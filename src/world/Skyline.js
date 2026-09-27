@@ -1,14 +1,19 @@
 import * as THREE from 'three';
-import { allocInkId } from '../render/layers.js';
+import { allocSkylineId } from '../render/layers.js';
 import { merge, lathe, V3 } from './geom.js';
 import { linearFor, EXPOSURE } from '../render/tone.js';
+import { SKY_GRAD_GLSL } from '../render/shaders/sky.js';
 
 // the street preset's eye (debug/Shots.js street), for the avenue sector
 const STREET_EYE = { x: -3.8, z: -9.0 };
 
-// Art-directed tower tone per ring, in display values (reference: nearest
-// towers print ~#35 with lit windows, the farthest ~#6a, sky ~#80 behind).
-const ROW_TONE = [0.17, 0.23, 0.3, 0.37];
+// Art-directed tower tone per ring, in display values. Phase 1c: the towers
+// are flat fogged silhouettes, 0.30-0.38 display (the reference's skyline is
+// soft flat grey a little under its ~0.48 sky, never a dark cutout), and each
+// ring is hazed toward the sky value right behind it (ROW_HAZE) so the step
+// against the sky is a soft 0.06-0.10.
+const ROW_TONE = [0.30, 0.32, 0.33, 0.34];
+const ROW_HAZE = [0.08, 0.12, 0.16, 0.2];
 // Lit windows print as soft paper-grey (never bloom-white), a little dimmer
 // with each ring so they sink into the haze with their towers.
 const WINDOW_TONE = [0.66, 0.62, 0.58, 0.54];
@@ -24,13 +29,14 @@ const MIN_AZ_GAP = 0.007;
 // Towers are not lit by the scene: their value is set by the ring (aerial
 // perspective), lifted toward the lamp-lit ground mist at their feet, with a
 // little face shading and vertical weathering so they read as masses.
-function makeTowerMaterial(U, tone) {
+function makeTowerMaterial(U, tone, haze) {
   return new THREE.ShaderMaterial({
     name: 'NoirTower',
     uniforms: {
       tNoise: U.tNoise,
       uFogColor: U.uFogColor,
       uTone: { value: linearFor(tone) / EXPOSURE },
+      uHaze: { value: haze },
       uMistH: { value: 22 },
     },
     vertexShader: /* glsl */`
@@ -45,15 +51,21 @@ function makeTowerMaterial(U, tone) {
     fragmentShader: /* glsl */`
       uniform sampler2D tNoise;
       uniform vec3 uFogColor;
-      uniform float uTone, uMistH;
+      uniform float uTone, uHaze, uMistH;
       varying vec3 vW;
       varying vec3 vN;
+      ${SKY_GRAD_GLSL}
       void main() {
         vec3 n = normalize( vN );
-        // the city glow comes from the avenue side: +x faces a touch lighter
-        float face = 1.0 + 0.22 * n.x * sign( - vW.x + 1e-3 ) + 0.12 * max( n.y, 0.0 );
+        // flat masses: only a whisper of face shading (the city glow comes
+        // from the avenue side) and of vertical weathering
+        float face = 1.0 + 0.08 * n.x * sign( - vW.x + 1e-3 ) + 0.05 * max( n.y, 0.0 );
         float streak = texture2D( tNoise, vec2( ( vW.x + vW.z ) * 0.045, vW.y * 0.003 ) ).r;
-        float c = uTone * face * ( 0.82 + 0.36 * streak );
+        float c = uTone * face * ( 0.94 + 0.12 * streak );
+        // aerial perspective: haze toward the sky right behind this pixel
+        float e = normalize( vW - cameraPosition ).y;
+        float skyL = uFogColor.g * skyGrad( e ) * SKY_CLOUD_MEAN;
+        c = mix( c, skyL, uHaze );
         float mist = exp( - max( vW.y, 0.0 ) / uMistH );
         c = mix( c, uFogColor.g * 1.05, mist * 0.9 );
         gl_FragColor = vec4( vec3( c ), 1.0 );
@@ -101,8 +113,8 @@ export class Skyline {
         const h = rng.range(row.h[0], row.h[1]) * (behind ? 0.6 : 1.0);
         this.tower(parts, rng, x, z, h, rng.range(row.w[0], row.w[1]) * 1.2, ri, false, this.inAvenueSector(x, z) ? i * 31 + ri * 7 + 1 : 0);
       }
-      const mesh = new THREE.Mesh(merge(parts), makeTowerMaterial(world.U, ROW_TONE[ri]));
-      mesh.userData.inkId = allocInkId();
+      const mesh = new THREE.Mesh(merge(parts), makeTowerMaterial(world.U, ROW_TONE[ri], ROW_HAZE[ri]));
+      mesh.userData.inkId = allocSkylineId();
       mesh.frustumCulled = false;
       this.group.add(mesh);
     });
@@ -150,7 +162,8 @@ export class Skyline {
       // (0.21 / 0.25 / 0.3 printed ~0.30 once the near lamp's bloom and the
       // rain were laid over them: a 0.03 step from the 0.33 sky, a ghost.
       // The reference's cluster sits ~0.08 under its sky.)
-      const tone = t.d < 280 ? 0.15 : t.d < 340 ? 0.18 : 0.22;
+      // (Phase 1c: flat fogged silhouettes, 0.30-0.34 + haze toward the sky)
+      const tone = t.d < 280 ? 0.3 : t.d < 340 ? 0.31 : 0.33;
       if (!byTone.has(tone)) byTone.set(tone, []);
       if (t.slab) {
         const info = this.slabTower(byTone.get(tone), rng, x, z, h, t.w);
@@ -160,8 +173,8 @@ export class Skyline {
       }
     }
     for (const [tone, parts] of byTone) {
-      const mesh = new THREE.Mesh(merge(parts), makeTowerMaterial(world.U, tone));
-      mesh.userData.inkId = allocInkId();
+      const mesh = new THREE.Mesh(merge(parts), makeTowerMaterial(world.U, tone, tone < 0.305 ? 0.1 : tone < 0.32 ? 0.13 : 0.16));
+      mesh.userData.inkId = allocSkylineId();
       mesh.frustumCulled = false;
       this.group.add(mesh);
     }
@@ -434,7 +447,7 @@ export class Skyline {
     });
     im.instanceMatrix.needsUpdate = true;
     im.instanceColor.needsUpdate = true;
-    im.userData.inkId = allocInkId();
+    im.userData.inkId = allocSkylineId();
     im.userData.inkPerInstance = false;
     im.frustumCulled = false;
     this.group.add(im);

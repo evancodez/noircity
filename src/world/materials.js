@@ -1,4 +1,35 @@
 import * as THREE from 'three';
+import { linearFor, EXPOSURE } from '../render/tone.js';
+
+// Car paint: the base layer (diffuse + its broad specular) is capped so a lit
+// body never prints above ~0.10 display, i.e. inside the first ink band: a car
+// under a lamp stays a black silhouette. The clearcoat's broad sky sheen is
+// capped the same way (seen side-on at 40 m it printed a whole body as a
+// 0.25-0.4 grey with an ink outline); only its grazing Fresnel rim and the
+// bright glints of lamps (far above the cap) survive: the fine highlights.
+const BODY_CAP = linearFor(0.10) / EXPOSURE;
+const GLINT = 0.12;   // clearcoat reflections brighter than this are lamp glints
+function capBody(mat) {
+  const cap = BODY_CAP.toFixed(6);
+  mat.onBeforeCompile = (sh) => {
+    sh.fragmentShader = sh.fragmentShader.replace(
+      'vec3 outgoingLight = totalDiffuse + totalSpecular + totalEmissiveRadiance;',
+      `vec3 outgoingLight = min( totalDiffuse + totalSpecular + totalEmissiveRadiance, vec3( ${cap} ) );`,
+    ).replace(
+      '( clearcoatSpecularDirect + clearcoatSpecularIndirect ) * material.clearcoat;',
+      `( clearcoatSpecularDirect + noirCoat( clearcoatSpecularIndirect, dotNVcc ) ) * material.clearcoat;`,
+    ).replace(
+      'void main() {',
+      `vec3 noirCoat( vec3 c, float nv ) {
+        vec3 kept = min( c, vec3( ${cap} ) ) + max( c - ${GLINT.toFixed(3)}, 0.0 );
+        return mix( kept, c, smoothstep( 0.12, 0.02, nv ) );   // the grazing rim
+      }
+      void main() {`,
+    );
+  };
+  mat.customProgramCacheKey = () => 'noirBodyCap';
+  return mat;
+}
 
 // Material library. Everything is greyscale; only blood and fire (Phase 2/3)
 // may carry chroma, because the ink pass keeps colour purely by saturation.
@@ -74,13 +105,14 @@ export function makeMaterials(renderer, tex) {
     kerb: std({ color: 0x161616, roughness: 0.65, envMap: envSoft, envMapIntensity: 0.08 }),  // (a glossy kerb face grazes the sky into a white stripe)
     brickFar: std({ color: 0x151515, roughness: 0.9 }),
     tower: std({ color: 0x0a0a0a, roughness: 1.0 }),
-    paint: new THREE.MeshPhysicalMaterial({
-      color: 0x060606, roughness: 0.3, metalness: 0.0, clearcoat: 1.0, clearcoatRoughness: 0.05,
+    // (Phase 1c: very low albedo, a rough base layer, capped: see capBody)
+    paint: capBody(new THREE.MeshPhysicalMaterial({
+      color: 0x030303, roughness: 0.65, metalness: 0.0, clearcoat: 1.0, clearcoatRoughness: 0.05,
       envMap: env, envMapIntensity: 1.0,
-    }),
-    paintGrey: new THREE.MeshPhysicalMaterial({
-      color: 0x262626, roughness: 0.4, clearcoat: 1.0, clearcoatRoughness: 0.08, envMap: env, envMapIntensity: 0.8,
-    }),
+    })),
+    paintGrey: capBody(new THREE.MeshPhysicalMaterial({
+      color: 0x101010, roughness: 0.65, clearcoat: 1.0, clearcoatRoughness: 0.08, envMap: env, envMapIntensity: 0.8,
+    })),
     chrome: std({ color: 0x9a9a9a, roughness: 0.16, metalness: 1.0, envMap: env, envMapIntensity: 1.0 }),
     rubber: std({ color: 0x080808, roughness: 0.75, metalness: 0.0, envMap: env, envMapIntensity: 0.2 }),
     // hub: a dark disc (the wheel must not become a bright target), with a

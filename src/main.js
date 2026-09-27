@@ -12,6 +12,7 @@ import { Stats } from './debug/Stats.js';
 import { bench } from './debug/Bench.js';
 import { getShot, applyShot } from './debug/Shots.js';
 import { RNG } from './util/rng.js';
+import { DEATH_REPORT } from './enemies/Hood.js';
 
 // ---- URL params (DESIGN.md §9) -------------------------------------------
 const params = new URLSearchParams(location.search);
@@ -96,6 +97,25 @@ const skipSteps = Math.round(tSkip * 60);
 for (let i = 0; i < skipSteps; i++) simStep(STEP);
 if (skipSteps === 0) simStep(0);
 
+// focus=i[,dist,bearingDeg,eyeHeight,fov]: after the fast-forward, aim the
+// camera at Hood i (bearing 0 = in front of his face, 90 = his left side),
+// looking at his hips bone, so close-ups track a walking or fallen man
+const focusParam = params.get('focus');
+if (shot && focusParam && world.hoods.list.length) {
+  const [i, dist = 3, bearing = 0, eye = 1.5, fov = 32] = focusParam.split(',').map(Number);
+  const h = world.hoods.list[Math.min(world.hoods.list.length - 1, i | 0)];
+  const tgt = new THREE.Vector3().setFromMatrixPosition(h.bones.hips.matrixWorld);
+  tgt.y = Math.max(tgt.y, 0.35) + 0.15;
+  const a = h.yaw + bearing * Math.PI / 180;
+  const cx = tgt.x + Math.sin(a) * dist, cz = tgt.z + Math.cos(a) * dist;
+  const yaw = Math.atan2(-(tgt.x - cx), -(tgt.z - cz));
+  const pitch = Math.atan2(tgt.y - eye, dist);
+  camera.fov = fov;
+  camera.updateProjectionMatrix();
+  controller.setPose(cx, cz, yaw, pitch, eye - 1.63);
+  world.update(0, simTime, camera, pipeline.height);
+}
+
 // gdbg=<n>: wet-street term debug (render/shaders/ground.js)
 if (params.get('gdbg')) U.uGroundDebug.value = parseInt(params.get('gdbg'), 10) || 0;
 
@@ -139,7 +159,10 @@ window.__noir = {
   params: { shotName, shotMode, hudOn, debug, wavesOn, tSkip },
   bench: (opts) => bench(renderer, pipeline, scene, camera, opts),
   lightning: (strength = 1) => pipeline.pulseLightning(simTime, strength),
-  spawnHood(pos) { console.log('[noir] spawnHood is a Phase 2 feature', pos); return null; },
+  // spawnHood([x, z] | {x, z} | Vector3, variant = seed | { coat, brim, tall, cig }, { yaw, state })
+  spawnHood(pos, variant = {}, opts = {}) { return world.hoods.spawn(pos, variant, opts); },
+  get hoods() { return world.hoods.list; },
+  deathReport: DEATH_REPORT,
   get time() { return simTime; },
 };
 window.__noirReady = true;

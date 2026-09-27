@@ -128,9 +128,15 @@ export function makeConeMaterial(U, { apex, axis, tan, height, r0 = 0.18, intens
           // (the core has a FIXED width in metres, ~0.35 m: relative to the
           // cone radius it widened to ~1 m at the street and the near lamp's
           // column printed twice as wide as the reference's)
+          // Phase 1c: a lamp beyond ~30 m (horizontal distance from the eye;
+          // the mirrored camera shares the eye's x/z) leaves a thinner,
+          // dimmer column: its core drops toward the bright-pass threshold,
+          // so only its middle survives it (Pipeline §2 bright pass does the
+          // same for the lamp heads). Fewer, clearer columns on the road.
           if ( uUseDepth < 0.5 && uAxis.y < -0.5 ) {
             float core = exp( - r * r / 0.05 );
-            along = along * 0.12 + uReflCore * core * smoothstep( 0.0, 0.05, hn ) * ( 1.0 - 0.45 * hn )
+            float farCore = mix( 1.0, 0.3, smoothstep( 30.0, 50.0, length( uApex.xz - cameraPosition.xz ) ) );
+            along = along * 0.12 + uReflCore * farCore * core * smoothstep( 0.0, 0.05, hn ) * ( 1.0 - 0.45 * hn )
                   * ( 1.0 - smoothstep( 0.93, 1.0, hn ) );
           }
           // divide by the local radius so the integrated brightness across the
@@ -155,6 +161,10 @@ export function makeConeMaterial(U, { apex, axis, tan, height, r0 = 0.18, intens
         // far cones step back: each one stays a distinct shape in the mist
         // instead of summing with its neighbours into a white wall
         float farAtt = 1.0 / ( 1.0 + 0.025 * max( tm - 8.0, 0.0 ) );
+        // (Phase 1c: the cones beyond ~40 m hang over the far plate under
+        // the vanishing point, where they summed with the mist pools into
+        // one bright patch; they step back a little further)
+        farAtt *= mix( 1.0, 0.5, smoothstep( 35.0, 55.0, tm ) );
         float total = uIntensity * lit * ( 1.0 - fogF * 0.85 ) * farAtt;
         // volume pass: R = B = all the cone light, G = the part that hugs the
         // surface behind it. The ink pass paints figures (cars, Hoods) as black

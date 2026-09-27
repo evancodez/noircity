@@ -42,7 +42,35 @@ let nextId = 2; // 0 = sky/clear, 1 = untagged default
 export function allocInkId(count = 1) {
   const id = nextId;
   nextId += count;
-  if (nextId > IRON_ID0 - 1) nextId = 2;
+  if (nextId > HOOD_ID0 - 1) nextId = 2;
+  return id;
+}
+export function inkIdsUsed() { return nextId; }
+
+// Ids HOOD_ID0..HOOD_ID0+HOOD_SLOTS-1 are the Hoods (always written as
+// figures, i.e. negative). Each slot also owns an entry in FIG_ANCHOR: the
+// Hood's root position (xyz) and yaw (w), which the ink pass subtracts from
+// a figure pixel's world position before sampling the brush, so the
+// dry-brush strokes ride on the moving body instead of sliding over it.
+export const HOOD_ID0 = 1790;
+export const HOOD_SLOTS = 64;
+export const FIG_ANCHOR = Array.from({ length: HOOD_SLOTS }, () => new THREE.Vector4());
+const hoodSlots = new Array(HOOD_SLOTS).fill(false);
+export function allocHoodSlot() {
+  for (let i = 0; i < HOOD_SLOTS; i++) {
+    if (!hoodSlots[i]) { hoodSlots[i] = true; return i; }
+  }
+  return -1;
+}
+export function releaseHoodSlot(i) { if (i >= 0) hoodSlots[i] = false; }
+// Ids SKYLINE_ID0..IRON_ID0-1 are the far skyline (towers + their window
+// flecks). The ink pass prints them as flat fogged silhouettes: no dry-brush
+// strokes, no paper lift-outs, no contours or rims (Phase 1c polish #1).
+export const SKYLINE_ID0 = 1860;
+let nextSkyline = SKYLINE_ID0;
+export function allocSkylineId() {
+  const id = nextSkyline;
+  nextSkyline = nextSkyline >= IRON_ID0 - 1 ? SKYLINE_ID0 : nextSkyline + 1;
   return id;
 }
 // Ids IRON_ID0..2040 are reserved for the el's ironwork. The ink pass keeps

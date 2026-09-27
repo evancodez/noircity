@@ -86,14 +86,44 @@ export function makeReflBrightMaterial() {
   return new THREE.ShaderMaterial({
     name: 'ReflBright',
     depthTest: false, depthWrite: false,
-    uniforms: { tSrc: { value: null }, uTexel: { value: new THREE.Vector2() }, uThreshold: { value: 0.1 } },
+    uniforms: {
+      tSrc: { value: null }, uTexel: { value: new THREE.Vector2() }, uThreshold: { value: 0.1 },
+      uFocal: { value: new THREE.Vector2(1, 1) },   // reflection camera P[0][0], P[1][1]
+      uCamRot: { value: new THREE.Matrix3() },      // reflection camera -> world rotation
+      uEyeH: { value: 1.7 },                        // eye height above the street plane
+    },
     vertexShader: FULLSCREEN_VERT,
     fragmentShader: /* glsl */`
       uniform sampler2D tSrc; uniform vec2 uTexel; uniform float uThreshold;
+      uniform vec2 uFocal; uniform mat3 uCamRot; uniform float uEyeH;
       varying vec2 vUv;
       ${LUMA_GLSL}
+      // Distance weight (Phase 1c polish #3): seen from below the mirror an
+      // emitter at height h and distance D sits atan( ( h + eye ) / D ) above
+      // the reflection camera's horizon, so for the street's emitters (lamp
+      // heads, lit windows: ~2.5-6 m up) the elevation of the mirrored ray is
+      // a good distance estimate. Beyond ~30 m they are weighted down BEFORE
+      // the threshold: a far window or hanging lamp leaves a thinner, dimmer
+      // column (its faint flanks fall under T), the near lamps keep theirs,
+      // so the road carries a few columns with dark road between, not a
+      // palisade of six or seven side by side.
+      float distWeight( vec2 uv ) {
+        vec3 dV = normalize( vec3( ( uv * 2.0 - 1.0 ) / uFocal, -1.0 ) );
+        float e = ( uCamRot * dV ).y;
+        float tanE = e / sqrt( max( 1.0 - e * e, 1e-4 ) );
+        float D = ( 4.5 + uEyeH ) / max( tanE, 1e-3 );
+        return smoothstep( 26.0, 44.0, D );
+      }
       vec3 keep( vec3 c ) {
         c = min( c, vec3( 40.0 ) );                 // fireflies
+        // (a lamp head is ~100x the threshold: a plain gain would not dim its
+        // column at all, so a far emitter is also clipped to a low ceiling)
+        // (only the emitter heads, bulbs and headlamps, are placed by the
+        // estimate: a cone's air light reaches down to the street, where its
+        // elevation says 'far' at any distance, and it carries the upper part
+        // of every column; a far cone is small and dim on its own)
+        float far = distWeight( vUv ) * smoothstep( 0.5, 2.0, luma( c ) );
+        c *= mix( 1.0, 0.5, far ) * min( 1.0, mix( 40.0, uThreshold + 0.04, far ) / max( luma( c ), 1e-4 ) );
         float l = luma( c );
         return c * ( max( l - uThreshold, 0.0 ) / max( l, 1e-4 ) );
       }

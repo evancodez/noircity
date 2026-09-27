@@ -221,6 +221,7 @@ export class Pipeline {
     }
     scene.overrideMaterial = null;
     U.tDepth.value = this.rtId.depthTexture;
+    U.tNormalId.value = this.rtId.texture;
 
     // ---- 2. planar reflection (emitters only) + bright pass + streak -------
     // The street must not mirror the storm sky or the fogged-out distance as
@@ -251,6 +252,10 @@ export class Pipeline {
     bp.tSrc.value = this.rtRefl.texture;
     bp.uTexel.value.set(1 / this.rtRefl.width, 1 / this.rtRefl.height);
     bp.uThreshold.value = this.reflThreshold;
+    const rpm = this.reflCam.projectionMatrix.elements;
+    bp.uFocal.value.set(rpm[0], rpm[5]);
+    bp.uCamRot.value.setFromMatrix4(this.reflCam.matrixWorld);
+    bp.uEyeH.value = Math.max(0.3, this._v.camPos.y - this._v.planePos.y);
     this.blit(this.reflBrightMat, this.rtStreakA);
     // long vertical streak: each emitter leaves one column down the frame
     const sm = this.streakMat.uniforms;

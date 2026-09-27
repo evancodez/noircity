@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { tagInk, allocInkId, allocIronId } from '../render/layers.js';
+import { tagInk, allocInkId, allocIronId, markFigure } from '../render/layers.js';
 import { lathe, merge, roundedBox, tube, catenaryPoints, V3 } from './geom.js';
 import { STREET } from './Street.js';
 import { OVERPASS } from './Overpass.js';
@@ -162,9 +162,12 @@ export class Props {
     for (const [cx, cy, s] of [[0, 0.5, 1.1], [1.15, 0.45, 1.0]]) {
       for (let k = -1; k <= 1; k++) parts.push(roundedBox(s + 0.04, 0.08, 0.06, 0.02).translate(cx, cy + k * 0.3, s / 2 + 0.03));
     }
-    const m = new THREE.Mesh(merge(parts), M.wood);
+    // unlit black (Phase 1c): under an el lamp the lit wood printed as
+    // light-grey outline art; clutter is a black silhouette like the cars
+    const m = new THREE.Mesh(merge(parts), M.black);
     m.position.copy(p);
     m.rotation.y = yaw;
+    markFigure(m);   // inked like a car: the air light goes around it
     this.add(m, () => colliders.addBox(p.x + Math.cos(yaw) * 0.55, p.z - Math.sin(yaw) * 0.55, 1.2, 0.6, yaw, 'crates'));
   }
 

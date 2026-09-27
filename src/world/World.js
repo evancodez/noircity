@@ -14,6 +14,7 @@ import { Rain } from './Rain.js';
 import { Sky } from './Sky.js';
 import { Steam } from '../fx/Steam.js';
 import { GroundMist } from '../fx/GroundMist.js';
+import { Hoods } from '../enemies/Hood.js';
 
 // Assembles the block. Hooks for later phases:
 //   world.update(dt, t, camera)     — call once per fixed step
@@ -21,7 +22,9 @@ import { GroundMist } from '../fx/GroundMist.js';
 //   world.colliders                 — XZ collision (player, Hoods)
 //   world.flash                     — PointLight for muzzle flashes (intensity 0 at rest)
 //   world.street.addImpact(world, x, z, s) — ripple ring on the wet street
-//   world.solids                    — meshes for bullet raycasts
+//   world.solids                    — meshes for bullet raycasts (+ Hood hit volumes,
+//                                     userData.joint / userData.hood)
+//   world.hoods                     — the Hoods (enemies/Hood.js): spawn(pos, variant)
 export class World {
   constructor({ renderer, scene, U, tex, rng }) {
     this.renderer = renderer;
@@ -65,6 +68,7 @@ export class World {
     this.solids = [];
     scene.traverse((o) => { if (o.isMesh && o.layers.mask & 3 && !o.isInstancedMesh) this.solids.push(o); });
     this._rim = [];
+    this.hoods = new Hoods(this);
   }
 
   update(dt, t, camera, pixelHeight = 1000) {
@@ -73,6 +77,7 @@ export class World {
     this.sky.update(camera);
     this.lamps.update(dt, t, camera);
     this.rain.update(camera, pixelHeight);
+    this.hoods.update(dt, t, camera);
     const sorted = this.lights.sync(camera.position);
     // the 4 nearest lamps drive the ink pass' white rim light
     this._rim.length = 0;

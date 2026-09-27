@@ -17,6 +17,7 @@ export function createSharedUniforms(tex) {
     uTime: { value: 0 },
     uLightning: { value: 0 },
     tDepth: { value: null },          // opaque scene depth (normal/id pass)
+    tNormalId: { value: null },       // normal/id pass colour (w = ink id; < 0 = figure)
     uRes: { value: new THREE.Vector2(1, 1) },
     uNear: { value: 0.1 },
     uFar: { value: 1500 },

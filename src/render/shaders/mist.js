@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { HASH_GLSL, LAMPS_GLSL } from './common.js';
 import { NOIR_FOG_GLSL } from '../fog.js';
 import { ADD_KEEP_ALPHA } from '../layers.js';
+import { linearFor, EXPOSURE } from '../tone.js';
 
 // Lamp-lit ground mist: the soft grey haze that lies on the far street
 // between the el's columns in the reference (behind the shot man, around the
@@ -34,7 +35,11 @@ export function makeMistMaterial(U, { min, max, intensity = 1 }) {
       uDensity: { value: 0.011 },   // light per metre of pool-centre mist, view
       uDensityRefl: { value: 0.045 }, // ... reflection (5 m segment: pool centre ~T + 0.02)
       uSigma: { value: 5.0 },       // pool radius (m)
-      uDispCap: { value: 0.075 },   // mist + backdrop never above this (scene-linear; ~0.53 display)
+      // mist + backdrop never above this (scene-linear). Phase 1c: 0.075
+      // (~0.55 display) -> linearFor(0.48): the far plate under the
+      // vanishing point stays separate pools on a ~0.37 road, not one patch
+      uDispCap: { value: linearFor(0.48) / EXPOSURE },
+      uSigmaFar: { value: 4.0 },    // pool radius (m) for lamps beyond ~40 m
     },
     vertexShader: /* glsl */`
       varying vec3 vWorld;
@@ -45,7 +50,7 @@ export function makeMistMaterial(U, { min, max, intensity = 1 }) {
       }`,
     fragmentShader: /* glsl */`
       uniform vec3 uMin, uMax;
-      uniform float uIntensity, uHeight, uCap, uCapRefl, uSigma, uDensity, uDensityRefl, uDispCap;
+      uniform float uIntensity, uHeight, uCap, uCapRefl, uSigma, uSigmaFar, uDensity, uDensityRefl, uDispCap;
       uniform vec2 uStart;
       uniform sampler2D tDepth, tNoise;
       uniform vec2 uRes;
@@ -72,7 +77,10 @@ export function makeMistMaterial(U, { min, max, intensity = 1 }) {
           vec3 g = lp + ld * ( lp.y / - ld.y );
           vec2 dv = p.xz - g.xz;
           float r2 = dot( dv, dv );
-          acc += prm.z * exp( - r2 / ( 2.0 * uSigma * uSigma ) );
+          // far pools are tighter, so down the avenue they stay separate
+          // (the mirrored camera shares the eye's x/z)
+          float sg = mix( uSigma, uSigmaFar, smoothstep( 34.0, 44.0, length( g.xz - cameraPosition.xz ) ) );
+          acc += prm.z * exp( - r2 / ( 2.0 * sg * sg ) );
         }
         return acc;
       }
@@ -121,7 +129,12 @@ export function makeMistMaterial(U, { min, max, intensity = 1 }) {
           // light only where a lamp pools it (a trace elsewhere)
           float lit = 0.03 + lampPools( x );
           float fadeIn = smoothstep( uStart.x, uStart.y, t );
-          float a = hgt * box * ( 0.2 + 0.8 * bank ) * lit * fadeIn;
+          // (Phase 1c) the far plate under the vanishing point: every ray
+          // there crosses 100 m of slab and all the far pools line up along
+          // it, summing into one bright patch; beyond ~30 m the mist thins
+          // so the far pools stay separate soft glows on a ~0.4 road
+          float farThin = mix( 1.0, 0.3, smoothstep( 26.0, 46.0, t ) );
+          float a = hgt * box * ( 0.2 + 0.8 * bank ) * lit * fadeIn * farThin;
           acc += a;
           accNear += a * smoothstep( tSurf - 9.0, tSurf - 4.0, t );
         }
@@ -131,7 +144,7 @@ export function makeMistMaterial(U, { min, max, intensity = 1 }) {
         // capped: however many pools line up along the ray, the mist never
         // adds more than uCap (soft saturation)
         float cap = mix( uCap, uCapRefl, refl );
-        // Display cap (~0.55): the mist is ADDED over whatever lies behind
+        // Display cap (~0.48): the mist is ADDED over whatever lies behind
         // it, and the far street's backdrop is already the grey fog / horizon
         // (~0.4-0.6 display): mist + backdrop summed into the flat white wall.
         // So the mist may only lift the backdrop up to uDispCap (scene-

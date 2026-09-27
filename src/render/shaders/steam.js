@@ -50,7 +50,7 @@ export function makeSteamMaterial(U, puffTex) {
         gl_Position = projectionMatrix * mv;
       }`,
     fragmentShader: /* glsl */`
-      uniform sampler2D tPuff, tDepth;
+      uniform sampler2D tPuff, tDepth, tNormalId;
       uniform vec2 uRes;
       uniform float uNear, uFar, uUseDepth, uStrength;
       varying vec2 vUvP;
@@ -71,6 +71,13 @@ export function makeSteamMaterial(U, puffTex) {
           float d = texture2D( tDepth, gl_FragCoord.xy / uRes ).r;
           float sz = d < 0.999999 ? linZ( d ) : 1e5;
           a *= smoothstep( 0.0, 0.8, sz - vViewZ );
+          // a figure (car, crate, Hood) behind the puff stays a black
+          // silhouette: the veil is painted around it like the ink pass
+          // paints the air light, only a trace stays over it (Phase 1c: a
+          // lamp-lit column of puffs printed the near car and crate as grey
+          // outline art; even 12 % of each puff stacked to 0.22 on a far car)
+          float fig = step( texture2D( tNormalId, gl_FragCoord.xy / uRes ).a, -0.5 );
+          a *= 1.0 - 0.96 * fig;
         }
         a *= smoothstep( 0.3, 1.2, vViewZ );
         vec4 nf = noirFog( vDist, vWY, uFogDensity, uFogColor );

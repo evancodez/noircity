@@ -165,6 +165,23 @@ export function makeGroundMaterial(U, { paving = 0 } = {}) {
       // covering ~w of its row, q * w ~= cov (0.82 = mean of the tapers).
       // 'fade' -> 0 once a row is < 2 px, where the caller replaces the mask
       // by its mean (no aliasing).
+      // Near-field wash / blot mask (Phase 1c polish #4): thresholded
+      // low-frequency fbm, cells stretched ~1.5x along z in the WORLD so the
+      // foreshortened street prints them ~1.5:1 on screen (the old x-stretched
+      // noise x the horizontal brush printed 6:1 hard-edged streaks), with
+      // ragged rims from a fine isotropic octave.
+      float nearFbm( vec2 p, float seed ) {
+        vec2 q = p * vec2( 0.36, 0.24 ) + seed;
+        return texture2D( tNoise, q ).g * 0.5
+             + texture2D( tNoise, q * 2.03 + 1.7 ).r * 0.25
+             + texture2D( tNoise, q * 4.1 + 3.1 ).b * 0.15
+             + texture2D( tNoise, p * vec2( 1.9, 1.5 ) + seed * 2.3 ).a * 0.1;
+      }
+      float nearMask( vec2 p, float seed, float thr ) {
+        float rag = ( texture2D( tNoise, p * 3.3 + seed * 1.7 ).a - 0.5 ) * 0.07;
+        return smoothstep( thr, thr + 0.02, nearFbm( p, seed ) + rag );
+      }
+
       float rippleDashes( vec2 p, float pitch, float len, float cov, float seed, out float fade ) {
         float warp = texture2D( tNoise, p * vec2( 0.14 / len, 0.04 / pitch ) + seed ).r - 0.5;
         // a finer second octave: +-25 % local pitch, rows kink irregularly
@@ -238,9 +255,10 @@ export function makeGroundMaterial(U, { paving = 0 } = {}) {
         // near splatter: many 0.1-0.4 m blots, flattened along x, with ragged
         // rims and flung drops (a mid-frequency threshold broken by fine noise)
         float nearB = ( 1.0 - smoothstep( 5.0, 11.0, dist ) ) * ( 1.0 - uPaving );
-        float ns = texture2D( tNoise, p * vec2( 0.95, 1.5 ) + 7.7 ).g * 0.62
-                 + texture2D( tNoise, p * vec2( 0.3, 0.45 ) + 5.2 ).r * 0.2
-                 + texture2D( tNoise, p * vec2( 3.2, 4.4 ) + 2.1 ).a * 0.18;
+        // (Phase 1c: ~1.5:1 on screen, not flattened along x)
+        float ns = texture2D( tNoise, p * vec2( 0.95, 0.66 ) + 7.7 ).g * 0.62
+                 + texture2D( tNoise, p * vec2( 0.3, 0.21 ) + 5.2 ).r * 0.2
+                 + texture2D( tNoise, p * vec2( 3.2, 2.6 ) + 2.1 ).a * 0.18;
         float nearSplat = smoothstep( 0.6, 0.615, ns ) * nearB;
         float blobs = max( max( inkBlobs( p ), bigBlobs ), nearSplat ) * ( 1.0 - uPaving * 0.6 );
         float grain = n2.a * 0.55 + n1.b * 0.45;
@@ -362,6 +380,11 @@ export function makeGroundMaterial(U, { paving = 0 } = {}) {
         // slivers like the reference's streaks
         float vbr = texture2D( tBrush, ( ruv + dis ) * vec2( 1.9, 0.8 ) + vec2( 0.37, 0.11 ) ).g;
         dash *= mix( 1.0, smoothstep( 0.06, 0.24, vbr ), smoothstep( 0.02, 0.08, colL ) * 0.9 );
+        // inside the near wash band the water is carried by the wash and its
+        // blots, not by a ruled field of slivers: ~30 % of the dashes stay
+        // (outside the columns; a column's foot keeps its ripples)
+        float nearBand = ( 1.0 - smoothstep( 7.0, 11.0, dist ) ) * ( 1.0 - uPaving );
+        dash *= mix( 1.0, 0.3, nearBand * ( 1.0 - colMask ) );
         // A column stays a column; the dashes print it. The ink tone curve is
         // LOGARITHMIC (tone.js), so a linear floor of 0.55 is only -0.9 stop:
         // the dash gaps printed ~0.1 lighter than the dashes, or white where
@@ -399,11 +422,9 @@ export function makeGroundMaterial(U, { paving = 0 } = {}) {
         // catching the storm sky) with sparse pale specks, so the black ink
         // blots below have grey to sit on, like the reference's bottom edge
         float nearW = ( 1.0 - smoothstep( 4.0, 11.0, dist ) ) * ( 1.0 - uPaving );
-        // (laid as horizontal dry-brush strokes gathered in patches, not as a
-        // flat noise plate)
-        float washN = texture2D( tNoise, p * vec2( 0.13, 0.2 ) + 4.4 ).b * 0.7 + texture2D( tNoise, p * 0.7 + 1.1 ).a * 0.3;
-        float washB = texture2D( tBrush, p * vec2( 0.11, 0.14 ) + vec2( 0.3, 0.7 ) ).b;
-        float wash = smoothstep( 0.46, 0.6, washN ) * smoothstep( 0.3, 0.46, washB ) * nearW;
+        // (Phase 1c: patches from the thresholded fbm, ~1.5:1 with ragged
+        // rims; the horizontal-brush strokes printed 6:1 hard-edged streaks)
+        float wash = nearMask( p, 4.4, 0.56 ) * nearW;
         float speck = smoothstep( 0.7, 0.74, texture2D( tNoise, p * vec2( 0.9, 1.3 ) + 6.1 ).a ) * nearW;
         refl += uFogColor * ( 0.22 * wash + 0.45 * speck ) * ( 1.0 - coverage * puddle );
         // the bottom edge (< ~5 m, the bottom ~20 % of the street view): the
@@ -415,11 +436,7 @@ export function makeGroundMaterial(U, { paving = 0 } = {}) {
         // horizontal dry brush; blots are cut below (refl *= 1 - blobs).
         float nearE = ( 1.0 - smoothstep( 4.4, 7.0, dist ) ) * ( 1.0 - uPaving );
         if ( nearE > 0.0 ) {
-          float eN = texture2D( tNoise, p * vec2( 0.15, 0.3 ) + 2.7 ).g * 0.55
-                   + texture2D( tNoise, p * vec2( 0.24, 0.45 ) + 5.9 ).r * 0.3
-                   + texture2D( tNoise, p * vec2( 0.5, 0.9 ) + 1.3 ).b * 0.15
-                   + ( washB - 0.5 ) * 0.12;
-          float washE = smoothstep( 0.5, 0.555, eN ) * nearE;
+          float washE = nearMask( p, 2.7, 0.515 ) * nearE;
           // (under a column too: its dash gaps print grey, not black, so a
           // column's foot is white ripple slivers on grey water)
           refl += uFogColor * 0.4 * washE * ( 1.0 - coverage * puddle );

@@ -1,5 +1,20 @@
 import * as THREE from 'three';
 
+// The sky's vertical gradient (multiplier on the fog colour) and its mean
+// cloud factor, shared with the skyline towers (world/Skyline.js) so each
+// tower can be hazed toward the sky value right behind it: the step between
+// a tower and its sky stays a soft, constant ~0.06-0.10 display at any
+// elevation instead of a dark cutout.
+// Phase 1c: lifted ~0.06 display (overhead 0.47 -> 0.6, cloud gaps 0.75 ->
+// 0.82): the reference's sky behind the towers sits ~0.48.
+export const SKY_GRAD_GLSL = /* glsl */`
+float skyGrad( float e ) {
+  float g = mix( 1.0, 0.6, smoothstep( 0.0, 0.55, e ) );
+  return g * ( 1.0 + 0.1 * exp( - max( e, 0.0 ) * 8.0 ) );
+}
+const float SKY_CLOUD_MEAN = 0.9;
+`;
+
 // Sky dome: paper-grey storm sky. Horizon = fog colour (so fogged towers melt
 // into it), darker overhead, slow rolling cloud mottling, and a lightning term
 // that floods the clouds white.
@@ -21,13 +36,13 @@ export function makeSkyMaterial(U) {
       uniform float uTime, uLightning;
       uniform sampler2D tNoise, tBrush;
       varying vec3 vDir;
+      ${SKY_GRAD_GLSL}
       void main() {
         vec3 d = normalize( vDir );
         float e = d.y;
-        // storm sky with a real vertical gradient: ~#5e overhead, lifting to
+        // storm sky with a real vertical gradient: ~#6c overhead, lifting to
         // ~#8c in the mist band at the horizon (display values)
-        float g = mix( 1.0, 0.47, smoothstep( 0.0, 0.55, e ) );
-        g *= 1.0 + 0.1 * exp( - max( e, 0.0 ) * 8.0 );
+        float g = skyGrad( e );
         // big soft cloud masses, sampled on a low dome so they don't streak
         vec2 cp = d.xz / ( max( e, 0.0 ) + 0.45 );
         vec2 drift = vec2( uTime * 0.004, uTime * 0.0015 );
@@ -37,7 +52,7 @@ export function makeSkyMaterial(U) {
         float bb = texture2D( tBrush, cp * 0.42 + drift * 3.0 ).b;
         float clouds = smoothstep( 0.4, 0.62, c + ( bb - 0.5 ) * 0.16 );
         float horizonFade = smoothstep( 0.02, 0.3, e );
-        g *= mix( 1.0, mix( 0.75, 1.15, clouds ), horizonFade );
+        g *= mix( 1.0, mix( 0.82, 1.12, clouds ), horizonFade );
         vec3 col = uFogColor * g;
         col += vec3( uLightning * ( 0.25 + 1.6 * clouds ) * ( 0.4 + 0.6 * horizonFade ) );
         gl_FragColor = vec4( col, 1.0 );
