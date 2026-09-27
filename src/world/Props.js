@@ -14,6 +14,7 @@ export class Props {
     this.group.name = 'props';
     world.scene.add(this.group);
     const P = STREET.pavementTop;
+    this.items = [];     // Phase 3a: the shootable props (cans, booth, hydrants, grates)
     this.hydrant(V3(-6.55, P, -27.5));
     this.hydrant(V3(-6.55, P, -83));
     this.trashCan(V3(-9.55, P, -5.2), 0.2);
@@ -59,6 +60,9 @@ export class Props {
     m.position.copy(p);
     m.rotation.y = 0.5;
     this.add(m, () => colliders.addCircle(p.x, p.z, 0.25, 'hydrant'));
+    const hy = { kind: 'hydrant', mesh: m, pos: p.clone(), hits: 0, open: false, t: 0, acc: 0, ripT: 0 };
+    m.userData.prop = hy;
+    this.items.push(hy);
   }
 
   trashCan(p, yaw, tipped = false) {
@@ -85,7 +89,12 @@ export class Props {
       lidM.position.set(0.55, -0.93, 0.2);
       lidM.rotation.set(0.2, 0, 1.45);
     }
-    this.add(g, () => colliders.addCircle(p.x, p.z, 0.32, 'can'));
+    let col = null;
+    this.add(g, () => { col = colliders.addCircle(p.x, p.z, 0.32, 'can'); });
+    const item = { kind: 'can', group: g, can: canM, lid: lidM, pos: p.clone(), yaw, collider: col, hits: 0, dent: 0,
+      tip: 0, tipDir: 0, vel: new THREE.Vector3(), spin: 0, down: false, lidOff: tipped, lidVel: null };
+    g.traverse((o) => { if (o.isMesh) o.userData.prop = item; });
+    this.items.push(item);
   }
 
   phoneBooth(p, yaw) {
@@ -114,7 +123,9 @@ export class Props {
     g.add(new THREE.Mesh(merge(frame), M.paintedMetal));
     const glassMat = M.glass.clone();
     glassMat.side = THREE.DoubleSide;
-    g.add(new THREE.Mesh(merge(panes), glassMat));
+    const paneMesh = new THREE.Mesh(merge(panes), glassMat);
+    paneMesh.userData.surf = 'glass';
+    g.add(paneMesh);
     // interior dome light (dim) and the telephone box
     const lamp = new THREE.Mesh(new THREE.SphereGeometry(0.07, 12, 8).translate(0, H - 0.1, 0), new THREE.MeshBasicMaterial({ color: new THREE.Color(6, 6, 6) }));
     g.add(lamp);
@@ -122,6 +133,18 @@ export class Props {
     g.position.copy(p);
     g.rotation.y = yaw;
     this.add(g, () => colliders.addBox(p.x, p.z, W / 2 + 0.05, D / 2 + 0.05, yaw, 'booth'));
+    const booth = { kind: 'booth', group: g, paneMesh, panes: panes.map((geo, i) => ({ geo, hits: 0, broken: false, i })), pos: p.clone(), yaw, W, D, H };
+    // pane centres / normals in the booth's frame: +x, +z, -x, -z faces
+    const pc = [[W / 2 - 0.035, 0], [0, D / 2 - 0.035], [-(W / 2 - 0.035), 0], [0, -(D / 2 - 0.035)]];
+    const order = [[1, 0], [1, 1], [-1, 0], [-1, 1]];
+    booth.panes.forEach((pn, i) => {
+      const [sgn, ax] = order[i];
+      pn.c = ax === 0 ? V3(sgn * (W / 2 - 0.035), H / 2 + 0.1, 0) : V3(0, H / 2 + 0.1, sgn * (D / 2 - 0.035));
+      pn.n = ax === 0 ? V3(sgn, 0, 0) : V3(0, 0, sgn);
+    });
+    void pc;
+    g.traverse((o) => { if (o.isMesh) o.userData.prop = booth; });
+    this.items.push(booth);
     const light = new THREE.PointLight(0xffffff, 3.0, 5, 2);
     light.position.set(p.x, p.y + H - 0.25, p.z);
     this.world.scene.add(light);
@@ -201,6 +224,9 @@ export class Props {
     g.position.copy(p);
     g.rotation.y = 0.1;
     this.add(g);
+    const gr = { kind: 'grate', group: g, pos: p.clone(), puff: 0, acc: 0 };
+    g.traverse((o) => { if (o.isMesh) o.userData.prop = gr; });
+    this.items.push(gr);
   }
 
   manhole(p) {
@@ -210,6 +236,197 @@ export class Props {
     const m = new THREE.Mesh(merge(parts), M.iron);
     m.position.copy(p);
     this.add(m);
+  }
+
+  // ---- Phase 3a: shooting the props --------------------------------------------
+  bind(game) { this.game = game; }
+
+  hit(prop, hit, dir, { weak = false } = {}) {
+    const G = this.game;
+    if (!G) return null;
+    G.counters.props++;
+    if (prop.kind === 'can') return this.hitCan(prop, hit, dir, weak);
+    if (prop.kind === 'booth') return this.hitBooth(prop, hit, dir);
+    if (prop.kind === 'hydrant') return this.hitHydrant(prop, hit, dir, weak);
+    if (prop.kind === 'grate') { this.puffGrate(prop, 1); return null; }
+    return null;
+  }
+
+  // a round near a vent (the street round a grate) makes it puff too
+  nearGrate(x, z) {
+    for (const it of this.items) if (it.kind === 'grate' && Math.hypot(it.pos.x - x, it.pos.z - z) < 0.9) return it;
+    return null;
+  }
+
+  puffGrate(gr, k = 1) {
+    gr.puff = Math.min(2.5, gr.puff + 0.9 * k);
+    this.game.sfx.steam(gr.pos, k);
+  }
+
+  // dent (it squashes a little, rocks) then tumble over and roll, the lid
+  // flying off
+  hitCan(c, hit, dir, weak) {
+    const G = this.game, r = this.rng || (this.rng = this.world.rng.fork(8181));
+    c.hits++;
+    c.dent = Math.min(0.14, c.dent + 0.035);
+    G.sfx.clang(hit.point);
+    const push = new THREE.Vector3(dir.x, 0, dir.z).normalize();
+    if (!c.down && c.hits >= (weak ? 4 : 3)) {
+      c.down = true;
+      c.tipDir = Math.atan2(push.x, push.z);
+      c.vel.copy(push).multiplyScalar(r.range(1.4, 2.2));
+      c.spin = r.gauss() * 2;
+      if (!c.lidOff) { c.lidOff = true; c.lidVel = push.clone().multiplyScalar(2.5).add(new THREE.Vector3(r.gauss(), 3.2, r.gauss())); }
+      const cs = this.world.colliders.circles, i = cs.indexOf(c.collider);
+      if (i >= 0) cs.splice(i, 1);
+    } else if (!c.down) {
+      c.rock = (c.rock || 0) + 0.25;
+      c.vel.addScaledVector(push, 0.35);
+    } else c.vel.addScaledVector(push, 1.2);
+    return null;
+  }
+
+  hitBooth(b, hit, dir) {
+    const G = this.game, r = this.rng || (this.rng = this.world.rng.fork(8181));
+    if (hit.mesh !== b.paneMesh) return null;
+    const inv = new THREE.Matrix4().copy(b.group.matrixWorld).invert();
+    const lp = hit.point.clone().applyMatrix4(inv);
+    let best = null, bd = Infinity;
+    for (const pn of b.panes) { const d = pn.c.distanceToSquared(lp); if (d < bd) { bd = d; best = pn; } }
+    if (!best || best.broken) return 'done';
+    best.hits++;
+    if (best.hits === 1) { G.fx.decals.crack(hit.point, hit.normal, 0.45, best); G.sfx.glass(hit.point, 0.35); return 'glass'; }
+    best.broken = true;
+    G.fx.decals.hideOwner(best);
+    const keep = b.panes.filter((p) => !p.broken).map((p) => p.geo.clone());
+    if (keep.length) { const old = b.paneMesh.geometry; b.paneMesh.geometry = merge(keep); old.dispose(); G.rays.refresh(b.paneMesh); }
+    else { b.paneMesh.visible = false; G.rays.setEnabled(b.paneMesh, false); }
+    const c = best.c.clone().applyMatrix4(b.group.matrixWorld), n = best.n.clone().transformDirection(b.group.matrixWorld);
+    for (let k = 0; k < 16; k++) {
+      const s = r.range(0.04, 0.1);
+      G.fx.debris.spawn({
+        pos: c.clone().add(new THREE.Vector3(r.gauss() * 0.25, r.gauss() * 0.5, r.gauss() * 0.25)),
+        vel: n.clone().multiplyScalar(r.range(0.3, 1.8)).add(new THREE.Vector3(r.gauss() * 0.5, r.range(-0.2, 1), r.gauss() * 0.5)),
+        life: r.range(0.8, 1.5), size: [s, s * 0.6], rot: r.next() * 6.28, spin: r.gauss() * 12,
+        col: [0.35, 0.35, 0.35], cell: 12, gravity: 9.8, ground: 0.17, fadeOut: 0.15, lit: 2, litT: 0.1,
+      });
+    }
+    G.sfx.glass(c, 1);
+    G.counters.panes++;
+    return 'glass';
+  }
+
+  // the hydrant: two rounds in the nozzle cap and it bursts - a white plume
+  // of water, monochrome, rippling the street round it
+  hitHydrant(hy, hit, dir, weak) {
+    hy.hits++;
+    this.game.sfx.clang(hit.point);
+    if (!hy.open && hy.hits >= (weak ? 5 : 2)) {
+      hy.open = true;
+      hy.t = 0;
+      this.game.sfx.hydrant(hy.pos);
+    }
+    return null;
+  }
+
+  // per fixed step (game/React.js)
+  update(dt, t) {
+    const G = this.game;
+    if (!G) return;
+    const r = this.rng || (this.rng = this.world.rng.fork(8181));
+    const F = G.fx;
+    for (const it of this.items) {
+      if (it.kind === 'can') this.stepCan(it, dt);
+      else if (it.kind === 'grate' && it.puff > 0) {
+        it.acc += dt * 26 * Math.min(1, it.puff);
+        while (it.acc >= 1) {
+          it.acc -= 1;
+          const s = r.range(0.4, 0.8);
+          F.smoke.spawn({
+            pos: it.pos.clone().add(new THREE.Vector3(r.gauss() * 0.4, 0.1, r.gauss() * 0.3)),
+            vel: new THREE.Vector3(r.gauss() * 0.3 + 0.3, r.range(2.5, 4.5) * Math.min(1, it.puff), r.gauss() * 0.3),
+            life: r.range(1.2, 2.0), size: [s, s], grow: r.range(0.8, 1.3), rot: r.next() * 6.28, spin: r.gauss() * 0.4,
+            col: [0.16, 0.16, 0.16], alpha: 0.55, drag: 1.2, fadeIn: 0.06, fadeOut: 0.6, cell: 8 + r.int(0, 3), lit: 0.5, litT: 0.3,
+          });
+        }
+        it.puff = Math.max(0, it.puff - dt * 0.9);
+      } else if (it.kind === 'hydrant' && it.open) {
+        it.t += dt;
+        const k = it.t < 25 ? 1 : Math.max(0, 1 - (it.t - 25) / 8);
+        if (k <= 0) continue;
+        const top = it.pos.clone().add(new THREE.Vector3(0, 0.9, 0));
+        it.acc += dt * 150 * k;
+        while (it.acc >= 1) {
+          it.acc -= 1;
+          // the plume: a white jet of drops thrown up and over toward the
+          // road, falling back as spray (stretched along their flight: at
+          // 10-20 m they print as a white column of streaks)
+          const v = new THREE.Vector3(r.gauss() * 0.35 + 1.1, r.range(6.5, 9) * (0.6 + 0.4 * k), r.gauss() * 0.35);
+          const sz = r.range(0.03, 0.07);
+          F.splash.spawn({
+            pos: top.clone().add(new THREE.Vector3(r.gauss() * 0.04, 0, r.gauss() * 0.04)), vel: v, life: r.range(1.2, 1.9), size: [sz, sz * 1.6], stretch: 0.07,
+            col: [0.7, 0.7, 0.7], alpha: 0.95, cell: 4, gravity: 9.8, ground: 0.02, fadeOut: 0.12,
+            onGround: (p) => { if (r.chance(0.04)) this.world.street.addImpact(this.world, p.pos.x, p.pos.z, 0.5); return false; },
+          });
+        }
+        // mist off the column
+        if (r.chance(dt * 10 * k)) {
+          const s = r.range(0.35, 0.7);
+          F.smoke.spawn({
+            pos: top.clone().add(new THREE.Vector3(0.6 + r.gauss() * 0.3, r.range(1.5, 3), r.gauss() * 0.3)), vel: new THREE.Vector3(r.gauss() * 0.4 + 0.5, r.range(-0.3, 0.6), r.gauss() * 0.4),
+            life: r.range(1.0, 1.6), size: [s, s], grow: 0.6, rot: r.next() * 6.28, col: [0.2, 0.2, 0.2], alpha: 0.2, drag: 1, fadeIn: 0.1, fadeOut: 0.6, cell: 8 + r.int(0, 3),
+          });
+        }
+        // the street ripples round it where the spray comes down
+        it.ripT -= dt;
+        if (it.ripT <= 0) { it.ripT = r.range(0.12, 0.3); this.world.street.addImpact(this.world, it.pos.x + 1.5 + r.gauss() * 0.8, it.pos.z + r.gauss() * 0.9, 0.7 * k); }
+      }
+    }
+  }
+
+  stepCan(c, dt) {
+    const G = this.game, g = c.group;
+    let moved = false;
+    if (c.rock > 0) { c.rock = Math.max(0, c.rock - dt * 1.2); moved = true; }
+    if (c.down && c.tip < 1) { c.tip = Math.min(1, c.tip + dt * 3.2); moved = true; }
+    if (c.vel.lengthSq() > 1e-4) {
+      c.pos.addScaledVector(c.vel, dt);
+      c.vel.multiplyScalar(Math.exp(-(c.down ? 1.6 : 6) * dt));
+      this.world.colliders.resolve(c.pos, 0.3);
+      c.roll = (c.roll || 0) + c.vel.length() * dt / 0.27;
+      moved = true;
+    }
+    if (c.lidVel) {
+      const L = c.lid;
+      if (!c.lidWorld) { c.lidWorld = new THREE.Vector3().setFromMatrixPosition(L.matrixWorld); c.lidSpin = new THREE.Vector3(4, 7, 3); }
+      c.lidVel.y -= 9.8 * dt;
+      c.lidWorld.addScaledVector(c.lidVel, dt);
+      if (c.lidWorld.y < STREET.pavementTop * (c.lidWorld.x < STREET.kerbX ? 1 : 0) + 0.03) {
+        c.lidWorld.y = STREET.pavementTop * (c.lidWorld.x < STREET.kerbX ? 1 : 0) + 0.03;
+        if (c.lidVel.y < -1) { c.lidVel.y *= -0.3; c.lidVel.x *= 0.5; c.lidVel.z *= 0.5; G.sfx.clang(c.lidWorld, 0.5); } else { c.lidVel = null; c.lidSpin.set(0, 0, 0); }
+      }
+      // the lid leaves the can's group: placed in world space via its parent's inverse
+      const inv = new THREE.Matrix4().copy(g.matrixWorld).invert();
+      L.position.copy(c.lidWorld).applyMatrix4(inv);
+      L.rotation.x += c.lidSpin.x * dt; L.rotation.z += c.lidSpin.z * dt;
+      if (!c.lidVel) { L.rotation.x = Math.PI; L.rotation.z = 0; }
+      moved = true;
+    }
+    if (!moved) return;
+    // pose: dented (squashed), rocking, tipped over along its push and rolling
+    const s = 1 - c.dent;
+    c.can.scale.set(s, 1 - c.dent * 0.4, 1 + c.dent * 0.3);
+    const tipA = c.tip * Math.PI / 2 * 0.98;
+    const rock = Math.sin((c.rock || 0) * 25) * (c.rock || 0) * 0.3;
+    g.position.set(c.pos.x, c.pos.y + c.tip * 0.27, c.pos.z);
+    const q = new THREE.Quaternion().setFromAxisAngle(V3(0, 1, 0), c.tipDir);
+    q.multiply(new THREE.Quaternion().setFromAxisAngle(V3(1, 0, 0), tipA + rock));
+    q.multiply(new THREE.Quaternion().setFromAxisAngle(V3(0, 1, 0), c.roll || 0));
+    g.quaternion.copy(q);
+    g.updateMatrixWorld(true);
+    for (const m of [c.can, c.lid]) G.rays.refresh(m);
+    c.shT = (c.shT ?? 0) + 1;
+    if (c.shT % 10 === 0) G.pipeline.dirtyShadows();
   }
 
   wires() {

@@ -2,9 +2,12 @@ import * as THREE from 'three';
 
 // Waves of Hoods: 3, 5, 7, 9 ... (1 + 2n); heavies with Tommy guns from wave
 // 3 (1, then one more every other wave). They come out of the fog down the
-// avenue, from behind cars and the el's columns, 40-60 m from the player
-// (out of his line of sight when possible), a few seconds apart, at most 12
-// alive at once.
+// avenue, from behind cars and the el's columns, 30-45 m from the player
+// (out of his line of sight when possible), the whole wave staggered over
+// 4-6 s, at most 12 alive at once. Pacing (Phase 3a preamble #3): the first
+// two of a wave are the VANGUARD: they spawn at the near end of the band
+// and run to cover at ~25 m to open fire, so shots resume ~4-6 s after the
+// wave card instead of after a 20 s walk in out of the fog.
 export function waveSize(n) { return 1 + 2 * n; }
 export function waveHeavies(n) { return n >= 3 ? Math.min(3, Math.floor((n - 1) / 2)) : 0; }
 export const MAX_ALIVE = 12;
@@ -36,22 +39,29 @@ export class Spawner {
     this.toSpawn = waveSize(n);
     this.heaviesLeft = waveHeavies(n);
     this.timer = 0.4;
+    this.spawnedThisWave = 0;
+    // the whole wave comes out over 4-6 s
+    this.gap = this.rng.range(4, 6) / Math.max(1, this.toSpawn - 1);
   }
 
   get done() { return this.toSpawn === 0; }
 
-  pickSpot() {
+  pickSpot(vanguard = false) {
     const G = this.game, p = G.camera.position, r = this.rng;
     const cands = [];
+    const [d0, d1] = vanguard ? [30, 34] : [30, 45];
     for (const s of this.spots) {
       const d = Math.hypot(s.x - p.x, s.z - p.z);
-      if (d < 40 || d > 60) continue;
+      if (d < d0 || d > d1) continue;
       // not on top of another Hood
       let near = false;
       for (const h of G.world.hoods.list) if (h.alive && Math.hypot(h.pos.x - s.x, h.pos.z - s.z) < 2.5) { near = true; break; }
       if (near) continue;
-      cands.push({ s, d, score: (s.behind ? 2 : 0) + (d < 47 ? 2 : 0) + r.next() * 3 });
+      // behind a car or a column (out of sight) first, the nearer end of the
+      // band next
+      cands.push({ s, d, score: (s.behind ? 2.5 : 0) + (d < 38 ? 1.5 : 0) + r.next() * 3 });
     }
+    if (!cands.length && vanguard) return this.pickSpot(false);
     if (!cands.length) {
       // a short block: the farthest open spots
       let best = null, bd = 0;
@@ -69,7 +79,7 @@ export class Spawner {
       const dir = new THREE.Vector3().subVectors(p, e);
       const d = dir.length();
       dir.divideScalar(d);
-      if (d > 48 || G.rays.raycast(e, dir, d - 0.5, { anyHit: true })) return s;
+      if (d > 44 || G.rays.raycast(e, dir, d - 0.5, { anyHit: true })) return s;
     }
     return cands[0].s;
   }
@@ -80,13 +90,15 @@ export class Spawner {
     if (this.timer > 0) return;
     const alive = this.game.world.hoods.list.filter((h) => h.alive).length;
     if (alive >= MAX_ALIVE) { this.timer = 0.5; return; }
-    const s = this.pickSpot();
-    if (!s) { this.timer = 0.5; return; }
-    // the last ones of a wave are the heavies
+    // the last ones of a wave are the heavies; the first two the vanguard
     const heavy = this.heaviesLeft > 0 && this.toSpawn <= this.heaviesLeft;
-    this.game.spawnHood(s.x, s.z, { heavy });
+    const vanguard = !heavy && this.spawnedThisWave < 2;
+    const s = this.pickSpot(vanguard);
+    if (!s) { this.timer = 0.5; return; }
+    this.game.spawnHood(s.x, s.z, { heavy, vanguard });
     if (heavy) this.heaviesLeft--;
     this.toSpawn--;
-    this.timer = this.rng.range(0.7, 1.6);
+    this.spawnedThisWave++;
+    this.timer = this.gap * this.rng.range(0.7, 1.3);
   }
 }

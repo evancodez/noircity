@@ -16,6 +16,7 @@ export class Facade {
     scene.add(this.group);
     this.windowsDark = [];   // matrices for instanced far windows
     this.windowsLit = [];
+    this.windows = [];       // the near building's panes (Phase 3a: shootable)
     this.buildNearBuilding(rng.fork(1));
     this.buildFarBlocks(rng.fork(2));
     this.buildWindowInstances();
@@ -80,9 +81,9 @@ export class Facade {
         // glass sits in the reveal
         const glass = new THREE.PlaneGeometry(w, h).rotateY(Math.PI / 2).translate(xf + 0.01, y + h / 2, z);
         const r = rng.next();
-        if (r < 0.0) glassLit.push(glass);
-        else if (r < 0.14) glassDim.push(glass);
-        else glassDark.push(glass);
+        const kind = r < 0.0 ? 'lit' : r < 0.14 ? 'dim' : 'dark';
+        (kind === 'lit' ? glassLit : kind === 'dim' ? glassDim : glassDark).push(glass);
+        this.windows.push({ geo: glass, kind, c: V3(xf + 0.01, y + h / 2, z), w, h, broken: false, hits: 0 });
         if (r < 0.22 && rng.next() < 0.6) {
           // drawn blind: dark band over the top part of the lit window
           const bh = h * rng.range(0.3, 0.7);
@@ -101,6 +102,7 @@ export class Facade {
       const w = 2.9, h = 3.3;
       const glass = new THREE.PlaneGeometry(w, h).rotateY(Math.PI / 2).translate(X + 0.03, 0.75 + h / 2, z);
       glassDark.push(glass);
+      this.windows.push({ geo: glass, kind: 'dark', c: V3(X + 0.03, 0.75 + h / 2, z), w, h, broken: false, hits: 0, shop: true });
       frameParts.push(roundedBox(0.2, 0.2, w + 0.3, 0.05, 2).translate(X + 0.1, 0.75 + h + 0.1, z));
       frameParts.push(roundedBox(0.22, 0.28, w + 0.3, 0.05, 2).translate(X + 0.11, 0.7, z));
       frameParts.push(roundedBox(0.08, h, 0.08, 0.03, 2).translate(X + 0.05, 0.75 + h / 2, z));
@@ -108,17 +110,97 @@ export class Facade {
     const frames = new THREE.Mesh(merge(frameParts), M.stoneTrim);
     frames.castShadow = false; frames.receiveShadow = true;
     g.add(frames);
-    const addGlass = (list, mat) => { if (list.length) g.add(new THREE.Mesh(merge(list), mat)); };
-    addGlass(glassDark, M.glassDark);
-    addGlass(glassLit, M.windowLit);
-    addGlass(glassDim, M.windowLitDim);
-    addGlass(blinds, M.black);
+    // Phase 3a: each kind of pane is one merged mesh, rebuilt without a pane
+    // once it is shot out (world/Facade.hit); a black recess stands behind
+    // every shot-out pane (the dark room)
+    this.glassMeshes = {};
+    const addGlass = (list, mat, kind) => {
+      if (!list.length) return;
+      const m = new THREE.Mesh(merge(list), mat);
+      m.userData.facadeGlass = kind;
+      m.userData.surf = 'glass';
+      g.add(m);
+      this.glassMeshes[kind] = m;
+    };
+    addGlass(glassDark, M.glassDark, 'dark');
+    addGlass(glassLit, M.windowLit, 'lit');
+    addGlass(glassDim, M.windowLitDim, 'dim');
+    if (blinds.length) {
+      // (a round through a drawn blind breaks the pane behind it)
+      const bm = new THREE.Mesh(merge(blinds), M.black);
+      bm.userData.facadeGlass = 'any';
+      g.add(bm);
+    }
 
     this.buildFireEscape(g, X, -1.0);
     this.buildSign(g, X, -10.6);
     tagInk(g);
     this.group.add(g);
     this.near = g;
+  }
+
+  // ---- Phase 3a: shooting the windows ---------------------------------------
+  bind(game) { this.game = game; }
+
+  // a round hit a pane of the near building: the first cracks it, the
+  // second (or any round into a crack) shatters it
+  hit(hit, dir) {
+    const G = this.game;
+    if (!G) return null;
+    const kind = hit.mesh.userData.facadeGlass;
+    let best = null, bd = Infinity;
+    for (const w of this.windows) {
+      if (w.kind !== kind && kind !== 'any') continue;
+      const dz = Math.abs(hit.point.z - w.c.z) - w.w / 2, dy = Math.abs(hit.point.y - w.c.y) - w.h / 2;
+      const d = Math.max(dz, dy);
+      if (d < bd) { bd = d; best = w; }
+    }
+    if (!best || bd > 0.3) return null;
+    if (best.broken) return 'done';      // through the hole, into the dark room
+    best.hits++;
+    if (best.hits === 1 && !best.shop) {
+      G.fx.decals.crack(hit.point, hit.normal, 0.7, best);
+      G.sfx.glass(hit.point, 0.35);
+      return 'glass';
+    }
+    this.shatter(best, dir);
+    return 'glass';
+  }
+
+  shatter(w, dir = new THREE.Vector3(-1, 0, 0)) {
+    const G = this.game, r = G.rng, F = G.fx, M = this.world.M;
+    w.broken = true;
+    G.fx.decals.hideOwner(w);
+    // a lit pane goes dark: it moves into the dark glass mesh
+    if (w.kind !== 'dark') {
+      const from = w.kind;
+      w.kind = 'dark';
+      this.rebuildGlass(from);
+      this.rebuildGlass('dark');
+    }
+    // the hole: black, jagged, glass teeth left round the frame
+    F.decals.paneHole(w.c.clone().add(new THREE.Vector3(0.004, 0, 0)), new THREE.Vector3(1, 0, 0), w.w, w.h);
+    // shards: out and down onto the pavement
+    const n = Math.round(10 + w.w * w.h * 6);
+    for (let k = 0; k < n; k++) {
+      const s = r.range(0.04, 0.12);
+      F.debris.spawn({
+        pos: w.c.clone().add(new THREE.Vector3(0.05, r.gauss() * w.h * 0.3, r.gauss() * w.w * 0.3)),
+        vel: new THREE.Vector3(r.range(0.4, 2.2) - dir.x * 0.3, r.range(-0.3, 1.2), r.gauss() * 0.8),
+        life: r.range(1.0, 2.0), size: [s, s * r.range(0.4, 0.8)], rot: r.next() * 6.28, spin: r.gauss() * 10,
+        col: [0.32, 0.32, 0.32], cell: 12, gravity: 9.8, ground: 0.17, fadeOut: 0.12, lit: w.kind === 'dark' ? 1.5 : 3, litT: 0.12,
+      });
+    }
+    G.sfx.glass(w.c, 1.2);
+    G.counters.windows++;
+  }
+
+  rebuildGlass(kind) {
+    const G = this.game, m = this.glassMeshes[kind];
+    if (!m) return;
+    const keep = this.windows.filter((x) => x.kind === kind).map((x) => x.geo.clone());
+    if (keep.length) { const old = m.geometry; m.geometry = merge(keep); old.dispose(); m.visible = true; G.rays.refresh(m); G.rays.setEnabled(m, true); }
+    else { m.visible = false; G.rays.setEnabled(m, false); }
   }
 
   buildFireEscape(parent, X, zc) {

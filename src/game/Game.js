@@ -10,6 +10,9 @@ import { Spawner } from '../enemies/Spawner.js';
 import { Autopilot } from './Autopilot.js';
 import { LAYER } from '../render/layers.js';
 import { DEATHS, HAT_OFF } from '../enemies/HoodAnim.js';
+import { React } from './React.js';
+import { Storm } from '../world/Storm.js';
+import { Sfx } from '../audio/Sfx.js';
 
 // The game: the player (Controller + Tommy gun + Health), the Hoods' AI and
 // waves, combat resolution (the player's hitscan -> Weapon.js, the Hoods'
@@ -20,7 +23,7 @@ import { DEATHS, HAT_OFF } from '../enemies/HoodAnim.js';
 export const GAME = { intermission: 8, corpseCap: 16, hoodHp: 100, heavyHp: 170 };
 
 export class Game {
-  constructor({ world, camera, controller, pipeline, hud, shotMode, wavesOn }) {
+  constructor({ world, camera, controller, pipeline, hud, shotMode, wavesOn, sfx = null }) {
     this.world = world;
     this.camera = camera;
     this.controller = controller;
@@ -31,7 +34,15 @@ export class Game {
     this.counters = {
       spawned: 0, alive: 0, shots: 0, hits: 0, headshots: 0, kills: 0,
       hoodShots: 0, hoodHits: 0, damageTaken: 0, deaths: 0, wave: 0, bursts: 0, impacts: 0, decals: 0, casings: 0,
+      // pacing (Phase 3a preamble #3): the longest stretch of 'playing' time
+      // without a Hood shot, and the delay from the last wave start to its
+      // first Hood shot
+      maxLull: 0, firstVolley: -1,
+      // Phase 3a: the world's reactions
+      explosions: 0, blastKills: 0, blastDamage: 0, burnTicks: 0, lampsOut: 0, windows: 0, panes: 0, props: 0,
     };
+    this.waveStartT = 0;
+    this.lastHoodShotT = null;
     const t0 = performance.now();
     this.rays = new RayWorld(world);
     this.nav = new NavGrid(world.colliders);
@@ -42,6 +53,21 @@ export class Game {
     this.health = new Health(hud.root);
     this.health.onDeath = () => this.onPlayerDeath();
     this.spawner = new Spawner(this);
+    // Phase 3a: sound, and the world's reactions to bullets
+    this.sfx = sfx || new Sfx();
+    this.react = new React(this);
+    world.fxRef = this.fx;
+    this.storm = new Storm(world, pipeline);
+    this.storm.onThunder = (s, far, dbl) => this.sfx.thunder(s, far, dbl);
+    this.explosionsOnTick = null;
+    this.fx.explosions.onTick = (p, k) => this.sfx.debris(p, k);
+    this.fx.casings.onTick = (p, n) => this.sfx.casing(p, n);
+    const T = world.train;
+    T.onRumble = (k, pos) => this.sfx.train(k, pos);
+    T.onSqueal = (k, pos) => this.sfx.squeal(k, pos);
+    // the world's shot-mode clocks run (a train and lightning in a shot are
+    // staged explicitly: shot=train, lightning=)
+    this.ambient = !shotMode;
     this.initMs = performance.now() - t0;
     this.ais = new Map();
     this.pending = [];        // the Hoods' bullets in flight
@@ -69,6 +95,14 @@ export class Game {
       for (const h of world.hoods.list) if (h.object.visible && h.pos.distanceToSquared(cam.position) > 20 * 20) reflList.push(h.object);
       return reflList;
     };
+    // footfalls: a ripple on the wet street (near the eye: a far one is
+    // invisible and would take one of the street's few impact slots) and a
+    // footstep sound
+    world.hoods.onStep = (h, x, z, run) => {
+      const d = Math.hypot(x - camera.position.x, z - camera.position.z);
+      if (d < 28 && x > -6.0 && x < 17) world.street.addImpact(world, x, z, run ? 0.45 : 0.3);
+      if (d < 35) this.sfx.step(new THREE.Vector3(x, 0, z), run, false);
+    };
     const casters = [];
     pipeline.shadowCasters = () => {
       casters.length = 0;
@@ -94,13 +128,25 @@ export class Game {
     // effects with one live instance each, so their programs compile too
     const p = new THREE.Vector3(-8.5, 1, 26);
     const F = this.fx;
-    for (const sys of [F.blood, F.chips, F.sparks, F.splash, F.dust, F.flash.vm, F.flash.refl, F.flash.world3, F.flash.smoke]) sys.spawn({ pos: p, life: 0.01 });
-    for (const sys of [F.blood, F.chips, F.sparks, F.splash, F.dust, F.flash.vm, F.flash.refl, F.flash.world3, F.flash.smoke]) sys.write();
+    const systems = [F.blood, F.chips, F.sparks, F.splash, F.dust, F.flash.vm, F.flash.refl, F.flash.world3, F.flash.smoke, F.fire, F.smoke, F.debris];
+    for (const sys of systems) sys.spawn({ pos: p, life: 0.01 });
+    for (const sys of systems) sys.write();
     F.decals.ink(p, new THREE.Vector3(0, 1, 0));
+    F.decals.crack(p, new THREE.Vector3(0, 1, 0));
     F.casings.eject(p, new THREE.Vector3(1, 0, 0), new THREE.Vector3(0, 1, 0), new THREE.Vector3(0, 0, -1));
     F.casings.update(0);
+    // (Phase 3a: the wreck's char materials and a dead lamp's disc, so the
+    // first explosion / shot-out lamp never hitches on a shader compile)
+    const M = this.world.M, warm = [];
+    for (const m of [M.wreck, M.wreckMetal, M.bulbDead]) {
+      const w = new THREE.Mesh(new THREE.PlaneGeometry(0.1, 0.1), m);
+      w.position.copy(p);
+      this.world.scene.add(w);
+      warm.push(w);
+    }
     this.world.scene.updateMatrixWorld(true);
     renderer.compile(this.world.scene, this.camera);
+    for (const w of warm) this.world.scene.remove(w);
     renderer.compile(this.vm.scene, this.vm.cam);
     for (const h of tmp) H.remove(h);
     F.clear();
@@ -121,6 +167,9 @@ export class Game {
     this.counters.wave = n;
     if (this.wavesOn) this.spawner.startWave(n);
     this.stateT = 0;
+    this.waveStartT = this.time;
+    this.waveFirstShot = false;
+    this.lastHoodShotT = this.time;
   }
 
   startBattle({ wave = 1, autopilot = true } = {}) {
@@ -165,7 +214,7 @@ export class Game {
   }
 
   // ---- Hoods -------------------------------------------------------------------
-  spawnHood(x, z, { heavy = false, variant = null, yaw = null, state = null, ai = true } = {}) {
+  spawnHood(x, z, { heavy = false, vanguard = false, variant = null, yaw = null, state = null, ai = true } = {}) {
     const W = this.world;
     const seed = 101 + this.counters.spawned * 13;
     const v = variant || { ...hoodSeedVariant(seed), heavy };
@@ -174,7 +223,7 @@ export class Game {
     h.hp = heavy ? GAME.heavyHp : GAME.hoodHp;
     h.heavy = heavy;
     this.counters.spawned++;
-    if (ai) this.ais.set(h, new HoodAI(this, h, { heavy }));
+    if (ai) this.ais.set(h, new HoodAI(this, h, { heavy, vanguard }));
     return h;
   }
 
@@ -187,6 +236,27 @@ export class Game {
     this.fx.flash.last.hoods.delete(h);
   }
 
+  // Fire tokens: at most this many Hoods peek / aim / fire at once
+  // (HoodAI); `force` (the vanguard, a heavy at point blank) always gets one
+  takeFireToken(ai, force = false) {
+    const T = this.fireTokens || (this.fireTokens = new Map());
+    if (T.has(ai)) return true;
+    // (a token held for more than ~7 s is taken back: nobody may block the
+    // exchange by getting stuck mid-peek)
+    for (const [a, t0] of T) if (this.time - t0 > 7) T.delete(a);
+    // TODO(3b balance pass): the 3a pacing fixes (first volley ~3 s, lull
+    // < 6 s) raised the autopilot's incoming damage (battle t=90: 426 at the
+    // 3a review, 307-735 across 3a-fix runs - the fight is chaotic, one car
+    // tactic more or less swings it). Compare damageTaken per minute against
+    // the Phase 2 battle counters over several seeds; if it stays high, cap
+    // the concurrent shooters at range (> ~20 m) at 2 from wave 5 as well.
+    const max = this.counters.wave >= 5 ? 3 : 2;
+    if (T.size >= max && !force) return false;
+    T.set(ai, this.time);
+    return true;
+  }
+  dropFireToken(ai) { if (this.fireTokens) this.fireTokens.delete(ai); }
+
   // the player's bullet hit a Hood
   damageHood(h, dmg, dir, { head = false, time = this.time } = {}) {
     if (!h.alive) return;
@@ -197,6 +267,7 @@ export class Game {
       return;
     }
     h.flinch(dir);
+    this.sfx.grunt(h.pos.clone().setY(h.pos.y + 1.5));
     // a heavy torso hit can knock a standing man back a step
     const stag = !head && dmg >= WEAPON.dmgTorso && this.rng.chance(0.3) && (h.state === 'idle' || h.state === 'aim');
     if (stag) h.stagger();
@@ -218,6 +289,8 @@ export class Game {
     let d = from - h.yaw; d = Math.atan2(Math.sin(d), Math.cos(d));
     h.yaw += Math.max(-0.25, Math.min(0.25, d * 0.3));
     h.die(kind);
+    // (a head shot drops him without a sound)
+    if (!head) this.sfx.death(h.pos.clone().setY(h.pos.y + 1.5));
     // head shot: the hat flies at once
     if (head && h._deathT >= 0) h._deathT = Math.max(h._deathT, HAT_OFF[kind] ?? 0);
     this.counters.kills++;
@@ -241,11 +314,21 @@ export class Game {
     const eye = this.camera.position;
     const dir = new THREE.Vector3().subVectors(eye, muzzle).normalize();
     this.fx.flash.hood(h, muzzle, dir, time, ai.heavy);
+    if (ai.heavy) this.sfx.play('tommy', muzzle, { pitch: 0.92 }, { ref: 4, delay: Math.min(0.25, muzzle.distanceTo(this.camera.position) / 343) });
+    else this.sfx.pistol(muzzle, muzzle.distanceTo(this.camera.position));
     this.counters.hoodShots++;
     this.lastHoodShot.set(h, time);
+    if (!this.waveFirstShot) {
+      this.waveFirstShot = true;
+      this.counters.firstVolley = +(time - this.waveStartT).toFixed(2);
+      (this.volleys || (this.volleys = [])).push(this.counters.firstVolley);
+    }
+    this.lastHoodShotT = time;
     const dist = muzzle.distanceTo(eye);
     const moving = this.controller.vel.length() > 1.2;
-    let p = Math.max(0.1, Math.min(0.55, 0.56 - dist * 0.013));
+    // (Phase 3a: the waves now open fire from ~25 m within seconds, so a
+    // pistol at range is a warning shot more than a threat)
+    let p = Math.max(0.05, Math.min(0.5, 0.52 - dist * 0.017));
     if (moving) p *= 0.65;
     if (ai.heavy) p *= 0.55;
     if (this.state !== 'playing') p = 0;
@@ -261,6 +344,7 @@ export class Game {
       const d = dir.length(); dir.divideScalar(d);
       if (!this.rays.raycast(s.from, dir, d - 0.4, { anyHit: true })) {
         this.health.damage(s.dmg);
+        this.sfx.play('grunt', null, { f0: 88, k: 0.35, dur: 0.14 }, { send: false });
         this.counters.hoodHits++;
         this.counters.damageTaken += s.dmg;
         return;
@@ -271,7 +355,42 @@ export class Game {
     const aim = eye.clone().add(new THREE.Vector3(r.gauss() * 1.1, r.range(-1.4, 0.5), r.gauss() * 1.1));
     const dir = aim.sub(s.from).normalize();
     const hit = this.rays.raycast(s.from, dir, 90);
-    if (hit) this.fx.impacts.at(hit, dir);
+    if (hit) this.react.bullet(hit, dir, { weak: true });
+  }
+
+  // ---- the reactive world (world/Cars.js, game/React.js) ------------------------
+  onCarSmoking(car) {
+    this.react.hazards.push({ car, pos: car.pos.clone(), r: 7.5, kind: 'smoke' });
+    this.sfx.hiss(car.pos);
+  }
+
+  onCarExploded(car, at) {
+    this.counters.explosions++;
+    this.sfx.explosion(at);
+    this.controller.shake(0.9, at.distanceTo(this.camera.position));
+    // Hoods within ~5 m die, flung away from it; within ~9 m they flinch
+    for (const h of [...this.world.hoods.list]) {
+      if (!h.alive) continue;
+      const d = Math.hypot(h.pos.x - at.x, h.pos.z - at.z);
+      const away = new THREE.Vector3(h.pos.x - at.x, 0.2, h.pos.z - at.z).normalize();
+      if (d < 5.2) {
+        this.fx.bloodFx.hit(new THREE.Vector3().setFromMatrixPosition(h.bones.chest.matrixWorld), away, { strength: 1.2, rays: this.rays });
+        this.killHood(h, away, false, this.rng.chance(0.5) ? 'deathBack' : 'deathSpin');
+        this.counters.blastKills++;
+      } else if (d < 9) {
+        h.flinch(away);
+        const ai = this.ais.get(h);
+        if (ai) ai.onHit(away, true);
+      }
+    }
+    // the player within ~8 m
+    const p = this.camera.position;
+    const dp = Math.hypot(p.x - at.x, p.z - at.z);
+    if (dp < 8 && this.state === 'playing') {
+      const dmg = Math.round(8 + 62 * Math.pow(1 - dp / 8, 1.3));
+      this.health.damage(dmg);
+      this.counters.blastDamage += dmg;
+    }
   }
 
   // ---- per step ------------------------------------------------------------------
@@ -294,12 +413,54 @@ export class Game {
     for (let i = this.pending.length - 1; i >= 0; i--) {
       if (this.pending[i].t <= t) { const s = this.pending[i]; this.pending.splice(i, 1); this.resolveShot(s); }
     }
+    this.react.update(dt, t);
     this.fx.update(dt, t);
+    // the train and the storm: in play (and the battle preset); a crossing
+    // never starts in the intermission or in a wave's first seconds, and a
+    // train still out there when the wave's last man falls hurries away
+    // before the card comes up
+    const W = this.world;
+    if (this.ambient || W.train.active) {
+      const waveAge = t - this.waveStartT;
+      // (no new crossing once the wave is down to its last two men: a 27 s
+      // crossing would still be on the el when the card comes up)
+      const ending = this.state === 'playing' && this.wavesOn && this.spawner.done && this.counters.alive <= 2;
+      const lastDown = ending && this.counters.alive === 0;
+      W.train.update(dt, t, {
+        canStart: this.ambient && this.state === 'playing' && waveAge > 4 && !ending,
+        camera: this.camera, hurry: lastDown || this.state === 'intermission',
+      });
+    }
+    // (never in a wave's first 5 s: the wave card and the first volley own
+    // that moment; the intermission and the title may flash)
+    if (this.ambient) this.storm.update(dt, t, { quiet: this.state === 'playing' && this.wavesOn && t - this.waveStartT < 5 });
+    else this.storm.update(dt, t, { quiet: true });
+    this.pipeline.rainBoost = this.storm.rainBoost;
+    // the lit rain streaks: brighter everywhere while the sky flashes
+    const rm = W.rain.rainMat.uniforms;
+    rm.uBase.value = 0.03 * (1 + 5 * this.storm.rainBoost);
     this.health.update(dt);
     this.stateT += dt;
     const alive = this.world.hoods.list.reduce((n, h) => n + (h.alive ? 1 : 0), 0);
     this.counters.alive = alive;
     if (this.state === 'playing' && this.wavesOn) {
+      // the lull breaker: ~5 s without a Hood shot while they are out there,
+      // the nearest one takes the initiative (HoodAI.press)
+      if (this.lastHoodShotT !== null && t - this.lastHoodShotT > 4.5 && t - (this.pressT ?? -9) > 2.5 && this.counters.alive > 0) {
+        this.pressT = t;
+        let best = null, bd = Infinity;
+        for (const ai of this.ais.values()) {
+          if (ai.heavy || !ai.h.alive || ai.vanguard || ai.state === 'aim' || ai.state === 'fire' || ai.state === 'peek') continue;
+          const d = ai.distToPlayer();
+          if (d < bd) { bd = d; best = ai; }
+        }
+        if (best && best.press()) this.counters.presses = (this.counters.presses || 0) + 1;
+      }
+      if (this.lastHoodShotT !== null && t - this.lastHoodShotT > this.counters.maxLull) {
+        this.counters.maxLull = +(t - this.lastHoodShotT).toFixed(2);
+        this.maxLullAt = { t: +t.toFixed(1), wave: this.counters.wave, alive: this.counters.alive, since: +(t - this.waveStartT).toFixed(1),
+          ai: [...this.ais.values()].map((a) => a.state + ':' + Math.round(a.distToPlayer())) };
+      }
       this.spawner.update(dt);
       if (this.spawner.done && alive === 0 && this.stateT > 2) {
         this.state = 'intermission';
@@ -364,7 +525,9 @@ export class Game {
     addEventListener('keydown', (e) => {
       if (!locked()) return;
       if (e.code === 'KeyR') this.weapon.reload();
-      if (e.code === 'KeyM') { this.muted = !this.muted; this.hud.message(this.muted ? 'sound off' : 'sound on'); }
+      if (e.code === 'KeyM') { this.muted = this.sfx.toggleMute(); this.hud.message(this.muted ? 'sound off' : 'sound on'); }
+      if (e.code === 'BracketLeft' || e.code === 'Minus') this.hud.message('volume ' + Math.round(this.sfx.setVolume(this.sfx.volume - 0.1) * 10));
+      if (e.code === 'BracketRight' || e.code === 'Equal') this.hud.message('volume ' + Math.round(this.sfx.setVolume(this.sfx.volume + 0.1) * 10));
     });
     document.addEventListener('pointerlockchange', () => { if (!locked()) this.weapon.trigger = false; });
   }

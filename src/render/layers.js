@@ -60,6 +60,17 @@ export function inkIdsUsed() { return nextId; }
 // with the viewmodel camera's projection and anchors their brush field in
 // the gun's own frame (uVmFrame), so strokes ride on the gun.
 export const VM_ID0 = 1770;
+// Ids DEBRIS_ID0..DEBRIS_ID0+9 are a blast's flying chunks (fx/Explosion.js,
+// always figures). They are drawn OVER the fireball and its smoke in the
+// scene pass, so the ink pass ignores the smoke coverage there and takes the
+// fireball's bloom off them: black shapes printed against the flame.
+export const DEBRIS_ID0 = 1780;
+let nextDebris = DEBRIS_ID0;
+export function allocDebrisId() {
+  const id = nextDebris;
+  nextDebris = nextDebris >= DEBRIS_ID0 + 9 ? DEBRIS_ID0 : nextDebris + 1;
+  return id;
+}
 // Ids HOOD_ID0..HOOD_ID0+HOOD_SLOTS-1 are the Hoods (always written as
 // figures, i.e. negative). Each slot also owns an entry in FIG_ANCHOR: the
 // Hood's root position (xyz) and yaw (w), which the ink pass subtracts from

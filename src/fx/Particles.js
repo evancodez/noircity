@@ -26,7 +26,20 @@ export class Particles {
   // keepChroma: blood. The fog only attenuates its colour (full coverage
   //   kept) instead of mixing it toward the grey fog colour, which
   //   desaturated a drop at 15-25 m to a half-grey the ink pass printed pink
-  constructor(world, { max = 512, map, cells = [1, 1], blending = 'normal', layer = 3, crisp = true, name = 'particles', renderOrder = 2, reflGain = 1, cut = [0.38, 0.62], alphaFromR = false, keepChroma = false } = {}) {
+  // occlude: smoke (Phase 3a). The volume pass paints the lamps' air light
+  //   over the inked image from the opaque depth alone, so a translucent
+  //   puff in front of a lit cone or the lit mist was washed out by the glow
+  //   behind it (the warning smoke vanished against the mist). With occlude
+  //   = k a second mesh (same instance data) is drawn LAST into the volume
+  //   buffer, multiplying the air light by (1 - k * coverage): the smoke
+  //   stands in front of the light like any dark mass.
+  // distDim [near, far, k]: fire (Phase 3a review). Its HDR is far above what
+  //   the ink needs to print it (full flame from ~0.3 up), and the surplus is
+  //   what feeds the bloom: at 20-30 m the halo (a constant width in pixels)
+  //   outgrew the small flames and read as a CG glow sprite. Past `near` m
+  //   the scene colour is scaled toward k by `far` m (the print stays the
+  //   same, only the bloom goes); the planar reflection keeps full strength.
+  constructor(world, { max = 512, map, cells = [1, 1], blending = 'normal', layer = 3, crisp = true, name = 'particles', renderOrder = 2, reflGain = 1, cut = [0.38, 0.62], alphaFromR = false, keepChroma = false, occlude = 0, fogFade = 0, distDim = null } = {}) {
     this.world = world;
     this.max = max;
     this.list = [];
@@ -57,6 +70,8 @@ export class Particles {
         uAdd: { value: blending === 'add' ? 1 : 0 },
         uAlphaR: { value: alphaFromR ? 1 : 0 },
         uKeepChroma: { value: keepChroma ? 1 : 0 },
+        uFogFade: { value: fogFade },
+        uDistDim: { value: new THREE.Vector3(...(distDim || [1e4, 2e4, 1])) },
         // in the planar reflection (uUseDepth == 0) the wet street keeps only
         // light above its bright-pass threshold: blood is boosted there so a
         // burst leaves a red streak in the water like every lit thing
@@ -102,8 +117,9 @@ export class Particles {
         }`,
       fragmentShader: /* glsl */`
         uniform sampler2D tMap;
-        uniform float uCrisp, uAdd, uReflGain, uUseDepth, uAlphaR, uKeepChroma;
+        uniform float uCrisp, uAdd, uReflGain, uUseDepth, uAlphaR, uKeepChroma, uFogFade;
         uniform vec2 uCut;
+        uniform vec3 uDistDim;
         varying vec2 vUv;
         varying vec4 vCol;
         varying vec3 vView;
@@ -113,10 +129,13 @@ export class Particles {
           vec4 tx = texture2D( tMap, vUv );
           float t = uAlphaR > 0.5 ? tx.r : tx.a;
           float a = mix( t, smoothstep( uCut.x, uCut.y, t ), uCrisp ) * vCol.a;
-          vec3 c = vCol.rgb * ( uUseDepth < 0.5 ? uReflGain : 1.0 );
+          vec3 c = vCol.rgb * ( uUseDepth < 0.5 ? uReflGain : mix( 1.0, uDistDim.z, smoothstep( uDistDim.x, uDistDim.y, length( vView ) ) ) );
           vec4 nf = noirFog( length( vView ), vWY, uFogDensity, uFogColor );
           if ( a < 0.01 ) discard;
           c = ( uAdd > 0.5 || uKeepChroma > 0.5 ) ? c * ( 1.0 - nf.a ) : mix( c, nf.rgb, nf.a );
+          // (soft washes - smoke - thin out into the haze instead of printing
+          // as pale fog-coloured ghosts over the dark towers behind them)
+          a *= 1.0 - uFogFade * nf.a;
           gl_FragColor = vec4( c * ( uAdd > 0.5 ? a : 1.0 ), uAdd > 0.5 ? 1.0 : a );
         }`,
     });
@@ -126,6 +145,22 @@ export class Particles {
     this.mesh.renderOrder = renderOrder;
     this.mesh.name = name;
     world.scene.add(this.mesh);
+    if (occlude > 0) {
+      const om = this.mat.clone();
+      om.uniforms = { ...this.mat.uniforms, uOcc: { value: occlude } };
+      om.fragmentShader = this.mat.fragmentShader.replace('uniform float uCrisp', 'uniform float uOcc;\n        uniform float uCrisp')
+        .replace('gl_FragColor = vec4( c * ( uAdd > 0.5 ? a : 1.0 ), uAdd > 0.5 ? 1.0 : a );', 'gl_FragColor = vec4( 0.0, 0.0, 0.0, clamp( a * uOcc * ( 1.0 - nf.a ), 0.0, 1.0 ) );');
+      // dst.rgb *= 1 - srcA ; alpha untouched
+      // (and the coverage into its ALPHA, cleared to 1: dstA *= 1 - srcA; the
+      // ink pass reads 1 - alpha as 'smoke covers this pixel')
+      Object.assign(om, { blending: THREE.CustomBlending, blendEquation: THREE.AddEquation, blendSrc: THREE.ZeroFactor, blendDst: THREE.OneMinusSrcAlphaFactor, blendSrcAlpha: THREE.ZeroFactor, blendDstAlpha: THREE.OneMinusSrcAlphaFactor, depthTest: false });
+      this.occ = new THREE.Mesh(g, om);
+      this.occ.frustumCulled = false;
+      this.occ.layers.set(7);   // LAYER.MIST: the volume pass only, never the reflection
+      this.occ.renderOrder = 50;
+      this.occ.name = name + 'Occ';
+      world.scene.add(this.occ);
+    }
   }
 
   spawn(o) {
@@ -155,6 +190,15 @@ export class Particles {
     p.onGround = o.onGround || null;
     p.bounce = o.bounce ?? 0;
     p.hold = false;
+    p.anchor = o.anchor ?? null;
+    // colour over life (Phase 3: a fireball's white-hot -> orange -> soot):
+    // col -> colEnd along pow(age / life, colPow)
+    p.col2 = o.colEnd || null;
+    p.colPow = o.colPow ?? 1;
+    // lit: a brief extra brightness at birth, fading over litT s (muzzle
+    // smoke caught by the flash light)
+    p.lit = o.lit ?? 0;
+    p.litT = o.litT ?? 0.1;
     this.list.push(p);
     return p;
   }
@@ -199,7 +243,13 @@ export class Particles {
       V[i * 3] = p.vel.x; V[i * 3 + 1] = p.vel.y; V[i * 3 + 2] = p.vel.z;
       S[i * 3] = p.w; S[i * 3 + 1] = p.h; S[i * 3 + 2] = p.stretch;
       R[i] = p.rot;
-      C[i * 4] = p.r; C[i * 4 + 1] = p.g; C[i * 4 + 2] = p.b; C[i * 4 + 3] = a;
+      let cr = p.r, cg = p.g, cb = p.b;
+      if (p.col2) {
+        const k = Math.pow(Math.min(1, u), p.colPow);
+        cr += (p.col2[0] - cr) * k; cg += (p.col2[1] - cg) * k; cb += (p.col2[2] - cb) * k;
+      }
+      if (p.lit > 0 && p.age < p.litT) { const k = 1 + p.lit * (1 - p.age / p.litT); cr *= k; cg *= k; cb *= k; }
+      C[i * 4] = cr; C[i * 4 + 1] = cg; C[i * 4 + 2] = cb; C[i * 4 + 3] = a;
       T[i] = p.cell;
     }
     if (n > 0 || this.geo.instanceCount > 0) {

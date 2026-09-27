@@ -73,6 +73,15 @@ export class Street {
     for (let i = 1; i < arr.length; i++) if (arr[i].z < arr[oldest].z) oldest = i;
     arr[oldest].set(x, z, world.U.uTime.value, strength);
   }
+
+  // an explosion's shockwave: one bold ring with a bright crest (ground.js
+  // blastRings), strength ~3 (x a bullet ring's amplitude)
+  addBlast(world, x, z, strength = 3) {
+    const arr = world.U.uBlasts.value;
+    let oldest = 0;
+    for (let i = 1; i < arr.length; i++) if (arr[i].z < arr[oldest].z) oldest = i;
+    arr[oldest].set(x, z, world.U.uTime.value, strength);
+  }
 }
 
 // Height of the walking surface at x (the pavements are raised; the kerb step

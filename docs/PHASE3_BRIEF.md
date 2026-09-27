@@ -136,3 +136,25 @@ performance and the beauty pass**.
    canvas splatter generator, not flat discs with drips.
 5. **Muzzle smoke**: a visible soft grey puff (~0.3 m, mid-grey with the brush
    texture as alpha, lit by the flash light for ~100 ms) after each burst.
+
+---
+
+## Preamble for 3b — polish left over from the 3a review (do first, quickly)
+1. **Train light on the street**: raise the near-car spot and pool strobe for
+   cars within ~30 m and brighten the shaft cone so the strobe lands on the
+   street and its reflection; give the two nearest cars' wheel sparks a small
+   floor so a mid-crossing frame shows them.
+2. **Fireball glow rim**: modulate the fireball's glow with the world-space
+   brush alpha and cut the halo radius ~40 %, keeping the white-hot core, so
+   it reads as ink rather than a bloom aura.
+3. **Blast smoke lobes**: spawn the first-frame smoke with the brush puff
+   texture used by the fire column (fewer, larger, ragged lobes, alpha ~0.6).
+4. **Muzzle smoke**: mid-grey puff (col ~0.35, alpha 0.35–0.45, 0.25–0.35 m)
+   lit by the flash for ~100 ms; add a `vmpuff=<s>` param to the viewmodel
+   preset so a post-burst puff can be captured.
+5. **Explosion loudness**: bring the offline peak to ~0.9 (scale the sub +
+   noise tail ~0.85 or add a per-voice limiter).
+6. **Fire taper**: start the taper at ~25 s so t=40 reads as a lower, hotter-
+   cored blaze.
+7. **Performance headroom is thin** (uncapped ~72 fps avg with 10 Hoods, one
+   wreck, particles; bench 23.3 ms): this is the 3b performance pass.

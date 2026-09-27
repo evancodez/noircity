@@ -168,7 +168,7 @@ function bvhFor(geo) {
 }
 
 // Surface classes for impact effects (fx/Impacts.js).
-export const SURF = { STONE: 'stone', IRON: 'iron', CAR: 'car', WATER: 'water', PAVE: 'pave', HOOD: 'hood' };
+export const SURF = { STONE: 'stone', IRON: 'iron', CAR: 'car', WATER: 'water', PAVE: 'pave', HOOD: 'hood', GLASS: 'glass', METAL: 'metal' };
 
 function classify(mesh, world) {
   if (mesh === world.street.road) return SURF.WATER;
@@ -202,8 +202,10 @@ export class RayWorld {
       // the far skyline is never within a bullet's range of the block
       const far = Math.hypot((_box.min.x + _box.max.x) / 2, (_box.min.z + _box.max.z) / 2 + 40) > 260;
       if (far) continue;
+      const bvh = bvhFor(g);
+      bvh.geo = g;
       this.entries.push({
-        mesh, bvh: bvhFor(g), inv: mesh.matrixWorld.clone().invert(), mw: mesh.matrixWorld.clone(),
+        mesh, bvh, inv: mesh.matrixWorld.clone().invert(), mw: mesh.matrixWorld.clone(),
         inv3: new THREE.Matrix3().setFromMatrix4(mesh.matrixWorld.clone().invert()),
         min: _box.min.clone(), max: _box.max.clone(), surf: classify(mesh, world),
       });
@@ -219,6 +221,7 @@ export class RayWorld {
     const ox = origin.x, oy = origin.y, oz = origin.z, dx = dir.x, dy = dir.y, dz = dir.z;
     const ix = 1 / (dx || 1e-12), iy = 1 / (dy || 1e-12), iz = 1 / (dz || 1e-12);
     for (const e of this.entries) {
+      if (e.off) continue;
       // world AABB slab test
       let a = (e.min.x - ox) * ix, b = (e.max.x - ox) * ix;
       let tmin = Math.min(a, b), tmax = Math.max(a, b);
@@ -245,6 +248,26 @@ export class RayWorld {
     if (normal.dot(dir) > 0) normal.negate();
     return { t: best, point: origin.clone().addScaledVector(dir, best), normal, mesh: hit.mesh, surf: hit.surf };
   }
+
+  // Phase 3a (a reactive world): a mesh that moved (a sagging wreck, a
+  // tumbled trash can) or whose geometry was rebuilt (a shattered pane)
+  // refreshes its entry; a mesh that is gone (the glass of a wreck) is
+  // switched off.
+  refresh(mesh) {
+    for (const e of this.entries) {
+      if (e.mesh !== mesh) continue;
+      mesh.updateWorldMatrix(true, false);
+      const g = mesh.geometry;
+      if (!g.boundingBox) g.computeBoundingBox();
+      if (e.bvh.geo !== g) { e.bvh = bvhFor(g); e.bvh.geo = g; }
+      e.mw.copy(mesh.matrixWorld);
+      e.inv.copy(mesh.matrixWorld).invert();
+      e.inv3.setFromMatrix4(e.inv);
+      _box.copy(g.boundingBox).applyMatrix4(mesh.matrixWorld);
+      e.min.copy(_box.min); e.max.copy(_box.max);
+    }
+  }
+  setEnabled(mesh, on) { for (const e of this.entries) if (e.mesh === mesh) e.off = !on; }
 
   // Ray against the Hoods' hit volumes (spheres / capsules on the bones).
   // Returns { t, hood, joint, point } or null. opts.skipHood: ignore him.

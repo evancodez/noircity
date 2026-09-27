@@ -34,9 +34,12 @@ export class Health {
     this.heartG = this.heart.getContext('2d');
     this.flash = document.createElement('div'); this.flash.id = 'hitflash';
     this.canvas = document.createElement('canvas'); this.canvas.id = 'dmgsplat';
-    root.appendChild(this.heart);
-    root.appendChild(this.flash);
-    root.appendChild(this.canvas);
+    // under the HUD's readouts (wave / kills, health, ammo stay legible
+    // over the blood on the lens)
+    root.insertBefore(this.canvas, root.firstChild);
+    root.insertBefore(this.flash, root.firstChild);
+    root.insertBefore(this.heart, root.firstChild);
+    this.root = root;
     this.g = this.canvas.getContext('2d');
     this.splatA = 0;
     this.resize();
@@ -73,13 +76,27 @@ export class Health {
     this.sinceHit = 0;
     // fresh blood on the lens; older splats fade under it
     if (this.splatA < 0.05) this.g.clearRect(0, 0, this.canvas.width, this.canvas.height);
-    drawScreenSplatter(this.g, this.canvas.width, this.canvas.height, this.rng, Math.min(1.5, amount / 10));
+    drawScreenSplatter(this.g, this.canvas.width, this.canvas.height, this.rng, Math.min(1.5, amount / 10), this.hudRects());
     this.splatA = 1;
     this.hitA = 1;
     if (this.hp <= 0) {
       this.dead = true;
       if (this.onDeath) this.onDeath();
     }
+  }
+
+  // the HUD's boxes (wave / kills, health bar, ammo) in splatter-canvas pixels
+  hudRects() {
+    const c = this.canvas, k = c.width / Math.max(1, innerWidth);
+    const out = [];
+    for (const sel of ['.tl', '.bl', '.br']) {
+      const el = this.root.querySelector(sel);
+      if (!el) continue;
+      const r = el.getBoundingClientRect();
+      if (r.width < 1) continue;
+      out.push([(r.left - 14) * k, (r.top - 14) * k, (r.right + 14) * k, (r.bottom + 14) * k]);
+    }
+    return out;
   }
 
   update(dt) {

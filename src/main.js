@@ -14,6 +14,7 @@ import { getShot, applyShot } from './debug/Shots.js';
 import { RNG } from './util/rng.js';
 import { DEATH_REPORT } from './enemies/Hood.js';
 import { Game } from './game/Game.js';
+import { Sfx, audioTest } from './audio/Sfx.js';
 
 // ---- URL params (DESIGN.md §9) -------------------------------------------
 const params = new URLSearchParams(location.search);
@@ -57,17 +58,21 @@ const rng = new RNG(seed);
 const world = new World({ renderer, scene, U, tex, rng });
 const pipeline = new Pipeline(renderer, tex, U, { pixelRatio, view: parseInt(params.get('view') ?? '0', 10) || 0, debugRT: params.get('rt') });
 const controller = new Controller(camera, renderer.domElement, world);
-controller.onStep = (x, z, v) => world.street.addImpact(world, x, z, Math.min(1, v / 5) * 0.8);
+controller.onStep = (x, z, v) => { world.street.addImpact(world, x, z, Math.min(1, v / 5) * 0.8); if (game) game.sfx.step(null, v > 5, true); };
 
 // ---- HUD / title / game ------------------------------------------------------
 let game = null;
+// sound: procedural Web Audio (audio/Sfx.js); no AudioContext until the
+// first click (the pointer-lock start), none at all in shot mode
+const sfx = new Sfx({ enabled: !shotMode });
 const hud = new Hud({
-  onBegin: () => controller.lock(),
-  onRestart: () => { game.restart(); controller.lock(); },
+  onBegin: () => { sfx.unlock(); controller.lock(); },
+  onRestart: () => { sfx.unlock(); game.restart(); controller.lock(); },
 });
+if (!shotMode) for (const ev of ['mousedown', 'keydown', 'touchstart']) addEventListener(ev, () => sfx.unlock(), { passive: true });
 hud.setVisible(hudOn);
 if (shotMode) hud.hideTitle();
-game = new Game({ world, camera, controller, pipeline, hud, shotMode, wavesOn });
+game = new Game({ world, camera, controller, pipeline, hud, shotMode, wavesOn, sfx });
 game.bindInput(renderer.domElement);
 // (play and the battle preset: every Hood variant + combat program up front)
 if (!shotMode || wavesOn || shotName === 'battle') game.prewarm(renderer);
@@ -192,6 +197,7 @@ function frame(now) {
   game.vm.sync(camera);
   pipeline.render(scene, camera, simTime);
   game.hudUpdate(dt);
+  if (sfx.live) sfx.update(dt, { fires: world.cars.fires, hp: game.health.hp, dead: game.state === 'dead', listener: camera });
   const tC = performance.now();
   // CPU time per frame (debug overlay / tools/fps.mjs): simulation, render submit
   perf.sim = perf.sim * 0.95 + (tB - tA) * 0.05;
@@ -238,5 +244,23 @@ window.__noir = {
   get hoods() { return world.hoods.list; },
   deathReport: DEATH_REPORT,
   get time() { return simTime; },
+  sfx,
+  // render every procedural sound offline: [{ name, peak, rms, seconds }]
+  audioTest,
 };
 window.__noirReady = true;
+
+// audiotest=1: the offline audio table as JSON in #errlog's data-audio
+// (tools/errors.sh prints it)
+if (params.get('audiotest') === '1') {
+  audioTest().then((r) => { errlog.el.dataset.audio = JSON.stringify(r); }, (e) => { errlog.el.dataset.audio = 'ERR ' + e; });
+}
+
+// probe=<js expression over N = window.__noir> (headless inspection): the
+// JSON result lands in #errlog's data-probe attribute
+if (params.get('probe')) {
+  try {
+    const v = new Function('N', 'THREE', `return (${params.get('probe')});`)(window.__noir, THREE);
+    Promise.resolve(v).then((r) => { errlog.el.dataset.probe = JSON.stringify(r); }, (e) => { errlog.el.dataset.probe = 'ERR ' + e; });
+  } catch (e) { errlog.el.dataset.probe = 'ERR ' + e; }
+}

@@ -104,12 +104,26 @@ export class Controller {
     this.apply(dt);
   }
 
-  apply() {
+  // a blast's kick (Phase 3a): strength falls with distance
+  shake(strength = 1, dist = 0) {
+    const k = strength / (1 + Math.max(0, dist - 4) * 0.15);
+    this.shakeAmp = Math.max(this.shakeAmp || 0, Math.min(1, k));
+    this.shakeT = 0;
+  }
+
+  apply(dt = 0) {
     const c = this.camera;
     const bobY = Math.abs(Math.sin(this.bobPhase)) * 0.045 * this.bobAmp;
     const bobX = Math.cos(this.bobPhase) * 0.025 * this.bobAmp;
+    let sx = 0, sy = 0;
+    if (this.shakeAmp > 0.001) {
+      this.shakeT += dt;
+      const a = this.shakeAmp * Math.exp(-this.shakeT * 5);
+      sx = Math.sin(this.shakeT * 47) * 0.02 * a; sy = Math.sin(this.shakeT * 39 + 1.3) * 0.028 * a;
+      if (a < 0.002) this.shakeAmp = 0;
+    }
     c.position.set(this.pos.x + Math.cos(this.yaw) * bobX, this.groundY + EYE - 0.02 + bobY, this.pos.z - Math.sin(this.yaw) * bobX);
     c.rotation.order = 'YXZ';
-    c.rotation.set(this.pitch, this.yaw, Math.sin(this.bobPhase) * 0.004 * this.bobAmp);
+    c.rotation.set(this.pitch + sy, this.yaw + sx, Math.sin(this.bobPhase) * 0.004 * this.bobAmp + sx * 0.5);
   }
 }

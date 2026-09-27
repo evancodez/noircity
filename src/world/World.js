@@ -11,6 +11,7 @@ import { Skyline } from './Skyline.js';
 import { Cars } from './Cars.js';
 import { Props } from './Props.js';
 import { Rain } from './Rain.js';
+import { Train } from './Train.js';
 import { Sky } from './Sky.js';
 import { Steam } from '../fx/Steam.js';
 import { GroundMist } from '../fx/GroundMist.js';
@@ -52,6 +53,19 @@ export class World {
     this.flash = new THREE.PointLight(0xffffff, 0, 18, 2);
     this.flash.position.set(0, -50, 0);
     scene.add(this.flash);
+    // Phase 3a: the explosion's flash and the burning wrecks' fire lights,
+    // pre-allocated at intensity 0 for the same reason (a constant light
+    // count: no program recompiles when a car goes up)
+    // (every extra light is paid by every lit pixel of every lit material -
+    // five of them cost a third of the frame - so: the blast borrows the
+    // muzzle-flash light, the nearest fire gets the one new light, and the
+    // Hoods' flash pool gives one up for it: the light count is Phase 2's)
+    const pl = (hex, dist) => { const L = new THREE.PointLight(hex, 0, dist, 2); L.position.set(0, -50, 0); scene.add(L); return L; };
+    this.fxLights = { blast: this.flash, fire: [pl(0xffffff, 24)] };
+    // (a pale warm white: lit stone, iron and car bodies stay ink - a
+    // saturated orange light printed every lit edge as an orange outline;
+    // the colour lives in the flames and their column in the wet street)
+    for (const L of this.fxLights.fire) L.color.setRGB(1.0, 0.87, 0.76);
 
     this.sky = new Sky(this);
     this.street = new Street(this);
@@ -64,9 +78,12 @@ export class World {
     this.steam = new Steam(this, this.props.vents);
     this.mist = new GroundMist(this);
     this.rain = new Rain(this);
+    // Phase 3a: the el train (driven by the Game: world/Train.js)
+    this.train = new Train(this);
+    this.fxRef = null;       // the Game's effects (sparks for the train's wheels)
 
     this.solids = [];
-    scene.traverse((o) => { if (o.isMesh && o.layers.mask & 3 && !o.isInstancedMesh) this.solids.push(o); });
+    scene.traverse((o) => { if (o.isMesh && o.layers.mask & 3 && !o.isInstancedMesh && !o.userData.noRay) this.solids.push(o); });
     this._rim = [];
     this.hoods = new Hoods(this);
   }

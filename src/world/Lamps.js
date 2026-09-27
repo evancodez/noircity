@@ -215,6 +215,10 @@ export class Lamps {
     // the street-lamp falloff: brightest under the shade, gone by ~65 % of
     // the height, soft edges (it read as a lit canvas tent to the floor)
     const lamp = this.finish(g, head, target, { real, bulb, heightToGround: head.y, fadeEnd: 0.62, edgeSoft: 0.05 });
+    // a hanging lamp swings on its rod (hit, the train passing overhead)
+    lamp.hanging = true;
+    lamp.anchor = anchor.clone();
+    lamp.swing = { x: 0, z: 0, vx: 0, vz: 0 };
     // narrower pool: the columns either side stay black, like the reference
     // (the ink pass keeps the ironwork black; the glow lives in the volume)
     if (lamp.light) { lamp.light.angle = 0.62; lamp.light.penumbra = 0.95; lamp.light.intensity = 70; }
@@ -250,7 +254,8 @@ export class Lamps {
     const light = { pos: head.clone(), target, angle: 1.05, penumbra: 0.85, distance: 14, intensity: 55 };
     const entry = lights.add({ position: head.clone(), direction: axis.clone(), halfAngle: 0.55, range: 4.4, intensity: 0.6 });
     const lamp = { group: g, head, axis, cone, light, bulb, entry, real: true, sconce: true, on: true, flicker: 0, flickerSeed: this.rng.next() * 100,
-      coneBase: 0.12, _k: 1 };
+      coneBase: 0.12, _k: 1, head0: head.clone(), axis0: axis.clone(), target0: target.clone() };
+    g.traverse((o) => { if (o.isMesh) o.userData.lamp = lamp; });
     this.lamps.push(lamp);
     return lamp;
   }
@@ -268,7 +273,9 @@ export class Lamps {
       group, head, axis, cone, light, bulb, entry, real,
       base: 1.0, on: true, flicker: 0, flickerSeed: this.rng.next() * 100, _k: 1,
       coneBase: cone.material.uniforms.uIntensity.value,
+      head0: head.clone(), axis0: axis.clone(), target0: target.clone(),
     };
+    group.traverse((o) => { if (o.isMesh) o.userData.lamp = lamp; });
     this.lamps.push(lamp);
     return lamp;
   }
@@ -277,11 +284,139 @@ export class Lamps {
     lamp.on = on;
   }
 
+  // ---- Phase 3a: shooting the lamps ----------------------------------------
+  bind(game) { this.game = game; }
+
+  // a round hit one of this lamp's meshes: only the head (shade + glass)
+  // puts it out; the iron post just sparks
+  hit(lamp, hit, dir) {
+    const G = this.game;
+    if (!G) return null;
+    if (hit.point.distanceTo(lamp.head) > (lamp.sconce ? 0.45 : 0.62)) return null;
+    // (a round knocks it into a slight swing, ~8 degrees, away from the shot)
+    if (lamp.hanging) { lamp.swing.vx += dir.x * 0.35; lamp.swing.vz += dir.z * 0.35; }
+    if (lamp.dead) return null;
+    this.shootOut(lamp, dir);
+    return null;
+  }
+
+  shootOut(lamp, dir = new THREE.Vector3(0, 0, -1)) {
+    const G = this.game, r = this.rng, F = G.fx;
+    lamp.dead = true;
+    lamp.on = true;             // still lit through the buzz; off when it dies
+    // a shot lamp may buzz back on for a moment, then die
+    lamp.buzz = r.chance(0.6) ? { t: 0, at: r.range(0.25, 0.6), len: r.range(0.25, 0.7) } : null;
+    lamp.deadT = 0;
+    lamp.dieNow = true;
+    const p = lamp.head;
+    // glass: pale shards falling out of the shade's mouth
+    for (let k = 0; k < 18; k++) {
+      const s = r.range(0.025, 0.07);
+      F.debris.spawn({
+        pos: p.clone().add(new THREE.Vector3(r.gauss() * 0.15, -0.05, r.gauss() * 0.15)),
+        vel: new THREE.Vector3(r.gauss() * 1.2 + dir.x * 0.8, r.range(-0.5, 1.2), r.gauss() * 1.2 + dir.z * 0.8),
+        life: r.range(0.9, 1.6), size: [s, s * 0.6], rot: r.next() * 6.28, spin: r.gauss() * 12,
+        col: [0.4, 0.4, 0.4], cell: 12, gravity: 9.8, ground: 0.02, fadeOut: 0.15, lit: 3, litT: 0.15,
+      });
+    }
+    // a shower of white sparks off the filament
+    for (let k = 0; k < 26; k++) {
+      const v = new THREE.Vector3(r.gauss(), r.range(-1.2, 0.6), r.gauss()).normalize().multiplyScalar(r.range(2, 6));
+      F.sparks.spawn({ pos: p.clone(), vel: v, life: r.range(0.25, 0.8), size: [0.01, 0.016], stretch: 0.04, col: [6, 6, 6], cell: 4, gravity: 9.8, ground: 0.02, fadeOut: 0.4 });
+    }
+    G.sfx.glass(p, 0.8);
+    G.sfx.zap(p);
+    G.counters.lampsOut++;
+  }
+
+  // per fixed step (game/React.js): the buzz and death of shot lamps, the
+  // hanging lamps' swing
+  react(dt, t) {
+    const G = this.game;
+    for (const l of this.lamps) {
+      if (l.dead) {
+        l.deadT += dt;
+        let k = 0;
+        if (l.buzz) {
+          const b = l.buzz;
+          if (l.deadT >= b.at && l.deadT < b.at + b.len) {
+            // a failing arc: hard flicker
+            const n = Math.sin(t * 91) * Math.sin(t * 37 + 1.3);
+            k = n > 0.1 ? 0.9 : n > -0.4 ? 0.25 : 0;
+            if (!b.sounded) { b.sounded = true; if (G) G.sfx.buzz(l.head, b.len); }
+          }
+        }
+        l.deadK = k;
+        if (l.deadT > (l.buzz ? l.buzz.at + l.buzz.len : 0) + 0.05 && l.on) {
+          l.on = false;
+          l.bulb.material = this.world.M.bulbDead;
+          l.bulb.visible = true;
+        }
+      }
+      if (l.hanging) this.swingStep(l, dt);
+    }
+  }
+
+  // damped pendulum on the rod; the head, cone, light and rain entry follow
+  swingStep(l, dt) {
+    const S = l.swing;
+    const w2 = 9.8 / 1.6;
+    S.vx += (-w2 * S.x - 0.9 * S.vx) * dt;
+    S.vz += (-w2 * S.z - 0.9 * S.vz) * dt;
+    S.x += S.vx * dt; S.z += S.vz * dt;
+    S.x = Math.max(-0.5, Math.min(0.5, S.x)); S.z = Math.max(-0.5, Math.min(0.5, S.z));
+    if (Math.abs(S.x) + Math.abs(S.z) + Math.abs(S.vx) + Math.abs(S.vz) < 1e-4 && !l._swung) return;
+    l._swung = Math.abs(S.x) + Math.abs(S.z) > 1e-4;
+    // S.x, S.z: the bob's displacement (m per m of rod) along world x / z
+    const g = l.group;
+    // (rotation about x by -S.z swings the bob toward +z; about z by +S.x
+    // toward +x: the rod hangs along -y)
+    g.rotation.set(-S.z, 0, S.x);
+    g.updateMatrixWorld(true);
+    const q = g.quaternion;
+    const rod = l.head0.clone().sub(l.anchor).applyQuaternion(q);
+    l.head.copy(l.anchor).add(rod);
+    l.axis.copy(l.axis0).applyQuaternion(q);
+    const cone = l.cone;
+    cone.position.copy(l.head);
+    cone.quaternion.setFromUnitVectors(new THREE.Vector3(0, -1, 0), l.axis);
+    cone.material.uniforms.uApex.value.copy(l.head);
+    cone.material.uniforms.uAxis.value.copy(l.axis);
+    l.entry.position.copy(l.head);
+    l.entry.direction.copy(l.axis);
+    // the real SpotLight follows only a real swing (a hit): the train's
+    // tremble moves the cone, the bulb and the lit rain, but a moving spot
+    // re-renders its shadow map every frame (Pipeline shadow cache)
+    if (l.light) {
+      const big = Math.abs(S.x) + Math.abs(S.z) > 0.03;
+      if (big || l._spotMoved) {
+        l._spotMoved = big;
+        const hp = big ? l.head : l.head0, ax = big ? l.axis : l.axis0;
+        l.light.pos.copy(hp);
+        l.light.target.copy(hp).addScaledVector(ax, hp.y / Math.max(0.3, -ax.y));
+        for (const slot of this.pool) if (slot.lamp === l) { slot.spot.position.copy(l.light.pos); slot.spot.target.position.copy(l.light.target); slot.spot.target.updateMatrixWorld(); }
+      }
+    }
+  }
+
+  // the train overhead: every hanging lamp near it trembles
+  tremble(x, z, k = 1) {
+    const r = this.rng;
+    for (const l of this.lamps) {
+      if (!l.hanging) continue;
+      const d = Math.hypot(l.anchor.x - x, l.anchor.z - z);
+      if (d > 30) continue;
+      const a = k * (1 - d / 30) * 0.05;
+      l.swing.vx += r.gauss() * a; l.swing.vz += r.gauss() * a;
+    }
+  }
+
   update(dt, t, camera) {
     const camPos = camera.position;
     camera.getWorldDirection(this._fwd);
     for (const l of this.lamps) {
       let k = l.on ? 1 : 0;
+      if (l.dead) k = l.on ? (l.deadK || 0) : 0;
       if (l.flicker > 0 && l.on) {
         const n = Math.sin(t * 23.0 + l.flickerSeed) * Math.sin(t * 7.3 + l.flickerSeed * 2.1);
         const dip = (Math.sin(t * 0.7 + l.flickerSeed) > 0.6 && n > 0.2) ? 0.15 : 1.0;
@@ -289,7 +424,7 @@ export class Lamps {
       }
       l.cone.material.uniforms.uIntensity.value = l.coneBase * k;
       l._k = k;
-      l.bulb.visible = k > 0.05;
+      l.bulb.visible = k > 0.05 || (l.dead && !l.on);
       l.entry.intensity = k;
     }
     this.updatePool(dt, camPos, this._fwd);

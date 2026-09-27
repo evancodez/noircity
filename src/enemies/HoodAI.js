@@ -91,10 +91,13 @@ export class CoverSet {
 const _v = new THREE.Vector3(), _eye = new THREE.Vector3(), _dir = new THREE.Vector3();
 
 export class HoodAI {
-  constructor(game, hood, { heavy = false } = {}) {
+  constructor(game, hood, { heavy = false, vanguard = false } = {}) {
     this.game = game;
     this.h = hood;
     this.heavy = heavy;
+    // vanguard (Spawner): the first two of a wave run straight to cover at
+    // ~25 m and open fire at once
+    this.vanguard = vanguard;
     this.rng = game.world.rng.fork(2000 + game.counters.spawned * 7 + (heavy ? 1 : 0));
     this.state = 'enter';
     this.timer = 0;
@@ -215,25 +218,31 @@ export class HoodAI {
     if (h.state === 'walk' || h.state === 'run') h.setState('idle', 0.25);
   }
 
-  release() { if (this.cover) { this.cover.taken = null; this.cover = null; } }
+  release() { if (this.cover) { this.cover.taken = null; this.cover = null; } this.game.dropFireToken(this); }
 
   // choose a cover point; mode 'advance' | 'relocate'
   pickCover(mode) {
     const G = this.game, h = this.h, p = this.player, r = this.rng;
     const dNow = this.distToPlayer();
-    const desired = mode === 'advance' ? Math.max(this.heavy ? 8 : 13, dNow - r.range(10, 17)) : r.range(12, 17);
+    const desired = mode === 'vanguard' ? (this.pressR ? this.pressR + r.gauss() : r.range(22, 27))
+      : mode === 'advance' ? Math.max(this.heavy ? 8 : 13, dNow - r.range(10, 17)) : r.range(12, 17);
     let best = null, bestS = Infinity;
     for (const c of G.covers.points) {
       if (c.taken && c.taken !== this) continue;
+      // never behind a smoking car or beside a burning wreck (game/React.js)
+      if (G.react && G.react.hazards.length && G.react.hazardAt(c.x, c.z, 0.6)) continue;
       const d = Math.hypot(c.x - p.x, c.z - p.z);
       if (d < 7.5 || d > 70) continue;
-      if (mode === 'advance' && d > dNow - 2.5 && dNow > 14) continue;
+      if ((mode === 'advance' || mode === 'vanguard') && d > dNow - 2.5 && dNow > 14) continue;
       if (!G.covers.hides(c, p.x, p.z)) continue;
       const travel = Math.hypot(c.x - h.pos.x, c.z - h.pos.z);
       if (travel > 30) continue;
       let crowd = 0;
       for (const ai of G.ais.values()) if (ai !== this && ai.cover && Math.hypot(ai.cover.x - c.x, ai.cover.z - c.z) < 3) crowd += 4;
-      const s = Math.abs(d - desired) * 1.2 + travel * 0.05 - c.value * 2.5 + crowd + r.next() * 2.5;
+      // (the vanguard wants the NEAREST cover in its band: it has to be
+      // shooting within a few seconds)
+      if (mode === 'vanguard' && travel > 14) continue;
+      const s = Math.abs(d - desired) * 1.2 + travel * (mode === 'vanguard' ? 0.45 : 0.05) - c.value * 2.5 + crowd + r.next() * 2.5;
       if (s < bestS) { bestS = s; best = c; }
     }
     return best;
@@ -249,6 +258,20 @@ export class HoodAI {
       this.cover = c;
       this.state = 'move';
       return true;
+    }
+    // the vanguard with no cover in its band: a spot at ~24 m with a clear
+    // line to the player, on its side of him (it has to open fire)
+    if (mode === 'vanguard') {
+      const p = this.player, h = this.h, nav = this.game.nav;
+      const b0 = Math.atan2(h.pos.x - p.x, h.pos.z - p.z);
+      for (let k = 0; k < 14; k++) {
+        const a = b0 + (k % 2 ? 1 : -1) * Math.ceil(k / 2) * 0.12;
+        const R = (this.pressR ?? 24) + this.rng.gauss() * 1.5;
+        const x = p.x + Math.sin(a) * R, z = p.z + Math.cos(a) * R;
+        if (!nav.free(x, z) || (this.game.react.hazards.length && this.game.react.hazardAt(x, z, 1))) continue;
+        if (!this.losFrom(x, z)) continue;
+        if (this.go(x, z, true)) { this.release(); this.state = 'move'; return true; }
+      }
     }
     // no cover: close in over open ground to ~14 m
     const p = this.player, h = this.h;
@@ -279,6 +302,19 @@ export class HoodAI {
     return null;
   }
 
+  // the Game's lull breaker: nobody has fired for a while - this man takes
+  // the initiative (the vanguard's rules: a firing spot with a clear line,
+  // no nearer than ~10 m, then straight out to shoot)
+  press() {
+    if (!this.h.alive || this.heavy) return false;
+    this.vanguard = true;
+    this.opening = false;
+    this.pressR = Math.min(24, Math.max(10, this.distToPlayer() - 2));
+    const ok = this.moveToCover('vanguard', true);
+    this.pressR = null;
+    return ok;
+  }
+
   onHit(dir, stunned) {
     this.stun = stunned ? 1.25 : 0.35;
     this.underFire = 3;
@@ -288,6 +324,10 @@ export class HoodAI {
   update(dt, t) {
     const h = this.h, G = this.game, r = this.rng;
     if (!h.alive) { this.release(); return; }
+    // fire tokens (Game): only a few men shoot at once, the rest hold in
+    // cover or keep closing in, so the fight is a steady exchange instead
+    // of a whole wave emptying its guns together
+    if (this.state !== 'peek' && this.state !== 'aim' && this.state !== 'fire') G.dropFireToken(this);
     this.underFire = Math.max(0, this.underFire - dt);
     // being shot at: the player's aim passes near him
     if (G.weapon.sinceShot < 0.25) {
@@ -298,6 +338,29 @@ export class HoodAI {
       if (to.dot(f) / d > Math.cos(Math.atan2(2.0, d))) this.underFire = 2.5;
     }
     if (h.state === 'stagger') { this.stun = Math.max(this.stun, 0.2); return; }
+    // Phase 3a: a car smoking beside him (or burning): get clear of it,
+    // after a moment's reaction (a man looks up before he runs)
+    this.hazT = (this.hazT ?? 0) - dt;
+    if (G.react.hazards.length && this.hazT <= 0) {
+      this.hazT = 0.25;
+      const hz = G.react.hazardAt(h.pos.x, h.pos.z, 0.8) || (this.cover && G.react.hazardAt(this.cover.x, this.cover.z, 0.4));
+      if (hz && this.fleeFrom !== hz) {
+        this.fleeFrom = hz;
+        this.fleeT = r.range(0.25, 0.8);
+      }
+    }
+    if (this.fleeT > 0) {
+      this.fleeT -= dt;
+      if (this.fleeT <= 0) {
+        this.opening = false;
+        G.dropFireToken(this);
+        h.setAim(false);
+        this.moveToCover('relocate', true);
+        this.underFire = Math.max(this.underFire, 2);
+        this.relocations = (this.relocations || 0) + 1;
+        G.counters.relocations = (G.counters.relocations || 0) + 1;
+      }
+    }
     if (this.stun > 0) {
       this.stun -= dt;
       h.speed = Math.min(h.speed, 0.6);
@@ -309,6 +372,7 @@ export class HoodAI {
     switch (this.state) {
       case 'enter': {
         if (this.heavy) { this.state = 'rush'; this.repathT = 0; break; }
+        if (this.vanguard && this.moveToCover('vanguard', true)) break;
         if (!this.moveToCover('advance', dist < 34)) { this.state = 'cover'; this.timer = 1; }
         break;
       }
@@ -317,15 +381,22 @@ export class HoodAI {
         if (arrived) {
           this.state = 'cover';
           // far off, a breath; in the fight, a longer wait before popping out
-          this.timer = (dist > 30 ? r.range(0.25, 0.7) : r.range(0.6, 1.5)) * (this.underFire > 0 ? 1.3 : 1);
+          // (the vanguard's first stop: straight out to fire the opening volley)
+          this.timer = this.vanguard ? r.range(0.15, 0.35)
+            : (dist > 30 ? r.range(0.25, 0.7) : r.range(0.6, 1.5)) * (this.underFire > 0 ? 1.3 : 1);
           this.cycles = 0;
         } else if (this.run === false && this.underFire > 0) {
           this.run = true;   // caught in the open: break into a run
         }
         // popped out while crossing: a snap shot at close range
-        if (!arrived && dist < 14 && this.checkLOS(dt) && t - this.lastShot > 2.5 && r.chance(dt * 0.6)) {
+        // (the vanguard, caught in the open inside ~28 m, stops and opens up)
+        // (so do the last men of a wave: nobody hides out the clock)
+        const lastMen = G.spawner.done && G.counters.alive <= 2;
+        const snapD = this.vanguard || lastMen ? 28 : 14, snapRate = this.vanguard ? 2.5 : lastMen ? 1.2 : 0.6;
+        if (!arrived && dist < snapD && this.checkLOS(dt) && t - this.lastShot > 2.5 && r.chance(dt * snapRate) && G.takeFireToken(this, this.vanguard)) {
           this.path = null; this.stop();
-          this.state = 'aim'; this.timer = r.range(0.3, 0.5); this.shots = r.int(1, 2);
+          this.state = 'aim'; this.timer = r.range(0.3, 0.5); this.shots = this.vanguard ? r.int(2, 3) : r.int(1, 2);
+          this.vanguard = false;
           h.setState('aim', 0.2); h.lookAt(_v.copy(p).setY(p.y - 0.3));
         }
         break;
@@ -338,11 +409,19 @@ export class HoodAI {
         const flanked = this.cover && !G.covers.hides(this.cover, p.x, p.z);
         if (dist < 7) { this.moveToCover('relocate', true); break; }
         // beyond pistol range: keep coming; at 20-30 m trade a volley first
-        if (dist > 34 || (dist > 22 && this.cycles >= 1) || (this.cycles >= r.int(2, 3) && dist > 13)) {
+        const lastMen = G.spawner.done && G.counters.alive <= 2;
+        if (dist > 34 || (dist > 22 && this.cycles >= 1) || (this.cycles >= (lastMen ? 1 : r.int(2, 3)) && dist > 13)) {
           if (this.moveToCover('advance')) break;
         }
         if (flanked && r.chance(0.6)) { this.moveToCover('relocate'); break; }
+        if (!G.takeFireToken(this, this.vanguard)) { this.timer = r.range(0.35, 0.9); break; }
         this.peekPt = this.findPeek();
+        this.vanguardPeek = this.vanguard && !!this.peekPt;
+        // the opening volley is fired even through a car's cabin: covering
+        // fire at where the player is (the rounds that do not reach him
+        // spark off whatever is in between)
+        if (this.vanguard) { this.opening = true; if (!this.peekPt) this.peekPt = { x: h.pos.x, z: h.pos.z }; }
+        if (this.peekPt) this.vanguard = false;
         if (!this.peekPt) {
           this.cycles++;
           if (this.cycles > 1) this.moveToCover(dist > 16 ? 'advance' : 'relocate');
@@ -350,7 +429,7 @@ export class HoodAI {
           break;
         }
         const moveNeeded = Math.hypot(this.peekPt.x - h.pos.x, this.peekPt.z - h.pos.z) > 0.25;
-        if (moveNeeded) { this.path = [new THREE.Vector3(this.peekPt.x, 0, this.peekPt.z)]; this.pathI = 0; this.run = false; this.state = 'peek'; }
+        if (moveNeeded) { this.path = [new THREE.Vector3(this.peekPt.x, 0, this.peekPt.z)]; this.pathI = 0; this.run = false; this.state = 'peek'; this.timer = 2.2; }
         else { this.state = 'aim'; this.timer = r.range(0.3, 0.55); h.setState('aim', 0.2); }
         break;
       }
@@ -359,14 +438,18 @@ export class HoodAI {
         const wp = this.path && this.path[0];
         if (!wp) { this.state = 'aim'; this.timer = r.range(0.35, 0.7); h.setState('aim', 0.2); break; }
         const d = Math.hypot(wp.x - h.pos.x, wp.z - h.pos.z);
-        if (d < 0.2) {
+        // (a peek point he cannot reach - a man or a prop in the way - must
+        // not hold his fire token forever: after ~2 s he shoots from here)
+        if (d < 0.2 || this.timer <= 0) {
           this.path = null; this.stop();
           this.state = 'aim'; this.timer = r.range(0.35, 0.7); h.setState('aim', 0.2);
           break;
         }
         this.faceTo(wp.x, wp.z, dt, 8);
-        h.speed = 1.6;
-        if (h.state !== 'walk') h.setState('walk', 0.15);
+        // (the vanguard's first peek is a quick dash out, not a side step)
+        const dash = this.vanguardPeek;
+        h.speed = dash ? 2.6 : 1.6;
+        if (h.state !== (dash ? 'run' : 'walk')) h.setState(dash ? 'run' : 'walk', 0.15);
         break;
       }
       case 'aim': {
@@ -375,7 +458,7 @@ export class HoodAI {
         h.lookAt(_v.copy(p).setY(p.y - 0.3));
         this.faceTo(p.x, p.z, dt, 6);
         if (this.timer > 0) break;
-        if (!this.checkLOS(dt, true)) { this.state = 'duck'; break; }
+        if (!this.checkLOS(dt, true) && !this.opening) { this.state = 'duck'; break; }
         this.state = 'fire';
         if (!this.shots) this.shots = this.heavy ? r.int(5, 9) : r.int(2, 4) + (r.chance(0.35) ? 1 : 0);
         this.shotT = 0;
@@ -387,8 +470,9 @@ export class HoodAI {
         this.faceTo(p.x, p.z, dt, 6);
         this.shotT -= dt;
         if (this.shotT > 0) break;
-        if (this.shots <= 0 || !this.checkLOS(dt)) {
+        if (this.shots <= 0 || (!this.checkLOS(dt) && !this.opening)) {
           this.shots = 0;
+          this.opening = false;
           this.state = this.heavy ? 'rush' : 'duck';
           if (this.heavy) { this.burstT = r.range(2, 3.5); this.repathT = 0; }
           break;
@@ -424,7 +508,7 @@ export class HoodAI {
         this.repathT -= dt;
         this.burstT -= dt;
         const los = this.checkLOS(dt);
-        if (dist < 10 || (this.burstT <= 0 && los && dist < 26)) {
+        if ((dist < 10 && G.takeFireToken(this, true)) || (this.burstT <= 0 && los && dist < 26 && G.takeFireToken(this))) {
           this.path = null; this.stop();
           this.state = 'aim'; this.timer = r.range(0.3, 0.45); this.shots = r.int(5, 9);
           h.setState('aim', 0.2);
@@ -436,7 +520,7 @@ export class HoodAI {
           const k = Math.min(1, 8.5 / d);
           this.go(p.x + dx * k, p.z + dz * k, true);
         }
-        if (this.follow(dt)) { this.state = 'aim'; this.timer = 0.3; h.setState('aim', 0.2); }
+        if (this.follow(dt) && G.takeFireToken(this, true)) { this.state = 'aim'; this.timer = 0.3; h.setState('aim', 0.2); }
         break;
       }
       default: break;

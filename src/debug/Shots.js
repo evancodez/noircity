@@ -152,7 +152,21 @@ function stageBattle(world, camera, controller, game) {
   game.startBattle({ wave: w, autopilot: false });
   game.warmup = parseFloat(Q().get('warmup') ?? '13');
   game.afterWarmup = () => game.enableAutopilot();
+  // Phase 3a: the whole living block runs (train, lightning), seeded
+  game.ambient = true;
 }
+
+// train: the el train mid-crossing over the street view, window light
+// strobing onto the street below. trainz=<z> / trainahead=<m> / traindir=<1|-1>
+function stageTrain(world, camera, controller, game) {
+  const T = tEndOf(SHOTS.train);
+  const z = parseFloat(Q().get('trainz') ?? '-40'), ahead = parseFloat(Q().get('trainahead') ?? '30');
+  const dir = parseInt(Q().get('traindir') ?? '1', 10) || 1;
+  // start it so that at t = T its lead car is `ahead` m past z
+  const tr = world.train;
+  tr.stage(z, ahead - dir * 15 * T * 0 - 15 * T, dir);
+}
+SHOTS.train = { ...SHOTS.street, t: 3, stage: stageTrain };
 
 // hoods: the staged reference firefight (brief §2a / PHASE2B_NOTES): four
 // Hoods at 8-30 m in the street composition (el top right, lamp left).
@@ -169,9 +183,11 @@ function stageHoods(world, camera, controller, game) {
   const at = (x, z) => { const k = nav.nearestFree(x, z, 3); const c = nav.center(k); return [c.x, c.z]; };
   const face = (x, z) => Math.atan2(cam.x - x, cam.z - z);
   const eye = cam.clone();
-  // A: the man being shot, ~6 m, under the lamp just left of the gun's flash
-  // (the flash sprays toward him), turned 3/4 like the reference's centre man
-  const [ax, az] = at(-3.8, -14.8);
+  // A: the man being shot, ~9 m, under the lamp left of the gun's flash
+  // (Phase 3a preamble: 1.85 m left and 3.2 m deeper than 2b, so the
+  // player's flash sits ~60 px clear of his red burst at 1600x1000, both
+  // inside the lamp cone; the nav grid snaps him to x -5.65, z -17.98)
+  const [ax, az] = at(+(Q().get('ax') ?? -5.6), +(Q().get('az') ?? -18.1));
   const A = game.spawnHood(ax, az, { ai: false, variant: { coat: 0, brim: 1, tall: 1 }, yaw: face(ax, az) + 0.55, state: 'aim' });
   A.lookAt(eye);
   // B: the shooter behind the car on the right, firing over its hood
@@ -183,8 +199,9 @@ function stageHoods(world, camera, controller, game) {
   const [cx, cz] = at(8.3, -33);
   const C = game.spawnHood(cx, cz, { ai: false, variant: { coat: 2, brim: 0, tall: 0 }, yaw: face(cx, cz), state: 'aim' });
   C.lookAt(eye);
-  // D: walking out of the alley by the phone booth, left
-  const [dx, dz] = at(-7.4, -29.5);
+  // D: walking in out of the lit mist down the left of the avenue, ~30 m
+  // (clear of the dying man's silhouette: Phase 3a preamble #1)
+  const [dx, dz] = at(+(Q().get('dx') ?? -7.0), +(Q().get('dz') ?? -37));
   const D = game.spawnHood(dx, dz, { ai: false, variant: { coat: 1, brim: 0, tall: 1 }, yaw: face(dx, dz) - 0.7 });
   D.speed = 1.1;
   D.setState('walk', 0);
@@ -240,13 +257,107 @@ function stageImpacts(world, camera, controller, game) {
   });
 }
 
+// muzzlesmoke (look development, Phase 3a preamble #5): a 5-round burst
+// that ends `smokeage` s before the frame (default 0.35)
+function stageMuzzleSmoke(world, camera, controller, game) {
+  const T = tEndOf(SHOTS.muzzlesmoke);
+  const age = parseFloat(Q().get('smokeage') ?? '0.35');
+  const aim = new THREE.Vector3(0, 0, -30).applyMatrix4(camera.matrixWorld);
+  const t0 = T - age - 0.13 - 4 / 11;
+  let k = 0;
+  game.scripts.push((t) => { while (k < 5 && t >= t0 + k / 11 - 1e-6) { game.scriptedShot(aim, t); k++; } });
+}
+SHOTS.muzzlesmoke = { ...SHOTS.street, t: 4, viewmodel: true, holdWindow: 0, stage: stageMuzzleSmoke };
 SHOTS.reload = { ...SHOTS.street, t: 4, viewmodel: true, holdWindow: 0, stage: stageReload };
 SHOTS.impacts = { ...SHOTS.street, t: 4, viewmodel: true, holdWindow: 0.1, stage: stageImpacts };
 SHOTS.battle = { ...SHOTS.street, t: 30, viewmodel: true, holdWindow: 0.35, stage: stageBattle };
 SHOTS.hoods = { ...SHOTS.street, t: 4, viewmodel: true, holdWindow: 0.6, stage: stageHoods };
 SHOTS.viewmodel = { ...SHOTS.street, t: 4, viewmodel: true, holdWindow: 0, stage: stageViewmodel };
 
-const ALIASES = { wreck: 'street', ots: 'street', default: 'street' };
+// ---- Phase 3a: the reactive world ---------------------------------------------
+// wreck: the black sedan down the middle of the avenue, already shot to its
+// warning smoke at t = 0 (a cracked windscreen, a shattered side window, a
+// flat front tyre, bullet marks), a Hood crouched by its trunk. It explodes
+// at t = 3.0 (fuse), so t = 2.9 smoke, 3.1 fireball, 3.4 chunks in the air,
+// 8 the burning wreck with its warm column in the wet street, 40 still
+// burning, ~95 embers. wreckcar=<i> picks another car.
+function stageWreck(world, camera, controller, game) {
+  const cars = world.cars;
+  const car = cars.cars[parseInt(Q().get('wreckcar') ?? '2', 10) || 0];
+  const fuse = parseFloat(Q().get('fuse') ?? '3');
+  const eye = camera.position.clone();
+  const L = (x, y, z) => cars.toWorld(car, new THREE.Vector3(x, y, z));
+  // the rounds that did it (straight into the car, no muzzle flash in frame)
+  const shots = [L(-1.37, 1.47, 0.12), L(-0.8, 1.4, 0.64), L(-0.8, 1.36, 0.64), L(0.15, 1.4, 0.64), L(-1.55, 0.3, 0.9), L(-1.9, 0.8, 0.7), L(-1.2, 0.75, 0.72), L(0.2, 0.7, 0.72), L(-2.3, 0.9, 0.3), L(-2.2, 1.0, -0.4)];
+  for (const p of shots) {
+    const dir = p.clone().sub(eye).normalize();
+    const hit = game.rays.raycast(eye, dir, 80);
+    if (hit) game.react.bullet(hit, dir);
+  }
+  game.fx.impacts.count = 0;
+  cars.startSmoke(car, fuse);
+  car.smokeT = 6;    // (thick: it has been smoking a while)
+  // a Hood by its trunk, in the blast
+  const hp = L(-3.1, 0, 1.35);
+  const h = game.spawnHood(hp.x, hp.z, { ai: false, variant: { coat: 1, brim: 1, tall: 1 }, state: 'aim' });
+  h.yaw = Math.atan2(eye.x - hp.x, eye.z - hp.z) + 0.4;
+  h.lookAt(eye);
+  // and one further off, who takes the blast standing
+  const hp2 = L(-5.5, 0, -4.8);
+  const h2 = game.spawnHood(hp2.x, hp2.z, { ai: false, variant: { coat: 0, brim: 0, tall: 0 }, state: 'idle' });
+  h2.yaw = Math.atan2(eye.x - hp2.x, eye.z - hp2.z) - 0.6;
+}
+SHOTS.wreck = { x: -2.2, z: -13.0, y: 0.0, yaw: 0.06, pitch: 0.06, fov: 58, t: 8, stage: stageWreck };
+
+// a round into `target` from `from` (default: 3 m in front of it toward
+// the street), dispatched through the reactive world like a real bullet
+function shootAt(game, target, from = null) {
+  const o = from || target.clone().add(new THREE.Vector3(3, 0.3, 0.6));
+  const dir = target.clone().sub(o).normalize();
+  const hit = game.rays.raycast(o, dir, 20);
+  if (hit) game.react.bullet(hit, dir);
+  return hit;
+}
+
+// havoc (look development, Phase 3a): the left side of the block takes a
+// few rounds - the near street lamp is shot out, two façade windows (one
+// lit) and the phone booth's glass shatter, the hydrant bursts, a trash can
+// tumbles, a grate coughs steam, a hanging lamp swings and dies
+function stageHavoc(world, camera, controller, game) {
+  const T = tEndOf(SHOTS.havoc);
+  const V = (x, y, z) => new THREE.Vector3(x, y, z);
+  const lamp = world.lamps.lamps.find((l) => !l.hanging && !l.sconce && Math.abs(l.head.z + 17.5) < 0.5);
+  const hang = world.lamps.lamps.find((l) => l.hanging && l.real && l.head.z < -20 && l.head.z > -40);
+  const lit = world.facade.windows.find((w) => w.kind === 'dim' && w.c.z < -2 && w.c.z > -20);
+  const events = [
+    [T - 3.4, () => lamp && shootAt(game, lamp.head.clone().add(V(0, 0.2, 0)), lamp.head.clone().add(V(3, -2, 1)))],
+    [T - 3.0, () => lit && (shootAt(game, lit.c.clone().add(V(0, 0.3, 0.4))), shootAt(game, lit.c.clone().add(V(0, -0.4, 0.35))))],
+    [T - 2.8, () => { shootAt(game, V(-10.19, 2.4, -17.3)); }],
+    [T - 2.6, () => { for (const dz of [0.25, 0.3]) shootAt(game, V(-8.43, 1.5, -27.2 + dz), V(-6.2, 1.6, -25 + dz)); for (const dx of [0.25, 0.28]) shootAt(game, V(-8.9 + dx, 1.4, -26.73), V(-6.2 + dx, 1.5, -21)); }],
+    [T - 2.3, () => { shootAt(game, V(-6.55, 0.62, -27.5), V(-6.0, 1.0, -31)); shootAt(game, V(-6.55, 0.5, -27.5), V(-6.0, 1.0, -31)); }],
+    [T - 2.0, () => { for (let k = 0; k < 3; k++) shootAt(game, V(-9.5, 0.7, -66), V(-5, 1.2, -60)); }],
+    [T - 1.6, () => { shootAt(game, V(-1.4, 0.05, -21.5), V(-1, 1.7, -15)); }],
+    [T - 1.2, () => hang && (shootAt(game, hang.head.clone().add(V(0, 0.25, 0)), hang.head.clone().add(V(-4, -3, 3))), shootAt(game, hang.head.clone().add(V(0, 0.25, 0)), hang.head.clone().add(V(-4, -3, 3))))],
+  ];
+  let k = 0;
+  game.scripts.push((t) => { while (k < events.length && t >= events[k][0] - 1e-6) events[k++][1](); });
+}
+SHOTS.havoc = { ...SHOTS.street, t: 4, stage: stageHavoc };
+
+// storm: a lightning strike `strikeage` s before the frame (default 0: its
+// first frame, the tone kick held); strikeage=0.05 the flash after the kick,
+// 0.2 the dip of the double flicker
+function stageStorm(world, camera, controller, game) {
+  const T = tEndOf(SHOTS.storm);
+  const age = parseFloat(Q().get('strikeage') ?? '0');
+  let done = false;
+  const t0 = Math.round((T - age) * 60) / 60 - 1 / 60;
+  game.scripts.push((t) => { if (!done && t >= t0 - 1e-6) { done = true; game.storm.strike(1, false); } });
+  if (age < 1 / 60) game.pipeline.kickHold = true;
+}
+SHOTS.storm = { ...SHOTS.street, t: 4, stage: stageStorm };
+
+const ALIASES = { ots: 'street', default: 'street' };
 
 export function getShot(name) {
   const key = SHOTS[name] ? name : ALIASES[name];

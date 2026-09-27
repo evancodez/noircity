@@ -974,6 +974,17 @@ export class Hood {
       this.pos.x += Math.sin(this.yaw) * this.speed * dt;
       this.pos.z += Math.cos(this.yaw) * this.speed * dt;
       this.anim.setTimeScale(this.gaitScale(this.state === 'walk' ? WALK.speed : RUN.speed));
+      // footfalls (Phase 3a: puddle ripples, footsteps): one per half gait
+      // cycle, i.e. every stride = speed * T / 2 metres
+      const run = this.state === 'run';
+      const stride = (run ? RUN.speed * RUN.T : WALK.speed * WALK.T) * this.scale * 0.5;
+      this._stepAcc = (this._stepAcc || 0) + this.speed * dt;
+      if (this._stepAcc >= stride) {
+        this._stepAcc -= stride;
+        this._foot = -(this._foot || 1);
+        const sx = Math.cos(this.yaw) * 0.11 * this._foot, sz = -Math.sin(this.yaw) * 0.11 * this._foot;
+        if (this.world.hoods.onStep) this.world.hoods.onStep(this, this.pos.x + sx, this.pos.z + sz, run);
+      }
     }
     // stagger: apply the clip's extracted root motion (backwards)
     if (this.state === 'stagger') {

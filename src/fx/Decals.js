@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { NOIR_FOG_GLSL } from '../render/fog.js';
 import { LAYER } from '../render/layers.js';
-import { ATLAS } from './fxTextures.js';
+import { ATLAS, GLASS } from './fxTextures.js';
 
 // Persistent decals: blood splatter, corpse pools, dark bullet/chip marks.
 // Two instanced quad pools (one draw call each), ring buffers that reuse the
@@ -17,7 +17,7 @@ const _q = new THREE.Quaternion(), _m = new THREE.Matrix4(), _x = new THREE.Vect
 const _s = new THREE.Vector3(), _p = new THREE.Vector3();
 
 class DecalPool {
-  constructor(world, map, max, layer, name, reflGain = 1) {
+  constructor(world, map, max, layer, name, reflGain = 1, cells = [ATLAS.cols, ATLAS.rows]) {
     this.max = max;
     this.next = 0;
     this.count = 0;
@@ -36,7 +36,7 @@ class DecalPool {
       polygonOffsetUnits: -4,
       uniforms: {
         tMap: { value: map },
-        uCells: { value: new THREE.Vector2(ATLAS.cols, ATLAS.rows) },
+        uCells: { value: new THREE.Vector2(cells[0], cells[1]) },
         uTime: U.uTime,
         uReflGain: { value: reflGain },
         uUseDepth: U.uUseDepth,
@@ -103,10 +103,19 @@ class DecalPool {
     this.mesh.renderOrder = 1;
     this.mesh.name = 'decals_' + name;
     world.scene.add(this.mesh);
+    this.owner = new Array(max).fill(null);
   }
 
-  add(pos, normal, size, rot, cell, col, alpha, pool = null, time = 0) {
+  // hide every decal tagged with `owner` (a shattered pane takes its cracks)
+  hideOwner(owner) {
+    let n = 0;
+    for (let i = 0; i < this.max; i++) if (this.owner[i] === owner) { this.aCol.setW(i, 0); this.owner[i] = null; n++; }
+    if (n) this.aCol.needsUpdate = true;
+  }
+
+  add(pos, normal, size, rot, cell, col, alpha, pool = null, time = 0, owner = null) {
     const i = this.next;
+    this.owner[i] = owner;
     this.next = (this.next + 1) % this.max;
     this.count = Math.min(this.max, this.count + 1);
     _z.copy(normal).normalize();
@@ -119,7 +128,7 @@ class DecalPool {
     _y.crossVectors(_z, xr);
     _m.makeBasis(xr, _y, _z);
     _q.setFromRotationMatrix(_m);
-    _s.set(size, size, 1);
+    if (Array.isArray(size)) _s.set(size[0], size[1], 1); else _s.set(size, size, 1);
     _m.compose(pos, _q, _s);
     this.mesh.setMatrixAt(i, _m);
     this.aCol.setXYZW(i, col[0], col[1], col[2], alpha);
@@ -137,14 +146,40 @@ class DecalPool {
 export const BLOOD_DECAL = [0.085, 0.00034, 0.0034];   // prints ~#c8102e
 export const BLOOD_POOL = [0.05, 0.0002, 0.002];      // a touch deeper
 const INK = [0.0035, 0.0035, 0.0035];
+// fracture lines: a pale grey that prints as broken white lines on dark glass
+const CRACK_COL = [0.16, 0.16, 0.16];
 
 export class Decals {
-  constructor(world, atlas) {
+  constructor(world, atlas, glassAtlas = null) {
     this.world = world;
     this.ground = new DecalPool(world, atlas, 220, LAYER.FX, 'ground');
     this.surface = new DecalPool(world, atlas, 200, LAYER.FX_REFL, 'surface', 6);
     this.pools = new DecalPool(world, atlas, 40, LAYER.FX, 'pools');
+    // Phase 3a: cracks and holes in glass (car windows, the façade, the
+    // phone booth), their own atlas (fxTextures GLASS)
+    if (glassAtlas) this.glass = new DecalPool(world, glassAtlas, 90, LAYER.FX, 'glass', 1, [GLASS.cols, GLASS.rows]);
     this.rng = world.rng.fork(907);
+  }
+
+  // spider crack (pale fracture lines) or a punched hole (black blot with
+  // cracks) on a pane; `owner` lets the pane take them back when it goes
+  crack(pos, normal, size = 0.35, owner = null) {
+    const r = this.rng;
+    const p = _p.copy(pos).addScaledVector(normal, 0.006);
+    return this.glass.add(p.clone(), normal, size * r.range(0.8, 1.2), r.next() * Math.PI * 2, GLASS.CRACK[r.int(0, 1)], CRACK_COL, 0.95, null, 0, owner);
+  }
+  hideOwner(owner) { if (this.glass) this.glass.hideOwner(owner); }
+  // a shot-out pane: a black jagged hole the pane's size (w x h, local x
+  // horizontal), glass teeth left round the frame
+  paneHole(pos, normal, w, h) {
+    const r = this.rng;
+    const p = _p.copy(pos).addScaledVector(normal, 0.008);
+    return this.glass.add(p.clone(), normal, [w * 1.02, h * 1.02], r.gauss() * 0.02, GLASS.PANE[r.int(0, 3)], INK, 1);
+  }
+  hole(pos, normal, size = 0.5, owner = null, alpha = 1) {
+    const r = this.rng;
+    const p = _p.copy(pos).addScaledVector(normal, 0.008);
+    return this.glass.add(p.clone(), normal, size * r.range(0.85, 1.15), r.next() * Math.PI * 2, GLASS.HOLE[r.int(0, 1)], INK, alpha, null, 0, owner);
   }
 
   // blood splatter on any surface; `up` normals go to the ground pool
@@ -179,6 +214,6 @@ export class Decals {
     return this.pools.add(p.clone(), _z.set(0, 1, 0).clone(), size, r.next() * Math.PI * 2, ATLAS.POOL, BLOOD_POOL, 1, { grow }, time);
   }
 
-  clear() { this.ground.clear(); this.surface.clear(); this.pools.clear(); }
-  get total() { return this.ground.count + this.surface.count + this.pools.count; }
+  clear() { this.ground.clear(); this.surface.clear(); this.pools.clear(); if (this.glass) this.glass.clear(); }
+  get total() { return this.ground.count + this.surface.count + this.pools.count + (this.glass ? this.glass.count : 0); }
 }

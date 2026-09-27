@@ -3,7 +3,7 @@ import { FULLSCREEN_VERT, HASH_GLSL, LUMA_GLSL } from './common.js';
 import { NOIR_FOG_GLSL } from '../fog.js';
 import { TONE_GLSL, toneUniforms, EXPOSURE } from '../tone.js';
 import { RAIN_SLANT } from '../textures.js';
-import { FIG_ANCHOR, HOOD_ID0, HOOD_SLOTS, VM_ID0 } from '../layers.js';
+import { FIG_ANCHOR, HOOD_ID0, HOOD_SLOTS, VM_ID0, DEBRIS_ID0 } from '../layers.js';
 
 // The ink pass: turns the linear HDR render into a hand-inked noir panel.
 // Order inside the shader (see DESIGN.md §3.4):
@@ -44,6 +44,7 @@ export function makeInkMaterial(tex, fogUniforms) {
       uBrush: { value: 0.85 },
       uLineWidth: { value: 1.0 },
       uLightning: { value: 0 },
+      uKick: { value: 0 },
       uBrushPan: { value: new THREE.Vector2() },
       uRimLamps: { value: [new THREE.Vector4(), new THREE.Vector4(), new THREE.Vector4(), new THREE.Vector4()] },
       uRain: { value: 1.0 },
@@ -59,7 +60,7 @@ export function makeInkMaterial(tex, fogUniforms) {
       uniform vec2 uRes;
       uniform float uTime, uBoil, uNear, uFar;
       uniform mat4 uProjInv, uViewInv, uProjInvVM, uVmFrame;
-      uniform float uExposure, uBloomStrength, uBrush, uLineWidth, uLightning, uRain, uRain3;
+      uniform float uExposure, uBloomStrength, uBrush, uLineWidth, uLightning, uRain, uRain3, uKick;
       uniform vec4 uRimLamps[ 4 ];
       uniform vec4 uFigAnchor[ ${HOOD_SLOTS} ];
       uniform int uView;
@@ -171,6 +172,18 @@ export function makeInkMaterial(tex, fogUniforms) {
         // full-res buffer (b) so the hairlines stay one pixel sharp.
         vec4 volT = texture2D( tVolume, uv );
         vec3 vol = volT.rrr;
+        // smoke coverage (Phase 3a): smoke puffs are not in the id / depth
+        // passes, so every id-driven rule (iron and figures held black, the
+        // air light painted around figures, contours, rims) belonged to
+        // whatever stands BEHIND a puff; the puffs' occluders write their
+        // coverage into the volume buffer's alpha (fx/Particles occlude) and
+        // those rules give way to the smoke's own tone where it covers
+        float fxCov = clamp( 1.0 - volT.a, 0.0, 1.0 );
+        // a blast's flying chunks are drawn over the fire and smoke (fx/
+        // Explosion.js): the smoke's coverage does not apply to them, and the
+        // fireball's bloom is taken off them below (black against the flame)
+        float debrisF = step( ${(DEBRIS_ID0 - 0.5).toFixed(1)}, - nid.w ) * step( - nid.w, ${(DEBRIS_ID0 + 9.5).toFixed(1)} );
+        fxCov *= 1.0 - debrisF;
         float rain3 = texture2D( tRainBuf, uv ).b;
         float volNear = volT.g / max( volT.r, 1e-5 );
         // soft knee on the accumulated air light: one near cone passes almost
@@ -192,7 +205,7 @@ export function makeInkMaterial(tex, fogUniforms) {
         // window flecks. Flat fogged silhouettes: no strokes, no lift-outs,
         // no contours or rims (DESIGN.md: 'no line work' on the skyline)
         float skyl = sky ? 0.0 : step( 1859.5, abs( nid.w ) ) * ( 1.0 - iron );
-        float figure = isFig * ( 1.0 - smoothstep( 45.0, 110.0, dist ) );
+        float figure = isFig * ( 1.0 - smoothstep( 45.0, 110.0, dist ) ) * ( 1.0 - fxCov );
         // (the el's iron is a backdrop, not a figure: the cones hanging in
         // front of it must survive, so only the light that actually lies on
         // the steel is taken off, not the fan in the air before it)
@@ -205,6 +218,8 @@ export function makeInkMaterial(tex, fogUniforms) {
         // (a lamp hung under the el keeps its halo over the girders and
         // arches around it; figures and columns stay clean silhouettes)
         bloom *= 1.0 - 0.85 * figure * ( 1.0 - iron * step( 5.0, wpos.y ) * 0.8 );
+        bloom *= 1.0 - debrisF;
+        vol *= 1.0 - 0.9 * debrisF;
         // A Hood is inked as a man, not as a window onto the mist: the few
         // percent of air light left on generic figures still printed a far
         // walker in the lit mist as mid grey (the tone curve is steep in the
@@ -231,7 +246,7 @@ export function makeInkMaterial(tex, fogUniforms) {
         // 45 m), so the el recedes in steps like the reference; the two
         // nearest columns (< ~20 m) stay pure black.
         float ironAir = 0.28 * smoothstep( 22.0, 48.0, dist );
-        v = mix( v, max( min( v, mix( 0.08, 0.62, fogA ) ), ironAir ), iron );
+        v = mix( v, max( min( v, mix( 0.08, 0.62, fogA ) ), ironAir ), iron * ( 1.0 - fxCov ) );
         float vSmooth = v;
         float vLit = toneCurve( ( L + luma( bloom ) + luma( vol ) ) * exposure );
         // (measured against the UNclamped surface: the clamp must not come
@@ -316,6 +331,8 @@ export function makeInkMaterial(tex, fogUniforms) {
         // core vanished into the compensator.)
         float flashF = max( hood, vmF ) * smoothstep( 1.1, 2.2, L );
         v = mix( v, vRaw, flashF );
+        // (smoke over a man or the el prints as smoke, not as his cloth)
+        v = mix( v, vRaw, fxCov * ( 1.0 - vmF ) );
         // the wet street & pavements: flat, facing up, at kerb height or below
         float ground = sky ? 0.0 : step( 0.9, nW.y ) * step( wpos.y, 0.25 );
         // stroke family follows surface orientation: walls get vertical
@@ -372,7 +389,7 @@ export function makeInkMaterial(tex, fogUniforms) {
                      * smoothstep( 0.3, 0.62, br.r * 0.4 + br.b * 0.6 )
                      * ( 1.0 - smoothstep( 18.0, 45.0, dist ) ) * ( 1.0 - 0.5 * step( nid.w, -0.5 ) ) * ( 1.0 - ground )
                      * ( 1.0 - hood * smoothstep( 8.0, 16.0, dist ) );
-          v += lift * ( 1.0 - smoothstep( 0.06, 0.10, v ) ) * ( 1.0 - wallQuiet );
+          v += lift * ( 1.0 - smoothstep( 0.06, 0.10, v ) ) * ( 1.0 - wallQuiet ) * ( 1.0 - fxCov );
         }
         // strokes reach down into the blacks (dry-brush on near-black
         // surfaces) and survive inside lit mist; only real glare stays smooth
@@ -385,6 +402,10 @@ export function makeInkMaterial(tex, fogUniforms) {
         float vBand = mix( inkBands( v, b, 4.0 ), pow( inkBands( pow( v, 0.6667 ), b, 4.0 ), 1.5 ), ground );
         // the quiet wall areas keep the flat wash (the lit surface tone)
         brushAmt *= ( 1.0 - 0.9 * wallQuiet ) * ( 1.0 - skyl );
+        // smoke is a soft wash with its own brushed alpha (fx/fxTextures
+        // SMOKE): banded by the surface behind it, its tone stepped at every
+        // tower and wall edge it drifted across
+        brushAmt *= 1.0 - fxCov;
         v = mix( v, vBand, brushAmt );
         // the sky gets only a whisper of horizontal wash; fogged towers a
         // little vertical dry-brush (the far street keeps horizontal)
@@ -398,10 +419,29 @@ export function makeInkMaterial(tex, fogUniforms) {
         // the red family: red dominant with green ~ blue (blood, and blood
         // thinned by grey at a drop's anti-aliased rim). The ember and fire
         // (green well above blue) keep their own hue.
-        float redF = step( hdr.g, hdr.r ) * step( hdr.b, hdr.r ) * ( 1.0 - smoothstep( 0.1, 0.22, abs( hn.g - hn.b ) ) );
+        // (SIGNED: blood's green sits at or below its blue however much grey
+        // thins it; an orange thinned by grey (a fire column's flank in the
+        // wet street) keeps green above blue and must never be read as
+        // blood: with abs() its pale rim printed as a crimson fringe)
+        float gb = hn.g - hn.b;
+        float redF = step( hdr.g, hdr.r ) * step( hdr.b, hdr.r ) * ( 1.0 - smoothstep( 0.02, 0.07, gb ) );
+        // the fire family (Phase 3a, the second permitted colour): orange to
+        // yellow-white, green well above blue
+        float fireF = step( hdr.b, hdr.g ) * step( hdr.g, hdr.r ) * smoothstep( 0.02, 0.07, gb );
         // (a steep, low window for blood: a half-covered pixel at a drop's
         // edge goes red or stays ink, it never prints as a pink mix)
         float keep = mix( smoothstep( 0.22, 0.4, sat ), smoothstep( 0.1, 0.2, sat ), redF ) * smoothstep( 0.0004, 0.004, mx );
+        // Fire is printed BRIGHT or not at all: its value is the tone of its
+        // own max channel, and only where that is >= ~0.3 does the colour
+        // survive; the dim end (a fire light's falloff on the stone, the gaps
+        // of its column in the wet street) goes back to ink. A dark orange
+        // is brown, and brown is the one thing fire must never print as.
+        // (the transition is thresholded against the dry-brush field, not
+        // blended: a half-kept orange over dark ink is exactly brown, so the
+        // fading fire breaks into orange strokes and ink instead)
+        float vFire = toneCurve( mx * exposure );
+        float fireK = clamp( ( vFire - 0.22 ) / 0.2, 0.0, 1.0 );
+        keep *= mix( 1.0, smoothstep( b - 0.05, b + 0.05, fireK ), fireF );
         // Blood must print VIVID red (the reference's #c8102e), never maroon
         // or black: chroma pixels bypass the black crush and the brush bands.
         // The hue is taken to display space (linear #c8102e = (1, .009, .047)
@@ -416,6 +456,12 @@ export function makeInkMaterial(tex, fogUniforms) {
         float cV = 0.45 + 0.55 * smoothstep( 0.0, 1.0, cT );
         cV *= mix( 0.9, 1.04, b );
         vec3 colOut = hue * clamp( max( cV, 0.45 ), 0.0, 1.0 );
+        // fire: lifted into the top of the range (0.86-1) so it reads as
+        // flame, never as brown; the dimmer it is, the deeper and redder the
+        // orange (an ember), not the darker. The brush breaks it a little.
+        vec3 fireHue = mix( vec3( 1.0, 0.36, 0.06 ), hue, smoothstep( 0.35, 0.95, vFire ) );
+        vec3 fireOut = fireHue * mix( 0.86, 1.0, smoothstep( 0.3, 0.9, vFire ) ) * mix( 0.94, 1.03, b );
+        colOut = mix( colOut, fireOut, fireF );
 
         // ---- contours ------------------------------------------------------
         // Wobble: a static low-frequency warp plus a small 'boil' that jumps
@@ -541,6 +587,10 @@ export function makeInkMaterial(tex, fogUniforms) {
         }
 
         vec3 col = vec3( v );
+        // (a smoke puff in front softens the line work behind it)
+        edge *= 1.0 - 0.85 * fxCov;
+        rim *= 1.0 - fxCov;
+        structL *= 1.0 - fxCov;
         col = mix( col, vec3( 0.0 ), edge );
         col = max( col, vec3( structL * 0.42 ) );
         col = max( col, vec3( rim * mix( 0.72, 0.86, figR ) ) );
@@ -573,7 +623,7 @@ export function makeInkMaterial(tex, fogUniforms) {
           }
           haloK *= lineBreak * max( lampH, 0.7 * isFig );
         }
-        col = mix( col, vec3( 0.42 ), haloK );
+        col = mix( col, vec3( 0.42 ), haloK * ( 1.0 - fxCov ) );
         col = min( col + glow, vec3( 1.0 ) );
         // paper-white lift-out: where the air light is dense (a lamp's halo,
         // the hot collar under a shade) the brush leaves bare paper, with a
@@ -587,7 +637,7 @@ export function makeInkMaterial(tex, fogUniforms) {
         // façade's slashes); there only real air light lifts paper.
         float airA = smoothstep( 0.5, 0.95, airL );
         float slashOK = sky ? 0.0 : ( 1.0 - skyl ) * ( 1.0 - wallQuiet );
-        float paperW = smoothstep( b - 0.12, b + 0.12, airA ) * max( smoothstep( 0.0, 0.2, airA ), slashOK ) * ( 1.0 - figure );
+        float paperW = smoothstep( b - 0.12, b + 0.12, airA ) * max( smoothstep( 0.0, 0.2, airA ), slashOK ) * ( 1.0 - figure ) * ( 1.0 - fxCov );
         col = max( col, vec3( paperW ) );
         col = mix( col, colOut, keep );
         // 3D rain + splash rings, screened over the ink as thin white lines at
@@ -614,6 +664,11 @@ export function makeInkMaterial(tex, fogUniforms) {
         rain *= uRain * 0.32 * ( mix( 0.18, 0.4, smoothstep( 0.05, 0.4, col.r ) ) + 1.4 * clamp( bl, 0.0, 1.0 ) ) * rainMask;
         col = 1.0 - ( 1.0 - col ) * ( 1.0 - rain );
 
+        // lightning's first frame (Pipeline.kick): the print snaps to a stark
+        // two-tone - mid greys jump to paper, the darks stay ink - a flash
+        // bulb's one-frame inversion feel; colour (blood, fire) is left alone
+        col = mix( col, mix( vec3( smoothstep( 0.1, 0.32, col.r ) ), col, keep ), uKick * 0.85 );
+
         // ---- paper, grain, vignette ----------------------------------------
         // paper: faint and low-frequency only; a stronger sheet texture reads
         // as a pattern glued to the lens once the player walks
@@ -633,6 +688,7 @@ export function makeInkMaterial(tex, fogUniforms) {
         else if ( uView == 5 ) col = vec3( 1.0 - edge ) - vec3( rim ) * vec3( 0.0, 1.0, 1.0 );
         else if ( uView == 6 ) col = vec3( b );
         else if ( uView == 8 ) col = vec3( vSmooth );   // lit surfaces only (no air light)
+        else if ( uView == 9 ) col = vec3( fxCov, glow, paperW );   // smoke coverage / air light / paper lift-out
 
         gl_FragColor = vec4( clamp( col, 0.0, 1.0 ), 1.0 );
       }`,

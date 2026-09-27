@@ -207,12 +207,20 @@ export class Pipeline {
 
   updateLightning(time) {
     const b = this._bolt;
+    this.kick = 0;
     if (!b) return;
     const u = (time - b.t0) / b.duration;
     if (u < 0 || u > 1) { this._bolt = null; this.lightning = 0; return; }
     const flick = u < 0.12 ? 1 : u < 0.22 ? 0.25 : u < 0.34 ? 0.9 : Math.pow(1 - (u - 0.34) / 0.66, 2) * 0.6;
     this.lightning = b.strength * flick;
+    // the first frame of a strike: the ink tone curve kicks (Phase 3a)
+    // (kickHold: a screenshot of that first frame, shot=storm)
+    if (!b.kicked || this.kickHold) { b.kicked = true; this.kick = Math.min(1, b.strength); }
   }
+
+  // a static caster moved (a wreck settling, a trash can knocked over):
+  // every shadow map is re-rendered once (Phase 3a)
+  dirtyShadows() { this.shadowDirty = true; }
 
   // flag the shadow maps that must be re-rendered this frame (see above)
   updateShadowFlags(scene) {
@@ -256,6 +264,7 @@ export class Pipeline {
       }
       if (sig !== L._shSig) need = true;
       L._shSig = sig;
+      if (this.shadowDirty) need = true;
       if (need) L.shadow.needsUpdate = true;
     }
   }
@@ -361,7 +370,7 @@ export class Pipeline {
     camera.layers.disable(LAYER.VM_FX);
     camera.layers.disable(LAYER.REFL_ONLY);
     r.shadowMap.autoUpdate = !S.shadows;
-    if (this.shadowCache && !S.shadows) this.updateShadowFlags(scene);
+    if (this.shadowCache && !S.shadows) { this.updateShadowFlags(scene); this.shadowDirty = false; }
     r.setRenderTarget(this.rtScene);
     r.setClearColor(this.fogColor, 1);
     r.clear();
@@ -444,6 +453,10 @@ export class Pipeline {
     }
     iu.uViewInv.value.copy(camera.matrixWorld);
     iu.uLightning.value = this.lightning;
+    iu.uKick.value = this.kick || 0;
+    // lightning shows the rain everywhere, not only inside the cones
+    iu.uRain.value = 1 + 2.2 * Math.min(1, this.lightning) + 1.2 * (this.rainBoost || 0);
+    iu.uRain3.value = 1 + 1.5 * Math.min(1, this.lightning);
     iu.uView.value = this.view;
     const pxPerRad = this.height / THREE.MathUtils.degToRad(camera.fov);
     iu.uBrushPan.value.set(-camera.rotation.y * pxPerRad + time * 2.0, camera.rotation.x * pxPerRad + time * 1.3);

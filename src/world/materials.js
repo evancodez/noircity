@@ -141,6 +141,11 @@ export function makeMaterials(renderer, tex) {
     windowLitDim: new THREE.MeshBasicMaterial({ color: hdr(0.16) }),
     windowFar: new THREE.MeshBasicMaterial({ color: hdr(2.2) }),
     black: new THREE.MeshBasicMaterial({ color: 0x000000 }),
+    // Phase 3a: a burnt-out car (matte char, no clearcoat, no chrome shine)
+    wreck: std({ color: 0x020202, roughness: 0.96, metalness: 0.05, envMap: envSoft, envMapIntensity: 0.12 }),
+    wreckMetal: std({ color: 0x0c0c0c, roughness: 0.85, metalness: 0.3, envMap: envSoft, envMapIntensity: 0.2 }),
+    // a shot-out lamp's emitter: a dead dark disc in the shade's mouth
+    bulbDead: std({ color: 0x111111, roughness: 0.3, metalness: 0.2, envMap: envSoft, envMapIntensity: 0.6 }),
   };
   return M;
 }

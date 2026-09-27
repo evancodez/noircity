@@ -76,10 +76,31 @@ export class Autopilot {
     if (this.driftTo) this.drift.lerp(this.driftTo, Math.min(1, dt * 4));
     let err = 1;
     this.wob += dt;
-    if (this.target) {
-      const c = this._v.setFromMatrixPosition(this.target.bones.chest.matrixWorld);
-      c.y += 0.02;
-      c.add(this.drift);
+    // Phase 3a tactics, when no man is in the sights: (1) a Hood hiding
+    // behind a parked car - put rounds into its engine block until it goes
+    // up; (2) now and then, shoot out a street lamp over their side of the
+    // street (a real player works the dark)
+    this.tacT = (this.tacT ?? 2) - dt;
+    if (this.tacT <= 0 && !this.tactic && !W.reloading && W.ammo >= 8) {
+      this.tacT = 0.5;
+      // (a man in the sights beats a lamp; but a man ducking behind a car
+      // gets the car)
+      const tgtAI = this.target && G.ais.get(this.target);
+      if (this.target) this.tactic = tgtAI ? this.pickCarTactic(tgtAI) : null;
+      else this.tactic = this.pickLampTactic() || this.pickCarTactic();
+      if (this.tactic) { this.settle = r.range(0.3, 0.6); this.burst = 0; }
+    }
+    // (a lamp takes a moment: it is finished even if a man shows)
+    if (this.tactic && !this.tacticValid(this.tactic)) this.tactic = null;
+    let aim = null;
+    if (this.tactic) aim = this._v.copy(this.tactic.point);
+    else if (this.target) {
+      aim = this._v.setFromMatrixPosition(this.target.bones.chest.matrixWorld);
+      aim.y += 0.02;
+      aim.add(this.drift);
+    }
+    if (aim) {
+      const c = aim;
       const eye = G.camera.position;
       const d = c.clone().sub(eye);
       const wantYaw = Math.atan2(-d.x, -d.z);
@@ -100,15 +121,68 @@ export class Autopilot {
     }
     // ---- trigger discipline ---------------------------------------------------
     if (G.state !== 'playing') { W.trigger = false; this.burst = 0; if (!W.reloading && W.ammo < 30) W.reload(); return; }
+    const onMark = !!aim;
     if (this.burst > 0) {
-      W.trigger = !!this.target && err < 0.06;
-      if (W.sinceShot === 0) this.burst--;
-      if (!W.trigger || this.burst <= 0) { W.trigger = false; this.burst = 0; this.pause = r.range(0.6, 1.3); }
+      W.trigger = onMark && err < 0.06;
+      if (W.sinceShot === 0) { this.burst--; if (this.tactic) this.tactic.rounds--; }
+      if (!W.trigger || this.burst <= 0) { W.trigger = false; this.burst = 0; this.pause = r.range(0.6, 1.3) * (this.tactic ? 0.5 : 1); }
     } else {
       W.trigger = false;
       this.pause -= dt;
-      if (this.pause <= 0 && this.settle <= 0 && this.target && err < 0.03 && !W.reloading) this.burst = r.int(3, 6);
+      if (this.pause <= 0 && this.settle <= 0 && onMark && err < 0.03 && !W.reloading) this.burst = this.tactic ? this.tactic.burst : r.int(3, 6);
     }
-    if (!W.reloading && (W.ammo === 0 || (W.ammo < 12 && !this.target))) { W.trigger = false; this.burst = 0; W.reload(); }
+    if (this.tactic && this.tactic.rounds <= 0) { this.tactic.done(); this.tactic = null; }
+    if (!W.reloading && (W.ammo === 0 || (W.ammo < 12 && !this.target && !this.tactic))) { W.trigger = false; this.burst = 0; W.reload(); }
+  }
+
+  // a Hood in cover behind an intact car we can see: its engine block
+  pickCarTactic(only = null) {
+    const G = this.game, eye = G.camera.position, cars = G.world.cars;
+    // (one car at a time: after a wreck, ~30 s before the next)
+    if (G.time - (this.lastCar ?? -99) < 30) return null;
+    for (const ai of (only ? [only] : G.ais.values())) {
+      const c = ai.cover;
+      if (!c || !ai.h.alive || c.obs.kind !== 'box' || !c.obs.b.car) continue;
+      const car = c.obs.b.car;
+      if (car.state === 'burning' || car.state === 'dead') continue;
+      const p = cars.engine(car);
+      p.y -= 0.25;
+      const d = eye.distanceTo(p);
+      if (d > 36 || d < 9) continue;
+      const dir = p.clone().sub(eye).normalize();
+      const hit = G.rays.raycast(eye, dir, d + 1);
+      if (!hit || hit.mesh.userData.car !== car) continue;
+      return { kind: 'car', car, point: hit.point.clone(), rounds: car.state === 'smoking' ? 10 : 16, burst: 6, done: () => { if (car.state !== 'intact') this.lastCar = G.time; } };
+    }
+    return null;
+  }
+
+  // a lit street lamp ahead, over the Hoods' side (at most every ~35 s)
+  pickLampTactic() {
+    const G = this.game;
+    if (G.time - (this.lastLamp ?? -20) < 35) return null;
+    const eye = G.camera.position;
+    let best = null, bd = Infinity;
+    for (const l of G.world.lamps.lamps) {
+      if (!l.real || l.dead || l.sconce || !l.on) continue;
+      // (the shade, just above the lamp's mouth: the head, not the post)
+      const aimP = l.head.clone().add(new THREE.Vector3(0, 0.12, 0));
+      const d = eye.distanceTo(aimP);
+      if (d < 10 || d > 45) continue;
+      const dir = aimP.clone().sub(eye).normalize();
+      let dh = Math.atan2(-dir.x, -dir.z) - this.homeYaw; dh = Math.atan2(Math.sin(dh), Math.cos(dh));
+      if (Math.abs(dh) > 0.6) continue;
+      const hit = G.rays.raycast(eye, dir, d + 0.5);
+      if (!hit || hit.mesh.userData.lamp !== l || hit.point.distanceTo(l.head) > 0.55) continue;
+      if (d < bd) { bd = d; best = { l, point: aimP }; }
+    }
+    if (!best) return null;
+    return { kind: 'lamp', lamp: best.l, point: best.point, rounds: 5, burst: 3, done: () => { this.lastLamp = G.time; } };
+  }
+
+  tacticValid(tc) {
+    if (tc.kind === 'car') { if (tc.car.state === 'burning' || tc.car.state === 'dead') { this.lastCar = this.game.time; return false; } return true; }
+    if (tc.kind === 'lamp') { if (tc.lamp.dead) { tc.done(); return false; } return true; }
+    return false;
   }
 }

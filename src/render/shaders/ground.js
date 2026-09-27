@@ -14,11 +14,17 @@ import { NOIR_FOG_GLSL } from '../fog.js';
 //   - rain ring ripples + footstep/shot impact rings perturb the normal and
 //     distort the reflection lookup
 //   - wet GGX specular for every lamp, with shadows
-export const MAX_IMPACTS = 8;
+// (12: Phase 3a adds Hood footfalls, the blast's rings, the hydrant)
+export const MAX_IMPACTS = 12;
+// blast shockwaves (Phase 3a review): one bold ring per explosion, racing
+// out to ~6 m in 0.4 s with a bright broken crest (Street.addBlast)
+export const MAX_BLASTS = 2;
 
 export function makeGroundUniformsShared(tex) {
   const impacts = [];
   for (let i = 0; i < MAX_IMPACTS; i++) impacts.push(new THREE.Vector4(0, 0, -100, 0));
+  const blasts = [];
+  for (let i = 0; i < MAX_BLASTS; i++) blasts.push(new THREE.Vector4(0, 0, -100, 0));
   return {
     tRefl: { value: null },
     tReflBlur: { value: null },
@@ -26,6 +32,7 @@ export function makeGroundUniformsShared(tex) {
     tNoise: { value: tex.noise },
     tBrush: { value: tex.brush },
     uImpacts: { value: impacts },
+    uBlasts: { value: blasts },
     uReflStrength: { value: 1.0 },
     uGroundDebug: { value: 0 },   // ?gdbg=: 1 base, 2 direct, 3 column, 4 sheen, 5 dash, 6 rSharp*puddle, 7 blobs, 8 near wash
   };
@@ -71,6 +78,7 @@ export function makeGroundMaterial(U, { paving = 0 } = {}) {
       uniform int uGroundDebug;
       uniform vec2 uRes;
       uniform vec4 uImpacts[ ${MAX_IMPACTS} ];
+      uniform vec4 uBlasts[ ${MAX_BLASTS} ];
       varying vec3 vWorld;
       varying vec3 vViewPos;
       varying vec4 vReflCoord;
@@ -119,6 +127,37 @@ export function makeGroundMaterial(U, { paving = 0 } = {}) {
           float x = ( r - R ) * 9.0;
           float env = ( 1.0 - age / 2.0 ) * ( 1.0 - age / 2.0 ) * im.w;
           acc += dv / max( r, 1e-3 ) * sin( x * 3.14159 ) * exp( - x * x * 0.25 ) * env;
+        }
+        return acc;
+      }
+
+      // Blast shockwave (x, z, startTime, strength): ONE bold ring whose
+      // front races out and slows (~2.5 m at 0.1 s, ~5.8 m at 0.4 s, 7 m
+      // max), a ~0.4 m crest ~3x a bullet ring's amplitude. 'crest' gets its
+      // leading edge, broken along the ring like an inked line, bright only
+      // for the first ~0.7 s: a white ripple like the reference's puddle rings.
+      vec2 blastRings( vec2 p, out float crest ) {
+        vec2 acc = vec2( 0.0 );
+        crest = 0.0;
+        for ( int i = 0; i < ${MAX_BLASTS}; i ++ ) {
+          vec4 b = uBlasts[ i ];
+          float age = uTime - b.z;
+          if ( age < 0.0 || age > 1.8 ) continue;
+          vec2 dv = p - b.xy;
+          float r = length( dv );
+          float R = 7.0 * ( 1.0 - exp( - age * 4.5 ) );
+          float x = ( r - R ) / 0.2;
+          float env = b.w * ( 1.0 - smoothstep( 0.4, 1.8, age ) ) * smoothstep( 0.0, 0.03, age );
+          acc += dv / max( r, 1e-3 ) * sin( x * 1.6 ) * exp( - x * x * 0.35 ) * env;
+          // (the crest: the ring's leading edge, a thin line cut into dashes
+          // by the world-anchored dry brush - an inker's broken line, not a
+          // smooth CG hoop - with a fainter second line trailing it)
+          float brk = smoothstep( 0.32, 0.52, texture2D( tBrush, p * 0.23 + b.xy * 0.37 ).g )
+                    * smoothstep( 0.18, 0.4, texture2D( tNoise, p * 0.61 + 3.7 ).a );
+          float lead = exp( - ( x + 0.2 ) * ( x + 0.2 ) * 3.0 );
+          float trail = exp( - ( x + 2.6 ) * ( x + 2.6 ) * 4.0 ) * 0.55;
+          float cr = ( lead + trail * ( 1.0 - brk * 0.6 ) ) * ( 1.0 - smoothstep( 0.3, 0.8, age ) );
+          crest = max( crest, cr * brk * min( b.w / 3.0, 1.0 ) );
         }
         return acc;
       }
@@ -306,6 +345,8 @@ export function makeGroundMaterial(U, { paving = 0 } = {}) {
         vec2 grad = rainRipples( p, uTime, crest ) * nearFade * ( 0.5 + 0.8 * puddle );
         crest *= 1.0 - smoothstep( 5.0, 10.0, dist );
         grad += impactRipples( p ) * ( 0.4 + puddle );
+        float blastCrest;
+        grad += blastRings( p, blastCrest ) * ( 0.5 + 0.5 * puddle );
         vec2 micro = ( texture2D( tNoise, p * 0.9 + uTime * vec2( 0.021, 0.047 ) ).rb - 0.5 )
                    + ( texture2D( tNoise, p * 2.3 - uTime * vec2( 0.033, 0.018 ) ).rb - 0.5 ) * 0.5;
         grad += micro * mix( 0.12, 0.03, puddle );
@@ -407,7 +448,24 @@ export function makeGroundMaterial(U, { paving = 0 } = {}) {
         // over a grey wash, the columns already broken up)
         colB *= mix( 0.65, 1.0, nearCol );
         vec3 colC = column * ( colB / max( colL, 1e-5 ) );
-        vec3 refl = colC * mix( 0.04, 1.0, dash )
+        // Blood in the column (Phase 3a review): the brightness normalisation
+        // above lifts a red streak to the same value as a lamp's, and the ink
+        // keeps any red over ~0.1 saturation, so a burst in the air printed
+        // a solid red block in the water. The blood family (red dominant,
+        // green ~ blue, as ink.js reads it) keeps ~35 % of the column, only
+        // on sparse ripple flecks with black water between: a few red slivers
+        // under the burst, like the reference's faint red in the wet street.
+        // Fire (green well above blue) keeps its full warm column.
+        float cMx = max( column.r, max( column.g, column.b ) );
+        vec3 cHn = column / max( cMx, 1e-5 );
+        float cSat = 1.0 - min( cHn.r, min( cHn.g, cHn.b ) );
+        float bloodC = step( column.g, column.r ) * step( column.b, column.r )
+                     * ( 1.0 - smoothstep( 0.02, 0.07, cHn.g - cHn.b ) ) * smoothstep( 0.15, 0.4, cSat );
+        vec3 colBlood = colC * bloodC;
+        colC -= colBlood;
+        float fleck = smoothstep( 0.56, 0.64, texture2D( tNoise, p * vec2( 0.45, 1.6 ) + 5.1 ).r )
+                    * smoothstep( 0.3, 0.6, dash );
+        vec3 refl = colC * mix( 0.04, 1.0, dash ) + colBlood * 0.35 * fleck
                   + sheen * ( 0.4 + 1.2 * dash )       // the dark-grey wet look
                   // sparse pale dashes on dark asphalt: ripple facets that
                   // catch the grey storm sky. (sheen * 1.2 * dash alone is
@@ -418,6 +476,9 @@ export function makeGroundMaterial(U, { paving = 0 } = {}) {
                   + rSharp * puddle * 0.5;             // puddles: a sharp mirror
         // near-field rain rings: thin light arcs where their crest catches the sky
         refl += uFogColor * crest * 0.7 * ( 0.5 + 0.5 * puddle );
+        // the blast's shockwave: its crest catches the fireball and the storm
+        // sky as a WHITE ripple line racing out across the wet street
+        refl += vec3( 0.55 ) * blastCrest * mix( 1.0, 0.35, uPaving );
         // near field (< ~9 m): a patchy grey wash (the rain-beaten water
         // catching the storm sky) with sparse pale specks, so the black ink
         // blots below have grey to sit on, like the reference's bottom edge

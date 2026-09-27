@@ -48,6 +48,7 @@ export class Weapon {
     if (this.reloading || this.ammo === WEAPON.drum) return false;
     this.reloadLeft = WEAPON.reload;
     this.vm.startReload();
+    this.game.sfx.reload();
     return true;
   }
 
@@ -77,6 +78,11 @@ export class Weapon {
     if (!this.trigger || this.sinceShot > 0.15) {
       this.spread = Math.max(WEAPON.spread0, this.spread - WEAPON.recover * dt);
     }
+    // a burst has ended: the smoke it leaves hangs at the muzzle
+    if (this.burstShots > 0 && this.sinceShot > 0.13) {
+      if (this.lastMuzzle) this.game.fx.muzzleSmoke(this.lastMuzzle, this.lastFwd, this.burstShots);
+      this.burstShots = 0;
+    }
   }
 
   // fire one round; `forceDir` (staged shots) bypasses the spread
@@ -105,13 +111,17 @@ export class Weapon {
     const vmMuzzle = this.vm.vmWorld(MUZZLE);
     const wMuzzle = this.vm.reproject(MUZZLE, 0.9, cam);
     G.fx.flash.player(vmMuzzle, wMuzzle, fwd.clone(), time, this.vm.forward());
+    G.sfx.tommy();
+    this.burstShots = (this.burstShots || 0) + 1;
+    this.lastMuzzle = wMuzzle.clone();
+    this.lastFwd = fwd.clone();
     const ej = this.vm.reproject(EJECT, 0.45, cam);
     G.fx.casings.eject(ej, right, up, fwd);
     // the shot
     const hood = G.rays.raycastHoods(origin, dir, WEAPON.range, G.world.hoods.list);
     const wall = G.rays.raycast(origin, dir, hood ? hood.t : WEAPON.range);
     if (hood && (!wall || hood.t < wall.t)) this.hitHood(hood, dir, time);
-    else if (wall) G.fx.impacts.at(wall, dir);
+    else if (wall) G.react.bullet(wall, dir);
   }
 
   hitHood(hit, dir, time) {

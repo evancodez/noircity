@@ -22,6 +22,10 @@ const FRAME = 1 / 60;
 const VM_AHEAD = 0.075;
 // the screenshot hold (shot mode): the second, smaller frame, a softer light
 const HOLD = { size: 0.6, light: 0.55, entry: 0.12, reflSize: 0.34, reflCol: 3 };
+// a Hood's flash beyond FAR_FLASH m is the bold starburst, >= FAR_PX on screen
+const FAR_FLASH = 13;
+const FAR_PX = 48;
+const FAR_COL = 1.35;
 const _v = new THREE.Vector3(), _r = new THREE.Vector3(), _u = new THREE.Vector3();
 
 export class MuzzleFlash {
@@ -42,7 +46,8 @@ export class MuzzleFlash {
     this.playerEntry = world.lights.add({ position: new THREE.Vector3(0, -50, 0), direction: new THREE.Vector3(0, -1, 0), halfAngle: Math.PI, range: 3.2, intensity: 0 });
     // the Hoods' shared pool (pre-allocated: the light count never changes)
     this.pool = [];
-    for (let i = 0; i < 3; i++) {
+    // (two: a burning wreck's fire light is the third, world.fxLights)
+    for (let i = 0; i < 2; i++) {
       const L = new THREE.PointLight(0xffffff, 0, 14, 2);
       L.position.set(0, -50, 0);
       L.layers.enableAll();
@@ -105,14 +110,37 @@ export class MuzzleFlash {
     this.last.player = { vmPos: vmPos.clone(), worldPos: worldPos.clone(), fwd: fwd.clone(), gunFwd: gunFwd.clone(), time, s, cell, rot, s2, cell2, rot2 };
   }
 
+  // metres per screen pixel at distance d (the main camera, full-res frame)
+  pxSize(d) {
+    const cam = this.camera;
+    const H = Math.max(1, this.world.U.uRes.value.y);
+    const fov = cam ? cam.fov : 70;
+    return (2 * Math.tan(THREE.MathUtils.degToRad(fov) / 2) * d) / H;
+  }
+
   hood(h, pos, dir, time, heavy = false) {
     const r = this.rng;
     // (the sprite's white core is ~1/5 of the quad; the spikes and drops
     // fill the rest: a ~1 m splash of white ink at the pistol)
-    const s = (heavy ? 1.45 : 1.15) * r.range(0.85, 1.15);
-    const { cell, rot, center } = this.hoodSprite(pos, dir, s);
-    this.world3.spawn({ pos: center, life: FRAME * 1.01, size: [s, s], rot, col: [3.4, 3.4, 3.4], cell, fadeOut: 0 });
-    this.queue.push({ sys: this.world3, pos: pos.clone(), size: s * 0.7, cell: FLASH.SMALL[r.int(0, 1)], rot: rot + 1.3, col: 2.6, t: time + FRAME });
+    let s = (heavy ? 1.45 : 1.15) * r.range(0.85, 1.15);
+    const d = this.camera ? this.camera.position.distanceTo(pos) : 0;
+    let cell, rot, center, far = false;
+    if (d > FAR_FLASH) {
+      // Beyond ~15 m (Phase 3a preamble #2): the bold starburst, centred ON
+      // the muzzle (no side-spray offset, no random turn), at least ~48 px
+      // on screen, and anchored to the gun hand for its life (update()).
+      far = true;
+      cell = FLASH.FAR[r.int(0, 3)];
+      rot = 0;
+      center = pos.clone();
+      s = Math.max(s * 0.8, FAR_PX * this.pxSize(d));
+    } else ({ cell, rot, center } = this.hoodSprite(pos, dir, s));
+    // (a far flash is only just over paper white: at 3.4 its bloom halo
+    // printed the 48 px starburst as a soft white blob)
+    const fc = far ? FAR_COL : 3.4;
+    const p0 = this.world3.spawn({ pos: center, life: FRAME * 1.01, size: [s, s], rot, col: [fc, fc, fc], cell, fadeOut: 0 });
+    if (far) p0.anchor = h;
+    this.queue.push({ sys: this.world3, pos: pos.clone(), size: s * (far ? 0.85 : 0.7), cell: far ? FLASH.FAR[r.int(0, 3)] : FLASH.SMALL[r.int(0, 1)], rot: far ? 0 : rot + 1.3, col: far ? FAR_COL * 0.9 : 2.6, t: time + FRAME, anchor: far ? h : null });
     const P = this.pool[this.poolNext];
     this.poolNext = (this.poolNext + 1) % this.pool.length;
     P.light.position.copy(pos).addScaledVector(dir, 0.3);
@@ -121,7 +149,7 @@ export class MuzzleFlash {
     P.light.intensity = P.i0;
     P.entry.intensity = 1.2;
     this.puff(pos, dir, 0.35);
-    this.last.hoods.set(h, { pos: pos.clone(), center: center.clone(), dir: dir.clone(), time, s, cell, rot, heavy });
+    this.last.hoods.set(h, { pos: pos.clone(), center: center.clone(), dir: dir.clone(), time, s, cell, rot, heavy, far });
   }
 
   puff(pos, dir, k) {
@@ -140,7 +168,8 @@ export class MuzzleFlash {
     for (let i = this.queue.length - 1; i >= 0; i--) {
       const q = this.queue[i];
       if (time + 1e-6 >= q.t) {
-        q.sys.spawn({ pos: q.pos, life: FRAME * 1.01, size: [q.size, q.size], rot: q.rot, col: [q.col, q.col, q.col], cell: q.cell, fadeOut: 0 });
+        const pq = q.sys.spawn({ pos: q.anchor && q.anchor.alive ? q.anchor.muzzleWorld(_v) : q.pos, life: FRAME * 1.01, size: [q.size, q.size], rot: q.rot, col: [q.col, q.col, q.col], cell: q.cell, fadeOut: 0 });
+        if (q.anchor) pq.anchor = q.anchor;
         this.queue.splice(i, 1);
       }
     }
@@ -160,6 +189,9 @@ export class MuzzleFlash {
     }
     this.vm.update(dt);
     this.refl.update(dt);
+    // far flashes ride on the gun hand (the sprite lives a frame or two, but
+    // a held frame and a man turning under fire must not leave it behind)
+    for (const p of this.world3.list) if (p.anchor && p.anchor.alive) p.anchor.muzzleWorld(p.pos);
     this.world3.update(dt);
     this.smoke.update(dt);
   }
@@ -193,8 +225,11 @@ export class MuzzleFlash {
     let k = 0;
     for (const [h, f] of this.last.hoods) {
       if (time - f.time > window || !h.alive) continue;
-      const pos = f.pos;
-      const a = this.world3.spawn({ pos: f.center || pos, life: 1, size: [f.s, f.s], rot: f.rot, col: [3.4, 3.4, 3.4], cell: f.cell, fadeOut: 0 });
+      // a far flash is held on his gun hand as it is NOW (the frame shows
+      // the pose he has at the hold, not the one he had when he fired)
+      const pos = f.far ? h.muzzleWorld(new THREE.Vector3()) : f.pos;
+      const fc = f.far ? FAR_COL : 3.4;
+      const a = this.world3.spawn({ pos: f.far ? pos : (f.center || pos), life: 1, size: [f.s, f.s], rot: f.rot, col: [fc, fc, fc], cell: f.cell, fadeOut: 0 });
       a.hold = true;
       if (k < this.pool.length) {
         const P = this.pool[k++];
