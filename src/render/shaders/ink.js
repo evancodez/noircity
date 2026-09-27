@@ -189,6 +189,13 @@ export function makeInkMaterial(tex, fogUniforms) {
         // (a lamp hung under the el keeps its halo over the girders and
         // arches around it; figures and columns stay clean silhouettes)
         bloom *= 1.0 - 0.85 * figure * ( 1.0 - iron * step( 5.0, wpos.y ) * 0.8 );
+        // A Hood is inked as a man, not as a window onto the mist: the few
+        // percent of air light left on generic figures still printed a far
+        // walker in the lit mist as mid grey (the tone curve is steep in the
+        // darks), so on Hood pixels the air light is taken off almost fully.
+        float hoodF = isFig * isHood( nid.w ) * ( 1.0 - smoothstep( 60.0, 110.0, dist ) );
+        vol *= 1.0 - 0.9 * hoodF;
+        bloom *= 1.0 - 0.85 * hoodF;
         float L = luma( hdr );
         float exposure = uExposure * ( 1.0 + 2.5 * uLightning );
         // v: the inked surface tone (gets brush bands + lines);
@@ -315,7 +322,8 @@ export function makeInkMaterial(tex, fogUniforms) {
                      // dry-brush fragments with the fine field, so no mark
                      // prints as a solid plank
                      * smoothstep( 0.3, 0.62, br.r * 0.4 + br.b * 0.6 )
-                     * ( 1.0 - smoothstep( 18.0, 45.0, dist ) ) * ( 1.0 - 0.5 * step( nid.w, -0.5 ) ) * ( 1.0 - ground );
+                     * ( 1.0 - smoothstep( 18.0, 45.0, dist ) ) * ( 1.0 - 0.5 * step( nid.w, -0.5 ) ) * ( 1.0 - ground )
+                     * ( 1.0 - hood * smoothstep( 8.0, 16.0, dist ) );
           v += lift * ( 1.0 - smoothstep( 0.06, 0.10, v ) ) * ( 1.0 - wallQuiet );
         }
         // strokes reach down into the blacks (dry-brush on near-black
@@ -429,7 +437,10 @@ export function makeInkMaterial(tex, fogUniforms) {
           // not rim them, only the sides of silhouettes that turn to the light
           // (a man's hat crown and shoulders are the exception: that light
           // edge is what separates him from the black behind, DESIGN.md 5.4)
-          rim = smoothstep( 0.35, 1.0, rim ) * nearF * ( 1.0 - edge ) * mix( 1.0 - smoothstep( 0.5, 0.8, nW.y ), 1.0, hood );
+          rim = smoothstep( 0.35, 1.0, rim ) * nearF * ( 1.0 - edge ) * mix( 1.0 - smoothstep( 0.5, 0.8, nW.y ), 1.0, hood )
+              // (a far Hood keeps only a trace of rim: past ~10 m the rim probe
+              // covers most of his body and would print him grey)
+              * ( 1.0 - hood * 0.85 * smoothstep( 9.0, 20.0, dist ) );
           // a dry-brush highlight, not a CG glow outline: broken along its length
           rim *= smoothstep( 0.3, 0.5, br.g * 0.5 + br.r * 0.5 );
           // no rim beside a glare (the lamp shade is a black silhouette under its light)
@@ -454,7 +465,10 @@ export function makeInkMaterial(tex, fogUniforms) {
           float lit = max( lampF, skyF * 0.6 );
           structL = edgeN * ( 1.0 - edgeId ) * lit * ( 0.6 + 0.4 * iron )
                   * smoothstep( 0.35, 0.55, br.r * 0.5 + br.b * 0.5 )
-                  * nearF * ( 1.0 - smoothstep( 25.0, 60.0, dist ) ) * ( 1.0 - ground );
+                  * nearF * ( 1.0 - smoothstep( 25.0, 60.0, dist ) ) * ( 1.0 - ground )
+                  // a far Hood is a clean black silhouette (the reference's
+                  // man by the car): his fold lines go long before the world's
+                  * ( 1.0 - hood * 0.92 * smoothstep( 8.0, 18.0, dist ) );
         }
 
         vec3 col = vec3( v );
