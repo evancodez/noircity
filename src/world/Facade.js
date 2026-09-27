@@ -1,0 +1,284 @@
+import * as THREE from 'three';
+import { tagInk, allocInkId } from '../render/layers.js';
+import { STREET } from './Street.js';
+import { roundedBox, boxWorldUV, merge, place, V3, smoothNormals } from './geom.js';
+
+// The left façade: a tall wet stone building in the foreground (rusticated
+// base, pilasters, framed windows, cornice, fire escape, a blade sign), then a
+// cross street, then lower buildings receding into the mist. Also the
+// warehouses on the far side of the overpass and the block ends.
+export class Facade {
+  constructor(world) {
+    this.world = world;
+    const { scene, M, rng } = world;
+    this.group = new THREE.Group();
+    this.group.name = 'facade';
+    scene.add(this.group);
+    this.windowsDark = [];   // matrices for instanced far windows
+    this.windowsLit = [];
+    this.buildNearBuilding(rng.fork(1));
+    this.buildFarBlocks(rng.fork(2));
+    this.buildWindowInstances();
+  }
+
+  box(w, h, d, x, y, z, mat, uvScale = 1 / 6) {
+    const g = boxWorldUV(new THREE.BoxGeometry(w, h, d).translate(x, y, z), uvScale);
+    const m = new THREE.Mesh(g, mat);
+    m.castShadow = true; m.receiveShadow = true;
+    return m;
+  }
+
+  // ---------------------------------------------------------------------
+  buildNearBuilding(rng) {
+    const { M, colliders } = this.world;
+    const X = STREET.facadeX;          // wall plane faces +x
+    const z0 = 40, z1 = -24, H = 24; // its corner frames the left of the reference view
+    const g = new THREE.Group();
+    const stoneParts = [];
+    const trimParts = [];
+
+    // main mass
+    stoneParts.push(new THREE.BoxGeometry(16, H, z0 - z1).translate(X - 8, H / 2, (z0 + z1) / 2));
+    // rusticated base course & plinth
+    stoneParts.push(roundedBox(0.3, 0.7, z0 - z1, 0.05).translate(X + 0.12, 0.35, (z0 + z1) / 2));
+    // string course above the ground floor & under the cornice
+    trimParts.push(roundedBox(0.42, 0.34, z0 - z1 + 0.4, 0.06).translate(X + 0.2, 5.35, (z0 + z1) / 2));
+    trimParts.push(roundedBox(0.3, 0.22, z0 - z1 + 0.4, 0.05).translate(X + 0.14, 20.4, (z0 + z1) / 2));
+    // cornice: stepped moulding
+    const corn = [[0.35, 0.5, 21.9], [0.7, 0.3, 22.4], [1.05, 0.28, 22.8], [1.25, 0.5, 23.2]];
+    for (const [dx, h, y] of corn) trimParts.push(roundedBox(dx * 2, h, z0 - z1 + dx * 2, 0.07).translate(X, y, (z0 + z1) / 2));
+
+    // pilasters every bay; wider corner quoin at z1
+    const bay = 4.4;
+    for (let z = z0 - 2.0; z > z1 + 1; z -= bay) {
+      stoneParts.push(roundedBox(0.5, 20.4, 0.75, 0.06).translate(X + 0.18, 10.2 + 0.4, z));
+    }
+    stoneParts.push(roundedBox(0.6, H - 1.0, 1.3, 0.08).translate(X + 0.22, (H - 1.0) / 2, z1 + 0.6));
+    // side quoin (visible end wall edge)
+    stoneParts.push(roundedBox(16.2, H - 1.0, 0.4, 0.08).translate(X - 8, (H - 1.0) / 2, z1 + 0.12));
+
+    const stoneGeo = merge(stoneParts.map((q) => boxWorldUVAfter(q)));
+    boxWorldUV(stoneGeo, 1 / 12); // the stone tile covers 12 m: 1 m courses
+    const stone = new THREE.Mesh(stoneGeo, M.stone);
+    stone.castShadow = true; stone.receiveShadow = true;
+    g.add(stone);
+    // Ledges and frames do NOT cast shadow-map shadows: a lamp at ledge
+    // height projects them as long crisp black parallelograms (a regular
+    // black-bar grid). Their own unlit undersides give the dark band an
+    // inker would draw.
+    const trim = new THREE.Mesh(merge(trimParts), M.stoneTrim);
+    trim.castShadow = false; trim.receiveShadow = true;
+    g.add(trim);
+
+    // windows: frames (stone trim), sills, glass (dark or lit)
+    const frameParts = [], glassDark = [], glassLit = [], glassDim = [], blinds = [];
+    const floors = [6.4, 10.0, 13.6, 17.2];
+    for (let z = z0 - 2.0 - bay / 2; z > z1 + 1.5; z -= bay) {
+      for (const y of floors) {
+        const w = 1.5, h = 2.3;
+        const xf = X + 0.02;
+        // glass sits in the reveal
+        const glass = new THREE.PlaneGeometry(w, h).rotateY(Math.PI / 2).translate(xf + 0.01, y + h / 2, z);
+        const r = rng.next();
+        if (r < 0.0) glassLit.push(glass);
+        else if (r < 0.14) glassDim.push(glass);
+        else glassDark.push(glass);
+        if (r < 0.22 && rng.next() < 0.6) {
+          // drawn blind: dark band over the top part of the lit window
+          const bh = h * rng.range(0.3, 0.7);
+          blinds.push(new THREE.PlaneGeometry(w, bh).rotateY(Math.PI / 2).translate(xf + 0.02, y + h - bh / 2, z));
+        }
+        // frame: jambs, head, sill, keystone
+        frameParts.push(roundedBox(0.2, h + 0.3, 0.16, 0.04, 2).translate(xf + 0.08, y + h / 2, z - w / 2 - 0.08));
+        frameParts.push(roundedBox(0.2, h + 0.3, 0.16, 0.04, 2).translate(xf + 0.08, y + h / 2, z + w / 2 + 0.08));
+        frameParts.push(roundedBox(0.26, 0.24, w + 0.6, 0.05, 2).translate(xf + 0.1, y + h + 0.2, z));
+        frameParts.push(roundedBox(0.34, 0.14, w + 0.5, 0.04, 2).translate(xf + 0.14, y - 0.06, z));
+        frameParts.push(roundedBox(0.3, 0.36, 0.3, 0.04, 2).translate(xf + 0.12, y + h + 0.3, z));
+        // mullion
+        frameParts.push(roundedBox(0.06, h, 0.06, 0.02, 2).translate(xf + 0.03, y + h / 2, z));
+      }
+      // ground floor shop window / door between pilasters
+      const w = 2.9, h = 3.3;
+      const glass = new THREE.PlaneGeometry(w, h).rotateY(Math.PI / 2).translate(X + 0.03, 0.75 + h / 2, z);
+      glassDark.push(glass);
+      frameParts.push(roundedBox(0.2, 0.2, w + 0.3, 0.05, 2).translate(X + 0.1, 0.75 + h + 0.1, z));
+      frameParts.push(roundedBox(0.22, 0.28, w + 0.3, 0.05, 2).translate(X + 0.11, 0.7, z));
+      frameParts.push(roundedBox(0.08, h, 0.08, 0.03, 2).translate(X + 0.05, 0.75 + h / 2, z));
+    }
+    const frames = new THREE.Mesh(merge(frameParts), M.stoneTrim);
+    frames.castShadow = false; frames.receiveShadow = true;
+    g.add(frames);
+    const addGlass = (list, mat) => { if (list.length) g.add(new THREE.Mesh(merge(list), mat)); };
+    addGlass(glassDark, M.glassDark);
+    addGlass(glassLit, M.windowLit);
+    addGlass(glassDim, M.windowLitDim);
+    addGlass(blinds, M.black);
+
+    this.buildFireEscape(g, X, -1.0);
+    this.buildSign(g, X, -10.6);
+    tagInk(g);
+    this.group.add(g);
+    this.near = g;
+  }
+
+  buildFireEscape(parent, X, zc) {
+    const { M } = this.world;
+    const parts = [];
+    const L = 4.2, D = 1.15;
+    const levels = [5.9, 9.5, 13.1, 16.7];
+    for (let i = 0; i < levels.length; i++) {
+      const y = levels[i];
+      // platform (slatted grating read as a thin slab) + brackets
+      parts.push(roundedBox(D, 0.06, L, 0.02).translate(X + D / 2, y, zc));
+      parts.push(new THREE.CylinderGeometry(0.025, 0.025, 1.5, 6).rotateZ(Math.PI / 4.2).translate(X + 0.5, y - 0.55, zc - L / 2 + 0.2));
+      parts.push(new THREE.CylinderGeometry(0.025, 0.025, 1.5, 6).rotateZ(Math.PI / 4.2).translate(X + 0.5, y - 0.55, zc + L / 2 - 0.2));
+      // railing: posts + two rails
+      for (let k = 0; k <= 6; k++) {
+        const z = zc - L / 2 + (k / 6) * L;
+        parts.push(new THREE.CylinderGeometry(0.018, 0.018, 1.0, 6).translate(X + D - 0.03, y + 0.5, z));
+      }
+      for (const ry of [0.5, 1.0]) {
+        parts.push(new THREE.CylinderGeometry(0.022, 0.022, L, 6).rotateX(Math.PI / 2).translate(X + D - 0.03, y + ry, zc));
+        parts.push(new THREE.CylinderGeometry(0.022, 0.022, D, 6).rotateZ(Math.PI / 2).translate(X + D / 2, y + ry, zc - L / 2));
+        parts.push(new THREE.CylinderGeometry(0.022, 0.022, D, 6).rotateZ(Math.PI / 2).translate(X + D / 2, y + ry, zc + L / 2));
+      }
+      // stair to the next level (alternating direction)
+      if (i < levels.length - 1) {
+        const dir = i % 2 === 0 ? 1 : -1;
+        const za = zc - dir * (L / 2 - 0.3), zb = zc + dir * (L / 2 - 0.9);
+        const a = V3(X + 0.55, y + 0.03, za), b = V3(X + 0.55, levels[i + 1], zb);
+        const len = a.distanceTo(b);
+        const mid = a.clone().add(b).multiplyScalar(0.5);
+        const q = new THREE.Quaternion().setFromUnitVectors(V3(0, 1, 0), b.clone().sub(a).normalize());
+        for (const off of [-0.35, 0.35]) {
+          const s = new THREE.BoxGeometry(0.04, len, 0.12);
+          place(s, { pos: mid.clone().add(V3(off, 0, 0)), quat: q });
+          parts.push(s);
+        }
+        // treads
+        for (let k = 1; k < 10; k++) {
+          const p = a.clone().lerp(b, k / 10);
+          parts.push(new THREE.BoxGeometry(0.7, 0.03, 0.18).translate(p.x, p.y, p.z));
+        }
+      }
+    }
+    // drop ladder from the lowest platform
+    parts.push(new THREE.CylinderGeometry(0.02, 0.02, 2.4, 6).translate(X + 0.3, levels[0] - 1.2, zc + 1.2));
+    parts.push(new THREE.CylinderGeometry(0.02, 0.02, 2.4, 6).translate(X + 0.75, levels[0] - 1.2, zc + 1.2));
+    for (let k = 0; k < 7; k++) parts.push(new THREE.CylinderGeometry(0.015, 0.015, 0.45, 5).rotateZ(Math.PI / 2).translate(X + 0.525, levels[0] - 0.2 - k * 0.33, zc + 1.2));
+    const m = new THREE.Mesh(merge(parts), M.iron);
+    m.castShadow = true;
+    parent.add(m);
+  }
+
+  // Vertical blade sign, unlit, monochrome paint.
+  buildSign(parent, X, z) {
+    const { M } = this.world;
+    const c = document.createElement('canvas');
+    c.width = 128; c.height = 512;
+    const g = c.getContext('2d');
+    g.fillStyle = '#1a1a1a'; g.fillRect(0, 0, 128, 512);
+    g.strokeStyle = '#9a9a9a'; g.lineWidth = 6; g.strokeRect(10, 10, 108, 492);
+    g.fillStyle = '#b8b8b8';
+    g.font = 'bold 84px "Bodoni 72", Didot, Georgia, serif';
+    g.textAlign = 'center'; g.textBaseline = 'middle';
+    'DINER'.split('').forEach((ch, i) => g.fillText(ch, 64, 62 + i * 96));
+    const tex = new THREE.CanvasTexture(c);
+    tex.colorSpace = THREE.SRGBColorSpace;
+    tex.anisotropy = 4;
+    const face = new THREE.MeshStandardMaterial({ map: tex, roughness: 0.6, envMap: M.envSoft, envMapIntensity: 0.5 });
+    // put letters on both broad faces via planes (rounded box has no face groups)
+    const body = new THREE.Mesh(roundedBox(1.36, 4.7, 0.2, 0.06), M.paintedMetal);
+    body.position.set(X + 0.95, 6.1, z);
+    parent.add(body);
+    for (const s of [1, -1]) {
+      const p = new THREE.Mesh(new THREE.PlaneGeometry(1.2, 4.5), face);
+      p.position.set(X + 0.95, 6.1, z + s * 0.105);
+      if (s < 0) p.rotation.y = Math.PI;
+      parent.add(p);
+    }
+    // bracket arms
+    const arm = new THREE.Mesh(merge([
+      new THREE.CylinderGeometry(0.03, 0.03, 1.8, 8).rotateZ(Math.PI / 2).translate(X + 0.9, 8.6, z),
+      new THREE.CylinderGeometry(0.03, 0.03, 1.8, 8).rotateZ(Math.PI / 2).translate(X + 0.9, 3.6, z),
+    ]), M.iron);
+    parent.add(arm);
+  }
+
+  // ---------------------------------------------------------------------
+  // Simpler blocks: left side past the cross street, cross-street depth,
+  // warehouses beyond the overpass, and the block behind the player.
+  buildFarBlocks(rng) {
+    const { M } = this.world;
+    const blocks = [];
+    // left side past the cross street (z < -30)
+    let z = -30;
+    while (z > -260) {
+      const w = rng.range(14, 26), h = rng.range(9, 17);
+      blocks.push({ x0: STREET.facadeX - 18, x1: STREET.facadeX, z0: z, z1: z - w, h });
+      z -= w + (rng.next() < 0.15 ? 10 : 0.3);
+    }
+    // cross street flanks (running off to the left)
+    for (let x = -34; x > -120; x -= rng.range(16, 26)) {
+      blocks.push({ x0: x - 14, x1: x, z0: -2, z1: -16, h: rng.range(10, 22) });
+      blocks.push({ x0: x - 14, x1: x, z0: -30, z1: -44, h: rng.range(10, 20) });
+    }
+    // block behind the player
+    z = 40;
+    while (z < 120) {
+      const w = rng.range(12, 20);
+      blocks.push({ x0: STREET.facadeX - 18, x1: STREET.facadeX, z0: z + w, z1: z, h: rng.range(12, 24) });
+      z += w + 0.3;
+    }
+    // (the low warehouse row beyond the right pavement is gone: in the fog it
+    // printed as a line of outlined boxes. The el's arches now frame open
+    // mist and the skyline, whose feet dissolve into the ground haze.)
+    const massParts = [], trimParts = [];
+    for (const b of blocks) {
+      const w = b.x1 - b.x0, d = b.z0 - b.z1;
+      const cx = (b.x0 + b.x1) / 2, cz = (b.z0 + b.z1) / 2;
+      massParts.push(new THREE.BoxGeometry(w, b.h, d).translate(cx, b.h / 2, cz));
+      // cornice lip on the street side
+      trimParts.push(new THREE.BoxGeometry(w + 0.8, 0.5, d + 0.8).translate(cx, b.h + 0.1, cz));
+      // windows on the face toward the street
+      const faceX = b.faceMinus ? b.x0 - 0.05 : b.x1 + 0.05;
+      const rotY = b.faceMinus ? -Math.PI / 2 : Math.PI / 2;
+      const floors = Math.floor((b.h - 3) / 3.4);
+      const cols = Math.floor(d / 3.2);
+      const litP = rng.range(0.03, 0.14);
+      for (let f = 0; f < floors; f++) {
+        for (let c = 0; c < cols; c++) {
+          const wz = b.z1 + (c + 0.5) * (d / cols);
+          const wy = 3.6 + f * 3.4;
+          const m = new THREE.Matrix4().compose(V3(faceX, wy, wz), new THREE.Quaternion().setFromEuler(new THREE.Euler(0, rotY, 0)), V3(1.3, 1.9, 1));
+          (rng.next() < litP ? this.windowsLit : this.windowsDark).push(m);
+        }
+      }
+    }
+    const mass = new THREE.Mesh(merge(massParts), M.brickFar);
+    mass.castShadow = false; mass.receiveShadow = true;
+    const trim = new THREE.Mesh(merge(trimParts), M.brickFar);
+    this.farId = tagInk(mass); tagInk(trim, this.farId);
+    this.group.add(mass, trim);
+  }
+
+  buildWindowInstances() {
+    const { M } = this.world;
+    const quad = new THREE.PlaneGeometry(1, 1);
+    const mk = (list, mat) => {
+      if (!list.length) return;
+      const im = new THREE.InstancedMesh(quad, mat, list.length);
+      list.forEach((m, i) => im.setMatrixAt(i, m));
+      im.instanceMatrix.needsUpdate = true;
+      im.userData.inkId = this.farId;
+      im.userData.inkPerInstance = false;
+      this.group.add(im);
+    };
+    mk(this.windowsDark, M.glassDark);
+    mk(this.windowsLit, M.windowLit);
+  }
+}
+
+// merge() strips uvs; the stone mass gets world UVs after merging instead.
+function boxWorldUVAfter(g) { return g; }
+void smoothNormals;
