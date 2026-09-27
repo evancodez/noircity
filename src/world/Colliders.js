@@ -15,10 +15,12 @@ export class Colliders {
   }
   setBounds(minX, maxX, minZ, maxZ) { this.bounds = { minX, maxX, minZ, maxZ }; }
 
-  // Push a circle of radius r at (pos.x, pos.z) out of everything.
-  resolve(pos, r) {
+  // Push a circle of radius r at (pos.x, pos.z) out of everything
+  // (except `skip`: a Hood's own circle).
+  resolve(pos, r, skip = null) {
     for (let iter = 0; iter < 3; iter++) {
       for (const c of this.circles) {
+        if (c === skip) continue;
         const dx = pos.x - c.x, dz = pos.z - c.z;
         const d2 = dx * dx + dz * dz, rr = c.r + r;
         if (d2 < rr * rr) {

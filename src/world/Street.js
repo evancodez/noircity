@@ -74,3 +74,12 @@ export class Street {
     arr[oldest].set(x, z, world.U.uTime.value, strength);
   }
 }
+
+// Height of the walking surface at x (the pavements are raised; the kerb step
+// is smoothed over 25 cm, as the player's Controller does it).
+export function groundAt(x) {
+  const ss = (a, b, v) => { const t = Math.min(1, Math.max(0, (v - a) / (b - a))); return t * t * (3 - 2 * t); };
+  const l = 1 - ss(STREET.kerbX - 0.12, STREET.kerbX + 0.12, x);
+  const r = ss(STREET.rightKerbX - 0.12, STREET.rightKerbX + 0.12, x);
+  return STREET.pavementTop * Math.max(l, r);
+}

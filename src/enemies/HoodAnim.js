@@ -294,18 +294,23 @@ const DEATH_BACK = chainKeys([
   }],
   [0.92, {
     hipsPos: [0.01, 0.16, -0.78], hips: [-89, -4, 3],
-    head: [-8, 30, 0],
+    spine: [3, 0, 0], chest: [4, -2, -2], head: [-8, 26, 4],
     footL: [0.17, 0.09, -0.12], footRotL: [45, 10, 0], kneeL: [0.25, 1, 0.1],
     footR: [-0.2, 0.08, 0.06], footRotR: [55, 15, 0], kneeR: [-0.05, 1, 0.05],
   }],
+  // settled (Phase 2b polish): not a plank. The ribcage is pitched ~12 deg
+  // up off the street (chest ~0.2 m high, shoulders pressed back), the head
+  // rolled ~25 deg to one side; the gun arm lies up beside the head with the
+  // forearm bent back over it, the left arm is flung out ~70 deg from the
+  // body, palm up: no cross, no mirror symmetry
   [1.15, {
     hipsPos: [0.01, 0.15, -0.8], hips: [-90, -3, 2],
-    spine: [-2, 0, 0], chest: [-3, 0, 0], neck: [0, 0, 0], head: [-4, 38, 0],
-    shoulderL: [0, 0, 4], shoulderR: [0, 0, -4],
-    armR: [-0.78, -0.02, -0.62, 0], elbowR: [35], handR: [-10, 0, 20],
-    armL: [0.95, -0.05, 0.22, 0], elbowL: [25], handL: [0, 0, -10],
-    // settled: the right leg out straight, the left knee bent and fallen
-    // open to the side (the coat lies on the street, Hood.driveSkirt)
+    spine: [5, 0, 0], chest: [7, -3, -3], neck: [-6, 0, 0], head: [-10, 25, 6],
+    shoulderL: [-8, 0, 6], shoulderR: [-8, 0, -8],
+    armR: [-0.5, -0.12, -0.86, 90], elbowR: [78], handR: [-10, 0, 20],
+    armL: [0.93, -0.1, 0.34, 180], elbowL: [16], handL: [0, 0, -12],
+    // the right leg out straight, the left knee bent and fallen open to the
+    // side (the coat lies on the street, Hood.driveSkirt)
     footL: [0.24, 0.085, -0.02], footRotL: [55, 38, 0], kneeL: [1, 0.3, 0.1],
     footR: [-0.2, 0.085, 0.085], footRotR: [75, 22, 0], kneeR: [-0.35, 1, 0.0],
   }],
@@ -497,17 +502,19 @@ function flinchStepKeys(m) {
     [0.05, { hipsPos: [0.1 * sx, 0.948, 0.1 * sz], hips: [-3, -6 * m, 3 * m] }],
     [0.13, {
       hipsPos: [0.35 * sx, 0.943, 0.35 * sz], hips: [-4, -8 * m, 4 * m],
-      ['foot' + F]: [xF + 0.35 * sx, 0.12, zF + 0.4 * sz], ['footRot' + F]: [-15, 10, 0],
+      ['foot' + F]: [xF + 0.35 * sx - 0.05 * m, 0.12, zF + 0.4 * sz], ['footRot' + F]: [-15, 10, 0],
     }],
     [0.25, {
       hipsPos: [0.8 * sx, 0.935, 0.8 * sz], hips: [-5, -8 * m, 3 * m],
-      ['foot' + F]: [xF + sx, ANKLE_Y, zF + sz], ['footRot' + F]: [0, 10, 0],
+      // (the stepping foot lands ~6 cm further out than the body travels,
+      // so the two shins never overlap in silhouette: Phase 2b polish)
+      ['foot' + F]: [xF + sx - 0.06 * m, ANKLE_Y, zF + sz], ['footRot' + F]: [0, 10, 0],
       // weight back on the heel: the near foot's toe lifts
       ['foot' + N]: [xN, 0.087, zN - 0.025], ['footRot' + N]: [18, 8, 0],
     }],
     [0.37, {
       hipsPos: [0.93 * sx, 0.94, 0.93 * sz], hips: [-2, -5 * m, 1 * m],
-      ['foot' + N]: [xN + 0.6 * sx, 0.105, zN + 0.55 * sz], ['footRot' + N]: [-4, 8, 0],
+      ['foot' + N]: [xN + 0.45 * sx, 0.105, zN + 0.55 * sz], ['footRot' + N]: [-4, 8, 0],
     }],
     [0.5, {
       hipsPos: [sx, 0.949, sz], hips: [0, -2 * m, 0],

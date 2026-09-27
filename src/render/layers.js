@@ -16,7 +16,15 @@ import * as THREE from 'three';
 //   MIST    : the lamp-lit ground mist. Volume pass only, NEVER reflected: its
 //             pools, mirrored and streaked, merged with the far columns into a
 //             white plate on the road under the vanishing point.
-export const LAYER = { WORLD: 0, GROUND: 1, FX: 2, FX_REFL: 3, VOLUME: 4, RAIN: 5, SKY: 6, MIST: 7 };
+//   VIEWMODEL : the player's Tommy gun + gloves (+ its muzzle flash). Drawn by the
+//             viewmodel camera (FOV ~50) into the id and scene targets after a
+//             depth clear (Pipeline), so it is inked like the world and never
+//             clips into it; never reflected, never in the volume/rain passes.
+//   VM_FX    : the player's muzzle flash sprites: drawn by the viewmodel camera
+//             after the gun (scene pass only, never in the id pass).
+//   REFL_ONLY: drawn ONLY by the reflection camera: the world-space stand-in
+//             of the player's muzzle flash, so the wet street mirrors it.
+export const LAYER = { WORLD: 0, GROUND: 1, FX: 2, FX_REFL: 3, VOLUME: 4, RAIN: 5, SKY: 6, MIST: 7, VIEWMODEL: 8, REFL_ONLY: 9, VM_FX: 10 };
 
 // Additive light that leaves the target's ALPHA untouched: the planar
 // reflection uses alpha as 'opaque geometry coverage' (cleared 0, surfaces 1),
@@ -42,11 +50,16 @@ let nextId = 2; // 0 = sky/clear, 1 = untagged default
 export function allocInkId(count = 1) {
   const id = nextId;
   nextId += count;
-  if (nextId > HOOD_ID0 - 1) nextId = 2;
+  if (nextId > VM_ID0 - 1) nextId = 2;
   return id;
 }
 export function inkIdsUsed() { return nextId; }
 
+// Ids VM_ID0..VM_ID0+9 are the viewmodel (gun metal, wood, gloves): always
+// written as figures (negative). The ink pass reconstructs their position
+// with the viewmodel camera's projection and anchors their brush field in
+// the gun's own frame (uVmFrame), so strokes ride on the gun.
+export const VM_ID0 = 1770;
 // Ids HOOD_ID0..HOOD_ID0+HOOD_SLOTS-1 are the Hoods (always written as
 // figures, i.e. negative). Each slot also owns an entry in FIG_ANCHOR: the
 // Hood's root position (xyz) and yaw (w), which the ink pass subtracts from

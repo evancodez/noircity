@@ -119,10 +119,10 @@ function stageHoodLab(world) {
   const q = new URLSearchParams(location.search);
   const st = q.get('hs') || 'idle';
   const yaw = parseFloat(q.get('hy') || '0') * D2R;
-  const [coat = 0, brim = 1] = (q.get('hv') || '0,1').split(',').map(Number);
+  const [coat = 0, brim = 1, heavy = 0] = (q.get('hv') || '0,1').split(',').map(Number);
   const death = st.startsWith('death');
   const base = death || st === 'flinch' ? 'idle' : st;
-  const h = H.spawn([-2.2, -17.3], { coat, brim, tall: 1 }, { yaw, state: base });
+  const h = H.spawn([-2.2, -17.3], { coat, brim, tall: 1, heavy: !!heavy }, { yaw, state: base });
   if (base === 'aim') h.lookAt(new THREE.Vector3(-2.2 + Math.sin(yaw) * 8, 1.55, -17.3 + Math.cos(yaw) * 8));
   if (base === 'walk' || base === 'run') { h.speed = base === 'walk' ? 1.0 : 2.9; h.script = (hh, t) => { if (t > 0) { hh.pos.x = -2.2 + Math.sin(yaw) * (t - 4.45) * hh.speed; hh.pos.z = -17.3 + Math.cos(yaw) * (t - 4.45) * hh.speed; } }; h.script(h, 1e-6); }
   if (death) h.script = (hh, t) => { if (hh.alive && t >= 3.9) hh.die(st); };
@@ -134,18 +134,130 @@ SHOTS.hoodwalk = { x: -2.2, z: -13.3, y: -0.03, yaw: 0, pitch: -0.1, fov: 50, t:
 SHOTS.hoodstudy = { x: -2.2, z: -13.3, y: -0.03, yaw: 0, pitch: -0.12, fov: 60, t: 4.3, stage: stageHoodStudy };
 SHOTS.hood = { ...SHOTS.street, t: 4, stage: stageHood };
 
-// Phase 2b/3 will replace these with staged scenes.
-const ALIASES = { hoods: 'hood', wreck: 'street', ots: 'street', default: 'street' };
+// ---- Phase 2b: combat ---------------------------------------------------------
+const Q = () => new URLSearchParams(location.search);
+const tEndOf = (shot) => { const t = parseFloat(Q().get('t') ?? ''); return Number.isFinite(t) ? t : shot.t; };
+const STEP = 1 / 60;
+
+// battle: the REAL game loop - waves on (from wave=<n>, default 5), a
+// deterministic seed, and the autopilot player (game/Autopilot.js) strafing
+// by the left kerb in the street composition. t= fast-forwards the fight.
+// (wave 5 by default: eleven Hoods including two Tommy-gun heavies, so
+// the fight is still on at t=60)
+// The wave starts 13 s before the clock (game.warmup, run by main.js before
+// the t= fast-forward, the player holding fire): the Hoods come out of the
+// fog at 40-60 m and walk in, so that t=6 already opens on the firefight.
+function stageBattle(world, camera, controller, game) {
+  const w = parseInt(Q().get('wave') ?? '5', 10) || 5;
+  game.startBattle({ wave: w, autopilot: false });
+  game.warmup = parseFloat(Q().get('warmup') ?? '13');
+  game.afterWarmup = () => game.enableAutopilot();
+}
+
+// hoods: the staged reference firefight (brief §2a / PHASE2B_NOTES): four
+// Hoods at 8-30 m in the street composition (el top right, lamp left).
+//   centre, ~12 m : being shot - deathBack starts 0.4 s before the frame,
+//                   blood bursting off his chest (the reference's centre man)
+//   right, ~14 m  : aiming and firing over the car's hood, flash held
+//   right, ~22 m  : aiming from beside an el column
+//   centre, ~30 m : walking in out of the mist
+// The Tommy gun fires the killing burst (its flash held in frame too).
+function stageHoods(world, camera, controller, game) {
+  const T = tEndOf(SHOTS.hoods);
+  const cam = camera.position.clone();
+  const nav = game.nav;
+  const at = (x, z) => { const k = nav.nearestFree(x, z, 3); const c = nav.center(k); return [c.x, c.z]; };
+  const face = (x, z) => Math.atan2(cam.x - x, cam.z - z);
+  const eye = cam.clone();
+  // A: the man being shot, ~6 m, under the lamp just left of the gun's flash
+  // (the flash sprays toward him), turned 3/4 like the reference's centre man
+  const [ax, az] = at(-3.8, -14.8);
+  const A = game.spawnHood(ax, az, { ai: false, variant: { coat: 0, brim: 1, tall: 1 }, yaw: face(ax, az) + 0.55, state: 'aim' });
+  A.lookAt(eye);
+  // B: the shooter behind the car on the right, firing over its hood
+  // (behind the hood, not the cabin: his chest clears the bonnet)
+  const [bx, bz] = at(6.06, -20.98);
+  const B = game.spawnHood(bx, bz, { ai: false, variant: { coat: 1, brim: 1, tall: 1, cig: true }, yaw: face(bx, bz), state: 'aim' });
+  B.lookAt(eye);
+  // C: aiming from beside an el column further back
+  const [cx, cz] = at(8.3, -33);
+  const C = game.spawnHood(cx, cz, { ai: false, variant: { coat: 2, brim: 0, tall: 0 }, yaw: face(cx, cz), state: 'aim' });
+  C.lookAt(eye);
+  // D: walking out of the alley by the phone booth, left
+  const [dx, dz] = at(-7.4, -29.5);
+  const D = game.spawnHood(dx, dz, { ai: false, variant: { coat: 1, brim: 0, tall: 1 }, yaw: face(dx, dz) - 0.7 });
+  D.speed = 1.1;
+  D.setState('walk', 0);
+  const dir = [Math.sin(D.yaw), Math.cos(D.yaw)];
+  D.script = (h, t) => { if (t > 0) { h.pos.x = dx + dir[0] * (t - T) * h.speed; h.pos.z = dz + dir[1] * (t - T) * h.speed; } };
+  D.script(D, 1e-6);
+  // the scripted fire: B and C shoot at the player, the Tommy gun cuts A down
+  const chest = (h) => new THREE.Vector3().setFromMatrixPosition(h.bones.chest.matrixWorld);
+  const events = [
+    [T - 1.2, () => game.stagedHoodFire(C, T - 1.2)],
+    [T - 0.75, () => game.stagedHoodFire(B, T - 0.75)],
+    [T - 0.58, () => game.scriptedShot(chest(A).add(new THREE.Vector3(0.12, -0.25, 0)), T - 0.58)],
+    [T - 0.49, () => game.scriptedShot(chest(A).add(new THREE.Vector3(-0.05, 0.02, 0)), T - 0.49)],
+    [T - 0.4, () => { game.scriptedShot(chest(A).add(new THREE.Vector3(0.02, 0.1, 0)), T - 0.4); if (A.alive) game.killHood(A, new THREE.Vector3().subVectors(chest(A), eye).normalize(), false, 'deathBack'); }],
+    [T - 0.34, () => game.stagedHoodFire(C, T - 0.34)],
+    [T - 0.05, () => game.stagedHoodFire(B, T - 0.05)],
+  ];
+  let k = 0;
+  game.scripts.push((t) => { while (k < events.length && t >= events[k][0] - 1e-6) events[k++][1](); });
+}
+
+// viewmodel: the street composition with the Tommy gun in frame and a muzzle
+// flash 0.03 s old (its second frame) - fired two steps before the frame
+function stageViewmodel(world, camera, controller, game) {
+  const T = tEndOf(SHOTS.viewmodel);
+  const t0 = Math.round(T * 60) / 60 - 2 * STEP;
+  let done = false;
+  const aim = new THREE.Vector3(0, 0, -30).applyMatrix4(camera.matrixWorld);
+  game.scripts.push((t) => { if (!done && t >= t0 - 1e-6) { done = true; game.scriptedShot(aim, t); } });
+}
+
+// viewmodel reload: vmreload=<s into the 2.3 s reload> (default 0.85: the
+// drum is off and hanging below the gun)
+function stageReload(world, camera, controller, game) {
+  const T = tEndOf(SHOTS.reload);
+  const at = parseFloat(Q().get('vmreload') ?? '0.85');
+  let done = false;
+  game.weapon.ammo = 3;
+  game.scripts.push((t) => { if (!done && t >= T - at - 1e-6) { done = true; game.weapon.reload(); } });
+}
+
+// impacts: the Tommy gun rakes the façade (stone), the near car's body
+// (sparks), an el column (iron) and the wet street (splash + ring) in the
+// last half second, so one frame shows every surface's reaction
+function stageImpacts(world, camera, controller, game) {
+  const T = tEndOf(SHOTS.impacts);
+  const V = (x, y, z) => new THREE.Vector3(x, y, z);
+  const targets = [V(-10.1, 2.4, -19), V(-10.1, 1.6, -21.5), V(-4.3, 1.0, -24.2), V(-3.6, 0.9, -25.2), V(12.5, 3, -27), V(-1.5, 0, -15), V(0.5, 0, -17)];
+  let k = 0;
+  const t0 = T - 0.5;
+  game.scripts.push((t) => {
+    while (k < targets.length && t >= t0 + k * 0.07 - 1e-6) game.scriptedShot(targets[k++], t);
+  });
+}
+
+SHOTS.reload = { ...SHOTS.street, t: 4, viewmodel: true, holdWindow: 0, stage: stageReload };
+SHOTS.impacts = { ...SHOTS.street, t: 4, viewmodel: true, holdWindow: 0.1, stage: stageImpacts };
+SHOTS.battle = { ...SHOTS.street, t: 30, viewmodel: true, holdWindow: 0.35, stage: stageBattle };
+SHOTS.hoods = { ...SHOTS.street, t: 4, viewmodel: true, holdWindow: 0.6, stage: stageHoods };
+SHOTS.viewmodel = { ...SHOTS.street, t: 4, viewmodel: true, holdWindow: 0, stage: stageViewmodel };
+
+const ALIASES = { wreck: 'street', ots: 'street', default: 'street' };
 
 export function getShot(name) {
   const key = SHOTS[name] ? name : ALIASES[name];
   return key ? { name: key, ...SHOTS[key] } : null;
 }
 
-export function applyShot(shot, controller, camera, world) {
+export function applyShot(shot, controller, camera, world, game) {
   camera.fov = shot.fov;
   camera.updateProjectionMatrix();
   // optional y: ground height under the eye (raises the camera for a shot)
   controller.setPose(shot.x, shot.z, shot.yaw, shot.pitch, shot.y ?? null);
-  if (shot.stage) shot.stage(world, camera, controller);
+  camera.updateMatrixWorld();
+  if (shot.stage) shot.stage(world, camera, controller, game);
 }

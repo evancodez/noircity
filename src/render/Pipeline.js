@@ -22,6 +22,12 @@ import { makeBloomPrefilter, makeBloomDown, makeBloomUp, makeStreakMaterial, mak
 //                          so the hairlines stay thin and never stair-step
 //   5. bloom chain      -> bloom[0] (half res)
 //   6. ink pass         -> canvas
+// The viewmodel (player's gun, LAYER.VIEWMODEL) is drawn by its own camera
+// (this.vm.camera: same eye, FOV ~50) into rtId and rtScene right after the
+// world, its depth squeezed in front of the world's: it is inked by the same pass as the
+// world (normals, ids, contours, brush) and can never clip into a wall. It is
+// never reflected and never in the volume / rain passes; its muzzle flash
+// sprites (LAYER.VM_FX) follow it in the scene pass only.
 const BLOOM_LEVELS = 5;
 
 export class Pipeline {
@@ -37,6 +43,19 @@ export class Pipeline {
     this.rimLamps = []; // [{ position: Vector3, strength }]
     this.view = opts.view || 0;
     this.fogColor = U.uFogColor.value;
+    this.vm = null;          // { scene, camera, frameInv: Matrix4 (view -> gun local), visible }
+    // Combat hooks (game/Game.js):
+    //   reflHide(camera) -> objects left out of the planar reflection (Hoods
+    //     beyond ~25 m: a speck in the mirrored emitters, a full skinned draw)
+    //   shadowCasters() -> [{ id, x, y, z, moving }] the dynamic shadow casters
+    // Shadow cache: the lamps' shadow maps are re-rendered only when they can
+    // have changed (the light was re-assigned or moved, a moving caster is in
+    // its range, or the set of casters in range changed). The world itself
+    // is static, so a quiet street renders them once.
+    this.reflHide = null;
+    this.shadowCasters = null;
+    this.shadowCache = opts.shadowCache ?? true;
+    this._shadowLights = null;
 
     const hf = THREE.HalfFloatType;
     this.rtId = new THREE.WebGLRenderTarget(1, 1, {
@@ -195,6 +214,52 @@ export class Pipeline {
     this.lightning = b.strength * flick;
   }
 
+  // flag the shadow maps that must be re-rendered this frame (see above)
+  updateShadowFlags(scene) {
+    if (!this._shadowLights) {
+      this._shadowLights = [];
+      scene.traverse((o) => { if (o.isLight && o.castShadow && o.shadow) this._shadowLights.push(o); });
+      for (const L of this._shadowLights) { L.shadow.autoUpdate = false; L.shadow.needsUpdate = true; L._shKey = null; L._shSig = ''; }
+    }
+    const casters = this.shadowCasters ? this.shadowCasters() : null;
+    for (const L of this._shadowLights) {
+      const t = L.target ? L.target.position : L.position;
+      const key = [L.position.x, L.position.y, L.position.z, t.x, t.y, t.z, L.shadow.camera.far, L.angle ?? 0, L.visible ? 1 : 0].join(',');
+      let need = key !== L._shKey;
+      L._shKey = key;
+      let sig = '';
+      if (casters) {
+        // inside the light's shadow frustum (a spot's cone, a ~1.3 m sphere
+        // round the man): a man outside the cone never touches its map
+        const far = L.shadow.camera.far, R = 1.3;
+        let ax = 0, ay = -1, az = 0, cosA = -1, sinA = 0;
+        if (L.isSpotLight) {
+          ax = t.x - L.position.x; ay = t.y - L.position.y; az = t.z - L.position.z;
+          const al = Math.hypot(ax, ay, az) || 1;
+          ax /= al; ay /= al; az /= al;
+          cosA = Math.cos(L.angle); sinA = Math.sin(L.angle);
+        }
+        for (const c of casters) {
+          const dx = c.x - L.position.x, dy = c.y - L.position.y, dz = c.z - L.position.z;
+          const d = Math.hypot(dx, dy, dz);
+          if (d > far + R) continue;
+          if (L.isSpotLight && d > R) {
+            // sphere vs cone: the angle to the axis minus the sphere's
+            // angular radius must be inside the cone's half-angle
+            const along = dx * ax + dy * ay + dz * az;
+            const perp = Math.sqrt(Math.max(0, d * d - along * along));
+            if (along * sinA - perp * cosA < -R && along < d * cosA) continue;
+          }
+          if (c.moving) need = true;
+          sig += c.id + ',';
+        }
+      }
+      if (sig !== L._shSig) need = true;
+      L._shSig = sig;
+      if (need) L.shadow.needsUpdate = true;
+    }
+  }
+
   render(scene, camera, time) {
     const r = this.renderer, U = this.U;
     this.updateLightning(time);
@@ -216,9 +281,27 @@ export class Pipeline {
     r.shadowMap.autoUpdate = false;
     r.setRenderTarget(this.rtId);
     r.setClearColor(0x000000, 0);
-    if (!S.id) {
-      for (let k = 0; k <= (this.repeat.id || 0); k++) { r.clear(); r.render(scene, camera); }
+    const vm = this.vm && this.vm.visible ? this.vm : null;
+    if (vm) vm.camera.updateMatrixWorld();
+    // The gun is drawn FIRST, then the world into the same depth (no clear
+    // in between): the viewmodel camera's projection squeezes its depth into
+    // [0, 5e-4] of the range (Viewmodel.js), so it always wins, and the
+    // world's fragments under it are rejected by the early depth test instead
+    // of being shaded and then painted over (the same pixels either way).
+    const drawVm = (layer, override = null) => {
+      vm.camera.layers.set(layer);
+      vm.scene.overrideMaterial = override;
+      r.render(vm.scene, vm.camera);
+      vm.scene.overrideMaterial = null;
+    };
+    const ac0 = r.autoClear;
+    r.autoClear = false;
+    for (let k = 0; k <= (S.id ? 0 : (this.repeat.id || 0)); k++) {
+      r.clear();
+      if (vm) drawVm(LAYER.VIEWMODEL, this.idMat);
+      if (!S.id) r.render(scene, camera);
     }
+    r.autoClear = ac0;
     scene.overrideMaterial = null;
     U.tDepth.value = this.rtId.depthTexture;
     U.tNormalId.value = this.rtId.texture;
@@ -233,9 +316,12 @@ export class Pipeline {
     // What remains: lamp heads, cones, windows, headlights, lit surfaces;
     // opaque geometry writes alpha 1.
     this.updateReflectionCamera(camera);
+    const reflHidden = this.reflHide ? this.reflHide(camera) : null;
+    if (reflHidden) for (const o of reflHidden) o.visible = false;
     this.reflCam.layers.set(LAYER.WORLD);
     this.reflCam.layers.enable(LAYER.FX_REFL);
     this.reflCam.layers.enable(LAYER.VOLUME);
+    this.reflCam.layers.enable(LAYER.REFL_ONLY);
     U.uUseDepth.value = 0;
     this._fogSave.copy(U.uFogColor.value);
     U.uFogColor.value.setRGB(0, 0, 0);
@@ -247,6 +333,7 @@ export class Pipeline {
     U.uFogColor.value.copy(this._fogSave);
     if (scene.fog) scene.fog.color.copy(this._sceneFogSave);
     U.uUseDepth.value = 1;
+    if (reflHidden) for (const o of reflHidden) o.visible = true;
     // bright pass: half -> quarter res; keep = max(0, lum - T)
     const bp = this.reflBrightMat.uniforms;
     bp.tSrc.value = this.rtRefl.texture;
@@ -270,15 +357,28 @@ export class Pipeline {
     camera.layers.disable(LAYER.VOLUME);
     camera.layers.disable(LAYER.MIST);
     camera.layers.disable(LAYER.RAIN);
+    camera.layers.disable(LAYER.VIEWMODEL);
+    camera.layers.disable(LAYER.VM_FX);
+    camera.layers.disable(LAYER.REFL_ONLY);
     r.shadowMap.autoUpdate = !S.shadows;
+    if (this.shadowCache && !S.shadows) this.updateShadowFlags(scene);
     r.setRenderTarget(this.rtScene);
     r.setClearColor(this.fogColor, 1);
     r.clear();
+    // the gun first (see the id pass: the world under it is depth-rejected,
+    // most of all the expensive wet street), then the world, then the flash
+    // sprites on the gun (only while there are any: every render call into
+    // this MSAA target costs a full-screen resolve)
+    r.autoClear = false;
+    if (vm) drawVm(LAYER.VIEWMODEL);
     if (!S.scene) {
       r.render(scene, camera);
       r.shadowMap.autoUpdate = false;
-      for (let k = 0; k < (this.repeat.scene || 0); k++) { r.clear(); r.render(scene, camera); }
+      for (let k = 0; k < (this.repeat.scene || 0); k++) { r.clear(); if (vm) drawVm(LAYER.VIEWMODEL); r.render(scene, camera); }
     }
+    r.shadowMap.autoUpdate = false;
+    if (vm && (!vm.fxLive || vm.fxLive())) drawVm(LAYER.VM_FX);
+    r.autoClear = ac0;
 
     // ---- 4. volume light (half res) + rain (full res) --------------------------
     r.shadowMap.autoUpdate = false;
@@ -338,6 +438,10 @@ export class Pipeline {
     iu.uNear.value = camera.near;
     iu.uFar.value = camera.far;
     iu.uProjInv.value.copy(camera.projectionMatrixInverse);
+    if (vm) {
+      iu.uProjInvVM.value.copy(vm.camera.projectionMatrixInverse);
+      iu.uVmFrame.value.copy(vm.frameInv);
+    }
     iu.uViewInv.value.copy(camera.matrixWorld);
     iu.uLightning.value = this.lightning;
     iu.uView.value = this.view;

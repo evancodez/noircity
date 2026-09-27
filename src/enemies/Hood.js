@@ -4,6 +4,7 @@ import { HoodAnimator, getClips, DEATHS, HAT_OFF, WALK, RUN } from './HoodAnim.j
 import { allocHoodSlot, releaseHoodSlot, HOOD_ID0, FIG_ANCHOR } from '../render/layers.js';
 import { roundedBox } from '../world/geom.js';
 import { STREET } from '../world/Street.js';
+import { buildTommyGeometry } from '../player/Viewmodel.js';
 
 // The Hood: a procedural man in a fedora and a belted trench coat.
 //
@@ -27,7 +28,7 @@ const spow = (x, p) => Math.sign(x) * Math.pow(Math.abs(x), p);
 // masses with lit dry-brush folds near the camera
 const SHADE = {
   coat: 0.014, collar: 0.013, lapel: 0.013, belt: 0.005, hat: 0.007, band: 0.002,
-  skin: 0.024, hair: 0.004, trousers: 0.008, shoes: 0.004, glove: 0.01, gun: 0.003, shirt: 0.13, tie: 0.004,
+  skin: 0.024, hair: 0.004, trousers: 0.006, slideTop: 0.2, nose: 0.024, shoes: 0.004, glove: 0.01, gun: 0.003, shirt: 0.13, tie: 0.004,
 };
 const COAT_HEM = [0.4, 0.51, 0.62];      // long, medium, short
 const BRIM_R = [0.168, 0.19];            // narrow, wide
@@ -36,10 +37,14 @@ const HEIGHT = [0.96, 1.04];
 // ---------------------------------------------------------------------------
 // tessellation: Q scales every part's segment counts. LOD0 (near) keeps the
 // silhouettes free of facets at 2 m (a 0.2 m radius at 50+ segments deviates
-// < 0.5 mm from the true curve); LOD1 is swapped in beyond ~11 m.
+// < 0.5 mm from the true curve); LOD1 is swapped in beyond ~11 m; LOD2
+// beyond ~16 m (a black silhouette ~80 px tall): half LOD1's segments, and
+// no nose, belt or lapels (they only ever printed inside the black mass).
+// The cigarette is hidden there too.
 let Q = 1;
 const seg = (n, min = 4) => Math.max(min, Math.round(n * Q));
-export const LOD_Q = [0.56, 0.3];
+export const LOD_Q = [0.56, 0.3, 0.16];
+const LOD_FAR = [12, 17];      // switch-out distances (m); back in 1.5 m closer
 
 // ---------------------------------------------------------------------------
 // parametric surfaces
@@ -407,6 +412,25 @@ function buildHead() {
   return { geo, shade, weights: () => [[B.head, 1]] };
 }
 
+// A small nose (Phase 2b polish): the head sphere's bump was narrower than
+// its tessellation and vanished in profile; a separate little wedge on the
+// face carries the facing direction in a silhouette.
+function buildNose() {
+  const C = new THREE.Vector3(0, 1.648, 0.101);
+  const nu = seg(24, 10), nv = seg(14, 6);
+  const geo = grid(nu, nv, (u, v, p) => {
+    const b = v * Math.PI, a = u * TAU;
+    const dy = Math.cos(b), q = Math.sin(b);
+    const dx = q * Math.sin(a), dz = q * Math.cos(a);
+    // a wedge: narrow bridge on top, a rounded tip forward and down
+    const w = 0.0105 * (0.75 + 0.35 * sstep(1, -1, dy));
+    const d = 0.017 * (0.6 + 0.5 * sstep(1, -0.4, dy));
+    p.set(C.x + dx * w, C.y + dy * 0.021, C.z + dz * d + 0.004 * (1 - dy) * Math.max(0, dz));
+  });
+  orientOut(geo, C);
+  return { geo, shade: SHADE.nose, weights: () => [[B.head, 1]] };
+}
+
 function buildNeck() {
   const nu = seg(32, 10), nv = seg(10, 3);
   const geo = grid(nu, nv, (u, v, p) => {
@@ -477,7 +501,7 @@ function buildHat(brimR) {
 function buildHand(sgn, fist) {
   const W = BIND[sgn > 0 ? 'handL' : 'handR'];
   const C = fist ? new THREE.Vector3(W.x, W.y - 0.058, W.z + 0.004) : new THREE.Vector3(W.x - sgn * 0.004, W.y - 0.075, W.z + 0.006);
-  const R = fist ? [0.034, 0.047, 0.043] : [0.025, 0.082, 0.045];
+  const R = fist ? [0.029, 0.045, 0.037] : [0.025, 0.082, 0.045];   // (fist ~15 % thinner: Phase 2b)
   const nu = seg(32, 10), nv = seg(22, 8);
   const geo = grid(nu, nv, (u, v, p) => {
     const b = v * Math.PI, a = u * TAU;
@@ -507,21 +531,26 @@ function buildGun() {
   if (!GUN_GEO) {
     const parts = [];
     // (sized a little over life: at game distances the gun must read as an
-    // L past the fist, not vanish into it)
-    const slide = roundedBox(0.03, 0.235, 0.04, 0.008, 3);
-    slide.translate(0, -0.128, 0.058);
+    // L past the fist, not vanish into it). Phase 2b polish: the slide runs
+    // 0.29 m so ~0.12 m of it projects past the (thinner) fist in profile,
+    // and a grip stub with a base plate shows under the heel of the hand.
+    const slide = roundedBox(0.028, 0.29, 0.038, 0.008, 3);
+    slide.translate(0, -0.15, 0.058);
     parts.push(slide);
-    const frame = roundedBox(0.026, 0.12, 0.026, 0.007, 3);
-    frame.translate(0, -0.17, 0.033);
+    const frame = roundedBox(0.024, 0.13, 0.024, 0.007, 3);
+    frame.translate(0, -0.175, 0.034);
     parts.push(frame);
-    const grip = roundedBox(0.034, 0.058, 0.13, 0.009, 3);
-    grip.rotateX(-0.3).translate(0, -0.036, -0.018);
+    const grip = roundedBox(0.032, 0.056, 0.15, 0.009, 3);
+    grip.rotateX(-0.3).translate(0, -0.03, -0.028);
     parts.push(grip);
+    const base = roundedBox(0.036, 0.064, 0.016, 0.006, 2);
+    base.rotateX(-0.3).translate(0, -0.008, -0.1);
+    parts.push(base);
     const guard = new THREE.TorusGeometry(0.024, 0.005, 8, 20, Math.PI);
-    guard.rotateY(Math.PI / 2).rotateX(Math.PI / 2).translate(0, -0.095, 0.022);
+    guard.rotateY(Math.PI / 2).rotateX(Math.PI / 2).translate(0, -0.1, 0.022);
     parts.push(guard);
     const hammer = roundedBox(0.014, 0.022, 0.024, 0.005, 2);
-    hammer.translate(0, -0.004, 0.068);
+    hammer.translate(0, -0.001, 0.068);
     parts.push(hammer);
     const clean = parts.map((g) => {
       let q = g.index ? g.toNonIndexed() : g;
@@ -545,10 +574,13 @@ function buildGun() {
   }
   const W = BIND.handR;
   const geo = GUN_GEO.clone().translate(W.x, W.y, W.z);
-  return { geo, shade: SHADE.gun, weights: () => [[B.handR, 1]] };
+  // the top of the slide is bright steel: a thin light line that separates
+  // the gun from the black fist in profile (the rest of the gun stays ink)
+  const shade = (x, y, z) => (z - W.z > 0.07 && W.y - y > 0.03 ? SHADE.slideTop : SHADE.gun);
+  return { geo, shade, weights: () => [[B.handR, 1]] };
 }
 // muzzle position in handR bone space
-export const MUZZLE_LOCAL = new THREE.Vector3(0, -0.245, 0.058);
+export const MUZZLE_LOCAL = new THREE.Vector3(0, -0.3, 0.058);
 
 // ---------------------------------------------------------------------------
 // assemble parts into one skinned geometry
@@ -594,14 +626,16 @@ function assemble(parts) {
 
 const GEO_CACHE = new Map();
 function hoodGeometry(v, lod = 0) {
-  const key = `${v.coat}_${v.brim}_${lod}`;
+  const key = `${v.coat}_${v.brim}_${lod}_${v.heavy ? 1 : 0}`;
   if (!GEO_CACHE.has(key)) {
     Q = LOD_Q[lod];
+    const near = lod < 2;
     const parts = [
-      buildTorso(), buildSkirt(COAT_HEM[v.coat]), buildBelt(), buildCollar(), buildLapel(1), buildLapel(-1),
+      buildTorso(), buildSkirt(COAT_HEM[v.coat]), ...(near ? [buildBelt()] : []), buildCollar(), ...(near ? [buildLapel(1), buildLapel(-1)] : []),
       buildSleeve(1), buildSleeve(-1), buildTrouser(1), buildTrouser(-1), buildShoe(1), buildShoe(-1),
-      buildHead(), buildNeck(), buildHat(BRIM_R[v.brim]), buildHand(1, false), buildHand(-1, true), buildGun(),
+      buildHead(), ...(near ? [buildNose()] : []), buildNeck(), buildHat(BRIM_R[v.brim]), buildHand(1, false), buildHand(-1, true),
     ];
+    if (!v.heavy) parts.push(buildGun());
     GEO_CACHE.set(key, assemble(parts));
     Q = 1;
   }
@@ -620,6 +654,7 @@ function hoodMaterial(world) {
   return MAT;
 }
 let CIG_MATS = null;
+let TOMMY = null;
 
 // low-poly invisible hit volumes (raycast targets), one per limb, tagged
 // with the joint name: [joint, kind, radius, length, offset along -Y]
@@ -732,7 +767,14 @@ export class Hood {
     this.bones = bones;
     obj.add(bones.root);
     const skeleton = new THREE.Skeleton(JOINTS.map((j) => bones[j[0]]));
-    this.lods = [hoodGeometry(this.variant, 0), hoodGeometry(this.variant, 1)];
+    // three re-computes and re-uploads the bone texture once per render()
+    // call that draws the man (id pass, reflection, scene: 3x a frame); the
+    // pose only changes in update(), so the upload happens once per new pose
+    this._poseVer = 1;
+    let skelVer = 0;
+    const skelUpdate = skeleton.update.bind(skeleton);
+    skeleton.update = () => { if (skelVer === this._poseVer) return; skelVer = this._poseVer; skelUpdate(); };
+    this.lods = [hoodGeometry(this.variant, 0), hoodGeometry(this.variant, 1), hoodGeometry(this.variant, 2)];
     this.lod = 0;
     const mesh = new THREE.SkinnedMesh(this.lods[0], hoodMaterial(world));
     mesh.name = 'hoodBody';
@@ -747,9 +789,10 @@ export class Hood {
     this.skeleton = skeleton;
 
     if (this.variant.cig) this.addCigarette();
+    if (this.variant.heavy) this.addTommy();
 
     // ink: one figure id for the whole man; the ink pass anchors his brush
-    for (const o of [mesh, ...(this.cig || [])]) { o.userData.inkId = this.inkId; o.userData.inkFigure = true; }
+    for (const o of [mesh, ...(this.cig || []), ...(this.tommy ? [this.tommy] : [])]) { o.userData.inkId = this.inkId; o.userData.inkFigure = true; }
 
     // hit volumes on the bones
     this.hitMeshes = [];
@@ -812,6 +855,24 @@ export class Hood {
     stick.castShadow = false;
     this.bones.head.add(stick, ember);
     this.cig = [stick, ember];
+  }
+
+  // Heavies carry the player's Thompson (player/Viewmodel.js geometry) in
+  // the right fist: barrel down the hand bone's -Y, the drum below, its
+  // pistol grip in the fist.
+  addTommy() {
+    if (!TOMMY) {
+      TOMMY = {
+        geo: buildTommyGeometry(),
+        mat: new THREE.MeshStandardMaterial({ color: 0x080808, roughness: 0.45, metalness: 0.5, envMap: this.world.M.envSoft, envMapIntensity: 0.6 }),
+      };
+    }
+    const m = new THREE.Mesh(TOMMY.geo, TOMMY.mat);
+    m.quaternion.setFromEuler(new THREE.Euler(-Math.PI / 2, 0, 0)).premultiply(new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), Math.PI));
+    m.position.set(0, -0.143, 0.064);
+    m.castShadow = true;
+    this.bones.handR.add(m);
+    this.tommy = m;
   }
 
   // ---- control (Phase 2b's AI drives these) ---------------------------------
@@ -883,6 +944,7 @@ export class Hood {
   }
 
   muzzleWorld(out = new THREE.Vector3()) {
+    if (this.tommy) return out.set(0, 0.03, -0.53).applyMatrix4(this.tommy.matrixWorld);
     return out.copy(MUZZLE_LOCAL).applyMatrix4(this.bones.handR.matrixWorld);
   }
 
@@ -894,9 +956,18 @@ export class Hood {
     if (camera) {
       this._eye = camera.position;
       const d = camera.position.distanceTo(this.pos);
-      const lod = this.lod === 0 ? (d > 12 ? 1 : 0) : (d < 10.5 ? 0 : 1);
-      if (lod !== this.lod) { this.lod = lod; this.mesh.geometry = this.lods[lod]; }
-      this.mesh.castShadow = d < 24;
+      let lod = this.lod;
+      while (lod < 2 && d > LOD_FAR[lod]) lod++;
+      while (lod > 0 && d < LOD_FAR[lod - 1] - 1.5) lod--;
+      if (lod !== this.lod) {
+        this.lod = lod;
+        this.geoStamp = (this.geoStamp || 0) + 1;   // (the pipeline's shadow cache)
+        this.mesh.geometry = this.lods[lod];
+        if (this.cig) for (const c of this.cig) c.visible = lod < 2;
+      }
+      // (beyond ~16 m his lamp shadow is a few pixels; every caster in a
+      // lamp's cone re-renders its shadow map, render/Pipeline.js)
+      this.mesh.castShadow = d < 16;
     }
     // locomotion: the root advances along its facing at `speed`
     if (this.alive && (this.state === 'walk' || this.state === 'run') && this.speed > 0) {
@@ -926,6 +997,8 @@ export class Hood {
       this.pos.x += lx * c + lz * s;
       this.pos.z += -lx * s + lz * c;
     }
+    // steering / collision hook (enemies/HoodAI.js): after locomotion
+    if (this.onMove && this.alive) this.onMove(this);
     this.pos.y = groundY(this.pos.x);
     const obj = this.object;
     obj.position.copy(this.pos);
@@ -944,6 +1017,7 @@ export class Hood {
 
     // brush anchor for the ink pass
     if (this.slot >= 0) FIG_ANCHOR[this.slot].set(this.pos.x, this.pos.y, this.pos.z, this.yaw);
+    this._poseVer++;
   }
 
   // look-at / aim correction and the coat-hem spring, on top of the mixer

@@ -24,6 +24,8 @@ export class Controller {
     this.stepTimer = 0;
     this.sensitivity = 0.0021;
     this.onStep = null;         // callback(x, z) for footsteps (ripples / audio)
+    this.auto = null;           // { f, s, sprint } from the autopilot
+    this.frozen = false;        // dead / title: no movement
 
     this._onMouse = (e) => {
       if (!this.enabled) return;
@@ -69,17 +71,21 @@ export class Controller {
 
   update(dt) {
     const k = this.keys;
-    const f = (k.has('KeyW') || k.has('ArrowUp') ? 1 : 0) - (k.has('KeyS') || k.has('ArrowDown') ? 1 : 0);
-    const s = (k.has('KeyD') || k.has('ArrowRight') ? 1 : 0) - (k.has('KeyA') || k.has('ArrowLeft') ? 1 : 0);
-    const sprint = k.has('ShiftLeft') || k.has('ShiftRight');
+    let f = (k.has('KeyW') || k.has('ArrowUp') ? 1 : 0) - (k.has('KeyS') || k.has('ArrowDown') ? 1 : 0);
+    let s = (k.has('KeyD') || k.has('ArrowRight') ? 1 : 0) - (k.has('KeyA') || k.has('ArrowLeft') ? 1 : 0);
+    let sprint = k.has('ShiftLeft') || k.has('ShiftRight');
+    // the battle autopilot (game/Autopilot.js) drives the same inputs
+    if (this.auto) { f = this.auto.f; s = this.auto.s; sprint = !!this.auto.sprint; }
+    if (this.frozen) { f = 0; s = 0; }
     const speed = sprint ? 6.8 : 4.0;
     const sin = Math.sin(this.yaw), cos = Math.cos(this.yaw);
     // forward = (-sin, -cos), right = (cos, -sin) in XZ
     const wx = (-sin * f + cos * s), wz = (-cos * f - sin * s);
     const len = Math.hypot(wx, wz) || 1;
-    const tx = (wx / len) * speed * (f || s ? 1 : 0);
-    const tz = (wz / len) * speed * (f || s ? 1 : 0);
-    const accel = (f || s) ? 12 : 9;
+    const on = Math.min(1, Math.hypot(f, s));
+    const tx = (wx / len) * speed * on;
+    const tz = (wz / len) * speed * on;
+    const accel = (Math.abs(f) + Math.abs(s) > 0.05) ? 12 : 9;
     const a = 1 - Math.exp(-accel * dt);
     this.vel.x += (tx - this.vel.x) * a;
     this.vel.z += (tz - this.vel.z) * a;

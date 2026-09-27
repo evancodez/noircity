@@ -117,3 +117,22 @@ performance and the beauty pass**.
 - `shot=ots`, `shot=title` (title card over the live street), `shot=end`.
 - A two-minute autopilot session (`shot=battle&t=120`) renders, errors.sh
   clean, counters sensible, fps numbers reported.
+
+---
+
+## Preamble for 3a — leftovers from the combat review (do these first, quickly)
+1. **Staged `hoods` preset composition**: move the dying man ~1.5 m left and
+   3–4 m deeper and re-aim the scripted burst so the player's flash sits clear
+   of the red burst (60–80 px gap); keep both in the lamp cone.
+2. **Hood muzzle flash at distance**: beyond ~15 m use the spiky starburst
+   variant with a ~48 px screen-size floor, no random off-centre rotation,
+   anchored to the gun-hand bone, so the far shooter shows a crisp white spike
+   at the pistol like the reference.
+3. **Wave pacing**: no 20 s lull. Spawn at 30–45 m (or behind nearer cars),
+   stagger a wave over 4–6 s, let the first two Hoods run to 25 m and fire a
+   volley from the first cover, so shots resume within ~6 s of the wave card.
+4. **Damage splatter vs HUD**: keep the screen splatters clear of the wave/kills
+   and health boxes (or layer the HUD above), and draw them from the jagged
+   canvas splatter generator, not flat discs with drips.
+5. **Muzzle smoke**: a visible soft grey puff (~0.3 m, mid-grey with the brush
+   texture as alpha, lit by the flash light for ~100 ms) after each burst.

@@ -3,7 +3,7 @@ import { FULLSCREEN_VERT, HASH_GLSL, LUMA_GLSL } from './common.js';
 import { NOIR_FOG_GLSL } from '../fog.js';
 import { TONE_GLSL, toneUniforms, EXPOSURE } from '../tone.js';
 import { RAIN_SLANT } from '../textures.js';
-import { FIG_ANCHOR, HOOD_ID0, HOOD_SLOTS } from '../layers.js';
+import { FIG_ANCHOR, HOOD_ID0, HOOD_SLOTS, VM_ID0 } from '../layers.js';
 
 // The ink pass: turns the linear HDR render into a hand-inked noir panel.
 // Order inside the shader (see DESIGN.md §3.4):
@@ -34,6 +34,10 @@ export function makeInkMaterial(tex, fogUniforms) {
       uFar: { value: 1500 },
       uProjInv: { value: new THREE.Matrix4() },
       uViewInv: { value: new THREE.Matrix4() },
+      // viewmodel: its camera's inverse projection (FOV ~50) and the view ->
+      // gun-local transform its brush field is anchored in
+      uProjInvVM: { value: new THREE.Matrix4() },
+      uVmFrame: { value: new THREE.Matrix4() },
       uExposure: { value: EXPOSURE },
       ...toneUniforms(),
       uBloomStrength: { value: 0.3 },
@@ -54,7 +58,7 @@ export function makeInkMaterial(tex, fogUniforms) {
       uniform sampler2D tScene, tBloom, tVolume, tRainBuf, tNormalId, tDepth, tBrush, tPaper, tRain, tNoise;
       uniform vec2 uRes;
       uniform float uTime, uBoil, uNear, uFar;
-      uniform mat4 uProjInv, uViewInv;
+      uniform mat4 uProjInv, uViewInv, uProjInvVM, uVmFrame;
       uniform float uExposure, uBloomStrength, uBrush, uLineWidth, uLightning, uRain, uRain3;
       uniform vec4 uRimLamps[ 4 ];
       uniform vec4 uFigAnchor[ ${HOOD_SLOTS} ];
@@ -79,6 +83,16 @@ export function makeInkMaterial(tex, fogUniforms) {
         vec4 c = vec4( uv * 2.0 - 1.0, d * 2.0 - 1.0, 1.0 );
         vec4 v = uProjInv * c;
         return v.xyz / v.w;
+      }
+      vec3 viewPosVM( vec2 uv, float d ) {
+        vec4 c = vec4( uv * 2.0 - 1.0, d * 2.0 - 1.0, 1.0 );
+        vec4 v = uProjInvVM * c;
+        return v.xyz / v.w;
+      }
+      // 1 for the viewmodel's ids (written negative, see layers.js)
+      float isVM( float w ) {
+        float f = -w - ${VM_ID0.toFixed(1)};
+        return step( -0.5, f ) * step( f, 9.5 );
       }
 
       // Log-space film curve with an S (render/tone.js): solid ink below
@@ -142,7 +156,9 @@ export function makeInkMaterial(tex, fogUniforms) {
         vec4 nid = texture2D( tNormalId, uv );
         float d = texture2D( tDepth, uv ).r;
         bool sky = d >= 0.999999;
-        vec3 vpos = viewPos( uv, d );
+        // the viewmodel was drawn by its own camera (same eye, narrower FOV)
+        float vmF = isVM( nid.w );
+        vec3 vpos = vmF > 0.5 ? viewPosVM( uv, d ) : viewPos( uv, d );
         float dist = sky ? uFar : length( vpos );
         vec3 wpos = ( uViewInv * vec4( vpos, 1.0 ) ).xyz;
         float fogA = sky ? 1.0 : noirFogAmount( dist, wpos.y, uFogDensity );
@@ -240,13 +256,21 @@ export function makeInkMaterial(tex, fogUniforms) {
         float hood = sky ? 0.0 : isHood( idc );
         vec3 bpos = wpos;
         vec3 nBr = nB;
+        float hoodY = 10.0;   // height above the Hood's root (m)
         if ( hood > 0.5 ) {
           int slot = int( fidH + 0.5 );
           vec4 A = uFigAnchor[ slot ];
           vec3 q = wpos - A.xyz;
+          hoodY = q.y;
           float ca = cos( A.w ), sa = sin( A.w );
           bpos = vec3( ca * q.x - sa * q.z, q.y, sa * q.x + ca * q.z ) + vec3( float( slot ) * 7.31, float( slot ) * 1.9, float( slot ) * 3.77 );
           nBr = vec3( ca * nB.x - sa * nB.z, nB.y, sa * nB.x + ca * nB.z );
+        }
+        // the gun carries its brush field in its own frame (it moves with the
+        // eye): world-scaled strokes that stay on the steel and the wood
+        if ( vmF > 0.5 ) {
+          bpos = ( uVmFrame * vec4( vpos, 1.0 ) ).xyz * 2.2 + vec3( 3.1, 1.7, 5.3 );
+          nBr = normalize( mat3( uVmFrame ) * n );
         }
         vec3 br = brushWorld( bpos, nBr, dist, 820.0, 0.0 );
         // A Hood stays a dark mass: a soft knee holds a lamp-lit coat below
@@ -264,10 +288,34 @@ export function makeInkMaterial(tex, fogUniforms) {
           // 0.25 band, so the ceiling is scaled by the brush: only where its
           // strokes are strong does the cloth step up to grey)
           float ceilV = mix( 0.34, 0.13, upF );
+          // the shins below the coat hem hold lower (Phase 2b polish: a lit
+          // trouser leg printed as a pale slot between two black shins)
+          ceilV *= mix( 1.0, 0.55, 1.0 - smoothstep( 0.42, 0.62, hoodY ) );
           v = ceilV * ( 1.0 - exp( -v / ceilV ) );
           v *= mix( 1.0, mix( 0.2, 1.4, br.r ), upF );
           v *= 1.0 - 0.88 * smoothstep( 9.0, 20.0, dist );
         }
+        // the gun: black steel and dark wood; lamp light and the muzzle flash
+        // raise dry-brush greys on it (never a white plate)
+        // (ceiling ~0.28: at 0.5 the stock lit by the key light printed as a
+        // pale flat slab beside the camera.) The walnut (stock, grips) is
+        // broken by the brush field in the gun's own frame, so it reads as
+        // dry-brushed dark wood with strokes along it, not a painted plank.
+        if ( vmF > 0.5 ) {
+          float ceilG = 0.28;
+          v = ceilG * ( 1.0 - exp( -v / ceilG ) );
+          float vmPart = -idc - ${VM_ID0.toFixed(1)};
+          float woodF = step( 1.5, vmPart ) * step( vmPart, 2.5 );
+          v *= mix( 1.0, mix( 0.35, 1.45, smoothstep( 0.25, 0.75, br.g * 0.6 + br.r * 0.4 ) ), woodF );
+        }
+        // A muzzle flash sprite drawn in front of a man or of the gun is not
+        // his cloth or its steel: it is far brighter than anything they can
+        // reflect (lit cloth < ~0.7, the sprite ~3), so it keeps its own
+        // tone instead of being held under their ceilings. (Crushed, a
+        // Hood's flash printed as black behind his head and the player's
+        // core vanished into the compensator.)
+        float flashF = max( hood, vmF ) * smoothstep( 1.1, 2.2, L );
+        v = mix( v, vRaw, flashF );
         // the wet street & pavements: flat, facing up, at kerb height or below
         float ground = sky ? 0.0 : step( 0.9, nW.y ) * step( wpos.y, 0.25 );
         // stroke family follows surface orientation: walls get vertical
@@ -346,9 +394,28 @@ export function makeInkMaterial(tex, fogUniforms) {
         float mx = max( hdr.r, max( hdr.g, hdr.b ) );
         float mn = min( hdr.r, min( hdr.g, hdr.b ) );
         float sat = ( mx - mn ) / max( mx, 1e-5 );
-        float keep = smoothstep( 0.22, 0.4, sat ) * smoothstep( 0.0004, 0.004, mx );
-        vec3 hue = hdr / max( mx, 1e-5 );
-        vec3 colOut = hue * clamp( vLit * 1.25 + 0.12, 0.0, 1.0 );
+        vec3 hn = clamp( hdr / max( mx, 1e-5 ), 0.0, 1.0 );
+        // the red family: red dominant with green ~ blue (blood, and blood
+        // thinned by grey at a drop's anti-aliased rim). The ember and fire
+        // (green well above blue) keep their own hue.
+        float redF = step( hdr.g, hdr.r ) * step( hdr.b, hdr.r ) * ( 1.0 - smoothstep( 0.1, 0.22, abs( hn.g - hn.b ) ) );
+        // (a steep, low window for blood: a half-covered pixel at a drop's
+        // edge goes red or stays ink, it never prints as a pink mix)
+        float keep = mix( smoothstep( 0.22, 0.4, sat ), smoothstep( 0.1, 0.2, sat ), redF ) * smoothstep( 0.0004, 0.004, mx );
+        // Blood must print VIVID red (the reference's #c8102e), never maroon
+        // or black: chroma pixels bypass the black crush and the brush bands.
+        // The hue is taken to display space (linear #c8102e = (1, .009, .047)
+        // of its max -> (1, .12, .25) displayed), the value follows a gentle
+        // log curve of the colour's own max channel, floored at 0.45 and
+        // broken a little by the brush so a splatter is not a flat sticker.
+        vec3 hue = pow( hn, vec3( 1.0 / 2.2 ) );
+        // blood prints at the reference red at full saturation, whatever
+        // grey (mist, a lamp's cone, the anti-aliased rim) thinned it to
+        hue = mix( hue, vec3( 1.0, 0.12, 0.25 ), redF );
+        float cT = clamp( ( log2( max( mx * exposure, 1e-6 ) ) + 7.97 ) / 8.1, 0.0, 1.0 );
+        float cV = 0.45 + 0.55 * smoothstep( 0.0, 1.0, cT );
+        cV *= mix( 0.9, 1.04, b );
+        vec3 colOut = hue * clamp( max( cV, 0.45 ), 0.0, 1.0 );
 
         // ---- contours ------------------------------------------------------
         // Wobble: a static low-frequency warp plus a small 'boil' that jumps
@@ -418,26 +485,28 @@ export function makeInkMaterial(tex, fogUniforms) {
 
         // ---- lit rim: a thin white line inside silhouettes facing a lamp ----
         float rim = 0.0;
+        // the gun takes the figures' rim (stronger, allowed on its top)
+        float figR = max( hood, vmF );
         if ( !sky && silFront > 0.5 ) {
           float rimBestW = 0.0, rimBest = 0.0;
           for ( int i = 0; i < 4; i ++ ) {
             vec3 Lv = uRimLamps[ i ].xyz - vpos;
             float dl = length( Lv );
             // only the part of the silhouette that turns squarely to the lamp
-            float wl = uRimLamps[ i ].w / ( 1.0 + mix( 0.015, 0.009, hood ) * dl * dl );
-            float c = smoothstep( mix( 0.55, 0.3, hood ), mix( 0.85, 0.75, hood ), dot( n, Lv / dl ) ) * wl;
+            float wl = uRimLamps[ i ].w / ( 1.0 + mix( 0.015, 0.009, figR ) * dl * dl );
+            float c = smoothstep( mix( 0.55, 0.3, figR ), mix( 0.85, 0.75, figR ), dot( n, Lv / dl ) ) * wl;
             rim += c;
             if ( wl > rimBestW ) { rimBestW = wl; rimBest = c; }
           }
           // a man is rimmed by the lamp he stands under (the lamp-facing half
           // of his silhouette); the other lamps only add a trace, or the rim
           // closes round him on the shadow side too like a sticker's outline
-          rim = mix( rim, rimBest + 0.25 * ( rim - rimBest ), hood );
+          rim = mix( rim, rimBest + 0.25 * ( rim - rimBest ), figR );
           // tops of kerbs, roofs and ledges face every lamp: an inker would
           // not rim them, only the sides of silhouettes that turn to the light
           // (a man's hat crown and shoulders are the exception: that light
           // edge is what separates him from the black behind, DESIGN.md 5.4)
-          rim = smoothstep( 0.35, 1.0, rim ) * nearF * ( 1.0 - edge ) * mix( 1.0 - smoothstep( 0.5, 0.8, nW.y ), 1.0, hood )
+          rim = smoothstep( 0.35, 1.0, rim ) * nearF * ( 1.0 - edge ) * mix( 1.0 - smoothstep( 0.5, 0.8, nW.y ), 1.0, figR )
               // (a far Hood keeps only a trace of rim: past ~10 m the rim probe
               // covers most of his body and would print him grey)
               * ( 1.0 - hood * 0.85 * smoothstep( 9.0, 20.0, dist ) );
@@ -474,7 +543,7 @@ export function makeInkMaterial(tex, fogUniforms) {
         vec3 col = vec3( v );
         col = mix( col, vec3( 0.0 ), edge );
         col = max( col, vec3( structL * 0.42 ) );
-        col = max( col, vec3( rim * mix( 0.72, 0.86, hood ) ) );
+        col = max( col, vec3( rim * mix( 0.72, 0.86, figR ) ) );
         // black on black: behind a Hood's silhouette the dark object (a car,
         // a column, another man) is cut back by a thin broken paper gap, the
         // inker's trapping line, instead of a black contour nobody can see
@@ -524,6 +593,11 @@ export function makeInkMaterial(tex, fogUniforms) {
         // 3D rain + splash rings, screened over the ink as thin white lines at
         // the value they would print on their own (through the tone curve)
         float rainD = rain3 > 1e-5 ? toneCurve( rain3 * exposure * uRain3 ) : 0.0;
+        // the gun is half a metre from the eye: the rain falls behind it, never
+        // across it (streaks over the steel read as the gun behind the rain);
+        // over blood the streaks thin out so a splatter never prints pink
+        float rainMask = ( 1.0 - vmF ) * ( 1.0 - 0.7 * keep );
+        rainD *= rainMask;
         col = 1.0 - ( 1.0 - col ) * ( 1.0 - rainD * 0.85 );
 
         // ---- screen-space rain ---------------------------------------------
@@ -537,7 +611,7 @@ export function makeInkMaterial(tex, fogUniforms) {
         float bl = luma( bloom ) + luma( vol ) * 0.5;
         // outside the beams the rain is barely there (reference: it only
         // lights up inside the cones), most of all over near-black surfaces
-        rain *= uRain * 0.32 * ( mix( 0.18, 0.4, smoothstep( 0.05, 0.4, col.r ) ) + 1.4 * clamp( bl, 0.0, 1.0 ) );
+        rain *= uRain * 0.32 * ( mix( 0.18, 0.4, smoothstep( 0.05, 0.4, col.r ) ) + 1.4 * clamp( bl, 0.0, 1.0 ) ) * rainMask;
         col = 1.0 - ( 1.0 - col ) * ( 1.0 - rain );
 
         // ---- paper, grain, vignette ----------------------------------------
