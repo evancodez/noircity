@@ -80,8 +80,25 @@ export const HOOD_ID0 = 1790;
 export const HOOD_SLOTS = 64;
 export const FIG_ANCHOR = Array.from({ length: HOOD_SLOTS }, () => new THREE.Vector4());
 const hoodSlots = new Array(HOOD_SLOTS).fill(false);
-export function allocHoodSlot() {
-  for (let i = 0; i < HOOD_SLOTS; i++) {
+// The last two slots are the player's own (Phase 3b): his body (63) and his
+// Tommy gun (62: an id of its own, so the ink traps it against his coat with
+// the paper gap it draws between a man and a dark object behind him). The
+// Hoods take the first free of the rest, so their slots, ids and brush
+// offsets are what they always were.
+export const PLAYER_SLOT = { body: HOOD_SLOTS - 1, gun: HOOD_SLOTS - 2 };
+// The player's hero key (Phase 3b review): the ink prints the player's own
+// hat, head and Tommy gun with bold dry-brush highlights under a key light
+// fixed in WORLD space (mostly from above, leaning to the street's +x side
+// and ahead, like the reference's lamp and flash on the shooter's crown,
+// brim, ear and receiver). [0] the hat bone (xyz, w = brim radius), [1] the
+// hat's up axis (xyz, w = 1 while the body is shown), [2] the key direction
+// (xyz, w = strength), [3] the hat's x axis (its brim is an oval, 0.9 x).
+// Written by player/PlayerBody.js every pose.
+const heroKey = new THREE.Vector3(0.45, 0.85, -0.3).normalize();
+export const HERO = [new THREE.Vector4(), new THREE.Vector4(0, 1, 0, 0), new THREE.Vector4(heroKey.x, heroKey.y, heroKey.z, 1), new THREE.Vector4(1, 0, 0, 0)];
+export function allocHoodSlot(reserved = -1) {
+  if (reserved >= 0) { hoodSlots[reserved] = true; return reserved; }
+  for (let i = 0; i < HOOD_SLOTS - 2; i++) {
     if (!hoodSlots[i]) { hoodSlots[i] = true; return i; }
   }
   return -1;

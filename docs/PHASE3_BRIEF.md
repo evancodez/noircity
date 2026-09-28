@@ -158,3 +158,36 @@ performance and the beauty pass**.
    cored blaze.
 7. **Performance headroom is thin** (uncapped ~72 fps avg with 10 Hoods, one
    wreck, particles; bench 23.3 ms): this is the 3b performance pass.
+
+---
+
+## 3c — what the 3b review left open (a focused round)
+1. **The over-the-shoulder hero must be inked like the reference shooter, not
+   a glossy mannequin.** `src/player/PlayerBody.js`: camera at brim height
+   (HEAD_DROP 12 → 3–4°, OTS.up ≈ −0.02) so the brim is edge-on and the crown
+   and ribbon show; key light response on the hero ≤ 1.0 and no keyed
+   direct-diffuse on head/hat (that is what prints as wet-latex gloss);
+   player-only brim radius ~0.15 with a stronger snap; skull below the hat
+   shaded as hair so the head is a black mass with the ear bump reading.
+   `src/render/shaders/ink.js` hero block: quantise the key response to two
+   levels and coarsen the stroke field (tile ~900, fixed threshold ~0.55) so
+   highlights print as sparse ragged dry-brush ticks, never gradient bands.
+   Tommy gun: drum, fins and front sight get their own ink ids so internal
+   contours draw; the left hand on the foregrip must be visible above the
+   barrel from this camera. Judge side by side with the reference's foreground
+   shooter (`shots/c3b_1_crops/ref_figure.png`).
+2. **Performance pass, for real.** Measure first (`RUNS=4 UNCAPPED=1 node
+   tools/fps.mjs "shot=perf&t=1&anim=1" 1440 900`, note GPU-busy flags: the
+   user's own Chrome tab may be running the game, so report the best clean run
+   and the spread). Then optimise: quarter-res rain buffer (hairlines must
+   survive), 2 bloom levels, decal pooling, particle caps, cut the 813 draw
+   calls (instance lamps/columns, merge static props), skip the id pass on the
+   viewmodel, cheaper far Hoods. Targets: uncapped ≥ 85 fps average and p95
+   ≤ 14 ms on a clean run, no visible change in street/hoods/viewmodel/wreck08.
+   Report before/after with the bench() breakdown.
+3. **Muzzle puff**: fewer denser lobes with a frayed brush edge and a darker
+   core (col ~0.13, alpha ~0.7, 0.18 m), compact growth, so it reads as a puff
+   against both road and mist.
+4. **Train**: sparks 5–6 px with 6–10 per bite and 0.25 s tails from the near
+   girder; near-car strobe ~2× into the wet-street reflection at lamp-column
+   gain, so a crossing reads on the road.

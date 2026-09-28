@@ -9,6 +9,13 @@ import { Blood } from './Blood.js';
 import { Explosions } from './Explosion.js';
 import { makeBloodAtlas, makeFlashAtlas, makeFireAtlas, makeGlassAtlas, ATLAS, FIRE } from './fxTextures.js';
 
+// the muzzle smoke's colour (linear, Phase 3b review: ~0.35): laid at alpha
+// ~0.4 it prints as a soft grey wash over the black street and a shade
+// lighter than the lit mist - visible against both, never an ink blot
+const MUZZLE_SMOKE_COL = 0.35;
+// (the puff's darker core: it reads against the lit mist)
+const MUZZLE_SMOKE_CORE = 0.13;
+
 // All combat effects, one update per fixed step. Draw calls: blood, chips,
 // sparks, splash, dust, smoke, 3 flash systems, 3 decal pools, casings.
 export class Fx {
@@ -66,26 +73,33 @@ export class Fx {
     this.debris.update(dt);
   }
 
-  // Muzzle smoke after a burst (Phase 3a preamble #5): a soft mid-grey puff
-  // ~0.3 m across at the muzzle, its alpha laid in dry-brush strokes, lit by
-  // the flash for its first ~100 ms, drifting up and along the shot
-  muzzleSmoke(pos, fwd, shots = 3) {
+  // Muzzle smoke after a burst (Phase 3a preamble #5, 3b): a soft puff
+  // 0.25-0.35 m across hanging at the muzzle, its alpha laid in dry-brush
+  // strokes (a wash you see the street through), lit by the flash for its
+  // first ~100 ms, drifting up and along the shot. Phase 3b review: one
+  // mid-grey puff (col 0.35) vanished in front of the lit arcade mist, which
+  // prints the same grey; now two mid-grey outer lobes (col 0.35, alpha
+  // ~0.35: they read against the dark street) wrap a DARKER core (col 0.13,
+  // alpha ~0.5: it reads against the lit mist), all three flash-lit at
+  // birth, so the puff separates from either ground. It hangs where the gun
+  // points (gunFwd), rising slowly.
+  muzzleSmoke(pos, fwd, shots = 3, gunFwd = null) {
     const r = this.world.rng;
-    // (the muzzle sits ~1 m from the eye: a 0.3 m puff there fills a fifth
-    // of the frame, so it is laid thin - a brushed wash you see the street
-    // through - and it drifts off forward and up out of the view)
-    const k = Math.min(1.3, 0.75 + shots * 0.06);
-    for (let i = 0; i < 2; i++) {
-      const s = (i === 0 ? 0.26 : r.range(0.14, 0.2)) * k;
-      const side = new THREE.Vector3(-fwd.z, 0, fwd.x).multiplyScalar(r.gauss() * 0.05);
-      this.smoke.spawn({
-        pos: pos.clone().addScaledVector(fwd, 0.25 + i * 0.12).add(side).add(new THREE.Vector3(0, 0.03 + i * 0.04, 0)),
-        vel: fwd.clone().multiplyScalar(r.range(0.4, 0.7)).add(new THREE.Vector3(r.gauss() * 0.05, r.range(0.3, 0.45), r.gauss() * 0.05)),
-        life: r.range(1.2, 1.6), size: [s, s], grow: r.range(0.12, 0.2), rot: r.next() * 6.28, spin: r.gauss() * 0.3,
-        col: [0.024, 0.024, 0.024], alpha: 0.62, drag: 0.6, fadeIn: 0.04, fadeOut: 0.7, cell: FIRE.SMOKE[r.int(0, 3)],
-        lit: 3.5, litT: 0.1,
-      });
-    }
+    const k = Math.min(1, 0.8 + shots * 0.04);
+    const col = MUZZLE_SMOKE_COL;
+    const dir = gunFwd || fwd;
+    const side = new THREE.Vector3(-dir.z, 0, dir.x).normalize();
+    const puff = (o, s, c, a, up) => this.smoke.spawn({
+      pos: pos.clone().addScaledVector(dir, o).addScaledVector(side, r.gauss() * 0.03).add(new THREE.Vector3(0, up, 0)),
+      vel: dir.clone().multiplyScalar(r.range(0.25, 0.45)).add(new THREE.Vector3(r.gauss() * 0.04, r.range(0.14, 0.24), r.gauss() * 0.04)),
+      life: r.range(1.2, 1.6), size: [s, s], grow: r.range(0.1, 0.16), rot: r.next() * 6.28, spin: r.gauss() * 0.3,
+      col: [c, c, c], alpha: a, drag: 0.8, fadeIn: 0.04, fadeOut: 0.7, cell: FIRE.SMOKE[r.int(0, 3)],
+      lit: 3.0, litT: 0.1,
+    });
+    // (drawn in spawn order: the outer lobes first, the core over them)
+    puff(0.2, r.range(0.3, 0.35) * k, col, r.range(0.33, 0.38), 0.03);
+    puff(0.3, r.range(0.25, 0.3) * k, col, r.range(0.33, 0.38), 0.06);
+    puff(0.22, r.range(0.2, 0.24) * k, MUZZLE_SMOKE_CORE, r.range(0.48, 0.54), 0.035);
   }
 
   clear() {

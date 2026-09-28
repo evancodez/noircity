@@ -21,6 +21,8 @@ export const OVERPASS = {
   springY: 5.6,
 };
 
+const FAR_LOD = 70;
+
 export class Overpass {
   constructor(world) {
     this.world = world;
@@ -65,7 +67,9 @@ export class Overpass {
     return { P, T, N };
   }
 
-  columnGeo() {
+  // (segs: 32 near; the far LOD - Phase 3b - takes 14: at 70 m a 0.7 m
+  // column is ~14 px wide and 14 segments deviate < 0.2 px from the circle)
+  columnGeo(segs = 32) {
     const D = OVERPASS.deckY;
     // (profile drawn for an 8.8 m deck; the shaft and capital stretch with
     // deckY, the plinth stays its own height)
@@ -75,14 +79,13 @@ export class Overpass {
       [0.33, 2.8 * k], [0.3, 4.4 * k], [0.34, 4.5 * k], [0.34, 4.72 * k], [0.29, 4.8 * k], [0.29, 6.6 * k],
       [0.34, 7.1 * k], [0.44, 7.6 * k], [0.58, 8.1 * k], [0.66, 8.4 * k], [0.7, 8.5 * k], [0.7, D + 0.05], [0.0, D + 0.05],
     ];
-    return lathe(prof, 32);
+    return lathe(prof, segs);
   }
 
   // Spandrel plate spanning Lc between two column centres, arched underside.
-  archPlate(Lc, H, rise, c0, thick) {
+  archPlate(Lc, H, rise, c0, thick, n = 40, bevelSegments = 2) {
     const s = new THREE.Shape();
     s.moveTo(0, 0);
-    const n = 40;
     const pts = [];
     for (let i = 0; i <= n; i++) {
       const th = (i / n) * Math.PI;
@@ -95,7 +98,7 @@ export class Overpass {
     s.lineTo(Lc, H);
     s.lineTo(0, H);
     s.closePath();
-    const plate = new THREE.ExtrudeGeometry(s, { depth: thick, bevelEnabled: true, bevelThickness: 0.03, bevelSize: 0.03, bevelSegments: 2, curveSegments: 4 });
+    const plate = new THREE.ExtrudeGeometry(s, { depth: thick, bevelEnabled: true, bevelThickness: 0.03, bevelSize: 0.03, bevelSegments, curveSegments: 4 });
     plate.translate(0, 0, -thick / 2);
     // intrados flange: a flat band under the arch, wider than the plate
     const path = pts.map(([u, v]) => V3(u, v, 0));
@@ -112,10 +115,18 @@ export class Overpass {
     return geo;
   }
 
+  // Each station (a column pair, its portal arch and the arches to the next)
+  // is one mesh, in two levels of detail (Phase 3b performance pass): the
+  // full build near the eye, a light one (14-segment columns, 16-point
+  // arches, one bevel step: ~1/3 of the triangles) beyond FAR_LOD m, where a
+  // station is a fogged silhouette ~100 px tall and the two print the same.
+  // Thirty-odd far stations of 5000 triangles each were drawn by the id,
+  // reflection and scene passes every frame, most of them a few pixels big.
   buildStations(M) {
     const { colliders } = this.world;
     const O = OVERPASS;
     const col = this.columnGeo();
+    const colLo = this.columnGeo(14);
     const count = Math.floor(this.length / O.span);
     const cols = [];
     for (let k = 0; k <= count; k++) {
@@ -128,33 +139,64 @@ export class Overpass {
     const Hs = O.deckY - O.springY;
     for (let k = 0; k < cols.length; k++) {
       const c = cols[k];
-      const parts = [];
-      parts.push(col.clone().translate(c.L.x, 0, c.L.z));
-      parts.push(col.clone().translate(c.R.x, 0, c.R.z));
-      // portal arch across the pair
-      const across = new THREE.Vector3().subVectors(c.R, c.L);
-      const Lx = across.length();
-      const portalH = O.deckY + O.girderH - 0.4 - (O.springY + 0.4);
-      parts.push(this.placeLocal(this.archPlate(Lx, portalH, Hs - 0.85, 0.3, 0.26), V3(c.L.x, O.springY + 0.4, c.L.z), across.normalize()));
-      // longitudinal arches to the next station, both sides
-      if (k + 1 < cols.length) {
-        const n = cols[k + 1];
-        for (const [a, b] of [[c.L, n.L], [c.R, n.R]]) {
-          const d = new THREE.Vector3().subVectors(b, a);
-          const Lc = d.length();
-          parts.push(this.placeLocal(this.archPlate(Lc, Hs, Hs - 0.62, 0.3, 0.22), V3(a.x, O.springY, a.z), d.normalize()));
+      const build = (lo) => {
+        const parts = [];
+        const cg = lo ? colLo : col, n = lo ? 16 : 40, bs = lo ? 1 : 2;
+        parts.push(cg.clone().translate(c.L.x, 0, c.L.z));
+        parts.push(cg.clone().translate(c.R.x, 0, c.R.z));
+        // portal arch across the pair
+        const across = new THREE.Vector3().subVectors(c.R, c.L);
+        const Lx = across.length();
+        const portalH = O.deckY + O.girderH - 0.4 - (O.springY + 0.4);
+        parts.push(this.placeLocal(this.archPlate(Lx, portalH, Hs - 0.85, 0.3, 0.26, n, bs), V3(c.L.x, O.springY + 0.4, c.L.z), across.normalize()));
+        // longitudinal arches to the next station, both sides
+        if (k + 1 < cols.length) {
+          const nx = cols[k + 1];
+          for (const [a, b] of [[c.L, nx.L], [c.R, nx.R]]) {
+            const d = new THREE.Vector3().subVectors(b, a);
+            const Lc = d.length();
+            parts.push(this.placeLocal(this.archPlate(Lc, Hs, Hs - 0.62, 0.3, 0.22, n, bs), V3(a.x, O.springY, a.z), d.normalize()));
+          }
         }
-      }
-      const mesh = new THREE.Mesh(merge(parts), M.iron);
-      mesh.castShadow = true;
-      mesh.receiveShadow = true;
-      tagInk(mesh, allocIronId());
-      this.group.add(mesh);
-      this.stations.push({ s: c.s, L: c.L, R: c.R, frame: c.f, mesh });
+        const mesh = new THREE.Mesh(merge(parts), M.iron);
+        mesh.castShadow = true;
+        mesh.receiveShadow = true;
+        this.group.add(mesh);
+        return mesh;
+      };
+      const mesh = build(false), meshLo = build(true);
+      const id = allocIronId();
+      tagInk(mesh, id);
+      tagInk(meshLo, id);
+      meshLo.visible = false;
+      meshLo.userData.noRay = true;     // (the bullets hit the full build)
+      // (the station's centre, for the LOD distance)
+      const mid = c.L.clone().add(c.R).multiplyScalar(0.5);
+      this.stations.push({ s: c.s, L: c.L, R: c.R, frame: c.f, mesh, meshLo, mid, lo: false });
       if (c.L.z > -140 && c.L.z < 60) {
         colliders.addCircle(c.L.x, c.L.z, 0.66, 'column');
         colliders.addCircle(c.R.x, c.R.z, 0.66, 'column');
       }
+    }
+  }
+
+  // the planar reflection (half res, emitters only) draws every station in
+  // its light build (Pipeline.reflLod)
+  reflLod(on) {
+    for (const st of this.stations) {
+      if (st.lo) continue;
+      st.mesh.visible = !on; st.meshLo.visible = on;
+    }
+  }
+
+  // per step: the far stations take their light build (with 4 m of
+  // hysteresis so a station on the boundary never flickers)
+  update(camera) {
+    const p = camera.position;
+    for (const st of this.stations) {
+      const d = Math.hypot(st.mid.x - p.x, st.mid.z - p.z);
+      const lo = !this.world.lodOff && (st.lo ? d > FAR_LOD - 4 : d > FAR_LOD);
+      if (lo !== st.lo) { st.lo = lo; st.mesh.visible = !lo; st.meshLo.visible = lo; }
     }
   }
 

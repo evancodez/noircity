@@ -605,10 +605,17 @@ export class Sfx {
     if (this.master) this.master.gain.setTargetAtTime(m ? 0 : this.volume, this.ctx.currentTime, 0.03);
   }
   toggleMute() { this.setMuted(!this.muted); return this.muted; }
+  // the pause card (Phase 3b): the whole mix drops to a murmur (the rain
+  // keeps falling behind the card), and comes back on resume
+  // (not duck(): that is the guns' sidechain duck of the ambience, below)
+  pauseMix(on) {
+    this.ducked = !!on;
+    if (this.master && !this.muted) this.master.gain.setTargetAtTime(this.volume * (on ? 0.22 : 1), this.ctx.currentTime, 0.08);
+  }
   setVolume(v) {
     this.volume = Math.min(1, Math.max(0, v));
     try { localStorage.setItem('noir.volume', String(this.volume.toFixed(2))); } catch (e) { /* ignore */ }
-    if (this.master && !this.muted) this.master.gain.setTargetAtTime(this.volume, this.ctx.currentTime, 0.03);
+    if (this.master && !this.muted) this.master.gain.setTargetAtTime(this.volume * (this.ducked ? 0.22 : 1), this.ctx.currentTime, 0.03);
     return this.volume;
   }
 

@@ -3,11 +3,53 @@
 // __noir.bench() and the game counters. Uses the DevTools protocol directly
 // (Node >= 22 has a global WebSocket; no puppeteer needed).
 //   node tools/fps.mjs "shot=battle&t=0.1&anim=1&wave=6" 1440 900 [seconds]
-import { spawn } from 'node:child_process';
+// The page's viewport is set to exactly width x height (Phase 3b: the
+// headless window's own chrome used to eat ~90 px, so '1440 900' measured a
+// 1440x813 canvas). The Phase 3b performance scenario is
+//   UNCAPPED=1 node tools/fps.mjs "shot=perf&t=1&anim=1" 1440 900
+// (a burning wreck, a full wave of 12 Hoods, the train, lightning).
+// Phase 3b review: the perf scenario is SEEDED (shot=perf holds the Hoods
+// on their feet - a fixed count, no blast kills - and the player on his
+// mark, so tris / calls repeat run to run), and the GPU's own utilisation
+// (ioreg 'Device Utilization %') is printed before and after: another
+// process already loading the GPU (> ~30 % before the run) makes the
+// absolute numbers meaningless, and the run is flagged BUSY. RUNS=<n>
+// repeats the measurement n times and prints the spread.
+import { spawn, execSync } from 'node:child_process';
+
+// GPU busy % right now (macOS IOAccelerator; null elsewhere): the max of a
+// few samples 150 ms apart (the counter is a short moving average)
+function gpuUtil(samples = 5) {
+  let best = null;
+  for (let i = 0; i < samples; i++) {
+    try {
+      const o = execSync('ioreg -r -d 1 -w 0 -c IOAccelerator', { encoding: 'utf8' });
+      const m = [...o.matchAll(/"Device Utilization %"=(\d+)/g)].map((x) => +x[1]);
+      if (m.length) best = Math.max(best ?? 0, ...m);
+    } catch { return null; }
+    if (i < samples - 1) execSync('sleep 0.15');
+  }
+  return best;
+}
+const GPU_BUSY = +(process.env.GPU_BUSY || 30);
 
 const QS = process.argv[2] || 'shot=battle&t=0.1&anim=1';
 const W = +(process.argv[3] || 1440), H = +(process.argv[4] || 900);
 const SECS = +(process.argv[5] || 6);
+const RUNS = +(process.env.RUNS || 1);
+const results = [];
+for (let run = 0; run < RUNS; run++) results.push(await measure(run));
+if (RUNS > 1) {
+  const ok = results.filter((r) => r && r.fps);
+  const col = (k) => ok.map((r) => r[k]);
+  const spread = (a) => ({ min: Math.min(...a), max: Math.max(...a), mean: +(a.reduce((x, y) => x + y, 0) / a.length).toFixed(2) });
+  console.log(JSON.stringify({ runs: ok.length, busyRuns: ok.filter((r) => r.gpu.busy).length, fps: spread(col('fps')), p95Ms: spread(col('p95Ms')),
+    tris: spread(col('tris')), calls: spread(col('calls')), gpuBefore: col('gpu').map((g) => g.before), gpuAfter: col('gpu').map((g) => g.after) }, null, 1));
+}
+process.exit(0);
+
+async function measure(run) {
+const gpuBefore = gpuUtil();
 const PORT = 9300 + Math.floor(Math.random() * 500);
 const CHROME = '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome';
 const chrome = spawn(CHROME, [
@@ -30,6 +72,7 @@ try {
   const { result: { targetId } } = await send('Target.createTarget', { url: 'about:blank' });
   const { result: { sessionId } } = await send('Target.attachToTarget', { targetId, flatten: true });
   await send('Page.enable', {}, sessionId);
+  await send('Emulation.setDeviceMetricsOverride', { width: W, height: H, deviceScaleFactor: 1, mobile: false }, sessionId);
   await send('Page.navigate', { url: `http://127.0.0.1:5173/?${QS}` }, sessionId);
   const evalJS = async (expr) => (await send('Runtime.evaluate', { expression: expr, awaitPromise: true, returnByValue: true }, sessionId)).result?.result?.value;
   for (let k = 0; k < 100; k++) { if (await evalJS('!!window.__noirReady')) break; await sleep(200); }
@@ -49,18 +92,27 @@ try {
     times.sort((a, b) => a - b);
     const avg = times.reduce((a, b) => a + b, 0) / times.length;
     const p95 = times[Math.floor(times.length * 0.95)];
-    const info = N.renderer.info.render;
+    const p99 = times[Math.floor(times.length * 0.99)];
+    // (copied now: bench() below renders without resetting the counters)
+    const info = { calls: N.renderer.info.render.calls, triangles: N.renderer.info.render.triangles };
     const K = N.game.counters;
     const b = await N.bench({ frames: 24, k: 6 });
-    return { cpu, fps: +(1000 / avg).toFixed(1), avgMs: +avg.toFixed(2), p95Ms: +p95.toFixed(2), frames: times.length, calls: info.calls, tris: info.triangles,
-      alive: K.alive, particles: N.game.fx.liveParticles, decals: K.decals, shots: K.shots, hoodShots: K.hoodShots, bench: b,
+    return { cpu, fps: +(1000 / avg).toFixed(1), avgMs: +avg.toFixed(2), p95Ms: +p95.toFixed(2), p99Ms: +p99.toFixed(2), frames: times.length, calls: info.calls, tris: info.triangles,
+      alive: K.alive, train: N.world.train.active, fires: N.world.cars.fires.length, strikes: N.game.storm.strikes, particles: N.game.fx.liveParticles, decals: K.decals, shots: K.shots, hoodShots: K.hoodShots, bench: b,
       size: [innerWidth, innerHeight], err: document.getElementById('errlog').textContent.slice(0, 400) };
   })()`);
-  console.log(JSON.stringify(out, null, 1));
-} catch (e) {
-  console.error('fps.mjs failed:', e);
-} finally {
   try { ws && ws.close(); } catch {}
   chrome.kill('SIGKILL');
-  process.exit(0);
+  await sleep(600);
+  const gpuAfter = gpuUtil();
+  out.gpu = { before: gpuBefore, after: gpuAfter, busy: gpuBefore != null && gpuBefore > GPU_BUSY };
+  if (out.gpu.busy) out.WARNING = `GPU already ${gpuBefore} % busy before the run (another process): absolute fps / ms are not a clean benchmark`;
+  console.log(JSON.stringify(RUNS > 1 ? { run, ...out } : out, null, 1));
+  return out;
+} catch (e) {
+  console.error('fps.mjs failed:', e);
+  try { ws && ws.close(); } catch {}
+  chrome.kill('SIGKILL');
+  return null;
+}
 }

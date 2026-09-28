@@ -3,7 +3,7 @@ import { FULLSCREEN_VERT, HASH_GLSL, LUMA_GLSL } from './common.js';
 import { NOIR_FOG_GLSL } from '../fog.js';
 import { TONE_GLSL, toneUniforms, EXPOSURE } from '../tone.js';
 import { RAIN_SLANT } from '../textures.js';
-import { FIG_ANCHOR, HOOD_ID0, HOOD_SLOTS, VM_ID0, DEBRIS_ID0 } from '../layers.js';
+import { FIG_ANCHOR, HOOD_ID0, HOOD_SLOTS, VM_ID0, DEBRIS_ID0, PLAYER_SLOT, HERO } from '../layers.js';
 
 // The ink pass: turns the linear HDR render into a hand-inked noir panel.
 // Order inside the shader (see DESIGN.md §3.4):
@@ -50,8 +50,14 @@ export function makeInkMaterial(tex, fogUniforms) {
       uRain: { value: 1.0 },
       uRain3: { value: 1.0 },
       uView: { value: 0 },
+      // 1: the Phase 3b fast paths (bit-identical output); 0: the Phase 3a
+      // path, for the in-session before/after benchmark (__noir.perfLegacy)
+      uFast: { value: 1 },
       // per-Hood brush anchor (root xyz, yaw), indexed by id - HOOD_ID0
       uFigAnchor: { value: FIG_ANCHOR },
+      // the player's hero key (layers.HERO): hat bone + brim radius, hat up
+      // axis + on, key direction + strength
+      uHero: { value: HERO },
       ...fogUniforms,
     },
     vertexShader: FULLSCREEN_VERT,
@@ -63,7 +69,9 @@ export function makeInkMaterial(tex, fogUniforms) {
       uniform float uExposure, uBloomStrength, uBrush, uLineWidth, uLightning, uRain, uRain3, uKick;
       uniform vec4 uRimLamps[ 4 ];
       uniform vec4 uFigAnchor[ ${HOOD_SLOTS} ];
+      uniform vec4 uHero[ 4 ];
       uniform int uView;
+      uniform float uFast;
       varying vec2 vUv;
 
       ${HASH_GLSL}
@@ -167,6 +175,21 @@ export function makeInkMaterial(tex, fogUniforms) {
 
         vec3 hdr = texture2D( tScene, uv ).rgb;
         vec3 bloom = texture2D( tBloom, uv ).rgb * uBloomStrength;
+        // The fire's glow (Phase 3b): a fireball's bloom printed as a smooth
+        // white aura round the flame, a CG glow sprite. The bloom is split
+        // into a white part (lamps, flashes, windows: untouched) and a warm
+        // part (the fire family, hue ~(1, .45, .07): r - b carries it, and
+        // green well above blue tells it from blood); the warm part loses
+        // its faint outer ~40 %, and what is left of its glow is broken by
+        // the world-space brush field below, so the flame is edged by
+        // dry-brush paper, not airbrushed. (Split, not switched: where a
+        // lamp's halo and the fire's overlap only the fire's share goes.)
+        float bWarm = smoothstep( 0.02, 0.08, ( bloom.g - bloom.b ) / max( bloom.r, 1e-6 ) );
+        vec3 fireBl = max( ( bloom.r - bloom.b ) / 0.93, 0.0 ) * bWarm * vec3( 1.0, 0.45, 0.07 );
+        vec3 whiteBl = max( bloom - fireBl, 0.0 );
+        fireBl *= smoothstep( 0.1, 0.5, luma( fireBl ) * uExposure );
+        bloom = whiteBl + fireBl;
+        float fireGlowF = luma( fireBl ) / max( luma( bloom ), 1e-6 );
         // volume (half res, feathered): r = cone light, g = the share of it
         // touching the surface. Rain & splash rings live in their own
         // full-res buffer (b) so the hairlines stay one pixel sharp.
@@ -246,7 +269,12 @@ export function makeInkMaterial(tex, fogUniforms) {
         // 45 m), so the el recedes in steps like the reference; the two
         // nearest columns (< ~20 m) stay pure black.
         float ironAir = 0.28 * smoothstep( 22.0, 48.0, dist );
-        v = mix( v, max( min( v, mix( 0.08, 0.62, fogA ) ), ironAir ), iron * ( 1.0 - fxCov ) );
+        // (an emitter drawn over the iron - a train's wheel sparks spilling
+        // over the girder, L ~ 7 - is not lit steel: far brighter than any
+        // lamp-lit iron, it keeps its own tone and prints as a hot white
+        // point instead of being held dark with the girder behind it)
+        float emitOnIron = smoothstep( 2.2, 3.5, L );
+        v = mix( v, max( min( v, mix( 0.08, 0.62, fogA ) ), ironAir ), iron * ( 1.0 - fxCov ) * ( 1.0 - emitOnIron ) );
         float vSmooth = v;
         float vLit = toneCurve( ( L + luma( bloom ) + luma( vol ) ) * exposure );
         // (measured against the UNclamped surface: the clamp must not come
@@ -309,6 +337,55 @@ export function makeInkMaterial(tex, fogUniforms) {
           v = ceilV * ( 1.0 - exp( -v / ceilV ) );
           v *= mix( 1.0, mix( 0.2, 1.4, br.r ), upF );
           v *= 1.0 - 0.88 * smoothstep( 9.0, 20.0, dist );
+        }
+        // The player's own hat, head and Tommy gun (Phase 3b review): seen
+        // from half a metre they are the second-largest shape in the over-
+        // the-shoulder frame, and under the figure ceiling the hat printed as
+        // a flat vector cut-out. Like the reference's shooter they take bold
+        // white dry-brush strokes where a key light fixed in WORLD space
+        // (uHero[2], mostly from above) falls: the crown, the brim's top and
+        // its front edge, the ear and the neck, the receiver's top and the
+        // drum's rim. The strokes are the brush field (world-scaled, riding
+        // on the body like every Hood's) thresholded by the key: the more
+        // squarely lit, the more of the field prints paper white. The hat
+        // band stays a black ribbon and the brim's rim a heavy ink line.
+        float heroF = 0.0, heroLine = 0.0;
+        if ( hood > 0.5 && fidH > ${(PLAYER_SLOT.gun - 0.5).toFixed(1)} && uHero[ 1 ].w > 0.5 ) {
+          float gunF = step( fidH, ${(PLAYER_SLOT.gun + 0.5).toFixed(1)} );
+          // (the body: the head and the hat only; the coat keeps its greys)
+          heroF = mix( smoothstep( 1.47, 1.55, hoodY ), 1.0, gunF ) * nearF * ( 1.0 - smoothstep( 3.0, 6.0, dist ) );
+          if ( heroF > 0.0 ) {
+            vec3 hq = wpos - uHero[ 0 ].xyz;
+            float hh = dot( hq, uHero[ 1 ].xyz );                  // height above the brim plane
+            float hx = dot( hq, uHero[ 3 ].xyz );
+            float hz = length( hq - hh * uHero[ 1 ].xyz - hx * uHero[ 3 ].xyz );
+            float hr = length( vec2( hx / 0.9, hz ) );              // off the crown's axis (the brim's oval)
+            float onHat = ( 1.0 - gunF ) * step( -0.05, hh ) * step( hr, uHero[ 0 ].w + 0.02 );
+            float band = onHat * smoothstep( 0.008, 0.013, hh ) * ( 1.0 - smoothstep( 0.034, 0.039, hh ) ) * step( hr, 0.125 );
+            float brimEdge = onHat * smoothstep( uHero[ 0 ].w - 0.016, uHero[ 0 ].w - 0.008, hr ) * step( hh, 0.03 );
+            float kh = max( dot( nW, uHero[ 2 ].xyz ), 0.0 ) * uHero[ 2 ].w;
+            vec3 kH0 = normalize( vec3( uHero[ 2 ].x, 0.0, uHero[ 2 ].z ) + 1e-4 );
+            // bold strokes: a coarser octave of the field than the coat's
+            // (the gun: the diagonal family only, fewer and sparser - a few
+            // highlights on the steel, not a ruled line of ticks)
+            vec3 brH = brushWorld( bpos, nBr, dist, 1500.0, 0.53 );
+            float bs = mix( mix( brH.r, brH.b, smoothstep( 0.6, 0.9, abs( nBr.y ) ) ), brH.r, gunF );
+            float thr = 1.0 - mix( 0.72, 0.42, gunF ) * kh * kh;
+            float s = smoothstep( thr - 0.05, thr + 0.05, bs ) * ( 1.0 - band );
+            // the head (not the hat): a broken white edge where it turns away
+            // from the eye on the key's side - the ear, the jaw, the hair at
+            // the nape, like the reference's shooter's lit ear
+            vec3 kH = kH0;
+            float graze = 1.0 - abs( dot( n, normalize( -vpos ) ) );
+            float edgeLit = ( 1.0 - onHat ) * ( 1.0 - gunF ) * smoothstep( 0.55, 0.8, graze ) * smoothstep( -0.1, 0.35, dot( nW, kH ) );
+            s = max( s, edgeLit * smoothstep( 0.35, 0.5, bs ) );
+            v = max( v * ( 1.0 - band ), heroF * s * 0.9 );
+            // the ribbon's top edge catches the key: a thin broken light line
+            // (the reference's band reads as a ribbon, not as more crown)
+            float bandTop = onHat * smoothstep( 0.030, 0.033, hh ) * ( 1.0 - smoothstep( 0.0355, 0.039, hh ) ) * step( hr, 0.125 );
+            v = max( v, heroF * bandTop * 0.62 * smoothstep( 0.3, 0.45, bs ) * smoothstep( -0.2, 0.3, dot( nW, kH0 ) ) );
+            heroLine = heroF * brimEdge * smoothstep( 0.3, 0.5, br.g * 0.5 + br.r * 0.5 );
+          }
         }
         // the gun: black steel and dark wood; lamp light and the muzzle flash
         // raise dry-brush greys on it (never a white plate)
@@ -468,6 +545,9 @@ export function makeInkMaterial(tex, fogUniforms) {
         // 8x per second, like inked animation on twos.
         // (the slow warp is anchored to the surface so lines do not swim
         // against the world as the player walks; the boil is time-only)
+        // (the wobble's and the width's noise taps stay OUTSIDE the sky
+        // branch below: the noise is mipmapped, and a quad straddling a
+        // silhouette against the sky needs its derivatives)
         vec2 wob = ( texture2D( tNoise, ( bpos.xy + bpos.zx * 0.7 ) / ( 0.6 + dist * 0.09 ) ).rg - 0.5 ) * 1.8
                  + ( texture2D( tNoise, uv * vec2( 5.3, 3.7 ) + uBoil * 0.37 ).ba - 0.5 ) * 1.2;
         vec2 uvL = uv + wob / uRes;
@@ -476,8 +556,6 @@ export function makeInkMaterial(tex, fogUniforms) {
         // width varies along the line and grows for near objects
         float wN = texture2D( tNoise, uv * vec2( 7.0, 5.0 ) + 0.3 ).a;
         float rpx = uLineWidth * mix( 0.7, 1.9, wN ) * clamp( 7.0 / zc + 0.6, 0.65, 1.7 );
-        vec4 cN = texture2D( tNormalId, uvL );
-        float wcl = wAt( uvL );
         float edge = 0.0;
         float edgeN = 0.0;   // crease lines only (no silhouettes): structure inside black masses
         float edgeId = 0.0;
@@ -486,6 +564,14 @@ export function makeInkMaterial(tex, fogUniforms) {
         vec2 haloUV = uv;    // ... at this neighbouring Hood pixel,
         vec3 haloN = vec3( 0.0, 0.0, 1.0 );   // whose normal is this
         const vec2 dirs[ 4 ] = vec2[ 4 ]( vec2( 1.0, 0.0 ), vec2( 0.0, 1.0 ), vec2( 0.7071, 0.7071 ), vec2( 0.7071, -0.7071 ) );
+        // (Phase 3b performance: a sky pixel's contour terms all end up zero -
+        // its edge fades out at zc = uFar, its id edge, halo, rim and structure
+        // lines are all gated by !sky - so the 24-tap probe is skipped there;
+        // the output is bit-identical. The depth and normal/id targets are
+        // unfiltered and unmipmapped, so the branch is safe for their taps.)
+        if ( !sky || uFast < 0.5 ) {
+        vec4 cN = texture2D( tNormalId, uvL );
+        float wcl = wAt( uvL );
         for ( int i = 0; i < 4; i ++ ) {
           vec2 o = dirs[ i ] * rpx / uRes;
           float w1 = wAt( uvL + o ), w2 = wAt( uvL - o );
@@ -507,6 +593,7 @@ export function makeInkMaterial(tex, fogUniforms) {
           vec2 o2 = o * 1.7;
           float wf = min( wAt( uv + o2 ), wAt( uv - o2 ) );
           silFront = max( silFront, step( 1.25, wc / max( wf, 1e-7 ) ) );
+        }
         }
         // lines break up a little like a dry brush, and dissolve into the fog
         float lineBreak = mix( 1.0, smoothstep( 0.08, 0.3, br.g * 0.6 + br.r * 0.4 ), 0.35 + 0.5 * fogA );
@@ -591,7 +678,7 @@ export function makeInkMaterial(tex, fogUniforms) {
         edge *= 1.0 - 0.85 * fxCov;
         rim *= 1.0 - fxCov;
         structL *= 1.0 - fxCov;
-        col = mix( col, vec3( 0.0 ), edge );
+        col = mix( col, vec3( 0.0 ), max( edge, heroLine ) );
         col = max( col, vec3( structL * 0.42 ) );
         col = max( col, vec3( rim * mix( 0.72, 0.86, figR ) ) );
         // black on black: behind a Hood's silhouette the dark object (a car,
@@ -624,6 +711,9 @@ export function makeInkMaterial(tex, fogUniforms) {
           haloK *= lineBreak * max( lampH, 0.7 * isFig );
         }
         col = mix( col, vec3( 0.42 ), haloK * ( 1.0 - fxCov ) );
+        // (the fire's glow in dry-brush strokes: the strong inner part stays
+        // solid, the rest of it breaks up along the brush field)
+        glow *= mix( 1.0, smoothstep( b - 0.2, b + 0.2, clamp( glow * 1.1 - 0.15, 0.0, 1.0 ) ), fireGlowF );
         col = min( col + glow, vec3( 1.0 ) );
         // paper-white lift-out: where the air light is dense (a lamp's halo,
         // the hot collar under a shade) the brush leaves bare paper, with a

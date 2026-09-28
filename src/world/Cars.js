@@ -69,8 +69,14 @@ function fenderShape(front) {
   return s;
 }
 
+// CQ scales the template's segment counts (Phase 3b: the far build, CQ
+// 0.4, for cars beyond FAR_LOD m - a 4.5 m sedan ~70 px long prints the same
+// with a third of the triangles; its clearcoat body was 33k of them)
+let CQ = 1;
+const cq = (n, min = 3) => Math.max(min, Math.round(n * CQ));
+const FAR_LOD = 36;
 function extrude(shape, depth, bt, bs, seg = 5) {
-  const g = new THREE.ExtrudeGeometry(shape, { depth, bevelEnabled: true, bevelThickness: bt, bevelSize: bs, bevelSegments: seg, curveSegments: 20 });
+  const g = new THREE.ExtrudeGeometry(shape, { depth, bevelEnabled: true, bevelThickness: bt, bevelSize: bs, bevelSegments: cq(seg, 2), curveSegments: cq(20, 8) });
   g.translate(0, 0, -depth / 2);
   return smoothNormals(g, 1e-4);
 }
@@ -134,8 +140,12 @@ function contactMaterial() {
   return CONTACT;
 }
 
-let TEMPLATE = null;
-function buildTemplate() {
+let TEMPLATE = null, TEMPLATE_LO = null;
+function buildTemplate(q = 1) {
+  CQ = q;
+  try { return buildTemplateParts(); } finally { CQ = 1; }
+}
+function buildTemplateParts() {
   const paint = [], chrome = [], rubber = [], glass = [], lenses = [], dark = [], white = [], hubs = [], seams = [], caps = [];
   // Phase 3a: every pane and headlamp lens is also kept on its own, so a
   // car's glass can be rebuilt without the ones that were shot out
@@ -174,29 +184,29 @@ function buildTemplate() {
     // cabin side seam: the B-pillar between the two panes
     seams.push(tube([V3(-0.31, 1.13, sgn * (cabHalf + 0.003)), V3(-0.31, 1.6, sgn * (cabHalf + 0.003))], 0.006, 5, 4));
     // chrome belt trim along the body side
-    chrome.push(tube([V3(2.1, 1.02, sgn * (bodyHalf - 0.02)), V3(0.6, 1.07, sgn * (bodyHalf + 0.005)), V3(-0.5, 1.07, sgn * (bodyHalf + 0.005)), V3(-1.6, 1.02, sgn * (bodyHalf - 0.01))], 0.012, 6, 32));
+    chrome.push(tube([V3(2.1, 1.02, sgn * (bodyHalf - 0.02)), V3(0.6, 1.07, sgn * (bodyHalf + 0.005)), V3(-0.5, 1.07, sgn * (bodyHalf + 0.005)), V3(-1.6, 1.02, sgn * (bodyHalf - 0.01))], 0.012, cq(6, 4), cq(32, 12)));
     // wheels
     for (const [wx, wz] of [[1.55, 0.78], [-1.55, 0.76]]) {
-      const tyre = new THREE.TorusGeometry(0.27, 0.105, 16, 40).translate(wx, WHEEL_R, sgn * wz);
+      const tyre = new THREE.TorusGeometry(0.27, 0.105, cq(16, 8), cq(40, 16)).translate(wx, WHEEL_R, sgn * wz);
       // whitewall: ONE thin pale ring that makes a black 1930s tyre read in
       // ink (a wide band plus a chrome hubcap ring read as a bullseye)
       // (it sits just proud of the torus sidewall: a ring placed inside the
       // tyre's bulge is half hidden and shows as two concentric circles)
       // drawn as the lit upper arc only, the way an inker would pick it out
-      const ww = new THREE.RingGeometry(0.25, 0.265, 48, 1, -0.25, Math.PI + 0.5);
+      const ww = new THREE.RingGeometry(0.25, 0.265, cq(48, 16), 1, -0.25, Math.PI + 0.5);
       if (sgn < 0) ww.rotateY(Math.PI);
       white.push(ww.translate(wx, WHEEL_R, sgn * (wz + 0.108)));
       rubber.push(tyre);
       // (profile runs bottom-up so LatheGeometry's faces point outward)
-      const hub = lathe([[0.25, -0.02], [0.23, 0.01], [0.17, 0.045], [0.08, 0.07], [0.0, 0.075]], 28).rotateX(sgn * Math.PI / 2).translate(wx, WHEEL_R, sgn * (wz + 0.03));
+      const hub = lathe([[0.25, -0.02], [0.23, 0.01], [0.17, 0.045], [0.08, 0.07], [0.0, 0.075]], cq(28, 12)).rotateX(sgn * Math.PI / 2).translate(wx, WHEEL_R, sgn * (wz + 0.03));
       hubs.push(hub);
       // small chrome cap dot at the hub centre
-      caps.push(lathe([[0.06, -0.01], [0.055, 0.01], [0.035, 0.025], [0.0, 0.03]], 20).rotateX(sgn * Math.PI / 2).translate(wx, WHEEL_R, sgn * (wz + 0.1)));
-      const disc = new THREE.CylinderGeometry(0.26, 0.26, 0.12, 28).rotateX(Math.PI / 2).translate(wx, WHEEL_R, sgn * wz);
+      caps.push(lathe([[0.06, -0.01], [0.055, 0.01], [0.035, 0.025], [0.0, 0.03]], cq(20, 8)).rotateX(sgn * Math.PI / 2).translate(wx, WHEEL_R, sgn * (wz + 0.1)));
+      const disc = new THREE.CylinderGeometry(0.26, 0.26, 0.12, cq(28, 12)).rotateX(Math.PI / 2).translate(wx, WHEEL_R, sgn * wz);
       dark.push(disc);
     }
     // headlamps: bullet shells on stalks, lens facing +x
-    const hl = lathe([[0.0, -0.25], [0.05, -0.23], [0.1, -0.17], [0.13, -0.09], [0.145, 0.0], [0.15, 0.03], [0.135, 0.045]], 28);
+    const hl = lathe([[0.0, -0.25], [0.05, -0.23], [0.1, -0.17], [0.13, -0.09], [0.145, 0.0], [0.15, 0.03], [0.135, 0.045]], cq(28, 12));
     hl.rotateZ(-Math.PI / 2).translate(2.26, 0.98, sgn * 0.6);
     chrome.push(hl);
     chrome.push(new THREE.CylinderGeometry(0.03, 0.04, 0.12, 8).translate(2.14, 0.88, sgn * 0.6));
@@ -204,7 +214,7 @@ function buildTemplate() {
     lenses.push(lens);
     lensParts.push({ geo: lens, c: V3(2.307, 0.98, sgn * 0.6), n: V3(1, 0, 0), side: sgn });
     // taillights
-    dark.push(lathe([[0, -0.08], [0.04, -0.06], [0.05, 0.0], [0.035, 0.03]], 16).rotateZ(Math.PI / 2).translate(-2.3, 0.84, sgn * 0.74));
+    dark.push(lathe([[0, -0.08], [0.04, -0.06], [0.05, 0.0], [0.035, 0.03]], cq(16, 8)).rotateZ(Math.PI / 2).translate(-2.3, 0.84, sgn * 0.74));
   }
   // windshield (split) and rear window
   const ws0 = V2(0.74 + CAB_BS * 0.3, 1.1), ws1 = V2(0.47 + CAB_BS * 0.3, 1.58);
@@ -229,11 +239,11 @@ function buildTemplate() {
     chrome.push(new THREE.CylinderGeometry(0.009, 0.009, top - 0.55, 6).translate(2.39, (top + 0.55) / 2, z));
   }
   // hood centre strip + ornament
-  chrome.push(tube([V3(0.76, 1.145, 0), V3(1.4, 1.14, 0), V3(2.0, 1.12, 0), V3(2.26, 1.08, 0)], 0.014, 6, 24));
+  chrome.push(tube([V3(0.76, 1.145, 0), V3(1.4, 1.14, 0), V3(2.0, 1.12, 0), V3(2.26, 1.08, 0)], 0.014, cq(6, 4), cq(24, 10)));
   chrome.push(lathe([[0, 0], [0.03, 0.01], [0.025, 0.06], [0.006, 0.12], [0, 0.13]], 12).translate(2.2, 1.09, 0));
   // bumpers
   const bump = (x, s) => {
-    const g = tube([V3(x - s * 0.1, 0.46, -0.95), V3(x, 0.46, -0.55), V3(x + s * 0.03, 0.46, 0), V3(x, 0.46, 0.55), V3(x - s * 0.1, 0.46, 0.95)], 0.05, 10, 48);
+    const g = tube([V3(x - s * 0.1, 0.46, -0.95), V3(x, 0.46, -0.55), V3(x + s * 0.03, 0.46, 0), V3(x, 0.46, 0.55), V3(x - s * 0.1, 0.46, 0.95)], 0.05, cq(10, 6), cq(48, 16));
     g.translate(0, -0.46, 0).scale(1, 1.7, 1).translate(0, 0.46, 0);
     chrome.push(g);
     for (const z of [-0.35, 0.35]) chrome.push(new THREE.CapsuleGeometry(0.035, 0.2, 4, 10).translate(x + s * 0.03, 0.5, z));
@@ -251,17 +261,19 @@ function buildTemplate() {
   // spare tyre on the turtle deck
   const spareAxis = V3(-0.78, 0.62, 0).normalize();
   const q = new THREE.Quaternion().setFromUnitVectors(V3(0, 0, 1), spareAxis);
-  const spare = new THREE.TorusGeometry(0.23, 0.09, 14, 36).applyQuaternion(q).translate(-2.31, 0.8, 0);
+  const spare = new THREE.TorusGeometry(0.23, 0.09, cq(14, 8), cq(36, 14)).applyQuaternion(q).translate(-2.31, 0.8, 0);
   rubber.push(spare);
-  const cover = lathe([[0.27, -0.03], [0.22, 0.02], [0.12, 0.06], [0, 0.07]], 28).applyQuaternion(new THREE.Quaternion().setFromUnitVectors(V3(0, 1, 0), spareAxis)).translate(-2.34, 0.82, 0);
+  const cover = lathe([[0.27, -0.03], [0.22, 0.02], [0.12, 0.06], [0, 0.07]], cq(28, 12)).applyQuaternion(new THREE.Quaternion().setFromUnitVectors(V3(0, 1, 0), spareAxis)).translate(-2.34, 0.82, 0);
   paint.push(cover);
 
-  TEMPLATE = {
+  return {
     paint: merge(paint), chrome: merge(chrome), rubber: merge(rubber), glass: merge(glass), lenses: merge(lenses), dark: merge(dark), white: merge(white), hubs: merge(hubs),
     seams: merge(seams), caps: merge(caps), skirt, panes, lensParts,
   };
-  return TEMPLATE;
 }
+// the parts whose geometry is shared by every car (never rebuilt per car:
+// the glass and the lenses are) swap to the far build beyond FAR_LOD m
+const LOD_PARTS = ['paint', 'chrome', 'dark', 'rubber', 'white', 'hubs', 'caps', 'seams'];
 
 // ---------------------------------------------------------------------------
 // Damage (Phase 3a). Bullets are dispatched here by the game (game/React.js)
@@ -300,8 +312,9 @@ export class Cars {
     this.world = world;
     this.cars = [];
     this.rng = world.rng.fork(4447);
-    const T = TEMPLATE || buildTemplate();
+    const T = TEMPLATE || (TEMPLATE = buildTemplate());
     this.T = T;
+    this.TL = TEMPLATE_LO || (TEMPLATE_LO = buildTemplate(0.4));
     const specs = [
       { pos: V3(2.6, 0, -27), yaw: -1.2, lights: false, paint: 'paint' },
       // parked under the el, ~14 m from the street view and cropped by the
@@ -371,7 +384,7 @@ export class Cars {
       state: 'intact',           // intact -> smoking -> burning (a wreck), or smoking (a dud) -> dead
       panes: T.panes.map(() => ({ hits: 0, broken: false })), lensBroken: [false, false],
       tyres: [0, 0, 0, 0], sag: [0, 0, 0, 0], extraSag: 0, tilt: [0, 0], fuse: FUSE, smokeT: 0, smokeAcc: 0,
-      hits: 0, fire: null, wreckT: 0, dud: false,
+      hits: 0, fire: null, wreckT: 0, dud: false, lod: 0,
     };
     g.traverse((o) => { if (o.isMesh) o.userData.car = car; });
     car.collider = colliders.addBox(pos.x, pos.z, 2.6, 1.0, yaw, 'car');
@@ -575,6 +588,25 @@ export class Cars {
   }
 
   // per fixed step (game/React.js)
+  // per step (World.update): the far build for the cars beyond FAR_LOD m
+  // (4 m of hysteresis). The bullets' BVH keeps the full build (RayWorld).
+  lodUpdate(camera) {
+    const p = camera.position;
+    for (const car of this.cars) {
+      const d = Math.hypot(car.pos.x - p.x, car.pos.z - p.z);
+      const lod = this.world.lodOff ? 0 : car.lod ? (d > FAR_LOD - 4 ? 1 : 0) : (d > FAR_LOD ? 1 : 0);
+      if (lod === car.lod) continue;
+      car.lod = lod;
+      const T = lod ? this.TL : this.T;
+      for (const k of LOD_PARTS) {
+        const m = car.meshes[k];
+        if (!m) continue;
+        m.userData.rayGeo = this.T[k];
+        m.geometry = T[k];
+      }
+    }
+  }
+
   update(dt, t) {
     const G = this.game, r = this.rng;
     for (const car of this.cars) {

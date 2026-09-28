@@ -28,6 +28,15 @@ import { makeBloomPrefilter, makeBloomDown, makeBloomUp, makeStreakMaterial, mak
 // world (normals, ids, contours, brush) and can never clip into a wall. It is
 // never reflected and never in the volume / rain passes; its muzzle flash
 // sprites (LAYER.VM_FX) follow it in the scene pass only.
+//
+// Phase 3b performance pass (same image, see __noir.perfLegacy for the
+// in-session before/after): the scene target's MSAA colour is resolved once
+// per frame instead of after every render() call into it, and its depth is
+// never resolved (nobody reads it); the ink pass skips its 24-tap contour
+// probe on sky pixels; the street skips its rain-ring search beyond 34 m;
+// far el stations, far cars and far Tommy guns take lighter builds
+// (Overpass, Cars, Hood). GPU per-pass timings: __noir.gpuProfile() where
+// timer queries work, else __noir.bench() (repeated passes).
 const BLOOM_LEVELS = 5;
 
 export class Pipeline {
@@ -65,8 +74,32 @@ export class Pipeline {
       depthTexture: new THREE.DepthTexture(1, 1, THREE.UnsignedIntType),
     });
     this.rtId.texture.name = 'rtId';
-    this.rtScene = new THREE.WebGLRenderTarget(1, 1, { type: hf, samples: 4 });
+    // (Phase 3b performance pass) nothing reads the scene target's depth (the
+    // ink pass takes rtId's), so its multisampled depth is never resolved;
+    // and three resolves the MSAA colour after EVERY render() call into it,
+    // but only the last one of the frame matters: holdResolve() hides the
+    // samples from three's resolve for the calls before the last (the gun,
+    // and the world when the gun's flash sprites follow) - each skipped
+    // resolve is a 1440x900x4 half-float blit
+    // (and it is R11G11B10F, not RGBA16F: nothing reads the scene's alpha,
+    // its colour is never negative, and 6-5 bits of mantissa per channel
+    // are well under a display step through the log tone curve; half the
+    // bytes of every 4x multisampled pixel stored, loaded and resolved)
+    this.rtScene = new THREE.WebGLRenderTarget(1, 1, { type: THREE.UnsignedInt101111Type, format: THREE.RGBFormat, samples: 4, resolveDepthBuffer: false });
     this.rtScene.texture.name = 'rtScene';
+    {
+      const rt = this.rtScene;
+      let samples = rt.samples;
+      rt._holdResolve = false;
+      Object.defineProperty(rt, 'samples', { get: () => (rt._holdResolve ? 0 : samples), set: (v) => { samples = v; }, configurable: true });
+      // (a render() that updates the shadow maps re-binds the scene target
+      // after them, reading `samples`: the hold may only begin after that,
+      // so it is armed from the shadow map's own render - see holdAfterShadows)
+      const sm = renderer.shadowMap, smRender = sm.render.bind(sm);
+      this._armHold = false;
+      this.deferResolve = true;
+      sm.render = (lights, scene, camera) => { smRender(lights, scene, camera); if (this._armHold) rt._holdResolve = true; };
+    }
     this.rtRefl = new THREE.WebGLRenderTarget(1, 1, { type: hf });
     this.rtVolume = new THREE.WebGLRenderTarget(1, 1, { type: hf, depthBuffer: false });
     this.rtVolume.texture.name = 'rtVolume';
@@ -132,6 +165,15 @@ export class Pipeline {
           gl_FragColor = vec4( vec3( uMode == 1 ? c.a : toneCurve( l * uExposure ) ), 1.0 );
         }`,
     });
+  }
+
+  // the scene target's format: R11G11B10F (default) or RGBA16F (Phase 3a)
+  setSceneFormat(compact) {
+    const t = this.rtScene.texture;
+    const type = compact ? THREE.UnsignedInt101111Type : THREE.HalfFloatType, format = compact ? THREE.RGBFormat : THREE.RGBAFormat;
+    if (t.type === type && t.format === format) return;
+    t.type = type; t.format = format;
+    this.rtScene.dispose();
   }
 
   setSize(cssW, cssH) {
@@ -281,8 +323,11 @@ export class Pipeline {
     scene.background = null;
     r.getClearColor(this._clearColor);
     const savedAlpha = r.getClearAlpha();
+    // GPU stage timings (debug/GpuProf.js, __noir.gpuProfile): off by default
+    const P = this.prof;
 
     // ---- 1. normal + id --------------------------------------------------
+    if (P) P.begin('id');
     camera.layers.set(LAYER.WORLD);
     camera.layers.enable(LAYER.GROUND);
     const S = this.skip;
@@ -324,9 +369,13 @@ export class Pipeline {
     // with the far columns into a white plate under the vanishing point).
     // What remains: lamp heads, cones, windows, headlights, lit surfaces;
     // opaque geometry writes alpha 1.
+    if (P) P.begin('refl');
     this.updateReflectionCamera(camera);
     const reflHidden = this.reflHide ? this.reflHide(camera) : null;
     if (reflHidden) for (const o of reflHidden) o.visible = false;
+    // (Phase 3b: the half-res, emitters-only mirror takes the light builds of
+    // the el's stations and of the cars - black occluders there)
+    if (this.reflLod && this.deferResolve) this.reflLod(true);
     this.reflCam.layers.set(LAYER.WORLD);
     this.reflCam.layers.enable(LAYER.FX_REFL);
     this.reflCam.layers.enable(LAYER.VOLUME);
@@ -343,7 +392,9 @@ export class Pipeline {
     if (scene.fog) scene.fog.color.copy(this._sceneFogSave);
     U.uUseDepth.value = 1;
     if (reflHidden) for (const o of reflHidden) o.visible = true;
+    if (this.reflLod && this.deferResolve) this.reflLod(false);
     // bright pass: half -> quarter res; keep = max(0, lum - T)
+    if (P) P.begin('reflPost');
     const bp = this.reflBrightMat.uniforms;
     bp.tSrc.value = this.rtRefl.texture;
     bp.uTexel.value.set(1 / this.rtRefl.width, 1 / this.rtRefl.height);
@@ -362,6 +413,7 @@ export class Pipeline {
     U.tReflBlur.value = this.rtStreakB.texture;
 
     // ---- 3. scene -----------------------------------------------------------
+    if (P) P.begin('scene');
     camera.layers.enableAll();
     camera.layers.disable(LAYER.VOLUME);
     camera.layers.disable(LAYER.MIST);
@@ -379,17 +431,25 @@ export class Pipeline {
     // sprites on the gun (only while there are any: every render call into
     // this MSAA target costs a full-screen resolve)
     r.autoClear = false;
-    if (vm) drawVm(LAYER.VIEWMODEL);
+    const vmFx = vm && (!vm.fxLive || vm.fxLive());
+    // (the gun's own scene has no shadow casting lights: its hold is simple;
+    // the world's render arms the hold behind its shadow maps)
+    const hold = (on) => { this.rtScene._holdResolve = on && this.deferResolve; };
+    if (vm) { hold(!S.scene || vmFx); drawVm(LAYER.VIEWMODEL); hold(false); }
     if (!S.scene) {
+      this._armHold = vmFx && this.deferResolve;
       r.render(scene, camera);
+      this._armHold = false;
+      hold(false);
       r.shadowMap.autoUpdate = false;
       for (let k = 0; k < (this.repeat.scene || 0); k++) { r.clear(); if (vm) drawVm(LAYER.VIEWMODEL); r.render(scene, camera); }
     }
     r.shadowMap.autoUpdate = false;
-    if (vm && (!vm.fxLive || vm.fxLive())) drawVm(LAYER.VM_FX);
+    if (vmFx) drawVm(LAYER.VM_FX);
     r.autoClear = ac0;
 
     // ---- 4. volume light (half res) + rain (full res) --------------------------
+    if (P) P.begin('vol');
     r.shadowMap.autoUpdate = false;
     camera.layers.set(LAYER.VOLUME);
     camera.layers.enable(LAYER.MIST);
@@ -399,6 +459,7 @@ export class Pipeline {
     r.clear();
     if (!S.vol) for (let k = 0; k <= (this.repeat.vol || 0); k++) r.render(scene, camera);
     // feather: cones must dissolve into the rain, never end in a ruled edge
+    if (P) P.begin('volBlur');
     const bu = this.blurMat.uniforms;
     bu.tSrc.value = this.rtVolume.texture;
     bu.uDir.value.set(1 / this.rtVolume.width, 0);
@@ -406,6 +467,7 @@ export class Pipeline {
     bu.tSrc.value = this.rtVolTmp.texture;
     bu.uDir.value.set(0, 1 / this.rtVolume.height);
     this.blit(this.blurMat, this.rtVolume);
+    if (P) P.begin('rain');
     camera.layers.set(LAYER.RAIN);
     U.uRes.value.set(this.width, this.height);
     r.setRenderTarget(this.rtRain);
@@ -415,6 +477,7 @@ export class Pipeline {
     camera.layers.mask = savedMask;
 
     // ---- 5. bloom -------------------------------------------------------------
+    if (P) P.begin('bloom');
     const pf = this.prefilterMat.uniforms;
     pf.tSrc.value = this.rtScene.texture;
     pf.uTexel.value.set(1 / this.width, 1 / this.height);
@@ -435,6 +498,7 @@ export class Pipeline {
     }
 
     // ---- 6. ink -----------------------------------------------------------------
+    if (P) P.begin('ink');
     const iu = this.inkMat.uniforms;
     iu.tScene.value = this.rtScene.texture;
     iu.tBloom.value = this.bloom[0].texture;
@@ -480,5 +544,6 @@ export class Pipeline {
 
     r.setClearColor(this._clearColor, savedAlpha);
     scene.background = savedBg;
+    if (P) P.frame();
   }
 }

@@ -98,7 +98,7 @@ function basisQ(x, y, z, out) {
 // the middle joint should point (knee forward / elbow back). bend: +1 when
 // the lower bone folds toward the upper bone's -Z (a knee), -1 for +Z (an
 // elbow). Returns the root-space rotations of the two bones.
-function twoBone(s, t, pole, l1, l2, bend, qUpper, qLower) {
+export function twoBone(s, t, pole, l1, l2, bend, qUpper, qLower) {
   const d = _v2.subVectors(t, s);
   let len = d.length();
   const dn = d.clone().divideScalar(Math.max(len, 1e-6));

@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { OTS } from '../player/PlayerBody.js';
 
 // Camera presets for ?shot=<name>. Each: feet position (x, z), yaw, pitch
 // (radians), vertical fov, default fast-forward seconds, optional stage(world).
@@ -147,8 +148,8 @@ const STEP = 1 / 60;
 // The wave starts 13 s before the clock (game.warmup, run by main.js before
 // the t= fast-forward, the player holding fire): the Hoods come out of the
 // fog at 40-60 m and walk in, so that t=6 already opens on the firefight.
-function stageBattle(world, camera, controller, game) {
-  const w = parseInt(Q().get('wave') ?? '5', 10) || 5;
+function stageBattle(world, camera, controller, game, defWave = 5) {
+  const w = parseInt(Q().get('wave') ?? String(defWave), 10) || defWave;
   game.startBattle({ wave: w, autopilot: false });
   game.warmup = parseFloat(Q().get('warmup') ?? '13');
   game.afterWarmup = () => game.enableAutopilot();
@@ -225,11 +226,29 @@ function stageHoods(world, camera, controller, game) {
 
 // viewmodel: the street composition with the Tommy gun in frame and a muzzle
 // flash 0.03 s old (its second frame) - fired two steps before the frame
+// vmpuff=<s> (Phase 3b): instead, a 4-round burst whose muzzle smoke (it
+// hangs 0.13 s after the last round) is <s> old at the frame
 function stageViewmodel(world, camera, controller, game) {
   const T = tEndOf(SHOTS.viewmodel);
+  const aim = new THREE.Vector3(0, 0, -30).applyMatrix4(camera.matrixWorld);
+  const puff = parseFloat(Q().get('vmpuff') ?? '');
+  if (Number.isFinite(puff)) {
+    // (the burst is fired a few degrees down: the frame tips with it, so the
+    // muzzle and its smoke sit against the dark road below the cars, not in
+    // the lit mist - the same reasoning as the ots preset's pitch)
+    controller.pitch -= parseFloat(Q().get('vmpitch') ?? '0.08');
+    controller.apply(0);
+    camera.updateMatrixWorld();
+    const aimDown = new THREE.Vector3(0, 0, -30).applyMatrix4(camera.matrixWorld);
+    aim.copy(aimDown);
+    const t1 = Math.round((T - puff - 0.14) * 60) / 60;
+    const t0 = t1 - 3 / 11;
+    let k = 0;
+    game.scripts.push((t) => { while (k < 4 && t >= t0 + k / 11 - 1e-6) { game.scriptedShot(aim, t); k++; } });
+    return;
+  }
   const t0 = Math.round(T * 60) / 60 - 2 * STEP;
   let done = false;
-  const aim = new THREE.Vector3(0, 0, -30).applyMatrix4(camera.matrixWorld);
   game.scripts.push((t) => { if (!done && t >= t0 - 1e-6) { done = true; game.scriptedShot(aim, t); } });
 }
 
@@ -357,7 +376,129 @@ function stageStorm(world, camera, controller, game) {
 }
 SHOTS.storm = { ...SHOTS.street, t: 4, stage: stageStorm };
 
-const ALIASES = { ots: 'street', default: 'street' };
+// ---- Phase 3b ------------------------------------------------------------------
+// perf: the performance scenario (tools/fps.mjs "shot=perf&t=1&anim=1"): the
+// battle (wave 6: twelve Hoods alive at once, heavies among them, the
+// autopilot fighting), plus the car down the middle of the avenue blown up
+// during the warm-up so it burns through the measurement, the train kept
+// crossing the el, and a lightning strike every ~2.5 s
+// (seeded, Phase 3b review: the Hoods are held on their feet - a hit
+// bleeds and flinches, nobody falls, no blast kills - and the autopilot
+// holds his mark while he aims and fires, so the Hood count, the fire and
+// the view, hence tris / calls, repeat from run to run; perfseed=0 lets
+// the fight run free as before)
+function stagePerf(world, camera, controller, game) {
+  stageBattle(world, camera, controller, game, 6);
+  if (Q().get('perfseed') !== '0') {
+    game.hoodsHold = true;
+    game.afterWarmup = () => { game.enableAutopilot(); game.autopilot.hold = true; };
+  }
+  const cars = world.cars;
+  cars.startSmoke(cars.cars[2], 0.5, { force: true });
+  const tr = world.train;
+  let strikeT = 0, staged = false;
+  game.scripts.push((t, dt) => {
+    // (after the warm-up: the train comes in from behind the eye, so it runs
+    // over the view through the measurement; then it keeps crossing)
+    if (t < game.warmup - 0.5) return;
+    if (!staged || !tr.active) { staged = true; tr.stage(20, 0, 1); }
+    strikeT -= dt;
+    if (strikeT <= 0) { strikeT = 2.5; game.storm.strike(1, false); }
+  });
+}
+SHOTS.perf = { ...SHOTS.street, t: 1, viewmodel: true, holdWindow: 0, stage: stagePerf };
+
+// ots: the reference composition over the shoulder (Phase 3b, the V
+// camera). The eye stands where the boom (PlayerBody OTS: right, up, back,
+// swung OTS.yaw left of the aim) puts the over-the-shoulder camera exactly
+// on the street preset's camera, looking down the street as the reference
+// does - the lamp left, the el top right - with the player's back, hat and
+// Tommy gun large in the bottom left. The eye itself (the aim) is turned
+// OTS.yaw to the right of the picture: under the crosshair, ~9 m down the
+// street right of centre, a Hood takes the burst (deathBack 0.3 s old: the
+// reference's arched-back frame, the red burst off his chest); a second
+// Hood fires over the car on the right, a third walks in out of the mist.
+// otsaim=<m> moves the man being hit along the view axis.
+function stageOts(world, camera, controller, game) {
+  const T = tEndOf(SHOTS.ots);
+  game.setOts(true);
+  const q = Q();
+  // the OTS camera (on the street preset's camera) and its frame
+  const cyaw = controller.yaw + OTS.yaw * D2R;
+  const fwd = new THREE.Vector3(-Math.sin(cyaw), 0, -Math.cos(cyaw));
+  const right = new THREE.Vector3(Math.cos(cyaw), 0, -Math.sin(cyaw));
+  const cam = new THREE.Vector3(camera.position.x, 1.7, camera.position.z);
+  const nav = game.nav;
+  const at = (x, z) => { const k = nav.nearestFree(x, z, 3); const c = nav.center(k); return [c.x, c.z]; };
+  const face = (x, z) => Math.atan2(cam.x - x, cam.z - z);
+  const dA = parseFloat(q.get('otsaim') ?? '9');
+  const pA = cam.clone().addScaledVector(fwd, dA).addScaledVector(right, parseFloat(q.get('otsside') ?? '2.1'));
+  const [ax, az] = [pA.x, pA.z];
+  const A = game.spawnHood(ax, az, { ai: false, variant: { coat: 0, brim: 1, tall: 1 }, yaw: face(ax, az) + 0.5, state: 'aim' });
+  A.lookAt(cam);
+  const [bx, bz] = at(6.06, -20.98);
+  const B = game.spawnHood(bx, bz, { ai: false, variant: { coat: 1, brim: 1, tall: 1, cig: true }, yaw: face(bx, bz), state: 'aim' });
+  B.lookAt(cam);
+  const [dx, dz] = at(-7.0, -37);
+  const D = game.spawnHood(dx, dz, { ai: false, variant: { coat: 1, brim: 0, tall: 1 }, yaw: face(dx, dz) - 0.7 });
+  D.speed = 1.1;
+  D.setState('walk', 0);
+  const dir = [Math.sin(D.yaw), Math.cos(D.yaw)];
+  D.script = (h, t) => { if (t > 0) { h.pos.x = dx + dir[0] * (t - T) * h.speed; h.pos.z = dz + dir[1] * (t - T) * h.speed; } };
+  D.script(D, 1e-6);
+  const chest = (h) => new THREE.Vector3().setFromMatrixPosition(h.bones.chest.matrixWorld);
+  // the eye is turned OTS.yaw right of the picture, onto the man being hit
+  // (within ~1.3 deg: seen from the eye he stands ~14 deg right) and the
+  // barrel is held on his chest
+  const aimAt = chest(A);
+  game.body.aimOverride = () => aimAt;
+  const kill = parseFloat(q.get('otskill') ?? '0.3');
+  const events = [
+    [T - 1.2, () => game.stagedHoodFire(B, T - 1.2)],
+    [T - kill - 0.2, () => game.scriptedShot(chest(A).add(new THREE.Vector3(0.1, -0.22, 0)), T - kill - 0.2)],
+    [T - kill - 0.1, () => game.scriptedShot(chest(A).add(new THREE.Vector3(-0.05, 0.02, 0)), T - kill - 0.1)],
+    [T - kill, () => { game.scriptedShot(chest(A).add(new THREE.Vector3(0.02, 0.1, 0)), T - kill); if (A.alive) game.killHood(A, new THREE.Vector3().subVectors(chest(A), cam).normalize(), false, 'deathBack'); }],
+    [T - 0.05, () => game.stagedHoodFire(B, T - 0.05)],
+  ];
+  let k = 0;
+  game.scripts.push((t) => { while (k < events.length && t >= events[k][0] - 1e-6) events[k++][1](); });
+}
+{
+  // the eye: where the boom puts the camera on the street preset's camera,
+  // its yaw OTS.yaw right of the street's
+  const S = SHOTS.street, pitch = -0.03;
+  const q = new THREE.Quaternion().setFromEuler(new THREE.Euler(pitch * OTS.pitchK, S.yaw, 0, 'YXZ'));
+  const off = new THREE.Vector3(OTS.right, OTS.up, OTS.back).applyQuaternion(q);
+  // (pitched a little down: the flash sits against the dark street and the
+  // car beyond the man, not inside the lamp's lit pool)
+  SHOTS.ots = { ...S, x: S.x - off.x, z: S.z - off.z, yaw: S.yaw - OTS.yaw * D2R, pitch, t: 4, viewmodel: false, holdWindow: 0.45, stage: stageOts };
+}
+
+// title: the title card over the live street - the drifting title camera
+// (Game.titleDrift) at t=, the rain falling, no gun in frame
+function stageTitle(world, camera, controller, game) {
+  game.state = 'title';
+  game.setViewmodelVisible(false);
+  game.hud.showTitle();
+  game.titleDrift(0);
+}
+SHOTS.title = { ...SHOTS.street, t: 6, viewmodel: false, stage: stageTitle };
+
+// end: THE END over the battle (the battle preset, wave 5, the autopilot)
+// at t= (default 60): kills and waves from the fight, a seeded epitaph
+// (epitaph=<i> picks one)
+function stageEnd(world, camera, controller, game) {
+  stageBattle(world, camera, controller, game);
+  const T = tEndOf(SHOTS.end);
+  const pick = parseInt(Q().get('epitaph') ?? '', 10);
+  game.hud.epiRng = { next: () => (Number.isFinite(pick) ? (pick + 0.5) / 12 : 0.37) };
+  let done = false;
+  // (0.6 s before the frame: the dead man's Tommy gun has dropped out of it)
+  game.scripts.push((t) => { if (!done && t >= game.warmup + T - 0.6 - 1e-6) { done = true; game.endGame(); } });
+}
+SHOTS.end = { ...SHOTS.street, t: 60, viewmodel: true, holdWindow: 0.35, stage: stageEnd };
+
+const ALIASES = { default: 'street' };
 
 export function getShot(name) {
   const key = SHOTS[name] ? name : ALIASES[name];

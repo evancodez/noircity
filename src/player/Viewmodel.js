@@ -29,20 +29,24 @@ const DRUM_C = new THREE.Vector3(0, -0.07, -0.085);
 const FOREGRIP = new THREE.Vector3(0, 0.012, -0.3);
 
 // ---- geometry helpers ----------------------------------------------------------
+// GQ scales every segment count (Phase 3b: the heavies' Tommy guns beyond
+// ~12 m use a build at GQ 0.35 - a 0.6 m gun ~40 px long prints the same)
+let GQ = 1;
+const sq = (n, min = 3) => Math.max(min, Math.round(n * GQ));
 // lathe along the gun's -z axis: profile [[r, a]] with a = distance forward
 function latheFwd(profile, segs = 32) {
-  const g = new THREE.LatheGeometry(profile.map(([r, a]) => new THREE.Vector2(Math.max(r, 1e-4), a)), segs);
+  const g = new THREE.LatheGeometry(profile.map(([r, a]) => new THREE.Vector2(Math.max(r, 1e-4), a)), sq(segs, 6));
   g.rotateX(-Math.PI / 2);   // lathe +y -> gun -z
   return g;
 }
 // lathe along -y (hanging down): profile [[r, d]] with d = distance down
 function latheDown(profile, segs = 28) {
-  const g = new THREE.LatheGeometry(profile.map(([r, d]) => new THREE.Vector2(Math.max(r, 1e-4), -d)), segs);
+  const g = new THREE.LatheGeometry(profile.map(([r, d]) => new THREE.Vector2(Math.max(r, 1e-4), -d)), sq(segs, 6));
   return g;
 }
 // lathe along +x (the drum's axis): profile [[r, x]]
 function latheX(profile, segs = 48) {
-  const g = new THREE.LatheGeometry(profile.map(([r, x]) => new THREE.Vector2(Math.max(r, 1e-4), x)), segs);
+  const g = new THREE.LatheGeometry(profile.map(([r, x]) => new THREE.Vector2(Math.max(r, 1e-4), x)), sq(segs, 8));
   g.rotateZ(-Math.PI / 2);   // lathe +y -> +x
   return g;
 }
@@ -53,13 +57,13 @@ function sideExtrude(pts, w, b, curveSeg = 16) {
   s.splineThru(pts.slice(1).map(([a, y]) => new THREE.Vector2(a, y)));
   s.closePath();
   const depth = Math.max(0.002, w - 2 * b);
-  const g = new THREE.ExtrudeGeometry(s, { depth, bevelEnabled: true, bevelThickness: b, bevelSize: b * 0.9, bevelSegments: 5, curveSegments: curveSeg });
+  const g = new THREE.ExtrudeGeometry(s, { depth, bevelEnabled: true, bevelThickness: b, bevelSize: b * 0.9, bevelSegments: sq(5, 1), curveSegments: sq(curveSeg, 4) });
   g.translate(0, 0, -depth / 2);
   g.rotateY(Math.PI / 2);    // shape x (forward) -> -z, extrusion -> x
   return smoothNormals(g, 1e-4);
 }
 function ellipsoid(rx, ry, rz, c, segs = 28, bump = null) {
-  const g = new THREE.SphereGeometry(1, segs, Math.round(segs * 0.7));
+  const g = new THREE.SphereGeometry(1, sq(segs, 6), sq(Math.round(segs * 0.7), 4));
   const p = g.getAttribute('position');
   const v = new THREE.Vector3();
   for (let i = 0; i < p.count; i++) {
@@ -76,31 +80,37 @@ function ellipsoid(rx, ry, rz, c, segs = 28, bump = null) {
 function capsuleBetween(a, b, r, segs = 16) {
   const d = new THREE.Vector3().subVectors(b, a);
   const len = d.length();
-  const g = new THREE.CapsuleGeometry(r, Math.max(1e-3, len), 6, segs);
+  const g = new THREE.CapsuleGeometry(r, Math.max(1e-3, len), sq(6, 2), sq(segs, 5));
   g.applyQuaternion(new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), d.normalize()));
   g.translate((a.x + b.x) / 2, (a.y + b.y) / 2, (a.z + b.z) / 2);
   return g;
 }
 
-function buildGun() {
+const rbox = (w, h, d, r, seg) => roundedBox(w, h, d, r, sq(seg, 1));
+const torus = (R, r, a, b, arc) => new THREE.TorusGeometry(R, r, sq(a, 4), sq(b, 6), arc);
+function buildGun(q = 1) {
+  GQ = q;
+  try { return buildGunParts(); } finally { GQ = 1; }
+}
+function buildGunParts() {
   const steel = [], wood = [], drum = [], knob = [];
   // receiver: a long rounded box with a narrower rib on top
-  steel.push(roundedBox(0.034, 0.052, 0.25, 0.009, 4).translate(0, 0.026, -0.055));
-  steel.push(roundedBox(0.022, 0.012, 0.2, 0.005, 3).translate(0, 0.054, -0.07));
+  steel.push(rbox(0.034, 0.052, 0.25, 0.009, 4).translate(0, 0.026, -0.055));
+  steel.push(rbox(0.022, 0.012, 0.2, 0.005, 3).translate(0, 0.054, -0.07));
   // lower frame / trigger housing
-  steel.push(roundedBox(0.03, 0.03, 0.15, 0.007, 3).translate(0, -0.01, 0.0));
+  steel.push(rbox(0.03, 0.03, 0.15, 0.007, 3).translate(0, -0.01, 0.0));
   // Lyman rear sight: base, two ladder rails and the aperture slide, standing
   // proud of the receiver so its notch breaks the black slab's top line
-  steel.push(roundedBox(0.022, 0.012, 0.034, 0.004, 2).translate(0, 0.063, 0.04));
-  for (const x of [-0.0075, 0.0075]) steel.push(roundedBox(0.0035, 0.036, 0.006, 0.0015, 2).translate(x, 0.085, 0.046));
-  steel.push(roundedBox(0.02, 0.006, 0.007, 0.0018, 2).translate(0, 0.1, 0.046));
-  const ap = new THREE.TorusGeometry(0.0042, 0.0016, 8, 16);
+  steel.push(rbox(0.022, 0.012, 0.034, 0.004, 2).translate(0, 0.063, 0.04));
+  for (const x of [-0.0075, 0.0075]) steel.push(rbox(0.0035, 0.036, 0.006, 0.0015, 2).translate(x, 0.085, 0.046));
+  steel.push(rbox(0.02, 0.006, 0.007, 0.0018, 2).translate(0, 0.1, 0.046));
+  const ap = torus(0.0042, 0.0016, 8, 16);
   steel.push(ap.translate(0, 0.093, 0.046));
   // the receiver's side: a raised rail along the left flank and the
   // ejection-port frame on the right, so the ink finds crease lines in the
   // slab instead of one flat black side
-  steel.push(roundedBox(0.004, 0.009, 0.2, 0.0018, 2).translate(-0.0175, 0.036, -0.06));
-  steel.push(roundedBox(0.004, 0.018, 0.055, 0.0018, 2).translate(0.0175, 0.034, -0.035));
+  steel.push(rbox(0.004, 0.009, 0.2, 0.0018, 2).translate(-0.0175, 0.036, -0.06));
+  steel.push(rbox(0.004, 0.018, 0.055, 0.0018, 2).translate(0.0175, 0.034, -0.035));
   // barrel: finned (cooling fins) behind a plain run to the Cutts compensator
   const prof = [[0.0, 0.17], [0.0135, 0.17], [0.0135, 0.19]];
   for (let a = 0.19; a < 0.335; a += 0.0115) {
@@ -114,17 +124,17 @@ function buildGun() {
   steel.push(latheFwd(prof, 30).translate(0, 0.03, 0));
   // compensator: four raised transverse ribs across its top (between the
   // cut ports) + the front sight blade on the barrel behind it
-  for (const z of [-0.462, -0.474, -0.486, -0.498]) steel.push(roundedBox(0.021, 0.0065, 0.0048, 0.0016, 2).translate(0, 0.0454, z));
-  steel.push(roundedBox(0.003, 0.012, 0.012, 0.0012, 2).translate(0, 0.0465, -0.437));
+  for (const z of [-0.462, -0.474, -0.486, -0.498]) steel.push(rbox(0.021, 0.0065, 0.0048, 0.0016, 2).translate(0, 0.0454, z));
+  steel.push(rbox(0.003, 0.012, 0.012, 0.0012, 2).translate(0, 0.0465, -0.437));
   // foregrip mount under the barrel
-  steel.push(roundedBox(0.02, 0.018, 0.034, 0.005, 2).translate(0, 0.017, -0.3));
+  steel.push(rbox(0.02, 0.018, 0.034, 0.005, 2).translate(0, 0.017, -0.3));
   // vertical foregrip with finger grooves (wood), raked forward a little
   const fg = latheDown([[0, 0], [0.013, 0], [0.0165, 0.008], [0.019, 0.022], [0.0165, 0.034], [0.0195, 0.047], [0.0165, 0.059],
     [0.0195, 0.072], [0.017, 0.085], [0.0215, 0.098], [0.0205, 0.106], [0.012, 0.111], [0, 0.112]], 28);
   fg.rotateX(0.14).translate(FOREGRIP.x, FOREGRIP.y, FOREGRIP.z);
   wood.push(fg);
   // trigger guard + trigger
-  const guard = new THREE.TorusGeometry(0.019, 0.0034, 8, 24, Math.PI);
+  const guard = torus(0.019, 0.0034, 8, 24, Math.PI);
   guard.rotateY(Math.PI / 2).rotateX(Math.PI).translate(0, -0.025, 0.03);
   steel.push(guard);
   steel.push(capsuleBetween(new THREE.Vector3(0, -0.022, 0.028), new THREE.Vector3(0, -0.036, 0.034), 0.0028, 8));
@@ -139,24 +149,34 @@ function buildGun() {
   // the drum: a flat can with rolled rims, a raised ring and the winding key
   drum.push(latheX([[0, -0.025], [0.066, -0.025], [0.084, -0.0235], [0.0915, -0.019], [0.0935, -0.012], [0.0935, 0.012], [0.0915, 0.019],
     [0.084, 0.0235], [0.066, 0.025], [0.058, 0.026], [0.052, 0.025], [0.03, 0.025], [0.02, 0.028], [0.016, 0.036], [0.006, 0.037], [0, 0.037]], 56));
-  const ring = new THREE.TorusGeometry(0.058, 0.0028, 8, 56);
+  const ring = torus(0.058, 0.0028, 8, 56);
   ring.rotateY(Math.PI / 2).translate(0.026, 0, 0);
   drum.push(ring);
   // winding key: a flat bar across the hub
-  drum.push(roundedBox(0.006, 0.042, 0.009, 0.0025, 2).translate(0.038, 0, 0));
+  drum.push(rbox(0.006, 0.042, 0.009, 0.0025, 2).translate(0.038, 0, 0));
   // cocking knob on top of the receiver (animated in the reload): a ribbed
   // knob on a stem, standing well above the top rib
   knob.push(ellipsoid(0.0098, 0.0082, 0.0098, new THREE.Vector3(0, 0.08, 0), 16));
-  knob.push(new THREE.CylinderGeometry(0.0034, 0.0034, 0.022, 10).translate(0, 0.067, 0));
-  const kr = new THREE.TorusGeometry(0.0096, 0.0014, 6, 20);
+  knob.push(new THREE.CylinderGeometry(0.0034, 0.0034, 0.022, sq(10, 5)).translate(0, 0.067, 0));
+  const kr = torus(0.0096, 0.0014, 6, 20);
   kr.rotateX(Math.PI / 2);
   knob.push(kr.translate(0, 0.08, 0));
   return { steel: merge(steel), wood: merge(wood), drum: merge(drum), knob: merge(knob) };
 }
 
-// the whole gun as one geometry (the heavies' Tommy guns, enemies/Hood.js)
-export function buildTommyGeometry() {
+// the gun in two parts (Phase 3b: the player's own body, PlayerBody.js): the
+// body (steel, wood, bolt knob) and the drum, the drum centred on its own
+// origin so it can come out in the reload
+export function buildTommyParts() {
   const G = buildGun();
+  const knob = G.knob.clone().translate(0, 0, -0.11);
+  return { body: merge([G.steel, G.wood, knob]), drum: G.drum.clone(), drumC: DRUM_C.clone(), foregrip: FOREGRIP.clone() };
+}
+
+// the whole gun as one geometry (the heavies' Tommy guns, enemies/Hood.js);
+// q < 1: the far build
+export function buildTommyGeometry(q = 1) {
+  const G = buildGun(q);
   const drum = G.drum.clone().translate(DRUM_C.x, DRUM_C.y, DRUM_C.z);
   const knob = G.knob.clone().translate(0, 0, -0.11);
   return merge([G.steel, G.wood, drum, knob]);
@@ -301,11 +321,20 @@ export class Viewmodel {
     this.recoil = { z: 0, vz: 0, p: 0, vp: 0, yaw: 0, roll: 0 };
     this.reloadT = -1;
     this.reloadDur = 2.3;
+    // lowered (Phase 3b review): a dead man's gun leaves the shoulder - on
+    // the end card the Tommy gun drops out of the bottom of the frame
+    // (0 = shouldered, 1 = gone; the root is hidden once it is out of view)
+    this.lower = 0;
+    this.lowerTarget = 0;
     this._lastYaw = null; this._lastPitch = null;
     this.pose = new THREE.Matrix4();
     this.frameInv = new THREE.Matrix4();
     this.t = 0;
     this._q = new THREE.Quaternion(); this._e = new THREE.Euler(0, 0, 0, 'YXZ'); this._v = new THREE.Vector3();
+    // (scratch: update() and the light sync run every step / frame)
+    this._dh = new THREE.Vector3(); this._dhOff = new THREE.Vector3(0.03, -0.075, 0.02); this._wl = new THREE.Vector3(); this._tmpV = new THREE.Vector3();
+    this._elR = new THREE.Vector3(); this._elL = new THREE.Vector3(); this._m4 = new THREE.Matrix4(); this._one = new THREE.Vector3(1, 1, 1);
+    this._sd = new THREE.Vector3(); this._up = new THREE.Vector3(0, 1, 0); this._act = [];
   }
 
   // Depth squeeze: the viewmodel is drawn into the same depth buffer as the
@@ -331,6 +360,8 @@ export class Viewmodel {
   }
 
   startReload() { if (this.reloadT < 0) this.reloadT = 0; }
+  // lower the gun out of the frame (1) or bring it back (0); snap: at once
+  lowerTo(v, snap = false) { this.lowerTarget = v; if (snap) this.lower = v; }
   get reloading() { return this.reloadT >= 0; }
 
   // controller: yaw/pitch (for sway), bobPhase/bobAmp (walk bob)
@@ -362,6 +393,9 @@ export class Viewmodel {
         this.reloadT += dt;
         if (this.reloadT >= this.reloadDur) this.reloadT = -1;
       }
+      // (the drop: quick, like a man letting the gun fall to his side)
+      this.lower += (this.lowerTarget - this.lower) * (1 - Math.exp(-7 * dt));
+      if (Math.abs(this.lowerTarget - this.lower) < 0.004) this.lower = this.lowerTarget;
     }
     // walk bob + idle breath
     const bp = controller ? controller.bobPhase : 0, ba = controller ? controller.bobAmp : 0;
@@ -391,11 +425,18 @@ export class Viewmodel {
       drumDrop = sstep(0.34, 0.46, u) * (1 - sstep(0.48, 0.56, u));
       bolt = sstep(0.74, 0.79, u) * (1 - sstep(0.81, 0.86, u));
     }
+    // lowered: down and out of the frame, the muzzle dipping, rolled away
+    const L = this.lower;
+    if (L > 0) {
+      const l = L * L * (3 - 2 * L);
+      pos.y -= 0.5 * l; pos.x += 0.05 * l; pos.z += 0.06 * l;
+      e.x -= 0.75 * l; e.z -= 0.35 * l;
+    }
     this.drumG.position.set(DRUM_C.x + 0.15 * drumOut, DRUM_C.y - 0.18 * drumDrop, DRUM_C.z + 0.01 * drumOut);
     this.drumG.rotation.set(0.3 * drumDrop, 0, -0.35 * drumOut);
     this.knobG.position.z = -0.11 + 0.055 * bolt;
     // left hand: on the foregrip, or on the drum's rim during the swap
-    const drumHand = this.drumG.position.clone().add(new THREE.Vector3(0.03, -0.075, 0.02));
+    const drumHand = this._dh.copy(this.drumG.position).add(this._dhOff);
     this.leftG.position.copy(this.leftHome).lerp(drumHand, handToDrum);
     this.leftG.rotation.set(0, 0, 0.6 * handToDrum);
 
@@ -405,23 +446,23 @@ export class Viewmodel {
     this.pose.copy(this.gun.matrix);
     this.frameInv.copy(this.pose).invert();
     // sleeves: from the wrist (moves with the hand) to a fixed elbow
-    this.placeSleeve(this.sleeveR, this.wristR, this._vmToGun(this.elbowR, pos, e));
-    const wl = this.leftG.position.clone().add(this.wristL.clone().sub(this.leftHome));
-    this.placeSleeve(this.sleeveL, wl, this._vmToGun(this.elbowL, pos, e));
+    this.placeSleeve(this.sleeveR, this.wristR, this._vmToGun(this.elbowR, pos, e, this._elR));
+    const wl = this._wl.copy(this.leftG.position).add(this._tmpV.copy(this.wristL).sub(this.leftHome));
+    this.placeSleeve(this.sleeveL, wl, this._vmToGun(this.elbowL, pos, e, this._elL));
   }
 
   // elbows are fixed in CAMERA space (the arms reach from the body); the
   // sleeves live in the gun's frame, so convert
-  _vmToGun(pCam, pos, e) {
-    const m = new THREE.Matrix4().compose(pos, new THREE.Quaternion().setFromEuler(e), new THREE.Vector3(1, 1, 1)).invert();
-    return pCam.clone().applyMatrix4(m);
+  _vmToGun(pCam, pos, e, out) {
+    const m = this._m4.compose(pos, this._q.setFromEuler(e), this._one).invert();
+    return out.copy(pCam).applyMatrix4(m);
   }
 
   placeSleeve(mesh, wrist, elbow) {
-    const d = new THREE.Vector3().subVectors(elbow, wrist);
+    const d = this._sd.subVectors(elbow, wrist);
     const len = d.length();
     mesh.position.copy(wrist);
-    mesh.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), d.normalize());
+    mesh.quaternion.setFromUnitVectors(this._up, d.normalize());
     mesh.scale.set(1, len, 1);
   }
 
@@ -433,8 +474,10 @@ export class Viewmodel {
     this.flashP.position.copy(F.position); this.flashP.intensity = F.intensity; this.flashP.distance = F.distance; this.flashP.decay = F.decay;
     const pool = (W.lamps && W.lamps.pool) || [];
     const p = camera.position;
-    const act = pool.filter((sl) => sl.lamp && sl.spot.intensity > 0)
-      .sort((a, b) => a.spot.position.distanceToSquared(p) - b.spot.position.distanceToSquared(p));
+    const act = this._act;
+    act.length = 0;
+    for (const sl of pool) if (sl.lamp && sl.spot.intensity > 0) { sl._vmD = sl.spot.position.distanceToSquared(p); act.push(sl); }
+    act.sort((a, b) => a._vmD - b._vmD);
     this.spots.forEach((sp, i) => {
       const src = act[i] && act[i].spot;
       if (!src) { sp.intensity = 0; return; }
@@ -452,7 +495,7 @@ export class Viewmodel {
     this.cam.position.setFromMatrixPosition(camera.matrixWorld);
     this.cam.quaternion.setFromRotationMatrix(camera.matrixWorld);
     this.cam.updateMatrixWorld(true);
-    this.root.visible = this.visible;
+    this.root.visible = this.visible && this.lower < 0.98;
   }
 
   // gun-local point -> VM-camera view space -> world (VM placement)

@@ -54,7 +54,7 @@ export class React {
     this.hotT -= dt;
     if (this.hotT <= 0 && G.state === 'playing') {
       this.hotT = 0.25;
-      const p = G.camera.position;
+      const p = G.eye;
       for (const f of W.cars.fires) {
         const I = f.intensity();
         if (I < 0.3) continue;

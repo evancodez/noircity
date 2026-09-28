@@ -21,7 +21,7 @@ export class Autopilot {
   }
 
   pickTarget() {
-    const G = this.game, eye = G.camera.position;
+    const G = this.game, eye = G.eye;
     let best = null, bs = Infinity;
     for (const h of G.world.hoods.list) {
       if (!h.alive) continue;
@@ -53,7 +53,8 @@ export class Autopilot {
     const sp = this.spots[this.spot];
     const dx = sp.x - C.pos.x, dz = sp.y - C.pos.z;
     const dist = Math.hypot(dx, dz);
-    if (dist > 0.25) {
+    // (hold: the seeded perf scenario keeps him on his mark)
+    if (dist > 0.25 && !this.hold) {
       const sin = Math.sin(C.yaw), cos = Math.cos(C.yaw);
       // world dir -> (forward, right) input
       const f = (-sin * dx - cos * dz) / dist, s = (cos * dx - sin * dz) / dist;
@@ -101,7 +102,7 @@ export class Autopilot {
     }
     if (aim) {
       const c = aim;
-      const eye = G.camera.position;
+      const eye = G.eye;
       const d = c.clone().sub(eye);
       const wantYaw = Math.atan2(-d.x, -d.z);
       const wantPitch = Math.atan2(d.y, Math.hypot(d.x, d.z));
@@ -137,7 +138,7 @@ export class Autopilot {
 
   // a Hood in cover behind an intact car we can see: its engine block
   pickCarTactic(only = null) {
-    const G = this.game, eye = G.camera.position, cars = G.world.cars;
+    const G = this.game, eye = G.eye, cars = G.world.cars;
     // (one car at a time: after a wreck, ~30 s before the next)
     if (G.time - (this.lastCar ?? -99) < 30) return null;
     for (const ai of (only ? [only] : G.ais.values())) {
@@ -161,7 +162,7 @@ export class Autopilot {
   pickLampTactic() {
     const G = this.game;
     if (G.time - (this.lastLamp ?? -20) < 35) return null;
-    const eye = G.camera.position;
+    const eye = G.eye;
     let best = null, bd = Infinity;
     for (const l of G.world.lamps.lamps) {
       if (!l.real || l.dead || l.sconce || !l.on) continue;

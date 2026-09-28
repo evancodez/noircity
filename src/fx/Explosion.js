@@ -137,26 +137,31 @@ export class Explosions {
     // black smoke rolling up out of it (soft dark washes): a ring of it
     // shoved out round the fireball's rim (black ink edging the burst), and
     // a column rising behind it
-    for (let i = 0; i < 10 * scale; i++) {
-      const a = (i / 10) * Math.PI * 2 + r.gauss() * 0.3;
-      const s = r.range(1.4, 2.2) * scale;
+    // (Phase 3b: fewer, larger, ragged lobes of the fire column's brushed
+    // puff at alpha ~0.6: at 0.95 the first frames printed a ring of solid
+    // black discs round the fireball, a sticker, not a wash)
+    const nRing = Math.round(6 * scale);
+    for (let i = 0; i < nRing; i++) {
+      const a = (i / nRing) * Math.PI * 2 + r.gauss() * 0.35;
+      const s = r.range(2.0, 3.0) * scale;
       const out = new THREE.Vector3(Math.cos(a), 0, Math.sin(a));
       F.smoke.spawn({
-        pos: at.clone().addScaledVector(out, 1.4).add(new THREE.Vector3(0, 1.0 + r.next() * 1.6, 0)),
+        pos: at.clone().addScaledVector(out, 1.5).add(new THREE.Vector3(0, 1.1 + r.next() * 1.6, 0)),
         vel: out.clone().multiplyScalar(r.range(2.5, 4.5)).add(new THREE.Vector3(0, r.range(2.5, 5), 0)),
-        life: r.range(2.2, 3.4), size: [s, s], grow: r.range(1.4, 2.2), rot: r.next() * 6.28, spin: r.gauss() * 0.4,
-        col: [0.003, 0.003, 0.003], alpha: 0.95, drag: 1.8, fadeIn: 0.02, fadeOut: 0.5, cell: FIRE.SMOKE[r.int(0, 3)],
+        life: r.range(2.4, 3.6), size: [s, s * r.range(0.8, 1.2)], grow: r.range(1.4, 2.2), rot: r.next() * 6.28, spin: r.gauss() * 0.4,
+        col: [0.003, 0.003, 0.003], alpha: r.range(0.55, 0.65), drag: 1.8, fadeIn: 0.02, fadeOut: 0.5, cell: FIRE.SMOKE[r.int(0, 3)],
       });
     }
-    for (let i = 0; i < 12 * scale; i++) {
-      const s = r.range(1.6, 2.8) * scale;
+    const nCol = Math.round(7 * scale);
+    for (let i = 0; i < nCol; i++) {
+      const s = r.range(2.3, 3.7) * scale;
       F.smoke.spawn({
         pos: at.clone().add(new THREE.Vector3(r.gauss() * 0.9, 1.0 + r.next() * 1.4, r.gauss() * 0.9)),
         vel: new THREE.Vector3(r.gauss() * 1.2, r.range(1.8, 4.2), r.gauss() * 1.2),
         // (it thins out within ~5 s: the burning wreck's own column, a
         // translucent wash, takes over - Fire.js)
-        life: r.range(3.0, 5.0), size: [s, s], grow: r.range(0.9, 1.6), rot: r.next() * 6.28, spin: r.gauss() * 0.25,
-        col: [0.004, 0.004, 0.004], alpha: r.range(0.75, 0.95), drag: 0.9, fadeIn: 0.03, fadeOut: 0.65, cell: FIRE.SMOKE[r.int(0, 3)],
+        life: r.range(3.0, 5.0), size: [s, s * r.range(0.8, 1.2)], grow: r.range(0.9, 1.6), rot: r.next() * 6.28, spin: r.gauss() * 0.25,
+        col: [0.004, 0.004, 0.004], alpha: r.range(0.55, 0.65), drag: 0.9, fadeIn: 0.03, fadeOut: 0.65, cell: FIRE.SMOKE[r.int(0, 3)],
       });
     }
     // a sheet of water blown off the street in a ring

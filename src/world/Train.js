@@ -238,6 +238,26 @@ export class Train {
     const W = this.world, r = this.rng;
     const cam = camera ? camera.position : null;
     let best = [], nearest = null, nd = Infinity;
+    // (Phase 3b: the two cars nearest the eye always throw a few sparks off
+    // the wheels, so a frame mid-crossing shows them even on the straight)
+    const sparkFloor = this._sparkFloor || (this._sparkFloor = new Set());
+    sparkFloor.clear();
+    if (cam) {
+      // (the nearest two IN VIEW: a car off the edge of the frame or behind
+      // the eye gets no floor)
+      const ds = this._ds || (this._ds = []);
+      const v = this._pv || (this._pv = new THREE.Vector3());
+      ds.length = 0;
+      for (let i = 0; i < N_CARS; i++) {
+        const P = this.frame(this.head - this.dir * (i * (CAR_L + CAR_GAP) + CAR_L / 2)).P;
+        const d = Math.hypot(P.x - cam.x, P.z - cam.z);
+        v.set(P.x, DECK_TOP, P.z).project(camera);
+        const inView = v.z < 1 && Math.abs(v.x) < 1.05 && Math.abs(v.y) < 1.05;
+        ds.push([d + (inView ? 0 : 100), i]);
+      }
+      ds.sort((x, y) => x[0] - y[0]);
+      for (let k = 0; k < 2; k++) if (ds[k][0] < 60) sparkFloor.add(ds[k][1]);
+    }
     for (let i = 0; i < N_CARS; i++) {
       const c = this.cars[i];
       // the car's two truck points on the curve: position = their midpoint,
@@ -263,20 +283,50 @@ export class Train {
       // wheel sparks where the curve bends: curvature from the tangent turn
       if (dt > 0) {
         const k = Math.abs(a.T.x * b.T.z - a.T.z * b.T.x) / (CAR_L * 0.66);   // 1/m
-        const bite = THREE.MathUtils.smoothstep(k, 0.004, 0.012);
+        const curve = THREE.MathUtils.smoothstep(k, 0.004, 0.012);
+        const bite = Math.max(curve, sparkFloor.has(i) ? 0.2 : 0);
         if (bite > 0 && r.chance(dt * 40 * bite)) {
           // on the OUTER rail (away from the centre of the turn)
           const turn = Math.sign(a.T.x * b.T.z - a.T.z * b.T.x) || 1;
           const side = new THREE.Vector3(-fwd.z, 0, fwd.x).multiplyScalar(-turn * 0.72);
           const wheel = mid.clone().addScaledVector(fwd, (r.chance(0.5) ? 1 : -1) * (CAR_L / 2 - 2.3)).add(side).setY(DECK_TOP + 0.3);
+          // the floor's sparks (the straight): they spill over the girder on
+          // the side facing the eye (on the deck itself the girder hides them
+          // and the ink holds the iron behind them black)
+          // (the two cars nearest the eye spill theirs over the near girder
+          // on the bend too: on the deck the girder hid every one of them)
+          const spill = (curve <= 0 || sparkFloor.has(i)) && !!cam;
+          if (spill) {
+            const N = new THREE.Vector3(-fwd.z, 0, fwd.x);
+            if (N.x * (cam.x - mid.x) + N.z * (cam.z - mid.z) < 0) N.negate();
+            side.copy(N).multiplyScalar(OVERPASS.halfW * 0.5);
+            // (Phase 3b review: spat out from under the bottom flange, where
+            // nothing of the girder can hide them from the street)
+            wheel.copy(mid).addScaledVector(fwd, (r.chance(0.5) ? 1 : -1) * (CAR_L / 2 - 2.3)).addScaledVector(N, OVERPASS.halfW + 0.2).setY(OVERPASS.deckY - 0.03);
+          }
           const F = W.fxRef;
           if (F) {
-            for (let n = 0; n < 5; n++) {
-              const v = fwd.clone().multiplyScalar(-this.dir * r.range(1, 4)).add(side.clone().normalize().multiplyScalar(r.range(0.5, 2.5))).add(new THREE.Vector3(r.gauss() * 0.6, r.range(0.2, 2.2), r.gauss() * 0.6));
-              F.sparks.spawn({ pos: wheel.clone(), vel: v, life: r.range(0.35, 0.9), size: [0.012, 0.02], stretch: 0.05, col: [7, 7, 7], cell: 4, gravity: 9.8, ground: 0.02, fadeOut: 0.4 });
+            // (at least ~3 px wide at the wheel's distance: at 20-30 m a
+            // 12 mm spark was a third of a pixel and never printed)
+            // Phase 3b review: the floor's sparks printed as pale streaks
+            // along the girder that read as rain. Now they are hot white
+            // POINTS with a short tail (stretch 0.03, a 3 px floor, thrown
+            // slower so they hang by the wheel), spat out in a burst of 3-5
+            // per bite so a single frame catches several together.
+            let sw = 0.012;
+            if (camera) {
+              const dW = wheel.distanceTo(camera.position);
+              sw = Math.max(sw, 3.0 * (2 * Math.tan(THREE.MathUtils.degToRad(camera.fov) / 2) * dW) / Math.max(1, W.U.uRes.value.y));
+            }
+            const floor = spill;
+            const nS = floor ? r.int(3, 5) : 5;
+            const sp = floor ? 0.45 : 1;
+            for (let n = 0; n < nS; n++) {
+              const v = fwd.clone().multiplyScalar(-this.dir * r.range(1, 4) * sp).add(side.clone().normalize().multiplyScalar(r.range(0.5, 2.5) * sp)).add(new THREE.Vector3(r.gauss() * 0.6 * sp, r.range(0.2, 2.2) * sp, r.gauss() * 0.6 * sp));
+              F.sparks.spawn({ pos: wheel.clone().add(new THREE.Vector3(r.gauss() * 0.08, r.gauss() * 0.04, r.gauss() * 0.08)), vel: v, life: r.range(0.35, 0.9), size: [sw, sw * 1.3], stretch: 0.03, col: [7, 7, 7], cell: 4, gravity: 9.8, ground: 0.02, fadeOut: 0.4 });
             }
           }
-          if (this.onSqueal) this.onSqueal(bite, wheel);
+          if (this.onSqueal && curve > 0) this.onSqueal(curve, wheel);
         }
       }
     }
@@ -302,11 +352,14 @@ export class Train {
       const colGap = THREE.MathUtils.smoothstep(Math.abs(((c.s / OVERPASS.span) % 1 + 1) % 1 - 0.5), 0.06, 0.18);
       const strobe = (0.4 + 0.6 * post) * (0.3 + 0.7 * colGap);
       const near = 1 - THREE.MathUtils.smoothstep(e.d, 30, 70);
+      // (Phase 3b: a car within ~30 m throws its strobe hard onto the
+      // street: the lit rain, the shaft and its column in the wet street)
+      const close = 1 - THREE.MathUtils.smoothstep(e.d, 18, 32);
       S.sp.intensity = 260 * strobe * near;
       const ax = tgt.clone().sub(p).normalize();
       S.entry.position.copy(p);
       S.entry.direction.copy(ax);
-      S.entry.intensity = 1.4 * strobe * near;
+      S.entry.intensity = 1.4 * strobe * near * (1 + 0.5 * close);
       const cn = S.cone;
       cn.visible = near > 0.01;
       cn.position.copy(p);
@@ -314,14 +367,17 @@ export class Train {
       cn.updateMatrixWorld();
       cn.material.uniforms.uApex.value.copy(p);
       cn.material.uniforms.uAxis.value.copy(ax);
-      cn.material.uniforms.uIntensity.value = 0.55 * strobe * near;
+      cn.material.uniforms.uIntensity.value = 0.62 * strobe * near * (1 + 0.45 * close);
     });
     // the pools: per car, spaced along it, thrown out onto the road
     const P = this.pools, A = P.aI.array;
     let n = 0;
     for (const c of this.cars) {
       if (!c.mid) continue;
-      if (cam && Math.hypot(c.mid.x - cam.x, c.mid.z - cam.z) > 75) continue;
+      const dc = cam ? Math.hypot(c.mid.x - cam.x, c.mid.z - cam.z) : 50;
+      if (dc > 75) continue;
+      // (Phase 3b: the pools under the cars nearest the eye strobe harder)
+      const boost = 1 + 1.6 * (1 - THREE.MathUtils.smoothstep(dc, 18, 32));
       for (let k = 0; k < POOLS_PER_CAR; k++) {
         const u = (k + 0.5) / POOLS_PER_CAR - 0.5;
         const sP = c.s + this.dir * u * (CAR_L - 2.4);
@@ -333,7 +389,7 @@ export class Train {
         const colGap = THREE.MathUtils.smoothstep(Math.abs(((sP / OVERPASS.span) % 1 + 1) % 1 - 0.5), 0.05, 0.16);
         A[n * 4] = x; A[n * 4 + 1] = z; A[n * 4 + 2] = Math.atan2(f.T.x, f.T.z) + Math.PI / 2;
         // (hard strobe: the posts and the column pairs cut the light off)
-        A[n * 4 + 3] = THREE.MathUtils.smoothstep(post, 0.25, 0.75) * colGap;
+        A[n * 4 + 3] = THREE.MathUtils.smoothstep(post, 0.25, 0.75) * colGap * boost;
         n++;
       }
     }

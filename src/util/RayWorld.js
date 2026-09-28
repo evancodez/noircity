@@ -257,7 +257,8 @@ export class RayWorld {
     for (const e of this.entries) {
       if (e.mesh !== mesh) continue;
       mesh.updateWorldMatrix(true, false);
-      const g = mesh.geometry;
+      // (a mesh drawn with a far LOD keeps its full build for the bullets)
+      const g = mesh.userData.rayGeo || mesh.geometry;
       if (!g.boundingBox) g.computeBoundingBox();
       if (e.bvh.geo !== g) { e.bvh = bvhFor(g); e.bvh.geo = g; }
       e.mw.copy(mesh.matrixWorld);

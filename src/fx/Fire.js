@@ -19,7 +19,9 @@ import { FIRE_COL } from './Explosion.js';
 // (Phase 3a review: the full blaze was 55 s, and a long battle's street
 // turned into a gallery of roaring wrecks; an old wreck now sinks to a warm
 // ember glow sooner: embers (I < 0.45) from ~59 s, the floor by ~70 s)
-const ROAR = 35;     // s at full blaze
+// (Phase 3b: the taper starts at ~25 s, so ~40 s after the blast it is a
+// lower blaze with a hotter core, not the full roar)
+const ROAR = 25;     // s at full blaze
 const FADE = 35;     // s from full blaze down to embers
 
 export class Fire {
@@ -74,13 +76,16 @@ export class Fire {
     this.acc.flame += dt * (ember ? 12 : 34 * Math.max(0.3, I));
     while (this.acc.flame >= 1) {
       this.acc.flame -= 1;
-      const s = ember ? r.range(0.3, 0.55) : r.range(0.8, 1.7) * (0.8 + 0.4 * I);
+      const s = ember ? r.range(0.3, 0.55) : r.range(0.8, 1.7) * (0.65 + 0.55 * I);
       const off = new THREE.Vector3(r.gauss() * 0.42, 0, r.gauss() * 0.36).applyAxisAngle(new THREE.Vector3(0, 1, 0), this.yaw);
-      const root = r.chance(0.35);
+      // as it dies down the flames get lower and the white-hot roots take
+      // over more of the blaze (a hotter core, not a dimmer one)
+      const low = ember ? 0.5 : 0.55 + 0.45 * I;
+      const root = r.chance(0.35 + 0.45 * (1 - I));
       F.fire.spawn({
         pos: this.pos.clone().add(off).add(new THREE.Vector3(0, s * 0.4, 0)),
-        vel: new THREE.Vector3(this.wind.x * 0.5 + r.gauss() * 0.15, r.range(1.1, 2.2) * (ember ? 0.5 : 1), this.wind.z * 0.5 + r.gauss() * 0.15),
-        life: r.range(0.4, 0.75) * (ember ? 0.8 : 1), size: [s * 0.75, s], grow: 0.35, rot: r.gauss() * 0.14, spin: r.gauss() * 0.3,
+        vel: new THREE.Vector3(this.wind.x * 0.5 + r.gauss() * 0.15, r.range(1.1, 2.2) * low, this.wind.z * 0.5 + r.gauss() * 0.15),
+        life: r.range(0.4, 0.75) * (ember ? 0.8 : 0.75 + 0.25 * I), size: [s * 0.75, s], grow: 0.35 * (ember ? 1 : 0.5 + 0.5 * I), rot: r.gauss() * 0.14, spin: r.gauss() * 0.3,
         col: ember ? FIRE_COL.orange : root ? FIRE_COL.white : FIRE_COL.yellow, colEnd: FIRE_COL.deep, colPow: 1.3, cell: FIRE.FLAME[r.int(0, 3)],
         fadeIn: 0.08, fadeOut: 0.35, drag: 0.5,
       });

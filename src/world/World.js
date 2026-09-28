@@ -92,6 +92,8 @@ export class World {
     this.time = t;
     this.U.uTime.value = t;
     this.sky.update(camera);
+    this.overpass.update(camera);
+    this.cars.lodUpdate(camera);
     this.lamps.update(dt, t, camera);
     this.rain.update(camera, pixelHeight);
     this.hoods.update(dt, t, camera);

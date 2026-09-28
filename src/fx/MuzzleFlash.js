@@ -110,6 +110,28 @@ export class MuzzleFlash {
     this.last.player = { vmPos: vmPos.clone(), worldPos: worldPos.clone(), fwd: fwd.clone(), gunFwd: gunFwd.clone(), time, s, cell, rot, s2, cell2, rot2 };
   }
 
+  // The player's flash seen over the shoulder (Phase 3b): the Tommy gun is
+  // in the world (PlayerBody), so its flash is too - a spray thrown along the
+  // shot plus a radial core on the muzzle (FX_REFL: the wet street mirrors
+  // it), the player's light and entry, a puff of smoke.
+  playerWorld(pos, dir, time) {
+    const r = this.rng;
+    const s = r.range(0.5, 0.62);
+    const { cell, rot, center } = this.hoodSprite(pos, dir, s);
+    this.world3.spawn({ pos: center, life: FRAME * 1.01, size: [s, s], rot, col: [3.2, 3.2, 3.2], cell, fadeOut: 0 });
+    const s0 = s * 0.6, c0 = FLASH.RADIAL[r.int(0, 5)], rot0 = r.next() * Math.PI * 2;
+    this.world3.spawn({ pos: pos.clone(), life: FRAME * 1.01, size: [s0, s0], rot: rot0, col: [3.4, 3.4, 3.4], cell: c0, fadeOut: 0 });
+    this.queue.push({ sys: this.world3, pos: pos.clone(), size: s * 0.6, cell: FLASH.SMALL[r.int(0, 1)], rot: rot + 1.1, col: 2.6, t: time + FRAME });
+    this.light.position.copy(pos).addScaledVector(dir, 1.0);
+    this.lightT = 0;
+    this.lightI = this.intensity.player * r.range(0.85, 1.15);
+    this.light.intensity = this.lightI;
+    this.playerEntry.position.copy(this.light.position);
+    this.playerEntry.intensity = 0.35;
+    this.puff(pos, dir, 0.6);
+    this.last.playerOts = { pos: pos.clone(), center: center.clone(), dir: dir.clone(), time, s, cell, rot, s0, c0, rot0 };
+  }
+
   // metres per screen pixel at distance d (the main camera, full-res frame)
   pxSize(d) {
     const cam = this.camera;
@@ -222,6 +244,21 @@ export class MuzzleFlash {
       this.playerEntry.position.copy(this.light.position);
       this.playerEntry.intensity = HOLD.entry;
     }
+    // the over-the-shoulder flash (Phase 3b): its first frame, held on the
+    // body's muzzle as it is now (otsNow: { pos, dir })
+    const lo = this.last.playerOts;
+    if (lo && time - lo.time <= window) {
+      const p = vmNow && vmNow.otsPos ? vmNow.otsPos : lo.pos;
+      const d = vmNow && vmNow.otsDir ? vmNow.otsDir : lo.dir;
+      const off = new THREE.Vector3().subVectors(lo.center, lo.pos);
+      const a = this.world3.spawn({ pos: p.clone().add(off), life: 1, size: [lo.s, lo.s], rot: lo.rot, col: [3.0, 3.0, 3.0], cell: lo.cell, fadeOut: 0 });
+      const c = this.world3.spawn({ pos: p.clone(), life: 1, size: [lo.s0, lo.s0], rot: lo.rot0, col: [3.2, 3.2, 3.2], cell: lo.c0, fadeOut: 0 });
+      a.hold = true; c.hold = true;
+      this.light.position.copy(p).addScaledVector(d, 1.0);
+      this.light.intensity = this.intensity.player * HOLD.light;
+      this.playerEntry.position.copy(this.light.position);
+      this.playerEntry.intensity = HOLD.entry;
+    }
     let k = 0;
     for (const [h, f] of this.last.hoods) {
       if (time - f.time > window || !h.alive) continue;
@@ -246,5 +283,7 @@ export class MuzzleFlash {
     this.vm.clear(); this.refl.clear(); this.world3.clear(); this.smoke.clear();
     this.queue.length = 0;
     this.last.hoods.clear();
+    this.last.player = null;
+    this.last.playerOts = null;
   }
 }

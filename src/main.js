@@ -10,6 +10,7 @@ import { Controller } from './player/Controller.js';
 import { Hud } from './ui/Hud.js';
 import { Stats } from './debug/Stats.js';
 import { bench } from './debug/Bench.js';
+import { GpuProf } from './debug/GpuProf.js';
 import { getShot, applyShot } from './debug/Shots.js';
 import { RNG } from './util/rng.js';
 import { DEATH_REPORT } from './enemies/Hood.js';
@@ -66,23 +67,40 @@ let game = null;
 // first click (the pointer-lock start), none at all in shot mode
 const sfx = new Sfx({ enabled: !shotMode });
 const hud = new Hud({
+  brush: tex.brush.image,
   onBegin: () => { sfx.unlock(); controller.lock(); },
   onRestart: () => { sfx.unlock(); game.restart(); controller.lock(); },
+  onResume: () => { sfx.unlock(); controller.lock(); },
 });
-if (!shotMode) for (const ev of ['mousedown', 'keydown', 'touchstart']) addEventListener(ev, () => sfx.unlock(), { passive: true });
+// (the browser opens the audio only on a gesture: any key on the title lets
+// the rain in behind it; the click that begins the game does too)
+if (!shotMode) for (const ev of ['mousedown', 'keydown', 'touchstart']) addEventListener(ev, () => { sfx.unlock(); hud.soundHint(!sfx.live); }, { passive: true });
+hud.soundHint(!shotMode);
 hud.setVisible(hudOn);
 if (shotMode) hud.hideTitle();
 game = new Game({ world, camera, controller, pipeline, hud, shotMode, wavesOn, sfx });
 game.bindInput(renderer.domElement);
 // (play and the battle preset: every Hood variant + combat program up front)
-if (!shotMode || wavesOn || shotName === 'battle') game.prewarm(renderer);
-document.addEventListener('pointerlockerror', () => { if (!shotMode) hud.showTitle('click again to take the mouse'); });
+if (!shotMode || wavesOn || shotName === 'battle' || shotName === 'end' || shotName === 'perf') game.prewarm(renderer);
+document.addEventListener('pointerlockerror', () => {
+  if (shotMode) return;
+  if (game.state === 'title') hud.showTitle('click again to take the mouse');
+  else if (game.state !== 'dead') hud.showPause('click again to take the mouse');
+});
+// pointer lock lost in play: the fight pauses (see the loop) under the
+// dimmed pause card, the sound drops back; the click that takes the mouse
+// again resumes
 document.addEventListener('pointerlockchange', () => {
   if (shotMode) return;
   if (document.pointerLockElement === renderer.domElement) {
     hud.hideTitle();
+    hud.hidePause();
+    sfx.pauseMix(false);
     if (game.state === 'title') game.start();
-  } else if (game.state !== 'dead') hud.showTitle('click to resume');
+  } else if (game.state === 'playing' || game.state === 'intermission') {
+    hud.showPause();
+    sfx.pauseMix(true);
+  }
 });
 // the viewmodel: in play; in shot mode for the combat presets or vm=1
 // vmpos=x,y,z / vmrot=pitch,yaw,roll: viewmodel composition (look development)
@@ -110,6 +128,9 @@ if (shot && poseParam) {
 }
 if (shot) applyShot(shot, controller, camera, world, game);
 else controller.setPose(-7.3, 6.2, -0.2, 0.02);
+game.eye.copy(camera.position);
+// ots=1: start over the shoulder (any preset, or play)
+if (params.get('ots') === '1') game.setOts(true);
 // waves=1 in shot mode: the real spawning, no autopilot
 if (shotMode && wavesOn && game.counters.wave === 0) game.startBattle({ wave: parseInt(params.get('wave') ?? '1', 10) || 1, autopilot: false });
 
@@ -123,7 +144,9 @@ function simStep(dt) {
 }
 // staged warm-up (shot=battle): simulated before the clock starts
 if (game.warmup > 0) {
+  game.inWarmup = true;
   for (let i = 0, n = Math.round(game.warmup * 60); i < n; i++) simStep(STEP);
+  game.inWarmup = false;
   if (game.afterWarmup) game.afterWarmup();
 }
 const skipSteps = Math.round(tSkip * 60);
@@ -156,6 +179,23 @@ if (shot && focusParam && world.hoods.list.length) {
   world.update(0, simTime, camera, pipeline.height);
 }
 
+// card=pause|wave (look development): hold that card over the frame
+if (params.get('card') === 'pause') hud.showPause();
+if (params.get('card') === 'wave') hud.showWave(6, 13);
+
+// otslook=dist,bearingDeg,height[,fov] (look development): after the
+// fast-forward, look at the player's own body from outside (bearing 0 = in
+// front of him, 90 = his left side, 180 = from behind)
+if (params.get('otslook') && game.ots) {
+  const [dist = 2, bearing = 90, h = 1.4, fov = 40] = params.get('otslook').split(',').map(Number);
+  const B = game.body.hood, tgt = new THREE.Vector3(B.pos.x, 1.35, B.pos.z);
+  const a = B.yaw + bearing * Math.PI / 180;
+  camera.position.set(tgt.x + Math.sin(a) * dist, h, tgt.z + Math.cos(a) * dist);
+  camera.fov = fov; camera.updateProjectionMatrix();
+  camera.lookAt(tgt);
+  controller.apply = () => {};
+}
+
 // gdbg=<n>: wet-street term debug (render/shaders/ground.js)
 if (params.get('gdbg')) U.uGroundDebug.value = parseInt(params.get('gdbg'), 10) || 0;
 
@@ -182,7 +222,7 @@ function frame(now) {
   last = now;
   const tA = performance.now();
   // in play, the fight pauses behind the "click to resume" card
-  const paused = !shotMode && game.state === 'playing' && document.pointerLockElement !== renderer.domElement;
+  const paused = !shotMode && (game.state === 'playing' || game.state === 'intermission') && document.pointerLockElement !== renderer.domElement;
   if (animate && !paused) {
     acc += dt;
     let n = 0;
@@ -236,6 +276,33 @@ window.__noir = {
   sim(seconds = 1) { const n = Math.round(seconds * 60); for (let i = 0; i < n; i++) simStep(STEP); writeCounters(); return { ...game.counters }; },
   params: { shotName, shotMode, hudOn, debug, wavesOn, tSkip },
   bench: (opts) => bench(renderer, pipeline, scene, camera, opts),
+  // Phase 3b performance pass, in-session before/after: legacy = true puts
+  // back the Phase 3a pipeline (every MSAA resolve, the depth resolve, the
+  // full-detail far el / cars / Tommy guns, the ink's and the street's full
+  // paths); false (the default) is the optimised one. Same image either way
+  // (the LODs within a few pixels).
+  perfLegacy(on = true) {
+    pipeline.deferResolve = !on;
+    pipeline.rtScene.resolveDepthBuffer = !!on;
+    pipeline.setSceneFormat(!on);
+    pipeline.inkMat.uniforms.uFast.value = on ? 0 : 1;
+    U.uFast.value = on ? 0 : 1;
+    world.lodOff = !!on;
+    for (const h of world.hoods.list) if (h.tommy) h.tommy.geometry = !on && h.lod >= 1 ? h.tommy.userData.geoLo : h.tommy.userData.geoHi;
+    world.overpass.update(camera);
+    world.cars.lodUpdate(camera);
+    return { legacy: !!on };
+  },
+  // GPU ms per pipeline stage over `seconds` of live play (timer queries)
+  async gpuProfile(seconds = 4) {
+    const P = pipeline.prof || (pipeline.prof = new GpuProf(renderer.getContext()));
+    if (!P.ok) { pipeline.prof = null; return { error: 'EXT_disjoint_timer_query_webgl2 unavailable' }; }
+    P.reset();
+    await new Promise((r) => setTimeout(r, seconds * 1000));
+    const out = P.report();
+    pipeline.prof = null;
+    return out;
+  },
   lightning: (strength = 1) => pipeline.pulseLightning(simTime, strength),
   // spawnHood([x, z] | {x, z} | Vector3, variant = seed | { coat, brim, tall, cig }, { yaw, state })
   spawnHood(pos, variant = {}, opts = {}) { return world.hoods.spawn(pos, variant, opts); },
@@ -249,6 +316,8 @@ window.__noir = {
   audioTest,
 };
 window.__noirReady = true;
+// legacy=1: the Phase 3a pipeline paths (performance before/after, see perfLegacy)
+if (params.get('legacy') === '1') window.__noir.perfLegacy(true);
 
 // audiotest=1: the offline audio table as JSON in #errlog's data-audio
 // (tools/errors.sh prints it)

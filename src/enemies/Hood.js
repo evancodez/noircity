@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { JOINTS, JOINT_INDEX, BIND, OFFSET, L_UPPER } from './HoodRig.js';
 import { HoodAnimator, getClips, DEATHS, HAT_OFF, WALK, RUN } from './HoodAnim.js';
-import { allocHoodSlot, releaseHoodSlot, HOOD_ID0, FIG_ANCHOR } from '../render/layers.js';
+import { allocHoodSlot, releaseHoodSlot, HOOD_ID0, FIG_ANCHOR, PLAYER_SLOT } from '../render/layers.js';
 import { roundedBox } from '../world/geom.js';
 import { STREET } from '../world/Street.js';
 import { buildTommyGeometry } from '../player/Viewmodel.js';
@@ -30,7 +30,9 @@ const SHADE = {
   coat: 0.014, collar: 0.013, lapel: 0.013, belt: 0.005, hat: 0.007, band: 0.002,
   skin: 0.024, hair: 0.004, trousers: 0.006, slideTop: 0.2, nose: 0.024, shoes: 0.004, glove: 0.01, gun: 0.003, shirt: 0.13, tie: 0.004,
 };
-const COAT_HEM = [0.4, 0.51, 0.62];      // long, medium, short
+// long, medium, short; [3] the player's own coat (Phase 3b: the over-the-
+// shoulder body), longer still: mid-shin
+const COAT_HEM = [0.4, 0.51, 0.62, 0.3];
 const BRIM_R = [0.168, 0.19];            // narrow, wide
 const HEIGHT = [0.96, 1.04];
 
@@ -44,6 +46,12 @@ const HEIGHT = [0.96, 1.04];
 let Q = 1;
 const seg = (n, min = 4) => Math.max(min, Math.round(n * Q));
 export const LOD_Q = [0.56, 0.3, 0.16];
+// the player's body (PlayerBody.js) is seen from ~0.5 m: full tessellation
+const PLAYER_Q = 1.0;
+// (seen from half a metre, the player's felt hat takes the key light a
+// little: the crown and the brim print dry-brush grey against the black
+// band, like the reference's shooter, instead of a flat black cut-out)
+const PLAYER_HAT = 0.02;
 const LOD_FAR = [12, 17];      // switch-out distances (m); back in 1.5 m closer
 
 // ---------------------------------------------------------------------------
@@ -447,14 +455,21 @@ function buildNeck() {
 }
 
 // fedora, in hat-bone space (origin on the brim plane): pinched, creased
-// crown, band, snap brim (front down, back up), brim >= 6 mm thick
-function buildHat(brimR) {
+// crown, band, snap brim (front down, back up), brim >= 6 mm thick.
+// ribbon (the player's own hat, Phase 3b review): the band is a grosgrain
+// ribbon standing 3.5 mm proud of the crown, so its top and bottom edges
+// are creases the ink draws, and the ink keeps it a black ribbon between
+// the lit crown and the brim (render/shaders/ink.js, the hero key)
+function buildHat(brimR, crownShade = SHADE.hat, ribbon = false) {
   const H = BIND.hat;
+  const band = ribbon
+    ? [[0.1052, 0.0125], [0.1054, 0.0335], [0.1015, 0.0368]]
+    : [[0.1015, 0.014], [0.1015, 0.035]];
   const prof = [
     [0.0, 0.03], [0.06, 0.012], [0.098, 0.0], [brimR - 0.03, -0.001], [brimR - 0.006, 0.001],
-    [brimR, 0.0045], [brimR - 0.004, 0.0085], [brimR - 0.03, 0.0082], [0.104, 0.0095], [0.1015, 0.014],
+    [brimR, 0.0045], [brimR - 0.004, 0.0085], [brimR - 0.03, 0.0082], [0.104, 0.0095], ...band,
     // crown: tapers in toward a rounded top (not a cylinder with a lid)
-    [0.1015, 0.035], [0.0975, 0.038], [0.0925, 0.066], [0.0855, 0.091], [0.0755, 0.107], [0.058, 0.117],
+    [0.0975, 0.038], [0.0925, 0.066], [0.0855, 0.091], [0.0755, 0.107], [0.058, 0.117],
     [0.032, 0.1205], [0.0, 0.121],
   ];
   const nu = seg(88, 24), nv = seg(prof.length * 4, prof.length + 6);
@@ -464,7 +479,7 @@ function buildHat(brimR) {
     const th = u * TAU;
     const s = Math.sin(th), c = Math.cos(th);
     let h = h0;
-    const crown = r < 0.106;
+    const crown = r < (ribbon ? 0.1065 : 0.106);
     // oval crown, slightly oval brim
     const ox = crown ? 0.85 : lerp(0.85, 0.9, sstep(0.106, brimR, r));
     let x = r * s * ox, z = r * c;
@@ -493,7 +508,7 @@ function buildHat(brimR) {
   const shade = (x, y) => {
     const h = y - H.y;
     const r = Math.hypot(x, 0);
-    return h > 0.012 && h < 0.036 && r < 0.2 ? SHADE.band : SHADE.hat;
+    return h > 0.012 && h < 0.036 && r < 0.2 ? SHADE.band : crownShade;
   };
   return { geo, shade, weights: () => [[B.hat, 1]] };
 }
@@ -626,16 +641,16 @@ function assemble(parts) {
 
 const GEO_CACHE = new Map();
 function hoodGeometry(v, lod = 0) {
-  const key = `${v.coat}_${v.brim}_${lod}_${v.heavy ? 1 : 0}`;
+  const key = `${v.coat}_${v.brim}_${lod}_${v.heavy ? 1 : 0}_${v.player ? 1 : 0}`;
   if (!GEO_CACHE.has(key)) {
-    Q = LOD_Q[lod];
+    Q = v.player ? PLAYER_Q : LOD_Q[lod];
     const near = lod < 2;
     const parts = [
       buildTorso(), buildSkirt(COAT_HEM[v.coat]), ...(near ? [buildBelt()] : []), buildCollar(), ...(near ? [buildLapel(1), buildLapel(-1)] : []),
       buildSleeve(1), buildSleeve(-1), buildTrouser(1), buildTrouser(-1), buildShoe(1), buildShoe(-1),
-      buildHead(), ...(near ? [buildNose()] : []), buildNeck(), buildHat(BRIM_R[v.brim]), buildHand(1, false), buildHand(-1, true),
+      buildHead(), ...(near ? [buildNose()] : []), buildNeck(), buildHat(BRIM_R[v.brim], v.player ? PLAYER_HAT : SHADE.hat, !!v.player), buildHand(1, false), buildHand(-1, true),
     ];
-    if (!v.heavy) parts.push(buildGun());
+    if (!v.heavy && !v.player) parts.push(buildGun());
     GEO_CACHE.set(key, assemble(parts));
     Q = 1;
   }
@@ -725,13 +740,19 @@ function driveSkirt(b, groundW = 1) {
   }
 }
 
+// scratch for Hood.postPose (per Hood per step)
+const _pp = {
+  e: new THREE.Euler(), m: new THREE.Matrix4(), tl: new THREE.Vector3(), q: new THREE.Quaternion(), Y: new THREE.Vector3(0, 1, 0),
+  sh: new THREE.Vector3(), pq: new THREE.Quaternion(), up: new THREE.Vector3(), d: new THREE.Vector3(), ax: new THREE.Vector3(),
+};
+
 // deterministic variant from an integer seed or a partial spec
 export function hoodVariant(v = {}) {
   if (typeof v === 'number') {
     const h = (n) => Math.abs(Math.sin(v * 12.9898 + n * 78.233) * 43758.5453) % 1;
     v = { coat: Math.floor(h(1) * 3), brim: Math.floor(h(2) * 2), tall: Math.floor(h(3) * 2), cig: h(4) < 0.4 };
   }
-  return { coat: v.coat ?? 1, brim: v.brim ?? 1, tall: v.tall ?? 1, cig: !!v.cig, heavy: !!v.heavy };
+  return { coat: v.coat ?? 1, brim: v.brim ?? 1, tall: v.tall ?? 1, cig: !!v.cig, heavy: !!v.heavy, player: !!v.player };
 }
 
 // the flying hat's tumble per death (axis in the Hood's frame, rad/s, sense)
@@ -745,10 +766,13 @@ const HAT_TUMBLE = {
 
 // ---------------------------------------------------------------------------
 export class Hood {
-  constructor(world, { pos = new THREE.Vector3(), yaw = 0, variant = {} } = {}) {
+  // ghost (Phase 3b, the player's own body): no collider, no hit volumes, no
+  // place in the bullets' world, one full-detail mesh; the owner drives it
+  constructor(world, { pos = new THREE.Vector3(), yaw = 0, variant = {}, ghost = false } = {}) {
     this.world = world;
+    this.ghost = ghost;
     this.variant = hoodVariant(variant);
-    this.slot = allocHoodSlot();
+    this.slot = allocHoodSlot(this.variant.player ? PLAYER_SLOT.body : -1);
     this.inkId = HOOD_ID0 + Math.max(0, this.slot);
     this.scale = HEIGHT[this.variant.tall];
 
@@ -774,7 +798,8 @@ export class Hood {
     let skelVer = 0;
     const skelUpdate = skeleton.update.bind(skeleton);
     skeleton.update = () => { if (skelVer === this._poseVer) return; skelVer = this._poseVer; skelUpdate(); };
-    this.lods = [hoodGeometry(this.variant, 0), hoodGeometry(this.variant, 1), hoodGeometry(this.variant, 2)];
+    this.lods = this.variant.player ? [0, 0, 0].map(() => hoodGeometry(this.variant, 0))
+      : [hoodGeometry(this.variant, 0), hoodGeometry(this.variant, 1), hoodGeometry(this.variant, 2)];
     this.lod = 0;
     const mesh = new THREE.SkinnedMesh(this.lods[0], hoodMaterial(world));
     mesh.name = 'hoodBody';
@@ -789,7 +814,7 @@ export class Hood {
     this.skeleton = skeleton;
 
     if (this.variant.cig) this.addCigarette();
-    if (this.variant.heavy) this.addTommy();
+    if (this.variant.heavy && !ghost) this.addTommy();
 
     // ink: one figure id for the whole man; the ink pass anchors his brush
     for (const o of [mesh, ...(this.cig || []), ...(this.tommy ? [this.tommy] : [])]) { o.userData.inkId = this.inkId; o.userData.inkFigure = true; }
@@ -797,7 +822,7 @@ export class Hood {
     // hit volumes on the bones
     this.hitMeshes = [];
     const hitMat = new THREE.MeshBasicMaterial({ visible: false });
-    for (const [joint, kind, r, len, off] of HIT_PARTS) {
+    for (const [joint, kind, r, len, off] of ghost ? [] : HIT_PARTS) {
       const m = new THREE.Mesh(hitGeo(kind, r, len), hitMat);
       m.visible = false;
       m.name = 'hit_' + joint;
@@ -831,9 +856,13 @@ export class Hood {
     obj.scale.setScalar(this.scale);
     world.scene.add(obj);
     // collision + raycast hooks
-    this.collider = world.colliders.addCircle(pos.x, pos.z, 0.32 * this.scale, 'hood');
-    this.collider.hood = this;
-    world.solids.push(...this.hitMeshes);
+    this.collider = null;
+    if (!ghost) {
+      this.collider = world.colliders.addCircle(pos.x, pos.z, 0.32 * this.scale, 'hood');
+      this.collider.hood = this;
+      world.solids.push(...this.hitMeshes);
+    }
+    this.afterPose = null;    // (hood, dt) => void: after the look-at / coat pass
     this.update(0, 0);
   }
 
@@ -864,10 +893,14 @@ export class Hood {
     if (!TOMMY) {
       TOMMY = {
         geo: buildTommyGeometry(),
+        // (beyond the near LOD: the same gun at a third of the segments -
+        // 21k triangles for a 0.6 m gun 12+ m away, times three passes)
+        geoLo: buildTommyGeometry(0.35),
         mat: new THREE.MeshStandardMaterial({ color: 0x080808, roughness: 0.45, metalness: 0.5, envMap: this.world.M.envSoft, envMapIntensity: 0.6 }),
       };
     }
     const m = new THREE.Mesh(TOMMY.geo, TOMMY.mat);
+    m.userData.geoHi = TOMMY.geo; m.userData.geoLo = TOMMY.geoLo;
     m.quaternion.setFromEuler(new THREE.Euler(-Math.PI / 2, 0, 0)).premultiply(new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), Math.PI));
     m.position.set(0, -0.143, 0.064);
     m.castShadow = true;
@@ -964,6 +997,7 @@ export class Hood {
         this.geoStamp = (this.geoStamp || 0) + 1;   // (the pipeline's shadow cache)
         this.mesh.geometry = this.lods[lod];
         if (this.cig) for (const c of this.cig) c.visible = lod < 2;
+        if (this.tommy) this.tommy.geometry = lod >= 1 && !this.world.lodOff ? TOMMY.geoLo : TOMMY.geo;
       }
       // (beyond ~16 m his lamp shadow is a few pixels; every caster in a
       // lamp's cone re-renders its shadow map, render/Pipeline.js)
@@ -1019,6 +1053,7 @@ export class Hood {
     this.anim.update(dt);
     obj.updateMatrixWorld(true);
     this.postPose(dt);
+    if (this.afterPose) { this.afterPose(this, dt); obj.updateMatrixWorld(true); }
     if (this._deathT >= 0) {
       this._deathT += dt;
       if (!this.hat && this._deathT >= HAT_OFF[this._deathKind]) this.launchHat();
@@ -1058,7 +1093,7 @@ export class Hood {
       this._prevPos.copy(this.pos);
       this._prevYaw = this.yaw;
     }
-    b.coat.quaternion.setFromEuler(new THREE.Euler(this._hem.x, 0, this._hem.z));
+    b.coat.quaternion.setFromEuler(_pp.e.set(this._hem.x, 0, this._hem.z));
     driveSkirt(b);
 
     // look-at: chest and head yaw toward the target within limits; when
@@ -1068,27 +1103,28 @@ export class Hood {
     this._lookW += (wantLook - this._lookW) * Math.min(1, dt * 6);
     this._aimW += ((aiming ? 1 : 0) - this._aimW) * Math.min(1, dt * 6);
     if (this._lookW > 0.001 && this.lookTarget) {
-      const inv = this.object.matrixWorld.clone().invert();
-      const tl = this.lookTarget.clone().applyMatrix4(inv);
+      // (scratch objects, not fresh ones: a dozen Hoods run this 60x a second)
+      const inv = _pp.m.copy(this.object.matrixWorld).invert();
+      const tl = _pp.tl.copy(this.lookTarget).applyMatrix4(inv);
       const yawT = Math.atan2(tl.x, tl.z);
       const lim = (x, l) => Math.max(-l, Math.min(l, x));
       const chestYaw = lim(yawT * lerp(0.35, 1, this._aimW), lerp(0.6, 0.8, this._aimW)) * this._lookW;
       const headYaw = lim(yawT - chestYaw, 1.0) * this._lookW * (1 - 0.9 * this._aimW);
-      const q = new THREE.Quaternion();
-      b.spine.quaternion.multiply(q.setFromAxisAngle(new THREE.Vector3(0, 1, 0), chestYaw * 0.5));
-      b.chest.quaternion.multiply(q.setFromAxisAngle(new THREE.Vector3(0, 1, 0), chestYaw * 0.5));
-      b.head.quaternion.premultiply(q.setFromAxisAngle(new THREE.Vector3(0, 1, 0), headYaw));
+      const q = _pp.q;
+      b.spine.quaternion.multiply(q.setFromAxisAngle(_pp.Y, chestYaw * 0.5));
+      b.chest.quaternion.multiply(q.setFromAxisAngle(_pp.Y, chestYaw * 0.5));
+      b.head.quaternion.premultiply(q.setFromAxisAngle(_pp.Y, headYaw));
       // aim elevation: raise / lower the gun arm in the shoulder's frame
       if (this._aimW > 0.01) {
         this.object.updateMatrixWorld(true);
-        const sh = new THREE.Vector3().setFromMatrixPosition(b.upperArmR.matrixWorld).applyMatrix4(inv);
+        const sh = _pp.sh.setFromMatrixPosition(b.upperArmR.matrixWorld).applyMatrix4(inv);
         const dy = tl.y - sh.y, dh = Math.hypot(tl.x - sh.x, tl.z - sh.z);
         const elev = lim(Math.atan2(dy, dh) - 0.02, 0.7) * this._lookW * this._aimW;
         // axis: perpendicular to the arm and to 'up', in the shoulder's frame
-        const pInv = new THREE.Quaternion().setFromRotationMatrix(b.shoulderR.matrixWorld).invert();
-        const up = new THREE.Vector3(0, 1, 0).applyQuaternion(pInv);
-        const d = new THREE.Vector3(0, -1, 0).applyQuaternion(b.upperArmR.quaternion);
-        const axis = new THREE.Vector3().crossVectors(d, up);
+        const pInv = _pp.pq.setFromRotationMatrix(b.shoulderR.matrixWorld).invert();
+        const up = _pp.up.set(0, 1, 0).applyQuaternion(pInv);
+        const d = _pp.d.set(0, -1, 0).applyQuaternion(b.upperArmR.quaternion);
+        const axis = _pp.ax.crossVectors(d, up);
         if (axis.lengthSq() > 1e-6) b.upperArmR.quaternion.premultiply(q.setFromAxisAngle(axis.normalize(), elev));
       }
     }

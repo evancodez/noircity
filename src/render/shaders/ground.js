@@ -34,6 +34,7 @@ export function makeGroundUniformsShared(tex) {
     uImpacts: { value: impacts },
     uBlasts: { value: blasts },
     uReflStrength: { value: 1.0 },
+    uFast: { value: 1 },          // Phase 3b fast paths (0: the 3a path, __noir.perfLegacy)
     uGroundDebug: { value: 0 },   // ?gdbg=: 1 base, 2 direct, 3 column, 4 sheen, 5 dash, 6 rSharp*puddle, 7 blobs, 8 near wash
   };
 }
@@ -76,6 +77,7 @@ export function makeGroundMaterial(U, { paving = 0 } = {}) {
       uniform sampler2D tRefl, tReflBlur, tNoise, tBrush;
       uniform float uTime, uPaving, uReflStrength;
       uniform int uGroundDebug;
+      uniform float uFast;
       uniform vec2 uRes;
       uniform vec4 uImpacts[ ${MAX_IMPACTS} ];
       uniform vec4 uBlasts[ ${MAX_BLASTS} ];
@@ -341,8 +343,13 @@ export function makeGroundMaterial(U, { paving = 0 } = {}) {
 
         // ---- normal: rain rings + impacts + wind-rippled micro noise ------
         float nearFade = 1.0 - smoothstep( 16.0, 34.0, dist );
-        float crest;
-        vec2 grad = rainRipples( p, uTime, crest ) * nearFade * ( 0.5 + 0.8 * puddle );
+        // (Phase 3b performance: beyond 34 m the rain rings are weighted out
+        // entirely - nearFade and the crest's fade are both 0 - so the
+        // 9-cell ring search is skipped there; it takes no textures or
+        // derivatives, so the branch is safe and the output bit-identical)
+        float crest = 0.0;
+        vec2 grad = vec2( 0.0 );
+        if ( nearFade > 0.0 || uFast < 0.5 ) grad = rainRipples( p, uTime, crest ) * nearFade * ( 0.5 + 0.8 * puddle );
         crest *= 1.0 - smoothstep( 5.0, 10.0, dist );
         grad += impactRipples( p ) * ( 0.4 + puddle );
         float blastCrest;
@@ -463,9 +470,28 @@ export function makeGroundMaterial(U, { paving = 0 } = {}) {
                      * ( 1.0 - smoothstep( 0.02, 0.07, cHn.g - cHn.b ) ) * smoothstep( 0.15, 0.4, cSat );
         vec3 colBlood = colC * bloodC;
         colC -= colBlood;
+        // Fire in the column (Phase 3b review): lifted to a lamp column's
+        // value and printed bright-or-nothing by the ink, a burning wreck's
+        // wide warm column came out a dense orange block while the lamps'
+        // broke into streaks. Its share is broken by dry-brush STREAKS laid
+        // in world space on the street and stretched along the reflection
+        // axis (the ground direction from the eye), the way a lamp column
+        // is broken by its vertical smear, and held below a lamp column's
+        // value (0.62) so more of it falls under the ink's print threshold
+        // and it sits in the picture, not on it.
+        float fireC = step( column.b, column.g ) * step( column.g, column.r )
+                    * smoothstep( 0.02, 0.07, cHn.g - cHn.b ) * smoothstep( 0.15, 0.4, cSat );
+        vec3 colFire = colC * fireC;
+        colC -= colFire;
+        vec2 fAx = normalize( p - cameraPosition.xz + 1e-4 );
+        vec2 fQ = vec2( dot( p, vec2( - fAx.y, fAx.x ) ) / 17.0, dot( p, fAx ) / 40.0 );
+        float fStreak = texture2D( tBrush, fQ + vec2( 0.61, 0.23 ) ).g * 0.7
+                      + texture2D( tBrush, fQ * vec2( 1.6, 1.3 ) + vec2( 0.17, 0.71 ) ).g * 0.3;
+        colFire *= 0.62 * smoothstep( 0.36, 0.56, fStreak );
         float fleck = smoothstep( 0.56, 0.64, texture2D( tNoise, p * vec2( 0.45, 1.6 ) + 5.1 ).r )
                     * smoothstep( 0.3, 0.6, dash );
         vec3 refl = colC * mix( 0.04, 1.0, dash ) + colBlood * 0.35 * fleck
+                  + colFire * mix( 0.02, 1.0, dash )
                   + sheen * ( 0.4 + 1.2 * dash )       // the dark-grey wet look
                   // sparse pale dashes on dark asphalt: ripple facets that
                   // catch the grey storm sky. (sheen * 1.2 * dash alone is

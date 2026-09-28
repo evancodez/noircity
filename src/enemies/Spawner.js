@@ -47,7 +47,7 @@ export class Spawner {
   get done() { return this.toSpawn === 0; }
 
   pickSpot(vanguard = false) {
-    const G = this.game, p = G.camera.position, r = this.rng;
+    const G = this.game, p = G.eye, r = this.rng;
     const cands = [];
     const [d0, d1] = vanguard ? [30, 34] : [30, 45];
     for (const s of this.spots) {
