@@ -4,7 +4,7 @@ import { makeIdMaterial } from './shaders/idpass.js';
 import { makeInkMaterial } from './shaders/ink.js';
 import { FULLSCREEN_VERT } from './shaders/common.js';
 import { TONE_GLSL, toneUniforms, EXPOSURE } from './tone.js';
-import { makeBloomPrefilter, makeBloomDown, makeBloomUp, makeStreakMaterial, makeBlurMaterial, makeReflBrightMaterial } from './shaders/bloom.js';
+import { makeBloomPrefilter, makeBloomDown, makeBloomUp, makeBloomUpWide, makeStreakMaterial, makeBlurMaterial, makeReflBrightMaterial } from './shaders/bloom.js';
 
 // Explicit render pipeline (DESIGN.md §3). Per frame:
 //   1. normal+id pass   -> rtId (view normal xyz, object id w) + depth texture
@@ -18,7 +18,7 @@ import { makeBloomPrefilter, makeBloomDown, makeBloomUp, makeStreakMaterial, mak
 //   4. volume pass      -> rtVolume (half res): cones, beams; these shaders
 //                          depth-test manually against rtId's depth; then a
 //                          separable blur feathers every cone edge
-//      rain pass        -> rtRain (FULL res): 3D rain streaks + splash rings,
+//      rain pass        -> rtRain (FULL res, R16F): 3D rain streaks + splash rings,
 //                          so the hairlines stay thin and never stair-step
 //   5. bloom chain      -> bloom[0] (half res)
 //   6. ink pass         -> canvas
@@ -37,7 +37,10 @@ import { makeBloomPrefilter, makeBloomDown, makeBloomUp, makeStreakMaterial, mak
 // far el stations, far cars and far Tommy guns take lighter builds
 // (Overpass, Cars, Hood). GPU per-pass timings: __noir.gpuProfile() where
 // timer queries work, else __noir.bench() (repeated passes).
-const BLOOM_LEVELS = 5;
+// (Phase 3c performance pass: two levels, the quarter-res one mipmapped and
+// read by one wide upsample - shaders/bloom.js makeBloomUpWide - in place of
+// the three small levels and their six passes)
+const BLOOM_LEVELS = 2;
 
 export class Pipeline {
   constructor(renderer, tex, U, opts = {}) {
@@ -63,7 +66,10 @@ export class Pipeline {
     // is static, so a quiet street renders them once.
     this.reflHide = null;
     this.shadowCasters = null;
+    this.shadowLod = null;     // (on) => light builds into the shadow maps
+    this.volPost = null;       // () => true while a muzzle puff hangs (LAYER.VOL_POST)
     this.shadowCache = opts.shadowCache ?? true;
+    this.shadowThrottle = opts.shadowThrottle ?? true;
     this._shadowLights = null;
 
     const hf = THREE.HalfFloatType;
@@ -98,13 +104,27 @@ export class Pipeline {
       const sm = renderer.shadowMap, smRender = sm.render.bind(sm);
       this._armHold = false;
       this.deferResolve = true;
-      sm.render = (lights, scene, camera) => { smRender(lights, scene, camera); if (this._armHold) rt._holdResolve = true; };
+      // (Phase 3c performance pass: a shadow map re-rendered for a moving
+      // Hood drew the el's stations and the cars at full detail - ~300k
+      // triangles a map; they cast it from their light builds, which print
+      // the same soft PCF pools - this.shadowLod, set by the Game)
+      sm.render = (lights, scene, camera) => {
+        let lod = false;
+        if (this.shadowLod && sm.enabled) for (const L of lights) if (L.castShadow && (L.shadow.autoUpdate || L.shadow.needsUpdate)) { lod = true; break; }
+        if (lod) this.shadowLod(true);
+        smRender(lights, scene, camera);
+        if (lod) this.shadowLod(false);
+        if (this._armHold) rt._holdResolve = true;
+      };
     }
     this.rtRefl = new THREE.WebGLRenderTarget(1, 1, { type: hf });
     this.rtVolume = new THREE.WebGLRenderTarget(1, 1, { type: hf, depthBuffer: false });
     this.rtVolume.texture.name = 'rtVolume';
     this.rtVolTmp = new THREE.WebGLRenderTarget(1, 1, { type: hf, depthBuffer: false });
-    this.rtRain = new THREE.WebGLRenderTarget(1, 1, { type: hf, depthBuffer: false });
+    // (Phase 3c performance pass: one channel - R16F, a quarter of the
+    // RGBA16F's bytes to clear, store and sample - but FULL res: at half res
+    // the 1.5 px hairlines doubled into soft 3 px bars)
+    this.rtRain = new THREE.WebGLRenderTarget(1, 1, { type: hf, format: THREE.RedFormat, depthBuffer: false });
     this.rtRain.texture.name = 'rtRain';
     this.rtStreakA = new THREE.WebGLRenderTarget(1, 1, {
       type: hf, depthBuffer: false, generateMipmaps: true, minFilter: THREE.LinearMipmapLinearFilter,
@@ -112,7 +132,9 @@ export class Pipeline {
     this.rtStreakB = new THREE.WebGLRenderTarget(1, 1, { type: hf, depthBuffer: false });
     this.bloom = [];
     for (let i = 0; i < BLOOM_LEVELS; i++) {
-      this.bloom.push(new THREE.WebGLRenderTarget(1, 1, { type: hf, depthBuffer: false }));
+      const last = i === BLOOM_LEVELS - 1;
+      this.bloom.push(new THREE.WebGLRenderTarget(1, 1, { type: hf, depthBuffer: false,
+        ...(last ? { generateMipmaps: true, minFilter: THREE.LinearMipmapLinearFilter } : {}) }));
     }
 
     this.idMat = makeIdMaterial();
@@ -120,6 +142,7 @@ export class Pipeline {
     this.prefilterMat = makeBloomPrefilter();
     this.downMat = makeBloomDown();
     this.upMat = makeBloomUp();
+    this.upWideMat = makeBloomUpWide();
     this.streakMat = makeStreakMaterial();
     this.reflBrightMat = makeReflBrightMaterial();
     // Bright-pass threshold T (scene-linear luminance): just above lamp-lit
@@ -265,7 +288,16 @@ export class Pipeline {
   dirtyShadows() { this.shadowDirty = true; }
 
   // flag the shadow maps that must be re-rendered this frame (see above)
-  updateShadowFlags(scene) {
+  // Phase 3c performance pass: a map that must follow a MOVING caster (a
+  // Hood walking or fighting in the light's range) is refreshed every other
+  // frame - the three shadowed lamps staggered, so ~1.5 maps a frame instead
+  // of 3 - and one that only sees far casters (> 20 m from the eye: a man
+  // ~70 px tall) every fourth; a light that moved or was re-assigned, a
+  // caster entering or leaving its range, or dirtyShadows() still refresh it
+  // at once. A shadow at most one frame late (three for a far man) is
+  // invisible under the ink's soft PCF pools.
+  updateShadowFlags(scene, camera = null) {
+    this._shFrame = (this._shFrame || 0) + 1;
     if (!this._shadowLights) {
       this._shadowLights = [];
       scene.traverse((o) => { if (o.isLight && o.castShadow && o.shadow) this._shadowLights.push(o); });
@@ -277,7 +309,7 @@ export class Pipeline {
       const key = [L.position.x, L.position.y, L.position.z, t.x, t.y, t.z, L.shadow.camera.far, L.angle ?? 0, L.visible ? 1 : 0].join(',');
       let need = key !== L._shKey;
       L._shKey = key;
-      let sig = '';
+      let sig = '', moveNear = false, moveFar = false;
       if (casters) {
         // inside the light's shadow frustum (a spot's cone, a ~1.3 m sphere
         // round the man): a man outside the cone never touches its map
@@ -300,13 +332,19 @@ export class Pipeline {
             const perp = Math.sqrt(Math.max(0, d * d - along * along));
             if (along * sinA - perp * cosA < -R && along < d * cosA) continue;
           }
-          if (c.moving) need = true;
+          if (c.moving) {
+            const far = c.slow || (camera && Math.hypot(c.x - camera.position.x, c.z - camera.position.z) > 20);
+            if (far) moveFar = true; else moveNear = true;
+          }
           sig += c.id + ',';
         }
       }
       if (sig !== L._shSig) need = true;
       L._shSig = sig;
       if (this.shadowDirty) need = true;
+      const li = this._shadowLights.indexOf(L), f = this._shFrame + li;
+      if (!this.shadowThrottle) { if (moveNear || moveFar) need = true; }
+      else if (moveNear ? (f & 1) === 0 : moveFar && (f & 3) === 0) need = true;
       if (need) L.shadow.needsUpdate = true;
     }
   }
@@ -421,8 +459,9 @@ export class Pipeline {
     camera.layers.disable(LAYER.VIEWMODEL);
     camera.layers.disable(LAYER.VM_FX);
     camera.layers.disable(LAYER.REFL_ONLY);
+    camera.layers.disable(LAYER.VOL_POST);
     r.shadowMap.autoUpdate = !S.shadows;
-    if (this.shadowCache && !S.shadows) { this.updateShadowFlags(scene); this.shadowDirty = false; }
+    if (this.shadowCache && !S.shadows) { this.updateShadowFlags(scene, camera); this.shadowDirty = false; }
     r.setRenderTarget(this.rtScene);
     r.setClearColor(this.fogColor, 1);
     r.clear();
@@ -467,6 +506,16 @@ export class Pipeline {
     bu.tSrc.value = this.rtVolTmp.texture;
     bu.uDir.value.set(0, 1 / this.rtVolume.height);
     this.blit(this.blurMat, this.rtVolume);
+    // the muzzle puff's occluder after the feather (LAYER.VOL_POST): the air
+    // light behind it is cut at its own frayed edge (only while one hangs)
+    if (this.volPost && this.volPost()) {
+      camera.layers.set(LAYER.VOL_POST);
+      r.setRenderTarget(this.rtVolume);
+      const ac1 = r.autoClear;
+      r.autoClear = false;
+      r.render(scene, camera);
+      r.autoClear = ac1;
+    }
     if (P) P.begin('rain');
     camera.layers.set(LAYER.RAIN);
     U.uRes.value.set(this.width, this.height);
@@ -490,11 +539,13 @@ export class Pipeline {
     }
     for (let i = S.bloom ? -1 : BLOOM_LEVELS - 2; i >= 0; i--) {
       const src = this.bloom[i + 1];
-      this.upMat.uniforms.tSrc.value = src.texture;
-      this.upMat.uniforms.uTexel.value.set(1 / src.width, 1 / src.height);
+      // (the last level: the wide upsample over its mips)
+      const m = i + 2 === BLOOM_LEVELS ? this.upWideMat : this.upMat;
+      m.uniforms.tSrc.value = src.texture;
+      m.uniforms.uTexel.value.set(1 / src.width, 1 / src.height);
       // wider mips count for less: a tight hot halo, not a fog of glow
-      this.upMat.uniforms.uScale.value = 0.55;
-      this.blit(this.upMat, this.bloom[i], false);
+      m.uniforms.uScale.value = 0.55;
+      this.blit(m, this.bloom[i], false);
     }
 
     // ---- 6. ink -----------------------------------------------------------------

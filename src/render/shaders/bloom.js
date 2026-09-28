@@ -122,7 +122,13 @@ export function makeReflBrightMaterial() {
         // estimate: a cone's air light reaches down to the street, where its
         // elevation says 'far' at any distance, and it carries the upper part
         // of every column; a far cone is small and dim on its own)
-        float far = distWeight( vUv ) * smoothstep( 0.5, 2.0, luma( c ) );
+        // (the train's window pools, Phase 3c, lie ON the mirror plane,
+        // where the elevation estimate reads every one as far away and the
+        // far clip cut its column to a thread: they are drawn a hair blue in
+        // the mirror - 5 %, far under the ink's colour keep - and pass at the
+        // near lamps' column gain)
+        float poolF = smoothstep( 0.02, 0.04, ( c.b - c.r ) / max( c.b, 1e-4 ) );
+        float far = distWeight( vUv ) * smoothstep( 0.5, 2.0, luma( c ) ) * ( 1.0 - poolF );
         c *= mix( 1.0, 0.5, far ) * min( 1.0, mix( 40.0, uThreshold + 0.04, far ) / max( luma( c ), 1e-4 ) );
         float l = luma( c );
         return c * ( max( l - uThreshold, 0.0 ) / max( l, 1e-4 ) );
@@ -216,6 +222,43 @@ export function makeBlurMaterial() {
                + ( texture2D( tSrc, vUv + uDir * 1.5 ) + texture2D( tSrc, vUv - uDir * 1.5 ) ) * 4.0
                + ( texture2D( tSrc, vUv + uDir * 3.0 ) + texture2D( tSrc, vUv - uDir * 3.0 ) );
         gl_FragColor = s / 16.0;
+      }`,
+  });
+}
+
+// Phase 3c performance pass: the bloom chain in TWO levels (half and quarter
+// res) instead of five. The three small levels (1/8 .. 1/32 res) carried the
+// lamps' wide soft glow; their six tiny passes cost ~0.25 ms a frame (each
+// pass has a fixed cost on the tiled GPU whatever its size). The quarter-res
+// level is now mipmapped by the GPU in one call, and this last upsample
+// (quarter -> half res) reads its mips 1..3 with the same tent the chain
+// used - the chain's nested sum L1 + k T(L2 + k T(L3 + k T(L4))) flattened
+// into one pass, k^n weights and all - so the lamp halos keep their width.
+export function makeBloomUpWide() {
+  return new THREE.ShaderMaterial({
+    name: 'BloomUpWide',
+    depthTest: false, depthWrite: false,
+    blending: THREE.AdditiveBlending,
+    transparent: true,
+    uniforms: { tSrc: { value: null }, uTexel: { value: new THREE.Vector2() }, uScale: { value: 1.0 }, uSpread: { value: 1.3 } },
+    vertexShader: FULLSCREEN_VERT,
+    fragmentShader: /* glsl */`
+      uniform sampler2D tSrc; uniform vec2 uTexel; uniform float uScale, uSpread;
+      varying vec2 vUv;
+      vec3 tent( float lod, vec2 t ) {
+        vec3 s = textureLod( tSrc, vUv, lod ).rgb * 4.0;
+        s += ( textureLod( tSrc, vUv + vec2( t.x, 0.0 ), lod ).rgb + textureLod( tSrc, vUv - vec2( t.x, 0.0 ), lod ).rgb
+             + textureLod( tSrc, vUv + vec2( 0.0, t.y ), lod ).rgb + textureLod( tSrc, vUv - vec2( 0.0, t.y ), lod ).rgb ) * 2.0;
+        s += textureLod( tSrc, vUv + t, lod ).rgb + textureLod( tSrc, vUv - t, lod ).rgb
+           + textureLod( tSrc, vUv + vec2( t.x, -t.y ), lod ).rgb + textureLod( tSrc, vUv + vec2( -t.x, t.y ), lod ).rgb;
+        return s / 16.0;
+      }
+      void main() {
+        vec3 s = tent( 0.0, uTexel )
+               + uScale * ( tent( 1.0, uTexel * 2.0 * uSpread )
+               + uScale * ( tent( 2.0, uTexel * 4.0 * uSpread )
+               + uScale * tent( 3.0, uTexel * 8.0 * uSpread ) ) );
+        gl_FragColor = vec4( s * uScale, 1.0 );
       }`,
   });
 }

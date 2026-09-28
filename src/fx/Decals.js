@@ -98,6 +98,8 @@ class DecalPool {
     });
     this.mesh = new THREE.InstancedMesh(geo, this.mat, max);
     this.mesh.count = 0;
+    // (an empty pool is not drawn: Phase 3c performance)
+    this.mesh.visible = false;
     this.mesh.frustumCulled = false;
     this.mesh.layers.set(layer);
     this.mesh.renderOrder = 1;
@@ -137,10 +139,11 @@ class DecalPool {
     this.aCol.needsUpdate = true;
     this.aInfo.needsUpdate = true;
     this.mesh.count = this.count;
+    this.mesh.visible = true;
     return i;
   }
 
-  clear() { this.next = 0; this.count = 0; this.mesh.count = 0; }
+  clear() { this.next = 0; this.count = 0; this.mesh.count = 0; this.mesh.visible = false; }
 }
 
 export const BLOOD_DECAL = [0.085, 0.00034, 0.0034];   // prints ~#c8102e

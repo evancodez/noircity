@@ -106,7 +106,7 @@ export class MuzzleFlash {
     this.playerEntry.position.copy(this.light.position);
     this.playerEntry.intensity = 0.35;
     // smoke
-    this.puff(worldPos, fwd, 0.6);
+    this.puff(worldPos, fwd, 0.6, true);
     this.last.player = { vmPos: vmPos.clone(), worldPos: worldPos.clone(), fwd: fwd.clone(), gunFwd: gunFwd.clone(), time, s, cell, rot, s2, cell2, rot2 };
   }
 
@@ -128,7 +128,7 @@ export class MuzzleFlash {
     this.light.intensity = this.lightI;
     this.playerEntry.position.copy(this.light.position);
     this.playerEntry.intensity = 0.35;
-    this.puff(pos, dir, 0.6);
+    this.puff(pos, dir, 0.6, true);
     this.last.playerOts = { pos: pos.clone(), center: center.clone(), dir: dir.clone(), time, s, cell, rot, s0, c0, rot0 };
   }
 
@@ -174,14 +174,22 @@ export class MuzzleFlash {
     this.last.hoods.set(h, { pos: pos.clone(), center: center.clone(), dir: dir.clone(), time, s, cell, rot, heavy, far });
   }
 
-  puff(pos, dir, k) {
+  // (player, Phase 3c: the per-round wisps are short-lived and hardly grow
+  // - identical for their first frames, so a flash frame is unchanged - and
+  // gone within ~0.4 s: a burst's soft wisps, growing 0.45 m a second and
+  // hanging a second, had merged into a soft smudge the size of a car round
+  // the muzzle, burying the compact brushed puff the burst leaves, Fx.muzzleSmoke)
+  puff(pos, dir, k, player = false) {
     const r = this.rng;
     for (let i = 0; i < 2; i++) {
       const v = dir.clone().multiplyScalar(r.range(0.3, 0.9)).add(new THREE.Vector3(r.gauss() * 0.1, r.range(0.15, 0.4), r.gauss() * 0.1));
       const sz = r.range(0.12, 0.22) * (0.6 + k);
+      // (the rng is drawn in the original order: pos, then life)
+      const p0 = pos.clone().addScaledVector(dir, r.range(0.05, 0.25));
+      const life = r.range(0.7, 1.2);
       this.smoke.spawn({
-        pos: pos.clone().addScaledVector(dir, r.range(0.05, 0.25)), vel: v, life: r.range(0.7, 1.2), size: [sz, sz], grow: 0.45,
-        rot: r.next() * 6.28, spin: r.gauss() * 0.6, col: [0.05, 0.05, 0.05], alpha: 0.28 * k + 0.1, drag: 1.4, fadeIn: 0.1, fadeOut: 0.7,
+        pos: p0, vel: v, life: player ? life * 0.4 : life, size: [sz, sz], grow: player ? 0.15 : 0.45,
+        rot: r.next() * 6.28, spin: r.gauss() * 0.6, col: [0.05, 0.05, 0.05], alpha: 0.28 * k + 0.1, drag: 1.4, fadeIn: player ? 0.1 / 0.4 : 0.1, fadeOut: 0.7,
       });
     }
   }

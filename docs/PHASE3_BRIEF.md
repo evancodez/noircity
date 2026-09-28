@@ -191,3 +191,41 @@ performance and the beauty pass**.
 4. **Train**: sparks 5–6 px with 6–10 per bite and 0.25 s tails from the near
    girder; near-car strobe ~2× into the wet-street reflection at lamp-column
    gain, so a crossing reads on the road.
+
+---
+
+## 3d — the hero, finished by subtraction (final art round)
+The 3c hero is close: hat brim edge-on with dashed catch-light, black coat
+mass with long ragged ticks, flat black gun steel. What still reads as CG is
+every place a *feature* was rendered instead of inked. The reference's
+foreground shooter is a silhouette: the head under the hat is a black shape,
+the ear is two or three tiny ticks at most, the cheek is a torn brush plane,
+the shoulder is a squared yoke. **When in doubt, make it black.**
+1. **Ear**: no lit bowl, no pale ring, ever. Either remove the ear geometry
+   on the player body or gate its light through the tick field only
+   (2–3 ragged helix ticks, otherwise black with its contour). Scale ~0.65
+   and sink 5 mm into the skull.
+2. **Skull and cheek**: the skull under the hat is a black hair mass with a
+   ragged lit hairline of a few ticks along the crown-to-nape silhouette; the
+   cheek plane is a hard brush-torn step (step ~0.55 on the tick field), never
+   a smooth grey gradient, and it never extends below the jaw (no neck band).
+3. **Left hand on the foregrip**: visible above the barrel and forward of the
+   drum in ots, hoods&ots=1 and battle&ots=1 (fix the IK target: wrist up
+   ~2 cm and back ~4 cm from the muzzle; log wrist error per frame); the glove
+   gets its own ink id so a contour separates it from barrel/drum; exclude the
+   glove from the flash mask; 3–4 knuckle ticks always print.
+4. **Shoulder / sleeve silhouette**: the upper-arm capsule ~25 % thinner at
+   the sleeve cap with a flattened top (a yoke corner), the torso back rows
+   tapered so the back is not a sphere, a small coat-hem flare. Judge in
+   battle&t=30&ots=1, where the body shows most.
+5. **Gun**: the stock gets its own ink id (stock/receiver contour), a dashed
+   light line along the stock's comb and one along the fin tops so the barrel
+   reads ribbed; kill the rear-sight speckle.
+6. **Muzzle puff**: nothing in the puff prints paler than the mist (upper lobe
+   col ≤ 0.06 or removed; grow the dark core to 0.18 m, alpha 0.7); the edge
+   cut window [0.3, 0.7] so the outline frays.
+7. **Train sparks**: straighter, shorter tails (no signature scribble), less
+   bloom halo on windows/sparks over the girder.
+Verification: ots, hoods&ots=1, battle&t=30&ots=1 at 1600×1000 with 4× crops
+of head, ear region, hand, shoulder next to `shots/c3b_1_crops/ref_figure.png`;
+errors.sh clean; performance re-measured unchanged (≥ 85 fps clean run).

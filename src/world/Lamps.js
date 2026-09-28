@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { LAYER, tagInk, markFigure } from '../render/layers.js';
+import { LAYER, tagInk, markFigure, allocInkId } from '../render/layers.js';
 import { makeConeMesh } from '../render/shaders/cone.js';
 import { lathe, merge, tube, V3 } from './geom.js';
 import { STREET } from './Street.js';
@@ -57,6 +57,79 @@ export class Lamps {
       this.addHanging(V3(p.x, OVERPASS.deckY, p.z), { real: z < 0 && z > -100 });
     }
     this.buildPool();
+    this.buildInstances();
+  }
+
+  // Phase 3c performance pass: the posts and the hanging lamps were three
+  // meshes each (iron, shade, bulb), drawn in the id, reflection and scene
+  // passes (and the shadow maps): ~190 draw calls for 22 lamps. Each kind
+  // is now drawn as instanced meshes - iron, shade, the live bulbs and the
+  // dead ones - one draw per pass each; every instance keeps its lamp's own
+  // ink id (the id pass adds gl_InstanceID to the base, and the lamps of a
+  // kind were tagged with consecutive ids), so the contours are the same.
+  // The per-lamp groups stay in the scene graph, hidden (group.visible =
+  // false), as the bullets' ray targets (world.solids, userData.lamp) and
+  // the carriers of the lamp's state; the instances follow them: a swing
+  // (swingStep), a bulb going out or dying (update).
+  buildInstances() {
+    const { M, scene } = this.world;
+    const zero = new THREE.Matrix4().makeScale(0, 0, 0);
+    this.inst = [];
+    for (const kind of ['post', 'hang']) {
+      const list = this.lamps.filter((l) => l.kind === kind);
+      if (!list.length) continue;
+      const n = list.length, L0 = list[0];
+      let base = L0.iron.userData.inkId;
+      if (!list.every((l, i) => l.iron.userData.inkId === base + i)) base = allocInkId(n);
+      const mk = (geo, mat, name, figure, cast) => {
+        const im = new THREE.InstancedMesh(geo, mat, n);
+        im.name = name;
+        im.userData.inkId = base;
+        im.userData.noRay = true;
+        if (figure) im.userData.inkFigure = true;
+        im.castShadow = cast;
+        im.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+        scene.add(im);
+        return im;
+      };
+      const I = {
+        kind, list,
+        iron: mk(L0.iron.geometry, M.lampIron, `lamps_${kind}_iron`, false, true),
+        shade: mk(L0.shade.geometry, M.lampShade, `lamps_${kind}_shade`, true, true),
+        bulb: mk(L0.bulb.geometry, M.bulb, `lamps_${kind}_bulb`, false, false),
+        dead: mk(L0.bulb.geometry, M.bulbDead, `lamps_${kind}_bulbDead`, false, false),
+        zero,
+      };
+      list.forEach((l, i) => {
+        l.inst = I; l.instIdx = i; l._bstate = -1;
+        l.group.visible = false;
+        l.group.updateMatrixWorld(true);
+        for (const im of [I.iron, I.shade, I.bulb, I.dead]) im.setMatrixAt(i, l.group.matrixWorld);
+      });
+      // (the bounds over every lamp of the kind - a hanging lamp swings a
+      // few cm inside them - then the bulbs start hidden until update())
+      for (const im of [I.iron, I.shade, I.bulb, I.dead]) { im.computeBoundingSphere(); im.boundingSphere.radius += 0.6; im.instanceMatrix.needsUpdate = true; }
+      list.forEach((l, i) => { I.bulb.setMatrixAt(i, zero); I.dead.setMatrixAt(i, zero); });
+      this.inst.push(I);
+    }
+  }
+
+  // the instances of one lamp follow its (hidden) group
+  syncInstance(l, moved) {
+    const I = l.inst;
+    if (!I) return;
+    const i = l.instIdx, m = l.group.matrixWorld;
+    const state = !l.bulb.visible ? 0 : l.bulb.material === this.world.M.bulbDead ? 2 : 1;
+    if (moved) {
+      I.iron.setMatrixAt(i, m); I.shade.setMatrixAt(i, m);
+      I.iron.instanceMatrix.needsUpdate = I.shade.instanceMatrix.needsUpdate = true;
+    }
+    if (moved || state !== l._bstate) {
+      l._bstate = state;
+      I.bulb.setMatrixAt(i, state === 1 ? m : I.zero);
+      I.dead.setMatrixAt(i, state === 2 ? m : I.zero);
+      I.bulb.instanceMatrix.needsUpdate = I.dead.instanceMatrix.needsUpdate = true;
+    }
   }
 
   // A fixed pool of real SpotLights follows the player: the nearest lamps get
@@ -187,6 +260,7 @@ export class Lamps {
     const out = V3(Math.cos(yaw), 0, -Math.sin(yaw));
     const target = head.clone().addScaledVector(out, 0.9).setY(0);
     const lamp = this.finish(g, head, target, { real, bulb, heightToGround: head.y });
+    Object.assign(lamp, { kind: 'post', iron, shade });
     if (real || base.z > -140) this.world.colliders.addCircle(base.x, base.z, 0.25, 'lamp');
     return lamp;
   }
@@ -217,6 +291,7 @@ export class Lamps {
     const lamp = this.finish(g, head, target, { real, bulb, heightToGround: head.y, fadeEnd: 0.62, edgeSoft: 0.05 });
     // a hanging lamp swings on its rod (hit, the train passing overhead)
     lamp.hanging = true;
+    Object.assign(lamp, { kind: 'hang', iron, shade });
     lamp.anchor = anchor.clone();
     lamp.swing = { x: 0, z: 0, vx: 0, vz: 0 };
     // narrower pool: the columns either side stay black, like the reference
@@ -373,6 +448,7 @@ export class Lamps {
     // toward +x: the rod hangs along -y)
     g.rotation.set(-S.z, 0, S.x);
     g.updateMatrixWorld(true);
+    this.syncInstance(l, true);
     const q = g.quaternion;
     const rod = l.head0.clone().sub(l.anchor).applyQuaternion(q);
     l.head.copy(l.anchor).add(rod);
@@ -426,6 +502,7 @@ export class Lamps {
       l._k = k;
       l.bulb.visible = k > 0.05 || (l.dead && !l.on);
       l.entry.intensity = k;
+      if (l.inst) this.syncInstance(l, false);
     }
     this.updatePool(dt, camPos, this._fwd);
   }

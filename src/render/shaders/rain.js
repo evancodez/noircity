@@ -98,10 +98,12 @@ export function makeRainMaterial(U) {
         float a = across * along * vAlpha;
         float fogF = noirFogAmount( vDist, vWY, uFogDensity );
         float bright = ( uBase + vLight * uLit ) * vBright * ( 1.0 - fogF );
-        // B channel only: the ink pass lays rain over the INKED image in
-        // display space (a thin white line reads even over a bright cone,
-        // which it could not if it were summed into the cone's light first)
-        gl_FragColor = vec4( 0.0, 0.0, bright * a, 1.0 );
+        // its own one-channel buffer: the ink pass lays rain over the INKED
+        // image in display space (a thin white line reads even over a bright
+        // cone, which it could not if it were summed into the cone's light
+        // first). (Phase 3c: R16F, the red channel - a quarter of the bytes
+        // of the RGBA16F it was, at full res so the hairlines stay one pixel)
+        gl_FragColor = vec4( bright * a, 0.0, 0.0, 1.0 );
       }`,
   });
 }
@@ -169,7 +171,7 @@ export function makeSplashMaterial(U) {
         ring += 0.45 * exp( - pow( ( r - R2 ) * 24.0, 2.0 ) ) * ( 1.0 - vPh ) * smoothstep( 0.1, 0.35, vPh );
         float crown = exp( - r * r * 900.0 ) * smoothstep( 0.2, 0.0, vPh );
         float a = ( ring + crown * 2.0 ) * smoothstep( 25.0, 8.0, vDist );
-        gl_FragColor = vec4( 0.0, 0.0, a * ( 0.02 + vLight * 0.5 ), 1.0 );
+        gl_FragColor = vec4( a * ( 0.02 + vLight * 0.5 ), 0.0, 0.0, 1.0 );
       }`,
   });
 }

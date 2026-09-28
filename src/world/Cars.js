@@ -607,6 +607,16 @@ export class Cars {
     }
   }
 
+  // the shadow maps (Pipeline.shadowLod): every near car casts from its far
+  // build while a map is re-rendered (Phase 3c performance pass)
+  shadowLod(on) {
+    for (const car of this.cars) {
+      if (car.lod) continue;
+      const T = on ? this.TL : this.T;
+      for (const k of LOD_PARTS) { const m = car.meshes[k]; if (m) m.geometry = T[k]; }
+    }
+  }
+
   update(dt, t) {
     const G = this.game, r = this.rng;
     for (const car of this.cars) {

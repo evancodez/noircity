@@ -133,6 +133,11 @@ export class Train {
     const aI = new THREE.InstancedBufferAttribute(new Float32Array(max * 4), 4);   // x, z, yaw, intensity
     aI.setUsage(THREE.DynamicDrawUsage);
     g.setAttribute('iPool', aI);
+    // (Phase 3c) how near its car is (0..1): the near cars' pools go into the
+    // wet street's mirror twice as hard
+    const aN = new THREE.InstancedBufferAttribute(new Float32Array(max), 1);
+    aN.setUsage(THREE.DynamicDrawUsage);
+    g.setAttribute('iNear', aN);
     g.instanceCount = 0;
     const U = world.U;
     const mat = new THREE.ShaderMaterial({
@@ -145,9 +150,11 @@ export class Train {
       uniforms: { uUseDepth: U.uUseDepth, uFogColor: U.uFogColor, uFogDensity: U.uFogDensity, uSize: { value: new THREE.Vector2(1.7, 1.1) } },
       vertexShader: /* glsl */`
         attribute vec4 iPool;
+        attribute float iNear;
         uniform vec2 uSize;
         varying vec2 vUvP;
         varying float vI;
+        varying float vNear;
         varying vec3 vView;
         void main() {
           float c = cos( iPool.z ), s = sin( iPool.z );
@@ -155,6 +162,7 @@ export class Train {
           vec3 wp = vec3( iPool.x + c * q.x + s * q.y, 0.03, iPool.y - s * q.x + c * q.y );
           vUvP = uv;
           vI = iPool.w;
+          vNear = iNear;
           vec4 mv = viewMatrix * vec4( wp, 1.0 );
           vView = mv.xyz;
           gl_Position = projectionMatrix * mv;
@@ -163,6 +171,7 @@ export class Train {
         uniform float uUseDepth;
         varying vec2 vUvP;
         varying float vI;
+        varying float vNear;
         varying vec3 vView;
         ${NOIR_FOG_GLSL}
         void main() {
@@ -170,9 +179,13 @@ export class Train {
           vec2 d = abs( vUvP - 0.5 ) * 2.0;
           float m = ( 1.0 - smoothstep( 0.35, 1.0, d.x ) ) * ( 1.0 - smoothstep( 0.2, 1.0, d.y ) );
           float fog = noirFogAmount( length( vView ), 0.0, uFogDensity );
-          // in the reflection (uUseDepth 0) it must clear the bright pass
-          float k = uUseDepth < 0.5 ? 0.85 : 0.14;
-          gl_FragColor = vec4( vec3( m * vI * k * ( 1.0 - fog ) ), 1.0 );
+          // in the reflection (uUseDepth 0) it must clear the bright pass;
+          // there a near car's strobe goes in twice as hard (Phase 3c), and
+          // a hair blue: the bright pass passes it at the near lamps' column
+          // gain instead of clipping it as a far emitter (shaders/bloom.js)
+          float refl = 1.0 - step( 0.5, uUseDepth );
+          float k = mix( 0.14, 0.85 * ( 1.0 + vNear ), refl );
+          gl_FragColor = vec4( vec3( m * vI * k * ( 1.0 - fog ) ) * mix( vec3( 1.0 ), vec3( 0.95, 0.95, 1.0 ), refl ), 1.0 );
         }`,
     });
     const mesh = new THREE.Mesh(g, mat);
@@ -181,7 +194,7 @@ export class Train {
     mesh.renderOrder = 2;
     mesh.name = 'trainPools';
     world.scene.add(mesh);
-    return { mesh, aI, max };
+    return { mesh, aI, aN, max };
   }
 
   get active() { return this.head >= 0; }
@@ -318,12 +331,37 @@ export class Train {
               const dW = wheel.distanceTo(camera.position);
               sw = Math.max(sw, 3.0 * (2 * Math.tan(THREE.MathUtils.degToRad(camera.fov) / 2) * dW) / Math.max(1, W.U.uRes.value.y));
             }
+            // Phase 3c: from the near girder, a bite is a SPRAY - 6-10 hot
+            // points 5-6 px across, each trailing a 0.25 s tail (stretch
+            // 0.25: a streak as long as its last quarter second of flight)
             const floor = spill;
-            const nS = floor ? r.int(3, 5) : 5;
-            const sp = floor ? 0.45 : 1;
+            if (floor && camera) {
+              const dW = wheel.distanceTo(camera.position);
+              sw = Math.max(sw, r.range(5, 6) * (2 * Math.tan(THREE.MathUtils.degToRad(camera.fov) / 2) * dW) / Math.max(1, W.U.uRes.value.y));
+            }
+            const nS = floor ? r.int(6, 10) : 5;
+            // Phase 3c review: the spray printed as one bloomed white smear
+            // peppered with black (the atlas cells' holes fell back to the
+            // ink's black iron) - now the rail sparks' own system: a solid
+            // round head 5-6 px across and a thin line tail (Particles
+            // `spark`), each at 2x the bloom's threshold rather than 5x, so
+            // the bloom haloes each point instead of welding the bite into
+            // a flare (the system tags them a hair blue, and the ink prints
+            // a tagged emitter over the girder white - partly covered pixels
+            // too - rather than holding it to the black iron: the pepper)
+            // (thrown a little harder than the 3b points, so a bite fans out
+            // into a spray of separate streaks instead of piling into one
+            // blooming blob at the wheel)
+            // (Phase 3c review: 0.8 -> 1.4, the life 0.3-0.6 -> 0.25-0.45 s: a
+            // bite fans out wider, so its points stand apart with dark iron
+            // between them instead of one blooming blob)
+            const sp = floor ? 1.4 : 1;
             for (let n = 0; n < nS; n++) {
               const v = fwd.clone().multiplyScalar(-this.dir * r.range(1, 4) * sp).add(side.clone().normalize().multiplyScalar(r.range(0.5, 2.5) * sp)).add(new THREE.Vector3(r.gauss() * 0.6 * sp, r.range(0.2, 2.2) * sp, r.gauss() * 0.6 * sp));
-              F.sparks.spawn({ pos: wheel.clone().add(new THREE.Vector3(r.gauss() * 0.08, r.gauss() * 0.04, r.gauss() * 0.08)), vel: v, life: r.range(0.35, 0.9), size: [sw, sw * 1.3], stretch: 0.03, col: [7, 7, 7], cell: 4, gravity: 9.8, ground: 0.02, fadeOut: 0.4 });
+              // (the spray holds its full heat to the end - no fade: a
+              // dimming spark over the girder fell under the ink's emitter
+              // test and printed as a black streak on the lit iron)
+              (F.railSparks || F.sparks).spawn({ pos: wheel.clone().add(new THREE.Vector3(r.gauss() * (floor ? 0.14 : 0.08), r.gauss() * 0.04, r.gauss() * (floor ? 0.14 : 0.08))), vel: v, life: floor ? r.range(0.25, 0.45) : r.range(0.35, 0.9), size: [sw, sw], stretch: floor ? 0.25 : 0.03, col: [2.6, 2.6, 2.6], cell: 4, gravity: 9.8, ground: 0.02, fadeOut: floor ? 0 : 0.4 });
             }
           }
           if (this.onSqueal && curve > 0) this.onSqueal(curve, wheel);
@@ -377,7 +415,8 @@ export class Train {
       const dc = cam ? Math.hypot(c.mid.x - cam.x, c.mid.z - cam.z) : 50;
       if (dc > 75) continue;
       // (Phase 3b: the pools under the cars nearest the eye strobe harder)
-      const boost = 1 + 1.6 * (1 - THREE.MathUtils.smoothstep(dc, 18, 32));
+      const nearK = 1 - THREE.MathUtils.smoothstep(dc, 18, 32);
+      const boost = 1 + 1.6 * nearK;
       for (let k = 0; k < POOLS_PER_CAR; k++) {
         const u = (k + 0.5) / POOLS_PER_CAR - 0.5;
         const sP = c.s + this.dir * u * (CAR_L - 2.4);
@@ -390,11 +429,13 @@ export class Train {
         A[n * 4] = x; A[n * 4 + 1] = z; A[n * 4 + 2] = Math.atan2(f.T.x, f.T.z) + Math.PI / 2;
         // (hard strobe: the posts and the column pairs cut the light off)
         A[n * 4 + 3] = THREE.MathUtils.smoothstep(post, 0.25, 0.75) * colGap * boost;
+        P.aN.array[n] = nearK;
         n++;
       }
     }
     P.mesh.geometry.instanceCount = n;
     P.aI.needsUpdate = true;
+    P.aN.needsUpdate = true;
     if (this.onRumble && cam) this.onRumble(1 - THREE.MathUtils.smoothstep(nd, 15, 140), nearest);
     // the hanging lamps under it tremble
     if (W.lamps && W.lamps.tremble && dt > 0) for (const c of this.cars) if (r.chance(dt * 6)) W.lamps.tremble(c.mid.x, c.mid.z, 1);

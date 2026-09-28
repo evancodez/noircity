@@ -32,7 +32,27 @@ export class Props {
     this.vents = [V3(-1.4, 0, -21.5), V3(3.6, 0, -47), V3(-3.4, 0, -79), V3(-1.0, 0, 6), V3(0.5, 0, -112)];
     for (const v of this.vents) this.grate(v);
     for (const m of [V3(-2.5, 0, -33), V3(-2.8, 0, -64), V3(2.2, 0, -90)]) this.manhole(m);
+    this.flushStatic();
     this.wires();
+  }
+
+  // (Phase 3c performance pass) the props nobody can move - the crates, the
+  // barrels, the manholes - are batched: one mesh (one ink id, one draw per
+  // pass) per kind instead of one per pile; their colliders stay their own
+  addStatic(kind, geo, mat, p, yaw, figure = false) {
+    const B = this._static || (this._static = {});
+    const m = new THREE.Matrix4().makeRotationY(yaw).setPosition(p);
+    (B[kind] || (B[kind] = { mat, figure, geos: [] })).geos.push(geo.applyMatrix4(m));
+  }
+
+  flushStatic() {
+    for (const [kind, b] of Object.entries(this._static || {})) {
+      const m = new THREE.Mesh(merge(b.geos), b.mat);
+      m.name = 'props_' + kind;
+      if (b.figure) markFigure(m);   // inked like a car: the air light goes around it
+      this.add(m);
+    }
+    this._static = null;
   }
 
   add(mesh, collider) {
@@ -187,11 +207,8 @@ export class Props {
     }
     // unlit black (Phase 1c): under an el lamp the lit wood printed as
     // light-grey outline art; clutter is a black silhouette like the cars
-    const m = new THREE.Mesh(merge(parts), M.black);
-    m.position.copy(p);
-    m.rotation.y = yaw;
-    markFigure(m);   // inked like a car: the air light goes around it
-    this.add(m, () => colliders.addBox(p.x + Math.cos(yaw) * 0.55, p.z - Math.sin(yaw) * 0.55, 1.2, 0.6, yaw, 'crates'));
+    this.addStatic('crates', merge(parts), M.black, p, yaw, true);
+    colliders.addBox(p.x + Math.cos(yaw) * 0.55, p.z - Math.sin(yaw) * 0.55, 1.2, 0.6, yaw, 'crates');
   }
 
   barrels(p, yaw) {
@@ -199,10 +216,8 @@ export class Props {
     const prof = [[0, 0], [0.28, 0], [0.3, 0.04], [0.31, 0.12], [0.3, 0.16], [0.33, 0.3], [0.345, 0.44], [0.33, 0.58], [0.3, 0.72], [0.31, 0.76], [0.3, 0.84], [0.28, 0.88], [0, 0.88]];
     const b = lathe(prof, 28);
     const parts = [b.clone().translate(0, 0, 0), b.clone().translate(0.72, 0, 0.15), b.clone().rotateZ(Math.PI / 2).translate(0.35, 0.3, 0.85)];
-    const m = new THREE.Mesh(merge(parts), M.paintedMetal);
-    m.position.copy(p);
-    m.rotation.y = yaw;
-    this.add(m, () => colliders.addBox(p.x + 0.36, p.z + 0.4, 0.8, 0.8, yaw, 'barrels'));
+    this.addStatic('barrels', merge(parts), M.paintedMetal, p, yaw);
+    colliders.addBox(p.x + 0.36, p.z + 0.4, 0.8, 0.8, yaw, 'barrels');
   }
 
   grate(p) {
@@ -233,9 +248,7 @@ export class Props {
     const { M } = this.world;
     const parts = [lathe([[0, 0.012], [0.35, 0.012], [0.4, 0.004], [0.42, 0.0]], 36)];
     for (let r = 0.1; r < 0.36; r += 0.08) parts.push(new THREE.TorusGeometry(r, 0.008, 4, 36).rotateX(Math.PI / 2).translate(0, 0.012, 0));
-    const m = new THREE.Mesh(merge(parts), M.iron);
-    m.position.copy(p);
-    this.add(m);
+    this.addStatic('manholes', merge(parts), M.iron, p, 0);
   }
 
   // ---- Phase 3a: shooting the props --------------------------------------------

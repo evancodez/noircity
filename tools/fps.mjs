@@ -16,6 +16,7 @@
 // absolute numbers meaningless, and the run is flagged BUSY. RUNS=<n>
 // repeats the measurement n times and prints the spread.
 import { spawn, execSync } from 'node:child_process';
+import { rmSync } from 'node:fs';
 
 // GPU busy % right now (macOS IOAccelerator; null elsewhere): the max of a
 // few samples 150 ms apart (the counter is a short moving average)
@@ -104,6 +105,9 @@ try {
   try { ws && ws.close(); } catch {}
   chrome.kill('SIGKILL');
   await sleep(600);
+  // (Phase 3c: the throwaway profile goes with the run - ~35 MB each, and
+  // hundreds of them had filled the disk)
+  try { rmSync(`/tmp/noir-fps-${PORT}`, { recursive: true, force: true }); } catch {}
   const gpuAfter = gpuUtil();
   out.gpu = { before: gpuBefore, after: gpuAfter, busy: gpuBefore != null && gpuBefore > GPU_BUSY };
   if (out.gpu.busy) out.WARNING = `GPU already ${gpuBefore} % busy before the run (another process): absolute fps / ms are not a clean benchmark`;
@@ -113,6 +117,8 @@ try {
   console.error('fps.mjs failed:', e);
   try { ws && ws.close(); } catch {}
   chrome.kill('SIGKILL');
+  await sleep(600);
+  try { rmSync(`/tmp/noir-fps-${PORT}`, { recursive: true, force: true }); } catch {}
   return null;
 }
 }

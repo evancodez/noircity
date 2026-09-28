@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { Hood } from '../enemies/Hood.js';
+import { Hood, playerPartGeometry } from '../enemies/Hood.js';
 import { twoBone, L_UPPER, L_FORE, BIND, eulerQ } from '../enemies/HoodRig.js';
 import { WALK, RUN } from '../enemies/HoodAnim.js';
 import { buildTommyParts, MUZZLE, EJECT } from './Viewmodel.js';
@@ -47,19 +47,34 @@ import { allocHoodSlot, PLAYER_SLOT, HOOD_ID0, FIG_ANCHOR, HERO } from '../rende
 // the camera over the hat, so the brim stays edge-on instead of spreading
 // into a black disc. Bullets, the Hoods' sense of being shot at and the
 // aim itself stay on the EYE (eyeObj), never on the boom camera.
-export const OTS = { right: 0.45, up: 0.03, back: 0.6, yaw: 15, pitchK: 0.4 };
+// (Phase 3c: up -0.02 - the lens at brim height, below the eye, so the brim
+// is a thin edge-on shape with the crown and ribbon above it, like the
+// reference's shooter, not a black disc seen from above)
+export const OTS = { right: 0.45, up: -0.02, back: 0.6, yaw: 15, pitchK: 0.4 };
 
 const Y = new THREE.Vector3(0, 1, 0);
 const D2R = Math.PI / 180;
-// the player variant's wide brim (Hood.js BRIM_R[1])
-const BRIM_R_PLAYER = 0.19;
+// the player's own brim (Hood.js PLAYER_BRIM: narrower than any Hood's, with
+// a stronger snap - at 0.19 it printed as a sombrero from half a metre)
+const BRIM_R_PLAYER = 0.15;
 const sstep = (a, b, x) => { const t = Math.min(1, Math.max(0, (x - a) / (b - a))); return t * t * (3 - 2 * t); };
 const wrap = (a) => Math.atan2(Math.sin(a), Math.cos(a));
 
 // gun-local points (Viewmodel.js frame: +x right, +y up, muzzle toward -z)
 const BUTT = new THREE.Vector3(0, -0.095, 0.455);       // the butt plate, in the shoulder
 const GRIP = new THREE.Vector3(0, -0.07, 0.088);        // the right fist
-const FORE = new THREE.Vector3(0, -0.05, -0.3);         // the left hand
+// the left hand on the foregrip (Phase 3c: it never got there - the grip
+// was out of the arm's reach, see GUN_SCALE / PROTRACT - and hung hidden
+// behind the receiver): the wrist behind the grip's top, the hand turned
+// 20 deg across it so the fingers wrap its near side, where the lens sees
+// them between the drum and the fins, under the barrel (otsfore=x,y,z
+// gun-local wrist; otsforerot=x,y,z deg in the gun's frame, applied Z*Y*X)
+// (Phase 3c review: it still never got there - the wrist stopped 6 cm short,
+// at the drum's front edge, hidden behind the drum. With the collarbone
+// protracted 55 deg and the torso bladed 38 the arm reaches, and the wrist is
+// set on the foregrip's top, 1.5 cm out to his left: the fist rides ahead of
+// the drum with its knuckles over the barrel's top line)
+const FORE = new THREE.Vector3(-0.012, 0.006, -0.30);
 // the shoulder pocket in the chest bone's frame (bind: chest at y 1.28):
 // the stock in the right shoulder's inside, the gun at chin height under
 // the right eye (the cheek weld: 6 cm in toward the centre line and 6 cm
@@ -72,13 +87,30 @@ const POCKET = new THREE.Vector3(-0.10, 1.47, 0.14).sub(BIND.chest);
 const LD = new URLSearchParams(typeof location !== 'undefined' ? location.search : '');
 if (LD.get('otscam')) { const [r, u, b, y = OTS.yaw, k = OTS.pitchK] = LD.get('otscam').split(',').map(Number); Object.assign(OTS, { right: r, up: u, back: b, yaw: y, pitchK: k }); }
 if (LD.get('otspocket')) POCKET.set(...LD.get('otspocket').split(',').map(Number)).sub(BIND.chest);
-const BLADE = parseFloat(LD.get('otsblade') ?? '20');
+// (Phase 3c: 20 -> 30 deg, with the left collarbone protracted below: the
+// left shoulder comes forward so the hand reaches the foregrip)
+// (Phase 3c review: 30 -> 38, and the protraction 35 -> 55 below: the left
+// hand's reach onto the foregrip)
+const BLADE = parseFloat(LD.get('otsblade') ?? '38');
+// the player's own Tommy gun at true size (Phase 3c): the viewmodel's gun
+// is built ~12 % long (0.97 m; an M1928 is 0.86), and the foregrip sat
+// 0.92 m from his left shoulder - out of a 0.57 m arm's reach, so the left
+// hand never got there. (otsgunscale=<k>)
+const GUN_SCALE = parseFloat(LD.get('otsgunscale') ?? '0.88');
+const PROTRACT = parseFloat(LD.get('otsprotract') ?? '55');
+if (LD.get('otsfore')) FORE.set(...LD.get('otsfore').split(',').map(Number));
+const FORE_ROT = (LD.get('otsforerot') ?? '0,-20,0').split(',').map((d) => parseFloat(d) * Math.PI / 180);
+const FORE_Q = new THREE.Quaternion().setFromEuler(new THREE.Euler(FORE_ROT[0], FORE_ROT[1], FORE_ROT[2], 'ZYX'));
+const ID_Q = new THREE.Quaternion();
 // the right elbow's pole: down, and this much out to his right (1.1: a
 // raised 'chicken wing'; lower: the elbow tucked under the gun)
 const ELBOW_OUT = parseFloat(LD.get('otselbow') ?? '-0.5');
-// the head's drop onto the stock (deg, forward): the brim tips toward the aim
-// so the camera behind sees its top and the crown above it
-const HEAD_DROP = parseFloat(LD.get('otshead') ?? '12');
+// the head's drop onto the stock (deg, forward). Phase 3c: 12 -> 3.5 - at
+// 12 the brim tipped its whole top to the camera behind and spread into a
+// black disc; nearly level, it stays edge-on at the lens's height
+const HEAD_DROP = parseFloat(LD.get('otshead') ?? '3.5');
+// (m) how far the head sinks toward the shoulders (otssink=<m>)
+const HEAD_SINK = parseFloat(LD.get('otssink') ?? '0.03');
 // The staged hero frame (shot=ots) swings the barrel this much further right
 // than the man it is held on, the illustrator's cheat the reference makes:
 // the Tommy gun's drum is a flat can on its flank, and from behind the
@@ -86,31 +118,55 @@ const HEAD_DROP = parseFloat(LD.get('otshead') ?? '12');
 // more side-on opens it into a round drum under the receiver. In play the
 // barrel converges on the crosshair exactly (no cheat).
 const GUN_CHEAT = parseFloat(LD.get('otscheat') ?? '8');
+// the drum's turn toward the lens (rad, about the gun's up; otsdrum=<deg>)
+const DRUM_TURN = parseFloat(LD.get('otsdrum') ?? '26') * Math.PI / 180;
 
 // The key light (Phase 3b): lit only by the street, the player's back - the
 // side the camera sees - printed as one black mass. Like the viewmodel's own
 // key, the body gets a light of its own, from up and to the left of the
 // camera (where the reference's lamp stands), folded into its material, so
-// the coat's back and shoulders, the hat's crown and the gun's top raise
-// dry-brush greys under the ink's figure ceiling. (A material term, not a
-// scene light: a light would be paid by every lit pixel of the frame.)
-const KEY = { dir: new THREE.Vector3(-0.75, 0.6, 0.3).normalize(), col: 2.6 };
-function keyed(mat, U) {
+// the coat's back and shoulders and the gun's top raise dry-brush ticks.
+// (A material term, not a scene light: a light would be paid by every lit
+// pixel of the frame.)
+// Phase 3c: the ink quantises the hero's lit response to two levels
+// (render/shaders/ink.js, the hero block), so the key only has to say WHERE
+// the light falls: its strength is held at 1.0 (at 2.6 it printed as
+// wet-latex gloss), and the head and the hat take none of it (the ink's own
+// world key decides their ticks). The hero has no specular at all - no
+// lamp hotspot, no environment sheen: felt, wool and blued steel in ink.
+const KEY = { dir: new THREE.Vector3(-0.75, 0.6, 0.3).normalize(), col: 1.0 };
+// The ink's own key on the head, the hat and the gun (layers.HERO[2]; Phase
+// 3c: camera-relative, like the material key - world-fixed, the side the
+// reference lights went dark whenever the player faced the other way): from
+// ahead, right and above the lens, where the reference's flash and far lamp
+// are, so the crown's right side, the brim's front edge, the ear and the
+// receiver's top catch it while the back the camera sees stays black
+const INK_KEY = new THREE.Vector3(0.75, 0.55, -0.4).normalize();
+function keyed(mat, U, head = 0) {
   const m = mat.clone();
   m.onBeforeCompile = (sh) => {
     sh.uniforms.uKeyDir = U.dir;
     sh.uniforms.uKeyCol = U.col;
+    sh.uniforms.uHeadK = { value: head };
+    sh.vertexShader = sh.vertexShader
+      .replace('#include <common>', '#include <common>\nvarying float vBindY;')
+      .replace('#include <begin_vertex>', '#include <begin_vertex>\nvBindY = position.y;');
     sh.fragmentShader = sh.fragmentShader
-      .replace('#include <common>', '#include <common>\nuniform vec3 uKeyDir;\nuniform float uKeyCol;')
+      .replace('#include <common>', '#include <common>\nuniform vec3 uKeyDir;\nuniform float uKeyCol, uHeadK;\nvarying float vBindY;')
       .replace('#include <lights_fragment_end>', `#include <lights_fragment_end>
         {
-          // (uKeyDir: world space; normal: view space)
+          // (uKeyDir: world space; normal: view space; vBindY: the bind
+          // pose's height - the head, the hat and the neck above the collar
+          // take no key)
           vec3 kd = normalize( ( viewMatrix * vec4( uKeyDir, 0.0 ) ).xyz );
           float k = max( dot( normal, kd ), 0.0 );
-          reflectedLight.directDiffuse += diffuseColor.rgb * uKeyCol * k * k;
+          float headM = uHeadK * smoothstep( 1.53, 1.57, vBindY );
+          reflectedLight.directDiffuse += diffuseColor.rgb * uKeyCol * k * k * ( 1.0 - headM );
+          reflectedLight.directSpecular = vec3( 0.0 );
+          reflectedLight.indirectSpecular = vec3( 0.0 );
         }`);
   };
-  m.customProgramCacheKey = () => 'playerKey';
+  m.customProgramCacheKey = () => 'playerKey' + head;
   return m;
 }
 
@@ -128,8 +184,29 @@ export class PlayerBody {
     h.mesh.castShadow = true;
     // the body and the gun take the key light (world direction set per step)
     this.keyU = { dir: { value: new THREE.Vector3() }, col: { value: KEY.col } };
-    h.mesh.material = keyed(h.mesh.material, this.keyU);
+    h.mesh.material = keyed(h.mesh.material, this.keyU, 1);
+    // his ears and his left hand: rigid meshes on the head and the left hand
+    // bones (bind-space geometry, so the material key's bind height still
+    // tells the head from the body), each an ink id of its own - the ear a
+    // shell the ink cuts out of the black skull, the glove a shape of its
+    // own on the foregrip between the drum and the fins
+    this.partSlots = [];
+    for (const [kind, bone, slot] of [['ears', 'head', PLAYER_SLOT.ear], ['hand', 'handL', PLAYER_SLOT.hand]]) {
+      const m = new THREE.Mesh(playerPartGeometry(kind), h.mesh.material);
+      m.name = 'player_' + kind;
+      m.position.copy(BIND[bone]).negate();
+      m.castShadow = true;
+      const k = allocHoodSlot(slot);
+      m.userData.inkId = HOOD_ID0 + k; m.userData.inkFigure = true; m.userData.noRay = true;
+      h.bones[bone].add(m);
+      this.partSlots.push(k);
+    }
     h.setState('idle', 0);
+    // the head sunk into the shoulders (Phase 3c, second round): a shooter
+    // on the stock hunches, his head down between the raised collar and the
+    // brim; upright on a 9 cm neck, from behind at brim height the skull and
+    // the neck stood a head's height above the collar like a column
+    h.bones.head.position.y -= HEAD_SINK;
     // the Tommy gun, in two parts (the drum comes out in the reload): an ink
     // figure of its own (a Hood slot reserved for it, layers.PLAYER_SLOT),
     // so the ink draws the paper trap line between it and the coat behind -
@@ -139,15 +216,23 @@ export class PlayerBody {
     this.gunMat = keyed(new THREE.MeshStandardMaterial({ color: 0x0a0a0a, roughness: 0.6, metalness: 0.35, envMap: world.M.envSoft, envMapIntensity: 0.45 }), this.keyU);
     this.gun = new THREE.Group();
     this.gun.name = 'playerGun';
+    this.gun.scale.setScalar(GUN_SCALE);
     const body = new THREE.Mesh(P.body, this.gunMat);
+    const fins = new THREE.Mesh(P.fins, this.gunMat);
+    const sight = new THREE.Mesh(P.sight, this.gunMat);
     this.drumG = new THREE.Group();
     this.drumC = P.drumC;
     this.drumG.position.copy(P.drumC);
     const drum = new THREE.Mesh(P.drum, this.gunMat);
     this.drumG.add(drum);
-    this.gun.add(body, this.drumG);
+    this.gun.add(body, fins, sight, this.drumG);
+    // (Phase 3c: the drum, the finned barrel and the sights each an ink id -
+    // a Hood slot - of their own, so the ink draws their contours and the
+    // paper trap between them inside the black steel; all four share the
+    // gun's brush anchor)
     this.gunSlot = allocHoodSlot(PLAYER_SLOT.gun);
-    for (const m of [body, drum]) { m.userData.inkId = HOOD_ID0 + this.gunSlot; m.userData.inkFigure = true; m.castShadow = true; m.userData.noRay = true; }
+    this.gunSlots = [this.gunSlot, allocHoodSlot(PLAYER_SLOT.drum), allocHoodSlot(PLAYER_SLOT.fins), allocHoodSlot(PLAYER_SLOT.sight)];
+    [body, drum, fins, sight].forEach((m, i) => { m.userData.inkId = HOOD_ID0 + this.gunSlots[i]; m.userData.inkFigure = true; m.castShadow = true; m.userData.noRay = true; });
     world.scene.add(this.gun);
     h.afterPose = (hh, dt) => this.pose(dt);
 
@@ -214,6 +299,8 @@ export class PlayerBody {
     const boomQ = this._q[2].setFromEuler(this._e.set(C.pitch * OTS.pitchK, C.yaw + OTS.yaw * D2R, 0, 'YXZ'));
     // the key light rides with the camera
     this.keyU.dir.value.copy(KEY.dir).applyQuaternion(camQ);
+    const ik = this._v[4].copy(INK_KEY).applyQuaternion(camQ);
+    HERO[2].set(ik.x, ik.y, ik.z, 1);
     const eye = this._v[0].copy(camera.position);
     const off = this._v[1].set(OTS.right, OTS.up, OTS.back).applyQuaternion(boomQ);
     const len = off.length();
@@ -389,7 +476,7 @@ export class PlayerBody {
     // cant (a little roll into the cheek), the recoil's muzzle rise, the
     // reload's tilt
     gq.multiply(Q[0].setFromEuler(this._e.set(R.p + 0.1 * rl, 0, -0.1 + R.roll - 0.6 * rl, 'YXZ')));
-    const gp = this.gunPos.copy(BUTT).applyQuaternion(gq).negate().add(pocket);
+    const gp = this.gunPos.copy(BUTT).multiplyScalar(GUN_SCALE).applyQuaternion(gq).negate().add(pocket);
     gp.addScaledVector(V[5].set(0, 0, 1).applyQuaternion(gq), R.z * 0.9);
     this.gun.position.copy(gp);
     this.gun.quaternion.copy(gq);
@@ -401,18 +488,34 @@ export class PlayerBody {
       drumDrop = sstep(0.34, 0.46, reloadU) * (1 - sstep(0.48, 0.56, reloadU));
     }
     this.drumG.position.set(this.drumC.x + 0.15 * drumOut, this.drumC.y - 0.2 * drumDrop, this.drumC.z);
-    this.drumG.rotation.set(0.3 * drumDrop, 0, -0.35 * drumOut);
+    // (Phase 3c review: the drum turned ~26 deg on the receiver toward the
+    // lens behind the shoulder - the illustrator's cheat the reference makes:
+    // true to the gun, from here its face was a thin edge-on oval; turned, it
+    // opens into the round can under the receiver)
+    this.drumG.rotation.set(0.3 * drumDrop, -DRUM_TURN * (1 - drumOut), -0.35 * drumOut);
     this.gun.updateMatrixWorld(true);
     // (the gun's brush anchor: its receiver and its heading)
-    FIG_ANCHOR[this.gunSlot].set(gp.x, gp.y, gp.z, Math.atan2(-gz.x, -gz.z) + Math.PI);
+    for (const k of this.gunSlots) FIG_ANCHOR[k].set(gp.x, gp.y, gp.z, Math.atan2(-gz.x, -gz.z) + Math.PI);
     // 4. arms: two-bone IK onto the grip and the foregrip (drum in the reload)
+    // (Phase 3c: the left collarbone swung forward - protracted, as a
+    // shooter reaches for the foregrip - so the hand gets there)
+    if (PROTRACT) {
+      b.shoulderL.quaternion.multiply(Q[0].setFromAxisAngle(Y, -PROTRACT * D2R * (1 - low)));
+      b.shoulderL.updateMatrixWorld(true);
+    }
     const gm = this.gun.matrixWorld;
     const back = V[5].set(0, 0, 1).applyQuaternion(gq);
     const gripW = V[6].copy(GRIP).applyMatrix4(gm).addScaledVector(back, 0.055);
     this.arm('R', gripW, V[7].set(0, -1, 0).addScaledVector(V[2].set(-1, 0, 0).applyQuaternion(objQ), ELBOW_OUT));
     const foreL = V[6].copy(FORE).lerp(V[7].copy(this.drumG.position).add(V[2].set(0.02, -0.02, 0.06)), handDrum).applyMatrix4(gm).addScaledVector(back, 0.07);
-    this.arm('L', foreL, V[7].set(0, -1, 0).addScaledVector(V[2].set(1, 0, 0).applyQuaternion(objQ), 0.35));
+    this.arm('L', foreL, V[7].set(0, -1, 0).addScaledVector(V[2].set(1, 0, 0).applyQuaternion(objQ), 0.35),
+      (this._foreQ || (this._foreQ = new THREE.Quaternion())).copy(FORE_Q).slerp(ID_Q, handDrum));
     obj.updateMatrixWorld(true);
+    // (the ears ride on the body's brush anchor; the glove, Phase 3c review,
+    // on the gun's - its fingers wrap the gun, and the ink draws the gaps
+    // between them across the bore)
+    FIG_ANCHOR[this.partSlots[0]].set(h.pos.x, h.pos.y, h.pos.z, h.yaw);
+    FIG_ANCHOR[this.partSlots[1]].copy(FIG_ANCHOR[this.gunSlot]);
     // the hero key's hat frame (the ink's crown / band / brim tests)
     const hm = b.hat.matrixWorld.elements;
     HERO[0].set(hm[12], hm[13], hm[14], BRIM_R_PLAYER);
@@ -420,6 +523,16 @@ export class PlayerBody {
     HERO[1].set(ux.x, ux.y, ux.z, this.visible ? 1 : 0);
     const xx = V[5].set(hm[0], hm[1], hm[2]).normalize();
     HERO[3].set(xx.x, xx.y, xx.z, 0);
+    // the neck's frame (the ink's neck column, inside the collar), and the
+    // sleeve's fold line: the right upper arm's heading in the body's
+    // frontal plane (the ink's brush frame: the root turned by its yaw)
+    const ua = b.upperArmR.getWorldPosition(V[5]), fa = b.forearmR.getWorldPosition(V[6]);
+    const dx = fa.x - ua.x, dz = fa.z - ua.z, cy = Math.cos(h.yaw), sy = Math.sin(h.yaw);
+    const foldA = Math.atan2(fa.y - ua.y, cy * dx - sy * dz);
+    const nm = b.neck.matrixWorld.elements;
+    HERO[4].set(nm[12], nm[13], nm[14], foldA);
+    const nu = V[5].set(nm[4], nm[5], nm[6]).normalize();
+    HERO[5].set(nu.x, nu.y, nu.z, 0);
   }
 
   // bone.world rotation := q (then its children follow)
@@ -432,7 +545,7 @@ export class PlayerBody {
   // two-bone IK of one arm onto a wrist target (world) with an elbow pole
   // (world direction), then the hand turned to the gun (both hands: their
   // -Y along the bore, +Z up the gun, like the Hood's fist on his pistol)
-  arm(s, target, pole) {
+  arm(s, target, pole, extra = null) {
     const h = this.hood, b = h.bones, obj = h.object;
     const inv = this._invM || (this._invM = new THREE.Matrix4());
     inv.copy(obj.matrixWorld).invert();
@@ -451,8 +564,9 @@ export class PlayerBody {
     b['upperArm' + s].quaternion.copy(qs.invert().multiply(qU));
     b['forearm' + s].quaternion.copy(qU).invert().multiply(qL);
     // the hand: X = -gunX, Y = gunZ, Z = gunY (in his frame)
-    const hq = (this._hq || (this._hq = new THREE.Quaternion())).copy(objQi).multiply(this.gunQ)
-      .multiply(this._hb || (this._hb = new THREE.Quaternion().setFromRotationMatrix(new THREE.Matrix4().makeBasis(
+    const hq = (this._hq || (this._hq = new THREE.Quaternion())).copy(objQi).multiply(this.gunQ);
+    if (extra) hq.multiply(extra);
+    hq.multiply(this._hb || (this._hb = new THREE.Quaternion().setFromRotationMatrix(new THREE.Matrix4().makeBasis(
         new THREE.Vector3(-1, 0, 0), new THREE.Vector3(0, 0, 1), new THREE.Vector3(0, 1, 0)))));
     b['hand' + s].quaternion.copy(qL).invert().multiply(hq);
     b['upperArm' + s].updateMatrixWorld(true);

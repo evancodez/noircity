@@ -24,7 +24,10 @@ import * as THREE from 'three';
 //             after the gun (scene pass only, never in the id pass).
 //   REFL_ONLY: drawn ONLY by the reflection camera: the world-space stand-in
 //             of the player's muzzle flash, so the wet street mirrors it.
-export const LAYER = { WORLD: 0, GROUND: 1, FX: 2, FX_REFL: 3, VOLUME: 4, RAIN: 5, SKY: 6, MIST: 7, VIEWMODEL: 8, REFL_ONLY: 9, VM_FX: 10 };
+//   VOL_POST : drawn into the volume buffer AFTER its feather blur (Phase 3c):
+//             the muzzle puff's occluder, so the air light is cut crisply at
+//             the puff's frayed edge (blurred, it printed as a soft smudge)
+export const LAYER = { WORLD: 0, GROUND: 1, FX: 2, FX_REFL: 3, VOLUME: 4, RAIN: 5, SKY: 6, MIST: 7, VIEWMODEL: 8, REFL_ONLY: 9, VM_FX: 10, VOL_POST: 11 };
 
 // Additive light that leaves the target's ALPHA untouched: the planar
 // reflection uses alpha as 'opaque geometry coverage' (cleared 0, surfaces 1),
@@ -85,7 +88,15 @@ const hoodSlots = new Array(HOOD_SLOTS).fill(false);
 // the paper gap it draws between a man and a dark object behind him). The
 // Hoods take the first free of the rest, so their slots, ids and brush
 // offsets are what they always were.
-export const PLAYER_SLOT = { body: HOOD_SLOTS - 1, gun: HOOD_SLOTS - 2 };
+// Phase 3c: the gun's drum, its finned barrel and its sights take three more
+// (61, 60, 59) so the ink draws their contours - and the paper trap between
+// them - inside the black steel; low is the lowest of the player's slots.
+// Phase 3c (second round): his ears (58) and his left hand on the foregrip
+// (57) are meshes of their own on the head and hand bones, with ids of their
+// own: the ink outlines them - the ear a light shell cut out of the black
+// skull, the glove a shape of its own between the drum and the fins - and
+// shades them as skin and leather, not as the coat.
+export const PLAYER_SLOT = { body: HOOD_SLOTS - 1, gun: HOOD_SLOTS - 2, drum: HOOD_SLOTS - 3, fins: HOOD_SLOTS - 4, sight: HOOD_SLOTS - 5, ear: HOOD_SLOTS - 6, hand: HOOD_SLOTS - 7, low: HOOD_SLOTS - 7 };
 // The player's hero key (Phase 3b review): the ink prints the player's own
 // hat, head and Tommy gun with bold dry-brush highlights under a key light
 // fixed in WORLD space (mostly from above, leaning to the street's +x side
@@ -95,10 +106,14 @@ export const PLAYER_SLOT = { body: HOOD_SLOTS - 1, gun: HOOD_SLOTS - 2 };
 // (xyz, w = strength), [3] the hat's x axis (its brim is an oval, 0.9 x).
 // Written by player/PlayerBody.js every pose.
 const heroKey = new THREE.Vector3(0.45, 0.85, -0.3).normalize();
-export const HERO = [new THREE.Vector4(), new THREE.Vector4(0, 1, 0, 0), new THREE.Vector4(heroKey.x, heroKey.y, heroKey.z, 1), new THREE.Vector4(1, 0, 0, 0)];
+// (Phase 3c review) [4] the neck bone (xyz, w = the sleeve's fold angle in
+// the body frame's frontal plane, rad), [5] the neck's up axis (xyz): the ink
+// tells the neck from the turned-up collar round it by the neck's own axis
+// (the hat's frame tilts with the head's pitch and took the collar's back in)
+export const HERO = [new THREE.Vector4(), new THREE.Vector4(0, 1, 0, 0), new THREE.Vector4(heroKey.x, heroKey.y, heroKey.z, 1), new THREE.Vector4(1, 0, 0, 0), new THREE.Vector4(), new THREE.Vector4(0, 1, 0, 0)];
 export function allocHoodSlot(reserved = -1) {
   if (reserved >= 0) { hoodSlots[reserved] = true; return reserved; }
-  for (let i = 0; i < HOOD_SLOTS - 2; i++) {
+  for (let i = 0; i < PLAYER_SLOT.low; i++) {
     if (!hoodSlots[i]) { hoodSlots[i] = true; return i; }
   }
   return -1;

@@ -39,7 +39,12 @@ export class Particles {
   //   outgrew the small flames and read as a CG glow sprite. Past `near` m
   //   the scene colour is scaled toward k by `far` m (the print stays the
   //   same, only the bloom goes); the planar reflection keeps full strength.
-  constructor(world, { max = 512, map, cells = [1, 1], blending = 'normal', layer = 3, crisp = true, name = 'particles', renderOrder = 2, reflGain = 1, cut = [0.38, 0.62], alphaFromR = false, keepChroma = false, occlude = 0, fogFade = 0, distDim = null } = {}) {
+  // spark (Phase 3c review, the train's wheel sparks): no atlas cell - a
+  //   solid round HEAD at the particle and a thin tapered LINE for its tail
+  //   (the stretched part of the quad), drawn procedurally. The atlas cells
+  //   cut crisp had holes, and over the el's girder every hole fell back to
+  //   the ink's black iron: a bloomed smear peppered with black dots
+  constructor(world, { max = 512, map, cells = [1, 1], blending = 'normal', layer = 3, crisp = true, name = 'particles', renderOrder = 2, reflGain = 1, cut = [0.38, 0.62], alphaFromR = false, keepChroma = false, occlude = 0, fogFade = 0, distDim = null, occLayer = 7, occMark = false, spark = false } = {}) {
     this.world = world;
     this.max = max;
     this.list = [];
@@ -57,6 +62,7 @@ export class Particles {
     const U = world.U;
     this.mat = new THREE.ShaderMaterial({
       name: 'NoirParticles_' + name,
+      defines: spark ? { SPARK: 1 } : {},
       transparent: true,
       depthWrite: false,
       blending: blending === 'add' ? THREE.AdditiveBlending : THREE.NormalBlending,
@@ -89,6 +95,9 @@ export class Particles {
         varying vec4 vCol;
         varying vec3 vView;
         varying float vWY;
+        #ifdef SPARK
+        varying float vHead;
+        #endif
         void main() {
           vec4 mv = modelViewMatrix * vec4( iPos, 1.0 );
           vec2 ax = vec2( 1.0, 0.0 ), ay = vec2( 0.0, 1.0 );
@@ -107,10 +116,17 @@ export class Particles {
             float c = cos( iRot ), s = sin( iRot );
             ax = vec2( c, s ); ay = vec2( -s, c );
           }
+          #ifdef SPARK
+          // (the head's share of the quad's length: the rest is the tail)
+          vHead = iSize.y / max( h, 1e-6 );
+          #endif
           mv.xy += ax * q.x * iSize.x + ay * q.y * h;
           gl_Position = projectionMatrix * mv;
           float cx = mod( iCell, uCells.x ), cy = floor( iCell / uCells.x );
           vUv = ( vec2( cx, uCells.y - 1.0 - cy ) + uv ) / uCells;
+          #ifdef SPARK
+          vUv = uv;
+          #endif
           vCol = iCol;
           vView = mv.xyz;
           vWY = iPos.y;
@@ -124,14 +140,34 @@ export class Particles {
         varying vec4 vCol;
         varying vec3 vView;
         varying float vWY;
+        #ifdef SPARK
+        varying float vHead;
+        #endif
         ${NOIR_FOG_GLSL}
         void main() {
+          #ifdef SPARK
+          // head: a disc at the front end (uv.y = 1 is the front); tail: a
+          // line a third of the head's width, tapering to nothing at its end
+          float hy = 1.0 - vHead * 0.5;
+          vec2 hd = vec2( ( vUv.x - 0.5 ) * 2.0, ( vUv.y - hy ) / max( vHead * 0.5, 1e-4 ) );
+          float head = step( length( hd ), 1.0 );
+          float ty = clamp( vUv.y / max( 1.0 - vHead * 0.5, 1e-4 ), 0.0, 1.0 );
+          float tail = step( abs( vUv.x - 0.5 ), 0.17 * ty ) * step( vUv.y, hy );
+          float a = max( head, tail ) * vCol.a;
+          #else
           vec4 tx = texture2D( tMap, vUv );
           float t = uAlphaR > 0.5 ? tx.r : tx.a;
           float a = mix( t, smoothstep( uCut.x, uCut.y, t ), uCrisp ) * vCol.a;
+          #endif
           vec3 c = vCol.rgb * ( uUseDepth < 0.5 ? uReflGain : mix( 1.0, uDistDim.z, smoothstep( uDistDim.x, uDistDim.y, length( vView ) ) ) );
           vec4 nf = noirFog( length( vView ), vWY, uFogDensity, uFogColor );
           if ( a < 0.01 ) discard;
+          #ifdef SPARK
+          // (a hair blue - the ink's tag for an emitter over the el's iron:
+          // it prints the spark, partly covered pixels too, instead of
+          // holding it to the black iron; never kept as colour, sat ~0.08)
+          c *= vec3( 0.92, 0.92, 1.0 );
+          #endif
           c = ( uAdd > 0.5 || uKeepChroma > 0.5 ) ? c * ( 1.0 - nf.a ) : mix( c, nf.rgb, nf.a );
           // (soft washes - smoke - thin out into the haze instead of printing
           // as pale fog-coloured ghosts over the dark towers behind them)
@@ -154,9 +190,18 @@ export class Particles {
       // (and the coverage into its ALPHA, cleared to 1: dstA *= 1 - srcA; the
       // ink pass reads 1 - alpha as 'smoke covers this pixel')
       Object.assign(om, { blending: THREE.CustomBlending, blendEquation: THREE.AddEquation, blendSrc: THREE.ZeroFactor, blendDst: THREE.OneMinusSrcAlphaFactor, blendSrcAlpha: THREE.ZeroFactor, blendDstAlpha: THREE.OneMinusSrcAlphaFactor, depthTest: false });
+      // occMark (the muzzle puff, Phase 3c): its coverage is also laid into
+      // the volume buffer's BLUE channel (unused by the air light: r = cone
+      // light, g = its share on the surface), premultiplied 'over' - the ink
+      // pass prints the puff in flat banded washes by it
+      if (occMark) {
+        om.fragmentShader = om.fragmentShader.replace('gl_FragColor = vec4( 0.0, 0.0, 0.0, clamp( a * uOcc * ( 1.0 - nf.a ), 0.0, 1.0 ) );',
+          'float oa = clamp( a * uOcc * ( 1.0 - nf.a ), 0.0, 1.0 );\n          gl_FragColor = vec4( 0.0, 0.0, oa, oa );');
+        om.blendSrc = THREE.OneFactor;
+      }
       this.occ = new THREE.Mesh(g, om);
       this.occ.frustumCulled = false;
-      this.occ.layers.set(7);   // LAYER.MIST: the volume pass only, never the reflection
+      this.occ.layers.set(occLayer);   // LAYER.MIST (default): the volume pass only, never the reflection
       this.occ.renderOrder = 50;
       this.occ.name = name + 'Occ';
       world.scene.add(this.occ);
@@ -260,5 +305,10 @@ export class Particles {
       }
     }
     this.geo.instanceCount = n;
+    // (Phase 3c performance: an empty system is not drawn at all - three
+    // binds the program and issues a zero-instance draw in every pass that
+    // sees its layer; ~a dozen of the systems are empty most frames)
+    this.mesh.visible = n > 0;
+    if (this.occ) this.occ.visible = n > 0;
   }
 }

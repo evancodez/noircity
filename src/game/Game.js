@@ -115,6 +115,9 @@ export class Game {
     // (the el's iron only: a car's chrome and lamps are emitters in the
     // mirror - its light build moved a column in the wet street)
     pipeline.reflLod = (on) => { world.overpass.reflLod(on); };
+    // (the shadow maps take the light builds too: Phase 3c performance)
+    pipeline.shadowLod = (on) => { if (world.lodOff) return; world.overpass.reflLod(on); world.cars.shadowLod(on); };
+    pipeline.volPost = () => this.fx.puff.list.length > 0;
     const casters = [];
     pipeline.shadowCasters = () => {
       casters.length = 0;
@@ -122,7 +125,13 @@ export class Game {
       for (const h of world.hoods.list) {
         if (!h.object.visible || !h.mesh.castShadow) continue;
         const moving = h.alive || h._deathT < 3.5 || (h.hat && !h.hat.rest);
-        casters.push({ id: h.slot + ':' + (h.geoStamp || 0), x: h.pos.x, y: h.pos.y + 1, z: h.pos.z, moving });
+        // (Phase 3c performance pass: a man standing his ground - aiming,
+        // firing from cover, idling - only sways; his shadow is refreshed
+        // like a far man's, every fourth frame: invisible under the soft
+        // PCF pool. Walking, running, staggering, flinching, falling: at
+        // the full rate)
+        const slow = h.alive && !(h.state === 'walk' || h.state === 'run' || h.state === 'stagger' || h.anim.lowerOnce) && !(h.hat && !h.hat.rest);
+        casters.push({ id: h.slot + ':' + (h.geoStamp || 0), x: h.pos.x, y: h.pos.y + 1, z: h.pos.z, moving, slow });
       }
       return casters;
     };
@@ -141,7 +150,7 @@ export class Game {
     // effects with one live instance each, so their programs compile too
     const p = new THREE.Vector3(-8.5, 1, 26);
     const F = this.fx;
-    const systems = [F.blood, F.chips, F.sparks, F.splash, F.dust, F.flash.vm, F.flash.refl, F.flash.world3, F.flash.smoke, F.fire, F.smoke, F.debris];
+    const systems = [F.blood, F.chips, F.sparks, F.railSparks, F.splash, F.dust, F.flash.vm, F.flash.refl, F.flash.world3, F.flash.smoke, F.fire, F.smoke, F.debris];
     for (const sys of systems) sys.spawn({ pos: p, life: 0.01 });
     for (const sys of systems) sys.write();
     F.decals.ink(p, new THREE.Vector3(0, 1, 0));
