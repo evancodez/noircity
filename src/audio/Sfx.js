@@ -51,7 +51,7 @@ function res(ctx) {
   });
   // street IR: 1.6 s of decaying noise, darker as it decays, with a few
   // early slaps (the façade, the parked cars, the el's columns)
-  const ir = ctx.createBuffer(2, Math.floor(sr * 1.6), sr);
+  const ir = ctx.createBuffer(2, Math.floor(sr * 2.4), sr);
   for (let ch = 0; ch < 2; ch++) {
     const d = ir.getChannelData(ch);
     let lp = 0;
@@ -59,9 +59,11 @@ function res(ctx) {
       const t = i / sr;
       const k = Math.min(1, t / 0.15);
       lp += (rnd() * 2 - 1 - lp) * (0.5 - 0.42 * k);
-      d[i] = lp * Math.exp(-t * 3.2) * 0.6;
+      d[i] = lp * Math.exp(-t * 2.3) * 0.55;
     }
-    for (const [tt, a] of [[0.021 + ch * 0.004, 0.5], [0.047 - ch * 0.006, 0.35], [0.083 + ch * 0.009, 0.25], [0.131, 0.16]]) {
+    // early slaps (façade, parked cars, columns) and two far echoes (the
+    // block's end, the towers) that give a shot its rolling city tail
+    for (const [tt, a] of [[0.021 + ch * 0.004, 0.5], [0.047 - ch * 0.006, 0.35], [0.083 + ch * 0.009, 0.25], [0.131, 0.16], [0.21 - ch * 0.012, 0.2], [0.34 + ch * 0.015, 0.12]]) {
       const i0 = Math.floor(tt * sr);
       for (let k = 0; k < 90; k++) d[i0 + k] += (rnd() * 2 - 1) * a * Math.exp(-k / 25);
     }
@@ -96,6 +98,13 @@ function env(g, t0, peak, attack, decay, hold = 0) {
   if (hold > 0) p.setValueAtTime(peak, t0 + attack + hold);
   p.exponentialRampToValueAtTime(0.0001, t0 + attack + hold + decay);
 }
+function shaper(ctx, drive = 2) {
+  const ws = ctx.createWaveShaper();
+  const n = 2048, c = new Float32Array(n);
+  for (let i = 0; i < n; i++) { const x = (i / (n - 1)) * 2 - 1; c[i] = Math.tanh(x * drive) / Math.tanh(drive); }
+  ws.curve = c; ws.oversample = '2x';
+  return ws;
+}
 function chain(...nodes) { for (let i = 0; i < nodes.length - 1; i++) nodes[i].connect(nodes[i + 1]); return nodes[nodes.length - 1]; }
 function osc(ctx, type, f, t0, dur) { const o = ctx.createOscillator(); o.type = type; o.frequency.value = f; o.start(t0); o.stop(t0 + dur + 0.05); return o; }
 const rng = (a, b) => a + (b - a) * Math.random();
@@ -109,25 +118,45 @@ const B = {
   // variance; the street throws back a tail (the reverb send)
   tommy(ctx, out, t0, p, R, send) {
     const pv = p.pitch ?? rng(0.94, 1.06);
-    const n = noise(ctx, R, 'white', t0, 0.2, pv);
-    const g1 = gain(ctx); env(g1, t0, 0.45, 0.0015, 0.07);
-    const pk = filt(ctx, 'peaking', 1900 * pv, 1.2); pk.gain.value = 6;
-    chain(n, filt(ctx, 'highpass', 500 * pv), pk, g1, out);
-    const th = osc(ctx, 'sine', 120 * pv, t0, 0.2);
-    th.frequency.setValueAtTime(130 * pv, t0);
-    th.frequency.exponentialRampToValueAtTime(48, t0 + 0.11);
-    const g2 = gain(ctx); env(g2, t0, 0.5, 0.002, 0.12);
-    chain(th, g2, out);
-    // a short saturated body: the crack's low-mid punch
-    const n2 = noise(ctx, R, 'brown', t0, 0.12, 1.3 * pv);
-    const g3 = gain(ctx); env(g3, t0, 0.4, 0.001, 0.05);
-    chain(n2, filt(ctx, 'lowpass', 900), g3, out);
+    // every layer sums into a soft clipper: saturation is what gives a
+    // recorded gunshot its weight, and it glues the crack to the thump
+    const sat = shaper(ctx, 2.4);
+    chain(sat, gain(ctx, 0.95), out);
+    // crack: band-limited noise, ~90 ms, with a presence peak
+    const n = noise(ctx, R, 'white', t0, 0.25, pv);
+    const g1 = gain(ctx); env(g1, t0, 0.9, 0.0012, 0.09);
+    const pk = filt(ctx, 'peaking', 1900 * pv, 1.2); pk.gain.value = 7;
+    chain(n, filt(ctx, 'highpass', 420 * pv), pk, g1, sat);
+    // thump: a sine dropping from 140 Hz to 42 Hz over 160 ms (the chest hit)
+    const th = osc(ctx, 'sine', 140 * pv, t0, 0.3);
+    th.frequency.setValueAtTime(140 * pv, t0);
+    th.frequency.exponentialRampToValueAtTime(42, t0 + 0.16);
+    const g2 = gain(ctx); env(g2, t0, 1.1, 0.002, 0.2);
+    chain(th, g2, sat);
+    // boom: low brown noise, the muzzle blast's pressure wave
+    const bm = noise(ctx, R, 'brown', t0, 0.25, pv);
+    const g5 = gain(ctx); env(g5, t0, 1.0, 0.001, 0.16);
+    chain(bm, filt(ctx, 'lowpass', 220), g5, sat);
+    // bark: a short saw sweep, the low-mid punch
+    const bk = osc(ctx, 'sawtooth', 260 * pv, t0, 0.08);
+    bk.frequency.exponentialRampToValueAtTime(95 * pv, t0 + 0.05);
+    const g3 = gain(ctx); env(g3, t0, 0.55, 0.001, 0.045);
+    chain(bk, filt(ctx, 'lowpass', 1400), g3, sat);
     // bolt click, a hair later
     const c = noise(ctx, R, 'white', t0 + 0.012, 0.03, 1);
-    const g4 = gain(ctx); env(g4, t0 + 0.012, 0.2, 0.0005, 0.012);
+    const g4 = gain(ctx); env(g4, t0 + 0.012, 0.25, 0.0005, 0.012);
     chain(c, filt(ctx, 'bandpass', 3400 * pv, 4), g4, out);
-    if (send) { const gs = gain(ctx); env(gs, t0, 0.55, 0.002, 0.09); chain(n, gs, send); chain(g2, gain(ctx, 0.5), send); }
-    return 0.3;
+    // the street answers: a big send (crack, thump, boom) plus a slap off
+    // the far façade ~190 ms later, the rolling echo of a shot in a city
+    if (send) {
+      const gs = gain(ctx); env(gs, t0, 1.3, 0.002, 0.12); chain(n, gs, send);
+      chain(g2, gain(ctx, 0.7), send);
+      chain(g5, gain(ctx, 0.5), send);
+      const sl = noise(ctx, R, 'white', t0 + 0.19, 0.12, 0.9 * pv);
+      const gsl = gain(ctx); env(gsl, t0 + 0.19, 0.35, 0.004, 0.08);
+      chain(sl, filt(ctx, 'bandpass', 900, 0.8), gsl, send);
+    }
+    return 0.45;
   },
 
   // a Hood's pistol: a sharp crack, a short body; distance darkens it
@@ -135,15 +164,22 @@ const B = {
   pistol(ctx, out, t0, p, R, send) {
     const d = p.dist ?? 15;
     const dark = Math.max(700, 9000 / (1 + d / 12));
+    const sat = shaper(ctx, 2.0);
+    chain(sat, gain(ctx, 0.95), out);
     const n = noise(ctx, R, 'white', t0, 0.25, rng(0.95, 1.05));
-    const g = gain(ctx); env(g, t0, 0.6, 0.001, 0.09);
-    chain(n, filt(ctx, 'highpass', 700), filt(ctx, 'lowpass', dark), g, out);
+    const g = gain(ctx); env(g, t0, 0.85, 0.001, 0.09);
+    chain(n, filt(ctx, 'highpass', 600), filt(ctx, 'lowpass', dark), g, sat);
     const b = osc(ctx, 'triangle', 190, t0, 0.12);
     b.frequency.exponentialRampToValueAtTime(80, t0 + 0.07);
-    const gb = gain(ctx); env(gb, t0, 0.3, 0.001, 0.08);
-    chain(b, gb, out);
-    if (send) { const gs = gain(ctx); env(gs, t0, 0.35 + Math.min(0.4, d / 60), 0.002, 0.1); chain(n, filt(ctx, 'lowpass', dark), gs, send); }
-    return 0.4;
+    const gb = gain(ctx); env(gb, t0, 0.55, 0.001, 0.1);
+    chain(b, gb, sat);
+    // a low thump that fades with distance (the pressure wave does not carry)
+    const th = osc(ctx, 'sine', 110, t0, 0.2);
+    th.frequency.exponentialRampToValueAtTime(50, t0 + 0.12);
+    const gt = gain(ctx); env(gt, t0, 0.6 * Math.max(0.25, 1 - d / 60), 0.002, 0.14);
+    chain(th, gt, sat);
+    if (send) { const gs = gain(ctx); env(gs, t0, 0.6 + Math.min(0.5, d / 50), 0.002, 0.12); chain(n, filt(ctx, 'lowpass', dark), gs, send); chain(gb, gain(ctx, 0.5), send); }
+    return 0.45;
   },
 
   // ricochet: a falling whine with a little flutter, over a tick
@@ -184,6 +220,10 @@ const B = {
   // the explosion: a sub drop, a roaring noise body, the crack, a long dark
   // tail, then debris ticks raining down
   explosion(ctx, out, t0, p, R, send) {
+    // (Phase 3b: the whole voice at 0.85 - its offline peak was ~1.05, the
+    // compressor's knee is no limiter; now ~0.9)
+    const trim = gain(ctx, 0.85); trim.connect(out); out = trim;
+    if (send) { const ts = gain(ctx, 0.85); ts.connect(send); send = ts; }
     const sub = osc(ctx, 'sine', 55, t0, 1.8);
     sub.frequency.setValueAtTime(58, t0);
     sub.frequency.exponentialRampToValueAtTime(24, t0 + 1.4);
@@ -400,11 +440,11 @@ const B = {
     const dur = p.dur ?? 3;
     const bed = noise(ctx, R, 'pink', t0, dur, 1);
     const g = gain(ctx, 0.0001);
-    g.gain.setValueAtTime(0.0001, t0); g.gain.linearRampToValueAtTime(0.5, t0 + 0.5);
+    g.gain.setValueAtTime(0.0001, t0); g.gain.linearRampToValueAtTime(0.24, t0 + 0.5);
     chain(bed, filt(ctx, 'highpass', 250), filt(ctx, 'lowpass', 2600, 0.5), g, out);
     const pat = noise(ctx, R, 'white', t0, dur, 1);
     const g2 = gain(ctx, 0.0001);
-    g2.gain.setValueAtTime(0.0001, t0); g2.gain.linearRampToValueAtTime(0.07, t0 + 0.5);
+    g2.gain.setValueAtTime(0.0001, t0); g2.gain.linearRampToValueAtTime(0.035, t0 + 0.5);
     chain(pat, filt(ctx, 'bandpass', 5200, 0.6), g2, out);
     for (let i = 0; i < dur * 3; i++) B.drip(ctx, out, t0 + Math.random() * dur, {}, R);
     return dur;
@@ -533,18 +573,26 @@ export class Sfx {
   build() {
     const ctx = this.ctx;
     this.R = res(ctx);
+    // glue compressor: a high threshold and a slow attack so a gunshot's
+    // transient gets through untouched, then a brick-wall limiter so the
+    // hot gun voices never clip the output
     this.comp = ctx.createDynamicsCompressor();
-    this.comp.threshold.value = -18; this.comp.knee.value = 12; this.comp.ratio.value = 3;
-    this.comp.attack.value = 0.008; this.comp.release.value = 0.25;
+    this.comp.threshold.value = -12; this.comp.knee.value = 8; this.comp.ratio.value = 2.5;
+    this.comp.attack.value = 0.02; this.comp.release.value = 0.3;
+    this.lim = ctx.createDynamicsCompressor();
+    this.lim.threshold.value = -2; this.lim.knee.value = 0; this.lim.ratio.value = 20;
+    this.lim.attack.value = 0.001; this.lim.release.value = 0.08;
     this.master = gain(ctx, this.muted ? 0 : this.volume);
-    this.master.connect(this.comp).connect(ctx.destination);
-    this.bus = gain(ctx, 0.9); this.bus.connect(this.master);
-    this.amb = gain(ctx, 0.55); this.amb.connect(this.master);
+    this.master.connect(this.comp).connect(this.lim).connect(ctx.destination);
+    this.bus = gain(ctx, 1.0); this.bus.connect(this.master);
+    // the ambience sits well under the guns and ducks when they fire
+    this.ambLevel = 0.4;
+    this.amb = gain(ctx, this.ambLevel); this.amb.connect(this.master);
     // the street's tail: a convolution reverb on a send
     this.verb = ctx.createConvolver();
     this.verb.buffer = this.R.ir;
-    this.send = gain(ctx, 0.5);
-    this.send.connect(this.verb).connect(filt(ctx, 'lowpass', 3500)).connect(this.bus);
+    this.send = gain(ctx, 0.75);
+    this.send.connect(this.verb).connect(filt(ctx, 'lowpass', 2800)).connect(this.bus);
     this.startRain();
   }
 
@@ -615,14 +663,23 @@ export class Sfx {
   }
 
   // ---- the game's calls ------------------------------------------------------
-  tommy() { this.play('tommy', null, {}, { gain: 0.8 }); }
+  // sidechain-style duck of the ambience: 10 ms in, ~350 ms out (a burst
+  // holds it down; the rain swells back after the last round)
+  duck(depth = 0.6, release = 0.35) {
+    if (!this.amb) return;
+    const t = this.ctx.currentTime, g = this.amb.gain;
+    g.cancelScheduledValues(t);
+    g.setTargetAtTime(this.ambLevel * (1 - depth), t, 0.01);
+    g.setTargetAtTime(this.ambLevel, t + 0.09, release);
+  }
+  tommy() { this.play('tommy', null, {}, { gain: 1.0 }); this.duck(0.6, 0.35); }
   pistol(pos, dist) {
     // (sound travels: a far shot arrives after its flash)
     this.play('pistol', pos, { dist }, { delay: Math.min(0.25, dist / 343), ref: 4 });
   }
   ricochet(pos) { this.play('ricochet', pos, {}, { ref: 3 }); }
   glass(pos, k = 1) { this.play('glass', pos, { k }, { ref: 3 }); }
-  explosion(pos) { this.play('explosion', pos, {}, { ref: 8, roll: 0.7, gain: 1.2 }); }
+  explosion(pos) { this.play('explosion', pos, {}, { ref: 8, roll: 0.7, gain: 1.2 }); this.duck(0.75, 1.2); }
   debris(pos, k) { this.play('debris', pos, { k }, { ref: 3 }); }
   clang(pos, k = 1) { this.play('clang', pos, { k }, { ref: 3 }); }
   hiss(pos) { this.play('hiss', pos, { dur: 2.5 }, { ref: 4 }); }
@@ -681,9 +738,11 @@ export class Sfx {
 
   startRain() {
     // the bed: pink noise, band-limited; the patter: bright white noise
-    this.loop('rainBed', null, 0.5, 'pink', 2600, 250);
-    this.loop('rainPatter', null, 0.06, 'white', 7000, 3800);
-    this.loop('rainLow', null, 0.18, 'brown', 400, 60);
+    // (a bed, not a wall of noise: it sits ~9 dB under where it began, so
+    // the guns own the mix and the drips and thunder read against it)
+    this.loop('rainBed', null, 0.24, 'pink', 2600, 250);
+    this.loop('rainPatter', null, 0.035, 'white', 7000, 3800);
+    this.loop('rainLow', null, 0.1, 'brown', 400, 60);
   }
 
   // the train rumble: k 0..1 by distance, pos the nearest car
@@ -707,7 +766,7 @@ export class Sfx {
     this.gustV += (Math.random() - 0.5) * dt * 0.6 - this.gust * dt * 0.25;
     this.gust = Math.max(-0.5, Math.min(1, this.gust + this.gustV * dt));
     const bed = this.loops.get('rainBed');
-    if (bed) bed.g.gain.setTargetAtTime(0.5 * (1 + 0.45 * this.gust), this.ctx.currentTime, 0.4);
+    if (bed) bed.g.gain.setTargetAtTime(0.24 * (1 + 0.45 * this.gust), this.ctx.currentTime, 0.4);
     // drips off the ironwork and the awnings, here and there
     this.dripT -= dt;
     if (this.dripT <= 0) {
