@@ -667,10 +667,14 @@ export class ShardField {
     const n = _v.set(0, 0, 1).applyQuaternion(m.quaternion);
     const toEye = new THREE.Vector3().subVectors(cam, m.position).normalize();
     const h = toEye.add(UP).normalize();
-    const g = Math.pow(Math.abs(n.dot(h)), 60);
-    const e = 0.02 + 3.5 * g;
+    // (polish: a glint is a spark, not a sheet: a big pane turning in the
+    // burst lit up whole - the window filled with blown-out white bloom -
+    // so the flash falls with the piece's size, and it never goes past a
+    // bright grey on its own; the small pieces still flash paper white)
+    const g = Math.pow(Math.abs(n.dot(h)), 60) / (1 + s.area / 0.006);
+    const e = 0.02 + 2.4 * g;
     m.material.emissive.setRGB(e, e, e);
-    m.material.opacity = Math.min(1, 0.32 + 2 * g);
+    m.material.opacity = Math.min(1, 0.32 + 1.6 * g);
   }
 
   update(dt) {

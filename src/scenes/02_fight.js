@@ -35,6 +35,14 @@ const BEAT_MANNER = { round1: 'measured', round2: 'dirty', round3: 'wild', reel:
 const BRAWL_ROUND = { round1: 1, round2: 2, round3: 3 };
 const WINDOWS = ['B2', 'B4'];
 const Q = () => (typeof location !== 'undefined' ? new URLSearchParams(location.search) : new URLSearchParams(''));
+// the window he went out of: ?win= for a jump, else the save's (a CONTINUE
+// at 'outside' after a B2 finish found him outside B4: only ?win= was read)
+const winOf = (ctx) => {
+  const q = Q().get('win');
+  if (q === 'B2' || q === 'B4') return q;
+  const s = ctx.game && ctx.game.save && ctx.game.save.flags && ctx.game.save.flags.window;
+  return s === 'B2' ? 'B2' : 'B4';
+};
 
 // where he lies after the last blow: out on the pavement off that window
 export const landing = (w) => ({ x: DINER.finish[w].x + KO_OUT.hips, z: DINER.finish[w].z });
@@ -260,7 +268,7 @@ export default defineScene({
     // way (t= scrubs his flight: the glass goes at ~0.34 s)
     ko(ctx) {
       ctx.flags.jobs = makeJobs();
-      const w = Q().get('win') === 'B2' ? 'B2' : 'B4';
+      const w = winOf(ctx);
       const m = stageFight(ctx, 'round3');
       const s = DINER.finish[w];
       m.place({ x: s.x, z: s.z }, -Math.PI / 2);
@@ -275,14 +283,14 @@ export default defineScene({
     },
     outside(ctx) {
       ctx.flags.jobs = makeJobs();
-      const w = Q().get('win') === 'B2' ? 'B2' : 'B4';
+      const w = winOf(ctx);
       mackOutside(ctx, w);
       ctx.hands.equip('empty');
       ctx.controller.setMode('walk', { pose: outsidePose(w) });
     },
     matchbook(ctx) {
       ctx.flags.jobs = makeJobs();
-      const w = Q().get('win') === 'B2' ? 'B2' : 'B4';
+      const w = winOf(ctx);
       const mack = mackOutside(ctx, w);
       ctx.hands.equip('empty');
       const L = landing(w), sg = w === 'B2' ? -1 : 1;
@@ -344,7 +352,12 @@ export default defineScene({
       let idle = 0;
       yield until(() => {
         idle += 1 / 60;
-        if (idle > 7 && G.eye.x < DINER.innerX) G.hud.prompt('WASD  the door', G.screenOf(V(DINER.faceX, 1.3, 0.6)), 'scene');
+        // (polish, the bug hunt: only while the door is in the frame - its
+        // tick on the door; with the door behind me or off to the side the
+        // hint drew mid-screen, pointing at nothing)
+        const at = idle > 7 && G.eye.x < DINER.innerX ? G.screenOf(V(DINER.faceX, 1.3, 0.6)) : null;
+        const inFrame = at && at.x > innerWidth * 0.06 && at.x < innerWidth * 0.94 && at.y > innerHeight * 0.06 && at.y < innerHeight * 0.94;
+        if (inFrame) G.hud.prompt('WASD  the door', at, 'scene');
         else G.hud.clearPrompt('scene');
         return G.eye.x > DINER.faceX && Math.hypot(G.eye.x - L.x, G.eye.z - L.z) < 2.8;
       });

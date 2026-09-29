@@ -87,6 +87,18 @@ export const FIGHT_CLIPS = {
   windItem: { duration: 1.6, marks: { cocked: 0.2, full: 1.0 }, hold: true, blocking: false,
     keys: { R: [[0, gR], [0.25, 'bottleUpR', 'out'], [1.0, shift(HP.bottleUpR, [0.03, 0.02, 0.05])]], L: [[0, gL]] },
     view: [[0, {}], [1.0, { yaw: -0.08, pitch: 0.02 }]], brush: 'R' },
+  // (polish, the bug hunt: a stool or a chair wound up over the shoulder
+  // put its seat right before the eye - the frame one black disc for the
+  // whole wind-up. It is drawn back low on the right instead, the legs
+  // trailing back and away out of the frame, the left fist up)
+  windBig: { duration: 1.6, marks: { cocked: 0.2, full: 1.0 }, hold: true, blocking: false,
+    keys: { R: [[0, gR], [0.3, { frame: 'cam', p: [0.3, -0.36, -0.2], f: [0.55, -0.25, 0.8], b: [0.8, 0.1, -0.55], F: HP.guardR.F, e: [0.36, -0.5, 0.05] }, 'out'],
+      [1.0, { frame: 'cam', p: [0.34, -0.38, -0.14], f: [0.55, -0.25, 0.8], b: [0.8, 0.1, -0.55], F: HP.guardR.F, e: [0.4, -0.5, 0.1] }]], L: [[0, gL]] },
+    view: [[0, {}], [1.0, { yaw: -0.08, pitch: 0.02 }]], brush: 'R' },
+  // the wound stool comes round from low right, across, into him
+  swingBig: { duration: 0.6, marks: { contact: 0.2 },
+    keys: { R: [[0, { frame: 'cam', p: [0.34, -0.38, -0.14], f: [0.55, -0.25, 0.8], b: [0.8, 0.1, -0.55], F: HP.guardR.F, e: [0.4, -0.5, 0.1] }], [0.2, 'stoolHitR', 'in'], [0.6, gR]], L: [[0, gL]] },
+    view: [[0, { yaw: -0.08 }], [0.2, { yaw: 0.14, fwd: 0.04 }, 'in'], [0.6, {}]], brush: 'R' },
   throwItem: { duration: 0.45, marks: { release: 0.1 },
     keys: { R: [[0, 'bottleUpR'], [0.1, 'plateOutR', 'snap'], [0.45, gR]], L: [[0, gL]] },
     view: [[0, { yaw: -0.08 }], [0.1, { yaw: 0.08, fwd: 0.04 }, 'snap'], [0.45, {}]], brush: 'R' },

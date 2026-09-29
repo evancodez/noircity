@@ -242,6 +242,13 @@ export class Controller {
       const wx = this.pos.x, wz = this.pos.z;
       if (this.world.colliders) this.world.colliders.resolve(this.pos, this.radius * 0.85);
       this.keepOff();
+      // (the fight's room: its walls hold me, the door's gap too - Brawl sets it)
+      const BB = this.brawlBounds;
+      if (BB) {
+        const m = this.radius * 0.85;
+        this.pos.x = Math.max(BB.x0 + m, Math.min(BB.x1 - m, this.pos.x));
+        this.pos.z = Math.max(BB.z0 + m, Math.min(BB.z1 - m, this.pos.z));
+      }
       // (driven into something hard: what, and how hard)
       if (P && P.lengthSq() > 0.8 && Math.hypot(this.pos.x - wx, this.pos.z - wz) > 0.3 * P.length() * dt) {
         this.bump = { at: this.pos.clone(), speed: P.length(), from: { x: px, z: pz } };
