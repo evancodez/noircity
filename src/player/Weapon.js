@@ -1,5 +1,7 @@
 import * as THREE from 'three';
-import { MUZZLE, EJECT } from './Viewmodel.js';
+import * as THREE_ from 'three';
+import { MUZZLE, EJECT, RELOAD, buildDrumGeometry } from './Viewmodel.js';
+import { allocInkId } from '../render/layers.js';
 
 // The Thompson M1928: 50-round drum, 11 rounds/s, hitscan with a spread
 // cone that grows while the trigger is held (and when moving) and recovers
@@ -11,7 +13,7 @@ import { MUZZLE, EJECT } from './Viewmodel.js';
 export const WEAPON = {
   drum: 50,
   rate: 11,                 // rounds / s
-  reload: 2.3,              // s
+  reload: RELOAD.dur,       // s (the drum falls out of the frame, a fresh one goes in: Viewmodel RELOAD)
   spread0: 0.0035,          // rad, first round
   spreadStep: 0.0032,       // added per round while firing
   spreadMax: 0.05,
@@ -48,7 +50,10 @@ export class Weapon {
     if (this.reloading || this.ammo === WEAPON.drum) return false;
     this.reloadLeft = WEAPON.reload;
     this.vm.startReload();
-    this.game.sfx.reload();
+    // (the sound's moments are fractions of its length: at 2.6 s they land on
+    // the latch, the drum out, the drum in and home, the bolt)
+    this.game.sfx.play('reload', null, { dur: WEAPON.reload }, { send: false, gain: 0.8 });
+    this.dropped = false;
     return true;
   }
 
@@ -58,6 +63,8 @@ export class Weapon {
 
   update(dt, time) {
     if (this.reloadLeft > 0) {
+      // the spent drum lands by the feet 0.35 s after it left the frame
+      if (!this.dropped && WEAPON.reload - this.reloadLeft + dt >= RELOAD.land - 1e-6) { this.dropped = true; this.dropDrum(); }
       this.reloadLeft -= dt;
       if (this.reloadLeft <= 0) { this.reloadLeft = 0; this.ammo = WEAPON.drum; }
     }
@@ -83,6 +90,37 @@ export class Weapon {
       if (this.lastMuzzle) this.game.fx.muzzleSmoke(this.lastMuzzle, this.lastFwd, this.burstShots, this.lastGunFwd);
       this.burstShots = 0;
     }
+  }
+
+  // The spent drum on the ground: a clang, a ripple on the wet street, a dark
+  // drum lying there that stays (three at most, the oldest goes). World
+  // geometry, not a bullet solid (it would change where rounds land).
+  dropDrum() {
+    const G = this.game, S = G.stage, cam = G.camera;
+    if (!S) return;
+    const fwd = new THREE_.Vector3(0, 0, -1).applyQuaternion(cam.quaternion); fwd.y = 0;
+    if (fwd.lengthSq() < 1e-6) fwd.set(0, 0, -1);
+    fwd.normalize();
+    const right = new THREE_.Vector3(-fwd.z, 0, fwd.x);
+    // (by the right foot, a little ahead: where a drum dropped from the gun lands)
+    const x = cam.position.x + right.x * 0.28 + fwd.x * 0.35, z = cam.position.z + right.z * 0.28 + fwd.z * 0.35;
+    const y = S.surfaceY ? S.surfaceY(x, z) : 0;
+    const p = new THREE_.Vector3(x, y, z);
+    G.sfx.play('clang', p, { k: 0.55 }, { ref: 3 });
+    if (S.street && S.street.addImpact) S.street.addImpact(S, x, z, 0.7);
+    const list = S._spentDrums || (S._spentDrums = []);
+    if (list.length >= 3) { const old = list.shift(); S.scene.remove(old); }
+    if (!Weapon.drumGeo) Weapon.drumGeo = buildDrumGeometry();
+    if (!Weapon.drumMat) Weapon.drumMat = new THREE_.MeshStandardMaterial({ color: 0x0e0e0e, roughness: 0.9, metalness: 0 });
+    const m = new THREE_.Mesh(Weapon.drumGeo, Weapon.drumMat);
+    // lying on its face (the drum's axis up), turned as it fell
+    m.position.set(x, y + 0.026, z);
+    m.rotation.set(0, Math.atan2(fwd.x, fwd.z) + 0.7, Math.PI / 2, 'YXZ');
+    m.userData.inkId = allocInkId();
+    m.userData.noRay = true;
+    m.castShadow = false; m.receiveShadow = true;
+    S.scene.add(m);
+    list.push(m);
   }
 
   // fire one round; `forceDir` (staged shots) bypasses the spread

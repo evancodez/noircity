@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { LAYER, VM_ID0 } from '../render/layers.js';
 import { roundedBox, smoothNormals, merge } from '../world/geom.js';
 
-// The player's Thompson M1928 and gloved hands, first person.
+// The player's Thompson M1928, first person (the hands on it: Hands.js).
 //
 // Built from smooth parts only (lathes, bevelled extrusions, rounded boxes,
 // ellipsoids): finned barrel with a Cutts compensator, 50-round drum, vertical
@@ -16,7 +16,9 @@ import { roundedBox, smoothNormals, merge } from '../world/geom.js';
 // field is anchored in the gun's frame (uVmFrame): strokes ride on the gun.
 //
 // Motion: sway (lags the look), walk bob, idle breath, recoil kick + muzzle
-// climb (a spring), and the reload: tilt, drum out, drum in, bolt, back.
+// climb (a spring), and the reload: tilt, drum out and dropped, a fresh
+// drum in, bolt, back (RELOAD). The hands are not here: player/Hands.js
+// lays its rig on the gun's grips every step.
 
 export const VM_FOV = 50;
 const TAU = Math.PI * 2;
@@ -26,7 +28,26 @@ const sstep = (a, b, x) => { const t = Math.min(1, Math.max(0, (x - a) / (b - a)
 export const MUZZLE = new THREE.Vector3(0, 0.03, -0.52);
 export const EJECT = new THREE.Vector3(0.02, 0.04, -0.04);
 const DRUM_C = new THREE.Vector3(0, -0.07, -0.085);
-const FOREGRIP = new THREE.Vector3(0, 0.012, -0.3);
+export const FOREGRIP = new THREE.Vector3(0, 0.012, -0.3);
+export { DRUM_C };
+// The reload (lane 2 brief, fix 2), seconds from its start. The sound
+// (Sfx 'reload' at dur 2.6) lands on the same moments: the latch at 0.52,
+// the drum sliding out at 0.68, in at 1.35, home at 1.56, the bolt 1.98 / 2.11.
+// where the fresh drum comes from: below the frame, tipped (the eye's frame)
+const FRESH_LOW = { p: new THREE.Vector3(0.02, -0.46, -0.42), q: new THREE.Quaternion().setFromEuler(new THREE.Euler(0.9, 0.5, -0.6)) };
+export const RELOAD = {
+  dur: 2.6,
+  latch: 0.52,          // the left thumb on the latch
+  out0: 0.55, out1: 0.72, slide: 0.05,   // the spent drum slides 5 cm out to the side (the gun's left, turned to the eye)
+  gone: 1.04,           // ... falls: out of the bottom of the frame by u = 0.40
+  land: 1.39,           // ... and lands by the feet 0.35 s later (clang, ripple)
+  rise0: 1.12,          // the fresh drum rises into view in the left hand
+  line: 1.36,           // lined up beside the slot
+  seat0: 1.42, seat: 1.56,   // slides in, seats (a push of the palm, a jolt)
+  bolt0: 1.9, boltBack: 1.98, boltHome: 2.11,
+  grip0: 2.12, grip1: 2.4,   // the hand back on the foregrip
+  down0: 2.232,         // the gun goes back down (the old 0.368 s)
+};
 
 // ---- geometry helpers ----------------------------------------------------------
 // GQ scales every segment count (Phase 3b: the heavies' Tommy guns beyond
@@ -165,6 +186,10 @@ function buildGunParts() {
   return { steel: merge(steel), wood: merge(wood), drum: merge(drum), knob: merge(knob) };
 }
 
+// the drum alone (the spent drum lying on the street, Weapon.dropDrum):
+// its axis along x, centred
+export function buildDrumGeometry() { return buildGun(0.6).drum; }
+
 // the whole gun as one geometry (the heavies' Tommy guns, enemies/Hood.js);
 // q < 1: the far build
 export function buildTommyGeometry(q = 1) {
@@ -174,52 +199,6 @@ export function buildTommyGeometry(q = 1) {
   return merge([G.steel, G.wood, drum, knob]);
 }
 
-// right glove wrapped round the pistol grip (finger on the trigger), left
-// glove round the foregrip; each hand is its own mesh (the left one moves to
-// the drum in the reload)
-function buildHands() {
-  const R = [];
-  // fist on the grip: the palm wraps from the back, knuckles to the front
-  R.push(ellipsoid(0.034, 0.047, 0.05, new THREE.Vector3(0.002, -0.058, 0.082), 28,
-    (v) => 0.12 * Math.exp(-((v.z + 0.8) ** 2) / 0.2) * Math.max(0, v.y + 0.2)));
-  // index finger to the trigger
-  R.push(capsuleBetween(new THREE.Vector3(0.013, -0.04, 0.062), new THREE.Vector3(0.006, -0.034, 0.036), 0.0085, 10));
-  // thumb over the top of the grip, on the left side
-  R.push(capsuleBetween(new THREE.Vector3(-0.022, -0.03, 0.088), new THREE.Vector3(-0.02, -0.016, 0.058), 0.0095, 10));
-  // back of the hand and the wrist, toward the elbow (down, right, back)
-  R.push(ellipsoid(0.03, 0.028, 0.045, new THREE.Vector3(0.02, -0.07, 0.115), 20));
-  const L = [];
-  // left fist round the foregrip: a smaller palm on its back, four curled
-  // fingers wrapping its front (their proximal knuckles a ridge down the
-  // left side, facing the eye), the thumb up the right side with its tip
-  // bent over the top, the back of the hand and the wrist toward the elbow
-  L.push(ellipsoid(0.027, 0.046, 0.03, new THREE.Vector3(-0.008, -0.05, -0.286), 24));
-  for (let k = 0; k < 4; k++) {
-    const y = -0.024 - k * 0.0155, rr = 0.0085 - k * 0.0006;
-    const kn = new THREE.Vector3(-0.026, y, -0.3);          // knuckle
-    const mid = new THREE.Vector3(-0.012, y - 0.001, -0.323);
-    const tip = new THREE.Vector3(0.012, y - 0.002, -0.318);
-    L.push(capsuleBetween(kn, mid, rr, 10), capsuleBetween(mid, tip, rr * 0.92, 10));
-    L.push(ellipsoid(rr * 1.25, rr * 1.05, rr * 1.2, kn, 12));
-  }
-  L.push(capsuleBetween(new THREE.Vector3(0.016, -0.062, -0.284), new THREE.Vector3(0.022, -0.028, -0.292), 0.0102, 10));
-  L.push(capsuleBetween(new THREE.Vector3(0.022, -0.028, -0.292), new THREE.Vector3(0.014, -0.008, -0.304), 0.0088, 10));
-  L.push(ellipsoid(0.028, 0.028, 0.042, new THREE.Vector3(-0.022, -0.07, -0.27), 20));
-  const shift = (list, c) => list.map((g) => g.translate(-c.x, -c.y, -c.z));
-  // left hand in its own frame (origin at the grip point) so it can travel
-  const LC = new THREE.Vector3(0, -0.05, -0.3);
-  return { right: merge(R), left: merge(shift(L, LC)), leftC: LC };
-}
-
-// one coat sleeve with a glove cuff: a tube along +y of unit length (scaled
-// to the wrist-elbow distance each frame)
-function buildSleeve() {
-  const g = new THREE.LatheGeometry([
-    [0.0, -0.02], [0.028, -0.02], [0.033, 0.0], [0.034, 0.05], [0.041, 0.06], [0.045, 0.09], [0.048, 0.5], [0.05, 0.9], [0.05, 1.05], [0.0, 1.06],
-  ].map(([r, y]) => new THREE.Vector2(Math.max(r, 1e-4), y)), 24);
-  return g;
-}
-
 export class Viewmodel {
   constructor(world, camera) {
     this.world = world;
@@ -227,6 +206,8 @@ export class Viewmodel {
     this.cam = new THREE.PerspectiveCamera(VM_FOV, camera.aspect, 0.03, 50);
     this.setAspect(camera.aspect);
     this.visible = true;
+    this.study = null;
+    this.reloadFreeze = null;   // (a still of the reload: handstudy&pose=tommyReload@<s>)
     const M = world.M;
     // Inked, not CG-shaded: every part is rough with no environment
     // reflection, so no specular hotspot or crescent survives (the drum and
@@ -249,7 +230,7 @@ export class Viewmodel {
     this.root.name = 'viewmodel';
     this.gun = new THREE.Group();
     this.root.add(this.gun);
-    const G = buildGun(), H = buildHands();
+    const G = buildGun();
     const add = (geo, mat, id, parent = this.gun) => {
       const m = new THREE.Mesh(geo, mat);
       m.userData.inkId = VM_ID0 + id;
@@ -270,19 +251,8 @@ export class Viewmodel {
     this.knobG.position.set(0, 0, -0.11);
     this.gun.add(this.knobG);
     add(G.knob, mats.steel, 0, this.knobG);
-    add(H.right, mats.glove, 3);
-    this.leftG = new THREE.Group();
-    this.leftG.position.copy(H.leftC);
-    this.leftHome = H.leftC.clone();
-    this.gun.add(this.leftG);
-    add(H.left, mats.glove, 3, this.leftG);
-    const sl = buildSleeve();
-    this.sleeveR = add(sl, mats.sleeve, 4);
-    this.sleeveL = add(sl, mats.sleeve, 4);
-    this.wristR = new THREE.Vector3(0.024, -0.074, 0.13);
-    this.elbowR = new THREE.Vector3(0.24, -0.34, 0.12);
-    this.wristL = new THREE.Vector3(-0.024, -0.074, -0.262);   // relative to the gun (moves with the hand)
-    this.elbowL = new THREE.Vector3(-0.34, -0.33, -0.3);
+    // (the hands and sleeves are the hands' rig, player/Hands.js: one
+    // articulated pair for every set; they take the gun's grips from here)
     // a key light for the gun alone (LAYER.VIEWMODEL only: three filters
     // lights by the camera's layers, so the world never sees it): up and to
     // the left like the street lamp in the composition, so the steel catches
@@ -312,7 +282,10 @@ export class Viewmodel {
     this.sway = { x: 0, y: 0, vx: 0, vy: 0 };
     this.recoil = { z: 0, vz: 0, p: 0, vp: 0, yaw: 0, roll: 0 };
     this.reloadT = -1;
-    this.reloadDur = 2.3;
+    this.reloadDur = RELOAD.dur;
+    this._pA = new THREE.Vector3(); this._pB = new THREE.Vector3(); this._qA = new THREE.Quaternion(); this._qB = new THREE.Quaternion();
+    this.drumFall = null;
+    this._g = new THREE.Vector3(); this._qc = new THREE.Quaternion(); this._mi = new THREE.Matrix4(); this._s3 = new THREE.Vector3();
     // lowered (Phase 3b review): a dead man's gun leaves the shoulder - on
     // the end card the Tommy gun drops out of the bottom of the frame
     // (0 = shouldered, 1 = gone; the root is hidden once it is out of view)
@@ -324,9 +297,7 @@ export class Viewmodel {
     this.t = 0;
     this._q = new THREE.Quaternion(); this._e = new THREE.Euler(0, 0, 0, 'YXZ'); this._v = new THREE.Vector3();
     // (scratch: update() and the light sync run every step / frame)
-    this._dh = new THREE.Vector3(); this._dhOff = new THREE.Vector3(0.03, -0.075, 0.02); this._wl = new THREE.Vector3(); this._tmpV = new THREE.Vector3();
-    this._elR = new THREE.Vector3(); this._elL = new THREE.Vector3(); this._m4 = new THREE.Matrix4(); this._one = new THREE.Vector3(1, 1, 1);
-    this._sd = new THREE.Vector3(); this._up = new THREE.Vector3(0, 1, 0); this._act = [];
+    this._m4 = new THREE.Matrix4(); this._one = new THREE.Vector3(1, 1, 1); this._act = [];
   }
 
   // Depth squeeze: the viewmodel is drawn into the same depth buffer as the
@@ -341,6 +312,15 @@ export class Viewmodel {
     const e = c.projectionMatrix.elements, A = 0.0005, B = -0.9995;
     for (let k = 0; k < 4; k++) e[k * 4 + 2] = A * e[k * 4 + 2] + B * e[k * 4 + 3];
     c.projectionMatrixInverse.copy(c.projectionMatrix).invert();
+  }
+
+  // The sets that are not a gun see through the eye's own lens (a hand on
+  // the counter lands on the counter, a prop picked up keeps its size); the
+  // guns keep VM_FOV (Hands.js switches it with the set).
+  setFov(fov) {
+    if (Math.abs(this.cam.fov - fov) < 1e-9) return;
+    this.cam.fov = fov;
+    this.setAspect(this.cam.aspect);
   }
 
   kick(strength = 1, rng = Math.random) {
@@ -381,7 +361,8 @@ export class Viewmodel {
       R.vz += (-kr * R.z - cr * R.vz) * dt; R.z += R.vz * dt;
       R.vp += (-kr * R.p - cr * R.vp) * dt; R.p += R.vp * dt;
       R.yaw *= Math.exp(-14 * dt); R.roll *= Math.exp(-12 * dt);
-      if (this.reloadT >= 0) {
+      if (this.reloadFreeze != null) this.reloadT = this.reloadFreeze;
+      else if (this.reloadT >= 0) {
         this.reloadT += dt;
         if (this.reloadT >= this.reloadDur) this.reloadT = -1;
       }
@@ -400,22 +381,25 @@ export class Viewmodel {
     e.x += R.p * 0.055 + S.y * 0.5 + breath * 0.8;
     e.y += R.yaw + S.x * 0.6;
     e.z += R.roll + S.x * -0.3 + Math.cos(bp) * 0.01 * ba;
-    // reload choreography
-    let drumOut = 0, drumDrop = 0, bolt = 0, handToDrum = 0;
-    if (this.reloadT >= 0) {
-      // the gun comes up and turns its right side to the eye, the drum
-      // slides out to the right and drops away, a fresh one goes in, the
-      // left hand racks the bolt, the gun goes back down
-      const u = this.reloadT / this.reloadDur;
-      const tilt = sstep(0.0, 0.16, u) * (1 - sstep(0.84, 1.0, u));
+    // reload choreography (fix 2; timings in seconds: RELOAD). The gun
+    // comes up and turns its right side to the eye (as it always did: the
+    // same tilt over the first 0.368 s), the drum slides out and FALLS out
+    // of the bottom of the frame, a fresh one comes up in the left hand
+    // (player/Hands.js), slides in and seats, the bolt is racked, the gun
+    // goes back down.
+    let bolt = 0;
+    const RT = this.reloadT;
+    if (RT >= 0) {
+      const RL = RELOAD;
+      const tilt = sstep(0.0, 0.368, RT) * (1 - sstep(RL.down0, RL.dur, RT));
       e.y += 0.42 * tilt;
       e.z += 0.3 * tilt;
-      e.x += 0.16 * tilt - 0.07 * sstep(0.74, 0.8, u) * (1 - sstep(0.8, 0.9, u));
-      pos.x -= 0.08 * tilt; pos.y += 0.06 * tilt; pos.z += 0.04 * tilt;
-      handToDrum = sstep(0.1, 0.24, u) * (1 - sstep(0.62, 0.72, u));
-      drumOut = sstep(0.24, 0.4, u) * (1 - sstep(0.5, 0.64, u));
-      drumDrop = sstep(0.34, 0.46, u) * (1 - sstep(0.48, 0.56, u));
-      bolt = sstep(0.74, 0.79, u) * (1 - sstep(0.81, 0.86, u));
+      // (the muzzle dips as the bolt is hauled back; a small jolt as the
+      // palm seats the drum)
+      const seat = sstep(RL.seat - 0.06, RL.seat, RT) * (1 - sstep(RL.seat, RL.seat + 0.16, RT));
+      e.x += 0.16 * tilt - 0.07 * sstep(RL.bolt0, RL.boltBack, RT) * (1 - sstep(RL.boltBack, RL.boltHome + 0.08, RT)) - 0.035 * seat;
+      pos.x -= 0.08 * tilt; pos.y += 0.06 * tilt - 0.006 * seat; pos.z += 0.04 * tilt + 0.012 * seat;
+      bolt = sstep(RL.bolt0, RL.boltBack, RT) * (1 - sstep(RL.boltBack + 0.06, RL.boltHome, RT));
     }
     // lowered: down and out of the frame, the muzzle dipping, rolled away
     const L = this.lower;
@@ -424,38 +408,84 @@ export class Viewmodel {
       pos.y -= 0.5 * l; pos.x += 0.05 * l; pos.z += 0.06 * l;
       e.x -= 0.75 * l; e.z -= 0.35 * l;
     }
-    this.drumG.position.set(DRUM_C.x + 0.15 * drumOut, DRUM_C.y - 0.18 * drumDrop, DRUM_C.z + 0.01 * drumOut);
-    this.drumG.rotation.set(0.3 * drumDrop, 0, -0.35 * drumOut);
     this.knobG.position.z = -0.11 + 0.055 * bolt;
-    // left hand: on the foregrip, or on the drum's rim during the swap
-    const drumHand = this._dh.copy(this.drumG.position).add(this._dhOff);
-    this.leftG.position.copy(this.leftHome).lerp(drumHand, handToDrum);
-    this.leftG.rotation.set(0, 0, 0.6 * handToDrum);
 
     this.gun.position.copy(pos);
     this.gun.quaternion.setFromEuler(e);
     this.gun.updateMatrix();
     this.pose.copy(this.gun.matrix);
     this.frameInv.copy(this.pose).invert();
-    // sleeves: from the wrist (moves with the hand) to a fixed elbow
-    this.placeSleeve(this.sleeveR, this.wristR, this._vmToGun(this.elbowR, pos, e, this._elR));
-    const wl = this._wl.copy(this.leftG.position).add(this._tmpV.copy(this.wristL).sub(this.leftHome));
-    this.placeSleeve(this.sleeveL, wl, this._vmToGun(this.elbowL, pos, e, this._elL));
+    this.updateDrum(dt);
   }
 
-  // elbows are fixed in CAMERA space (the arms reach from the body); the
-  // sleeves live in the gun's frame, so convert
-  _vmToGun(pCam, pos, e, out) {
-    const m = this._m4.compose(pos, this._q.setFromEuler(e), this._one).invert();
-    return out.copy(pCam).applyMatrix4(m);
+  // The drum through the reload (gun-local, drumG is the gun's child):
+  //   in the slot | sliding 5 cm out to the side | falling (gravity in the
+  //   eye's frame, a slight tumble: out of the bottom of the frame by 1.04 s)
+  //   | gone | the fresh one rising from below the frame (the left hand lies
+  //   on its rim: Hands) | lined up beside the slot, pushed in and seated
+  updateDrum(dt) {
+    const D = this.drumG, RL = RELOAD, t = this.reloadT;
+    D.visible = true;
+    if (t < 0 || t < RL.out0) {
+      D.position.copy(DRUM_C); D.rotation.set(0, 0, 0);
+      this.drumFall = null;
+      return;
+    }
+    if (t < RL.out1) {
+      D.position.set(DRUM_C.x - RL.slide * sstep(RL.out0, RL.out1, t), DRUM_C.y, DRUM_C.z);
+      D.rotation.set(0, 0, 0);
+      this.drumFall = null;
+      return;
+    }
+    if (t < RL.rise0) {
+      // falling: from where it left the slot, in the eye's frame (analytic in
+      // the fall's own clock, so a still at any moment of it is exact)
+      const F = this.drumFall || (this.drumFall = this._fallStart());
+      const tau = Math.max(0, t - RL.out1);
+      const g = this._g.set(0, -9.8, 0).applyQuaternion(this._qc.copy(this.camera.quaternion).invert());
+      this._pB.copy(F.p).addScaledVector(F.v, tau).addScaledVector(g, 0.5 * tau * tau);
+      this._qB.copy(F.q).multiply(this._q.setFromAxisAngle(F.w, F.wl * tau));
+      // back into the gun's frame
+      this._m4.compose(this._pB, this._qB, this._one).premultiply(this._mi.copy(this.gun.matrix).invert());
+      this._m4.decompose(D.position, D.quaternion, this._s3);
+      D.visible = this._pB.y > -1.2;
+      return;
+    }
+    this.drumFall = null;
+    // the fresh drum: it rises into view from below the frame, tilted, held
+    // by its rim in the left hand (Hands lays the hand on it), lines up
+    // beside the slot, slides in and seats
+    const k = sstep(RL.seat0, RL.seat, t);
+    const lk = 1 - sstep(RL.line, RL.seat0 + 0.04, t);
+    D.position.set(DRUM_C.x - RL.slide * 1.1 * (1 - k), DRUM_C.y, DRUM_C.z);
+    D.rotation.set(0.22 * lk, 0.12 * lk, -0.18 * lk);
+    if (t < RL.line) {
+      // from below the frame (in the eye's frame) up to the slot's line
+      D.updateMatrix();
+      const m = this._m4.multiplyMatrices(this.gun.matrix, D.matrix);
+      m.decompose(this._pA, this._qA, this._s3);
+      const u = sstep(RL.rise0 - 0.1, RL.line, t);
+      const e = 1 - (1 - u) * (1 - u);
+      this._pB.copy(FRESH_LOW.p).lerp(this._pA, e);
+      this._qB.copy(FRESH_LOW.q).slerp(this._qA, e);
+      this._m4.compose(this._pB, this._qB, this._one).premultiply(this._mi.copy(this.gun.matrix).invert());
+      this._m4.decompose(D.position, D.quaternion, this._s3);
+      D.visible = t >= RL.rise0 - 0.1;
+    }
   }
 
-  placeSleeve(mesh, wrist, elbow) {
-    const d = this._sd.subVectors(elbow, wrist);
-    const len = d.length();
-    mesh.position.copy(wrist);
-    mesh.quaternion.setFromUnitVectors(this._up, d.normalize());
-    mesh.scale.set(1, len, 1);
+  // where the drum is as it leaves the slot, in the eye's frame, and how it
+  // goes: on with the slide's speed, a little down, tumbling
+  _fallStart() {
+    const D = this.drumG;
+    D.updateMatrix();
+    const m = new THREE.Matrix4().multiplyMatrices(this.gun.matrix, D.matrix);
+    const p = new THREE.Vector3(), q = new THREE.Quaternion(), s = new THREE.Vector3();
+    m.decompose(p, q, s);
+    const side = new THREE.Vector3(-1, 0, 0).transformDirection(this.gun.matrix);
+    const v = side.multiplyScalar(0.3).add(new THREE.Vector3(0, -0.1, 0));
+    const w = new THREE.Vector3(0.3, 0.2, 1).normalize();
+    return { p, q, v, w, wl: 2.6 };
   }
 
   // mirror the world's lights near the eye into the viewmodel scene
@@ -481,7 +511,8 @@ export class Viewmodel {
   // After the camera moved: glue the root to it; returns nothing.
   sync(camera) {
     this.syncLights(camera);
-    this.root.matrix.copy(camera.matrixWorld);
+    // (handstudy: `study` is the eye the hands belong to, the camera orbits it)
+    this.root.matrix.copy(this.study || camera.matrixWorld);
     this.root.matrixWorldNeedsUpdate = true;
     this.root.updateMatrixWorld(true);
     this.cam.position.setFromMatrixPosition(camera.matrixWorld);
@@ -500,7 +531,7 @@ export class Viewmodel {
   // must be for their screen position to match the viewmodel.
   reproject(local, depth, camera, out = new THREE.Vector3()) {
     const p = out.copy(local).applyMatrix4(this.pose);            // VM view space
-    const tv = Math.tan(THREE.MathUtils.degToRad(VM_FOV) / 2);
+    const tv = Math.tan(THREE.MathUtils.degToRad(this.cam.fov) / 2);
     const tm = Math.tan(THREE.MathUtils.degToRad(camera.fov) / 2);
     const nx = p.x / (-p.z * tv), ny = p.y / (-p.z * tv);
     p.set(nx * tm * depth, ny * tm * depth, -depth);

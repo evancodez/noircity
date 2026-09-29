@@ -55,6 +55,7 @@ export class Controller {
     this.mode = 'walk';
     this.modeOpts = {};
     this.modeT = 0;
+    this.bodyYaw = null;        // the body's heading when it is not the view's (seated: the stool's)
     this.nudge = { yaw: 0, pitch: 0 };   // brawl: the mouse's small say
     this.slip = 0;              // brawl: the eye's sideways offset (m)
     this._ease = null;          // { from, to, t, dur }
@@ -93,6 +94,7 @@ export class Controller {
 
   setPose(x, z, yaw, pitch, y = null) {
     this.mode = 'walk';
+    this.bodyYaw = null;
     this.modeOpts = {};
     this._ease = null;
     this.pos.set(x, 0, z);
@@ -109,6 +111,7 @@ export class Controller {
     if (name === 'drive') throw new Error('controller: drive is wave B');
     const prev = this.eyePose();
     this.mode = name;
+    if (name !== 'seated') this.bodyYaw = null;
     this.modeOpts = opts;
     this.modeT = 0;
     this._ease = null;
@@ -121,7 +124,11 @@ export class Controller {
     } else if (name === 'seated') {
       const a = typeof opts.anchor === 'string' ? S.anchor(opts.anchor) : opts.anchor;
       if (!a) throw new Error(`controller seated: no anchor '${opts.anchor}'`);
-      this.modeOpts = { yawRange: [-2.3, 2.3], pitchRange: [-0.9, 0.7], lean: 0.06, ...opts, anchor: a };
+      // forward: a man leaning on the counter has his head well ahead of
+      // the stool (his forearms on the counter top, the eye ~0.3 m back from
+      // its edge)
+      this.modeOpts = { yawRange: [-2.3, 2.3], pitchRange: [-0.9, 0.7], lean: 0.06, forward: 0.3, ...opts, anchor: a };
+      this.bodyYaw = a.yaw;
       this.pos.set(a.pos.x, 0, a.pos.z);
       this.groundY = (opts.eyeY ?? a.eyeY ?? 1.6) - EYE + 0.02;
       this.yaw = a.yaw;
@@ -171,7 +178,8 @@ export class Controller {
       this.pitch = clampA(this.pitch, O.pitchRange[0], O.pitchRange[1]);
       // a man leaning on the counter: the eye comes forward as he looks down
       const lean = O.lean * Math.max(0, -this.pitch);
-      this.pos.set(a.pos.x - Math.sin(this.yaw) * lean, 0, a.pos.z - Math.cos(this.yaw) * lean);
+      const fw = O.forward || 0, by = this.bodyYaw ?? a.yaw;
+      this.pos.set(a.pos.x - Math.sin(by) * fw - Math.sin(this.yaw) * lean, 0, a.pos.z - Math.cos(by) * fw - Math.cos(this.yaw) * lean);
     } else if (this.mode === 'brawl' && O.opponent) {
       const op = O.opponent.pos;
       _v.set(this.pos.x - op.x, 0, this.pos.z - op.z);
