@@ -39,7 +39,7 @@ export class React {
       const gr = W.props.nearGrate && W.props.nearGrate(hit.point.x, hit.point.z);
       if (gr) W.props.puffGrate(gr, 0.7);
     }
-    if (res !== 'glass' && res !== 'done') G.fx.impacts.at(hit, dir);
+    if (res !== 'glass' && res !== 'done') G.fx.impacts.at(hit, dir, { weak });
     if (res === null && (hit.surf === SURF.IRON || hit.surf === SURF.CAR) && G.rng.chance(0.35)) G.sfx.ricochet(hit.point);
     return res;
   }
@@ -47,6 +47,8 @@ export class React {
   update(dt, t) {
     const G = this.game, W = this.world;
     W.cars.update(dt, t);
+    // (the panes' falling shards: destruct/Glass.js)
+    if (W.glass && W.glass.update) W.glass.update(dt);
     if (W.lamps.react) W.lamps.react(dt, t);
     if (W.props.update) W.props.update(dt, t);
     // hazards follow their cars' state

@@ -3,7 +3,9 @@ import { LAYER, allocInkId, markFigure } from '../render/layers.js';
 import { makeConeMesh } from '../render/shaders/cone.js';
 import { lathe, merge, roundedBox, smoothNormals, tube, V2, V3 } from './geom.js';
 import { Fire } from '../fx/Fire.js';
-import { FIRE } from '../fx/fxTextures.js';
+import { FIRE, ATLAS } from '../fx/fxTextures.js';
+import { FIRE_COL } from '../fx/Explosion.js';
+import { buildWreck, wreckMaterials, WRECK_KINDS } from '../destruct/Wreck.js';
 
 const FIRE_CELL_SHARD = FIRE.SHARD;
 const FIRE_CELL_SMOKE = FIRE.SMOKE;
@@ -275,43 +277,107 @@ function buildTemplateParts() {
 // the glass and the lenses are) swap to the far build beyond FAR_LOD m
 const LOD_PARTS = ['paint', 'chrome', 'dark', 'rubber', 'white', 'hubs', 'caps', 'seams'];
 
+
 // ---------------------------------------------------------------------------
-// Damage (Phase 3a). Bullets are dispatched here by the game (fx/React.js)
-// with the RayWorld hit; the part is told by the mesh (userData.part) and
-// the hit point in the car's frame:
+// Damage (lane 3, P0.1): a BULLET COUNT, never a clock. Bullets are
+// dispatched here by fx/React.js with the RayWorld hit; the part is told by
+// the mesh (userData.part) and the hit point in the car's frame:
 //   glass  - the first round spider-cracks the pane (a crack decal), the
-//            second shatters it: the pane leaves the car's glass geometry,
-//            its cracks go, shards fall
+//            second shatters it: the pane leaves the car's glass geometry
 //   lens   - the headlamp breaks: lens gone, shards, its light off
 //   rubber - near a wheel: the tyre hisses flat and the car sags onto it
-//   body   - a dark bullet mark (fx/Impacts) and damage
-// At SMOKE_AT the bonnet starts smoking (the 10 s warning: the Hoods clear
-// out, HoodAI hazards); every round into a smoking car shortens the fuse;
-// then it explodes (fx/Explosion.js) and burns (fx/Fire.js): a blackened,
-// sagging wreck that still stops bullets and men.
-// (Phase 3a review: a long battle blew three cars in 100 s. A round into the
-// body counts in full only on the engine bay - the front ~1.6 m, the bonnet
-// and grille - elsewhere 0.4x; glass and tyres count less too. It takes
-// ~14 rounds into the engine bay, or a long spray at a man behind the car,
-// to set it smoking. And at most TWO cars may be going up or roaring at
-// once: a third one reaching the smoke state fizzles - a thin grey smoke
-// that dies away - and it stays a dead, unexploded car.)
-const DMG = { body: 4.5, glass: 1.0, lens: 1.5, tyre: 1.5 };
-const BAY_X = 0.6;           // local x forward of which a body round hits the engine bay
-const OFF_BAY = 0.4;         // damage share of a body round elsewhere
-const SMOKE_AT = 36;
-const MAX_BLAZES = 2;        // smoking-to-blow + roaring wrecks at once
-export const FUSE = 10;       // s of warning smoke before the blast
+//   body   - a mark (fx/Impacts) and points by where it went in
+// Each car blows on the round that takes it past its limit (26 +- 3 points,
+// seeded per car). A round into the body counts 1, into the engine bay
+// (local x > 0.6, under the bonnet line) 2, into the fuel tank (the rear,
+// x < -1.55, y < 0.95) 3; glass, lenses and tyres 0.5 (they keep their own
+// effects); a Hood's stray round 0.15 of that. About 26 rounds anywhere, 13
+// into the engine, 9 into the tank: two to three seconds of the Tommy gun.
+// The warnings come by count too: at 40 % grey smoke from the bonnet seam
+// (or fuel dripping into a dark pool under the tank, if the tank took most
+// of it); at 75 % the smoke goes black and thick, a small flame licks at the
+// seam and the Hoods using it as cover relocate (Game.onCarSmoking: the
+// hazard). A smoking car left alone just smokes.
+// The kind of blast is the killing round's: engine bay A (the bonnet),
+// tank B, anywhere else C (the cook-off); one in six of any is D (it rolls).
+// The blast kills within ~5 m and hurts the player within 8 (Game), and
+// chains: a blast within 6 m adds 12 points to a neighbouring car. At most
+// two fires roar at once: a third blast is allowed, the oldest fire dies
+// down to embers.
+// (startSmoke(car, fuse) is the presets' staging, not the game's: it puts the
+// car at its 75 % warning and scripts the blast `fuse` s later.)
+const PTS = { body: 1, engine: 2, tank: 3, glass: 0.5 };
+const WEAK = 0.15;
+const LIMIT = 26, LIMIT_VAR = 3;
+const WARN1 = 0.4, WARN2 = 0.75;
+const MAX_ROAR = 2;
+const CHAIN_R = 6, CHAIN_PTS = 12, CHAIN_DELAY = 0.35;
+const EMBER_T = 40;            // s the embers crawl on a wreck's edges
+export const FUSE = 10;        // (the presets' default staged fuse)
 // the warning smoke's grey (linear; prints ~0.5 display: render/tone.js)
 const SMOKE_GREY = 0.066;
 const WHEELS = [[1.55, 0.78], [1.55, -0.78], [-1.55, 0.76], [-1.55, -0.76]];
-const _l = new THREE.Vector3(), _n = new THREE.Vector3(), _m = new THREE.Matrix4(), _q = new THREE.Quaternion();
+const _l = new THREE.Vector3(), _m = new THREE.Matrix4(), _q = new THREE.Quaternion();
+const _q2 = new THREE.Quaternion(), _p = new THREE.Vector3(), _p2 = new THREE.Vector3();
+const Y = V3(0, 1, 0), X = V3(1, 0, 0), Z = V3(0, 0, 1);
+
+// debug staging: `wreckkind=` (src/debug/shots/L3_*.js) forces the kind of
+// every staged blast
+let DEBUG_KIND = null;
+export function setDebugWreckKind(k) { DEBUG_KIND = k && WRECK_KINDS.includes(k) ? k : null; }
+export const SEDAN_SHAPES = { body: bodyShape, cabin: cabinShape, fender: fenderShape };
+
+const ease = (u) => (u <= 0 ? 0 : u >= 1 ? 1 : u * u * (3 - 2 * u));
+const bump = (t, t0, d) => (t < t0 || t > t0 + d ? 0 : Math.sin(Math.PI * (t - t0) / d));
+
+// the wreck's motion in its first seconds, per kind: { dy, pitch (about the
+// car's z: + lifts the nose), roll (about x), px (the pitch pivot's x) }
+export function wreckMotion(kind, t, sgn) {
+  const list = 0.052 * sgn * ease(t / 0.7);     // 3 deg: the front axle down one side
+  if (kind === 'A') {
+    // the bay kicks the nose up, then it falls onto it (pivot: rear axle)
+    let p;
+    if (t < 0.1) p = 0.09 * ease(t / 0.1);
+    else if (t < 0.38) { const u = (t - 0.1) / 0.28; p = 0.09 - 0.2 * u * u; }
+    else if (t < 0.6) p = -0.11 + 0.03 * bump(t, 0.38, 0.22);
+    else p = -0.11 + 0.025 * ease((t - 0.6) / 0.3);
+    return { dy: 0.14 * bump(t, 0, 0.4), pitch: p, roll: list, px: -1.55 };
+  }
+  if (kind === 'B') {
+    // the rear lifts a metre and slams down (pivot: the front axle, 4.05 m
+    // from the rear), a small bounce, then the tail collapsed
+    const L = 4.05;
+    let h;
+    if (t < 0.16) h = 1 - (1 - t / 0.16) ** 2;
+    else if (t < 0.24) h = 1;
+    else if (t < 0.692) { const u = t - 0.24; h = Math.max(0, 1 - 4.9 * u * u); }
+    else h = 0.13 * bump(t, 0.692, 0.25);
+    const settle = 0.036 * ease((t - 0.7) / 0.35);
+    return { dy: 0, pitch: -Math.asin(Math.min(1, h / L)) + settle, roll: list, px: 1.55 };
+  }
+  if (kind === 'C') {
+    // two jolts: the cook-off, then the second blast (0.5 s) that guts it
+    return { dy: 0.08 * bump(t, 0, 0.22) + 0.2 * bump(t, 0.5, 0.38), pitch: 0.02 * bump(t, 0.5, 0.5), roll: list * 0.8, px: 0 };
+  }
+  // D: thrown up and over onto its side
+  const u = Math.min(1, t / 0.95);
+  const roll = sgn * (Math.PI / 2) * (ease(u) + 0.06 * bump(t, 0.95, 0.3));
+  return { dy: 1.3 * 4 * u * (1 - u), pitch: 0.12 * bump(t, 0, 0.95), roll, px: 0, lift: true };
+}
+// hull corners in the car's frame: a rolled car rests on the lowest
+const HULL = [];
+for (const x of [-2.5, 2.5]) for (const y of [0.1, 1.72]) for (const z of [-0.86, 0.86]) HULL.push(V3(x, y, z));
 
 export class Cars {
   constructor(world) {
     this.world = world;
     this.cars = [];
     this.rng = world.rng.fork(4447);
+    // (new streams of their own: the per-car limits, the kind of blast, the
+    // warnings' and the wreck's effects; the old stream keeps its draws)
+    this.limRng = world.rng.fork(4450);
+    this.kindRng = world.rng.fork(4451);
+    this.fxRng = world.rng.fork(4452);
     const T = TEMPLATE || (TEMPLATE = buildTemplate());
     this.T = T;
     this.TL = TEMPLATE_LO || (TEMPLATE_LO = buildTemplate(0.4));
@@ -334,6 +400,7 @@ export class Cars {
     for (const s of specs) this.cars.push(this.spawn(s));
     this.game = null;        // bound by the Game (effects, sound, Hoods)
     this.fires = [];
+    this.chains = [];        // { car, pts, t }: a neighbour's blast arriving
   }
 
   bind(game) { this.game = game; }
@@ -379,13 +446,19 @@ export class Cars {
     markFigure(g);
     scene.add(g);
     g.updateMatrixWorld(true);
+    const limit = LIMIT + (this.limRng.next() * 2 - 1) * LIMIT_VAR;
     const car = {
-      id: this.cars.length, group: g, pos, yaw, lights, lens, spot: null, cones: [], entry: null, health: 100, meshes,
-      state: 'intact',           // intact -> smoking -> burning (a wreck), or smoking (a dud) -> dead
+      id: this.cars.length, group: g, pos, yaw, lights, lens, spot: null, cones: [], entry: null, meshes, shadow,
+      ids: { bodyId, glassId, wheelId, seamId },
+      state: 'intact',           // intact -> smoking (40 %, 75 %: warn) -> burning (a wreck)
+      pts: 0, limit, zones: { body: 0, engine: 0, tank: 0, glass: 0 }, warn: 0, fuse: null, fuseKind: null,
       panes: T.panes.map(() => ({ hits: 0, broken: false })), lensBroken: [false, false],
-      tyres: [0, 0, 0, 0], sag: [0, 0, 0, 0], extraSag: 0, tilt: [0, 0], fuse: FUSE, smokeT: 0, smokeAcc: 0,
-      hits: 0, fire: null, wreckT: 0, dud: false, lod: 0,
+      tyres: [0, 0, 0, 0], sag: [0, 0, 0, 0], smokeT: 0, smokeAcc: 0, flameAcc: 0, dripAcc: 0, leak: false,
+      hits: 0, fire: null, wreckT: 0, kind: null, lod: 0, cook: null, wreck: null, emberAcc: 0,
     };
+    // (the old name other lanes may read: health falls from 100 as the
+    // points rise)
+    Object.defineProperty(car, 'health', { get: () => 100 * (1 - car.pts / car.limit), enumerable: false });
     g.traverse((o) => { if (o.isMesh) o.userData.car = car; });
     car.collider = colliders.addBox(pos.x, pos.z, 2.6, 1.0, yaw, 'car');
     car.collider.car = car;
@@ -416,6 +489,13 @@ export class Cars {
   toWorld(car, v) { return v.clone().applyMatrix4(car.group.matrixWorld); }
   engine(car) { return this.toWorld(car, V3(1.45, 1.0, 0)); }
 
+  // where a round into the body went, in the car's frame
+  zoneOf(lp) {
+    if (lp.x > 0.6 && lp.y < 1.16) return 'engine';
+    if (lp.x < -1.55 && lp.y < 0.95) return 'tank';
+    return 'body';
+  }
+
   // a bullet hit one of this car's meshes; returns 'glass' when the pane's
   // own effect replaces the generic impact, else null (sparks + mark)
   hit(car, hit, dir, { weak = false } = {}) {
@@ -430,7 +510,7 @@ export class Cars {
     }
     car.hits++;
     if (car.state === 'burning') return null;
-    let dmg = DMG.body * (lp.x > BAY_X ? 1 : OFF_BAY), out = null;
+    let zone = this.zoneOf(lp), out = null;
     if (part === 'glass') {
       // nearest pane (by centre, in the car's frame)
       let bi = -1, bd = Infinity;
@@ -438,7 +518,7 @@ export class Cars {
       if (bi >= 0) {
         const P = car.panes[bi];
         P.hits++;
-        dmg = DMG.glass;
+        zone = 'glass';
         if (P.hits >= 2) this.shatter(car, bi);
         else {
           G.fx.decals.crack(hit.point, hit.normal, r.range(0.32, 0.46) * this.T.panes[bi].w / 0.9 + 0.1, 'car' + car.id + ':' + bi);
@@ -451,58 +531,74 @@ export class Cars {
       const side = lp.z > 0 ? 0 : 1;
       if (!car.lensBroken[side]) this.breakLens(car, side);
       else if (!car.lensBroken[1 - side]) this.breakLens(car, 1 - side);
-      dmg = DMG.lens;
+      zone = 'glass';
       out = 'glass';
     } else if (part === 'rubber') {
       let wi = -1, wd = 0.5 * 0.5;
       WHEELS.forEach(([x, z], i) => { const d = (lp.x - x) ** 2 + (lp.y - 0.375) ** 2 + (lp.z - z) ** 2; if (d < wd) { wd = d; wi = i; } });
       if (wi >= 0) {
-        dmg = DMG.tyre;
+        zone = 'glass';     // (a tyre counts as little as glass)
         if (!car.tyres[wi]) { car.tyres[wi] = 1; G.sfx.tyre(hit.point); }
       }
     }
-    // (a Hood's stray round cracks glass and marks the paint, but it takes
-    // the player's sustained fire to set a car smoking)
-    this.damage(car, weak ? dmg * 0.15 : dmg);
+    this.damage(car, PTS[zone] * (weak ? WEAK : 1), zone);
     return out;
   }
 
-  damage(car, dmg) {
-    if (car.state === 'burning' || car.state === 'dead') return;
-    car.health -= dmg;
-    if (car.state === 'intact' && car.health <= SMOKE_AT) this.startSmoke(car);
-    // every round into a smoking car shortens the fuse
-    else if (car.state === 'smoking' && !car.dud) car.fuse = Math.max(0.6, car.fuse - dmg * 0.09);
+  // points into a car; the round that takes it past its limit blows it
+  damage(car, pts, zone = 'body') {
+    if (car.state === 'burning') return;
+    car.pts += pts;
+    car.zones[zone] = (car.zones[zone] || 0) + pts;
+    const k = car.pts / car.limit;
+    if (k >= 1) { this.explode(car, this.kindFor(zone)); return; }
+    if (k >= WARN1 && car.warn < 1) this.setWarn(car, 1);
+    if (k >= WARN2 && car.warn < 2) this.setWarn(car, 2);
   }
 
-  // cars going up (smoking toward the blast) + wrecks still roaring
-  blazes() {
-    let n = 0;
-    for (const c of this.cars) if (c.state === 'smoking' && !c.dud) n++;
-    for (const f of this.fires) if (f.intensity() >= 0.45) n++;
-    return n;
+  // the kind of blast: the killing round's zone; one in six rolls
+  kindFor(zone) {
+    const roll = this.kindRng.next() < 1 / 6;
+    if (DEBUG_KIND) return DEBUG_KIND;
+    if (roll) return 'D';
+    return zone === 'engine' ? 'A' : zone === 'tank' ? 'B' : 'C';
   }
 
-  startSmoke(car, fuse = FUSE, { force = false } = {}) {
-    if (car.state !== 'intact') return;
+  // the zone that took most of it (a staged blast has no killing round)
+  mainZone(car) {
+    const z = car.zones;
+    return z.tank >= z.engine && z.tank >= z.body && z.tank > 0 ? 'tank' : z.engine >= z.body && z.engine > 0 ? 'engine' : 'body';
+  }
+
+  setWarn(car, n) {
+    if (car.warn >= n) return;
+    if (car.warn === 0) { car.smokeT = 0; car.leak = this.mainZone(car) === 'tank'; }
+    car.warn = n;
     car.state = 'smoking';
-    car.fuse = fuse;
-    car.smokeT = 0;
-    // (two blazes already: this one fizzles out instead - see DMG above)
-    car.dud = !force && this.blazes() > MAX_BLAZES;
-    if (car.dud) car.fuse = this.rng.range(6, 8);
-    if (this.game) this.game.onCarSmoking(car);
+    // (75 %: the Hoods clear out of its cover, the hiss - Game.onCarSmoking)
+    if (n >= 2 && this.game) this.game.onCarSmoking(car);
   }
 
-  shatter(car, i) {
-    const G = this.game, r = this.rng, T = this.T;
+  // the presets' staging: the car at its 75 % warning, the blast `fuse` s
+  // later (kind: the zone that took most of it, unless given)
+  startSmoke(car, fuse = FUSE, { force = false, kind = null } = {}) {
+    if (car.state === 'burning') return;
+    car.pts = Math.max(car.pts, car.limit * WARN2);
+    this.setWarn(car, 1);
+    this.setWarn(car, 2);
+    car.fuse = fuse;
+    car.fuseKind = kind;
+  }
+
+  shatter(car, i, power = 1) {
+    const G = this.game, T = this.T;
     const P = car.panes[i];
     if (P.broken) return;
     P.broken = true;
     this.rebuild(car, 'glass', T.panes, car.panes.map((p) => !p.broken));
     G.fx.decals.hideOwner('car' + car.id + ':' + i);
     const c = this.toWorld(car, T.panes[i].c), n = T.panes[i].n.clone().transformDirection(car.group.matrixWorld);
-    this.shards(c, n, T.panes[i].w, 16);
+    this.shards(c, n.multiplyScalar(power), T.panes[i].w, 16);
     G.sfx.glass(c, 1);
   }
 
@@ -547,35 +643,111 @@ export class Cars {
     }
   }
 
-  explode(car) {
+  // ---- the blast ------------------------------------------------------------------
+  explode(car, kind = 'C') {
     const G = this.game;
+    if (car.state === 'burning' || !G) return;
     car.state = 'burning';
+    car.kind = kind;
     car.wreckT = 0;
-    const at = this.engine(car);
-    G.fx.explosions.blast(at, { yaw: car.yaw });
-    // everything glass goes at once
-    car.panes.forEach((p, i) => { if (!p.broken) { p.broken = true; G.fx.decals.hideOwner('car' + car.id + ':' + i); } });
-    this.rebuild(car, 'glass', this.T.panes, car.panes.map(() => false));
+    car.fuse = null;
+    car.rollSgn = this.kindRng.next() < 0.5 ? 1 : -1;
+    // the frame rate's limit: two fires roaring; a third blast is allowed,
+    // the oldest roaring fire dies down to embers
+    const roaring = this.fires.filter((f) => !f.doused && (f.age < 1 || f.intensity() >= 0.45));
+    if (roaring.length >= MAX_ROAR) roaring.sort((a, b) => b.age - a.age)[0].douse();
+    const L = (x, y, z) => this.toWorld(car, V3(x, y, z));
+    const at = kind === 'A' ? L(1.45, 1.0, 0) : kind === 'B' ? L(-2.0, 0.75, 0) : kind === 'C' ? L(-0.4, 1.2, 0) : L(0.2, 0.35, 0);
+    // the lights die with it
     car.lensBroken = [true, true];
     this.rebuild(car, 'lens', this.T.lensParts, [false, false]);
     if (car.spot) { car.spot.intensity = 0; for (const c of car.cones) c.visible = false; if (car.entry) car.entry.intensity = 0; }
-    // the blackened wreck: char paint, no chrome, burnt tyres (sagging)
-    const M = this.world.M, ms = car.meshes;
-    ms.paint.material = M.wreck;
-    ms.chrome.material = M.wreckMetal;
-    ms.caps.material = M.wreckMetal;
-    ms.hubs.material = M.wreck;
-    ms.seams.visible = false;
-    if (ms.white) ms.white.visible = false;
-    car.tyres = [1, 1, 1, 1];
-    car.extraSag = 0.07;
-    car.tilt = [this.rng.gauss() * 0.03, this.rng.gauss() * 0.02];
-    // the fire: engine bay + cabin
-    const fire = new Fire(this.world, G.fx, { pos: this.toWorld(car, V3(1.35, 1.05, 0)), yaw: car.yaw, cabin: this.toWorld(car, V3(-0.4, 1.15, 0)) });
+    if (kind === 'C') {
+      // the cook-off: the windows blow out one after another in 0.4 s, then
+      // (0.5 s) the second, larger blast guts it
+      const order = car.panes.map((p, i) => i).filter((i) => !car.panes[i].broken);
+      car.cook = { t: 0, order, next: 0 };
+      G.fx.explosions.blast(at, { yaw: car.yaw, kind, scale: 0.6, phase: 1, local: L });
+    } else {
+      this.toWreck(car);
+      G.fx.explosions.blast(at, { yaw: car.yaw, kind, local: L });
+      this.chain(car, at);
+    }
+    G.onCarExploded(car, at);
+    this.pose(car);
+  }
+
+  // the neighbours: a blast within 6 m adds 12 points (a moment later)
+  chain(car, at) {
+    for (const c of this.cars) {
+      if (c === car || c.state === 'burning') continue;
+      if (Math.hypot(c.pos.x - at.x, c.pos.z - at.z) < CHAIN_R) this.chains.push({ car: c, pts: CHAIN_PTS, t: CHAIN_DELAY });
+    }
+  }
+
+  // swap the sedan for its wreck (inside the flash) and light its fire
+  toWreck(car, { fire: withFire = true } = {}) {
+    const G = this.game, W = this.world, kind = car.kind;
+    if (car.wreck) return;
+    // everything glass goes at once
+    car.panes.forEach((p, i) => { if (!p.broken) { p.broken = true; G.fx.decals.hideOwner('car' + car.id + ':' + i); } });
+    this.rebuild(car, 'glass', this.T.panes, car.panes.map(() => false));
+    for (const k of Object.keys(car.meshes)) { const m = car.meshes[k]; m.visible = false; G.rays.setEnabled(m, false); }
+    const B = buildWreck(kind, SEDAN_SHAPES, kind === 'D' ? car.rollSgn : 0), MW = wreckMaterials(W.M);
+    const wm = {};
+    const mk = (key, geo, mat, id) => {
+      if (!geo) return;
+      const m = new THREE.Mesh(geo, mat);
+      m.castShadow = true; m.receiveShadow = true;
+      Object.assign(m.userData, { inkId: id, inkFigure: true, part: 'body', car });
+      car.group.add(m);
+      wm[key] = m;
+      car.meshes[key] = m;
+      m.updateMatrixWorld(true);
+      W.addSolid(m);
+    };
+    mk('wShell', B.shell, MW.shell, car.ids.bodyId);
+    mk('wLines', B.lines, MW.lines, car.ids.seamId);
+    mk('wRims', B.rims, MW.rims, car.ids.wheelId);
+    mk('wDoors', B.doors, MW.shell, car.ids.glassId);
+    car.wreck = { meshes: wm, edges: B.edges };
+    // the contact shadow stays on the street (the wreck lifts and rolls)
+    W.scene.attach(car.shadow);
+    car.shadow.position.set(car.pos.x, 0.012, car.pos.z);
+    car.shadow.rotation.set(0, car.yaw, 0);
+    if (kind === 'D') {
+      // on its side: the footprint moves over to the side it rolled onto
+      const s = V3(-Math.sin(car.yaw), 0, -Math.cos(car.yaw)).multiplyScalar(-car.rollSgn * 0.9);
+      car.shadow.position.add(s);
+      car.shadow.scale.set(1, 1, 0.9);
+    }
+    if (!withFire) return;
+    // the fire, its sources in the car's frame (the wreck carries them)
+    const src = {
+      A: [{ kind: 'bay', at: V3(1.45, 0.92, 0), rx: 0.42, rz: 0.36 }, { kind: 'cabin', at: V3(-0.4, 0.85, 0), rx: 0.35, rz: 0.35, noEmber: true, k: 0.8 }],
+      B: [{ kind: 'tank', at: V3(-1.95, 0.75, 0), rx: 0.38, rz: 0.45 }, { kind: 'cabin', at: V3(-0.5, 0.85, 0), rx: 0.4, rz: 0.35, noEmber: true }],
+      C: [{ kind: 'roof', at: V3(-0.45, 1.3, 0), rx: 0.45, rz: 0.32, noEmber: true }, { kind: 'bay', at: V3(1.4, 0.92, 0), rx: 0.36, rz: 0.3, k: 0.55 }, { kind: 'cabin', at: V3(-1.0, 0.85, 0), rx: 0.3, rz: 0.3, noEmber: true, k: 0.7 }],
+      D: [{ kind: 'bay', at: V3(1.35, 0.7, 0), rx: 0.4, rz: 0.3 }, { kind: 'cabin', at: V3(-0.4, 0.75, 0), rx: 0.45, rz: 0.3, noEmber: true, k: 0.8 }],
+    }[kind];
+    const toW = (v) => _p.copy(v).applyMatrix4(car.group.matrixWorld);
+    // (B: the burning fuel spreads behind the car on the water)
+    const pool = kind === 'B' ? { at: V3(-3.5, 0, 0), rx: 1.7, rz: 1.8, life: 12, spread: 0.8, y: 0.03 } : null;
+    const fire = new Fire(W, G.fx, { pos: this.toWorld(car, src[0].at), yaw: car.yaw, sources: src, toWorld: toW, pool, seed: 7700 + car.id * 31 });
     car.fire = fire;
     this.fires.push(fire);
     this.assignFireLights();
-    G.onCarExploded(car, at);
+  }
+
+  // a wreck at rest, at once (the presets' study: no blast, no fire unless
+  // asked, no embers: the silhouette alone)
+  wreckNow(car, kind = 'C', { fire = false, rollSgn = 1 } = {}) {
+    car.state = 'burning';
+    car.kind = kind;
+    car.rollSgn = rollSgn;
+    car.wreckT = fire ? 0 : EMBER_T + 10;
+    this.toWreck(car, { fire });
+    car.wreckT = Math.max(car.wreckT, 3);
+    this.pose(car);
   }
 
   // the world's fire lights go to the fires nearest the player
@@ -587,7 +759,6 @@ export class Cars {
     lights.forEach((L, i) => { const f = live[i]; if (f) f.light = L; else L.intensity = 0; });
   }
 
-  // per fixed step (fx/React.js)
   // per step (World.update): the far build for the cars beyond FAR_LOD m
   // (4 m of hysteresis). The bullets' BVH keeps the full build (RayWorld).
   lodUpdate(camera) {
@@ -618,52 +789,34 @@ export class Cars {
   }
 
   update(dt, t) {
-    const G = this.game, r = this.rng;
+    // a neighbour's blast arriving
+    for (let i = this.chains.length - 1; i >= 0; i--) {
+      const c = this.chains[i];
+      c.t -= dt;
+      if (c.t <= 0) { this.chains.splice(i, 1); this.damage(c.car, c.pts, 'body'); }
+    }
     for (const car of this.cars) {
-      // sag: tyres going flat, then the wreck settling
+      // sag: tyres going flat
       let moved = false;
-      for (let i = 0; i < 4; i++) {
-        const want = car.tyres[i];
-        if (car.sag[i] !== want) { car.sag[i] += Math.sign(want - car.sag[i]) * Math.min(Math.abs(want - car.sag[i]), dt * 0.8); moved = true; }
+      if (car.state !== 'burning') {
+        for (let i = 0; i < 4; i++) {
+          const want = car.tyres[i];
+          if (car.sag[i] !== want) { car.sag[i] += Math.sign(want - car.sag[i]) * Math.min(Math.abs(want - car.sag[i]), dt * 0.8); moved = true; }
+        }
       }
-      if (car.state === 'burning' && car.wreckT < 3) { car.wreckT += dt; moved = true; }
+      if (car.state === 'burning') {
+        car.wreckT += dt;
+        if (car.cook) this.cookOff(car, dt);
+        if (car.wreckT < 3) moved = true;
+        if (car.wreck && car.wreckT < EMBER_T) this.embers(car, dt);
+      }
       if (moved) this.pose(car);
       if (car.state === 'smoking') {
         car.smokeT += dt;
-        car.fuse -= dt;
-        // GREY smoke boiling out of the bonnet, thicker as the fuse runs: the
-        // warning must read 'about to blow', never as the black column of a
-        // burning wreck (fx/Fire.js, fx/Explosion.js own the black). A mid
-        // grey (~0.5 display: lighter than the towers and the façade, darker
-        // than a lamp's cone, which its occluder takes off behind it), laid
-        // thinner and in smaller puffs than the fire's column; each puff
-        // pales a little as it rises and spreads. Only in the last ~1.5 s of
-        // the fuse do the new puffs at its root darken - to a dark grey
-        // (~0.25 display), still not the black of the fire.
-        // a dud: thin pale smoke, dying away over its last ~4 s
-        const fizz = car.dud ? Math.min(1, Math.max(0, car.fuse / 4)) : 1;
-        const k = Math.min(1, car.smokeT / FUSE) * fizz;
-        const late = car.dud ? 0 : 1 - Math.min(1, Math.max(0, car.fuse / 1.5));
-        const g0 = SMOKE_GREY * (1 - 0.5 * late) * (car.dud ? 1.15 : 1);
-        car.smokeAcc += dt * (5 + 10 * k) * (car.dud ? 0.6 * fizz : 1);
-        while (car.smokeAcc >= 1) {
-          car.smokeAcc -= 1;
-          const p = this.toWorld(car, V3(1.5 + r.gauss() * 0.3, 1.15, r.gauss() * 0.3));
-          const s = r.range(0.45, 0.7) * (0.8 + 0.5 * k);
-          // (each puff its own grey, ~0.33-0.55 display: overlapping billows
-          // of different tone read as smoke against the mid-grey mist, where
-          // a single flat grey was the mist's own value)
-          const g = g0 * r.range(0.55, 1.2);
-          G.fx.smoke.spawn({
-            pos: p, vel: new THREE.Vector3(r.gauss() * 0.25 + 0.35, r.range(1.3, 2.2), r.gauss() * 0.25),
-            life: r.range(2.2, 3.1), size: [s, s], grow: r.range(0.35, 0.55), rot: r.next() * 6.28, spin: r.gauss() * 0.3,
-            col: [g, g, g], colEnd: [g * 1.25, g * 1.25, g * 1.25], alpha: r.range(0.78, 0.9), drag: 0.3, fadeIn: 0.06, fadeOut: 0.45,
-            cell: FIRE_CELL_SMOKE[r.int(0, 3)],
-          });
-        }
-        if (car.fuse <= 0) {
-          if (car.dud) { car.state = 'dead'; if (G && G.counters) G.counters.fizzles = (G.counters.fizzles || 0) + 1; }
-          else this.explode(car);
+        this.warning(car, dt);
+        if (car.fuse !== null) {
+          car.fuse -= dt;
+          if (car.fuse <= 0) this.explode(car, car.fuseKind || this.kindFor(this.mainZone(car)));
         }
       }
     }
@@ -672,19 +825,153 @@ export class Cars {
     if (this.fires.length > 1) { this.fireLightT = (this.fireLightT ?? 1) - dt; if (this.fireLightT <= 0) { this.fireLightT = 1; this.assignFireLights(); } }
   }
 
-  // the group's transform from its tyres' sag (+ the wreck's settling)
+  // The warnings, by count:
+  //  40 %  GREY smoke boiling out of the bonnet seam - it must read 'hurt',
+  //        never the black column of a burning wreck. A mid grey (~0.5
+  //        display), each puff its own grey, paling as it rises. If the tank
+  //        took most of it: fuel dripping and a dark pool growing under the
+  //        tank instead (and a thin grey thread)
+  //  75 %  the smoke goes BLACK and thick, a small flame licks at the seam
+  //        (at the tank's seam if it leaks)
+  warning(car, dt) {
+    const G = this.game, r = this.fxRng;
+    if (!G) return;
+    const hot = car.warn >= 2;
+    const k = Math.min(1, car.smokeT / 6);
+    const seam = car.leak ? V3(-2.05, 0.95, 0) : V3(1.5, 1.15, 0);
+    const rate = hot ? 12 + 6 * k : car.leak ? 2.5 : 5 + 7 * k;
+    car.smokeAcc += dt * rate;
+    while (car.smokeAcc >= 1) {
+      car.smokeAcc -= 1;
+      const p = this.toWorld(car, V3(seam.x + r.gauss() * 0.3, seam.y, r.gauss() * 0.3));
+      if (hot) {
+        const s = r.range(0.6, 1.0) * (0.85 + 0.4 * k);
+        const g = r.range(0.004, 0.012);
+        G.fx.smoke.spawn({
+          pos: p, vel: new THREE.Vector3(r.gauss() * 0.3 + 0.35, r.range(1.6, 2.6), r.gauss() * 0.3),
+          life: r.range(2.6, 3.6), size: [s, s], grow: r.range(0.45, 0.7), rot: r.next() * 6.28, spin: r.gauss() * 0.3,
+          col: [g, g, g], colEnd: [g * 2, g * 2, g * 2], alpha: r.range(0.72, 0.85), drag: 0.3, fadeIn: 0.05, fadeOut: 0.5,
+          cell: FIRE_CELL_SMOKE[r.int(0, 3)],
+        });
+      } else {
+        const s = r.range(0.45, 0.7) * (0.8 + 0.5 * k) * (car.leak ? 0.6 : 1);
+        const g = SMOKE_GREY * r.range(0.55, 1.2);
+        G.fx.smoke.spawn({
+          pos: p, vel: new THREE.Vector3(r.gauss() * 0.25 + 0.35, r.range(1.3, 2.2), r.gauss() * 0.25),
+          life: r.range(2.2, 3.1), size: [s, s], grow: r.range(0.35, 0.55), rot: r.next() * 6.28, spin: r.gauss() * 0.3,
+          col: [g, g, g], colEnd: [g * 1.25, g * 1.25, g * 1.25], alpha: r.range(0.78, 0.9) * (car.leak ? 0.7 : 1), drag: 0.3, fadeIn: 0.06, fadeOut: 0.45,
+          cell: FIRE_CELL_SMOKE[r.int(0, 3)],
+        });
+      }
+    }
+    // the flame licking at the seam (75 %): small, low, flickering in and out
+    if (hot) {
+      car.flameAcc += dt * 9;
+      while (car.flameAcc >= 1) {
+        car.flameAcc -= 1;
+        if (r.chance(0.3)) continue;
+        const s = r.range(0.22, 0.42);
+        const p = this.toWorld(car, V3(seam.x + r.gauss() * 0.22, seam.y - 0.04, (r.chance(0.5) ? 1 : -1) * r.range(0.25, 0.55)));
+        G.fx.fire.spawn({
+          pos: p.add(V3(0, s * 0.3, 0)), vel: V3(r.gauss() * 0.1 + 0.2, r.range(0.5, 1.0), r.gauss() * 0.1),
+          life: r.range(0.18, 0.34), size: [s * 0.7, s], grow: 0.2, rot: r.gauss() * 0.15,
+          col: r.chance(0.5) ? FIRE_COL.yellow : FIRE_COL.orange, colEnd: FIRE_COL.deep, colPow: 1.3, cell: FIRE.FLAME[r.int(0, 3)], fadeIn: 0.04, fadeOut: 0.3,
+        });
+      }
+    }
+    // the tank leaks: drops falling from under it, a dark pool spreading
+    if (car.leak) {
+      car.dripAcc += dt * 7;
+      while (car.dripAcc >= 1) {
+        car.dripAcc -= 1;
+        const p = this.toWorld(car, V3(-1.95 + r.gauss() * 0.15, 0.5, r.gauss() * 0.25));
+        G.fx.splash.spawn({ pos: p, vel: V3(0, -0.3, 0), life: 0.4, size: [0.012, 0.03], stretch: 0.03, col: [0.02, 0.02, 0.02], alpha: 1, cell: ATLAS.DROP, gravity: 9.8, ground: 0.01, fadeOut: 0.1 });
+      }
+      if (!car.poolDone) {
+        car.poolDone = true;
+        const p = this.toWorld(car, V3(-2.0, 0, 0)); p.y = 0.004;
+        G.fx.decals.pools.add(p, V3(0, 1, 0), 1.9, r.next() * 6.28, ATLAS.POOL, [0.0025, 0.0025, 0.0025], 1, { grow: 9 }, G.time ?? 0);
+      }
+    }
+  }
+
+  // the cook-off's sequence (kind C): a window a step for 0.4 s, fire
+  // punching out of each; the second blast at 0.5 s swaps in the gutted wreck
+  cookOff(car, dt) {
+    const G = this.game, C = car.cook, r = this.fxRng;
+    C.t += dt;
+    while (C.next < C.order.length && C.t >= (C.next / Math.max(1, C.order.length - 1)) * 0.4) {
+      const i = C.order[C.next++];
+      this.shatter(car, i, 2.2);
+      // a tongue of fire out of the hole
+      const c = this.toWorld(car, this.T.panes[i].c), n = this.T.panes[i].n.clone().transformDirection(car.group.matrixWorld);
+      for (let k = 0; k < 3; k++) {
+        const s = r.range(0.6, 1.1);
+        G.fx.fire.spawn({ pos: c.clone().addScaledVector(n, 0.2), vel: n.clone().multiplyScalar(r.range(2, 4)).add(V3(0, r.range(0.8, 1.8), 0)), life: r.range(0.3, 0.5), size: [s, s], grow: 1.2, rot: r.next() * 6.28,
+          col: FIRE_COL.yellow, colEnd: FIRE_COL.deep, colPow: 1.4, cell: FIRE.BALL[r.int(0, 3)], drag: 2, fadeOut: 0.3 });
+      }
+    }
+    if (C.t >= 0.5) {
+      car.cook = null;
+      const at = this.toWorld(car, V3(-0.4, 1.1, 0));
+      this.toWreck(car);
+      G.fx.explosions.blast(at, { yaw: car.yaw, kind: 'C', scale: 1.3, phase: 2, local: (x, y, z) => this.toWorld(car, V3(x, y, z)) });
+      G.sfx.explosion(at);
+      G.controller.shake(0.7, at.distanceTo(G.camera.position));
+      this.chain(car, at);
+    }
+  }
+
+  // embers crawling along the wreck's top edges for its first 40 s
+  embers(car, dt) {
+    const r = this.fxRng, E = car.wreck.edges;
+    if (!E.length || !this.game) return;
+    car.emberAcc += dt * 26 * (1 - car.wreckT / EMBER_T) * Math.min(1, car.wreckT / 2);
+    while (car.emberAcc >= 1) {
+      car.emberAcc -= 1;
+      const e = E[r.int(0, E.length - 1)];
+      const u = r.next() * (e.length - 1);
+      const i = Math.min(e.length - 2, Math.floor(u));
+      const a = e[i], b = e[i + 1];
+      const p = this.toWorld(car, _p2.copy(a).lerp(b, u - i).add(V3(0, 0.02, 0)));
+      const tan = this.toWorld(car, b).sub(this.toWorld(car, a)).normalize().multiplyScalar(r.range(-0.12, 0.12));
+      const s = r.range(0.03, 0.055);
+      this.game.fx.fire.spawn({ pos: p, vel: tan.add(V3(0, r.range(0.0, 0.08), 0)), life: r.range(0.5, 1.3), size: [s, s], rot: r.next() * 6.28,
+        col: r.chance(0.3) ? FIRE_COL.yellow : FIRE_COL.orange, colEnd: FIRE_COL.deep, cell: FIRE.EMBER, fadeIn: 0.15, fadeOut: 0.5 });
+    }
+  }
+
+  // the group's transform: an intact car on its tyres' sag; a wreck by its
+  // kind's motion (the lift, the slam, the roll) and its 3 deg list
   pose(car) {
-    const g = car.group, s = car.sag;
-    const D = 0.09;   // m a flat tyre drops its corner
-    const fl = s[0] * D, fr = s[1] * D, rl = s[2] * D, rr = s[3] * D;
-    const w = car.state === 'burning' ? Math.min(1, car.wreckT / 2.5) : 0;
-    const drop = (fl + fr + rl + rr) / 4 + car.extraSag * w;
-    const pitch = Math.atan2((rl + rr) / 2 - (fl + fr) / 2, 3.1) + car.tilt[0] * w;
-    const roll = Math.atan2((fl + rl) / 2 - (fr + rr) / 2, 1.56) + car.tilt[1] * w;
-    g.position.set(car.pos.x, car.pos.y - drop, car.pos.z);
-    g.quaternion.setFromAxisAngle(V3(0, 1, 0), car.yaw)
-      .multiply(_q.setFromAxisAngle(V3(0, 0, 1), pitch))
-      .multiply(new THREE.Quaternion().setFromAxisAngle(V3(1, 0, 0), roll));
+    const g = car.group;
+    if (car.state === 'burning') {
+      const M = wreckMotion(car.kind, car.wreckT, car.rollSgn || 1);
+      _q.setFromAxisAngle(Z, M.pitch).multiply(_q2.setFromAxisAngle(X, M.roll));
+      const pivot = V3(M.px, car.kind === 'D' ? 0.85 : 0, 0);
+      const off = pivot.clone().sub(pivot.clone().applyQuaternion(_q));
+      let dy = M.dy;
+      if (M.lift) {
+        // (rolled: it rests on its lowest corner, never through the street)
+        let minY = Infinity;
+        for (const h of HULL) { const y = h.clone().sub(pivot).applyQuaternion(_q).add(pivot).y; if (y < minY) minY = y; }
+        dy = Math.max(dy, -minY);
+      }
+      const qy = new THREE.Quaternion().setFromAxisAngle(Y, car.yaw);
+      g.position.copy(car.pos).add(off.applyQuaternion(qy)).add(V3(0, dy, 0));
+      g.quaternion.copy(qy).multiply(_q);
+    } else {
+      const s = car.sag;
+      const D = 0.09;   // m a flat tyre drops its corner
+      const fl = s[0] * D, fr = s[1] * D, rl = s[2] * D, rr = s[3] * D;
+      const drop = (fl + fr + rl + rr) / 4;
+      const pitch = Math.atan2((rl + rr) / 2 - (fl + fr) / 2, 3.1);
+      const roll = Math.atan2((fl + rl) / 2 - (fr + rr) / 2, 1.56);
+      g.position.set(car.pos.x, car.pos.y - drop, car.pos.z);
+      g.quaternion.setFromAxisAngle(Y, car.yaw)
+        .multiply(_q.setFromAxisAngle(Z, pitch))
+        .multiply(new THREE.Quaternion().setFromAxisAngle(X, roll));
+    }
     g.updateMatrixWorld(true);
     if (this.game) {
       for (const m of Object.values(car.meshes)) if (m.visible) this.game.rays.refresh(m);

@@ -2,42 +2,75 @@ import * as THREE from 'three';
 import { FIRE } from './fxTextures.js';
 import { FIRE_COL } from './Explosion.js';
 
-// A burning wreck (Phase 3a). Per fire:
-//   - flames: flame-tongue sprites licking up off the engine bay (and a
-//     smaller fire in the cabin), upright, swaying, their colour running
-//     from yellow-white at the root to deep orange at the tips. Normal
-//     blending, chroma kept (FX_REFL: the wet street mirrors them, and the
-//     reflection bright pass keeps their chroma -> a warm column)
+// A burning wreck (Phase 3a; lane 3: one fire per explosion kind). Per fire:
+//   - flames: flame-tongue sprites licking up off each of its SOURCES (the
+//     engine bay, the cabin, fire standing up through the roof, the tank),
+//     upright, swaying, yellow-white at the root to deep orange at the tips.
+//     Normal blending, chroma kept (FX_REFL: the wet street mirrors them)
 //   - a warm PointLight (from the world's pre-allocated fire pool) that
 //     flickers with the flames, plus a light-registry entry so the rain
 //     falling through it glitters
 //   - a rising black smoke column: dark soft washes drifting downwind
 //   - over ~60 s it dies down to embers: fewer, lower flames, a dim light,
 //     sparks of embers, a thin smoke thread
+//   - (kind B) a POOL: burning fuel spread on the wet street, a sheet of low
+//     flame 3-4 m wide that burns 12 s, lying on the water (it reflects)
+// Sources are given in the car's own frame and `toWorld(v)` maps them each
+// step: a wreck that rolls onto its side carries its fire with it.
 // intensity() is 1 while it roars, ~0.2 as embers; the Game reads it for
 // the hot-wreck damage tick, the Hoods' hazard radius and the fire sound.
-// (Phase 3a review: the full blaze was 55 s, and a long battle's street
-// turned into a gallery of roaring wrecks; an old wreck now sinks to a warm
-// ember glow sooner: embers (I < 0.45) from ~59 s, the floor by ~70 s)
-// (Phase 3b: the taper starts at ~25 s, so ~40 s after the blast it is a
-// lower blaze with a hotter core, not the full roar)
+// douse(): the oldest of three roaring fires sinks to embers (the frame
+// rate's limit of two big fires, Cars.js).
 const ROAR = 25;     // s at full blaze
 const FADE = 35;     // s from full blaze down to embers
+const _v = new THREE.Vector3(), _w = new THREE.Vector3();
+
+// the flame recipe per source kind: rate (flames/s at full blaze), size
+// range, rise speed, life, spread (rx, rz, m), the white-hot root share
+const SRC = {
+  bay: { rate: 34, s: [0.8, 1.7], up: [1.1, 2.2], life: [0.4, 0.75], root: 0.35 },
+  cabin: { rate: 14, s: [0.55, 1.1], up: [0.7, 1.4], life: [0.3, 0.55], root: 0.15 },
+  // fire standing up through the roof (the cook-off): a tall column that
+  // settles to a cabin fire after ~10 s
+  roof: { rate: 30, s: [1.0, 2.0], up: [2.0, 3.2], life: [0.45, 0.8], root: 0.3 },
+  // the tank at the rear, low and wide
+  tank: { rate: 22, s: [0.6, 1.3], up: [0.8, 1.6], life: [0.35, 0.6], root: 0.4 },
+};
 
 export class Fire {
-  constructor(world, fx, { pos, yaw = 0, t0 = 0, cabin = null } = {}) {
+  constructor(world, fx, { pos, yaw = 0, t0 = 0, cabin = null, sources = null, toWorld = null, pool = null, seed = null } = {}) {
     this.world = world;
     this.fx = fx;
-    this.rng = world.rng.fork(7700 + Math.round(pos.x * 13 + pos.z * 7));
-    this.pos = pos.clone();              // the engine bay (flame root)
-    this.cabin = cabin ? cabin.clone() : null;
+    this.rng = world.rng.fork(seed ?? (7700 + Math.round(pos.x * 13 + pos.z * 7)));
+    this.toWorld = toWorld;
+    // the old two-source fire (engine bay + cabin, in world space)
+    this.sources = sources ? sources.map((s) => ({ ...s, acc: 0, w: new THREE.Vector3() }))
+      : [{ kind: 'bay', at: pos.clone(), rx: 0.42, rz: 0.36, world: true, acc: 0, w: pos.clone() }, ...(cabin ? [{ kind: 'cabin', at: cabin.clone(), rx: 0.35, rz: 0.35, world: true, acc: 0, w: cabin.clone(), noEmber: true }] : [])];
+    this.pos = new THREE.Vector3();          // the main source (light, sound, hazard)
     this.yaw = yaw;
     this.age = -t0;
-    this.acc = { flame: 0, cab: 0, smoke: 0, ember: 0 };
-    this.light = null;                   // a pooled PointLight while it burns
-    this.entry = world.lights.add({ position: pos.clone().add(new THREE.Vector3(0, 1.4, 0)), direction: new THREE.Vector3(0, -1, 0), halfAngle: Math.PI, range: 6, intensity: 0 });
+    this.acc = { smoke: 0, ember: 0, pool: 0 };
+    this.light = null;                       // a pooled PointLight while it burns
+    this.place();
+    this.entry = world.lights.add({ position: this.pos.clone().add(new THREE.Vector3(0, 1.4, 0)), direction: new THREE.Vector3(0, -1, 0), halfAngle: Math.PI, range: 6, intensity: 0 });
     this.flick = 1;
     this.wind = new THREE.Vector3(0.55, 0, 0.12);
+    // the fuel pool: { at (local), rx, rz (full size), life, spread (s) }
+    this.pool = pool ? { ...pool, w: new THREE.Vector3(), age: 0 } : null;
+    if (this.pool) {
+      this.poolEntry = world.lights.add({ position: new THREE.Vector3(), direction: new THREE.Vector3(0, -1, 0), halfAngle: Math.PI, range: 5, intensity: 0 });
+    }
+    this.doused = false;
+  }
+
+  // the sources' world positions (a rolled wreck carries them)
+  place() {
+    for (const s of this.sources) {
+      if (s.world) s.w.copy(s.at);
+      else s.w.copy(this.toWorld(s.at));
+    }
+    this.pos.copy(this.sources[0].w);
+    if (this.pool) this.pool.w.copy(this.pool.world ? this.pool.at : this.toWorld(this.pool.at)).setY(this.pool.y ?? 0.02);
   }
 
   intensity() {
@@ -46,6 +79,12 @@ export class Fire {
     const up = Math.min(1, a / 0.6);
     const down = a < ROAR ? 1 : Math.max(0.2, 1 - (a - ROAR) / FADE * 0.8);
     return up * down;
+  }
+
+  // the oldest of three roaring fires dies down to embers (Cars.js)
+  douse() {
+    if (this.age < ROAR + FADE) this.age = ROAR + FADE;
+    this.doused = true;
   }
 
   // flicker: two noisy sines and the odd gust
@@ -59,6 +98,7 @@ export class Fire {
 
   update(dt, t) {
     this.age += dt;
+    if (this.toWorld) this.place();
     const I = this.intensity();
     const F = this.fx, r = this.rng;
     const f = this.flicker(t);
@@ -70,57 +110,47 @@ export class Fire {
     }
     this.entry.intensity = I > 0 ? 0.5 * I * f : 0;
     this.entry.position.copy(this.pos).add(new THREE.Vector3(0, 1.4, 0));
+    this.updatePool(dt, f);
     if (I <= 0) return;
     const ember = I < 0.45;
-    // flames off the engine bay (as embers: low licks along the bay)
-    this.acc.flame += dt * (ember ? 12 : 34 * Math.max(0.3, I));
-    while (this.acc.flame >= 1) {
-      this.acc.flame -= 1;
-      const s = ember ? r.range(0.3, 0.55) : r.range(0.8, 1.7) * (0.65 + 0.55 * I);
-      const off = new THREE.Vector3(r.gauss() * 0.42, 0, r.gauss() * 0.36).applyAxisAngle(new THREE.Vector3(0, 1, 0), this.yaw);
-      // as it dies down the flames get lower and the white-hot roots take
-      // over more of the blaze (a hotter core, not a dimmer one)
-      const low = ember ? 0.5 : 0.55 + 0.45 * I;
-      const root = r.chance(0.35 + 0.45 * (1 - I));
-      F.fire.spawn({
-        pos: this.pos.clone().add(off).add(new THREE.Vector3(0, s * 0.4, 0)),
-        vel: new THREE.Vector3(this.wind.x * 0.5 + r.gauss() * 0.15, r.range(1.1, 2.2) * low, this.wind.z * 0.5 + r.gauss() * 0.15),
-        life: r.range(0.4, 0.75) * (ember ? 0.8 : 0.75 + 0.25 * I), size: [s * 0.75, s], grow: 0.35 * (ember ? 1 : 0.5 + 0.5 * I), rot: r.gauss() * 0.14, spin: r.gauss() * 0.3,
-        col: ember ? FIRE_COL.orange : root ? FIRE_COL.white : FIRE_COL.yellow, colEnd: FIRE_COL.deep, colPow: 1.3, cell: FIRE.FLAME[r.int(0, 3)],
-        fadeIn: 0.08, fadeOut: 0.35, drag: 0.5,
-      });
-    }
-    // the cabin burns lower
-    if (this.cabin && !ember) {
-      this.acc.cab += dt * 14 * I;
-      while (this.acc.cab >= 1) {
-        this.acc.cab -= 1;
-        const s = r.range(0.55, 1.1);
+    const up = new THREE.Vector3(0, 1, 0);
+    for (const S of this.sources) {
+      const R = SRC[S.kind] || SRC.bay;
+      if (ember && S.noEmber) continue;
+      // (the roof column settles into a cabin fire after ~10 s)
+      const roofK = S.kind === 'roof' ? Math.max(0.45, 1 - Math.max(0, this.age - 8) / 12) : 1;
+      S.acc += dt * (ember ? (S.kind === 'bay' || S.kind === 'tank' ? 12 : 4) : R.rate * Math.max(0.3, I) * (S.k ?? 1) * roofK);
+      while (S.acc >= 1) {
+        S.acc -= 1;
+        const s = ember ? r.range(0.3, 0.55) : r.range(R.s[0], R.s[1]) * (0.65 + 0.55 * I) * (S.kind === 'roof' ? 0.6 + 0.4 * roofK : 1);
+        const off = _v.set(r.gauss() * (S.rx ?? 0.4), 0, r.gauss() * (S.rz ?? 0.35)).applyAxisAngle(up, this.yaw);
+        const low = ember ? 0.5 : 0.55 + 0.45 * I;
+        const root = r.chance(R.root + 0.45 * (1 - I));
         F.fire.spawn({
-          pos: this.cabin.clone().add(new THREE.Vector3(r.gauss() * 0.35, s * 0.35, r.gauss() * 0.35)),
-          vel: new THREE.Vector3(r.gauss() * 0.1, r.range(0.7, 1.4), r.gauss() * 0.1),
-          life: r.range(0.3, 0.55), size: [s * 0.8, s], grow: 0.2, rot: r.gauss() * 0.14,
-          col: FIRE_COL.yellow, colEnd: FIRE_COL.deep, colPow: 1.2, cell: FIRE.FLAME[r.int(0, 3)], fadeIn: 0.1, fadeOut: 0.35,
+          pos: S.w.clone().add(off).add(_w.set(0, s * 0.4, 0)),
+          vel: new THREE.Vector3(this.wind.x * 0.5 + r.gauss() * 0.15, r.range(R.up[0], R.up[1]) * low * (S.kind === 'roof' ? roofK : 1), this.wind.z * 0.5 + r.gauss() * 0.15),
+          life: r.range(R.life[0], R.life[1]) * (ember ? 0.8 : 0.75 + 0.25 * I), size: [s * 0.75, s], grow: 0.35 * (ember ? 1 : 0.5 + 0.5 * I), rot: r.gauss() * 0.14, spin: r.gauss() * 0.3,
+          col: ember ? FIRE_COL.orange : root ? FIRE_COL.white : FIRE_COL.yellow, colEnd: FIRE_COL.deep, colPow: 1.3, cell: FIRE.FLAME[r.int(0, 3)],
+          fadeIn: 0.08, fadeOut: 0.35, drag: 0.5,
         });
       }
     }
     // the smoke column: a soft dark wash rising and drifting downwind -
     // translucent, the skyline ghosting through it, darkest where the puffs
-    // overlap over the fire (Phase 3a review: at 5.5 opaque puffs a second
-    // it was a solid black mass blotting out the towers, and the biggest
-    // 3a cost in the MSAA scene target: fewer, larger, thinner puffs)
+    // overlap over the fire
+    const top = this.sources.reduce((m, s) => (s.kind === 'roof' ? s : m), this.sources[0]);
     this.acc.smoke += dt * (ember ? 2.2 : 3.4);
     while (this.acc.smoke >= 1) {
       this.acc.smoke -= 1;
       const s = r.range(1.1, 1.8) * (ember ? 0.45 : 1);
       F.smoke.spawn({
-        pos: this.pos.clone().add(new THREE.Vector3(r.gauss() * 0.3, 1.6 + r.next() * 0.6, r.gauss() * 0.3)),
+        pos: top.w.clone().add(new THREE.Vector3(r.gauss() * 0.3, 1.6 + r.next() * 0.6, r.gauss() * 0.3)),
         vel: new THREE.Vector3(this.wind.x + r.gauss() * 0.2, r.range(1.5, 2.4) * (ember ? 0.6 : 1), this.wind.z + r.gauss() * 0.2),
         life: r.range(5, 8), size: [s, s], grow: r.range(0.55, 0.95), rot: r.next() * 6.28, spin: r.gauss() * 0.15,
         col: [0.004, 0.004, 0.004], alpha: r.range(0.3, 0.4) * (ember ? 0.55 : 1), drag: 0.25, fadeIn: 0.07, fadeOut: 0.6, cell: FIRE.SMOKE[r.int(0, 3)],
       });
     }
-    // embers: sparks rising off the dying fire
+    // embers: sparks rising off the fire
     this.acc.ember += dt * (ember ? 9 : 3);
     while (this.acc.ember >= 1) {
       this.acc.ember -= 1;
@@ -132,15 +162,52 @@ export class Fire {
     }
     // as embers: the bay glows - a few hot coals sitting on the wreck
     if (ember && r.chance(dt * 10)) {
-      const off = new THREE.Vector3(r.gauss() * 0.4, 0, r.gauss() * 0.3).applyAxisAngle(new THREE.Vector3(0, 1, 0), this.yaw);
+      const off = new THREE.Vector3(r.gauss() * 0.4, 0, r.gauss() * 0.3).applyAxisAngle(up, this.yaw);
       const s = r.range(0.12, 0.26);
       F.fire.spawn({ pos: this.pos.clone().add(off).add(new THREE.Vector3(0, 0.05, 0)), life: r.range(0.4, 0.9), size: [s, s * 0.6], rot: r.next() * 6.28,
         col: FIRE_COL.orange, colEnd: FIRE_COL.deep, cell: FIRE.BALL[r.int(0, 3)], fadeIn: 0.2, fadeOut: 0.5 });
     }
   }
 
+  // Burning fuel on the wet street: it spreads out from under the tank in
+  // ~0.8 s to its full 3-4 m, burns as a sheet of LOW flame (short tongues,
+  // crowded, their tips licking) for its life, and goes out from the edge
+  // in; a flame on the water is mirrored like any fire (FX_REFL)
+  updatePool(dt, f) {
+    const P = this.pool;
+    if (!P) return;
+    P.age += dt;
+    const life = P.life ?? 12;
+    const k = P.age < 0 ? 0 : Math.min(1, P.age / (P.spread ?? 0.8)) * Math.max(0, Math.min(1, (life - P.age) / 3));
+    this.poolEntry.intensity = 0.45 * k * f;
+    this.poolEntry.position.copy(P.w).add(new THREE.Vector3(0, 0.6, 0));
+    if (k <= 0) return;
+    const r = this.rng, F = this.fx;
+    const rx = P.rx * (0.35 + 0.65 * Math.min(1, P.age / (P.spread ?? 0.8))), rz = P.rz * (0.35 + 0.65 * Math.min(1, P.age / (P.spread ?? 0.8)));
+    // flames per second: by the sheet's area, thinned as it goes out
+    this.acc.pool += dt * 85 * rx * rz * (0.4 + 0.6 * k);
+    const c = Math.cos(this.yaw), s = Math.sin(this.yaw);
+    while (this.acc.pool >= 1) {
+      this.acc.pool -= 1;
+      // a point in the ellipse, denser toward the middle
+      const a = r.next() * Math.PI * 2, d = Math.sqrt(r.next()) * (0.55 + 0.45 * k);
+      const lx = Math.cos(a) * rx * d, lz = Math.sin(a) * rz * d;
+      const x = P.w.x + lx * c + lz * s, z = P.w.z - lx * s + lz * c;
+      const edge = 1 - d;
+      const sz = r.range(0.2, 0.5) * (0.55 + 0.6 * edge) * (0.6 + 0.4 * k);
+      F.fire.spawn({
+        pos: new THREE.Vector3(x, P.w.y + sz * 0.38, z),
+        vel: new THREE.Vector3(this.wind.x * 0.4 + r.gauss() * 0.1, r.range(0.35, 0.9) * (0.5 + edge), this.wind.z * 0.4 + r.gauss() * 0.1),
+        life: r.range(0.25, 0.5), size: [sz * 0.9, sz], grow: 0.25, rot: r.gauss() * 0.2, spin: r.gauss() * 0.3,
+        col: r.chance(0.3 + 0.3 * edge) ? FIRE_COL.white : FIRE_COL.yellow, colEnd: FIRE_COL.deep, colPow: 1.4, cell: FIRE.FLAME[r.int(0, 3)],
+        fadeIn: 0.06, fadeOut: 0.35, drag: 0.6,
+      });
+    }
+  }
+
   dispose() {
     this.world.lights.remove(this.entry);
+    if (this.poolEntry) this.world.lights.remove(this.poolEntry);
     if (this.light) this.light.intensity = 0;
   }
 }
