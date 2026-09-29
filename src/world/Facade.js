@@ -343,6 +343,9 @@ export class Facade {
         }
       }
     }
+    // (the block's edges read them: every gap in the building line is
+    // closed by a thing, stages/block/parts/bounds.js)
+    this.farBlocks = blocks;
     const mass = new THREE.Mesh(merge(massParts), M.brickFar);
     mass.castShadow = false; mass.receiveShadow = true;
     const trim = new THREE.Mesh(merge(trimParts), M.brickFar);
