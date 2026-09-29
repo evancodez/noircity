@@ -30,9 +30,10 @@ const lighterUp = (F) => DF.cam('lighter', ...LIGHT, F, EF);
 // below and to the right of the mouth)
 const cigLips = DF.cam('cigarette', [0.0, -0.088, -0.07], [0.02, -0.05, -1], [0.7, -0.7, 0], HP.cigLipsR ? HP.cigLipsR.F : null, [0.14, -0.42, -0.06]);
 
-// the glass where it stands (or held off it), up at the lips (tilt 0 | 1)
+// the glass where it stands (or held off it), up at the lips (tilt 0 | 1;
+// the hand on its left side, fingers round the front, the wrist below)
 const glassAt = (off) => DF.at('glass', GRIP.glass, EL, off);
-const glassUp = (k) => DF.cam('glass', [-0.005, -0.15 + 0.012 * k, -0.2], [0, 0.72 - 0.3 * k, 0.69 + 0.25 * k], [0, 1, 0], GRIP.glass, [-0.14, -0.42, -0.02]);
+const glassUp = (k) => DF.cam('glass', [-0.005, -0.17 + 0.012 * k, -0.24], [0, 0.72 - 0.3 * k, 0.69 + 0.25 * k], [0, -1, 0], GRIP.glass, [-0.14, -0.42, -0.02]);
 // the wallet up in front, turned to the left (open 0 | 1)
 const walletUp = (k) => DF.cam('wallet', [0.035 - 0.02 * k, -0.14, -0.3], [-0.25 - 0.5 * k, 0.2, 0.95], [0, 1, 0.2], GRIP.wallet, [0.2, -0.45, -0.05]);
 

@@ -69,7 +69,7 @@ const SOCKETS = {
   lighter: { bone: 'hand', p: [-0.006, -0.03, -0.062], r: [0, 0, Math.PI / 2] },
   cigarettePack: { bone: 'hand', p: [0.0, -0.03, -0.058], r: [Math.PI / 2, 0, 0] },
   // flat between the fingers and the thumb, its face in the palm
-  wallet: { bone: 'hand', p: [0.0, -0.03, -0.085], r: [0, 0, 0] },
+  wallet: { bone: 'hand', p: [0.0, -0.03, -0.09], r: [Math.PI, 0, 0] },
   matchbook: { bone: 'i1', p: [0.0, -0.012, -0.012], r: [0, 0, 0] },
   bottle: { bone: 'hand', p: [0.004, -0.04, -0.05], r: [0, 0, Math.PI / 2] },
   plate: { bone: 'hand', p: [0.0, -0.02, -0.07], r: [0, 0, 0] },
