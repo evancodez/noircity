@@ -39,14 +39,23 @@ export function buildPendants(kit, lamps) {
     kit.add(shade, shadeMat, { parent: head, cast: false });
     kit.add(inner, M.lampInner, { parent: head, cast: false });
     const bulb = kit.add(mergeGeos([bulbGeo, disc]), M.bulb, { parent: head, cast: false });
-    const lamp = lamps.addCustom({ head: V3(x, P.headY, z), axis: V3(0, -1, 0), height: P.headY - D.floorY, half, real: true, bulb, fadeEnd: 0.9, edgeSoft: 0.35, strength: 0.75, tag: 'pendant' });
-    // (the pool light: brighter than a street lamp's share, a tighter
-    // pool, so the counter goes paper white under it and falls off to
-    // black between; the cone keeps its street-lamp strength)
+    // The cone (fix round A2) is light in smoky air, not a bell: it is
+    // drawn only down to the counter / table top (height), gone by 60 % of
+    // the way (fadeEnd), its edge dissolving over the outer third of its
+    // radius (edgeSoft), faint (strength): the smoke curls are the room's
+    // haze (the cone shader). The registry entry keeps the whole drop to the
+    // floor (range), as before.
+    const drop = kind === 'counter' ? P.headY - D.counter.topY : P.headY - D.booths.tableY;
+    const lamp = lamps.addCustom({ head: V3(x, P.headY, z), axis: V3(0, -1, 0), height: drop, half, real: true, bulb, fadeEnd: 0.6, edgeSoft: 0.62, strength: 0.75, tag: 'pendant' });
+    if (lamp.entry) lamp.entry.range = P.headY - D.floorY;
+    // (the pool light: a round pool about 1.5 m across on the counter top,
+    // paper white in the middle, a grey rim, black between two pools where
+    // neither reaches: angle ~0.5 rad at 1.4 m, a wide penumbra for the
+    // rim; the booth lamps a softer share)
     if (lamp.light) {
-      lamp.light.intensity = kind === 'counter' ? 115 : 55;
-      lamp.light.angle = 0.62;
-      lamp.light.penumbra = 0.6;
+      lamp.light.intensity = kind === 'counter' ? 120 : 55;
+      lamp.light.angle = kind === 'counter' ? 0.56 : 0.62;
+      lamp.light.penumbra = 0.55;
       lamp.light.distance = 4.6;
     }
     // (out of sight it is off: no pool share, no cone, no rain light)

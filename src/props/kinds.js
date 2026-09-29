@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { PM, lathe, flutedLathe, slab, boxUV, tubeAlong, handleArc, flatPoly, uvRect, planarUV, mergeGeos, smooth, AT, V3, V2, hash } from './lib.js';
 import { makeLiquid } from './liquid.js';
+import { accentMaterial } from '../render/accents.js';
 
 // The prop kinds (docs/story/CONTRACTS.md §8.1), each a function of
 // (variant, lod) returning a spec:
@@ -19,6 +20,24 @@ const _q = new THREE.Quaternion(), _up = new THREE.Vector3(0, 1, 0);
 // a liquid's surface level while its vessel is turned by the world
 // quaternion q (the world's up seen from the vessel)
 function upIn(q) { return _up.set(0, 1, 0).applyQuaternion(_q.copy(q).invert()).clone(); }
+
+// a lighter's flame: a tongue of two shells (an outer, a hotter core) in
+// the registry's flame accent; hidden until lit
+function flameGroup(inkId) {
+  const g = new THREE.Group();
+  g.name = 'flame';
+  const prof = [[0.0001, 0], [0.0032, 0.0018], [0.005, 0.0075], [0.0046, 0.015], [0.0027, 0.023], [0.0009, 0.029], [0.0001, 0.032]];
+  const geo = lathe(prof, 16);
+  const outer = new THREE.Mesh(geo, accentMaterial('flame', { gain: 1 }));
+  const core = new THREE.Mesh(geo, accentMaterial('flame', { gain: 2.2 }));
+  core.scale.set(0.5, 0.62, 0.5);
+  core.position.y = 0.0012;
+  for (const m of [outer, core]) { m.castShadow = false; m.userData.noRay = true; m.userData.inkId = inkId; g.add(m); }
+  g.visible = false;
+  g.userData.gain = 1;
+  g.setGain = (k) => { g.userData.gain = k; outer.material.userData.setGain(k); core.material.userData.setGain(2.2 * k); };
+  return g;
+}
 
 // a handle (a torus arc) on the +x side of a cup / mug
 function sideHandle(R, r, cx, cy, lod, open = 1.15) {
@@ -43,8 +62,10 @@ export const SPECS = {
     const geo = flutedLathe(prof, { segs: S(lod, 80), count: 10, depth: (y, i) => (i <= outerRows && y > 0.004 && y < 0.047 ? 0.0011 * Math.min(1, (0.047 - y) / 0.006) * Math.min(1, (y - 0.004) / 0.003) : 0) });
     const inner = [[R - wall - 0.002, base], [R - wall, base + 0.004], [R - wall, H]];
     const liq = makeLiquid(inner, { y0: base, yFull: H * 0.4, mat: P.amber, segs: S(lod, 40) });
+    // a white tick where the rim catches the light (fix round A5)
+    const rimTick = new THREE.TorusGeometry(R - 0.0009, 0.00075, 4, S(lod, 10), 0.75).rotateX(Math.PI / 2).rotateY(0.35).translate(0, H - 0.0004, 0);
     return {
-      parts: [{ geo, mat: P.glass, id: 0, name: 'glass' }, { mesh: liq.mesh, id: 1 }],
+      parts: [{ geo, mat: P.amberGlass, id: 0, name: 'glass' }, { mesh: liq.mesh, id: 1 }, { geo: rimTick, mat: P.tick, id: 0, cast: false }],
       grip: [0, 0.042, 0], accent: 'amber',
       init(g, ud) {
         ud.fill = 1;
@@ -63,7 +84,7 @@ export const SPECS = {
     const P = PM();
     const seg = S(lod, 44);
     const shapes = {
-      scotch: { r: 0.046, h: 0.28, sh: 0.165, neck: 0.0135, glass: P.glass, liquid: P.amber, label: AT.scotch, labelY: [0.05, 0.13], cork: true },
+      scotch: { r: 0.046, h: 0.28, sh: 0.165, neck: 0.0135, glass: P.amberGlass, liquid: P.amber, label: AT.scotch, labelY: [0.05, 0.13], cork: true, tick: true },
       rye: { r: 0.04, h: 0.3, sh: 0.18, neck: 0.013, glass: P.bottleDark, label: AT.rye, labelY: [0.06, 0.13], cork: true },
       gin: { r: 0.041, h: 0.29, sh: 0.2, neck: 0.014, glass: P.glassThick, label: AT.gin, labelY: [0.07, 0.14], square: true },
       beer: { r: 0.031, h: 0.235, sh: 0.12, neck: 0.012, glass: P.bottleDark, label: AT.rye, labelY: [0.04, 0.09], cap: true, longNeck: true },
@@ -97,6 +118,15 @@ export const SPECS = {
       geo = smooth(geo);
     }
     const parts = [{ geo, mat: B.glass, id: 0, name: 'glass' }];
+    if (B.tick) {
+      // one long white highlight down the shoulder and the body's edge
+      // (fix round A5: glass reads as glass by its highlight), a hair proud
+      // of the glass on the side toward the light, clear of the label
+      const a = 0.62, off = 0.0009;
+      const at = (rr, y) => new THREE.Vector3(Math.sin(a) * (rr + off), y, Math.cos(a) * (rr + off));
+      const pts = [at(neck * 1.2, sh + 0.046), at(r * 0.45, sh + 0.036), at(r * 0.78, sh + 0.026), at(r * 0.96, sh + 0.012), at(r, sh - 0.004), at(r, B.labelY[1] + 0.012)];
+      parts.push({ geo: tubeAlong(pts, 0.0011, 5, 40), mat: P.tick, id: 0, cast: false });
+    }
     // the label: a band just proud of the body, facing +z
     const [ly0, ly1] = B.labelY;
     const arc = B.square ? 1.3 : 2.1;
@@ -116,7 +146,7 @@ export const SPECS = {
     let liq = null;
     if (B.liquid) {
       const inner = [[r - 0.004, 0.006], [r - 0.004, sh], [r * 0.7, sh + 0.024], [neck - 0.002, sh + 0.05], [neck - 0.002, lipY - 0.01]];
-      liq = makeLiquid(inner, { y0: 0.006, yFull: sh * 0.95, mat: B.liquid, segs: S(lod, 36) });
+      liq = makeLiquid(inner, { y0: 0.006, yFull: sh * 0.95, mat: B.liquid, segs: S(lod, 36), meniscus: P.amberLine });
       parts.push({ mesh: liq.mesh, id: 3 });
     }
     return {
@@ -124,6 +154,7 @@ export const SPECS = {
       init(g, ud) {
         ud.neck = new THREE.Vector3(0, lipY, 0);   // where the stream leaves it
         if (!liq) return;
+        if (liq.ring) liq.ring.userData.inkId = ud.inkId + 3;
         ud.fill = 1;
         ud.setFill = (f) => { ud.fill = Math.max(0, Math.min(1, f)); liq.set(ud.fill); };
         ud.setTilt = (q) => { ud.tilt = q ? q.clone() : null; liq.set(ud.fill, q ? upIn(q) : _up.set(0, 1, 0)); };
@@ -335,7 +366,8 @@ export const SPECS = {
         { geo: paper, mat: P.paperLight, id: 0, name: 'paper', keep: true },
         { geo: cap0, mat: P.paper, id: 0, name: 'mouthEnd', keep: true },
         { geo: tipCap, mat: P.food, id: 0, name: 'tipEnd', keep: true },
-        { geo: ember, mat: P.ember, id: 1, name: 'ember', cast: false, keep: true },
+        // (its own ember material: userData.setGlow(k) flares this tip alone)
+        { geo: ember, mat: accentMaterial('ember'), id: 1, name: 'ember', cast: false, keep: true },
         { geo: ashG, mat: P.ash, id: 1, name: 'ash', keep: true },
       ],
       grip: [0, 0.022, 0],
@@ -359,6 +391,9 @@ export const SPECS = {
           ud.tipPos = new THREE.Vector3(0, len + a, 0);
         };
         ud.setTip = (s) => { ud.tip = s; if (s === 'ash' && ud.ashLen < 0.006) ud.ashLen = 0.012; if (s === 'lit' && ud.ashLen > 0.004) ud.ashLen = 0.002; place(); };
+        // the ember's glow (fix round A11): gain 1 at rest, 3 on a drag
+        ud.glow = 1;
+        ud.setGlow = (k) => { ud.glow = k; const m = by.ember.material; if (m.userData.setGain) m.userData.setGain(k); };
         ud.setAsh = (m) => { ud.ashLen = Math.max(0, m); place(); };
         // the ash falls: returns where it was (the caller drops a flake)
         ud.dropAsh = () => { const p = new THREE.Vector3(0, L - ud.burnt + ud.ashLen * 0.5, 0); g.localToWorld(p); ud.ashLen = 0; place(); return p; };
@@ -448,10 +483,21 @@ export const SPECS = {
       grip: [0, 0.026, 0],
       init(g, ud, by) {
         ud.open = 0;
-        ud.flame = new THREE.Vector3(-0.004, hb + 0.021, 0);   // where lane 3's flame stands
+        ud.flame = new THREE.Vector3(-0.004, hb + 0.019, 0);
         ud.setOpen = (k) => { ud.open = Math.max(0, Math.min(1, k)); const e = ud.open * ud.open * (3 - 2 * ud.open); by.lid.rotation.z = -e * 2.35; };
         // the wheel turns (a thumb strike): radians
         ud.strike = (a = 2) => { by.wheel.rotation.z += a; };
+      },
+      // the flame (fix round A6), added after the lighter is measured (it
+      // is not part of its size): a tongue ~3 cm tall standing on the wick,
+      // hidden until lit - ud.flame.visible = true; ud.flame.setGain(g) (1 a
+      // steady flame, ~2 as it catches); it flickers on the game's clock
+      // (accents.js). ud.flame.position is where it stands, as before.
+      after(g, ud) {
+        const f = flameGroup(ud.inkId + 1);
+        f.position.copy(ud.flame);
+        ud.flame = f;
+        g.add(f);
       },
     };
   },

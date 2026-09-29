@@ -5,7 +5,8 @@ import { PROP_KINDS, BOTTLE_VARIANTS } from '../../props/index.js';
 // Lane 5's presets: the diner's room and the prop library.
 //   propsheet                   every kind on the counter under a lamp, two rows, 0.6 m from the eye
 //   propsheet&kind=<k>          one prop filling the frame (&variant=<v> for a bottle;
-//                               &open=<0..1>, &fill=<0..1>, &tip=<unlit|lit|ash>, &turn=<rad>)
+//                               &open=<0..1>, &fill=<0..1>, &tip=<unlit|lit|ash>, &turn=<rad>,
+//                               &flame=<gain> a lighter lit, &glow=<k> a cigarette's ember)
 //   diner_seat                  the player's view from stool 4 at the back bar (eye y 1.60, fov 68)
 //   diner_left / diner_right    from the stool, down the counter toward the door and windows /
 //                               toward the jukebox
@@ -38,11 +39,17 @@ function stagePropSheet(stage, camera, controller) {
     if (q.has('open')) ud.setOpen(parseFloat(q.get('open')));
     if (q.has('fill')) ud.setFill(parseFloat(q.get('fill')));
     if (q.has('tip')) ud.setTip(q.get('tip'));
+    // (&flame=<gain>: the lighter's flame lit, fix round A6; &glow=<k>: a
+    // cigarette's ember at gain k, A11)
+    if (q.has('flame') && ud.flame && ud.flame.isObject3D) { ud.flame.visible = true; ud.flame.setGain(parseFloat(q.get('flame')) || 1); }
+    if (q.has('glow') && ud.setGlow) ud.setGlow(parseFloat(q.get('glow')) || 1);
     o.rotation.y = parseFloat(q.get('turn') || '0.5');
     // frame it: the eye on the counter's front, looking down at it
-    const s = Math.max(ud.size.x, ud.size.y, ud.size.z, 0.03);
+    // (a lit lighter: its flame stands ~3.5 cm over it, frame it too)
+    const lit = q.has('flame') && ud.flame && ud.flame.isObject3D ? 0.035 : 0;
+    const s = Math.max(ud.size.x, ud.size.y + lit, ud.size.z, 0.03);
     const dist = s / (2 * Math.tan((20 * Math.PI) / 180)) * 1.2 + 0.03;
-    const cy = top + ud.size.y * 0.45;
+    const cy = top + (ud.size.y + lit) * 0.45;
     const pitch = -0.42;
     const pose = { x: C.frontX - 0.3 + Math.cos(pitch) * dist, y: cy - Math.sin(pitch) * dist, z: z0, yaw: Math.PI / 2, pitch, fov: 40 };
     holdEye(controller, pose);
@@ -126,7 +133,9 @@ function stageAlive(stage, camera, controller, game) {
 }
 export const presets = {
   propsheet: { x: C.frontX + 0.6, z: 3.2, y: 0, yaw: -Math.PI / 2, pitch: -0.4, fov: 68, t: 1, stage: stagePropSheet },
-  diner_seat: roomView({ x: SX - 0.03, y: 1.6, z: S4, yaw: Math.PI / 2, pitch: -0.1, fov: 68 }),
+  // (fix round A1: lane B's seated eye, 0.12 m forward of the stool's
+  // centre, square to the counter, pitched a little down)
+  diner_seat: roomView({ x: -13.87, y: 1.6, z: S4, yaw: Math.PI / 2, pitch: -0.14, fov: 68 }),
   diner_left: roomView({ x: SX, y: 1.6, z: S4, yaw: -0.5, pitch: -0.05, fov: 68 }),
   diner_right: roomView({ x: SX + 0.05, y: 1.6, z: S4, yaw: -0.07, pitch: -0.08, fov: 68 }),
   diner_wide: roomView({ x: -12.75, y: 1.8, z: -5.05, yaw: Math.PI - 0.22, pitch: -0.1, fov: 70 }),

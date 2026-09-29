@@ -37,6 +37,11 @@ export function makeGroundUniformsShared(tex) {
     uImpacts: { value: impacts },
     uBlasts: { value: blasts },
     uReflStrength: { value: 1.0 },
+    // where a neon sign's sheen may lie on the wet ground (fix round A7):
+    // z from .x to .y (under the sign, no wider), full out to x = .z, gone by
+    // x = .w (the pavement under the sign; the stage sets it: the block's
+    // diner part). The default lets it lie anywhere.
+    uNeonZone: { value: new THREE.Vector4(-1e5, 1e5, 1e5, 2e5) },
     uFast: { value: 1 },          // Phase 3b fast paths (0: the 3a path, __noir.perfLegacy)
     uGroundDebug: { value: 0 },   // ?gdbg=: 1 base, 2 direct, 3 column, 4 sheen, 5 dash, 6 rSharp*puddle, 7 blobs, 8 near wash
   };
@@ -85,6 +90,7 @@ export function makeGroundMaterial(U, { paving = 0 } = {}) {
       uniform vec2 uRes;
       uniform vec4 uImpacts[ ${MAX_IMPACTS} ];
       uniform vec4 uBlasts[ ${MAX_BLASTS} ];
+      uniform vec4 uNeonZone;
       varying vec3 vWorld;
       varying vec3 vViewPos;
       varying vec4 vReflCoord;
@@ -420,7 +426,9 @@ export function makeGroundMaterial(U, { paving = 0 } = {}) {
         // (fix 8: at the player's feet a sheen is broken hard by the ripples
         // - sparse slivers - and held under display ~0.6 below: a lamp a few
         // metres off left a white paint blob in the bottom corner)
-        float feet = smoothstep( 3.0, 7.0, dist );
+        // (fix round A8: the near lamp's column runs on to ~y 800 of 900
+        // in the street frame before it is gone: the hold starts nearer)
+        float feet = smoothstep( 2.2, 5.2, dist );
         covIn *= mix( 0.3, 1.0, feet );
         float colMask = smoothstep( 0.003, 0.08, colL );
         float cov = mix( covOut, covIn, colMask );
@@ -457,7 +465,10 @@ export function makeGroundMaterial(U, { paving = 0 } = {}) {
         // white) and its strength is carried by the dash COVERAGE instead
         // (cov above: ~80 % at the core, sparse slivers in the flanks); the
         // gaps keep ~4 %: dark grey inside a core, black in the flanks.
-        float colB = 0.45 * ( 1.0 - exp( - colL / 0.05 ) );
+        // (fix round A8: the plateau prints PAPER white - the column's
+        // brightness saturates sooner, so a column's mid-length dashes are
+        // white slivers with dark gaps, not grey-white ones)
+        float colB = 0.5 * ( 1.0 - exp( - colL / 0.028 ) );
         // aerial perspective on the columns: every far emitter's streak
         // converges on the road under the vanishing point, where they summed
         // (with the direct lamp pools) into a lit white plate. Beyond ~25 m a
@@ -516,9 +527,19 @@ export function makeGroundMaterial(U, { paving = 0 } = {}) {
         vec3 colNeon = colC * neonC;
         colC -= colNeon;
         colNeon *= 0.55 * smoothstep( 0.4, 0.6, fStreak );
+        // (fix round A7: the sign's sheen lies on the pavement UNDER the
+        // sign - no wider than it, gone before the kerb - in broken flecks,
+        // under display ~0.6: it ran across the road as a solid blue plate)
+        float neonZ = smoothstep( uNeonZone.x - 0.2, uNeonZone.x + 0.25, p.y ) * ( 1.0 - smoothstep( uNeonZone.y - 0.25, uNeonZone.y + 0.2, p.y ) )
+                    * ( 1.0 - smoothstep( uNeonZone.z, uNeonZone.w, p.x ) );
+        float neonFl = smoothstep( 0.5, 0.6, texture2D( tNoise, p * vec2( 2.9, 1.6 ) + 3.7 ).g )
+                     * smoothstep( 0.35, 0.55, texture2D( tNoise, p * vec2( 0.9, 0.5 ) + 1.3 ).b );
+        colNeon *= neonZ * neonFl * 0.3;
         float fleck = smoothstep( 0.56, 0.64, texture2D( tNoise, p * vec2( 0.45, 1.6 ) + 5.1 ).r )
                     * smoothstep( 0.3, 0.6, dash );
-        vec3 refl = colC * mix( 0.04, 1.0, dash ) + colBlood * 0.35 * fleck
+        // (a column's dashes cut crisp: a sliver is lit or it is a gap)
+        float dashC = mix( dash, smoothstep( 0.3, 0.62, dash ), colMask );
+        vec3 refl = colC * mix( 0.04, 1.0, dashC ) + colBlood * 0.35 * fleck
                   + colFire * mix( 0.02, 1.0, dash )
                   + colNeon * mix( 0.0, 1.0, dash )
                   + sheen * ( 0.4 + 1.2 * dash )       // the dark-grey wet look

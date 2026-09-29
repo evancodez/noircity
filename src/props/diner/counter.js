@@ -39,11 +39,15 @@ export function buildCounter(kit) {
   kit.add(kit.box(x1, x1 + 0.006, top - 0.07, top - 0.052, C.z0, C.z1), M.steel, { cast: false });
   kit.add(kit.box(x1, x1 + 0.002, F + 0.52, F + 0.53, C.z0 + 0.02, C.z1 - 0.02), M.enamelDark, { cast: false });
   kit.piece();
-  out.top = kit.add(slab(C.depth + 0.05, 0.035, C.z1 - C.z0 + 0.04, { bevel: 0.004, corner: 0.02 }).translate((x0 + x1 + 0.05) / 2, top - 0.035, (C.z0 + C.z1) / 2), M.counterTop);
+  // (fix round A1: the top barely overhangs the front, so from the seated
+  // eye its rolled steel edge runs across the bottom of the frame; with a
+  // 5 cm lip it lay just under it and the counter read as a floor)
+  const lip = 0.012;
+  out.top = kit.add(slab(C.depth + lip, 0.035, C.z1 - C.z0 + 0.04, { bevel: 0.004, corner: 0.02 }).translate((x0 + x1 + lip) / 2, top - 0.035, (C.z0 + C.z1) / 2), M.counterTop);
   // the rolled steel edge along the front and round both ends
   kit.piece();
   const edge = [];
-  const ex = x1 + 0.05, ey = top - 0.016;
+  const ex = x1 + lip, ey = top - 0.016;
   edge.push(new THREE.CylinderGeometry(0.021, 0.021, C.z1 - C.z0 + 0.0, 20, 1, true).rotateX(Math.PI / 2).translate(ex, ey, (C.z0 + C.z1) / 2));
   for (const [zz, s] of [[C.z0 - 0.02, -1], [C.z1 + 0.02, 1]]) {
     edge.push(new THREE.CylinderGeometry(0.021, 0.021, C.depth + 0.03, 20, 1, true).rotateZ(Math.PI / 2).translate((x0 + ex) / 2 - 0.015, ey, zz));
@@ -386,7 +390,9 @@ export function buildBackBar(kit) {
 export function buildPieCase(kit, buildProp) {
   const { M } = kit;
   const g = new THREE.Group();
-  const cx = C.frontX - 0.3, cz = C.z0 + 0.45, y = C.topY;
+  // (under the last counter pendant, z -1.75: the pie on its stand sits in
+  // the lamp's pool and reads through the glass)
+  const cx = C.frontX - 0.3, cz = DINER.pendants.z[5], y = C.topY;
   g.position.set(cx, y, cz);
   kit.g.add(g);
   kit.piece();
@@ -396,7 +402,9 @@ export function buildPieCase(kit, buildProp) {
   for (const sx of [-1, 1]) for (const sz of [-1, 1]) post(sx * w / 2, sz * d / 2);
   fr.push(slab(w + 0.04, 0.02, d + 0.04, { bevel: 0.004, corner: 0.01 }));
   fr.push(slab(w + 0.03, 0.018, d + 0.03, { bevel: 0.004, corner: 0.01 }).translate(0, h + 0.02, 0));
-  kit.add(mergeGeos(fr), M.steel, { parent: g });
+  // (the frame casts no shadow: its top is a rim round a glass lid, and as a
+  // solid caster it put the pie in the dark under the lamp over it)
+  kit.add(mergeGeos(fr), M.steel, { parent: g, cast: false });
   const panes = [
     new THREE.PlaneGeometry(d, h).rotateY(Math.PI / 2).translate(w / 2, h / 2 + 0.02, 0),
     new THREE.PlaneGeometry(d, h).rotateY(-Math.PI / 2).translate(-w / 2, h / 2 + 0.02, 0),
@@ -406,7 +414,9 @@ export function buildPieCase(kit, buildProp) {
   // (one mesh per pane, each flagged userData.glass: lane 3's pieCase break
   // turns each into a pane of its own and shatters it)
   const caseGlass = M.std('caseGlass', 0x505050, 0.12, 'metal', { transparent: true, opacity: 0.12, depthWrite: false });
-  for (const pg of panes) kit.add(pg, caseGlass, { parent: g, cast: false }).userData.glass = true;
+  // (the ink sees through the panes: inkSkip keeps them out of the id pass,
+  // so the pie and its stand print with their own contours behind them)
+  for (const pg of panes) { const m = kit.add(pg, caseGlass, { parent: g, cast: false }); m.userData.glass = true; m.userData.inkSkip = true; }
   // a stand, a pie on it, a second pie lower, half gone
   const stand = lathe([[0.0001, 0.02], [0.06, 0.02], [0.02, 0.03], [0.018, 0.12], [0.14, 0.13], [0.145, 0.137], [0.0001, 0.137]], 40);
   kit.add(stand, M.steel, { parent: g });

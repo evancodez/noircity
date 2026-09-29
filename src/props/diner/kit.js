@@ -22,6 +22,8 @@ export function roomMats() {
   const glow = (name, v, extra = {}) => {
     const m = new THREE.MeshBasicMaterial({ color: new THREE.Color(v, v, v), ...extra });
     m.name = 'diner_' + name;
+    // (a lit panel prints its own flat light: the ink's 'lit' class)
+    m.userData.inkSurface = 'lit';
     return m;
   };
   MATS = {

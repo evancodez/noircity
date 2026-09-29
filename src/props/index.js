@@ -123,6 +123,8 @@ export function buildProp(kind, { lod = 0, variant = null } = {}) {
   // unit cylinder until its init scales it)
   const box = new THREE.Box3().setFromObject(g);
   ud.size = box.isEmpty() ? new THREE.Vector3() : box.getSize(new THREE.Vector3());
+  // (what the kind adds that is not part of its size: a lighter's flame)
+  if (S.after) S.after(g, ud, by);
   return g;
 }
 
