@@ -458,7 +458,7 @@ function buildHand(F, sgn, g) {
   const W = F.rig.BIND[sgn > 0 ? 'handL' : 'handR'];
   const k = g.s ?? 1, fist = !!g.fist;
   const C = fist ? new THREE.Vector3(W.x, W.y - 0.058 * k, W.z + 0.004) : new THREE.Vector3(W.x - sgn * 0.004, W.y - 0.075 * k, W.z + 0.006);
-  const R = (fist ? [0.029, 0.045, 0.037] : [0.025, 0.082, 0.045]).map((r) => r * k);
+  const R = (fist ? [0.029, 0.045, 0.037] : [0.029, 0.08, 0.047]).map((r) => r * k);
   const nu = seg(32, 10), nv = seg(22, 8);
   const geo = grid(nu, nv, (u, v, p) => {
     const b = v * Math.PI, a = u * TAU;
@@ -470,8 +470,8 @@ function buildHand(F, sgn, g) {
     let x = dx * R[0] * r, y = dy * R[1] * r, z = dz * R[2] * r;
     if (!fist) {
       const tip = sstep(-0.2, -1, dy);
-      x -= sgn * 0.018 * k * tip;
-      z *= 1 - 0.25 * tip;
+      x -= sgn * 0.01 * k * tip;
+      z *= 1 - 0.18 * tip;
     }
     p.set(C.x + x, C.y + y, C.z + z);
   });

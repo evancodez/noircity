@@ -10,6 +10,7 @@ import { buildProp } from '../../props/index.js';
 //                                  so t is the time into it (default br_guard)
 //     &side=1                      the eye 2.1 m off his right side, over the counter
 //     &round=3                     round three: blood, the cap loose
+//     &hit=head|body               a blow lands at t = 0 (c.hit: the reaction clip)
 //   brawlstrip&clip=<name>          five of him side by side on the street under
 //                                  a lamp, the clip at tell, wind, contact,
 //                                  follow and recover (&side=1: in profile)
@@ -55,6 +56,10 @@ function stageBrawlStudy(stage, camera, controller, game) {
   // lights; then the clip starts with the clock, so t is its time)
   game.warmup = 1;
   game.afterWarmup = () => {
+    // hit=head|body: a blow lands at t = 0 (from the eye: c.hit, as lane 7's
+    // rules call it; round 3 knocks the cap off)
+    const hz = q.get('hit');
+    if (hz) { c.hit({ zone: hz, power: 0.8, dir: new THREE.Vector3(-Math.sin(yaw) + 0.5 * Math.cos(yaw), 0, -Math.cos(yaw) - 0.5 * Math.sin(yaw)).normalize() }); return; }
     if (name === 'br_guard') return;
     const h = c.play(name, { fade: 0 });
     if (name === 'br_bottle') bottleHands(c, h);

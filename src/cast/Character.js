@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { CAST_CLIPS } from './clips.js';
 import { KO_D, IS_ADDITIVE } from './castAnim.js';
-import { newspaper, holder, umbrella, blood } from './extras.js';
+import { newspaper, holder, umbrella, blood, cloth } from './extras.js';
 import { RNG } from '../util/rng.js';
 
 // A Character (docs/story/CONTRACTS.md §6): one figure of the story on the
@@ -76,6 +76,7 @@ export class Character {
     if (kind === 'oldman') this.extras.push(newspaper(this));
     if (kind === 'couple_her') this.extras.push(holder(this));
     if (kind === 'couple_him') this.extras.push(umbrella(this));
+    if (kind === 'waitress') { this._cloth = cloth(this); this.extras.push(this._cloth); }
     if (kind === 'brawler') { this._blood = blood(this); this.extras.push(this._blood); }
     if (this.costumed) fig.extras = this.extras;
     fig.afterPose = null;
@@ -107,7 +108,12 @@ export class Character {
   }
 
   face(yaw) { this.fig.yaw = yaw; }
-  lookAt(v) { this._look = null; this.fig.lookAt(v || null); }
+  // (during the slow notice a look at something retargets the turn)
+  lookAt(v) {
+    if (this._look && v) { this._look.to.copy(v); return; }
+    this._look = null;
+    this.fig.lookAt(v || null);
+  }
 
   // the resolved clip name (a seated clip is baked for its seat)
   clipName(name) {
@@ -162,6 +168,8 @@ export class Character {
       return nm;
     }
     F.state = name;
+    // the waitress wipes with her cloth
+    if (this._cloth) this._cloth.object.visible = name === 'wipe';
     F.anim.play(nm, { fade });
     F.startRoot(nm);
     return nm;
@@ -223,6 +231,9 @@ export class Character {
     if (IS_ADDITIVE(name)) { F.anim.additive(name); this.state = this.base; return h; }
     const nm = this._anim(name, fade);
     if (name === 'br_ko_window') this._koTravel(nm);
+    // the brawler's notice turns his head slowly to the eye (lookAt retargets)
+    if (name === 'notice' && this.game && this.game.eye) this.notice(this.game.eye.clone());
+
     if (c.cover && this.capLoose) h.onCover = c.cover;
     return h;
   }

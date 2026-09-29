@@ -14,8 +14,7 @@
 //   edge, contact 1.6), br_hitHead* 0.35 -> 0.4, br_hitBody 0.35 -> 0.5,
 //   br_into_stools 1.6 -> 2.2 (down with them, up off one knee),
 //   br_ko_window 2.2 -> 2.4 (glass 0.55 -> 1.0: two steps back and over the
-//   booth table first; land 1.45), pour 3.2 -> 4.2 (she turns to the back
-//   bar for the bottle: take 0.8, uncork 1.7, streamOn 2.2, streamOff 3.4).
+//   booth table first; land 1.45).
 export const CAST_CLIPS = {
   // ---- the brawler's fight (CONTRACTS §14) -------------------------------------
   br_guard: { duration: 2.4, marks: {}, loop: true },
@@ -41,7 +40,7 @@ export const CAST_CLIPS = {
 
   // ---- the waitress ----------------------------------------------------------------
   serve: { duration: 1.2, marks: { down: 0.8 } },
-  pour: { duration: 4.2, marks: { take: 0.8, uncork: 1.7, streamOn: 2.2, streamOff: 3.4 } },
+  pour: { duration: 3.2, marks: { take: 0.5, uncork: 0.9, streamOn: 1.3, streamOff: 2.6 } },
   slide: { duration: 1.2, marks: { release: 0.6 } },
   slideBottle: { duration: 1.0, marks: { release: 0.5 } },
   wipe: { duration: 2.4, marks: {}, loop: true },

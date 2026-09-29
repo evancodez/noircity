@@ -127,7 +127,7 @@ const DEFS = {
       const b = wob(t, 7, 1);
       return P({ ...sitBase(G, 14),
         spine: [4, 0, 0], chest: [10, 0, 0], neck: [22, 0, 0], head: [-8 + 3 * b, 4 * b, 0], headLevel: [0.1],
-        handTL: [0.28, G.seat + 0.58 + 0.006 * b, 0.36], handTR: [lerp(-0.28, 0.02, turn), G.seat + 0.58 + 0.05 * turn, lerp(0.36, 0.42, turn)],
+        handTL: [0.27, G.seat + 0.6 + 0.006 * b, 0.35], handTR: [lerp(-0.27, 0.02, turn), G.seat + 0.6 + 0.05 * turn, lerp(0.35, 0.42, turn)],
         elbowPoleL: [1, -1, -0.3], elbowPoleR: [-1, -1, -0.3], handL: [-70, 0, 70], handR: [-70, 0, -70],
       });
     } };
@@ -165,7 +165,7 @@ const DEFS = {
   // the old man reading on his feet (the study), bent
   read: () => ({ duration: 7, loop: true, armSpace: 'root', pose: (t) => {
     const b = wob(t, 7, 1);
-    return P({ ...BENT(t), handTL: [0.28, 1.3 + 0.006 * b, 0.36], handTR: [-0.28, 1.3, 0.36],
+    return P({ ...BENT(t), handTL: [0.27, 1.42 + 0.006 * b, 0.35], handTR: [-0.27, 1.42, 0.35],
       elbowPoleL: [1, -1, -0.3], elbowPoleR: [-1, -1, -0.3], handL: [-70, 0, 70], handR: [-70, 0, -70], neck: [24, 0, 0], head: [-10 + 3 * b, 4 * b, 0] });
   } }),
   // the waitress at the back bar: her hip against it, arms folded, weight on
@@ -263,20 +263,24 @@ Object.assign(DEFS, {
   // to the back bar, takes the bottle, back to the counter, draws the cork,
   // tilts it over the glass, rights it
   pour: () => {
-    const rm = (t) => [0, -0.55 * pw(t, [[0, 0], [0.45, 1], [0.95, 1], [1.45, 0]])];
+    // (quick, as a waitress with a room to serve is: the turn and a step
+    // back to the bar 0 .. 0.45, the bottle in hand at 0.5, back at the
+    // counter by 0.85, the cork out at 0.9, the tilt, the stream 1.3 .. 2.6,
+    // righted and corked by 3.2)
+    const rm = (t) => [0, -0.55 * pw(t, [[0, 0], [0.4, 1], [0.55, 1], [0.9, 0]])];
     const K = keyed([
       [0, { hipsPos: [0, 0.95, 0], handTR: [-0.18, 0.96, 0.15], handTL: [0.18, 0.94, 0.08] }],
-      [0.45, { rootYaw: [-160], hipsPos: [0, 0.95, -0.55], footL: [0.1, A, -0.5], footR: [-0.12, A, -0.62], handTR: [-0.05, 1.1, -0.95], elbowPoleR: [-1, -0.3, 0.3], chest: [6, 0, 0] }],
-      [0.8, { handTR: [0.02, 1.2, -1.02], chest: [10, 0, 0] }],
-      [1.45, { rootYaw: [0], hipsPos: [0, 0.95, 0], footL: [0.12, A, 0.04], footR: [-0.12, A, -0.02], handTR: [-0.12, 1.2, 0.3], chest: [2, 0, 0], elbowPoleR: [-1, -0.5, -0.4] }],
-      [1.7, { handTL: [-0.02, 1.26, 0.32], elbowPoleL: [1, -0.5, -0.2], handTR: [-0.08, 1.22, 0.32] }],
-      [2.0, { handTL: [0.16, 1.1, 0.2] }],
-      [2.2, { spine: [10, 0, 0], chest: [10, 8, 0], handTR: [0.0, 1.36, 0.58], handR: [-10, 0, 70] }],
-      [3.4, { handTR: [0.02, 1.33, 0.6], handR: [-10, 0, 80] }],
-      [3.7, { handTR: [-0.08, 1.24, 0.4], handR: [-40, 0, 0], chest: [4, 0, 0], spine: [4, 0, 0] }],
-      [4.2, { handTR: [-0.16, 1.02, 0.2], handTL: [0.18, 0.94, 0.08] }],
+      [0.4, { rootYaw: [-160], hipsPos: [0, 0.94, -0.55], footL: [0.1, A, -0.5], footR: [-0.12, A, -0.62], handTR: [-0.05, 1.1, -0.95], elbowPoleR: [-1, -0.3, 0.3], chest: [8, 0, 0] }],
+      [0.5, { handTR: [0.02, 1.18, -1.02], chest: [10, 0, 0] }],
+      [0.9, { rootYaw: [0], hipsPos: [0, 0.95, 0], footL: [0.12, A, 0.04], footR: [-0.12, A, -0.02], handTR: [-0.12, 1.2, 0.3], chest: [2, 0, 0], elbowPoleR: [-1, -0.5, -0.4],
+        handTL: [-0.02, 1.26, 0.32], elbowPoleL: [1, -0.5, -0.2] }],
+      [1.05, { handTL: [0.16, 1.12, 0.2], handTR: [-0.08, 1.24, 0.34] }],
+      [1.3, { spine: [10, 0, 0], chest: [10, 8, 0], handTR: [0.0, 1.36, 0.58], handR: [-10, 0, 70] }],
+      [2.6, { handTR: [0.02, 1.33, 0.6], handR: [-10, 0, 80] }],
+      [2.85, { handTR: [-0.08, 1.24, 0.4], handR: [-40, 0, 0], chest: [4, 0, 0], spine: [4, 0, 0], handTL: [-0.02, 1.2, 0.36] }],
+      [3.2, { handTR: [-0.16, 1.02, 0.2], handTL: [0.18, 0.94, 0.08] }],
     ]);
-    return { duration: 4.2, armSpace: 'root', pose: rooted(K, rm), rootMotion: rm };
+    return { duration: 3.2, armSpace: 'root', pose: rooted(K, rm), rootMotion: rm };
   },
   // she slides the glass across the counter to his hand (release 0.6)
   slide: () => ({ duration: 1.2, armSpace: 'root', pose: keyed([
@@ -328,10 +332,10 @@ Object.assign(DEFS, {
     [0, { ...BENT(0), armL: [0.14, -1, 0.3, 0], armR: [-0.14, -1, 0.32, 0] }],
     [0.3, { hipsPos: [0, 0.7, 0.02], hips: [20, 0, 0], footL: [0.12, A, 0.12], footR: [-0.12, A + 0.04, -0.18], footRotR: [-40, 8, 0],
       handTL: [0.1, 1.45, 0.2], handTR: [-0.1, 1.45, 0.2], elbowPoleL: [1, 0.3, 0.4], elbowPoleR: [-1, 0.3, 0.4] }],
-    [0.6, { hipsPos: [0, 0.38, -0.08], hips: [40, 0, 0], spine: [30, 0, 0], chest: [20, 0, 0], neck: [30, 0, 0], head: [20, 0, 0],
+    [0.6, { hipsPos: [0, 0.4, -0.12], hips: [62, 0, 0], spine: [22, 0, 0], chest: [16, 0, 0], neck: [24, 0, 0], head: [20, 0, 0],
       footL: [0.13, 0.08, -0.34], footR: [-0.13, 0.08, -0.36], footRotL: [-150, 6, 0], footRotR: [-150, 6, 0], kneeL: [0.1, -0.2, 1], kneeR: [-0.1, -0.2, 1],
-      handTL: [0.06, 0.92, 0.46], handTR: [-0.06, 0.94, 0.46], elbowPoleL: [1, 0.3, 0.2], elbowPoleR: [-1, 0.3, 0.2], handL: [0, 0, 60], handR: [0, 0, -60] }],
-    [1.0, { hipsPos: [0, 0.36, -0.1], chest: [22, 0, 0] }],
+      handTL: [0.05, 0.62, 0.52], handTR: [-0.05, 0.64, 0.5], elbowPoleL: [1, 0.2, 0.3], elbowPoleR: [-1, 0.2, 0.3], handL: [0, 0, 60], handR: [0, 0, -60] }],
+    [1.0, { hipsPos: [0, 0.38, -0.13], chest: [18, 0, 0] }],
   ]) }),
   // flight: an overlay on the run: he leads her by the arm, she is led
   fleeLead: () => ({ duration: 0.72, loop: true, armSpace: 'root', pose: (t) => P({ chest: [8, -14, 0], spine: [6, -6, 0], head: [0, -20, 0],

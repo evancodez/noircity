@@ -28,7 +28,7 @@ function figMesh(fig, geo) {
 // ---- the broadsheet: open, held up before the face, a little bowed, the
 // top corners drooping; a headline and a photograph as darker blocks on the
 // outside. The right leaf turns over at the clip's 'page' mark.
-const PAPER = { w: 0.6, h: 0.44 };
+const PAPER = { w: 0.66, h: 0.5 };
 function leafGeo(side) {
   const W = PAPER.w / 2, H = PAPER.h;
   const g = grid(10, 8, (u, v, p) => {
@@ -65,8 +65,8 @@ export function newspaper(c) {
       g.visible = on;
       if (!on) return;
       // (object space: the hands hold its side edges; see castAnim sitRead / read)
-      const y = seated ? ch.seatModel + 0.6 : 1.34;
-      g.position.set(0, y, 0.385);
+      const y = seated ? ch.seatModel + 0.64 : 1.46;
+      g.position.set(0, y, 0.39);
       // the page: 4.3 .. 4.9 of the reading loop the right leaf goes over
       const a = ch.fig.anim.upper.get(ch.animName);
       const t = a ? a.time % 7 : 0;
@@ -95,6 +95,23 @@ export function holder(c) {
   g.rotation.set(1.25, 0, -0.35);
   fig.bones.handR.add(g);
   return { object: g, tip: e };
+}
+
+// ---- her cloth: a crumpled square in the wiping hand (shown while she wipes)
+export function cloth(c) {
+  const fig = c.fig;
+  const geo = grid(12, 10, (u, v, p) => {
+    const a = u * TAU, b = v * Math.PI;
+    const r = 1 + 0.3 * Math.sin(3 * a + 1) * Math.sin(2 * b) + 0.15 * Math.sin(7 * a + 3 * b);
+    p.set(0.05 * r * Math.sin(b) * Math.cos(a), 0.022 * r * Math.cos(b), 0.045 * r * Math.sin(b) * Math.sin(a));
+  });
+  geo.computeVertexNormals();
+  const m = figMesh(fig, withColor(geo, () => 0.12));
+  const k = fig.costume.garments.find((g) => g.kind === 'hands')?.s ?? 1;
+  m.position.set(0, -0.09 * k, 0.01);
+  m.visible = false;
+  fig.bones.handR.add(m);
+  return { object: m };
 }
 
 // ---- his umbrella, hooked by its crook over the booth table's edge
