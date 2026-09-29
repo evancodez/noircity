@@ -1,3 +1,5 @@
+import * as THREE from 'three';
+
 // The hands' poses as data (lane 2 brief P0.1): a pose is one hand's joint
 // angles plus its wrist's place and turn in a frame:
 //   frame  'cam' (the eye's frame), 'body' (the eye's place, turned only by
@@ -112,8 +114,99 @@ void KNOB;
 
 // ---- the diner (scene 1): seated at the counter, the body frame --------------------
 // (the counter top lies 0.40 below the eye, its front edge ~0.30 ahead: the
-// seated eye leans on the counter, Controller 'seated')
-HP.restL = { frame: 'body', p: [-0.08, -0.37, -0.47], f: [0.78, -0.08, -0.62], b: [0.05, 1, 0.05], F: RELAX, e: [-0.33, -0.385, -0.3] };
-HP.restR = { frame: 'body', p: [0.2, -0.365, -0.39], f: [-0.35, -0.1, -0.93], b: [0.12, 1, 0.08], F: RELAX, e: [0.3, -0.385, -0.2] };
+// seated eye leans on the counter, Controller 'seated'). Elbows on the
+// counter's edge, off the bottom of the frame.
+const ER = [0.3, -0.385, -0.16], ELc = [-0.33, -0.385, -0.3];
+HP.restR = { frame: 'body', p: [0.215, -0.37, -0.37], f: [-0.4, -0.12, -0.91], b: [0.3, 0.95, 0.05], F: RELAX, e: ER };
+HP.restL = { frame: 'body', p: [-0.07, -0.374, -0.47], f: [0.82, -0.1, -0.56], b: [0.06, 1, 0.08], F: RELAX, e: ELc };
+// the cigarette between the first two fingers, the hand resting on the
+// counter on its little-finger side, the cigarette's tip up and out
+const CIG = { i: C(0.35, 0.45, 0.2, -0.05), m: C(0.35, 0.5, 0.25, 0.05), r: C(0.9, 1.1, 0.6), l: C(1.0, 1.2, 0.6), t: [0.35, 0.2, 0.2, 0.25, 0.25] };
+HP.cigRestR = { frame: 'body', p: [0.2, -0.36, -0.36], f: [-0.45, 0.0, -0.89], b: [0.75, 0.62, 0.1], F: CIG, e: ER };
+// the left hand cupped round the flame (its fingertips come up into the
+// bottom of the frame beside it; the rest of the hand is under the frame)
+HP.cupL = palm('cam', [-0.032, -0.138, -0.165], [1, 0.25, 0.1], [0.25, 0.45, -0.85],
+  { i: C(0.35, 0.4, 0.2), m: C(0.4, 0.45, 0.25), r: C(0.45, 0.5, 0.3), l: C(0.5, 0.55, 0.3), t: [0.3, 0.2, 0.3, 0.15, 0.1] }, [-0.14, -0.42, -0.06]);
+// pulling a cigarette from the top of the pack (it stands at (0.14, -0.4, -0.44))
+HP.pullR = { frame: 'body', p: [0.2, -0.27, -0.39], f: [-0.55, -0.15, -0.82], b: [0.55, 0.8, -0.2], F: CIG, e: ER };
+// the drag: the hand at the lips, the cigarette in them
+HP.cigLipsR = { frame: 'cam', p: [0.05, -0.16, -0.11], f: [-0.62, 0.62, -0.48], b: [0.55, 0.15, -0.82], F: CIG, e: [0.2, -0.45, 0.05] };
+// pinching the cigarette out of the lips
+HP.cigTakeR = { frame: 'cam', p: [0.045, -0.155, -0.1], f: [-0.62, 0.6, -0.5], b: [0.55, 0.15, -0.82], F: { ...CIG, i: C(0.45, 0.55, 0.3, -0.05), m: C(0.5, 0.6, 0.3, 0.05) }, e: [0.2, -0.45, 0.05] };
+// over the ashtray (left of the glass): a tap of the index on the cigarette
+HP.ashR = { frame: 'body', p: [-0.08, -0.33, -0.44], f: [-0.85, -0.1, -0.5], b: [0.2, 0.97, 0.1], F: CIG, e: [0.22, -0.39, -0.2] };
+HP.ashTapR = { ...HP.ashR, p: [-0.08, -0.338, -0.44], F: { ...CIG, i: C(0.2, 0.3, 0.15, -0.05) } };
+// the right hand in the coat (the inside pocket: off the bottom right)
+HP.coatR = { frame: 'cam', p: [0.16, -0.36, -0.12], f: [-0.5, 0.6, -0.6], b: [0.6, 0.2, -0.8], F: RELAX, e: [0.24, -0.5, 0.05] };
+// the left hand opens the wallet (its fingers on the far leaf) and takes a bill
+HP.walletOpenL = { frame: 'cam', p: [-0.05, -0.2, -0.26], f: [0.6, 0.55, -0.55], b: [-0.3, 0.6, 0.72], F: { ...OPEN, t: [0.6, 0.3, 0.2, 0.2, 0.2] }, e: [-0.2, -0.45, -0.05] };
+HP.billL = { frame: 'cam', p: [-0.07, -0.22, -0.28], f: [0.55, 0.45, -0.7], b: [-0.3, 0.8, 0.5], F: { i: C(0.5, 0.6, 0.3), m: C(0.55, 0.6, 0.3), r: C(0.9, 1.1, 0.6), l: C(1.0, 1.2, 0.6), t: [0.8, 0.4, 0.4, 0.3, 0.2] }, e: [-0.2, -0.45, -0.05] };
+HP.billDownL = { frame: 'body', p: [-0.06, -0.36, -0.42], f: [0.5, -0.1, -0.86], b: [0.0, 1, 0.1], F: RELAX, e: ELc };
+// the grips on the counter's things
+export const GRIP = {
+  pack: { i: C(0.55, 0.9, 0.5), m: C(0.6, 0.95, 0.5), r: C(0.65, 1.0, 0.55), l: C(0.7, 1.0, 0.55), t: [0.9, 0.3, 0.5, 0.3, 0.2] },
+  lighter: { i: C(0.9, 1.2, 0.6), m: C(1.0, 1.3, 0.7), r: C(1.1, 1.35, 0.7), l: C(1.2, 1.35, 0.7), t: [0.55, 0.35, 0.6, 0.2, 0.1] },
+  flick: { i: C(0.9, 1.2, 0.6), m: C(1.0, 1.3, 0.7), r: C(1.1, 1.35, 0.7), l: C(1.2, 1.35, 0.7), t: [0.55, 0.35, 0.6, 0.55, 0.45] },
+  glass: { ...wrap(0.0375), t: [0.8, 0.4, 0.6, 0.25, 0.2] },
+  wallet: { i: C(0.25, 0.3, 0.15), m: C(0.3, 0.35, 0.2), r: C(0.4, 0.45, 0.25), l: C(0.5, 0.5, 0.3), t: [0.3, -0.2, 0.3, 0.1, 0.1] },
+};
+const M4 = (pos, axisUp, fwd) => {
+  const y = new THREE.Vector3(...axisUp).normalize(), z0 = new THREE.Vector3(...fwd);
+  const x = new THREE.Vector3().crossVectors(y, z0).normalize(), z = new THREE.Vector3().crossVectors(x, y);
+  return new THREE.Matrix4().makeBasis(x, y, z).setPosition(...pos);
+};
+// pose functions (evaluated once per playing, from the world):
+export const DF = {
+  // reach and close on a thing where it stands on the counter
+  at: (kind, F, e, off = null) => (H, side) => H.holdPoseAt(side, H.propOf(side, kind), F, e, off),
+  // the prop in this hand, held at a place of the eye's frame (up / facing)
+  cam: (kind, pos, up, fwd, F, e) => (H, side) => { const p = H.propOf(side, kind); return p ? H.poseForProp(side, p, M4(pos, up, fwd), 'cam', F, e) : null; },
+  body: (kind, pos, up, fwd, F, e) => (H, side) => { const p = H.propOf(side, kind); return p ? H.poseForProp(side, p, M4(pos, up, fwd), 'body', F, e) : null; },
+};
+
+// ---- the fists (scene 2): the punch-out view, the eye's frame ----------------------
+// Fists up in the bottom corners, knuckles to him, thumbs outside (across
+// the first two fingers), the left a little ahead; his head, shoulders and
+// hands stay clear between and above them. Sleeves pushed up.
+export const FISTF = { i: C(1.5, 1.75, 0.95, -0.02), m: C(1.52, 1.78, 0.95), r: C(1.55, 1.8, 0.95, 0.02), l: C(1.58, 1.78, 0.95, 0.05), t: [0.75, 0.55, 0.6, 0.55, 0.45] };
+const EFR = [0.25, -0.46, -0.08];
+HP.guardR = { frame: 'cam', p: [0.205, -0.2, -0.29], f: [-0.3, 0.55, -0.78], b: [0.62, 0.62, 0.3], F: FISTF, e: EFR };
+HP.guardL = { frame: 'cam', p: [-0.19, -0.18, -0.35], f: [0.28, 0.55, -0.79], b: [-0.62, 0.62, 0.3], F: FISTF, e: [-0.25, -0.46, -0.12] };
+// the jab: straight at his face down the centre line, turning palm-down at contact
+HP.jabR = { frame: 'cam', p: [0.03, -0.075, -0.64], f: [-0.08, 0.1, -0.99], b: [0.0, 1, 0.1], F: FISTF, e: [0.14, -0.3, -0.3] };
+HP.jabL = { frame: 'cam', p: [-0.03, -0.07, -0.66], f: [0.08, 0.1, -0.99], b: [0.0, 1, 0.1], F: FISTF, e: [-0.14, -0.3, -0.3] };
+// the heavy: the right fist drawn back and down out of the corner, the left
+// open forward for balance; then across the frame from low right to high left
+HP.windR = { frame: 'cam', p: [0.3, -0.34, -0.2], f: [-0.2, 0.7, -0.68], b: [0.8, 0.3, 0.5], F: FISTF, e: [0.3, -0.5, 0.05] };
+HP.balanceL = { frame: 'cam', p: [-0.13, -0.16, -0.46], f: [0.25, 0.45, -0.86], b: [-0.75, 0.55, 0.2], F: OPEN, e: [-0.22, -0.42, -0.2] };
+HP.hitR = { frame: 'cam', p: [-0.1, 0.03, -0.6], f: [-0.45, 0.15, -0.88], b: [0.15, 0.95, -0.2], F: FISTF, e: [0.1, -0.2, -0.3] };
+HP.hitFollowR = { frame: 'cam', p: [-0.25, -0.02, -0.45], f: [-0.8, 0.0, -0.6], b: [0.0, 0.9, -0.4], F: FISTF, e: [0.02, -0.3, -0.2] };
+// the block: both forearms up, vertical, side by side in the lower middle,
+// fists at brow height
+HP.blockR = { frame: 'cam', p: [0.06, -0.005, -0.26], f: [-0.08, 0.9, -0.43], b: [0.3, 0.4, 0.87], F: FISTF, e: [0.08, -0.34, -0.2] };
+HP.blockL = { frame: 'cam', p: [-0.06, -0.005, -0.27], f: [0.08, 0.9, -0.43], b: [-0.3, 0.4, 0.87], F: FISTF, e: [-0.08, -0.34, -0.21] };
+// hurt: the fists drop
+HP.hurtR = { ...HP.guardR, p: [0.26, -0.36, -0.28] };
+HP.hurtL = { ...HP.guardL, p: [-0.24, -0.35, -0.34] };
+// grab (what is in reach, low to the right) and the swings
+HP.grabR = { frame: 'cam', p: [0.2, -0.3, -0.42], f: [-0.2, -0.3, -0.93], b: [0.7, 0.7, 0.0], F: OPEN, e: [0.25, -0.5, -0.1] };
+HP.bottleUpR = { frame: 'cam', p: [0.2, 0.05, -0.12], f: [-0.2, 0.9, 0.35], b: [0.9, -0.2, 0.3], F: FISTF, e: [0.3, -0.25, 0.1] };
+HP.bottleDownR = { frame: 'cam', p: [0.02, -0.2, -0.55], f: [-0.1, -0.35, -0.93], b: [0.8, 0.5, -0.2], F: FISTF, e: [0.18, -0.35, -0.25] };
+HP.plateInR = { frame: 'cam', p: [0.06, -0.26, -0.22], f: [-0.9, 0.0, -0.4], b: [0.0, 1, 0.0], F: { ...OPEN, i: C(0.5, 0.6, 0.3), m: C(0.5, 0.6, 0.3), r: C(0.55, 0.6, 0.3), l: C(0.6, 0.6, 0.3) }, e: [0.25, -0.45, -0.05] };
+HP.plateOutR = { frame: 'cam', p: [0.02, -0.14, -0.62], f: [-0.2, 0.0, -0.98], b: [0.0, 1, 0.0], F: OPEN, e: [0.14, -0.3, -0.3] };
+HP.stoolUpR = { frame: 'cam', p: [0.26, 0.02, -0.18], f: [-0.3, 0.9, 0.2], b: [0.9, 0.2, 0.3], F: FISTF, e: [0.32, -0.3, 0.05] };
+HP.stoolUpL = { frame: 'cam', p: [0.14, -0.05, -0.2], f: [-0.2, 0.9, 0.2], b: [-0.2, -0.2, 0.95], F: FISTF, e: [-0.05, -0.4, -0.05] };
+HP.stoolHitR = { frame: 'cam', p: [-0.2, -0.12, -0.5], f: [-0.8, 0.3, -0.5], b: [0.3, 0.9, 0.0], F: FISTF, e: [0.05, -0.35, -0.2] };
+HP.stoolHitL = { frame: 'cam', p: [-0.3, -0.2, -0.38], f: [-0.7, 0.3, -0.6], b: [0.2, -0.3, 0.9], F: FISTF, e: [-0.25, -0.45, -0.1] };
+// out on the pavement: the hand into his waistcoat pocket, the matchbook up
+HP.downR = { frame: 'cam', p: [0.25, -0.5, -0.25], f: [-0.2, 0.5, -0.8], b: [0.8, 0.3, 0.4], F: RELAX, e: [0.28, -0.7, 0.05] };
+HP.downL = mirror(HP.downR);
+HP.reachR = { frame: 'cam', p: [0.06, -0.3, -0.5], f: [-0.15, -0.55, -0.82], b: [0.4, 0.8, -0.4], F: OPEN, e: [0.2, -0.45, -0.15] };
+HP.pocketR = { frame: 'cam', p: [0.05, -0.36, -0.56], f: [-0.1, -0.7, -0.7], b: [0.5, 0.7, -0.5], F: { ...OPEN, i: C(0.5, 0.6, 0.3), m: C(0.5, 0.6, 0.3), r: C(0.8, 0.9, 0.5), l: C(0.9, 1.0, 0.5), t: [0.6, 0.3, 0.2, 0.3, 0.2] }, e: [0.2, -0.45, -0.15] };
+// finger and thumb: the matchbook held up in front
+export const PINCH = { i: C(0.7, 0.8, 0.35), m: C(0.9, 1.1, 0.6), r: C(1.2, 1.3, 0.7), l: C(1.3, 1.3, 0.7), t: [0.7, 0.45, 0.4, 0.2, 0.15] };
+HP.showR = { frame: 'cam', p: [0.07, -0.16, -0.3], f: [-0.3, 0.75, -0.6], b: [0.5, 0.4, 0.77], F: PINCH, e: [0.18, -0.45, -0.1] };
+HP.showTurnR = { frame: 'cam', p: [0.06, -0.155, -0.3], f: [-0.5, 0.7, -0.5], b: [-0.3, 0.45, 0.84], F: PINCH, e: [0.18, -0.45, -0.1] };
+HP.pocketAwayR = { frame: 'cam', p: [0.24, -0.46, -0.1], f: [-0.2, 0.6, -0.75], b: [0.8, 0.3, 0.5], F: PINCH, e: [0.28, -0.6, 0.1] };
 
 export const HAND_POSES = HP;

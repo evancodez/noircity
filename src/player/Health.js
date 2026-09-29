@@ -26,6 +26,7 @@ export class Health {
     style.textContent = `
       #dmgsplat { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; opacity: 0; }
       #heart { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; opacity: 0; }
+      #whiteflash { position: absolute; inset: 0; pointer-events: none; opacity: 0; background: #fff; }
       #hitflash { position: absolute; inset: 0; pointer-events: none; opacity: 0;
         background: radial-gradient(ellipse at center, rgba(0,0,0,0) 50%, rgba(0,0,0,0.75) 100%); }
     `;
@@ -34,11 +35,15 @@ export class Health {
     this.heartG = this.heart.getContext('2d');
     this.flash = document.createElement('div'); this.flash.id = 'hitflash';
     this.canvas = document.createElement('canvas'); this.canvas.id = 'dmgsplat';
+    // a blow landing in the brawl: the whole frame white for two frames
+    this.white = document.createElement('div'); this.white.id = 'whiteflash';
+    this.whiteN = 0;
     // under the HUD's readouts (health and ammo stay legible over the blood
     // on the lens)
     root.insertBefore(this.canvas, root.firstChild);
     root.insertBefore(this.flash, root.firstChild);
     root.insertBefore(this.heart, root.firstChild);
+    root.appendChild(this.white);
     this.root = root;
     this.g = this.canvas.getContext('2d');
     this.splatA = 0;
@@ -99,8 +104,12 @@ export class Health {
     return out;
   }
 
+  // the white flash of a blow (frames = fixed steps: deterministic)
+  flashWhite(frames = 2) { this.whiteN = Math.max(this.whiteN, frames); this.white.style.opacity = '1'; }
+
   update(dt) {
     this.sinceHit += dt;
+    if (this.whiteN > 0 && dt > 0) { this.whiteN--; if (this.whiteN <= 0) this.white.style.opacity = '0'; }
     if (!this.dead && this.sinceHit > HEALTH.regenDelay && this.hp < HEALTH.max) {
       this.hp = Math.min(HEALTH.max, this.hp + HEALTH.regenRate * dt);
     }

@@ -207,7 +207,8 @@ export class Viewmodel {
     this.setAspect(camera.aspect);
     this.visible = true;
     this.study = null;
-    this.reloadFreeze = null;   // (a still of the reload: handstudy&pose=tommyReload@<s>)
+    this.reloadFreeze = null;
+    this.flame = null;          // world point of a lighter's flame in the hands (Hands)   // (a still of the reload: handstudy&pose=tommyReload@<s>)
     const M = world.M;
     // Inked, not CG-shaded: every part is rough with no environment
     // reflection, so no specular hotspot or crescent survives (the drum and
@@ -494,6 +495,12 @@ export class Viewmodel {
     this.hemi.color.copy(W.hemi.color); this.hemi.groundColor.copy(W.hemi.groundColor); this.hemi.intensity = W.hemi.intensity;
     const F = W.flash;
     this.flashP.position.copy(F.position); this.flashP.intensity = F.intensity; this.flashP.distance = F.distance; this.flashP.decay = F.decay;
+    // (a lighter's flame in the hands borrows the proxy while no muzzle flash
+    // has it: a small warm-white point on both hands, Hands sets `flame`)
+    if (this.flame && F.intensity <= 0) {
+      this.flashP.position.copy(this.flame); this.flashP.intensity = 0.12; this.flashP.distance = 0.8; this.flashP.decay = 2;
+      this.flashP.color.setRGB(1, 0.86, 0.66);
+    } else this.flashP.color.setRGB(1, 1, 1);
     const pool = (W.lamps && W.lamps.pool) || [];
     const p = camera.position;
     const act = this._act;

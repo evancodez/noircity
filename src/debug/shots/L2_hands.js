@@ -103,7 +103,10 @@ function handClip(stage, camera, controller, game) {
   } else if (OUT_CLIPS.has(clip)) {
     game.scenes.shot('fight', 'outside');
   } else {
-    game.scenes.shot('diner', clip === 'payWallet' ? 'pay' : clip === 'reachGlass' || clip === 'sip' || clip === 'putDown' ? 'drink' : 'settle');
+    game.scenes.shot('diner', clip === 'payWallet' ? 'pay' : clip === 'reachGlass' || clip === 'sip' || clip === 'putDown' ? 'drink' : clip === 'drag' || clip === 'ash' ? 'order' : 'settle');
+    // (the cigarette lit: the beat's stand-in one, into the hand as the hands hold it)
+    if (clip === 'drag' || clip === 'ash') { const c = H.cigarette(); if (c) { H.lit = true; if (H.held.R !== c) H.hold(c, 'R'); } }
+    if (clip === 'putDown') { let done0 = false; game.scripts.push((t) => { if (!done0 && t >= 0.1) { done0 = true; H.play('reachGlass'); } }); }
   }
   let done = false;
   const start = Math.round((T - ct) * 60) / 60;

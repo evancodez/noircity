@@ -144,10 +144,15 @@ function pushedSleeveGeometry() {
     [0.06, 0.38], [0.058, 1.05], [0.0, 1.06]];
   return new THREE.LatheGeometry(prof.map(([r, y]) => new THREE.Vector2(Math.max(r, 1e-4), y)), 28);
 }
-// the shirt cuff: 8 mm of paper white between the sleeve and the wrist
-function cuffGeometry(len0 = 0.34) {
-  const s = (d) => d / len0;
-  const prof = [[0.0, s(-0.006)], [0.033, s(-0.006)], [0.0372, s(-0.003)], [0.0376, s(0.004)], [0.0372, s(0.03)], [0.0, s(0.031)]];
+// the shirt cuff: 8 mm of paper white between the sleeve and the wrist (in
+// metres, from the sleeve's hem: y < 0 shows)
+function cuffGeometry() {
+  const prof = [[0.0, -0.0095], [0.033, -0.0095], [0.0368, -0.0075], [0.0374, -0.004], [0.0372, 0.02], [0.0, 0.021]];
+  return new THREE.LatheGeometry(prof.map(([r, y]) => new THREE.Vector2(Math.max(r, 1e-4), y)), 24);
+}
+// the upper arm, elbow (y = 0) to shoulder (y = 1): the coat, round at the elbow
+function upperArmGeometry() {
+  const prof = [[0.0, -0.05], [0.03, -0.045], [0.048, -0.03], [0.057, -0.01], [0.06, 0.05], [0.064, 0.6], [0.066, 1.0], [0.0, 1.01]];
   return new THREE.LatheGeometry(prof.map(([r, y]) => new THREE.Vector2(Math.max(r, 1e-4), y)), 24);
 }
 // the rolled shirt cuff under a pushed-up sleeve
@@ -160,10 +165,10 @@ function forearmGeometry() {
   const prof = [[0.0, -0.02], [0.02, -0.018], [0.027, 0.0], [0.0285, 0.04], [0.033, 0.1], [0.038, 0.16], [0.039, 0.2], [0.0, 0.21]];
   return new THREE.LatheGeometry(prof.map(([r, y]) => new THREE.Vector2(Math.max(r, 1e-4), y)), 24);
 }
-// the glove's gauntlet: a short flared leather cuff over the wrist
-function gauntletGeometry(len0 = 0.34) {
-  const s = (d) => d / len0;
-  const prof = [[0.0, s(-0.012)], [0.03, s(-0.012)], [0.0335, s(-0.004)], [0.036, s(0.02)], [0.0385, s(0.034)], [0.0, s(0.035)]];
+// the glove's gauntlet: a short flared leather cuff over the wrist (metres,
+// from the sleeve's hem)
+function gauntletGeometry() {
+  const prof = [[0.0, -0.034], [0.028, -0.034], [0.032, -0.026], [0.0355, -0.006], [0.0385, 0.012], [0.0, 0.013]];
   return new THREE.LatheGeometry(prof.map(([r, y]) => new THREE.Vector2(Math.max(r, 1e-4), y)), 24);
 }
 
@@ -253,10 +258,11 @@ export class HandRig {
     this.rolled = plain(rolledCuffGeometry(), mats.cuff, ids.cuff);
     this.forearm = plain(forearmGeometry(), mats.bare, ids.skin);
     this.gauntlet = plain(gauntletGeometry(), mats.glove, ids.skin);
+    this.upper = plain(upperArmGeometry(), mats.sleeve, ids.sleeve);
     for (const m of [this.forearm, this.gauntlet]) m.geometry.setAttribute('color', new THREE.Float32BufferAttribute(new Float32Array(m.geometry.getAttribute('position').count * 3).fill(1), 3));
     this.sleeveMode = 'coat';
     this.setSleeve('coat', true);
-    this._q = new THREE.Quaternion(); this._e = new THREE.Euler(); this._up = V(0, 1, 0); this._d = V(0, 0, 0);
+    this._q = new THREE.Quaternion(); this._e = new THREE.Euler(); this._up = V(0, 1, 0); this._d = V(0, 0, 0); this._u = V(0, 0, 0); this._sh = V(0, 0, 0);
     this.elbow = V(0.2, -0.4, 0.05);
   }
 
@@ -379,6 +385,7 @@ export class HandRig {
     this.rolled.visible = mode === 'pushed';
     this.forearm.visible = mode === 'pushed';
     this.gauntlet.visible = mode === 'coat' && !bare;
+    this.upper.visible = mode !== 'none';
   }
 
   set visible(v) { this.root.visible = v; }
@@ -389,7 +396,7 @@ export class HandRig {
   //   F           { i: [mcp, pip, dip, spread], m, r, l, t: [cx, cy, cz, mcp, ip] } (radians;
   //               + curls toward the palm)
   //   elbow       Vector3, arm-root space
-  apply(pos, quat, F, elbow) {
+  apply(pos, quat, F, elbow, shoulder = null) {
     const H = this.hand;
     H.position.copy(pos);
     H.quaternion.copy(quat);
@@ -405,15 +412,19 @@ export class HandRig {
     tb[1].rotation.set(-t[3], 0, 0);
     tb[2].rotation.set(-t[4], 0, 0);
     this.elbow.copy(elbow);
-    // the forearm pieces run from the wrist to the elbow
+    // the forearm pieces run from the wrist to the elbow: the sleeve's hem
+    // 35 mm up the arm from the wrist's centre (the cuffs hang from it)
     const d = this._d.subVectors(elbow, pos);
     const len = d.length();
     d.multiplyScalar(1 / Math.max(1e-5, len));
     this._q.setFromUnitVectors(this._up, d);
-    for (const m of [this.sleeve, this.cuff, this.gauntlet]) {
-      m.position.copy(pos).addScaledVector(d, 0.018);
+    const hem = 0.035;
+    this.sleeve.position.copy(pos).addScaledVector(d, hem);
+    this.sleeve.quaternion.copy(this._q);
+    this.sleeve.scale.set(1, Math.max(0.05, len - hem), 1);
+    for (const m of [this.cuff, this.gauntlet]) {
+      m.position.copy(pos).addScaledVector(d, hem);
       m.quaternion.copy(this._q);
-      m.scale.set(1, len / 1.0, 1);
     }
     // (the pushed pieces are in metres, not unit length: the rolls stay the
     // same size whatever the reach; the bunched sleeve runs on past the elbow)
@@ -421,6 +432,13 @@ export class HandRig {
       m.position.copy(pos).addScaledVector(d, 0.004);
       m.quaternion.copy(this._q);
     }
+    // the upper arm: elbow to shoulder (behind the eye, off the frame)
+    const sh = shoulder || this._sh.set(0.2, -0.3, 0.12);
+    const u = this._u.subVectors(sh, elbow);
+    const ul = u.length();
+    this.upper.position.copy(elbow);
+    this.upper.quaternion.setFromUnitVectors(this._up, u.multiplyScalar(1 / Math.max(1e-5, ul)));
+    this.upper.scale.set(1, ul, 1);
   }
 }
 const ZERO4 = [0, 0, 0, 0], ZERO5 = [0, 0, 0, 0, 0];
