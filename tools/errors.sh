@@ -11,7 +11,7 @@ CHROME="/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
 if [[ "$QS" == *audiotest=1* ]]; then
   DUMP() { node "$(dirname "$0")/waitdom.mjs" "$QS" audio 90; }
 else
-  DUMP() { "$CHROME" --headless=new --use-angle=metal --hide-scrollbars --window-size=1200,800 \
+  DUMP() { "$CHROME" --headless=new --mute-audio --use-angle=metal --hide-scrollbars --window-size=1200,800 \
     --virtual-time-budget=${VTB:-8000} --dump-dom "http://127.0.0.1:${NOIR_PORT:-5173}/?${QS}" 2>/dev/null; }
 fi
 DUMP | python3 -c '

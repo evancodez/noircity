@@ -11,6 +11,6 @@ H="${4:-1000}"
 CHROME="/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
 URL="http://127.0.0.1:${NOIR_PORT:-5173}/?${QS}"
 mkdir -p "$(dirname "$OUT")"
-"$CHROME" --headless=new --use-angle=metal --hide-scrollbars --force-device-scale-factor=1 \
+"$CHROME" --headless=new --mute-audio --use-angle=metal --hide-scrollbars --force-device-scale-factor=1 \
   --window-size="${W},${H}" --virtual-time-budget=12000 --screenshot="$OUT" "$URL" 2>/dev/null
 echo "wrote $OUT ($(sips -g pixelWidth -g pixelHeight "$OUT" 2>/dev/null | awk '/pixel/ {printf "%s ", $2}'))"

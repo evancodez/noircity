@@ -12,7 +12,7 @@ const TIMEOUT = +(process.argv[4] || 60);
 const PORT = 9800 + Math.floor(Math.random() * 400);
 const CHROME = '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome';
 const chrome = spawn(CHROME, [
-  '--headless=new', '--use-angle=metal', '--hide-scrollbars', '--window-size=1200,800', '--autoplay-policy=no-user-gesture-required',
+  '--headless=new', '--mute-audio', '--use-angle=metal', '--hide-scrollbars', '--window-size=1200,800', '--autoplay-policy=no-user-gesture-required',
   `--remote-debugging-port=${PORT}`, '--no-first-run', '--no-default-browser-check', `--user-data-dir=/tmp/noir-wait-${PORT}`, 'about:blank',
 ], { stdio: 'ignore' });
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));

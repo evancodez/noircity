@@ -40,7 +40,7 @@ mkdirSync(OUT, { recursive: true });
 const PORT = 9400 + Math.floor(Math.random() * 400);
 const CHROME = '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome';
 const chrome = spawn(CHROME, [
-  '--headless=new', '--use-angle=metal', '--hide-scrollbars', '--force-device-scale-factor=1', `--window-size=${W},${H}`,
+  '--headless=new', '--mute-audio', '--use-angle=metal', '--hide-scrollbars', '--force-device-scale-factor=1', `--window-size=${W},${H}`,
   '--autoplay-policy=no-user-gesture-required', `--remote-debugging-port=${PORT}`, '--no-first-run', '--no-default-browser-check',
   `--user-data-dir=/tmp/noir-play-${PORT}`, 'about:blank',
 ], { stdio: 'ignore' });
