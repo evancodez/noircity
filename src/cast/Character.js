@@ -112,7 +112,24 @@ export class Character {
   lookAt(v) {
     if (this._look && v) { this._look.to.copy(v); return; }
     this._look = null;
+    // (a look let go is eased off: the Hood's look is laid on only while it
+    // has a target, so dropping the target turned the chest and the head
+    // back in one frame - round 2, the pop as he rose off his stool. The
+    // target is walked round to straight ahead first, then let go)
+    if (!v && this.fig.lookTarget && this.fig._lookW > 0.05) { this._lookOff = { t: 0, from: this.fig.lookTarget.clone() }; return; }
+    this._lookOff = null;
     this.fig.lookAt(v || null);
+  }
+  // (the look easing off, per step: toward a point straight ahead of him)
+  lookOff(dt) {
+    const L = this._lookOff, F = this.fig;
+    if (!L) return;
+    L.t += dt;
+    const k = Math.min(1, L.t / 0.35), e = k * k * (3 - 2 * k);
+    const ahead = _t.set(F.pos.x + Math.sin(F.yaw) * 3, L.from.y, F.pos.z + Math.cos(F.yaw) * 3);
+    if (!F.lookTarget) F.lookTarget = new THREE.Vector3();
+    F.lookTarget.lerpVectors(L.from, ahead, e);
+    if (k >= 1) { this._lookOff = null; F.lookAt(null); }
   }
 
   // the resolved clip name (a seated clip is baked for its seat)
@@ -230,7 +247,7 @@ export class Character {
     if (!this.costumed) { if (F.anim.clips[name]) this._anim(name, fade); else F.flinch(); return h; }
     if (IS_ADDITIVE(name)) { F.anim.additive(name); this.state = this.base; return h; }
     const nm = this._anim(name, fade);
-    if (name === 'br_ko_window') this._koTravel(nm);
+    if (name === 'br_ko_window' && !c.selfTravel) this._koTravel(nm);
     // the brawler's notice turns his head slowly to the eye (lookAt retargets)
     if (name === 'notice' && this.game && this.game.eye) this.notice(this.game.eye.clone());
 
@@ -318,7 +335,9 @@ export class Character {
 
   // ---- looking ----------------------------------------------------------------------------
   glance(pos, seconds = 1.6) {
-    if (!pos || !this.alive) return;
+    // (a man in a fist fight keeps his eyes on the man he fights: a plate
+    // breaking by him does not snap his head round for a frame)
+    if (!pos || !this.alive || this.noGlance) return;
     const G = this._glance;
     G.target = pos.clone ? pos.clone() : new THREE.Vector3(pos.x, pos.y ?? 1.5, pos.z);
     G.until = seconds;
@@ -365,6 +384,10 @@ export class Character {
     if (this.down) return;
     this.down = true;
     this.seat = null;
+    // (a man who is down looks at nothing: no turn of the chest or the head
+    // toward anything while he lies there)
+    this._look = null;
+    this.lookAt(null);
     const G = this.game;
     if (!this.costumed) {
       this.clipH = null;
@@ -415,6 +438,7 @@ export class Character {
       this._koFall += dt;
       if (this._koFall > 1.15) { this._koFall = null; this._anim('ko', 0.3); }
     }
+    if (this._lookOff) this.lookOff(dt);
     if (this.costumed && this.alive) this.life(dt);
     if (this.own) this.fig.update(dt, t, camera);
   }
@@ -443,7 +467,7 @@ export class Character {
     const G = this._glance;
     if (G.until > 0) {
       G.until -= dt;
-      if (G.until <= 0) F.lookAt(null);
+      if (G.until <= 0) this.lookAt(null);
       return;
     }
     if (!CALM.has(this.state)) return;

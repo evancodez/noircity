@@ -2,6 +2,7 @@ import { HoodAnimator, getClips, bake, bakeAdditive, chainKeys, DEATH_BACK } fro
 import { NEUTRAL, mergePose, samplePoseKeys, ANKLE_Y } from '../enemies/HoodRig.js';
 import { figureRig, figureGeometry } from './tailor.js';
 import { COSTUMES } from './costumes.js';
+import { BR_DEFS } from './brawl/clips.js';
 
 // The cast's clips (lane 6, P0.3): procedural poses on the Hood's joints,
 // baked per costume (its own proportions: the IK knows his arm lengths)
@@ -551,6 +552,10 @@ Object.assign(DEFS, {
   koFall: () => ({ duration: 1.15, armSpace: 'root', pose: keyed([...DEATH_BACK.map((k) => [k.t, k.pose])]) }),
 });
 
+// the brawler's fight as round 2 made it (src/cast/brawl/clips.js): his
+// guard, his steps, both hands' blows, the room, the last blow
+Object.assign(DEFS, BR_DEFS);
+
 // startle: a jolt over whatever he is doing (additive)
 const ADDITIVE = {
   startle: [
@@ -597,10 +602,38 @@ export function castBank(kind) {
   return bank;
 }
 
+// The look-at (Hood.postPose) turns the spine, the chest and the head ON TOP
+// of the pose the mixer wrote this step. But three's mixer only writes a
+// bone when its animated value changed since the last step (PropertyMixer.
+// apply compares the two accumulation buffers): on a held pose (a clip that
+// ended and holds - notice, rise, the last blow - or a track that is flat
+// over some keys) the bone keeps what it had, and the look is laid on top
+// of last step's look, every step: the torso wound round and round (the
+// brawler's 360s as he rose into the fight and as he lay on the pavement).
+// So before each mixer step the bones the look (and the aim) touch are
+// marked changed: the mixer writes them fresh every step, and the look is
+// always one look on one pose. (Round 2, the fight's owner: the root cause.)
+const LOOK_BONES = new Set(['spine', 'chest', 'neck', 'head', 'upperArmR']);
 export class CastAnimator extends HoodAnimator {
   constructor(root, bank) {
     super(root, bank.clips);
     this.bank = bank;
+  }
+  update(dt) {
+    const M = this.mixer;
+    const binds = M._bindings;
+    if (binds) {
+      // (the region the coming step compares against: last step's)
+      const other = M._accuIndex;
+      for (const pm of binds) {
+        const b = pm.binding;
+        const node = b && (b.targetObject || b.node);
+        if (!node || !LOOK_BONES.has(node.name) || pm.valueSize !== 4) continue;
+        const o = other * 4 + 4;
+        pm.buffer[o] = NaN;
+      }
+    }
+    super.update(dt);
   }
   play(name, opts) { if (this.bank) this.bank.ensure(name); return super.play(name, opts); }
   setOverlay(name, fade) { if (name && this.bank) this.bank.ensure(name); return super.setOverlay(name, fade); }

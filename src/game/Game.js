@@ -701,6 +701,8 @@ export class Game {
       if (e.button === 0 && this.state === 'playing' && this.hands.set === 'tommy' && !this.inspect.active && !this.puzzles.active) this.weapon.trigger = true;
     });
     addEventListener('mouseup', (e) => { if (e.button === 0) this.weapon.trigger = false; this.keysUp.add('Mouse' + e.button); C.keys.delete('Mouse' + e.button); });
+    // (round 2: the right button is my right arm; no menu comes up over the fight)
+    dom.addEventListener('contextmenu', (e) => e.preventDefault());
     document.addEventListener('mousemove', (e) => { if (locked()) { this._mouseAcc.dx += e.movementX || 0; this._mouseAcc.dy += e.movementY || 0; } });
     addEventListener('wheel', (e) => { if (locked()) this._mouseAcc.wheel += e.deltaY; }, { passive: true });
     addEventListener('keyup', (e) => { this.keysUp.add(e.code); });

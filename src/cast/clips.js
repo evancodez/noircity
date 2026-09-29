@@ -76,3 +76,7 @@ export const CAST_CLIPS = {
   // standing, reading (the old man in the study)
   read: { duration: 7, marks: { page: 4.5 }, loop: true },
 };
+
+// the brawler's fight as round 2 made it (src/cast/brawl/clips.js)
+import { BR_CLIPS } from './brawl/clips.js';
+Object.assign(CAST_CLIPS, BR_CLIPS);

@@ -64,8 +64,12 @@ export class Controller {
     this._onMouse = (e) => {
       if (!this.enabled) return;
       if (this.mode === 'brawl') {
-        this.nudge.yaw = clampA(this.nudge.yaw - e.movementX * this.sensitivity, -0.12, 0.12);
-        this.nudge.pitch = clampA(this.nudge.pitch - e.movementY * this.sensitivity, -0.12, 0.12);
+        // (round 2: the mouse looks; the body keeps turning to face him and
+        // the look comes back to him when the mouse is still)
+        const L = this.modeOpts.look ?? 0.7;
+        this.nudge.yaw = clampA(this.nudge.yaw - e.movementX * this.sensitivity, -L, L);
+        this.nudge.pitch = clampA(this.nudge.pitch - e.movementY * this.sensitivity, -0.4, 0.4);
+        this.nudgeIdle = 0;
         return;
       }
       if (this.mode === 'table' || this.mode === 'cutscene' || this.lookLocked) return;
@@ -140,7 +144,14 @@ export class Controller {
       this.pitch = opts.pitch ?? -0.14;
     } else if (name === 'brawl') {
       this.modeOpts = { dist: 1.45, eyeY: 1.8, ...opts };
-      this.nudge.yaw = 0; this.nudge.pitch = 0; this.slip = 0;
+      this.nudge.yaw = 0; this.nudge.pitch = 0; this.slip = 0; this.nudgeIdle = 0;
+      // (the eye stays where it stands: the fight is in the room, I move in
+      // it; the body turns to him from the way it faced)
+      if (opts.pos) this.pos.set(opts.pos.x, 0, opts.pos.z);
+      this.faceYaw = opts.yaw ?? prev.yaw ?? this.yaw;
+      this.brawlMove = { f: 0, s: 0 };
+      this.brawlPush = new THREE.Vector3();
+      this.bump = null;
     } else if (name === 'table') {
       this.ease(opts.pose, opts.ease ?? 0.5, prev);
     }
@@ -193,25 +204,49 @@ export class Controller {
       const fw = O.forward || 0, by = this.bodyYaw ?? a.yaw;
       this.pos.set(a.pos.x - Math.sin(by) * fw - Math.sin(this.yaw) * lean, 0, a.pos.z - Math.cos(by) * fw - Math.cos(this.yaw) * lean);
     } else if (this.mode === 'brawl' && O.opponent) {
+      // Round 2 (FIGHT.md §1, §4): the fight is in the room. I walk where I
+      // like (the brawl hands me its move: brawlMove { f, s } from W A S D,
+      // held off while SPACE makes A / D slips); the body turns to face him
+      // (at most 7 rad/s); the mouse looks round (nudge, coming back to him
+      // when the mouse rests); a shove moves me (brawlPush, m/s), and what
+      // it drives me into is reported (bump: the counter, a stool)
       const op = O.opponent.pos;
-      _v.set(this.pos.x - op.x, 0, this.pos.z - op.z);
-      if (_v.lengthSq() < 1e-6) _v.set(1, 0, 0);
-      _v.normalize();
-      let x = op.x + _v.x * O.dist, z = op.z + _v.z * O.dist;
-      // the slip: sideways across the line to him
-      x += _v.z * this.slip; z += -_v.x * this.slip;
-      if (O.ring) {
-        const dx = x - O.ring.x, dz = z - O.ring.z, d = Math.hypot(dx, dz), R = O.ring.r ?? 2;
-        if (d > R) { x = O.ring.x + dx / d * R; z = O.ring.z + dz / d * R; }
+      const M = this.brawlMove || { f: 0, s: 0 };
+      const fy = this.faceYaw ?? this.yaw;
+      const sin = Math.sin(fy), cos = Math.cos(fy);
+      const sp = M.f < 0 ? 1.7 : M.f > 0 ? 2.1 : 1.8;
+      const len = Math.hypot(M.f, M.s) || 1;
+      const tx = ((-sin * M.f + cos * M.s) / len) * sp * Math.min(1, Math.hypot(M.f, M.s));
+      const tz = ((-cos * M.f - sin * M.s) / len) * sp * Math.min(1, Math.hypot(M.f, M.s));
+      const a = 1 - Math.exp(-(Math.abs(M.f) + Math.abs(M.s) > 0.05 ? 11 : 14) * dt);
+      this.vel.x += (tx - this.vel.x) * a; this.vel.z += (tz - this.vel.z) * a;
+      const P = this.brawlPush;
+      const px = this.pos.x, pz = this.pos.z;
+      this.pos.x += (this.vel.x + (P ? P.x : 0)) * dt;
+      this.pos.z += (this.vel.z + (P ? P.z : 0)) * dt;
+      const wx = this.pos.x, wz = this.pos.z;
+      if (this.world.colliders) this.world.colliders.resolve(this.pos, this.radius * 0.85);
+      // (driven into something hard: what, and how hard)
+      if (P && P.lengthSq() > 0.8 && Math.hypot(this.pos.x - wx, this.pos.z - wz) > 0.3 * P.length() * dt) {
+        this.bump = { at: this.pos.clone(), speed: P.length(), from: { x: px, z: pz } };
+        P.set(0, 0, 0);
       }
-      this.pos.set(x, 0, z);
-      // (footwork: never through a stool, a booth or the counter)
-      if (this.world.colliders) this.world.colliders.resolve(this.pos, this.radius * 0.8);
-      x = this.pos.x; z = this.pos.z;
+      if (P) P.multiplyScalar(Math.exp(-dt * 5.5));
+      const bob = Math.hypot(this.vel.x, this.vel.z);
+      this.bobAmp += ((bob > 0.3 ? Math.min(0.7, bob / 3) : 0) - this.bobAmp) * (1 - Math.exp(-8 * dt));
+      this.bobPhase += dt * (bob > 0.1 ? 2.6 + bob * 1.2 : 0);
       this.groundY = O.eyeY - EYE + 0.02;
+      // the body to him, the look on top
+      const x = this.pos.x, z = this.pos.z;
+      const want = Math.atan2(-(op.x - x), -(op.z - z));
+      const turn = wrap(want - fy);
+      this.faceYaw = fy + Math.sign(turn) * Math.min(Math.abs(turn), (O.turn ?? 7) * dt);
+      this.nudgeIdle = (this.nudgeIdle || 0) + dt;
+      if (this.nudgeIdle > 0.35) { const k = Math.exp(-dt * 1.6); this.nudge.yaw *= k; this.nudge.pitch *= k; }
       const ty = (op.y || 0) + 1.45 * (O.opponent.fig ? O.opponent.fig.scale : 1) * 0.78;
-      this.yaw = Math.atan2(-(op.x - x), -(op.z - z)) + this.nudge.yaw;
-      this.pitch = Math.atan2(ty - O.eyeY, Math.hypot(op.x - x, op.z - z)) + this.nudge.pitch;
+      this.yaw = this.faceYaw + this.nudge.yaw;
+      this.pitch = clampA(Math.atan2(ty - O.eyeY, Math.max(0.6, Math.hypot(op.x - x, op.z - z))) + this.nudge.pitch, -0.9, 0.6);
+      this.bodyYaw = null;
     } else if (this.mode === 'cutscene' && O.track) {
       const p = O.track(this.modeT);
       if (p) this._pose = p;

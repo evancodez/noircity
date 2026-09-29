@@ -52,8 +52,8 @@ export function buildBooths(kit, stage, buildProp) {
   const booths = [];
   const cush = [], dims = [], frame = [], base = [];
   BT.z.forEach((z, i) => {
-    const short = i === 2;
-    const half = short ? 0.55 : 1.0;
+    const short = false;
+    const half = BT.half ?? 1.0;
     const seats = [];
     for (const s of short ? [1] : [-1, 1]) {
       const zb = z + s * half;
@@ -91,14 +91,84 @@ export function buildBooths(kit, stage, buildProp) {
     const h = stage.breakables.add(t, { kind: 'table', hp: 3 });
     b.table = t; b.handle = h; b.items = items;
   });
-  // booth 3's stool, on the door side of its table
-  const b3 = booths[2];
-  const st = buildProp('stool', { lod: 1 });
-  st.position.set(bx - 0.25, 0, b3.z - 0.62);
-  st.scale.set(0.95, 0.62, 0.95);
-  kit.g.add(st);
-  b3.stool = st;
+  booths.cafe = buildCafe(kit, stage);
   return booths;
+}
+
+// ---- bay B2: a small round café table and two bentwood chairs against each
+// pilaster (FIGHT.md §6). All breakable; the chairs can be picked up in the
+// fight. Each thing its own group (a breakable), with a collider of its own.
+function buildCafe(kit, stage) {
+  const { M } = kit;
+  const out = [];
+  const C = stage.colliders;
+  for (const spec of D.booths.cafe) {
+    kit.piece();
+    const t = new THREE.Group();
+    t.name = 'cafeTable';
+    t.position.set(spec.x, 0, spec.z);
+    kit.g.add(t);
+    const R = 0.31, top = 0.76 + F;
+    // the top: an enamel disc with a steel band; one iron pedestal on a
+    // cross of feet
+    kit.add(lathe([[0.0001, top], [R, top], [R + 0.004, top - 0.01], [R, top - 0.03], [0.0001, top - 0.03]], 40), M.tableTop, { parent: t });
+    kit.add(new THREE.CylinderGeometry(R + 0.006, R + 0.006, 0.018, 40, 1, true).translate(0, top - 0.02, 0), M.steel, { parent: t, cast: false });
+    kit.add(lathe([[0.0001, F], [0.05, F], [0.03, F + 0.05], [0.022, top - 0.1], [0.06, top - 0.04], [0.0001, top - 0.03]], 20), M.iron, { parent: t });
+    const feet = [];
+    for (let k = 0; k < 4; k++) {
+      const a = k * Math.PI / 2 + 0.4;
+      feet.push(slab(0.36, 0.03, 0.05, { bevel: 0.008, corner: 0.01 }).rotateY(-a).translate(Math.cos(a) * 0.16, F, Math.sin(a) * 0.16));
+    }
+    kit.addMerged(feet, M.iron, { parent: t });
+    const tcol = C.addCircle(spec.x, spec.z, R + 0.02, 'cafeTable');
+    const th = stage.breakables.add(t, { kind: 'table', hp: 2, collider: tcol });
+    const chairs = [];
+    for (const [cx, cz, yaw] of spec.chairs) {
+      kit.piece();
+      const c = buildChair(kit);
+      c.position.set(cx, 0, cz);
+      c.rotation.y = yaw;
+      kit.g.add(c);
+      const col = C.addCircle(cx, cz, 0.21, 'chair');
+      const h = stage.breakables.add(c, { kind: 'stool', hp: 2, collider: col });
+      c.userData.kind = 'chair';
+      chairs.push({ object: c, handle: h, collider: col, pos: new THREE.Vector3(cx, F, cz), yaw });
+    }
+    out.push({ table: t, handle: th, collider: tcol, pos: new THREE.Vector3(spec.x, F, spec.z), chairs });
+  }
+  return out;
+}
+
+// a bentwood café chair: a round seat, four splayed legs with a ring, a hoop
+// back (its origin at the middle of its feet, facing +z)
+function buildChair(kit) {
+  const { M } = kit;
+  const g = new THREE.Group();
+  g.name = 'chair';
+  const seatY = F + 0.46;
+  const wood = [];
+  wood.push(lathe([[0.0001, seatY], [0.19, seatY], [0.2, seatY - 0.012], [0.19, seatY - 0.035], [0.0001, seatY - 0.035]], 28));
+  const legs = [];
+  for (let k = 0; k < 4; k++) {
+    const a = k * Math.PI / 2 + Math.PI / 4;
+    const x0 = Math.cos(a) * 0.14, z0 = Math.sin(a) * 0.14, x1 = Math.cos(a) * 0.2, z1 = Math.sin(a) * 0.2;
+    const len = Math.hypot(x1 - x0, seatY - 0.04 - F, z1 - z0);
+    const leg = new THREE.CylinderGeometry(0.012, 0.014, len, 8);
+    const dir = new THREE.Vector3(x1 - x0, -(seatY - 0.04 - F), z1 - z0).normalize();
+    leg.applyQuaternion(new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, -1, 0), dir));
+    leg.translate((x0 + x1) / 2, (seatY - 0.04 + F) / 2, (z0 + z1) / 2);
+    legs.push(leg);
+  }
+  legs.push(new THREE.TorusGeometry(0.165, 0.008, 6, 32).rotateX(Math.PI / 2).translate(0, F + 0.2, 0));
+  // the back: two uprights and a hoop, behind the seat (-z)
+  const back = [];
+  for (const sx of [-1, 1]) back.push(new THREE.CylinderGeometry(0.011, 0.012, 0.42, 8).rotateX(-0.12).translate(sx * 0.13, seatY + 0.2, -0.17));
+  back.push(new THREE.TorusGeometry(0.15, 0.012, 6, 28, Math.PI).rotateX(-0.12).translate(0, seatY + 0.36, -0.2));
+  back.push(new THREE.TorusGeometry(0.1, 0.008, 6, 24, Math.PI).rotateX(-0.12).translate(0, seatY + 0.26, -0.19));
+  kit.add(mergeGeos([...wood, ...back]), M.boothFrame, { parent: g });
+  kit.add(mergeGeos(legs), M.boothFrame, { parent: g });
+  g.userData.size = new THREE.Vector3(0.42, seatY + 0.55 - F, 0.42);
+  return g;
 }
 
 // the blind half down over B2: a headrail and its slats (their shadows are

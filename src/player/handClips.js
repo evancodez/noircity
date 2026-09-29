@@ -201,3 +201,8 @@ export const HAND_CLIPS = {
   tommyReload: { duration: 2.3, marks: { latch: 0.35, drumOut: 0.8, drumIn: 1.5, bolt: 1.8 } },
   tommyHold: { duration: 1.0, marks: {}, hold: true, blocking: false },
 };
+
+// round 2: my fists in the fight (each button an arm, the wind-up, the
+// slips, the lean, the cover; src/player/clips/fight.js)
+import { FIGHT_CLIPS } from './clips/fight.js';
+Object.assign(HAND_CLIPS, FIGHT_CLIPS);

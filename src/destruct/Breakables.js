@@ -2,6 +2,8 @@ import * as THREE from 'three';
 import { FIRE, ATLAS } from '../fx/fxTextures.js';
 import { accent } from '../render/accents.js';
 import { roundedBox, tube } from '../world/geom.js';
+import { supportUnder } from './Glass.js';
+const _box3 = new THREE.Box3(), _c3 = new THREE.Vector3();
 
 // Breakables (docs/story/CONTRACTS.md §8.2): anything a round, a fist, a
 // body, a blast or a car can break. One set per stage (stage.breakables,
@@ -225,6 +227,7 @@ export class Breakables {
     for (const m of h.removed) if (!S.solids.includes(m)) S.addSolid(m);
     if (G && G.rays && G.rays.refresh) h.object.traverse((m) => { if (m.isMesh && S.solids.includes(m)) G.rays.refresh(m); });
     if (h.collider && h.colArr && !h.colArr.includes(h.collider)) h.colArr.push(h.collider);
+    if (h.collider && h.collider.x0 !== undefined) { h.collider.x = h.collider.x0; h.collider.z = h.collider.z0; }
     Object.assign(h, { broken: false, toppled: false, hp: h.hp0, hits: 0, dumped: false, cut: false, out: false, snap: null, made: [], removed: [], panes: [] });
     delete h.rest;
     if (G && G.pipeline && G.pipeline.dirtyShadows) G.pipeline.dirtyShadows();
@@ -365,6 +368,16 @@ export class Breakables {
     if (m) { if (m.q0) h.object.quaternion.copy(m.q0); h.object.position.copy(m.p0); this.moving.splice(this.moving.indexOf(m), 1); }
     else if (h.rest) { h.object.quaternion.copy(h.rest.q); h.object.position.copy(h.rest.p); }
     h.toppled = false;
+    this.home(h);
+  }
+
+  // a knocked-over thing stood up again: its collider where it stands, its
+  // meshes where the bullets' world (and what falls) finds them
+  home(h) {
+    const cl = h.collider;
+    if (cl && cl.x0 !== undefined) { cl.x = cl.x0; cl.z = cl.z0; }
+    const G = this.game;
+    if (G && G.rays && G.rays.refresh) { h.object.updateMatrixWorld(true); h.object.traverse((x) => { if (x.isMesh) G.rays.refresh(x); }); }
   }
 
   update(dt) {
@@ -426,7 +439,20 @@ export class Breakables {
           }
         }
       }
-      if (m.ang >= Math.PI / 2 && Math.abs(m.rollW) < 0.05 && m.t > 0.5 && (!m.barrel || m.barrel.v <= 0)) { m.h.rest = { q: m.q0, p: m.p0 }; this.moving.splice(i, 1); }
+      if (m.ang >= Math.PI / 2 && Math.abs(m.rollW) < 0.05 && m.t > 0.5 && (!m.barrel || m.barrel.v <= 0)) {
+        m.h.rest = { q: m.q0, p: m.p0 };
+        this.moving.splice(i, 1);
+        // (lying down now: the bullets' world - and what falls on it - finds
+        // it where it lies, not standing where it stood; round 2)
+        const Gm = this.game;
+        if (Gm && Gm.rays && Gm.rays.refresh) { o.updateMatrixWorld(true); o.traverse((x) => { if (x.isMesh) Gm.rays.refresh(x); }); }
+        // (and the floor it stood on is free; what it lies across is not)
+        const cl = m.h.collider;
+        if (cl && cl.r !== undefined) {
+          if (cl.x0 === undefined) { cl.x0 = cl.x; cl.z0 = cl.z; }
+          const p = o.getWorldPosition(_v); cl.x = p.x; cl.z = p.z;
+        }
+      }
     }
     if (this.pieces) this.pieces.update(dt);
     this.updateJets(dt);
@@ -1027,13 +1053,10 @@ export class PieceField {
     this.rest = [];
   }
 
-  groundUnder(p) {
-    const G = this.stage.game;
-    const fl = this.stage.surfaceY(p.x, p.z);
-    if (!G || !G.rays) return fl;
-    const hit = G.rays.raycast(new THREE.Vector3(p.x, p.y + 0.05, p.z), new THREE.Vector3(0, -1, 0), 4);
-    return hit ? Math.max(fl, hit.point.y) : fl;
-  }
+  // (round 2: what is under it, shown - a knocked-over stool's old seat or a
+  // broken table is no support - found again every few centimetres, never
+  // kept from where it was thrown: glass does not lie on the air)
+  groundUnder(p) { return supportUnder(this.stage, p); }
 
   add(m, vel, spin, opts = {}) {
     if (!m.parent) this.stage.scene.add(m);
@@ -1081,13 +1104,69 @@ export class PieceField {
       if (p.roll || p.thin) best = axes[1];
       const tgt = new THREE.Vector3(0, Math.sign(best.y) || 1, 0);
       m.quaternion.premultiply(_q.setFromUnitVectors(best.clone().normalize(), tgt));
+      // (its lowest point on what is under it, exactly: a piece lies on the
+      // counter or the floor, never a centimetre over it)
+      this.seat(p);
     }
+    if (p.vel) p.vel.set(0, 0, 0);
     this.rest.push(p);
     while (this.rest.length > REST_CAP) { const q = this.rest.shift(); q.mesh.parent && q.mesh.parent.remove(q.mesh); }
   }
 
+  // what a piece lies on: the highest support under its footprint (its
+  // middle and four points toward its edges: a sliver across a fallen
+  // stool's column lies on the column)
+  restSupport(p, b = null) {
+    const m = p.mesh;
+    if (!b) { m.updateMatrixWorld(true); b = _box3.setFromObject(m, true); }
+    const hx = (b.max.x - b.min.x) * 0.35, hz = (b.max.z - b.min.z) * 0.35;
+    let g = -Infinity;
+    for (const [ox, oz] of [[0, 0], [hx, 0], [-hx, 0], [0, hz], [0, -hz]]) g = Math.max(g, supportUnder(this.stage, _c3.set(m.position.x + ox, b.max.y, m.position.z + oz)));
+    return g;
+  }
+
+  // (about to land: is what it lands on really there? a fresh look; if the
+  // floor is further down, it falls on)
+  landOn(p) {
+    const g = this.groundUnder(p.mesh.position);
+    p.gx = p.mesh.position.x; p.gz = p.mesh.position.z; p.gT = 6;
+    if (g < p.ground - 0.02) { p.ground = g; return false; }
+    p.ground = g;
+    return true;
+  }
+
+  // set a piece down on the support under it by its lowest vertex
+  seat(p) {
+    const m = p.mesh;
+    m.updateMatrixWorld(true);
+    const b = _box3.setFromObject(m, true);
+    if (!Number.isFinite(b.min.y)) return;
+    const g = this.restSupport(p, b);
+    p.ground = g;
+    m.position.y += g + 0.002 - b.min.y;
+  }
+
   update(dt) {
     const r = this.rng;
+    // (a piece lying on something that is gone - a stool knocked over, a
+    // table broken - falls again: a few looked at each step, round the list)
+    if (this.rest.length) {
+      for (let k = 0; k < 6; k++) {
+        this._ri = ((this._ri || 0) + 1) % this.rest.length;
+        const p = this.rest[this._ri];
+        if (p.hinge || !p.mesh.parent) continue;
+        const m = p.mesh;
+        m.updateMatrixWorld(true);
+        const b = _box3.setFromObject(m, true);
+        const g = this.restSupport(p, b);
+        if (b.min.y - g > 0.006) {
+          this.rest.splice(this._ri, 1);
+          p.vel = new THREE.Vector3(0, 0, 0); p.spin = new THREE.Vector3(0, 0, 0); p.gT = 0; p.bounces = 3; p.rolling = null;
+          this.live.push(p);
+          if (!this.rest.length) break;
+        }
+      }
+    }
     for (let i = this.live.length - 1; i >= 0; i--) {
       const p = this.live[i], m = p.mesh;
       p.t += dt;
@@ -1126,10 +1205,11 @@ export class PieceField {
       m.position.addScaledVector(p.vel, dt);
       const w = p.spin.length();
       if (w > 1e-4) m.quaternion.premultiply(_q.setFromAxisAngle(_ax.copy(p.spin).divideScalar(w), w * dt));
-      // (moved far over the floor: find what is under it again)
-      if (Math.hypot(m.position.x - p.gx, m.position.z - p.gz) > 0.25) { p.gx = m.position.x; p.gz = m.position.z; p.ground = this.groundUnder(m.position); }
+      // (moved over the floor: find what is under it again)
+      const near = m.position.y - (p.ground || 0) < 0.35;
+      if (Math.hypot(m.position.x - p.gx, m.position.z - p.gz) > (near ? 0.04 : 0.25) || (p.gT = (p.gT || 0) - 1) < 0) { p.gT = near ? 6 : 12; p.gx = m.position.x; p.gz = m.position.z; p.ground = this.groundUnder(m.position); }
       const low = p.thin ? p.rad * 0.3 : p.rad * 0.55;
-      if (m.position.y - low <= p.ground && p.vel.y < 0) {
+      if (m.position.y - low <= p.ground && p.vel.y < 0 && this.landOn(p)) {
         m.position.y = p.ground + low;
         if (p.roll && p.bounces === 0 && Math.hypot(p.vel.x, p.vel.z) > 0.6) {
           // a disc lands on its rim and rolls
