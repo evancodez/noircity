@@ -272,7 +272,11 @@ export default {
         dips.length = 0;
         api.rattle = null; api.train = null; trainBars.hide();
         api.register.isOpen = false; api.register.k = 0; reg.drawer.position.x = 0;
-        for (const l of pendants) { l.sw.x = l.sw.z = l.sw.vx = l.sw.vz = 0; l._swung = true; swingStep(l, 0); }
+        for (const l of pendants) {
+          l.sw.x = l.sw.z = l.sw.vx = l.sw.vz = 0; l._swung = true; swingStep(l, 0);
+          // (a pendant shot out in the last try is lit again)
+          if (l.dead) { l.dead = false; l.buzz = null; l.dieNow = false; l.deadK = 0; l.on = !!api.near; if (l.bulb) l.bulb.material = kit.M.bulb; }
+        }
         // a table or the pie case broken in the last try stands again
         for (const h of [...booths.map((b) => b.handle), pieHandle]) {
           if (!h.broken) continue;
