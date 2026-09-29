@@ -308,8 +308,11 @@ function buildSleeve(F, sgn, g) {
 function buildBareArm(F, sgn, g) {
   const R = F.rig, J = R.BIND[sgn > 0 ? 'upperArmL' : 'upperArmR'];
   const r = g.r ?? 0.05, U = R.L_UPPER, L = U + R.L_FORE, d0 = g.d0 ?? 0.1;
+  // (wrist: the arm's radius at the wrist, a fraction of r; a heavy forearm
+  // swells below the elbow and narrows hard to it)
+  const wr = g.wrist ?? 0.64;
   const prof = [[d0 - 0.02, r * 0.4], [d0, r * 1.02], [U * 0.6, r * 1.05], [U - 0.04, r * 0.92], [U, r * 0.86], [U + 0.05, r * 0.98],
-    [U + 0.1, r * 1.0], [U + 0.17, r * 0.86], [L - 0.03, r * 0.66], [L - 0.005, r * 0.64], [L + 0.01, r * 0.5]];
+    [U + 0.1, r * 1.0], [U + 0.17, r * (0.86 + (0.64 - wr) * 0.3)], [L - 0.03, r * (wr + 0.02)], [L - 0.005, r * wr], [L + 0.01, r * wr * 0.78]];
   const nu = seg(32, 10), nv = seg(prof.length * 3, prof.length + 4);
   const geo = grid(nu, nv, (u, v, p) => {
     const [d, rr] = profileAt(prof, v);
@@ -453,10 +456,139 @@ function buildNeck(F) {
   return { geo, shade: F.shade(F.body.neckShade || 'skin'), weights };
 }
 
+// A fist that is a fist, never a ball (the brawler's): built in the bind
+// pose, the arm hanging, the back of the hand outward (+sgn x), the palm in,
+// the knuckles a row along z at the bottom. Its parts: the back of the hand
+// and the curled fingers as one squared block (a superellipsoid) with a
+// ridge of four knuckles along its outer bottom edge and the fingers'
+// joints as a second, lower ridge on the palm side; the thumb a bent tube
+// folded across the front of the curled fingers.
+function buildFist(F, sgn, g) {
+  const W = F.rig.BIND[sgn > 0 ? 'handL' : 'handR'];
+  const k = g.s ?? 1;
+  const hx = 0.029 * k, hy = 0.05 * k, hz = 0.043 * k;
+  const C = new THREE.Vector3(W.x - sgn * 0.004 * k, W.y - 0.056 * k, W.z + 0.004);
+  const nu = seg(40, 12), nv = seg(28, 8);
+  const hb = sgn > 0 ? B.handL : B.handR;
+  const e = 0.42;
+  const block = grid(nu, nv, (u, v, p) => {
+    const b = v * Math.PI, a = u * TAU;
+    const dy = Math.cos(b), q = Math.sin(b);
+    const dx = q * Math.sin(a), dz = q * Math.cos(a);
+    let x = spow(dx, e) * hx, y = spow(dy, e) * hy, z = spow(dz, e) * hz;
+    // narrower at the wrist, broad across the knuckles
+    const toWrist = sstep(-0.2, 1, dy);
+    z *= 1 - 0.2 * toWrist; x *= 1 - 0.12 * toWrist;
+    // the knuckle ridge (MCP): four bumps along the outer bottom edge
+    const out = sgn * dx;
+    const edge = sstep(-0.1, 0.55, out) * sstep(0.25, 0.85, -dy);
+    const kn = Math.pow(Math.max(0, Math.cos(TAU * (z / (0.022 * k)) - Math.PI / 2)), 1.5);
+    // the second row (PIP) along the inner bottom edge, softer
+    const inner = sstep(-0.1, 0.6, -out) * sstep(0.2, 0.9, -dy);
+    const kn2 = Math.pow(Math.max(0, Math.cos(TAU * (z / (0.022 * k)) - Math.PI / 2)), 2);
+    const bump = 0.0075 * k * edge * kn + 0.004 * k * inner * kn2;
+    x += sgn * bump * 0.6 * Math.max(0, out); y -= bump;
+    // the crease where the curled fingers meet the palm (a groove across the inner face)
+    const crease = Math.exp(-(((dy + 0.05) / 0.12) ** 2)) * sstep(0.3, 0.8, -out);
+    x += sgn * 0.003 * k * crease;
+    // the fingers told apart: shallow grooves between them over the bottom
+    // and the inner face (the curled fingers' side)
+    const fingers = sstep(0.1, 0.7, -dy) + sstep(0.2, 0.8, -out) * (1 - sstep(0.2, 0.9, dy));
+    const gr = Math.pow(Math.max(0, Math.cos(TAU * (z / (0.022 * k)))), 6) * Math.min(1, fingers) * (1 - edge);
+    x += sgn * 0.0025 * k * gr * Math.max(0, out); x -= sgn * 0.0025 * k * gr * Math.max(0, -out); y += 0.0025 * k * gr * Math.max(0, -dy);
+    p.set(C.x + x, C.y + y, C.z + z);
+  });
+  orientOut(block, C);
+  // the thumb: from the heel of the hand at the front (+z) edge, folded down
+  // across the inner face over the curled fingers
+  const xin = C.x - sgn * hx * 0.92;
+  const T0 = new THREE.Vector3(xin + sgn * 0.004 * k, C.y + 0.035 * k, C.z + hz * 0.85);
+  const T1 = new THREE.Vector3(xin - sgn * 0.006 * k, C.y - 0.008 * k, C.z + hz * 0.95);
+  const T2 = new THREE.Vector3(xin - sgn * 0.004 * k, C.y - 0.03 * k, C.z + hz * 0.15);
+  const tr = 0.0105 * k;
+  const curve = new THREE.QuadraticBezierCurve3(T0, T1, T2);
+  const nT = seg(18, 6), nR = seg(14, 6);
+  const fr = curve.computeFrenetFrames(nT, false);
+  const thumb = grid(nR, nT, (u, v, p) => {
+    const i = Math.round(v * nT);
+    const c = curve.getPoint(v), a = u * TAU;
+    // (round ends: the tube pinches shut at both)
+    const rr = tr * (0.3 + 0.7 * Math.sin(Math.PI * Math.min(1, Math.max(0, v * 1.15 - 0.02)) ** 0.5)) * (1 - 0.15 * v);
+    p.copy(c).addScaledVector(fr.normals[i], Math.cos(a) * rr).addScaledVector(fr.binormals[i], Math.sin(a) * rr);
+  });
+  orientOut(thumb, curve.getPoint(0.5));
+  const shade = F.shade(g.shade || 'hand');
+  return [{ geo: block, shade, weights: () => [[hb, 1]] }, { geo: thumb, shade, weights: () => [[hb, 1]] }];
+}
+
+// An open hand with fingers (the waitress's: she pours, serves, carries):
+// in the bind pose, the arm hanging, the palm in (-sgn x), the back out,
+// the fingers down. A flat palm, four tapered fingers bent `curl` of the
+// way into the palm at their joints, a thumb from the heel of the palm
+// forward and in.
+function buildOpenHand(F, sgn, g) {
+  const W = F.rig.BIND[sgn > 0 ? 'handL' : 'handR'];
+  const k = g.s ?? 1, curl = g.curl ?? 0.4;
+  const hb = sgn > 0 ? B.handL : B.handR;
+  const shade = F.shade(g.shade || 'hand');
+  const parts = [];
+  const nu = seg(28, 10), nv = seg(18, 6);
+  // the palm: a flattened superellipsoid
+  const C = new THREE.Vector3(W.x - sgn * 0.002 * k, W.y - 0.048 * k, W.z + 0.004);
+  const px = 0.0125 * k, py = 0.046 * k, pz = 0.04 * k;
+  const palm = grid(nu, nv, (u, v, p) => {
+    const b = v * Math.PI, a = u * TAU;
+    const dy = Math.cos(b), q = Math.sin(b);
+    const dx = q * Math.sin(a), dz = q * Math.cos(a);
+    const w = 1 - 0.18 * sstep(0, 1, dy);
+    p.set(C.x + spow(dx, 0.7) * px, C.y + spow(dy, 0.5) * py, C.z + spow(dz, 0.5) * pz * w);
+  });
+  orientOut(palm, C);
+  parts.push({ geo: palm, shade, weights: () => [[hb, 1]] });
+  // a finger: a tube along a polyline of three phalanges from its knuckle,
+  // bending toward the palm (-sgn x)
+  const tube = (pts, r0, r1) => {
+    const curve = new THREE.CatmullRomCurve3(pts);
+    const nT = seg(14, 6), nR = seg(10, 5);
+    const fr = curve.computeFrenetFrames(nT, false);
+    const geo = grid(nR, nT, (u, v, p) => {
+      const i = Math.round(v * nT), c = curve.getPoint(v), a = u * TAU;
+      const cap = Math.sqrt(Math.max(0, 1 - Math.max(0, (v - 0.9) / 0.1) ** 2)) * (v < 0.04 ? 0.6 + 10 * v : 1);
+      const rr = (r0 + (r1 - r0) * v) * cap;
+      p.copy(c).addScaledVector(fr.normals[i], Math.cos(a) * rr).addScaledVector(fr.binormals[i], Math.sin(a) * rr);
+    });
+    orientOut(geo, curve.getPoint(0.5));
+    return geo;
+  };
+  const Fz = [0.027, 0.009, -0.009, -0.026], Fl = [0.07, 0.078, 0.073, 0.058];
+  for (let i = 0; i < 4; i++) {
+    const len = Fl[i] * k, z = C.z + Fz[i] * k;
+    const pts = [new THREE.Vector3(C.x, C.y - py * 0.92, z)];
+    let dir = new THREE.Vector3(0, -1, 0), at = pts[0].clone();
+    const ang = [0.45, 0.8, 0.6].map((x) => x * curl * 1.35);
+    const segs = [0.45, 0.3, 0.25];
+    for (let j = 0; j < 3; j++) {
+      // (a bend about z: the finger turns from down toward the palm side)
+      dir = dir.clone().applyAxisAngle(new THREE.Vector3(0, 0, 1), -sgn * ang[j]);
+      at = at.clone().addScaledVector(dir, len * segs[j]);
+      pts.push(at);
+    }
+    parts.push({ geo: tube(pts, 0.0082 * k, 0.0064 * k), shade, weights: () => [[hb, 1]] });
+  }
+  // the thumb: from the heel of the palm's front edge, forward and in
+  const T = [new THREE.Vector3(C.x - sgn * 0.004 * k, C.y + 0.02 * k, C.z + pz * 0.8),
+    new THREE.Vector3(C.x - sgn * 0.014 * k, C.y - 0.02 * k, C.z + pz * 1.25),
+    new THREE.Vector3(C.x - sgn * (0.022 + 0.02 * curl) * k, C.y - 0.05 * k, C.z + pz * 1.0)];
+  parts.push({ geo: tube(T, 0.0105 * k, 0.0075 * k), shade, weights: () => [[hb, 1]] });
+  return parts;
+}
+
 // hands: the Hood's glove, sized; open (fingers curled toward the body) or a fist
 function buildHand(F, sgn, g) {
   const W = F.rig.BIND[sgn > 0 ? 'handL' : 'handR'];
   const k = g.s ?? 1, fist = !!g.fist;
+  if (fist && g.shape !== 'ball') return buildFist(F, sgn, g);
+  if (!fist && g.fingers) return buildOpenHand(F, sgn, g);
   const C = fist ? new THREE.Vector3(W.x, W.y - 0.058 * k, W.z + 0.004) : new THREE.Vector3(W.x - sgn * 0.004, W.y - 0.075 * k, W.z + 0.006);
   const R = (fist ? [0.029, 0.045, 0.037] : [0.029, 0.08, 0.047]).map((r) => r * k);
   const nu = seg(32, 10), nv = seg(22, 8);
@@ -786,7 +918,7 @@ export function figureGeometry(costume, lod = 0) {
       case 'arms': parts.push(buildBareArm(F, 1, g), buildBareArm(F, -1, g)); break;
       case 'legs': parts.push(buildLeg(F, 1, g), buildLeg(F, -1, g)); break;
       case 'shoes': parts.push(buildShoe(F, 1, g), buildShoe(F, -1, g)); break;
-      case 'hands': parts.push(buildHand(F, 1, { ...g, fist: g.fistL ?? g.fist }), buildHand(F, -1, { ...g, fist: g.fistR ?? g.fist })); break;
+      case 'hands': parts.push(...[buildHand(F, 1, { ...g, fist: g.fistL ?? g.fist }), buildHand(F, -1, { ...g, fist: g.fistR ?? g.fist })].flat()); break;
       case 'apron': parts.push(...buildApron(F, g)); break;
       case 'ribbon': parts.push(buildRibbon(F, g)); break;
       case 'custom': parts.push(...g.build(F, { grid, orientOut, torsoWeights, B, seg, sstep, lerp })); break;
