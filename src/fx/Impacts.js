@@ -22,9 +22,14 @@ export class Impacts {
     this.cells = new Map();     // stone hits per 35 cm cell: a corner loses a chunk
   }
 
-  at(hit, dir) {
+  // (weak: a Hood's stray round - it keeps the old reaction only; the P1
+  // craters, dents, heavy sparks and chunks are the player's rounds')
+  at(hit, dir, { weak = false } = {}) {
     const r = this.rng, fx = this.fx;
     const p = hit.point, n = hit.normal;
+    // (past ~18 m a crater or a dent is a pixel: the old reaction only)
+    const G = this.world.game;
+    if (G && G.camera && G.camera.position.distanceTo(p) > 18) weak = true;
     this.count++;
     // reflected direction: debris leaves along the bounce, fanned by the normal
     const refl = dir.clone().addScaledVector(n, -2 * dir.dot(n)).normalize();
@@ -54,6 +59,7 @@ export class Impacts {
         });
       }
       fx.sparks.spawn({ pos: p.clone().addScaledVector(n, 0.02), life: 0.035, size: [0.12, 0.12], rot: r.next() * 6.28, col: [4, 4, 4], cell: ATLAS.CHIP, fadeOut: 0 });
+      if (weak) { if (hit.surf === SURF.CAR) fx.decals.ink(p, n, 0.05); return; }
       // (P1) a few heavier sparks that fall, bounce on the street and die
       const q = this.rng2;
       for (let i = 0; i < 4; i++) {
@@ -86,6 +92,7 @@ export class Impacts {
         col: [0.07, 0.07, 0.07], alpha: 0.5, drag: 3, fadeOut: 0.8,
       });
     }
+    if (weak) { fx.decals.ink(p, n, r.range(0.09, 0.15)); return; }
     // (P1) the crater: pale crushed stone round a dark core
     const q = this.rng2;
     fx.decals.surface.add(p.clone().addScaledVector(n, 0.009), n, q.range(0.16, 0.24), q.next() * 6.28, ATLAS.SPLAT[q.int(0, 3)], [0.16, 0.16, 0.16], 0.85);

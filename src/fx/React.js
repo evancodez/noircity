@@ -39,7 +39,7 @@ export class React {
       const gr = W.props.nearGrate && W.props.nearGrate(hit.point.x, hit.point.z);
       if (gr) W.props.puffGrate(gr, 0.7);
     }
-    if (res !== 'glass' && res !== 'done') G.fx.impacts.at(hit, dir);
+    if (res !== 'glass' && res !== 'done') G.fx.impacts.at(hit, dir, { weak });
     if (res === null && (hit.surf === SURF.IRON || hit.surf === SURF.CAR) && G.rng.chance(0.35)) G.sfx.ricochet(hit.point);
     return res;
   }
