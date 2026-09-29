@@ -769,6 +769,11 @@ export class Sfx {
     this.roomGain = inside ? 1 / 3 : 1;
   }
 
+  // the fight's sounds (game/Brawl.js): a name of the fight's table
+  fight(name, pos = null, p = {}) { this.play('f_' + name, pos, p, { ref: 2 }); }
+  // a window gone: the street comes into the room (0..1 of the way)
+  roomOpen(k = 0.5) { this.openK = k; if (this.live) this.room(this.roomName || 'diner'); }
+
   // the train rumble: k 0..1 by distance, pos the nearest car
   train(k, pos) {
     if (!this.live) return;

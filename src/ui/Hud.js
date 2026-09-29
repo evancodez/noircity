@@ -1,25 +1,36 @@
 import { RNG } from '../util/rng.js';
+import { setBrush, frayEdges, drawInkSplat, makeTornStroke, makeKeyDab, makeTick, hashSeed } from './inkArt.js';
 
-// DOM overlay: the in-game HUD and the ink cards (Phase 3b presentation).
-// Monochrome and ink-styled (DESIGN.md §8); the only colour anywhere is one
-// red splatter accent on the title and on the end card:
+// DOM overlay: the in-game HUD and the ink cards (Phase 3b presentation,
+// the story pass). Monochrome and ink-styled (DESIGN.md §8); the only colour
+// anywhere is one red splatter accent on the title and on the end card:
 //   bottom right the drum count in a typewriter face (American Typewriter /
-//                Courier New), RELOADING while the drum is swapped
-//   bottom left  a thin ink health bar that bleeds red when low
-//   centre       a tiny dot crosshair (opens a little with the spread)
+//                Courier New), RELOADING while the drum is swapped: only
+//                while a gun is out
+//   bottom left  a thin ink health bar that bleeds red when low: only in a
+//                fight
+//   centre       a tiny dot crosshair (opens a little with the spread): only
+//                while a gun is out
+//   the story's lines (CONTRACTS §4.1, §12.1):
+//     prompt     `E  light up` low in the frame in the typewriter face, the
+//                key letter on a dab of ink, a brush tick at the thing
+//     subtitle   one line (42 characters at most), bottom centre, paper
+//                white on a torn black brush stroke, 2.2 s of game time
+//     chapter    a roman numeral and a name (`I` / `The Diner`) in the
+//                title's lettering, 2.4 s, faded on game time
 //   cards        a black ink splatter (canvas: a blot of ragged lobes,
 //                dry-brush drags running dry, spikes flung out ending in
 //                drops, satellite drops, drips) with the lettering in paper
 //                white over it:
-//     title  "NOIR EXTREME" over the live street (the camera drifts, the
-//            rain falls), "click to begin", the keys
-//     end    "THE END", the kills, a one-line epitaph chosen at
-//            random, "click to try again"
+//     title  "NOIR EXTREME" over the live picture of the diner from across
+//            the street in the rain; BEGIN, and CONTINUE when a save exists
+//     end    "THE END" and a one-line epitaph (the old battle's death), or
+//            "To be continued" (the end of the slice); no counters
 //     pause  pointer lock lost: the frame dims under a smaller card,
-//            "click to resume"
+//            "click to resume", a settings line (mouse, volume, subtitles)
 // Hidden entirely in ?shot= mode unless hud=1 (shot=title / shot=end show
-// their card).
-const KEYS = 'WASD move · mouse aim · click fire · R reload · M sound';
+// their card). Every timer runs on game time (tick), never on the page's.
+const KEYS = 'WASD walk · mouse look · E use · F smoke · M sound · ESC pause';
 // one line for the dead (chosen at random on the end card)
 export const EPITAPHS = [
   'The rain washed the street clean. It always does.',
@@ -35,66 +46,95 @@ export const EPITAPHS = [
   'In this town even the rain carries a gun.',
   'They’ll find him when the gutters run clear.',
 ];
+const SERIF = '"Bodoni 72", "Didot", "Playfair Display", Georgia, serif';
+const BOOK = '"Baskerville", Georgia, serif';
+const TYPE = '"American Typewriter", "Courier New", monospace';
+const SAY_FONT = `22px ${BOOK}`;
 
 export class Hud {
   // brush: the ink pass's dry-brush field (render/textures.js, a 1024^2
   // canvas, R/G/B = diagonal / vertical / horizontal stroke families): the
-  // card splats' edges are frayed with it
-  constructor({ onBegin, onRestart, onResume, brush = null }) {
-    BRUSH = brush ? readBrush(brush) : null;
+  // card splats' and strokes' edges are frayed with it
+  constructor({ onBegin, onContinue = null, onRestart, onResume, onSetting = null, brush = null }) {
+    setBrush(brush);
+    this.onSetting = onSetting;
     const style = document.createElement('style');
     style.textContent = `
-      #hud { position: fixed; inset: 0; pointer-events: none; z-index: 10; font-family: "American Typewriter", "Courier New", monospace; color: #e8e8e8; }
+      #hud { position: fixed; inset: 0; pointer-events: none; z-index: 10; font-family: ${TYPE}; color: #e8e8e8; }
       .ncard { position: fixed; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; user-select: none;
-        transition: opacity 0.6s; font-family: "American Typewriter", "Courier New", monospace; }
+        transition: opacity 0.6s; font-family: ${TYPE}; }
       .ncard.hidden { display: none; }
       .ncard .card { position: relative; display: flex; align-items: center; justify-content: center; }
       .ncard .splat { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); pointer-events: none; height: auto; }
-      .ncard h1 { position: relative; margin: 0; font-family: "Bodoni 72", "Didot", "Playfair Display", Georgia, serif; font-weight: 700;
+      .ncard h1 { position: relative; margin: 0; font-family: ${SERIF}; font-weight: 700;
         color: #f2f0ea; transform: scaleX(0.78); line-height: 1; white-space: nowrap; letter-spacing: 0.02em; }
-      .ncard .sub { position: relative; margin: 16px 0 0; font-family: "Baskerville", Georgia, serif; font-size: 19px; letter-spacing: 0.24em; text-shadow: 0 0 6px #000, 0 0 2px #000;
+      .ncard .sub { position: relative; margin: 16px 0 0; font-family: ${BOOK}; font-size: 19px; letter-spacing: 0.24em; text-shadow: 0 0 6px #000, 0 0 2px #000;
         color: #dcdad4; text-transform: uppercase; min-height: 1em; }
-      .ncard .epi { position: relative; margin: 14px 0 0; font-family: "Baskerville", Georgia, serif; font-style: italic; font-size: 19px;
+      .ncard .sub:empty { display: none; }
+      .ncard .epi { position: relative; margin: 14px 0 0; font-family: ${BOOK}; font-style: italic; font-size: 19px;
         color: #cfcdc6; letter-spacing: 0.03em; max-width: 80vw; text-align: center; text-shadow: 0 0 6px #000, 0 0 2px #000; }
+      .ncard .epi:empty { display: none; }
       .ncard .go { position: relative; margin: 26px 0 0; font-size: 14px; letter-spacing: 0.45em; color: #e6e4de; text-transform: uppercase; text-shadow: 0 0 5px #000; }
-      .ncard .keys { position: relative; margin: 12px 0 0; font-size: 11px; letter-spacing: 0.2em; color: #a4a29c; text-transform: uppercase; text-shadow: 0 0 4px #000; }
-      #title { z-index: 20; cursor: pointer; padding-top: 24vh; box-sizing: border-box;
-        background: radial-gradient(ellipse at 50% 62%, rgba(0,0,0,0.0) 0%, rgba(0,0,0,0.12) 45%, rgba(0,0,0,0.72) 100%); }
-      #title h1 { font-size: min(10.5vw, 150px); }
-      #title .go { margin-top: 40px; animation: noirBlink 2.6s ease-in-out infinite; }
+      .ncard .go:empty { display: none; }
+      .ncard .keys { position: relative; margin: 12px 0 0; font-size: 11px; letter-spacing: 0.2em; color: #b8b6b0; text-transform: uppercase; text-shadow: 0 0 4px #000; }
+      #title { z-index: 20; cursor: pointer; justify-content: flex-start; padding: 5vh 0 5vh; box-sizing: border-box;
+        background: linear-gradient(to top, rgba(0,0,0,0.72) 0%, rgba(0,0,0,0.38) 13%, rgba(0,0,0,0) 30%),
+          radial-gradient(ellipse at 50% 34%, rgba(0,0,0,0.0) 0%, rgba(0,0,0,0.08) 45%, rgba(0,0,0,0.6) 100%); }
+      #title .card { margin-top: 9vh; }
+      #title h1 { font-size: min(9vw, 128px); }
+      #title .opts { margin-top: auto; display: flex; gap: 0; align-items: center; font-size: 17px; letter-spacing: 0.5em; color: #eeece6; text-transform: uppercase; }
+      #title .opt { position: relative; padding: 16px 30px 16px 38px; cursor: pointer; text-shadow: 0 0 6px #000, 0 0 2px #000; }
+      #title .opt canvas { position: absolute; left: 50%; top: 50%; transform: translate(-46%, -50%); pointer-events: none; }
+      #title .opt span { position: relative; }
+      #title .opt.hidden { display: none; }
+      #title .opt:hover canvas { opacity: 1; }
+      #title .sep { width: 6px; height: 6px; border-radius: 50%; background: #d8d6d0; box-shadow: 0 0 4px #000; }
+      #title .sep.hidden { display: none; }
+      #title .go { margin-top: 10px; animation: noirBlink 2.6s ease-in-out infinite; }
+      #title .keys { margin-top: 14px; }
       @keyframes noirBlink { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
       #endcard { z-index: 19; cursor: pointer; background: radial-gradient(ellipse at 50% 46%, rgba(0,0,0,0.2) 0%, rgba(0,0,0,0.5) 50%, rgba(0,0,0,0.88) 100%); }
       #endcard h1 { font-size: min(10vw, 140px); }
+      #endcard.cont h1 { font-style: italic; font-weight: 400; font-size: min(8.4vw, 118px); letter-spacing: 0.01em; transform: scaleX(0.86); }
       #endcard .go { margin-top: 34px; }
       #pausecard { z-index: 21; cursor: pointer; background: rgba(4,4,4,0.6); }
       #pausecard h1 { font-size: min(6vw, 84px); }
+      #pausecard .set { position: relative; margin: 30px 0 0; font-size: 12px; letter-spacing: 0.28em; color: #bdbbb5; text-transform: uppercase; text-shadow: 0 0 4px #000; display: flex; gap: 34px; }
+      #pausecard .set b { font-weight: normal; color: #f0eee8; display: inline-block; min-width: 1.6em; text-align: center; }
+      #pausecard .set i { font-style: normal; cursor: pointer; padding: 2px 8px; color: #f0eee8; }
+      #pausecard .set i:hover { color: #fff; text-shadow: 0 0 6px #fff; }
       #hud .br { position: absolute; right: 38px; bottom: 30px; text-align: right; text-shadow: 0 0 3px #000, 0 0 1px #000; }
       #hud .br .ammo { font-size: 46px; line-height: 1; letter-spacing: 0.02em; }
       #hud .br .ammo small { font-size: 18px; color: #bdbdbd; letter-spacing: 0.1em; }
       #hud .br .note { font-size: 13px; letter-spacing: 0.35em; color: #d8d8d8; margin-top: 6px; min-height: 16px; }
       #hud .bl { position: absolute; left: 34px; bottom: 34px; width: 230px; }
       #hud .bl canvas { width: 230px; height: 26px; display: block; }
-      #hud .bl .lab { font-family: "American Typewriter", "Courier New", monospace; font-size: 11px; letter-spacing: 0.4em; color: #bdbdbd; margin-bottom: 4px; text-shadow: 0 0 3px #000; }
+      #hud .bl .lab { font-family: ${TYPE}; font-size: 11px; letter-spacing: 0.4em; color: #bdbdbd; margin-bottom: 4px; text-shadow: 0 0 3px #000; }
       #hud .xh { position: absolute; left: 50%; top: 50%; width: 4px; height: 4px; margin: -2px 0 0 -2px; border-radius: 50%; background: #f2f2f2;
         box-shadow: 0 0 0 1px rgba(0,0,0,0.85); }
       #hud .xr { position: absolute; left: 50%; top: 50%; border-radius: 50%; border: 1px solid rgba(240,240,240,0.35); pointer-events: none; }
-      #hud.titled .br, #hud.titled .bl, #hud.titled .xh, #hud.titled .xr { display: none; }
+      #hud.titled .br, #hud.titled .bl, #hud.titled .xh, #hud.titled .xr, #hud.titled .prompt, #hud.titled .tick, #hud.titled .say, #hud.titled .chapter { display: none !important; }
       #hud .msg { position: absolute; left: 50%; top: 62%; transform: translateX(-50%); font-size: 13px; letter-spacing: 0.4em; color: #ddd; text-shadow: 0 0 3px #000;
         opacity: 0; transition: opacity 0.4s; text-transform: uppercase; }
-      #hud .prompt { position: absolute; left: 50%; bottom: 17%; transform: translateX(-50%); font-size: 15px; letter-spacing: 0.3em; color: #eee;
-        text-shadow: 0 0 4px #000, 0 0 2px #000; text-transform: uppercase; white-space: pre; display: none; }
-      #hud .tick { position: absolute; width: 10px; height: 2px; margin: -1px 0 0 -5px; background: #eee; box-shadow: 0 0 0 1px rgba(0,0,0,0.7); display: none; }
-      #hud .say { position: absolute; left: 50%; bottom: 9%; transform: translateX(-50%); max-width: 80vw; padding: 6px 22px; font-family: "Baskerville", Georgia, serif;
-        font-size: 21px; color: #f2f0ea; background: rgba(4,4,4,0.82); white-space: nowrap; display: none; }
-      #hud .chapter { position: absolute; left: 50%; top: 38%; transform: translate(-50%, -50%); text-align: center; color: #f2f0ea; display: none;
-        font-family: "Bodoni 72", "Didot", Georgia, serif; text-shadow: 0 0 8px #000; }
-      #hud .chapter .num { font-size: 56px; line-height: 1; }
-      #hud .chapter .name { margin-top: 10px; font-family: "Baskerville", Georgia, serif; font-size: 22px; letter-spacing: 0.3em; text-transform: uppercase; }
+      #hud .prompt { position: absolute; left: 50%; bottom: 16%; transform: translateX(-50%); font-size: 15px; letter-spacing: 0.32em; color: #efede7;
+        text-shadow: 0 0 5px #000, 0 0 2px #000, 0 0 1px #000; text-transform: uppercase; white-space: pre; display: none; align-items: center; }
+      #hud .prompt .k { position: relative; display: inline-block; min-width: 44px; height: 44px; line-height: 44px; text-align: center; margin-right: 14px;
+        letter-spacing: 0.08em; font-size: 16px; color: #f4f2ec; text-shadow: none; padding: 0 9px; box-sizing: border-box; }
+      #hud .prompt .k canvas { position: absolute; left: -4px; top: 0; width: calc(100% + 8px); height: 100%; }
+      #hud .prompt .k span { position: relative; }
+      #hud .tick { position: absolute; width: 26px; height: 26px; margin: -24px 0 0 -2px; display: none; }
+      #hud .say { position: absolute; left: 50%; bottom: 7.5%; transform: translateX(-50%); display: none; }
+      #hud .say canvas { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); }
+      #hud .say span { position: relative; display: block; padding: 0 30px; font: ${SAY_FONT}; line-height: 58px; color: #f2f0ea; white-space: nowrap; letter-spacing: 0.02em; }
+      #hud .chapter { position: absolute; left: 50%; top: 40%; transform: translate(-50%, -50%); text-align: center; color: #f2f0ea; display: none; opacity: 0; }
+      #hud .chapter .num { font-family: ${SERIF}; font-weight: 700; font-size: 118px; line-height: 1; transform: scaleX(0.78); text-shadow: 0 0 18px rgba(0,0,0,0.9); }
+      #hud .chapter .rule { display: block; margin: 12px auto 12px; }
+      #hud .chapter .name { font-family: ${BOOK}; font-size: 23px; letter-spacing: 0.42em; text-transform: uppercase; padding-left: 0.42em; text-shadow: 0 0 10px #000, 0 0 3px #000; }
       #hud .cursor { position: absolute; width: 14px; height: 14px; margin: -7px 0 0 -7px; display: none;
         background: linear-gradient(#111, #111) center / 14px 2px no-repeat, linear-gradient(#111, #111) center / 2px 14px no-repeat; filter: drop-shadow(0 0 1px #eee); }
       #fade { position: fixed; inset: 0; background: #000; opacity: 0; pointer-events: none; z-index: 9; }
       #hud.fight .bl { display: block; }
-      #hud.nogun .br, #hud.nogun .xr { display: none; }
+      #hud.nogun .br, #hud.nogun .xr, #hud.nogun .xh { display: none; }
       #hud.nofight .bl { display: none; }
     `;
     document.head.appendChild(style);
@@ -106,7 +146,7 @@ export class Hud {
       <div class="bl"><div class="lab">health</div><canvas width="460" height="52"></canvas></div>
       <div class="xr"></div><div class="xh"></div>
       <div class="msg"></div>
-      <div class="tick"></div><div class="prompt"></div><div class="say"></div>
+      <div class="tick"></div><div class="prompt"><span class="k"><span></span></span><span class="t"></span></div><div class="say"><span></span></div>
       <div class="chapter"><div class="num"></div><div class="name"></div></div><div class="cursor"></div>`;
     // the fade to black between scenes: over the frame, under the cards
     this.fadeEl = document.createElement('div');
@@ -115,36 +155,81 @@ export class Hud {
     this.el = {
       ammo: this.root.querySelector('.ammo'), note: this.root.querySelector('.note'),
       bar: this.root.querySelector('.bl canvas'), xr: this.root.querySelector('.xr'), xh: this.root.querySelector('.xh'), msg: this.root.querySelector('.msg'),
-      prompt: this.root.querySelector('.prompt'), tick: this.root.querySelector('.tick'), say: this.root.querySelector('.say'),
+      prompt: this.root.querySelector('.prompt'), key: this.root.querySelector('.prompt .k span'), ptext: this.root.querySelector('.prompt .t'),
+      tick: this.root.querySelector('.tick'), say: this.root.querySelector('.say'), sayText: this.root.querySelector('.say span'),
       chapter: this.root.querySelector('.chapter'), cursor: this.root.querySelector('.cursor'),
     };
+    // the prompt's key dab and tick, and the chapter card's rule: drawn once
+    this.el.key.parentNode.insertBefore(makeKeyDab(5, 64), this.el.key);
+    this.el.tick.appendChild(makeTick(9));
+    const rule = makeTornStroke(220, 16, 311, [238, 236, 230]);
+    rule.className = 'rule';
+    this.el.chapter.insertBefore(rule, this.el.chapter.querySelector('.name'));
     this.promptOwner = null;
+    this.promptText = null;
     this.sayT = 0;
+    this.sayCanvas = null;
+    this.subtitles = true;
     this.cardT = 0;
+    this.cardDur = 0;
     this.barG = this.el.bar.getContext('2d');
     this.barRng = new RNG(77);
     this.barStrokes = makeBarStrokes(this.barRng);
     this._last = {};
 
-    // the title: the big splat with its red accent, the lettering, the
-    // prompt and the keys
-    this.titleCard = makeCard('title', 'NOIR EXTREME', { w: 1400, h: 620, R: 190, wide: 5.6, vw: 94, seed: 1937, red: true, go: 'click to begin', keys: KEYS });
+    // the title: the big splat with its red accent, the lettering; low in
+    // the frame over the wet street BEGIN and CONTINUE, the keys
+    this.titleCard = makeCard('title', 'NOIR EXTREME', { w: 1400, h: 620, R: 190, wide: 5.6, vw: 80, seed: 1937, red: true });
     this.title = this.titleCard.el;
+    const opts = document.createElement('div');
+    opts.className = 'opts';
+    const opt = (key, text, seed) => {
+      const o = document.createElement('div');
+      o.className = 'opt';
+      o.dataset.k = key;
+      o.appendChild(makeTornStroke(Math.round(text.length * 17 * 1.5 + 150), 62, seed));
+      const s = document.createElement('span'); s.textContent = text; o.appendChild(s);
+      opts.appendChild(o);
+      return o;
+    };
+    this.beginOpt = opt('begin', 'begin', 4101);
+    this.sepEl = document.createElement('div'); this.sepEl.className = 'sep hidden'; opts.appendChild(this.sepEl);
+    this.contOpt = opt('continue', 'continue', 4102);
+    this.contOpt.classList.add('hidden');
+    this.title.appendChild(opts);
+    this.titlePrompt = document.createElement('p'); this.titlePrompt.className = 'go'; this.title.appendChild(this.titlePrompt);
+    const keys = document.createElement('p'); keys.className = 'keys'; keys.textContent = KEYS; this.title.appendChild(keys);
     this.soundLine = document.createElement('p');
     this.soundLine.className = 'keys';
     this.soundLine.textContent = 'any key: sound';
     this.soundLine.style.display = 'none';
     this.title.appendChild(this.soundLine);
-    this.titlePrompt = this.titleCard.go;
     this.title.classList.remove('hidden');
     this.root.classList.add('titled');
-    this.title.addEventListener('click', () => onBegin && onBegin());
+    this.canContinue = false;
+    // BEGIN (or a click anywhere while there is nothing to continue);
+    // CONTINUE when a save exists
+    this.title.addEventListener('click', (e) => {
+      const o = e.target.closest && e.target.closest('.opt');
+      const k = o ? o.dataset.k : this.canContinue ? null : 'begin';
+      if (k === 'continue' && onContinue) onContinue();
+      else if (k === 'begin' && onBegin) onBegin();
+    });
 
-    this.endCard = makeCard('endcard', 'THE END', { w: 1300, h: 620, R: 180, wide: 5.0, vw: 88, seed: 1942, red: true, sub: ' ', epi: ' ', go: 'click to try again' });
-    this.endStats = this.endCard.sub;
-    this.endCard.el.addEventListener('click', () => onRestart && onRestart());
+    this.endCard = makeCard('endcard', 'THE END', { w: 1300, h: 620, R: 180, wide: 5.0, vw: 88, seed: 1942, red: true, sub: '', epi: ' ', go: 'click to try again' });
+    this.endKind = 'end';
+    this.endCard.el.addEventListener('click', () => onRestart && onRestart(this.endKind));
     this.pauseCard = makeCard('pausecard', 'PAUSED', { w: 900, h: 400, R: 96, wide: 5.2, vw: 56, seed: 777, go: 'click to resume', keys: KEYS });
     this.pauseCard.el.addEventListener('click', () => { const f = onResume || onBegin; if (f) f(); });
+    this.settingsEl = document.createElement('div');
+    this.settingsEl.className = 'set';
+    this.pauseCard.el.appendChild(this.settingsEl);
+    this.settingsEl.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const b = e.target.closest && e.target.closest('i');
+      if (b && this.onSetting) { this.onSetting(b.dataset.k, +b.dataset.d); this.drawSettings(); }
+    });
+    this.settings = null;     // () -> { mouse, volume, subtitles }
     this.msgT = 0;
     this.paused = false;
     this.epiRng = null;       // (shot mode: a seeded epitaph)
@@ -154,43 +239,80 @@ export class Hud {
   soundHint(on) { this.soundLine.style.display = on ? '' : 'none'; }
 
   // (the HUD's readouts stay hidden behind the title card)
-  showTitle(text = 'click to begin') { this.titlePrompt.textContent = text; this.title.classList.remove('hidden'); this.root.classList.add('titled'); }
+  // text: a line under the choices (a pointer-lock refusal), none by default
+  showTitle(text = '', { canContinue = this.canContinue } = {}) {
+    this.titlePrompt.textContent = text;
+    this.canContinue = !!canContinue;
+    this.contOpt.classList.toggle('hidden', !this.canContinue);
+    this.sepEl.classList.toggle('hidden', !this.canContinue);
+    this.title.classList.remove('hidden');
+    this.root.classList.add('titled');
+  }
   hideTitle() { this.title.classList.add('hidden'); this.retitle(); }
   setVisible(v) { this.visible = v; this.root.style.display = v ? '' : 'none'; if (!v) this.hideTitle(); }
   get titleShown() { return !this.title.classList.contains('hidden'); }
   get endShown() { return !this.endCard.el.classList.contains('hidden'); }
   retitle() { this.root.classList.toggle('titled', this.titleShown || this.paused || this.endShown); }
 
-  // pointer lock lost in play: the frame dims under the pause card
+  // pointer lock lost in play: the frame dims under the pause card, the
+  // settings line under it
   showPause(text = 'click to resume') {
     this.paused = true;
     this.pauseCard.go.textContent = text;
+    this.drawSettings();
     this.pauseCard.el.classList.remove('hidden');
     this.retitle();
   }
   hidePause() { this.paused = false; this.pauseCard.el.classList.add('hidden'); this.retitle(); }
+  drawSettings() {
+    const s = this.settings ? this.settings() : null;
+    if (!s) { this.settingsEl.innerHTML = ''; return; }
+    this.settingsEl.innerHTML = `<span>mouse <i data-k="mouse" data-d="-1">−</i><b>${s.mouse}</b><i data-k="mouse" data-d="1">+</i></span>`
+      + `<span>volume <i data-k="volume" data-d="-1">−</i><b>${s.volume}</b><i data-k="volume" data-d="1">+</i></span>`
+      + `<span>subtitles <i data-k="subtitles" data-d="0">${s.subtitles ? 'on' : 'off'}</i></span>`;
+  }
 
-  showEnd(kills) {
-    this.endStats.textContent = `${kills} ${kills === 1 ? 'kill' : 'kills'}`;
-    const r = this.epiRng ? this.epiRng.next() : Math.random();
-    this.endCard.epi.textContent = EPITAPHS[Math.floor(r * EPITAPHS.length) % EPITAPHS.length];
-    this.endCard.el.classList.remove('hidden');
-    this.endCard.el.style.opacity = '1';
+  // the end cards: kind 'end' (THE END and an epitaph: the old battle's
+  // death) or 'cont' (the end of the slice: To be continued). No counters.
+  showEnd(opts = {}) {
+    const o = typeof opts === 'object' && opts ? opts : {};
+    const kind = o.kind || 'end';
+    this.endKind = kind;
+    const E = this.endCard;
+    E.el.classList.toggle('cont', kind === 'cont');
+    E.h1.textContent = o.title || (kind === 'cont' ? 'To be continued' : 'THE END');
+    E.sub.textContent = o.sub || '';
+    let epi = o.epi;
+    if (epi === undefined && kind === 'end') {
+      const r = this.epiRng ? this.epiRng.next() : Math.random();
+      epi = EPITAPHS[Math.floor(r * EPITAPHS.length) % EPITAPHS.length];
+    }
+    E.epi.textContent = epi || '';
+    E.go.textContent = o.go || (kind === 'cont' ? 'click for the title' : 'click to try again');
+    E.el.classList.remove('hidden');
+    E.el.style.opacity = '1';
     this.retitle();
   }
   hideEnd() { this.endCard.el.classList.add('hidden'); this.retitle(); }
+
   // ---- the story's lines (CONTRACTS §4.1, §12.1) -------------------------------------
-  // (FOUNDATION: plain; lane 7 owns the look: the brush tick, the torn
-  // stroke under the subtitle, the card's lettering)
   // the one prompt, low in the frame ('E  light up'), a tick at the thing
   // (at: screen pixels { x, y } or null); owner: who may clear it
   prompt(text, at = null, owner = null) {
     const E = this.el;
     if (this.promptOwner && owner && this.promptOwner !== owner && E.prompt.style.display !== 'none' && owner !== 'scene') return;
     this.promptOwner = owner;
-    if (E.prompt.textContent !== text) E.prompt.textContent = text;
-    E.prompt.style.display = 'block';
-    if (at) { E.tick.style.display = 'block'; E.tick.style.left = at.x + 'px'; E.tick.style.top = at.y + 'px'; } else E.tick.style.display = 'none';
+    if (this.promptText !== text) {
+      this.promptText = text;
+      // 'E  light up': the key on its dab, the words after it
+      // (the key is what comes before the double space: 'A D  slip')
+      const m = /^(.+?)\s{2,}(.*)$/.exec(text) || /^(\S+)\s+(.*)$/.exec(text);
+      E.key.textContent = m ? m[1] : '';
+      E.key.parentNode.style.display = m ? '' : 'none';
+      E.ptext.textContent = m ? m[2] : text;
+    }
+    E.prompt.style.display = 'flex';
+    if (at) { E.tick.style.display = 'block'; E.tick.style.left = at.x.toFixed(1) + 'px'; E.tick.style.top = at.y.toFixed(1) + 'px'; } else E.tick.style.display = 'none';
   }
   clearPrompt(owner = null) {
     if (owner && this.promptOwner && owner !== this.promptOwner) return;
@@ -198,19 +320,46 @@ export class Hud {
     this.el.prompt.style.display = 'none';
     this.el.tick.style.display = 'none';
   }
-  // a one-line subtitle (42 characters at most), `secs` of game time
+  get promptShown() { return this.el.prompt.style.display !== 'none' ? (this.promptText || '') : ''; }
+  // a one-line subtitle (42 characters at most), `secs` of game time, on
+  // its own torn stroke (seeded by the line: the same line, the same stroke)
   say(text, secs = 2.2) {
     if (text.length > 42) console.warn(`hud.say: '${text}' is longer than 42 characters`);
-    this.el.say.textContent = text;
-    this.el.say.style.display = 'block';
+    this.lastSay = text;
+    if (!this.subtitles) return;
+    const E = this.el;
+    E.sayText.textContent = text;
+    if (this.sayCanvas) this.sayCanvas.remove();
+    const g = (this._mctx || (this._mctx = document.createElement('canvas').getContext('2d')));
+    g.font = SAY_FONT;
+    const w = Math.ceil(g.measureText(text).width + text.length * 0.44) + 60;
+    this.sayCanvas = makeTornStroke(w + 70, 66, hashSeed(text));
+    E.say.insertBefore(this.sayCanvas, E.sayText);
+    E.say.style.display = 'block';
     this.sayT = secs;
   }
-  // the chapter card: a roman numeral and a name
+  get sayShown() { return this.el.say.style.display !== 'none' ? this.el.sayText.textContent : ''; }
+  // the chapter card: a roman numeral and a name, in the title's lettering;
+  // in over 0.5 s, out over the last 0.7 s (game time)
   card(num, name, secs = 2.4) {
-    this.el.chapter.querySelector('.num').textContent = num || '';
-    this.el.chapter.querySelector('.name').textContent = name || '';
-    this.el.chapter.style.display = 'block';
+    const C = this.el.chapter;
+    C.querySelector('.num').textContent = num || '';
+    C.querySelector('.num').style.display = num ? '' : 'none';
+    C.querySelector('.name').textContent = name || '';
+    C.style.display = 'block';
+    C.style.opacity = '0';
     this.cardT = secs;
+    this.cardDur = secs;
+    this.tickCard(0);
+  }
+  tickCard(dt) {
+    if (this.cardT <= 0) return;
+    this.cardT -= dt;
+    const C = this.el.chapter;
+    if (this.cardT <= 0) { C.style.display = 'none'; return; }
+    const age = this.cardDur - this.cardT;
+    const a = Math.min(1, age / 0.5, this.cardT / 0.7);
+    C.style.opacity = (a * a * (3 - 2 * a)).toFixed(3);
   }
   // the fade to black (0 clear .. 1 black)
   fade(k) { this.fadeEl.style.opacity = String(Math.max(0, Math.min(1, k))); }
@@ -223,7 +372,7 @@ export class Hud {
   // the lines' timers run on game time (one fixed step)
   tick(dt) {
     if (this.sayT > 0) { this.sayT -= dt; if (this.sayT <= 0) this.el.say.style.display = 'none'; }
-    if (this.cardT > 0) { this.cardT -= dt; if (this.cardT <= 0) this.el.chapter.style.display = 'none'; }
+    this.tickCard(dt);
   }
   // shot mode: every CSS animation and transition stops where it starts, so
   // a card in a screenshot never depends on when the page loaded
@@ -236,7 +385,7 @@ export class Hud {
   message(text, secs = 1.4) { this.el.msg.textContent = text; this.el.msg.style.opacity = '1'; this.msgT = secs; }
 
   // s: { ammo, drum, reloading, hp, spread, dt, gun, fight }
-  // (the ammo only while a gun is out; the health in a fight or while hurt)
+  // (the ammo only while a gun is out; the health only in a fight)
   update(s) {
     const L = this._last, E = this.el;
     const gun = s.gun ?? true, fight = s.fight ?? true;
@@ -294,175 +443,6 @@ function makeCard(id, title, { w, h, R, wide, vw, seed, red = false, sub = null,
   const subEl = line('sub', sub), epiEl = line('epi', epi), goEl = line('go', go), keysEl = line('keys', keys);
   document.body.appendChild(el);
   return { el, card, h1, sub: subEl, epi: epiEl, go: goEl, keys: keysEl, canvas: c };
-}
-
-// The dry-brush field as bytes (read once; null without a brush)
-let BRUSH = null;
-function readBrush(img) {
-  try {
-    const n = img.width;
-    const c = document.createElement('canvas');
-    c.width = c.height = n;
-    const g = c.getContext('2d');
-    g.drawImage(img, 0, 0);
-    return { n, d: g.getImageData(0, 0, n, n).data };
-  } catch (e) { return null; }
-}
-
-// Fray a splat's edge like the fireball's and the smoke's (Phase 3b review:
-// the canvas lobes printed as smooth vector curves). The sheet's alpha is
-// softened a few pixels and re-thresholded against the brush field (two
-// octaves, jittered per sheet, the diagonal family inside the blot, the
-// horizontal one along the drags): where the field is strong the ink
-// reaches past the old edge in dry-brush streaks, where it is weak the
-// paper bites into it, so every lobe ends in bristle marks, not a curve.
-function frayEdges(cv, rgb, rng, R) {
-  if (!BRUSH) return;
-  const w = cv.width, h = cv.height;
-  const g = cv.getContext('2d');
-  const src = g.getImageData(0, 0, w, h);
-  // the softened alpha: the band where the brush decides
-  const b = document.createElement('canvas');
-  b.width = w; b.height = h;
-  const bg = b.getContext('2d');
-  const blur = Math.max(1.5, R * 0.022);
-  bg.filter = `blur(${blur.toFixed(1)}px)`;
-  bg.drawImage(cv, 0, 0);
-  const soft = bg.getImageData(0, 0, w, h).data;
-  const { n, d } = BRUSH;
-  const s0 = rng.range(0.55, 0.75), s1 = s0 * rng.range(1.9, 2.3);
-  const ox0 = Math.floor(rng.next() * n), oy0 = Math.floor(rng.next() * n);
-  const ox1 = Math.floor(rng.next() * n), oy1 = Math.floor(rng.next() * n);
-  const out = src.data;
-  for (let y = 0; y < h; y++) {
-    for (let x = 0; x < w; x++) {
-      const k = (y * w + x) * 4;
-      const a = soft[k + 3] / 255;
-      if (a <= 0.004 || (a >= 0.996 && out[k + 3] === 255)) { if (a <= 0.004) out[k + 3] = 0; continue; }
-      const i0 = ((((y * s0 + oy0) | 0) % n) * n + (((x * s0 + ox0) | 0) % n)) * 4;
-      const i1 = ((((y * s1 + oy1) | 0) % n) * n + (((x * s1 + ox1) | 0) % n)) * 4;
-      // diagonal strokes, with the horizontal family mixed in (the drags)
-      const f = (d[i0] * 0.6 + d[i0 + 2] * 0.4) * 0.6 / 255 + (d[i1] * 0.5 + d[i1 + 2] * 0.5) * 0.4 / 255;
-      // (half the sheet's own alpha: a thin spike or drag keeps its body
-      // and frays along its sides instead of melting into the blur)
-      const v = 0.5 * (a + out[k + 3] / 255) + (f - 0.5) * 0.85;
-      const t = Math.min(1, Math.max(0, (v - 0.44) / 0.12));
-      out[k] = rgb[0]; out[k + 1] = rgb[1]; out[k + 2] = rgb[2];
-      out[k + 3] = Math.round(255 * t * t * (3 - 2 * t));
-    }
-  }
-  g.putImageData(src, 0, 0);
-}
-
-// An ink splatter, as a loaded brush and a flicked pen leave it: a blot of
-// overlapping ragged lobes along a flattened ellipse (the lettering sits on
-// it), dry-brush drags pulled out left and right whose bristles run dry,
-// spikes flung out of the blot each ending in a drop, satellite drops
-// thinning with distance, and a few drips running down from the bottom.
-function drawInkSplat(g, cx, cy, R, rng, col, { wide = 4, spikes = 30, drops = 80, drags = 1, drips = 4, spikeLen = 1 } = {}) {
-  g.save();
-  g.fillStyle = col;
-  g.strokeStyle = col;
-  g.lineCap = 'round';
-  g.lineJoin = 'round';
-  const half = R * wide * 0.5;           // half-length of the blot
-  const nL = Math.max(3, Math.round(wide * 3));
-  for (let i = 0; i < nL; i++) {
-    const t = i / (nL - 1) - 0.5;         // -0.5 .. 0.5 along
-    const x = cx + t * half * 1.7 + rng.gauss() * R * 0.06;
-    const y = cy + rng.gauss() * R * 0.1;
-    // (the ends taper: a stroke of the loaded brush, not a sausage)
-    const r = R * (0.3 + 0.6 * Math.pow(Math.cos(t * Math.PI), 0.8)) * rng.range(0.8, 1.12);
-    blob(g, x, y, r, rng, 0.18);
-  }
-  blob(g, cx, cy, R * 0.95, rng, 0.1);
-  // splash lobes where the ink hit hardest: fat bulges pushed out of the
-  // rim, and a fringe of small blots breaking the rim's line
-  const rimAt = (a) => 1 / Math.sqrt((Math.cos(a) / (half * 0.85)) ** 2 + (Math.sin(a) / (R * 0.78)) ** 2);
-  for (let i = 0; i < 9; i++) {
-    const a = rng.next() * Math.PI * 2, rr = rimAt(a);
-    blob(g, cx + Math.cos(a) * rr * 0.95, cy + Math.sin(a) * rr * 0.95, R * rng.range(0.16, 0.34), rng, 0.3);
-  }
-  for (let i = 0; i < 70; i++) {
-    const a = rng.next() * Math.PI * 2, rr = rimAt(a) * rng.range(0.96, 1.08);
-    blob(g, cx + Math.cos(a) * rr, cy + Math.sin(a) * rr, R * rng.range(0.03, 0.1), rng, 0.35);
-  }
-  // dry-brush drags off both ends
-  for (let side = -1; side <= 1; side += 2) {
-    const n = Math.round(110 * drags);
-    for (let i = 0; i < n; i++) {
-      const dy = rng.gauss() * R * 0.3;
-      const y0 = cy + dy;
-      const x0 = cx + side * half * rng.range(0.6, 0.8);
-      const len = R * rng.range(0.4, 1.4) * Math.max(0.15, 1 - Math.abs(dy) / (R * 0.8));
-      const dryAt = rng.range(0.35, 0.85);
-      g.lineWidth = rng.range(1.4, 4.5);
-      g.globalAlpha = rng.range(0.75, 1);
-      g.beginPath();
-      g.moveTo(x0, y0);
-      let drawing = true;
-      for (let k = 1; k <= 20; k++) {
-        const u = k / 20;
-        const x = x0 + side * len * u, y = y0 + Math.sin(u * 2.4) * R * 0.03 + rng.gauss() * 0.5;
-        const skip = u > dryAt && rng.next() < (u - dryAt) * 2.6;
-        if (skip) { drawing = false; g.moveTo(x, y); } else if (!drawing) { drawing = true; g.moveTo(x, y); } else g.lineTo(x, y);
-      }
-      g.stroke();
-    }
-  }
-  g.globalAlpha = 1;
-  // spikes flung out of the blot, each tapering to a drop
-  for (let i = 0; i < spikes; i++) {
-    const a = rng.next() * Math.PI * 2;
-    const ux = Math.cos(a), uy = Math.sin(a), px = -uy, py = ux;
-    // start on the blot's rim (an ellipse half x R*0.9)
-    const rim = 1 / Math.sqrt((ux / (half * 0.85)) ** 2 + (uy / (R * 0.8)) ** 2);
-    const len = R * rng.range(0.25, 0.95) * spikeLen * (rng.next() < 0.25 ? 1.6 : 1);
-    const w0 = R * rng.range(0.03, 0.075);
-    const bx = cx + ux * rim * 0.92, by = cy + uy * rim * 0.92;
-    const tx = bx + ux * len, ty = by + uy * len;
-    g.beginPath();
-    g.moveTo(bx + px * w0, by + py * w0);
-    g.quadraticCurveTo(bx + ux * len * 0.6 + px * w0 * 0.25, by + uy * len * 0.6 + py * w0 * 0.25, tx, ty);
-    g.quadraticCurveTo(bx + ux * len * 0.6 - px * w0 * 0.25, by + uy * len * 0.6 - py * w0 * 0.25, bx - px * w0, by - py * w0);
-    g.fill();
-    if (rng.next() < 0.7) blob(g, tx + ux * w0 * 1.5, ty + uy * w0 * 1.5, w0 * rng.range(0.9, 1.7), rng, 0.25);
-  }
-  // satellite drops
-  for (let i = 0; i < drops; i++) {
-    const a = rng.next() * Math.PI * 2;
-    const d = rng.range(1.05, 1.9);
-    const x = cx + Math.cos(a) * half * 0.9 * d, y = cy + Math.sin(a) * R * 0.9 * d;
-    const r = (R * 0.06 * Math.pow(rng.next(), 1.6)) / d + 1.3;
-    blob(g, x, y, r, rng, 0.3);
-  }
-  // drips off the bottom
-  for (let i = 0; i < drips; i++) {
-    const x = cx + rng.range(-0.55, 0.55) * half;
-    const y0 = cy + R * rng.range(0.4, 0.6);
-    const len = R * rng.range(0.25, 0.75);
-    const w = R * rng.range(0.022, 0.04);
-    g.beginPath();
-    g.moveTo(x - w, y0);
-    g.quadraticCurveTo(x - w * 0.5, y0 + len * 0.7, x - w * 0.35, y0 + len);
-    g.arc(x, y0 + len, w * 0.9, Math.PI, 0, true);
-    g.quadraticCurveTo(x + w * 0.5, y0 + len * 0.7, x + w, y0);
-    g.fill();
-  }
-  g.restore();
-}
-function blob(g, x, y, r, rng, jag = 0.2) {
-  const n = 18 + Math.round(r / 6);
-  const ph = rng.next() * 6.28;
-  g.beginPath();
-  for (let k = 0; k <= n; k++) {
-    const a = (k / n) * Math.PI * 2;
-    const rr = r * (1 + jag * (0.6 * Math.sin(a * 3 + ph) * rng.next() + 0.5 * (rng.next() - 0.5)));
-    const px = x + Math.cos(a) * rr, py = y + Math.sin(a) * rr;
-    if (k === 0) g.moveTo(px, py); else g.lineTo(px, py);
-  }
-  g.closePath();
-  g.fill();
 }
 
 // the health bar: a dry-brush ink stroke whose length is the health; below

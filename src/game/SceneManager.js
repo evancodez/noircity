@@ -28,17 +28,22 @@
 // scene started at or before beat b (a script skips what came before a
 // jump). No promises, no timers: game time only.
 //
-//   game.scenes.go(id, { beat?, fade: 'black' | 'cut', card?: true | string })
+//   game.scenes.go(id, { beat?, fade: 'black' | 'cut', card?: true | string,
+//                        fadeIn?: s (0.6), keep?: true })
 //       a transition: fade to black (0.6 s), enter the stage, run the
 //       beat's setup (or place the player at the scene's spawn), the
-//       chapter card, fade in; the script starts at the beat
+//       chapter card, fade in over `fadeIn`; the script starts at the beat.
+//       keep: the room goes on as it is (no setup, the cast kept): a cut
+//       from one scene straight into the next (the diner into the fight)
+//   game.scenes.stop()           no scene (back to the title)
 //   game.scenes.shot(id, beat)   the shot mode (?scene=&beat=): the same,
 //       at once, no fade, no card, no save
 //   game.scenes.current (def) / .beat / .ctx / .names    game.scenes.press(code)
+//   game.scenes.playTime  seconds of play since the title (counters)
 // Events: scene:enter { id }, scene:beat { id, beat }, scene:exit { id }.
-//
-// FOUNDATION: plain but working; lane 7 owns it (checkpoints, the fade's
-// look, the cards' lettering).
+// Checkpoints: entering a scene writes the save, and so does every beat in
+// def.save (never in shot mode). A scene may export auto(ctx): what the
+// autoplay driver does at each beat (game/Autoplay.js).
 // (a scene file imports its helpers from game/script.js, never from here:
 // this module loads the scene files)
 import { wait, keyLabel } from './script.js';
@@ -73,8 +78,20 @@ export class SceneManager {
     if (!def) throw new Error(`scenes.go: no scene '${id}' (scenes: ${this.names.join(', ')})`);
     if (opts.beat && !def.beats.includes(opts.beat)) throw new Error(`scenes.go: '${id}' has no beat '${opts.beat}' (beats: ${def.beats.join(', ')})`);
     const fade = opts.fade ?? 'black';
-    if (fade === 'cut' || this.game.shotMode) { this.enter(def, opts); this.setFade(0); return; }
-    this.trans = { phase: 'out', t: 0, def, opts };
+    if (fade === 'cut' || this.game.shotMode) { this.trans = null; this.enter(def, opts); this.setFade(0); return; }
+    this.trans = { phase: 'out', t: 0, def, opts, fadeIn: opts.fadeIn ?? FADE };
+  }
+
+  // no scene at all (the title): the script, its hooks and its prompts end
+  stop() {
+    const G = this.game;
+    if (this.current) G.emit('scene:exit', { id: this.current.id });
+    G.interact.clear('scene');
+    if (G.inspect.active) G.inspect.close(false);
+    if (G.puzzles.active) G.puzzles.close();
+    G.hud.clearPrompt();
+    this.current = null; this.beat = null; this.ctx = null; this.it = null; this.waitOn = null; this.hooks = []; this.trans = null;
+    this.setFade(0);
   }
 
   shot(id, beatName = null) {
@@ -85,7 +102,7 @@ export class SceneManager {
 
   setFade(k) { this.fadeK = k; this.game.hud.fade(k); }
 
-  enter(def, { beat: b = null, card = null } = {}) {
+  enter(def, { beat: b = null, card = null, keep = false } = {}) {
     const G = this.game;
     if (this.current) G.emit('scene:exit', { id: this.current.id });
     G.interact.clear('scene');
@@ -96,14 +113,16 @@ export class SceneManager {
     const from = b || def.beats[0] || null;
     this.current = def;
     this.beat = from;
-    const ctx = this.makeCtx(def, stage, from);
+    const ctx = this.makeCtx(def, stage, from, keep);
     this.ctx = ctx;
     // the room as the beat has it: setup puts every figure and the player
     // where the story has them (the stage's cast is the scene's)
     this.hooks = [];
     this.startT = G.time;
-    stage.cast.clear();
-    if (from && def.setup[from]) def.setup[from](ctx);
+    this.gen = (this.gen || 0) + 1;
+    if (!keep) stage.cast.clear();
+    if (keep) { /* the room as it stands */ }
+    else if (from && def.setup[from]) def.setup[from](ctx);
     else if (def.spawn && def.spawn.anchor) {
       const a = stage.anchor(def.spawn.anchor);
       if (a) G.controller.setPose(a.pos.x, a.pos.z, a.yaw, 0);
@@ -116,14 +135,14 @@ export class SceneManager {
     this.stepScript(0);
   }
 
-  makeCtx(def, stage, from) {
+  makeCtx(def, stage, from, keep = false) {
     const G = this.game, M = this;
     const order = def.beats;
     const ctx = {
       game: G, stage, player: G.player, hands: G.player.hands, controller: G.controller, cast: stage.cast,
       interact: G.interact, inspect: G.inspect, puzzles: G.puzzles, director: G.director, hud: G.hud, sfx: G.sfx,
       music: G.music, save: G.save, rng: stage.rng.fork(9000 + [...def.id].reduce((a, c) => a * 31 + c.charCodeAt(0), 7) % 997),
-      scene: def, from, flags: {},
+      scene: def, from, flags: {}, kept: !!keep,
       get time() { return G.time; },
       get beat() { return M.beat; },
       at: (b) => !from || order.indexOf(b) >= order.indexOf(from),
@@ -132,10 +151,12 @@ export class SceneManager {
       get sceneTime() { return G.time - M.startT; },
       *say(text, secs = 2.2) { G.hud.say(text, secs); yield wait(secs); },
       // wait for a key, the prompt low in the frame ('E  light up')
+      // at: a Vector3, an Object3D or () => Vector3 (the tick's place)
       *prompt({ text, key = 'KeyE', at = null } = {}) {
         M.prompting = { text, key, at };
+        const where = () => { const a = typeof at === 'function' ? at() : at; return a && a.isObject3D ? a.getWorldPosition(M._at || (M._at = a.position.clone())) : a; };
         for (;;) {
-          G.hud.prompt(`${keyLabel(key)}  ${text}`, at ? G.screenOf(at) : null, 'scene');
+          G.hud.prompt(`${keyLabel(key)}  ${text}`, at ? G.screenOf(where()) : null, 'scene');
           if (M.pressed(key)) break;
           yield null;
         }
@@ -154,19 +175,25 @@ export class SceneManager {
   // ---- per step (Game.post) --------------------------------------------------------------
   update(dt) {
     const T = this.trans;
+    if (this.current && this.game.state === 'playing') this.playTime = (this.playTime || 0) + dt;
     if (T) {
       T.t += dt;
       if (T.phase === 'out') {
         this.setFade(Math.min(1, T.t / FADE));
         if (T.t >= FADE) { this.enter(T.def, { ...T.opts, card: T.opts.card ?? true }); T.phase = 'in'; T.t = 0; }
       } else {
-        this.setFade(Math.max(0, 1 - T.t / FADE));
-        if (T.t >= FADE) this.trans = null;
+        // (the fade in eases out: the room comes up out of the black)
+        const u = Math.min(1, T.t / T.fadeIn);
+        this.setFade(1 - u * u * (3 - 2 * u));
+        if (T.t >= T.fadeIn) this.trans = null;
       }
     }
     if (!T || T.phase === 'in') {
-      for (const f of [...this.hooks]) f(dt, this.ctx);
-      this.stepScript(dt);
+      // (a hook or the script may cut to another scene: what is left of
+      // this step belongs to the new one)
+      const gen = this.gen;
+      for (const f of [...this.hooks]) { f(dt, this.ctx); if (this.gen !== gen) break; }
+      if (this.gen === gen) this.stepScript(dt);
     }
     this.injected.clear();
   }
@@ -177,9 +204,12 @@ export class SceneManager {
     if (w && w.kind === 'wait') { w.left -= dt; if (w.left > 1e-6) return; }
     else if (w && w.kind === 'until' && !w.cond()) return;
     this.waitOn = null;
+    const it = this.it;
     // (a beat marker costs no step: the script runs on to its next wait)
     for (let guard = 0; guard < 64; guard++) {
-      const r = this.it.next();
+      const r = it.next();
+      // (the script cut to another scene: the new one has taken over)
+      if (this.it !== it) return;
       if (r.done) { this.it = null; return; }
       const v = r.value;
       if (v && v.kind === 'beat') { this.setBeat(v.name); continue; }
