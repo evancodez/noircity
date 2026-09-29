@@ -627,7 +627,9 @@ function assemble(parts) {
 
 const GEO_CACHE = new Map();
 function hoodGeometry(v, lod = 0) {
-  const key = `${v.coat}_${v.brim}_${lod}_${v.heavy ? 1 : 0}`;
+  // (an unarmed figure - the cast's civilians, src/cast/ - drops the pistol;
+  // an armed Hood's key is what it always was)
+  const key = `${v.coat}_${v.brim}_${lod}_${v.heavy ? 1 : 0}${v.unarmed ? '_u' : ''}`;
   if (!GEO_CACHE.has(key)) {
     Q = LOD_Q[lod];
     const near = lod < 2;
@@ -637,7 +639,7 @@ function hoodGeometry(v, lod = 0) {
       buildHead(), ...(near ? [buildNose()] : []), buildNeck(), buildHat(BRIM_R[v.brim], SHADE.hat),
       buildHand(1, false), buildHand(-1, true),
     ];
-    if (!v.heavy) parts.push(buildGun());
+    if (!v.heavy && !v.unarmed) parts.push(buildGun());
     GEO_CACHE.set(key, assemble(parts));
     Q = 1;
   }
@@ -739,7 +741,7 @@ export function hoodVariant(v = {}) {
     const h = (n) => Math.abs(Math.sin(v * 12.9898 + n * 78.233) * 43758.5453) % 1;
     v = { coat: Math.floor(h(1) * 3), brim: Math.floor(h(2) * 2), tall: Math.floor(h(3) * 2), cig: h(4) < 0.4 };
   }
-  return { coat: v.coat ?? 1, brim: v.brim ?? 1, tall: v.tall ?? 1, cig: !!v.cig, heavy: !!v.heavy };
+  return { coat: v.coat ?? 1, brim: v.brim ?? 1, tall: v.tall ?? 1, cig: !!v.cig, heavy: !!v.heavy, unarmed: !!v.unarmed };
 }
 
 // the flying hat's tumble per death (axis in the Hood's frame, rad/s, sense)
@@ -797,7 +799,7 @@ export class Hood {
     this.skeleton = skeleton;
 
     if (this.variant.cig) this.addCigarette();
-    if (this.variant.heavy) this.addTommy();
+    if (this.variant.heavy && !this.variant.unarmed) this.addTommy();
 
     // ink: one figure id for the whole man; the ink pass anchors his brush
     for (const o of [mesh, ...(this.cig || []), ...(this.tommy ? [this.tommy] : [])]) { o.userData.inkId = this.inkId; o.userData.inkFigure = true; }

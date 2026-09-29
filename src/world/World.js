@@ -12,6 +12,7 @@ import { Fx } from '../fx/Fx.js';
 import { React } from '../fx/React.js';
 import { Glass } from '../destruct/Glass.js';
 import { Breakables } from '../destruct/Breakables.js';
+import { Cast } from '../cast/Cast.js';
 
 // The Stage: a place (docs/story/CONTRACTS.md §2.2). This base holds the
 // engine services every place has; the place itself is assembled from PARTS
@@ -31,6 +32,7 @@ import { Breakables } from '../destruct/Breakables.js';
 //   stage.street                    { addImpact(stage, x, z, s), addBlast(...) }:
 //                                   the street part's, a no-op without one
 //   stage.hoods                     the Hoods (enemies/Hood.js): spawn(pos, variant)
+//   stage.cast                      every figure (src/cast/Cast.js): spawn(kind, opts)
 //   stage.glass, stage.breakables   the panes and the things that break
 //                                   (src/destruct/): a part registers its own
 //   stage.part(name)                the api a part's build() returned (also
@@ -129,6 +131,8 @@ export class Stage {
     scene.traverse((o) => { if (o.isMesh && o.layers.mask & 3 && !o.isInstancedMesh && !o.userData.noRay) this.solids.push(o); });
     this._rim = [];
     this.hoods = new Hoods(this);
+    // every figure of the place (src/cast/): the Hoods among them
+    this.cast = new Cast(this);
     // the place's own systems
     this.rays = new RayWorld(this);
     this.nav = new NavGrid(this.colliders);
@@ -202,6 +206,7 @@ export class Stage {
     this.U.uTime.value = t;
     for (const u of this.updaters) u.fn(u.api, dt, t, camera, pixelHeight);
     this.hoods.update(dt, t, camera);
+    this.cast.update(dt, t, camera);
     this.breakables.update(dt);
     const sorted = this.lights.sync(camera.position);
     // the 4 nearest lamps drive the ink pass' white rim light
