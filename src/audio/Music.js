@@ -59,7 +59,7 @@ export class Music {
       } else g.connect(S.bus);
       node.connect(g);
       this.gain = g;
-    } catch (e) { /* no audio graph: the element alone */ }
+    } catch (e) { /* no audio graph: the element alone (muted with the rest) */ el.muted = !!S.muted; }
     this.el = el;
     tryNext();
   }

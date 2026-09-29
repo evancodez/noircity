@@ -1,5 +1,5 @@
 {
-  "url": "/?autoplay=1&speed=2",
+  "url": "/?autoplay=1&speed=2&mute=1",
   "size": [1280, 800],
   "out": "shots/play/auto",
   "steps": [

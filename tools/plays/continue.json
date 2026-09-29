@@ -1,6 +1,6 @@
 {
   "about": "Save and continue across a reload (P1), and the end of the slice from the last blow: a checkpoint at the fight's last blow, the page reloaded, CONTINUE on the title, the walk out through the door by real input, the search, the matchbook, the card. node tools/play.mjs tools/plays/continue.json",
-  "url": "/",
+  "url": "/?mute=1",
   "size": [1280, 800],
   "out": "shots/play/continue",
   "steps": [

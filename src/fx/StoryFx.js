@@ -22,11 +22,23 @@ import { LAYER } from '../render/layers.js';
 const _a = new THREE.Vector3(), _b = new THREE.Vector3(), _c = new THREE.Vector3();
 const UP = new THREE.Vector3(0, 1, 0);
 
-// where a prop's stream leaves (the mouth: the top of its axis) and lands
-// (the liquid's surface in a glass, else the top of its box)
-function mouthOf(o, out) {
-  const s = o.userData && o.userData.size;
-  return o.localToWorld(out.set(0, s ? s.y : 0.1, 0));
+// where a prop's stream leaves: the lip's lowest point (userData.mouth, or
+// the neck's lip on the axis, else the top of its axis, moved down its
+// rim to the side the pour hangs from) and lands (the liquid's surface in a
+// glass, else the top of its box)
+const _q = new THREE.Quaternion();
+function mouthOf(o, out, axisOut = null) {
+  const ud = o.userData || {};
+  const s = ud.size;
+  const m = ud.mouth || ud.neck || ud.spout;
+  if (m) out.copy(m); else out.set(0, s ? s.y : 0.1, 0);
+  o.localToWorld(out);
+  const ax = (axisOut || new THREE.Vector3()).set(0, 1, 0).applyQuaternion(o.getWorldQuaternion(_q));
+  // (the lip's low side: the rim radius toward the world's down, square to the axis)
+  const r = m && m.r != null ? m.r : 0.015;
+  const d = new THREE.Vector3(0, -1, 0).addScaledVector(ax, ax.y);
+  if (d.lengthSq() > 1e-6) out.addScaledVector(d.normalize(), r);
+  return out;
 }
 function landOf(o, out) {
   const s = o.userData && o.userData.size;
@@ -43,16 +55,19 @@ export class Pour {
     this.mesh = null;
     this.t = 0;
   }
+  // accent 'coffee' is no accent: a black stream (the coffee is ink, not colour)
   start({ from, to, accent: key = 'amber', rate = 1, fill = true } = {}) {
-    const c = accent(key);
+    const dark = key === 'coffee';
+    const c = dark ? { r: 0.02, g: 0.02, b: 0.02 } : accent(key);
     this.on = { from, to, rate, key, fill, col: [c.r * 2, c.g * 2, c.b * 2], acc: 0, t: 0 };
     if (!this.mesh) {
-      this.mat = accentMaterial(key);
-      this.mesh = new THREE.Mesh(new THREE.BufferGeometry(), this.mat);
+      this.mesh = new THREE.Mesh(new THREE.BufferGeometry(), null);
       this.mesh.userData.noRay = true;
       this.mesh.frustumCulled = false;
       this.fx.world.scene.add(this.mesh);
     }
+    this.mats = this.mats || {};
+    this.mesh.material = this.mats[key] || (this.mats[key] = dark ? new THREE.MeshStandardMaterial({ color: 0x050505, roughness: 0.4 }) : accentMaterial(key));
     this.mesh.visible = true;
   }
   stop() { this.on = null; if (this.mesh) this.mesh.visible = false; }
@@ -62,28 +77,42 @@ export class Pour {
     if (!P || !P.from || !P.to) return;
     const r = this.rng;
     P.t += dt;
-    mouthOf(P.from, _a); landOf(P.to, _b);
-    // the stream: it leaves the lip along the bottle's tilt, falls in an arc
-    // into the glass; the middle sways a few millimetres
-    const axis = new THREE.Vector3(0, 1, 0).applyQuaternion(P.from.getWorldQuaternion(new THREE.Quaternion()));
-    axis.y = Math.min(axis.y, 0.2);
-    const sway = new THREE.Vector3(Math.sin(P.t * 7.3) * 0.004, 0, Math.cos(P.t * 5.1) * 0.004);
-    const c1 = _a.clone().addScaledVector(axis.normalize(), 0.035).add(sway);
-    const c2 = _b.clone().add(new THREE.Vector3(0, Math.max(0.04, (_a.y - _b.y) * 0.4), 0)).addScaledVector(sway, 1.5);
-    const curve = new THREE.CubicBezierCurve3(_a.clone(), c1, c2, _b.clone());
-    // (a thin tube, thinning as it falls and speeds up)
-    const w = 0.0032 * Math.min(1.3, P.rate);
-    const g = new THREE.TubeGeometry(curve, 18, w, 6, false);
-    const pos = g.getAttribute('position'), nrm = g.getAttribute('normal');
-    // taper: pull the rings toward the curve down its length
+    const axis = new THREE.Vector3();
+    mouthOf(P.from, _a, axis); landOf(P.to, _b);
+    // the stream (round 2): what a pour is - the scotch leaves the lip
+    // moving along the bottle's axis, slowly, and falls: a parabola from the
+    // lip down to the surface in the glass, 3.5 mm across as it leaves,
+    // thinning as it speeds up (the flow is the same through every section:
+    // r ~ v^-1/2), swaying a few millimetres at its foot. It never bends
+    // back up, never aims at the glass: where it lands is where the lip is.
+    const v0 = 0.2 * Math.min(1.2, P.rate);
+    const vx = axis.x * v0, vz = axis.z * v0, vy = Math.min(0, axis.y) * v0;
+    const drop = Math.max(0.01, _a.y - _b.y);
+    // (time to fall `drop` from vy: g/2 t^2 - vy t - drop = 0)
+    const g0 = 9.81, T = (vy + Math.sqrt(vy * vy + 2 * g0 * drop)) / g0;
+    const N = 16;
+    const pts = [];
+    for (let i = 0; i <= N; i++) {
+      const t = T * i / N;
+      const k = i / N;
+      // (the sway grows down the stream: the foot wanders, the lip holds)
+      const sw = 0.0025 * k * k;
+      pts.push(new THREE.Vector3(_a.x + vx * t + Math.sin(P.t * 7.3 + k * 2) * sw, _a.y + vy * t - 0.5 * g0 * t * t, _a.z + vz * t + Math.cos(P.t * 5.9 + k * 2) * sw));
+    }
+    const curve = new THREE.CatmullRomCurve3(pts);
+    const w = 0.00175 * Math.min(1.3, P.rate);
+    const g = new THREE.TubeGeometry(curve, N, w, 6, false);
+    const pos = g.getAttribute('position');
     for (let i = 0; i < pos.count; i++) {
       const ring = Math.floor(i / 7);
-      const u = ring / 18;
-      const k = 1 - 0.35 * u;
+      const u = ring / N;
+      const t = T * u;
+      const v = Math.hypot(vx, vz, vy - g0 * t);
+      const k = Math.sqrt(v0 / Math.max(v0, v)) * 0.55 + 0.45;
       const p = curve.getPoint(u);
       pos.setXYZ(i, p.x + (pos.getX(i) - p.x) * k, p.y + (pos.getY(i) - p.y) * k, p.z + (pos.getZ(i) - p.z) * k);
     }
-    void nrm;
+    _b.set(pts[N].x, _b.y, pts[N].z);
     const old = this.mesh.geometry;
     this.mesh.geometry = g;
     old.dispose();
@@ -125,12 +154,13 @@ const THREAD = {
   laminar: 0.10,       // m of straight rise
   split: [0.12, 0.40], // the curls part between these heights (m)
   gone: [0.46, 0.70],  // and fade out between these
-  w0: 0.0009,          // half width of a strand's core at the tip (m): ~3 px at 0.45 m
-  w1: 0.0012,          // ... and at the top
-  // (scene-linear grey x alpha: display ~0.5 on black (tone.js), a paler
-  // hair over the lit back-bar glass, a darker one over the lit counter)
-  grey: 0.16,
-  alpha: 0.45,
+  w0: 0.001,           // half width of a strand's core at the tip (m): ~3 px at 0.45 m
+  w1: 0.0014,          // ... and at the top
+  // (scene-linear grey x alpha: display ~0.6 on black (tone.js), a paler
+  // hair over the lit back-bar glass, a darker one over the lit counter;
+  // round 2: a little surer - it read as nothing at the seat)
+  grey: 0.22,
+  alpha: 0.6,
 };
 const STRANDS = 3;
 const _s = new THREE.Vector3(), _t = new THREE.Vector3(), _e = new THREE.Vector3();
@@ -237,7 +267,9 @@ class Thread {
         // gaps that rise with the smoke: a strand breaks where its own
         // phase says so, more often the higher it is
         const gap = h < T.split[0] ? 1 : (Math.sin(j * 0.31 + k * 1.9 + pt.seed * 0.2) * 0.5 + 0.5) > 0.1 + 1.2 * sp * (h - T.split[0]) ? 1 : 0.1;
-        AL[k * max + i] = T.alpha * fade * share * gap;
+        // (either side of a break: nothing drawn across it)
+        const brk = pt.cut || (P[j + 1] && P[j + 1].cut) ? 0 : 1;
+        AL[k * max + i] = T.alpha * fade * share * gap * brk;
       }
     }
     for (let k = 0; k < STRANDS; k++) {
@@ -258,8 +290,13 @@ class Thread {
         this.pos.set([_s.x + side.x * ww, _s.y + side.y * ww, _s.z + side.z * ww], v * 3);
         this.pos.set([_s.x, _s.y, _s.z], v * 3 + 3);
         this.pos.set([_s.x - side.x * ww, _s.y - side.y * ww, _s.z - side.z * ww], v * 3 + 6);
-        const g = T.grey * (1 - 0.15 * sp), a = AL[k * max + i];
-        this.col.set([g, g, g, 0, g, g, g, a, g, g, g, 0], v * 4);
+        // (round 2: a pale core with dark edges - an inked hair: the core
+        // reads over the dark wall and the back bar, the edges over the lit
+        // counter and the white pool)
+        // (the lit counter under the pool is several stops over paper white:
+        // only a near-opaque edge darkens it at all)
+        const g = T.grey * (1 - 0.15 * sp), a = AL[k * max + i], ea = Math.min(0.9, a * 1.6);
+        this.col.set([0, 0, 0, ea, g, g, g, a, 0, 0, 0, ea], v * 4);
       }
     }
     // (the slots past the last point collapse onto it: a segment into a
@@ -285,7 +322,12 @@ export class Cig {
     if (!T) { T = new Thread(this.fx); this.threads.set(key, T); }
     if (this.t - T.lastT < 1 / THREAD.rate - 1e-6) return;
     T.lastT = this.t;
-    T.pts.push({ p: tip.clone(), y0: tip.y, age: 0, seed: this.rng.next() * 10 });
+    // (round 2: a tip carried fast - to the lips, to the ashtray - leaves no
+    // rope along its path: the thread breaks there and starts again at the
+    // tip, as a real thread tears in the draught of the hand)
+    const last = T.pts[T.pts.length - 1];
+    const cut = !!last && last.p.distanceTo(tip) > 0.012;
+    T.pts.push({ p: tip.clone(), y0: tip.y, age: 0, seed: this.rng.next() * 10, cut });
     if (T.pts.length > T.max) T.pts.shift();
   }
   // a plume breathed out: pushed out along `dir`, slowing, rolling, rising

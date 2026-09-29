@@ -9,120 +9,16 @@
 // not name (reachGlass taken, sip drink, putDown down, ash tap, payWallet
 // bill, searchBody found, showMatchbook shown / pocketed, the reload's) are
 // the foundation's and keep their names when lane 2 retimes them.
-import { DF, GRIP, HAND_POSES as HP } from './handPoses.js';
+import { HAND_POSES as HP } from './handPoses.js';
 // a pose moved in its own frame (metres)
 const shift = (P, d) => ({ ...P, p: P.p.map((v, i) => v + d[i]) });
 // keys (lane 2): per hand [t, pose, ease?]: a pose name of handPoses.js,
-// '@rest' (the set's rest), a pose def, or a pose function (DF: reach a
-// thing where it stands, hold a prop at a place); eases 'io' (default),
-// 'in', 'out', 'snap', 'lin'. props: [t, action, hand, arg] (Hands.propEvent).
-const ER = [0.3, -0.33, -0.27], EL = [-0.3, -0.33, -0.3];
-// the lighter under the cigarette's tip (its top 1.2 cm below it: the tip at
-// (0, -0.092, -0.15) in the eye's frame, the lighter just under the frame's
-// bottom edge, its flame standing up into it)
-const LIGHT = [[0.002, -0.133, -0.156], [0, 0.96, 0.28], [1, 0, 0.3]];
-const EF = [0.14, -0.42, -0.06];
-const pack = (off) => DF.at('cigarettePack', GRIP.pack, ER, off);
-const lighter = (off, F = GRIP.lighter) => DF.at('lighter', F, ER, off);
-const lighterUp = (F) => DF.cam('lighter', ...LIGHT, F, EF);
-// the cigarette at the lips in the right hand's fingers
-// (turned about the cigarette so the fingers point up and in, the wrist
-// below and to the right of the mouth)
-const cigLips = DF.cam('cigarette', [0.0, -0.088, -0.07], [0.02, -0.05, -1], [0.7, -0.7, 0], HP.cigLipsR ? HP.cigLipsR.F : null, [0.14, -0.42, -0.06]);
-
-// the glass where it stands (or held off it), up at the lips (tilt 0 | 1;
-// the hand on its left side, fingers round the front, the wrist below)
-// (the left hand on the glass's near left, its fingers round the far side)
-const GLASS_FWD = [0.6, 0, 0.8];
-const glassAt = (off) => DF.up('glass', GLASS_FWD, GRIP.glass, EL, off);
-// up (k 0): before the chin, upright, a little toward me, low in the frame;
-// drinking (k 1): tipped over toward the mouth, the rim at the lips below
-// the frame's bottom edge, the base up and away (only the glass's far end
-// shows at the bottom of the frame), the scotch run down to the rim
-// (setTilt, every step). It never fills more than a fifth of the frame.
-// ([base, up, fwd]: fwd is the glass's +z, square to its up: the hand on
-// its left and near side, the fingers round the far side)
-const GLASS_UP = [
-  [[-0.05, -0.165, -0.31], [0.05, 0.97, 0.24], [0.62, -0.217, 0.747]],
-  [[-0.03, -0.158, -0.235], [0.05, 0.7, 0.71], [0.447, -0.578, 0.539]],
-];
-const glassUp = (k) => { const [p, up, fw] = GLASS_UP[k]; return DF.cam('glass', p, up, fw, GRIP.glass, [-0.16, -0.44, -0.04]); };
-// the wallet up in front, turned to the left (open 0 | 1)
-const walletUp = (k) => DF.cam('wallet', [0.035 - 0.02 * k, -0.14, -0.3], [-0.25 - 0.5 * k, 0.2, 0.95], [0, 1, 0.2], GRIP.wallet, [0.2, -0.45, -0.05]);
-
+// '@rest' (the set's rest), a pose def, or a pose function; eases 'io'
+// (default), 'in', 'out', 'snap', 'lin'. props: [t, action, hand, arg]
+// (Hands.propEvent).
+// (round 2: the diner's clips - lightUp, drag, ash, reachGlass, sip,
+// putDown, payWallet - are object first and live in clips/diner.js)
 export const HAND_CLIPS = {
-  // ---- the diner (scene 1) -------------------------------------------------------------
-  // The right hand lifts the pack and taps it on the counter, puts it down,
-  // pulls a cigarette out of it and puts it between the lips; then it takes
-  // the lighter (it lies by the right hand, STORY) and brings it up under
-  // the tip, the left hand comes up and cups the flame; the thumb flicks the
-  // wheel, a flame, the tip catches, the lid snaps shut, the lighter goes
-  // back on the counter. The cigarette stays in the lips, glowing low in
-  // the frame (the first drag takes it into the right hand's fingers).
-  lightUp: {
-    duration: 3.2, marks: { tap: 0.5, lips: 1.2, spark: 1.9, flame: 2.0, lit: 2.5, shut: 2.9 },
-    keys: {
-      R: [[0, '@rest'], [0.28, pack()], [0.34, pack()], [0.44, pack([0, 0.05, 0.01])], [0.5, pack([0, 0.012, 0]), 'snap'], [0.57, pack([0, 0.03, 0])],
-        [0.63, pack()], [0.76, 'pullR'], [0.8, 'pullR'], [1.1, cigLips], [1.22, cigLips],
-        [1.42, lighter()], [1.47, lighter()], [1.72, lighterUp(GRIP.lighter)], [1.86, lighterUp(GRIP.lighter)], [1.92, lighterUp(GRIP.flick), 'snap'],
-        [2.86, lighterUp(GRIP.flick)], [2.93, lighterUp(GRIP.lighter), 'snap'], [3.08, lighter([0, 0.012, 0])], [3.13, lighter()], [3.2, 'restR']],
-      L: [[0, '@rest'], [1.55, '@rest'], [1.85, 'cupL'], [2.85, 'cupL'], [3.2, '@rest']],
-    },
-    props: [[0.34, 'take', 'R', 'cigarettePack'], [0.63, 'put', 'R'], [0.78, 'take', 'R', 'cigarette'], [1.2, 'toMouth', 'R'], [1.46, 'take', 'R', 'lighter'],
-      [2.0, 'flame', 'R', 1], [2.5, 'tip', 'M', 'lit'], [2.9, 'flame', 'R', 0], [3.13, 'put', 'R']],
-  },
-  // the hand comes up (the cigarette to the lips if it is in the fingers),
-  // the ember flares, the hand comes down with it; the smoke breathed out
-  // (mark exhale) drifts up into the lamp's cone
-  drag: {
-    duration: 2.4, marks: { glow: 0.8, exhale: 1.6 },
-    keys: { R: [[0, '@rest'], [0.45, cigLips], [1.0, cigLips], [1.5, 'cigRestR']] },
-    props: [[0.5, 'toMouth', 'R'], [0.6, 'glow', 'M', 3], [1.02, 'glow', 'M', 1], [1.04, 'fromMouth', 'R']],
-    brush: 'R',
-  },
-  // a tap over the ashtray: a fleck falls
-  ash: {
-    duration: 0.8, marks: { tap: 0.4 },
-    keys: { R: [[0, '@rest'], [0.3, 'ashR'], [0.4, 'ashTapR', 'snap'], [0.5, 'ashR'], [0.8, 'cigRestR']] },
-  },
-  // the left hand takes the tumbler off the counter
-  reachGlass: {
-    duration: 0.8, marks: { taken: 0.5 },
-    keys: { L: [[0, '@rest'], [0.44, glassAt()], [0.5, glassAt()], [0.8, glassAt([0, 0.05, 0.02])]] },
-    props: [[0.5, 'take', 'L', 'glass']],
-    brush: 'L',
-  },
-  // the glass comes up to the bottom centre of the frame, tilts toward the
-  // eye so the amber runs to the rim, a third of it goes; down again (sip
-  // takes the glass off the counter itself when it is not in the hand)
-  sip: {
-    duration: 2.0, marks: { tilt: 0.7, drink: 1.1, down: 1.6 },
-    keys: { L: [[0, '@rest'], [0.28, glassAt()], [0.32, glassAt()], [0.7, glassUp(0)], [1.0, glassUp(1)], [1.25, glassUp(1)], [1.45, glassUp(0)], [1.62, glassAt([0, 0.01, 0])], [1.7, glassAt()], [2.0, '@rest']] },
-    props: [[0.3, 'take', 'L', 'glass'], [1.1, 'fill', 'L', 1 / 3], [1.7, 'put', 'L']],
-    // (the head tips back a little with the drink)
-    view: [[0, {}], [0.7, {}], [1.0, { pitch: 0.06 }], [1.25, { pitch: 0.06 }], [1.5, {}]],
-    brush: 'L',
-  },
-  // the glass back on the counter where it came from
-  putDown: {
-    duration: 0.7, marks: { down: 0.5 },
-    keys: { L: [[0, glassAt([0, 0.05, 0.02])], [0.45, glassAt([0, 0.008, 0])], [0.5, glassAt()], [0.7, '@rest']] },
-    props: [[0.5, 'put', 'L']],
-    brush: 'L',
-  },
-  // the right hand brings the wallet from the coat, the left opens it: the
-  // licence card shows, held still, turned to the left where a man two
-  // stools down could see it; the left hand lays a bill on the counter; the
-  // wallet shuts and goes back
-  payWallet: {
-    duration: 2.6, marks: { open: 0.8, shown: 1.3, shownEnd: 2.2, bill: 2.3 },
-    keys: {
-      R: [[0, '@rest'], [0.25, 'coatR'], [0.35, 'coatR'], [0.7, walletUp(0)], [0.85, walletUp(0)], [1.25, walletUp(1)], [2.2, walletUp(1)], [2.35, walletUp(0)], [2.6, 'coatR']],
-      L: [[0, '@rest'], [0.55, '@rest'], [0.8, 'walletOpenL'], [1.0, 'walletOpenL'], [1.25, '@rest'], [2.1, '@rest'], [2.2, 'billL'], [2.3, 'billDownL'], [2.6, '@rest']],
-    },
-    props: [[0.35, 'take', 'R', 'wallet'], [0.82, 'open', 'R', 1], [2.3, 'bill', 'L'], [2.4, 'open', 'R', 0], [2.58, 'drop', 'R']],
-    brush: 'R',
-  },
   // ---- the fist fight (scene 2; CONTRACTS §14) ---------------------------------------------
   // (view: the eye's own motion in the brawl, keys [t, { yaw, pitch, roll,
   // fwd, side, down }] in radians / metres, laid on the brawl view by the

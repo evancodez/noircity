@@ -1066,7 +1066,10 @@ export const SOUND_NAMES = Object.keys(B);
 
 // ---------------------------------------------------------------------------
 export class Sfx {
-  constructor({ enabled = true } = {}) {
+  // forceMute: start silent whatever was saved (the URL's mute=1, or an
+  // automated browser: a test run never makes a sound on the machine); M
+  // still turns it on, and the saved choice is left as the player made it
+  constructor({ enabled = true, forceMute = false } = {}) {
     this.enabled = enabled;
     this.ctx = null;
     this.muted = false;
@@ -1076,6 +1079,8 @@ export class Sfx {
       if (Number.isFinite(v)) this.volume = Math.min(1, Math.max(0, v));
       this.muted = localStorage.getItem('noir.muted') === '1';
     } catch (e) { /* storage blocked: defaults */ }
+    this.forceMute = !!forceMute;
+    if (forceMute) this.muted = true;
     this.loops = new Map();   // key -> { src nodes, gain, panner }
     this.heartT = 0;
     this.lowK = 0;
@@ -1138,7 +1143,8 @@ export class Sfx {
 
   setMuted(m) {
     this.muted = m;
-    try { localStorage.setItem('noir.muted', m ? '1' : '0'); } catch (e) { /* ignore */ }
+    // (a forced mute is the run's, not the player's: it is not saved)
+    if (!this.forceMute) try { localStorage.setItem('noir.muted', m ? '1' : '0'); } catch (e) { /* ignore */ }
     if (this.master) this.master.gain.setTargetAtTime(m ? 0 : this.volume, this.ctx.currentTime, 0.03);
   }
   toggleMute() { this.setMuted(!this.muted); return this.muted; }

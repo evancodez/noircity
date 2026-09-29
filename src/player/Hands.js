@@ -1,12 +1,17 @@
 import * as THREE from 'three';
 import { LAYER, allocVmId, allocInkId } from '../render/layers.js';
 import { MUZZLE, RELOAD, VM_FOV } from './Viewmodel.js';
-import { HAND_CLIPS } from './handClips.js';
+import { HAND_CLIPS as BASE_CLIPS } from './handClips.js';
+import { DINER_CLIPS } from './clips/diner.js';
 import { HAND_POSES, mirror } from './handPoses.js';
+// (the diner's clips are object-first and live in clips/diner.js; they take
+// the place of the first version's of the same name)
+const HAND_CLIPS = { ...BASE_CLIPS, ...DINER_CLIPS };
 import { HandRig, FINGERS } from './HandRig.js';
 import { buildProp } from '../props/index.js';
 import { accentMaterial } from '../render/accents.js';
 import { DINER } from '../stages/block/site.js';
+import { FIRE } from '../fx/fxTextures.js';
 
 // The hands (docs/story/CONTRACTS.md §7.2; lane 2 brief): the detective's
 // one pair of inked hands and sleeves, drawn by the viewmodel camera as the
@@ -23,6 +28,12 @@ import { DINER } from '../stages/block/site.js';
 //                            pair ('study': studyR + studyL) or a clip's
 //                            moment ('lightUp@2.0')
 //
+// Object first (round 2, clips/diner.js): a clip's key may say where a
+// THING is rather than where the hand is ([t, { o: kind, at, F, ... }]);
+// between two such keys the thing moves on its own smooth path and the hand
+// is solved onto its grip every step (objBetween), so what the hand holds
+// never swings about the wrist. The view key 'eyes' turns the eyes alone
+// (the head, and what it holds at the lips, stay put).
 // One rig (player/HandRig.js) per arm, two skins on it: 'bare' indoors,
 // 'glove' with the guns. Every step: the clip's keys (handClips.js) are
 // evaluated into a pose per hand (handPoses.js: a wrist place and turn in a
@@ -63,19 +74,43 @@ const SOCKETS = {
   // (on the hand bone, where the first two fingers hold it when their
   // knuckles bend ~0.35: every cigarette pose keeps them there)
   cigarette: { bone: 'hand', p: [-0.0187, -0.006, -0.11], r: [-0.35, 0, 0] },
-  // wrapped in the palm, the glass upright when the thumb is up
-  tumbler: { bone: 'hand', p: [0.004, -0.056, -0.05], r: [0, 0, Math.PI / 2] },
-  glass: { bone: 'hand', p: [0.004, -0.056, -0.05], r: [0, 0, Math.PI / 2] },
-  lighter: { bone: 'hand', p: [-0.006, -0.03, -0.062], r: [0, 0, Math.PI / 2] },
-  cigarettePack: { bone: 'hand', p: [0.0, -0.03, -0.058], r: [Math.PI / 2, 0, 0] },
+  // wrapped in the palm, the glass upright when the thumb is up: its wall
+  // on the palm under the knuckles (the fingers' wrap starts there: round
+  // its far wall, 1 mm off the glass - measured, R2 probe), the thumb on
+  // its near wall
+  tumbler: { bone: 'hand', p: [-0.006, -0.057, -0.086], r: [0, 0, Math.PI / 2] },
+  glass: { bone: 'hand', p: [-0.006, -0.057, -0.086], r: [0, 0, Math.PI / 2] },
+  // upright in the hand, the thumb up at its top (on the lid, the wheel),
+  // its back face in the palm and the fingers round its far edge: its x
+  // along the hand toward the wrist, its y the thumb's way, its face away
+  // from the palm
+  lighter: { bone: 'hand', p: [-0.022, -0.0255, -0.06], basis: [[0, 0, 1], [-1, 0, 0], [0, -1, 0]] },
+  cigarettePack: { bone: 'hand', p: [-0.004, -0.0305, -0.058], basis: [[0, 0, 1], [-1, 0, 0], [0, -1, 0]] },
   // flat between the fingers and the thumb, its face in the palm
-  wallet: { bone: 'hand', p: [0.0, -0.03, -0.09], r: [Math.PI, 0, 0] },
+  // held up like a book by its right leaf: the palm behind it, the fingers
+  // pointing left along its back, the thumb on its face by the right edge
+  // (its spine vertical, down the hand's little-finger side)
+  wallet: { bone: 'hand', p: [0.0, -0.026, -0.07], basis: [[0, 0, 1], [0, -1, 0], [1, 0, 0]] },
+  // a banknote pinched at its end between the thumb and the side of the
+  // index: its length along the fingers, its face across the pinch
+  bill: { bone: 'hand', p: [-0.018, -0.016, -0.082], basis: [[0, 0, 1], [0, 1, 0], [-1, 0, 0]] },
   matchbook: { bone: 'i1', p: [0.0, -0.012, -0.012], r: [0, 0, 0] },
   bottle: { bone: 'hand', p: [0.004, -0.04, -0.05], r: [0, 0, Math.PI / 2] },
   plate: { bone: 'hand', p: [0.0, -0.02, -0.07], r: [0, 0, 0] },
   stool: { bone: 'hand', p: [0.0, -0.035, -0.05], r: [0, 0, Math.PI / 2] },
   default: { bone: 'hand', p: [0.0, -0.035, -0.055], r: [0, 0, Math.PI / 2] },
 };
+
+// a socket's matrix (cached): its turn is Euler `r`, or `basis` - the prop's
+// own x, y, z axes written in the hand's frame (columns)
+function sockM(S) {
+  if (S._m) return S._m;
+  const m = new THREE.Matrix4();
+  if (S.basis) m.makeBasis(V(...S.basis[0]).normalize(), V(...S.basis[1]).normalize(), V(...S.basis[2]).normalize());
+  else m.makeRotationFromEuler(new THREE.Euler(...S.r));
+  m.setPosition(...S.p);
+  return (S._m = m);
+}
 
 // A held prop's surface class in the hands' scene (lane 1: skin, paper,
 // cloth, metal, glass). The prop library tags its materials with the room's
@@ -231,8 +266,13 @@ export class Hands {
   //   toMouth          what this hand holds, between the lips
   //   flame 0|1        the lighter in this hand: its flame
   //   tip state        the cigarette's tip ('lit', 'ash')
-  //   open k           the held prop's setOpen (the wallet)
+  //   open k           the held prop's setOpen (the wallet; clips may also
+  //                    carry an `opens` track: its opening every step)
   //   fill k           the held glass's fill (setFill), a sip
+  //   show 0|1         a thing in the hand not yet seen (a cigarette still in the pack)
+  //   strike rad       the lighter's wheel turned by the thumb
+  //   dropAsh          the ash off the tip, a fleck falling
+  //   (take 'bill': a banknote made for the hand, laid on the counter by 'put')
   propEvent(ev) {
     const [, act, hand, arg] = ev;
     const H = this.held;
@@ -244,7 +284,7 @@ export class Hands {
     };
     if (act === 'take') {
       if (H[hand] && (H[hand].userData.kind === arg || (arg === 'glass' && H[hand].userData.kind === 'tumbler'))) return;
-      const p = find(arg) || find(arg === 'glass' ? 'tumbler' : arg) || buildProp(arg === 'glass' ? 'tumbler' : arg);
+      const p = find(arg) || find(arg === 'glass' ? 'tumbler' : arg) || (arg === 'bill' ? this.makeBill() : buildProp(arg === 'glass' ? 'tumbler' : arg));
       p.userData._handTaken = true;
       this.hold(p, hand);
     } else if (act === 'put' || act === 'drop') {
@@ -298,6 +338,23 @@ export class Hands {
       if (arg === 'lit' && c) { this.lit = true; this.wispT = 0; }
     } else if (act === 'open') {
       const p = H[hand]; if (p && p.userData.setOpen) p.userData.setOpen(arg);
+    } else if (act === 'show') {
+      // (a thing already in the hand but not yet seen: a cigarette still in
+      // the pack, until the fingers draw it)
+      const p = H[hand]; if (p) p.userData._hidden = !arg;
+    } else if (act === 'dropAsh') {
+      // the ash off the tip, a fleck falling (into the ashtray under it)
+      const c = this.cigarette();
+      if (c && c.userData.dropAsh && c.userData.tip !== 'unlit') {
+        c.updateMatrixWorld(true);
+        if ((c.userData.ashLen || 0) < 0.003) c.userData.setAsh(0.006);
+        const p = c.userData.dropAsh();
+        const fx = this.game.fx;
+        if (fx && fx.debris && p) fx.debris.spawn({ pos: this.toWorld(p), vel: V(0, -0.15, 0), life: 0.45, size: [0.004, 0.006], rot: 0, spin: 3, col: [0.35, 0.35, 0.35], cell: FIRE.SMOKE ? FIRE.SMOKE[0] : 0, gravity: 9.8, ground: DINER.counter.topY + 0.012, fadeOut: 0.1 });
+      }
+    } else if (act === 'strike') {
+      // the thumb turns the lighter's wheel
+      const p = H[hand]; if (p && p.userData.strike) p.userData.strike(arg || 2.2);
     } else if (act === 'fill') {
       const p = H[hand]; if (p && p.userData.setFill) p.userData.setFill(Math.max(0, (p.userData.fill ?? 1) - arg));
     } else if (act === 'glow') {
@@ -306,18 +363,21 @@ export class Hands {
       const c = this.cigarette();
       if (c) { if (c.userData.setGlow) c.userData.setGlow(arg); else { const e = c.getObjectByName('ember'); if (e) e.scale.setScalar(1 + 0.35 * (arg - 1)); } }
     } else if (act === 'toMouth' || act === 'fromMouth') { /* (handled above) */ }
-    else if (act === 'bill') {
-      // a bill on the counter: a paper slip laid where the hand lets it go
-      const b = new THREE.Mesh(new THREE.BoxGeometry(0.156, 0.0012, 0.066), this.mats.cuff);
-      this.rig[hand].root.updateMatrixWorld(true);
-      const w = new THREE.Vector3(0, -0.02, -0.08).applyMatrix4(this.rig[hand].hand.matrixWorld);
-      b.position.set(w.x, DINER.counter.topY + 0.001, w.z);
-      b.rotation.y = this.game.controller.bodyYaw ?? 0;
-      b.userData.inkId = allocInkId();
-      b.userData.inkSurface = 'plaster';   // (on the counter it is the room's: calm, not the hands' paper class)
-      b.userData.noRay = true;
-      stage.scene.add(b);
-    }
+  }
+
+  // a banknote (the pay: drawn from the wallet, laid on the counter): a thin
+  // paper slip, its grip at one end
+  makeBill() {
+    const g = new THREE.Group();
+    const m = new THREE.Mesh(new THREE.BoxGeometry(0.156, 0.0008, 0.066).translate(0, 0.0004, 0), this.mats.cuff);
+    // (on the counter it is the room's calm paper; in the hand, the hands' paper)
+    m.userData.inkSurface = 'plaster';
+    g.add(m);
+    g.userData = { kind: 'bill', prop: true, size: V(0.156, 0.0008, 0.066), grip: new THREE.Matrix4().makeTranslation(0.062, 0.0004, 0.0), rest: new THREE.Matrix4(), setOpen() {}, setTilt() {}, setFill() {} };
+    m.userData.inkId = allocInkId();
+    m.userData.noRay = true;
+    this.game.stage.scene.add(g);
+    return g;
   }
 
   // a prop on the counter (the diner's items) by name or kind
@@ -372,7 +432,7 @@ export class Hands {
   // The pose of the hand that holds `prop` at matrix `m` (in `frame`).
   poseForProp(side, prop, m, frame, F, e = null) {
     const S = SOCKETS[prop.userData.kind] || SOCKETS.default;
-    const sm = new THREE.Matrix4().compose(V(...S.p), new THREE.Quaternion().setFromEuler(new THREE.Euler(...S.r)), V(1, 1, 1));
+    const sm = sockM(S).clone();
     m = m.clone();
     if (prop.userData.grip) m.multiply(prop.userData.grip);
     if (side === 'L') m.multiply(MX);
@@ -507,7 +567,8 @@ export class Hands {
     const p = POINTS[name];
     if (!p) throw new Error(`hands.anchor: no point '${name}'`);
     cam.updateMatrixWorld();
-    return out.copy(p).applyMatrix4(cam.matrixWorld);
+    this.frames();
+    return out.copy(p).applyMatrix4(this._frames.cam).applyMatrix4(cam.matrixWorld);
   }
 
   // a point in the hands' scene -> the world point seen at the same place
@@ -540,6 +601,18 @@ export class Hands {
           if (h.onMark[m]) h.onMark[m](m);
           else this.defaultMark(h.name, m);
         }
+      }
+      // continuous opening of a held thing (a wallet like a book, a
+      // lighter's lid): opens { R | L: [[t, k], ...] }
+      const O = HAND_CLIPS[h.name].opens;
+      if (O) for (const side of ['R', 'L']) {
+        const K = O[side], pr = this.held[side];
+        if (!K || !pr || !pr.userData.setOpen) continue;
+        let j = 0;
+        while (j < K.length - 1 && K[j + 1][0] <= h.t) j++;
+        const a = K[j], b = K[Math.min(K.length - 1, j + 1)];
+        const u = b === a ? 0 : Math.min(1, Math.max(0, (h.t - a[0]) / (b[0] - a[0])));
+        if (h.t >= K[0][0]) pr.userData.setOpen(a[1] + (b[1] - a[1]) * u);
       }
       // (a clip that ends hands over to the rest with a short blend)
       if (h.t >= h.duration && !h.hold) { h.done = true; this.snapshot(0.18); }
@@ -582,6 +655,10 @@ export class Hands {
     this._q.setFromAxisAngle(this._y.set(0, 1, 0), yaw);
     this._q2.copy(this._eyeQ).invert().multiply(this._q);
     F.body.makeRotationFromQuaternion(this._q2);
+    // (the eyes looking down alone - a clip's view key 'eyes' - turn the
+    // camera but not the head: what the eye's frame holds stays in the head)
+    const eyes = C && C.viewFx && C.viewFx.eyes ? C.viewFx.eyes : 0;
+    F.cam.makeRotationX(-eyes);
     F.gun = vm.gun.matrix;
     vm.drumG.updateMatrix();
     F.drum.multiplyMatrices(vm.gun.matrix, vm.drumG.matrix);
@@ -655,7 +732,8 @@ export class Hands {
   viewFx(cdef, t) {
     const C = this.game.controller;
     if (!C) return;
-    const V = C.viewFx || (C.viewFx = { yaw: 0, pitch: 0, roll: 0, fwd: 0, side: 0, down: 0 });
+    const V = C.viewFx || (C.viewFx = { yaw: 0, pitch: 0, roll: 0, fwd: 0, side: 0, down: 0, eyes: 0 });
+    if (V.eyes === undefined) V.eyes = 0;
     for (const k in V) V[k] = 0;
     const keys = cdef && cdef.view;
     if (!keys) return;
@@ -696,8 +774,20 @@ export class Hands {
     let i = 0;
     while (i < keys.length - 1 && keys[i + 1][0] <= t) i++;
     const k0 = keys[i], k1 = keys[Math.min(keys.length - 1, i + 1)];
+    // object first (clips/diner.js): two object keys of one prop in a row
+    // are interpolated as the OBJECT's path (its place on a smooth curve
+    // through its neighbours, its turn slerped), and the hand is solved onto
+    // its grip at every step; the hand never swings the thing about the wrist
+    if (isObj(k0) && isObj(k1) && k0 !== k1 && k0[1].o === k1[1].o && t > k0[0]) {
+      const ka = i > 0 && isObj(keys[i - 1]) && keys[i - 1][1].o === k0[1].o ? keys[i - 1] : null;
+      const kb = i + 2 < keys.length && isObj(keys[i + 2]) && keys[i + 2][1].o === k0[1].o ? keys[i + 2] : null;
+      let u = Math.min(1, Math.max(0, (t - k0[0]) / Math.max(1e-6, k1[0] - k0[0])));
+      u = easeK(k1[2] || 'io', u);
+      if (this.objBetween(k0, k1, ka, kb, u, side, out)) return true;
+    }
     const get = (k, o) => {
       let P = k[1];
+      if (P && P.o) return this.objPose(k, side, o);
       if (P === '@rest') { const S = SETS[this.set]; P = S[side] ? HAND_POSES[S[side]] : null; }
       if (typeof P === 'string') P = HAND_POSES[P];
       // (a pose computed from the world - the hand that takes the pack where
@@ -721,6 +811,116 @@ export class Hands {
     out.p.lerp(B.p, u); out.q.slerp(B.q, u); out.e.lerp(B.e, u);
     out.F = lerpF(out.F, B.F, u, out.F);
     return true;
+  }
+
+  // ---- object keys (clips/diner.js) ----------------------------------------------------------
+  // A key [t, { o: kind, at, F, e, ef, off }] says where the THING is (the
+  // hand follows it): `at` is
+  //   'here'                          where it stood when the clip began (world)
+  //   { here: true, d, up, fwd }      that place moved by d (body frame, m),
+  //                                   turned upright facing fwd (body) if given
+  //   { frame: 'cam'|'body'|'world', p, up, fwd }   a place of the eye, the body or the room
+  //   (H, side) => Matrix4 (world)    computed once per playing
+  // F the fingers, e the elbow (in `ef`: 'body' default, or 'cam'), off a
+  // shift of the HAND alone (body frame: the hand open beside the thing
+  // before it closes on it; never while it holds it).
+  // The world or body place of the thing, in the eye's frame (the arm roots'
+  // parent) right now.
+  objMatrix(k, side) {
+    const P = k[1];
+    const memo = this.keyMemo || (this.keyMemo = new Map());
+    const F = this.frames();
+    const root = this.vm.root;
+    root.updateMatrixWorld(true);
+    const at = P.at;
+    let rec = memo.get(k);
+    if (!rec) {
+      const prop = this.propOf(side, P.o);
+      if (typeof at === 'function') rec = { frame: 'world', m: at(this, side) };
+      else if (at === 'here' || (at && at.here)) {
+        if (!prop) return null;
+        prop.updateMatrixWorld(true);
+        const W = ((this.origins && this.origins.get(prop)) || prop.matrixWorld).clone();
+        if (at !== 'here') {
+          const Bw = _m1.multiplyMatrices(root.matrixWorld, F.body);
+          const pos = new THREE.Vector3().setFromMatrixPosition(W);
+          if (at.d && Math.hypot(...at.d) > 1e-9) pos.add(V(...at.d).transformDirection(Bw).multiplyScalar(Math.hypot(...at.d)));
+          if (at.up || at.fwd) {
+            const R = M4(V(0, 0, 0), at.up || [0, 1, 0], at.fwd || [0, 0, 1]);
+            const Rw = new THREE.Matrix4().extractRotation(Bw).multiply(R);
+            W.copy(Rw).setPosition(pos);
+          } else W.setPosition(pos);
+        }
+        rec = { frame: 'world', m: W };
+      } else if (at && at.m) rec = { frame: at.frame || 'cam', m: at.m.clone() };
+      else if (at) rec = { frame: at.frame || 'cam', m: M4(V(...at.p), at.up || [0, 1, 0], at.fwd || [0, 0, 1]) };
+      if (!rec || !rec.m) return null;
+      memo.set(k, rec);
+    }
+    const out = new THREE.Matrix4();
+    // (in the eye's frame as the head holds it: resolve() turns it by the
+    // eyes' own look, F.cam)
+    if (rec.frame === 'world') out.copy(root.matrixWorld).invert().multiply(rec.m).premultiply(_m1.copy(F.cam).invert());
+    else if (rec.frame === 'body') out.multiplyMatrices(F.body, rec.m).premultiply(_m1.copy(F.cam).invert());
+    else out.copy(rec.m);
+    return out;
+  }
+
+  // the hand's pose for an object key (and out.obj: the thing's matrix)
+  objPose(k, side, out, M = null, F = null, e = null) {
+    const P = k[1];
+    const prop = this.propOf(side, P.o);
+    if (!prop) return false;
+    M = M || this.objMatrix(k, side);
+    if (!M) return false;
+    let m = M;
+    if (P.off) {
+      m = M.clone();
+      const d = V(...P.off).applyMatrix4(_m1.extractRotation(this._frames.body)).applyMatrix4(_m2.copy(this._frames.cam).transpose());
+      m.elements[12] += d.x; m.elements[13] += d.y; m.elements[14] += d.z;
+    }
+    const ee = e || (P.e ? this.eIn(P) : null);
+    const pose = this.poseForProp(side, prop, m, 'cam', F || P.F, ee ? ee.toArray() : null);
+    if (!this.resolve(pose, side, out)) return false;
+    out.obj = M; out.prop = prop;
+    return true;
+  }
+
+  // an object key's elbow, in the eye's frame as the head holds it
+  eIn(P) {
+    const v = V(...P.e);
+    if (P.ef === 'cam') return v;
+    return v.applyMatrix4(this._frames.body).applyMatrix4(_m2.copy(this._frames.cam).transpose());
+  }
+
+  // between two object keys: the thing's path (Catmull-Rom through the
+  // neighbouring keys' places, its turn slerped), the fingers and the elbow
+  // lerped; the hand solved onto it
+  objBetween(k0, k1, ka, kb, u, side, out) {
+    const A = this.objMatrix(k0, side), B = this.objMatrix(k1, side);
+    if (!A || !B) return false;
+    const pa = new THREE.Vector3(), qa = new THREE.Quaternion(), pb = new THREE.Vector3(), qb = new THREE.Quaternion(), s = new THREE.Vector3();
+    A.decompose(pa, qa, s); B.decompose(pb, qb, s);
+    const p0 = ka ? new THREE.Vector3().setFromMatrixPosition(this.objMatrix(ka, side)) : pa.clone().multiplyScalar(2).sub(pb);
+    const p3 = kb ? new THREE.Vector3().setFromMatrixPosition(this.objMatrix(kb, side)) : pb.clone().multiplyScalar(2).sub(pa);
+    // (a centripetal-free, uniform Catmull-Rom: the keys are close and even)
+    const u2 = u * u, u3 = u2 * u;
+    const p = new THREE.Vector3()
+      .addScaledVector(p0, -0.5 * u3 + u2 - 0.5 * u)
+      .addScaledVector(pa, 1.5 * u3 - 2.5 * u2 + 1)
+      .addScaledVector(pb, -1.5 * u3 + 2 * u2 + 0.5 * u)
+      .addScaledVector(p3, 0.5 * u3 - 0.5 * u2);
+    const q = qa.clone().slerp(qb, u);
+    const M = new THREE.Matrix4().compose(p, q, s.set(1, 1, 1));
+    const P0 = k0[1], P1 = k1[1];
+    const F = lerpF(P0.F, P1.F, u, {});
+    const e0 = P0.e ? this.eIn(P0) : null;
+    const e1 = P1.e ? this.eIn(P1) : null;
+    const e = e0 && e1 ? e0.lerp(e1, u) : e0 || e1;
+    // (a hand shift eases with the keys: the open hand closing in on the thing)
+    const off0 = P0.off || [0, 0, 0], off1 = P1.off || [0, 0, 0];
+    const k = { 1: { o: P0.o, off: off0.map((v, i) => v + (off1[i] - v) * u) } };
+    return this.objPose([0, k[1]], side, out, M, F, e);
   }
 
   // ---- the Tommy gun: both hands on its grips; the reload's drum swap ------------------------
@@ -751,7 +951,7 @@ export class Hands {
     // (low in the frame, centre, foreshortened)
     const M = this.held.M;
     if (M) {
-      const m = this._m.compose(POINTS.mouth, MOUTH_Q, this._s.set(1, 1, 1));
+      const m = this._m.compose(POINTS.mouth, MOUTH_Q, this._s.set(1, 1, 1)).premultiply(this._frames.cam);
       M.matrix.copy(m);
       M.matrixWorldNeedsUpdate = true;
       M.visible = true;
@@ -763,14 +963,14 @@ export class Hands {
       const S = SOCKETS[prop.userData.kind] || SOCKETS.default;
       const bone = S.bone === 'hand' ? rig.hand : (S.bone[0] === 't' ? rig.thumb.b[+S.bone[1]] : rig.fingers[S.bone[0]].b[+S.bone[1]]);
       rig.root.updateMatrixWorld(true);
-      const sock = S._m || (S._m = new THREE.Matrix4().compose(V(...S.p), new THREE.Quaternion().setFromEuler(new THREE.Euler(...S.r)), V(1, 1, 1)));
+      const sock = sockM(S);
       const g = prop.userData.grip;
       const m = this._m.copy(this.vm.root.matrixWorld).invert().multiply(bone.matrixWorld).multiply(sock);
       if (h === 'L') m.multiply(MX);
       if (g) m.multiply(this._mb.copy(g).invert());
       prop.matrix.copy(m);
       prop.matrixWorldNeedsUpdate = true;
-      prop.visible = rig.visible;
+      prop.visible = rig.visible && !prop.userData._hidden;
       // (a glass or a bottle in the hand: its liquid stays level in the
       // world however the hand tips it, every step)
       if (prop.userData.setTilt) {
@@ -787,6 +987,17 @@ const MOUTH_Q = new THREE.Quaternion().setFromUnitVectors(V(0, 1, 0), MOUTH_DIR)
 // where the smoke set's hands find the pack and the lighter (body frame)
 export const PACK_AT = [0.16, -0.4, -0.63];
 export const LIGHTER_AT = [0.29, -0.4, -0.59];
+
+// an object key (clips/diner.js): [t, { o: kind, at, ... }]
+const isObj = (k) => !!(k && k[1] && typeof k[1] === 'object' && k[1].o);
+const easeK = (ease, u) => ease === 'lin' ? u : ease === 'in' ? u * u : ease === 'out' ? 1 - (1 - u) * (1 - u) : ease === 'snap' ? 1 - Math.pow(1 - u, 3) : u * u * (3 - 2 * u);
+const _m1 = new THREE.Matrix4(), _m2 = new THREE.Matrix4();
+// a place and turn: its +y along `up`, its +z toward `fwd` (made square)
+function M4(pos, up, fwd) {
+  const y = V(...up).normalize(), z0 = V(...fwd);
+  const x = new THREE.Vector3().crossVectors(y, z0).normalize(), z = new THREE.Vector3().crossVectors(x, y);
+  return new THREE.Matrix4().makeBasis(x, y, z).setPosition(pos);
+}
 
 function cloneF(F) { const o = {}; for (const k of [...FINGERS, 't']) o[k] = F[k] ? F[k].slice() : null; return o; }
 function copyF(src, dst) {
