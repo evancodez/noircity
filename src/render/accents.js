@@ -40,11 +40,15 @@ const KEYS = {
   // scotch: honey amber, darker than fire (a lit surface; ink class 6)
   amber: { rgb: [0.62, 0.26, 0.035], emit: false },
   // the DINER sign: cold electric blue, white-hot along the tube's centre
-  neon: { rgb: [0.07, 0.4, 1.0], core: [0.55, 0.8, 1.0], hot: [0.8, 0.92, 1.0], emit: true, gain: 3, corePow: 6 },
+  neon: { rgb: [0.07, 0.4, 1.0], core: [0.55, 0.8, 1.0], hot: [0.8, 0.92, 1.0], emit: true, gain: 7, corePow: 6 },
   // the Cardinal's red: the same red as blood, on an object
   crew: { rgb: [0.578, 0.0056, 0.0273], emit: false },
 };
 export const ACCENT_KEYS = Object.keys(KEYS);
+
+// The view's height in device pixels (Pipeline.setSize): a neon tube keeps a
+// minimum PRINTED width, whatever its distance (see coreMaterial).
+export const ACCENT_U = { uViewH: { value: 900 } };
 
 export function accent(key, { gain = 1 } = {}) {
   const k = KEYS[key];
@@ -57,9 +61,12 @@ export function accent(key, { gain = 1 } = {}) {
 // centre line. uGain (1 at rest; a drag takes an ember to 3) pushes the core
 // toward `hot`. Unlit, no fog (small near things), written like any mesh
 // (the id pass and the reflection read it as they read a basic material).
-function coreMaterial(k, gain, map, additive) {
+function coreMaterial(k, gain, map, additive, minPx = 0, tube = 0) {
   const m = new THREE.ShaderMaterial({
     uniforms: {
+      uViewH: ACCENT_U.uViewH,
+      uMinPx: { value: minPx },
+      uTubeR: { value: tube },
       uRim: { value: new THREE.Color(...k.rgb) },
       uCore: { value: new THREE.Color(...k.core) },
       uHot: { value: new THREE.Color(...k.hot) },
@@ -72,6 +79,7 @@ function coreMaterial(k, gain, map, additive) {
     vertexShader: /* glsl */`
       #include <common>
       #include <skinning_pars_vertex>
+      uniform float uViewH, uMinPx, uTubeR;
       varying vec3 vN;
       varying vec3 vV;
       varying vec2 vUv;
@@ -83,6 +91,16 @@ function coreMaterial(k, gain, map, additive) {
         #include <begin_vertex>
         #include <skinning_vertex>
         #include <project_vertex>
+        // A minimum printed width (neon, fix round 1): an 18 mm tube 8 m
+        // off is under 2 px, and the ink printed it as a hairline. Every
+        // vertex is pushed out along its view normal until the tube is
+        // uMinPx pixels across (nothing is added once it is wider than that).
+        if ( uMinPx > 0.0 ) {
+          float pxW = 2.0 * max( - mvPosition.z, 1e-3 ) / ( projectionMatrix[ 1 ][ 1 ] * uViewH );
+          float dil = max( 0.5 * uMinPx * pxW - uTubeR, 0.0 );
+          mvPosition.xyz += normalize( transformedNormal ) * dil;
+          gl_Position = projectionMatrix * mvPosition;
+        }
         vN = normalize( transformedNormal );
         vV = - mvPosition.xyz;
         vUv = uv;
@@ -114,12 +132,14 @@ function coreMaterial(k, gain, map, additive) {
 
 // Emitters (blood in the air, fire, ember, flame, neon) are unlit; surfaces
 // (amber, crew) are lit like any other object, so a lamp shapes them.
-export function accentMaterial(key, { gain = 1, map = null, additive = false } = {}) {
+// neon: { tube: the tube's radius in m (default 0.009, an 18 mm tube),
+// minPx: its minimum printed width in px (default 3.5) }
+export function accentMaterial(key, { gain = 1, map = null, additive = false, tube = 0.009, minPx = 3.5 } = {}) {
   const k = KEYS[key];
   if (!k) throw new Error(`accentMaterial: no key '${key}'`);
   let m;
   if (k.core) {
-    m = coreMaterial(k, gain, map, additive);
+    m = key === 'neon' ? coreMaterial(k, gain, map, additive, minPx, tube) : coreMaterial(k, gain, map, additive);
   } else if (k.emit || additive) {
     m = new THREE.MeshBasicMaterial({ color: accent(key, { gain }), map });
     if (additive) Object.assign(m, { transparent: true, depthWrite: false, blending: THREE.AdditiveBlending });

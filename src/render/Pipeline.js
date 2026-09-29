@@ -6,6 +6,7 @@ import { FULLSCREEN_VERT } from './shaders/common.js';
 import { TONE_GLSL, toneUniforms, EXPOSURE } from './tone.js';
 import { makeBloomPrefilter, makeBloomDown, makeBloomUp, makeBloomUpWide, makeBlurMaterial, makeReflBrightMaterial } from './shaders/bloom.js';
 import { makeReflPosMaterial, makeReflSplat, makeCopyLumMaterial } from './shaders/reflstreak.js';
+import { ACCENT_U } from './accents.js';
 
 // Explicit render pipeline (DESIGN.md §3). Per frame:
 //   1. normal+id pass   -> rtId (view normal xyz, object id w) + depth texture
@@ -150,6 +151,19 @@ export class Pipeline {
     this.rtRain = new THREE.WebGLRenderTarget(1, 1, { type: hf, format: THREE.RedFormat, depthBuffer: false });
     this.rtRain.texture.name = 'rtRain';
     this.rtStreakA = new THREE.WebGLRenderTarget(1, 1, { type: hf, depthBuffer: false });
+    // The splat reads the bright and position targets in its VERTEX stage;
+    // read in the frame that wrote them, that stalled the Metal backend
+    // (~0.9 ms: the vertex stage waits for the fragment writes of the pass
+    // before). So they are double-buffered and the splat lays the sheens of
+    // the frame before (placed by that frame's eye and mirror camera; the
+    // world positions do not move with the eye). One frame of lag on a
+    // reflection; a held frame (a screenshot) is exactly the same.
+    this._srcA = [this.rtStreakA, new THREE.WebGLRenderTarget(1, 1, { type: hf, depthBuffer: false })];
+    this._srcP = [this.rtReflPos, new THREE.WebGLRenderTarget(1, 1, {
+      type: hf, depthBuffer: false, generateMipmaps: true, minFilter: THREE.LinearMipmapLinearFilter,
+    })];
+    this._pp = 0;
+    this._prevSrc = { valid: false, eye: new THREE.Vector3(), projInv: new THREE.Matrix4(), camWorld: new THREE.Matrix4(), texelTan: 0 };
     this.rtStreakB = new THREE.WebGLRenderTarget(1, 1, { type: hf, depthBuffer: false });
     this.bloom = [];
     for (let i = 0; i < BLOOM_LEVELS; i++) {
@@ -167,8 +181,35 @@ export class Pipeline {
     this.reflBrightMat = makeReflBrightMaterial();
     this.reflPosMat = makeReflPosMaterial();
     this.copyLumMat = makeCopyLumMaterial();
-    this.splat = null;                 // the street streaks' instanced quads (setSize)
+    this.splat = null;                 // the street sheens' quads, one per source texel (setSize)
     this.splatScene = new THREE.Scene();
+    // The lamp heads as the mirror sees them (fix 8, round 2). A lamp's bulb
+    // is a disc facing down: from the mirror's eye, below the street, a
+    // lamp 40 m off is seen edge-on - a sliver under a texel - so the far
+    // lamps left no sheen at all (their columns in the old street came from
+    // their CONES, which are air light and stay out of the mirror). Each lit
+    // lamp of the stage gets a small bright ball at its head, drawn into the
+    // mirror only (never into the view): it writes the depth that places
+    // its sheen, and it goes dark with its lamp (shot out, switched off,
+    // flickering).
+    this.lampSource = null;            // setLamps (else the stage in play, via __noir)
+    {
+      const g = new THREE.IcosahedronGeometry(1, 2);
+      // (not depth-tested: the sheen at a lamp's foot sees the lamp even
+      // where the mirror's eye does not - a parked car between them hid the
+      // left pavement's second lamp, and its column went with it; the sheen
+      // itself lies on the street and is hidden by whatever stands on it)
+      // (AlwaysDepth, not depthTest off: with the test off GL writes no depth)
+      const m = new THREE.MeshBasicMaterial({ color: 0xffffff, fog: false, toneMapped: false, depthFunc: THREE.AlwaysDepth });
+      this.lampProxy = new THREE.InstancedMesh(g, m, 96);
+      this.lampProxy.instanceColor = new THREE.InstancedBufferAttribute(new Float32Array(96 * 3), 3);
+      this.lampProxy.frustumCulled = false;
+      this.lampProxy.count = 0;
+      this.lampProxyScene = new THREE.Scene();
+      this.lampProxyScene.add(this.lampProxy);
+      this._pm = new THREE.Matrix4();
+      this._pc = new THREE.Color();
+    }
     // Bright-pass threshold T (scene-linear luminance): just above lamp-lit
     // stone in the (black-fogged) reflection, so only emitters, cone cores and
     // hot lit spots leave a column; a wet dark car body or the mist does not.
@@ -241,6 +282,33 @@ export class Pipeline {
   // the stage's dry volumes (stage.dry, Box3[]): the rain, its splashes and
   // the street's ripple rings are never drawn inside one (up to 4)
   setDry(boxes) { this.dryBoxes = boxes || []; }
+  // the stage's lamps (stage.lamps: a Lamps, or null): their heads light
+  // the street's sheens (the mirror's lamp proxies, render step 2)
+  setLamps(lamps) { this.lampSource = lamps; }
+
+  // the lamp proxies for this frame: one ball per lit lamp head
+  syncLampProxies() {
+    const src = this.lampSource ?? globalThis.__noir?.game?.stage?.lamps ?? null;
+    const list = (src && src.lamps) || [];
+    const P = this.lampProxy, m = this._pm, c = this._pc;
+    let n = 0;
+    for (const l of list) {
+      if (n >= 96) break;
+      const k = l._k ?? (l.on ? 1 : 0);
+      if (!l.on || !(k > 0.05) || !l.head) continue;
+      // (a sconce's head is a small dim disc; a street or hanging lamp's
+      // shade mouth ~0.5 m)
+      const r = l.sconce ? 0.12 : 0.22;
+      m.makeScale(r, r * 0.6, r).setPosition(l.head);
+      P.setMatrixAt(n, m);
+      P.setColorAt(n, c.setScalar(8 * k));
+      n++;
+    }
+    P.count = n;
+    P.instanceMatrix.needsUpdate = true;
+    if (P.instanceColor) P.instanceColor.needsUpdate = true;
+    return n;
+  }
 
   blendLook(time) {
     const T = this.look;
@@ -333,7 +401,7 @@ export class Pipeline {
     const u = new THREE.Vector3(eye.x - F.x, 0, eye.z - F.z);
     const D = u.length(); u.normalize();
     const out = [], p = new THREE.Vector4();
-    for (let s = -1; s <= Math.min(D, 12); s += step) {
+    for (let s = -1; s <= D - 0.5; s += step) {
       p.set(F.x + u.x * s, F.y, F.z + u.z * s, 1).applyMatrix4(M);
       const x = Math.floor(p.x / p.w * T.w), y = Math.floor(p.y / p.w * T.h);
       if (x < 0 || y < 0 || x >= T.w || y >= T.h) { out.push([+s.toFixed(2), null]); continue; }
@@ -365,6 +433,7 @@ export class Pipeline {
     this.renderer.setPixelRatio(this.pixelRatio);
     this.renderer.setSize(cssW, cssH, true);
     this.rtId.setSize(w, h);
+    ACCENT_U.uViewH.value = h;
     this.rtScene.setSize(w, h);
     const hw = Math.max(2, w >> 1), hh = Math.max(2, h >> 1);
     const rh = Math.max(2, Math.round(hh * REFL_ROWS));
@@ -372,15 +441,16 @@ export class Pipeline {
     this.rtReflOpq.setSize(hw, rh);
     this.rtSpriteZ.setSize(hw, rh);
     const sw = Math.max(2, hw >> 1), sh = Math.max(2, rh >> 1);
-    this.rtReflPos.setSize(sw, sh);
+    for (const t of this._srcP) t.setSize(sw, sh);
     this.rtVolume.setSize(hw, hh);
     this.rtVolTmp.setSize(hw, hh);
     this.rtRain.setSize(w, h);
     const qw = Math.max(2, w >> 2), qh = Math.max(2, h >> 2);
-    this.rtStreakA.setSize(sw, sh);
+    for (const t of this._srcA) t.setSize(sw, sh);
+    this._prevSrc.valid = false;
     this.rtStreakB.setSize(qw, qh);
-    // one splat instance per source texel
-    if (!this.splat || this.splat.geometry.instanceCount !== sw * sh) {
+    // one splat quad per source texel
+    if (!this.splat || this.splat.geometry.userData.texels !== sw * sh) {
       if (this.splat) { this.splatScene.remove(this.splat); this.splat.geometry.dispose(); this.splat.material.dispose(); }
       this.splat = makeReflSplat(sw * sh);
       this.splatScene.add(this.splat);
@@ -643,6 +713,12 @@ export class Pipeline {
     if (reflOn) {
       this.reflCam.layers.set(LAYER.WORLD);
       for (let k = 0; k <= (this.repeat.refl || 0); k++) r.render(scene, this.reflCam);
+      if (this.syncLampProxies()) {
+        const acP = r.autoClear;
+        r.autoClear = false;
+        r.render(this.lampProxyScene, this.reflCam);
+        r.autoClear = acP;
+      }
       this.copyLumMat.uniforms.tSrc.value = this.rtRefl.texture;
       this.blit(this.copyLumMat, this.rtReflOpq);
       r.setRenderTarget(this.rtRefl);
@@ -670,6 +746,9 @@ export class Pipeline {
     if (this.reflLod && this.deferResolve) this.reflLod(false);
     // bright pass: half -> quarter res; keep = max(0, lum - T)
     if (P) P.begin('reflPost');
+    const cur = this._pp;
+    this.rtStreakA = this._srcA[cur];
+    this.rtReflPos = this._srcP[cur];
     const bp = this.reflBrightMat.uniforms;
     bp.tSrc.value = this.rtRefl.texture;
     bp.uTexel.value.set(1 / this.rtRefl.width, 1 / this.rtRefl.height);
@@ -687,15 +766,33 @@ export class Pipeline {
     pp.uEye.value.copy(this._v.camPos);
     this.blit(this.reflPosMat, this.rtReflPos);
     // the street's sheens: one per emitter, from its foot toward the eye
-    const su = this.splat.material.uniforms, W = this._v.win;
-    su.tBright.value = this.rtStreakA.texture;
-    su.tPos.value = this.rtReflPos.texture;
+    // (from the frame before: see _srcA)
+    const su = this.splat.material.uniforms, W = this._v.win, PS = this._prevSrc;
+    const texelTan = (W.xR - W.xL) / this.rtStreakA.width;
+    if (PS.valid) {
+      su.tBright.value = this._srcA[1 - cur].texture;
+      su.tPos.value = this._srcP[1 - cur].texture;
+      su.uProjInvR.value.copy(PS.projInv);
+      su.uCamWorldR.value.copy(PS.camWorld);
+      su.uEyeSrc.value.copy(PS.eye);
+      su.uTexelTan.value = PS.texelTan;
+    } else {
+      su.tBright.value = this.rtStreakA.texture;
+      su.tPos.value = this.rtReflPos.texture;
+      su.uProjInvR.value.copy(this.reflCam.projectionMatrixInverse);
+      su.uCamWorldR.value.copy(this.reflCam.matrixWorld);
+      su.uEyeSrc.value.copy(this._v.camPos);
+      su.uTexelTan.value = texelTan;
+    }
+    PS.projInv.copy(this.reflCam.projectionMatrixInverse);
+    PS.camWorld.copy(this.reflCam.matrixWorld);
+    PS.eye.copy(this._v.camPos);
+    PS.texelTan = texelTan;
+    PS.valid = true;
+    this._pp = 1 - cur;
     su.uVP.value.copy(this._v.vp);
-    su.uProjInvR.value.copy(this.reflCam.projectionMatrixInverse);
-    su.uCamWorldR.value.copy(this.reflCam.matrixWorld);
     su.uEye.value.copy(this._v.camPos);
     su.uPlaneY.value = this._v.planePos.y;
-    su.uTexelTan.value = (W.xR - W.xL) / this.rtStreakA.width;
     r.setRenderTarget(this.rtStreakB);
     r.setClearColor(0x000000, 0);
     r.clear();
@@ -782,6 +879,7 @@ export class Pipeline {
     if (P) P.begin('bloom');
     const pf = this.prefilterMat.uniforms;
     pf.tSrc.value = this.rtScene.texture;
+    pf.tId.value = this.rtId.texture;
     pf.uTexel.value.set(1 / this.width, 1 / this.height);
     this.blit(this.prefilterMat, this.bloom[0]);
     for (let i = 1; i < (S.bloom ? 0 : BLOOM_LEVELS); i++) {

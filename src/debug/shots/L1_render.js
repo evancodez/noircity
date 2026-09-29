@@ -2,7 +2,7 @@
 import * as THREE from 'three';
 import { accentMaterial } from '../../render/accents.js';
 import { makeWindowLightMaterial, makeRoomMaterial } from '../../render/glass.js';
-import { allocInkId } from '../../render/layers.js';
+import { allocInkId, allocVmId, LAYER } from '../../render/layers.js';
 
 const Q = () => new URLSearchParams(location.search);
 
@@ -113,7 +113,82 @@ function stageRooms(stage) {
   }
 }
 
+// vmtone (fix round 1, item 3): what the hands hold prints by what it is
+// made of. Five hand-sized capsules in the hands' own scene (viewmodel ids,
+// userData.inkSurface), left to right: skin, paper, cloth, metal, glass,
+// held before the eye at the counter under a pendant (&where=street: the
+// same on the dark street under the el). The gun is put away.
+function stageVmTone(stage, camera, controller, game) {
+  const hands = game.player && game.player.hands;
+  if (!hands || !hands.vm) return;
+  hands.equip('empty');
+  const root = hands.vm.root;
+  const kinds = [
+    ['skin', { color: 0x8c8c8c, roughness: 0.7 }],
+    ['paper', { color: 0xdedede, roughness: 0.9 }],
+    ['cloth', { color: 0x202020, roughness: 1.0 }],
+    ['metal', { color: 0x303030, roughness: 0.35, metalness: 0.8 }],
+    ['glass', { color: 0x505050, roughness: 0.1 }],
+  ];
+  kinds.forEach(([k, m], i) => {
+    const mesh = new THREE.Mesh(new THREE.CapsuleGeometry(0.03, 0.09, 8, 24), new THREE.MeshStandardMaterial(m));
+    mesh.position.set((i - 2) * 0.1, -0.1, -0.5);
+    mesh.rotation.z = 0.25;
+    mesh.layers.set(LAYER.VIEWMODEL);
+    mesh.userData.inkId = allocVmId();
+    mesh.userData.inkFigure = true;
+    mesh.userData.inkSurface = k;
+    mesh.castShadow = false;
+    mesh.frustumCulled = false;
+    root.add(mesh);
+  });
+  if (Q().get('where') === 'street') controller.setPose(1.0, -40.0, 0.0, -0.1);
+}
+
+// neonstudy (fix round 1, item 4): D I N E R in 18 mm neon tube
+// (accentMaterial('neon'), letters 0.55 tall) on the diner's fascia over
+// bays B2..B3 (x = -10.15, y centre 3.85), seen from the avenue ~8.5 m off
+// (the dinerfront camera): the tube must print as a solid 3-4 px line,
+// white-hot along its centre, a blue halo, and a broken blue sheen under it
+// on the wet pavement and road.
+const NEON_LETTERS = {
+  // strokes in a 0.34 x 0.55 box, (u right, v up), 0..1
+  D: [[[0, 0], [0, 1], [0.55, 1], [0.9, 0.8], [1, 0.5], [0.9, 0.2], [0.55, 0], [0, 0]]],
+  I: [[[0.5, 0], [0.5, 1]]],
+  N: [[[0, 0], [0, 1], [1, 0], [1, 1]]],
+  E: [[[1, 1], [0, 1], [0, 0], [1, 0]], [[0, 0.5], [0.75, 0.5]]],
+  R: [[[0, 0], [0, 1], [0.7, 1], [1, 0.85], [1, 0.62], [0.7, 0.5], [0, 0.5]], [[0.5, 0.5], [1, 0]]],
+};
+function stageNeon(stage) {
+  const mat = accentMaterial('neon');
+  const g = new THREE.Group();
+  g.name = 'neonStudy';
+  const H = 0.55, Wd = 0.34, x = -10.15, y0 = 3.85 - H / 2;
+  let z = 4.4;
+  for (const ch of 'DINER') {
+    for (const stroke of NEON_LETTERS[ch]) {
+      const path = new THREE.CurvePath();
+      for (let i = 1; i < stroke.length; i++) {
+        const a = stroke[i - 1], b = stroke[i];
+        path.add(new THREE.LineCurve3(new THREE.Vector3(x, y0 + a[1] * H, z - a[0] * Wd), new THREE.Vector3(x, y0 + b[1] * H, z - b[0] * Wd)));
+      }
+      const m = new THREE.Mesh(new THREE.TubeGeometry(path, 24 * stroke.length, 0.009, 10, false), mat);
+      m.userData.inkId = allocInkId();
+      m.castShadow = false;
+      g.add(m);
+    }
+    z -= Wd + 0.22;
+  }
+  g.updateMatrixWorld(true);
+  stage.scene.add(g);
+}
+
 export const presets = {
+  neonstudy: { x: -1.5, z: 6.5, yaw: Math.atan2(-(-10.2 + 1.5), -(0.6 - 6.5)), pitch: 0.12, fov: 60, t: 4, stage: stageNeon },
+  // at the counter, under the pendant over stool 5 (z = 3.2), facing the
+  // back bar; &where=street: the avenue between the lamps
+  vmtone: { x: -13.2, z: 3.2, y: -0.05, yaw: Math.PI / 2, pitch: -0.15, fov: 62, t: 2, viewmodel: true, holdWindow: 0,
+    stage(stage, camera, controller, game) { tagDinerStub(stage); stageVmTone(stage, camera, controller, game); } },
   windowlight: { x: -12.9, z: 11.0, y: -0.05, yaw: 0.35, pitch: -0.45, fov: 64, t: 4, stage: stageWindowLight },
   roomstudy: { x: 1.5, z: -33.0, yaw: 0.55, pitch: 0.3, fov: 60, t: 4, stage: stageRooms },
   // glassstudy: the diner's plate glass (bay B2, 3.55 x 2.2 m) from 2 m

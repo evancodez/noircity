@@ -417,6 +417,11 @@ export function makeGroundMaterial(U, { paving = 0 } = {}) {
         // core thins so the column's foot is carried by its dashes
         float nearCol = smoothstep( 1.5, 7.0, dist );
         float covIn = 0.8 * mix( 0.82, 1.1, patchM ) * mix( 0.45, 1.0, nearCol );
+        // (fix 8: at the player's feet a sheen is broken hard by the ripples
+        // - sparse slivers - and held under display ~0.6 below: a lamp a few
+        // metres off left a white paint blob in the bottom corner)
+        float feet = smoothstep( 3.0, 7.0, dist );
+        covIn *= mix( 0.3, 1.0, feet );
         float colMask = smoothstep( 0.003, 0.08, colL );
         float cov = mix( covOut, covIn, colMask );
         float f1, f2, f3, f4;
@@ -458,11 +463,15 @@ export function makeGroundMaterial(U, { paving = 0 } = {}) {
         // (with the direct lamp pools) into a lit white plate. Beyond ~25 m a
         // column thins toward the grey of the fog, so the far road stays a
         // mid grey with the columns still separate, like the reference.
-        colB *= mix( 1.0, 0.22, smoothstep( 24.0, 62.0, dist ) );
+        // (fix 8: the sheens no longer converge - each lies at its own
+        // lamp's foot, short - so the far road keeps them, a little dimmed:
+        // a lamp 50 m off prints its column where it stands)
+        colB *= mix( 1.0, 0.55, smoothstep( 40.0, 90.0, dist ) );
         // ... and at the very front the column is no solid core: its foot is
         // carried by the dashes (the reference's bottom edge is ink blots
         // over a grey wash, the columns already broken up)
         colB *= mix( 0.65, 1.0, nearCol );
+        colB = mix( min( colB, 0.045 ), colB, feet );
         vec3 colC = column * ( colB / max( colL, 1e-5 ) );
         // Blood in the column (Phase 3a review): the brightness normalisation
         // above lifts a red streak to the same value as a lamp's, and the ink
@@ -497,10 +506,21 @@ export function makeGroundMaterial(U, { paving = 0 } = {}) {
         float fStreak = texture2D( tBrush, fQ + vec2( 0.61, 0.23 ) ).g * 0.7
                       + texture2D( tBrush, fQ * vec2( 1.6, 1.3 ) + vec2( 0.17, 0.71 ) ).g * 0.3;
         colFire *= 0.62 * smoothstep( 0.36, 0.56, fStreak );
+        // Neon in the column (fix round 1): a sign's sheen lifted to a lamp
+        // column's value printed as a solid blue block under the letters.
+        // Like the fire it is broken by the stretched dry-brush streaks and
+        // held under a lamp's value: a broken blue sheen, the ripples and
+        // the streaks cutting it. (Blue clearly leading, saturated: the
+        // train's hair-blue tag is not it.)
+        float neonC = step( column.r, column.b ) * step( column.g, column.b ) * smoothstep( 0.3, 0.55, cSat );
+        vec3 colNeon = colC * neonC;
+        colC -= colNeon;
+        colNeon *= 0.55 * smoothstep( 0.4, 0.6, fStreak );
         float fleck = smoothstep( 0.56, 0.64, texture2D( tNoise, p * vec2( 0.45, 1.6 ) + 5.1 ).r )
                     * smoothstep( 0.3, 0.6, dash );
         vec3 refl = colC * mix( 0.04, 1.0, dash ) + colBlood * 0.35 * fleck
                   + colFire * mix( 0.02, 1.0, dash )
+                  + colNeon * mix( 0.0, 1.0, dash )
                   + sheen * ( 0.4 + 1.2 * dash )       // the dark-grey wet look
                   // sparse pale dashes on dark asphalt: ripple facets that
                   // catch the grey storm sky. (sheen * 1.2 * dash alone is

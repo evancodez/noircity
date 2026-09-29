@@ -4,7 +4,11 @@ import * as THREE from 'three';
 // mesh.userData.inkSurface (or its material's userData.inkSurface) =
 // 'plaster' | 'wood' | 'lino' | 'metal' | 'cloth' (and the aliases below).
 // The ink pass prints them calm: flat washes that follow the light.
-export const SURFACE = { plaster: 1, wall: 1, ceiling: 1, wood: 2, panel: 2, panelling: 2, lino: 3, linoleum: 3, floor: 3, metal: 4, enamel: 4, chrome: 4, cloth: 5, leather: 5, fabric: 5 };
+// In the hands (viewmodel ids 1730..1769) the same tag names what a held
+// thing is made of: 'skin' | 'paper' | 'cloth' | 'metal' | 'glass' (classes
+// 7, 8, 5, 4, 9; the ink prints each by its own tone rule, untagged = skin).
+export const SURFACE = { plaster: 1, wall: 1, ceiling: 1, wood: 2, panel: 2, panelling: 2, lino: 3, linoleum: 3, floor: 3, metal: 4, enamel: 4, chrome: 4, cloth: 5, leather: 5, fabric: 5,
+  skin: 7, paper: 8, glass: 9 };
 
 // Normal + object-id pass (used as scene.overrideMaterial).
 // Output: rgb = view-space normal, a = object id (integer, exact in half float).
@@ -59,7 +63,9 @@ export function makeIdMaterial() {
     const oud = om && om.userData;
     // (an accent printed by its own rule, not by its hue: the scotch's amber
     // has the fire's hue and must never be lifted to flame: class 6)
-    const sc = oud && oud.accent === 'amber' ? 6 : SURFACE[object.userData.inkSurface ?? (oud && oud.inkSurface)] || 0;
+    // (the ember, class 10: the ink gives it a warm glow of its own, keyed
+    // by the class, not by hue - the fire keeps its accepted print)
+    const sc = oud && oud.accent === 'amber' ? 6 : oud && oud.accent === 'ember' ? 10 : SURFACE[object.userData.inkSurface ?? (oud && oud.inkSurface)] || 0;
     mat.uniforms.uSurf.value = 1 + 2 * sc;
     mat.uniformsNeedUpdate = true;
   };

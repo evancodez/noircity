@@ -8,10 +8,10 @@ export function makeBloomPrefilter() {
   return new THREE.ShaderMaterial({
     name: 'BloomPrefilter',
     depthTest: false, depthWrite: false,
-    uniforms: { tSrc: { value: null }, uTexel: { value: new THREE.Vector2() }, uThreshold: { value: 1.3 }, uKnee: { value: 0.6 } },
+    uniforms: { tSrc: { value: null }, tId: { value: null }, uTexel: { value: new THREE.Vector2() }, uThreshold: { value: 1.3 }, uKnee: { value: 0.6 } },
     vertexShader: FULLSCREEN_VERT,
     fragmentShader: /* glsl */`
-      uniform sampler2D tSrc; uniform vec2 uTexel; uniform float uThreshold; uniform float uKnee;
+      uniform sampler2D tSrc, tId; uniform vec2 uTexel; uniform float uThreshold; uniform float uKnee;
       varying vec2 vUv;
       ${LUMA_GLSL}
       vec3 prefilter( vec3 c ) {
@@ -22,14 +22,25 @@ export function makeBloomPrefilter() {
         float w = max( rq, l - uThreshold ) / max( l, 1e-4 );
         return c * w;
       }
+      float emberW( vec2 uv ) {
+        float n = length( texture2D( tId, uv ).xyz );
+        return step( 20.0, n ) * step( n, 22.0 );
+      }
       void main() {
         vec3 a = texture2D( tSrc, vUv + uTexel * vec2( -0.5, -0.5 ) ).rgb;
         vec3 b = texture2D( tSrc, vUv + uTexel * vec2(  0.5, -0.5 ) ).rgb;
         vec3 c = texture2D( tSrc, vUv + uTexel * vec2( -0.5,  0.5 ) ).rgb;
         vec3 d = texture2D( tSrc, vUv + uTexel * vec2(  0.5,  0.5 ) ).rgb;
         // clamp fireflies before averaging
-        vec3 s = min( prefilter( a ), 60.0 ) + min( prefilter( b ), 60.0 ) + min( prefilter( c ), 60.0 ) + min( prefilter( d ), 60.0 );
-        gl_FragColor = vec4( s * 0.25, 1.0 );
+        vec3 pa = min( prefilter( a ), 60.0 ), pb = min( prefilter( b ), 60.0 ), pc = min( prefilter( c ), 60.0 ), pd = min( prefilter( d ), 60.0 );
+        vec3 s = pa + pb + pc + pd;
+        // alpha: the share of this glow that is an ember's (idpass class
+        // 10, the normal's length 21): the ink warms the ember's glow by it,
+        // keyed by the class and never by hue (the fire keeps its print).
+        // The chain carries it as it carries the light (rgb untouched).
+        float e = emberW( vUv + uTexel * vec2( -0.5, -0.5 ) ) * luma( pa ) + emberW( vUv + uTexel * vec2( 0.5, -0.5 ) ) * luma( pb )
+                + emberW( vUv + uTexel * vec2( -0.5, 0.5 ) ) * luma( pc ) + emberW( vUv + uTexel * vec2( 0.5, 0.5 ) ) * luma( pd );
+        gl_FragColor = vec4( s * 0.25, e * 0.25 );
       }`,
   });
 }
@@ -44,11 +55,11 @@ export function makeBloomDown() {
       uniform sampler2D tSrc; uniform vec2 uTexel;
       varying vec2 vUv;
       void main() {
-        vec3 s = texture2D( tSrc, vUv + uTexel * vec2( -1.0, -1.0 ) ).rgb
-               + texture2D( tSrc, vUv + uTexel * vec2(  1.0, -1.0 ) ).rgb
-               + texture2D( tSrc, vUv + uTexel * vec2( -1.0,  1.0 ) ).rgb
-               + texture2D( tSrc, vUv + uTexel * vec2(  1.0,  1.0 ) ).rgb;
-        gl_FragColor = vec4( s * 0.25, 1.0 );
+        vec4 s = texture2D( tSrc, vUv + uTexel * vec2( -1.0, -1.0 ) )
+               + texture2D( tSrc, vUv + uTexel * vec2(  1.0, -1.0 ) )
+               + texture2D( tSrc, vUv + uTexel * vec2( -1.0,  1.0 ) )
+               + texture2D( tSrc, vUv + uTexel * vec2(  1.0,  1.0 ) );
+        gl_FragColor = s * 0.25;
       }`,
   });
 }
@@ -59,6 +70,9 @@ export function makeBloomUp() {
     depthTest: false, depthWrite: false,
     blending: THREE.AdditiveBlending,
     transparent: true,
+    // (premultiplied: ONE, ONE - the light is added exactly as before, and
+    // the alpha, the ember's share, is added with it)
+    premultipliedAlpha: true,
     uniforms: { tSrc: { value: null }, uTexel: { value: new THREE.Vector2() }, uScale: { value: 1.0 } },
     vertexShader: FULLSCREEN_VERT,
     fragmentShader: /* glsl */`
@@ -66,12 +80,12 @@ export function makeBloomUp() {
       varying vec2 vUv;
       void main() {
         vec2 t = uTexel;
-        vec3 s = texture2D( tSrc, vUv ).rgb * 4.0;
-        s += ( texture2D( tSrc, vUv + vec2( t.x, 0.0 ) ).rgb + texture2D( tSrc, vUv - vec2( t.x, 0.0 ) ).rgb
-             + texture2D( tSrc, vUv + vec2( 0.0, t.y ) ).rgb + texture2D( tSrc, vUv - vec2( 0.0, t.y ) ).rgb ) * 2.0;
-        s += texture2D( tSrc, vUv + t ).rgb + texture2D( tSrc, vUv - t ).rgb
-           + texture2D( tSrc, vUv + vec2( t.x, -t.y ) ).rgb + texture2D( tSrc, vUv + vec2( -t.x, t.y ) ).rgb;
-        gl_FragColor = vec4( s * ( uScale / 16.0 ), 1.0 );
+        vec4 s = texture2D( tSrc, vUv ) * 4.0;
+        s += ( texture2D( tSrc, vUv + vec2( t.x, 0.0 ) ) + texture2D( tSrc, vUv - vec2( t.x, 0.0 ) )
+             + texture2D( tSrc, vUv + vec2( 0.0, t.y ) ) + texture2D( tSrc, vUv - vec2( 0.0, t.y ) ) ) * 2.0;
+        s += texture2D( tSrc, vUv + t ) + texture2D( tSrc, vUv - t )
+           + texture2D( tSrc, vUv + vec2( t.x, -t.y ) ) + texture2D( tSrc, vUv + vec2( -t.x, t.y ) );
+        gl_FragColor = s * ( uScale / 16.0 );
       }`,
   });
 }
@@ -147,25 +161,26 @@ export function makeBloomUpWide() {
     depthTest: false, depthWrite: false,
     blending: THREE.AdditiveBlending,
     transparent: true,
+    premultipliedAlpha: true,   // (see makeBloomUp)
     uniforms: { tSrc: { value: null }, uTexel: { value: new THREE.Vector2() }, uScale: { value: 1.0 }, uSpread: { value: 1.3 } },
     vertexShader: FULLSCREEN_VERT,
     fragmentShader: /* glsl */`
       uniform sampler2D tSrc; uniform vec2 uTexel; uniform float uScale, uSpread;
       varying vec2 vUv;
-      vec3 tent( float lod, vec2 t ) {
-        vec3 s = textureLod( tSrc, vUv, lod ).rgb * 4.0;
-        s += ( textureLod( tSrc, vUv + vec2( t.x, 0.0 ), lod ).rgb + textureLod( tSrc, vUv - vec2( t.x, 0.0 ), lod ).rgb
-             + textureLod( tSrc, vUv + vec2( 0.0, t.y ), lod ).rgb + textureLod( tSrc, vUv - vec2( 0.0, t.y ), lod ).rgb ) * 2.0;
-        s += textureLod( tSrc, vUv + t, lod ).rgb + textureLod( tSrc, vUv - t, lod ).rgb
-           + textureLod( tSrc, vUv + vec2( t.x, -t.y ), lod ).rgb + textureLod( tSrc, vUv + vec2( -t.x, t.y ), lod ).rgb;
+      vec4 tent( float lod, vec2 t ) {
+        vec4 s = textureLod( tSrc, vUv, lod ) * 4.0;
+        s += ( textureLod( tSrc, vUv + vec2( t.x, 0.0 ), lod ) + textureLod( tSrc, vUv - vec2( t.x, 0.0 ), lod )
+             + textureLod( tSrc, vUv + vec2( 0.0, t.y ), lod ) + textureLod( tSrc, vUv - vec2( 0.0, t.y ), lod ) ) * 2.0;
+        s += textureLod( tSrc, vUv + t, lod ) + textureLod( tSrc, vUv - t, lod )
+           + textureLod( tSrc, vUv + vec2( t.x, -t.y ), lod ) + textureLod( tSrc, vUv + vec2( -t.x, t.y ), lod );
         return s / 16.0;
       }
       void main() {
-        vec3 s = tent( 0.0, uTexel )
+        vec4 s = tent( 0.0, uTexel )
                + uScale * ( tent( 1.0, uTexel * 2.0 * uSpread )
                + uScale * ( tent( 2.0, uTexel * 4.0 * uSpread )
                + uScale * tent( 3.0, uTexel * 8.0 * uSpread ) ) );
-        gl_FragColor = vec4( s * uScale, 1.0 );
+        gl_FragColor = s * uScale;
       }`,
   });
 }
