@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { ATLAS } from './fxTextures.js';
-import { groundAt } from '../world/Street.js';
+import { groundY } from './ground.js';
 
 // Blood: the only saturated red in the world (DESIGN.md §1.8).
 //   hit(point, dir)  - 20-40 red drops flung along the shot direction with
@@ -38,7 +38,7 @@ export class Blood {
       fx.blood.spawn({
         pos: point.clone().add(new THREE.Vector3(r.gauss() * 0.05, r.gauss() * 0.05, r.gauss() * 0.05)),
         vel: v, life: r.range(0.7, 1.4), size: [s, s * 1.3], stretch: 0.03, col: BLOOD_AIR.map((c) => c * r.range(0.75, 1.25)),
-        cell: r.chance(0.7) ? ATLAS.DROP : ATLAS.DROPS, gravity: 9.8, drag: 0.4, ground: groundAt(point.x),
+        cell: r.chance(0.7) ? ATLAS.DROP : ATLAS.DROPS, gravity: 9.8, drag: 0.4, ground: groundY(this.world, point.x, point.z, point.y),
         fadeOut: 0.05,
         onGround: (p) => { if (r.chance(0.35)) fx.decals.drop(p.pos, r.range(0.06, 0.16)); return false; },
       });
@@ -65,7 +65,7 @@ export class Blood {
     }
     // on the street where the spray comes down
     const gp = point.clone().addScaledVector(dir, r.range(0.6, 1.8)).addScaledVector(side, r.gauss() * 0.3);
-    gp.y = groundAt(gp.x);
+    gp.y = groundY(this.world, gp.x, gp.z);
     fx.decals.blood(gp, new THREE.Vector3(0, 1, 0), r.range(0.3, 0.6));
   }
 
@@ -85,7 +85,7 @@ export class Blood {
       const a = new THREE.Vector3().setFromMatrixPosition(h.bones.hips.matrixWorld);
       const b = new THREE.Vector3().setFromMatrixPosition(h.bones.neck.matrixWorld);
       const c = a.lerp(b, 0.6);
-      c.y = groundAt(c.x);
+      c.y = groundY(this.world, c.x, c.z);
       this.fx.decals.pool(c, this.rng.range(1.0, 1.35), this.rng.range(4.5, 5.5));
     }
   }

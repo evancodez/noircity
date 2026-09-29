@@ -96,7 +96,12 @@ export default {
         p.userData.noRay = true;
         grp.add(p);
       }
-      out.signs.push(breakables.add(grp, { kind: 'sign', hp: 2 }));
+      // (lane 3's sign swings about its origin: the brackets' line, local x
+      // along it; the board hangs 0.42 under it)
+      const o = V3(x0 + 0.68, y, bz);
+      grp.position.copy(o);
+      for (const c of grp.children) c.position.sub(o);
+      out.signs.push(breakables.add(grp, { kind: 'sign', hp: 2, w: 0.95, h: 0.6 }));
     }
 
     // ---- crates and barrels at the edges' works
@@ -157,17 +162,17 @@ export default {
         // lagging joints: a fatter collar every so often
         for (let i = 6; i < pts.length; i += 9) P.push(new THREE.CylinderGeometry(0.19, 0.19, 0.3, 14).rotateX(Math.PI / 2).lookAt(pts[i + 1] ? pts[i + 1].clone().sub(pts[i]) : V3(0, 0, 1)).translate(pts[i].x, pts[i].y, pts[i].z));
         const m = mesh(P, MAT.pipe);
-        out.pipes.push(breakables.add(m, { kind: 'pipe', hp: 4 }));
+        out.pipes.push(breakables.add(m, { kind: 'pipe', hp: 4, fluid: 'steam' }));
       }
     }
 
     // ---- what other parts built that breaks: the newsstand's papers, the
     // overhead wires, the diner's awning
     const props = stage.part('props');
-    for (const p of (props && props.papers) || []) breakables.add(p, { kind: 'paper', hp: 1 });
-    for (const w of (props && props.wireMeshes) || []) breakables.add(w, { kind: 'wire', hp: 1 });
+    for (const p of (props && props.papers) || []) breakables.add(p, { kind: 'papers', hp: 1 });
+    for (const w of (props && props.wireMeshes) || []) breakables.add(w, { kind: 'wire', hp: 1, a: w.userData.ends[0], b: w.userData.ends[1] });
     const front = stage.part('dinerFront');
-    if (front && front.awning) out.awning = breakables.add(front.awning, { kind: 'awning', hp: 3 });
+    if (front && front.awning) out.awning = breakables.add(front.awning, { kind: 'awning', hp: 3, ...(front.awning.userData.awning || {}) });
     void rng; void DINER;
     return { group: g, ...out };
   },

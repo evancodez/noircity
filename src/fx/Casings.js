@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { LAYER, allocInkId } from '../render/layers.js';
-import { groundAt } from '../world/Street.js';
+import { groundY } from './ground.js';
 
 // Spent .45 ACP cases: thrown up and to the right from the Tommy gun's
 // ejection port (reprojected from the viewmodel into the world), tumbling,
@@ -62,7 +62,7 @@ export class Casings {
         c.vel.y -= 9.8 * dt;
         c.pos.addScaledVector(c.vel, dt);
         c.rot.x += c.spin.x * dt; c.rot.y += c.spin.y * dt; c.rot.z += c.spin.z * dt;
-        const gy = groundAt(c.pos.x) + 0.006;
+        const gy = groundY(this.world, c.pos.x, c.pos.z) + 0.006;
         if (c.pos.y < gy) {
           c.pos.y = gy;
           if (c.vel.y < -0.6 && c.bounces < 3) {

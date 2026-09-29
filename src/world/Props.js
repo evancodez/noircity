@@ -448,6 +448,7 @@ export class Props {
     const { M } = this.world;
     const ov = this.world.overpass;
     const parts = [];
+    const ends = [];      // (each wire's two pinned ends: lane 3 cuts it between them)
     // Span wires from the façade to the el, only far down the block (beyond
     // z -60): the near spans and the old tram trolley wire (the rails are
     // retired) were the darkest lines in the upper half of the street view,
@@ -460,17 +461,20 @@ export class Props {
       const a = V3(STREET.facadeX + 0.05, 8.2, z);
       const b = V3(col.x - 0.3, 7.4, col.z);
       parts.push(tube(catenaryPoints(a, b, 0.55, 20), 0.014, 5, 40));
+      ends.push([a, b]);
     }
     // a loose wire sagging along the façade (dark against the wall, never
     // across the sky from the street view)
     parts.push(tube(catenaryPoints(V3(STREET.facadeX + 0.05, 11.5, 12), V3(STREET.facadeX + 0.05, 10.8, -14), 1.2, 24), 0.018, 5, 48));
+    ends.push([V3(STREET.facadeX + 0.05, 11.5, 12), V3(STREET.facadeX + 0.05, 10.8, -14)]);
     // inked like the el's iron: black up close, lifting toward dark grey and
     // losing its contour with distance (one id; one mesh per wire, so each
     // is a breakable of its own: stages/block/parts/dressing.js)
     const id = allocIronId();
-    this.wireMeshes = parts.map((geo) => {
+    this.wireMeshes = parts.map((geo, i) => {
       const m = new THREE.Mesh(merge([geo]), M.ironDark);
       m.userData.inkId = id;
+      m.userData.ends = ends[i];
       this.group.add(m);
       return m;
     });

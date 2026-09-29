@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { SURF } from '../util/RayWorld.js';
 import { ATLAS } from './fxTextures.js';
-import { groundAt } from '../world/Street.js';
+import { groundY } from './ground.js';
 import { roundedBox } from '../world/geom.js';
 
 // Bullet impacts by surface (RayWorld.SURF):
@@ -33,7 +33,7 @@ export class Impacts {
     this.count++;
     // reflected direction: debris leaves along the bounce, fanned by the normal
     const refl = dir.clone().addScaledVector(n, -2 * dir.dot(n)).normalize();
-    const gy = groundAt(p.x);
+    const gy = groundY(this.world, p.x, p.z, p.y);
     if (hit.surf === SURF.WATER || hit.surf === SURF.PAVE) {
       this.world.street.addImpact(this.world, p.x, p.z, hit.surf === SURF.WATER ? 0.9 : 0.5);
       const k = hit.surf === SURF.WATER ? 1 : 0.6;

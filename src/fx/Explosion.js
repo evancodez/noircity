@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { FIRE, ATLAS } from './fxTextures.js';
 import { LAYER, allocDebrisId } from '../render/layers.js';
-import { groundAt } from '../world/Street.js';
+import { groundY } from './ground.js';
 import { roundedBox, merge } from '../world/geom.js';
 
 // A car going up. Read as ink, not as a CG particle fountain:
@@ -120,7 +120,7 @@ export class Explosions {
     const side = new THREE.Vector3(-fwd.z, 0, fwd.x);
     const up = (y) => new THREE.Vector3(0, y, 0);
     const K = kind || 'old';
-    const gy = groundAt(at.x);
+    const gy = groundY(this.world, at.x, at.z, at.y);
     // --- the fireball: its shape is the kind's -----------------------------
     // (the white-hot core blots swell fast, their colour running to orange)
     const core = (pos, vel, s, life, grow, aspect = 1) => F.fire.spawn({
@@ -341,7 +341,7 @@ export class Explosions {
         c.roll = { dir, speed: r.range(3.6, 4.4), lean: 0, leanV: 0, ang: 0, side: r.chance(0.5) ? 1 : -1, hop: 0.9 };
         c.burn = r.range(7, 9);
         c.smoke = 0;
-        m.position.y = groundAt(m.position.x) + 0.38;
+        m.position.y = groundY(this.world, m.position.x, m.position.z) + 0.38;
       }
       this.chunks.push(c);
     }
@@ -377,7 +377,7 @@ export class Explosions {
       c.vel.y -= G * dt;
       c.mesh.position.addScaledVector(c.vel, dt);
       c.mesh.rotation.x += c.spin.x * dt; c.mesh.rotation.y += c.spin.y * dt; c.mesh.rotation.z += c.spin.z * dt;
-      const gy = groundAt(c.mesh.position.x) + c.half;
+      const gy = groundY(this.world, c.mesh.position.x, c.mesh.position.z) + c.half;
       if (c.mesh.position.y < gy) {
         c.mesh.position.y = gy;
         if (c.vel.y < -1.2 && c.bounces < 4) {
@@ -397,7 +397,7 @@ export class Explosions {
           if (c.kind === 'wheel') c.mesh.rotation.set(Math.PI / 2, 0, c.mesh.rotation.z);
           else if (c.kind === 'door') c.mesh.rotation.set(Math.PI / 2, c.mesh.rotation.y, 0);
           else c.mesh.rotation.set(0, c.mesh.rotation.y, 0);
-          c.mesh.position.y = groundAt(c.mesh.position.x) + (c.kind === 'wheel' ? 0.105 : c.kind === 'door' ? 0.035 : 0.035);
+          c.mesh.position.y = groundY(this.world, c.mesh.position.x, c.mesh.position.z) + (c.kind === 'wheel' ? 0.105 : c.kind === 'door' ? 0.035 : 0.035);
         }
       }
       // a thread of smoke off a burning chunk
@@ -446,7 +446,7 @@ export class Explosions {
     const qa = new THREE.Quaternion().setFromAxisAngle(_z, -R.ang);
     const ql = new THREE.Quaternion().setFromAxisAngle(R.dir, R.lean);
     m.quaternion.copy(ql).multiply(qa).multiply(_q);
-    const gy = groundAt(m.position.x);
+    const gy = groundY(this.world, m.position.x, m.position.z);
     m.position.y = gy + rad * Math.cos(R.lean) + 0.1 * Math.abs(Math.sin(R.lean)) + (R.hop > 0 ? Math.sin(R.hop / 0.9 * Math.PI) * 0.35 : 0);
     // the street answers: a ripple where the rim runs
     if (r.chance(dt * 8 * Math.min(1, R.speed))) this.world.street.addImpact(this.world, m.position.x, m.position.z, 0.35);

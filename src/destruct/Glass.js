@@ -257,7 +257,9 @@ export class Glass {
       pane.cutMesh.geometry = g;
       o.dispose();
       if (G) G.rays.refresh(pane.cutMesh);
-      pane.backing.visible = P.cells.some((c) => c.gone);
+      // (no black behind a pane whose owner opened a room there: lane 4's
+      // upper rooms, Facade.openRoom)
+      pane.backing.visible = !pane.roomOpen && P.cells.some((c) => c.gone);
     } else {
       const o = pane.mesh.geometry;
       pane.mesh.geometry = g;
@@ -458,7 +460,7 @@ export class Glass {
       const vis = !p.hidden;
       if (p.cutMesh.visible !== vis) {
         p.cutMesh.visible = vis; p.crackMesh.visible = vis;
-        p.backing.visible = vis && p.cut.cells.some((c) => c.gone);
+        p.backing.visible = vis && !p.roomOpen && p.cut.cells.some((c) => c.gone);
         for (const h of p.halos) h.mesh.visible = vis;
         if (this.game) this.game.rays.setEnabled(p.cutMesh, vis);
       }

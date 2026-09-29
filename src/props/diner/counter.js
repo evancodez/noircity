@@ -403,7 +403,10 @@ export function buildPieCase(kit, buildProp) {
     new THREE.PlaneGeometry(w, h).translate(0, h / 2 + 0.02, d / 2),
     new THREE.PlaneGeometry(w, h).rotateY(Math.PI).translate(0, h / 2 + 0.02, -d / 2),
   ];
-  kit.add(mergeGeos(panes), M.std('caseGlass', 0x505050, 0.12, 'metal', { transparent: true, opacity: 0.12, depthWrite: false }), { parent: g, cast: false });
+  // (one mesh per pane, each flagged userData.glass: lane 3's pieCase break
+  // turns each into a pane of its own and shatters it)
+  const caseGlass = M.std('caseGlass', 0x505050, 0.12, 'metal', { transparent: true, opacity: 0.12, depthWrite: false });
+  for (const pg of panes) kit.add(pg, caseGlass, { parent: g, cast: false }).userData.glass = true;
   // a stand, a pie on it, a second pie lower, half gone
   const stand = lathe([[0.0001, 0.02], [0.06, 0.02], [0.02, 0.03], [0.018, 0.12], [0.14, 0.13], [0.145, 0.137], [0.0001, 0.137]], 40);
   kit.add(stand, M.steel, { parent: g });

@@ -383,9 +383,15 @@ export default {
     {
       const ay = fy0 - 0.16, ax = fx1 - 0.04, za = fz0 + 0.15, zb = fz1 - 0.15;
       const roll = lathe([[0.0, 0], [0.1, 0], [0.13, 0.03], [0.14, 0.12], [0.14, zb - za - 0.12], [0.13, zb - za - 0.03], [0.1, zb - za], [0.0, zb - za]], 28);
-      roll.rotateX(-Math.PI / 2).translate(ax, ay, za);
+      roll.rotateX(Math.PI / 2).translate(ax, ay, za);   // (the roll runs from za to zb, over B2..B3)
       const fl = new THREE.PlaneGeometry(zb - za - 0.1, 0.16).rotateY(Math.PI / 2).rotateZ(-0.35).translate(ax + 0.13, ay - 0.13, (za + zb) / 2);
       awning = mesh(merge([roll, fl]), MM.canvas, { id: allocInkId() });
+      // (lane 3's awning dumps its water off its front edge: its local x
+      // along it, local +z toward the street, the origin on the roll's axis)
+      awning.geometry.translate(-ax, -ay, -(za + zb) / 2).rotateY(-Math.PI / 2);
+      awning.position.set(ax, ay, (za + zb) / 2);
+      awning.rotation.y = Math.PI / 2;
+      awning.userData.awning = { w: zb - za, d: 0.3 };
       const brk = [];
       for (const zz of [za - 0.04, zb + 0.04]) {
         brk.push(roundedBox(0.34, 0.05, 0.04, 0.01, 2).translate(ax - 0.12, ay, zz));

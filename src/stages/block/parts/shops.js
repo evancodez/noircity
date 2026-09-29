@@ -210,7 +210,7 @@ export default {
     if (facade) {
       for (const w of facade.windows) {
         if (w.shop || !w.on) continue;
-        w.on('state', (pane, st) => { if (st === 'gone') { const bx = facade.openRoom(pane); if (bx) dressRoom(bx); } });
+        w.on('state', (pane, st) => { if (st === 'gone') { const bx = facade.openRoom(pane); if (bx) { if (pane.backing) pane.backing.visible = false; dressRoom(bx); } } });
       }
     }
     return { group: g, shops, dressRoom };
