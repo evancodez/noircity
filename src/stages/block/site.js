@@ -42,8 +42,17 @@ export const DINER = {
   jukebox: { x: -12.9, z: -5.8 },
   hatch: { z0: 1.0, z1: 3.4, y0: 1.25, y1: 2.15 },
   // six pendants over the counter's front edge, two over the booths
-  pendants: { x: -14.0, z: [8.0, 5.6, 3.2, 0.8, -1.6, -3.4], headY: 2.6, half: 0.6, booth: [[-11.45, 9.4], [-11.45, -3.8]] },
+  // (fix round A1: every 1.95 m from stool 1, so one hangs straight over
+  // the player's place, stool 4 at z 4.1, and its pool falls on the counter
+  // top in front of him; x a hand's breadth in from the rolled front edge,
+  // just behind where his things stand, so their small shadows fall toward
+  // him where he can see them, not hidden behind them)
+  pendants: { x: -14.7, z: [8.0, 6.05, 4.1, 2.15, 0.2, -1.75], headY: 2.6, half: 0.6, booth: [[-11.45, 9.4], [-11.45, -3.8]] },
   serveX: -15.3,
+  // the DINER sign's sheen on the wet pavement (fix round A7): under the
+  // letters only (z 1.18 .. 4.42 and a hair), full near the front, gone
+  // before the kerb (x -6.0)
+  neonSheen: { z0: 1.05, z1: 4.55, xFull: -8.8, xGone: -6.6 },
 };
 
 // z of stool i (1..9) and of the serve anchor opposite it

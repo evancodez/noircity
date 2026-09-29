@@ -7,8 +7,17 @@ import * as THREE from 'three';
 // In the hands (viewmodel ids 1730..1769) the same tag names what a held
 // thing is made of: 'skin' | 'paper' | 'cloth' | 'metal' | 'glass' (classes
 // 7, 8, 5, 4, 9; the ink prints each by its own tone rule, untagged = skin).
-export const SURFACE = { plaster: 1, wall: 1, ceiling: 1, wood: 2, panel: 2, panelling: 2, lino: 3, linoleum: 3, floor: 3, metal: 4, enamel: 4, chrome: 4, cloth: 5, leather: 5, fabric: 5,
-  skin: 7, paper: 8, glass: 9 };
+// 'amberGlass' (class 11, fix round A5): the glass of a vessel that holds
+// scotch - the id pass sees the glass, not the liquid behind it, so the ink
+// reads the amber through it by its hue there (and prints the empty glass
+// above the fill line dark).
+// 'metal' / 'chrome' (class 12, fix round A3): bare metal and glass in a
+// room print as black with broken highlights (the counter's rolled edge,
+// the stools' chrome), not as a calm enamel wash (enamel stays class 4).
+// 'lit' (class 13): a lit panel of a room (the back bar's glass, the
+// kitchen's wall, the jukebox's pilasters): its own flat light, unbanded.
+export const SURFACE = { plaster: 1, wall: 1, ceiling: 1, wood: 2, panel: 2, panelling: 2, lino: 3, linoleum: 3, floor: 3, enamel: 4, cloth: 5, leather: 5, fabric: 5,
+  skin: 7, paper: 8, glass: 9, amberGlass: 11, metal: 12, chrome: 12, lit: 13 };
 
 // Normal + object-id pass (used as scene.overrideMaterial).
 // Output: rgb = view-space normal, a = object id (integer, exact in half float).
@@ -68,6 +77,13 @@ export function makeIdMaterial() {
     const sc = oud && oud.accent === 'amber' ? 6 : oud && oud.accent === 'ember' ? 10 : SURFACE[object.userData.inkSurface ?? (oud && oud.inkSurface)] || 0;
     mat.uniforms.uSurf.value = 1 + 2 * sc;
     mat.uniformsNeedUpdate = true;
+    // (a clear pane the ink should see THROUGH - the pie case's glass: it
+    // leaves no id, normal or depth, so what stands behind it keeps its own
+    // contours and tone; its frame draws the box. The state is set per draw:
+    // three applies the material's write masks after this hook.)
+    const skip = !!object.userData.inkSkip;
+    mat.colorWrite = !skip;
+    mat.depthWrite = !skip;
   };
   return mat;
 }

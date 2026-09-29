@@ -60,7 +60,6 @@ export default {
     const W = D.innerX, B = D.backX;
     const g = new THREE.Group();
     g.name = 'diner';
-    g.visible = false;
     stage.scene.add(g);
     const kit = makeKit(stage, g);
     const rng = stage.rng.fork(5150);
@@ -215,6 +214,8 @@ export default {
     stage.dry.push(room);
     stage.addLook(room, { fogDensity: FOG.density * 0.35, rainOverlay: 0, haze: 0.6, reflect: 'floor', room: 'diner' });
     stage.addSurface((x, z) => (x < W + 0.01 && x > B && z > D.zMin && z < D.zMax ? F : undefined));
+    // (the neon's sheen lies on the pavement under the sign only)
+    if (stage.U && stage.U.uNeonZone) { const N = D.neonSheen; stage.U.uNeonZone.value.set(N.z0, N.z1, N.xFull, N.xGone); }
 
     // ---- the API
     const game = () => stage.game;
@@ -267,6 +268,23 @@ export default {
         api.cupsRattle(0.6, Math.max(0.1, seconds - at));
       },
       reset() {
+        // (fix round A10: whatever the last try broke stands again - lane 3's
+        // breakables put back what they swapped for pieces, and the pieces
+        // on the floor and the counter are swept up)
+        const BR = stage.breakables;
+        for (const h of [...stools.map((st) => st.handle), ...booths.map((b) => b.handle), pieHandle, jHandle]) {
+          if (BR.restore) BR.restore(h);
+          else if (h.broken) {
+            h.broken = false; h.hp = h.hp0; h.object.visible = true;
+            h.object.traverse((m) => { if (m.isMesh && !m.userData.noRay) stage.addSolid(m); });
+          }
+        }
+        if (BR.clearPieces) BR.clearPieces(room);
+        // the pie back on its stand in the case, the case's glass in its frame
+        if (pie.pie.parent !== pie.group) pie.group.add(pie.pie);
+        pie.pie.position.set(0, 0.137, 0.02); pie.pie.rotation.set(0, 2.2, 0); pie.pie.scale.setScalar(1); pie.pie.visible = true;
+        pie.pie.traverse((m) => { m.visible = true; });
+        pie.group.traverse((m) => { if (m.userData.glass) m.visible = true; });
         for (const st of stools) st.upright();
         setTable();
         dips.length = 0;
@@ -276,12 +294,6 @@ export default {
           l.sw.x = l.sw.z = l.sw.vx = l.sw.vz = 0; l._swung = true; swingStep(l, 0);
           // (a pendant shot out in the last try is lit again)
           if (l.dead) { l.dead = false; l.buzz = null; l.dieNow = false; l.deadK = 0; l.on = !!api.near; if (l.bulb) l.bulb.material = kit.M.bulb; }
-        }
-        // a table or the pie case broken in the last try stands again
-        for (const h of [...booths.map((b) => b.handle), pieHandle]) {
-          if (!h.broken) continue;
-          h.broken = false; h.hp = h.hp0; h.object.visible = true;
-          h.object.traverse((m) => { if (m.isMesh && !m.userData.noRay) stage.addSolid(m); });
         }
       },
       dips,
@@ -300,8 +312,17 @@ export default {
     const G = api.stage.game;
     if (near !== api.near) {
       api.near = near;
-      api.group.visible = near;
-      // (out of sight nothing of it is a bullet's target either)
+      // (fix round A9: the room is always drawn - from farther than the
+      // front's 30 m its glass showed a bare void. Out of sight it only
+      // saves its light: its pendants take no pooled light, and it casts no
+      // shadow into a street lamp's map; nor is it a bullet's target)
+      api.group.visible = true;
+      api.group.traverse((o) => {
+        if (!o.isMesh) return;
+        if (o.userData._cast === undefined) o.userData._cast = o.castShadow;
+        o.castShadow = near && o.userData._cast;
+      });
+      if (G && G.pipeline && G.pipeline.dirtyShadows) G.pipeline.dirtyShadows();
       if (G) api.group.traverse((o) => { if (o.isMesh) G.rays.setEnabled(o, near); });
       for (const l of L) l.on = near && !l.dead;
     }

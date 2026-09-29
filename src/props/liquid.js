@@ -12,7 +12,7 @@ import * as THREE from 'three';
 // reads right in a hand at 0.3 m: the high side climbs, the low side drops.
 const _u = new THREE.Vector3();
 
-export function makeLiquid(profile, { y0, yFull, mat, segs = 32, rows = 6 } = {}) {
+export function makeLiquid(profile, { y0, yFull, mat, segs = 32, rows = 6, meniscus = null } = {}) {
   // the inner radius at a height, from the vessel's inner profile
   const rAt = (y) => {
     if (y <= profile[0][1]) return profile[0][0];
@@ -46,6 +46,18 @@ export function makeLiquid(profile, { y0, yFull, mat, segs = 32, rows = 6 } = {}
   const mesh = new THREE.Mesh(geo, mat);
   mesh.name = 'liquid';
   const state = { fill: 1, up: new THREE.Vector3(0, 1, 0), ripple: 0, rippleT: 0 };
+  // (fix round A5) the meniscus: a thin flat ring where the surface meets
+  // the glass, drawn after the glass (renderOrder) so the ink reads it as
+  // the liquid's own lit surface seen edge-on - a lighter line at the fill
+  // line through the bottle's glass; hidden while the vessel tips
+  let ring = null;
+  if (meniscus) {
+    ring = new THREE.Mesh(new THREE.RingGeometry(0.9, 1.0, segs, 1).rotateX(-Math.PI / 2), meniscus);
+    ring.name = 'meniscus';
+    ring.renderOrder = 2;
+    ring.castShadow = false;
+    mesh.add(ring);
+  }
   const cosA = [], sinA = [];
   for (let j = 0; j <= segs; j++) { const a = (j / segs) * Math.PI * 2; cosA.push(Math.cos(a)); sinA.push(Math.sin(a)); }
 
@@ -80,10 +92,16 @@ export function makeLiquid(profile, { y0, yFull, mat, segs = 32, rows = 6 } = {}
     geo.computeVertexNormals();
     geo.computeBoundingSphere();
     mesh.visible = state.fill > 0.004;
+    if (ring) {
+      const r = Math.max(1e-4, rAt(level) - 0.0002);
+      ring.position.y = Math.min(yTop, level) + 0.0004;
+      ring.scale.set(r, 1, r);
+      ring.visible = u.y > 0.995 && state.fill > 0.02 && level < yTop - 0.002;
+    }
   }
   rebuild();
   return {
-    mesh, state,
+    mesh, state, ring,
     set(fill = state.fill, up = null) {
       state.fill = Math.max(0, Math.min(1, fill));
       if (up) state.up.copy(up);

@@ -41,12 +41,36 @@ export function accentMat(key, opts = {}) {
   return m;
 }
 
+// a white highlight tick on glass (a bottle's shoulder, a tumbler's rim):
+// an unlit paper-white stroke, printed as paper in the hands too
+function tickMat() {
+  if (cache.has('tick')) return cache.get('tick');
+  const m = basic('tick', { color: new THREE.Color(1, 1, 1).multiplyScalar(1.6) });
+  m.userData.inkSurface = 'paper';
+  return m;
+}
+
+function amberLineMat() {
+  if (cache.has('amberLine')) return cache.get('amberLine');
+  const m = accentMaterial('amber');
+  m.name = 'prop_amberLine';
+  m.transparent = true;
+  m.depthWrite = false;
+  m.side = THREE.DoubleSide;
+  cache.set('amberLine', m);
+  return m;
+}
+
 // the prop palette (sRGB hex; see the tone note above)
 export function PM() {
   return {
     china: std('china', { color: 0x3c3c3c, roughness: 0.42, surface: 'enamel' }),
     chinaRim: std('chinaRim', { color: 0x141414, roughness: 0.5, surface: 'enamel' }),
     glass: std('glass', { color: 0x6a6a6a, roughness: 0.14, transparent: true, opacity: 0.32, depthWrite: false, surface: 'metal' }),
+    // (fix round A5: the glass of a vessel that holds scotch - its own ink
+    // class, so the amber is read through it and the empty glass above the
+    // fill line prints dark)
+    amberGlass: std('amberGlass', { color: 0x6a6a6a, roughness: 0.14, transparent: true, opacity: 0.28, depthWrite: false, surface: 'amberGlass' }),
     glassThick: std('glassThick', { color: 0x5a5a5a, roughness: 0.16, transparent: true, opacity: 0.55, depthWrite: false, surface: 'metal' }),
     glassDark: std('glassDark', { color: 0x1e1e1e, roughness: 0.18, transparent: true, opacity: 0.82, depthWrite: false, surface: 'metal' }),
     bottleDark: std('bottleDark', { color: 0x050505, roughness: 0.22, surface: 'metal' }),
@@ -67,8 +91,10 @@ export function PM() {
     atlas: std('atlas', { color: 0x606060, roughness: 0.9, map: atlas().tex, surface: 'cloth' }),
     atlasDecal: std('atlasDecal', { color: 0x303030, roughness: 0.9, map: atlas().tex, alphaTest: 0.5, surface: 'cloth' }),
     atlasGlow: basic('atlasGlow', { color: 0xffffff, map: atlas().tex }),
-    tick: basic('tick', { color: new THREE.Color(1, 1, 1).multiplyScalar(1.6) }),
+    tick: tickMat(),
     amber: accentMat('amber'),
+    // (the meniscus line: the amber, drawn over the bottle's glass)
+    amberLine: amberLineMat(),
     crew: accentMat('crew'),
     ember: accentMat('ember'),
   };

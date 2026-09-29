@@ -625,6 +625,7 @@ export class Pipeline {
 
   render(scene, camera, time) {
     const r = this.renderer, U = this.U;
+    ACCENT_U.uTime.value = time;   // (the flame's flicker: the game's clock)
     this.applyLook(scene, time);
     this.updateLightning(time);
     camera.updateMatrixWorld();
@@ -916,6 +917,18 @@ export class Pipeline {
     if (vm) {
       iu.uProjInvVM.value.copy(vm.camera.projectionMatrixInverse);
       iu.uVmFrame.value.copy(vm.frameInv);
+    }
+    // the lighter's flame in the hands (fix round A6): its world point, set
+    // by the hands on the viewmodel (game.vm.flame; null when there is no
+    // flame), into the eye's view space for the skin's warm lift
+    {
+      const G = globalThis.__noir && globalThis.__noir.game;
+      const fw = vm && G && G.vm ? G.vm.flame : null;
+      if (fw) {
+        const p = this._flameV || (this._flameV = new THREE.Vector3());
+        p.copy(fw).applyMatrix4(camera.matrixWorldInverse);
+        iu.uFlame.value.set(p.x, p.y, p.z, 1);
+      } else iu.uFlame.value.w = 0;
     }
     iu.uViewInv.value.copy(camera.matrixWorld);
     iu.uLightning.value = this.lightning;

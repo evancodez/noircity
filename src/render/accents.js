@@ -36,7 +36,7 @@ const KEYS = {
   // gamma, where (1, .3, .04) read as a pale apricot)
   ember: { rgb: [1.0, 0.12, 0.012], core: [1.0, 0.42, 0.08], hot: [1.0, 0.85, 0.5], emit: true, gain: 10, corePow: 2.5 },
   // a lighter's tongue: pale yellow body, orange edge
-  flame: { rgb: [1.0, 0.26, 0.03], core: [1.0, 0.8, 0.4], hot: [1.0, 0.93, 0.7], emit: true, gain: 2.2, corePow: 1.6 },
+  flame: { rgb: [1.0, 0.26, 0.03], core: [1.0, 0.86, 0.5], hot: [1.0, 0.97, 0.84], emit: true, gain: 2.2, corePow: 1.6 },
   // scotch: honey amber, darker than fire (a lit surface; ink class 6)
   amber: { rgb: [0.62, 0.26, 0.035], emit: false },
   // the DINER sign: cold electric blue, white-hot along the tube's centre
@@ -48,7 +48,8 @@ export const ACCENT_KEYS = Object.keys(KEYS);
 
 // The view's height in device pixels (Pipeline.setSize): a neon tube keeps a
 // minimum PRINTED width, whatever its distance (see coreMaterial).
-export const ACCENT_U = { uViewH: { value: 900 } };
+// uTime: the game's clock (Pipeline.render), for the flame's flicker.
+export const ACCENT_U = { uViewH: { value: 900 }, uTime: { value: 0 } };
 
 export function accent(key, { gain = 1 } = {}) {
   const k = KEYS[key];
@@ -130,6 +131,73 @@ function coreMaterial(k, gain, map, additive, minPx = 0, tube = 0) {
   return m;
 }
 
+// The lighter's flame (fix round A6): a tongue 25 .. 40 mm tall - a
+// white-yellow core where it faces the eye, an orange edge, a dark blue
+// base at the wick - that flickers: it stretches and sways, most at its
+// tip, on the game's clock (deterministic: the pipeline sets uTime from the
+// fixed step's time). Height is read from the mesh's own y (0 at the wick,
+// ~0.03 m at the tip).
+function flameMaterial(k, gain) {
+  const m = new THREE.ShaderMaterial({
+    uniforms: {
+      uTime: ACCENT_U.uTime,
+      uRim: { value: new THREE.Color(...k.rgb) },
+      uCore: { value: new THREE.Color(...k.core) },
+      uHot: { value: new THREE.Color(...k.hot) },
+      uLevel: { value: k.gain },
+      uGain: { value: gain },
+      uPow: { value: k.corePow },
+    },
+    vertexShader: /* glsl */`
+      uniform float uTime;
+      varying vec3 vN;
+      varying vec3 vV;
+      varying float vH;
+      void main() {
+        vec3 p = position;
+        float h = clamp( p.y / 0.03, 0.0, 1.2 );
+        float t = uTime;
+        // (a breath in its height, a sway of its tip: sums of unrelated
+        // sines, so it never repeats visibly)
+        p.y *= 1.0 + 0.09 * sin( t * 17.3 ) + 0.05 * sin( t * 31.7 + 1.3 ) + 0.03 * sin( t * 53.1 + 0.4 );
+        float sway = h * h;
+        p.x += sway * ( 0.0017 * sin( t * 11.1 + 0.5 ) + 0.0008 * sin( t * 27.3 ) );
+        p.z += sway * ( 0.0012 * sin( t * 9.7 + 2.1 ) + 0.0006 * sin( t * 23.9 + 1.0 ) );
+        vH = h;
+        vec4 mv = modelViewMatrix * vec4( p, 1.0 );
+        vN = normalize( normalMatrix * normal );
+        vV = - mv.xyz;
+        gl_Position = projectionMatrix * mv;
+      }`,
+    fragmentShader: /* glsl */`
+      uniform vec3 uRim, uCore, uHot;
+      uniform float uLevel, uGain, uPow;
+      varying vec3 vN;
+      varying vec3 vV;
+      varying float vH;
+      void main() {
+        vec3 n = normalize( vN );
+        n = gl_FrontFacing ? n : -n;
+        float f = pow( clamp( dot( n, normalize( vV ) ), 0.0, 1.0 ), uPow );
+        // a white-yellow core (hotter still as it catches: the gain), hottest
+        // in the lower middle of the tongue; the edge and the tip orange
+        vec3 core = mix( uCore, uHot, 0.6 + 0.4 * smoothstep( 1.2, 3.0, uGain ) );
+        float body = smoothstep( 0.12, 0.32, vH ) * ( 1.0 - smoothstep( 0.5, 0.9, vH ) );
+        float centre = smoothstep( 0.2, 0.7, f ) * body;
+        vec3 c = mix( uRim, core, centre ) * uLevel * ( 0.55 + 0.45 * uGain ) * ( 0.8 + 0.7 * centre );
+        // the dark blue base where it sits on the wick: the orange goes out
+        // through a dark band before the blue begins (a mix of the two is a
+        // red - the ink's blood - never a flame's colour)
+        float base = 1.0 - smoothstep( 0.06, 0.3, vH );
+        c *= 1.0 - smoothstep( 0.25, 0.5, base );
+        c += vec3( 0.07, 0.13, 0.75 ) * uLevel * 0.3 * smoothstep( 0.6, 0.85, base );
+        gl_FragColor = vec4( c, 1.0 );
+      }`,
+  });
+  m.userData.setGain = (g) => { m.uniforms.uGain.value = g; };
+  return m;
+}
+
 // Emitters (blood in the air, fire, ember, flame, neon) are unlit; surfaces
 // (amber, crew) are lit like any other object, so a lamp shapes them.
 // neon: { tube: the tube's radius in m (default 0.009, an 18 mm tube),
@@ -139,7 +207,9 @@ export function accentMaterial(key, { gain = 1, map = null, additive = false, tu
   if (!k) throw new Error(`accentMaterial: no key '${key}'`);
   let m;
   if (k.core) {
-    m = key === 'neon' ? coreMaterial(k, gain, map, additive, minPx, tube) : coreMaterial(k, gain, map, additive);
+    m = key === 'neon' ? coreMaterial(k, gain, map, additive, minPx, tube)
+      : key === 'flame' && !map && !additive ? flameMaterial(k, gain)
+      : coreMaterial(k, gain, map, additive);
   } else if (k.emit || additive) {
     m = new THREE.MeshBasicMaterial({ color: accent(key, { gain }), map });
     if (additive) Object.assign(m, { transparent: true, depthWrite: false, blending: THREE.AdditiveBlending });
