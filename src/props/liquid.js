@@ -45,6 +45,9 @@ export function makeLiquid(profile, { y0, yFull, mat, segs = 32, rows = 6, menis
   geo.setIndex(idx);
   const mesh = new THREE.Mesh(geo, mat);
   mesh.name = 'liquid';
+  // (round 2: the ink's class for scotch IN a vessel - amber that goes dark
+  // where the vessel's wall turns edge-on; the stream keeps plain amber)
+  mesh.userData.inkSurface = 'amberIn';
   const state = { fill: 1, up: new THREE.Vector3(0, 1, 0), ripple: 0, rippleT: 0 };
   // (fix round A5) the meniscus: a thin flat ring where the surface meets
   // the glass, drawn after the glass (renderOrder) so the ink reads it as

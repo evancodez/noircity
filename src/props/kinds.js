@@ -64,8 +64,16 @@ export const SPECS = {
     const liq = makeLiquid(inner, { y0: base, yFull: H * 0.4, mat: P.amber, segs: S(lod, 40) });
     // a white tick where the rim catches the light (fix round A5)
     const rimTick = new THREE.TorusGeometry(R - 0.0009, 0.00075, 4, S(lod, 10), 0.75).rotateX(Math.PI / 2).rotateY(0.35).translate(0, H - 0.0004, 0);
+    // (round 2: the thick base reads as glass by its two dark ellipses - the
+    // foot's edge and the floor of the well a centimetre and a half above
+    // it - drawn as ink lines lying on the glass, as an inker draws them)
+    const baseRings = mergeGeos([
+      new THREE.TorusGeometry(R + 0.0002, 0.0007, 4, S(lod, 40)).rotateX(Math.PI / 2).translate(0, 0.0035, 0),
+      new THREE.TorusGeometry(R - wall - 0.0012, 0.0006, 4, S(lod, 40)).rotateX(Math.PI / 2).translate(0, base + 0.0006, 0),
+    ]);
     return {
-      parts: [{ geo, mat: P.amberGlass, id: 0, name: 'glass' }, { mesh: liq.mesh, id: 1 }, { geo: rimTick, mat: P.tick, id: 0, cast: false }],
+      parts: [{ geo, mat: P.amberGlass, id: 0, name: 'glass' }, { mesh: liq.mesh, id: 1 }, { geo: rimTick, mat: P.tick, id: 0, cast: false },
+        { geo: baseRings, mat: P.black, id: 0, cast: false, name: 'baseLines' }],
       grip: [0, 0.042, 0], accent: 'amber',
       init(g, ud) {
         ud.fill = 1;
@@ -134,7 +142,14 @@ export const SPECS = {
     const lab = new THREE.CylinderGeometry(lr, lr, ly1 - ly0, S(lod, 24), 1, true, -arc / 2, arc).translate(0, (ly0 + ly1) / 2, 0);
     if (B.square) lab.scale(1, 1, 1.02).translate(0, 0, 0.0);
     uvRect(lab, B.label);
-    parts.push({ geo: lab, mat: P.atlas, id: 1, name: 'label' });
+    parts.push({ geo: lab, mat: B.tick ? P.label : P.atlas, id: 1, name: 'label' });
+    // (round 2: a back label too, smaller, so the bottle turned in a hand
+    // still shows paper on the side toward the eye)
+    if (B.tick) {
+      const back = new THREE.CylinderGeometry(lr, lr, (ly1 - ly0) * 0.7, S(lod, 18), 1, true, Math.PI - arc * 0.3, arc * 0.6).translate(0, (ly0 + ly1) / 2 - 0.005, 0);
+      uvRect(back, B.label);
+      parts.push({ geo: back, mat: P.label, id: 1, name: 'labelBack' });
+    }
     if (B.cork) {
       const ck = lathe([[0.0001, lipY - 0.004], [neck * 0.95, lipY - 0.004], [neck * 1.02, lipY + 0.004], [neck * 1.2, lipY + 0.006], [neck * 1.25, h - 0.004], [neck * 1.1, h], [0.0001, h]], S(lod, 20));
       parts.push({ geo: ck, mat: P.cork, id: 2, name: 'cork' });
@@ -153,6 +168,12 @@ export const SPECS = {
       parts, grip: [0, h - 0.08, 0], accent: B.liquid ? 'amber' : null,
       init(g, ud) {
         ud.neck = new THREE.Vector3(0, lipY, 0);   // where the stream leaves it
+        // (round 2) the mouth: the centre of the lip's opening, in the
+        // bottle's own frame (with the cork drawn, the stream leaves here);
+        // mouthR its radius, mouthAxis the way out of it
+        ud.mouth = new THREE.Vector3(0, lipY, 0);
+        ud.mouthR = neck;
+        ud.mouthAxis = new THREE.Vector3(0, 1, 0);
         if (!liq) return;
         if (liq.ring) liq.ring.userData.inkId = ud.inkId + 3;
         ud.fill = 1;

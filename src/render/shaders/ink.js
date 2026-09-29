@@ -194,6 +194,9 @@ export function makeInkMaterial(tex, fogUniforms) {
         float metalF = step( 11.5, surf ) * step( surf, 12.5 );
         float interior = max( step( 0.5, surf ) * step( surf, 5.5 ), metalF );
         float amberF = step( 5.5, surf ) * step( surf, 6.5 );   // the scotch (accents.js)
+        // (class 16, round 2: the scotch inside its vessel, liquid.js)
+        float amberInF = step( 15.5, surf ) * step( surf, 16.5 );
+        amberF = max( amberF, amberInF );
         // the glass of a vessel that holds scotch (class 11): the amber is
         // read through it by its hue below
         float amberGlassF = step( 10.5, surf ) * step( surf, 11.5 );
@@ -791,6 +794,14 @@ export function makeInkMaterial(tex, fogUniforms) {
         float amFace = max( smoothstep( 0.55, 0.99, abs( n.z ) ), amTop * 0.8 );
         vec3 amberOut = mix( vec3( 0.541, 0.329, 0.086 ), vec3( 0.788, 0.514, 0.165 ), amFace )
                       * mix( 0.78, 1.02, smoothstep( 0.05, 0.6, vRaw ) ) * mix( 0.95, 1.03, b );
+        // (round 2: seen through glass the amber goes dark where the glass
+        // turns edge-on - a bottle is a vessel with a dark outline, not a
+        // flat orange cylinder; the dark band torn by the brush)
+        // (edge-on to the view RAY, not the camera's axis: a bottle below the
+        // eye shows its silhouette with normals well off the axis)
+        float amNdv = abs( dot( n, normalize( - vpos ) ) );
+        float amEdge = max( amberGlassF, amberInF ) * smoothstep( b * 0.12 + 0.3, b * 0.12 + 0.42, 1.0 - amNdv ) * ( 1.0 - amTop );
+        amberOut = mix( amberOut, vec3( 0.2, 0.105, 0.025 ), amEdge );
         // (the meniscus: the surface only where it is seen nearly edge-on -
         // a lighter line at the fill line; seen from above, it is the depth)
         float amMen = amTop * ( 1.0 - smoothstep( 0.1, 0.28, abs( n.z ) ) );

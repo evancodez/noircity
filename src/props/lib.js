@@ -89,6 +89,10 @@ export function PM() {
     coffee: std('coffee', { color: 0x040404, roughness: 0.15, surface: 'enamel' }),
     ash: std('ash', { color: 0x0e0e0e, roughness: 1.0, surface: 'cloth' }),
     atlas: std('atlas', { color: 0x606060, roughness: 0.9, map: atlas().tex, surface: 'cloth' }),
+    // (round 2: a bottle's paper label, lighter than the printed atlas, so
+    // it reads as paper on the dark glass; named as the atlas, so a hand
+    // holding it prints it as paper too)
+    label: (() => { const m = std('label', { color: 0xd8d8d8, roughness: 0.9, map: atlas().tex, surface: 'cloth' }); m.name = 'prop_atlas'; return m; })(),
     atlasDecal: std('atlasDecal', { color: 0x303030, roughness: 0.9, map: atlas().tex, alphaTest: 0.5, surface: 'cloth' }),
     atlasGlow: basic('atlasGlow', { color: 0xffffff, map: atlas().tex }),
     tick: tickMat(),
