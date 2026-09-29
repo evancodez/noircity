@@ -55,8 +55,10 @@ export class Controller {
     this.mode = 'walk';
     this.modeOpts = {};
     this.modeT = 0;
+    this.bodyYaw = null;        // the body's heading when it is not the view's (seated: the stool's)
     this.nudge = { yaw: 0, pitch: 0 };   // brawl: the mouse's small say
     this.slip = 0;              // brawl: the eye's sideways offset (m)
+    this.viewFx = null;         // the hands' clips' eye motion (Hands.viewFx)
     this._ease = null;          // { from, to, t, dur }
 
     this._onMouse = (e) => {
@@ -93,6 +95,8 @@ export class Controller {
 
   setPose(x, z, yaw, pitch, y = null) {
     this.mode = 'walk';
+    this.bodyYaw = null;
+    this._modeBlend = null;
     this.modeOpts = {};
     this._ease = null;
     this.pos.set(x, 0, z);
@@ -109,6 +113,7 @@ export class Controller {
     if (name === 'drive') throw new Error('controller: drive is wave B');
     const prev = this.eyePose();
     this.mode = name;
+    if (name !== 'seated') this.bodyYaw = null;
     this.modeOpts = opts;
     this.modeT = 0;
     this._ease = null;
@@ -121,7 +126,11 @@ export class Controller {
     } else if (name === 'seated') {
       const a = typeof opts.anchor === 'string' ? S.anchor(opts.anchor) : opts.anchor;
       if (!a) throw new Error(`controller seated: no anchor '${opts.anchor}'`);
-      this.modeOpts = { yawRange: [-2.3, 2.3], pitchRange: [-0.9, 0.7], lean: 0.06, ...opts, anchor: a };
+      // forward: a man leaning on the counter has his head well ahead of
+      // the stool (his forearms on the counter top, the eye ~0.3 m back from
+      // its edge)
+      this.modeOpts = { yawRange: [-2.3, 2.3], pitchRange: [-0.9, 0.7], lean: 0.06, forward: 0.3, ...opts, anchor: a };
+      this.bodyYaw = a.yaw;
       this.pos.set(a.pos.x, 0, a.pos.z);
       this.groundY = (opts.eyeY ?? a.eyeY ?? 1.6) - EYE + 0.02;
       this.yaw = a.yaw;
@@ -132,6 +141,9 @@ export class Controller {
     } else if (name === 'table') {
       this.ease(opts.pose, opts.ease ?? 0.5, prev);
     }
+    // every mode change is eased (0.4 s) from where the eye was, unless the
+    // eye jumps (a scene entered, another stage): then it cuts
+    if (name !== 'table') this._modeBlend = { from: prev, t: 0, dur: opts.ease ?? 0.4, checked: false };
     // (a table view may take its own lens; any other mode gives it back)
     const c = this.camera;
     if (name === 'table' && opts.fov) { if (this._fov0 == null) this._fov0 = c.fov; c.fov = opts.fov; c.updateProjectionMatrix(); }
@@ -168,10 +180,15 @@ export class Controller {
       const a = O.anchor;
       const dy = clampA(wrap(this.yaw - a.yaw), O.yawRange[0], O.yawRange[1]);
       this.yaw = a.yaw + dy;
+      // past +-1.2 rad the stool swivels with the look (the body turns: the
+      // hands on the counter go with it)
+      const sw = O.swivel ?? 1.2;
+      this.bodyYaw = a.yaw + (Math.abs(dy) > sw ? Math.sign(dy) * (Math.abs(dy) - sw) : 0);
       this.pitch = clampA(this.pitch, O.pitchRange[0], O.pitchRange[1]);
       // a man leaning on the counter: the eye comes forward as he looks down
       const lean = O.lean * Math.max(0, -this.pitch);
-      this.pos.set(a.pos.x - Math.sin(this.yaw) * lean, 0, a.pos.z - Math.cos(this.yaw) * lean);
+      const fw = O.forward || 0, by = this.bodyYaw ?? a.yaw;
+      this.pos.set(a.pos.x - Math.sin(by) * fw - Math.sin(this.yaw) * lean, 0, a.pos.z - Math.cos(by) * fw - Math.cos(this.yaw) * lean);
     } else if (this.mode === 'brawl' && O.opponent) {
       const op = O.opponent.pos;
       _v.set(this.pos.x - op.x, 0, this.pos.z - op.z);
@@ -185,6 +202,9 @@ export class Controller {
         if (d > R) { x = O.ring.x + dx / d * R; z = O.ring.z + dz / d * R; }
       }
       this.pos.set(x, 0, z);
+      // (footwork: never through a stool, a booth or the counter)
+      if (this.world.colliders) this.world.colliders.resolve(this.pos, this.radius * 0.8);
+      x = this.pos.x; z = this.pos.z;
       this.groundY = O.eyeY - EYE + 0.02;
       const ty = (op.y || 0) + 1.45 * (O.opponent.fig ? O.opponent.fig.scale : 1) * 0.78;
       this.yaw = Math.atan2(-(op.x - x), -(op.z - z)) + this.nudge.yaw;
@@ -259,6 +279,7 @@ export class Controller {
       c.position.set(P.x, P.y, P.z);
       c.rotation.order = 'YXZ';
       c.rotation.set(P.pitch, P.yaw, 0);
+      this.blendMode(dt);
       return;
     }
     const bobY = Math.abs(Math.sin(this.bobPhase)) * 0.045 * this.bobAmp;
@@ -270,8 +291,39 @@ export class Controller {
       sx = Math.sin(this.shakeT * 47) * 0.02 * a; sy = Math.sin(this.shakeT * 39 + 1.3) * 0.028 * a;
       if (a < 0.002) this.shakeAmp = 0;
     }
-    c.position.set(this.pos.x + Math.cos(this.yaw) * bobX, this.groundY + EYE - 0.02 + bobY, this.pos.z - Math.sin(this.yaw) * bobX);
+    // the hands' clips move the eye with the body (a punch's lunge, a slip,
+    // a blow landing: Hands sets viewFx; zero outside those clips)
+    const V = this.viewFx;
+    let ox = 0, oy = 0, oz = 0, vy = 0, vp = 0, vr = 0;
+    if (V && (V.yaw || V.pitch || V.roll || V.fwd || V.side || V.down)) {
+      const sn = Math.sin(this.yaw), cs = Math.cos(this.yaw);
+      ox = -sn * V.fwd + cs * V.side; oz = -cs * V.fwd - sn * V.side; oy = -V.down;
+      vy = V.yaw; vp = V.pitch; vr = V.roll;
+    }
+    c.position.set(this.pos.x + Math.cos(this.yaw) * bobX + ox, this.groundY + EYE - 0.02 + bobY + oy, this.pos.z - Math.sin(this.yaw) * bobX + oz);
     c.rotation.order = 'YXZ';
-    c.rotation.set(this.pitch + sy, this.yaw + sx, Math.sin(this.bobPhase) * 0.004 * this.bobAmp + sx * 0.5);
+    c.rotation.set(this.pitch + sy + vp, this.yaw + sx + vy, Math.sin(this.bobPhase) * 0.004 * this.bobAmp + sx * 0.5 + vr);
+    this.blendMode(dt);
+  }
+
+  // the ease of a mode change: the camera goes from where the eye was to
+  // where the new mode puts it over 0.4 s (smoothstep)
+  blendMode(dt) {
+    const B = this._modeBlend;
+    if (!B) return;
+    const c = this.camera;
+    if (!B.checked) {
+      B.checked = true;
+      if (B.from.x === undefined || Math.hypot(c.position.x - B.from.x, c.position.y - B.from.y, c.position.z - B.from.z) > 2.5) { this._modeBlend = null; return; }
+    }
+    B.t += dt;
+    const u = Math.min(1, B.t / B.dur);
+    if (u >= 1) { this._modeBlend = null; return; }
+    const k = 1 - u * u * (3 - 2 * u);
+    c.position.x += (B.from.x - c.position.x) * k;
+    c.position.y += (B.from.y - c.position.y) * k;
+    c.position.z += (B.from.z - c.position.z) * k;
+    c.rotation.x += (B.from.pitch - c.rotation.x) * k;
+    c.rotation.y += wrap(B.from.yaw - c.rotation.y) * k;
   }
 }
