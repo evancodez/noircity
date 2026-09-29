@@ -184,23 +184,48 @@ export class Fire {
     if (k <= 0) return;
     const r = this.rng, F = this.fx;
     const rx = P.rx * (0.35 + 0.65 * Math.min(1, P.age / (P.spread ?? 0.8))), rz = P.rz * (0.35 + 0.65 * Math.min(1, P.age / (P.spread ?? 0.8)));
-    // flames per second: by the sheet's area, thinned as it goes out
-    this.acc.pool += dt * 85 * rx * rz * (0.4 + 0.6 * k);
+    // (Wave A fix D7) One low sheet of flame with a ragged edge, not a row
+    // of separate tongues: the sheet is laid in wide, squat pieces - the
+    // atlas's tongue cells squashed flat, each a run of short tongues on a
+    // ragged base, overlapping their neighbours so the base is one burning
+    // band - and a few taller tongues licking up out of it make its top edge
+    // ragged. Thinned as it goes out, from the edge in.
     const c = Math.cos(this.yaw), s = Math.sin(this.yaw);
+    const at = (d) => {
+      const a = r.next() * Math.PI * 2;
+      const lx = Math.cos(a) * rx * d, lz = Math.sin(a) * rz * d;
+      return [P.w.x + lx * c + lz * s, P.w.z - lx * s + lz * c];
+    };
+    // the sheet: pieces per second by its area
+    this.acc.pool += dt * 70 * rx * rz * (0.4 + 0.6 * k);
     while (this.acc.pool >= 1) {
       this.acc.pool -= 1;
-      // a point in the ellipse, denser toward the middle
-      const a = r.next() * Math.PI * 2, d = Math.sqrt(r.next()) * (0.55 + 0.45 * k);
-      const lx = Math.cos(a) * rx * d, lz = Math.sin(a) * rz * d;
-      const x = P.w.x + lx * c + lz * s, z = P.w.z - lx * s + lz * c;
+      const d = Math.sqrt(r.next()) * (0.5 + 0.5 * k);
+      const [x, z] = at(d);
       const edge = 1 - d;
-      const sz = r.range(0.2, 0.5) * (0.55 + 0.6 * edge) * (0.6 + 0.4 * k);
+      const w = r.range(0.55, 0.95) * (0.6 + 0.4 * k), h = r.range(0.2, 0.34) * (0.7 + 0.3 * k) * (0.8 + 0.4 * edge);
+      const ball = r.chance(0.35);
       F.fire.spawn({
-        pos: new THREE.Vector3(x, P.w.y + sz * 0.38, z),
-        vel: new THREE.Vector3(this.wind.x * 0.4 + r.gauss() * 0.1, r.range(0.35, 0.9) * (0.5 + edge), this.wind.z * 0.4 + r.gauss() * 0.1),
-        life: r.range(0.25, 0.5), size: [sz * 0.9, sz], grow: 0.25, rot: r.gauss() * 0.2, spin: r.gauss() * 0.3,
-        col: r.chance(0.3 + 0.3 * edge) ? FIRE_COL.white : FIRE_COL.yellow, colEnd: FIRE_COL.deep, colPow: 1.4, cell: FIRE.FLAME[r.int(0, 3)],
-        fadeIn: 0.06, fadeOut: 0.35, drag: 0.6,
+        pos: new THREE.Vector3(x, P.w.y + h * (ball ? 0.3 : 0.42), z),
+        vel: new THREE.Vector3(this.wind.x * 0.25 + r.gauss() * 0.05, r.range(0.08, 0.25), this.wind.z * 0.25 + r.gauss() * 0.05),
+        life: r.range(0.3, 0.55), size: [w, ball ? h * 0.6 : h], grow: 0.1, rot: r.gauss() * 0.05, spin: 0,
+        col: r.chance(0.35 + 0.25 * edge) ? FIRE_COL.white : FIRE_COL.yellow, colEnd: FIRE_COL.deep, colPow: 1.4, cell: ball ? FIRE.BALL[r.int(0, 3)] : FIRE.FLAME[r.int(0, 3)],
+        fadeIn: 0.06, fadeOut: 0.3, drag: 0.8,
+      });
+    }
+    // the tongues that lick up out of it (its ragged top)
+    this.acc.poolT = (this.acc.poolT || 0) + dt * 22 * rx * rz * (0.4 + 0.6 * k);
+    while (this.acc.poolT >= 1) {
+      this.acc.poolT -= 1;
+      const d = Math.sqrt(r.next()) * (0.45 + 0.45 * k);
+      const [x, z] = at(d);
+      const sz = r.range(0.25, 0.5) * (0.6 + 0.4 * k);
+      F.fire.spawn({
+        pos: new THREE.Vector3(x, P.w.y + 0.12 + sz * 0.4, z),
+        vel: new THREE.Vector3(this.wind.x * 0.4 + r.gauss() * 0.1, r.range(0.35, 0.8), this.wind.z * 0.4 + r.gauss() * 0.1),
+        life: r.range(0.22, 0.42), size: [sz * 0.8, sz], grow: 0.2, rot: r.gauss() * 0.2, spin: r.gauss() * 0.3,
+        col: FIRE_COL.yellow, colEnd: FIRE_COL.deep, colPow: 1.4, cell: FIRE.FLAME[r.int(0, 3)],
+        fadeIn: 0.06, fadeOut: 0.3, drag: 0.6,
       });
     }
   }

@@ -55,9 +55,39 @@ export default {
     // place a builder's parts (a { key: geo[] } set) at (x, z) turned by
     // yaw (a figure's heading: its +z faces (sin yaw, cos yaw)), one mesh
     // per material, one ink id for the thing
-    const thing = (P, x, z, yaw = 0, { figure = false, y = 0, parent = g, id = allocInkId() } = {}) => {
+    // (Wave A fix D3, the frame rate) The works at the south, north and west
+    // edges are many small things - sawhorses, lanterns, trucks, pipe
+    // stacks, hoardings, bills - each one a mesh per material with an ink id
+    // of its own: ~100 meshes, ~150 draws a frame down the avenue. A thing
+    // at those edges is now baked (already in world space, as before) into
+    // its edge's bucket for its material: one mesh per edge and material,
+    // one ink id per edge (figures - the trucks, the van, the compressor -
+    // one of their own). The vertices are the same numbers as before. What
+    // is lost is only the id line between two things of one edge where no
+    // depth or normal edge draws it anyway: two black trucks nose to tail
+    // (black on black), a lantern on its sawhorse; the east railing keeps
+    // its own ids (its caps' line is its design).
+    const buckets = new Map();
+    const edgeOf = (x, z) => (z > 25 ? 'S' : z < -110 ? 'N' : x < -9 ? 'W' : null);
+    const edgeIds = {};
+    const edgeId = (e, figure) => edgeIds[e + (figure ? 'F' : '')] ?? (edgeIds[e + (figure ? 'F' : '')] = allocInkId());
+    const bucket = (e, k, figure, mat, geo, { cast = true, receive = true, noRay = false } = {}) => {
+      const key = e + '|' + k + '|' + (figure ? 'F' : '');
+      let B = buckets.get(key);
+      if (!B) buckets.set(key, B = { mat, figure, id: edgeId(e, figure), geos: [], cast, receive, noRay });
+      B.geos.push(geo);
+    };
+    const thing = (P, x, z, yaw = 0, { figure = false, y = 0, parent = g, id = null, edge = edgeOf(x, z) } = {}) => {
       _m.compose(V3(x, y, z), _q.setFromAxisAngle(_y, yaw), _one);
       const out = [];
+      if (edge && parent === g) {
+        for (const [k, list] of Object.entries(P)) {
+          if (!list.length) continue;
+          bucket(edge, k, figure, MAT[k], merge(list.map((q) => q.clone().applyMatrix4(_m))), { cast: k !== 'glow', noRay: k === 'glow' });
+        }
+        return { meshes: out, edge };
+      }
+      if (id == null) id = allocInkId();
       for (const [k, list] of Object.entries(P)) {
         if (!list.length) continue;
         const geo = merge(list.map((q) => q.clone().applyMatrix4(_m)));
@@ -71,22 +101,48 @@ export default {
       for (const m of out) { m.userData.inkId = id; if (figure) m.userData.inkFigure = true; }
       return grp;
     };
+    // the buckets become meshes once every edge has been built
+    const flush = () => {
+      for (const [key, B] of buckets) {
+        const m = new THREE.Mesh(merge(B.geos), B.mat);
+        m.name = 'bounds_' + key;
+        m.castShadow = B.cast; m.receiveShadow = B.receive;
+        if (B.noRay) m.userData.noRay = true;
+        m.userData.inkId = B.id;
+        if (B.figure) m.userData.inkFigure = true;
+        g.add(m);
+      }
+      buckets.clear();
+    };
     // a collider box given by its footprint's two corners (axis aligned)
     const wallAA = (x0, x1, z0, z1, tag) => colliders.addBox((x0 + x1) / 2, (z0 + z1) / 2, Math.abs(x1 - x0) / 2, Math.abs(z1 - z0) / 2, 0, tag);
     // an oriented box: centre, half sizes along the thing's x / z, heading
     const wallOB = (x, z, hx, hz, yaw, tag) => colliders.addBox(x, z, hx, hz, yaw, tag);
 
-    // storm lanterns: a lit globe and a tiny cone of its own (no registry
-    // entry, no pool light: they light nothing but the air round them)
+    // storm lanterns: a lit globe in its wire guard. (Wave A fix D6) Each is
+    // a lamp of the registry now (stage.lamps.addCustom): small and short -
+    // a faint cone 0.6 m down, no pool light - so the renderer knows it as a
+    // lamp (its sheen on the wet road is one of the lamps' sheens, held down
+    // near the eye like theirs; its head a small disc in the mirror), and its
+    // registry entry (rain, rim) counts only while the eye is near
+    // it (6 m): it never takes a far street lamp's slot. The globe prints white but
+    // small (a gentler emitter: at 3 m the old one bloomed into a white disc
+    // 100 px across over the road)
+    MAT.glow.color.setScalar(1.7);
     const lanterns = [];
     const lanternAt = (x, y, z) => {
       const L = W.lantern();
-      thing(L.parts, x, z, 0, { y });
+      const t = thing(L.parts, x, z, 0, { y });
       const c = V3(x, y + L.globe.y, z);
-      const cone = makeConeMesh(stage.U, { apex: c, axis: V3(0, -1, 0), tan: Math.tan(1.0), height: 0.9, r0: 0.06, intensity: 0.2, seed: lanterns.length * 1.7, fadeEnd: 0.8, edgeSoft: 0.6 });
-      cone.layers.set(LAYER.VOLUME);
-      g.add(cone);
-      lanterns.push({ pos: c, cone });
+      const bulb = t.meshes.find((m) => m.material === MAT.glow) || null;
+      const lamp = stage.lamps.addCustom({ head: c, axis: V3(0, -1, 0), height: 0.6, half: 0.85, real: false, bulb, fadeEnd: 0.65, edgeSoft: 0.8, strength: 0.22, tag: 'lantern' });
+      lamp.sconce = true;
+      lamp.entry.range = 2.5;
+      // (its air light only a breath: at full a lamp's cone, it stood under
+      // the globe as a small grey bell)
+      lamp.cone.material.uniforms.uIntensity.value *= 0.45;
+      lamp.coneBase = lamp.cone.material.uniforms.uIntensity.value;
+      lanterns.push({ pos: c, cone: lamp.cone, lamp });
     };
     const sawhorseAt = (x, z, yaw, len = 2.4, lamp = true) => {
       thing(W.sawhorse(len), x, z, yaw);
@@ -102,17 +158,25 @@ export default {
       const len = Math.hypot(bx - ax, bz - az);
       const yaw = Math.atan2(bx - ax, bz - az);
       const H = W.hoarding(len, h, rng);
-      const id = allocInkId();
-      const t = thing(H.parts, ax, az, yaw, { id });
+      const edge = edgeOf((ax + bx) / 2, (az + bz) / 2);
+      const id = edge ? edgeId(edge, false) : allocInkId();
+      const t = thing(H.parts, ax, az, yaw, { id, edge });
       const s = Math.sin(yaw), c = Math.cos(yaw);
       // (the boards' +x normal in world: (cos yaw, 0, -sin yaw))
       const nx = c * face, nz = -s * face;
       for (const b of H.bills) {
         const px = ax + s * b.z + nx * 0.03, pz = az + c * b.z + nz * 0.03;
-        const pl = new THREE.Mesh(new THREE.PlaneGeometry(b.w, b.h), billMats[Math.floor(b.seed * billMats.length)]);
+        const bm = billMats[Math.floor(b.seed * billMats.length)];
+        const pl = new THREE.Mesh(new THREE.PlaneGeometry(b.w, b.h), bm);
         pl.position.set(px, b.y, pz);
         pl.lookAt(px + nx, b.y, pz + nz);
         pl.rotateZ((b.torn - 0.5) * 0.06);
+        if (edge) {
+          // (a bill joins its edge's bucket for its paper: baked where it hangs)
+          pl.updateMatrix();
+          bucket(edge, 'bill' + billMats.indexOf(bm), false, bm, pl.geometry.clone().applyMatrix4(pl.matrix), { cast: false, receive: false, noRay: true });
+          continue;
+        }
         pl.userData.inkId = id;
         pl.userData.noRay = true;
         g.add(pl);
@@ -127,7 +191,7 @@ export default {
     // the trench across the left lanes: a black pit, shoring along its lips
     const trench = { x0: STREET.kerbX + 0.2, x1: 4.2, z0: SZ + 1.7, z1: SZ + 3.0 };
     {
-      const id = allocInkId();
+      const id = edgeId('S', false);
       const pit = new THREE.Mesh(new THREE.BoxGeometry(trench.x1 - trench.x0, 0.02, trench.z1 - trench.z0).translate((trench.x0 + trench.x1) / 2, 0.006, (trench.z0 + trench.z1) / 2), MAT.pit);
       pit.userData.inkId = id; pit.receiveShadow = false;
       g.add(pit);
@@ -147,7 +211,7 @@ export default {
       mound.scale(4.6, 0.95, 0.9).translate(-1.4, 0, SZ + 4.1);
       const cob = [];
       for (let i = 0; i < 26; i++) cob.push(W.B(mr.range(0.12, 0.2), 0.1, mr.range(0.12, 0.2), mr.range(-6, 3.4), 0.05, SZ + mr.range(3.1, 3.4), 0.03).rotateY(mr.range(0, 3)));
-      thing({ clay: [mound], wood: sh, iron: cob }, 0, 0, 0, { id });
+      thing({ clay: [mound], wood: sh, iron: cob }, 0, 0, 0, { id, edge: 'S' });
       wallAA(trench.x0, trench.x1, trench.z0 - 0.15, trench.z1 + 0.15, 'trench');
       wallAA(-6.0, 3.3, SZ + 3.3, SZ + 5.0, 'spoil');
       // the plank bridge across it, chained off
@@ -157,7 +221,7 @@ export default {
       for (const s of [-1, 1]) posts.push(new THREE.CylinderGeometry(0.035, 0.04, 1.0, 10).translate(bx + s * 0.55, 0.5, trench.z0 - 0.35));
       ch.push(W.chain(V3(bx - 0.55, 0.92, trench.z0 - 0.35), V3(bx + 0.55, 0.92, trench.z0 - 0.35), 0.18));
       ch.push(W.chain(V3(bx - 0.55, 0.6, trench.z0 - 0.35), V3(bx + 0.55, 0.6, trench.z0 - 0.35), 0.1));
-      thing({ wood: planks, iron: [...posts, ...ch] }, 0, 0, 0);
+      thing({ wood: planks, iron: [...posts, ...ch] }, 0, 0, 0, { edge: 'S' });
       wallAA(bx - 0.6, bx + 0.6, trench.z0 - 0.45, trench.z0 - 0.25, 'chain');
     }
     // two sawhorses before it, with lanterns
@@ -358,7 +422,7 @@ export default {
         for (const z of [cz0 + 0.05, cz1 - 0.05]) frame.push(new THREE.CylinderGeometry(0.02, 0.02, 0.45, 8).rotateZ(-0.45).translate(gx + 0.1, 2.55, z));
         frame.push(W.chain(V3(gx + 0.06, 1.25, (cz0 + cz1) / 2 - 0.2), V3(gx + 0.06, 1.25, (cz0 + cz1) / 2 + 0.2), 0.15));
         frame.push(W.B(0.05, 0.1, 0.08, gx + 0.1, 1.05, (cz0 + cz1) / 2, 0.02));
-        thing({ iron: frame }, 0, 0, 0, { id });
+        thing({ iron: frame }, 0, 0, 0, { id, edge: 'W' });
         // the wire: chain-link as a faint scrim (a fine even mesh at this
         // distance reads as a grey veil, not as a grid)
         const c = document.createElement('canvas');
@@ -386,7 +450,7 @@ export default {
           lathe([[0.012, 0.0], [0.05, -0.02], [0.14, -0.1], [0.19, -0.14], [0.185, -0.15]], 24).translate(wl.x, wl.y + 0.1, wl.z),
           W.B(0.14, 0.2, 0.04, wl.x, wl.y + 0.15, -24.02, 0.015),
         ];
-        thing({ iron: fix }, 0, 0, 0);
+        thing({ iron: fix }, 0, 0, 0, { edge: 'W' });
         stage.addAnchor('block.alley.lamp', { pos: wl.clone(), yaw: 0 });
       }
       // the far row past the cross street: walls, and every gap closed
@@ -405,7 +469,7 @@ export default {
             for (let z = za - 0.35; z > zb + 0.3; z -= 0.14) gp.push(new THREE.CylinderGeometry(0.014, 0.014, 2.6, 6).translate(STREET.facadeX - 0.4, 1.3, z));
             for (const y of [0.2, 1.3, 2.5]) gp.push(W.B(0.05, 0.06, za - zb - 0.5, STREET.facadeX - 0.4, y, (za + zb) / 2, 0.01));
             gp.push(W.chain(V3(STREET.facadeX - 0.32, 1.3, (za + zb) / 2 - 0.2), V3(STREET.facadeX - 0.32, 1.3, (za + zb) / 2 + 0.2), 0.15));
-            thing({ iron: gp }, 0, 0, 0, { id });
+            thing({ iron: gp }, 0, 0, 0, { id, edge: 'W' });
             wallAA(STREET.facadeX - 0.55, STREET.facadeX - 0.25, zb, za, 'gate');
             // bins inside the gate
             for (const dz of [0.8, 1.6]) {
@@ -421,6 +485,7 @@ export default {
 
     // ================= the outer net: beyond everything ================
     colliders.addRegion(-40, EAST_X + 2, NORTH_Z - 14, SOUTH_Z + 12, 'net');
+    flush();
 
     const api = {
       group: g, lanterns, steam: boilerSteam, yard,
@@ -465,7 +530,13 @@ export default {
         }
       },
     };
-    void roundedBox; void markFigure; void tagInk;
+    void roundedBox; void markFigure; void tagInk; void makeConeMesh; void LAYER;
     return api;
+  },
+
+  // the lanterns' registry entries count only near the eye (see lanternAt)
+  update(api, dt, t, camera) {
+    const e = camera.position;
+    for (const L of api.lanterns) L.lamp.entry.enabled = Math.hypot(L.pos.x - e.x, L.pos.z - e.z) < 6;
   },
 };

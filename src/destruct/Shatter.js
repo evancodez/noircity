@@ -83,7 +83,7 @@ function distOutline(o, u, v) {
 // sites: a jittered grid of pitch s over the outline's box, and round the
 // first impact a polar cluster (a core site on the impact, rings of sites
 // whose bisectors are the star's radial and ring cracks)
-export function cutPane(outline, first, s, rng, scale = 1) {
+export function cutPane(outline, first, s, rng, scale = 1, { spokes: withSpokes = true } = {}) {
   let u0 = Infinity, u1 = -Infinity, v0 = Infinity, v1 = -Infinity;
   for (const [u, v] of outline) { u0 = Math.min(u0, u); u1 = Math.max(u1, u); v0 = Math.min(v0, v); v1 = Math.max(v1, v); }
   const sites = [];
@@ -91,6 +91,7 @@ export function cutPane(outline, first, s, rng, scale = 1) {
   // the arcs between them, so the first star's cracks run true, not zig-zag)
   const R = [0.028, 0.06, 0.105, 0.17, 0.26, 0.38, 0.54, 0.75].map((r) => r * scale);
   const clusterR = R[R.length - 1] * 1.05;
+  const spokes = [];
   if (first) {
     sites.push([first[0], first[1]]);
     // (the same spokes on every ring: the bisectors line up into straight
@@ -105,11 +106,48 @@ export function cutPane(outline, first, s, rng, scale = 1) {
         sites.push([first[0] + Math.cos(a) * rr, first[1] + Math.sin(a) * rr]);
       }
     });
+    // Beyond the rings each spoke runs on to the frame (Wave A fix D4: a
+    // crack through the jittered grid walked a lightning zig-zag). A pair of
+    // sites mirrored across the spoke every pitch makes the spoke itself a
+    // run of cell edges, so the crack that follows it is a nearly straight
+    // line; it kinks by a few degrees now and then, as struck glass does.
+    // (a pane that goes all at once - a body, a blast - has no star to run:
+    // withSpokes false keeps its cut as it was)
+    const reach = withSpokes ? Math.hypot(u1 - u0, v1 - v0) : 0;
+    for (let i = 0; i < (withSpokes ? m : 0); i++) {
+      let a = a0 + (i + jit[i] + (R.length - 1) * 0.015) * 6.283 / m;
+      let x = first[0] + Math.cos(a) * R[R.length - 1], y = first[1] + Math.sin(a) * R[R.length - 1];
+      const line = [[x, y]];
+      let next = rng.range(0.18, 0.45);
+      for (let d = 0; d < reach; d += s) {
+        x += Math.cos(a) * s; y += Math.sin(a) * s;
+        line.push([x, y]);
+        const nx = -Math.sin(a) * s * 0.36, ny = Math.cos(a) * s * 0.36;
+        sites.push([x - Math.cos(a) * s * 0.5 + nx, y - Math.sin(a) * s * 0.5 + ny], [x - Math.cos(a) * s * 0.5 - nx, y - Math.sin(a) * s * 0.5 - ny]);
+        if ((next -= s) <= 0) { a += rng.range(-0.09, 0.09); next = rng.range(0.18, 0.45); }
+      }
+      spokes.push({ a: a0 + (i + jit[i]) * 6.283 / m, line });
+    }
   }
+  // (the distance from a point to the nearest spoke run)
+  const nearSpoke = (p) => {
+    let best = Infinity;
+    for (const S of spokes) {
+      const L = S.line;
+      for (let k = 0; k < L.length - 1; k++) {
+        const a = L[k], b = L[k + 1], ex = b[0] - a[0], ey = b[1] - a[1];
+        const t = Math.max(0, Math.min(1, ((p[0] - a[0]) * ex + (p[1] - a[1]) * ey) / (ex * ex + ey * ey)));
+        best = Math.min(best, Math.hypot(a[0] + ex * t - p[0], a[1] + ey * t - p[1]));
+      }
+    }
+    return best;
+  };
   for (let v = v0 + s * 0.5; v < v1; v += s) {
     for (let u = u0 + s * 0.5; u < u1; u += s) {
       const p = [u + rng.range(-0.42, 0.42) * s, v + rng.range(-0.42, 0.42) * s];
       if (first && Math.hypot(p[0] - first[0], p[1] - first[1]) < clusterR + s * 0.35) continue;
+      // (the spokes' own pairs make the cells along them)
+      if (spokes.length && nearSpoke(p) < s * 0.8) continue;
       sites.push(p);
     }
   }
@@ -145,7 +183,11 @@ export function cutPane(outline, first, s, rng, scale = 1) {
     if (pts.length < 3) continue;
     cells.push({ site: i, poly: pts, labels, area: Math.abs(polyArea(pts)), c: polyCentroid(pts), gone: false, edges: [] });
   }
-  return buildGraph(cells, outline);
+  const graph = buildGraph(cells, outline);
+  // (the first star's radial cracks take the spokes' directions)
+  graph.spokes = spokes.map((S) => S.a);
+  graph.first = first;
+  return graph;
 }
 
 // the cells' shared edges and vertices (a crack walks this graph)
@@ -193,6 +235,7 @@ function cellAt(P, u, v) {
 function walk(P, v, dx, dy, rng, { maxLen = 99, stopAtCrack = 0.85, bend = 0.12, steer = null } = {}) {
   let len = 0, prev = -1, steps = 0;
   const path = [];
+  path.fresh = [];      // (the edges this walk cracked: not already cracks)
   while (steps++ < 400) {
     const [x, y] = P.verts[v];
     if (steer) { const d = steer(x, y); dx = d[0]; dy = d[1]; }
@@ -212,6 +255,7 @@ function walk(P, v, dx, dy, rng, { maxLen = 99, stopAtCrack = 0.85, bend = 0.12,
     const was = E.crack;
     E.crack = true;
     path.push(best);
+    if (!was) path.fresh.push(best);
     const ex = P.verts[bw][0] - x, ey = P.verts[bw][1] - y;
     len += Math.hypot(ex, ey);
     // (the crack drifts a little toward where it has been going)
@@ -238,11 +282,19 @@ export function addStar(P, u, v, rng, { scale = 1, rays = null, core: withCore =
   const C = P.cells[core];
   if (withCore) for (const e of C.edges) if (e >= 0) P.edges[e].crack = true;
   P.decor = P.decor || [];
-  const K = rays ?? rng.int(6, 9);
+  let K = rays ?? rng.int(6, 9);
   const a0 = rng.next() * 6.283;
+  // (the first star, where the cut was centred: its radials run along the
+  // cut's spokes - K of the twelve, the gaps between them uneven)
+  let angles = null;
+  if (withCore && P.spokes && P.spokes.length && P.first && Math.hypot(P.first[0] - u, P.first[1] - v) < 1e-6) {
+    angles = P.spokes.filter(() => rng.next() < K / P.spokes.length);
+    if (angles.length < 5) angles = P.spokes.filter((_, i) => i % 2 === 0);
+    K = angles.length;
+  }
   const radials = [];
   for (let k = 0; k < K; k++) {
-    const a = a0 + (k + rng.range(-0.28, 0.28)) * 6.283 / K;
+    const a = angles ? angles[k] : a0 + (k + rng.range(-0.28, 0.28)) * 6.283 / K;
     const dx = Math.cos(a), dy = Math.sin(a);
     // start at the core's vertex that best faces the ray
     let sv = C.vids[0], ss = -Infinity;
@@ -253,7 +305,21 @@ export function addStar(P, u, v, rng, { scale = 1, rays = null, core: withCore =
       if (sc > ss) { ss = sc; sv = vv; }
     }
     if (!withCore) P.decor.push([u, v, P.verts[sv][0], P.verts[sv][1]]);
-    radials.push({ a, start: sv, path: walk(P, sv, dx, dy, rng, { stopAtCrack: 0.9 }) });
+    // (along a spoke the walk holds its line: little bend)
+    const path = walk(P, sv, dx, dy, rng, { stopAtCrack: 0.9, bend: angles ? 0.04 : 0.12 });
+    radials.push({ a, start: sv, path });
+    // Off the spokes (a later round's star, through the coarse cells) the
+    // walk is a zig-zag along the cells' edges: it still decides the pieces,
+    // but what is DRAWN is the crack as glass runs, nearly straight - from
+    // where it starts to where it stops, with one kink at its middle (Wave A
+    // fix D4); the walked edges show only where glass has gone beside them
+    if (!angles && path.length > 2) {
+      for (const e of path.fresh) P.edges[e].hidden = true;
+      const vs = [sv];
+      for (const e of path) { const E = P.edges[e], last = vs[vs.length - 1]; vs.push(E.a === last ? E.b : E.a); }
+      const m = vs[Math.floor(vs.length / 2)], z = vs[vs.length - 1];
+      (P.lines || (P.lines = [])).push([P.verts[sv], P.verts[m], P.verts[z]]);
+    }
   }
   // ring cracks: short arcs between neighbouring radials, round the hole
   const nRing = rng.int(2, 4);
@@ -352,6 +418,9 @@ export function crackGeometry(P, frame, width) {
     if (!E.crack || E.frame) continue;
     const g0 = P.cells[E.c0].gone, g1 = E.c1 < 0 || P.cells[E.c1].gone;
     if (g0 && g1) continue;
+    // (a later star's walked edge: drawn straight below, shown here only
+    // once glass has gone beside it - the hole's rim)
+    if (E.hidden && !g0 && !g1) continue;
     const a = P.verts[E.a], b = P.verts[E.b];
     const ex = b[0] - a[0], ey = b[1] - a[1], l = Math.hypot(ex, ey) || 1;
     // (a hole's rim is drawn a little heavier: the chipped edge)
@@ -359,6 +428,25 @@ export function crackGeometry(P, frame, width) {
     const nx = -ey / l * w, ny = ex / l * w;
     const q = [p3(a[0] + nx, a[1] + ny), p3(b[0] + nx, b[1] + ny), p3(b[0] - nx, b[1] - ny), p3(a[0] - nx, a[1] - ny)];
     pos.push(q[0].x, q[0].y, q[0].z, q[1].x, q[1].y, q[1].z, q[2].x, q[2].y, q[2].z, q[0].x, q[0].y, q[0].z, q[2].x, q[2].y, q[2].z, q[3].x, q[3].y, q[3].z);
+  }
+  // a later star's radial cracks, drawn as they run (start - middle - end),
+  // in short pieces: each piece shows while the glass under it is still in
+  // the frame
+  for (const L of P.lines || []) {
+    for (let k = 0; k < L.length - 1; k++) {
+      const A = L[k], Bv = L[k + 1];
+      const n = Math.max(1, Math.round(Math.hypot(Bv[0] - A[0], Bv[1] - A[1]) / 0.06));
+      for (let i = 0; i < n; i++) {
+        const t0 = i / n, t1 = (i + 1) / n;
+        const a0 = A[0] + (Bv[0] - A[0]) * t0, a1 = A[1] + (Bv[1] - A[1]) * t0, b0 = A[0] + (Bv[0] - A[0]) * t1, b1 = A[1] + (Bv[1] - A[1]) * t1;
+        const ci = cellAt(P, (a0 + b0) / 2, (a1 + b1) / 2);
+        if (ci < 0 || P.cells[ci].gone) continue;
+        const ex = b0 - a0, ey = b1 - a1, l = Math.hypot(ex, ey) || 1;
+        const nx = -ey / l * width / 2, ny = ex / l * width / 2;
+        const q = [p3(a0 + nx, a1 + ny), p3(b0 + nx, b1 + ny), p3(b0 - nx, b1 - ny), p3(a0 - nx, a1 - ny)];
+        pos.push(q[0].x, q[0].y, q[0].z, q[1].x, q[1].y, q[1].z, q[2].x, q[2].y, q[2].z, q[0].x, q[0].y, q[0].z, q[2].x, q[2].y, q[2].z, q[3].x, q[3].y, q[3].z);
+      }
+    }
   }
   // the marks from a later hole to its cell's corners (drawn while the cell
   // is in the frame)
@@ -382,7 +470,7 @@ export function shardGeometry(P, cells, thick) {
   let cu = 0, cv = 0, A = 0;
   for (const ci of cells) { const c = P.cells[ci]; cu += c.c[0] * c.area; cv += c.c[1] * c.area; A += c.area; }
   cu /= A || 1; cv /= A || 1;
-  const pos = [];
+  const pos = [], rim = [];
   const h = thick / 2;
   const tri = (a, b, c, z) => { pos.push(a[0] - cu, a[1] - cv, z, b[0] - cu, b[1] - cv, z, c[0] - cu, c[1] - cv, z); };
   const set = new Set(cells);
@@ -399,13 +487,18 @@ export function shardGeometry(P, cells, thick) {
       const a = p[i], b = p[(i + 1) % p.length];
       pos.push(a[0] - cu, a[1] - cv, h, b[0] - cu, b[1] - cv, h, b[0] - cu, b[1] - cv, -h);
       pos.push(a[0] - cu, a[1] - cv, h, b[0] - cu, b[1] - cv, -h, a[0] - cu, a[1] - cv, -h);
+      rim.push(a[0] - cu, a[1] - cv, h, b[0] - cu, b[1] - cv, h);
     }
   }
   const g = new THREE.BufferGeometry();
   g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
   g.computeVertexNormals();
   g.computeBoundingSphere();
-  return { geo: g, cu, cv, area: A };
+  // its outline, as line segments on its upper face (the shard's thin
+  // contour: destruct/Glass.js ShardField)
+  const line = new THREE.BufferGeometry();
+  line.setAttribute('position', new THREE.Float32BufferAttribute(rim, 3));
+  return { geo: g, line, cu, cv, area: A };
 }
 
 export { cellAt, distOutline, inConvex, polyArea };
