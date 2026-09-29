@@ -508,6 +508,8 @@ at z <= -9 looking down the avenue, so the diner is behind all of them and
 no accepted frame changes.
 
 ```
+All y values are WORLD y. The pavement and the diner's floor are at y = 0.15.
+
 front wall plane        x = -10.2 (outer face), wall 0.25 thick, inner face x = -10.45
 interior (clear)        x from -17.0 to -10.45, z from -5.8 to 11.4, floor y = 0.15, ceiling y = 3.55
 bays (centre z)         B1 9.4    B2 5.0    B3 0.6 (door)    B4 -3.8 (the end bay: the KO window)
@@ -516,21 +518,24 @@ window opening          3.55 wide, sill y 0.90, head y 3.10, transom band above 
 door (bay B3)           leaf 0.95 x 2.15, hinged at z = 0.12, opens inwards, glazed upper half,
                         recess 0.4 deep; fixed side lights fill the rest of the bay
 sign                    DINER in neon tube letters (accent `neon`) on the fascia over B2..B3,
-                        letters 0.55 tall, y centre 3.75; the old blade sign stays, unlit
-counter                 runs along z from -3.6 to 8.6, front face x = -14.35, top y = 1.07,
-                        0.62 deep; service aisle behind it; back bar against x = -17.0
+                        letters 0.55 tall, y centre 3.85; the old blade sign stays, unlit
+counter                 runs along z from -3.6 to 8.6, front face x = -14.35, top y = 1.20
+                        (1.05 above the floor), 0.62 deep; service aisle behind it; back bar
+                        against x = -17.0
 stools                  9, on the street side of the counter at x = -13.75, every 1.3 m,
-                        seat y = 0.80; anchors diner.stool.1 (z = 8.0) .. diner.stool.9 (z = -2.4)
-the player's stool      diner.stool.4 (z = 4.1), alias diner.stool.player, facing -x
+                        seat y = 0.92; anchors diner.stool.1 (z = 8.0) .. diner.stool.9 (z = -2.4)
+the player's stool      diner.stool.4 (z = 4.1), alias diner.stool.player, facing -x;
+                        the seated eye is at y = 1.60 (a man leaning on the counter)
 the brawler's stool     diner.stool.6 (z = 1.5)
 booths                  4, along the window wall, x from -12.35 to -10.55, in bays B1, B2, B4 and
-                        the near half of B3's side light; table top y = 0.76
-aisle (the ring)        x from -13.3 to -12.4, z from -5.0 to 10.6; brawl ring centre (-12.85, 1.0)
+                        the near half of B3's side light; table top y = 0.90
+aisle (the ring)        x from -13.3 to -12.4, z from -5.0 to 10.6; brawl ring centre (-12.85, 1.0);
+                        in the brawl the eye is at y = 1.80 (standing)
 jukebox                 against the end wall z = -5.8, x = -12.9, facing +z
-kitchen hatch           in the back wall x = -17.0, z from 1.0 to 3.4, y from 1.15 to 2.05, lit from behind
+kitchen hatch           in the back wall x = -17.0, z from 1.0 to 3.4, y from 1.25 to 2.15, lit from behind
 pendant lamps           6, over the counter's front edge x = -14.0, at z = 8.0, 5.6, 3.2, 0.8, -1.6, -3.4,
-                        head y = 2.55, half angle 0.6; 2 more over the booths in B1 and B4
-serve anchors           counter.serve.1..9 behind the counter at x = -15.0, opposite each stool
+                        head y = 2.60, half angle 0.6; 2 more over the booths in B1 and B4
+serve anchors           counter.serve.1..9 behind the counter at x = -15.3, opposite each stool
 ```
 The side alley (scene 3, wave B) is the cross street's mouth: x from -10.2
 to -22, z from -24 to -30, a wall lamp at (-12.5, 4.2, -24.3).

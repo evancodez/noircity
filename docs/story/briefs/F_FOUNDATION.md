@@ -110,7 +110,11 @@ B5. `src/props/index.js`: `buildProp(kind)` for every wave A kind as a
   `rest`. `src/destruct/Breakables.js` and `src/destruct/Glass.js`: the
   façade's crack / shatter code moves into Glass unchanged and the façade
   registers its panes (the `havoc` frame proves it); breakables hide the
-  object in a burst of the existing debris.
+  object in a burst of the existing debris. Prop stubs carry the no-op
+  methods the briefs name (`userData.setFill`, `setTilt`, `setOpen`).
+  `src/fx/`: `fx.pour.start({ from, to, accent, rate })` / `.stop()`,
+  `fx.cig.wisp(pos)` / `.exhale(pos, dir)`, `fx.hit.punch(pos, dir, power)`
+  as stubs that draw something plain with the existing particles.
 B6. `src/render/accents.js` (§9.3) with colours that survive today's
   colour keep; `pipeline.setLook` (§9.1) where the block's Look is today's
   frame; `src/game/Exposure.js` (§10) working; `src/audio/Music.js` (§12.3)
@@ -125,6 +129,14 @@ B7. **The diner site** (CONTRACTS §15), as stubs: rebuild the near
   blocks, the pendant lamps through `lamps.addCustom`, every anchor of the
   site plan, the dry volume, an interior Look. Real walls get real
   colliders: the player walks in and out through the door and nowhere else.
+  The part returns the API of `docs/story/briefs/L5_INTERIORS.md` P0.2
+  (`stool(i)`, `items`, `place`, `take`, `jukebox`, `bell`, `doorBell`,
+  `register`, `cupsRattle`, `lampsDip`, `trainPass`, `reset`) as working
+  no-ops, and `dinerFront` returns `door` (`on('open')`) and `panes` (B1,
+  B2, B4 through `game.glass.addPane`).
+  The lane briefs in `docs/story/briefs/L*.md` name a few more calls
+  (presets, part APIs, clip names): read them all and make sure every name
+  a lane will call on another lane's system exists as a stub.
 B8. `docs/story/ARCHITECTURE.md`: the module map as built, one paragraph
   per system, how a lane adds a part, a preset, a scene; the exact query
   strings of the new presets. Update `README.md` and the first paragraph
