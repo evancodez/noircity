@@ -2,6 +2,8 @@
 // it is ready, print the JSON result. Look development / profiling helper.
 //   node tools/evalpage.mjs "shot=perf&t=1&anim=1" 1440 900 "await __noir.gpuProfile(3)"
 import { spawn } from 'node:child_process';
+import { sweepProfiles, endChrome } from './lib/profile.mjs';
+sweepProfiles();
 import { rmSync } from 'node:fs';
 const QS = process.argv[2] || 'shot=street';
 const W = +(process.argv[3] || 1440), H = +(process.argv[4] || 900);
@@ -32,7 +34,7 @@ try {
   console.log(JSON.stringify(await evalJS(`(async () => { const N = window.__noir; return (${EXPR}); })()`), null, 1));
 } catch (e) { console.error(e); }
 try { ws && ws.close(); } catch {}
-chrome.kill('SIGKILL');
+endChrome(chrome, `/tmp/noir-eval-${PORT}`);
 await sleep(600);
 try { rmSync(`/tmp/noir-eval-${PORT}`, { recursive: true, force: true }); } catch {}
 process.exit(0);

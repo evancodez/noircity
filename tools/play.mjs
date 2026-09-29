@@ -31,6 +31,8 @@
 // At the end: the #errlog contents (a non-empty log is a FAIL) and a summary;
 // the exit code is 1 when anything failed.
 import { spawn } from 'node:child_process';
+import { sweepProfiles, endChrome } from './lib/profile.mjs';
+sweepProfiles();
 import { readFileSync, mkdirSync, writeFileSync } from 'node:fs';
 import { resolve, dirname } from 'node:path';
 
@@ -285,6 +287,6 @@ try {
 } finally {
   console.log(`${passes} passed, ${fails} failed`);
   try { ws && ws.close(); } catch { /* */ }
-  chrome.kill('SIGKILL');
+  endChrome(chrome, `/tmp/noir-play-${PORT}`);
   process.exit(fails ? 1 : 0);
 }

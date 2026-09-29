@@ -5,6 +5,8 @@
 // Env: UNCAPPED=1 disables vsync / the frame-rate limit.
 import { spawn } from 'node:child_process';
 
+import { sweepProfiles, endChrome } from './lib/profile.mjs';
+sweepProfiles();
 const QS = process.argv[2] || 'shot=street';
 const EXPR = process.argv[3] || 'N.renderer.info.render';
 const W = +(process.argv[4] || 1440), H = +(process.argv[5] || 900);
@@ -45,6 +47,6 @@ try {
   console.error('probe.mjs failed:', e);
 } finally {
   try { ws && ws.close(); } catch {}
-  chrome.kill('SIGKILL');
+  endChrome(chrome, `/tmp/noir-probe-${PORT}`);
   process.exit(0);
 }

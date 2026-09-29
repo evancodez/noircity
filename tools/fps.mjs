@@ -16,6 +16,8 @@
 // absolute numbers meaningless, and the run is flagged BUSY. RUNS=<n>
 // repeats the measurement n times and prints the spread.
 import { spawn, execSync } from 'node:child_process';
+import { sweepProfiles, endChrome } from './lib/profile.mjs';
+sweepProfiles();
 import { rmSync } from 'node:fs';
 
 // GPU busy % right now (macOS IOAccelerator; null elsewhere): the max of a
@@ -103,7 +105,7 @@ try {
       size: [innerWidth, innerHeight], err: document.getElementById('errlog').textContent.slice(0, 400) };
   })()`);
   try { ws && ws.close(); } catch {}
-  chrome.kill('SIGKILL');
+  endChrome(chrome, `/tmp/noir-fps-${PORT}`);
   await sleep(600);
   // (Phase 3c: the throwaway profile goes with the run - ~35 MB each, and
   // hundreds of them had filled the disk)
@@ -116,7 +118,7 @@ try {
 } catch (e) {
   console.error('fps.mjs failed:', e);
   try { ws && ws.close(); } catch {}
-  chrome.kill('SIGKILL');
+  endChrome(chrome, `/tmp/noir-fps-${PORT}`);
   await sleep(600);
   try { rmSync(`/tmp/noir-fps-${PORT}`, { recursive: true, force: true }); } catch {}
   return null;

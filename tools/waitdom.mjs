@@ -6,6 +6,8 @@
 // Prints the #errlog element as dump-dom would (tools/errors.sh parses it).
 import { spawn } from 'node:child_process';
 
+import { sweepProfiles, endChrome } from './lib/profile.mjs';
+sweepProfiles();
 const QS = process.argv[2] || 'shot=street&audiotest=1';
 const ATTR = process.argv[3] || 'audio';
 const TIMEOUT = +(process.argv[4] || 60);
@@ -43,6 +45,6 @@ try {
   console.error('waitdom.mjs failed:', e);
 } finally {
   try { ws && ws.close(); } catch {}
-  chrome.kill('SIGKILL');
+  endChrome(chrome, `/tmp/noir-wait-${PORT}`);
   process.exit(0);
 }

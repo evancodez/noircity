@@ -13,7 +13,7 @@ captured at width x height (default 960 x 600) through tools/shot.sh, so
 NOIR_PORT applies, and tiled cols wide (default 4) with the time printed on
 each. Headless Chrome is muted (tools/shot.sh).
 """
-import os, subprocess, sys, tempfile
+import os, shutil, subprocess, sys, tempfile
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
@@ -54,6 +54,7 @@ def main():
         sheet.paste(im, ((i % cols) * tw, (i // cols) * th))
     os.makedirs(os.path.dirname(os.path.abspath(out)), exist_ok=True)
     sheet.save(out, quality=90)
+    shutil.rmtree(tmp, ignore_errors=True)
     print('wrote', out, sheet.size, '%d frames' % len(frames))
     return 0
 

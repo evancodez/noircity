@@ -15,6 +15,8 @@
 //   node tools/playtest.mjs [width] [height]
 import { spawn } from 'node:child_process';
 
+import { sweepProfiles, endChrome } from './lib/profile.mjs';
+sweepProfiles();
 const W = +(process.argv[2] || 1280), H = +(process.argv[3] || 800);
 const PORT = 9400 + Math.floor(Math.random() * 400);
 const CHROME = '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome';
@@ -280,6 +282,6 @@ try {
 } finally {
   console.log(`${results.filter(Boolean).length}/${results.length} checks passed`);
   try { ws && ws.close(); } catch {}
-  chrome.kill('SIGKILL');
+  endChrome(chrome, `/tmp/noir-play-${PORT}`);
   process.exit(0);
 }
