@@ -2,7 +2,6 @@ import * as THREE from 'three';
 import { Figure } from './Figure.js';
 import { Character, resolveAt } from './Character.js';
 import { buildProp } from '../props/index.js';
-import { DINER } from '../stages/block/site.js';
 
 // The cast of a stage (docs/story/CONTRACTS.md §6): every figure on it.
 //   stage.cast / game.cast
@@ -49,9 +48,9 @@ export class Cast {
     if (K.hood ? alive(true) >= MAX_HOODS : alive(false) >= MAX_OTHERS) throw new Error(`cast.spawn: too many ${K.hood ? 'Hoods' : 'figures'} on '${this.stage.name}'`);
     const w = resolveAt(this.stage, at || seat || { x: 0, z: 0 });
     const fyaw = yaw ?? w.yaw ?? 0;
-    // the cook stands in his kitchen behind the hatch in the back wall,
-    // whatever the anchor says: he is only ever seen through it
-    if (kind === 'cook' && w.x > DINER.backX - 0.3 && w.x < DINER.backX + 1.5) w.x = DINER.backX - 0.42;
+    // (the cook stands where the anchor says: lane 5's diner.hatch is inside
+    // its kitchen box, between the hatch partition and the lit back wall;
+    // pushing him behind x = backX put him behind that wall)
     let fig, own = true;
     const G = this.game;
     if (K.hood) {
