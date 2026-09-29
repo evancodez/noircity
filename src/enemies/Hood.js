@@ -903,6 +903,7 @@ export class Hood {
   setState(name, fade = 0.25) {
     if (!this.alive) return;
     this.state = name;
+    if (name === 'stepOut') this._rm = 0;
     const ts = name === 'walk' ? this.gaitScale(WALK.speed) : name === 'run' ? this.gaitScale(RUN.speed) : 1;
     this.anim.play(name, { fade, timeScale: ts });
   }
@@ -1014,6 +1015,17 @@ export class Hood {
     // stagger: apply the clip's extracted root motion (backwards)
     if (this.state === 'stagger') {
       const clip = this.anim.clips.stagger;
+      const tt = Math.min(clip.duration, this.anim.baseTime + dt);
+      const rm = clip.rootMotion(tt);
+      const d = (rm - this._rm) * this.scale;
+      this._rm = rm;
+      this.pos.x += Math.sin(this.yaw) * d;
+      this.pos.z += Math.cos(this.yaw) * d;
+      if (this.anim.baseTime >= clip.duration) this.setState('idle', 0.3);
+    }
+    // stepping out of a doorway (wave B): its root motion forward, then idle
+    if (this.state === 'stepOut') {
+      const clip = this.anim.clips.stepOut;
       const tt = Math.min(clip.duration, this.anim.baseTime + dt);
       const rm = clip.rootMotion(tt);
       const d = (rm - this._rm) * this.scale;

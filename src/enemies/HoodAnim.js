@@ -537,6 +537,50 @@ function bakeFlinchStep(name, m) {
 }
 
 // ---------------------------------------------------------------------------
+// wave B entries (lane 6 P1): a man leaning in a doorway, his shoulder on
+// the jamb at his left, the brim down, the gun hand low by his thigh, one
+// ankle crossed over the other; he pushes off it and steps out (the step
+// is root motion forward, as the stagger's is back); a man sitting in a car.
+const LEAN_DOOR = {
+  hipsPos: [0.07, 0.935, -0.03], hips: [0, 8, -6], spine: [2, -2, -3], chest: [-2, -4, -2], neck: [16, 0, 0], head: [-2, -12, 5],
+  headRoot: [14, -10, 0], headLevel: [0.4],
+  footL: [0.08, ANKLE_Y, 0.0], footR: [0.0, ANKLE_Y + 0.004, 0.16], footRotL: [0, 14, 0], footRotR: [14, -22, 0], kneeR: [0.3, 0, 1],
+  handTL: [0.21, 0.94, 0.04], elbowPoleL: [1, 0, -0.5], handL: [0, 0, 20],
+  handTR: [-0.16, 0.86, 0.08], elbowPoleR: [-1, 0, -0.4], handR: [-20, 0, -6],
+};
+function leanDoorPose(t) {
+  const b = Math.sin(TAU * t / 5), w = Math.sin(TAU * t / 10 + 0.7);
+  const P = mergePose(NEUTRAL, LEAN_DOOR);
+  P.chest = [P.chest[0] - 0.8 * b, P.chest[1], P.chest[2]];
+  P.head = [P.head[0] + 1.5 * w, P.head[1] + 4 * w, P.head[2]];
+  return P;
+}
+const STEP_OUT_RAW = chainKeys([
+  [0, LEAN_DOOR],
+  [0.3, { hipsPos: [0.02, 0.95, 0.02], hips: [0, 2, 0], spine: [4, 0, 0], chest: [0, 0, 0], head: [-4, -4, 0], headLevel: [0.8], headRoot: [4, 0, 0],
+    footR: [-0.1, 0.12, 0.2], footRotR: [-10, 8, 0] }],
+  [0.55, { hipsPos: [0.0, 0.95, 0.2], footR: [-0.12, ANKLE_Y, 0.36], footRotR: [0, 8, 0], footL: [0.1, 0.1, 0.1], footRotL: [-20, 8, 0],
+    handTL: [0.2, 0.95, 0.24], handTR: [-0.17, 0.88, 0.3] }],
+  [0.85, { hipsPos: [0.0, 0.955, 0.42], footL: [0.115, ANKLE_Y, 0.58], footRotL: [0, 8, 0] }],
+  [1.2, { hipsPos: [0, 0.955, 0.56], footL: [0.115, ANKLE_Y, 0.58], footR: [-0.115, ANKLE_Y, 0.54], head: [-5, 0, 0], neck: [8, 0, 0], headLevel: [0],
+    handTL: [0.2, 0.9, 0.62], handTR: [-0.19, 0.86, 0.64], elbowPoleL: [1, 0, -1], elbowPoleR: [-1, 0, -1], handL: [0, 0, 4], handR: [-40, 0, -4] }],
+]);
+const STEP_OUT_RM = (t) => samplePoseKeys(STEP_OUT_RAW, t).hipsPos[2] - LEAN_DOOR.hipsPos[2];
+function stepOutPose(t) {
+  const P = samplePoseKeys(STEP_OUT_RAW, t);
+  const rz = STEP_OUT_RM(t);
+  for (const k of ['hipsPos', 'footL', 'footR', 'handTL', 'handTR']) if (P[k]) P[k] = [P[k][0], P[k][1], P[k][2] - rz];
+  return P;
+}
+function sitCarPose(t) {
+  const b = Math.sin(TAU * t / 4.4), w = Math.sin(TAU * t / 8.8 + 1);
+  return mergePose(NEUTRAL, {
+    hipsPos: [0, 0.62, -0.05], hips: [-12, 0, 0], spine: [4, 0, 0], chest: [6 - b, 0, 0], neck: [6, 0, 0], head: [-4 + w, 10 * w, 0], headLevel: [0.5],
+    footL: [0.14, ANKLE_Y + 0.02, 0.5], footR: [-0.14, ANKLE_Y + 0.02, 0.46], kneeL: [0.1, 0.3, 1], kneeR: [-0.1, 0.3, 1], footRotL: [10, 8, 0], footRotR: [10, 8, 0],
+    handTL: [0.12, 0.72, 0.3], handTR: [-0.1, 0.72, 0.32], elbowPoleL: [1, -0.4, -0.5], elbowPoleR: [-1, -0.4, -0.5], handL: [60, 0, 20], handR: [40, 0, -20],
+  });
+}
+
 let CLIPS = null;
 export function getClips() {
   if (CLIPS) return CLIPS;
@@ -547,6 +591,9 @@ export function getClips() {
     run: bake('run', RUN.T, (t) => gaitPose(t / RUN.T, RUN_G), { loop: true }),
     aim: bake('aim', 2, aimPose, { loop: true, armSpace: 'root' }),
     stagger: bake('stagger', 1.2, staggerPose, { rootMotion: STAGGER_RM }),
+    leanDoor: bake('leanDoor', 10, leanDoorPose, { loop: true, armSpace: 'root' }),
+    stepOut: bake('stepOut', 1.2, stepOutPose, { armSpace: 'root', rootMotion: STEP_OUT_RM }),
+    sitCar: bake('sitCar', 8.8, sitCarPose, { loop: true, armSpace: 'root' }),
     deathBack: bake('deathBack', deathLen, (t) => samplePoseKeys(DEATH_BACK, t), { armSpace: 'root' }),
     deathKnees: bake('deathKnees', deathLen, (t) => samplePoseKeys(DEATH_KNEES, t), { armSpace: 'root' }),
     deathSpin: bake('deathSpin', 1.1, (t) => samplePoseKeys(DEATH_SPIN, t), { armSpace: 'root' }),

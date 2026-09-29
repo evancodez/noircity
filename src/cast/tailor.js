@@ -497,13 +497,13 @@ function buildFlatCap(F) {
     // [v-row] rx, rzF, rzB, cz, y: no band to speak of: the soft crown
     // bulges out at once and droops over the sides, wider than the head
     [0.083, 0.097, 0.099, 0.0, -0.008],
-    [0.1, 0.118, 0.108, 0.01, 0.004],
-    [0.115, 0.138, 0.114, 0.02, 0.018],
-    [0.119, 0.146, 0.113, 0.025, 0.03],
-    [0.11, 0.134, 0.102, 0.026, 0.04],
-    [0.084, 0.1, 0.078, 0.024, 0.047],
-    [0.044, 0.052, 0.04, 0.022, 0.051],
-    [0.0, 0.0, 0.0, 0.02, 0.052],
+    [0.095, 0.114, 0.105, 0.01, 0.004],
+    [0.105, 0.132, 0.108, 0.02, 0.016],
+    [0.108, 0.14, 0.106, 0.025, 0.026],
+    [0.1, 0.13, 0.096, 0.026, 0.035],
+    [0.078, 0.098, 0.074, 0.024, 0.042],
+    [0.04, 0.05, 0.038, 0.022, 0.046],
+    [0.0, 0.0, 0.0, 0.02, 0.047],
   ];
   const crown = coverGeo(F, (u, v, p) => {
     const [rx, rzF, rzB, cz, y] = profileAt(rows, v);
@@ -535,8 +535,10 @@ function buildFlatCap(F) {
 // the knit watch cap: a dome over the skull with a rolled cuff
 function buildWatchCap(F) {
   const c = F.cover, s = c.s ?? 1;
-  const prof = [[0.0, -0.01], [0.092, -0.012], [0.1, -0.004], [0.101, 0.02], [0.097, 0.03], [0.093, 0.034], [0.094, 0.05], [0.086, 0.078],
-    [0.07, 0.1], [0.045, 0.114], [0.02, 0.119], [0.0, 0.12]];
+  // a fisherman's cap: the rolled cuff a thick band over the ears' tops,
+  // the knit above it short and square-shouldered
+  const prof = [[0.0, -0.012], [0.09, -0.014], [0.103, -0.006], [0.106, 0.012], [0.105, 0.03], [0.099, 0.04], [0.094, 0.043],
+    [0.095, 0.06], [0.093, 0.08], [0.085, 0.094], [0.06, 0.103], [0.03, 0.106], [0.0, 0.107]];
   const geo = coverGeo(F, (u, v, p) => {
     const [r, y] = profileAt(prof, v);
     const th = u * TAU;
@@ -545,7 +547,7 @@ function buildWatchCap(F) {
   }, 64, 28);
   orientOut(geo, F.rig.BIND.hat.clone().add(new THREE.Vector3(0, 0.05, 0)));
   const sh = F.shade('cover'), cuff = F.shade('cuff');
-  return [{ geo, shade: (x, y) => (y - F.rig.BIND.hat.y < 0.034 * s ? cuff : sh), weights: () => [[B.hat, 1]] }];
+  return [{ geo, shade: (x, y) => (y - F.rig.BIND.hat.y < 0.041 * s ? cuff : sh), weights: () => [[B.hat, 1]] }];
 }
 
 // the cloche: a bell pulled down to the eyebrows, a short brim turned down

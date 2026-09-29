@@ -70,7 +70,7 @@ const BRAWLER = {
     { kind: 'shoes', style: 'boot' },
     { kind: 'hands', s: 1.16, fist: true },
   ],
-  skin: { shirt: 0.055, vest: 0.008, arm: 0.2, hand: 0.19, skin: 0.03, hair: 0.004, cover: 0.011, peak: 0.007, trousers: 0.01, shoes: 0.004 },
+  skin: { shirt: 0.022, vest: 0.005, arm: 0.2, hand: 0.19, skin: 0.03, hair: 0.004, cover: 0.011, peak: 0.009, trousers: 0.006, shoes: 0.004 },
   // his waistcoat pocket (theta, y): where the red matchbook rides
   pocket: [0.62, 1.1],
   collider: 0.4,
@@ -119,12 +119,12 @@ const WAITRESS = {
     { kind: 'collar', style: 'dress', shade: 0.09 },
     { kind: 'sleeves', style: 'short', r: 0.058, len: 0.12, shade: 'dress' },
     { kind: 'arms', r: 0.038, d0: 0.08 },
-    { kind: 'apron', waist: 1.045, bibTop: 1.33, hem: 0.56, span: 0.19 },
+    { kind: 'apron', waist: 1.045, bibTop: 1.3, hem: 0.58, span: 0.16 },
     { kind: 'legs', style: 'stocking' },
     { kind: 'shoes', style: 'flat' },
     { kind: 'hands', s: 0.84 },
   ],
-  skin: { dress: 0.022, arm: 0.04, hand: 0.04, skin: 0.03, hair: 0.004, cover: 0.3, apron: 0.55, stocking: 0.012, shoes: 0.004 },
+  skin: { dress: 0.022, arm: 0.04, hand: 0.04, skin: 0.03, hair: 0.004, cover: 0.3, apron: 0.72, stocking: 0.012, shoes: 0.004 },
   collider: 0.26,
 };
 
@@ -151,9 +151,9 @@ const COOK = {
   cover: { kind: 'papercap', hatDY: 0.105, hatDZ: -0.004, pitch: 0.03, h: 0.1 },
   garments: [
     // a white jacket gone grey in the kitchen's steam, the apron bib over it
-    { kind: 'torso', shade: (th, y) => (A(th) < 0.55 && y < 1.36 ? 0.3 : 0.05) },
+    { kind: 'torso', shade: (th, y) => (A(th) < 0.5 && y < 1.34 ? 0.13 : 0.04) },
     { kind: 'skirt', y0: 1.02, hem: 0.52, flare: [1.12, 1.2], folds: 0.4, back: 0.5, grow: 0.012,
-      shade: (u) => { const th = u * 6.2832; return Math.cos(th) > 0.35 ? 0.3 : 0.01; } },
+      shade: (u) => { const th = u * 6.2832; return Math.cos(th) > 0.4 ? 0.13 : 0.01; } },
     { kind: 'collar', style: 'band', h: 0.03, hFront: 0.024, open: 0.35, gap: 0.004, lean: 0.002, flareOut: 0.002, shade: 0.05 },
     { kind: 'sleeves', style: 'rolled', r: 0.085, shade: 0.05 },
     { kind: 'arms', r: 0.055, d0: 0.18 },
@@ -161,7 +161,7 @@ const COOK = {
     { kind: 'shoes' },
     { kind: 'hands', s: 1.1 },
   ],
-  skin: { arm: 0.09, hand: 0.09, skin: 0.03, cover: 0.35, trousers: 0.008 },
+  skin: { arm: 0.09, hand: 0.09, skin: 0.03, cover: 0.3, trousers: 0.008 },
   collider: 0.36,
 };
 
@@ -198,7 +198,7 @@ const OLDMAN = {
     { kind: 'shoes' },
     { kind: 'hands', s: 0.9 },
   ],
-  skin: { coat: 0.016, scarf: 0.05, hand: 0.03, skin: 0.03, cover: 0.012, peak: 0.009 },
+  skin: { coat: 0.016, scarf: 0.05, hand: 0.02, skin: 0.03, cover: 0.012, peak: 0.009 },
   collider: 0.3,
 };
 
@@ -235,7 +235,7 @@ const HER = {
     { kind: 'shoes', style: 'flat' },
     { kind: 'hands', s: 0.82 },
   ],
-  skin: { coat: 0.013, fur: 0.045, hand: 0.035, skin: 0.03, cover: 0.01, band: 0.03, stocking: 0.012 },
+  skin: { coat: 0.013, fur: 0.045, hand: 0.022, skin: 0.03, cover: 0.01, band: 0.03, stocking: 0.012 },
   collider: 0.26,
 };
 
@@ -271,7 +271,7 @@ const HIM = {
     { kind: 'shoes' },
     { kind: 'hands', s: 0.95 },
   ],
-  skin: { coat: 0.013, hand: 0.03, skin: 0.03, cover: 0.006 },
+  skin: { coat: 0.013, hand: 0.02, skin: 0.03, cover: 0.006 },
   collider: 0.28,
 };
 
@@ -296,17 +296,17 @@ const DOCKER = {
     shoulderX: 0.205, shoulderY: 1.415, upper: 0.305, fore: 0.28, hipX: 0.1,
     neckR: 0.062, headW: 1.04, jaw: 0.12,
   },
-  cover: { kind: 'watchcap', hatDY: 0.07, hatDZ: -0.01, pitch: -0.05, s: 1.0 },
+  cover: { kind: 'watchcap', hatDY: 0.1, hatDZ: -0.008, pitch: -0.1, s: 1.02 },
   garments: [
     { kind: 'torso', shade: 'coat' },
     { kind: 'skirt', y0: 1.02, hem: 0.74, flare: [1.1, 1.14], back: 0.6, folds: 0.5, grow: 0.012, shade: 'coat' },
-    { kind: 'collar', style: 'peacoat', h: 0.13, hFront: 0.1, lo: -0.01, open: 0.62, gap: 0.05, lean: 0.03, flareOut: 0.02, wide: 1.1, nv: 14 },
+    { kind: 'collar', style: 'peacoat', h: 0.16, hFront: 0.13, lo: -0.02, open: 0.55, gap: 0.062, lean: 0.004, flareOut: 0.008, wide: 1.06, nv: 14 },
     { kind: 'sleeves', r: 0.088, cuff: 0.074 },
     { kind: 'legs', r: 1.08, boot: true },
     { kind: 'shoes', style: 'boot' },
     { kind: 'hands', s: 1.05 },
   ],
-  skin: { coat: 0.012, collar: 0.012, hand: 0.032, skin: 0.03, cover: 0.01, cuff: 0.014, trousers: 0.009 },
+  skin: { coat: 0.012, collar: 0.016, hand: 0.02, skin: 0.03, cover: 0.03, cuff: 0.045, trousers: 0.009 },
   collider: 0.34,
 };
 

@@ -389,9 +389,9 @@ Object.assign(DEFS, {
   // both hands up and back over the right shoulder, the whole body wound to
   // his right, he steps in; the blow comes down overhand
   br_haymaker: fight(1.4, [
-    [0.2, { chest: [-6, -34, 8], spine: [-4, -14, 0], hips: [0, -26, 0], handTR: [-0.34, 1.66, -0.18], handTL: [-0.1, 1.6, 0.0], elbowPoleR: [-1, 0.6, -0.3], elbowPoleL: [1, 0.6, 0.2], neck: [8, 0, 0], head: [-10, 20, 0] }],
-    [0.4, { chest: [-10, -44, 10], spine: [-6, -16, 0], handTR: [-0.36, 1.74, -0.28], handTL: [-0.14, 1.68, -0.12], hipsPos: [0, 0.92, -0.1] }],
-    [0.7, { hipsPos: [0, 0.9, 0.12], footL: [0.14, A, 0.5], footRotL: [0, 10, 0], chest: [-12, -46, 10], handTR: [-0.34, 1.78, -0.3] }],
+    [0.2, { chest: [-6, -34, 8], spine: [-4, -14, 0], hips: [0, -26, 0], handTR: [-0.3, 1.52, -0.2], handTL: [-0.1, 1.5, -0.04], elbowPoleR: [-0.7, 0.4, 0.6], elbowPoleL: [0.4, 0.1, 1], neck: [8, 0, 0], head: [-10, 20, 0] }],
+    [0.4, { chest: [-10, -44, 10], spine: [-6, -16, 0], handTR: [-0.34, 1.58, -0.3], handTL: [-0.16, 1.56, -0.14], hipsPos: [0, 0.92, -0.1] }],
+    [0.7, { hipsPos: [0, 0.9, 0.12], footL: [0.14, A, 0.5], footRotL: [0, 10, 0], chest: [-12, -46, 10], handTR: [-0.34, 1.6, -0.32] }],
     [0.95, { hipsPos: [0, 0.84, 0.3], hips: [16, 14, 0], spine: [16, 10, 0], chest: [18, 26, -6], neck: [22, 0, 0], head: [6, 0, 0],
       handTR: [0.04, 1.34, 0.86], elbowPoleR: [-1, 1, 0.3], handR: [-80, 0, 20], handTL: [0.28, 1.0, 0.34], elbowPoleL: [1, -0.5, -0.3], footR: [-0.16, A, -0.02], footRotR: [-25, 20, 0] }],
     [1.15, { hipsPos: [0, 0.82, 0.3], chest: [24, 30, -6], handTR: [0.16, 1.02, 0.7] }],
@@ -403,7 +403,7 @@ Object.assign(DEFS, {
   br_bottle: fight(2.0, [
     [0.2, { hips: [8, -60, 0], chest: [14, -24, 0], spine: [10, -10, 0], handTR: [-0.62, 1.08, 0.12], elbowPoleR: [-1, -0.6, 0.3], handR: [-60, 0, 0], footR: [-0.34, A, -0.08] }],
     [0.35, { handTR: [-0.72, 1.02, 0.18], chest: [18, -28, 0] }],
-    [0.55, { hips: [4, -40, 0], chest: [-4, -20, 10], handTR: [-0.36, 1.72, -0.02], elbowPoleR: [-1, 0.6, -0.4], handR: [30, 0, 0], head: [-6, -20, 0] }],
+    [0.55, { hips: [4, -40, 0], chest: [-4, -20, 10], handTR: [-0.3, 1.56, 0.02], elbowPoleR: [-1, 0.2, -0.3], handR: [30, 0, 0], head: [-6, -20, 0] }],
     [0.75, { hips: [10, -60, 0], chest: [22, -30, -4], spine: [12, -12, 0], handTR: [-0.68, 1.02, 0.2], elbowPoleR: [-1, 0.2, 0.3], handR: [-50, 0, 0] }],
     [1.0, { hips: [4, -16, 0], chest: [8, -6, 0], spine: [8, -4, 0], footR: [-0.2, A, -0.24], handTR: [-0.44, 0.98, 0.24], elbowPoleR: [-1, -0.6, -0.2], handR: [-20, 0, -30], head: [-2, 10, 0] }],
     [1.3, { chest: [6, -22, 2], handTR: [-0.4, 1.02, -0.06], hipsPos: [0, 0.88, -0.1] }],

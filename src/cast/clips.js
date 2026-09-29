@@ -66,6 +66,11 @@ export const CAST_CLIPS = {
   sitRead: { duration: 7, marks: { page: 4.5 }, loop: true },
   sitSmoke: { duration: 5, marks: { drag: 1.5 }, loop: true },
   sitTalk: { duration: 6, marks: {}, loop: true },
+  // ---- the Hoods' entries (wave B): in a doorway, out of it; in a car ---------------
+  leanDoor: { duration: 10, marks: {}, loop: true },
+  stepOut: { duration: 1.2, marks: { off: 0.3, out: 0.85 }, then: 'idle' },
+  sitCar: { duration: 8.8, marks: {}, loop: true },
+
   // standing, reading (the old man in the study)
   read: { duration: 7, marks: { page: 4.5 }, loop: true },
 };

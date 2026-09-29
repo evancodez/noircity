@@ -157,8 +157,8 @@ export class Character {
     this.animName = nm;
     if (HOOD_STATES.has(name)) { F.setState(name, fade); return nm; }
     if (!this.costumed) {
-      // (a Hood in the cast: only the Hood's clips)
-      F.setState('idle', fade);
+      // (a Hood in the cast: only the Hood's clips: leanDoor, stepOut, sitCar)
+      F.setState(F.anim.clips[name] ? name : 'idle', fade);
       return nm;
     }
     F.state = name;
@@ -207,6 +207,8 @@ export class Character {
     };
     this.clipH = h;
     this.state = name;
+    // (a clip that leaves him in another state: stepping out of a doorway)
+    if (c.then) this.base = c.then;
     const F = this.fig;
     if (c.state) {
       // (flight: the Hood's run, with an overlay of the kind's own)
@@ -217,7 +219,7 @@ export class Character {
       if (ov && this.costumed) F.anim.setOverlay(ov, 0.2);
       return h;
     }
-    if (!this.costumed) { F.flinch(); return h; }
+    if (!this.costumed) { if (F.anim.clips[name]) this._anim(name, fade); else F.flinch(); return h; }
     if (IS_ADDITIVE(name)) { F.anim.additive(name); this.state = this.base; return h; }
     const nm = this._anim(name, fade);
     if (name === 'br_ko_window') this._koTravel(nm);

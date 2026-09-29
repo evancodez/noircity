@@ -10,7 +10,12 @@ import * as THREE from 'three';
 //                             (hy: 0 = facing the eye). Seated states are
 //                             staged in the diner (stool 7 / booth 4, hseat=
 //                             stool|booth), the rest on the street.
-//                             focus=0,dist,bearing,eye,fov for close-ups (as hoodlab)
+//                             focus=0,dist,bearing,eye,fov for close-ups (as hoodlab);
+//                             the waitress's counter clips (serve pour slide
+//                             slideBottle wipe duck) behind the counter at
+//                             hat=<anchor> (diner.serve.4), seen from
+//                             heye=<anchor> (the player's stool); hs=walk|carry|run
+//                             crosses the frame
 //   castdiner&cview=<n>       the diner's people where scene 1 has them (Dot at
 //                             the urns, the cook in the hatch, the old man on
 //                             stool 9, the docker on stool 1, the couple in
@@ -50,7 +55,6 @@ function giveGear(stage, c, prop) {
   c.hold(prop(G[0]), G[1]);
 }
 
-async function propLib() { return (await import('../../props/index.js')).buildProp; }
 import { buildProp } from '../../props/index.js';
 
 // ---- castlab --------------------------------------------------------------------------
@@ -60,7 +64,12 @@ function stageCastLab(stage, camera, controller, game) {
   const kind = q.get('kind') || 'brawler';
   const st = q.get('hs') || 'idle';
   const yaw = parseFloat(q.get('hy') || '0') * D2R;
-  if (kind === 'hood') { stage.hoods.spawn([-2.2, -17.3], { coat: 1, brim: 1, tall: 1 }, { yaw, state: 'idle' }); return; }
+  if (kind === 'hood') {
+    // a Hood through the cast (no AI): leanDoor, stepOut (from t = 3.9), sitCar
+    const h = stage.cast.spawn('hood', { at: { x: -2.2, z: -17.3 }, yaw, brain: 'none', variant: { coat: 1, brim: 1, tall: 1 } });
+    if (st === 'stepOut') { h.setState('leanDoor', 0); let done = false; game.scripts.push((t) => { if (!done && t >= 3.9 - 1e-6) { done = true; h.play('stepOut', { fade: 0.15 }); } }); } else if (st !== 'idle') h.setState(st, 0);
+    return;
+  }
   let c;
   if (SEATED.test(st)) {
     // in the diner: the seat, and the eye in the aisle facing it
@@ -71,13 +80,27 @@ function stageCastLab(stage, camera, controller, game) {
     const fy = a.yaw + Math.PI + yaw;
     const cx = a.pos.x + Math.sin(fy) * 2.6, cz = a.pos.z + Math.cos(fy) * 2.6;
     controller.setPose(cx, cz, Math.atan2(-(a.pos.x - cx), -(a.pos.z - cz)), -0.15, 0.15);
+  } else if (q.get('hat') || /^(serve|pour|slide|slideBottle|wipe|duck)$/.test(st)) {
+    // behind the counter, seen from the player's stool (hat=<anchor>)
+    const at = q.get('hat') || 'diner.serve.4';
+    c = stage.cast.spawn(kind, { at });
+    const a = stage.anchor(q.get('heye') || 'diner.stool.player'), b = stage.anchor(at);
+    const ey = a.eyeY ?? 1.6;
+    controller.setPose(a.pos.x, a.pos.z, Math.atan2(-(b.pos.x - a.pos.x), -(b.pos.z - a.pos.z)) + (parseFloat(q.get('hpan') || '0') * D2R), -0.02, ey - 1.63);
+  } else if (st === 'walk' || st === 'carry' || st === 'run') {
+    // across the frame, passing the mark (-2.2, -17.3) at t = 4.3
+    const sp = st === 'run' ? 2.9 : 1.25;
+    c = stage.cast.spawn(kind, { at: { x: -2.2 - sp * 4.3, z: -17.3 }, yaw: Math.PI / 2 });
+    if (st === 'carry' && !GEAR[kind]) c.hold(buildProp('plate'), 'R');
+    else if (st === 'carry') giveGear(stage, c, (k) => buildProp(k));
+    const gen = c.walkTo({ x: 6, z: -17.3 }, { run: st === 'run' });
+    game.scripts.push(() => gen.next());
   } else {
     c = stage.cast.spawn(kind, { at: { x: -2.2, z: -17.3 }, yaw });
   }
   if (kind === 'brawler' && q.get('blood')) c.bleed(parseFloat(q.get('blood')));
-  if (GEAR[kind] && q.get('gear') !== '0') giveGear(stage, c, (k) => buildProp(k));
-  const def = c.clip ? null : null; void def;
-  if (st !== 'idle') {
+  if (GEAR[kind] && q.get('gear') === '1' && !c.held.R) giveGear(stage, c, (k) => buildProp(k));
+  if (st !== 'idle' && st !== 'walk' && st !== 'carry' && st !== 'run') {
     const one = !['sit', 'sitEat', 'sitDrink', 'sitRead', 'sitSmoke', 'sitTalk', 'lean', 'wipe', 'hatch', 'watch', 'read', 'br_guard', 'ko'].includes(st);
     if (!one) c.setState(st, 0);
     else {
@@ -99,7 +122,7 @@ function stageCastStudy(stage, camera, controller, game) {
   const cx = -2.2, cz = -13.3;
   const kinds = [...KINDS7, 'hood'];
   kinds.forEach((k, i) => {
-    const a = (i - (kinds.length - 1) / 2) * step * D2R;
+    const a = ((i - (kinds.length - 1) / 2) * step + (far ? 1.6 : 0)) * D2R;
     const x = cx + R * Math.sin(a), z = cz - R * Math.cos(a);
     const face = Math.atan2(cx - x, cz - z) + 40 * D2R;
     if (k === 'hood') { stage.hoods.spawn([x, z], { coat: 1, brim: 1, tall: 1 }, { yaw: face, state: 'idle' }); return; }
@@ -142,7 +165,6 @@ function stageCastDiner(stage, camera, controller) {
   camera.fov = v.fov; camera.updateProjectionMatrix();
   controller.setPose(v.x, v.z, v.yaw, v.pitch, v.y);
 }
-void propLib;
 
 export const presets = {
   caststudy: { x: -2.2, z: -13.3, y: -0.03, yaw: 0, pitch: -0.1, fov: 50, t: 4.3, stage: stageCastStudy },
