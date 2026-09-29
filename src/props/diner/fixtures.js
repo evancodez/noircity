@@ -32,13 +32,11 @@ export function buildPendants(kit, lamps) {
     const pivot = new THREE.Group();
     pivot.position.set(x, D.ceilY, z);
     kit.g.add(pivot);
-    kit.add(canopy, M.iron, { parent: pivot, cast: false });
-    const cord = kit.add(new THREE.CylinderGeometry(0.005, 0.005, cordLen, 6).translate(0, -cordLen / 2, 0), M.black, { parent: pivot, cast: false });
-    void cord;
+    kit.add(mergeGeos([canopy, new THREE.CylinderGeometry(0.005, 0.005, cordLen, 6).translate(0, -cordLen / 2, 0)]), M.iron, { parent: pivot, cast: false });
     const head = new THREE.Group();
     head.position.set(0, -(D.ceilY - P.headY), 0);
     pivot.add(head);
-    kit.add(shade, shadeMat, { parent: head });
+    kit.add(shade, shadeMat, { parent: head, cast: false });
     kit.add(inner, M.lampInner, { parent: head, cast: false });
     const bulb = kit.add(mergeGeos([bulbGeo, disc]), M.bulb, { parent: head, cast: false });
     const lamp = lamps.addCustom({ head: V3(x, P.headY, z), axis: V3(0, -1, 0), height: P.headY - D.floorY, half, real: true, bulb, fadeEnd: 0.9, edgeSoft: 0.35, strength: 0.75, tag: 'pendant' });

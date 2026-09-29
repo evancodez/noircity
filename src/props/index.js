@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { allocInkId } from '../render/layers.js';
 import { SPECS, PROP_KINDS, BOTTLE_VARIANTS } from './kinds.js';
+import { mergeGeos } from './lib.js';
 
 // The prop library (docs/story/CONTRACTS.md §8.1): the small objects of the
 // story, built by one function so the thing on the counter and the thing in
@@ -62,25 +63,44 @@ export function buildProp(kind, { lod = 0, variant = null } = {}) {
     g.add(pg);
     by[name] = pg;
   }
-  for (const p of S.parts) {
-    const m = p.mesh || new THREE.Mesh(p.geo, p.side ? cloneSide(p.mat, p.side) : p.mat);
+  // parts that share a material, a parent and an ink id are drawn as one
+  // mesh (a stool is three draws, not six); a part the kind's behaviour
+  // moves or swaps (a pivot, a named 'keep' part, a liquid) stays its own
+  const buckets = new Map();
+  const mk = (geo, mat, p) => {
+    const m = new THREE.Mesh(geo, mat);
     m.castShadow = lod === 0 && p.cast !== false;
     m.receiveShadow = true;
     m.userData.inkId = id0 + (p.id || 0);
-    if (p.mat && p.mat.transparent) m.renderOrder = 1;
-    let parent = g;
+    if (mat && mat.transparent) m.renderOrder = 1;
+    return m;
+  };
+  for (const p of S.parts) {
+    const mat = p.mesh ? p.mesh.material : p.side ? cloneSide(p.mat, p.side) : p.mat;
     if (p.pivot) {
       const pg = new THREE.Group();
       pg.name = p.name;
       pg.position.set(...p.pivot);
       g.add(pg);
-      pg.add(m);
+      pg.add(mk(p.geo, mat, p));
       by[p.name] = pg;
       continue;
     }
-    if (p.parent) parent = by[p.parent];
-    if (p.name && !by[p.name]) { m.name = p.name; by[p.name] = m; }
-    parent.add(m);
+    const parent = p.parent ? by[p.parent] : g;
+    if (p.mesh || p.keep) {
+      const m = p.mesh || mk(p.geo, mat, p);
+      if (p.mesh) { m.castShadow = lod === 0 && p.cast !== false; m.receiveShadow = true; m.userData.inkId = id0 + (p.id || 0); if (mat.transparent) m.renderOrder = 1; }
+      if (p.name) { m.name = p.name; by[p.name] = m; }
+      parent.add(m);
+      continue;
+    }
+    const key = mat.uuid + '|' + (p.parent || '') + '|' + (p.id || 0) + '|' + (p.cast !== false);
+    if (!buckets.has(key)) buckets.set(key, { mat, parent, p, geos: [] });
+    buckets.get(key).geos.push(p.geo);
+  }
+  for (const b of buckets.values()) {
+    const geo = b.geos.length === 1 ? b.geos[0] : mergeGeos(b.geos, { uv: !!b.mat.map });
+    b.parent.add(mk(geo, b.mat, b.p));
   }
   const box = new THREE.Box3().setFromObject(g);
   const size = box.isEmpty() ? new THREE.Vector3() : box.getSize(new THREE.Vector3());

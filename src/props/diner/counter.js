@@ -112,10 +112,10 @@ export function buildBackBar(kit) {
     }
     topG.push(slab(0.58, 0.03, z1 - z0, { bevel: 0.004, corner: 0.01 }).translate(B + 0.29, ct - 0.03, (z0 + z1) / 2));
   }
-  kit.addMerged(cabG, M.cabinet);
-  kit.addMerged(doors, M.std('cabDoor', 0x131313, 0.5, 'wood'));
+  kit.addMerged(cabG, M.cabinet, { cast: false });
+  kit.addMerged(doors, M.std('cabDoor', 0x131313, 0.5, 'wood'), { cast: false });
   kit.piece();
-  kit.addMerged(topG, M.steel);
+  kit.addMerged(topG, M.steel, { cast: false });
 
   // ---- the lit glass behind the shelves: grey, brightest in a band under
   // the canopy that hides its tube; the bottles stand black against it
@@ -138,7 +138,7 @@ export function buildBackBar(kit) {
     wood.push(kit.box(B, B + 0.3, ct, BAR.glowTop, z1 - 0.03, z1 + 0.02));
     for (const y of BAR.shelves) wood.push(slab(0.24, 0.022, z1 - z0 - 0.06, { bevel: 0.004, corner: 0.006 }).translate(B + 0.13, y - 0.022, (z0 + z1) / 2));
   }
-  kit.addMerged(wood, M.shelf);
+  kit.addMerged(wood, M.shelf, { cast: false });
 
   // ---- bottles on the shelves: dark shapes, one tick of light each
   kit.piece();
@@ -170,7 +170,7 @@ export function buildBackBar(kit) {
     const s = bottleShape(kind);
     ticks.push(new THREE.PlaneGeometry(0.006, s[3][1] * 0.35).rotateY(Math.PI / 2).translate(B + 0.2 + s[3][0] * 0.85 + 0.002, ct + s[3][1] * 0.5, z - s[3][0] * 0.35));
   }
-  kit.addMerged(bottles, PM().bottleDark);
+  kit.addMerged(bottles, PM().bottleDark, { cast: false });
   kit.addMerged(ticks, M.glow('tick', 1.4), { cast: false, receive: false, noRay: true });
 
   // ---- stacked tumblers (section B's cabinet top), cups on hooks under
@@ -216,7 +216,7 @@ export function buildBackBar(kit) {
     const x = B + 0.28, y = ct;
     const shell = lathe([[0.0001, 0], [0.15, 0], [0.16, 0.02], [0.16, 0.05], [0.145, 0.07], [0.145, 0.62], [0.155, 0.64], [0.155, 0.68], [0.12, 0.72], [0.06, 0.745], [0.025, 0.75], [0.02, 0.78], [0.03, 0.8], [0.0001, 0.805]], 48).translate(x, y, z);
     const bands = [new THREE.TorusGeometry(0.147, 0.007, 8, 48).rotateX(Math.PI / 2).translate(x, y + 0.22, z), new THREE.TorusGeometry(0.147, 0.007, 8, 48).rotateX(Math.PI / 2).translate(x, y + 0.5, z)];
-    kit.add(mergeGeos([shell, ...bands]), M.steel);
+    kit.add(mergeGeos([shell, ...bands]), M.steel, { cast: false });
     // the gauge: a glass tube in two brass knuckles, the coffee's level dark in it
     const gx = x + 0.165;
     const gauge = [new THREE.CylinderGeometry(0.009, 0.009, 0.36, 12).translate(gx, y + 0.34, z + 0.05), new THREE.SphereGeometry(0.016, 12, 8).translate(gx - 0.005, y + 0.15, z + 0.05), new THREE.SphereGeometry(0.016, 12, 8).translate(gx - 0.005, y + 0.53, z + 0.05)];
@@ -256,7 +256,7 @@ export function buildBackBar(kit) {
   kit.addMerged(part, M.plaster, { cast: false });
   // below the hatch: the cabinets run on; a panelled face
   partPanel.push(kit.box(B + 0.02, hx, F + 0.09, H.y0 - 0.03, P0, P1));
-  kit.addMerged(partPanel, M.cabinet);
+  kit.addMerged(partPanel, M.cabinet, { cast: false });
   kit.addMerged([kit.box(B + 0.02, hx - 0.05, F, F + 0.09, P0, P1)], M.black, { cast: false });
   // the hatch's steel frame and its pass shelf
   kit.piece();
@@ -266,7 +266,7 @@ export function buildBackBar(kit) {
     kit.box(hx - 0.004, hx + 0.02, H.y0 - 0.02, H.y1 + 0.04, H.z1, H.z1 + 0.04),
     slab(0.62, 0.028, H.z1 - H.z0 + 0.16, { bevel: 0.004, corner: 0.01 }).translate(hx - 0.02, H.y0 - 0.028, (H.z0 + H.z1) / 2),
   ];
-  kit.addMerged(fr, M.steel);
+  kit.addMerged(fr, M.steel, { cast: false });
   // the ticket rail across the top of the opening, three tickets on it
   kit.piece();
   const tr = [new THREE.CylinderGeometry(0.008, 0.008, H.z1 - H.z0 - 0.1, 12).rotateX(Math.PI / 2).translate(hx + 0.035, H.y1 - 0.03, (H.z0 + H.z1) / 2)];

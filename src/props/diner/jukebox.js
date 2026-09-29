@@ -43,9 +43,9 @@ export function buildJukebox(kit) {
   kit.piece();
   const body = new THREE.ExtrudeGeometry(outline(W, Hs, H), { depth: Dp - 0.06, bevelEnabled: true, bevelThickness: 0.03, bevelSize: 0.028, bevelSegments: 4, curveSegments: 40 });
   body.translate(0, 0, -Dp / 2 + 0.03);
-  const cab = kit.add(smooth(body), M.std('jukeWood', 0x141414, 0.45, 'wood'), { parent: g });
+  const cab = kit.add(smooth(body), M.std('jukeWood', 0x141414, 0.45, 'wood'), { parent: g, cast: false });
   // a plinth
-  kit.add(kit.box(-W / 2 - 0.02, W / 2 + 0.02, 0, 0.07, -Dp / 2, Dp / 2 + 0.02), M.black, { parent: g });
+  kit.add(kit.box(-W / 2 - 0.02, W / 2 + 0.02, 0, 0.07, -Dp / 2, Dp / 2 + 0.02), M.black, { parent: g, cast: false });
   // ---- the lit pilasters up the front's sides and round the arch (paper
   // white), a grey inner band beside them
   kit.piece();
@@ -65,7 +65,7 @@ export function buildJukebox(kit) {
   // the fluted caps at the pilasters' feet
   const feet = [];
   for (const sx of [-1, 1]) feet.push(lathe([[0.0001, 0], [0.05, 0], [0.052, 0.02], [0.04, 0.05], [0.036, 0.1], [0.0001, 0.1]], 20).translate(sx * hw, 0.08, fz - 0.01));
-  kit.add(mergeGeos(feet), M.steel, { parent: g });
+  kit.add(mergeGeos(feet), M.steel, { parent: g, cast: false });
   // ---- the window: a lit well on the cabinet's face, the record standing
   // in it face-on (black, a pale label), the arm across it, glass over them
   kit.piece();

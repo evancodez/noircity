@@ -49,26 +49,40 @@ function stagePropSheet(stage, camera, controller) {
     camera.fov = 40; camera.updateProjectionMatrix();
     return;
   }
-  const far = ['bottle:scotch', 'bottle:rye', 'bottle:gin', 'bottle:beer', 'bottle:ketchup', 'bottle:milk', 'coffeePot', 'napkinBox', 'sugar', 'mug', 'saucer', 'tumbler'];
-  const near = ['plate', 'pie', 'ashtray', 'cigarette', 'cigarettePack', 'lighter', 'matchbook', 'wallet', 'fork', 'knife', 'menu', 'newspaper', 'cup'];
-  const row = (list, x, span) => list.forEach((k, i) => {
-    const [kind, variant] = k.split(':');
-    const z = z0 + span / 2 - (i + 0.5) * (span / list.length);
-    const o = d.place(kind, V(x, top, z), { name: 'sheet.' + k, variant });
-    o.rotation.y = kind === 'fork' || kind === 'knife' ? 0 : 0.4 + i * 0.3;
-    const ud = o.userData;
-    if (kind === 'lighter') { ud.setOpen(1); o.rotation.y = 1.2; }
-    if (kind === 'matchbook') { ud.setOpen(0.5); o.rotation.y = Math.PI / 2 + 0.3; }
-    if (kind === 'wallet') { ud.setOpen(1); o.rotation.y = Math.PI / 2; o.position.x += 0.03; }
-    if (kind === 'cigarette') { o.rotation.set(0, 0, 0); o.applyMatrix4(new THREE.Matrix4().makeRotationY(0.8).multiply(ud.rest)); o.position.add(V(x, top, z)); ud.setTip('ash'); }
-    if (kind === 'menu' || kind === 'newspaper') { o.scale.setScalar(0.5); o.rotation.y = Math.PI / 2 + 0.2; }
-    if (kind === 'cup') o.position.y += 0.0;
-    if (kind === 'pie') o.scale.setScalar(0.6);
-    if (kind === 'plate') o.scale.setScalar(0.5);
-  });
-  row(far, C.frontX - 0.47, 1.2);
-  row(near, C.frontX - 0.2, 1.05);
-  holdEye(controller, { x: C.frontX + 0.28, y: top + 0.42, z: z0, yaw: Math.PI / 2, pitch: -0.52, fov: 68 });
+  // two rows along the counter under the pendant: the tall things behind,
+  // the small and flat things in front; each spaced by its own width
+  const far = ['bottle:scotch', 'bottle:rye', 'bottle:gin', 'bottle:beer', 'bottle:ketchup', 'bottle:milk', 'coffeePot', 'tumbler', 'mug', 'cup', 'sugar', 'napkinBox', 'pie'];
+  const near = ['plate', 'saucer', 'ashtray', 'cigarette', 'cigarettePack', 'lighter', 'matchbook', 'wallet', 'fork', 'knife', 'menu', 'newspaper'];
+  const row = (list, x, gap) => {
+    const objs = list.map((k) => {
+      const [kind, variant] = k.split(':');
+      const o = d.place(kind, V(x, top, z0), { name: 'sheet.' + k, variant });
+      const ud = o.userData;
+      let w = Math.max(ud.size.x, ud.size.z) * 0.8;
+      o.rotation.y = 0.5;
+      if (kind === 'fork' || kind === 'knife') { o.rotation.y = 0.15; w = 0.04; }
+      if (kind === 'lighter') { ud.setOpen(1); o.rotation.y = Math.PI / 2 + 0.3; w = 0.06; }
+      if (kind === 'matchbook') { ud.setOpen(0.55); o.rotation.y = Math.PI / 2 + 0.25; w = 0.05; }
+      if (kind === 'wallet') { ud.setOpen(1); o.rotation.y = Math.PI / 2; w = 0.2; }
+      if (kind === 'cigarette') { ud.setTip('ash'); o.rotation.set(0, 0, 0); o.userData.lay = true; w = 0.05; }
+      if (kind === 'menu' || kind === 'newspaper') { o.scale.setScalar(0.55); o.rotation.y = Math.PI / 2 + 0.15; w *= 0.5; }
+      if (kind === 'pie' || kind === 'plate') w = 0.2;
+      if (kind === 'cup') { const sc = d.place('saucer', V(x, top, z0), { name: 'sheet.cupSaucer' }); o.userData.saucer = sc; o.position.y += 0.006; }
+      return { o, w };
+    });
+    const total = objs.reduce((a, q) => a + q.w + gap, -gap);
+    let z = z0 + total / 2;
+    for (const q of objs) {
+      z -= q.w / 2;
+      q.o.position.z = z;
+      if (q.o.userData.saucer) q.o.userData.saucer.position.z = z;
+      if (q.o.userData.lay) { const p = q.o.position.clone(); q.o.position.set(0, 0, 0); q.o.applyMatrix4(new THREE.Matrix4().makeRotationY(Math.PI / 2 + 0.4).multiply(q.o.userData.rest)); q.o.position.add(p); }
+      z -= q.w / 2 + gap;
+    }
+  };
+  row(far, C.frontX - 0.45, 0.035);
+  row(near, C.frontX - 0.17, 0.04);
+  holdEye(controller, { x: C.frontX + 0.5, y: top + 0.5, z: z0, yaw: Math.PI / 2, pitch: -0.5, fov: 68 });
   camera.fov = 68; camera.updateProjectionMatrix();
   void PROP_KINDS; void BOTTLE_VARIANTS; void stoolZ;
 }
@@ -91,6 +105,25 @@ function roomView(pose) {
   };
 }
 const S4 = stoolZ(DINER.playerStool), SX = DINER.stools.x;
+// diner_alive: the room's API at work (lane 5's brief P0.2, P1), staged on
+// the step's clock from t = 0: stool 5 spun at 0.2, the jukebox changes at
+// 0.5 (2 s) and is hit three times from 3.0 (dark for a second), the
+// pendant over stool 3 swings from 0.3, the register's drawer opens at 1.0,
+// the bell at 1.2, a power dip at 2.0, cups rattle from 2.5; stool 7
+// toppled at 1.5. Default t = 2.2 (mid change, drawer out, the lamp
+// swinging); &t= scrubs. The eye looks down the counter from the jukebox end.
+function stageAlive(stage, camera, controller, game) {
+  const d = stage.part('diner');
+  const ev = [
+    [0.2, () => d.stool(5).spin(2)], [0.3, () => d.lamps[3].swing(V(0.6, 0, 0.3))], [0.5, () => d.jukebox.next()],
+    [1.0, () => d.register.open()], [1.2, () => d.bell.ring()], [1.5, () => d.stool(7).topple(V(1, 0, -0.3))],
+    [2.0, () => d.lampsDip(0.5, 0.6)], [2.5, () => d.cupsRattle(1, 3)],
+    [3.0, () => d.jukebox.hit(1)], [3.3, () => d.jukebox.hit(1)], [3.6, () => d.jukebox.hit(1)],
+  ];
+  let k = 0;
+  const t0 = game.time;
+  game.scripts.push((t) => { while (k < ev.length && t - t0 >= ev[k][0]) ev[k++][1](); });
+}
 export const presets = {
   propsheet: { x: C.frontX + 0.6, z: 3.2, y: 0, yaw: -Math.PI / 2, pitch: -0.4, fov: 68, t: 1, stage: stagePropSheet },
   diner_seat: roomView({ x: SX - 0.03, y: 1.6, z: S4, yaw: Math.PI / 2, pitch: -0.1, fov: 68 }),
@@ -98,5 +131,6 @@ export const presets = {
   diner_right: roomView({ x: SX + 0.05, y: 1.6, z: S4, yaw: -0.07, pitch: -0.08, fov: 68 }),
   diner_wide: roomView({ x: -12.75, y: 1.8, z: -5.05, yaw: Math.PI - 0.22, pitch: -0.1, fov: 70 }),
   diner_booth: roomView({ x: -11.25, y: 1.45, z: 10.05, yaw: 1.05, pitch: -0.08, fov: 68 }),
+  diner_alive: (() => { const v = roomView({ x: -12.95, y: 1.75, z: -2.4, yaw: Math.PI - 0.28, pitch: -0.14, fov: 62 }); const st = v.stage; return { ...v, t: 2.2, stage(...a) { st(...a); stageAlive(...a); } }; })(),
   diner_out: roomView({ x: SX, y: 1.6, z: S4, yaw: -Math.PI / 2, pitch: 0.0, fov: 68 }),
 };

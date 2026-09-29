@@ -210,7 +210,7 @@ export function buildWindowLight(kit, booths, blind) {
 // front and the back bar. Additive quads (scene pass only), resized every
 // step to the part of each bar that the opening lets through.
 export function buildTrainBars(kit) {
-  const mat = new THREE.MeshBasicMaterial({ color: new THREE.Color(0.2, 0.2, 0.2), transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, map: barTexture() });
+  const mat = new THREE.MeshBasicMaterial({ color: new THREE.Color(0.075, 0.075, 0.075), transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, map: barTexture() });
   mat.name = 'diner_trainBar';
   const ops = dinerOpenings().filter((o) => !o.door);
   // the surfaces a bar lands on (the light comes from the el, high and to
