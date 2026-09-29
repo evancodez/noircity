@@ -214,5 +214,39 @@ export function* feedJukebox(ctx, c, d, { onCoin, onPress } = {}) {
   gaze(c, null);
 }
 
+// ---- the cook: the bell on the pass -----------------------------------------------------------
+// He steps along behind the pass to the bell, his palm comes down flat on
+// its plunger (it rings as the palm lands), up again; back to his place.
+export function* ringBell(ctx, c, d, { onRing } = {}) {
+  const H = handsOn(c);
+  H.label = 'bell';
+  const bell = d.bell && d.bell.mesh;
+  if (!bell) return;
+  const home = { x: c.fig.pos.x, z: c.fig.pos.z }, yaw0 = c.fig.yaw;
+  bell.updateMatrixWorld(true);
+  const box = new THREE.Box3().setFromObject(bell);
+  const top = V((box.min.x + box.max.x) / 2, box.max.y + 0.004, (box.min.z + box.max.z) / 2);
+  // (behind the bell, a forearm's reach back from it)
+  const h0 = heading(c);
+  const stand = top.clone().addScaledVector(h0.fwd, -0.36).addScaledVector(h0.right, -0.12);
+  yield* c.walkTo({ x: stand.x, z: stand.z }, { speed: 1.0 });
+  c.face(yaw0);
+  c.setState('idle', 0.15);
+  gaze(c, top);
+  const h = heading(c);
+  let w = 0, dy = 0.06;
+  H.R = { flat: () => ({ point: top.clone().add(V(0, dy, 0)), normal: UP, fwd: h.fwd.clone() }), pole: pole(c, 'R', 1, 0.6, 0.3), w: () => w };
+  yield* over(0.45, (t) => { w = ss(t / 0.45); });
+  yield* over(0.12, (t) => { dy = 0.06 * (1 - t / 0.12); });
+  if (onRing) onRing();
+  yield* over(0.25, (t) => { dy = 0.04 * ss(t / 0.25); });
+  yield* over(0.35, (t) => { w = 1 - ss(t / 0.35); });
+  H.R = null;
+  gaze(c, null);
+  const walk = c.walkTo(home, { speed: 1.0 });
+  for (let r = walk.next(); !r.done; r = walk.next()) yield r.value;
+  c.face(yaw0);
+}
+
 function decomp(M) { const p = V(0, 0, 0), q = new THREE.Quaternion(), s = V(1, 1, 1); M.decompose(p, q, s); return { p, q }; }
 void gripHand; void palmTo;

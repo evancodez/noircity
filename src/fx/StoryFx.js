@@ -154,12 +154,13 @@ const THREAD = {
   laminar: 0.10,       // m of straight rise
   split: [0.12, 0.40], // the curls part between these heights (m)
   gone: [0.46, 0.70],  // and fade out between these
-  w0: 0.0009,          // half width of a strand's core at the tip (m): ~3 px at 0.45 m
-  w1: 0.0012,          // ... and at the top
-  // (scene-linear grey x alpha: display ~0.5 on black (tone.js), a paler
-  // hair over the lit back-bar glass, a darker one over the lit counter)
-  grey: 0.16,
-  alpha: 0.45,
+  w0: 0.001,           // half width of a strand's core at the tip (m): ~3 px at 0.45 m
+  w1: 0.0014,          // ... and at the top
+  // (scene-linear grey x alpha: display ~0.6 on black (tone.js), a paler
+  // hair over the lit back-bar glass, a darker one over the lit counter;
+  // round 2: a little surer - it read as nothing at the seat)
+  grey: 0.22,
+  alpha: 0.6,
 };
 const STRANDS = 3;
 const _s = new THREE.Vector3(), _t = new THREE.Vector3(), _e = new THREE.Vector3();
@@ -266,7 +267,9 @@ class Thread {
         // gaps that rise with the smoke: a strand breaks where its own
         // phase says so, more often the higher it is
         const gap = h < T.split[0] ? 1 : (Math.sin(j * 0.31 + k * 1.9 + pt.seed * 0.2) * 0.5 + 0.5) > 0.1 + 1.2 * sp * (h - T.split[0]) ? 1 : 0.1;
-        AL[k * max + i] = T.alpha * fade * share * gap;
+        // (either side of a break: nothing drawn across it)
+        const brk = pt.cut || (P[j + 1] && P[j + 1].cut) ? 0 : 1;
+        AL[k * max + i] = T.alpha * fade * share * gap * brk;
       }
     }
     for (let k = 0; k < STRANDS; k++) {
@@ -287,8 +290,13 @@ class Thread {
         this.pos.set([_s.x + side.x * ww, _s.y + side.y * ww, _s.z + side.z * ww], v * 3);
         this.pos.set([_s.x, _s.y, _s.z], v * 3 + 3);
         this.pos.set([_s.x - side.x * ww, _s.y - side.y * ww, _s.z - side.z * ww], v * 3 + 6);
-        const g = T.grey * (1 - 0.15 * sp), a = AL[k * max + i];
-        this.col.set([g, g, g, 0, g, g, g, a, g, g, g, 0], v * 4);
+        // (round 2: a pale core with dark edges - an inked hair: the core
+        // reads over the dark wall and the back bar, the edges over the lit
+        // counter and the white pool)
+        // (the lit counter under the pool is several stops over paper white:
+        // only a near-opaque edge darkens it at all)
+        const g = T.grey * (1 - 0.15 * sp), a = AL[k * max + i], ea = Math.min(0.9, a * 1.6);
+        this.col.set([0, 0, 0, ea, g, g, g, a, 0, 0, 0, ea], v * 4);
       }
     }
     // (the slots past the last point collapse onto it: a segment into a
@@ -314,7 +322,12 @@ export class Cig {
     if (!T) { T = new Thread(this.fx); this.threads.set(key, T); }
     if (this.t - T.lastT < 1 / THREAD.rate - 1e-6) return;
     T.lastT = this.t;
-    T.pts.push({ p: tip.clone(), y0: tip.y, age: 0, seed: this.rng.next() * 10 });
+    // (round 2: a tip carried fast - to the lips, to the ashtray - leaves no
+    // rope along its path: the thread breaks there and starts again at the
+    // tip, as a real thread tears in the draught of the hand)
+    const last = T.pts[T.pts.length - 1];
+    const cut = !!last && last.p.distanceTo(tip) > 0.012;
+    T.pts.push({ p: tip.clone(), y0: tip.y, age: 0, seed: this.rng.next() * 10, cut });
     if (T.pts.length > T.max) T.pts.shift();
   }
   // a plume breathed out: pushed out along `dir`, slowing, rolling, rising

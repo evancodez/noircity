@@ -147,11 +147,17 @@ export function makeGlance(ctx) {
   return g;
 }
 
-// where the scotch stands: on the counter at my left hand, clear of it and
-// of the ashtray (0.56 ahead of the seated eye, 0.26 to its left: the left
-// hand's outer edge is ~0.06 to its right, the ashtray 0.14 beyond it),
-// where the slide stops it
-export const GLASS_AT = () => V(DINER.counter.frontX - 0.08, DINER.counter.topY, stoolZ(DINER.playerStool) + 0.26);
+// where the scotch stands: on the counter at my left hand, just beyond its
+// fingertips (0.64 ahead of the seated eye, 0.15 to its left: the fingers
+// end ~5 cm short of it, the ashtray 0.17 to its left), in clear view above
+// the wrist; where the slide stops it
+export const GLASS_AT = () => V(DINER.counter.frontX - 0.17, DINER.counter.topY, stoolZ(DINER.playerStool) + 0.15);
+
+// where Dot sets the tumbler down to pour (her side of the counter, 6 cm in
+// from its back edge, in line with GLASS_AT: the slide's start) and where
+// the scotch stands after the pour (at her right, beside it)
+export const POUR_AT = () => { const g = GLASS_AT(); return V(Math.max(g.x - 0.4, DINER.counter.frontX - DINER.counter.depth + 0.06), g.y, g.z); };
+export const SCOTCH_DOWN = () => POUR_AT().add(V(0.03, 0, 0.15));
 
 // the cigarette between his fingers (lane 2 draws the hand round it)
 export function holdCigarette(ctx, lit) {
@@ -162,11 +168,14 @@ export function holdCigarette(ctx, lit) {
   return c;
 }
 
-// the glass on the counter at my left hand, with `fill` of scotch
+// the glass on the counter at my left hand, with `fill` of scotch (and the
+// scotch where Dot left it after the pour, a double down)
 export function setGlass(ctx, fill = 1) {
   const d = ctx.stage.part('diner');
   const g = d.place('tumbler', GLASS_AT(), { name: 'glass' });
   g.userData.setFill(fill);
+  const b = d.place('bottle', SCOTCH_DOWN(), { name: 'scotch', variant: 'scotch', yaw: Math.PI / 2 });
+  if (b.userData.setFill) b.userData.setFill(0.88);
   return g;
 }
 

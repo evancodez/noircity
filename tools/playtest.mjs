@@ -51,7 +51,8 @@ try {
   ({ result: { sessionId: sid } } = await send('Target.attachToTarget', { targetId, flatten: true }));
   await send('Page.enable');
   await send('Emulation.setDeviceMetricsOverride', { width: W, height: H, deviceScaleFactor: 1, mobile: false });
-  await send('Page.navigate', { url: `http://127.0.0.1:${process.env.NOIR_PORT || 5173}/` });
+  // (mute=1: a test run never makes a sound, whatever the browser does)
+  await send('Page.navigate', { url: `http://127.0.0.1:${process.env.NOIR_PORT || 5173}/?mute=1` });
   for (let k = 0; k < 150; k++) { if (await js('!!window.__noirReady')) break; await sleep(200); }
   await sleep(1500);
 
@@ -59,6 +60,8 @@ try {
   const t0 = await js(`({ state: N.game.state, title: !document.getElementById('title').classList.contains('hidden'), h1: document.querySelector('#title h1').textContent,
     begin: (document.querySelector('#title .opt[data-k=begin]') || {}).textContent || '', vm: N.game.vm.visible, cam: N.camera.position.toArray().map((v) => +v.toFixed(3)) })`);
   check('title card over the live diner: BEGIN', t0.state === 'title' && t0.title && t0.h1 === 'NOIR EXTREME' && /begin/i.test(t0.begin) && t0.vm === false, JSON.stringify(t0));
+  const mu = await js(`({ muted: N.sfx.muted, line: [...document.querySelectorAll('#title .keys')].map((e) => e.style.display === 'none' ? '' : e.textContent).join(' / ') })`);
+  check('mute=1: the game starts muted and the title says so (M sound)', mu.muted && /sound off/.test(mu.line) && /M sound/.test(mu.line), JSON.stringify(mu));
   await sleep(1500);
   const cam2 = await js('N.camera.position.toArray().map((v) => +v.toFixed(3))');
   check('title camera drifts', JSON.stringify(cam2) !== JSON.stringify(t0.cam), `${t0.cam} -> ${cam2}`);
@@ -162,7 +165,10 @@ try {
   await key('KeyM', 'm');
   await sleep(150);
   const m2 = await js(`({ muted: N.sfx.muted, stored: localStorage.getItem('noir.muted') })`);
-  check('M mutes and unmutes (persisted)', m1.muted && m1.stored === '1' && !m2.muted && m2.stored === '0', JSON.stringify([m1, m2]));
+  // (a test run starts muted - navigator.webdriver - and its forced mute is
+  // never written to the player's saved choice: M turns the sound on, then
+  // off again, and nothing is stored)
+  check('M toggles the sound (a test run starts muted, and keeps the saved choice as it was)', !m1.muted && m2.muted && m1.stored === m2.stored, JSON.stringify([m1, m2]));
 
   // ---- pointer lock lost: pause, resume ---------------------------------------------------------------------
   await js('(document.exitPointerLock(), 1)');
@@ -203,7 +209,7 @@ try {
   await sleep(600);
   const p1 = await js(off);
   check('try again at pay: square to the counter; his line: the view eased round to frame him', Math.abs(p0) < 0.01 && p1 < -0.9 && p1 > -1.25, JSON.stringify({ before: p0, atHisLine: p1 }));
-  const fight = await until(`N.game.scenes.current && N.game.scenes.current.id === 'fight' && N.game.brawl.active`, 25000);
+  const fight = await until(`N.game.scenes.current && N.game.scenes.current.id === 'fight' && N.game.brawl.active`, 40000);
   const f2 = await js(`({ scene: N.game.scenes.current && N.game.scenes.current.id, beat: N.game.scenes.beat, mode: N.controller.mode, hands: N.game.hands.set, brawl: N.game.brawl.active, him: N.game.brawl.state && N.game.brawl.state.hisState, mack: N.game.cast.get('mack') && N.game.cast.get('mack').kind })`);
   check('E pay: he stands, the fight begins (brawl mode, fists, the brawler)', fight && f2.beat === 'round1' && f2.mode === 'brawl' && f2.hands === 'fists' && f2.mack === 'brawler', JSON.stringify(f2));
 

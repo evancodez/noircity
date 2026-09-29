@@ -248,8 +248,88 @@ const PAY = {
   brush: 'R',
 };
 
+// ---- the cigarette: a drag, the ash ----------------------------------------------------
+// A drag: the right hand comes up to the cigarette (in the lips after the
+// light, else in its fingers), its first two fingers on it at the lips, the
+// ember flares, the hand takes it away and down to the counter; the smoke
+// breathed out (mark exhale) drifts up into the lamp's cone. The hand at the
+// lips is turned so that it lies under the cigarette, mostly below the frame.
+const CRW = [1, 0, 0];
+const cigLipsR = (d = [0, 0, 0]) => ({ frame: 'cam', p: MOUTH.map((v, i) => v + d[i]), up: MOUTH_DIR, fwd: CRW });
+const CR = (at, F = CIGF, extra = {}) => ({ o: 'cigarette', at, F, e: [0.2, -0.46, -0.04], ef: 'cam', ...extra });
+const DRAG = {
+  duration: 2.3, marks: { glow: 0.62, exhale: 1.55 },
+  keys: { R: [
+    [0, '@rest'],
+    [0.3, CR(cigLipsR([0.01, -0.035, -0.06]))],
+    [0.42, CR(cigLipsR())],
+    [1.0, CR(cigLipsR())],
+    [1.22, CR(cigLipsR([0.01, -0.035, -0.07]))],
+    [1.75, 'cigRestR'],
+  ] },
+  props: [[0.42, 'fromMouth', 'R'], [0.5, 'glow', 'R', 3], [1.0, 'glow', 'R', 1]],
+  brush: 'R',
+};
+// The ash: the cigarette goes over the ashtray (it stands at my left: the
+// hand goes over the left hand in an arc), the index taps it, the ash falls
+// in the tray; back to rest.
+const ashAt = (drop = 0) => (H) => {
+  const a = H.item('ashtray');
+  if (!a) return null;
+  a.updateMatrixWorld(true);
+  const F = H.frames();
+  H.vm.root.updateMatrixWorld(true);
+  const Bw = new THREE.Matrix4().multiplyMatrices(H.vm.root.matrixWorld, F.body);
+  const R = new THREE.Matrix4().extractRotation(Bw);
+  const tip = a.getWorldPosition(new THREE.Vector3()).add(new THREE.Vector3(0, 0.045 + drop, 0));
+  // (pointing left and a little away and down, from the right hand to the tray)
+  const dir = new THREE.Vector3(-1, -0.28, -0.35).normalize().applyMatrix4(R);
+  const up = new THREE.Vector3(0, 1, 0);
+  const x = new THREE.Vector3().crossVectors(dir, up).normalize(), z = new THREE.Vector3().crossVectors(x, dir);
+  const m = new THREE.Matrix4().makeBasis(x, dir, z);
+  m.setPosition(tip.addScaledVector(dir, -0.075));
+  return m;
+};
+const TAPF = { ...CIGF, i: C(0.15, 0.25, 0.1, -0.05) };
+const ASH = {
+  duration: 1.25, marks: { tap: 0.62 },
+  keys: { R: [
+    [0, 'cigRestR'],
+    [0.28, { frame: 'body', p: [0.02, -0.26, -0.56], f: [-0.8, -0.1, -0.55], b: [0.15, 0.97, 0.1], F: CIGF, e: [0.24, -0.34, -0.3] }],
+    [0.5, { o: 'cigarette', at: ashAt(0), F: CIGF, e: [0.1, -0.34, -0.36] }],
+    [0.62, { o: 'cigarette', at: ashAt(-0.005), F: TAPF, e: [0.1, -0.34, -0.36] }, 'snap'],
+    [0.72, { o: 'cigarette', at: ashAt(0), F: CIGF, e: [0.1, -0.34, -0.36] }],
+    [0.95, { frame: 'body', p: [0.02, -0.26, -0.56], f: [-0.8, -0.1, -0.55], b: [0.15, 0.97, 0.1], F: CIGF, e: [0.24, -0.34, -0.3] }],
+    [1.25, 'cigRestR'],
+  ] },
+  props: [[0.62, 'dropAsh', 'R']],
+  brush: 'R',
+};
+
+// (paying: the cigarette goes into the lips first - the right hand is
+// needed for the wallet - then the wallet as above, 0.4 s later)
+function shifted(c, dt) {
+  const k = (arr) => arr.map((e) => [e[0] + dt, ...e.slice(1)]);
+  return {
+    ...c, duration: c.duration + dt,
+    marks: Object.fromEntries(Object.entries(c.marks).map(([m, t]) => [m, t + dt])),
+    keys: Object.fromEntries(Object.entries(c.keys).map(([h, K]) => [h, k(K)])),
+    props: c.props ? k(c.props) : undefined,
+    opens: c.opens ? Object.fromEntries(Object.entries(c.opens).map(([h, K]) => [h, k(K)])) : undefined,
+  };
+}
+const PAY_FIRST = 0.4;
+const PAY_ALL = (() => {
+  const c = shifted(PAY, PAY_FIRST);
+  c.keys.R = [[0, '@rest'], [0.26, CR(cigLipsR([0.01, -0.035, -0.06]))], [PAY_FIRST, CR(cigLipsR())], ...c.keys.R.slice(1)];
+  c.props = [[PAY_FIRST, 'toMouth', 'R'], ...c.props];
+  return c;
+})();
+
 export const DINER_CLIPS = {
-  payWallet: PAY,
+  drag: DRAG,
+  ash: ASH,
+  payWallet: PAY_ALL,
   lightUp: LIGHT,
   // the left hand takes the tumbler off the counter: in from the left, open
   // beside it, onto it, the fingers close, it lifts a hair
@@ -283,7 +363,8 @@ export const DINER_CLIPS = {
     ] },
     props: [[0, 'take', 'L', 'glass']],
     // (the head tips back a little with the drink)
-    view: [[0, {}], [1.0, {}], [1.35, { pitch: 0.08 }], [1.6, { pitch: 0.08 }], [1.95, {}]],
+    // (the eyes go up over the rim as it tips: the glass sinks in the frame)
+    view: [[0, {}], [1.0, {}], [1.35, { pitch: 0.08, eyes: 0.17 }], [1.6, { pitch: 0.08, eyes: 0.17 }], [1.95, {}]],
     brush: 'L',
   },
   // back down flat where it stood, the hand opens and goes back to rest

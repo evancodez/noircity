@@ -21,16 +21,26 @@ const UP = V(0, 1, 0);
 const ss = (u) => { u = Math.max(0, Math.min(1, u)); return u * u * (3 - 2 * u); };
 const val = (f) => (typeof f === 'function' ? f() : f);
 const STEP = 1 / 60;
+const _ql = new THREE.Quaternion(), _X = new THREE.Vector3(1, 0, 0);
 
 export function handsOn(c) {
   if (c._hands) return c._hands;
   const fig = c.fig;
   // (things: set before the arms are solved - what a hand holds; after: set
   // from a solved hand - what rides in its fingers, a cork)
-  const H = { R: null, L: null, things: [], after: [], miss: { R: 0, L: 0 }, worst: 0, worstBy: {}, _label: null, when: {} };
+  const H = { R: null, L: null, things: [], after: [], miss: { R: 0, L: 0 }, worst: 0, worstBy: {}, _label: null, when: {}, lean: 0, leanNow: 0 };
   // (the choreography's phase; when each began, in game time: the probes read it)
   Object.defineProperty(H, 'label', { get() { return H._label; }, set(v) { H._label = v; if (v && H.when[v] == null) { const g = c.game; H.when[v] = g ? +(g.time || 0).toFixed(2) : 0; } } });
-  fig.afterPose = (f) => {
+  fig.afterPose = (f, dt) => {
+    // (she leans into her work: the spine and chest bowed toward the thing,
+    // eased; the arms are solved from where that puts her shoulders)
+    H.leanNow += ((H.lean || 0) - H.leanNow) * Math.min(1, (dt || 0) * 5);
+    if (Math.abs(H.leanNow) > 1e-4) {
+      const b = f.bones;
+      b.spine.quaternion.multiply(_ql.setFromAxisAngle(_X, H.leanNow * 0.45));
+      b.chest.quaternion.multiply(_ql.setFromAxisAngle(_X, H.leanNow * 0.55));
+      f.object.updateMatrixWorld(true);
+    }
     for (const th of H.things) { const M = val(th.M); if (M) setWorld(th.obj, M); }
     for (const s of ['R', 'L']) {
       const b = H[s];
@@ -117,6 +127,7 @@ export function* serveGlass(ctx, c, glass, at, { onDown } = {}) {
   let w = 0;
   H.R = { M: () => tr(T), grip: { r: 0.0375, h: 0.036, thumb: 1 }, dir, pole: pole(c, 'R', 1, 0.8, 0.2), w: () => w };
   gaze(c, at);
+  H.lean = 0.18;
   c.play('serve', { fade: 0.25 });
   let down = false;
   yield* over(1.35, (t) => {
@@ -124,7 +135,7 @@ export function* serveGlass(ctx, c, glass, at, { onDown } = {}) {
     w = t < 0.35 ? ss(t / 0.35) : t > 1.12 ? 1 - ss((t - 1.12) / 0.23) : 1;
     if (!down && t >= 1.08) { down = true; if (onDown) onDown(); }
   });
-  H.things = []; H.R = null;
+  H.things = []; H.R = null; H.lean = 0;
   gaze(c, null);
   setWorld(glass, place(at, q));
   rebase(glass);
@@ -134,7 +145,7 @@ export function* serveGlass(ctx, c, glass, at, { onDown } = {}) {
 // She turns, walks to the back bar, takes the bottle by its body (it leaves
 // the shelf upright, toward her), turns and walks back to her place carrying
 // it upright before her right hip.
-export function* fetchBottle(ctx, c, bottle, back) {
+export function* fetchBottle(ctx, c, bottle, back, { face = null } = {}) {
   const H = handsOn(c);
   H.label = 'fetch';
   const shelf = bottle.getWorldPosition(V(0, 0, 0));
@@ -146,6 +157,7 @@ export function* fetchBottle(ctx, c, bottle, back) {
   c.face(Math.atan2(toward.x, toward.z));
   c.setState('idle', 0.2);
   gaze(c, shelf.clone().add(V(0, 0.15, 0)));
+  H.lean = 0.1;
   // reach, take, lift toward her
   const h = heading(c);
   const lifted = shelf.clone().add(V(0, 0.045, 0)).addScaledVector(h.fwd, -0.1).addScaledVector(h.right, 0.03);
@@ -171,6 +183,7 @@ export function* fetchBottle(ctx, c, bottle, back) {
   H.R = { M: blend, grip: { r: 0.046, h: 0.12, thumb: 1 }, dir, pole: pole(c, 'R', 1, 0.75, 0.3), w: 1 };
   gaze(c, null);
   H.label = 'fetchWalk';
+  H.lean = 0;
   const walk = c.walkTo(back, { speed: 1.2 });
   for (let n = 0; ; n++) {
     k = Math.min(1, n * STEP / 0.45);
@@ -179,6 +192,7 @@ export function* fetchBottle(ctx, c, bottle, back) {
     yield r.value;
   }
   while (k < 1) { k = Math.min(1, k + STEP / 0.45); yield null; }
+  if (face != null) c.face(face);
   c.setState('idle', 0.2);
   gaze(c, null);
 }
@@ -191,7 +205,7 @@ export function* fetchBottle(ctx, c, bottle, back) {
 // the rim); the stream runs; she rights it with a twist of the wrist, the
 // left hand corks it, the bottle goes down on the counter at her right.
 export const POUR = { tilt: 115, over: 0.065, gripH: 0.12, lipFrom: 0.138, pour: 1.3 };
-export function* pourScotch(ctx, c, bottle, glass, { onUncork, onStream, onStreamOff, onCork, onDown } = {}) {
+export function* pourScotch(ctx, c, bottle, glass, { onUncork, onStream, onStreamOff, onCork, onDown } = {}, downAt0 = null) {
   const H = handsOn(c);
   H.label = 'pour';
   const h = heading(c);
@@ -203,7 +217,7 @@ export function* pourScotch(ctx, c, bottle, glass, { onUncork, onStream, onStrea
   // mouth goes forward over the glass
   const tipAxis = h.right.clone();
   const tipQ = (deg) => new THREE.Quaternion().setFromAxisAngle(tipAxis, -deg * Math.PI / 180);
-  const q0 = yawQ(c.fig.yaw + Math.PI / 2);   // (its label to me)
+  const q0 = yawQ(c.fig.yaw);   // (its label to me, across the counter)
   const axisOf = (deg) => UP.clone().applyQuaternion(tipQ(deg));
   // the grip point stays where the hand holds it while the bottle tips; it
   // is placed so that at full tilt the lip is `over` above the rim, over
@@ -227,6 +241,7 @@ export function* pourScotch(ctx, c, bottle, glass, { onUncork, onStream, onStrea
   const dirR = () => h.fwd.clone().multiplyScalar(-0.55).addScaledVector(UP, -0.55).addScaledVector(h.right, 0.6);
   H.R = { M: () => cur, grip: { r: 0.046, h: POUR.gripH, thumb: 1 }, dir: dirR, pole: pole(c, 'R', 1, 0.45, 0.35), w: 1 };
   gaze(c, G.clone().setY(G.y + 0.05));
+  H.lean = 0.14;
   // 1. from the carry up over the glass, upright, beside it
   const pa = V(0, 0, 0), qa = new THREE.Quaternion(), s1 = V(1, 1, 1);
   from.decompose(pa, qa, s1);
@@ -297,7 +312,8 @@ export function* pourScotch(ctx, c, bottle, glass, { onUncork, onStream, onStrea
   if (onCork) onCork();
   // 7. the left hand away; the bottle down on the counter at her right
   H.label = 'pourDown';
-  const downAt = G.clone().addScaledVector(h.fwd, -0.1).addScaledVector(h.right, 0.13).setY(G.y);
+  // (on the counter at her right, clear of its back edge: 5 cm in from it)
+  const downAt = downAt0 ? downAt0.clone() : G.clone().addScaledVector(h.fwd, 0.03).addScaledVector(h.right, 0.15).setY(G.y);
   const onCounter = place(downAt, q0);
   const hov = M(0, 0, V(0, 0.015, 0));
   const pc = V(0, 0, 0), qc = new THREE.Quaternion();
@@ -316,7 +332,7 @@ export function* pourScotch(ctx, c, bottle, glass, { onUncork, onStream, onStrea
   H.R.w = () => wr;
   H.R.M = () => onCounter;
   yield* over(0.3, (t) => { wr = 1 - ss(t / 0.3); cur = onCounter; });
-  H.R = null; H.things = [];
+  H.R = null; H.things = []; H.lean = 0;
   setWorld(bottle, onCounter);
   rebase(bottle);
 }
@@ -339,6 +355,7 @@ export function* slideGlass(ctx, c, glass, to, { onRelease, onStop } = {}) {
   H.R = { M, grip: { r: 0.0375, h: 0.04, thumb: 1 }, dir: () => dir.clone().negate().addScaledVector(UP, -0.3).addScaledVector(h.right, 0.3), pole: pole(c, 'R', 1, 0.6, 0.3), w: () => wr };
   H.things = [{ obj: glass, M }];
   gaze(c, to);
+  H.lean = 0.08;
   c.play('slide', { fade: 0.2 });
   // (the clip's lean: its hand reaches the counter by 0.3, the release at 0.6)
   yield* over(0.3, (t) => { wr = ss(t / 0.3); });
@@ -357,6 +374,7 @@ export function* slideGlass(ctx, c, glass, to, { onRelease, onStop } = {}) {
   H.R = null; H.things = [];
   setWorld(glass, place(to, q));
   rebase(glass);
+  H.lean = 0;
   gaze(c, null);
   if (onStop) onStop();
 }

@@ -11,6 +11,7 @@ import { HandRig, FINGERS } from './HandRig.js';
 import { buildProp } from '../props/index.js';
 import { accentMaterial } from '../render/accents.js';
 import { DINER } from '../stages/block/site.js';
+import { FIRE } from '../fx/fxTextures.js';
 
 // The hands (docs/story/CONTRACTS.md §7.2; lane 2 brief): the detective's
 // one pair of inked hands and sleeves, drawn by the viewmodel camera as the
@@ -27,6 +28,12 @@ import { DINER } from '../stages/block/site.js';
 //                            pair ('study': studyR + studyL) or a clip's
 //                            moment ('lightUp@2.0')
 //
+// Object first (round 2, clips/diner.js): a clip's key may say where a
+// THING is rather than where the hand is ([t, { o: kind, at, F, ... }]);
+// between two such keys the thing moves on its own smooth path and the hand
+// is solved onto its grip every step (objBetween), so what the hand holds
+// never swings about the wrist. The view key 'eyes' turns the eyes alone
+// (the head, and what it holds at the lips, stay put).
 // One rig (player/HandRig.js) per arm, two skins on it: 'bare' indoors,
 // 'glove' with the guns. Every step: the clip's keys (handClips.js) are
 // evaluated into a pose per hand (handPoses.js: a wrist place and turn in a
@@ -259,8 +266,13 @@ export class Hands {
   //   toMouth          what this hand holds, between the lips
   //   flame 0|1        the lighter in this hand: its flame
   //   tip state        the cigarette's tip ('lit', 'ash')
-  //   open k           the held prop's setOpen (the wallet)
+  //   open k           the held prop's setOpen (the wallet; clips may also
+  //                    carry an `opens` track: its opening every step)
   //   fill k           the held glass's fill (setFill), a sip
+  //   show 0|1         a thing in the hand not yet seen (a cigarette still in the pack)
+  //   strike rad       the lighter's wheel turned by the thumb
+  //   dropAsh          the ash off the tip, a fleck falling
+  //   (take 'bill': a banknote made for the hand, laid on the counter by 'put')
   propEvent(ev) {
     const [, act, hand, arg] = ev;
     const H = this.held;
@@ -330,6 +342,16 @@ export class Hands {
       // (a thing already in the hand but not yet seen: a cigarette still in
       // the pack, until the fingers draw it)
       const p = H[hand]; if (p) p.userData._hidden = !arg;
+    } else if (act === 'dropAsh') {
+      // the ash off the tip, a fleck falling (into the ashtray under it)
+      const c = this.cigarette();
+      if (c && c.userData.dropAsh && c.userData.tip !== 'unlit') {
+        c.updateMatrixWorld(true);
+        if ((c.userData.ashLen || 0) < 0.003) c.userData.setAsh(0.006);
+        const p = c.userData.dropAsh();
+        const fx = this.game.fx;
+        if (fx && fx.debris && p) fx.debris.spawn({ pos: this.toWorld(p), vel: V(0, -0.15, 0), life: 0.45, size: [0.004, 0.006], rot: 0, spin: 3, col: [0.35, 0.35, 0.35], cell: FIRE.SMOKE ? FIRE.SMOKE[0] : 0, gravity: 9.8, ground: DINER.counter.topY + 0.012, fadeOut: 0.1 });
+      }
     } else if (act === 'strike') {
       // the thumb turns the lighter's wheel
       const p = H[hand]; if (p && p.userData.strike) p.userData.strike(arg || 2.2);
@@ -341,18 +363,6 @@ export class Hands {
       const c = this.cigarette();
       if (c) { if (c.userData.setGlow) c.userData.setGlow(arg); else { const e = c.getObjectByName('ember'); if (e) e.scale.setScalar(1 + 0.35 * (arg - 1)); } }
     } else if (act === 'toMouth' || act === 'fromMouth') { /* (handled above) */ }
-    else if (act === 'bill') {
-      // a bill on the counter: a paper slip laid where the hand lets it go
-      const b = new THREE.Mesh(new THREE.BoxGeometry(0.156, 0.0012, 0.066), this.mats.cuff);
-      this.rig[hand].root.updateMatrixWorld(true);
-      const w = new THREE.Vector3(0, -0.02, -0.08).applyMatrix4(this.rig[hand].hand.matrixWorld);
-      b.position.set(w.x, DINER.counter.topY + 0.001, w.z);
-      b.rotation.y = this.game.controller.bodyYaw ?? 0;
-      b.userData.inkId = allocInkId();
-      b.userData.inkSurface = 'plaster';   // (on the counter it is the room's: calm, not the hands' paper class)
-      b.userData.noRay = true;
-      stage.scene.add(b);
-    }
   }
 
   // a banknote (the pay: drawn from the wallet, laid on the counter): a thin

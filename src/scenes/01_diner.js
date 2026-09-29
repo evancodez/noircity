@@ -1,7 +1,7 @@
 import { defineScene, wait, until, beat } from '../game/script.js';
 import { serveGlass, fetchBottle, pourScotch as pourScotchHands, slideGlass, POUR } from '../cast/diner/dot.js';
-import { deliverPlate, topUpCoffee, feedJukebox } from '../cast/diner/patrons.js';
-import { dinerRoom, seatPlayer, holdCigarette, setGlass, makeJobs, makeGlance, clip, counterAt, jukeboxPos, V, DINER, stoolZ, MACK_AT, EYE_AT, BRAWL_EYE, GLASS_AT } from './_diner_room.js';
+import { deliverPlate, topUpCoffee, feedJukebox, ringBell } from '../cast/diner/patrons.js';
+import { dinerRoom, seatPlayer, holdCigarette, setGlass, makeJobs, makeGlance, clip, counterAt, jukeboxPos, V, DINER, stoolZ, MACK_AT, EYE_AT, BRAWL_EYE, GLASS_AT, POUR_AT, SCOTCH_DOWN } from './_diner_room.js';
 
 // Scene 1, the diner (STORY.md, lane 7's brief P0.2). Beats: settle, order,
 // drink, pay; the room lives under them. Nothing forces the player's pace:
@@ -200,7 +200,8 @@ export default defineScene({
       // he steps out into the aisle; the eye rises off the stool and turns
       // to him (1.2 s), into the fight
       jobs.add('mack', m.walkTo(MACK_AT, { speed: 1.1 }));
-      H.hold(null, 'R'); H.hold(null, 'L');
+      // (his hands free for the fight: the cigarette out of the lips too, as he rises)
+      H.hold(null, 'R'); H.hold(null, 'L'); H.hold(null, 'M', { keep: true });
       ctx.flags.cig = null;
       yield* riseToFight(ctx);
       yield until(() => !jobs.busy('mack'));
@@ -227,9 +228,9 @@ function* pourScotch(ctx, d, dot) {
   const { game: G } = ctx;
   const snd = (name, pos = null, p = {}) => G.sfx.play(name, pos, p);
   const dest = GLASS_AT();
-  // (set down before her at her side of the counter, a hand's width to her
-  // right; slid from there the half metre to my left hand)
-  const setAt = V(dest.x - 0.5, dest.y, dest.z);
+  // (set down before her at her side of the counter - its back edge is
+  // 0.62 from the front - and slid from there the 0.4 m to my left hand)
+  const setAt = POUR_AT();
   dot.setState('idle', 0.25);
   // the tumbler: from the shelf under the counter, down before her
   const glass = d.place('tumbler', setAt, { name: 'glass' });
@@ -238,7 +239,8 @@ function* pourScotch(ctx, d, dot) {
   // the scotch off the back bar; back to her place with it
   const bottle = d.items.get('scotch');
   if (bottle) {
-    yield* fetchBottle(ctx, dot, bottle, 'diner.serve.4');
+    // (back up against the counter's back edge, square to it, behind the glass)
+    yield* fetchBottle(ctx, dot, bottle, { x: setAt.x - 0.27, z: stoolZ(DINER.playerStool) }, { face: Math.PI / 2 });
     // the pour: the stream from its lip, the glass filling, the bottle's level falling
     const f0 = bottle.userData.fill ?? 1;
     let pouring = false, pt = 0;
@@ -248,7 +250,7 @@ function* pourScotch(ctx, d, dot) {
       onStreamOff: () => { pouring = false; G.fx.pour.stop(); },
       onCork: () => snd('cork', setAt, { k: 0.6 }),
       onDown: (at) => snd('glassDown', at, { k: 0.6 }),
-    });
+    }, SCOTCH_DOWN());
     for (let r = pourGen.next(); !r.done; r = pourGen.next()) {
       if (pouring) {
         pt += 1 / 60;
@@ -320,7 +322,8 @@ function roomClock(ctx, d, jobs) {
   // 10 s: the cook rings the bell; Dot takes the plate to the old man
   events.push([10, () => {
     const cook = cast.get('cook');
-    if (cook) cook.play('ring', { onMark: { ring: () => d.bell.ring() } });
+    // (his palm comes down on the bell's plunger: cast/diner/patrons.js)
+    if (cook) jobs.add('cook', (function* () { yield* ringBell(ctx, cook, d, { onRing: () => d.bell.ring() }); cook.setState('hatch', 0.3); })());
     jobs.add('dot', (function* () {
       const dot = cast.get('dot');
       yield wait(0.8);
