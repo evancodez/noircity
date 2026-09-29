@@ -537,8 +537,8 @@ function buildWatchCap(F) {
   const c = F.cover, s = c.s ?? 1;
   // a fisherman's cap: the rolled cuff a thick band over the ears' tops,
   // the knit above it short and square-shouldered
-  const prof = [[0.0, -0.012], [0.09, -0.014], [0.103, -0.006], [0.106, 0.012], [0.105, 0.03], [0.099, 0.04], [0.094, 0.043],
-    [0.095, 0.06], [0.093, 0.08], [0.085, 0.094], [0.06, 0.103], [0.03, 0.106], [0.0, 0.107]];
+  const prof = [[0.0, -0.012], [0.09, -0.014], [0.105, -0.006], [0.109, 0.012], [0.107, 0.03], [0.1, 0.04], [0.094, 0.043],
+    [0.094, 0.055], [0.089, 0.074], [0.077, 0.092], [0.056, 0.105], [0.03, 0.112], [0.0, 0.114]];
   const geo = coverGeo(F, (u, v, p) => {
     const [r, y] = profileAt(prof, v);
     const th = u * TAU;
@@ -671,7 +671,7 @@ function buildApron(F, g) {
   const shade = F.shade('apron');
   // bib
   const bib = grid(seg(24, 8), seg(20, 6), (u, v, p) => {
-    const y = lerp(waist - 0.01, bibTop, v);
+    const y = lerp(waist - 0.09, bibTop, v);
     const half = lerp(0.62, 0.42, sstep(0, 1, v));
     const th = (u * 2 - 1) * half;
     T.point(th, y, p, 0.007 + 0.002 * Math.sin(Math.PI * u));
@@ -723,6 +723,27 @@ function buildApron(F, g) {
   return parts;
 }
 
+// a ribbon lying on the torso: a strap, a tie. path: [[x, y]] on the front
+// (side 1) or the back (side -1) of the torso; w its width
+function torsoTheta(T, x, y, side) {
+  const [rx, , , , n] = T.S(Math.min(T.y1, Math.max(T.y0, y)));
+  const s = Math.sign(x) * Math.min(1, Math.pow(Math.abs(x) / rx, n / 2));
+  const a = Math.asin(s);
+  return side > 0 ? a : Math.sign(x || 1) * Math.PI - a;
+}
+function buildRibbon(F, g) {
+  const T = F.torso, path = g.path, w = g.w ?? 0.024, side = g.side ?? 1;
+  const nv = seg(g.n ?? 16, 6);
+  const geo = grid(2, nv, (u, v, p) => {
+    const f = v * (path.length - 1), i = Math.min(path.length - 2, Math.floor(f)), t = f - i;
+    const x = path[i][0] + (path[i + 1][0] - path[i][0]) * t, y = path[i][1] + (path[i + 1][1] - path[i][1]) * t;
+    const th = torsoTheta(T, x + (u - 0.5) * w, y, side);
+    T.point(th, y, p, g.grow ?? 0.01);
+  }, { wrapU: false });
+  geo.computeVertexNormals();
+  return { geo, shade: F.shade(g.shade || 'apron'), weights: (x, y) => torsoWeights(F, x, y) };
+}
+
 // the old man's broadsheet is not skinned: see Figure.js (a mesh in his hands)
 
 // ---------------------------------------------------------------------------
@@ -767,6 +788,7 @@ export function figureGeometry(costume, lod = 0) {
       case 'shoes': parts.push(buildShoe(F, 1, g), buildShoe(F, -1, g)); break;
       case 'hands': parts.push(buildHand(F, 1, { ...g, fist: g.fistL ?? g.fist }), buildHand(F, -1, { ...g, fist: g.fistR ?? g.fist })); break;
       case 'apron': parts.push(...buildApron(F, g)); break;
+      case 'ribbon': parts.push(buildRibbon(F, g)); break;
       case 'custom': parts.push(...g.build(F, { grid, orientOut, torsoWeights, B, seg, sstep, lerp })); break;
       default: throw new Error(`tailor: no garment '${g.kind}'`);
     }

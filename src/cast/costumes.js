@@ -80,18 +80,15 @@ const BRAWLER = {
 // a narrow waist, a short-sleeved uniform dress to below the knee, a small
 // collar, the white apron tied at the back, a small cap on pinned-up hair
 // with one curl that falls forward over the face, flat shoes
-const dotStraps = (th, y, x, z) => {
-  const ax = A(x);
-  // over the shoulders, near the neck
-  if (y > 1.36 && ax > 0.075 && ax < 0.108) return true;
-  if (z < 0) {
-    // crossed on the back, into the ties at the waist
-    const xs = lerp(0.1, -0.1, Math.min(1, Math.max(0, (1.42 - y) / 0.36)));
-    if (y > 1.05 && y < 1.43 && (A(x - xs) < 0.013 || A(x + xs) < 0.013)) return true;
-    if (A(y - 1.045) < 0.012) return true;
-  }
-  return false;
-};
+// the apron's waistband runs all round (painted on the dress: a band); the
+// straps are ribbons: from the bib's corners over the shoulders and crossed
+// down the back into the ties
+const dotBand = (th, y) => A(y - 1.045) < 0.016;
+const STRAPS = [];
+for (const k of [1, -1]) {
+  STRAPS.push({ kind: 'ribbon', side: 1, path: [[k * 0.092, 1.27], [k * 0.094, 1.38], [k * 0.09, 1.46], [k * 0.08, 1.487]], w: 0.022 });
+  STRAPS.push({ kind: 'ribbon', side: -1, path: [[k * 0.08, 1.49], [k * 0.092, 1.44], [k * 0.02, 1.25], [-k * 0.085, 1.07]], w: 0.022, n: 20 });
+}
 const WAITRESS = {
   name: 'waitress', h: 1.68,
   body: {
@@ -114,12 +111,13 @@ const WAITRESS = {
   },
   cover: { kind: 'pinned' },
   garments: [
-    { kind: 'torso', shade: (th, y, x, z) => (dotStraps(th, y, x, z) ? 0.5 : 0.022) },
+    { kind: 'torso', shade: (th, y) => (dotBand(th, y) ? 0.6 : 0.022) },
     { kind: 'skirt', y0: 0.97, hem: 0.4, flare: [1.42, 1.55], flarePow: 1.1, hipOut: 0.012, folds: 0.55, back: 1, grow: 0.006, shade: 'dress', hemWave: 0.006 },
     { kind: 'collar', style: 'dress', shade: 0.09 },
     { kind: 'sleeves', style: 'short', r: 0.058, len: 0.12, shade: 'dress' },
     { kind: 'arms', r: 0.038, d0: 0.08 },
     { kind: 'apron', waist: 1.045, bibTop: 1.3, hem: 0.58, span: 0.16 },
+    ...STRAPS,
     { kind: 'legs', style: 'stocking' },
     { kind: 'shoes', style: 'flat' },
     { kind: 'hands', s: 0.84 },
