@@ -139,9 +139,16 @@ export function steer(B, dt) {
   // in reach, the lesson waiting on one. The goal is pushed out of the
   // furniture as his own body would be)
   if (g && him.state !== 'reel') {
-    const q = _g.set(g.x, 0, g.z);
-    S.colliders.resolve(q, (F.collider ? F.collider.r : 0.35), F.collider);
-    g.x = q.x; g.z = q.z;
+    // (the block's colliders are many: the push is looked for again only
+    // when the goal has moved 12 cm or a fifth of a second has gone)
+    const GC = him.goalC || (him.goalC = { x: 1e9, z: 1e9, ox: 0, oz: 0, t: 0 });
+    GC.t -= dt;
+    if (GC.t <= 0 || Math.hypot(g.x - GC.x, g.z - GC.z) > 0.12) {
+      const q = _g.set(g.x, 0, g.z);
+      S.colliders.resolve(q, (F.collider ? F.collider.r : 0.35), F.collider);
+      GC.x = g.x; GC.z = g.z; GC.ox = q.x - g.x; GC.oz = q.z - g.z; GC.t = 0.2;
+    }
+    g.x += GC.ox; g.z += GC.oz;
     // (and wedged - in the pocket between the counter, a stool and a stool
     // knocked over, wanting to move and not moving for a second and a half -
     // he steps out into the open aisle, away from the counter, first)

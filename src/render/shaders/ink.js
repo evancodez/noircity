@@ -183,6 +183,7 @@ export function makeInkMaterial(tex, fogUniforms) {
         // a cast figure (class 14 / 15, idpass): its light share t, 0 on the
         // dark cloth, toward 1 on its light shapes
         float castF = 0.0, castT = 0.0;
+        float castShapeK = 0.0, castTb = 0.5;   // (polish: a light shape's own contour, set below)
         {
           float nLen = length( nid.xyz );
           if ( nLen > 2.0 ) { surf = floor( ( nLen - 1.0 ) * 0.5 + 0.5 ); nid.xyz /= nLen; }
@@ -459,27 +460,15 @@ export function makeInkMaterial(tex, fogUniforms) {
           // a figure against the light still shows its arm's turn)
           float litK = max( sideS, 0.45 * ( 1.0 - under ) );
           sideS = 1.0 - under;
-          // its thin contour (where the light shape meets the dark mass) and
-          // its creases (the knuckle line across a fist, the wrist): a
-          // neighbour 1.5 px off that is not the shape, or whose face turns
-          // sharply from this one
-          float lineC = 0.0;
-          for ( int k = 0; k < 4; k ++ ) {
-            vec2 o = ( k == 0 ? vec2( 1.5, 0.0 ) : k == 1 ? vec2( -1.5, 0.0 ) : k == 2 ? vec2( 0.0, 1.5 ) : vec2( 0.0, -1.5 ) ) / uRes;
-            vec4 q = texture2D( tNormalId, uv + o );
-            float qL = length( q.xyz );
-            float same = step( abs( q.w - nid.w ), 0.5 ) * step( 28.5, qL ) * step( qL, 31.9 );
-            float qT = same * clamp( ( qL - 29.0 ) / 1.8, 0.0, 1.0 );
-            float qK = smoothstep( tb - 0.05, tb + 0.05, qT );
-            lineC = max( lineC, shapeK * ( 1.0 - qK ) );
-            lineC = max( lineC, shapeK * qK * smoothstep( 0.8, 0.55, dot( q.xyz / max( qL, 1e-4 ), nid.xyz ) ) );
-          }
-          lineC *= 1.0 - smoothstep( 6.0, 14.0, dist );
+          // its thin contour, where the light shape meets the dark mass: in
+          // the contour probe below (its taps are already paid for); its
+          // creases (the knuckle line across a fist, the wrist) are the
+          // probe's own normal edges
+          castShapeK = shapeK * ( 1.0 - smoothstep( 6.0, 14.0, dist ) ); castTb = tb;
           float shapeV = mix( shS * mix( 0.72, 1.0, litK ), mix( shS + 0.12, litS, litK ), sideS );
           // (past ~14 m only the brightest shape holds, dimmed: a cut-out)
           shapeV *= 1.0 - 0.45 * smoothstep( 14.0, 30.0, dist );
           v = mix( massV, shapeV, shapeK );
-          v = mix( v, 0.04, lineC * 0.9 );
         }
         // the gun: black steel and dark wood; lamp light and the muzzle flash
         // raise dry-brush greys on it (never a white plate)
@@ -884,6 +873,7 @@ export function makeInkMaterial(tex, fogUniforms) {
         float halo = 0.0;    // we are just behind a Hood's silhouette
         vec2 haloUV = uv;    // ... at this neighbouring Hood pixel,
         vec3 haloN = vec3( 0.0, 0.0, 1.0 );   // whose normal is this
+        float shapeLine = 0.0;
         const vec2 dirs[ 4 ] = vec2[ 4 ]( vec2( 1.0, 0.0 ), vec2( 0.0, 1.0 ), vec2( 0.7071, 0.7071 ), vec2( 0.7071, -0.7071 ) );
         // (Phase 3b performance: a sky pixel's contour terms all end up zero -
         // its edge fades out at zc = uFar, its id edge, halo, rim and structure
@@ -900,6 +890,15 @@ export function makeInkMaterial(tex, fogUniforms) {
           float lap = abs( w1 + w2 - 2.0 * wcl ) / max( max( wcl, max( w1, w2 ) ), 1e-6 );
           edge = max( edge, smoothstep( 0.025, 0.07, lap ) );
           vec4 n1 = texture2D( tNormalId, uvL + o ), n2 = texture2D( tNormalId, uvL - o );
+          // (polish: the light shape's contour - a neighbour of the same
+          // figure that is not the shape; its class and light share ride on
+          // the normal's length, idpass)
+          if ( castShapeK > 0.01 ) {
+            float l1 = length( n1.xyz ), l2 = length( n2.xyz );
+            float t1 = step( abs( n1.w - cN.w ), 0.5 ) * step( 28.5, l1 ) * step( l1, 31.9 ) * clamp( ( l1 - 29.0 ) / 1.8, 0.0, 1.0 );
+            float t2 = step( abs( n2.w - cN.w ), 0.5 ) * step( 28.5, l2 ) * step( l2, 31.9 ) * clamp( ( l2 - 29.0 ) / 1.8, 0.0, 1.0 );
+            shapeLine = max( shapeLine, castShapeK * ( 1.0 - smoothstep( castTb - 0.05, castTb + 0.05, min( t1, t2 ) ) ) );
+          }
           if ( dot( n1.xyz, n1.xyz ) > 4.0 ) n1.xyz = normalize( n1.xyz );
           if ( dot( n2.xyz, n2.xyz ) > 4.0 ) n2.xyz = normalize( n2.xyz );
           float nd = max( 1.0 - dot( cN.xyz, n1.xyz ) * step( 0.5, abs( n1.w ) ), 1.0 - dot( cN.xyz, n2.xyz ) * step( 0.5, abs( n2.w ) ) );
@@ -919,6 +918,7 @@ export function makeInkMaterial(tex, fogUniforms) {
           silFront = max( silFront, step( 1.25, wc / max( wf, 1e-7 ) ) );
         }
         }
+        edge = max( edge, shapeLine );
         // lines break up a little like a dry brush, and dissolve into the fog
         float lineBreak = mix( 1.0, smoothstep( 0.08, 0.3, br.g * 0.6 + br.r * 0.4 ), 0.35 + 0.5 * fogA );
         edge *= lineBreak * pow( nearF, 1.6 ) * ( 1.0 - smoothstep( 45.0, 140.0, zc ) );
