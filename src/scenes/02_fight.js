@@ -63,7 +63,6 @@ function clearRoom(ctx, now) {
     yield* clip(c, 'startle');
     yield* c.walkTo('diner.door.in', { run: true });
     front.door.open();
-    G.sfx.play('doorBell', V(DINER.innerX, 2.3, 0.6));
     yield* c.walkTo('diner.door.out', { run: true });
     yield* c.walkTo({ x: -8.4, z: 14 + delay * 3 }, { run: true });
     cast.remove(c);
@@ -95,7 +94,7 @@ function roomFor(ctx) {
   const pc = d.pieCase || null;
   return {
     stools,
-    jukebox: { pos: V(J.x, 0, DINER.zMin + 0.62), hit: (p) => d.jukebox.hit(p) },
+    jukebox: { pos: V(J.x, 0, DINER.zMin + 0.62), hit: (p) => d.jukebox.hit(p), next: () => d.jukebox.next() },
     pieCase: pc ? { pos: pc.pos || (pc.object && pc.object.getWorldPosition(V(0, 0, 0))), pane: pc.pane || null, handle: pc.handle || null } : null,
     items(round) {
       const out = [];

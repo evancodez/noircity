@@ -68,7 +68,7 @@ const stages = new Stages({ renderer, U, tex, rng });
 const block = stages.get('block', { scene });
 const pipeline = new Pipeline(renderer, tex, U, { pixelRatio, view: parseInt(params.get('view') ?? '0', 10) || 0, debugRT: params.get('rt') });
 const controller = new Controller(camera, renderer.domElement, block);
-controller.onStep = (x, z, v) => { const S = controller.world; S.street.addImpact(S, x, z, Math.min(1, v / 5) * 0.8); if (game) game.sfx.step(null, v > 5, true); };
+controller.onStep = (x, z, v) => { const S = controller.world; S.street.addImpact(S, x, z, Math.min(1, v / 5) * 0.8); if (game) game.sfx.step(null, v > 5, true, game._room === 'diner'); };
 
 // ---- HUD / title / game ------------------------------------------------------
 let game = null;
@@ -172,6 +172,21 @@ else controller.setPose(-7.3, 6.2, -0.2, 0.02);
 // puzzle=<id> (with a scene beat): open that puzzle on its table
 // (?scene=diner&beat=settle&puzzle=demo)
 if (shot && params.get('puzzle')) game.puzzles.open(params.get('puzzle'));
+// press=<code>@<t>[,<code>@<t>...] (shot mode, a beat's moment): a key goes
+// down (and up a step later) at game time t, as a player's would, so a
+// query string can show the lighter's flame or the pour
+const pressList = shot ? (params.get('press') || shot.press || '') : '';
+if (pressList) {
+  for (const item of pressList.split(',')) {
+    const [code, at] = item.split('@');
+    const t0 = parseFloat(at) || 0;
+    let state = 0;
+    game.scripts.push((t) => {
+      if (state === 0 && t >= t0 - 1e-6) { state = 1; game.vin.down.add(code); game.vin.held.add(code); }
+      else if (state === 1) { state = 2; game.vin.held.delete(code); game.vin.up.add(code); }
+    });
+  }
+}
 game.eye.copy(camera.position);
 
 const STEP = 1 / 60;
@@ -224,6 +239,11 @@ if (shot && focusParam && game.stage.hoods.list.length) {
 
 // card=pause (look development): hold that card over the frame
 if (params.get('card') === 'pause') hud.showPause();
+// card=chapter / card=cont / say=<line> (look development): the chapter
+// card, the slice's end card, a subtitle, held over the frame
+if (params.get('card') === 'chapter') { hud.card('I', 'The Diner', 1e6); hud.tickCard(1.0); }
+if (params.get('card') === 'cont') hud.showEnd({ kind: 'cont' });
+if (params.get('say')) hud.say(params.get('say'), 1e6);
 
 // gdbg=<n>: wet-street term debug (render/shaders/ground.js)
 if (params.get('gdbg')) U.uGroundDebug.value = parseInt(params.get('gdbg'), 10) || 0;

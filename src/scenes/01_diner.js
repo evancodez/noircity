@@ -28,24 +28,24 @@ export default defineScene({
   save: ['order', 'drink', 'pay'],
 
   setup: {
-    settle(ctx) { dinerRoom(ctx); seatPlayer(ctx); },
+    settle(ctx) { dinerRoom(ctx); seatPlayer(ctx, { pitch: -0.2, turn: 0.3 }); },
     order(ctx) {
       dinerRoom(ctx);
-      seatPlayer(ctx, { lit: true });
+      seatPlayer(ctx, { lit: true, pitch: -0.06, turn: 0.1 });
       ctx.flags.lit = true;
       ctx.cast.get('dot').place('diner.serve.4');
       ctx.cast.get('dot').setState('lean');
     },
     drink(ctx) {
       dinerRoom(ctx);
-      seatPlayer(ctx, { lit: true, pitch: -0.3 });
+      seatPlayer(ctx, { lit: true, pitch: -0.26, turn: 0.2 });
       ctx.flags.lit = true;
       ctx.cast.get('dot').place('diner.serve.5');
       setGlass(ctx, 1);
     },
     pay(ctx) {
       dinerRoom(ctx);
-      seatPlayer(ctx, { lit: true, pitch: -0.2 });
+      seatPlayer(ctx, { lit: true, pitch: -0.1, turn: -0.5 });
       ctx.flags.lit = true;
       ctx.cast.get('dot').place('diner.serve.5');
       setGlass(ctx, 0);

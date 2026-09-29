@@ -15,6 +15,10 @@
 //   { "shot": "name" }                   a screenshot to <out>/<name>.png
 //   { "expect": "expr" }                 must be true (PASS / FAIL)
 //   { "eval": "expr" }                   run it, print the result
+//   { "walk": [[x, z], ...], "timeout": ms }   walk the points by real input: the
+//                                        mouse turns him toward the next, W held
+//   { "clickOn": "css selector" }        a click at the centre of that element
+//   { "reload": true }                   reload the page (a save survives it)
 //   { "fight": { "timeout": ms, "shots": { "name": "expr", ... } } }
 //                                        play the brawl by real input: read his
 //                                        clip and its marks, block / slip / punish
@@ -61,6 +65,26 @@ const VK = (code) => code === 'Space' ? 32 : code.startsWith('Key') || code.star
 const keyDown = (code) => send('Input.dispatchKeyEvent', { type: 'keyDown', code, key: KEYNAME(code), windowsVirtualKeyCode: VK(code) });
 const keyUp = (code) => send('Input.dispatchKeyEvent', { type: 'keyUp', code, key: KEYNAME(code), windowsVirtualKeyCode: VK(code) });
 const mouse = (type, x, y, button = 'left', extra = {}) => send('Input.dispatchMouseEvent', { type, x, y, button, buttons: type === 'mousePressed' ? (button === 'right' ? 2 : 1) : 0, clickCount: 1, ...extra });
+// a turn of the view: a trusted mouse move (under pointer lock the page
+// reads the move between two positions); the cursor is walked back to the
+// centre in steps too small to matter when it nears an edge
+let mx = null, my = null, lookVia = null;
+async function turn(dx, dy = 0) {
+  if (mx == null) { mx = W / 2; my = H / 2; await send('Input.dispatchMouseEvent', { type: 'mouseMoved', x: mx, y: my, button: 'none' }); }
+  // (the cursor has no room left on that side: a trusted move could not
+  // turn further, so this one goes to the same handler as a page event)
+  const edge = mx + dx < 2 || mx + dx > W - 2 || my + dy < 2 || my + dy > H - 2;
+  if (lookVia === 'event' || edge) { await js(`(document.dispatchEvent(new MouseEvent('mousemove', { movementX: ${dx}, movementY: ${dy} })), 1)`); return; }
+  const y0 = lookVia ? 0 : await js('N.controller.yaw');
+  mx = Math.max(2, Math.min(W - 2, mx + dx)); my = Math.max(2, Math.min(H - 2, my + dy));
+  await send('Input.dispatchMouseEvent', { type: 'mouseMoved', x: mx, y: my, button: 'none' });
+  if (!lookVia) {
+    const y1 = await js('N.controller.yaw');
+    lookVia = Math.abs(y1 - y0) > 1e-5 ? 'trusted' : 'event';
+    log(`look via ${lookVia} mouse moves`);
+    if (lookVia === 'event') await js(`(document.dispatchEvent(new MouseEvent('mousemove', { movementX: ${dx}, movementY: ${dy} })), 1)`);
+  }
+}
 const shot = async (name) => {
   const r = await send('Page.captureScreenshot', { format: 'png' });
   if (r.result?.data) { writeFileSync(`${OUT}/${name}.png`, Buffer.from(r.result.data, 'base64')); log(`shot  ${name}.png`); }
@@ -113,6 +137,29 @@ async function fight({ timeout = 240000, shots = {} } = {}) {
   }
 }
 
+// walk by real input: turn with mouse moves (under pointer lock) toward
+// each point, W held until there
+async function walk(points, timeout) {
+  const T = Date.now() + timeout;
+  let wDown = false;
+  const setW = async (on) => { if (on !== wDown) { wDown = on; await (on ? keyDown('KeyW') : keyUp('KeyW')); } };
+  for (const [x, z] of points) {
+    for (;;) {
+      const s = await js(`({ x: N.controller.pos.x, z: N.controller.pos.z, yaw: N.controller.yaw, sens: N.controller.sensitivity, mode: N.controller.mode })`);
+      if (Date.now() > T) { await setW(false); log(`walk stuck at ${JSON.stringify(s)} going to ${[x, z]}`); return false; }
+      const dx = x - s.x, dz = z - s.z, d = Math.hypot(dx, dz);
+      if (d < 0.4) break;
+      const want = Math.atan2(-dx, -dz);
+      const err = Math.atan2(Math.sin(want - s.yaw), Math.cos(want - s.yaw));
+      if (Math.abs(err) > 0.03) await turn(Math.round(Math.max(-40, Math.min(40, -err * 0.6 / s.sens))), 0);
+      await setW(Math.abs(err) < 0.6);
+      await sleep(33);
+    }
+  }
+  await setW(false);
+  return true;
+}
+
 try {
   let ver;
   for (let k = 0; k < 50; k++) { try { ver = await (await fetch(`http://127.0.0.1:${PORT}/json/version`)).json(); break; } catch { await sleep(100); } }
@@ -139,7 +186,7 @@ try {
       if (S.mouse !== 'down') await mouse('mouseReleased', x, y, b);
     } else if (S.look) {
       const n = S.steps || 8;
-      for (let i = 0; i < n; i++) { await send('Input.dispatchMouseEvent', { type: 'mouseMoved', x: W / 2, y: H / 2, button: 'none', movementX: S.look[0] / n, movementY: S.look[1] / n }); await sleep(16); }
+      for (let i = 0; i < n; i++) { await turn(Math.round(S.look[0] / n), Math.round(S.look[1] / n)); await sleep(16); }
     } else if (S.until) {
       const T = Date.now() + (S.timeout ?? 20000);
       let ok = false, v;
@@ -151,6 +198,21 @@ try {
     else if (S.expect) { const v = await js(S.expect); check(S.label || S.expect, v === true, v === true ? '' : JSON.stringify(v)); }
     else if (S.eval) log(`eval  ${S.eval} -> ${JSON.stringify(await js(S.eval))}`);
     else if (S.fight) { const r = await fight(S.fight); log(`fight ${JSON.stringify(r)}`); }
+    else if (S.walk) { const ok = await walk(S.walk, S.timeout ?? 30000); check(`walk ${JSON.stringify(S.walk)}`, ok); if (!ok && S.stop !== false) break; }
+    else if (S.clickOn) {
+      const r = await js(`(() => { const e = document.querySelector(${JSON.stringify(S.clickOn)}); if (!e) return null; const b = e.getBoundingClientRect(); return [b.left + b.width / 2, b.top + b.height / 2]; })()`);
+      if (!r) check(`clickOn ${S.clickOn}`, false, 'no element');
+      else { await mouse('mousePressed', r[0], r[1]); await sleep(40); await mouse('mouseReleased', r[0], r[1]); }
+    } else if (S.reload) {
+      await send('Page.reload', {});
+      await sleep(500);
+      for (let k = 0; k < 200; k++) { if (await js('!!window.__noirReady') === true) break; await sleep(200); }
+      // (the page's focus back, so a click may take the pointer lock)
+      await send('Page.bringToFront', {});
+      await send('Emulation.setFocusEmulationEnabled', { enabled: true });
+      mx = null;
+      log('reloaded');
+    }
   }
   const err = await js(`document.getElementById('errlog') ? document.getElementById('errlog').textContent.trim() : '(no errlog)'`);
   check('no errors in #errlog', !err, err ? String(err).slice(0, 800) : '');

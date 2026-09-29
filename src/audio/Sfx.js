@@ -337,9 +337,10 @@ const B = {
     const k = (p.run ? 1.2 : 0.8) * (p.k ?? 1);
     const n = noise(ctx, R, 'brown', t0, 0.1, 1.6);
     const g = gain(ctx); env(g, t0, 0.35 * k, 0.002, 0.05);
-    chain(n, filt(ctx, 'lowpass', 700), g, out);
+    chain(n, filt(ctx, 'lowpass', p.lino ? 1100 : 700), g, out);
+    // (indoors: a dry heel on linoleum, no splash)
     const s = noise(ctx, R, 'white', t0 + 0.012, 0.15, rng(0.8, 1.2));
-    const gs = gain(ctx); env(gs, t0 + 0.012, 0.16 * k, 0.004, 0.07);
+    const gs = gain(ctx); env(gs, t0 + 0.012, 0.16 * k * (p.lino ? 0.15 : 1), 0.004, 0.07);
     chain(s, filt(ctx, 'bandpass', rng(2400, 3600), 1.1), gs, out);
     return 0.2;
   },
@@ -533,6 +534,380 @@ function voice(ctx, out, t0, R, { f0, f1, dur, formants, breath = 0.5, level = 0
   return dur + 0.1;
 }
 
+
+// ---------------------------------------------------------------------------
+// The story's sounds (lane 7, P0.4): the diner's small objects, the fight,
+// what breaks. Same kit as above: noise through filters, a few oscillators,
+// envelopes; each returns its length.
+// a struck thing: inharmonic partials [freq, level, decay] and a tick
+function ping(ctx, out, t0, parts, k = 1) {
+  for (const [f, a, d] of parts) {
+    const o = osc(ctx, 'sine', f, t0, d + 0.05);
+    const g = gain(ctx); env(g, t0, a * k, 0.001, d);
+    chain(o, g, out);
+  }
+}
+// a burst of filtered noise: kind, [type, freq, Q], peak, attack, decay
+function burst(ctx, out, R, t0, kind, f, peak, attack, decay, rate = 1) {
+  const n = noise(ctx, R, kind, t0, attack + decay + 0.05, rate);
+  const g = gain(ctx); env(g, t0, peak, attack, decay);
+  chain(n, filt(ctx, f[0], f[1], f[2] ?? 0.7), g, out);
+  return g;
+}
+// a thud: a sine dropping in pitch
+function thud(ctx, out, t0, f0, f1, peak, dur) {
+  const o = osc(ctx, 'sine', f0, t0, dur);
+  o.frequency.setValueAtTime(f0, t0);
+  o.frequency.exponentialRampToValueAtTime(f1, t0 + dur * 0.8);
+  const g = gain(ctx); env(g, t0, peak, 0.002, dur);
+  chain(o, g, out);
+}
+// glass going: the crack, then pieces pinging down over `spread` seconds
+function glassFall(ctx, out, t0, R, k, spread, pieces) {
+  burst(ctx, out, R, t0, 'white', ['highpass', 2200], 0.5 * k, 0.001, 0.1 + 0.1 * k);
+  for (let i = 0; i < pieces; i++) {
+    const t = t0 + 0.02 + Math.pow(Math.random(), 1.4) * spread;
+    const f = rng(2400, 8200);
+    ping(ctx, out, t, [[f, rng(0.03, 0.12) * k, rng(0.02, 0.08)], [f * rng(2.2, 2.8), rng(0.02, 0.05) * k, 0.03]]);
+  }
+}
+Object.assign(B, {
+  // ---- the cigarette, the lighter ---------------------------------------------------
+  packTap(ctx, out, t0, p, R) {
+    burst(ctx, out, R, t0, 'brown', ['bandpass', 520, 1.5], 0.3, 0.002, 0.04, 2);
+    burst(ctx, out, R, t0 + 0.14, 'brown', ['bandpass', 560, 1.5], 0.25, 0.002, 0.04, 2);
+    return 0.25;
+  },
+  // the lid flipped, the wheel rasped, the flame catching with a soft whoosh
+  lighter(ctx, out, t0, p, R) {
+    ping(ctx, out, t0, [[3150, 0.16, 0.05], [5600, 0.08, 0.03], [1400, 0.06, 0.03]]);
+    const w = noise(ctx, R, 'white', t0 + 0.12, 0.12, 1.3);
+    const am = osc(ctx, 'square', 46, t0 + 0.12, 0.1);
+    const ga = gain(ctx, 0.5); chain(am, ga);
+    const g = gain(ctx); env(g, t0 + 0.12, 0.22, 0.004, 0.07);
+    ga.connect(g.gain);
+    chain(w, filt(ctx, 'bandpass', 2600, 1.6), g, out);
+    const f = noise(ctx, R, 'pink', t0 + 0.2, 0.6, 1);
+    const gf = gain(ctx, 0.0001);
+    gf.gain.setValueAtTime(0.0001, t0 + 0.2); gf.gain.linearRampToValueAtTime(0.1, t0 + 0.3); gf.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.75);
+    chain(f, filt(ctx, 'lowpass', 1100, 0.6), gf, out);
+    return 0.8;
+  },
+  lighterShut(ctx, out, t0) { ping(ctx, out, t0, [[1850, 0.18, 0.04], [4300, 0.07, 0.03], [700, 0.08, 0.03]]); return 0.1; },
+  // the tip catching: a dry crackle over a drawn breath
+  cigCatch(ctx, out, t0, p, R) {
+    for (let i = 0; i < 9; i++) burst(ctx, out, R, t0 + Math.random() * 0.45, 'white', ['highpass', 3200], rng(0.02, 0.06), 0.0005, 0.006);
+    burst(ctx, out, R, t0, 'pink', ['bandpass', 900, 0.8], 0.05, 0.12, 0.35);
+    return 0.6;
+  },
+  drag(ctx, out, t0, p, R) {
+    for (let i = 0; i < 14; i++) burst(ctx, out, R, t0 + Math.random() * 0.8, 'white', ['highpass', 3600], rng(0.015, 0.045), 0.0005, 0.005);
+    burst(ctx, out, R, t0, 'pink', ['bandpass', 1100, 0.9], 0.04, 0.2, 0.6);
+    return 0.9;
+  },
+  exhale(ctx, out, t0, p, R) { burst(ctx, out, R, t0, 'pink', ['bandpass', 700, 0.7], 0.08, 0.15, 1.1); return 1.3; },
+  ashTap(ctx, out, t0) { ping(ctx, out, t0, [[2250, 0.07, 0.05], [5100, 0.03, 0.02]]); return 0.1; },
+  // ---- the scotch -------------------------------------------------------------------------------
+  glassDown(ctx, out, t0, p, R) {
+    const k = p.k ?? 1;
+    thud(ctx, out, t0, 190, 120, 0.25 * k, 0.05);
+    ping(ctx, out, t0, [[2950, 0.09 * k, 0.12], [4750, 0.05 * k, 0.08], [7100, 0.02 * k, 0.05]]);
+    return 0.2;
+  },
+  cork(ctx, out, t0, p, R) {
+    const o = osc(ctx, 'sine', 900, t0, 0.1);
+    o.frequency.setValueAtTime(900, t0); o.frequency.exponentialRampToValueAtTime(1500, t0 + 0.08);
+    const g = gain(ctx); env(g, t0, 0.05 * (p.k ?? 1), 0.02, 0.06);
+    chain(o, filt(ctx, 'bandpass', 1200, 2), g, out);
+    burst(ctx, out, R, t0 + 0.09, 'white', ['bandpass', 1800, 3], 0.2 * (p.k ?? 1), 0.0005, 0.02);
+    return 0.2;
+  },
+  // the pour: glugs, their note rising as the glass fills
+  pour(ctx, out, t0, p, R) {
+    const dur = p.dur ?? 1.3;
+    const n = Math.round(dur * 7);
+    for (let i = 0; i < n; i++) {
+      const u = i / Math.max(1, n - 1), t = t0 + u * dur + rng(-0.02, 0.02);
+      const f = 380 + 750 * u;
+      const b = noise(ctx, R, 'white', t, 0.08, 1);
+      const g = gain(ctx); env(g, t, rng(0.08, 0.14), 0.005, 0.06);
+      chain(b, filt(ctx, 'bandpass', f, 9), g, out);
+      const o = osc(ctx, 'sine', f * 0.5, t, 0.05);
+      o.frequency.setValueAtTime(f * 0.45, t); o.frequency.exponentialRampToValueAtTime(f * 0.6, t + 0.04);
+      const go = gain(ctx); env(go, t, 0.05, 0.003, 0.04);
+      chain(o, go, out);
+    }
+    burst(ctx, out, R, t0, 'pink', ['bandpass', 2400, 0.8], 0.02, 0.1, dur);
+    return dur + 0.2;
+  },
+  glassSlide(ctx, out, t0, p, R) {
+    const n = noise(ctx, R, 'white', t0, 0.55, 1);
+    const bp = filt(ctx, 'bandpass', 1300, 2);
+    bp.frequency.setValueAtTime(1500, t0); bp.frequency.linearRampToValueAtTime(900, t0 + 0.5);
+    const g = gain(ctx); env(g, t0, 0.06, 0.03, 0.45);
+    chain(n, bp, g, out);
+    ping(ctx, out, t0 + 0.52, [[2900, 0.04, 0.06]]);
+    return 0.65;
+  },
+  sip(ctx, out, t0, p, R) {
+    const n = noise(ctx, R, 'pink', t0, 0.3, 1);
+    const am = osc(ctx, 'sine', 13, t0, 0.3); const ga = gain(ctx, 0.03); chain(am, ga);
+    const g = gain(ctx); env(g, t0, 0.05, 0.03, 0.22); ga.connect(g.gain);
+    chain(n, filt(ctx, 'bandpass', 1500, 1.2), g, out);
+    thud(ctx, out, t0 + 0.35, 110, 70, 0.12, 0.08);
+    return 0.5;
+  },
+  // ---- the room's things ---------------------------------------------------------------------
+  plateDown(ctx, out, t0, p, R) { thud(ctx, out, t0, 240, 150, 0.15, 0.05); ping(ctx, out, t0, [[2100, 0.06, 0.08], [3350, 0.04, 0.05]]); return 0.15; },
+  cutlery(ctx, out, t0) {
+    const n = 2 + Math.floor(Math.random() * 3);
+    for (let i = 0; i < n; i++) { const t = t0 + i * rng(0.08, 0.25), f = rng(3400, 6100); ping(ctx, out, t, [[f, rng(0.02, 0.05), 0.05], [f * 1.49, 0.015, 0.03]]); }
+    return 1.0;
+  },
+  // the bell in the kitchen hatch: a bright ding that rings on
+  bell(ctx, out, t0) { ping(ctx, out, t0, [[1720, 0.22, 1.3], [4140, 0.1, 0.7], [6310, 0.05, 0.35], [870, 0.05, 0.9]]); return 1.4; },
+  // the shop door's little bells on a spring
+  doorbell(ctx, out, t0) {
+    for (let i = 0; i < 6; i++) { const t = t0 + i * rng(0.05, 0.11); const f = rng(2600, 3400); ping(ctx, out, t, [[f, 0.07 * (1 - i / 7), 0.35], [f * 2.4, 0.03, 0.15]]); }
+    return 1.0;
+  },
+  register(ctx, out, t0, p, R) {
+    ping(ctx, out, t0, [[1930, 0.14, 0.6], [2410, 0.1, 0.5], [4800, 0.04, 0.2]]);
+    burst(ctx, out, R, t0 + 0.12, 'brown', ['bandpass', 220, 1], 0.25, 0.02, 0.25, 1.5);
+    thud(ctx, out, t0 + 0.4, 140, 80, 0.2, 0.08);
+    return 0.8;
+  },
+  wallet(ctx, out, t0, p, R) {
+    const n = noise(ctx, R, 'brown', t0, 0.35, 2.5);
+    const am = osc(ctx, 'sawtooth', 23, t0, 0.35); const ga = gain(ctx, 0.08); chain(am, ga);
+    const g = gain(ctx); env(g, t0, 0.18, 0.04, 0.28); ga.connect(g.gain);
+    chain(n, filt(ctx, 'bandpass', 650, 1.4), g, out);
+    return 0.4;
+  },
+  newspaper(ctx, out, t0, p, R) {
+    const n = noise(ctx, R, 'white', t0, 0.6, 1);
+    const am = osc(ctx, 'square', 31, t0, 0.6); const ga = gain(ctx, 0.04); chain(am, ga);
+    const g = gain(ctx); env(g, t0, 0.07, 0.05, 0.45); ga.connect(g.gain);
+    chain(n, filt(ctx, 'highpass', 1800), g, out);
+    return 0.7;
+  },
+  stoolSqueak(ctx, out, t0, p) {
+    const o = osc(ctx, 'sawtooth', 780, t0, 0.4);
+    const v = osc(ctx, 'sine', 9, t0, 0.4); const vg = gain(ctx, 60); chain(v, vg, o.frequency);
+    const g = gain(ctx); env(g, t0, 0.2 * (p.k ?? 1), 0.04, 0.3);
+    chain(o, filt(ctx, 'bandpass', 1500, 5), g, out);
+    return 0.45;
+  },
+  stoolFall(ctx, out, t0, p, R) {
+    B.clang(ctx, out, t0, { k: 0.6 }, R);
+    thud(ctx, out, t0, 120, 60, 0.4, 0.15);
+    B.clang(ctx, out, t0 + 0.28, { k: 0.3 }, R);
+    return 0.9;
+  },
+  // the jukebox: the coin in, the mechanism, the needle down, a skip
+  coin(ctx, out, t0) {
+    ping(ctx, out, t0, [[4230, 0.08, 0.1], [6100, 0.04, 0.06]]);
+    for (let i = 0; i < 5; i++) ping(ctx, out, t0 + 0.12 + i * 0.07 * (1 - i * 0.12), [[rng(2600, 3600), 0.05 * (1 - i / 6), 0.03]]);
+    return 0.6;
+  },
+  jukeboxMech(ctx, out, t0, p, R) {
+    const o = osc(ctx, 'sawtooth', 52, t0, 1.3);
+    const g = gain(ctx, 0.0001); g.gain.setValueAtTime(0.0001, t0); g.gain.linearRampToValueAtTime(0.08, t0 + 0.2); g.gain.setValueAtTime(0.08, t0 + 1.0); g.gain.linearRampToValueAtTime(0.0001, t0 + 1.3);
+    chain(o, filt(ctx, 'lowpass', 320), g, out);
+    for (const t of [0.05, 0.55, 1.25]) { thud(ctx, out, t0 + t, 170, 90, 0.15, 0.06); burst(ctx, out, R, t0 + t, 'white', ['bandpass', 2200, 3], 0.08, 0.001, 0.02); }
+    return 1.4;
+  },
+  needleDrop(ctx, out, t0, p, R) {
+    thud(ctx, out, t0, 95, 60, 0.12, 0.1);
+    for (let i = 0; i < 16; i++) burst(ctx, out, R, t0 + 0.05 + Math.random() * 0.9, 'white', ['highpass', 2500], rng(0.01, 0.04), 0.0005, 0.004);
+    return 1.0;
+  },
+  needleScratch(ctx, out, t0, p, R) {
+    const n = noise(ctx, R, 'white', t0, 0.4, 1);
+    const bp = filt(ctx, 'bandpass', 3000, 2);
+    bp.frequency.setValueAtTime(3400, t0); bp.frequency.exponentialRampToValueAtTime(700, t0 + 0.32);
+    const g = gain(ctx); env(g, t0, 0.3, 0.005, 0.3);
+    chain(n, bp, g, out);
+    return 0.45;
+  },
+  jukebox_hit(ctx, out, t0, p, R) {
+    const k = p.power ?? 1;
+    thud(ctx, out, t0, 110, 50, 0.6 * Math.min(1.2, k), 0.25);
+    burst(ctx, out, R, t0, 'brown', ['lowpass', 600], 0.5 * k, 0.002, 0.18);
+    B.needleScratch(ctx, out, t0 + 0.03, {}, R);
+    ping(ctx, out, t0, [[1180, 0.05, 0.4], [1731, 0.03, 0.3]]);
+    return 0.6;
+  },
+  coffeePour(ctx, out, t0, p, R) {
+    const n = noise(ctx, R, 'white', t0, 1.4, 1);
+    const am = osc(ctx, 'sine', 17, t0, 1.4); const ga = gain(ctx, 0.025); chain(am, ga);
+    const g = gain(ctx, 0.0001); g.gain.setValueAtTime(0.0001, t0); g.gain.linearRampToValueAtTime(0.06, t0 + 0.1); g.gain.linearRampToValueAtTime(0.0001, t0 + 1.3); ga.connect(g.gain);
+    const bp = filt(ctx, 'bandpass', 1400, 1.5); bp.frequency.linearRampToValueAtTime(2200, t0 + 1.3);
+    chain(n, bp, g, out);
+    return 1.4;
+  },
+  // the el overhead, through the wall: felt more than heard
+  trainWall(ctx, out, t0, p, R) {
+    const dur = p.dur ?? 7;
+    const r = noise(ctx, R, 'brown', t0, dur, 0.45);
+    const g = gain(ctx, 0.0001);
+    g.gain.setValueAtTime(0.0001, t0); g.gain.linearRampToValueAtTime(0.55, t0 + dur * 0.35); g.gain.linearRampToValueAtTime(0.0001, t0 + dur);
+    chain(r, filt(ctx, 'lowpass', 110, 0.9), g, out);
+    for (let t = t0 + 0.8; t < t0 + dur - 0.6; t += 0.93) { const k = Math.sin(Math.PI * (t - t0) / dur); thud(ctx, out, t, 75, 50, 0.12 * k, 0.07); thud(ctx, out, t + 0.11, 75, 50, 0.09 * k, 0.07); }
+    for (let i = 0; i < 12; i++) { const t = t0 + dur * (0.2 + 0.6 * Math.random()); ping(ctx, out, t, [[rng(3000, 5200), 0.012, 0.04]]); }
+    return dur;
+  },
+  // ---- the search, the matchbook ----------------------------------------------------------------
+  crouch(ctx, out, t0, p, R) { burst(ctx, out, R, t0, 'white', ['bandpass', 2300, 0.8], 0.05, 0.05, 0.3); thud(ctx, out, t0 + 0.25, 140, 90, 0.08, 0.06); return 0.45; },
+  clothRustle(ctx, out, t0, p, R) {
+    const n = noise(ctx, R, 'white', t0, 0.6, 1);
+    const am = osc(ctx, 'sine', 9, t0, 0.6); const ga = gain(ctx, 0.035); chain(am, ga);
+    const g = gain(ctx); env(g, t0, 0.07, 0.05, 0.45); ga.connect(g.gain);
+    chain(n, filt(ctx, 'bandpass', 2500, 0.9), g, out);
+    return 0.65;
+  },
+  matchbook(ctx, out, t0, p, R) { burst(ctx, out, R, t0, 'white', ['bandpass', 3800, 1.5], 0.06, 0.003, 0.05); burst(ctx, out, R, t0 + 0.09, 'white', ['bandpass', 3000, 1.5], 0.04, 0.003, 0.04); return 0.2; },
+  pocket(ctx, out, t0, p, R) { burst(ctx, out, R, t0, 'white', ['bandpass', 1900, 0.8], 0.06, 0.03, 0.22); return 0.3; },
+  // ---- the fight --------------------------------------------------------------------------------
+  // a jab: a short slap of skin with a knock under it
+  f_jab(ctx, out, t0, p, R) {
+    const k = p.k ?? 0.5;
+    burst(ctx, out, R, t0, 'white', ['highpass', 1300], 0.35 * (0.6 + k), 0.0008, 0.035);
+    thud(ctx, out, t0, 150, 70, 0.45 * (0.6 + k), 0.07);
+    return 0.12;
+  },
+  // a heavy one: a deep thud with the body in it, the slap on top
+  f_heavy(ctx, out, t0, p, R) {
+    const k = p.k ?? 1;
+    const sat = shaper(ctx, 2.2); chain(sat, gain(ctx, 0.9), out);
+    thud(ctx, sat, t0, 95, 38, 0.9 * (0.6 + 0.4 * k), 0.22);
+    burst(ctx, sat, R, t0, 'brown', ['lowpass', 420], 0.8 * k, 0.001, 0.14);
+    burst(ctx, out, R, t0, 'white', ['highpass', 1100], 0.35 * k, 0.0008, 0.05);
+    return 0.3;
+  },
+  f_hisGrunt(ctx, out, t0, p, R) { return voice(ctx, out, t0 + 0.03, R, { f0: rng(78, 92), f1: 62, dur: rng(0.2, 0.3), formants: [[480, 5], [900, 7], [2300, 10]], breath: 0.6, level: 0.45 * (p.k ?? 1) }); },
+  f_myGrunt(ctx, out, t0, p, R) { return voice(ctx, out, t0 + 0.02, R, { f0: rng(100, 118), f1: 84, dur: rng(0.12, 0.2), formants: [[560, 5], [1050, 7], [2500, 10]], breath: 0.7, level: 0.3 * (p.k ?? 1) }); },
+  // a blow into the guard: dull, on the forearms
+  f_blocked(ctx, out, t0, p, R) {
+    const k = p.k ?? 1;
+    burst(ctx, out, R, t0, 'brown', ['lowpass', 320], 0.6 * k, 0.001, 0.07);
+    thud(ctx, out, t0, 240, 160, 0.25 * k, 0.05);
+    burst(ctx, out, R, t0, 'white', ['bandpass', 1800, 1], 0.05 * k, 0.001, 0.03);
+    return 0.12;
+  },
+  f_punchMe(ctx, out, t0, p, R) {
+    const k = p.k ?? 1;
+    const sat = shaper(ctx, 2.6); chain(sat, gain(ctx, 0.9), out);
+    thud(ctx, sat, t0, 80, 34, 0.9 * (0.5 + 0.5 * k), 0.26);
+    burst(ctx, sat, R, t0, 'brown', ['lowpass', 520], 0.7 * k, 0.001, 0.16);
+    // (the ring in the ears after a big one)
+    if (k > 0.8) { const o = osc(ctx, 'sine', 3100, t0 + 0.05, 1.2); const g = gain(ctx); env(g, t0 + 0.05, 0.02, 0.1, 1.0); chain(o, g, out); }
+    return 0.4;
+  },
+  f_guardBreak(ctx, out, t0, p, R) { B.f_punchMe(ctx, out, t0, { k: 0.7 }, R); B.f_scuff(ctx, out, t0 + 0.12, {}, R); return 0.4; },
+  // air: a fist or a bottle missing
+  f_whiff(ctx, out, t0, p, R) {
+    const n = noise(ctx, R, 'pink', t0, 0.25, 1);
+    const bp = filt(ctx, 'bandpass', 700, 1.2);
+    bp.frequency.setValueAtTime(700, t0); bp.frequency.exponentialRampToValueAtTime(2400, t0 + 0.16);
+    const g = gain(ctx); env(g, t0, 0.22 * (p.k ?? 1), 0.04, 0.14);
+    chain(n, bp, g, out);
+    return 0.25;
+  },
+  f_wind(ctx, out, t0, p, R) { burst(ctx, out, R, t0, 'white', ['bandpass', 2000, 0.8], 0.03, 0.08, 0.2); return 0.3; },
+  // footwork on linoleum: a rubber squeak and a scuff
+  f_scuff(ctx, out, t0, p, R) {
+    const o = osc(ctx, 'sine', rng(1300, 1900), t0, 0.08);
+    o.frequency.exponentialRampToValueAtTime(rng(2000, 2600), t0 + 0.06);
+    const g = gain(ctx); env(g, t0, 0.025, 0.01, 0.06);
+    chain(o, g, out);
+    burst(ctx, out, R, t0, 'white', ['bandpass', 3000, 1], 0.03, 0.005, 0.08);
+    return 0.15;
+  },
+  f_tell(ctx, out, t0, p, R) { return B.f_scuff(ctx, out, t0, p, R); },
+  f_grab_bottle(ctx, out, t0) { ping(ctx, out, t0, [[1900, 0.05, 0.1], [3100, 0.03, 0.06]]); return 0.15; },
+  f_grab_plate(ctx, out, t0) { ping(ctx, out, t0, [[2200, 0.05, 0.08], [3500, 0.03, 0.05]]); return 0.12; },
+  f_grab_stool(ctx, out, t0, p, R) { B.clang(ctx, out, t0, { k: 0.25 }, R); B.f_scuff(ctx, out, t0, {}, R); return 0.5; },
+  f_stun(ctx, out, t0) { const o = osc(ctx, 'sine', 2300, t0, 0.9); const g = gain(ctx); env(g, t0, 0.012, 0.05, 0.8); chain(o, g, out); return 0.95; },
+  f_bodyThud(ctx, out, t0, p, R) { thud(ctx, out, t0, 85, 40, 0.8 * (p.k ?? 1), 0.3); burst(ctx, out, R, t0, 'brown', ['lowpass', 500], 0.6 * (p.k ?? 1), 0.002, 0.2); return 0.4; },
+  f_bodyStools(ctx, out, t0, p, R) {
+    B.f_bodyThud(ctx, out, t0, { k: 0.7 }, R);
+    for (let i = 0; i < 3; i++) B.clang(ctx, out, t0 + 0.05 + i * rng(0.12, 0.25), { k: 0.5 - i * 0.1 }, R);
+    return 1.0;
+  },
+  f_bodyFloor(ctx, out, t0, p, R) { B.f_bodyThud(ctx, out, t0, { k: 1 }, R); burst(ctx, out, R, t0 + 0.01, 'white', ['highpass', 1500], 0.12, 0.001, 0.05); return 0.4; },
+  // a body on the wet pavement in the glass
+  f_bodyPavement(ctx, out, t0, p, R) {
+    B.f_bodyThud(ctx, out, t0, { k: 1 }, R);
+    burst(ctx, out, R, t0 + 0.01, 'white', ['bandpass', 1800, 0.7], 0.25, 0.003, 0.25);
+    glassFall(ctx, out, t0 + 0.02, R, 0.5, 0.6, 10);
+    return 0.8;
+  },
+  // ---- what breaks --------------------------------------------------------------------------------
+  break_bottle(ctx, out, t0, p, R) { thud(ctx, out, t0, 180, 90, 0.3, 0.05); glassFall(ctx, out, t0, R, 0.8, 0.35, 12); burst(ctx, out, R, t0 + 0.02, 'pink', ['bandpass', 1400, 0.8], 0.1, 0.01, 0.25); return 0.6; },
+  break_tumbler(ctx, out, t0, p, R) { glassFall(ctx, out, t0, R, 0.6, 0.3, 8); return 0.45; },
+  break_cup(ctx, out, t0, p, R) { thud(ctx, out, t0, 260, 150, 0.2, 0.04); ping(ctx, out, t0, [[1800, 0.1, 0.1], [2700, 0.07, 0.08]]); glassFall(ctx, out, t0 + 0.01, R, 0.4, 0.3, 6); return 0.45; },
+  break_plate(ctx, out, t0, p, R) { thud(ctx, out, t0, 230, 130, 0.3, 0.05); ping(ctx, out, t0, [[2050, 0.12, 0.12], [3300, 0.08, 0.1]]); glassFall(ctx, out, t0 + 0.01, R, 0.5, 0.4, 9); return 0.55; },
+  break_stool(ctx, out, t0, p, R) { B.clang(ctx, out, t0, { k: 0.8 }, R); burst(ctx, out, R, t0, 'brown', ['bandpass', 400, 1], 0.5, 0.001, 0.12); B.clang(ctx, out, t0 + 0.3, { k: 0.35 }, R); return 0.9; },
+  break_table(ctx, out, t0, p, R) {
+    burst(ctx, out, R, t0, 'brown', ['bandpass', 350, 0.8], 0.8, 0.001, 0.15);
+    for (let i = 0; i < 10; i++) burst(ctx, out, R, t0 + Math.random() * 0.25, 'white', ['bandpass', rng(800, 2500), 2], rng(0.1, 0.25), 0.0005, 0.02);
+    thud(ctx, out, t0 + 0.2, 110, 60, 0.3, 0.12);
+    return 0.5;
+  },
+  // the plate-glass window: a crack like a shot, then a long fall of glass on stone
+  break_glass_big(ctx, out, t0, p, R, send) {
+    const trim = gain(ctx, 0.75); trim.connect(out); out = trim;
+    const sat = shaper(ctx, 2); chain(sat, gain(ctx, 0.9), out);
+    burst(ctx, sat, R, t0, 'white', ['highpass', 900], 0.9, 0.0008, 0.07);
+    thud(ctx, sat, t0, 130, 50, 0.6, 0.18);
+    if (send) { const gs = gain(ctx); env(gs, t0, 0.8, 0.002, 0.1); chain(noise(ctx, R, 'white', t0, 0.2), filt(ctx, 'highpass', 900), gs, send); }
+    glassFall(ctx, out, t0 + 0.03, R, 1.2, 2.2, 46);
+    // the heavy sheets landing on the pavement
+    for (let i = 0; i < 4; i++) { const t = t0 + 0.35 + i * rng(0.15, 0.35); burst(ctx, out, R, t, 'white', ['bandpass', rng(1500, 3000), 0.8], 0.3 - i * 0.05, 0.002, 0.12); }
+    return 2.6;
+  },
+  topple_stool(ctx, out, t0, p, R) { return B.stoolFall(ctx, out, t0, p, R); },
+  topple_table(ctx, out, t0, p, R) { thud(ctx, out, t0, 120, 60, 0.5, 0.18); burst(ctx, out, R, t0, 'brown', ['lowpass', 500], 0.4, 0.002, 0.2); return 0.4; },
+});
+
+// The diner's own sound (sfx.room('diner')): nodes that live while the ear
+// is in the room. Rain on the plate glass (soft, close, no low end), the
+// room tone, the refrigerator's hum with its slow beat, the fans, a murmur
+// of two voices as filtered noise, the urns' hiss. Returns { gain, stop }.
+function dinerBed(ctx, R, out) {
+  const master = gain(ctx, 0.0001);
+  master.connect(out);
+  const srcs = [];
+  const loopN = (kind, rate = 1) => { const s = ctx.createBufferSource(); s.buffer = R[kind]; s.loop = true; s.playbackRate.value = rate; s.start(ctx.currentTime, Math.random() * 2); srcs.push(s); return s; };
+  const lfo = (f, depth, param, type = 'sine') => { const o = ctx.createOscillator(); o.type = type; o.frequency.value = f; o.start(); srcs.push(o); const g = gain(ctx, depth); o.connect(g).connect(param); return o; };
+  // rain on the glass: bright, close, patter modulated by slow gusts
+  const rg = gain(ctx, 0.05); chain(loopN('white'), filt(ctx, 'highpass', 1600), filt(ctx, 'lowpass', 6500, 0.5), rg, master);
+  lfo(0.13, 0.02, rg.gain);
+  const pt = gain(ctx, 0.02); chain(loopN('pink', 1.3), filt(ctx, 'bandpass', 3800, 1.4), pt, master);
+  lfo(7.3, 0.012, pt.gain, 'square');
+  // the room tone
+  chain(loopN('brown', 0.8), filt(ctx, 'lowpass', 260), gain(ctx, 0.12), master);
+  // the refrigerator: 60 and 120 Hz, two a hair apart so it beats slowly
+  for (const [f, a] of [[60, 0.02], [120, 0.014], [120.6, 0.014], [180, 0.004]]) { const o = ctx.createOscillator(); o.frequency.value = f; o.start(); srcs.push(o); chain(o, gain(ctx, a), master); }
+  // the fans: a low whoosh that turns at ~3 Hz
+  const fg = gain(ctx, 0.025); chain(loopN('pink', 0.7), filt(ctx, 'lowpass', 420), fg, master);
+  lfo(2.8, 0.012, fg.gain);
+  // two voices murmuring: band-passed noise, syllables in a slow uneven swing
+  for (const [f, rate, a] of [[420, 3.1, 0.035], [640, 4.3, 0.025]]) {
+    const vg = gain(ctx, a * 0.5);
+    chain(loopN('pink', 1), filt(ctx, 'bandpass', f, 2.2), filt(ctx, 'bandpass', f * 1.9, 1.5), vg, master);
+    lfo(rate, a * 0.5, vg.gain);
+    lfo(rate * 0.23, a * 0.4, vg.gain);
+  }
+  // the urns' hiss
+  chain(loopN('white', 1.1), filt(ctx, 'highpass', 5200), gain(ctx, 0.008), master);
+  return {
+    gain: master,
+    stop() { const t = ctx.currentTime; master.gain.setTargetAtTime(0, t, 0.15); setTimeout(() => { for (const s of srcs) { try { s.stop(); } catch (e) { /* */ } } try { master.disconnect(); } catch (e) { /* */ } }, 1500); },
+  };
+}
+
 export const SOUND_NAMES = Object.keys(B);
 
 // ---------------------------------------------------------------------------
@@ -587,7 +962,15 @@ export class Sfx {
     this.bus = gain(ctx, 1.0); this.bus.connect(this.master);
     // the ambience sits well under the guns and ducks when they fire
     this.ambLevel = 0.4;
-    this.amb = gain(ctx, this.ambLevel); this.amb.connect(this.master);
+    // the street heard through a wall (sfx.room): the rain beds, thunder,
+    // the train and far shots go through a low-pass and a level that the
+    // room sets (the street: wide open; the diner: 600 Hz, 12 dB down; a
+    // broken window lets half of it back in)
+    this.wall = filt(ctx, 'lowpass', 20000, 0.7);
+    this.wallG = gain(ctx, 1);
+    this.wall.connect(this.wallG).connect(this.master);
+    this.street = gain(ctx, 1); this.street.connect(this.wall);
+    this.amb = gain(ctx, this.ambLevel); this.amb.connect(this.wall);
     // the street's tail: a convolution reverb on a send
     this.verb = ctx.createConvolver();
     this.verb.buffer = this.R.ir;
@@ -635,15 +1018,16 @@ export class Sfx {
   }
 
   // a voice's destination: a PannerNode at pos (world), or the bus direct
-  dest(pos, { ref = 3, roll = 1, max = 250 } = {}) {
+  dest(pos, { ref = 3, roll = 1, max = 250, street = false } = {}) {
     const ctx = this.ctx;
-    if (!pos) return this.bus;
+    const bus = street ? this.street : this.bus;
+    if (!pos) return bus;
     const pn = ctx.createPanner();
     pn.panningModel = 'equalpower';
     pn.distanceModel = 'inverse';
     pn.refDistance = ref; pn.rolloffFactor = roll; pn.maxDistance = max;
     if (pn.positionX) { pn.positionX.value = pos.x; pn.positionY.value = pos.y; pn.positionZ.value = pos.z; } else pn.setPosition(pos.x, pos.y, pos.z);
-    pn.connect(this.bus);
+    pn.connect(bus);
     return pn;
   }
 
@@ -682,7 +1066,7 @@ export class Sfx {
   tommy() { this.play('tommy', null, {}, { gain: 1.0 }); this.duck(0.6, 0.35); }
   pistol(pos, dist) {
     // (sound travels: a far shot arrives after its flash)
-    this.play('pistol', pos, { dist }, { delay: Math.min(0.25, dist / 343), ref: 4 });
+    this.play('pistol', pos, { dist }, { delay: Math.min(0.25, dist / 343), ref: 4, street: true });
   }
   ricochet(pos) { this.play('ricochet', pos, {}, { ref: 3 }); }
   glass(pos, k = 1) { this.play('glass', pos, { k }, { ref: 3 }); }
@@ -695,15 +1079,15 @@ export class Sfx {
   hydrant(pos) { this.play('hydrant', pos, { dur: 3 }, { ref: 4 }); this.loop('hydrant', pos, 0.35, 'pink', 700, 5000); }
   zap(pos) { this.play('zap', pos, {}, { ref: 4 }); }
   buzz(pos, dur) { this.play('buzz', pos, { dur }, { ref: 4 }); }
-  step(pos, run, player) {
-    if (player) this.play('step', null, { run, k: 0.55 }, { send: false });
+  step(pos, run, player, lino = false) {
+    if (player) this.play('step', null, { run, k: 0.55, lino }, { send: false });
     else if (pos) this.play('step', pos, { run }, { ref: 2, roll: 1.4, max: 40, send: false });
   }
   reload() { this.play('reload', null, {}, { send: false, gain: 0.8 }); }
   grunt(pos) { this.play('grunt', pos, {}, { ref: 3 }); }
   death(pos) { this.play('death', pos, {}, { ref: 3 }); }
   casing(pos, n) { this.play('casing', pos, { n }, { ref: 1.5, roll: 1.5, max: 30, send: false }); }
-  thunder(s, far, dbl) { this.play('thunder', null, { s, far }, { gain: 0.9 }); if (dbl) this.play('thunder', null, { s: s * 0.7, far: Math.min(1, far + 0.2) }, { delay: 0.6, gain: 0.7 }); }
+  thunder(s, far, dbl) { this.play('thunder', null, { s, far }, { gain: 0.9, street: true }); if (dbl) this.play('thunder', null, { s: s * 0.7, far: Math.min(1, far + 0.2) }, { delay: 0.6, gain: 0.7, street: true }); }
   squeal(k, pos) {
     if (!this.live) return;
     const now = this.ctx.currentTime;
@@ -714,7 +1098,7 @@ export class Sfx {
 
   // ---- loops: rain bed, fires, the train, the hydrant -------------------------
   // a looping filtered-noise voice at pos, its level driven per step
-  loop(key, pos, level, kind = 'brown', lp = 500, hp = 0) {
+  loop(key, pos, level, kind = 'brown', lp = 500, hp = 0, street = false) {
     if (!this.live) return null;
     let L = this.loops.get(key);
     if (!L) {
@@ -726,7 +1110,7 @@ export class Sfx {
       let node = s;
       if (hp) node = chain(node, filt(ctx, 'highpass', hp));
       node = chain(node, filt(ctx, 'lowpass', lp, 0.7), g);
-      const dst = pos ? this.dest(pos, { ref: 5, roll: 0.9 }) : (key.startsWith('rain') ? this.amb : this.bus);
+      const dst = pos ? this.dest(pos, { ref: 5, roll: 0.9, street }) : (key.startsWith('rain') ? this.amb : street ? this.street : this.bus);
       g.connect(dst);
       L = { s, g, dst, pos: pos ? pos.clone() : null };
       this.loops.set(key, L);
@@ -755,18 +1139,22 @@ export class Sfx {
   // The ambience of the place the ear is in (CONTRACTS §12.2): 'street'
   // (the rain bed as it always was) or an interior ('diner', and wave B's
   // rooms), whose walls muffle the rain; a doorway cross-fades in 0.4 s.
-  // (FOUNDATION STUB, lane 7: indoors the rain beds are only turned down
-  // and dulled; the room tone, the fridge, the cutlery are lane 7's)
+  // Indoors the street goes through the wall (600 Hz, 12 dB down) unless a
+  // window is out (openK: 0 shut .. 1 open); the room's own bed comes up
+  // (the diner: game/dinerBed). A doorway cross-fades in 0.4 s.
   room(name = 'street') {
     this.roomName = name;
     if (!this.live) return;
     const inside = name !== 'street';
-    const t = this.ctx.currentTime, tau = 0.4 / 3;
-    const set = (key, level) => { const L = this.loops.get(key); if (L) L.g.gain.setTargetAtTime(level, t, tau); };
-    set('rainBed', inside ? 0.08 : 0.24);
-    set('rainPatter', inside ? 0.004 : 0.035);
-    set('rainLow', inside ? 0.06 : 0.1);
-    this.roomGain = inside ? 1 / 3 : 1;
+    const ctx = this.ctx, t = ctx.currentTime, tau = 0.4 / 3;
+    const k = inside ? Math.max(0, Math.min(1, this.openK || 0)) : 1;
+    this.wall.frequency.setTargetAtTime(600 * Math.pow(20000 / 600, k), t, tau);
+    this.wallG.gain.setTargetAtTime(0.25 + 0.75 * k, t, tau);
+    this.roomGain = 1;
+    if (name === 'diner') {
+      if (!this.bed) this.bed = dinerBed(ctx, this.R, this.bus);
+      this.bed.gain.gain.setTargetAtTime(1, t, tau);
+    } else if (this.bed) { this.bed.stop(); this.bed = null; }
   }
 
   // the fight's sounds (game/Brawl.js): a name of the fight's table
@@ -779,11 +1167,11 @@ export class Sfx {
     if (!this.live) return;
     if (k <= 0.001 || !pos) { if (this.loops.has('train')) this.stopLoop('train'); if (this.loops.has('trainGrind')) this.stopLoop('trainGrind'); return; }
     const p = pos.clone(); p.y = 11;
-    this.loop('train', p, 0.9 * k, 'brown', 150);
-    this.loop('trainGrind', p, 0.1 * k, 'pink', 700, 250);
+    this.loop('train', p, 0.9 * k, 'brown', 150, 0, true);
+    this.loop('trainGrind', p, 0.1 * k, 'pink', 700, 250, true);
     this.clackT = (this.clackT ?? 0);
     const now = this.ctx.currentTime;
-    if (now > this.clackT) { this.clackT = now + 0.93; this.play('clack', p, { k }, { ref: 8 }); this.play('clack', p, { k: k * 0.8 }, { ref: 8, delay: 0.11 }); }
+    if (now > this.clackT) { this.clackT = now + 0.93; this.play('clack', p, { k }, { ref: 8, street: true }); this.play('clack', p, { k: k * 0.8 }, { ref: 8, delay: 0.11, street: true }); }
   }
 
   // per rendered frame (the Game): fires' crackle, the heartbeat, gusts,

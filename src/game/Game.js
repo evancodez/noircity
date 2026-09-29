@@ -356,6 +356,7 @@ export class Game {
   toTitle() {
     this.scenes.stop();
     this.brawl.stop();
+    this.brawl.finished = false;
     this.director.stop();
     this.hud.hideEnd();
     this.hud.clearPrompt();

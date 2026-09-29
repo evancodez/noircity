@@ -35,6 +35,10 @@ export function dinerRoom(ctx, phase = 'evening') {
   cast.clear();
   d.reset();
   for (const p of Object.values(front.panes)) stage.glass.restore(p);
+  // (the door's little bells, whoever opens it)
+  if (!front.bellHooked) { front.bellHooked = true; front.door.on('open', () => game.sfx.play('doorbell', V(DINER.innerX - 0.1, 2.3, 0.6))); }
+  // (the glass whole again: the street's sound back behind the wall)
+  if (game.sfx && game.sfx.roomOpen) game.sfx.roomOpen(0);
   const dot = cast.spawn('waitress', { at: 'diner.urns' });
   dot.setState('lean');
   cast.spawn('cook', { at: 'diner.hatch' });
@@ -52,12 +56,15 @@ export const jukeboxPos = () => V(DINER.jukebox.x, DINER.floorY + 1.0, DINER.zMi
 
 // the player on his stool, the smoke set in his hands (the pitch: a man
 // leaning on the counter, looking along it to the back bar and Dot)
-export function seatPlayer(ctx, { lit = false, pitch = -0.16 } = {}) {
+// (turn: radians off the counter's square, + toward the north end and Dot's
+// urns, - toward the south end and Mack)
+export function seatPlayer(ctx, { lit = false, pitch = -0.16, turn = 0 } = {}) {
   const { controller, hands } = ctx;
   hands.hold(null, 'R');
   hands.hold(null, 'L');
   hands.equip('smoke');
   controller.setMode('seated', { anchor: 'diner.stool.player', pitch });
+  if (turn) { controller.yaw += turn; controller.apply(0); }
   if (lit) holdCigarette(ctx, true);
 }
 

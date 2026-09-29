@@ -113,11 +113,15 @@ export class Brawl {
     this.game.hud.clearPrompt('brawl');
   }
 
+  // a call a little later, on game time
+  later(s, fn) { (this.timers || (this.timers = [])).push({ at: this.T + s, fn }); }
+
   // ---- per step (Game.post, before the scene's script) ------------------------------------
   update(dt) {
     if (!this.active) return;
     const G = this.game;
     this.T += dt;
+    if (this.timers && this.timers.length) for (const x of [...this.timers]) if (this.T >= x.at) { this.timers.splice(this.timers.indexOf(x), 1); x.fn(); }
     this.stats.time += dt;
     // (no regeneration in a fist fight: what he takes, he keeps)
     G.health.sinceHit = 0;
@@ -145,7 +149,7 @@ export class Brawl {
     if (slip && (me.state === 'idle' || me.state === 'block')) {
       me.state = 'slip'; me.slipDir = slip;
       me.h = H.play(slip < 0 ? 'slipL' : 'slipR');
-      this.sfx('whiff', null, { k: 0.4 });
+      this.sfx('scuff', null, {});
       return;
     }
     // E: grab what is in reach
@@ -415,7 +419,9 @@ export class Brawl {
       for (const st of him.throwStools || []) G.stage.breakables.topple(st.handle, V(st.pos.x - at.x, 0, st.pos.z - at.z).add(dir));
       this.sfx('bodyStools', at, {});
     } else if (what === 'jukebox') {
+      // (the record skips, then the next one drops)
       R.jukebox.hit(1.2);
+      if (R.jukebox.next) this.later(1.1, () => R.jukebox.next());
       this.sfx('bodyThud', at, { k: 1 });
     } else if (what === 'piecase') {
       if (R.pieCase.pane) G.stage.glass.shatter(R.pieCase.pane, { dir, power: 1.5 });
@@ -636,7 +642,7 @@ export class Brawl {
     if (this.round0 === 1 && this.round === 1) {
       if (this.T > 0.4 && !T.jab) tip('jab', 'LMB  jab', 2.2);
       if (him.state === 'attack' && him.clip === 'br_jab' && !T.block) tip('block', 'SPACE  block', 1.8);
-      if (him.state === 'attack' && him.clip === 'br_hook' && !T.slip) tip('slip', 'A D  slip', 1.9);
+      if (him.state === 'attack' && him.clip === 'br_hook' && !T.slip) tip('slip', 'A · D  slip', 1.9);
       if ((this.stats.jabs || 0) >= 3 && !T.heavy && this.me.state === 'idle') tip('heavy', 'RMB  hold, let go', 2.4);
     }
     // what is in reach (the first two times: after that the tick alone)
@@ -768,7 +774,8 @@ export class Brawl {
     } : null;
   }
 
-  sfx(name, pos, p) { const S = this.game.sfx; if (S && S.live) S.fight(name, pos, p); }
+  // (the fight's own sounds are 'f_<name>'; what breaks is 'break_<kind>')
+  sfx(name, pos, p) { const S = this.game.sfx; if (!S || !S.live) return; if (name.startsWith('break_')) S.play(name, pos, p, { ref: 2 }); else S.fight(name, pos, p); }
 }
 
 // the props a round puts in reach (built by the scene; exported for it)

@@ -209,7 +209,12 @@ export class Hud {
     this.canContinue = false;
     // BEGIN (or a click anywhere while there is nothing to continue);
     // CONTINUE when a save exists
-    this.title.addEventListener('click', (e) => {
+    // (on the button's press, not the click: a click is only delivered to
+    // the press's and the release's common ancestor, so a hand that moves a
+    // hair between the two would miss the choice; and the press is a gesture
+    // the pointer lock accepts)
+    this.title.addEventListener('mousedown', (e) => {
+      if (e.button !== 0) return;
       const o = e.target.closest && e.target.closest('.opt');
       const k = o ? o.dataset.k : this.canContinue ? null : 'begin';
       if (k === 'continue' && onContinue) onContinue();
