@@ -641,7 +641,7 @@ export class Hands {
     this.wispT = (this.wispT || 0) - dt;
     if (this.wispT > 0) return;
     this.wispT = 0.55;
-    fx.cig.wisp(this.anchor('cigTip'));
+    fx.cig.wisp(this.anchor('cigTip'), 'player', { lips: !!this.held.M });
   }
 
   // the frames a pose may be written in, as matrices into the arm root's
@@ -982,7 +982,7 @@ export class Hands {
 }
 
 // the cigarette between the lips: its +y (filter to tip) forward and down
-export const MOUTH_DIR = V(0.02, -0.05, -1).normalize();
+export const MOUTH_DIR = V(0.02, -0.1, -1).normalize();
 const MOUTH_Q = new THREE.Quaternion().setFromUnitVectors(V(0, 1, 0), MOUTH_DIR);
 // where the smoke set's hands find the pack and the lighter (body frame)
 export const PACK_AT = [0.16, -0.4, -0.63];

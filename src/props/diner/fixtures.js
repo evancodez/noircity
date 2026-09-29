@@ -26,7 +26,11 @@ export function buildPendants(kit, lamps) {
   const shade = shadeGeo();
   const inner = lathe([[0.02, 0.17], [0.05, 0.135], [0.09, 0.08], [0.14, 0.03], [0.165, 0.004]], 40);
   const bulbGeo = new THREE.SphereGeometry(0.045, 20, 12).scale(1, 0.8, 1).translate(0, 0.05, 0);
-  const disc = new THREE.CircleGeometry(0.15, 40).rotateX(Math.PI / 2).translate(0, 0.004, 0);
+  // (polish: the lamp head is a small white disc with a tight glow - the
+  // bulb's mouth, 10 cm across - not the whole 30 cm mouth of the shade
+  // lit paper white: from below or across the room that printed as a large
+  // hard white oval)
+  const disc = new THREE.CircleGeometry(0.05, 28).rotateX(Math.PI / 2).translate(0, 0.02, 0);
   const canopy = lathe([[0.0001, 0], [0.06, 0], [0.058, -0.012], [0.03, -0.04], [0.0001, -0.042]].reverse(), 24);
   const out = [];
   const shadeMat = M.std('shade', 0x0a0a0a, 0.35, 'enamel');

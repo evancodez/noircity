@@ -75,7 +75,7 @@ const PACK_UP = mat([0.06, -0.27, -0.42], [-0.34, 0.9, 0.26], [0.3, 0, 1]);
 const CTH = Math.PI;
 const cigInPack = (dy) => ({ frame: 'body', m: PACK_UP.clone().multiply(new THREE.Matrix4().makeRotationZ(Math.PI).setPosition(0.012, 0.098 + dy, 0)).multiply(new THREE.Matrix4().makeRotationY(CTH)) });
 // between the lips (the eye's frame): its filter at the mouth, tip forward and down
-const MOUTH = [0, -0.088, -0.07], MOUTH_DIR = [0.02, -0.05, -1];
+const MOUTH = [0, -0.088, -0.07], MOUTH_DIR = [0.02, -0.1, -1];
 // (turned so the fingers that hold it are under it and to the left: the
 // hand passes below the frame as it puts it in the lips)
 const CFW = [-1, 0, 0];
@@ -163,7 +163,11 @@ const LIGHT = {
   // (the head bows a little to the flame, and comes back up)
   // (the eyes go down to the flame at the lips and come back: the head and
   // what it holds stay put - view key 'eyes')
-  view: [[0, {}], [2.95, {}], [3.4, { eyes: -0.34 }], [4.05, { eyes: -0.34 }], [4.5, {}]],
+  // (polish: the eyes no longer drop 0.34 rad to the flame - it brought the
+  // whole cigarette up into the view as a fat white post from the bottom
+  // edge; the eyes stay level and the tip, its flame and the lighter's top
+  // rise just into the bottom of the frame, low and centre)
+  view: [[0, {}], [5.0, {}]],
   brush: 'R',
 };
 

@@ -19,8 +19,7 @@ import { lathe, mergeGeos, V3 } from '../lib.js';
 //                 plaster
 //   the jukebox   its glow on the end wall round its arch and on the floor
 //                 before it
-//   the neon      a faint blue on the floor just inside the door, the sign's
-//                 light through the door's glass (the accent's own blue)
+//   (the neon's blue on the floor inside the door was taken out: see below)
 //   the sheen     the pendants seen in the polished lino: short broken streaks
 //                 where the floor mirrors a lamp (the floor's own material,
 //                 view-dependent, broken by its wax mottle)
@@ -74,10 +73,13 @@ function patchMaterial(U, { mode = 0, gain = 1, a = 1, b = 1, color = null } = {
           // wall is lit, strongest just over the lamp, fading up the wall
           float y = p.y, ax = abs( p.x );
           float up = step( 0.0, y ), yy = abs( y );
-          float w = mix( 0.08 + 0.2 * sqrt( yy ), 0.1 + 0.5 * sqrt( yy ), up );
-          float inside = smoothstep( w, w * 0.72, ax );
-          float fall = mix( exp( - yy / 0.3 ) * 0.6, exp( - yy / 0.5 ), up );
-          float collar = exp( - dot( p, p ) / 0.012 ) * 0.5;
+          // (polish: soft - the edge a long ramp, not a cut: the room's
+          // print steps it once, and the brush tears that step; a small
+          // lamp's light, gone within a metre up and half that down)
+          float w = mix( 0.07 + 0.16 * sqrt( yy ), 0.09 + 0.36 * sqrt( yy ), up );
+          float inside = smoothstep( w, w * 0.25, ax );
+          float fall = mix( exp( - yy / 0.18 ) * 0.6, exp( - yy / 0.32 ), up );
+          float collar = exp( - dot( p, p ) / 0.006 ) * 0.45;
           I = inside * fall + collar;
         }
         float fogA = noirFogAmount( length( cameraPosition - vWorld ), vWorld.y, uFogDensity );
@@ -194,12 +196,13 @@ export function buildDinerLight(kit, { windowLight = [], jukebox = null, lamps =
     const g = new THREE.Group();
     g.position.set(x, y, D.zMin);
     kit.g.add(g);
-    kit.add(sg.plate, M.iron, { parent: g, cast: false });
-    const bowl = kit.add(sg.bowl.clone().translate(0, 0, 0.004), shadeMat, { parent: g, cast: false });
+    // (polish: no back plate - its dark disc facing the room printed as a
+    // black dot in the lamp; a smaller shade)
+    const bowl = kit.add(sg.bowl.clone().scale(0.7, 0.7, 0.7).translate(0, 0, 0.004), shadeMat, { parent: g, cast: false });
     bowl.userData.noRay = true;
     // the scallops on the plaster
-    const mat = patchMaterial(U, { mode: 1, gain: 0.24 });
-    patches.push(addPatch(kit, wallQuad(x, y, zW, -1.5, 1.5, -1.3, D.ceilY - y), mat));
+    const mat = patchMaterial(U, { mode: 1, gain: 0.2 });
+    patches.push(addPatch(kit, wallQuad(x, y, zW, -0.9, 0.9, -0.8, Math.min(1.4, D.ceilY - y)), mat));
     // (no lamp of the light registry: an omni entry lit the rain over the
     // roof through the ceiling; the pendants keep the figures' rims)
     sconces.push({ pos: V3(x, y, D.zMin + 0.15), group: g });
@@ -221,9 +224,13 @@ export function buildDinerLight(kit, { windowLight = [], jukebox = null, lamps =
   const cmF = patchMaterial(U, { mode: 0, gain: 0.07, a: 0.7, b: 0.9 });
   patches.push(addPatch(kit, floorQuad(-13.75, D.zMax - 0.9, -1.0, 1.0, -1.2, 1.2), cmF));
 
-  // ---- the neon's faint blue just inside the door (the sign over it)
-  const nMat = patchMaterial(U, { mode: 0, gain: 0.0009, a: 0.55, b: 1.1, color: accent('neon') });
-  patches.push(addPatch(kit, floorQuad(D.innerX - 0.55, D.door.hingeZ + D.door.w / 2, -0.55, 0.55, -1.2, 1.2), nMat, 3));
+  // (polish: the neon's blue patch inside the door is gone. The ink keeps a
+  // colour only at display 0.45 or more (its colour rule, ink.js: blood and
+  // fire print bright or not at all), so a faint blue wash cannot print: at
+  // any gain that shows at all it printed as a saturated blue disc lying on
+  // the floor like a plate. The neon stays where it can be bright - the
+  // tubes over the door and their light on the wet pavement outside.)
+  void accent;
 
   // ---- the street's light through the windows: lifted to print (it was
   // a wash under the ink's crush: a grey the aisle is seen by now, the

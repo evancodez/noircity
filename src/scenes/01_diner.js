@@ -81,7 +81,7 @@ export default defineScene({
       // the cigarette: a thread of smoke off the tip; F a drag, LMB the ash
       if (ctx.flags.lit && ctx.flags.cig) {
         // (lane 3's thread takes a point every step while it burns)
-        G.fx.cig.wisp(H.anchor('cigTip'), 'player');
+        G.fx.cig.wisp(H.anchor('cigTip'), 'player', { lips: !!H.held.M });
         if (ctx.pressed('KeyF') && !H.busy) {
           H.play('drag', { onMark: {
             glow: () => snd('drag'),
@@ -116,6 +116,17 @@ export default defineScene({
       } });
       yield until(() => h.done);
       ctx.flags.litAt = ctx.sceneTime;
+      // (polish: the first drag follows the light on its own - the hand takes
+      // the cigarette from the lips and rests with it on the counter. Left
+      // in the lips until F, it stood at the bottom of the view for good,
+      // its smoke a straight line up the middle of the picture.)
+      yield wait(0.5);
+      if (!H.busy && H.held.M) {
+        H.play('drag', { onMark: {
+          glow: () => snd('drag'),
+          exhale: () => { G.fx.cig.exhale(H.anchor('mouth'), G.camera.getWorldDirection(V(0, 0, 0))); snd('exhale'); },
+        } });
+      }
     }
 
     // ---- 2. order ---------------------------------------------------------------------

@@ -93,7 +93,9 @@ export function makeIdMaterial() {
     // has the fire's hue and must never be lifted to flame: class 6)
     // (the ember, class 10: the ink gives it a warm glow of its own, keyed
     // by the class, not by hue - the fire keeps its accepted print)
-    const sc = object.userData.inkSurface === 'amberIn' ? 16 : oud && oud.accent === 'amber' ? 6 : oud && oud.accent === 'ember' ? 10 : SURFACE[object.userData.inkSurface ?? (oud && oud.inkSurface)] || 0;
+    // (the lighter's flame, class 17 (polish): an emitter the bloom keeps
+    // even in the hands, where skin gives it none)
+    const sc = object.userData.inkSurface === 'amberIn' ? 16 : oud && oud.accent === 'amber' ? 6 : oud && oud.accent === 'ember' ? 10 : oud && oud.accent === 'flame' ? 17 : SURFACE[object.userData.inkSurface ?? (oud && oud.inkSurface)] || 0;
     mat.uniforms.uSurf.value = 1 + 2 * sc;
     mat.uniformsNeedUpdate = true;
     // (a clear pane the ink should see THROUGH - the pie case's glass: it

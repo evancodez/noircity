@@ -153,13 +153,19 @@ const THREAD = {
   max: 128,            // points kept: ~4 s of rise, the top at ~0.7 m
   laminar: 0.10,       // m of straight rise
   split: [0.12, 0.40], // the curls part between these heights (m)
-  gone: [0.46, 0.70],  // and fade out between these
-  w0: 0.001,           // half width of a strand's core at the tip (m): ~3 px at 0.45 m
-  w1: 0.0014,          // ... and at the top
-  // (scene-linear grey x alpha: display ~0.6 on black (tone.js), a paler
-  // hair over the lit back-bar glass, a darker one over the lit counter;
-  // round 2: a little surer - it read as nothing at the seat)
-  grey: 0.22,
+  // (polish: gone by 60 cm - a hair, not a pole up the whole view)
+  gone: [0.3, 0.6],    // and fade out between these
+  // (polish: the width is set on the screen, not in metres - a hair of
+  // 2 .. 3 px wherever the tip is: 1 mm in metres was 3 px at arm's length
+  // but a thick bar 15 cm from the eye, a cigarette in the lips)
+  px0: 2.2,            // a strand's drawn width at the tip (px)
+  px1: 2.8,            // ... and at the top
+  // (scene-linear grey x alpha. Polish: the room's print steps a wall's
+  // tone to grey from display ~0.45 and to paper from ~0.86 (ink.js), so a
+  // core of 0.22 x 0.6 over the dark wall printed paper white; now display
+  // ~0.4 over black, a mid grey, and the dark edges make it a darker hair
+  // over the lit counter)
+  grey: 0.085,
   alpha: 0.6,
 };
 const STRANDS = 3;
@@ -208,7 +214,7 @@ class Thread {
     const k = d.angle * 0.13 * (1 - 0.6 * sstep(3, 10, l));
     return out.set(dx / l * k, 0, dz / l * k);
   }
-  update(dt, t, cam, rng) {
+  update(dt, t, cam, rng, view = null) {
     const P = this.pts, T = THREAD;
     const lean = this.draught(P.length ? P[P.length - 1].p : _e.set(0, 0, 0), _t);
     for (const p of P) {
@@ -222,6 +228,15 @@ class Thread {
       p.p.x += (cx * wv + lean.x * (0.35 + h)) * dt;
       p.p.z += (cz * wv + lean.z * (0.35 + h)) * dt;
       p.p.y += (0.09 + h * 0.33) * dt;
+      // (polish: off a cigarette in the lips the thread does not rise up
+      // the middle of the view like a scratch on the lens: the breath and
+      // the face's warmth carry it forward and off to the side, so it is a
+      // short curl rising away from the eye, low and right of centre)
+      if (p.lips && view) {
+        const k = (0.06 + 0.5 * h) * dt;
+        p.p.x += (view.fwd.x * 0.9 + view.right.x * 0.75) * k;
+        p.p.z += (view.fwd.z * 0.9 + view.right.z * 0.75) * k;
+      }
     }
     while (P.length && (P[0].age > 6 || P[0].p.y - P[0].y0 > T.gone[1])) P.shift();
     // the strands: first where each strand's core runs (C), then the
@@ -264,9 +279,9 @@ class Thread {
         // the line's weight: at the tip all on the middle strand, higher up
         // shared out to the curls
         const share = k === 0 ? 1 - 0.5 * sp : 0.7 * sp;
-        // gaps that rise with the smoke: a strand breaks where its own
-        // phase says so, more often the higher it is
-        const gap = h < T.split[0] ? 1 : (Math.sin(j * 0.31 + k * 1.9 + pt.seed * 0.2) * 0.5 + 0.5) > 0.1 + 1.2 * sp * (h - T.split[0]) ? 1 : 0.1;
+        // (polish: no gaps - the torn strand printed as a dashed bar; the
+        // side strands thin out smoothly instead, by their own slow phase)
+        const gap = h < T.split[0] ? 1 : 0.55 + 0.45 * (Math.sin(j * 0.11 + k * 1.9) * 0.5 + 0.5);
         // (either side of a break: nothing drawn across it)
         const brk = pt.cut || (P[j + 1] && P[j + 1].cut) ? 0 : 1;
         AL[k * max + i] = T.alpha * fade * share * gap * brk;
@@ -286,7 +301,9 @@ class Thread {
         side.normalize();
         const j = P.length - 1 - i;
         const sp = sstep(T.split[0], T.split[1], P[j].p.y - P[j].y0);
-        const ww = (T.w0 + (T.w1 - T.w0) * sp) * (k === 0 ? 1 : 0.8) * 2;
+        // (the width on the screen: px at this point's distance)
+        const dcam = Math.max(0.05, cam.distanceTo(_s));
+        const ww = (T.px0 + (T.px1 - T.px0) * sp) * (k === 0 ? 1 : 0.8) * dcam / (view ? view.fpx : 667);
         this.pos.set([_s.x + side.x * ww, _s.y + side.y * ww, _s.z + side.z * ww], v * 3);
         this.pos.set([_s.x, _s.y, _s.z], v * 3 + 3);
         this.pos.set([_s.x - side.x * ww, _s.y - side.y * ww, _s.z - side.z * ww], v * 3 + 6);
@@ -295,7 +312,7 @@ class Thread {
         // counter and the white pool)
         // (the lit counter under the pool is several stops over paper white:
         // only a near-opaque edge darkens it at all)
-        const g = T.grey * (1 - 0.15 * sp), a = AL[k * max + i], ea = Math.min(0.9, a * 1.6);
+        const g = T.grey * (1 - 0.15 * sp), a = AL[k * max + i], ea = Math.min(0.75, a * 1.25);
         this.col.set([0, 0, 0, ea, g, g, g, a, 0, 0, 0, ea], v * 4);
       }
     }
@@ -317,7 +334,9 @@ class Thread {
 export class Cig {
   constructor(fx) { this.fx = fx; this.rng = fx.world.rng.fork(7102); this.threads = new Map(); this.t = 0; this.plumes = []; }
   // a thread of smoke off the tip (call it every step while it burns)
-  wisp(tip, key = 'player') {
+  // (lips: the cigarette is between the lips - the thread is carried off the
+  // face, see Thread.update)
+  wisp(tip, key = 'player', { lips = false } = {}) {
     let T = this.threads.get(key);
     if (!T) { T = new Thread(this.fx); this.threads.set(key, T); }
     if (this.t - T.lastT < 1 / THREAD.rate - 1e-6) return;
@@ -327,7 +346,7 @@ export class Cig {
     // tip, as a real thread tears in the draught of the hand)
     const last = T.pts[T.pts.length - 1];
     const cut = !!last && last.p.distanceTo(tip) > 0.012;
-    T.pts.push({ p: tip.clone(), y0: tip.y, age: 0, seed: this.rng.next() * 10, cut });
+    T.pts.push({ p: tip.clone(), y0: tip.y, age: 0, seed: this.rng.next() * 10, cut, lips });
     if (T.pts.length > T.max) T.pts.shift();
   }
   // a plume breathed out: pushed out along `dir`, slowing, rolling, rising
@@ -336,8 +355,18 @@ export class Cig {
   }
   update(dt) {
     this.t += dt;
-    const cam = this.fx.world.game ? this.fx.world.game.camera.position : null;
-    if (cam) for (const T of this.threads.values()) T.update(dt, this.t, cam, this.rng);
+    const camO = this.fx.world.game ? this.fx.world.game.camera : null;
+    const cam = camO ? camO.position : null;
+    if (cam) {
+      // (the view: its level forward and right, and the focal length in px
+      // for the thread's drawn width)
+      const V = this._view || (this._view = { fwd: new THREE.Vector3(), right: new THREE.Vector3(), fpx: 667 });
+      camO.getWorldDirection(V.fwd); V.fwd.y = 0; if (V.fwd.lengthSq() < 1e-8) V.fwd.set(0, 0, -1); V.fwd.normalize();
+      V.right.set(-V.fwd.z, 0, V.fwd.x);
+      const H = typeof innerHeight !== 'undefined' ? innerHeight : 900;
+      V.fpx = H * 0.5 / Math.tan((camO.fov || 68) * Math.PI / 360);
+      for (const T of this.threads.values()) T.update(dt, this.t, cam, this.rng, V);
+    }
     const r = this.rng;
     for (let i = this.plumes.length - 1; i >= 0; i--) {
       const P = this.plumes[i];
