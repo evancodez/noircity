@@ -3,7 +3,7 @@ import { Hood, playerPartGeometry } from '../enemies/Hood.js';
 import { twoBone, L_UPPER, L_FORE, BIND, eulerQ } from '../enemies/HoodRig.js';
 import { WALK, RUN } from '../enemies/HoodAnim.js';
 import { buildTommyParts, MUZZLE, EJECT } from './Viewmodel.js';
-import { allocHoodSlot, PLAYER_SLOT, HOOD_ID0, FIG_ANCHOR, HERO } from '../render/layers.js';
+import { allocHoodSlot, PLAYER_SLOT, HOOD_ID0, FIG_ANCHOR, HERO, PLAYER_HEAD } from '../render/layers.js';
 
 // The player's own body for the over-the-shoulder camera (Phase 3b, `V`).
 //
@@ -121,7 +121,11 @@ const ELBOW_OUT = parseFloat(LD.get('otselbow') ?? '0.3');
 // black disc; nearly level, it stays edge-on at the lens's height
 const HEAD_DROP = parseFloat(LD.get('otshead') ?? '3.5');
 // (m) how far the head sinks toward the shoulders (otssink=<m>)
-const HEAD_SINK = parseFloat(LD.get('otssink') ?? '0.03');
+// (Phase 3e: 0.03 -> 0.045 - with the hat set down on the head, layers
+// PLAYER_HEAD, the skull sinks 1.5 cm further between the collar's wings:
+// the ear's lobe near the wings' tops, the nape and the jaw going down into
+// the collar instead of a neck column under a round skull)
+const HEAD_SINK = parseFloat(LD.get('otssink') ?? '0.045');
 // The staged hero frame (shot=ots) swings the barrel this much further right
 // than the man it is held on, the illustrator's cheat the reference makes:
 // the Tommy gun's drum is a flat can on its flank, and from behind the
@@ -204,7 +208,10 @@ export class PlayerBody {
     // shell the ink cuts out of the black skull, the glove a shape of its
     // own on the foregrip between the drum and the fins
     this.partSlots = [];
-    for (const [kind, bone, slot] of [['ears', 'head', PLAYER_SLOT.ear], ['hand', 'handL', PLAYER_SLOT.hand]]) {
+    // (Phase 3e: and the yoke - a thin flat slab over his shoulders, rigid
+    // on the chest bone, Hood.js buildYoke - an id of its own so the ink
+    // draws its straight back arris where it meets the coat)
+    for (const [kind, bone, slot] of [['ears', 'head', PLAYER_SLOT.ear], ['hand', 'handL', PLAYER_SLOT.hand], ['yoke', 'chest', PLAYER_SLOT.yoke]]) {
       const m = new THREE.Mesh(playerPartGeometry(kind), h.mesh.material);
       m.name = 'player_' + kind;
       m.position.copy(BIND[bone]).negate();
@@ -220,6 +227,13 @@ export class PlayerBody {
     // brim; upright on a 9 cm neck, from behind at brim height the skull and
     // the neck stood a head's height above the collar like a column
     h.bones.head.position.y -= HEAD_SINK;
+    // (Phase 3e) the hat set down on the head (layers.PLAYER_HEAD.hatDrop):
+    // on the Hoods' 13.5 cm head-to-brim offset the whole skull hung under
+    // the brim, a black ball as wide as the crown with the hat perched on
+    // top; lowered, the brim cuts the skull near its equator, at the top of
+    // the ear, and only the nape, the ear, the cheek and the jaw show under
+    // it, as on the reference's shooter
+    h.bones.hat.position.y -= PLAYER_HEAD.hatDrop;
     // the Tommy gun, in two parts (the drum comes out in the reload): an ink
     // figure of its own (a Hood slot reserved for it, layers.PLAYER_SLOT),
     // so the ink draws the paper trap line between it and the coat behind -
@@ -533,6 +547,8 @@ export class PlayerBody {
     // on the gun's - its fingers wrap the gun, and the ink draws the gaps
     // between them across the bore)
     FIG_ANCHOR[this.partSlots[0]].set(h.pos.x, h.pos.y, h.pos.z, h.yaw);
+    // (the yoke on the body's too: the coat's strokes run on across it)
+    FIG_ANCHOR[this.partSlots[2]].set(h.pos.x, h.pos.y, h.pos.z, h.yaw);
     // (Phase 3d: the glove's frame is the WRIST's, turned with the gun's
     // heading - the ink counts its knuckles along the bore from the wrist)
     const wr = b.handL.getWorldPosition(V[5]);
@@ -562,6 +578,10 @@ export class PlayerBody {
     HERO[4].set(nm[12], nm[13], nm[14], foldA);
     const nu = V[5].set(nm[4], nm[5], nm[6]).normalize();
     HERO[5].set(nu.x, nu.y, nu.z, 0);
+    // (Phase 3e) the chest's forward axis: the yoke slab's back arris
+    const cm = b.chest.matrixWorld.elements;
+    const cf = V[5].set(cm[8], cm[9], cm[10]).normalize();
+    HERO[9].set(cf.x, cf.y, cf.z, 0);
   }
 
   // bone.world rotation := q (then its children follow)

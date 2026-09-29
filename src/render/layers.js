@@ -100,7 +100,20 @@ const hoodSlots = new Array(HOOD_SLOTS).fill(false);
 // contour and its knuckle ticks.)
 // Phase 3d: the gun's walnut stock (56) is a mesh of its own too: the ink
 // draws the stock / receiver contour and a dashed light line along its comb.
-export const PLAYER_SLOT = { body: HOOD_SLOTS - 1, gun: HOOD_SLOTS - 2, drum: HOOD_SLOTS - 3, fins: HOOD_SLOTS - 4, sight: HOOD_SLOTS - 5, ear: HOOD_SLOTS - 6, hand: HOOD_SLOTS - 7, stock: HOOD_SLOTS - 8, low: HOOD_SLOTS - 8 };
+// Phase 3e: the coat's YOKE (55) - a thin flat slab over his shoulders,
+// rigid on the chest bone - is a mesh of its own: the ink draws its back
+// arris as a dashed light line where its id meets the coat's.
+export const PLAYER_SLOT = { body: HOOD_SLOTS - 1, gun: HOOD_SLOTS - 2, drum: HOOD_SLOTS - 3, fins: HOOD_SLOTS - 4, sight: HOOD_SLOTS - 5, ear: HOOD_SLOTS - 6, hand: HOOD_SLOTS - 7, stock: HOOD_SLOTS - 8, yoke: HOOD_SLOTS - 9, low: HOOD_SLOTS - 9 };
+// (Phase 3e) The player's head under his hat, shared by the geometry
+// (enemies/Hood.js, player/PlayerBody.js) and the ink's head tests
+// (render/shaders/ink.js): from half a metre behind his shoulder the skull
+// hung whole under the brim, a black ball as wide as the crown with the hat
+// perched on it. hatDrop (m): the hat sits this much lower on his head than
+// on a Hood's - the brim cuts the skull near its equator, at the ear's top;
+// headK: the skull (and the nose and the ears on it) this much narrower in
+// x / z about its centre, narrower than the crown. (otshatdrop= / otsheadk=)
+const PLD = new URLSearchParams(typeof location !== 'undefined' ? location.search : '');
+export const PLAYER_HEAD = { hatDrop: parseFloat(PLD.get('otshatdrop') ?? '0.04'), k: parseFloat(PLD.get('otsheadk') ?? '0.9') };
 // The player's hero key (Phase 3b review): the ink prints the player's own
 // hat, head and Tommy gun with bold dry-brush highlights under a key light
 // fixed in WORLD space (mostly from above, leaning to the street's +x side
@@ -118,7 +131,10 @@ const heroKey = new THREE.Vector3(0.45, 0.85, -0.3).normalize();
 // -Y, wrist to knuckles (xyz), [8] its knuckle row - the hand's +Z, up the
 // gun (xyz): the ink lays the glove's knuckle ticks in the fist's own frame
 export const HERO = [new THREE.Vector4(), new THREE.Vector4(0, 1, 0, 0), new THREE.Vector4(heroKey.x, heroKey.y, heroKey.z, 1), new THREE.Vector4(1, 0, 0, 0), new THREE.Vector4(), new THREE.Vector4(0, 1, 0, 0),
-  new THREE.Vector4(), new THREE.Vector4(0, 0, -1, 0), new THREE.Vector4(0, 1, 0, 0)];
+  new THREE.Vector4(), new THREE.Vector4(0, 0, -1, 0), new THREE.Vector4(0, 1, 0, 0),
+  // (Phase 3e) [9] the chest's forward axis (xyz): the ink keeps the yoke's
+  // dashed arris to the slab's back edge
+  new THREE.Vector4(0, 0, 1, 0)];
 export function allocHoodSlot(reserved = -1) {
   if (reserved >= 0) { hoodSlots[reserved] = true; return reserved; }
   for (let i = 0; i < PLAYER_SLOT.low; i++) {

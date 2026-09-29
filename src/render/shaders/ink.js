@@ -3,7 +3,18 @@ import { FULLSCREEN_VERT, HASH_GLSL, LUMA_GLSL } from './common.js';
 import { NOIR_FOG_GLSL } from '../fog.js';
 import { TONE_GLSL, toneUniforms, EXPOSURE } from '../tone.js';
 import { RAIN_SLANT } from '../textures.js';
-import { FIG_ANCHOR, HOOD_ID0, HOOD_SLOTS, VM_ID0, DEBRIS_ID0, PLAYER_SLOT, HERO } from '../layers.js';
+import { FIG_ANCHOR, HOOD_ID0, HOOD_SLOTS, VM_ID0, DEBRIS_ID0, PLAYER_SLOT, HERO, PLAYER_HEAD } from '../layers.js';
+
+// (Phase 3e) the player's head in his hat's frame (layers.PLAYER_HEAD): the
+// hat sits HAT_DROP lower on it than on a Hood (the skull's centre 5.5 cm
+// under the brim plane less the drop) and the skull, the nose and the ears
+// are HEAD_K narrower in x / z about the skull's centre (1.8 cm ahead of the
+// hat's axis)
+const f3 = (x) => x.toFixed(4);
+const HAT_DROP = PLAYER_HEAD.hatDrop, HEAD_K = PLAYER_HEAD.k;
+// (the cheek's plane stops 1 cm under the brim however far the hat drops:
+// the brim's shadow)
+const CHEEK_TOP = Math.min(-0.028 + HAT_DROP, -0.01);
 
 // The ink pass: turns the linear HDR render into a hand-inked noir panel.
 // Order inside the shader (see DESIGN.md §3.4):
@@ -69,7 +80,7 @@ export function makeInkMaterial(tex, fogUniforms) {
       uniform float uExposure, uBloomStrength, uBrush, uLineWidth, uLightning, uRain, uRain3, uKick;
       uniform vec4 uRimLamps[ 4 ];
       uniform vec4 uFigAnchor[ ${HOOD_SLOTS} ];
-      uniform vec4 uHero[ 9 ];
+      uniform vec4 uHero[ 10 ];
       uniform int uView;
       uniform float uFast;
       varying vec2 vUv;
@@ -162,6 +173,12 @@ export function makeInkMaterial(tex, fogUniforms) {
       float isHeroId( float w ) {
         float f = -w - ${(HOOD_ID0 + PLAYER_SLOT.low).toFixed(1)};
         return step( -0.5, f ) * step( f, ${(HOOD_SLOTS - 1 - PLAYER_SLOT.low + 0.5).toFixed(1)} );
+      }
+
+      // (Phase 3e) 1 for the hero's coat: his body's id or his yoke slab's
+      float isHeroCoat( float w ) {
+        float f = -w - ${HOOD_ID0.toFixed(1)};
+        return ( 1.0 - step( 0.5, abs( f - ${PLAYER_SLOT.body.toFixed(1)} ) ) ) + ( 1.0 - step( 0.5, abs( f - ${PLAYER_SLOT.yoke.toFixed(1)} ) ) );
       }
 
       void main() {
@@ -324,7 +341,10 @@ export function makeInkMaterial(tex, fogUniforms) {
           vec3 q = wpos - A.xyz;
           hoodY = q.y;
           float ca = cos( A.w ), sa = sin( A.w );
-          bpos = vec3( ca * q.x - sa * q.z, q.y, sa * q.x + ca * q.z ) + vec3( float( slot ) * 7.31, float( slot ) * 1.9, float( slot ) * 3.77 );
+          // (Phase 3e: the hero's yoke slab wears his coat's strokes - the
+          // body slot's offset - so the field runs on across its arris)
+          float slotO = slot == ${PLAYER_SLOT.yoke} ? ${PLAYER_SLOT.body.toFixed(1)} : float( slot );
+          bpos = vec3( ca * q.x - sa * q.z, q.y, sa * q.x + ca * q.z ) + vec3( slotO * 7.31, slotO * 1.9, slotO * 3.77 );
           nBr = vec3( ca * nB.x - sa * nB.z, nB.y, sa * nB.x + ca * nB.z );
         }
         // the gun carries its brush field in its own frame (it moves with the
@@ -373,7 +393,7 @@ export function makeInkMaterial(tex, fogUniforms) {
         // the ear, the receiver's top). The ribbon stays a black band with a
         // broken light top edge, the brim's rim a heavy ink line. Applied
         // after the band quantiser (below), in place of it.
-        float heroEarLit = 0.0, heroGun = 0.0, heroFins = 0.0, heroHand = 0.0, heroSight = 0.0;
+        float heroEarLit = 0.0, heroGun = 0.0, heroFins = 0.0, heroHand = 0.0, heroSight = 0.0, heroYoke = 0.0;
         vec3 heroDbg = vec3( 0.0 );
         float heroM = 0.0, heroV = 0.0, heroLine = 0.0, heroRimK = 1.0, heroBreak = 0.0, heroHead = 0.0, heroHard = 0.0;
         if ( hood > 0.5 && fidH > ${(PLAYER_SLOT.low - 0.5).toFixed(1)} && uHero[ 1 ].w > 0.5 ) {
@@ -402,6 +422,11 @@ export function makeInkMaterial(tex, fogUniforms) {
             float hr = length( vec2( hx / 0.9, hz ) );              // off the crown's axis (the brim's oval)
             float onHat = bodyP * step( -0.05, hh ) * step( hr, uHero[ 0 ].w + 0.02 );
             float band = onHat * smoothstep( 0.008, 0.013, hh ) * ( 1.0 - smoothstep( 0.034, 0.039, hh ) ) * step( hr, 0.125 );
+            // (Phase 3e: the ribbon's wall only, never the brim's top at its
+            // foot - with the hat set lower on the head the lens looks onto
+            // the brim, and the band's soft lower edge laid a smooth grey
+            // gradient bar along it)
+            band *= step( abs( dot( nW, uHero[ 1 ].xyz ) ), 0.7 );
             float brimEdge = onHat * smoothstep( uHero[ 0 ].w - 0.014, uHero[ 0 ].w - 0.007, hr ) * step( hh, 0.03 );
             // the hat: above the brim plane, or the brim's snapped front
             // just below it
@@ -416,7 +441,7 @@ export function makeInkMaterial(tex, fogUniforms) {
             // column with the skull on top, cut flat by the coat)
             vec3 hZ = normalize( cross( uHero[ 3 ].xyz, uHero[ 1 ].xyz ) );   // the hat's front
             float hzF = dot( hq, hZ );
-            float eH = length( vec3( hx / 0.08, ( hh + 0.055 ) / 0.103, ( hzF - 0.018 ) / 0.097 ) );
+            float eH = length( vec3( hx / ${f3(0.08 * HEAD_K)}, ( hh + ${f3(0.055 - HAT_DROP)} ) / 0.103, ( hzF - 0.018 ) / ${f3(0.097 * HEAD_K)} ) );
             vec3 nq = wpos - uHero[ 4 ].xyz;
             float nt = dot( nq, uHero[ 5 ].xyz );
             float neckR = length( nq - nt * uHero[ 5 ].xyz );
@@ -424,7 +449,7 @@ export function makeInkMaterial(tex, fogUniforms) {
             // back, tucked in at the nape, where the collar's back comes up
             // to eH ~1.08 once the head drops onto the stock - so the margin
             // closes toward the nape)
-            float headOnly = bodyP * ( 1.0 - hatPx ) * max( step( eH, mix( 1.03, 1.14, smoothstep( -0.1, -0.04, hh ) ) ), step( -0.04, nt ) * step( nt, 0.2 ) * step( neckR, 0.058 ) );
+            float headOnly = bodyP * ( 1.0 - hatPx ) * max( step( eH, mix( 1.03, 1.14, smoothstep( ${f3(-0.1 + HAT_DROP)}, ${f3(-0.04 + HAT_DROP)}, hh ) ) ), step( -0.04, nt ) * step( nt, 0.2 ) * step( neckR, 0.058 ) );
             heroHead = headOnly;
             // the coarse stroke field. On the cloth and the felt it is laid
             // in ONE direction, like an inker's hand: projected on the body's
@@ -564,7 +589,7 @@ export function makeInkMaterial(tex, fogUniforms) {
             // 1.95 cm up, ~1 cm deep), torn by the fine field - on the helix's
             // back and top only (open toward the face and the lobe), cut into
             // dashes along the helix's angle, ~1.7 rad apart at ~45 % duty)
-            vec2 eq = vec2( ( hh + 0.058 ) / 0.0195, ( hzF + 0.008 ) / 0.0105 );
+            vec2 eq = vec2( ( hh + ${f3(0.058 - HAT_DROP)} ) / 0.0195, ( hzF + ${f3(0.026 * HEAD_K - 0.018)} ) / 0.0105 );
             float earR = length( eq );
             float earA = atan( eq.x, -eq.y );                 // 0: the helix's back, + over its top
             float earBand = step( 0.74, earR + ( brF.g - 0.5 ) * 0.3 );
@@ -594,25 +619,22 @@ export function makeInkMaterial(tex, fogUniforms) {
             tone = mix( tone, 0.6, collarP );
             heroV = max( max( wash * 0.12, hatWash * 0.26 ), tick * tone );
             // (Phase 3d review) the YOKE: the shoulder line from the collar
-            // out to the shoulder points and across the back's top edge -
-            // the corner where the coat's back and its sides turn onto the
-            // flat top of the shoulders - drawn as a DASHED light line, like
-            // the stock's comb: a narrow band of the surface's up-ness in the
-            // body's own frame (the neck's axis), round the top of the torso
-            // (neck-frame height -7..+4.5 cm, 8.5-27 cm off the neck's axis: outside
-            // the collar, inside the shoulder points - the raised forearm's
-            // sleeve passes through that height further out), cut into
-            // long dashes by the coarse field. The squared shoulder is drawn,
-            // not left to the silhouette alone
-            float upN = dot( nW, uHero[ 5 ].xyz );
-            float yokeR = bodyP * ( 1.0 - hatPx ) * ( 1.0 - headOnly ) * ( 1.0 - collarP ) * step( 0.085, neckR ) * step( neckR, 0.27 ) * step( -0.07, nt ) * step( nt, 0.045 );
-            // (a line ~3 px wide along the up-ness isoline 0.64 whatever the
-            // corner's radius - a band of fixed up-ness printed as a broad
-            // grey fan where the corner is rounder, at the shoulder points -
-            // broken into dashes by the coarse field and torn by the fine)
-            float upW = clamp( fwidth( upN ), 0.004, 0.06 );
-            float yoke = yokeR * ( 1.0 - smoothstep( upW * 2.0, upW * 2.6, abs( upN - 0.64 ) ) ) * step( 0.1, dot( n, vdir ) ) * step( 0.45, brH.r ) * step( 0.2, brF.g );
-            heroV = max( heroV, yoke * 0.72 );
+            // out to the shoulder points - drawn as a DASHED light line, like
+            // the stock's comb. (Phase 3e: no longer an isoline of the
+            // surface's up-ness - on the rounded shoulder corner it crossed
+            // the band twice and S-curved round the cushion. The yoke is a
+            // flat slab of its own, layers.PLAYER_SLOT.yoke, and its line is
+            // its back ARRIS: printed below where the slab's id meets the
+            // coat's, outside the collar - 10 cm off the neck's axis - cut
+            // into long dashes by the coarse field, torn by the fine)
+            float yokeP = 1.0 - step( 0.5, abs( slotH - ${PLAYER_SLOT.yoke.toFixed(1)} ) );
+            // (its BACK arris only: behind the neck in the chest's frame -
+            // uHero[9], its forward axis - and short of the slab's outer end,
+            // 25 cm out, where it laps the sleeve; ~2/3 of it in dashes -
+            // a line a pixel or three wide, where the old band was 3 px)
+            float yokeZ = dot( nq, uHero[ 9 ].xyz );
+            float yokeX = length( nq - nt * uHero[ 5 ].xyz - yokeZ * uHero[ 9 ].xyz );
+            heroYoke = yokeP * step( 0.1, neckR ) * step( yokeZ, -0.02 ) * step( yokeX, 0.235 ) * step( 0.38, brH.r ) * step( 0.12, brF.g );
             // the glove on the foregrip (Phase 3d): a BLACK fist, cut out of
             // the steel by its own id's contour and paper trap, drawn by 3-4
             // KNUCKLE TICKS that always print, lit or not: one short light
@@ -641,14 +663,14 @@ export function makeInkMaterial(tex, fogUniforms) {
                         * step( 0.035, fa ) * step( fa, 0.1 ) * step( 0.1, dot( n, vdir ) ) * step( 0.1, brF.g );
             heroV = mix( heroV, knuck * 0.8, handP );
             heroDbg = vec3( clamp( fa / 0.1, 0.0, 1.0 ), clamp( row / 4.0, 0.0, 1.0 ) * step( 0.0, row ), knuck ) * handP
-                    + vec3( fract( neckR / 0.05 ) * 0.7, clamp( neckR / 0.4, 0.0, 1.0 ), yoke ) * bodyP * ( 1.0 - hatPx ) * ( 1.0 - headOnly );
+                    + vec3( fract( neckR / 0.05 ) * 0.7, clamp( neckR / 0.4, 0.0, 1.0 ), yokeP ) * max( bodyP * ( 1.0 - hatPx ) * ( 1.0 - headOnly ), yokeP );
             // the skull (Phase 3d): a BLACK hair mass. Its light is a ragged
             // HAIRLINE of a few ticks along its silhouette from the crown to
             // the nape - where the back of the head turns from the eye,
             // behind the ear, under the brim - the reference's combed-back
             // hair catching the lamp: dashes of the fine field, never a rim
             float graze = 1.0 - abs( dot( n, vdir ) );
-            float onSkull = step( eH, 1.1 ) * step( -0.16, hh );
+            float onSkull = step( eH, 1.1 ) * step( ${f3(-0.16 + HAT_DROP)}, hh );
             // (the coarse field's strokes - 6-20 px wide at its 900 px tiles -
             // cut the silhouette band into a few ticks; the fine octave's
             // bristles printed it as a dotted line of specks)
@@ -689,7 +711,7 @@ export function makeInkMaterial(tex, fogUniforms) {
             // (the step is on the head's own tick field - the 1500 px octave,
             // strokes 10-30 px wide - so the plane is a few broad torn strokes;
             // on the fine octave it printed as a speckle of bristles)
-            float cheekR = headOnly * onSkull * step( hx, -0.025 ) * step( 0.004, hzF ) * step( -0.112, hh ) * step( hh, -0.028 );
+            float cheekR = headOnly * onSkull * step( hx, -0.025 ) * step( 0.004, hzF ) * step( ${f3(-0.112 + HAT_DROP)}, hh ) * step( hh, ${f3(CHEEK_TOP)} );
             // (and the ink's key decides WHERE it is torn: square to the key
             // the plane holds, a few holes; turning away it breaks into the
             // odd stroke - thresholded, never shaded: on the field alone it
@@ -707,7 +729,7 @@ export function makeInkMaterial(tex, fogUniforms) {
             // whole view - a plate square to the key in battle, nothing but a
             // speck in ots; the mean of two holds ~a third to a half of the
             // cheek in every view, as two or three broad torn strokes)
-            float limD = min( min( -0.025 - hx, hzF - 0.004 ), min( hh + 0.112, -0.028 - hh ) );
+            float limD = min( min( -0.025 - hx, hzF - 0.004 ), min( hh + ${f3(0.112 - HAT_DROP)}, ${f3(CHEEK_TOP)} - hh ) );
             cheekR *= step( 0.018 * brH.g + 0.008 * brF.r, limD );
             cheekR *= step( 6.0 + 22.0 * brH.g, silPx );
             float cf = ( bt + brH.g ) * 0.5 + ( kInk - 0.5 ) * 0.1 + ( smoothstep( 0.0, 0.05, hzF ) - 0.5 ) * 0.1;
@@ -718,7 +740,12 @@ export function makeInkMaterial(tex, fogUniforms) {
             // the ribbon: a black band, its top edge a broken light line
             heroV *= 1.0 - band;
             float bandTop = onHat * smoothstep( 0.030, 0.033, hh ) * ( 1.0 - smoothstep( 0.0355, 0.039, hh ) ) * step( hr, 0.125 );
-            heroV = max( heroV, bandTop * 0.6 * smoothstep( 0.45, 0.5, bs ) * smoothstep( -0.2, 0.3, dot( nW, kH0 ) ) );
+            // (Phase 3e: on the rolled lip only - its normal ~50 deg up - and
+            // cut to two levels: with the hat set lower the lens looks down
+            // onto the ribbon, and the band's top 3 mm of wall took the soft
+            // key ramp as a smooth pale bar round the crown's foot)
+            bandTop *= step( 0.35, dot( nW, uHero[ 1 ].xyz ) );
+            heroV = max( heroV, bandTop * 0.6 * step( 0.475, bs ) * step( 0.05, dot( nW, kH0 ) ) );
             // the brim's outer edge: a light line where it turns to the key
             // (the reference's brim is drawn by that one catch-light), a
             // heavy ink line where it does not
@@ -938,6 +965,7 @@ export function makeInkMaterial(tex, fogUniforms) {
         float silFront = 0.0;
         float halo = 0.0;    // we are just behind a Hood's silhouette
         float stockJ = 0.0;  // (Phase 3d) the hero's stock, against his receiver
+        float yokeJ = 0.0;   // (Phase 3e) the hero's yoke slab, against his coat
         vec2 haloUV = uv;    // ... at this neighbouring Hood pixel,
         vec3 haloN = vec3( 0.0, 0.0, 1.0 );   // whose normal is this
         const vec2 dirs[ 4 ] = vec2[ 4 ]( vec2( 1.0, 0.0 ), vec2( 0.0, 1.0 ), vec2( 0.7071, 0.7071 ), vec2( 0.7071, -0.7071 ) );
@@ -948,6 +976,10 @@ export function makeInkMaterial(tex, fogUniforms) {
         // unfiltered and unmipmapped, so the branch is safe for their taps.)
         if ( !sky || uFast < 0.5 ) {
         vec4 cN = texture2D( tNormalId, uvL );
+        // (Phase 3e) the hero's coat - his body or his yoke slab - under the
+        // probe's centre, and the yoke alone (tested per tap only there)
+        float coatC = isHeroCoat( cN.w );
+        float yokeC = 1.0 - step( 0.5, abs( -cN.w - ${(HOOD_ID0 + PLAYER_SLOT.yoke).toFixed(1)} ) );
         float wcl = wAt( uvL );
         for ( int i = 0; i < 4; i ++ ) {
           vec2 o = dirs[ i ] * rpx / uRes;
@@ -959,7 +991,16 @@ export function makeInkMaterial(tex, fogUniforms) {
           float en = smoothstep( 0.3, 0.6, nd ) * step( 0.5, abs( cN.w ) );
           edge = max( edge, en );
           edgeN = max( edgeN, en );
-          float idd = max( abs( n1.w - cN.w ), abs( n2.w - cN.w ) );
+          // (Phase 3e: the hero's yoke slab and his coat are one cloth - no
+          // black id contour, no paper trap between them; the yoke's arris
+          // is drawn by its own dashed light line, yokeJ)
+          float coat1 = 0.0, coat2 = 0.0;
+          if ( coatC > 0.5 ) {
+            coat1 = isHeroCoat( n1.w ); coat2 = isHeroCoat( n2.w );
+            // (the yoke's pixels beside the coat's - its arris)
+            if ( yokeC > 0.5 ) yokeJ = max( yokeJ, 1.0 - step( 0.5, min( abs( -n1.w - ${(HOOD_ID0 + PLAYER_SLOT.body).toFixed(1)} ), abs( -n2.w - ${(HOOD_ID0 + PLAYER_SLOT.body).toFixed(1)} ) ) ) );
+          }
+          float idd = max( abs( n1.w - cN.w ) * ( 1.0 - coat1 ), abs( n2.w - cN.w ) * ( 1.0 - coat2 ) );
           edgeId = max( edgeId, step( 0.5, idd ) );
           // (between two of the hero's own ids - the drum, the barrel, the
           // sights, the receiver, his coat - the part in front need only be
@@ -969,8 +1010,8 @@ export function makeInkMaterial(tex, fogUniforms) {
           // (Phase 3d: the stock's pixels beside the receiver's - their joint)
           stockJ = max( stockJ, ( 1.0 - step( 0.5, abs( -cN.w - ${(HOOD_ID0 + PLAYER_SLOT.stock).toFixed(1)} ) ) )
                               * ( 1.0 - step( 0.5, min( abs( -n1.w - ${(HOOD_ID0 + PLAYER_SLOT.gun).toFixed(1)} ), abs( -n2.w - ${(HOOD_ID0 + PLAYER_SLOT.gun).toFixed(1)} ) ) ) ) );
-          float h1 = isHood( n1.w ) * step( 0.5, abs( n1.w - cN.w ) ) * step( wcl * ( 1.15 - 0.135 * hc * isHeroId( n1.w ) ) + 1e-6, w1 );
-          float h2 = isHood( n2.w ) * step( 0.5, abs( n2.w - cN.w ) ) * step( wcl * ( 1.15 - 0.135 * hc * isHeroId( n2.w ) ) + 1e-6, w2 );
+          float h1 = isHood( n1.w ) * step( 0.5, abs( n1.w - cN.w ) * ( 1.0 - coat1 ) ) * step( wcl * ( 1.15 - 0.135 * hc * isHeroId( n1.w ) ) + 1e-6, w1 );
+          float h2 = isHood( n2.w ) * step( 0.5, abs( n2.w - cN.w ) * ( 1.0 - coat2 ) ) * step( wcl * ( 1.15 - 0.135 * hc * isHeroId( n2.w ) ) + 1e-6, w2 );
           if ( halo < 0.5 && h1 > 0.5 ) { haloUV = uvL + o; haloN = n1.xyz; }
           else if ( halo < 0.5 && h2 > 0.5 ) { haloUV = uvL - o; haloN = n2.xyz; }
           halo = max( halo, max( h1, h2 ) );
@@ -1071,6 +1112,10 @@ export function makeInkMaterial(tex, fogUniforms) {
         // round the shell ran exactly along the rim band and ate it)
         col = mix( col, vec3( 0.0 ), max( edge * ( 1.0 - heroEarLit * step( 0.5, heroM ) ), heroLine ) );
         col = max( col, vec3( structL * 0.42 ) );
+        // (Phase 3e) the yoke's arris: a dashed light line along the slab's
+        // edge where it meets the coat (heroYoke: the slab, outside the
+        // collar, the coarse field's dashes), drawn over its own contour
+        col = max( col, vec3( 0.72 * yokeJ * heroYoke * heroM * ( 1.0 - fxCov ) ) );
         col = max( col, vec3( rim * mix( 0.72, 0.86, figR ) ) );
         // black on black: behind a Hood's silhouette the dark object (a car,
         // a column, another man) is cut back by a thin broken paper gap, the
