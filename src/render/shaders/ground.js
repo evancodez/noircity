@@ -29,6 +29,9 @@ export function makeGroundUniformsShared(tex) {
     tRefl: { value: null },
     tReflBlur: { value: null },
     uReflMatrix: { value: new THREE.Matrix4() },
+    // the view's uv (uReflMatrix) -> the mirror's own window (Pipeline:
+    // the mirror is rendered from the horizon down): v' = v * x + y
+    uReflRemap: { value: new THREE.Vector2(1, 0) },
     tNoise: { value: tex.noise },
     tBrush: { value: tex.brush },
     uImpacts: { value: impacts },
@@ -76,6 +79,7 @@ export function makeGroundMaterial(U, { paving = 0 } = {}) {
       #include <shadowmap_pars_fragment>
       uniform sampler2D tRefl, tReflBlur, tNoise, tBrush;
       uniform float uTime, uPaving, uReflStrength;
+      uniform vec2 uReflRemap;
       uniform int uGroundDebug;
       uniform float uFast;
       uniform vec2 uRes;
@@ -367,22 +371,24 @@ export function makeGroundMaterial(U, { paving = 0 } = {}) {
         vec2 dis = grad * mix( 0.02, 0.008, puddle ) * ( 1.0 / ( 1.0 + dist * 0.05 ) );
         // a slight sideways waver only: a column stays a straight bar
         dis.x += wave * 0.006 * ( 1.0 - puddle * 0.7 );
-        vec4 rS = texture2D( tRefl, ruv + dis * 0.6 );
-        vec3 rSharp = rS.rgb;
-        float coverage = clamp( rS.a, 0.0, 1.0 );   // geometry mirrored here (cleared = 0)
-        // the sharp mirror only ADDS light that is itself a light (lamp heads,
-        // lit windows, headlights, cone cores: above the bright-pass T); any
-        // mirrored LIT GEOMETRY (a car's sky-grey windows and underbody seen
-        // from below) is black water, carried by the coverage cut in the
-        // sheen - it printed as a flat grey plate, brush-hatched, under the cars
-        float rsL = dot( rSharp, vec3( 0.2126, 0.7152, 0.0722 ) );
-        rSharp *= smoothstep( 0.055, 0.13, rsL );
-        // column: the bright-passed, long-streaked emitters (Pipeline §2)
+        // (fix 8: the sharp mirror in the puddles is gone - it printed each
+        // light upside down at its mirror point, in front of its own sheen -
+        // and so is the coverage cut, the mirrored dark masses (the el's
+        // columns, a lamp post, standing upside down in the near grey wash):
+        // the street reflects light only. The mirror is read by the sheen
+        // pass alone; uReflRemap maps into it should a term need it again.)
+        const float coverage = 0.0;
+        vec3 rSharp = vec3( 0.0 );
+        // column: each emitter's sheen lying on the street from its foot
+        // toward the eye (Pipeline §2, shaders/reflstreak.js)
         vec3 column = texture2D( tReflBlur, ruv + dis ).rgb * uReflStrength;
         float colL = dot( column, vec3( 0.2126, 0.7152, 0.0722 ) );
         // graphic toe: the faint skirt of a column goes (it printed as a
         // mid-grey plate between the columns), the column body stays
-        column *= smoothstep( 0.004, 0.03, colL );
+        // (fix 8: a sheen's luminance is its presence, ~0.1 at its foot,
+        // falling to 0 at its end: the thresholds below are cut so the fade
+        // prints over its whole length, not as a bar that stops)
+        column *= smoothstep( 0.0015, 0.01, colL );
         // sheen: the storm sky, only as a faint fresnel wet-grey between the
         // columns; in a puddle whatever is mirrored (a car, a column) is
         // black against it
@@ -407,8 +413,8 @@ export function makeGroundMaterial(U, { paving = 0 } = {}) {
         // it: ~60 % net) and falls off across its flanks; within ~6 m the
         // core thins so the column's foot is carried by its dashes
         float nearCol = smoothstep( 1.5, 7.0, dist );
-        float covIn = 0.8 * mix( 0.82, 1.1, patchM ) * mix( 0.7, 1.0, nearCol );
-        float colMask = smoothstep( 0.006, 0.075, colL );
+        float covIn = 0.8 * mix( 0.82, 1.1, patchM ) * mix( 0.45, 1.0, nearCol );
+        float colMask = smoothstep( 0.003, 0.08, colL );
         float cov = mix( covOut, covIn, colMask );
         float f1, f2, f3, f4;
         float d1 = rippleDashes( p, 0.16, 0.45, cov, 0.0, f1 );
@@ -427,7 +433,7 @@ export function makeGroundMaterial(U, { paving = 0 } = {}) {
         // so it runs down the column): the rungs break into ragged vertical
         // slivers like the reference's streaks
         float vbr = texture2D( tBrush, ( ruv + dis ) * vec2( 1.9, 0.8 ) + vec2( 0.37, 0.11 ) ).g;
-        dash *= mix( 1.0, smoothstep( 0.06, 0.24, vbr ), smoothstep( 0.02, 0.08, colL ) * 0.9 );
+        dash *= mix( 1.0, smoothstep( 0.06, 0.24, vbr ), smoothstep( 0.006, 0.04, colL ) * 0.9 );
         // inside the near wash band the water is carried by the wash and its
         // blots, not by a ruled field of slivers: ~30 % of the dashes stay
         // (outside the columns; a column's foot keeps its ripples)
@@ -443,7 +449,7 @@ export function makeGroundMaterial(U, { paving = 0 } = {}) {
         // white) and its strength is carried by the dash COVERAGE instead
         // (cov above: ~80 % at the core, sparse slivers in the flanks); the
         // gaps keep ~4 %: dark grey inside a core, black in the flanks.
-        float colB = 0.45 * ( 1.0 - exp( - colL / 0.045 ) );
+        float colB = 0.45 * ( 1.0 - exp( - colL / 0.05 ) );
         // aerial perspective on the columns: every far emitter's streak
         // converges on the road under the vanishing point, where they summed
         // (with the direct lamp pools) into a lit white plate. Beyond ~25 m a
@@ -497,7 +503,7 @@ export function makeGroundMaterial(U, { paving = 0 } = {}) {
                   // catch the grey storm sky. (sheen * 1.2 * dash alone is
                   // ~0.005 near the camera, where the fresnel is low: under
                   // the ink's black point, so the near road had no dashes)
-                  + uFogColor * ( 0.1 + 0.3 * fres ) * dash * ( 1.0 - smoothstep( 0.004, 0.05, colL ) )
+                  + uFogColor * ( 0.1 + 0.3 * fres ) * dash * ( 1.0 - smoothstep( 0.002, 0.05, colL ) )
                     * ( 1.0 - coverage * puddle )
                   + rSharp * puddle * 0.5;             // puddles: a sharp mirror
         // near-field rain rings: thin light arcs where their crest catches the sky
@@ -578,6 +584,9 @@ export function makeGroundMaterial(U, { paving = 0 } = {}) {
         else if ( uGroundDebug == 8 ) col = vec3( ( wash + speck ) * 0.1 );
         vec4 nf = noirFog( dist, vWorld.y, uFogDensity, uFogColor );
         col = mix( col, nf.rgb, nf.a );
+        // (10: a saturated key that survives the ink's colour keep - the
+        // mask of the street and pavements, to prove a change is ground only)
+        if ( uGroundDebug == 10 ) col = vec3( 0.0, 1.0, 0.0 );
         gl_FragColor = vec4( col, 1.0 );
       }`,
   });
