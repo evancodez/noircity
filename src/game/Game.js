@@ -4,6 +4,7 @@ import { Weapon, WEAPON } from '../player/Weapon.js';
 import { Health } from '../player/Health.js';
 import { HoodAI, HoodPacing } from '../enemies/HoodAI.js';
 import { Director } from './Director.js';
+import { Brawl } from './Brawl.js';
 import { Autopilot } from './Autopilot.js';
 import { DEATHS, HAT_OFF } from '../enemies/HoodAnim.js';
 import { Storm } from '../world/Storm.js';
@@ -90,9 +91,17 @@ export class Game {
     this.inspect = new Inspect(this);
     this.puzzles = new Puzzles(this);
     this.scenes = new SceneManager(this);
-    // input edges (see pressed / released / mouse)
+    this.brawl = new Brawl(this);
+    // hit feel (the brawl): steps the simulation skips (a hit stop), and a
+    // slow-motion scale on the real-time loop (main.js)
+    this.hitStop = 0;
+    this.timeScale = 1;
+    this.slowT = 0;
+    // input edges (see pressed / released / held / mouse); vin: the
+    // autoplay's hands on the same keys (game/Autoplay.js)
     this.keysDown = new Set();
     this.keysUp = new Set();
+    this.vin = { held: new Set(), down: new Set(), up: new Set() };
     this.mouse = { dx: 0, dy: 0, wheel: 0 };
     this._mouseAcc = { dx: 0, dy: 0, wheel: 0 };
     // the world's shot-mode clocks run (a train and lightning in a shot are
@@ -198,8 +207,9 @@ export class Game {
   get breakables() { return this.world.breakables; }
 
   // ---- input edges (one fixed step) ----------------------------------------------
-  pressed(code) { return this.keysDown.has(code); }
-  released(code) { return this.keysUp.has(code); }
+  pressed(code) { return this.keysDown.has(code) || this.vin.down.has(code); }
+  released(code) { return this.keysUp.has(code) || this.vin.up.has(code); }
+  held(code) { return this.controller.keys.has(code) || this.vin.held.has(code); }
 
   // a world point on the screen, in CSS pixels ({ x, y }), or null behind
   screenOf(p) {
@@ -279,14 +289,20 @@ export class Game {
     this.vm.visible = on; this.pipeline.vm.visible = on;
   }
 
-  // The title card's camera (Phase 3b): the street composition, drifting -
-  // a slow dolly down the avenue and back, the gaze wandering a little
-  // across the lamp and the el - so the live street breathes behind the
-  // lettering. A pure function of time (shot=title renders it at t=).
+  // The title card's camera (lane 7): the diner from across the street in
+  // the rain, the eye 1.6 m up on the far pavement, drifting slowly from
+  // (2.5, 9.5) toward (1.5, 7.5) and back (an eased swing of 70 s), the
+  // gaze held on the diner's door (a little above it: the lit bays and the
+  // fascia in the middle band, the dark stone above for the lettering, the
+  // wet street below for the choices). A pure function of time (shot=title
+  // renders it at t=).
   titleDrift(t) {
-    const u = t / 26;
-    const s = Math.sin(u * Math.PI * 2), c = Math.cos(u * Math.PI * 1.3);
-    this.controller.setPose(-3.8 + 0.5 * c, -8.4 - 1.6 * (0.5 - 0.5 * Math.cos(u * Math.PI * 2)), -0.105 + 0.05 * s, 0.085 + 0.018 * c, 0.07);
+    const u = 0.5 - 0.5 * Math.cos((t / 70) * Math.PI * 2);
+    const x = 2.5 - 1.0 * u, z = 9.5 - 2.0 * u;
+    const tx = -10.2, ty = 1.95, tz = 0.6;
+    const yaw = Math.atan2(-(tx - x), -(tz - z));
+    const pitch = Math.atan2(ty - 1.6, Math.hypot(tx - x, tz - z));
+    this.controller.setPose(x, z, yaw, pitch, 1.6 - 1.63);
   }
 
   // shot=end / an ended battle: THE END over whatever is on the street
@@ -298,7 +314,17 @@ export class Game {
     this.controller.frozen = true;
     // (a dead man's gun is not at the shoulder: it drops out of the frame)
     this.vm.lowerTo(1);
-    this.hud.showEnd(this.counters.kills);
+    this.hud.showEnd({ kind: 'end' });
+  }
+
+  // the end of the slice (scene 2's last beat): To be continued
+  endSlice() {
+    this.state = 'end';
+    this.controller.frozen = true;
+    this.hud.clearPrompt();
+    this.hud.showEnd({ kind: 'cont' });
+    this.save.write();
+    if (!this.shotMode && document.pointerLockElement) document.exitPointerLock();
   }
 
   // in play and in the fight: the gun works, the Hoods' rounds can hit
@@ -308,18 +334,55 @@ export class Game {
   // ---- lifecycle ---------------------------------------------------------------
   // the title leads into the story's first scene: the diner (a fade from
   // black and the chapter card)
-  start() {
+  // from: a save ({ scene, beat, flags, inventory }) to continue from
+  start(from = null) {
     if (this.state !== 'title') return;
     this.state = 'playing';
+    this.controller.frozen = false;
+    this.hud.hideTitle();
     this.setViewmodelVisible(this.vmWanted);
-    this.scenes.go('diner', { fade: 'black', card: true });
+    if (from && from.scene && this.scenes.get(from.scene)) {
+      this.save.flags = { ...(from.flags || {}) };
+      this.save.inventory = [...(from.inventory || [])];
+      const def = this.scenes.get(from.scene);
+      const beat = def.beats.includes(from.beat) ? from.beat : def.beats[0];
+      this.scenes.go(from.scene, { beat, fade: 'black', card: true, fadeIn: 1.6 });
+    } else {
+      this.save.flags = {};
+      this.save.inventory = [];
+      // (scene 1 fades in from black over 2.5 s under its chapter card)
+      this.scenes.go('diner', { fade: 'black', card: true, fadeIn: 2.5 });
+    }
+  }
+
+  // back to the title card (after the slice's end card): the diner across
+  // the street, CONTINUE offered
+  toTitle() {
+    this.scenes.stop();
+    this.brawl.stop();
+    this.brawl.finished = false;
+    this.director.stop();
+    this.hud.hideEnd();
+    this.hud.clearPrompt();
+    this.health.reset();
+    this.controller.frozen = false;
+    this.state = 'title';
+    this.setViewmodelVisible(this.vmWanted);
+    this.titleT0 = this.time;
+    this.hud.showTitle('', { canContinue: this.save.exists });
   }
 
   enableAutopilot() { this.autopilot = new Autopilot(this); }
 
+  // the real-time loop runs at k x for `seconds` of game time (the last blow)
+  slowmo(k, seconds) { this.timeScale = k; this.slowT = seconds; }
+
   onPlayerDeath() {
     this.counters.deaths++;
     this.emit('player:down', {});
+    // (in a fist fight going down is not the end: the brawl puts him back
+    // on his feet at the start of the round)
+    if (this.brawl.active) { this.health.dead = false; this.brawl.playerDown(); return; }
     // (the battle preset's warm-up: the autopilot holds its fire while the
     // Hoods walk in, so it is not killed there either)
     if (this.autopilot || this.inWarmup) {
@@ -332,7 +395,7 @@ export class Game {
     this.weapon.trigger = false;
     this.controller.frozen = true;
     this.vm.lowerTo(1);
-    this.hud.showEnd(this.counters.kills);
+    this.hud.showEnd({ kind: 'end' });
     if (document.pointerLockElement) document.exitPointerLock();
   }
 
@@ -520,7 +583,9 @@ export class Game {
     for (const f of this.scripts) f(t, dt);
     const C = this.controller;
     if (this.autopilot && this.state !== 'dead') this.autopilot.update(dt);
-    if (this.state === 'title') this.titleDrift(t);
+    // (?autoplay=1: the story played by its own driver, through game.vin)
+    if (this.autoplay) this.autoplay.update(dt);
+    if (this.state === 'title') this.titleDrift(t - (this.titleT0 || 0));
     else if (!this.shotMode || this.autopilot) C.update(dt);
     else C.apply(dt);
     this.eye.copy(this.camera.position);
@@ -566,6 +631,8 @@ export class Game {
     const alive = this.world.hoods.list.reduce((n, h) => n + (h.alive ? 1 : 0), 0);
     this.counters.alive = alive;
     this.director.update(dt, t);
+    if (this.slowT > 0) { this.slowT -= dt; if (this.slowT <= 0) this.timeScale = 1; }
+    this.brawl.update(dt);
     // the story: the scene's script, the prompts, the hands' inspection,
     // the puzzle; the sound of the room the eye is in
     this.scenes.update(dt, t);
@@ -577,6 +644,7 @@ export class Game {
     if (room !== this._room) { this._room = room; this.sfx.room(room); }
     // (this step's input edges are spent)
     this.keysDown.clear(); this.keysUp.clear();
+    this.vin.down.clear(); this.vin.up.clear();
     const MA = this._mouseAcc, MO = this.mouse;
     MO.dx = MA.dx; MO.dy = MA.dy; MO.wheel = MA.wheel;
     MA.dx = 0; MA.dy = 0; MA.wheel = 0;
@@ -619,7 +687,7 @@ export class Game {
     this.hud.update({
       ammo: this.weapon.ammo, drum: WEAPON.drum,
       reloading: this.weapon.reloading, hp: this.health.hp, spread: this.weapon.spread, dt,
-      gun: this.hands.set === 'tommy', fight: this.director.active || this.health.hp < 100 || this.controller.mode === 'brawl',
+      gun: this.hands.set === 'tommy', fight: this.director.active || this.brawl.active || this.controller.mode === 'brawl',
     });
   }
 

@@ -16,6 +16,7 @@ import { RNG } from './util/rng.js';
 import { DEATH_REPORT } from './enemies/Hood.js';
 import { Game } from './game/Game.js';
 import { Sfx, audioTest } from './audio/Sfx.js';
+import { Autoplay } from './game/Autoplay.js';
 
 // ---- URL params (DESIGN.md §9) -------------------------------------------
 const params = new URLSearchParams(location.search);
@@ -31,6 +32,10 @@ const animate = params.get('anim') === '1' || !shotMode; // shots freeze after f
 const tSkip = parseFloat(params.get('t') ?? (shot ? String(shot.t ?? 4) : '0')) || 0;
 const pixelRatio = parseFloat(params.get('dpr') ?? '1') || 1;
 const seed = parseInt(params.get('seed') ?? '1937', 10);
+// autoplay=1: the game plays itself from the title (game/Autoplay.js)
+const autoplay = params.get('autoplay') === '1' && !shotMode;
+// speed=<k> (headless testing): the real-time loop runs k fixed steps' worth per frame
+const speed = Math.max(0.1, parseFloat(params.get('speed') ?? '1') || 1);
 
 // ---- renderer --------------------------------------------------------------
 installFogChunks();
@@ -63,18 +68,24 @@ const stages = new Stages({ renderer, U, tex, rng });
 const block = stages.get('block', { scene });
 const pipeline = new Pipeline(renderer, tex, U, { pixelRatio, view: parseInt(params.get('view') ?? '0', 10) || 0, debugRT: params.get('rt') });
 const controller = new Controller(camera, renderer.domElement, block);
-controller.onStep = (x, z, v) => { const S = controller.world; S.street.addImpact(S, x, z, Math.min(1, v / 5) * 0.8); if (game) game.sfx.step(null, v > 5, true); };
+controller.onStep = (x, z, v) => { const S = controller.world; S.street.addImpact(S, x, z, Math.min(1, v / 5) * 0.8); if (game) game.sfx.step(null, v > 5, true, game._room === 'diner'); };
 
 // ---- HUD / title / game ------------------------------------------------------
 let game = null;
 // sound: procedural Web Audio (audio/Sfx.js); no AudioContext until the
 // first click (the pointer-lock start), none at all in shot mode
 const sfx = new Sfx({ enabled: !shotMode });
+// the title's choice waits for the pointer lock: BEGIN, or CONTINUE from
+// the save
+let startFrom = null;
 const hud = new Hud({
   brush: tex.brush.image,
-  onBegin: () => { sfx.unlock(); controller.lock(); },
-  onRestart: () => { sfx.unlock(); game.restart(); controller.lock(); },
+  onBegin: () => { startFrom = null; sfx.unlock(); controller.lock(); },
+  onContinue: () => { startFrom = game.save.read(); sfx.unlock(); controller.lock(); },
+  // (the slice's end card goes back to the title; THE END tries again)
+  onRestart: (kind) => { sfx.unlock(); if (kind === 'cont') { game.toTitle(); return; } game.restart(); controller.lock(); },
   onResume: () => { sfx.unlock(); controller.lock(); },
+  onSetting: (k, d) => settings.change(k, d),
 });
 // (the browser opens the audio only on a gesture: any key on the title lets
 // the rain in behind it; the click that begins the game does too)
@@ -86,6 +97,28 @@ if (shotMode) hud.hideTitle();
 if (shotMode) hud.freeze();
 game = new Game({ stages, stage: 'block', camera, controller, pipeline, hud, shotMode, sfx });
 game.bindInput(renderer.domElement);
+// the pause card's settings line (P1): mouse sensitivity, volume, subtitles
+// (kept in localStorage; never read in shot mode)
+const settings = {
+  load() {
+    if (shotMode) return;
+    try {
+      const m = parseFloat(localStorage.getItem('noir.mouse'));
+      if (Number.isFinite(m)) controller.sensitivity = 0.0021 * Math.min(3, Math.max(0.2, m / 5));
+      hud.subtitles = localStorage.getItem('noir.subs') !== '0';
+    } catch (e) { /* storage blocked: defaults */ }
+  },
+  get() { return { mouse: Math.round(controller.sensitivity / 0.0021 * 5), volume: Math.round(sfx.volume * 10), subtitles: hud.subtitles }; },
+  change(k, d) {
+    if (k === 'mouse') { const m = Math.min(15, Math.max(1, this.get().mouse + d)); controller.sensitivity = 0.0021 * m / 5; try { localStorage.setItem('noir.mouse', String(m)); } catch (e) { /* */ } }
+    if (k === 'volume') sfx.setVolume(sfx.volume + d * 0.1);
+    if (k === 'subtitles') { hud.subtitles = !hud.subtitles; try { localStorage.setItem('noir.subs', hud.subtitles ? '1' : '0'); } catch (e) { /* */ } }
+  },
+};
+settings.load();
+hud.settings = () => settings.get();
+// the title offers CONTINUE when a checkpoint exists
+if (!shotMode) hud.showTitle('', { canContinue: game.save.exists });
 // (play and the fight presets: every Hood variant + combat program up front)
 if (!shotMode || shot.prewarm) game.prewarm(renderer);
 document.addEventListener('pointerlockerror', () => {
@@ -102,7 +135,7 @@ document.addEventListener('pointerlockchange', () => {
     hud.hideTitle();
     hud.hidePause();
     sfx.pauseMix(false);
-    if (game.state === 'title') game.start();
+    if (game.state === 'title') game.start(startFrom);
   } else if (game.state === 'playing') {
     hud.showPause();
     sfx.pauseMix(true);
@@ -139,11 +172,28 @@ else controller.setPose(-7.3, 6.2, -0.2, 0.02);
 // puzzle=<id> (with a scene beat): open that puzzle on its table
 // (?scene=diner&beat=settle&puzzle=demo)
 if (shot && params.get('puzzle')) game.puzzles.open(params.get('puzzle'));
+// press=<code>@<t>[,<code>@<t>...] (shot mode, a beat's moment): a key goes
+// down (and up a step later) at game time t, as a player's would, so a
+// query string can show the lighter's flame or the pour
+const pressList = shot ? (params.get('press') || shot.press || '') : '';
+if (pressList) {
+  for (const item of pressList.split(',')) {
+    const [code, at] = item.split('@');
+    const t0 = parseFloat(at) || 0;
+    let state = 0;
+    game.scripts.push((t) => {
+      if (state === 0 && t >= t0 - 1e-6) { state = 1; game.vin.down.add(code); game.vin.held.add(code); }
+      else if (state === 1) { state = 2; game.vin.held.delete(code); game.vin.up.add(code); }
+    });
+  }
+}
 game.eye.copy(camera.position);
 
 const STEP = 1 / 60;
 let simTime = 0;
 function simStep(dt) {
+  // a hit stop (the brawl): the world holds for a step or three
+  if (game.hitStop > 0) { game.hitStop--; return; }
   game.pre(dt, simTime);
   game.stage.update(dt, simTime, camera, pipeline.height);
   game.post(dt, simTime);
@@ -189,6 +239,11 @@ if (shot && focusParam && game.stage.hoods.list.length) {
 
 // card=pause (look development): hold that card over the frame
 if (params.get('card') === 'pause') hud.showPause();
+// card=chapter / card=cont / say=<line> (look development): the chapter
+// card, the slice's end card, a subtitle, held over the frame
+if (params.get('card') === 'chapter') { hud.card('I', 'The Diner', 1e6); hud.tickCard(1.0); }
+if (params.get('card') === 'cont') hud.showEnd({ kind: 'cont' });
+if (params.get('say')) hud.say(params.get('say'), 1e6);
 
 // gdbg=<n>: wet-street term debug (render/shaders/ground.js)
 if (params.get('gdbg')) U.uGroundDebug.value = parseInt(params.get('gdbg'), 10) || 0;
@@ -217,12 +272,14 @@ function frame(now) {
   last = now;
   const tA = performance.now();
   // in play, the fight pauses behind the "click to resume" card
-  const paused = !shotMode && game.state === 'playing' && document.pointerLockElement !== renderer.domElement;
+  const paused = !shotMode && !autoplay && game.state === 'playing' && document.pointerLockElement !== renderer.domElement;
   if (animate && !paused) {
-    acc += dt;
+    // (the last blow of the fight runs slow: game.timeScale)
+    acc += dt * game.timeScale * speed;
     let n = 0;
-    while (acc >= STEP && n < 6) { simStep(STEP); acc -= STEP; n++; }
-    if (n === 6) acc = 0;
+    const cap = Math.ceil(6 * speed);
+    while (acc >= STEP && n < cap) { simStep(STEP); acc -= STEP; n++; }
+    if (n === cap) acc = 0;
     perf.steps += n;
   }
   const tB = performance.now();
@@ -257,11 +314,14 @@ const counterEl = document.createElement('div');
 counterEl.id = 'counters';
 counterEl.style.display = 'none';
 document.body.appendChild(counterEl);
+// (a scene's flags hold objects too: the counters carry the plain ones)
+function plainFlags(f) { const o = {}; for (const [k, v] of Object.entries(f)) if (v == null || typeof v !== 'object') o[k] = v; return o; }
 function writeCounters() {
   const K = { ...game.counters, time: +simTime.toFixed(2), hp: +game.health.hp.toFixed(1), ammo: game.weapon.ammo, state: game.state,
     particles: game.fx.liveParticles, ffMs: Math.round(ffMs), rays: game.rays.stats.rays, rayMs: +game.rays.stats.ms.toFixed(1),
     states: game.world.hoods.list.map((h) => (h.alive ? (game.ais.get(h)?.state || h.state) : 'dead')).join(','),
-    scene: game.scenes.current ? game.scenes.current.id : null, beat: game.scenes.beat, mode: controller.mode, hands: game.hands.set };
+    scene: game.scenes.current ? game.scenes.current.id : null, beat: game.scenes.beat, mode: controller.mode, hands: game.hands.set,
+    fight: game.brawl.state, play: +(game.scenes.playTime || 0).toFixed(1), prompt: hud.promptShown, say: hud.sayShown, flags: game.scenes.ctx ? plainFlags(game.scenes.ctx.flags) : null };
   counterEl.dataset.json = JSON.stringify(K);
 }
 writeCounters();
@@ -320,6 +380,7 @@ window.__noir = {
   audioTest,
 };
 window.__noirReady = true;
+if (autoplay) { game.autoplay = new Autoplay(game, { seed }); window.__noir.autoplay = game.autoplay; }
 // legacy=1: the Phase 3a pipeline paths (performance before/after, see perfLegacy)
 if (params.get('legacy') === '1') window.__noir.perfLegacy(true);
 
