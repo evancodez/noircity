@@ -285,7 +285,9 @@ export default {
     const sz = (fz0 + fz1) / 2 + total / 2;   // the word's start (its left, +z)
     const ny = 3.85 - NEON_H / 2;             // (y centre 3.85)
     const nx = fx1 + 0.07;                    // tube centres, on stand-offs
-    const neonOn = accentMaterial('neon');
+    // (lane 1's tube: widened to at least 3.5 px on screen, white-hot core,
+    // blue halo; on the world layer it leaves its own sheen in the street)
+    const neonOn = accentMaterial('neon', { tube: NEON_R });
     neonOn.name = 'neon_on';
     // an unlit tube: dark glass
     const neonOff = std({ color: 0x1c1c1c, roughness: 0.25, metalness: 0.2, envMap: M.envSoft, envMapIntensity: 0.8 });
@@ -342,7 +344,7 @@ export default {
         stand.push(new THREE.CylinderGeometry(0.005, 0.005, 0.07, 6).rotateZ(Math.PI / 2).translate(nx - 0.035, ny + p[1] * NEON_H, sz - (u0 + p[0] * NEON_H)));
       }
       const tubeM = new THREE.Mesh(merge(tubes), neonOn);
-      tubeM.layers.set(LAYER.FX);   // (lit glass: no ink line eats an 18 mm tube; kept out of the planar reflection, whose streak printed it as a solid blue block: its sheen is drawn below)
+      tubeM.userData.inkId = idNeon;
       tubeM.userData.noRay = true;
       lg.add(tubeM);
       mesh(merge([...caps, ...stand]), MM.steel, { parent: lg, cast: false, id: idNeon });
@@ -359,7 +361,7 @@ export default {
     {
       const y = ny - 0.1, za = sz + 0.05, zb = sz - total - 0.05;
       const ul = new THREE.Mesh(new THREE.TubeGeometry(new THREE.LineCurve3(V3(nx, y, za), V3(nx, y, zb)), 64, NEON_R, 10, false), neonOn);
-      ul.layers.set(LAYER.FX);
+      ul.userData.inkId = idNeon;
       ul.userData.noRay = true;
       g.add(ul);
       mesh(merge([za, zb].map((zz) => new THREE.CylinderGeometry(0.016, 0.016, 0.07, 12).rotateZ(Math.PI / 2).translate(nx - 0.035, y, zz))), MM.steel, { cast: false, id: idNeon });
@@ -459,15 +461,9 @@ export default {
       g.add(p);
       pools.push(p);
     }
-    {
-      const t = puddleTex(1320, (x) => { const gr = x.createRadialGradient(128, 128, 4, 128, 128, 128); gr.addColorStop(0, 'rgba(255,255,255,1)'); gr.addColorStop(0.55, 'rgba(255,255,255,0.4)'); gr.addColorStop(1, 'rgba(255,255,255,0)'); return gr; });
-      const m = new THREE.MeshBasicMaterial({ color: accent('neon', { gain: 0.01 }), map: t, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending });
-      const p = new THREE.Mesh(new THREE.PlaneGeometry(3.0, total + 1.6).rotateX(-Math.PI / 2).translate(-8.4, F + 0.006, sz - total / 2), m);
-      p.layers.set(LAYER.FX);
-      p.userData.noRay = true;
-      g.add(p);
-      letters.sheen = p;
-    }
+    // (the sign's blue on the wet pavement is lane 1's reflection of the
+    // tubes now: no patch of its own)
+    letters.sheen = null;
 
     // ---- colliders: the front (risers and walls) except the vestibule,
     // the splayed sides, the pilasters, the door (it follows the leaf); the
@@ -503,7 +499,7 @@ export default {
         sign.on = !!on;
         for (const l of letters) l.tube.material = sign.on && l.lit ? neonOn : neonOff;
         letters.underline.material = sign.on ? neonOn : neonOff;
-        letters.sheen.visible = sign.on;
+        if (letters.sheen) letters.sheen.visible = sign.on;
       },
     };
     const nLetter = letters.find((l) => l.ch === 'N');
