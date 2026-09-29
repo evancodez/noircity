@@ -75,3 +75,17 @@ float sceneViewZ() {
 }
 bool behindScene( float viewZ, float eps ) { return viewZ > sceneViewZ() + eps; }
 `;
+
+// The dry volumes (stage.dry, Pipeline.applyLook): 1 inside any of them.
+export const DRY_GLSL = /* glsl */`
+uniform vec3 uDryMin[ 4 ];
+uniform vec3 uDryMax[ 4 ];
+float inDry( vec3 p ) {
+  float d = 0.0;
+  for ( int i = 0; i < 4; i ++ ) {
+    vec3 a = step( uDryMin[ i ], p ) * step( p, uDryMax[ i ] );
+    d = max( d, a.x * a.y * a.z );
+  }
+  return d;
+}
+`;

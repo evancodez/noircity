@@ -4,15 +4,25 @@ import { makeIdMaterial } from './shaders/idpass.js';
 import { makeInkMaterial } from './shaders/ink.js';
 import { FULLSCREEN_VERT } from './shaders/common.js';
 import { TONE_GLSL, toneUniforms, EXPOSURE } from './tone.js';
-import { makeBloomPrefilter, makeBloomDown, makeBloomUp, makeBloomUpWide, makeStreakMaterial, makeBlurMaterial, makeReflBrightMaterial } from './shaders/bloom.js';
+import { makeBloomPrefilter, makeBloomDown, makeBloomUp, makeBloomUpWide, makeBlurMaterial, makeReflBrightMaterial } from './shaders/bloom.js';
+import { makeReflPosMaterial, makeReflSplat, makeCopyLumMaterial } from './shaders/reflstreak.js';
+import { ACCENT_U } from './accents.js';
 
 // Explicit render pipeline (DESIGN.md §3). Per frame:
 //   1. normal+id pass   -> rtId (view normal xyz, object id w) + depth texture
-//   2. planar reflection-> rtRefl (half res, mirrored camera, oblique clip),
-//                          EMITTERS ONLY: black clear (alpha 0 = nothing
-//                          mirrored), black fog, no sky; alpha = coverage
-//      bright pass      -> rtStreakA (quarter res, mipmapped): light above T
-//      long streak      -> rtStreakB (quarter res): one column per emitter
+//   2. planar reflection-> rtRefl (half res, mirrored camera, oblique clip,
+//                          + depth), EMITTERS ONLY: black clear (alpha 0 =
+//                          nothing mirrored), black fog, no sky, no cones;
+//                          alpha = coverage. Its frustum is the part of the
+//                          view below the horizon, reaching down to 60 deg
+//                          under it, so a lamp head right above the eye is
+//                          still in the mirror (REFL_ROWS)
+//      bright pass      -> rtStreakA (quarter of rtRefl): light above T
+//      positions        -> rtReflPos (quarter of rtRefl, mipmapped): where
+//                          each bright texel's emitter stands
+//      street streaks   -> rtStreakB (quarter res of the view): one sheen per
+//                          emitter lying on the street, from its foot toward
+//                          the eye (shaders/reflstreak.js)
 //   3. scene pass       -> rtScene (linear HDR, 4x MSAA); world shaders read
 //                          rtId's depth for soft intersections
 //   4. volume pass      -> rtVolume (half res): cones, beams; these shaders
@@ -41,6 +51,13 @@ import { makeBloomPrefilter, makeBloomDown, makeBloomUp, makeBloomUpWide, makeSt
 // read by one wide upsample - shaders/bloom.js makeBloomUpWide - in place of
 // the three small levels and their six passes)
 const BLOOM_LEVELS = 2;
+// the mirror's rows, as a share of the view's half-res height: it covers
+// from the horizon (every mirror image lies below it) down to 60 deg under
+// it, ~1.24x the rows of the view's lower half at the same density
+const REFL_ROWS = 1.25;
+// the Look's blended numbers (setLook)
+const LOOK_NUM = ['fogDensity', 'exposure', 'rainOverlay', 'rain3d', 'grain', 'ambient', 'haze'];
+const REFL_DOWN = THREE.MathUtils.degToRad(60);
 
 export class Pipeline {
   constructor(renderer, tex, U, opts = {}) {
@@ -117,7 +134,14 @@ export class Pipeline {
         if (this._armHold) rt._holdResolve = true;
       };
     }
-    this.rtRefl = new THREE.WebGLRenderTarget(1, 1, { type: hf });
+    this.rtRefl = new THREE.WebGLRenderTarget(1, 1, { type: hf, depthTexture: new THREE.DepthTexture(1, 1, THREE.UnsignedIntType) });
+    this.rtRefl.texture.name = 'rtRefl';
+    this.rtReflOpq = new THREE.WebGLRenderTarget(1, 1, { type: hf, format: THREE.RedFormat, depthBuffer: false });
+    this.rtSpriteZ = new THREE.WebGLRenderTarget(1, 1, { format: THREE.RedFormat, depthTexture: new THREE.DepthTexture(1, 1, THREE.UnsignedIntType) });
+    this._spriteMats = [];
+    this.rtReflPos = new THREE.WebGLRenderTarget(1, 1, {
+      type: hf, depthBuffer: false, generateMipmaps: true, minFilter: THREE.LinearMipmapLinearFilter,
+    });
     this.rtVolume = new THREE.WebGLRenderTarget(1, 1, { type: hf, depthBuffer: false });
     this.rtVolume.texture.name = 'rtVolume';
     this.rtVolTmp = new THREE.WebGLRenderTarget(1, 1, { type: hf, depthBuffer: false });
@@ -126,9 +150,20 @@ export class Pipeline {
     // the 1.5 px hairlines doubled into soft 3 px bars)
     this.rtRain = new THREE.WebGLRenderTarget(1, 1, { type: hf, format: THREE.RedFormat, depthBuffer: false });
     this.rtRain.texture.name = 'rtRain';
-    this.rtStreakA = new THREE.WebGLRenderTarget(1, 1, {
+    this.rtStreakA = new THREE.WebGLRenderTarget(1, 1, { type: hf, depthBuffer: false });
+    // The splat reads the bright and position targets in its VERTEX stage;
+    // read in the frame that wrote them, that stalled the Metal backend
+    // (~0.9 ms: the vertex stage waits for the fragment writes of the pass
+    // before). So they are double-buffered and the splat lays the sheens of
+    // the frame before (placed by that frame's eye and mirror camera; the
+    // world positions do not move with the eye). One frame of lag on a
+    // reflection; a held frame (a screenshot) is exactly the same.
+    this._srcA = [this.rtStreakA, new THREE.WebGLRenderTarget(1, 1, { type: hf, depthBuffer: false })];
+    this._srcP = [this.rtReflPos, new THREE.WebGLRenderTarget(1, 1, {
       type: hf, depthBuffer: false, generateMipmaps: true, minFilter: THREE.LinearMipmapLinearFilter,
-    });
+    })];
+    this._pp = 0;
+    this._prevSrc = { valid: false, eye: new THREE.Vector3(), projInv: new THREE.Matrix4(), camWorld: new THREE.Matrix4(), texelTan: 0 };
     this.rtStreakB = new THREE.WebGLRenderTarget(1, 1, { type: hf, depthBuffer: false });
     this.bloom = [];
     for (let i = 0; i < BLOOM_LEVELS; i++) {
@@ -138,13 +173,43 @@ export class Pipeline {
     }
 
     this.idMat = makeIdMaterial();
-    this.inkMat = makeInkMaterial(tex, { uFogColor: U.uFogColor, uFogDensity: U.uFogDensity });
+    this.inkMat = makeInkMaterial(tex, { uFogColor: U.uFogColor, uFogDensity: U.uFogDensity, uDryMin: U.uDryMin, uDryMax: U.uDryMax });
     this.prefilterMat = makeBloomPrefilter();
     this.downMat = makeBloomDown();
     this.upMat = makeBloomUp();
     this.upWideMat = makeBloomUpWide();
-    this.streakMat = makeStreakMaterial();
     this.reflBrightMat = makeReflBrightMaterial();
+    this.reflPosMat = makeReflPosMaterial();
+    this.copyLumMat = makeCopyLumMaterial();
+    this.splat = null;                 // the street sheens' quads, one per source texel (setSize)
+    this.splatScene = new THREE.Scene();
+    // The lamp heads as the mirror sees them (fix 8, round 2). A lamp's bulb
+    // is a disc facing down: from the mirror's eye, below the street, a
+    // lamp 40 m off is seen edge-on - a sliver under a texel - so the far
+    // lamps left no sheen at all (their columns in the old street came from
+    // their CONES, which are air light and stay out of the mirror). Each lit
+    // lamp of the stage gets a small bright ball at its head, drawn into the
+    // mirror only (never into the view): it writes the depth that places
+    // its sheen, and it goes dark with its lamp (shot out, switched off,
+    // flickering).
+    this.lampSource = null;            // setLamps (else the stage in play, via __noir)
+    {
+      const g = new THREE.IcosahedronGeometry(1, 2);
+      // (not depth-tested: the sheen at a lamp's foot sees the lamp even
+      // where the mirror's eye does not - a parked car between them hid the
+      // left pavement's second lamp, and its column went with it; the sheen
+      // itself lies on the street and is hidden by whatever stands on it)
+      // (AlwaysDepth, not depthTest off: with the test off GL writes no depth)
+      const m = new THREE.MeshBasicMaterial({ color: 0xffffff, fog: false, toneMapped: false, depthFunc: THREE.AlwaysDepth });
+      this.lampProxy = new THREE.InstancedMesh(g, m, 96);
+      this.lampProxy.instanceColor = new THREE.InstancedBufferAttribute(new Float32Array(96 * 3), 3);
+      this.lampProxy.frustumCulled = false;
+      this.lampProxy.count = 0;
+      this.lampProxyScene = new THREE.Scene();
+      this.lampProxyScene.add(this.lampProxy);
+      this._pm = new THREE.Matrix4();
+      this._pc = new THREE.Color();
+    }
     // Bright-pass threshold T (scene-linear luminance): just above lamp-lit
     // stone in the (black-fogged) reflection, so only emitters, cone cores and
     // hot lit spots leave a column; a wet dark car body or the mist does not.
@@ -166,6 +231,8 @@ export class Pipeline {
       normal: new THREE.Vector3(0, 1, 0), planePos: new THREE.Vector3(), camPos: new THREE.Vector3(),
       rot: new THREE.Matrix4(), look: new THREE.Vector3(), view: new THREE.Vector3(), target: new THREE.Vector3(),
       plane: new THREE.Plane(), clip: new THREE.Vector4(), q: new THREE.Vector4(), tmp: new THREE.Vector3(),
+      f: new THREE.Vector3(), u: new THREE.Vector3(), d: new THREE.Vector3(), vp: new THREE.Matrix4(),
+      win: { xL: -1, xR: 1, yB: -1, yT: 1 },
     };
     this._clearColor = new THREE.Color();
     // debug/bench: skip individual passes to measure their cost (__noir.bench())
@@ -174,7 +241,11 @@ export class Pipeline {
     // debug: ?rt=refl|reflA|bright|streak shows an intermediate buffer through
     // the ink tone curve instead of the final image
     this.debugRT = opts.debugRT || null;
-    this.look = null;              // the Look in force (setLook)
+    this.look = null;              // the Look the eye stands in (setLook)
+    this._lookCur = null;          // ... and the one in force, blended toward it
+    this._lookT = null;
+    this._ambient = new WeakMap(); // scene -> its hemisphere lights and their own intensity
+    this.dryBoxes = null;          // setDry
     this.exposureOverride = null;  // exposure=<v> (look development)
     this.debugMat = new THREE.ShaderMaterial({
       name: 'DebugRT', depthTest: false, depthWrite: false,
@@ -197,19 +268,153 @@ export class Pipeline {
   // rain3d, grain, ambient, reflect, haze, room }. The block's exterior Look
   // is today's frame (world/World.js BASE_LOOK): its values are the ones
   // every uniform already holds, so applying it changes nothing.
-  // (FOUNDATION STUB, lane 1: fog, exposure and the screen rain overlay are
-  // applied, switched by the volume the eye is in; rain3d, grain, ambient,
-  // reflect and haze are kept for lane 1, and nothing is blended yet)
+  // The Look in force is BLENDED toward the one the eye stands in over
+  // ~0.25 s of game time (render(time)), so crossing a doorway eases the fog,
+  // the exposure, the rain and the haze from one room to the next; a frozen
+  // clock (a screenshot) or a jump (a cut, a scene change) snaps to it. The
+  // switched fields (reflect, room) change at once.
+  //   fog: scene fog and the shared fog uniforms; exposure: the ink pass;
+  //   rainOverlay: the ink's screen rain; rain3d: the 3D rain and its
+  //   splashes (U.uRain3d); grain: the ink's film grain; ambient: the stage's
+  //   hemisphere light; haze: the room smoke in every lamp cone (U.uHaze);
+  //   reflect: 'none' skips the street's mirror and sheens.
   setLook(look) { this.look = look; }
+  // the stage's dry volumes (stage.dry, Box3[]): the rain, its splashes and
+  // the street's ripple rings are never drawn inside one (up to 4)
+  setDry(boxes) { this.dryBoxes = boxes || []; }
+  // the stage's lamps (stage.lamps: a Lamps, or null): their heads light
+  // the street's sheens (the mirror's lamp proxies, render step 2)
+  setLamps(lamps) { this.lampSource = lamps; }
 
-  applyLook(scene) {
-    const L = this.look;
+  // the lamp proxies for this frame: one ball per lit lamp head
+  syncLampProxies() {
+    const src = this.lampSource ?? globalThis.__noir?.game?.stage?.lamps ?? null;
+    const list = (src && src.lamps) || [];
+    const P = this.lampProxy, m = this._pm, c = this._pc;
+    let n = 0;
+    for (const l of list) {
+      if (n >= 96) break;
+      const k = l._k ?? (l.on ? 1 : 0);
+      if (!l.on || !(k > 0.05) || !l.head) continue;
+      // (a sconce's head is a small dim disc; a street or hanging lamp's
+      // shade mouth ~0.5 m)
+      const r = l.sconce ? 0.12 : 0.22;
+      m.makeScale(r, r * 0.6, r).setPosition(l.head);
+      P.setMatrixAt(n, m);
+      P.setColorAt(n, c.setScalar(8 * k));
+      n++;
+    }
+    P.count = n;
+    P.instanceMatrix.needsUpdate = true;
+    if (P.instanceColor) P.instanceColor.needsUpdate = true;
+    return n;
+  }
+
+  blendLook(time) {
+    const T = this.look;
+    if (!T) return null;
+    let C = this._lookCur;
+    const dt = this._lookT == null ? -1 : time - this._lookT;
+    this._lookT = time;
+    if (!C) C = this._lookCur = { ...T, fogColor: T.fogColor.clone() };
+    if (dt <= 0 || dt > 0.5) {
+      for (const k of LOOK_NUM) C[k] = T[k];
+      C.fogColor.copy(T.fogColor);
+    } else {
+      const a = 1 - Math.exp(-dt / 0.25);
+      for (const k of LOOK_NUM) C[k] = T[k] === C[k] ? C[k] : Math.abs(T[k] - C[k]) < 1e-5 * (1 + Math.abs(T[k])) ? T[k] : C[k] + (T[k] - C[k]) * a;
+      if (!C.fogColor.equals(T.fogColor)) C.fogColor.lerp(T.fogColor, a);
+    }
+    C.reflect = T.reflect; C.room = T.room;
+    return C;
+  }
+
+  applyLook(scene, time) {
+    const L = this.blendLook(time);
     if (!L) return;
     if (scene.fog) { scene.fog.color.copy(L.fogColor); scene.fog.density = L.fogDensity; }
     this.U.uFogColor.value.copy(L.fogColor);
     this.U.uFogDensity.value = L.fogDensity;
     // (exposure=<v>, main.js: a look-development override wins)
     this.inkMat.uniforms.uExposure.value = this.exposureOverride ?? L.exposure;
+    this.inkMat.uniforms.uGrain.value = L.grain ?? 1;
+    this.U.uRain3d.value = L.rain3d ?? 1;
+    this.U.uHaze.value = L.haze ?? 0;
+    // ambient: the hemisphere lights of the scene, from their own intensity
+    let amb = this._ambient.get(scene);
+    if (!amb) {
+      amb = [];
+      scene.traverse((o) => { if (o.isHemisphereLight || o.isAmbientLight) amb.push({ light: o, base: o.intensity }); });
+      this._ambient.set(scene, amb);
+    }
+    const ak = L.ambient ?? 1;
+    for (const e of amb) e.light.intensity = ak === 1 ? e.base : e.base * ak;
+    // the dry volumes (an adapter until the Game calls setDry on entering a
+    // stage: the stage in play is found through __noir)
+    const boxes = this.dryBoxes ?? globalThis.__noir?.game?.stage?.dry ?? [];
+    const U = this.U, n = Math.min(boxes.length, 4);
+    for (let i = 0; i < 4; i++) {
+      if (i < n) { U.uDryMin.value[i].copy(boxes[i].min); U.uDryMax.value[i].copy(boxes[i].max); }
+      else { U.uDryMin.value[i].set(1e5, 1e5, 1e5); U.uDryMax.value[i].set(-1e5, -1e5, -1e5); }
+    }
+  }
+
+  // (debug) read a render target back as floats: { w, h, data: Float32Array rgba }
+  readTarget(rt) {
+    const w = rt.width, h = rt.height, n = w * h * 4;
+    const u16 = new Uint16Array(n);
+    this.renderer.readRenderTargetPixels(rt, 0, 0, w, h, u16);
+    const data = new Float32Array(n);
+    for (let i = 0; i < n; i++) data[i] = THREE.DataUtils.fromHalfFloat(u16[i]);
+    return { w, h, data };
+  }
+
+  // (debug, fix 8) the street's emitters as the sheen pass sees them: bright
+  // texels of the mirror with their world positions, clustered by foot
+  // (0.5 m cells). -> [{ foot: [x, z], h, n, lum, rgb, D }]
+  probeEmitters(minLum = 0.004) {
+    const B = this.readTarget(this.rtStreakA), Pz = this.readTarget(this.rtReflPos);
+    const eye = this._v.camPos, cells = new Map();
+    for (let i = 0; i < B.w * B.h; i++) {
+      const r = B.data[i * 4], g = B.data[i * 4 + 1], b = B.data[i * 4 + 2];
+      const l = 0.2126 * r + 0.7152 * g + 0.0722 * b;
+      const w = Pz.data[i * 4 + 3];
+      if (l < minLum || !(w > 0)) continue;
+      const x = eye.x + Pz.data[i * 4] / w, y = eye.y + Pz.data[i * 4 + 1] / w, z = eye.z + Pz.data[i * 4 + 2] / w;
+      const k = Math.round(x * 2) + ',' + Math.round(z * 2);
+      const c = cells.get(k) || { sx: 0, sz: 0, sy: 0, n: 0, lum: 0, rgb: [0, 0, 0] };
+      c.sx += x; c.sz += z; c.sy += y; c.n++; c.lum = Math.max(c.lum, l); c.rgb[0] += r; c.rgb[1] += g; c.rgb[2] += b;
+      cells.set(k, c);
+    }
+    return [...cells.values()].map((c) => ({ foot: [+(c.sx / c.n).toFixed(2), +(c.sz / c.n).toFixed(2)], h: +(c.sy / c.n).toFixed(2), n: c.n, lum: +c.lum.toFixed(3),
+      rgb: c.rgb.map((v) => +(v / c.n).toFixed(3)), D: +Math.hypot(c.sx / c.n - eye.x, c.sz / c.n - eye.z).toFixed(2) })).sort((a, b) => b.n - a.n);
+  }
+
+  // (debug, fix 8) the sheen along one emitter's axis, from its foot F = [x,
+  // z] toward the eye: [[s (m), luminance]] every `step` m from s = -1 m.
+  // Also the gap (m) between F and the first sample above 5 % of the peak,
+  // the length (m) to the last sample above 2 % of it, and whether the
+  // luminance falls monotonically after the first third of that length.
+  probeStreak(foot, step = 0.25) {
+    const T = this.readTarget(this.rtStreakB), M = this.U.uReflMatrix.value, eye = this._v.camPos;
+    const F = new THREE.Vector3(foot[0], this._v.planePos.y, foot[1]);
+    const u = new THREE.Vector3(eye.x - F.x, 0, eye.z - F.z);
+    const D = u.length(); u.normalize();
+    const out = [], p = new THREE.Vector4();
+    for (let s = -1; s <= D - 0.5; s += step) {
+      p.set(F.x + u.x * s, F.y, F.z + u.z * s, 1).applyMatrix4(M);
+      const x = Math.floor(p.x / p.w * T.w), y = Math.floor(p.y / p.w * T.h);
+      if (x < 0 || y < 0 || x >= T.w || y >= T.h) { out.push([+s.toFixed(2), null]); continue; }
+      const i = (y * T.w + x) * 4;
+      out.push([+s.toFixed(2), +(0.2126 * T.data[i] + 0.7152 * T.data[i + 1] + 0.0722 * T.data[i + 2]).toFixed(5)]);
+    }
+    const vals = out.filter((o) => o[1] !== null);
+    const peak = Math.max(...vals.map((o) => o[1]));
+    const first = vals.find((o) => o[1] > 0.05 * peak), last = [...vals].reverse().find((o) => o[1] > 0.02 * peak);
+    const len = last ? last[0] : 0;
+    let mono = true, prev = Infinity;
+    for (const o of vals) if (o[0] >= len / 3 && o[0] <= len) { if (o[1] > prev * 1.02 + 1e-5) mono = false; prev = o[1]; }
+    return { D: +D.toFixed(2), peak: +peak.toFixed(4), gap: first ? Math.max(0, first[0]) : null, length: len, monotonic: mono, samples: out };
   }
 
   // the scene target's format: R11G11B10F (default) or RGBA16F (Phase 3a)
@@ -228,15 +433,29 @@ export class Pipeline {
     this.renderer.setPixelRatio(this.pixelRatio);
     this.renderer.setSize(cssW, cssH, true);
     this.rtId.setSize(w, h);
+    ACCENT_U.uViewH.value = h;
     this.rtScene.setSize(w, h);
     const hw = Math.max(2, w >> 1), hh = Math.max(2, h >> 1);
-    this.rtRefl.setSize(hw, hh);
+    const rh = Math.max(2, Math.round(hh * REFL_ROWS));
+    this.rtRefl.setSize(hw, rh);
+    this.rtReflOpq.setSize(hw, rh);
+    this.rtSpriteZ.setSize(hw, rh);
+    const sw = Math.max(2, hw >> 1), sh = Math.max(2, rh >> 1);
+    for (const t of this._srcP) t.setSize(sw, sh);
     this.rtVolume.setSize(hw, hh);
     this.rtVolTmp.setSize(hw, hh);
     this.rtRain.setSize(w, h);
     const qw = Math.max(2, w >> 2), qh = Math.max(2, h >> 2);
-    this.rtStreakA.setSize(qw, qh);
+    for (const t of this._srcA) t.setSize(sw, sh);
+    this._prevSrc.valid = false;
     this.rtStreakB.setSize(qw, qh);
+    // one splat quad per source texel
+    if (!this.splat || this.splat.geometry.userData.texels !== sw * sh) {
+      if (this.splat) { this.splatScene.remove(this.splat); this.splat.geometry.dispose(); this.splat.material.dispose(); }
+      this.splat = makeReflSplat(sw * sh);
+      this.splatScene.add(this.splat);
+    }
+    this.splat.material.uniforms.uSrcSize.value.set(sw, sh);
     for (let i = 0; i < BLOOM_LEVELS; i++) {
       this.bloom[i].setSize(Math.max(2, w >> (i + 1)), Math.max(2, h >> (i + 1)));
     }
@@ -268,10 +487,43 @@ export class Pipeline {
     rc.updateMatrixWorld();
     rc.projectionMatrix.copy(camera.projectionMatrix);
 
+    // the street plane -> the view's own window (the ground reads its
+    // streaks there: uReflMatrix), and the same in clip space for the splat
     const tm = this.U.uReflMatrix.value;
     tm.set(0.5, 0, 0, 0.5, 0, 0.5, 0, 0.5, 0, 0, 0.5, 0.5, 0, 0, 0, 1);
     tm.multiply(rc.projectionMatrix);
     tm.multiply(rc.matrixWorldInverse);
+    v.vp.multiplyMatrices(rc.projectionMatrix, rc.matrixWorldInverse);
+
+    // The mirror's own window (street fix 8): every mirror image lies below
+    // the horizon, so the view's upper part is never rendered; and a lamp
+    // head a few metres off mirrors to far below the frame's bottom edge
+    // while its foot and its streak are in view, so the window reaches down
+    // to REFL_DOWN under the horizon. Same eye, same x window: the ground
+    // maps the view's uv to the mirror's by an affine remap of v
+    // (uReflRemap), for the coverage it still reads there.
+    {
+      const e = camera.projectionMatrix.elements;
+      const sy = e[5], oy = e[9];
+      const yB0 = (-1 - oy) / sy, yT0 = (1 - oy) / sy;
+      v.f.set(0, 0, -1).applyMatrix4(v.rot);
+      v.u.set(0, 1, 0).applyMatrix4(v.rot);
+      const fx = v.f.x, fz = v.f.z, fl = Math.hypot(fx, fz) || 1;
+      const tanOf = (cy, sn) => {        // a direction (horizontal forward * cy, down * sn) in the camera's tan y
+        v.d.set(fx / fl * cy, -sn, fz / fl * cy);
+        return v.d.dot(v.u) / Math.max(v.d.dot(v.f), 0.05);
+      };
+      const yH = tanOf(1, 0);
+      const yD = tanOf(Math.cos(REFL_DOWN), Math.sin(REFL_DOWN));
+      let yT = Math.min(yT0, yH + 0.02), yB = Math.min(yB0, yD);
+      if (yT < yB + 0.1) yT = yB + 0.1;
+      const n = camera.near;
+      const xL = (-1 - e[8]) / e[0], xR = (1 - e[8]) / e[0];
+      rc.projectionMatrix.makePerspective(xL * n, xR * n, yT * n, yB * n, n, camera.far);
+      const W = v.win; W.xL = xL; W.xR = xR; W.yB = yB; W.yT = yT;
+      const v0 = (yB0 - yB) / (yT - yB), v1 = (yT0 - yB) / (yT - yB);
+      this.U.uReflRemap.value.set(v1 - v0, v0);
+    }
     // Oblique near plane = the street plane, so nothing below ground leaks in.
     v.plane.setFromNormalAndCoplanarPoint(v.normal, v.planePos);
     v.plane.applyMatrix4(rc.matrixWorldInverse);
@@ -373,7 +625,7 @@ export class Pipeline {
 
   render(scene, camera, time) {
     const r = this.renderer, U = this.U;
-    this.applyLook(scene);
+    this.applyLook(scene, time);
     this.updateLightning(time);
     camera.updateMatrixWorld();
     U.uNear.value = camera.near;
@@ -428,8 +680,10 @@ export class Pipeline {
     // the distance recedes into nothing. The sky dome is on its own layer and
     // never drawn here, nor is the ground mist (LAYER.MIST: its pools summed
     // with the far columns into a white plate under the vanishing point).
-    // What remains: lamp heads, cones, windows, headlights, lit surfaces;
-    // opaque geometry writes alpha 1.
+    // What remains: lamp heads, windows, headlights, fire, flashes, blood in
+    // the air, lit surfaces; opaque geometry writes alpha 1. (The cones stay
+    // out: air light has no place on the street to stand on - each lamp's
+    // sheen comes from its head, placed by the mirror's depth.)
     if (P) P.begin('refl');
     this.updateReflectionCamera(camera);
     const reflHidden = this.reflHide ? this.reflHide(camera) : null;
@@ -437,10 +691,6 @@ export class Pipeline {
     // (Phase 3b: the half-res, emitters-only mirror takes the light builds of
     // the el's stations and of the cars - black occluders there)
     if (this.reflLod && this.deferResolve) this.reflLod(true);
-    this.reflCam.layers.set(LAYER.WORLD);
-    this.reflCam.layers.enable(LAYER.FX_REFL);
-    this.reflCam.layers.enable(LAYER.VOLUME);
-    this.reflCam.layers.enable(LAYER.REFL_ONLY);
     U.uUseDepth.value = 0;
     this._fogSave.copy(U.uFogColor.value);
     U.uFogColor.value.setRGB(0, 0, 0);
@@ -448,7 +698,47 @@ export class Pipeline {
     r.setRenderTarget(this.rtRefl);
     r.setClearColor(0x000000, 0);
     r.clear();
-    if (!S.refl) for (let k = 0; k <= (this.repeat.refl || 0); k++) r.render(scene, this.reflCam);
+    const reflOn = !S.refl && (!this._lookCur || this._lookCur.reflect !== 'none');
+    // In three parts: the world (opaque; its depth is where its light
+    // stands), a copy of its light, then the sprites (fire, blood, sparks, a
+    // Hood's flash: they write no depth - over the skyline a flame read as a
+    // light 170 m away). What the sprites added is what the copy lacks; for
+    // that light the position pass reads the sprites' OWN depth, drawn once
+    // more into rtSpriteZ with their depth writes forced on (and nothing
+    // else: that depth never touches the mirror's, so a lamp seen through
+    // steam keeps its own place).
+    // (The player's own flash stand-in, LAYER.REFL_ONLY, stays out: its
+    // foot is under the gun, its sheen under the eye, out of the frame; its
+    // point light still flashes the street.)
+    if (reflOn) {
+      this.reflCam.layers.set(LAYER.WORLD);
+      for (let k = 0; k <= (this.repeat.refl || 0); k++) r.render(scene, this.reflCam);
+      if (this.syncLampProxies()) {
+        const acP = r.autoClear;
+        r.autoClear = false;
+        r.render(this.lampProxyScene, this.reflCam);
+        r.autoClear = acP;
+      }
+      this.copyLumMat.uniforms.tSrc.value = this.rtRefl.texture;
+      this.blit(this.copyLumMat, this.rtReflOpq);
+      r.setRenderTarget(this.rtRefl);
+      this.reflCam.layers.set(LAYER.FX_REFL);
+      const acR = r.autoClear;
+      r.autoClear = false;
+      r.render(scene, this.reflCam);
+      r.autoClear = acR;
+      const mats = this._spriteMats;
+      mats.length = 0;
+      const bit = 1 << LAYER.FX_REFL;
+      scene.traverseVisible((o) => {
+        const m = o.material;
+        if (m && !Array.isArray(m) && (o.layers.mask & bit) && !m.depthWrite) { mats.push(m, m.colorWrite); m.depthWrite = true; m.colorWrite = false; }
+      });
+      r.setRenderTarget(this.rtSpriteZ);
+      r.clear();
+      if (mats.length) r.render(scene, this.reflCam);
+      for (let i = 0; i < mats.length; i += 2) { mats[i].depthWrite = false; mats[i].colorWrite = mats[i + 1]; }
+    }
     U.uFogColor.value.copy(this._fogSave);
     if (scene.fog) scene.fog.color.copy(this._sceneFogSave);
     U.uUseDepth.value = 1;
@@ -456,20 +746,57 @@ export class Pipeline {
     if (this.reflLod && this.deferResolve) this.reflLod(false);
     // bright pass: half -> quarter res; keep = max(0, lum - T)
     if (P) P.begin('reflPost');
+    const cur = this._pp;
+    this.rtStreakA = this._srcA[cur];
+    this.rtReflPos = this._srcP[cur];
     const bp = this.reflBrightMat.uniforms;
     bp.tSrc.value = this.rtRefl.texture;
     bp.uTexel.value.set(1 / this.rtRefl.width, 1 / this.rtRefl.height);
     bp.uThreshold.value = this.reflThreshold;
-    const rpm = this.reflCam.projectionMatrix.elements;
-    bp.uFocal.value.set(rpm[0], rpm[5]);
-    bp.uCamRot.value.setFromMatrix4(this.reflCam.matrixWorld);
-    bp.uEyeH.value = Math.max(0.3, this._v.camPos.y - this._v.planePos.y);
     this.blit(this.reflBrightMat, this.rtStreakA);
-    // long vertical streak: each emitter leaves one column down the frame
-    const sm = this.streakMat.uniforms;
-    sm.tSrc.value = this.rtStreakA.texture;
-    sm.uTexel.value.set(1 / this.rtStreakA.width, 1 / this.rtStreakA.height);
-    this.blit(this.streakMat, this.rtStreakB);
+    // where each bright texel's emitter stands (the mirror's depth)
+    const pp = this.reflPosMat.uniforms;
+    pp.tSrc.value = this.rtRefl.texture;
+    pp.tOpq.value = this.rtReflOpq.texture;
+    pp.tSpriteZ.value = this.rtSpriteZ.depthTexture;
+    pp.tDepth.value = this.rtRefl.depthTexture;
+    pp.uTexel.value.set(1 / this.rtRefl.width, 1 / this.rtRefl.height);
+    pp.uProjInv.value.copy(this.reflCam.projectionMatrixInverse);
+    pp.uCamWorld.value.copy(this.reflCam.matrixWorld);
+    pp.uEye.value.copy(this._v.camPos);
+    this.blit(this.reflPosMat, this.rtReflPos);
+    // the street's sheens: one per emitter, from its foot toward the eye
+    // (from the frame before: see _srcA)
+    const su = this.splat.material.uniforms, W = this._v.win, PS = this._prevSrc;
+    const texelTan = (W.xR - W.xL) / this.rtStreakA.width;
+    if (PS.valid) {
+      su.tBright.value = this._srcA[1 - cur].texture;
+      su.tPos.value = this._srcP[1 - cur].texture;
+      su.uProjInvR.value.copy(PS.projInv);
+      su.uCamWorldR.value.copy(PS.camWorld);
+      su.uEyeSrc.value.copy(PS.eye);
+      su.uTexelTan.value = PS.texelTan;
+    } else {
+      su.tBright.value = this.rtStreakA.texture;
+      su.tPos.value = this.rtReflPos.texture;
+      su.uProjInvR.value.copy(this.reflCam.projectionMatrixInverse);
+      su.uCamWorldR.value.copy(this.reflCam.matrixWorld);
+      su.uEyeSrc.value.copy(this._v.camPos);
+      su.uTexelTan.value = texelTan;
+    }
+    PS.projInv.copy(this.reflCam.projectionMatrixInverse);
+    PS.camWorld.copy(this.reflCam.matrixWorld);
+    PS.eye.copy(this._v.camPos);
+    PS.texelTan = texelTan;
+    PS.valid = true;
+    this._pp = 1 - cur;
+    su.uVP.value.copy(this._v.vp);
+    su.uEye.value.copy(this._v.camPos);
+    su.uPlaneY.value = this._v.planePos.y;
+    r.setRenderTarget(this.rtStreakB);
+    r.setClearColor(0x000000, 0);
+    r.clear();
+    if (reflOn) r.render(this.splatScene, this.quadCam);
     U.tRefl.value = this.rtRefl.texture;
     U.tReflBlur.value = this.rtStreakB.texture;
 
@@ -552,6 +879,7 @@ export class Pipeline {
     if (P) P.begin('bloom');
     const pf = this.prefilterMat.uniforms;
     pf.tSrc.value = this.rtScene.texture;
+    pf.tId.value = this.rtId.texture;
     pf.uTexel.value.set(1 / this.width, 1 / this.height);
     this.blit(this.prefilterMat, this.bloom[0]);
     for (let i = 1; i < (S.bloom ? 0 : BLOOM_LEVELS); i++) {
@@ -593,7 +921,7 @@ export class Pipeline {
     iu.uLightning.value = this.lightning;
     iu.uKick.value = this.kick || 0;
     // lightning shows the rain everywhere, not only inside the cones
-    iu.uRain.value = (1 + 2.2 * Math.min(1, this.lightning) + 1.2 * (this.rainBoost || 0)) * (this.look ? this.look.rainOverlay : 1);
+    iu.uRain.value = (1 + 2.2 * Math.min(1, this.lightning) + 1.2 * (this.rainBoost || 0)) * (this._lookCur ? this._lookCur.rainOverlay : 1);
     iu.uRain3.value = 1 + 1.5 * Math.min(1, this.lightning);
     iu.uView.value = this.view;
     const pxPerRad = this.height / THREE.MathUtils.degToRad(camera.fov);
@@ -608,7 +936,7 @@ export class Pipeline {
     }
     if (!S.ink) for (let k = 0; k <= (this.repeat.ink || 0); k++) this.blit(this.inkMat, null);
     if (this.debugRT) {
-      const src = { refl: this.rtRefl, reflA: this.rtRefl, bright: this.rtStreakA, streak: this.rtStreakB, vol: this.rtVolume }[this.debugRT];
+      const src = { refl: this.rtRefl, reflA: this.rtRefl, bright: this.rtStreakA, streak: this.rtStreakB, pos: this.rtReflPos, vol: this.rtVolume }[this.debugRT];
       if (src) {
         this.debugMat.uniforms.tSrc.value = src.texture;
         this.debugMat.uniforms.uMode.value = this.debugRT === 'reflA' ? 1 : 0;
