@@ -1,3 +1,4 @@
+import * as THREE from 'three';
 // The diner's site on the block (docs/story/CONTRACTS.md §15): one table of
 // numbers that the near building (world/Facade.js cuts the void), the street
 // front (parts/dinerFront.js) and the room (parts/diner.js) all build to.
@@ -63,15 +64,33 @@ export function dinerOpenings() {
   return out;
 }
 
-// Can the eye see the diner? North of z = -7.5 (the diner is behind every
-// accepted camera, all of which stand south of z = -8.4 looking down the
-// avenue) or inside it. While it cannot, the near building is drawn as its
-// old solid block and nothing of the diner is drawn, shadowed or lit
-// (world/Facade.js setNear, parts/dinerFront.js, parts/diner.js), so the
-// accepted frames print from exactly what they always did.
-// (lane 4: a frustum test would do better once the golden frames allow it)
-export const DINER_SIGHT = { z: -7.5, force: null };
+// Is the diner's room worth lighting? The building, its front and its room
+// are always there (drawn, solid, shot at); what stays an optimisation is
+// the room's light: its pendants take no pooled spot light and the room
+// casts no shadow unless the eye is inside, or the front is in view within
+// 30 m (walls stop light: a lamp behind a wall lights nothing the player
+// sees). parts/dinerFront.js decides it once per step from the camera
+// (inView below) and parts/diner.js reads it through dinerInSight.
+export const DINER_SIGHT = { force: null, state: null, near: 30 };
 export function dinerInSight(eye) {
   if (DINER_SIGHT.force != null) return DINER_SIGHT.force;
-  return eye.z > DINER_SIGHT.z || eye.x < DINER.faceX;
+  if (DINER_SIGHT.state != null) return DINER_SIGHT.state;
+  return eye.x < DINER.faceX && eye.z > DINER.zMin && eye.z < DINER.zMax;
+}
+
+// the front's box (the four bays and the fascia) against the camera's
+// frustum, within `near` metres (with 2 m of hysteresis: the pool is not
+// re-dealt every step on the boundary)
+const _fr = new THREE.Frustum(), _pm = new THREE.Matrix4();
+const _box = new THREE.Box3(new THREE.Vector3(DINER.backX, 0, DINER.pilasters[4]), new THREE.Vector3(DINER.faceX + 1.2, 4.6, DINER.pilasters[0]));
+export function dinerSightFrom(camera, was = false) {
+  const e = camera.position;
+  if (e.x < DINER.faceX + 0.3 && e.x > DINER.backX && e.z > DINER.zMin - 0.5 && e.z < DINER.zMax + 0.5) return true;
+  const cx = Math.max(_box.min.x, Math.min(_box.max.x, e.x)), cz = Math.max(_box.min.z, Math.min(_box.max.z, e.z));
+  const d = Math.hypot(cx - e.x, cz - e.z);
+  if (d > DINER_SIGHT.near + (was ? 2 : 0)) return false;
+  camera.updateMatrixWorld();
+  _pm.multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse);
+  _fr.setFromProjectionMatrix(_pm);
+  return _fr.intersectsBox(_box);
 }
