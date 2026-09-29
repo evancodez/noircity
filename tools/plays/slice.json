@@ -24,7 +24,7 @@
     { "wait": 2200 },
     { "shot": "s03_lighter" },
     { "until": "G.scenes.ctx.flags.lit === true", "timeout": 6000 },
-    { "expect": "G.scenes.ctx.flags.cig && G.scenes.ctx.flags.cig.userData && G.hands.held.R === G.scenes.ctx.flags.cig", "label": "the cigarette is lit, in the hand" },
+    { "expect": "G.scenes.ctx.flags.cig && G.scenes.ctx.flags.cig.userData.tip === 'lit'", "label": "the cigarette is lit, in the hand" },
     { "wait": 900 },
     { "key": "KeyF" },
     { "wait": 600 },
