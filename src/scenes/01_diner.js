@@ -64,14 +64,15 @@ export default defineScene({
     const eye = () => G.eye;
 
     // ---- under every beat -----------------------------------------------------------
-    let wispT = 0, lastTrain = false;
+    let lastTrain = false;
     const room = roomClock(ctx, d, jobs);
     ctx.onStep((dt) => {
       jobs.step(dt);
       room(dt);
       // the cigarette: a thread of smoke off the tip; F a drag, LMB the ash
       if (ctx.flags.lit && ctx.flags.cig) {
-        if ((wispT -= dt) <= 0) { wispT = 0.32; G.fx.cig.wisp(H.anchor('cigTip')); }
+        // (lane 3's thread takes a point every step while it burns)
+        G.fx.cig.wisp(H.anchor('cigTip'), 'player');
         if (ctx.pressed('KeyF') && !H.busy) {
           H.play('drag', { onMark: {
             glow: () => snd('drag'),
@@ -94,20 +95,15 @@ export default defineScene({
       yield beat('settle');
       yield wait(4);
       yield* ctx.prompt({ text: 'light up', at: () => d.items.get('lighter') || counterAt(4, 0.12, -0.26) });
-      let lighter = null;
+      // (lane 2's clip takes the pack, the cigarette and the lighter off the
+      // counter and puts them back itself, lights the tip on its own prop
+      // event: the scene adds the sounds and the story's flags)
       const h = H.play('lightUp', { onMark: {
         tap: () => snd('packTap'),
-        lips: () => { holdCigarette(ctx, false); },
-        spark: () => {
-          const l = d.take('lighter');
-          if (l) { H.hold(l, 'L'); lighter = l; }
-          snd('lighter');
-        },
-        lit: () => { const c = ctx.flags.cig; if (c) c.userData.setTip('lit'); ctx.flags.lit = true; G.fx.cig.wisp(H.anchor('cigTip')); snd('cigCatch'); },
-        shut: () => {
-          snd('lighterShut');
-          if (lighter) { H.hold(null, 'L'); d.place('lighter', counterAt(4, 0.12, -0.26), { name: 'lighter', yaw: -0.2 }); lighter = null; }
-        },
+        lips: () => { ctx.flags.cig = H.cigarette(); },
+        spark: () => snd('lighter'),
+        lit: () => { const c = H.cigarette(); if (c) { c.userData.setTip('lit'); ctx.flags.cig = c; } ctx.flags.lit = true; G.fx.cig.wisp(H.anchor('cigTip'), 'player'); snd('cigCatch'); },
+        shut: () => snd('lighterShut'),
       } });
       yield until(() => h.done);
       ctx.flags.litAt = ctx.sceneTime;
@@ -253,7 +249,8 @@ function* sip(ctx, d, k) {
   const snd = (name, pos = null, p = {}) => G.sfx.play(name, pos, p);
   const glass = d.items.get('glass');
   const home = ctx.stage.anchor('diner.counter.glass').pos;
-  const r = H.play('reachGlass', { onMark: { taken: () => { if (glass) H.hold(glass, 'L'); } } });
+  // (lane 2's reachGlass / sip take the tumbler off the counter themselves)
+  const r = H.play('reachGlass');
   yield until(() => r.done);
   const f0 = 1 - (k - 1) / 3, f1 = 1 - k / 3;
   const S = H.clip('sip'), a = S.marks.tilt, b = S.marks.drink;
@@ -305,8 +302,13 @@ function roomClock(ctx, d, jobs) {
     jobs.add('dot', (function* () {
       const dot = cast.get('dot');
       yield wait(0.8);
-      yield* dot.walkTo('diner.hatch');
-      const plate = d.place('plate', V(DINER.backX + 0.1, DINER.hatch.y0 + 0.02, 2.2), { name: 'plate.oldman' });
+      // (lane 5's diner.hatch is the cook's place inside the kitchen: Dot
+      // stands in the service aisle before the pass, where the bell is)
+      const bell = ctx.stage.anchor('diner.bell').pos;
+      const passZ = bell.z + Math.sign((DINER.hatch.z0 + DINER.hatch.z1) / 2 - bell.z || 1) * 0.35;
+      yield* dot.walkTo({ x: DINER.serveX - 0.5, z: passZ });
+      dot.face(-Math.PI / 2);
+      const plate = d.place('plate', V(bell.x, bell.y, passZ), { name: 'plate.oldman' });
       yield* clip(dot, 'serve', { down: () => { dot.hold(d.take('plate.oldman') || plate, 'L'); } });
       yield* dot.walkTo('diner.serve.9');
       yield* clip(dot, 'serve', { down: () => { dot.hold(null, 'L'); d.place('plate', counterAt(9, 0.28, 0.2), { name: 'plate.oldman' }); snd('plateDown', counterAt(9)); } });
@@ -338,12 +340,14 @@ function roomClock(ctx, d, jobs) {
   const topUp = () => jobs.add('dot', (function* () {
     const dot = cast.get('dot');
     yield* dot.walkTo('diner.urns');
+    const potItem = d.items.get('coffeePot');
+    const potHome = potItem ? potItem.getWorldPosition(V(0, 0, 0)) : V(DINER.backX + 0.3, DINER.counter.topY, 5.55);
     const pot = d.take('coffeePot');
     if (pot) dot.hold(pot, 'R');
     yield* dot.walkTo('diner.serve.9');
     yield* clip(dot, 'pour', { streamOn: () => snd('coffeePour', counterAt(9)) });
     yield* dot.walkTo('diner.urns');
-    if (pot) { dot.hold(null, 'R'); d.place('coffeePot', V(DINER.backX + 0.25, DINER.floorY + 0.95, 6.9), { name: 'coffeePot' }); }
+    if (pot) { dot.hold(null, 'R'); d.place('coffeePot', potHome, { name: 'coffeePot' }); }
     yield* dot.walkTo('diner.serve.5');
     dot.setState('lean');
   })());

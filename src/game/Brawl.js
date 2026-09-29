@@ -222,12 +222,9 @@ export class Brawl {
       const { marks, duration } = H.clip('heavyWind');
       if ((me.release && me.windT >= marks.charged) || me.windT >= duration) this.heavy();
     }
-    if (me.state === 'slip') {
-      const { duration } = H.clip(me.slipDir < 0 ? 'slipL' : 'slipR');
-      const u = me.h ? Math.min(1, me.h.t / duration) : 1;
-      // the eye moves off the line and back: out fast, back slower
-      C.slip = me.slipDir * 0.36 * Math.sin(Math.PI * Math.pow(u, 0.75));
-    } else if (C.slip) C.slip *= Math.exp(-dt * 18);
+    // (the eye's move off the line is lane 2's slipL / slipR clip itself,
+    // through controller.viewFx: controller.slip stays 0, or it doubles)
+    if (C.slip) C.slip *= Math.exp(-dt * 18);
     if (me.state === 'stagger' || me.state === 'hurt') {
       me.stun -= dt;
       if (me.stun <= 0) { me.state = 'idle'; me.h = H.play(G.held('Space') ? 'block' : 'guard'); if (G.held('Space')) me.state = 'block'; }
@@ -407,6 +404,8 @@ export class Brawl {
     const d = to.clone().sub(him.throwFrom);
     const L = d.length();
     him.throwTo = him.throwFrom.clone().addScaledVector(d, Math.max(0, (L - 0.45) / Math.max(L, 1e-3)));
+    // (lane 6's br_into_* go backwards: his back to the thing)
+    if (L > 1e-3) c.face(Math.atan2(-d.x, -d.z));
     c.play(clip, { onMark: { impact: () => this.throwImpact(what, dir) } });
     this.game.emit('brawl:throw', { into: what });
     return true;
@@ -695,7 +694,8 @@ export class Brawl {
     him.koYaw0 = c.yaw;
     const clip = c.clip('br_ko_window');
     him.koGlass = clip.marks.glass;
-    him.koLand = clip.marks.glass + 0.62;
+    him.koLand = clip.marks.land ?? clip.marks.glass + 0.62;
+    him.koEnd = clip.duration;
     c.play('br_ko_window', { onMark: { glass: () => { if (this.opts.onGlass) this.opts.onGlass(); } } });
     G.hitStop = Math.max(G.hitStop || 0, BRAWL.hitStop.heavy);
     if (G.slowmo) G.slowmo(BRAWL.slowmo.k, BRAWL.slowmo.dur);
@@ -721,48 +721,21 @@ export class Brawl {
   }
 
   stepKO(dt) {
-    const him = this.him, c = this.c, R = this.ring, G = this.game;
-    const t = him.t, tg = him.koGlass, tl = him.koLand;
-    const from = him.koFrom, win = R.window, land = R.land;
-    // (his back leads: he faces back into the room, the way he came)
-    const travel = Math.atan2(land.x - from.x, land.z - from.z);
-    const yaw = him.koYaw0 + Math.atan2(Math.sin(travel + Math.PI - him.koYaw0), Math.cos(travel + Math.PI - him.koYaw0)) * Math.min(1, t / (tg * 0.7));
-    let x, z, y;
-    if (t <= tg) {
-      const u = t / tg, e = Math.sin(u * Math.PI / 2);
-      x = from.x + (win.x - from.x) * e; z = from.z + (win.z - from.z) * e;
-      y = 1.05 * Math.sin(u * Math.PI / 2);
-    } else if (t <= tl) {
-      const u = (t - tg) / (tl - tg);
-      x = win.x + (land.x - win.x) * u; z = win.z + (land.z - win.z) * u;
-      y = 1.05 * (1 - u * u) - 0.15 * u;
-    } else { x = land.x; z = land.z; y = 0; }
-    c.place({ x, z }, yaw);
-    // (a stand-in for the clip's own flight: the figure laid back about
-    // its hips as it goes, near flat by the time it comes down; his down
-    // clip takes over as he lands)
-    const tilt = him.fell ? 0 : -1.35 * Math.pow(Math.min(1, t / tl), 0.8);
-    if (c.object) {
-      // (yaw first, then the lean about his own hips' axis)
-      c.object.rotation.order = 'YXZ';
-      c.object.position.x = x; c.object.position.z = z;
-      c.object.position.y = him.fell ? 0 : Math.max(0, y) + 0.15;
-      c.object.rotation.x = tilt;
-    }
-    if (!him.fell && t >= tl) {
-      him.fell = true;
-      if (c.object) c.object.rotation.x = 0;
-      c.ko('deathBack');
-      // (the fall is over as he hits: straight to his lying pose)
-      for (let i = 0; i < 70; i++) c.fig.update(1 / 60, 0);
-    }
+    const him = this.him, c = this.c, G = this.game;
+    const t = him.t, tl = him.koLand;
+    // (lane 6's br_ko_window carries him from where he stands over the end
+    // booth, through the end bay's glass, onto his back on the pavement:
+    // Figure root motion to diner.pavement.ko. Nothing here moves him.)
     if (!him.landed && t >= tl) {
       him.landed = true;
-      this.sfx('bodyPavement', V(x, 0.2, z), { k: 1 });
+      const p = c.pos;
+      this.sfx('bodyPavement', V(p.x, 0.2, p.z), { k: 1 });
       this.controller.shake(0.2, 3);
       if (this.opts.onLanded) this.opts.onLanded();
     }
-    if (t >= tl + 1.0 && !this.done) { this.done = true; this.stop(); G.emit('brawl:end', { won: true }); }
+    // the clip over: he lies there, breathing (c.ko after the last blow)
+    if (!him.fell && t >= (him.koEnd ?? tl)) { him.fell = true; c.ko(); }
+    if (t >= Math.max(tl + 1.0, him.koEnd ?? 0) && !this.done) { this.done = true; this.stop(); G.emit('brawl:end', { won: true }); }
   }
 
   get state() {

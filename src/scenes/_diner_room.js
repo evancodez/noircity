@@ -36,14 +36,25 @@ export function dinerRoom(ctx, phase = 'evening') {
   d.reset();
   for (const p of Object.values(front.panes)) stage.glass.restore(p);
   // (the door's little bells, whoever opens it)
-  if (!front.bellHooked) { front.bellHooked = true; front.door.on('open', () => game.sfx.play('doorbell', V(DINER.innerX - 0.1, 2.3, 0.6))); }
+  // (and the room's heads turn to it: lane 6's cast.attention)
+  if (!front.bellHooked) {
+    front.bellHooked = true;
+    front.door.on('open', () => {
+      game.sfx.play('doorbell', V(DINER.innerX - 0.1, 2.3, 0.6));
+      if (game.cast && game.cast.attention) game.cast.attention(V(DINER.innerX, 1.6, 0.6));
+    });
+  }
   // (the glass whole again: the street's sound back behind the wall)
   if (game.sfx && game.sfx.roomOpen) game.sfx.roomOpen(0);
   const dot = cast.spawn('waitress', { at: 'diner.urns' });
   dot.setState('lean');
-  cast.spawn('cook', { at: 'diner.hatch' });
+  cast.spawn('cook', { at: 'diner.hatch' }).setState('hatch');
   cast.spawn('oldman', { seat: 'diner.stool.9' }).setState('sitRead');
-  cast.spawn('docker', { seat: 'diner.stool.1' }).setState('sitDrink');
+  const dk = cast.spawn('docker', { seat: 'diner.stool.1' });
+  // (his mug off the counter into his hands: lane 6's sitDrink holds it)
+  const mug = d.take('mug.docker');
+  if (mug) dk.hold(mug, 'R');
+  dk.setState('sitDrink');
   cast.spawn('couple_her', { seat: 'diner.booth.2.a' }).setState('sitTalk');
   cast.spawn('couple_him', { seat: 'diner.booth.2.b' }).setState('sitTalk');
   if (phase === 'evening') cast.spawn('brawler', { seat: 'diner.stool.' + DINER.brawlerStool }).setState('sitEat');

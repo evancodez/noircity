@@ -1,12 +1,15 @@
 // Scripted play-through of the real game page (no ?shot=) in headless Chrome,
 // driven through the DevTools protocol with TRUSTED input events (the same
-// path as a user's mouse and keyboard): the title card, click to begin
-// (pointer lock) into scene 1 (the diner: seated at the counter, E moves
-// the stub beats on), X off the stool, out through the diner's door onto
-// the street and back in (walk mode), mouse look, the Tommy gun put in the
-// hands (LMB fire, R reload), M mute, pointer-lock loss -> pause -> click
-// to resume, death -> THE END -> click to try again. Prints one line per
-// check and the #errlog contents.
+// path as a user's mouse and keyboard): the title card, BEGIN (pointer lock)
+// into scene 1 (the diner: seated at the counter; E lights up, orders,
+// drinks three times), at the pay beat off the stool (the controller's walk
+// mode, set from the page: there is no stand-up key in the story) out
+// through the diner's door onto the street and back in, mouse look, the
+// Tommy gun put in the hands (LMB fire, R reload), M mute, pointer-lock
+// loss -> pause -> click to resume, death -> THE END -> click to try again
+// (back at the pay beat on the stool), E pay -> the fight begins. Prints one
+// line per check and the #errlog contents. (tools/play.mjs plays the whole
+// slice by real input.)
 //   node tools/playtest.mjs [width] [height]
 import { spawn } from 'node:child_process';
 
@@ -52,8 +55,8 @@ try {
 
   // ---- title --------------------------------------------------------------------
   const t0 = await js(`({ state: N.game.state, title: !document.getElementById('title').classList.contains('hidden'), h1: document.querySelector('#title h1').textContent,
-    prompt: document.querySelector('#title .go').textContent, vm: N.game.vm.visible, cam: N.camera.position.toArray().map((v) => +v.toFixed(3)) })`);
-  check('title card over the live street', t0.state === 'title' && t0.title && t0.h1 === 'NOIR EXTREME' && t0.prompt === 'click to begin' && t0.vm === false, JSON.stringify(t0));
+    begin: (document.querySelector('#title .opt[data-k=begin]') || {}).textContent || '', vm: N.game.vm.visible, cam: N.camera.position.toArray().map((v) => +v.toFixed(3)) })`);
+  check('title card over the live diner: BEGIN', t0.state === 'title' && t0.title && t0.h1 === 'NOIR EXTREME' && /begin/i.test(t0.begin) && t0.vm === false, JSON.stringify(t0));
   await sleep(1500);
   const cam2 = await js('N.camera.position.toArray().map((v) => +v.toFixed(3))');
   check('title camera drifts', JSON.stringify(cam2) !== JSON.stringify(t0.cam), `${t0.cam} -> ${cam2}`);
@@ -66,7 +69,7 @@ try {
   await sleep(600);
   const s1 = await js(`({ locked: document.pointerLockElement === N.renderer.domElement, state: N.game.state,
     title: !document.getElementById('title').classList.contains('hidden') })`);
-  check('click to begin: pointer lock, playing', s1.locked && s1.state === 'playing' && !s1.title, JSON.stringify(s1));
+  check('BEGIN: pointer lock, playing', s1.locked && s1.state === 'playing' && !s1.title, JSON.stringify(s1));
   if (!s1.locked) throw new Error('no pointer lock in this headless build: the rest needs it');
   await sleep(1200);
   const sc = () => js(`({ scene: N.game.scenes.current && N.game.scenes.current.id, beat: N.game.scenes.beat, mode: N.controller.mode, hands: N.game.hands.set,
@@ -75,25 +78,28 @@ try {
   const d0 = await sc();
   check('the title leads into scene 1: seated at the counter, the smoke set, no gun', d0.scene === 'diner' && d0.beat === 'settle' && d0.mode === 'seated' && d0.hands === 'smoke' && !d0.gun && d0.room === 'diner', JSON.stringify(d0));
   const until = async (expr, ms) => { for (let t = 0; t < ms; t += 150) { if (await js(expr)) return true; await sleep(150); } return false; };
-  await until(`document.querySelector('#hud .prompt').style.display !== 'none'`, 3000);
+  await until(`document.querySelector('#hud .prompt').style.display !== 'none'`, 9000);
   await key('KeyE', 'e');
   await sleep(300);
   const d1 = await sc();
   check('E lights up (the hands play lightUp)', d1.clip === 'lightUp', JSON.stringify(d1));
-  const toOrder = await until(`N.game.scenes.beat === 'order'`, 5000);
-  const toScotch = await until(`/scotch/.test(document.querySelector('#hud .prompt').textContent) && document.querySelector('#hud .prompt').style.display !== 'none'`, 8000);
+  const promptIs = (re) => `${re}.test(document.querySelector('#hud .prompt').textContent) && document.querySelector('#hud .prompt').style.display !== 'none'`;
+  const toOrder = await until(`N.game.scenes.beat === 'order'`, 6000);
+  // (E calls Dot at once; she may finish an errand first)
+  await sleep(400); await key('KeyE', 'e');
+  const toScotch = await until(promptIs('/scotch/'), 30000);
   await key('KeyE', 'e');
-  const toDrink = await until(`N.game.scenes.beat === 'drink'`, 14000);
-  for (let k = 0; k < 3; k++) { await until(`/drink/.test(document.querySelector('#hud .prompt').textContent) && document.querySelector('#hud .prompt').style.display !== 'none'`, 4000); await key('KeyE', 'e'); await sleep(2300); }
-  const toPay = await until(`N.game.scenes.beat === 'pay'`, 4000);
+  const toDrink = await until(`N.game.scenes.beat === 'drink'`, 20000);
+  for (let k = 0; k < 3; k++) { await until(promptIs('/drink/'), 8000); await key('KeyE', 'e'); await until(`!${promptIs('/drink/')}`, 2000); await until(`!N.game.hands.busy && !N.game.hands.current`, 6000); await sleep(300); }
+  const toPay = await until(`N.game.scenes.beat === 'pay'`, 6000);
   const fill = await js(`N.game.stage.part('diner').items.get('glass').userData.fill`);
   check('E moves the beats on: settle, order (Dot pours), drink (three sips empty the glass), pay', toOrder && toScotch && toDrink && toPay && fill < 0.01, JSON.stringify({ toOrder, toScotch, toDrink, toPay, fill }));
 
-  // ---- X: off the stool; out through the door and back in ------------------------------
-  await key('KeyX', 'x');
+  // ---- off the stool (set from the page: no stand-up key); out through the door and back in ----
+  await js(`(N.controller.setMode('walk', { pose: { x: -12.85, y: 0.15 + 1.65, z: 3.6, yaw: Math.PI, pitch: 0 } }), 1)`);
   await sleep(200);
   const w0 = await sc();
-  check('X stands up off the stool (walk mode)', w0.mode === 'walk', JSON.stringify(w0));
+  check('off the stool (walk mode)', w0.mode === 'walk', JSON.stringify(w0));
   // (walked by the controller's own input, as the battle's autopilot does:
   // turn toward a point, W until there; the colliders and the room's walls
   // decide where he can go)
@@ -139,9 +145,9 @@ try {
   await key('KeyR', 'r');
   await sleep(200);
   const r1 = await js(`({ reloading: N.game.weapon.reloading, note: document.querySelector('#hud .note').textContent })`);
-  await sleep(2400);
+  await sleep(2900);
   const r2 = await js('({ reloading: N.game.weapon.reloading, ammo: N.game.weapon.ammo })');
-  check('R reloads (2.3 s, drum full)', r1.reloading && r1.note === 'reloading' && !r2.reloading && r2.ammo === 50, JSON.stringify([r1, r2]));
+  check('R reloads (2.6 s, drum full)', r1.reloading && r1.note === 'reloading' && !r2.reloading && r2.ammo === 50, JSON.stringify([r1, r2]));
 
   // ---- M: mute ---------------------------------------------------------------------------------------
   await key('KeyM', 'm');
@@ -171,7 +177,7 @@ try {
   await sleep(400);
   const e1 = await js(`({ state: N.game.state, end: !document.getElementById('endcard').classList.contains('hidden'), stats: document.querySelector('#endcard .sub').textContent,
     epi: document.querySelector('#endcard .epi').textContent, locked: !!document.pointerLockElement, pause: !document.getElementById('pausecard').classList.contains('hidden') })`);
-  check('death: THE END (kills, an epitaph), no pause card', e1.state === 'dead' && e1.end && /kill/.test(e1.stats) && e1.epi.length > 10 && !e1.locked && !e1.pause, JSON.stringify(e1));
+  check('death: THE END (an epitaph, no counters), no pause card', e1.state === 'dead' && e1.end && !/kill/i.test(e1.stats) && e1.epi.length > 10 && !e1.locked && !e1.pause, JSON.stringify(e1));
   await sleep(400);
   const e1b = await js('({ lower: +N.game.vm.lower.toFixed(2), shown: N.game.vm.root.visible })');
   check('death: the Tommy gun drops out of the frame', e1b.lower > 0.95 && !e1b.shown, JSON.stringify(e1b));
@@ -180,8 +186,15 @@ try {
   const e2 = await js(`({ state: N.game.state, end: !document.getElementById('endcard').classList.contains('hidden'), hp: N.game.health.hp, locked: document.pointerLockElement === N.renderer.domElement })`);
   check('click to try again: a fresh start', e2.state === 'playing' && !e2.end && e2.hp === 100 && e2.locked, JSON.stringify(e2));
   await sleep(1400);
-  const e3 = await js('({ lower: N.game.vm.lower, scene: N.game.scenes.current && N.game.scenes.current.id, beat: N.game.scenes.beat })');
-  check('try again: back into the scene at its beat, the hands back up', e3.lower === 0 && e3.scene === 'diner' && e3.beat === 'pay', JSON.stringify(e3));
+  const e3 = await js('({ lower: N.game.vm.lower, scene: N.game.scenes.current && N.game.scenes.current.id, beat: N.game.scenes.beat, mode: N.controller.mode, hands: N.game.hands.set })');
+  check('try again: back into the scene at its beat, on the stool, the smoke set', e3.lower === 0 && e3.scene === 'diner' && e3.beat === 'pay' && e3.mode === 'seated' && e3.hands === 'smoke', JSON.stringify(e3));
+
+  // ---- E pay: the wallet, his line, he stands: the fight --------------------------------------------------
+  await until(promptIs('/pay/'), 8000);
+  await key('KeyE', 'e');
+  const fight = await until(`N.game.scenes.current && N.game.scenes.current.id === 'fight' && N.game.brawl.active`, 25000);
+  const f2 = await js(`({ scene: N.game.scenes.current && N.game.scenes.current.id, beat: N.game.scenes.beat, mode: N.controller.mode, hands: N.game.hands.set, brawl: N.game.brawl.active, him: N.game.brawl.state && N.game.brawl.state.hisState, mack: N.game.cast.get('mack') && N.game.cast.get('mack').kind })`);
+  check('E pay: he stands, the fight begins (brawl mode, fists, the brawler)', fight && f2.beat === 'round1' && f2.mode === 'brawl' && f2.hands === 'fists' && f2.mack === 'brawler', JSON.stringify(f2));
 
   const err = await js(`document.getElementById('errlog').textContent`);
   check('no console errors / warnings', !err, err ? err.slice(0, 300) : 'errlog empty');

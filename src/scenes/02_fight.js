@@ -19,6 +19,26 @@ import { dinerRoom, makeJobs, clip, counterAt, V, DINER, stoolZ, RING, MACK_AT, 
 // Losing a round is not failing: black, and up at the round's start with 60.
 const ROUND_Z = { 1: MACK_AT.z, 2: MACK_AT.z - 1.0, 3: MACK_AT.z - 2.0 };
 
+// his bottle broken by the neck (lane 3: a held bottle's break leaves the
+// jagged neck in the same hand); -> the neck, or the whole bottle if the
+// break left none
+function breakInFist(ctx, mack, at = null) {
+  const { stage } = ctx;
+  const b = buildProp('bottle', { variant: 'beer' });
+  mack.hold(b, 'R');
+  const B = stage.breakables;
+  if (!B || !B.add) return b;
+  b.updateWorldMatrix(true, true);
+  const p = at || b.getWorldPosition(V(0, 0, 0));
+  const parent = b.parent;
+  B.hit(B.add(b, { kind: 'bottle', solid: false }), { point: p, dir: V(0, -1, 0), power: 9, by: 'body', neck: true });
+  const neck = parent && parent.children.find((o) => o.userData && o.userData.kind === 'bottleNeck');
+  if (!neck) return b;
+  // (the broken bottle out of his hand, the neck in it, hung as the bottle was)
+  mack.hold(neck, 'R', { grip: 'hang' });
+  return neck;
+}
+
 // the room as a round finds it (the shot mode's jump; a retry)
 function stageRound(ctx, round) {
   const { cast, stage, controller: C, hands } = ctx;
@@ -30,13 +50,13 @@ function stageRound(ctx, round) {
   const mack = cast.spawn('brawler', { at: { x: RING.x, z }, yaw: 0 });
   if (round >= 2) {
     // (what round two left: his bottle's neck in his fist, mine on the counter)
-    const neck = buildProp('bottle', { variant: 'beer' });
-    mack.hold(neck, 'R');
-    ctx.flags.hisBottle = neck;
+    ctx.flags.hisBottle = breakInFist(ctx, mack);
     const dz = nearestStool(z + 1.45);
     d.place('bottle', counterAt(dz, 0.14, 0), { name: 'bottle.reach', variant: 'beer' });
     placePlates(ctx, z);
   }
+  // (round three: a split lip, the cap loose for the next blow to the head)
+  if (round >= 3) { if (mack.bleed) mack.bleed(1); mack.capLoose = true; }
   C.setPose(RING.x, z + 1.45, 0, 0);
   C.setMode('brawl', { opponent: mack, ring: { x: RING.x, z: z + 1.45, r: 0.45 }, dist: 1.45, eyeY: BRAWL_EYE });
   hands.hold(null, 'R'); hands.hold(null, 'L');
@@ -95,7 +115,7 @@ function roomFor(ctx) {
   return {
     stools,
     jukebox: { pos: V(J.x, 0, DINER.zMin + 0.62), hit: (p) => d.jukebox.hit(p), next: () => d.jukebox.next() },
-    pieCase: pc ? { pos: pc.pos || (pc.object && pc.object.getWorldPosition(V(0, 0, 0))), pane: pc.pane || null, handle: pc.handle || null } : null,
+    pieCase: pc ? { pos: pc.pos || ((pc.object || pc.group) && (pc.object || pc.group).getWorldPosition(V(0, 0, 0))), pane: pc.pane || null, handle: pc.handle || null } : null,
     items(round) {
       const out = [];
       if (round < 2) return out;
@@ -215,6 +235,8 @@ export default defineScene({
         // he bleeds: a split lip opens with the round
         const m = mack();
         G.fx.hit.punch(m.bones.head.getWorldPosition(V(0, 0, 0)), V(0, -0.3, 1), 0.9);
+        if (m.bleed) m.bleed(1);
+        m.capLoose = true;
       }
       yield until(() => B.finished);
     }
@@ -298,12 +320,11 @@ function* roundTwo(ctx) {
   const { game: G, cast, stage } = ctx;
   const d = stage.part('diner');
   const m = cast.get('mack');
-  const neck = buildProp('bottle', { variant: 'beer' });
-  m.hold(neck, 'R');
+  const at = counterAt(nearestStool(m.pos.z), 0.05, 0);
+  const neck = breakInFist(ctx, m, at);
   ctx.flags.hisBottle = neck;
   G.brawl.armBottle(neck);
-  const at = counterAt(nearestStool(m.pos.z), 0.05, 0);
-  G.sfx.play('break_bottle', at);
+  // (the break's sound is lane 3's: breakables plays break_bottle)
   G.fx.hit.punch(at, V(0, 1, 0), 0.3);
   placePlates(ctx, m.pos.z);
   // Dot: up from behind the counter, the slide, down again
