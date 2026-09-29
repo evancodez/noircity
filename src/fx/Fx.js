@@ -95,6 +95,8 @@ export class Fx {
 
   update(dt, time) {
     this.pour.update(dt);
+    this.cig.update(dt);
+    this.hit.update(dt);
     this.flash.update(dt, time);
     this.blood.update(dt);
     this.chips.update(dt);
