@@ -70,7 +70,7 @@ const BRAWLER = {
     { kind: 'shoes', style: 'boot' },
     { kind: 'hands', s: 1.25, fist: true },
   ],
-  skin: { shirt: 0.022, vest: 0.005, arm: 0.2, hand: 0.19, skin: 0.03, hair: 0.004, cover: 0.011, peak: 0.009, trousers: 0.006, shoes: 0.004 },
+  skin: { shirt: 0.013, vest: 0.004, arm: 0.2, hand: 0.19, skin: 0.03, hair: 0.004, cover: 0.011, peak: 0.009, trousers: 0.006, shoes: 0.004 },
   // his waistcoat pocket (theta, y): where the red matchbook rides
   pocket: [0.62, 1.1],
   collider: 0.4,

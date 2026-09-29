@@ -185,10 +185,10 @@ export function blood(c) {
   const sp = blob(0.024, 0.036, 0.004, 0.4);
   const T = fig.costume.body.torso;
   const row = T.find((r) => r[0] >= 1.34) || T[T.length - 1];
-  sp.position.set(-0.012, 1.345, row[4] + row[2] + 0.004).sub(R.chest);
+  sp.position.set(-0.012, 1.345, row[4] + row[2] + 0.016).sub(R.chest);
   sp.rotation.x = -0.2;
   const sp2 = blob(0.01, 0.014, 0.004, 3.3);
-  sp2.position.set(0.02, 1.3, row[4] + row[2] + 0.006).sub(R.chest);
+  sp2.position.set(0.02, 1.3, row[4] + row[2] + 0.02).sub(R.chest);
   fig.bones.chest.add(sp, sp2);
   const parts = [mouth, drip, sp, sp2];
   for (const m of parts) m.visible = false;

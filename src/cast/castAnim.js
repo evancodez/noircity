@@ -355,14 +355,14 @@ Object.assign(DEFS, {
 // silhouette in its first 0.2 s; each tell runs at least 0.3 s before its
 // contact. Root space; he faces +z, the eye 1.45 m ahead.
 const GUARD = {
-  hipsPos: [0, 0.9, -0.05], hips: [4, -16, 0], spine: [8, -4, 0], chest: [6, -4, 0], neck: [18, 6, 0], head: [-2, 10, 0], headLevel: [0.35], headRoot: [10, 0, 0],
+  hipsPos: [0, 0.91, -0.05], hips: [2, -16, 0], spine: [3, -4, 0], chest: [0, -4, 0], neck: [14, 6, 0], head: [-4, 10, 0], headLevel: [0.5], headRoot: [8, 0, 0],
   footL: [0.14, A, 0.2], footR: [-0.18, A, -0.22], footRotL: [0, 12, 0], footRotR: [0, 32, 0], kneeL: [0.3, 0, 1], kneeR: [-0.2, 0, 1],
   handTL: [0.1, 1.2, 0.3], handTR: [-0.14, 1.16, 0.2], elbowPoleL: [1, -1, -0.2], elbowPoleR: [-1, -1, -0.3],
   handL: [-20, 0, 10], handR: [-20, 0, -10], shoulderL: [0, 0, 0], shoulderR: [0, 0, 0],
 };
 const guardAt = (t) => {
   const w = S(TAU * t / 1.2), b = S(TAU * t / 0.6), v = wob(t, 2.4, 1);
-  return { hipsPos: [0.028 * w, 0.9 + 0.008 * b, -0.05], hips: [4, -16 + 3 * w, -2 * w], chest: [6 + b, -4 - 2 * w, 2 * w],
+  return { hipsPos: [0.028 * w, 0.91 + 0.008 * b, -0.05], hips: [2, -16 + 3 * w, -2 * w], chest: [b, -4 - 2 * w, 2 * w],
     handTL: [0.1 + 0.01 * v, 1.2 + 0.015 * b, 0.3], handTR: [-0.14, 1.16 + 0.012 * b, 0.2 + 0.01 * v], head: [-2, 10 + 3 * w, 0] };
 };
 const fight = (dur, keys, rm = null) => {

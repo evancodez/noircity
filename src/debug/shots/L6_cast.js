@@ -99,6 +99,7 @@ function stageCastLab(stage, camera, controller, game) {
     c = stage.cast.spawn(kind, { at: { x: -2.2, z: -17.3 }, yaw });
   }
   if (kind === 'brawler' && q.get('blood')) c.bleed(parseFloat(q.get('blood')));
+  if (kind === 'brawler' && q.get('matchbook') === '1') c.items.get('matchbook').visible = true;
   if (GEAR[kind] && q.get('gear') === '1' && !c.held.R) giveGear(stage, c, (k) => buildProp(k));
   if (st !== 'idle' && st !== 'walk' && st !== 'carry' && st !== 'run') {
     const one = !['sit', 'sitEat', 'sitDrink', 'sitRead', 'sitSmoke', 'sitTalk', 'lean', 'wipe', 'hatch', 'watch', 'read', 'br_guard', 'ko'].includes(st);
