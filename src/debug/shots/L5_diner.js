@@ -127,10 +127,10 @@ function stageAlive(stage, camera, controller, game) {
 export const presets = {
   propsheet: { x: C.frontX + 0.6, z: 3.2, y: 0, yaw: -Math.PI / 2, pitch: -0.4, fov: 68, t: 1, stage: stagePropSheet },
   diner_seat: roomView({ x: SX - 0.03, y: 1.6, z: S4, yaw: Math.PI / 2, pitch: -0.1, fov: 68 }),
-  diner_left: roomView({ x: SX, y: 1.6, z: S4, yaw: -0.72, pitch: -0.06, fov: 68 }),
+  diner_left: roomView({ x: SX, y: 1.6, z: S4, yaw: -0.5, pitch: -0.05, fov: 68 }),
   diner_right: roomView({ x: SX + 0.05, y: 1.6, z: S4, yaw: -0.07, pitch: -0.08, fov: 68 }),
   diner_wide: roomView({ x: -12.75, y: 1.8, z: -5.05, yaw: Math.PI - 0.22, pitch: -0.1, fov: 70 }),
-  diner_booth: roomView({ x: -11.25, y: 1.45, z: 10.05, yaw: 1.05, pitch: -0.08, fov: 68 }),
+  diner_booth: roomView({ x: -11.45, y: 1.45, z: 10.0, yaw: 1.3, pitch: -0.08, fov: 68 }),
   diner_alive: (() => { const v = roomView({ x: -12.95, y: 1.75, z: -2.4, yaw: Math.PI - 0.28, pitch: -0.14, fov: 62 }); const st = v.stage; return { ...v, t: 2.2, stage(...a) { st(...a); stageAlive(...a); } }; })(),
   diner_out: roomView({ x: SX, y: 1.6, z: S4, yaw: -Math.PI / 2, pitch: 0.0, fov: 68 }),
 };

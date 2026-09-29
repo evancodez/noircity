@@ -42,7 +42,7 @@ function bench(kit, x0, x1, zb, face) {
   // the frame: a wooden cap along the back's top and an end panel at the aisle
   const frame = [];
   frame.push(slab(x1 - x0, 0.04, 0.2, { bevel: 0.012, corner: 0.02 }).translate((x0 + x1) / 2, bt, zb + face * 0.06));
-  frame.push(slab(0.045, bt - F + 0.02, d + 0.16, { bevel: 0.012, corner: 0.03 }).translate(x0 - 0.0, F, zb + face * (d + 0.16) / 2 - face * 0.08));
+  frame.push(slab(0.045, bt - F + 0.02, d + 0.02, { bevel: 0.012, corner: 0.03 }).translate(x0 - 0.0, F, zb + face * (d + 0.02) / 2 - face * 0.04));
   return { base: g, cush, dims, frame };
 }
 

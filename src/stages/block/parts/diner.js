@@ -9,6 +9,7 @@ import { buildBooths, buildBlind, buildWindowLight, buildTrainBars } from '../..
 import { buildJukebox } from '../../../props/diner/jukebox.js';
 import { buildPendants, buildFans, swingStep } from '../../../props/diner/fixtures.js';
 import { FIRE } from '../../../fx/fxTextures.js';
+import { buildExtras } from '../../../props/diner/extras.js';
 
 // The diner (docs/story/CONTRACTS.md §15; lane 5's brief): the room on the
 // ground floor of the near building, behind its street front
@@ -80,6 +81,7 @@ export default {
     g.add(jb.group);
     const pendants = buildPendants(kit, lamps);
     const fans = buildFans(kit);
+    const extras = buildExtras(kit);
 
     // ---- colliders: the counter, the back bar, the booths, the jukebox
     const cx0 = C.frontX - C.depth;
@@ -88,6 +90,7 @@ export default {
     const BT = D.booths, bx = (BT.x0 + BT.x1) / 2;
     for (const b of booths) colliders.addBox(bx, b.z + (b.short ? 0.1 : 0), (BT.x1 - BT.x0) / 2, b.half + 0.06 + (b.short ? 0.2 : 0), 0, 'booth');
     colliders.addBox(J.x, D.zMin + jb.size.z / 2, jb.size.x / 2 + 0.02, jb.size.z / 2 + 0.02, 0, 'jukebox');
+    colliders.addBox(-13.75, D.zMax - 0.22, 0.33, 0.23, 0, 'machine');
 
     // ---- the stools: nine chrome pedestals, each a breakable that swivels
     const stools = [];
@@ -139,6 +142,9 @@ export default {
     anchor('register', reg.pos.clone(), -Math.PI / 2);
     anchor('piecase', pie.centre.clone(), Math.PI / 2);
     anchor('bell', bar.bell.pos.clone(), Math.PI / 2);
+    anchor('restroom', extras.restRoom.pos, 0);
+    anchor('phone', extras.phone.pos, 0);
+    anchor('cigmachine', extras.machine.pos, Math.PI);
     for (const [k, z] of Object.entries(D.bays)) anchor('window.' + k, V(W - 0.02, 2.0, z), -Math.PI / 2);
     anchor('counter.player', V(C.frontX - 0.25, C.topY, z4), Math.PI / 2);
     anchor('counter.glass', V(C.frontX - 0.12, C.topY, z4 + 0.2), Math.PI / 2);
