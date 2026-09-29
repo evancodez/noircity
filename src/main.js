@@ -11,7 +11,7 @@ import { Hud } from './ui/Hud.js';
 import { Stats } from './debug/Stats.js';
 import { bench } from './debug/Bench.js';
 import { GpuProf } from './debug/GpuProf.js';
-import { getShot, applyShot } from './debug/Shots.js';
+import { getShot, sceneShot, applyShot } from './debug/Shots.js';
 import { RNG } from './util/rng.js';
 import { DEATH_REPORT } from './enemies/Hood.js';
 import { Game } from './game/Game.js';
@@ -20,7 +20,9 @@ import { Sfx, audioTest } from './audio/Sfx.js';
 // ---- URL params (DESIGN.md §9) -------------------------------------------
 const params = new URLSearchParams(location.search);
 const shotName = params.get('shot');
-const shot = shotName ? getShot(shotName) : null;
+// ?scene=<id>&beat=<name>: a story beat's frame (Shots.js sceneShot)
+const sceneName = params.get('scene');
+const shot = shotName ? getShot(shotName) : sceneName ? sceneShot(sceneName, params.get('beat')) : null;
 const shotMode = !!shot;
 // HUD: on in play unless hud=0; in shot mode only with hud=1
 const hudOn = shotMode ? params.get('hud') === '1' : params.get('hud') !== '0';
@@ -122,12 +124,14 @@ resize();
 const stats = debug ? new Stats(renderer) : null;
 
 // ---- start pose & fast-forward ---------------------------------------------
-// pose=x,z,yaw,pitch[,fov] overrides a preset's camera (framing new shots)
+// pose=x,z,yaw,pitch[,fov] overrides a preset's camera (framing new shots);
+// fov=<deg> alone overrides its lens
 const poseParam = params.get('pose');
 if (shot && poseParam) {
   const [x, z, yaw, pitch, fov] = poseParam.split(',').map(Number);
   Object.assign(shot, { x, z, yaw, pitch }, fov ? { fov } : {});
 }
+if (shot && params.get('fov')) shot.fov = parseFloat(params.get('fov'));
 if (shot) applyShot(shot, controller, camera, game.stage, game);
 else controller.setPose(-7.3, 6.2, -0.2, 0.02);
 game.eye.copy(camera.position);
@@ -265,7 +269,7 @@ window.__noir = {
   perf,
   // fast-forward the fixed-step simulation (as t= does at load)
   sim(seconds = 1) { const n = Math.round(seconds * 60); for (let i = 0; i < n; i++) simStep(STEP); writeCounters(); return { ...game.counters }; },
-  params: { shotName, shotMode, hudOn, debug, tSkip },
+  params: { shotName, sceneName, shotMode, hudOn, debug, tSkip },
   bench: (opts) => bench(renderer, pipeline, game.stage.scene, camera, opts),
   // Phase 3b performance pass, in-session before/after: legacy = true puts
   // back the Phase 3a pipeline (every MSAA resolve, the depth resolve, the

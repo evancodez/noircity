@@ -1,7 +1,19 @@
 import * as THREE from 'three';
 
-// Camera presets for ?shot=<name>. Each: feet position (x, z), yaw, pitch
-// (radians), vertical fov, default fast-forward seconds, optional stage(world).
+// Camera presets for ?shot=<name> (the core: today's presets, below), and
+// every preset file in src/debug/shots/*.js (found on their own; each
+// exports { presets: { name: {...} } }: a lane adds a file, never edits
+// this one). A preset: feet position (x, z), optional y (ground height under
+// the eye), yaw, pitch (radians), vertical fov, t (default fast-forward
+// seconds), and optionally
+//   viewmodel: true    the gun in frame      holdWindow: s   flashes held (shot mode)
+//   prewarm: true      every Hood variant and combat program compiled first
+//   stage(stage, camera, controller, game)   stages the frame (spawns, scripts)
+//   scene / beat       a scene beat instead of a camera (see sceneShot)
+// Scene shot mode (CONTRACTS §3): ?scene=<id>&beat=<name>&t=<s> builds the
+// scene's stage, runs the beat's setup (the state exactly as if played),
+// steps t seconds and freezes; anim=1 plays on; pose= and fov= still
+// override the camera.
 export const SHOTS = {
   // Reference composition: low on the road by the left kerb, eye ~1.7 m,
   // looking down the avenue. The vanishing point sits ~45 % across and ~55 %
@@ -432,6 +444,17 @@ function stageEnd(world, camera, controller, game) {
 }
 SHOTS.end = { ...SHOTS.street, t: 60, viewmodel: true, holdWindow: 0.35, prewarm: true, stage: stageEnd };
 
+// ---- the lanes' preset files ------------------------------------------------------
+// (a name taken twice is an error, not a silent override: two lanes framing
+// the same name would each judge the other's frame)
+const LANE_FILES = import.meta.glob('./shots/*.js', { eager: true });
+for (const [path, mod] of Object.entries(LANE_FILES)) {
+  for (const [name, preset] of Object.entries(mod.presets || {})) {
+    if (SHOTS[name]) throw new Error(`preset '${name}' (${path}) is already defined`);
+    SHOTS[name] = preset;
+  }
+}
+
 const ALIASES = { default: 'street' };
 
 export function getShot(name) {
@@ -439,11 +462,29 @@ export function getShot(name) {
   return key ? { name: key, ...SHOTS[key] } : null;
 }
 
-export function applyShot(shot, controller, camera, world, game) {
-  camera.fov = shot.fov;
-  camera.updateProjectionMatrix();
-  // optional y: ground height under the eye (raises the camera for a shot)
-  controller.setPose(shot.x, shot.z, shot.yaw, shot.pitch, shot.y ?? null);
-  camera.updateMatrixWorld();
-  if (shot.stage) shot.stage(world, camera, controller, game);
+// ?scene=<id>&beat=<name>: the beat's own frame. The scene manager
+// (game.scenes, docs/story/CONTRACTS.md §3) builds the stage, places the
+// player and runs setup[beat]; t= then steps the clock (default 1 s).
+export function sceneShot(scene, beat = null) {
+  return { name: `scene:${scene}${beat ? ':' + beat : ''}`, scene, beat, t: 1, viewmodel: true };
+}
+
+// shot.x undefined: the scene (or the stage fn) places the camera
+export function applyShot(shot, controller, camera, stage, game) {
+  const pose = () => {
+    if (shot.fov) { camera.fov = shot.fov; camera.updateProjectionMatrix(); }
+    // optional y: ground height under the eye (raises the camera for a shot)
+    if (shot.x !== undefined) controller.setPose(shot.x, shot.z, shot.yaw, shot.pitch, shot.y ?? null);
+    camera.updateMatrixWorld();
+  };
+  if (shot.scene) {
+    if (!game.scenes) throw new Error(`scene shot '${shot.name}': no scene manager (game.scenes) yet`);
+    game.scenes.shot(shot.scene, shot.beat);
+    // (pose= and fov= override the camera the beat's setup placed)
+    pose();
+    if (shot.stage) shot.stage(game.stage, camera, controller, game);
+    return;
+  }
+  pose();
+  if (shot.stage) shot.stage(stage, camera, controller, game);
 }
