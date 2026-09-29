@@ -45,7 +45,7 @@ export function makeConeMaterial(U, { apex, axis, tan, height, r0 = 0.18, intens
       uniform float uTan, uHeight, uR0, uIntensity, uSeed, uReflCore, uFadeEnd, uEdgeSoft;
       uniform sampler2D tDepth, tNoise;
       uniform vec2 uRes;
-      uniform float uNear, uFar, uUseDepth, uTime;
+      uniform float uNear, uFar, uUseDepth, uTime, uHaze;
       varying vec3 vWorld;
       ${HASH_GLSL}
       ${NOIR_FOG_GLSL}
@@ -104,6 +104,19 @@ export function makeConeMaterial(U, { apex, axis, tan, height, r0 = 0.18, intens
           float tat = texture2D( tNoise, wx.xz * 0.9 + vec2( wx.y * 0.37, uTime * 0.07 ) - uSeed ).a;
           // the edge threshold wanders with the mist: the fan's rim dissolves
           // into the rain instead of running as a ruled line
+          // Indoors the cone lights SMOKE, not rain (the Look's haze): slow
+          // curls anchored in the room, two octaves of noise drifting up
+          // through the cone at ~0.08 m/s, soft-edged, thicker near the lamp
+          float smokeK = 1.0;
+          if ( uHaze > 0.0 ) {
+            vec3 q = wx - vec3( 0.0, uTime * 0.08, 0.0 );
+            float s1 = texture2D( tNoise, vec2( q.x + q.y * 0.37, q.z - q.y * 0.21 ) * 1.9 + uSeed ).g;
+            float s2 = texture2D( tNoise, vec2( q.z + q.y * 0.53, q.x + q.y * 0.3 ) * 4.3 - uSeed ).b;
+            float smoke = smoothstep( 0.22, 0.8, s1 * 0.68 + s2 * 0.32 );
+            mist = mix( mist, smoke, uHaze );
+            tat = mix( tat, 0.5, uHaze * 0.7 );
+            smokeK = mix( 1.0, 0.12 + 0.95 * smoke, uHaze );
+          }
           float rnj = rn + ( mist - 0.5 ) * 0.3 + ( tat - 0.5 ) * 0.16;
           float radial = ( 1.0 - smoothstep( uEdgeSoft, 1.05, rnj ) ) * ( 0.55 + 0.45 * exp( - rn * rn * 6.0 ) );
           float hn = clamp( h / uHeight, 0.0, 1.0 );
@@ -145,7 +158,11 @@ export function makeConeMaterial(U, { apex, axis, tan, height, r0 = 0.18, intens
           // the mist right around the viewer is not drawn: standing under a
           // lamp shows the cone around you, not a grey veil over the screen
           float camFade = smoothstep( 2.0, 10.0, t );
+          // (a room's lamp hangs a metre off: its smoke is there to put a
+          // hand into, only the last half metre before the eye is left out)
+          if ( uHaze > 0.0 ) camFade = mix( camFade, smoothstep( 0.3, 1.1, t ), uHaze );
           float a = radial * along * spread * ( 0.55 + 0.9 * mist ) * camFade;
+          if ( uHaze > 0.0 ) a *= smokeK;
           acc += a;
           // light within a few metres in front of the surface: it touches it
           accNear += a * smoothstep( tSurf - 9.0, tSurf - 4.0, t );

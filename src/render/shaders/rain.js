@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { HASH_GLSL, LAMPS_GLSL, DEPTH_TEST_GLSL } from './common.js';
+import { HASH_GLSL, LAMPS_GLSL, DEPTH_TEST_GLSL, DRY_GLSL } from './common.js';
 import { NOIR_FOG_GLSL } from '../fog.js';
 
 // 3D rain: instanced camera-facing streak quads living in a box around the
@@ -41,6 +41,7 @@ export function makeRainMaterial(U) {
       varying float vWY;
       varying float vViewZ;
       varying float vBright;
+      varying vec3 vWP;
       ${HASH_GLSL}
       ${LAMPS_GLSL}
       void main() {
@@ -69,6 +70,7 @@ export function makeRainMaterial(U) {
         vBright = mix( 0.3, 1.0, hA.y );
         vec3 wp = p + axis * ( position.y * len ) + side * ( position.x * w );
         vUvR = uv;
+        vWP = wp;
         vLight = min( lampCones( p ), 2.5 );
         vDist = dist;
         vWY = p.y;
@@ -77,7 +79,7 @@ export function makeRainMaterial(U) {
         gl_Position = projectionMatrix * mv;
       }`,
     fragmentShader: /* glsl */`
-      uniform float uBase, uLit;
+      uniform float uBase, uLit, uRain3d;
       uniform sampler2D tDepth;
       uniform vec2 uRes;
       uniform float uNear, uFar;
@@ -88,10 +90,15 @@ export function makeRainMaterial(U) {
       varying float vWY;
       varying float vViewZ;
       varying float vBright;
+      varying vec3 vWP;
       ${NOIR_FOG_GLSL}
       ${DEPTH_TEST_GLSL}
+      ${DRY_GLSL}
       void main() {
         if ( behindScene( vViewZ, 0.05 ) ) discard;
+        // no rain inside a room (stage.dry): seen from within, it falls
+        // beyond the glass
+        if ( inDry( vWP ) > 0.5 ) discard;
         float across = 1.0 - abs( vUvR.x - 0.5 ) * 2.0;
         // flat along the streak: no bright bead in the middle
         float along = smoothstep( 0.0, 0.15, vUvR.y ) * smoothstep( 1.0, 0.85, vUvR.y );
@@ -103,7 +110,7 @@ export function makeRainMaterial(U) {
         // cone, which it could not if it were summed into the cone's light
         // first). (Phase 3c: R16F, the red channel - a quarter of the bytes
         // of the RGBA16F it was, at full res so the hairlines stay one pixel)
-        gl_FragColor = vec4( bright * a, 0.0, 0.0, 1.0 );
+        gl_FragColor = vec4( bright * a * uRain3d, 0.0, 0.0, 1.0 );
       }`,
   });
 }
@@ -131,6 +138,7 @@ export function makeSplashMaterial(U) {
       varying float vLight;
       varying float vDist;
       varying float vViewZ;
+      varying vec3 vWP;
       ${HASH_GLSL}
       ${LAMPS_GLSL}
       void main() {
@@ -143,6 +151,7 @@ export function makeSplashMaterial(U) {
         float size = 0.3 + 0.6 * aSeed.w; // ring radius 0.15-0.45 m
         vec3 wp = vec3( pos.x + position.x * size, y, pos.y + position.z * size );
         vUvS = uv;
+        vWP = wp + vec3( 0.0, 0.05, 0.0 );
         vPh = ph;
         vLight = lampCones( vec3( pos.x, 0.2, pos.y ) );
         vDist = length( cameraPosition - wp );
@@ -153,15 +162,18 @@ export function makeSplashMaterial(U) {
     fragmentShader: /* glsl */`
       uniform sampler2D tDepth;
       uniform vec2 uRes;
-      uniform float uNear, uFar;
+      uniform float uNear, uFar, uRain3d;
       varying vec2 vUvS;
       varying float vPh;
       varying float vLight;
       varying float vDist;
       varying float vViewZ;
+      varying vec3 vWP;
       ${DEPTH_TEST_GLSL}
+      ${DRY_GLSL}
       void main() {
         if ( behindScene( vViewZ, 0.08 ) ) discard;
+        if ( inDry( vWP ) > 0.5 ) discard;
         float r = length( vUvS - 0.5 ) * 2.0;
         float R = 0.15 + vPh * 0.85;
         // a thin drawn circle (the reference's foreground ripple rings), a
@@ -171,7 +183,7 @@ export function makeSplashMaterial(U) {
         ring += 0.45 * exp( - pow( ( r - R2 ) * 24.0, 2.0 ) ) * ( 1.0 - vPh ) * smoothstep( 0.1, 0.35, vPh );
         float crown = exp( - r * r * 900.0 ) * smoothstep( 0.2, 0.0, vPh );
         float a = ( ring + crown * 2.0 ) * smoothstep( 25.0, 8.0, vDist );
-        gl_FragColor = vec4( a * ( 0.02 + vLight * 0.5 ), 0.0, 0.0, 1.0 );
+        gl_FragColor = vec4( a * ( 0.02 + vLight * 0.5 ) * uRain3d, 0.0, 0.0, 1.0 );
       }`,
   });
 }

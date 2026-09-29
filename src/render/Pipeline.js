@@ -54,6 +54,8 @@ const BLOOM_LEVELS = 2;
 // from the horizon (every mirror image lies below it) down to 60 deg under
 // it, ~1.24x the rows of the view's lower half at the same density
 const REFL_ROWS = 1.25;
+// the Look's blended numbers (setLook)
+const LOOK_NUM = ['fogDensity', 'exposure', 'rainOverlay', 'rain3d', 'grain', 'ambient', 'haze'];
 const REFL_DOWN = THREE.MathUtils.degToRad(60);
 
 export class Pipeline {
@@ -157,7 +159,7 @@ export class Pipeline {
     }
 
     this.idMat = makeIdMaterial();
-    this.inkMat = makeInkMaterial(tex, { uFogColor: U.uFogColor, uFogDensity: U.uFogDensity });
+    this.inkMat = makeInkMaterial(tex, { uFogColor: U.uFogColor, uFogDensity: U.uFogDensity, uDryMin: U.uDryMin, uDryMax: U.uDryMax });
     this.prefilterMat = makeBloomPrefilter();
     this.downMat = makeBloomDown();
     this.upMat = makeBloomUp();
@@ -198,7 +200,11 @@ export class Pipeline {
     // debug: ?rt=refl|reflA|bright|streak shows an intermediate buffer through
     // the ink tone curve instead of the final image
     this.debugRT = opts.debugRT || null;
-    this.look = null;              // the Look in force (setLook)
+    this.look = null;              // the Look the eye stands in (setLook)
+    this._lookCur = null;          // ... and the one in force, blended toward it
+    this._lookT = null;
+    this._ambient = new WeakMap(); // scene -> its hemisphere lights and their own intensity
+    this.dryBoxes = null;          // setDry
     this.exposureOverride = null;  // exposure=<v> (look development)
     this.debugMat = new THREE.ShaderMaterial({
       name: 'DebugRT', depthTest: false, depthWrite: false,
@@ -221,19 +227,68 @@ export class Pipeline {
   // rain3d, grain, ambient, reflect, haze, room }. The block's exterior Look
   // is today's frame (world/World.js BASE_LOOK): its values are the ones
   // every uniform already holds, so applying it changes nothing.
-  // (FOUNDATION STUB, lane 1: fog, exposure and the screen rain overlay are
-  // applied, switched by the volume the eye is in; rain3d, grain, ambient,
-  // reflect and haze are kept for lane 1, and nothing is blended yet)
+  // The Look in force is BLENDED toward the one the eye stands in over
+  // ~0.25 s of game time (render(time)), so crossing a doorway eases the fog,
+  // the exposure, the rain and the haze from one room to the next; a frozen
+  // clock (a screenshot) or a jump (a cut, a scene change) snaps to it. The
+  // switched fields (reflect, room) change at once.
+  //   fog: scene fog and the shared fog uniforms; exposure: the ink pass;
+  //   rainOverlay: the ink's screen rain; rain3d: the 3D rain and its
+  //   splashes (U.uRain3d); grain: the ink's film grain; ambient: the stage's
+  //   hemisphere light; haze: the room smoke in every lamp cone (U.uHaze);
+  //   reflect: 'none' skips the street's mirror and sheens.
   setLook(look) { this.look = look; }
+  // the stage's dry volumes (stage.dry, Box3[]): the rain, its splashes and
+  // the street's ripple rings are never drawn inside one (up to 4)
+  setDry(boxes) { this.dryBoxes = boxes || []; }
 
-  applyLook(scene) {
-    const L = this.look;
+  blendLook(time) {
+    const T = this.look;
+    if (!T) return null;
+    let C = this._lookCur;
+    const dt = this._lookT == null ? -1 : time - this._lookT;
+    this._lookT = time;
+    if (!C) C = this._lookCur = { ...T, fogColor: T.fogColor.clone() };
+    if (dt <= 0 || dt > 0.5) {
+      for (const k of LOOK_NUM) C[k] = T[k];
+      C.fogColor.copy(T.fogColor);
+    } else {
+      const a = 1 - Math.exp(-dt / 0.25);
+      for (const k of LOOK_NUM) C[k] = T[k] === C[k] ? C[k] : Math.abs(T[k] - C[k]) < 1e-5 * (1 + Math.abs(T[k])) ? T[k] : C[k] + (T[k] - C[k]) * a;
+      if (!C.fogColor.equals(T.fogColor)) C.fogColor.lerp(T.fogColor, a);
+    }
+    C.reflect = T.reflect; C.room = T.room;
+    return C;
+  }
+
+  applyLook(scene, time) {
+    const L = this.blendLook(time);
     if (!L) return;
     if (scene.fog) { scene.fog.color.copy(L.fogColor); scene.fog.density = L.fogDensity; }
     this.U.uFogColor.value.copy(L.fogColor);
     this.U.uFogDensity.value = L.fogDensity;
     // (exposure=<v>, main.js: a look-development override wins)
     this.inkMat.uniforms.uExposure.value = this.exposureOverride ?? L.exposure;
+    this.inkMat.uniforms.uGrain.value = L.grain ?? 1;
+    this.U.uRain3d.value = L.rain3d ?? 1;
+    this.U.uHaze.value = L.haze ?? 0;
+    // ambient: the hemisphere lights of the scene, from their own intensity
+    let amb = this._ambient.get(scene);
+    if (!amb) {
+      amb = [];
+      scene.traverse((o) => { if (o.isHemisphereLight || o.isAmbientLight) amb.push({ light: o, base: o.intensity }); });
+      this._ambient.set(scene, amb);
+    }
+    const ak = L.ambient ?? 1;
+    for (const e of amb) e.light.intensity = ak === 1 ? e.base : e.base * ak;
+    // the dry volumes (an adapter until the Game calls setDry on entering a
+    // stage: the stage in play is found through __noir)
+    const boxes = this.dryBoxes ?? globalThis.__noir?.game?.stage?.dry ?? [];
+    const U = this.U, n = Math.min(boxes.length, 4);
+    for (let i = 0; i < 4; i++) {
+      if (i < n) { U.uDryMin.value[i].copy(boxes[i].min); U.uDryMax.value[i].copy(boxes[i].max); }
+      else { U.uDryMin.value[i].set(1e5, 1e5, 1e5); U.uDryMax.value[i].set(-1e5, -1e5, -1e5); }
+    }
   }
 
   // (debug) read a render target back as floats: { w, h, data: Float32Array rgba }
@@ -500,7 +555,7 @@ export class Pipeline {
 
   render(scene, camera, time) {
     const r = this.renderer, U = this.U;
-    this.applyLook(scene);
+    this.applyLook(scene, time);
     this.updateLightning(time);
     camera.updateMatrixWorld();
     U.uNear.value = camera.near;
@@ -573,7 +628,7 @@ export class Pipeline {
     r.setRenderTarget(this.rtRefl);
     r.setClearColor(0x000000, 0);
     r.clear();
-    const reflOn = !S.refl && (!this.look || this.look.reflect !== 'none');
+    const reflOn = !S.refl && (!this._lookCur || this._lookCur.reflect !== 'none');
     // In three parts: the world (opaque; its depth is where its light
     // stands), a copy of its light, then the sprites (fire, blood, sparks, a
     // Hood's flash: they write no depth - over the skyline a flame read as a
@@ -768,7 +823,7 @@ export class Pipeline {
     iu.uLightning.value = this.lightning;
     iu.uKick.value = this.kick || 0;
     // lightning shows the rain everywhere, not only inside the cones
-    iu.uRain.value = (1 + 2.2 * Math.min(1, this.lightning) + 1.2 * (this.rainBoost || 0)) * (this.look ? this.look.rainOverlay : 1);
+    iu.uRain.value = (1 + 2.2 * Math.min(1, this.lightning) + 1.2 * (this.rainBoost || 0)) * (this._lookCur ? this._lookCur.rainOverlay : 1);
     iu.uRain3.value = 1 + 1.5 * Math.min(1, this.lightning);
     iu.uView.value = this.view;
     const pxPerRad = this.height / THREE.MathUtils.degToRad(camera.fov);

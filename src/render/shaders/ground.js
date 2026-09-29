@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { HASH_GLSL } from './common.js';
+import { HASH_GLSL, DRY_GLSL } from './common.js';
 import { NOIR_FOG_GLSL } from '../fog.js';
 
 // Wet street. A ShaderMaterial with lights:true so it can read three's spot /
@@ -90,6 +90,7 @@ export function makeGroundMaterial(U, { paving = 0 } = {}) {
       varying vec4 vReflCoord;
       ${HASH_GLSL}
       ${NOIR_FOG_GLSL}
+      ${DRY_GLSL}
 
       // Rain rings: every 0.8 m cell spawns one expanding ring per cycle at a
       // fresh random spot. Returns the height gradient (xz); 'crest' gets the
@@ -347,6 +348,8 @@ export function makeGroundMaterial(U, { paving = 0 } = {}) {
 
         // ---- normal: rain rings + impacts + wind-rippled micro noise ------
         float nearFade = 1.0 - smoothstep( 16.0, 34.0, dist );
+        // (no rain rings under a roof: stage.dry)
+        nearFade *= 1.0 - inDry( vWorld + vec3( 0.0, 0.05, 0.0 ) );
         // (Phase 3b performance: beyond 34 m the rain rings are weighted out
         // entirely - nearFade and the crest's fade are both 0 - so the
         // 9-cell ring search is skipped there; it takes no textures or

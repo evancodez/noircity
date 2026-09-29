@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { FULLSCREEN_VERT, HASH_GLSL, LUMA_GLSL } from './common.js';
+import { FULLSCREEN_VERT, HASH_GLSL, LUMA_GLSL, DRY_GLSL } from './common.js';
 import { NOIR_FOG_GLSL } from '../fog.js';
 import { TONE_GLSL, toneUniforms, EXPOSURE } from '../tone.js';
 import { RAIN_SLANT } from '../textures.js';
@@ -49,6 +49,7 @@ export function makeInkMaterial(tex, fogUniforms) {
       uRimLamps: { value: [new THREE.Vector4(), new THREE.Vector4(), new THREE.Vector4(), new THREE.Vector4()] },
       uRain: { value: 1.0 },
       uRain3: { value: 1.0 },
+      uGrain: { value: 1.0 },       // the Look's film grain
       uView: { value: 0 },
       // 1: the Phase 3b fast paths (bit-identical output); 0: the Phase 3a
       // path, for the in-session before/after benchmark (__noir.perfLegacy)
@@ -63,7 +64,7 @@ export function makeInkMaterial(tex, fogUniforms) {
       uniform vec2 uRes;
       uniform float uTime, uBoil, uNear, uFar;
       uniform mat4 uProjInv, uViewInv, uProjInvVM, uVmFrame;
-      uniform float uExposure, uBloomStrength, uBrush, uLineWidth, uLightning, uRain, uRain3, uKick;
+      uniform float uExposure, uBloomStrength, uBrush, uLineWidth, uLightning, uRain, uRain3, uKick, uGrain;
       uniform vec4 uRimLamps[ 4 ];
       uniform vec4 uFigAnchor[ ${HOOD_SLOTS} ];
       uniform int uView;
@@ -73,6 +74,7 @@ export function makeInkMaterial(tex, fogUniforms) {
       ${HASH_GLSL}
       ${LUMA_GLSL}
       ${NOIR_FOG_GLSL}
+      ${DRY_GLSL}
 
       float linZ( float d ) {
         float ndc = d * 2.0 - 1.0;
@@ -160,6 +162,16 @@ export function makeInkMaterial(tex, fogUniforms) {
         vec2 fc = gl_FragCoord.xy;
 
         vec4 nid = texture2D( tNormalId, uv );
+        // an interior surface class rides on the normal's length (idpass:
+        // n * ( 1 + 2 k ), k = 1 plaster, 2 wood, 3 lino, 4 metal, 5 cloth);
+        // untagged surfaces are unit normals and never enter the branch
+        float surf = 0.0;
+        {
+          float nLen = length( nid.xyz );
+          if ( nLen > 2.0 ) { surf = floor( ( nLen - 1.0 ) * 0.5 + 0.5 ); nid.xyz /= nLen; }
+        }
+        float interior = step( 0.5, surf ) * step( surf, 5.5 );
+        float amberF = step( 5.5, surf ) * step( surf, 6.5 );   // the scotch (accents.js)
         float d = texture2D( tDepth, uv ).r;
         bool sky = d >= 0.999999;
         // the viewmodel was drawn by its own camera (same eye, narrower FOV)
@@ -285,6 +297,10 @@ export function makeInkMaterial(tex, fogUniforms) {
         emitOnIron = max( emitOnIron, sparkTag );
         v = mix( v, max( min( v, mix( 0.08, 0.62, fogA ) ), ironAir ), iron * ( 1.0 - fxCov ) * ( 1.0 - emitOnIron ) );
         float vSmooth = v;
+        // (how fast the lit tone changes across the screen here: in a room
+        // the brush works only where a lamp's pool falls off; taken outside
+        // any branch, derivatives need the whole quad)
+        float gradV = fwidth( vRaw );
         float vLit = toneCurve( ( L + luma( bloom ) + luma( vol ) ) * exposure );
         // (measured against the UNclamped surface: the clamp must not come
         // back as 'air light')
@@ -401,6 +417,28 @@ export function makeInkMaterial(tex, fogUniforms) {
           b = mix( b, bLong, wall );
         }
         float wallQuiet = wall * ( 1.0 - gather );
+        // Interior surfaces are calm (story pass, P0.2): a room is not wet
+        // stone turned inside out. Flat washes that follow the lamps; the
+        // brush works only where a band gives way to the next, which in a
+        // room is where a lamp's pool falls off into shadow: short, sparse
+        // strokes there, none on the ceiling, no white slashes or lift-outs
+        // anywhere. Wood takes the horizontal family (its grain), lino and
+        // enamel are flatter still.
+        // (an untagged surface inside a room - a dry volume, stage.dry - is
+        // plaster: the room's own faces of the façade's stone, a part not
+        // yet tagged; figures and the hands are never a room)
+        if ( interior < 0.5 && !sky && isFig < 0.5 && amberF < 0.5 && inDry( wpos + nW * 0.05 ) > 0.5 ) { interior = 1.0; surf = 1.0; }
+        if ( interior > 0.5 ) {
+          wallQuiet = 0.0;
+          if ( surf > 1.5 && surf < 2.5 ) b = br.b;
+          // Still banded (flat washes, never the smooth CG gradient of the
+          // lit tone), but the brush field's contrast follows the light's
+          // screen gradient: wherever a band edge falls it is a zone ~14 px
+          // wide - a short broken stroke line on the pool's falling edge -
+          // and a flat-lit face near an edge is one flat wash, not a mottle
+          b = 0.5 + ( b - 0.5 ) * clamp( 120.0 * gradV, 0.02, surf > 2.5 && surf < 4.5 ? 0.4 : 0.6 );
+          b = mix( b, 0.5, smoothstep( -0.4, -0.75, nW.y ) );   // ceilings: no strokes at all
+        }
         // the skyline takes a neutral field: whatever the brush does below
         // (bands, paper lift-out edges) leaves its flat tone untouched
         b = mix( b, 0.5, skyl );
@@ -431,7 +469,7 @@ export function makeInkMaterial(tex, fogUniforms) {
                      * smoothstep( 0.3, 0.62, br.r * 0.4 + br.b * 0.6 )
                      * ( 1.0 - smoothstep( 18.0, 45.0, dist ) ) * ( 1.0 - 0.5 * step( nid.w, -0.5 ) ) * ( 1.0 - ground )
                      * ( 1.0 - hood * smoothstep( 8.0, 16.0, dist ) );
-          v += lift * ( 1.0 - smoothstep( 0.06, 0.10, v ) ) * ( 1.0 - wallQuiet ) * ( 1.0 - fxCov );
+          v += lift * ( 1.0 - smoothstep( 0.06, 0.10, v ) ) * ( 1.0 - wallQuiet ) * ( 1.0 - fxCov ) * ( 1.0 - interior );
         }
         // strokes reach down into the blacks (dry-brush on near-black
         // surfaces) and survive inside lit mist; only real glare stays smooth
@@ -444,6 +482,9 @@ export function makeInkMaterial(tex, fogUniforms) {
         float vBand = mix( inkBands( v, b, 4.0 ), pow( inkBands( pow( v, 0.6667 ), b, 4.0 ), 1.5 ), ground );
         // the quiet wall areas keep the flat wash (the lit surface tone)
         brushAmt *= ( 1.0 - 0.9 * wallQuiet ) * ( 1.0 - skyl );
+        // (in a room the smoke's glow lies over most surfaces: its bands stay
+        // brushed under a thin haze, only real glare goes smooth)
+        if ( interior > 0.5 ) brushAmt = sky ? 0.0 : uBrush * nearF * nearF * smoothstep( 0.03, 0.15, v ) * ( 1.0 - smoothstep( 0.4, 0.85, glow ) );
         // smoke is a soft wash with its own brushed alpha (fx/fxTextures
         // SMOKE): banded by the surface behind it, its tone stepped at every
         // tower and wall edge it drifted across
@@ -474,6 +515,8 @@ export function makeInkMaterial(tex, fogUniforms) {
         // the fire family (Phase 3a, the second permitted colour): orange to
         // yellow-white, green well above blue
         float fireF = step( hdr.b, hdr.g ) * step( hdr.g, hdr.r ) * smoothstep( 0.02, 0.07, gb );
+        // (the scotch has the fire's hue but never its print: see below)
+        fireF *= 1.0 - amberF;
         // (a steep, low window for blood: a half-covered pixel at a drop's
         // edge goes red or stays ink, it never prints as a pink mix)
         float keep = mix( smoothstep( 0.22, 0.4, sat ), smoothstep( 0.1, 0.2, sat ), redF ) * smoothstep( 0.0004, 0.004, mx );
@@ -508,6 +551,13 @@ export function makeInkMaterial(tex, fogUniforms) {
         vec3 fireHue = mix( vec3( 1.0, 0.36, 0.06 ), hue, smoothstep( 0.35, 0.95, vFire ) );
         vec3 fireOut = fireHue * mix( 0.86, 1.0, smoothstep( 0.3, 0.9, vFire ) ) * mix( 0.94, 1.03, b );
         colOut = mix( colOut, fireOut, fireF );
+        // amber (the scotch in the bottle, the stream, the glass): a rich
+        // honey at MID value, darker and deeper than any flame - its own
+        // lit tone laid in 0.5 .. 0.72 (display), the brush breaking it a
+        // little; keyed by its class (idpass), never by hue
+        vec3 amberOut = vec3( 1.0, 0.6, 0.17 ) * mix( 0.5, 0.72, smoothstep( 0.08, 0.75, vRaw ) ) * mix( 0.93, 1.04, b );
+        colOut = mix( colOut, amberOut, amberF );
+        keep = max( keep, amberF * smoothstep( 0.2, 0.4, sat ) );
 
         // ---- contours ------------------------------------------------------
         // Wobble: a static low-frequency warp plus a small 'boil' that jumps
@@ -540,6 +590,7 @@ export function makeInkMaterial(tex, fogUniforms) {
         // unfiltered and unmipmapped, so the branch is safe for their taps.)
         if ( !sky || uFast < 0.5 ) {
         vec4 cN = texture2D( tNormalId, uvL );
+        if ( dot( cN.xyz, cN.xyz ) > 4.0 ) cN.xyz = normalize( cN.xyz );
         float wcl = wAt( uvL );
         for ( int i = 0; i < 4; i ++ ) {
           vec2 o = dirs[ i ] * rpx / uRes;
@@ -547,6 +598,8 @@ export function makeInkMaterial(tex, fogUniforms) {
           float lap = abs( w1 + w2 - 2.0 * wcl ) / max( max( wcl, max( w1, w2 ) ), 1e-6 );
           edge = max( edge, smoothstep( 0.025, 0.07, lap ) );
           vec4 n1 = texture2D( tNormalId, uvL + o ), n2 = texture2D( tNormalId, uvL - o );
+          if ( dot( n1.xyz, n1.xyz ) > 4.0 ) n1.xyz = normalize( n1.xyz );
+          if ( dot( n2.xyz, n2.xyz ) > 4.0 ) n2.xyz = normalize( n2.xyz );
           float nd = max( 1.0 - dot( cN.xyz, n1.xyz ) * step( 0.5, abs( n1.w ) ), 1.0 - dot( cN.xyz, n2.xyz ) * step( 0.5, abs( n2.w ) ) );
           float en = smoothstep( 0.3, 0.6, nd ) * step( 0.5, abs( cN.w ) );
           edge = max( edge, en );
@@ -686,7 +739,11 @@ export function makeInkMaterial(tex, fogUniforms) {
         // (and no air-light wash over the puff's body: the occluder already
         // took the light behind it; what the blur left at its rim goes too)
         glow *= 1.0 - smoothstep( 0.35, 0.6, puffCov );
-        col = min( col + glow, vec3( 1.0 ) );
+        // (the neon's glow is its own cold blue, tight round the tube: a
+        // bloom whose blue clearly leads is the sign's; every other glow is
+        // white. Exactly vec3( 1 ) elsewhere.)
+        float neonBl = smoothstep( 0.15, 0.4, ( bloom.b - max( bloom.r, bloom.g ) ) / max( bloom.b, 1e-5 ) );
+        col = min( col + glow * mix( vec3( 1.0 ), vec3( 0.42, 0.72, 1.25 ), neonBl ), vec3( 1.0 ) );
         // paper-white lift-out: where the air light is dense (a lamp's halo,
         // the hot collar under a shade) the brush leaves bare paper, with a
         // dry-brush edge instead of a smooth airbrushed falloff
@@ -698,7 +755,7 @@ export function makeInkMaterial(tex, fogUniforms) {
         // never on the sky or the skyline (item 1: the towers carried the
         // façade's slashes); there only real air light lifts paper.
         float airA = smoothstep( 0.5, 0.95, airL );
-        float slashOK = sky ? 0.0 : ( 1.0 - skyl ) * ( 1.0 - wallQuiet );
+        float slashOK = sky ? 0.0 : ( 1.0 - skyl ) * ( 1.0 - wallQuiet ) * ( 1.0 - interior );
         float paperW = smoothstep( b - 0.12, b + 0.12, airA ) * max( smoothstep( 0.0, 0.2, airA ), slashOK ) * ( 1.0 - figure ) * ( 1.0 - fxCov );
         col = max( col, vec3( paperW ) );
         col = mix( col, colOut, keep );
@@ -738,7 +795,7 @@ export function makeInkMaterial(tex, fogUniforms) {
         float lum = col.r;
         col *= mix( 1.0, 0.965 + 0.045 * paper.r, smoothstep( 0.15, 0.8, lum ) );
         float grain = hash12( fc + fract( uTime * 7.13 ) * vec2( 131.0, 71.0 ) ) - 0.5;
-        col += grain * 0.045;
+        col += grain * 0.045 * uGrain;
         vec2 vq = ( uv - 0.5 ) * vec2( uRes.x / uRes.y, 1.0 );
         col *= mix( 1.0, 0.8, smoothstep( 0.5, 1.1, length( vq ) ) );
 
