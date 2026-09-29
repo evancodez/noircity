@@ -340,8 +340,17 @@ export default {
       if (u >= 1) { api.dips.splice(i, 1); continue; }
       f = Math.min(f, 1 - d.depth * Math.sin(Math.PI * u));
     }
+    // (round 2: the shafts are long and full seen in the room's smoke; from
+    // the street, through the glass, they keep the short soft glow the
+    // front was accepted with - never bells in the windows)
+    const inside = camera.position.x < D.innerX + 0.05;
     for (const l of L) {
-      l.coneBase = l.dipBase.cone * f;
+      // (the counter's lamps lean toward the street: from out there the eye
+      // looks up their shafts, so they are held lower still)
+      l.coneBase = l.dipBase.cone * f * (inside ? 1 : 0.36);
+      const cu = l.cone && l.cone.material && l.cone.material.uniforms;
+      if (cu && cu.uFadeEnd) cu.uFadeEnd.value = inside ? 0.92 : 0.6;
+      if (cu && cu.uEdgeSoft) cu.uEdgeSoft.value = inside ? 0.7 : 0.62;
       if (l.light) l.light.intensity = l.dipBase.light * f;
       swingStep(l, dt);
     }
