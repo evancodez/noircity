@@ -7,9 +7,11 @@
 // through the diner's door onto the street and back in, mouse look, the
 // Tommy gun put in the hands (LMB fire, R reload), M mute, pointer-lock
 // loss -> pause -> click to resume, death -> THE END -> click to try again
-// (back at the pay beat on the stool), E pay -> the fight begins. Prints one
-// line per check and the #errlog contents. (tools/play.mjs plays the whole
-// slice by real input.)
+// (back at the pay beat on the stool), E pay -> his line with the view eased
+// round to him -> the fight begins; a lost round re-staged under a held
+// black without a sound; every sound asked for by name built. Scene 1
+// starts square to the counter. Prints one line per check and the #errlog
+// contents. (tools/play.mjs plays the whole slice by real input.)
 //   node tools/playtest.mjs [width] [height]
 import { spawn } from 'node:child_process';
 
@@ -77,6 +79,10 @@ try {
     eye: N.camera.position.toArray().map((v) => +v.toFixed(2)), room: N.game._room })`);
   const d0 = await sc();
   check('the title leads into scene 1: seated at the counter, the smoke set, no gun', d0.scene === 'diner' && d0.beat === 'settle' && d0.mode === 'seated' && d0.hands === 'smoke' && !d0.gun && d0.room === 'diner', JSON.stringify(d0));
+  // (the view's turn off the stool's square, radians: + toward Dot's end, - toward his)
+  const off = `(() => { const a = N.game.stage.anchor('diner.stool.player').yaw, y = N.controller.yaw; return +Math.atan2(Math.sin(y - a), Math.cos(y - a)).toFixed(3); })()`;
+  const sq = await js(`({ off: ${off}, pitch: +N.controller.pitch.toFixed(3), roll: +N.camera.rotation.z.toFixed(4) })`);
+  check('scene 1 starts square to the counter: straight at the back bar, pitch -0.14, no roll', Math.abs(sq.off) < 0.01 && Math.abs(sq.pitch + 0.14) < 0.01 && Math.abs(sq.roll) < 1e-3, JSON.stringify(sq));
   const until = async (expr, ms) => { for (let t = 0; t < ms; t += 150) { if (await js(expr)) return true; await sleep(150); } return false; };
   await until(`document.querySelector('#hud .prompt').style.display !== 'none'`, 9000);
   await key('KeyE', 'e');
@@ -191,10 +197,40 @@ try {
 
   // ---- E pay: the wallet, his line, he stands: the fight --------------------------------------------------
   await until(promptIs('/pay/'), 8000);
+  const p0 = await js(off);
   await key('KeyE', 'e');
+  await until(`N.hud.sayShown.includes('Cardinal')`, 12000);
+  await sleep(600);
+  const p1 = await js(off);
+  check('try again at pay: square to the counter; his line: the view eased round to frame him', Math.abs(p0) < 0.01 && p1 < -0.9 && p1 > -1.25, JSON.stringify({ before: p0, atHisLine: p1 }));
   const fight = await until(`N.game.scenes.current && N.game.scenes.current.id === 'fight' && N.game.brawl.active`, 25000);
   const f2 = await js(`({ scene: N.game.scenes.current && N.game.scenes.current.id, beat: N.game.scenes.beat, mode: N.controller.mode, hands: N.game.hands.set, brawl: N.game.brawl.active, him: N.game.brawl.state && N.game.brawl.state.hisState, mack: N.game.cast.get('mack') && N.game.cast.get('mack').kind })`);
   check('E pay: he stands, the fight begins (brawl mode, fists, the brawler)', fight && f2.beat === 'round1' && f2.mode === 'brawl' && f2.hands === 'fists' && f2.mack === 'brawler', JSON.stringify(f2));
+
+  // ---- a lost round: the room set again under the black, quietly -------------------------------------
+  // (down: the black comes in over 0.35 s, the room is re-staged behind it
+  // with the sound hushed - nothing breaks, no one-shot plays - the black
+  // holds to 1.5 s, then lifts over 0.6 s: up at the round's start with 60)
+  await sleep(1500);
+  const q = await js(`(async () => { const G = N.game, B = G.brawl, S = N.sfx;
+    const breaks = []; const on = (e) => breaks.push(e.kind); G.on('break', on);
+    const tick = () => new Promise((r) => setTimeout(r, 50));
+    B.playerDown();
+    const t0 = N.time; let played0 = null, fadeMin = 1;
+    while (N.time - t0 < 1.45) { await tick(); if (N.time - t0 > 0.5) { if (played0 == null) played0 = S.stats.played; fadeMin = Math.min(fadeMin, +G.hud.fadeEl.style.opacity); } }
+    const played = S.stats.played - played0;
+    while (N.time - t0 < 2.5) await tick();
+    G.off('break', on);
+    return { breaks: breaks.length, played, fadeMin, fadeEnd: +G.hud.fadeEl.style.opacity, me: B.me.state, hp: G.health.hp, active: B.active, round: B.round, mack: !!G.cast.get('mack') }; })()`);
+  check('a lost round: re-staged under a held black, nothing broken, nothing heard; back up with 60', q.breaks === 0 && q.played === 0 && q.fadeMin > 0.99 && q.fadeEnd < 0.01 && q.me === 'idle' && q.active && q.mack && Math.round(q.hp) === 60, JSON.stringify(q));
+
+  // ---- the sounds the lanes ask for by name all exist (the audio test table) --------------------------
+  const names = ['ring', 'burst_water', 'burst_leak', 'sign_drop', 'awning_tear', 'neon_pop', 'break_saucer', 'break_mug', 'break_pieCase', 'break_crate', 'break_barrel',
+    'break_sign', 'break_pipe', 'break_awning', 'break_papers', 'break_thing', 'topple_barrel', 'topple_crate', 'jukebox_change', 'bell', 'doorbell', 'register', 'jukebox_hit', 'hiss',
+    'break_bottle', 'break_tumbler', 'break_cup', 'break_plate', 'break_stool', 'break_table', 'topple_stool', 'topple_table'];
+  const missing = await js(`(async () => { const M = await import('/src/audio/Sfx.js'); return ${JSON.stringify(names)}.filter((n) => !M.SOUND_NAMES.includes(n)); })()`);
+  const aliased = await js(`[...(N.sfx.aliased || [])]`);
+  check('every sound asked for by name is built (none silent, none left to a fallback in this play)', Array.isArray(missing) && missing.length === 0 && aliased.length === 0, JSON.stringify({ missing, aliased }));
 
   const err = await js(`document.getElementById('errlog').textContent`);
   check('no console errors / warnings', !err, err ? err.slice(0, 300) : 'errlog empty');

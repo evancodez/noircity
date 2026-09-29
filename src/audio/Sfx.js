@@ -871,6 +871,160 @@ Object.assign(B, {
   topple_table(ctx, out, t0, p, R) { thud(ctx, out, t0, 120, 60, 0.5, 0.18); burst(ctx, out, R, t0, 'brown', ['lowpass', 500], 0.4, 0.002, 0.2); return 0.4; },
 });
 
+// ---------------------------------------------------------------------------
+// The sounds the other lanes ask for by name (the integration's list, wave A
+// fix round): what the street's things and the diner's small china make when
+// a round, a fist or a body finds them. Same kit.
+// wood splitting: a dry crack, splinters ticking off, a knock under it
+function splinter(ctx, out, t0, R, k = 1, n = 9) {
+  burst(ctx, out, R, t0, 'white', ['bandpass', 1900, 1.1], 0.45 * k, 0.0006, 0.05);
+  thud(ctx, out, t0, 210, 110, 0.35 * k, 0.07);
+  for (let i = 0; i < n; i++) burst(ctx, out, R, t0 + 0.01 + Math.random() * 0.22, 'white', ['bandpass', rng(900, 3200), 3], rng(0.05, 0.16) * k, 0.0005, rng(0.01, 0.03));
+}
+// canvas or paper going: a ragged tear, its grain chopped by a fast flutter
+function tear(ctx, out, t0, R, dur, f0, f1, k = 1, rate = 38) {
+  const n = noise(ctx, R, 'white', t0, dur, 1);
+  const bp = filt(ctx, 'bandpass', f0, 1.3);
+  bp.frequency.setValueAtTime(f0, t0); bp.frequency.exponentialRampToValueAtTime(f1, t0 + dur);
+  const am = osc(ctx, 'square', rate, t0, dur); const ga = gain(ctx, 0.5 * k); chain(am, ga);
+  const g = gain(ctx); env(g, t0, 0.22 * k, 0.01, dur * 0.8, dur * 0.1); ga.connect(g.gain);
+  chain(n, bp, g, out);
+}
+Object.assign(B, {
+  // a round on iron or a steel post: a hard tick and an inharmonic ring (p.big: 1 the el's iron, 0.5 a post)
+  ring(ctx, out, t0, p, R) {
+    const k = p.big ?? 0.7;
+    burst(ctx, out, R, t0, 'white', ['highpass', 3000], 0.25, 0.0005, 0.02);
+    const f = rng(1300, 2100) * (1.25 - 0.4 * k);
+    ping(ctx, out, t0, [[f, 0.12, 0.25 + 0.7 * k], [f * 2.76, 0.06, 0.18 + 0.4 * k], [f * 5.4, 0.03, 0.1 + 0.2 * k], [f * 0.53, 0.05 * k, 0.4 * k + 0.1]]);
+    return 0.35 + 0.8 * k;
+  },
+  // a pipe holed: the pop, then water rushing out under pressure
+  burst_water(ctx, out, t0, p, R) {
+    const dur = p.dur ?? 1.6;
+    thud(ctx, out, t0, 160, 70, 0.3, 0.08);
+    burst(ctx, out, R, t0, 'white', ['bandpass', 1400, 1], 0.25, 0.002, 0.08);
+    const n = noise(ctx, R, 'pink', t0 + 0.02, dur, 1.1);
+    const g = gain(ctx, 0.0001);
+    g.gain.setValueAtTime(0.0001, t0 + 0.02); g.gain.linearRampToValueAtTime(0.3, t0 + 0.08); g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+    chain(n, filt(ctx, 'highpass', 500), filt(ctx, 'lowpass', 4200), g, out);
+    return dur + 0.1;
+  },
+  // a barrel holed low: a dark dribble, a few glugs slowing
+  burst_leak(ctx, out, t0, p, R) {
+    for (let i = 0; i < 7; i++) {
+      const t = t0 + i * (0.09 + i * 0.03);
+      const f = rng(380, 560) * (1 - i * 0.05);
+      const g = gain(ctx); env(g, t, 0.9 * (1 - i / 9), 0.004, 0.05);
+      chain(noise(ctx, R, 'white', t, 0.07, 1), filt(ctx, 'bandpass', f, 5), g, out);
+      const o = osc(ctx, 'sine', f * 0.5, t, 0.05); o.frequency.exponentialRampToValueAtTime(f * 0.7, t + 0.04);
+      const go = gain(ctx); env(go, t, 0.07 * (1 - i / 9), 0.003, 0.04); chain(o, go, out);
+    }
+    burst(ctx, out, R, t0, 'pink', ['bandpass', 900, 0.8], 0.08, 0.05, 0.9);
+    return 1.2;
+  },
+  // a shop sign off its brackets: the bracket's creak, the fall, the sign flat on the pavement
+  sign_drop(ctx, out, t0, p, R) {
+    const o = osc(ctx, 'sawtooth', 240, t0, 0.3);
+    o.frequency.setValueAtTime(260, t0); o.frequency.exponentialRampToValueAtTime(150, t0 + 0.25);
+    const g = gain(ctx); env(g, t0, 0.05, 0.03, 0.22);
+    chain(o, filt(ctx, 'bandpass', 900, 4), g, out);
+    const t1 = t0 + 0.42;
+    thud(ctx, out, t1, 140, 60, 0.5, 0.14);
+    burst(ctx, out, R, t1, 'white', ['bandpass', 1600, 0.9], 0.3, 0.001, 0.09);
+    B.clang(ctx, out, t1 + 0.02, { k: 0.35 }, R);
+    return 1.0;
+  },
+  // the awning's canvas torn by a round or a body
+  awning_tear(ctx, out, t0, p, R) { tear(ctx, out, t0, R, 0.55, 2600, 900, 1, 41); tear(ctx, out, t0 + 0.3, R, 0.35, 1800, 700, 0.5, 29); return 0.75; },
+  // a neon tube shot out: a glassy pop and the arc's buzz dying
+  neon_pop(ctx, out, t0, p, R) {
+    burst(ctx, out, R, t0, 'white', ['highpass', 2500], 0.4, 0.0004, 0.04);
+    thud(ctx, out, t0, 520, 180, 0.2, 0.04);
+    const o = osc(ctx, 'sawtooth', 120, t0 + 0.02, 0.4);
+    const g = gain(ctx, 0.0001); g.gain.setValueAtTime(0.06, t0 + 0.02); g.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.4);
+    chain(o, filt(ctx, 'bandpass', 1100, 1), g, out);
+    glassFall(ctx, out, t0 + 0.03, R, 0.35, 0.4, 7);
+    return 0.55;
+  },
+  // ---- what breaks (the rest of lane 3's kinds) ----------------------------------------------
+  break_saucer(ctx, out, t0, p, R) { thud(ctx, out, t0, 280, 170, 0.18, 0.035); ping(ctx, out, t0, [[2400, 0.08, 0.08], [3700, 0.05, 0.06]]); glassFall(ctx, out, t0 + 0.01, R, 0.4, 0.3, 6); return 0.4; },
+  break_mug(ctx, out, t0, p, R) { thud(ctx, out, t0, 190, 110, 0.35, 0.06); ping(ctx, out, t0, [[1450, 0.09, 0.08], [2300, 0.05, 0.06]]); glassFall(ctx, out, t0 + 0.015, R, 0.45, 0.35, 6); return 0.5; },
+  // the pie case: its four panes going, and the pie stand's tin
+  break_pieCase(ctx, out, t0, p, R) {
+    burst(ctx, out, R, t0, 'white', ['highpass', 1400], 0.5, 0.0006, 0.06);
+    glassFall(ctx, out, t0 + 0.02, R, 0.9, 0.9, 22);
+    B.clang(ctx, out, t0 + 0.25, { k: 0.2 }, R);
+    return 1.1;
+  },
+  break_crate(ctx, out, t0, p, R) { splinter(ctx, out, t0, R, 1, 12); thud(ctx, out, t0 + 0.12, 150, 80, 0.25, 0.1); return 0.5; },
+  // a barrel stove in: the hollow boom, the staves, a hoop ringing
+  break_barrel(ctx, out, t0, p, R) {
+    thud(ctx, out, t0, 110, 55, 0.6, 0.3);
+    burst(ctx, out, R, t0, 'brown', ['lowpass', 380], 0.5, 0.002, 0.25);
+    splinter(ctx, out, t0 + 0.02, R, 0.6, 7);
+    ping(ctx, out, t0 + 0.05, [[640, 0.04, 0.5], [1510, 0.025, 0.3]]);
+    return 0.7;
+  },
+  break_sign(ctx, out, t0, p, R) { splinter(ctx, out, t0, R, 0.8, 8); B.clang(ctx, out, t0 + 0.05, { k: 0.3 }, R); return 0.6; },
+  break_pipe(ctx, out, t0, p, R) { B.clang(ctx, out, t0, { k: 0.7 }, R); burst(ctx, out, R, t0, 'white', ['bandpass', 2600, 2], 0.12, 0.001, 0.06); return 0.6; },
+  break_awning(ctx, out, t0, p, R) { tear(ctx, out, t0, R, 0.7, 2400, 700, 1.2, 36); B.clang(ctx, out, t0 + 0.45, { k: 0.35 }, R); return 1.0; },
+  // a bundle of papers blown apart: a flurry of sheets
+  break_papers(ctx, out, t0, p, R) {
+    burst(ctx, out, R, t0, 'white', ['bandpass', 1800, 0.7], 0.25, 0.002, 0.08);
+    for (let i = 0; i < 6; i++) tear(ctx, out, t0 + 0.04 + i * rng(0.04, 0.1), R, rng(0.15, 0.3), rng(3000, 4200), rng(1500, 2200), 0.35, rng(24, 50));
+    return 0.8;
+  },
+  // an overhead wire cut: the snap, a twang, the spark's crackle
+  break_wire(ctx, out, t0, p, R) {
+    burst(ctx, out, R, t0, 'white', ['highpass', 2200], 0.3, 0.0005, 0.03);
+    const o = osc(ctx, 'triangle', 190, t0, 0.6);
+    o.frequency.setValueAtTime(230, t0); o.frequency.exponentialRampToValueAtTime(120, t0 + 0.5);
+    const g = gain(ctx); env(g, t0, 0.12, 0.002, 0.5);
+    chain(o, filt(ctx, 'lowpass', 1400), g, out);
+    for (let i = 0; i < 10; i++) burst(ctx, out, R, t0 + Math.random() * 0.35, 'white', ['highpass', 3400], rng(0.03, 0.08), 0.0004, 0.006);
+    return 0.65;
+  },
+  break_neon(ctx, out, t0, p, R) { glassFall(ctx, out, t0, R, 0.6, 0.5, 12); return 0.6; },
+  // anything else (the fallback for a kind with no sound of its own): a crunch
+  break_thing(ctx, out, t0, p, R) {
+    thud(ctx, out, t0, 170, 80, 0.35, 0.08);
+    burst(ctx, out, R, t0, 'brown', ['bandpass', 600, 0.9], 0.35, 0.001, 0.1);
+    for (let i = 0; i < 5; i++) burst(ctx, out, R, t0 + 0.01 + Math.random() * 0.15, 'white', ['bandpass', rng(1200, 3500), 2], rng(0.05, 0.12), 0.0005, 0.02);
+    return 0.4;
+  },
+  // knocked over whole
+  topple_barrel(ctx, out, t0, p, R) {
+    thud(ctx, out, t0, 95, 50, 0.55, 0.28);
+    burst(ctx, out, R, t0, 'brown', ['lowpass', 420], 0.35, 0.003, 0.25);
+    // (it rolls a little: a rumble that slows)
+    const n = noise(ctx, R, 'brown', t0 + 0.2, 0.9, 1);
+    const g = gain(ctx, 0.0001); g.gain.setValueAtTime(0.12, t0 + 0.2); g.gain.exponentialRampToValueAtTime(0.0001, t0 + 1.1);
+    const am = osc(ctx, 'sine', 5, t0 + 0.2, 0.9); const ga = gain(ctx, 0.06); chain(am, ga, g.gain);
+    chain(n, filt(ctx, 'lowpass', 300), g, out);
+    return 1.15;
+  },
+  topple_crate(ctx, out, t0, p, R) { thud(ctx, out, t0, 150, 75, 0.45, 0.14); burst(ctx, out, R, t0, 'white', ['bandpass', 1300, 1], 0.12, 0.002, 0.08); burst(ctx, out, R, t0 + 0.06, 'brown', ['bandpass', 500, 1], 0.2, 0.01, 0.2); return 0.4; },
+  topple_thing(ctx, out, t0, p, R) { thud(ctx, out, t0, 130, 65, 0.4, 0.16); burst(ctx, out, R, t0, 'brown', ['lowpass', 520], 0.3, 0.003, 0.18); return 0.35; },
+  // the jukebox changing records: the arm lifts, the mechanism turns, the next
+  // record drops onto the platter (2 s of clunks)
+  jukebox_change(ctx, out, t0, p, R) {
+    ping(ctx, out, t0, [[1200, 0.04, 0.05]]);
+    B.jukeboxMech(ctx, out, t0 + 0.08, p, R);
+    thud(ctx, out, t0 + 1.55, 120, 70, 0.18, 0.08);
+    burst(ctx, out, R, t0 + 1.56, 'white', ['bandpass', 1600, 2], 0.06, 0.001, 0.03);
+    B.needleDrop(ctx, out, t0 + 1.8, p, R);
+    return 2.8;
+  },
+});
+// a name no sound answers (a new kind of lane 3's): its family's fallback
+const FAMILY = [['break_', 'break_thing'], ['topple_', 'topple_thing'], ['burst_', 'burst_water']];
+function soundFor(name) {
+  if (B[name]) return name;
+  for (const [pre, alt] of FAMILY) if (name.startsWith(pre)) return alt;
+  return null;
+}
+
 // The diner's own sound (sfx.room('diner')): nodes that live while the ear
 // is in the room. Rain on the plate glass (soft, close, no low end), the
 // room tone, the refrigerator's hum with its slow beat, the fans, a murmur
@@ -1033,10 +1187,18 @@ export class Sfx {
 
   // play a one-shot: name, world pos (null = at the ear), params
   play(name, pos = null, p = {}, opts = {}) {
-    if (!this.live || !B[name]) return 0;
+    if (!this.live) return 0;
+    // (a name with no sound of its own takes its family's: break_, topple_,
+    // burst_; the names seen so are kept in sfx.aliased for the tests)
+    const s = soundFor(name);
+    if (!s) return 0;
+    if (s !== name) (this.aliased || (this.aliased = new Set())).add(name);
+    name = s;
     // the voice cap is kept on the AUDIO clock (a throttled background tab
     // or a fast-forwarded sim must not wedge it): end times of live voices
     const now = this.ctx.currentTime;
+    // (a hush: a retry's room set again behind the black, silently)
+    if (now < (this.hushEnd || 0)) return 0;
     if (this.ends.length > 64) this.ends = this.ends.filter((e) => e > now);
     if (this.ends.length > 90) { this.stats.dropped++; return 0; }
     try {
@@ -1051,6 +1213,14 @@ export class Sfx {
       setTimeout(() => { try { out.disconnect(); } catch (e) { /* gone */ } }, ((opts.delay || 0) + dur + 0.5) * 1000);
       return dur;
     } catch (e) { return 0; }
+  }
+
+  // no one-shot plays for `secs` (the audio clock): what a re-staging sets
+  // off behind the black (a brawl's retry) is not heard. Loops, the rain,
+  // the room's bed and the music go on.
+  hush(secs = 1) {
+    if (!this.live) return;
+    this.hushEnd = Math.max(this.hushEnd || 0, this.ctx.currentTime + secs);
   }
 
   // ---- the game's calls ------------------------------------------------------

@@ -28,8 +28,10 @@ export const EYE_AT = { x: DINER.ring.x, z: DINER.ring.z + 0.73 };
 export const BRAWL_EYE = DINER.brawlEyeY;
 
 // the room at the start of the evening: phase 'evening' (scene 1) or
-// 'fight' (scene 2: Mack off his stool, his stool over)
-export function dinerRoom(ctx, phase = 'evening') {
+// 'fight' (scene 2: Mack off his stool, his stool over). retry: a lost
+// round set again under the black (the record plays on as it was: a needle
+// knocked off stays off)
+export function dinerRoom(ctx, phase = 'evening', { retry = false } = {}) {
   const { stage, cast, game } = ctx;
   const d = stage.part('diner'), front = stage.part('dinerFront');
   cast.clear();
@@ -59,25 +61,90 @@ export function dinerRoom(ctx, phase = 'evening') {
   cast.spawn('couple_him', { seat: 'diner.booth.2.b' }).setState('sitTalk');
   if (phase === 'evening') cast.spawn('brawler', { seat: 'diner.stool.' + DINER.brawlerStool }).setState('sitEat');
   // (the record on: heard from the jukebox, never in shot mode)
-  if (!game.shotMode && !d.jukebox.slot) d.jukebox.play('jukebox_a');
-  else if (!game.shotMode) game.music.cue(d.jukebox.slot, { diegetic: { pos: jukeboxPos(), room: 'diner' } });
+  // (a fresh evening - scene 1 from its start, a second BEGIN after the end
+  // card too - puts the first record on; any other entry picks up the one
+  // that was playing)
+  const fresh = phase === 'evening' && (ctx.from || 'settle') === 'settle';
+  if (game.shotMode || retry) { /* the record as it is */ }
+  else if (!d.jukebox.slot || fresh) d.jukebox.play('jukebox_a');
+  else game.music.cue(d.jukebox.slot, { diegetic: { pos: jukeboxPos(), room: 'diner' } });
   return d;
 }
 export const jukeboxPos = () => V(DINER.jukebox.x, DINER.floorY + 1.0, DINER.zMin + 0.6);
 
-// the player on his stool, the smoke set in his hands (the pitch: a man
-// leaning on the counter, looking along it to the back bar and Dot)
-// (turn: radians off the counter's square, + toward the north end and Dot's
-// urns, - toward the south end and Mack)
-export function seatPlayer(ctx, { lit = false, pitch = -0.16, turn = 0 } = {}) {
+// the player on his stool, the smoke set in his hands. Every seated beat
+// starts square to the counter: the view straight across it at the back bar
+// (the stool's own yaw, lane 2's seat), level, a little down (SEAT_PITCH).
+// When something wants the eye, the script turns it there and gives it back
+// (glance, below): the frame is never set askew.
+export const SEAT_PITCH = -0.14;
+export function seatPlayer(ctx, { lit = false } = {}) {
   const { controller, hands } = ctx;
   hands.hold(null, 'R');
   hands.hold(null, 'L');
   hands.equip('smoke');
-  controller.setMode('seated', { anchor: 'diner.stool.player', pitch });
-  if (turn) { controller.yaw += turn; controller.apply(0); }
+  controller.setMode('seated', { anchor: 'diner.stool.player', pitch: SEAT_PITCH });
   if (lit) holdCigarette(ctx, true);
 }
+
+// ---- the glance: the script eases the seated view to what wants it ------------------------
+// makeGlance(ctx) -> glance; glance.to({ at, max, frame, pitch, in, hold, out }) turns the
+// view toward at() (a Vector3, followed while it moves), by at most `max`
+// rad, `frame` rad to its left (+) or right (-) of it; `pitch`: the view's
+// pitch follows too (at most maxPitch). It eases in over `in` s (smooth),
+// holds `hold` s (Infinity: until glance.release()), eases back over `out`.
+// It is an offset added to the seated yaw and pitch and taken off again as
+// it eases out: the player's own look rides under it, and the view comes
+// back to where he had it. Stepped from the scene's onStep (glance.step).
+// Only in the seated mode (a mode change drops it: a cutscene takes the eye
+// from where it is).
+export function makeGlance(ctx) {
+  const C = ctx.controller, G = ctx.game;
+  const wrap = (a) => Math.atan2(Math.sin(a), Math.cos(a));
+  const clamp = (x, m) => Math.max(-m, Math.min(m, x));
+  const ss = (u) => { u = Math.max(0, Math.min(1, u)); return u * u * (3 - 2 * u); };
+  const g = {
+    cur: { yaw: 0, pitch: 0 }, job: null,
+    to(o) { g.job = { t: 0, in: 0.8, hold: 1.2, out: 0.9, max: 1.2, maxPitch: 0.35, frame: 0, pitch: false, ...o }; return g.job; },
+    release() { const J = g.job; if (J && J.hold === Infinity) J.hold = Math.max(0, J.t - J.in); },
+    get active() { return !!g.job; },
+    step(dt) {
+      if (C.mode !== 'seated') { g.job = null; g.cur.yaw = 0; g.cur.pitch = 0; return; }
+      const J = g.job;
+      let oy = 0, op = 0;
+      if (J) {
+        J.t += dt;
+        const k = J.t < J.in ? ss(J.t / J.in) : J.t < J.in + J.hold ? 1 : 1 - ss((J.t - J.in - J.hold) / J.out);
+        const p = typeof J.at === 'function' ? J.at() : J.at;
+        if (p) {
+          const e = G.eye;
+          // (where the player looks under the glance)
+          const baseY = C.yaw - g.cur.yaw, baseP = C.pitch - g.cur.pitch;
+          const ty = Math.atan2(-(p.x - e.x), -(p.z - e.z)) + J.frame;
+          const dy = clamp(wrap(ty - baseY), J.max);
+          const dp = J.pitch ? clamp(Math.atan2(p.y - e.y, Math.hypot(p.x - e.x, p.z - e.z)) - baseP, J.maxPitch) : 0;
+          // (a moving target is followed as an eye follows: smoothly, never
+          // snapping to a figure's every sway)
+          // (aim0: where it was, unclamped, when the glance began: the tests read it)
+          if (J.sy == null) { J.sy = dy; J.sp = dp; J.aim0 = wrap(ty - baseY); }
+          const a = 1 - Math.exp(-dt * 5);
+          J.sy += (dy - J.sy) * a; J.sp += (dp - J.sp) * a;
+          oy = k * J.sy; op = k * J.sp;
+        }
+        if (J.t >= J.in + J.hold + J.out) g.job = null;
+      }
+      C.yaw += oy - g.cur.yaw;
+      C.pitch += op - g.cur.pitch;
+      g.cur.yaw = oy; g.cur.pitch = op;
+    },
+  };
+  return g;
+}
+
+// where the scotch stands: on the counter by my left hand, in the seated
+// view (x -14.40: 0.1 m in from the rolled front edge; z 4.35: 0.25 m to
+// my left; the brief's x -14.20 would stand it off the counter's edge)
+export const GLASS_AT = () => V(DINER.counter.frontX - 0.05, DINER.counter.topY, stoolZ(DINER.playerStool) + 0.25);
 
 // the cigarette between his fingers (lane 2 draws the hand round it)
 export function holdCigarette(ctx, lit) {
@@ -91,7 +158,7 @@ export function holdCigarette(ctx, lit) {
 // the glass on the counter at my left hand, with `fill` of scotch
 export function setGlass(ctx, fill = 1) {
   const d = ctx.stage.part('diner');
-  const g = d.place('tumbler', 'diner.counter.glass', { name: 'glass' });
+  const g = d.place('tumbler', GLASS_AT(), { name: 'glass' });
   g.userData.setFill(fill);
   return g;
 }

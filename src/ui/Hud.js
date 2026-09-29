@@ -79,9 +79,9 @@ export class Hud {
       .ncard .keys { position: relative; margin: 12px 0 0; font-size: 11px; letter-spacing: 0.2em; color: #b8b6b0; text-transform: uppercase; text-shadow: 0 0 4px #000; }
       #title { z-index: 20; cursor: pointer; justify-content: flex-start; padding: 5vh 0 5vh; box-sizing: border-box;
         background: linear-gradient(to top, rgba(0,0,0,0.72) 0%, rgba(0,0,0,0.38) 13%, rgba(0,0,0,0) 30%),
-          radial-gradient(ellipse at 50% 34%, rgba(0,0,0,0.0) 0%, rgba(0,0,0,0.08) 45%, rgba(0,0,0,0.6) 100%); }
-      #title .card { margin-top: 9vh; }
-      #title h1 { font-size: min(9vw, 128px); }
+          radial-gradient(ellipse at 46% 36%, rgba(0,0,0,0.0) 0%, rgba(0,0,0,0.08) 45%, rgba(0,0,0,0.6) 100%); }
+      #title .card { position: absolute; left: 30%; top: 22%; transform: translate(-50%, -50%); margin: 0; }
+      #title h1 { font-size: min(6.4vw, 92px); }
       #title .opts { margin-top: auto; display: flex; gap: 0; align-items: center; font-size: 17px; letter-spacing: 0.5em; color: #eeece6; text-transform: uppercase; }
       #title .opt { position: relative; padding: 16px 30px 16px 38px; cursor: pointer; text-shadow: 0 0 6px #000, 0 0 2px #000; }
       #title .opt canvas { position: absolute; left: 50%; top: 50%; transform: translate(-46%, -50%); pointer-events: none; }
@@ -177,9 +177,16 @@ export class Hud {
     this.barStrokes = makeBarStrokes(this.barRng);
     this._last = {};
 
-    // the title: the big splat with its red accent, the lettering; low in
-    // the frame over the wet street BEGIN and CONTINUE, the keys
-    this.titleCard = makeCard('title', 'NOIR EXTREME', { w: 1400, h: 620, R: 190, wide: 5.6, vw: 80, seed: 1937, red: true });
+    // the title: the splat with its red accent and the lettering, top left
+    // over the dark upper storeys (its centre at 30 % of the width, 22 % of
+    // the height, the blot 46 % of the width), so the diner's neon, its door
+    // and the old blade sign stand clear below and right of it; the red
+    // splatter on the blot's upper right shoulder, above the signs' line;
+    // low in the frame over the wet street BEGIN and CONTINUE, the keys
+    // (fewer, shorter drops and spikes than the other cards: nothing flung
+    // down onto the signs)
+    this.titleCard = makeCard('title', 'NOIR EXTREME', { w: 1400, h: 620, R: 190, wide: 5.6, vw: 65, seed: 1937, red: true,
+      splat: { drops: 24, spikes: 14, spikeLen: 0.6, drips: 1 }, redAt: [2.05, -0.55] });
     this.title = this.titleCard.el;
     const opts = document.createElement('div');
     opts.className = 'opts';
@@ -416,7 +423,9 @@ export class Hud {
 // An ink card: the splat (a canvas behind everything, centred on the
 // lettering, its width a share `vw` of the window up to its pixel size),
 // the title and the optional lines under it.
-function makeCard(id, title, { w, h, R, wide, vw, seed, red = false, sub = null, epi = null, go = null, keys = null }) {
+// splat: the blot's own drawInkSplat options (drops, spikes, ...); redAt: the
+// red splatter's centre off the blot's, in R (x along the blot, y down)
+function makeCard(id, title, { w, h, R, wide, vw, seed, red = false, sub = null, epi = null, go = null, keys = null, splat = {}, redAt = null }) {
   const el = document.createElement('div');
   el.id = id;
   el.className = 'ncard hidden';
@@ -436,9 +445,10 @@ function makeCard(id, title, { w, h, R, wide, vw, seed, red = false, sub = null,
     frayEdges(t, col, new RNG(seed2), R);
     g.drawImage(t, 0, 0);
   };
-  sheet((gg) => drawInkSplat(gg, w / 2, h * 0.5, R, new RNG(seed), '#060606', { wide }), [6, 6, 6], seed + 31);
+  sheet((gg) => drawInkSplat(gg, w / 2, h * 0.5, R, new RNG(seed), '#060606', { wide, ...splat }), [6, 6, 6], seed + 31);
   // the one colour: a red splatter caught on the ink's right flank
-  if (red) sheet((gg) => drawInkSplat(gg, w / 2 + R * wide * 0.33, h * 0.5 + R * 0.5, R * 0.22, new RNG(seed + 7), '#c8102e', { wide: 1.25, spikes: 16, drops: 22, drags: 0, drips: 2, spikeLen: 1.6 }), [200, 16, 46], seed + 37);
+  const [rx, ry] = redAt || [wide * 0.33, 0.5];
+  if (red) sheet((gg) => drawInkSplat(gg, w / 2 + R * rx, h * 0.5 + R * ry, R * 0.22, new RNG(seed + 7), '#c8102e', { wide: 1.25, spikes: 16, drops: 22, drags: 0, drips: 2, spikeLen: 1.6 }), [200, 16, 46], seed + 37);
   card.appendChild(c);
   const h1 = document.createElement('h1');
   h1.textContent = title;

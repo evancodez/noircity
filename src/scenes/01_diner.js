@@ -1,5 +1,5 @@
 import { defineScene, wait, until, beat } from '../game/script.js';
-import { dinerRoom, seatPlayer, holdCigarette, setGlass, makeJobs, clip, counterAt, jukeboxPos, V, DINER, stoolZ, MACK_AT, EYE_AT, BRAWL_EYE } from './_diner_room.js';
+import { dinerRoom, seatPlayer, holdCigarette, setGlass, makeJobs, makeGlance, clip, counterAt, jukeboxPos, V, DINER, stoolZ, MACK_AT, EYE_AT, BRAWL_EYE, GLASS_AT } from './_diner_room.js';
 
 // Scene 1, the diner (STORY.md, lane 7's brief P0.2). Beats: settle, order,
 // drink, pay; the room lives under them. Nothing forces the player's pace:
@@ -18,9 +18,13 @@ import { dinerRoom, seatPlayer, holdCigarette, setGlass, makeJobs, clip, counter
 //           the lamps dip, thunder 1.6 s later; Dot tops up the old man's
 //           coffee; Q spins the empty stool on my left
 //   pay     E pay: the wallet, the licence; the big man two stools down sees
-//           it, holds the look, says his line, stands; the stool goes over;
-//           the eye rises off the stool and turns to him (1.2 s), and the
-//           fight begins with no cut to black
+//           it, holds the look; the view eases round to him (he is framed on
+//           its right third) and holds through his line and his rise; the
+//           stool goes over; the eye rises off the stool and turns to him
+//           (1.2 s), and the fight begins with no cut to black
+// Every beat starts square to the counter (seatPlayer); the view turns only
+// when something wants it, eased there and given back (the glance): Dot
+// coming down the counter (0.25 rad toward her, 1.2 s), Mack's line.
 export default defineScene({
   id: 'diner', stage: 'block', title: 'I', name: 'The Diner',
   spawn: { anchor: 'diner.stool.player' },
@@ -28,24 +32,24 @@ export default defineScene({
   save: ['order', 'drink', 'pay'],
 
   setup: {
-    settle(ctx) { dinerRoom(ctx); seatPlayer(ctx, { pitch: -0.2, turn: 0.3 }); },
+    settle(ctx) { dinerRoom(ctx); seatPlayer(ctx); },
     order(ctx) {
       dinerRoom(ctx);
-      seatPlayer(ctx, { lit: true, pitch: -0.06, turn: 0.1 });
+      seatPlayer(ctx, { lit: true });
       ctx.flags.lit = true;
       ctx.cast.get('dot').place('diner.serve.4');
       ctx.cast.get('dot').setState('lean');
     },
     drink(ctx) {
       dinerRoom(ctx);
-      seatPlayer(ctx, { lit: true, pitch: -0.26, turn: 0.2 });
+      seatPlayer(ctx, { lit: true });
       ctx.flags.lit = true;
       ctx.cast.get('dot').place('diner.serve.5');
       setGlass(ctx, 1);
     },
     pay(ctx) {
       dinerRoom(ctx);
-      seatPlayer(ctx, { lit: true, pitch: -0.1, turn: -0.5 });
+      seatPlayer(ctx, { lit: true });
       ctx.flags.lit = true;
       ctx.cast.get('dot').place('diner.serve.5');
       setGlass(ctx, 0);
@@ -60,6 +64,8 @@ export default defineScene({
     const dot = () => cast.get('dot'), mack = () => cast.get('mack');
     const jobs = makeJobs();
     ctx.flags.jobs = jobs;
+    // the view's eased turns (to Dot, to him) and back
+    const look = ctx.flags.glance = makeGlance(ctx);
     const snd = (name, pos = null, p = {}) => G.sfx.play(name, pos, p);
     const eye = () => G.eye;
 
@@ -69,6 +75,7 @@ export default defineScene({
     ctx.onStep((dt) => {
       jobs.step(dt);
       room(dt);
+      look.step(dt);
       // the cigarette: a thread of smoke off the tip; F a drag, LMB the ash
       if (ctx.flags.lit && ctx.flags.cig) {
         // (lane 3's thread takes a point every step while it burns)
@@ -121,7 +128,16 @@ export default defineScene({
       // order, the pour, the slide (the room's errands wait behind it)
       const F = ctx.flags;
       jobs.add('dot', (function* () {
-        if (ctx.from !== 'order') yield* dot().walkTo('diner.serve.4');
+        if (ctx.from !== 'order') {
+          // (she comes down the counter: the eye goes to where she is, 0.25
+          // rad at most, holds while she comes (1.2 s at least), and eases
+          // back square as she arrives across from me)
+          const g = look.to({ at: dot().bones.head.getWorldPosition(V(0, 0, 0)), max: 0.25, in: 0.6, hold: Infinity, out: 0.9 });
+          yield wait(0.4);
+          yield* dot().walkTo('diner.serve.4');
+          while (look.job === g && g.t < g.in + 1.2) yield null;
+          if (look.job === g) look.release();
+        }
         dot().setState('lean');
         F.attending = true;
         yield until(() => F.ordered);
@@ -159,7 +175,11 @@ export default defineScene({
         bill: () => snd('register', V(DINER.backX + 0.75, 1.2, DINER.counter.z0 + 0.5)),
       } });
       yield until(() => h.done && noticed);
-      // he holds the look
+      // he holds the look; the eye goes round to him (framed on the right
+      // third of the view, his head a little above its middle) and stays
+      // on him through the line and his rise
+      const mackAt = () => { const p = m.bones.head.getWorldPosition(V(0, 0, 0)); p.y -= 0.12; return p; };
+      look.to({ at: mackAt, frame: 0.3, max: 1.2, pitch: true, in: 1.1, hold: Infinity });
       yield wait(1.2);
       yield* ctx.say('You’re the one asking about the Cardinal.', 2.6);
       // he stands; the stool goes over (and if he bumps the counter, the
@@ -202,7 +222,7 @@ export default defineScene({
 function* pourScotch(ctx, d, dot) {
   const { game: G } = ctx;
   const snd = (name, pos = null, p = {}) => G.sfx.play(name, pos, p);
-  const dest = ctx.stage.anchor('diner.counter.glass').pos;
+  const dest = GLASS_AT();
   const setAt = V(dest.x - 0.5, dest.y, dest.z);
   let glass = null;
   yield* clip(dot, 'serve', { down: () => { glass = d.place('tumbler', setAt, { name: 'glass' }); glass.userData.setFill(0); snd('glassDown', setAt); } });
@@ -248,7 +268,7 @@ function* sip(ctx, d, k) {
   const { hands: H, game: G } = ctx;
   const snd = (name, pos = null, p = {}) => G.sfx.play(name, pos, p);
   const glass = d.items.get('glass');
-  const home = ctx.stage.anchor('diner.counter.glass').pos;
+  const home = GLASS_AT();
   // (lane 2's reachGlass / sip take the tumbler off the counter themselves)
   const r = H.play('reachGlass');
   yield until(() => r.done);
@@ -326,11 +346,10 @@ function roomClock(ctx, d, jobs) {
       yield wait(0.4);
       snd('coin', jukeboxPos());
       yield wait(0.9);
-      snd('jukeboxMech', jukeboxPos());
-      yield wait(1.4);
+      // (the change: the arm, the mechanism, the record dropping: the
+      // jukebox's own jukebox_change)
       d.jukebox.next();
-      snd('needleDrop', jukeboxPos());
-      yield wait(2.0);
+      yield wait(3.3);
       yield* k.walkTo('diner.stool.1');
       k.sit('diner.stool.1');
       k.setState('sitDrink');
