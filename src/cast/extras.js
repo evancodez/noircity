@@ -21,6 +21,8 @@ function withColor(geo, fn) {
 function figMesh(fig, geo) {
   const m = new THREE.Mesh(geo, hoodMaterial(fig.world));
   m.userData.inkId = fig.inkId; m.userData.inkFigure = true;
+  // (round 2: printed as the figure is - its light shapes, the paper, flat)
+  m.userData.inkSurface = 'castFig';
   m.castShadow = true; m.receiveShadow = true;
   return m;
 }
@@ -44,7 +46,7 @@ function leafGeo(side) {
     const ax = Math.abs(x);
     if (y > H * 0.3 && ax > 0.02 && ax < 0.27) return 0.07;               // the headline
     if (side < 0 && y < H * 0.18 && y > -H * 0.2 && ax > 0.08 && ax < 0.24) return 0.1;   // a photograph
-    return 0.34;
+    return 0.5;
   });
 }
 export function newspaper(c) {

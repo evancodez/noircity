@@ -22,7 +22,7 @@ function floorMaps() {
   const mk = () => { const c = document.createElement('canvas'); c.width = W; c.height = H; return c; };
   const ca = mk(), cr = mk();
   const a = ca.getContext('2d'), r = cr.getContext('2d');
-  a.fillStyle = 'rgb(6,6,6)'; a.fillRect(0, 0, W, H);
+  a.fillStyle = 'rgb(20,20,20)'; a.fillRect(0, 0, W, H);
   r.fillStyle = 'rgb(62,62,62)'; r.fillRect(0, 0, W, H);   // roughness 0.24: polished
   const blob = (g, x, y, rad, rgba) => {
     const gr = g.createRadialGradient(x, y, 0, x, y, rad);
@@ -33,7 +33,7 @@ function floorMaps() {
   for (let i = 0; i < 520; i++) {
     const x = hash(i, 1) * W, y = hash(i, 2) * H, s = 6 + hash(i, 3) * 34;
     blob(r, x, y, s, `rgba(190,190,190,${0.35 + hash(i, 4) * 0.45})`);
-    if (i % 3 === 0) blob(a, x, y, s * 1.2, `rgba(9,9,9,${0.3 + hash(i, 5) * 0.3})`);
+    if (i % 3 === 0) blob(a, x, y, s * 1.2, `rgba(15,15,15,${0.3 + hash(i, 5) * 0.3})`);
   }
   // scuffed paths: the aisle by the stools, the way from the door to the
   // counter, the service aisle behind it; worn duller and a shade lighter
