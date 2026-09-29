@@ -58,6 +58,11 @@ room, and their many clips were made fast.
 - **Flat ink.** A figure is a dark shape with a rim, not a shaded solid.
 - **Silence.** Every automated run is muted (`--mute-audio` is in the
   tools). Never open the game with sound on the user's machine.
+- **Cheap gates.** `shots/golden/` is older than Wave A and is not your
+  reference; do not run the full golden check. Capture your own base
+  frames before you start, check a handful of frames while you work, and
+  run `npm run build`, `tools/errors.sh` on what you touched, and the
+  plays once at the end.
 - Base: the head of `wave-a/integration`. Own worktree, own port, own
   branch `wave-a/r2-<name>`. Put new clip and pose data in **new files**
   of your own (listed below) and touch a shared file only to import them
@@ -79,7 +84,10 @@ clips, his brain, his steering), `src/destruct/**` (the window, the
 shards), `src/props/diner/booths.js` and the `booths` entry of
 `src/stages/block/site.js` (FIGHT.md §6: finish spots, café tables and
 chairs), the fight's cards in `src/ui/Hud.js`, `tools/plays/**`,
-`tools/playtest.mjs`, `src/debug/shots/R2_fight.js`.
+`tools/playtest.mjs`, `src/debug/shots/R2_fight.js`, and new sounds in a
+new `src/audio/fight.js` (one import line in `Sfx.js`). `src/game/Game.js`
+is yours where the fight needs it (input edges for both buttons, hit
+stop, slow motion).
 
 Must be true when you finish:
 1. The controls are exactly FIGHT.md §1 and §2. Left button left arm,
@@ -126,7 +134,11 @@ You own: `src/scenes/01_diner.js`, `src/scenes/_diner_room.js`,
 patrons: clips and behaviour), `src/fx/StoryFx.js` (the stream, the
 smoke), the `grip` and `rest` data of props in `src/props/**` (not their
 shapes or materials), the scene's prompts in `src/ui/Hud.js`,
-`src/debug/shots/R2_diner.js`.
+`src/main.js`, `src/audio/**`, `src/debug/shots/R2_diner.js`.
+
+Also yours, small: the game starts **muted** when the URL has `mute=1` or
+when the browser is automated (`navigator.webdriver`), and the title card
+says so (`M sound`).
 
 Must be true when you finish:
 1. **The pour.** Dot takes the scotch by its body from the back bar,
@@ -231,5 +243,36 @@ against light.
 - Frames: `diner_seat`, `diner_wide`, `diner_left`, `diner_right`,
   `diner_booth`, `scene=fight&beat=round1`, each judged as a film still.
 
-### 3.4 What round 1 left open
-The art director adds this list when round 1 has been merged and judged.
+### 3.4 What fix round 1 left open (judged on the merged build)
+Frames: `docs/story/review/round1/*.jpg`. Reports:
+`docs/story/reports/wave-a/FIX_ROUND1.md`.
+- `settle.jpg` is the first frame that is right in kind: square, the pool
+  on the counter, hands of flesh. Build the rest of the room up to it.
+- `diner_wide.jpg`: the room has gone **too dark**. The bells are gone
+  and nothing took their place: walls, floor and people are one dark
+  mass, the far end is lost. This is where §3.3 starts. The pendants
+  need their soft shafts back (light, not bells), the floor its pools and
+  a short broken sheen, the window wall its patches from the street, the
+  end wall and the jukebox their glow.
+- `round1.jpg`: Mack is a pile of rounded lumps with boulder fists, and
+  he stands against a wall as dark as he is. No rim from the pendant.
+  My fists are fists now; their wrists show a hard angular line where
+  hand meets forearm, and the knuckles are speckles.
+- `pour.jpg`: the scotch bottle is still one flat orange cylinder. It is
+  glass: dark outline, label, a white tick down the shoulder, amber only
+  where the liquid is, and the liquid stays level as the bottle tips
+  (`setTilt`). Its mouth is where owner 2 needs it to be: give the prop a
+  `userData.mouth` point.
+- The tumbler's thick base does not read; objects on the counter throw
+  almost no shadow (the pool is so far over white that only the umbra
+  prints).
+- Highlights on skin are speckles; they should be a few short ticks on
+  the knuckle ridge.
+- The near lamp's column on the street is broader and softer than the
+  golden's.
+
+### 3.5 The overall pass
+When the above is done, look at every frame of the slice as a film
+still, in order (title, fade in, settle, light, order, pour, drink, pay,
+his line, the rise, the fight, the window, the pavement, the matchbook,
+the end card) and fix what snags the eye. List what you changed.
