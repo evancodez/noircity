@@ -1,4 +1,5 @@
 node_modules
 dist
-shots/
+shots/*
+!shots/golden/
 .DS_Store

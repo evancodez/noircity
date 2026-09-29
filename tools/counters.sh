@@ -5,7 +5,7 @@ set -uo pipefail
 QS="${1:-shot=battle&t=30}"
 CHROME="/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
 "$CHROME" --headless=new --use-angle=metal --hide-scrollbars --window-size=1200,800 \
-  --virtual-time-budget=${VTB:-20000} --dump-dom "http://127.0.0.1:5173/?${QS}" 2>/dev/null | python3 -c '
+  --virtual-time-budget=${VTB:-20000} --dump-dom "http://127.0.0.1:${NOIR_PORT:-5173}/?${QS}" 2>/dev/null | python3 -c '
 import sys,re,html,json
 d=sys.stdin.read()
 m=re.search(r"<div id=\"errlog\"[^>]*>(.*?)</div>",d,re.S)

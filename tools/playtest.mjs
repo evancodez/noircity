@@ -43,7 +43,7 @@ try {
   ({ result: { sessionId: sid } } = await send('Target.attachToTarget', { targetId, flatten: true }));
   await send('Page.enable');
   await send('Emulation.setDeviceMetricsOverride', { width: W, height: H, deviceScaleFactor: 1, mobile: false });
-  await send('Page.navigate', { url: 'http://127.0.0.1:5173/' });
+  await send('Page.navigate', { url: `http://127.0.0.1:${process.env.NOIR_PORT || 5173}/` });
   for (let k = 0; k < 150; k++) { if (await js('!!window.__noirReady')) break; await sleep(200); }
   await sleep(1500);
 

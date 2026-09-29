@@ -31,7 +31,7 @@ try {
   await send('Page.enable', {}, sessionId);
   // the exact viewport (the headless window's chrome eats ~90 px otherwise)
   await send('Emulation.setDeviceMetricsOverride', { width: W, height: H, deviceScaleFactor: 1, mobile: false }, sessionId);
-  await send('Page.navigate', { url: `http://127.0.0.1:5173/?${QS}` }, sessionId);
+  await send('Page.navigate', { url: `http://127.0.0.1:${process.env.NOIR_PORT || 5173}/?${QS}` }, sessionId);
   const evalJS = async (expr) => {
     const r = await send('Runtime.evaluate', { expression: expr, awaitPromise: true, returnByValue: true }, sessionId);
     if (r.result?.exceptionDetails) return { exception: r.result.exceptionDetails.exception?.description || r.result.exceptionDetails.text };

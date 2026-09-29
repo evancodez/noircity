@@ -28,7 +28,7 @@ try {
   const { result: { targetId } } = await send('Target.createTarget', { url: 'about:blank' });
   const { result: { sessionId } } = await send('Target.attachToTarget', { targetId, flatten: true });
   await send('Page.enable', {}, sessionId);
-  await send('Page.navigate', { url: `http://127.0.0.1:5173/?${QS}` }, sessionId);
+  await send('Page.navigate', { url: `http://127.0.0.1:${process.env.NOIR_PORT || 5173}/?${QS}` }, sessionId);
   const evalJS = async (expr) => (await send('Runtime.evaluate', { expression: expr, returnByValue: true }, sessionId)).result?.result?.value;
   const t0 = Date.now();
   let html = null;
