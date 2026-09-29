@@ -26,13 +26,13 @@ const spow = (x, p) => Math.sign(x) * Math.pow(Math.abs(x), p);
 
 // albedo (linear grey) of each part; the ink pass turns these into black
 // masses with lit dry-brush folds near the camera
-const SHADE = {
+export const SHADE = {
   coat: 0.014, collar: 0.013, lapel: 0.013, belt: 0.005, hat: 0.007, band: 0.002,
   skin: 0.024, hair: 0.004, trousers: 0.006, slideTop: 0.2, nose: 0.024, shoes: 0.004, glove: 0.01, gun: 0.003, shirt: 0.13, tie: 0.004,
 };
 // long, medium, short
-const COAT_HEM = [0.4, 0.51, 0.62];
-const BRIM_R = [0.168, 0.19];            // narrow, wide
+export const COAT_HEM = [0.4, 0.51, 0.62];
+export const BRIM_R = [0.168, 0.19];            // narrow, wide
 const HEIGHT = [0.96, 1.04];
 
 // ---------------------------------------------------------------------------
@@ -45,13 +45,13 @@ const HEIGHT = [0.96, 1.04];
 let Q = 1;
 const seg = (n, min = 4) => Math.max(min, Math.round(n * Q));
 export const LOD_Q = [0.56, 0.3, 0.16];
-const LOD_FAR = [12, 17];      // switch-out distances (m); back in 1.5 m closer
+export const LOD_FAR = [12, 17];      // switch-out distances (m); back in 1.5 m closer
 
 // ---------------------------------------------------------------------------
 // parametric surfaces
 // fn(u, v, out) with u around (wraps when wrapU) and v along; returns an
 // indexed BufferGeometry with smooth normals pointing away from the part.
-function grid(nu, nv, fn, { wrapU = true, flip = false } = {}) {
+export function grid(nu, nv, fn, { wrapU = true, flip = false } = {}) {
   const cols = wrapU ? nu : nu + 1;
   const pos = new Float32Array(cols * (nv + 1) * 3);
   const uvs = new Float32Array(cols * (nv + 1) * 2);
@@ -97,7 +97,7 @@ function grid(nu, nv, fn, { wrapU = true, flip = false } = {}) {
 }
 
 // Make normals point away from `center` on average (winding-agnostic).
-function orientOut(g, center) {
+export function orientOut(g, center) {
   const p = g.getAttribute('position'), n = g.getAttribute('normal');
   let s = 0;
   const v = new THREE.Vector3(), w = new THREE.Vector3();
@@ -115,7 +115,7 @@ function orientOut(g, center) {
 }
 
 // Catmull-Rom sampler over a table of rows [key, ...values], key ascending.
-function tableSampler(rows) {
+export function tableSampler(rows) {
   return (key) => {
     let i = 0;
     while (i < rows.length - 2 && key > rows[i + 1][0]) i++;
@@ -135,7 +135,7 @@ function tableSampler(rows) {
 
 // Profile sampler for lathe-like parts: rows [s, a, b, ...] with s the
 // parameter; returns values at s via Catmull-Rom (s in row units).
-function profileAt(rows, v) {
+export function profileAt(rows, v) {
   const f = v * (rows.length - 1);
   const i = Math.min(rows.length - 2, Math.floor(f));
   const t = f - i;
@@ -378,7 +378,7 @@ function buildShoe(sgn) {
   return { geo, shade: SHADE.shoes, weights: () => [[sgn > 0 ? B.footL : B.footR, 1]] };
 }
 
-function buildHead() {
+export function buildHead() {
   const C = new THREE.Vector3(0, 1.655, 0.01);
   const R = [0.077, 0.1, 0.094];
   const nu = seg(64, 16), nv = seg(44, 12);
@@ -417,7 +417,7 @@ function buildHead() {
 // A small nose (Phase 2b polish): the head sphere's bump was narrower than
 // its tessellation and vanished in profile; a separate little wedge on the
 // face carries the facing direction in a silhouette.
-function buildNose() {
+export function buildNose() {
   const C = new THREE.Vector3(0, 1.648, 0.101);
   const nu = seg(24, 10), nv = seg(14, 6);
   const geo = grid(nu, nv, (u, v, p) => {
@@ -450,7 +450,7 @@ function buildNeck() {
 
 // fedora, in hat-bone space (origin on the brim plane): pinched, creased
 // crown, band, snap brim (front down, back up), brim >= 6 mm thick.
-function buildHat(brimR, crownShade = SHADE.hat) {
+export function buildHat(brimR, crownShade = SHADE.hat) {
   const H = BIND.hat;
   const prof = [
     [0.0, 0.03], [0.06, 0.012], [0.098, 0.0], [brimR - 0.03, -0.001], [brimR - 0.006, 0.001],
@@ -585,7 +585,7 @@ export const MUZZLE_LOCAL = new THREE.Vector3(0, -0.3, 0.058);
 
 // ---------------------------------------------------------------------------
 // assemble parts into one skinned geometry
-function assemble(parts) {
+export function assemble(parts) {
   let nv = 0, ni = 0;
   for (const p of parts) { nv += p.geo.getAttribute('position').count; ni += p.geo.index.count; }
   const pos = new Float32Array(nv * 3), nrm = new Float32Array(nv * 3), col = new Float32Array(nv * 3);
@@ -701,7 +701,7 @@ const _sk = {
   q: new THREE.Quaternion(), qi: new THREE.Quaternion(), qf: new THREE.Quaternion(), qt: new THREE.Quaternion(),
   up: new THREE.Vector3(), d: new THREE.Vector3(), u: new THREE.Vector3(), DOWN: new THREE.Vector3(0, -1, 0), Y: new THREE.Vector3(0, 1, 0),
 };
-function driveSkirt(b, groundW = 1) {
+export function driveSkirt(b, groundW = 1) {
   const S = _sk;
   // world up in the hips' frame
   b.hips.getWorldQuaternion(S.q);
@@ -755,12 +755,16 @@ const HAT_TUMBLE = {
 
 // ---------------------------------------------------------------------------
 export class Hood {
-  constructor(world, { pos = new THREE.Vector3(), yaw = 0, variant = {} } = {}) {
+  // build (the cast's costumes, src/cast/Figure.js; a Hood passes none):
+  // { lods: [geo x3], offsets: { joint: Vector3 }, scale, animator(obj),
+  //   surface(x, z) -> y, hatR, hatFlies }
+  constructor(world, { pos = new THREE.Vector3(), yaw = 0, variant = {}, build = null } = {}) {
     this.world = world;
     this.variant = hoodVariant(variant);
     this.slot = allocHoodSlot();
     this.inkId = HOOD_ID0 + Math.max(0, this.slot);
-    this.scale = HEIGHT[this.variant.tall];
+    this.scale = build && build.scale ? build.scale : HEIGHT[this.variant.tall];
+    this.build = build;
 
     const obj = new THREE.Group();
     obj.name = 'hood' + this.slot;
@@ -770,7 +774,7 @@ export class Hood {
     for (const [name, parent] of JOINTS) {
       const b = new THREE.Bone();
       b.name = name;
-      b.position.copy(OFFSET[name]);
+      b.position.copy(build && build.offsets && build.offsets[name] ? build.offsets[name] : OFFSET[name]);
       bones[name] = b;
       if (parent) bones[parent].add(b);
     }
@@ -784,7 +788,7 @@ export class Hood {
     let skelVer = 0;
     const skelUpdate = skeleton.update.bind(skeleton);
     skeleton.update = () => { if (skelVer === this._poseVer) return; skelVer = this._poseVer; skelUpdate(); };
-    this.lods = [hoodGeometry(this.variant, 0), hoodGeometry(this.variant, 1), hoodGeometry(this.variant, 2)];
+    this.lods = build ? build.lods : [hoodGeometry(this.variant, 0), hoodGeometry(this.variant, 1), hoodGeometry(this.variant, 2)];
     this.lod = 0;
     const mesh = new THREE.SkinnedMesh(this.lods[0], hoodMaterial(world));
     mesh.name = 'hoodBody';
@@ -818,7 +822,7 @@ export class Hood {
       this.hitMeshes.push(m);
     }
 
-    this.anim = new HoodAnimator(obj);
+    this.anim = build && build.animator ? build.animator(obj) : new HoodAnimator(obj);
     this.pos = pos.clone();
     this.yaw = yaw;
     this.speed = 0;
@@ -835,6 +839,11 @@ export class Hood {
     this._deathT = -1;
     this._rm = 0;
     this.script = null;       // optional (hood, t, dt) => void, for staged shots
+    // (a costume's: the floor it stands on, the cover's radius when it
+    // lands, whether the cover flies off in a fall)
+    this.surface = build && build.surface ? build.surface : null;
+    if (build && build.hatR) this.hatR = build.hatR;
+    if (build && build.hatFlies === false) this.hatFlies = false;
 
     obj.position.copy(this.pos);
     obj.rotation.y = yaw;
@@ -1026,7 +1035,7 @@ export class Hood {
     }
     // steering / collision hook (enemies/HoodAI.js): after locomotion
     if (this.onMove && this.alive) this.onMove(this);
-    this.pos.y = groundY(this.pos.x);
+    this.pos.y = this.surface ? this.surface(this.pos.x, this.pos.z) : groundY(this.pos.x);
     const obj = this.object;
     obj.position.copy(this.pos);
     obj.rotation.y = this.yaw;
@@ -1038,7 +1047,7 @@ export class Hood {
     if (this.afterPose) { this.afterPose(this, dt); obj.updateMatrixWorld(true); }
     if (this._deathT >= 0) {
       this._deathT += dt;
-      if (!this.hat && this._deathT >= HAT_OFF[this._deathKind]) this.launchHat();
+      if (!this.hat && this.hatFlies !== false && this._deathT >= (HAT_OFF[this._deathKind] ?? 0.1)) this.launchHat();
     }
     if (this.hat) this.updateHat(dt);
     obj.updateMatrixWorld(true);
@@ -1179,7 +1188,7 @@ export class Hood {
     }
     // lowest point: the brim circle (r ~0.18) or the crown top when upturned
     const up = new THREE.Vector3(0, 1, 0).applyQuaternion(hat.quaternion);
-    const R = BRIM_R[this.variant.brim];
+    const R = this.hatR ?? BRIM_R[this.variant.brim];
     // (the snap brim hangs ~2.5 cm below the brim plane at the front)
     const low = Math.min(hat.position.y - R * Math.sqrt(Math.max(0, 1 - up.y * up.y)) - 0.03 * Math.max(0, up.y), hat.position.y + up.y * 0.125);
     if (low < 0) {
