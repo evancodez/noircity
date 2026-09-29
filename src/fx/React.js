@@ -47,6 +47,8 @@ export class React {
   update(dt, t) {
     const G = this.game, W = this.world;
     W.cars.update(dt, t);
+    // (the panes' falling shards: destruct/Glass.js)
+    if (W.glass && W.glass.update) W.glass.update(dt);
     if (W.lamps.react) W.lamps.react(dt, t);
     if (W.props.update) W.props.update(dt, t);
     // hazards follow their cars' state

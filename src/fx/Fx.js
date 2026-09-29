@@ -51,7 +51,7 @@ export class Fx {
     // like blood, mirrored by the wet street (FX_REFL)
     // (its bloom fades with distance - Particles distDim: a mid-distance
     // wreck's flames print as ink, not as a glow sprite)
-    this.fire = new Particles(world, { max: 700, map: this.fireAtlas, cells: fc, layer: LAYER.FX_REFL, name: 'fire', renderOrder: 6, keepChroma: true, cut: [0.3, 0.55], distDim: [14, 24, 0.3] });
+    this.fire = new Particles(world, { max: 1200, map: this.fireAtlas, cells: fc, layer: LAYER.FX_REFL, name: 'fire', renderOrder: 6, keepChroma: true, cut: [0.3, 0.55], distDim: [14, 24, 0.3] });
     // smoke: soft dry-brush washes (muzzle smoke, the bonnet's warning
     // smoke, the black column over a wreck); scene pass only
     // (alpha remapped by a wide soft window: the body of a puff is a solid
