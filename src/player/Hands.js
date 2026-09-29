@@ -77,6 +77,24 @@ const SOCKETS = {
   default: { bone: 'hand', p: [0.0, -0.035, -0.055], r: [0, 0, Math.PI / 2] },
 };
 
+// A held prop's surface class in the hands' scene (lane 1: skin, paper,
+// cloth, metal, glass). The prop library tags its materials with the room's
+// classes (paper is 'cloth' there, glass 'metal'): by material first.
+const HELD_BY_MAT = {
+  prop_paper: 'paper', prop_paperLight: 'paper', prop_atlas: 'paper', prop_atlasDecal: 'paper', prop_china: 'paper',
+  prop_glass: 'glass', prop_glassThick: 'glass', prop_glassDark: 'glass', prop_bottleDark: 'glass',
+};
+const HELD_BY_SURF = { metal: 'metal', enamel: 'metal', chrome: 'metal', cloth: 'cloth', leather: 'cloth', fabric: 'cloth', wood: 'cloth', plaster: 'paper', lino: 'cloth' };
+function heldSurface(o) {
+  const m = Array.isArray(o.material) ? o.material[0] : o.material;
+  if (!m) return null;
+  if (m.userData && m.userData.accent) return null;     // (amber, ember, crew print by their accent)
+  if (HELD_BY_MAT[m.name]) return HELD_BY_MAT[m.name];
+  const s = o.userData.inkSurface ?? (m.userData && m.userData.inkSurface);
+  if (s === 'skin' || s === 'paper' || s === 'glass') return s;
+  return HELD_BY_SURF[s] || null;
+}
+
 export class Hands {
   constructor(game, vm) {
     this.game = game;
@@ -98,6 +116,13 @@ export class Hands {
       sleeve: vm.mats.sleeve,
       cuff: new THREE.MeshStandardMaterial({ color: 0xdcdcdc, roughness: 0.9, metalness: 0, envMap: M.envSoft, envMapIntensity: 0 }),
     };
+    // what each prints as (lane 1's viewmodel surface classes, fix round 1):
+    // bare hands light, the white cuff paper, the coat sleeve dark cloth; the
+    // leather gloves keep the gun's 0.28 ceiling, as they always printed
+    this.mats.bare.userData.inkSurface = 'skin';
+    this.mats.glove.userData.inkSurface = 'metal';
+    this.mats.cuff.userData.inkSurface = 'paper';
+    if (this.mats.sleeve && !this.mats.sleeve.userData.inkSurface) this.mats.sleeve.userData.inkSurface = 'cloth';
     // ink ids (CONTRACTS §9.4, allocVmId): each hand's skin, each sleeve, the cuffs
     const id0 = allocVmId(5);
     this.ids = { skinR: id0, skinL: id0 + 1, sleeveR: id0 + 2, sleeveL: id0 + 3, cuff: id0 + 4 };
@@ -159,6 +184,7 @@ export class Hands {
         if (!o.isMesh || !o.userData._handSave) return;
         const S = o.userData._handSave;
         o.layers.mask = S.mask; o.userData.inkId = S.id; o.userData.inkFigure = S.fig; o.castShadow = S.cast; o.frustumCulled = S.cull;
+        if (S.surf === undefined) delete o.userData.inkSurface; else o.userData.inkSurface = S.surf;
         delete o.userData._handSave;
       });
       const parent = prev.userData._handParent;
@@ -177,7 +203,11 @@ export class Hands {
     const id = allocVmId();
     prop.traverse((o) => {
       if (!o.isMesh) return;
-      o.userData._handSave = { mask: o.layers.mask, id: o.userData.inkId, fig: !!o.userData.inkFigure, cast: o.castShadow, cull: o.frustumCulled };
+      o.userData._handSave = { mask: o.layers.mask, id: o.userData.inkId, fig: !!o.userData.inkFigure, cast: o.castShadow, cull: o.frustumCulled, surf: o.userData.inkSurface };
+      // (in the hands a prop prints by what it is made of: lane 1's
+      // viewmodel classes, not the room's calm ones)
+      const hs = heldSurface(o);
+      if (hs) o.userData.inkSurface = hs;
       o.layers.set(LAYER.VIEWMODEL);
       o.userData.inkId = id;
       o.userData.inkFigure = true;    // (viewmodel ids are written as figures)
@@ -273,6 +303,7 @@ export class Hands {
       b.position.set(w.x, DINER.counter.topY + 0.001, w.z);
       b.rotation.y = this.game.controller.bodyYaw ?? 0;
       b.userData.inkId = allocInkId();
+      b.userData.inkSurface = 'plaster';   // (on the counter it is the room's: calm, not the hands' paper class)
       b.userData.noRay = true;
       stage.scene.add(b);
     }
