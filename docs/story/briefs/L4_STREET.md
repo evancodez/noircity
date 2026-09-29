@@ -10,6 +10,24 @@ silhouettes, the towers behind the vanishing point.
 
 All of this brief is required; the numbers are the order of work.
 
+## 0. The diner is always there
+The foundation kept the golden frames identical with a trick: the near
+building has a far build (the old solid block) and a near build (with the
+diner), swapped by `dinerInSight(eye)`. In play that is a building that
+changes behind the player's back. Remove the swap: one building, with the
+diner in it, always drawn, always solid, always a target for bullets.
+- The near façade's stone is then cut into other triangles, and a few
+  pixels of `street`, `lamp` and the other frames will move in their last
+  bit. That change is intended and allowed: show in the diff sheets that it
+  is invisible (no pixel differs by more than 8 levels outside the areas
+  you changed on purpose).
+- What may stay is an honest optimisation: the diner's interior lamps do
+  not compete for the pooled spot lights, and the room casts no shadows,
+  unless the eye is inside or the front is in view within 30 m. Walls stop
+  light; a lamp behind a wall lights nothing the player can see.
+- The stray rounds of the `battle` preset reach the diner's bays: those
+  frames will change as the panes are now the diner's. Allowed.
+
 ## 1. The diner's street front (`parts/dinerFront.js`; CONTRACTS §15)
 The four ground-floor bays between the pilasters at z = 11.6 and z = -6.0,
 a 1930s lunch-room front set into the stone:

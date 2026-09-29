@@ -12,6 +12,11 @@ the clips' marks, never through a stub's insides, so that when the real
 hands, people, room and breakage replace the stubs your scenes simply look
 better.
 
+The foundation's stand-ins that you retire: the title still drifts over
+the empty street; scenes 1 and 2 advance on E alone; X stands up and sits
+down (remove it: the story decides when I stand); sounds named by other
+lanes are silent until you build them (ARCHITECTURE.md lists them).
+
 ## P0.1  Systems (CONTRACTS §3, §4, §5, §12)
 Finish what the foundation stubbed: `SceneManager` (coroutines, beats,
 transitions, the shot mode, checkpoints), `Interact` (one prompt, generous

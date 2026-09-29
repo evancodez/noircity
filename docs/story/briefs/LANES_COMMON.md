@@ -11,8 +11,9 @@ order 1, 4, 5, 3, 6, 2, 7.
    a frame)
 2. `DESIGN.md`
 3. `docs/story/STORY.md`
-4. `docs/story/CONTRACTS.md` (binding) and `docs/story/ARCHITECTURE.md` (how
-   the foundation actually built it)
+4. `docs/story/CONTRACTS.md` (binding; its last section, "Deviations",
+   records where the foundation differs) and `docs/story/ARCHITECTURE.md`
+   (how the foundation actually built it, and every stub you will replace)
 5. your own brief, then the code you own
 
 ## Set up
@@ -46,6 +47,12 @@ python3 tools/golden.py check street        # sanity: IDENTICAL
   arm's length), black masses with a few light ticks, no gloss, no modelled
   faces, no regular grids or stripes as shading. When in doubt, make it
   black and let the contour and one highlight carry it.
+- Seven lanes share one machine and one GPU. Screenshots and the golden
+  check are safe to run side by side (the frames are deterministic), only
+  slower. Frame-rate numbers measured while other lanes work are not
+  trustworthy: report them, and say the machine was busy.
+- The block's parts keep their build order (it fixes ink ids and RNG
+  draws): a new part takes an `order` after the existing ones.
 - Commit on your branch as you go; message ends with
   `Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>`.
   Do not push. Do not merge. Do not touch `main`.

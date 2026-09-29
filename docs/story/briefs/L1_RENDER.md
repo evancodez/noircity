@@ -84,6 +84,17 @@ the ground's ids); sky, el, façade, cars, figures and the gun are identical.
   upwards at about 0.08 m/s), soft, denser near the lamp. `Look.haze`
   scales it. A pendant lamp over the counter must look like the street
   lamps do in the rain: a soft cone you could put your hand into.
+- **Interior surfaces are calm.** Look at
+  `docs/story/stub_frames/scene_diner_settle.jpg` and
+  `docs/story/stub_frames/scene_fight_round1.jpg` (the foundation's stand-in room): every
+  wall, the ceiling and the floor carry the façade's heavy white dry-brush
+  slashes, so the room looks like wet stone turned inside out. Give the
+  ink a surface class for interiors (plaster, panelling, linoleum, wood,
+  enamel, leather; by material flag or id class,
+  `mesh.userData.inkSurface = 'plaster' | 'wood' | 'lino' | 'metal' |
+  'cloth'`): flat dark washes that follow the light, with **sparse** short
+  strokes only where a lamp's pool falls off into shadow; stroke coverage
+  under 10 % of a wall, none on the ceiling. Lane 5 tags its meshes.
 - Interior surfaces must use the full range: paper-white where a lamp's
   pool falls on the counter top, real black under the counter and in the
   corners, dry-brush greys between. Check the ink bands on a lit interior

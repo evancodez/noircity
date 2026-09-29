@@ -25,6 +25,21 @@ hands at your anchors). Your side of the wall is everything at x < -10.45.
 - No regular grids. No checkerboard floor, no tiled wall printed as graph
   paper, no evenly ruled anything.
 
+## What the stand-in shows (the foundation's stub room)
+Open `docs/story/stub_frames/scene_diner_settle.jpg` and
+`docs/story/stub_frames/scene_fight_round1.jpg`. The room exists, the lamps and cones work,
+the street shows through the openings. What is wrong and is yours to put
+right: the counter top is one flat white slab from end to end (it should be
+dark, with a pool of white under each lamp and the things on it throwing
+small shadows); the walls are covered in the façade's brush slashes (tag
+every mesh with `userData.inkSurface` as lane 1's brief describes, and keep
+albedos low so walls print as dark washes); the stools are toadstools; the
+hatch is a white rectangle. Rain falling indoors is lane 1's to stop.
+
+Pendants and the light pool: your lamps take pooled spot lights only while
+the eye is inside or the front is in view (keep the foundation's `on`
+logic as an optimisation). The room itself is always there.
+
 ## P0.1  The room
 - **Floor**: dark linoleum, polished: it takes a soft, short, broken sheen
   under each pendant lamp (not a mirror); a lighter inlaid border line

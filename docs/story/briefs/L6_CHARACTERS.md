@@ -24,6 +24,13 @@ hair, the angle of the head, the line of the jaw against a lit background,
 at most a nose in profile. The cover always shadows the face: a brim, a
 peak, a fall of hair.
 
+Anchors carry a **viewer's** yaw (the way a camera placed there would
+look); a figure placed on an anchor faces `yaw + PI`. The foundation's
+stand-in brawler in `scene=fight&beat=round1` stands with his back to the
+player: make sure your figures face what they should (the brawler faces
+the player, the waitress faces the counter, a seated man faces the counter
+or his table).
+
 ## P0.2  The diner's people (STORY.md, the cast)
 Heights are to the top of the head cover. The player's standing eye is at
 1.65 m, seated 1.45 m above the floor.
