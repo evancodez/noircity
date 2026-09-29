@@ -177,6 +177,10 @@ export class Game {
       if (d < 28 && x > -6.0 && x < 17) stage.street.addImpact(stage, x, z, run ? 0.45 : 0.3);
       if (d < 35) this.sfx.step(new THREE.Vector3(x, 0, z), run, false);
     };
+    // the render's per-stage inputs: the rain's dry volumes and the lamps
+    // whose heads leave a sheen (lane 1's adapters read __noir until this)
+    this.pipeline.setDry?.(stage.dry);
+    this.pipeline.setLamps?.(stage.lamps ?? null);
     this.emit('stage:enter', { name: stage.name });
     return stage;
   }
