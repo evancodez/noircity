@@ -413,13 +413,15 @@ export class Breakables {
       if (J.fluid === 'steam') {
         const k = Math.max(0, 1 - J.t / 4);
         if (k <= 0) { this.jets.splice(i, 1); continue; }
-        J.acc += dt * 50 * k;
+        J.acc += dt * 90 * k;
         while (J.acc >= 1) {
           J.acc -= 1;
-          const s = r.range(0.06, 0.12);
-          G.fx.smoke.spawn({ pos: J.at.clone(), vel: J.dir.clone().multiplyScalar(r.range(4, 7) * (0.4 + 0.6 * k)).add(new THREE.Vector3(r.gauss() * 0.3, r.gauss() * 0.3, r.gauss() * 0.3)),
-            life: r.range(0.5, 0.9), size: [s, s], grow: r.range(1.4, 2.2), rot: r.next() * 6.28, spin: r.gauss() * 0.5,
-            col: [0.38, 0.38, 0.38], colEnd: [0.3, 0.3, 0.3], alpha: r.range(0.45, 0.6) * (0.5 + 0.5 * k), drag: 3.2, gravity: -0.6, fadeIn: 0.02, fadeOut: 0.6, cell: FIRE.SMOKE[r.int(0, 3)] });
+          // (a jet: narrow at the hole, streaked along its speed, opening
+          // and slowing into a drifting cloud)
+          const s = r.range(0.035, 0.07);
+          G.fx.smoke.spawn({ pos: J.at.clone().addScaledVector(J.dir, r.next() * 0.15), vel: J.dir.clone().multiplyScalar(r.range(5, 8) * (0.4 + 0.6 * k)).add(new THREE.Vector3(r.gauss() * 0.25, r.gauss() * 0.25, r.gauss() * 0.25)),
+            life: r.range(0.5, 1.0), size: [s, s], grow: r.range(0.7, 1.2), stretch: 0.06, rot: r.next() * 6.28, spin: r.gauss() * 0.5,
+            col: [0.34, 0.34, 0.34], colEnd: [0.26, 0.26, 0.26], alpha: r.range(0.3, 0.45) * (0.5 + 0.5 * k), drag: 2.4, gravity: -0.5, fadeIn: 0.02, fadeOut: 0.7, cell: FIRE.SMOKE[r.int(0, 3)] });
         }
         continue;
       }
@@ -550,8 +552,11 @@ const HIT = {
     const o = h.object;
     o.updateWorldMatrix(true, false);
     // (out of the pipe's side, back toward the shooter, and down)
-    const out = dir.clone().negate();
-    out.y = h.opts.fluid === 'steam' ? out.y : Math.min(out.y, -0.1);
+    // (a hole tears open to one side of the round's path: the jet squirts
+    // across it, not back down the line of fire)
+    const across = new THREE.Vector3().crossVectors(dir, UP).normalize().multiplyScalar(this.R.chance(0.5) ? 1 : -1);
+    const out = dir.clone().negate().multiplyScalar(0.45).add(across);
+    out.y = h.opts.fluid === 'steam' ? 0.15 : -0.25;
     this.jet(point, out.normalize(), h.opts.fluid || 'water', o);
     return 'hit';
   },

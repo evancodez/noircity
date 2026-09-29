@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { setDebugWreckKind } from '../../world/Cars.js';
 import { buildProp } from '../../props/index.js';
-import { roundedBox } from '../../world/geom.js';
+import { roundedBox, tube as tubeGeo } from '../../world/geom.js';
 
 // Lane 3's presets (destruction). Query strings:
 //   shot=wreck&t=<s>&wreckkind=A|B|C|D   the core wreck preset, its staged
@@ -214,9 +214,87 @@ function stageBreakStudy(world, camera, controller, game) {
   game.scripts.push((t) => { while (k < ev.length && t >= ev[k][0] - 1e-6) ev[k++][1](); });
 }
 
+// streetstudy: the street's things answering rounds (P1), my own test
+// objects along the near building (lane 4 places the real ones and
+// registers them with these kinds): a blade sign (swings; its outer bracket
+// is shot through at 2.6 and it hangs by one corner), a drainpipe (a fan of
+// water), a steam pipe (a white jet), a stack of crates (knocked over), a
+// barrel (rolls and leaks), a newsstand (papers fly), an awning (tears and
+// dumps its water), a wire (cut: it falls, swings, spits sparks), three neon
+// letters (one goes out, the others flicker), and the stone and the iron
+// (craters, a chunk off a corner, dents). Rounds from 2.0 s.
+//   shot=streetstudy&t=<s>  (default 2.5)
+function stageStreetStudy(world, camera, controller, game) {
+  const S = world, B = S.breakables, M = S.M;
+  const V3 = (x, y, z) => new THREE.Vector3(x, y, z);
+  const mesh = (geo, mat, parent = S.scene) => { const m = new THREE.Mesh(geo, mat); m.castShadow = true; m.receiveShadow = true; m.userData.inkId = 5; parent.add(m); return m; };
+  const solid = (o) => { o.traverse((m) => { if (m.isMesh) S.addSolid(m); }); return o; };
+  const dark = M.stoneTrim || M.stone, metal = M.lampIron || M.iron;
+  // the blade sign
+  const sign = new THREE.Group(); sign.position.set(-9.5, 3.3, -13.2); S.scene.add(sign);
+  mesh(roundedBox(1.0, 0.55, 0.05, 0.015, 1).translate(0, -0.33, 0), dark, sign);
+  for (const x of [-0.4, 0.4]) mesh(new THREE.CylinderGeometry(0.012, 0.012, 0.06, 6).translate(x, -0.03, 0), metal, sign);
+  mesh(new THREE.CylinderGeometry(0.018, 0.018, 1.1, 8).rotateZ(Math.PI / 2), metal);
+  S.scene.children[S.scene.children.length - 1].position.set(-9.55, 3.3, -13.2);
+  B.add(solid(sign), { kind: 'sign', hp: 99, w: 1.0, h: 0.55 });
+  // the drainpipe and the steam pipe
+  const drain = mesh(new THREE.CylinderGeometry(0.055, 0.055, 4.2, 12).translate(0, 2.1, 0), metal); drain.position.set(-10.08, 0.15, -14.6);
+  B.add(solid(drain), { kind: 'pipe', hp: 99, fluid: 'water' });
+  const steam = mesh(new THREE.CylinderGeometry(0.07, 0.07, 2.4, 12).rotateX(Math.PI / 2), metal); steam.position.set(-10.02, 1.25, -16.9);
+  B.add(solid(steam), { kind: 'pipe', hp: 99, fluid: 'steam' });
+  // crates, a barrel, the newsstand, the awning
+  const crates = [];
+  for (const [x, y, z, r] of [[-8.9, 0.15, -17.6, 0.1], [-8.9, 0.66, -17.6, -0.2], [-8.35, 0.15, -17.7, 0.4]]) {
+    const c = new THREE.Group(); c.position.set(x, y, z); c.rotation.y = r; mesh(roundedBox(0.5, 0.5, 0.5, 0.02, 1).translate(0, 0.25, 0), dark, c); S.scene.add(c);
+    crates.push(B.add(solid(c), { kind: 'crate', hp: 8 }));
+  }
+  const barrel = new THREE.Group(); barrel.position.set(-7.7, 0.15, -15.6); S.scene.add(barrel);
+  mesh(new THREE.CylinderGeometry(0.29, 0.29, 0.88, 20).translate(0, 0.44, 0), metal, barrel);
+  barrel.userData.size = V3(0.58, 0.88, 0.58);
+  B.add(solid(barrel), { kind: 'barrel', hp: 99 });
+  const stand = new THREE.Group(); stand.position.set(-9.4, 0.15, -19.4); S.scene.add(stand);
+  mesh(roundedBox(0.5, 1.1, 1.0, 0.02, 1).translate(0, 0.55, 0), dark, stand);
+  B.add(solid(stand), { kind: 'papers', hp: 99 });
+  const awn = new THREE.Group(); awn.position.set(-10.1, 2.9, -21.4); awn.rotation.set(0, Math.PI / 2, 0); S.scene.add(awn);
+  const cloth = mesh(new THREE.PlaneGeometry(2.4, 1.2).rotateX(-Math.PI / 2 + 0.35).translate(0, -0.2, 0.56), dark, awn);
+  cloth.material = cloth.material.clone(); cloth.material.side = THREE.DoubleSide;
+  B.add(solid(awn), { kind: 'awning', hp: 99, w: 2.4, d: 1.1 });
+  // the wire across the pavement
+  const wa = V3(-10.1, 4.4, -11.0), wb = V3(-4.0, 5.2, -11.6);
+  const wire = mesh(tubeGeo([wa, wa.clone().lerp(wb, 0.5).add(V3(0, -0.25, 0)), wb], 0.012), M.black || dark);
+  B.add(solid(wire), { kind: 'wire', hp: 99, a: wa, b: wb });
+  // three neon letters over the door
+  const glow = new THREE.MeshBasicMaterial({ color: new THREE.Color(0.9, 0.9, 0.9) });
+  const letters = [];
+  for (let i = 0; i < 3; i++) {
+    const L = mesh(roundedBox(0.06, 0.5, 0.34, 0.02, 1), glow); L.position.set(-10.05, 3.6, -23.0 + i * 0.45);
+    letters.push(B.add(solid(L), { kind: 'neon', hp: 99 }));
+  }
+  const from = camera.position.clone();
+  const shoot = (p, o = from) => { const d = p.clone().sub(o).normalize(); const h = game.rays.raycast(o, d, 40); if (h) game.react.bullet(h, d); };
+  const ev = [
+    [2.0, () => shoot(V3(-9.3, 3.05, -13.2))],
+    [2.6, () => shoot(V3(-9.12, 3.25, -13.2))],
+    [2.05, () => shoot(V3(-10.05, 1.3, -14.6))],
+    [2.1, () => shoot(V3(-10.0, 1.25, -16.7))],
+    [2.15, () => shoot(V3(-8.9, 0.9, -17.6))],
+    [2.2, () => shoot(V3(-7.7, 0.5, -15.6))],
+    [2.25, () => shoot(V3(-9.2, 1.0, -19.4))],
+    [2.3, () => shoot(V3(-9.4, 2.65, -21.4))],
+    [2.35, () => shoot(wa.clone().lerp(wb, 0.3).add(V3(0, -0.15, 0)))],
+    [2.4, () => shoot(V3(-10.02, 3.6, -22.55))],
+    // the stone: three rounds into one place on the kerb (a chunk comes away)
+    [1.4, () => shoot(V3(-6.0, 0.1, -13.2))], [1.5, () => shoot(V3(-6.0, 0.11, -13.22))], [1.6, () => shoot(V3(-6.0, 0.09, -13.18))],
+  ];
+  let k = 0;
+  ev.sort((a, b) => a[0] - b[0]);
+  game.scripts.push((t) => { while (k < ev.length && t >= ev[k][0] - 1e-6) ev[k++][1](); });
+}
+
 const tEnd = (shot) => { const t = parseFloat(Q().get('t') ?? ''); return Number.isFinite(t) ? t : shot.t; };
 
 export const presets = {
+  streetstudy: { x: -6.9, z: -10.6, y: 0.15, yaw: 0.27, pitch: 0.02, fov: 66, t: 2.5, stage: stageStreetStudy },
   // (the bench at 3 m, a little above it)
   breakstudy: { x: -9.5, z: -15.8, y: 0.15, yaw: -Math.PI / 2, pitch: -0.2, fov: 50, t: 2.02, stage: stageBreakStudy },
   // (on the road by the kerb, square to bay B2, eye 1.65 over the street)
