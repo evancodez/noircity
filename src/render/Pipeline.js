@@ -174,6 +174,8 @@ export class Pipeline {
     // debug: ?rt=refl|reflA|bright|streak shows an intermediate buffer through
     // the ink tone curve instead of the final image
     this.debugRT = opts.debugRT || null;
+    this.look = null;              // the Look in force (setLook)
+    this.exposureOverride = null;  // exposure=<v> (look development)
     this.debugMat = new THREE.ShaderMaterial({
       name: 'DebugRT', depthTest: false, depthWrite: false,
       uniforms: { tSrc: { value: null }, uMode: { value: 0 }, uExposure: { value: EXPOSURE }, ...toneUniforms() },
@@ -188,6 +190,26 @@ export class Pipeline {
           gl_FragColor = vec4( vec3( uMode == 1 ? c.a : toneCurve( l * uExposure ) ), 1.0 );
         }`,
     });
+  }
+
+  // The Look (docs/story/CONTRACTS.md §9.1), called every frame with
+  // stage.lookAt(eye): { fogDensity, fogColor, exposure, rainOverlay,
+  // rain3d, grain, ambient, reflect, haze, room }. The block's exterior Look
+  // is today's frame (world/World.js BASE_LOOK): its values are the ones
+  // every uniform already holds, so applying it changes nothing.
+  // (FOUNDATION STUB, lane 1: fog, exposure and the screen rain overlay are
+  // applied, switched by the volume the eye is in; rain3d, grain, ambient,
+  // reflect and haze are kept for lane 1, and nothing is blended yet)
+  setLook(look) { this.look = look; }
+
+  applyLook(scene) {
+    const L = this.look;
+    if (!L) return;
+    if (scene.fog) { scene.fog.color.copy(L.fogColor); scene.fog.density = L.fogDensity; }
+    this.U.uFogColor.value.copy(L.fogColor);
+    this.U.uFogDensity.value = L.fogDensity;
+    // (exposure=<v>, main.js: a look-development override wins)
+    this.inkMat.uniforms.uExposure.value = this.exposureOverride ?? L.exposure;
   }
 
   // the scene target's format: R11G11B10F (default) or RGBA16F (Phase 3a)
@@ -351,6 +373,7 @@ export class Pipeline {
 
   render(scene, camera, time) {
     const r = this.renderer, U = this.U;
+    this.applyLook(scene);
     this.updateLightning(time);
     camera.updateMatrixWorld();
     U.uNear.value = camera.near;
@@ -570,7 +593,7 @@ export class Pipeline {
     iu.uLightning.value = this.lightning;
     iu.uKick.value = this.kick || 0;
     // lightning shows the rain everywhere, not only inside the cones
-    iu.uRain.value = 1 + 2.2 * Math.min(1, this.lightning) + 1.2 * (this.rainBoost || 0);
+    iu.uRain.value = (1 + 2.2 * Math.min(1, this.lightning) + 1.2 * (this.rainBoost || 0)) * (this.look ? this.look.rainOverlay : 1);
     iu.uRain3.value = 1 + 1.5 * Math.min(1, this.lightning);
     iu.uView.value = this.view;
     const pxPerRad = this.height / THREE.MathUtils.degToRad(camera.fov);

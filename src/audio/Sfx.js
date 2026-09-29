@@ -752,6 +752,23 @@ export class Sfx {
     this.loop('rainLow', null, 0.1, 'brown', 400, 60);
   }
 
+  // The ambience of the place the ear is in (CONTRACTS §12.2): 'street'
+  // (the rain bed as it always was) or an interior ('diner', and wave B's
+  // rooms), whose walls muffle the rain; a doorway cross-fades in 0.4 s.
+  // (FOUNDATION STUB, lane 7: indoors the rain beds are only turned down
+  // and dulled; the room tone, the fridge, the cutlery are lane 7's)
+  room(name = 'street') {
+    this.roomName = name;
+    if (!this.live) return;
+    const inside = name !== 'street';
+    const t = this.ctx.currentTime, tau = 0.4 / 3;
+    const set = (key, level) => { const L = this.loops.get(key); if (L) L.g.gain.setTargetAtTime(level, t, tau); };
+    set('rainBed', inside ? 0.08 : 0.24);
+    set('rainPatter', inside ? 0.004 : 0.035);
+    set('rainLow', inside ? 0.06 : 0.1);
+    this.roomGain = inside ? 1 / 3 : 1;
+  }
+
   // the train rumble: k 0..1 by distance, pos the nearest car
   train(k, pos) {
     if (!this.live) return;
@@ -773,7 +790,7 @@ export class Sfx {
     this.gustV += (Math.random() - 0.5) * dt * 0.6 - this.gust * dt * 0.25;
     this.gust = Math.max(-0.5, Math.min(1, this.gust + this.gustV * dt));
     const bed = this.loops.get('rainBed');
-    if (bed) bed.g.gain.setTargetAtTime(0.24 * (1 + 0.45 * this.gust), this.ctx.currentTime, 0.4);
+    if (bed) bed.g.gain.setTargetAtTime(0.24 * (this.roomGain ?? 1) * (1 + 0.45 * this.gust), this.ctx.currentTime, 0.4);
     // drips off the ironwork and the awnings, here and there
     this.dripT -= dt;
     if (this.dripT <= 0) {
