@@ -125,6 +125,7 @@ export class Weapon {
     const wall = G.rays.raycast(origin, dir, hood ? hood.t : WEAPON.range);
     if (hood && (!wall || hood.t < wall.t)) this.hitHood(hood, dir, time);
     else if (wall) G.react.bullet(wall, dir);
+    G.emit('shot', { weapon: 'tommy', hit: hood && (!wall || hood.t < wall.t) ? hood : wall });
   }
 
   hitHood(hit, dir, time) {
