@@ -538,3 +538,47 @@ to -22, z from -24 to -30, a wall lamp at (-12.5, 4.2, -24.3).
 ---------------------------------------------------------------------------
 ## Deviations
 (the foundation and the lanes record here what differs from the above)
+
+### Foundation, pass A (steps A1 to A5)
+- §5 Director: besides `legacyWave(n)` there is `director.legacyWaves(from)`,
+  the old wave game chained for the `battle`, `perf` and `end` presets: a
+  wave, its last man down plus 2 s, then the old 8 s gap (`director.lull`:
+  `game.live` is false, the gun is safed, the Hoods' rounds cannot hit, the
+  train hurries off), then the next wave. Debug presets only. Also
+  `director.done` (no spawns to come), `director.level` (the legacy wave
+  number: 3 fire tokens from 5), `director.begin()`, `director.active`,
+  `director.startT` (the fight's start: the storm and train pacing read it).
+  `d.spawn` of a cast kind needs `game.cast` (pass B); `entry` sets the
+  Hood's first state, `to` walks only a figure with `walkTo`.
+- §5: the fire tokens and the lull breaker live in `HoodPacing`
+  (`src/enemies/HoodAI.js`, `game.pacing`: `take`, `drop`, `begin`, `shot`,
+  `update`).
+- §2.2 Stage: added `stage.addAnchor(name, data)`, `stage.addSurface(fn)`
+  (`fn(x, z) -> y | undefined`, the last to answer wins), `stage.addLook(box,
+  look)` (`lookAt` picks the volume the eye is in, no blending yet: L1),
+  `stage.onReflLod(fn)` / `onShadowLod(fn)` (the pipeline's light-build
+  hooks), and a part def may carry `update(api, dt, t, camera, pixelHeight)`
+  and `tick` (update order; the block keeps the old World.update order).
+  A part may read an earlier part's API (steam reads `props.vents`, lamps
+  read the overpass's curve), never change it.
+- §2.2: `stage.cast` does not exist yet (pass B, B3); `stage.hoods` does.
+  `stage.lamps` exists only on a stage with a lamps part: `Lamps` cannot be
+  built empty without moving the block's pooled SpotLights in the scene
+  graph (a wave B stage needs that refactor, keeping the block's order).
+- §2.3 / RNG: the block draws from the root seed; another stage declares a
+  `salt` in its `index.js` and draws from `root.fork(salt)`.
+- §2.4 `lamps.addCustom`: `bulb` is the caller's own mesh (built and added
+  by the part; null for none), the lamp adds the cone, the registry entry and
+  the pool share; its cone seed and flicker phase come from RNG fork 42 so
+  the block's lamps keep every draw. `lamp.flicker` is still a number as
+  today, not `{ rate, depth }`.
+- §3 shot mode: `?scene=` defaults to t = 1 s and shows the viewmodel; it
+  calls `game.scenes.shot(id, beat)`, which pass B provides (until then the
+  page reports "no scene manager").
+- §9.4: `allocVmId(n)` wraps inside 1730..1769; `VM_LO` / `VM_HI` (1730,
+  1779) are exported from `layers.js`. The block allocates ids 2..83.
+- The effects still find the ground with `Street.groundAt(x)` (the street's
+  kerb profile): indoors they must use `stage.surfaceY` (L3).
+- Golden `title`: its key line no longer lists "V camera" (the key is gone);
+  the frame differs only in that line (and the blinking "click to begin",
+  whose CSS phase follows the page's load time).

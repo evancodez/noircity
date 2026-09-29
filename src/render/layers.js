@@ -48,21 +48,40 @@ export function setLayerDeep(obj, layer) {
 
 // Object ids feed the contour detector: an id change always draws an ink line,
 // so two overlapping black silhouettes still separate. Ids live in a half-float
-// channel, which holds integers exactly up to 2048.
+// channel, which holds integers exactly up to 2048. The ranges
+// (docs/story/CONTRACTS.md §9.4):
+//   0, 1          sky / untagged
+//   2 .. 1729     allocInkId: world surfaces and props (the block uses ~85)
+//   1730 .. 1769  allocVmId: the hands, held props, revolver, fists, wheel
+//   1770 .. 1779  VM_ID0: the Tommy gun and gloves
+//   1780 .. 1789  DEBRIS_ID0: a blast's flying chunks
+//   1790 .. 1853  HOOD_ID0: the figures (64 slots)
+//   1860 .. 1899  SKYLINE_ID0: the far towers
+//   1900 .. 2040  IRON_ID0: the el's iron
 let nextId = 2; // 0 = sky/clear, 1 = untagged default
 export function allocInkId(count = 1) {
   const id = nextId;
   nextId += count;
-  if (nextId > VM_ID0 - 1) nextId = 2;
+  if (nextId > VM_LO - 1) nextId = 2;
   return id;
 }
 export function inkIdsUsed() { return nextId; }
 
-// Ids VM_ID0..VM_ID0+9 are the viewmodel (gun metal, wood, gloves): always
-// written as figures (negative). The ink pass reconstructs their position
-// with the viewmodel camera's projection and anchors their brush field in
-// the gun's own frame (uVmFrame), so strokes ride on the gun.
+// Ids VM_LO..VM_HI are the viewmodel's: always written as figures
+// (negative). The ink pass reconstructs their position with the viewmodel
+// camera's projection and anchors their brush field in the gun's own frame
+// (uVmFrame), so strokes ride on the hands and the gun. VM_ID0..VM_ID0+9 are
+// the Tommy gun's (metal, wood, gloves); allocVmId hands out the rest.
+export const VM_LO = 1730;
+export const VM_HI = 1779;
 export const VM_ID0 = 1770;
+let nextVm = VM_LO;
+export function allocVmId(count = 1) {
+  if (nextVm + count > VM_ID0) nextVm = VM_LO;
+  const id = nextVm;
+  nextVm += count;
+  return id;
+}
 // Ids DEBRIS_ID0..DEBRIS_ID0+9 are a blast's flying chunks (fx/Explosion.js,
 // always figures). They are drawn OVER the fireball and its smoke in the
 // scene pass, so the ink pass ignores the smoke coverage there and takes the

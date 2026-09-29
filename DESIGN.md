@@ -291,7 +291,7 @@ against black backgrounds like the reference's mid-ground man.
   font) while a gun is out, health shown as an ink bar that bleeds red when
   low; damage vignette in red. No counters and no cards between fights.
   "THE END" card on death, with the kills and "click to try again".
-- Fights are scripted encounters (`src/game/Director.js`), never waves.
+- Fights are scripted encounters (`src/game/Director.js`).
 - Audio: all procedural Web Audio — rain bed (filtered noise + drips), thunder,
   Tommy gun (noise burst + low thump, per-shot pitch variance), pistol crack,
   ricochet, glass, explosion (sub + noise tail), fire crackle, train rumble,

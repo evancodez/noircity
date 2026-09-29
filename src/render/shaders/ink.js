@@ -3,7 +3,7 @@ import { FULLSCREEN_VERT, HASH_GLSL, LUMA_GLSL } from './common.js';
 import { NOIR_FOG_GLSL } from '../fog.js';
 import { TONE_GLSL, toneUniforms, EXPOSURE } from '../tone.js';
 import { RAIN_SLANT } from '../textures.js';
-import { FIG_ANCHOR, HOOD_ID0, HOOD_SLOTS, VM_ID0, DEBRIS_ID0 } from '../layers.js';
+import { FIG_ANCHOR, HOOD_ID0, HOOD_SLOTS, VM_ID0, VM_LO, VM_HI, DEBRIS_ID0 } from '../layers.js';
 
 // The ink pass: turns the linear HDR render into a hand-inked noir panel.
 // Order inside the shader (see DESIGN.md §3.4):
@@ -94,10 +94,11 @@ export function makeInkMaterial(tex, fogUniforms) {
         vec4 v = uProjInvVM * c;
         return v.xyz / v.w;
       }
-      // 1 for the viewmodel's ids (written negative, see layers.js)
+      // 1 for the viewmodel's ids, VM_LO..VM_HI: the hands and whatever they
+      // hold, the Tommy gun (written negative, see layers.js)
       float isVM( float w ) {
-        float f = -w - ${VM_ID0.toFixed(1)};
-        return step( -0.5, f ) * step( f, 9.5 );
+        float f = -w - ${VM_LO.toFixed(1)};
+        return step( -0.5, f ) * step( f, ${(VM_HI - VM_LO + 0.5).toFixed(1)} );
       }
 
       // Log-space film curve with an S (render/tone.js): solid ink below
