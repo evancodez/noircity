@@ -1,3 +1,4 @@
+import * as THREE from 'three';
 import { defineScene, wait, until, beat } from '../game/script.js';
 import { buildProp } from '../props/index.js';
 import { dinerRoom, makeJobs, clip, counterAt, V, DINER, stoolZ, RING, MACK_AT, EYE_AT, BRAWL_EYE } from './_diner_room.js';
@@ -7,9 +8,9 @@ import { dinerRoom, makeJobs, clip, counterAt, V, DINER, stoolZ, RING, MACK_AT, 
 //   round1  squared up in the aisle, fists up; the room clears (the couple
 //           out into the rain, the old man under the end booth's table, Dot
 //           down behind the counter, the docker back against the far wall)
-//   round2  (him at 66) he takes a bottle by the neck and breaks it on the
+//   round2  (him at 68) he takes a bottle by the neck and breaks it on the
 //           counter; Dot slides me a bottle; plates and stools in reach
-//   round3  (him at 33) the haymaker, faster, wilder; he bleeds
+//   round3  (him at 36) the haymaker, faster, wilder; he bleeds
 //   ko      (him at 0: he reels down the aisle) my last heavy: out over the
 //           end booth and through the end bay's glass onto the pavement;
 //           the street's rain comes into the room; then the walk out
@@ -21,11 +22,13 @@ const ROUND_Z = { 1: MACK_AT.z, 2: MACK_AT.z - 1.0, 3: MACK_AT.z - 2.0 };
 
 // his bottle broken by the neck (lane 3: a held bottle's break leaves the
 // jagged neck in the same hand); -> the neck, or the whole bottle if the
-// break left none
-function breakInFist(ctx, mack, at = null) {
+// break left none. `bottle`: the one already in his fist (his first bottle
+// attack's 'break' mark), else a fresh one. The neck made is kept as the
+// pattern for a quiet re-staging (neckFrom).
+function breakInFist(ctx, mack, at = null, bottle = null) {
   const { stage } = ctx;
-  const b = buildProp('bottle', { variant: 'beer' });
-  mack.hold(b, 'R');
+  const b = bottle || buildProp('bottle', { variant: 'beer' });
+  if (!bottle) mack.hold(b, 'R');
   const B = stage.breakables;
   if (!B || !B.add) return b;
   b.updateWorldMatrix(true, true);
@@ -36,21 +39,47 @@ function breakInFist(ctx, mack, at = null) {
   if (!neck) return b;
   // (the broken bottle out of his hand, the neck in it, hung as the bottle was)
   mack.hold(neck, 'R', { grip: 'hang' });
+  ctx.flags.neckPattern = neck;
   return neck;
 }
 
-// the room as a round finds it (the shot mode's jump; a retry)
-function stageRound(ctx, round) {
-  const { cast, stage, controller: C, hands } = ctx;
+// the neck back in his fist without breaking anything (a retry: no sound,
+// no shards): a mesh of the first neck's own geometry and material
+function neckFrom(ctx, mack) {
+  const P = ctx.flags.neckPattern;
+  if (!P || !P.geometry) return null;
+  const n = new THREE.Mesh(P.geometry, P.material);
+  n.name = 'bottleNeck';
+  const u = P.userData;
+  Object.assign(n.userData, { kind: 'bottleNeck', inkId: u.inkId, size: u.size, weapon: u.weapon, grip: u.grip });
+  n.castShadow = P.castShadow;
+  mack.hold(n, 'R', { grip: 'hang' });
+  return n;
+}
+
+// the room as a round finds it (the shot mode's jump, a continue; a retry,
+// `retry`: under the black, quietly). Round two and three: his bottle's neck
+// in his fist (the first neck's pattern when there is one; else one bottle
+// broken now, hushed), mine on the counter
+function stageRound(ctx, round, { retry = false } = {}) {
+  const { cast, stage, controller: C, hands, game: G } = ctx;
   const d = stage.part('diner');
-  dinerRoom(ctx, 'fight');
+  dinerRoom(ctx, 'fight', { retry });
   d.stool(DINER.brawlerStool).topple(V(1, 0, -0.3));
   clearRoom(ctx, true);
   const z = ROUND_Z[round];
   const mack = cast.spawn('brawler', { at: { x: RING.x, z }, yaw: 0 });
+  ctx.flags.hisBottle = null;
   if (round >= 2) {
-    // (what round two left: his bottle's neck in his fist, mine on the counter)
-    ctx.flags.hisBottle = breakInFist(ctx, mack);
+    // (a retry of round two before his first bottle: he goes for it again)
+    const had = !retry || round >= 3 || ctx.flags.neckPattern;
+    if (had) {
+      ctx.flags.hisBottle = neckFrom(ctx, mack);
+      if (!ctx.flags.hisBottle) {
+        if (G.sfx && G.sfx.hush) G.sfx.hush(0.3);
+        ctx.flags.hisBottle = breakInFist(ctx, mack);
+      }
+    }
     const dz = nearestStool(z + 1.45);
     d.place('bottle', counterAt(dz, 0.14, 0), { name: 'bottle.reach', variant: 'beer' });
     placePlates(ctx, z);
@@ -133,18 +162,36 @@ function roomFor(ctx) {
 }
 
 // into the brawl: the rules take over (a round's start, a retry)
-function beginFight(ctx, round, mack, { hp = null } = {}) {
+function beginFight(ctx, round, mack, { hp = null, retry = false } = {}) {
   const { game: G, stage } = ctx;
   const B = G.brawl;
   const ko = stage.anchor('diner.pavement.ko');
   B.start({
-    opponent: mack, round, hp, rng: ctx.rng,
+    opponent: mack, round, hp, rng: ctx.rng, retry,
     ring: { ...RING, land: { x: ko.pos.x, z: ko.pos.z } },
     room: roomFor(ctx),
+    // (a retry: the room set again under the black, without a sound)
     onRetry: (r) => {
-      const m = stageRound(ctx, r);
-      beginFight(ctx, r, m);
-      if (r >= 2 && ctx.flags.hisBottle) G.brawl.armBottle(ctx.flags.hisBottle);
+      const m = stageRound(ctx, r, { retry: true });
+      beginFight(ctx, r, m, { retry: true });
+      if (r >= 2 && !ctx.flags.hisBottle) G.brawl.firstBottle();
+    },
+    // his first bottle (round two, br_bottle): off the counter into his
+    // fist at 'take', broken on the counter's edge at 'break'
+    onBottle: (mark) => {
+      const m = mack;
+      if (mark === 'take') {
+        const b = buildProp('bottle', { variant: 'beer' });
+        m.hold(b, 'R');
+        G.sfx.play('f_grab_bottle', m.pos.clone().setY(1.2), {}, { ref: 2 });
+        return b;
+      }
+      const whole = B.him && B.him.bottle;
+      const neck = breakInFist(ctx, m, null, whole && whole.parent ? whole : null);
+      const at = neck.getWorldPosition(V(0, 0, 0));
+      G.fx.hit.punch(at, V(0, 1, 0), 0.3);
+      ctx.flags.hisBottle = neck;
+      return neck;
     },
     onGlass: () => {
       const pane = stage.part('dinerFront').panes.B4;
@@ -314,18 +361,15 @@ export default defineScene({
   },
 });
 
-// round two: he takes a bottle by the neck and breaks it on the counter;
-// Dot comes up and slides one to me along the counter
+// round two: his next attack is the bottle, the first time (br_bottle: he
+// takes one off the counter and breaks it on the edge; the fight's
+// onBottle does it on the clip's marks); Dot comes up and slides one to me
+// along the counter
 function* roundTwo(ctx) {
   const { game: G, cast, stage } = ctx;
   const d = stage.part('diner');
   const m = cast.get('mack');
-  const at = counterAt(nearestStool(m.pos.z), 0.05, 0);
-  const neck = breakInFist(ctx, m, at);
-  ctx.flags.hisBottle = neck;
-  G.brawl.armBottle(neck);
-  // (the break's sound is lane 3's: breakables plays break_bottle)
-  G.fx.hit.punch(at, V(0, 1, 0), 0.3);
+  G.brawl.firstBottle();
   placePlates(ctx, m.pos.z);
   // Dot: up from behind the counter, the slide, down again
   const dot = cast.get('dot');

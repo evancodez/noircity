@@ -29,6 +29,7 @@
     { "wait": 800 },
     { "shot": "a09_end" },
     { "eval": "G.brawl.stats" },
+    { "expect": "G.brawl.stats.won === true && G.brawl.stats.time >= 70 && G.brawl.stats.time <= 150 && G.brawl.stats.throws >= 1", "label": "the fight played by the autoplay (a careful player who reads the marks): won in 70..150 s of game time, at least one throw into the room" },
     { "expect": "G.save.inventory.includes('matchbook')", "label": "the matchbook was pocketed" }
   ]
 }

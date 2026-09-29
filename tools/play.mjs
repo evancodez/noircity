@@ -19,11 +19,15 @@
 //                                        mouse turns him toward the next, W held
 //   { "clickOn": "css selector" }        a click at the centre of that element
 //   { "reload": true }                   reload the page (a save survives it)
-//   { "fight": { "timeout": ms, "shots": { "name": "expr", ... } } }
+//   { "fight": { "timeout": ms, "shots": { "name": "expr", ... }, "expect": "expr over F" } }
 //                                        play the brawl by real input: read his
 //                                        clip and its marks, block / slip / punish
-//                                        (what a player does), until it ends;
-//                                        a shot the first time each expr is true
+//                                        at a first-timer's pace (a reaction time,
+//                                        a wrong read now and then), until it ends;
+//                                        a shot the first time each expr is true;
+//                                        F = the fight's record in game time
+//                                        { time, dur: [r1, r2, r3], perMin, throws,
+//                                        downs, landed, taken }, checked by expect
 // At the end: the #errlog contents (a non-empty log is a FAIL) and a summary;
 // the exit code is 1 when anything failed.
 import { spawn } from 'node:child_process';
@@ -40,7 +44,7 @@ mkdirSync(OUT, { recursive: true });
 const PORT = 9400 + Math.floor(Math.random() * 400);
 const CHROME = '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome';
 const chrome = spawn(CHROME, [
-  '--headless=new', '--use-angle=metal', '--hide-scrollbars', '--force-device-scale-factor=1', `--window-size=${W},${H}`,
+  '--headless=new', '--mute-audio', '--use-angle=metal', '--hide-scrollbars', '--force-device-scale-factor=1', `--window-size=${W},${H}`,
   '--autoplay-policy=no-user-gesture-required', `--remote-debugging-port=${PORT}`, '--no-first-run', '--no-default-browser-check',
   `--user-data-dir=/tmp/noir-play-${PORT}`, 'about:blank',
 ], { stdio: 'ignore' });
@@ -90,13 +94,27 @@ const shot = async (name) => {
   if (r.result?.data) { writeFileSync(`${OUT}/${name}.png`, Buffer.from(r.result.data, 'base64')); log(`shot  ${name}.png`); }
 };
 
-// the brawl by real input: poll his clip, answer by its marks
+// the brawl by real input, at a first-timer's pace: poll his clip, and
+// answer it by its marks - but only once his move has been seen (a human
+// reaction, 0.16..0.32 s after it starts), with a wrong read or a late
+// hand now and then (one in eight), and an opening punished only after it
+// has been noticed (0.2..0.45 s). Returns the fight's own record (game
+// time, rounds, throws) with the state it ended in.
 async function fight({ timeout = 240000, shots = {} } = {}) {
   const done = new Set();
   const plans = new Map();
-  let blockUp = 0, rmbUp = 0, nextJab = 0, grabT = 0;
+  let blockUp = 0, rmbUp = 0, nextJab = 0, grabT = 0, seen = null, seenAt = 0;
   const T0 = Date.now();
   const cx = W / 2, cy = H / 2;
+  const rr = (a, b) => a + (b - a) * Math.random();
+  // (the fight's record in game time: rounds, his attacks, throws)
+  await js(`(() => { const R = window.__fightRec = { t0: N.time, rounds: { 1: N.time }, his: {}, throws: [] };
+    G.on('brawl:round', (e) => { if (R.rounds[e.n] == null) R.rounds[e.n] = N.time; });
+    G.on('brawl:tell', () => { const n = G.brawl.round; R.his[n] = (R.his[n] || 0) + 1; });
+    G.on('brawl:throw', (e) => R.throws.push(e.into)); return 1; })()`);
+  const record = async () => js(`(() => { const R = window.__fightRec, B = G.brawl, t1 = N.time;
+    const dur = [1, 2, 3].map((n) => +(((R.rounds[n + 1] ?? t1) - (R.rounds[n] ?? t1))).toFixed(1));
+    return { time: +(t1 - R.t0).toFixed(1), dur, perMin: dur.map((d, i) => +((R.his[i + 1] || 0) / Math.max(1, d) * 60).toFixed(1)), throws: R.throws, downs: B.stats.downs, landed: B.stats.landed, taken: B.stats.taken }; })()`);
   for (;;) {
     const s = await js(`(() => { const B = G.brawl; if (!B.active) return { off: true, finished: !!B.finished, won: !!B.stats.won };
       const h = B.him, m = B.me, c = B.c; const clip = h.clip ? c.clip(h.clip) : null;
@@ -106,25 +124,32 @@ async function fight({ timeout = 240000, shots = {} } = {}) {
     const now = Date.now();
     if (blockUp && now >= blockUp) { await keyUp('Space'); blockUp = 0; }
     if (rmbUp && now >= rmbUp) { await mouse('mouseReleased', cx, cy, 'right'); rmbUp = 0; }
-    if (s.off) { if (blockUp) await keyUp('Space'); return s; }
-    if (now - T0 > timeout) { check('the fight ended in time', false, JSON.stringify(s)); return s; }
+    if (s.off) { if (blockUp) await keyUp('Space'); return { ...s, ...(await record()) }; }
+    if (now - T0 > timeout) { check('the fight ended in time', false, JSON.stringify(s)); return { ...s, ...(await record()) }; }
     if (s.me === 'down') { await sleep(50); continue; }
     if (s.state === 'attack') {
       const key = s.clip + '@' + s.his;
       if (!plans.has(key)) {
         const r = Math.random();
-        plans.set(key, s.clip === 'br_hook' ? 'slipR' : s.clip === 'br_haymaker' ? (r < 0.5 ? 'slipL' : 'slipR') : 'block');
+        const act = s.clip === 'br_hook' ? (r < 0.8 ? 'slipR' : 'block') : s.clip === 'br_haymaker' ? (r < 0.5 ? 'slipL' : 'slipR') : 'block';
+        plans.set(key, { act: Math.random() < 0.125 ? null : act, seen: rr(0.16, 0.32) });
       }
       const tc = s.contact - s.t;
-      const act = plans.get(key);
-      if (act && tc < (act === 'block' ? 0.3 : 0.2) && tc > -0.05) {
-        plans.set(key, null);
+      const P = plans.get(key);
+      // (a read made late acts late: past his contact it is a blow taken)
+      if (P && P.act && s.t >= P.seen && tc < (P.act === 'block' ? 0.3 : 0.2) && tc > -0.05) {
+        const act = P.act;
+        P.act = null;
         if (act === 'block') { await keyDown('Space'); blockUp = Date.now() + (tc + 0.3) * 1000; }
         else { const k = act === 'slipL' ? 'KeyA' : 'KeyD'; await keyDown(k); await keyUp(k); }
       }
       if (tc > 0) { await sleep(16); continue; }
     }
     if (s.me === 'idle' && !blockUp && !rmbUp) {
+      // (an opening is seen a beat late)
+      const look = s.state + ':' + (s.open > 0.15) + ':' + s.low;
+      if (look !== seen) { seen = look; seenAt = now + rr(200, 450); }
+      if (now < seenAt) { await sleep(16); continue; }
       const heavy = async (ms) => { await mouse('mousePressed', cx, cy, 'right'); rmbUp = Date.now() + ms; nextJab = Date.now() + 700; };
       if (s.state === 'reel' || s.hp <= 0) await heavy(380);
       else if (s.holding && s.state !== 'attack') { await mouse('mousePressed', cx, cy); await mouse('mouseReleased', cx, cy); }
@@ -197,7 +222,11 @@ try {
     } else if (S.shot) await shot(S.shot);
     else if (S.expect) { const v = await js(S.expect); check(S.label || S.expect, v === true, v === true ? '' : JSON.stringify(v)); }
     else if (S.eval) log(`eval  ${S.eval} -> ${JSON.stringify(await js(S.eval))}`);
-    else if (S.fight) { const r = await fight(S.fight); log(`fight ${JSON.stringify(r)}`); }
+    else if (S.fight) {
+      const r = await fight(S.fight);
+      log(`fight ${JSON.stringify(r)}`);
+      if (S.fight.expect) { const ok = new Function('F', `return (${S.fight.expect});`)(r) === true; check(S.fight.label || S.fight.expect, ok, ok ? '' : JSON.stringify(r)); }
+    }
     else if (S.walk) { const ok = await walk(S.walk, S.timeout ?? 30000); check(`walk ${JSON.stringify(S.walk)}`, ok); if (!ok && S.stop !== false) break; }
     else if (S.clickOn) {
       const r = await js(`(() => { const e = document.querySelector(${JSON.stringify(S.clickOn)}); if (!e) return null; const b = e.getBoundingClientRect(); return [b.left + b.width / 2, b.top + b.height / 2]; })()`);

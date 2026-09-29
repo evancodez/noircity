@@ -19,15 +19,22 @@ import { buildProp } from '../props/index.js';
 //   his hook     (his right hand, my left) slip AWAY from it (D), or block
 //                it for chip damage; slipping into it (A) is a hit
 //   his haymaker only slipped; blocking it breaks my guard (0.6 s stagger)
-//   his bottle   blocking breaks the bottle; slip
-//   a slipped attack leaves him open 0.9 s: my hits count double and a
+//   his bottle   blocking breaks the bottle; slip. The first time (round
+//                two) br_bottle: he takes a bottle off the counter and breaks
+//                it on the edge (the scene's onBottle('take' | 'break')); every
+//                bottle attack after that, the neck already in his fist, is
+//                br_bottle_thrust (the thrust alone; br_bottle if the clip is
+//                missing)
+//   a slipped attack leaves him open 0.9..1.1 s (the round's): my hits count 1.75 x and a
 //   heavy hit stuns him (br_stun: the combo window)
-// Rounds flow (no bell): one to 66, two to 33 (the bottle, Dot's bottle on
+// Rounds flow (no bell): one to 68, two to 36 (the bottle, Dot's bottle on
 // the counter, plates and stools in reach), three to 0 (the haymaker,
 // faster, wilder, he bleeds). At 0 he reels back down the aisle; my next
 // heavy is the last (br_ko_window, through the end bay's glass).
 // Losing is not failing: at 0 health the frame goes black, and after 1.5 s
-// I am up at the start of the round with 60.
+// I am up at the start of the round with 60. The room is set again as soon
+// as the black is in, quietly (the sound hushed, nothing broken in view),
+// and the black holds until the round is ready.
 // The room takes part: a heavy that lands with his back within 1.2 m of the
 // stools, the jukebox or the pie case throws him into it (once each a round).
 // Hit feel: a landed heavy freezes the simulation 3 steps (game.hitStop), a
@@ -36,24 +43,36 @@ import { buildProp } from '../props/index.js';
 // preset at t= always shows the same fight).
 export const BRAWL = {
   himHp: 100, meHp: 100, retryHp: 60,
-  rounds: [66, 33, 0],                 // his health at which each round ends
-  his: { br_jab: 6, br_hook: 12, br_haymaker: 22, br_bottle: 18 },
-  chip: { br_hook: 3, br_haymaker: 6, br_bottle: 4 },
-  // (tuned from the brief's starting numbers - jab 3, heavy 9..16, bottle 22,
-  // plate 12, stool 30 - so the autoplay, a careful player, wins in about
-  // 90 s with half his health, and a first-timer in two minutes or so)
-  mine: { jab: 2.5, heavyMin: 8, heavyMax: 13, bottle: 18, plate: 10, stool: 24, guarded: 0.3 },
-  open: 0.9, stagger: 0.6, down: 1.5, throwNear: 1.2,
+  rounds: [68, 36, 0],                 // his health at which each round ends
+  his: { br_jab: 5, br_hook: 10, br_haymaker: 17, br_bottle: 15, br_bottle_thrust: 15 },
+  chip: { br_hook: 3, br_haymaker: 5, br_bottle: 4, br_bottle_thrust: 4 },
+  // (tuned in game time, seeded, many fights each: the reactive play of
+  // tools/play.mjs - a first-timer: his move seen 0.16..0.32 s after it
+  // starts, one read in eight missed, openings noticed 0.2..0.45 s late -
+  // wins in 106..163 s, mean 124, rounds ~43 / 28 / 53 s, hardly ever down;
+  // the autoplay, a careful player who reads the marks ahead, in 71..123 s,
+  // mean 96. His attacks per minute by round ~22 / 26 / 37; two or three
+  // throws into the room a fight, mostly into the stools)
+  mine: { jab: 2.5, heavyMin: 8.5, heavyMax: 13.5, bottle: 18, plate: 10, stool: 24, guarded: 0.3 },
+  open: 0.9, openMult: 1.75, stagger: 0.6, down: 1.5, stageAt: 0.4, throwNear: 1.2,
   hitStop: { heavy: 3, jab: 1 }, slowmo: { k: 0.35, dur: 0.8 },
   reach: { counter: 1.65, floor: 1.3 },
-  // his pace per round: the quiet between his attacks (s), what he throws
+  // his pace per round: the quiet between his attacks (s), what he throws,
+  // how often his hands drop, how often a second blow follows, how long a
+  // slipped blow leaves him open (s); blockOpen: open after a blocked blow;
+  // dmg: his blows' weight. One: measured, a jab and now and then a hook.
+  // Two: the bottle, quicker, cocky (the hands drop). Three: wild, the
+  // haymaker, blow after blow, each a little short, and off balance when
+  // one misses or is stopped.
   pace: [
-    { gap: [1.3, 2.1], mix: { br_jab: 0.62, br_hook: 0.38 }, low: 0.16, combo: 0 },
-    { gap: [1.0, 1.6], mix: { br_jab: 0.35, br_hook: 0.3, br_bottle: 0.35 }, low: 0.12, combo: 0.2 },
-    { gap: [0.6, 1.1], mix: { br_jab: 0.22, br_hook: 0.3, br_haymaker: 0.36, br_bottle: 0.12 }, low: 0.1, combo: 0.4 },
+    { gap: [1.7, 2.5], mix: { br_jab: 0.7, br_hook: 0.3 }, low: 0.22, combo: 0, open: 0.9 },
+    { gap: [1.0, 1.5], mix: { br_jab: 0.35, br_hook: 0.3, br_bottle: 0.35 }, low: 0.2, combo: 0.2, open: 1.0 },
+    { gap: [0.5, 0.85], mix: { br_jab: 0.25, br_hook: 0.3, br_haymaker: 0.35, br_bottle: 0.1 }, low: 0.1, combo: 0.4, open: 1.1, blockOpen: 0.6, dmg: 0.75 },
   ],
 };
-const HIS_ATTACKS = ['br_jab', 'br_hook', 'br_haymaker', 'br_bottle'];
+const HIS_ATTACKS = ['br_jab', 'br_hook', 'br_haymaker', 'br_bottle', 'br_bottle_thrust'];
+const isBottle = (clip) => clip === 'br_bottle' || clip === 'br_bottle_thrust';
+const freshStats = () => ({ landed: 0, taken: 0, blocked: 0, slipped: 0, throws: 0, downs: 0, time: 0 });
 const V = (x, y, z) => new THREE.Vector3(x, y, z);
 const _a = new THREE.Vector3(), _b = new THREE.Vector3();
 
@@ -62,7 +81,8 @@ export class Brawl {
     this.game = game;
     this.active = false;
     this.round = 0;
-    this.stats = { landed: 0, taken: 0, blocked: 0, slipped: 0, throws: 0, downs: 0, time: 0 };
+    this.stats = freshStats();
+    this.blackT = 0;
   }
 
   get hands() { return this.game.player.hands; }
@@ -72,14 +92,18 @@ export class Brawl {
   // opponent: the Character; round 1..3; ring: { x, z, r, z0, z1 } (the
   // aisle he can be driven along); room: { stools: [{ object, handle, pos }],
   // jukebox, pieCase, items: () => [{ name, object, kind, pos }] };
-  // onRetry(round): re-stage the round (losing); onKO(): the last blow is in
-  start({ opponent, round = 1, ring, room = {}, rng, onRetry = null, onKO = null, onGlass = null, onLanded = null, hp = null, myHp = null }) {
+  // onRetry(round): re-stage the round (losing); onKO(): the last blow is in;
+  // onBottle(mark, him): his first bottle's 'take' (a bottle into his fist)
+  // and 'break' (broken on the counter's edge: the scene arms the neck);
+  // retry: a retry's start (the fight's stats run on)
+  start({ opponent, round = 1, ring, room = {}, rng, onRetry = null, onKO = null, onGlass = null, onLanded = null, onBottle = null, hp = null, myHp = null, retry = false }) {
     const G = this.game;
     this.active = true;
     this.finished = false;
     this.done = false;
     this.fadeBack = 0;
-    this.opts = { onRetry, onKO, onGlass, onLanded };
+    if (!retry) { this.stats = freshStats(); this.blackT = 0; }
+    this.opts = { onRetry, onKO, onGlass, onLanded, onBottle };
     this.ring = { ...ring };
     this.room = room;
     this.rng = rng;
@@ -89,7 +113,7 @@ export class Brawl {
     const him = {
       hp: hp ?? (round === 1 ? BRAWL.himHp : BRAWL.rounds[round - 2]),
       state: 'guard', clip: null, t: 0, next: 1.4, open: 0, lowT: 0, guardLow: false,
-      z: opponent.pos.z, combo: 0, bottle: null, thrown: new Set(), reelTo: null, pending: null, hitsInRow: 0, lastHitT: -9,
+      z: opponent.pos.z, combo: 0, bottle: null, bottleWhole: false, thrown: new Set(), reelTo: null, pending: null, hitsInRow: 0, lastHitT: -9,
     };
     this.him = him;
     opponent.hp = him.hp;
@@ -125,6 +149,14 @@ export class Brawl {
     this.stats.time += dt;
     // (no regeneration in a fist fight: what he takes, he keeps)
     G.health.sinceHit = 0;
+    // a retry: the room is set again behind the black; it holds until the
+    // round is ready, then the frame comes back (nothing moves meanwhile)
+    if (this.blackT > 0) {
+      this.blackT -= dt;
+      G.hud.fade(1);
+      if (this.blackT <= 0) { this.blackT = 0; this.fadeBack = 0.6; }
+      return;
+    }
     if (this.fadeBack > 0) { this.fadeBack -= dt; G.hud.fade(Math.max(0, this.fadeBack / 0.6)); }
     if (this.me.state === 'down') { this.stepDown(dt); return; }
     this.input(dt);
@@ -291,7 +323,7 @@ export class Brawl {
       dmg = M[kind]; power = 1;
       this.breakHeld(head, dir);
     }
-    if (him.open > 0 && !guarded) dmg *= 2;
+    if (him.open > 0 && !guarded) dmg *= BRAWL.openMult;
     this.damageHim(dmg);
     this.stats.landed++;
     him.hitsInRow = this.T - him.lastHitT < 1.2 ? him.hitsInRow + 1 : 1;
@@ -337,7 +369,7 @@ export class Brawl {
     const him = this.him, prev = him.hp;
     him.hp = Math.max(0, him.hp - n);
     this.c.hp = him.hp;
-    // the rounds flow: crossing 66 / 33 starts the next
+    // the rounds flow: crossing 68 / 36 starts the next
     for (let r = this.round; r < 3; r++) {
       if (prev > BRAWL.rounds[r - 1] && him.hp <= BRAWL.rounds[r - 1]) this.nextRound();
     }
@@ -355,8 +387,9 @@ export class Brawl {
   react(kind, dir, power) {
     const him = this.him, c = this.c;
     if (him.state === 'attack' && kind === 'jab' && this.c.clip(him.clip).marks.contact > him.t) {
-      // a jab does not stop a haymaker already coming
-      if (him.clip === 'br_haymaker') return;
+      // a jab does not stop a haymaker already coming, nor his first bottle
+      // on its way to the counter's edge
+      if (him.clip === 'br_haymaker' || him.clip === 'br_bottle') return;
     }
     const clip = kind === 'heavy' || kind === 'stool' ? 'br_hitBody' : this.rng.chance(0.5) ? 'br_hitHeadL' : 'br_hitHeadR';
     him.state = 'react'; him.clip = clip; him.t = 0;
@@ -484,6 +517,9 @@ export class Brawl {
     const him = this.him, c = this.c, P = BRAWL.pace[this.round - 1];
     him.state = 'guard'; him.clip = null; him.t = 0;
     c.setState('br_guard');
+    // (knocked off his first bottle with it still whole in his fist: he goes
+    // back to the counter's edge with it next)
+    if (him.bottleWhole && !him.pending) him.pending = 'br_bottle';
     if (him.pending) { him.next = 0.12; return; }
     if (him.next < 0.3) him.next = this.rng.range(P.gap[0], P.gap[1]);
     // hands low for a moment
@@ -505,12 +541,25 @@ export class Brawl {
       // (round three: a hook after a jab, the wild ones)
       if (this.rng.chance(P.combo)) him.pending = clip === 'br_jab' ? 'br_hook' : 'br_jab';
     }
+    // the bottle: the first time he takes one off the counter and breaks it
+    // (br_bottle); with the neck already in his fist, the thrust alone
+    if (isBottle(clip)) clip = him.bottle && !him.bottleWhole && this.hasClip('br_bottle_thrust') ? 'br_bottle_thrust' : 'br_bottle';
     if (him.guardLow) { him.guardLow = false; }
     him.state = 'attack'; him.clip = clip; him.t = 0;
     him.next = this.rng.range(P.gap[0], P.gap[1]);
+    const first = clip === 'br_bottle' && (!him.bottle || him.bottleWhole);
     c.play(clip, { onMark: {
       tell: () => this.sfx('tell', null, { kind: clip }),
       contact: () => this.hisContact(clip),
+      ...(first ? {
+        take: () => { if (!him.bottle && this.opts.onBottle) { him.bottle = this.opts.onBottle('take', him) || null; him.bottleWhole = !!him.bottle; } },
+        break: () => {
+          if (!him.bottleWhole || !this.opts.onBottle) return;
+          const neck = this.opts.onBottle('break', him);
+          him.bottleWhole = false;
+          him.bottle = neck || null;
+        },
+      } : {}),
     } });
     this.stats.his = (this.stats.his || 0) + 1;
     this.game.emit('brawl:tell', { clip });
@@ -525,7 +574,10 @@ export class Brawl {
     const S = H.clip(me.slipDir < 0 ? 'slipL' : 'slipR');
     const safe = me.state === 'slip' && me.h && me.h.t >= S.marks.safe && me.h.t <= (S.marks.safeEnd ?? 0.3);
     const blocking = me.state === 'block';
-    const dmg = BRAWL.his[clip];
+    // (a round's blows land as its pace has them: three's are wild, many and
+    // a little short)
+    const K = BRAWL.pace[this.round - 1].dmg ?? 1;
+    const dmg = BRAWL.his[clip] * K;
     const eye = G.eye;
     const from = _a.setFromMatrixPosition(this.c.bones.head.matrixWorld);
     const dir = _b.subVectors(eye, from).setY(0).normalize();
@@ -533,25 +585,29 @@ export class Brawl {
     // way for the rest
     if (safe && (clip !== 'br_hook' || me.slipDir > 0)) {
       this.stats.slipped++;
-      him.open = BRAWL.open;
+      him.open = BRAWL.pace[this.round - 1].open ?? BRAWL.open;
       this.sfx('whiff', null, { k: 1 });
       G.emit('brawl:hit', { by: 'him', kind: clip, power: 0, zone: 'miss' });
       return;
     }
     if (blocking && clip !== 'br_haymaker') {
       this.stats.blocked++;
-      const chip = BRAWL.chip[clip] || 0;
+      const chip = (BRAWL.chip[clip] || 0) * K;
       if (chip) this.hurtMe(chip, dir, { soft: true });
       this.sfx('blocked', eye, { k: clip === 'br_jab' ? 0.7 : 1 });
       H.play('blockHit');
       me.h = null;
       me.state = 'hurt'; me.stun = H.clip('blockHit').duration;
-      if (clip === 'br_bottle' && him.bottle) this.breakHisBottle();
+      if (isBottle(clip) && him.bottle) this.breakHisBottle();
+      // (round three: he throws himself into it, and a blow stopped cold
+      // leaves him off balance for a moment)
+      const bo = BRAWL.pace[this.round - 1].blockOpen || 0;
+      if (bo) him.open = Math.max(him.open, bo);
       return;
     }
     if (blocking && clip === 'br_haymaker') {
       // it goes through the guard: staggered
-      this.hurtMe(BRAWL.chip.br_haymaker, dir, {});
+      this.hurtMe(BRAWL.chip.br_haymaker * K, dir, {});
       me.state = 'stagger'; me.stun = BRAWL.stagger;
       H.play('hurt');
       this.controller.shake(0.45, 0);
@@ -593,8 +649,21 @@ export class Brawl {
   }
 
   // round two: he takes a bottle by the neck and breaks it on the counter
+  // (armBottle: the neck is in his fist already, a jump or a retry);
+  // firstBottle(): his next attack is the take-and-break, br_bottle
   armBottle(bottle) {
     this.him.bottle = bottle;
+    this.him.bottleWhole = false;
+  }
+  firstBottle() {
+    const him = this.him;
+    if (him.bottle && !him.bottleWhole) return;
+    him.pending = 'br_bottle';
+  }
+  hasClip(name) {
+    const k = this._has || (this._has = new Map());
+    if (!k.has(name)) { let ok = false; try { ok = !!this.c.clip(name); } catch (e) { ok = false; } k.set(name, ok); }
+    return k.get(name);
   }
 
   // ---- the ring moves with us along the aisle ---------------------------------------------------
@@ -664,18 +733,25 @@ export class Brawl {
   }
 
   // (Game.post: the black and the retry run on game time)
+  // The room is re-staged as soon as the black is in (0.35 s), under a hush:
+  // a stool going over, a bottle's neck back in his fist, the record, all
+  // silent and out of sight; the black holds to BRAWL.down, then lifts.
   stepDown(dt) {
     const me = this.me, G = this.game;
     if (!this.active || me.state !== 'down') return;
     me.downT += dt;
     G.hud.fade(Math.min(1, me.downT / 0.35));
-    if (me.downT >= BRAWL.down) {
+    if (me.downT >= BRAWL.stageAt) {
       const r = this.round;
+      const left = Math.max(0.05, BRAWL.down - me.downT);
       G.health.reset();
       G.health.hp = BRAWL.retryHp;
+      // (the hush lasts through what the re-staging sets moving: a stool
+      // falling behind the black knocks the next)
+      if (G.sfx && G.sfx.hush) G.sfx.hush(left + 0.3);
       if (this.opts.onRetry) this.opts.onRetry(r);
-      G.hud.fade(0);
-      this.fadeBack = 0.6;
+      G.hud.fade(1);
+      this.blackT = left;
     }
   }
 

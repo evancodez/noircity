@@ -5,6 +5,7 @@
 // The HUD shows with hud=1 (prompts, subtitles, the fight's health bar).
 //   diner_settle     seated at the counter, the pack and the lighter by the right hand; E light up
 //   diner_light      E pressed at 4.2 s: the lighter's flame at the cigarette (flame mark 2.0 s on)
+//   diner_dot        the view eased 0.25 rad toward Dot coming down the counter (E at 7.8: the order at once)
 //   diner_order      Dot across the counter; E scotch
 //   diner_pour       E pressed: "Scotch. Neat.", the tumbler down, the stream (streamOn .. streamOff)
 //   diner_drink      the glass at my left hand; E drink: the glass up
@@ -20,6 +21,7 @@ const beat = (scene, b, t, press = null) => ({ scene, beat: b, t, viewmodel: tru
 export const presets = {
   diner_settle: beat('diner', 'settle', 4.5),
   diner_light: beat('diner', 'settle', 6.4, 'KeyE@4.2'),
+  diner_dot: beat('diner', 'settle', 8.7, 'KeyE@4.2,KeyE@7.8'),
   diner_order: beat('diner', 'order', 1),
   diner_pour: beat('diner', 'order', 5.6, 'KeyE@0.3'),
   diner_drink: beat('diner', 'drink', 1.9, 'KeyE@0.3'),
