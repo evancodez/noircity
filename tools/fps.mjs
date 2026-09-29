@@ -2,12 +2,12 @@
 // Metal), measured with requestAnimationFrame over a few seconds, plus
 // __noir.bench() and the game counters. Uses the DevTools protocol directly
 // (Node >= 22 has a global WebSocket; no puppeteer needed).
-//   node tools/fps.mjs "shot=battle&t=0.1&anim=1&wave=6" 1440 900 [seconds]
+//   node tools/fps.mjs "shot=battle&t=0.1&anim=1&legacywave=6" 1440 900 [seconds]
 // The page's viewport is set to exactly width x height (Phase 3b: the
 // headless window's own chrome used to eat ~90 px, so '1440 900' measured a
 // 1440x813 canvas). The Phase 3b performance scenario is
 //   UNCAPPED=1 node tools/fps.mjs "shot=perf&t=1&anim=1" 1440 900
-// (a burning wreck, a full wave of 12 Hoods, the train, lightning).
+// (a burning wreck, 12 Hoods at once, the train, lightning).
 // Phase 3b review: the perf scenario is SEEDED (shot=perf holds the Hoods
 // on their feet - a fixed count, no blast kills - and the player on his
 // mark, so tris / calls repeat run to run), and the GPU's own utilisation

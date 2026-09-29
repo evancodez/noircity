@@ -1,6 +1,6 @@
 # NOIR EXTREME — Art Direction & Technical Design
 
-A first-person wave shooter set on one rain-soaked city block beneath an elevated
+A first-person noir game set on one rain-soaked city block beneath an elevated
 railway, rendered in real time to look like a hand-inked black-and-white noir
 illustration. The **only** colour in the world is blood (red) and fire (orange /
 yellow, from burning cars and explosions). Everything else is ink: black, grey
@@ -235,7 +235,8 @@ them to silhouettes.
 - Hats can fly off on head shots.
 
 ### 5.3 AI
-- Spawn out of the fog / from behind cars / from the alley, in waves.
+- Spawn out of the fog / from behind cars / from the alley, as the encounter
+  director's script sends them (`src/game/Director.js`).
 - Behaviour: advance toward the player using cover points (behind cars,
   columns, the hydrant), stop at ~10–20 m, pop out, fire 2–4 shots with visible
   muzzle flash (their bullets deal player damage with a small delay), duck back.
@@ -286,11 +287,11 @@ against black backgrounds like the reference's mid-ground man.
 
 ## 8. Game loop, HUD, audio
 - Title card "NOIR EXTREME" in a condensed serif with an ink-splatter behind
-  it; "click to begin" → pointer lock. Wave counter, kills, ammo (bottom
-  right, typewriter-ish font), health shown as an ink bar that bleeds red when
-  low; damage vignette in red. "THE END" card on death, with score and
-  "click to try again".
-- Waves: 3 Hoods, then 5, 7, … Tommy-gun Hoods from wave 3. Short intermission.
+  it; "click to begin" → pointer lock. Ammo (bottom right, typewriter-ish
+  font) while a gun is out, health shown as an ink bar that bleeds red when
+  low; damage vignette in red. No counters and no cards between fights.
+  "THE END" card on death, with the kills and "click to try again".
+- Fights are scripted encounters (`src/game/Director.js`), never waves.
 - Audio: all procedural Web Audio — rain bed (filtered noise + drips), thunder,
   Tommy gun (noise burst + low thump, per-shot pitch variance), pistol crack,
   ricochet, glass, explosion (sub + noise tail), fire crackle, train rumble,
@@ -313,7 +314,6 @@ The app must honour these URL params:
 - `t=<seconds>`: fast-forward the simulation clock by that many seconds after
   load (run fixed-step updates) so staged effects are in a known state.
 - `hud=0` hides the HUD. `debug=1` shows the stats overlay.
-- Wave spawning is disabled in shot mode unless `waves=1`.
 Also expose `window.__noir` with the scene, pipeline, and a `spawnHood(pos)`
 helper for manual poking in the browser console.
 
@@ -340,7 +340,7 @@ src/
   player/Weapon.js        Tommy gun logic + Viewmodel.js
   enemies/Hood.js         model + procedural animation
   enemies/HoodAI.js       state machine, cover, shooting
-  enemies/Spawner.js      waves
+  game/Director.js        encounters (scripted fights)
   audio/Sfx.js            procedural sounds
   ui/Hud.js               DOM overlay (title, hud, end card)
   debug/Shots.js          camera presets + staged scenes for ?shot=
@@ -356,7 +356,7 @@ the *why* of shader tricks.
   fog, first-person movement. Accept when `shot=street` looks like the
   reference with the figures removed.
 - **Phase 2 – Combat**: Hoods (model, animation, AI), Tommy gun viewmodel,
-  muzzle flash, blood, hit reactions, deaths, player damage, waves, HUD.
+  muzzle flash, blood, hit reactions, deaths, player damage, HUD.
   Accept when `shot=hoods` looks like the reference *with* the figures.
 - **Phase 3 – Reactivity & polish**: destructible cars/lamps/windows,
   explosions and fire, decals, train, lightning, audio, title/end cards,

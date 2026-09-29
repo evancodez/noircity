@@ -17,12 +17,19 @@ import * as THREE from 'three';
 //   duck        back behind the cover; after 2-3 cycles advance to a nearer
 //               cover (until 10-20 m), or relocate if the player closes in
 //               or flanks the cover
-//   rush        heavies (wave 3+): run at the player with the Tommy gun,
-//               stopping for bursts of 5-9 rounds
+//   rush        heavies: run at the player with the Tommy gun, stopping
+//               for bursts of 5-9 rounds
 // Line of sight: RayWorld rays against world.solids (throttled). Steering:
 // the path + world.colliders (never through cars, columns or each other).
 // Their bullets: resolved after a short delay by the Game, accuracy falling
 // with distance and when the player moves; 8-14 damage.
+//
+// HoodPacing: how a fight breathes (Phase 3a preamble #3). Fire tokens: at
+// most two men (three from the director's level 5, legacyWave) peek, aim and fire at
+// once. The lull breaker: ~5 s without a Hood's shot while they are out
+// there, the nearest one takes the initiative (HoodAI.press). The director
+// (game/Director.js) begins it with each encounter and steps it while the
+// encounter runs.
 
 const COVER_TAGS = {
   car: { value: 0.9, pad: 0.6 }, booth: { value: 1, pad: 0.55 }, stand: { value: 0.7, pad: 0.55 },
@@ -95,8 +102,8 @@ export class HoodAI {
     this.game = game;
     this.h = hood;
     this.heavy = heavy;
-    // vanguard (Spawner): the first two of a wave run straight to cover at
-    // ~25 m and open fire at once
+    // vanguard (the director's legacyWave): the first two out run straight
+    // to cover at ~25 m and open fire at once
     this.vanguard = vanguard;
     this.rng = game.world.rng.fork(2000 + game.counters.spawned * 7 + (heavy ? 1 : 0));
     this.state = 'enter';
@@ -219,7 +226,7 @@ export class HoodAI {
     if (h.state === 'walk' || h.state === 'run') h.setState('idle', 0.25);
   }
 
-  release() { if (this.cover) { this.cover.taken = null; this.cover = null; } this.game.dropFireToken(this); }
+  release() { if (this.cover) { this.cover.taken = null; this.cover = null; } this.game.pacing.drop(this); }
 
   // choose a cover point; mode 'advance' | 'relocate'
   pickCover(mode) {
@@ -327,8 +334,8 @@ export class HoodAI {
     if (!h.alive) { this.release(); return; }
     // fire tokens (Game): only a few men shoot at once, the rest hold in
     // cover or keep closing in, so the fight is a steady exchange instead
-    // of a whole wave emptying its guns together
-    if (this.state !== 'peek' && this.state !== 'aim' && this.state !== 'fire') G.dropFireToken(this);
+    // of a whole crew emptying its guns together
+    if (this.state !== 'peek' && this.state !== 'aim' && this.state !== 'fire') G.pacing.drop(this);
     this.underFire = Math.max(0, this.underFire - dt);
     // being shot at: the player's aim passes near him
     if (G.weapon.sinceShot < 0.25) {
@@ -354,7 +361,7 @@ export class HoodAI {
       this.fleeT -= dt;
       if (this.fleeT <= 0) {
         this.opening = false;
-        G.dropFireToken(this);
+        G.pacing.drop(this);
         h.setAim(false);
         this.moveToCover('relocate', true);
         this.underFire = Math.max(this.underFire, 2);
@@ -391,10 +398,10 @@ export class HoodAI {
         }
         // popped out while crossing: a snap shot at close range
         // (the vanguard, caught in the open inside ~28 m, stops and opens up)
-        // (so do the last men of a wave: nobody hides out the clock)
-        const lastMen = G.spawner.done && G.counters.alive <= 2;
+        // (so do the last men of a fight: nobody hides out the clock)
+        const lastMen = G.director.done && G.counters.alive <= 2;
         const snapD = this.vanguard || lastMen ? 28 : 14, snapRate = this.vanguard ? 2.5 : lastMen ? 1.2 : 0.6;
-        if (!arrived && dist < snapD && this.checkLOS(dt) && t - this.lastShot > 2.5 && r.chance(dt * snapRate) && G.takeFireToken(this, this.vanguard)) {
+        if (!arrived && dist < snapD && this.checkLOS(dt) && t - this.lastShot > 2.5 && r.chance(dt * snapRate) && G.pacing.take(this, this.vanguard)) {
           this.path = null; this.stop();
           this.state = 'aim'; this.timer = r.range(0.3, 0.5); this.shots = this.vanguard ? r.int(2, 3) : r.int(1, 2);
           this.vanguard = false;
@@ -410,12 +417,12 @@ export class HoodAI {
         const flanked = this.cover && !G.covers.hides(this.cover, p.x, p.z);
         if (dist < 7) { this.moveToCover('relocate', true); break; }
         // beyond pistol range: keep coming; at 20-30 m trade a volley first
-        const lastMen = G.spawner.done && G.counters.alive <= 2;
+        const lastMen = G.director.done && G.counters.alive <= 2;
         if (dist > 34 || (dist > 22 && this.cycles >= 1) || (this.cycles >= (lastMen ? 1 : r.int(2, 3)) && dist > 13)) {
           if (this.moveToCover('advance')) break;
         }
         if (flanked && r.chance(0.6)) { this.moveToCover('relocate'); break; }
-        if (!G.takeFireToken(this, this.vanguard)) { this.timer = r.range(0.35, 0.9); break; }
+        if (!G.pacing.take(this, this.vanguard)) { this.timer = r.range(0.35, 0.9); break; }
         this.peekPt = this.findPeek();
         this.vanguardPeek = this.vanguard && !!this.peekPt;
         // the opening volley is fired even through a car's cabin: covering
@@ -509,7 +516,7 @@ export class HoodAI {
         this.repathT -= dt;
         this.burstT -= dt;
         const los = this.checkLOS(dt);
-        if ((dist < 10 && G.takeFireToken(this, true)) || (this.burstT <= 0 && los && dist < 26 && G.takeFireToken(this))) {
+        if ((dist < 10 && G.pacing.take(this, true)) || (this.burstT <= 0 && los && dist < 26 && G.pacing.take(this))) {
           this.path = null; this.stop();
           this.state = 'aim'; this.timer = r.range(0.3, 0.45); this.shots = r.int(5, 9);
           h.setState('aim', 0.2);
@@ -521,10 +528,81 @@ export class HoodAI {
           const k = Math.min(1, 8.5 / d);
           this.go(p.x + dx * k, p.z + dz * k, true);
         }
-        if (this.follow(dt) && G.takeFireToken(this, true)) { this.state = 'aim'; this.timer = 0.3; h.setState('aim', 0.2); }
+        if (this.follow(dt) && G.pacing.take(this, true)) { this.state = 'aim'; this.timer = 0.3; h.setState('aim', 0.2); }
         break;
       }
       default: break;
+    }
+  }
+}
+
+export class HoodPacing {
+  constructor(game) {
+    this.game = game;
+    this.tokens = new Map();   // ai -> time it took its token
+    this.lastShotT = null;     // the last Hood shot (null: no fight yet)
+    this.pressT = null;
+    this.startT = 0;
+    this.firstShot = false;
+    this.volleys = [];         // each encounter's first-volley delay (s)
+    this.maxLullAt = null;
+  }
+
+  // an encounter begins (the director)
+  begin(t) {
+    this.startT = t;
+    this.firstShot = false;
+    this.lastShotT = t;
+  }
+
+  // a Hood fired (Game.hoodFire)
+  shot(t) {
+    const K = this.game.counters;
+    if (!this.firstShot) {
+      this.firstShot = true;
+      K.firstVolley = +(t - this.startT).toFixed(2);
+      this.volleys.push(K.firstVolley);
+    }
+    this.lastShotT = t;
+  }
+
+  // a fire token; `force` (the vanguard, a heavy at point blank) always gets one
+  take(ai, force = false) {
+    const T = this.tokens, now = this.game.time;
+    if (T.has(ai)) return true;
+    // (a token held for more than ~7 s is taken back: nobody may block the
+    // exchange by getting stuck mid-peek)
+    for (const [a, t0] of T) if (now - t0 > 7) T.delete(a);
+    // TODO(3b balance pass): the 3a pacing fixes (first volley ~3 s, lull
+    // < 6 s) raised the autopilot's incoming damage (battle t=90: 426 at the
+    // 3a review, 307-735 across 3a-fix runs - the fight is chaotic, one car
+    // tactic more or less swings it). Compare damageTaken per minute against
+    // the Phase 2 battle counters over several seeds; if it stays high, cap
+    // the concurrent shooters at range (> ~20 m) at 2 from level 5 as well.
+    const max = this.game.director.level >= 5 ? 3 : 2;
+    if (T.size >= max && !force) return false;
+    T.set(ai, now);
+    return true;
+  }
+  drop(ai) { this.tokens.delete(ai); }
+
+  // per step while an encounter runs: the lull breaker, and the longest lull
+  update(t) {
+    const G = this.game, K = G.counters;
+    if (this.lastShotT !== null && t - this.lastShotT > 4.5 && t - (this.pressT ?? -9) > 2.5 && K.alive > 0) {
+      this.pressT = t;
+      let best = null, bd = Infinity;
+      for (const ai of G.ais.values()) {
+        if (ai.heavy || !ai.h.alive || ai.vanguard || ai.state === 'aim' || ai.state === 'fire' || ai.state === 'peek') continue;
+        const d = ai.distToPlayer();
+        if (d < bd) { bd = d; best = ai; }
+      }
+      if (best && best.press()) K.presses = (K.presses || 0) + 1;
+    }
+    if (this.lastShotT !== null && t - this.lastShotT > K.maxLull) {
+      K.maxLull = +(t - this.lastShotT).toFixed(2);
+      this.maxLullAt = { t: +t.toFixed(1), level: G.director.level, alive: K.alive, since: +(t - this.startT).toFixed(1),
+        ai: [...G.ais.values()].map((a) => a.state + ':' + Math.round(a.distToPlayer())) };
     }
   }
 }

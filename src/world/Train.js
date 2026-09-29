@@ -215,8 +215,8 @@ export class Train {
     this.place();
   }
 
-  // the Game calls this every step; `canStart` gates a new crossing (no
-  // train during the intermission card, see Game)
+  // the Game calls this every step; `canStart` gates a new crossing (not in
+  // a fight's first seconds, see Game)
   update(dt, t, { canStart = true, camera = null, hurry = false } = {}) {
     if (!this.active) {
       this.next -= dt;
@@ -226,7 +226,7 @@ export class Train {
       }
       return;
     }
-    // (a wave's last man down: the train clears the view before the card)
+    // (a fight's last man down: the train clears the view)
     if (hurry) this.hurry = true;
     const v = SPEED * (this.hurry ? 8 : 1);
     this.head += this.dir * v * dt;

@@ -139,17 +139,18 @@ const Q = () => new URLSearchParams(location.search);
 const tEndOf = (shot) => { const t = parseFloat(Q().get('t') ?? ''); return Number.isFinite(t) ? t : shot.t; };
 const STEP = 1 / 60;
 
-// battle: the REAL game loop - waves on (from wave=<n>, default 5), a
-// deterministic seed, and the autopilot player (game/Autopilot.js) strafing
-// by the left kerb in the street composition. t= fast-forwards the fight.
-// (wave 5 by default: eleven Hoods including two Tommy-gun heavies, so
-// the fight is still on at t=60)
-// The wave starts 13 s before the clock (game.warmup, run by main.js before
+// battle: the REAL game loop - the director's legacy fights (game/
+// Director.js legacyWaves, from legacywave=<n>, default 5), a deterministic
+// seed, and the autopilot player (game/Autopilot.js) strafing by the left
+// kerb in the street composition. t= fast-forwards the fight.
+// (5 by default: eleven Hoods including two Tommy-gun heavies, so the fight
+// is still on at t=60)
+// The fight starts 13 s before the clock (game.warmup, run by main.js before
 // the t= fast-forward, the player holding fire): the Hoods come out of the
 // fog at 40-60 m and walk in, so that t=6 already opens on the firefight.
-function stageBattle(world, camera, controller, game, defWave = 5) {
-  const w = parseInt(Q().get('wave') ?? String(defWave), 10) || defWave;
-  game.startBattle({ wave: w, autopilot: false });
+function stageBattle(world, camera, controller, game, from = 5) {
+  const n = parseInt(Q().get('legacywave') ?? String(from), 10) || from;
+  game.director.legacyWaves(n);
   game.warmup = parseFloat(Q().get('warmup') ?? '13');
   game.afterWarmup = () => game.enableAutopilot();
   // Phase 3a: the whole living block runs (train, lightning), seeded
@@ -288,7 +289,7 @@ function stageMuzzleSmoke(world, camera, controller, game) {
 SHOTS.muzzlesmoke = { ...SHOTS.street, t: 4, viewmodel: true, holdWindow: 0, stage: stageMuzzleSmoke };
 SHOTS.reload = { ...SHOTS.street, t: 4, viewmodel: true, holdWindow: 0, stage: stageReload };
 SHOTS.impacts = { ...SHOTS.street, t: 4, viewmodel: true, holdWindow: 0.1, stage: stageImpacts };
-SHOTS.battle = { ...SHOTS.street, t: 30, viewmodel: true, holdWindow: 0.35, stage: stageBattle };
+SHOTS.battle = { ...SHOTS.street, t: 30, viewmodel: true, holdWindow: 0.35, prewarm: true, stage: stageBattle };
 SHOTS.hoods = { ...SHOTS.street, t: 4, viewmodel: true, holdWindow: 0.6, stage: stageHoods };
 SHOTS.viewmodel = { ...SHOTS.street, t: 4, viewmodel: true, holdWindow: 0, stage: stageViewmodel };
 
@@ -377,7 +378,7 @@ SHOTS.storm = { ...SHOTS.street, t: 4, stage: stageStorm };
 
 // ---- Phase 3b ------------------------------------------------------------------
 // perf: the performance scenario (tools/fps.mjs "shot=perf&t=1&anim=1"): the
-// battle (wave 6: twelve Hoods alive at once, heavies among them, the
+// battle (legacy 6: twelve Hoods alive at once, heavies among them, the
 // autopilot fighting), plus the car down the middle of the avenue blown up
 // during the warm-up so it burns through the measurement, the train kept
 // crossing the el, and a lightning strike every ~2.5 s
@@ -405,7 +406,7 @@ function stagePerf(world, camera, controller, game) {
     if (strikeT <= 0) { strikeT = 2.5; game.storm.strike(1, false); }
   });
 }
-SHOTS.perf = { ...SHOTS.street, t: 1, viewmodel: true, holdWindow: 0, stage: stagePerf };
+SHOTS.perf = { ...SHOTS.street, t: 1, viewmodel: true, holdWindow: 0, prewarm: true, stage: stagePerf };
 
 // title: the title card over the live street - the drifting title camera
 // (Game.titleDrift) at t=, the rain falling, no gun in frame
@@ -417,8 +418,8 @@ function stageTitle(world, camera, controller, game) {
 }
 SHOTS.title = { ...SHOTS.street, t: 6, viewmodel: false, stage: stageTitle };
 
-// end: THE END over the battle (the battle preset, wave 5, the autopilot)
-// at t= (default 60): kills and waves from the fight, a seeded epitaph
+// end: THE END over the battle (the battle preset, legacy 5, the autopilot)
+// at t= (default 60): the kills of the fight, a seeded epitaph
 // (epitaph=<i> picks one)
 function stageEnd(world, camera, controller, game) {
   stageBattle(world, camera, controller, game);
@@ -429,7 +430,7 @@ function stageEnd(world, camera, controller, game) {
   // (0.6 s before the frame: the dead man's Tommy gun has dropped out of it)
   game.scripts.push((t) => { if (!done && t >= game.warmup + T - 0.6 - 1e-6) { done = true; game.endGame(); } });
 }
-SHOTS.end = { ...SHOTS.street, t: 60, viewmodel: true, holdWindow: 0.35, stage: stageEnd };
+SHOTS.end = { ...SHOTS.street, t: 60, viewmodel: true, holdWindow: 0.35, prewarm: true, stage: stageEnd };
 
 const ALIASES = { default: 'street' };
 

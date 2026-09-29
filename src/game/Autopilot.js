@@ -121,7 +121,7 @@ export class Autopilot {
       C.pitch += (0.02 - C.pitch) * Math.min(1, dt * 2);
     }
     // ---- trigger discipline ---------------------------------------------------
-    if (G.state !== 'playing') { W.trigger = false; this.burst = 0; if (!W.reloading && W.ammo < 30) W.reload(); return; }
+    if (!G.live) { W.trigger = false; this.burst = 0; if (!W.reloading && W.ammo < 30) W.reload(); return; }
     const onMark = !!aim;
     if (this.burst > 0) {
       W.trigger = onMark && err < 0.06;

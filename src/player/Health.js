@@ -34,8 +34,8 @@ export class Health {
     this.heartG = this.heart.getContext('2d');
     this.flash = document.createElement('div'); this.flash.id = 'hitflash';
     this.canvas = document.createElement('canvas'); this.canvas.id = 'dmgsplat';
-    // under the HUD's readouts (wave / kills, health, ammo stay legible
-    // over the blood on the lens)
+    // under the HUD's readouts (health and ammo stay legible over the blood
+    // on the lens)
     root.insertBefore(this.canvas, root.firstChild);
     root.insertBefore(this.flash, root.firstChild);
     root.insertBefore(this.heart, root.firstChild);
@@ -85,11 +85,11 @@ export class Health {
     }
   }
 
-  // the HUD's boxes (wave / kills, health bar, ammo) in splatter-canvas pixels
+  // the HUD's boxes (health bar, ammo) in splatter-canvas pixels
   hudRects() {
     const c = this.canvas, k = c.width / Math.max(1, innerWidth);
     const out = [];
-    for (const sel of ['.tl', '.bl', '.br']) {
+    for (const sel of ['.bl', '.br']) {
       const el = this.root.querySelector(sel);
       if (!el) continue;
       const r = el.getBoundingClientRect();

@@ -61,9 +61,9 @@ try {
   // ---- click to begin -----------------------------------------------------------------
   await click(W / 2, H / 2);
   await sleep(600);
-  const s1 = await js(`({ locked: document.pointerLockElement === N.renderer.domElement, state: N.game.state, wave: N.game.counters.wave,
+  const s1 = await js(`({ locked: document.pointerLockElement === N.renderer.domElement, state: N.game.state,
     title: !document.getElementById('title').classList.contains('hidden'), vm: N.game.vm.visible, hud: !document.getElementById('hud').classList.contains('titled') })`);
-  check('click to begin: pointer lock, playing, wave 1, gun in hand, HUD up', s1.locked && s1.state === 'playing' && s1.wave === 1 && !s1.title && s1.vm && s1.hud, JSON.stringify(s1));
+  check('click to begin: pointer lock, playing, gun in hand, HUD up', s1.locked && s1.state === 'playing' && !s1.title && s1.vm && s1.hud, JSON.stringify(s1));
   if (!s1.locked) throw new Error('no pointer lock in this headless build: the rest needs it');
 
   // ---- WASD, mouse look ------------------------------------------------------------------
@@ -131,14 +131,14 @@ try {
   await sleep(400);
   const e1 = await js(`({ state: N.game.state, end: !document.getElementById('endcard').classList.contains('hidden'), stats: document.querySelector('#endcard .sub').textContent,
     epi: document.querySelector('#endcard .epi').textContent, locked: !!document.pointerLockElement, pause: !document.getElementById('pausecard').classList.contains('hidden') })`);
-  check('death: THE END (kills, waves, an epitaph), no pause card', e1.state === 'dead' && e1.end && /kill/.test(e1.stats) && e1.epi.length > 10 && !e1.locked && !e1.pause, JSON.stringify(e1));
+  check('death: THE END (kills, an epitaph), no pause card', e1.state === 'dead' && e1.end && /kill/.test(e1.stats) && e1.epi.length > 10 && !e1.locked && !e1.pause, JSON.stringify(e1));
   await sleep(400);
   const e1b = await js('({ lower: +N.game.vm.lower.toFixed(2), shown: N.game.vm.root.visible })');
   check('death: the Tommy gun drops out of the frame', e1b.lower > 0.95 && !e1b.shown, JSON.stringify(e1b));
   await click(W / 2, H / 2);
   await sleep(600);
-  const e2 = await js(`({ state: N.game.state, end: !document.getElementById('endcard').classList.contains('hidden'), hp: N.game.health.hp, wave: N.game.counters.wave, locked: document.pointerLockElement === N.renderer.domElement })`);
-  check('click to try again: a fresh fight from wave 1', e2.state === 'playing' && !e2.end && e2.hp === 100 && e2.wave === 1 && e2.locked, JSON.stringify(e2));
+  const e2 = await js(`({ state: N.game.state, end: !document.getElementById('endcard').classList.contains('hidden'), hp: N.game.health.hp, locked: document.pointerLockElement === N.renderer.domElement })`);
+  check('click to try again: a fresh start', e2.state === 'playing' && !e2.end && e2.hp === 100 && e2.locked, JSON.stringify(e2));
   const e3 = await js('({ lower: N.game.vm.lower, shown: N.game.vm.root.visible })');
   check('try again: the Tommy gun back at the shoulder', e3.lower === 0 && e3.shown, JSON.stringify(e3));
 

@@ -1,6 +1,6 @@
 # NOIR EXTREME
 
-A first-person wave shooter set on one rain-soaked city block under an
+A first-person noir game set on one rain-soaked city block under an
 elevated railway, rendered in real time to look like a hand-inked
 black-and-white noir illustration. The only colour in the world is blood
 and fire. Built with Three.js and Vite; every texture, model, sound and

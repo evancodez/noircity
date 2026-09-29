@@ -5,8 +5,8 @@
 // paper - the one-frame inversion feel) and lengthens the rain (the lit
 // streaks show everywhere, not only inside the cones). Thunder follows
 // 1-3 s later (further strikes: later, softer, longer). About one strike in
-// four is a double. Never during the first 5 s of a wave (the wave card
-// owns that moment); the Game passes `quiet` then.
+// four is a double. Never during the first 5 s of a fight (the first
+// volley owns that moment); the Game passes `quiet` then.
 export class Storm {
   constructor(world, pipeline) {
     this.world = world;

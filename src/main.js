@@ -25,7 +25,6 @@ const shotMode = !!shot;
 // HUD: on in play unless hud=0; in shot mode only with hud=1
 const hudOn = shotMode ? params.get('hud') === '1' : params.get('hud') !== '0';
 const debug = params.get('debug') === '1';
-const wavesOn = params.get('waves') === '1' || !shotMode;
 const animate = params.get('anim') === '1' || !shotMode; // shots freeze after fast-forward unless anim=1
 const tSkip = parseFloat(params.get('t') ?? (shot ? String(shot.t ?? 4) : '0')) || 0;
 const pixelRatio = parseFloat(params.get('dpr') ?? '1') || 1;
@@ -78,10 +77,10 @@ if (!shotMode) for (const ev of ['mousedown', 'keydown', 'touchstart']) addEvent
 hud.soundHint(!shotMode);
 hud.setVisible(hudOn);
 if (shotMode) hud.hideTitle();
-game = new Game({ world, camera, controller, pipeline, hud, shotMode, wavesOn, sfx });
+game = new Game({ world, camera, controller, pipeline, hud, shotMode, sfx });
 game.bindInput(renderer.domElement);
-// (play and the battle preset: every Hood variant + combat program up front)
-if (!shotMode || wavesOn || shotName === 'battle' || shotName === 'end' || shotName === 'perf') game.prewarm(renderer);
+// (play and the fight presets: every Hood variant + combat program up front)
+if (!shotMode || shot.prewarm) game.prewarm(renderer);
 document.addEventListener('pointerlockerror', () => {
   if (shotMode) return;
   if (game.state === 'title') hud.showTitle('click again to take the mouse');
@@ -97,7 +96,7 @@ document.addEventListener('pointerlockchange', () => {
     hud.hidePause();
     sfx.pauseMix(false);
     if (game.state === 'title') game.start();
-  } else if (game.state === 'playing' || game.state === 'intermission') {
+  } else if (game.state === 'playing') {
     hud.showPause();
     sfx.pauseMix(true);
   }
@@ -129,8 +128,6 @@ if (shot && poseParam) {
 if (shot) applyShot(shot, controller, camera, world, game);
 else controller.setPose(-7.3, 6.2, -0.2, 0.02);
 game.eye.copy(camera.position);
-// waves=1 in shot mode: the real spawning, no autopilot
-if (shotMode && wavesOn && game.counters.wave === 0) game.startBattle({ wave: parseInt(params.get('wave') ?? '1', 10) || 1, autopilot: false });
 
 const STEP = 1 / 60;
 let simTime = 0;
@@ -177,9 +174,8 @@ if (shot && focusParam && world.hoods.list.length) {
   world.update(0, simTime, camera, pipeline.height);
 }
 
-// card=pause|wave (look development): hold that card over the frame
+// card=pause (look development): hold that card over the frame
 if (params.get('card') === 'pause') hud.showPause();
-if (params.get('card') === 'wave') hud.showWave(6, 13);
 
 // gdbg=<n>: wet-street term debug (render/shaders/ground.js)
 if (params.get('gdbg')) U.uGroundDebug.value = parseInt(params.get('gdbg'), 10) || 0;
@@ -207,7 +203,7 @@ function frame(now) {
   last = now;
   const tA = performance.now();
   // in play, the fight pauses behind the "click to resume" card
-  const paused = !shotMode && (game.state === 'playing' || game.state === 'intermission') && document.pointerLockElement !== renderer.domElement;
+  const paused = !shotMode && game.state === 'playing' && document.pointerLockElement !== renderer.domElement;
   if (animate && !paused) {
     acc += dt;
     let n = 0;
@@ -234,7 +230,7 @@ function frame(now) {
   if (stats) {
     const K = game.counters;
     stats.update(`pos ${camera.position.x.toFixed(1)} ${camera.position.y.toFixed(2)} ${camera.position.z.toFixed(1)}  yaw ${controller.yaw.toFixed(2)} pitch ${controller.pitch.toFixed(2)}\nview ${pipeline.view}  tex ${tex.buildMs.toFixed(0)}ms  game ${game.initMs.toFixed(0)}ms\n`
-      + `wave ${K.wave}  hoods alive ${K.alive}/${K.spawned}  kills ${K.kills}\nshots ${K.shots}  hits ${K.hits} (head ${K.headshots})  hood shots ${K.hoodShots}  hood hits ${K.hoodHits}\n`
+      + `hoods alive ${K.alive}/${K.spawned}  kills ${K.kills}\nshots ${K.shots}  hits ${K.hits} (head ${K.headshots})  hood shots ${K.hoodShots}  hood hits ${K.hoodHits}\n`
       + `hp ${game.health.hp.toFixed(0)}  ammo ${game.weapon.ammo}  particles ${game.fx.liveParticles}  decals ${K.decals}  rays ${game.rays.stats.rays}\n`
       + `cpu sim ${perf.sim.toFixed(2)} ms  render ${perf.render.toFixed(2)} ms`);
   }
@@ -259,7 +255,7 @@ window.__noir = {
   perf,
   // fast-forward the fixed-step simulation (as t= does at load)
   sim(seconds = 1) { const n = Math.round(seconds * 60); for (let i = 0; i < n; i++) simStep(STEP); writeCounters(); return { ...game.counters }; },
-  params: { shotName, shotMode, hudOn, debug, wavesOn, tSkip },
+  params: { shotName, shotMode, hudOn, debug, tSkip },
   bench: (opts) => bench(renderer, pipeline, scene, camera, opts),
   // Phase 3b performance pass, in-session before/after: legacy = true puts
   // back the Phase 3a pipeline (every MSAA resolve, the depth resolve, the

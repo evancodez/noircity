@@ -3,7 +3,6 @@ import { RNG } from '../util/rng.js';
 // DOM overlay: the in-game HUD and the ink cards (Phase 3b presentation).
 // Monochrome and ink-styled (DESIGN.md §8); the only colour anywhere is one
 // red splatter accent on the title and on the end card:
-//   top left     WAVE / KILLS in a condensed serif (Baskerville / Georgia)
 //   bottom right the drum count in a typewriter face (American Typewriter /
 //                Courier New), RELOADING while the drum is swapped
 //   bottom left  a thin ink health bar that bleeds red when low
@@ -14,8 +13,7 @@ import { RNG } from '../util/rng.js';
 //                white over it:
 //     title  "NOIR EXTREME" over the live street (the camera drifts, the
 //            rain falls), "click to begin", the keys
-//     wave   "WAVE n" and how many of them are coming, between waves
-//     end    "THE END", kills and waves, a one-line epitaph chosen at
+//     end    "THE END", the kills, a one-line epitaph chosen at
 //            random, "click to try again"
 //     pause  pointer lock lost: the frame dims under a smaller card,
 //            "click to resume"
@@ -37,8 +35,6 @@ export const EPITAPHS = [
   'In this town even the rain carries a gun.',
   'They’ll find him when the gutters run clear.',
 ];
-const NUMBER = ['none', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten', 'eleven', 'twelve', 'thirteen',
-  'fourteen', 'fifteen', 'sixteen', 'seventeen', 'eighteen', 'nineteen', 'twenty', 'twenty-one', 'twenty-two', 'twenty-three'];
 
 export class Hud {
   // brush: the ink pass's dry-brush field (render/textures.js, a 1024^2
@@ -67,17 +63,11 @@ export class Hud {
       #title h1 { font-size: min(10.5vw, 150px); }
       #title .go { margin-top: 40px; animation: noirBlink 2.6s ease-in-out infinite; }
       @keyframes noirBlink { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
-      #wavecard { z-index: 18; pointer-events: none; }
-      #wavecard h1 { font-size: min(7.5vw, 104px); }
       #endcard { z-index: 19; cursor: pointer; background: radial-gradient(ellipse at 50% 46%, rgba(0,0,0,0.2) 0%, rgba(0,0,0,0.5) 50%, rgba(0,0,0,0.88) 100%); }
       #endcard h1 { font-size: min(10vw, 140px); }
       #endcard .go { margin-top: 34px; }
       #pausecard { z-index: 21; cursor: pointer; background: rgba(4,4,4,0.6); }
       #pausecard h1 { font-size: min(6vw, 84px); }
-      #hud .tl { position: absolute; left: 34px; top: 26px; font-family: "Baskerville", "Baskerville Old Face", Georgia, serif;
-        text-transform: uppercase; letter-spacing: 0.16em; color: #ececec; text-shadow: 0 0 3px #000, 0 0 1px #000; transform-origin: left top; transform: scaleX(0.86); }
-      #hud .tl .wave { font-size: 30px; font-weight: 700; line-height: 1; }
-      #hud .tl .kills { font-size: 16px; margin-top: 6px; color: #cfcfcf; }
       #hud .br { position: absolute; right: 38px; bottom: 30px; text-align: right; text-shadow: 0 0 3px #000, 0 0 1px #000; }
       #hud .br .ammo { font-size: 46px; line-height: 1; letter-spacing: 0.02em; }
       #hud .br .ammo small { font-size: 18px; color: #bdbdbd; letter-spacing: 0.1em; }
@@ -88,7 +78,7 @@ export class Hud {
       #hud .xh { position: absolute; left: 50%; top: 50%; width: 4px; height: 4px; margin: -2px 0 0 -2px; border-radius: 50%; background: #f2f2f2;
         box-shadow: 0 0 0 1px rgba(0,0,0,0.85); }
       #hud .xr { position: absolute; left: 50%; top: 50%; border-radius: 50%; border: 1px solid rgba(240,240,240,0.35); pointer-events: none; }
-      #hud.titled .tl, #hud.titled .br, #hud.titled .bl, #hud.titled .xh, #hud.titled .xr { display: none; }
+      #hud.titled .br, #hud.titled .bl, #hud.titled .xh, #hud.titled .xr { display: none; }
       #hud .msg { position: absolute; left: 50%; top: 62%; transform: translateX(-50%); font-size: 13px; letter-spacing: 0.4em; color: #ddd; text-shadow: 0 0 3px #000;
         opacity: 0; transition: opacity 0.4s; text-transform: uppercase; }
     `;
@@ -97,13 +87,11 @@ export class Hud {
     this.root.id = 'hud';
     document.body.appendChild(this.root);
     this.root.innerHTML = `
-      <div class="tl"><div class="wave">Wave 1</div><div class="kills">Kills 0</div></div>
       <div class="br"><div class="ammo">50<small> / 50</small></div><div class="note"></div></div>
       <div class="bl"><div class="lab">health</div><canvas width="460" height="52"></canvas></div>
       <div class="xr"></div><div class="xh"></div>
       <div class="msg"></div>`;
     this.el = {
-      wave: this.root.querySelector('.wave'), kills: this.root.querySelector('.kills'),
       ammo: this.root.querySelector('.ammo'), note: this.root.querySelector('.note'),
       bar: this.root.querySelector('.bl canvas'), xr: this.root.querySelector('.xr'), xh: this.root.querySelector('.xh'), msg: this.root.querySelector('.msg'),
     };
@@ -126,7 +114,6 @@ export class Hud {
     this.root.classList.add('titled');
     this.title.addEventListener('click', () => onBegin && onBegin());
 
-    this.waveCard = makeCard('wavecard', 'WAVE 2', { w: 1000, h: 420, R: 118, wide: 5.0, vw: 66, seed: 1101, sub: ' ' });
     this.endCard = makeCard('endcard', 'THE END', { w: 1300, h: 620, R: 180, wide: 5.0, vw: 88, seed: 1942, red: true, sub: ' ', epi: ' ', go: 'click to try again' });
     this.endStats = this.endCard.sub;
     this.endCard.el.addEventListener('click', () => onRestart && onRestart());
@@ -157,15 +144,8 @@ export class Hud {
   }
   hidePause() { this.paused = false; this.pauseCard.el.classList.add('hidden'); this.retitle(); }
 
-  showWave(n, count = null) {
-    this.waveCard.h1.textContent = 'WAVE ' + n;
-    this.waveCard.sub.textContent = count ? `${NUMBER[count] || count} of them` : '';
-    this.waveCard.el.classList.remove('hidden');
-    this.waveCard.el.style.opacity = '1';
-  }
-  hideWave() { this.waveCard.el.style.opacity = '0'; setTimeout(() => { if (this.waveCard.el.style.opacity === '0') this.waveCard.el.classList.add('hidden'); }, 700); }
-  showEnd(kills, waves) {
-    this.endStats.textContent = `${kills} ${kills === 1 ? 'kill' : 'kills'}  ·  ${waves} ${waves === 1 ? 'wave' : 'waves'}`;
+  showEnd(kills) {
+    this.endStats.textContent = `${kills} ${kills === 1 ? 'kill' : 'kills'}`;
     const r = this.epiRng ? this.epiRng.next() : Math.random();
     this.endCard.epi.textContent = EPITAPHS[Math.floor(r * EPITAPHS.length) % EPITAPHS.length];
     this.endCard.el.classList.remove('hidden');
@@ -175,11 +155,9 @@ export class Hud {
   hideEnd() { this.endCard.el.classList.add('hidden'); this.retitle(); }
   message(text, secs = 1.4) { this.el.msg.textContent = text; this.el.msg.style.opacity = '1'; this.msgT = secs; }
 
-  // s: { wave, kills, ammo, drum, reloading, hp, spread, dt }
+  // s: { ammo, drum, reloading, hp, spread, dt }
   update(s) {
     const L = this._last, E = this.el;
-    if (L.wave !== s.wave) { E.wave.textContent = 'Wave ' + s.wave; L.wave = s.wave; }
-    if (L.kills !== s.kills) { E.kills.textContent = 'Kills ' + s.kills; L.kills = s.kills; }
     const ammoKey = s.ammo + '/' + s.reloading;
     if (L.ammo !== ammoKey) {
       E.ammo.innerHTML = `${s.reloading ? '--' : String(s.ammo).padStart(2, '0')}<small> / ${s.drum}</small>`;

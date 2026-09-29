@@ -52,7 +52,7 @@ export class React {
     }
     // the burning wreck is hot: a small damage tick standing in the flames
     this.hotT -= dt;
-    if (this.hotT <= 0 && G.state === 'playing') {
+    if (this.hotT <= 0 && G.live) {
       this.hotT = 0.25;
       const p = G.eye;
       for (const f of W.cars.fires) {
