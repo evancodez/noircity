@@ -81,6 +81,21 @@ export class Hud {
       #hud.titled .br, #hud.titled .bl, #hud.titled .xh, #hud.titled .xr { display: none; }
       #hud .msg { position: absolute; left: 50%; top: 62%; transform: translateX(-50%); font-size: 13px; letter-spacing: 0.4em; color: #ddd; text-shadow: 0 0 3px #000;
         opacity: 0; transition: opacity 0.4s; text-transform: uppercase; }
+      #hud .prompt { position: absolute; left: 50%; bottom: 17%; transform: translateX(-50%); font-size: 15px; letter-spacing: 0.3em; color: #eee;
+        text-shadow: 0 0 4px #000, 0 0 2px #000; text-transform: uppercase; white-space: pre; display: none; }
+      #hud .tick { position: absolute; width: 10px; height: 2px; margin: -1px 0 0 -5px; background: #eee; box-shadow: 0 0 0 1px rgba(0,0,0,0.7); display: none; }
+      #hud .say { position: absolute; left: 50%; bottom: 9%; transform: translateX(-50%); max-width: 80vw; padding: 6px 22px; font-family: "Baskerville", Georgia, serif;
+        font-size: 21px; color: #f2f0ea; background: rgba(4,4,4,0.82); white-space: nowrap; display: none; }
+      #hud .chapter { position: absolute; left: 50%; top: 38%; transform: translate(-50%, -50%); text-align: center; color: #f2f0ea; display: none;
+        font-family: "Bodoni 72", "Didot", Georgia, serif; text-shadow: 0 0 8px #000; }
+      #hud .chapter .num { font-size: 56px; line-height: 1; }
+      #hud .chapter .name { margin-top: 10px; font-family: "Baskerville", Georgia, serif; font-size: 22px; letter-spacing: 0.3em; text-transform: uppercase; }
+      #hud .cursor { position: absolute; width: 14px; height: 14px; margin: -7px 0 0 -7px; display: none;
+        background: linear-gradient(#111, #111) center / 14px 2px no-repeat, linear-gradient(#111, #111) center / 2px 14px no-repeat; filter: drop-shadow(0 0 1px #eee); }
+      #fade { position: fixed; inset: 0; background: #000; opacity: 0; pointer-events: none; z-index: 9; }
+      #hud.fight .bl { display: block; }
+      #hud.nogun .br, #hud.nogun .xr { display: none; }
+      #hud.nofight .bl { display: none; }
     `;
     document.head.appendChild(style);
     this.root = document.createElement('div');
@@ -90,11 +105,22 @@ export class Hud {
       <div class="br"><div class="ammo">50<small> / 50</small></div><div class="note"></div></div>
       <div class="bl"><div class="lab">health</div><canvas width="460" height="52"></canvas></div>
       <div class="xr"></div><div class="xh"></div>
-      <div class="msg"></div>`;
+      <div class="msg"></div>
+      <div class="tick"></div><div class="prompt"></div><div class="say"></div>
+      <div class="chapter"><div class="num"></div><div class="name"></div></div><div class="cursor"></div>`;
+    // the fade to black between scenes: over the frame, under the cards
+    this.fadeEl = document.createElement('div');
+    this.fadeEl.id = 'fade';
+    document.body.appendChild(this.fadeEl);
     this.el = {
       ammo: this.root.querySelector('.ammo'), note: this.root.querySelector('.note'),
       bar: this.root.querySelector('.bl canvas'), xr: this.root.querySelector('.xr'), xh: this.root.querySelector('.xh'), msg: this.root.querySelector('.msg'),
+      prompt: this.root.querySelector('.prompt'), tick: this.root.querySelector('.tick'), say: this.root.querySelector('.say'),
+      chapter: this.root.querySelector('.chapter'), cursor: this.root.querySelector('.cursor'),
     };
+    this.promptOwner = null;
+    this.sayT = 0;
+    this.cardT = 0;
     this.barG = this.el.bar.getContext('2d');
     this.barRng = new RNG(77);
     this.barStrokes = makeBarStrokes(this.barRng);
@@ -109,7 +135,7 @@ export class Hud {
     this.soundLine.textContent = 'any key: sound';
     this.soundLine.style.display = 'none';
     this.title.appendChild(this.soundLine);
-    this.prompt = this.titleCard.go;
+    this.titlePrompt = this.titleCard.go;
     this.title.classList.remove('hidden');
     this.root.classList.add('titled');
     this.title.addEventListener('click', () => onBegin && onBegin());
@@ -128,7 +154,7 @@ export class Hud {
   soundHint(on) { this.soundLine.style.display = on ? '' : 'none'; }
 
   // (the HUD's readouts stay hidden behind the title card)
-  showTitle(text = 'click to begin') { this.prompt.textContent = text; this.title.classList.remove('hidden'); this.root.classList.add('titled'); }
+  showTitle(text = 'click to begin') { this.titlePrompt.textContent = text; this.title.classList.remove('hidden'); this.root.classList.add('titled'); }
   hideTitle() { this.title.classList.add('hidden'); this.retitle(); }
   setVisible(v) { this.visible = v; this.root.style.display = v ? '' : 'none'; if (!v) this.hideTitle(); }
   get titleShown() { return !this.title.classList.contains('hidden'); }
@@ -153,11 +179,69 @@ export class Hud {
     this.retitle();
   }
   hideEnd() { this.endCard.el.classList.add('hidden'); this.retitle(); }
+  // ---- the story's lines (CONTRACTS §4.1, §12.1) -------------------------------------
+  // (FOUNDATION: plain; lane 7 owns the look: the brush tick, the torn
+  // stroke under the subtitle, the card's lettering)
+  // the one prompt, low in the frame ('E  light up'), a tick at the thing
+  // (at: screen pixels { x, y } or null); owner: who may clear it
+  prompt(text, at = null, owner = null) {
+    const E = this.el;
+    if (this.promptOwner && owner && this.promptOwner !== owner && E.prompt.style.display !== 'none' && owner !== 'scene') return;
+    this.promptOwner = owner;
+    if (E.prompt.textContent !== text) E.prompt.textContent = text;
+    E.prompt.style.display = 'block';
+    if (at) { E.tick.style.display = 'block'; E.tick.style.left = at.x + 'px'; E.tick.style.top = at.y + 'px'; } else E.tick.style.display = 'none';
+  }
+  clearPrompt(owner = null) {
+    if (owner && this.promptOwner && owner !== this.promptOwner) return;
+    this.promptOwner = null;
+    this.el.prompt.style.display = 'none';
+    this.el.tick.style.display = 'none';
+  }
+  // a one-line subtitle (42 characters at most), `secs` of game time
+  say(text, secs = 2.2) {
+    if (text.length > 42) console.warn(`hud.say: '${text}' is longer than 42 characters`);
+    this.el.say.textContent = text;
+    this.el.say.style.display = 'block';
+    this.sayT = secs;
+  }
+  // the chapter card: a roman numeral and a name
+  card(num, name, secs = 2.4) {
+    this.el.chapter.querySelector('.num').textContent = num || '';
+    this.el.chapter.querySelector('.name').textContent = name || '';
+    this.el.chapter.style.display = 'block';
+    this.cardT = secs;
+  }
+  // the fade to black (0 clear .. 1 black)
+  fade(k) { this.fadeEl.style.opacity = String(Math.max(0, Math.min(1, k))); }
+  // a puzzle's virtual cursor (screen pixels, or null to hide it)
+  cursor(at) {
+    const c = this.el.cursor;
+    if (!at) { c.style.display = 'none'; return; }
+    c.style.display = 'block'; c.style.left = at.x + 'px'; c.style.top = at.y + 'px';
+  }
+  // the lines' timers run on game time (one fixed step)
+  tick(dt) {
+    if (this.sayT > 0) { this.sayT -= dt; if (this.sayT <= 0) this.el.say.style.display = 'none'; }
+    if (this.cardT > 0) { this.cardT -= dt; if (this.cardT <= 0) this.el.chapter.style.display = 'none'; }
+  }
+  // shot mode: every CSS animation and transition stops where it starts, so
+  // a card in a screenshot never depends on when the page loaded
+  freeze() {
+    const st = document.createElement('style');
+    st.textContent = '*, *::before, *::after { animation: none !important; transition: none !important; }';
+    document.head.appendChild(st);
+  }
+
   message(text, secs = 1.4) { this.el.msg.textContent = text; this.el.msg.style.opacity = '1'; this.msgT = secs; }
 
-  // s: { ammo, drum, reloading, hp, spread, dt }
+  // s: { ammo, drum, reloading, hp, spread, dt, gun, fight }
+  // (the ammo only while a gun is out; the health in a fight or while hurt)
   update(s) {
     const L = this._last, E = this.el;
+    const gun = s.gun ?? true, fight = s.fight ?? true;
+    if (L.gun !== gun) { this.root.classList.toggle('nogun', !gun); L.gun = gun; }
+    if (L.fight !== fight) { this.root.classList.toggle('nofight', !fight); L.fight = fight; }
     const ammoKey = s.ammo + '/' + s.reloading;
     if (L.ammo !== ammoKey) {
       E.ammo.innerHTML = `${s.reloading ? '--' : String(s.ammo).padStart(2, '0')}<small> / ${s.drum}</small>`;
