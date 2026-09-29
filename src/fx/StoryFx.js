@@ -101,74 +101,177 @@ export class Pour {
   }
 }
 
-// A cigarette's thread: points leave the tip and rise, curling in a slow
-// field; drawn as a thin camera-facing ribbon whose alpha is broken like a
-// dry brush, widening as it rises, falling apart from ~0.35 m and gone by
-// ~0.55 m
+// A cigarette's thread (Wave A fix D1). What a smoker sees at arm's length:
+// a hair-thin grey line that rises straight off the tip for ~10 cm (the
+// laminar part), then starts to waver, then tears into two or three thin
+// curls that wind about each other by ~40 cm, and is gone by ~70 cm. It is
+// never a tube and never white: mid grey, half transparent, 2-4 px wide at
+// arm's length, so over the lit counter it is a faint darker hair and over
+// the dark back bar a pale one.
+// Points leave the tip (30 a second) and rise, faster as they go; above the
+// laminar run one slow field pushes them about (one field for the whole
+// thread: a point's own phase tore it into zig-zags), and the draught from
+// the diner's door, while it stands open, leans the whole thread away from
+// it. Drawn as up to three camera-facing strands that share the points: at
+// the tip they lie on one another (one line); higher up the side strands
+// swing out from it, each on its own slow phase, and the line's weight goes
+// to them. Each strand is three vertices across (edge, core, edge: alpha
+// 0 / a / 0), so a 3 px hair has a soft edge instead of a stair-stepped one.
+// The strands break in gaps that ride up with the smoke (the gap belongs to
+// the points, not to the height).
+const THREAD = {
+  rate: 30,            // points a second
+  max: 128,            // points kept: ~4 s of rise, the top at ~0.7 m
+  laminar: 0.10,       // m of straight rise
+  split: [0.12, 0.40], // the curls part between these heights (m)
+  gone: [0.46, 0.70],  // and fade out between these
+  w0: 0.0009,          // half width of a strand's core at the tip (m): ~3 px at 0.45 m
+  w1: 0.0012,          // ... and at the top
+  // (scene-linear grey x alpha: display ~0.5 on black (tone.js), a paler
+  // hair over the lit back-bar glass, a darker one over the lit counter)
+  grey: 0.16,
+  alpha: 0.45,
+};
+const STRANDS = 3;
+const _s = new THREE.Vector3(), _t = new THREE.Vector3(), _e = new THREE.Vector3();
+const sstep = (a, b, x) => { const t = Math.min(1, Math.max(0, (x - a) / (b - a))); return t * t * (3 - 2 * t); };
 class Thread {
   constructor(fx) {
     this.fx = fx;
     this.pts = [];
     this.lastT = -1;
     this.seed = 1.7;
-    const max = 90;
+    const max = THREAD.max;
     this.max = max;
     const g = new THREE.BufferGeometry();
-    this.pos = new Float32Array(max * 2 * 3);
-    this.col = new Float32Array(max * 2 * 4);
+    const nv = STRANDS * max * 3;
+    this.pos = new Float32Array(nv * 3);
+    this.col = new Float32Array(nv * 4);
     g.setAttribute('position', new THREE.BufferAttribute(this.pos, 3));
     g.setAttribute('color', new THREE.BufferAttribute(this.col, 4));
     const idx = [];
-    for (let i = 0; i < max - 1; i++) { const a = i * 2; idx.push(a, a + 1, a + 2, a + 1, a + 3, a + 2); }
+    for (let k = 0; k < STRANDS; k++) {
+      for (let i = 0; i < max - 1; i++) {
+        const a = (k * max + i) * 3, b = a + 3;
+        // (edge L - core - edge R, two quads per segment)
+        idx.push(a, a + 1, b, a + 1, b + 1, b, a + 1, a + 2, b + 1, a + 2, b + 2, b + 1);
+      }
+    }
     g.setIndex(idx);
-    this.mesh = new THREE.Mesh(g, new THREE.MeshBasicMaterial({ color: 0xffffff, vertexColors: true, transparent: true, depthWrite: false, side: THREE.DoubleSide }));
+    this.mesh = new THREE.Mesh(g, new THREE.MeshBasicMaterial({ color: 0xffffff, vertexColors: true, transparent: true, depthWrite: false, side: THREE.DoubleSide, fog: false }));
     this.mesh.frustumCulled = false;
     this.mesh.layers.set(LAYER.FX);
     this.mesh.renderOrder = 3;
     this.mesh.userData.noRay = true;
     fx.world.scene.add(this.mesh);
   }
+  // the draught through the diner's door while it stands open: a push away
+  // from the doorway, weaker the further in (m/s, horizontal)
+  draught(p, out) {
+    out.set(0, 0, 0);
+    const st = this.fx.world;
+    const F = st && st.part ? st.part('dinerFront') : null;
+    const d = F && F.door;
+    if (!d || !(d.angle > 0.01) || !d.object) return out;
+    d.object.getWorldPosition(_e);
+    const dx = p.x - _e.x, dz = p.z - _e.z, l = Math.hypot(dx, dz) || 1;
+    const k = d.angle * 0.13 * (1 - 0.6 * sstep(3, 10, l));
+    return out.set(dx / l * k, 0, dz / l * k);
+  }
   update(dt, t, cam, rng) {
-    const P = this.pts;
+    const P = this.pts, T = THREAD;
+    const lean = this.draught(P.length ? P[P.length - 1].p : _e.set(0, 0, 0), _t);
     for (const p of P) {
       p.age += dt;
       const h = p.p.y - p.y0;
-      // rising faster as it goes, a slow curl that grows with height
-      // (one field for the whole thread: a point's own phase tore it into
-      // zig-zags)
-      const cx = Math.sin(p.p.y * 14 + t * 1.3 + this.seed) * 0.12 + Math.sin(p.p.y * 31 + t * 2.1) * 0.05;
-      const cz = Math.cos(p.p.y * 11 + t * 1.1 + this.seed * 1.3) * 0.12;
-      p.p.x += (cx * (0.4 + h * 5)) * dt;
-      p.p.z += (cz * (0.4 + h * 5)) * dt;
-      p.p.y += (0.09 + h * 0.35) * dt;
+      // (the column itself only drifts a little, slowly, above the laminar
+      // run; the waver and the curls are laid on it where it is drawn)
+      const wv = sstep(T.laminar, T.laminar * 3, h) * (0.004 + 0.03 * h);
+      const cx = Math.sin(p.p.y * 6 + t * 0.35 + this.seed);
+      const cz = Math.cos(p.p.y * 5 + t * 0.3 + this.seed * 1.3);
+      p.p.x += (cx * wv + lean.x * (0.35 + h)) * dt;
+      p.p.z += (cz * wv + lean.z * (0.35 + h)) * dt;
+      p.p.y += (0.09 + h * 0.33) * dt;
     }
-    while (P.length && (P[0].age > 5 || P[0].p.y - P[0].y0 > 0.6)) P.shift();
-    // the ribbon
+    while (P.length && (P[0].age > 6 || P[0].p.y - P[0].y0 > T.gone[1])) P.shift();
+    // the strands: first where each strand's core runs (C), then the
+    // ribbons across its own drawn path (a curl that loops over keeps its
+    // width all the way round)
     const n = Math.min(P.length, this.max);
-    const toCam = new THREE.Vector3();
-    for (let i = 0; i < this.max; i++) {
-      const j = i < n ? P.length - 1 - i : -1;
-      if (j < 0) { this.col[i * 8 + 3] = 0; this.col[i * 8 + 7] = 0; continue; }
-      const p = P[j].p, q = P[Math.max(0, j - 1)].p, s = P[Math.min(P.length - 1, j + 1)].p;
-      const tan = _c.subVectors(q, s);
-      if (tan.lengthSq() < 1e-10) tan.set(0, 1, 0);
+    const max = this.max;
+    const C = this.core || (this.core = new Float32Array(STRANDS * max * 3));
+    const AL = this.al || (this.al = new Float32Array(STRANDS * max));
+    const toCam = _a;
+    for (let i = 0; i < n; i++) {
+      const j = P.length - 1 - i;
+      const pt = P[j], p = pt.p;
       toCam.subVectors(cam, p).normalize();
-      const side = _a.crossVectors(tan, toCam).normalize();
-      const h = p.y - P[j].y0;
-      const w = 0.0016 + h * 0.012;
-      this.pos.set([p.x + side.x * w, p.y + side.y * w, p.z + side.z * w], i * 6);
-      this.pos.set([p.x - side.x * w, p.y - side.y * w, p.z - side.z * w], i * 6 + 3);
-      // (dry brush: the alpha breaks in bits that grow with height)
-      const fade = Math.max(0, 1 - h / 0.55) * Math.min(1, P[j].age * 6);
-      // (it breaks up into strands and gaps above ~12 cm, more the higher)
-      const brk = h < 0.12 ? 1 : (Math.sin(j * 0.55 + P[j].seed * 0.3) * 0.5 + 0.5) > (h - 0.12) * 2.4 ? 1 : 0.05;
-      const a = 0.8 * fade * brk;
-      const g = 0.22 + h * 0.1;
-      for (let k = 0; k < 2; k++) this.col.set([g, g, g, a * (k === 0 ? 1 : 0.8)], (i * 2 + k) * 4);
+      // (across the view, horizontal: the plane the curls wind in)
+      const side = _b.crossVectors(UP, toCam);
+      if (side.lengthSq() < 1e-10) side.set(1, 0, 0);
+      side.normalize();
+      const h = p.y - pt.y0;
+      const sp = sstep(T.split[0], T.split[1], h);
+      const fade = (1 - sstep(T.gone[0], T.gone[1], h)) * Math.min(1, pt.age * 8);
+      // the waver: a wave travelling up the column (the undulation a still
+      // room puts in a thread once it leaves the laminar run), ~8 cm long,
+      // its swing growing to a couple of cm; two axes out of step, so it winds
+      const A = 0.014 * sstep(T.laminar * 0.8, T.laminar * 2.6, h) * (1 + 1.5 * h);
+      const wx = A * Math.sin(h * 75 - t * 3.1 + this.seed), wz = A * 0.8 * Math.sin(h * 64 - t * 2.7 + this.seed * 2.1 + 1.1);
+      for (let k = 0; k < STRANDS; k++) {
+        // a curl: the strand's core turns round a point riding up the
+        // column, in the plane across the view; once the radius passes
+        // 1 / (the wave number) the path loops back on itself (a curl).
+        // The middle strand keeps to the column, the side ones part from it
+        const ph = k * 2.09 + this.seed;
+        const kk = 58 + 11 * k;
+        const r = (k === 0 ? 0.3 : 1) * sp * (0.004 + 0.075 * Math.max(0, h - T.split[0]));
+        const th = h * kk - t * (2.4 + 0.45 * k) + ph;
+        const drift = k === 0 ? 0 : (k === 1 ? 1 : -1) * sp * 0.15 * Math.max(0, h - T.split[0]);
+        _s.copy(p).add(_e.set(wx, 0, wz)).addScaledVector(side, r * Math.cos(th) + drift);
+        _s.y += r * 0.85 * Math.sin(th);
+        C[(k * max + i) * 3] = _s.x; C[(k * max + i) * 3 + 1] = _s.y; C[(k * max + i) * 3 + 2] = _s.z;
+        // the line's weight: at the tip all on the middle strand, higher up
+        // shared out to the curls
+        const share = k === 0 ? 1 - 0.5 * sp : 0.7 * sp;
+        // gaps that rise with the smoke: a strand breaks where its own
+        // phase says so, more often the higher it is
+        const gap = h < T.split[0] ? 1 : (Math.sin(j * 0.31 + k * 1.9 + pt.seed * 0.2) * 0.5 + 0.5) > 0.1 + 1.2 * sp * (h - T.split[0]) ? 1 : 0.1;
+        AL[k * max + i] = T.alpha * fade * share * gap;
+      }
+    }
+    for (let k = 0; k < STRANDS; k++) {
+      for (let i = 0; i < max; i++) {
+        const v = (k * max + i) * 3;
+        if (i >= n) { this.col[v * 4 + 3] = 0; this.col[v * 4 + 7] = 0; this.col[v * 4 + 11] = 0; continue; }
+        const a0 = (k * max + Math.max(0, i - 1)) * 3, a1 = (k * max + Math.min(n - 1, i + 1)) * 3;
+        _c.set(C[a1] - C[a0], C[a1 + 1] - C[a0 + 1], C[a1 + 2] - C[a0 + 2]);
+        if (_c.lengthSq() < 1e-12) _c.set(0, 1, 0);
+        _s.set(C[v], C[v + 1], C[v + 2]);
+        toCam.subVectors(cam, _s).normalize();
+        const side = _b.crossVectors(_c, toCam);
+        if (side.lengthSq() < 1e-12) side.set(1, 0, 0);
+        side.normalize();
+        const j = P.length - 1 - i;
+        const sp = sstep(T.split[0], T.split[1], P[j].p.y - P[j].y0);
+        const ww = (T.w0 + (T.w1 - T.w0) * sp) * (k === 0 ? 1 : 0.8) * 2;
+        this.pos.set([_s.x + side.x * ww, _s.y + side.y * ww, _s.z + side.z * ww], v * 3);
+        this.pos.set([_s.x, _s.y, _s.z], v * 3 + 3);
+        this.pos.set([_s.x - side.x * ww, _s.y - side.y * ww, _s.z - side.z * ww], v * 3 + 6);
+        const g = T.grey * (1 - 0.15 * sp), a = AL[k * max + i];
+        this.col.set([g, g, g, 0, g, g, g, a, g, g, g, 0], v * 4);
+      }
+    }
+    // (the slots past the last point collapse onto it: a segment into a
+    // stale slot drew a long sliver to wherever that slot was left)
+    if (n > 0) {
+      for (let k = 0; k < STRANDS; k++) {
+        const last = (k * max + n - 1) * 9;
+        for (let i = n; i < max; i++) this.pos.copyWithin((k * max + i) * 9, last, last + 9);
+      }
     }
     this.mesh.geometry.attributes.position.needsUpdate = true;
     this.mesh.geometry.attributes.color.needsUpdate = true;
-    this.mesh.geometry.setDrawRange(0, Math.max(0, (n - 1) * 6));
     this.mesh.visible = n > 1;
     void rng;
   }
@@ -180,7 +283,7 @@ export class Cig {
   wisp(tip, key = 'player') {
     let T = this.threads.get(key);
     if (!T) { T = new Thread(this.fx); this.threads.set(key, T); }
-    if (this.t - T.lastT < 1 / 40) return;
+    if (this.t - T.lastT < 1 / THREAD.rate - 1e-6) return;
     T.lastT = this.t;
     T.pts.push({ p: tip.clone(), y0: tip.y, age: 0, seed: this.rng.next() * 10 });
     if (T.pts.length > T.max) T.pts.shift();
@@ -197,18 +300,23 @@ export class Cig {
     for (let i = this.plumes.length - 1; i >= 0; i--) {
       const P = this.plumes[i];
       P.t += dt;
-      // a breath lasts ~0.6 s, strongest at first
+      // a breath lasts ~0.6 s, strongest at first: a soft plume pushed out
+      // ~0.6 m, slowing (drag), rolling (each puff turns), rising into the
+      // lamp's cone above (buoyant); a pale grey wash, never white (display
+      // under 0.5 where it is thickest), gone in ~3 s
       const k = Math.max(0, 1 - P.t / 0.6);
-      P.acc += dt * 60 * k;
+      // (many small puffs, each its own speed and drift: the plume is long
+      // and ragged, never one round cloud)
+      P.acc += dt * 110 * k;
       while (P.acc >= 1) {
         P.acc -= 1;
         const s = r.range(0.025, 0.045);
         this.fx.smoke.spawn({
-          pos: P.mouth.clone().addScaledVector(P.dir, 0.03).add(new THREE.Vector3(r.gauss() * 0.01, r.gauss() * 0.01, r.gauss() * 0.01)),
-          vel: P.dir.clone().multiplyScalar(r.range(0.8, 1.4) * (0.5 + k)).add(new THREE.Vector3(r.gauss() * 0.06, r.range(0.02, 0.08), r.gauss() * 0.06)),
-          life: r.range(2.2, 3.4), size: [s, s], grow: r.range(0.16, 0.26), rot: r.next() * 6.28, spin: r.gauss() * 0.5,
-          col: [0.05, 0.05, 0.05], colEnd: [0.06, 0.06, 0.06], alpha: r.range(0.18, 0.26), drag: 2.6, gravity: -0.12,
-          fadeIn: 0.05, fadeOut: 1.0, cell: FIRE.SMOKE[r.int(0, 3)],
+          pos: P.mouth.clone().addScaledVector(P.dir, 0.05).add(new THREE.Vector3(r.gauss() * 0.012, r.gauss() * 0.012, r.gauss() * 0.012)),
+          vel: P.dir.clone().multiplyScalar(r.range(0.5, 1.4) * (0.45 + k)).add(new THREE.Vector3(r.gauss() * 0.12, r.range(0.02, 0.14), r.gauss() * 0.12)),
+          life: r.range(1.9, 2.9), size: [s, s * r.range(0.6, 1)], grow: r.range(0.05, 0.11), rot: r.next() * 6.28, spin: r.gauss() * 1.2,
+          col: [0.1, 0.1, 0.1], colEnd: [0.07, 0.07, 0.07], alpha: r.range(0.12, 0.2), drag: 2.2, gravity: -0.2,
+          fadeIn: 0.05, fadeOut: 1.2, cell: FIRE.SMOKE[r.int(0, 3)],
         });
       }
       if (P.t > 0.7) this.plumes.splice(i, 1);

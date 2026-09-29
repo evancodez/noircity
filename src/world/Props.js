@@ -31,6 +31,7 @@ export class Props {
     // steam grates (vents consumed by fx/Steam)
     this.vents = [V3(-1.4, 0, -21.5), V3(3.6, 0, -47), V3(-3.4, 0, -79), V3(-1.0, 0, 6), V3(0.5, 0, -112)];
     for (const v of this.vents) this.grate(v);
+    this.flushGrates();
     for (const m of [V3(-2.5, 0, -33), V3(-2.8, 0, -64), V3(2.2, 0, -90)]) this.manhole(m);
     this.flushStatic();
     this.wires();
@@ -165,6 +166,32 @@ export class Props {
     void pc;
     g.traverse((o) => { if (o.isMesh) o.userData.prop = booth; });
     this.items.push(booth);
+    // (Wave A fix D5) the booth's four panes are the glass's own panes
+    // (destruct/Glass.js), SHARED: they stay one merged mesh (one draw) until
+    // a pane is hit; then that pane leaves it and breaks geometry-true -
+    // a star, cracks, pieces that fall out, shards on the pavement - like
+    // every other window on the block. The booth stands open behind a hole
+    // (roomOpen: no black backing).
+    const glass = this.world.glass;
+    if (glass && glass.addPane) {
+      g.updateMatrixWorld(true);
+      booth.glassMeshes = { booth: paneMesh };
+      booth.paneGone = (pane) => {
+        const keep = booth.panes.filter((q) => q.glassPane.kind !== 'cut').map((q) => q.geo.clone());
+        const old = paneMesh.geometry;
+        paneMesh.geometry = keep.length ? merge(keep) : new THREE.BufferGeometry();
+        paneMesh.visible = keep.length > 0;
+        old.dispose();
+        const G = this.game;
+        if (G && G.rays) { if (keep.length) G.rays.refresh(paneMesh); G.rays.setEnabled(paneMesh, keep.length > 0); }
+        void pane;
+      };
+      booth.panes.forEach((pn, i) => {
+        const w = (i % 2 === 0 ? D : W) - 0.1, h = H - 0.5;
+        const c = pn.c.clone().applyMatrix4(g.matrixWorld), n = pn.n.clone().transformDirection(g.matrixWorld);
+        pn.glassPane = glass.addPane({ shared: true, owner: booth, kind: 'booth', c, normal: n, w, h, thick: 0.005, tag: 'booth', roomOpen: true });
+      });
+    }
     const light = new THREE.PointLight(0xffffff, 3.0, 5, 2);
     light.position.set(p.x, p.y + H - 0.25, p.z);
     this.world.scene.add(light);
@@ -234,16 +261,30 @@ export class Props {
       const w = [0.05, 0.035, 0.06, 0.04, 0.055, 0.035, 0.05][i];
       bars.push(new THREE.BoxGeometry(w, 0.008, 0.86).translate(x, 0.043, (i % 3 - 1) * 0.012));
     });
-    const frame = new THREE.Mesh(merge(parts), M.ironDark);
-    const b = new THREE.Mesh(merge(bars), M.iron);
-    const g = new THREE.Group();
-    g.add(frame, b);
-    g.position.copy(p);
-    g.rotation.y = 0.1;
-    this.add(g);
-    const gr = { kind: 'grate', group: g, pos: p.clone(), puff: 0, acc: 0 };
-    g.traverse((o) => { if (o.isMesh) o.userData.prop = gr; });
+    // (Wave A fix D3) the five grates are baked where they lie into one frame
+    // mesh and one bars mesh (two draws a pass instead of ten): flat on the
+    // street 25 m apart, no two ever meet on the screen, so one ink id for
+    // them all prints the same lines; a round finds its grate by where it
+    // struck (nearGrate)
+    const m = new THREE.Matrix4().makeRotationY(0.1).setPosition(p);
+    const G = this._grates || (this._grates = { frame: [], bars: [] });
+    G.frame.push(merge(parts).applyMatrix4(m));
+    G.bars.push(merge(bars).applyMatrix4(m));
+    const gr = { kind: 'grate', group: null, pos: p.clone(), puff: 0, acc: 0 };
     this.items.push(gr);
+  }
+
+  flushGrates() {
+    const { M } = this.world;
+    const G = this._grates;
+    if (!G) return;
+    const g = new THREE.Group();
+    g.name = 'grates';
+    g.add(new THREE.Mesh(merge(G.frame), M.ironDark), new THREE.Mesh(merge(G.bars), M.iron));
+    this.add(g);
+    const any = { kind: 'grates' };
+    g.traverse((o) => { if (o.isMesh) o.userData.prop = any; });
+    this._grates = null;
   }
 
   manhole(p) {
@@ -261,9 +302,10 @@ export class Props {
     if (!G) return null;
     G.counters.props++;
     if (prop.kind === 'can') return this.hitCan(prop, hit, dir, weak);
-    if (prop.kind === 'booth') return this.hitBooth(prop, hit, dir);
+    if (prop.kind === 'booth') return this.hitBooth(prop, hit, dir, weak);
     if (prop.kind === 'hydrant') return this.hitHydrant(prop, hit, dir, weak);
     if (prop.kind === 'grate') { this.puffGrate(prop, 1); return null; }
+    if (prop.kind === 'grates') { const gr = this.nearGrate(hit.point.x, hit.point.z); if (gr) this.puffGrate(gr, 1); return null; }
     return null;
   }
 
@@ -301,13 +343,15 @@ export class Props {
     return null;
   }
 
-  hitBooth(b, hit, dir) {
+  hitBooth(b, hit, dir, weak = false) {
     const G = this.game, r = this.rng || (this.rng = this.world.rng.fork(8181));
     if (hit.mesh !== b.paneMesh) return null;
     const inv = new THREE.Matrix4().copy(b.group.matrixWorld).invert();
     const lp = hit.point.clone().applyMatrix4(inv);
     let best = null, bd = Infinity;
     for (const pn of b.panes) { const d = pn.c.distanceToSquared(lp); if (d < bd) { bd = d; best = pn; } }
+    // (the glass's own pane: destruct/Glass.js breaks it, Wave A fix D5)
+    if (best && best.glassPane && G.glass) return G.glass.hit(best.glassPane, { point: hit.point, normal: hit.normal, dir, power: weak ? 0.5 : 1, by: 'bullet' });
     if (!best || best.broken) return 'done';
     best.hits++;
     if (best.hits === 1) { G.fx.decals.crack(hit.point, hit.normal, 0.45, best); G.sfx.glass(hit.point, 0.35); return 'glass'; }

@@ -51,6 +51,29 @@ export const presets = {
   dressing: { x: -4.2, z: 22.5, yaw: yawTo(-4.2, 22.5, -10.2, 31.5), pitch: 0.12, fov: 62, t: 4 },
   // the steam main along the el's columns behind the start
   steammain: { x: 3.0, z: 20.0, yaw: yawTo(3.0, 20.0, 15.0, 8.0), pitch: 0.1, fov: 60, t: 4 },
+  // (Wave A fix D5) the phone booth at the alley mouth from the road, its
+  // street-facing pane shot &hits=<n> times (default 2) in the last 1.5 s,
+  // the eye firing: the glass's own star, cracks, pieces and shards
+  //   shot=booth&hits=0|1|2|6   (&age=<s> after the last round, default 0.5)
+  booth: {
+    x: -5.2, z: -25.4, yaw: yawTo(-5.2, -25.4, -8.9, -27.2), pitch: 0.02, fov: 50, t: 4,
+    stage(stage, camera, controller, game) {
+      const q = new URLSearchParams(location.search);
+      const n = parseInt(q.get('hits') ?? '2', 10), age = parseFloat(q.get('age') ?? '0.5');
+      const T = parseFloat(q.get('t') ?? '4');
+      const pts = [];
+      for (let k = 0; k < n; k++) pts.push(new THREE.Vector3(-8.9 + 0.465, 1.5 + ((k * 0.37) % 0.8) - 0.4, -27.2 + ((k * 0.61) % 0.7) - 0.35));
+      let k = 0;
+      game.scripts.push((t) => {
+        while (k < n && t >= T - age - 1.5 + 1.5 * (n > 1 ? k / (n - 1) : 1) - 1e-6) {
+          const eye = camera.position.clone(), dir = pts[k].clone().sub(eye).normalize();
+          const hit = game.rays.raycast(eye, dir, 30);
+          if (hit) game.react.bullet(hit, dir);
+          k++;
+        }
+      });
+    },
+  },
   // (an upper floor's pane shot out: the room it opens; with the
   // foundation's glass a black hole decal still lies over it: lane 3)
   shoproomsUp: {

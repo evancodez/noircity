@@ -35,7 +35,7 @@ import { cutPane, addStar, crackAll, pieces, paneGeometry, crackGeometry, shardG
 
 const SHARD_CAP = 150;      // shards flying or sliding
 const REST_CAP = 220;       // shards lying on the ground (the oldest go)
-const _q = new THREE.Quaternion(), _v = new THREE.Vector3(), _m = new THREE.Matrix4();
+const _q = new THREE.Quaternion(), _v = new THREE.Vector3(), _m = new THREE.Matrix4(), _o = new THREE.Vector3(), _d = new THREE.Vector3();
 const UP = new THREE.Vector3(0, 1, 0);
 
 // the frosted halo round a hole: a ring of crushed glass, its alpha a noisy
@@ -175,7 +175,7 @@ export class Glass {
   }
 
   // cut the pane on its first hit (the finest cells round that first hit)
-  prepare(pane, first) {
+  prepare(pane, first, { spokes = true } = {}) {
     if (pane.cut) return pane.cut;
     const G = this.game;
     const r = this.rng || (this.rng = this.stage.rng.fork(8311));
@@ -186,7 +186,7 @@ export class Glass {
     // than 16 cm, never finer than 3 cm; the star's rings scale with it)
     const s = Math.min(0.11, Math.max(0.03, Math.sqrt(area / 700)));
     const scale = Math.min(1, Math.max(0.35, s / 0.12));
-    const P = cutPane(outline, first, s, r, scale);
+    const P = cutPane(outline, first, s, r, scale, { spokes });
     P.scale = scale;
     P.stars = [];
     pane.cut = P;
@@ -337,7 +337,7 @@ export class Glass {
     }
     const sh = shardGeometry(P, group.cells, pane.thick || 0.006);
     sh.P = P; sh.cells = group.cells;
-    S.spawn(sh, F, vel, spin);
+    S.spawn(sh, F, vel, spin).pane = pane;
   }
 
   // the groups the cracks closed off from the frame fall out
@@ -393,7 +393,7 @@ export class Glass {
     if (!G || pane.state === 'gone') return;
     const F = this.frameOf(pane);
     let c = at ? this.toUV(pane, at) : [(this.rng || this.stage.rng.fork(8311)).range(-0.2, 0.2) * pane.w, -0.1 * pane.h];
-    const P = this.prepare(pane, c);
+    const P = this.prepare(pane, c, { spokes: false });
     const r = this.rng;
     if (!P.stars.length) { const s = addStar(P, c[0], c[1], r, { scale: P.scale }); if (s) P.stars.push(s); }
     const body = by === 'body' || power >= 1.4;
@@ -410,14 +410,24 @@ export class Glass {
     // (above the percolation line of the cells' edges - about half - the
     // glass falls apart in bits; below it, in big sheets: near the holes the
     // one, at the frame the other)
-    crackAll(P, P.stars, r, { near: 0.92, far: 0.62, edge: 0.42, reach: Math.max(0.5, Math.min(pane.w, pane.h) * 0.45) });
+    // (a body through it (Wave A fix D8): bits round him, but away from him
+    // the glass holds in large sheets - fewer cracks there - which tip out
+    // of the frame about their edge and fall onto the pavement)
+    crackAll(P, P.stars, r, body ? { near: 0.92, far: 0.26, edge: 0.12, reach: 0.6 } : { near: 0.92, far: 0.62, edge: 0.42, reach: Math.max(0.5, Math.min(pane.w, pane.h) * 0.45) });
     const tooth = Math.max(0.04, Math.min(0.14, Math.min(pane.w, pane.h) * 0.08));
     let n = 0;
     for (const g of pieces(P)) {
       // teeth: shallow pieces held by the frame stay
       if (g.frame && g.depth < tooth) continue;
-      const tip = g.frame && g.area > 0.03 && !body;
-      this.drop(pane, g, { dir, power: power * (body ? 1.2 : 1), burst, tip });
+      let far = true;
+      if (body) {
+        let cu = 0, cv = 0;
+        for (const ci of g.cells) { cu += P.cells[ci].c[0] * P.cells[ci].area; cv += P.cells[ci].c[1] * P.cells[ci].area; }
+        cu /= g.area || 1; cv /= g.area || 1;
+        far = Math.hypot((cu - c[0]) / 0.42, (cv - c[1]) / 0.85) > 1.05;
+      }
+      const tip = g.frame && g.area > 0.03 && far;
+      this.drop(pane, g, { dir, power: power * (body ? 1.2 : 1), burst: tip ? null : burst, tip });
       n++;
     }
     pane.broken = true;
@@ -448,7 +458,30 @@ export class Glass {
       for (const h of pane.halos) this.stage.scene.remove(h.mesh);
       pane.cut = null;
     }
+    // (its shards go with it: a retry must not find the old glass lying
+    // under a whole pane)
+    if (this.shards) this.shards.clear((s) => s.pane === pane);
     this.setState(pane, 'whole');
+  }
+
+  // take a pane out altogether (a breakable's own glass - the pie case's -
+  // made for one break; Breakables.restore puts the thing back whole)
+  removePane(pane) {
+    const G = this.game;
+    const i = this.panes.indexOf(pane);
+    if (i >= 0) this.panes.splice(i, 1);
+    if (this.shards) this.shards.clear((s) => s.pane === pane);
+    if (pane.owner) { this.restore(pane); return; }
+    for (const o of [pane.mesh, pane.proxy, pane.crackMesh]) if (o && o.parent) o.parent.remove(o);
+    for (const h of pane.halos || []) h.mesh.parent && h.mesh.parent.remove(h.mesh);
+    if (pane.proxy) this.stage.removeSolid(pane.proxy);
+    if (G && pane.proxy && G.rays.setEnabled) G.rays.setEnabled(pane.proxy, false);
+  }
+
+  // the shards lying (or still falling) inside a box, or all of them
+  clearShards(box = null) {
+    if (!this.shards) return 0;
+    return this.shards.clear((s) => !box || box.containsPoint(s.mesh.position));
   }
 
   update(dt) {
@@ -488,12 +521,27 @@ export class ShardField {
     if (m) return m;
     // (see-through: a clear shard is a dark pane with an inked outline; it
     // comes up opaque and white only while it glints)
-    return new THREE.MeshStandardMaterial({ color: 0x101010, roughness: 0.18, metalness: 0.5, envMap: this.mat.envMap, envMapIntensity: 0.8, emissive: 0x000000, transparent: true, opacity: 0.35, depthWrite: false, side: THREE.DoubleSide });
+    // (Wave A fix D4: with no ink silhouette of its own the shard shows by
+    // its tone - a grey sheet of glass catching the lamps - and its hairline)
+    // (clear: what is behind shows through it, lifted a little; it comes up
+    // white only while it glints)
+    return new THREE.MeshStandardMaterial({ color: 0x9a9a9a, roughness: 0.2, metalness: 0.6, envMap: this.mat.envMap, envMapIntensity: 1.6, emissive: new THREE.Color(0.02, 0.02, 0.02), transparent: true, opacity: 0.32, depthWrite: false, side: THREE.DoubleSide });
   }
 
   restMat() {
-    // lying on the street: a faint pale sheen (the lamps catch the flats)
+    // lying on the street: a faint pale sheen (the lamps catch the flats).
+    // (a shard at rest goes back to the world layer and takes the ink's own
+    // outline: the glass on the pavement of s18_matchbook is the level)
     return this._rest || (this._rest = new THREE.MeshStandardMaterial({ color: 0x202020, roughness: 0.3, metalness: 0.3, envMap: this.mat.envMap, envMapIntensity: 0.35, emissive: new THREE.Color(0.03, 0.03, 0.03), transparent: true, opacity: 0.55, depthWrite: false, side: THREE.DoubleSide }));
+  }
+
+  // (Wave A fix D4) A shard carries a thin contour, not the ink's heavy one:
+  // it is drawn on the effects layer (the scene pass only: the ink's id and
+  // depth probes see what lies under it, so it gets no silhouette line of
+  // its own) and its outline is a hairline of its own, one pixel of dark
+  // round its rim, riding with it
+  lineMat() {
+    return this._line || (this._line = new THREE.LineBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.85, depthWrite: false }));
   }
 
   spawn(sh, F, vel, spin, parent = null) {
@@ -501,13 +549,25 @@ export class ShardField {
     m.userData.inkId = this.inkId;
     m.userData.noRay = true;
     m.castShadow = false;
+    m.layers.set(LAYER.FX);
+    m.renderOrder = 2;
+    // (a sliver too small to hold a line is its tone alone: outlined, a
+    // shower of slivers printed as a scribble of wire)
+    if (sh.line && sh.area > 0.0035) {
+      const l = new THREE.LineSegments(sh.line, this.lineMat());
+      l.layers.set(LAYER.FX);
+      l.renderOrder = 3;
+      l.userData.noRay = true;
+      m.add(l);
+      m.userData.line = l;
+    }
     if (parent) { m.position.copy(parent.pos); m.quaternion.copy(parent.q); }
     else {
       m.position.copy(F.c).addScaledVector(F.U, sh.cu).addScaledVector(F.V, sh.cv);
       m.quaternion.setFromRotationMatrix(_m.makeBasis(F.U, F.V, F.N));
     }
     this.stage.scene.add(m);
-    const s = { mesh: m, vel, spin, area: sh.area, rad: Math.sqrt(sh.area) * 0.75, broke: !!parent, slide: false, flat: null, t: 0, sh };
+    const s = { mesh: m, vel, spin, area: sh.area, rad: Math.sqrt(sh.area) * 0.75, broke: !!parent, slide: false, flat: null, t: 0, sh, gx: 1e9, gz: 1e9, gy: 0 };
     this.live.push(s);
     while (this.live.length > SHARD_CAP) this.kill(this.live.shift());
     return s;
@@ -516,7 +576,45 @@ export class ShardField {
   kill(s) {
     this.stage.scene.remove(s.mesh);
     s.mesh.geometry.dispose();
+    if (s.mesh.userData.line) s.mesh.userData.line.geometry.dispose();
     if (s.mesh.material !== this._rest) (this.pool || (this.pool = [])).push(s.mesh.material);
+  }
+
+  // what a shard comes down on: the highest solid under it (a counter, a
+  // booth's table or bench, a car's roof), else the walking surface. Found
+  // by the bullets' rays, again only when it has moved ~15 cm across
+  groundAt(s) {
+    const p = s.mesh.position;
+    if (Math.hypot(p.x - s.gx, p.z - s.gz) < 0.15) return s.gy;
+    s.gx = p.x; s.gz = p.z;
+    const floor = this.stage.surfaceY(p.x, p.z);
+    let y = floor;
+    const G = this.stage.game;
+    if (G && G.rays) {
+      // (a big sheet rests on a support only where the support spans it: the
+      // lowest of five rays, its middle and four points out toward its edge;
+      // a sill under its middle alone does not hold it up)
+      const k = s.rad > 0.12 ? 0.6 * s.rad : 0;
+      let low = Infinity;
+      for (const [ox, oz] of k ? [[0, 0], [k, 0], [-k, 0], [0, k], [0, -k]] : [[0, 0]]) {
+        const hit = G.rays.raycast(_o.set(p.x + ox, p.y + 0.05, p.z + oz), _d.set(0, -1, 0), 6);
+        // (not the glass it came out of: a ray down the pane's own plane)
+        const yy = hit && !hit.mesh.userData.pane ? Math.max(floor, hit.point.y) : floor;
+        low = Math.min(low, yy);
+      }
+      y = Math.max(floor, low);
+    }
+    s.gy = y;
+    return y;
+  }
+
+  // take away the shards that match (flying or lying) -> how many went
+  clear(pred) {
+    let n = 0;
+    for (const L of [this.live, this.rest]) {
+      for (let i = L.length - 1; i >= 0; i--) if (pred(L[i])) { this.kill(L[i]); L.splice(i, 1); n++; }
+    }
+    return n;
   }
 
   // the glint: a shard turned so that it mirrors the lamps above into the
@@ -529,7 +627,7 @@ export class ShardField {
     const g = Math.pow(Math.abs(n.dot(h)), 60);
     const e = 0.02 + 3.5 * g;
     m.material.emissive.setRGB(e, e, e);
-    m.material.opacity = Math.min(1, 0.35 + 2 * g);
+    m.material.opacity = Math.min(1, 0.32 + 2 * g);
   }
 
   update(dt) {
@@ -539,7 +637,7 @@ export class ShardField {
       const s = this.live[i], m = s.mesh;
       s.t += dt;
       if (cam) this.glint(s, cam);
-      const gy = this.stage.surfaceY(m.position.x, m.position.z) + 0.004;
+      const gy = this.groundAt(s) + 0.004;
       if (!s.slide) {
         s.vel.y -= 9.8 * dt;
         s.vel.multiplyScalar(1 - 0.15 * dt);
@@ -575,6 +673,8 @@ export class ShardField {
           m.quaternion.copy(s.flat);
           (this.pool || (this.pool = [])).push(m.material);
           m.material = this.restMat();
+          m.layers.set(LAYER.WORLD);
+          if (m.userData.line) m.userData.line.visible = false;
           this.live.splice(i, 1);
           this.rest.push(s);
           while (this.rest.length > REST_CAP) this.kill(this.rest.shift());
@@ -603,7 +703,7 @@ export class ShardField {
       const pos = m.position.clone().add(off);
       const vel = new THREE.Vector3(s.vel.x * 0.5 + r.gauss() * 0.6, -s.vel.y * r.range(0.15, 0.3), s.vel.z * 0.5 + r.gauss() * 0.6);
       const spin = new THREE.Vector3(r.gauss(), r.gauss(), r.gauss()).multiplyScalar(r.range(4, 10));
-      this.spawn(g, null, vel, spin, { pos, q: m.quaternion });
+      this.spawn(g, null, vel, spin, { pos, q: m.quaternion }).pane = s.pane;
     }
   }
 }

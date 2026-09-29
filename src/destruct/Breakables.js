@@ -57,7 +57,8 @@ export class Breakables {
   // (opts: a kind's own settings - a pipe's fluid, a wire's ends, a sign's
   // brackets - kept on the handle as h.opts)
   add(object, { kind = 'thing', hp = 1, mass = 1, solid = true, collider = null, onBreak = null, ...opts } = {}) {
-    const h = { object, kind, hp, hp0: hp, mass, solid, collider, onBreak, broken: false, toppled: false, hits: 0, opts };
+    // (snap/made/removed/panes: what restore() needs - see there)
+    const h = { object, kind, hp, hp0: hp, mass, solid, collider, onBreak, broken: false, toppled: false, hits: 0, opts, snap: null, made: [], removed: [], panes: [] };
     object.traverse((o) => { if (o.isMesh) { o.userData.breakable = h; if (!solid) o.userData.noRay = true; } });
     // (added once the stage stands: into the bullets' world now; during the
     // build the stage collects every mesh on its own)
@@ -83,6 +84,8 @@ export class Breakables {
   hit(x, { point = null, dir = new THREE.Vector3(0, 0, -1), power = 1, by = 'bullet', neck = null } = {}) {
     const h = this.handle(x);
     if (!h || h.broken) return null;
+    this.snapshot(h);
+    this._cur = h;
     h.hits++;
     if (h.kind === 'jukebox') { this.dent(h, { point, dir, by }); return 'hit'; }  // (dented, never destroyed)
     // the street's things answer every hit in their own way (P1)
@@ -100,6 +103,8 @@ export class Breakables {
   // ---- the break -----------------------------------------------------------------
   breakIt(h, { point = null, dir = new THREE.Vector3(0, 0, -1), by = 'bullet', neck = null } = {}) {
     const G = this.game, S = this.stage;
+    this.snapshot(h);
+    this._cur = h;
     h.broken = true;
     const o = h.object;
     o.updateWorldMatrix(true, true);
@@ -113,11 +118,11 @@ export class Breakables {
     fn.call(this, h, { pos, dir: dir.clone().normalize(), by, held, how });
     if (h.kind !== 'pieCase') {
       o.visible = false;
-      o.traverse((m) => { if (m.isMesh) S.removeSolid(m); });
+      o.traverse((m) => { if (m.isMesh) this.unSolid(h, m); });
     }
     if (h.collider) {
       const C = S.colliders;
-      for (const arr of [C.circles, C.boxes]) { const i = arr.indexOf(h.collider); if (i >= 0) arr.splice(i, 1); }
+      for (const arr of [C.circles, C.boxes]) { const i = arr.indexOf(h.collider); if (i >= 0) { arr.splice(i, 1); h.colArr = arr; } }
     }
     if (G) {
       if (G.sfx && G.sfx.play) G.sfx.play('break_' + h.kind, pos);
@@ -163,7 +168,83 @@ export class Breakables {
     m.userData.inkId = o.userData.inkId ?? (() => { let id = 1; o.traverse((x) => { if (x.isMesh && x.userData.inkId) id = x.userData.inkId; }); return id; })();
     m.userData.noRay = true;
     m.castShadow = false;
-    return this.field.add(m, vel, spin, opts);
+    return this.field.add(m, vel, spin, { owner: this._cur, ...opts });
+  }
+
+  // ---- restore (Wave A fix D2): a retry, a second BEGIN, d.reset() ------------------
+  // The first blow (a hit, a topple, a dent) snapshots the thing as it stood:
+  // every node of it with its parent, its local transform, its visibility
+  // and its material. restore(handle) takes away what the break made (its
+  // pieces, a neck, cut wires' halves, the pie case's glass and its shards,
+  // a swing, a flicker, a jet), puts the snapshot back, the solids back into
+  // the bullets' world and its collider back in the room, and forgets the
+  // damage. clearPieces(box) sweeps the mess out of a box (everything that
+  // fell and lies there: pieces, glass shards, spills, marks).
+  snapshot(h) {
+    if (h.snap) return;
+    const list = [];
+    h.object.traverse((o) => list.push({ o, parent: o.parent, p: o.position.clone(), q: o.quaternion.clone(), s: o.scale.clone(), vis: o.visible, mat: o.isMesh ? o.material : null }));
+    h.snap = list;
+  }
+
+  // a mesh out of the bullets' world, remembered for restore
+  unSolid(h, m) {
+    // (a mesh collected by the stage at its build is in the bullets' world
+    // without being in stage.solids: anything not marked noRay was a solid)
+    if (!m.userData.noRay && !h.removed.includes(m)) h.removed.push(m);
+    this.stage.removeSolid(m);
+  }
+
+  restore(x, { place = true } = {}) {
+    const h = this.handle(x);
+    if (!h) return null;
+    const S = this.stage, G = this.game;
+    const own = new Set(h.snap ? h.snap.map((e) => e.o) : []);
+    // what the break made
+    this.moving = this.moving.filter((m) => m.h !== h);
+    this.swings = this.swings.filter((s) => s.h !== h);
+    this.flickers = this.flickers.filter((f) => f.h !== h);
+    this.jets = this.jets.filter((j) => j.h !== h);
+    for (const R of this.ropes) if (R.h === h && R.mesh.parent) { R.mesh.parent.remove(R.mesh); R.mesh.geometry.dispose(); }
+    this.ropes = this.ropes.filter((R) => R.h !== h);
+    if (this.pieces) this.pieces.drop((p) => p.owner === h, own);
+    for (const m of h.made) if (!own.has(m) && m.parent) m.parent.remove(m);
+    for (const pane of h.panes) if (S.glass && S.glass.removePane) S.glass.removePane(pane);
+    // the thing as it stood before the first blow
+    if (h.snap && place) {
+      for (const e of h.snap) {
+        const o = e.o;
+        if (o.parent !== e.parent) { if (e.parent) e.parent.add(o); else if (o.parent) o.parent.remove(o); }
+        o.position.copy(e.p); o.quaternion.copy(e.q); o.scale.copy(e.s); o.visible = e.vis;
+        if (e.mat && o.material !== e.mat) o.material = e.mat;
+        if (o.userData.ownMat) { delete o.userData.ownMat; delete o.userData.col0; delete o.userData.em0; }
+      }
+      h.object.updateWorldMatrix(true, true);
+    }
+    // (the room's own reset may have put some back already)
+    for (const m of h.removed) if (!S.solids.includes(m)) S.addSolid(m);
+    if (G && G.rays && G.rays.refresh) h.object.traverse((m) => { if (m.isMesh && S.solids.includes(m)) G.rays.refresh(m); });
+    if (h.collider && h.colArr && !h.colArr.includes(h.collider)) h.colArr.push(h.collider);
+    Object.assign(h, { broken: false, toppled: false, hp: h.hp0, hits: 0, dumped: false, cut: false, out: false, snap: null, made: [], removed: [], panes: [] });
+    delete h.rest;
+    if (G && G.pipeline && G.pipeline.dirtyShadows) G.pipeline.dirtyShadows();
+    return h;
+  }
+
+  // sweep a box (THREE.Box3, world) clear of what fell there - or everywhere
+  // (no box): the pieces, the glass shards, the spills running off an edge,
+  // the pools and marks on its floor. A thing's own meshes that fell (a pie
+  // slid out of its case, a crate thrown off a stack) are left for restore().
+  clearPieces(box = null) {
+    const S = this.stage, G = this.game;
+    const inBox = (o) => !box || box.containsPoint(o.getWorldPosition(_v));
+    const own = new Set();
+    for (const h of this.list) if (h.snap) for (const e of h.snap) own.add(e.o);
+    let n = this.pieces ? this.pieces.drop((p) => inBox(p.mesh), own) : 0;
+    this.spills = this.spills.filter((s) => !(!box || box.containsPoint(s.edge.at)));
+    if (S.glass && S.glass.clearShards) n += S.glass.clearShards(box);
+    if (G && G.fx && G.fx.decals && G.fx.decals.clearIn) G.fx.decals.clearIn(box);
+    return n;
   }
 
   // the liquid in it bursts: drops, then a spill where it lands
@@ -239,7 +320,7 @@ export class Breakables {
         glows.push(m);
       }
     });
-    this.flickers.push({ meshes: glows, t: 0, dur: 0.7 + 0.2 * h.hits, seed: r.next() * 100 });
+    this.flickers.push({ h, meshes: glows, t: 0, dur: 0.7 + 0.2 * h.hits, seed: r.next() * 100 });
     // the third hit: a shower of sparks out of its works
     if (h.hits % 3 === 0) {
       const c = point || o.getWorldPosition(new THREE.Vector3()).add(new THREE.Vector3(0, 1, 0));
@@ -258,6 +339,7 @@ export class Breakables {
   topple(x, impulse = new THREE.Vector3(1, 0, 0)) {
     const h = this.handle(x);
     if (!h || h.broken || h.toppled) return;
+    this.snapshot(h);
     h.toppled = true;
     const o = h.object;
     _v.set(impulse.x, 0, impulse.z);
@@ -391,7 +473,7 @@ export class Breakables {
   // white jet with a hiss for 4 s), a barrel's leak (a dark dribble)
   jet(at, dir, fluid = 'water', follow = null) {
     const G = this.game;
-    const J = { at: at.clone(), dir: dir.clone().normalize(), fluid, t: 0, acc: 0, follow };
+    const J = { h: this._cur, at: at.clone(), dir: dir.clone().normalize(), fluid, t: 0, acc: 0, follow };
     if (follow) {
       follow.updateWorldMatrix(true, false);
       J.local = follow.worldToLocal(at.clone());
@@ -583,9 +665,10 @@ const HIT = {
       const q = o.object.getWorldPosition(_v);
       // (one standing on it is thrown off and falls: a loose piece now)
       if (Math.hypot(q.x - p.x, q.z - p.z) < 0.5 && q.y > p.y + 0.1) {
+        this.snapshot(o);
         o.toppled = true;
         const r = this.R;
-        this.field.add(o.object, dir.clone().multiplyScalar(r.range(0.8, 1.6)).add(new THREE.Vector3(r.gauss() * 0.3, r.range(0.5, 1.2), r.gauss() * 0.3)), new THREE.Vector3(r.gauss() * 2, r.gauss() * 2, r.gauss() * 2));
+        this.field.add(o.object, dir.clone().multiplyScalar(r.range(0.8, 1.6)).add(new THREE.Vector3(r.gauss() * 0.3, r.range(0.5, 1.2), r.gauss() * 0.3)), new THREE.Vector3(r.gauss() * 2, r.gauss() * 2, r.gauss() * 2), { owner: o });
       }
     }
     return 'hit';
@@ -603,7 +686,7 @@ const HIT = {
       m.rotation.set(r.next() * 6, r.next() * 6, r.next() * 6);
       m.userData.inkId = 3;
       m.userData.noRay = true;
-      this.field.add(m, new THREE.Vector3(r.gauss() * 1.2, r.range(2.5, 4.5), r.gauss() * 1.2).addScaledVector(dir, 0.8), new THREE.Vector3(r.gauss() * 3, r.gauss() * 3, r.gauss() * 3), { paper: true, thin: true });
+      this.field.add(m, new THREE.Vector3(r.gauss() * 1.2, r.range(2.5, 4.5), r.gauss() * 1.2).addScaledVector(dir, 0.8), new THREE.Vector3(r.gauss() * 3, r.gauss() * 3, r.gauss() * 3), { paper: true, thin: true, owner: h });
     }
     return 'hit';
   },
@@ -639,7 +722,7 @@ const HIT = {
     const A = h.opts.a, B = h.opts.b;
     const cut = point ? point.clone() : A.clone().lerp(B, 0.5);
     h.object.visible = false;
-    h.object.traverse((m) => { if (m.isMesh) this.stage.removeSolid(m); });
+    h.object.traverse((m) => { if (m.isMesh) this.unSolid(h, m); });
     const mat = this.matOf(h.object);
     for (const [pin, end] of [[A, cut], [B, cut]]) {
       const n = 12;
@@ -650,7 +733,7 @@ const HIT = {
       mesh.userData.inkId = h.object.userData.inkId || 3;
       mesh.userData.noRay = true;
       this.stage.scene.add(mesh);
-      this.ropes.push({ pin: pin.clone(), pts, prev, seg: len / (n - 1), r: h.opts.r || 0.012, mesh, t: 0 });
+      this.ropes.push({ h, pin: pin.clone(), pts, prev, seg: len / (n - 1), r: h.opts.r || 0.012, mesh, t: 0 });
     }
     return 'break';
   },
@@ -673,8 +756,9 @@ const HIT = {
       if (n === h || n.kind !== 'neon' || n.out) continue;
       if (n.object.getWorldPosition(_v).distanceTo(p) > 0.9) continue;
       const meshes = [];
+      this.snapshot(n);
       n.object.traverse((m) => { if (m.isMesh) { if (!m.userData.ownMat) { m.material = m.material.clone(); m.userData.ownMat = true; m.userData.col0 = m.material.color.clone(); m.userData.em0 = m.material.emissive ? m.material.emissive.clone() : null; } meshes.push(m); } });
-      this.flickers.push({ meshes, t: 0, dur: r.range(0.8, 1.6), seed: r.next() * 100 });
+      this.flickers.push({ h: n, meshes, t: 0, dur: r.range(0.8, 1.6), seed: r.next() * 100 });
     }
     return 'break';
   },
@@ -751,6 +835,7 @@ const BREAK = {
       neck.position.copy(o.position); neck.quaternion.copy(o.quaternion); neck.scale.copy(o.scale);
       if (o.userData.grip) neck.userData.grip = o.userData.grip;
       o.parent.add(neck);
+      h.made.push(neck);
       how.neck = neck;
     } else {
       this.piece(o, ng, glass, flingOut(r, pos, o.getWorldPosition(_v), dir, 0.8), spinOf(r));
@@ -874,7 +959,7 @@ const BREAK = {
       m.userData.noRay = true;
       const outer = c.clone().addScaledVector(ax, s * L / 2);
       const fall = Math.asin(Math.min(0.95, (c.y - this.floorAt(c)) / (L / 2)));
-      this.field.addHinge(m, outer, new THREE.Vector3().crossVectors(ax, UP).multiplyScalar(s), fall * r.range(0.9, 1.0));
+      this.field.addHinge(m, outer, new THREE.Vector3().crossVectors(ax, UP).multiplyScalar(s), fall * r.range(0.9, 1.0), h);
     }
     // the leg goes over
     o.children.forEach((ch) => {
@@ -901,7 +986,7 @@ const BREAK = {
       const bs = b.getSize(new THREE.Vector3()), bc = b.getCenter(new THREE.Vector3());
       const thin = bs.x < bs.z ? (bs.x < bs.y ? 'x' : 'y') : (bs.z < bs.y ? 'z' : 'y');
       m.visible = false;
-      this.stage.removeSolid(m);
+      this.unSolid(h, m);
       return { c: bc, n: thin === 'x' ? new THREE.Vector3(1, 0, 0) : thin === 'z' ? new THREE.Vector3(0, 0, 1) : new THREE.Vector3(0, 1, 0), w: thin === 'x' ? bs.z : bs.x, h: thin === 'y' ? bs.z : bs.y };
     }) : [
       { c: c.clone().add(new THREE.Vector3(dir.x < 0 ? s.x / 2 : -s.x / 2, 0, 0)), n: new THREE.Vector3(1, 0, 0), w: s.z, h: s.y },
@@ -909,6 +994,7 @@ const BREAK = {
     ];
     for (const f of faces) {
       const p = glass.addPane({ centre: f.c, normal: f.n, w: Math.max(0.1, f.w), h: Math.max(0.1, f.h), tag: 'pieCase' });
+      h.panes.push(p);
       glass.shatter(p, { dir, power: 1.2, at: pos });
     }
     // what is in it (anything with a prop kind) slides out onto the counter
@@ -919,7 +1005,7 @@ const BREAK = {
       const wp = m.getWorldPosition(new THREE.Vector3()), wq = m.getWorldQuaternion(new THREE.Quaternion());
       this.stage.scene.attach(m);
       m.position.copy(wp); m.quaternion.copy(wq);
-      this.field.add(m, dir.clone().multiplyScalar(r.range(0.6, 1.4)).add(new THREE.Vector3(r.gauss() * 0.2, r.range(0.1, 0.5), r.gauss() * 0.2)), spinOf(r, 0.2), { slide: true });
+      this.field.add(m, dir.clone().multiplyScalar(r.range(0.6, 1.4)).add(new THREE.Vector3(r.gauss() * 0.2, r.range(0.1, 0.5), r.gauss() * 0.2)), spinOf(r, 0.2), { slide: true, owner: h });
     }
     void G;
   },
@@ -960,9 +1046,27 @@ export class PieceField {
     return p;
   }
 
-  addHinge(m, pivot, axis, angle) {
+  addHinge(m, pivot, axis, angle, owner = null) {
     this.stage.scene.add(m);
-    this.live.push({ mesh: m, hinge: { pivot, axis: axis.normalize(), ang: 0, w: 0, max: angle, p0: m.position.clone(), q0: m.quaternion.clone() }, t: 0 });
+    this.live.push({ mesh: m, owner, hinge: { pivot, axis: axis.normalize(), ang: 0, w: 0, max: angle, p0: m.position.clone(), q0: m.quaternion.clone() }, t: 0 });
+  }
+
+  // take away the pieces that match (flying or lying); a mesh in `keep` (a
+  // thing's own, put back by restore) stays in the scene -> how many went
+  drop(pred, keep = null) {
+    let n = 0;
+    for (const L of [this.live, this.rest]) {
+      for (let i = L.length - 1; i >= 0; i--) {
+        const p = L[i];
+        if (!pred(p)) continue;
+        L.splice(i, 1);
+        n++;
+        if (keep && keep.has(p.mesh)) continue;
+        if (p.mesh.parent) p.mesh.parent.remove(p.mesh);
+        if (p.mesh.geometry && p.owner) p.mesh.geometry.dispose();
+      }
+    }
+    return n;
   }
 
   settle(p, now = false) {

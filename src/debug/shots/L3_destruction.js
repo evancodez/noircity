@@ -291,6 +291,40 @@ function stageStreetStudy(world, camera, controller, game) {
   game.scripts.push((t) => { while (k < ev.length && t >= ev[k][0] - 1e-6) ev[k++][1](); });
 }
 
+// smokestudy (Wave A fix D1): the cigarette's thread from my seat (stool 4,
+// the seated eye), the tip held at arm's length in front of me, lit from
+// t = 0.3; the room as scene 1 has it (settle), no hands drawn.
+//   shot=smokestudy&t=<s>        (default 8: the thread fully grown)
+//   &exhale=<age>                 a breath out, <age> s before the frame
+//   &door=1                       the street door held open (the draught)
+//   &tip=x,y,z                    the tip anywhere (world)
+function stageSmokeStudy(world, camera, controller, game) {
+  const T = tEnd(presets.smokestudy);
+  const q = Q();
+  const pose = { x: -13.78, y: 1.6, z: 4.1, yaw: Math.PI / 2, pitch: -0.14, fov: 68 };
+  controller.setMode('cutscene', { track: () => pose });
+  camera.fov = pose.fov; camera.updateProjectionMatrix();
+  if (game.setViewmodelVisible) game.setViewmodelVisible(false);
+  const tip = q.has('tip') ? V(...q.get('tip').split(',').map(Number)) : V(-14.15, 1.30, 4.22);
+  const c = buildProp('cigarette');
+  c.position.copy(tip).add(V(0.035, 0, -0.02)); c.rotation.set(0, 0.5, Math.PI / 2 - 0.25);
+  if (c.userData.setTip) c.userData.setTip('lit');
+  world.scene.add(c);
+  const door = world.part('dinerFront') && world.part('dinerFront').door;
+  const ex = q.has('exhale') ? T - parseFloat(q.get('exhale')) : null;
+  let breathed = false;
+  game.scripts.push((t) => {
+    if (t > 0.3) game.fx.cig.wisp(tip, 'study');
+    if (door && q.get('door') === '1') { door.open(); door.holdT = 99; }
+    if (ex != null && !breathed && t >= ex - 1e-6) {
+      breathed = true;
+      const mouth = V(pose.x - 0.06, pose.y - 0.09, pose.z);
+      const dir = V(-Math.cos(pose.pitch), Math.sin(pose.pitch) + 0.25, 0).normalize();
+      game.fx.cig.exhale(mouth, dir);
+    }
+  });
+}
+
 const tEnd = (shot) => { const t = parseFloat(Q().get('t') ?? ''); return Number.isFinite(t) ? t : shot.t; };
 
 export const presets = {
@@ -301,6 +335,7 @@ export const presets = {
   glassstudy2: { x: -6.0, z: 5.0, y: 0.15, yaw: Math.PI / 2, pitch: 0.08, fov: 58, t: 4, stage: stageGlassStudy },
   windowman: { x: -6.2, z: -8.6 + 1.3, y: 0.15, yaw: 2.55, pitch: 0.0, fov: 62, t: 4, stage: stageWindowMan },
   wreckstudy: { x: 0.4, z: -9.0, y: 0.0, yaw: 0, pitch: -0.02, fov: 70, t: 2, stage: stageWreckStudy },
+  smokestudy: { scene: 'diner', beat: 'settle', t: 8, viewmodel: false, stage: stageSmokeStudy },
 };
 // (one wreck: 8 m from its side)
 if (Q().get('wk')) Object.assign(presets.wreckstudy, { z: -11.5, fov: 55 });

@@ -144,6 +144,19 @@ class DecalPool {
   }
 
   clear() { this.next = 0; this.count = 0; this.mesh.count = 0; this.mesh.visible = false; }
+
+  // hide every mark lying inside a box (Box3, world) -> how many
+  clearIn(box) {
+    let n = 0;
+    for (let i = 0; i < this.count; i++) {
+      if (this.aCol.getW(i) <= 0) continue;
+      this.mesh.getMatrixAt(i, _m);
+      _p.setFromMatrixPosition(_m);
+      if (box.containsPoint(_p)) { this.aCol.setW(i, 0); this.owner[i] = null; n++; }
+    }
+    if (n) this.aCol.needsUpdate = true;
+    return n;
+  }
 }
 
 export const BLOOD_DECAL = [0.085, 0.00034, 0.0034];   // prints ~#c8102e
@@ -218,5 +231,10 @@ export class Decals {
   }
 
   clear() { this.ground.clear(); this.surface.clear(); this.pools.clear(); if (this.glass) this.glass.clear(); }
+  // every mark inside a box (a retry sweeps the room), or all of them
+  clearIn(box = null) {
+    if (!box) { this.clear(); return; }
+    for (const P of [this.ground, this.surface, this.pools, this.glass]) if (P) P.clearIn(box);
+  }
   get total() { return this.ground.count + this.surface.count + this.pools.count + (this.glass ? this.glass.count : 0); }
 }
