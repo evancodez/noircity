@@ -6,8 +6,8 @@ names in `docs/story/review/wave-a/`. Then `docs/story/CONTRACTS.md`,
 (the defects list and how the lanes were wired), and your section below.
 
 ## Rules for every fix lane
-- Base: branch `wave-a/integration` at `f08ba93`. In your worktree:
-  `git switch -c wave-a/fix-<letter> f08ba93`, `npm ci`,
+- Base: the head of branch `wave-a/integration` (it holds the integrated build `f08ba93` plus these briefs and the review frames). In your worktree:
+  `git switch -c wave-a/fix-<letter> wave-a/integration`, `npm ci`,
   `NOIR_PORT=<port> npm run dev &`, `export NOIR_PORT=<port>`.
 - Edit only the files your section owns. If you need something from
   another fix lane, call it with `?.` by the name given here and say so in
