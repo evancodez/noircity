@@ -239,6 +239,8 @@ function beginFight(ctx, mack, { manner = 'measured', hp = null, lesson = false,
       if (!w) return;
       const hip = mack.bones.chest.getWorldPosition(V(0, 0, 0));
       stage.glass.shatter(w.pane, { dir: V(1, 0.15, 0), power: 2, by: 'body', at: hip });
+      // (the hole he made is a way out: the wall opens there)
+      const fr = stage.part('dinerFront'); if (fr && fr.openBay) fr.openBay(w.name);
       G.sfx.play('break_glass_big', V(DINER.faceX, 1.8, DINER.bays[w.name]));
       // the street's rain and its sound come into the room
       G.sfx.roomOpen(0.5);
@@ -432,6 +434,7 @@ function mackOutside(ctx, w = 'B4') {
   clearRoom(ctx, true);
   const pane = stage.part('dinerFront').panes[w];
   if (!pane.broken && stage.game) stage.glass.shatter(pane, { dir: V(1, 0.15, 0), power: 2, by: 'body', at: V(DINER.faceX - 0.1, 1.5, DINER.finish[w].z) });
+  { const fr = stage.part('dinerFront'); if (fr && fr.openBay && pane.broken) fr.openBay(w); }
   const L = landing(w);
   const mack = cast.spawn('brawler', { at: { x: L.x, z: L.z }, yaw: -Math.PI / 2 });
   mack.setState('br_down', 0);
