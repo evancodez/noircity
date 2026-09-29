@@ -10,6 +10,8 @@ import { NavGrid } from '../enemies/Nav.js';
 import { CoverSet } from '../enemies/HoodAI.js';
 import { Fx } from '../fx/Fx.js';
 import { React } from '../fx/React.js';
+import { Glass } from '../destruct/Glass.js';
+import { Breakables } from '../destruct/Breakables.js';
 
 // The Stage: a place (docs/story/CONTRACTS.md §2.2). This base holds the
 // engine services every place has; the place itself is assembled from PARTS
@@ -29,6 +31,8 @@ import { React } from '../fx/React.js';
 //   stage.street                    { addImpact(stage, x, z, s), addBlast(...) }:
 //                                   the street part's, a no-op without one
 //   stage.hoods                     the Hoods (enemies/Hood.js): spawn(pos, variant)
+//   stage.glass, stage.breakables   the panes and the things that break
+//                                   (src/destruct/): a part registers its own
 //   stage.part(name)                the api a part's build() returned (also
 //                                   stage[name], the old World's fields)
 //   stage.anchor(name)              a named place: { pos, yaw, ... }
@@ -44,6 +48,8 @@ import { React } from '../fx/React.js';
 const BASE_LOOK = {
   fogDensity: FOG.density, fogColor: FOG.color.clone(), exposure: EXPOSURE,
   rainOverlay: 1, rain3d: 1, grain: 1, ambient: 1, reflect: 'street', haze: 0,
+  // (the sound of the place: sfx.room(name) follows the Look the eye is in)
+  room: 'street',
 };
 // (a stage without a street part: impacts and blasts fall on nothing)
 const NO_STREET = { addImpact() {}, addBlast() {} };
@@ -98,6 +104,11 @@ export class Stage {
     // saturated orange light printed every lit edge as an orange outline;
     // the colour lives in the flames and their column in the wet street)
     for (const L of this.fxLights.fire) L.color.setRGB(1.0, 0.87, 0.76);
+
+    // the registries a part fills while it builds: its panes and the things
+    // that break (plain lists: they make no mesh and draw no rng)
+    this.glass = new Glass(this);
+    this.breakables = new Breakables(this);
 
     // the parts, in order (the order is the build order of the ink ids,
     // the RNG draws and the scene graph: never reorder a stage's parts)
@@ -191,6 +202,7 @@ export class Stage {
     this.U.uTime.value = t;
     for (const u of this.updaters) u.fn(u.api, dt, t, camera, pixelHeight);
     this.hoods.update(dt, t, camera);
+    this.breakables.update(dt);
     const sorted = this.lights.sync(camera.position);
     // the 4 nearest lamps drive the ink pass' white rim light
     this._rim.length = 0;

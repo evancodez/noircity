@@ -7,6 +7,7 @@ import { Casings } from './Casings.js';
 import { Impacts } from './Impacts.js';
 import { Blood } from './Blood.js';
 import { Explosions } from './Explosion.js';
+import { Pour, Cig, Punch } from './StoryFx.js';
 import { makeBloodAtlas, makeFlashAtlas, makeFireAtlas, makeGlassAtlas, ATLAS, FIRE } from './fxTextures.js';
 
 // the muzzle puff (Phase 3c): a compact DENSE core (col 0.13, alpha ~0.7,
@@ -85,9 +86,15 @@ export class Fx {
     this.impacts = new Impacts(world, this);
     this.bloodFx = new Blood(world, this);
     this.explosions = new Explosions(world, this);
+    // the story's small effects (fx/StoryFx.js): the pour, the cigarette's
+    // smoke, a fist landing
+    this.pour = new Pour(this);
+    this.cig = new Cig(this);
+    this.hit = new Punch(this);
   }
 
   update(dt, time) {
+    this.pour.update(dt);
     this.flash.update(dt, time);
     this.blood.update(dt);
     this.chips.update(dt);

@@ -28,6 +28,10 @@ export class React {
     let res = null;
     if (ud.car) res = W.cars.hit(ud.car, hit, dir, { weak });
     else if (ud.lamp && W.lamps.hit) res = weak ? null : W.lamps.hit(ud.lamp, hit, dir);
+    // a pane of its own (destruct/Glass.js) and anything breakable
+    // (destruct/Breakables.js)
+    else if (ud.pane && W.glass) res = W.glass.hit(ud.pane, { point: hit.point, normal: hit.normal, dir, power: weak ? 0.5 : 1, by: 'bullet' });
+    else if (ud.breakable && W.breakables) { W.breakables.hit(ud.breakable, { point: hit.point, dir, power: weak ? 0.3 : 1, by: 'bullet' }); res = null; }
     else if (ud.facadeGlass && W.facade.hit) res = W.facade.hit(hit, dir);
     else if (ud.prop && W.props.hit) res = W.props.hit(ud.prop, hit, dir, { weak });
     else if (hit.surf === SURF.WATER || hit.surf === SURF.PAVE) {

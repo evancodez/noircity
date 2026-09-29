@@ -83,7 +83,7 @@ export class Facade {
         const r = rng.next();
         const kind = r < 0.0 ? 'lit' : r < 0.14 ? 'dim' : 'dark';
         (kind === 'lit' ? glassLit : kind === 'dim' ? glassDim : glassDark).push(glass);
-        this.windows.push({ geo: glass, kind, c: V3(xf + 0.01, y + h / 2, z), w, h, broken: false, hits: 0 });
+        this.windows.push(this.world.glass.addPane({ geo: glass, kind, c: V3(xf + 0.01, y + h / 2, z), w, h, broken: false, hits: 0, shared: true, owner: this, tag: 'facade' }));
         if (r < 0.22 && rng.next() < 0.6) {
           // drawn blind: dark band over the top part of the lit window
           const bh = h * rng.range(0.3, 0.7);
@@ -102,7 +102,7 @@ export class Facade {
       const w = 2.9, h = 3.3;
       const glass = new THREE.PlaneGeometry(w, h).rotateY(Math.PI / 2).translate(X + 0.03, 0.75 + h / 2, z);
       glassDark.push(glass);
-      this.windows.push({ geo: glass, kind: 'dark', c: V3(X + 0.03, 0.75 + h / 2, z), w, h, broken: false, hits: 0, shop: true });
+      this.windows.push(this.world.glass.addPane({ geo: glass, kind: 'dark', c: V3(X + 0.03, 0.75 + h / 2, z), w, h, broken: false, hits: 0, shop: true, shared: true, owner: this, tag: 'facade.shop' }));
       frameParts.push(roundedBox(0.2, 0.2, w + 0.3, 0.05, 2).translate(X + 0.1, 0.75 + h + 0.1, z));
       frameParts.push(roundedBox(0.22, 0.28, w + 0.3, 0.05, 2).translate(X + 0.11, 0.7, z));
       frameParts.push(roundedBox(0.08, h, 0.08, 0.03, 2).translate(X + 0.05, 0.75 + h / 2, z));
@@ -142,8 +142,8 @@ export class Facade {
   // ---- Phase 3a: shooting the windows ---------------------------------------
   bind(game) { this.game = game; }
 
-  // a round hit a pane of the near building: the first cracks it, the
-  // second (or any round into a crack) shatters it
+  // a round hit a pane of the near building: find which one (the panes
+  // are drawn merged, one mesh per kind); the pane cracks or goes
   hit(hit, dir) {
     const G = this.game;
     if (!G) return null;
@@ -156,43 +156,16 @@ export class Facade {
       if (d < bd) { bd = d; best = w; }
     }
     if (!best || bd > 0.3) return null;
-    if (best.broken) return 'done';      // through the hole, into the dark room
-    best.hits++;
-    if (best.hits === 1 && !best.shop) {
-      G.fx.decals.crack(hit.point, hit.normal, 0.7, best);
-      G.sfx.glass(hit.point, 0.35);
-      return 'glass';
-    }
-    this.shatter(best, dir);
-    return 'glass';
+    // (the crack and the shatter are the panes' own: destruct/Glass.js)
+    return this.world.glass.hit(best, { point: hit.point, normal: hit.normal, dir });
   }
 
-  shatter(w, dir = new THREE.Vector3(-1, 0, 0)) {
-    const G = this.game, r = G.rng, F = G.fx, M = this.world.M;
-    w.broken = true;
-    G.fx.decals.hideOwner(w);
-    // a lit pane goes dark: it moves into the dark glass mesh
-    if (w.kind !== 'dark') {
-      const from = w.kind;
-      w.kind = 'dark';
-      this.rebuildGlass(from);
-      this.rebuildGlass('dark');
-    }
-    // the hole: black, jagged, glass teeth left round the frame
-    F.decals.paneHole(w.c.clone().add(new THREE.Vector3(0.004, 0, 0)), new THREE.Vector3(1, 0, 0), w.w, w.h);
-    // shards: out and down onto the pavement
-    const n = Math.round(10 + w.w * w.h * 6);
-    for (let k = 0; k < n; k++) {
-      const s = r.range(0.04, 0.12);
-      F.debris.spawn({
-        pos: w.c.clone().add(new THREE.Vector3(0.05, r.gauss() * w.h * 0.3, r.gauss() * w.w * 0.3)),
-        vel: new THREE.Vector3(r.range(0.4, 2.2) - dir.x * 0.3, r.range(-0.3, 1.2), r.gauss() * 0.8),
-        life: r.range(1.0, 2.0), size: [s, s * r.range(0.4, 0.8)], rot: r.next() * 6.28, spin: r.gauss() * 10,
-        col: [0.32, 0.32, 0.32], cell: 12, gravity: 9.8, ground: 0.17, fadeOut: 0.12, lit: w.kind === 'dark' ? 1.5 : 3, litT: 0.12,
-      });
-    }
-    G.sfx.glass(w.c, 1.2);
-    G.counters.windows++;
+  shatter(w, dir = new THREE.Vector3(-1, 0, 0)) { this.world.glass.shatter(w, { dir }); }
+
+  // destruct/Glass.js: a lit pane that went dark moves into the dark mesh
+  paneGone(w, from) {
+    this.rebuildGlass(from);
+    this.rebuildGlass('dark');
   }
 
   rebuildGlass(kind) {
