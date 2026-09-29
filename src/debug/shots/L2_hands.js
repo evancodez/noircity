@@ -14,6 +14,13 @@ import * as THREE from 'three';
 //   handclip&clip=<name>&ct=<s>   a clip of the hands at ct seconds into it, in its
 //                             place: the diner's clips seated at the counter, the
 //                             fists' in the ring facing Mack, the Tommy gun's on the street
+//     &beatview=1             the diner's clips keep the beat's own view (else the
+//                             seat's square view: straight across the counter)
+//   seatstudy                 the first frame of the game: on stool 4, the seat's own
+//                             default view (square to the counter, pitch -0.14, no
+//                             roll), the hands at rest on the counter
+//     &lit=1                  the cigarette lit in the right hand
+//     &pitch=<rad> &yaw=<rad> the look moved off the square (the lean follows)
 // (the diner and the ring are set up through the scene shot mode:
 // game.scenes.shot, as ?scene= does)
 const Q = () => new URLSearchParams(location.search);
@@ -83,6 +90,24 @@ function handStudy(stage, camera, controller, game) {
   orbit(game, controller, camera);
 }
 
+// the seat's own view: square to the counter (the anchor's yaw), its
+// default pitch; the hands keep what the beat gave them
+function seatSquare(controller, { pitch = null, yaw = 0 } = {}) {
+  controller.setMode('seated', { anchor: 'diner.stool.player', ease: 1e-3, ...(pitch != null ? { pitch } : {}) });
+  if (yaw) controller.yaw += yaw;
+  controller.apply(0);
+}
+
+function seatStudy(stage, camera, controller, game) {
+  game.scenes.shot('diner', Q().get('lit') === '1' ? 'order' : 'settle');
+  const dot = game.cast && game.cast.get && game.cast.get('dot');
+  if (dot && Q().get('lit') === '1') dot.place('diner.serve.2');
+  const pitch = parseFloat(Q().get('pitch') ?? '');
+  seatSquare(controller, { pitch: Number.isFinite(pitch) ? pitch : null, yaw: num('yaw', 0) });
+  const pose = Q().get('pose');
+  if (pose) game.player.hands.pose(pose);
+}
+
 function handClip(stage, camera, controller, game) {
   const clip = Q().get('clip') || 'lightUp';
   const ct = num('ct', 1);
@@ -104,6 +129,7 @@ function handClip(stage, camera, controller, game) {
     game.scenes.shot('fight', 'outside');
   } else {
     game.scenes.shot('diner', clip === 'payWallet' ? 'pay' : clip === 'reachGlass' || clip === 'sip' || clip === 'putDown' ? 'drink' : clip === 'drag' || clip === 'ash' ? 'order' : 'settle');
+    if (Q().get('beatview') !== '1') seatSquare(controller);
     // (the cigarette lit: the beat's stand-in one, into the hand as the hands hold it)
     if (clip === 'drag' || clip === 'ash') { const c = H.cigarette(); if (c) { H.lit = true; if (H.held.R !== c) H.hold(c, 'R'); } }
     if (clip === 'putDown') { let done0 = false; game.scripts.push((t) => { if (!done0 && t >= 0.1) { done0 = true; H.play('reachGlass'); } }); }
@@ -117,6 +143,7 @@ const SHOT_T = Math.round((num('ct', 1) + 0.5) * 60) / 60;
 
 export const presets = {
   handstudy: { t: 1, viewmodel: true, stage: handStudy },
+  seatstudy: { t: 1, viewmodel: true, stage: seatStudy },
   handclip: { t: SHOT_T, viewmodel: true, stage: handClip },
   // the reload on the street (the golden 'reload' composition)
   handreload: { x: -3.8, z: -9.0, y: 0.07, yaw: -0.105, pitch: 0.075, fov: 70, t: SHOT_T, viewmodel: true, holdWindow: 0, stage: handClip },

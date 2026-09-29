@@ -253,6 +253,7 @@ export class Hands {
       this.hold(null, hand, { keep: act === 'drop' });
       if (act === 'drop') return;
       p.userData._handTaken = false;
+      if (p.userData.setTilt) p.userData.setTilt(null);
       if (!p.parent) stage.scene.add(p);
       // (on the counter: upright, its base on the top)
       if (this.set === 'smoke') {
@@ -336,6 +337,26 @@ export class Hands {
     m.premultiply(new THREE.Matrix4().copy(this._frames.body).invert());
     if (off) m.premultiply(new THREE.Matrix4().makeTranslation(...off));
     return this.poseForProp(side, prop, m, 'body', F, e);
+  }
+
+  // The same, but the prop taken upright where it stands and the hand coming
+  // at it from a chosen side: `fwd` (body frame) is the prop's +z in the
+  // hand, so the grip does not depend on how a round thing happens to be
+  // turned on the counter (a tumbler: the hand on its near left, the
+  // fingers round its far side).
+  holdPoseUpright(side, prop, fwd, F, e = null, off = null) {
+    if (!prop) return null;
+    this.frames();
+    this.vm.root.updateMatrixWorld(true);
+    prop.updateMatrixWorld(true);
+    const W = (this.origins && this.origins.get(prop)) || prop.matrixWorld;
+    const m = new THREE.Matrix4().copy(this.vm.root.matrixWorld).invert().multiply(W);
+    m.premultiply(new THREE.Matrix4().copy(this._frames.body).invert());
+    const pos = new THREE.Vector3().setFromMatrixPosition(m);
+    if (off) pos.add(V(...off));
+    const y = V(0, 1, 0), x = new THREE.Vector3().crossVectors(y, V(...fwd)).normalize(), z = new THREE.Vector3().crossVectors(x, y);
+    const M = new THREE.Matrix4().makeBasis(x, y, z).setPosition(pos);
+    return this.poseForProp(side, prop, M, 'body', F, e);
   }
 
   // The pose of the hand that holds `prop` at matrix `m` (in `frame`).
@@ -740,6 +761,12 @@ export class Hands {
       prop.matrix.copy(m);
       prop.matrixWorldNeedsUpdate = true;
       prop.visible = rig.visible;
+      // (a glass or a bottle in the hand: its liquid stays level in the
+      // world however the hand tips it, every step)
+      if (prop.userData.setTilt) {
+        prop.updateMatrixWorld(true);
+        prop.userData.setTilt(prop.getWorldQuaternion(this._q2));
+      }
     }
   }
 }
@@ -748,8 +775,8 @@ export class Hands {
 export const MOUTH_DIR = V(0.02, -0.05, -1).normalize();
 const MOUTH_Q = new THREE.Quaternion().setFromUnitVectors(V(0, 1, 0), MOUTH_DIR);
 // where the smoke set's hands find the pack and the lighter (body frame)
-export const PACK_AT = [0.14, -0.4, -0.44];
-export const LIGHTER_AT = [0.26, -0.4, -0.42];
+export const PACK_AT = [0.16, -0.4, -0.63];
+export const LIGHTER_AT = [0.29, -0.4, -0.59];
 
 function cloneF(F) { const o = {}; for (const k of [...FINGERS, 't']) o[k] = F[k] ? F[k].slice() : null; return o; }
 function copyF(src, dst) {

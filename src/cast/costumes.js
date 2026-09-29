@@ -24,22 +24,25 @@ const A = Math.abs;
 const BRAWLER = {
   name: 'brawler', h: 1.96,
   body: {
+    // a barrel chest wider and deeper than the belly (0.60 across the
+    // shoulders, 0.52 at the ribs, 0.48 at the waist, world), the belly no
+    // more than 4 cm forward of the chest
     torso: [
-      [0.9, 0.212, 0.162, 0.152, 0.02, 2.3],
-      [0.98, 0.218, 0.186, 0.152, 0.036, 2.3],
-      [1.06, 0.226, 0.204, 0.15, 0.046, 2.35],
-      [1.15, 0.236, 0.2, 0.15, 0.042, 2.45],
-      [1.24, 0.249, 0.186, 0.154, 0.03, 2.6],
-      [1.32, 0.262, 0.174, 0.16, 0.018, 2.9],
-      [1.38, 0.271, 0.162, 0.158, 0.008, 3.3],
-      [1.425, 0.273, 0.144, 0.148, -0.002, 3.6],
-      [1.455, 0.26, 0.127, 0.132, -0.008, 3.5],
-      [1.478, 0.226, 0.112, 0.117, -0.012, 3.0],
-      [1.496, 0.164, 0.1, 0.106, -0.014, 2.6],
-      [1.512, 0.1, 0.092, 0.098, -0.015, 2.3],
+      [0.9, 0.206, 0.15, 0.15, 0.015, 2.3],
+      [0.98, 0.207, 0.165, 0.15, 0.028, 2.3],
+      [1.06, 0.213, 0.176, 0.148, 0.034, 2.35],
+      [1.15, 0.22, 0.18, 0.15, 0.034, 2.45],
+      [1.24, 0.231, 0.19, 0.158, 0.026, 2.6],
+      [1.32, 0.248, 0.19, 0.166, 0.018, 2.9],
+      [1.38, 0.262, 0.174, 0.164, 0.008, 3.3],
+      [1.425, 0.268, 0.152, 0.152, -0.002, 3.6],
+      [1.455, 0.258, 0.132, 0.136, -0.008, 3.5],
+      [1.478, 0.226, 0.114, 0.12, -0.012, 3.0],
+      [1.496, 0.168, 0.102, 0.108, -0.014, 2.6],
+      [1.512, 0.105, 0.094, 0.1, -0.015, 2.3],
     ],
     shoulderX: 0.216, shoulderY: 1.41, upper: 0.318, fore: 0.292, hipX: 0.106,
-    neckR: 0.076, neckFlare: 0.03, neckY: 1.475, headY: 1.548, headS: 1.06, headW: 1.06, jaw: 0.06, hairLine: 0.1,
+    neckR: 0.082, neckFlare: 0.04, neckY: 1.475, headY: 1.548, headS: 1.06, headW: 1.06, jaw: 0.06, hairLine: 0.1,
   },
   cover: { kind: 'flatcap', hatDY: 0.122, hatDZ: 0.012, pitch: 0.12, s: 1.06, peak: 0.058, peakDrop: 0.28 },
   garments: [
@@ -65,7 +68,8 @@ const BRAWLER = {
       } },
     { kind: 'collar', style: 'band', h: 0.028, hFront: 0.022, open: 0.42, gap: 0.004, lean: 0.002, flareOut: 0.002, shade: 'shirt' },
     { kind: 'sleeves', style: 'rolled', r: 0.09, shade: 'shirt' },
-    { kind: 'arms', r: 0.06, d0: 0.19 },
+    // heavy forearms, the wrist 0.075 across (world)
+    { kind: 'arms', r: 0.062, d0: 0.19, wrist: 0.5 },
     { kind: 'legs', r: 1.3, boot: true },
     { kind: 'shoes', style: 'boot' },
     { kind: 'hands', s: 1.25, fist: true },
@@ -106,8 +110,9 @@ const WAITRESS = {
       [1.482, 0.098, 0.065, 0.071, -0.016, 2.4],
       [1.492, 0.058, 0.054, 0.061, -0.017, 2.2],
     ],
+    // (a shorter neck than the Hood's: the head sits down on the collar)
     shoulderX: 0.152, shoulderY: 1.405, upper: 0.285, fore: 0.252, hipX: 0.084,
-    neckR: 0.045, headS: 0.93, jaw: 0.26, nose: 0.85,
+    neckR: 0.047, neckY: 1.468, headY: 1.545, headS: 0.93, jaw: 0.26, nose: 0.85,
   },
   cover: { kind: 'pinned' },
   garments: [
@@ -120,7 +125,9 @@ const WAITRESS = {
     ...STRAPS,
     { kind: 'legs', style: 'stocking' },
     { kind: 'shoes', style: 'flat' },
-    { kind: 'hands', s: 0.84 },
+    // hands with fingers (she pours, serves, carries): four and a thumb,
+    // half curled to hold what she holds
+    { kind: 'hands', s: 0.84, fingers: true, curl: 0.55 },
   ],
   skin: { dress: 0.022, arm: 0.04, hand: 0.04, skin: 0.03, hair: 0.004, cover: 0.3, apron: 0.72, stocking: 0.012, shoes: 0.004 },
   collider: 0.26,

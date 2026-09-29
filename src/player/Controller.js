@@ -126,15 +126,18 @@ export class Controller {
     } else if (name === 'seated') {
       const a = typeof opts.anchor === 'string' ? S.anchor(opts.anchor) : opts.anchor;
       if (!a) throw new Error(`controller seated: no anchor '${opts.anchor}'`);
-      // forward: a man leaning on the counter has his head well ahead of
-      // the stool (his forearms on the counter top, the eye ~0.3 m back from
-      // its edge)
-      this.modeOpts = { yawRange: [-2.3, 2.3], pitchRange: [-0.9, 0.7], lean: 0.06, forward: 0.3, ...opts, anchor: a };
+      // forward: he sits up at the counter, his head a hand ahead of the
+      // stool's centre (on stool 4 the eye is at x -13.87), so the counter's
+      // near edge runs across the bottom of the frame instead of under the
+      // eye. The first frame of the game is square and calm: straight across
+      // the counter at the back bar (the anchor's yaw), pitched a little
+      // down (-0.14), no roll, ever; the lean as he looks down stays small.
+      this.modeOpts = { yawRange: [-2.3, 2.3], pitchRange: [-0.9, 0.7], lean: 0.04, forward: 0.12, ...opts, anchor: a };
       this.bodyYaw = a.yaw;
       this.pos.set(a.pos.x, 0, a.pos.z);
       this.groundY = (opts.eyeY ?? a.eyeY ?? 1.6) - EYE + 0.02;
       this.yaw = a.yaw;
-      this.pitch = opts.pitch ?? -0.2;
+      this.pitch = opts.pitch ?? -0.14;
     } else if (name === 'brawl') {
       this.modeOpts = { dist: 1.45, eyeY: 1.8, ...opts };
       this.nudge.yaw = 0; this.nudge.pitch = 0; this.slip = 0;
@@ -302,7 +305,9 @@ export class Controller {
     }
     c.position.set(this.pos.x + Math.cos(this.yaw) * bobX + ox, this.groundY + EYE - 0.02 + bobY + oy, this.pos.z - Math.sin(this.yaw) * bobX + oz);
     c.rotation.order = 'YXZ';
-    c.rotation.set(this.pitch + sy + vp, this.yaw + sx + vy, Math.sin(this.bobPhase) * 0.004 * this.bobAmp + sx * 0.5 + vr);
+    // (seated, the horizon never tips: a man on a stool does not roll his head)
+    const roll = this.mode === 'seated' ? 0 : Math.sin(this.bobPhase) * 0.004 * this.bobAmp + sx * 0.5 + vr;
+    c.rotation.set(this.pitch + sy + vp, this.yaw + sx + vy, roll);
     this.blendMode(dt);
   }
 
@@ -314,7 +319,9 @@ export class Controller {
     const c = this.camera;
     if (!B.checked) {
       B.checked = true;
-      if (B.from.x === undefined || Math.hypot(c.position.x - B.from.x, c.position.y - B.from.y, c.position.z - B.from.z) > 2.5) { this._modeBlend = null; return; }
+      // (and never from nowhere: an eye that was not yet placed is no start)
+      const jump = Math.hypot(c.position.x - B.from.x, c.position.y - B.from.y, c.position.z - B.from.z);
+      if (B.from.x === undefined || !Number.isFinite(jump) || !Number.isFinite(B.from.yaw + B.from.pitch) || jump > 2.5) { this._modeBlend = null; return; }
     }
     B.t += dt;
     const u = Math.min(1, B.t / B.dur);

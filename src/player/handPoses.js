@@ -60,7 +60,7 @@ export function mirror(P) {
 
 const HP = {};
 // ---- handstudy: both hands open, palms down, over the counter ---------------------
-HP.studyR = { frame: 'body', p: [0.13, -0.31, -0.36], f: [-0.12, -0.08, -1], b: [0, 1, 0.08], F: OPEN, e: [0.24, -0.4, -0.08] };
+HP.studyR = { frame: 'body', p: [0.13, -0.31, -0.5], f: [-0.12, -0.08, -1], b: [0, 1, 0.08], F: OPEN, e: [0.26, -0.36, -0.24] };
 HP.studyL = mirror(HP.studyR);
 
 // ---- the Tommy gun (fix 3): in the gun's own frame --------------------------------
@@ -113,35 +113,47 @@ HP.tommyBoltBackL = { ...HP.tommyBoltL, p: [HP.tommyBoltL.p[0], HP.tommyBoltL.p[
 void KNOB;
 
 // ---- the diner (scene 1): seated at the counter, the body frame --------------------
-// (the counter top lies 0.40 below the eye, its front edge ~0.30 ahead: the
-// seated eye leans on the counter, Controller 'seated'). Elbows on the
-// counter's edge, off the bottom of the frame.
-const ER = [0.3, -0.385, -0.16], ELc = [-0.33, -0.385, -0.3];
-HP.restR = { frame: 'body', p: [0.215, -0.37, -0.37], f: [-0.4, -0.12, -0.91], b: [0.3, 0.95, 0.05], F: RELAX, e: ER };
-HP.restL = { frame: 'body', p: [-0.07, -0.374, -0.47], f: [0.82, -0.1, -0.56], b: [0.06, 1, 0.08], F: RELAX, e: ELc };
+// (the seat puts the eye 0.12 ahead of the stool: the counter top lies 0.40
+// below it, its rolled front edge 0.43 ahead, the pack 0.63 ahead and 0.16
+// right, the lighter 0.59 / 0.29, the ashtray 0.67 / -0.32, the glass 0.60 /
+// -0.2). The forearms lie on the counter over its edge, the elbows just in
+// front of it, off the bottom of the frame. Each resting hand is laid on the
+// top by the rig itself (shots/tools/restfit: the wrist and the pads on the
+// counter): the palm down, rolled a little onto its little-finger side,
+// fingers together and gently curled, their pads on the top, the thumb
+// alongside: a hand at rest, not a rake.
+const ER = [0.3, -0.33, -0.27], ELc = [-0.3, -0.33, -0.3];
+const TREL = [-0.088, -0.121, 0.734, 0.331, 0.102];   // the thumb lying along the index
+export const RESTF = { i: C(0.26, 0.42, 0.22, -0.04), m: C(0.24, 0.4, 0.2), r: C(0.24, 0.42, 0.22, 0.03), l: C(0.28, 0.46, 0.24, 0.07), t: TREL };
+const RESTFL = { i: C(0.22, 0.38, 0.2, -0.04), m: C(0.24, 0.4, 0.2), r: C(0.28, 0.44, 0.22, 0.03), l: C(0.32, 0.48, 0.25, 0.07), t: TREL };
+// the right hand by the pack and the lighter, the left further out, turned in
+HP.restR = { frame: 'body', p: [0.19, -0.378, -0.52], f: [-0.28, 0.134, -0.951], b: [0.2, 0.961, 0.135], F: RESTF, e: ER };
+HP.restL = mirror({ frame: 'body', p: [0.16, -0.378, -0.56], f: [-0.45, 0.142, -0.879], b: [0.2, 0.958, 0.155], F: RESTFL, e: [-ELc[0], ELc[1], ELc[2]] });
 // the cigarette between the first two fingers, the hand resting on the
 // counter on its little-finger side, the cigarette's tip up and out
 const CIG = { i: C(0.35, 0.45, 0.2, -0.05), m: C(0.35, 0.5, 0.25, 0.05), r: C(0.9, 1.1, 0.6), l: C(1.0, 1.2, 0.6), t: [0.35, 0.2, 0.2, 0.25, 0.25] };
-HP.cigRestR = { frame: 'body', p: [0.2, -0.36, -0.36], f: [-0.45, 0.0, -0.89], b: [0.75, 0.62, 0.1], F: CIG, e: ER };
-// the left hand cupped round the flame (its fingertips come up into the
-// bottom of the frame beside it; the rest of the hand is under the frame)
-HP.cupL = palm('cam', [-0.032, -0.138, -0.165], [1, 0.25, 0.1], [0.25, 0.45, -0.85],
-  { i: C(0.35, 0.4, 0.2), m: C(0.4, 0.45, 0.25), r: C(0.45, 0.5, 0.3), l: C(0.5, 0.55, 0.3), t: [0.3, 0.2, 0.3, 0.15, 0.1] }, [-0.14, -0.42, -0.06]);
-// pulling a cigarette from the top of the pack (it stands at (0.14, -0.4, -0.44))
-HP.pullR = { frame: 'body', p: [0.2, -0.27, -0.39], f: [-0.55, -0.15, -0.82], b: [0.55, 0.8, -0.2], F: CIG, e: ER };
+HP.cigRestR = { frame: 'body', p: [0.19, -0.358, -0.52], f: [-0.45, 0.12, -0.88], b: [0.75, 0.62, 0.2], F: CIG, e: ER };
+// the left hand cupped round the flame from the far side: its palm turned
+// to me and a little right, a shield beyond the flame (the flame burns in
+// front of it and lights it), the fingers curled round the far left of it;
+// never between the flame and my eye
+HP.cupL = palm('cam', [-0.028, -0.132, -0.215], [0.5, 0.2, 0.84], [0.5, 0.8, -0.3],
+  { i: C(0.7, 0.75, 0.35), m: C(0.72, 0.78, 0.38), r: C(0.78, 0.8, 0.4), l: C(0.85, 0.85, 0.42), t: [0.25, 0.1, 0.4, 0.2, 0.15] }, [-0.16, -0.42, -0.1]);
+// pulling a cigarette from the top of the pack (it stands at (0.16, -0.4, -0.63))
+HP.pullR = { frame: 'body', p: [0.22, -0.27, -0.56], f: [-0.55, -0.15, -0.82], b: [0.55, 0.8, -0.2], F: CIG, e: ER };
 // the drag: the hand at the lips, the cigarette in them
 HP.cigLipsR = { frame: 'cam', p: [0.05, -0.16, -0.11], f: [-0.62, 0.62, -0.48], b: [0.55, 0.15, -0.82], F: CIG, e: [0.2, -0.45, 0.05] };
 // pinching the cigarette out of the lips
 HP.cigTakeR = { frame: 'cam', p: [0.045, -0.155, -0.1], f: [-0.62, 0.6, -0.5], b: [0.55, 0.15, -0.82], F: { ...CIG, i: C(0.45, 0.55, 0.3, -0.05), m: C(0.5, 0.6, 0.3, 0.05) }, e: [0.2, -0.45, 0.05] };
 // over the ashtray (left of the glass): a tap of the index on the cigarette
-HP.ashR = { frame: 'body', p: [-0.08, -0.33, -0.44], f: [-0.85, -0.1, -0.5], b: [0.2, 0.97, 0.1], F: CIG, e: [0.22, -0.39, -0.2] };
-HP.ashTapR = { ...HP.ashR, p: [-0.08, -0.338, -0.44], F: { ...CIG, i: C(0.2, 0.3, 0.15, -0.05) } };
+HP.ashR = { frame: 'body', p: [-0.1, -0.33, -0.6], f: [-0.85, -0.1, -0.5], b: [0.2, 0.97, 0.1], F: CIG, e: [0.22, -0.34, -0.33] };
+HP.ashTapR = { ...HP.ashR, p: [-0.1, -0.338, -0.6], F: { ...CIG, i: C(0.2, 0.3, 0.15, -0.05) } };
 // the right hand in the coat (the inside pocket: off the bottom right)
 HP.coatR = { frame: 'cam', p: [0.16, -0.36, -0.12], f: [-0.5, 0.6, -0.6], b: [0.6, 0.2, -0.8], F: RELAX, e: [0.24, -0.5, 0.05] };
 // the left hand opens the wallet (its fingers on the far leaf) and takes a bill
 HP.walletOpenL = { frame: 'cam', p: [-0.05, -0.2, -0.26], f: [0.6, 0.55, -0.55], b: [-0.3, 0.6, 0.72], F: { ...OPEN, t: [0.6, 0.3, 0.2, 0.2, 0.2] }, e: [-0.2, -0.45, -0.05] };
 HP.billL = { frame: 'cam', p: [-0.07, -0.22, -0.28], f: [0.55, 0.45, -0.7], b: [-0.3, 0.8, 0.5], F: { i: C(0.5, 0.6, 0.3), m: C(0.55, 0.6, 0.3), r: C(0.9, 1.1, 0.6), l: C(1.0, 1.2, 0.6), t: [0.8, 0.4, 0.4, 0.3, 0.2] }, e: [-0.2, -0.45, -0.05] };
-HP.billDownL = { frame: 'body', p: [-0.06, -0.36, -0.42], f: [0.5, -0.1, -0.86], b: [0.0, 1, 0.1], F: RELAX, e: ELc };
+HP.billDownL = { frame: 'body', p: [-0.08, -0.372, -0.58], f: [0.5, -0.05, -0.86], b: [0.0, 1, 0.1], F: RESTFL, e: ELc };
 // the grips on the counter's things
 export const GRIP = {
   pack: { i: C(0.55, 0.9, 0.5), m: C(0.6, 0.95, 0.5), r: C(0.65, 1.0, 0.55), l: C(0.7, 1.0, 0.55), t: [0.9, 0.3, 0.5, 0.3, 0.2] },
@@ -159,6 +171,8 @@ const M4 = (pos, axisUp, fwd) => {
 export const DF = {
   // reach and close on a thing where it stands on the counter
   at: (kind, F, e, off = null) => (H, side) => H.holdPoseAt(side, H.propOf(side, kind), F, e, off),
+  // reach a thing where it stands, upright, the hand coming from `fwd` (body)
+  up: (kind, fwd, F, e, off = null) => (H, side) => H.holdPoseUpright(side, H.propOf(side, kind), fwd, F, e, off),
   // the prop in this hand, held at a place of the eye's frame (up / facing)
   cam: (kind, pos, up, fwd, F, e) => (H, side) => { const p = H.propOf(side, kind); return p ? H.poseForProp(side, p, M4(pos, up, fwd), 'cam', F, e) : null; },
   body: (kind, pos, up, fwd, F, e) => (H, side) => { const p = H.propOf(side, kind); return p ? H.poseForProp(side, p, M4(pos, up, fwd), 'body', F, e) : null; },
@@ -168,10 +182,22 @@ export const DF = {
 // Fists up in the bottom corners, knuckles to him, thumbs outside (across
 // the first two fingers), the left a little ahead; his head, shoulders and
 // hands stay clear between and above them. Sleeves pushed up.
-export const FISTF = { i: C(1.5, 1.75, 0.95, -0.02), m: C(1.52, 1.78, 0.95), r: C(1.55, 1.8, 0.95, 0.02), l: C(1.58, 1.78, 0.95, 0.05), t: [0.75, 0.55, 0.6, 0.55, 0.45] };
-const EFR = [0.25, -0.46, -0.08];
-HP.guardR = { frame: 'cam', p: [0.205, -0.2, -0.29], f: [-0.3, 0.55, -0.78], b: [0.62, 0.62, 0.3], F: FISTF, e: EFR };
-HP.guardL = { frame: 'cam', p: [-0.19, -0.18, -0.35], f: [0.28, 0.55, -0.79], b: [-0.62, 0.62, 0.3], F: FISTF, e: [-0.25, -0.46, -0.12] };
+// A fist that is a fist: the four fingers curled tight into the palm (MCP
+// 85, PIP 105, DIP 75 degrees, the spread closed so they lie side by side),
+// the thumb folded across the front of the index and middle fingers' middle
+// phalanges, its tip at the middle finger (fitted on the rig: its MCP, IP
+// and tip laid on the fingers, not through them)
+const FK = [1.484, 1.833, 1.309];
+export const FISTF = { i: [...FK, -0.05], m: [...FK, 0], r: [...FK, 0.04], l: [...FK, 0.1], t: [0.384, 0.185, 0.828, 0.664, 0.84] };
+// Guard, from my eye: the back of each hand faces me and a little out, the
+// hand upright (knuckles on top: a row of four bumps, the first phalanges a
+// flat top going away from me), the thumb on the inner side; forearms up
+// from the bottom corners, sleeves rolled. Each fist ~170 px wide at
+// 1280 x 800, its top ~70 % down the frame, wholly inside it; the left a
+// little ahead and higher.
+const EFR = [0.29, -0.5, -0.1];
+HP.guardR = { frame: 'cam', p: [0.222, -0.205, -0.4], f: [-0.14, 0.8, -0.58], b: [0.36, 0.5, 0.78], F: FISTF, e: EFR };
+HP.guardL = { frame: 'cam', p: [-0.205, -0.196, -0.43], f: [0.14, 0.8, -0.58], b: [-0.36, 0.5, 0.78], F: FISTF, e: [-0.29, -0.52, -0.17] };
 // the jab: straight at his face down the centre line, turning palm-down at contact
 HP.jabR = { frame: 'cam', p: [0.03, -0.075, -0.64], f: [-0.08, 0.1, -0.99], b: [0.0, 1, 0.1], F: FISTF, e: [0.14, -0.3, -0.3] };
 HP.jabL = { frame: 'cam', p: [-0.03, -0.07, -0.66], f: [0.08, 0.1, -0.99], b: [0.0, 1, 0.1], F: FISTF, e: [-0.14, -0.3, -0.3] };

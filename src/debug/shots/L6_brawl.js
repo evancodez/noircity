@@ -11,6 +11,7 @@ import { buildProp } from '../../props/index.js';
 //     &side=1                      the eye 2.1 m off his right side, over the counter
 //     &round=3                     round three: blood, the cap loose
 //     &hit=head|body               a blow lands at t = 0 (c.hit: the reaction clip)
+//   (clip=br_bottle_thrust: the broken neck in his fist from the start)
 //   brawlstrip&clip=<name>          five of him side by side on the street under
 //                                  a lamp, the clip at tell, wind, contact,
 //                                  follow and recover (&side=1: in profile)
@@ -40,6 +41,13 @@ function bottleHands(c, h) {
   h.onMark.break = () => { if (b) b.scale.y *= 0.62; };
 }
 
+// the thrust: the broken neck already in his fist from the start
+function neckInFist(c) {
+  const b = buildProp('bottle', { variant: 'beer' });
+  c.hold(b, 'R', { grip: 'hang' });
+  b.scale.y *= 0.62;
+}
+
 function stageBrawlStudy(stage, camera, controller, game) {
   const q = Q();
   const name = q.get('clip') || 'br_guard';
@@ -51,6 +59,7 @@ function stageBrawlStudy(stage, camera, controller, game) {
   const yaw = ko ? -Math.PI / 2 : 0;
   const c = stage.cast.spawn('brawler', { at, yaw });
   roundProps(c, round, stage);
+  if (name === 'br_bottle_thrust') neckInFist(c);
   c.setState('br_guard', 0);
   // (a second of warm-up first: the diner's pendants take the lamp pool's
   // lights; then the clip starts with the clock, so t is its time)
@@ -92,6 +101,7 @@ function stageStrip(stage, camera, controller, game) {
     const x = -2.2 + (i - 2) * 1.35, z = -17.3;
     const c = stage.cast.spawn('brawler', { at: { x, z }, yaw: side ? -Math.PI / 2 : 0 });
     roundProps(c, round, stage);
+    if (name === 'br_bottle_thrust') neckInFist(c);
     c.setState('br_guard', 0);
     let done = false;
     const t0 = Math.max(0, T - ct);

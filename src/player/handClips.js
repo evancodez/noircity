@@ -16,11 +16,11 @@ const shift = (P, d) => ({ ...P, p: P.p.map((v, i) => v + d[i]) });
 // '@rest' (the set's rest), a pose def, or a pose function (DF: reach a
 // thing where it stands, hold a prop at a place); eases 'io' (default),
 // 'in', 'out', 'snap', 'lin'. props: [t, action, hand, arg] (Hands.propEvent).
-const ER = [0.3, -0.385, -0.16], EL = [-0.33, -0.385, -0.3];
+const ER = [0.3, -0.33, -0.27], EL = [-0.3, -0.33, -0.3];
 // the lighter under the cigarette's tip (its top 1.2 cm below it: the tip at
 // (0, -0.092, -0.15) in the eye's frame, the lighter just under the frame's
 // bottom edge, its flame standing up into it)
-const LIGHT = [[0.002, -0.133, -0.156], [0, 0.96, 0.28], [0.3, 0, 1]];
+const LIGHT = [[0.002, -0.133, -0.156], [0, 0.96, 0.28], [1, 0, 0.3]];
 const EF = [0.14, -0.42, -0.06];
 const pack = (off) => DF.at('cigarettePack', GRIP.pack, ER, off);
 const lighter = (off, F = GRIP.lighter) => DF.at('lighter', F, ER, off);
@@ -32,8 +32,21 @@ const cigLips = DF.cam('cigarette', [0.0, -0.088, -0.07], [0.02, -0.05, -1], [0.
 
 // the glass where it stands (or held off it), up at the lips (tilt 0 | 1;
 // the hand on its left side, fingers round the front, the wrist below)
-const glassAt = (off) => DF.at('glass', GRIP.glass, EL, off);
-const glassUp = (k) => DF.cam('glass', [-0.005, -0.17 + 0.012 * k, -0.24], [0, 0.72 - 0.3 * k, 0.69 + 0.25 * k], [0, -1, 0], GRIP.glass, [-0.14, -0.42, -0.02]);
+// (the left hand on the glass's near left, its fingers round the far side)
+const GLASS_FWD = [0.6, 0, 0.8];
+const glassAt = (off) => DF.up('glass', GLASS_FWD, GRIP.glass, EL, off);
+// up (k 0): before the chin, upright, a little toward me, low in the frame;
+// drinking (k 1): tipped over toward the mouth, the rim at the lips below
+// the frame's bottom edge, the base up and away (only the glass's far end
+// shows at the bottom of the frame), the scotch run down to the rim
+// (setTilt, every step). It never fills more than a fifth of the frame.
+// ([base, up, fwd]: fwd is the glass's +z, square to its up: the hand on
+// its left and near side, the fingers round the far side)
+const GLASS_UP = [
+  [[-0.05, -0.165, -0.31], [0.05, 0.97, 0.24], [0.62, -0.217, 0.747]],
+  [[-0.03, -0.158, -0.235], [0.05, 0.7, 0.71], [0.447, -0.578, 0.539]],
+];
+const glassUp = (k) => { const [p, up, fw] = GLASS_UP[k]; return DF.cam('glass', p, up, fw, GRIP.glass, [-0.16, -0.44, -0.04]); };
 // the wallet up in front, turned to the left (open 0 | 1)
 const walletUp = (k) => DF.cam('wallet', [0.035 - 0.02 * k, -0.14, -0.3], [-0.25 - 0.5 * k, 0.2, 0.95], [0, 1, 0.2], GRIP.wallet, [0.2, -0.45, -0.05]);
 
@@ -86,6 +99,8 @@ export const HAND_CLIPS = {
     duration: 2.0, marks: { tilt: 0.7, drink: 1.1, down: 1.6 },
     keys: { L: [[0, '@rest'], [0.28, glassAt()], [0.32, glassAt()], [0.7, glassUp(0)], [1.0, glassUp(1)], [1.25, glassUp(1)], [1.45, glassUp(0)], [1.62, glassAt([0, 0.01, 0])], [1.7, glassAt()], [2.0, '@rest']] },
     props: [[0.3, 'take', 'L', 'glass'], [1.1, 'fill', 'L', 1 / 3], [1.7, 'put', 'L']],
+    // (the head tips back a little with the drink)
+    view: [[0, {}], [0.7, {}], [1.0, { pitch: 0.06 }], [1.25, { pitch: 0.06 }], [1.5, {}]],
     brush: 'L',
   },
   // the glass back on the counter where it came from

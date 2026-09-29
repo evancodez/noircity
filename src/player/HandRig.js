@@ -46,6 +46,15 @@ export const HAND = {
   // metacarpal (inside the ball of the thumb), then the visible 0.060
   thumb: { cmc: [-0.026, -0.009, -0.014], dir: [-0.5, -0.2, -0.84], nail: [-0.62, 0.78, 0.0], meta: 0.042, seg: [0.033, 0.027], r: [0.0128, 0.011, 0.0101, 0.0088] },
   wrist: { rx: 0.029, ry: 0.02 },   // the wrist 0.058 x 0.040
+  // the bare hand's fingers are a man's, not a glove's: slimmer than the
+  // leather (radius 8.5 mm at the base tapering to 6.5 at the tip), so the
+  // knuckles stand proud of them and the joints read; the glove keeps the
+  // leather's girth (the Tommy gun's grips are fitted to it)
+  bare: {
+    fingers: { i: [0.0085, 0.0065], m: [0.0087, 0.0066], r: [0.0082, 0.0063], l: [0.0074, 0.0057] },
+    thumb: [0.0118, 0.0101, 0.0092, 0.008],
+    knuckle: 1.2,
+  },
 };
 export const FINGERS = ['i', 'm', 'r', 'l'];
 
@@ -213,14 +222,13 @@ export class HandRig {
     this.thumb = { b: [t0, t1, t2] };
     this.hand.updateMatrixWorld(true);
 
-    const geo = this.buildHandGeometry();
-    // two skins on one geometry: their own mark colours (dark ticks and
-    // nails on the bare hand; pale ticks, no nails on the glove)
-    geo.setAttribute('color', new THREE.Float32BufferAttribute(HandRig.markColours(this.markKind, 0.06, 0.3), 3));
-    const geoG = new THREE.BufferGeometry();
-    geoG.setIndex(geo.index);
-    for (const k of ['position', 'normal', 'skinIndex', 'skinWeight']) geoG.setAttribute(k, geo.getAttribute(k));
+    // two skins on one skeleton, each its own geometry: the bare hand
+    // (slim fingers, proud knuckles; dark ticks and nails) and the glove
+    // (the leather's girth; pale ticks, no nails)
+    const geoG = this.buildHandGeometry(null);
     geoG.setAttribute('color', new THREE.Float32BufferAttribute(HandRig.markColours(this.markKind, 2.6, 1), 3));
+    const geo = this.buildHandGeometry(HAND.bare);
+    geo.setAttribute('color', new THREE.Float32BufferAttribute(HandRig.markColours(this.markKind, 0.06, 0.3), 3));
     const skeleton = new THREE.Skeleton(this.bones);
     const mk = (mat) => {
       const m = new THREE.SkinnedMesh(geo, mat);
@@ -268,7 +276,8 @@ export class HandRig {
 
   // the hand's geometry in rest pose (hand-bone space); marks carry a colour
   // of their own: 0 on the bare skin (ink), 2.2 on the glove (lifted)
-  buildHandGeometry() {
+  // (dims: HAND.bare for the bare hand's slimmer fingers, null for the glove)
+  buildHandGeometry(dims = null) {
     const parts = [];
     const B = (b) => this.bones.indexOf(b);
     const rest = (b) => {
@@ -286,7 +295,9 @@ export class HandRig {
     // the wrist
     add(ellipsoid(HAND.wrist.rx, HAND.wrist.ry, 0.034, V(0, -0.0015, 0.012), 22, 14), H);
     const PH = HAND.phal, fl = HAND.flat;
-    for (const [name, , , len, r0, r1] of HAND.fingers) {
+    const kn = dims ? dims.knuckle : 1;
+    for (const [name, , , len, g0, g1] of HAND.fingers) {
+      const [r0, r1] = dims ? dims.fingers[name] : [g0, g1];
       const [b0, b1, b2] = this.fingers[name].b;
       const L0 = len * PH[0], L1 = len * PH[1], L2 = len * PH[2];
       const ra = r0, rb = r0 + (r1 - r0) * PH[0], rc = r0 + (r1 - r0) * (PH[0] + PH[1]);
@@ -299,19 +310,19 @@ export class HandRig {
       // knuckles, a little proud: the MCP head belongs to the palm (it
       // stays and shows when the fist closes), the PIP / DIP heads to the
       // proximal side of their joint
-      const mcp = ellipsoid(ra * 1.12, ra * 1.02, ra * 1.12, V(0, ra * 0.32, 0.001), 16, 10);
+      const mcp = ellipsoid(ra * 1.12 * kn, ra * 1.02 * kn, ra * 1.12 * kn, V(0, ra * 0.32 * kn, 0.001), 16, 10);
       mcp.applyMatrix4(rest(b0));
       parts.push(tag(mcp, B(H)));
-      add(ellipsoid(rb * 1.08, rb * 1.0, rb * 1.06, V(0, rb * 0.12, -L0), 14, 10), b0);
-      add(ellipsoid(rc * 1.05, rc * 0.98, rc * 1.05, V(0, rc * 0.1, -L1), 14, 10), b1);
+      add(ellipsoid(rb * 1.08 * kn, rb * 1.0 * kn, rb * 1.06 * kn, V(0, rb * 0.12 * kn, -L0), 14, 10), b0);
+      add(ellipsoid(rc * 1.05 * kn, rc * 0.98 * kn, rc * 1.05 * kn, V(0, rc * 0.1 * kn, -L1), 14, 10), b1);
       // ticks: two creases over the PIP, one over the DIP, a short one on the
       // MCP knuckle, the nail's cuticle line
       const tb = 0.00062;
-      add(tick(rb * 1.09 + 0.0003, tb, -L0 + 0.0022, undefined, undefined, fl), b0, MARK);
-      add(tick(rb * 1.09 + 0.0003, tb * 0.9, -L0 - 0.0006, Math.PI / 2 - 0.4, Math.PI / 2 + 0.4, fl), b0, MARK);
-      add(tick(rc * 1.06 + 0.0002, tb * 0.85, -L1 + 0.0012, Math.PI / 2 - 0.42, Math.PI / 2 + 0.42, fl), b1, MARK);
-      const k = tick(ra * 1.13 + 0.0005, tb, 0.0, Math.PI / 2 - 0.38, Math.PI / 2 + 0.38, 1);
-      k.translate(0, ra * 0.32, 0.001);
+      add(tick(rb * 1.09 * kn + 0.0003, tb, -L0 + 0.0022, undefined, undefined, fl), b0, MARK);
+      add(tick(rb * 1.09 * kn + 0.0003, tb * 0.9, -L0 - 0.0006, Math.PI / 2 - 0.4, Math.PI / 2 + 0.4, fl), b0, MARK);
+      add(tick(rc * 1.06 * kn + 0.0002, tb * 0.85, -L1 + 0.0012, Math.PI / 2 - 0.42, Math.PI / 2 + 0.42, fl), b1, MARK);
+      const k = tick(ra * 1.13 * kn + 0.0005, tb, 0.0, Math.PI / 2 - 0.38, Math.PI / 2 + 0.38, 1);
+      k.translate(0, ra * 0.32 * kn, 0.001);
       k.applyMatrix4(rest(b0));
       parts.push(tag(k, B(H), MARK));
       // the nail: one short arc at the cuticle
@@ -320,7 +331,7 @@ export class HandRig {
     }
     // the thumb: the metacarpal inside the ball of the thumb, then two
     // visible segments
-    const T = HAND.thumb, [t0, t1, t2] = this.thumb.b;
+    const T = { ...HAND.thumb, r: dims ? dims.thumb : HAND.thumb.r }, [t0, t1, t2] = this.thumb.b;
     add(taperCapsule(T.meta, T.r[0], T.r[1], 18, 0.92), t0);
     // the ball of the thumb (thenar): a soft mass on the metacarpal's palm side
     add(ellipsoid(0.0165, 0.012, 0.028, V(0.004, -0.0045, -T.meta * 0.45), 18, 12), t0);

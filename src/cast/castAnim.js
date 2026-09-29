@@ -275,8 +275,9 @@ Object.assign(DEFS, {
       [0.9, { rootYaw: [0], hipsPos: [0, 0.95, 0], footL: [0.12, A, 0.04], footR: [-0.12, A, -0.02], handTR: [-0.12, 1.2, 0.3], chest: [2, 0, 0], elbowPoleR: [-1, -0.5, -0.4],
         handTL: [-0.02, 1.26, 0.32], elbowPoleL: [1, -0.5, -0.2] }],
       [1.05, { handTL: [0.16, 1.12, 0.2], handTR: [-0.08, 1.24, 0.34] }],
-      [1.3, { spine: [10, 0, 0], chest: [10, 8, 0], handTR: [0.0, 1.36, 0.58], handR: [-10, 0, 70] }],
-      [2.6, { handTR: [0.02, 1.33, 0.6], handR: [-10, 0, 80] }],
+      // (the bottle round its body, tipped 100 degrees, its mouth over the glass)
+      [1.3, { spine: [10, 0, 0], chest: [10, 8, 0], handTR: [-0.1, 1.34, 0.5], handR: [-80, 0, 0] }],
+      [2.6, { handTR: [-0.08, 1.32, 0.52], handR: [-84, 0, 0] }],
       [2.85, { handTR: [-0.08, 1.24, 0.4], handR: [-40, 0, 0], chest: [4, 0, 0], spine: [4, 0, 0], handTL: [-0.02, 1.2, 0.36] }],
       [3.2, { handTR: [-0.16, 1.02, 0.2], handTL: [0.18, 0.94, 0.08] }],
     ]);
@@ -354,16 +355,20 @@ Object.assign(DEFS, {
 // ---- the brawler's fight (CONTRACTS §14): every attack's tell reads in
 // silhouette in its first 0.2 s; each tell runs at least 0.3 s before its
 // contact. Root space; he faces +z, the eye 1.45 m ahead.
+// The guard (fix round, B4): upright, chin down, the fists at cheek height
+// either side of the jaw (the wrists under them, the forearms up), the
+// elbows in front of the ribs, the left foot and the left shoulder forward:
+// the most dangerous shape in the game, not a man hugging his belly.
 const GUARD = {
-  hipsPos: [0, 0.91, -0.05], hips: [2, -16, 0], spine: [3, -4, 0], chest: [0, -4, 0], neck: [14, 6, 0], head: [-4, 10, 0], headLevel: [0.5], headRoot: [8, 0, 0],
-  footL: [0.14, A, 0.2], footR: [-0.18, A, -0.22], footRotL: [0, 12, 0], footRotR: [0, 32, 0], kneeL: [0.3, 0, 1], kneeR: [-0.2, 0, 1],
-  handTL: [0.1, 1.2, 0.3], handTR: [-0.14, 1.16, 0.2], elbowPoleL: [1, -1, -0.2], elbowPoleR: [-1, -1, -0.3],
-  handL: [-20, 0, 10], handR: [-20, 0, -10], shoulderL: [0, 0, 0], shoulderR: [0, 0, 0],
+  hipsPos: [0, 0.93, -0.04], hips: [0, -18, 0], spine: [-1, -5, 0], chest: [-4, -5, 0], neck: [8, 6, 0], head: [10, 12, 0], headLevel: [0.4], headRoot: [2, 0, 0],
+  footL: [0.14, A, 0.22], footR: [-0.18, A, -0.22], footRotL: [0, 12, 0], footRotR: [0, 32, 0], kneeL: [0.3, 0, 1], kneeR: [-0.2, 0, 1],
+  handTL: [0.155, 1.44, 0.25], handTR: [-0.13, 1.41, 0.19], elbowPoleL: [0.35, -1, 0.7], elbowPoleR: [-0.35, -1, 0.7],
+  handL: [-15, -60, 10], handR: [-15, 60, -10], shoulderL: [0, 0, 4], shoulderR: [0, 0, -4],
 };
 const guardAt = (t) => {
   const w = S(TAU * t / 1.2), b = S(TAU * t / 0.6), v = wob(t, 2.4, 1);
-  return { hipsPos: [0.028 * w, 0.91 + 0.008 * b, -0.05], hips: [2, -16 + 3 * w, -2 * w], chest: [b, -4 - 2 * w, 2 * w],
-    handTL: [0.1 + 0.01 * v, 1.2 + 0.015 * b, 0.3], handTR: [-0.14, 1.16 + 0.012 * b, 0.2 + 0.01 * v], head: [-2, 10 + 3 * w, 0] };
+  return { hipsPos: [0.028 * w, 0.93 + 0.008 * b, -0.04], hips: [0, -18 + 3 * w, -2 * w], chest: [-4 + b, -5 - 2 * w, 2 * w],
+    handTL: [0.155 + 0.01 * v, 1.44 + 0.012 * b, 0.25], handTR: [-0.13, 1.41 + 0.01 * b, 0.19 + 0.01 * v], head: [10, 12 + 3 * w, 0] };
 };
 const fight = (dur, keys, rm = null) => {
   const K = keyed([[0, GUARD], ...keys]);
@@ -415,6 +420,17 @@ Object.assign(DEFS, {
     [1.75, { handTR: [0.0, 1.16, 0.8] }],
     [2.0, { ...GUARD, handTR: [-0.22, 1.08, 0.22] }],
   ], (t) => [-0.38 * pw(t, [[0, 0], [0.3, 1], [0.8, 1], [1.1, 0]]), 0]),
+  // the thrust alone (the neck already in his right fist, held low): the
+  // jagged glass drawn back beside the shoulder, the body wound to his
+  // right (the tell, readable at once), then driven straight at my chest
+  // (contact 0.45) with the left foot stepping in; back to the low hold
+  br_bottle_thrust: fight(0.9, [
+    [0.14, { hips: [4, -24, 0], chest: [6, -26, 4], spine: [6, -8, 0], handTR: [-0.4, 1.3, -0.06], elbowPoleR: [-1, -0.2, -0.5], handR: [-40, 0, 0], hipsPos: [0, 0.9, -0.1] }],
+    [0.3, { chest: [4, -32, 6], hips: [4, -28, 0], handTR: [-0.42, 1.28, -0.12], hipsPos: [0, 0.89, -0.12] }],
+    [0.45, { hipsPos: [0, 0.86, 0.14], hips: [8, 14, 0], chest: [12, 24, 0], spine: [10, 8, 0], handTR: [-0.02, 1.18, 0.84], elbowPoleR: [-1, -0.3, 0], handR: [-80, 0, 0], footL: [0.14, A, 0.38] }],
+    [0.58, { handTR: [0.0, 1.16, 0.8] }],
+    [0.9, { ...GUARD, handTR: [-0.22, 1.08, 0.22], handR: [-20, 0, -10] }],
+  ], (t) => [0, 0.14 * sstep(0.3, 0.45, t) - 0.14 * sstep(0.6, 0.9, t)]),
   // hit reactions: where and how hard
   br_hitHeadL: fight(0.4, [
     [0.06, { neck: [4, -18, -12], head: [-16, -38, -18], chest: [2, -16, 6], handTL: [0.22, 1.1, 0.3], hipsPos: [-0.03, 0.9, -0.08] }],

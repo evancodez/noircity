@@ -293,7 +293,8 @@ export class Character {
     const bone = this.fig.bones[hand === 'L' ? 'handL' : 'handR'];
     bone.add(prop);
     const kind = prop.userData.kind;
-    const g = grip || (kind === 'bottle' && this.kind === 'brawler' ? 'hang' : 'upright');
+    // (the waitress pours: she holds a bottle round its body, not its neck)
+    const g = grip || (kind === 'bottle' && this.kind === 'brawler' ? 'hang' : kind === 'bottle' && this.kind === 'waitress' ? 'body' : 'upright');
     const hs = this.costumed ? (this.fig.costume.garments.find((x) => x.kind === 'hands')?.s ?? 1) : 1;
     const inv = 1 / this.fig.scale;
     prop.scale.setScalar(inv);
@@ -301,7 +302,14 @@ export class Character {
     else prop.quaternion.setFromAxisAngle(_v.set(1, 0, 0), Math.PI / 2);
     // the palm, in the hand bone's frame
     _t.set(0, -0.068 * hs, 0.012);
-    const gp = prop.userData.grip ? new THREE.Vector3().setFromMatrixPosition(prop.userData.grip) : new THREE.Vector3();
+    let gp = prop.userData.grip ? new THREE.Vector3().setFromMatrixPosition(prop.userData.grip) : new THREE.Vector3();
+    if (g === 'body') {
+      // the palm on the body a third of the way up, the axis a radius off
+      // the palm on its inner side (the palm faces +x on the right hand)
+      const sz = prop.userData.size, r = sz ? sz.x / 2 : 0.04;
+      gp = new THREE.Vector3(0, (sz ? sz.y : 0.28) * 0.36, 0);
+      _t.x += (hand === 'L' ? -1 : 1) * (r + 0.006) * inv;
+    }
     gp.applyQuaternion(prop.quaternion).multiplyScalar(inv);
     prop.position.copy(_t).sub(gp);
     this.held[hand] = prop;

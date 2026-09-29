@@ -22,6 +22,9 @@ export const CAST_CLIPS = {
   br_hook: { duration: 1.0, marks: { tell: 0.0, contact: 0.62 } },
   br_haymaker: { duration: 1.4, marks: { tell: 0.0, contact: 0.95 } },
   br_bottle: { duration: 2.0, marks: { tell: 0.0, take: 0.35, break: 0.75, contact: 1.6 } },
+  // the thrust alone, for when the broken neck is already in his fist (the
+  // repeated bottle attack of rounds two and three; br_bottle is the first)
+  br_bottle_thrust: { duration: 0.9, marks: { tell: 0.0, contact: 0.45 } },
   br_hitHeadL: { duration: 0.4, marks: {} },
   br_hitHeadR: { duration: 0.4, marks: {} },
   br_hitBody: { duration: 0.5, marks: {} },
