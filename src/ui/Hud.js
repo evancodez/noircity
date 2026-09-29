@@ -248,7 +248,12 @@ export class Hud {
   }
 
   // the title's hint while the browser still holds the sound back
-  soundHint(on) { this.soundLine.style.display = on ? '' : 'none'; }
+  // (muted - mute=1, a test run, or the player's own M - it says so, and
+  // how to have it back)
+  soundHint(on, muted = false) {
+    this.soundLine.textContent = muted ? 'sound off · M sound' : 'any key: sound';
+    this.soundLine.style.display = on || muted ? '' : 'none';
+  }
 
   // (the HUD's readouts stay hidden behind the title card)
   // text: a line under the choices (a pointer-lock refusal), none by default

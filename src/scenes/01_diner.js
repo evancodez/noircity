@@ -1,4 +1,6 @@
 import { defineScene, wait, until, beat } from '../game/script.js';
+import { serveGlass, fetchBottle, pourScotch as pourScotchHands, slideGlass, POUR } from '../cast/diner/dot.js';
+import { deliverPlate, topUpCoffee, feedJukebox } from '../cast/diner/patrons.js';
 import { dinerRoom, seatPlayer, holdCigarette, setGlass, makeJobs, makeGlance, clip, counterAt, jukeboxPos, V, DINER, stoolZ, MACK_AT, EYE_AT, BRAWL_EYE, GLASS_AT } from './_diner_room.js';
 
 // Scene 1, the diner (STORY.md, lane 7's brief P0.2). Beats: settle, order,
@@ -219,43 +221,48 @@ export default defineScene({
 // Dot serves: the tumbler down, the bottle off the back bar, the pour (its
 // stream and the glass's fill follow the clip's streamOn / streamOff), the
 // cork, the bottle back, the glass slid 0.5 m to my left hand
+// (object first: every thing she handles has its path in cast/diner/dot.js,
+// her hands solved onto it every step)
 function* pourScotch(ctx, d, dot) {
   const { game: G } = ctx;
   const snd = (name, pos = null, p = {}) => G.sfx.play(name, pos, p);
   const dest = GLASS_AT();
+  // (set down before her at her side of the counter, a hand's width to her
+  // right; slid from there the half metre to my left hand)
   const setAt = V(dest.x - 0.5, dest.y, dest.z);
-  let glass = null;
-  yield* clip(dot, 'serve', { down: () => { glass = d.place('tumbler', setAt, { name: 'glass' }); glass.userData.setFill(0); snd('glassDown', setAt); } });
-  const bottle = d.take('scotch');
-  const P = dot.clip('pour');
-  const { streamOn, streamOff } = P.marks;
-  let fillT = -1;
-  const pour = dot.play('pour', { onMark: {
-    take: () => { if (bottle) dot.hold(bottle, 'R'); },
-    uncork: () => snd('cork', setAt),
-    streamOn: () => { fillT = 0; if (bottle && glass) G.fx.pour.start({ from: bottle, to: glass, accent: 'amber' }); snd('pour', setAt, { dur: streamOff - streamOn }); },
-    streamOff: () => { G.fx.pour.stop(); snd('cork', setAt, { k: 0.6 }); },
-  } });
-  while (!pour.done && pour.t < pour.duration) {
-    if (glass && fillT >= 0) glass.userData.setFill(Math.min(1, Math.max(0, (pour.t - streamOn) / (streamOff - streamOn))));
-    yield null;
-  }
-  if (glass) glass.userData.setFill(1);
-  G.fx.pour.stop();
-  // the bottle back on the back bar
-  if (bottle) { dot.hold(null, 'R'); d.place('bottle', 'diner.bar.scotch', { name: 'scotch', variant: 'scotch' }); }
-  // the slide: on release the glass travels 0.5 m and stops at my hand
-  let go = -1;
-  const slide = dot.play('slide', { onMark: { release: () => { go = 0; snd('glassSlide', setAt); } } });
-  while (!slide.done && slide.t < slide.duration || (go >= 0 && go < 0.55)) {
-    if (go >= 0 && glass) {
-      go += 1 / 60;
-      const u = Math.min(1, go / 0.55), e = 1 - Math.pow(1 - u, 2.2);
-      glass.position.set(setAt.x + (dest.x - setAt.x) * e, dest.y, setAt.z + (dest.z - setAt.z) * e);
+  dot.setState('idle', 0.25);
+  // the tumbler: from the shelf under the counter, down before her
+  const glass = d.place('tumbler', setAt, { name: 'glass' });
+  glass.userData.setFill(0);
+  yield* serveGlass(ctx, dot, glass, setAt, { onDown: () => snd('glassDown', setAt) });
+  // the scotch off the back bar; back to her place with it
+  const bottle = d.items.get('scotch');
+  if (bottle) {
+    yield* fetchBottle(ctx, dot, bottle, 'diner.serve.4');
+    // the pour: the stream from its lip, the glass filling, the bottle's level falling
+    const f0 = bottle.userData.fill ?? 1;
+    let pouring = false, pt = 0;
+    const pourGen = pourScotchHands(ctx, dot, bottle, glass, {
+      onUncork: () => snd('cork', setAt),
+      onStream: () => { pouring = true; G.fx.pour.start({ from: bottle, to: glass, accent: 'amber', fill: false }); snd('pour', setAt, { dur: POUR.pour + 0.3 }); },
+      onStreamOff: () => { pouring = false; G.fx.pour.stop(); },
+      onCork: () => snd('cork', setAt, { k: 0.6 }),
+      onDown: (at) => snd('glassDown', at, { k: 0.6 }),
+    });
+    for (let r = pourGen.next(); !r.done; r = pourGen.next()) {
+      if (pouring) {
+        pt += 1 / 60;
+        const u = Math.min(1, pt / (POUR.pour + 0.25));
+        glass.userData.setFill(u);
+        if (bottle.userData.setFill) bottle.userData.setFill(f0 - 0.12 * u);
+      }
+      yield r.value;
     }
-    yield null;
+    G.fx.pour.stop();
   }
-  if (glass) glass.position.copy(dest);
+  glass.userData.setFill(1);
+  // the slide: her hand to the glass, a push; it runs on and stops at my left hand
+  yield* slideGlass(ctx, dot, glass, dest, { onRelease: () => snd('glassSlide', setAt) });
   ctx.flags.served = true;
   dot.setState('lean');
   // she moves off down the counter
@@ -268,8 +275,8 @@ function* sip(ctx, d, k) {
   const { hands: H, game: G } = ctx;
   const snd = (name, pos = null, p = {}) => G.sfx.play(name, pos, p);
   const glass = d.items.get('glass');
-  const home = GLASS_AT();
-  // (lane 2's reachGlass / sip take the tumbler off the counter themselves)
+  // (the hands' clips take the tumbler off the counter and put it back where
+  // it stood themselves: object first, the hand on its grip)
   const r = H.play('reachGlass');
   yield until(() => r.done);
   const f0 = 1 - (k - 1) / 3, f1 = 1 - k / 3;
@@ -280,12 +287,7 @@ function* sip(ctx, d, k) {
     yield null;
   }
   if (glass) glass.userData.setFill(f1);
-  const p = H.play('putDown', { onMark: { down: () => {
-    if (!glass) return;
-    H.hold(null, 'L');
-    d.group.add(glass); glass.position.copy(home); glass.rotation.set(0, 0, 0);
-    snd('glassDown', home, { k: 0.8 });
-  } } });
+  const p = H.play('putDown', { onMark: { down: () => { if (glass) snd('glassDown', glass.getWorldPosition(V(0, 0, 0)), { k: 0.8 }); } } });
   yield until(() => p.done);
 }
 
@@ -326,12 +328,14 @@ function roomClock(ctx, d, jobs) {
       // stands in the service aisle before the pass, where the bell is)
       const bell = ctx.stage.anchor('diner.bell').pos;
       const passZ = bell.z + Math.sign((DINER.hatch.z0 + DINER.hatch.z1) / 2 - bell.z || 1) * 0.35;
-      yield* dot.walkTo({ x: DINER.serveX - 0.5, z: passZ });
+      yield* dot.walkTo({ x: bell.x + 0.42, z: passZ });
       dot.face(-Math.PI / 2);
-      const plate = d.place('plate', V(bell.x, bell.y, passZ), { name: 'plate.oldman' });
-      yield* clip(dot, 'serve', { down: () => { dot.hold(d.take('plate.oldman') || plate, 'L'); } });
-      yield* dot.walkTo('diner.serve.9');
-      yield* clip(dot, 'serve', { down: () => { dot.hold(null, 'L'); d.place('plate', counterAt(9, 0.28, 0.2), { name: 'plate.oldman' }); snd('plateDown', counterAt(9)); } });
+      dot.setState('idle', 0.2);
+      // (the plate on the pass, taken by its rim, carried level, set down
+      // before him: cast/diner/patrons.js)
+      const to = counterAt(9, 0.38, 0.22);
+      yield* deliverPlate(ctx, dot, d, { name: 'plate.oldman', from: V(bell.x, bell.y, passZ), to, walkTo: 'diner.serve.9' });
+      snd('plateDown', to);
       yield* dot.walkTo('diner.serve.5');
       dot.setState('lean');
     })());
@@ -341,32 +345,37 @@ function roomClock(ctx, d, jobs) {
     jobs.add('docker', (function* () {
       const k = cast.get('docker');
       if (!k) return;
+      // (his mug down on the counter before he goes: it was in his hand)
+      const mug = k.hold(null, 'R');
+      if (mug) d.place('mug', counterAt(1, 0.2), { name: 'mug.docker', yaw: 2.4 });
       yield* k.walkTo('diner.jukebox.front');
       k.face(Math.PI);
-      yield wait(0.4);
-      snd('coin', jukeboxPos());
-      yield wait(0.9);
+      k.setState('idle', 0.2);
+      yield wait(0.2);
+      // a coin in the slot, a button pressed: his fingers on the machine
+      yield* feedJukebox(ctx, k, d, { onCoin: (p) => snd('coin', p) });
+      yield wait(0.3);
       // (the change: the arm, the mechanism, the record dropping: the
       // jukebox's own jukebox_change)
       d.jukebox.next();
-      yield wait(3.3);
+      yield wait(2.6);
       yield* k.walkTo('diner.stool.1');
       k.sit('diner.stool.1');
+      const m2 = d.take('mug.docker');
+      if (m2) k.hold(m2, 'R');
       k.setState('sitDrink');
     })());
   }]);
   // 30 s and 64 s: Dot tops up the old man's coffee
   const topUp = () => jobs.add('dot', (function* () {
     const dot = cast.get('dot');
-    yield* dot.walkTo('diner.urns');
-    const potItem = d.items.get('coffeePot');
-    const potHome = potItem ? potItem.getWorldPosition(V(0, 0, 0)) : V(DINER.backX + 0.3, DINER.counter.topY, 5.55);
-    const pot = d.take('coffeePot');
-    if (pot) dot.hold(pot, 'R');
-    yield* dot.walkTo('diner.serve.9');
-    yield* clip(dot, 'pour', { streamOn: () => snd('coffeePour', counterAt(9)) });
-    yield* dot.walkTo('diner.urns');
-    if (pot) { dot.hold(null, 'R'); d.place('coffeePot', potHome, { name: 'coffeePot' }); }
+    // (the pot by its handle to his cup, a second's pour, back on the warmer:
+    // cast/diner/patrons.js)
+    yield* topUpCoffee(ctx, dot, d, {
+      cup: 'cup.oldman',
+      onPour: (pot, cup) => { G.fx.pour.start({ from: pot, to: cup, accent: 'coffee', fill: false, rate: 0.9 }); snd('coffeePour', counterAt(9)); },
+      onStop: () => G.fx.pour.stop(),
+    });
     yield* dot.walkTo('diner.serve.5');
     dot.setState('lean');
   })());

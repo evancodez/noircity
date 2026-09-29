@@ -1,6 +1,8 @@
 import * as THREE from 'three';
 import { DINER, stoolZ } from '../stages/block/site.js';
 import { buildProp } from '../props/index.js';
+import { steady } from '../cast/diner/steady.js';
+import { setupPatrons } from '../cast/diner/patrons.js';
 
 // The diner as scenes 1 and 2 find it (STORY.md): who sits where, what is
 // on the counter, the player on his stool, and the small machinery both
@@ -60,6 +62,10 @@ export function dinerRoom(ctx, phase = 'evening', { retry = false } = {}) {
   cast.spawn('couple_her', { seat: 'diner.booth.2.a' }).setState('sitTalk');
   cast.spawn('couple_him', { seat: 'diner.booth.2.b' }).setState('sitTalk');
   if (phase === 'evening') cast.spawn('brawler', { seat: 'diner.stool.' + DINER.brawlerStool }).setState('sitEat');
+  // (every bone written every step: a look-at never winds a still torso
+  // round and round - cast/diner/steady.js)
+  for (const c of cast.list) steady(c.fig);
+  if (phase === 'evening') setupPatrons(ctx, d);
   // (the record on: heard from the jukebox, never in shot mode)
   // (a fresh evening - scene 1 from its start, a second BEGIN after the end
   // card too - puts the first record on; any other entry picks up the one
@@ -141,10 +147,11 @@ export function makeGlance(ctx) {
   return g;
 }
 
-// where the scotch stands: on the counter by my left hand, in the seated
-// view (x -14.40: 0.1 m in from the rolled front edge; z 4.35: 0.25 m to
-// my left; the brief's x -14.20 would stand it off the counter's edge)
-export const GLASS_AT = () => V(DINER.counter.frontX - 0.05, DINER.counter.topY, stoolZ(DINER.playerStool) + 0.25);
+// where the scotch stands: on the counter at my left hand, clear of it and
+// of the ashtray (0.56 ahead of the seated eye, 0.26 to its left: the left
+// hand's outer edge is ~0.06 to its right, the ashtray 0.14 beyond it),
+// where the slide stops it
+export const GLASS_AT = () => V(DINER.counter.frontX - 0.08, DINER.counter.topY, stoolZ(DINER.playerStool) + 0.26);
 
 // the cigarette between his fingers (lane 2 draws the hand round it)
 export function holdCigarette(ctx, lit) {

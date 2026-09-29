@@ -298,10 +298,13 @@ export class Controller {
     // a blow landing: Hands sets viewFx; zero outside those clips)
     const V = this.viewFx;
     let ox = 0, oy = 0, oz = 0, vy = 0, vp = 0, vr = 0;
+    // (eyes: the eyes alone look down - at a flame at the lips - while the
+    // head and what it holds stay put: Hands turns its eye-frame poses back)
+    if (V && V.eyes) vp += V.eyes;
     if (V && (V.yaw || V.pitch || V.roll || V.fwd || V.side || V.down)) {
       const sn = Math.sin(this.yaw), cs = Math.cos(this.yaw);
       ox = -sn * V.fwd + cs * V.side; oz = -cs * V.fwd - sn * V.side; oy = -V.down;
-      vy = V.yaw; vp = V.pitch; vr = V.roll;
+      vy = V.yaw; vp += V.pitch; vr = V.roll;
     }
     c.position.set(this.pos.x + Math.cos(this.yaw) * bobX + ox, this.groundY + EYE - 0.02 + bobY + oy, this.pos.z - Math.sin(this.yaw) * bobX + oz);
     c.rotation.order = 'YXZ';

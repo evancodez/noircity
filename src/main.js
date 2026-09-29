@@ -74,7 +74,10 @@ controller.onStep = (x, z, v) => { const S = controller.world; S.street.addImpac
 let game = null;
 // sound: procedural Web Audio (audio/Sfx.js); no AudioContext until the
 // first click (the pointer-lock start), none at all in shot mode
-const sfx = new Sfx({ enabled: !shotMode });
+// (mute=1 in the URL, or a browser driven by a test tool: the game starts
+// silent and the title says so; M turns the sound on)
+const autoMute = params.get('mute') === '1' || !!navigator.webdriver;
+const sfx = new Sfx({ enabled: !shotMode, forceMute: autoMute });
 // the title's choice waits for the pointer lock: BEGIN, or CONTINUE from
 // the save
 let startFrom = null;
@@ -89,8 +92,8 @@ const hud = new Hud({
 });
 // (the browser opens the audio only on a gesture: any key on the title lets
 // the rain in behind it; the click that begins the game does too)
-if (!shotMode) for (const ev of ['mousedown', 'keydown', 'touchstart']) addEventListener(ev, () => { sfx.unlock(); hud.soundHint(!sfx.live); }, { passive: true });
-hud.soundHint(!shotMode);
+if (!shotMode) for (const ev of ['mousedown', 'keydown', 'touchstart']) addEventListener(ev, () => { sfx.unlock(); hud.soundHint(!sfx.live, sfx.muted); }, { passive: true });
+hud.soundHint(!shotMode, sfx.muted);
 hud.setVisible(hudOn);
 if (shotMode) hud.hideTitle();
 // (a screenshot never depends on when the page loaded: no CSS animation runs)
