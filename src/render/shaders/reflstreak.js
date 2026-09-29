@@ -177,6 +177,7 @@ export function makeReflSplat(maxInstances) {
       out vec3 vCol;
       out vec3 vST;       // s (m along, from F), t (m across), sigma0 (m)
       out vec4 vQ;        // D (m, F from the eye), e (eye height), q at F, q at the end
+      out float vGrow;    // the width's growth per metre run (round 2: narrower near)
       float luma( vec3 c ) { return dot( c, vec3( 0.2126, 0.7152, 0.0722 ) ); }
       void main() {
         int inst = gl_VertexID / 6;
@@ -187,7 +188,7 @@ export function makeReflSplat(maxInstances) {
         vec3 c = texelFetch( tBright, tc, 0 ).rgb;
         float l = luma( c );
         gl_Position = vec4( 2.0, 2.0, 2.0, 1.0 );
-        vCol = vec3( 0.0 ); vST = vec3( 0.0 ); vQ = vec4( 1.0 );
+        vCol = vec3( 0.0 ); vST = vec3( 0.0 ); vQ = vec4( 1.0 ); vGrow = uGrow;
         if ( l < uMin ) return;
         // the emitter's place: its own depth, else the nearest geometry's
         // (the mips of the position target; see makeReflPosMaterial)
@@ -274,11 +275,16 @@ export function makeReflSplat(maxInstances) {
         // under the lamp (a column, as in the golden street), not a tent
         // opening toward the bottom edge. (See sigAt in the fragment.)
         float w0 = max( r * uTexelTan, 0.02 );
-        float sig0 = max( 0.35 * w0, 0.04 );
+        float sig0 = max( 0.35 * w0, mix( 0.026, 0.04, smoothstep( 7.0, 16.0, D ) ) );
         float lead = 0.1;
         float s = mix( -lead, L, corner.x );
         // (the quad's edge bounds the Gaussian over the whole run)
-        float t = corner.y * 2.6 * ( sig0 + uGrow / 2.355 * max( s, 0.0 ) );
+        // (round 2: a lamp a stride or two off lays a narrower, harder
+        // column - the golden street's near bar - than the spread of the
+        // far ones; beyond ~16 m the width is as it was)
+        float grow = uGrow * mix( 0.5, 1.0, smoothstep( 7.0, 16.0, D ) );
+        vGrow = grow;
+        float t = corner.y * 2.6 * ( sig0 + grow / 2.355 * max( s, 0.0 ) );
         vec3 Pw = vec3( E.x, uPlaneY, E.z ) + vec3( u.x, 0.0, u.y ) * s + vec3( v.x, 0.0, v.y ) * t;
         vec4 clip = uVP * vec4( Pw, 1.0 );
         gl_Position = vec4( clip.xy, 0.0, clip.w );
@@ -313,6 +319,7 @@ export function makeReflSplat(maxInstances) {
       in vec3 vCol;
       in vec3 vST;
       in vec4 vQ;
+      in float vGrow;
       out vec4 outColor;
       void main() {
         float s = vST.x, t = vST.y, sig0 = vST.z;
@@ -328,7 +335,7 @@ export function makeReflSplat(maxInstances) {
         // then break it hard): no white blob under the eye, and the near
         // lamp's column has faded out by the bottom edge
         along *= mix( uNear.z, 1.0, smoothstep( uNear.x, uNear.y, d ) );
-        float sigA = sig0 + uGrow / 2.355 * max( s, 0.0 );     // at F's distance
+        float sigA = sig0 + vGrow / 2.355 * max( s, 0.0 );     // at F's distance
         float sig = sigA * clamp( d / vQ.x, 0.02, 1.0 );         // held as an angle
         float across = exp( - 0.5 * ( t * t ) / ( sig * sig ) );
         // (the light spreads a little as it widens)

@@ -74,10 +74,10 @@ function patchMaterial(U, { mode = 0, gain = 1, a = 1, b = 1, color = null } = {
           // wall is lit, strongest just over the lamp, fading up the wall
           float y = p.y, ax = abs( p.x );
           float up = step( 0.0, y ), yy = abs( y );
-          float w = mix( 0.08 + 0.2 * sqrt( yy ), 0.08 + 0.36 * sqrt( yy ), up );
+          float w = mix( 0.08 + 0.2 * sqrt( yy ), 0.1 + 0.5 * sqrt( yy ), up );
           float inside = smoothstep( w, w * 0.72, ax );
-          float fall = mix( exp( - yy / 0.3 ) * 0.6, exp( - yy / 0.8 ), up );
-          float collar = exp( - dot( p, p ) / 0.012 ) * 1.4;
+          float fall = mix( exp( - yy / 0.3 ) * 0.6, exp( - yy / 0.5 ), up );
+          float collar = exp( - dot( p, p ) / 0.012 ) * 0.5;
           I = inside * fall + collar;
         }
         float fogA = noirFogAmount( length( cameraPosition - vWorld ), vWorld.y, uFogDensity );
@@ -142,16 +142,20 @@ export function sheenFloor(floorMat, n = 8) {
           vec3 Vd = normalize( vSheenW - cameraPosition );
           vec3 Rd = reflect( Vd, vec3( 0.0, 1.0, 0.0 ) );
           float s = 0.0;
+          // (the polish is rubbed along the aisle: the lamp's image is
+          // tight across and drawn out toward the eye - a short streak, as
+          // the wet street draws a lamp into a column, in a room's scale)
+          vec2 rh = normalize( Rd.xz + 1e-5 );
+          float re = asin( clamp( Rd.y, -1.0, 1.0 ) );
           for ( int i = 0; i < ${n}; i ++ ) {
-            vec3 Ld = uSheenLamp[ i ] - vSheenW;
-            float c = max( dot( Rd, normalize( Ld ) ), 0.0 );
-            // (the shade is a disc 0.34 m across: a lobe a little wider
-            // than it subtends, the polish not a mirror)
-            s += uSheenK[ i ] * ( pow( c, 900.0 ) * 0.5 + pow( c, 90.0 ) * 0.03 );
+            vec3 Ld = normalize( uSheenLamp[ i ] - vSheenW );
+            float dh = 1.0 - dot( rh, normalize( Ld.xz + 1e-5 ) );
+            float de = re - asin( clamp( Ld.y, -1.0, 1.0 ) );
+            s += uSheenK[ i ] * exp( - dh / 0.0004 - de * de / 0.08 ) * 0.55;
           }
           // (a polished floor mirrors most at a grazing look, little
           // straight down)
-          s *= 0.08 + 0.92 * pow( 1.0 - abs( Vd.y ), 3.0 );
+          s *= 0.15 + 0.85 * pow( 1.0 - abs( Vd.y ), 2.0 );
           // the wax's dull patches break the sheen (the roughness map's
           // mottle: the polish is 0.24, a dull patch 0.75)
           float wax = smoothstep( 0.4, 0.26, roughnessFactor );
@@ -168,7 +172,7 @@ function sconceGeo() {
   // (a half bowl open at the top and the bottom: its rim casts the scallops)
   const bowl = lathe([[0.075, -0.1], [0.11, -0.06], [0.13, 0.0], [0.135, 0.05], [0.12, 0.09]], 24, Math.PI, 0);
   bowl.rotateY(Math.PI / 2);
-  const plate = new THREE.CylinderGeometry(0.05, 0.05, 0.012, 20).rotateX(Math.PI / 2).translate(0, 0, 0.006);
+  const plate = new THREE.CylinderGeometry(0.03, 0.03, 0.01, 20).rotateX(Math.PI / 2).translate(0, 0.12, 0.005);
   return { bowl, plate };
 }
 
@@ -184,7 +188,7 @@ export function buildDinerLight(kit, { windowLight = [], jukebox = null, lamps =
   // rack over the B4 booth's end)
   const sconces = [];
   const sg = sconceGeo();
-  const shadeMat = M.glow('sconceShade', 3.2, { side: THREE.DoubleSide });
+  const shadeMat = M.glow('sconceShade', 1.4, { side: THREE.DoubleSide });
   for (const [x, y] of [[-13.4, F + 2.2], [-11.2, F + 2.3]]) {
     kit.piece();
     const g = new THREE.Group();
@@ -203,7 +207,7 @@ export function buildDinerLight(kit, { windowLight = [], jukebox = null, lamps =
 
   // ---- the jukebox's glow round its arch and before it on the floor
   const J = D.jukebox;
-  const jbMatW = patchMaterial(U, { mode: 0, gain: 0.16, a: 0.95, b: 1.05 });
+  const jbMatW = patchMaterial(U, { mode: 0, gain: 0.2, a: 1.15, b: 1.25 });
   patches.push(addPatch(kit, wallQuad(J.x, F + 1.05, zW + 0.001, -1.6, 1.6, -1.05, 1.9), jbMatW));
   const jbMatF = patchMaterial(U, { mode: 0, gain: 0.11, a: 0.8, b: 0.9 });
   patches.push(addPatch(kit, floorQuad(J.x, D.zMin + 0.75, -1.4, 1.4, -1.5, 1.5), jbMatF));
