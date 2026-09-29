@@ -10,6 +10,7 @@ import { buildJukebox } from '../../../props/diner/jukebox.js';
 import { buildPendants, buildFans, swingStep } from '../../../props/diner/fixtures.js';
 import { FIRE } from '../../../fx/fxTextures.js';
 import { buildExtras } from '../../../props/diner/extras.js';
+import { buildDinerLight } from '../../../props/diner/light.js';
 
 // The diner (docs/story/CONTRACTS.md §15; lane 5's brief): the room on the
 // ground floor of the near building, behind its street front
@@ -81,6 +82,8 @@ export default {
     const pendants = buildPendants(kit, lamps);
     const fans = buildFans(kit);
     const extras = buildExtras(kit);
+    // (round 2: the light behind the people and on the floor between them)
+    const lightRig = buildDinerLight(kit, { windowLight, jukebox: jb, lamps: pendants, floor: shell.floor });
 
     // ---- colliders: the counter, the back bar, the booths, the jukebox
     const cx0 = C.frontX - C.depth;
@@ -247,7 +250,7 @@ export default {
     const H0 = 23 * 3600 + 40 * 60;   // the clock: 11:40 when the story starts
     const api = {
       group: g, kit, anchors: new Map(), items, stools, booths, lamps: pendants, fans, near: null, stage, rng,
-      shell, bar, windowLight, trainBars, blind, jb,
+      shell, bar, windowLight, trainBars, blind, jb, lightRig,
       pieCase: { group: pie.group, pie: pie.pie, handle: pieHandle },
       stool: (i) => stools[i - 1],
       place, take,
@@ -326,7 +329,8 @@ export default {
       if (G) api.group.traverse((o) => { if (o.isMesh) G.rays.setEnabled(o, near); });
       for (const l of L) l.on = near && !l.dead;
     }
-    if (!near) return;
+    if (!near) { if (api._rigNear !== false) { api._rigNear = false; api.lightRig.update(false, 1); } return; }
+    api._rigNear = true;
     // a power dip: the pendants sag to `depth` and recover
     let f = 1;
     for (let i = api.dips.length - 1; i >= 0; i--) {
@@ -341,6 +345,7 @@ export default {
       if (l.light) l.light.intensity = l.dipBase.light * f;
       swingStep(l, dt);
     }
+    api.lightRig.update(true, f);
     // the stools swivel and slow
     for (const st of api.stools) {
       if (Math.abs(st.spinV) < 1e-3) continue;

@@ -279,17 +279,21 @@ function buildSleeve(F, sgn, g) {
   const R = F.rig, J = R.BIND[sgn > 0 ? 'upperArmL' : 'upperArmR'];
   const r = g.r ?? 0.083, L = R.L_UPPER + R.L_FORE;
   let prof;
+  // (round 2: the sleeve head is set in square, a tailored shoulder with a
+  // seam - a flat top that turns down at an edge - not the dome of a
+  // balloon's arm)
+  const cap = [[-0.036, 0], [-0.036, r * 0.5], [-0.034, r * 0.8], [-0.026, r * 0.96], [-0.012, r * 1.01], [0, r]];
   if (g.style === 'rolled') {
     const e = g.len ?? R.L_UPPER * 0.72;
-    prof = [[-0.045, 0], [-0.043, r * 0.38], [-0.036, r * 0.68], [-0.022, r * 0.88], [0, r], [0.06, r * 0.99], [e * 0.6, r * 0.93],
+    prof = [...cap, [0.06, r * 0.99], [e * 0.6, r * 0.93],
       [e - 0.05, r * 0.9], [e - 0.035, r * 1.08], [e - 0.012, r * 1.14], [e + 0.004, r * 1.08], [e + 0.012, r * 0.92], [e + 0.01, r * 0.78]];
   } else if (g.style === 'short') {
     const e = g.len ?? 0.13;
-    prof = [[-0.045, 0], [-0.043, r * 0.38], [-0.036, r * 0.68], [-0.022, r * 0.9], [0, r], [e * 0.5, r * 1.02], [e - 0.01, r * 0.96], [e, r * 0.9], [e + 0.004, r * 0.8], [e, r * 0.7]];
+    prof = [...cap, [e * 0.5, r * 1.02], [e - 0.01, r * 0.96], [e, r * 0.9], [e + 0.004, r * 0.8], [e, r * 0.7]];
   } else {
     const e = g.style === 'long' ? L + 0.06 : L - 0.025;
     const rc = g.cuff ?? 0.071;
-    prof = [[-0.045, 0], [-0.043, r * 0.36], [-0.036, r * 0.66], [-0.022, r * 0.88], [0, r], [0.06, r],
+    prof = [...cap, [0.06, r],
       [0.15, r * 0.95], [0.24, r * 0.9], [R.L_UPPER, r * 0.88], [R.L_UPPER + 0.06, r * 0.86], [e - 0.1, r * 0.82], [e - 0.028, rc * 0.95],
       [e - 0.015, rc], [e - 0.004, rc * 0.97], [e, rc * 0.87], [e - 0.01, rc * 0.73]];
   }
@@ -347,7 +351,11 @@ function buildLeg(F, sgn, g) {
     const [y, r] = profileAt(prof, v);
     const th = u * TAU;
     const kk = g.style === 'stocking' ? 1 : lerp(1, k, sstep(0.1, 0.35, y));
-    p.set(x0 + r * kk * 0.95 * Math.sin(th), y, r * kk * 1.03 * Math.cos(th));
+    // (round 2: pressed trousers keep a crease down the front and the back,
+    // a sharp ridge the ink's line finds from the knee to the shoe)
+    const cr = g.style === 'stocking' ? 0 : 0.07 * sstep(0.12, 0.3, y) * (1 - sstep(0.85, 0.98, y));
+    const ridge = 1 + cr * (Math.exp(-((Math.sin(th) / 0.1) ** 2)) * Math.max(0, Math.cos(th)) + 0.6 * Math.exp(-((Math.sin(th) / 0.1) ** 2)) * Math.max(0, -Math.cos(th)));
+    p.set(x0 + r * kk * 0.95 * Math.sin(th), y, r * kk * 1.03 * Math.cos(th) * ridge);
   });
   orientOut(geo, new THREE.Vector3(x0, 0.6, 0));
   const th = sgn > 0 ? B.thighL : B.thighR, sh = sgn > 0 ? B.shinL : B.shinR;
@@ -374,11 +382,27 @@ function buildShoe(F, sgn, g) {
     const hw = W * (1 - 0.14 * Math.max(0, lz) ** 2) * (1 + 0.04 * Math.max(0, -lz));
     let ht = (0.044 + 0.022 * Math.exp(-(((lz + 0.12) / 0.42) ** 2)) - 0.012 * sstep(0.35, 1, lz)) * Hk;
     if (kind === 'boot') ht += 0.03 * Math.exp(-(((lz + 0.35) / 0.3) ** 2));
-    const y = cy > 0 ? 0.04 + cy * ht : 0.04 - 0.04 * Math.pow(-cy, 0.28);
-    p.set(x0 + cx * hw, y, cz + lz * HL);
+    // (the sole arches between the heel and the ball of the foot)
+    // (and under the heel it stands on the heel block, below)
+    const hh0 = kind === 'flat' ? 0.012 : kind === 'boot' ? 0.03 : 0.026;
+    const arch = Math.max(kind === 'flat' ? 0 : 0.014 * Math.exp(-(((lz + 0.35) / 0.28) ** 2)), hh0 * 0.92 * sstep(-0.42, -0.58, lz));
+    const y = cy > 0 ? 0.04 + cy * ht : 0.04 - (0.04 - arch) * Math.pow(-cy, 0.28);
+    // (a squared toe: the sides straighten toward the front)
+    p.set(x0 + cx * hw * (1 + 0.08 * sstep(0.2, 0.8, lz)), y, cz + lz * HL);
   });
   orientOut(geo, new THREE.Vector3(x0, 0.04, cz));
-  return { geo, shade: F.shade(g.shade || 'shoes'), weights: () => [[sgn > 0 ? B.footL : B.footR, 1]] };
+  const w = () => [[sgn > 0 ? B.footL : B.footR, 1]];
+  const sh = F.shade(g.shade || 'shoes');
+  // the heel: a block under the back of the shoe, square at its corners
+  const hz = cz - HL * 0.74, hh = kind === 'flat' ? 0.012 : kind === 'boot' ? 0.03 : 0.026;
+  const heel = grid(seg(24, 8), seg(12, 6), (u, v, p) => {
+    const b = v * Math.PI, a = u * TAU;
+    const dy = Math.cos(b), q = Math.sin(b);
+    const dx = q * Math.sin(a), dz = q * Math.cos(a);
+    p.set(x0 + spow(dx, 0.3) * W * 0.78, hh * 0.5 + spow(dy, 0.3) * hh * 0.5, hz + spow(dz, 0.3) * HL * 0.2);
+  });
+  orientOut(heel, new THREE.Vector3(x0, hh * 0.5, hz));
+  return [{ geo, shade: sh, weights: w }, { geo: heel, shade: sh, weights: w }];
 }
 
 // ---------------------------------------------------------------------------
@@ -470,7 +494,7 @@ function buildFist(F, sgn, g) {
   const C = new THREE.Vector3(W.x - sgn * 0.004 * k, W.y - 0.056 * k, W.z + 0.004);
   const nu = seg(40, 12), nv = seg(28, 8);
   const hb = sgn > 0 ? B.handL : B.handR;
-  const e = 0.42;
+  const e = 0.34;
   const block = grid(nu, nv, (u, v, p) => {
     const b = v * Math.PI, a = u * TAU;
     const dy = Math.cos(b), q = Math.sin(b);
@@ -495,7 +519,7 @@ function buildFist(F, sgn, g) {
     // and the inner face (the curled fingers' side)
     const fingers = sstep(0.1, 0.7, -dy) + sstep(0.2, 0.8, -out) * (1 - sstep(0.2, 0.9, dy));
     const gr = Math.pow(Math.max(0, Math.cos(TAU * (z / (0.022 * k)))), 6) * Math.min(1, fingers) * (1 - edge);
-    x += sgn * 0.0025 * k * gr * Math.max(0, out); x -= sgn * 0.0025 * k * gr * Math.max(0, -out); y += 0.0025 * k * gr * Math.max(0, -dy);
+    x += sgn * 0.0025 * k * gr * Math.max(0, out); x -= sgn * 0.0045 * k * gr * Math.max(0, -out); y += 0.004 * k * gr * Math.max(0, -dy);
     p.set(C.x + x, C.y + y, C.z + z);
   });
   orientOut(block, C);
@@ -505,7 +529,7 @@ function buildFist(F, sgn, g) {
   const T0 = new THREE.Vector3(xin + sgn * 0.004 * k, C.y + 0.035 * k, C.z + hz * 0.85);
   const T1 = new THREE.Vector3(xin - sgn * 0.006 * k, C.y - 0.008 * k, C.z + hz * 0.95);
   const T2 = new THREE.Vector3(xin - sgn * 0.004 * k, C.y - 0.03 * k, C.z + hz * 0.15);
-  const tr = 0.0105 * k;
+  const tr = 0.0125 * k;
   const curve = new THREE.QuadraticBezierCurve3(T0, T1, T2);
   const nT = seg(18, 6), nR = seg(14, 6);
   const fr = curve.computeFrenetFrames(nT, false);
@@ -583,12 +607,86 @@ function buildOpenHand(F, sgn, g) {
   return parts;
 }
 
-// hands: the Hood's glove, sized; open (fingers curled toward the body) or a fist
+// A hand drawn as an inker draws a far hand (round 2): never a mitten. In
+// the bind pose (arm hanging, palm in toward -sgn x, back out, fingers
+// down): a squared palm, the four fingers as ONE tapered block that curls
+// toward the palm, cut by three knuckle lines along its back and its front
+// and a row of knuckles where it leaves the palm, and a thumb from the heel
+// of the palm, forward and in.
+function buildBlockHand(F, sgn, g) {
+  const W = F.rig.BIND[sgn > 0 ? 'handL' : 'handR'];
+  const k = g.s ?? 1, curl = g.curl ?? 0.45;
+  const hb = sgn > 0 ? B.handL : B.handR;
+  const shade = F.shade(g.shade || 'hand');
+  const w = () => [[hb, 1]];
+  const parts = [];
+  // the palm: a squared block, broad across the knuckles, narrower at the wrist
+  const C = new THREE.Vector3(W.x - sgn * 0.002 * k, W.y - 0.044 * k, W.z + 0.003);
+  const px = 0.0135 * k, py = 0.045 * k, pz = 0.041 * k;
+  const palm = grid(seg(30, 10), seg(20, 8), (u, v, p) => {
+    const b = v * Math.PI, a = u * TAU;
+    const dy = Math.cos(b), q = Math.sin(b);
+    const dx = q * Math.sin(a), dz = q * Math.cos(a);
+    const wz = 1 - 0.2 * sstep(0, 1, dy);
+    // (the knuckle row at the palm's lower back edge: four bumps)
+    const zz = spow(dz, 0.4) * pz * wz;
+    const kn = Math.pow(Math.max(0, Math.cos(TAU * (zz / (0.0205 * k)) - Math.PI / 2)), 2) * sstep(-0.2, -0.8, dy) * Math.max(0, sgn * dx);
+    p.set(C.x + spow(dx, 0.55) * px + sgn * 0.003 * k * kn, C.y + spow(dy, 0.4) * py, C.z + zz);
+  });
+  orientOut(palm, C);
+  parts.push({ geo: palm, shade, weights: w });
+  // the fingers: one block swept down an arc that bends toward the palm
+  const len = 0.078 * k, th = curl * 1.9;
+  const P0 = new THREE.Vector3(C.x - sgn * 0.001 * k, C.y - py * 0.86, C.z);
+  const fing = grid(seg(28, 10), seg(20, 8), (u, v, p) => {
+    const a = th * v, ph = u * TAU;
+    const R = th > 1e-3 ? len / th : 1e9;
+    const cx = th > 1e-3 ? -sgn * R * (1 - Math.cos(a)) : 0, cy = th > 1e-3 ? -R * Math.sin(a) : -len * v;
+    // (thinner and narrower toward the tips; the tip rounds shut)
+    const tip = Math.sqrt(Math.max(0, 1 - Math.max(0, (v - 0.82) / 0.18) ** 2));
+    const tx = 0.0112 * k * (1 - 0.22 * v) * tip, wz = 0.038 * k * (1 - 0.18 * v) * (0.72 + 0.28 * tip);
+    const sx = spow(Math.cos(ph), 0.5), sz = spow(Math.sin(ph), 0.35);
+    const z = sz * wz, fz = sz;
+    // the three knuckle lines between the four fingers, deeper toward the
+    // tips, where the fingers part
+    let gr = 0;
+    for (const zb of [-0.5, 0, 0.5]) gr += Math.exp(-(((fz - zb) / 0.07) ** 2));
+    const x = sx * tx * (1 - (0.12 + 0.3 * v) * gr);
+    // (the middle finger longest, and each tip its own round: the gaps
+    // between the fingers stop short)
+    const loc = ((fz + 1) * 2) % 1;
+    const lz = (1 - 0.1 * fz * fz) * (0.93 + 0.07 * Math.sin(Math.PI * loc) * sstep(0.6, 1, v) + 0.07 * (1 - sstep(0.6, 1, v)));
+    const bx = sgn * Math.cos(a), by = -Math.sin(a);
+    p.set(P0.x + cx * lz + bx * x, P0.y + cy * lz + by * x, P0.z + z);
+  }, { wrapU: true });
+  orientOut(fing, P0.clone().add(new THREE.Vector3(-sgn * 0.01 * k, -len * 0.5, 0)));
+  parts.push({ geo: fing, shade, weights: w });
+  // the thumb
+  const T = [new THREE.Vector3(C.x - sgn * 0.006 * k, C.y + 0.022 * k, C.z + pz * 0.75),
+    new THREE.Vector3(C.x - sgn * 0.014 * k, C.y - 0.014 * k, C.z + pz * 1.2),
+    new THREE.Vector3(C.x - sgn * (0.02 + 0.02 * curl) * k, C.y - 0.045 * k, C.z + pz * 1.05)];
+  const curve = new THREE.CatmullRomCurve3(T);
+  const nT = seg(14, 6), nR = seg(10, 5);
+  const fr = curve.computeFrenetFrames(nT, false);
+  const thumb = grid(nR, nT, (u, v, p) => {
+    const i = Math.round(v * nT), c = curve.getPoint(v), a = u * TAU;
+    const capE = Math.sqrt(Math.max(0, 1 - Math.max(0, (v - 0.85) / 0.15) ** 2));
+    const rr = 0.0105 * k * (1 - 0.25 * v) * capE;
+    p.copy(c).addScaledVector(fr.normals[i], Math.cos(a) * rr).addScaledVector(fr.binormals[i], Math.sin(a) * rr);
+  });
+  orientOut(thumb, curve.getPoint(0.5));
+  parts.push({ geo: thumb, shade, weights: w });
+  return parts;
+}
+
+// hands: a fist, fingers, or the drawn block hand (round 2; the Hood's
+// mitten only when a costume asks for shape: 'glove')
 function buildHand(F, sgn, g) {
   const W = F.rig.BIND[sgn > 0 ? 'handL' : 'handR'];
   const k = g.s ?? 1, fist = !!g.fist;
   if (fist && g.shape !== 'ball') return buildFist(F, sgn, g);
   if (!fist && g.fingers) return buildOpenHand(F, sgn, g);
+  if (!fist && g.shape !== 'glove') return buildBlockHand(F, sgn, g);
   const C = fist ? new THREE.Vector3(W.x, W.y - 0.058 * k, W.z + 0.004) : new THREE.Vector3(W.x - sgn * 0.004, W.y - 0.075 * k, W.z + 0.006);
   const R = (fist ? [0.029, 0.045, 0.037] : [0.029, 0.08, 0.047]).map((r) => r * k);
   const nu = seg(32, 10), nv = seg(22, 8);
@@ -628,13 +726,15 @@ function buildFlatCap(F) {
   const rows = [
     // [v-row] rx, rzF, rzB, cz, y: no band to speak of: the soft crown
     // bulges out at once and droops over the sides, wider than the head
+    // (round 2: the crown's top is a flat plane that meets its side at
+    // an edge - a cap with a cut, not a mushroom)
     [0.083, 0.097, 0.099, 0.0, -0.008],
     [0.095, 0.114, 0.105, 0.01, 0.004],
     [0.105, 0.132, 0.108, 0.02, 0.016],
-    [0.108, 0.14, 0.106, 0.025, 0.026],
-    [0.1, 0.13, 0.096, 0.026, 0.035],
-    [0.078, 0.098, 0.074, 0.024, 0.042],
-    [0.04, 0.05, 0.038, 0.022, 0.046],
+    [0.109, 0.142, 0.107, 0.025, 0.027],
+    [0.108, 0.141, 0.105, 0.026, 0.036],
+    [0.1, 0.13, 0.097, 0.026, 0.042],
+    [0.07, 0.09, 0.066, 0.024, 0.0455],
     [0.0, 0.0, 0.0, 0.02, 0.047],
   ];
   const crown = coverGeo(F, (u, v, p) => {
@@ -669,8 +769,9 @@ function buildWatchCap(F) {
   const c = F.cover, s = c.s ?? 1;
   // a fisherman's cap: the rolled cuff a thick band over the ears' tops,
   // the knit above it short and square-shouldered
+  // (round 2: the knit is square-topped, its crown folded flat with an edge)
   const prof = [[0.0, -0.012], [0.09, -0.014], [0.105, -0.006], [0.109, 0.012], [0.107, 0.03], [0.1, 0.04], [0.094, 0.043],
-    [0.094, 0.055], [0.089, 0.074], [0.077, 0.092], [0.056, 0.105], [0.03, 0.112], [0.0, 0.114]];
+    [0.094, 0.055], [0.093, 0.08], [0.09, 0.096], [0.078, 0.106], [0.04, 0.11], [0.0, 0.111]];
   const geo = coverGeo(F, (u, v, p) => {
     const [r, y] = profileAt(prof, v);
     const th = u * TAU;
@@ -917,7 +1018,7 @@ export function figureGeometry(costume, lod = 0) {
       case 'sleeves': parts.push(buildSleeve(F, 1, g), buildSleeve(F, -1, g)); break;
       case 'arms': parts.push(buildBareArm(F, 1, g), buildBareArm(F, -1, g)); break;
       case 'legs': parts.push(buildLeg(F, 1, g), buildLeg(F, -1, g)); break;
-      case 'shoes': parts.push(buildShoe(F, 1, g), buildShoe(F, -1, g)); break;
+      case 'shoes': parts.push(...buildShoe(F, 1, g), ...buildShoe(F, -1, g)); break;
       case 'hands': parts.push(...[buildHand(F, 1, { ...g, fist: g.fistL ?? g.fist }), buildHand(F, -1, { ...g, fist: g.fistR ?? g.fist })].flat()); break;
       case 'apron': parts.push(...buildApron(F, g)); break;
       case 'ribbon': parts.push(buildRibbon(F, g)); break;

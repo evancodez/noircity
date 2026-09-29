@@ -37,6 +37,10 @@ export class Figure extends Hood {
     this.rig = rig;
     this.bank = bank;
     if (this.collider) this.collider.r = (costume.collider ?? 0.32) * this.scale;
+    // (round 2: the ink prints the cast as it prints the Hoods - a flat dark
+    // mass with a rim and one or two light shapes, read off the albedo; the
+    // Hoods themselves keep their accepted print)
+    this.mesh.userData.inkSurface = 'castFig';
     this._rmClip = null;
     this.onMove = () => this.rootMotion();
   }

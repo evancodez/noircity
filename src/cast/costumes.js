@@ -50,7 +50,7 @@ const BRAWLER = {
     { kind: 'torso', shade: (th, y, x) => {
       if (y < 1.07) return 0.009;
       const brace = A(A(th) - 0.33) < 0.045 && y < 1.5;
-      return brace ? 0.006 : 0.07;
+      return brace ? 0.006 : (A(th) < 0.42 && y > 1.15 ? 0.34 : 0.03);
     } },
     // the waistcoat: a V to the fourth button, points over the belly, the
     // bottom button undone, cut away round the arms
@@ -58,7 +58,7 @@ const BRAWLER = {
       pad: (th, y) => 0.004 * Math.exp(-(((y - 1.08) / 0.1) ** 2)) * Math.max(0, Math.cos(th)),
       top: (th) => {
         const a = A(th);
-        const v = 1.235 + 0.25 * Math.pow(Math.min(1, a / 0.4), 0.95);
+        const v = 1.285 + 0.2 * Math.pow(Math.min(1, a / 0.32), 0.95);
         return Math.min(v, 1.5) - 0.2 * sstep(1.1, 1.35, a) * (1 - sstep(1.95, 2.25, a));
       },
       hem: (th) => {
@@ -66,15 +66,15 @@ const BRAWLER = {
         const base = 0.968 + 0.05 * sstep(0.3, 1.5, a) + 0.02 * sstep(1.5, 3, a);
         return base + (1.1 - base) * (1 - sstep(0.02, 0.3, a));
       } },
-    { kind: 'collar', style: 'band', h: 0.028, hFront: 0.022, open: 0.42, gap: 0.004, lean: 0.002, flareOut: 0.002, shade: 'shirt' },
+    { kind: 'collar', style: 'band', h: 0.028, hFront: 0.022, open: 0.42, gap: 0.004, lean: 0.002, flareOut: 0.002, shade: 0.34 },
     { kind: 'sleeves', style: 'rolled', r: 0.09, shade: 'shirt' },
     // heavy forearms, the wrist 0.075 across (world)
     { kind: 'arms', r: 0.062, d0: 0.19, wrist: 0.5 },
     { kind: 'legs', r: 1.3, boot: true },
     { kind: 'shoes', style: 'boot' },
-    { kind: 'hands', s: 1.25, fist: true },
+    { kind: 'hands', s: 1.12, fist: true },
   ],
-  skin: { shirt: 0.013, vest: 0.004, arm: 0.2, hand: 0.19, skin: 0.03, hair: 0.004, cover: 0.011, peak: 0.009, trousers: 0.006, shoes: 0.004 },
+  skin: { shirt: 0.02, vest: 0.004, arm: 0.34, hand: 0.34, skin: 0.03, hair: 0.004, cover: 0.011, peak: 0.009, trousers: 0.006, shoes: 0.004 },
   // his waistcoat pocket (theta, y): where the red matchbook rides
   pocket: [0.62, 1.1],
   collider: 0.4,
@@ -118,7 +118,7 @@ const WAITRESS = {
   garments: [
     { kind: 'torso', shade: (th, y) => (dotBand(th, y) ? 0.6 : 0.022) },
     { kind: 'skirt', y0: 0.97, hem: 0.4, flare: [1.42, 1.55], flarePow: 1.1, hipOut: 0.012, folds: 0.55, back: 1, grow: 0.006, shade: 'dress', hemWave: 0.006 },
-    { kind: 'collar', style: 'dress', shade: 0.09 },
+    { kind: 'collar', style: 'dress', shade: 0.03 },
     { kind: 'sleeves', style: 'short', r: 0.058, len: 0.12, shade: 'dress' },
     { kind: 'arms', r: 0.038, d0: 0.08 },
     { kind: 'apron', waist: 1.045, bibTop: 1.3, hem: 0.58, span: 0.16 },
@@ -129,7 +129,7 @@ const WAITRESS = {
     // half curled to hold what she holds
     { kind: 'hands', s: 0.84, fingers: true, curl: 0.55 },
   ],
-  skin: { dress: 0.022, arm: 0.04, hand: 0.04, skin: 0.03, hair: 0.004, cover: 0.3, apron: 0.72, stocking: 0.012, shoes: 0.004 },
+  skin: { dress: 0.022, arm: 0.04, hand: 0.04, skin: 0.03, hair: 0.004, cover: 0.62, apron: 0.72, stocking: 0.012, shoes: 0.004 },
   collider: 0.26,
 };
 
@@ -156,17 +156,17 @@ const COOK = {
   cover: { kind: 'papercap', hatDY: 0.105, hatDZ: -0.004, pitch: 0.03, h: 0.1 },
   garments: [
     // a white jacket gone grey in the kitchen's steam, the apron bib over it
-    { kind: 'torso', shade: (th, y) => (A(th) < 0.5 && y < 1.34 ? 0.13 : 0.04) },
+    { kind: 'torso', shade: (th, y) => (A(th) < 0.5 && y < 1.34 ? 0.035 : 0.025) },
     { kind: 'skirt', y0: 1.02, hem: 0.52, flare: [1.12, 1.2], folds: 0.4, back: 0.5, grow: 0.012,
-      shade: (u) => { const th = u * 6.2832; return Math.cos(th) > 0.4 ? 0.13 : 0.01; } },
-    { kind: 'collar', style: 'band', h: 0.03, hFront: 0.024, open: 0.35, gap: 0.004, lean: 0.002, flareOut: 0.002, shade: 0.05 },
-    { kind: 'sleeves', style: 'rolled', r: 0.085, shade: 0.05 },
+      shade: (u) => { const th = u * 6.2832; return Math.cos(th) > 0.4 ? 0.035 : 0.01; } },
+    { kind: 'collar', style: 'band', h: 0.03, hFront: 0.024, open: 0.35, gap: 0.004, lean: 0.002, flareOut: 0.002, shade: 0.03 },
+    { kind: 'sleeves', style: 'rolled', r: 0.085, shade: 0.03 },
     { kind: 'arms', r: 0.055, d0: 0.18 },
     { kind: 'legs', r: 1.1 },
     { kind: 'shoes' },
     { kind: 'hands', s: 1.1 },
   ],
-  skin: { arm: 0.09, hand: 0.09, skin: 0.03, cover: 0.3, trousers: 0.008 },
+  skin: { arm: 0.03, hand: 0.03, skin: 0.03, cover: 0.62, trousers: 0.008 },
   collider: 0.36,
 };
 
@@ -267,7 +267,7 @@ const HIM = {
   },
   cover: { kind: 'bowler', hatDY: 0.13, hatDZ: 0.0, pitch: 0.05, s: 0.98, brim: 0.14 },
   garments: [
-    { kind: 'torso', shade: (th, y) => (y > 1.25 && A(th) < 0.12 ? 0.11 : 0.013) },
+    { kind: 'torso', shade: (th, y) => (y > 1.25 && A(th) < 0.12 ? 0.3 : 0.013) },
     { kind: 'skirt', y0: 1.06, hem: 0.52, split: 0.5, flare: [1.2, 1.26], back: 0.4, folds: 0.8, shade: 'coat' },
     { kind: 'lapels', near: true, top: 1.482, low: 1.24 },
     { kind: 'collar', style: 'stand', h: 0.045, hFront: 0.03, open: 0.55, gap: 0.028 },

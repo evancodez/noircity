@@ -46,7 +46,9 @@ export function buildPendants(kit, lamps) {
     // haze (the cone shader). The registry entry keeps the whole drop to the
     // floor (range), as before.
     const drop = kind === 'counter' ? P.headY - D.counter.topY : P.headY - D.booths.tableY;
-    const lamp = lamps.addCustom({ head: V3(x, P.headY, z), axis: V3(0, -1, 0), height: drop, half, real: true, bulb, fadeEnd: 0.6, edgeSoft: 0.62, strength: 0.75, tag: 'pendant' });
+    // (round 2: the shaft reaches most of the way down and is a little
+    // stronger - light in smoke under a low ceiling, still soft-edged)
+    const lamp = lamps.addCustom({ head: V3(x, P.headY, z), axis: V3(0, -1, 0), height: drop, half, real: true, bulb, fadeEnd: 0.92, edgeSoft: 0.7, strength: 1.3, tag: 'pendant' });
     if (lamp.entry) lamp.entry.range = P.headY - D.floorY;
     // (the pool light: a round pool about 1.5 m across on the counter top,
     // paper white in the middle, a grey rim, black between two pools where

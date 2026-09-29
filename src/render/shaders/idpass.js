@@ -16,8 +16,13 @@ import * as THREE from 'three';
 // the stools' chrome), not as a calm enamel wash (enamel stays class 4).
 // 'lit' (class 13): a lit panel of a room (the back bar's glass, the
 // kitchen's wall, the jukebox's pilasters): its own flat light, unbanded.
+// 'castFig' (class 14, round 2): a figure of the cast printed as the Hoods
+// are (a flat dark mass with a rim) with its light shapes (an apron, bare
+// forearms, a paper hat): the id pass reads the figure's albedo off its
+// vertex colour and adds its light share t (0..1) to the length, 29 + 1.8 t,
+// so the ink knows the shapes (it decodes class 14 or 15 and t from it).
 export const SURFACE = { plaster: 1, wall: 1, ceiling: 1, wood: 2, panel: 2, panelling: 2, lino: 3, linoleum: 3, floor: 3, enamel: 4, cloth: 5, leather: 5, fabric: 5,
-  skin: 7, paper: 8, glass: 9, amberGlass: 11, metal: 12, chrome: 12, lit: 13 };
+  skin: 7, paper: 8, glass: 9, amberGlass: 11, metal: 12, chrome: 12, lit: 13, castFig: 14 };
 
 // Normal + object-id pass (used as scene.overrideMaterial).
 // Output: rgb = view-space normal, a = object id (integer, exact in half float).
@@ -28,6 +33,9 @@ export function makeIdMaterial() {
   const mat = new THREE.ShaderMaterial({
     name: 'NoirIdPass',
     side: THREE.DoubleSide,
+    // (the vertex colour is read only for a cast figure's light share; a
+    // mesh without colours gets the default white and never uses it)
+    vertexColors: true,
     uniforms: { uId: { value: 1 }, uPerInstance: { value: 1 }, uFigure: { value: 0 }, uSurf: { value: 1 } },
     vertexShader: /* glsl */`
       #include <common>
@@ -36,7 +44,13 @@ export function makeIdMaterial() {
       uniform float uPerInstance;
       varying vec3 vN;
       varying float vId;
+      varying float vAlb;
       void main() {
+        #ifdef USE_COLOR
+          vAlb = color.r;
+        #else
+          vAlb = 0.0;
+        #endif
         #include <beginnormal_vertex>
         #include <skinbase_vertex>
         #include <skinnormal_vertex>
@@ -55,11 +69,16 @@ export function makeIdMaterial() {
       uniform float uFigure, uSurf;
       varying vec3 vN;
       varying float vId;
+      varying float vAlb;
       void main() {
         vec3 n = normalize( vN );
         n = gl_FrontFacing ? n : -n;
         // (an interior surface class: the ink reads it off the length)
-        if ( uSurf > 1.5 ) n *= uSurf;
+        // (a cast figure, class 14: its light share rides on top, from the
+        // albedo - the dark cloth 0 .. 0.05, the light shapes 0.2 .. 0.72)
+        float sL = uSurf;
+        if ( abs( uSurf - 29.0 ) < 0.5 ) sL += 1.8 * clamp( ( vAlb - 0.05 ) / 0.65, 0.0, 1.0 );
+        if ( uSurf > 1.5 ) n *= sL;
         float id = mod( floor( vId + 0.5 ), 2048.0 );
         gl_FragColor = vec4( n, uFigure > 0.5 ? - id : id );
       }`,

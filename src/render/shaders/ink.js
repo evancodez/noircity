@@ -180,9 +180,14 @@ export function makeInkMaterial(tex, fogUniforms) {
         // n * ( 1 + 2 k ), k = 1 plaster, 2 wood, 3 lino, 4 metal, 5 cloth);
         // untagged surfaces are unit normals and never enter the branch
         float surf = 0.0;
+        // a cast figure (class 14 / 15, idpass): its light share t, 0 on the
+        // dark cloth, toward 1 on its light shapes
+        float castF = 0.0, castT = 0.0;
         {
           float nLen = length( nid.xyz );
           if ( nLen > 2.0 ) { surf = floor( ( nLen - 1.0 ) * 0.5 + 0.5 ); nid.xyz /= nLen; }
+          castF = step( 13.5, surf ) * step( surf, 15.5 );
+          castT = castF * clamp( ( nLen - 29.0 ) / 1.8, 0.0, 1.0 );
         }
         // (bare metal and glass, class 12: a room's too, printed black with
         // broken highlights)
@@ -405,6 +410,35 @@ export function makeInkMaterial(tex, fogUniforms) {
           v *= mix( 1.0, mix( 0.2, 1.4, br.r ), upF );
           v *= 1.0 - 0.88 * smoothstep( 9.0, 20.0, dist );
         }
+        // The cast (round 2): printed as the Hoods are, whatever the light
+        // on them - under a pendant a figure's shaded solid printed every
+        // rounded form as a grey balloon. One flat dark mass (no gradient
+        // inside it: a dry-brush grey only where the brush's strongest
+        // strokes cross the lit side of the cloth), and its one or two light
+        // shapes (the apron, the bare forearms, the paper hat: t from the
+        // albedo) printed FLAT - a light value where the key light reaches
+        // them, a mid value where it does not - with torn edges: the shape's
+        // own edge where the brush decides the side, and the split between
+        // its two values. The rim (below) cuts it from what is behind.
+        castF *= hood;
+        if ( castF > 0.5 ) {
+          float lgC = log2( max( L * exposure, 1e-6 ) );
+          float keyC = smoothstep( -1.5, 1.5, lgC );
+          float foldC = smoothstep( 0.74, 0.8, br.g * 0.55 + br.r * 0.45 ) * keyC;
+          float massV = mix( 0.028, 0.15, foldC * 0.75 );
+          float tb = clamp( 0.1 + 0.16 * br.g, 0.1, 0.26 );
+          float shapeK = smoothstep( tb - 0.05, tb + 0.05, castT );
+          // (the light shape's albedo sets its value: skin a light grey, a
+          // white apron paper)
+          float hiA = smoothstep( 0.2, 0.95, castT );
+          float litS = mix( 0.62, 0.9, hiA ), shS = mix( 0.3, 0.44, hiA );
+          float bs = clamp( br.r, 0.2, 0.8 );
+          float sideS = smoothstep( bs - 0.12, bs + 0.12, clamp( ( lgC + 0.8 ) / 2.2 + 0.5, 0.0, 1.0 ) );
+          float shapeV = mix( shS, litS, sideS );
+          // (past ~14 m only the brightest shape holds, dimmed: a cut-out)
+          shapeV *= 1.0 - 0.45 * smoothstep( 14.0, 30.0, dist );
+          v = mix( massV, shapeV, shapeK );
+        }
         // the gun: black steel and dark wood; lamp light and the muzzle flash
         // raise dry-brush greys on it (never a white plate)
         // (ceiling ~0.28: at 0.5 the stock lit by the key light printed as a
@@ -472,7 +506,10 @@ export function makeInkMaterial(tex, fogUniforms) {
               // under the lamp stays the lit grey)
               vec3 hV = normalize( upV + normalize( - vpos ) );
               float spec = pow( max( dot( n, hV ), 0.0 ), 60.0 );
-              float hiK = smoothstep( bh - 0.1, bh + 0.1, clamp( ( spec - 0.45 ) / 0.3 + 0.5, 0.0, 1.0 ) ) * smoothstep( 0.5, 2.0, lg );
+              // (round 2: no paper highlight on the skin - on the knuckles'
+              // small spheres it printed as white speckles; the hand is two
+              // values, its contour and its dark ticks)
+              float hiK = 0.0 * smoothstep( bh - 0.1, bh + 0.1, clamp( ( spec - 0.45 ) / 0.3 + 0.5, 0.0, 1.0 ) ) * smoothstep( 0.5, 2.0, lg );
               v = mix( mix( shV, litV, side ), 0.95, hiK ) * mix( 0.97, 1.03, br.b );
               // (the lighter's flame, within ~8 cm: a warm-white lift through
               // the skin's own print, no new light; the warmth is added below)
@@ -494,7 +531,9 @@ export function makeInkMaterial(tex, fogUniforms) {
         // (the bare hands and what they hold, not the gloves and sleeves of
         // the gun sets: those keep their accepted print)
         float vmHands = vmF * step( -idc, ${(VM_ID0 - 0.5).toFixed(1)} ) * ( 1.0 - metalF ) * ( 1.0 - step( 3.5, surf ) * step( surf, 5.5 ) );
-        float flashF = max( hood, vmF * ( 1.0 - vmHands ) ) * smoothstep( 1.1, 2.2, L ) + vmHands * smoothstep( 14.0, 24.0, L );
+        // (a cast figure's apron under a pendant is several times paper
+        // white itself: as with the bare hands, only a far brighter thing)
+        float flashF = max( hood * ( 1.0 - castF ), vmF * ( 1.0 - vmHands ) ) * smoothstep( 1.1, 2.2, L ) + max( vmHands, castF ) * smoothstep( 14.0, 24.0, L );
         v = mix( v, vRaw, flashF );
         // (smoke over a man or the el prints as smoke, not as his cloth)
         v = mix( v, vRaw, fxCov * ( 1.0 - vmF ) );
@@ -677,7 +716,7 @@ export function makeInkMaterial(tex, fogUniforms) {
         // smoke is a soft wash with its own brushed alpha (fx/fxTextures
         // SMOKE): banded by the surface behind it, its tone stepped at every
         // tower and wall edge it drifted across
-        brushAmt *= ( 1.0 - fxCov ) * ( 1.0 - litF );
+        brushAmt *= ( 1.0 - fxCov ) * ( 1.0 - litF ) * ( 1.0 - castF );
         v = mix( v, vBand, brushAmt );
         // (the muzzle puff: its tone laid in the ink's flat bands, their
         // edges broken by the brush field - a brushed puff with a darker core,
@@ -839,12 +878,22 @@ export function makeInkMaterial(tex, fogUniforms) {
         edge *= 1.0 - smoothstep( 0.35, 0.8, glow );
         // light sources are never outlined: ink stops where the glare begins
         float glare = ( L + luma( bloom ) ) * exposure;
-        edge *= 1.0 - smoothstep( 0.6, 2.0, glare );
+        edge *= 1.0 - smoothstep( 0.6, 2.0, mix( glare, luma( bloom ) * exposure, castF ) );
 
         // ---- lit rim: a thin white line inside silhouettes facing a lamp ----
         float rim = 0.0;
         // the gun takes the figures' rim (stronger, allowed on its top)
         float figR = max( hood, vmF );
+        // (a cast figure's rim is a band a few pixels deep inside its
+        // outline: the probe reaches three line widths in, so the rim is
+        // not only the sliver the contour leaves between itself and 1.7)
+        if ( castF > 0.5 && !sky && silFront < 0.5 ) {
+          for ( int i = 0; i < 4; i ++ ) {
+            vec2 o3 = dirs[ i ] * rpx * 3.4 / uRes;
+            float wf3 = min( wAt( uv + o3 ), wAt( uv - o3 ) );
+            silFront = max( silFront, step( 1.25, wc / max( wf3, 1e-7 ) ) );
+          }
+        }
         if ( !sky && silFront > 0.5 ) {
           float rimBestW = 0.0, rimBest = 0.0;
           for ( int i = 0; i < 4; i ++ ) {
@@ -864,14 +913,16 @@ export function makeInkMaterial(tex, fogUniforms) {
           // not rim them, only the sides of silhouettes that turn to the light
           // (a man's hat crown and shoulders are the exception: that light
           // edge is what separates him from the black behind, DESIGN.md 5.4)
-          rim = smoothstep( 0.35, 1.0, rim ) * nearF * ( 1.0 - edge ) * mix( 1.0 - smoothstep( 0.5, 0.8, nW.y ), 1.0, figR )
+          rim = smoothstep( mix( 0.35, 0.12, castF ), mix( 1.0, 0.55, castF ), rim ) * nearF * ( 1.0 - edge ) * mix( 1.0 - smoothstep( 0.5, 0.8, nW.y ), 1.0, figR )
               // (a far Hood keeps only a trace of rim: past ~10 m the rim probe
               // covers most of his body and would print him grey)
               * ( 1.0 - hood * 0.85 * smoothstep( 9.0, 20.0, dist ) );
           // a dry-brush highlight, not a CG glow outline: broken along its length
           rim *= smoothstep( 0.3, 0.5, br.g * 0.5 + br.r * 0.5 );
           // no rim beside a glare (the lamp shade is a black silhouette under its light)
-          rim *= 1.0 - smoothstep( 0.3, 1.0, glare );
+          // (a cast figure is lit strongly under a pendant - its own light
+          // is not a glare; only a lamp's halo beside it is)
+          rim *= 1.0 - smoothstep( 0.3, 1.0, mix( glare, luma( bloom ) * exposure, castF ) );
           rim *= 1.0 - skyl;
         }
 

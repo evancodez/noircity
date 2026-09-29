@@ -170,9 +170,21 @@ function rolledCuffGeometry() {
   return new THREE.LatheGeometry(prof.map(([r, y]) => new THREE.Vector2(Math.max(r, 1e-4), y)), 24);
 }
 // the bare forearm (sleeves pushed up): wrist to the rolls
+// (round 2: flat across the wrist as a wrist is - wider than it is thick,
+// its flat laid in the hand's own plane by apply() - so it runs into the
+// wrist and the heel of the hand without the hard angle the ink drew where a
+// round arm met a flat hand; rounding out toward the elbow)
 function forearmGeometry() {
-  const prof = [[0.0, -0.02], [0.02, -0.018], [0.027, 0.0], [0.0285, 0.04], [0.033, 0.1], [0.038, 0.16], [0.039, 0.2], [0.0, 0.21]];
-  return new THREE.LatheGeometry(prof.map(([r, y]) => new THREE.Vector2(Math.max(r, 1e-4), y)), 24);
+  const prof = [[0.0, -0.024], [0.02, -0.022], [0.027, -0.006], [0.0285, 0.03], [0.033, 0.1], [0.038, 0.16], [0.039, 0.2], [0.0, 0.21]];
+  const g = new THREE.LatheGeometry(prof.map(([r, y]) => new THREE.Vector2(Math.max(r, 1e-4), y)), 32);
+  const p = g.getAttribute('position');
+  for (let i = 0; i < p.count; i++) {
+    const y = p.getY(i), k = sstep(0.0, 0.12, y);
+    p.setX(i, p.getX(i) * (1.05 + (1 - 1.05) * k));
+    p.setZ(i, p.getZ(i) * (0.72 + (1 - 0.72) * k));
+  }
+  g.computeVertexNormals();
+  return g;
 }
 // the glove's gauntlet: a short flared leather cuff over the wrist (metres,
 // from the sleeve's hem)
@@ -291,7 +303,16 @@ export class HandRig {
     const add = (g, b, col = 1, wfn = null) => { g.applyMatrix4(rest(b)); parts.push(tag(g, B(b), col, wfn)); };
     const MARK = -1;   // (a mark: its colour is chosen per skin below)
     const H = this.hand;
-    add(palmGeometry(), H);
+    // (the palm's radial edge between the index's knuckle and the heel is
+    // the web: it follows the thumb's metacarpal part of the way, so when
+    // the thumb opens the skin between them stretches as one smooth fold)
+    {
+      const bh = B(H), bt = B(this.thumb.b[0]);
+      add(palmGeometry(), H, 1, (v) => {
+        const w = (dims ? 0.72 : 0) * sstep(-0.02, -0.04, v.x) * sstep(-0.01, -0.036, v.z) * (1 - sstep(-0.084, -0.102, v.z));
+        return [bh, bt, w];
+      });
+    }
     // the wrist
     add(ellipsoid(HAND.wrist.rx, HAND.wrist.ry, 0.034, V(0, -0.0015, 0.012), 22, 14), H);
     const PH = HAND.phal, fl = HAND.flat;
@@ -341,9 +362,15 @@ export class HandRig {
     add(ellipsoid(T.r[2] * 1.05, T.r[2] * 0.98, T.r[2] * 1.03, V(0, T.r[2] * 0.1, -T.seg[0]), 14, 10), t1);
     add(tick(T.r[2] * 1.08 + 0.0003, 0.0006, -T.seg[0] + 0.002, Math.PI / 2 - 0.45, Math.PI / 2 + 0.45, 0.9), t1, MARK);
     add(tick(T.r[3] * 1.05 + 0.0002, 0.00055, -T.seg[1] * 0.45, Math.PI / 2 - 0.6, Math.PI / 2 + 0.6, 0.88), t2, -2);
-    // the web between thumb and index: a thin flap from the thumb's MCP to
-    // the index's MCP, skinned to both (it stretches as the thumb opens)
-    {
+    // (round 2: the web between thumb and index was a flap from the thumb's
+    // MCP to the index's, skinned to both: as the thumb opened it stretched
+    // into a thin rod standing across the gap, and the ink drew its outline
+    // - the 'stick between thumb and index'. The web is now the palm's own
+    // radial edge, which folds toward the thumb (see the palm's weights):
+    // one surface, no seam for the ink to find.)
+    // (the glove keeps its flap: the leather is stiff, and the Tommy gun's
+    // accepted frames are drawn with it)
+    if (!dims) {
       const tm = new THREE.Vector3(0, 0, -T.meta).applyMatrix4(rest(t0));
       const im = new THREE.Vector3().setFromMatrixPosition(rest(this.fingers.i.b[0]));
       const c = tm.clone().lerp(im, 0.45);
@@ -443,6 +470,17 @@ export class HandRig {
       m.position.copy(pos).addScaledVector(d, 0.004);
       m.quaternion.copy(this._q);
     }
+    // (the bare forearm's flat turns with the hand: its local x along the
+    // hand's width, so the wrist's ellipse meets the hand's)
+    {
+      const X = this._u.set(1, 0, 0).applyQuaternion(quat);
+      X.addScaledVector(d, -X.dot(d));
+      if (X.lengthSq() > 1e-8) {
+        X.normalize();
+        const Z = this._sh.crossVectors(X, d);
+        this.forearm.quaternion.setFromRotationMatrix(_mb.makeBasis(X, d, Z));
+      }
+    }
     // the upper arm: elbow to shoulder (behind the eye, off the frame)
     const sh = shoulder || this._sh.set(0.2, -0.3, 0.12);
     const u = this._u.subVectors(sh, elbow);
@@ -453,3 +491,4 @@ export class HandRig {
   }
 }
 const ZERO4 = [0, 0, 0, 0], ZERO5 = [0, 0, 0, 0, 0];
+const _mb = new THREE.Matrix4();
