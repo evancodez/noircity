@@ -181,19 +181,24 @@ const TORSO = tableSampler([
 // shoulder rows held wide up to the collar and squarer in section. Seen from
 // half a metre behind his right shoulder the Hoods' sloping round shoulder
 // printed as an inflated bulb; the reference's coat has a squared shoulder
+// (Phase 3d: the back rows TAPERED - the back's depth falls off steadily
+// from the waist to the collar, 13.3 -> 9 cm, instead of swelling to 13.9 cm
+// at the shoulder blades: seen from behind the raised right shoulder the
+// full rows printed as one sphere, a dome from the collar to the elbow; the
+// back is now a slope up to a squared shoulder line, the reference's yoke)
 const TORSO_PLAYER = tableSampler([
   [0.95, 0.196, 0.138, 0.138, 0.000, 2.3],
-  [1.03, 0.184, 0.131, 0.131, 0.004, 2.3],
-  [1.12, 0.189, 0.140, 0.130, 0.010, 2.35],
-  [1.22, 0.202, 0.152, 0.133, 0.014, 2.45],
-  [1.31, 0.222, 0.156, 0.138, 0.012, 2.8],
-  [1.38, 0.238, 0.147, 0.139, 0.004, 3.6],
-  [1.425, 0.246, 0.132, 0.130, -0.006, 4.6],
-  [1.455, 0.246, 0.117, 0.118, -0.012, 4.8],
-  [1.476, 0.236, 0.102, 0.104, -0.016, 4.4],
-  [1.49, 0.196, 0.091, 0.095, -0.018, 3.4],
-  [1.499, 0.13, 0.081, 0.087, -0.019, 2.6],
-  [1.506, 0.074, 0.068, 0.074, -0.020, 2.2],
+  [1.03, 0.188, 0.131, 0.131, 0.004, 3.0],
+  [1.12, 0.200, 0.140, 0.122, 0.010, 4.5],
+  [1.22, 0.215, 0.150, 0.112, 0.014, 6.0],
+  [1.31, 0.229, 0.154, 0.104, 0.012, 6.5],
+  [1.38, 0.238, 0.147, 0.100, 0.004, 6.5],
+  [1.425, 0.241, 0.132, 0.100, -0.006, 6.5],
+  [1.455, 0.242, 0.117, 0.100, -0.012, 6.0],
+  [1.476, 0.240, 0.104, 0.099, -0.016, 5.5],
+  [1.49, 0.222, 0.093, 0.097, -0.018, 4.6],
+  [1.499, 0.15, 0.083, 0.092, -0.019, 3.4],
+  [1.506, 0.074, 0.068, 0.080, -0.020, 2.4],
 ]);
 let TORSO_CUR = TORSO;
 const TORSO_Y0 = 0.95, TORSO_Y1 = 1.506;
@@ -254,7 +259,7 @@ function buildTorso(player = false) {
 
 // skirt: open at the front, the left panel lapping over the right; each
 // panel follows its own thigh, the back follows both.
-function buildSkirt(hemY) {
+function buildSkirt(hemY, player = false) {
   const y0 = 1.06;
   const S = tableSampler([
     [0, 0.188, 0.134, 0.134, 0.004],
@@ -274,6 +279,9 @@ function buildSkirt(hemY) {
     // outer (left) panel sits proud of the inner (right) one where they lap
     const lap = 0.012 * (1 - sstep(0, 0.09, u)) - 0.007 * sstep(0.91, 1, u);
     rx = rx * (1 + fold) + lap; rzF = rzF * (1 + fold) + lap; rzB = rzB * (1 + fold) + lap;
+    // (the player's, Phase 3d: a small flare at the hem - ~8 % over its last
+    // quarter - so the long coat ends in a skirt, not a tube)
+    if (player) { const fl = 1 + 0.08 * sstep(0.7, 1, v); rx *= fl; rzF *= fl; rzB *= fl; }
     const s = Math.sin(th), c = Math.cos(th);
     const y = lerp(y0, hemY + 0.012 * Math.sin(3 * th + 0.7) * v, Math.pow(v, 0.92));
     p.set(rx * spow(s, 2 / 2.3), y, cz + (c > 0 ? rzF : rzB) * spow(c, 2 / 2.3));
@@ -378,18 +386,27 @@ function buildSleeve(sgn, player = false) {
     [0.15, 0.079], [0.24, 0.075], [0.3, 0.073], [0.36, 0.071], [0.45, 0.068], [0.52, 0.067],
     [0.545, 0.071], [0.556, 0.069], [0.56, 0.062], [0.55, 0.052],
   ];
+  // (Phase 3d: the player's cap FLATTENED - its dome cut to a flat top 2.6 cm
+  // above the joint, turned over a tight corner - and ~25 % thinner: from
+  // behind the raised arm the round cap was the apex of a dome from the collar
+  // to the elbow; flat-topped it squares the shoulder off into a yoke corner)
+  if (player) prof.splice(0, 5, [-0.026, 0.0], [-0.026, 0.078], [-0.018, 0.083], [0.0, 0.083]);
   const nu = seg(40, 12), nv = seg(prof.length * 3, prof.length + 4);
   const geo = grid(nu, nv, (u, v, p) => {
     let [d, r] = profileAt(prof, v);
-    if (player) r *= (1 - 0.15 * sstep(0.14, 0.02, d)) * (1 - 0.07 * Math.exp(-(((d - 0.035) / 0.007) ** 2)));
+    if (player) r *= (1 - 0.25 * sstep(0.22, 0.06, d)) * (1 - 0.07 * Math.exp(-(((d - 0.035) / 0.007) ** 2)));
     const th = u * TAU;
-    p.set(J.x + r * 0.93 * Math.sin(th), J.y - d, J.z + r * Math.cos(th));
+    if (player) {
+      const e = 2 / lerp(3.8, 2.2, sstep(0.3, 0.5, d));
+      p.set(J.x + r * 0.93 * spow(Math.sin(th), e), J.y - d, J.z + r * spow(Math.cos(th), e));
+    } else p.set(J.x + r * 0.93 * Math.sin(th), J.y - d, J.z + r * Math.cos(th));
   });
   orientOut(geo, new THREE.Vector3(J.x, J.y - 0.28, J.z));
   const weights = (x, y) => {
     const d = J.y - y;
     const we = sstep(0.25, 0.35, d);
-    return [[sgn > 0 ? B.upperArmL : B.upperArmR, 1 - we], [sgn > 0 ? B.forearmL : B.forearmR, we]];
+    const wc = player ? 0.8 * sstep(0.03, -0.026, d) : 0;
+    return [[B.chest, wc], [sgn > 0 ? B.upperArmL : B.upperArmR, (1 - we) * (1 - wc)], [sgn > 0 ? B.forearmL : B.forearmR, we]];
   };
   return { geo, shade: SHADE.coat, weights };
 }
@@ -499,7 +516,11 @@ function buildNose() {
 // skull's silhouette under the brim's shadow, where from behind the shoulder
 // it reads as a bump on the black mass; flush on the side of the skull,
 // seen across its face, it printed as a pale button inside the head)
-const EAR_OUT = 0.012, EAR_BACK = 0.004, EAR_K = 0.8;
+// (Phase 3d: 0.8 -> 0.65 and sunk 5 mm into the skull - 12 -> 7 mm out: the
+// reference's ear is a small bump on the black mass drawn by two or three
+// ticks, not a shell standing off the head; at 0.8 its lit rim printed as a
+// pale ring the size of an eye)
+const EAR_OUT = 0.007, EAR_BACK = 0.004, EAR_K = 0.65;
 function buildEar(sgn) {
   const C = new THREE.Vector3(sgn * (0.08 + EAR_OUT), 1.652, -0.012 - EAR_BACK);
   const nu = seg(28, 10), nv = seg(16, 6);
@@ -608,15 +629,21 @@ function buildHat(brimR, crownShade = SHADE.hat, ribbon = false) {
   return { geo, shade, weights: () => [[B.hat, 1]] };
 }
 
-function buildHand(sgn, fist) {
+// (player: the left glove on the foregrip, Phase 3d review - a BOXY fist,
+// a superellipsoid ~20 % shorter from the wrist to the knuckles, its end a
+// flat face turned over a hard knuckle ridge: the round ovoid printed as a
+// black mound merged into the receiver, a ball on the barrel, not a hand)
+function buildHand(sgn, fist, player = false) {
   const W = BIND[sgn > 0 ? 'handL' : 'handR'];
-  const C = fist ? new THREE.Vector3(W.x, W.y - 0.058, W.z + 0.004) : new THREE.Vector3(W.x - sgn * 0.004, W.y - 0.075, W.z + 0.006);
-  const R = fist ? [0.029, 0.045, 0.037] : [0.025, 0.082, 0.045];   // (fist ~15 % thinner: Phase 2b)
+  const box = fist && player;
+  const C = fist ? new THREE.Vector3(W.x, W.y - (box ? 0.052 : 0.058), W.z + 0.004) : new THREE.Vector3(W.x - sgn * 0.004, W.y - 0.075, W.z + 0.006);
+  const R = fist ? [0.029, box ? 0.036 : 0.045, 0.037] : [0.025, 0.082, 0.045];   // (fist ~15 % thinner: Phase 2b)
+  const e = box ? 0.55 : 1;
   const nu = seg(32, 10), nv = seg(22, 8);
   const geo = grid(nu, nv, (u, v, p) => {
     const b = v * Math.PI, a = u * TAU;
-    const dy = Math.cos(b), q = Math.sin(b);
-    const dx = q * Math.sin(a), dz = q * Math.cos(a);
+    const dy = spow(Math.cos(b), e), q = spow(Math.sin(b), e);
+    const dx = q * spow(Math.sin(a), e), dz = q * spow(Math.cos(a), e);
     let r = 1;
     // thumb along the front, near the top
     r += 0.35 * Math.exp(-(((dz - 0.8) / 0.3) ** 2) - (((dy - 0.35) / 0.35) ** 2) - (((dx + sgn * 0.2) / 0.5) ** 2));
@@ -741,7 +768,7 @@ function hoodGeometry(v, lod = 0) {
     Q = v.player ? PLAYER_Q : LOD_Q[lod];
     const near = lod < 2;
     const parts = [
-      buildTorso(!!v.player), buildSkirt(COAT_HEM[v.coat]), ...(near ? [buildBelt()] : []), buildCollar(!!v.player), ...(near ? [buildLapel(1), buildLapel(-1)] : []),
+      buildTorso(!!v.player), buildSkirt(COAT_HEM[v.coat], !!v.player), ...(near ? [buildBelt()] : []), buildCollar(!!v.player), ...(near ? [buildLapel(1), buildLapel(-1)] : []),
       buildSleeve(1, !!v.player), buildSleeve(-1, !!v.player), buildTrouser(1), buildTrouser(-1), buildShoe(1), buildShoe(-1),
       buildHead(!!v.player), ...(near ? [buildNose()] : []), buildNeck(!!v.player), buildHat(v.player ? PLAYER_BRIM : BRIM_R[v.brim], v.player ? PLAYER_HAT : SHADE.hat, !!v.player),
       // (the player's left hand and ears are meshes of their own: playerPart)
@@ -763,7 +790,7 @@ export function playerPartGeometry(kind) {
   Q = PLAYER_Q;
   // (the left hand closed on the foregrip: the open hand hung there as a
   // 16 cm paddle and printed as a black oval under the barrel)
-  const parts = kind === 'ears' ? [buildEar(1), buildEar(-1)] : [buildHand(1, true)];
+  const parts = kind === 'ears' ? [buildEar(1), buildEar(-1)] : [buildHand(1, true, true)];
   const geo = assemble(parts);
   Q = 1;
   geo.deleteAttribute('skinIndex');

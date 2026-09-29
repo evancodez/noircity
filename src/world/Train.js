@@ -65,7 +65,11 @@ export class Train {
     const G = trainGeometry();
     // windows: a warm-less white light, bright enough to bloom and to clear
     // the reflection's bright pass
-    this.winMat = new THREE.MeshBasicMaterial({ color: new THREE.Color(1, 1, 1).multiplyScalar(2.6) });
+    // (Phase 3d: 2.6 -> 1.8 - at 2x the bloom's threshold every window hung a
+    // grey halo over the black girder under it; at ~1.4x the bloom only
+    // softens the window's own edge, and it still clears the reflection's
+    // bright pass by far)
+    this.winMat = new THREE.MeshBasicMaterial({ color: new THREE.Color(1, 1, 1).multiplyScalar(1.8) });
     this.bodyMat = new THREE.MeshStandardMaterial({ color: 0x050505, roughness: 0.6, metalness: 0.3, envMap: M.envSoft, envMapIntensity: 0.4 });
     this.cars = [];
     const ironId = allocIronId(), winId = allocInkId();
@@ -335,9 +339,12 @@ export class Train {
             // points 5-6 px across, each trailing a 0.25 s tail (stretch
             // 0.25: a streak as long as its last quarter second of flight)
             const floor = spill;
+            // (Phase 3d review: the heads HALVED - 2.3-2.7 px, the tail's
+            // line a third of that, ~1 px: at 5-6 px, bloomed, a bite printed
+            // as a string of small flames, fat round heads on teardrops)
             if (floor && camera) {
               const dW = wheel.distanceTo(camera.position);
-              sw = Math.max(sw, r.range(5, 6) * (2 * Math.tan(THREE.MathUtils.degToRad(camera.fov) / 2) * dW) / Math.max(1, W.U.uRes.value.y));
+              sw = Math.max(0.006, 0.45 * r.range(5, 6) * (2 * Math.tan(THREE.MathUtils.degToRad(camera.fov) / 2) * dW) / Math.max(1, W.U.uRes.value.y));
             }
             const nS = floor ? r.int(6, 10) : 5;
             // Phase 3c review: the spray printed as one bloomed white smear
@@ -356,12 +363,28 @@ export class Train {
             // bite fans out wider, so its points stand apart with dark iron
             // between them instead of one blooming blob)
             const sp = floor ? 1.4 : 1;
+            // (Phase 3d: the spray's tails STRAIGHT and SHORT - thrown DOWN
+            // off the flange, back along the rail and a little out over the
+            // girder, with little scatter: thrown up, the fall bent every
+            // tail over its quarter second and the crossing arcs of a bite
+            // printed as a scribbled signature; falling from the start, the
+            // fall (9.8 -> 3) only lengthens a straight streak. Their tails
+            // half as long (stretch 0.25 -> 0.12), and at 1.5x the bloom's
+            // threshold, not 2x, so each point is not a halo over the girder)
+            // (the rng is drawn in the original order and count)
+            const scat = floor ? 0.35 : 1;
             for (let n = 0; n < nS; n++) {
-              const v = fwd.clone().multiplyScalar(-this.dir * r.range(1, 4) * sp).add(side.clone().normalize().multiplyScalar(r.range(0.5, 2.5) * sp)).add(new THREE.Vector3(r.gauss() * 0.6 * sp, r.range(0.2, 2.2) * sp, r.gauss() * 0.6 * sp));
+              const along = r.range(1, 4), out = r.range(0.5, 2.5), gx = r.gauss(), up = r.range(0.2, 2.2), gz = r.gauss();
+              const v = floor
+                ? fwd.clone().multiplyScalar(-this.dir * (1.2 + along * 0.5) * sp).add(side.clone().normalize().multiplyScalar((0.5 + out * 0.25) * sp)).add(new THREE.Vector3(gx * 0.6 * scat * sp, -(0.4 + up * 0.5) * sp, gz * 0.6 * scat * sp))
+                : fwd.clone().multiplyScalar(-this.dir * along * sp).add(side.clone().normalize().multiplyScalar(out * sp)).add(new THREE.Vector3(gx * 0.6 * sp, up * sp, gz * 0.6 * sp));
               // (the spray holds its full heat to the end - no fade: a
               // dimming spark over the girder fell under the ink's emitter
               // test and printed as a black streak on the lit iron)
-              (F.railSparks || F.sparks).spawn({ pos: wheel.clone().add(new THREE.Vector3(r.gauss() * (floor ? 0.14 : 0.08), r.gauss() * 0.04, r.gauss() * (floor ? 0.14 : 0.08))), vel: v, life: floor ? r.range(0.25, 0.45) : r.range(0.35, 0.9), size: [sw, sw], stretch: floor ? 0.25 : 0.03, col: [2.6, 2.6, 2.6], cell: 4, gravity: 9.8, ground: 0.02, fadeOut: floor ? 0 : 0.4 });
+              // (Phase 3d review: 1.95 -> 1.6 on the girder - just over the
+              // bloom's threshold, so the bloom no longer rounds each head)
+              const sc = floor ? 1.6 : 2.6;
+              (F.railSparks || F.sparks).spawn({ pos: wheel.clone().add(new THREE.Vector3(r.gauss() * (floor ? 0.14 : 0.08), r.gauss() * 0.04, r.gauss() * (floor ? 0.14 : 0.08))), vel: v, life: floor ? r.range(0.25, 0.45) : r.range(0.35, 0.9), size: [sw, sw], stretch: floor ? 0.12 : 0.03, col: [sc, sc, sc], cell: 4, gravity: floor ? 3 : 9.8, ground: 0.02, fadeOut: floor ? 0 : 0.4 });
             }
           }
           if (this.onSqueal && curve > 0) this.onSqueal(curve, wheel);

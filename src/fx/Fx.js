@@ -14,7 +14,11 @@ import { makeBloodAtlas, makeFlashAtlas, makeFireAtlas, makeGlassAtlas, ATLAS, F
 // shade lighter than the black wet asphalt - and one lighter lobe riding up
 // off it (col 0.3), both cut crisp from the brushed smoke cells so the edge
 // frays in dry-brush bristles instead of fading like a gaussian sprite
-const MUZZLE_SMOKE_COL = 0.2;
+// (Phase 3d: NOTHING in the puff prints paler than the mist - the lobe
+// riding off the top, col 0.2 and flash-lit x4 at birth, printed as a pale
+// disc brighter than the arcade mist behind it; it is now as dark as the
+// core's rim, 0.05, and lit no harder than the core)
+const MUZZLE_SMOKE_COL = 0.05;
 const MUZZLE_SMOKE_CORE = 0.02;
 
 // All combat effects, one update per fixed step. Draw calls: blood, chips,
@@ -62,7 +66,17 @@ export class Fx {
     // 'pale steam plume' in front of the arcade mist was the steam itself.
     // fogFade 0.8 -> 0.4, and the crisp cut widened, [0.26, 0.44] ->
     // [0.22, 0.5], so the bristled edge reads at 1x)
-    this.puff = new Particles(world, { max: 48, map: this.fireAtlas, cells: fc, layer: LAYER.FX, name: 'muzzlePuff', renderOrder: 9, crisp: true, cut: [0.22, 0.5], occlude: 1.45, fogFade: 0.4, occLayer: LAYER.VOL_POST, occMark: true });
+    // (Phase 3d: the cut window [0.22, 0.5] -> [0.3, 0.7] - the edge now
+    // frays over the cell's whole bristled rim instead of closing into a
+    // clean round outline)
+    // (Phase 3d review: and a second, coarser octave cut into that rim -
+    // Particles `fray` - so the outline breaks into three or four ragged
+    // lobes at 1x, not a smooth ellipse with a soft grey rim; the rng draws
+    // are untouched. At 0.6, cut only into the outer rim, the notches of the
+    // two overlapping sprites filled each other in and the core still read
+    // as an ellipse: 0.8, over a steeper ramp. Cut from the centre out it
+    // holed the lobe, and the flash behind printed through as pale bits)
+    this.puff = new Particles(world, { max: 48, map: this.fireAtlas, cells: fc, layer: LAYER.FX, name: 'muzzlePuff', renderOrder: 9, crisp: true, cut: [0.3, 0.7], occlude: 1.45, fogFade: 0.4, occLayer: LAYER.VOL_POST, occMark: true, fray: 0.8 });
     // glass shards, debris flecks, embers (lit, normal blending)
     this.debris = new Particles(world, { max: 500, map: this.fireAtlas, cells: fc, layer: LAYER.FX_REFL, name: 'debris', renderOrder: 4, keepChroma: true, cut: [0.35, 0.6] });
     this.decals = new Decals(world, atlas, this.glassAtlas);
@@ -117,11 +131,17 @@ export class Fx {
       col: [c, c, c], alpha: a, drag: 1.2, fadeIn: 0.03, fadeOut: 0.6, cell: FIRE.SMOKE[r.int(0, 3)],
       lit, litT: 0.1,
     });
-    // (drawn in spawn order: the light lobe first, the dark core over it)
-    puff(0.24, r.range(0.15, 0.17) * k, MUZZLE_SMOKE_COL, r.range(0.48, 0.52), 0.07, r.range(0.07, 0.09));
+    // (drawn in spawn order: the lobe first, the dark core over it)
+    // (Phase 3d: the lobe dark too - see MUZZLE_SMOKE_COL - and flash-lit
+    // only as hard as the core)
+    puff(0.24, r.range(0.15, 0.17) * k, MUZZLE_SMOKE_COL, r.range(0.48, 0.52), 0.07, r.range(0.07, 0.09), 1.5);
     // (Phase 3c review: the core lit only half as hard by the flash - 3.0
     // lifted it toward the mist's grey in its first frames)
-    puff(0.18, r.range(0.17, 0.19) * k, MUZZLE_SMOKE_CORE, r.range(0.68, 0.72), 0.03, r.range(0.05, 0.07), 1.5);
+    // (Phase 3d: the core a full 0.18 m however short the burst - k shrank
+    // a 3-round burst's to 0.165 - at alpha 0.7)
+    // (the rng is drawn in the original order and count: the world's rng
+    // runs the whole battle)
+    puff(0.18, r.range(0.175, 0.185), MUZZLE_SMOKE_CORE, (r.range(0.68, 0.72), 0.7), 0.03, r.range(0.05, 0.07), 1.5);
   }
 
   clear() {

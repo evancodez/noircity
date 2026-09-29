@@ -39,12 +39,15 @@ export class Particles {
   //   outgrew the small flames and read as a CG glow sprite. Past `near` m
   //   the scene colour is scaled toward k by `far` m (the print stays the
   //   same, only the bloom goes); the planar reflection keeps full strength.
+  // fray (Phase 3d review, the muzzle puff): a coarse octave of angular
+  //   lobes cut into the rim before the crisp cut, so the outline breaks
+  //   into three or four ragged lobes at 1x
   // spark (Phase 3c review, the train's wheel sparks): no atlas cell - a
   //   solid round HEAD at the particle and a thin tapered LINE for its tail
   //   (the stretched part of the quad), drawn procedurally. The atlas cells
   //   cut crisp had holes, and over the el's girder every hole fell back to
   //   the ink's black iron: a bloomed smear peppered with black dots
-  constructor(world, { max = 512, map, cells = [1, 1], blending = 'normal', layer = 3, crisp = true, name = 'particles', renderOrder = 2, reflGain = 1, cut = [0.38, 0.62], alphaFromR = false, keepChroma = false, occlude = 0, fogFade = 0, distDim = null, occLayer = 7, occMark = false, spark = false } = {}) {
+  constructor(world, { max = 512, map, cells = [1, 1], blending = 'normal', layer = 3, crisp = true, name = 'particles', renderOrder = 2, reflGain = 1, cut = [0.38, 0.62], alphaFromR = false, keepChroma = false, occlude = 0, fogFade = 0, distDim = null, occLayer = 7, occMark = false, spark = false, fray = 0 } = {}) {
     this.world = world;
     this.max = max;
     this.list = [];
@@ -62,7 +65,7 @@ export class Particles {
     const U = world.U;
     this.mat = new THREE.ShaderMaterial({
       name: 'NoirParticles_' + name,
-      defines: spark ? { SPARK: 1 } : {},
+      defines: spark ? { SPARK: 1 } : fray > 0 ? { FRAY: fray.toFixed(3) } : {},
       transparent: true,
       depthWrite: false,
       blending: blending === 'add' ? THREE.AdditiveBlending : THREE.NormalBlending,
@@ -98,6 +101,9 @@ export class Particles {
         #ifdef SPARK
         varying float vHead;
         #endif
+        #ifdef FRAY
+        varying vec2 vQ;
+        #endif
         void main() {
           vec4 mv = modelViewMatrix * vec4( iPos, 1.0 );
           vec2 ax = vec2( 1.0, 0.0 ), ay = vec2( 0.0, 1.0 );
@@ -127,6 +133,9 @@ export class Particles {
           #ifdef SPARK
           vUv = uv;
           #endif
+          #ifdef FRAY
+          vQ = uv;
+          #endif
           vCol = iCol;
           vView = mv.xyz;
           vWY = iPos.y;
@@ -143,6 +152,9 @@ export class Particles {
         #ifdef SPARK
         varying float vHead;
         #endif
+        #ifdef FRAY
+        varying vec2 vQ;
+        #endif
         ${NOIR_FOG_GLSL}
         void main() {
           #ifdef SPARK
@@ -157,6 +169,19 @@ export class Particles {
           #else
           vec4 tx = texture2D( tMap, vUv );
           float t = uAlphaR > 0.5 ? tx.r : tx.a;
+          #ifdef FRAY
+          // (fray: a second, coarser octave cut into the rim - three ragged
+          // lobes, an angular wave of 3 cycles with 7- and 13-cycle overtones
+          // bent by the radius - riding the sprite's own random rotation, so
+          // the outline breaks at 1x where the cell's bristles alone closed
+          // into a smooth ellipse; a steeper ramp, full by 0.65 of the radius,
+          // so the notches cut deep enough to survive the puff's two
+          // overlapping sprites)
+          vec2 fq = vQ - 0.5;
+          float fR = length( fq ) * 2.0, fA = atan( fq.y, fq.x );
+          float lobes = 0.55 * sin( fA * 3.0 + fR * 2.5 ) + 0.3 * sin( fA * 7.0 - fR * 4.0 + 1.3 ) + 0.15 * sin( fA * 13.0 + 0.7 );
+          t -= FRAY * smoothstep( 0.15, 0.65, fR ) * ( 0.5 + 0.5 * lobes );
+          #endif
           float a = mix( t, smoothstep( uCut.x, uCut.y, t ), uCrisp ) * vCol.a;
           #endif
           vec3 c = vCol.rgb * ( uUseDepth < 0.5 ? uReflGain : mix( 1.0, uDistDim.z, smoothstep( uDistDim.x, uDistDim.y, length( vView ) ) ) );

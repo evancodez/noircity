@@ -124,7 +124,7 @@ function buildGunParts() {
   // (the barrel and the sights are also kept apart - `split` - for the
   // player's over-the-shoulder gun, whose ink draws their contours with ids
   // of their own; the merged steel is unchanged)
-  const split = { rest: [], barrel: null, sight: [] };
+  const split = { rest: [], barrel: null, sight: [], stock: null, woodRest: [] };
   const nRest = steel.length;
   split.barrel = latheFwd(prof, 30).translate(0, 0.03, 0);
   steel.push(split.barrel);
@@ -151,8 +151,12 @@ function buildGunParts() {
   // stock (wood): comb, wrist, butt plate
   // (a real M1928 stock drops ~6 cm at the heel: it runs back and down out
   // of the frame instead of standing beside the camera as a flat plank)
-  wood.push(sideExtrude([[-0.07, 0.048], [-0.2, 0.03], [-0.36, 0.0], [-0.45, -0.022], [-0.462, -0.036], [-0.462, -0.17],
-    [-0.44, -0.182], [-0.3, -0.112], [-0.17, -0.05], [-0.11, -0.024], [-0.075, -0.006]], 0.036, 0.011));
+  // (Phase 3d: also kept apart - `split.stock` - for the player's
+  // over-the-shoulder gun, whose ink gives it an id of its own: the stock /
+  // receiver contour, and the dashed light line along its comb)
+  const stock = sideExtrude([[-0.07, 0.048], [-0.2, 0.03], [-0.36, 0.0], [-0.45, -0.022], [-0.462, -0.036], [-0.462, -0.17],
+    [-0.44, -0.182], [-0.3, -0.112], [-0.17, -0.05], [-0.11, -0.024], [-0.075, -0.006]], 0.036, 0.011);
+  wood.push(stock);
   // the drum: a flat can with rolled rims, a raised ring and the winding key
   drum.push(latheX([[0, -0.025], [0.066, -0.025], [0.084, -0.0235], [0.0915, -0.019], [0.0935, -0.012], [0.0935, 0.012], [0.0915, 0.019],
     [0.084, 0.0235], [0.066, 0.025], [0.058, 0.026], [0.052, 0.025], [0.03, 0.025], [0.02, 0.028], [0.016, 0.036], [0.006, 0.037], [0, 0.037]], 56));
@@ -169,6 +173,8 @@ function buildGunParts() {
   kr.rotateX(Math.PI / 2);
   knob.push(kr.translate(0, 0.08, 0));
   split.rest = steel.slice(0, nRest).concat(steel.slice(nSplit));
+  split.stock = stock;
+  split.woodRest = wood.filter((g) => g !== stock);
   return { steel: merge(steel), wood: merge(wood), drum: merge(drum), knob: merge(knob), split };
 }
 
@@ -181,7 +187,7 @@ function buildGunParts() {
 export function buildTommyParts() {
   const G = buildGun();
   const knob = G.knob.clone().translate(0, 0, -0.11);
-  return { body: merge([...G.split.rest, G.wood, knob]), fins: G.split.barrel, sight: merge(G.split.sight), drum: G.drum.clone(), drumC: DRUM_C.clone(), foregrip: FOREGRIP.clone() };
+  return { body: merge([...G.split.rest, ...G.split.woodRest, knob]), stock: G.split.stock, fins: G.split.barrel, sight: merge(G.split.sight), drum: G.drum.clone(), drumC: DRUM_C.clone(), foregrip: FOREGRIP.clone() };
 }
 
 // the whole gun as one geometry (the heavies' Tommy guns, enemies/Hood.js);

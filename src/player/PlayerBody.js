@@ -74,7 +74,13 @@ const GRIP = new THREE.Vector3(0, -0.07, 0.088);        // the right fist
 // protracted 55 deg and the torso bladed 38 the arm reaches, and the wrist is
 // set on the foregrip's top, 1.5 cm out to his left: the fist rides ahead of
 // the drum with its knuckles over the barrel's top line)
-const FORE = new THREE.Vector3(-0.012, 0.006, -0.30);
+// (Phase 3d: 2 cm up and 4 cm back - gun-local /0.88 - from the foregrip's
+// top: at -0.30 the arm was at full stretch, the wrist stopping ~5 mm short
+// (PlayerBody.wristErr), and the fist rode level with the barrel on its far
+// side, where the barrel and the fins hid it; now the solve lands, the elbow
+// keeps a bend, and the knuckles ride over the barrel's top line just ahead
+// of the drum)
+const FORE = new THREE.Vector3(-0.012, 0.029, -0.255);
 // the shoulder pocket in the chest bone's frame (bind: chest at y 1.28):
 // the stock in the right shoulder's inside, the gun at chin height under
 // the right eye (the cheek weld: 6 cm in toward the centre line and 6 cm
@@ -104,7 +110,12 @@ const FORE_Q = new THREE.Quaternion().setFromEuler(new THREE.Euler(FORE_ROT[0], 
 const ID_Q = new THREE.Quaternion();
 // the right elbow's pole: down, and this much out to his right (1.1: a
 // raised 'chicken wing'; lower: the elbow tucked under the gun)
-const ELBOW_OUT = parseFloat(LD.get('otselbow') ?? '-0.5');
+// (Phase 3d: -0.5 -> 0.3 - tucked in, the upper arm hung straight down
+// behind the torso's flank and the two printed as one convex sack, the dome
+// shoulder; out a little, as the reference's shooter holds it, the sleeve
+// breaks away from the back at the armpit and the shoulder turns a corner
+// into the arm - the drum loses ~1 % of its pixels in ots, ~10 % in battle)
+const ELBOW_OUT = parseFloat(LD.get('otselbow') ?? '0.3');
 // the head's drop onto the stock (deg, forward). Phase 3c: 12 -> 3.5 - at
 // 12 the brim tipped its whole top to the camera behind and spread into a
 // black disc; nearly level, it stays edge-on at the lens's height
@@ -120,6 +131,8 @@ const HEAD_SINK = parseFloat(LD.get('otssink') ?? '0.03');
 const GUN_CHEAT = parseFloat(LD.get('otscheat') ?? '8');
 // the drum's turn toward the lens (rad, about the gun's up; otsdrum=<deg>)
 const DRUM_TURN = parseFloat(LD.get('otsdrum') ?? '26') * Math.PI / 180;
+// otslog=1: the IK wrists' miss logged every frame (arm())
+const OTS_LOG = LD.get('otslog') === '1';
 
 // The key light (Phase 3b): lit only by the street, the player's back - the
 // side the camera sees - printed as one black mass. Like the viewmodel's own
@@ -220,19 +233,22 @@ export class PlayerBody {
     const body = new THREE.Mesh(P.body, this.gunMat);
     const fins = new THREE.Mesh(P.fins, this.gunMat);
     const sight = new THREE.Mesh(P.sight, this.gunMat);
+    const stock = new THREE.Mesh(P.stock, this.gunMat);
     this.drumG = new THREE.Group();
     this.drumC = P.drumC;
     this.drumG.position.copy(P.drumC);
     const drum = new THREE.Mesh(P.drum, this.gunMat);
     this.drumG.add(drum);
-    this.gun.add(body, fins, sight, this.drumG);
+    this.gun.add(body, fins, sight, stock, this.drumG);
     // (Phase 3c: the drum, the finned barrel and the sights each an ink id -
     // a Hood slot - of their own, so the ink draws their contours and the
     // paper trap between them inside the black steel; all four share the
     // gun's brush anchor)
     this.gunSlot = allocHoodSlot(PLAYER_SLOT.gun);
-    this.gunSlots = [this.gunSlot, allocHoodSlot(PLAYER_SLOT.drum), allocHoodSlot(PLAYER_SLOT.fins), allocHoodSlot(PLAYER_SLOT.sight)];
-    [body, drum, fins, sight].forEach((m, i) => { m.userData.inkId = HOOD_ID0 + this.gunSlots[i]; m.userData.inkFigure = true; m.castShadow = true; m.userData.noRay = true; });
+    // (Phase 3d: and the walnut stock, so the stock / receiver contour draws
+    // and its comb takes a dashed light line of its own)
+    this.gunSlots = [this.gunSlot, allocHoodSlot(PLAYER_SLOT.drum), allocHoodSlot(PLAYER_SLOT.fins), allocHoodSlot(PLAYER_SLOT.sight), allocHoodSlot(PLAYER_SLOT.stock)];
+    [body, drum, fins, sight, stock].forEach((m, i) => { m.userData.inkId = HOOD_ID0 + this.gunSlots[i]; m.userData.inkFigure = true; m.castShadow = true; m.userData.noRay = true; });
     world.scene.add(this.gun);
     h.afterPose = (hh, dt) => this.pose(dt);
 
@@ -253,6 +269,8 @@ export class PlayerBody {
     this._prevYaw = 0;
     this.gunQ = new THREE.Quaternion();
     this.gunPos = new THREE.Vector3();
+    this.wristErr = { L: 0, R: 0 };
+    this.wristErrMax = { L: 0, R: 0 };
     // scratch
     this._v = [0, 1, 2, 3, 4, 5, 6, 7].map(() => new THREE.Vector3());
     this._q = [0, 1, 2, 3, 4, 5].map(() => new THREE.Quaternion());
@@ -515,7 +533,18 @@ export class PlayerBody {
     // on the gun's - its fingers wrap the gun, and the ink draws the gaps
     // between them across the bore)
     FIG_ANCHOR[this.partSlots[0]].set(h.pos.x, h.pos.y, h.pos.z, h.yaw);
-    FIG_ANCHOR[this.partSlots[1]].copy(FIG_ANCHOR[this.gunSlot]);
+    // (Phase 3d: the glove's frame is the WRIST's, turned with the gun's
+    // heading - the ink counts its knuckles along the bore from the wrist)
+    const wr = b.handL.getWorldPosition(V[5]);
+    FIG_ANCHOR[this.partSlots[1]].set(wr.x, wr.y, wr.z, FIG_ANCHOR[this.gunSlot].w);
+    // (and the fist's own frame for its knuckle ticks: the wrist, the hand's
+    // -Y - its length - and its +Z - the knuckle row)
+    HERO[6].set(wr.x, wr.y, wr.z, 0);
+    const hw = b.handL.matrixWorld.elements;
+    const ly = V[5].set(-hw[4], -hw[5], -hw[6]).normalize();
+    HERO[7].set(ly.x, ly.y, ly.z, 0);
+    const lz = V[5].set(hw[8], hw[9], hw[10]).normalize();
+    HERO[8].set(lz.x, lz.y, lz.z, 0);
     // the hero key's hat frame (the ink's crown / band / brim tests)
     const hm = b.hat.matrixWorld.elements;
     HERO[0].set(hm[12], hm[13], hm[14], BRIM_R_PLAYER);
@@ -570,6 +599,15 @@ export class PlayerBody {
         new THREE.Vector3(-1, 0, 0), new THREE.Vector3(0, 0, 1), new THREE.Vector3(0, 1, 0)))));
     b['hand' + s].quaternion.copy(qL).invert().multiply(hq);
     b['upperArm' + s].updateMatrixWorld(true);
+    // (Phase 3d) the wrist's miss: how far the solved wrist stopped from its
+    // target (m) - out of reach, the arm straightens and the hand hangs short
+    // (behind the drum, where the lens never sees it). Kept per frame in
+    // wristErr (and its worst in wristErrMax); otslog=1 logs it every frame.
+    const miss = this._wv || (this._wv = new THREE.Vector3());
+    const e = miss.setFromMatrixPosition(b['hand' + s].matrixWorld).distanceTo(target);
+    this.wristErr[s] = e;
+    if (e > this.wristErrMax[s]) this.wristErrMax[s] = e;
+    if (OTS_LOG && s === 'L') console.log(`[ots] wrist miss L ${(this.wristErr.L * 100).toFixed(1)} cm  R ${(this.wristErr.R * 100).toFixed(1)} cm`);
   }
 
   // ---- world points of the gun (the flash, the case, the smoke) --------------------

@@ -95,8 +95,12 @@ const hoodSlots = new Array(HOOD_SLOTS).fill(false);
 // (57) are meshes of their own on the head and hand bones, with ids of their
 // own: the ink outlines them - the ear a light shell cut out of the black
 // skull, the glove a shape of its own between the drum and the fins - and
-// shades them as skin and leather, not as the coat.
-export const PLAYER_SLOT = { body: HOOD_SLOTS - 1, gun: HOOD_SLOTS - 2, drum: HOOD_SLOTS - 3, fins: HOOD_SLOTS - 4, sight: HOOD_SLOTS - 5, ear: HOOD_SLOTS - 6, hand: HOOD_SLOTS - 7, low: HOOD_SLOTS - 7 };
+// shades them as skin and leather, not as the coat. (Phase 3d: both BLACK -
+// the ear drawn by its contour and two or three helix ticks, the glove by its
+// contour and its knuckle ticks.)
+// Phase 3d: the gun's walnut stock (56) is a mesh of its own too: the ink
+// draws the stock / receiver contour and a dashed light line along its comb.
+export const PLAYER_SLOT = { body: HOOD_SLOTS - 1, gun: HOOD_SLOTS - 2, drum: HOOD_SLOTS - 3, fins: HOOD_SLOTS - 4, sight: HOOD_SLOTS - 5, ear: HOOD_SLOTS - 6, hand: HOOD_SLOTS - 7, stock: HOOD_SLOTS - 8, low: HOOD_SLOTS - 8 };
 // The player's hero key (Phase 3b review): the ink prints the player's own
 // hat, head and Tommy gun with bold dry-brush highlights under a key light
 // fixed in WORLD space (mostly from above, leaning to the street's +x side
@@ -110,7 +114,11 @@ const heroKey = new THREE.Vector3(0.45, 0.85, -0.3).normalize();
 // the body frame's frontal plane, rad), [5] the neck's up axis (xyz): the ink
 // tells the neck from the turned-up collar round it by the neck's own axis
 // (the hat's frame tilts with the head's pitch and took the collar's back in)
-export const HERO = [new THREE.Vector4(), new THREE.Vector4(0, 1, 0, 0), new THREE.Vector4(heroKey.x, heroKey.y, heroKey.z, 1), new THREE.Vector4(1, 0, 0, 0), new THREE.Vector4(), new THREE.Vector4(0, 1, 0, 0)];
+// (Phase 3d) [6] the left wrist (xyz), [7] the fist's length - the hand's
+// -Y, wrist to knuckles (xyz), [8] its knuckle row - the hand's +Z, up the
+// gun (xyz): the ink lays the glove's knuckle ticks in the fist's own frame
+export const HERO = [new THREE.Vector4(), new THREE.Vector4(0, 1, 0, 0), new THREE.Vector4(heroKey.x, heroKey.y, heroKey.z, 1), new THREE.Vector4(1, 0, 0, 0), new THREE.Vector4(), new THREE.Vector4(0, 1, 0, 0),
+  new THREE.Vector4(), new THREE.Vector4(0, 0, -1, 0), new THREE.Vector4(0, 1, 0, 0)];
 export function allocHoodSlot(reserved = -1) {
   if (reserved >= 0) { hoodSlots[reserved] = true; return reserved; }
   for (let i = 0; i < PLAYER_SLOT.low; i++) {
