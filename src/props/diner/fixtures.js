@@ -17,7 +17,12 @@ function shadeGeo() {
 
 export function buildPendants(kit, lamps) {
   const { M } = kit;
-  const heads = [...P.z.map((z) => [P.x, z, P.half, 'counter']), ...P.booth.map(([x, z]) => [x, z, P.half * 0.9, 'booth'])];
+  // (round 2: the counter's lamps hang a little further back over the
+  // counter than the site plan's line, x - 0.28: straight over the things
+  // on the counter a lamp throws their shadows under them, where nobody
+  // sees them; from behind, each throws a short soft shadow toward the
+  // stools, and the pool still reaches the rolled front edge)
+  const heads = [...P.z.map((z) => [P.x - 0.28, z, P.half, 'counter']), ...P.booth.map(([x, z]) => [x, z, P.half * 0.9, 'booth'])];
   const shade = shadeGeo();
   const inner = lathe([[0.02, 0.17], [0.05, 0.135], [0.09, 0.08], [0.14, 0.03], [0.165, 0.004]], 40);
   const bulbGeo = new THREE.SphereGeometry(0.045, 20, 12).scale(1, 0.8, 1).translate(0, 0.05, 0);
@@ -48,14 +53,18 @@ export function buildPendants(kit, lamps) {
     const drop = kind === 'counter' ? P.headY - D.counter.topY : P.headY - D.booths.tableY;
     // (round 2: the shaft reaches most of the way down and is a little
     // stronger - light in smoke under a low ceiling, still soft-edged)
-    const lamp = lamps.addCustom({ head: V3(x, P.headY, z), axis: V3(0, -1, 0), height: drop, half, real: true, bulb, fadeEnd: 0.92, edgeSoft: 0.7, strength: 1.3, tag: 'pendant' });
+    // (and it is aimed a little forward, so its pool lies where it lay,
+    // over the counter's front half and the rolled edge)
+    const aim = kind === 'counter' ? V3(Math.sin(0.17), -Math.cos(0.17), 0) : V3(0, -1, 0);
+    const lamp = lamps.addCustom({ head: V3(x, P.headY, z), axis: aim.clone(), height: drop, half, real: true, bulb, fadeEnd: 0.92, edgeSoft: 0.7, strength: 1.3, tag: 'pendant' });
+    lamp.aim = aim;
     if (lamp.entry) lamp.entry.range = P.headY - D.floorY;
     // (the pool light: a round pool about 1.5 m across on the counter top,
     // paper white in the middle, a grey rim, black between two pools where
     // neither reaches: angle ~0.5 rad at 1.4 m, a wide penumbra for the
     // rim; the booth lamps a softer share)
     if (lamp.light) {
-      lamp.light.intensity = kind === 'counter' ? 120 : 55;
+      lamp.light.intensity = kind === 'counter' ? 110 : 55;
       lamp.light.angle = kind === 'counter' ? 0.56 : 0.62;
       lamp.light.penumbra = 0.55;
       lamp.light.distance = 4.6;
@@ -94,7 +103,7 @@ export function swingStep(l, dt) {
   // (S.x, S.z: the angle toward +x / +z)
   l.pivot.rotation.set(-S.z, 0, S.x);
   _q.setFromEuler(_e.set(-S.z, 0, S.x));
-  l.axis.copy(_dn).applyQuaternion(_q);
+  l.axis.copy(l.aim || _dn).applyQuaternion(_q);
   l.head.set(l.pivot.position.x, l.pivot.position.y, l.pivot.position.z).addScaledVector(l.axis, l.cordLen);
   const cone = l.cone;
   cone.position.copy(l.head);

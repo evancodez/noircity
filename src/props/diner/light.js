@@ -14,7 +14,7 @@ import { lathe, mergeGeos, V3 } from '../lib.js';
 // on, additive quads on the effects layer (the scene pass only - the ink's
 // id pass sees the wall or the floor under them, so the room's print cuts
 // each into its flat values with torn edges, as it cuts a pendant's pool):
-//   the sconces   two wall lamps on the end wall behind Mack's stool, each
+//   the sconce    a wall lamp on the end wall behind Mack's stool,
 //                 throwing the scallop of a half-round shade up and down the
 //                 plaster
 //   the jukebox   its glow on the end wall round its arch and on the floor
@@ -184,12 +184,12 @@ export function buildDinerLight(kit, { windowLight = [], jukebox = null, lamps =
 
   // ---- the sconces on the end wall, behind Mack's stool and the jukebox
   // (x -13.4: on the line from the player's stool through Mack's head, so
-  // at his line he is a black shape on its scallop; x -11.2 by the coat
-  // rack over the B4 booth's end)
+  // at his line he is a black shape on its scallop; one only - a second by
+  // the coat rack glared through the B4 glass onto the pavement outside)
   const sconces = [];
   const sg = sconceGeo();
   const shadeMat = M.glow('sconceShade', 1.4, { side: THREE.DoubleSide });
-  for (const [x, y] of [[-13.4, F + 2.2], [-11.2, F + 2.3]]) {
+  for (const [x, y] of [[-13.4, F + 2.2]]) {
     kit.piece();
     const g = new THREE.Group();
     g.position.set(x, y, D.zMin);
