@@ -83,7 +83,11 @@
    "label": "the cigarette is lit, in the hand"
   },
   {
-   "wait": 900
+   "until": "!G.hands.busy",
+   "timeout": 5000
+  },
+  {
+   "wait": 300
   },
   {
    "key": "KeyF"
@@ -141,8 +145,15 @@
    "shot": "s05_scotch_neat"
   },
   {
-   "until": "G.cast.get('dot').clipH && G.cast.get('dot').clipH.name === 'pour' && G.cast.get('dot').clipH.t > 1.6",
-   "timeout": 12000
+   "until": "G.fx.pour.active",
+   "timeout": 20000
+  },
+  {
+   "wait": 500
+  },
+  {
+   "expect": "(() => { const d = G.stage.part('diner'), b = d.items.get('scotch'), g = d.items.get('glass'); b.updateMatrixWorld(true); const e = b.matrixWorld.elements, tilt = Math.acos(Math.max(-1, Math.min(1, e[5] / Math.hypot(e[4], e[5], e[6])))) * 180 / Math.PI; const lip = b.localToWorld(b.userData.neck.clone()), G0 = g.getWorldPosition(lip.clone()); const over = lip.y - (G0.y + 0.085); return tilt >= 110 && tilt <= 120 && over >= 0.05 && over <= 0.08 && Math.hypot(lip.x - G0.x, lip.z - G0.z) < 0.035 && G.cast.get('dot')._hands.miss.R < 0.005; })()",
+   "label": "the pour: the bottle 110..120 degrees from upright, its lip 5..8 cm over the glass's rim, over the glass, her hand on it"
   },
   {
    "shot": "s06_pour"
