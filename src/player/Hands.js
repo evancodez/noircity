@@ -279,6 +279,16 @@ export class Hands {
       this.hold(p, 'M');
     } else if (act === 'flame') {
       const p = H[hand]; if (!p) return;
+      // (the lighter's own flame - props/kinds.js: core, edge, blue base,
+      // flicker - when the prop has one; the plain tongue otherwise)
+      const own = p.userData.flame && p.userData.flame.isObject3D ? p.userData.flame : null;
+      if (own) {
+        if (arg) own.traverse((m) => { if (m.isMesh) { m.layers.set(LAYER.VIEWMODEL); m.frustumCulled = false; m.userData.inkFigure = true; } });
+        own.visible = !!arg;
+        if (arg && own.setGain) own.setGain(1);
+        this.flameOn = !!arg && own;
+        return;
+      }
       if (arg && !p.userData._flame) p.add(p.userData._flame = this.flameMesh(p));
       if (p.userData._flame) p.userData._flame.visible = !!arg;
       this.flameOn = !!arg && p.userData._flame;
