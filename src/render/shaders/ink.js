@@ -574,7 +574,8 @@ export function makeInkMaterial(tex, fogUniforms) {
         // only ~5% of it survives. Vertical faces (girders, walls) take the
         // near-horizontal family so marks run along the spans, not down
         // them like bark.
-        if ( !sky && skyl < 0.5 && v < 0.10 ) {
+        // (never in a room: its lift is multiplied away there below)
+        if ( !sky && skyl < 0.5 && v < 0.10 && interior < 0.5 ) {
           vec3 Lr = uRimLamps[ 0 ].xyz - vpos;
           float facing = uRimLamps[ 0 ].w > 0.0 ? max( dot( n, normalize( Lr ) ), 0.0 ) : 0.3;
           vec3 brL = brushWorld( bpos, nBr, dist, 2200.0, 0.41 );
@@ -627,8 +628,21 @@ export function makeInkMaterial(tex, fogUniforms) {
           float tO = clamp( ( log2( max( L * exposure, 1e-6 ) ) - uLogBlack ) / ( uLogWhite - uLogBlack ), 0.0, 1.0 );
           float vo = mix( tO, tO * tO * ( 3.0 - 2.0 * tO ), uContrast );
           vo = mix( vo, 1.0, smoothstep( 0.72, 0.9, vo ) );
-          vec3 brC = brushWorld( bpos, nBr, dist, 2600.0, 0.17 );
-          float bc = mix( brC.r, brC.b, wH );
+          // (a coarse field for the torn edges: the brush on the surface's
+          // dominant plane only, two octaves - a third of brushWorld's taps)
+          float bc;
+          {
+            float f = uRes.y * 0.5 / max( uProjInv[ 1 ][ 1 ], 1e-4 );
+            float lg2 = log2( max( 2600.0 * dist / f, 1e-3 ) );
+            float k0 = floor( lg2 ), tt = lg2 - k0;
+            float W0 = exp2( k0 );
+            vec3 an = abs( nBr );
+            vec2 pq = an.x > an.y && an.x > an.z ? bpos.zy : an.y > an.z ? bpos.xz : bpos.xy;
+            vec2 c0 = texture2D( tBrush, pq / W0 + vec2( 0.17, 0.107 ) ).rb;
+            vec2 c1 = texture2D( tBrush, pq / ( W0 * 2.0 ) + vec2( 0.54, 0.477 ) ).rb;
+            vec2 cc = clamp( ( mix( c0, c1, tt ) - 0.5 ) * inversesqrt( 1.0 - 2.0 * tt * ( 1.0 - tt ) ) + 0.5, 0.0, 1.0 );
+            bc = mix( cc.x, cc.y, wH );
+          }
           // (held inside the steps' ramps: where the field dips near 0 or 1 a
           // step would otherwise fire at ANY tone - white slashes on a black wall)
           float bt = clamp( 0.62 * bc + 0.38 * b, 0.16, 0.84 );
