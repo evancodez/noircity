@@ -52,8 +52,17 @@ export class Facade {
     const D = DINER;
     const massParts = [];
     const slab = (xa, xb, ya, yb, za, zb) => massParts.push(new THREE.BoxGeometry(xb - xa, yb - ya, zb - za).translate((xa + xb) / 2, (ya + yb) / 2, (za + zb) / 2));
-    slab(X - 16, X, 0, H, z1, D.zMin);
-    slab(X - 16, X, 0, H, D.zMax, z0);
+    // (the parts either side of the diner are layered - a core, a layer of
+    // shallow rooms, a skin with the openings - so the ten other shops have
+    // real rooms behind their glass, and a pane of an upper floor that goes
+    // opens a room: massGeo(), openRoom())
+    this.massSpec = { X, H, z0, z1 };
+    this.holes = { rooms: [], openings: [] };
+    for (const sb of SHOP_BAYS) {
+      if (sb.kind === 'shutter') continue;
+      this.holes.rooms.push({ z0: sb.z - 1.85, z1: sb.z + 1.85, y0: 0.15, y1: 4.35 });
+      this.holes.openings.push({ z0: sb.z - 1.45, z1: sb.z + 1.45, y0: 0.75, y1: 4.05 });
+    }
     slab(X - 16, D.backX, 0, H, D.zMin, D.zMax);
     slab(D.backX, X, 0, D.floorY, D.zMin, D.zMax);
     slab(D.backX, X, D.ceilY, H, D.zMin, D.zMax);
@@ -85,8 +94,11 @@ export class Facade {
       g.add(m);
       return m;
     };
-    this.mass = stoneMesh(massParts);
+    this.diner = stoneMesh(massParts);
+    this.diner.name = 'facadeMassDiner';
+    this.mass = stoneMesh(this.massGeo());
     this.mass.name = 'facadeMass';
+    this.stoneMesh = stoneMesh;
     stoneMesh(stoneParts);
     // Ledges and frames do NOT cast shadow-map shadows: a lamp at ledge
     // height projects them as long crisp black parallelograms (a regular
@@ -126,11 +138,10 @@ export class Facade {
       // ground floor shop window between pilasters (the diner's four bays
       // are its own front: stages/block/parts/dinerFront.js)
       if (Object.values(D.bays).some((b) => Math.abs(b - z) < 0.01)) continue;
+      // (its glass is a pane of its own with a room behind it, or a
+      // roller shutter: stages/block/parts/shops.js)
       const fp = frameParts;
       const w = 2.9, h = 3.3;
-      const glass = new THREE.PlaneGeometry(w, h).rotateY(Math.PI / 2).translate(X + 0.03, 0.75 + h / 2, z);
-      glassDark.push(glass);
-      this.windows.push(this.world.glass.addPane({ geo: glass, kind: 'dark', c: V3(X + 0.03, 0.75 + h / 2, z), w, h, broken: false, hits: 0, shop: true, shared: true, owner: this, tag: 'facade.shop' }));
       fp.push(roundedBox(0.2, 0.2, w + 0.3, 0.05, 2).translate(X + 0.1, 0.75 + h + 0.1, z));
       fp.push(roundedBox(0.22, 0.28, w + 0.3, 0.05, 2).translate(X + 0.11, 0.7, z));
       fp.push(roundedBox(0.08, h, 0.08, 0.03, 2).translate(X + 0.05, 0.75 + h / 2, z));
@@ -165,6 +176,43 @@ export class Facade {
     tagInk(g);
     this.group.add(g);
     this.near = g;
+  }
+
+  // The near building's mass either side of the diner, as boxes: a core,
+  // a layer of rooms 3.5 m deep with the rooms cut out of it, a 0.25 m skin
+  // with the openings cut out of it.
+  massGeo() {
+    const { X, H, z0, z1 } = this.massSpec;
+    const D = DINER;
+    const parts = [];
+    const XR = X - 3.75, XS = X - 0.25;
+    for (const [za, zb] of [[z1, D.zMin], [D.zMax, z0]]) {
+      holey(parts, X - 16, XR, za, zb, 0, H, []);
+      holey(parts, XR, XS, za, zb, 0, H, this.holes.rooms);
+      holey(parts, XS, X, za, zb, 0, H, this.holes.openings);
+    }
+    return parts;
+  }
+
+  // a pane of an upper floor has gone: cut its room into the mass (the
+  // shops part dresses it); -> the room's box, or null
+  openRoom(w) {
+    if (!w || w.shop || w.roomOpen || w.c.y < 5) return null;
+    const D = DINER, z = w.c.z;
+    if (z > D.zMin - 1.5 && z < D.zMax + 1.5) return null;    // (over the diner: its own ceiling)
+    w.roomOpen = true;
+    const y0 = w.c.y - w.h / 2;
+    const room = { z0: z - 1.4, z1: z + 1.4, y0: y0 - 0.55, y1: y0 + 2.85 };
+    this.holes.rooms.push(room);
+    this.holes.openings.push({ z0: z - w.w / 2, z1: z + w.w / 2, y0, y1: y0 + w.h });
+    const geo = merge(this.massGeo());
+    boxWorldUV(geo, 1 / 12);
+    const old = this.mass.geometry;
+    this.mass.geometry = geo;
+    old.dispose();
+    const G = this.game;
+    if (G) { G.rays.refresh(this.mass); if (G.pipeline) G.pipeline.dirtyShadows(); }
+    return { ...room, x0: this.massSpec.X - 3.75, x1: this.massSpec.X - 0.25, z };
   }
 
   // (the old far / near swap round the diner is gone: one building, always
@@ -469,6 +517,29 @@ export class Facade {
     };
     mk(this.windowsDark, M.glassDark);
     mk(this.windowsLit, M.windowLit);
+  }
+}
+
+// The ten shop bays of the near building besides the diner's four: what
+// each shop is (stages/block/parts/shops.js dresses them)
+export const SHOP_BAYS = [
+  { z: 35.8, kind: 'florist' }, { z: 31.4, kind: 'tailor' }, { z: 27.0, kind: 'shutter' },
+  { z: 22.6, kind: 'pawn' }, { z: 18.2, kind: 'empty' }, { z: 13.8, kind: 'barber' },
+  { z: -8.2, kind: 'florist' }, { z: -12.6, kind: 'tailor' }, { z: -17.0, kind: 'pawn' }, { z: -21.4, kind: 'shutter' },
+];
+
+// A slab (x, z, y ranges) with rectangular holes through it along x, as
+// boxes: between each pair of the holes' z edges, solid runs of y.
+function holey(parts, xa, xb, za, zb, ya, yb, holes) {
+  const hs = holes.filter((h) => h.z1 > za && h.z0 < zb);
+  const edges = [...new Set([za, zb, ...hs.flatMap((h) => [Math.max(za, h.z0), Math.min(zb, h.z1)])])].sort((a, b) => a - b);
+  const box = (y0, y1, e0, e1) => { if (y1 - y0 > 1e-4 && e1 - e0 > 1e-4) parts.push(new THREE.BoxGeometry(xb - xa, y1 - y0, e1 - e0).translate((xa + xb) / 2, (y0 + y1) / 2, (e0 + e1) / 2)); };
+  for (let i = 0; i < edges.length - 1; i++) {
+    const e0 = edges[i], e1 = edges[i + 1];
+    const act = hs.filter((h) => h.z0 <= e0 + 1e-6 && h.z1 >= e1 - 1e-6).sort((a, b) => a.y0 - b.y0);
+    let cur = ya;
+    for (const h of act) { if (h.y0 > cur) box(cur, h.y0, e0, e1); cur = Math.max(cur, h.y1); }
+    box(cur, yb, e0, e1);
   }
 }
 

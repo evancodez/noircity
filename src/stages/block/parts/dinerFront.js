@@ -64,6 +64,7 @@ export default {
       brass: std({ color: 0x6a6a6a, roughness: 0.35, metalness: 0.9, envMap: M.envSoft, envMapIntensity: 0.9 }),
     };
     const meshes = [];
+    let awning = null;
     const mesh = (geo, mat, { cast = true, parent = g, id = null } = {}) => {
       const m = new THREE.Mesh(geo, mat);
       m.castShadow = cast; m.receiveShadow = true;
@@ -382,7 +383,7 @@ export default {
       const roll = lathe([[0.0, 0], [0.1, 0], [0.13, 0.03], [0.14, 0.12], [0.14, zb - za - 0.12], [0.13, zb - za - 0.03], [0.1, zb - za], [0.0, zb - za]], 28);
       roll.rotateX(-Math.PI / 2).translate(ax, ay, za);
       const fl = new THREE.PlaneGeometry(zb - za - 0.1, 0.16).rotateY(Math.PI / 2).rotateZ(-0.35).translate(ax + 0.13, ay - 0.13, (za + zb) / 2);
-      mesh(merge([roll, fl]), MM.canvas, { id: allocInkId() });
+      awning = mesh(merge([roll, fl]), MM.canvas, { id: allocInkId() });
       const brk = [];
       for (const zz of [za - 0.04, zb + 0.04]) {
         brk.push(roundedBox(0.34, 0.05, 0.04, 0.01, 2).translate(ax - 0.12, ay, zz));
@@ -507,7 +508,7 @@ export default {
     };
     const nLetter = letters.find((l) => l.ch === 'N');
     return {
-      group: g, wall, door, panes, sign, near: null, stage, facade: stage.part('facade'),
+      group: g, wall, door, panes, sign, awning, near: null, stage, facade: stage.part('facade'),
       drips, pools, neonOn, neonOff, nLetter, flickRng: rng.fork(7), nextFlick: 2.5, flickLeft: 0,
     };
   },

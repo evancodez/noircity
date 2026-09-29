@@ -192,6 +192,8 @@ export class Props {
     paper.position.copy(p);
     paper.rotation.y = yaw + Math.PI / 2;
     this.add(paper);
+    // (a breakable of kind 'paper': stages/block/parts/dressing.js)
+    (this.papers || (this.papers = [])).push(paper);
   }
 
   crates(p, yaw) {
@@ -462,10 +464,15 @@ export class Props {
     // a loose wire sagging along the façade (dark against the wall, never
     // across the sky from the street view)
     parts.push(tube(catenaryPoints(V3(STREET.facadeX + 0.05, 11.5, 12), V3(STREET.facadeX + 0.05, 10.8, -14), 1.2, 24), 0.018, 5, 48));
-    const m = new THREE.Mesh(merge(parts), M.ironDark);
     // inked like the el's iron: black up close, lifting toward dark grey and
-    // losing its contour with distance
-    m.userData.inkId = allocIronId();
-    this.group.add(m);
+    // losing its contour with distance (one id; one mesh per wire, so each
+    // is a breakable of its own: stages/block/parts/dressing.js)
+    const id = allocIronId();
+    this.wireMeshes = parts.map((geo) => {
+      const m = new THREE.Mesh(merge([geo]), M.ironDark);
+      m.userData.inkId = id;
+      this.group.add(m);
+      return m;
+    });
   }
 }

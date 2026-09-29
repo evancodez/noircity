@@ -1,3 +1,5 @@
+import * as THREE from 'three';
+
 // Lane 4's presets (the street and the city): docs/story/briefs/L4_STREET.md.
 // A viewer's yaw: he looks along (-sin yaw, -cos yaw).
 const yawTo = (x, z, tx, tz) => Math.atan2(-(tx - x), -(tz - z));
@@ -34,4 +36,29 @@ export const presets = {
   skyline: { x: 2.0, z: -48, yaw: 0.0, pitch: 0.1, fov: 45, t: 20 },
   skylineE: { x: 4.0, z: -36, yaw: -Math.PI / 2, pitch: 0.12, fov: 55, t: 20 },
   skylineT: { x: 2.0, z: -48, yaw: 0.0, pitch: 0.1, fov: 45, t: 20 },
+
+  // 5. rooms behind the glass: two shop bays from 4 m, the tailor's pane
+  // whole, the pawnbroker's broken
+  shoprooms: {
+    x: -6.0, z: -14.8, yaw: yawTo(-6.0, -14.8, -10.2, -14.8), pitch: -0.02, fov: 68, t: 4,
+    stage(stage) {
+      const s = stage.part('shops').shops.find((q) => q.kind === 'pawn' && q.z < 0);
+      if (s && s.pane) stage.glass.shatter(s.pane, { dir: new THREE.Vector3(-1, 0, 0) });
+    },
+  },
+  // 6. dressing that reacts: the tailor's sign, drainpipes, the shops
+  // north of the diner, the works' crates and barrels at the south edge
+  dressing: { x: -4.2, z: 22.5, yaw: yawTo(-4.2, 22.5, -10.2, 31.5), pitch: 0.12, fov: 62, t: 4 },
+  // the steam main along the el's columns behind the start
+  steammain: { x: 3.0, z: 20.0, yaw: yawTo(3.0, 20.0, 15.0, 8.0), pitch: 0.1, fov: 60, t: 4 },
+  // (an upper floor's pane shot out: the room it opens; with the
+  // foundation's glass a black hole decal still lies over it: lane 3)
+  shoproomsUp: {
+    x: -5.2, z: -9.6, yaw: yawTo(-5.2, -9.6, -10.2, -12.6), pitch: 0.42, fov: 60, t: 4,
+    stage(stage) {
+      const f = stage.part('facade');
+      const w = f.windows.find((q) => Math.abs(q.c.z + 12.6) < 0.1 && q.c.y > 7 && q.c.y < 8.5);
+      if (w) stage.glass.shatter(w, { dir: new THREE.Vector3(-1, 0, 0) });
+    },
+  },
 };
