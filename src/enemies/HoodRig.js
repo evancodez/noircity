@@ -53,6 +53,7 @@ export const BIND = Object.fromEntries(JOINTS.map((j) => [j[0], new THREE.Vector
 export const PARENT = Object.fromEntries(JOINTS.map((j) => [j[0], j[1]]));
 // local offset of each joint from its parent (bind rotations are identity)
 export const OFFSET = Object.fromEntries(JOINTS.map((j) => [j[0], j[1] ? BIND[j[0]].clone().sub(BIND[j[1]]) : BIND[j[0]].clone()]));
+export const HOOD_RIG = { OFFSET, L_UPPER, L_FORE, L_THIGH, L_SHIN };
 
 // which bones each animation layer owns
 export const LOWER_BONES = ['root', 'hips', 'thighL', 'shinL', 'footL', 'thighR', 'shinR', 'footR'];
@@ -168,8 +169,12 @@ export const NEUTRAL = {
 // Solve a pose to local bone rotations (+ the hips position).
 // opts.armSpace: 'chest' (arm directions relative to the shoulder's parent)
 // or 'root'. P.handTL/handTR switch that arm to IK.
+// opts.rig (a costume's proportions, src/cast/): { OFFSET, L_UPPER, L_FORE,
+// L_THIGH, L_SHIN } in place of the Hood's.
 export function solvePose(P, opts = {}) {
   const armSpace = opts.armSpace || 'chest';
+  const R = opts.rig || HOOD_RIG;
+  const OFFSET = R.OFFSET;
   const out = { hipsPos: new THREE.Vector3(...P.hipsPos), q: {} };
   const rq = {};   // root-space rotations
   const rp = {};   // root-space joint positions
@@ -208,7 +213,7 @@ export function solvePose(P, opts = {}) {
       const S = rp[sh].clone().add(OFFSET[ua].clone().applyQuaternion(rq[sh]));
       const pole = new THREE.Vector3(...(P['elbowPole' + s] || [s === 'L' ? 1 : -1, 0, -1]));
       const qU = new THREE.Quaternion(), qL = new THREE.Quaternion();
-      twoBone(S, new THREE.Vector3(...tgt), pole, L_UPPER, L_FORE, -1, qU, qL);
+      twoBone(S, new THREE.Vector3(...tgt), pole, R.L_UPPER, R.L_FORE, -1, qU, qL);
       fk(ua, rq[sh].clone().invert().multiply(qU));
       fk(fa, rq[ua].clone().invert().multiply(qL));
     } else {
@@ -229,7 +234,7 @@ export function solvePose(P, opts = {}) {
     const th = 'thigh' + s, sn = 'shin' + s, ft = 'foot' + s;
     const S = rp.hips.clone().add(OFFSET[th].clone().applyQuaternion(rq.hips));
     const qU = new THREE.Quaternion(), qL = new THREE.Quaternion();
-    twoBone(S, new THREE.Vector3(...P['foot' + s]), new THREE.Vector3(...P['knee' + s]), L_THIGH, L_SHIN, 1, qU, qL);
+    twoBone(S, new THREE.Vector3(...P['foot' + s]), new THREE.Vector3(...P['knee' + s]), R.L_THIGH, R.L_SHIN, 1, qU, qL);
     rq[th] = qU; out.q[th] = rq.hips.clone().invert().multiply(qU);
     rq[sn] = qL; out.q[sn] = qU.clone().invert().multiply(qL);
     // foot: root-space orientation; yaw is "toe out" (mirrored for R)
