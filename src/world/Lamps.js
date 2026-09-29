@@ -359,6 +359,35 @@ export class Lamps {
     lamp.on = on;
   }
 
+  // A lamp for any part (CONTRACTS §2.4): the emissive head is the caller's
+  // (`bulb`, a mesh it built and added, or null), the lamp gives it the
+  // volumetric cone, the registry entry (rain, smoke, rim, exposure) and,
+  // when `real`, a share of the pooled SpotLights (the nearest lamps win).
+  //   { head: Vector3, axis: Vector3 (unit, down the beam), height: m,
+  //     half: rad, real, bulb, fadeEnd, edgeSoft, strength, tag }
+  // (its cone seed and flicker phase come from a fork of their own: the
+  // block's lamps keep every draw of theirs, and so the frames)
+  addCustom({ head, axis, height = 3, half = 0.6, real = true, bulb = null, fadeEnd = 1.0, edgeSoft = 0.3, strength = 1, tag = 'custom' } = {}) {
+    const { scene, U, lights } = this.world;
+    const r = this.customRng || (this.customRng = this.world.rng.fork(42));
+    const ax = axis.clone().normalize();
+    const cone = makeConeMesh(U, { apex: head, axis: ax, tan: Math.tan(half), height, r0: 0.2, intensity: 0.42 * strength, seed: r.next() * 10, fadeEnd, edgeSoft });
+    cone.layers.set(LAYER.VOLUME);
+    scene.add(cone);
+    const target = head.clone().addScaledVector(ax, height);
+    const light = real ? { pos: head.clone(), target, angle: Math.min(1.2, half * 1.6), penumbra: LIGHT_PENUMBRA, distance: height * 2.2 + 4, intensity: 60 * strength } : null;
+    const entry = lights.add({ position: head.clone(), direction: ax.clone(), halfAngle: half, range: height, intensity: strength });
+    const lamp = {
+      group: null, head: head.clone(), axis: ax, cone, light, bulb, entry, real, tag, custom: true,
+      base: 1.0, on: true, flicker: 0, flickerSeed: r.next() * 100, _k: 1,
+      coneBase: cone.material.uniforms.uIntensity.value,
+      head0: head.clone(), axis0: ax.clone(), target0: target.clone(),
+    };
+    if (bulb) bulb.traverse((o) => { if (o.isMesh) o.userData.lamp = lamp; });
+    this.lamps.push(lamp);
+    return lamp;
+  }
+
   // ---- Phase 3a: shooting the lamps ----------------------------------------
   bind(game) { this.game = game; }
 
@@ -404,7 +433,7 @@ export class Lamps {
     G.counters.lampsOut++;
   }
 
-  // per fixed step (game/React.js): the buzz and death of shot lamps, the
+  // per fixed step (fx/React.js): the buzz and death of shot lamps, the
   // hanging lamps' swing
   react(dt, t) {
     const G = this.game;
@@ -424,8 +453,7 @@ export class Lamps {
         l.deadK = k;
         if (l.deadT > (l.buzz ? l.buzz.at + l.buzz.len : 0) + 0.05 && l.on) {
           l.on = false;
-          l.bulb.material = this.world.M.bulbDead;
-          l.bulb.visible = true;
+          if (l.bulb) { l.bulb.material = this.world.M.bulbDead; l.bulb.visible = true; }
         }
       }
       if (l.hanging) this.swingStep(l, dt);
@@ -500,7 +528,7 @@ export class Lamps {
       }
       l.cone.material.uniforms.uIntensity.value = l.coneBase * k;
       l._k = k;
-      l.bulb.visible = k > 0.05 || (l.dead && !l.on);
+      if (l.bulb) l.bulb.visible = k > 0.05 || (l.dead && !l.on);
       l.entry.intensity = k;
       if (l.inst) this.syncInstance(l, false);
     }

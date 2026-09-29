@@ -5,7 +5,7 @@ import { installFogChunks } from './render/fog.js';
 import { makeTextures } from './render/textures.js';
 import { createSharedUniforms } from './render/uniforms.js';
 import { Pipeline } from './render/Pipeline.js';
-import { World } from './world/World.js';
+import { Stages } from './stages/index.js';
 import { Controller } from './player/Controller.js';
 import { Hud } from './ui/Hud.js';
 import { Stats } from './debug/Stats.js';
@@ -55,10 +55,13 @@ camera.layers.enableAll();
 const tex = makeTextures(1);
 const U = createSharedUniforms(tex);
 const rng = new RNG(seed);
-const world = new World({ renderer, scene, U, tex, rng });
+// the places of the story (src/stages/): the block is built first, into
+// this scene; any other on first use (game.stages.get)
+const stages = new Stages({ renderer, U, tex, rng });
+const block = stages.get('block', { scene });
 const pipeline = new Pipeline(renderer, tex, U, { pixelRatio, view: parseInt(params.get('view') ?? '0', 10) || 0, debugRT: params.get('rt') });
-const controller = new Controller(camera, renderer.domElement, world);
-controller.onStep = (x, z, v) => { world.street.addImpact(world, x, z, Math.min(1, v / 5) * 0.8); if (game) game.sfx.step(null, v > 5, true); };
+const controller = new Controller(camera, renderer.domElement, block);
+controller.onStep = (x, z, v) => { const S = controller.world; S.street.addImpact(S, x, z, Math.min(1, v / 5) * 0.8); if (game) game.sfx.step(null, v > 5, true); };
 
 // ---- HUD / title / game ------------------------------------------------------
 let game = null;
@@ -77,7 +80,7 @@ if (!shotMode) for (const ev of ['mousedown', 'keydown', 'touchstart']) addEvent
 hud.soundHint(!shotMode);
 hud.setVisible(hudOn);
 if (shotMode) hud.hideTitle();
-game = new Game({ world, camera, controller, pipeline, hud, shotMode, sfx });
+game = new Game({ stages, stage: 'block', camera, controller, pipeline, hud, shotMode, sfx });
 game.bindInput(renderer.domElement);
 // (play and the fight presets: every Hood variant + combat program up front)
 if (!shotMode || shot.prewarm) game.prewarm(renderer);
@@ -125,7 +128,7 @@ if (shot && poseParam) {
   const [x, z, yaw, pitch, fov] = poseParam.split(',').map(Number);
   Object.assign(shot, { x, z, yaw, pitch }, fov ? { fov } : {});
 }
-if (shot) applyShot(shot, controller, camera, world, game);
+if (shot) applyShot(shot, controller, camera, game.stage, game);
 else controller.setPose(-7.3, 6.2, -0.2, 0.02);
 game.eye.copy(camera.position);
 
@@ -133,7 +136,7 @@ const STEP = 1 / 60;
 let simTime = 0;
 function simStep(dt) {
   game.pre(dt, simTime);
-  world.update(dt, simTime, camera, pipeline.height);
+  game.stage.update(dt, simTime, camera, pipeline.height);
   game.post(dt, simTime);
   simTime += dt;
 }
@@ -159,9 +162,10 @@ if (shotMode) game.holdFlashes(shot && shot.holdWindow);
 // camera at Hood i (bearing 0 = in front of his face, 90 = his left side),
 // looking at his hips bone, so close-ups track a walking or fallen man
 const focusParam = params.get('focus');
-if (shot && focusParam && world.hoods.list.length) {
+if (shot && focusParam && game.stage.hoods.list.length) {
   const [i, dist = 3, bearing = 0, eye = 1.5, fov = 32] = focusParam.split(',').map(Number);
-  const h = world.hoods.list[Math.min(world.hoods.list.length - 1, i | 0)];
+  const H = game.stage.hoods.list;
+  const h = H[Math.min(H.length - 1, i | 0)];
   const tgt = new THREE.Vector3().setFromMatrixPosition(h.bones.hips.matrixWorld);
   tgt.y = Math.max(tgt.y, 0.35) + 0.15;
   const a = h.yaw + bearing * Math.PI / 180;
@@ -171,7 +175,7 @@ if (shot && focusParam && world.hoods.list.length) {
   camera.fov = fov;
   camera.updateProjectionMatrix();
   controller.setPose(cx, cz, yaw, pitch, eye - 1.63);
-  world.update(0, simTime, camera, pipeline.height);
+  game.stage.update(0, simTime, camera, pipeline.height);
 }
 
 // card=pause (look development): hold that card over the frame
@@ -195,6 +199,7 @@ addEventListener('keydown', (e) => {
 // ---- loop ----------------------------------------------------------------------
 let frames = 0;
 let acc = 0;
+const NO_FIRES = [];
 const perf = { sim: 0, render: 0, steps: 0 };
 let last = performance.now();
 function frame(now) {
@@ -213,12 +218,13 @@ function frame(now) {
   }
   const tB = performance.now();
   renderer.info.reset();
-  pipeline.rimLamps = world.rimLamps;
+  const S = game.stage;
+  pipeline.rimLamps = S.rimLamps;
   camera.updateMatrixWorld();
   game.vm.sync(camera);
-  pipeline.render(scene, camera, simTime);
+  pipeline.render(S.scene, camera, simTime);
   game.hudUpdate(dt);
-  if (sfx.live) sfx.update(dt, { fires: world.cars.fires, hp: game.health.hp, dead: game.state === 'dead', listener: camera });
+  if (sfx.live) sfx.update(dt, { fires: S.cars ? S.cars.fires : NO_FIRES, hp: game.health.hp, dead: game.state === 'dead', listener: camera });
   const tC = performance.now();
   // CPU time per frame (debug overlay / tools/fps.mjs): simulation, render submit
   perf.sim = perf.sim * 0.95 + (tB - tA) * 0.05;
@@ -250,13 +256,17 @@ writeCounters();
 requestAnimationFrame(frame);
 
 window.__noir = {
-  THREE, scene, camera, renderer, pipeline, world, controller, hud, U, tex, game,
+  THREE, camera, renderer, pipeline, controller, hud, U, tex, game, stages,
+  // the current stage and its scene (the old one-block names)
+  get world() { return game.stage; },
+  get stage() { return game.stage; },
+  get scene() { return game.stage.scene; },
   get counters() { return game.counters; },
   perf,
   // fast-forward the fixed-step simulation (as t= does at load)
   sim(seconds = 1) { const n = Math.round(seconds * 60); for (let i = 0; i < n; i++) simStep(STEP); writeCounters(); return { ...game.counters }; },
   params: { shotName, shotMode, hudOn, debug, tSkip },
-  bench: (opts) => bench(renderer, pipeline, scene, camera, opts),
+  bench: (opts) => bench(renderer, pipeline, game.stage.scene, camera, opts),
   // Phase 3b performance pass, in-session before/after: legacy = true puts
   // back the Phase 3a pipeline (every MSAA resolve, the depth resolve, the
   // full-detail far el / cars / Tommy guns, the ink's and the street's full
@@ -268,10 +278,11 @@ window.__noir = {
     pipeline.setSceneFormat(!on);
     pipeline.inkMat.uniforms.uFast.value = on ? 0 : 1;
     U.uFast.value = on ? 0 : 1;
-    world.lodOff = !!on;
-    for (const h of world.hoods.list) if (h.tommy) h.tommy.geometry = !on && h.lod >= 1 ? h.tommy.userData.geoLo : h.tommy.userData.geoHi;
-    world.overpass.update(camera);
-    world.cars.lodUpdate(camera);
+    const W = game.stage;
+    W.lodOff = !!on;
+    for (const h of W.hoods.list) if (h.tommy) h.tommy.geometry = !on && h.lod >= 1 ? h.tommy.userData.geoLo : h.tommy.userData.geoHi;
+    if (W.overpass) W.overpass.update(camera);
+    if (W.cars) W.cars.lodUpdate(camera);
     return { legacy: !!on };
   },
   // GPU ms per pipeline stage over `seconds` of live play (timer queries)
@@ -286,10 +297,10 @@ window.__noir = {
   },
   lightning: (strength = 1) => pipeline.pulseLightning(simTime, strength),
   // spawnHood([x, z] | {x, z} | Vector3, variant = seed | { coat, brim, tall, cig }, { yaw, state })
-  spawnHood(pos, variant = {}, opts = {}) { return world.hoods.spawn(pos, variant, opts); },
+  spawnHood(pos, variant = {}, opts = {}) { return game.stage.hoods.spawn(pos, variant, opts); },
   // spawnAI(x, z, heavy): a Hood with a brain
   spawnAI(x, z, heavy = false) { return game.spawnHood(x, z, { heavy }); },
-  get hoods() { return world.hoods.list; },
+  get hoods() { return game.stage.hoods.list; },
   deathReport: DEATH_REPORT,
   get time() { return simTime; },
   sfx,

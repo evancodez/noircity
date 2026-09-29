@@ -237,7 +237,7 @@ export class HoodAI {
     let best = null, bestS = Infinity;
     for (const c of G.covers.points) {
       if (c.taken && c.taken !== this) continue;
-      // never behind a smoking car or beside a burning wreck (game/React.js)
+      // never behind a smoking car or beside a burning wreck (fx/React.js)
       if (G.react && G.react.hazards.length && G.react.hazardAt(c.x, c.z, 0.6)) continue;
       const d = Math.hypot(c.x - p.x, c.z - p.z);
       if (d < 7.5 || d > 70) continue;

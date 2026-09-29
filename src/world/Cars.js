@@ -276,7 +276,7 @@ function buildTemplateParts() {
 const LOD_PARTS = ['paint', 'chrome', 'dark', 'rubber', 'white', 'hubs', 'caps', 'seams'];
 
 // ---------------------------------------------------------------------------
-// Damage (Phase 3a). Bullets are dispatched here by the game (game/React.js)
+// Damage (Phase 3a). Bullets are dispatched here by the game (fx/React.js)
 // with the RayWorld hit; the part is told by the mesh (userData.part) and
 // the hit point in the car's frame:
 //   glass  - the first round spider-cracks the pane (a crack decal), the
@@ -587,7 +587,7 @@ export class Cars {
     lights.forEach((L, i) => { const f = live[i]; if (f) f.light = L; else L.intensity = 0; });
   }
 
-  // per fixed step (game/React.js)
+  // per fixed step (fx/React.js)
   // per step (World.update): the far build for the cars beyond FAR_LOD m
   // (4 m of hysteresis). The bullets' BVH keeps the full build (RayWorld).
   lodUpdate(camera) {

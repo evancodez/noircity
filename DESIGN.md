@@ -333,7 +333,8 @@ src/
   render/Pipeline.js      render targets, passes, resize
   render/shaders/*.js     GLSL strings: ink.js, ground.js, cone.js, rain.js, bloom.js
   render/textures.js      canvas-generated noise/brush/paper/streak/splatter textures
-  world/World.js          assembles the block; Street, Facade, Overpass, Lamps, Skyline, Cars, Props
+  world/World.js          the Stage base: engine services, parts, anchors, surface, look
+  stages/<name>/          a place: index.js + parts/*.js (the block: street, overpass, facade, ...)
   world/*.js              one module per structure
   fx/*.js                 MuzzleFlash, Blood, Decals, Particles, Explosion, Steam, Lightning
   player/Controller.js    movement, look, pointer lock, collision with props

@@ -67,6 +67,14 @@ export class Street {
   }
 
   // footstep / bullet ripple on the wet street
+  // the walking surface (the stage's surfaceY): the left and right
+  // pavements are raised, the kerb step smoothed over 25 cm
+  surfaceY(x) {
+    const l = 1 - THREE.MathUtils.smoothstep(x, STREET.kerbX - 0.12, STREET.kerbX + 0.12);
+    const r = THREE.MathUtils.smoothstep(x, STREET.rightKerbX - 0.12, STREET.rightKerbX + 0.12);
+    return STREET.pavementTop * Math.max(l, r);
+  }
+
   addImpact(world, x, z, strength = 1) {
     const arr = world.U.uImpacts.value;
     let oldest = 0;

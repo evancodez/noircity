@@ -1,9 +1,10 @@
 import * as THREE from 'three';
-import { STREET } from '../world/Street.js';
 
 // First-person controller: pointer-lock mouse look, WASD (+Shift sprint),
-// capsule-vs-XZ collision against the world's colliders, kerb step, head bob.
-// Camera eye height 1.65 m above whatever surface the player stands on.
+// capsule-vs-XZ collision against the stage's colliders, its walking surface
+// (stage.surfaceY: kerbs, floors), head bob. Camera eye height 1.65 m above
+// whatever surface the player stands on. `world` is the current stage
+// (re-bound by the Game on stage:enter).
 export const EYE = 1.65;
 
 export class Controller {
@@ -58,15 +59,8 @@ export class Controller {
     this.yaw = yaw;
     this.pitch = pitch;
     this.vel.set(0, 0, 0);
-    this.groundY = y ?? this.surfaceY(x, z);
+    this.groundY = y ?? this.world.surfaceY(x, z);
     this.apply(0);
-  }
-
-  surfaceY(x) {
-    // left & right pavements are raised; smooth the kerb step over 25 cm
-    const l = 1 - THREE.MathUtils.smoothstep(x, STREET.kerbX - 0.12, STREET.kerbX + 0.12);
-    const r = THREE.MathUtils.smoothstep(x, STREET.rightKerbX - 0.12, STREET.rightKerbX + 0.12);
-    return STREET.pavementTop * Math.max(l, r);
   }
 
   update(dt) {
@@ -93,7 +87,7 @@ export class Controller {
     this.pos.z += this.vel.z * dt;
     this.world.colliders.resolve(this.pos, this.radius);
 
-    const gy = this.surfaceY(this.pos.x);
+    const gy = this.world.surfaceY(this.pos.x, this.pos.z);
     this.groundY += (gy - this.groundY) * (1 - Math.exp(-14 * dt));
     const v = Math.hypot(this.vel.x, this.vel.z);
     this.bobAmp += ((v > 0.3 ? Math.min(1, v / 4) : 0) - this.bobAmp) * (1 - Math.exp(-8 * dt));

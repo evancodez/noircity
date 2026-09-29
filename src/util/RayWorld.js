@@ -192,26 +192,31 @@ export class RayWorld {
     this.entries = [];
     this.stats = { rays: 0, ms: 0 };
     const t0 = performance.now();
-    for (const mesh of world.solids) {
-      if (mesh.userData.hood) continue;
-      const g = mesh.geometry;
-      if (!g || !g.getAttribute('position')) continue;
-      mesh.updateWorldMatrix(true, false);
-      if (!g.boundingBox) g.computeBoundingBox();
-      _box.copy(g.boundingBox).applyMatrix4(mesh.matrixWorld);
-      // the far skyline is never within a bullet's range of the block
-      const far = Math.hypot((_box.min.x + _box.max.x) / 2, (_box.min.z + _box.max.z) / 2 + 40) > 260;
-      if (far) continue;
-      const bvh = bvhFor(g);
-      bvh.geo = g;
-      this.entries.push({
-        mesh, bvh, inv: mesh.matrixWorld.clone().invert(), mw: mesh.matrixWorld.clone(),
-        inv3: new THREE.Matrix3().setFromMatrix4(mesh.matrixWorld.clone().invert()),
-        min: _box.min.clone(), max: _box.max.clone(), surf: classify(mesh, world),
-      });
-    }
+    for (const mesh of world.solids) this.add(mesh);
     this.buildMs = performance.now() - t0;
   }
+
+  // a static solid joins the bullets' world (stage.addSolid); the Hoods'
+  // hit volumes are tested analytically (raycastHoods), never here
+  add(mesh) {
+    if (mesh.userData.hood) return;
+    const g = mesh.geometry;
+    if (!g || !g.getAttribute('position')) return;
+    mesh.updateWorldMatrix(true, false);
+    if (!g.boundingBox) g.computeBoundingBox();
+    _box.copy(g.boundingBox).applyMatrix4(mesh.matrixWorld);
+    // the far skyline is never within a bullet's range of the block
+    const far = Math.hypot((_box.min.x + _box.max.x) / 2, (_box.min.z + _box.max.z) / 2 + 40) > 260;
+    if (far) return;
+    const bvh = bvhFor(g);
+    bvh.geo = g;
+    this.entries.push({
+      mesh, bvh, inv: mesh.matrixWorld.clone().invert(), mw: mesh.matrixWorld.clone(),
+      inv3: new THREE.Matrix3().setFromMatrix4(mesh.matrixWorld.clone().invert()),
+      min: _box.min.clone(), max: _box.max.clone(), surf: classify(mesh, this.world),
+    });
+  }
+  remove(mesh) { this.entries = this.entries.filter((e) => e.mesh !== mesh); }
 
   // Nearest static hit. Returns { t, point, normal, mesh, surf } or null.
   // opts.anyHit: stop at the first hit (line of sight).

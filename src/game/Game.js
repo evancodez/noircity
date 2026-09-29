@@ -1,16 +1,11 @@
 import * as THREE from 'three';
-import { RayWorld } from '../util/RayWorld.js';
-import { Fx } from '../fx/Fx.js';
 import { Viewmodel, MUZZLE } from '../player/Viewmodel.js';
 import { Weapon, WEAPON } from '../player/Weapon.js';
 import { Health } from '../player/Health.js';
-import { NavGrid } from '../enemies/Nav.js';
-import { CoverSet, HoodAI, HoodPacing } from '../enemies/HoodAI.js';
+import { HoodAI, HoodPacing } from '../enemies/HoodAI.js';
 import { Director } from './Director.js';
 import { Autopilot } from './Autopilot.js';
-import { LAYER } from '../render/layers.js';
 import { DEATHS, HAT_OFF } from '../enemies/HoodAnim.js';
-import { React } from './React.js';
 import { Storm } from '../world/Storm.js';
 import { Sfx } from '../audio/Sfx.js';
 
@@ -19,13 +14,24 @@ import { Sfx } from '../audio/Sfx.js';
 // player's hitscan -> Weapon.js, the Hoods' delayed shots here), effects,
 // and the state machine
 //   title -> playing -> dead ("THE END")
-// One fixed step (1/60 s): pre() before world.update (input, the gun, AI
+// One fixed step (1/60 s): pre() before stage.update (input, the gun, AI
 // decisions), post() after it (enemy bullets, effects, the director, HUD).
+//
+// Stages (docs/story/CONTRACTS.md §2): game.stage (old name game.world) is
+// the current place, game.stages.get(name) any other. What belongs to a
+// place is the stage's - its effects, ray world, nav grid, cover set,
+// reactions and cast (game.fx, .rays, .nav, .covers, .react, .hoods read
+// the current one); what belongs to the player or the machine is the
+// game's - the hands and the gun, health, the HUD, sound, the pipeline -
+// and is re-bound to the stage on stage:enter (enterStage).
 export const GAME = { corpseCap: 16, hoodHp: 100, heavyHp: 170 };
 
 export class Game {
-  constructor({ world, camera, controller, pipeline, hud, shotMode, sfx = null }) {
-    this.world = world;
+  // stages: the registry (src/stages/index.js); stage: the one to start in
+  constructor({ stages, stage = 'block', camera, controller, pipeline, hud, shotMode, sfx = null }) {
+    this.stages = stages;
+    this.world = stages.get(stage);
+    const world = this.world;
     this.camera = camera;
     this.controller = controller;
     this.pipeline = pipeline;
@@ -41,10 +47,6 @@ export class Game {
       explosions: 0, blastKills: 0, blastDamage: 0, burnTicks: 0, lampsOut: 0, windows: 0, panes: 0, props: 0,
     };
     const t0 = performance.now();
-    this.rays = new RayWorld(world);
-    this.nav = new NavGrid(world.colliders);
-    this.covers = new CoverSet(world, this.nav);
-    this.fx = new Fx(world);
     this.vm = new Viewmodel(world, camera);
     this.weapon = new Weapon(this, this.vm);
     this.health = new Health(hud.root);
@@ -56,22 +58,12 @@ export class Game {
     // fights: the director's scripts, the Hoods' pacing
     this.pacing = new HoodPacing(this);
     this.director = new Director(this);
-    // Phase 3a: sound, and the world's reactions to bullets
     this.sfx = sfx || new Sfx();
-    this.react = new React(this);
-    world.fxRef = this.fx;
     this.storm = new Storm(world, pipeline);
     this.storm.onThunder = (s, far, dbl) => this.sfx.thunder(s, far, dbl);
-    this.explosionsOnTick = null;
-    this.fx.explosions.onTick = (p, k) => this.sfx.debris(p, k);
-    this.fx.casings.onTick = (p, n) => this.sfx.casing(p, n);
-    const T = world.train;
-    T.onRumble = (k, pos) => this.sfx.train(k, pos);
-    T.onSqueal = (k, pos) => this.sfx.squeal(k, pos);
     // the world's shot-mode clocks run (a train and lightning in a shot are
     // staged explicitly: shot=train, lightning=)
     this.ambient = !shotMode;
-    this.initMs = performance.now() - t0;
     this.ais = new Map();
     this.pending = [];        // the Hoods' bullets in flight
     this.corpses = [];
@@ -85,36 +77,27 @@ export class Game {
     // the viewmodel is drawn by the pipeline's viewmodel pass; every light
     // must also be visible to its camera (three filters lights by layer)
     pipeline.vm = { scene: this.vm.scene, camera: this.vm.cam, frameInv: this.vm.frameInv, visible: true, fxLive: () => this.fx.flash.vm.list.length > 0 };
-    // the player's flash sprites are drawn with the gun (its own scene)
-    this.vm.scene.add(this.fx.flash.vm.mesh);
-    this.fx.flash.camera = camera;
+    this.enterStage(world);
+    this.initMs = performance.now() - t0;
     // pipeline hooks: Hoods beyond 20 m stay out of the planar reflection
     // (it mirrors emitters only: a far man is a speck of occlusion); the Hoods
     // are the only moving shadow casters (a settled corpse is static)
     const reflList = [];
     pipeline.reflHide = (cam) => {
       reflList.length = 0;
-      for (const h of world.hoods.list) if (h.object.visible && h.pos.distanceToSquared(cam.position) > 20 * 20) reflList.push(h.object);
+      for (const h of this.stage.hoods.list) if (h.object.visible && h.pos.distanceToSquared(cam.position) > 20 * 20) reflList.push(h.object);
       return reflList;
-    };
-    // footfalls: a ripple on the wet street (near the eye: a far one is
-    // invisible and would take one of the street's few impact slots) and a
-    // footstep sound
-    world.hoods.onStep = (h, x, z, run) => {
-      const d = Math.hypot(x - camera.position.x, z - camera.position.z);
-      if (d < 28 && x > -6.0 && x < 17) world.street.addImpact(world, x, z, run ? 0.45 : 0.3);
-      if (d < 35) this.sfx.step(new THREE.Vector3(x, 0, z), run, false);
     };
     // (the el's iron only: a car's chrome and lamps are emitters in the
     // mirror - its light build moved a column in the wet street)
-    pipeline.reflLod = (on) => { world.overpass.reflLod(on); };
+    pipeline.reflLod = (on) => { this.stage.reflLod(on); };
     // (the shadow maps take the light builds too: Phase 3c performance)
-    pipeline.shadowLod = (on) => { if (world.lodOff) return; world.overpass.reflLod(on); world.cars.shadowLod(on); };
+    pipeline.shadowLod = (on) => { this.stage.shadowLod(on); };
     pipeline.volPost = () => this.fx.puff.list.length > 0;
     const casters = [];
     pipeline.shadowCasters = () => {
       casters.length = 0;
-      for (const h of world.hoods.list) {
+      for (const h of this.stage.hoods.list) {
         if (!h.object.visible || !h.mesh.castShadow) continue;
         const moving = h.alive || h._deathT < 3.5 || (h.hat && !h.hat.rest);
         // (Phase 3c performance pass: a man standing his ground - aiming,
@@ -129,8 +112,50 @@ export class Game {
     };
   }
 
+  // Enter a stage (a name or a Stage): the place's systems come with it, the
+  // player's and the machine's are re-bound to it. (The scene manager's
+  // transitions place the player; this only swaps the place.)
+  enterStage(which) {
+    const stage = typeof which === 'string' ? this.stages.get(which) : which;
+    const prev = this.entered;
+    if (prev === stage) return stage;
+    if (prev) this.vm.scene.remove(prev.fx.flash.vm.mesh);
+    this.world = stage;
+    this.entered = stage;
+    stage.bind(this);
+    this.controller.world = stage;
+    this.vm.world = stage;
+    // the player's flash sprites are drawn with the gun (its own scene)
+    this.vm.scene.add(stage.fx.flash.vm.mesh);
+    stage.fx.flash.camera = this.camera;
+    stage.fx.explosions.onTick = (p, k) => this.sfx.debris(p, k);
+    stage.fx.casings.onTick = (p, n) => this.sfx.casing(p, n);
+    if (stage.train) {
+      stage.train.onRumble = (k, pos) => this.sfx.train(k, pos);
+      stage.train.onSqueal = (k, pos) => this.sfx.squeal(k, pos);
+    }
+    // footfalls: a ripple on the wet street (near the eye: a far one is
+    // invisible and would take one of the street's few impact slots) and a
+    // footstep sound
+    const camera = this.camera;
+    stage.hoods.onStep = (h, x, z, run) => {
+      const d = Math.hypot(x - camera.position.x, z - camera.position.z);
+      if (d < 28 && x > -6.0 && x < 17) stage.street.addImpact(stage, x, z, run ? 0.45 : 0.3);
+      if (d < 35) this.sfx.step(new THREE.Vector3(x, 0, z), run, false);
+    };
+    this.emit('stage:enter', { name: stage.name });
+    return stage;
+  }
+
   // the current stage (CONTRACTS §2.1; `world` is its old name)
   get stage() { return this.world; }
+  // the place's own systems: the current stage's
+  get fx() { return this.world.fx; }
+  get rays() { return this.world.rays; }
+  get nav() { return this.world.nav; }
+  get covers() { return this.world.covers; }
+  get react() { return this.world.react; }
+  get hoods() { return this.world.hoods; }
 
   // events across the lanes (CONTRACTS §2.1): on(name, fn) / off / emit
   on(name, fn) {
@@ -389,7 +414,7 @@ export class Game {
     if (hit) this.react.bullet(hit, dir, { weak: true });
   }
 
-  // ---- the reactive world (world/Cars.js, game/React.js) ------------------------
+  // ---- the reactive world (world/Cars.js, fx/React.js) --------------------------
   onCarSmoking(car) {
     this.react.hazards.push({ car, pos: car.pos.clone(), r: 7.5, kind: 'smoke' });
     this.sfx.hiss(car.pos);

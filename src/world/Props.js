@@ -342,7 +342,7 @@ export class Props {
     return null;
   }
 
-  // per fixed step (game/React.js)
+  // per fixed step (fx/React.js)
   update(dt, t) {
     const G = this.game;
     if (!G) return;
