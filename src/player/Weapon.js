@@ -88,8 +88,7 @@ export class Weapon {
   // fire one round; `forceDir` (staged shots) bypasses the spread
   fire(time, forceDir = null) {
     const G = this.game, r = this.rng;
-    // (the aim frame: the eye, also over the shoulder - never the boom camera)
-    const cam = G.aimRef || G.camera;
+    const cam = G.camera;
     this.ammo--;
     this.sinceShot = 0;
     this.lastShotTime = time;
@@ -112,26 +111,15 @@ export class Weapon {
     // flash, smoke, case
     G.sfx.tommy();
     this.burstShots = (this.burstShots || 0) + 1;
-    if (G.ots && G.body) {
-      // over the shoulder (Phase 3b): all of it comes off the body's gun
-      const B = G.body;
-      const m = B.muzzleWorld(), gf = B.gunForward();
-      G.fx.flash.playerWorld(m, gf, time);
-      this.lastMuzzle = m;
-      this.lastFwd = gf;
-      this.lastGunFwd = gf;
-      G.fx.casings.eject(B.ejectWorld(), B.gunAxis(new THREE.Vector3(), 1, 0, 0), B.gunAxis(new THREE.Vector3(), 0, 1, 0), gf.clone());
-    } else {
-      const vmMuzzle = this.vm.vmWorld(MUZZLE);
-      const wMuzzle = this.vm.reproject(MUZZLE, 0.9, cam);
-      G.fx.flash.player(vmMuzzle, wMuzzle, fwd.clone(), time, this.vm.forward());
-      this.lastMuzzle = wMuzzle.clone();
-      this.lastFwd = fwd.clone();
-      // (the gun's own heading in the world: the puff hangs where it points)
-      this.lastGunFwd = fwd.clone();
-      const ej = this.vm.reproject(EJECT, 0.45, cam);
-      G.fx.casings.eject(ej, right, up, fwd);
-    }
+    const vmMuzzle = this.vm.vmWorld(MUZZLE);
+    const wMuzzle = this.vm.reproject(MUZZLE, 0.9, cam);
+    G.fx.flash.player(vmMuzzle, wMuzzle, fwd.clone(), time, this.vm.forward());
+    this.lastMuzzle = wMuzzle.clone();
+    this.lastFwd = fwd.clone();
+    // (the gun's own heading in the world: the puff hangs where it points)
+    this.lastGunFwd = fwd.clone();
+    const ej = this.vm.reproject(EJECT, 0.45, cam);
+    G.fx.casings.eject(ej, right, up, fwd);
     // the shot
     const hood = G.rays.raycastHoods(origin, dir, WEAPON.range, G.world.hoods.list);
     const wall = G.rays.raycast(origin, dir, hood ? hood.t : WEAPON.range);

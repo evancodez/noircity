@@ -23,7 +23,6 @@ Open http://127.0.0.1:5173, click to begin (pointer lock).
 | W A S D | move |
 | mouse | look, **left button** fire |
 | R | reload the drum |
-| V | toggle over-the-shoulder camera |
 | M | mute |
 | Esc | release the mouse (pauses) |
 
@@ -48,7 +47,7 @@ Open http://127.0.0.1:5173, click to begin (pointer lock).
 - `tools/shot.sh out.png "shot=street" 1600 1000` — headless Chrome WebGL
   screenshot of a named camera preset (`street`, `lamp`, `cars`, `hood`,
   `hoodstudy`, `hoods`, `viewmodel`, `battle&t=30` (autopilot combat),
-  `wreck&t=8`, `train&t=6`, `ots`, `title`, `end`; `t=` fast-forwards the
+  `wreck&t=8`, `train&t=6`, `title`, `end`; `t=` fast-forwards the
   simulation, `hud=1`, `debug=1`, `view=N` shows pipeline buffers).
 - `tools/errors.sh "shot=battle&t=30"` — runtime errors, frame count and
   (with `audiotest=1`) the offline audio render table.

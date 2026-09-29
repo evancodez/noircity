@@ -13,7 +13,6 @@ import { DEATHS, HAT_OFF } from '../enemies/HoodAnim.js';
 import { React } from './React.js';
 import { Storm } from '../world/Storm.js';
 import { Sfx } from '../audio/Sfx.js';
-import { PlayerBody } from '../player/PlayerBody.js';
 
 // The game: the player (Controller + Tommy gun + Health), the Hoods' AI and
 // waves, combat resolution (the player's hitscan -> Weapon.js, the Hoods'
@@ -53,13 +52,9 @@ export class Game {
     this.weapon = new Weapon(this, this.vm);
     this.health = new Health(hud.root);
     this.health.onDeath = () => this.onPlayerDeath();
-    // Phase 3b: the player's own body for the over-the-shoulder camera (V)
-    this.body = new PlayerBody(this);
-    this.ots = false;
     this.vmWanted = true;
     // the player's eye (the first-person camera's place): what the Hoods
-    // shoot at and the combat measures from; over the shoulder the camera
-    // itself stands 0.6 m behind it
+    // shoot at and the combat measures from
     this.eye = camera.position.clone();
     this.spawner = new Spawner(this);
     // Phase 3a: sound, and the world's reactions to bullets
@@ -121,7 +116,6 @@ export class Game {
     const casters = [];
     pipeline.shadowCasters = () => {
       casters.length = 0;
-      if (this.ots) casters.push(this.body.caster());
       for (const h of world.hoods.list) {
         if (!h.object.visible || !h.mesh.castShadow) continue;
         const moving = h.alive || h._deathT < 3.5 || (h.hat && !h.hat.rest);
@@ -166,12 +160,8 @@ export class Game {
       this.world.scene.add(w);
       warm.push(w);
     }
-    // (and the player's body and gun, hidden until V)
-    const bodyVis = this.body.visible;
-    this.body.setVisible(true);
     this.world.scene.updateMatrixWorld(true);
     renderer.compile(this.world.scene, this.camera);
-    this.body.setVisible(bodyVis);
     for (const w of warm) this.world.scene.remove(w);
     renderer.compile(this.vm.scene, this.vm.cam);
     for (const h of tmp) H.remove(h);
@@ -179,12 +169,11 @@ export class Game {
     this.prewarmMs = performance.now() - t0;
   }
 
-  // (over the shoulder the viewmodel is always off: vmWanted is what first
-  // person gets back)
+  // (vmWanted: what the title card gives back when play begins)
   setViewmodelVisible(v) {
     this.vmWanted = v;
-    // (and never on the title card: the street alone behind the lettering)
-    const on = v && !this.ots && this.state !== 'title';
+    // (never on the title card: the street alone behind the lettering)
+    const on = v && this.state !== 'title';
     this.vm.visible = on; this.pipeline.vm.visible = on;
   }
 
@@ -210,27 +199,6 @@ export class Game {
     this.vm.lowerTo(1);
     this.hud.showEnd(this.counters.kills, Math.max(0, this.counters.wave - 1));
   }
-
-  // the over-the-shoulder camera (Phase 3b, V): the body shows, the gun in
-  // the hands leaves the frame; first person again: the body is hidden
-  setOts(on) {
-    this.ots = !!on;
-    this.body.setVisible(this.ots);
-    this.setViewmodelVisible(this.vmWanted);
-    if (this.ots) {
-      // (the body's springs start at rest, the barrel on the current aim)
-      this.body.settle();
-      this.camera.updateMatrixWorld();
-      this.body.placeCamera(this.camera);
-      this.body.aim();
-    }
-    return this.ots;
-  }
-
-  // the frame the player aims in: the eye (first person: the camera itself;
-  // over the shoulder: the eye the boom camera hangs off). Bullets, staged
-  // shots and the Hoods' sense of being shot at use it, never the boom.
-  get aimRef() { return this.ots ? this.body.eyeObj : this.camera; }
 
   // ---- lifecycle ---------------------------------------------------------------
   start() {
@@ -431,8 +399,6 @@ export class Game {
       const d = dir.length(); dir.divideScalar(d);
       if (!this.rays.raycast(s.from, dir, d - 0.4, { anyHit: true })) {
         this.health.damage(s.dmg);
-        // (over the shoulder: the body flinches away from the shot)
-        if (this.ots) this.body.flinch(dir, Math.min(1.3, s.dmg / 10));
         this.sfx.play('grunt', null, { f0: 88, k: 0.35, dur: 0.14 }, { send: false });
         this.counters.hoodHits++;
         this.counters.damageTaken += s.dmg;
@@ -478,7 +444,6 @@ export class Game {
     if (dp < 8 && this.state === 'playing') {
       const dmg = Math.round(8 + 62 * Math.pow(1 - dp / 8, 1.3));
       this.health.damage(dmg);
-      if (this.ots) this.body.flinch(new THREE.Vector3(p.x - at.x, 0, p.z - at.z).normalize(), 1.5);
       this.counters.blastDamage += dmg;
     }
   }
@@ -493,13 +458,6 @@ export class Game {
     else if (!this.shotMode || this.autopilot) C.update(dt);
     else C.apply(dt);
     this.eye.copy(this.camera.position);
-    // over the shoulder: the camera backs off the eye, the barrel finds the
-    // point under the crosshair, the body takes the player's pose
-    if (this.ots) {
-      this.body.placeCamera(this.camera);
-      this.body.aim();
-      this.body.update(dt, t);
-    }
     this.camera.updateMatrixWorld();
     this.vm.update(dt, C);
     this.vm.sync(this.camera);
@@ -583,8 +541,7 @@ export class Game {
   scriptedShot(point, time) {
     const W = this.weapon;
     const pitch = this.controller.pitch, yaw = this.controller.yaw;
-    const cam = this.aimRef;
-    const d = new THREE.Vector3().subVectors(point, cam.position).normalize();
+    const d = new THREE.Vector3().subVectors(point, this.camera.position).normalize();
     W.fire(time, d);
     // keep the staged composition (no recoil climb)
     this.controller.pitch = pitch; this.controller.yaw = yaw;
@@ -604,22 +561,13 @@ export class Game {
     this.vm.sync(this.camera);
     const fwd = new THREE.Vector3(0, 0, -1).transformDirection(this.camera.matrixWorld);
     const vmNow = { vmPos: this.vm.vmWorld(MUZZLE), worldPos: this.vm.reproject(MUZZLE, 0.9, this.camera), fwd, gunFwd: this.vm.forward() };
-    if (this.ots) { vmNow.otsPos = this.body.muzzleWorld(); vmNow.otsDir = this.body.gunForward(); }
     this.fx.flash.holdRecent(this.time, window ?? 0.5, vmNow);
   }
 
   // HUD refresh (per rendered frame)
   hudUpdate(dt) {
     if (!this.hud.visible) return;
-    // over the shoulder the crosshair is drawn where the aim point projects
-    // (right of centre: the boom looks up the street, left of the aim)
-    let aimX = 0.5, aimY = 0.5;
-    if (this.ots) {
-      const p = (this._xp || (this._xp = new THREE.Vector3())).copy(this.body.crossPoint).project(this.camera);
-      if (p.z < 1) { aimX = 0.5 + 0.5 * p.x; aimY = 0.5 - 0.5 * p.y; }
-    }
     this.hud.update({
-      aimX, aimY,
       wave: Math.max(1, this.counters.wave), kills: this.counters.kills, ammo: this.weapon.ammo, drum: WEAPON.drum,
       reloading: this.weapon.reloading, hp: this.health.hp, spread: this.weapon.spread, dt,
     });
@@ -633,7 +581,6 @@ export class Game {
     addEventListener('keydown', (e) => {
       if (!locked()) return;
       if (e.code === 'KeyR') this.weapon.reload();
-      if (e.code === 'KeyV' && !e.repeat) this.hud.message(this.setOts(!this.ots) ? 'over the shoulder' : 'first person', 1.0);
       if (e.code === 'KeyM') { this.muted = this.sfx.toggleMute(); this.hud.message(this.muted ? 'sound off' : 'sound on'); }
       if (e.code === 'BracketLeft' || e.code === 'Minus') this.hud.message('volume ' + Math.round(this.sfx.setVolume(this.sfx.volume - 0.1) * 10));
       if (e.code === 'BracketRight' || e.code === 'Equal') this.hud.message('volume ' + Math.round(this.sfx.setVolume(this.sfx.volume + 0.1) * 10));

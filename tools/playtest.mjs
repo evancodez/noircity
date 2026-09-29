@@ -103,32 +103,6 @@ try {
   const r2 = await js('({ reloading: N.game.weapon.reloading, ammo: N.game.weapon.ammo })');
   check('R reloads (2.3 s, drum full)', r1.reloading && r1.note === 'reloading' && !r2.reloading && r2.ammo === 50, JSON.stringify([r1, r2]));
 
-  // ---- V: over the shoulder and back ------------------------------------------------------------
-  await key('KeyV', 'v');
-  await sleep(300);
-  const v1 = await js(`({ ots: N.game.ots, body: N.game.body.hood.object.visible, gun: N.game.body.gun.visible, vm: N.game.vm.visible,
-    back: +N.camera.position.distanceTo(N.game.eye).toFixed(2), msg: document.querySelector('#hud .msg').textContent })`);
-  check('V: over the shoulder (body shown, viewmodel hidden, camera ~0.7 m off the eye)', v1.ots && v1.body && v1.gun && !v1.vm && v1.back > 0.3, JSON.stringify(v1));
-  // (Phase 3b review: the boom is swung left of the aim, so the crosshair is
-  // drawn right of centre where the aim point projects, and bullets still
-  // leave from the eye, not from the boom camera)
-  const x1 = await js(`(() => { const xh = document.querySelector('#hud .xh'); const r = xh.getBoundingClientRect(); const eye = N.game.aimRef.position;
-    return { x: +((r.left + r.width / 2) / innerWidth).toFixed(3), y: +((r.top + r.height / 2) / innerHeight).toFixed(3), eyeIsEye: eye.distanceTo(N.game.eye) < 0.02 }; })()`);
-  check('over the shoulder: the crosshair right of centre on the aim point, the aim on the eye', x1.x > 0.56 && x1.x < 0.8 && Math.abs(x1.y - 0.5) < 0.12 && x1.eyeIsEye, JSON.stringify(x1));
-  await key('KeyW', 'w', 500);
-  const g1 = await js(`({ state: N.game.body.hood.state, legs: N.game.body.hood.anim.lower.current })`);
-  check('the body walks with the player', /walk|run/.test(g1.state), JSON.stringify(g1));
-  await mouse('mousePressed', W / 2, H / 2); await sleep(300); await mouse('mouseReleased', W / 2, H / 2);
-  const o2 = await js('({ flash: !!N.game.fx.flash.last.playerOts, shots: N.game.counters.shots })');
-  check('firing over the shoulder flashes from the body\'s gun', o2.flash, JSON.stringify(o2));
-  await key('KeyV', 'v');
-  await sleep(200);
-  const v2 = await js('({ ots: N.game.ots, body: N.game.body.hood.object.visible, gun: N.game.body.gun.visible, vm: N.game.vm.visible, back: +N.camera.position.distanceTo(N.game.eye).toFixed(3) })');
-  check('V again: first person (body hidden, viewmodel back, camera on the eye)', !v2.ots && !v2.body && !v2.gun && v2.vm && v2.back < 0.01, JSON.stringify(v2));
-  await sleep(100);
-  const x2 = await js(`(() => { const r = document.querySelector('#hud .xh').getBoundingClientRect(); return +((r.left + r.width / 2) / innerWidth).toFixed(3); })()`);
-  check('first person: the crosshair back at the centre', Math.abs(x2 - 0.5) < 0.01, String(x2));
-
   // ---- M: mute ---------------------------------------------------------------------------------------
   await key('KeyM', 'm');
   await sleep(150);

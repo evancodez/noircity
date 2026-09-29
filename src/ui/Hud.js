@@ -7,9 +7,7 @@ import { RNG } from '../util/rng.js';
 //   bottom right the drum count in a typewriter face (American Typewriter /
 //                Courier New), RELOADING while the drum is swapped
 //   bottom left  a thin ink health bar that bleeds red when low
-//   centre       a tiny dot crosshair (opens a little with the spread); over
-//                the shoulder it sits where the aim point projects, right of
-//                centre (s.aimX / s.aimY, fractions of the window)
+//   centre       a tiny dot crosshair (opens a little with the spread)
 //   cards        a black ink splatter (canvas: a blot of ragged lobes,
 //                dry-brush drags running dry, spikes flung out ending in
 //                drops, satellite drops, drips) with the lettering in paper
@@ -23,7 +21,7 @@ import { RNG } from '../util/rng.js';
 //            "click to resume"
 // Hidden entirely in ?shot= mode unless hud=1 (shot=title / shot=end show
 // their card).
-const KEYS = 'WASD move · mouse aim · click fire · R reload · V camera · M sound';
+const KEYS = 'WASD move · mouse aim · click fire · R reload · M sound';
 // one line for the dead (chosen at random on the end card)
 export const EPITAPHS = [
   'The rain washed the street clean. It always does.',
@@ -177,14 +175,9 @@ export class Hud {
   hideEnd() { this.endCard.el.classList.add('hidden'); this.retitle(); }
   message(text, secs = 1.4) { this.el.msg.textContent = text; this.el.msg.style.opacity = '1'; this.msgT = secs; }
 
-  // s: { wave, kills, ammo, drum, reloading, hp, spread, dt, aimX, aimY }
+  // s: { wave, kills, ammo, drum, reloading, hp, spread, dt }
   update(s) {
     const L = this._last, E = this.el;
-    const ax = (100 * (s.aimX ?? 0.5)).toFixed(2) + '%', ay = (100 * (s.aimY ?? 0.5)).toFixed(2) + '%';
-    if (L.ax !== ax || L.ay !== ay) {
-      for (const e of [E.xh, E.xr]) { e.style.left = ax; e.style.top = ay; }
-      L.ax = ax; L.ay = ay;
-    }
     if (L.wave !== s.wave) { E.wave.textContent = 'Wave ' + s.wave; L.wave = s.wave; }
     if (L.kills !== s.kills) { E.kills.textContent = 'Kills ' + s.kills; L.kills = s.kills; }
     const ammoKey = s.ammo + '/' + s.reloading;

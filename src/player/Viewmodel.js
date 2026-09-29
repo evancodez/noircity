@@ -121,18 +121,11 @@ function buildGunParts() {
   // bore in front
   prof.push([0.0115, 0.345], [0.0108, 0.44], [0.0118, 0.449], [0.0142, 0.4495], [0.0146, 0.452], [0.0146, 0.513], [0.0141, 0.5165],
     [0.0072, 0.517], [0.0066, 0.51], [0.0, 0.51]);
-  // (the barrel and the sights are also kept apart - `split` - for the
-  // player's over-the-shoulder gun, whose ink draws their contours with ids
-  // of their own; the merged steel is unchanged)
-  const split = { rest: [], barrel: null, sight: [], stock: null, woodRest: [] };
-  const nRest = steel.length;
-  split.barrel = latheFwd(prof, 30).translate(0, 0.03, 0);
-  steel.push(split.barrel);
+  steel.push(latheFwd(prof, 30).translate(0, 0.03, 0));
   // compensator: four raised transverse ribs across its top (between the
   // cut ports) + the front sight blade on the barrel behind it
-  for (const z of [-0.462, -0.474, -0.486, -0.498]) { const g = rbox(0.021, 0.0065, 0.0048, 0.0016, 2).translate(0, 0.0454, z); steel.push(g); split.sight.push(g); }
-  { const g = rbox(0.003, 0.012, 0.012, 0.0012, 2).translate(0, 0.0465, -0.437); steel.push(g); split.sight.push(g); }
-  const nSplit = steel.length;
+  for (const z of [-0.462, -0.474, -0.486, -0.498]) steel.push(rbox(0.021, 0.0065, 0.0048, 0.0016, 2).translate(0, 0.0454, z));
+  steel.push(rbox(0.003, 0.012, 0.012, 0.0012, 2).translate(0, 0.0465, -0.437));
   // foregrip mount under the barrel
   steel.push(rbox(0.02, 0.018, 0.034, 0.005, 2).translate(0, 0.017, -0.3));
   // vertical foregrip with finger grooves (wood), raked forward a little
@@ -151,9 +144,6 @@ function buildGunParts() {
   // stock (wood): comb, wrist, butt plate
   // (a real M1928 stock drops ~6 cm at the heel: it runs back and down out
   // of the frame instead of standing beside the camera as a flat plank)
-  // (Phase 3d: also kept apart - `split.stock` - for the player's
-  // over-the-shoulder gun, whose ink gives it an id of its own: the stock /
-  // receiver contour, and the dashed light line along its comb)
   const stock = sideExtrude([[-0.07, 0.048], [-0.2, 0.03], [-0.36, 0.0], [-0.45, -0.022], [-0.462, -0.036], [-0.462, -0.17],
     [-0.44, -0.182], [-0.3, -0.112], [-0.17, -0.05], [-0.11, -0.024], [-0.075, -0.006]], 0.036, 0.011);
   wood.push(stock);
@@ -172,22 +162,7 @@ function buildGunParts() {
   const kr = torus(0.0096, 0.0014, 6, 20);
   kr.rotateX(Math.PI / 2);
   knob.push(kr.translate(0, 0.08, 0));
-  split.rest = steel.slice(0, nRest).concat(steel.slice(nSplit));
-  split.stock = stock;
-  split.woodRest = wood.filter((g) => g !== stock);
-  return { steel: merge(steel), wood: merge(wood), drum: merge(drum), knob: merge(knob), split };
-}
-
-// the gun in two parts (Phase 3b: the player's own body, PlayerBody.js): the
-// body (steel, wood, bolt knob) and the drum, the drum centred on its own
-// origin so it can come out in the reload
-// (Phase 3c: the body without the barrel and the sights, which come apart as
-// `fins` - the finned barrel and the compensator - and `sight` - the front
-// sight blade and the compensator's ribs - each an ink id of its own)
-export function buildTommyParts() {
-  const G = buildGun();
-  const knob = G.knob.clone().translate(0, 0, -0.11);
-  return { body: merge([...G.split.rest, ...G.split.woodRest, knob]), stock: G.split.stock, fins: G.split.barrel, sight: merge(G.split.sight), drum: G.drum.clone(), drumC: DRUM_C.clone(), foregrip: FOREGRIP.clone() };
+  return { steel: merge(steel), wood: merge(wood), drum: merge(drum), knob: merge(knob) };
 }
 
 // the whole gun as one geometry (the heavies' Tommy guns, enemies/Hood.js);

@@ -129,8 +129,6 @@ if (shot && poseParam) {
 if (shot) applyShot(shot, controller, camera, world, game);
 else controller.setPose(-7.3, 6.2, -0.2, 0.02);
 game.eye.copy(camera.position);
-// ots=1: start over the shoulder (any preset, or play)
-if (params.get('ots') === '1') game.setOts(true);
 // waves=1 in shot mode: the real spawning, no autopilot
 if (shotMode && wavesOn && game.counters.wave === 0) game.startBattle({ wave: parseInt(params.get('wave') ?? '1', 10) || 1, autopilot: false });
 
@@ -182,19 +180,6 @@ if (shot && focusParam && world.hoods.list.length) {
 // card=pause|wave (look development): hold that card over the frame
 if (params.get('card') === 'pause') hud.showPause();
 if (params.get('card') === 'wave') hud.showWave(6, 13);
-
-// otslook=dist,bearingDeg,height[,fov] (look development): after the
-// fast-forward, look at the player's own body from outside (bearing 0 = in
-// front of him, 90 = his left side, 180 = from behind)
-if (params.get('otslook') && game.ots) {
-  const [dist = 2, bearing = 90, h = 1.4, fov = 40] = params.get('otslook').split(',').map(Number);
-  const B = game.body.hood, tgt = new THREE.Vector3(B.pos.x, 1.35, B.pos.z);
-  const a = B.yaw + bearing * Math.PI / 180;
-  camera.position.set(tgt.x + Math.sin(a) * dist, h, tgt.z + Math.cos(a) * dist);
-  camera.fov = fov; camera.updateProjectionMatrix();
-  camera.lookAt(tgt);
-  controller.apply = () => {};
-}
 
 // gdbg=<n>: wet-street term debug (render/shaders/ground.js)
 if (params.get('gdbg')) U.uGroundDebug.value = parseInt(params.get('gdbg'), 10) || 0;

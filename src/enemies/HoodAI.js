@@ -121,7 +121,7 @@ export class HoodAI {
     hood.onMove = (h) => this.resolve(h);
   }
 
-  // (the player's eye: over the shoulder the camera stands behind him)
+  // (the player's eye)
   get player() { return this.game.eye; }
   distToPlayer() { const p = this.player; return Math.hypot(p.x - this.h.pos.x, p.z - this.h.pos.z); }
   eye(out = _eye) { return out.set(this.h.pos.x, this.h.pos.y + 1.58 * this.h.scale, this.h.pos.z); }
@@ -332,7 +332,7 @@ export class HoodAI {
     this.underFire = Math.max(0, this.underFire - dt);
     // being shot at: the player's aim passes near him
     if (G.weapon.sinceShot < 0.25) {
-      const cam = G.aimRef || G.camera;
+      const cam = G.camera;
       const f = _dir.set(0, 0, -1).transformDirection(cam.matrixWorld);
       const to = _v.set(h.pos.x - cam.position.x, h.pos.y + 1.1 - cam.position.y, h.pos.z - cam.position.z);
       const d = to.length();

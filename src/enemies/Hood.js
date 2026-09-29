@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { JOINTS, JOINT_INDEX, BIND, OFFSET, L_UPPER } from './HoodRig.js';
 import { HoodAnimator, getClips, DEATHS, HAT_OFF, WALK, RUN } from './HoodAnim.js';
-import { allocHoodSlot, releaseHoodSlot, HOOD_ID0, FIG_ANCHOR, PLAYER_SLOT, PLAYER_HEAD } from '../render/layers.js';
+import { allocHoodSlot, releaseHoodSlot, HOOD_ID0, FIG_ANCHOR } from '../render/layers.js';
 import { roundedBox } from '../world/geom.js';
 import { STREET } from '../world/Street.js';
 import { buildTommyGeometry } from '../player/Viewmodel.js';
@@ -30,14 +30,9 @@ const SHADE = {
   coat: 0.014, collar: 0.013, lapel: 0.013, belt: 0.005, hat: 0.007, band: 0.002,
   skin: 0.024, hair: 0.004, trousers: 0.006, slideTop: 0.2, nose: 0.024, shoes: 0.004, glove: 0.01, gun: 0.003, shirt: 0.13, tie: 0.004,
 };
-// long, medium, short; [3] the player's own coat (Phase 3b: the over-the-
-// shoulder body), longer still: mid-shin
-const COAT_HEM = [0.4, 0.51, 0.62, 0.3];
+// long, medium, short
+const COAT_HEM = [0.4, 0.51, 0.62];
 const BRIM_R = [0.168, 0.19];            // narrow, wide
-// the player's own brim (Phase 3c): seen edge-on from half a metre, 0.19
-// printed as a sombrero; 0.15 with a steeper snap reads as the reference
-// shooter's fedora (front turned down, back up)
-const PLAYER_BRIM = 0.15;
 const HEIGHT = [0.96, 1.04];
 
 // ---------------------------------------------------------------------------
@@ -50,12 +45,6 @@ const HEIGHT = [0.96, 1.04];
 let Q = 1;
 const seg = (n, min = 4) => Math.max(min, Math.round(n * Q));
 export const LOD_Q = [0.56, 0.3, 0.16];
-// the player's body (PlayerBody.js) is seen from ~0.5 m: full tessellation
-const PLAYER_Q = 1.0;
-// (seen from half a metre, the player's felt hat takes the key light a
-// little: the crown and the brim print dry-brush grey against the black
-// band, like the reference's shooter, instead of a flat black cut-out)
-const PLAYER_HAT = 0.02;
 const LOD_FAR = [12, 17];      // switch-out distances (m); back in 1.5 m closer
 
 // ---------------------------------------------------------------------------
@@ -177,33 +166,9 @@ const TORSO = tableSampler([
   [1.499, 0.12, 0.081, 0.087, -0.019, 2.4],
   [1.506, 0.074, 0.068, 0.074, -0.020, 2.2],
 ]);
-// the player's own (Phase 3c review): a padded, SQUARE shoulder line - the
-// shoulder rows held wide up to the collar and squarer in section. Seen from
-// half a metre behind his right shoulder the Hoods' sloping round shoulder
-// printed as an inflated bulb; the reference's coat has a squared shoulder
-// (Phase 3d: the back rows TAPERED - the back's depth falls off steadily
-// from the waist to the collar, 13.3 -> 9 cm, instead of swelling to 13.9 cm
-// at the shoulder blades: seen from behind the raised right shoulder the
-// full rows printed as one sphere, a dome from the collar to the elbow; the
-// back is now a slope up to a squared shoulder line, the reference's yoke)
-const TORSO_PLAYER = tableSampler([
-  [0.95, 0.196, 0.138, 0.138, 0.000, 2.3],
-  [1.03, 0.188, 0.131, 0.131, 0.004, 3.0],
-  [1.12, 0.200, 0.140, 0.122, 0.010, 4.5],
-  [1.22, 0.215, 0.150, 0.112, 0.014, 6.0],
-  [1.31, 0.229, 0.154, 0.104, 0.012, 6.5],
-  [1.38, 0.238, 0.147, 0.100, 0.004, 6.5],
-  [1.425, 0.241, 0.132, 0.100, -0.006, 6.5],
-  [1.455, 0.242, 0.117, 0.100, -0.012, 6.0],
-  [1.476, 0.240, 0.104, 0.099, -0.016, 5.5],
-  [1.49, 0.222, 0.093, 0.097, -0.018, 4.6],
-  [1.499, 0.15, 0.083, 0.092, -0.019, 3.4],
-  [1.506, 0.074, 0.068, 0.080, -0.020, 2.4],
-]);
-let TORSO_CUR = TORSO;
 const TORSO_Y0 = 0.95, TORSO_Y1 = 1.506;
 function torsoPoint(theta, y, out = new THREE.Vector3(), grow = 0) {
-  const [rx, rzF, rzB, cz, n] = TORSO_CUR(y);
+  const [rx, rzF, rzB, cz, n] = TORSO(y);
   const s = Math.sin(theta), c = Math.cos(theta);
   const e = 2 / n;
   out.set((rx + grow) * spow(s, e), y, cz + (c > 0 ? rzF + grow : rzB + grow) * spow(c, e));
@@ -216,103 +181,32 @@ function torsoNormal(theta, y, out = new THREE.Vector3()) {
   out.crossVectors(du, dv).normalize();
   // outward = away from the axis
   const p = torsoPoint(theta, y);
-  if (out.x * p.x + out.z * (p.z - TORSO_CUR(y)[3]) < 0) out.negate();
+  if (out.x * p.x + out.z * (p.z - TORSO(y)[3]) < 0) out.negate();
   return out;
 }
 
 // ---------------------------------------------------------------------------
 // skin weights: each returns [[bone, w], ...]
 const B = JOINT_INDEX;
-function torsoWeights(x, y, player = false) {
+function torsoWeights(x, y) {
   const b1 = sstep(1.02, 1.14, y), b2 = sstep(1.2, 1.33, y);
   const w = [[B.hips, 1 - b1], [B.spine, b1 * (1 - b2)], [B.chest, b1 * b2]];
   const ax = Math.abs(x);
-  // (the player's, Phase 3e: none of the arm's under the yoke slab - rigid
-  // on the chest - or the raised arm heaves the pressed shoulder through it)
-  const wa = 0.18 * sstep(0.15, 0.23, ax) * sstep(1.32, 1.42, y) * (player ? 1 - sstep(1.4, 1.44, y) : 1);
+  const wa = 0.18 * sstep(0.15, 0.23, ax) * sstep(1.32, 1.42, y);
   if (wa > 0) { for (const e of w) e[1] *= 1 - wa; w.push([x > 0 ? B.upperArmL : B.upperArmR, wa]); }
   return w;
 }
 
 // ---------------------------------------------------------------------------
-// The player's YOKE (Phase 3e): seen from half a metre behind his raised
-// right shoulder, the torso's rounded top corner and the sleeve's cap merged
-// into one convex cushion, and a yoke line drawn on the surface's up-ness
-// S-curved round it. The reference's coat has a squared yoke: one straight
-// arris from the collar out to the sleeve's corner, the sleeve's hard edge
-// under it. So a thin flat slab lies over his shoulders (chest bind space,
-// ax = |x|): its top two planes falling from the collar's base (level across
-// the back of the neck out to xc, at y0) to the sleeve cap's corner (x1, y1);
-// its back edge two straight lines from behind the neck (zbC) out to the
-// corners (zb1), its front over the chest (zfC -> zf1) - narrowing in plan
-// to the sleeve cap's own depth at the shoulder point; 1.8 cm thick at the
-// front, a 4 mm wedge at the back, so its top meets the coat on one sharp
-// arris. It dives under the collar's band round the neck (hole). The torso's
-// own top corner is pressed flat under it and its back drawn in to the arris
-// line (buildTorso), so nothing of the old cushion shows past it. A rigid
-// mesh on the chest bone with an ink id of its own (layers.PLAYER_SLOT.yoke):
-// the ink draws the arris where the yoke's id meets the coat's.
-const YOKE = { xc: 0.07, x1: 0.25, y0: 1.518, y1: 1.472, zbC: -0.118, zb1: -0.078, zfC: 0.07, zf1: 0.04, tf: 0.018, tb: 0.004, hole: 0.083, holeZ: -0.02 };
-const yokeY = (ax) => lerp(YOKE.y0, YOKE.y1, clamp((ax - YOKE.xc) / (YOKE.x1 - YOKE.xc), 0, 10));
-const yokeZb = (ax) => lerp(YOKE.zbC, YOKE.zb1, ax / YOKE.x1);
-const yokeZf = (ax) => lerp(YOKE.zfC, YOKE.zf1, ax / YOKE.x1);
-function buildYoke() {
-  // (x across both shoulders, t from the back edge to the front)
-  const at = (x, t, down, p) => {
-    const ax = Math.abs(x);
-    const z = lerp(yokeZb(ax), yokeZf(ax), t);
-    // the collar's band round the neck: the slab dives 5 cm into the torso
-    // over its last 8 mm inside the band, hidden by it
-    const e = Math.hypot(x / YOKE.hole, (z - YOKE.holeZ) / YOKE.hole);
-    return p.set(x, yokeY(ax) - down - 0.05 * sstep(1.0, 0.9, e), z);
-  };
-  const thick = (t) => lerp(YOKE.tb, YOKE.tf, t);
-  const X = (u) => lerp(-YOKE.x1, YOKE.x1, u);
-  const NX = seg(110, 40), NZ = seg(28, 10);
-  const faces = [
-    // top (normals up) and bottom
-    [grid(NX, NZ, (u, v, p) => at(X(u), v, 0, p), { wrapU: false }), new THREE.Vector3(0, -1, 0)],
-    [grid(NX, NZ, (u, v, p) => at(X(u), v, thick(v), p), { wrapU: false }), new THREE.Vector3(0, 1, 0)],
-    // the back edge (the wedge's 4 mm) and the front edge
-    [grid(NX, 1, (u, v, p) => at(X(u), 0, v * thick(0), p), { wrapU: false }), new THREE.Vector3(0, 0, 1)],
-    [grid(NX, 1, (u, v, p) => at(X(u), 1, v * thick(1), p), { wrapU: false }), new THREE.Vector3(0, 0, -1)],
-    // the two outer ends, over the sleeves' caps
-    ...[0, 1].map((u0) => [grid(NZ, 1, (u, v, p) => at(X(u0), u, v * thick(u), p), { wrapU: false }), new THREE.Vector3(u0 ? -1 : 1, 0, 0)]),
-  ];
-  // (each face flat-shaded on its own: the arrises are hard; normals turned
-  // away from a point on the face's inner side)
-  return faces.map(([geo, dir]) => {
-    const P = geo.getAttribute('position');
-    const c = new THREE.Vector3();
-    for (let i = 0; i < P.count; i++) c.add(new THREE.Vector3().fromBufferAttribute(P, i));
-    c.divideScalar(P.count).addScaledVector(dir, 0.05);
-    orientOut(geo, c);
-    return { geo, shade: SHADE.coat, weights: () => [[B.chest, 1]] };
-  });
-}
-
 // ---------------------------------------------------------------------------
 // part builders: each returns { geo, shade(x,y,z,u,v) | number, weights(x,y,z,u,v) }
-function buildTorso(player = false) {
+function buildTorso() {
   const nu = seg(96, 24), nv = seg(44, 14);
-  TORSO_CUR = player ? TORSO_PLAYER : TORSO;
   const geo = grid(nu, nv, (u, v, p) => {
     // denser rings toward the shoulders
     const y = TORSO_Y0 + (TORSO_Y1 - TORSO_Y0) * (1 - Math.pow(1 - v, 1.35));
     torsoPoint(u * TAU, y, p);
-    // (the player's, Phase 3e: the shoulders' rounded top corner pressed
-    // flat 3 mm under the yoke slab's plane, so no part of it pokes through)
-    // (and its back drawn in to the yoke's arris line over the top 4.5 cm,
-    // so the back runs up to that one straight edge instead of bulging round
-    // behind it)
-    if (player) {
-      const ax = Math.abs(p.x), yt = yokeY(ax);
-      p.y = Math.min(p.y, yt - 0.003);
-      const zb = yokeZb(ax) + 0.003;
-      if (p.z < zb) p.z = lerp(p.z, zb, sstep(yt - 0.045, yt - 0.006, p.y));
-    }
   });
-  TORSO_CUR = TORSO;
   orientOut(geo, new THREE.Vector3(0, 1.2, 0));
   // the shirt and tie show in the V between the lapels
   const shade = (x, y, z, u) => {
@@ -324,12 +218,12 @@ function buildTorso(player = false) {
     }
     return SHADE.coat;
   };
-  return { geo, shade, weights: (x, y) => torsoWeights(x, y, player) };
+  return { geo, shade, weights: (x, y) => torsoWeights(x, y) };
 }
 
 // skirt: open at the front, the left panel lapping over the right; each
 // panel follows its own thigh, the back follows both.
-function buildSkirt(hemY, player = false) {
+function buildSkirt(hemY) {
   const y0 = 1.06;
   const S = tableSampler([
     [0, 0.188, 0.134, 0.134, 0.004],
@@ -349,9 +243,6 @@ function buildSkirt(hemY, player = false) {
     // outer (left) panel sits proud of the inner (right) one where they lap
     const lap = 0.012 * (1 - sstep(0, 0.09, u)) - 0.007 * sstep(0.91, 1, u);
     rx = rx * (1 + fold) + lap; rzF = rzF * (1 + fold) + lap; rzB = rzB * (1 + fold) + lap;
-    // (the player's, Phase 3d: a small flare at the hem - ~8 % over its last
-    // quarter - so the long coat ends in a skirt, not a tube)
-    if (player) { const fl = 1 + 0.08 * sstep(0.7, 1, v); rx *= fl; rzF *= fl; rzB *= fl; }
     const s = Math.sin(th), c = Math.cos(th);
     const y = lerp(y0, hemY + 0.012 * Math.sin(3 * th + 0.7) * v, Math.pow(v, 0.92));
     p.set(rx * spow(s, 2 / 2.3), y, cz + (c > 0 ? rzF : rzB) * spow(c, 2 / 2.3));
@@ -383,39 +274,18 @@ function buildBelt() {
 
 // raised collar: a flared band around the neck, open at the front, higher
 // at the back
-// (player, Phase 3c: 3.5 cm lower at the back and less flared - from the
-// lens behind his shoulder the full collar stood round the head like a
-// funnel and hid the neck the reference's shooter shows)
-function buildCollar(player = false) {
+function buildCollar() {
   const th0 = 0.5;
   const nu = seg(64, 16), nv = seg(10, 3);
   const geo = grid(nu, nv, (u, v, p) => {
     const th = th0 + u * (TAU - 2 * th0);
     const back = (1 - Math.cos(th)) * 0.5;               // 0 front .. 1 back
     const yb = 1.482 + 0.01 * back;
-    // (player, second round: the back turned up again, 5.5 cm, and the
-    // flare kept off - with his head sunk onto the stock the collar is what
-    // the lens sees under the hat's back, as in the reference, where the
-    // turned-up collar stands to the ear and there is no neck column)
-    // (and low at the sides: the lit side of the neck shows between the jaw
-    // and the collar under the ear, as in the reference, instead of a black
-    // band standing to the jaw all round)
-    // (Phase 3c review: a V cut into the player's at the centre back, 4 cm
-    // deep - the turned-up collar stands in two wings and the nape shows
-    // between the hat and the coat; square across the back it cut the head
-    // off the coat on a flat line)
-    const vcut = player ? 0.07 * Math.exp(-(((th - Math.PI) / 0.45) ** 2)) : 0;
-    const yt = player ? 1.508 + 0.085 * Math.pow(back, 2.4) - vcut : 1.535 + 0.06 * Math.pow(back, 0.8);
+    const yt = 1.535 + 0.06 * Math.pow(back, 0.8);
     const y = lerp(yb, yt, v);
     // stands up close around the neck, the top edge turned out a little
-    // (player: the top edge rolled OUT, a turned-up collar's fold, not a
-    // stiff tube round the neck - from behind the tube read as a neck brace)
-    const fl = player ? 1.6 : 1;
-    const rx = lerp(0.086, 0.094, v) + 0.008 * fl * v * v * v;
-    // (the player's leans in over the nape toward the top, 2 cm at the back:
-    // from behind it is the coat rising to the hair, not a funnel with the
-    // neck standing in it)
-    const rz = lerp(0.082, 0.09, v) + 0.007 * fl * v * v * v - (player ? 0.02 * v * v * back : 0);
+    const rx = lerp(0.086, 0.094, v) + 0.008 * v * v * v;
+    const rz = lerp(0.082, 0.09, v) + 0.007 * v * v * v;
     const cz = lerp(-0.018, -0.026, v);
     p.set(rx * Math.sin(th), y, cz + rz * Math.cos(th));
   }, { wrapU: false });
@@ -444,11 +314,7 @@ function buildLapel(sgn) {
 }
 
 // sleeve: hangs from the shoulder joint, domed top under the coat's shoulder
-// (the player's, Phase 3c review: the cap ~15 % smaller and a seam crease
-// round it 3.5 cm under the joint - from half a metre behind his raised right
-// arm the full round cap printed as an inflated bulb, a puffer sleeve; the
-// seam squares the shoulder line off where the sleeve is set in)
-function buildSleeve(sgn, player = false) {
+function buildSleeve(sgn) {
   const J = BIND[sgn > 0 ? 'upperArmL' : 'upperArmR'];
   // [d below the joint, r]
   const prof = [
@@ -456,30 +322,17 @@ function buildSleeve(sgn, player = false) {
     [0.15, 0.079], [0.24, 0.075], [0.3, 0.073], [0.36, 0.071], [0.45, 0.068], [0.52, 0.067],
     [0.545, 0.071], [0.556, 0.069], [0.56, 0.062], [0.55, 0.052],
   ];
-  // (Phase 3d: the player's cap FLATTENED - its dome cut to a flat top 2.6 cm
-  // above the joint, turned over a tight corner - and ~25 % thinner: from
-  // behind the raised arm the round cap was the apex of a dome from the collar
-  // to the elbow; flat-topped it squares the shoulder off into a yoke corner)
-  if (player) prof.splice(0, 5, [-0.026, 0.0], [-0.026, 0.078], [-0.018, 0.083], [0.0, 0.083]);
   const nu = seg(40, 12), nv = seg(prof.length * 3, prof.length + 4);
   const geo = grid(nu, nv, (u, v, p) => {
-    let [d, r] = profileAt(prof, v);
-    if (player) r *= (1 - 0.25 * sstep(0.22, 0.06, d)) * (1 - 0.07 * Math.exp(-(((d - 0.035) / 0.007) ** 2)));
+    const [d, r] = profileAt(prof, v);
     const th = u * TAU;
-    if (player) {
-      const e = 2 / lerp(3.8, 2.2, sstep(0.3, 0.5, d));
-      p.set(J.x + r * 0.93 * spow(Math.sin(th), e), J.y - d, J.z + r * spow(Math.cos(th), e));
-      // (Phase 3e: the flat cap's inboard half carried 1 cm further in,
-      // under the yoke slab's outer end, so the slab laps over the sleeve)
-      if (Math.sin(th) * sgn < 0) p.x -= sgn * 0.01 * sstep(0.06, 0.0, d) * Math.min(1, -Math.sin(th) * sgn * 3);
-    } else p.set(J.x + r * 0.93 * Math.sin(th), J.y - d, J.z + r * Math.cos(th));
+    p.set(J.x + r * 0.93 * Math.sin(th), J.y - d, J.z + r * Math.cos(th));
   });
   orientOut(geo, new THREE.Vector3(J.x, J.y - 0.28, J.z));
   const weights = (x, y) => {
     const d = J.y - y;
     const we = sstep(0.25, 0.35, d);
-    const wc = player ? 0.8 * sstep(0.03, -0.026, d) : 0;
-    return [[B.chest, wc], [sgn > 0 ? B.upperArmL : B.upperArmR, (1 - we) * (1 - wc)], [sgn > 0 ? B.forearmL : B.forearmR, we]];
+    return [[sgn > 0 ? B.upperArmL : B.upperArmR, 1 - we], [sgn > 0 ? B.forearmL : B.forearmR, we]];
   };
   return { geo, shade: SHADE.coat, weights };
 }
@@ -525,7 +378,7 @@ function buildShoe(sgn) {
   return { geo, shade: SHADE.shoes, weights: () => [[sgn > 0 ? B.footL : B.footR, 1]] };
 }
 
-function buildHead(player = false) {
+function buildHead() {
   const C = new THREE.Vector3(0, 1.655, 0.01);
   const R = [0.077, 0.1, 0.094];
   const nu = seg(64, 16), nv = seg(44, 12);
@@ -537,8 +390,7 @@ function buildHead(player = false) {
     // nose, brow, ears, back of the skull
     r += 0.24 * Math.exp(-((dx / 0.13) ** 2) - (((dy + 0.1) / 0.2) ** 2)) * Math.max(0, dz) ** 6;
     r += 0.07 * Math.exp(-((dx / 0.45) ** 2) - (((dy - 0.28) / 0.1) ** 2)) * Math.max(0, dz) ** 2;
-    // (the player's ears are shells of their own, buildEar)
-    if (!player) r += 0.2 * Math.exp(-(((Math.abs(dx) - 0.97) / 0.07) ** 2) - (((dy - 0.02) / 0.22) ** 2) - (((dz + 0.08) / 0.2) ** 2));
+    r += 0.2 * Math.exp(-(((Math.abs(dx) - 0.97) / 0.07) ** 2) - (((dy - 0.02) / 0.22) ** 2) - (((dz + 0.08) / 0.2) ** 2));
     // back of the skull: fuller above, tucking in toward the nape
     r += 0.1 * Math.exp(-(((dy - 0.2) / 0.35) ** 2) - (((dz + 0.9) / 0.35) ** 2));
     r -= 0.06 * Math.exp(-(((dy + 0.55) / 0.25) ** 2) - (((dz + 0.8) / 0.4) ** 2));
@@ -549,15 +401,6 @@ function buildHead(player = false) {
     const jaw = sstep(-0.05, -0.85, dy);
     x *= 1 - 0.2 * jaw;
     z += 0.016 * sstep(-0.35, -0.85, dy) * Math.max(0, dz) - 0.012 * jaw * Math.max(0, -dz);
-    // (the player's, Phase 3e: narrower in x / z - layers.PLAYER_HEAD.k -
-    // so under the lowered brim the skull is narrower than the crown)
-    if (player) {
-      x *= PLAYER_HEAD.k; z *= PLAYER_HEAD.k;
-      // ... and the hair at the nape drawn down 2.5 cm into the collar's V:
-      // the back of the skull tapers into the collar as one hair mass, where
-      // it turned under onto the neck like the bottom of a ball
-      y -= 0.025 * sstep(-0.1, -0.8, dy) * sstep(0.1, 0.7, -dz);
-    }
     p.set(C.x + x, C.y + y, C.z + z);
   });
   orientOut(geo, C);
@@ -574,10 +417,8 @@ function buildHead(player = false) {
 // A small nose (Phase 2b polish): the head sphere's bump was narrower than
 // its tessellation and vanished in profile; a separate little wedge on the
 // face carries the facing direction in a silhouette.
-function buildNose(player = false) {
-  // (the player's rides on his narrower skull: its centre scaled in z about
-  // the head's, layers.PLAYER_HEAD.k)
-  const C = new THREE.Vector3(0, 1.648, player ? 0.01 + 0.091 * PLAYER_HEAD.k : 0.101);
+function buildNose() {
+  const C = new THREE.Vector3(0, 1.648, 0.101);
   const nu = seg(24, 10), nv = seg(14, 6);
   const geo = grid(nu, nv, (u, v, p) => {
     const b = v * Math.PI, a = u * TAU;
@@ -592,54 +433,11 @@ function buildNose(player = false) {
   return { geo, shade: SHADE.nose, weights: () => [[B.head, 1]] };
 }
 
-// The player's ears (Phase 3c): seen from half a metre behind his right
-// shoulder, the head's ear bump melted into the skull; the reference's
-// shooter is read by his ear under the brim. A flattened, cupped shell
-// standing off the side of the head, tipped back, its rim rolled.
-// (Phase 3c review: 1.2 cm further out and 4 mm back, 0.8x - on the
-// skull's silhouette under the brim's shadow, where from behind the shoulder
-// it reads as a bump on the black mass; flush on the side of the skull,
-// seen across its face, it printed as a pale button inside the head)
-// (Phase 3d: 0.8 -> 0.65 and sunk 5 mm into the skull - 12 -> 7 mm out: the
-// reference's ear is a small bump on the black mass drawn by two or three
-// ticks, not a shell standing off the head; at 0.8 its lit rim printed as a
-// pale ring the size of an eye)
-const EAR_OUT = 0.007, EAR_BACK = 0.004, EAR_K = 0.65;
-// (Phase 3e: on the narrower skull - its centre scaled in x / z about the
-// head's, layers.PLAYER_HEAD.k, the shell's own size and stand-off kept)
-function buildEar(sgn) {
-  const K = PLAYER_HEAD.k;
-  const C = new THREE.Vector3(sgn * (0.08 * K + EAR_OUT), 1.652, 0.01 + (-0.022 - EAR_BACK) * K);
-  const nu = seg(28, 10), nv = seg(16, 6);
-  // (turned only a little forward: from behind the shoulder the lens sees
-  // the shell's outer face and its rolled rim - the reference's C - where
-  // at 0.55 rad it saw the shell edge-on, a slot in the skull)
-  const tip = new THREE.Quaternion().setFromEuler(new THREE.Euler(-0.25, -sgn * 0.18, 0));
-  const geo = grid(nu, nv, (u, v, p) => {
-    const b = v * Math.PI, a = u * TAU;
-    const dy = Math.cos(b), q = Math.sin(b);
-    const dx = q * Math.sin(a), dz = q * Math.cos(a);
-    // a shell: thin across (x), taller than deep, the outer face cupped
-    // (the rim stands proud of the bowl)
-    const rim = sstep(0.6, 0.95, Math.hypot(dy, dz));
-    const x = dx * (0.005 + 0.003 * rim) + sgn * 0.002 * rim;
-    const y = dy * 0.03 * (1 - 0.25 * Math.max(0, -dy));
-    const z = dz * 0.0145 * (1 + 0.25 * Math.max(0, dy)) + 0.003 * dy;
-    p.set(x, y, z).multiplyScalar(EAR_K).applyQuaternion(tip).add(C);
-  });
-  orientOut(geo, C.clone().add(new THREE.Vector3(-sgn * 0.01, 0, 0)));
-  return { geo, shade: SHADE.skin, weights: () => [[B.head, 1]] };
-}
-
-// (the player's, Phase 3c review: ~30 % thinner - from behind the shoulder
-// the skull stood on a column as wide as itself, a black egg on a post; a
-// neck narrower than the skull is what makes the nape and the head read)
-function buildNeck(player = false) {
+function buildNeck() {
   const nu = seg(32, 10), nv = seg(10, 3);
-  const k = player ? 0.7 : 1;
   const geo = grid(nu, nv, (u, v, p) => {
     const y = lerp(1.44, 1.63, v), th = u * TAU;
-    const r = (0.054 + 0.006 * (1 - v)) * k;
+    const r = 0.054 + 0.006 * (1 - v);
     p.set(r * Math.sin(th), y, -0.012 + r * 1.06 * Math.cos(th));
   });
   orientOut(geo, new THREE.Vector3(0, 1.53, -0.012));
@@ -652,25 +450,13 @@ function buildNeck(player = false) {
 
 // fedora, in hat-bone space (origin on the brim plane): pinched, creased
 // crown, band, snap brim (front down, back up), brim >= 6 mm thick.
-// ribbon (the player's own hat, Phase 3b review): the band is a grosgrain
-// ribbon standing 3.5 mm proud of the crown, so its top and bottom edges
-// are creases the ink draws, and the ink keeps it a black ribbon between
-// the lit crown and the brim (render/shaders/ink.js, the hero key)
-function buildHat(brimR, crownShade = SHADE.hat, ribbon = false) {
+function buildHat(brimR, crownShade = SHADE.hat) {
   const H = BIND.hat;
-  const band = ribbon
-    ? [[0.1052, 0.0125], [0.1054, 0.0335], [0.1015, 0.0368]]
-    : [[0.1015, 0.014], [0.1015, 0.035]];
   const prof = [
     [0.0, 0.03], [0.06, 0.012], [0.098, 0.0], [brimR - 0.03, -0.001], [brimR - 0.006, 0.001],
-    [brimR, 0.0045], [brimR - 0.004, 0.0085], [brimR - 0.03, 0.0082], [0.104, 0.0095], ...band,
+    [brimR, 0.0045], [brimR - 0.004, 0.0085], [brimR - 0.03, 0.0082], [0.104, 0.0095], [0.1015, 0.014], [0.1015, 0.035],
     // crown: tapers in toward a rounded top (not a cylinder with a lid)
-    // (the player's, Phase 3c: taller, its sides straighter and its top
-    // turned over sharper - from brim height the round crown read as a
-    // bowler; the reference's is a tall pinched teardrop)
-    ...(ribbon
-      ? [[0.0975, 0.038], [0.095, 0.075], [0.0915, 0.101], [0.085, 0.119], [0.068, 0.129], [0.036, 0.1325], [0.0, 0.133]]
-      : [[0.0975, 0.038], [0.0925, 0.066], [0.0855, 0.091], [0.0755, 0.107], [0.058, 0.117], [0.032, 0.1205], [0.0, 0.121]]),
+    [0.0975, 0.038], [0.0925, 0.066], [0.0855, 0.091], [0.0755, 0.107], [0.058, 0.117], [0.032, 0.1205], [0.0, 0.121],
   ];
   const nu = seg(88, 24), nv = seg(prof.length * 4, prof.length + 6);
   const tilt = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(1, 0, 0), 0.06);
@@ -679,20 +465,17 @@ function buildHat(brimR, crownShade = SHADE.hat, ribbon = false) {
     const th = u * TAU;
     const s = Math.sin(th), c = Math.cos(th);
     let h = h0;
-    const crown = r < (ribbon ? 0.1065 : 0.106);
+    const crown = r < 0.106;
     // oval crown, slightly oval brim
     const ox = crown ? 0.85 : lerp(0.85, 0.9, sstep(0.106, brimR, r));
     let x = r * s * ox, z = r * c;
     if (!crown) {
       const w = Math.pow(sstep(0.1, brimR, r), 1.4);
-      // (the player's narrower brim: the same drop over ~half the width -
-      // a steeper snap - and its back turned up a little more)
-      const sb = ribbon ? 1.25 : 1;
-      h += w * (-0.024 * Math.max(0, c) ** 1.5 + 0.017 * sb * Math.max(0, -c) ** 1.5 + 0.007 * s * s);
+      h += w * (-0.024 * Math.max(0, c) ** 1.5 + 0.017 * Math.max(0, -c) ** 1.5 + 0.007 * s * s);
     } else if (h0 > 0.02) {
       // front pinch: the sides of the crown pulled in toward the front
       const hk = sstep(0.045, 0.11, h0);
-      x *= 1 - (ribbon ? 0.24 : 0.16) * hk * Math.max(0, c) ** 1.5;
+      x *= 1 - 0.16 * hk * Math.max(0, c) ** 1.5;
       // the back wall leans in a little toward the top (the crown tapers
       // toward the back as well as the top)
       z += 0.006 * hk * Math.max(0, -c) ** 1.5;
@@ -700,8 +483,8 @@ function buildHat(brimR, crownShade = SHADE.hat, ribbon = false) {
       // the front, still 18 mm where it runs out over the back, so from
       // behind the top of the crown is an M (two rounded lobes and the dip),
       // not the straight edge of a pork-pie
-      const top = ribbon ? sstep(0.08, 0.125, h0) : sstep(0.07, 0.113, h0);
-      h -= top * Math.exp(-((x / (ribbon ? 0.028 : 0.03)) ** 2)) * ((ribbon ? 0.025 : 0.0205) + 0.0025 * c);
+      const top = sstep(0.07, 0.113, h0);
+      h -= top * Math.exp(-((x / 0.03) ** 2)) * (0.0205 + 0.0025 * c);
       // the crown is a touch lower at the front
       h -= 0.008 * Math.max(0, c) * sstep(0.04, 0.12, h0);
     }
@@ -716,21 +499,15 @@ function buildHat(brimR, crownShade = SHADE.hat, ribbon = false) {
   return { geo, shade, weights: () => [[B.hat, 1]] };
 }
 
-// (player: the left glove on the foregrip, Phase 3d review - a BOXY fist,
-// a superellipsoid ~20 % shorter from the wrist to the knuckles, its end a
-// flat face turned over a hard knuckle ridge: the round ovoid printed as a
-// black mound merged into the receiver, a ball on the barrel, not a hand)
-function buildHand(sgn, fist, player = false) {
+function buildHand(sgn, fist) {
   const W = BIND[sgn > 0 ? 'handL' : 'handR'];
-  const box = fist && player;
-  const C = fist ? new THREE.Vector3(W.x, W.y - (box ? 0.052 : 0.058), W.z + 0.004) : new THREE.Vector3(W.x - sgn * 0.004, W.y - 0.075, W.z + 0.006);
-  const R = fist ? [0.029, box ? 0.036 : 0.045, 0.037] : [0.025, 0.082, 0.045];   // (fist ~15 % thinner: Phase 2b)
-  const e = box ? 0.55 : 1;
+  const C = fist ? new THREE.Vector3(W.x, W.y - 0.058, W.z + 0.004) : new THREE.Vector3(W.x - sgn * 0.004, W.y - 0.075, W.z + 0.006);
+  const R = fist ? [0.029, 0.045, 0.037] : [0.025, 0.082, 0.045];   // (fist ~15 % thinner: Phase 2b)
   const nu = seg(32, 10), nv = seg(22, 8);
   const geo = grid(nu, nv, (u, v, p) => {
     const b = v * Math.PI, a = u * TAU;
-    const dy = spow(Math.cos(b), e), q = spow(Math.sin(b), e);
-    const dx = q * spow(Math.sin(a), e), dz = q * spow(Math.cos(a), e);
+    const dy = Math.cos(b), q = Math.sin(b);
+    const dx = q * Math.sin(a), dz = q * Math.cos(a);
     let r = 1;
     // thumb along the front, near the top
     r += 0.35 * Math.exp(-(((dz - 0.8) / 0.3) ** 2) - (((dy - 0.35) / 0.35) ** 2) - (((dx + sgn * 0.2) / 0.5) ** 2));
@@ -850,41 +627,21 @@ function assemble(parts) {
 
 const GEO_CACHE = new Map();
 function hoodGeometry(v, lod = 0) {
-  const key = `${v.coat}_${v.brim}_${lod}_${v.heavy ? 1 : 0}_${v.player ? 1 : 0}`;
+  const key = `${v.coat}_${v.brim}_${lod}_${v.heavy ? 1 : 0}`;
   if (!GEO_CACHE.has(key)) {
-    Q = v.player ? PLAYER_Q : LOD_Q[lod];
+    Q = LOD_Q[lod];
     const near = lod < 2;
     const parts = [
-      buildTorso(!!v.player), buildSkirt(COAT_HEM[v.coat], !!v.player), ...(near ? [buildBelt()] : []), buildCollar(!!v.player), ...(near ? [buildLapel(1), buildLapel(-1)] : []),
-      buildSleeve(1, !!v.player), buildSleeve(-1, !!v.player), buildTrouser(1), buildTrouser(-1), buildShoe(1), buildShoe(-1),
-      buildHead(!!v.player), ...(near ? [buildNose(!!v.player)] : []), buildNeck(!!v.player), buildHat(v.player ? PLAYER_BRIM : BRIM_R[v.brim], v.player ? PLAYER_HAT : SHADE.hat, !!v.player),
-      // (the player's left hand and ears are meshes of their own: playerPart)
-      ...(v.player ? [] : [buildHand(1, false)]), buildHand(-1, true),
+      buildTorso(), buildSkirt(COAT_HEM[v.coat]), ...(near ? [buildBelt()] : []), buildCollar(), ...(near ? [buildLapel(1), buildLapel(-1)] : []),
+      buildSleeve(1), buildSleeve(-1), buildTrouser(1), buildTrouser(-1), buildShoe(1), buildShoe(-1),
+      buildHead(), ...(near ? [buildNose()] : []), buildNeck(), buildHat(BRIM_R[v.brim], SHADE.hat),
+      buildHand(1, false), buildHand(-1, true),
     ];
-    if (!v.heavy && !v.player) parts.push(buildGun());
+    if (!v.heavy) parts.push(buildGun());
     GEO_CACHE.set(key, assemble(parts));
     Q = 1;
   }
   return GEO_CACHE.get(key);
-}
-
-// The player's own ears and left hand (Phase 3c): rigid on one bone each, so
-// they are built as plain meshes (bind space, full tessellation) that
-// PlayerBody hangs on the head and handL bones, each with an ink id of its
-// own (layers.PLAYER_SLOT.ear / .hand): the ink cuts the ear out of the black
-// skull and the glove out of the gun and the coat. (Phase 3e: and the yoke
-// slab over his shoulders, on the chest bone - PLAYER_SLOT.yoke)
-export function playerPartGeometry(kind) {
-  Q = PLAYER_Q;
-  // (the left hand closed on the foregrip: the open hand hung there as a
-  // 16 cm paddle and printed as a black oval under the barrel)
-  const parts = kind === 'ears' ? [buildEar(1), buildEar(-1)] : kind === 'yoke' ? buildYoke() : [buildHand(1, true, true)];
-  const geo = assemble(parts);
-  Q = 1;
-  geo.deleteAttribute('skinIndex');
-  geo.deleteAttribute('skinWeight');
-  geo.computeBoundingSphere();
-  return geo;
 }
 
 let MAT = null;
@@ -982,7 +739,7 @@ export function hoodVariant(v = {}) {
     const h = (n) => Math.abs(Math.sin(v * 12.9898 + n * 78.233) * 43758.5453) % 1;
     v = { coat: Math.floor(h(1) * 3), brim: Math.floor(h(2) * 2), tall: Math.floor(h(3) * 2), cig: h(4) < 0.4 };
   }
-  return { coat: v.coat ?? 1, brim: v.brim ?? 1, tall: v.tall ?? 1, cig: !!v.cig, heavy: !!v.heavy, player: !!v.player };
+  return { coat: v.coat ?? 1, brim: v.brim ?? 1, tall: v.tall ?? 1, cig: !!v.cig, heavy: !!v.heavy };
 }
 
 // the flying hat's tumble per death (axis in the Hood's frame, rad/s, sense)
@@ -996,13 +753,10 @@ const HAT_TUMBLE = {
 
 // ---------------------------------------------------------------------------
 export class Hood {
-  // ghost (Phase 3b, the player's own body): no collider, no hit volumes, no
-  // place in the bullets' world, one full-detail mesh; the owner drives it
-  constructor(world, { pos = new THREE.Vector3(), yaw = 0, variant = {}, ghost = false } = {}) {
+  constructor(world, { pos = new THREE.Vector3(), yaw = 0, variant = {} } = {}) {
     this.world = world;
-    this.ghost = ghost;
     this.variant = hoodVariant(variant);
-    this.slot = allocHoodSlot(this.variant.player ? PLAYER_SLOT.body : -1);
+    this.slot = allocHoodSlot();
     this.inkId = HOOD_ID0 + Math.max(0, this.slot);
     this.scale = HEIGHT[this.variant.tall];
 
@@ -1028,8 +782,7 @@ export class Hood {
     let skelVer = 0;
     const skelUpdate = skeleton.update.bind(skeleton);
     skeleton.update = () => { if (skelVer === this._poseVer) return; skelVer = this._poseVer; skelUpdate(); };
-    this.lods = this.variant.player ? [0, 0, 0].map(() => hoodGeometry(this.variant, 0))
-      : [hoodGeometry(this.variant, 0), hoodGeometry(this.variant, 1), hoodGeometry(this.variant, 2)];
+    this.lods = [hoodGeometry(this.variant, 0), hoodGeometry(this.variant, 1), hoodGeometry(this.variant, 2)];
     this.lod = 0;
     const mesh = new THREE.SkinnedMesh(this.lods[0], hoodMaterial(world));
     mesh.name = 'hoodBody';
@@ -1044,7 +797,7 @@ export class Hood {
     this.skeleton = skeleton;
 
     if (this.variant.cig) this.addCigarette();
-    if (this.variant.heavy && !ghost) this.addTommy();
+    if (this.variant.heavy) this.addTommy();
 
     // ink: one figure id for the whole man; the ink pass anchors his brush
     for (const o of [mesh, ...(this.cig || []), ...(this.tommy ? [this.tommy] : [])]) { o.userData.inkId = this.inkId; o.userData.inkFigure = true; }
@@ -1052,7 +805,7 @@ export class Hood {
     // hit volumes on the bones
     this.hitMeshes = [];
     const hitMat = new THREE.MeshBasicMaterial({ visible: false });
-    for (const [joint, kind, r, len, off] of ghost ? [] : HIT_PARTS) {
+    for (const [joint, kind, r, len, off] of HIT_PARTS) {
       const m = new THREE.Mesh(hitGeo(kind, r, len), hitMat);
       m.visible = false;
       m.name = 'hit_' + joint;
@@ -1086,12 +839,9 @@ export class Hood {
     obj.scale.setScalar(this.scale);
     world.scene.add(obj);
     // collision + raycast hooks
-    this.collider = null;
-    if (!ghost) {
-      this.collider = world.colliders.addCircle(pos.x, pos.z, 0.32 * this.scale, 'hood');
-      this.collider.hood = this;
-      world.solids.push(...this.hitMeshes);
-    }
+    this.collider = world.colliders.addCircle(pos.x, pos.z, 0.32 * this.scale, 'hood');
+    this.collider.hood = this;
+    world.solids.push(...this.hitMeshes);
     this.afterPose = null;    // (hood, dt) => void: after the look-at / coat pass
     this.update(0, 0);
   }

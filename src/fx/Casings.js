@@ -17,7 +17,7 @@ export class Casings {
     geo.rotateZ(Math.PI / 2);   // lies along x
     // inked, not rendered: a dark matte case that prints as a black tick with
     // at most a rim glint (a glossy metal case printed as a CG-shaded tube
-    // with a white cap in the hero frame). It joins the WORLD layer so the
+    // with a white cap). It joins the WORLD layer so the
     // id pass sees it and the ink pass treats it as a small figure.
     const mat = new THREE.MeshStandardMaterial({ color: 0x161616, roughness: 0.9, metalness: 0.0 });
     this.mesh = new THREE.InstancedMesh(geo, mat, MAX);

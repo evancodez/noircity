@@ -67,10 +67,7 @@ Study the reference and match these properties, in priority order:
 - First-person. Vertical FOV ~70°, camera height 1.65 m. The viewmodel (right
   glove + Tommy gun) sits low and to the right, so the left of the frame is
   open to the street like the reference. Weapon bob, sway, recoil.
-- **Optional `V` key: over-the-shoulder camera** that shows the player's own
-  silhouette (fedora, coat, Tommy gun) large in the bottom-left, matching the
-  reference composition exactly. Reuse the enemy character model. Implement in
-  Phase 3; it must not compromise the first-person default.
+- First person only: the player is never seen, only his hands and the gun.
 
 ---
 
@@ -312,7 +309,7 @@ The app must honour these URL params:
   `lamp` (close to a lamp cone with rain), `cars` (a couple of cars, 6 m away),
   `hood` (a Hood 5 m away in aim pose, facing the camera, plus one at 25 m),
   `hoods` (a firefight staged: 4 Hoods at 8–30 m in mixed poses, one dying
-  with blood), `wreck` (a burning car), `ots` (over-the-shoulder camera).
+  with blood), `wreck` (a burning car).
 - `t=<seconds>`: fast-forward the simulation clock by that many seconds after
   load (run fixed-step updates) so staged effects are in a known state.
 - `hud=0` hides the HUD. `debug=1` shows the stats overlay.
@@ -363,7 +360,7 @@ the *why* of shader tricks.
   Accept when `shot=hoods` looks like the reference *with* the figures.
 - **Phase 3 – Reactivity & polish**: destructible cars/lamps/windows,
   explosions and fire, decals, train, lightning, audio, title/end cards,
-  over-the-shoulder camera, performance. Accept when a 2-minute play session
+  performance. Accept when a 2-minute play session
   feels alive and stays at 60 fps.
 
 Every builder must take its own screenshots with `tools/shot.sh`, look at them
