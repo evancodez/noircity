@@ -1,9 +1,12 @@
 // Scripted play-through of the real game page (no ?shot=) in headless Chrome,
 // driven through the DevTools protocol with TRUSTED input events (the same
 // path as a user's mouse and keyboard): the title card, click to begin
-// (pointer lock), WASD, mouse look, LMB fire, R reload, V camera, M mute,
-// pointer-lock loss -> pause -> click to resume, death -> THE END -> click to
-// try again. Prints one line per check and the #errlog contents.
+// (pointer lock) into scene 1 (the diner: seated at the counter, E moves
+// the stub beats on), X off the stool, out through the diner's door onto
+// the street and back in (walk mode), mouse look, the Tommy gun put in the
+// hands (LMB fire, R reload), M mute, pointer-lock loss -> pause -> click
+// to resume, death -> THE END -> click to try again. Prints one line per
+// check and the #errlog contents.
 //   node tools/playtest.mjs [width] [height]
 import { spawn } from 'node:child_process';
 
@@ -58,23 +61,59 @@ try {
   const snd = await js(`({ live: N.sfx.live, ctx: N.sfx.ctx && N.sfx.ctx.state, loops: [...N.sfx.loops.keys()].join(',') })`);
   check('a key on the title opens the sound (rain bed)', snd.live && /rainBed/.test(snd.loops), JSON.stringify(snd));
 
-  // ---- click to begin -----------------------------------------------------------------
+  // ---- click to begin: the diner -----------------------------------------------------
   await click(W / 2, H / 2);
   await sleep(600);
   const s1 = await js(`({ locked: document.pointerLockElement === N.renderer.domElement, state: N.game.state,
-    title: !document.getElementById('title').classList.contains('hidden'), vm: N.game.vm.visible, hud: !document.getElementById('hud').classList.contains('titled') })`);
-  check('click to begin: pointer lock, playing, gun in hand, HUD up', s1.locked && s1.state === 'playing' && !s1.title && s1.vm && s1.hud, JSON.stringify(s1));
+    title: !document.getElementById('title').classList.contains('hidden') })`);
+  check('click to begin: pointer lock, playing', s1.locked && s1.state === 'playing' && !s1.title, JSON.stringify(s1));
   if (!s1.locked) throw new Error('no pointer lock in this headless build: the rest needs it');
+  await sleep(1200);
+  const sc = () => js(`({ scene: N.game.scenes.current && N.game.scenes.current.id, beat: N.game.scenes.beat, mode: N.controller.mode, hands: N.game.hands.set,
+    gun: N.game.vm.gun.visible, clip: N.game.hands.current, prompt: document.querySelector('#hud .prompt').style.display !== 'none' ? document.querySelector('#hud .prompt').textContent : '',
+    eye: N.camera.position.toArray().map((v) => +v.toFixed(2)), room: N.game._room })`);
+  const d0 = await sc();
+  check('the title leads into scene 1: seated at the counter, the smoke set, no gun', d0.scene === 'diner' && d0.beat === 'settle' && d0.mode === 'seated' && d0.hands === 'smoke' && !d0.gun && d0.room === 'diner', JSON.stringify(d0));
+  const until = async (expr, ms) => { for (let t = 0; t < ms; t += 150) { if (await js(expr)) return true; await sleep(150); } return false; };
+  await until(`document.querySelector('#hud .prompt').style.display !== 'none'`, 3000);
+  await key('KeyE', 'e');
+  await sleep(300);
+  const d1 = await sc();
+  check('E lights up (the hands play lightUp)', d1.clip === 'lightUp', JSON.stringify(d1));
+  const toOrder = await until(`N.game.scenes.beat === 'order'`, 5000);
+  const toScotch = await until(`/scotch/.test(document.querySelector('#hud .prompt').textContent) && document.querySelector('#hud .prompt').style.display !== 'none'`, 8000);
+  await key('KeyE', 'e');
+  const toDrink = await until(`N.game.scenes.beat === 'drink'`, 14000);
+  for (let k = 0; k < 3; k++) { await until(`/drink/.test(document.querySelector('#hud .prompt').textContent) && document.querySelector('#hud .prompt').style.display !== 'none'`, 4000); await key('KeyE', 'e'); await sleep(2300); }
+  const toPay = await until(`N.game.scenes.beat === 'pay'`, 4000);
+  const fill = await js(`N.game.stage.part('diner').items.get('glass').userData.fill`);
+  check('E moves the beats on: settle, order (Dot pours), drink (three sips empty the glass), pay', toOrder && toScotch && toDrink && toPay && fill < 0.01, JSON.stringify({ toOrder, toScotch, toDrink, toPay, fill }));
 
-  // ---- WASD, mouse look ------------------------------------------------------------------
-  const p0 = await js('N.controller.pos.toArray()');
-  await key('KeyW', 'w', 700);
-  const p1 = await js('N.controller.pos.toArray()');
-  const moved = Math.hypot(p1[0] - p0[0], p1[2] - p0[2]);
-  check('W walks forward', moved > 1.2, `moved ${moved.toFixed(2)} m`);
-  await key('KeyD', 'd', 400);
-  const p2 = await js('N.controller.pos.toArray()');
-  check('D strafes', Math.hypot(p2[0] - p1[0], p2[2] - p1[2]) > 0.5);
+  // ---- X: off the stool; out through the door and back in ------------------------------
+  await key('KeyX', 'x');
+  await sleep(200);
+  const w0 = await sc();
+  check('X stands up off the stool (walk mode)', w0.mode === 'walk', JSON.stringify(w0));
+  // (walked by the controller's own input, as the battle's autopilot does:
+  // turn toward a point, W until there; the colliders and the room's walls
+  // decide where he can go)
+  const walkTo = async (x, z, ms = 6000) => js(`(async () => { const C = N.controller;
+    for (let t = 0; t < ${ms}; t += 50) { const dx = ${x} - C.pos.x, dz = ${z} - C.pos.z; if (Math.hypot(dx, dz) < 0.3) break;
+      C.yaw = Math.atan2(-dx, -dz); C.auto = { f: 1, s: 0 }; await new Promise((r) => setTimeout(r, 50)); }
+    C.auto = null; return [+C.pos.x.toFixed(2), +C.pos.z.toFixed(2)]; })()`);
+  await walkTo(-12.85, 3.0); await walkTo(-12.85, 0.6); await walkTo(-11.2, 0.6);
+  const out = await walkTo(-8.6, 0.6);
+  const w1 = await sc();
+  check('out through the diner door onto the pavement', out[0] > -9.4 && w1.room === 'street', JSON.stringify({ out, room: w1.room }));
+  await walkTo(-8.8, 4.0);
+  const blocked = await walkTo(-12.5, 4.0, 2500);
+  check('the front wall stops him (no way in but the door)', blocked[0] > -10.2, JSON.stringify(blocked));
+  await walkTo(-8.8, 0.6); await walkTo(-11.6, 0.6);
+  const back = await walkTo(-12.85, 2.0);
+  const w2 = await sc();
+  check('back in through the door', back[0] < -12 && w2.room === 'diner', JSON.stringify({ back, room: w2.room }));
+
+  // ---- mouse look ------------------------------------------------------------------------------
   const y0 = await js('N.controller.yaw');
   for (let i = 1; i <= 5; i++) await mouse('mouseMoved', W / 2 + 40 * i, H / 2, { button: 'none' });
   await sleep(100);
@@ -89,13 +128,14 @@ try {
   }
   check('mouse look turns the view', Math.abs(y1 - y0) > 0.05, `${lookVia}: yaw ${y0.toFixed(3)} -> ${y1.toFixed(3)}`);
 
-  // ---- fire, reload -------------------------------------------------------------------------
+  // ---- the Tommy gun in the hands: fire, reload --------------------------------------------------
+  await js('(N.game.player.weapons.equip("tommy"), 1)');
   const shots0 = await js('N.game.counters.shots');
   await mouse('mousePressed', W / 2, H / 2);
   await sleep(600);
   await mouse('mouseReleased', W / 2, H / 2);
-  const f = await js('({ shots: N.game.counters.shots, ammo: N.game.weapon.ammo, casings: N.game.fx.casings.list.length })');
-  check('LMB fires the Tommy gun', f.shots - shots0 >= 4 && f.ammo < 50, JSON.stringify(f));
+  const f = await js('({ shots: N.game.counters.shots, ammo: N.game.weapon.ammo, casings: N.game.fx.casings.list.length, gun: N.game.vm.gun.visible })');
+  check('the Tommy gun in hand: LMB fires', f.gun && f.shots - shots0 >= 4 && f.ammo < 50, JSON.stringify(f));
   await key('KeyR', 'r');
   await sleep(200);
   const r1 = await js(`({ reloading: N.game.weapon.reloading, note: document.querySelector('#hud .note').textContent })`);
@@ -139,8 +179,9 @@ try {
   await sleep(600);
   const e2 = await js(`({ state: N.game.state, end: !document.getElementById('endcard').classList.contains('hidden'), hp: N.game.health.hp, locked: document.pointerLockElement === N.renderer.domElement })`);
   check('click to try again: a fresh start', e2.state === 'playing' && !e2.end && e2.hp === 100 && e2.locked, JSON.stringify(e2));
-  const e3 = await js('({ lower: N.game.vm.lower, shown: N.game.vm.root.visible })');
-  check('try again: the Tommy gun back at the shoulder', e3.lower === 0 && e3.shown, JSON.stringify(e3));
+  await sleep(1400);
+  const e3 = await js('({ lower: N.game.vm.lower, scene: N.game.scenes.current && N.game.scenes.current.id, beat: N.game.scenes.beat })');
+  check('try again: back into the scene at its beat, the hands back up', e3.lower === 0 && e3.scene === 'diner' && e3.beat === 'pay', JSON.stringify(e3));
 
   const err = await js(`document.getElementById('errlog').textContent`);
   check('no console errors / warnings', !err, err ? err.slice(0, 300) : 'errlog empty');

@@ -82,6 +82,8 @@ if (!shotMode) for (const ev of ['mousedown', 'keydown', 'touchstart']) addEvent
 hud.soundHint(!shotMode);
 hud.setVisible(hudOn);
 if (shotMode) hud.hideTitle();
+// (a screenshot never depends on when the page loaded: no CSS animation runs)
+if (shotMode) hud.freeze();
 game = new Game({ stages, stage: 'block', camera, controller, pipeline, hud, shotMode, sfx });
 game.bindInput(renderer.domElement);
 // (play and the fight presets: every Hood variant + combat program up front)
@@ -134,6 +136,9 @@ if (shot && poseParam) {
 if (shot && params.get('fov')) shot.fov = parseFloat(params.get('fov'));
 if (shot) applyShot(shot, controller, camera, game.stage, game);
 else controller.setPose(-7.3, 6.2, -0.2, 0.02);
+// puzzle=<id> (with a scene beat): open that puzzle on its table
+// (?scene=diner&beat=settle&puzzle=demo)
+if (shot && params.get('puzzle')) game.puzzles.open(params.get('puzzle'));
 game.eye.copy(camera.position);
 
 const STEP = 1 / 60;
@@ -189,7 +194,7 @@ if (params.get('card') === 'pause') hud.showPause();
 if (params.get('gdbg')) U.uGroundDebug.value = parseInt(params.get('gdbg'), 10) || 0;
 
 // exposure=<v>: override the ink pass exposure (look development)
-if (params.get('exposure')) pipeline.inkMat.uniforms.uExposure.value = parseFloat(params.get('exposure'));
+if (params.get('exposure')) pipeline.exposureOverride = parseFloat(params.get('exposure'));
 
 // lightning=<v>: hold a constant lightning level (screenshot testing)
 const lightningParam = parseFloat(params.get('lightning') ?? '');
@@ -224,6 +229,8 @@ function frame(now) {
   renderer.info.reset();
   const S = game.stage;
   pipeline.rimLamps = S.rimLamps;
+  // the Look of the volume the eye is in (CONTRACTS §9.1)
+  pipeline.setLook(S.lookAt(camera.position));
   camera.updateMatrixWorld();
   game.vm.sync(camera);
   pipeline.render(S.scene, camera, simTime);
@@ -253,7 +260,8 @@ document.body.appendChild(counterEl);
 function writeCounters() {
   const K = { ...game.counters, time: +simTime.toFixed(2), hp: +game.health.hp.toFixed(1), ammo: game.weapon.ammo, state: game.state,
     particles: game.fx.liveParticles, ffMs: Math.round(ffMs), rays: game.rays.stats.rays, rayMs: +game.rays.stats.ms.toFixed(1),
-    states: game.world.hoods.list.map((h) => (h.alive ? (game.ais.get(h)?.state || h.state) : 'dead')).join(',') };
+    states: game.world.hoods.list.map((h) => (h.alive ? (game.ais.get(h)?.state || h.state) : 'dead')).join(','),
+    scene: game.scenes.current ? game.scenes.current.id : null, beat: game.scenes.beat, mode: controller.mode, hands: game.hands.set };
   counterEl.dataset.json = JSON.stringify(K);
 }
 writeCounters();

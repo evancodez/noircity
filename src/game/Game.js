@@ -8,6 +8,16 @@ import { Autopilot } from './Autopilot.js';
 import { DEATHS, HAT_OFF } from '../enemies/HoodAnim.js';
 import { Storm } from '../world/Storm.js';
 import { Sfx } from '../audio/Sfx.js';
+import { Hands } from '../player/Hands.js';
+import { Weapons } from '../player/Weapons.js';
+import { SceneManager } from './SceneManager.js';
+import { Interact } from './Interact.js';
+import { Inspect } from './Inspect.js';
+import { Puzzles } from './Puzzles.js';
+import { Exposure } from './Exposure.js';
+import { Save } from './Save.js';
+import { Music } from '../audio/Music.js';
+import { Vehicles } from '../vehicles/index.js';
 
 // The game: the player (Controller + Tommy gun + Health), the Hoods' AI,
 // the encounter director (game/Director.js), combat resolution (the
@@ -24,6 +34,13 @@ import { Sfx } from '../audio/Sfx.js';
 // the current one); what belongs to the player or the machine is the
 // game's - the hands and the gun, health, the HUD, sound, the pipeline -
 // and is re-bound to the stage on stage:enter (enterStage).
+// The story (docs/story/CONTRACTS.md §2.1): game.scenes (the scene
+// manager), .interact, .inspect, .puzzles, .director, .exposure, .music,
+// .save, .vehicles (wave B), game.player = { controller, hands, weapons,
+// health, eye }, and the current stage's .cast, .glass, .breakables.
+// Input edges for the scripts, one fixed step at a time: game.pressed(code)
+// (a key or 'Mouse0' / 'Mouse2' went down since the last step),
+// game.released(code), game.mouse { dx, dy, wheel } (this step's).
 export const GAME = { corpseCap: 16, hoodHp: 100, heavyHp: 170 };
 
 export class Game {
@@ -61,6 +78,23 @@ export class Game {
     this.sfx = sfx || new Sfx();
     this.storm = new Storm(world, pipeline);
     this.storm.onThunder = (s, far, dbl) => this.sfx.thunder(s, far, dbl);
+    // the player's hands and weapons, and the story's systems
+    this.hands = new Hands(this, this.vm);
+    this.weapons = new Weapons(this);
+    this.player = { controller, hands: this.hands, weapons: this.weapons, health: this.health, eye: this.eye };
+    this.exposure = new Exposure(this);
+    this.music = new Music(this);
+    this.save = new Save(this, { enabled: !shotMode });
+    this.vehicles = new Vehicles(this);
+    this.interact = new Interact(this);
+    this.inspect = new Inspect(this);
+    this.puzzles = new Puzzles(this);
+    this.scenes = new SceneManager(this);
+    // input edges (see pressed / released / mouse)
+    this.keysDown = new Set();
+    this.keysUp = new Set();
+    this.mouse = { dx: 0, dy: 0, wheel: 0 };
+    this._mouseAcc = { dx: 0, dy: 0, wheel: 0 };
     // the world's shot-mode clocks run (a train and lightning in a shot are
     // staged explicitly: shot=train, lightning=)
     this.ambient = !shotMode;
@@ -97,7 +131,7 @@ export class Game {
     const casters = [];
     pipeline.shadowCasters = () => {
       casters.length = 0;
-      for (const h of this.stage.hoods.list) {
+      for (const h of this.shadowFigures()) {
         if (!h.object.visible || !h.mesh.castShadow) continue;
         const moving = h.alive || h._deathT < 3.5 || (h.hat && !h.hat.rest);
         // (Phase 3c performance pass: a man standing his ground - aiming,
@@ -147,8 +181,30 @@ export class Game {
     return stage;
   }
 
+  // the Hoods and the cast's other figures (the shadow maps follow them)
+  shadowFigures() {
+    const H = this.stage.hoods.list, F = this.stage.cast.figures();
+    return F.length ? H.concat(F) : H;
+  }
+
   // the current stage (CONTRACTS §2.1; `world` is its old name)
   get stage() { return this.world; }
+  get cast() { return this.world.cast; }
+  get glass() { return this.world.glass; }
+  get breakables() { return this.world.breakables; }
+
+  // ---- input edges (one fixed step) ----------------------------------------------
+  pressed(code) { return this.keysDown.has(code); }
+  released(code) { return this.keysUp.has(code); }
+
+  // a world point on the screen, in CSS pixels ({ x, y }), or null behind
+  screenOf(p) {
+    if (!p) return null;
+    const v = this._scr || (this._scr = new THREE.Vector3());
+    v.copy(p).project(this.camera);
+    if (v.z > 1) return null;
+    return { x: (v.x * 0.5 + 0.5) * innerWidth, y: (0.5 - v.y * 0.5) * innerHeight };
+  }
   // the place's own systems: the current stage's
   get fx() { return this.world.fx; }
   get rays() { return this.world.rays; }
@@ -246,20 +302,20 @@ export class Game {
   get live() { return this.state === 'playing' && !this.director.lull; }
 
   // ---- lifecycle ---------------------------------------------------------------
-  // (pass B: the title leads into the story's first scene; until then the
-  // player stands on the empty block)
+  // the title leads into the story's first scene: the diner (a fade from
+  // black and the chapter card)
   start() {
     if (this.state !== 'title') return;
     this.state = 'playing';
-    // off the title's drifting camera, into the player's own boots
-    this.controller.setPose(-7.3, 6.2, -0.2, 0.02);
     this.setViewmodelVisible(this.vmWanted);
+    this.scenes.go('diner', { fade: 'black', card: true });
   }
 
   enableAutopilot() { this.autopilot = new Autopilot(this); }
 
   onPlayerDeath() {
     this.counters.deaths++;
+    this.emit('player:down', {});
     // (the battle preset's warm-up: the autopilot holds its fire while the
     // Hoods walk in, so it is not killed there either)
     if (this.autopilot || this.inWarmup) {
@@ -286,10 +342,13 @@ export class Game {
     this.weapon.reset();
     for (const k of Object.keys(this.counters)) this.counters[k] = 0;
     this.controller.frozen = false;
-    this.controller.setPose(-7.3, 6.2, -0.2, 0.02);
     this.vm.lowerTo(0, true);
     this.hud.hideEnd();
     this.state = 'playing';
+    // (back into the scene at its beat; with none, where play has always begun)
+    const S = this.scenes;
+    if (S.current) S.go(S.current.id, { beat: S.beat, fade: 'black', card: false });
+    else this.controller.setPose(-7.3, 6.2, -0.2, 0.02);
   }
 
   // ---- Hoods -------------------------------------------------------------------
@@ -400,6 +459,7 @@ export class Game {
       const d = dir.length(); dir.divideScalar(d);
       if (!this.rays.raycast(s.from, dir, d - 0.4, { anyHit: true })) {
         this.health.damage(s.dmg);
+        this.emit('player:hit', { dmg: s.dmg, dir });
         this.sfx.play('grunt', null, { f0: 88, k: 0.35, dur: 0.14 }, { send: false });
         this.counters.hoodHits++;
         this.counters.damageTaken += s.dmg;
@@ -422,6 +482,7 @@ export class Game {
 
   onCarExploded(car, at) {
     this.counters.explosions++;
+    this.emit('car:exploded', { car, at });
     this.sfx.explosion(at);
     this.controller.shake(0.9, at.distanceTo(this.camera.position));
     // Hoods within ~5 m die, flung away from it; within ~9 m they flinch
@@ -462,7 +523,9 @@ export class Game {
     this.camera.updateMatrixWorld();
     this.vm.update(dt, C);
     this.vm.sync(this.camera);
-    if (this.live) this.weapon.update(dt, t);
+    this.hands.update(dt);
+    // (the Tommy gun fires only while it is the set in hand)
+    if (this.live && this.hands.set === 'tommy') this.weapon.update(dt, t);
     else this.weapon.trigger = false;
     for (const ai of this.ais.values()) ai.update(dt, t);
   }
@@ -499,6 +562,20 @@ export class Game {
     const alive = this.world.hoods.list.reduce((n, h) => n + (h.alive ? 1 : 0), 0);
     this.counters.alive = alive;
     this.director.update(dt, t);
+    // the story: the scene's script, the prompts, the hands' inspection,
+    // the puzzle; the sound of the room the eye is in
+    this.scenes.update(dt, t);
+    this.interact.update(dt);
+    this.inspect.update(dt);
+    this.puzzles.update(dt);
+    this.hud.tick(dt);
+    const room = this.stage.lookAt(this.eye).room;
+    if (room !== this._room) { this._room = room; this.sfx.room(room); }
+    // (this step's input edges are spent)
+    this.keysDown.clear(); this.keysUp.clear();
+    const MA = this._mouseAcc, MO = this.mouse;
+    MO.dx = MA.dx; MO.dy = MA.dy; MO.wheel = MA.wheel;
+    MA.dx = 0; MA.dy = 0; MA.wheel = 0;
     this.counters.bursts = this.fx.bloodFx.bursts;
     this.counters.impacts = this.fx.impacts.count;
     this.counters.decals = this.fx.decals.total;
@@ -538,17 +615,27 @@ export class Game {
     this.hud.update({
       ammo: this.weapon.ammo, drum: WEAPON.drum,
       reloading: this.weapon.reloading, hp: this.health.hp, spread: this.weapon.spread, dt,
+      gun: this.hands.set === 'tommy', fight: this.director.active || this.health.hp < 100 || this.controller.mode === 'brawl',
     });
   }
 
   // input (pointer-locked play)
   bindInput(dom) {
     const locked = () => document.pointerLockElement === dom;
-    dom.addEventListener('mousedown', (e) => { if (e.button === 0 && locked() && this.state === 'playing') this.weapon.trigger = true; });
-    addEventListener('mouseup', (e) => { if (e.button === 0) this.weapon.trigger = false; });
+    const C = this.controller;
+    dom.addEventListener('mousedown', (e) => {
+      if (!locked()) return;
+      this.keysDown.add('Mouse' + e.button); C.keys.add('Mouse' + e.button);
+      if (e.button === 0 && this.state === 'playing' && this.hands.set === 'tommy' && !this.inspect.active && !this.puzzles.active) this.weapon.trigger = true;
+    });
+    addEventListener('mouseup', (e) => { if (e.button === 0) this.weapon.trigger = false; this.keysUp.add('Mouse' + e.button); C.keys.delete('Mouse' + e.button); });
+    document.addEventListener('mousemove', (e) => { if (locked()) { this._mouseAcc.dx += e.movementX || 0; this._mouseAcc.dy += e.movementY || 0; } });
+    addEventListener('wheel', (e) => { if (locked()) this._mouseAcc.wheel += e.deltaY; }, { passive: true });
+    addEventListener('keyup', (e) => { this.keysUp.add(e.code); });
     addEventListener('keydown', (e) => {
       if (!locked()) return;
-      if (e.code === 'KeyR') this.weapon.reload();
+      if (!e.repeat) this.keysDown.add(e.code);
+      if (e.code === 'KeyR' && this.hands.set === 'tommy') this.weapon.reload();
       if (e.code === 'KeyM') { this.muted = this.sfx.toggleMute(); this.hud.message(this.muted ? 'sound off' : 'sound on'); }
       if (e.code === 'BracketLeft' || e.code === 'Minus') this.hud.message('volume ' + Math.round(this.sfx.setVolume(this.sfx.volume - 0.1) * 10));
       if (e.code === 'BracketRight' || e.code === 'Equal') this.hud.message('volume ' + Math.round(this.sfx.setVolume(this.sfx.volume + 0.1) * 10));
