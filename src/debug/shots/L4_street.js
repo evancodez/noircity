@@ -27,4 +27,11 @@ export const presets = {
   // oblique view of where the track leaves the avenue
   elfar: { x: 3.0, z: -113.0, yaw: yawTo(3.0, -113.0, -30, -166), pitch: 0.2, fov: 60, t: 4 },
   elplan: { x: 30, z: -95, y: 42, yaw: yawTo(30, -95, -22, -160), pitch: -0.5, fov: 55, t: 4 },
+
+  // 4. the city behind: from the middle of the block down the avenue (fov
+  // 45), east through the arches, and the first under lightning
+  // (skylineT: the same camera; add &lightning=1)
+  skyline: { x: 2.0, z: -48, yaw: 0.0, pitch: 0.1, fov: 45, t: 20 },
+  skylineE: { x: 4.0, z: -36, yaw: -Math.PI / 2, pitch: 0.12, fov: 55, t: 20 },
+  skylineT: { x: 2.0, z: -48, yaw: 0.0, pitch: 0.1, fov: 45, t: 20 },
 };

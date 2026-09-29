@@ -29,7 +29,7 @@ const MIN_AZ_GAP = 0.007;
 // Towers are not lit by the scene: their value is set by the ring (aerial
 // perspective), lifted toward the lamp-lit ground mist at their feet, with a
 // little face shading and vertical weathering so they read as masses.
-function makeTowerMaterial(U, tone, haze) {
+export function makeTowerMaterial(U, tone, haze) {
   return new THREE.ShaderMaterial({
     name: 'NoirTower',
     uniforms: {
@@ -38,6 +38,7 @@ function makeTowerMaterial(U, tone, haze) {
       uTone: { value: linearFor(tone) / EXPOSURE },
       uHaze: { value: haze },
       uMistH: { value: 22 },
+      uLightning: U.uLightning,
     },
     vertexShader: /* glsl */`
       varying vec3 vW;
@@ -51,7 +52,7 @@ function makeTowerMaterial(U, tone, haze) {
     fragmentShader: /* glsl */`
       uniform sampler2D tNoise;
       uniform vec3 uFogColor;
-      uniform float uTone, uHaze, uMistH;
+      uniform float uTone, uHaze, uMistH, uLightning;
       varying vec3 vW;
       varying vec3 vN;
       ${SKY_GRAD_GLSL}
@@ -65,7 +66,14 @@ function makeTowerMaterial(U, tone, haze) {
         // aerial perspective: haze toward the sky right behind this pixel
         float e = normalize( vW - cameraPosition ).y;
         float skyL = uFogColor.g * skyGrad( e ) * SKY_CLOUD_MEAN;
-        c = mix( c, skyL, uHaze );
+        // (lightning: the flash lights the air between the layers, not the
+        // masses - each layer keeps its print against the white sky, the
+        // exposure kick cancelled, and the haze toward the lit sky grows
+        // with distance: the nearest layer darkest; at rest this is the
+        // plain haze above, to the bit)
+        float L = uLightning;
+        skyL = skyL + L * uFogColor.g * 0.9;
+        c = mix( c, skyL, min( 1.0, uHaze * ( 1.0 + 2.0 * L ) ) ) / ( 1.0 + 2.5 * L );
         float mist = exp( - max( vW.y, 0.0 ) / uMistH );
         c = mix( c, uFogColor.g * 1.05, mist * 0.9 );
         gl_FragColor = vec4( vec3( c ), 1.0 );
@@ -456,5 +464,7 @@ export class Skyline {
     im.frustumCulled = false;
     this.group.add(im);
     this.windowCount = this.windows.length;
+    // (world/City.js turns a few of them on and off over a minute)
+    this.windowMesh = im;
   }
 }
