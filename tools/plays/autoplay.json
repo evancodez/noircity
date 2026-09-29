@@ -1,35 +1,118 @@
 {
-  "url": "/?autoplay=1&speed=2&mute=1",
-  "size": [1280, 800],
-  "out": "shots/play/auto",
-  "steps": [
-    { "name": "the title, then the game begins on its own (autoplay: game/Autoplay.js)" },
-    { "wait": 2500 },
-    { "shot": "a00_title" },
-    { "until": "G.scenes.beat === 'order'", "timeout": 60000, "log": true },
-    { "shot": "a01_order" },
-    { "until": "G.scenes.beat === 'drink'", "timeout": 90000, "log": true },
-    { "until": "G.scenes.beat === 'pay'", "timeout": 90000, "log": true },
-    { "shot": "a02_pay" },
-    { "until": "G.scenes.current && G.scenes.current.id === 'fight'", "timeout": 60000, "log": true },
-    { "shot": "a03_fight" },
-    { "until": "G.scenes.beat === 'round2'", "timeout": 200000, "log": true, "stop": false },
-    { "shot": "a04_round2" },
-    { "until": "G.scenes.beat === 'round3'", "timeout": 200000, "log": true, "stop": false },
-    { "shot": "a05_round3" },
-    { "until": "G.scenes.beat === 'ko'", "timeout": 200000, "log": true },
-    { "wait": 600 },
-    { "shot": "a06_ko" },
-    { "until": "G.scenes.beat === 'outside'", "timeout": 60000, "log": true },
-    { "shot": "a07_outside" },
-    { "until": "G.scenes.beat === 'matchbook'", "timeout": 30000, "log": true },
-    { "wait": 800 },
-    { "shot": "a08_matchbook" },
-    { "until": "G.state === 'end'", "timeout": 40000, "log": true },
-    { "wait": 800 },
-    { "shot": "a09_end" },
-    { "eval": "G.brawl.stats" },
-    { "expect": "G.brawl.stats.won === true && G.brawl.stats.time >= 70 && G.brawl.stats.time <= 150 && G.brawl.stats.throws >= 1", "label": "the fight played by the autoplay (a careful player who reads the marks): won in 70..150 s of game time, at least one throw into the room" },
-    { "expect": "G.save.inventory.includes('matchbook')", "label": "the matchbook was pocketed" }
-  ]
+ "url": "/?autoplay=1&speed=2&mute=1",
+ "size": [
+  1280,
+  800
+ ],
+ "out": "shots/play/auto",
+ "steps": [
+  {
+   "name": "the title, then the game begins on its own (autoplay: game/Autoplay.js)"
+  },
+  {
+   "wait": 2500
+  },
+  {
+   "shot": "a00_title"
+  },
+  {
+   "until": "G.scenes.beat === 'order'",
+   "timeout": 60000,
+   "log": true
+  },
+  {
+   "shot": "a01_order"
+  },
+  {
+   "until": "G.scenes.beat === 'drink'",
+   "timeout": 90000,
+   "log": true
+  },
+  {
+   "until": "G.scenes.beat === 'pay'",
+   "timeout": 90000,
+   "log": true
+  },
+  {
+   "shot": "a02_pay"
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'fight'",
+   "timeout": 60000,
+   "log": true
+  },
+  {
+   "shot": "a03_fight"
+  },
+  {
+   "until": "G.scenes.beat === 'round2'",
+   "timeout": 200000,
+   "log": true,
+   "stop": false
+  },
+  {
+   "shot": "a04_round2"
+  },
+  {
+   "until": "G.scenes.beat === 'round3'",
+   "timeout": 200000,
+   "log": true,
+   "stop": false
+  },
+  {
+   "shot": "a05_round3"
+  },
+  {
+   "until": "G.scenes.beat === 'ko'",
+   "timeout": 200000,
+   "log": true
+  },
+  {
+   "wait": 600
+  },
+  {
+   "shot": "a06_ko"
+  },
+  {
+   "until": "G.scenes.beat === 'outside'",
+   "timeout": 60000,
+   "log": true
+  },
+  {
+   "shot": "a07_outside"
+  },
+  {
+   "until": "G.scenes.beat === 'matchbook'",
+   "timeout": 30000,
+   "log": true
+  },
+  {
+   "wait": 800
+  },
+  {
+   "shot": "a08_matchbook"
+  },
+  {
+   "until": "G.state === 'end'",
+   "timeout": 40000,
+   "log": true
+  },
+  {
+   "wait": 800
+  },
+  {
+   "shot": "a09_end"
+  },
+  {
+   "eval": "G.brawl.stats"
+  },
+  {
+   "expect": "G.brawl.stats.won === true && G.brawl.stats.time >= 90 && G.brawl.stats.time <= 150 && G.brawl.stats.lesson > 5 && G.brawl.stats.lesson < 45 && G.brawl.stats.throws >= 1",
+   "label": "the fight played by the autoplay at a human pace (game/Autoplay.js): the lesson under 45 s, then won in 90..150 s of game time all told, at least one knock into the room"
+  },
+  {
+   "expect": "G.save.inventory.includes('matchbook')",
+   "label": "the matchbook was pocketed"
+  }
+ ]
 }

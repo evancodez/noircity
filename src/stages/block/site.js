@@ -33,8 +33,18 @@ export const DINER = {
   playerStool: 4,
   brawlerStool: 6,
   seatedEyeY: 1.6,
-  // booths along the window wall
-  booths: { x0: -12.35, x1: -10.55, tableY: 0.9, z: [9.4, 5.0, 1.75, -3.8] },
+  // booths along the window wall (round 2, docs/story/FIGHT.md §6): two
+  // back to back in bay B1 (the couple at z 8.5); bay B2 is a finish spot,
+  // clear floor 2.4 m wide at the middle of its pane, with a small round
+  // café table and two chairs against each of its pilasters; B3 is the door
+  // and nothing else; B4 is a finish spot, clear to its glass
+  booths: { x0: -12.35, x1: -10.55, tableY: 0.9, z: [10.3, 8.5], half: 0.88,
+    cafe: [{ x: -10.86, z: 6.55, chairs: [[-11.5, 6.62, Math.PI / 2], [-10.86, 7.14, Math.PI]] },
+      { x: -10.86, z: 3.45, chairs: [[-11.5, 3.38, Math.PI / 2], [-10.86, 2.86, 0]] }] },
+  // where he stands, his back to the glass, for the last blow: the clear
+  // floor before the plate glass of B2 and of B4 (the backs of his thighs
+  // 0.25 m off the wall's inner face)
+  finish: { B2: { x: -10.86, z: 5.0 }, B4: { x: -10.86, z: -3.8 } },
   // the aisle between the stools and the booths: the brawl's ring
   aisle: { x0: -13.3, x1: -12.4, z0: -5.0, z1: 10.6 },
   ring: { x: -12.85, z: 1.0, r: 2.2 },

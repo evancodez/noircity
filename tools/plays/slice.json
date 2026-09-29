@@ -1,111 +1,355 @@
 {
-  "about": "The wave A slice by real input (tools/play.mjs): the title, BEGIN, the whole of scene 1 (the diner) and scene 2 (the fight), a screenshot at every beat, and the expectations the brief asks for. node tools/play.mjs tools/plays/slice.json",
-  "url": "/?mute=1",
-  "size": [1280, 800],
-  "out": "shots/play/slice",
-  "steps": [
-    { "name": "the title: NOIR EXTREME over the diner across the street" },
-    { "wait": 2500 },
-    { "expect": "G.state === 'title' && document.querySelector('#title h1').textContent === 'NOIR EXTREME' && !document.getElementById('title').classList.contains('hidden')", "label": "the title card is up" },
-    { "shot": "s00_title" },
-    { "key": "KeyA" },
-    { "wait": 300 },
-    { "expect": "N.sfx.live", "label": "a key on the title opens the sound" },
-    { "clickOn": "#title .opt[data-k=begin]" },
-    { "name": "scene 1, the diner: settle" },
-    { "until": "G.scenes.current && G.scenes.current.id === 'diner' && document.pointerLockElement === N.renderer.domElement", "timeout": 8000 },
-    { "expect": "G.controller.mode === 'seated' && G.hands.set === 'smoke'", "label": "seated at the counter, the smoke set" },
-    { "expect": "Math.abs(Math.atan2(Math.sin(N.controller.yaw - G.stage.anchor('diner.stool.player').yaw), Math.cos(N.controller.yaw - G.stage.anchor('diner.stool.player').yaw))) < 0.01 && Math.abs(N.controller.pitch + 0.14) < 0.01", "label": "the first frame is square to the counter: straight at the back bar, pitch -0.14, level" },
-    { "wait": 1500 },
-    { "shot": "s01_fade_in_card" },
-    { "until": "G.hud.promptShown.includes('light up')", "timeout": 12000 },
-    { "expect": "G._room === 'diner' && !!N.sfx.bed", "label": "the diner's own sound bed is up (the street through the wall)" },
-    { "shot": "s02_settle" },
-    { "key": "KeyE" },
-    { "wait": 2200 },
-    { "shot": "s03_lighter" },
-    { "until": "G.scenes.ctx.flags.lit === true", "timeout": 6000 },
-    { "expect": "G.scenes.ctx.flags.cig && G.scenes.ctx.flags.cig.userData.tip === 'lit'", "label": "the cigarette is lit, in the hand" },
-    { "until": "!G.hands.busy", "timeout": 5000 },
-    { "wait": 300 },
-    { "key": "KeyF" },
-    { "wait": 600 },
-    { "expect": "G.hands.current === 'drag'", "label": "F takes a drag" },
-    { "name": "order" },
-    { "until": "G.scenes.beat === 'order' && G.scenes.ctx.flags.glance && G.scenes.ctx.flags.glance.active", "timeout": 20000 },
-    { "wait": 900 },
-    { "expect": "(() => { const J = G.scenes.ctx.flags.glance.job, d = Math.atan2(Math.sin(N.controller.yaw - G.stage.anchor('diner.stool.player').yaw), Math.cos(N.controller.yaw - G.stage.anchor('diner.stool.player').yaw)); return !!J && (Math.abs(J.aim0) < 0.12 || (Math.abs(d) > 0.12 && Math.abs(d) < 0.27 && Math.sign(d) === Math.sign(J.aim0))); })()", "label": "Dot coming down the counter: the view eased toward her side (0.25 rad at most)" },
-    { "shot": "s04a_dot" },
-    { "until": "G.scenes.beat === 'order' && G.hud.promptShown.includes('scotch')", "timeout": 30000 },
-    { "shot": "s04_order" },
-    { "until": "!G.scenes.ctx.flags.glance.active", "timeout": 4000 },
-    { "expect": "Math.abs(Math.atan2(Math.sin(N.controller.yaw - G.stage.anchor('diner.stool.player').yaw), Math.cos(N.controller.yaw - G.stage.anchor('diner.stool.player').yaw))) < 0.03", "label": "she is across from me: the view back square" },
-    { "key": "KeyE" },
-    { "wait": 800 },
-    { "expect": "G.hud.sayShown === 'Scotch. Neat.'", "label": "the line: Scotch. Neat." },
-    { "shot": "s05_scotch_neat" },
-    { "until": "G.fx.pour.active", "timeout": 20000 },
-    { "wait": 500 },
-    { "expect": "(() => { const d = G.stage.part('diner'), b = d.items.get('scotch'), g = d.items.get('glass'); b.updateMatrixWorld(true); const e = b.matrixWorld.elements, tilt = Math.acos(Math.max(-1, Math.min(1, e[5] / Math.hypot(e[4], e[5], e[6])))) * 180 / Math.PI; const lip = b.localToWorld(b.userData.neck.clone()), G0 = g.getWorldPosition(lip.clone()); const over = lip.y - (G0.y + 0.085); return tilt >= 110 && tilt <= 120 && over >= 0.05 && over <= 0.08 && Math.hypot(lip.x - G0.x, lip.z - G0.z) < 0.035 && G.cast.get('dot')._hands.miss.R < 0.005; })()", "label": "the pour: the bottle 110..120 degrees from upright, its lip 5..8 cm over the glass's rim, over the glass, her hand on it" },
-    { "shot": "s06_pour" },
-    { "until": "G.scenes.ctx.flags.served === true", "timeout": 12000 },
-    { "expect": "G.stage.part('diner').items.get('glass').userData.fill > 0.99", "label": "the glass is poured full" },
-    { "name": "drink" },
-    { "until": "G.scenes.beat === 'drink' && G.hud.promptShown.includes('drink')", "timeout": 12000 },
-    { "shot": "s07_drink" },
-    { "key": "KeyE" },
-    { "wait": 1900 },
-    { "shot": "s08_sip" },
-    { "until": "G.hud.promptShown.includes('drink')", "timeout": 8000 },
-    { "key": "KeyQ" },
-    { "wait": 200 },
-    { "expect": "Math.abs(G.stage.part('diner').stool(3).spinV) > 0.5", "label": "Q spins the empty stool on my left" },
-    { "key": "KeyE" },
-    { "until": "G.hud.promptShown.includes('drink')", "timeout": 8000 },
-    { "key": "KeyE" },
-    { "name": "pay" },
-    { "until": "G.scenes.beat === 'pay' && G.hud.promptShown.includes('pay')", "timeout": 12000 },
-    { "expect": "G.stage.part('diner').items.get('glass').userData.fill < 0.01", "label": "three sips empty the glass" },
-    { "shot": "s09_pay" },
-    { "key": "KeyE" },
-    { "until": "G.hud.sayShown.includes('Cardinal')", "timeout": 10000 },
-    { "shot": "s10_his_line" },
-    { "expect": "(() => { const d = Math.atan2(Math.sin(N.controller.yaw - G.stage.anchor('diner.stool.player').yaw), Math.cos(N.controller.yaw - G.stage.anchor('diner.stool.player').yaw)); return d < -0.9 && d > -1.25; })()", "label": "his line: the view eased round to frame him" },
-    { "until": "G.controller.mode === 'cutscene'", "timeout": 10000 },
-    { "wait": 600 },
-    { "shot": "s11_rise" },
-    { "name": "scene 2, the fight" },
-    { "until": "G.scenes.current.id === 'fight' && G.brawl.active", "timeout": 10000 },
-    { "expect": "G.controller.mode === 'brawl' && G.hands.set === 'fists'", "label": "the fight started: locked on him, fists up" },
-    { "wait": 700 },
-    { "shot": "s12_round1" },
-    { "fight": { "timeout": 360000, "shots": {
-      "s13_round2": "G.brawl.round === 2 && G.brawl.him.state === 'attack'",
-      "s13a_bottle": "G.brawl.him && G.brawl.him.clip === 'br_bottle' && G.brawl.him.t > 0.8",
-      "s14_round3": "G.brawl.round === 3 && G.brawl.him.state === 'attack' && G.brawl.him.clip === 'br_haymaker'",
-      "s15_reel": "G.brawl.him && G.brawl.him.state === 'reel'",
-      "s16_ko": "G.brawl.him && G.brawl.him.state === 'ko' && G.brawl.him.t > 0.55"
-    }, "expect": "F.throws.length >= 1 && F.time >= 85 && F.time <= 170 && F.dur[2] > 0",
-      "label": "a first-timer's fight (the reactive play): won in 85..170 s of game time (tuned: 90..150 for most), three rounds, at least one throw into the room" } },    { "until": "!G.brawl.active && G.scenes.beat === 'ko'", "timeout": 10000 },
-    { "expect": "G.brawl.stats.won === true && G.stage.part('dinerFront').panes.B4.state === 'gone'", "label": "the fight ended: he went out through the end bay's glass" },
-    { "name": "out through the door" },
-    { "walk": [[-12.85, 0.2], [-11.2, 0.6], [-9.2, 0.6], [-8.4, -1.6]], "timeout": 40000 },
-    { "until": "G.scenes.beat === 'outside'", "timeout": 8000 },
-    { "look": [0, 160], "steps": 8 },
-    { "wait": 400 },
-    { "shot": "s17_outside" },
-    { "until": "G.hud.promptShown.includes('search')", "timeout": 8000 },
-    { "key": "KeyE" },
-    { "until": "G.scenes.beat === 'matchbook' && !!G.inspect.active", "timeout": 8000 },
-    { "wait": 1200 },
-    { "expect": "G.inspect.active && G.inspect.active.obj.userData.kind === 'matchbook'", "label": "the matchbook was shown (inspect)" },
-    { "shot": "s18_matchbook" },
-    { "key": "KeyE" },
-    { "until": "G.scenes.ctx.flags.shots === 2", "timeout": 6000 },
-    { "expect": "G.save.inventory.includes('matchbook')", "label": "the matchbook was pocketed" },
-    { "until": "G.state === 'end'", "timeout": 8000 },
-    { "wait": 700 },
-    { "expect": "G.hud.endShown && document.querySelector('#endcard h1').textContent === 'To be continued'", "label": "the slice ends: To be continued" },
-    { "shot": "s19_to_be_continued" }
-  ]
+ "about": "The wave A slice by real input (tools/play.mjs): the title, BEGIN, the whole of scene 1 (the diner) and scene 2 (the fight), a screenshot at every beat, and the expectations the brief asks for. node tools/play.mjs tools/plays/slice.json",
+ "url": "/?mute=1",
+ "size": [
+  1280,
+  800
+ ],
+ "out": "shots/play/slice",
+ "steps": [
+  {
+   "name": "the title: NOIR EXTREME over the diner across the street"
+  },
+  {
+   "wait": 2500
+  },
+  {
+   "expect": "G.state === 'title' && document.querySelector('#title h1').textContent === 'NOIR EXTREME' && !document.getElementById('title').classList.contains('hidden')",
+   "label": "the title card is up"
+  },
+  {
+   "shot": "s00_title"
+  },
+  {
+   "key": "KeyA"
+  },
+  {
+   "wait": 300
+  },
+  {
+   "expect": "N.sfx.live",
+   "label": "a key on the title opens the sound"
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]"
+  },
+  {
+   "name": "scene 1, the diner: settle"
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'diner' && document.pointerLockElement === N.renderer.domElement",
+   "timeout": 8000
+  },
+  {
+   "expect": "G.controller.mode === 'seated' && G.hands.set === 'smoke'",
+   "label": "seated at the counter, the smoke set"
+  },
+  {
+   "expect": "Math.abs(Math.atan2(Math.sin(N.controller.yaw - G.stage.anchor('diner.stool.player').yaw), Math.cos(N.controller.yaw - G.stage.anchor('diner.stool.player').yaw))) < 0.01 && Math.abs(N.controller.pitch + 0.14) < 0.01",
+   "label": "the first frame is square to the counter: straight at the back bar, pitch -0.14, level"
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "shot": "s01_fade_in_card"
+  },
+  {
+   "until": "G.hud.promptShown.includes('light up')",
+   "timeout": 12000
+  },
+  {
+   "expect": "G._room === 'diner' && !!N.sfx.bed",
+   "label": "the diner's own sound bed is up (the street through the wall)"
+  },
+  {
+   "shot": "s02_settle"
+  },
+  {
+   "key": "KeyE"
+  },
+  {
+   "wait": 2200
+  },
+  {
+   "shot": "s03_lighter"
+  },
+  {
+   "until": "G.scenes.ctx.flags.lit === true",
+   "timeout": 6000
+  },
+  {
+   "expect": "G.scenes.ctx.flags.cig && G.scenes.ctx.flags.cig.userData.tip === 'lit'",
+   "label": "the cigarette is lit, in the hand"
+  },
+  {
+   "wait": 900
+  },
+  {
+   "key": "KeyF"
+  },
+  {
+   "wait": 600
+  },
+  {
+   "expect": "G.hands.current === 'drag'",
+   "label": "F takes a drag"
+  },
+  {
+   "name": "order"
+  },
+  {
+   "until": "G.scenes.beat === 'order' && G.scenes.ctx.flags.glance && G.scenes.ctx.flags.glance.active",
+   "timeout": 20000
+  },
+  {
+   "wait": 900
+  },
+  {
+   "expect": "(() => { const J = G.scenes.ctx.flags.glance.job, d = Math.atan2(Math.sin(N.controller.yaw - G.stage.anchor('diner.stool.player').yaw), Math.cos(N.controller.yaw - G.stage.anchor('diner.stool.player').yaw)); return !!J && (Math.abs(J.aim0) < 0.12 || (Math.abs(d) > 0.12 && Math.abs(d) < 0.27 && Math.sign(d) === Math.sign(J.aim0))); })()",
+   "label": "Dot coming down the counter: the view eased toward her side (0.25 rad at most)"
+  },
+  {
+   "shot": "s04a_dot"
+  },
+  {
+   "until": "G.scenes.beat === 'order' && G.hud.promptShown.includes('scotch')",
+   "timeout": 30000
+  },
+  {
+   "shot": "s04_order"
+  },
+  {
+   "until": "!G.scenes.ctx.flags.glance.active",
+   "timeout": 4000
+  },
+  {
+   "expect": "Math.abs(Math.atan2(Math.sin(N.controller.yaw - G.stage.anchor('diner.stool.player').yaw), Math.cos(N.controller.yaw - G.stage.anchor('diner.stool.player').yaw))) < 0.03",
+   "label": "she is across from me: the view back square"
+  },
+  {
+   "key": "KeyE"
+  },
+  {
+   "wait": 800
+  },
+  {
+   "expect": "G.hud.sayShown === 'Scotch. Neat.'",
+   "label": "the line: Scotch. Neat."
+  },
+  {
+   "shot": "s05_scotch_neat"
+  },
+  {
+   "until": "G.cast.get('dot').clipH && G.cast.get('dot').clipH.name === 'pour' && G.cast.get('dot').clipH.t > 1.6",
+   "timeout": 12000
+  },
+  {
+   "shot": "s06_pour"
+  },
+  {
+   "until": "G.scenes.ctx.flags.served === true",
+   "timeout": 12000
+  },
+  {
+   "expect": "G.stage.part('diner').items.get('glass').userData.fill > 0.99",
+   "label": "the glass is poured full"
+  },
+  {
+   "name": "drink"
+  },
+  {
+   "until": "G.scenes.beat === 'drink' && G.hud.promptShown.includes('drink')",
+   "timeout": 12000
+  },
+  {
+   "shot": "s07_drink"
+  },
+  {
+   "key": "KeyE"
+  },
+  {
+   "wait": 1900
+  },
+  {
+   "shot": "s08_sip"
+  },
+  {
+   "until": "G.hud.promptShown.includes('drink')",
+   "timeout": 8000
+  },
+  {
+   "key": "KeyQ"
+  },
+  {
+   "wait": 200
+  },
+  {
+   "expect": "Math.abs(G.stage.part('diner').stool(3).spinV) > 0.5",
+   "label": "Q spins the empty stool on my left"
+  },
+  {
+   "key": "KeyE"
+  },
+  {
+   "until": "G.hud.promptShown.includes('drink')",
+   "timeout": 8000
+  },
+  {
+   "key": "KeyE"
+  },
+  {
+   "name": "pay"
+  },
+  {
+   "until": "G.scenes.beat === 'pay' && G.hud.promptShown.includes('pay')",
+   "timeout": 12000
+  },
+  {
+   "expect": "G.stage.part('diner').items.get('glass').userData.fill < 0.01",
+   "label": "three sips empty the glass"
+  },
+  {
+   "shot": "s09_pay"
+  },
+  {
+   "key": "KeyE"
+  },
+  {
+   "until": "G.hud.sayShown.includes('Cardinal')",
+   "timeout": 10000
+  },
+  {
+   "shot": "s10_his_line"
+  },
+  {
+   "expect": "(() => { const d = Math.atan2(Math.sin(N.controller.yaw - G.stage.anchor('diner.stool.player').yaw), Math.cos(N.controller.yaw - G.stage.anchor('diner.stool.player').yaw)); return d < -0.9 && d > -1.25; })()",
+   "label": "his line: the view eased round to frame him"
+  },
+  {
+   "until": "G.controller.mode === 'cutscene'",
+   "timeout": 10000
+  },
+  {
+   "wait": 600
+  },
+  {
+   "shot": "s11_rise"
+  },
+  {
+   "name": "scene 2, the fight"
+  },
+  {
+   "until": "G.scenes.current.id === 'fight' && G.brawl.active",
+   "timeout": 10000
+  },
+  {
+   "expect": "G.controller.mode === 'brawl' && G.hands.set === 'fists'",
+   "label": "the fight started: locked on him, fists up"
+  },
+  {
+   "wait": 700
+  },
+  {
+   "expect": "G.scenes.beat === 'lesson' && !!G.brawl.lesson && document.querySelector('#fightcards .fc .t').textContent.includes('LEFT CLICK')",
+   "label": "the fight opens on the lesson: its first card, LEFT CLICK"
+  },
+  {
+   "shot": "s12_lesson"
+  },
+  {
+   "fight": {
+    "timeout": 400000,
+    "shots": {
+     "s12a_lesson_hook": "G.brawl.lesson && G.brawl.lesson.step === 4 && G.brawl.him.clip === 'br_hook' && G.brawl.him.t > 0.35",
+     "s12b_now_fight": "!G.brawl.lesson && G.brawl.round === 1 && document.querySelector('#fightcards .fl').textContent === 'NOW FIGHT.'",
+     "s13_round2": "G.brawl.round === 2 && G.brawl.him.state === 'attack'",
+     "s13a_bottle": "G.brawl.him && G.brawl.him.clip === 'br_bottle' && G.brawl.him.t > 0.8",
+     "s14_round3": "G.brawl.round === 3 && G.brawl.him.state === 'attack' && /haymaker|rush/.test(G.brawl.him.clip)",
+     "s15_reel": "G.brawl.him && G.brawl.him.state === 'reel' && G.brawl.him.atSpot",
+     "s16_ko": "G.brawl.him && G.brawl.him.state === 'ko' && G.brawl.him.t > 0.4"
+    },
+    "expect": "F.time >= 85 && F.time <= 175 && F.lesson > 5 && F.lesson < 45 && F.dur[2] > 0 && F.throws.length >= 1",
+    "label": "a first-timer's fight by real input: the lesson under 45 s, then won in 85..175 s of game time (tuned: 90..150 for most), his three manners, at least one knock into the room"
+   }
+  },
+  {
+   "until": "!G.brawl.active && G.scenes.beat === 'ko'",
+   "timeout": 10000
+  },
+  {
+   "expect": "G.brawl.stats.won === true && ['B2', 'B4'].includes(G.brawl.stats.window) && G.stage.part('dinerFront').panes[G.brawl.stats.window].state === 'gone'",
+   "label": "the fight ended: he went out through the nearer window's glass (B2 or B4)"
+  },
+  {
+   "name": "out through the door"
+  },
+  {
+   "walk": "(() => { const z = (G.brawl.stats.window || 'B4') === 'B2' ? 5.0 : -3.8; return [[-12.6, 0.6], [-11.2, 0.6], [-9.2, 0.6], [-8.3, z + (z > 0.6 ? -1.8 : 1.8)]]; })()",
+   "timeout": 40000
+  },
+  {
+   "until": "G.scenes.beat === 'outside'",
+   "timeout": 8000
+  },
+  {
+   "look": [
+    0,
+    160
+   ],
+   "steps": 8
+  },
+  {
+   "wait": 400
+  },
+  {
+   "shot": "s17_outside"
+  },
+  {
+   "until": "G.hud.promptShown.includes('search')",
+   "timeout": 8000
+  },
+  {
+   "key": "KeyE"
+  },
+  {
+   "until": "G.scenes.beat === 'matchbook' && !!G.inspect.active",
+   "timeout": 8000
+  },
+  {
+   "wait": 1200
+  },
+  {
+   "expect": "G.inspect.active && G.inspect.active.obj.userData.kind === 'matchbook'",
+   "label": "the matchbook was shown (inspect)"
+  },
+  {
+   "shot": "s18_matchbook"
+  },
+  {
+   "key": "KeyE"
+  },
+  {
+   "until": "G.scenes.ctx.flags.shots === 2",
+   "timeout": 6000
+  },
+  {
+   "expect": "G.save.inventory.includes('matchbook')",
+   "label": "the matchbook was pocketed"
+  },
+  {
+   "until": "G.state === 'end'",
+   "timeout": 8000
+  },
+  {
+   "wait": 700
+  },
+  {
+   "expect": "G.hud.endShown && document.querySelector('#endcard h1').textContent === 'To be continued'",
+   "label": "the slice ends: To be continued"
+  },
+  {
+   "shot": "s19_to_be_continued"
+  }
+ ]
 }

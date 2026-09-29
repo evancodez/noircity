@@ -225,7 +225,7 @@ export default {
     const J8 = ['jukebox_a', 'jukebox_b', 'jukebox_c'];
     const jHandle = stage.breakables.add(jb.group, { kind: 'jukebox', hp: 3 });
     const pieHandle = stage.breakables.add(pie.group, { kind: 'pieCase', hp: 1 });
-    const booth3stool = booths[2].stool;
+    const booth3stool = booths[2] && booths[2].stool;
     void booth3stool;
     const jukebox = {
       object: jb.group, handle: jHandle, slot: null, hits: 0, jb,

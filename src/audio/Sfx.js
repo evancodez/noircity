@@ -1,3 +1,4 @@
+import { FIGHT_SOUNDS } from './fight.js';
 // Procedural sound (Phase 3a): Web Audio only, no assets. Every sound is a
 // small node graph built on demand by a `build` function
 //     build(ctx, out, t0, params, R)   (R: per-context noise buffers + reverb)
@@ -1062,6 +1063,8 @@ function dinerBed(ctx, R, out) {
   };
 }
 
+// (round 2: the fight's own new sounds, src/audio/fight.js)
+Object.assign(B, FIGHT_SOUNDS);
 export const SOUND_NAMES = Object.keys(B);
 
 // ---------------------------------------------------------------------------

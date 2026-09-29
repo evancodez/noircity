@@ -1,39 +1,137 @@
 {
-  "about": "Save and continue across a reload (P1), and the end of the slice from the last blow: a checkpoint at the fight's last blow, the page reloaded, CONTINUE on the title, the walk out through the door by real input, the search, the matchbook, the card. node tools/play.mjs tools/plays/continue.json",
-  "url": "/?mute=1",
-  "size": [1280, 800],
-  "out": "shots/play/continue",
-  "steps": [
-    { "wait": 1500 },
-    { "expect": "document.querySelector('#title .opt[data-k=continue]').classList.contains('hidden')", "label": "a fresh browser: no CONTINUE" },
-    { "eval": "(localStorage.setItem('noir.save', JSON.stringify({ v: 1, scene: 'fight', beat: 'ko', flags: {}, inventory: [] })), true)" },
-    { "reload": true },
-    { "wait": 1500 },
-    { "expect": "!document.querySelector('#title .opt[data-k=continue]').classList.contains('hidden')", "label": "after a reload the title offers CONTINUE" },
-    { "shot": "c00_title_continue" },
-    { "clickOn": "#title .opt[data-k=continue]" },
-    { "until": "G.scenes.current && G.scenes.current.id === 'fight' && G.scenes.beat === 'ko'", "timeout": 8000 },
-    { "expect": "true", "label": "continued at the checkpoint: the fight's last blow" },
-    { "wait": 700 },
-    { "shot": "c01_ko" },
-    { "until": "!G.brawl.active && G.controller.mode === 'walk'", "timeout": 10000 },
-    { "walk": [[-12.85, 0.2], [-11.2, 0.6], [-9.2, 0.6], [-8.4, -1.6]], "timeout": 40000 },
-    { "until": "G.scenes.beat === 'outside'", "timeout": 8000 },
-    { "look": [0, 160], "steps": 8 },
-    { "wait": 400 },
-    { "shot": "c02_outside" },
-    { "until": "G.hud.promptShown.includes('search')", "timeout": 8000 },
-    { "key": "KeyE" },
-    { "until": "G.scenes.beat === 'matchbook' && !!G.inspect.active", "timeout": 8000 },
-    { "wait": 1000 },
-    { "shot": "c03_matchbook" },
-    { "key": "KeyE" },
-    { "until": "G.state === 'end'", "timeout": 8000 },
-    { "expect": "G.save.inventory.includes('matchbook') && G.hud.endShown", "label": "pocketed; To be continued" },
-    { "wait": 700 },
-    { "shot": "c04_end" },
-    { "clickOn": "#endcard" },
-    { "wait": 800 },
-    { "expect": "G.state === 'title' && !document.querySelector('#title .opt[data-k=continue]').classList.contains('hidden')", "label": "the end card leads back to the title, CONTINUE offered" }
-  ]
+ "about": "Save and continue across a reload (P1), and the end of the slice from the last blow: a checkpoint at the fight's last blow, the page reloaded, CONTINUE on the title, the walk out through the door by real input, the search, the matchbook, the card. node tools/play.mjs tools/plays/continue.json",
+ "url": "/?mute=1",
+ "size": [
+  1280,
+  800
+ ],
+ "out": "shots/play/continue",
+ "steps": [
+  {
+   "wait": 1500
+  },
+  {
+   "expect": "document.querySelector('#title .opt[data-k=continue]').classList.contains('hidden')",
+   "label": "a fresh browser: no CONTINUE"
+  },
+  {
+   "eval": "(localStorage.setItem('noir.save', JSON.stringify({ v: 1, scene: 'fight', beat: 'ko', flags: {}, inventory: [] })), true)"
+  },
+  {
+   "reload": true
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "expect": "!document.querySelector('#title .opt[data-k=continue]').classList.contains('hidden')",
+   "label": "after a reload the title offers CONTINUE"
+  },
+  {
+   "shot": "c00_title_continue"
+  },
+  {
+   "clickOn": "#title .opt[data-k=continue]"
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'fight' && G.scenes.beat === 'ko'",
+   "timeout": 8000
+  },
+  {
+   "expect": "true",
+   "label": "continued at the checkpoint: the fight's last blow"
+  },
+  {
+   "wait": 700
+  },
+  {
+   "shot": "c01_ko"
+  },
+  {
+   "until": "!G.brawl.active && G.controller.mode === 'walk'",
+   "timeout": 10000
+  },
+  {
+   "walk": [
+    [
+     -12.85,
+     0.2
+    ],
+    [
+     -11.2,
+     0.6
+    ],
+    [
+     -9.2,
+     0.6
+    ],
+    [
+     -8.4,
+     -1.6
+    ]
+   ],
+   "timeout": 40000
+  },
+  {
+   "until": "G.scenes.beat === 'outside'",
+   "timeout": 8000
+  },
+  {
+   "look": [
+    0,
+    160
+   ],
+   "steps": 8
+  },
+  {
+   "wait": 400
+  },
+  {
+   "shot": "c02_outside"
+  },
+  {
+   "until": "G.hud.promptShown.includes('search')",
+   "timeout": 8000
+  },
+  {
+   "key": "KeyE"
+  },
+  {
+   "until": "G.scenes.beat === 'matchbook' && !!G.inspect.active",
+   "timeout": 8000
+  },
+  {
+   "wait": 1000
+  },
+  {
+   "shot": "c03_matchbook"
+  },
+  {
+   "key": "KeyE"
+  },
+  {
+   "until": "G.state === 'end'",
+   "timeout": 8000
+  },
+  {
+   "expect": "G.save.inventory.includes('matchbook') && G.hud.endShown",
+   "label": "pocketed; To be continued"
+  },
+  {
+   "wait": 700
+  },
+  {
+   "shot": "c04_end"
+  },
+  {
+   "clickOn": "#endcard"
+  },
+  {
+   "wait": 800
+  },
+  {
+   "expect": "G.state === 'title' && !document.querySelector('#title .opt[data-k=continue]').classList.contains('hidden')",
+   "label": "the end card leads back to the title, CONTINUE offered"
+  }
+ ]
 }

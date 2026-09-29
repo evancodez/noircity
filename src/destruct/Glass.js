@@ -326,7 +326,10 @@ export class Glass {
       // a big shard at the frame: it tips out about its frame edge, then falls
       // (they tip out of the frame onto the pavement side, the face the pane
       // shows the street: the rest of it falls in with the round)
-      const outer = F.N;
+      // (a body through it: every piece goes out with him, the sheets at the
+      // frame tip out over the sill onto the pavement; a round's: toward
+      // the street's face)
+      const outer = burst || dir ? out : F.N;
       vel.copy(outer).multiplyScalar(r.range(0.2, 0.6)).add(new THREE.Vector3(0, r.range(0, 0.3), 0));
       const hinge = Math.abs(cv) > Math.abs(cu) * (pane.h / pane.w) ? F.U : F.V;
       const lever = at.clone().sub(F.c);
@@ -335,6 +338,9 @@ export class Glass {
     } else {
       spin = new THREE.Vector3(r.gauss(), r.gauss(), r.gauss()).multiplyScalar(r.range(3, 9));
     }
+    // (a body through it: nothing comes back into the room - every piece
+    // leaves with the burst, at least 0.4 m/s outward)
+    if (burst || tip) { const vo = vel.dot(out); if (vo < 0.4) vel.addScaledVector(out, 0.4 - vo); }
     const sh = shardGeometry(P, group.cells, pane.thick || 0.006);
     sh.P = P; sh.cells = group.cells;
     S.spawn(sh, F, vel, spin).pane = pane;
@@ -501,6 +507,27 @@ export class Glass {
   }
 }
 
+// ---- what a thing that falls comes to rest on --------------------------------------------
+// The highest solid under p that is SHOWN (a counter, a table, a sill, a
+// car's roof), else the walking surface. `k` > 0: a big sheet rests on a
+// support only where the support spans it: the lowest of five rays, its
+// middle and four points toward its edge (a sill under its middle alone
+// does not hold it up). Not the glass it came out of (a ray down the
+// pane's own plane), not a thing that is hidden (broken, taken away).
+const shown = (o) => { for (; o; o = o.parent) if (!o.visible) return false; return true; };
+const _skip = (e) => !!e.mesh.userData.pane || !shown(e.mesh);
+export function supportUnder(stage, p, k = 0) {
+  const floor = stage.surfaceY(p.x, p.z);
+  const G = stage.game;
+  if (!G || !G.rays) return floor;
+  let low = Infinity;
+  for (const [ox, oz] of k ? [[0, 0], [k, 0], [-k, 0], [0, k], [0, -k]] : [[0, 0]]) {
+    const hit = G.rays.raycast(_o.set(p.x + ox, p.y + 0.05, p.z + oz), _d.set(0, -1, 0), 6, { skip: _skip });
+    low = Math.min(low, hit ? Math.max(floor, hit.point.y) : floor);
+  }
+  return Math.max(floor, low);
+}
+
 // ---- the shards --------------------------------------------------------------------------
 // Real pieces of the pane: they fly, turn (flashing white where they catch
 // the light: a mirror-like material over the environment), land, break again
@@ -583,29 +610,22 @@ export class ShardField {
   // what a shard comes down on: the highest solid under it (a counter, a
   // booth's table or bench, a car's roof), else the walking surface. Found
   // by the bullets' rays, again only when it has moved ~15 cm across
-  groundAt(s) {
+  // (round 2, the floating shards: the support used to be kept until the
+  // shard had moved 15 cm across, so one that tipped out of the frame and
+  // fell straight down past the sill kept the sill's height and lay on the
+  // air; and one that slid off an edge slid on at the old height. Now it is
+  // looked for again every few centimetres, and always before it lies down;
+  // a support that is not there any more - hidden, broken, knocked over -
+  // is no support: the ray skips what is not shown)
+  groundAt(s, force = false) {
     const p = s.mesh.position;
-    if (Math.hypot(p.x - s.gx, p.z - s.gz) < 0.15) return s.gy;
-    s.gx = p.x; s.gz = p.z;
-    const floor = this.stage.surfaceY(p.x, p.z);
-    let y = floor;
-    const G = this.stage.game;
-    if (G && G.rays) {
-      // (a big sheet rests on a support only where the support spans it: the
-      // lowest of five rays, its middle and four points out toward its edge;
-      // a sill under its middle alone does not hold it up)
-      const k = s.rad > 0.12 ? 0.6 * s.rad : 0;
-      let low = Infinity;
-      for (const [ox, oz] of k ? [[0, 0], [k, 0], [-k, 0], [0, k], [0, -k]] : [[0, 0]]) {
-        const hit = G.rays.raycast(_o.set(p.x + ox, p.y + 0.05, p.z + oz), _d.set(0, -1, 0), 6);
-        // (not the glass it came out of: a ray down the pane's own plane)
-        const yy = hit && !hit.mesh.userData.pane ? Math.max(floor, hit.point.y) : floor;
-        low = Math.min(low, yy);
-      }
-      y = Math.max(floor, low);
-    }
-    s.gy = y;
-    return y;
+    // (high over what is under it, a look every few steps or 25 cm is
+    // enough; near it, every 4 cm: the rays are paid for)
+    const near = p.y - (s.gy || 0) < 0.35;
+    if (!force && Math.hypot(p.x - s.gx, p.z - s.gz) < (near ? 0.04 : 0.25) && s.gyT > 0) { s.gyT--; return s.gy; }
+    s.gx = p.x; s.gz = p.z; s.gyT = 5;
+    s.gy = supportUnder(this.stage, p, s.rad > 0.12 ? 0.6 * s.rad : 0);
+    return s.gy;
   }
 
   // take away the shards that match (flying or lying) -> how many went
@@ -633,6 +653,26 @@ export class ShardField {
   update(dt) {
     const r = this.rng;
     const cam = this.stage.game ? this.stage.game.camera.position : null;
+    // (a shard lying on something that is not there any more - a table
+    // knocked over, a stool taken - falls again: a few of them looked at
+    // each step, round the list)
+    if (this.rest.length) {
+      for (let k = 0; k < 6; k++) {
+        this._ri = ((this._ri || 0) + 1) % this.rest.length;
+        const s = this.rest[this._ri];
+        const p = s.mesh.position;
+        const gy = supportUnder(this.stage, p, s.rad > 0.12 ? 0.6 * s.rad : 0);
+        if (p.y - gy > 0.006) {
+          this.rest.splice(this._ri, 1);
+          s.slide = false; s.vel = new THREE.Vector3(0, 0, 0); s.spin = new THREE.Vector3(0, 0, 0); s.t = 0.3; s.gyT = 0;
+          s.mesh.layers.set(LAYER.FX);
+          s.mesh.material = this.matFor();
+          if (s.mesh.userData.line) s.mesh.userData.line.visible = true;
+          this.live.push(s);
+          if (!this.rest.length) break;
+        }
+      }
+    }
     for (let i = this.live.length - 1; i >= 0; i--) {
       const s = this.live[i], m = s.mesh;
       s.t += dt;
@@ -647,7 +687,7 @@ export class ShardField {
         // its lowest reach: the half-extent across its tilt
         const n = _v.set(0, 0, 1).applyQuaternion(m.quaternion);
         const hh = s.rad * Math.sqrt(Math.max(0, 1 - n.y * n.y));
-        if (m.position.y - hh <= gy && s.vel.y < 0) {
+        if (m.position.y - hh <= gy && s.vel.y < 0 && this.groundAt(s, true) + 0.004 >= gy - 0.02) {
           // a hard landing breaks a big shard again (into 2 or 3)
           if (!s.broke && s.area > 0.012 && s.vel.y < -2.2) { this.split(s); this.live.splice(i, 1); this.kill(s); continue; }
           s.slide = true;
@@ -659,19 +699,25 @@ export class ShardField {
           const f = new THREE.Vector3(1, 0, 0).applyQuaternion(m.quaternion).setY(0);
           const yaw = f.lengthSq() > 1e-6 ? Math.atan2(-f.z, f.x) : r.next() * 6.28;
           s.flat = new THREE.Quaternion().setFromAxisAngle(UP, yaw).multiply(q);
-          m.position.y = gy;
+          m.position.y = s.gy + 0.004;
           this.stage.street && this.stage.street.addImpact && s.area > 0.004 && this.stage.street.addImpact(this.stage, m.position.x, m.position.z, 0.25);
         }
       } else {
         m.quaternion.slerp(s.flat, Math.min(1, dt * 14));
         m.position.addScaledVector(s.vel, dt);
-        m.position.y = gy;
+        // (slid off an edge: it falls again)
+        const g2 = this.groundAt(s);
+        if (g2 + 0.004 < m.position.y - 0.01) { s.slide = false; s.vel.y = 0; continue; }
+        m.position.y = g2 + 0.004;
         const sp = Math.hypot(s.vel.x, s.vel.z);
         const dec = Math.min(sp, 3.2 * dt);
         if (sp > 1e-5) { s.vel.x -= s.vel.x / sp * dec; s.vel.z -= s.vel.z / sp * dec; }
         if (sp < 0.02 && s.t > 0.25) {
+          // (lying down: on what is under it now, exactly)
           m.quaternion.copy(s.flat);
-          (this.pool || (this.pool = [])).push(m.material);
+          m.position.y = this.groundAt(s, true) + 0.004;
+          s.vel.set(0, 0, 0);
+          if (m.material !== this._rest) (this.pool || (this.pool = [])).push(m.material);
           m.material = this.restMat();
           m.layers.set(LAYER.WORLD);
           if (m.userData.line) m.userData.line.visible = false;
