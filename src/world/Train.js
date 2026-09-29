@@ -208,6 +208,9 @@ export class Train {
   startAt(s = null, dir = null) {
     this.dir = dir ?? (this.rng.chance(0.5) ? 1 : -1);
     this.head = s ?? (this.dir > 0 ? this.s0 : this.s1);
+    this.dwell = null; this.depart = null;
+    // (a train coming in starts from the terminus, its tail at the buffers)
+    if (s == null && this.dir < 0) { this.head = this.ov.length - 2.5 - this.length; this.depart = 0; }
     this.crossings++;
     this.hurry = false;
     for (const c of this.cars) c.group.visible = true;
@@ -228,10 +231,30 @@ export class Train {
     }
     // (a fight's last man down: the train clears the view)
     if (hurry) this.hurry = true;
-    const v = SPEED * (this.hurry ? 8 : 1);
+    // the line ends at a terminus (world/Overpass.js buildTerminus): a
+    // train running out slows into the platforms, stands, and goes back
+    // the way it came; one that is hurried off simply goes (it is out of
+    // sight in the street by then)
+    const stopS = this.ov.length - 2.5;
+    let v = SPEED * (this.hurry ? 8 : 1);
+    if (this.dir > 0 && !this.hurry) {
+      v = Math.min(v, Math.sqrt(Math.max(0, 2 * 2.0 * (stopS - this.head))) + 0.15);
+      if (this.head >= stopS - 0.02) {
+        this.head = stopS;
+        this.dwell = (this.dwell ?? 14) - dt;
+        if (this.dwell <= 0) { this.dwell = null; this.dir = -1; this.depart = 0; this.head = stopS - this.length; }
+        this.place(dt, t, camera);
+        return;
+      }
+    } else if (this.dir < 0 && this.depart != null) {
+      this.depart += dt;
+      v = Math.min(v, 0.3 + 1.6 * this.depart);
+      if (v >= SPEED) this.depart = null;
+    }
     this.head += this.dir * v * dt;
+    if (this.dir > 0 && this.head > stopS && !this.hurry) this.head = stopS;
     const tail = this.head - this.dir * this.length;
-    if ((this.dir > 0 && tail > this.s1) || (this.dir < 0 && tail < this.s0)) {
+    if ((this.dir > 0 && this.hurry && tail > this.s1) || (this.dir < 0 && tail < this.s0)) {
       this.head = -1;
       this.next = this.rng.range(INTERVAL[0], INTERVAL[1]);
       for (const c of this.cars) c.group.visible = false;

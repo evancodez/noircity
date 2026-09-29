@@ -188,6 +188,7 @@ export class Skyline {
     let tw = w * rng.range(1.0, 1.15);
     let td = tw * rng.range(0.6, 0.8);
     const rot = rng.range(-0.12, 0.12);
+    (this.boxes || (this.boxes = [])).push({ x, z, hw: tw / 2 + 0.1, hd: td / 2 + 0.8, rot, r: Math.hypot(tw, td) / 2 + 0.8, h: h * 1.2 });
     const q = new THREE.Quaternion().setFromAxisAngle(V3(0, 1, 0), rot);
     const put = (geo, px, py, pz) => {
       const o = V3(px, 0, pz).applyQuaternion(q);
@@ -267,6 +268,9 @@ export class Skyline {
     w *= rng.range(0.7, 1.05);
     let d = w * rng.range(0.7, 1.05);
     const rot = rng.range(-0.3, 0.3);
+    // (its footprint for the el's clipTest: the base tier, turned, with
+    // its rib)
+    (this.boxes || (this.boxes = [])).push({ x, z, hw: w / 2 + 0.1, hd: d / 2 + 0.9, rot, r: Math.hypot(w, d) / 2 + 0.9, h: h * 1.25 });
     const tiers = ri <= 1 ? rng.int(3, 4) : rng.int(2, 3);
     let y = 0;
     let tw = w, td = d;

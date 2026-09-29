@@ -4,6 +4,10 @@ import { STREET } from './Street.js';
 import { roundedBox, boxWorldUV, merge, place, V3, smoothNormals } from './geom.js';
 import { DINER } from '../stages/block/site.js';
 
+// where the left row makes way for the el (z, from its first block to its
+// last: the el crosses the building line from z -146 to -192)
+export const EL_GAP = { z0: -143, z1: -184 };
+
 // The left façade: a tall wet stone building in the foreground (rusticated
 // base, pilasters, framed windows, cornice, fire escape, a blade sign), then a
 // cross street, then lower buildings receding into the mist. Also the
@@ -321,8 +325,20 @@ export class Facade {
     // (the low warehouse row beyond the right pavement is gone: in the fog it
     // printed as a line of outlined boxes. The el's arches now frame open
     // mist and the skyline, whose feet dissolve into the ground haze.)
+    // The el leaves the avenue over the left row (fix 5): the row makes way
+    // for it - its blocks between EL_GAP.z0 and z1 are not built (their rng
+    // draws are still taken, so every other block keeps its shape and its
+    // lit windows) - and a cross street opens under the el's turn, lined
+    // with blocks of its own (buildElStreet, from its own stream).
+    for (const b of blocks) b.skip = b.x1 === STREET.facadeX && b.z0 <= -30 && b.z0 > EL_GAP.z1 && b.z1 < EL_GAP.z0;
     const massParts = [], trimParts = [];
     for (const b of blocks) {
+      if (b.skip) {
+        const floors = Math.floor((b.h - 3) / 3.4), cols = Math.floor((b.z0 - b.z1) / 3.2);
+        rng.range(0.03, 0.14);
+        for (let k = 0; k < floors * cols; k++) rng.next();
+        continue;
+      }
       const w = b.x1 - b.x0, d = b.z0 - b.z1;
       const cx = (b.x0 + b.x1) / 2, cz = (b.z0 + b.z1) / 2;
       massParts.push(new THREE.BoxGeometry(w, b.h, d).translate(cx, b.h / 2, cz));
@@ -343,14 +359,100 @@ export class Facade {
         }
       }
     }
+    this.buildElStreet(blocks, massParts, trimParts);
     // (the block's edges read them: every gap in the building line is
-    // closed by a thing, stages/block/parts/bounds.js)
-    this.farBlocks = blocks;
+    // closed by a thing, stages/block/parts/bounds.js; the el's clipTest
+    // reads them too)
+    this.farBlocks = blocks.filter((b) => !b.skip);
     const mass = new THREE.Mesh(merge(massParts), M.brickFar);
     mass.castShadow = false; mass.receiveShadow = true;
     const trim = new THREE.Mesh(merge(trimParts), M.brickFar);
     this.farId = tagInk(mass); tagInk(trim, this.farId);
     this.group.add(mass, trim);
+  }
+
+  // The cross street under the el's turn: the left row's corners, then
+  // blocks along both sides of the street the el follows west, each kept
+  // clear of the el (its deck, columns and the train) by 2 m.
+  buildElStreet(blocks, massParts, trimParts) {
+    const rng = this.world.rng.fork(203);
+    const ov = this.world.overpass;
+    if (!ov) return;
+    // the el's footprint past the avenue: points on its deck edges and its
+    // columns
+    const foot = [];
+    // (the station at the turn reaches 7.5 m out from the track, its stair
+    // further: world/Overpass.js buildStation)
+    for (let s = ov.sAtZ(EL_GAP.z0 + 10); s <= ov.length + 9; s += 0.5) {
+      const f = ov.frameAt(s);
+      const st = ov.station;
+      const wide = st && s > st.s0 - 2 && s < st.s1 + 14 ? 9.5 : 4.8;
+      for (let k = -wide; k <= wide + 0.01; k += wide / 4) foot.push([f.P.x + f.N.x * k, f.P.z + f.N.z * k]);
+    }
+    const clear = 2.0;
+    const elZ = (xa, xb) => {
+      let lo = Infinity, hi = -Infinity;
+      for (const [x, z] of foot) if (x > xa - clear && x < xb + clear) { lo = Math.min(lo, z); hi = Math.max(hi, z); }
+      return [lo, hi];
+    };
+    const add = (b) => {
+      blocks.push(b);
+      const w = b.x1 - b.x0, d = b.z0 - b.z1;
+      const cx = (b.x0 + b.x1) / 2, cz = (b.z0 + b.z1) / 2;
+      massParts.push(new THREE.BoxGeometry(w, b.h, d).translate(cx, b.h / 2, cz));
+      trimParts.push(new THREE.BoxGeometry(w + 0.8, 0.5, d + 0.8).translate(cx, b.h + 0.1, cz));
+      // a few windows on the face toward the cross street (+z or -z) and,
+      // for the row's corners, toward the avenue
+      const faces = b.faces || [];
+      for (const fc of faces) {
+        const along = fc === 'x' ? d : w;
+        const floors = Math.floor((b.h - 3) / 3.4), cols = Math.floor(along / 3.2);
+        const litP = rng.range(0.04, 0.12);
+        for (let f = 0; f < floors; f++) for (let c = 0; c < cols; c++) {
+          const u = (c + 0.5) * (along / cols), wy = 3.6 + f * 3.4;
+          let pos, rotY;
+          if (fc === 'x') { pos = V3(b.x1 + 0.05, wy, b.z1 + u); rotY = Math.PI / 2; }
+          else if (fc === '+z') { pos = V3(b.x0 + u, wy, b.z0 + 0.05); rotY = 0; }
+          else { pos = V3(b.x0 + u, wy, b.z1 - 0.05); rotY = Math.PI; }
+          const m = new THREE.Matrix4().compose(pos, new THREE.Quaternion().setFromEuler(new THREE.Euler(0, rotY, 0)), V3(1.3, 1.9, 1));
+          (rng.next() < litP ? this.windowsLit : this.windowsDark).push(m);
+        }
+      }
+    };
+    const X0 = STREET.facadeX - 18, X1 = STREET.facadeX;
+    // the row's corners: from the last block standing to the gap's edges,
+    // each cut back to clear the el
+    const row = blocks.filter((b) => b.x1 === X1 && b.z0 <= -30 && !b.skip);
+    const north = Math.min(...row.filter((b) => b.z1 >= EL_GAP.z0).map((b) => b.z1));
+    const south = Math.max(...row.filter((b) => b.z0 <= EL_GAP.z1).map((b) => b.z0));
+    {
+      const [lo, hi] = elZ(X0, X1);
+      void lo;
+      const z1 = Math.max(hi + clear, EL_GAP.z0 - 10);
+      if (north - z1 > 4) add({ x0: X0, x1: X1, z0: north - 0.3, z1, h: rng.range(10, 16), faces: ['x', '-z'] });
+    }
+    // south corner: the row begins again past the el
+    {
+      let zTop = south;
+      const [lo] = elZ(X0, X1);
+      const z0 = Math.min(lo - clear, south + 30);
+      if (z0 - south > 4) add({ x0: X0, x1: X1, z0, z1: south + 0.3, h: rng.range(10, 16), faces: ['x', '+z'] });
+      void zTop;
+    }
+    // along the cross street, west to x -160: a block each side
+    let x = X0;
+    while (x > -165) {
+      const w = rng.range(14, 24);
+      const xa = x - w, xb = x;
+      const [lo, hi] = elZ(xa, xb);
+      if (hi > -Infinity) {
+        const nz1 = hi + clear, nz0 = nz1 + rng.range(14, 22);
+        add({ x0: xa, x1: xb, z0: nz0, z1: nz1, h: rng.range(10, 20), faces: ['-z'] });
+        const sz0 = lo - clear, sz1 = sz0 - rng.range(14, 22);
+        add({ x0: xa, x1: xb, z0: sz0, z1: sz1, h: rng.range(10, 20), faces: ['+z'] });
+      }
+      x = xa - (rng.chance(0.3) ? rng.range(6, 10) : 0.3);
+    }
   }
 
   buildWindowInstances() {

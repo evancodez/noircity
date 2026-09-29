@@ -21,4 +21,10 @@ export const presets = {
   boundN: { x: 4.0, z: -108.5, yaw: yawTo(4.0, -108.5, 3.5, -121), pitch: 0.03, fov: 62, t: 4 },
   // west: the cross street, its wire gate and the van behind it
   boundW: { x: -13.8, z: -26.2, yaw: yawTo(-13.8, -26.2, -24.2, -27.2), pitch: 0.03, fov: 62, t: 4 },
+
+  // 3. the el clear of the buildings: from under the crossing along the far
+  // curve (the turn into the cross street, the terminus), and a high
+  // oblique view of where the track leaves the avenue
+  elfar: { x: 3.0, z: -113.0, yaw: yawTo(3.0, -113.0, -30, -166), pitch: 0.2, fov: 60, t: 4 },
+  elplan: { x: 30, z: -95, y: 42, yaw: yawTo(30, -95, -22, -160), pitch: -0.5, fov: 55, t: 4 },
 };

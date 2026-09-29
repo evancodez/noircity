@@ -49,8 +49,9 @@ export class Lamps {
     this.addSconce(V3(STREET.facadeX + 0.05, 4.7, -3.0));
     this.addSconce(V3(STREET.facadeX + 0.05, 4.7, 21.5));
     // lamps hung under the street-side girder, mid-span
+    // (the last one hangs over the cross street the el turns into: fix 5)
     for (const z of [26, -2, -30, -58, -86, -114, -142, -170]) {
-      const s0 = ov.sAtZ(z);
+      const s0 = z > -160 ? ov.sAtZ(z) : ov.length - 28;
       const k = Math.round(s0 / OVERPASS.span - 0.5) + 0.5; // snap to mid-span
       const f = ov.frameAt(k * OVERPASS.span);
       const p = f.P.clone().addScaledVector(f.N, -OVERPASS.halfW + 0.15);
