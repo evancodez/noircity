@@ -587,3 +587,96 @@ to -22, z from -24 to -30, a wall lamp at (-12.5, 4.2, -24.3).
 - Golden `title`: its key line no longer lists "V camera" (the key is gone);
   the frame differs only in that line (and the blinking "click to begin",
   whose CSS phase follows the page's load time).
+
+### Foundation, pass B (steps B1 to B9)
+Read with `docs/story/ARCHITECTURE.md` (the module map, every stub and who
+replaces it, the exact query strings).
+- §15 / §2.2 The diner's void is not cut into the one accepted mass: the
+  same plane cut into other triangles moved pixels (depth and texture
+  interpolate a last bit differently). The near building keeps a **far**
+  build (the old block, triangle for triangle, with the diner bays' old
+  shop windows and frames: the Hoods' stray rounds in `battle` break them)
+  and a **near** build (the void cut, the plinth broken for the doorway),
+  swapped by `facade.setNear(on)`. `site.js dinerInSight(eye)`: the eye
+  north of z = -7.5 or inside the diner (every accepted camera stands south
+  of z = -8.4). Out of sight nothing of the diner is drawn, shadowed, lit or
+  shot at, and its pendants are off (`lamp.on = false`: no pool light, no
+  cone, no rain / rim slot). Lane 4 may replace the rule with a frustum
+  test once the goldens allow it.
+- §2.2 Anchors: `anchor.yaw` is a viewer's yaw (the controller's: he looks
+  along (-sin yaw, -cos yaw)); a figure placed there turns to `yaw + PI`
+  (Character does it). Seat anchors carry `pos` = the seat's top, `eyeY`,
+  `seat: true`. The serve anchors exist as both `diner.serve.N` and
+  `counter.serve.N`. Added: `diner.counter.player`, `diner.counter.glass`,
+  `diner.pavement.ko`, `diner.door.in` / `.out` (made by dinerFront).
+- §2.2 `stage.cast` exists; `cast.list` holds the characters spawned
+  through the cast. The Hoods spawned by `game.spawnHood` / the director's
+  legacy waves are in `stage.hoods` only. `stage.glass` and
+  `stage.breakables` are built before the parts (a part registers into
+  them); `game.cast / glass / breakables` are getters on the stage.
+- §2.2 Colliders: `colliders.addRegion(minX, maxX, minZ, maxZ)`: the outer
+  net is the union of the bounds and the regions (the diner and its
+  doorway lie outside the block's bounds). Nav and the old spawner read the
+  bounds only.
+- §3 Scenes import `wait / until / beat / defineScene` from
+  `src/game/script.js` (the scene manager loads the scene files, so they
+  cannot import it). `yield` with no value waits one step. Added:
+  `ctx.onStep(fn)`, `ctx.sceneTime`, `ctx.flags`, `def.save` (the beats
+  that write a checkpoint), `scenes.press(code)`, `scenes.names`. A scene
+  file without a default export (a helper) is not a scene. Shot mode never
+  fades, shows no card, never saves.
+- §2.1 Input edges for scripts: `game.pressed(code)`, `game.released(code)`,
+  `game.mouse { dx, dy, wheel }` per step (codes include `Mouse0`,
+  `Mouse2`); `game.screenOf(v)`; `game.shadowFigures()`. Events added:
+  `cast:hit`, `cue` (the director's). `game.restart()` goes back to the
+  current scene's beat.
+- §4.1 `interact.add` takes `scope` (default 'scene': cleared when a scene
+  is entered). §4.2 E puts an inspected prop away (the browser keeps Esc for
+  the pointer lock); the mouse turns the prop, not the view
+  (`controller.lookLocked`). §4.3 E leaves a puzzle; the pointer has
+  `pressed` and `world`; a puzzle signals progress with `state.progress`.
+- §6 Character: `c.yaw` / `c.face(yaw)` are the figure's heading (a
+  Hood's). Added: `c.place(at, yaw)`, `c.items` (the brawler's matchbook:
+  `items.get('matchbook')`, hidden), `c.down`, `c.fig` (the Hood figure),
+  `cast.figures()`. `setState` takes the Hood's states (idle walk run aim
+  stagger) or any clip of `src/cast/clips.js` (held). A clip def may carry
+  `hold` and `loop`. `ko()` plays a Hood death clip with no blood pool.
+- §7.1 A pose is `{ x, y, z, yaw, pitch, fov? }` with y the eye's world
+  height. `brawl.ring` is `{ x, z, r }`; `controller.slip` (m) moves the eye
+  sideways; `controller.eyePose()`; `setPose()` returns to 'walk'; 'drive'
+  throws (wave B).
+- §7.2 Hands: a held prop is drawn in the hands' scene at a fixed palm
+  point until lane 2 draws hands. Marks the brief does not name are the
+  foundation's and keep their names (handClips.js): lightUp tap / lips /
+  shut, ash tap, reachGlass taken, sip tilt / drink / down, putDown down,
+  payWallet open / shownEnd / bill, hurt down / up, searchBody found,
+  showMatchbook shown / pocketed, tommyReload latch / drumOut / drumIn /
+  bolt; slip's window is `safe` .. `safeEnd`, the stun's `open` ..
+  `openEnd`. Added `hands.current`, anchors 'glass' and 'eye'.
+- §8.1 A prop's origin is the middle of its base; `userData.setTip('unlit'
+  | 'lit' | 'ash')` for the cigarette; `userData.inkId`.
+- §8.2 Breakables: added `upright(handle)`; `hit` returns 'hit' | 'break';
+  a fist counts 0.35 of a round, a blast or a car 3. A jukebox is never
+  destroyed (hit returns 'hit').
+- §8.3 Glass: a pane of its own is drawn on LAYER.FX (the scene pass only)
+  with an invisible bullet twin on the world layer; a SHARED pane (the
+  facade's merged windows) belongs to an owner (`owner.paneGone`). Added
+  `glass.restore(pane)`; `hit` takes `normal`; power >= 2 shatters at once;
+  `pane.on('state', fn)` is the only event (fn(pane, state)).
+- §9.1 `Look.room` (the sound's room: 'street', 'diner'). `setLook` applies
+  fog, exposure and the screen rain overlay, switched by volume, not
+  blended; `pipeline.exposureOverride` (the `exposure=` param) wins.
+- §12.1 The HUD's lines are timed on game time (`hud.tick(dt)` from the
+  step); `hud.freeze()` in shot mode stops every CSS animation (the title
+  and end cards are deterministic now; the title frame differs from its
+  golden only in the prompt line).
+- §12.2 `sfx.play` of a name not yet built is silent: `bell`, `doorbell`,
+  `lighter`, `jukebox_hit`, `break_<kind>`, `topple_<kind>` are asked for
+  and are lane 7's to make.
+- §12.3 Music plays `music/<slot>.(mp3|ogg|m4a)` from `public/`; an unknown
+  slot throws.
+- The diner's pendants are custom lamps without a `swing(impulse)` (the
+  hanging lamps' `lamp.swing` is their swing state): lane 5 adds it.
+- `game.fx.smoke` is a particle system, not a function: the story's smoke
+  is `fx.cig.wisp / exhale` (lane 2's brief).
+- The title still drifts over the street (lane 7 moves it to the diner).

@@ -1,10 +1,17 @@
 # NOIR EXTREME — Art Direction & Technical Design
 
-A first-person noir game set on one rain-soaked city block beneath an elevated
-railway, rendered in real time to look like a hand-inked black-and-white noir
-illustration. The **only** colour in the world is blood (red) and fire (orange /
-yellow, from burning cars and explosions). Everything else is ink: black, grey
-paper-tones, white light.
+A short first-person noir detective story, one rainy night in 1937, told by
+action, objects and staging (`docs/story/STORY.md`): a diner, a fist fight,
+a body in an alley, an office, gunfights, a tail by car, a warehouse, and
+the big shootout on the block beneath the elevated railway where it began.
+Every frame is rendered in real time to look like a hand-inked
+black-and-white noir illustration. Colour is an accent, one or two per
+frame, small and meaningful, and only from the registry
+(`src/render/accents.js`): blood (red), fire (orange / yellow), a cigarette's
+ember, a lighter's flame, the amber of scotch, the blue of the diner's neon,
+and the crew's red (the Cardinal's matchbook). Everything else is ink:
+black, grey paper-tones, white light. The engine's map is
+`docs/story/ARCHITECTURE.md`; its binding APIs are `docs/story/CONTRACTS.md`.
 
 The reference image is `reference/noir_reference.png`. **Look at it before you
 write any code, and look at it again every time you judge a screenshot.** The
@@ -64,10 +71,16 @@ Study the reference and match these properties, in priority order:
 
 ## 2. Camera & composition
 
-- First-person. Vertical FOV ~70°, camera height 1.65 m. The viewmodel (right
-  glove + Tommy gun) sits low and to the right, so the left of the frame is
-  open to the street like the reference. Weapon bob, sway, recoil.
-- First person only: the player is never seen, only his hands and the gun.
+- First-person. Vertical FOV ~70°, camera height 1.65 m (seated at a counter
+  1.60, standing in a fist fight 1.80 above the street). With the Tommy gun,
+  the viewmodel (right glove + gun) sits low and to the right, so the left of
+  the frame is open to the street like the reference. Weapon bob, sway,
+  recoil.
+- First person only: the detective is never seen, never named: only his
+  hands and sleeves, which carry the story (a cigarette lit, a glass raised,
+  a wallet opened, fists up, a matchbook turned in the fingers). The camera
+  has modes: walking, seated, locked on an opponent in a brawl, looking down
+  on a puzzle's table, driven by a cutscene (`src/player/Controller.js`).
 
 ---
 
@@ -287,11 +300,18 @@ against black backgrounds like the reference's mid-ground man.
 
 ## 8. Game loop, HUD, audio
 - Title card "NOIR EXTREME" in a condensed serif with an ink-splatter behind
-  it; "click to begin" → pointer lock. Ammo (bottom right, typewriter-ish
-  font) while a gun is out, health shown as an ink bar that bleeds red when
-  low; damage vignette in red. No counters and no cards between fights.
-  "THE END" card on death, with the kills and "click to try again".
-- Fights are scripted encounters (`src/game/Director.js`).
+  it; "click to begin" → pointer lock → the first scene fades in from black
+  under its chapter card ("I  The Diner"). Ammo (bottom right, typewriter-ish
+  font) only while a gun is out, health shown as an ink bar that bleeds red
+  when low, only in a fight; damage vignette in red. One prompt at a time,
+  low in the frame (`E  light up`); one-line subtitles, a few in the whole
+  story; chapter cards. No counters, no objective list, no dialogue tree.
+  Losing a fight is not failing: back to the start of the round.
+- The story runs as scenes of named beats (`src/game/SceneManager.js`,
+  `src/scenes/`); fights are scripted encounters (`src/game/Director.js`).
+- Music: none is composed. The game has named music slots, silent until the
+  user drops a file into `public/music/<slot>.(mp3|ogg|m4a)`; the diner's is
+  heard from its jukebox (`src/audio/Music.js`, STORY.md "Music").
 - Audio: all procedural Web Audio — rain bed (filtered noise + drips), thunder,
   Tommy gun (noise burst + low thump, per-shot pitch variance), pistol crack,
   ricochet, glass, explosion (sub + noise tail), fire crackle, train rumble,
@@ -314,8 +334,16 @@ The app must honour these URL params:
 - `t=<seconds>`: fast-forward the simulation clock by that many seconds after
   load (run fixed-step updates) so staged effects are in a known state.
 - `hud=0` hides the HUD. `debug=1` shows the stats overlay.
-Also expose `window.__noir` with the scene, pipeline, and a `spawnHood(pos)`
-helper for manual poking in the browser console.
+- `scene=<id>&beat=<name>` (the scene shot mode): builds the scene's stage,
+  runs the beat's setup (the room, the cast and the player exactly where the
+  story has them), steps `t` seconds (default 1) and freezes; `anim=1`
+  plays on, `pose=` / `fov=` override the camera, `puzzle=<id>` opens a
+  puzzle. Every beat of STORY.md is reachable this way; the full list of
+  presets and beats is in `docs/story/ARCHITECTURE.md` §8.
+- Shot mode stops every CSS animation, so a card in a screenshot never
+  depends on when the page loaded.
+Also expose `window.__noir` with the game, the stage, the pipeline, and a
+`spawnHood(pos)` helper for manual poking in the browser console.
 
 **Error capture (required):** `main.js` creates a hidden `<div id="errlog">`
 and appends every `window.onerror`, `unhandledrejection`, and `console.error` /
@@ -345,7 +373,10 @@ src/
   audio/Sfx.js            procedural sounds
   ui/Hud.js               DOM overlay (title, hud, end card)
   debug/Shots.js          camera presets + staged scenes for ?shot=
+  game/SceneManager.js    the story's scenes (src/scenes/*.js); Interact, Inspect, Puzzles
+  cast/, props/, destruct/  the figures, the small objects, what breaks
 ```
+The full module map, with each file's owner, is `docs/story/ARCHITECTURE.md`.
 Plain ES modules, no TypeScript, no framework. Keep functions small; comment
 the *why* of shader tricks.
 

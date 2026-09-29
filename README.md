@@ -1,10 +1,11 @@
 # NOIR EXTREME
 
-A first-person noir game set on one rain-soaked city block under an
-elevated railway, rendered in real time to look like a hand-inked
-black-and-white noir illustration. The only colour in the world is blood
-and fire. Built with Three.js and Vite; every texture, model, sound and
-effect is generated procedurally at startup (no art assets).
+A short first-person noir detective story, one rainy night in 1937, in a
+city rendered in real time to look like a hand-inked black-and-white noir
+illustration. Colour is an accent: blood, fire, an ember, a flame, scotch,
+neon, the crew's red. Built with Three.js and Vite; every texture, model,
+sound and effect is generated procedurally at startup (no art assets; the
+music slots wait for the user's jazz in `public/music/`).
 
 The target look is `reference/noir_reference.png`; progress frames per
 milestone live in `docs/progress/`.
@@ -16,15 +17,24 @@ npm install
 npm run dev
 ```
 
-Open http://127.0.0.1:5173, click to begin (pointer lock).
+Open http://127.0.0.1:5173, click to begin (pointer lock): the story opens
+in the diner, on a stool at the counter.
 
 | Key | Action |
 | --- | --- |
-| W A S D | move |
-| mouse | look, **left button** fire |
+| E | the prompt's action (light up, scotch, drink, pay, search, ...) |
+| mouse | look (seated: around the room; inspecting: turn the object) |
+| W A S D | move (walking) |
+| X | stand up off the stool / sit back down (the foundation's stand-in) |
+| F | a drag on the cigarette |
+| left button | fire (with the Tommy gun in hand) |
 | R | reload the drum |
 | M | mute |
 | Esc | release the mouse (pauses) |
+
+Scenes 1 and 2 are the foundation's stubs: stand-in people and hands, the
+beats moved on by E. See `docs/story/` for the story, the contracts and
+the architecture.
 
 ## How the look works
 
@@ -53,7 +63,16 @@ Open http://127.0.0.1:5173, click to begin (pointer lock).
   (with `audiotest=1`) the offline audio render table.
 - `node tools/fps.mjs` (`UNCAPPED=1` for headroom) — frame-time measurement.
 
+- `tools/shot.sh out.png "scene=diner&beat=order"` — a story beat's frame
+  (every beat: `docs/story/ARCHITECTURE.md` §8).
+- `python3 tools/golden.py check` — every golden frame against
+  `shots/golden/` (the renderer is pixel-deterministic).
+- `node tools/playtest.mjs` — a scripted play-through with trusted input.
+
 ## Design documents
 
-`DESIGN.md` is the art direction and technical plan; `docs/PHASE*_BRIEF.md`
-are the per-phase briefs and review notes.
+`DESIGN.md` is the art direction and technical plan. The story pass:
+`docs/story/STORY.md` (the story), `docs/story/CONTRACTS.md` (the binding
+APIs, file ownership, the site plan), `docs/story/ARCHITECTURE.md` (the
+engine as built, every stub and who replaces it), `docs/story/briefs/`
+(one brief per lane). `docs/PHASE*_BRIEF.md` are the shooter's phases.
