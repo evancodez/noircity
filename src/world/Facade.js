@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { tagInk, allocInkId } from '../render/layers.js';
 import { STREET } from './Street.js';
 import { roundedBox, boxWorldUV, merge, place, V3, smoothNormals } from './geom.js';
+import { DINER } from '../stages/block/site.js';
 
 // The left façade: a tall wet stone building in the foreground (rusticated
 // base, pilasters, framed windows, cornice, fire escape, a blade sign), then a
@@ -38,10 +39,32 @@ export class Facade {
     const stoneParts = [];
     const trimParts = [];
 
-    // main mass
-    stoneParts.push(new THREE.BoxGeometry(16, H, z0 - z1).translate(X - 8, H / 2, (z0 + z1) / 2));
-    // rusticated base course & plinth
-    stoneParts.push(roundedBox(0.3, 0.7, z0 - z1, 0.05).translate(X + 0.12, 0.35, (z0 + z1) / 2));
+    // main mass and the rusticated base course & plinth, in two builds
+    // (CONTRACTS §15, the diner's room on the ground floor):
+    //   far:  the old solid block, triangle for triangle, drawn whenever
+    //         the diner cannot be seen: every accepted frame is printed
+    //         from exactly these triangles (the same plane cut into other
+    //         triangles interpolates its depth and texture a last bit
+    //         differently, and the ink's brush thresholds show it)
+    //   near: boxes round the diner's void (the same outer faces and
+    //         world-space texture) and a plinth broken for its doorway,
+    //         drawn while the eye can see the diner (setNear, driven by
+    //         parts/dinerFront.js)
+    const D = DINER;
+    const farParts = [
+      new THREE.BoxGeometry(16, H, z0 - z1).translate(X - 8, H / 2, (z0 + z1) / 2),
+      roundedBox(0.3, 0.7, z0 - z1, 0.05).translate(X + 0.12, 0.35, (z0 + z1) / 2),
+    ];
+    const nearParts = [];
+    const slab = (xa, xb, ya, yb, za, zb) => nearParts.push(new THREE.BoxGeometry(xb - xa, yb - ya, zb - za).translate((xa + xb) / 2, (ya + yb) / 2, (za + zb) / 2));
+    slab(X - 16, X, 0, H, z1, D.zMin);
+    slab(X - 16, X, 0, H, D.zMax, z0);
+    slab(X - 16, D.backX, 0, H, D.zMin, D.zMax);
+    slab(D.backX, X, 0, D.floorY, D.zMin, D.zMax);
+    slab(D.backX, X, D.ceilY, H, D.zMin, D.zMax);
+    const doorZ0 = D.bays.B3 - D.window.w / 2, doorZ1 = D.bays.B3 + D.window.w / 2;
+    nearParts.push(roundedBox(0.3, 0.7, doorZ0 - z1, 0.05).translate(X + 0.12, 0.35, (doorZ0 + z1) / 2));
+    nearParts.push(roundedBox(0.3, 0.7, z0 - doorZ1, 0.05).translate(X + 0.12, 0.35, (z0 + doorZ1) / 2));
     // string course above the ground floor & under the cornice
     trimParts.push(roundedBox(0.42, 0.34, z0 - z1 + 0.4, 0.06).translate(X + 0.2, 5.35, (z0 + z1) / 2));
     trimParts.push(roundedBox(0.3, 0.22, z0 - z1 + 0.4, 0.05).translate(X + 0.14, 20.4, (z0 + z1) / 2));
@@ -58,11 +81,21 @@ export class Facade {
     // side quoin (visible end wall edge)
     stoneParts.push(roundedBox(16.2, H - 1.0, 0.4, 0.08).translate(X - 8, (H - 1.0) / 2, z1 + 0.12));
 
-    const stoneGeo = merge(stoneParts.map((q) => boxWorldUVAfter(q)));
-    boxWorldUV(stoneGeo, 1 / 12); // the stone tile covers 12 m: 1 m courses
-    const stone = new THREE.Mesh(stoneGeo, M.stone);
-    stone.castShadow = true; stone.receiveShadow = true;
-    g.add(stone);
+    // (the stone tile covers 12 m: 1 m courses)
+    const stoneMesh = (parts) => {
+      const geo = merge(parts.map((q) => boxWorldUVAfter(q)));
+      boxWorldUV(geo, 1 / 12);
+      const m = new THREE.Mesh(geo, M.stone);
+      m.castShadow = true; m.receiveShadow = true;
+      g.add(m);
+      return m;
+    };
+    this.massFar = stoneMesh(farParts);
+    this.massNear = stoneMesh(nearParts);
+    this.massNear.visible = false;
+    this.massNear.name = 'facadeMassNear';
+    this.nearOn = false;
+    stoneMesh(stoneParts);
     // Ledges and frames do NOT cast shadow-map shadows: a lamp at ledge
     // height projects them as long crisp black parallelograms (a regular
     // black-bar grid). Their own unlit undersides give the dark band an
@@ -72,7 +105,7 @@ export class Facade {
     g.add(trim);
 
     // windows: frames (stone trim), sills, glass (dark or lit)
-    const frameParts = [], glassDark = [], glassLit = [], glassDim = [], blinds = [];
+    const frameParts = [], dinerFrameParts = [], glassDark = [], glassLit = [], glassDim = [], blinds = [];
     const floors = [6.4, 10.0, 13.6, 17.2];
     for (let z = z0 - 2.0 - bay / 2; z > z1 + 1.5; z -= bay) {
       for (const y of floors) {
@@ -98,18 +131,27 @@ export class Facade {
         // mullion
         frameParts.push(roundedBox(0.06, h, 0.06, 0.02, 2).translate(xf + 0.03, y + h / 2, z));
       }
-      // ground floor shop window / door between pilasters
+      // ground floor shop window / door between pilasters (the diner's four
+      // bays keep their old shop windows in the far build: the Hoods' stray
+      // rounds of the accepted fights break them; the near build hides them
+      // for the diner's own front, stages/block/parts/dinerFront.js)
+      const dinerBay = Object.values(D.bays).some((b) => Math.abs(b - z) < 0.01);
+      const fp = dinerBay ? dinerFrameParts : frameParts;
       const w = 2.9, h = 3.3;
       const glass = new THREE.PlaneGeometry(w, h).rotateY(Math.PI / 2).translate(X + 0.03, 0.75 + h / 2, z);
       glassDark.push(glass);
-      this.windows.push(this.world.glass.addPane({ geo: glass, kind: 'dark', c: V3(X + 0.03, 0.75 + h / 2, z), w, h, broken: false, hits: 0, shop: true, shared: true, owner: this, tag: 'facade.shop' }));
-      frameParts.push(roundedBox(0.2, 0.2, w + 0.3, 0.05, 2).translate(X + 0.1, 0.75 + h + 0.1, z));
-      frameParts.push(roundedBox(0.22, 0.28, w + 0.3, 0.05, 2).translate(X + 0.11, 0.7, z));
-      frameParts.push(roundedBox(0.08, h, 0.08, 0.03, 2).translate(X + 0.05, 0.75 + h / 2, z));
+      this.windows.push(this.world.glass.addPane({ geo: glass, kind: 'dark', c: V3(X + 0.03, 0.75 + h / 2, z), w, h, broken: false, hits: 0, shop: true, shared: true, owner: this, tag: 'facade.shop', dinerBay }));
+      fp.push(roundedBox(0.2, 0.2, w + 0.3, 0.05, 2).translate(X + 0.1, 0.75 + h + 0.1, z));
+      fp.push(roundedBox(0.22, 0.28, w + 0.3, 0.05, 2).translate(X + 0.11, 0.7, z));
+      fp.push(roundedBox(0.08, h, 0.08, 0.03, 2).translate(X + 0.05, 0.75 + h / 2, z));
     }
     const frames = new THREE.Mesh(merge(frameParts), M.stoneTrim);
     frames.castShadow = false; frames.receiveShadow = true;
     g.add(frames);
+    // (the diner bays' old shop frames: the far build's)
+    this.dinerFrames = new THREE.Mesh(merge(dinerFrameParts), M.stoneTrim);
+    this.dinerFrames.castShadow = false; this.dinerFrames.receiveShadow = true;
+    g.add(this.dinerFrames);
     // Phase 3a: each kind of pane is one merged mesh, rebuilt without a pane
     // once it is shot out (world/Facade.hit); a black recess stands behind
     // every shot-out pane (the dark room)
@@ -139,8 +181,34 @@ export class Facade {
     this.near = g;
   }
 
+  // ---- the diner's room (CONTRACTS §15) -----------------------------------------
+  // the near build of the mass (the void cut, the doorway open) or the far
+  // one (the old solid block): drawn, shadow-cast and shot at one at a time
+  setNear(on) {
+    on = !!on;
+    if (on === this.nearOn) return;
+    this.nearOn = on;
+    this.massNear.visible = on;
+    this.massFar.visible = !on;
+    this.dinerFrames.visible = !on;
+    for (const w of this.windows) if (w.dinerBay) w.hidden = on;
+    const G = this.game;
+    if (G) {
+      G.rays.setEnabled(this.massNear, on);
+      G.rays.setEnabled(this.massFar, !on);
+      G.rays.setEnabled(this.dinerFrames, !on);
+      this.rebuildGlass('dark');
+      if (G.pipeline) G.pipeline.dirtyShadows();
+    }
+  }
+
   // ---- Phase 3a: shooting the windows ---------------------------------------
-  bind(game) { this.game = game; }
+  bind(game) {
+    this.game = game;
+    // (the bullets' world starts on the far build)
+    game.rays.setEnabled(this.massNear, this.nearOn);
+    game.rays.setEnabled(this.massFar, !this.nearOn);
+  }
 
   // a round hit a pane of the near building: find which one (the panes
   // are drawn merged, one mesh per kind); the pane cracks or goes
@@ -150,7 +218,7 @@ export class Facade {
     const kind = hit.mesh.userData.facadeGlass;
     let best = null, bd = Infinity;
     for (const w of this.windows) {
-      if (w.kind !== kind && kind !== 'any') continue;
+      if ((w.kind !== kind && kind !== 'any') || w.hidden) continue;
       const dz = Math.abs(hit.point.z - w.c.z) - w.w / 2, dy = Math.abs(hit.point.y - w.c.y) - w.h / 2;
       const d = Math.max(dz, dy);
       if (d < bd) { bd = d; best = w; }
@@ -171,7 +239,7 @@ export class Facade {
   rebuildGlass(kind) {
     const G = this.game, m = this.glassMeshes[kind];
     if (!m) return;
-    const keep = this.windows.filter((x) => x.kind === kind).map((x) => x.geo.clone());
+    const keep = this.windows.filter((x) => x.kind === kind && !x.hidden).map((x) => x.geo.clone());
     if (keep.length) { const old = m.geometry; m.geometry = merge(keep); old.dispose(); m.visible = true; G.rays.refresh(m); G.rays.setEnabled(m, true); }
     else { m.visible = false; G.rays.setEnabled(m, false); }
   }

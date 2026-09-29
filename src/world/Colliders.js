@@ -1,12 +1,20 @@
 // 2D (XZ-plane) collision world for the player & later the Hoods:
 // circles (posts, columns, hydrants), oriented boxes (cars, booths, stands),
 // and an outer rectangle of invisible walls.
+// The outer net is the bounds rectangle plus any REGIONS (addRegion): a
+// room behind a doorway lies outside the block's bounds, so a region adds
+// its rectangle to the net (the walls inside it are real boxes). A circle
+// inside any of them is left alone; one outside all of them goes back into
+// the nearest. (The Hoods' nav grid and the old wave spawner read only the
+// bounds.)
 export class Colliders {
   constructor() {
     this.circles = [];
     this.boxes = [];
     this.bounds = { minX: -1e9, maxX: 1e9, minZ: -1e9, maxZ: 1e9 };
+    this.regions = [];
   }
+  addRegion(minX, maxX, minZ, maxZ, tag = 'region') { const r = { minX, maxX, minZ, maxZ, tag }; this.regions.push(r); return r; }
   addCircle(x, z, r, tag) { const c = { x, z, r, tag }; this.circles.push(c); return c; }
   addBox(cx, cz, hx, hz, angle = 0, tag) {
     const b = { cx, cz, hx, hz, angle, c: Math.cos(angle), s: Math.sin(angle), tag };
@@ -55,9 +63,26 @@ export class Colliders {
         pos.z = b.cz - nlx * b.s + nlz * b.c;
       }
       const B = this.bounds;
-      pos.x = Math.max(B.minX + r, Math.min(B.maxX - r, pos.x));
-      pos.z = Math.max(B.minZ + r, Math.min(B.maxZ - r, pos.z));
+      if (this.regions.length) this.clampNet(pos, r);
+      else {
+        pos.x = Math.max(B.minX + r, Math.min(B.maxX - r, pos.x));
+        pos.z = Math.max(B.minZ + r, Math.min(B.maxZ - r, pos.z));
+      }
     }
     return pos;
+  }
+
+  // the union of the bounds and the regions: inside one of them, untouched;
+  // else clamped into the one that moves it least
+  clampNet(pos, r) {
+    let best = null, bd = Infinity;
+    for (const R of [this.bounds, ...this.regions]) {
+      const x = Math.max(R.minX + r, Math.min(R.maxX - r, pos.x));
+      const z = Math.max(R.minZ + r, Math.min(R.maxZ - r, pos.z));
+      const d = (x - pos.x) ** 2 + (z - pos.z) ** 2;
+      if (d === 0) return;
+      if (d < bd) { bd = d; best = [x, z]; }
+    }
+    pos.x = best[0]; pos.z = best[1];
   }
 }
