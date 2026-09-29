@@ -189,14 +189,20 @@ export class Controller {
   // figure of the cast (not a Hood: the shooter's own rules; not a man lying
   // down: I kneel to search him). A figure's collider let the eye come to
   // ~0.65 m of his root, the camera almost inside his coat.
-  keepOff(R = 1.1) {
+  // (it stops MY step toward a figure, and never shoves me: a figure that
+  // walks past me - the old man going to hide - must not push me along, and
+  // the fight's man keeps his own distance, cast/brawl/brain.js)
+  keepOff(px, pz, R = 1.1) {
     const cast = this.world && this.world.cast;
     if (!cast || !cast.list) return;
     for (const c of cast.list) {
       if (!c.own || c.down || c.alive === false || c.state === 'ko' || !c.pos) continue;
       const dx = this.pos.x - c.pos.x, dz = this.pos.z - c.pos.z, d = Math.hypot(dx, dz);
       if (d >= R || d < 1e-4) continue;
-      this.pos.x = c.pos.x + dx / d * R; this.pos.z = c.pos.z + dz / d * R;
+      const d0 = Math.hypot(px - c.pos.x, pz - c.pos.z);
+      if (d >= d0) continue;
+      const k = Math.min(R, d0) / d;
+      this.pos.x = c.pos.x + dx * k; this.pos.z = c.pos.z + dz * k;
     }
   }
 
@@ -241,7 +247,7 @@ export class Controller {
       this.pos.z += (this.vel.z + (P ? P.z : 0)) * dt;
       const wx = this.pos.x, wz = this.pos.z;
       if (this.world.colliders) this.world.colliders.resolve(this.pos, this.radius * 0.85);
-      this.keepOff();
+      this.keepOff(px, pz);
       // (the fight's room: its walls hold me, the door's gap too - Brawl sets it)
       const BB = this.brawlBounds;
       if (BB) {
@@ -297,10 +303,11 @@ export class Controller {
     const a = 1 - Math.exp(-accel * dt);
     this.vel.x += (tx - this.vel.x) * a;
     this.vel.z += (tz - this.vel.z) * a;
+    const kx = this.pos.x, kz = this.pos.z;
     this.pos.x += this.vel.x * dt;
     this.pos.z += this.vel.z * dt;
     this.world.colliders.resolve(this.pos, this.radius);
-    this.keepOff();
+    this.keepOff(kx, kz);
 
     const gy = this.world.surfaceY(this.pos.x, this.pos.z);
     this.groundY += (gy - this.groundY) * (1 - Math.exp(-14 * dt));

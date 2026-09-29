@@ -21,9 +21,9 @@ export const MANNERS = {
 };
 export function mannerOf(hp) { return hp > 65 ? 'measured' : hp > 30 ? 'dirty' : hp > 12 ? 'wild' : 'out'; }
 // the nearest he comes to my eye (his root), and a rush's end
-export const KEEP_OFF = { eye: 1.1, rush: 1.2, body: 1.0 };
+export const KEEP_OFF = { eye: 1.1, rush: 1.2, body: 1.0, pass: 0.85 };
 export const REACH = { straight: 1.95, swing: 1.85, over: 1.95, shove: 1.7, throw: 7, rush: 2.9 };
-const _v = new THREE.Vector3(), _w = new THREE.Vector3();
+const _v = new THREE.Vector3(), _w = new THREE.Vector3(), _g = new THREE.Vector3();
 const wrap = (a) => Math.atan2(Math.sin(a), Math.cos(a));
 
 // ---- choices -------------------------------------------------------------------------------
@@ -133,6 +133,28 @@ export function steer(B, dt) {
   const S = B.game.stage;
   const free = him.state === 'move' || (him.state === 'reel' && !him.atSpot) || (him.state === 'arm' && him.task && him.task.phase !== 'take');
   const g = free ? goalOf(B) : null;
+  // (polish: a place he can stand - the point at arm's length from me can
+  // fall on a stool or the counter, and with me in the gap between the
+  // stools and the counter he stood off behind the stool for good: no blow
+  // in reach, the lesson waiting on one. The goal is pushed out of the
+  // furniture as his own body would be)
+  if (g && him.state !== 'reel') {
+    const q = _g.set(g.x, 0, g.z);
+    S.colliders.resolve(q, (F.collider ? F.collider.r : 0.35), F.collider);
+    g.x = q.x; g.z = q.z;
+    // (and wedged - in the pocket between the counter, a stool and a stool
+    // knocked over, wanting to move and not moving for a second and a half -
+    // he steps out into the open aisle, away from the counter, first)
+    const want = Math.hypot(g.x - F.pos.x, g.z - F.pos.z) > 0.3;
+    him.wedgeT = want && (him.speed || 0) < 0.08 ? (him.wedgeT || 0) + dt : Math.max(0, (him.wedgeT || 0) - dt * 2);
+    if (him.wedgeT > 1.5) him.outT = 1.0;
+    if (him.outT > 0) {
+      him.outT -= dt;
+      const ax = B.room && B.room.counterX != null ? B.room.counterX + 1.5 : F.pos.x + 0.9;
+      g.x = Math.max(ax, F.pos.x + 0.5); g.z = F.pos.z;
+      if (him.outT <= 0) him.wedgeT = 0;
+    }
+  }
   // the velocity he wants: toward the goal, easing in, capped
   const tv = _w.set(0, 0, 0);
   if (g) {
@@ -167,10 +189,16 @@ export function steer(B, dt) {
   {
     const dx = F.pos.x - eye.x, dz = F.pos.z - eye.z, dd = Math.hypot(dx, dz);
     let R = him.clip === 'br_rush' ? KEEP_OFF.rush : KEEP_OFF.eye;
+    // (walking - circling, stepping out of a corner, going for a bottle -
+    // his steering keeps him 1.25 m and more from me anyway; closer than
+    // that he is only passing, and in the 1.1 m aisle a 1.1 m ring round my
+    // eye walled him into the corner by the counter for good: he may pass
+    // at arm's length)
+    if (him.state === 'move' || him.state === 'arm') R = KEEP_OFF.pass;
     // (and his body: a haymaker or an overhand throws the chest and the
     // head well past the feet - they too stay KEEP_OFF.body from my eye:
     // the root goes back by as much as the body leans in toward me)
-    if (dd > 1e-4 && c.object && c.bones.chest && c.bones.head) {
+    if (R !== KEEP_OFF.pass && dd > 1e-4 && c.object && c.bones.chest && c.bones.head) {
       const o = c.object.position, ux = -dx / dd, uz = -dz / dd;
       let lean = 0;
       for (const b of [c.bones.chest, c.bones.head]) {
