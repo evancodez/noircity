@@ -102,12 +102,10 @@ export function buildProp(kind, { lod = 0, variant = null } = {}) {
     const geo = b.geos.length === 1 ? b.geos[0] : mergeGeos(b.geos, { uv: !!b.mat.map });
     b.parent.add(mk(geo, b.mat, b.p));
   }
-  const box = new THREE.Box3().setFromObject(g);
-  const size = box.isEmpty() ? new THREE.Vector3() : box.getSize(new THREE.Vector3());
   const ud = g.userData;
   Object.assign(ud, {
     kind, variant: v, prop: true, lod,
-    size,
+    size: null,
     grip: S.grip && S.grip.isMatrix4 ? S.grip : new THREE.Matrix4().makeTranslation(...(S.grip || [0, 0, 0])),
     rest: S.rest || new THREE.Matrix4(),
     inkIds: nIds, inkId: id0,
@@ -121,6 +119,10 @@ export function buildProp(kind, { lod = 0, variant = null } = {}) {
     parts: by,
   });
   if (S.init) S.init(g, ud, by);
+  // (measured once the kind has set itself up: a cigarette's paper is a
+  // unit cylinder until its init scales it)
+  const box = new THREE.Box3().setFromObject(g);
+  ud.size = box.isEmpty() ? new THREE.Vector3() : box.getSize(new THREE.Vector3());
   return g;
 }
 

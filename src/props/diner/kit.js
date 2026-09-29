@@ -32,7 +32,7 @@ export function roomMats() {
     panelStile: std('panelStile', 0x181818, 0.55, 'wood'),
     rail: std('rail', 0x262626, 0.45, 'wood'),
     counterFront: std('counterFront', 0x0d0d0d, 0.55, 'wood'),
-    counterTop: std('counterTop', 0x151515, 0.42, 'enamel'),
+    counterTop: std('counterTop', 0x222222, 0.42, 'enamel'),
     steel: std('steel', 0x141414, 0.18, 'metal'),
     brass: std('brass', 0x151515, 0.22, 'metal'),
     cabinet: std('cabinet', 0x0e0e0e, 0.6, 'wood'),

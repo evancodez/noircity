@@ -44,7 +44,7 @@ export function buildPendants(kit, lamps) {
     // pool, so the counter goes paper white under it and falls off to
     // black between; the cone keeps its street-lamp strength)
     if (lamp.light) {
-      lamp.light.intensity = kind === 'counter' ? 210 : 110;
+      lamp.light.intensity = kind === 'counter' ? 115 : 55;
       lamp.light.angle = 0.62;
       lamp.light.penumbra = 0.6;
       lamp.light.distance = 4.6;

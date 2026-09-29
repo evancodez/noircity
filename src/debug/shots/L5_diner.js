@@ -41,7 +41,7 @@ function stagePropSheet(stage, camera, controller) {
     o.rotation.y = parseFloat(q.get('turn') || '0.5');
     // frame it: the eye on the counter's front, looking down at it
     const s = Math.max(ud.size.x, ud.size.y, ud.size.z, 0.03);
-    const dist = s / (2 * Math.tan((32 * Math.PI) / 180)) * 1.45 + 0.05;
+    const dist = s / (2 * Math.tan((20 * Math.PI) / 180)) * 1.2 + 0.03;
     const cy = top + ud.size.y * 0.45;
     const pitch = -0.42;
     const pose = { x: C.frontX - 0.3 + Math.cos(pitch) * dist, y: cy - Math.sin(pitch) * dist, z: z0, yaw: Math.PI / 2, pitch, fov: 40 };
