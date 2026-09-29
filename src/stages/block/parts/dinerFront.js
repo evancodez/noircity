@@ -480,6 +480,13 @@ export default {
     colliders.addRegion(XD - 0.05, X + 1.2, bz0 + 0.26, bz1 - 0.26, 'diner.vestibule');
     colliders.addRegion(Xi - 1.2, X + 1.2, dz0, dz1, 'diner.door');
     colliders.addRegion(D.backX, Xi, D.zMin, D.zMax, 'diner');
+    // the wall's thickness behind the plate glass is indoors: no rain falls
+    // in the reveals, and the ink prints them calm like the room (lane 1:
+    // an untagged surface in a dry box is plaster). The door bay's
+    // vestibule is left out: it is open to the street.
+    for (const [za, zb] of [[D.zMin - 0.45, bz0], [bz1, D.zMax + 0.45]]) {
+      stage.dry.push(new THREE.Box3(new THREE.Vector3(Xi - 0.02, F - 0.2, za), new THREE.Vector3(XF - 0.02, D.ceilY, zb)));
+    }
     stage.addAnchor('diner.door.out', { pos: { x: X + 0.9, y: F, z: dz0 + dz.w / 2 }, yaw: -Math.PI / 2, r: 1.0 });
     stage.addAnchor('diner.door.in', { pos: { x: Xi - 0.9, y: F, z: dz0 + dz.w / 2 }, yaw: Math.PI / 2, r: 1.0 });
     stage.addAnchor('diner.pavement.ko', { pos: { x: -8.9, y: 0.15, z: D.bays.B4 + 0.2 }, yaw: Math.PI / 2, r: 1.6 });
