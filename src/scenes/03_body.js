@@ -4,6 +4,7 @@ import { V, ALLEY, XV, STOOD, SHOOTER, WOUNDS, MARKS, LIES, KNEEL, STUDY, startP
 import { makeOutline, makeStrings, runStrings } from './body/strings.js';
 import { HALVES, clearHalves } from './body/halves.js';
 import { NOTE_PUZZLE, clearNote } from './body/note.js';
+import { DINER_SIGHT } from '../stages/block/site.js';
 import { openFist, pullLadder, climbHands, handsOff, takeHalf, tableFinger } from './body/hands.js';
 
 // Scene 3, the body (STORY.md; lane B1's brief). The side alley thirty
@@ -40,6 +41,13 @@ function tidy(game) {
   if (L.box) { const i = st.colliders.boxes.indexOf(L.box); if (i >= 0) st.colliders.boxes.splice(i, 1); }
   const alley = st.part && st.part('alley');
   if (alley) { alley.show(false); alley.ladder.set(0); }
+  DINER_SIGHT.force = null;
+  // (a puzzle left unsolved: its things off the step, its state forgotten)
+  const PZ = game.puzzles;
+  if (PZ.active && (PZ.active.id === 'body.halves' || PZ.active.id === 'body.note')) PZ.close();
+  const hs = PZ.states.get('body.halves'); if (hs) clearHalves(hs);
+  const ns = PZ.states.get('body.note'); if (ns) clearNote(ns);
+  PZ.states.delete('body.halves'); PZ.states.delete('body.note');
   const cam = game.camera;
   if (L.fov0 && Math.abs(cam.fov - L.fov0) > 1e-3) { cam.fov = L.fov0; cam.updateProjectionMatrix(); }
 }
@@ -201,6 +209,11 @@ export default defineScene({
 
     // ---- under every beat ------------------------------------------------------------
     ctx.onStep((dt) => {
+      // (in the alley the diner is behind a wall of brick: its room's lamps
+      // stay out of the pool and it casts no shadow - the site's own test is
+      // a frustum's, and from the step it looks straight through the wall)
+      const e = G.eye;
+      DINER_SIGHT.force = e.x < ALLEY.mouthX - 0.2 && e.z < ALLEY.zS + 0.05 && e.z > ALLEY.zN - 0.05 ? false : null;
       if (F.hat) F.hat.step(dt);
       if (F.car) F.car.step(dt);
       O.step(dt);

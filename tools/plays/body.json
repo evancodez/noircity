@@ -17,6 +17,15 @@
    "clickOn": "#title .opt[data-k=begin]"
   },
   {
+   "wait": 2500
+  },
+  {
+   "name": "(a loaded machine may refuse the first pointer lock: the title then asks for a second click, harmless once locked)"
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]"
+  },
+  {
    "until": "G.scenes.current && G.scenes.current.id === 'body' && document.pointerLockElement === N.renderer.domElement",
    "timeout": 10000
   },

@@ -301,11 +301,18 @@ export default {
     // the guides and the counterweight hook on the landing's rail
     add([rbox(0.08, 0.14, 0.1, L.x - lw / 2 - 0.05, E.y1 + 0.1, lz, 0.01), rbox(0.08, 0.14, 0.1, L.x + lw / 2 + 0.05, E.y1 + 0.1, lz, 0.01),
       rbox(0.08, 0.14, 0.1, L.x - lw / 2 - 0.05, E.y1 + 0.85, lz, 0.01), rbox(0.08, 0.14, 0.1, L.x + lw / 2 + 0.05, E.y1 + 0.85, lz, 0.01)], MAT.iron, { id: escId, parent: esc });
+    let api = null;
     const ladder = {
       group: ladG, down: 0, rungs, x: L.x, z: lz, w: lw,
       // the ladder's foot, world y
       footY: () => A.y + L.up * (1 - ladder.down),
-      set(k) { ladder.down = Math.max(0, Math.min(1, k)); ladG.position.y = A.y + L.up * (1 - ladder.down); },
+      set(k) {
+        ladder.down = Math.max(0, Math.min(1, k)); ladG.position.y = A.y + L.up * (1 - ladder.down);
+        // (down, it stands in the way: a man walks into it, not through it)
+        const want = api && api.shown && ladder.down > 0.9;
+        if (want && !ladder.col) ladder.col = colliders.addBox(L.x, lz, lw / 2 + 0.05, 0.06, 0, 'alley');
+        else if (!want && ladder.col) { const i = colliders.boxes.indexOf(ladder.col); if (i >= 0) colliders.boxes.splice(i, 1); ladder.col = null; }
+      },
       // a rung's world point (i from the foot)
       rung(i, out = new THREE.Vector3()) { return out.set(L.x, ladder.footY() + rungs[Math.max(0, Math.min(rungs.length - 1, i))], lz); },
     };
@@ -352,7 +359,7 @@ export default {
     // (the alley's own room: the street's rain, the gutters and the drains)
     stage.addLook(new THREE.Box3(V3(A.gateX, -1, A.zN), V3(A.mouthX - 0.3, 12, A.zS)), { room: 'alley' });
 
-    const api = {
+    api = {
       group: g, meshes, lamp, bulb, ladder, escape: esc, walls: { S: wallS, N: wallN }, shown: false,
       stepTop: STEP_TOP,
       // the scene shows the place (and its colliders); the lamp is the scene's
@@ -360,6 +367,7 @@ export default {
         api.shown = !!on;
         g.visible = !!on;
         setColliders(!!on);
+        ladder.set(ladder.down);
         if (!on) api.light(false);
       },
       light(on = true) {
