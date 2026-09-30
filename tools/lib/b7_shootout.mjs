@@ -17,9 +17,22 @@ const STATIONS = {
 const BEAT_AT = { cars: 'B4', doorways: 'B2', el: 'B4', driveby: 'door', cardinal: 'B4', end: 'door' };
 const AISLE = -12.75;
 
+// [R2-F] profiles: 'sure' (the first pass's: a quick, sure shot) and
+// 'first' (a first-timer: slower to see a man and to turn onto him, a hand
+// that wanders - a slow sway of the sights of `sway` rad - no lead on a
+// moving man or car, longer bursts, holds a window until badly hurt, never
+// finds the light switch). The step's "profile" picks one.
+const PROFILES = {
+  sure: { react: [250, 420], gain: 0.55, step: 0.16, sway: 0, lead: true, burst: [300, 650], tol: 1, hurt: 38, lights: true },
+  first: { react: [550, 950], gain: 0.34, step: 0.1, sway: 0.055, lead: false, burst: [600, 1200], tol: 1.8, hurt: 25, lights: false },
+};
+
 export default async function drive({ js, turn, keyDown, keyUp, mouse, shot, log, sleep, W, H, opts }) {
   const T0 = Date.now(), timeout = opts.timeout ?? 900000;
   const rr = (a, b) => a + (b - a) * Math.random();
+  const P = PROFILES[opts.profile || 'sure'];
+  const ph = [0, 1, 2, 3].map(() => Math.random() * 6.28);
+  const sway = () => { const t = (Date.now() - T0) / 1000; return [P.sway * (0.6 * Math.sin(t * 1.3 + ph[0]) + 0.4 * Math.sin(t * 3.1 + ph[1])), 0.6 * P.sway * (0.6 * Math.sin(t * 1.7 + ph[2]) + 0.4 * Math.sin(t * 2.9 + ph[3]))]; };
   const cx = W / 2, cy = H / 2;
   const rec = { beats: [], deaths: 0, shots: 0, lights: false, drums: 0, ended: false };
   let wDown = false, fireUntil = 0, firing = false, target = null, seenAt = 0, route = null, mode = 'go', lastBeat = null;
@@ -107,7 +120,7 @@ export default async function drive({ js, turn, keyDown, keyUp, mouse, shot, log
       continue;
     }
     // ---- the lights, once ------------------------------------------------------------------
-    if (s.lights && !rec.lights && (s.beat === 'arrive' || s.beat === 'cars')) {
+    if (P.lights && s.lights && !rec.lights && (s.beat === 'arrive' || s.beat === 'cars')) {
       if (mode !== 'lights') { mode = 'lights'; route = routeTo(s, STATIONS.sw); }
       if (!(await walkStep(s))) { await sleep(33); continue; }
       await aimAt(s, lookYaw(s, -10.46, 1.62), lookPitch(s, -10.46, 1.42, 1.62));
@@ -134,7 +147,7 @@ export default async function drive({ js, turn, keyDown, keyUp, mouse, shot, log
       continue;
     }
     // ---- hurt: back off the window until the breath comes back -----------------------------
-    if (s.hp < 38 && mode !== 'cover') { mode = 'cover'; route = routeTo(s, STATIONS.cover); coverUntil = now + 9000; await fire(false); }
+    if (s.hp < P.hurt && mode !== 'cover') { mode = 'cover'; route = routeTo(s, STATIONS.cover); coverUntil = now + 9000; await fire(false); }
     if (mode === 'cover') {
       const arrived = await walkStep(s);
       if (arrived && s.ammo < 50 && !s.reloading && s.reserve > 0 && now > reloadAt) { reloadAt = now + 3000; await tap('KeyR'); }
@@ -160,13 +173,14 @@ export default async function drive({ js, turn, keyDown, keyUp, mouse, shot, log
     const seen = s.men.filter((m) => m.los).sort((a, b) => a.d - b.d);
     let m = null;
     if (target != null) m = seen.find((q) => q.i === target) || null;
-    if (!m && seen.length) { m = seen[0]; if (target !== m.i) { target = m.i; seenAt = now + rr(250, 420); } }
+    if (!m && seen.length) { m = seen[0]; if (target !== m.i) { target = m.i; seenAt = now + rr(P.react[0], P.react[1]); } }
     if (!m) target = null;
     if (car && (!m || m.d > 12)) {
       // (lead it a little)
-      const lead = car.d / 60 + 0.12;
+      const lead = P.lead ? car.d / 60 + 0.12 : 0;
       const px = car.x + car.vx * lead, pz = car.z + car.vz * lead;
-      const err = await aimAt(s, lookYaw(s, px, pz), lookPitch(s, px, car.y, pz), 0.6, 0.2);
+      const [sy, sp] = sway();
+      const err = await aimAt(s, lookYaw(s, px, pz) + sy, lookPitch(s, px, car.y, pz) + sp, P.gain + 0.05, P.step + 0.04);
       await fire(err < 0.05 && s.ammo > 0);
     } else if (m && now > seenAt) {
       await engage(s, m);
@@ -180,17 +194,19 @@ export default async function drive({ js, turn, keyDown, keyUp, mouse, shot, log
   }
   await setW(false); await fire(false);
   rec.time = +((Date.now() - T0) / 1000).toFixed(0);
-  rec.K = await js('(() => { const K = G.counters; return { damageTaken: K.damageTaken, hoodShots: K.hoodShots, hoodHits: K.hoodHits, kills: K.kills, shots: K.shots, explosions: K.explosions, windows: K.windows }; })()');
+  rec.K = await js('(() => { const K = G.counters; return { damageTaken: K.damageTaken, hoodShots: K.hoodShots, hoodHits: K.hoodHits, kills: K.kills, shots: K.shots, hits: K.hits, deaths: K.deaths, explosions: K.explosions, windows: K.windows }; })()');
+  rec.profile = opts.profile || 'sure';
   return rec;
 
   // hold a burst on a man's chest while on him
   async function engage(s, m) {
-    const lead = m.d / 80;
+    const lead = P.lead ? m.d / 80 : 0;
     const px = m.x + m.vx * lead, pz = m.z + m.vz * lead;
-    const err = await aimAt(s, lookYaw(s, px, pz), lookPitch(s, px, m.y, pz), 0.55, 0.18);
+    const [sy, sp] = sway();
+    const err = await aimAt(s, lookYaw(s, px, pz) + sy, lookPitch(s, px, m.y, pz) + sp, P.gain, P.step + 0.02);
     const now = Date.now();
     if (s.ammo === 0) { await fire(false); if (!s.reloading && s.reserve > 0 && now > reloadAt) { reloadAt = now + 3200; await tap('KeyR'); } return; }
-    if (err < 0.035 + 0.3 / Math.max(4, m.d) * 0.1) { if (!firing) { fireUntil = now + rr(300, 650); rec.shots++; } await fire(true); }
+    if (err < (0.035 + 0.3 / Math.max(4, m.d) * 0.1) * P.tol) { if (!firing) { fireUntil = now + rr(P.burst[0], P.burst[1]); rec.shots++; } await fire(true); }
     if (firing && now > fireUntil) { await fire(false); await sleep(rr(120, 260)); }
   }
 }
