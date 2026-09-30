@@ -30,7 +30,7 @@ export default {
     ctl.esc = {
       rail, len, s: opts.s ?? 0, v: 0, look: { yaw: 0, pitch: 0 }, idle: 0, done: false, heading: null,
       onEvent: opts.onEvent || (() => {}), endYaw: opts.endYaw ?? null, ladderTime: opts.ladderTime ?? 0.95, ladderT: 0, ladderK: 0,
-      footAcc: 0, seg: 0, game: opts.game || null, pitchBase: -0.1,
+      footAcc: 0, seg: 0, game: opts.game || null, pitchBase: -0.1, ladder: opts.ladder || null,
     };
     // (the look the eye had comes with it: an offset from the way ahead)
     const E = ctl.esc;
@@ -95,9 +95,9 @@ export default {
     // the way ahead turns the body; the look is laid on it and eases back
     // to it once the mouse has rested 0.6 s (faster while moving)
     let h = headingAt(E, E.s);
-    if (E.endYaw != null && kind === 'ladder') h = E.heading + wrap(E.endYaw - E.heading) * sm(E.ladderK * 1.15);
+    if (E.endYaw != null && kind === 'ladder') h = E.heading + wrap(E.endYaw - E.heading) * sm(Math.min(1, E.ladderK / 0.3));
     const dh = wrap(h - E.heading);
-    E.heading += Math.sign(dh) * Math.min(Math.abs(dh), dt * 4.2);
+    E.heading += Math.sign(dh) * Math.min(Math.abs(dh), dt * (kind === 'ladder' ? 6.5 : 4.2));
     E.idle += dt;
     if (E.idle > 0.6) { const k = Math.exp(-dt * (E.v > 0.5 ? 2.2 : 0.6)); E.look.yaw *= k; E.look.pitch = E.look.pitch * k; }
     const onStair = kind === 'stair' && E.v > 0.3;
@@ -111,7 +111,35 @@ export default {
     ctl.bobPhase += dt * (moving ? 2.1 + E.v * 1.6 : 0);
     RUNHANDS.phase = ctl.bobPhase;
     RUNHANDS.k += ((moving ? 0.55 : 0.15) - RUNHANDS.k) * (1 - Math.exp(-dt * 6));
-    RUNHANDS.step(dt, 6);
+    // on a flight, a hand runs down its handrail (object first: the rail's
+    // point beside me and a little ahead, at the rail's height); on the
+    // ladder both hands hold its sides as it drops, and let go as I turn
+    const seg = E.rail[Math.min(E.rail.length - 1, segIndex(E, E.s) + 1)];
+    if (seg.kind === 'stair' && seg.rail) {
+      const i = segIndex(E, E.s), a = E.rail[i], b = E.rail[i + 1];
+      const hx = b.x - a.x, hz = b.z - a.z, hl = Math.hypot(hx, hz) || 1;
+      const fx = hx / hl, fz = hz / hl;
+      // (the right of a heading (fx, fz) is (-fz, fx))
+      const sx = seg.rail === 'R' ? -fz : fz, sz = seg.rail === 'R' ? fx : -fx;
+      const ahead = Math.min(0.35, (b.s - E.s) * 0.8);
+      const q = pointAt(E, Math.min(b.s, E.s + ahead), _b);
+      const P = seg.rail === 'R' ? RUNHANDS.plantR : RUNHANDS.plantL;
+      P.set(q.x + sx * 0.33, q.y + 0.97, q.z + sz * 0.33);
+      RUNHANDS.railSide = seg.rail;
+      RUNHANDS.lift = 0;
+      RUNHANDS.set('rail');
+    } else if (kind === 'ladder') {
+      const L = E.ladder;
+      if (L) {
+        const y = pointAt(E, E.s, _b).y + 1.25;
+        // (its sides left and right of me as I go down it facing south)
+        RUNHANDS.plantR.set(L.x - 0.24, y, L.z + 0.06);
+        RUNHANDS.plantL.set(L.x + 0.24, y, L.z + 0.06);
+      }
+      RUNHANDS.lift = Math.max(0, (E.ladderK - 0.55) / 0.35);
+      RUNHANDS.set(E.ladderK < 0.28 ? 'plant' : 'pump');
+    } else RUNHANDS.set('pump');
+    RUNHANDS.step(dt, 7);
     if (E.s >= E.len && !E.done) { E.done = true; E.onEvent('end', {}); }
   },
   exit(ctl) { delete ctl.esc; },

@@ -255,7 +255,7 @@ export default {
       flight(g, F, ESC.f1.z0, y3, ESC.f1.z1, y2, ESC.f1.x, w);
       flight(g, F, ESC.f2.z0, y2, ESC.f2.z1, y1, ESC.f2.x, w);
       // the ladder's guides at the hatch (the ladder itself slides: chase.js)
-      for (const s of [-1, 1]) fbox(g, MAT.iron, F, ESC.ladder.z + s * 0.27 - 0.02, ESC.ladder.z + s * 0.27 + 0.02, y1 - 0.9, y1 + 1.0, ESC.ladder.x - 0.03, ESC.ladder.x + 0.03);
+      for (const s of [-1, 1]) fbox(g, MAT.iron, F, ESC.ladder.z - 0.025, ESC.ladder.z + 0.025, y1 - 0.9, y1 + 1.0, ESC.ladder.x + s * 0.27 - 0.03, ESC.ladder.x + s * 0.27 + 0.03);
     }
 
     // ================= 1 the straight: the east block ============================
@@ -383,8 +383,14 @@ export default {
     lamps.l2 = L.wall(31.6, 4.0, LANE.z0, 0, 1);
     // 3 the yard: at its far end, behind the sheets (the back light) and at
     // its entry
-    lamps.y1 = L.wall(YARD.x1, 4.6, -78.6, -1, 0, { out: 0.6, strength: 1.25 });
-    lamps.y2 = L.wall(YARD.x1, 4.2, -50.4, -1, 0);
+    lamps.y1 = L.wall(YARD.x1, 4.6, -78.6, -1, 0, { out: 0.6, strength: 1.0 });
+    // a flood on the far wall of the yard, thrown down the yard through the
+    // washing: the sheets glow with it, and a man between it and them is a
+    // shadow on them
+    lamps.y3 = L.wall(43.2, 5.4, PASSAGE.z0, 0, 1, { out: 2.3, half: 0.62, strength: 1.0, height: 26 });
+    // (not one of the pool's: the far lamp behind the washing must have
+    // a shadow-casting light as I come up the yard)
+    lamps.y2 = L.wall(YARD.x1, 4.2, -50.4, -1, 0, { real: false });
     // 4 the passage
     lamps.p1 = L.wall(32.4, 3.9, PASSAGE.z1, 0, -1, { out: 0.2 });
     lamps.p2 = L.wall(16.0, 4.0, PASSAGE.z0, 0, 1, { out: 0.2 });

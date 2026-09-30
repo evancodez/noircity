@@ -1,4 +1,6 @@
 import * as THREE from 'three';
+import { restageStretch } from '../../scenes/06_watcher.js';
+import { layOn } from '../../cast/kinds/watcher.js';
 
 // Lane B4's presets (scene 6, The Watcher). The scene's beats are also
 // reachable as ?scene=watcher&beat=<seen|escape|run|car>&t=<s>.
@@ -35,7 +37,24 @@ function spawnWatcher(game, at, yaw, clip) {
   return c;
 }
 
+// the chase in shot mode: the run beat at stretch `st` (0 .. 4), W held
+// (&jump=1 SPACE held too; &w=0 no W), &ax=<yaw offset> the look turned;
+// t= how long into it
+function chase() {
+  return {
+    scene: 'watcher', beat: 'run', t: 2, viewmodel: true,
+    stage(stage, camera, controller, game) {
+      const i = Math.round(num('st', 0));
+      const ctx = game.scenes.ctx;
+      if (i > 0 && ctx && ctx.flags.chase) restageStretch(ctx, i);
+      controller.auto = { f: P.get('w') === '0' ? 0 : 1, s: num('as', 0), jump: P.get('jump') === '1' };
+      if (P.get('ax')) controller.yaw += num('ax', 0);
+    },
+  };
+}
+
 export const presets = {
+  chase: chase(),
   backlot: onBacklot(2.5, -12, 0, 0),
   bl_straight: onBacklot(0.95, -9.8, 0, 0.02),
   bl_escape: onBacklot(0.5, -10.4, Math.PI - 0.1, -0.45, 10.8),
@@ -55,11 +74,8 @@ export const presets = {
       const yaw = Math.atan2(-(at.x - ex), -(at.z - ez));
       camera.fov = num('fov', 40); camera.updateProjectionMatrix();
       controller.setPose(ex, ez, yaw, Math.atan2(ty - 1.6, d), 0);
-      if (P.get('wl') === '1') {
-        // (a look back over the shoulder, as the chase lays it on)
-        const q = new THREE.Quaternion(), Y = new THREE.Vector3(0, 1, 0);
-        F.afterPose = (h) => { const B = h.bones; B.chest.quaternion.multiply(q.setFromAxisAngle(Y, 0.45)); B.neck.quaternion.multiply(q.setFromAxisAngle(Y, 0.9)); B.head.quaternion.multiply(q.setFromAxisAngle(Y, 0.5)); B.spine.quaternion.multiply(q.setFromAxisAngle(Y, 0.35)); };
-      }
+      // (the coat's tails and a look back, as the chase lays them on)
+      F.afterPose = (h) => layOn(h, { v: ws, t: game.time, look: P.get('wl') === '1' ? 0.4 : null });
     },
   },
   watcher_pass: {
@@ -71,6 +87,7 @@ export const presets = {
       const c = spawnWatcher(game, { x: 2.3, z: z0 }, Math.PI, 'watcher_run');
       const F = c.fig;
       F.anim.setTimeScale(ws / (6.0 * F.scale));
+      F.afterPose = (h) => layOn(h, { v: ws, t: game.time });
       game.scripts.push((t, dt) => { F.pos.z = z0 - ws * t; });
       const d = num('wd', 2.3);
       controller.setPose(2.3 + d, -34, Math.atan2(2.3 + d - 2.3, -4), -0.05, 0);

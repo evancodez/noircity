@@ -187,6 +187,25 @@ export default (kit) => {
         thud(ctx, out, t0 + 0.12, 150, 90, 0.2, 0.08);
         return 0.35;
       },
+      // his shoe sliding on the wet stones at a corner: a hiss and a slap
+      w_skid(ctx, out, t0, p, R) {
+        const n = noise(ctx, R, 'white', t0, 0.35);
+        const bp = filt(ctx, 'bandpass', 2400, 1.2);
+        bp.frequency.setValueAtTime(3200, t0); bp.frequency.exponentialRampToValueAtTime(1400, t0 + 0.32);
+        const g = gain(ctx); env(g, t0, 0.22, 0.01, 0.28);
+        chain(n, bp, g, out);
+        thud(ctx, out, t0 + 0.3, 110, 60, 0.3, 0.08);
+        burst(ctx, out, R, t0 + 0.3, 'white', ['bandpass', 2600, 0.9], 0.16, 0.002, 0.1);
+        return 0.5;
+      },
+      // the crates coming down: their stack knocked, wood on stone
+      w_crates(ctx, out, t0, p, R) {
+        splinter(ctx, out, t0 + 0.05, R, 0.4, 6);
+        thud(ctx, out, t0 + 0.35, 130, 65, 0.5, 0.14);
+        thud(ctx, out, t0 + 0.5, 150, 75, 0.35, 0.1);
+        burst(ctx, out, R, t0 + 0.36, 'brown', ['bandpass', 500, 1], 0.25, 0.01, 0.2);
+        return 0.8;
+      },
       // "Lost him.": nothing but a low sting of the street
       w_lost(ctx, out, t0, p, R) { burst(ctx, out, R, t0, 'brown', ['lowpass', 300], 0.25, 0.2, 1.2); return 1.5; },
     },

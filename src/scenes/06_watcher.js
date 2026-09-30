@@ -5,6 +5,7 @@ import { Chase, STRETCH_S, FENCE_S, pathAt } from './watcher/chase.js';
 import { makeUmbrella } from './watcher/umbrella.js';
 import { makeBlind } from './watcher/blind.js';
 import { RUNHANDS } from '../player/clips/run.js';
+import { SLAT, DOOR } from '../player/clips/watcher.js';
 
 // Scene 6, The Watcher (lane B4): the chase on foot. Beats:
 //   seen     at room 304's street window, E: two fingers part the blind.
@@ -164,18 +165,31 @@ export default defineScene({
     if (ctx.at('seen') && !ctx.flags.office) {
       yield beat('seen');
       const blind = ctx.flags.blind;
+      // (the chapter card first: the room comes up out of the black, the
+      // slivers of the lamp through the slats; then the prompt)
+      yield wait(1.6);
       yield* ctx.prompt({ text: 'look out', at: () => blind.gapAt(V(0, 0, 0)) });
-      // (the fingers part the slats: the gap opens in 0.35 s; the eye leans
-      // to it)
-      G.sfx.play('w_slats');
+      // two fingers part the slats: the hand comes up (0.3 s), the slat goes
+      // down under them (0.3 .. 0.6 s) and the eye leans to the slit, on the
+      // line from him through it
+      SLAT.blind = blind; SLAT.cam = G.camera;
+      H.play('partSlats');
+      blind.part(1);
+      const gap = blind.gapAt(V(0, 0, 0), -0.1);
+      blind.part(0);
+      const him = C.fig.bones.chest.getWorldPosition(V(0, 0, 0));
+      const dir = gap.clone().sub(him).normalize();
+      const eye = gap.clone().addScaledVector(dir, 0.4);
+      G.controller.ease({ x: eye.x, y: eye.y, z: eye.z, yaw: Math.atan2(dir.x, dir.z), pitch: Math.asin(-dir.y) }, 0.55);
+      // (and the eye narrows on him: the lens closes in as it leans)
+      const fov0 = ctx.flags.fov0 = G.camera.fov;
       let t = 0;
-      const P0 = G.controller.eyePose();
-      const gap = blind.gapAt(V(0, 0, 0));
-      const tgt = C.fig.bones.head.getWorldPosition(V(0, 0, 0));
       yield until(() => {
         t += 1 / 60;
-        blind.part(Math.min(1, t / 0.35) ** 0.7);
-        return t >= 0.35;
+        if (t > 0.26) blind.part(Math.min(1, (t - 0.26) / 0.3));
+        if (Math.abs(t - 0.3) < 0.01) G.sfx.play('w_slats', gap);
+        lens(G, fov0 + (54 - fov0) * Math.min(1, t / 0.6) ** 2 * (3 - 2 * Math.min(1, t / 0.6)));
+        return t >= 0.6;
       });
       // he looks up at the window; held a second and a half
       yield wait(1.5);
@@ -187,14 +201,17 @@ export default defineScene({
       G.sfx.play('w_umbrella', C.fig.pos.clone().setY(1));
       G.music.cue('chase', { fade: 0.4 });
       yield wait(0.55);
-      // he turns and runs for the alley's mouth
+      // he turns and runs for the alley's mouth (under this window: out of
+      // the slit in a second); the fingers let the slat go, it springs shut
       C.place(0.6);
-      yield wait(0.4);
-      yield* ctx.prompt({ text: 'the fire escape' });
-      // the blind falls shut behind my hand; across the room to the side
-      // window and out through it
+      yield wait(1.0);
+      H.play('releaseSlats');
+      for (let t = 0; t < 0.3; t += 1 / 60) { blind.part(Math.max(0, 1 - t / 0.2)); lens(G, 54 + (ctx.flags.fov0 - 54) * (t / 0.3)); yield null; }
       blind.part(0);
-      G.controller.frozen = false;
+      lens(G, ctx.flags.fov0);
+      G.sfx.play('w_slats', gap);
+      yield* ctx.prompt({ text: 'the fire escape' });
+      // across the room to the side window and out through it
       const e = ESC_RAIL[0];
       G.controller.ease({ x: e.x, y: e.y + EYE, z: e.z, yaw: -Math.PI / 2, pitch: -0.05 }, 1.0);
       yield wait(1.0);
@@ -209,10 +226,10 @@ export default defineScene({
       G.music.cue('chase', { fade: 0.4 });
       H.equip('run');
       const chase = G.stage.part('chase');
-      const from = ctx.from === 'escape' ? 1 : 0;
+      const from = ctx.from === 'escape' || ctx.flags.office ? 1 : 0;
       let ended = false;
       G.controller.setMode('escape', {
-        rail: ESC_RAIL, s: from ? railS(from) : 0, endYaw: 0, game: G,
+        rail: ESC_RAIL, s: from ? railS(from) : 0, endYaw: 0, game: G, ladder: ESC.ladder,
         onEvent: (name, d) => {
           if (name === 'foot') G.sfx.play(d.kind === 'stair' ? 'w_ironStep' : 'w_ironWalk', G.eye.clone().setY(d.y));
           if (name === 'landing') G.sfx.play('w_landing', G.eye.clone().setY(d.y));
@@ -256,10 +273,12 @@ export default defineScene({
       C.active = true;
       C.onLost = (i) => restageStretch(ctx, i);
       const chase = G.stage.part('chase');
-      let taught = false, dog = false, through = false;
+      let taught = false, dog = false, through = false, breath = 0.4;
       yield until(() => {
         const R = G.controller.run;
         const p = G.controller.pos;
+        // my breath, hard, with the stride
+        if (R && R.v > 4) { breath -= 1 / 60; if (breath <= 0) { breath = 0.64 + Math.random() * 0.12; G.sfx.play('w_breath', null, { k: Math.min(1.2, R.v / 7) }); } }
         // the washing: I go through it too
         if (R) chase.sheets.touch(p.x, p.z, G.controller.vel.x, G.controller.vel.z, 1);
         // SPACE, taught once at the first fence
@@ -306,12 +325,24 @@ export default defineScene({
       G.hands.equip('empty');
       yield until(() => driven);
       G.interact.remove('drive');
-      G.sfx.play('w_carDoorOpen', door);
-      yield wait(0.5);
+      // my hand on the handle (object first: the handle, then the hand on
+      // it), the door's click, and away after him
+      DOOR.at = door.clone();
+      SLAT.cam = G.camera;
+      G.controller.frozen = true;
+      H.play('carDoor', { onMark: { grip: () => G.sfx.play('w_carDoorOpen', door) } });
+      yield wait(0.75);
       ctx.next();
     }
   },
 });
+
+// the eye's lens (degrees), for the peek through the slats
+function lens(G, fov) {
+  if (Math.abs(G.camera.fov - fov) < 1e-3) return;
+  G.camera.fov = fov;
+  G.camera.updateProjectionMatrix();
+}
 
 // ---- the escape's rail and the run ------------------------------------------------------------
 function railS(i) {
@@ -320,7 +351,7 @@ function railS(i) {
   return s;
 }
 
-function startRun(ctx) {
+export function startRun(ctx) {
   const G = ctx.game;
   const stage = G.stage;
   const build = stage.part('build');
@@ -343,7 +374,7 @@ function startRun(ctx) {
 }
 
 // "Lost him.": back at the start of stretch i (behind the black)
-function restageStretch(ctx, i) {
+export function restageStretch(ctx, i) {
   const G = ctx.game;
   const C = ctx.flags.chase;
   const chase = G.stage.part('chase');

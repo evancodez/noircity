@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { allocInkId, markFigure, tagInk } from '../../../render/layers.js';
+import { LAYER, allocInkId, markFigure, tagInk } from '../../../render/layers.js';
 import { accent } from '../../../render/accents.js';
 import { lathe, merge, tube, catenaryPoints, V3 } from '../../../world/geom.js';
 import { ESC, YARD, SHEETS, PASSAGE, CRATES, GATE, BOARD } from '../plan.js';
@@ -24,7 +24,15 @@ export default {
     const { M, scene } = stage;
     const std = (o) => new THREE.MeshStandardMaterial(o);
     const wood = std({ color: 0x3e3e3e, roughness: 0.88, envMap: M.envSoft, envMapIntensity: 0.12 });
-    const cloth = std({ color: 0x9c9c9c, roughness: 0.96, side: THREE.DoubleSide, envMap: M.envSoft, envMapIntensity: 0.05 });
+    // the washing's cloth: lit from either side (a wet sheet with a lamp
+    // behind it glows through, and the shadow of a man between them shows on
+    // it: the lamp's own shadow map, read on both faces)
+    const cloth = std({ color: 0x5c5c5c, roughness: 0.96, side: THREE.DoubleSide, envMap: M.envSoft, envMapIntensity: 0.04 });
+    cloth.onBeforeCompile = (sh) => {
+      sh.fragmentShader = sh.fragmentShader.replace('#include <lights_physical_pars_fragment>',
+        THREE.ShaderChunk.lights_physical_pars_fragment.replace('float dotNL = saturate( dot( geometryNormal, directLight.direction ) );', 'float dotNL = abs( dot( geometryNormal, directLight.direction ) ) * 0.9;'));
+    };
+    cloth.customProgramCacheKey = () => 'backlotCloth';
     const api = {};
 
     // ---- the drop ladder at L1's hatch ---------------------------------------------------
@@ -44,6 +52,8 @@ export default {
       const y1 = ESC.levels[2];
       const up = y1 - L + 1.45, down = 0.0;
       g.position.set(ESC.ladder.x, up, ESC.ladder.z);
+      // (across the hatch: its sides left and right of a man going down it)
+      g.rotation.y = Math.PI / 2;
       api.ladder = {
         group: g, length: L, up, down, k: 0,
         set(k) { this.k = k; g.position.y = up + (down - up) * k; g.updateMatrixWorld(true); },
@@ -73,6 +83,8 @@ export default {
           const u = (cx - a.x) / (b.x - a.x);
           const y = lineY - 0.22 * 4 * u * (1 - u) - 0.02;
           sheet.position.set(cx, y, z);
+          // (the flood's light goes through every sheet: none shades another)
+          sheet.traverse((o) => { if (o.isMesh) o.castShadow = false; });
           scene.add(sheet);
           list.push({ mesh: sheet, x0: x, x1: x + w, z, y, h, ang: 0, vel: 0, flap: r.next() * 6 });
           x += w + r.range(0.5, 1.4);
@@ -230,6 +242,33 @@ export default {
       };
     }
 
+    // ---- his wet prints up the dead end to the loose board ----------------------------------
+    {
+      const mat = new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.55, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 });
+      const sole = new THREE.CircleGeometry(0.5, 20).scale(0.1, 0.26, 1).rotateX(-Math.PI / 2);
+      const heel = new THREE.CircleGeometry(0.5, 16).scale(0.085, 0.09, 1).rotateX(-Math.PI / 2).translate(0, 0, 0.19);
+      const path = [[4.1, -85.2], [4.05, -90.0], [4.0, -94.6], [3.3, -96.3], [2.25, -96.65]];
+      let foot = 1, acc = 0.45;
+      for (let i = 0; i < path.length - 1; i++) {
+        const [ax, az] = path[i], [bx, bz] = path[i + 1];
+        const L = Math.hypot(bx - ax, bz - az), yaw = Math.atan2(bx - ax, bz - az);
+        for (; acc < L; acc += 0.92) {
+          const k = acc / L, x = ax + (bx - ax) * k + Math.cos(yaw) * 0.11 * foot, z = az + (bz - az) * k - Math.sin(yaw) * 0.11 * foot;
+          for (const geo of [sole, heel]) {
+            const m = new THREE.Mesh(geo, mat);
+            m.position.set(x, 0.004, z);
+            m.rotation.y = yaw + Math.PI + foot * 0.08;
+            m.layers.set(LAYER.FX);
+            m.userData.noRay = true;
+            m.renderOrder = 2;
+            scene.add(m);
+          }
+          foot = -foot;
+        }
+        acc -= L;
+      }
+    }
+
     api.reset = () => { api.ladder.set(0); api.sheets.reset(); api.crates.reset(); api.gate.reset(); api.board.reset(); };
     return api;
   },
@@ -244,15 +283,22 @@ export default {
 // a sheet on the line: a plane hung from its top edge (rotation about x at
 // the line), a little sag and a few folds, its hem uneven
 function makeSheet(w, h, mat, r) {
-  const geo = new THREE.PlaneGeometry(w, h, 12, 10);
+  const geo = new THREE.PlaneGeometry(w, h, 20, 16);
   const p = geo.getAttribute('position');
-  const k1 = r.range(0, 6), k2 = r.range(0, 6);
+  const k1 = r.range(0, 6), k2 = r.range(0, 6), k3 = r.range(0, 6);
+  const folds = r.range(2.2, 3.4), belly = r.range(0.08, 0.16) * (r.chance(0.5) ? 1 : -1);
   for (let i = 0; i < p.count; i++) {
     const x = p.getX(i), y = p.getY(i);
-    const v = (h / 2 - y) / h;               // 0 at the line, 1 at the hem
-    const fold = 0.09 * Math.sin(x * 5.3 + k1) * (0.3 + v) + 0.04 * Math.sin(x * 11 + k2) * v + 0.03 * Math.sin(x * 2.1 + y * 3 + k2);
-    const sag = -0.06 * (1 - (2 * x / w) ** 2) * (1 - v);
-    p.setXYZ(i, x, y - h / 2 + sag + 0.03 * Math.sin(x * 3 + k2) * v * v, fold);
+    const u = x / w + 0.5;                   // 0 .. 1 along the line
+    const v = Math.min(1, Math.max(0, (h / 2 - y) / h));   // 0 at the line, 1 at the hem
+    // pegged at its ends and middle: the top edge droops between the pegs
+    const peg = 0.035 * Math.abs(Math.sin(u * Math.PI * 2)) * (1 - v) * (1 - v);
+    // folds falling from the pegs, deeper toward the hem; the wind's belly
+    const fold = (0.05 + 0.07 * v) * Math.sin(u * Math.PI * 2 * folds + k1) + 0.025 * v * Math.sin(u * 17 + k2);
+    const bel = belly * Math.sin(Math.PI * u) * Math.pow(v, 0.8);
+    // the hem uneven, a corner dropped
+    const hem = v * v * (0.06 * Math.sin(u * 7 + k3) + 0.05 * (u - 0.5));
+    p.setXYZ(i, x * (1 - 0.04 * v), y - h / 2 - peg - hem, fold + bel);
   }
   geo.computeVertexNormals();
   const m = new THREE.Mesh(geo, mat);
@@ -261,6 +307,12 @@ function makeSheet(w, h, mat, r) {
   m.userData.noRay = true;
   const g = new THREE.Group();
   g.add(m);
+  // its pegs on the line
+  for (const u of [0.02, 0.5, 0.98]) {
+    const peg = new THREE.Mesh(new THREE.BoxGeometry(0.018, 0.07, 0.03).translate((u - 0.5) * w, -0.01, 0), mat);
+    peg.userData.inkId = m.userData.inkId; peg.userData.noRay = true;
+    g.add(peg);
+  }
   return g;
 }
 

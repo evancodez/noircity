@@ -27,7 +27,7 @@ export const RUNHANDS = {
 
 const C = (mcp, pip = mcp * 1.15, dip = pip * 0.7, s = 0) => [mcp, pip, dip, s];
 // a running hand: loosely closed, the thumb along the index
-const RUNF = { i: C(0.95, 1.25, 0.7, -0.03), m: C(1.05, 1.3, 0.7), r: C(1.1, 1.35, 0.7, 0.03), l: C(1.15, 1.35, 0.7, 0.07), t: [0.45, 0.25, 0.5, 0.35, 0.3] };
+const RUNF = { i: [1.35, 1.65, 1.1, -0.05], m: [1.42, 1.7, 1.1, 0], r: [1.46, 1.72, 1.05, 0.04], l: [1.5, 1.7, 1.0, 0.1], t: [0.4, 0.2, 0.8, 0.6, 0.7] };
 // flat on a rail: the fingers over its far side
 const PLANTF = { i: C(0.35, 0.5, 0.25, -0.05), m: C(0.4, 0.55, 0.25), r: C(0.45, 0.55, 0.25, 0.04), l: C(0.5, 0.55, 0.25, 0.08), t: [0.3, 0.1, 0.25, 0.2, 0.15] };
 // wide open, catching
@@ -41,7 +41,7 @@ const _v = new THREE.Vector3(), _m = new THREE.Matrix4();
 // the pump, a right hand (the left is its mirror, half a stride behind):
 // u 0 down by the hip (out of the frame), 1 up at the bottom corner
 function pumpR(u, k) {
-  const up = { p: [0.19, -0.27, -0.36], f: [-0.3, 0.72, -0.62], b: [0.72, 0.28, 0.62], e: [0.26, -0.52, -0.02] };
+  const up = { p: [0.25, -0.235, -0.38], f: [-0.18, 0.74, -0.64], b: [0.52, 0.46, 0.72], e: [0.31, -0.5, -0.06] };
   const dn = { p: [0.25, -0.62, 0.02], f: [-0.1, 0.4, -0.9], b: [0.9, 0.2, 0.3], e: [0.28, -0.6, 0.18] };
   const kk = sm(Math.min(1, Math.max(0, u))) * k;
   return { frame: 'cam', p: L3(dn.p, up.p, kk), f: L3(dn.f, up.f, kk), b: L3(dn.b, up.b, kk), e: L3(dn.e, up.e, kk), F: RUNF };

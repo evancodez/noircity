@@ -1,6 +1,6 @@
 import * as THREE from 'three';
-import { ROUTE, STRETCH, FENCES, LANE, CRATES, PASSAGE, GATE, BOARD, HIS_CAR, DEADEND, EYE } from '../../stages/backlot/plan.js';
-import { WRUN } from '../../cast/kinds/watcher.js';
+import { ROUTE, STRETCH, FENCES, LANE, CRATES, PASSAGE, GATE, BOARD, HIS_CAR, DEADEND, EYE, YARD } from '../../stages/backlot/plan.js';
+import { WRUN, layOn } from '../../cast/kinds/watcher.js';
 
 // The chase on foot (lane B4, scene 6): the watcher's run along the route
 // and the rules under it.
@@ -65,6 +65,20 @@ export const CRATE_S = CRATES.map((c) => sOfX(c.x, (PASSAGE.z0 + PASSAGE.z1) / 2
 export const GATE_S = sOfX(GATE.x, (PASSAGE.z0 + PASSAGE.z1) / 2);
 export const BOARD_S = sOfX(BOARD.x, BOARD.z);
 export const CAR_S = PATH.len;
+// the corners where the way turns more than 60 degrees: he skids on the
+// wet at the first he takes at speed (the end of the straight), and leans
+// hard into the rest
+export const CORNERS = (() => {
+  const out = [];
+  const { pts, s: S } = PATH;
+  for (let i = 1; i < pts.length - 1; i++) {
+    const a = Math.atan2(pts[i].x - pts[i - 1].x, pts[i].z - pts[i - 1].z), b = Math.atan2(pts[i + 1].x - pts[i].x, pts[i + 1].z - pts[i].z);
+    const d = wrap(b - a);
+    if (Math.abs(d) > 1.05) out.push({ s: S[i], turn: d });
+  }
+  return out;
+})();
+const SKID = CORNERS.find((c) => c.s > 40) || null;
 // where he looks back over his shoulder (twice)
 const LOOKS = [STRETCH_S[1] + 3.5, STRETCH_S[3] + 6];
 
@@ -162,7 +176,12 @@ export class Chase {
       F.anim.setTimeScale(Math.max(0.3, this.v / (WRUN.speed * F.scale)));
       // what he does on the way
       if (this.fence < FENCE_S.length && this.s >= FENCE_S[this.fence] - 0.95 * F.scale) this.startVault();
-      else if (this.crate < CRATE_S.length && this.s >= CRATE_S[this.crate] + 0.6) { chase.crates.pull(this.crate); this.G.sfx.play('topple_crate', F.pos.clone().setY(0.5)); this.crate++; }
+      else if (this.crate < CRATE_S.length && this.s >= CRATE_S[this.crate] - 0.9 && !this.pull) {
+        // (a hand out to the stack as he passes it, a yank: it comes down behind him)
+        this.pull = { t: 0, side: CRATES[this.crate].side, i: this.crate };
+        this.crate++;
+      }
+      if (this.pull && !this.pull.done && this.pull.t > 0.2) { this.pull.done = true; chase.crates.pull(this.pull.i); this.G.sfx.play('topple_crate', F.pos.clone().setY(0.5)); this.G.sfx.play('w_crates', F.pos.clone().setY(0.6)); }
       if (!this.board && this.s >= BOARD_S - 0.5) { this.board = true; chase.board.push(2.6); this.G.sfx.play('w_board', V(BOARD.x, BOARD.z).setY(1.4)); }
       for (let i = 0; i < LOOKS.length; i++) if (!this.looked?.[i] && this.s >= LOOKS[i]) { (this.looked || (this.looked = []))[i] = true; this.look = { t: 0 }; }
       if (this.s >= CAR_S - 0.6) this.startCarIn();
@@ -181,6 +200,30 @@ export class Chase {
       if (!h || h.t >= h.duration - 1e-3) { this.act = 'gone'; F.object.visible = false; if (F.collider) F.collider.r = 0; this.G.sfx.play('w_door', F.pos.clone().setY(1)); }
     }
     if (this.look) { this.look.t += dt; if (this.look.t > 1.0) this.look = null; }
+    // the skid: his feet go out from under him a little on the wet, he
+    // leans hard into it and runs on (a spray, the slap of the sole)
+    if (this.act === 'run' && SKID && !this.skidDone && this.s >= SKID.s - 1.2) {
+      this.skidDone = true;
+      this.skid = { t: 0, side: Math.sign(SKID.turn) };
+      const p = F.pos.clone();
+      G.sfx.play('w_skid', p.clone().setY(0.2));
+      const fx = G.fx;
+      if (fx && fx.splash) for (let i = 0; i < 14; i++) {
+        const a = F.yaw + (Math.random() - 0.5) * 1.6;
+        fx.splash.spawn({ pos: p.clone().setY(0.04), vel: new THREE.Vector3(Math.sin(a) * 2.2, 1.2 + Math.random() * 1.4, Math.cos(a) * 2.2), life: 0.5, size: [0.02, 0.035], stretch: 0.04, col: [0.55, 0.55, 0.55], alpha: 0.9, gravity: 9.8, ground: 0.0, fadeOut: 0.2 });
+      }
+    }
+    if (this.skid) {
+      const K = this.skid;
+      K.t += dt;
+      const b = Math.sin(Math.PI * Math.min(1, K.t / 0.55));
+      this.lean = K.side * (0.6 + 0.9 * b);
+      // (the hips slide out, away from the turn, and come back under him)
+      const out = -K.side * 0.32 * b;
+      F.pos.x += Math.cos(F.yaw) * out; F.pos.z -= Math.sin(F.yaw) * out;
+      if (K.t > 0.55) this.skid = null;
+    }
+    if (this.pull) { this.pull.t += dt; if (this.pull.t > 0.7) this.pull = null; }
     // the rules
     if (this.active && !this.lost) this.rules(dt);
     if (this.lost) this.lostStep(dt);
@@ -224,7 +267,7 @@ export class Chase {
       this.seen = !hit;
     }
     this.unseen = this.seen ? 0 : this.unseen + dt;
-    if (gap > 30 || this.unseen > 6) this.lose();
+    if (gap > 30 || this.unseen > 6) { (this.lostLog || (this.lostLog = [])).push({ sp: +this.sp.toFixed(1), s: +this.s.toFixed(1), gap: +gap.toFixed(1), unseen: +this.unseen.toFixed(1), stretch: this.stretch, eye: [+G.eye.x.toFixed(1), +G.eye.z.toFixed(1)] }); this.lose(); }
   }
 
   lose() {
@@ -257,35 +300,23 @@ export class Chase {
     this.crate = CRATE_S.filter((s) => s < STRETCH_S[i] + 15).length;
     this.board = BOARD_S < STRETCH_S[i] + 15;
     this.looked = LOOKS.map((s) => s < STRETCH_S[i] + 15);
+    this.skidDone = SKID ? SKID.s < STRETCH_S[i] + 15 : true;
+    this.skid = null; this.pull = null;
     this.fig.object.visible = true;
     this.place(STRETCH_S[i] + 15);
   }
 
   // ---- his figure, laid on the clip each step ----------------------------------------------------
   afterPose(h, dt) {
-    const b = h.bones;
     const v = this.act === 'run' || this.act === 'vault' ? this.v : 0;
-    // the coat's tails out behind him (the coat bone tipped back with speed,
-    // a flutter on it), more of it off the legs as he runs
-    const k = Math.min(1, v / 7);
-    const flap = 0.08 * Math.sin((this.G.time || 0) * 11.3) + 0.05 * Math.sin((this.G.time || 0) * 17.9 + 1);
-    const tip = 0.62 * k + flap * k;
-    _e.set(-tip, 0, this.lean * 0.12 * k);
-    _q.setFromEuler(_e);
-    b.coat.quaternion.multiply(_q);
-    // the lean into a turn: the whole body rolled into it (about his feet)
     if (this.act !== 'run') this.lean *= Math.exp(-dt * 8);
-    h.object.rotation.z = -this.lean * 0.2;
-    // the look back over his shoulder: the chest and head come round
-    if (this.look) {
-      const t = this.look.t, w = sm(t / 0.22) * (1 - sm((t - 0.62) / 0.3));
-      _q.setFromAxisAngle(_y, 0.35 * w); b.spine.quaternion.multiply(_q);
-      _q.setFromAxisAngle(_y, 0.45 * w); b.chest.quaternion.multiply(_q);
-      _q.setFromAxisAngle(_y, 0.9 * w); b.neck.quaternion.multiply(_q);
-      _q.setFromAxisAngle(_y, 0.5 * w); b.head.quaternion.multiply(_q);
-    }
+    // (the arm toward the stack: its side of him - he runs west down the
+    // passage, so the north wall is on his right)
+    const pull = this.pull ? { t: this.pull.t, side: this.pull.side > 0 ? 'R' : 'L' } : null;
+    // (in the yard his shadow is thrown on the washing from the far flood:
+    // cast however far he is from the eye - a Hood's is only within 16 m)
+    if (h.pos.x > YARD.x0 - 1 && h.pos.z > YARD.z0 - 3 && h.pos.z < YARD.z1) h.mesh.castShadow = true;
+    layOn(h, { v, t: this.G.time || 0, lean: this.lean, look: this.look ? this.look.t : null, pull });
   }
 }
-const _e = new THREE.Euler(), _q = new THREE.Quaternion();
-const _y = new THREE.Vector3(0, 1, 0), _z = new THREE.Vector3(0, 0, 1);
 export { EYE, HIS_CAR, DEADEND };

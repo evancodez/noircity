@@ -1,3 +1,4 @@
+import * as THREE from 'three';
 import { NEUTRAL, mergePose, samplePoseKeys, ANKLE_Y } from '../../enemies/HoodRig.js';
 import { gaitPose, chainKeys } from '../../enemies/HoodAnim.js';
 
@@ -36,8 +37,8 @@ export const WRUN = {
   speed: 6.0, T: 0.6, beta: 0.2, sHeel: 0.1, sBall: 0.5,
   strikePitch: 5, toePitch: 42, swingPitch: 14, swingTan: 0.32, lift: 0.4, liftSkew: 0.55,
   zOff: 0.04, stepW: 0.055, toeOut: 3,
-  hipsY: 0.925, hipsZ: 0.07, bob: 0.06, bobPeak: 0.5, sway: 0.008,
-  lean: 15, pelvisYaw: 12, pelvisRoll: 3, twist: 16, breathe: 1.5,
+  hipsY: 0.93, hipsZ: 0.1, bob: 0.06, bobPeak: 0.5, sway: 0.008,
+  lean: 25, pelvisYaw: 12, pelvisRoll: 3, twist: 16, breathe: 1.5,
   armSwing: 30, armSwingR: 52, elbow: 90, elbowR: 86, elbowSwing: 16, gunHand: -10, headPitch: 3,
 };
 function runPose(phase) {
@@ -144,6 +145,39 @@ const CARIN = chainKeys([
   [1.0, { hipsPos: [0.3, 0.7, -0.1], hips: [30, 80, 0], spine: [30, 10, 0], chest: [20, 0, 0], neck: [20, 0, 0], head: [10, 10, 0], handTL: [0.5, 0.9, -0.2], footL: [0.45, 0.3, 0.1], footR: [0.1, A, -0.1] }],
 ]);
 
+// What is laid on his clip's pose every step (the chase's afterPose, the
+// study preset's): the coat's tails out behind him with his speed v (the
+// coat's bone tipped back, a flutter on it), the body rolled into a turn
+// (lean -1 .. 1), a look back over the shoulder (look: its time, 0 .. 1 s)
+const _e = new THREE.Euler(), _q = new THREE.Quaternion(), _Y = new THREE.Vector3(0, 1, 0), _Z = new THREE.Vector3(0, 0, 1), _X = new THREE.Vector3(1, 0, 0);
+//   pull: { t, side: 'R' | 'L' } an arm flung out to a crate stack and back
+//   (0.7 s: out by 0.2, the yank, back to the run)
+export function layOn(h, { v = 0, t = 0, lean = 0, look = null, pull = null } = {}) {
+  const b = h.bones;
+  const k = Math.min(1, v / 7);
+  const flap = 0.09 * Math.sin(t * 11.3) + 0.05 * Math.sin(t * 17.9 + 1);
+  const tip = (0.7 + flap) * k;
+  _e.set(tip, 0, lean * 0.15 * k);
+  b.coat.quaternion.multiply(_q.setFromEuler(_e));
+  h.object.rotation.z = -lean * 0.2;
+  if (look != null) {
+    const w = sm(Math.min(1, look / 0.22)) * (1 - sm(Math.min(1, Math.max(0, (look - 0.62) / 0.3))));
+    b.spine.quaternion.multiply(_q.setFromAxisAngle(_Y, 0.35 * w));
+    b.chest.quaternion.multiply(_q.setFromAxisAngle(_Y, 0.45 * w));
+    b.neck.quaternion.multiply(_q.setFromAxisAngle(_Y, 0.9 * w));
+    b.head.quaternion.multiply(_q.setFromAxisAngle(_Y, 0.5 * w));
+  }
+  if (pull) {
+    const w = sm(Math.min(1, pull.t / 0.18)) * (1 - sm(Math.min(1, Math.max(0, (pull.t - 0.3) / 0.4))));
+    const sg = pull.side === 'R' ? -1 : 1;
+    // (out to the side and back: the upper arm swung out, the chest turned to it)
+    b['upperArm' + pull.side].quaternion.premultiply(_q.setFromAxisAngle(_Z, sg * 1.1 * w));
+    b['upperArm' + pull.side].quaternion.premultiply(_q.setFromAxisAngle(_X, 0.5 * w));
+    b.chest.quaternion.multiply(_q.setFromAxisAngle(_Y, sg * 0.35 * w));
+    b.head.quaternion.multiply(_q.setFromAxisAngle(_Y, sg * 0.4 * w));
+  }
+}
+
 const COSTUME = {
   body: {
     // narrow: 0.46 across the coat's shoulders, a long back
@@ -167,7 +201,7 @@ const COSTUME = {
   garments: [
     // the raincoat, belted: pale (it prints as a grey shape in the dark
     // alleys: the runner the eye follows), the belt a dark band
-    { kind: 'torso', shade: (th, y) => (Math.abs(y - 1.03) < 0.022 ? 0.008 : 0.055) },
+    { kind: 'torso', shade: (th, y) => (Math.abs(y - 1.03) < 0.022 ? 0.008 : 0.3) },
     // to mid-shin, open below the belt, its back hung from the coat's own
     // spring more than from the legs (back 0.18): the tails stream out
     { kind: 'skirt', y0: 1.03, hem: 0.3, split: 0.5, flare: [1.3, 1.36], back: 0.18, folds: 1.0, grow: 0.012, shade: 'coat', hemWave: 0.016 },
@@ -178,7 +212,7 @@ const COSTUME = {
     { kind: 'shoes' },
     { kind: 'hands', s: 0.95 },
   ],
-  skin: { coat: 0.055, collar: 0.05, lapel: 0.05, hand: 0.022, skin: 0.03, cover: 0.005, trousers: 0.007, shoes: 0.004 },
+  skin: { coat: 0.3, collar: 0.26, lapel: 0.24, hand: 0.022, skin: 0.03, cover: 0.005, trousers: 0.007, shoes: 0.004 },
   collider: 0.28,
 };
 

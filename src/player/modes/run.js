@@ -114,7 +114,7 @@ export default {
     if (R.act === 'run' || R.act === 'stumble') ctl.bobAmp = R.bobBase * (1 + 0.35 * Math.min(1, R.v / R.speed));
     RUNHANDS.phase = ctl.bobPhase;
     RUNHANDS.k += (Math.min(1, R.v / 5) - RUNHANDS.k) * (1 - Math.exp(-dt * 6));
-    RUNHANDS.step(dt, R.act === 'vault' ? 14 : 8);
+    if (R.act !== 'vault') RUNHANDS.step(dt, 8);
     // a jolt (a dog at the gate, a stumble): the view kicked and back in 0.35 s
     const J = R.jolt;
     if (J) {
@@ -200,6 +200,10 @@ function stepMove(ctl, R, dt) {
     // up over the rail (the eye 0.5 over its own height at the top), down,
     // and the landing's dip
     lift = 0.52 * Math.sin(Math.PI * Math.min(1, u / 0.85)) - 0.2 * Math.sin(Math.PI * Math.max(0, (u - 0.8) / 0.2));
+    // (the palms go out to the rail as it comes within reach, and are on it
+    // when the eye is 0.55 m from it: they stay while the body goes over)
+    const C = R.cross, d = (ctl.pos.x - C.x) * C.nx + (ctl.pos.z - C.z) * C.nz;
+    RUNHANDS.w = d > 0 ? sm(1 - (d - 0.55) / Math.max(0.3, C.d0 - 0.55)) : 1;
     if (u > 0.55) RUNHANDS.lift = Math.min(1, (u - 0.55) / 0.3);
     ctl.bobAmp *= Math.exp(-dt * 10);
   } else if (R.act === 'scramble') {
