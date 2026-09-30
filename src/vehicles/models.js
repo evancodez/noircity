@@ -22,23 +22,58 @@ const ext = (shape, depth, bt, bs, seg = 4, curve = 18) => {
   return smoothNormals(g, 1e-4);
 };
 
-// the coupe's body in profile: the block's sedan's long hood and short deck,
-// with the cockpit's well cut out of it (the body's top would otherwise be a
-// table at the driver's chest): the door skins close its sides
+// the coupe's body in profile, from its tail to the cowl (the hood, the
+// grille and the fenders make the front): the cockpit's well cut out of it
+// (the body's top would otherwise be a table at the driver's chest), the
+// door skins close its sides
 function coupeBody() {
   const s = new THREE.Shape();
   s.moveTo(-2.24, 0.52);
-  s.lineTo(2.16, 0.52);
-  s.splineThru([V2(2.27, 0.58), V2(2.31, 0.74), V2(2.3, 0.95), V2(2.22, 1.06)]);
-  s.splineThru([V2(1.7, 1.1), V2(1.1, 1.12), V2(0.72, 1.13)]);
+  s.lineTo(0.66, 0.52);
+  s.lineTo(0.66, 1.1);
   // the cowl drops into the well at the dash, the well's floor, up behind the seat
-  s.lineTo(0.66, 1.13);
   s.lineTo(0.64, 0.62);
   s.lineTo(-1.26, 0.62);
   s.lineTo(-1.3, 1.12);
   s.splineThru([V2(-1.72, 1.07), V2(-2.08, 0.93), V2(-2.27, 0.72), V2(-2.29, 0.58)]);
   s.closePath();
   return s;
+}
+// the hood: a long crowned engine cover from the cowl to the grille, a
+// little narrower and lower as it goes, its sides down between the fenders
+// (a loft of superellipse sections: no facets, a soft crown the lamps run
+// along); x from the cowl, top and half width at each station
+export const HOOD = { x0: 0.64, x1: 2.25, top0: 1.155, top1: 1.075, w0: 0.5, w1: 0.37, side: 0.78 };
+export function hoodTop(x) { const u = Math.min(1, Math.max(0, (x - HOOD.x0) / (HOOD.x1 - HOOD.x0))); return HOOD.top0 + (HOOD.top1 - HOOD.top0) * Math.pow(u, 1.4); }
+function hoodLoft() {
+  const NX = 28, NA = 24, pos = [], idx = [];
+  for (let i = 0; i <= NX; i++) {
+    const u = i / NX, x = HOOD.x0 + (HOOD.x1 - HOOD.x0) * u;
+    const top = hoodTop(x), w = HOOD.w0 + (HOOD.w1 - HOOD.w0) * u * u;
+    // (the nose rounds down into the grille's shell)
+    const nose = u > 0.92 ? Math.sin(((u - 0.92) / 0.08) * Math.PI / 2) * 0.05 : 0;
+    const bot = HOOD.side;
+    for (let j = 0; j <= NA; j++) {
+      const a = -Math.PI / 2 + (j / NA) * Math.PI;
+      const sa = Math.sin(a), ca = Math.cos(a);
+      const n = 3.2;
+      const z = w * Math.sign(sa) * Math.pow(Math.abs(sa), 2 / n);
+      const y = bot + (top - nose - bot) * Math.pow(Math.abs(ca), 2 / n);
+      pos.push(x, y, z);
+    }
+  }
+  for (let i = 0; i < NX; i++) for (let j = 0; j < NA; j++) {
+    const a = i * (NA + 1) + j, b = a + 1, c = a + NA + 1, d = c + 1;
+    idx.push(a, b, c, b, d, c);
+  }
+  const g = new THREE.BufferGeometry();
+  g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+  g.setIndex(idx);
+  g.computeVertexNormals();
+  // (outward: the crown's normal must point up)
+  const nm = g.getAttribute('normal');
+  if (nm.getY(Math.floor(NA / 2)) < 0) { const I = g.index.array; for (let k = 0; k < I.length; k += 3) { const t = I[k + 1]; I[k + 1] = I[k + 2]; I[k + 2] = t; } g.computeVertexNormals(); }
+  return g;
 }
 // the coupe's cabin: an upright split screen, a long roof, a fastback; open
 // below the belt (the well is the body's)
@@ -108,6 +143,9 @@ export const WHEEL_TURN = 1.7;
 export function buildCoupe(M) {
   const paint = [], chrome = [], rubber = [], dark = [], hubs = [], cabin = [], trim = [];
   paint.push(ext(coupeBody(), 1.2, 0.1, 0.08, 5));
+  paint.push(hoodLoft());
+  // the front's frame under the hood, between the fenders (dark)
+  dark.push(roundedBox(1.7, 0.36, 0.86, 0.05, 2).translate(1.45, 0.62, 0));
   // (the cabin a shell with real openings - its roof and fastback a cap, its
   // sides frames round the windows: a solid cabin enclosed the eye, and the
   // id pass, which draws both faces, saw a wall where the windscreen is)
@@ -131,7 +169,7 @@ export function buildCoupe(M) {
     chrome.push(new THREE.CylinderGeometry(0.03, 0.04, 0.12, 8).translate(2.14, 0.88, sgn * 0.6));
     dark.push(lathe([[0, -0.08], [0.045, -0.06], [0.055, 0.0], [0.04, 0.03]], 12).rotateZ(Math.PI / 2).translate(-2.3, 0.84, sgn * 0.74));
     // chrome belt line
-    chrome.push(tube([V3(2.1, 1.02, sgn * 0.68), V3(0.6, 1.07, sgn * 0.705), V3(-0.5, 1.07, sgn * 0.705), V3(-1.6, 1.02, sgn * 0.69)], 0.012, 5, 24));
+    chrome.push(tube([V3(0.62, 1.1, sgn * 0.705), V3(-0.5, 1.09, sgn * 0.71), V3(-1.6, 1.03, sgn * 0.7)], 0.012, 5, 24));
   }
   // grille, hood strip, the ornament (a winged thing on the radiator cap)
   const gs = new THREE.Shape();
@@ -139,7 +177,9 @@ export function buildCoupe(M) {
   const grille = new THREE.ExtrudeGeometry(gs, { depth: 0.06, bevelEnabled: true, bevelThickness: 0.02, bevelSize: 0.02, bevelSegments: 2, curveSegments: 12 });
   dark.push(smoothNormals(grille.rotateY(Math.PI / 2).translate(2.3, 0, 0), 1e-4));
   for (let z = -0.16; z <= 0.161; z += 0.04) { const top = 1.05 - Math.pow(Math.abs(z) / 0.23, 2) * 0.36; chrome.push(new THREE.CylinderGeometry(0.009, 0.009, top - 0.55, 6).translate(2.39, (top + 0.55) / 2, z)); }
-  chrome.push(tube([V3(0.76, 1.145, 0), V3(1.4, 1.14, 0), V3(2.0, 1.12, 0), V3(2.26, 1.08, 0)], 0.014, 5, 20));
+  chrome.push(tube([0.7, 1.1, 1.5, 1.9, 2.2].map((x) => V3(x, hoodTop(x) + 0.004, 0)), 0.011, 5, 24));
+  // the hood's side seams, where it lifts
+  for (const sgn of [-1, 1]) chrome.push(tube([0.72, 1.3, 1.9, 2.2].map((x) => { const u = (x - HOOD.x0) / (HOOD.x1 - HOOD.x0); const w = HOOD.w0 + (HOOD.w1 - HOOD.w0) * u * u; return V3(x, hoodTop(x) - 0.05, sgn * (w * 0.93)); }), 0.006, 4, 16));
   {
     // the ornament: a stylised bird, wings swept back (the eye's aiming mark)
     const w = new THREE.Shape();
@@ -148,8 +188,8 @@ export function buildCoupe(M) {
     body.translate(0, 0, -0.006);
     const wing = new THREE.ExtrudeGeometry(w, { depth: 0.006, bevelEnabled: false, curveSegments: 8 });
     const wl = wing.clone().rotateX(Math.PI / 2 - 0.35).translate(-0.02, 0.05, 0.0), wr = wing.clone().rotateX(-Math.PI / 2 + 0.35).translate(-0.02, 0.05, 0.0);
-    chrome.push(merge([body, wl, wr]).translate(2.2, 1.1, 0));
-    chrome.push(lathe([[0, 0], [0.028, 0.0], [0.024, 0.03], [0.0, 0.035]], 12).translate(2.2, 1.075, 0));
+    chrome.push(merge([body, wl, wr]).translate(2.19, hoodTop(2.19) + 0.03, 0));
+    chrome.push(lathe([[0, 0], [0.028, 0.0], [0.024, 0.03], [0.0, 0.035]], 12).translate(2.19, hoodTop(2.19) - 0.004, 0));
   }
   // bumpers
   for (const [x, s] of [[2.55, 1], [-2.55, -1]]) {
@@ -214,6 +254,8 @@ export function buildCoupe(M) {
   // the dial faces: a dim pale glow; the needles are their own meshes
   const dialMat = new THREE.MeshBasicMaterial({ color: new THREE.Color().setScalar(0.06) });
   meshes.dials = mk(dials, dialMat, 'dials');
+  meshes.trim.userData.inkSub = true;
+  meshes.dials.userData.inkSub = true;
   const needleGeo = new THREE.BoxGeometry(0.004, 0.058, 0.006).translate(0, 0.026, 0);
   const needles = [];
   for (const z of [COUPE.eye.z - 0.09, COUPE.eye.z + 0.095]) {
@@ -275,6 +317,7 @@ export function buildCoupe(M) {
     parts.push(lathe([[0.0, 0.0], [0.045, 0.0], [0.04, 0.025], [0.02, 0.04], [0.0, 0.042]], 20).rotateZ(Math.PI / 2).translate(-0.01, 0, 0).rotateY(Math.PI));
     const wm = new THREE.Mesh(merge(parts), M.iron);
     wm.name = 'wheelRim';
+    wm.userData.inkSub = true;
     wheel.add(wm);
     mount.add(wheel);
     g.add(mount);
@@ -318,30 +361,67 @@ export function tailLamps(g, at, gain = 7) {
   const mat = new THREE.MeshBasicMaterial({ color: accent('crew', { gain }) });
   mat.name = 'accent_crew_lamp';
   mat.userData.accent = 'crew';
-  const parts = at.map((p) => new THREE.SphereGeometry(0.055, 12, 8).scale(0.5, 1, 1).translate(p.x - 0.02, p.y, p.z));
+  const parts = at.map((p) => new THREE.SphereGeometry(0.07, 14, 10).scale(0.45, 0.85, 1).translate(p.x - 0.02, p.y, p.z));
   const m = new THREE.Mesh(merge(parts), mat);
   m.name = 'tailLamps';
   m.userData.noRay = true;
   m.userData.emitter = true;
   g.add(m);
+  // their glow in the rain: a soft red halo round each (it carries to 60 m,
+  // and the wet road takes it down in two red streaks: LAYER.FX_REFL)
+  const glowMat = new THREE.SpriteMaterial({ map: glowTexture(), color: accent('crew', { gain: 0.9 }), blending: THREE.AdditiveBlending, depthWrite: false, transparent: true, fog: false });
+  glowMat.name = 'accent_crew_glow';
+  glowMat.userData.accent = 'crew';
+  m.userData.glows = at.map((p) => {
+    const sp = new THREE.Sprite(glowMat);
+    sp.position.set(p.x - 0.06, p.y, p.z);
+    sp.scale.setScalar(0.62);
+    sp.layers.set(LAYER.FX_REFL);
+    sp.renderOrder = 6;
+    sp.userData.noRay = true;
+    sp.userData.side = Math.sign(p.z);
+    g.add(sp);
+    return sp;
+  });
   return m;
+}
+let GLOW = null;
+function glowTexture() {
+  if (GLOW) return GLOW;
+  const c = document.createElement('canvas');
+  c.width = c.height = 64;
+  const x = c.getContext('2d');
+  const gr = x.createRadialGradient(32, 32, 0, 32, 32, 32);
+  gr.addColorStop(0, 'rgba(255,255,255,1)');
+  gr.addColorStop(0.18, 'rgba(255,255,255,0.55)');
+  gr.addColorStop(0.5, 'rgba(255,255,255,0.12)');
+  gr.addColorStop(1, 'rgba(255,255,255,0)');
+  x.fillStyle = gr;
+  x.fillRect(0, 0, 64, 64);
+  GLOW = new THREE.CanvasTexture(c);
+  return GLOW;
 }
 
 // a moving car's brush rides on it: every mesh of the group takes one of
 // the figure slots (the Hoods', layers.js) and the slot's anchor follows
 // the car (anchorInk each step). Returns the slot (or -1: world ids kept).
+// (a mesh marked userData.inkSub takes a second slot on the same anchor: the
+// wheel against the dash, the dials' bezels, need a contour of their own)
 export function figureInk(group) {
   const slot = allocHoodSlot();
   if (slot < 0) return -1;
+  let sub = -1;
+  group.traverse((o) => { if (o.isMesh && o.userData.inkSub && sub < 0) sub = allocHoodSlot(); });
   // (the lamps keep their own ids: an emitter under a figure's ceiling
   // would print dim)
-  group.traverse((o) => { if (o.isMesh && !o.userData.emitter) { o.userData.inkId = HOOD_ID0 + slot; o.userData.inkFigure = true; } });
+  group.traverse((o) => { if (o.isMesh && !o.userData.emitter) { o.userData.inkId = HOOD_ID0 + (o.userData.inkSub && sub >= 0 ? sub : slot); o.userData.inkFigure = true; } });
+  group.userData.inkSlots = sub >= 0 ? [slot, sub] : [slot];
   return slot;
 }
 export function anchorInk(slot, group) {
   if (slot < 0) return;
   const p = group.position;
   // (well below the car: the figure shader's shin rule never reaches it)
-  FIG_ANCHOR[slot].set(p.x, p.y - 3, p.z, group.rotation.y);
+  for (const s of group.userData.inkSlots || [slot]) FIG_ANCHOR[s].set(p.x, p.y - 3, p.z, group.rotation.y);
 }
 export { markFigure, LAYER };

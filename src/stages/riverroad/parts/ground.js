@@ -56,13 +56,13 @@ function wallRibbon(d, y0, y1, face = -1, s0 = -40, s1 = ROAD.len + 40, step = 4
   return g;
 }
 // a kerb stone profile swept along d
-function kerb(d, sign) {
+function kerb(d, sign, s0 = -40, s1 = ROAD.len + 40) {
   const h = ROAD.pave - 0.003;
   const prof = [[-0.3 * sign, -0.05], [0, -0.05], [0, h - 0.04], [-0.04 * sign, h], [-0.3 * sign, h]];
   const pos = [], idx = [];
   const m = prof.length;
   let n = 0;
-  for (let s = -40; s <= ROAD.len + 40; s += 4) {
+  for (let s = s0; s <= s1 + 1e-6; s += 4) {
     const sc = Math.max(0, Math.min(ROAD.len, s));
     frameAt(sc, F);
     const ex = s - sc;
@@ -81,38 +81,35 @@ function kerb(d, sign) {
 }
 
 export default {
-  name: 'street', order: 20,
+  name: 'street', order: 20, tick: 21,
+  update: (g, dt, t, camera) => g.update(camera),
   build(stage) {
     const { scene, U, M } = stage;
-    const road = new THREE.Mesh(ribbon(ROAD.kerbL - 0.4, ROAD.kerbR + 0.4, 0), makeGroundMaterial(U, { paving: 0 }));
-    road.layers.set(LAYER.GROUND);
-    road.receiveShadow = true;
-    road.userData.inkId = allocInkId();
-    road.name = 'riverroad';
-    road.frustumCulled = false;
-    scene.add(road);
-    const paveMat = makeGroundMaterial(U, { paving: 1 });
-    const paveL = new THREE.Mesh(ribbon(-60, ROAD.kerbL, ROAD.pave), paveMat);
-    const paveR = new THREE.Mesh(ribbon(ROAD.kerbR, ROAD.quay, ROAD.pave), paveMat);
-    for (const p of [paveL, paveR]) {
-      p.layers.set(LAYER.GROUND); p.receiveShadow = true; p.userData.inkId = allocInkId(); p.frustumCulled = false;
-      scene.add(p);
+    // (in chunks of CH m: each is culled, and those near the road's end are
+    // in the bullets' world - a mesh far from the block's middle is not)
+    const CH = 120, chunks = [];
+    const roadMat = makeGroundMaterial(U, { paving: 0 }), paveMat = makeGroundMaterial(U, { paving: 1 });
+    const roadId = allocInkId(), paveLId = allocInkId(), paveRId = allocInkId(), kerbId = allocInkId(), quayId = allocInkId();
+    for (let s0 = -40; s0 < ROAD.len + 40; s0 += CH) {
+      const s1 = Math.min(ROAD.len + 40, s0 + CH);
+      const mk = (geo, mat, id, ground = true) => {
+        const m = new THREE.Mesh(geo, mat);
+        if (ground) m.layers.set(LAYER.GROUND);
+        m.receiveShadow = true;
+        m.userData.inkId = id;
+        scene.add(m);
+        return m;
+      };
+      const road = mk(ribbon(ROAD.kerbL - 0.4, ROAD.kerbR + 0.4, 0, s0, s1), roadMat, roadId);
+      road.name = 'riverroad';
+      const paveL = mk(ribbon(-60, ROAD.kerbL, ROAD.pave, s0, s1), paveMat, paveLId);
+      const paveR = mk(ribbon(ROAD.kerbR, ROAD.quay, ROAD.pave, s0, s1), paveMat, paveRId);
+      const kerbs = mk(smoothNormals(mergeTwo(kerb(ROAD.kerbL, -1, s0, s1), kerb(ROAD.kerbR, 1, s0, s1)), 1e-3), M.kerb, kerbId, false);
+      // the quay: its wall down to the water
+      const quay = mk(wallRibbon(ROAD.quay, ROAD.waterY - 0.5, ROAD.pave, 1, s0, s1), M.stone || M.kerb, quayId, false);
+      chunks.push({ meshes: [road, paveL, paveR, kerbs, quay], s0, s1 });
     }
-    const kerbs = new THREE.Mesh(new THREE.BufferGeometry(), M.kerb);
-    {
-      const a = kerb(ROAD.kerbL, -1), b = kerb(ROAD.kerbR, 1);
-      kerbs.geometry.dispose();
-      kerbs.geometry = smoothNormals(mergeTwo(a, b), 1e-3);
-    }
-    kerbs.receiveShadow = true;
-    kerbs.frustumCulled = false;
-    tagInk(kerbs);
-    scene.add(kerbs);
-    // the quay: its wall down to the water, a coping stone on its edge
-    const quay = new THREE.Mesh(wallRibbon(ROAD.quay, ROAD.waterY - 0.5, ROAD.pave, 1), M.stone || M.kerb);
-    quay.frustumCulled = false; quay.receiveShadow = true;
-    tagInk(quay);
-    scene.add(quay);
+    const road = chunks[0].meshes[0], paveL = chunks[0].meshes[1], paveR = chunks[0].meshes[2], kerbs = chunks[0].meshes[3], quay = chunks[0].meshes[4];
     // the river: one wide plane, black water under the wet shader
     const water = new THREE.Mesh(new THREE.PlaneGeometry(2600, 2600).rotateX(-Math.PI / 2), makeGroundMaterial(U, { paving: 0 }));
     const mid = frameAt(ROAD.len / 2, {});
@@ -132,7 +129,15 @@ export default {
       return groundAt(P.d);
     });
     const api = {
-      road, paveL, paveR, kerbs, quay, water,
+      road, paveL, paveR, kerbs, quay, water, chunks,
+      update(camera) {
+        const p = camera.position;
+        for (const c of chunks) {
+          const m = frameAt(Math.max(0, Math.min(ROAD.len, (c.s0 + c.s1) / 2)), F);
+          const v = Math.hypot(m.x - p.x, m.z - p.z) < 330;
+          for (const x of c.meshes) x.visible = v;
+        }
+      },
       // footfalls and bullet rings on the wet road (the block's street API)
       addImpact(world, x, z, strength = 1) {
         const arr = world.U.uImpacts.value;

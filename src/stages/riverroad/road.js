@@ -11,7 +11,7 @@ import * as THREE from 'three';
 // (-sin h, -cos h)); a car's own heading (a group turned by rotation.y, its
 // local +x forward) is h + PI / 2.
 export const ROAD = {
-  len: 1320,
+  len: 1760,
   half: 6.5,          // the carriageway's half width (two lanes of 3.25 m)
   kerbR: 6.5,         // the river pavement: 6.5 .. 9.2
   rail: 9.2,          // the river railing (the car's right wall)
@@ -23,9 +23,11 @@ export const ROAD = {
   wall: -21.5,        // the warehouses' fronts (the car's left wall)
   pave: 0.15,
   // the story's marks on the road
-  marks: { start: 14, market: 380, marketEnd: 640, truck: 735, oncoming: 880, close: 960, end: 1290 },
+  // (the chase ~1.3 km: a minute flat out, longer for a first-timer; the
+  // close ~400 m, round the origin: the bullets' world)
+  marks: { start: 14, train: 250, market: 400, marketEnd: 700, truck: 862, stand: 1012, oncoming: 1150, close: 1330, hull: 1560, end: 1740 },
   // where a failed stretch goes back to (the last one passed)
-  checkpoints: [14, 430, 820],
+  checkpoints: [14, 420, 820, 1200],
 };
 
 const STEP = 1;              // samples every metre
@@ -44,8 +46,8 @@ const X = new Float32Array(N), Z = new Float32Array(N), H = new Float32Array(N);
     const hm = bend(s + STEP / 2);
     x += -Math.sin(hm) * STEP; z += -Math.cos(hm) * STEP;
   }
-  // the end of the road at (0, -150): the close lies round the origin
-  const ox = -X[N - 1], oz = -150 - Z[N - 1];
+  // the end of the road at (0, -260): the close lies round the origin
+  const ox = -X[N - 1], oz = -260 - Z[N - 1];
   for (let i = 0; i < N; i++) { X[i] += ox; Z[i] += oz; }
 }
 

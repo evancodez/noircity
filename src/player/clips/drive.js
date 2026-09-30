@@ -13,7 +13,7 @@ import { wrap, RELAX, FIST } from '../handPoses.js';
 //   DRIVE.camera  the eye (set by the scene: game.camera)
 //   DRIVE.grip    the lapels (the interrogation): { L, R } world grip
 //                 frames { p, n (the palm's way), f (the fingers') } or null
-export const DRIVE = { car: null, aim: 0, camera: null, grip: null, lapelK: 0, t: -1, rimR: 0.205 };
+export const DRIVE = { car: null, aim: 0, camera: null, grip: null, gun: null, lapelK: 0, t: -1, rimR: 0.205 };
 
 const _m = new THREE.Matrix4(), _c = new THREE.Vector3(), _u = new THREE.Vector3(), _r = new THREE.Vector3(), _n = new THREE.Vector3();
 const _p = new THREE.Vector3(), _a = new THREE.Vector3(), _rd = new THREE.Vector3(), _t = new THREE.Vector3(), _f = new THREE.Vector3(), _q = new THREE.Vector3();
@@ -64,20 +64,61 @@ function wheelFrame(cam, car) {
   return { c: _c, u: _u, r: _r, n: _n };
 }
 
-// the gun out of the window: the left arm along the sill, the hand out past
-// the pillar, the muzzle on the view's centre far down the road
-const AIM_P = new THREE.Vector3(-0.11, -0.13, -0.43);
-function aimPose(P) {
-  const aimAt = _a.set(0, 0, -25);
-  _f.copy(aimAt).sub(AIM_P).normalize();
-  // (the knuckles tip down round the grip)
-  _f.y -= 0.35; _f.normalize();
-  const b = _t.set(-0.85, 0.5, 0.05).normalize();
-  P.p[0] = AIM_P.x; P.p[1] = AIM_P.y; P.p[2] = AIM_P.z;
-  P.f[0] = _f.x; P.f[1] = _f.y; P.f[2] = _f.z;
+// The gun out of the window (object first): the revolver's own path in the
+// eye's frame - up from the holster below the frame, then out past the
+// pillar, its muzzle on the view's centre far down the road, kicked up by a
+// shot and settling - and the left hand on its grip wherever it is: the
+// palm on the grip's left side, the fingers round its front, the index
+// along the frame. DRIVE.gun: { prop (drawn in the hands' scene: the scene
+// adds it), kick (0..1, a shot's recoil) }
+const GRIP = new THREE.Vector3(-0.05, -0.108, -0.5);      // the grip at the aim (the sights under the view's centre)
+const LOW = new THREE.Vector3(-0.16, -0.62, -0.24);       // ... in the holster, out of sight
+const _gm = new THREE.Matrix4(), _gx = new THREE.Vector3(), _gy = new THREE.Vector3(), _gz = new THREE.Vector3(), _gp = new THREE.Vector3();
+function gunMatrix(k, kick) {
+  // (k 0: low in the holster, pointing down and forward; 1: at the aim)
+  const e = k * k * (3 - 2 * k);
+  _gp.lerpVectors(LOW, GRIP, e);
+  _gp.y += Math.sin(e * Math.PI) * 0.04;
+  // the barrel: at the aim on the view's centre 25 m out; low, down the leg
+  _gz.set(0, 0, -25).sub(_gp).normalize();
+  const low = _t.set(0.1, -0.8, -0.6).normalize();
+  _gz.lerp(low, 1 - e).normalize();
+  // (a shot kicks the muzzle up about the grip, 14 degrees, and it settles)
+  _gy.set(0, 1, 0);
+  _gx.crossVectors(_gy, _gz).normalize();
+  _gy.crossVectors(_gz, _gx).normalize();
+  if (kick > 0) { const q = new THREE.Quaternion().setFromAxisAngle(_gx, -0.25 * kick); _gz.applyQuaternion(q); _gy.applyQuaternion(q); _gp.addScaledVector(_gz, -0.025 * kick); }
+  // (the prop's +z is its barrel, +y its top: x = y cross z)
+  _gx.crossVectors(_gy, _gz).normalize();
+  return _gm.makeBasis(_gx, _gy, _gz).setPosition(_gp);
+}
+// the left hand on the grip of the gun at matrix m (the eye's frame)
+function onGrip(P, m) {
+  const x = _a.set(1, 0, 0).transformDirection(m), y = _rd.set(0, 1, 0).transformDirection(m), z = _f.set(0, 0, 1).transformDirection(m);
+  const g = _q.setFromMatrixPosition(m);
+  // (the grip is raked back 0.32 rad: its axis runs down and back)
+  const axis = _t.copy(y).multiplyScalar(-Math.cos(0.32)).addScaledVector(z, -Math.sin(0.32)).normalize();
+  // the palm on the grip's left face, the fingers round its front
+  const at = g.clone().addScaledVector(x, -0.02).addScaledVector(axis, 0.02);
+  const n = x.clone();                                       // the palm faces the grip (+x)
+  const dir = z.clone().multiplyScalar(0.55).addScaledVector(axis, 0.35).addScaledVector(x, 0.25).normalize();
+  const f = dir.addScaledVector(n, -dir.dot(n)).normalize();
+  const b = n.clone().negate();
+  const p = at.addScaledVector(b, 0.018).addScaledVector(f, -0.047);
+  P.p[0] = p.x; P.p[1] = p.y; P.p[2] = p.z;
+  P.f[0] = f.x; P.f[1] = f.y; P.f[2] = f.z;
   P.b[0] = b.x; P.b[1] = b.y; P.b[2] = b.z;
   P.F = GUN_F;
-  P.e[0] = -0.24; P.e[1] = -0.36; P.e[2] = -0.12;
+  // the elbow: back along the sill, out of the window
+  P.e[0] = p.x - 0.16; P.e[1] = p.y - 0.2; P.e[2] = p.z + 0.3;
+}
+// the hand gone down to the holster (below the frame)
+function holsterPose(P) {
+  P.p[0] = -0.2; P.p[1] = -0.62; P.p[2] = -0.22;
+  P.f[0] = 0.1; P.f[1] = -0.6; P.f[2] = -0.8;
+  P.b[0] = -0.9; P.b[1] = 0.2; P.b[2] = -0.2;
+  P.F = GUN_F;
+  P.e[0] = -0.3; P.e[1] = -0.8; P.e[2] = 0.1;
 }
 
 const lerp3 = (o, a, b, k) => { for (let i = 0; i < 3; i++) o[i] = a[i] + (b[i] - a[i]) * k; };
@@ -92,7 +133,7 @@ const tmpA = live(), tmpB = live();
 function refresh() {
   const cam = DRIVE.camera, car = DRIVE.car;
   const t = globalThis.__noir ? globalThis.__noir.game.time : 0;
-  const stamp = t + (cam ? cam.matrixWorld.elements[12] * 1e-3 + cam.matrixWorld.elements[0] : 0);
+  const stamp = t + (cam ? cam.matrixWorld.elements[12] * 1e-3 + cam.matrixWorld.elements[0] : 0) + DRIVE.aim * 3.1 + (DRIVE.gun ? DRIVE.gun.kick || 0 : 0) * 7.3;
   if (stamp === DRIVE.t) return;
   DRIVE.t = stamp;
   if (!cam || !car || !car.model.wheel) return;
@@ -103,17 +144,22 @@ function refresh() {
   // (ten and two, riding the rim as it turns: + spin turns it to the left)
   onRim(R, 1.05 + spin, 'R', W);
   onRim(tmpA, -1.05 + spin, 'L', W);
-  const k = DRIVE.aim;
+  const k = DRIVE.aim, G = DRIVE.gun;
+  // (off the wheel, down to the holster (k < 0.35); up with the gun, out of
+  // the window and onto the aim (k > 0.35))
+  const k1 = Math.min(1, k / 0.35), k2 = Math.max(0, (k - 0.35) / 0.65);
+  if (G && G.prop) G.prop.visible = k2 > 0;
   if (k <= 0) { copyPose(L, tmpA); return; }
-  aimPose(tmpB);
-  // (out of the window along an arc: up off the wheel, then out)
-  const e = k * k * (3 - 2 * k);
-  lerp3(L.p, tmpA.p, tmpB.p, e);
-  L.p[1] += Math.sin(e * Math.PI) * 0.05;
-  lerp3(L.f, tmpA.f, tmpB.f, e);
-  lerp3(L.b, tmpA.b, tmpB.b, e);
-  lerp3(L.e, tmpA.e, tmpB.e, e);
-  L.F = lerpF(GRIP_F, GUN_F, e);
+  if (k2 <= 0) {
+    holsterPose(tmpB);
+    const e = k1 * k1 * (3 - 2 * k1);
+    lerp3(L.p, tmpA.p, tmpB.p, e); lerp3(L.f, tmpA.f, tmpB.f, e); lerp3(L.b, tmpA.b, tmpB.b, e); lerp3(L.e, tmpA.e, tmpB.e, e);
+    L.F = lerpF(GRIP_F, GUN_F, e);
+    return;
+  }
+  const m = gunMatrix(k2, G ? G.kick || 0 : 0);
+  if (G && G.prop) { G.prop.matrix.copy(m); G.prop.matrixWorldNeedsUpdate = true; }
+  onGrip(L, m);
 }
 function copyPose(o, a) { for (const k of ['p', 'f', 'b', 'e']) for (let i = 0; i < 3; i++) o[k][i] = a[k][i]; o.F = a.F; }
 
@@ -123,9 +169,5 @@ export const POSES = { driveR: liveProxy(R), driveL: liveProxy(L) };
 export const SETS = {
   // driving gloves, the coat's sleeves
   drive: { skin: 'glove', sleeve: 'coat', R: 'driveR', L: 'driveL', brush: 'R' },
-};
-// the stand-in revolver in the left hand (a prop of lane B5's: props/kinds/tail.js)
-export const SOCKETS = {
-  tailRevolver: { bone: 'hand', p: [-0.004, -0.03, -0.05], basis: [[1, 0, 0], [0, 0.34, 0.94], [0, -0.94, 0.34]] },
 };
 void FIST;

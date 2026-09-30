@@ -1,44 +1,93 @@
 {
  "about": "Scene 7, the tail, by real input (tools/play.mjs; lane B5): BEGIN at ?start=tail, W to drive, the chase down the river road (the market, the truck, the car coming the other way), the close, RMB and the mouse onto his rear tyre, LMB, the spin into the post, E get out, walk to him, E take him, the eyes to the river, 'Pier nine.', the end card. node tools/play.mjs tools/plays/tail.json",
  "url": "/?mute=1&start=tail",
- "size": [1280, 800],
+ "size": [
+  1280,
+  800
+ ],
  "out": "shots/play/tail",
  "steps": [
-  { "name": "the title, BEGIN at the tail" },
-  { "wait": 2500 },
-  { "clickOn": "#title .opt[data-k=begin]" },
-  { "until": "G.scenes.current && G.scenes.current.id === 'tail' && document.pointerLockElement === N.renderer.domElement", "timeout": 20000 },
-  { "name": "start: in my car at the kerb, his tail lamps down the road" },
-  { "until": "G.hud.promptShown.includes('drive')", "timeout": 15000 },
-  { "expect": "G.controller.mode === 'drive' && G.hands.set === 'drive' && !!G.vehicles.player", "label": "the eye in the driver's seat, the hands on the wheel" },
-  { "expect": "(() => { const T = G.scenes.ctx.flags.tail; return T.his.s - T.my.s > 50; })()", "label": "his tail lamps well down the road" },
-  { "shot": "t00_start" },
-  { "look": [6, 0], "steps": 2 },
-  { "look": [-6, 0], "steps": 2 },
-  { "name": "the tail, the close, the shot, the crash, the question" },
-  { "drive": {
+  {
+   "name": "the title, BEGIN at the tail"
+  },
+  {
+   "wait": 2500
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]"
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'tail' && document.pointerLockElement === N.renderer.domElement",
+   "timeout": 20000
+  },
+  {
+   "name": "start: in my car at the kerb, his tail lamps down the road"
+  },
+  {
+   "until": "G.hud.promptShown.includes('drive')",
+   "timeout": 15000
+  },
+  {
+   "expect": "G.controller.mode === 'drive' && G.hands.set === 'drive' && !!G.vehicles.player",
+   "label": "the eye in the driver's seat, the hands on the wheel"
+  },
+  {
+   "expect": "(() => { const T = G.scenes.ctx.flags.tail; return T.his.s - T.my.s > 50; })()",
+   "label": "his tail lamps well down the road"
+  },
+  {
+   "shot": "t00_start"
+  },
+  {
+   "look": [
+    6,
+    0
+   ],
+   "steps": 2
+  },
+  {
+   "look": [
+    -6,
+    0
+   ],
+   "steps": 2
+  },
+  {
+   "name": "the tail, the close, the shot, the crash, the question"
+  },
+  {
+   "drive": {
     "until": "G.state === 'end' || (G.scenes.current && G.scenes.current.id !== 'tail')",
     "timeout": 300000,
     "line": 2.4,
     "shots": {
-      "t01_pulling_away": "G.scenes.ctx.flags.tail.my.speed > 12",
-      "t02_speed": "G.scenes.ctx.flags.tail.my.speed > 24",
-      "t03_market": "G.scenes.ctx.flags.tail.my.s > 470",
-      "t04_truck": "!!G.scenes.ctx.flags.tail.truck && G.scenes.ctx.flags.tail.truck.s - G.scenes.ctx.flags.tail.my.s < 30",
-      "t05_oncoming": "!!G.scenes.ctx.flags.tail.oncoming && G.scenes.ctx.flags.tail.oncoming.s - G.scenes.ctx.flags.tail.my.s < 45",
-      "t06_close_prompt": "G.hud.promptShown.includes('aim')",
-      "t07_gun_out": "G.scenes.ctx.flags.tail.aimK > 0.99",
-      "t08_first_shot": "G.scenes.ctx.flags.tail.shots >= 1",
-      "t09_spin": "G.scenes.ctx.flags.tail.state === 'shot' && G.scenes.ctx.flags.tail.spin.t > 0.6",
-      "t10_wreck": "G.scenes.ctx.flags.tail.state === 'crashed' && G.scenes.ctx.flags.tail.my.speedAbs < 3",
-      "t11_get_out": "G.hud.promptShown.includes('get out')",
-      "t12_on_foot": "G.controller.mode === 'walk'",
-      "t13_lapels": "G.controller.mode === 'hold'",
-      "t14_rail": "!!G.scenes.ctx.flags.tail.question && G.scenes.ctx.flags.tail.question.p > 0.8",
-      "t15_pier_nine": "G.hud.sayShown === 'Pier nine.'"
+     "t01_pulling_away": "G.scenes.ctx.flags.tail.my.speed > 12",
+     "t02_speed": "G.scenes.ctx.flags.tail.my.speed > 24",
+     "t03_market": "G.scenes.ctx.flags.tail.my.s > 520",
+     "t04_truck": "!!G.scenes.ctx.flags.tail.truck && G.scenes.ctx.flags.tail.truck.s - G.scenes.ctx.flags.tail.my.s < 30",
+     "t05_oncoming": "!!G.scenes.ctx.flags.tail.oncoming && G.scenes.ctx.flags.tail.oncoming.s - G.scenes.ctx.flags.tail.my.s < 45",
+     "t06_close_prompt": "G.hud.promptShown.includes('aim')",
+     "t07_gun_out": "G.scenes.ctx.flags.tail.aimK > 0.99",
+     "t08_first_shot": "G.scenes.ctx.flags.tail.shots >= 1",
+     "t09_spin": "G.scenes.ctx.flags.tail.state === 'shot' && G.scenes.ctx.flags.tail.spin.t > 0.6",
+     "t10_wreck": "G.scenes.ctx.flags.tail.state === 'crashed' && G.scenes.ctx.flags.tail.my.speedAbs < 3",
+     "t11_get_out": "G.hud.promptShown.includes('get out')",
+     "t12_on_foot": "G.controller.mode === 'walk'",
+     "t13_lapels": "G.controller.mode === 'hold'",
+     "t14_rail": "!!G.scenes.ctx.flags.tail.question && G.scenes.ctx.flags.tail.question.p > 0.8",
+     "t15_pier_nine": "G.hud.sayShown === 'Pier nine.'"
     }
-  } },
-  { "expect": "G.state === 'end'", "label": "the scene ends with ctx.next() (the next scene's file is another lane's: the end card here)" },
-  { "shot": "t16_end" }
+   }
+  },
+  {
+   "eval": "JSON.stringify({ log: window.__tail && window.__tail.log, events: window.__tail && window.__tail.evlog })"
+  },
+  {
+   "expect": "G.state === 'end'",
+   "label": "the scene ends with ctx.next() (the next scene's file is another lane's: the end card here)"
+  },
+  {
+   "shot": "t16_end"
+  }
  ]
 }

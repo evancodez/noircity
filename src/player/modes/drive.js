@@ -14,7 +14,7 @@ import * as THREE from 'three';
 const EYE = 1.65;
 const LOOK = { yaw: [-0.6, 0.6], pitch: [-0.32, 0.26] };
 const AIM = { yaw: [-0.7, 0.34], pitch: [-0.3, 0.2] };
-const LEAN = new THREE.Vector3(0.1, 0.035, -0.4);   // the head out of the window (car frame)
+const LEAN = new THREE.Vector3(0.2, 0.06, -0.62);   // the head and shoulders out of the window (car frame)
 const _e = new THREE.Vector3();
 const clamp = (x, a, b) => Math.max(a, Math.min(b, x));
 

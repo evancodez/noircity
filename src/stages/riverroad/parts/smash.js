@@ -186,14 +186,14 @@ export default {
       if (rng.chance(0.35)) barrels(s + 2.5, -7.4, rng.int(2, 3));
     }
     // things in the road itself: a market's overflow in the parking lane
-    for (const [s, d, n, h] of [[402, -4.9, 3, 2], [455, -5.2, 2, 3], [498, -4.6, 4, 1], [548, -5.0, 2, 2], [596, -4.8, 3, 2], [622, -3.6, 2, 1]]) crates(s, d, n, h);
-    for (const [s, d] of [[430, -4.8], [520, -5.3], [575, -4.2]]) barrels(s, d, 3);
+    for (const [s, d, n, h] of [[422, -4.9, 3, 2], [475, -5.2, 2, 3], [518, -4.6, 4, 1], [568, -5.0, 2, 2], [616, -4.8, 3, 2], [642, -3.6, 2, 1], [672, -4.9, 3, 2]]) crates(s, d, n, h);
+    for (const [s, d] of [[450, -4.8], [540, -5.3], [595, -4.2], [690, -5.1]]) barrels(s, d, 3);
     // the newsstand on the corner by the truck's side street
-    const nsS = ROAD.marks.truck + 16;
+    const nsS = ROAD.marks.stand + 9;
     const stand = place('stand', nsS, -7.6, 0);
     show(stand, 'stand'); show(stand, 'standPapers');
     // board hoardings along the el's near columns (two stretches)
-    for (const [s0, s1] of [[160, 262], [805, 900]]) {
+    for (const [s0, s1] of [[160, 262], [1060, 1180]]) {
       for (let s = s0; s < s1; s += FENCE.w + 0.02) {
         const k = Math.round((s - 4) / 11.5), off = s - (4 + k * 11.5);
         if (Math.abs(off) < 1.3) continue;
@@ -201,7 +201,7 @@ export default {
       }
     }
     // hydrants on the pavements
-    for (const [s, d] of [[120, -7.0], [268, 7.3], [345, -7.0], [690, -7.0], [790, 7.3], [930, -7.0], [1060, 7.3], [1150, -7.0]]) {
+    for (const [s, d] of [[120, -7.0], [268, 7.3], [345, -7.0], [720, -7.0], [790, 7.3], [950, -7.0], [1040, 7.3], [1250, -7.0], [1470, 7.3], [1600, -7.0]]) {
       const it = place('hydrant', s, d, 0);
       show(it, 'hydrant');
     }

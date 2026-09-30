@@ -23,7 +23,7 @@ export class Watcher {
   // the gap he keeps, by where he is on the road
   wantGap(s) {
     const M = ROAD.marks;
-    if (s < M.close) return 58 - 30 * clamp((s - 60) / (M.close - 60), 0, 1);
+    if (s < M.close) return 46 - 20 * clamp((s - 60) / (M.close - 60), 0, 1);
     return this.caught ? 9 : 22;
   }
 

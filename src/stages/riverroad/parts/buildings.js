@@ -8,7 +8,7 @@ import { ROAD, roadPoint, frameAt } from '../road.js';
 // of one), with loading doors, a cornice, pilasters, a few lit windows and
 // signs. Chunked by ~100 m; a chunk past SHOW m is not drawn.
 // API: { streets: [{ s, w }], chunks, update(camera) }
-export const STREETS = [{ s: 300, w: 14 }, { s: ROAD.marks.truck, w: 15 }, { s: 1012, w: 13 }];
+export const STREETS = [{ s: 300, w: 14 }, { s: ROAD.marks.truck, w: 15 }, { s: ROAD.marks.stand, w: 13 }, { s: 1420, w: 13 }];
 const SHOW = 300;
 const F = {};
 

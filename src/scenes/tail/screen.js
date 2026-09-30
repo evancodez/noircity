@@ -46,42 +46,45 @@ const FRAG = /* glsl */`
       vec2 w = sinceWipe( a );
       if ( w.x < age ) { age = w.x; idx = w.y + float( i ) * 1000.0; }
     }
-    // the drops: a cell grid, a drop per cell, born some time after the wipe
-    float col = 0.0, alpha = 0.0;
+    // the drops: a cell grid, a drop per cell, born some time after the
+    // wipe. At night a drop on the glass is a small dark lens with a fleck of
+    // light in it (a lamp's reflection): the lens darkens what is behind it
+    // a little, the fleck is the lamp's (uLit); at speed the air pushes them
+    // up the glass in short streaks and thins them out
+    float dark = 0.0, spark = 0.0;
     for ( int L = 0; L < 2; L++ ) {
-      float sc = L == 0 ? 0.021 : 0.013;
-      // (pushed up the glass at speed: the drops run up in short streaks)
+      float sc = L == 0 ? 0.024 : 0.012;
       vec2 g = q / sc;
       vec2 cell = floor( g );
       for ( int j = -1; j <= 1; j++ ) for ( int i = -1; i <= 1; i++ ) {
         vec2 c = cell + vec2( float( i ), float( j ) );
         vec2 seed = c + vec2( idx * 7.13, float( L ) * 31.7 );
         vec2 rr = h2( seed );
-        float born = h1( seed + 3.1 ) * ( 1.6 + float( L ) * 1.2 );
+        float born = h1( seed + 3.1 ) * ( L == 0 ? 2.4 : 1.4 );
         if ( age < born ) continue;
-        if ( h1( seed + 9.7 ) > uRain ) continue;
+        if ( h1( seed + 9.7 ) > uRain * ( L == 0 ? 0.55 : 0.8 ) * ( 1.0 - 0.35 * min( uSpeed, 1.0 ) ) ) continue;
         float life = age - born;
-        vec2 ctr = c + rr;
-        float run = min( life, 3.0 ) * uSpeed * ( 0.6 + rr.x ) * ( L == 0 ? 1.0 : 0.5 );
+        vec2 ctr = c + 0.15 + rr * 0.7;
+        float run = min( life, 2.5 ) * uSpeed * ( 0.4 + rr.x ) * ( L == 0 ? 1.6 : 0.8 );
         vec2 p = g - ctr;
-        p.y -= run * 0.5;
-        float len = 1.0 + min( run, 4.0 );
-        vec2 e = vec2( p.x, p.y / len * ( p.y < 0.0 ? 1.0 : 1.4 ) );
-        float rad = ( L == 0 ? 0.26 : 0.2 ) * ( 0.6 + 0.8 * h1( seed + 5.3 ) );
+        p.y -= run * 0.6;
+        float len = 1.0 + min( run * 0.8, 3.5 );
+        // (a streak is a tail behind the drop: narrow, fading down the glass)
+        vec2 e = vec2( p.x * ( 1.0 + 0.25 * min( run, 2.0 ) ), p.y < 0.0 ? p.y / len : p.y );
+        float rad = ( L == 0 ? 0.3 : 0.2 ) * ( 0.55 + 0.7 * h1( seed + 5.3 ) );
         float dd = length( e );
-        float body = 1.0 - smoothstep( rad * 0.75, rad, dd );
-        // a bright crescent on the drop's lower side (the light through it),
-        // a dark rim
-        float rim = smoothstep( rad * 0.45, rad * 0.9, dd ) * body;
-        float lit = body * smoothstep( -0.2, 0.6, - e.y / rad ) * 0.9 + rim * 0.35;
-        col = max( col, lit );
-        alpha = max( alpha, body );
+        float body = 1.0 - smoothstep( rad * 0.7, rad, dd );
+        float tail = p.y < 0.0 ? smoothstep( -len * rad, 0.0, p.y ) : 1.0;
+        dark = max( dark, body * ( 0.22 + 0.2 * tail ) );
+        // the fleck: up and to one side in the drop, tiny
+        vec2 hl = e - vec2( -0.3, 0.35 ) * rad;
+        spark = max( spark, exp( - dot( hl, hl ) / ( rad * rad * 0.045 ) ) * body );
       }
     }
     // the wet film: faint where the blade has just been, heavier with age
-    float film = 0.05 + 0.1 * smoothstep( 0.0, 4.0, age );
-    vec3 c = vec3( col * uLit * 1.4 + film * 0.25 * uLit );
-    gl_FragColor = vec4( c, alpha * 0.55 + film * 0.35 );
+    float film = 0.02 + 0.05 * smoothstep( 0.3, 4.0, min( age, 10.0 ) );
+    float lit = spark * uLit * 2.6;
+    gl_FragColor = vec4( vec3( lit + film * 0.4 * uLit ), max( dark * ( 1.0 - spark ), spark * min( 1.0, uLit * 1.5 ) ) + film * 0.3 );
   }`;
 
 export class Screen {
@@ -95,7 +98,7 @@ export class Screen {
     // (the plane's x is u, its y is v)
     this.mat = new THREE.ShaderMaterial({
       name: 'TailScreen',
-      uniforms: { uTime: { value: 0 }, uPeriod: { value: 1.15 }, uSpeed: { value: 0 }, uLit: { value: 0.4 }, uRain: { value: 0.55 }, uPivot: { value: COUPE.wipers.map((w) => new THREE.Vector2(w.z, 0.02)) } },
+      uniforms: { uTime: { value: 0 }, uPeriod: { value: 1.15 }, uSpeed: { value: 0 }, uLit: { value: 0.4 }, uRain: { value: 0.6 }, uPivot: { value: COUPE.wipers.map((w) => new THREE.Vector2(w.z, 0.02)) } },
       vertexShader: /* glsl */`
         varying vec2 vQ;
         void main() { vQ = position.xy; gl_Position = projectionMatrix * modelViewMatrix * vec4( position, 1.0 ); }`,
@@ -125,10 +128,10 @@ export class Screen {
     this.mesh.matrix.copy(this.basis);
     // (the uniforms' pivots: the wipers' z at the scuttle)
   }
-  wipe() {}
+  // (the blades' clock: the cabin's, so the drops clear where they sweep)
+  wipe(sweep, wipers, t) { if (t != null) this.mat.uniforms.uTime.value = t; }
   update(dt, car) {
     const U = this.mat.uniforms;
-    U.uTime.value += dt;
     U.uSpeed.value = Math.min(1.6, Math.max(0, car.speed) / 14);
     // the light the car is under: the nearest lamps' cones
     const L = this.stage.lamps, e = car.pos;

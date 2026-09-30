@@ -36,7 +36,12 @@ function build(ctx, which) {
   ctx.flags.tail = T;
   const at = AT[which] || AT.start;
   T.spawn({ ...at, state: which === 'start' ? 'start' : which === 'chase' ? 'chase' : 'close' });
-  if (which !== 'start') { T.flags.train = at.my.s > M.market + 180; T.checkpoint = ROAD.checkpoints.filter((c) => c < at.my.s).pop() ?? ROAD.checkpoints[0]; }
+  if (which !== 'start') {
+    // (what the road has already done by here stays done)
+    const at0 = at.my.s;
+    Object.assign(T.flags, { train: at0 > M.train, truck: at0 > M.truck - 60, oncoming: at0 > M.oncoming - 60 });
+    T.checkpoint = ROAD.checkpoints.filter((c) => c < at0).pop() ?? ROAD.checkpoints[0];
+  }
   ctx.onStep((dt) => T.step(dt));
   return T;
 }
@@ -63,8 +68,9 @@ function buildCrash(ctx, { out = false } = {}) {
   for (let i = 0; i < 400 && !S.hit; i++) S.drive(T.his, 1 / 60);
   T.his.pose(0);
   // my car beside him, stopped
-  T.my.place(T.my.pos.copy(ctx.stage.track ? roadPoint2(post.s - 7.5, 3.6) : T.my.pos), carYaw2(post.s - 7.5), 0);
-  T.stop = { s: post.s - 7.5, d: 3.6 };
+  T.my.place(roadPoint2(post.s - 3, 2.6), carYaw2(post.s - 3), 0);
+  T.stop = { s: post.s - 3, d: 2.6, fixed: true };
+  T.my.parkedT = 1;
   return T;
 }
 import { roadPoint as roadPoint2, carYawAt as carYaw2 } from '../stages/riverroad/road.js';
@@ -106,12 +112,15 @@ export default defineScene({
       yield beat('shot');
       yield until(() => T.state === 'crashed');
       // my car to a stop behind him (it brakes itself if I do not)
-      const post = T.spin.post;
-      T.stop = T.stop || { s: post.s - 7.5, d: 3.6 };
+      // (beside his car, on the road by the kerb where he lies - or past it,
+      // if I come on too fast to stop there: the car brakes itself, eased)
+      const post = T.spin.post, my = T.my, sp = Math.max(0, my.speed);
+      const beside = post.s - 2.5, reach = my.s + (sp * sp) / (2 * 8.5) + 1.5;
+      T.stop = T.stop || { s: Math.max(beside, reach), d: 2.8, fixed: true };
     }
     if (ctx.at('crash')) {
       yield beat('crash');
-      yield until(() => T.my.speedAbs < 0.4 && T.stop && Math.abs(T.stop.s - T.my.s) < 4);
+      yield until(() => T.my.speedAbs < 0.3 && T.stop && (T.my.parkedT || 0) > 0.2);
       const Q = new Question(T);
       T.question = Q;
       Q.spawnWatcher();

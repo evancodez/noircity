@@ -243,7 +243,7 @@ async function drive({ until = 'false', timeout = 240000, line = 2.4, shots = {}
       const avoid = [T.truck, T.oncoming].filter(Boolean);
       for (const o of avoid) if (o.s - v.s < 60 && o.s - v.s > -8) d = Math.max(d, o.d + 4.2);
       const la = 9 + Math.max(0, v.speed) * 0.55;
-      const F = R.frame(Math.min(${1320}, v.s + la), {});
+      const F = R.frame(Math.min(1760, v.s + la), {});
       const tx = F.x + F.rx * d, tz = F.z + F.rz * d;
       const c = Math.cos(v.yaw), sn = Math.sin(v.yaw), dx = tx - v.pos.x, dz = tz - v.pos.z;
       out.err = Math.atan2(-(dx * sn + dz * c), dx * c - dz * sn) - v.yawRate * 0.12;

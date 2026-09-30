@@ -11,7 +11,7 @@ export default {
   build(stage) {
     const C = stage.colliders;
     let x0 = Infinity, x1 = -Infinity, z0 = Infinity, z1 = -Infinity;
-    const S0 = 880;
+    const S0 = 1290;
     for (let s = S0; s <= ROAD.len; s += 5) for (const d of [ROAD.wall - 2, ROAD.rail + 2]) {
       const p = roadPoint(s, d);
       x0 = Math.min(x0, p.x); x1 = Math.max(x1, p.x); z0 = Math.min(z0, p.z); z1 = Math.max(z1, p.z);

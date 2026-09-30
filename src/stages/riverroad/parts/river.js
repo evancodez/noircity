@@ -105,7 +105,7 @@ export default {
     if (dimParts.length) { const dm = new THREE.Mesh(merge(dimParts), dim); dm.userData.inkId = bankMesh.userData.inkId; dm.userData.noRay = true; group.add(dm); }
 
     // ---- a freighter moored along the quay near the road's end -------------
-    const hull = { s0: 1105, s1: 1185 };
+    const hull = { s0: ROAD.marks.hull, s1: ROAD.marks.hull + 80 };
     {
       const L = hull.s1 - hull.s0, B = 11, Hh = ROAD.waterY + 5.2;
       const s = new THREE.Shape();

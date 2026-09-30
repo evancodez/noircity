@@ -4,6 +4,7 @@ import { STREETS } from '../../stages/riverroad/parts/buildings.js';
 import { COUPE, WHEEL_TURN } from '../../vehicles/models.js';
 import { DRIVE } from '../../player/clips/drive.js';
 import { PROP_KINDS, buildProp } from '../../props/index.js';
+import { LAYER, allocVmId } from '../../render/layers.js';
 import { Watcher, PathDriver } from './driver.js';
 import { Screen } from './screen.js';
 
@@ -39,6 +40,8 @@ export class Tail {
     this.shots = 0;
     this.gun = null;
     this.t = 0;
+    // (the last tail, for the headless tools: its record of the run)
+    globalThis.__tail = this;
   }
 
   // ---- building the moment ---------------------------------------------------------------
@@ -47,7 +50,8 @@ export class Tail {
     const G = this.game, V = this.V, stage = this.stage;
     V.clear();
     // (the old tail's lamp and gun state go with its cars)
-    this.lampOut = 0; this.goodShots = 0; this.gunProp = null;
+    this.lampOut = 0; this.goodShots = 0;
+    if (this.gunProp) { this.gunProp.visible = false; }
     if (stage.train && stage.train.active) stage.train.stop();
     this.state = state;
     this.my = V.spawn('coupe', { at: roadPoint(my.s, my.d), yaw: carYawAt(my.s) + (my.yaw || 0), speed: my.speed || 0, lights: true });
@@ -89,13 +93,16 @@ export class Tail {
     const S = this.stop;
     if (!S) return false;
     const I = v.input;
+    // (a stop it can make: never past the point, never backing up to it)
+    if (!S.fixed) { S.fixed = true; S.s = Math.max(S.s, v.s + (v.speed * v.speed) / (2 * 9) + 2); }
+    if (v.speed < 0.25 && S.s - v.s < 1.5) { I.throttle = 0; I.brake = 0; I.steer = 0; v.vel.set(0, 0, 0); v.parkedT = (v.parkedT || 0) + dt; return true; }
     const F2 = frameAt(v.s, F);
     // the point to stop at: along the road, then across
     const ds = S.s - v.s, sp = v.speed;
     const need = sp > 0.1 ? (sp * sp) / (2 * Math.max(0.5, ds)) : 0;
     const want = ds > 1 ? Math.min(14, 2.2 + ds * 0.45) : 0;
     I.throttle = sp < want - 1 ? clamp((want - sp) / 5, 0.2, 0.8) : 0;
-    I.brake = ds < 0.6 || sp > want + 1 || need > 4 ? clamp(Math.max(need / 10, (sp - want) / 6, ds < 0.6 ? 1 : 0), 0.15, 1) : 0;
+    I.brake = sp > 0.3 && (ds < 0.6 || sp > want + 1 || need > 4) ? clamp(Math.max(need / 10, (sp - want) / 6, ds < 0.6 ? 1 : 0), 0.15, 1) : 0;
     // steer onto the stop's line
     const aim = roadPoint(v.s + 7, S.d);
     const dx = aim.x - v.pos.x, dz = aim.z - v.pos.z;
@@ -111,6 +118,9 @@ export class Tail {
     const G = this.game, my = this.my, his = this.his;
     if (!my) return;
     this.t += dt;
+    // (a record of the run, for tuning and the play's checks: every 0.5 s)
+    this.logT = (this.logT || 0) + dt;
+    if (this.logT >= 0.5) { this.logT = 0; (this.log || (this.log = [])).push([+this.t.toFixed(1), +my.s.toFixed(0), +my.speed.toFixed(1), +(his.s - my.s).toFixed(1), this.state]); }
     this.V.update(dt);
     this.placeCabin();
     this.cabin(dt);
@@ -148,7 +158,9 @@ export class Tail {
     this.rev = (this.rev ?? 0.3) + (rev - (this.rev ?? 0.3)) * (1 - Math.exp(-dt * 6));
     m.needles[1].rotation.x = -1.2 + this.rev * 2.4;
     // the wheel follows the hands' ask (the car's eased steer)
-    if (m.wheel) m.wheel.rotation.x = -v.steer * WHEEL_TURN + Math.sin(this.t * 29) * 0.012 * v.shake;
+    // (less of it at speed: a car at 90 turns on a flick of the wheel)
+    const turnK = WHEEL_TURN * (1 - 0.45 * clamp(Math.abs(v.speed) / 26, 0, 1));
+    if (m.wheel) m.wheel.rotation.x = -v.steer * turnK + Math.sin(this.t * 29) * 0.012 * v.shake;
     // the wipers: two arcs, a sweep a second and a bit
     const P = 1.15;
     this.wipeT = (this.wipeT || 0) + dt;
@@ -156,7 +168,7 @@ export class Tail {
     const sweep = 0.5 - 0.5 * Math.cos(u * Math.PI * 2);
     for (const w of m.wipers) w.arm.rotation.x = 1.52 - sweep * 1.65;
     this.wipe = { sweep, u };
-    if (this.screen) this.screen.wipe(sweep, m.wipers);
+    if (this.screen) this.screen.wipe(sweep, m.wipers, this.wipeT);
   }
 
   // ---- the road's events --------------------------------------------------------------------------
@@ -164,7 +176,7 @@ export class Tail {
     const G = this.game, my = this.my, his = this.his, stage = this.stage;
     const M = ROAD.marks, fl = this.flags;
     // the train over the el, once, coming down the line toward me
-    if (!fl.train && my.s > M.market + 180) { fl.train = true; if (stage.train) stage.train.run(Math.min(ROAD.len, my.s + 320), -1); }
+    if (!fl.train && my.s > M.train) { fl.train = true; if (stage.train) stage.train.run(Math.min(ROAD.len, my.s + 320), -1); }
     // the market: he swerves at the stalls and knocks their crates into my road
     const S = stage.smash;
     if (S && his.s > M.market - 10 && his.s < M.marketEnd + 10) {
@@ -210,8 +222,10 @@ export class Tail {
   }
 
   // ---- what my car meets ----------------------------------------------------------------------
+  note(kind, k) { (this.evlog || (this.evlog = [])).push([+this.t.toFixed(1), kind, +(k || 0).toFixed(2), +this.my.s.toFixed(0)]); }
   scrape(e) {
     const G = this.game, r = this.ctx.rng;
+    this.note('scrape:' + e.what, e.k);
     const n = Math.round(8 + 22 * e.k);
     const up = new THREE.Vector3(0, 1, 0);
     for (let i = 0; i < n; i++) {
@@ -224,6 +238,7 @@ export class Tail {
   }
   crash(e) {
     const G = this.game;
+    this.note('crash:' + e.what, e.k);
     G.sfx.play('tail_crash', e.point, { k: e.k }, { ref: 4 });
     G.controller.shake(0.8 * e.k + 0.2, 0);
     G.controller.kick(3 * e.k, 3 * e.k, 0.16);
@@ -232,6 +247,7 @@ export class Tail {
   }
   smashed(e) {
     const G = this.game;
+    this.note('smash:' + e.item.kind, this.my.speed);
     G.controller.kick(0.5, 0.3, 0.08);
     void e;
   }
@@ -239,6 +255,7 @@ export class Tail {
   // ---- failing: black, back to the last marker ---------------------------------------------------
   fail() {
     const G = this.game;
+    this.note('fail', this.gap);
     this.fade = { t: 0, phase: 'out' };
     G.emit('tail:fail', { s: this.my.s, gap: this.gap });
   }
@@ -256,7 +273,7 @@ export class Tail {
         this.failT = 0;
         this.spawn({ my: { s: c, d: 2.2, speed: 16 }, his: { s: c + 42, d: 1.9, speed: 18 }, state: this.state === 'close' ? 'close' : 'chase' });
         // (the events already passed stay passed)
-        this.flags.train = c > ROAD.marks.market;
+        this.flags.train = c > ROAD.marks.train;
         this.flags.truck = c > ROAD.marks.truck;
         this.flags.oncoming = c > ROAD.marks.oncoming;
         Fd.phase = 'in'; Fd.t = 0;
@@ -283,6 +300,7 @@ export class Tail {
     // the revolver in the left hand while it is up
     this.showGun(this.aimK > 0.25);
     this.cool = Math.max(0, this.cool - dt);
+    if (DRIVE.gun) DRIVE.gun.kick = Math.max(0, (DRIVE.gun.kick || 0) - dt / 0.16);
     if (this.reloadT > 0) { this.reloadT -= dt; if (this.reloadT <= 0) { this.rounds = 6; } }
     if (this.fireBuf > 0 && this.aimK > 0.9 && this.cool <= 0 && this.reloadT <= 0) { this.fireBuf = 0; this.fire(); }
     // the prompt: once he is within 30 m (the first time only)
@@ -299,16 +317,24 @@ export class Tail {
       this.showGun(this.aimK > 0.25);
     }
   }
+  // the revolver: made once, drawn in the hands' scene (its path and the
+  // hand on it are the hands' drive set's: player/clips/drive.js)
   showGun(on) {
-    const H = this.game.player.hands;
-    if (on && !this.gunProp) {
+    const G = this.game, vm = G.vm;
+    if (!this.gunProp) {
+      // (a gun of an earlier tail - a retry, a jump - goes)
+      if (DRIVE.gun && DRIVE.gun.prop && DRIVE.gun.prop.parent) DRIVE.gun.prop.parent.remove(DRIVE.gun.prop);
       const kind = PROP_KINDS.includes('revolver') ? 'revolver' : 'tailRevolver';
-      this.gunProp = buildProp(kind);
-      H.hold(this.gunProp, 'L');
-    } else if (!on && this.gunProp) {
-      H.hold(null, 'L', { keep: true });
-      this.gunProp = null;
+      const p = buildProp(kind);
+      const id = allocVmId();
+      p.traverse((o) => { if (!o.isMesh) return; o.layers.set(LAYER.VIEWMODEL); o.userData.inkId = id; o.userData.inkFigure = true; o.castShadow = false; o.frustumCulled = false; });
+      p.matrixAutoUpdate = false;
+      p.visible = false;
+      vm.root.add(p);
+      this.gunProp = p;
+      DRIVE.gun = { prop: p, kick: 0 };
     }
+    if (!on) this.gunProp.visible = false;
   }
   fire() {
     const G = this.game, cam = G.camera, his = this.his;
@@ -326,7 +352,7 @@ export class Tail {
     G.fx.flash.player(muzzle.clone(), muzzle.clone(), dir.clone(), G.time);
     G.sfx.pistol(muzzle.clone(), 0);
     G.controller.kick(1.8, 1.2, 0.11);
-    this.recoil = 1;
+    if (DRIVE.gun) DRIVE.gun.kick = 1;
     G.counters.shots++;
     // his car in the bullets' world (moving: its entries refreshed each step)
     this.solidify(his);
@@ -371,6 +397,7 @@ export class Tail {
     ng.setAttribute('position', new THREE.BufferAttribute(arr, 3));
     ng.computeVertexNormals();
     his.tail.geometry = ng;
+    for (const sp of his.tail.userData.glows || []) if (sp.userData.side === side) sp.visible = false;
     const p = his.seat(new THREE.Vector3(-2.3, 0.84, 0.74 * side), new THREE.Vector3());
     this.game.fx.debris.spawn({ pos: p, vel: new THREE.Vector3(0, 1, 0).addScaledVector(his.vel, 0.9), life: 0.8, size: [0.04, 0.03], rot: 0, spin: 9, col: [0.35, 0.02, 0.03], cell: 12, gravity: 9.8, ground: 0.02, fadeOut: 0.2 });
     this.game.sfx.glass(p, 0.4);

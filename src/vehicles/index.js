@@ -91,7 +91,7 @@ export class Vehicles {
     if (i < 0) return;
     this.list.splice(i, 1);
     if (v.lamps) v.lamps.dispose();
-    releaseHoodSlot(v.inkSlot);
+    for (const sl of v.body.userData.inkSlots || [v.inkSlot]) releaseHoodSlot(sl);
     const stage = this.game.stage;
     if (v.car) {
       const C = stage.cars, j = C.cars.indexOf(v.car);
