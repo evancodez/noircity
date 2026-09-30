@@ -351,7 +351,7 @@ function buildCurtain(kit, mats, stage) {
   // through where the window is and nowhere else, strongest at a man's
   // height, where the Tommy gun's outline will fall; the cloth over the wall is dark)
   mat.userData.setLamp(V(xc - 0.05, 1.5, ROOM.z1 + 0.55), 1);
-  mat.userData.glow(0.2, 0.2);
+  mat.userData.glow(0.14, 0.14);
   mat.userData.fall({ base: 0.02, mid: 0.07, peak: 0.95, sigma: 1.2 }, [ESC.x0 - xc, ESC.y0 - yc, ESC.x1 - xc, ESC.y1 - yc]);
   // (drawn to one side: the curtain covers the window's left two thirds)
   const rod = kit.add(new THREE.CylinderGeometry(0.009, 0.009, w + 0.2, 8).rotateZ(Math.PI / 2).translate(xc, CEIL - 0.32, zc), mats.brass, { cast: false });

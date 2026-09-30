@@ -6,6 +6,7 @@ import { buildShell } from '../build/shell.js';
 import { buildOpenings, syncFrosted } from '../build/openings.js';
 import { buildFurniture } from '../build/furniture.js';
 import { buildFireEscape, buildStreet } from '../build/outside.js';
+import { makeGobo } from '../build/gobo.js';
 import { FLOOR, CEIL, ROOM, CORR, DOOR, DESK, PAD, LAMP, WIN, ESC, SAFE, PICTURE, STREET, POST, CORR_LAMP, BLIND_LIGHT, PICTURE_ASIDE } from '../plan.js';
 // the banker's lamp's strength (the pad sits close under it, in the heart of its pool: at
 // this the graphite on the sheet still prints dark, and the blotter round it white)
@@ -14,6 +15,8 @@ const DESK_LAMP_I = 30, DESK_LAMP_A = 1.3;
 const FLASH_I = { player: 11, hood: 6.5 };
 // the street's light up through the blind onto the ceiling
 const UP_I = 16000;
+// the blind's light on the hands, against its light on the room (build/gobo.js)
+const GOBO_K = 0.3;
 
 // Room 304 and its corridor (lane B2): the whole third floor of the stage.
 // Built from ./build/*; this part lights it, gives it its Looks, its dry
@@ -280,6 +283,9 @@ export default {
       bl.base = on ? 1 : 0.82;
       if (bl.light) bl.light.intensity = 40000 * bl.base;
     }
+    // (round 2) the slats across my hands and the gun, where the light through the blind reaches me
+    if (G && api._gobo === undefined) api._gobo = makeGobo(G, stage, api.blind, api.lights.blind) || null;
+    if (api._gobo) api._gobo.update((api.lights.blind._k ?? 1) * GOBO_K);
   },
 };
 
