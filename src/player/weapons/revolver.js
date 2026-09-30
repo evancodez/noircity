@@ -241,9 +241,13 @@ export default (game) => {
     },
     // a press during the reload: shut on what is in and fire (once a pair is in)
     cutReload() {
-      if (this.cut || this.t >= RL.close[0]) { this.buffered = G.time; return; }
-      this.cut = { at: this.loaded > 0 ? this.t : null };
       this.buffered = G.time;
+      if (this.cut) return;
+      // (second pass: a press once the cylinder is closing no longer waits
+      // for the whole 1.7 s: the gun comes straight up and fires 0.18 s
+      // later; the left hand goes its own way out)
+      if (this.t >= RL.close[0]) { this.cut = { at: this.t, late: true, shut: this.snapped }; return; }
+      this.cut = { at: this.loaded > 0 ? this.t : null };
     },
     finishReload(abandon = false) {
       const H = G.hands;
@@ -465,7 +469,7 @@ export default (game) => {
         if (st >= 0.24) { this.top = (this.turnFrom + 1) % 6; this.turnFrom = null; }
       } else if (this.phase !== 'reload') ud.setTurn(this.top * Math.PI / 3);
       if (this.phase === 'reload') hammer = this.t < RL.cock[0] ? 0.0 : ss(RL.cock[0], RL.cock[1], this.t);
-      if (this.phase === 'reload' && this.cut && this.cut.at != null) hammer = ss(CUT.close, CUT.ready, this.t - this.cut.at);
+      if (this.phase === 'reload' && this.cut && this.cut.at != null) hammer = Math.max(hammer, ss(CUT.close, CUT.ready, this.t - this.cut.at));
       ud.setHammer(hammer);
       ud.setTrigger(trig);
       ud.setChambers(this.chambers);
@@ -509,7 +513,7 @@ export default (game) => {
       this.gunTmp = this.gunTmp || new THREE.Matrix4();
       this.gunTmp.compose(out.p, out.q, _v2.set(1, 1, 1));
       this.reloadF = GRIP_F;
-      this.poseL = cutAt != null ? this.leftCut(t - cutAt) : this.leftHand(t);
+      this.poseL = cutAt != null && !this.cut.late ? this.leftCut(t - cutAt) : this.leftHand(t);
     },
     // a point of the gun (its own frame) in the eye's frame, as it stands in gunTmp
     gunPt(x, y, z, out = V(0, 0, 0)) { return out.set(x, y, z).applyMatrix4(this.gunTmp); },
