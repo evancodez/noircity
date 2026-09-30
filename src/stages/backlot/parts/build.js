@@ -397,16 +397,25 @@ export default {
     // a shadow-casting light as I come up the yard)
     lamps.y2 = L.wall(YARD.x1, 4.2, -50.4, -1, 0, { real: false });
     // 4 the passage
-    lamps.p1 = L.wall(32.4, 3.9, PASSAGE.z1, 0, -1, { out: 0.2 });
-    lamps.p2 = L.wall(16.0, 4.0, PASSAGE.z0, 0, 1, { out: 0.2 });
-    lamps.p3 = L.wall(7.4, 4.1, PASSAGE.z1, 0, -1, { out: 0.2 });
+    lamps.p1 = L.wall(32.4, 3.9, PASSAGE.z1, 0, -1, { out: 0.05 });
+    lamps.p2 = L.wall(16.0, 4.0, PASSAGE.z0, 0, 1, { out: 0.05 });
+    lamps.p3 = L.wall(7.4, 4.1, PASSAGE.z1, 0, -1, { out: 0.05 });
     // (and between them: the passage is narrow and tall, a dark slot but
     // for its pools, one every eight metres or so, so the way reads)
-    lamps.p4 = L.wall(23.6, 3.7, PASSAGE.z1, 0, -1, { out: 0.25, strength: 0.9 });
-    lamps.p5 = L.wall(11.2, 3.8, PASSAGE.z0, 0, 1, { out: 0.25, strength: 0.9 });
-    // (a slot 2.4 m wide: a full pool light paints the far wall as a flat
-    // grey egg; these two a softer one)
-    for (const l of [lamps.p4, lamps.p5]) l.light.intensity = 26;
+    lamps.p4 = L.wall(23.6, 3.7, PASSAGE.z1, 0, -1, { out: 0.05, strength: 0.9 });
+    lamps.p5 = L.wall(11.2, 3.8, PASSAGE.z0, 0, 1, { out: 0.05, strength: 0.9 });
+    // a bare lamp in the dog's pen behind the gate: the air over the gate
+    // glows, and the dog that comes up over it is black against it
+    lamps.pen = L.hang(GATE.x, 3.9, GATE.z - 2.6, { real: false });
+    // (a slot 2.4 m wide: a wall lamp's full 46-degree light paints both
+    // walls with a flat grey egg at eye height. The passage's are narrow
+    // and soft-edged, aimed down: a pool on the wet floor, the walls lit
+    // only where they meet it, black above)
+    for (const l of [lamps.p1, lamps.p2, lamps.p3, lamps.p4, lamps.p5]) {
+      l.light.angle = 0.42;
+      l.light.penumbra = 0.85;
+      l.light.intensity = l === lamps.p1 || l === lamps.p3 ? 60 : 46;
+    }
     // 5 the dead end, the street
     lamps.d1 = L.wall(DEADEND.x1, 3.8, -94.8, -1, 0, { out: 0.5 });
     lamps.b1 = L.post(0.9, -104.5, Math.PI / 2 + Math.PI / 2, { y: 0.15 });

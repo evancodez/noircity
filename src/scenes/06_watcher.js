@@ -299,7 +299,7 @@ export default defineScene({
         if (!taught && dF > 0 && dF < 8 && Math.abs(p.z - (LANE.z0 + LANE.z1) / 2) < 3.5) G.hud.prompt('SPACE  vault', null, 'scene');
         else if (!taught && (dF <= 0 || (R && (R.act === 'vault' || R.act === 'scramble')))) { taught = true; G.hud.clearPrompt('scene'); }
         // the dog at the gate
-        if (!dog && p.z < PASSAGE.z1 + 0.5 && p.z > PASSAGE.z0 - 0.5 && p.x < GATE.x + 2.4 && p.x > GATE.x - 1) {
+        if (!dog && p.z < PASSAGE.z1 + 0.5 && p.z > PASSAGE.z0 - 0.5 && p.x < GATE.x + 4.6 && p.x > GATE.x - 1) {
           dog = true;
           chase.gate.bang(1.2);
           G.sfx.play('w_bark', V(GATE.x, 0.8, GATE.z - 0.6));

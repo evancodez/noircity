@@ -100,7 +100,7 @@
    "label": "down the ladder into the alley"
   },
   {
-   "name": "run: the straight"
+   "name": "run: the straight (W held the whole way; the frames of the run are shot-mode presets: a capture here costs seconds of standing still on a loaded machine, and standing still loses him)"
   },
   {
    "walk": [
@@ -111,15 +111,7 @@
     [
      2.5,
      -27.0
-    ]
-   ],
-   "timeout": 10000
-  },
-  {
-   "shot": "w03c_straight"
-  },
-  {
-   "walk": [
+    ],
     [
      2.5,
      -44.5
@@ -133,32 +125,17 @@
      -50.0
     ]
    ],
-   "timeout": 15000
+   "timeout": 20000
   },
   {
    "expect": "G.scenes.beat === 'run' && N.controller.mode === 'run'",
    "label": "the chase is on"
   },
   {
-   "shot": "w04_lane"
-  },
-  {
    "name": "the fences: SPACE held into each"
   },
   {
    "down": "Space"
-  },
-  {
-   "walk": [
-    [
-     13.3,
-     -50.0
-    ]
-   ],
-   "timeout": 6000
-  },
-  {
-   "shot": "w04b_vault"
   },
   {
    "walk": [
@@ -216,15 +193,7 @@
     [
      41.0,
      -66.0
-    ]
-   ],
-   "timeout": 12000
-  },
-  {
-   "shot": "w05_sheets"
-  },
-  {
-   "walk": [
+    ],
     [
      41.2,
      -76.0
@@ -234,7 +203,7 @@
      -82.9
     ]
    ],
-   "timeout": 10000
+   "timeout": 20000
   },
   {
    "name": "the dog and the crates"
@@ -248,15 +217,7 @@
     [
      26.0,
      -83.0
-    ]
-   ],
-   "timeout": 8000
-  },
-  {
-   "shot": "w07_passage"
-  },
-  {
-   "walk": [
+    ],
     [
      24.5,
      -82.9
@@ -272,15 +233,7 @@
     [
      16.5,
      -83.4
-    ]
-   ],
-   "timeout": 10000
-  },
-  {
-   "shot": "w08_crates"
-  },
-  {
-   "walk": [
+    ],
     [
      15.2,
      -83.7
@@ -294,7 +247,7 @@
      -83.2
     ]
    ],
-   "timeout": 10000
+   "timeout": 20000
   },
   {
    "name": "the dead end, through the board"
@@ -308,15 +261,7 @@
     [
      4.2,
      -91.0
-    ]
-   ],
-   "timeout": 8000
-  },
-  {
-   "shot": "w09_deadend"
-  },
-  {
-   "walk": [
+    ],
     [
      4.2,
      -95.4
@@ -330,7 +275,7 @@
      -96.9
     ]
    ],
-   "timeout": 10000
+   "timeout": 15000
   },
   {
    "until": "G.scenes.beat === 'car'",
