@@ -4,6 +4,7 @@ import { makeBrain } from '../enemies/HoodBrains.js';
 import { SITE, BEATS, DINER, DOORS } from './shootout/site.js';
 import { stageBeat, rig, markBeat, man, setLights, roundAt, everyStep, RESERVE, V } from './shootout/rig.js';
 import { endHat } from './shootout/ending.js';
+import { mackWindow } from './shootout/room.js';
 import { DOT_CLIP, dotGunAt, dotDrumsAt } from '../cast/kinds/cardinal.js';
 
 // Scene 9, The Block (B7; docs/story/briefs/B7_SHOOTOUT.md). Back on the
@@ -642,6 +643,22 @@ function* ending(ctx) {
   G.weapon.fire = () => {};
   G.vm.lowerTo(0.62);
   const hat = R.hat;
+  // behind me, once I am out on the street: Dot's shape in the broken window
+  // (she comes up from behind the counter while I am not looking)
+  const dotAt = () => {
+    const dot = ctx.cast.get('dot');
+    if (!dot || R.dotOut) return true;
+    const e = G.eye, bay = DINER.bays[mackWindow(G)];
+    const w = V(-11.15, 1.4, bay + 0.35);
+    const look = V(-Math.sin(G.controller.yaw), 0, -Math.cos(G.controller.yaw));
+    const to = V(w.x - e.x, 0, w.z - e.z);
+    if (!frameNow && (e.x < -9.6 || look.dot(to.normalize()) > 0.2)) return true;
+    R.dotOut = true;
+    dot.place({ x: w.x, z: w.z }, Math.PI / 2);
+    dot.setState('watch');
+    return false;
+  };
+  R.ticks.push(dotAt);
   // I walk out to it
   let idle = 0;
   if (frameNow) { yield wait(2.5); yield* theFrame(ctx); return; }
