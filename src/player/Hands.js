@@ -256,7 +256,10 @@ export class Hands {
     if (!prop) return prev;
     if (prop.parent) { prop.userData._handParent = prop.parent; prop.parent.remove(prop); }
     else prop.userData._handParent = null;
-    const id = allocVmId();
+    // ([B3] a prop that asks for it - the revolver - keeps a contour
+    // between its parts: one viewmodel id per part id, in the same order)
+    const nParts = Math.max(1, prop.userData.vmPartIds || 1), id0p = prop.userData.inkId;
+    const id = allocVmId(nParts);
     prop.traverse((o) => {
       if (!o.isMesh) return;
       o.userData._handSave = { mask: o.layers.mask, id: o.userData.inkId, fig: !!o.userData.inkFigure, cast: o.castShadow, cull: o.frustumCulled, surf: o.userData.inkSurface };
@@ -265,7 +268,7 @@ export class Hands {
       const hs = heldSurface(o);
       if (hs) o.userData.inkSurface = hs;
       o.layers.set(LAYER.VIEWMODEL);
-      o.userData.inkId = id;
+      o.userData.inkId = nParts > 1 ? id + Math.min(nParts - 1, Math.max(0, (o.userData.inkId ?? id0p) - id0p)) : id;
       o.userData.inkFigure = true;    // (viewmodel ids are written as figures)
       o.castShadow = false;
       o.frustumCulled = false;
@@ -701,6 +704,9 @@ export class Hands {
       if (this.set === 'tommy') ok = this.tommyPose(h, out);
       else if (this.still && this.still[h]) ok = this.resolve(this.still[h], h, out);
       else if (cdef && cdef.keys && cdef.keys[h]) ok = this.evalKeys(cdef.keys[h], ct, h, out);
+      // [B3] a set may pose its hands itself every step (the revolver: its
+      // weapon authors the gun's place and solves the hands onto it)
+      else if (S.pose) ok = S.pose(this, h, out);
       if (!ok) {
         let rest = S[h] ? HAND_POSES[S[h]] : null;
         // (the smoke set's right hand rests with its cigarette once it has one)
@@ -741,7 +747,9 @@ export class Hands {
     // the brush field rides on the hand that moves (the gun sets: the gun)
     const vm = this.vm;
     vm.setFov(S.gun && !this.studyFov ? VM_FOV : this.game.camera.fov);
-    if (!S.gun) {
+    // ([B3] a gun set with a hand of its own - the revolver - lays the
+    // brush on that hand, which carries the gun)
+    if (!S.gun || S.brush) {
       const b = this.rig[(cdef && cdef.brush) || S.brush || 'R'];
       b.root.updateMatrixWorld(true);
       this._m.copy(vm.root.matrixWorld).invert().multiply(b.hand.matrixWorld);
