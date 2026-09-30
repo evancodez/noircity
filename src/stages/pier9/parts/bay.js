@@ -194,7 +194,7 @@ export default {
         o.position.copy(r.home.p); o.quaternion.copy(r.home.q); o.scale.setScalar(1);
         o.visible = true;
         o.traverse((m) => { if (m.isMesh) m.visible = true; });
-        delete r.gone;
+        delete r.gone; delete r.spent;
       }
       for (const c of crates) {
         const o = c.object;

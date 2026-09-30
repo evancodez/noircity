@@ -34,8 +34,8 @@ const _a = new THREE.Vector3(), _b = new THREE.Vector3(), _q = new THREE.Quatern
 // or back). Either, hit on the hook arm while he winds up: he drops it
 // (the rules' `drops`: Brawl.disarm).
 export const FM_ATTACKS = {
-  fm_hookSwing: { hand: 'R', kind: 'long', dmg: 17, block: null, push: 0.35, stun: 0.45, miss: { open: 'LR', t: 0.75 }, path: { lo: -1.35, hi: 0.95, reach: 2.45, over: 0.45, min: 1.35 }, heavy: true, drops: 'hook' },
-  fm_hookChop: { hand: 'R', kind: 'over', dmg: 16, block: null, push: 0.25, stun: 0.4, miss: { open: 'LR', t: 0.7 }, path: { lo: -0.42, hi: 0.42, reach: 2.15, over: 0.4 }, heavy: true, drops: 'hook' },
+  fm_hookSwing: { hand: 'R', kind: 'long', dmg: 19, block: null, push: 0.35, stun: 0.45, miss: { open: 'LR', t: 0.75 }, path: { lo: -1.35, hi: 0.95, reach: 2.45, over: 0.45, min: 1.35 }, heavy: true, drops: 'hook' },
+  fm_hookChop: { hand: 'R', kind: 'over', dmg: 17, block: null, push: 0.25, stun: 0.4, miss: { open: 'LR', t: 0.7 }, path: { lo: -0.42, hi: 0.42, reach: 2.15, over: 0.4 }, heavy: true, drops: 'hook' },
 };
 for (const [k, v] of Object.entries(FM_ATTACKS)) BR_ATTACKS[k] = v;
 
@@ -44,9 +44,9 @@ for (const [k, v] of Object.entries(FM_ATTACKS)) BR_ATTACKS[k] = v;
 // hand the rest. He takes nothing up in the bay (the things are mine).
 const noThings = { things: 0, thingKinds: [] };
 export const FM_MANNERS = {
-  measured: { ...MANNERS.measured, ...noThings, keep: [1.45, 1.7], speed: 2.0, gap: [0.7, 1.15], breathe: 3.2,
+  measured: { ...MANNERS.measured, ...noThings, keep: [1.45, 1.7], speed: 2.0, gap: [0.7, 1.15], breathe: 3.2, combo: 0.34,
     with: { hook: { fm_hookSwing: 0.34, fm_hookChop: 0.14, br_jab: 0.26, br_hookL: 0.14, br_bodyL: 0.08, br_cross: 0.04 } } },
-  dirty: { ...MANNERS.dirty, ...noThings, keep: [1.35, 1.6], speed: 2.2, gap: [0.55, 0.95],
+  dirty: { ...MANNERS.dirty, ...noThings, keep: [1.35, 1.6], speed: 2.2, gap: [0.55, 0.95], combo: 0.42,
     mix: { br_jab: 0.2, br_cross: 0.14, br_hook: 0.2, br_hookL: 0.18, br_body: 0.08, br_bodyL: 0.08, br_shove: 0.12 },
     with: { hook: { fm_hookSwing: 0.36, fm_hookChop: 0.2, br_jab: 0.16, br_hookL: 0.14, br_shove: 0.08, br_bodyL: 0.06 } } },
   wild: { ...MANNERS.wild, ...noThings,
@@ -67,7 +67,7 @@ export const FM_THINGS = {
   chain: { dmg: 15, uses: 2, hands: 1, throw: false, level: 2, reach: 0.7 },
   lantern: { dmg: 12, uses: 1, hands: 1, throw: true, level: 2 },
 };
-export const FOREMAN = { name: 'THE FOREMAN', hp: 124 };
+export const FOREMAN = { name: 'THE FOREMAN', hp: 136 };
 
 // where the fight finds us (a retry, a jump): him toward the doors, me off
 // the stairs' foot
@@ -99,6 +99,14 @@ export function bayRoom(ctx, fight) {
   const lift = (it) => {
     const o = it.ref.object;
     it.ref.gone = true;
+    // (the chain is taken up off its coil: a length of it in the fist, the
+    // coil gone from the crate)
+    if (it.kind === 'chain') {
+      o.visible = false; it.ref.spent = true;
+      const h = buildProp('chainCoil', { variant: 'hank' });
+      fight.loose.push(h);
+      return h;
+    }
     fight.field(o, false);
     if (o.parent) o.parent.remove(o);
     o.position.set(0, 0, 0); o.quaternion.identity(); o.scale.setScalar(1);
@@ -183,6 +191,7 @@ export class PierFight {
     this.boards = [];
     this.stuck = [];
     this.flot = [];
+    this.loose = [];
   }
 
   get bay() { return this.stage.part('bay'); }
@@ -343,6 +352,7 @@ export class PierFight {
   // ---- his hook out of his fist: it falls and lies where it lands
   dropHook(o, w, q, Br) {
     const r = this.rng;
+    this.loose.push(o);
     this.stage.scene.add(o);
     o.position.copy(w); o.quaternion.copy(q); o.scale.setScalar(1); o.visible = true;
     o.updateMatrixWorld(true);
@@ -466,6 +476,14 @@ export class PierFight {
       this.flot.push({ m, v, w: V(r.gauss() * 4, r.gauss() * 3, r.gauss() * 4), state: 'fly', t: 0, ph: r.next() * 6.28 });
       this.boards.push(m);
     }
+    // (a hook stuck in these planks goes with them)
+    for (const o of [...this.stuck]) {
+      const p = o.getWorldPosition(V(0, 0, 0));
+      if (p.x > PIER.shed.x1 - 0.7 && Math.abs(p.z - d.z) < PIER.loadingW / 2 + 0.1 && p.y < PIER.loadingH) {
+        this.stuck.splice(this.stuck.indexOf(o), 1);
+        this.flot.push({ m: o, v: V(r.range(2.5, 4), r.range(0.5, 1.5), r.gauss() * 0.6), w: V(r.gauss() * 8, r.gauss() * 8, r.gauss() * 8), state: 'fly', t: 0, ph: 0, sinks: true });
+      }
+    }
     const at = V(PIER.shed.x1, 1.2, d.z);
     this.splinters(at, dir, 22);
     this.sfx('b9burst', at, {}, { ref: 5 });
@@ -546,6 +564,15 @@ export class PierFight {
     }
     this.stepRain(dt);
     this.stepBoards(dt);
+    // the sounds of it: the fire's crackle, the lantern creaking on its nail
+    this.crackT = (this.crackT || 0) - dt;
+    if (this.crackT <= 0 && this.fires.length) { this.crackT = 0.32; for (const f of this.fires) this.sfx('b9crackle', f.at, { k: Math.min(1, f.t / 0.5) * Math.max(0, Math.min(1, (f.life - f.t) / 4)) }); }
+    const Ln = this.bay && this.bay.lantern;
+    if (Ln && Ln.hung) {
+      const sp = Math.abs(Ln.sw.va) + Math.abs(Ln.sw.vb);
+      this.creakT = (this.creakT || 0) - dt;
+      if (sp > 0.6 && this.creakT <= 0 && Math.sign(Ln.sw.va) !== this.creakS) { this.creakS = Math.sign(Ln.sw.va); this.creakT = 0.25; this.sfx('b9creak', Ln.pivot.position, { k: Math.min(1, sp / 3) }); }
+    }
   }
 
   // the door's boards: flying out, glancing off the pier's edge, onto the
@@ -567,6 +594,10 @@ export class PierFight {
           b.state = 'float'; b.t = 0; m.position.y = WY + 0.02; b.v.multiplyScalar(0.2); b.v.y = 0; b.w.multiplyScalar(0.1);
           this.plop(m.position.clone());
         }
+      } else if (b.state === 'float' && b.sinks) {
+        // (steel: it goes under)
+        m.position.y -= dt * 0.8;
+        if (m.position.y < WY - 0.5) { m.visible = false; b.state = 'gone'; }
       } else if (b.state === 'float') {
         this.flatten(m, Math.min(1, dt * 3));
         b.v.x += (0.14 - b.v.x) * Math.min(1, dt * 0.4); b.v.z *= Math.exp(-dt * 0.6);
@@ -595,6 +626,14 @@ export class PierFight {
     this.tweens = [];
     for (const m of this.boards) if (m.parent) m.parent.remove(m);
     this.boards = [];
+    // (his hook, wherever it went; the bay's own things are put home by its
+    // reset - out of the pieces' field first, so a thing hung back on its
+    // nail is not let fall again)
+    for (const o of this.loose) if (o.parent) o.parent.remove(o);
+    this.loose = [];
+    this.stuck = [];
+    const F = this.stage.breakables.pieces, bay = this.stage.part('bay');
+    if (F && bay) { const own = new Set(bay.reach.map((r) => r.object)); F.drop((p) => own.has(p.mesh), own); }
     this.flot = [];
     this.rain = null;
     this.hole = null;

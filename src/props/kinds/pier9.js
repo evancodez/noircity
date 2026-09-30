@@ -99,6 +99,20 @@ export const SPECS = {
   chainCoil: (v, lod) => {
     const M = mats();
     const links = [];
+    // ([R2-E] 'hank': a length of it taken up in the fist - two turns round
+    // the knuckles and 0.6 m hanging out of the bottom of the fist and
+    // curling forward: the reach it swings with; the grip its top)
+    if (v === 'hank') {
+      const pts = [];
+      for (let i = 0; i < 16; i++) { const s = i / 15; pts.push([0.0, -0.04 - s * 0.42 + 0.12 * s * s * s, 0.02 + 0.3 * s * s]); }
+      pts.forEach(([x, y, z], i) => {
+        const link = new THREE.TorusGeometry(0.028, 0.008, 5, 10).rotateX(Math.PI / 2 * (i % 2)).rotateZ(Math.PI / 2);
+        link.translate(x, y, z);
+        links.push(link);
+      });
+      for (let i = 0; i < 8; i++) { const a = i / 8 * Math.PI * 2; const link = new THREE.TorusGeometry(0.026, 0.008, 5, 10).rotateY(a); link.translate(Math.cos(a) * 0.05, 0.01 * (i % 2), Math.sin(a) * 0.05); links.push(link); }
+      return { parts: [{ geo: mergeGeos(links), mat: std('p9_hookSteel', { color: 0x464646, roughness: 0.28, surface: 'metal' }), id: 0 }], grip: [0, 0, 0] };
+    }
     const n = lod ? 26 : 52;
     for (let i = 0; i < n; i++) {
       const a = i * 0.55, r = 0.08 + 0.12 * (i / n);

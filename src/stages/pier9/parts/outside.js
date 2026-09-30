@@ -137,6 +137,9 @@ export default {
     const ride = V(F.x, PIER.waterY + 6.4 + 15.6, F.z0 + 16);
     kit.piece();
     kit.add(new THREE.SphereGeometry(0.2, 14, 10).translate(ride.x, ride.y, ride.z), M.glow('ridingLight', 14), { cast: false, noRay: true });
+    // ([R2-E] and her stern light on the aft mast: the first frame, from by
+    // my car, sees it over her superstructure)
+    kit.add(new THREE.SphereGeometry(0.16, 14, 10).translate(F.x, PIER.waterY + 6.4 + 16.6, F.z1 - 14), M.glow('ridingLight', 14), { cast: false, noRay: true });
     const gl = new THREE.Mesh(new THREE.PlaneGeometry(1.4, 26).rotateX(-Math.PI / 2).translate(ride.x - 4.2, PIER.waterY + 0.02, ride.z + 13), glintMaterial(stage.U, { gain: 0.5 }));
     gl.layers.set(LAYER.FX); gl.userData.noRay = true;
     g.add(gl);

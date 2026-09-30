@@ -86,11 +86,11 @@ export const PIER = {
   // against the side door
   truck: { from: { x: -4.6, z: -2.6 }, to: { x: -9.9, z: -2.6 } },
   // outside: my car, the gate, the freighter along the east side
-  car: { x: -3.8, z: 24.5, yaw: 0.25 },
+  car: { x: -6.2, z: 18.2, yaw: 0.25 },
   gate: { z: 28 },
   freighter: { x: 30.5, z0: -70, z1: 16 },
   // where I stand when the scene begins, by the car looking at the shed
-  start: { x: -5.2, z: 20.5, yaw: 0.12 },
+  start: { x: -12, z: 24, yaw: -0.72 },
 };
 
 // is (x, z) inside the shed's walls?

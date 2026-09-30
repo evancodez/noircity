@@ -117,6 +117,105 @@ export default (kit) => {
         chain(n, filt(ctx, 'bandpass', 180, 1.5), ng, out);
         return d + 0.2;
       },
+      // ---- [R2-E] the second fist fight in the bay ------------------------------------
+      // the hook dragged along a post as he steps out of the dark: a steel scrape
+      b9hookScrape(ctx, out, t0, p, R) {
+        burst(ctx, out, R, t0, 'white', ['bandpass', 3400, 4], 0.12, 0.05, 0.45);
+        ping(ctx, out, t0 + 0.02, [[2900, 0.05, 0.4], [4350, 0.03, 0.3]]);
+        return 0.6;
+      },
+      // a man driven into a stack of crates: the boards' boom, their creak
+      b9crate(ctx, out, t0, p, R) {
+        thud(ctx, out, t0, 120, 50, 0.7, 0.22);
+        burst(ctx, out, R, t0, 'pink', ['bandpass', 700, 0.8], 0.3, 0.002, 0.18);
+        splinter(ctx, out, t0 + 0.03, R, 0.5, 5);
+        return 0.5;
+      },
+      // into the post: the timber's knock, the lantern's bail rattling on its nail
+      b9post(ctx, out, t0, p, R) {
+        thud(ctx, out, t0, 160, 70, 0.6, 0.12);
+        for (let i = 0; i < 5; i++) ping(ctx, out, t0 + 0.04 + i * 0.07, [[1800 + i * 90, 0.05, 0.05], [3100, 0.02, 0.04]]);
+        return 0.6;
+      },
+      b9barrel(ctx, out, t0) { thud(ctx, out, t0, 95, 60, 0.5, 0.3); ping(ctx, out, t0, [[210, 0.08, 0.4]]); return 0.6; },
+      // his back into a loading door: the planks shudder on their bar
+      b9door(ctx, out, t0, p, R) {
+        thud(ctx, out, t0, 85, 40, 0.8, 0.3);
+        burst(ctx, out, R, t0, 'brown', ['lowpass', 500], 0.5, 0.002, 0.25);
+        for (let i = 0; i < 4; i++) thud(ctx, out, t0 + 0.06 + i * 0.05, 180 - i * 10, 120, 0.12, 0.04);
+        return 0.6;
+      },
+      // the hook into a crate's face: a hard bite in the wood
+      b9thunk(ctx, out, t0, p, R) {
+        thud(ctx, out, t0, 240, 90, 0.5, 0.06);
+        burst(ctx, out, R, t0, 'white', ['bandpass', 2600, 1.5], 0.25, 0.001, 0.05);
+        ping(ctx, out, t0 + 0.005, [[1450, 0.06, 0.18]]);
+        return 0.35;
+      },
+      // the lid splitting on his hook
+      b9split(ctx, out, t0, p, R) {
+        splinter(ctx, out, t0, R, 1.2, 10);
+        thud(ctx, out, t0, 200, 80, 0.5, 0.07);
+        burst(ctx, out, R, t0, 'pink', ['bandpass', 1400, 1], 0.35, 0.001, 0.12);
+        return 0.6;
+      },
+      // the chain let fall: links on the planks
+      b9chain(ctx, out, t0) {
+        for (let i = 0; i < 14; i++) ping(ctx, out, t0 + i * 0.035 + Math.random() * 0.02, [[2200 + Math.random() * 1500, 0.05, 0.06], [4800, 0.02, 0.03]]);
+        thud(ctx, out, t0 + 0.1, 130, 80, 0.25, 0.1);
+        return 0.8;
+      },
+      // his hook knocked out of his fist lands on the planks
+      b9clatter(ctx, out, t0) {
+        ping(ctx, out, t0, [[1700, 0.12, 0.3], [2650, 0.06, 0.25]]);
+        ping(ctx, out, t0 + 0.12, [[1750, 0.06, 0.2]]);
+        thud(ctx, out, t0, 220, 120, 0.2, 0.04);
+        return 0.5;
+      },
+      // the lantern's oil catching: a soft rush and a whoomph
+      b9whoomph(ctx, out, t0, p, R) {
+        burst(ctx, out, R, t0, 'brown', ['lowpass', 380], 0.7, 0.04, 0.5);
+        burst(ctx, out, R, t0 + 0.02, 'pink', ['bandpass', 900, 0.6], 0.25, 0.06, 0.4);
+        return 0.8;
+      },
+      // the fire's crackle, a few pops (played again and again while it burns)
+      b9crackle(ctx, out, t0, p, R) {
+        const k = p.k ?? 1;
+        for (let i = 0; i < 5; i++) burst(ctx, out, R, t0 + Math.random() * 0.3, 'white', ['bandpass', 2000 + Math.random() * 3000, 2], 0.07 * k, 0.001, 0.015);
+        burst(ctx, out, R, t0, 'brown', ['lowpass', 300], 0.12 * k, 0.1, 0.25);
+        return 0.4;
+      },
+      // the loading door burst outward: planks tearing, a crash, splinters
+      b9burst(ctx, out, t0, p, R, send) {
+        thud(ctx, out, t0, 70, 30, 1.0, 0.5);
+        splinter(ctx, out, t0, R, 1.6, 16);
+        burst(ctx, out, R, t0, 'brown', ['lowpass', 420], 1.0, 0.002, 0.6);
+        burst(ctx, out, R, t0, 'pink', ['bandpass', 1100, 0.7], 0.5, 0.002, 0.3);
+        if (send) { const s = gain(ctx, 0.5); out.connect(s); s.connect(send); }
+        return 1.2;
+      },
+      // a man into the river from a height: the smack, the heavy slosh, the
+      // water falling back
+      b9splash(ctx, out, t0, p, R, send) {
+        burst(ctx, out, R, t0, 'white', ['lowpass', 2600], 0.9, 0.002, 0.25);
+        thud(ctx, out, t0, 60, 35, 0.8, 0.4);
+        burst(ctx, out, R, t0 + 0.05, 'pink', ['bandpass', 600, 0.6], 0.7, 0.05, 1.1);
+        burst(ctx, out, R, t0 + 0.5, 'white', ['bandpass', 3500, 0.8], 0.25, 0.1, 0.9);
+        if (send) { const s = gain(ctx, 0.6); out.connect(s); s.connect(send); }
+        return 1.8;
+      },
+      // a board off the pier's edge; a board onto the water
+      b9plank(ctx, out, t0) { thud(ctx, out, t0, 170, 90, 0.35, 0.08); return 0.2; },
+      b9plop(ctx, out, t0, p, R) { burst(ctx, out, R, t0, 'pink', ['bandpass', 800, 0.8], 0.3, 0.005, 0.35); thud(ctx, out, t0, 110, 60, 0.2, 0.1); return 0.5; },
+      // the lantern creaking on its nail as it swings
+      b9creak(ctx, out, t0) {
+        const d = 0.35;
+        const o = osc(ctx, 'sawtooth', 520, t0, d);
+        o.frequency.setValueAtTime(480, t0); o.frequency.linearRampToValueAtTime(610, t0 + d);
+        const g = gain(ctx); env(g, t0, 0.025, 0.05, 0.2, 0.1);
+        chain(o, filt(ctx, 'bandpass', 1800, 4), g, out);
+        return d + 0.1;
+      },
     },
     rooms: {
       // the shed: the rain drumming on the roof far overhead (dull, big),
