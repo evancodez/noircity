@@ -464,7 +464,7 @@ export class Breakables {
       f.t += dt;
       const on = f.t >= f.dur || Math.sin(f.t * 47 + f.seed) + Math.sin(f.t * 23 + f.seed * 2) > -0.2;
       const k = f.t >= f.dur ? 1 : on ? 1 : 0.15;
-      for (const m of f.meshes) { if (m.userData.col0) m.material.color.copy(m.userData.col0).multiplyScalar(k); else if (m.userData.lv0 != null) m.material.uniforms.uLevel.value = m.userData.lv0 * k; if (m.userData.em0) m.material.emissive.copy(m.userData.em0).multiplyScalar(k); }   // [B7] (a shader tube: its level)
+      for (const m of f.meshes) { const M = m.material; if (m.userData.col0 && M.color) M.color.copy(m.userData.col0).multiplyScalar(k); else if (m.userData.lv0 != null && M.uniforms && M.uniforms.uLevel) M.uniforms.uLevel.value = m.userData.lv0 * k; if (m.userData.em0 && M.emissive) M.emissive.copy(m.userData.em0).multiplyScalar(k); }   // [B7] (a shader tube: its level; a material swapped since, left be)
       if (f.t >= f.dur) this.flickers.splice(i, 1);
     }
   }
