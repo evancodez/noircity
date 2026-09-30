@@ -724,6 +724,24 @@ function* cardinal(ctx) {
   yield until(() => him.b7down);
 }
 
+// room to fall back: the street behind a man (as killHood will turn him to
+// the shot) clear of cars, walls and posts for a body's length
+function fallRoom(S, h, dir) {
+  const from = Math.atan2(-dir.x, -dir.z);
+  let d = from - h.yaw; d = Math.atan2(Math.sin(d), Math.cos(d));
+  const yaw = h.yaw + Math.max(-0.25, Math.min(0.25, d * 0.3));
+  const back = V(-Math.sin(yaw), 0, -Math.cos(yaw));
+  for (const L of [0.6, 1.2, 1.8, 2.2]) {
+    const p = h.pos.clone().addScaledVector(back, L);
+    for (const b of S.colliders.boxes) {
+      const dx = p.x - b.cx, dz = p.z - b.cz, lx = dx * b.c - dz * b.s, lz = dx * b.s + dz * b.c;
+      if (Math.hypot(Math.max(0, Math.abs(lx) - b.hx), Math.max(0, Math.abs(lz) - b.hz)) < 0.3) return false;
+    }
+    for (const c of S.colliders.circles) if (c.tag !== 'hood' && c !== h.collider && Math.hypot(p.x - c.x, p.z - c.z) < c.r + 0.3) return false;
+  }
+  return true;
+}
+
 // him: the cast kind 'cardinal' (else a heavy Hood, unarmed, as a stand-in),
 // made to be shot like a Hood, with his own brain
 function spawnCardinal(ctx, at) {
@@ -746,7 +764,11 @@ function spawnCardinal(ctx, at) {
     }
     if (wounds >= W.total && !h.b7down) {
       h.b7down = true;
-      G.killHood(h, dir || V(1, 0, 0), false, 'deathBack');
+      // [second pass] he falls back, away from my rounds, when there is
+      // street behind him; with his car or a wall at his back he goes down
+      // on his knees and forward instead (never back into the saloon)
+      const d0 = dir || V(1, 0, 0);
+      G.killHood(h, d0, false, fallRoom(S, h, d0) ? 'deathBack' : 'deathKnees');
       endHat(ctx, h);
     }
   };
