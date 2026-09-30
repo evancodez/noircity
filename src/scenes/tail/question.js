@@ -223,8 +223,8 @@ export class Question {
       if (H) {
         const e = G.camera.position, m = man.pos;
         const wy = Math.atan2(-(m.x - e.x), -(m.z - e.z)) - H.face;
-        // (to his hat as he sits: he is in the frame's lower half, the rail,
-        // the black water and the far bank's haze above him)
+        // (to his chest as he sits: he is in the frame's lower half, the
+        // rail and the black water above him)
         const wp = Math.atan2(m.y + 0.6 - e.y, Math.hypot(m.x - e.x, m.z - e.z));
         const k = 1 - Math.exp(-(1 / 60) * 3.2);
         H.look.yaw += Math.atan2(Math.sin(wy - H.look.yaw), Math.cos(wy - H.look.yaw)) * k;
