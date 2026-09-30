@@ -219,6 +219,80 @@ async function walk(points, timeout) {
   return true;
 }
 
+// [B5] the tail (scene 7) by real input, a first-timer's hands: W held
+// (off when he is too close), A / D pressed toward a line down the road
+// (round the truck and the car coming the other way); in the close RMB held
+// and the mouse brought onto his rear tyre, LMB when it is on; E to get
+// out, W and the mouse to walk to him, E to take him, the mouse onto the
+// river. Ends when `until` holds. { drive: { until, timeout, line, shots } }
+async function drive({ until = 'false', timeout = 240000, line = 2.4, shots = {} } = {}) {
+  const done = new Set(), held = new Set();
+  const set = async (code, on) => { if (on && !held.has(code)) { held.add(code); await keyDown(code); } else if (!on && held.has(code)) { held.delete(code); await keyUp(code); } };
+  const cx = W / 2, cy = H / 2;
+  let rmb = false, lastFire = 0, lastE = 0;
+  const T0 = Date.now();
+  for (;;) {
+    if (await js(until) === true) break;
+    if (Date.now() - T0 > timeout) { check('the tail ended in time', false); break; }
+    for (const [name, expr] of Object.entries(shots)) if (!done.has(name) && await js(expr) === true) { done.add(name); await shot(name); }
+    const s = await js(`(() => { const T = G.scenes.ctx && G.scenes.ctx.flags.tail; if (!T || !T.my) return { none: true };
+      const v = T.my, R = N.stage.track, C = N.controller, cam = N.camera;
+      const out = { state: T.state, mode: C.mode, sens: C.sensitivity, speed: v.speed, gap: T.gap, prompt: G.hud.promptShown, fade: !!T.fade };
+      // the line: the right lane, round the truck and the oncoming car
+      let d = ${line};
+      const avoid = [T.truck, T.oncoming].filter(Boolean);
+      for (const o of avoid) if (o.s - v.s < 60 && o.s - v.s > -8) d = Math.max(d, o.d + 4.2);
+      const la = 9 + Math.max(0, v.speed) * 0.55;
+      const F = R.frame(Math.min(${1320}, v.s + la), {});
+      const tx = F.x + F.rx * d, tz = F.z + F.rz * d;
+      const c = Math.cos(v.yaw), sn = Math.sin(v.yaw), dx = tx - v.pos.x, dz = tz - v.pos.z;
+      out.err = Math.atan2(-(dx * sn + dz * c), dx * c - dz * sn) - v.yawRate * 0.12;
+      // his rear tyre in the eye's frame (the aim)
+      const h = T.his;
+      if (h && T.state === 'close') {
+        const p = h.seat(new N.THREE.Vector3(-1.5, 0.45, 0.7), new N.THREE.Vector3()).applyMatrix4(cam.matrixWorldInverse);
+        out.ay = Math.atan2(p.x, -p.z); out.ap = Math.atan2(p.y, -p.z); out.aimK = T.aimK;
+      }
+      const Q = T.question;
+      if (Q && Q.man) { const m = Q.man.pos, e = cam.position; out.man = [m.x, m.z]; out.dMan = Math.hypot(m.x - e.x, m.z - e.z);
+        const q = new N.THREE.Vector3(m.x, 1.3, m.z).applyMatrix4(cam.matrixWorldInverse); out.my = Math.atan2(q.x, -q.z);
+        if (Q.water) { const w = Q.water.clone().applyMatrix4(cam.matrixWorldInverse); out.wy = Math.atan2(w.x, -w.z); out.wp = Math.atan2(w.y, -w.z); } }
+      return out; })()`);
+    if (!s || s.none || s.fade) { await sleep(40); continue; }
+    if (s.mode === 'drive') {
+      const drivingOn = s.state === 'start' || s.state === 'chase' || s.state === 'close';
+      await set('KeyW', drivingOn && !(s.gap < 9 && s.speed > 8));
+      await set('KeyS', drivingOn && s.gap < 7 && s.speed > 6);
+      const e = s.err;
+      await set('KeyA', drivingOn && e > 0.035);
+      await set('KeyD', drivingOn && e < -0.035);
+      // the gun: RMB held once he is near; the mouse onto the tyre; LMB
+      if (s.state === 'close' && s.gap < 27 && s.ay != null) {
+        if (!rmb) { rmb = true; await mouse('mousePressed', cx, cy, 'right'); }
+        if (s.aimK > 0.95) {
+          const ex = s.ay, ey = s.ap;
+          if (Math.abs(ex) > 0.006 || Math.abs(ey) > 0.006) await turn(Math.round(Math.max(-60, Math.min(60, ex * 0.7 / s.sens))), Math.round(Math.max(-40, Math.min(40, -ey * 0.7 / s.sens))));
+          if (Math.abs(ex) < 0.02 && Math.abs(ey) < 0.03 && Date.now() - lastFire > 420) { lastFire = Date.now(); await mouse('mousePressed', cx, cy, 'left'); await sleep(40); await mouse('mouseReleased', cx, cy, 'left'); }
+        }
+      } else if (rmb) { rmb = false; await mouse('mouseReleased', cx, cy, 'right'); }
+      if (/get out/.test(s.prompt) && Date.now() - lastE > 1500) { lastE = Date.now(); await set('KeyW', false); await set('KeyA', false); await set('KeyD', false); await sleep(rr0(300, 600)); await keyDown('KeyE'); await sleep(60); await keyUp('KeyE'); }
+    } else if (s.mode === 'walk' && s.man) {
+      // to him, then E
+      if (Math.abs(s.my) > 0.05) await turn(Math.round(Math.max(-40, Math.min(40, s.my * 0.6 / s.sens))), 0);
+      await set('KeyW', s.dMan > 1.5 && Math.abs(s.my) < 0.6);
+      if (/take him/.test(s.prompt) && Date.now() - lastE > 1500) { lastE = Date.now(); await set('KeyW', false); await keyDown('KeyE'); await sleep(60); await keyUp('KeyE'); }
+    } else if (s.mode === 'hold' && s.wy != null) {
+      // the question: the eyes to the river, a moment after he is pinned
+      await set('KeyW', false);
+      if (Date.now() - lastE > 1600 && (Math.abs(s.wy) > 0.04 || Math.abs(s.wp) > 0.05)) await turn(Math.round(Math.max(-25, Math.min(25, s.wy * 0.35 / s.sens))), Math.round(Math.max(-20, Math.min(20, -s.wp * 0.35 / s.sens))));
+    }
+    await sleep(33);
+  }
+  for (const c of [...held]) await set(c, false);
+  if (rmb) await mouse('mouseReleased', cx, cy, 'right');
+}
+const rr0 = (a, b) => a + (b - a) * Math.random();
+
 try {
   let ver;
   for (let k = 0; k < CHROME_WAIT_STEPS; k++) { try { ver = await (await fetch(`http://127.0.0.1:${PORT}/json/version`)).json(); break; } catch { await sleep(100); } }
@@ -262,6 +336,7 @@ try {
       log(`fight ${JSON.stringify(r)}`);
       if (S.fight.expect) { const ok = new Function('F', `return (${S.fight.expect});`)(r) === true; check(S.fight.label || S.fight.expect, ok, ok ? '' : JSON.stringify(r)); }
     }
+    else if (S.drive) { await drive(S.drive); log('drive done'); }   // [B5]
     // (a walk's points may be an expression: where the fight left him)
     else if (S.walk) { const pts = typeof S.walk === 'string' ? await js(S.walk) : S.walk; const ok = await walk(pts, S.timeout ?? 30000); check(`walk ${JSON.stringify(pts)}`, ok); if (!ok && S.stop !== false) break; }
     else if (S.clickOn) {
