@@ -269,7 +269,14 @@ export function papers(ctx, at, dir, rng, n = 5) {
     m.position.copy(at).add(V(rng.gauss() * 0.08, rng.range(0, 0.08), rng.gauss() * 0.08));
     m.rotation.set(rng.next() * 6, rng.next() * 6, rng.next() * 6);
     m.userData.inkId = 3; m.userData.noRay = true;
-    B.field.add(m, V(rng.gauss() * 0.9, rng.range(1.6, 3.2), rng.gauss() * 0.9).addScaledVector(dir, 0.5), V(rng.gauss() * 3, rng.gauss() * 3, rng.gauss() * 3), { paper: true, thin: true });
+    // (round 2: a burst off the desk I am down behind flew up through my eye
+    // and a sheet a hand from the lens was a white wall across the frame:
+    // near me they go up less and off away from me)
+    const e = ctx.game.eye, ex = at.x - e.x, ez = at.z - e.z, ed = Math.hypot(ex, ez) || 1;
+    const near = Math.max(0, 1 - ed / 1.8);
+    const vel = V(rng.gauss() * 0.9, rng.range(1.6, 3.2) * (1 - 0.45 * near), rng.gauss() * 0.9).addScaledVector(dir, 0.5);
+    vel.x += ex / ed * 1.6 * near; vel.z += ez / ed * 1.6 * near;
+    B.field.add(m, vel, V(rng.gauss() * 3, rng.gauss() * 3, rng.gauss() * 3), { paper: true, thin: true });
   }
   ctx.game.sfx.play('office_papers', at);
 }
