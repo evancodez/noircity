@@ -120,7 +120,7 @@
   { "name": "(on the landing in the dark, the Hood with the torch gone down to the truck: down behind the man in the bay as he turns his back and walks away up aisle C)" },
   { "until": "M('hood2').mode !== 'patrol' && M('cal').ri === 3 && M('cal').wait <= 0 && M('cal').pos.z > -32.8 && M('cal').pos.z < -30.5", "timeout": 60000 },
   { "eval": "CS() + ' | ' + JSON.stringify(LOG)" },
-  { "walk": [[13.2, -40.2]], "timeout": 20000, "stop": false },
+  { "walk": [[11.4, -40.2]], "timeout": 20000, "stop": false },
   { "down": "KeyW" },
   { "until": "G.controller.mode === 'brawlIn' || G.brawl.active", "timeout": 8000 },
   { "up": "KeyW" },
