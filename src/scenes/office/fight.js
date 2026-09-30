@@ -256,10 +256,23 @@ function roomHit(ctx, O, hit, dir, rng) {
 
 // sheets of paper up off a hit, drifting down (they settle and stay)
 const PAPER = { mat: null };
+// (round 2: a sheet in the air up by the ceiling crosses the street's light
+// up through the blind - a light made to reach the ceiling from three
+// floors down - and printed as a glowing white card, a white wall across
+// the frame's top when it came down near me in the quiet. Paper is paper:
+// it never prints brighter than a sheet in the lamp's pool, and no glow)
+function paperMat() {
+  const m = new THREE.MeshStandardMaterial({ color: 0x6e6e6e, roughness: 0.9, side: THREE.DoubleSide });
+  m.onBeforeCompile = (sh) => {
+    sh.fragmentShader = sh.fragmentShader.replace('#include <opaque_fragment>', 'outgoingLight = min( outgoingLight, vec3( 0.85 ) );\n#include <opaque_fragment>');
+  };
+  m.customProgramCacheKey = () => 'b2paper';
+  return m;
+}
 export function papers(ctx, at, dir, rng, n = 5) {
   const B = ctx.stage.breakables;
   // (a sheet's paper, not a light: at 0x9a one in the floor lamp's beam printed as a glowing card)
-  const mat = PAPER.mat || (PAPER.mat = new THREE.MeshStandardMaterial({ color: 0x6e6e6e, roughness: 0.9, side: THREE.DoubleSide }));
+  const mat = PAPER.mat || (PAPER.mat = paperMat());
   mat.userData.inkSurface = 'plaster';
   for (let k = 0; k < n; k++) {
     // (its face on local y: the field lays a thin piece down on local y - an

@@ -185,7 +185,14 @@ export default defineScene({
       C.crouchOn = false;
       // smoke in the light, paper coming down
       const rng = ctx.stage.rng.fork(3071);
-      papers(ctx, V(DESK.x - 0.6, 2.4, DESK.z), V(0, -1, 0), rng, 5);
+      // (round 2: where I am looking, a couple of metres off, not over my head:
+      // over the desk they came down past the lens as a white card)
+      const fw = G.camera.getWorldDirection(V(0, 0, 0)).setY(0);
+      if (fw.lengthSq() < 1e-4) fw.set(-1, 0, 0);
+      fw.normalize();
+      const pAt = V(G.eye.x + fw.x * 1.9, 2.3, G.eye.z + fw.z * 1.9);
+      pAt.x = Math.max(0.5, Math.min(5.1, pAt.x)); pAt.z = Math.max(0.5, Math.min(6.5, pAt.z));
+      papers(ctx, pAt, V(0, -1, 0), rng, 5);
       yield wait(3.2);
       ctx.next();
     }
