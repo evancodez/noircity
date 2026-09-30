@@ -14,6 +14,12 @@
    "clickOn": "#title .opt[data-k=begin]"
   },
   {
+   "wait": 6000
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]"
+  },
+  {
    "name": "seen: the street window"
   },
   {
@@ -284,7 +290,7 @@
      -91.6
     ],
     [
-     -2.35,
+     -2.8,
      -90.3
     ]
    ],
