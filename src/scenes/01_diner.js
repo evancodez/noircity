@@ -1,7 +1,7 @@
 import { defineScene, wait, until, beat } from '../game/script.js';
 import { serveGlass, fetchBottle, pourScotch as pourScotchHands, slideGlass, POUR } from '../cast/diner/dot.js';
 import { deliverPlate, topUpCoffee, feedJukebox, ringBell } from '../cast/diner/patrons.js';
-import { dinerRoom, seatPlayer, holdCigarette, setGlass, makeJobs, makeGlance, clip, counterAt, jukeboxPos, V, DINER, stoolZ, MACK_AT, EYE_AT, BRAWL_EYE, GLASS_AT, POUR_AT, SCOTCH_DOWN } from './_diner_room.js';
+import { dinerRoom, seatPlayer, holdCigarette, setGlass, makeJobs, makeGlance, clip, counterAt, jukeboxPos, V, DINER, stoolZ, GLASS_AT, POUR_AT, SCOTCH_DOWN } from './_diner_room.js';
 
 // Scene 1, the diner (STORY.md, lane 7's brief P0.2). Beats: settle, order,
 // drink, pay; the room lives under them. Nothing forces the player's pace:
@@ -21,9 +21,9 @@ import { dinerRoom, seatPlayer, holdCigarette, setGlass, makeJobs, makeGlance, c
 //           coffee; Q spins the empty stool on my left
 //   pay     E pay: the wallet, the licence; the big man two stools down sees
 //           it, holds the look; the view eases round to him (he is framed on
-//           its right third) and holds through his line and his rise; the
-//           stool goes over; the eye rises off the stool and turns to him
-//           (1.2 s), and the fight begins with no cut to black
+//           its right third) and holds through his line; then scene 2's way
+//           in takes over with no cut (he stands, his stool goes over, his hand
+//           on my shoulder: scenes/fight/start.js, lane B8)
 // Every beat starts square to the counter (seatPlayer); the view turns only
 // when something wants it, eased there and given back (the glance): Dot
 // coming down the counter (0.25 rad toward her, 1.2 s), Mack's line.
@@ -195,28 +195,12 @@ export default defineScene({
       look.to({ at: mackAt, frame: 0.3, max: 1.2, pitch: true, in: 1.1, hold: Infinity });
       yield wait(1.2);
       yield* ctx.say('You’re the one asking about the Cardinal.', 2.6);
-      // he stands; the stool goes over (and if he bumps the counter, the
-      // needle jumps and the record stops)
-      const bump = ctx.rng.chance(0.5);
-      const rise = m.play('rise', { onMark: {
-        stool: () => {
-          d.stool(DINER.brawlerStool).topple(V(1, 0, -0.3));
-          snd('stoolFall', V(DINER.stools.x, 0.5, stoolZ(DINER.brawlerStool)));
-          if (bump) { d.cupsRattle(0.8, 0.6); G.sfx.play('needleScratch', jukeboxPos()); G.music.stop(0.15); ctx.flags.scratch = true; }
-        },
-      } });
-      yield until(() => rise.done || rise.t >= rise.duration);
-      m.stand();
-      m.lookAt(null);
-      // he steps out into the aisle; the eye rises off the stool and turns
-      // to him (1.2 s), into the fight
-      jobs.add('mack', m.walkTo(MACK_AT, { speed: 1.1 }));
-      // (his hands free for the fight: the cigarette out of the lips too, as he rises)
+      // [B8] his hands free for the fight: the cigarette out of the lips as he
+      // moves; then scene 2 takes the room as it stands, no cut: he stands,
+      // comes down the counter, his hand on my shoulder (scenes/fight/start.js)
       H.hold(null, 'R'); H.hold(null, 'L'); H.hold(null, 'M', { keep: true });
       ctx.flags.cig = null;
-      yield* riseToFight(ctx);
-      yield until(() => !jobs.busy('mack'));
-      G.scenes.go('fight', { beat: 'round1', fade: 'cut', card: false, keep: true });
+      G.scenes.go('fight', { beat: 'start', fade: 'cut', card: false, keep: true });
     }
   },
 
@@ -302,23 +286,6 @@ function* sip(ctx, d, k) {
   if (glass) glass.userData.setFill(f1);
   const p = H.play('putDown', { onMark: { down: () => { if (glass) snd('glassDown', glass.getWorldPosition(V(0, 0, 0)), { k: 0.8 }); } } });
   yield until(() => p.done);
-}
-
-// off the stool and round to face him (1.2 s, eased): the seated eye rises
-// to the standing brawl eye in the aisle, turning to look down it at him
-function* riseToFight(ctx) {
-  const { controller: C, game: G } = ctx;
-  const from = C.eyePose();
-  const to = { x: EYE_AT.x, y: BRAWL_EYE, z: EYE_AT.z, yaw: 0, pitch: -0.08 };
-  C.setMode('cutscene', { track: (t) => {
-    const u = Math.min(1, t / 1.2), e = u * u * (3 - 2 * u);
-    // (up first, then across: a man getting off a stool)
-    const up = Math.min(1, u / 0.55), eu = up * up * (3 - 2 * up);
-    const dy = Math.atan2(Math.sin(to.yaw - from.yaw), Math.cos(to.yaw - from.yaw));
-    return { x: from.x + (to.x - from.x) * e, y: from.y + (to.y - from.y) * eu, z: from.z + (to.z - from.z) * e, yaw: from.yaw + dy * e, pitch: from.pitch + (to.pitch - from.pitch) * e };
-  } });
-  G.sfx.play('stoolSqueak', V(DINER.stools.x, 0.9, stoolZ(DINER.playerStool)), { k: 0.6 });
-  yield wait(1.2);
 }
 
 // The room's own clock (STORY 'room', lane 7's brief P0.2 item 4), seeded

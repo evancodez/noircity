@@ -146,5 +146,31 @@ export const FIGHT_CLIPS = {
     keys: { R: [[0, gR], [0.3, 'hurtR'], [0.8, shift(HP.hurtR, [0.05, -0.25, 0.1])]], L: [[0, gL], [0.3, 'hurtL'], [0.8, shift(HP.hurtL, [-0.05, -0.25, 0.1])]] },
     view: [[0, {}], [0.8, { pitch: -0.3, down: 0.5, roll: 0.3 }]] },
 };
+// ---- [B8] the way in (briefs/B8_FIGHT.md §1): off the stool, the stool
+// beside me taken by its seat and sent skidding, the fists up --------------------------
+// A hand on a thing that moves in the world (object first): the scene sets
+// REACH.L / REACH.R to a function giving that hand's pose in the eye's frame
+// where the thing is NOW (read every step, as the key 'b8reachL' is
+// resolved); unset, the guard.
+export const REACH = { L: null, R: null };
+const live = (side) => {
+  const g = side === 'L' ? gL : gR;
+  const cur = () => (REACH[side] && REACH[side]()) || g;
+  return { frame: 'cam', get p() { return cur().p; }, get f() { return cur().f; }, get b() { return cur().b; }, get F() { return cur().F; }, get e() { return cur().e; } };
+};
+export const POSES = { b8reachL: live('L'), b8reachR: live('R') };
+// (below the frame: where the hands are while he comes up off the stool)
+const lowR = shift(gR, [0.06, -0.36, 0.14]), lowL = shift(gL, [-0.06, -0.36, 0.14]);
+FIGHT_CLIPS.b8_rise = {
+  duration: 0.9, marks: { grab: 0.26, release: 0.44 }, blend: 0.05,
+  keys: {
+    L: [[0, lowL], [0.26, 'b8reachL', 'out'], [0.44, 'b8reachL', 'lin'], [0.74, gL, 'io'], [0.9, gL]],
+    R: [[0, lowR], [0.36, shift(gR, [0.04, -0.2, 0.08]), 'io'], [0.72, gR, 'out'], [1.0, gR]],
+  },
+  // (the eyes go to the stool as the hand takes it, and back to him)
+  view: [[0, {}], [0.24, { yaw: 0.34, pitch: -0.34, side: -0.08, down: 0.12 }, 'out'], [0.44, { yaw: 0.26, pitch: -0.24, side: -0.06, down: 0.08 }], [0.8, {}]],
+  brush: 'L',
+};
+
 // (the hands' data files export CLIPS: Hands.js merges them)
 export { FIGHT_CLIPS as CLIPS };

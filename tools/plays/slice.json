@@ -238,14 +238,38 @@
    "label": "his line: the view eased round to frame him"
   },
   {
-   "until": "G.controller.mode === 'cutscene'",
+   "until": "G.scenes.current.id === 'fight' && G.scenes.beat === 'start' && G.controller.mode === 'brawlIn'",
    "timeout": 10000
   },
   {
-   "wait": 600
+   "eval": "(window.__startT = N.time, 'the way in began')"
+  },
+  {
+   "wait": 1300
   },
   {
    "shot": "s11_rise"
+  },
+  {
+   "until": "!!G.scenes.ctx.flags.handOn",
+   "timeout": 6000
+  },
+  {
+   "expect": "(() => { const m = G.cast.get('mack'), h = m.bones.handL.getWorldPosition(G.eye.clone()); return Math.hypot(h.x - G.eye.x, h.z - G.eye.z) < 0.45 && h.y < G.eye.y && h.y > G.eye.y - 0.45; })()",
+   "label": "his left hand on my right shoulder"
+  },
+  {
+   "shot": "s11a_shoulder"
+  },
+  {
+   "until": "G.hands.current === 'b8_rise'",
+   "timeout": 4000
+  },
+  {
+   "wait": 250
+  },
+  {
+   "shot": "s11b_stool"
   },
   {
    "name": "scene 2, the fight"
@@ -253,6 +277,14 @@
   {
    "until": "G.scenes.current.id === 'fight' && G.brawl.active",
    "timeout": 10000
+  },
+  {
+   "expect": "(N.time - window.__startT) > 3.2 && (N.time - window.__startT) < 5.2",
+   "label": "the way in, his line to fists up, in about four seconds"
+  },
+  {
+   "expect": "(() => { const s = G.stage.part('diner').stool(4); return s.handle.toppled && s.object.position.x < -13.95; })()",
+   "label": "the stool I sat on went skidding into the counter and lies there"
   },
   {
    "expect": "G.controller.mode === 'brawl' && G.hands.set === 'fists'",

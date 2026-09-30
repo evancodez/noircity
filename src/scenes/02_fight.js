@@ -1,11 +1,16 @@
 import * as THREE from 'three';
 import { defineScene, wait, until, beat } from '../game/script.js';
-import { dinerRoom, makeJobs, clip, counterAt, V, DINER, stoolZ, MACK_AT, EYE_AT, BRAWL_EYE } from './_diner_room.js';
+import { dinerRoom, seatPlayer, makeJobs, clip, counterAt, V, DINER, stoolZ, MACK_AT, EYE_AT, BRAWL_EYE } from './_diner_room.js';
 import { KO_OUT } from '../cast/brawl/clips.js';
+import { startSetup, startFight, layStool } from './fight/start.js';
 
 // Scene 2, the fist fight (round 2: docs/story/FIGHT.md, the user's spec).
 // The rules are game/Brawl.js (with his brain, src/cast/brawl/); this file
 // stages the room round them. Beats:
+//   start    [B8] after his line: he stands, comes down the counter, his
+//            hand on my shoulder pulls me round; I come up, the stool beside
+//            me sent skidding, fists up (scenes/fight/start.js); a retry
+//            skips it
 //   lesson   he rises, squares up and waits: the first exchange is taught,
 //            one card at a time (game/BrawlLesson.js); ?step=<1..7> jumps
 //            into it. The room clears as it starts (the couple out into the
@@ -205,6 +210,8 @@ function stageFight(ctx, part, { retry = false } = {}) {
   // (the café tables and chairs as they stood; the rack on the counter)
   for (const t of d.booths.cafe || []) { stage.breakables.restore(t.handle); for (const c of t.chairs) stage.breakables.restore(c.handle); }
   d.stool(DINER.brawlerStool).topple(V(1, 0, -0.3));
+  // [B8] (the stool I sent skidding lies where it stopped)
+  layStool(stage);
   clearRoom(ctx, true);
   setRack(ctx);
   ctx.flags.room = null;
@@ -253,10 +260,12 @@ function beginFight(ctx, mack, { manner = 'measured', hp = null, lesson = false,
 
 export default defineScene({
   id: 'fight', stage: 'block', title: 'II', name: 'The Fight',
-  beats: ['lesson', 'round1', 'round2', 'round3', 'reel', 'ko', 'outside', 'matchbook'],
+  beats: ['start', 'lesson', 'round1', 'round2', 'round3', 'reel', 'ko', 'outside', 'matchbook'],
   save: ['lesson', 'round1', 'round2', 'round3', 'outside'],
 
   setup: {
+    // [B8] his line said: he on his stool turned to me, I on mine (a cold entry)
+    start(ctx) { ctx.flags.jobs = makeJobs(); startSetup(ctx, dinerRoom, seatPlayer); },
     lesson(ctx) {
       ctx.flags.jobs = makeJobs();
       stageFight(ctx, 'lesson');
@@ -309,24 +318,23 @@ export default defineScene({
     const mack = () => cast.get('mack');
     const fighting = ['lesson', 'round1', 'round2', 'round3', 'reel'];
 
-    // ---- into the fight: the lesson (the first time), or the part jumped to
-    if (ctx.kept) {
-      // (a cut straight from the diner: the room goes on as it stands; he
-      // squares up from where he stood, turning to me the short way)
+    // ---- into the fight: the way in and the lesson (the first time), or the part jumped to
+    if (ctx.kept || ctx.from === 'start') {
+      // [B8] (a cut straight from the diner, his line just said: the room goes
+      // on as it stands; the move of scenes/fight/start.js, then the lesson)
+      yield beat('start');
       const m = mack();
+      ctx.flags.onFall = () => clearRoom(ctx, false);
+      const end = yield* startFight(ctx);
       setRack(ctx);
-      const P = G.controller.eyePose();
-      G.controller.setMode('brawl', { opponent: m, eyeY: BRAWL_EYE, pos: { x: P.x, z: P.z }, yaw: P.yaw });
-      H.hold(null, 'R'); H.hold(null, 'L');
-      H.equip('fists');
+      G.controller.setMode('brawl', { opponent: m, eyeY: BRAWL_EYE, pos: { x: end.eye.x, z: end.eye.z }, yaw: end.yaw, ease: 0.2 });
       beginFight(ctx, m, { lesson: true });
-      clearRoom(ctx, false);
     } else if (fighting.includes(ctx.from)) {
       if (ctx.from === 'lesson') beginFight(ctx, mack(), { lesson: ctx.flags.startLesson || 1 });
       else if (ctx.from === 'reel') beginFight(ctx, mack(), { manner: 'out', hp: 12 });
       else beginFight(ctx, mack(), { manner: BEAT_MANNER[ctx.from] });
     }
-    // (the cut from the diner arrives as 'round1' kept: it is the lesson)
+    // (the way in ends in the lesson)
     const taught = ctx.kept || ctx.at('lesson');
     if (ctx.at('reel') || ctx.kept) {
       if (taught) {
