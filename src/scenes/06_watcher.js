@@ -217,11 +217,29 @@ export default defineScene({
           if (name === 'end') ended = true;
         },
       });
-      // (and the black of the cut lifts as I come up under the sash)
+      // (and the black of the cut lifts as I come up under the sash; out on
+      // the iron the look is drawn down to him in the street below, crossing
+      // for the alley's mouth - where to go - until the mouse or W takes it)
       if (T) {
-        let k = 1;
-        const up = ctx.onStep((dt) => { if (k <= 0) return; k = Math.max(0, k - dt / 0.3); G.hud.fade(k * k * (3 - 2 * k)); });
-        void up;
+        let k = 1, draw = -1;
+        ctx.onStep((dt) => {
+          if (k > 0) { k = Math.max(0, k - dt / 0.3); G.hud.fade(k * k * (3 - 2 * k)); }
+          const e = G.controller.esc;
+          if (!e || draw === -2) return;
+          if (draw < 0 && e.s >= e.autoTo) draw = 0;
+          if (draw < 0) return;
+          // (a turn of the mouse or a step down the iron lets it go)
+          if (e.idle < draw - 1e-6 || G.held('KeyW') || G.held('ArrowUp')) { draw = -2; return; }
+          draw += dt;
+          e.idle = draw;
+          if (draw > 1.6) { draw = -2; return; }
+          const him = C.fig.bones.chest.getWorldPosition(V(0, 0, 0)), eye = G.eye;
+          const yawTo = Math.atan2(-(him.x - eye.x), -(him.z - eye.z));
+          const pitchTo = Math.atan2(him.y - eye.y, Math.hypot(him.x - eye.x, him.z - eye.z));
+          const a = 1 - Math.exp(-dt * 3.2);
+          e.look.yaw += Math.atan2(Math.sin(yawTo - e.heading - e.look.yaw), Math.cos(yawTo - e.heading - e.look.yaw)) * a;
+          e.look.pitch += (pitchTo - e.pitchBase - e.look.pitch) * a;
+        });
       }
       // his pace follows mine down the iron: he is 15 m up the alley when I land
       const E = () => G.controller.esc;
@@ -363,9 +381,15 @@ export default defineScene({
       const ex = door.x + doorOut.x * 0.7 - doorOut.z * 0.1, ez = door.z + doorOut.z * 0.7 + doorOut.x * 0.1;
       const gy = G.stage.surfaceY(ex, ez);
       const dy = gy + 1.63 - door.y, dd = Math.hypot(door.x - ex, door.z - ez);
-      G.controller.ease({ x: ex, y: gy + 1.63, z: ez, yaw: Math.atan2(-(door.x - ex), -(door.z - ez)) + 0.1, pitch: -Math.atan2(dy, dd) + 0.2 }, 0.4);
+      const P1 = { x: ex, y: gy + 1.63, z: ez, yaw: Math.atan2(-(door.x - ex), -(door.z - ez)) + 0.1, pitch: -Math.atan2(dy, dd) + 0.2 };
+      G.controller.ease(P1, 0.4);
       H.play('carDoor', { onMark: { grip: () => G.sfx.play('w_carDoorOpen', door) } });
-      yield wait(0.85);
+      // (the click, and on it the black: the chapter's fade, the eye going
+      // on down toward the car's side as a man ducks in to its seat - the
+      // tail opens in that seat)
+      yield wait(0.55);
+      const P2 = { ...P1, x: P1.x - doorOut.x * 0.25, z: P1.z - doorOut.z * 0.25, y: P1.y - 0.45, pitch: P1.pitch + 0.18 };
+      G.controller.ease(P2, 0.75);
       ctx.next();
     }
   },
@@ -566,7 +590,8 @@ function* seenAtWindow(ctx) {
     ctx.onStep((dt) => R.step(dt));
   } else C.place(0.6);
   ctx.flags.ran = true;
-  yield wait(1.0);
+  // (in the office he has further to go out of the slit: held till he has)
+  yield wait(ctx.flags.office ? 1.35 : 1.0);
   H.play('releaseSlats');
   for (let t = 0; t < 0.3; t += 1 / 60) { blind.part(Math.max(0, 1 - t / 0.2)); lens(G, peek + (ctx.flags.fov0 - peek) * (t / 0.3)); yield null; }
   blind.part(0);
@@ -589,11 +614,28 @@ function* outOfOffice(ctx) {
   // (facing the window, +z: my right is -x)
   RUNHANDS.plantR.set(W.x - 0.24, W.sill + 0.012, W.wall + 0.035);
   RUNHANDS.plantL.set(W.x + 0.24, W.sill + 0.012, W.wall + 0.035);
-  let cur = null, black = 0, t = 0;
+  let cur = null, black = 0, t = 0, steps = 0, sill = false;
+  // the curtain over the window (B2's, drawn across it): swept aside to its
+  // far side as I come to it - gathered on its rod, its outer edge where it
+  // was - and hung again behind the black
+  const room = ctx.flags.office.part('office');
+  const cm = room && room.curtain && room.curtain.mesh;
+  const c0 = cm ? { x: cm.position.x, s: cm.scale.x, w: room.curtain.w } : null;
+  let swept = 0, swish = false;
   G.controller.setMode('cutscene', { ease: 0.05, track: (tt) => { cur = track(tt); return cur.pose; } });
   yield until(() => {
     const dt = 1 / 60;
     t += dt;
+    // (my feet on the boards across the room, the palms slapped on the sill)
+    if (steps < 3 && t > 0.22 + steps * 0.24) { steps++; G.sfx.step(null, true, true, true); }
+    if (!sill && cur && cur.duck > 0.45) { sill = true; G.sfx.play('w_sill', V(W.x, W.sill, W.wall)); }
+    if (cm && cur && W.wall - cur.pose.z < 1.0) {
+      if (!swish) { swish = true; G.sfx.play('w_curtain', V(W.x, 1.4, W.wall - 0.1)); }
+      swept = Math.min(1, swept + dt / 0.22);
+      const k = swept * swept * (3 - 2 * swept), sc = c0.s * (1 - 0.74 * k);
+      cm.scale.x = sc;
+      cm.position.x = c0.x + (c0.w / 2) * (c0.s - sc);
+    }
     // (a quick stride across the room, the hands low; then down to the sill)
     RUNHANDS.phase += dt * 9;
     RUNHANDS.k += ((cur && cur.duck > 0.05 ? 0 : 0.35) - RUNHANDS.k) * (1 - Math.exp(-dt * 8));
@@ -603,6 +645,7 @@ function* outOfOffice(ctx) {
     return black >= 1;
   });
   G.hud.fade(1);
+  if (cm) { cm.scale.x = c0.s; cm.position.x = c0.x; }
   // the backlot: the same window of the same building, the eye under its
   // sash as it was under the office's; him running for the side alley
   const pitch = G.controller.pitch;

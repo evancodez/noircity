@@ -435,6 +435,9 @@ export default {
     lamps.b1 = L.post(0.9, -104.5, Math.PI / 2 + Math.PI / 2, { y: 0.15 });
     lamps.b2 = L.post(-13.6, -124.0, -Math.PI / 2 + Math.PI / 2, { y: 0.15, real: true });
     lamps.b3 = L.post(0.9, -130.0, Math.PI, { real: false });
+    // ([R2-C] my car at the kerb stands under one: what to go to, once his
+    // tail lamps are gone - it was in the dark between the pools)
+    lamps.b4 = L.post(-0.35, -87.6, Math.PI, { y: 0.15 });
 
     // ================= the neon at the end of the straight's sight line ==========
     api.neon = neonSign(stage, V3(2.5, 5.2, LANE.z0 + 0.06));

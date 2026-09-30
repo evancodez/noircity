@@ -144,6 +144,19 @@ export default (kit) => {
         return 0.6;
       },
       // his hand on the fence as he goes over it
+      // [R2-C] out of the office: the curtain swept aside (a swish of thin
+      // cloth), both palms on the escape window's sill (a flat slap on wood)
+      w_curtain(ctx, out, t0, p, R) {
+        burst(ctx, out, R, t0, 'pink', ['bandpass', 1400, 0.7], 0.16, 0.04, 0.22);
+        burst(ctx, out, R, t0 + 0.05, 'white', ['bandpass', 3800, 1.2], 0.05, 0.03, 0.12);
+        return 0.4;
+      },
+      w_sill(ctx, out, t0, p, R) {
+        thud(ctx, out, t0, 210, 120, 0.28, 0.05);
+        burst(ctx, out, R, t0, 'pink', ['bandpass', 1300, 1.2], 0.14, 0.002, 0.05);
+        thud(ctx, out, t0 + 0.035, 190, 110, 0.2, 0.05);
+        return 0.25;
+      },
       w_fenceHand(ctx, out, t0, p, R) {
         thud(ctx, out, t0 + 0.12, 200, 120, 0.3, 0.06);
         burst(ctx, out, R, t0 + 0.12, 'pink', ['bandpass', 1200, 1.2], 0.16, 0.002, 0.06);

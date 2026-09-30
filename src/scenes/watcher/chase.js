@@ -173,7 +173,7 @@ export class Chase {
       const washing = this.s > FENCE_S[1] + 2 && this.s < WASH_S;
       if (this.pace) want = this.pace(this.s);
       else if (!this.active) want = 6.2;
-      else if (washing) want = gap < 3.5 ? 8.8 : Math.min(8.2, Math.max(4.8, mine - (gap - 5.6) * 0.8));
+      else if (washing) want = gap < 3.5 ? 8.8 : Math.min(8.2, Math.max(4.4, mine - (gap - 5.6) * 1.0));
       else if (gap < 5) want = 9.6;
       else if (gap < 9) want = Math.max(mine + 0.8, 7.8);
       else if (gap > 22) want = 4.5;
@@ -325,7 +325,9 @@ export class Chase {
     this.skidDone = SKID ? SKID.s < STRETCH_S[i] + 15 : true;
     this.skid = null; this.pull = null;
     this.fig.object.visible = true;
-    this.place(STRETCH_S[i] + 15);
+    // ([R2-C] the washing's retry: nearer, so he is a line ahead of me
+    // there as he is in a run that never lost him)
+    this.place(STRETCH_S[i] + (i === 2 ? 10 : 15));
   }
 
   // ---- his figure, laid on the clip each step ----------------------------------------------------
