@@ -198,7 +198,8 @@ function bloodOnFlags(stage) {
   const N = 60, pos = [], idx = [];
   for (let i = 0; i <= N; i++) {
     const u = i / N, c = path.getPointAt(u), t = path.getTangentAt(u);
-    const w = (0.017 - 0.009 * u) * (1 + 0.45 * Math.sin(u * 37) * Math.sin(u * 13 + 1)) * (u > 0.93 ? 1.6 : 1);
+    // [second pass] a trickle, not a ribbon: thinner, wandering in width
+    const w = (0.011 - 0.006 * u) * (1 + 0.55 * Math.sin(u * 37) * Math.sin(u * 13 + 1)) * (u > 0.93 ? 1.5 : 1);
     const nx = -t.z, nz = t.x;
     for (const sg of [-1, 1]) { const x = c.x + nx * w * sg, z = c.z + nz * w * sg; pos.push(x, floorY(z) + 0.003, z); }
     if (i < N) { const a = i * 2; idx.push(a, a + 1, a + 2, a + 1, a + 3, a + 2); }
@@ -264,13 +265,18 @@ export function crewCar(ctx) {
   addM(T.paint, M.paint); addM(T.chrome, M.chrome); addM(T.dark, M.rubber); addM(T.skirt, M.black);
   addM(T.rubber, M.rubber); addM(T.hubs, M.hubcap); addM(T.caps, M.chrome); addM(T.seams, M.seam);
   addM(T.glass, M.carGlass);
+  // [second pass] its headlamps lit (it had none: from the pavement, 25 m
+  // off among the parked cars, the car going was not seen at all); the wet
+  // street streaks them, as it does every lamp
+  if (T.lenses && M.headlamp) addM(T.lenses, M.headlamp).castShadow = false;
   markFigure(g);
-  // the tail lamps: two small red discs glowing at the back (+ their sheen)
-  const tailM = new THREE.MeshBasicMaterial({ color: accentMaterial('crew').color.clone().multiplyScalar(16) });
+  // the tail lamps: two red discs glowing at the back (+ their sheen)
+  // [second pass: larger and hotter - the crew's red must carry 40 m]
+  const tailM = new THREE.MeshBasicMaterial({ color: accentMaterial('crew').color.clone().multiplyScalar(26) });
   tailM.name = 'body_tail';
   tailM.userData.accent = 'crew';
   for (const z of [0.74, -0.74]) {
-    const d = new THREE.Mesh(new THREE.SphereGeometry(0.095, 16, 10).scale(0.45, 1, 1), tailM);
+    const d = new THREE.Mesh(new THREE.SphereGeometry(0.13, 16, 10).scale(0.45, 1, 1), tailM);
     d.position.set(-2.33, 0.85, z);
     d.userData.inkId = id; d.userData.noRay = true;
     g.add(d);

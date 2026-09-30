@@ -202,6 +202,13 @@ export default defineScene({
     const chest = () => ames.bones.chest.getWorldPosition(V(0, 0, 0));
     const fist = () => ames.bones.handR.getWorldPosition(V(0, 0, 0));
     const flat = (a, b) => Math.hypot(a.x - b.x, a.z - b.z);
+    // [second pass] one quiet line, once, when a first-timer has stood a
+    // while without finding where the story goes next (the world says it
+    // first: the lines, the red, the lamp; this is the fallback)
+    const nudge = (line, done, secs = 20) => {
+      const t0 = G.time; let over = false;
+      ctx.onStep(() => { if (over) return; if (done()) { over = true; return; } if (G.time - t0 > secs) { over = true; G.hud.say(line, 3); } });
+    };
     // (shot mode, the strips: act=kneel@0.3,fist@1.5,... does what E would
     // at those scene times - the look development of each moment)
     const ACT = G.shotMode && typeof location !== 'undefined' ? (new URLSearchParams(location.search).get('act') || '').split(',').filter(Boolean).map((a) => { const [n, t] = a.split('@'); return { n, t: +t || 0 }; }) : [];
@@ -367,6 +374,7 @@ export default defineScene({
       yield beat('landing');
       const L = ALLEY.ladder, lz = alley.ladder.z;
       // E: the drop ladder down (its foot is a reach over my head)
+      nudge('The fire escape. Where the lines cross.', () => flat(G.eye, V(L.x, 0, lz)) < 2.2 || C.mode !== 'walk');
       if (alley.ladder.down < 0.99) {
         let pulled = false;
         I.add({ id: 'body.ladder', at: () => V(L.x, alley.ladder.footY() + 0.05, lz), range: 3.0, cone: 0.5, prompt: 'pull the ladder down', onUse: () => { pulled = true; } });
@@ -398,9 +406,12 @@ export default defineScene({
       yield until(() => C.climb && C.climb.u >= 1);
       // on the landing, under the rain, over the alley: along it to where
       // he stood (the casings, the red)
-      const stand = { pos: V(XV - 0.5, 0, ALLEY.zN + 0.55), yaw: -Math.PI / 2 + 0.12, eyeY: ALLEY.esc.y1 + 1.62 };
-      C.setMode('seated', { anchor: stand, yawRange: [-2.2, 2.2], pitchRange: [-1.3, 0.8], lean: 0.05, forward: 0, pitch: -0.6, ease: 0.9 });
-      C.pitch = -0.6;
+      // [second pass] a step back along the landing from where he stood,
+      // turned to it: the two casings and the red at the edge in the frame
+      // (it looked past them at the street)
+      const stand = { pos: V(XV - 1.1, 0, ALLEY.zN + 0.55), yaw: -1.8, eyeY: ALLEY.esc.y1 + 1.62 };
+      C.setMode('seated', { anchor: stand, yawRange: [-2.2, 2.2], pitchRange: [-1.3, 0.8], lean: 0.05, forward: 0, pitch: -0.86, ease: 0.9 });
+      C.pitch = -0.86;
       let taken = false;
       I.add({ id: 'body.half', at: () => ev.half.getWorldPosition(V(0, 0, 0)), range: 2.6, cone: 0.45, prompt: 'take', onUse: () => { taken = true; } });
       yield until(() => taken || acted('take'));
@@ -431,6 +442,7 @@ export default defineScene({
     const standAtStep = () => ({ x: ALLEY.step.x + 0.05, y: ALLEY.y + 1.65, z: ALLEY.zS - 0.95, yaw: Math.PI, pitch: -0.5 });
     if (ctx.at('halves')) {
       yield beat('halves');
+      nudge('The dry step under the lamp. His matchbook and the half.', () => flat(G.eye, stepAt()) < 2.4 || C.mode !== 'walk');
       let go = false;
       I.add({ id: 'body.step', at: () => stepAt(), range: 2.6, cone: 0.85, prompt: 'the matchbook', onUse: () => { go = true; } });
       yield until(() => go);
