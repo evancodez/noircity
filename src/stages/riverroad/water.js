@@ -105,6 +105,8 @@ export function makeWaterMaterial(U, waterY) {
         vec3 sheen = uFogColor * ( 0.05 + 0.6 * streak ) * graze * farW * ( 1.0 + 3.0 * uLightning );
         // under a lamp that leans out over it, the water takes the light: a
         // patch of broken ripples (the lamps' cones, as the lit rain has them)
+        // [R2] on a grey floor of its own, so a thing on the water there - his
+        // hat - is a black shape against it
         float cone = lampCones( vWorld );
         float glint = smoothstep( 0.5, 0.78, rip ) + rain * 2.0;
         // a thing dropped in (his hat): its rings run out over the water
@@ -117,7 +119,7 @@ export function makeWaterMaterial(U, waterY) {
             rings = band * ( 1.0 - age / 3.0 ) * uDrop.w;
           }
         }
-        vec3 lamp = vec3( 3.2 * cone * ( 0.03 + glint ) + rings * ( 0.45 + 3.0 * cone ) );
+        vec3 lamp = vec3( 3.2 * cone * ( 0.12 + glint ) + rings * ( 0.45 + 3.0 * cone ) );
         vec3 base = sheen + lamp;
         col = base + col;
         // (the fog as it lies over the street's own level: at the water's

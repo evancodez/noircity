@@ -150,7 +150,9 @@ export class Question {
     // [R2] the bent lamp's shade on the spot where he will go over the rail
     // (on the water ahead of me as I look at it past him: the cone falls
     // from over my shoulder into the frame, past him onto the river)
-    if (this.tail.wreck) this.tail.wreck.aimAt = roadPoint(sRail + Math.sign(sRail - pin.s || 1) * 1.2, ROAD.quay + 2.2, ROAD.waterY + 0.3);
+    // (a stride along past him, so the lit water is seen beside him from
+    // over his shoulders, not behind them: his hat comes down in it)
+    if (this.tail.wreck) this.tail.wreck.aimAt = roadPoint(sRail + Math.sign(sRail - pin.s || 1) * 2.5, ROAD.quay + 2.4, ROAD.waterY + 0.3);
     yield wait(0.35);
   }
 
@@ -233,7 +235,20 @@ export class Question {
     const face = Math.atan2(fx, fz), dFace = Math.atan2(Math.sin(face - H.face), Math.cos(face - H.face));
     H.look.yaw = clamp(H.look.yaw - dFace, -1.9, 1.9);
     H.face = face;
-    if (this.p >= 1 && !this.broken) { this.broken = true; this.hatOff(); return true; }
+    // [R2] over the rail he fights it for a breath (his clip's struggle, his
+    // feet scraping the stones, the jolts in my arms), then breaks: the
+    // bend's end was the break, and the struggle was never seen
+    if (this.p >= 1 && !this.broken) {
+      const o0 = this.overT || 0;
+      this.overT = o0 + dt;
+      for (const at2 of [0.3, 0.75]) if (o0 < at2 && this.overT >= at2) { G.sfx.step(man.pos.clone(), false, false); G.controller.kick(0.5, 0.4, 0.1); }
+      if (this.overT >= 1.1) {
+        this.broken = true;
+        man.play('tail_broken', { fade: 0.35 });
+        this.hatOff();
+        return true;
+      }
+    }
     return false;
   }
 
@@ -262,12 +277,29 @@ export class Question {
     // (and off to the side of him, past his shoulder: straight back it fell
     // behind him, hidden by his own shoulders)
     const side = new THREE.Vector3(F.fx, 0, F.fz).multiplyScalar(Math.sign(this.water ? project(this.water.x, this.water.z, this.railS, {}).s - this.railS : 1) || 1);
-    const dir = away.clone().lerp(out, 0.5).normalize().addScaledVector(side, 0.55).normalize();
+    const dir = away.clone().lerp(out, 0.5).normalize().addScaledVector(side, 0.65).normalize();
+    // [R2] (up off his head and well out over the water, as his head jerks
+    // back: it tumbled 1 m out and fell behind his own shoulders, and the
+    // eyes that went down after it found his coat)
     this.hatS = {
-      hat, obj, at, vel: dir.multiplyScalar(1.25).add(new THREE.Vector3(0, 0.45, 0)),
+      hat, obj, at, vel: dir.multiplyScalar(2.5).add(new THREE.Vector3(0, 1.9, 0)),
       axis: new THREE.Vector3(dir.z, 0, -dir.x).normalize(), spin: 7.5, t: 0, wet: false, drift: new THREE.Vector3(F.fx, 0, F.fz).multiplyScalar(-0.35).addScaledVector(out, 0.12),
       q: hat.getWorldQuaternion(new THREE.Quaternion()),
     };
+    // (where it will come down on the water: into the bent lamp's light on
+    // the river, where a black hat reads against the lit ripples - on the
+    // black water beyond it, it was lost; the eyes go to it as it falls)
+    {
+      const H = this.hatS, g = 9.8, h0 = H.at.y - (ROAD.waterY + 0.02);
+      const tl = (H.vel.y + Math.sqrt(H.vel.y * H.vel.y + 2 * g * Math.max(0, h0))) / g;
+      const W = this.tail.wreck && this.tail.wreck.aimAt;
+      if (W) {
+        const vx = (W.x - H.at.x) / tl, vz = (W.z - H.at.z) / tl, sp = Math.hypot(vx, vz), k = sp > 4.5 ? 4.5 / sp : 1;
+        H.vel.x = vx * k; H.vel.z = vz * k;
+      }
+      H.land = new THREE.Vector3(H.at.x + H.vel.x * tl, ROAD.waterY, H.at.z + H.vel.z * tl);
+      H.tLand = tl;
+    }
     this.ctx.onStep((dt) => this.hatStep(dt));
   }
   hatStep(dt) {
@@ -305,13 +337,18 @@ export class Question {
     // splash under the lamp are the moment he breaks - then they are the
     // player's again)
     const C = G.controller, HL = C.hold;
-    if (HL && H.vel.y < 0 && H.t < (H.tWet ?? 9) + 0.7) {
-      const e = G.camera.position;
-      const yaw = Math.atan2(-(H.at.x - e.x), -(H.at.z - e.z)) - HL.face;
-      const pitch = Math.atan2(H.at.y - e.y, Math.hypot(H.at.x - e.x, H.at.z - e.z)) + 0.12;
-      const k = 1 - Math.exp(-dt * 4.5);
-      HL.look.yaw += Math.atan2(Math.sin(yaw - HL.look.yaw), Math.cos(yaw - HL.look.yaw)) * k * 0.5;
-      HL.look.pitch += (Math.max(-0.85, pitch) - HL.look.pitch) * k * 0.7;
+    if (HL && H.t < H.tLand + 0.8) {
+      // [R2] (the eyes go down to where it will land, as it goes up off his
+      // head, and only down: the splash sits in the lower part of the frame
+      // beside him, the water and its lights above it - followed as it
+      // flew, the eyes rose with it off the water, then fell to his coat)
+      const e = G.camera.position, L = H.land;
+      if (H.pitch0 == null) H.pitch0 = HL.look.pitch;
+      const yaw = Math.atan2(-(L.x - e.x), -(L.z - e.z)) - HL.face;
+      const pitch = Math.min(H.pitch0, Math.atan2(L.y - e.y, Math.hypot(L.x - e.x, L.z - e.z)) + 0.27);
+      const k = 1 - Math.exp(-dt * 3.5);
+      HL.look.yaw += Math.atan2(Math.sin(yaw - HL.look.yaw), Math.cos(yaw - HL.look.yaw)) * k * 0.45;
+      HL.look.pitch += (Math.max(-0.62, pitch) - HL.look.pitch) * k;
     }
     // (into the man's frame: the hat bone hangs from his root now)
     const h = H.hat, o = H.obj;

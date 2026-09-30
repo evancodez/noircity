@@ -753,7 +753,9 @@ class Wreck {
       const Hc = this.coneH0 + (H - this.coneH0) * this.aimK;
       l.cone.material.uniforms.uHeight.value = Hc;
       l.cone.scale.setScalar(Hc / this.coneH0);
-      l.entry.range = Hc;
+      // (its light reaches on past the water: the lamps' falloff dies at
+      // its range, and with the range at the water the patch there was black)
+      l.entry.range = Hc * 1.7;
     }
     l.entry.position.copy(head); l.entry.direction.copy(l.axis);
     if (l.light) { l.light.pos.copy(head); l.light.target.copy(head).addScaledVector(l.axis, 6); for (const sl of this.L.pool) if (sl.lamp === l) { sl.spot.position.copy(head); sl.spot.target.position.copy(l.light.target); sl.spot.target.updateMatrixWorld(); } }
