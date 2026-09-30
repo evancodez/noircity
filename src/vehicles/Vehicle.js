@@ -175,11 +175,17 @@ export class Vehicle {
     const T = this.track;
     const stuck = this.touch && th > 0 && this.speedAbs < 1.5;
     this.pinT = stuck ? (this.pinT || 0) + dt : Math.max(0, (this.pinT || 0) - dt * 3);
-    if (!T || this.pinT < 0.3) return;
+    if (!T || this.pinT < 0.25) return;
     const F = T.frame(this.s, this._f || (this._f = {}));
-    const want = F.h + Math.PI / 2 + clamp(this.d * 0.07, -0.5, 0.5);
-    const dy = Math.atan2(Math.sin(want - this.yaw), Math.cos(want - this.yaw));
-    this.yaw += clamp(dy, -1.3 * dt, 1.3 * dt);
+    // (the hands on the wheel have the say when they ask: A / D pivot the
+    // car off the thing; left alone, the nose comes round to the road)
+    const st = clamp(this.input.steer, -1, 1);
+    if (st) this.yaw += st * 1.8 * dt;
+    else {
+      const want = F.h + Math.PI / 2 + clamp(this.d * 0.07, -0.5, 0.5);
+      const dy = Math.atan2(Math.sin(want - this.yaw), Math.cos(want - this.yaw));
+      this.yaw += clamp(dy, -2.2 * dt, 2.2 * dt);
+    }
     if (Math.abs(this.d) > 3) { const sg = -Math.sign(this.d); this.pos.x += F.rx * sg * 0.9 * dt; this.pos.z += F.rz * sg * 0.9 * dt; }
   }
 
@@ -270,6 +276,10 @@ export class Vehicle {
       // a hard stop: the thump, a bounce back, the wheel's kick
       this.vel.set(-nx * Math.min(2.2, vn * 0.12), 0, -nz * Math.min(2.2, vn * 0.12));
       this.yawRate *= 0.2;
+      // [2nd pass] the bounce leaves the nose off the thing (toward the
+      // road when it was dead on), so W again glances by instead of
+      // butting it: rolling again at once
+      { const sd = f.x * nz - f.z * nx; this.yaw += -(Math.abs(sd) > 0.05 ? Math.sign(sd) : -Math.sign(this.d || 1)) * 0.3; }
       this.hardT = 0;
       this.shake = 1;
       this.pitchV -= 2.4 * Math.sign(f.x * nx + f.z * nz);
