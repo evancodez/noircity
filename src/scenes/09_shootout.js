@@ -999,15 +999,16 @@ function* theFrame(ctx) {
   // (the way it looks turned, if it must be, until the eye stands clear of
   // cars, walls and posts)
   let fwd = fwd0, eye = null;
+  const BACK = 1.2, ON = 1.25;
   for (const a of [0, 0.35, -0.35, 0.7, -0.7, 1.1, -1.1, 1.6, -1.6]) {
     const f = fwd0.clone().applyAxisAngle(V(0, 1, 0), a), sd = V(f.z, 0, -f.x);
-    const e = at.clone().addScaledVector(f, 1.2).addScaledVector(sd, 0.28);
+    const e = at.clone().addScaledVector(f, BACK).addScaledVector(sd, 0.28);
     if (standClear(G.stage, e)) { fwd = f; eye = e; break; }
   }
   const side = V(fwd.z, 0, -fwd.x);
-  if (!eye) eye = at.clone().addScaledVector(fwd, 1.2).addScaledVector(side, 0.28);
+  if (!eye) eye = at.clone().addScaledVector(fwd, BACK).addScaledVector(side, 0.28);
   eye.y = G.stage.surfaceY(eye.x, eye.z) + 1.08;
-  const lookAt = at.clone().addScaledVector(fwd, -1.25).addScaledVector(side, -0.1);
+  const lookAt = at.clone().addScaledVector(fwd, -ON).addScaledVector(side, -0.1);
   lookAt.y = 0.1;
   const yaw = Math.atan2(-(lookAt.x - eye.x), -(lookAt.z - eye.z));
   const pitch = Math.atan2(lookAt.y - eye.y, Math.hypot(lookAt.x - eye.x, lookAt.z - eye.z));
@@ -1017,11 +1018,17 @@ function* theFrame(ctx) {
     const u = Math.min(1, t / dur), k = u * u * (3 - 2 * u);
     const L = (a, b) => a + (b - a) * k;
     const dy = Math.atan2(Math.sin(to.yaw - from.yaw), Math.cos(to.yaw - from.yaw));
-    return { x: L(from.x, to.x), y: L(from.y, to.y), z: L(from.z, to.z), yaw: from.yaw + dy * k, pitch: L(from.pitch, to.pitch) - 0.02 * Math.sin(Math.min(1, t / 9) * Math.PI) };
+    // [R2-F] (and once down, the eye lifts a little, slowly, off the hat to
+    // the street and the el as the train goes away along it: the hat and the
+    // ember stay in the frame's foot)
+    const w = Math.min(1, Math.max(0, (t - dur - 0.4) / 5)), lift = 0.15 * w * w * (3 - 2 * w);
+    return { x: L(from.x, to.x), y: L(from.y, to.y), z: L(from.z, to.z), yaw: from.yaw + dy * k, pitch: L(from.pitch, to.pitch) - 0.02 * Math.sin(Math.min(1, t / 9) * Math.PI) + lift };
   } });
   G.vm.lowerTo(1);
-  // the el train goes over
-  G.director.cue('train', { z: at.z + 10, ahead: 40, dir: -1 });
+  // the el train goes over: [R2-F] from behind me and away down the avenue,
+  // along the deck at the top right of the frame (the first pass sent it the
+  // other way, out of the frame: heard, never seen)
+  G.director.cue('train', { z: at.z, ahead: -22, dir: 1 });
   yield wait(dur);
   G.music.cue('end', { fade: 3 });
   yield wait(6);
