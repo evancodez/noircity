@@ -78,12 +78,11 @@ function pickAttack(B, M, d) {
   // about one of his actions in four is with a thing, while things last -
   // when one is within his reach and I am not on top of him: a plate, a mug
   // or a bottle to throw, a stool or a chair to swing
-  if (!him.holding && room.hisItem && d > 1.3 && !(him.thingCool > 0)) {
+  if (!him.holding && room.hisItem && d > 1.05 && !(him.thingCool > 0)) {
+    // (a thing in reach first; then kept to about one action in four)
     const p = M.things ?? 0.25, ratio = (him.thingActs || 0) / Math.max(1, him.acts);
-    if (r.chance(ratio < p ? p * 1.5 : p * 0.5)) {
-      const task = pickThing(B, M);
-      if (task) { him.thingActs = (him.thingActs || 0) + 1; return { task }; }
-    }
+    const task = pickThing(B, M);
+    if (task && r.chance(ratio < p ? 0.85 : 0.15)) { him.thingActs = (him.thingActs || 0) + 1; return { task }; }
   }
   // a feint now and then (it teaches the tell)
   if (r.chance(M.feint)) return { clip: r.chance(0.5) ? 'br_feint' : 'br_feintL', reach: 2.4 };
@@ -105,7 +104,7 @@ function pickAttack(B, M, d) {
 
 // a thing within his reach (its place to stand at most `REACH_THING` from
 // him), by his manner: throwables more often than a stool
-const REACH_THING = 2.4;
+const REACH_THING = 3.2;
 function pickThing(B, M) {
   const r = B.rng, c = B.c, room = B.room;
   const kinds = M.thingKinds || ['plate', 'mug', 'bottle', 'stool', 'chair'];
