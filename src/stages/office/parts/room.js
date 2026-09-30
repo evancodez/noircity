@@ -258,6 +258,16 @@ function drawersHome(api, stage, shut) {
 // once the desk goes over the lamp is thrown off it and lies on the floor,
 // burning, its light along the boards and up the walls
 const _h = new THREE.Vector3(), _a = new THREE.Vector3();
+// the lamp's resting turn on the floor: on its side, then turned so its
+// light runs low across the boards to the door's wall and up it (the men
+// between it and the wall throw their shadows up there)
+const LAMP_REST_AIM = new THREE.Vector3(-0.78, 0.14, -0.6).normalize();
+function restQuat(parts) {
+  const q = new THREE.Quaternion().setFromEuler(new THREE.Euler(0, 0.4, Math.PI / 2 - 0.2));
+  const inGroup = parts.localAxis.clone().applyQuaternion(parts.shadeG.quaternion);
+  const now = inGroup.applyQuaternion(q).normalize();
+  return new THREE.Quaternion().setFromUnitVectors(now, LAMP_REST_AIM).multiply(q);
+}
 function lampFollow(api, stage) {
   const Lp = api.lamp, lamp = Lp.lamp, parts = Lp.parts;
   const d = api.desk;
@@ -267,7 +277,7 @@ function lampFollow(api, stage) {
     const p = parts.group.getWorldPosition(new THREE.Vector3()), q = parts.group.getWorldQuaternion(new THREE.Quaternion());
     stage.scene.attach(parts.group);
     parts.group.position.copy(p); parts.group.quaternion.copy(q);
-    Lp.fall = { t: 0, p0: p, v: V(-1.5, 0.6, -0.2), rest: V(d.x - 1.35, FLOOR + 0.07, d.z + 0.35) };
+    Lp.fall = { t: 0, p0: p, v: V(-1.5, 0.6, -0.2), rest: V(d.x - 1.35, FLOOR + 0.07, d.z + 0.35), q0: q.clone(), q1: restQuat(parts) };
     const G = stage.game;
     if (G) G.sfx.play('office_lampFall', p, {});
   }
@@ -280,7 +290,7 @@ function lampFollow(api, stage) {
     p.y = F.p0.y + (F.rest.y - F.p0.y) * e + Math.sin(Math.PI * u) * 0.25;
     parts.group.position.copy(p);
     // (it lands on its side, the shade's mouth toward the door, a little up)
-    parts.group.rotation.set(0, 0.4 * u, (Math.PI / 2 - 0.2) * u);
+    parts.group.quaternion.slerpQuaternions(F.q0, F.q1, Math.min(1, u * 1.15));
     if (u >= 1) {
       F.done = true;
       const G = stage.game;
@@ -298,7 +308,7 @@ function lampFollow(api, stage) {
     lamp.light.pos.copy(_h);
     lamp.light.target.copy(_h).addScaledVector(lamp.axis, 2);
     // (on the floor it throws its light low and long: a wider, weaker spread)
-    if (Lp.fall && Lp.fall.done) { lamp.light.angle = 1.3; lamp.light.distance = 7; lamp.light.intensity = 18; }
+    if (Lp.fall && Lp.fall.done) { lamp.light.angle = 1.05; lamp.light.distance = 9; lamp.light.intensity = 160; }
     lamp.cone.position.copy(_h);
     lamp.cone.quaternion.setFromUnitVectors(new THREE.Vector3(0, -1, 0), lamp.axis);
     const u = lamp.cone.material.uniforms;

@@ -118,6 +118,8 @@ export function roomReacts(ctx) {
   const rng = ctx.stage.rng.fork(3057);
   const b0 = R.bullet.bind(R);
   R.bullet = (hit, dir, opts = {}) => {
+    // (their stray rounds go wide of the desk lamp: it is mine to shoot out)
+    if (opts.weak && hit && hit.mesh && hit.mesh.userData.lamp === O.lights.desk) return null;
     try { roomHit(ctx, O, hit, dir, rng, opts); } catch (e) { console.error(e); }
     return b0(hit, dir, opts);
   };
