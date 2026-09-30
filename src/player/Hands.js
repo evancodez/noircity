@@ -222,10 +222,11 @@ export class Hands {
     for (const h of ['R', 'L']) {
       const r = this.rig[h];
       // [R2-B] the gloves' print: black leather for a set that asks for it
-      // (the gauntlet keeps the plain print: its long cylinder took the sheen
-      // as a pale band round the wrist)
+      // (and no gauntlet: its long flared cylinder printed as a band round
+      // the wrist, grey in the plain print, pale with the sheen)
       const gm = S.leather ? this.mats.leather : this.mats.glove;
       if (r.glove.material !== gm) r.glove.material = gm;
+      r.noGauntlet = !!S.leather;
       if (S.skin) r.setSkin(opts.skin || S.skin);
       r.cuffOn = !!S.cuff;
       if (S.sleeve) r.setSleeve(opts.sleeve || S.sleeve, true);
