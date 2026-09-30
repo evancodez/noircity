@@ -18,7 +18,8 @@ export function tornBook() {
   // (the book's own back panel is the one mesh of its crew red outside the
   // cover's pivot: it takes the torn shape and the back's bird)
   const back = b.children.find((o) => o.isMesh && o.material && o.material.userData && o.material.userData.accent === 'crew');
-  if (back) {
+  // (the prop itself is torn now, props/kinds.js: only an old one is torn here)
+  if (back && !b.userData.torn) {
     back.geometry = T.keep.geo;
     const bird = new THREE.Mesh(T.keep.decal, birdMaterial());
     bird.userData.inkId = back.userData.inkId;
