@@ -276,6 +276,9 @@ function buildTemplateParts() {
     seams: merge(seams), caps: merge(caps), skirt, panes, lensParts,
   };
 }
+// [B5] the sedan's shared template (and its far build) for another stage's
+// cars (src/vehicles: the river road's sedans go through Cars.prototype)
+export const sedanTemplate = (lo = false) => (lo ? (TEMPLATE_LO || (TEMPLATE_LO = buildTemplate(0.4))) : (TEMPLATE || (TEMPLATE = buildTemplate())));
 // the parts whose geometry is shared by every car (never rebuilt per car:
 // the glass and the lenses are) swap to the far build beyond FAR_LOD m
 const LOD_PARTS = ['paint', 'chrome', 'dark', 'rubber', 'white', 'hubs', 'caps', 'seams'];
