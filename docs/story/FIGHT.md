@@ -85,6 +85,8 @@ still jabs.
   plate or mug **12**, stool or chair **35** and it breaks his guard. They
   count at level 2 or 3 for everything a blow does to him. His guard stops
   a bottle, a plate, a mug (it breaks on his forearm); nothing stops a stool.
+  A thing swung at the air stays in the hand. Hit for 12 or more, knocked
+  down, or at the end of the fight, what is in my hands falls and lies.
 - Counters (a blow landing in his tell) count half again; a hard punch or
   a thing in his tell stops his blow; **a jab stops nothing** (version 3's
   jab stopped straights: a masher bought himself out of every blow).
@@ -134,19 +136,24 @@ and takes a quarter of a hook; a haymaker, a stool swing, a shove break it.
 | throw | 0.45 | release 0.59 | 10 |
 
 (His damage is about a third up on version 3's: a player who never steps
-off the line must lose.) A blow that lands, he presses: a second on its
-heels 35 / 45 / 55 % of the time by manner.
+off the line must lose.) **Caught punching** (a fist out, bounced off his
+guard, or winding) his blow lands half again: trading blows with him is a
+losing game. A blow that lands, he presses: a second on its heels 35 / 45 /
+55 % of the time by manner.
 
 ## 6. He uses the room
 
 From his measured manner on, about **one of his actions in four is with a
-thing** while things last, when one is within his reach (2.4 m) and I am
-not on top of him (1.3 m): a plate, a mug or a bottle to throw, a stool or
-a chair to swing. His first bottle in his dirty manner is still broken on
+thing** while things last (one of his free choices in four: his answers
+and his follow-ups are not choices), when one stands within 3.2 m of him
+and I am not on top of him (1.05 m): a plate, a mug or a bottle to throw, a
+stool or a chair to swing. In the seeded fights he takes up three to five
+things in a fight. His first bottle in his dirty manner is still broken on
 the counter's edge and used by the neck.
 
-- **A throw.** He backs off to 2.4 m or more (or throws from where he is
-  after 2.5 s of trying), draws back with the thing (the tell, 0.45 s) and
+- **A throw.** He backs off to 2.4 m or more (pressed, he throws from
+  where he is after 1.2 s: holding a thing is never a reason to stand and
+  take it), draws back with the thing (the tell, 0.45 s) and
   **a small inked chevron shows low at the side of the frame to step to**:
   away from the throwing hand unless a wall or the counter is that way.
   The chevron stays in the game after the lesson, for thrown things only.
@@ -156,6 +163,8 @@ the counter's edge and used by the neck.
 - **A swing with a thing** follows the rule for fists (step away from the
   hand that swings, or back), with no indicator, and reaches further (a
   stool 2.05 m).
+- Going for a thing he keeps his guard up; only the reach and the take
+  open him. Struck off an errand, he fights with his fists for 5 s.
 
 ## 7. The lesson (the first exchange)
 
@@ -179,29 +188,35 @@ more for a first-timer.
 
 ## 8. The open fight
 
-His health is **125**; his manners change at 65 %, 30 % and 12 % of it:
+His health is **116**; his manners change at 65 %, 30 % and 12 % of it:
 measured, dirty, wild, out on his feet. What he does in each is version
 3's (§7 there), plus the things above. Two rules keep the fight's length
 fair:
 
-- **Hurt fast** (a fifth of him and more in 4 s) he covers up and gives
-  ground a moment: a run of luck does not end the fight in a breath.
+- **Hurt fast** (16 % of him in 4 s) he covers up and gives ground a
+  moment; and **a manner holds 9 s**: in its first nine seconds a run of
+  blows takes him no further than the edge of the next. A run of luck does
+  not end the fight in a breath.
 - **Losing is not failing**: at 0 I go down, black, and up again with 60;
-  he has got his breath back a little (8 % of him, never past the start of
-  his manner). Failing costs about ten seconds, not the round.
+  he has got his breath back a little (8 % of him the first time in a
+  manner, 16 % the second, 24 % the third..., never past the start of his
+  manner). Failing costs about ten seconds; failing the same way again
+  costs more.
 
 Blows move people and the room takes them (the stools, the counter, the
 jukebox, the pie case, the café tables); a blow's own travel never carries
-him through the counter or a wall (it is pushed back out every step).
+him through the counter or a wall (it is pushed back out every step). The
+service aisle behind the counter is shut while we fight (`room.enter`).
 
 ## 9. The finish
 
 At 12 % he is out on his feet and reels to the nearer finish spot (the
 room's `finishes`: in the diner the clear floor before the glass of bays
 B2 and B4); my next hard punch of level 2 or more, or a thing, is the last:
-slow motion, out through the glass, onto his back on the pavement. If he
-cannot get to either window from where he stands he comes round and fights
-on (a fight that cannot end is a bug).
+slow motion, out through the glass, onto his back on the pavement. Standing
+in his way, I am shouldered out of it. If he cannot get to either window
+(held up three times, or 12 s) he comes round and fights on: a fight that
+cannot end is a bug.
 
 ## 10. One fight system, two rooms
 
@@ -213,14 +228,17 @@ is the first user):
 | room. | what |
 | --- | --- |
 | `bounds` | { x0, x1, z0, z1 }: the fight stays inside |
+| `enter()`, `leave()` | the room made ready for the fight and given back (the diner shuts its service aisle) |
 | `items()` | what can be picked up now: { name, kind, object, pos, stand, take(), available() } |
 | `hisItem(kind, near)` | the nearest thing of a kind he may go for |
 | `things` | kinds of its own for `THINGS` (dmg, uses, hands, throw, then, breaksGuard, big, level) |
-| `stools`, `cafe` | what stands on the floor to be knocked into (topple handles) |
-| `onInto` / `counterHit`, `pieCase`, `jukebox` | what his back into a hard thing does |
-| `windows` | the finish spots: { name, spot, pane, land } |
+| `knockables()` | what stands on the floor to be knocked into: { pos, r, what, catch?, spin? } |
+| `hardAt(tag, x, z)` | the name of a hard thing by its collider's tag (the counter, the pie case, the jukebox) |
+| `onInto(hit, dir, at, brawl)` | what his back into it does; returns his clip (`br_into`, `br_into_stools`) |
+| `onBump(at, speed, brawl)` | me driven into something |
+| `finishes` | the finish spots: { name, spot, pane, land, clip } |
 | `gift(why)` | someone slides me a thing ('lesson', 'first', 'bleeds') |
-| `counterX` | the line of the room's open aisle (his reel path) |
+| `lane` | the x of the room's open aisle (his reel path, his way out of a corner) |
 
 `who = { name, hp, manners }`: the bar's name, his hit points, his table by
 manner (`src/cast/brawl/brain.js MANNERS` by default). Pier 9 adds a
@@ -231,10 +249,10 @@ finishes (the plank doors, with their own clip) and its man.
 
 The in-page autoplayer (`?shot=r2play&beat=lesson&seed=<n>&style=<s>&t=220`,
 ten seeds each): the human-paced reader (`player`) wins 10 of 10, all in
-60 to 110 s (lesson included); the masher (`mash`) wins none (most go down
-eleven to twenty-two times without leaving his measured manner); the player
-who never steps (`nododge`) wins none (ten to fourteen downs); a player who
-only uses things (`things`) wins faster on the mean than one who never
-picks anything up (`fists`). Strips of each exchange: `?shot=b8duel`
+60 to 110 s (71 to 108, lesson included); the masher (`mash`) wins none and
+goes down 22 to 27 times, never past his wild manner; the player who never
+steps (`nododge`) wins none (10 to 13 downs, stuck in his first two
+manners); a player who takes whatever is in reach (`things`, mean 81.5 s)
+wins faster than one who never picks anything up (`fists`, 95.2 s). Strips of each exchange: `?shot=b8duel`
 (`src/debug/shots/B8_fight.js`). The plays `slice`, `fight`, `autoplay`,
 `continue` pass by real input.
