@@ -20,14 +20,31 @@ import * as THREE from 'three';
 //                 (metres, + = right) moves the eye sideways
 //   'table'     { pose, fov }  the puzzle view, eased in over 0.5 s
 //   'cutscene'  { track(t) -> pose }  the script drives the eye
-//   'drive'     { vehicle }  (wave B)
 //   controller.ease(pose, seconds)   glide the eye to a pose and hold it
 //   controller.shake(strength, dist)
 // setPose() puts the controller back in 'walk' at that pose.
 // (FOUNDATION: the modes are plain but working; lane 2 owns them: the
 // seated swivel, the brawl's footwork, the eases)
+//
+// More modes (wave B seams, docs/story/seams/X.md): a file
+// src/player/modes/<name>.js default-exporting
+//   { name, enter(ctl, opts, prevPose), step(ctl, dt), exit?(ctl),
+//     mouse?(ctl, e) -> true if it took the move }
+// is a mode (a run, a sneak, 'drive'): setMode(name, opts) calls the old
+// mode's exit, then its enter; every step its step (it owns pos, yaw, pitch,
+// groundY; walkStep(dt, opts) is today's walking for it to reuse); the
+// mouse is offered to its mouse first. The shared apply() still does the
+// bob, the shake, the hands' viewFx, the kick and the mode-change blend.
 export const EYE = 1.65;
-export const MODES = ['walk', 'seated', 'brawl', 'table', 'cutscene', 'drive'];
+const BUILT_IN = ['walk', 'seated', 'brawl', 'table', 'cutscene'];
+export const MODE_DEFS = {};
+for (const [file, m] of Object.entries(import.meta.glob('./modes/*.js', { eager: true }))) {
+  const d = m.default;
+  if (!d || !d.name) continue;
+  if (BUILT_IN.includes(d.name) || MODE_DEFS[d.name]) throw new Error(`controller: mode '${d.name}' defined twice (${file})`);
+  MODE_DEFS[d.name] = d;
+}
+export const MODES = [...BUILT_IN, ...Object.keys(MODE_DEFS)];
 const _v = new THREE.Vector3();
 const clampA = (x, a, b) => Math.max(a, Math.min(b, x));
 const wrap = (a) => Math.atan2(Math.sin(a), Math.cos(a));
@@ -63,6 +80,8 @@ export class Controller {
 
     this._onMouse = (e) => {
       if (!this.enabled) return;
+      const D = MODE_DEFS[this.mode];
+      if (D && D.mouse && D.mouse(this, e)) return;
       if (this.mode === 'brawl') {
         // (round 2: the mouse looks; the body keeps turning to face him and
         // the look comes back to him when the mouse is still)
@@ -98,6 +117,8 @@ export class Controller {
   }
 
   setPose(x, z, yaw, pitch, y = null) {
+    const D = MODE_DEFS[this.mode];
+    if (D && D.exit) D.exit(this);
     this.mode = 'walk';
     this.bodyYaw = null;
     this._modeBlend = null;
@@ -113,9 +134,11 @@ export class Controller {
 
   // ---- modes ----------------------------------------------------------------------
   setMode(name, opts = {}) {
-    if (!MODES.includes(name)) throw new Error(`controller.setMode: no mode '${name}'`);
-    if (name === 'drive') throw new Error('controller: drive is wave B');
+    if (!MODES.includes(name)) throw new Error(`controller.setMode: no mode '${name}' (modes: ${MODES.join(', ')})`);
     const prev = this.eyePose();
+    // (a mode of a file: the old one lets go first)
+    const old = MODE_DEFS[this.mode], def = MODE_DEFS[name];
+    if (old && old.exit) old.exit(this);
     this.mode = name;
     if (name !== 'seated') this.bodyYaw = null;
     this.modeOpts = opts;
@@ -154,7 +177,7 @@ export class Controller {
       this.bump = null;
     } else if (name === 'table') {
       this.ease(opts.pose, opts.ease ?? 0.5, prev);
-    }
+    } else if (def) def.enter(this, opts, prev);
     // every mode change is eased (0.4 s) from where the eye was, unless the
     // eye jumps (a scene entered, another stage): then it cuts
     if (name !== 'table') this._modeBlend = { from: prev, t: 0, dur: opts.ease ?? 0.4, checked: false };
@@ -292,19 +315,34 @@ export class Controller {
     } else if (this.mode === 'cutscene' && O.track) {
       const p = O.track(this.modeT);
       if (p) this._pose = p;
+    } else {
+      // a mode of a file (src/player/modes/): it moves the eye
+      const D = MODE_DEFS[this.mode];
+      if (D) D.step(this, dt);
     }
   }
 
   update(dt) {
     if (this.mode !== 'walk' || this._ease) { this.apply(dt); return; }
+    this.walkStep(dt);
+    this.apply(dt);
+  }
+
+  // Today's walking, one step (a mode may reuse it: a run, a sneak): WASD
+  // (or `input` { f, s, sprint }, else the autopilot's), the velocity eased
+  // to `speed` (`sprint` m/s with Shift when `canSprint`), the colliders,
+  // the walking surface, the bob and the footfalls. It moves pos, vel,
+  // groundY and the bob; apply() places the camera.
+  walkStep(dt, { speed: walk = 4.0, sprint: run = 6.8, canSprint = true, input = null } = {}) {
     const k = this.keys;
     let f = (k.has('KeyW') || k.has('ArrowUp') ? 1 : 0) - (k.has('KeyS') || k.has('ArrowDown') ? 1 : 0);
     let s = (k.has('KeyD') || k.has('ArrowRight') ? 1 : 0) - (k.has('KeyA') || k.has('ArrowLeft') ? 1 : 0);
     let sprint = k.has('ShiftLeft') || k.has('ShiftRight');
     // the battle autopilot (game/Autopilot.js) drives the same inputs
-    if (this.auto) { f = this.auto.f; s = this.auto.s; sprint = !!this.auto.sprint; }
+    if (input) { f = input.f || 0; s = input.s || 0; sprint = !!input.sprint; }
+    else if (this.auto) { f = this.auto.f; s = this.auto.s; sprint = !!this.auto.sprint; }
     if (this.frozen) { f = 0; s = 0; }
-    const speed = sprint ? 6.8 : 4.0;
+    const speed = sprint && canSprint ? run : walk;
     const sin = Math.sin(this.yaw), cos = Math.cos(this.yaw);
     // forward = (-sin, -cos), right = (cos, -sin) in XZ
     const wx = (-sin * f + cos * s), wz = (-cos * f - sin * s);
@@ -330,7 +368,6 @@ export class Controller {
     this.bobPhase += dt * (v > 0.1 ? 2.1 + v * 0.95 : 0);
     // a footstep lands every half bob cycle
     if (Math.floor(prev / Math.PI) !== Math.floor(this.bobPhase / Math.PI) && this.onStep) this.onStep(this.pos.x, this.pos.z, v);
-    this.apply(dt);
   }
 
   // a landed blow's kick of the view (the fight, FIGHT.md v3 §5.5): the view

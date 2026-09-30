@@ -21,7 +21,9 @@
 //   yield* c.walkTo('diner.serve.4')           any generator of the same kind
 // ctx = { game, stage, player, hands, controller, cast, interact, inspect,
 //         puzzles, director, hud, sfx, music, save, rng, time, scene, beat,
-//         from, at(beat), pressed(code), say, prompt, onStep(fn), flags }
+//         from, at(beat), pressed(code), say, prompt, onStep(fn), flags,
+//         next(opts) }
+// A scene leaving drops the HUD's layers (hud.layer(name)).
 // ctx.onStep(fn(dt, ctx)) runs fn every step while the scene lasts (what
 // lives under the beats: the room, a key that works all scene long).
 // ctx.from is the beat the scene was entered at; ctx.at(b) is true when the
@@ -35,6 +37,10 @@
 //       chapter card, fade in over `fadeIn`; the script starts at the beat.
 //       keep: the room goes on as it is (no setup, the cast kept): a cut
 //       from one scene straight into the next (the diner into the fight)
+//   game.scenes.next(opts?) / ctx.next(opts?)   on to the next scene of the
+//       story's order (src/scenes/order.js) that has a file, with go's
+//       opts; past the last one, the "to be continued" card (game.endSlice)
+//   game.scenes.nextId(id?)      that scene's id (null: the end)
 //   game.scenes.stop()           no scene (back to the title)
 //   game.scenes.shot(id, beat)   the shot mode (?scene=&beat=): the same,
 //       at once, no fade, no card, no save
@@ -46,7 +52,7 @@
 // autoplay driver does at each beat (game/Autoplay.js).
 // (a scene file imports its helpers from game/script.js, never from here:
 // this module loads the scene files)
-import { wait, keyLabel } from './script.js';
+import { wait, keyLabel, ORDER } from './script.js';
 export { wait, until, beat, defineScene, keyLabel } from './script.js';
 const SCENE_MODS = import.meta.glob('../scenes/*.js', { eager: true });
 
@@ -72,6 +78,23 @@ export class SceneManager {
   get names() { return [...this.defs.keys()]; }
   get(id) { return this.defs.get(id) || null; }
 
+  // the story's order (src/scenes/order.js): the next id after `id` that
+  // has a scene file, or null (the end; a scene outside the order has none)
+  nextId(id = this.current && this.current.id) {
+    const i = ORDER.findIndex((o) => o.id === id);
+    if (i < 0) return null;
+    for (let j = i + 1; j < ORDER.length; j++) if (this.defs.has(ORDER[j].id)) return ORDER[j].id;
+    return null;
+  }
+  // on to it (go's opts: a fade to black and the chapter card by default);
+  // past the last scene, the "to be continued" card
+  next(opts = {}) {
+    const id = this.nextId();
+    if (!id) { this.game.endSlice(); return null; }
+    this.go(id, opts);
+    return id;
+  }
+
   // ---- transitions ---------------------------------------------------------------------
   go(id, opts = {}) {
     const def = this.defs.get(id);
@@ -90,6 +113,7 @@ export class SceneManager {
     if (G.inspect.active) G.inspect.close(false);
     if (G.puzzles.active) G.puzzles.close();
     G.hud.clearPrompt();
+    G.hud.dropLayers();
     this.current = null; this.beat = null; this.ctx = null; this.it = null; this.waitOn = null; this.hooks = []; this.trans = null;
     this.setFade(0);
   }
@@ -109,6 +133,7 @@ export class SceneManager {
     if (G.inspect.active) G.inspect.close(false);
     if (G.puzzles.active) G.puzzles.close();
     G.hud.clearPrompt();
+    G.hud.dropLayers();
     const stage = G.enterStage(def.stage);
     const from = b || def.beats[0] || null;
     this.current = def;
@@ -148,6 +173,7 @@ export class SceneManager {
       at: (b) => !from || order.indexOf(b) >= order.indexOf(from),
       pressed: (code) => M.pressed(code),
       onStep: (fn) => { M.hooks.push(fn); return fn; },
+      next: (opts) => M.next(opts),
       get sceneTime() { return G.time - M.startT; },
       *say(text, secs = 2.2) { G.hud.say(text, secs); yield wait(secs); },
       // wait for a key, the prompt low in the frame ('E  light up')

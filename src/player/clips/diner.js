@@ -387,3 +387,5 @@ export const DINER_CLIPS = {
   },
 };
 void OPEN; void RELAX; void HP; void C;
+// (the hands' data files export CLIPS: Hands.js merges them)
+export { DINER_CLIPS as CLIPS };

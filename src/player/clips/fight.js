@@ -9,7 +9,7 @@
 // sees him (or on his forearm, or in the air where he is not), so the fist
 // arrives ON him and grows smaller as it goes out.
 // Clips as data (Hands plays them; the brawl reads their marks). Merged
-// into HAND_CLIPS by handClips.js.
+// into the hands' clips by Hands.js (export CLIPS, at the end).
 //   keys   per hand [t, pose, ease]; view [t, { yaw, pitch, roll, fwd, side, down }]
 //   blend  the blend from where the hand was (never under 0.05 s: §9)
 import { HAND_POSES as HP, mirror } from '../handPoses.js';
@@ -146,3 +146,5 @@ export const FIGHT_CLIPS = {
     keys: { R: [[0, gR], [0.3, 'hurtR'], [0.8, shift(HP.hurtR, [0.05, -0.25, 0.1])]], L: [[0, gL], [0.3, 'hurtL'], [0.8, shift(HP.hurtL, [-0.05, -0.25, 0.1])]] },
     view: [[0, {}], [0.8, { pitch: -0.3, down: 0.5, roll: 0.3 }]] },
 };
+// (the hands' data files export CLIPS: Hands.js merges them)
+export { FIGHT_CLIPS as CLIPS };

@@ -80,10 +80,15 @@ const autoMute = params.get('mute') === '1' || !!navigator.webdriver;
 const sfx = new Sfx({ enabled: !shotMode, forceMute: autoMute });
 // the title's choice waits for the pointer lock: BEGIN, or CONTINUE from
 // the save
+// (?start=<id>[.<beat>] in play: BEGIN starts at that scene and beat
+// instead of the diner, the save unread - a scene played without the ones
+// before it, by hand or by tools/play.mjs)
+const startParam = shotMode ? null : params.get('start');
+const startAt = startParam ? { scene: startParam.split('.')[0], beat: startParam.split('.')[1] || null } : null;
 let startFrom = null;
 const hud = new Hud({
   brush: tex.brush.image,
-  onBegin: () => { startFrom = null; sfx.unlock(); controller.lock(); },
+  onBegin: () => { startFrom = startAt; sfx.unlock(); controller.lock(); },
   onContinue: () => { startFrom = game.save.read(); sfx.unlock(); controller.lock(); },
   // (the slice's end card goes back to the title; THE END tries again)
   onRestart: (kind) => { sfx.unlock(); if (kind === 'cont') { game.toTitle(); return; } game.restart(); controller.lock(); },
@@ -122,6 +127,8 @@ settings.load();
 hud.settings = () => settings.get();
 // the title offers CONTINUE when a checkpoint exists
 if (!shotMode) hud.showTitle('', { canContinue: game.save.exists });
+if (startAt && !game.scenes.get(startAt.scene)) console.error(`start=${startParam}: no scene '${startAt.scene}' (scenes: ${game.scenes.names.join(', ')})`);
+else if (startAt && startAt.beat && !game.scenes.get(startAt.scene).beats.includes(startAt.beat)) console.error(`start=${startParam}: '${startAt.scene}' has no beat '${startAt.beat}'`);
 // (play and the fight presets: every Hood variant + combat program up front)
 if (!shotMode || shot.prewarm) game.prewarm(renderer);
 document.addEventListener('pointerlockerror', () => {
