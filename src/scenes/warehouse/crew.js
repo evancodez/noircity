@@ -415,7 +415,8 @@ export class Man {
     this.go(x, z);
   }
 
-  // back to his round: to the nearest point of it
+  // back to his round: on to the point he was walking to (a man who turned
+  // to look goes on the way he was going, not back the way he came)
   resume() {
     if (this.route.length < 2) {
       const h = this.spec.at;
@@ -423,8 +424,7 @@ export class Man {
       this.go(h[0], h[1]);
       return;
     }
-    let best = 0, bd = Infinity;
-    this.route.forEach((p, i) => { const d = Math.hypot(p.x - this.pos.x, p.z - this.pos.z); if (d < bd) { bd = d; best = i; } });
+    const best = Math.max(0, Math.min(this.route.length - 1, this.ri | 0));
     this.ri = best;
     this.wait = 0;
     this.setMode('return');

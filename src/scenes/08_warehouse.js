@@ -90,7 +90,9 @@ function setupAt(ctx, b) {
   const crew = new Crew(G, stage, { rng: ctx.rng.fork(81) });
   for (const spec of CREW) crew.add(b === 'out' && spec.name === 'hood2' ? { ...spec, ...HOOD2_TRUCK, route: null, ri: 0, lookEvery: 3.2 } : spec);
   // (a jump past the door: the first man is already on his round)
-  if (b !== 'arrive' && b !== 'floor') { const s = crew.get('sully'); s.entry = null; s.setMode('patrol'); }
+  // (he stands in aisle A walking north, not at the truck's tail: the way
+  // from there to his round's far end is through the stacks)
+  if (b !== 'arrive' && b !== 'floor') { const s = crew.get('sully'); s.entry = null; s.c.place({ x: -11.2, z: -8.2 }, PI); s.look = s.light = s.lookWant = PI; s.setMode('patrol'); }
   // the office: the Cardinal (lane B7's kind when it is here) and his two men
   const office = [];
   const cardKind = ctx.cast.has('cardinal') ? 'cardinal' : 'heavy';

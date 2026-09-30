@@ -48,7 +48,7 @@ export default {
     const wallMat = M.wall;
 
     // ---- the walls, with their openings
-    kit.piece();
+    const wallId = kit.piece();
     const walls = [];
     const wallBox = (x0, x1, z0, z1, y0 = 0, y1 = H) => walls.push(worldUV(kit.box(x0, x1, y0, y1, z0, z1), 1.6));
     const col = (x0, x1, z0, z1) => C.addBox((x0 + x1) / 2, (z0 + z1) / 2, (x1 - x0) / 2, (z1 - z0) / 2, 0, 'wall');
@@ -79,8 +79,8 @@ export default {
     for (const l of PIER.loading) col(S.x1 - t, S.x1, l.z - PIER.loadingW / 2, l.z + PIER.loadingW / 2);
     kit.addMerged(walls, wallMat, { cast: true });
 
-    // the gables: triangles over the south and north walls
-    kit.piece();
+    // the gables: triangles over the south and north walls (the walls'
+    // boards: one face, no contour at the eaves)
     const gable = (zc) => {
       const sh = new THREE.Shape([new THREE.Vector2(S.x0, H), new THREE.Vector2(S.x1, H), new THREE.Vector2(0, S.ridgeY)]);
       const ge = new THREE.ExtrudeGeometry(sh, { depth: t, bevelEnabled: false });
@@ -229,6 +229,8 @@ export default {
     kit.piece();
     const lt = kit.add(new THREE.PlaneGeometry(11, 2.75).translate(0, 8.0, S.z1 + 0.02), letters, { cast: false, noRay: true });
     lt.name = 'pier9_letters';
+    // (the paint is the boards': no contour round its quad)
+    lt.userData.inkId = wallId;
 
     // ---- a caged lamp over the side door, outside: its pool at the door
     kit.piece();

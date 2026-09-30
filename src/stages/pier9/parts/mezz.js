@@ -141,11 +141,13 @@ export default {
     kit.piece();
     kit.add(kit.box(O.x0, O.x1, oy1 - 0.01, oy1, O.z0 + 0.25, fz - t), M.officeWall, { cast: false });
     kit.piece();
-    const backGlow = new THREE.PlaneGeometry(O.x1 - O.x0, O.h).translate((O.x0 + O.x1) / 2, oy0 + O.h / 2, O.z0 + 0.27);
-    // (a gradient: brightest behind the desk lamp, falling to the corners)
+    const backGlow = new THREE.PlaneGeometry(O.x1 - O.x0, O.h, 24, 12).translate((O.x0 + O.x1) / 2, oy0 + O.h / 2, O.z0 + 0.27);
+    // (a gradient: brightest behind the window's middle, at a standing
+    // man's head - the Cardinal at the window is a black shape on it -
+    // falling to the corners)
     const col = new Float32Array(backGlow.getAttribute('position').count * 3);
     const BP = backGlow.getAttribute('position');
-    for (let i = 0; i < BP.count; i++) { const dx = BP.getX(i) - 0.2, dy = BP.getY(i) - (oy0 + 1.3); const v = Math.max(0.05, 1 - Math.hypot(dx / 3.4, dy / 2.2)); col[i * 3] = col[i * 3 + 1] = col[i * 3 + 2] = v * v; }
+    for (let i = 0; i < BP.count; i++) { const dx = BP.getX(i) + 0.8, dy = BP.getY(i) - (oy0 + 1.5); const v = Math.max(0.05, 1 - Math.hypot(dx / 4.4, dy / 2.4)); col[i * 3] = col[i * 3 + 1] = col[i * 3 + 2] = Math.pow(v, 1.4); }
     backGlow.setAttribute('color', new THREE.BufferAttribute(col, 3));
     const glowMat = M.glow('officeBack', 1.3, { vertexColors: true });
     const back = kit.add(backGlow, glowMat, { cast: false, noRay: true });
