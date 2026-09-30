@@ -108,7 +108,11 @@ export default defineScene({
       G.sfx.play('tail_start', null, {});
       T.his.input.throttle = 0;
       yield wait(1.1);
-      yield* ctx.prompt({ text: 'drive', key: 'KeyW' });
+      // [2nd pass] the prompt until the car moves: W pressed early (in the
+      // engine's catch) drove off with 'W drive' left on the dials, waiting
+      // for a second press
+      while (T.state === 'start' && !ctx.pressed('KeyW')) { G.hud.prompt('W  drive', null, 'scene'); yield null; }
+      G.hud.clearPrompt('scene');
     }
     if (ctx.at('chase')) {
       yield beat('chase');

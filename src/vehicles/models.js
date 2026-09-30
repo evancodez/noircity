@@ -392,7 +392,10 @@ function contactShadow(g, len, wid, x = 0) {
   }
   const m = new THREE.Mesh(new THREE.PlaneGeometry(len, wid).rotateX(-Math.PI / 2).translate(x, 0.014, 0), CONTACT);
   m.layers.set(LAYER.FX);
-  m.renderOrder = 1;
+  // [2nd pass] after the headlamps' pools (renderOrder 2, additive): the
+  // other car's pool no longer lights the road under a car, which then
+  // stood lifted on a bright wash with nothing under its wheels
+  m.renderOrder = 3;
   m.userData.noRay = true;
   m.castShadow = false;
   g.add(m);

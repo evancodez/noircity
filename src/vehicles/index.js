@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { Vehicle, Headlamps } from './Vehicle.js';
 import { buildCoupe, buildTruck, tailLamps, figureInk, COUPE, TRUCK } from './models.js';
-import { releaseHoodSlot } from '../render/layers.js';
+import { releaseHoodSlot, LAYER } from '../render/layers.js';
 
 // Vehicles (docs/story/CONTRACTS.md §11; wave B, lane B5): game.vehicles.
 //   vehicles.spawn(kind: 'coupe' | 'sedan' | 'truck', { at: { x, z } | Vector3,
@@ -46,6 +46,9 @@ export class Vehicles {
       car.meshes.lens.userData.emitter = true;
       // (the contact shadow rides with it; the car is not a shadow caster)
       for (const m of Object.values(car.meshes)) if (m && m.isMesh) m.castShadow = false;
+      // [2nd pass] its contact shadow after the headlamps' pools (as my
+      // coupe's, models.js): my pool lit the road under his wreck
+      car.group.traverse((m) => { if (m.isMesh && m.renderOrder === 1 && m.layers.isEnabled(LAYER.FX)) m.renderOrder = 3; });
       model = { group: car.group, meshes: car.meshes, car };
       lampPts = [new THREE.Vector3(2.3, 0.98, 0.6), new THREE.Vector3(2.3, 0.98, -0.6)];
       tailPts = [new THREE.Vector3(-2.3, 0.84, 0.74), new THREE.Vector3(-2.3, 0.84, -0.74)];
