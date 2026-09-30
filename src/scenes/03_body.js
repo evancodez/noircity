@@ -461,7 +461,7 @@ export default defineScene({
     const standAtStep = () => ({ x: ALLEY.step.x + 0.05, y: ALLEY.y + 1.65, z: ALLEY.zS - 0.95, yaw: Math.PI, pitch: -0.5 });
     if (ctx.at('halves')) {
       yield beat('halves');
-      nudge('The dry step under the lamp. His matchbook and the half.', () => flat(G.eye, stepAt()) < 2.4 || C.mode !== 'walk');
+      nudge('The dry step. His matchbook, the half.', () => flat(G.eye, stepAt()) < 2.4 || C.mode !== 'walk');
       let go = false;
       I.add({ id: 'body.step', at: () => stepAt(), range: 2.6, cone: 0.85, prompt: 'the matchbook', onUse: () => { go = true; } });
       yield until(() => go || acted('step'));
