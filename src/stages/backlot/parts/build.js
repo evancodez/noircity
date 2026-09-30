@@ -400,6 +400,10 @@ export default {
     lamps.p1 = L.wall(32.4, 3.9, PASSAGE.z1, 0, -1, { out: 0.2 });
     lamps.p2 = L.wall(16.0, 4.0, PASSAGE.z0, 0, 1, { out: 0.2 });
     lamps.p3 = L.wall(7.4, 4.1, PASSAGE.z1, 0, -1, { out: 0.2 });
+    // (and between them: the passage is narrow and tall, a dark slot but
+    // for its pools, one every eight metres or so, so the way reads)
+    lamps.p4 = L.wall(23.6, 3.7, PASSAGE.z1, 0, -1, { out: 0.25, strength: 0.9 });
+    lamps.p5 = L.wall(11.2, 3.8, PASSAGE.z0, 0, 1, { out: 0.25, strength: 0.9 });
     // 5 the dead end, the street
     lamps.d1 = L.wall(DEADEND.x1, 3.8, -94.8, -1, 0, { out: 0.5 });
     lamps.b1 = L.post(0.9, -104.5, Math.PI / 2 + Math.PI / 2, { y: 0.15 });

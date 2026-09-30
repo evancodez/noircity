@@ -186,7 +186,8 @@ export default {
     {
       const g = new THREE.Group();
       const parts = [];
-      const w = GATE.w, h = 1.95;
+      // (chest high: the dog behind it comes up over its top)
+      const w = GATE.w, h = 1.42;
       for (let x = -w / 2 + 0.07; x < w / 2 - 0.05; x += 0.16) parts.push(new THREE.BoxGeometry(0.13, h - 0.05, 0.04).translate(x + 0.06, h / 2, 0));
       for (const y of [0.3, h - 0.3]) parts.push(new THREE.BoxGeometry(w - 0.04, 0.1, 0.05).translate(0, y, 0.04));
       parts.push(tube([V3(-w / 2 + 0.1, 0.35, 0.05), V3(w / 2 - 0.1, h - 0.35, 0.05)], 0.03, 6, 2));
@@ -196,9 +197,32 @@ export default {
       tagInk(g);
       g.position.set(GATE.x, 0, GATE.z + 0.03);
       scene.add(g);
+      // the dog: a big black shape behind it that comes up over its top when
+      // I pass - the head (the ears flat, the muzzle open), the neck, the
+      // forelegs, the paws hooked over the top board - and drops back
+      const dogMat = std({ color: 0x0c0c0c, roughness: 0.7, envMap: M.envSoft, envMapIntensity: 0.25 });
+      const dog = new THREE.Group();
+      const dp = [];
+      dp.push(new THREE.SphereGeometry(0.13, 20, 14).scale(1, 0.9, 1.15).translate(0, 0.02, 0));                // skull
+      dp.push(new THREE.CapsuleGeometry(0.058, 0.16, 6, 14).rotateX(Math.PI / 2).translate(0, -0.03, 0.17));   // muzzle
+      dp.push(new THREE.CapsuleGeometry(0.045, 0.12, 6, 12).rotateX(Math.PI / 2 + 0.45).translate(0, -0.1, 0.16)); // jaw, open
+      for (const sx of [-1, 1]) dp.push(new THREE.ConeGeometry(0.045, 0.13, 10).rotateZ(-sx * 0.5).rotateX(-0.5).translate(sx * 0.08, 0.12, -0.05));  // ears, back
+      dp.push(new THREE.CapsuleGeometry(0.1, 0.34, 6, 14).rotateX(0.6).translate(0, -0.26, -0.12));            // neck and chest
+      for (const sx of [-1, 1]) {
+        dp.push(new THREE.CapsuleGeometry(0.042, 0.36, 6, 12).rotateX(-0.55).translate(sx * 0.12, -0.3, 0.02));  // forelegs
+        dp.push(new THREE.SphereGeometry(0.05, 12, 8).scale(1.1, 0.7, 1.3).translate(sx * 0.12, -0.13, 0.13));  // paws
+      }
+      const dm = new THREE.Mesh(merge(dp), dogMat);
+      dm.castShadow = true;
+      dog.add(dm);
+      markFigure(dog);
+      tagInk(dog);
+      dog.position.set(GATE.x + 0.1, 0, GATE.z - 0.28);
+      dog.visible = false;
+      scene.add(dog);
       api.gate = {
-        group: g, k: 0, v: 0,
-        bang(k = 1) { this.v += 5 * k; },
+        group: g, dog, k: 0, v: 0, dt: -1,
+        bang(k = 1) { this.v += 5 * k; this.dt = 0; },
         update(dt) {
           // it jumps toward the passage on its hinges and chain, then settles
           this.v += (-160 * this.k - 9 * this.v) * dt;
@@ -206,8 +230,20 @@ export default {
           g.position.z = GATE.z + 0.03 + Math.max(0, this.k) * 0.06;
           g.rotation.x = this.k * 0.05;
           g.rotation.z = Math.sin(this.k * 7) * 0.01;
+          // the leap: up in a tenth, two snaps at the top, down behind it
+          if (this.dt >= 0) {
+            this.dt += dt;
+            const t = this.dt;
+            const up = SS(0, 0.12, t) * (1 - SS(0.62, 0.85, t));
+            dog.visible = t < 0.9;
+            const snap = Math.sin(Math.min(1, Math.max(0, (t - 0.15) / 0.4)) * Math.PI * 3) * 0.12 * up;
+            dog.position.y = h - 0.55 + 0.72 * up;
+            dog.rotation.x = -0.25 * up + snap;
+            dog.rotation.y = 0.18 * Math.sin(t * 9) * up;
+            if (t > 0.9) this.dt = -1;
+          }
         },
-        reset() { this.k = 0; this.v = 0; },
+        reset() { this.k = 0; this.v = 0; this.dt = -1; dog.visible = false; },
       };
     }
 

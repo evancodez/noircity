@@ -166,7 +166,9 @@ export class Chase {
       else if (gap > 22) want = 4.5;
       else want = Math.min(8.2, Math.max(5.6, mine * 0.97 + (gap - 14) * 0.08));
       this.v += (want - this.v) * (1 - Math.exp(-dt * 2.5));
-      this.s += this.v * dt;
+      // (behind the black of a "Lost him." he waits where the stretch has
+      // him: the retry begins as it will be played, 15 m)
+      if (!(this.lost && this.lost.done && this.lost.t < 1.1)) this.s += this.v * dt;
       const p = pathAt(this.s);
       F.pos.x = p.x; F.pos.z = p.z;
       const h = pathHeading(this.s, 1.2 + this.v * 0.25);

@@ -36,7 +36,9 @@ export default {
     const E = ctl.esc;
     const h = headingAt(E, E.s);
     E.heading = h;
-    E.look.yaw = Math.max(-1.4, Math.min(1.4, wrap(ctl.yaw - h)));
+    // (not clamped: a man looking back at the street stays looking at it
+    // until he moves; then the way down takes his eyes)
+    E.look.yaw = wrap(ctl.yaw - h);
     E.look.pitch = ctl.pitch - E.pitchBase;
     RUNHANDS.cam = ctl.camera;
     RUNHANDS.set('pump'); RUNHANDS.w = 1; RUNHANDS.k = 0;
@@ -44,7 +46,8 @@ export default {
   mouse(ctl, e) {
     const E = ctl.esc;
     if (!E) return false;
-    E.look.yaw = Math.max(-1.4, Math.min(1.4, E.look.yaw - e.movementX * ctl.sensitivity));
+    const lim = Math.max(1.4, Math.abs(E.look.yaw));
+    E.look.yaw = Math.max(-lim, Math.min(lim, E.look.yaw - e.movementX * ctl.sensitivity));
     E.look.pitch = Math.max(-1.1, Math.min(0.9, E.look.pitch - e.movementY * ctl.sensitivity));
     E.idle = 0;
     return true;
@@ -99,7 +102,7 @@ export default {
     const dh = wrap(h - E.heading);
     E.heading += Math.sign(dh) * Math.min(Math.abs(dh), dt * (kind === 'ladder' ? 6.5 : 4.2));
     E.idle += dt;
-    if (E.idle > 0.6) { const k = Math.exp(-dt * (E.v > 0.5 ? 2.2 : 0.6)); E.look.yaw *= k; E.look.pitch = E.look.pitch * k; }
+    if (E.idle > 0.6 && E.v > 0.5) { const k = Math.exp(-dt * 2.4); E.look.yaw *= k; E.look.pitch = E.look.pitch * k; }
     const onStair = kind === 'stair' && E.v > 0.3;
     E.pitchBase += ((onStair ? -0.32 : kind === 'ladder' ? -0.2 + 0.17 * E.ladderK : -0.08) - E.pitchBase) * (1 - Math.exp(-dt * 4));
     ctl.yaw = E.heading + E.look.yaw;

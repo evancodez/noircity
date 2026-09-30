@@ -59,6 +59,8 @@ function chase() {
 
 export const presets = {
   chase: chase(),
+  // down the fire escape with W held (&ax= the look turned)
+  esc: { scene: 'watcher', beat: 'escape', t: 1, viewmodel: true, stage(stage, camera, controller) { controller.auto = { f: 1 }; } },
   backlot: onBacklot(2.5, -12, 0, 0),
   bl_straight: onBacklot(0.95, -9.8, 0, 0.02),
   bl_escape: onBacklot(0.5, -10.4, Math.PI - 0.1, -0.45, 10.8),
