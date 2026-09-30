@@ -372,16 +372,22 @@ function* takeGun(ctx) {
   R.gun.group.visible = false;
   vm.gun.visible = true;
   R.gunTaken = true;
-  // the lift: off the counter, toward me, down out of the frame
+  // the lift: off the counter, turned muzzle-forward and a little up (the
+  // stock DOWN, never up at the lens), and down out of the bottom of the
+  // frame; not in toward the eye [R2-F: the first pass tipped the muzzle
+  // down as it came in, and the stock swept up across the lens]
   const p0 = vm.base.pos.clone(), q0 = new THREE.Quaternion().setFromEuler(vm.base.rot);
-  const p1 = new THREE.Vector3(0.24, -0.66, -0.4);
-  const q1 = new THREE.Quaternion().setFromEuler(new THREE.Euler(R.vmBase0.rot.x - 0.75, R.vmBase0.rot.y, R.vmBase0.rot.z - 0.3, 'YXZ'));
-  const T = 0.38;
+  const p1 = new THREE.Vector3(0.22, -0.95, Math.min(-0.5, p0.z + 0.12));
+  const q1 = new THREE.Quaternion().setFromEuler(new THREE.Euler(R.vmBase0.rot.x + 0.45, R.vmBase0.rot.y, R.vmBase0.rot.z - 0.25, 'YXZ'));
+  const T = 0.34;
   if (lean > 0.02) C.ease({ ...P0, pitch: Math.max(-0.12, Math.min(0.05, P0.pitch)) }, 0.42);
   for (let t = 0; t < T; t += 1 / 60) {
-    const u = Math.min(1, t / T), e = u * u * (3 - 2 * u);
-    vm.base.pos.lerpVectors(p0, p1, e).y += 0.1 * Math.sin(Math.PI * Math.min(1, u * 1.6));
-    vm.base.rot.setFromQuaternion(new THREE.Quaternion().slerpQuaternions(q0, q1, e), 'YXZ');
+    const u = Math.min(1, t / T);
+    // (off the counter first - a few centimetres up - then down and away;
+    // it turns as it goes, a little behind the move)
+    const ep = u * u * (3 - 2 * u), er = Math.min(1, u * 1.15) ** 1.3;
+    vm.base.pos.lerpVectors(p0, p1, ep).y += 0.07 * Math.sin(Math.PI * Math.min(1, u * 2.2));
+    vm.base.rot.setFromQuaternion(new THREE.Quaternion().slerpQuaternions(q0, q1, er * er * (3 - 2 * er)), 'YXZ');
     yield null;
   }
   // out of sight: the gun's own lens, and up to the shoulder
