@@ -85,8 +85,12 @@ Beats, in order (each is a named beat for `?scene=diner&beat=<name>`):
    "You're the one asking about the Cardinal." He stands. The stool falls.
 
 ### 2. The fist fight  (Wave A)
-First person, locked on him, fists up in the bottom corners of the frame:
-the punch-out view. He telegraphs; I read the tell and answer.
+First person, fists up in the bottom corners of the frame. It starts in one
+move: his hand on my shoulder pulls me round on the stool, I come up and
+send the stool beside me skidding away to clear the floor, and we square
+up. The rules are `docs/story/FIGHT.md` (each mouse button an arm, a click
+a jab, a hold a harder punch, his guard and its openings, a step off the
+line as the dodge); the list below is the story's shape.
 - **Controls**: LMB jab (alternating hands), hold and release RMB heavy
   punch, SPACE block, A / D slip left / right, E grab what is in reach,
   then LMB swing it.
@@ -159,6 +163,12 @@ The light on my hands tells me how exposed I am. Lamps can be dealt with:
 a switch, a chain, a thrown bottle to turn a head. On the mezzanine, in a
 lit office, the Cardinal, cigar going, gives the order: the diner, tonight,
 the waitress saw Mack talk. No one leaves.
+- **The second fist fight** (the user asked for one later in the story).
+  The way out is through the loading bay, and the foreman is in it: a dock
+  man with a cargo hook, as big as Mack and quieter. A shot would bring
+  the whole pier, so it is fists, and whatever the bay has lying in it (a
+  crate lid, bottles, a coil of chain, a lantern). No lesson this time. It
+  ends with him going through the planks of a loading door into the river.
 
 ### 9. The big shootout  (Wave B)
 Back on the block. I get there first. Dot hands me the Tommy gun from under
