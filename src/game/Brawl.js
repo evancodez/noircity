@@ -46,7 +46,7 @@ import { Lesson } from './BrawlLesson.js';
 export const BRAWL = {
   // [B8] his hit points (a room's man may have his own: who.hp); his
   // manners change at these PERCENT of them
-  himHp: 116, meHp: 100, retryHp: 60, retryBack: 8, shell: 0.16, mannerHold: 9,
+  himHp: 116, meHp: 100, retryHp: 60, retryBack: 8, pound: 30, shell: 0.16, mannerHold: 9,
   manners: { measured: 100, dirty: 65, wild: 30, out: 12 },
   order: ['measured', 'dirty', 'wild', 'out'],
   reach: 1.8, cone: 38 * Math.PI / 180, itemReach: 2.0,
@@ -146,6 +146,8 @@ export class Brawl {
     this.done = false;
     this.fadeBack = 0;
     if (!retry) { this.stats = freshStats(); this.blackT = 0; this.did = {}; }
+    // ([B8] this life's start: how hard it pounded his guard is read at a down)
+    this.stats.life = { t: this.stats.time, b: this.stats.myBlocked };
     this.opts = { onRetry, onKO, onGlass, onLanded, onManner, onBottle, onHop };
     // ([B8] a thing of his still in the air when I went down falls where it is)
     if (this.flying && this.flying.length) this.dropFlying();
@@ -1797,16 +1799,23 @@ export class Brawl {
       // [B8] (he has got his breath back, a little: at most `retryBack` of
       // him, never past the start of his manner - failing costs about ten
       // seconds, not the round)
-      // (second pass: the same each time - 8, 16, 24 %... a down caught a
-      // player who struggled in one manner there for good, five minutes and
-      // fifteen downs; and from the third down in a manner I come up whole:
-      // the fight gives a little to the man who keeps getting up. A masher
-      // still gets nowhere: his answers and the blows caught punching do that)
-      const MD = this.stats.mannerDowns || (this.stats.mannerDowns = {}); MD[m] = (MD[m] || 0) + 1;
-      const back = Math.min(BRAWL.manners[m] * this.max / 100, this.him.hp + BRAWL.retryBack * this.max / 100);
+      // (second pass: a down gives him back the same each time, and from the
+      // third in a manner I come up whole - the fight gives a little to the
+      // man who keeps getting up; version 4's 8, 16, 24 %... held a player
+      // who struggled in one manner for good, five minutes and fifteen
+      // downs. But a life spent pounding his guard - more than `pound`
+      // punches into it a minute: a masher throws 45, a first-timer who
+      // struggles 10 to 19 - is paid for as before: 8, 16, 24 %... of him
+      // back each time, up with 60)
+      const L0 = this.stats.life || { t: 0, b: 0 };
+      const rate = (this.stats.myBlocked - L0.b) / Math.max(20, this.stats.time - L0.t) * 60;
+      const pounding = rate > BRAWL.pound;
+      const key = pounding ? 'pounding' : 'mannerDowns';
+      const MD = this.stats[key] || (this.stats[key] = {}); MD[m] = (MD[m] || 0) + 1;
+      const back = Math.min(BRAWL.manners[m] * this.max / 100, this.him.hp + BRAWL.retryBack * (pounding ? MD[m] : 1) * this.max / 100);
       const left = Math.max(0.05, BRAWL.down - me.downT);
       G.health.reset();
-      G.health.hp = MD[m] >= 3 ? BRAWL.meHp : BRAWL.retryHp;
+      G.health.hp = !pounding && MD[m] >= 3 ? BRAWL.meHp : BRAWL.retryHp;
       if (G.sfx && G.sfx.hush) G.sfx.hush(left + 0.3);
       if (this.opts.onRetry) this.opts.onRetry(m, back);
       G.hud.fade(1);
