@@ -42,7 +42,9 @@ const clamp01 = (x) => Math.min(1, Math.max(0, x));
 const ss = (a, b, x) => { const t = clamp01((x - a) / (b - a)); return t * t * (3 - 2 * t); };
 const easeOut = (u) => 1 - (1 - u) * (1 - u) * (1 - u);
 // (the shot's climb: up at once, peaking at TAU, all but gone by 0.25 s)
-const TAU = 0.045;
+const TAU = 0.042;
+// the climb's peak (radians, about the wrist) and the shove back (metres)
+const RECOIL = { climb: 0.3 };
 const climbK = (t) => (t < 0 ? 0 : (t / TAU) * Math.exp(1 - t / TAU));
 
 // The gun's places in the eye's frame (+x right, +y up, -z ahead; the
@@ -51,21 +53,31 @@ const climbK = (t) => (t < 0 ? 0 : (t / TAU) * Math.exp(1 - t / TAU));
 const P = (p, yaw, pitch, roll, e) => ({ p: V(...p), q: new THREE.Quaternion().setFromEuler(new THREE.Euler(pitch, yaw, roll, 'YXZ')), e: V(...e) });
 const POSE = {
   // at the eye's height, a little right, canted in: the classic frame
-  ready: P(GUN_READY.p, GUN_READY.yaw, GUN_READY.pitch, GUN_READY.roll, [0.22, -0.3, -0.26]),
+  ready: P(GUN_READY.p, GUN_READY.yaw, GUN_READY.pitch, GUN_READY.roll, [0.24, -0.3, -0.12]),
   // steadied: up on the eye's line, square, the front sight on the centre
-  steady: P([0.0, -0.078, -0.52], 0, 0, 0, [0.09, -0.25, -0.27]),
+  steady: P([0.0, -0.078, -0.45], 0, 0, 0, [0.06, -0.22, -0.26]),
   // in the coat (the shoulder holster): below the frame's bottom right
   holster: P([0.19, -0.5, -0.12], 0.4, -1.25, 0.9, [0.3, -0.7, 0.05]),
-  // the reload: brought in low, its left side turned up to the eye
-  present: P([0.05, -0.185, -0.37], 0.5, 0.22, -1.2, [0.2, -0.42, -0.12]),
-  // the muzzle up for the ejector's stroke
-  eject: P([0.045, -0.15, -0.34], 0.25, 1.15, -0.95, [0.2, -0.44, -0.1]),
+  // the reload (each place searched - the eyes' dip to it counted - so the
+  // gun stays in the viewmodel's
+  // frame - at a third of a metre it shows only 16 cm below the eye's line
+  // - with the swung-out cylinder low right of centre):
+  // brought in, the muzzle ahead and left, its left side turned up to the eye
+  // (the elbows well under the wrists: the sleeves rise from the frame's
+  // bottom edge, foreshortened, instead of lying across it)
+  // (right of centre: the left arm reaches in from the lower left and never
+  // stands between the eye and the gun)
+  present: P([0.115, -0.179, -0.42], 0.625, 0.227, -0.812, [0.27, -0.66, -0.24]),
+  // the muzzle up for the ejector's stroke, the rear face down
+  eject: P([0.091, -0.18, -0.41], 0.802, 1.141, -0.115, [0.25, -0.66, -0.24]),
   // the muzzle down to feed the chambers: the rear face turned to the eye
-  load: P([0.035, -0.2, -0.35], 0.35, -0.72, -0.75, [0.2, -0.42, -0.1]),
+  load: P([0.106, -0.118, -0.43], 0.496, -0.484, -0.707, [0.26, -0.64, -0.26]),
 };
+// the left elbow through the reload (true eye-frame): low on the left
+const EL = [-0.36, -0.42, -0.2];
 // the reload, seconds from its start (the sounds land on the same marks)
 export const RL = {
-  dur: 1.7,
+  dur: 1.7, look: 0.17,
   present: [0.0, 0.16], lUp: [0.03, 0.15], open: [0.13, 0.25],
   tipUp: [0.24, 0.36], strike: [0.34, 0.4], drop: 0.4, starBack: [0.44, 0.52],
   lDown: [0.4, 0.52], tipDown: [0.42, 0.58], lRounds: [0.54, 0.72],
@@ -270,8 +282,15 @@ export default (game) => {
       this.syncProp();
       this.setZoom(this.steady * REVOLVER.steadyFov);
       this.drawHud();
+      // the eyes drop to the gun through the reload (the head and what it
+      // holds stay put: the hands' 'eyes' view, Hands.frames), and come up
+      // with it
+      const eyes = this.phase === 'reload' ? -RL.look * (this.cut ? 1 - ss(0, CUT.ready, this.t - (this.cut.at ?? this.t)) : ss(0, 0.2, this.t) * (1 - ss(RL.ready[0], RL.ready[1], this.t))) : 0;
+      const VF = C.viewFx || (C.viewFx = { yaw: 0, pitch: 0, roll: 0, fwd: 0, side: 0, down: 0, eyes: 0 });
+      VF.eyes = eyes;
       // lay the hands now: the gun's place of this step, not the last one's
       G.hands.pose3();
+      VF.eyes = eyes;
     },
 
     // the reload's moments that change the gun (its pose is pose()'s)
@@ -376,10 +395,19 @@ export default (game) => {
       const S = this.sway;
       p.x += Math.cos(bp) * 0.01 * ba + S.x * 0.1;
       p.y += -Math.abs(Math.sin(bp)) * 0.012 * ba + br + S.y * 0.1;
-      p.z += 0.034 * k;
-      p.y += 0.012 * k;
-      _e.set(0.52 * k + S.y * 0.35 + br * 0.6, S.x * 0.45 + 0.03 * k * this.kickY, -S.x * 0.25 + 0.05 * k * this.kickR + Math.cos(bp) * 0.008 * ba, 'YXZ');
-      q.multiply(_q2.setFromEuler(_e));
+      // (the shove back into the hand, and the wrist breaking up: the gun
+      // turns about the wrist, 6 cm behind and 3 below the grip, so the
+      // whole gun lifts as the muzzle climbs; a little roll to the right)
+      p.addScaledVector(_v2.set(0, 0, 1).applyQuaternion(q), 0.042 * k);
+      p.y += 0.008 * k;
+      _e.set(RECOIL.climb * k + S.y * 0.35 + br * 0.6, S.x * 0.45 + 0.03 * k * this.kickY, -S.x * 0.25 - 0.06 * k + 0.03 * k * this.kickR + Math.cos(bp) * 0.008 * ba, 'YXZ');
+      _q2.setFromEuler(_e);
+      // (the pivot, in the gun's frame, carried round by the turn)
+      const piv = _v2.set(0, -0.03, 0.06);
+      const pw = piv.clone().applyQuaternion(q);
+      const pr = piv.applyQuaternion(q.clone().multiply(_q2));
+      p.add(pw).sub(pr);
+      q.multiply(_q2);
       this.gunM.compose(p, q, _v2.set(1, 1, 1));
       this.eR.copy(base.e);
       this.eR.y += 0.02 * k;
@@ -471,8 +499,8 @@ export default (game) => {
     // the left hand through the reload (true eye-frame poses)
     leftHand(t) {
       const D = this.prop.userData.dims;
-      const E = [-0.2, -0.46, -0.08];
-      const below = { frame: 'cam', p: [-0.05, -0.5, -0.28], f: [0.3, 0.7, -0.5], b: [-0.6, 0.2, 0.7], F: L_OPEN, e: [-0.25, -0.8, 0.05] };
+      const E = EL;
+      const below = { frame: 'cam', p: [-0.06, -0.52, -0.3], f: [0.3, 0.8, -0.5], b: [-0.6, 0.2, 0.7], F: L_OPEN, e: [-0.12, -0.9, -0.1] };
       // on the cylinder: the palm under its left side (as the gun is turned:
       // toward the eye), the fingers round it, pushing it out
       const cyl = (F = L_CRADLE) => this.onCylinder(F, E);
@@ -551,15 +579,16 @@ export default (game) => {
       const oo = left.clone().lerp(o, k).normalize();
       const at = c.clone().addScaledVector(oo, D.CYL_R + out);
       const across = new THREE.Vector3().crossVectors(ax, oo).normalize();
-      // (the fingers point across it, to the side away from the eye)
-      if (across.dot(c) < 0) across.negate();
+      // (the fingers point across it to the right: the left arm comes from
+      // the left edge)
+      if (across.x < 0) across.negate();
       return palm('cam', at.toArray(), oo.clone().negate().toArray(), across.addScaledVector(ax, 0.25).normalize().toArray(), F, E);
     },
     // the cut: the left hand slaps the cylinder shut and drops away
     leftCut(u) {
       if (u > CUT.ready + 0.08) return null;
-      const below = { frame: 'cam', p: [-0.05, -0.5, -0.28], f: [0.3, 0.7, -0.5], b: [-0.6, 0.2, 0.7], F: L_OPEN, e: [-0.25, -0.8, 0.05] };
-      const on = this.onCylinder(L_STRIKE, [-0.2, -0.46, -0.08]);
+      const below = { frame: 'cam', p: [-0.06, -0.52, -0.3], f: [0.3, 0.8, -0.5], b: [-0.6, 0.2, 0.7], F: L_OPEN, e: [-0.12, -0.9, -0.1] };
+      const on = this.onCylinder(L_STRIKE, EL);
       if (G.hands.held.L === this.rounds && this.rounds) G.hands.hold(null, 'L', { keep: true });
       return lerpPose(on, below, ss(CUT.close, CUT.ready + 0.08, u));
     },

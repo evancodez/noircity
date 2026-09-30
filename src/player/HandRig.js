@@ -18,17 +18,19 @@ import { mergeGeometries, mergeVertices } from 'three/addons/utils/BufferGeometr
 // camera space, and the forearm (sleeve, cuff, bare forearm) is laid from it
 // to the wrist every step.
 //
-// Surfaces (smooth at 0.3 m): the palm a cupped, rounded slab (a signed-power
-// sphere, welded normals); fingers tapered capsules (lathes) with knuckle
-// spheres a little proud of them; a web between thumb and index skinned to
-// both; the wrist an ellipsoid. One SkinnedMesh per skin, rigid weights
-// (the web blended): one draw per hand.
-//
-// Ink marks are geometry, not texture: a knuckle tick is a hair-thin arc
-// lying on the joint (a torus segment ~1.2 mm thick: two or three pixels at
-// arm's length, and the ink draws its contour), a nail one short arc at the
-// cuticle. Their vertex colour darkens them on the bare skin and lifts them
-// on the glove, so the same marks print dark on skin and pale on leather.
+// Surfaces (wave B, lane B3: "less balloon"): built as an inker constructs a
+// hand, not as tubes and balls. The back of the hand a flat wedge with its
+// knuckle line; the knuckles a row of rolls; each finger three tapered boxes
+// (a superellipse section: flat top, flat sides, the pad rounder beneath)
+// stepping down at each joint over a roll that closes the joint's back when
+// it bends; the thumb squared, its ball a soft mass; the wrist a flattened
+// box into the cuff. Planes catch the light as planes (the ink's skin print
+// splits lit and shadow by the form), and the ink's lines fall where an
+// inker's do: between the fingers, the knuckles of a fist, the web as the
+// palm's own edge, the cuff. One SkinnedMesh per skin, rigid weights (the
+// web blended into the thumb's metacarpal): one draw per hand. (The first
+// version's knuckle spheres, torus ticks and nails are gone; the marks'
+// vertex-colour channel stays, empty.)
 
 export const HAND = {
   // palm 0.085 wide, 0.095 long, 0.028 thick (the brief's adult male)
@@ -62,17 +64,74 @@ const V = (x, y, z) => new THREE.Vector3(x, y, z);
 const sstep = (a, b, x) => { const t = Math.min(1, Math.max(0, (x - a) / (b - a))); return t * t * (3 - 2 * t); };
 
 // ---- geometry pieces (each built in its bone's frame) ------------------------------
-// a tapered capsule along -z from 0 to -len (hemispheres at both ends)
-function taperCapsule(len, r0, r1, radial = 16, flat = 1) {
-  const pts = [];
-  const cap = 6;
-  for (let k = 0; k <= cap; k++) { const a = -Math.PI / 2 + (k / cap) * Math.PI / 2; pts.push(new THREE.Vector2(Math.cos(a) * r0, Math.sin(a) * r0)); }
-  const mid = 5;
-  for (let k = 1; k < mid; k++) { const u = k / mid; pts.push(new THREE.Vector2(r0 + (r1 - r0) * u, len * u)); }
-  for (let k = 0; k <= cap; k++) { const a = (k / cap) * Math.PI / 2; pts.push(new THREE.Vector2(Math.max(1e-5, Math.cos(a) * r1), len + Math.sin(a) * r1)); }
-  const g = new THREE.LatheGeometry(pts, radial);
-  g.rotateX(-Math.PI / 2);             // lathe +y -> -z
-  g.scale(1, flat, 1);
+// (wave B, lane B3: the hand as an inker constructs it - "less balloon".
+// Every piece is a superellipse section lofted along its bone: a flat top
+// and flat sides with soft corners, a rounder pad beneath, so the planes
+// catch the light as planes - one side lit, one side ink, a hard edge
+// between - and the ink's creases fall on the corners, the joints, the
+// gaps between the fingers. No knuckle spheres, no torus ticks, no nails:
+// the lines are the geometry's own.)
+// a superellipse point: angle a (0 = +x, pi/2 = the top +y); half sizes hw,
+// the top's hh and the bottom's hb; exponents nt (top), nb (bottom)
+function sePt(a, hw, hh, hb, nt, nb) {
+  const c = Math.cos(a), s = Math.sin(a);
+  const ex = 2 / (s >= 0 ? nt : nb);
+  return [hw * Math.sign(c) * Math.pow(Math.abs(c), ex), (s >= 0 ? hh : hb) * Math.sign(s) * Math.pow(Math.abs(s), ex)];
+}
+// a loft along -z: rings of a section fn(u) -> { hw, hh, hb, cy, nt, nb, z }
+// at u = 0 .. 1 (rows), closed by domes (their length in metres) at either end
+function loft(sec, { rows = 6, cols = 28, dome0 = 0, dome1 = 0, domeRows = 4 } = {}) {
+  const rings = [];
+  const ring = (S, scale, dz) => {
+    const pts = [];
+    for (let j = 0; j < cols; j++) {
+      const a = (j / cols) * Math.PI * 2;
+      const [x, y] = sePt(a, S.hw * scale, S.hh * scale, S.hb * scale, S.nt ?? 4, S.nb ?? 2.6);
+      pts.push(x + (S.cx || 0), y + (S.cy || 0), S.z + dz);
+    }
+    rings.push(pts);
+  };
+  const S0 = sec(0), S1 = sec(1);
+  // the start dome: from a point up to the first ring (an ellipse's quarter)
+  if (dome0 > 0) for (let k = 0; k < domeRows; k++) { const t = 1 - k / domeRows; ring(S0, Math.sqrt(Math.max(0, 1 - t * t)), dome0 * t); }
+  for (let i = 0; i <= rows; i++) ring(sec(i / rows), 1, 0);
+  if (dome1 > 0) for (let k = 1; k <= domeRows; k++) { const t = k / domeRows; ring(S1, Math.sqrt(Math.max(0, 1 - t * t)), -dome1 * t); }
+  const pos = [], idx = [];
+  for (const r of rings) pos.push(...r);
+  const n = rings.length;
+  for (let i = 0; i < n - 1; i++) for (let j = 0; j < cols; j++) {
+    const a = i * cols + j, b = i * cols + (j + 1) % cols, c = (i + 1) * cols + j, d = (i + 1) * cols + (j + 1) % cols;
+    idx.push(a, c, b, b, c, d);
+  }
+  // flat caps where there is no dome (a fan to the ring's centre)
+  const cap = (ri, flip) => {
+    const base = pos.length / 3, S = ri === 0 ? S0 : S1;
+    const r = rings[ri];
+    let cx = 0, cy = 0, cz = 0;
+    for (let j = 0; j < cols; j++) { cx += r[j * 3]; cy += r[j * 3 + 1]; cz += r[j * 3 + 2]; }
+    pos.push(cx / cols, cy / cols, cz / cols);
+    for (let j = 0; j < cols; j++) { const a = ri * cols + j, b = ri * cols + (j + 1) % cols; if (flip) idx.push(base, b, a); else idx.push(base, a, b); }
+    void S;
+  };
+  if (!(dome0 > 0)) cap(0, false);
+  if (!(dome1 > 0)) cap(n - 1, true);
+  const g = new THREE.BufferGeometry();
+  g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+  g.setIndex(idx);
+  return g;
+}
+// a joint's roll: a squat superellipsoid lying along x (the joint's hinge),
+// round about it (radius r, so a bending neighbour never opens a gap on the
+// back), its ends flat with soft edges; centred at c
+function roll(w, r, c, n = 5, rb = r) {
+  const g = new THREE.SphereGeometry(1, 16, 12);
+  const p = g.getAttribute('position');
+  for (let i = 0; i < p.count; i++) {
+    const x = p.getX(i), y = p.getY(i), z = p.getZ(i);
+    const ex = Math.sign(x) * Math.pow(Math.abs(x), 2 / n);
+    p.setXYZ(i, (w / 2) * ex, (y >= 0 ? r : rb) * y, r * z);
+  }
+  g.translate(c.x, c.y, c.z);
   return g;
 }
 function ellipsoid(rx, ry, rz, c, w = 18, h = 12) {
@@ -81,36 +140,61 @@ function ellipsoid(rx, ry, rz, c, w = 18, h = 12) {
   g.translate(c.x, c.y, c.z);
   return g;
 }
-// a short arc lying across the back of a finger at z (radius R, from
-// angle a0 to a1 around the finger axis; pi/2 = the back of the hand)
-function tick(R, tube, z, a0 = Math.PI / 2 - 0.5, a1 = Math.PI / 2 + 0.5, flat = 1) {
-  const g = new THREE.TorusGeometry(R, tube, 5, 10, a1 - a0);
-  g.rotateZ(a0);
-  g.scale(1, flat, 1);
-  g.translate(0, 0, z);
-  return g;
+const lerp = (a, b, t) => a + (b - a) * t;
+// the knuckle line: where the back of the hand ends, by x (the four MCPs,
+// straight on past the index and the little finger)
+function knuckleZ(x) {
+  const K = HAND.fingers.map((f) => [f[1], f[2]]);
+  if (x <= K[0][0]) return K[0][1] + (x - K[0][0]) * ((K[1][1] - K[0][1]) / (K[1][0] - K[0][0])) * 0.5;
+  for (let i = 0; i < K.length - 1; i++) if (x <= K[i + 1][0]) return lerp(K[i][1], K[i + 1][1], (x - K[i][0]) / (K[i + 1][0] - K[i][0]));
+  const L = K.length - 1;
+  return K[L][1] + (x - K[L][0]) * ((K[L][1] - K[L - 1][1]) / (K[L][0] - K[L - 1][0]));
 }
-// the palm: a signed-power sphere (a slab with round edges), cupped on the
-// palm side, arched on the back, narrower at the wrist than at the knuckles
-function palmGeometry() {
-  const P = HAND.palm;
-  const hx = P.w / 2, hy = P.t / 2, hz = 0.052, cz = -0.046;
-  const g = new THREE.SphereGeometry(1, 44, 28);
-  const p = g.getAttribute('position');
-  const sp = (v, e) => Math.sign(v) * Math.pow(Math.abs(v), e);
-  for (let i = 0; i < p.count; i++) {
-    const x = p.getX(i), y = p.getY(i), z = p.getZ(i);
-    const u = sp(z, 0.55);                     // -1 at the knuckles .. +1 at the wrist
-    let X = sp(x, 0.5) * hx * (1 - 0.17 * sstep(-0.2, 1, u));
-    let Y = sp(y, 0.8) * hy;
-    const Z = cz + u * hz;
-    const across = 1 - Math.min(1, (X / hx) ** 2), along = 1 - Math.min(1, u * u);
-    if (Y < 0) Y += 0.0045 * across * along;   // the cupped palm
-    else Y += 0.0022 * across;                 // the arched back
-    // the heel of the hand is thicker on the palm side
-    if (Y < 0) Y -= 0.003 * sstep(0.2, 0.9, u) * across;
-    p.setXYZ(i, X, Y - 0.002, Z);
+// the back of the hand: a flat, slightly wedge-shaped slab from the heel to
+// the knuckle line (thicker at the heel on the palm's side, the back arched
+// a little across), its front edge slanted along the knuckles
+function palmSlab(g0) {
+  const rows = 14, cols = 44;
+  // (the heel starts inside the wrist, narrower, and widens out of it: no
+  // end face shows where the hand meets the wrist)
+  const zBack = 0.014;
+  const pos = [], idx = [];
+  const h0 = 0.13;
+  const sec = (u) => (u < h0 ? {
+    hw: lerp(0.0262, 0.0322, sstep(0, 1, u / h0)) * g0,
+    hh: lerp(0.0092, 0.0112, sstep(0, 1, u / h0)) * g0,
+    hb: lerp(0.0142, 0.0165, sstep(0, 1, u / h0)) * g0,
+  } : {
+    hw: lerp(0.0322, 0.0425, Math.min(1, (u - h0) / 0.62)) * g0,
+    hh: lerp(0.0112, 0.0082, (u - h0) / (1 - h0)) * g0,
+    hb: lerp(0.0165, 0.0106, Math.min(1, (u - h0) * 1.2)) * g0,
+  });
+  for (let i = 0; i <= rows; i++) {
+    const u = i / rows, S = sec(u);
+    for (let j = 0; j < cols; j++) {
+      const a = (j / cols) * Math.PI * 2;
+      let [x, y] = sePt(a, S.hw, S.hh, S.hb, 4.2, 2.8);
+      // (the back's gentle arch across the hand)
+      if (y > 0) y += 0.0016 * g0 * (1 - Math.min(1, (x / S.hw) ** 2));
+      const z = lerp(zBack, knuckleZ(x) + 0.001, u);
+      pos.push(x, y - 0.0012, z);
+    }
   }
+  for (let i = 0; i < rows; i++) for (let j = 0; j < cols; j++) {
+    const a = i * cols + j, b = i * cols + (j + 1) % cols, c = (i + 1) * cols + j, d = (i + 1) * cols + (j + 1) % cols;
+    idx.push(a, c, b, b, c, d);
+  }
+  // the two ends: fans (the heel inside the wrist, the front under the knuckles)
+  for (const [ri, flip] of [[0, false], [rows, true]]) {
+    const base = pos.length / 3;
+    let cx = 0, cy = 0, cz = 0;
+    for (let j = 0; j < cols; j++) { cx += pos[(ri * cols + j) * 3]; cy += pos[(ri * cols + j) * 3 + 1]; cz += pos[(ri * cols + j) * 3 + 2]; }
+    pos.push(cx / cols, cy / cols, cz / cols);
+    for (let j = 0; j < cols; j++) { const a = ri * cols + j, b = ri * cols + (j + 1) % cols; if (flip) idx.push(base, b, a); else idx.push(base, a, b); }
+  }
+  const g = new THREE.BufferGeometry();
+  g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+  g.setIndex(idx);
   return g;
 }
 
@@ -286,9 +370,15 @@ export class HandRig {
     this.elbow = V(0.2, -0.4, 0.05);
   }
 
-  // the hand's geometry in rest pose (hand-bone space); marks carry a colour
-  // of their own: 0 on the bare skin (ink), 2.2 on the glove (lifted)
-  // (dims: HAND.bare for the bare hand's slimmer fingers, null for the glove)
+  // the hand's geometry in rest pose (hand-bone space), built as an inker
+  // constructs a hand (wave B, lane B3): the back a flat wedge with its
+  // knuckle line, the knuckles a row of rolls, each finger three tapered
+  // boxes (flat top and sides, the pad rounder beneath) stepping down at
+  // each joint over a roll that closes the joint's back when it bends, the
+  // fingertip domed; the thumb squared, its ball a soft mass; the wrist a
+  // flattened box running into the cuff.
+  // (dims: HAND.bare for the bare hand's slimmer fingers, null for the
+  // glove's leather girth; the marks' channel is kept, empty)
   buildHandGeometry(dims = null) {
     const parts = [];
     const B = (b) => this.bones.indexOf(b);
@@ -301,97 +391,71 @@ export class HandRig {
       return m;
     };
     const add = (g, b, col = 1, wfn = null) => { g.applyMatrix4(rest(b)); parts.push(tag(g, B(b), col, wfn)); };
-    const MARK = -1;   // (a mark: its colour is chosen per skin below)
     const H = this.hand;
-    // (the palm's radial edge between the index's knuckle and the heel is
-    // the web: it follows the thumb's metacarpal part of the way, so when
-    // the thumb opens the skin between them stretches as one smooth fold)
+    const glove = !dims;
+    const g0 = glove ? 1.06 : 1;       // (the leather's girth)
+    // the back of the hand and the palm: its radial edge between the index's
+    // knuckle and the heel is the web, weighted into the thumb's metacarpal,
+    // so when the thumb opens the skin between them stretches as one fold
     {
       const bh = B(H), bt = B(this.thumb.b[0]);
-      add(palmGeometry(), H, 1, (v) => {
-        const w = (dims ? 0.72 : 0) * sstep(-0.02, -0.04, v.x) * sstep(-0.01, -0.036, v.z) * (1 - sstep(-0.084, -0.102, v.z));
+      add(palmSlab(g0), H, 1, (v) => {
+        const w = 0.72 * sstep(-0.02, -0.04, v.x) * sstep(-0.01, -0.036, v.z) * (1 - sstep(-0.078, -0.096, v.z));
         return [bh, bt, w];
       });
     }
-    // the wrist
-    add(ellipsoid(HAND.wrist.rx, HAND.wrist.ry, 0.034, V(0, -0.0015, 0.012), 22, 14), H);
-    const PH = HAND.phal, fl = HAND.flat;
-    const kn = dims ? dims.knuckle : 1;
-    for (const [name, , , len, g0, g1] of HAND.fingers) {
-      const [r0, r1] = dims ? dims.fingers[name] : [g0, g1];
+    // the wrist: a flattened box from inside the heel back into the cuff
+    // (its top eases down under the back of the hand where they meet, so the
+    // two planes run on without a step)
+    // (its back end is the bare forearm's own section - an ellipse 58 x 39
+    // mm - so it sinks into the forearm or the cuff without a corner)
+    add(loft((u) => { const k = sstep(0.3, 1, u), q = sstep(0.72, 1, u); return { hw: lerp(0.0282, 0.0292, k) * g0, hh: lerp(0.0188, 0.0112, k) * g0, hb: lerp(0.0188, 0.0172, k) * g0, cy: lerp(0, -0.0016, k), nt: lerp(2.05, 4.2, q), nb: lerp(2.05, 3.0, q), z: lerp(0.046, -0.012, u) }; }, { rows: 8, cols: 32 }), H);
+    const PH = HAND.phal;
+    for (const [name, , , len, gr0, gr1] of HAND.fingers) {
+      const [r0, r1] = dims ? dims.fingers[name] : [gr0, gr1];
       const [b0, b1, b2] = this.fingers[name].b;
       const L0 = len * PH[0], L1 = len * PH[1], L2 = len * PH[2];
-      const ra = r0, rb = r0 + (r1 - r0) * PH[0], rc = r0 + (r1 - r0) * (PH[0] + PH[1]);
-      add(taperCapsule(L0, ra, rb, 16, fl), b0);
-      add(taperCapsule(L1, rb * 0.98, rc, 16, fl), b1);
-      // the fingertip: a little fuller on the pad side
-      const tip = taperCapsule(L2, rc * 0.97, r1, 16, fl);
-      tip.translate(0, -0.0006, 0);
-      add(tip, b2);
-      // knuckles, a little proud: the MCP head belongs to the palm (it
-      // stays and shows when the fist closes), the PIP / DIP heads to the
-      // proximal side of their joint
-      const mcp = ellipsoid(ra * 1.12 * kn, ra * 1.02 * kn, ra * 1.12 * kn, V(0, ra * 0.32 * kn, 0.001), 16, 10);
-      mcp.applyMatrix4(rest(b0));
-      parts.push(tag(mcp, B(H)));
-      add(ellipsoid(rb * 1.08 * kn, rb * 1.0 * kn, rb * 1.06 * kn, V(0, rb * 0.12 * kn, -L0), 14, 10), b0);
-      add(ellipsoid(rc * 1.05 * kn, rc * 0.98 * kn, rc * 1.05 * kn, V(0, rc * 0.1 * kn, -L1), 14, 10), b1);
-      // ticks: two creases over the PIP, one over the DIP, a short one on the
-      // MCP knuckle, the nail's cuticle line
-      const tb = 0.00062;
-      add(tick(rb * 1.09 * kn + 0.0003, tb, -L0 + 0.0022, undefined, undefined, fl), b0, MARK);
-      add(tick(rb * 1.09 * kn + 0.0003, tb * 0.9, -L0 - 0.0006, Math.PI / 2 - 0.4, Math.PI / 2 + 0.4, fl), b0, MARK);
-      add(tick(rc * 1.06 * kn + 0.0002, tb * 0.85, -L1 + 0.0012, Math.PI / 2 - 0.42, Math.PI / 2 + 0.42, fl), b1, MARK);
-      const k = tick(ra * 1.13 * kn + 0.0005, tb, 0.0, Math.PI / 2 - 0.38, Math.PI / 2 + 0.38, 1);
-      k.translate(0, ra * 0.32 * kn, 0.001);
+      // the section along the finger: half-width, the top's half-height (a
+      // flat back) and the pad's (fuller), tapering base -> tip
+      const at = (u) => { const r = lerp(r0, r1, u); return { hw: r * 1.02, hh: r * 0.78, hb: r * 0.98 }; };
+      const u1 = PH[0], u2 = PH[0] + PH[1];
+      // each phalanx a tapered box from its joint to the next; the next one
+      // starts a hair narrower: a step at the joint, not a bulge
+      const seg = (L, ua, ub, k, dome = 0) => loft((u) => { const S = at(lerp(ua, ub, u)); return { hw: S.hw * k, hh: S.hh * k, hb: S.hb * k, nt: 4.2, nb: 2.5, z: -L * u }; }, { rows: 4, cols: 28, dome1: dome });
+      add(seg(L0, 0, u1, 1), b0);
+      add(seg(L1, u1, u2, 0.96), b1);
+      const S2 = at(1);
+      add(seg(L2 - S2.hh * 0.7, u2, 1, 0.92, S2.hh * 1.25), b2);
+      // the joints' rolls (the PIP and DIP): round about the hinge, as high
+      // as the phalanx before them - the back of a bent finger closes over
+      // them, a straight one shows a small step
+      const Sa = at(u1), Sb = at(u2);
+      add(roll(Sa.hw * 1.96, Sa.hh * 1.02, V(0, 0, -L0), 5, Sa.hb * 0.9), b0);
+      add(roll(Sb.hw * 1.96 * 0.96, Sb.hh * 1.02 * 0.96, V(0, 0, -L1), 5, Sb.hb * 0.9 * 0.96), b1);
+      // the knuckle (the metacarpal's head): a roll across the joint a
+      // little proud of the back, the palm's (it stays when the fist closes:
+      // the knuckle line)
+      const S0 = at(0);
+      const k = roll(S0.hw * 2.04, S0.hh * 1.4, V(0, 0.0006, 0.0005), 5, S0.hb * 0.95);
       k.applyMatrix4(rest(b0));
-      parts.push(tag(k, B(H), MARK));
-      // the nail: one short arc at the cuticle
-      const rn = rc + (r1 - rc) * 0.45;
-      add(tick(rn * 1.02 + 0.0002, tb * 0.9, -L2 * 0.42, Math.PI / 2 - 0.55, Math.PI / 2 + 0.55, fl), b2, -2);
+      parts.push(tag(k, B(H)));
     }
     // the thumb: the metacarpal inside the ball of the thumb, then two
-    // visible segments
+    // squared segments, the tip domed, a roll at each joint
     const T = { ...HAND.thumb, r: dims ? dims.thumb : HAND.thumb.r }, [t0, t1, t2] = this.thumb.b;
-    add(taperCapsule(T.meta, T.r[0], T.r[1], 18, 0.92), t0);
-    // the ball of the thumb (thenar): a soft mass on the metacarpal's palm side
-    add(ellipsoid(0.0165, 0.012, 0.028, V(0.004, -0.0045, -T.meta * 0.45), 18, 12), t0);
-    add(taperCapsule(T.seg[0], T.r[1], T.r[2], 16, 0.9), t1);
-    add(taperCapsule(T.seg[1], T.r[2] * 0.98, T.r[3], 16, 0.88), t2);
-    add(ellipsoid(T.r[1] * 1.08, T.r[1] * 1.0, T.r[1] * 1.05, V(0, T.r[1] * 0.12, 0), 14, 10), t1);
-    add(ellipsoid(T.r[2] * 1.05, T.r[2] * 0.98, T.r[2] * 1.03, V(0, T.r[2] * 0.1, -T.seg[0]), 14, 10), t1);
-    add(tick(T.r[2] * 1.08 + 0.0003, 0.0006, -T.seg[0] + 0.002, Math.PI / 2 - 0.45, Math.PI / 2 + 0.45, 0.9), t1, MARK);
-    add(tick(T.r[3] * 1.05 + 0.0002, 0.00055, -T.seg[1] * 0.45, Math.PI / 2 - 0.6, Math.PI / 2 + 0.6, 0.88), t2, -2);
-    // (round 2: the web between thumb and index was a flap from the thumb's
-    // MCP to the index's, skinned to both: as the thumb opened it stretched
-    // into a thin rod standing across the gap, and the ink drew its outline
-    // - the 'stick between thumb and index'. The web is now the palm's own
-    // radial edge, which folds toward the thumb (see the palm's weights):
-    // one surface, no seam for the ink to find.)
-    // (the glove keeps its flap: the leather is stiff, and the Tommy gun's
-    // accepted frames are drawn with it)
-    if (!dims) {
-      const tm = new THREE.Vector3(0, 0, -T.meta).applyMatrix4(rest(t0));
-      const im = new THREE.Vector3().setFromMatrixPosition(rest(this.fingers.i.b[0]));
-      const c = tm.clone().lerp(im, 0.45);
-      c.y -= 0.004;
-      const d = new THREE.Vector3().subVectors(im, tm);
-      const g = ellipsoid(d.length() * 0.52, 0.0055, 0.0125, V(0, 0, 0), 20, 10);
-      g.rotateY(-Math.atan2(d.z, d.x));
-      g.translate(c.x, c.y, c.z);
-      const bt = B(t0), bh = B(H);
-      const tmc = tm.clone(), dir = d.clone().normalize(), len = d.length();
-      parts.push(tag(g, bh, 1, (v) => {
-        const u = Math.min(1, Math.max(0, new THREE.Vector3().subVectors(v, tmc).dot(dir) / len));
-        return [bh, bt, 1 - sstep(0.15, 0.85, u)];
-      }));
-    }
+    const tsec = (r0, r1, L, dome = 0) => loft((u) => { const r = lerp(r0, r1, u); return { hw: r * 1.04, hh: r * 0.8, hb: r * 0.98, nt: 3.8, nb: 2.5, z: -L * u }; }, { rows: 4, cols: 28, dome1: dome });
+    add(tsec(T.r[0], T.r[1], T.meta), t0);
+    // the ball of the thumb (the thenar): a soft mass on the metacarpal's
+    // palm side, flatter than it was (no balloon)
+    add(ellipsoid(0.0158 * g0, 0.0102 * g0, 0.0265, V(0.0045, -0.0048, -T.meta * 0.46), 20, 12), t0);
+    add(tsec(T.r[1], T.r[2], T.seg[0]), t1);
+    add(tsec(T.r[2] * 0.96, T.r[3], T.seg[1] - T.r[3] * 0.6, T.r[3] * 1.1), t2);
+    add(roll(T.r[1] * 2.0, T.r[1] * 0.84, V(0, 0, 0), 5, T.r[1] * 0.95), t1);
+    add(roll(T.r[2] * 1.98, T.r[2] * 0.82, V(0, 0, -T.seg[0]), 5, T.r[2] * 0.95), t1);
     const geo = mergeGeometries(parts, false);
-    // marks: -1 knuckle ticks, -2 nails -> two channels (the skin picks)
+    // (the marks' channel: no ticks, no nails now - every vertex the skin's)
     const mk = geo.getAttribute('mark');
-    const kind = new Float32Array(mk.count);
-    for (let i = 0; i < mk.count; i++) kind[i] = mk.getX(i) === -1 ? 1 : mk.getX(i) === -2 ? 2 : 0;
-    this.markKind = kind;
+    this.markKind = new Float32Array(mk.count);
     geo.deleteAttribute('mark');
     this.geo = geo;
     return geo;

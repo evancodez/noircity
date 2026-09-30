@@ -200,6 +200,7 @@ export class Hands {
     this._eyeQ = new THREE.Quaternion(); this._eyeP = V(0, 0, 0); this._s = V(1, 1, 1);
     this.bodyYaw = null;    // the study's body heading (else the controller's)
     this.poses = HAND_POSES;   // (look development: __noir.game.player.hands.poses)
+    this.sockets = SOCKETS;    // ([B3] and the sockets: a grip fitted in the page)
     this.equip('tommy');
   }
 
