@@ -147,7 +147,7 @@ function brawlRoom(ctx) {
     windows: WINDOWS.map((name) => ({ name, spot: DINER.finish[name], pane: front.panes[name], land: landing(name) })),
     items: () => [...counterItems(), ...floorItems()],
     hisItem(kind, near) {
-      const all = kind === 'stool' ? floorItems().filter((x) => x.kind === 'stool') : counterItems().filter((x) => x.kind === kind);
+      const all = kind === 'stool' || kind === 'chair' ? floorItems().filter((x) => x.kind === kind) : counterItems().filter((x) => x.kind === kind);
       let best = null, bd = 6;
       const e = G.eye;
       for (const it of all) {
@@ -175,8 +175,8 @@ function brawlRoom(ctx) {
     },
     counterBump() { d.cupsRattle(1.2, 0.7); },
     // Dot slides me a bottle down the counter (the lesson; his first bottle;
-    // when he bleeds): it stops opposite me
-    dotSlide(why) {
+    // when he bleeds): it stops opposite me (the rules' room.gift)
+    gift(why) {
       if (slides >= 3) return;
       slides++;
       const dot = ctx.cast.get('dot');
@@ -236,12 +236,12 @@ function beginFight(ctx, mack, { manner = 'measured', hp = null, lesson = false,
     opponent: mack, manner, hp, rng: ctx.rng, retry, lesson, room,
     // (a retry: the room set again under the black, without a sound; the
     // lesson is not taught twice)
-    onRetry: (m) => {
+    onRetry: (m, hp = null) => {
       const part = m === 'out' ? 'round3' : MANNER_BEAT[m];
       const mk = stageFight(ctx, part, { retry: true });
-      beginFight(ctx, mk, { manner: m, hp: m === 'out' ? 12 : null, retry: true });
+      beginFight(ctx, mk, { manner: m, hp, retry: true });
     },
-    onManner: (m) => { if (m === 'wild') room.dotSlide('bleeds'); },
+    onManner: (m) => { if (m === 'wild') room.gift('bleeds'); },
     onGlass: (w) => {
       if (!w) return;
       const hip = mack.bones.chest.getWorldPosition(V(0, 0, 0));
@@ -287,7 +287,7 @@ export default defineScene({
       const yaw = Math.atan2(-(s.x - me.x), -(s.z - me.z));
       ctx.controller.setPose(me.x, me.z, yaw, -0.1);
       ctx.controller.setMode('brawl', { opponent: m, eyeY: BRAWL_EYE, pos: me, yaw });
-      const B = beginFight(ctx, m, { manner: 'out', hp: 12 });
+      const B = beginFight(ctx, m, { manner: 'out' });
       const win = ctx.flags.room.windows.find((x) => x.name === w);
       Object.assign(B.him, { window: win, spot: win.spot, atSpot: true, state: 'reel' });
       B.ko();
@@ -331,7 +331,7 @@ export default defineScene({
       beginFight(ctx, m, { lesson: true });
     } else if (fighting.includes(ctx.from)) {
       if (ctx.from === 'lesson') beginFight(ctx, mack(), { lesson: ctx.flags.startLesson || 1 });
-      else if (ctx.from === 'reel') beginFight(ctx, mack(), { manner: 'out', hp: 12 });
+      else if (ctx.from === 'reel') beginFight(ctx, mack(), { manner: 'out' });
       else beginFight(ctx, mack(), { manner: BEAT_MANNER[ctx.from] });
     }
     // (the way in ends in the lesson)

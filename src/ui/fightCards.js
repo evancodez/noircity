@@ -92,11 +92,15 @@ export class FightCards {
       this.drawBurst();
     }
     // the ticks run out
-    if (this.ticks && this.ticks.length) {
-      for (const k of this.ticks) k.t -= dt;
-      this.ticks = this.ticks.filter((k) => k.t > 0);
+    if ((this.ticks && this.ticks.length) || (this.wticks && this.wticks.length)) {
+      for (const k of this.ticks || []) k.t -= dt;
+      this.ticks = (this.ticks || []).filter((k) => k.t > 0);
+      for (const k of this.wticks || []) k.t -= dt;
+      this.wticks = (this.wticks || []).filter((k) => k.t > 0);
       this.drawTicks();
     }
+    // [B8] the chevron (a thrown thing): pops in, then holds
+    if (this.chev && this.chev.side) { this.chev.t += dt; this.drawChevron(); }
     // his health: the lost part flashes white, holds a moment, drains
     const B = this.hbS;
     if (B) {
@@ -164,6 +168,17 @@ export class FightCards {
     (this.ticks || (this.ticks = [])).push({ x: at.x, y: at.y, side, t: dur, dur, seed: Math.floor(at.x * 7 + at.y * 13) });
     this.drawTicks();
   }
+  // [B8] the wind-up's ticks (§2): as the held punch passes each level a
+  // white ink tick flicks at the fist (the first above it, the next further
+  // round to its outside, the third out beside it); at full the fist flashes:
+  // a ring of short white strokes round it for a few frames
+  windTick(at, side, lv) {
+    if (!at) return;
+    const k = innerHeight / 900;
+    (this.wticks || (this.wticks = [])).push({ x: at.x, y: at.y, s: side === 'L' ? -1 : 1, lv, t: 0.24, dur: 0.24, k });
+    if (lv >= 3) this.wticks.push({ x: at.x, y: at.y, s: side === 'L' ? -1 : 1, lv: 'flash', t: 0.07, dur: 0.07, k });
+    this.drawTicks();
+  }
   drawTicks() {
     const c = this.tickC || (this.tickC = (() => { const e = document.createElement('canvas'); e.className = 'ticks'; e.style.cssText = 'position:absolute;left:0;top:0'; this.root.appendChild(e); return e; })());
     const W = innerWidth, H = innerHeight;
@@ -171,6 +186,29 @@ export class FightCards {
     const g = c.getContext('2d');
     g.clearRect(0, 0, W, H);
     g.lineCap = 'round';
+    const stroke = (x0, y0, x1, y1, w) => {
+      g.strokeStyle = 'rgba(5,5,5,0.85)'; g.lineWidth = w + 3;
+      g.beginPath(); g.moveTo(x0, y0); g.lineTo(x1, y1); g.stroke();
+      g.strokeStyle = '#f4f2ec'; g.lineWidth = w;
+      g.beginPath(); g.moveTo(x0, y0); g.lineTo(x1, y1); g.stroke();
+    };
+    for (const q of this.wticks || []) {
+      const u = 1 - q.t / q.dur, K = q.k;
+      if (q.lv === 'flash') {
+        // (the flash: twelve strokes round the fist, pressed then gone)
+        const r = new RNG(Math.floor(q.x * 3 + q.y));
+        for (let i = 0; i < 12; i++) {
+          const a = (i / 12) * Math.PI * 2 + r.gauss() * 0.08, r0 = (62 + r.range(0, 10)) * K, r1 = r0 + (26 + r.range(0, 22)) * K;
+          stroke(q.x + Math.cos(a) * r0, q.y + Math.sin(a) * r0, q.x + Math.cos(a) * r1, q.y + Math.sin(a) * r1, 4.5 * K);
+        }
+        continue;
+      }
+      // (the tick: up and out from the fist, growing, then thinning)
+      const ang = [-Math.PI / 2 + 0.25 * q.s, -Math.PI / 2 + 0.85 * q.s, -Math.PI / 2 + 1.4 * q.s][q.lv - 1];
+      const dx = Math.cos(ang), dy = Math.sin(ang);
+      const r0 = 70 * K, len = (18 + 16 * Math.min(1, u * 4)) * K, w = (4.2 + 0.8 * q.lv) * (1 - u * 0.5) * K;
+      stroke(q.x + dx * r0, q.y + dy * r0, q.x + dx * (r0 + len), q.y + dy * (r0 + len), w);
+    }
     for (const k of this.ticks || []) {
       const u = 1 - k.t / k.dur;
       const s = k.side === 'L' ? -1 : 1;
@@ -339,7 +377,43 @@ export class FightCards {
     draw(`rgb(${v},${v},${Math.round(v * 0.98)})`, 0);
   }
 
-  clear() { this.card(''); this.fl.style.display = 'none'; this.flT = 0; this.shownFlash = ''; this.arrow(null); this.charge(null, 0); }
+  // [B8] a thing is coming (§4): a small inked chevron low at the side of the
+  // frame to step to ('L' | 'R'), pointing that way; null hides it. It stays
+  // in the game after the lesson, for thrown things only.
+  chevron(side) {
+    if (!side) { if (this.chev && this.chev.side) { this.chev.side = null; this.drawChevron(); } return; }
+    if (this.chev && this.chev.side === side) return;
+    this.chev = { side, t: 0 };
+    this.shownChevron = side;
+    this.drawChevron();
+  }
+  drawChevron() {
+    const c = this.chevC || (this.chevC = (() => { const e = document.createElement('canvas'); e.className = 'chevron'; e.style.cssText = 'position:absolute;left:0;top:0'; this.root.appendChild(e); return e; })());
+    const W = innerWidth, H = innerHeight;
+    if (c.width !== W || c.height !== H) { c.width = W; c.height = H; }
+    const g = c.getContext('2d');
+    g.clearRect(0, 0, W, H);
+    const C = this.chev;
+    if (!C || !C.side) return;
+    const K = H / 900, s = C.side === 'L' ? -1 : 1;
+    // (pops in over 0.08 s, from a little further in)
+    const u = Math.min(1, C.t / 0.08), e = 1 - (1 - u) * (1 - u);
+    const cx = W / 2 + s * (W * 0.3 + 14 * e * K), cy = H * 0.74;
+    const r = new RNG(C.side === 'L' ? 91 : 92);
+    g.lineCap = 'round'; g.lineJoin = 'round';
+    // two nested chevrons, pressed strokes with a dry end
+    for (const [off, a] of [[0, 1], [-26, 0.75]]) {
+      const x = cx + s * off * K;
+      const pts = [[x - s * 20 * K, cy - 26 * K], [x + s * 8 * K, cy], [x - s * 20 * K, cy + 26 * K]];
+      for (const [col, w] of [['rgba(5,5,5,0.85)', 13], ['#f2f0ea', 8]]) {
+        g.strokeStyle = col; g.globalAlpha = a * e; g.lineWidth = (w + r.gauss() * 0.4) * K;
+        g.beginPath(); g.moveTo(pts[0][0], pts[0][1]); g.lineTo(pts[1][0], pts[1][1]); g.lineTo(pts[2][0], pts[2][1]); g.stroke();
+      }
+    }
+    g.globalAlpha = 1;
+  }
+
+  clear() { this.card(''); this.fl.style.display = 'none'; this.flT = 0; this.shownFlash = ''; this.arrow(null); this.charge(null, 0); this.chevron(null); this.wticks = []; }
 }
 
 // the small inked pictures: the mouse, one button inked in; keys as dabs

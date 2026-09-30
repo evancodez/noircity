@@ -469,6 +469,10 @@ export const TELL = {
   br_stoolSwing: { peak: 0.55, snap: 0.15, T: 0.45, C: 0.59, D: 1.09, cOld: 0.95, dOld: 1.6 },
 };
 TELL.br_jabR = TELL.br_jab; TELL.br_hookL = TELL.br_hook; TELL.br_bodyL = TELL.br_body; TELL.br_haymakerL = TELL.br_haymaker;
+// [B8] his answer to a punch into his guard (§3): the hand that blocked
+// cocks (0.2 s, the fist back beyond his outline) and goes straight in, fast
+TELL.br_answerL = { peak: 0.22, snap: 0.07, T: 0.2, C: 0.28, D: 0.62, cOld: 0.38, dOld: 0.7 };
+TELL.br_answerR = TELL.br_answerL;
 // a feint: the same snap and hold, then back to the guard with no blow
 const FEINT_T = { peak: 0.34, snap: 0.12, T: 0.30, D: 0.55, dOld: 0.6 };
 const feintT = (defFn) => timed(defFn, [[0, 0], [FEINT_T.snap, FEINT_T.peak], [FEINT_T.T, FEINT_T.peak], [FEINT_T.D, FEINT_T.dOld]], FEINT_T.D);
@@ -518,6 +522,7 @@ export const BR_DEFS = {
   br_openL: openSide('L'), br_openR: openSide('R'), br_openBoth: openSide('both'),
   br_jab: told(fight(0.7, JAB), TELL.br_jab),
   br_jabR: told(fightL(0.7, JAB), TELL.br_jab),     // (his right jab: a jab with the right)
+  br_answerL: told(fight(0.7, JAB), TELL.br_answerL), br_answerR: told(fightL(0.7, JAB), TELL.br_answerR),
   br_cross: told(fight(0.85, CROSS), TELL.br_cross),
   br_hook: told(fight(1.0, HOOK), TELL.br_hook), br_hookL: told(fightL(1.0, HOOK), TELL.br_hook),
   br_body: told(fight(1.0, BODY), TELL.br_body), br_bodyL: told(fightL(1.0, BODY), TELL.br_body),
@@ -611,22 +616,27 @@ const PATH = {
   shove: { lo: -0.35, hi: 0.35, reach: 1.8, over: 0.3 },
   stool: { lo: -1.05, hi: 0.32, reach: 2.05, over: 0.4 },
 };
+// ([B8] version 4: his damage about a third up on version 3's - a player
+// who never steps off the line must lose)
 export const BR_ATTACKS = {
-  br_jab: { hand: 'L', kind: 'straight', dmg: 5, block: 0, push: 0, stun: 0.2, miss: { open: 'R', t: 0.5 }, path: PATH.straight },
-  br_jabR: { hand: 'R', kind: 'straight', dmg: 5, block: 0, push: 0, stun: 0.2, miss: { open: 'L', t: 0.5 }, path: PATH.straight },
-  br_cross: { hand: 'R', kind: 'straight', dmg: 7, block: 0, push: 0.1, stun: 0.24, miss: { open: 'L', t: 0.5 }, path: PATH.straight },
-  br_hook: { hand: 'R', kind: 'swing', dmg: 10, block: 0.25, push: 0.1, stun: 0.3, miss: { open: 'LR', t: 0.8 }, path: PATH.swingR },
-  br_hookL: { hand: 'L', kind: 'swing', dmg: 10, block: 0.25, push: 0.1, stun: 0.3, miss: { open: 'LR', t: 0.8 }, path: PATH.swingL },
-  br_body: { hand: 'R', kind: 'swing', dmg: 8, block: 0.25, push: 0.05, stun: 0.28, miss: { open: 'L', t: 0.6 }, path: PATH.swingR },
-  br_bodyL: { hand: 'L', kind: 'swing', dmg: 8, block: 0.25, push: 0.05, stun: 0.28, miss: { open: 'R', t: 0.6 }, path: PATH.swingL },
-  br_haymaker: { hand: 'R', kind: 'over', dmg: 18, block: null, push: 0.4, stun: 0.45, miss: { open: 'LR', t: 1.1 }, path: PATH.over, heavy: true },
-  br_haymakerL: { hand: 'L', kind: 'over', dmg: 18, block: null, push: 0.4, stun: 0.45, miss: { open: 'LR', t: 1.1 }, path: PATH.over, heavy: true },
-  br_rush: { hand: 'R', kind: 'rush', dmg: 18, block: null, push: 0.5, stun: 0.45, miss: { open: 'LR', t: 1.0 }, path: PATH.rush, heavy: true },
+  br_jab: { hand: 'L', kind: 'straight', dmg: 6, block: 0, push: 0, stun: 0.2, miss: { open: 'R', t: 0.5 }, path: PATH.straight },
+  br_jabR: { hand: 'R', kind: 'straight', dmg: 6, block: 0, push: 0, stun: 0.2, miss: { open: 'L', t: 0.5 }, path: PATH.straight },
+  // [B8] the answer: fast, a little harder than a jab (a masher pays for it)
+  br_answerL: { hand: 'L', kind: 'straight', dmg: 8, block: 0, push: 0.05, stun: 0.24, miss: { open: 'R', t: 0.55 }, path: PATH.straight, answer: true },
+  br_answerR: { hand: 'R', kind: 'straight', dmg: 8, block: 0, push: 0.05, stun: 0.24, miss: { open: 'L', t: 0.55 }, path: PATH.straight, answer: true },
+  br_cross: { hand: 'R', kind: 'straight', dmg: 9, block: 0, push: 0.1, stun: 0.24, miss: { open: 'L', t: 0.5 }, path: PATH.straight },
+  br_hook: { hand: 'R', kind: 'swing', dmg: 13, block: 0.25, push: 0.1, stun: 0.3, miss: { open: 'LR', t: 0.8 }, path: PATH.swingR },
+  br_hookL: { hand: 'L', kind: 'swing', dmg: 13, block: 0.25, push: 0.1, stun: 0.3, miss: { open: 'LR', t: 0.8 }, path: PATH.swingL },
+  br_body: { hand: 'R', kind: 'swing', dmg: 10, block: 0.25, push: 0.05, stun: 0.28, miss: { open: 'L', t: 0.6 }, path: PATH.swingR },
+  br_bodyL: { hand: 'L', kind: 'swing', dmg: 10, block: 0.25, push: 0.05, stun: 0.28, miss: { open: 'R', t: 0.6 }, path: PATH.swingL },
+  br_haymaker: { hand: 'R', kind: 'over', dmg: 22, block: null, push: 0.4, stun: 0.45, miss: { open: 'LR', t: 1.1 }, path: PATH.over, heavy: true },
+  br_haymakerL: { hand: 'L', kind: 'over', dmg: 22, block: null, push: 0.4, stun: 0.45, miss: { open: 'LR', t: 1.1 }, path: PATH.over, heavy: true },
+  br_rush: { hand: 'R', kind: 'rush', dmg: 22, block: null, push: 0.5, stun: 0.45, miss: { open: 'LR', t: 1.0 }, path: PATH.rush, heavy: true },
   br_shove: { hand: 'both', kind: 'shove', dmg: 3, block: null, push: 1.2, stun: 0.45, miss: { open: 'LR', t: 0.5 }, path: PATH.shove },
-  br_bottle: { hand: 'R', kind: 'straight', dmg: 14, block: 0, push: 0.1, stun: 0.3, miss: { open: 'LR', t: 0.8 }, path: PATH.straight, heavy: true },
-  br_bottle_thrust: { hand: 'R', kind: 'straight', dmg: 14, block: 0, push: 0.1, stun: 0.3, miss: { open: 'LR', t: 0.8 }, path: PATH.straight },
-  br_throw: { hand: 'R', kind: 'throw', dmg: 8, block: 0, push: 0, stun: 0.25, miss: { open: 'LR', t: 0.8 }, path: PATH.straight },
-  br_stoolSwing: { hand: 'R', kind: 'swing', dmg: 20, block: null, push: 0.6, stun: 0.5, miss: { open: 'LR', t: 0.8 }, path: PATH.stool, heavy: true },
+  br_bottle: { hand: 'R', kind: 'straight', dmg: 16, block: 0, push: 0.1, stun: 0.3, miss: { open: 'LR', t: 0.8 }, path: PATH.straight, heavy: true },
+  br_bottle_thrust: { hand: 'R', kind: 'straight', dmg: 16, block: 0, push: 0.1, stun: 0.3, miss: { open: 'LR', t: 0.8 }, path: PATH.straight },
+  br_throw: { hand: 'R', kind: 'throw', dmg: 10, block: 0, push: 0, stun: 0.25, miss: { open: 'LR', t: 0.8 }, path: PATH.straight },
+  br_stoolSwing: { hand: 'R', kind: 'swing', dmg: 24, block: null, push: 0.6, stun: 0.5, miss: { open: 'LR', t: 0.8 }, path: PATH.stool, heavy: true },
 };
 // the side of MY SCREEN a blow of his opens while he throws it (the hand
 // that swings has left its guard): his right hand is on my left
