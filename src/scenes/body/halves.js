@@ -112,6 +112,12 @@ export const HALVES = {
       P.y = st.tgt.y + (st.snapT < 0.12 ? 0.0012 * Math.sin(st.snapT / 0.12 * Math.PI) : 0);
       return;
     }
+    // (shot mode, the strips: act=join@t lays it home by itself)
+    if (st.autoJoin) {
+      st.lift = 0.004;
+      P.x += (st.tgt.x - P.x) * 0.07; P.z += (st.tgt.z - P.z) * 0.07;
+      st.pivot.rotation.y += Math.atan2(Math.sin(st.tgtYaw - st.pivot.rotation.y), Math.cos(st.tgtYaw - st.pivot.rotation.y)) * 0.07;
+    }
     P.y = st.top + st.lift + (st.overBook ? BOOK_H - BOOK.t : 0);
     // over the book?
     const hd = Math.hypot(P.x - st.holder.position.x, P.z - st.holder.position.z);

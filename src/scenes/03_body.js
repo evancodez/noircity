@@ -220,6 +220,7 @@ export default defineScene({
       // my hands on the rungs while I am on the ladder
       if (C.mode === 'climb') { F.climbS = F.climbS || { onRung: (side) => snd('rung', V(ALLEY.ladder.x + (side === 'R' ? 0.13 : -0.13), G.eye.y, alley.ladder.z), { f: side === 'R' ? 420 : 470 }) }; climbHands(ctx, alley.ladder, F.climbS); }
       else if (F.climbS) { F.climbS = null; handsOff(H); }
+      if (F.halvesSt && acted('join')) F.halvesSt.autoJoin = true;
       // my fingertip on the step's puzzles
       const PA = G.puzzles.active;
       if (PA && (PA.id === 'body.halves' || PA.id === 'body.note')) { F.finger = F.finger || {}; tableFinger(ctx, F.finger, PA.pointer.world, PA.pointer.down); }
@@ -244,7 +245,7 @@ export default defineScene({
       yield beat('body');
       // E kneel, beside him
       let knelt = false;
-      I.add({ id: 'body.kneel', at: () => chest(), range: 3.2, cone: 0.7, prompt: 'kneel', onUse: () => { knelt = true; } });
+      I.add({ id: 'body.kneel', at: () => chest(), range: 3.4, cone: 1.0, prompt: 'kneel', onUse: () => { knelt = true; } });
       yield until(() => knelt || acted('kneel'));
       I.remove('body.kneel');
       snd('kneel');
@@ -303,6 +304,8 @@ export default defineScene({
       yield beat('strings');
       if (O.k < 1) O.raise(true);
       const run = F.run = runStrings(ctx, R, O, {});
+      // (the strips: act=taut1@t,taut2@t carries each end up the line)
+      if (ACT.length) ctx.onStep(() => { if (!run.active || run.solvedT >= 0) return; const tgt = (k) => MARKS[k].clone().lerp(SHOOTER, 0.45); if (run.cur === 0 && acted('taut1')) run.aimAt(tgt(0)); else if (run.cur === 1 && acted('taut2')) run.aimAt(tgt(1)); });
       LIVE && LIVE.removers.push(() => run.end());
       let solvedLight = false;
       ctx.onSolvedStrings = () => {

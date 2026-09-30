@@ -115,6 +115,8 @@ export function runStrings(ctx, R, O, { from = null } = {}) {
   // the pointer starts on the first pin
   const toNdc = (p) => { const v = p.clone().project(cam); return new THREE.Vector2(v.x, v.y); };
   const HINTS = ['Through the wound.', 'Carry the end through the ring on his chest.', 'Move the mouse: the string through the circle.'];
+  // (shot mode, the strips: the pointer put on a world point)
+  run.aimAt = (p) => { if (run.t >= EASE * 0.85) run.ndc.lerp(toNdc(p), 0.1); };
   run.skipTo = (i) => { for (let k = 0; k < i; k++) if (!S[k].taut) R.setTaut(S[k]); run.cur = i; };
   run.step = (dt) => {
     if (!run.active) return;

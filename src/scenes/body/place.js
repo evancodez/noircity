@@ -215,11 +215,12 @@ export function gutterHat(ctx) {
   const { stage } = ctx;
   const h = buildProp('amesHat');
   h.traverse((o) => { if (o.isMesh) o.userData.noRay = true; });
-  // (crown down: turned over, floating with the brim just in the water)
+  // (crown up, tipped on its brim, the brim's edge in the water: the
+  // shape of a hat at a glance)
   const pivot = new THREE.Group();
   pivot.add(h);
-  h.rotation.x = Math.PI;
-  h.position.y = 0.09;
+  h.rotation.x = 0.32;
+  h.position.y = 0.012;
   pivot.position.set(-5.78, 0.0, -13.2);
   stage.scene.add(pivot);
   const H = { pivot, hat: h, t: 0 };
@@ -228,7 +229,8 @@ export function gutterHat(ctx) {
     // it turns slowly in the run of the gutter and drifts a little with it
     pivot.rotation.y += dt * 0.42;
     pivot.position.z -= dt * 0.035;
-    h.rotation.z = 0.05 * Math.sin(H.t * 1.7);
+    h.rotation.z = 0.06 * Math.sin(H.t * 1.7);
+    h.rotation.x = 0.32 + 0.04 * Math.sin(H.t * 1.1);
     pivot.position.y = 0.004 * Math.sin(H.t * 2.3);
     H.ripple = (H.ripple || 0) - dt;
     if (H.ripple <= 0 && stage.street && stage.street.addImpact) { H.ripple = 1.1; stage.street.addImpact(stage, pivot.position.x, pivot.position.z, 0.22); }
