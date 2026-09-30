@@ -21,7 +21,7 @@ const W = +(process.argv[2] || 1280), H = +(process.argv[3] || 800);
 const PORT = await freePort();
 const CHROME = '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome';
 const chrome = spawn(CHROME, [
-  '--headless=new', '--mute-audio', '--use-angle=metal', '--hide-scrollbars', '--force-device-scale-factor=1', `--window-size=${W},${H}`,
+  '--headless=new', '--use-mock-keychain', '--password-store=basic', '--mute-audio', '--use-angle=metal', '--hide-scrollbars', '--force-device-scale-factor=1', `--window-size=${W},${H}`,
   '--autoplay-policy=no-user-gesture-required', `--remote-debugging-port=${PORT}`, '--no-first-run', '--no-default-browser-check',
   `--user-data-dir=/tmp/noir-play-${PORT}`, 'about:blank',
 ], { stdio: 'ignore' });
