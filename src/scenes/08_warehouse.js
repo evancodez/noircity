@@ -450,7 +450,7 @@ export default defineScene({
       const tau = L.stealth.taught;
       while (!(C.pos.z < -12.3 || (C.pos.x > -2.5 && C.pos.z < -6.5))) {
         const near = Math.hypot(sully.pos.x - C.pos.x, sully.pos.z - C.pos.z) < 11;
-        if (!tau.crouch && near && C.sneak && !C.sneak.crouch) G.hud.prompt('C  crouch', null, 'b6c');
+        if (!tau.crouch && near && C.sneak && !C.sneak.crouch && L.stealth.coshT < 0 && crew.alarmT < 0) G.hud.prompt('C  crouch', null, 'b6c');
         else G.hud.clearPrompt('b6c');
         yield null;
       }

@@ -372,6 +372,9 @@ export class Stealth {
     this.onCoshDone = onDone;
     this.aiming = false;
     G.controller.frozen = true;
+    // (no line left over the black: the crouch prompt stood on it)
+    G.hud.clearPrompt('b6c'); G.hud.clearPrompt('b6');
+    this.teachThrow = false;
     G.player.hands.play('sn_cosh');
   }
   coshStep(dt) {
