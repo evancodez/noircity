@@ -104,8 +104,11 @@ export default {
       duration: 1.6, hold: true,
       def: () => ({ duration: 1.6, armSpace: 'root', pose: keyed([
         [0, { hipsPos: [0, 0.96, -0.02], hips: [-10, 0, 0], spine: [-19, 0, 0], chest: [-17, 0, 0], neck: [-2, 0, 0], head: [12, 8, 0], handTL: [0.12, 1.14, 0.36], handTR: [-0.11, 1.12, 0.38] }],
-        [0.5, { hipsPos: [0, 0.8, 0.02], hips: [10, 0, 0], spine: [4, 0, 0], chest: [0, 0, 0], neck: [10, 0, 0], head: [10, 0, 0], handTL: [0.3, 0.8, 0.05], handTR: [-0.3, 0.82, 0.04],
-          footL: [0.15, A, 0.3], footR: [-0.15, A, 0.28] }],
+        // [2nd pass] down the rail, not up off it: his back stays on it and
+        // his hands go back to it as his knees give (he stood straight up
+        // with his fists at his sides first, then dropped)
+        [0.5, { hipsPos: [0, 0.74, -0.06], hips: [-2, 0, 0], spine: [-10, 0, 0], chest: [-10, 0, 0], neck: [6, 0, 0], head: [10, 6, 0], handTL: [0.3, 0.88, -0.1], handTR: [-0.3, 0.9, -0.08],
+          footL: [0.15, A, 0.34], footR: [-0.15, A, 0.3] }],
         // [2nd pass] the hands down by his hips on the stones, the elbows
         // back (they stuck out sideways: from above he was a cross)
         [1.2, { hipsPos: [0, 0.28, 0.02], hips: [70, 0, 0], spine: [8, 0, 0], chest: [4, 0, 0], neck: [26, 0, 0], head: [24, 10, 0],
