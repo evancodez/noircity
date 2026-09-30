@@ -257,6 +257,10 @@ function die(ctx) {
   // (a beat's frame in shot mode is looked at, not played: nobody dies in it)
   if (G.shotMode) { G.health.reset(); return; }
   R.dying = { t: 0, beat: G.scenes.beat };
+  // [R2-F] (how often I have gone down in this beat: its men shoot a little
+  // worse at each retry - see mercy)
+  R.downs = R.downs || {};
+  R.downs[R.dying.beat] = (R.downs[R.dying.beat] || 0) + 1;
   G.controller.frozen = true;
   G.weapon.trigger = false;
   G.vm.lowerTo(1);
@@ -282,11 +286,22 @@ function dyingStep(ctx, dt) {
 // room's lights on his aim
 export function man(ctx, spec) {
   const G = ctx.game, R = RIG;
-  const aim = (spec.aim ?? 1) * (R.lightsOn ? 1 : LIGHTS_OFF);
+  const aim0 = (spec.aim ?? 1) * mercy(ctx);
+  const aim = aim0 * (R.lightsOn ? 1 : LIGHTS_OFF);
   const h = G.director.spawn({ who: spec.heavy ? 'heavy' : 'hood', at: spec.at, yaw: spec.yaw ?? null, group: spec.group, entry: spec.entry || 'idle', run: spec.run, post: spec.post, leash: spec.leash, wake: spec.wake, aim, hp: spec.hp, brain: spec.brain || 'cover', variant: spec.variant || null, ...(spec.opts || {}) });
   h.b7beat = ctx.beat;
-  h.b7aim = spec.aim ?? 1;
+  h.b7aim = aim0;
   return h;
+}
+
+// [R2-F] fail softly: at each retry of a beat I went down in, its men shoot
+// a fifth worse (at most down to 0.55 of their aim). The first try is the
+// beat as written; a player who keeps dying in one place is let through it
+// in a try or two instead of a loop (a first-timer's play went down three
+// times running in the doorways beat)
+export function mercy(ctx) {
+  const R = RIG, n = (R && R.downs && R.downs[ctx.beat]) || 0;
+  return Math.max(0.55, Math.pow(0.8, n));
 }
 
 // the lights: the men outside shoot worse at what they cannot see

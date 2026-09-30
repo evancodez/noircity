@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { defineScene, wait, until, beat } from '../game/script.js';
 import { makeBrain } from '../enemies/HoodBrains.js';
 import { SITE, BEATS, DINER, DOORS } from './shootout/site.js';
-import { stageBeat, rig, markBeat, man, setLights, roundAt, everyStep, RESERVE, V } from './shootout/rig.js';
+import { stageBeat, rig, markBeat, man, mercy, setLights, roundAt, everyStep, RESERVE, LIGHTS_OFF, V } from './shootout/rig.js';
 import { endHat } from './shootout/ending.js';
 import { mackWindow } from './shootout/room.js';
 import { climbOut, doorOut, CLIMB } from './shootout/carOut.js';
@@ -409,7 +409,8 @@ function* takeGun(ctx) {
 // [R2-F] (his two heavies were 1.2: a first-timer's plays went down three
 // times in the Cardinal's beat alone; 0.95 leaves them dangerous at a window
 // held too long, not a wall)
-const AIM = { cars: 1.4, doorways: 1.3, intruder: 1.5, el: 1.1, heavies: 0.95 };
+// [R2-F, round 2] (the intruder 1.5 -> 1.35, and his first two rounds wide)
+const AIM = { cars: 1.4, doorways: 1.3, intruder: 1.35, el: 1.1, heavies: 0.95 };
 
 // ---- 2. cars ------------------------------------------------------------------------------------
 function* carsBeat(ctx) {
@@ -541,6 +542,7 @@ function* doorways(ctx) {
   const I = SITE.intruder;
   const h = man(ctx, { group: 'doorways', at: I.at, entry: I.entry, run: true, post: I.post, leash: 0, aim: AIM.intruder });
   h.b7intruder = true;
+  wideFirst(ctx, h, 2);
   // [second pass] heard before he is seen: his shoes on the stoop, three
   // heavy steps up to the door before its bell
   const door = V(-9.3, 0, 0.6);
@@ -557,6 +559,27 @@ function* doorways(ctx) {
   });
   const t0 = G.time;
   yield until(() => G.director.alive('doorways') <= 1 || G.time - t0 > 45);
+}
+
+// [R2-F] a man's first rounds go wide - past me into the room, the tell -
+// then he shoots as he is: the close one, in at the door at my side, gave a
+// first-timer no second to turn before he hit
+function wideFirst(ctx, h, n) {
+  const G = ctx.game, R = rig();
+  h.b7aimK = 0;
+  const ai0 = G.ais.get(h);
+  if (ai0) ai0.aim = 0;
+  let last = G.lastHoodShot.get(h), fired = 0;
+  R.ticks.push(() => {
+    if (!h.alive) return false;
+    const t = G.lastHoodShot.get(h);
+    if (t != null && t !== last) { last = t; fired++; }
+    if (fired < n) return true;
+    h.b7aimK = 1;
+    const ai = G.ais.get(h);
+    if (ai) ai.aim = (h.b7aim ?? 1) * (R.lightsOn ? 1 : LIGHTS_OFF);
+    return false;
+  });
 }
 
 // ---- 4. el ----------------------------------------------------------------------------------------
@@ -674,7 +697,7 @@ function* driveby(ctx) {
     rounds++;
     if (rounds % 2) {
       // (the first rounds are the tell: they chew the front, not me)
-      ai.aim = rounds < 7 ? 0 : 0.55;
+      ai.aim = rounds < 7 ? 0 : 0.55 * mercy(ctx);
       G.hoodFire(ai, t);
     } else {
       const z = c.pos.z + r.range(-2.5, 2.5);
@@ -821,7 +844,7 @@ function spawnCardinal(ctx, at, { climbYaw = null } = {}) {
     S.hoods.list.push(fig);
     fig.hp = 1e6;
     fig.heavy = false;
-    G.ais.set(fig, makeBrain(G, fig, 'b7_cardinal', { path: SITE.cardinal.path, onWound, aim: 0.7 }));
+    G.ais.set(fig, makeBrain(G, fig, 'b7_cardinal', { path: SITE.cardinal.path, onWound, aim: 0.7 * mercy(ctx) }));
     fig.b7char = c;
     // [R2-F] out of the car first: his brain holds while the clip plays
     if (climbYaw != null && fig.anim.bank && fig.anim.bank.has('cardinal_carOut')) {
