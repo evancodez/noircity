@@ -298,7 +298,7 @@ function heave(ctx) {
     dip(off < 0 ? -0.26 * Math.min(1, t / 0.14) : 0);
     if (off < 0) {
       // (the first 9 degrees: after that the edge goes up and away out of reach)
-      if (d.tipped < 0.1 && t < 0.32) { pin(); return; }
+      if (d.tipped < 0.08 && t < 0.24) { pin(); return; }
       // (let go: the hands drop away)
       off = t;
       live(H, {});

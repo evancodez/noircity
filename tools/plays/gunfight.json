@@ -17,7 +17,7 @@
   { "expect": "G.music.current === null || G.music.current === undefined || G.music.fading !== undefined || true", "label": "(the music slot stopped: silent without files)" },
 
   { "name": "to the desk; E tips it over" },
-  { "walk": [[3.6, 2.2], [4.7, 2.7], [4.85, 3.5], [4.62, 3.62]], "timeout": 15000, "name": "(the last step toward the desk: he ends facing it, whatever the load did to the walk)" },
+  { "walk": [[3.6, 2.2], [4.7, 2.7], [5.2, 3.6], [4.45, 3.66]], "timeout": 15000, "name": "(the last leg toward the desk, longer than the walk's 0.4 m arrival: he ends facing it, whatever the load did to the walk)" },
   { "look": [0, 280], "steps": 6 },
   { "wait": 300 },
   { "until": "G.hud.promptShown.includes('tip')", "timeout": 5000 },

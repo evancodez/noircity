@@ -265,8 +265,8 @@ export default {
     const F = api.fan;
     F.rotor.rotation.y -= (F.rpm / 60) * Math.PI * 2 * dt;
     // (its shadow in the street's light on the ceiling: that light's map
-    // follows the blades every other step)
-    if (dt > 0 && (api._fanK = (api._fanK || 0) + 1) % 2 === 0) {
+    // follows the blades every third step: 20 a second)
+    if (dt > 0 && (api._fanK = (api._fanK || 0) + 1) % 3 === 0) {
       for (const sl of stage.lamps.pool) if (sl.lamp === api.lights.up && sl.shadow) sl.spot.shadow.needsUpdate = true;
     }
     // the curtain in the air from under the sash

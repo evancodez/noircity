@@ -41,7 +41,8 @@ export default defineScene({
       carry(ctx);
       const O = roomAs(ctx, 'found');
       O.setDoor(1.45);
-      stand(ctx, 0.55, 1.1, -Math.PI / 2 + 0.25, -0.08);
+      // (round 2: the pool on the desk and the slats on the wall both in the first look)
+      stand(ctx, 0.55, 1.1, -Math.PI / 2 + 0.03, -0.1);
     },
     pad(ctx) {
       carry(ctx);
