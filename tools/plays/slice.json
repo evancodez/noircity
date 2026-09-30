@@ -349,15 +349,15 @@
    "label": "the matchbook was pocketed"
   },
   {
-   "until": "G.state === 'end'",
+   "until": "G.state === 'end' || (G.scenes.current && G.scenes.current.id !== 'fight')",
    "timeout": 8000
   },
   {
    "wait": 700
   },
   {
-   "expect": "G.hud.endShown && document.querySelector('#endcard h1').textContent === 'To be continued'",
-   "label": "the slice ends: To be continued"
+   "expect": "(G.hud.endShown && document.querySelector('#endcard h1').textContent === 'To be continued') || (G.scenes.current && G.scenes.current.id !== 'fight')",
+   "label": "the slice ends: To be continued (or, with a later chapter's file present, ctx.next() opens it) [B5]"
   },
   {
    "shot": "s19_to_be_continued"
