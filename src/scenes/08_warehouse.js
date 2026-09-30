@@ -37,7 +37,7 @@ const CREW = [
   // (he stands at the stack's corner facing up the aisle, so his turn to the
   // pool swings his light through the north, never across the door)
   { name: 'sully', kind: 'dockhand', light: 'lantern', at: [-8.1, -5.1], yaw: 2.5, start: 'wait', entry: [{ x: -10.9, z: -5.0 }],
-    route: [{ x: -11.2, z: -23.6, wait: 2.6, looks: [PI, -PI / 2 - 0.3] }, { x: -11.2, z: -6.6, wait: 2.2, looks: [PI / 2, 0.9] }] },
+    route: [{ x: -11.2, z: -24.6, wait: 4.0, looks: [PI, -PI / 2 - 0.3, PI] }, { x: -11.2, z: -6.6, wait: 2.2, looks: [PI / 2, 0.9] }] },
   // a loop round the block east of aisle B: east along the cross aisle to
   // the hoist's post, south down aisle C, west along the truck's strip,
   // north up aisle B's east side (his light never points back along the

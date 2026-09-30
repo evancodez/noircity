@@ -229,12 +229,15 @@ export default {
     ob(O.x0 - 0.14, O.x0, O.z0, fz); ob(O.x1, O.x1 + 0.14, O.z0, fz);
     // (the level's own back wall up there: the shed's is a wall at both levels)
     const downCircles = posts.map((x) => ({ x, z: Z.z1 - 0.15, r: 0.16, tag: 'post' }));
+    // (and the stores stacked under it, parts/stacks.js)
+    const downBoxes = C.boxes.filter((b) => b.tag === 'stores');
     api.setUp = (up) => {
       if (up === api.up && api._set) return;
       api._set = true;
       api.up = up;
       for (const b of upBoxes) { const i = C.boxes.indexOf(b); if (up && i < 0) C.boxes.push(b); if (!up && i >= 0) C.boxes.splice(i, 1); }
       for (const c of downCircles) { const i = C.circles.indexOf(c); if (!up && i < 0) C.circles.push(c); if (up && i >= 0) C.circles.splice(i, 1); }
+      for (const b of downBoxes) { const i = C.boxes.indexOf(b); if (!up && i < 0) C.boxes.push(b); if (up && i >= 0) C.boxes.splice(i, 1); }
     };
     api.setUp(false);
 
@@ -243,7 +246,10 @@ export default {
     A('office.window', (wx0 + wx1) / 2, Y, fz + 0.55, 0);
     A('office.window.in', (wx0 + wx1) / 2, Y, fz - 0.45, Math.PI);
     A('office.desk', 0.1, Y, -44.5, Math.PI);
-    A('office.side', -2.2, Y, -43.2, -Math.PI / 2);
+    // (the men in the office stand back from its front: a figure keeps me off
+    // him in plan whatever the height, and the way under the office runs
+    // below its front)
+    A('office.side', -2.45, Y, -44.35, -Math.PI / 2 + 0.5);
     A('office.cab', 2.1, Y, -43.4, Math.PI / 2);
     A('stairs.W.foot', SW.foot + 0.7, 0, SW.z, Math.PI / 2);
     A('stairs.W.top', landW.x0 + 1.0, Y, SW.z - 0.3, -Math.PI / 2);

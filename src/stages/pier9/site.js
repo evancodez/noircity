@@ -40,6 +40,10 @@ export const PIER = {
     [3.4, 8.6, -11.5, -5.4, 3], [3.4, 8.6, -25.6, -16.4, 3], [3.4, 8.6, -35, -30, 2],
     [-15, -13.4, -13, -7, 2], [-15, -13.4, -24, -17, 2], [-15, -13.4, -33, -28, 1],
     [13.4, 15, -11, -4.5, 2], [13.4, 15, -23, -15, 2],
+    // (stores under the mezzanine, behind its posts: a row two crates high,
+    // a dark way along the back wall to the stairs' foot; 'full': every
+    // cell its tiers, no gaps, under the floor's joists)
+    [-8.9, -4.1, -42.4, -41.45, 2, 'full'],
   ],
   // dark pockets left in the blocks' edges (a crate not there): a place to
   // wait out of the aisles' sight lines. [x, z] of the missing crate

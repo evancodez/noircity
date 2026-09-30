@@ -36,7 +36,7 @@ export default {
     const stacks = [];
     const C = stage.colliders;
     let b = 0;
-    for (const [x0, x1, z0, z1, tiers] of PIER.blocks) {
+    for (const [x0, x1, z0, z1, tiers, full] of PIER.blocks) {
       kit.piece();
       const geos = [], battens = [];
       const nx = Math.max(1, Math.round((x1 - x0) / CRATE)), nz = Math.max(1, Math.round((z1 - z0) / CRATE));
@@ -48,7 +48,7 @@ export default {
           const cx0 = x0 + (i + 0.5) * cw, cz0 = z0 + (j + 0.5) * cd;
           const notched = PIER.notches.some(([nx0, nz0]) => Math.abs(nx0 - cx0) < 0.45 && Math.abs(nz0 - cz0) < 0.45);
           if (edge && nx > 1 && nz > 2 && (rng.next() < 0.1 || notched)) continue;
-          const n = Math.max(1, Math.min(tiers, Math.round(tiers * (0.55 + 0.6 * rng.next()))));
+          const n = full ? tiers : Math.max(1, Math.min(tiers, Math.round(tiers * (0.55 + 0.6 * rng.next()))));
           const cx = x0 + (i + 0.5) * cw, cz = z0 + (j + 0.5) * cd;
           let y = 0;
           for (let k = 0; k < n; k++) {
@@ -65,7 +65,9 @@ export default {
             y += h;
           }
           stacks.push({ x0: cx - cw / 2, x1: cx + cw / 2, z0: cz - cd / 2, z1: cz + cd / 2, h: y });
-          C.addBox(cx, cz, cw / 2 - 0.02, cd / 2 - 0.02, 0, 'crates');
+          // (the stores under the mezzanine: walls down there only, the
+          // mezzanine's level takes them off when I am up on it)
+          C.addBox(cx, cz, cw / 2 - 0.02, cd / 2 - 0.02, 0, full ? 'stores' : 'crates');
         }
       }
       kit.addMerged(geos, M.crate, { cast: true });
