@@ -48,12 +48,13 @@ export function padPuzzle(ctx) {
       const p = V().setFromMatrixPosition(m);
       const n = V(0, -1, 0).transformDirection(m.clone().setPosition(0, 0, 0)).normalize();
       void n;
-      // (palm(): the palm's surface point, the way it faces, the fingers' way - in the eye's frame)
+      // (palm(): the palm's surface point, the way it faces, the fingers' way - in the eye's frame; a left
+      // pose is written in its true place, as the hands' own left poses are: resolve() mirrors it for the rig)
       const root = H.vm.root; root.updateMatrixWorld(true);
       const inv = new THREE.Matrix4().copy(root.matrixWorld).invert();
       const down = V(0, -1, 0).transformDirection(inv);
       const fwd = V(-0.85, 0, 0.5).normalize().transformDirection(inv);
-      const pose = palm('cam', [-p.x, p.y, p.z], [-down.x, down.y, down.z], [-fwd.x, fwd.y, fwd.z], { ...OPEN, i: [0.12, 0.15, 0.1, -0.06], l: [0.2, 0.25, 0.15, 0.12], t: [0.35, 0.3, 0.1, 0.1, 0.1] }, [0.26, -0.5, 0.0]);
+      const pose = palm('cam', [p.x, p.y, p.z], [down.x, down.y, down.z], [fwd.x, fwd.y, fwd.z], { ...OPEN, i: [0.12, 0.15, 0.1, -0.06], l: [0.2, 0.25, 0.15, 0.12], t: [0.35, 0.3, 0.1, 0.1, 0.1] }, [-0.3, -0.5, 0.05]);
       setLive('L', pose);
     },
     // the pencil at the tip: its lead's side down on the paper (or lifted),
