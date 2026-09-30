@@ -7,6 +7,7 @@ import { NOTE_PUZZLE, clearNote, layNoteWhole } from './body/note.js';
 import { DINER_SIGHT } from '../stages/block/site.js';
 import { openFist, pullLadder, climbHands, handsOff, takeHalf, tableFinger, stringHand } from './body/hands.js';
 import { stepLens } from './body/stepview.js';
+import { alleySight } from './body/sight.js';
 
 // Scene 3, the body (STORY.md; lane B1's brief). The side alley thirty
 // metres down the pavement from the diner, under its one wall lamp.
@@ -66,6 +67,9 @@ function stageBody(ctx, b) {
   alley.light(true);
   alley.ladder.set(atOrAfter(b, 'halves') ? 1 : 0);
   LIVE = { removers: [], fov0: G.camera.fov };
+  // [R2-G] what cannot be seen through the alley's mouth is not drawn
+  const sight = LIVE.sight = alleySight(stage, ALLEY);
+  LIVE.removers.push(() => sight.restore());
   // (the blood of an earlier try in this place goes before it is laid again)
   if (G.fx && G.fx.decals && G.fx.decals.clearIn) G.fx.decals.clearIn(new THREE.Box3(V(ALLEY.gateX, -1, ALLEY.zN), V(ALLEY.mouthX + 0.5, 3, ALLEY.zS + 0.1)));
   // what the story has given me by now
@@ -186,6 +190,8 @@ const PROBE = {
   },
 };
 if (typeof window !== 'undefined') window.__body = PROBE;
+// (look development: the alley's sight culling)
+PROBE.sight = () => (LIVE && LIVE.sight ? LIVE.sight.debug() : null);
 
 export default defineScene({
   id: 'body', stage: 'block',
@@ -227,6 +233,7 @@ export default defineScene({
       // a frustum's, and from the step it looks straight through the wall)
       const e = G.eye;
       DINER_SIGHT.force = e.x < ALLEY.mouthX - 0.2 && e.z < ALLEY.zS + 0.05 && e.z > ALLEY.zN - 0.05 ? false : null;
+      if (LIVE && LIVE.sight) LIVE.sight.step(e, !(typeof location !== 'undefined' && location.search.includes('nosight')));
       if (F.hat) F.hat.step(dt);
       if (F.car) F.car.step(dt);
       O.step(dt);
