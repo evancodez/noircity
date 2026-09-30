@@ -74,7 +74,7 @@ export function makePad() {
       // (fibres along the sheet: streaks more than dots)
       const v = rnd();
       const a = v > 0.35 ? 255 * (0.55 + 0.45 * rnd()) : 255 * 0.15 * rnd();
-      im.data[i * 4] = im.data[i * 4 + 1] = im.data[i * 4 + 2] = 20; im.data[i * 4 + 3] = a;
+      im.data[i * 4] = im.data[i * 4 + 1] = im.data[i * 4 + 2] = 8; im.data[i * 4 + 3] = a;
     }
     q.putImageData(im, 0, 0);
   }
@@ -149,7 +149,8 @@ export function makePad() {
         gg.save();
         gg.translate(px, py);
         gg.rotate(Math.atan2(dy, dx) + Math.PI / 2 + (rnd() - 0.5) * 0.25);
-        gg.globalAlpha = Math.min(1, 0.2 * k * (0.6 + 0.8 * rnd()));
+        // (a soft lead laid on hard: in the full pool of the lamp the graphite must still print dark)
+        gg.globalAlpha = Math.min(1, 0.27 * k * (0.6 + 0.8 * rnd()));
         // (the lead's flank: ~1.5 cm across the stroke, a few mm along it)
         const w = 34 + rnd() * 12, h = 8 + rnd() * 5;
         // (the pattern stays put on the sheet: offset it back)

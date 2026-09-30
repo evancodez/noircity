@@ -105,16 +105,49 @@ function coverRaw(ctx, from) {
 // wall as a hard white disc. A muzzle outside the room (and not in the open
 // doorway) keeps its sprite and loses its light; the frosted pane he fires
 // through flashes white round the muzzle instead (the curtain does its own).
+// (where HE stands decides it, not his muzzle: the glass man's gun hand
+// reaches to the pane, and the light a step beyond it was in the room)
+function outside(O, h) {
+  const b = h.pos;
+  const inRoom = b.x > 0.0 && b.x < ROOM.x1 && b.z > ROOM.z0 && b.z < ROOM.z1;
+  const inDoor = b.x > -0.75 && Math.abs(b.z - (DOOR.z0 + DOOR.z1) / 2) < 0.5 && O.door.angle > 0.8;
+  return !(inRoom || inDoor);
+}
 export function outsideFlash(ctx, h) {
   const G = ctx.game, O = office(ctx), MF = G.fx && G.fx.flash;
   if (!MF || !MF.pool || !MF.pool.length) return;
   const P = MF.pool[(MF.poolNext - 1 + MF.pool.length) % MF.pool.length];
   if (!P || P.t !== 0) return;
   const q = P.light.position;
-  const inRoom = q.x > 0.02 && q.x < ROOM.x1 && q.z > ROOM.z0 && q.z < ROOM.z1;
-  const inDoor = q.x > -0.7 && Math.abs(q.z - (DOOR.z0 + DOOR.z1) / 2) < 0.42 && O.door.angle > 0.8;
-  if (inRoom || inDoor) return;
+  if (!outside(O, h)) return;
+  // (a still frame, shot mode, lights its held flashes again: this stage's
+  // flash system holds them without the light of a man outside the room)
+  if (!MF._b2hold) {
+    MF._b2hold = true;
+    const hold0 = MF.holdRecent.bind(MF);
+    MF.holdRecent = (time, win = 0.5, vmNow = null) => {
+      hold0(time, win, vmNow);
+      let k = 0;
+      for (const [hh, f] of MF.last.hoods) {
+        if (time - f.time > win || !hh.alive) continue;
+        if (k >= MF.pool.length) break;
+        const Pk = MF.pool[k++];
+        if (outside(office(ctx), hh)) { Pk.light.intensity = 0; Pk.entry.intensity = 0; }
+      }
+    };
+  }
   P.i0 = 0; P.light.intensity = 0; if (P.entry) P.entry.intensity = 0;
+  // (on the fire escape his flash is behind the wall: the burst drawn over the
+  // plaster round the window is gone, the curtain's own flash shows it. The
+  // glass man keeps his: it is at the pane, seen through it)
+  if (h.pos.z > ROOM.z1 + 0.05) {
+    const W3 = MF.world3, p0 = W3 && W3.list[W3.list.length - 1];
+    if (p0 && p0.age === 0) { p0.w = 0; p0.h = 0; }
+    const q2 = MF.queue[MF.queue.length - 1];
+    if (q2 && q2.sys === W3) q2.size = 0;
+    const rec = MF.last.hoods.get(h);
+    if (rec) rec.s = 0;
+  }
   // (the pane between him and the room: its frost lit round his muzzle)
   if (q.x < 0.05) {
     for (const f of [O.frosted[0], O.frosted[1]]) {
