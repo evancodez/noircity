@@ -42,10 +42,10 @@ it, not by a checklist.
 | B5 | 7 The Tail (`tail`), vehicles | `riverroad` | `wave-b/B5-tail` | 5315 |
 | B6 | 8 Pier Nine (`warehouse`) | `pier9` | `wave-b/B6-warehouse` | 5316 |
 | B7 | 9 The Block (`shootout`), the ending | `block` | `wave-b/B7-shootout` | 5317 |
+| B8 | 1 and 2: the fist fight, version 4, and how it starts | `block` (the diner) | `wave-b/B8-fight` | 5318 |
 
-After these merge: the fight's next pass (the user's list for scenes 1 and
-2) and a second fist fight at Pier 9, then a play-through review and fixes.
-Those are not yours.
+After these merge: a second fist fight at Pier 9 (on B8's fight, in B6's
+loading bay), then a play-through review and fixes. Those are not yours.
 
 ---------------------------------------------------------------------------
 ## 2. What premium means here (the lessons of Wave A, paid for in rounds)
