@@ -12,6 +12,7 @@ import { COUPE } from '../../vehicles/models.js';
 //   screen.attach(car)   screen.update(dt, car)   screen.wipe(sweep, wipers)
 const FRAG = /* glsl */`
   uniform float uTime, uPeriod, uSpeed, uLit, uRain;
+  uniform vec4 uCracks[ 4 ];   // (u, v, radius, 0 none .. 1)
   uniform vec2 uPivot[2];
   varying vec2 vQ;
   float h1( vec2 p ) { return fract( sin( dot( p, vec2( 127.1, 311.7 ) ) ) * 43758.5453 ); }
@@ -81,10 +82,30 @@ const FRAG = /* glsl */`
         spark = max( spark, exp( - dot( hl, hl ) / ( rad * rad * 0.045 ) ) * body );
       }
     }
+    // the cracks: a star where a thing struck the glass - rays out from the
+    // blow, a broken ring round it; the lines catch the light
+    float crackL = 0.0;
+    for ( int i = 0; i < 4; i++ ) {
+      vec4 C = uCracks[ i ];
+      if ( C.w <= 0.0 ) continue;
+      vec2 d = q - C.xy;
+      float r = length( d ) / C.z;
+      if ( r > 1.0 ) continue;
+      float a = atan( d.y, d.x ) / 6.2831853 + 0.5;
+      float n = 11.0;
+      float cell = floor( a * n );
+      float ja = fract( a * n ) - 0.5 - ( h1( vec2( cell, C.x * 91.0 ) ) - 0.5 ) * 0.5 + sin( r * 17.0 + cell ) * 0.06;
+      float len = 0.45 + 0.55 * h1( vec2( cell, C.y * 57.0 ) );
+      float ray = ( 1.0 - smoothstep( 0.0, 0.035 / max( r, 0.08 ), abs( ja ) ) ) * step( r, len );
+      float ring = ( 1.0 - smoothstep( 0.0, 0.03, abs( r - 0.32 - 0.08 * sin( a * 40.0 ) ) ) ) * step( 0.5, h1( vec2( floor( a * 23.0 ), C.x ) ) );
+      float core = 1.0 - smoothstep( 0.0, 0.07, r );
+      crackL = max( crackL, max( max( ray, ring * 0.8 ), core ) * C.w * ( 1.0 - r * 0.6 ) );
+    }
     // the wet film: faint where the blade has just been, heavier with age
     float film = 0.02 + 0.05 * smoothstep( 0.3, 4.0, min( age, 10.0 ) );
     float lit = spark * uLit * 2.6;
-    gl_FragColor = vec4( vec3( lit + film * 0.4 * uLit ), max( dark * ( 1.0 - spark ), spark * min( 1.0, uLit * 1.5 ) ) + film * 0.3 );
+    float cl = crackL * ( 0.35 + uLit * 1.4 );
+    gl_FragColor = vec4( vec3( lit + film * 0.4 * uLit + cl ), max( max( dark * ( 1.0 - spark ), spark * min( 1.0, uLit * 1.5 ) ) + film * 0.3, crackL * 0.85 ) );
   }`;
 
 export class Screen {
@@ -98,7 +119,7 @@ export class Screen {
     // (the plane's x is u, its y is v)
     this.mat = new THREE.ShaderMaterial({
       name: 'TailScreen',
-      uniforms: { uTime: { value: 0 }, uPeriod: { value: 1.15 }, uSpeed: { value: 0 }, uLit: { value: 0.4 }, uRain: { value: 0.6 }, uPivot: { value: COUPE.wipers.map((w) => new THREE.Vector2(w.z, 0.02)) } },
+      uniforms: { uTime: { value: 0 }, uPeriod: { value: 1.15 }, uSpeed: { value: 0 }, uLit: { value: 0.4 }, uRain: { value: 0.6 }, uCracks: { value: [0, 1, 2, 3].map(() => new THREE.Vector4(0, 0, 0.1, 0)) }, uPivot: { value: COUPE.wipers.map((w) => new THREE.Vector2(w.z, 0.02)) } },
       vertexShader: /* glsl */`
         varying vec2 vQ;
         void main() { vQ = position.xy; gl_Position = projectionMatrix * modelViewMatrix * vec4( position, 1.0 ); }`,
@@ -128,6 +149,16 @@ export class Screen {
     this.mesh.matrix.copy(this.basis);
     // (the uniforms' pivots: the wipers' z at the scuttle)
   }
+  // a crack in the glass where a thing struck it (lz: across the car; k: how
+  // hard): a star, up to four, the oldest going when a fifth comes
+  crack(lz, k = 1) {
+    const C = this.mat.uniforms.uCracks.value;
+    let i = C.findIndex((c) => c.w <= 0);
+    if (i < 0) { i = this.nextCrack = ((this.nextCrack ?? -1) + 1) % C.length; }
+    const len = Math.hypot(COUPE.screen.base - COUPE.screen.top, COUPE.screen.topY - COUPE.screen.baseY);
+    C[i].set(Math.max(-0.55, Math.min(0.55, lz)), len * (0.25 + Math.random() * 0.5), 0.07 + 0.12 * k, Math.min(1, 0.5 + k));
+  }
+  clearCracks() { for (const c of this.mat.uniforms.uCracks.value) c.w = 0; }
   // (the blades' clock: the cabin's, so the drops clear where they sweep)
   wipe(sweep, wipers, t) { if (t != null) this.mat.uniforms.uTime.value = t; }
   update(dt, car) {

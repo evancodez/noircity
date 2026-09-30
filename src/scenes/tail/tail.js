@@ -42,6 +42,22 @@ export class Tail {
     this.t = 0;
     // (the last tail, for the headless tools: its record of the run)
     globalThis.__tail = this;
+    // (leaving the scene: the engines' loops stop, the hands let go of the car)
+    const G = ctx.game;
+    // a thing thrown back into my windscreen: the thump, the glass cracks
+    // where it struck (screen.js), the view flinches
+    const onHit = (e) => { if (!this.my || this.out) return; const now = this.t; if (now - (this._hitT || -9) < 0.12) return; this._hitT = now; G.sfx.play('tail_screenHit', null, { k: e.k }); G.controller.kick(0.8 * e.k + 0.3, 0.5, 0.08); if (this.screen && e.k > 0.45) this.screen.crack(e.lz, e.k); };
+    G.on('screenHit', onHit);
+    const off = () => { this.dispose(); G.off('scene:exit', off); G.off('screenHit', onHit); };
+    G.on('scene:exit', off);
+  }
+
+  dispose() {
+    const S = this.game.sfx;
+    if (S && S.live) for (const k of ['tail_his', 'tail_truck']) if (S.loops.has(k)) S.stopLoop(k);
+    DRIVE.car = null;
+    if (DRIVE.gun && DRIVE.gun.prop) DRIVE.gun.prop.visible = false;
+    if (this.cabinBox) { this.cabinBox.min.set(1e5, 1e5, 1e5); this.cabinBox.max.set(1e5, 1e5, 1e5); }
   }
 
   // ---- building the moment ---------------------------------------------------------------
@@ -77,6 +93,7 @@ export class Tail {
     if (!stage.dry.includes(this.cabinBox)) stage.dry.push(this.cabinBox);
     if (!this.screen) this.screen = new Screen(stage, G);
     this.screen.attach(mine);
+    this.screen.clearCracks();
     this.gunProp = null;
     this.placeCabin();
   }
@@ -90,6 +107,11 @@ export class Tail {
 
   // ---- the scene drives my car itself (the stop beside him) --------------------------------
   control(v, dt) {
+    if (this.cruise != null && !this.stop) {
+      const I = v.input;
+      I.throttle = v.speed < this.cruise ? 1 : 0; I.brake = 0; I.steer = 0;
+      return true;
+    }
     const S = this.stop;
     if (!S) return false;
     const I = v.input;
@@ -125,6 +147,7 @@ export class Tail {
     this.placeCabin();
     this.cabin(dt);
     if (this.screen) this.screen.update(dt, my);
+    this.sound(dt);
     this.tickFade(dt);
     const gap = his.s - my.s;
     this.gap = gap;
@@ -143,6 +166,19 @@ export class Tail {
     else this.holster(dt);
     if (this.spin) this.spinStep(dt);
     if (this.wreck) this.wreckStep(dt);
+  }
+
+  // ---- the sound: my engine (the car's room bed), his, the truck's --------------------------
+  sound(dt) {
+    const S = this.game.sfx, my = this.my;
+    if (!S || !S.live) return;
+    if (S.bed && S.bedName === 'car' && S.bed.set) S.bed.set({ speed: my.speed, throttle: my.input.throttle, slide: my.slide || 0, shake: my.shake });
+    // his engine ahead (a noise loop that rides his car), the truck's
+    const his = this.his;
+    if (his && !his.parked) S.loop('tail_his', his.pos, 0.25 + 0.2 * Math.min(1, Math.abs(his.speed) / 25), 'brown', 220 + Math.abs(his.speed) * 9, 0, true);
+    else if (S.loops.has('tail_his')) S.stopLoop('tail_his');
+    if (this.truck) S.loop('tail_truck', this.truck.pos, 0.3, 'brown', 160, 0, true);
+    else if (S.loops.has('tail_truck')) S.stopLoop('tail_truck');
   }
 
   // ---- the cabin: dials, wheel, wipers ------------------------------------------------------
@@ -165,6 +201,10 @@ export class Tail {
     const P = 1.15;
     this.wipeT = (this.wipeT || 0) + dt;
     const u = (this.wipeT % P) / P;
+    // (a blade at each end of its sweep: the thump in the car's bed)
+    const end = u < 0.5 ? 0 : 1;
+    if (this._wEnd !== undefined && end !== this._wEnd) { const B = this.game.sfx && this.game.sfx.bed; if (B && B.wipe) B.wipe(end ? 1 : 0.6); }
+    this._wEnd = end;
     const sweep = 0.5 - 0.5 * Math.cos(u * Math.PI * 2);
     for (const w of m.wipers) w.arm.rotation.x = 1.52 - sweep * 1.65;
     this.wipe = { sweep, u };

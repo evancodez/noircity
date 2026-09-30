@@ -43,6 +43,15 @@ function build(ctx, which) {
     T.checkpoint = ROAD.checkpoints.filter((c) => c < at0).pop() ?? ROAD.checkpoints[0];
   }
   ctx.onStep((dt) => T.step(dt));
+  // (look development: ?tailAt=s,d,speed[,his gap] puts my car there, moving;
+  // &tailCruise=1 holds that speed, straight on)
+  const q = typeof location !== 'undefined' ? new URLSearchParams(location.search) : null;
+  if (q && q.get('tailAt')) {
+    const [s, d, sp = 0, gap = 30] = q.get('tailAt').split(',').map(Number);
+    T.my.place(roadPoint2(s, d), carYaw2(s), sp);
+    T.his.place(roadPoint2(s + gap, 1.9), carYaw2(s + gap), sp);
+    if (q.get('tailCruise')) T.cruise = sp;
+  }
   return T;
 }
 
@@ -154,6 +163,7 @@ export default defineScene({
       yield* Q.release();
       yield wait(1.4);
       G.music.stop(2);
+      T.dispose();
       ctx.next();
     }
   },

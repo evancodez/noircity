@@ -232,9 +232,9 @@ export default {
       const sp = carVel.length();
       const k = Math.min(1, sp / 22);
       return new THREE.Vector3(
-        carVel.x * rnd(0.55, 1.1) + gs() * 2.2 * spread,
+        carVel.x * rnd(0.45, 1.05) + gs() * 2.2 * spread,
         rnd(2.0, 5.5) * lift * (0.4 + 0.8 * k) + rnd(0, 1.2),
-        carVel.z * rnd(0.55, 1.1) + gs() * 2.2 * spread);
+        carVel.z * rnd(0.45, 1.05) + gs() * 2.2 * spread);
     };
     const spin = (k = 1) => new THREE.Vector3(gs() * 9 * k, gs() * 9 * k, gs() * 9 * k);
     // the crate: its slats, its fruit, or (slow) the whole thing tumbling
@@ -392,6 +392,25 @@ export default {
       },
       update(dt, t) {
         this.t = t;
+        // what flies back into my windscreen is thrown off it, up and over
+        // the roof (a thump on the glass: game.emit 'screenHit')
+        const G0 = stage.game, me = G0 && G0.vehicles && G0.vehicles.player;
+        if (me && me.model && me.model.wheel) {
+          const c = Math.cos(me.yaw), sn = Math.sin(me.yaw);
+          for (const p of pieces) {
+            if (p.rest || p.pos.y < me.pos.y + 1.0 || p.pos.y > me.pos.y + 1.95) continue;
+            const dx = p.pos.x - me.pos.x, dz = p.pos.z - me.pos.z;
+            const lx = dx * c - dz * sn, lz = dx * sn + dz * c;
+            if (lx < 0.25 || lx > 0.85 || Math.abs(lz) > 0.7) continue;
+            // (relative to the car it must be coming back at the glass)
+            const rvx = (p.vel.x - me.vel.x) * c - (p.vel.z - me.vel.z) * sn;
+            if (rvx > -0.5) continue;
+            const up = 2.5 + Math.random() * 3;
+            p.vel.set(me.vel.x + (p.vel.x - me.vel.x) * -0.25, up, me.vel.z + (p.vel.z - me.vel.z) * -0.25);
+            p.ang.multiplyScalar(-0.6);
+            if (!p.paper) G0.emit('screenHit', { pos: p.pos.clone(), k: Math.min(1, -rvx / 12), lz });
+          }
+        }
         for (let j = pieces.length - 1; j >= 0; j--) {
           const p = pieces[j];
           if (p.rest) continue;
