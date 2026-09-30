@@ -68,10 +68,12 @@ export default {
       const c = Math.cos(TAU * t / 1.2);
       return P({ ...CARRY, handTR: [-0.17, 1.2 + 0.008 * c, 0.34], armL: [0.14, -1, 0.1 + 0.06 * c, 0] });
     } }) },
+    // (read at 15 m: a lean from the hips, the head thrust, the lantern held
+    // up at eye height and out; a slow weave as he peers)
     dh_peer: { duration: 2.0, loop: true, def: () => ({ armSpace: 'root', pose: (t) => {
-      const b = S(TAU * t / 2.0);
-      return P({ ...CARRY, spine: [8, 0, 0], chest: [6 + b, 0, 0], neck: [10, 0, 0], head: [-8, 0, 0],
-        handTR: [-0.12, 1.3, 0.48], elbowPoleR: [-1, -0.6, -0.4], handR: [-20, 0, -10], armL: [0.2, -1, 0.2, 0], elbowL: [30] });
+      const b = S(TAU * t / 2.0), w = S(TAU * t / 4.0);
+      return P({ ...CARRY, spine: [13, 3 * w, 0], chest: [9 + 1.5 * b, 4 * w, 0], neck: [14, 0, 0], head: [-10, 0, 0],
+        handTR: [-0.1, 1.44 + 0.02 * b, 0.56], elbowPoleR: [-1, -0.5, -0.4], handR: [-24, 0, -10], armL: [0.22, -1, 0.26, 0], elbowL: [38] });
     } }) },
     dh_fix: { duration: 2.4, loop: true, def: () => ({ armSpace: 'root', pose: (t) => {
       const b = S(TAU * t / 1.2);
@@ -79,11 +81,16 @@ export default {
         handTR: [-0.1, 1.46 + 0.03 * b, 0.42], elbowPoleR: [-1, -0.8, -0.2], handR: [-60, 0, 0],
         handTL: [0.12, 1.4, 0.4], elbowPoleL: [1, -0.8, -0.2], handL: [-60, 0, 0] });
     } }) },
-    // the blow from behind: the head snaps forward, the knees go (0.35),
-    // he folds forward onto his knees (0.7) and tips over onto his side
-    // (1.3); I lower him the last of it (the hands' clip, the same timing)
-    dh_fold: { duration: 1.6, hold: true, marks: { knees: 0.35, down: 1.3 }, def: () => ({ armSpace: 'root', rootMotion: null, pose: (t) => {
-      const k1 = sstep(0.05, 0.7, t), k2 = sstep(0.75, 1.4, t);
+    // the blow from behind: the head snaps forward and the knees go at once
+    // - he drops onto them as a dead weight falls (0.3 s, a jolt as they
+    // take it), then tips over onto his side, falling (0.42 to 0.9) and
+    // settling. (It was a slow sink: 0.7 s to his knees, 1.4 s down.)
+    dh_fold: { duration: 1.1, hold: true, marks: { knees: 0.3, down: 0.9 }, def: () => ({ armSpace: 'root', rootMotion: null, pose: (t) => {
+      // (a fall: eased in, as gravity takes it; the knees' jolt a little
+      // past the kneel and back)
+      const fall = (a, b, x) => { const u = Math.min(1, Math.max(0, (x - a) / (b - a))); return u * u; };
+      const k1 = fall(0.02, 0.3, t) + 0.07 * Math.sin(Math.PI * Math.min(1, Math.max(0, (t - 0.3) / 0.16)));
+      const k2 = Math.min(1, fall(0.42, 0.86, t) * 0.97 + 0.03 * sstep(0.86, 1.05, t));
       const hipY = lerp(lerp(0.955, 0.5, k1), 0.17, k2);
       return P({
         hipsPos: [lerp(0, 0.1, k2), hipY, lerp(0, 0.05, k1) + lerp(0, 0.25, k2)],

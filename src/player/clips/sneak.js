@@ -8,7 +8,7 @@ import { OPEN, RELAX, FISTF, mirror } from '../handPoses.js';
 //   sn_take    reach and close on a bottle where it stands (H.snTarget), bring it up
 //   sn_aim     the bottle drawn back over the shoulder (held while LMB is)
 //   sn_throw   the arm comes over, the bottle leaves (mark release)
-//   sn_pull    reach up to a lever or a cord (H.snTarget) and pull it down (marks grab, pulled)
+//   sn_pull    reach to a lever or a cord and draw it along its path (H.snPath; marks grab, pulled)
 //   sn_pullL   the same with the left hand (a bottle in the right)
 //   sn_blow    one short blow from behind (mark hit), then both hands catch him and lower him
 //   sn_coat    the hand goes into the coat for the revolver, and comes away
@@ -46,6 +46,18 @@ export const POSES = {
 // a reach to the thing the scene points the hands at (H.snTarget: an
 // Object3D where the grip is), closed on it; computed once per playing
 const reach = (F, e = [0.26, -0.45, -0.2]) => (H, side) => (H.snTarget ? H.holdPoseAt(side, H.snTarget, F, e) : null);
+// the i-th place of the thing's path as the hand pulls it (H.snPath: the
+// scene's Object3Ds along the lever handle's arc, or the cord coming off
+// its cleat): the hand stays on the grip while the thing moves (object
+// first); without a path, the one target
+const along = (i, F, e) => (H, side) => {
+  const o = (H.snPath && H.snPath[Math.min(i, H.snPath.length - 1)]) || H.snTarget;
+  return o ? H.holdPoseAt(side, o, F, e) : null;
+};
+// a pull: reach, close on the grip, draw it down its path (0.34 to 0.58 s:
+// the scene moves the thing on the same clock), let go, back to rest
+const pullKeys = (e) => [[0, '@rest'], [0.28, along(0, GRIPB, e), 'out'], [0.34, along(0, GRIPB, e)],
+  [0.42, along(1, GRIPB, e), 'lin'], [0.5, along(2, GRIPB, e), 'lin'], [0.58, along(3, GRIPB, e), 'lin'], [0.68, along(3, GRIPB, e)], [0.95, '@rest']];
 
 export const CLIPS = {
   sn_take: {
@@ -63,20 +75,23 @@ export const CLIPS = {
     view: [[0, {}], [0.1, { fwd: 0.05, yaw: -0.02 }, 'snap'], [0.55, {}]],
   },
   sn_pull: {
-    duration: 0.85, marks: { grab: 0.28, pulled: 0.5 },
-    keys: { R: [[0, '@rest'], [0.28, reach(GRIPB, [0.3, -0.35, -0.2]), 'out'], [0.34, reach(GRIPB, [0.3, -0.35, -0.2])], [0.5, 'sn_pullDownR', 'snap'], [0.85, '@rest']], L: [[0, '@rest'], [0.85, '@rest']] },
-    view: [[0, {}], [0.28, { fwd: 0.12 }], [0.5, { fwd: 0.08, down: 0.04 }], [0.85, {}]],
+    duration: 0.95, marks: { grab: 0.28, pulled: 0.58 },
+    keys: { R: pullKeys([0.3, -0.35, -0.2]), L: [[0, '@rest'], [0.95, '@rest']] },
+    view: [[0, {}], [0.28, { fwd: 0.12 }], [0.58, { fwd: 0.08, down: 0.05 }], [0.95, {}]],
   },
   // (the bottle in the right hand: the left pulls, the right keeps it up)
   sn_pullL: {
-    duration: 0.85, marks: { grab: 0.28, pulled: 0.5 },
-    keys: { L: [[0, '@rest'], [0.28, reach(GRIPB, [-0.3, -0.35, -0.2]), 'out'], [0.34, reach(GRIPB, [-0.3, -0.35, -0.2])], [0.5, 'sn_pullDownL', 'snap'], [0.85, '@rest']], R: [[0, 'sn_holdR'], [0.85, 'sn_holdR']] },
-    view: [[0, {}], [0.28, { fwd: 0.12 }], [0.5, { fwd: 0.08, down: 0.04 }], [0.85, {}]],
+    duration: 0.95, marks: { grab: 0.28, pulled: 0.58 },
+    keys: { L: pullKeys([-0.3, -0.35, -0.2]), R: [[0, 'sn_holdR'], [0.95, 'sn_holdR']] },
+    view: [[0, {}], [0.28, { fwd: 0.12 }], [0.58, { fwd: 0.08, down: 0.05 }], [0.95, {}]],
   },
+  // (his fold is 1.1 s - dockhand dh_fold: on his knees at 0.3, down by
+  // 0.9 - the eye goes down with him, the hands out to him; control back
+  // as he lies)
   sn_blow: {
-    duration: 1.5, marks: { hit: 0.2, lowered: 1.2 },
-    keys: { R: [[0, '@rest'], [0.12, 'sn_blowUpR', 'out'], [0.2, 'sn_blowDownR', 'snap'], [0.5, 'sn_catchR'], [1.2, 'sn_catchR'], [1.5, '@rest']], L: [[0, '@rest'], [0.35, 'sn_catchL'], [1.2, 'sn_catchL'], [1.5, '@rest']] },
-    view: [[0, {}], [0.2, { fwd: 0.16, pitch: -0.1 }, 'snap'], [0.6, { fwd: 0.12, down: 0.2, pitch: -0.3 }], [1.2, { fwd: 0.05, down: 0.35, pitch: -0.42 }], [1.5, {}]],
+    duration: 1.15, marks: { hit: 0.2, lowered: 0.95 },
+    keys: { R: [[0, '@rest'], [0.12, 'sn_blowUpR', 'out'], [0.2, 'sn_blowDownR', 'snap'], [0.42, 'sn_catchR'], [0.9, 'sn_catchR'], [1.15, '@rest']], L: [[0, '@rest'], [0.3, 'sn_catchL'], [0.9, 'sn_catchL'], [1.15, '@rest']] },
+    view: [[0, {}], [0.2, { fwd: 0.16, pitch: -0.1 }, 'snap'], [0.45, { fwd: 0.12, down: 0.16, pitch: -0.28 }], [0.9, { fwd: 0.05, down: 0.32, pitch: -0.45 }], [1.15, {}]],
   },
   sn_coat: {
     duration: 1.0, marks: { in: 0.35 },

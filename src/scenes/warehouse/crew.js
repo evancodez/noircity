@@ -196,7 +196,11 @@ export class Man {
     this.saw = { why: this.why, d: +d.toFixed(2), off: +off.toFixed(2), beam: +beam.toFixed(2), lit: +lit.toFixed(2), s: +s.toFixed(2), at: [+P.x.toFixed(2), +P.z.toFixed(2)], t: +t.toFixed(2),
       me: [+this.pos.x.toFixed(2), +this.pos.z.toFixed(2)], look: +this.look.toFixed(2), light: +this.light.toFixed(2), yaw: +this.fig.yaw.toFixed(2), mode: this.mode, lamp: this.lampPos ? this.lampPos.toArray().map((v) => +v.toFixed(2)) : null, axis: this.lamp ? this.lamp.axis.toArray().map((v) => +v.toFixed(2)) : null };
     const litK = Math.max(beam > 0 ? 1 : 0, Math.min(1, lit * 1.3));
-    const T = (TUNE.certainDark + (TUNE.certainLit - TUNE.certainDark) * litK) * Math.max(0.55, Math.min(1, d / 7));
+    // (the brief's one to two and a half seconds: never less than a second
+    // from his "hm" to the whistle, near or not, lit or not - a player who
+    // hears it has time to drop or step back into the black; the dark is
+    // quicker near him, down to that second)
+    const T = Math.max(TUNE.certainLit, (TUNE.certainDark + (TUNE.certainLit - TUNE.certainDark) * litK) * Math.max(0.55, Math.min(1, d / 7)));
     return s / T;
   }
 

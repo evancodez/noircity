@@ -19,7 +19,9 @@ const mats = () => ({
   plank: std('p9_plank', { color: 0x2a2a2a, roughness: 0.85, surface: 'wood' }),
   steel: std('p9_steel', { color: 0x0c0c0c, roughness: 0.35, surface: 'metal' }),
   rope: std('p9_rope', { color: 0x232323, roughness: 0.95, surface: 'cloth' }),
-  lens: basic('p9_lens', { color: new THREE.Color(1, 1, 1).multiplyScalar(6) }),
+  // (a lit lens: bright enough to read as the light, not a moon - at 6 its
+  // glow printed a white disc wider than the man's head)
+  lens: basic('p9_lens', { color: new THREE.Color(1, 1, 1).multiplyScalar(3) }),
   lensOff: std('p9_lensOff', { color: 0x3a3a3a, roughness: 0.1, surface: 'metal' }),
 });
 

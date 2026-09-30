@@ -242,7 +242,8 @@ export class Stealth {
     const dots = new THREE.InstancedMesh(dotGeo, mat, n);
     dots.layers.set(LAYER.FX); dots.frustumCulled = false; dots.userData.noRay = true;
     g.add(dots);
-    const ring = new THREE.Mesh(new THREE.RingGeometry(0.16, 0.2, 28).rotateX(-Math.PI / 2), mat);
+    // (where it lands: a ring a man's stride across, read from the strip's end)
+    const ring = new THREE.Mesh(new THREE.RingGeometry(0.24, 0.32, 32).rotateX(-Math.PI / 2), mat);
     ring.layers.set(LAYER.FX); ring.userData.noRay = true;
     g.add(ring);
     g.visible = false;
@@ -253,7 +254,9 @@ export class Stealth {
     const A = this.arc, S = this.G.stage;
     if (A.group.parent !== S.scene) S.scene.add(A.group);
     const tr = this.trace();
-    // (dots every ~0.35 m along the path, fewer near the hand)
+    // (dots every ~0.35 m along the path; none within 1.6 m of the hand -
+    // a dot at arm's length is a white ball over the view, not a mark on
+    // the room)
     const pts = tr.pts;
     let acc = 0, k = 0;
     const m = _m;
@@ -261,6 +264,7 @@ export class Stealth {
       acc += pts[i].distanceTo(pts[i - 1]);
       if (acc < 0.35) continue;
       acc = 0;
+      if (pts[i].distanceTo(pts[0]) < 1.6) continue;
       const s = 0.6 + 0.4 * Math.min(1, i / 8);
       m.makeScale(s, s, s).setPosition(pts[i]);
       A.dots.setMatrixAt(k++, m);

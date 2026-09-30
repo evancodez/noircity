@@ -200,13 +200,16 @@ export default {
     const barsMat = new THREE.ShaderMaterial({
       name: 'PierBlindLight', transparent: true, depthWrite: false, blending: THREE.AdditiveBlending,
       polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2,
-      uniforms: { uGain: { value: 0.16 } },
+      // (uOpen: the blinds raised - the scene's listen beat - the bars
+      // nearest the wall run together into a slab, brighter)
+      uniforms: { uGain: { value: 0.16 }, uOpen: { value: 0 } },
       vertexShader: 'varying vec2 vUv; void main(){ vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0); }',
-      fragmentShader: `uniform float uGain; varying vec2 vUv;
+      fragmentShader: `uniform float uGain, uOpen; varying vec2 vUv;
         void main(){
           float bars = smoothstep( 0.35, 0.5, abs( fract( vUv.y * 9.0 ) - 0.5 ) * 2.0 );
+          bars = mix( bars, 1.0, uOpen * ( 1.0 - smoothstep( 0.25, 0.55, vUv.y ) ) );
           float fall = ( 1.0 - smoothstep( 0.0, 1.0, vUv.y ) ) * ( 1.0 - smoothstep( 0.35, 0.5, abs( vUv.x - 0.5 ) ) );
-          gl_FragColor = vec4( vec3( bars * fall * uGain ), 1.0 );
+          gl_FragColor = vec4( vec3( bars * fall * uGain * ( 1.0 + 1.6 * uOpen ) ), 1.0 );
         }`,
     });
     const barsQ = new THREE.Mesh(new THREE.PlaneGeometry(wx1 - wx0 + 0.6, 1.4).rotateX(-Math.PI / 2).translate((wx0 + wx1) / 2, Y + 0.004, fz + 0.7), barsMat);

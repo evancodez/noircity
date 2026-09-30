@@ -83,12 +83,13 @@ function setupAt(ctx, b) {
   const W = stage.part('works'), shed = stage.part('shed'), mezz = stage.part('mezz'), L = stage.lamps;
   // the place: lamps on, the switch up, the load hanging, the truck by the
   // big doors, the doors as the beat has them
-  W.panel.throw(true); W.panel.k = 1;
+  W.panel.throw(true); W.panel.k = 1; W.panel.drive = null;
   for (const l of L.lamps) if (l.row) { l.on = true; l.dying = null; }
   W.hoist.reset();
   W.truck.reset();
   shed.sideDoor.snap(b === 'arrive' || b === 'out' ? 0 : 1);
   shed.bayDoor.snap(0);
+  blinds(stage, 0);
   if (b === 'out') { W.truck.place(1); W.truck.lights(true); }
   // the crew
   const crew = new Crew(G, stage, { rng: ctx.rng.fork(81) });
@@ -152,26 +153,66 @@ function live(ctx) {
     });
   };
   // ---- the things of the place
-  const target = new THREE.Object3D();
-  target.userData = { kind: 'lever', grip: new THREE.Matrix4() };
-  stage.scene.add(target);
-  L.props.push(target);
-  const aimTarget = (pos, faceYaw) => { target.position.copy(pos); target.rotation.set(0, faceYaw, 0); target.updateMatrixWorld(true); return target; };
+  // (what a pull takes hold of: the grip's place along the thing's path, a
+  // few points the hand's clip keys run through - sn_pull; the scene moves
+  // the thing itself on the same clock, so the hand never leaves it)
+  const grip = () => { const o = new THREE.Object3D(); o.userData = { kind: 'lever', grip: new THREE.Matrix4() }; return o; };
+  const aimPath = (list) => { const H = G.player.hands; H.snPath = list; H.snTarget = list[0]; return list; };
+  // the knife switch's handle along its swing (k 1 up .. 0 thrown), the
+  // hand's frame turned with the blade
+  const leverPath = (P) => {
+    const lv = P.lever, z0 = lv.rotation.z, out = [];
+    const face = new THREE.Quaternion().setFromEuler(new THREE.Euler(0, P.face, 0));
+    let q0inv = null;
+    for (const k of [1, 2 / 3, 1 / 3, 0]) {
+      lv.rotation.z = 0.35 - (1 - k) * 2.4;
+      lv.updateMatrixWorld(true);
+      const q = lv.getWorldQuaternion(new THREE.Quaternion());
+      if (!q0inv) q0inv = q.clone().invert();
+      const o = grip();
+      o.position.copy(lv.localToWorld(V(0.03, 0.3, 0)));
+      o.quaternion.copy(q).multiply(q0inv).multiply(face);
+      o.updateMatrixWorld(true);
+      out.push(o);
+    }
+    lv.rotation.z = z0;
+    lv.updateMatrixWorld(true);
+    return out;
+  };
+  // the hoist's cord hitched on its cleat: taken there, pulled off it and
+  // out toward me
+  const cordPath = (c) => [[0, 0, 0], [0.05, 0.04, 0], [0.16, -0.02, 0], [0.26, -0.14, 0]].map(([dx, dy]) => {
+    const o = grip(); o.position.set(c.x + dx, c.y + dy, c.z); o.rotation.set(0, -PI / 2, 0); o.updateMatrixWorld(true); return o;
+  });
+  // E on a thing: I step in to arm's length and square up to it, then the
+  // hand goes out (a press at the prompt's edge, 1.5 m off, stretched an
+  // arm to it or closed a hand short of it). The step is a quarter second
+  // at most and starts at once; the controls come back when the hand has it.
+  const approach = (at, near, then, hold = 0.35) => {
+    const C = G.controller;
+    const p0 = typeof at === 'function' ? at() : at;
+    const d = Math.hypot(p0.x - C.pos.x, p0.z - C.pos.z);
+    C.frozen = true;
+    C.vel.x = C.vel.z = 0;
+    L.approach = { at, near, then, hold, t: 0, dur: Math.min(0.26, Math.max(0.1, (d - near) / 2.6)), fx: C.pos.x, fz: C.pos.z, y0: C.yaw, p0: C.pitch };
+  };
+  const busy = () => G.player.hands.busy || !!L.approach;
   // the side door (from outside)
   I.add({ id: 'b6door', at: V(PIER.sideDoor.x + 0.4, 1.05, 0.15), range: 2.4, cone: 1.1, prompt: 'open', when: () => !shed.sideDoor.isOpen && ctx.beat === 'arrive',
     onUse: () => { shed.sideDoor.open(1); G.sfx.play('creak', V(PIER.sideDoor.x, 1.2, 0), {}, { ref: 3 }); } });
   // the bottles
   L.bottles.forEach((b, i) => {
     I.add({ id: 'b6bottle' + i, at: () => b.getWorldPosition(new THREE.Vector3()).add(V(0, 0.15, 0)), range: 1.55, cone: 0.95, prompt: 'bottle',
-      when: () => !stealth.bottle && b.parent && b.parent !== G.vm.root && !G.player.hands.busy && stealth.coshT < 0,
-      onUse: () => stealth.take(b) });
+      when: () => !stealth.bottle && b.parent && b.parent !== G.vm.root && !busy() && stealth.coshT < 0,
+      onUse: () => approach(b.getWorldPosition(new THREE.Vector3()).add(V(0, 0.12, 0)), 0.45, () => stealth.take(b), 0.34) });
   });
   // the knife switch: the middle aisle's lamps go dark; a man comes to put it back
   const P = W.panel;
   I.add({ id: 'b6switch', at: () => P.pos, range: 1.8, cone: 1.2, prompt: 'pull the switch',
-    when: () => P.on && !L.fixer && !G.player.hands.busy && !stealth.aiming,
-    onUse: () => {
-      aimTarget(P.lever.localToWorld(V(0.03, 0.3, 0)), P.face);
+    when: () => P.on && !L.fixer && !busy() && !stealth.aiming,
+    onUse: () => approach(P.lever.localToWorld(V(0.03, 0.3, 0)), 0.55, () => {
+      aimPath(leverPath(P));
+      L.pull = { t: 0 };
       G.player.hands.play(stealth.bottle ? 'sn_pullL' : 'sn_pull', { onMark: { pulled: () => {
         P.throw(false);
         G.sfx.play('switch', P.pos, {}, { ref: 3 });
@@ -180,7 +221,7 @@ function live(ctx) {
         crew.noise(P.pos, 6, 'step');
         L.fixDue = G.time + 1.2;
       } } });
-    } });
+    }, 0.6) });
   // the hoist's cord: the load down at the far end of the aisle
   const HO = W.hoist;
   HO.onLand = (p) => {
@@ -191,15 +232,15 @@ function live(ctx) {
     G.controller.shake(0.25, G.eye.distanceTo(p));
     crew.sendNearest(p, 2, 'crash', 40);
   };
-  I.add({ id: 'b6hoist', at: () => HO.cleat, range: 1.8, cone: 1.2, prompt: 'let the load go', when: () => HO.up && !G.player.hands.busy && !stealth.aiming,
-    onUse: () => {
-      aimTarget(HO.cleat.clone().add(V(0.02, 0.02, 0)), -PI / 2);
+  I.add({ id: 'b6hoist', at: () => HO.cleat, range: 1.8, cone: 1.2, prompt: 'let the load go', when: () => HO.up && !busy() && !stealth.aiming,
+    onUse: () => approach(HO.cleat, 0.5, () => {
+      aimPath(cordPath(HO.cleat.clone().add(V(0.02, 0.02, 0))));
       G.player.hands.play(stealth.bottle ? 'sn_pullL' : 'sn_pull', { onMark: { pulled: () => { HO.drop(); G.sfx.play('hoist', HO.cleat, {}, { ref: 5 }); } } });
-    } });
+    }, 0.6) });
   // a man from behind (only one who has not noticed me)
   for (const m of crew.men) {
     I.add({ id: 'b6ko_' + m.name, at: () => m.eye(new THREE.Vector3()).add(V(0, -0.35, 0)), range: 1.75, cone: 0.55, prompt: 'knock him out',
-      when: () => canTakeDown(m, G), onUse: () => takeDown(ctx, m) });
+      when: () => !L.approach && canTakeDown(m, G), onUse: () => approach(() => m.eye(new THREE.Vector3()).add(V(0, -0.35, 0)), 0.72, () => takeDown(ctx, m), null) });
   }
   // the bay's side door (only once there is a reason to leave)
   I.add({ id: 'b6bay', at: V(PIER.shed.x1 - 0.2, 1.05, PIER.bayDoor.z - 0.4), range: 2.2, cone: 1.1, prompt: 'open', when: () => !shed.bayDoor.isOpen && ctx.beat === 'out',
@@ -210,6 +251,38 @@ function live(ctx) {
     if (G.controller.lookLocked && !G.scenes.trans && ctx.sceneTime > 0.5) G.controller.lookLocked = false;
     stealth.step(dt);
     crew.step(dt, G.time);
+    // the step in to a thing E took (approach): glide, square up, then the hand
+    const A = L.approach;
+    if (A && stealth.coshT >= 0) L.approach = null;
+    else if (A) {
+      const C = G.controller;
+      A.t += dt;
+      const p = typeof A.at === 'function' ? A.at() : A.at;
+      const dx = A.fx - p.x, dz = A.fz - p.z, d = Math.hypot(dx, dz) || 1;
+      const tx = d > A.near ? p.x + (dx / d) * A.near : A.fx, tz = d > A.near ? p.z + (dz / d) * A.near : A.fz;
+      const u = sstep(0, 1, A.t / A.dur);
+      C.pos.x = A.fx + (tx - A.fx) * u;
+      C.pos.z = A.fz + (tz - A.fz) * u;
+      C.vel.x = C.vel.z = 0;
+      const wantY = Math.atan2(-(p.x - C.pos.x), -(p.z - C.pos.z));
+      const wantP = Math.atan2(p.y - G.eye.y, Math.max(0.3, Math.hypot(p.x - C.pos.x, p.z - C.pos.z)));
+      C.yaw = A.y0 + Math.atan2(Math.sin(wantY - A.y0), Math.cos(wantY - A.y0)) * 0.85 * u;
+      C.pitch = A.p0 + (wantP - A.p0) * 0.6 * u;
+      if (A.t >= A.dur) {
+        L.approach = null;
+        if (A.hold != null) L.thawAt = G.time + A.hold;
+        A.then();
+      }
+    }
+    if (L.thawAt && G.time >= L.thawAt) { L.thawAt = 0; if (stealth.coshT < 0) G.controller.frozen = false; }
+    // the switch's blade goes down with the hand on it (the pull's clock:
+    // closed on it at 0.34 s, thrown at 0.58 s)
+    if (L.pull) {
+      L.pull.t += dt;
+      const u = Math.min(1, Math.max(0, (L.pull.t - 0.34) / 0.24));
+      P.drive = 1 - u;
+      if (L.pull.t > 0.62) { L.pull = null; P.drive = null; }
+    }
     // the switch's fixer: the nearest free man walks over
     if (L.fixDue && G.time >= L.fixDue) {
       L.fixDue = 0;
@@ -272,12 +345,17 @@ function* listenBeat(ctx) {
   yield* walkFig(card, win.pos.x, win.pos.z + 0.1, 0.9);
   card.fig.yaw = 0;
   L.looking = true;
+  // (the tell: the blinds go up a hand's width with a rattle and the light
+  // falls out of the office in a slab across the catwalk: he is looking.
+  // A second from the rattle before standing or moving under it counts)
   G.sfx.play('newspaper', win.pos.clone().setY(PIER.mezz.y + 1.6), {}, { ref: 2 });
   // he looks down at the floor for three seconds: I must be down and still
-  for (let t = 0; t < 3.2; t += 1 / 60) {
+  const LOOK = 3.2;
+  for (let t = 0; t < LOOK; t += 1 / 60) {
+    blinds(ctx.stage, sstep(0, 0.35, t));
     const pl = L.crew.player;
     const near = Math.hypot(pl.feet.x - win.pos.x, pl.feet.z - (win.pos.z + 1)) < 5.5 && ctx.stage.part('mezz').up;
-    if (near && t > 0.6 && (!pl.crouch || pl.speed > 0.45)) {
+    if (near && t > 1.0 && (!pl.crouch || pl.speed > 0.45)) {
       L.crew.alarm({ eye: () => win.pos.clone().setY(PIER.mezz.y + 1.6), name: 'cardinal' });
       break;
     }
@@ -285,9 +363,29 @@ function* listenBeat(ctx) {
   }
   L.looking = false;
   if (L.crew.alarmT >= 0) { yield until(() => false); return; }
+  // (the blinds let down again)
+  G.sfx.play('newspaper', win.pos.clone().setY(PIER.mezz.y + 1.6), {}, { ref: 2, gain: 0.6 });
+  for (let t = 0; t < 0.4; t += 1 / 60) { blinds(ctx.stage, 1 - sstep(0, 0.4, t)); yield null; }
+  blinds(ctx.stage, 0);
   yield* walkFig(card, ctx.stage.anchor('pier9.office.desk').pos.x, ctx.stage.anchor('pier9.office.desk').pos.z, 0.9);
   card.fig.yaw = 0;
 }
+
+// the office's blinds raised by k (0 down, 1 up a hand's width): the slats
+// gather under the head rail, the light through them on the catwalk goes
+// from bars to a slab
+function blinds(stage, k) {
+  const mz = stage.part('mezz');
+  if (!mz || !mz.slats) return;
+  const top = PIER.mezz.y + PIER.office.win.y1;
+  const s = 1 - 0.42 * k;
+  mz.slats.scale.y = s;
+  mz.slats.position.y = top * (1 - s);
+  mz.slats.updateMatrixWorld(true);
+  const u = mz.barsQ && mz.barsQ.material.uniforms;
+  if (u && u.uOpen) u.uOpen.value = k;
+}
+const sstep = (a, b, x) => { const t = Math.min(1, Math.max(0, (x - a) / (b - a))); return t * t * (3 - 2 * t); };
 
 // a figure walked to a point at his pace (the office's)
 function* walkFig(c, x, z, speed) {

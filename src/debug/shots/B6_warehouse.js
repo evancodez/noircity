@@ -140,4 +140,12 @@ export const presets = {
   // the bay from the east stairs' landing: the clear floor in its pool, the
   // loading doors, the side door out
   b6f_bay: scene('out', 2, (game, C, L) => { blind(L); stand(game, C, 7.6, -40.3, -2.45, -0.34, false, 3.8); }, 66),
+  // look development: a beat as a checkpoint puts me back in it, the crew
+  // live (?shot=b6cp&cpbeat=<beat>[&pose=x,z,yaw,pitch]&t=): the frame a
+  // player comes back to after the cosh
+  b6cp: scene(new URLSearchParams(typeof location !== 'undefined' ? location.search : '').get('cpbeat') || 'aisle', 1.5, (game, C) => {
+    if (!new URLSearchParams(location.search).get('pose')) return;
+    const crouch = !!(C.sneak && C.sneak.crouch), up = game.stage.part('mezz').up;
+    stand(game, C, 0, 0, 0, 0, crouch, up ? 3.8 : null);
+  }),
 };

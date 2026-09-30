@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { Lamps } from '../../../world/Lamps.js';
 import { allocInkId, markFigure } from '../../../render/layers.js';
 import { lathe, mergeGeos } from '../../../props/lib.js';
-import { PIER } from '../site.js';
+import { PIER, inShed } from '../site.js';
 import { pierMats } from '../kit.js';
 
 // Pier 9's light (lane B6). A Lamps (world/Lamps.js) without the block's
@@ -196,7 +196,26 @@ export class PierLamps extends Lamps {
     }
   }
 
+  // the lamps the wet ground outside may mirror: the pipeline draws each
+  // lamp head it is given into the street's mirror with no depth test (the
+  // block's parked cars must not hide a lamp's column), so the shed's
+  // hanging lamps and the men's lights stood in the concrete outside the
+  // wall as five white columns under a blank wall. Only the lamps out in
+  // the rain leave a column; inside, the Look mirrors nothing.
+  get mirror() {
+    if (!this._mirror) {
+      // (the stage is built by the first step: its still lamps are all
+      // hung; the torches never go outside)
+      this._mirror = { lamps: this.lamps.filter((l) => !l.torch && l.head && !inShed(l.head.x, l.head.z)) };
+    }
+    return this._mirror;
+  }
+
   update(dt, t, camera) {
+    // (the pipeline takes this stage's lamps on stage:enter: it is given
+    // the mirror's view of them instead)
+    const P = this.world.game && this.world.game.pipeline;
+    if (P && P.lampSource === this && P.setLamps) P.setLamps(this.mirror);
     // the switched row: a dying flicker, then dark
     for (const l of this.lamps) {
       const D = l.dying;
@@ -208,6 +227,15 @@ export class PierLamps extends Lamps {
     }
     for (const l of this.torches) if (l.released) l.on = false;
     super.update(dt, t, camera);
+    // (a still lamp's cone of dust fades as the eye comes into it: standing
+    // at the switch panel, under its caged bulb, the cone's mouth was a white
+    // arch over the top of the view; the lamp's light on things stays)
+    const cp = camera.position;
+    for (const l of this.lamps) {
+      if (l.torch || !l.cone) continue;
+      const d = cp.distanceTo(l.head);
+      if (d < 2.2) { const u = Math.min(1, Math.max(0, (d - 0.9) / 1.3)); l.cone.material.uniforms.uIntensity.value *= u * u * (3 - 2 * u); }
+    }
   }
 }
 

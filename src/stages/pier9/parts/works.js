@@ -133,7 +133,7 @@ export default {
     if (bulbLamp.light) { bulbLamp.light.intensity = 26; bulbLamp.light.distance = 4.5; bulbLamp.light.angle = 0.6; }
     const stand = W(0.78, 0, 0);
     const panel = {
-      on: true, lever, pos: W(0.2, P.y, 0), bulbLamp, mesh: panelMesh, k: 1,
+      on: true, lever, pos: W(0.2, P.y, 0), bulbLamp, mesh: panelMesh, k: 1, drive: null,
       // where a man stands to work it, and his heading there (he faces it)
       stand, face: Math.atan2(P.x - stand.x, P.z - stand.z),
       throw(on) { panel.on = on; },
@@ -218,7 +218,9 @@ export default {
   update(api, dt) {
     // the lever swings to where the switch is thrown
     const P = api.panel;
-    P.k += Math.sign((P.on ? 1 : 0) - P.k) * Math.min(Math.abs((P.on ? 1 : 0) - P.k), dt * 7);
+    // (a hand on it: the scene drives it - P.drive, 1 up .. 0 thrown)
+    if (P.drive != null) P.k = P.drive;
+    else P.k += Math.sign((P.on ? 1 : 0) - P.k) * Math.min(Math.abs((P.on ? 1 : 0) - P.k), dt * 7);
     P.lever.rotation.z = 0.35 - (1 - P.k) * 2.4;
     // the load falls: 0.75 s, a bounce, it settles askew
     const H = api.hoist;
