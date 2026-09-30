@@ -1,0 +1,53 @@
+{
+ "about": "[R2-E] Scene 8's last beats by real input (?start=warehouse.fight): at the foot of the far stairs the foreman steps out of the dark by the bay's door, the hook turning in his hand; my hand goes to the revolver and comes away; the second fist fight (the first fight's rules in the loading bay: his hook's long arc left by a step back or in, the hook knocked out of his fist, the bay's things); the last blow puts him back through a loading door's planks into the river; out by the bay's side door onto the pier; the next chapter. node tools/play.mjs tools/plays/pier_fight.json",
+ "url": "/?mute=1&start=warehouse.fight",
+ "size": [1280, 800],
+ "out": "shots/play/pier_fight",
+ "steps": [
+  { "until": "G.state === 'title' && !document.getElementById('title').classList.contains('hidden')", "timeout": 30000 },
+  { "wait": 1500 },
+  { "clickOn": "#title .opt[data-k=begin]" },
+  { "wait": 3000 },
+  { "eval": "(() => { if (G.state !== 'title') return 'started'; document.querySelector('#title .opt[data-k=begin]').dispatchEvent(new MouseEvent('mousedown', { bubbles: true, button: 0 })); return '(a loaded machine: pressed again)'; })()" },
+  { "until": "G.scenes.current && G.scenes.current.id === 'warehouse' && G.scenes.beat === 'fight'", "timeout": 25000 },
+  { "until": "!G.scenes.trans", "timeout": 8000 },
+  { "eval": "(window.W = () => G.scenes.ctx.flags.live, 1)" },
+  { "name": "he steps out of the dark by the door, the hook turning in his hand" },
+  { "until": "!!W().fm && W().fm.pos.z < -31.4", "timeout": 8000 },
+  { "shot": "p00_he_steps_out" },
+  { "until": "G.controller.mode === 'brawlIn' || G.brawl.active", "timeout": 8000 },
+  { "shot": "p01_hand_to_the_coat" },
+  { "until": "G.brawl.active && G.controller.mode === 'brawl'", "timeout": 12000 },
+  { "expect": "G.brawl.him.holding === 'hook' && G.hands.set === 'fists' && G.brawl.who.name === 'THE FOREMAN' && G.brawl.lesson === null", "label": "fists up, no lesson; the hook in his fist" },
+  { "expect": "(() => { const f = W(); return f.fightT - G.scenes.startT < 7.5; })()", "label": "from the stairs' foot into the fight in under 7.5 s of game time" },
+  { "fight": {
+    "timeout": 300000,
+    "shots": {
+     "p02_hook_tell": "G.brawl.him.clip === 'fm_hookSwing' && G.brawl.him.t > 0.3 && G.brawl.him.t < 0.5",
+     "p03_round2": "G.brawl.round === 2 && G.brawl.him.state === 'attack'",
+     "p04_round3": "G.brawl.round === 3 && G.brawl.him.state === 'attack'",
+     "p05_reel": "G.brawl.him && G.brawl.him.state === 'reel' && G.brawl.him.atSpot",
+     "p06_through": "G.brawl.him && G.brawl.him.state === 'ko' && G.brawl.him.t > 0.35",
+     "p07_splash": "G.brawl.him && G.brawl.him.state === 'ko' && G.brawl.him.t > 1.1"
+    },
+    "expect": "F.time >= 25 && F.time <= 200",
+    "label": "the foreman's fight by real input, won"
+  } },
+  { "until": "G.scenes.beat === 'after'", "timeout": 15000 },
+  { "expect": "G.brawl.stats.won === true && G.stage.part('shed').loading.some((d) => d.burst) && !G.brawl.me.holding && !G.hands.held.L && !G.hands.held.R", "label": "through a loading door's planks into the river; nothing left in a hand" },
+  { "eval": "JSON.stringify({ disarms: G.brawl.stats.disarms || 0, downs: G.brawl.stats.downs, held: G.brawl.stats.held || [], window: G.brawl.stats.window, time: +G.brawl.stats.time.toFixed(1) })" },
+  { "wait": 1200 },
+  { "shot": "p08_the_hole" },
+  { "name": "out by the bay's side door" },
+  { "walk": [[13.6, -31.4], [14.3, -30.3]], "timeout": 20000, "stop": false },
+  { "until": "G.hud.promptShown.includes('open')", "timeout": 4000 },
+  { "key": "KeyE" },
+  { "wait": 1200 },
+  { "expect": "G.stage.part('shed').bayDoor.isOpen", "label": "E opens the bay's side door" },
+  { "walk": [[16.8, -29.4], [16.9, -27.6]], "timeout": 15000 },
+  { "down": "KeyW" },
+  { "until": "G.scenes.current === null || G.scenes.current.id !== 'warehouse' || G.state === 'end'", "timeout": 8000 },
+  { "up": "KeyW" },
+  { "expect": "G.scenes.current && G.scenes.current.id === 'shootout'", "label": "on into the next chapter (IX The Block)" }
+ ]
+}
