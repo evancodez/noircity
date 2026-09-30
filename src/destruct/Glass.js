@@ -624,6 +624,7 @@ export class ShardField {
   }
 
   kill(s) {
+    if (s.batched) this.batchDirty = true;   // [R2-F] (gone from the batch within 0.25 s)
     this.stage.scene.remove(s.mesh);
     s.mesh.geometry.dispose();
     if (s.mesh.userData.line) s.mesh.userData.line.geometry.dispose();
@@ -693,6 +694,7 @@ export class ShardField {
           this.rest.splice(this._ri, 1);
           s.slide = false; s.vel = new THREE.Vector3(0, 0, 0); s.spin = new THREE.Vector3(0, 0, 0); s.t = 0.3; s.gyT = 0;
           s.mesh.layers.set(LAYER.FX);
+          if (s.batched) { s.batched = false; s.mesh.visible = true; this.batchNow = true; }   // [R2-F]
           s.mesh.material = this.matFor();
           if (s.mesh.userData.line) { s.mesh.userData.line.material = this.lineMat(); s.mesh.userData.line.visible = s.area > 0.0035; }
           if (s.mesh.userData.glint) s.mesh.userData.glint.visible = false;
@@ -757,10 +759,72 @@ export class ShardField {
           if (m.userData.glint) m.userData.glint.visible = true; else this.restGlint(s);
           this.live.splice(i, 1);
           this.rest.push(s);
+          this.batchDirty = true;   // [R2-F]
           while (this.rest.length > REST_CAP) this.kill(this.rest.shift());
         }
       }
     }
+    if (this.batchRest || this.batch) this.batchStep(dt);   // [R2-F]
+  }
+
+  // [R2-F] (scene 9: the diner's front goes pane by pane and 60 - 220 pieces
+  // come to lie on the sills, the floor and the pavement, each one a draw with
+  // its edge and its glint.) With `batchRest` set (by the scene; off by
+  // default, so nothing else draws differently) the pieces at rest are drawn
+  // as one batch - their tone, their edges, their glints: three draws - built
+  // again when the set at rest changes: a piece that lies down joins it
+  // within 0.25 s (drawn on its own until then), one that leaves it (falls
+  // again, is taken away) at once. Each keeps its own mesh, hidden, for the
+  // rest of this class (the fall-again look, kill, clear). The tone and the
+  // edges are one colour each, so their overlaps blend the same in any order.
+  batchStep(dt) {
+    this.batchT = (this.batchT || 0) - dt;
+    if (!this.batchRest) { this.unbatch(); return; }
+    if (this.batchNow || (this.batchDirty && this.batchT <= 0)) this.rebuildBatch();
+  }
+  rebuildBatch() {
+    this.batchNow = false; this.batchDirty = false; this.batchT = 0.25;
+    const pos = [], lpos = [], gpos = [], v = new THREE.Vector3();
+    const push = (out, geo, M) => {
+      const pa = geo.getAttribute('position'), ix = geo.index, n = ix ? ix.count : pa.count;
+      for (let i = 0; i < n; i++) { v.fromBufferAttribute(pa, ix ? ix.getX(i) : i).applyMatrix4(M); out.push(v.x, v.y, v.z); }
+    };
+    for (const s of this.rest) {
+      const m = s.mesh;
+      m.updateMatrixWorld(true);
+      push(pos, m.geometry, m.matrixWorld);
+      const L = m.userData.line;
+      if (L && L.visible) push(lpos, L.geometry, m.matrixWorld);
+      const g = m.userData.glint;
+      if (g && g.visible) { v.copy(g.position).applyMatrix4(m.matrixWorld); gpos.push(v.x, v.y, v.z); }
+      m.visible = false;
+      s.batched = true;
+    }
+    if (!this.batch) {
+      const mk = (o, order) => { o.layers.set(LAYER.FX); o.renderOrder = order; o.userData.noRay = true; o.userData.inkId = this.inkId; this.stage.scene.add(o); return o; };
+      const pm = new THREE.PointsMaterial({ color: new THREE.Color(3.2, 3.2, 3.2), size: 0.013, sizeAttenuation: true, depthWrite: false, fog: false });
+      this.batch = {
+        mesh: mk(new THREE.Mesh(new THREE.BufferGeometry(), this.restMat()), 2),
+        line: mk(new THREE.LineSegments(new THREE.BufferGeometry(), this.restLineMat()), 3),
+        pts: mk(new THREE.Points(new THREE.BufferGeometry(), pm), 4),
+      };
+    }
+    for (const [k, arr] of [['mesh', pos], ['line', lpos], ['pts', gpos]]) {
+      const o = this.batch[k];
+      o.geometry.dispose();
+      const g = new THREE.BufferGeometry();
+      g.setAttribute('position', new THREE.Float32BufferAttribute(arr, 3));
+      g.computeBoundingSphere();
+      o.geometry = g;
+      o.visible = arr.length > 0;
+    }
+  }
+  unbatch() {
+    if (!this.batch) return;
+    for (const o of Object.values(this.batch)) { this.stage.scene.remove(o); o.geometry.dispose(); }
+    this.batch.pts.material.dispose();
+    this.batch = null;
+    for (const s of this.rest) if (s.batched) { s.batched = false; s.mesh.visible = true; }
   }
 
   // split a shard's cells in two or three by a line through its middle

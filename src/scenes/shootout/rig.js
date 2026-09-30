@@ -84,6 +84,7 @@ export function teardown(R) {
   if (R.hat) { S.scene.remove(R.hat.obj); if (R.hat.cigar) S.scene.remove(R.hat.cigar); }
   restoreRoomLights(S);
   clearBottles(S);
+  if (S.glass && S.glass.shards) S.glass.shards.batchRest = false;
   G.weapon.reload = R.reload0;
   if (R.fire0) G.weapon.fire = R.fire0;
   G.health.onDeath = R.onDeath0;
@@ -334,6 +335,9 @@ export function everyStep(ctx, dt) {
     if (h.state === 'deathBack' && (h.pos.y || 0) < 1 && !roomBehind(S, h)) { h.anim.play('deathKnees', { fade: 0.1 }); h.state = h._deathKind = 'deathKnees'; }
   }
   headlampsInRoom(ctx);
+  // [R2-F] the glass at rest drawn as one batch (destruct/Glass.js)
+  const F = S.glass && S.glass.shards;
+  if (F && !F.batchRest && R.batchGlass !== false) F.batchRest = R.batchGlass = !(typeof location !== 'undefined' && new URLSearchParams(location.search).get('b7batch') === '0');
   // [second pass] the fight is on from the cars until he is down (not in
   // the quiet before him): the director runs, so the health bar shows (the
   // HUD hides it outside a fight: I was shot at with no bar) and the Hoods'
