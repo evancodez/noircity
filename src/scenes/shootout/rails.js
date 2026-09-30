@@ -264,6 +264,10 @@ export class Rails {
           this.pose(car);
         } else if (car.tyres.some((x, i) => car.sag[i] !== x)) this.pose(car);
         this.stepDoors(car, dt);
+      } else if (!R.holesOut) {
+        // (a burnt-out cab has no light in it)
+        R.holesOut = true;
+        for (const d of Object.values(R.doors)) d.hole.visible = false;
       }
       this.lamps(car);
       this.engine(car, dt, burning);

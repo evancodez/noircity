@@ -150,6 +150,16 @@ export default (k) => {
         chain(n, filt(ctx, 'bandpass', 2400, 1.2), g, out);
         return dur;
       },
+      // [second pass] a man's shoe on the diner's wet stoop: a heel's knock on
+      // stone, the scuff, the water under it
+      b7_step(ctx, out, t0, p, R) {
+        const kk = p.k ?? 1;
+        thud(ctx, out, t0, 150, 85, 0.5 * kk, 0.09);
+        burst(ctx, out, R, t0, 'white', ['bandpass', 1900, 2.2], 0.16 * kk, 0.001, 0.035);
+        burst(ctx, out, R, t0 + 0.05, 'pink', ['bandpass', 900, 1.3], 0.1 * kk, 0.004, 0.07);
+        burst(ctx, out, R, t0 + 0.02, 'white', ['highpass', 3500], 0.06 * kk, 0.002, 0.08);
+        return 0.2;
+      },
       // rain on an ember: a tiny sizzle
       b7_hiss(ctx, out, t0, p, R) {
         const kk = p.k ?? 0.6;

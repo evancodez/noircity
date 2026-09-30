@@ -289,7 +289,8 @@ function dotDrumsPose(s) {
     const u = Math.min(1, (t - 0.3) / 0.3);
     keys.push([t, { handTR: [dr(t)[0], dr(t)[1] + 0.06 / s, dr(t)[2]], handR: [-85, 0, -10], hipsPos: [0, 0.82 + 0.1 * u, 0.01], hips: [16 - 6 * u, 0, 0], chest: [10, -10, 0] }]);
   }
-  keys.push([0.9, { handTR: w([-0.36, 1.18, 0.5]), handR: [-60, 0, -20] }]);
+  // (the hand lets go and comes back off the top, behind the counter's edge)
+  keys.push([0.92, { handTR: w([-0.3, 1.06, 0.3]), handR: [-60, 0, -20], hipsPos: [0, 0.86, 0.0] }]);
   keys.push([DOT_DRUMS.duration, { ...DUCK }]);
   const K = chainKeys(keys);
   return (t) => samplePoseKeys(K, t);

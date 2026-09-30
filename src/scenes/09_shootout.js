@@ -225,7 +225,7 @@ function dotResupply(ctx) {
   R.slide = { t: 0 };
   st.visible = false; st.rotation.set(0, 0, 0);
   const h = dot.play('b7_dotDrums', { fade: 0.15, onMark: {
-    drumsUp: () => { st.visible = true; G.sfx.play('b7_drumSlide', st.position.clone()); },
+    drumsUp: () => { st.visible = true; G.sfx.play('b7_drumTake', st.position.clone()); },
     drumsDown: () => { G.sfx.play('b7_drumDown', st.position.clone()); },
   } });
   R.ticks.push(() => {
@@ -525,6 +525,20 @@ function* doorways(ctx) {
   const I = SITE.intruder;
   const h = man(ctx, { group: 'doorways', at: I.at, entry: I.entry, run: true, post: I.post, leash: 0, aim: AIM.intruder });
   h.b7intruder = true;
+  // [second pass] heard before he is seen: his shoes on the stoop, three
+  // heavy steps up to the door before its bell
+  const door = V(-9.3, 0, 0.6);
+  let stepT = 0, steps = 0;
+  rig().ticks.push((dt) => {
+    if (!h.alive || steps >= 3 || h.pos.x < -10.3) return false;
+    const d = Math.hypot(h.pos.x - door.x, h.pos.z - door.z);
+    if (d > 4.2) return true;
+    if ((stepT -= dt) > 0) return true;
+    stepT = 0.34;
+    steps++;
+    G.sfx.play('b7_step', h.pos.clone().setY(0.2), { k: 0.8 + 0.1 * steps });
+    return true;
+  });
   const t0 = G.time;
   yield until(() => G.director.alive('doorways') <= 1 || G.time - t0 > 45);
 }
