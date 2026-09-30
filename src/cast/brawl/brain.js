@@ -38,6 +38,7 @@ export function think(B, dt) {
   const d = Math.hypot(eye.x - c.pos.x, eye.z - c.pos.z);
   // (circling: which way, for how long)
   him.circleT -= dt;
+  if (him.thingCool > 0) him.thingCool -= dt;
   if (him.circleT <= 0) { him.circleT = r.range(1.8, 3.6); him.circle = r.chance(0.5) ? 1 : -1; if (r.chance(0.25)) him.circle = 0; }
   if (him.backT > 0) him.backT -= dt;
   if (B.lessonHold) { him.goal = null; return; }
@@ -69,7 +70,7 @@ function pickAttack(B, M, d) {
   const room = B.room;
   him.acts = (him.acts || 0) + 1;
   // his first bottle in his dirty manner: broken on the counter, the neck
-  if (him.manner === 'dirty' && !him.holding && !him.hadBottle && room.hisItem) {
+  if (him.manner === 'dirty' && !him.holding && !him.hadBottle && room.hisItem && !(him.thingCool > 0)) {
     const it = room.hisItem('bottle', B.c.pos);
     if (it) { him.thingActs = (him.thingActs || 0) + 1; return { task: { kind: 'bottle', item: it, t: 0, first: true } }; }
   }
@@ -77,7 +78,7 @@ function pickAttack(B, M, d) {
   // about one of his actions in four is with a thing, while things last -
   // when one is within his reach and I am not on top of him: a plate, a mug
   // or a bottle to throw, a stool or a chair to swing
-  if (!him.holding && room.hisItem && d > 1.3) {
+  if (!him.holding && room.hisItem && d > 1.3 && !(him.thingCool > 0)) {
     const p = M.things ?? 0.25, ratio = (him.thingActs || 0) / Math.max(1, him.acts);
     if (r.chance(ratio < p ? p * 1.5 : p * 0.5)) {
       const task = pickThing(B, M);

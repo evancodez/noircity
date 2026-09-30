@@ -46,7 +46,7 @@ import { Lesson } from './BrawlLesson.js';
 export const BRAWL = {
   // [B8] his hit points (a room's man may have his own: who.hp); his
   // manners change at these PERCENT of them
-  himHp: 125, meHp: 100, retryHp: 60, retryBack: 8, shell: 0.16,
+  himHp: 120, meHp: 100, retryHp: 60, retryBack: 8, shell: 0.16,
   manners: { measured: 100, dirty: 65, wild: 30, out: 12 },
   order: ['measured', 'dirty', 'wild', 'out'],
   reach: 1.8, cone: 38 * Math.PI / 180, itemReach: 2.0,
@@ -147,7 +147,9 @@ export class Brawl {
     this.fadeBack = 0;
     if (!retry) { this.stats = freshStats(); this.blackT = 0; this.did = {}; }
     this.opts = { onRetry, onKO, onGlass, onLanded, onManner, onBottle, onHop };
+    if (this.room && this.room !== room && this.room.leave) this.room.leave();
     this.room = room;
+    if (room.enter) room.enter();
     this.who = { name: 'MACK', ...who };
     this.manners = this.who.manners || MANNERS;
     ACTIVE = { ...THINGS, ...(room.things || {}) };
@@ -204,6 +206,7 @@ export class Brawl {
     this.dropFlying();
     if (this._cards) { this._cards.clear(); this._cards.health(null); }
     this.game.hud.clearPrompt('brawl');
+    if (this.room && this.room.leave) this.room.leave();
   }
 
   later(s, fn) { this.timers.push({ at: this.T + s, fn }); }
@@ -530,7 +533,11 @@ export class Brawl {
   sideOpen(s) {
     const him = this.him;
     if (!him) return false;
-    if (him.state === 'stun' || him.state === 'reel' || him.state === 'arm' || him.state === 'comeRound') return true;
+    if (him.state === 'stun' || him.state === 'reel' || him.state === 'comeRound') return true;
+    // [B8] (going for a thing he keeps his guard up; only the reach and the
+    // take itself open him - version 3 left him open all the way, and a
+    // quick hand beat him to every errand: a round went by without a blow)
+    if (him.state === 'arm') return !!(him.task && him.task.phase === 'take') || !him.task;
     if (him.coverT > 0) return false;
     if (him.open[s] > 0) return true;
     // (the lesson: he holds a hand down and waits)
@@ -607,7 +614,8 @@ export class Brawl {
       // a miss: a whiff of air, nothing else
       this.sfx('whiff', null, { k: kind === 'jab' ? 0.5 : 0.9 });
       G.emit('brawl:hit', { by: 'me', kind, power: lv, zone: 'air', arm });
-      if (item) this.spendHeld(null, dir);
+      // ([B8] a thing swung at the air is still in the hand: it breaks on
+      // him, on his guard, or goes on the floor when it is let go)
       return;
     }
     const L = this.lesson;
@@ -955,7 +963,8 @@ export class Brawl {
     if ((him.holding === 'stool' || him.holding === 'chair') && him.prop) this.dropHisProp();
     this.hisState('react', clip, him.state === 'attack' || him.state === 'arm' ? 0.08 : 0.05);
     him.next = Math.min(Math.max(him.next, 0.35), 0.8);
-    if (him.task) him.task = null;
+    // (struck off an errand he fights with his fists a while)
+    if (him.task) { him.task = null; him.thingCool = 5; }
   }
 
   hisState(state, clip, fade = 0.1, onMark = {}) {
@@ -1535,7 +1544,7 @@ export class Brawl {
     this.stats.manners.out = this.stats.manners.out ?? this.stats.time;
     G.emit('brawl:round', { n: 4, manner: 'out' });
     G.emit('brawl:reel', {});
-    him.state = 'reel'; him.clip = null; him.t = 0; him.open.L = him.open.R = 0; him.quietT = 0; him.atSpot = false; him.loco = null; him.reelSpeed = null; him.caught = false; him.catchT = 0; him.lane = false; him.stuckT = 0; him.aim = null; him.bestD = null; him.reelPath = null; him.switched = 0;
+    him.state = 'reel'; him.clip = null; him.t = 0; him.open.L = him.open.R = 0; him.quietT = 0; him.atSpot = false; him.loco = null; him.reelSpeed = null; him.caught = false; him.catchT = 0; him.lane = false; him.stuckT = 0; him.aim = null; him.bestD = null; him.reelPath = null; him.switched = 0; him.reelT = 0;
     let best = null, bd = Infinity;
     for (const w of R.finishes || []) { const d = Math.hypot(w.spot.x - c.pos.x, w.spot.z - c.pos.z); if (d < bd) { bd = d; best = w; } }
     him.window = best;
@@ -1582,6 +1591,16 @@ export class Brawl {
       // (held up on the way - something fallen across it, or me standing in his
       // lane: no nearer the spot for 1.5 s - he goes for the other window)
       if (him.bestD == null || d < him.bestD - 0.1) { him.bestD = d; him.stuckT = 0; } else him.stuckT = (him.stuckT || 0) + dt;
+      // [B8] (me in his way, held up: he shoulders me out of it, hard - a
+      // big man reeling does not go round the man who stands there)
+      const e = this.game.eye, de = Math.hypot(e.x - F.pos.x, e.z - F.pos.z);
+      if (him.stuckT > 0.8 && de < 1.3 && !(him.shovedAt > this.T - 1.2)) {
+        him.shovedAt = this.T;
+        const vx = him.vel ? him.vel.x : 0, vz = him.vel ? him.vel.z : 0, vl = Math.hypot(vx, vz) || 1;
+        const ex = e.x - F.pos.x, ez = e.z - F.pos.z, side = (vx * ez - vz * ex) >= 0 ? 1 : -1;
+        this.pushMe(V(-vz / vl * side * 0.8 + ex / (de || 1) * 0.6, 0, vx / vl * side * 0.8 + ez / (de || 1) * 0.6).normalize(), 0.9);
+        this.stats.reelShoves = (this.stats.reelShoves || 0) + 1;
+      }
       if (him.stuckT > 2.5 && this.room.finishes) {
         const other = this.room.finishes.find((w) => w !== him.window);
         him.switched = (him.switched || 0) + 1;
@@ -1589,7 +1608,8 @@ export class Brawl {
       }
       // [B8] (neither window to be got to from where he is: he comes round
       // where he stands and fights on - never a fight that cannot end)
-      if (him.switched >= 3) { him.switched = 0; him.atSpot = false; him.spot = null; this.hisState('comeRound', 'br_comeRound', 0.2); return; }
+      him.reelT = (him.reelT || 0) + dt;
+      if (him.switched >= 3 || him.reelT > 12) { him.reelT = 0; him.switched = 0; him.atSpot = false; him.spot = null; this.hisState('comeRound', 'br_comeRound', 0.2); return; }
     }
     if (!him.atSpot && d < 0.2) {
       him.atSpot = true;

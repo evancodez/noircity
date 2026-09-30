@@ -117,7 +117,108 @@ function stageDuel(stage, camera, controller, game) {
   void DINER; void THREE;
 }
 
+
+// b8things (&t=300): every kind of thing, in each hand, through every way it
+// can leave a hand - a hit, a blow into his guard, a miss, a throw (a
+// wind-up), being hit while holding it, a knock-down and the retry after it,
+// the last blow - each case staged fresh in round 1 and played by the
+// virtual keys, then left 4 s; after each: what is in my hands matches what
+// the rules think I hold, nothing is in the air, and every piece lies on
+// something. The report: window.__b8things (and #errlog if any case fails).
+function stageThings(stage, camera, controller, game) {
+  const cases = [];
+  for (const kind of ['bottle', 'plate', 'mug', 'stool', 'chair']) {
+    const big = kind === 'stool' || kind === 'chair';
+    for (const btn of big ? ['L', 'R'] : ['L', 'R']) {
+      for (const act of ['hit', 'guard', 'miss', 'wind', 'hurt', 'down', 'finish']) cases.push({ kind, btn, act });
+    }
+  }
+  const out = { cases: [], fails: [] };
+  window.__b8things = out;
+  let i = -1, T0 = 0, phase = 'next';
+  const V = game.vin;
+  const press = (code, secs = 1 / 60) => { V.down.add(code); V.held.add(code); const at = game.time + secs; let gone = false; game.scripts.push((t) => { if (!gone && t >= at - 1e-6) { gone = true; if (V.held.has(code)) { V.held.delete(code); V.up.add(code); } } }); };
+  const check = (C) => {
+    const B = game.brawl, H = game.player.hands, F = game.stage.breakables.field;
+    const me = B.me || {};
+    const errs = [];
+    // (the hands hold what the rules say, and nothing else)
+    for (const h of ['L', 'R']) {
+      const want = me.holding && (me.holding.hand || 'R') === h ? me.holding.object : null;
+      if ((H.held[h] || null) !== want) errs.push(`hand ${h} holds ${H.held[h] ? H.held[h].userData.kind : 'nothing'}, rules: ${want ? want.userData.kind : 'nothing'}`);
+    }
+    if (B.flying && B.flying.length) errs.push(`${B.flying.length} in the air (thrown)`);
+    if (F.live.length) errs.push(`${F.live.length} pieces still moving`);
+    let high = 0;
+    for (const p of F.rest) {
+      if (!p.mesh.parent || p.hinge) continue;
+      p.mesh.updateMatrixWorld(true);
+      const b = new THREE.Box3().setFromObject(p.mesh, true);
+      const g = F.restSupport(p, b);
+      if (b.min.y - g > 0.012) high++;
+    }
+    if (high) errs.push(`${high} pieces resting over 1 cm above what is under them`);
+    const r = { ...C, held: me.holding ? me.holding.kind + (me.holding.hand || '') : null, pieces: F.rest.length, errs };
+    out.cases.push(r);
+    if (errs.length) { out.fails.push(r); console.warn('b8things', JSON.stringify(r)); }
+  };
+  const give = (C) => {
+    const B = game.brawl, c = B.c;
+    const items = B.room.items().filter((x) => x.kind === C.kind).sort((a, b) => Math.hypot(a.pos.x - game.eye.x, a.pos.z - game.eye.z) - Math.hypot(b.pos.x - game.eye.x, b.pos.z - game.eye.z));
+    const it = items[0];
+    if (!it) return false;
+    const o = it.take();
+    const hands = C.kind === 'stool' || C.kind === 'chair' ? 2 : 1, hand = hands === 2 ? 'R' : C.btn;
+    if (C.kind === 'chair' && !o.userData.grip) o.userData.grip = new THREE.Matrix4().makeTranslation(0.12, 0.95, -0.19);
+    B.me.holding = { kind: C.kind, object: o, name: it.name, uses: 1, hand, hands };
+    game.player.hands.hold(o, hand);
+    B.me.h = game.player.hands.play(B.restClip());
+    void c;
+    return true;
+  };
+  game.scripts.push((t) => {
+    const B = game.brawl;
+    if (phase === 'next') {
+      i++;
+      if (i >= cases.length) { phase = 'done'; out.done = true; return; }
+      const C = cases[i];
+      game.scenes.shot('fight', 'round1');
+      const Bb = game.brawl;
+      Bb.him.next = 99; Bb.lessonHold = true; Bb.him.breatheT = -99;
+      game.health.hp = 100;
+      if (!give(C)) { out.cases.push({ ...C, skipped: true }); return; }
+      T0 = t; phase = 'act';
+      return;
+    }
+    if (phase === 'act' && t - T0 > 0.5) {
+      const C = cases[i], c = B.c, code = C.btn === 'L' ? 'Mouse0' : 'Mouse2';
+      phase = 'wait';
+      if (C.act === 'hit') { B.him.taunt = 'LR'; press(code); }
+      else if (C.act === 'guard') press(code);
+      else if (C.act === 'miss') { c.place({ x: c.pos.x, z: c.pos.z - 3.5 }); press(code); }
+      else if (C.act === 'wind') { B.him.taunt = 'LR'; press(code, 0.66); }
+      else if (C.act === 'hurt') { B.lessonHold = false; B.hisAttack('br_hook'); }
+      else if (C.act === 'down') { game.health.hp = 4; B.lessonHold = false; B.hisAttack('br_haymaker'); }
+      else if (C.act === 'finish') { B.damageHim(B.him.hp - 0.1 * B.max); B.startReel(); }
+      T0 = t;
+      return;
+    }
+    if (phase === 'wait') {
+      const C = cases[i];
+      // (the last blow: at the window, then the thing on him)
+      if (C.act === 'finish' && B.him && B.him.atSpot && !C.sent && B.active) {
+        C.sent = true;
+        const E = game.controller, s = B.him.spot;
+        E.setMode('brawl', { opponent: B.c, eyeY: 1.8, pos: { x: s.x - 1.3, z: s.z + 0.2 }, yaw: Math.atan2(-(s.x - (s.x - 1.3)), -(s.z - (s.z + 0.2))) });
+        game.scripts.push((tt) => { if (!C.hit2 && tt > t + 0.3) { C.hit2 = true; press(C.btn === 'L' ? 'Mouse0' : 'Mouse2'); } });
+      }
+      if (t - T0 > (C.act === 'down' ? 6 : C.act === 'finish' ? 9 : 4.5)) { check(C); phase = 'next'; }
+    }
+  });
+}
+
 export const presets = {
   b8spy: { t: 1, viewmodel: false, stage: stageSpy },
   b8duel: { t: 2, viewmodel: true, stage: stageDuel },
+  b8things: { t: 440, viewmodel: true, stage: stageThings },
 };
