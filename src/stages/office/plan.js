@@ -64,7 +64,7 @@ export const TABLE = { x: 0.95, z: 0.33 };                                   // 
 // the street below and the building across it
 export const STREET = { y: -6.6, face: 5.76, kerb: 8.3, farKerb: 19.3, far: 21.8 };
 // the lamp post on the far pavement (the watcher stands under it)
-export const POST = { x: 19.75, z: 4.6 };
+export const POST = { x: 19.75, z: 5.35 };   // (off the blind's middle ladder tape as seen from the window)
 // the light up the street that comes in through the blind (a high lamp on
 // a bracket): the slats' shadows, across the room and me
 export const BLIND_LIGHT = { from: [20.5, 4.9, 21.9], through: [5.6, 1.6, 4.15] };

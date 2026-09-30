@@ -136,7 +136,7 @@ export function buildStreet(kit, mats, stage, lamps) {
     g.updateMatrixWorld(true);
     const head = geo.head.clone().applyMatrix4(g.matrixWorld);
     const lamp = lamps.addCustom({ head, axis: V(0, -1, 0.0), height: head.y - y0, half: 0.42, real: true, bulb, fadeEnd: 0.9, edgeSoft: 0.3, strength: 1.0, tag: 'post' });
-    if (lamp.light) { lamp.light.intensity = 90; lamp.light.angle = 0.8; lamp.light.distance = 12; }
+    if (lamp.light) { lamp.light.intensity = 170; lamp.light.angle = 0.8; lamp.light.distance = 12; }
     lamp.noShadow = true;
     out.post = { group: g, lamp, head };
   }

@@ -92,7 +92,7 @@ export default {
     A('safe', SAFE.x + 0.02, 0.78, 0);
     A('window.street', 5.02, (WIN.z0 + WIN.z1) / 2, -Math.PI / 2);
     A('window.escape', (ESC.x0 + ESC.x1) / 2, ROOM.z1 - 0.62, Math.PI);
-    stage.addAnchor('office.street.watcher', { pos: V(POST.x - 1.2, STREET.y + 0.15, POST.z - 0.25), yaw: Math.PI / 2 });
+    stage.addAnchor('office.street.watcher', { pos: V(POST.x - 0.25, STREET.y + 0.15, POST.z - 0.7), yaw: Math.PI / 2 });
     // the gunfight's places: behind the desk (tipped or not), the men's marks
     A('cover.desk', DESK.x + 0.7, DESK.z + 0.1, Math.PI / 2);
     A('fight.doorway', 0.35, (DOOR.z0 + DOOR.z1) / 2, 0);

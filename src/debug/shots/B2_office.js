@@ -10,7 +10,9 @@
 //   b2_shadows    scene 5: a man's shadow on the door's glass, another on the sidelight's
 //   b2_kick       the door kicked in: its glass in the air, the first man through
 //   b2_tipped     the desk over on its front, the lamp burning on the floor
-//   b2_window     the Tommy gun at the fire escape window
+//   b2_window     the Tommy gun at the fire escape window (his outline on the curtain)
+//   b2_street     the street through two fingers' gap in the blind: the lamp post, the watcher's place
+//   b2_cover      down behind the tipped desk, the door over its edge
 import { office } from '../../scenes/office/room.js';
 const beat = (scene, b, t, extra = {}) => ({ scene, beat: b, t, viewmodel: true, ...extra });
 
@@ -28,6 +30,17 @@ export const presets = {
     stage(stage) { stage.part('office').tipDesk(); },
   }),
   b2_window: beat('gunfight', 'window', 9.0, { x: 3.9, z: 3.6, yaw: 2.85, pitch: -0.05, fov: 68 }),
+  // the street from the window (office.window.street), the slats at the eye parted flat:
+  // the lamp post on the far pavement, where the watcher stands (office.street.watcher)
+  b2_street: beat('office', 'room', 1.5, {
+    x: 5.3, z: 4.15, yaw: -1.606, pitch: -0.43, fov: 50, viewmodel: false,
+    stage(stage) {
+      // (two fingers in the blind at the eye: the slats above lifted, those below pressed down)
+      const B = stage.part('office').blind;
+      // (where the eye's line to the street crosses the blind: ~1.52 m)
+      B.slats.forEach((S, i) => { const d = S.y - 1.52; if (Math.abs(d) < 0.15) B.set(i, { tilt: 0.05, lift: d > 0 ? 0.11 * (1 - d / 0.15) : 0, sag: d <= 0 ? 0.11 * (1 + d / 0.15) : 0 }); });
+    },
+  }),
   // down behind the desk, the door over its edge
   b2_cover: beat('gunfight', 'door', 2.8, {
     x: 3.98, z: 3.55, yaw: 1.02, pitch: 0.0, fov: 72,
