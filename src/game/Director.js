@@ -100,13 +100,18 @@ export class Director {
 
   // ---- the cast of a fight -----------------------------------------------------------
   // who: 'hood' | 'heavy' (the Hoods, with a brain) or a cast kind (§6)
-  spawn({ who = 'hood', at, yaw = null, group = null, entry = 'idle', to = null, brain = 'cover', variant = null } = {}) {
+  // A Hood takes the direction too (enemies/HoodAI.js, docs/story/seams/Y.md):
+  //   entry: [{x, z} | anchor, ...] (run: true), post: {x, z} | anchor,
+  //   leash: metres, wake: fn | 'sight' | 'shot', aim: 1, hp, brain: '<name>'
+  // (entry as a word - 'idle' | 'walk' | 'run' - is the old start state)
+  spawn({ who = 'hood', at, yaw = null, group = null, entry = 'idle', to = null, brain = 'cover', variant = null, ...direct } = {}) {
     const G = this.game;
     const p = this.place(at);
     let c;
     if (who === 'hood' || who === 'heavy') {
       const state = entry === 'walk' || entry === 'run' ? entry : 'idle';
-      c = G.spawnHood(p.x, p.z, { heavy: who === 'heavy', variant, yaw, state, ai: brain !== 'none' });
+      if (Array.isArray(entry)) direct.entry = entry;
+      c = G.spawnHood(p.x, p.z, { ...direct, heavy: who === 'heavy', variant, yaw, state, ai: brain !== 'none', brain });
     } else if (G.cast && G.cast.spawn) {
       c = G.cast.spawn(who, { at: p, yaw: yaw ?? 0, variant, group });
     } else throw new Error(`director.spawn: no cast yet for '${who}'`);

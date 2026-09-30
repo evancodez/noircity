@@ -2,12 +2,16 @@ import * as THREE from 'three';
 import { Figure } from './Figure.js';
 import { Character, resolveAt } from './Character.js';
 import { buildProp } from '../props/index.js';
+import { KIND_DEFS } from './costumes.js';
 
 // The cast of a stage (docs/story/CONTRACTS.md §6): every figure on it.
 //   stage.cast / game.cast
 //   cast.spawn(kind, { at: anchor | {x, z}, yaw?, variant?, seat?: anchor, group?,
 //                      name?, brain? }) -> Character
 //   cast.get(name)   cast.list   cast.remove(c)   cast.clear()   cast.figures()
+//   cast.has(kind)   a kind the cast knows (built in or a file's)
+//   hood / heavy take the Hoods' direction too (Game.spawnHood, seams/Y.md):
+//   { entry, run, post, leash, wake, aim, hp, brain: 'cover' | 'none' | a brain file's }
 //   cast.attention(pos, seconds?)   every calm figure glances at pos (the
 //                                   door's bell, a noise); breaks and glass
 //                                   going draw the room's eyes on their own
@@ -29,6 +33,11 @@ export const KINDS = {
   couple_him: { h: 1.74 },
   docker: { h: 1.82 },
 };
+// (and the kinds of their own files, src/cast/kinds/*.js: costumes.js reads them)
+for (const K of KIND_DEFS) {
+  if (KINDS[K.kind]) throw new Error(`cast kinds: '${K.kind}' defined twice`);
+  KINDS[K.kind] = { h: K.h, name: K.name, onSpawn: K.onSpawn };
+}
 const MAX_HOODS = 12, MAX_OTHERS = 8;
 const _v = new THREE.Vector3();
 
@@ -41,7 +50,9 @@ export class Cast {
 
   get game() { return this.stage.game; }
 
-  spawn(kind, { at, yaw = null, variant = null, seat = null, group = null, name = null, brain = null } = {}) {
+  has(kind) { return !!KINDS[kind]; }
+
+  spawn(kind, { at, yaw = null, variant = null, seat = null, group = null, name = null, brain = null, ...direct } = {}) {
     const K = KINDS[kind];
     if (!K) throw new Error(`cast.spawn: no kind '${kind}' (kinds: ${Object.keys(KINDS).join(', ')})`);
     const alive = (hood) => this.list.filter((c) => c.alive && !!KINDS[c.kind].hood === hood).length;
@@ -56,7 +67,7 @@ export class Cast {
     if (K.hood) {
       own = false;
       const ai = (brain ?? 'cover') !== 'none';
-      fig = G ? G.spawnHood(w.x, w.z, { heavy: !!K.heavy, variant: variant ? { ...variant, heavy: !!K.heavy } : null, yaw: fyaw, ai })
+      fig = G ? G.spawnHood(w.x, w.z, { ...direct, heavy: !!K.heavy, variant: variant ? { ...variant, heavy: !!K.heavy } : null, yaw: fyaw, ai, brain: brain ?? 'cover' })
         : this.stage.hoods.spawn([w.x, w.z], { ...(variant || {}), heavy: !!K.heavy }, { yaw: fyaw, state: 'idle' });
     } else {
       fig = new Figure(this.stage, { kind, pos: new THREE.Vector3(w.x, 0, w.z), yaw: fyaw });
@@ -83,6 +94,7 @@ export class Cast {
       fig.bones.spine.add(mb);
       c.items.set('matchbook', mb);
     }
+    if (K.onSpawn) K.onSpawn(c, fig, this);
     if (seat) c.sit(seat);
     if (own) fig.update(0, 0);
     return c;

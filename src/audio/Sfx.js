@@ -1069,6 +1069,58 @@ function dinerBed(ctx, R, out) {
 
 // (round 2: the fight's own new sounds, src/audio/fight.js)
 Object.assign(B, FIGHT_SOUNDS);
+
+// ---------------------------------------------------------------------------
+// The rooms sfx.room(name) knows (CONTRACTS §12.2). A room definition:
+//   inside    true (default for any name but 'street'): the street goes
+//             through the wall, as below
+//   wall      the wall's low-pass, Hz (default 600: the diner's)
+//   wallGain  the street's level through the wall (default 0.25, 12 dB down)
+//   bed(ctx, R, out, kit) -> { gain: GainNode, stop() }: the room's own sound,
+//             built when the ear comes in (faded to 1 in 0.4 s) and stopped
+//             when it leaves for another room
+// A name the table does not know is an interior with no bed (as before).
+export const ROOMS = {
+  street: { inside: false },
+  diner: { bed: dinerBed },
+};
+
+// a looping noise source and a slow modulator for a room's bed (srcs: the
+// list the bed stops)
+function loopN(ctx, R, kind, rate = 1, srcs = null) {
+  const s = ctx.createBufferSource(); s.buffer = R[kind]; s.loop = true; s.playbackRate.value = rate;
+  s.start(ctx.currentTime, Math.random() * 2); if (srcs) srcs.push(s); return s;
+}
+function lfo(ctx, f, depth, param, type = 'sine', srcs = null) {
+  const o = ctx.createOscillator(); o.type = type; o.frequency.value = f; o.start(); if (srcs) srcs.push(o);
+  const g = gain(ctx, depth); o.connect(g).connect(param); return o;
+}
+
+// Sounds of their own files (wave B seams, docs/story/seams/Y.md):
+// src/audio/sounds/*.js default-exporting
+//   (kit) => ({ sounds: { name(ctx, out, t0, p, R, send) -> seconds }, rooms?: { name: def } })
+// kit: every helper the built-in sounds use, and the table itself (kit.B:
+// a file's sound may play a built-in one: kit.B.clang(ctx, out, t0, { k }, R)).
+// A sound or a room named twice throws at load.
+export const KIT = {
+  burst, thud, ping, chain, osc, gain, env, filt, voice, noise, shaper, loopN, lfo,
+  glassFall, splinter, tear, rng, dinerBed, B, ROOMS,
+};
+const SOUND_FILES = import.meta.glob('./sounds/*.js', { eager: true });
+for (const path of Object.keys(SOUND_FILES).sort()) {
+  const make = SOUND_FILES[path].default;
+  if (typeof make !== 'function') throw new Error(`sfx: ${path} must default-export (kit) => ({ sounds, rooms? })`);
+  const { sounds = {}, rooms = {} } = make(KIT) || {};
+  for (const [name, fn] of Object.entries(sounds)) {
+    if (B[name]) throw new Error(`sfx: sound '${name}' defined twice (${path})`);
+    if (typeof fn !== 'function') throw new Error(`sfx: sound '${name}' must be (ctx, out, t0, p, R, send) -> seconds (${path})`);
+    B[name] = fn;
+  }
+  for (const [name, def] of Object.entries(rooms)) {
+    if (ROOMS[name]) throw new Error(`sfx: room '${name}' defined twice (${path})`);
+    ROOMS[name] = def;
+  }
+}
 export const SOUND_NAMES = Object.keys(B);
 
 // ---------------------------------------------------------------------------
@@ -1325,19 +1377,23 @@ export class Sfx {
   // Indoors the street goes through the wall (600 Hz, 12 dB down) unless a
   // window is out (openK: 0 shut .. 1 open); the room's own bed comes up
   // (the diner: game/dinerBed). A doorway cross-fades in 0.4 s.
+  // (the rooms: the ROOMS table above, which a sound file can add to)
   room(name = 'street') {
     this.roomName = name;
     if (!this.live) return;
-    const inside = name !== 'street';
+    const def = ROOMS[name] || {};
+    const inside = def.inside ?? name !== 'street';
     const ctx = this.ctx, t = ctx.currentTime, tau = 0.4 / 3;
     const k = inside ? Math.max(0, Math.min(1, this.openK || 0)) : 1;
-    this.wall.frequency.setTargetAtTime(600 * Math.pow(20000 / 600, k), t, tau);
-    this.wallG.gain.setTargetAtTime(0.25 + 0.75 * k, t, tau);
+    const hz = def.wall ?? 600, lo = def.wallGain ?? 0.25;
+    this.wall.frequency.setTargetAtTime(hz * Math.pow(20000 / hz, k), t, tau);
+    this.wallG.gain.setTargetAtTime(lo + (1 - lo) * k, t, tau);
     this.roomGain = 1;
-    if (name === 'diner') {
-      if (!this.bed) this.bed = dinerBed(ctx, this.R, this.bus);
+    if (this.bed && this.bedName !== name) { this.bed.stop(); this.bed = null; }
+    if (def.bed) {
+      if (!this.bed) { this.bed = def.bed(ctx, this.R, this.bus, KIT); this.bedName = name; }
       this.bed.gain.gain.setTargetAtTime(1, t, tau);
-    } else if (this.bed) { this.bed.stop(); this.bed = null; }
+    }
   }
 
   // the fight's sounds (game/Brawl.js): a name of the fight's table

@@ -2,7 +2,8 @@ import * as THREE from 'three';
 import { Viewmodel, MUZZLE } from '../player/Viewmodel.js';
 import { Weapon, WEAPON } from '../player/Weapon.js';
 import { Health } from '../player/Health.js';
-import { HoodAI, HoodPacing } from '../enemies/HoodAI.js';
+import { HoodPacing } from '../enemies/HoodAI.js';
+import { makeBrain } from '../enemies/HoodBrains.js';
 import { Director } from './Director.js';
 import { Brawl } from './Brawl.js';
 import { Autopilot } from './Autopilot.js';
@@ -421,16 +422,19 @@ export class Game {
   }
 
   // ---- Hoods -------------------------------------------------------------------
-  spawnHood(x, z, { heavy = false, vanguard = false, variant = null, yaw = null, state = null, ai = true } = {}) {
+  // (a scene's gunman: brain 'cover' | 'none' | a brain file's, hp, and the
+  // direction entry / run / post / leash / wake / aim: enemies/HoodBrains.js)
+  spawnHood(x, z, { heavy = false, vanguard = false, variant = null, yaw = null, state = null, ai = true, brain = 'cover', hp = null, ...direct } = {}) {
     const W = this.world;
     const seed = 101 + this.counters.spawned * 13;
     const v = variant || { ...hoodSeedVariant(seed), heavy };
     const p = this.camera.position;
     const h = W.hoods.spawn([x, z], v, { yaw: yaw ?? Math.atan2(p.x - x, p.z - z), state: state || 'idle' });
-    h.hp = heavy ? GAME.heavyHp : GAME.hoodHp;
+    h.hp = hp ?? (heavy ? GAME.heavyHp : GAME.hoodHp);
     h.heavy = heavy;
     this.counters.spawned++;
-    if (ai) this.ais.set(h, new HoodAI(this, h, { heavy, vanguard }));
+    const B = ai ? makeBrain(this, h, brain, { heavy, vanguard, ...direct }) : null;
+    if (B) this.ais.set(h, B);
     return h;
   }
 
@@ -515,6 +519,7 @@ export class Game {
     let p = Math.max(0.05, Math.min(0.5, 0.52 - dist * 0.017));
     if (moving) p *= 0.65;
     if (ai.heavy) p *= 0.55;
+    if (ai.aim != null) p = Math.min(1, p * ai.aim);
     if (!this.live) p = 0;
     const hit = r.chance(p);
     this.pending.push({ t: time + 0.07 + dist / 400, from: muzzle.clone(), hit, dmg: r.int(8, 14), ai });

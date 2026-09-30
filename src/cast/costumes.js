@@ -320,3 +320,21 @@ const DOCKER = {
 export const COSTUMES = {
   brawler: BRAWLER, waitress: WAITRESS, cook: COOK, oldman: OLDMAN, couple_her: HER, couple_him: HIM, docker: DOCKER,
 };
+
+// ---- kinds of their own files (wave B seams, docs/story/seams/Y.md) -------------------
+// src/cast/kinds/*.js, each default-exporting
+//   { kind, h, name?, costume, clips?: { name: clip }, idle?: clipName, onSpawn?(c, fig, cast) }
+// merged here (COSTUMES), in castAnim.js (the clip bank, the idle table,
+// CAST_CLIPS) and in Cast.js (KINDS). A kind or a clip named twice throws.
+// (a kind file may import tailor.js and the enemies' rig and clips, never
+// Cast / Character / Figure / castAnim / costumes: it is read before them)
+const KIND_FILES = import.meta.glob('./kinds/*.js', { eager: true });
+export const KIND_DEFS = Object.keys(KIND_FILES).sort().map((path) => {
+  const d = KIND_FILES[path].default;
+  if (!d || !d.kind || !d.costume) throw new Error(`cast kinds: ${path} must default-export { kind, h, costume, ... }`);
+  if (COSTUMES[d.kind]) throw new Error(`cast kinds: '${d.kind}' defined twice (${path})`);
+  if (d.costume.h == null) d.costume.h = d.h;
+  if (!d.costume.name) d.costume.name = d.kind;
+  COSTUMES[d.kind] = d.costume;
+  return d;
+});

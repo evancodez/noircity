@@ -1,8 +1,9 @@
 import { HoodAnimator, getClips, bake, bakeAdditive, chainKeys, DEATH_BACK } from '../enemies/HoodAnim.js';
 import { NEUTRAL, mergePose, samplePoseKeys, ANKLE_Y } from '../enemies/HoodRig.js';
 import { figureRig, figureGeometry } from './tailor.js';
-import { COSTUMES } from './costumes.js';
+import { COSTUMES, KIND_DEFS } from './costumes.js';
 import { BR_DEFS } from './brawl/clips.js';
+import { CAST_CLIPS } from './clips.js';
 
 // The cast's clips (lane 6, P0.3): procedural poses on the Hood's joints,
 // baked per costume (its own proportions: the IK knows his arm lengths)
@@ -569,6 +570,23 @@ const ADDITIVE = {
 // the kind's own stance, played as its 'idle'
 const IDLE = { brawler: 'idleBrawler', waitress: 'idleWaitress', oldman: 'idleOld' };
 export const IS_ADDITIVE = (name) => !!ADDITIVE[name];
+
+// the kinds of their own files (src/cast/kinds/*.js, costumes.js reads them):
+// each clip is its timing (CAST_CLIPS: duration, marks, loop, hold, ...) and
+// its poses, def(ctx, arg) -> { pose(t), armSpace?, rootMotion?, fps? }
+// (ctx = { kind, costume, rig, s }; arg: what follows '@' in the name)
+for (const K of KIND_DEFS) {
+  for (const [name, c] of Object.entries(K.clips || {})) {
+    // (CAST_CLIPS is clips.js's table: an entry this kind wrote before - the
+    // module read again by the dev server - is not a second definition)
+    if (DEFS[name] || ADDITIVE[name] || (CAST_CLIPS[name] && CAST_CLIPS[name].kind !== K.kind)) throw new Error(`cast kinds: clip '${name}' defined twice (kind '${K.kind}')`);
+    if (typeof c.def !== 'function' || !(c.duration > 0)) throw new Error(`cast kinds: clip '${name}' needs { duration, def(ctx, arg) } (kind '${K.kind}')`);
+    const { def, ...timing } = c;
+    CAST_CLIPS[name] = { marks: {}, ...timing, kind: K.kind };
+    DEFS[name] = (ctx, arg) => ({ duration: c.duration, loop: !!c.loop, ...def(ctx, arg) });
+  }
+  if (K.idle) IDLE[K.kind] = K.idle;
+}
 
 // ---------------------------------------------------------------------------
 const BANKS = new Map();

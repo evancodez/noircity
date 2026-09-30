@@ -24,6 +24,20 @@ import * as THREE from 'three';
 // Their bullets: resolved after a short delay by the Game, accuracy falling
 // with distance and when the player moves; 8-14 damage.
 //
+// Direction (wave B: scenes 5 and 9 place their gunmen by the story; see
+// docs/story/seams/Y.md). Game.spawnHood(x, z, { entry, run, post, leash,
+// wake, aim }) gives a man a direction on top of his brain:
+//   wake    fn(game, hood) -> bool | 'sight' | 'shot' | [any of them]: he
+//           stands idle until it is true (a hit always wakes him)
+//   entry   [{x, z} | anchor, ...]: then he walks them (run: true runs),
+//           without thinking; a hit cuts it short
+//   post    {x, z} | anchor, leash metres (default 3; 0 = he never moves):
+//           then he fights from there, his cover, his peeks and his moves
+//           kept within the leash
+//   aim     a scale on his accuracy (Game.hoodFire)
+// Without any of them (the wave game, the battle presets) this.direct is
+// null and not one draw of his rng moves.
+//
 // HoodPacing: how a fight breathes (Phase 3a preamble #3). Fire tokens: at
 // most two men (three from the director's level 5, legacyWave) peek, aim and fire at
 // once. The lull breaker: ~5 s without a Hood's shot while they are out
@@ -98,7 +112,7 @@ export class CoverSet {
 const _v = new THREE.Vector3(), _eye = new THREE.Vector3(), _dir = new THREE.Vector3();
 
 export class HoodAI {
-  constructor(game, hood, { heavy = false, vanguard = false } = {}) {
+  constructor(game, hood, { heavy = false, vanguard = false, direct = null } = {}) {
     this.game = game;
     this.h = hood;
     this.heavy = heavy;
@@ -126,6 +140,87 @@ export class HoodAI {
     this.burstT = this.rng.range(1.5, 3);
     this.lastShot = -10;
     hood.onMove = (h) => this.resolve(h);
+    // a scene's direction (null: the wave game's man, exactly as he was)
+    this.direct = direct ? directOf(game, hood, direct) : null;
+    if (direct && direct.aim != null) this.aim = direct.aim;
+  }
+
+  // ---- direction: wake, entry, post, leash ----------------------------------------
+  get posted() { return !!(this.direct && this.direct.post); }
+  inLeash(x, z, pad = 0.35) { const P = this.direct.post; return Math.hypot(x - P.x, z - P.z) <= this.direct.leash + pad; }
+  // the nearest point to (x, z) within the leash
+  leashed(x, z) {
+    const P = this.direct.post, L = this.direct.leash, dx = x - P.x, dz = z - P.z, d = Math.hypot(dx, dz);
+    if (d <= L) return { x, z };
+    if (d < 1e-6) return { x: P.x, z: P.z };
+    return { x: P.x + dx / d * L, z: P.z + dz / d * L };
+  }
+
+  // is the wake condition true? (a hit always is)
+  woken(dt, w = this.direct.wake) {
+    const D = this.direct, G = this.game, h = this.h;
+    if (D.hit) return true;
+    if (Array.isArray(w)) { let any = false; for (const x of w) any = this.woken(dt, x) || any; return any; }
+    if (typeof w === 'function') return !!w(G, h);
+    if (w === 'shot') return D.heard || G.counters.hoodShots !== D.hs0;
+    if (w === 'sight') {
+      // (a look every 0.2 s: the eye within 60 m, in front of him - 150
+      // degrees - or within 4 m, and a clear line to it)
+      D.sightT -= dt;
+      if (D.sightT > 0) return D.saw;
+      D.sightT = 0.2;
+      const p = this.player, dx = p.x - h.pos.x, dz = p.z - h.pos.z, d = Math.hypot(dx, dz);
+      D.saw = d < 60 && (d < 4 || (dx * Math.sin(h.yaw) + dz * Math.cos(h.yaw)) / d > 0.26) && this.losFrom(h.pos.x, h.pos.z);
+      return D.saw;
+    }
+    throw new Error(`hood wake: '${w}' is not a function, 'sight' or 'shot'`);
+  }
+
+  // per step before his brain: true while the brain must wait
+  direction(dt) {
+    const D = this.direct, h = this.h;
+    if (D.phase === 'brain' || !h.alive) return false;
+    if (h.state === 'stagger') return true;
+    if (D.phase === 'wake') {
+      if (!this.woken(dt)) { h.speed = 0; return true; }
+      D.off();
+      D.phase = D.entry.length ? 'entry' : 'brain';
+    }
+    if (D.phase === 'entry') {
+      if (D.hit) { this.path = null; this.stop(); D.phase = 'brain'; return false; }
+      if (!this.path) {
+        if (D.i >= D.entry.length) { D.phase = 'brain'; return false; }
+        const p = D.entry[D.i++], nav = this.game.nav;
+        // (straight where the grid says the line is clear, else round what is in the way)
+        const path = nav.lineFree(h.pos.x, h.pos.z, p.x, p.z) ? null : nav.findPath(h.pos.x, h.pos.z, p.x, p.z);
+        this.path = path || [new THREE.Vector3(p.x, 0, p.z)];
+        this.pathI = 0; this.run = D.run; this.stuckT = 0; this.lastPos.copy(h.pos);
+        h.setAim(false); h.lookAt(null);
+      }
+      this.follow(dt);
+      return true;
+    }
+    return false;
+  }
+
+  // his cover on a post: the best within the leash that hides him from the
+  // player, else where he stands (inside the leash), else the post itself
+  postMove(mode, run) {
+    const D = this.direct, P = D.post, G = this.game, h = this.h, p = this.player, r = this.rng;
+    let best = null, bestS = Infinity;
+    for (const c of G.covers.points) {
+      if (c.taken && c.taken !== this) continue;
+      if (!this.inLeash(c.x, c.z) || !G.covers.hides(c, p.x, p.z)) continue;
+      if (G.react && G.react.hazards.length && G.react.hazardAt(c.x, c.z, 0.6)) continue;
+      const s = Math.hypot(c.x - h.pos.x, c.z - h.pos.z) - c.value * 1.5 + r.next() * 0.5;
+      if (s < bestS) { bestS = s; best = c; }
+    }
+    const here = this.inLeash(h.pos.x, h.pos.z);
+    const tx = best ? best.x : here ? h.pos.x : P.x, tz = best ? best.z : here ? h.pos.z : P.z;
+    if (best !== this.cover) { if (this.cover) this.cover.taken = null; this.cover = best; if (best) best.taken = this; }
+    const wantRun = run ?? (this.underFire > 0 || mode === 'relocate');
+    if (Math.hypot(tx - h.pos.x, tz - h.pos.z) > 0.3 && this.go(tx, tz, wantRun)) { G.pacing.drop(this); this.state = 'move'; return true; }
+    return false;
   }
 
   // (the player's eye)
@@ -177,6 +272,8 @@ export class HoodAI {
 
   go(x, z, run) {
     const h = this.h;
+    // (a man on a post: never further from it than the leash)
+    if (this.posted && this.direct.phase === 'brain') ({ x, z } = this.leashed(x, z));
     const path = this.game.nav.findPath(h.pos.x, h.pos.z, x, z);
     if (!path) return false;
     this.path = path;
@@ -226,7 +323,7 @@ export class HoodAI {
     if (h.state === 'walk' || h.state === 'run') h.setState('idle', 0.25);
   }
 
-  release() { if (this.cover) { this.cover.taken = null; this.cover = null; } this.game.pacing.drop(this); }
+  release() { if (this.cover) { this.cover.taken = null; this.cover = null; } this.game.pacing.drop(this); if (this.direct) this.direct.off(); }
 
   // choose a cover point; mode 'advance' | 'relocate'
   pickCover(mode) {
@@ -257,6 +354,7 @@ export class HoodAI {
   }
 
   moveToCover(mode, run = null) {
+    if (this.posted) return this.postMove(mode, run);
     const c = this.pickCover(mode);
     const dNow = this.distToPlayer();
     const wantRun = run ?? (this.underFire > 0 || dNow < 34 || mode === 'relocate');
@@ -305,6 +403,7 @@ export class HoodAI {
     for (const k of ks) {
       const x = c.x + px * k, z = c.z + pz * k;
       if (k !== 0 && (!nav.free(x, z) || !nav.lineFree(c.x, c.z, x, z))) continue;
+      if (k !== 0 && this.posted && !this.inLeash(x, z)) continue;
       if (this.losFrom(x, z)) return { x, z };
     }
     return null;
@@ -315,6 +414,7 @@ export class HoodAI {
   // no nearer than ~10 m, then straight out to shoot)
   press() {
     if (!this.h.alive || this.heavy) return false;
+    if (this.direct && this.direct.phase !== 'brain') return false;
     this.vanguard = true;
     this.opening = false;
     this.pressR = Math.min(24, Math.max(10, this.distToPlayer() - 2));
@@ -327,9 +427,16 @@ export class HoodAI {
     this.stun = stunned ? 1.25 : 0.35;
     this.underFire = 3;
     this.shots = 0;
+    if (this.direct) this.direct.hit = true;
   }
 
   update(dt, t) {
+    if (this.direct && this.direction(dt)) return;
+    this.think(dt, t);
+  }
+
+  // the cover brain (today's): a step of the state machine above
+  think(dt, t) {
     const h = this.h, G = this.game, r = this.rng;
     if (!h.alive) { this.release(); return; }
     // fire tokens (Game): only a few men shoot at once, the rest hold in
@@ -415,13 +522,14 @@ export class HoodAI {
         this.faceTo(p.x, p.z, dt, 3);
         if (this.timer > 0) break;
         const flanked = this.cover && !G.covers.hides(this.cover, p.x, p.z);
-        if (dist < 7) { this.moveToCover('relocate', true); break; }
+        // (a man on a post who cannot move stands and fights)
+        if (dist < 7) { if (this.moveToCover('relocate', true) || !this.posted) break; }
         // beyond pistol range: keep coming; at 20-30 m trade a volley first
         const lastMen = G.director.done && G.counters.alive <= 2;
         if (dist > 34 || (dist > 22 && this.cycles >= 1) || (this.cycles >= (lastMen ? 1 : r.int(2, 3)) && dist > 13)) {
           if (this.moveToCover('advance')) break;
         }
-        if (flanked && r.chance(0.6)) { this.moveToCover('relocate'); break; }
+        if (flanked && r.chance(0.6)) { if (this.moveToCover('relocate') || !this.posted) break; }
         if (!G.pacing.take(this, this.vanguard)) { this.timer = r.range(0.35, 0.9); break; }
         this.peekPt = this.findPeek();
         this.vanguardPeek = this.vanguard && !!this.peekPt;
@@ -432,7 +540,7 @@ export class HoodAI {
         if (this.peekPt) this.vanguard = false;
         if (!this.peekPt) {
           this.cycles++;
-          if (this.cycles > 1) this.moveToCover(dist > 16 ? 'advance' : 'relocate');
+          if (this.cycles > 1) { if (!this.moveToCover(dist > 16 ? 'advance' : 'relocate') && this.posted) this.timer = r.range(0.6, 1.2); }
           else this.timer = r.range(0.6, 1.2);
           break;
         }
@@ -536,6 +644,38 @@ export class HoodAI {
   }
 }
 
+// a direction's record: places resolved (anchor names, {x, z}, Vector3s),
+// the leash, the phase ('wake' | 'entry' | 'brain')
+export function placeOf(stage, a) {
+  if (typeof a === 'string') {
+    const an = stage.anchor(a);
+    if (!an) throw new Error(`hood direction: no anchor '${a}'`);
+    return { x: an.pos.x, z: an.pos.z };
+  }
+  if (a && a.pos) return { x: a.pos.x, z: a.pos.z };
+  return { x: a.x, z: a.z };
+}
+function directOf(game, hood, { entry = null, run = false, post = null, leash = null, wake = null } = {}) {
+  const S = game.stage;
+  const E = (Array.isArray(entry) ? entry : []).map((a) => placeOf(S, a));
+  let P = post ? placeOf(S, post) : null;
+  // (a leash without a post: tied to where his entry ends, or where he stands)
+  if (!P && leash != null) P = E.length ? { ...E[E.length - 1] } : { x: hood.pos.x, z: hood.pos.z };
+  const D = {
+    phase: wake ? 'wake' : E.length ? 'entry' : 'brain',
+    wake, entry: E, i: 0, run: !!run, post: P, leash: P ? (leash ?? 3) : null,
+    hit: false, heard: false, hs0: game.counters.hoodShots, sightT: 0, saw: false,
+    off() {},
+  };
+  const shotWake = wake === 'shot' || (Array.isArray(wake) && wake.includes('shot'));
+  if (shotWake && game.on) {
+    const fn = () => { D.heard = true; };
+    game.on('shot', fn);
+    D.off = () => { game.off('shot', fn); D.off = () => {}; };
+  }
+  return D;
+}
+
 export class HoodPacing {
   constructor(game) {
     this.game = game;
@@ -594,6 +734,7 @@ export class HoodPacing {
       let best = null, bd = Infinity;
       for (const ai of G.ais.values()) {
         if (ai.heavy || !ai.h.alive || ai.vanguard || ai.state === 'aim' || ai.state === 'fire' || ai.state === 'peek') continue;
+        if (ai.direct && ai.direct.phase !== 'brain') continue;
         const d = ai.distToPlayer();
         if (d < bd) { bd = d; best = ai; }
       }

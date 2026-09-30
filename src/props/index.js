@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { allocInkId } from '../render/layers.js';
-import { SPECS, PROP_KINDS, BOTTLE_VARIANTS } from './kinds.js';
+import { SPECS as BUILT_IN, PROP_KINDS as BUILT_IN_KINDS, BOTTLE_VARIANTS } from './kinds.js';
 import { mergeGeos } from './lib.js';
 
 // The prop library (docs/story/CONTRACTS.md §8.1): the small objects of the
@@ -43,6 +43,23 @@ import { mergeGeos } from './lib.js';
 //               (setFill); userData.spout
 //   pie ashtray stool napkinBox sugar menu newspaper ('open': a sheet held
 //   up to read) fork knife ketchup
+//   ... and the kinds of their own files: src/props/kinds/*.js, each exporting
+//   SPECS = { kind: (variant, lod) => spec } (the spec as kinds.js's; a kind
+//   defined twice throws at load; docs/story/seams/Y.md)
+// (the library is this module's own merge: kinds.js's tables are not written to)
+const SPECS = { ...BUILT_IN };
+const PROP_KINDS = [...BUILT_IN_KINDS];
+const KIND_FILES = import.meta.glob('./kinds/*.js', { eager: true });
+for (const path of Object.keys(KIND_FILES).sort()) {
+  const own = KIND_FILES[path].SPECS;
+  if (!own) throw new Error(`props: ${path} must export SPECS = { kind: (variant, lod) => spec }`);
+  for (const [kind, fn] of Object.entries(own)) {
+    if (SPECS[kind]) throw new Error(`props: kind '${kind}' defined twice (${path})`);
+    if (typeof fn !== 'function') throw new Error(`props: kind '${kind}' must be (variant, lod) => spec (${path})`);
+    SPECS[kind] = fn;
+    PROP_KINDS.push(kind);
+  }
+}
 export { PROP_KINDS, BOTTLE_VARIANTS };
 
 export function buildProp(kind, { lod = 0, variant = null } = {}) {
