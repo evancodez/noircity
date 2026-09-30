@@ -240,7 +240,11 @@ try {
     else if (S.down) await keyDown(S.down);
     else if (S.up) await keyUp(S.up);
     else if (S.mouse) {
-      const x = S.x ?? W / 2, y = S.y ?? H / 2, b = S.button || 'left';
+      // [B2] a press without coordinates is where the cursor is: under the
+      // pointer lock a press in the frame's middle moved the cursor there,
+      // and the view jumped by the distance (and every look after it too)
+      const x = S.x ?? mx ?? W / 2, y = S.y ?? my ?? H / 2, b = S.button || 'left';
+      if (S.x != null && mx != null) { mx = x; my = y; }
       if (S.mouse !== 'up') await mouse('mousePressed', x, y, b);
       if (S.mouse === 'click') await sleep(S.hold ?? 40);
       if (S.mouse !== 'down') await mouse('mouseReleased', x, y, b);

@@ -28,8 +28,8 @@ export function padPuzzle(ctx) {
       P.active = true;
       P.prevPose = C.eyePose();
       // the eye over the pad from the chair's side, looking down on it
-      const pose = { x: PAD.x + 0.44, y: DESK.h + 0.56, z: PAD.z + 0.03, yaw: Math.PI / 2, pitch: -1.02 };
-      C.setMode('table', { pose, fov: 52, ease: 0.45 });
+      const pose = { x: PAD.x + 0.47, y: DESK.h + 0.46, z: PAD.z + 0.02, yaw: Math.PI / 2, pitch: -0.86 };
+      C.setMode('table', { pose, fov: 50, ease: 0.45 });
       // the pencil from the blotter into my hand (it goes where the hand takes it)
       const pc = O.pencil;
       H.equip('empty');
@@ -108,7 +108,7 @@ export function padPuzzle(ctx) {
       if (P.checkT <= 0 && P.solvedT < 0) {
         P.checkT = 0.25;
         P.shown = pad.shown();
-        if (P.shown > 0.58) { P.solvedT = 0; G.sfx.play('office_paperRustle', P.tip, { k: 0.3 }); }
+        if (P.shown > 0.5) { P.solvedT = 0; G.sfx.play('office_paperRustle', P.tip, { k: 0.3 }); }
       }
       if (P.solvedT >= 0) {
         P.solvedT += dt;
@@ -162,8 +162,9 @@ export function padPuzzle(ctx) {
     demoStep(dt) {
       P.dT = (P.dT || 0) + dt;
       const t = P.dT;
-      const sweep = Math.sin(t * 7.5) * 26;          // side to side (px of mouse)
-      const creep = t < 0.3 ? -30 : 2.2;              // up the sheet slowly
+      // (a stroke ~9 cm each way, three a second; the hand working down the sheet)
+      const sweep = Math.cos(t * 9.4) * 34;           // side to side (px of mouse a step)
+      const creep = t < 0.3 ? -26 : 1.6;              // down the sheet slowly
       return [sweep, creep, t > 0.3];
     },
   };

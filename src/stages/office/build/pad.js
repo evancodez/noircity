@@ -149,8 +149,9 @@ export function makePad() {
         gg.save();
         gg.translate(px, py);
         gg.rotate(Math.atan2(dy, dx) + Math.PI / 2 + (rnd() - 0.5) * 0.25);
-        gg.globalAlpha = Math.min(1, 0.09 * k * (0.6 + 0.8 * rnd()));
-        const w = 22 + rnd() * 8, h = 7 + rnd() * 4;
+        gg.globalAlpha = Math.min(1, 0.2 * k * (0.6 + 0.8 * rnd()));
+        // (the lead's flank: ~1.5 cm across the stroke, a few mm along it)
+        const w = 34 + rnd() * 12, h = 8 + rnd() * 5;
         // (the pattern stays put on the sheet: offset it back)
         gg.translate(-w / 2, -h / 2);
         gg.fillRect(0, 0, w, h);
@@ -165,7 +166,7 @@ export function makePad() {
     shown() {
       const d = gg.getImageData(0, 0, W, H).data;
       let n = 0, on = 0;
-      for (let i = 0; i < numMask.length; i += 2) { n++; if (d[(numMask[i + 1] * W + numMask[i]) * 4 + 3] > 150) on++; }
+      for (let i = 0; i < numMask.length; i += 2) { n++; if (d[(numMask[i + 1] * W + numMask[i]) * 4 + 3] > 120) on++; }
       return n ? on / n : 0;
     },
     coverage() {

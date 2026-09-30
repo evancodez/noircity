@@ -98,19 +98,26 @@ export function safePuzzle(ctx) {
       S.run += Math.abs(d);
       S.grip += d * (Math.PI * 2 / 100);
       // every number the index passes: a tick; the right one, the right way: the gate
-      const n0 = Math.floor(r0), n1 = Math.floor(S.reading);
-      if (n0 !== n1) {
-        const n = sgn > 0 ? n1 : n0;
+      // (a quick turn passes several in a step: each is counted)
+      const u0 = r0, u1 = r0 + d;
+      const lo = Math.ceil(Math.min(u0, u1)), hi = Math.floor(Math.max(u0, u1));
+      let ticked = false;
+      for (let m = lo; m <= hi; m++) {
+        if (m === u0) continue;
+        const n = ((m % 100) + 100) % 100;
         const want = COMBO[S.stage];
         if (S.stage < 3 && n === want && S.dir === DIRS[S.stage]) {
           S.gate = S.stage;
-          S.gateAt = S.reading;
+          S.gateAt = n;
           G.sfx.play('office_dialClick', safe.centre);
           S.twitch = 0.035 * -sgn;
           C.kick(0.22, 0.25, 0.07);
-        } else G.sfx.play('office_dialTick', safe.centre, { k: 0.7 + 0.3 * Math.random() });
-        // (past the gate by more than a few: it has let go)
-        if (S.gate === S.stage && Math.abs(S.reading - S.gateAt) > GATE) S.gate = -1;
+        } else if (!ticked) { ticked = true; G.sfx.play('office_dialTick', safe.centre, { k: 0.7 + 0.3 * Math.random() }); }
+      }
+      // (past the gate by more than a few: it has let go)
+      if (S.gate === S.stage && S.gate >= 0) {
+        const off = Math.abs(((S.reading - S.gateAt + 150) % 100) - 50);
+        if (off > GATE) S.gate = -1;
       }
     },
     reverse(sgn) {

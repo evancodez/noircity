@@ -61,6 +61,10 @@ export default {
     Object.assign(deskLamp.light, { intensity: 7.5, angle: 1.15, penumbra: 0.75, distance: 4.5 });
     deskLamp.priority = 5;
     deskLamp.shadow = { radius: 3, mapSize: 1024, near: 0.05 };
+    // (its head and aim in the shade's own frame: they ride the shade when the desk goes over)
+    const shadeInv = new THREE.Matrix4().copy(dl.shadeG.matrixWorld).invert();
+    dl.localHead = deskHead.clone().applyMatrix4(shadeInv);
+    dl.localAxis = deskAxis.clone().transformDirection(shadeInv);
     for (const m of [dl.shadeMesh, dl.inner]) m.userData.lamp = deskLamp;
     // the corridor's lamp: a milk-glass globe near 304
     kit.piece();
@@ -84,7 +88,7 @@ export default {
     const A = (name, x, z, yaw, extra = {}) => stage.addAnchor('office.' + name, { pos: V(x, FLOOR, z), yaw, ...extra });
     A('corridor.start', -1.02, -5.55, Math.PI);
     A('door', -0.62, (DOOR.z0 + DOOR.z1) / 2, -Math.PI / 2, { r: 1.2 });
-    A('desk', 4.66, PAD.z + 0.02, Math.PI / 2);
+    A('desk', 4.8, PAD.z + 0.02, Math.PI / 2);
     A('safe', SAFE.x + 0.02, 0.78, 0);
     A('window.street', 5.02, (WIN.z0 + WIN.z1) / 2, -Math.PI / 2);
     A('window.escape', (ESC.x0 + ESC.x1) / 2, ROOM.z1 - 0.62, Math.PI);
@@ -266,8 +270,8 @@ function lampFollow(api, stage) {
   }
   // the head and the aim from the shade's own frame, every step
   parts.shadeG.updateWorldMatrix(true, false);
-  parts.shadeG.localToWorld(_h.set(-0.01, -0.03, 0));
-  const dir = _a.set(0, -1, 0).transformDirection(parts.shadeG.matrixWorld);
+  parts.shadeG.localToWorld(_h.copy(parts.localHead));
+  const dir = _a.copy(parts.localAxis).transformDirection(parts.shadeG.matrixWorld);
   if (_h.distanceToSquared(lamp.head) > 1e-8 || dir.distanceToSquared(lamp.axis) > 1e-8) {
     lamp.head.copy(_h); lamp.axis.copy(dir).normalize();
     lamp.light.pos.copy(_h);
