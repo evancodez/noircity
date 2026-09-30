@@ -475,7 +475,9 @@ export class Tail {
     // the chase is done: my car eases down to stop beside where he will
     // end (the player may brake harder), the eyes go with him, and the
     // moment runs slow for a breath
-    this.stop = { s: post.s - 2.5, d: 2.8, fixed: false };
+    // (behind him, near the kerb: I get out on the road side and walk up to
+    // his door with nothing between us)
+    this.stop = { s: post.s - 9.5, d: Math.min(4.6, post.d - 3.9), fixed: false };
     const C = G.controller;
     if (C.drive) C.drive.focus = his;
     G.slowmo(0.5, 0.8);

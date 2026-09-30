@@ -251,12 +251,12 @@ async function drive({ until = 'false', timeout = 240000, line = 2.4, shots = {}
       const h = T.his;
       if (h && T.state === 'close') {
         const p = h.seat(new N.THREE.Vector3(-1.5, 0.45, 0.7), new N.THREE.Vector3()).applyMatrix4(cam.matrixWorldInverse);
-        out.ay = Math.atan2(p.x, -p.z); out.ap = Math.atan2(p.y, -p.z); out.aimK = T.aimK;
+        out.ay = Math.atan2(p.x, -p.z); out.ap = Math.atan2(p.y, Math.hypot(p.x, p.z)); out.aimK = T.aimK;
       }
       const Q = T.question;
       if (Q && Q.man) { const m = Q.man.pos, e = cam.position; out.man = [m.x, m.z]; out.dMan = Math.hypot(m.x - e.x, m.z - e.z);
         const q = new N.THREE.Vector3(m.x, 1.3, m.z).applyMatrix4(cam.matrixWorldInverse); out.my = Math.atan2(q.x, -q.z);
-        if (Q.water) { const w = Q.water.clone().applyMatrix4(cam.matrixWorldInverse); out.wy = Math.atan2(w.x, -w.z); out.wp = Math.atan2(w.y, -w.z); } }
+        if (Q.water) { const w = Q.water.clone().applyMatrix4(cam.matrixWorldInverse); out.wy = Math.atan2(w.x, -w.z); out.wp = Math.atan2(w.y, Math.hypot(w.x, w.z)); } }
       return out; })()`);
     if (!s || s.none || s.fade) { await sleep(40); continue; }
     if (s.mode === 'drive') {

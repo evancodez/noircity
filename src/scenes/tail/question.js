@@ -49,8 +49,10 @@ export class Question {
   *getOut() {
     const G = this.game, T = this.tail, my = T.my, C = G.controller;
     const from = C.eyePose();
-    // standing by my door, looking at his car
-    const at = my.seat(new THREE.Vector3(-0.35, 0, -1.45), new THREE.Vector3());
+    // out of my door and a step up past the front wing, looking at his car
+    // (my car a wall behind me now: it stands in the way of a man on foot)
+    const at = my.seat(new THREE.Vector3(0.9, 0, -1.5), new THREE.Vector3());
+    if (!my.walled) { my.walled = true; G.stage.colliders.addBox(my.pos.x, my.pos.z, my.spec.halfL, my.spec.halfW, my.yaw, 'car'); }
     const gy = G.stage.surfaceY(at.x, at.z);
     const to = new THREE.Vector3(at.x, gy + 1.65, at.z);
     const tgt = T.his.pos;
@@ -103,14 +105,20 @@ export class Question {
     G.sfx.play('tail_thud', wall, { k: 1 }, { ref: 3 });
     C.kick(2.2, 1.5, 0.14);
     C.shake(0.3, 0);
-    // the rail behind his car: past its end nearest me, then to the rail
-    const lend = lx > 0 ? 2.1 : -2.1;
-    const P1 = his.seat(new THREE.Vector3(lend + Math.sign(lend) * 0.9, 0, this.side * -(his.spec.halfW + 0.3)), new THREE.Vector3());
-    const pr = project(P1.x, P1.z, his.s, {});
-    this.path = [this.pin.clone(), roadPoint(pr.s, Math.max(pr.d, 6.8)), roadPoint(pr.s, ROAD.rail - 0.42)];
-    // (the water beyond him, out where the far lights lie on it: the eyes
-    // on it put him in the lower frame, bent over the rail, the river behind)
-    this.water = roadPoint(pr.s + 2, ROAD.rail + 14, ROAD.waterY);
+    // the rail beside his car: along the pavement past its end nearest me,
+    // then up to the rail (the walk never turns back on itself)
+    const pin = project(wall.x, wall.z, his.s, {});
+    const ends = [his.seat(new THREE.Vector3(2.4, 0, 0), new THREE.Vector3()), his.seat(new THREE.Vector3(-2.4, 0, 0), new THREE.Vector3())]
+      .map((e) => project(e.x, e.z, his.s, {}));
+    const eyeS = project(eye.x, eye.z, his.s, {}).s;
+    const near = Math.abs(ends[0].s - eyeS) < Math.abs(ends[1].s - eyeS) ? ends[0] : ends[1];
+    const sRail = near.s + Math.sign(near.s - pin.s || 1) * 1.1;
+    const pr = { s: sRail, d: ROAD.rail - 0.45 };
+    this.path = [this.pin.clone(), roadPoint(sRail, Math.min(Math.max(pin.d, 6.4), ROAD.rail - 1.4)), roadPoint(sRail, ROAD.rail - 0.45)];
+    // (the water past the rail where he is being walked: to the side of him
+    // as the question starts, so a look at him is not a look at it; the far
+    // lights lie on it)
+    this.water = roadPoint(sRail + Math.sign(sRail - pin.s || 1) * 4, ROAD.rail + 9, ROAD.waterY);
     this.railS = pr.s;
     yield wait(0.35);
   }
@@ -133,8 +141,11 @@ export class Question {
     const fwd = _w.set(0, 0, -1).transformDirection(G.camera.matrixWorld);
     const toW = new THREE.Vector3().subVectors(this.water, eye).normalize();
     const on = fwd.dot(toW);
-    // (and toward the river at all: the eyes past his shoulder)
-    const k = clamp((on - 0.82) / 0.14, 0, 1);
+    // (and at the water rather than at him: once he stands between me and
+    // it, at the rail, either will do)
+    const toM = new THREE.Vector3(man.pos.x - eye.x, man.pos.y + 1.3 - eye.y, man.pos.z - eye.z).normalize();
+    const atHim = fwd.dot(toM);
+    const k = clamp((on - 0.86) / 0.1, 0, 1) * (this.p > 0.6 || on > atHim ? 1 : 0);
     if (k > 0) { this.p = Math.min(1, this.p + dt * (0.18 + 0.32 * k)); this.stareT = 0; }
     else this.stareT += dt;
     // after a while of staring at him: the one small prompt

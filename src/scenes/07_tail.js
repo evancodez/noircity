@@ -77,8 +77,9 @@ function buildCrash(ctx, { out = false } = {}) {
   for (let i = 0; i < 400 && !S.hit; i++) S.drive(T.his, 1 / 60);
   T.his.pose(0);
   // my car beside him, stopped
-  T.my.place(roadPoint2(post.s - 3, 2.6), carYaw2(post.s - 3), 0);
-  T.stop = { s: post.s - 3, d: 2.6, fixed: true };
+  const sd = Math.min(4.6, post.d - 3.9);
+  T.my.place(roadPoint2(post.s - 9.5, sd), carYaw2(post.s - 9.5), 0);
+  T.stop = { s: post.s - 9.5, d: sd, fixed: true };
   T.my.parkedT = 1;
   return T;
 }
