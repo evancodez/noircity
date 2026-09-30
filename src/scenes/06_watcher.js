@@ -221,24 +221,28 @@ export default defineScene({
       // the iron the look is drawn down to him in the street below, crossing
       // for the alley's mouth - where to go - until the mouse or W takes it)
       if (T) {
-        let k = 1, draw = -1;
+        let k = 1, draw = 0;
+        // (the head is past the wall's face - out from under the sash - here)
+        const sOut = railS(1) - 0.45;
         ctx.onStep((dt) => {
           if (k > 0) { k = Math.max(0, k - dt / 0.3); G.hud.fade(k * k * (3 - 2 * k)); }
           const e = G.controller.esc;
           if (!e || draw === -2) return;
-          // (from the moment the head is out from under the sash)
-          if (draw < 0 && e.s >= e.autoTo - 0.4) draw = 0;
-          if (draw < 0) return;
           // (a turn of the mouse or a step down the iron lets it go)
           if (e.idle < draw - 1e-6 || G.held('KeyW') || G.held('ArrowUp')) { draw = -2; return; }
           draw += dt;
           e.idle = draw;
-          if (draw > 1.6) { draw = -2; return; }
+          if (draw > 1.8) { draw = -2; return; }
+          // (from the cut: the eyes go down to the street at once - under the
+          // sash the iron and the street are what the opening shows, not the
+          // wall across the light well - and round to him as the head comes
+          // out past the wall's face)
           const him = C.fig.bones.chest.getWorldPosition(V(0, 0, 0)), eye = G.eye;
           const yawTo = Math.atan2(-(him.x - eye.x), -(him.z - eye.z));
           const pitchTo = Math.atan2(him.y - eye.y, Math.hypot(him.x - eye.x, him.z - eye.z));
-          const a = 1 - Math.exp(-dt * 3.2);
-          e.look.yaw += Math.atan2(Math.sin(yawTo - e.heading - e.look.yaw), Math.cos(yawTo - e.heading - e.look.yaw)) * a;
+          const out = Math.min(1, Math.max(0, (e.s - sOut) / 0.3));
+          const a = 1 - Math.exp(-dt * 4.2);
+          e.look.yaw += Math.atan2(Math.sin(yawTo - e.heading - e.look.yaw), Math.cos(yawTo - e.heading - e.look.yaw)) * a * (0.25 + 0.75 * out * out * (3 - 2 * out));
           e.look.pitch += (pitchTo - e.pitchBase - e.look.pitch) * a;
         });
       }

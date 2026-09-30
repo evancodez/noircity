@@ -52,10 +52,15 @@ export function curtainAside(O, k) {
   const room = O.part('office');
   const cm = room && room.curtain && room.curtain.mesh;
   if (!cm) return;
-  const c0 = O._r2cCurtain0 || (O._r2cCurtain0 = { x: cm.position.x, s: cm.scale.x, w: room.curtain.w });
+  const U = cm.material && cm.material.uniforms;
+  const c0 = O._r2cCurtain0 || (O._r2cCurtain0 = { x: cm.position.x, s: cm.scale.x, w: room.curtain.w, lamp: U && U.uLampK ? U.uLampK.value : null });
   const sc = c0.s * (1 - 0.82 * k);
   cm.scale.x = sc;
   cm.position.x = c0.x + (c0.w / 2) * (c0.s - sc);
+  // (gathered, the cloth is folds against the frame, not a pane the light
+  // well shines through: it glowed as a white bar beside the window - its
+  // glow brought down to a dark cloth while it is aside)
+  if (U && U.uLampK && c0.lamp != null) U.uLampK.value = c0.lamp * (1 - 0.93 * k);
 }
 
 // ---- the blind ----------------------------------------------------------------------------
