@@ -133,6 +133,13 @@ export default (kit) => {
         burst(ctx, out, R, t0, 'white', ['bandpass', 3200, 2], 0.2 * k, 0.0005, 0.04);
         return 0.2;
       },
+      // the hammer on an empty chamber; the cylinder swung out, the empties
+      // out, six in, shut
+      tail_click(ctx, out, t0, p, R) { burst(ctx, out, R, t0, 'white', ['bandpass', 3600, 3], 0.25, 0.0005, 0.02); thud(ctx, out, t0, 700, 400, 0.08, 0.02); return 0.1; },
+      tail_reload(ctx, out, t0, p, R) {
+        for (const [dt, f, a] of [[0, 2600, 0.14], [0.22, 1800, 0.1], [0.3, 1900, 0.08], [0.55, 3000, 0.08], [0.7, 3100, 0.07], [0.85, 3000, 0.07], [1.1, 2400, 0.16]]) burst(ctx, out, R, t0 + dt, 'white', ['bandpass', f, 3], a, 0.0005, 0.025);
+        return 1.3;
+      },
       tail_kerb(ctx, out, t0, p) { thud(ctx, out, t0, 95, 55, 0.18 * (p.k ?? 0.5), 0.12); return 0.2; },
       // a 1930s horn: two reeds a fourth apart, nasal
       tail_horn(ctx, out, t0, p, R) {

@@ -235,6 +235,15 @@ export function buildCoupe(M) {
     const a = H.clone().addScaledVector(N, -0.04), b = H.clone().addScaledVector(N, -0.52);
     cabin.push(tube([a, a.clone().lerp(b, 0.5), b], 0.026, 10, 6));
   }
+  // the panel's furniture (its own ink id: the lines of the dash): the
+  // glovebox door before the passenger with its chrome catch, the radio's
+  // grille in the middle, a chrome strip across under the ledge
+  const panel = [];
+  panel.push(roundedBox(0.012, 0.15, 0.3, 0.012, 2).translate(0.372, 0.93, 0.36));
+  trim.push(new THREE.CylinderGeometry(0.012, 0.012, 0.01, 12).rotateZ(Math.PI / 2).translate(0.364, 0.97, 0.36));
+  for (let i = 0; i < 7; i++) panel.push(roundedBox(0.01, 0.1, 0.012, 0.004, 1).translate(0.372, 0.9, -0.08 + i * 0.022));
+  panel.push(roundedBox(0.012, 0.13, 0.19, 0.01, 2).translate(0.374, 0.9, -0.014));
+  trim.push(roundedBox(0.008, 0.012, 1.24, 0.004, 1).translate(0.372, 1.055, 0));
   // the dials on the panel: two before the driver, a clock in the middle
   const dials = [];
   const dz = [[COUPE.eye.z - 0.09, 0.068], [COUPE.eye.z + 0.095, 0.052], [0.05, 0.05]];
@@ -255,6 +264,8 @@ export function buildCoupe(M) {
   const dialMat = new THREE.MeshBasicMaterial({ color: new THREE.Color().setScalar(0.06) });
   meshes.dials = mk(dials, dialMat, 'dials');
   meshes.trim.userData.inkSub = true;
+  meshes.panel = mk(panel, M.iron, 'panel');
+  meshes.panel.userData.inkSub = true;
   meshes.dials.userData.inkSub = true;
   const needleGeo = new THREE.BoxGeometry(0.004, 0.058, 0.006).translate(0, 0.026, 0);
   const needles = [];

@@ -27,6 +27,7 @@ export class Question {
   // the watcher at his door, crawling out (his car: tail.his)
   spawnWatcher() {
     const C = this.ctx.cast, his = this.tail.his;
+    if (his.driverFig) his.driverFig.visible = false;
     const kind = C.has('watcher') ? 'watcher' : 'couple_him';
     // his door: the side of his car toward the road
     const c = Math.cos(his.yaw), s = Math.sin(his.yaw);
@@ -88,7 +89,9 @@ export class Question {
     const side = his.seat(new THREE.Vector3(0, 0, 0), new THREE.Vector3());
     // (the point on his car's side nearest me)
     const l = his.local(eye, new THREE.Vector3());
-    const lx = clamp(l.x, -1.6, 1.4);
+    // (at the end of his car nearest me: the rail and the river are a
+    // step round its corner, so the walk to them is short and faces them)
+    const lx = l.x >= 0 ? 1.75 : -1.9;
     const wall = his.seat(new THREE.Vector3(lx, 0, this.side * (his.spec.halfW + 0.36)), new THREE.Vector3());
     void side;
     const face = Math.atan2(cs.x, cs.z);   // his heading: away from the car
@@ -118,7 +121,7 @@ export class Question {
     // (the water past the rail where he is being walked: to the side of him
     // as the question starts, so a look at him is not a look at it; the far
     // lights lie on it)
-    this.water = roadPoint(sRail + Math.sign(sRail - pin.s || 1) * 4, ROAD.rail + 9, ROAD.waterY);
+    this.water = roadPoint(sRail + Math.sign(sRail - pin.s || 1) * 1.5, ROAD.rail + 4.5, ROAD.waterY);
     this.railS = pr.s;
     yield wait(0.35);
   }
@@ -155,7 +158,9 @@ export class Question {
     // it, at the rail, either will do)
     const toM = new THREE.Vector3(man.pos.x - eye.x, man.pos.y + 1.3 - eye.y, man.pos.z - eye.z).normalize();
     const atHim = fwd.dot(toM);
-    const k = clamp((on - 0.86) / 0.1, 0, 1) * (this.p > 0.6 || on > atHim ? 1 : 0);
+    // (the water lies below and beyond him: the eyes must go down past his
+    // shoulder to it, ~20 degrees round it; a look at his face is not one)
+    const k = clamp((on - 0.935) / 0.05, 0, 1) * (this.p > 0.03 || atHim < 0.965 ? 1 : 0);
     if (k > 0) { this.p = Math.min(1, this.p + dt * (0.18 + 0.32 * k)); this.stareT = 0; }
     else this.stareT += dt;
     // after a while of staring at him: the one small prompt
@@ -172,6 +177,9 @@ export class Question {
     dir.y = 0; dir.normalize();
     const heading = Math.atan2(-dir.x, -dir.z);   // (he faces away from where he is going)
     this.hd = this.hd == null ? this.face : this.hd + Math.atan2(Math.sin(heading - this.hd), Math.cos(heading - this.hd)) * (1 - Math.exp(-dt * 5));
+    // (our feet on the wet stones as I walk him back: a step each way)
+    if (this.lastAt) { this.stepAcc = (this.stepAcc || 0) + this.lastAt.distanceTo(at); if (this.stepAcc > 0.5) { this.stepAcc = 0; G.sfx.step(at.clone(), false, false); G.sfx.step(null, false, true); } }
+    (this.lastAt || (this.lastAt = new THREE.Vector3())).copy(at);
     man.place({ x: at.x, z: at.z }, this.hd);
     // (the bend: back over the rail - his clip - as the walk ends)
     if (bend > 0.02 && !this.bent) { this.bent = true; man.play('tail_overRail', { fade: 0.55 }); G.sfx.play('tail_thud', at, { k: 0.6 }, { ref: 3 }); G.controller.kick(1.2, 0.8, 0.12); }

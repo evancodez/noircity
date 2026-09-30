@@ -75,6 +75,25 @@ export class Tail {
     V.setPlayer(this.my);
     this.his = V.spawn('sedan', { at: roadPoint(his.s, his.d), yaw: carYawAt(his.s) + (his.yaw || 0), speed: his.speed || 0, lights: true, tail: 'crew' });
     this.his.driver = this.watcher;
+    // the man at his wheel: through his rear window, a bowler and a pair of
+    // shoulders against his own headlamps (gone when he crawls out)
+    {
+      const g = new THREE.Group();
+      const M = stage.M;
+      const parts = [
+        new THREE.SphereGeometry(0.095, 14, 10).scale(1, 1.15, 1).translate(0, 1.36, 0),
+        new THREE.CylinderGeometry(0.075, 0.1, 0.12, 14).translate(0, 1.5, 0),
+        new THREE.SphereGeometry(0.075, 14, 8, 0, Math.PI * 2, 0, Math.PI / 2).translate(0, 1.55, 0),
+        new THREE.CylinderGeometry(0.16, 0.16, 0.012, 18).translate(0, 1.465, 0),
+        new THREE.SphereGeometry(0.2, 14, 10).scale(1.5, 0.55, 1).translate(0, 1.13, 0),
+      ];
+      for (const geo of parts) { const m = new THREE.Mesh(geo, M.black); g.add(m); }
+      g.position.set(-0.35, 0, -0.33);
+      const id = this.his.car.meshes.paint.userData.inkId;
+      g.traverse((o) => { if (o.isMesh) { o.userData.inkId = id; o.userData.inkFigure = true; o.userData.noRay = true; } });
+      this.his.body.add(g);
+      this.his.driverFig = g;
+    }
     this.his.car.limit = 1e9;
     const mine = this.my;
     mine.on('scrape', (e) => this.scrape(e));
@@ -388,7 +407,7 @@ export class Tail {
   }
   fire() {
     const G = this.game, cam = G.camera, his = this.his;
-    if (this.rounds <= 0) { this.reloadT = 1.3; return; }
+    if (this.rounds <= 0) { this.reloadT = 1.3; G.sfx.play('tail_click', null, {}); G.sfx.play('tail_reload', null, {}); return; }
     this.rounds--;
     this.shots++;
     this.cool = 0.3;
@@ -421,7 +440,7 @@ export class Tail {
       if (good) this.goodShot(hit);
     }
     G.emit('shot', { weapon: 'revolver', hit, car: good });
-    if (this.rounds <= 0) this.reloadT = 1.3;
+    if (this.rounds <= 0) { this.reloadT = 1.3; G.sfx.play('tail_reload', null, {}, { delay: 0.25 }); }
   }
   // a round into his car: his tail lamp on that side goes, sparks off the
   // trunk; a round near a rear wheel (a generous one) or the fifth good one
