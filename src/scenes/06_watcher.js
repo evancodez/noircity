@@ -259,6 +259,7 @@ export default defineScene({
         return Math.max(2.5, Math.min(8.5, (want - s) * 2.2));
       };
       C.s0 = C.s;
+      let still = 0;
       yield until(() => {
         const e = E();
         if (e) {
@@ -267,7 +268,8 @@ export default defineScene({
           const L0 = e.rail[i].s;
           chase.ladder.set(e.s > L0 ? Math.min(1, (e.s - L0) / (e.len - L0)) : 0);
           // the prompt to go on down, once, if I stand still on the landing
-          if (e.s < 0.8 && ctx.sceneTime > 2.5 && e.v < 0.1) G.hud.prompt('W  down', null, 'scene'); else G.hud.clearPrompt('scene');
+          still = e.s < 0.8 && e.v < 0.1 ? still + 1 / 60 : 0;
+          if (still > 2.5) G.hud.prompt('W  down', null, 'scene'); else G.hud.clearPrompt('scene');
         }
         return ended;
       });
@@ -379,7 +381,13 @@ export function startRun(ctx) {
       if (name === 'vault') G.sfx.play('w_vault', at);
       else if (name === 'scramble') G.sfx.play('w_fenceHit', at);
       else if (name === 'land') G.sfx.play('w_land', at.setY(0.1));
-      else if (name === 'stumble') G.sfx.play('w_stumble', at.setY(0.4));
+      else if (name === 'stumble') {
+        G.sfx.play('w_stumble', at.clone().setY(0.4));
+        // (the crate I ran into goes skidding on ahead of me, off my line)
+        const p = G.controller.pos, v = G.controller.vel;
+        const L = Math.hypot(v.x, v.z) || 1;
+        for (const it of chase.crates.hits(p.x, p.z, 0.45)) chase.crates.kick(it, v.x / L * 0.7, v.z / L * 0.7 + (it.g.position.z > p.z ? 0.25 : -0.25));
+      }
       else if (name === 'hop') G.sfx.play('w_hop', at);
     },
     ease: 0.25,

@@ -151,7 +151,9 @@ export default {
         const slide = dir * (top ? 0.3 : 0.08) * u;
         const bounce = 0.05 * Math.sin(Math.min(1, Math.max(0, (kk - 0.9) / 0.4)) * Math.PI);
         it.g.position.set(it.x0, it.y0 - drop + 0.5 * S * Math.sin(ang) + bounce, it.z0 + dir * 0.5 * S * (1 - Math.cos(ang)) + slide);
-        it.g.rotation.set(dir * ang, it.yaw0, 0);
+        it.g.rotation.set(dir * ang, it.yaw0 + (it.kickYaw || 0), 0);
+        // (a shin into it: kicked along, skidding a little way on the wet)
+        if (it.kick) it.g.position.add(it.kick);
         it.lying = u > 0.95;
       };
       api.crates = {
@@ -177,7 +179,16 @@ export default {
           }
           return out;
         },
-        reset() { for (const s of stacks) { s.pulled = false; s.t = 0; } this.update(0); },
+        // a body ran into it: it is shoved along the way it was going
+        kick(it, dx, dz) {
+          if (!it.kick) it.kick = new THREE.Vector3();
+          it.kick.x += dx; it.kick.z += dz;
+          // (never through the walls of the passage)
+          const c = it.g.position.z + dz;
+          if (c < PASSAGE.z0 + 0.35 || c > PASSAGE.z1 - 0.35) it.kick.z -= dz;
+          it.kickYaw = (it.kickYaw || 0) + (Math.random() - 0.5) * 0.6;
+        },
+        reset() { for (const s of stacks) { s.pulled = false; s.t = 0; for (const it of s.items) { it.kick = null; it.kickYaw = 0; } } this.update(0); },
       };
       api.crates.update(0);
     }
