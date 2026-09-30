@@ -121,7 +121,7 @@ export class Question {
     // (the water past the rail where he is being walked: to the side of him
     // as the question starts, so a look at him is not a look at it; the far
     // lights lie on it)
-    this.water = roadPoint(sRail + Math.sign(sRail - pin.s || 1) * 1.5, ROAD.rail + 4.5, ROAD.waterY);
+    this.water = roadPoint(sRail + Math.sign(sRail - pin.s || 1) * 1.5, ROAD.rail + 8, ROAD.waterY);   // (8 m out: a look at it takes in the river and the far bank, not the stones at my feet)
     this.railS = pr.s;
     yield wait(0.35);
   }
@@ -146,7 +146,7 @@ export class Question {
       const e = G.camera.position, w = this.water;
       // (on the way, the eyes lift off the water a little, toward the far
       // bank: still inside the look's cone, and the river reads as a river)
-      const yaw = Math.atan2(-(w.x - e.x), -(w.z - e.z)) - H.face, pitch = Math.atan2(w.y - e.y, Math.hypot(w.x - e.x, w.z - e.z)) + (this.p > 0.35 ? 0.24 : 0);
+      const yaw = Math.atan2(-(w.x - e.x), -(w.z - e.z)) - H.face, pitch = Math.atan2(w.y - e.y, Math.hypot(w.x - e.x, w.z - e.z)) + (this.p > 0.35 ? 0.1 : 0);
       const k = 1 - Math.exp(-dt * 3);
       H.look.yaw += (Math.atan2(Math.sin(yaw), Math.cos(yaw)) - H.look.yaw) * k;
       H.look.pitch += (pitch - H.look.pitch) * k;
