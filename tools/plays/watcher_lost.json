@@ -11,6 +11,9 @@
    "wait": 1500
   },
   {
+   "eval": "(G.__says = [], G.hud.say = ((f) => function (t, d) { G.__says.push(String(t)); return f.apply(this, arguments); })(G.hud.say), 'recording says')"
+  },
+  {
    "clickOn": "#title .opt[data-k=begin]"
   },
   {
@@ -38,7 +41,7 @@
    "timeout": 15000
   },
   {
-   "expect": "G.hud.sayShown && G.hud.sayShown.includes('Lost him')",
+   "expect": "G.__says.filter((t) => t.includes('Lost him')).length === 1",
    "label": "Lost him. (the one line)"
   },
   {
