@@ -59,6 +59,8 @@ export const COOLER = { x: 5.0, z: 0.42 };
 export const STAND = { x: 0.42, z: 3.9 };                                    // the coat stand
 export const PICTURE = { x: 2.75, y: 1.5, w: 0.66, h: 0.52, tilt: -0.07 };   // south wall
 export const SAFE = { x: 2.75, y: 1.48, w: 0.42, h: 0.42, depth: 0.34 };
+// how far the picture is swung aside on its wire (rad): clear of the dial and the handle
+export const PICTURE_ASIDE = 1.45;
 export const FAN = { x: 2.8, z: 3.5 };
 export const TABLE = { x: 0.95, z: 0.33 };                                   // the adding machine's table (south wall)
 

@@ -249,9 +249,9 @@ export function buildFurniture(kit, mats, stage) {
     const P = PICTURE;
     // the pivot: the nail above it (it swings aside on its wire)
     const nail = new THREE.Group();
-    // (it stands off the wall on the safe's dial and handle behind it: they
-    // must never show through the print)
-    nail.position.set(P.x, P.y + P.h / 2 + 0.16, ROOM.z0 + 0.062);
+    // (it stands off the wall over the safe's dial and handle behind it:
+    // they must never show through the print)
+    nail.position.set(P.x, P.y + P.h / 2 + 0.16, ROOM.z0 + 0.056);
     kit.g.add(nail);
     const hang = new THREE.Group();
     nail.add(hang);
@@ -347,7 +347,8 @@ function buildSafe(kit, mats, stage) {
   // the door: hinged on its left edge (seen from the room: -x)
   kit.piece();
   const hinge = new THREE.Group();
-  hinge.position.set(S.x - w / 2 + 0.01, S.y, z + 0.004);
+  // (the door flush with the wall's face, as a wall safe's is: only the dial and the handle stand out of it)
+  hinge.position.set(S.x - w / 2 + 0.01, S.y, z - 0.048);
   g.add(hinge);
   const dd = [slab(w - 0.02, 0.05, h - 0.02, { bevel: 0.006, corner: 0.01 }).rotateX(Math.PI / 2).translate((w - 0.02) / 2, (h - 0.02) / 2, -0.05 + 0.05)];
   // (the slab lies along -z..0 after the turn: its face at z 0.0; hinge knuckles)
@@ -385,7 +386,7 @@ function buildSafe(kit, mats, stage) {
   kit.add(M([new THREE.CylinderGeometry(0.012, 0.012, 0.04, 10).rotateX(Math.PI / 2).translate(0, 0, 0.02), new THREE.CylinderGeometry(0.009, 0.009, 0.14, 10).rotateZ(Math.PI / 2).translate(0, 0, 0.042), ...[-0.07, 0.07].map((x) => new THREE.SphereGeometry(0.014, 10, 8).translate(x, 0, 0.042))]), mats.brass, { parent: handleG, name: 'safe_handle' });
   // a nameplate
   kit.add(new THREE.BoxGeometry(0.12, 0.022, 0.003).translate((w - 0.02) / 2 + 0.02, 0.16, FZ + 0.0015), mats.brass, { parent: hinge, cast: false });
-  return { group: g, hinge, door, dialG, handleG, face, angle: 0, open: 0, dial: 0, handle: 0, centre: new THREE.Vector3(S.x + 0.02, S.y + 0.05, z + 0.056 + 0.03), inside: new THREE.Vector3(S.x, S.y - h / 2 + 0.02, z - dz / 2) };
+  return { group: g, hinge, door, dialG, handleG, face, angle: 0, open: 0, dial: 0, handle: 0, centre: new THREE.Vector3(S.x + 0.02, S.y + 0.05, z + 0.004 + 0.03), inside: new THREE.Vector3(S.x, S.y - h / 2 + 0.02, z - dz / 2) };
 }
 
 // the dial's face: 100 ticks, a figure every ten, on dark steel

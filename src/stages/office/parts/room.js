@@ -6,7 +6,7 @@ import { buildShell } from '../build/shell.js';
 import { buildOpenings, syncFrosted } from '../build/openings.js';
 import { buildFurniture } from '../build/furniture.js';
 import { buildFireEscape, buildStreet } from '../build/outside.js';
-import { FLOOR, CEIL, ROOM, CORR, DOOR, DESK, PAD, LAMP, WIN, ESC, SAFE, PICTURE, STREET, POST, CORR_LAMP, BLIND_LIGHT } from '../plan.js';
+import { FLOOR, CEIL, ROOM, CORR, DOOR, DESK, PAD, LAMP, WIN, ESC, SAFE, PICTURE, STREET, POST, CORR_LAMP, BLIND_LIGHT, PICTURE_ASIDE } from '../plan.js';
 // the banker's lamp's strength (the pad sits close under it, in the heart of its pool: at
 // this the graphite on the sheet still prints dark, and the blotter round it white)
 const DESK_LAMP_I = 6;
@@ -149,11 +149,11 @@ export default {
         d.tip = { t: 0, a: now ? Math.PI / 2 : 0, v: 0 };
         d.tipNow = now;
         // (over at once: its collider and the bullets' copy where it lies, before anyone stands by it)
-        if (now) { d.tip.done = true; d.pivot.rotation.z = Math.PI / 2; d.tipped = 1; drawersHome(api, stage, true); afterTip(api, stage); }
+        if (now) { d.tip.done = true; d.pivot.rotation.z = Math.PI / 2; d.pivot.updateMatrixWorld(true); d.tipped = 1; drawersHome(api, stage, true); afterTip(api, stage); }
         return true;
       },
       // ---- the picture swings aside on its wire -------------------------------------------
-      swingPicture() { const p = furn.picture; p.target = 1.05; p.swinging = true; },
+      swingPicture() { const p = furn.picture; p.target = PICTURE_ASIDE; p.swinging = true; },
       reset() { resetRoom(api, stage); },
     };
     api.setDoor(DOOR.open0);

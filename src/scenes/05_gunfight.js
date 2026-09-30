@@ -52,7 +52,9 @@ export default defineScene({
     // it stood down on its first step and the bar never showed. The lull
     // breaker it steps asks the men's brain to press, and the office brain
     // has no press: nothing else changes)
-    D.run(function* () { for (;;) yield null; });
+    // (it ends with the scene: a scene left any other way never leaves the
+    // director running into the next one)
+    D.run(function* () { while (G.scenes.ctx === ctx) yield null; });
     roomReacts(ctx);
     // (the plain revolver has no model yet: where it points, what is in it)
     standInGun(ctx);
@@ -297,7 +299,8 @@ function heave(ctx) {
     t += 1 / 60;
     dip(off < 0 ? -0.26 * Math.min(1, t / 0.14) : 0);
     if (off < 0) {
-      if (d.tipped < 0.3 && t < 0.6) { pin(); return; }
+      // (the first 15 degrees: after that the edge goes up and away out of reach)
+      if (d.tipped < 0.17 && t < 0.5) { pin(); return; }
       // (let go: the hands drop away)
       off = t;
       live(H, {});

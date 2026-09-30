@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { buildProp } from '../../props/index.js';
-import { ROOM, DOOR, DESK, PAD, SAFE, PICTURE, WIN, CABS, COOLER, STAND, ESC, CORR } from '../../stages/office/plan.js';
+import { ROOM, DOOR, DESK, PAD, SAFE, PICTURE, WIN, CABS, COOLER, STAND, ESC, CORR, PICTURE_ASIDE } from '../../stages/office/plan.js';
 import { live } from './hands.js';
 
 // Room 304 as scenes 4 and 5 find it, and the small machinery both direct
@@ -33,7 +33,7 @@ export function roomAs(ctx, phase = 'found') {
   const at = P.indexOf(phase);
   if (at >= 1) O.pad.api.reset();
   if (at >= 2) {
-    O.picture.angle = O.picture.target = 1.05; O.picture.hang.rotation.z = 1.05;
+    O.picture.angle = O.picture.target = PICTURE_ASIDE; O.picture.hang.rotation.z = PICTURE_ASIDE;
     O.safe.open = 1; O.safe.hinge.rotation.y = -1.9;
   }
   // the ledger in the safe (until it is taken)

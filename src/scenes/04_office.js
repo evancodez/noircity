@@ -163,6 +163,8 @@ export default defineScene({
     if (ctx.at('ledger')) {
       yield beat('ledger');
       yield* ctx.prompt({ text: 'take it', at: () => O.ledger && O.ledger.getWorldPosition(V(0, 0, 0)) });
+      // (a quick hand: the sheet, if it is not in the pocket yet, goes now - both hands take the book)
+      if (O.sheet) { H.hold(null, 'L', { keep: true }); if (O.sheet.parent) O.sheet.parent.remove(O.sheet); O.sheet = null; live(H, {}); }
       const L = O.ledger;
       G.sfx.play('office_ledgerTake', L.getWorldPosition(V(0, 0, 0)));
       const tk = H.play('b2_take');
