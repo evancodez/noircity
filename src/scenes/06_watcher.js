@@ -331,19 +331,30 @@ export default defineScene({
       // (the eye is drawn to it, softly, from the moment its lamps come on
       // until it is well away: the mouse still turns me, the draw only
       // leans the look toward the red of its tail lamps)
-      const pull = { t: -1, dur: 3.2 };
+      // (then, more gently, back to my own car at the kerb: where to go)
+      const door = V(MY_CAR.x + 1.0, 1.1, MY_CAR.z + 0.35);
+      let driven = false;
+      const pull = { t: -1, dur: 5.4, rate: 3.2, pitch: -0.04, at: () => car.pos(),
+        next: { dur: 1.8, rate: 1.8, pitch: -0.1, at: () => door } };
       const wrapA = (a) => Math.atan2(Math.sin(a), Math.cos(a));
       ctx.onStep((dt) => {
-        if (pull.t < 0 || pull.t >= pull.dur) return;
-        const ctl = G.controller;
+        if (pull.t < 0 || driven) return;
+        const ctl = G.controller, e = G.eye;
+        if (pull.t >= pull.dur) {
+          // (not when I am already at it, or already looking its way)
+          const N = pull.next;
+          pull.next = null;
+          if (!N || Math.hypot(door.x - e.x, door.z - e.z) < 3.5) { pull.t = -1; return; }
+          Object.assign(pull, N, { t: 0 });
+        }
         if (ctl.mode !== 'run' && ctl.mode !== 'walk') return;
         pull.t += dt;
-        const P = car.pos(), e = G.eye;
+        const P = pull.at();
         const want = Math.atan2(-(P.x - e.x), -(P.z - e.z));
         const w = Math.min(1, pull.t / 0.3) * Math.min(1, (pull.dur - pull.t) / 1.0);
-        const k = (1 - Math.exp(-dt * 3.2)) * w;
+        const k = (1 - Math.exp(-dt * pull.rate)) * w;
         ctl.yaw += wrapA(want - ctl.yaw) * k;
-        ctl.pitch += (-0.04 - ctl.pitch) * k;
+        ctl.pitch += (pull.pitch - ctl.pitch) * k;
       });
       yield wait(0.5);
       car.start();
@@ -353,8 +364,6 @@ export default defineScene({
       car.go();
       // E drive: my hand on my car's door
       // (the kerb side: the door by the pavement I come out onto)
-      const door = V(MY_CAR.x + 1.0, 1.1, MY_CAR.z + 0.35);
-      let driven = false;
       G.interact.add({ id: 'drive', at: door, range: 3.0, cone: 1.0, prompt: 'drive', onUse: () => { driven = true; } });
       if (G.controller.run) G.controller.setMode('walk');
       G.hands.equip('empty');
