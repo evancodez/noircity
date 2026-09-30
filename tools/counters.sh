@@ -9,7 +9,7 @@ CHROME="/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
 # (scoped_dir*) and never removes it (200 GB after a few days of captures)
 PROF="$(mktemp -d /tmp/noir-shot-XXXXXX)"
 trap 'rm -rf "$PROF"' EXIT
-"$CHROME" --headless=new --disk-cache-dir="$PROF/cache" --mute-audio --use-angle=metal --hide-scrollbars --window-size=1200,800 \
+"$CHROME" --headless=new --use-mock-keychain --password-store=basic --disk-cache-dir="$PROF/cache" --mute-audio --use-angle=metal --hide-scrollbars --window-size=1200,800 \
   --virtual-time-budget=${VTB:-20000} --dump-dom "http://127.0.0.1:${NOIR_PORT:-5173}/?${QS}" 2>/dev/null | python3 -c '
 import sys,re,html,json
 d=sys.stdin.read()

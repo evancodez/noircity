@@ -11,7 +11,7 @@ const EXPR = process.argv[5] || '__noir.renderer.info.render';
 const WAIT = +(process.env.WAIT || 1500);
 const PORT = await freePort();
 const CHROME = '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome';
-const chrome = spawn(CHROME, ['--headless=new', '--mute-audio', '--use-angle=metal', '--hide-scrollbars', '--force-device-scale-factor=1', `--window-size=${W},${H}`,
+const chrome = spawn(CHROME, ['--headless=new', '--use-mock-keychain', '--password-store=basic', '--mute-audio', '--use-angle=metal', '--hide-scrollbars', '--force-device-scale-factor=1', `--window-size=${W},${H}`,
   `--remote-debugging-port=${PORT}`, '--no-first-run', '--no-default-browser-check', '--disable-background-timer-throttling', '--disable-renderer-backgrounding',
   '--disable-backgrounding-occluded-windows', ...(process.env.UNCAPPED ? ['--disable-gpu-vsync', '--disable-frame-rate-limit'] : []), `--user-data-dir=/tmp/noir-eval-${PORT}`, 'about:blank'], { stdio: 'ignore' });
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
