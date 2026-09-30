@@ -387,10 +387,19 @@ export default defineScene({
     const fighting = ['lesson', 'round1', 'round2', 'round3', 'reel'];
 
     // ---- into the fight: the way in and the lesson (the first time), or the part jumped to
+    // [R2-H] (entered from the title - a chapter chosen, a CONTINUE - the
+    // chapter card is up: the room comes up out of the black under it and
+    // what happens in it begins once the card has gone. The way in had his
+    // rise drawn under the numeral, and a fight jumped into was on before
+    // the card was off it)
+    // (with no card up - a cut from the diner, a shot - nothing waits: the
+    // fight is made in the same step, as the shots expect)
+    const underCard = function* () { if (G.hud.cardT > 0) yield until(() => !(G.hud.cardT > 0)); };
     if (ctx.kept || ctx.from === 'start') {
       // [B8] (a cut straight from the diner, his line just said: the room goes
       // on as it stands; the move of scenes/fight/start.js, then the lesson)
       yield beat('start');
+      yield* underCard();
       const m = mack();
       ctx.flags.onFall = () => clearRoom(ctx, false);
       const end = yield* startFight(ctx);
@@ -398,6 +407,7 @@ export default defineScene({
       G.controller.setMode('brawl', { opponent: m, eyeY: BRAWL_EYE, pos: { x: end.eye.x, z: end.eye.z }, yaw: end.yaw, ease: 0.2 });
       beginFight(ctx, m, { lesson: true });
     } else if (fighting.includes(ctx.from)) {
+      yield* underCard();
       if (ctx.from === 'lesson') beginFight(ctx, mack(), { lesson: ctx.flags.startLesson || 1 });
       else if (ctx.from === 'reel') beginFight(ctx, mack(), { manner: 'out' });
       else beginFight(ctx, mack(), { manner: BEAT_MANNER[ctx.from] });

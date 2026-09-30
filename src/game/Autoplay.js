@@ -142,8 +142,18 @@ export class Autoplay {
       if (him.state !== 'attack' && !(B.flying && B.flying.length)) return;
     }
     // ---- a masher: both buttons, as fast as they go, walking in
-    if (style === 'mash' && !B.lesson) {
+    // ([R2-H] 'mashone': a masher who, out on his feet at the window, after a
+    // few seconds of jabbing a man who only sways, holds once; 'mashload': one
+    // who now and then - every 14 to 24 s - holds a button down: the loaded
+    // punch among the mashing)
+    if ((style === 'mash' || style === 'mashone' || style === 'mashload') && !B.lesson) {
       this.walkTo(B, d, 1.35);
+      if (style === 'mashone') {
+        if (him.state === 'reel' && him.atSpot) { if (this.reelSince == null) this.reelSince = this.t; } else this.reelSince = null;
+        if (this.reelSince != null && this.t - this.reelSince > r.range(2.5, 4) && !busyHands && d < 1.8 && this.every('finish', 3, 4.5)) { this.hold(r.chance(0.5) ? 'Mouse0' : 'Mouse2', r.range(0.5, 0.7)); return; }
+      }
+      if (style === 'mashload' && !busyHands && me.act === 'idle' && d < 1.8 && this.every('load', 14, 24)) { this.hold(r.chance(0.5) ? 'Mouse0' : 'Mouse2', r.range(0.5, 0.7)); return; }
+      if (style !== 'mash' && busyHands) return;
       if (this.every('mash', 0.1, 0.16)) this.tap(this.lastArm = this.lastArm === 'Mouse0' ? 'Mouse2' : 'Mouse0');
       return;
     }

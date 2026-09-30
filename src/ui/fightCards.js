@@ -429,10 +429,13 @@ export class FightCards {
   }
 
   // [B8] (second pass) a thing he has thrown, on the frame: three speed
-  // lines trailing back toward his hand and a paper-white rim round it,
-  // inked like the chevron (a dark plate against the dark room at five
-  // metres was lost). list: [{ x, y (the thing), fx, fy (where it came
-  // from), r (its size on the frame, px), t (s in the air) }] | null
+  // lines trailing back toward his hand, inked like the chevron (a dark
+  // plate against the dark room at five metres was lost). [R2-H] Speed
+  // lines only: the ring and the paper-white rim round the thing were loud
+  // (the art director, frame 07); the plate itself goes up light in the air
+  // (Brawl.lightThing) and the lines show which way it came.
+  // list: [{ x, y (the thing), fx, fy (where it came from), r (its size on
+  // the frame, px), t (s in the air) }] | null
   flying(list) {
     const c = this.flyC || (this.flyC = (() => { const e = document.createElement('canvas'); e.className = 'flying'; e.style.cssText = 'position:absolute;left:0;top:0'; this.root.insertBefore(e, this.root.firstChild); return e; })());
     const W = innerWidth, H = innerHeight;
@@ -447,15 +450,17 @@ export class FightCards {
       const r = F.r;
       let dx = F.fx - F.x, dy = F.fy - F.y;
       const L = Math.hypot(dx, dy);
-      if (L < 1e-3) { dx = 0; dy = -1; } else { dx /= L; dy /= L; }
+      // (the way it is going, when it is told: back up its own velocity)
+      if (F.tx || F.ty) { const l = Math.hypot(F.tx, F.ty) || 1; dx = F.tx / l; dy = F.ty / l; }
+      else if (L < 1e-3) { dx = 0; dy = -1; } else { dx /= L; dy /= L; }
       const px = -dy, py = dx;
       // (the lines grow out in the first twentieth of a second)
       const grow = Math.min(1, F.t / 0.05);
-      const lines = [[-0.5, 1.5, 3.2], [0, 2.5, 4.4], [0.5, 1.3, 3.2]];
+      const lines = [[-0.55, 1.4, 3.0], [0, 2.4, 4.0], [0.55, 1.2, 3.0]];
       for (const [col, extra] of [['rgba(5,5,5,0.85)', 3], ['#f2f0ea', 0]]) {
         g.strokeStyle = col; g.fillStyle = col;
         for (const [off, len, w] of lines) {
-          const x0 = F.x + dx * r * 1.25 + px * off * r, y0 = F.y + dy * r * 1.25 + py * off * r;
+          const x0 = F.x + dx * r * 0.95 + px * off * r, y0 = F.y + dy * r * 0.95 + py * off * r;
           const l = Math.min(L + r, (len * r + 18 * K) * grow);
           const x1 = x0 + dx * l, y1 = y0 + dy * l;
           // (a tapering stroke: pressed at the thing, dry at its tail)
@@ -465,11 +470,6 @@ export class FightCards {
           g.lineTo(x1 - px * tail, y1 - py * tail); g.lineTo(x0 - px * ww, y0 - py * ww);
           g.closePath(); g.fill();
         }
-      }
-      // its rim, caught white
-      for (const [col, lw] of [['rgba(5,5,5,0.85)', 5.5], ['#f2f0ea', 2.6]]) {
-        g.strokeStyle = col; g.lineWidth = lw * K;
-        g.beginPath(); g.arc(F.x, F.y, r, 0, Math.PI * 2); g.stroke();
       }
     }
   }
