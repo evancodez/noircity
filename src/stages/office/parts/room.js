@@ -9,7 +9,9 @@ import { buildFireEscape, buildStreet } from '../build/outside.js';
 import { FLOOR, CEIL, ROOM, CORR, DOOR, DESK, PAD, LAMP, WIN, ESC, SAFE, PICTURE, STREET, POST, CORR_LAMP, BLIND_LIGHT, PICTURE_ASIDE } from '../plan.js';
 // the banker's lamp's strength (the pad sits close under it, in the heart of its pool: at
 // this the graphite on the sheet still prints dark, and the blotter round it white)
-const DESK_LAMP_I = 6;
+const DESK_LAMP_I = 30, DESK_LAMP_A = 1.3;
+// the muzzle flashes' light in this room (fx/MuzzleFlash.js: the street's 32 and 22)
+const FLASH_I = { player: 11, hood: 6.5 };
 
 // Room 304 and its corridor (lane B2): the whole third floor of the stage.
 // Built from ./build/*; this part lights it, gives it its Looks, its dry
@@ -59,9 +61,12 @@ export default {
     const dl = furn.lamp;
     g.updateMatrixWorld(true);
     const deskHead = dl.shadeG.localToWorld(V(-0.01, -0.03, 0));
-    const deskAxis = V(PAD.x, DESK.h, PAD.z + 0.05).sub(deskHead).normalize();
-    const deskLamp = lamps.addCustom({ head: deskHead, axis: deskAxis, height: 0.8, half: 0.95, real: true, bulb: dl.bulb, fadeEnd: 0.8, edgeSoft: 0.6, strength: 0.25, tag: 'desk' });
-    Object.assign(deskLamp.light, { intensity: DESK_LAMP_I, angle: 1.15, penumbra: 0.75, distance: 4.5 });
+    // (round 2: aimed nearly straight down and wide, as the shade throws it:
+    // one pool over the blotter, the pad, the papers and the desk's edges,
+    // falling off over its sides - the room's warm pool, as the diner's counter)
+    const deskAxis = V(-0.15, -1, 0.05).normalize();
+    const deskLamp = lamps.addCustom({ head: deskHead, axis: deskAxis, height: 0.42, half: 0.62, real: true, bulb: dl.bulb, fadeEnd: 0.95, edgeSoft: 0.55, strength: 0.34, tag: 'desk' });
+    Object.assign(deskLamp.light, { intensity: DESK_LAMP_I, angle: DESK_LAMP_A, penumbra: 0.45, distance: 5 });
     deskLamp.priority = 5;
     deskLamp.shadow = { radius: 3, mapSize: 1024, near: 0.05 };
     // (its head and aim in the shade's own frame: they ride the shade when the desk goes over)
@@ -82,9 +87,9 @@ export default {
 
     // ---- the Looks, the dry volumes, the walls of the stage ----------------------------------
     stage.dry.push(shell.roomBox, shell.corrBox);
-    const inside = { fogDensity: FOG.density * 0.3, rainOverlay: 0, haze: 0.65, reflect: 'none', ambient: 0.3 };
+    const inside = { fogDensity: FOG.density * 0.3, rainOverlay: 0, haze: 0.65, reflect: 'none', ambient: 0.2 };
     stage.addLook(shell.roomBox, { ...inside, room: 'office' });
-    stage.addLook(shell.corrBox, { ...inside, ambient: 0.25, haze: 0.45, room: 'corridor' });
+    stage.addLook(shell.corrBox, { ...inside, ambient: 0.18, haze: 0.45, room: 'corridor' });
     stage.colliders.setBounds(-2.5, 6.2, -7.3, 9.0);
 
     // ---- the anchors -------------------------------------------------------------------------
@@ -125,6 +130,8 @@ export default {
       lamp: { lamp: deskLamp, parts: dl, fallen: 0, fall: null },
       neon: street.neon,
       gust: 0,
+      // (the pad's close-up: the lamp eased down, 0..1; lampDimTo its target)
+      lampDim: 0, lampDimTo: 0,
       // ---- the door --------------------------------------------------------------------
       // swing it to `angle` (rad, 0 shut, ~1.7 open against the wall) with a
       // speed (rad/s); kick(): flung open, it bangs off its stop and comes to rest
@@ -162,6 +169,10 @@ export default {
 
   update(api, dt, t, camera) {
     const stage = api.kit.stage, G = stage.game;
+    // (round 2: a muzzle's flash in a small dark room - the street's flash
+    // light, at a metre from a wall, lit a hard white disc on it; here it
+    // lifts the walls to a grey for its two frames and the men stand black in it)
+    if (!api._flashSet && stage.fx && stage.fx.flash) { api._flashSet = true; Object.assign(stage.fx.flash.intensity, FLASH_I); }
     // the frosted panes: their frames (the door swings) and the men behind them
     const L = api.lights.corridor;
     for (const f of api.frosted) {
@@ -210,6 +221,11 @@ export default {
     if (!dk._raysInit && G && G.rays) { dk._raysInit = true; drawersHome(api, stage, !!dk.slid); }
     // the desk lamp rides the desk, or lies where it fell
     lampFollow(api, stage);
+    // (round 2: over the pad the eye is a hand's length from the bulb - the
+    // lamp's full pool would print the sheet and its graphite one white, so
+    // the light eases down while the pad is up, as an eye adapts, and back)
+    api.lampDim += ((api.lampDimTo || 0) - api.lampDim) * Math.min(1, dt * 7);
+    if (!api.lamp.fall && !api.lamp.lamp.dead) api.lamp.lamp.light.intensity = DESK_LAMP_I * (1 - 0.74 * api.lampDim);
     // the picture on its wire
     const P = api.picture;
     if (P.swinging) {
@@ -346,7 +362,8 @@ function resetRoom(api, stage) {
   }
   deskRays(api, stage);
   Lp.fall = null;
-  Object.assign(lamp.light, { intensity: DESK_LAMP_I, angle: 1.15, distance: 4.5 });
+  api.lampDim = api.lampDimTo = 0;
+  Object.assign(lamp.light, { intensity: DESK_LAMP_I, angle: DESK_LAMP_A, distance: 5 });
   if (lamp.dead) { lamp.dead = false; lamp.buzz = null; lamp.dieNow = false; lamp.deadK = 0; lamp.on = true; if (lamp.bulb) lamp.bulb.material = api.mats.bulb; }
   lamp.on = true;
   // the picture back crooked on its nail, the safe shut

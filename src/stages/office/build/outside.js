@@ -100,7 +100,11 @@ export function buildStreet(kit, mats, stage, lamps) {
   const winMats = [];
   for (let fl = 0; fl < 5; fl++) for (let k = -9; k <= 9; k++) {
     const z = k * 3.2 + 0.6, y = y0 + 4.8 + fl * 3.6;
-    const lit = hash(k * 7 + fl, 3) > 0.84 ? 0.55 + hash(k, fl) * 0.45 : 0;
+    // (round 2: a few lit panes where the room's eye meets the facade
+    // through the blind - from the door, the desk, the window - so the
+    // window is a night window with lights in it, never a black plate)
+    const seen = (fl === 1 && k === 4) || (fl === 0 && k === 3) || (fl === 2 && k === 5) || (fl === 1 && k === 1);
+    const lit = seen ? 0.7 + hash(k, fl) * 0.3 : hash(k * 7 + fl, 3) > 0.84 ? 0.55 + hash(k, fl) * 0.45 : 0;
     if (lit > 0) {
       const m = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), makeRoomMaterial({ seed: k * 11 + fl, lit }));
       m.position.set(S.far - 0.01, y, z); m.rotation.y = -Math.PI / 2; m.scale.set(1.3, 1.9, 1);

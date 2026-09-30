@@ -58,6 +58,12 @@ export function makeFrosted({ w = 1, h = 1, text = null, lit = 'back', seed = 0 
     // (a cloth's holes: a mask canvas, black where a round went through; a flash behind it)
     tHoles: { value: null }, uHoles: { value: 0 }, uSrcD: { value: 1.25 },
     uFl: { value: new THREE.Vector3(0, -99, 0) }, uFlK: { value: 0 },
+    // (round 2: a pane lit as the diner's lamps light things - a hot corner
+    // toward its lamp, falling off into grey: uFall 1; 0 is the first
+    // version's even glow. uRect: the part of it with light behind it (a
+    // curtain over a window: the window's rectangle, in metres from its centre))
+    uFall: { value: 0 }, uFallK: { value: new THREE.Vector4(0.012, 0.0, 1.3, 1.0) },
+    uRect: { value: new THREE.Vector4(-1e3, -1e3, 1e3, 1e3) },
   };
   const m = new THREE.ShaderMaterial({
     name: 'OfficeFrosted',
@@ -80,6 +86,8 @@ export function makeFrosted({ w = 1, h = 1, text = null, lit = 'back', seed = 0 
       uniform sampler2D tHoles;
       uniform float uHoles, uFlK, uSrcD;
       uniform vec3 uFl;
+      uniform float uFall;
+      uniform vec4 uFallK, uRect;
       varying vec3 vW;
       // (the lamp's projection of a world point onto the pane: its u, v and
       // how far it stands off the glass)
@@ -190,6 +198,14 @@ export function makeFrosted({ w = 1, h = 1, text = null, lit = 'back', seed = 0 
         vec2 eg = uWH * 0.5 - abs( p );
         float rim = 0.8 + 0.2 * smoothstep( 0.0, 0.07, min( eg.x, eg.y ) );
         float I = min( 1.05, glow * uLampK * ( 0.6 + 2.2 * fall ) ) * mottle * rim;
+        if ( uFall > 0.5 ) {
+          // (base, mid, peak, sigma: the far part a dark grey, the corner toward
+          // the lamp paper white; the ink prints the step between as its washes)
+          vec3 dl = uLamp - vW;
+          vec2 rm = smoothstep( vec2( -0.06 ), vec2( 0.06 ), min( p - uRect.xy, uRect.zw - p ) );
+          float mask = rm.x * rm.y;
+          I = min( 1.05, glow * uLampK * ( uFallK.x + mask * ( uFallK.y + uFallK.z * exp( - dot( dl, dl ) / uFallK.w ) ) ) ) * mottle * rim;
+        }
         // (a flash behind it: the cloth white round it for a moment)
         if ( uFlK > 0.0 ) { vec3 fq = uFl - vW; I = min( 1.05, I + uFlK * 2.5 / ( 1.0 + 6.0 * dot( fq, fq ) ) ); }
         // the gilt letters: pale, keylined; read the right way round from the
@@ -217,6 +233,11 @@ export function makeFrosted({ w = 1, h = 1, text = null, lit = 'back', seed = 0 
   };
   ud.setLamp = (p, k = 1) => { U.uLamp.value.copy(p); U.uLampK.value = k; };
   ud.glow = (f, b) => { U.uGlowF.value = f; U.uGlowB.value = b; };
+  // (round 2) the lamp's fall across the pane: { base, mid, peak, sigma }, a lit rectangle
+  ud.fall = ({ base = 0.012, mid = 0, peak = 1.3, sigma = 1.0 } = {}, rect = null) => {
+    U.uFall.value = 1; U.uFallK.value.set(base, mid, peak, sigma);
+    if (rect) U.uRect.value.set(...rect);
+  };
   // every step: the figures' joints into the uniforms
   ud.update = () => {
     for (let f = 0; f < MAXF; f++) {

@@ -22,9 +22,12 @@ export function officeMats() {
   };
   MATS = {
     std, glow,
-    plaster: std('plaster', 0x5a5a5a, 0.95, 'plaster'),
-    plasterDark: std('plasterDark', 0x3a3a3a, 0.95, 'plaster'),
-    ceil: std('ceil', 0x1e1e1e, 1.0, 'plaster'),
+    // (round 2: the walls fall into ink toward the ceiling and darken at the
+    // skirting, as the diner's plaster does: the lamps' pools are what the
+    // eye sees of a wall, not an even grey)
+    plaster: fall(std('plaster', 0x5a5a5a, 0.95, 'plaster'), 3.1),
+    plasterDark: fall(std('plasterDark', 0x3a3a3a, 0.95, 'plaster'), 2.95),
+    ceil: std('ceil', 0x0c0c0c, 1.0, 'plaster'),
     wainscot: std('wainscot', 0x1a1a1a, 0.6, 'wood'),
     trim: std('trim', 0x121212, 0.5, 'wood'),
     boards: std('boards', 0x2a2a2a, 0.7, 'wood'),
@@ -55,4 +58,26 @@ export function officeMats() {
     litWin: glow('litWin', 1.1),
   };
   return MATS;
+}
+
+// a wall's albedo by its height in the world (the floor y = 0): brightest
+// from the dado to the head of a door, a little darker at the skirting,
+// falling off to near ink under the ceiling (`ceil`)
+function fall(m, ceil) {
+  m.onBeforeCompile = (sh) => {
+    sh.vertexShader = sh.vertexShader
+      .replace('#include <common>', '#include <common>\nvarying float vOfficeY;')
+      .replace('#include <project_vertex>', '#include <project_vertex>\nvOfficeY = ( modelMatrix * vec4( transformed, 1.0 ) ).y;');
+    sh.fragmentShader = sh.fragmentShader
+      .replace('#include <common>', '#include <common>\nvarying float vOfficeY;')
+      .replace('#include <color_fragment>', `#include <color_fragment>
+        {
+          float y = vOfficeY;
+          float f = mix( 0.62, 1.0, smoothstep( 0.05, 0.85, y ) );
+          f *= mix( 1.0, 0.08, pow( smoothstep( 1.55, ${ceil.toFixed(2)}, y ), 0.85 ) );
+          diffuseColor.rgb *= f;
+        }`);
+  };
+  m.customProgramCacheKey = () => 'officeFall' + ceil;
+  return m;
 }
