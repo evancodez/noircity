@@ -116,7 +116,10 @@ export default {
     A('door', -0.62, (DOOR.z0 + DOOR.z1) / 2, -Math.PI / 2, { r: 1.2 });
     A('desk', 4.8, PAD.z + 0.02, Math.PI / 2);
     A('safe', SAFE.x + 0.02, 0.78, 0);
-    A('window.street', 5.02, (WIN.z0 + WIN.z1) / 2, -Math.PI / 2);
+    // (round 2: leaning over the radiator, the eye a hand from the slats - two
+    // fingers part the pair at the eye and the line down to the lamp post
+    // across the way passes through the gap they make)
+    A('window.street', 5.42, (WIN.z0 + WIN.z1) / 2 + 0.3, -Math.PI / 2 - 0.02, { eyeY: 1.72 });
     A('window.escape', (ESC.x0 + ESC.x1) / 2, ROOM.z1 - 0.62, Math.PI);
     stage.addAnchor('office.street.watcher', { pos: V(POST.x - 0.25, STREET.y + 0.15, POST.z - 0.7), yaw: Math.PI / 2 });
     // the gunfight's places: behind the desk (tipped or not), the men's marks

@@ -365,11 +365,11 @@ function buildCurtain(kit, mats, stage) {
       if (u < 0 || u > 1 || v < 0 || v > 1) return false;
       cg.fillStyle = '#000';
       cg.beginPath();
-      const R = 3 + r.next() * 4, cx = u * 128, cy = v * 192;
+      const R = 2 + r.next() * 2.5, cx = u * 128, cy = v * 192;
       for (let k = 0; k < 9; k++) { const a = k / 9 * Math.PI * 2, rr = R * (0.6 + r.next() * 0.9); cg.lineTo(cx + Math.cos(a) * rr, cy + Math.sin(a) * rr * 1.3); }
       cg.closePath(); cg.fill();
       // (a rip runs down from a hole now and then)
-      if (r.chance(0.35)) { cg.fillRect(cx - 1, cy, 2 + r.next() * 2, 8 + r.next() * 30); }
+      if (r.chance(0.2)) { cg.fillRect(cx - 1, cy, 1.5 + r.next() * 1.5, 6 + r.next() * 16); }
       tex.needsUpdate = true;
       holes.push([u, v]);
       return true;

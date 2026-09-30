@@ -82,6 +82,14 @@ export function buildFireEscape(kit, mats, stage) {
 export function buildStreet(kit, mats, stage, lamps) {
   const out = {};
   const S = STREET, y0 = S.y;
+  // (round 2: the street's ground for anyone standing on it - the watcher
+  // under the lamp, scene 6: a figure put at a place takes its feet from the
+  // stage's surface, and without this one it stood on the third floor's
+  // level in the air across the street)
+  stage.addSurface((x, z) => {
+    if (x < S.face || x > S.far || Math.abs(z) > 44) return undefined;
+    return x > S.kerb && x < S.farKerb ? y0 : y0 + 0.15;
+  });
   // ---- the street, the pavements ----------------------------------------------------------------
   kit.piece();
   kit.add(new THREE.BoxGeometry(S.farKerb - S.kerb, 0.1, 90).translate((S.kerb + S.farKerb) / 2, y0 - 0.05, 0), mats.asphalt, { name: 'street_road', cast: false });
