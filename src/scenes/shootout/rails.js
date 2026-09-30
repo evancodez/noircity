@@ -323,9 +323,11 @@ export class Rails {
   // ---- the car stopped: it is in the Hoods' way, and it is cover ------------------------------
   settle(car) {
     const R = car.rail, S = this.stage, nav = S.nav;
-    if (R.nav) return;
-    R.nav = [];
+    if (!R.nav) R.nav = [];
+    R.stamped = R.stamped || new Set();
     const stamp = (b) => {
+      if (R.stamped.has(b)) return;
+      R.stamped.add(b);
       const inflate = 0.45, rx = b.hx + inflate + 0.5, rz = b.hz + inflate + 0.5, rr = Math.hypot(rx, rz);
       for (let z = b.cz - rr; z <= b.cz + rr; z += nav.cell * 0.5) for (let x = b.cx - rr; x <= b.cx + rr; x += nav.cell * 0.5) {
         const k = nav.idx(x, z);
@@ -338,38 +340,34 @@ export class Rails {
         if (qx * qx + qz * qz < inflate * inflate) { nav.blocked[k] = 1; R.nav.push(k); }
       }
     };
-    stamp(car.collider);
-    for (const d of Object.values(R.doors)) if (d.col) stamp(d.col);
-    // cover points round it (CoverSet's rule for a box: both long faces, the ends)
-    const b = car.collider, pad = 0.6, pts = [];
-    for (const sz of [-1, 1]) for (const f of [-0.62, 0, 0.62]) pts.push([f * b.hx, sz * (b.hz + pad)]);
-    for (const sx of [-1, 1]) pts.push([sx * (b.hx + pad), 0]);
-    const obs = { kind: 'box', b };
-    for (const [lx, lz] of pts) {
-      const x = b.cx + lx * b.c + lz * b.s, z = b.cz - lx * b.s + lz * b.c;
-      if (!nav.free(x, z)) continue;
-      const c = { x, z, obs, tag: 'car', value: 0.9, taken: null, b7: true };
+    const add = (x, z, obs, value) => {
+      if (!nav.free(x, z)) return;
+      const c = { x, z, obs, tag: 'car', value, taken: null, b7: true };
       S.covers.points.push(c);
       R.covers.push(c);
+    };
+    // the car: its footprint off the grid, cover points round it (CoverSet's
+    // rule for a box: both long faces, the ends)
+    if (!R.stamped.has(car.collider)) {
+      stamp(car.collider);
+      const b = car.collider, pad = 0.6;
+      const obs = { kind: 'box', b };
+      for (const sz of [-1, 1]) for (const f of [-0.62, 0, 0.62]) { const lx = f * b.hx, lz = sz * (b.hz + pad); add(b.cx + lx * b.c + lz * b.s, b.cz - lx * b.s + lz * b.c, obs, 0.9); }
+      for (const sx of [-1, 1]) { const lx = sx * (b.hx + pad); add(b.cx + lx * b.c, b.cz - lx * b.s, obs, 0.9); }
     }
-    // behind each open door
+    // each open door: off the grid, and a man's place behind it
     for (const d of Object.values(R.doors)) {
-      if (!d.col) continue;
+      if (!d.col || R.stamped.has(d.col)) continue;
+      stamp(d.col);
       const db = d.col;
-      for (const sz of [-1, 1]) {
-        const x = db.cx + sz * 0.62 * db.s, z = db.cz + sz * 0.62 * db.c;
-        if (!nav.free(x, z)) continue;
-        const c = { x, z, obs: { kind: 'box', b: db }, tag: 'car', value: 0.8, taken: null, b7: true };
-        S.covers.points.push(c);
-        R.covers.push(c);
-      }
+      for (const sz of [-1, 1]) add(db.cx + sz * 0.62 * db.s, db.cz + sz * 0.62 * db.c, { kind: 'box', b: db }, 0.8);
     }
   }
 
   unsettle(car) {
     const R = car.rail, S = this.stage;
     if (R.nav) for (const k of R.nav) S.nav.blocked[k] = 0;
-    R.nav = null;
+    R.nav = null; R.stamped = null;
     const P = S.covers.points;
     for (const c of R.covers) { const i = P.indexOf(c); if (i >= 0) P.splice(i, 1); }
     R.covers.length = 0;

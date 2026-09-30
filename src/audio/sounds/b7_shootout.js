@@ -53,6 +53,12 @@ export default (k) => {
         burst(ctx, out, R, t0 + 0.52, 'white', ['bandpass', 2300, 2.5], 0.2, 0.0005, 0.025);
         return 0.8;
       },
+      // the trigger on an empty drum: a dry click
+      b7_dry(ctx, out, t0, p, R) {
+        burst(ctx, out, R, t0, 'white', ['bandpass', 3300, 3], 0.25, 0.0005, 0.012);
+        thud(ctx, out, t0, 520, 360, 0.06, 0.02);
+        return 0.08;
+      },
       // the gun at the shoulder: the bolt drawn back and let go
       b7_bolt(ctx, out, t0, p, R) {
         burst(ctx, out, R, t0, 'white', ['bandpass', 2400, 2.5], 0.3, 0.0005, 0.025);

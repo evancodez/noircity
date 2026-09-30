@@ -69,7 +69,7 @@ export function teardown(R) {
   G.off('scene:exit', R.onExit);
   G.director.stop();
   G.director.level = 0;
-  for (const h of [...S.hoods.list]) G.removeHood(h);
+  for (const h of [...S.hoods.list]) dropMan(G, S, h);
   G.corpses.length = 0;
   G.pending.length = 0;
   R.rails.dispose();
@@ -89,6 +89,13 @@ export function teardown(R) {
   if (G.sfx && G.sfx.live) for (const k of [...G.sfx.loops.keys()]) if (k.startsWith('b7')) G.sfx.stopLoop(k);
 }
 
+// a man out of the scene (the Cardinal is a figure of the cast, drawn as a
+// Hood: the cast lets him go, once)
+function dropMan(G, S, h) {
+  if (h.b7char) { const c = h.b7char; h.b7char = null; if (S.cast.list.includes(c)) { S.cast.remove(c); return; } }
+  G.removeHood(h);
+}
+
 // ---- staging a beat: the room, the people and me where the story has them ---------------
 export function stageBeat(ctx, b) {
   const G = ctx.game, S = ctx.stage;
@@ -100,7 +107,7 @@ export function stageBeat(ctx, b) {
   // (how many may fire at once: two in the cars beat, three after it)
   G.director.level = bi > BEATS.indexOf('cars') ? 5 : 4;
   // the men: a retry keeps the dead of the beats before; a fresh entry, nobody
-  for (const h of [...S.hoods.list]) if (!retry || h.alive || h.b7beat === b) G.removeHood(h);
+  for (const h of [...S.hoods.list]) if (!retry || h.alive || h.b7beat === b) dropMan(G, S, h);
   G.corpses = G.corpses.filter((h) => S.hoods.list.includes(h));
   G.pending.length = 0;
   ctx.cast.list.filter((c) => c.kind !== 'waitress').forEach((c) => ctx.cast.remove(c));
@@ -280,6 +287,9 @@ export function everyStep(ctx, dt) {
   const L = R.res || (R.res = reserveLayer(G.hud));
   R.outT = Math.max(0, (R.outT || 0) - dt);
   const out = G.weapon.ammo === 0 && !G.weapon.reloading && R.reserve === 0;
+  // (the trigger on an empty gun: the hammer's click, and the hint)
+  R.clickT = Math.max(0, (R.clickT || 0) - dt);
+  if (out && G.weapon.trigger && G.hands.set === 'tommy' && R.clickT <= 0) { R.clickT = 0.35; R.outT = 2.5; G.sfx.play('b7_dry', null); }
   L.set(R.reserve, G.hands.set === 'tommy', out || R.outT > 0 ? 'drums: the counter' : '');
   // the old man's cup still steams on the counter
   R.steamT = (R.steamT || 0) - dt;
@@ -301,18 +311,18 @@ function devStep(ctx) {
   if (!R.dev) {
     const q = typeof location !== 'undefined' ? new URLSearchParams(location.search) : new URLSearchParams('');
     const at = (k) => { const v = q.get(k); if (!v) return null; const [a, b] = v.split('@'); return { a, t: parseFloat(b ?? a) }; };
-    R.dev = { kill: at('b7kill'), wound: at('b7wound'), cripple: at('b7cripple') };
+    const w = (q.get('b7wound') || '').split(',').filter(Boolean).map((x) => { const [a, b] = x.split('@'); return { a: +a, t: +b }; });
+    R.dev = { kill: at('b7kill'), wound: w, cripple: at('b7cripple') };
   }
   const t = ctx.sceneTime, D = R.dev;
   if (D.kill && t >= D.kill.t) {
     for (const h of G.director.groups.get(D.kill.a) || []) if (h.alive) G.damageHood(h, 999, new THREE.Vector3(1, 0, 0.2).normalize(), { head: false });
     D.kill = null;
   }
-  if (D.wound && t >= D.wound.t && R.cardinal) {
-    const h = R.cardinal, ai = G.ais.get(h);
-    for (let i = 0; i < +D.wound.a && h.alive; i++) G.damageHood(h, 52, new THREE.Vector3(1, 0, -0.3).normalize(), {});
-    D.wound = null;
-    void ai;
+  // (b7wound=<n>@<t>[,<n>@<t>]: the Cardinal's wounds, as torso hits)
+  if (D.wound.length && t >= D.wound[0].t && R.cardinal) {
+    const h = R.cardinal, W = D.wound.shift();
+    for (let i = 0; i < W.a && h.alive && !h.b7down; i++) G.damageHood(h, 52, new THREE.Vector3(1, 0, -0.3).normalize(), {});
   }
   if (D.cripple && t >= D.cripple.t && R.cars.driveby) { R.cars.driveby.pts = 7; D.cripple = null; }
 }
