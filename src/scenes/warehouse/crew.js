@@ -26,7 +26,7 @@ import { buildProp } from '../../props/index.js';
 export const TUNE = {
   walk: 1.25, search: 1.1, run: 3.1,
   turn: 3.2, lookRate: 2.6, lightRate: 2.0, lightLag: 0.3,
-  beamHalf: 0.3, beamRange: 11.5,
+  beamHalf: 0.3,
   viewHalf: 1.05, viewRange: 30, nearDark: 3.0,
   certainDark: 2.5, certainLit: 1.0,
   hearRun: 8, hearWalk: 3,
@@ -73,7 +73,7 @@ export class Man {
     if (spec.light) {
       const L = stage.lamps;
       const kind = spec.light;
-      this.lamp = L.reuse(kind) || L.torch(kind, kind === 'lantern' ? { half: 0.34, range: 10, strength: 0.9 } : { half: 0.26, range: 12.5, strength: 1.0 });
+      this.lamp = L.reuse(kind) || L.torch(kind, kind === 'lantern' ? { half: 0.34, range: 9.5, strength: 0.9 } : { half: 0.26, range: 11, strength: 1.0 });
       this.lamp.on = true;
       this.prop = buildProp(kind === 'lantern' ? 'lantern' : 'torch');
       this.prop.traverse((o) => { if (o.isMesh) { o.castShadow = false; o.userData.noRay = true; } });
@@ -163,12 +163,13 @@ export class Man {
       for (const q of [pl.chest, pl.head]) {
         _d.subVectors(q, lp);
         const L = _d.length();
-        if (L > TUNE.beamRange) continue;
+        if (L > (this.lamp.range || 10) * 0.9) continue;
         const ang = Math.acos(Math.max(-1, Math.min(1, _d.dot(ax) / Math.max(L, 1e-4))));
         if (ang < TUNE.beamHalf * 1.15) beam = Math.max(beam, 1 - Math.max(0, ang - TUNE.beamHalf * 0.6) / (TUNE.beamHalf * 0.55));
       }
     }
-    const lit = pl.exposure;
+    // (the lamps' light on me: a torch on me is its own man's beam, below)
+    const lit = pl.lampLit;
     const inView = off < TUNE.viewHalf;
     let s = 0;
     if (beam > 0) s = Math.max(s, 0.6 + 0.4 * beam);
@@ -209,12 +210,17 @@ export class Man {
   // ---- modes ------------------------------------------------------------------------------
   setMode(m) {
     if (this.mode === m) return;
+    this.prevMode = this.mode;
     this.mode = m;
     this.modeT = 0;
     this.path = null;
     const C = this.crew;
     if (this.c.costumed && !this.down) this.fig.anim.setOverlay(m === 'curious' ? 'dh_peer' : m === 'fix' ? 'dh_fix' : this.lamp ? 'dh_carry' : null, 0.35);
-    if (m === 'curious') C.sound('hm', this.eye(V(0, 0, 0)));
+    if (m === 'curious') {
+      C.sound('hm', this.eye(V(0, 0, 0)));
+      // (for the plays and the report: what turned him)
+      C.game.emit('b6:curious', { by: this.name, from: this.prevMode, heard: this.lastHeard || null, saw: this.saw || null, t: +C.game.time.toFixed(2) });
+    }
     if (m === 'search' || m === 'investigate') this.searchT = 0;
   }
 
@@ -264,6 +270,8 @@ export class Man {
     } else if (t - this.seenT > TUNE.grace) this.a = Math.max(0, this.a - TUNE.decay * dt);
     const H = this.heard;
     this.heard = null;
+    if (H) this.lastHeard = { kind: H.kind, d: +H.d.toFixed(2), at: [+H.pos.x.toFixed(2), +H.pos.z.toFixed(2)], t: +t.toFixed(2) };
+    if (rate > 0) this.lastSeenWhy = this.saw;
     if (this.mode === 'alarm') { this.alarmStep(dt); return; }
     if (this.a >= 1) { C.alarm(this); return; }
 
@@ -477,7 +485,7 @@ export class Crew {
     this.onAlarm = onAlarm;
     this.onCaught = onCaught;
     this.alarmT = -1;
-    this.player = { eye: V(0, 0, 0), head: V(0, 0, 0), chest: V(0, 0, 0), feet: V(0, 0, 0), crouch: false, exposure: 0, speed: 0 };
+    this.player = { eye: V(0, 0, 0), head: V(0, 0, 0), chest: V(0, 0, 0), feet: V(0, 0, 0), crouch: false, exposure: 0, lampLit: 0, speed: 0 };
   }
 
   add(spec) { const m = new Man(this, spec); this.men.push(m); return m; }
@@ -499,6 +507,8 @@ export class Crew {
     if (this.alarmT >= 0) return;
     this.alarmT = 0;
     this.alarmBy = by;
+    // (for the plays and the report: who, and what he saw)
+    this.game.emit('b6:alarm', { by: by.name, saw: by.saw || null, me: this.player.feet.toArray().map((v) => +v.toFixed(2)), t: +this.game.time.toFixed(2) });
     this.sound('whistle', by.eye(V(0, 0, 0)));
     for (const m of this.men) { if (!m.down) { m.setMode('alarm'); m.a = 1; } }
     if (this.onAlarm) this.onAlarm(by);

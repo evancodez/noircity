@@ -45,7 +45,9 @@ export default {
         for (let j = 0; j < nz; j++) {
           const edge = i === 0 || j === 0 || i === nx - 1 || j === nz - 1;
           // (a notch in an edge now and then: a dark place to stand)
-          if (edge && nx > 1 && nz > 2 && rng.next() < 0.1) continue;
+          const cx0 = x0 + (i + 0.5) * cw, cz0 = z0 + (j + 0.5) * cd;
+          const notched = PIER.notches.some(([nx0, nz0]) => Math.abs(nx0 - cx0) < 0.45 && Math.abs(nz0 - cz0) < 0.45);
+          if (edge && nx > 1 && nz > 2 && (rng.next() < 0.1 || notched)) continue;
           const n = Math.max(1, Math.min(tiers, Math.round(tiers * (0.55 + 0.6 * rng.next()))));
           const cx = x0 + (i + 0.5) * cw, cz = z0 + (j + 0.5) * cd;
           let y = 0;

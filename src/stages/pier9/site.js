@@ -41,10 +41,13 @@ export const PIER = {
     [-15, -13.4, -13, -7, 2], [-15, -13.4, -24, -17, 2], [-15, -13.4, -33, -28, 1],
     [13.4, 15, -11, -4.5, 2], [13.4, 15, -23, -15, 2],
   ],
+  // dark pockets left in the blocks' edges (a crate not there): a place to
+  // wait out of the aisles' sight lines. [x, z] of the missing crate
+  notches: [[-6.65, -10.9], [-7.95, -17.05], [-4.05, -17.05], [-7.95, -33.1], [7.95, -17.05]],
   // bottles left on low crates at the aisles' edges (a hand's reach): [x, z, variant]
-  bottles: [[-8.95, -12.9, 'beer'], [-2.85, -12.3, 'rye'], [8.95, -26.4, 'gin'], [-8.95, -29.3, 'beer'], [2.85, -29.6, 'rye'], [-12.8, -31.0, 'beer']],
+  bottles: [[-13.0, -15.3, 'beer'], [-9.0, -10.3, 'rye'], [8.95, -26.4, 'gin'], [-8.95, -29.3, 'beer'], [2.85, -29.6, 'rye'], [-12.8, -31.0, 'beer']],
   // the roof's posts at the blocks' corners
-  columns: [[-3.4, -14], [3.4, -14], [-3.4, -27.8], [3.4, -27.8], [-9.4, -37.8]],
+  columns: [[-3.4, -14], [3.4, -14], [-3.4, -27.8], [3.4, -27.8], [-9.4, -37.8], [-8.95, -11.95]],
   // the mezzanine along the back wall, the office on it, its catwalk
   mezz: { x0: -11.2, x1: 13.6, z0: -45, z1: -41, y: 3.8, t: 0.18 },
   office: { x0: -3.2, x1: 3.2, z0: -45, z1: -42.3, h: 2.9, win: { x0: -2.7, x1: 0.7, y0: 0.95, y1: 2.15 }, door: { x0: 1.35, x1: 2.35 } },
@@ -69,9 +72,11 @@ export const PIER = {
     ['bay', 11.8, 4.3, -35.2, 0.58, 'N'],
   ],
   trussY: 7.1,
-  // the switch on the X1 post facing aisle B; the hoist over aisle C: its
+  // the switch on the post at the corner of aisle A and the cross aisle,
+  // facing east along it (the man who comes to put it back stands with his
+  // back to the floor); the hoist over aisle C: its
   // cord comes down at X1, its load hangs at the far end of the aisle
-  panel: { x: -3.12, y: 1.35, z: -14, face: 1 },
+  panel: { x: -8.95, y: 1.35, z: -12.1, yaw: Math.PI / 2 },
   hoist: { cleat: { x: 10.2, z: -13.2 }, x: 11, z0: -12.6, z1: -27.4, load: { x: 11, z: -27.4, y: 4.3 } },
   // the truck: half loaded, parked by the big doors; at the end it backs
   // against the side door

@@ -9,6 +9,7 @@ import { OPEN, RELAX, FISTF, mirror } from '../handPoses.js';
 //   sn_aim     the bottle drawn back over the shoulder (held while LMB is)
 //   sn_throw   the arm comes over, the bottle leaves (mark release)
 //   sn_pull    reach up to a lever or a cord (H.snTarget) and pull it down (marks grab, pulled)
+//   sn_pullL   the same with the left hand (a bottle in the right)
 //   sn_blow    one short blow from behind (mark hit), then both hands catch him and lower him
 //   sn_coat    the hand goes into the coat for the revolver, and comes away
 //   sn_cosh    the blow from behind: the view knocked down, the hands drop
@@ -33,6 +34,7 @@ export const POSES = {
   sn_outR: { frame: 'cam', p: [0.06, -0.12, -0.6], f: [-0.1, -0.2, -0.97], b: [0.3, 0.95, -0.1], F: OPEN, e: [0.18, -0.32, -0.3] },
   // pulling a lever or a cord down
   sn_pullDownR: { frame: 'cam', p: [0.14, -0.3, -0.42], f: [-0.2, 0.5, -0.84], b: [0.7, 0.2, 0.68], F: GRIPB, e: [0.26, -0.55, -0.1] },
+  sn_pullDownL: mirror({ frame: 'cam', p: [0.14, -0.3, -0.42], f: [-0.2, 0.5, -0.84], b: [0.7, 0.2, 0.68], F: GRIPB, e: [0.26, -0.55, -0.1] }),
   // the blow: the fist up by the ear, then down on the back of his neck
   sn_blowUpR: { frame: 'cam', p: [0.2, 0.06, -0.3], f: [-0.3, 0.85, 0.4], b: [0.9, 0.0, 0.4], F: FISTF, e: [0.32, -0.28, 0.05] },
   sn_blowDownR: { frame: 'cam', p: [0.02, -0.12, -0.6], f: [-0.2, -0.5, -0.84], b: [0.4, 0.8, -0.4], F: FISTF, e: [0.16, -0.3, -0.3] },
@@ -63,6 +65,12 @@ export const CLIPS = {
   sn_pull: {
     duration: 0.85, marks: { grab: 0.28, pulled: 0.5 },
     keys: { R: [[0, '@rest'], [0.28, reach(GRIPB, [0.3, -0.35, -0.2]), 'out'], [0.34, reach(GRIPB, [0.3, -0.35, -0.2])], [0.5, 'sn_pullDownR', 'snap'], [0.85, '@rest']], L: [[0, '@rest'], [0.85, '@rest']] },
+    view: [[0, {}], [0.28, { fwd: 0.12 }], [0.5, { fwd: 0.08, down: 0.04 }], [0.85, {}]],
+  },
+  // (the bottle in the right hand: the left pulls, the right keeps it up)
+  sn_pullL: {
+    duration: 0.85, marks: { grab: 0.28, pulled: 0.5 },
+    keys: { L: [[0, '@rest'], [0.28, reach(GRIPB, [-0.3, -0.35, -0.2]), 'out'], [0.34, reach(GRIPB, [-0.3, -0.35, -0.2])], [0.5, 'sn_pullDownL', 'snap'], [0.85, '@rest']], R: [[0, 'sn_holdR'], [0.85, 'sn_holdR']] },
     view: [[0, {}], [0.28, { fwd: 0.12 }], [0.5, { fwd: 0.08, down: 0.04 }], [0.85, {}]],
   },
   sn_blow: {

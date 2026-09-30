@@ -96,34 +96,46 @@ export default {
     const { M } = kit;
     const C = stage.colliders;
 
-    // ---- the knife-switch panel on the post, facing aisle B
+    // ---- the knife-switch panel on the post (built facing local +x, turned
+    // to face where the site says)
     const P = PIER.panel;
+    const pf = new THREE.Group();
+    pf.position.set(P.x, 0, P.z);
+    pf.rotation.y = P.yaw ?? 0;
+    g.add(pf);
+    pf.updateMatrixWorld(true);
+    const W = (x, y, z) => pf.localToWorld(V(x, y, z));
     kit.piece();
     const pg = [];
-    pg.push(kit.box(P.x, P.x + 0.09, P.y - 0.42, P.y + 0.42, P.z - 0.3, P.z + 0.3));
-    pg.push(kit.box(P.x + 0.09, P.x + 0.12, P.y - 0.3, P.y + 0.3, P.z - 0.2, P.z + 0.2));
+    pg.push(kit.box(0, 0.09, P.y - 0.42, P.y + 0.42, -0.3, 0.3));
+    pg.push(kit.box(0.09, 0.12, P.y - 0.3, P.y + 0.3, -0.2, 0.2));
     // the conduit up the post to the trusses
-    pg.push(new THREE.CylinderGeometry(0.025, 0.025, PIER.trussY - P.y - 0.4, 8).translate(P.x + 0.05, (PIER.trussY + P.y + 0.4) / 2, P.z + 0.22));
-    const panelMesh = kit.add(mergeGeos(pg), M.paint);
+    pg.push(new THREE.CylinderGeometry(0.025, 0.025, PIER.trussY - P.y - 0.4, 8).translate(0.05, (PIER.trussY + P.y + 0.4) / 2, 0.22));
+    const panelMesh = kit.add(mergeGeos(pg), M.paint, { parent: pf });
     panelMesh.name = 'switchPanel';
     // the lever: a copper blade (grey here) on a hinge, a black handle
     kit.piece();
     const lever = new THREE.Group();
-    lever.position.set(P.x + 0.16, P.y - 0.02, P.z);
-    g.add(lever);
+    lever.position.set(0.16, P.y - 0.02, 0);
+    pf.add(lever);
     kit.add(mergeGeos([kit.box(-0.012, 0.012, 0, 0.3, -0.05, -0.03), kit.box(-0.012, 0.012, 0, 0.3, 0.03, 0.05), kit.box(-0.012, 0.012, 0.27, 0.3, -0.05, 0.05)]), M.iron, { parent: lever });
     kit.add(new THREE.CylinderGeometry(0.025, 0.025, 0.16, 12).rotateX(Math.PI / 2).translate(0.03, 0.3, 0), M.black, { parent: lever });
     lever.rotation.z = 0.35;
-    // its caged bulb over it: a small pool on the panel and the floor before it
+    // (a small caged bulb on a bracket just over the panel, aimed at its face:
+    // the panel and the hand on it are lit, a man standing back from it is not)
     kit.piece();
-    const cb = V(P.x + 0.3, P.y + 1.25, P.z);
-    kit.add(mergeGeos([new THREE.CylinderGeometry(0.02, 0.02, 0.3, 6).rotateZ(Math.PI / 2).translate(cb.x - 0.15, cb.y + 0.1, cb.z),
-      new THREE.CylinderGeometry(0.09, 0.07, 0.1, 14).translate(cb.x, cb.y + 0.08, cb.z)]), M.iron, { cast: false });
-    const pBulb = kit.add(new THREE.SphereGeometry(0.05, 12, 8).translate(cb.x, cb.y, cb.z), M.bulb, { cast: false, noRay: true });
-    const bulbLamp = stage.lamps.addCustom({ head: cb.clone(), axis: V(0.3, -1, 0), height: 2.9, half: 0.75, real: true, bulb: pBulb, fadeEnd: 0.75, edgeSoft: 0.55, strength: 0.55, tag: 'panel' });
-    if (bulbLamp.light) { bulbLamp.light.intensity = 38; bulbLamp.light.distance = 7; }
+    kit.add(mergeGeos([new THREE.CylinderGeometry(0.02, 0.02, 0.3, 6).rotateZ(Math.PI / 2).translate(0.34 - 0.15, P.y + 1.05, 0),
+      new THREE.CylinderGeometry(0.09, 0.07, 0.1, 14).translate(0.34, P.y + 1.03, 0)]), M.iron, { parent: pf, cast: false });
+    const pBulb = kit.add(new THREE.SphereGeometry(0.05, 12, 8).translate(0.34, P.y + 0.95, 0), M.bulb, { parent: pf, cast: false, noRay: true });
+    const cb = W(0.34, P.y + 0.95, 0);
+    const ax = W(-0.55, -1, 0).sub(W(0, 0, 0));
+    const bulbLamp = stage.lamps.addCustom({ head: cb.clone(), axis: ax, height: 2.2, half: 0.42, real: true, bulb: pBulb, fadeEnd: 0.7, edgeSoft: 0.55, strength: 0.5, tag: 'panel' });
+    if (bulbLamp.light) { bulbLamp.light.intensity = 26; bulbLamp.light.distance = 4.5; bulbLamp.light.angle = 0.6; }
+    const stand = W(0.78, 0, 0);
     const panel = {
-      on: true, lever, pos: V(P.x + 0.2, P.y, P.z), bulbLamp, mesh: panelMesh, k: 1,
+      on: true, lever, pos: W(0.2, P.y, 0), bulbLamp, mesh: panelMesh, k: 1,
+      // where a man stands to work it, and his heading there (he faces it)
+      stand, face: Math.atan2(P.x - stand.x, P.z - stand.z),
       throw(on) { panel.on = on; },
     };
 

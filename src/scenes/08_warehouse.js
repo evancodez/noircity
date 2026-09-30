@@ -38,12 +38,19 @@ const CREW = [
   // pool swings his light through the north, never across the door)
   { name: 'sully', kind: 'dockhand', light: 'lantern', at: [-8.1, -5.1], yaw: 2.5, start: 'wait', entry: [{ x: -10.9, z: -5.0 }],
     route: [{ x: -11.2, z: -23.6, wait: 2.6, looks: [PI, -PI / 2 - 0.3] }, { x: -11.2, z: -6.6, wait: 2.2, looks: [PI / 2, 0.9] }] },
-  { name: 'rusty', kind: 'dockhand', light: 'torch', at: [0.5, -14.2], yaw: -PI / 2, ri: 0,
-    route: [{ x: -10.2, z: -14.2, wait: 2.2, looks: [0.1, PI] }, { x: 9.2, z: -14.2, wait: 2.2, looks: [PI, 0.1] }] },
-  { name: 'bert', kind: 'dockhand', light: 'lantern', at: [0, -25], yaw: PI, ri: 1,
-    route: [{ x: 0, z: -18, wait: 2.6, looks: [0.0, -0.8] }, { x: 0, z: -32.4, wait: 2.6, looks: [PI, PI / 2] }] },
-  { name: 'cal', kind: 'dockhand', light: 'torch', at: [11, -16], yaw: PI, ri: 1,
-    route: [{ x: 11, z: -6.2, wait: 2.0, looks: [0.0, -PI / 2] }, { x: 11, z: -25.8, wait: 1.4, looks: [PI] }, { x: 12, z: -34, wait: 3.0, looks: [PI / 2, 0.2] }, { x: 11, z: -25.8, wait: 0 }] },
+  // a loop round the block east of aisle B: east along the cross aisle to
+  // the hoist's post, south down aisle C, west along the truck's strip,
+  // north up aisle B's east side (his light never points back along the
+  // cross aisle at the switch; he is the switch's nearest man)
+  { name: 'rusty', kind: 'dockhand', light: 'torch', at: [6.0, -14.2], yaw: PI / 2, ri: 1,
+    route: [{ x: 3.9, z: -14.2, wait: 1.6, looks: [PI / 2] }, { x: 9.2, z: -14.2, wait: 2.6, looks: [PI, 0.2] },
+      { x: 10.3, z: -4.7, wait: 1.6, looks: [-PI / 2] }, { x: 2.6, z: -4.0, wait: 0 }, { x: 2.6, z: -12.6, wait: 0 }] },
+  // aisle B's man (its lamps are his: when they go, he goes to the switch)
+  { name: 'bert', kind: 'dockhand', light: 'lantern', at: [0, -25], yaw: PI, ri: 1, row: 'B',
+    route: [{ x: 0, z: -22.6, wait: 2.4, looks: [PI / 2, -PI / 2] }, { x: 0, z: -32.4, wait: 3.2, looks: [PI, PI / 2] }] },
+  // aisle C's north half and the loading bay (he looks at the loading doors)
+  { name: 'cal', kind: 'dockhand', light: 'torch', at: [11, -22], yaw: PI, ri: 2,
+    route: [{ x: 11, z: -17.4, wait: 2.0, looks: [0.0, -PI / 2] }, { x: 11, z: -26, wait: 0 }, { x: 12, z: -34, wait: 3.0, looks: [PI / 2, 0.2] }, { x: 11, z: -26, wait: 0 }] },
   { name: 'hood1', kind: 'hood', light: null, at: [-2.8, -37.6], yaw: 0.6, variant: { coat: 1, brim: 1, tall: 1, cig: true },
     looks: [0.65, -0.35, 0.2], lookEvery: 4.2 },
   { name: 'hood2', kind: 'hood', light: 'torch', at: [3.0, -36.4], yaw: PI / 2, ri: 1, variant: { coat: 2, brim: 0, tall: 0 }, speed: 1.1,
@@ -53,8 +60,8 @@ const CREW = [
 const START = {
   arrive: { x: PIER.start.x, z: PIER.start.z, yaw: PIER.start.yaw, pitch: 0.02 },
   floor: { x: -10.4, z: -1.2, yaw: 0.05, pitch: -0.02 },
-  lamps: { x: 9.1, z: -11.9, yaw: 1.4, pitch: -0.05, crouch: true },
-  stairs: { x: -11.6, z: -33.2, yaw: -0.9, pitch: 0.0, crouch: true },
+  lamps: { x: -6.65, z: -11.1, yaw: 0.4, pitch: -0.05, crouch: true },
+  stairs: { x: -7.95, z: -33.1, yaw: PI / 2 - 0.35, pitch: 0.0, crouch: true },
   listen: { x: -1.0, z: -41.7, yaw: 0.0, pitch: 0.2, crouch: true, up: true },
   out: { x: 4.2, z: -41.7, yaw: -PI / 2, pitch: -0.1, crouch: true, up: true },
 };
@@ -104,6 +111,9 @@ function setupAt(ctx, b) {
   G.controller.frozen = false;
   G.controller.setPose(S.x, S.z, S.yaw, S.pitch, S.up ? PIER.mezz.y : 0);
   G.controller.setMode('sneak', { crouch: !!S.crouch, sfx: G.sfx });
+  // (the look is held while the scene comes up out of the black: the first
+  // frame is the composed one)
+  G.controller.lookLocked = true;
   const stealth = new Stealth(ctx, crew);
   stealth.dress();
   LIVE = { crew, stealth, props, bottles, office, card, beat: b, cp: b === 'arrive' ? 'arrive' : b === 'listen' ? 'stairs' : b };
@@ -137,21 +147,21 @@ function live(ctx) {
   L.props.push(target);
   const aimTarget = (pos, faceYaw) => { target.position.copy(pos); target.rotation.set(0, faceYaw, 0); target.updateMatrixWorld(true); return target; };
   // the side door (from outside)
-  I.add({ id: 'b6door', at: V(PIER.sideDoor.x + 0.4, 1.05, 0.15), range: 2.4, cone: 0.6, prompt: 'open', when: () => !shed.sideDoor.isOpen && ctx.beat === 'arrive',
+  I.add({ id: 'b6door', at: V(PIER.sideDoor.x + 0.4, 1.05, 0.15), range: 2.4, cone: 1.1, prompt: 'open', when: () => !shed.sideDoor.isOpen && ctx.beat === 'arrive',
     onUse: () => { shed.sideDoor.open(1); G.sfx.play('creak', V(PIER.sideDoor.x, 1.2, 0), {}, { ref: 3 }); } });
   // the bottles
   L.bottles.forEach((b, i) => {
-    I.add({ id: 'b6bottle' + i, at: () => b.getWorldPosition(new THREE.Vector3()).add(V(0, 0.15, 0)), range: 1.45, cone: 0.45, prompt: 'bottle',
+    I.add({ id: 'b6bottle' + i, at: () => b.getWorldPosition(new THREE.Vector3()).add(V(0, 0.15, 0)), range: 1.55, cone: 0.95, prompt: 'bottle',
       when: () => !stealth.bottle && b.parent && b.parent !== G.vm.root && !G.player.hands.busy && stealth.coshT < 0,
       onUse: () => stealth.take(b) });
   });
   // the knife switch: the middle aisle's lamps go dark; a man comes to put it back
   const P = W.panel;
-  I.add({ id: 'b6switch', at: () => V(P.pos.x + 0.05, P.pos.y + 0.28, P.pos.z), range: 1.7, cone: 0.5, prompt: 'pull the switch',
-    when: () => P.on && !L.fixer && !G.player.hands.busy && !stealth.bottle,
+  I.add({ id: 'b6switch', at: () => P.pos, range: 1.8, cone: 1.2, prompt: 'pull the switch',
+    when: () => P.on && !L.fixer && !G.player.hands.busy && !stealth.aiming,
     onUse: () => {
-      aimTarget(V(P.pos.x + 0.05, P.pos.y + 0.3, P.pos.z), -PI / 2);
-      G.player.hands.play('sn_pull', { onMark: { pulled: () => {
+      aimTarget(P.lever.localToWorld(V(0.03, 0.3, 0)), P.face);
+      G.player.hands.play(stealth.bottle ? 'sn_pullL' : 'sn_pull', { onMark: { pulled: () => {
         P.throw(false);
         G.sfx.play('switch', P.pos, {}, { ref: 3 });
         G.sfx.play('lampsOff', V(0, 4.3, -21), {}, { ref: 8 });
@@ -170,10 +180,10 @@ function live(ctx) {
     G.controller.shake(0.25, G.eye.distanceTo(p));
     crew.sendNearest(p, 2, 'crash', 40);
   };
-  I.add({ id: 'b6hoist', at: () => HO.cleat, range: 1.7, cone: 0.5, prompt: 'let the load go', when: () => HO.up && !G.player.hands.busy && !stealth.bottle,
+  I.add({ id: 'b6hoist', at: () => HO.cleat, range: 1.8, cone: 1.2, prompt: 'let the load go', when: () => HO.up && !G.player.hands.busy && !stealth.aiming,
     onUse: () => {
       aimTarget(HO.cleat.clone().add(V(0.02, 0.02, 0)), -PI / 2);
-      G.player.hands.play('sn_pull', { onMark: { pulled: () => { HO.drop(); G.sfx.play('hoist', HO.cleat, {}, { ref: 5 }); } } });
+      G.player.hands.play(stealth.bottle ? 'sn_pullL' : 'sn_pull', { onMark: { pulled: () => { HO.drop(); G.sfx.play('hoist', HO.cleat, {}, { ref: 5 }); } } });
     } });
   // a man from behind (only one who has not noticed me)
   for (const m of crew.men) {
@@ -181,29 +191,31 @@ function live(ctx) {
       when: () => canTakeDown(m, G), onUse: () => takeDown(ctx, m) });
   }
   // the bay's side door (only once there is a reason to leave)
-  I.add({ id: 'b6bay', at: V(PIER.shed.x1 - 0.2, 1.05, PIER.bayDoor.z - 0.4), range: 1.9, cone: 0.6, prompt: 'open', when: () => !shed.bayDoor.isOpen && ctx.beat === 'out',
+  I.add({ id: 'b6bay', at: V(PIER.shed.x1 - 0.2, 1.05, PIER.bayDoor.z - 0.4), range: 2.2, cone: 1.1, prompt: 'open', when: () => !shed.bayDoor.isOpen && ctx.beat === 'out',
     onUse: () => { shed.bayDoor.open(1); G.sfx.play('creak', V(PIER.shed.x1, 1.2, PIER.bayDoor.z), {}, { ref: 3 }); } });
 
   ctx.onStep((dt) => {
     if (!LIVE || LIVE !== L) return;
+    if (G.controller.lookLocked && !G.scenes.trans && ctx.sceneTime > 0.5) G.controller.lookLocked = false;
     stealth.step(dt);
     crew.step(dt, G.time);
     // the switch's fixer: the nearest free man walks over
     if (L.fixDue && G.time >= L.fixDue) {
       L.fixDue = 0;
+      // (the dark row's own man, if he is free; else the nearest)
       const free = crew.men.filter((m) => !m.down && m.mode !== 'alarm' && !m.hood && (m.mode === 'patrol' || m.mode === 'hold' || m.mode === 'return' || m.mode === 'wait'))
-        .sort((a, b) => Math.hypot(a.pos.x - P.pos.x, a.pos.z - P.pos.z) - Math.hypot(b.pos.x - P.pos.x, b.pos.z - P.pos.z));
+        .sort((a, b) => (b.spec.row === 'B') - (a.spec.row === 'B') || Math.hypot(a.pos.x - P.pos.x, a.pos.z - P.pos.z) - Math.hypot(b.pos.x - P.pos.x, b.pos.z - P.pos.z));
       const m = free[0];
       if (m) {
         L.fixer = m;
-        m.fixing = { face: -PI / 2, dur: 2.6, onDone: () => {
+        m.fixing = { face: P.face, dur: 8.0, onDone: () => {
           P.throw(true);
           G.sfx.play('switch', P.pos, {}, { ref: 3 });
           for (const l of stage.lamps.rows.get('B')) stage.lamps.dim(l, true);
           L.fixer = null;
         } };
         m.setMode('fix');
-        m.go(P.pos.x + 0.55, P.pos.z);
+        m.go(P.stand.x, P.stand.z);
       }
     }
     if (L.fixer && (L.fixer.down || L.fixer.mode === 'alarm')) { L.fixer = null; if (!P.on) L.fixDue = G.time + 2; }
@@ -239,6 +251,7 @@ function* listenBeat(ctx) {
   const win = ctx.stage.anchor('pier9.office.window.in');
   yield wait(0.8);
   for (let i = 0; i < LINES.length; i++) {
+    L.said = i + 1;
     yield* ctx.say(LINES[i], 3.0);
     yield wait(i === LINES.length - 1 ? 0.6 : 1.0);
   }
@@ -342,7 +355,9 @@ export default defineScene({
         G.sfx.play('engine', V(PIER.truck.from.x, 1, PIER.truck.from.z), { dur: 8 }, { ref: 10 });
       }
       yield until(() => C.pos.x > PIER.shed.x1 + 0.4 && C.pos.z > PIER.bayDoor.z - 1.5);
-      yield until(() => C.pos.z > PIER.bayDoor.z + 4.5 || C.pos.x > PIER.apron.x0 + 2.6);
+      // (out on the apron, a few steps from the door: the scene ends on the
+      // pier in the rain)
+      yield until(() => C.pos.x > PIER.shed.x1 + 0.4 && Math.hypot(C.pos.x - (PIER.shed.x1 + 0.6), C.pos.z - PIER.bayDoor.z) > 3.2);
       G.music.stop(2);
       ctx.flags.done = true;
       ctx.next();

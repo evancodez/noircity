@@ -88,6 +88,7 @@ export class PierLamps extends Lamps {
     if (lamp.light) { lamp.light.intensity = 70 * strength; lamp.light.angle = half * 1.15; lamp.light.penumbra = 0.45; lamp.light.distance = range * 1.6; }
     lamp.entry.range = range;
     lamp.entry.intensity = 0;
+    lamp.entry.torch = true;
     lamp.on = false;
     lamp.range = range;
     lamp.aim = (pos, dir) => {

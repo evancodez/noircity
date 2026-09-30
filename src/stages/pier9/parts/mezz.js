@@ -166,7 +166,7 @@ export default {
     // the office's own lamp: over the desk, its pool on the desk, light
     // behind whoever stands between it and the window
     const deskBulb = kit.add(new THREE.SphereGeometry(0.05, 12, 8).translate(0.8, oy0 + 1.14, -44.0), M.bulb, { cast: false, noRay: true });
-    const oLamp = stage.lamps.addCustom({ head: V(0.2, oy1 - 0.3, -43.9), axis: V(0, -1, 0.25), height: 2.6, half: 0.9, real: true, bulb: deskBulb, fadeEnd: 0.8, edgeSoft: 0.6, strength: 0.5, tag: 'office' });
+    const oLamp = stage.lamps.addCustom({ head: V(0.2, oy1 - 0.3, -43.9), axis: V(0, -1, -0.3), height: 2.6, half: 0.7, real: true, bulb: deskBulb, fadeEnd: 0.8, edgeSoft: 0.6, strength: 0.5, tag: 'office' });
     if (oLamp.light) { oLamp.light.intensity = 40; oLamp.light.distance = 7; }
     oLamp.entry.range = 3.0;
 

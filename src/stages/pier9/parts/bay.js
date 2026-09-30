@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { PIER } from '../site.js';
 import { makeKit, paint } from '../kit.js';
-import { slab, mergeGeos } from '../../../props/lib.js';
+import { slab } from '../../../props/lib.js';
 import { buildProp } from '../../../props/index.js';
 
 // The loading bay (lane B6): the clear floor in its pool of light (the ring
@@ -37,14 +37,14 @@ export default {
     };
     const bTop1 = barrel(9.35, -31.2);
     barrel(9.95, -31.05);
-    const bTop2 = barrel(14.3, -39.3);
+    const bTop2 = barrel(10.1, -42.6);
     kit.addMerged(barrels, M.crateDark, { cast: true });
     kit.piece();
     const cr = [];
     const crate = (x, z, w, h, d, v = 0.14, y = 0) => { const c = slab(w, h, d, { bevel: 0.03, corner: 0.03, seg: 1, curve: 2 }); c.deleteAttribute('uv'); c.translate(x, y, z); paint(c, v); cr.push(c); C.addBox(x, z, w / 2, d / 2, 0, 'crates'); return V(x, y + h, z); };
     const cTop1 = crate(9.5, -39.4, 1.1, 0.9, 1.1, 0.13);
     crate(9.5, -41.5, 1.1, 0.9, 1.1, 0.16);
-    const cTop2 = crate(14.35, -31.6, 1.0, 1.0, 1.0, 0.12);
+    crate(14.3, -43.4, 1.0, 1.0, 1.0, 0.12);
     kit.addMerged(cr, M.crate, { cast: true });
 
     // ---- the things in reach (props)
@@ -65,9 +65,9 @@ export default {
     put('bottle', cTop1.clone().add(V(0.2, 0, 0.15)), { variant: 'rye' });
     put('bottle', cTop1.clone().add(V(-0.15, 0, -0.1)), { variant: 'beer' });
     put('cargoHook', bTop1.clone().add(V(0, 0, 0)), { yaw: 0.6 });
-    put('chainCoil', V(13.9, 0.0, -32.9));
+    put('chainCoil', V(9.75, 0.0, -33.6));
     put('lantern', bTop2.clone(), { variant: 'off', yaw: -0.8 });
-    put('rope', V(14.2, 0.0, -41.6));
+    put('rope', V(11.2, 0.0, -43.6));
 
     // ---- the anchors
     const A = (name, x, y, z, yaw, extra = {}) => stage.addAnchor('pier9.' + name, { pos: V(x, y, z), yaw, ...extra });
@@ -77,7 +77,6 @@ export default {
     PIER.loading.forEach((l, i) => A('bay.finish.' + (i + 1), S.x1 - 0.35, 0, l.z, -Math.PI / 2, { w: PIER.loadingW }));
     A('bay.door', S.x1 - 0.8, 0, PIER.bayDoor.z, -Math.PI / 2);
     A('bay.out', PIER.apron.x0 + 1.8, 0, PIER.bayDoor.z + 0.4, 0);
-    void mergeGeos; void cTop2;
     return { group: g, reach };
   },
 };

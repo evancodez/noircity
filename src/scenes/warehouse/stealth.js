@@ -82,6 +82,7 @@ export class Stealth {
     }
   }
   undress() {
+    this.G.controller.lookLocked = false;
     if (this.saved) for (const s of this.saved) s.mesh.material = s.mat;
     this.saved = null;
     this.arc.group.visible = false;
@@ -108,6 +109,7 @@ export class Stealth {
     P.chest.copy(eye).setY(eye.y - (S && S.crouch ? 0.25 : 0.42));
     P.feet.copy(this.feet);
     P.crouch = !!(S && S.crouch); P.exposure = E; P.speed = S ? S.speed : 0;
+    P.lampLit = this.lampLit(P.head, P.chest);
     // the hands: how lit they print (a quick ease: the light on them is
     // the light on me, 0.15 s behind as the exposure is)
     const lit = sstep(0.12, 0.55, E);
@@ -125,11 +127,17 @@ export class Stealth {
     }
     // LMB: the bottle's aim and throw; without one, the reach for the gun
     const busy = H.busy || this.coshT >= 0;
+    // (the throw is taught once, the first time a bottle is in my hand; a
+    // thing E can reach takes the line while it is in reach)
+    if (this.teachThrow && this.bottle && !G.interact.current) G.hud.prompt('hold LMB  throw', null, 'b6');
+    else if (this.teachThrow) G.hud.clearPrompt('b6');
     if (this.bottle) {
-      if (!this.aiming && G.held('Mouse0') && !busy) { this.aiming = true; H.play('sn_aim'); this.taught.throw = true; G.hud.clearPrompt('b6'); }
+      if (!this.aiming && G.held('Mouse0') && !busy) { this.aiming = true; H.play('sn_aim'); this.taught.throw = true; this.teachThrow = false; G.hud.clearPrompt('b6'); }
       if (this.aiming) {
-        this.drawArc();
+        // (let go: the throw goes where the arc was drawn a step ago - the
+        // release is a hand opening, not a turn of the head)
         if (!G.held('Mouse0')) this.throw();
+        else { this.aimQ = (this.aimQ || new THREE.Quaternion()).copy(G.camera.quaternion); this.aimP = (this.aimP || V(0, 0, 0)).copy(G.camera.position); this.drawArc(); }
       }
     } else if (G.pressed('Mouse0') && !busy && this.G.time > this.coatT) {
       this.coatT = this.G.time + 1.2;
@@ -143,6 +151,32 @@ export class Stealth {
     if (this.coshT >= 0) this.coshStep(dt);
   }
 
+  // how lit I am by the lamps alone (the crew's own torches left out: a
+  // torch on me is its man's beam), the chest and the head, each lamp's
+  // line tested; smoothed as the exposure is
+  lampLit(head, chest) {
+    const G = this.G, X = G.exposure, S = G.stage;
+    let best = 0;
+    for (const p of [head, chest]) {
+      let sum = 0;
+      for (const e of S.lights.entries) {
+        if (e.torch || !e.enabled || !(e.intensity > 0)) continue;
+        let k = X.lampAt(e, p);
+        if (k <= 0.01) continue;
+        _v.subVectors(p, e.position);
+        const d = _v.length();
+        _v.divideScalar(d);
+        if (G.rays.raycast(e.position, _v, d - 0.3, { anyHit: true })) k = 0;
+        sum += k;
+      }
+      best = Math.max(best, Math.min(1, sum));
+    }
+    const dt = this.G.time - (this._llT ?? -1);
+    this._llT = this.G.time;
+    this._ll = this._ll == null || dt > 0.5 ? best : this._ll + (best - this._ll) * (1 - Math.exp(-Math.max(0, dt) / 0.15));
+    return this._ll;
+  }
+
   // ---- the bottle -------------------------------------------------------------------------
   take(obj) {
     const G = this.G, H = G.player.hands;
@@ -153,16 +187,17 @@ export class Stealth {
       H.hold(tgt, 'R');
       this.bottle = tgt;
       G.sfx.play('f_grab_bottle', null, {}, { send: false });
-      if (!this.taught.throw) G.hud.prompt('hold LMB  throw', null, 'b6');
+      this.teachThrow = !this.taught.throw;
     } } });
   }
 
   // where the throw starts (the hand going over) and its first velocity
-  launch(out = { p: V(0, 0, 0), v: V(0, 0, 0) }) {
+  launch(out = { p: V(0, 0, 0), v: V(0, 0, 0) }, fromAim = false) {
     const cam = this.G.camera;
-    const f = _v.set(0, 0, -1).applyQuaternion(cam.quaternion);
-    const r = _w.set(1, 0, 0).applyQuaternion(cam.quaternion);
-    out.p.copy(cam.position).addScaledVector(f, 0.35).addScaledVector(r, 0.18);
+    const q = fromAim && this.aimQ ? this.aimQ : cam.quaternion;
+    const f = _v.set(0, 0, -1).applyQuaternion(q);
+    const r = _w.set(1, 0, 0).applyQuaternion(q);
+    out.p.copy(fromAim && this.aimP ? this.aimP : cam.position).addScaledVector(f, 0.35).addScaledVector(r, 0.18);
     out.p.y -= 0.05;
     // (the aim: the view's direction lifted, so a level look lobs it)
     const pitch = Math.asin(Math.max(-1, Math.min(1, f.y)));
@@ -246,17 +281,18 @@ export class Stealth {
       if (!b) return;
       // (its place in the world, from the hand's scene: the same place, the eye's lens)
       b.updateMatrixWorld(true);
-      b.matrixWorld.decompose(_v, _q, _w);
+      const at = V(0, 0, 0), rot = new THREE.Quaternion();
+      b.matrixWorld.decompose(at, rot, _w);
       H.hold(null, 'R', { keep: true });
       this.bottle = null;
-      const L = this.launch();
-      b.position.copy(_v);
-      b.quaternion.copy(_q);
+      const L = this.launch(undefined, true);
+      b.position.copy(at);
+      b.quaternion.copy(rot);
       b.scale.setScalar(1);
       b.matrixAutoUpdate = true;
       G.stage.scene.add(b);
       // (it flies from where the hand let it go along the aimed path)
-      this.flying.push({ obj: b, p: _v.clone(), v: L.v.clone(), spin: V(7, 2, 3), t: 0 });
+      this.flying.push({ obj: b, p: at.clone(), v: L.v.clone(), spin: V(7, 2, 3), t: 0 });
       G.sfx.play('throw', null, {}, { send: false });
     } } });
   }
