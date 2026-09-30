@@ -155,6 +155,10 @@ function* drumsGen(ctx, restore) {
   if (lean > 0.02) C.ease({ x: P0.x + dx / dh * lean, y: P0.y - 0.2 * lean / LEAN_MAX, z: P0.z + dz / dh * lean, yaw: Math.atan2(-dx, -dz), pitch: Math.atan2(at.y - (P0.y - 0.2), Math.max(0.3, dh - lean)) + 0.1 }, 0.26);
   for (let t = 0; t < 0.2; t += 1 / 60) { vm.lowerTo(Math.max(vm.lower, Math.min(DOWN, t / 0.2)), true); yield null; }
   vm.lowerTo(DOWN, true);
+  // (the eye held where it leaned while the hand works: a turn or a step
+  // away would drag the arm after the drums)
+  const Ph = C.eyePose();
+  const hold = () => C.ease(Ph, 1e-3);
   // the left hand, seen through the eye's own lens
   const still0 = H.still;
   H.studyFov = true;
@@ -178,11 +182,12 @@ function* drumsGen(ctx, restore) {
     const p = HAND_IN.clone().lerp(g, e);
     p.y += 0.06 * Math.sin(Math.PI * u);
     H.still = { ...(still0 || {}), L: pose(p, GRIPF, Math.max(0, (u - 0.6) / 0.4)) };
+    hold();
     yield null;
   }
   G.sfx.play('b7_drumTake', st.position.clone());
   // the grip
-  for (let t = 0; t < T2; t += 1 / 60) { H.still = { ...(still0 || {}), L: pose(toCam(top()), GRIPF, 1) }; yield null; }
+  for (let t = 0; t < T2; t += 1 / 60) { H.still = { ...(still0 || {}), L: pose(toCam(top()), GRIPF, 1) }; hold(); yield null; }
   // the carry: the stack comes off the counter toward me and down out of the
   // frame (its path first, the hand on it)
   const g0 = toCam(top()), o0 = toCam(st.position);
@@ -196,6 +201,7 @@ function* drumsGen(ctx, restore) {
     st.position.copy(g.clone().add(off).applyMatrix4(cam.matrixWorld));
     st.quaternion.copy(q0).premultiply(new THREE.Quaternion().setFromAxisAngle(V(0, 0, 1).transformDirection(cam.matrixWorld), -0.5 * e));
     H.still = { ...(still0 || {}), L: pose(g, GRIPF, 1) };
+    hold();
     yield null;
   }
   st.visible = false;
@@ -781,9 +787,9 @@ function spawnCardinal(ctx, at) {
       // [second pass] he falls back, away from my rounds, when there is
       // street behind him; with his car or a wall at his back he goes down
       // on his knees and forward instead (never back into the saloon)
-      const d0 = dir || V(1, 0, 0);
-      G.killHood(h, d0, false, fallRoom(S, h, d0) ? 'deathBack' : 'deathKnees');
-      endHat(ctx, h);
+      const d0 = dir || V(1, 0, 0), back = fallRoom(S, h, d0);
+      G.killHood(h, d0, false, back ? 'deathBack' : 'deathKnees');
+      endHat(ctx, h, { forward: !back });
     }
   };
   if (ctx.cast.has('cardinal')) {
@@ -899,7 +905,11 @@ function scatter(ctx) {
       if (onDeck || !path) { hd.speed = 0; return; }
       let wp = path[pi];
       while (wp && Math.hypot(wp.x - hd.pos.x, wp.z - hd.pos.z) < 0.6) wp = path[++pi];
-      if (!wp) { gi++; plan(); return; }
+      if (!wp) {
+        // (the last goal reached: he stands in the dark there until unseen)
+        if (++gi >= goals.length) { path = null; hd.speed = 0; hd.setState('idle', 0.3); return; }
+        plan(); return;
+      }
       const yaw = Math.atan2(wp.x - hd.pos.x, wp.z - hd.pos.z);
       const dy = Math.atan2(Math.sin(yaw - hd.yaw), Math.cos(yaw - hd.yaw));
       hd.yaw += dy * Math.min(1, dt * 7);
@@ -938,7 +948,7 @@ function* theFrame(ctx) {
   // down on one knee by his head, looking past it along the way he came: the
   // hat and the ember low in the frame, the wet street, the lamp beyond
   const at = hat ? hat.rest.clone() : V(-5.6, 0, -11);
-  const fwd0 = hat ? hat.fwd : V(-0.4, 0, 0.92);
+  const fwd0 = hat ? (hat.view || hat.fwd) : V(-0.4, 0, 0.92);
   // (the way it looks turned, if it must be, until the eye stands clear of
   // cars, walls and posts)
   let fwd = fwd0, eye = null;

@@ -44,7 +44,7 @@ function makeHat(k = 1) {
   return g;
 }
 
-export function endHat(ctx, hood, { now = false } = {}) {
+export function endHat(ctx, hood, { now = false, forward = false } = {}) {
   const G = ctx.game, S = ctx.stage, R = rig();
   if (!R) return;
   if (R.hat) { S.scene.remove(R.hat.obj); if (R.hat.cigar) S.scene.remove(R.hat.cigar); }
@@ -60,7 +60,12 @@ export function endHat(ctx, hood, { now = false } = {}) {
     side = V(Math.cos(hood.yaw), 0, -Math.sin(hood.yaw));
     pos = hood.pos.clone().setY(0);
   }
-  const H = R.hat = { obj: hat, cigar, t: 0, done: false, fwd, side, hood, from: null, spin: 0, rng: ctx.rng.fork ? ctx.rng.fork(77) : ctx.rng };
+  // [second pass] (fallen forward, on his knees and onto his face: his head
+  // lies ahead of him, and the hat rolls on away from him that way; the last
+  // frame still looks back along the way he came, the hat before his head)
+  const view = fwd.clone();
+  if (forward) fwd.negate();
+  const H = R.hat = { obj: hat, cigar, t: 0, done: false, fwd, side, view, hood, from: null, spin: 0, rng: ctx.rng.fork ? ctx.rng.fork(77) : ctx.rng };
   H.cig = { from: null, t: 0, yaw: Math.atan2(-side.z, side.x) + 0.6 };
   // (until the release says where exactly: his head a man's length behind him)
   plan(H, S, pos.clone().addScaledVector(fwd, -1.45));

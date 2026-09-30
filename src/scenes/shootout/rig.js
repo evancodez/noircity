@@ -167,6 +167,9 @@ export function stageBeat(ctx, b) {
     if (A) { R.reserve = Math.max(RESERVE.start, A.reserve); R.lightsOn = A.lights; }
   }
   R.hatReset && R.hatReset();
+  // [second pass] (a scene's entry drops the HUD's layers: the drums I carry
+  // get theirs again, or they vanish after the first death)
+  R.res = null;
   placeDot(ctx, b === 'arrive' ? 'lean' : 'duck');
   setRoomLights(S, R.lightsOn);
   R.sw.userData.set(R.lightsOn);
