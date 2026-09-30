@@ -52,29 +52,39 @@ const climbK = (t) => (t < 0 ? 0 : (t / TAU) * Math.exp(1 - t / TAU));
 // about the barrel; e is the right elbow.
 const P = (p, yaw, pitch, roll, e) => ({ p: V(...p), q: new THREE.Quaternion().setFromEuler(new THREE.Euler(pitch, yaw, roll, 'YXZ')), e: V(...e) });
 const POSE = {
-  // at the eye's height, a little right, canted in: the classic frame
+  // low right, the barrel running into the picture toward the centre,
+  // canted in (clips/revolver.js GUN_READY)
   ready: P(GUN_READY.p, GUN_READY.yaw, GUN_READY.pitch, GUN_READY.roll, [0.24, -0.3, -0.12]),
   // steadied: up on the eye's line, square, the front sight on the centre
   steady: P([0.0, -0.078, -0.45], 0, 0, 0, [0.06, -0.22, -0.26]),
-  // in the coat (the shoulder holster): below the frame's bottom right
-  holster: P([0.19, -0.5, -0.12], 0.4, -1.25, 0.9, [0.3, -0.7, 0.05]),
-  // the reload (each place searched - the eyes' dip to it counted - so the
-  // gun stays in the viewmodel's
-  // frame - at a third of a metre it shows only 16 cm below the eye's line
-  // - with the swung-out cylinder low right of centre):
-  // brought in, the muzzle ahead and left, its left side turned up to the eye
-  // (the elbows well under the wrists: the sleeves rise from the frame's
-  // bottom edge, foreshortened, instead of lying across it)
-  // (right of centre: the left arm reaches in from the lower left and never
-  // stands between the eye and the gun)
-  present: P([0.115, -0.179, -0.42], 0.625, 0.227, -0.812, [0.27, -0.66, -0.24]),
-  // the muzzle up for the ejector's stroke, the rear face down
-  eject: P([0.091, -0.18, -0.41], 0.802, 1.141, -0.115, [0.25, -0.66, -0.24]),
-  // the muzzle down to feed the chambers: the rear face turned to the eye
-  load: P([0.106, -0.118, -0.43], 0.496, -0.484, -0.707, [0.26, -0.64, -0.26]),
+  // in the coat (the shoulder holster, under the left arm): just under the
+  // frame's bottom edge left of centre, the muzzle to the left - the draw
+  // crosses the body and is in frame by its second step (second pass: it
+  // came from far below the right edge, nothing showed for 0.15 s)
+  holster: P([-0.02, -0.2, -0.26], 1.3, -0.25, 1.2, [0.14, -0.5, -0.02]),
+  // the reload (each place fitted with the eyes' dip to it counted: at a
+  // third of a metre the frame shows only 16 cm below the eye's line).
+  // (Second pass: the gun is side-on through the reload - its left side,
+  // where the cylinder swings out, turned to the eye, the muzzle down and
+  // left, low in the middle of the frame, the right forearm lying in from
+  // the right - so the cylinder swung out toward the eye, the rounds going
+  // into its rear face and the shut all read; the first version held it
+  // muzzle-ahead and the hands covered it)
+  present: P([0.03, -0.13, -0.33], 1.15, -0.2, 0.15, [0.25, -0.5, -0.05]),
+  // the muzzle up for the ejector's stroke, the rear face down (low: the
+  // left palm on the rod stays in the lower half)
+  eject: P([0.05, -0.24, -0.35], 1.0, 1.1, 0.1, [0.25, -0.55, -0.05]),
+  // the muzzle down and left to feed the chambers: the swung-out cylinder's
+  // rear face turned up to the eye, the left hand under it
+  load: P([0.02, -0.14, -0.33], 0.9, -0.35, 0.5, [0.25, -0.5, -0.05]),
 };
-// the left elbow through the reload (true eye-frame): low on the left
-const EL = [-0.36, -0.42, -0.2];
+// the left elbow through the reload (true eye-frame): low, under the hands
+// (second pass: it stood out left, and the left sleeve lay across the frame)
+const EL = [-0.2, -0.6, -0.1];
+// (second pass) the left hand's cradle from under the cylinder, the push
+// that shuts it, and the elbow for the strike (under the hand: the forearm
+// rises from the frame's bottom edge instead of lying across it)
+const LH = { under: 0.75, shutUnder: 0.3, eStrike: [-0.1, -0.65, -0.1] };
 // the reload, seconds from its start (the sounds land on the same marks)
 export const RL = {
   dur: 1.7, look: 0.17,
@@ -105,6 +115,8 @@ export default (game) => {
     prop: null, rounds: null,
     gunM: new THREE.Matrix4(), eR: V(0.25, -0.3, -0.2), FR: GRIP_F, poseL: null,
     turnVis: 0, hammerVis: 1, fovBase: null, zoom: 0,
+    // (the poses, for fitting in the page)
+    POSE, EL, LH,
     get ammo() { return this.chambers.filter((c) => c === 'live').length; },
     get reloading() { return this.phase === 'reload'; },
     get drawn() { return this.phase !== 'away'; },
@@ -141,10 +153,10 @@ export default (game) => {
       if (!pressed) return;
       if (this.phase === 'reload') { this.cutReload(); return; }
       if (this.phase === 'draw' || this.cool > 0) {
-        // (kept: a press in the draw, or in the last 0.15 s before the
-        // hammer is back, fires the moment it can)
-        const left = this.phase === 'draw' ? REVOLVER.draw - this.t + this.cool : this.cool;
-        if (left <= REVOLVER.buffer + 1e-6) this.buffered = G.time;
+        // (kept: any press in the draw - Q then the button at once is one
+        // move - or one in the last 0.15 s before the hammer is back, fires
+        // the moment it can)
+        if (this.phase === 'draw' || this.cool <= REVOLVER.buffer + 1e-6) this.buffered = G.time;
         return;
       }
       if (this.phase === 'ready') this.fire();
@@ -220,7 +232,7 @@ export default (game) => {
       if (this.phase !== 'ready' && this.phase !== 'draw') return false;
       if (this.ammo === REVOLVER.rounds) return false;
       this.from = this.curPose();
-      this.phase = 'reload'; this.t = 0; this.cut = null; this.buffered = -1;
+      this.phase = 'reload'; this.t = 0; this.cut = null; this.cutL = null; this.buffered = -1;
       this.loaded = 0; this.dropped = false; this.fed = 0; this.snapped = false;
       // (what is spent or live goes out: a dump, as a man does in a fight)
       this.feedTurn0 = this.top;
@@ -280,7 +292,10 @@ export default (game) => {
         this.buffered = -1;
         if (G.live) this.fire();
       }
-      if (this.buffered >= 0 && G.time - this.buffered > 0.6) this.buffered = -1;
+      // (a kept press waits out the draw and a cut reload, however long the
+      // first pair takes: it is dropped only if the gun stood ready and
+      // could not fire - the game not live)
+      if (this.buffered >= 0 && this.phase === 'ready' && G.time - this.buffered > 0.6) this.buffered = -1;
       this.pose(dt);
       this.syncProp();
       this.setZoom(this.steady * REVOLVER.steadyFov);
@@ -516,7 +531,7 @@ export default (game) => {
       const below = { frame: 'cam', p: [-0.06, -0.52, -0.3], f: [0.3, 0.8, -0.5], b: [-0.6, 0.2, 0.7], F: L_OPEN, e: [-0.12, -0.9, -0.1] };
       // on the cylinder: the palm under its left side (as the gun is turned:
       // toward the eye), the fingers round it, pushing it out
-      const cyl = (F = L_CRADLE) => this.onCylinder(F, E);
+      const cyl = (F = L_CRADLE, under = LH.under) => this.onCylinder(F, E, 0.004, under);
       // the strike: the palm flat on the ejector rod's tip (muzzle up)
       const strike = (d) => {
         const tip = this.gunPt(0, D.CA, D.Z0 - (D.FR1 + 0.045) + 0.0, V(0, 0, 0));
@@ -526,7 +541,7 @@ export default (game) => {
         void tip;
         const at = tipC.addScaledVector(ax, 0.003 + d);
         const f = V(1, 0, 0).transformDirection(this.gunTmp);
-        return palm('cam', at.toArray(), ax.clone().negate().toArray(), f.toArray(), L_STRIKE, E);
+        return palm('cam', at.toArray(), ax.clone().negate().toArray(), f.toArray(), L_STRIKE, LH.eStrike);
       };
       // the rounds: the front pair over the two chambers at the feed spot,
       // `lift` above the rear face, pushed in as lift goes to 0
@@ -567,7 +582,7 @@ export default (game) => {
       }
       // the push that shuts it: the fingers on the cylinder's side
       if (t < RL.lAway[1]) {
-        const c = cyl();
+        const c = cyl(L_CRADLE, LH.shutUnder);
         if (t < RL.close[1]) return c;
         return lerpPose(c, below, ss(RL.lAway[0], RL.lAway[1], t));
       }
@@ -576,7 +591,7 @@ export default (game) => {
     // the left hand on the swung-out cylinder: the palm on its outer side
     // (away from the frame), facing in, the fingers round it toward the
     // muzzle's side, the thumb on its near side
-    onCylinder(F, E, out = 0.004) {
+    onCylinder(F, E, out = 0.004, under = 0) {
       const D = this.prop.userData.dims;
       const M = this.cylM(_m);
       const c = V(0, 0, -0.02).applyMatrix4(M);
@@ -584,12 +599,19 @@ export default (game) => {
       // outward: from the gun's bore line (the frame) to the cylinder's axis
       const bore = this.gunPt(0, D.BORE, D.Z0 - 0.02, V(0, 0, 0));
       const o = c.clone().sub(bore); o.addScaledVector(ax, -o.dot(ax));
-      if (o.lengthSq() < 1e-8) o.copy(this.gunDir(-1, 0, 0)); 
+      if (o.lengthSq() < 1e-8) o.copy(this.gunDir(-1, 0, 0));
       o.normalize();
       // (shut, the cylinder's outside is its left: the gun's -x)
       const left = this.gunDir(-1, 0, 0);
       const k = clamp01(this.openVis ?? 0);
       const oo = left.clone().lerp(o, k).normalize();
+      // (second pass: `under` turns the palm round under the cylinder - the
+      // eye's down, across the axis - so the hand cradles it from below and
+      // never covers the chambers from the eye)
+      if (under > 0) {
+        const dn = V(0, -1, 0).addScaledVector(ax, ax.y);
+        if (dn.lengthSq() > 1e-6) oo.lerp(dn.normalize(), under).normalize();
+      }
       const at = c.clone().addScaledVector(oo, D.CYL_R + out);
       const across = new THREE.Vector3().crossVectors(ax, oo).normalize();
       // (the fingers point across it to the right: the left arm comes from
@@ -598,12 +620,18 @@ export default (game) => {
       return palm('cam', at.toArray(), oo.clone().negate().toArray(), across.addScaledVector(ax, 0.25).normalize().toArray(), F, E);
     },
     // the cut: the left hand slaps the cylinder shut and drops away
+    // (second pass: the hand is laid on the cylinder where it stood at the
+    // press and then drops straight down out of the frame, keeping its
+    // turn; it used to swing through a lerp toward a pose turned the other
+    // way, and for 0.1 s an open palm and a sleeve stood up mid-frame)
     leftCut(u) {
-      if (u > CUT.ready + 0.08) return null;
-      const below = { frame: 'cam', p: [-0.06, -0.52, -0.3], f: [0.3, 0.8, -0.5], b: [-0.6, 0.2, 0.7], F: L_OPEN, e: [-0.12, -0.9, -0.1] };
-      const on = this.onCylinder(L_STRIKE, EL);
+      if (u > CUT.ready + 0.08) { this.cutL = null; return null; }
       if (G.hands.held.L === this.rounds && this.rounds) G.hands.hold(null, 'L', { keep: true });
-      return lerpPose(on, below, ss(CUT.close, CUT.ready + 0.08, u));
+      const on = this.cutL || (this.cutL = this.onCylinder(L_CRADLE, EL, 0.004, LH.shutUnder));
+      const k = ss(0.03, CUT.ready + 0.08, u);
+      const F = {};
+      for (const n of ['i', 'm', 'r', 'l', 't']) F[n] = on.F[n].map((v, i) => v + (L_OPEN[n][i] - v) * k);
+      return { ...on, p: [on.p[0] - 0.03 * k, on.p[1] - 0.3 * k * k, on.p[2] + 0.03 * k], F };
     },
 
     // the muzzle: the viewmodel's world point, the world's stand-in (the

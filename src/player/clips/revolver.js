@@ -79,10 +79,14 @@ export const SETS = {
   },
 };
 
-// The grip poses (the eye's frame): the gun held out at the eye's height,
-// a little right, canted in (the weapon's ready pose, computed as its
-// right hand is: the socket inverted onto the gun's place)
-const GUN_READY = { p: [0.16, -0.098, -0.37], yaw: 0.3, pitch: 0.05, roll: 0.12 };
+// The grip poses (the eye's frame): the gun held out low right, its barrel
+// running into the picture toward the centre, canted in (the weapon's ready
+// pose, computed as its right hand is: the socket inverted onto the gun's
+// place). (Second pass: the first ready pose was yawed 0.3 across the
+// frame, so the gun lay sideways at the bottom edge with the thumb as a bar
+// over it; now the eye looks down the gun from behind its hammer: the
+// cylinder, the frame and the barrel read, the back of the hand wraps it.)
+const GUN_READY = { p: [0.115, -0.085, -0.3], yaw: 0.08, pitch: 0.12, roll: 0.4 };
 function gripPose(side) {
   const S = SOCKETS.revolver;
   const q = new THREE.Quaternion().setFromEuler(new THREE.Euler(GUN_READY.pitch, GUN_READY.yaw, GUN_READY.roll, 'YXZ'));
