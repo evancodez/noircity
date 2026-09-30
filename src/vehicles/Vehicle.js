@@ -173,8 +173,14 @@ export class Vehicle {
   // he was lost)
   unstick(dt, th) {
     const T = this.track;
-    const stuck = this.touch && th > 0 && this.speedAbs < 1.5;
-    this.pinT = stuck ? (this.pinT || 0) + dt : Math.max(0, (this.pinT || 0) - dt * 3);
+    // (stuck: W held, touching something lately, and the car's place not
+    // moving - its velocity lies, pushed back into a wall every step)
+    const lp = this._lp || (this._lp = this.pos.clone());
+    const moved = Math.hypot(this.pos.x - lp.x, this.pos.z - lp.z) / Math.max(dt, 1e-4);
+    lp.copy(this.pos);
+    this.touchT = this.touch ? 0 : (this.touchT ?? 9) + dt;
+    const stuck = this.touchT < 0.3 && th > 0 && moved < 2;
+    this.pinT = stuck ? (this.pinT || 0) + dt : Math.max(0, (this.pinT || 0) - dt);
     if (!T || this.pinT < 0.25) return;
     const F = T.frame(this.s, this._f || (this._f = {}));
     // (the hands on the wheel have the say when they ask: A / D pivot the
@@ -257,7 +263,10 @@ export class Vehicle {
     const along = -(f.x * nx + f.z * nz);
     // (turned along the wall: f x n says which way is away from it)
     const away = Math.sign(f.z * nx - f.x * nz) || 1;
-    this.yaw += away * clamp(along, 0, 1) * (0.35 * k + 2.5 * dt) * Math.sign(this.speed || 1);
+    // (only while it rolls: at a standstill the sign of a creeping speed
+    // flips step to step and turned the nose INTO the wall - pinned there
+    // with W held for 11 s; a car at rest is unstuck by unstick())
+    if (Math.abs(this.speed) > 1.5) this.yaw += away * clamp(along, 0, 1) * (0.35 * k + 2.5 * dt) * Math.sign(this.speed);
     this.yawRate *= 0.6;
     this.shake = Math.min(1, this.shake + 0.5 * k + 0.1);
     this.emit('scrape', { point: new THREE.Vector3(at[0], 0.5, at[1]), k: Math.max(0.15, k), what, n: new THREE.Vector3(nx, 0, nz) });
