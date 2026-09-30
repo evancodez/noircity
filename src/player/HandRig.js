@@ -487,7 +487,9 @@ export class HandRig {
     this.pushed.visible = mode === 'pushed';
     this.rolled.visible = mode === 'pushed';
     this.forearm.visible = mode === 'pushed';
-    this.gauntlet.visible = mode === 'coat' && !bare;
+    // ([R2-B] a set in black leather wears its gloves under the coat's cuff:
+    // the flared gauntlet printed as a grey band round the wrist)
+    this.gauntlet.visible = mode === 'coat' && !bare && !this.noGauntlet;
     this.upper.visible = mode !== 'none';
   }
 

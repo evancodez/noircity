@@ -15,6 +15,10 @@
    "timeout": 20000
   },
   {
+   "key": "KeyA",
+   "name": "([R2-B] a key first, as the gunfight's play does: the page's own gesture, so the click's pointer lock is granted on a loaded machine)"
+  },
+  {
    "clickOn": "#title .opt[data-k=begin]"
   },
   {
@@ -22,7 +26,7 @@
   },
   {
    "until": "G.scenes.current && G.scenes.current.id === 'range' && G.state === 'playing'",
-   "timeout": 20000
+   "timeout": 60000
   },
   {
    "eval": "document.pointerLockElement === N.renderer.domElement"

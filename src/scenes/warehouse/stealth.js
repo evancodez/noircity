@@ -29,7 +29,9 @@ const EXPO_U = { uLit: { value: 0 }, uFill: { value: 0 }, uAmb: { value: 0.35 } 
 function exposedMaterial(src) {
   const m = src.clone();
   m.name = src.name + '_b6';
-  m.userData = { ...src.userData, inkSurface: 'paper' };
+  // ([R2-B] each keeps its own print - the skin its two tones, which fall to
+  // the ink in the black; as paper the lit hand was a flat white cut-out)
+  m.userData = { ...src.userData };
   m.onBeforeCompile = (sh) => {
     Object.assign(sh.uniforms, EXPO_U);
     sh.fragmentShader = sh.fragmentShader

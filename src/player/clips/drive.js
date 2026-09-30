@@ -177,7 +177,8 @@ function copyPose(o, a) { for (const k of ['p', 'f', 'b', 'e']) for (let i = 0; 
 const liveProxy = (P) => new Proxy(P, { get(t, key) { if (key === 'p' || key === 'f' || key === 'b' || key === 'e' || key === 'F') refresh(); return t[key]; } });
 export const POSES = { driveR: liveProxy(R), driveL: liveProxy(L) };
 export const SETS = {
-  // driving gloves, the coat's sleeves
-  drive: { skin: 'glove', sleeve: 'coat', R: 'driveR', L: 'driveL', brush: 'R' },
+  // driving gloves, the coat's sleeves ([R2-B] printed as black leather
+  // with its sheen: on the dark rim and out of the window they read)
+  drive: { skin: 'glove', leather: true, sleeve: 'coat', R: 'driveR', L: 'driveL', brush: 'R' },
 };
 void FIST;
