@@ -245,7 +245,9 @@ function holdUntilKicked(ctx, h, delay = 0) {
 // E: the desk over on its front, the lamp thrown off it; then C to duck
 function tipPrompt(ctx) {
   const G = ctx.game, O = office(ctx), F = ctx.flags;
-  ctx.interact.add({ id: 'tip', at: V(DESK.x + 0.1, DESK.h + 0.1, DESK.z), range: 1.9, cone: 0.55, prompt: 'tip the desk', when: () => !O.desk.tip, onUse: () => {
+  // (round 2: a wide cone - the desk is 1.6 m of it and the prompt is the one thing
+  // in the room then: near its chair side and looking at any of it, the prompt shows)
+  ctx.interact.add({ id: 'tip', at: V(DESK.x + 0.1, DESK.h + 0.1, DESK.z), range: 1.9, cone: 0.85, prompt: 'tip the desk', when: () => !O.desk.tip, onUse: () => {
     if (!O.tipDesk()) return;
     G.sfx.play('office_deskTip', V(DESK.x, 0.6, DESK.z));
     F.tipped = true;
