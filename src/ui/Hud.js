@@ -113,6 +113,7 @@ export class Hud {
       #hud .xh { position: absolute; left: 50%; top: 50%; width: 4px; height: 4px; margin: -2px 0 0 -2px; border-radius: 50%; background: #f2f2f2;
         box-shadow: 0 0 0 1px rgba(0,0,0,0.85); }
       #hud .xr { position: absolute; left: 50%; top: 50%; border-radius: 50%; border: 1px solid rgba(240,240,240,0.35); pointer-events: none; }
+      #hud.titled .layer { display: none !important; }
       #hud.titled .br, #hud.titled .bl, #hud.titled .xh, #hud.titled .xr, #hud.titled .prompt, #hud.titled .tick, #hud.titled .say, #hud.titled .chapter { display: none !important; }
       #hud .msg { position: absolute; left: 50%; top: 62%; transform: translateX(-50%); font-size: 13px; letter-spacing: 0.4em; color: #ddd; text-shadow: 0 0 3px #000;
         opacity: 0; transition: opacity 0.4s; text-transform: uppercase; }
@@ -398,6 +399,30 @@ export class Hud {
     st.textContent = '*, *::before, *::after { animation: none !important; transition: none !important; }';
     document.head.appendChild(st);
   }
+
+  // a lane's own layer (wave B seams): a div under the HUD root, the whole
+  // frame, pointer-events none, made on first ask; hidden behind the
+  // cards; every layer is dropped when a scene exits (SceneManager)
+  layer(name) {
+    const L = this.layers || (this.layers = new Map());
+    let el = L.get(name);
+    if (!el) {
+      el = document.createElement('div');
+      el.className = 'layer';
+      el.dataset.layer = name;
+      el.style.cssText = 'position: absolute; inset: 0; pointer-events: none;';
+      this.root.appendChild(el);
+      L.set(name, el);
+    }
+    return el;
+  }
+  dropLayer(name) {
+    const el = this.layers && this.layers.get(name);
+    if (!el) return;
+    el.remove();
+    this.layers.delete(name);
+  }
+  dropLayers() { if (this.layers) for (const n of [...this.layers.keys()]) this.dropLayer(n); }
 
   message(text, secs = 1.4) { this.el.msg.textContent = text; this.el.msg.style.opacity = '1'; this.msgT = secs; }
 

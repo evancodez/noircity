@@ -317,7 +317,8 @@ export class Game {
     this.hud.showEnd({ kind: 'end' });
   }
 
-  // the end of the slice (scene 2's last beat): To be continued
+  // the end of the slice: To be continued (scenes.next() past the last
+  // scene of the story's order that has a file)
   endSlice() {
     this.state = 'end';
     this.controller.frozen = true;
@@ -334,7 +335,8 @@ export class Game {
   // ---- lifecycle ---------------------------------------------------------------
   // the title leads into the story's first scene: the diner (a fade from
   // black and the chapter card)
-  // from: a save ({ scene, beat, flags, inventory }) to continue from
+  // from: a save ({ scene, beat, flags, inventory }) to continue from, or
+  // main.js's ?start=<id>[.<beat>] ({ scene, beat }: no flags, no inventory)
   start(from = null) {
     if (this.state !== 'title') return;
     this.state = 'playing';
@@ -596,9 +598,9 @@ export class Game {
     this.vm.update(dt, C);
     this.vm.sync(this.camera);
     this.hands.update(dt);
-    // (the Tommy gun fires only while it is the set in hand)
-    if (this.live && this.hands.set === 'tommy') this.weapon.update(dt, t);
-    else this.weapon.trigger = false;
+    // the weapon in hand (player/Weapons.js): the mouse button, then its
+    // step (the Tommy gun fires only while it is the set in hand)
+    this.weapons.step(dt, t);
     for (const ai of this.ais.values()) ai.update(dt, t);
   }
 

@@ -98,7 +98,7 @@ export const HAND_CLIPS = {
   tommyHold: { duration: 1.0, marks: {}, hold: true, blocking: false },
 };
 
-// round 2: my fists in the fight (each button an arm, the wind-up, the
-// slips, the lean, the cover; src/player/clips/fight.js)
-import { FIGHT_CLIPS } from './clips/fight.js';
-Object.assign(HAND_CLIPS, FIGHT_CLIPS);
+// (round 2: my fists in the fight - each button an arm, the wind-up, the
+// slips, the lean, the cover - live in src/player/clips/fight.js; they and
+// the diner's take the place of the first versions here: Hands.js merges
+// every src/player/clips/*.js over this table)

@@ -399,7 +399,9 @@ export default defineScene({
       G.sfx.pistol(far, G.eye.distanceTo(far));
       ctx.flags.shots = 2;
       yield wait(2);
-      G.endSlice();
+      // (on to the next scene of the story's order; with none yet, the
+      // "to be continued" card)
+      ctx.next();
     }
   },
 

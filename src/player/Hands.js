@@ -2,11 +2,15 @@ import * as THREE from 'three';
 import { LAYER, allocVmId, allocInkId } from '../render/layers.js';
 import { MUZZLE, RELOAD, VM_FOV } from './Viewmodel.js';
 import { HAND_CLIPS as BASE_CLIPS } from './handClips.js';
-import { DINER_CLIPS } from './clips/diner.js';
 import { HAND_POSES, mirror } from './handPoses.js';
-// (the diner's clips are object-first and live in clips/diner.js; they take
-// the place of the first version's of the same name)
-const HAND_CLIPS = { ...BASE_CLIPS, ...DINER_CLIPS };
+// The hands' data files (wave B seams, docs/story/seams/X.md): every
+// src/player/clips/*.js may export CLIPS, POSES, SOCKETS, SETS, each an
+// object merged into the tables below (a name in two files throws at load;
+// a file's name takes the place of a built-in one of the same name: the
+// diner's and the fight's clips replace the first version's). POSES go
+// into HAND_POSES itself, so a clip key may name them.
+const CLIP_FILES = import.meta.glob('./clips/*.js', { eager: true });
+export const HAND_CLIPS = { ...BASE_CLIPS };
 import { HandRig, FINGERS } from './HandRig.js';
 import { buildProp } from '../props/index.js';
 import { accentMaterial } from '../render/accents.js';
@@ -48,15 +52,15 @@ import { FIRE } from '../fx/fxTextures.js';
 // hands yet). The gun sets see through VM_FOV; the others through the
 // eye's own lens (Viewmodel.setFov), so what a hand touches in the world is
 // where it touches it.
+// (in HAND_SETS' old order: tommy, revolver, fists, smoke, empty, wheel)
 const SETS = {
   tommy: { skin: 'glove', sleeve: 'coat', gun: true, R: 'tommyR', L: 'tommyL' },
   revolver: { hidden: true, gun: true },
-  wheel: { hidden: true },
-  smoke: { skin: 'bare', sleeve: 'coat', cuff: true, R: 'restR', L: 'restL', brush: 'R' },
   fists: { skin: 'bare', sleeve: 'pushed', R: 'guardR', L: 'guardL', brush: 'R' },
+  smoke: { skin: 'bare', sleeve: 'coat', cuff: true, R: 'restR', L: 'restL', brush: 'R' },
   empty: { skin: 'bare', sleeve: 'coat', cuff: true, R: 'downR', L: 'downL', hideAtRest: true },
+  wheel: { hidden: true },
 };
-export const HAND_SETS = ['tommy', 'revolver', 'fists', 'smoke', 'empty', 'wheel'];
 // (the mouth: a hand at the lips is below the frame, as it is for a man
 // lighting up; the cigarette in them rises into it from the bottom edge, its
 // tip low in the frame, centre, foreshortened, pointing away)
@@ -100,6 +104,23 @@ const SOCKETS = {
   stool: { bone: 'hand', p: [0.0, -0.035, -0.05], r: [0, 0, Math.PI / 2] },
   default: { bone: 'hand', p: [0.0, -0.035, -0.055], r: [0, 0, Math.PI / 2] },
 };
+
+// the data files merged in (src/player/clips/*.js, in file-name order)
+{
+  const seen = { CLIPS: {}, POSES: {}, SOCKETS: {}, SETS: {} };
+  const into = { CLIPS: HAND_CLIPS, POSES: HAND_POSES, SOCKETS, SETS };
+  for (const [file, m] of Object.entries(CLIP_FILES)) {
+    for (const key of Object.keys(into)) {
+      if (!m[key]) continue;
+      for (const [name, v] of Object.entries(m[key])) {
+        if (seen[key][name]) throw new Error(`hands: ${key} '${name}' defined twice (${seen[key][name]}, ${file})`);
+        seen[key][name] = file;
+        into[key][name] = v;
+      }
+    }
+  }
+}
+export const HAND_SETS = Object.keys(SETS);
 
 // a socket's matrix (cached): its turn is Euler `r`, or `basis` - the prop's
 // own x, y, z axes written in the hand's frame (columns)
