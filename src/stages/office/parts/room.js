@@ -7,6 +7,9 @@ import { buildOpenings, syncFrosted } from '../build/openings.js';
 import { buildFurniture } from '../build/furniture.js';
 import { buildFireEscape, buildStreet } from '../build/outside.js';
 import { FLOOR, CEIL, ROOM, CORR, DOOR, DESK, PAD, LAMP, WIN, ESC, SAFE, PICTURE, STREET, POST, CORR_LAMP, BLIND_LIGHT } from '../plan.js';
+// the banker's lamp's strength (the pad sits close under it, in the heart of its pool: at
+// this the graphite on the sheet still prints dark, and the blotter round it white)
+const DESK_LAMP_I = 6;
 
 // Room 304 and its corridor (lane B2): the whole third floor of the stage.
 // Built from ./build/*; this part lights it, gives it its Looks, its dry
@@ -58,7 +61,7 @@ export default {
     const deskHead = dl.shadeG.localToWorld(V(-0.01, -0.03, 0));
     const deskAxis = V(PAD.x, DESK.h, PAD.z + 0.05).sub(deskHead).normalize();
     const deskLamp = lamps.addCustom({ head: deskHead, axis: deskAxis, height: 0.8, half: 0.95, real: true, bulb: dl.bulb, fadeEnd: 0.8, edgeSoft: 0.6, strength: 0.25, tag: 'desk' });
-    Object.assign(deskLamp.light, { intensity: 16, angle: 1.15, penumbra: 0.75, distance: 4.5 });
+    Object.assign(deskLamp.light, { intensity: DESK_LAMP_I, angle: 1.15, penumbra: 0.75, distance: 4.5 });
     deskLamp.priority = 5;
     deskLamp.shadow = { radius: 3, mapSize: 1024, near: 0.05 };
     // (its head and aim in the shade's own frame: they ride the shade when the desk goes over)
@@ -139,10 +142,14 @@ export default {
         door.col.hx = on ? hx : 0.001; door.col.hz = on ? len / 2 : 0.001;
       },
       // ---- the desk goes over ------------------------------------------------------------
-      tipDesk() {
+      // (now: already over, the lamp already on the floor, no sound - a retry's room)
+      tipDesk({ now = false } = {}) {
         const d = furn.desk;
         if (d.tip) return false;
-        d.tip = { t: 0, a: 0, v: 0 };
+        d.tip = { t: 0, a: now ? Math.PI / 2 : 0, v: 0 };
+        d.tipNow = now;
+        // (over at once: its collider and the bullets' copy where it lies, before anyone stands by it)
+        if (now) { d.tip.done = true; d.pivot.rotation.z = Math.PI / 2; d.tipped = 1; drawersHome(api, stage, true); afterTip(api, stage); }
         return true;
       },
       // ---- the picture swings aside on its wire -------------------------------------------
@@ -197,7 +204,7 @@ export default {
       dk.pivot.rotation.z = T.a;
       dk.tipped = T.a / (Math.PI / 2);
       // (past halfway the pulled drawers point up and run home, one bang)
-      if (!dk.slid && dk.tipped > 0.55) { drawersHome(api, stage, true); if (G) G.sfx.play('office_drawer', V(dk.x - 0.2, 0.9, dk.z), { k: 1 }); }
+      if (!dk.slid && dk.tipped > 0.55) { drawersHome(api, stage, true); if (G && !dk.tipNow) G.sfx.play('office_drawer', V(dk.x - 0.2, 0.9, dk.z), { k: 1 }); }
     }
     // (the drawers' shut copy out of the bullets' way until it is wanted)
     if (!dk._raysInit && G && G.rays) { dk._raysInit = true; drawersHome(api, stage, !!dk.slid); }
@@ -277,9 +284,9 @@ function lampFollow(api, stage) {
     const p = parts.group.getWorldPosition(new THREE.Vector3()), q = parts.group.getWorldQuaternion(new THREE.Quaternion());
     stage.scene.attach(parts.group);
     parts.group.position.copy(p); parts.group.quaternion.copy(q);
-    Lp.fall = { t: 0, p0: p, v: V(-1.5, 0.6, -0.2), rest: V(d.x - 1.35, FLOOR + 0.07, d.z + 0.35), q0: q.clone(), q1: restQuat(parts) };
+    Lp.fall = { t: d.tipNow ? 0.55 : 0, p0: p, v: V(-1.5, 0.6, -0.2), rest: V(d.x - 1.35, FLOOR + 0.07, d.z + 0.35), q0: q.clone(), q1: restQuat(parts), quiet: !!d.tipNow };
     const G = stage.game;
-    if (G) G.sfx.play('office_lampFall', p, {});
+    if (G && !d.tipNow) G.sfx.play('office_lampFall', p, {});
   }
   if (Lp.fall && !Lp.fall.done) {
     const F = Lp.fall;
@@ -294,7 +301,7 @@ function lampFollow(api, stage) {
     if (u >= 1) {
       F.done = true;
       const G = stage.game;
-      if (G) G.sfx.play('office_lampLand', p, {});
+      if (G && !F.quiet) G.sfx.play('office_lampLand', p, {});
       // (the bullets' copy of it where it lies: it can be shot out on the floor)
       if (G && G.rays) { parts.group.updateWorldMatrix(true, true); parts.group.traverse((m) => { if (m.isMesh && stage.solids.includes(m)) G.rays.refresh(m); }); }
     }
@@ -328,7 +335,7 @@ function resetRoom(api, stage) {
   api.setDoor(DOOR.open0);
   // the desk upright, its lamp on it, lit
   const d = api.desk;
-  d.tip = null; d.tipped = 0; d.pivot.rotation.z = 0;
+  d.tip = null; d.tipped = 0; d.pivot.rotation.z = 0; d.tipNow = false;
   d.collider.cx = d.x; d.collider.hx = DESK.d / 2; d.collider.hz = DESK.w / 2;
   drawersHome(api, stage, false);
   const Lp = api.lamp, lamp = Lp.lamp;
@@ -339,7 +346,7 @@ function resetRoom(api, stage) {
   }
   deskRays(api, stage);
   Lp.fall = null;
-  Object.assign(lamp.light, { intensity: 16, angle: 1.15, distance: 4.5 });
+  Object.assign(lamp.light, { intensity: DESK_LAMP_I, angle: 1.15, distance: 4.5 });
   if (lamp.dead) { lamp.dead = false; lamp.buzz = null; lamp.dieNow = false; lamp.deadK = 0; lamp.on = true; if (lamp.bulb) lamp.bulb.material = api.mats.bulb; }
   lamp.on = true;
   // the picture back crooked on its nail, the safe shut

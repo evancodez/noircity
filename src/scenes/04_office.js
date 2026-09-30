@@ -66,7 +66,7 @@ export default defineScene({
       carry(ctx);
       const O = roomAs(ctx, 'open');
       O.setDoor(1.45);
-      giveSheet(ctx, O, true);
+      // (the sheet went into a pocket when the safe came open)
       const a = ctx.stage.anchor('office.safe');
       stand(ctx, a.pos.x + 0.05, a.pos.z + 0.1, a.yaw, -0.28);
     },
@@ -84,7 +84,12 @@ export default defineScene({
       pad.step(dt); safe.step(dt);
       // the torn sheet in my left hand: held up at the frame's lower left (higher at the dial, to be read)
       if (O.sheet && H.held.L === O.sheet && (!H.clips[0] || H.clips[0].done || H.clips[0].name !== 'b2_tear')) {
-        holdSheet(H, O.sheet, safe.active ? { pos: [-0.2, -0.17, -0.52], face: [0.25, 0.15, 1], foot: [-0.12, -1, 0.1] } : {});
+        // (at the dial the lens is narrower: the sheet further off, higher, its figures by the dial)
+        const at = safe.active ? { pos: [-0.25, -0.115, -0.64], face: [0.22, 0.12, 1], foot: [-0.06, -1, 0.1] } : {};
+        // (the safe open: the numbers have done their work, the sheet goes down into a pocket)
+        if (safe.opened) { F.stow = Math.min(1, (F.stow || 0) + 1 / 60 / 0.45); at.down = F.stow; }
+        holdSheet(H, O.sheet, at);
+        if (F.stow >= 1) { H.hold(null, 'L', { keep: true }); if (O.sheet.parent) O.sheet.parent.remove(O.sheet); O.sheet = null; live(H, {}); G.sfx.play('pocket'); return; }
         if (!H.still || H.still.L !== HP.b2liveL) live(H, { R: H.still && H.still.R ? 'b2liveR' : null, L: 'b2liveL' });
       }
     });

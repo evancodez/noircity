@@ -28,8 +28,10 @@ export function padPuzzle(ctx) {
       P.active = true;
       P.prevPose = C.eyePose();
       // the eye over the pad from the chair's side, looking down on it
-      const pose = { x: PAD.x + 0.36, y: DESK.h + 0.54, z: PAD.z + 0.04, yaw: Math.PI / 2 + 0.05, pitch: -1.02 };
-      C.setMode('table', { pose, fov: 50, ease: 0.45 });
+      // (leaning over the desk from its chair side: the pad ahead and below, the
+      // forearms in from the frame's lower corners, not up its middle)
+      const pose = { x: PAD.x + 0.42, y: DESK.h + 0.47, z: PAD.z - 0.01, yaw: Math.PI / 2 - 0.06, pitch: -0.86 };
+      C.setMode('table', { pose, fov: 44, ease: 0.45 });
       // the pencil from the blotter into my hand (it goes where the hand takes it)
       const pc = O.pencil;
       H.equip('empty');
@@ -43,8 +45,9 @@ export function padPuzzle(ctx) {
     },
     // the left hand on the pad (palm down at its near left edge, fingers away and in: its arm off the sheet)
     leftHand() {
-      const at = V(PAD.x + 0.05, TOP + 0.004, PAD.z + 0.125);
-      const m = toCam(H, place(at, V(0, 1, 0), V(-1, 0, 0.3)));
+      // (beside the pad on the blotter, the thumb on its left edge: the sheet clear)
+      const at = V(PAD.x - 0.0, TOP + 0.004, PAD.z + 0.19);
+      const m = toCam(H, place(at, V(0, 1, 0), V(-1, 0, 0.1)));
       const p = V().setFromMatrixPosition(m);
       const n = V(0, -1, 0).transformDirection(m.clone().setPosition(0, 0, 0)).normalize();
       void n;
@@ -53,7 +56,7 @@ export function padPuzzle(ctx) {
       const root = H.vm.root; root.updateMatrixWorld(true);
       const inv = new THREE.Matrix4().copy(root.matrixWorld).invert();
       const down = V(0, -1, 0).transformDirection(inv);
-      const fwd = V(-0.9, 0, -0.4).normalize().transformDirection(inv);
+      const fwd = V(-1, 0, -0.12).normalize().transformDirection(inv);
       const pose = palm('cam', [p.x, p.y, p.z], [down.x, down.y, down.z], [fwd.x, fwd.y, fwd.z], { ...OPEN, i: [0.12, 0.15, 0.1, -0.06], l: [0.2, 0.25, 0.15, 0.12], t: [0.35, 0.3, 0.1, 0.1, 0.1] }, [-0.3, -0.5, 0.05]);
       setLive('L', pose);
     },
@@ -110,13 +113,13 @@ export function padPuzzle(ctx) {
       // once, a line on how)
       P.inT = (P.inT || 0) + dt;
       if (P.solvedT < 0 && P.idle > 6 && !(P.teachT > 0) && P.press === 0) { G.hud.prompt('LMB  hold and rub', null, 'pad'); P.teachT = 3; P.idle = 0; }
-      if (P.solvedT < 0 && P.inT > 16 && P.shown < 0.25 && !P.hinted) { P.hinted = true; G.hud.say('The side of the lead. The whole sheet.', 3); }
+      if (P.solvedT < 0 && P.inT > 16 && P.shown < 0.2 && !P.hinted) { P.hinted = true; G.hud.say('The side of the lead. The whole sheet.', 3); }
       // what reads (measured four times a second)
       P.checkT -= dt;
       if (P.checkT <= 0 && P.solvedT < 0) {
         P.checkT = 0.25;
         P.shown = pad.shown();
-        if (P.shown > 0.5) { P.solvedT = 0; G.sfx.play('office_paperRustle', P.tip, { k: 0.3 }); }
+        if (P.shown > 0.42) { P.solvedT = 0; G.sfx.play('office_paperRustle', P.tip, { k: 0.3 }); }
       }
       if (P.solvedT >= 0) {
         P.solvedT += dt;

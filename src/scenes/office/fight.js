@@ -25,13 +25,17 @@ export const MEN = {
   window: { at: { x: -1.75, z: 7.62 }, path: [{ x: 0.9, z: 7.62 }, { x: 1.55, z: 7.72 }], role: 'window', heavy: true, hp: 130, aim: 0.75, hide: { x: 1.7, z: 7.74 }, fire: { x: 2.72, z: 7.72 } },
   // the last two: another at the door, the heavy on into the room
   second: { at: { x: -2.3, z: -5.8 }, path: [...STAIRS_IN, { x: -0.62, z: -0.6 }, { x: -0.6, z: 0.1 }], role: 'hall', hp: 110, aim: 0.75, hide: { x: -0.6, z: 0.1 }, fire: { x: -0.35, z: 1.05 } },
-  heavy: { at: { x: -2.3, z: -6.0 }, path: [...STAIRS_IN, { x: -0.9, z: -0.3 }, { x: -0.55, z: 1.02 }, { x: 0.55, z: 1.1 }], role: 'rush', heavy: true, hp: 200, aim: 0.65 },
+  // (on past the kicker's place, so the two do not end in one heap by the door)
+  heavy: { at: { x: -2.3, z: -6.0 }, path: [...STAIRS_IN, { x: -0.9, z: -0.3 }, { x: -0.55, z: 1.02 }, { x: 0.55, z: 1.1 }, { x: 1.2, z: 2.1 }], role: 'rush', heavy: true, hp: 200, aim: 0.65 },
 };
 
 // a man sent in: spawned out of sight, his brain, his feet on the stage's floor
 export function send(ctx, name, extra = {}) {
   const G = ctx.game, S = MEN[name];
   const o = { ...S, ...extra };
+  // (every shot: a muzzle outside the room lights only what it can reach)
+  const userFire = o.onFire || null;
+  o.onFire = (hh, B) => { outsideFlash(ctx, hh); if (userFire) userFire(hh, B); };
   const h = G.spawnHood(o.at.x, o.at.z, { brain: 'office', heavy: !!o.heavy, hp: o.hp, role: o.role, path: o.path, hide: o.hide || null, fire: o.fire || null, aim: o.aim, run: !!o.run, wait0: o.wait0, onFire: o.onFire || null, state: 'idle' });
   h.surface = (x, z) => ctx.stage.surfaceY(x, z);
   const ai = G.ais.get(h);
@@ -94,10 +98,54 @@ function coverRaw(ctx, from) {
   return 0.3 * k;
 }
 
+// ---- a flash outside the room ------------------------------------------------------------
+// The Hoods' muzzle flash carries a short point light (fx/MuzzleFlash.js,
+// no shadow): fired from the corridor behind the frosted glass, or from the
+// fire escape behind the curtain, it lit the room's own walls through the
+// wall as a hard white disc. A muzzle outside the room (and not in the open
+// doorway) keeps its sprite and loses its light; the frosted pane he fires
+// through flashes white round the muzzle instead (the curtain does its own).
+export function outsideFlash(ctx, h) {
+  const G = ctx.game, O = office(ctx), MF = G.fx && G.fx.flash;
+  if (!MF || !MF.pool || !MF.pool.length) return;
+  const P = MF.pool[(MF.poolNext - 1 + MF.pool.length) % MF.pool.length];
+  if (!P || P.t !== 0) return;
+  const q = P.light.position;
+  const inRoom = q.x > 0.02 && q.x < ROOM.x1 && q.z > ROOM.z0 && q.z < ROOM.z1;
+  const inDoor = q.x > -0.7 && Math.abs(q.z - (DOOR.z0 + DOOR.z1) / 2) < 0.42 && O.door.angle > 0.8;
+  if (inRoom || inDoor) return;
+  P.i0 = 0; P.light.intensity = 0; if (P.entry) P.entry.intensity = 0;
+  // (the pane between him and the room: its frost lit round his muzzle)
+  if (q.x < 0.05) {
+    for (const f of [O.frosted[0], O.frosted[1]]) {
+      const U = f && f.frost && f.frost.uniforms;
+      if (!U || !U.uFl) continue;
+      const c = U.uC.value;
+      if (Math.abs(q.z - c.z) < 0.9) { U.uFl.value.copy(h.pos).setY(1.35); U.uFl.value.x = Math.min(U.uFl.value.x, -0.1); U.uFlK.value = 1; }
+    }
+  }
+}
+
 // ---- the frosted glass shows the men in the corridor -------------------------------------
 export function glassMen(ctx) {
   const O = office(ctx), F = ctx.flags;
-  const men = (F.men || []).filter((h) => (h.alive || (h._deathT ?? 0) < 1.6) && h.pos.x < -0.16 && h.pos.x > -2.0);
+  // (the sidelight's glass gone: the blood and the holes that were on it go
+  // with it - a splash of red must not hang in the empty frame)
+  const sp = O.side && O.side.pane;
+  if (sp && sp.state === 'gone' && !F._sideSwept) {
+    F._sideSwept = true;
+    const G = ctx.game;
+    if (G.fx && G.fx.decals) G.fx.decals.clearIn(new THREE.Box3(V(-0.3, SIDE.y0 - 0.04, SIDE.z0 - 0.04), V(0.1, SIDE.y1 + 0.04, SIDE.z1 + 0.04)));
+  }
+  // (the panes' flashes die in a few frames)
+  for (const f of [O.frosted[0], O.frosted[1]]) {
+    const U = f && f.frost && f.frost.uniforms;
+    if (U && U.uFlK && U.uFlK.value > 0) { U.uFlK.value *= 0.55; if (U.uFlK.value < 0.02) U.uFlK.value = 0; }
+  }
+  // (a man going down fades off the glass as he falls - his outline lying
+  // down, the hat drawn on a head that is on the floor, read as a blot)
+  const kOf = (h) => (h.alive ? 1 : Math.max(0, 1 - Math.max(0, h._deathT ?? 9) / 0.7));
+  const men = (F.men || []).filter((h) => kOf(h) > 0 && h.pos.x < -0.16 && h.pos.x > -2.0);
   const panes = [O.frosted[0], O.frosted[1]];
   for (const f of panes) {
     const L = f.frost.userData.figures;
@@ -105,16 +153,16 @@ export function glassMen(ctx) {
     for (const h of men) {
       if (L.length >= 3) break;
       if (!h._b2j) h._b2j = hoodJoints(h);
-      L.push({ k: 1, joints: h._b2j });
+      L.push({ k: kOf(h), joints: h._b2j });
     }
   }
   // the man on the fire escape: his outline on the curtain (the light-well behind him)
   const C = O.curtain.frost.userData.figures;
   C.length = 0;
   for (const h of F.men || []) {
-    if (C.length >= 2 || h.pos.z < 7.1 || !(h.alive || (h._deathT ?? 0) < 1.6)) continue;
+    if (C.length >= 2 || h.pos.z < 7.1 || kOf(h) <= 0) continue;
     if (!h._b2j) h._b2j = hoodJoints(h);
-    C.push({ k: 1, joints: h._b2j });
+    C.push({ k: kOf(h), joints: h._b2j });
   }
 }
 
@@ -175,10 +223,13 @@ function roomHit(ctx, O, hit, dir, rng) {
 const PAPER = { mat: null };
 export function papers(ctx, at, dir, rng, n = 5) {
   const B = ctx.stage.breakables;
-  const mat = PAPER.mat || (PAPER.mat = new THREE.MeshStandardMaterial({ color: 0x9a9a9a, roughness: 0.9, side: THREE.DoubleSide }));
+  // (a sheet's paper, not a light: at 0x9a one in the floor lamp's beam printed as a glowing card)
+  const mat = PAPER.mat || (PAPER.mat = new THREE.MeshStandardMaterial({ color: 0x6e6e6e, roughness: 0.9, side: THREE.DoubleSide }));
   mat.userData.inkSurface = 'plaster';
   for (let k = 0; k < n; k++) {
-    const g = new THREE.PlaneGeometry(rng.range(0.16, 0.22), rng.range(0.2, 0.28));
+    // (its face on local y: the field lays a thin piece down on local y - an
+    // unturned plane came to rest standing on its edge, a white card in the air)
+    const g = new THREE.PlaneGeometry(rng.range(0.16, 0.22), rng.range(0.2, 0.28)).rotateX(-Math.PI / 2);
     const m = new THREE.Mesh(g, mat);
     m.position.copy(at).add(V(rng.gauss() * 0.08, rng.range(0, 0.08), rng.gauss() * 0.08));
     m.rotation.set(rng.next() * 6, rng.next() * 6, rng.next() * 6);

@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { defineScene, wait, until, beat } from '../game/script.js';
 import { roomAs, carry, office, stand, V } from './office/room.js';
 import { live } from './office/hands.js';
+import { standInGun } from './office/gunHud.js';
 import { MEN, send, coverFrom, glassMen, roomReacts, glassReward, fallHook, papers, note } from './office/fight.js';
 import { DESK, DOOR, SIDE, SAFE, FAN, PICTURE } from '../stages/office/plan.js';
 
@@ -46,6 +47,8 @@ export default defineScene({
     D.stop(); D.groups.clear();
     D.begin();
     roomReacts(ctx);
+    // (the plain revolver has no model yet: where it points, what is in it)
+    standInGun(ctx);
     const shotFn = () => { F.shotAt = true; F.lastShotT = G.time; };
     const downFn = (e) => { const h = e && e.hood; void h; };
     void downFn;
@@ -73,7 +76,31 @@ export default defineScene({
     });
 
     // ---- 1. the shadows ---------------------------------------------------------------
-    if (ctx.at('shadows') && !F.jump) {
+    // (a second go after a fall: nothing waited through twice - the door
+    // already shut, both shapes already at its glass, the revolver out, the
+    // desk over and me down behind it if I had tipped it; the door goes in
+    // a breath after the black lifts)
+    const retry = G._b2retry;
+    G._b2retry = null;
+    if (ctx.at('shadows') && !F.jump && retry) {
+      yield beat('shadows');
+      O.setDoor(0.035);
+      if (retry.tipped) {
+        O.tipDesk({ now: true });
+        F.tipped = true; F.ducked = true;
+        C.setPose(4.0, 3.7, 1.0, 0.0);
+        C.setMode('office', { crouch: true });
+      } else C.setMode('office', {});
+      ctx.player.weapons.equip('revolver');
+      live(ctx.hands, {});
+      F.drawn = true;
+      const k = send(ctx, 'kicker', { at: { x: -0.4, z: 1.02 }, path: [] });
+      holdUntilKicked(ctx, k);
+      const g = send(ctx, 'glass', { at: { x: -0.42, z: 2.52 }, path: [] });
+      holdUntilKicked(ctx, g, 0.3);
+      if (!retry.tipped) tipPrompt(ctx);
+      yield wait(3.0);
+    } else if (ctx.at('shadows') && !F.jump) {
       yield beat('shadows');
       ctx.music.stop(2.5);
       C.setMode('office', {});
@@ -131,7 +158,9 @@ export default defineScene({
       // crossfire if he lives long enough)
       let t = 0;
       yield until(() => { t += 1 / 60; return t > 4.5 || alive(ctx, ['window']) === 0; });
-      send(ctx, 'second');
+      // (the second at the sidelight if its glass is gone - the men do not all fall on one spot)
+      const sideGone = O.side && O.side.pane && O.side.pane.state === 'gone';
+      send(ctx, 'second', sideGone ? { path: [{ x: -1.55, z: -5.75 }, { x: -1.15, z: -4.6 }, { x: -1.3, z: -0.6 }, { x: -1.0, z: 1.95 }], hide: { x: -1.0, z: 1.95 }, fire: { x: -0.5, z: 2.4 } } : {});
       yield wait(1.5);
       send(ctx, 'heavy');
       yield until(() => alive(ctx) === 0);
@@ -270,6 +299,8 @@ function fall(ctx) {
   F.down = true;
   // (each fall's record kept on the game for the headless plays: the log, the cover per shot)
   (G._b2falls || (G._b2falls = [])).push(`${F.log || ''}| ks ${(F.ks || []).join(' ')}`);
+  // (the next go starts where this one was fought from)
+  G._b2retry = { tipped: !!office(ctx).desk.tip };
   const from = C.eyePose();
   C.setMode('cutscene', { track: (t) => {
     const u = Math.min(1, t / 0.9), e = u * u;

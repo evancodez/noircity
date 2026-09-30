@@ -48,8 +48,9 @@ export const FLIGHT = { x0: -1.95, x1: 1.15, y0: -3.2, y1: -0.06, z0: 7.3, z1: 8
 
 // the furniture
 export const DESK = { x: 3.95, z: 3.72, w: 1.62, d: 0.86, h: 0.78 };          // w along z, d along x
-export const PAD = { x: 3.78, z: 3.5, w: 0.215, d: 0.28 };                   // on the blotter
-export const PENCIL = { x: 3.74, z: 3.8 };
+// (the pad in the banker's lamp's pool: close under its shade, the brightest thing on the desk)
+export const PAD = { x: 3.92, z: 3.9, w: 0.215, d: 0.28 };                   // on the blotter
+export const PENCIL = { x: 3.9, z: 3.66 };
 export const LAMP = { x: 4.12, z: 4.28 };                                    // the banker's lamp
 export const CHAIR = { x: 5.08, z: 1.75 };
 export const CABS = [0.52, 1.02, 1.52];                                       // filing cabinets' x (north wall)

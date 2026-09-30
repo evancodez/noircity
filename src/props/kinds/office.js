@@ -87,7 +87,8 @@ export const SPECS = {
     mat.name = 'prop_paper';
     return {
       parts: [{ geo: g, mat, id: 0, name: 'sheet', keep: true }],
-      grip: [-0.095, 0.002, 0.03],
+      // (held by its lower left corner, under the figures: the hand never covers them)
+      grip: [-0.088, 0.002, 0.118],
       init(grp, ud, by) {
         ud.setPaper = (tex) => { by.sheet.material.map = tex; by.sheet.material.needsUpdate = true; };
         // (in a left hand the hands mirror what they hold: the sheet is

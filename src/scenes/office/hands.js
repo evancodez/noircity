@@ -58,10 +58,14 @@ export function place(pos, up, fwd) {
 // is solved onto its edge every step
 const _cm = new THREE.Matrix4();
 const SHEETF = { i: [0.3, 0.35, 0.18, -0.02], m: [0.35, 0.4, 0.2, 0], r: [0.45, 0.5, 0.25, 0.02], l: [0.55, 0.55, 0.28, 0.05], t: [0.65, 0.25, 0.45, 0.1, 0.05] };
-export function holdSheet(H, sheet, { pos = [-0.24, -0.26, -0.56], face = [0.3, 0.35, 1], foot = [-0.12, -1, 0.3] } = {}) {
+// (the defaults: walking, the whole sheet at the frame's lower left, its
+// three figures clear of the hand and of the frame's edge; `down` 0..1 takes
+// it down out of the frame, into a pocket)
+export function holdSheet(H, sheet, { pos = [-0.3, -0.25, -0.6], face = [0.3, 0.35, 1], foot = [-0.08, -1, 0.3], down = 0 } = {}) {
   const cam = H.game.camera;
   cam.updateMatrixWorld();
-  const M = place(new THREE.Vector3(...pos), new THREE.Vector3(...face), new THREE.Vector3(...foot));
+  const e = down * down * (3 - 2 * down);
+  const M = place(new THREE.Vector3(pos[0] - 0.05 * e, pos[1] - 0.42 * e, pos[2] + 0.12 * e), new THREE.Vector3(...face), new THREE.Vector3(...foot));
   _cm.multiplyMatrices(cam.matrixWorld, M);
   return holdAt(H, 'L', sheet, _cm, SHEETF, [-0.3, -0.55, 0.05]);
 }

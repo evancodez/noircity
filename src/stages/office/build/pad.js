@@ -163,11 +163,17 @@ export function makePad() {
     },
     // a stroke's graphite shown: redraw the sheet (once a step at most)
     flush() { if (dirty) compose(); },
+    // (how much reads: the least read of the three figures - half of the
+    // sheet read could be two figures whole and the third never touched,
+    // and the sheet torn off with two of three numbers on it)
     shown() {
       const d = gg.getImageData(0, 0, W, H).data;
-      let n = 0, on = 0;
-      for (let i = 0; i < numMask.length; i += 2) { n++; if (d[(numMask[i + 1] * W + numMask[i]) * 4 + 3] > 120) on++; }
-      return n ? on / n : 0;
+      const n = [0, 0, 0], on = [0, 0, 0];
+      for (let i = 0; i < numMask.length; i += 2) {
+        const y = numMask[i + 1] / H, b = y < 0.42 ? 0 : y < 0.58 ? 1 : 2;
+        n[b]++; if (d[(numMask[i + 1] * W + numMask[i]) * 4 + 3] > 120) on[b]++;
+      }
+      return Math.min(...n.map((k, b) => (k ? on[b] / k : 1)));
     },
     coverage() {
       const d = gg.getImageData(0, 0, W, H).data;

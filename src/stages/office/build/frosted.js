@@ -98,6 +98,17 @@ export function makeFrosted({ w = 1, h = 1, text = null, lit = 'back', seed = 0 
         float h = clamp( dot( pa, ba ) / max( dot( ba, ba ), 1e-6 ), 0.0, 1.0 );
         return length( pa - ba * h );
       }
+      float sdBox2( vec2 p, vec2 b ) { vec2 d = abs( p ) - b; return length( max( d, 0.0 ) ) + min( max( d.x, d.y ), 0.0 ); }
+      // (a trapezoid standing on y: r1 the half-width at its foot, r2 at its top, he its half-height)
+      float sdTrap( vec2 p, float r1, float r2, float he ) {
+        vec2 k1 = vec2( r2, he ), k2 = vec2( r2 - r1, 2.0 * he );
+        p.x = abs( p.x );
+        vec2 ca = vec2( p.x - min( p.x, ( p.y < 0.0 ) ? r1 : r2 ), abs( p.y ) - he );
+        vec2 cb = p - k1 + k2 * clamp( dot( k1 - p, k2 ) / dot( k2, k2 ), 0.0, 1.0 );
+        float s = ( cb.x < 0.0 && ca.y < 0.0 ) ? -1.0 : 1.0;
+        return s * sqrt( min( dot( ca, ca ), dot( cb, cb ) ) );
+      }
+      float smin( float a, float b, float k ) { float h = clamp( 0.5 + 0.5 * ( b - a ) / k, 0.0, 1.0 ); return mix( b, a, h ) - k * h * ( 1.0 - h ); }
       float hash( vec2 p ) { return fract( sin( dot( p, vec2( 12.9898, 78.233 ) ) + uSeed ) * 43758.5453 ); }
       float noise( vec2 p ) {
         vec2 i = floor( p ), f = fract( p );
@@ -127,24 +138,41 @@ export function makeFrosted({ w = 1, h = 1, text = null, lit = 'back', seed = 0 
           float blur = 0.006 + 0.06 * ch.z;
           vec2 X = vec2( 1.0, 0.0 );
           float dd = 1e3;
-          // the head, the hat's crown, its wide brim
-          // (hd: the head's bone, ht 0.2 over it: the head a ball on the
-          // bone, the brim a flat wide bar at its crown, the crown a low
-          // rounded block on the brim with its pinch)
+          // the man as an inker draws him on the glass (second pass: one
+          // connected shape, not a stack of balls): in his own frame (metres
+          // from the head's bone, y up, x across; mag the lamp's
+          // magnification) the skull under the hat, the jaw into the neck,
+          // the neck into sloping padded shoulders; the fedora a flat brim,
+          // wide and a little down at its ends, the crown a tapered block on
+          // it with the pinch at its top. The coat from the shoulders on down
+          // his projected joints, joined smooth; the arms to the hands.
           vec2 up = ( ht.xy - hd.xy ) / 0.2;
-          vec2 brim = hd.xy + up * 0.14;
-          dd = min( dd, length( ( p - ( hd.xy + up * 0.05 ) ) / vec2( 1.0, 1.2 ) ) - 0.088 * sc );
-          dd = min( dd, segD( p, brim - X * 0.165 * sc, brim + X * 0.165 * sc ) - 0.022 * sc );
-          dd = min( dd, segD( p, brim + up * 0.04 * sc - X * 0.045 * sc, brim + up * 0.04 * sc + X * 0.045 * sc ) - 0.052 * sc );
-          dd = min( dd, segD( p, brim + up * 0.1 * sc - X * 0.03 * sc, brim + up * 0.1 * sc + X * 0.03 * sc ) - 0.035 * sc );
-          // the shoulders, the coat to the hips and on past them to the knee
-          vec2 sh0 = mix( ch.xy, hd.xy, 0.28 );
-          dd = min( dd, segD( p, sh0 - X * 0.17 * sc, sh0 + X * 0.17 * sc ) - 0.075 * sc );
-          dd = min( dd, segD( p, ch.xy, hp.xy ) - 0.19 * sc );
-          dd = min( dd, segD( p, hp.xy, kn.xy ) - 0.2 * sc );
+          float mag = max( length( up ), 1e-3 );
+          vec2 U = up / mag, Xa = vec2( U.y, -U.x );
+          vec2 q = p - hd.xy;
+          vec2 l = vec2( dot( q, Xa ), dot( q, U ) ) / mag;
+          // (the head and the coat's top: one mass)
+          float hb = length( ( l - vec2( 0.0, 0.085 ) ) / vec2( 0.083, 0.105 ) ) - 1.0;
+          hb *= 0.083;
+          float jaw = sdBox2( l - vec2( 0.0, -0.035 ), vec2( 0.05, 0.075 ) ) - 0.015;
+          float shl = sdTrap( l - vec2( 0.0, -0.118 ), 0.232, 0.07, 0.058 ) - 0.012;
+          float body = smin( smin( hb, jaw, 0.025 ), shl, 0.03 );
+          // (the fedora: hard edged)
+          float bx = l.x;
+          float brimY = 0.142 - 0.45 * bx * bx;
+          float brim = sdBox2( vec2( bx, l.y - brimY ), vec2( 0.2, 0.013 ) ) - 0.006;
+          float crown = sdTrap( l - vec2( 0.0, 0.206 ), 0.1, 0.082, 0.058 ) - 0.014;
+          float hat = min( brim, crown );
+          float dL = min( body, hat ) * mag;
+          // the coat: the shoulders' line down the chest to the hips, on to the knee
+          vec2 sh0 = hd.xy + U * ( -0.15 * mag );
+          float coat = min( segD( p, sh0, ch.xy ) - 0.2 * sc, min( segD( p, ch.xy, hp.xy ) - 0.2 * sc, segD( p, hp.xy, kn.xy ) - 0.21 * sc ) );
+          dd = smin( dL, coat, 0.03 * mag );
           // the arms (a raised gun hand shows)
-          dd = min( dd, segD( p, sh0 + X * 0.18 * sc * sign( hr.x - ch.x + 1e-4 ), hr.xy ) - 0.05 * sc );
-          dd = min( dd, segD( p, sh0 + X * 0.18 * sc * sign( hl.x - ch.x + 1e-4 ), hl.xy ) - 0.05 * sc );
+          vec2 shR = sh0 + Xa * 0.2 * mag * sign( dot( hr.xy - ch.xy, Xa ) + 1e-4 );
+          vec2 shL = sh0 + Xa * 0.2 * mag * sign( dot( hl.xy - ch.xy, Xa ) + 1e-4 );
+          dd = smin( dd, segD( p, shR, hr.xy ) - 0.052 * sc, 0.02 * mag );
+          dd = smin( dd, segD( p, shL, hl.xy ) - 0.052 * sc, 0.02 * mag );
           // the frost's own grain breaks the edge a little
           float e = dd + ( noise( p * 40.0 ) - 0.5 ) * blur * 0.5;
           sh = max( sh, k * ( 1.0 - smoothstep( -blur, blur, e ) ) );
