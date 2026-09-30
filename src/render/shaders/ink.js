@@ -580,7 +580,7 @@ export function makeInkMaterial(tex, fogUniforms) {
               float lm = ndl + 0.16 * ( smoothstep( -4.5, 0.5, lg ) - 0.5 );
               // (the edge is a dry brush's: a small tear from the field, never
               // a mottle across the planes)
-              float th = 0.1 + ( clamp( br.r, 0.15, 0.85 ) - 0.5 ) * 0.16;
+              float th = 0.22 + ( clamp( br.r, 0.15, 0.85 ) - 0.5 ) * 0.16;
               float side = smoothstep( th - 0.02, th + 0.02, lm );
               float litV = mix( 0.7, 0.84, smoothstep( -4.0, 1.5, lg ) );
               litV = mix( 0.16, litV, smoothstep( -6.2, -4.8, lg ) );

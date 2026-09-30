@@ -23,11 +23,11 @@ export const SNEAK_REST = {
   R: { stand: [0.215, -0.258, -0.43], crouch: [0.2, -0.245, -0.5] },
   L: { stand: [0.19, -0.25, -0.47], crouch: [0.17, -0.235, -0.54] },
 };
-// [R2-B] the hands low and ready, not claws: the fingers together and
-// lightly curled, pointing forward and a little down, the back of each hand
-// turned out and up (the art director, round 2: palms down with the
-// fingers raised and fanned, held low, they read as claws)
-const LOW_F = { i: C(0.32, 0.5, 0.3, -0.05), m: C(0.36, 0.55, 0.32, 0), r: C(0.42, 0.6, 0.34, 0.04), l: C(0.5, 0.65, 0.36, 0.1), t: [0.25, 0.05, 0.3, 0.2, 0.2] };
+// [R2-B] the hands low and ready, not claws: loosely closed, the fingers
+// together and curled into the palm, the thumb along the index, the back of
+// each hand turned out and up (the art director, round 2: palms down with
+// the fingers raised and fanned, held low, they read as claws)
+const LOW_F = { i: C(0.65, 0.85, 0.45, -0.04), m: C(0.72, 0.9, 0.5), r: C(0.8, 0.95, 0.52, 0.03), l: C(0.88, 1.0, 0.55, 0.07), t: [0.45, 0.2, 0.45, 0.35, 0.3] };
 export const POSES = {
   sneakR: { frame: 'cam', p: [...SNEAK_REST.R.stand], f: [-0.12, -0.3, -0.95], b: [0.7, 0.65, 0.3], F: LOW_F, e: [0.3, -0.56, -0.08] },
   sneakL: mirror({ frame: 'cam', p: [...SNEAK_REST.L.stand], f: [-0.18, -0.28, -0.94], b: [0.72, 0.62, 0.3], F: LOW_F, e: [0.3, -0.56, -0.12] }),
