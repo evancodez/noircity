@@ -333,11 +333,44 @@ export class Vehicle {
   seat(localEye, out = new THREE.Vector3()) { return out.copy(localEye).applyMatrix4(this.body.matrixWorld); }
 }
 
+// the headlamps' pools (a ShaderMaterial on a flat plane in the car's own
+// frame: x ahead, z across): additive, never inked or mirrored
+function poolMaterial(points, reach, gain) {
+  return new THREE.ShaderMaterial({
+    name: 'HeadlampPool',
+    uniforms: { uL: { value: points.map((p) => new THREE.Vector2(p.x, p.z)) }, uReach: { value: reach }, uGain: { value: gain } },
+    vertexShader: /* glsl */`
+      varying vec2 vP;
+      void main() { vP = position.xz; gl_Position = projectionMatrix * modelViewMatrix * vec4( position, 1.0 ); }`,
+    fragmentShader: /* glsl */`
+      uniform vec2 uL[ 2 ];
+      uniform float uReach, uGain;
+      varying vec2 vP;
+      void main() {
+        float a = 0.0;
+        for ( int i = 0; i < 2; i++ ) {
+          vec2 d = vP - uL[ i ];
+          float x = d.x;
+          if ( x < 0.5 ) continue;
+          // (the beam spreads as it goes; its pool starts ~3 m out, peaks at
+          // ~9, fades to nothing at the reach)
+          float w = 0.5 + x * 0.2;
+          float across = exp( - ( d.y * d.y ) / ( w * w ) );
+          float along = smoothstep( 2.0, 7.5, x ) * ( 1.0 - smoothstep( uReach * 0.35, uReach, x ) ) * ( 9.0 / max( x, 6.0 ) );
+          a += across * along;
+        }
+        gl_FragColor = vec4( vec3( a * uGain * 0.06 ), 1.0 );
+      }`,
+    transparent: true, depthWrite: false, blending: THREE.AdditiveBlending,
+    polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2,
+  });
+}
+
 // A car's headlamps: two cones in the rain and a lit lens, a real light when
 // it has one of the track's two (the player's always; the other goes to the
 // car the eye is most likely to see lit).
 export class Headlamps {
-  constructor(stage, car, points, { reach = 26, intensity = 150, cone = 0.2 } = {}) {
+  constructor(stage, car, points, { reach = 26, intensity = 150, cone = 0.2, pool = 0.5 } = {}) {
     this.stage = stage;
     this.points = points;
     this.reach = reach;
@@ -353,12 +386,26 @@ export class Headlamps {
     });
     this.entry = stage.lights.add({ position: new THREE.Vector3(), direction: new THREE.Vector3(1, 0, 0), halfAngle: 0.3, range: 18, intensity: 0.8 });
     this._a = new THREE.Vector3(); this._d = new THREE.Vector3();
+    // the pools the lamps throw on the wet road ahead: a wash of light laid
+    // on the ground (the road's own shader keeps a lamp's pool dark, and a
+    // headlamp strikes the road too flat to light it): two long ovals that
+    // meet, brightest a car's length out, gone by `reach`
+    this.pool = new THREE.Mesh(new THREE.PlaneGeometry(reach, 9).rotateX(-Math.PI / 2).translate(reach / 2 + 2.4, 0, 0), poolMaterial(points, reach, pool));
+    this.pool.layers.set(LAYER.FX);
+    this.pool.frustumCulled = false;
+    this.pool.renderOrder = 2;
+    this.pool.userData.noRay = true;
+    stage.scene.add(this.pool);
   }
   take(spot) { this.spot = spot; }
   release() { if (this.spot) this.spot.intensity = 0; this.spot = null; }
-  setOn(on) { this.on = on; for (const c of this.cones) c.visible = on; this.entry.intensity = on ? 0.8 : 0; if (this.spot && !on) this.spot.intensity = 0; }
+  setOn(on) { this.on = on; for (const c of this.cones) c.visible = on; this.pool.visible = on; this.entry.intensity = on ? 0.8 : 0; if (this.spot && !on) this.spot.intensity = 0; }
   update(car) {
     const m = car.body.matrixWorld;
+    // (the pool lies flat on the road, turned with the car)
+    const T = car.track;
+    this.pool.position.set(car.pos.x, (T ? T.ground(car.d) : 0) + 0.025, car.pos.z);
+    this.pool.rotation.set(0, car.yaw, 0);
     // (aimed a little down the road: the pools slide over the wet ahead)
     const dir = this._d.set(1, -0.055, 0).transformDirection(m);
     for (let i = 0; i < this.cones.length; i++) {
@@ -383,6 +430,7 @@ export class Headlamps {
   }
   dispose() {
     for (const c of this.cones) this.stage.scene.remove(c);
+    this.stage.scene.remove(this.pool);
     this.stage.lights.remove(this.entry);
     this.release();
   }

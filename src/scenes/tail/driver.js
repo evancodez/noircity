@@ -18,6 +18,8 @@ export class Watcher {
     this.gapT = 50;
     this.caught = false;
     this.avoid = [];     // { s0, s1, d } stretches he steers round (the truck, the oncoming car)
+    // (the newsstand on its corner: he clips it and its papers fill my road)
+    this.avoid.push({ s0: ROAD.marks.stand - 28, s1: ROAD.marks.stand + 24, d: -6.9 });
   }
 
   // the gap he keeps, by where he is on the road
@@ -42,7 +44,7 @@ export class Watcher {
       const u = (s - a.s0) / (a.s1 - a.s0);
       d += (a.d - d) * Math.sin(u * Math.PI);
     }
-    return clamp(d, -5.6, 5.4);
+    return clamp(d, -6.4, 5.4);
   }
 
   drive(v, dt) {
@@ -55,7 +57,9 @@ export class Watcher {
     const meSp = Math.max(0, me.speed);
     let target = meSp + (gap - want) * -0.55;
     const top = this.caught ? 26.5 : (s > ROAD.marks.close ? 27.5 : 33);
-    target = clamp(target, s < 40 ? 14 : 11, top);
+    // (far ahead he eases off - a man who thinks he has lost me - so a
+    // crash costs me the ground, not the tail)
+    target = clamp(target, s < 40 ? 14 : gap > 62 ? 5 : 11, top);
     if (T.state === 'start') target = Math.min(target, 16);
     // the steering: aim at a point on his line ahead (pure pursuit)
     const ahead = clamp(7 + sp * 0.55, 8, 22);

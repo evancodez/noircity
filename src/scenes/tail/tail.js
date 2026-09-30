@@ -170,6 +170,9 @@ export class Tail {
       for (const c of ROAD.checkpoints) if (my.s > c + 10) this.checkpoint = Math.max(this.checkpoint || 0, c);
     }
     if (this.state === 'close') this.gunStep(dt);
+    // (mercy: near the road's end his tyre goes whatever my aim - a
+    // first-timer who cannot hit it still gets his crash)
+    if (this.state === 'close' && his.s > ROAD.marks.end - 70) this.tyre(1);
     else this.holster(dt);
     if (this.spin) this.spinStep(dt);
     if (this.wreck) this.wreckStep(dt);
