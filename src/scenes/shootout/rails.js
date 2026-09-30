@@ -45,7 +45,24 @@ export class Rails {
     // done under the black of the scene's start, never in play)
     const q = typeof location !== 'undefined' ? new URLSearchParams(location.search).get('b7spots') : null;
     const nSpots = q != null ? +q : 1;
-    for (let i = 0; i < nSpots; i++) {
+    // [R2-F] the first is not a light of its own: it is one of the lamp
+    // pool's four plain SpotLights, taken out of the pool for the scene (the
+    // lamp that would have had it - the seventh nearest - is lit by its cone
+    // and bulb alone meanwhile) and given back at the end. A light added to
+    // the scene changed every lit material's program: each figure, shard and
+    // wreck compiled again the first time it was drawn, in play (a stall at
+    // every first appearance), and every lit pixel paid for one light more.
+    const pool = stage.lamps && stage.lamps.pool;
+    const slot = nSpots > 0 && pool ? pool.find((p) => !p.shadow) : null;
+    if (slot) {
+      pool.splice(pool.indexOf(slot), 1);
+      const sp = slot.spot;
+      this.borrowed = { slot, angle: sp.angle, penumbra: sp.penumbra, distance: sp.distance, decay: sp.decay };
+      slot.lamp = null;
+      sp.intensity = 0; sp.angle = 0.42; sp.penumbra = 0.55; sp.distance = 34; sp.decay = 2.0;
+      this.spots.push({ light: sp, car: null, borrowed: true });
+    }
+    for (let i = slot ? 1 : 0; i < nSpots; i++) {
       const sp = new THREE.SpotLight(0xffffff, 0, 34, 0.42, 0.55, 2.0);
       sp.position.set(0, -60, 0); sp.target.position.set(0, -61, 0);
       stage.scene.add(sp, sp.target);
@@ -443,7 +460,17 @@ export class Rails {
   // the rig itself goes (the scene ends): its spots out of the scene
   dispose() {
     this.clear();
-    for (const S of this.spots) { this.stage.scene.remove(S.light, S.light.target); S.light.dispose(); }
+    for (const S of this.spots) if (!S.borrowed) { this.stage.scene.remove(S.light, S.light.target); S.light.dispose(); }
+    // [R2-F] the lamp pool's light back as it was
+    const B = this.borrowed;
+    if (B) {
+      const sp = B.slot.spot;
+      Object.assign(sp, { angle: B.angle, penumbra: B.penumbra, distance: B.distance, decay: B.decay, intensity: 0 });
+      B.slot.lamp = null; B.slot.k = 0;
+      const pool = this.stage.lamps && this.stage.lamps.pool;
+      if (pool && !pool.includes(B.slot)) pool.push(B.slot);
+      this.borrowed = null;
+    }
     this.spots.length = 0;
   }
 }
