@@ -92,6 +92,8 @@ export function* startFight(ctx) {
   const d = stage.part('diner');
   const m = cast.get('mack');
   const T = START.T;
+  // (its start and end in game time, for the plays: inT .. upT)
+  ctx.flags.inT = G.time;
   const snd = (name, pos = null, p = {}) => G.sfx.play(name, pos, p);
   const head = () => { const p = m.bones.head.getWorldPosition(_v); p.y -= 0.12; return p; };
   // ---- my eye: carried by the move, the look still mine a little -------------------------
@@ -180,6 +182,12 @@ export function* startFight(ctx) {
   if (st4 && st4.spin) st4.spin(-0.5);
   snd('stoolSqueak', V(DINER.stools.x, 0.9, stoolZ(SEAT)), { k: 0.8 });
   for (let u = 0; u < T.pull; u += 1 / 60) {
+    // (where his hand lay, measured a step after it landed, once the pose
+    // has put it there: for the plays, which may look a little late)
+    if (u > 0 && !ctx.flags.handAt && m.bones && m.bones.handL) {
+      const h = m.bones.handL.getWorldPosition(V());
+      ctx.flags.handAt = { xz: Math.hypot(h.x - G.eye.x, h.z - G.eye.z), dy: h.y - G.eye.y };
+    }
     const k = ss(u / T.pull);
     S.body = b0 + wrap(face() - b0) * k;
     S.frame = lerp(S.frame, 0, 0.2);
@@ -212,6 +220,7 @@ export function* startFight(ctx) {
     return P;
   };
   H.equip('fists');
+  ctx.flags.rise = G.time;
   const rise = H.play('b8_rise', { onMark: {
     grab: () => { run.going = true; snd('scuff', stoolAt, { k: 0.8 }); },
     release: () => { REACH.L = null; },
@@ -264,6 +273,7 @@ export function* startFight(ctx) {
   hands.L = null;
   if (!run.done) layStool(stage);
   void rise;
+  ctx.flags.upT = G.time;
   return { eye: S.eye.clone(), yaw: S.yaw };
 }
 // (the hand on the seat's rim: the fingers over it, half closed)
