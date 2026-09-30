@@ -1,11 +1,11 @@
 import * as THREE from 'three';
 import { defineScene, wait, until, beat } from '../game/script.js';
-import { V, ALLEY, XV, STOOD, SHOOTER, WOUNDS, MARKS, LIES, KNEEL, STUDY, startPose, mackOut, layVictim, evidence, clearEvidence, gutterHat, crewCar } from './body/place.js';
+import { V, ALLEY, XV, STOOD, SHOOTER, WOUNDS, MARKS, LIES, KNEEL, STUDY, startPose, mackOut, layVictim, evidence, clearEvidence, gutterHat, crewCar, halfGlint } from './body/place.js';
 import { makeOutline, makeStrings, runStrings } from './body/strings.js';
 import { HALVES, clearHalves } from './body/halves.js';
 import { NOTE_PUZZLE, clearNote, layNoteWhole } from './body/note.js';
 import { DINER_SIGHT } from '../stages/block/site.js';
-import { openFist, pullLadder, climbHands, handsOff, takeHalf, tableFinger } from './body/hands.js';
+import { openFist, pullLadder, climbHands, handsOff, takeHalf, tableFinger, stringHand } from './body/hands.js';
 import { stepLens } from './body/stepview.js';
 
 // Scene 3, the body (STORY.md; lane B1's brief). The side alley thirty
@@ -231,7 +231,8 @@ export default defineScene({
       if (F.car) F.car.step(dt);
       O.step(dt);
       for (const s of R.strings) if (s.taut && !F.run) R.drawTaut(s);
-      if (F.run) F.run.step(dt);
+      if (F.run) { F.run.step(dt); F.strHand = F.strHand || {}; stringHand(ctx, F.strHand, F.run); }
+      else if (F.strHand) { F.strHand = null; handsOff(H); }
       if (F.ladderAnim) {
         const A = F.ladderAnim;
         A.t += dt;
@@ -365,6 +366,10 @@ export default defineScene({
         solvedLight = true;
         // (and the red on the landing's edge catches it)
         F.glint = 0;
+        // [R2-G] a star of its red on the landing's edge, with the flash
+        const gl = halfGlint(ctx, ev.half);
+        LIVE && LIVE.removers.push(() => gl.remove());
+        ctx.onStep((dt) => gl.step(dt));
         ctx.onStep((dt) => {
           if (F.glint == null || F.glint > 2.2) return;
           F.glint += dt;

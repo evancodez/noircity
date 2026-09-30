@@ -24,6 +24,11 @@ const CLAW = { i: C(0.5, 0.7, 0.4), m: C(0.55, 0.75, 0.4), r: C(0.6, 0.8, 0.45),
 // thumb's (fitted on the rig: the pads 32 mm apart in front of the palm;
 // src/player/clips/body.js puts what it holds there)
 const PINCH = { i: [0.4, 1.2, 0.72, 0], m: C(0.95, 1.1, 0.65), r: C(1.2, 1.3, 0.7), l: C(1.3, 1.3, 0.7), t: [0.5, 0, 0.3, 0, 0.2] };
+// [R2-G] the pinch shut on a string: the index's pad on the thumb's
+// (fitted on the rig, node forward kinematics as the wad's pinch: the tips
+// 4 mm apart, their middle STRING_AT in the hand bone's frame)
+const STRING_PINCH = { i: [1.0, 0.9, 0.54, 0], m: C(1.05, 1.2, 0.7), r: C(1.25, 1.35, 0.75), l: C(1.35, 1.35, 0.75), t: [0.5, -0.15, 0.1, 0, 0.4] };
+const STRING_AT = [-0.0287, -0.0575, -0.0915];
 // (the pinch's middle in the hand bone's frame: where the index's tip and
 // the thumb's meet a thing)
 const PINCH_AT = [-0.0349, -0.0535, -0.0998];
@@ -106,11 +111,11 @@ export function setHand(H, side, pose) {
 
 // a pose from a pinch: the pinch's middle (PINCH_AT on the hand) at `at`
 // (world), the fingers along `f`, the back of the hand toward `b`
-export function pinchW(G, side, at, f, b, F = PINCH) {
+export function pinchW(G, side, at, f, b, F = PINCH, O = PINCH_AT) {
   const z = f.clone().normalize().negate();
   const y = b.clone().addScaledVector(z, -b.dot(z)).normalize();
   const x = new THREE.Vector3().crossVectors(y, z);
-  const w = at.clone().addScaledVector(x, -PINCH_AT[0]).addScaledVector(y, -PINCH_AT[1]).addScaledVector(z, -PINCH_AT[2]);
+  const w = at.clone().addScaledVector(x, -O[0]).addScaledVector(y, -O[1]).addScaledVector(z, -O[2]);
   return poseW(G, side, w, f, b, F);
 }
 // a crumple of wet paper (seeded: every one the same), `r` its radius
@@ -361,3 +366,50 @@ export function tableFinger(ctx, S, world, down, lift = 0, gone = false) {
   S.pose = k < 1 ? mixPose(awayW(G, 'R'), want, k) : want;
   setHand(H, 'R', S.pose);
 }
+
+// [R2-G] the strings: my right hand holds the string's free end. From the
+// kerb the plane of the shots is 5 m off: the hand is at arm's length in
+// front of the eye and the string's end is drawn in its pinch, as an inker
+// draws a hand holding a line to something far off (the end is on the
+// pointer; the pinch is on the eye's ray through it, 0.42 m out). The hand
+// comes in from the lower right once the view has arrived, travels to the
+// next pin when a string goes taut (it lets go: the string is pinned), and
+// draws back off the frame when both are taut.
+//   S: the moment's state (kept by the scene); run: the strings' run
+export function stringHand(ctx, S, run) {
+  const { game: G, hands: H } = ctx;
+  const cam = G.camera;
+  cam.updateMatrixWorld();
+  const on = run.active && run.solvedT < 0 && run.t >= run.ease * 0.85;
+  S.k = on ? Math.min(1, (S.k || 0) + 1 / 60 / 0.3) : Math.max(0, (S.k || 0) - 1 / 60 / 0.35);
+  if (S.k <= 0) { if (S.shown) { S.shown = false; setHand(H, 'R', null); } S.ndc = null; return; }
+  S.shown = true;
+  // (the pinch follows the pointer one to one; after a string goes taut the
+  // pointer is on the next pin: the hand goes there in a quarter second)
+  const want = run.ndc.clone();
+  if (!S.ndc) S.ndc = want.clone();
+  if (S.ndc.distanceTo(want) > 0.08 && !S.travel) S.travel = { from: S.ndc.clone(), t: 0 };
+  if (S.travel) {
+    S.travel.t += 1 / 60;
+    const u = sstep(0, 0.25, S.travel.t);
+    S.ndc.copy(S.travel.from).lerp(want, u);
+    if (u >= 1) S.travel = null;
+  } else S.ndc.copy(want);
+  const dir = V(S.ndc.x, S.ndc.y, 0.5).unproject(cam).sub(cam.position).normalize();
+  const Q = typeof location !== 'undefined' && location.search.includes('strhand') ? new URLSearchParams(location.search).get('strhand').split(',').map(Number) : [0.6, 0.8, 0.2, -0.35, 0.3, 0.85, 0.1];
+  const at = cam.position.clone().addScaledVector(dir, Q[0]);
+  // the fingers out toward the string's far end (the pin, up the frame),
+  // the back of the hand up and to the right: seen from behind and a little
+  // to the side, the thumb and index closed on the line
+  const fwd = V(0, 0, -1).applyQuaternion(cam.quaternion), up = V(0, 1, 0).applyQuaternion(cam.quaternion), right = V(1, 0, 0).applyQuaternion(cam.quaternion);
+  const fd = fwd.clone().multiplyScalar(Q[1]).addScaledVector(up, Q[2]).addScaledVector(right, Q[3]);
+  const bd = up.clone().multiplyScalar(Q[4]).addScaledVector(right, Q[5]).addScaledVector(fwd, Q[6]);
+  const FP = typeof location !== 'undefined' && location.search.includes('strpinch') ? new URLSearchParams(location.search).get('strpinch').split(',').map(Number) : null;
+  const SP = FP ? { ...STRING_PINCH, i: [FP[0], FP[1], FP[2], 0], t: [FP[3], FP[4], FP[5], FP[6], FP[7]] } : STRING_PINCH;
+  const pose = pinchW(G, 'R', at, fd, bd, SP, STRING_AT);
+  // (a moving end: the pinch a hair open while it travels to a pin)
+  if (S.travel) pose.F = lerpF(SP, REACH, Math.sin(Math.min(1, S.travel.t / 0.25) * Math.PI) * 0.6);
+  const k = S.k * S.k * (3 - 2 * S.k);
+  setHand(H, 'R', k < 1 ? mixPose(awayW(G, 'R'), pose, k) : pose);
+}
+
