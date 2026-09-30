@@ -28,7 +28,7 @@ export function padPuzzle(ctx) {
       P.active = true;
       P.prevPose = C.eyePose();
       // the eye over the pad from the chair's side, looking down on it
-      const pose = { x: PAD.x + 0.43, y: DESK.h + 0.44, z: PAD.z + 0.05, yaw: Math.PI / 2 + 0.05, pitch: -0.88 };
+      const pose = { x: PAD.x + 0.36, y: DESK.h + 0.54, z: PAD.z + 0.04, yaw: Math.PI / 2 + 0.05, pitch: -1.02 };
       C.setMode('table', { pose, fov: 50, ease: 0.45 });
       // the pencil from the blotter into my hand (it goes where the hand takes it)
       const pc = O.pencil;
@@ -41,9 +41,9 @@ export function padPuzzle(ctx) {
       G.sfx.play('office_pencilPick', O.pencilAt);
       if (!P.taught) { P.taught = true; G.hud.prompt('LMB  hold and rub', null, 'pad'); P.teachT = 3.5; }
     },
-    // the left hand on the pad (palm down on its far left corner, fingers away)
+    // the left hand on the pad (palm down at its near left edge, fingers away and in: its arm off the sheet)
     leftHand() {
-      const at = V(PAD.x - 0.07, TOP + 0.004, PAD.z + 0.1);
+      const at = V(PAD.x + 0.05, TOP + 0.004, PAD.z + 0.125);
       const m = toCam(H, place(at, V(0, 1, 0), V(-1, 0, 0.3)));
       const p = V().setFromMatrixPosition(m);
       const n = V(0, -1, 0).transformDirection(m.clone().setPosition(0, 0, 0)).normalize();
@@ -53,7 +53,7 @@ export function padPuzzle(ctx) {
       const root = H.vm.root; root.updateMatrixWorld(true);
       const inv = new THREE.Matrix4().copy(root.matrixWorld).invert();
       const down = V(0, -1, 0).transformDirection(inv);
-      const fwd = V(-0.85, 0, 0.5).normalize().transformDirection(inv);
+      const fwd = V(-0.9, 0, -0.4).normalize().transformDirection(inv);
       const pose = palm('cam', [p.x, p.y, p.z], [down.x, down.y, down.z], [fwd.x, fwd.y, fwd.z], { ...OPEN, i: [0.12, 0.15, 0.1, -0.06], l: [0.2, 0.25, 0.15, 0.12], t: [0.35, 0.3, 0.1, 0.1, 0.1] }, [-0.3, -0.5, 0.05]);
       setLive('L', pose);
     },

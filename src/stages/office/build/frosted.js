@@ -151,7 +151,10 @@ export function makeFrosted({ w = 1, h = 1, text = null, lit = 'back', seed = 0 
         float glow = ( front == ( lampFace < 0.0 ) ) ? uGlowB : uGlowF;
         float fall = 1.0 / ( 1.0 + 0.35 * dot( uLamp - vW, uLamp - vW ) );
         float mottle = 0.82 + 0.18 * noise( p * 9.0 ) + 0.06 * noise( p * 41.0 );
-        float I = min( 1.05, glow * uLampK * ( 0.35 + 3.2 * fall ) ) * mottle;
+        // (lit evenly, a pane and not a spot: a little darker only at its frame)
+        vec2 eg = uWH * 0.5 - abs( p );
+        float rim = 0.8 + 0.2 * smoothstep( 0.0, 0.07, min( eg.x, eg.y ) );
+        float I = min( 1.05, glow * uLampK * ( 0.6 + 2.2 * fall ) ) * mottle * rim;
         // the gilt letters: pale, keylined; read the right way round from the
         // lamp's side (the text is drawn for a reader facing -N)
         vec2 tuv = vec2( 0.5 - p.x / uWH.x, p.y / uWH.y + 0.5 );

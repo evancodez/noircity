@@ -36,7 +36,7 @@ export const STAIRS = { z0: -6.2, z1: -5.3 };
 // the lift at the south end: a cage of iron and a dark shaft
 export const LIFT = { x0: -1.62, x1: -0.52 };
 // the corridor's one lamp, near 304
-export const CORR_LAMP = { x: -1.42, z: 1.45 };
+export const CORR_LAMP = { x: -1.1, z: 1.45 };
 
 // the street window: east wall; the blind covers it from its head
 export const WIN = { z0: 3.25, z1: 5.05, y0: 0.82, y1: 2.5 };

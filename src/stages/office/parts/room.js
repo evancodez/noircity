@@ -48,7 +48,7 @@ export default {
     const from = street.flood.from, at = V(...BLIND_LIGHT.through).sub(from).multiplyScalar(1.3).add(from);
     const axis = at.clone().sub(from).normalize();
     const blindLight = lamps.addCustom({ head: from.clone(), axis, height: from.distanceTo(at) + 6, half: 0.09, real: true, bulb: street.flood.disc, strength: 1, tag: 'blind' });
-    Object.assign(blindLight.light, { intensity: 12000, angle: 0.105, penumbra: 0.35, distance: 34 });
+    Object.assign(blindLight.light, { intensity: 40000, angle: 0.105, penumbra: 0.35, distance: 34 });
     blindLight.cone.visible = false;
     blindLight.priority = 10;
     blindLight.shadow = { radius: 1.2, mapSize: 2048, bias: -0.00025, normalBias: 0.015, near: 8 };
@@ -58,7 +58,7 @@ export default {
     const deskHead = dl.shadeG.localToWorld(V(-0.01, -0.03, 0));
     const deskAxis = V(PAD.x, DESK.h, PAD.z + 0.05).sub(deskHead).normalize();
     const deskLamp = lamps.addCustom({ head: deskHead, axis: deskAxis, height: 0.8, half: 0.95, real: true, bulb: dl.bulb, fadeEnd: 0.8, edgeSoft: 0.6, strength: 0.25, tag: 'desk' });
-    Object.assign(deskLamp.light, { intensity: 7.5, angle: 1.15, penumbra: 0.75, distance: 4.5 });
+    Object.assign(deskLamp.light, { intensity: 16, angle: 1.15, penumbra: 0.75, distance: 4.5 });
     deskLamp.priority = 5;
     deskLamp.shadow = { radius: 3, mapSize: 1024, near: 0.05 };
     // (its head and aim in the shade's own frame: they ride the shade when the desk goes over)
@@ -79,9 +79,9 @@ export default {
 
     // ---- the Looks, the dry volumes, the walls of the stage ----------------------------------
     stage.dry.push(shell.roomBox, shell.corrBox);
-    const inside = { fogDensity: FOG.density * 0.3, rainOverlay: 0, haze: 0.5, reflect: 'none', ambient: 0.6 };
+    const inside = { fogDensity: FOG.density * 0.3, rainOverlay: 0, haze: 0.65, reflect: 'none', ambient: 0.3 };
     stage.addLook(shell.roomBox, { ...inside, room: 'office' });
-    stage.addLook(shell.corrBox, { ...inside, ambient: 0.4, haze: 0.35, room: 'corridor' });
+    stage.addLook(shell.corrBox, { ...inside, ambient: 0.25, haze: 0.45, room: 'corridor' });
     stage.colliders.setBounds(-2.5, 6.2, -7.3, 9.0);
 
     // ---- the anchors -------------------------------------------------------------------------
@@ -227,7 +227,7 @@ export default {
       // (the floodlight under the sign dips with it: the slats flicker on the walls)
       const bl = api.lights.blind;
       bl.base = on ? 1 : 0.82;
-      if (bl.light) bl.light.intensity = 12000 * bl.base;
+      if (bl.light) bl.light.intensity = 40000 * bl.base;
     }
   },
 };
@@ -298,7 +298,7 @@ function lampFollow(api, stage) {
     lamp.light.pos.copy(_h);
     lamp.light.target.copy(_h).addScaledVector(lamp.axis, 2);
     // (on the floor it throws its light low and long: a wider, weaker spread)
-    if (Lp.fall && Lp.fall.done) { lamp.light.angle = 1.3; lamp.light.distance = 7; lamp.light.intensity = 9; }
+    if (Lp.fall && Lp.fall.done) { lamp.light.angle = 1.3; lamp.light.distance = 7; lamp.light.intensity = 18; }
     lamp.cone.position.copy(_h);
     lamp.cone.quaternion.setFromUnitVectors(new THREE.Vector3(0, -1, 0), lamp.axis);
     const u = lamp.cone.material.uniforms;
@@ -329,7 +329,7 @@ function resetRoom(api, stage) {
   }
   deskRays(api, stage);
   Lp.fall = null;
-  Object.assign(lamp.light, { intensity: 7.5, angle: 1.15, distance: 4.5 });
+  Object.assign(lamp.light, { intensity: 16, angle: 1.15, distance: 4.5 });
   if (lamp.dead) { lamp.dead = false; lamp.buzz = null; lamp.dieNow = false; lamp.deadK = 0; lamp.on = true; if (lamp.bulb) lamp.bulb.material = api.mats.bulb; }
   lamp.on = true;
   // the picture back crooked on its nail, the safe shut
