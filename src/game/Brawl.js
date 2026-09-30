@@ -320,7 +320,7 @@ export class Brawl {
     // ---- the wind-up: it loads while held; let go, the blow
     if (me.act === 'wind') {
       const b = Bt[me.code];
-      if (b && b.down) me.holdT += dt;
+      if (b && b.down) me.holdT = b.t - (me.holdOff || 0);
       if (me.h && me.h.t > 1.08) me.h.t = 0.48;   // (the tremble, round again)
       if (!b || !b.down) {
         const lv = this.levelOf(me.holdT);
@@ -426,6 +426,9 @@ export class Brawl {
   wind(arm, code, holdT = BRAWL.hold.min, thing = false) {
     const me = this.me, H = this.hands;
     me.act = 'wind'; me.arm = arm; me.code = code; me.t = 0; me.holdT = Math.max(BRAWL.hold.min, holdT); me.windThing = thing && !!me.holding; me.lvShown = 0;
+    // (the load counts the button's own time held; a wind-up begun again
+    // after a blow counts from its new start)
+    const bt = this.me.btns[code]; me.holdOff = bt ? bt.t - me.holdT : 0;
     const it = me.windThing ? me.holding : null;
     const clip = it ? (THINGS_OF(it).big ? 'windBig' : 'windItem' + (it.hand === 'L' ? 'L' : '')) : arm === 'L' ? 'windL' : 'windR';
     me.h = H.play(clip);
@@ -483,6 +486,8 @@ export class Brawl {
       const o = it.take ? it.take() : it.object;
       if (!o) return;
       if (it.kind === 'stool') me.stools++;
+      // (a café chair has no grip of its own: taken by the top of its back)
+      if (it.kind === 'chair' && !o.userData.grip) o.userData.grip = new THREE.Matrix4().makeTranslation(0.12, 0.95, -0.19);
       me.holding = { kind: it.kind, object: o, name: it.name, uses: T.uses, hand, hands: T.hands };
       H.hold(o, hand);
       this.sfx('grab_' + (it.kind === 'chair' ? 'stool' : it.kind === 'mug' ? 'plate' : it.kind), null, {});
@@ -981,30 +986,23 @@ export class Brawl {
     this.game.emit('brawl:knock', { d: d0, into: hit ? hit.what : null });
   }
 
-  // what stands behind him along dir within D: { s, what, obj }
+  // what stands behind him along dir within D: { s, what, obj }. [B8] The
+  // room says what stands on its floor (room.knockables(): { pos, r, what })
+  // and what a hard thing is (room.hardAt(tag, x, z) -> a name: the counter,
+  // its pie case, the jukebox); the walls and the bounds are 'wall'.
   sweep(dir, D) {
     const c = this.c, R = this.room, S = this.game.stage;
     const r = (c.fig.collider ? c.fig.collider.r : 0.35);
     const Cl = S.colliders;
+    const K = R.knockables ? R.knockables() : [];
     for (let s = 0.08; s <= D + 0.001; s += 0.04) {
       const x = c.pos.x + dir.x * s, z = c.pos.z + dir.z * s;
-      if (R.stools) for (const st of R.stools) {
-        if (st.handle.toppled || st.handle.broken || st.taken) continue;
-        if (Math.hypot(st.pos.x - x, st.pos.z - z) < 0.2 + r * 0.8) return { s, what: 'stools', obj: st };
-      }
-      if (R.cafe) for (const t of R.cafe) {
-        if (!t.handle.toppled && !t.handle.broken && Math.hypot(t.pos.x - x, t.pos.z - z) < 0.31 + r * 0.8) return { s, what: 'table', obj: t };
-        for (const ch of t.chairs) if (!ch.handle.toppled && !ch.handle.broken && !ch.taken && Math.hypot(ch.pos.x - x, ch.pos.z - z) < 0.2 + r * 0.8) return { s, what: 'chair', obj: ch };
-      }
+      for (const k of K) if (Math.hypot(k.pos.x - x, k.pos.z - z) < k.r + r * 0.8) return { s, what: k.what, obj: k };
       for (const b of Cl.boxes) {
         const tag = b.tag || 'wall';
         const lx = (x - b.cx) * b.c - (z - b.cz) * b.s, lz = (x - b.cx) * b.s + (z - b.cz) * b.c;
         const qx = Math.max(-b.hx, Math.min(b.hx, lx)), qz = Math.max(-b.hz, Math.min(b.hz, lz));
-        if (Math.hypot(lx - qx, lz - qz) < r * 0.85) {
-          let what = tag === 'counter' ? 'counter' : tag === 'jukebox' ? 'jukebox' : tag === 'booth' ? 'booth' : 'wall';
-          if (what === 'counter' && R.pieCase && Math.abs(R.pieCase.pos.z - z) < 0.75 && !R.pieCase.broken) what = 'piecase';
-          return { s, what, obj: b };
-        }
+        if (Math.hypot(lx - qx, lz - qz) < r * 0.85) return { s, what: (R.hardAt && R.hardAt(tag, x, z, b)) || 'wall', obj: b };
       }
       if (R.bounds) {
         const B = R.bounds;
@@ -1014,42 +1012,17 @@ export class Brawl {
     return null;
   }
 
-  // his back into it
+  // his back into it: the room does what that does (room.onInto(hit, dir, at,
+  // brawl) -> the clip he takes it with: 'br_into', or 'br_into_stools' when
+  // he goes down with them)
   into(hit, dir) {
     const G = this.game, R = this.room, c = this.c;
     const at = V(c.pos.x, 1.0, c.pos.z);
     this.stats.throws++;
     this.stats.into.push(hit.what);
     G.emit('brawl:throw', { into: hit.what });
-    let clip = 'br_into';
-    if (hit.what === 'stools') {
-      clip = 'br_into_stools';
-      const st = hit.obj;
-      const row = R.stools.filter((s) => s !== st && !s.handle.toppled && !s.handle.broken && !s.taken && Math.abs(s.pos.x - st.pos.x) < 0.3);
-      const sgn = Math.abs(dir.z) > 0.2 ? Math.sign(dir.z) : (st.pos.z > c.pos.z ? 1 : -1);
-      row.sort((a, b) => (a.pos.z - st.pos.z) * sgn - (b.pos.z - st.pos.z) * sgn);
-      G.stage.breakables.topple(st.handle, V(dir.x, 0, dir.z + sgn * 0.6).multiplyScalar(1.4));
-      let k = 0;
-      for (const s of row) {
-        const ahead = (s.pos.z - st.pos.z) * sgn;
-        if (ahead <= 0 || ahead > 2.8) continue;
-        k++;
-        this.later(0.18 * k, () => G.stage.breakables.topple(s.handle, V(dir.x * 0.5, 0, sgn).multiplyScalar(1.2)));
-      }
-      this.sfx('bodyStools', at, {});
-    } else if (hit.what === 'counter' || hit.what === 'piecase') {
-      if (R.counterHit) R.counterHit(at, dir);
-      if (hit.what === 'piecase' && R.pieCase) { R.pieCase.burst(dir); }
-      this.sfx('counter', at, { k: 1 });
-    } else if (hit.what === 'jukebox') {
-      if (R.jukebox) { R.jukebox.hit(1.2); if (R.jukebox.next) this.later(1.1, () => R.jukebox.next()); }
-      this.sfx('bodyThud', at, { k: 1 });
-    } else if (hit.what === 'table' || hit.what === 'chair') {
-      const t = hit.obj;
-      G.stage.breakables.topple(t.handle, V(dir.x, 0, dir.z).multiplyScalar(1.4));
-      if (t.chairs) for (const ch of t.chairs) if (!ch.taken) this.later(0.15, () => G.stage.breakables.topple(ch.handle, V(ch.pos.x - t.pos.x, 0, ch.pos.z - t.pos.z).add(dir)));
-      this.sfx('bodyThud', at, { k: 0.8 });
-    } else this.sfx('bodyThud', at, { k: 0.9 });
+    const clip = (R.onInto && R.onInto(hit, dir, at, this)) || 'br_into';
+    if (!R.onInto) this.sfx('bodyThud', at, { k: 0.9 });
     this.controller.shake(0.3, 1.5);
     G.hitStop = Math.max(G.hitStop || 0, 2);
     // (into the stools he goes down with them: the stun is spent down there)
@@ -1348,7 +1321,7 @@ export class Brawl {
     C.bump = null;
     this.sfx('bodyThud', b.at, { k: Math.min(1, b.speed / 5) });
     this.controller.shake(0.3, 0);
-    if (R.counterBump && Math.abs(b.at.x - (R.counterX ?? -14.35)) < 0.8) { R.counterBump(b.at, b.speed); this.sfx('cups', b.at, { k: Math.min(1, b.speed / 4) }); }
+    if (R.onBump) R.onBump(b.at, b.speed, this);
     this.game.emit('brawl:bump', { at: b.at, speed: b.speed });
   }
 
@@ -1564,7 +1537,7 @@ export class Brawl {
     G.emit('brawl:reel', {});
     him.state = 'reel'; him.clip = null; him.t = 0; him.open.L = him.open.R = 0; him.quietT = 0; him.atSpot = false; him.loco = null; him.reelSpeed = null; him.caught = false; him.catchT = 0; him.lane = false; him.stuckT = 0; him.aim = null; him.bestD = null; him.reelPath = null; him.switched = 0;
     let best = null, bd = Infinity;
-    for (const w of R.windows || []) { const d = Math.hypot(w.spot.x - c.pos.x, w.spot.z - c.pos.z); if (d < bd) { bd = d; best = w; } }
+    for (const w of R.finishes || []) { const d = Math.hypot(w.spot.x - c.pos.x, w.spot.z - c.pos.z); if (d < bd) { bd = d; best = w; } }
     him.window = best;
     him.spot = best ? best.spot : { x: c.pos.x, z: c.pos.z };
     try { c.fig.anim.setOverlay(null, 0.1); } catch (e) { /* */ }
@@ -1577,16 +1550,16 @@ export class Brawl {
     if (him.atSpot) him.quietT += dt; else him.quietT = 0;
     if (him.swayT > 0) him.swayT -= dt;
     if (him.catchT > 0) { him.catchT -= dt; if (him.catchT <= 0) F.anim.setOverlay(null, 0.25); }
-    else if (!him.caught && !him.atSpot && this.room.stools) {
+    else if (!him.caught && !him.atSpot && this.room.knockables) {
       const s = Math.sin(F.yaw), co = Math.cos(F.yaw);
-      for (const st of this.room.stools) {
-        if (st.taken || st.handle.toppled || st.handle.broken) continue;
+      for (const st of this.room.knockables()) {
+        if (!st.catch) continue;
         const ox = st.pos.x - F.pos.x, oz = st.pos.z - F.pos.z;
         const lf = ox * co - oz * s, fw = ox * s + oz * co;
         if (Math.abs(lf) > 0.3 && Math.abs(lf) < 0.75 && Math.abs(fw) < 0.35) {
           him.caught = true; him.catchT = 0.85;
           F.anim.setOverlay(lf > 0 ? 'br_catchL' : 'br_catchR', 0.18);
-          if (st.st && st.st.spin) st.st.spin(0.6);
+          if (st.spin) st.spin(0.6);
           this.sfx('scuff', st.pos, {});
           break;
         }
@@ -1609,8 +1582,8 @@ export class Brawl {
       // (held up on the way - something fallen across it, or me standing in his
       // lane: no nearer the spot for 1.5 s - he goes for the other window)
       if (him.bestD == null || d < him.bestD - 0.1) { him.bestD = d; him.stuckT = 0; } else him.stuckT = (him.stuckT || 0) + dt;
-      if (him.stuckT > 2.5 && this.room.windows) {
-        const other = this.room.windows.find((w) => w !== him.window);
+      if (him.stuckT > 2.5 && this.room.finishes) {
+        const other = this.room.finishes.find((w) => w !== him.window);
         him.switched = (him.switched || 0) + 1;
         if (other) { him.window = other; him.spot = other.spot; him.lane = false; him.reelSpeed = null; him.stuckT = 0; him.bestD = null; }
       }
@@ -1644,10 +1617,13 @@ export class Brawl {
     him.state = 'ko'; him.t = 0; him.landed = false; him.fell = false;
     c.lookAt(new THREE.Vector3(c.pos.x - 3, c.pos.y + 1.7, c.pos.z));
     c.fig.yaw = -Math.PI / 2; c.fig._prevYaw = c.fig.yaw;
-    const clip = c.clip('br_ko_window');
+    // (the finish's own clip: out through a window here, through a plank
+    // door into the river at Pier 9)
+    const koClip = (w && w.clip) || 'br_ko_window';
+    const clip = c.clip(koClip);
     him.koLand = clip.marks.land;
     him.koEnd = clip.duration;
-    this.hisState('ko', 'br_ko_window', 0.06, { glass: () => { if (this.opts.onGlass) this.opts.onGlass(w); } });
+    this.hisState('ko', koClip, 0.06, { glass: () => { if (this.opts.onGlass) this.opts.onGlass(w); } });
     him.state = 'ko';
     G.hitStop = Math.max(G.hitStop || 0, BRAWL.feelOf[3].stop);
     if (G.slowmo) G.slowmo(BRAWL.slowmo.k, BRAWL.slowmo.dur);
@@ -1728,16 +1704,19 @@ export class Brawl {
   // view leaning back its view keys: clips/fight.js windL / windR.)
   drawWind() {
     const me = this.me, G = this.game;
-    if (me.act !== 'wind') { me.lvShown = 0; return; }
+    if (me.act !== 'wind') { if (me.lvShown) { me.lvShown = 0; this.cards.windMarks(null); } return; }
     const lv = this.levelOf(me.holdT);
-    if (lv <= (me.lvShown || 0)) return;
-    me.lvShown = lv;
     const hand = me.windThing && me.holding ? (me.holding.hand || 'R') : me.arm;
     const p = this.hands.anchor(hand === 'L' ? 'palmL' : 'palmR', _c);
     const s = G.screenOf(p);
-    if (s) this.cards.windTick(s, hand, lv);
-    this.sfx(lv >= 3 ? 'b8full' : 'b8tick', null, { k: lv });
-    this.stats.ticks3 = (this.stats.ticks3 || 0) + (lv >= 3 ? 1 : 0);
+    // (the fist drawn back low may leave the frame: the marks stay on it)
+    if (s) { s.x = Math.max(90, Math.min(innerWidth - 90, s.x)); s.y = Math.min(innerHeight - 70, s.y); }
+    if (lv > (me.lvShown || 0)) {
+      this.sfx(lv >= 3 ? 'b8full' : 'b8tick', null, { k: lv });
+      this.stats.ticks3 = (this.stats.ticks3 || 0) + (lv >= 3 ? 1 : 0);
+    }
+    me.lvShown = lv;
+    if (lv > 0) this.cards.windMarks(s, hand, lv);
   }
 
   // ---- losing: down, black, up at the start of his manner ---------------------------------------------

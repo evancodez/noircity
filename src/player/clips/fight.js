@@ -177,8 +177,21 @@ const flipClip = (c) => ({ ...c, keys: { L: flipKeys(c.keys.R), R: flipKeys(c.ke
 for (const n of ['grab', 'swingBottle', 'swingPlate', 'windItem', 'throwItem', 'smashItem']) FIGHT_CLIPS[n + 'L'] = flipClip(FIGHT_CLIPS[n]);
 // the stool in both hands at rest: low on the right, its seat never before
 // the eye, the left hand on it
-const BIG_R = { frame: 'cam', p: [0.28, -0.34, -0.26], f: [0.5, -0.2, 0.84], b: [0.84, 0.12, -0.5], F: HP.guardR.F, e: [0.36, -0.48, 0.02] };
-const BIG_L = { ...shift(gL, [0.16, -0.12, 0.02]) };
+// (held up before me, low, both hands on it: a stool by its seat's rim, a
+// chair by the top of its back - its face toward him, seen, not in the way)
+const BIG_R = { frame: 'cam', p: [0.2, -0.2, -0.46], f: [-0.3, 0.2, -0.93], b: [0.7, 0.7, 0], F: HP.guardR.F, e: [0.34, -0.46, -0.1] };
+const BIG_L = { frame: 'cam', p: [-0.15, -0.21, -0.47], f: [0.3, 0.2, -0.93], b: [-0.7, 0.7, 0], F: HP.guardL.F, e: [-0.3, -0.47, -0.1] };
+export const BIG = { R: BIG_R, L: BIG_L };
+// (the stool's clips start from it and end on it: nothing jumps)
+{
+  const low = (P) => ({ ...P });
+  const W = FIGHT_CLIPS.windBig.keys.R, S = FIGHT_CLIPS.swingBig.keys.R;
+  FIGHT_CLIPS.windBig.keys = { R: [[0, BIG_R], ...W.slice(1)], L: [[0, BIG_L], [0.2, shift(BIG_L, [0.12, -0.08, 0.12]), 'out']] };
+  FIGHT_CLIPS.swingBig.keys = { R: S, L: [[0, shift(BIG_L, [0.12, -0.08, 0.12])], [0.12, 'stoolHitL', 'snap'], [0.44, gL]] };
+  const T = FIGHT_CLIPS.swingStool.keys;
+  FIGHT_CLIPS.swingStool.keys = { R: [[0, BIG_R], ...T.R.slice(1)], L: [[0, BIG_L], ...T.L.slice(1)] };
+  void low;
+}
 FIGHT_CLIPS.guardBig = { duration: 1.0, marks: {}, hold: true, blocking: false, blend: 0.1, keys: { R: [[0, BIG_R]], L: [[0, BIG_L]] } };
 FIGHT_CLIPS.blockBig = { duration: 0.08, marks: { up: 0.08 }, hold: true, blocking: false, blend: 0.06, keys: { R: [[0, BIG_R], [0.08, 'stoolUpR', 'out']], L: [[0, BIG_L], [0.08, 'stoolUpL', 'out']] } };
 for (const [n, dir] of [['hopLBig', -1], ['hopRBig', 1]]) FIGHT_CLIPS[n] = { ...FIGHT_CLIPS[n.slice(0, 4)], keys: { R: [[0, BIG_R]], L: [[0, BIG_L]] }, view: [[0, {}], [0.05, { roll: -0.035 * dir, down: 0.025 }, 'out'], [0.15, {}]] };

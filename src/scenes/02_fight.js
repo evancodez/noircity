@@ -139,12 +139,70 @@ function brawlRoom(ctx) {
     return out;
   };
   let slides = 0;
-  return {
-    stools, cafe, counterX: DINER.counter.frontX,
+  const jukebox = { pos: V(DINER.jukebox.x, 0, DINER.zMin + 0.62), hit: (p) => d.jukebox.hit(p), next: () => d.jukebox.next() };
+  const pieCase = { pos: pcPos, get broken() { return !!(pc && pc.handle && pc.handle.broken); }, burst: (dir) => { if (pc && pc.handle) B.hit(pc.handle, { point: pcPos.clone(), dir: dir.clone(), power: 9, by: 'body' }); } };
+  const up = (h) => !h.toppled && !h.broken;
+  const room = {
+    stools, cafe,
+    // [B8] the rules' room (FIGHT.md v4 §10): the open lane down the room
+    // (the aisle, 1.4 m off the counter's front), the walls, the finishes
+    lane: DINER.counter.frontX + 1.4,
     bounds: { x0: DINER.backX, x1: DINER.innerX, z0: DINER.zMin, z1: DINER.zMax },
-    jukebox: { pos: V(DINER.jukebox.x, 0, DINER.zMin + 0.62), hit: (p) => d.jukebox.hit(p), next: () => d.jukebox.next() },
-    pieCase: { pos: pcPos, get broken() { return !!(pc && pc.handle && pc.handle.broken); }, burst: (dir) => { if (pc && pc.handle) B.hit(pc.handle, { point: pcPos.clone(), dir: dir.clone(), power: 9, by: 'body' }); } },
-    windows: WINDOWS.map((name) => ({ name, spot: DINER.finish[name], pane: front.panes[name], land: landing(name) })),
+    finishes: WINDOWS.map((name) => ({ name, spot: DINER.finish[name], pane: front.panes[name], land: landing(name), clip: 'br_ko_window' })),
+    // what stands on the floor to be knocked into (a stool he may catch at as he reels)
+    knockables() {
+      const out = [];
+      for (const st of stools) if (up(st.handle) && !st.taken) out.push({ pos: st.pos, r: 0.2, what: 'stools', st, handle: st.handle, catch: true, spin: (k) => st.st.spin(k) });
+      for (const t of cafe) {
+        if (up(t.handle)) out.push({ pos: t.pos, r: 0.31, what: 'table', t, handle: t.handle });
+        for (const ch of t.chairs) if (up(ch.handle) && !ch.taken) out.push({ pos: ch.pos, r: 0.2, what: 'chair', t: ch, handle: ch.handle });
+      }
+      return out;
+    },
+    // a hard thing, by its collider's tag (the counter before the pie case is the pie case)
+    hardAt(tag, x, z) {
+      if (tag === 'counter') return !pieCase.broken && Math.abs(pieCase.pos.z - z) < 0.75 ? 'piecase' : 'counter';
+      return tag === 'jukebox' || tag === 'booth' ? tag : 'wall';
+    },
+    // his back into it: the stools go down one after another, the counter's
+    // cups jump and its china flies, the pie case bursts, the jukebox skips
+    onInto(hit, dir, at, Br) {
+      const c = Br.c;
+      if (hit.what === 'stools') {
+        const st = hit.obj.st;
+        const row = stools.filter((q) => q !== st && up(q.handle) && !q.taken && Math.abs(q.pos.x - st.pos.x) < 0.3);
+        const sgn = Math.abs(dir.z) > 0.2 ? Math.sign(dir.z) : (st.pos.z > c.pos.z ? 1 : -1);
+        row.sort((a2, b2) => (a2.pos.z - st.pos.z) * sgn - (b2.pos.z - st.pos.z) * sgn);
+        B.topple(st.handle, V(dir.x, 0, dir.z + sgn * 0.6).multiplyScalar(1.4));
+        let k = 0;
+        for (const q of row) {
+          const ahead = (q.pos.z - st.pos.z) * sgn;
+          if (ahead <= 0 || ahead > 2.8) continue;
+          k++;
+          Br.later(0.18 * k, () => B.topple(q.handle, V(dir.x * 0.5, 0, sgn).multiplyScalar(1.2)));
+        }
+        Br.sfx('bodyStools', at, {});
+        return 'br_into_stools';
+      }
+      if (hit.what === 'counter' || hit.what === 'piecase') {
+        room.counterHit(at, dir);
+        if (hit.what === 'piecase') pieCase.burst(dir);
+        Br.sfx('counter', at, { k: 1 });
+        return 'br_into';
+      }
+      if (hit.what === 'jukebox') { jukebox.hit(1.2); Br.later(1.1, () => jukebox.next()); Br.sfx('bodyThud', at, { k: 1 }); return 'br_into'; }
+      if (hit.what === 'table' || hit.what === 'chair') {
+        const t = hit.obj.t;
+        B.topple(t.handle, V(dir.x, 0, dir.z).multiplyScalar(1.4));
+        if (t.chairs) for (const ch of t.chairs) if (!ch.taken) Br.later(0.15, () => B.topple(ch.handle, V(ch.pos.x - t.pos.x, 0, ch.pos.z - t.pos.z).add(dir)));
+        Br.sfx('bodyThud', at, { k: 0.8 });
+        return 'br_into';
+      }
+      Br.sfx('bodyThud', at, { k: 0.9 });
+      return 'br_into';
+    },
+    // me driven into the counter: the cups jump
+    onBump(at, speed, Br) { if (Math.abs(at.x - DINER.counter.frontX) < 0.8) { room.counterBump(at, speed); Br.sfx('cups', at, { k: Math.min(1, speed / 4) }); } },
     items: () => [...counterItems(), ...floorItems()],
     hisItem(kind, near) {
       const all = kind === 'stool' || kind === 'chair' ? floorItems().filter((x) => x.kind === kind) : counterItems().filter((x) => x.kind === kind);
@@ -174,6 +232,7 @@ function brawlRoom(ctx) {
       }
     },
     counterBump() { d.cupsRattle(1.2, 0.7); },
+    jukebox, pieCase,
     // Dot slides me a bottle down the counter (the lesson; his first bottle;
     // when he bleeds): it stops opposite me (the rules' room.gift)
     gift(why) {
@@ -200,6 +259,7 @@ function brawlRoom(ctx) {
       })());
     },
   };
+  return room;
 }
 
 // the room as a part of the fight finds it (a jump, a retry under the black)
@@ -288,7 +348,7 @@ export default defineScene({
       ctx.controller.setPose(me.x, me.z, yaw, -0.1);
       ctx.controller.setMode('brawl', { opponent: m, eyeY: BRAWL_EYE, pos: me, yaw });
       const B = beginFight(ctx, m, { manner: 'out' });
-      const win = ctx.flags.room.windows.find((x) => x.name === w);
+      const win = ctx.flags.room.finishes.find((x) => x.name === w);
       Object.assign(B.him, { window: win, spot: win.spot, atSpot: true, state: 'reel' });
       B.ko();
     },

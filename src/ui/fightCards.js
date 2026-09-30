@@ -92,11 +92,15 @@ export class FightCards {
       this.drawBurst();
     }
     // the ticks run out
-    if ((this.ticks && this.ticks.length) || (this.wticks && this.wticks.length)) {
+    const wm = this.wm;
+    if ((this.ticks && this.ticks.length) || (wm && wm.lv)) {
       for (const k of this.ticks || []) k.t -= dt;
       this.ticks = (this.ticks || []).filter((k) => k.t > 0);
-      for (const k of this.wticks || []) k.t -= dt;
-      this.wticks = (this.wticks || []).filter((k) => k.t > 0);
+      if (wm && wm.lv) {
+        for (let i = 0; i < 3; i++) wm.age[i] += dt;
+        if (wm.flash > 0) wm.flash -= dt;
+        if (wm.fade > 0) { wm.fade -= dt; if (wm.fade <= 0) { wm.lv = 0; wm.age = [0, 0, 0]; wm.flash = 0; } }
+      }
       this.drawTicks();
     }
     // [B8] the chevron (a thrown thing): pops in, then holds
@@ -169,14 +173,19 @@ export class FightCards {
     this.drawTicks();
   }
   // [B8] the wind-up's ticks (§2): as the held punch passes each level a
-  // white ink tick flicks at the fist (the first above it, the next further
-  // round to its outside, the third out beside it); at full the fist flashes:
-  // a ring of short white strokes round it for a few frames
-  windTick(at, side, lv) {
-    if (!at) return;
-    const k = innerHeight / 900;
-    (this.wticks || (this.wticks = [])).push({ x: at.x, y: at.y, s: side === 'L' ? -1 : 1, lv, t: 0.24, dur: 0.24, k });
-    if (lv >= 3) this.wticks.push({ x: at.x, y: at.y, s: side === 'L' ? -1 : 1, lv: 'flash', t: 0.07, dur: 0.07, k });
+  // white ink tick flicks out at the fist and stays while it is held (one,
+  // two, three: the load read at a glance, never a bar), the ticks riding
+  // with the fist; at full the fist flashes - a ring of pressed white strokes
+  // round it for a few frames. windMarks(at, side, lv) every step of the
+  // wind-up (at: the fist on the frame, CSS px); windMarks(null) lets them
+  // go (they fade in a tenth of a second).
+  windMarks(at, side, lv) {
+    const K = innerHeight / 900;
+    const W = this.wm || (this.wm = { lv: 0, age: [0, 0, 0], flash: 0, fade: 0 });
+    if (!at) { if (W.lv && W.fade <= 0) W.fade = 0.12; return; }
+    if (lv > W.lv) { for (let i = W.lv; i < lv; i++) W.age[i] = 0; if (lv >= 3) W.flash = 0.09; }
+    if (lv < W.lv) W.age = [0, 0, 0];
+    Object.assign(W, { x: at.x, y: at.y, s: side === 'L' ? -1 : 1, lv, k: K, fade: 0 });
     this.drawTicks();
   }
   drawTicks() {
@@ -192,22 +201,28 @@ export class FightCards {
       g.strokeStyle = '#f4f2ec'; g.lineWidth = w;
       g.beginPath(); g.moveTo(x0, y0); g.lineTo(x1, y1); g.stroke();
     };
-    for (const q of this.wticks || []) {
-      const u = 1 - q.t / q.dur, K = q.k;
-      if (q.lv === 'flash') {
-        // (the flash: twelve strokes round the fist, pressed then gone)
-        const r = new RNG(Math.floor(q.x * 3 + q.y));
-        for (let i = 0; i < 12; i++) {
-          const a = (i / 12) * Math.PI * 2 + r.gauss() * 0.08, r0 = (62 + r.range(0, 10)) * K, r1 = r0 + (26 + r.range(0, 22)) * K;
-          stroke(q.x + Math.cos(a) * r0, q.y + Math.sin(a) * r0, q.x + Math.cos(a) * r1, q.y + Math.sin(a) * r1, 4.5 * K);
-        }
-        continue;
+    const Wm = this.wm;
+    if (Wm && Wm.lv && Wm.x != null) {
+      const K = Wm.k, fa = Wm.fade > 0 ? Wm.fade / 0.12 : 1;
+      g.globalAlpha = fa;
+      // (each tick: flicked out from the fist's edge, a stroke that grows in
+      // 0.06 s and then holds, pressed at its root)
+      for (let i = 0; i < Wm.lv; i++) {
+        const ang = -Math.PI / 2 + [0.1, 0.62, 1.14][i] * Wm.s;
+        const dx = Math.cos(ang), dy = Math.sin(ang);
+        const grow = Math.min(1, Wm.age[i] / 0.06);
+        const r0 = 92 * K, len = (22 + 34 * grow) * K, w = (6 + 1.5 * i) * K * (grow < 1 ? 1.25 : 1);
+        stroke(Wm.x + dx * r0, Wm.y + dy * r0, Wm.x + dx * (r0 + len), Wm.y + dy * (r0 + len), w);
       }
-      // (the tick: up and out from the fist, growing, then thinning)
-      const ang = [-Math.PI / 2 + 0.25 * q.s, -Math.PI / 2 + 0.85 * q.s, -Math.PI / 2 + 1.4 * q.s][q.lv - 1];
-      const dx = Math.cos(ang), dy = Math.sin(ang);
-      const r0 = 70 * K, len = (18 + 16 * Math.min(1, u * 4)) * K, w = (4.2 + 0.8 * q.lv) * (1 - u * 0.5) * K;
-      stroke(q.x + dx * r0, q.y + dy * r0, q.x + dx * (r0 + len), q.y + dy * (r0 + len), w);
+      if (Wm.flash > 0) {
+        // (the flash at full: fourteen strokes round the fist, pressed, gone)
+        const r = new RNG(7);
+        for (let i = 0; i < 14; i++) {
+          const a = (i / 14) * Math.PI * 2 + r.gauss() * 0.07, r0 = (84 + r.range(0, 14)) * K, r1 = r0 + (40 + r.range(0, 36)) * K;
+          stroke(Wm.x + Math.cos(a) * r0, Wm.y + Math.sin(a) * r0, Wm.x + Math.cos(a) * r1, Wm.y + Math.sin(a) * r1, 7 * K);
+        }
+      }
+      g.globalAlpha = 1;
     }
     for (const k of this.ticks || []) {
       const u = 1 - k.t / k.dur;
@@ -413,7 +428,7 @@ export class FightCards {
     g.globalAlpha = 1;
   }
 
-  clear() { this.card(''); this.fl.style.display = 'none'; this.flT = 0; this.shownFlash = ''; this.arrow(null); this.charge(null, 0); this.chevron(null); this.wticks = []; }
+  clear() { this.card(''); this.fl.style.display = 'none'; this.flT = 0; this.shownFlash = ''; this.arrow(null); this.charge(null, 0); this.chevron(null); if (this.wm) { this.wm.lv = 0; this.drawTicks(); } }
 }
 
 // the small inked pictures: the mouse, one button inked in; keys as dabs

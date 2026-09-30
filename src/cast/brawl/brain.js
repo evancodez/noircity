@@ -143,7 +143,8 @@ function goalOf(B) {
     // the café tables and never got there)
     if (!him.reelPath || him.reelPath.spot !== S) {
       // (the aisle's middle: between the stools' seats and the booths' ends)
-      const aisle = (B.room && B.room.counterX != null ? B.room.counterX : -14.35) + 1.4;
+      // (the room's open lane: in the diner the aisle, 1.4 m off the counter)
+      const aisle = B.room && B.room.lane != null ? B.room.lane : c.pos.x;
       const P = [];
       // (straight to the lane when nothing stands between: sampled every 15 cm)
       const clear = (x0, z0, x1, z1) => {
@@ -215,7 +216,7 @@ export function steer(B, dt) {
     if (him.wedgeT > 1.5) him.outT = 1.0;
     if (him.outT > 0) {
       him.outT -= dt;
-      const ax = B.room && B.room.counterX != null ? B.room.counterX + 1.5 : F.pos.x + 0.9;
+      const ax = B.room && B.room.lane != null ? B.room.lane + 0.1 : F.pos.x + 0.9;
       g.x = Math.max(ax, F.pos.x + 0.5); g.z = F.pos.z;
       if (him.outT <= 0) him.wedgeT = 0;
     }

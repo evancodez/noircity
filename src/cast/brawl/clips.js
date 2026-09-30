@@ -147,8 +147,10 @@ function pivot() {
 
 // ---- his blows ------------------------------------------------------------------------------
 // the jab: the left shoulder dips, the left fist flicks out straight
+// ([B8] the tell is the cocked fist itself, bigger and held: drawn back
+// by the shoulder, out past his outline, the shoulder turned away to load)
 const JAB = [
-  [0.2, { chest: [8, 4, -10], shoulderL: [0, 0, -8], handTL: [0.14, 1.14, 0.26], elbowPoleL: [1, -1.4, 0], hipsPos: [0, 0.89, -0.07] }],
+  [0.2, { chest: [6, 16, -8], spine: [2, 6, 0], shoulderL: [0, 0, -10], handTL: [0.3, 1.36, -0.1], elbowPoleL: [1, -0.4, -0.9], handL: [-30, 0, 20], hipsPos: [0, 0.9, -0.08] }],
   [0.3, { chest: [6, -14, -4], hips: [4, -22, 0], handTL: [0.12, 1.3, 0.42], footL: [0.14, A, 0.3] }],
   [0.38, { chest: [4, -24, 0], spine: [8, -8, 0], hipsPos: [0, 0.9, 0.04], handTL: [0.03, 1.46, 0.76], handL: [-80, 0, 30], elbowPoleL: [1, -0.4, 0], shoulderL: [0, 12, 0] }],
   [0.5, { handTL: [0.05, 1.42, 0.7] }],
@@ -158,7 +160,7 @@ const JAB = [
 // the right fist goes straight down the middle
 const CROSS = [
   [0.18, { chest: [6, -16, 6], hips: [2, -24, 0], shoulderR: [0, 0, 8], handTR: [-0.22, 1.3, 0.04], elbowPoleR: [-1, -0.8, -0.4], hipsPos: [0, 0.9, -0.1] }],
-  [0.28, { chest: [6, -20, 6], handTR: [-0.26, 1.34, -0.02] }],
+  [0.28, { chest: [6, -24, 6], handTR: [-0.36, 1.4, -0.16], elbowPoleR: [-1, -0.3, -0.9] }],
   [0.46, { chest: [6, 18, -4], hips: [4, 8, 0], spine: [6, 6, 0], hipsPos: [0, 0.9, 0.06], handTR: [0.02, 1.44, 0.8], handR: [-80, 0, -30], elbowPoleR: [-1, -0.4, 0], footRotR: [-18, 12, 0], shoulderR: [0, -12, 0] }],
   [0.58, { handTR: [0.0, 1.42, 0.72] }],
   [0.85, { ...GUARD }],
@@ -168,7 +170,7 @@ const CROSS = [
 const HOOK = [
   [0.18, { chest: [8, -18, 10], shoulderR: [0, 0, 10], handTR: [-0.34, 1.24, 0.08], elbowPoleR: [-1, -0.1, -1] }],
   [0.3, { chest: [8, -26, 8], hips: [4, -24, 0], spine: [8, -8, 0], handTR: [-0.4, 1.3, 0.02], elbowPoleR: [-1, 0.1, -1], hipsPos: [0, 0.88, -0.08] }],
-  [0.44, { chest: [6, -30, 4], handTR: [-0.46, 1.42, 0.02], elbowPoleR: [-1, 0.3, -0.7] }],
+  [0.44, { chest: [6, -34, 4], handTR: [-0.6, 1.48, -0.1], elbowPoleR: [-1, 0.45, -0.7] }],
   [0.66, { chest: [6, 22, -4], hips: [4, 4, 0], spine: [8, 6, 0], hipsPos: [0, 0.9, 0.04], handTR: [0.04, 1.5, 0.6], elbowPoleR: [-1, 0.6, 0.1], handR: [-60, 0, 60], footRotR: [-20, 10, 0] }],
   [0.84, { chest: [8, 30, -4], handTR: [0.26, 1.42, 0.4], elbowPoleR: [-0.3, 0.3, 1] }],
   [1.0, { ...GUARD }],
@@ -176,7 +178,7 @@ const HOOK = [
 // to the body: he dips, the right shoulder low, the fist comes up under
 const BODY = [
   [0.2, { hipsPos: [0, 0.84, -0.06], hips: [8, -26, 0], spine: [10, -10, 0], chest: [10, -26, 12], shoulderR: [0, 0, 12], handTR: [-0.36, 1.02, 0.02], elbowPoleR: [-1, -0.2, -1] }],
-  [0.34, { handTR: [-0.4, 0.98, -0.04], chest: [10, -32, 12] }],
+  [0.34, { handTR: [-0.5, 1.0, -0.14], chest: [10, -36, 12], elbowPoleR: [-1, -0.1, -0.9] }],
   [0.58, { hipsPos: [0, 0.84, 0.08], hips: [10, 6, 0], spine: [12, 6, 0], chest: [12, 18, -2], handTR: [0.02, 1.16, 0.72], handR: [-40, 0, 70], elbowPoleR: [-1, 0.2, 0.2], footRotR: [-16, 10, 0] }],
   [0.74, { handTR: [0.12, 1.2, 0.56] }],
   [1.0, { ...GUARD }],
@@ -225,7 +227,7 @@ const SHOVE_RM = (t) => [0, 0.22 * sstep(0.1, 0.5, t)];
 // beside the shoulder, the body wound to his right, then driven at my chest
 const THRUST = [
   [0.14, { hips: [4, -24, 0], chest: [6, -26, 4], spine: [6, -8, 0], handTR: [-0.4, 1.3, -0.06], elbowPoleR: [-1, -0.2, -0.5], handR: [-40, 0, 0], hipsPos: [0, 0.9, -0.1] }],
-  [0.28, { chest: [4, -26, 6], hips: [4, -26, 0], handTR: [-0.42, 1.28, -0.12], hipsPos: [0, 0.89, -0.12] }],
+  [0.28, { chest: [4, -30, 6], hips: [4, -28, 0], handTR: [-0.5, 1.32, -0.24], hipsPos: [0, 0.89, -0.12] }],
   [0.5, { hipsPos: [0, 0.86, 0.14], hips: [8, 4, 0], chest: [12, 12, 0], spine: [10, 4, 0], handTR: [-0.02, 1.18, 0.84], elbowPoleR: [-1, -0.3, 0], handR: [-80, 0, 0], footL: [0.14, A, 0.38] }],
   [0.62, { handTR: [0.0, 1.16, 0.8] }],
   [0.9, { ...GUARD, handTR: [-0.22, 1.08, 0.22], handR: [-20, 0, -10] }],
@@ -292,11 +294,13 @@ const HIT_BODY = [
 // knocked back along the line of the blow: two stumbling steps back, the
 // arms thrown out, the head back; authored for 1 m (the rules scale it to
 // 0.6 .. 1.5 m). The feet are set down where they land and stay there.
+// ([B8] his fists stay up about his face as he goes back: version 3's arms
+// flung out wide read as a T-pose from the front)
 const KNOCK = [
   [0.08, { hipsPos: [0, 0.92, -0.12], hips: [-10, -8, 0], spine: [-8, 0, 0], chest: [-14, 6, 0], neck: [-10, 0, 0], head: [-24, 10, 6],
-    handTL: [0.36, 1.26, 0.06], handTR: [-0.34, 1.22, -0.02], elbowPoleL: [1, -0.5, 0], elbowPoleR: [-1, -0.5, 0], footR: [-0.18, A + 0.08, -0.3] }],
+    handTL: [0.22, 1.3, 0.1], handTR: [-0.2, 1.26, 0.04], elbowPoleL: [1, -0.8, 0.2], elbowPoleR: [-1, -0.8, 0.2], footR: [-0.18, A + 0.08, -0.3] }],
   [0.22, { hipsPos: [0, 0.9, -0.42], footR: [-0.2, A, -0.62], footRotR: [0, 30, 0] }],
-  [0.4, { hipsPos: [0, 0.9, -0.74], hips: [-6, -8, 0], chest: [-8, 4, 0], footL: [0.16, A + 0.09, -0.4], handTL: [0.34, 1.12, -0.6], handTR: [-0.33, 1.06, -0.68], elbowPoleL: [1, -0.6, 0], elbowPoleR: [-1, -0.6, 0] }],
+  [0.4, { hipsPos: [0, 0.9, -0.74], hips: [-6, -8, 0], chest: [-8, 4, 0], footL: [0.16, A + 0.09, -0.4], handTL: [0.21, 1.24, -0.56], handTR: [-0.2, 1.2, -0.62], elbowPoleL: [1, -0.8, 0.2], elbowPoleR: [-1, -0.8, 0.2] }],
   [0.54, { hipsPos: [0, 0.9, -0.92], footL: [0.16, A, -0.84], footRotL: [0, 12, 0] }],
   [0.8, { ...GUARD, hipsPos: [0, 0.93, -1.0], footL: [0.14, A, -0.8], footR: [-0.18, A, -1.24], handTL: [0.155, 1.44, -0.75], handTR: [-0.13, 1.41, -0.81] }],
 ];
@@ -312,7 +316,7 @@ const knockSnap = (s) => KNOCK.map(([t, p], i) => [t, i === 0 ? { ...p, neck: [-
 // the root; the rules put the thing there
 const INTO = [
   [0.1, { hipsPos: [0, 0.88, -0.12], hips: [-16, 0, 0], spine: [-10, 0, 0], chest: [-18, 0, 0], neck: [-18, 0, 0], head: [-30, 12, 0],
-    handTL: [0.58, 1.2, -0.3], handTR: [-0.56, 1.1, -0.36], elbowPoleL: [1, 0, 0], elbowPoleR: [-1, 0, 0], footR: [-0.2, A, -0.3] }],
+    handTL: [0.42, 1.1, -0.34], handTR: [-0.24, 1.22, 0.02], elbowPoleL: [1, 0, 0], elbowPoleR: [-1, -0.6, 0.2], footR: [-0.2, A, -0.3] }],
   [0.3, { hipsPos: [0, 0.84, -0.14], chest: [-12, 0, 0], head: [-20, 14, 6] }],
   [0.7, { hipsPos: [0, 0.88, -0.02], chest: [2, 0, 0], spine: [4, 0, 0], head: [4, 0, 0], handTL: [0.3, 1.2, 0.1], handTR: [-0.3, 1.14, 0.06] }],
   [1.1, { ...GUARD, hipsPos: [0, 0.93, 0.06], footL: [0.14, A, 0.3], footR: [-0.18, A, -0.14] }],
