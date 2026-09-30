@@ -529,6 +529,19 @@ export class Crew {
     if (this.onAlarm) this.onAlarm(by);
   }
 
+  // a thrown bottle broke on him: he turns to where it came from, near sure
+  // of me (the whistle if he then sees me), and the crash brings the nearest
+  struck(m, from) {
+    if (m.down || m.mode === 'alarm') return;
+    m.heard = null; // (not the smash at his own feet: where it came from)
+    m.last = from.clone().setY(0);
+    m.seenT = this.game.time;
+    m.a = Math.max(m.a, 0.75);
+    m.setMode('curious');
+    m.lookAtPoint(m.last, true);
+    this.sound('hm', m.eye(V(0, 0, 0)));
+  }
+
   // the player as the men see him (the scene fills it every step)
   sense(p) { Object.assign(this.player, p); }
 

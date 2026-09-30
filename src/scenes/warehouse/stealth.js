@@ -296,7 +296,7 @@ export class Stealth {
       b.matrixAutoUpdate = true;
       G.stage.scene.add(b);
       // (it flies from where the hand let it go along the aimed path)
-      this.flying.push({ obj: b, p: at.clone(), v: L.v.clone(), spin: V(7, 2, 3), t: 0 });
+      this.flying.push({ obj: b, p: at.clone(), v: L.v.clone(), spin: V(7, 2, 3), t: 0, from: V(this.G.controller.pos.x, 0, this.G.controller.pos.z) });
       G.sfx.play('throw', null, {}, { send: false });
     } } });
   }
@@ -309,6 +309,14 @@ export class Stealth {
     const hit = len > 1e-5 ? G.rays.raycast(f.p, d.divideScalar(len), len) : null;
     const floor = this.floorAt(q.x, q.z);
     f.t += dt;
+    // (a man in its way: it breaks on him - it never flies through a body -
+    // and he knows where it came from)
+    const man = this.manOn(f.p, q, hit ? hit.distance : len);
+    if (man) {
+      this.smash(f.obj, man.at, false);
+      this.crew.struck(man.m, f.from);
+      return true;
+    }
     if (hit || q.y <= floor || f.t > 4) {
       const at = hit ? hit.point.clone() : q.setY(Math.max(q.y, floor));
       this.smash(f.obj, at, floor < 0);
@@ -318,6 +326,25 @@ export class Stealth {
     f.obj.position.copy(q);
     f.obj.rotation.x += f.spin.x * dt; f.obj.rotation.y += f.spin.y * dt; f.obj.rotation.z += f.spin.z * dt;
     return false;
+  }
+
+  // the first standing man the path p -> q passes through (his body a
+  // column 0.3 m round from his knees to the top of his head), within maxD
+  manOn(p, q, maxD) {
+    const L = p.distanceTo(q);
+    let best = null;
+    for (const m of this.crew.men) {
+      if (m.down) continue;
+      const top = m.eye(_w).y + 0.15;
+      for (let k = 1; k <= 4; k++) {
+        const u = k / 4;
+        const x = p.x + (q.x - p.x) * u, y = p.y + (q.y - p.y) * u, z = p.z + (q.z - p.z) * u;
+        if (u * L > maxD) break;
+        if (y < 0.35 || y > top) continue;
+        if (Math.hypot(x - m.pos.x, z - m.pos.z) < 0.3) { if (!best || u * L < best.d) best = { m, d: u * L, at: V(x, y, z) }; break; }
+      }
+    }
+    return best;
   }
 
   smash(obj, at, water) {

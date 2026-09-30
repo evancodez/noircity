@@ -66,14 +66,19 @@ const START = {
   arrive: { x: PIER.start.x, z: PIER.start.z, yaw: PIER.start.yaw, pitch: 0.02 },
   floor: { x: -10.4, z: -1.2, yaw: 0.05, pitch: -0.02 },
   lamps: { x: -6.65, z: -11.1, yaw: 0.4, pitch: -0.05, crouch: true },
-  // (the pocket at the corner of the second stack, deep: the aisle's far end cannot see it)
-  aisle: { x: -7.65, z: -17.3, yaw: 1.25, pitch: -0.02, crouch: true },
-  stairs: { x: -7.95, z: -33.1, yaw: PI / 2 - 0.35, pitch: 0.0, crouch: true },
+  // (the pocket at the corner of the second stack, deep: the aisle's far end
+  // cannot see it; I come back to it looking down aisle A at the first man's
+  // back as he walks away - it faced a crate before)
+  aisle: { x: -7.65, z: -17.3, yaw: 2.1, pitch: -0.02, crouch: true },
+  // (the pocket in the last stack: looking out past its edge to the west
+  // stairs going up under the mezzanine - it faced the bare west wall)
+  stairs: { x: -7.95, z: -33.1, yaw: 0.9, pitch: 0.05, crouch: true },
   listen: { x: -1.0, z: -41.7, yaw: 0.0, pitch: 0.2, crouch: true, up: true },
   out: { x: 4.2, z: -41.7, yaw: -PI / 2, pitch: -0.1, crouch: true, up: true },
 };
 let LIVE = null;   // the scene's running state (its crew, its stealth, its props)
 let HOOKED = null; // (the game whose scene:exit puts the hands back)
+let RETRY = null;  // the checkpoint the cosh sends me back to (a beat heard once is not heard again whole)
 
 // ---- the room as a beat has it ---------------------------------------------------------
 function setupAt(ctx, b) {
@@ -128,7 +133,8 @@ function setupAt(ctx, b) {
   G.controller.lookLocked = true;
   const stealth = new Stealth(ctx, crew);
   stealth.dress();
-  LIVE = { crew, stealth, props, bottles, office, card, beat: b, cp: b };
+  LIVE = { crew, stealth, props, bottles, office, card, beat: b, cp: b, retry: RETRY === b };
+  RETRY = null;
   ctx.flags.live = LIVE;
   ctx.flags.cp = LIVE.cp;
   G.music.cue('warehouse');
@@ -147,6 +153,7 @@ function live(ctx) {
   crew.onCaught = () => {
     stealth.cosh(() => {
       const cp = ctx.flags.cp || 'floor';
+      RETRY = cp;
       G.scenes.go('warehouse', { beat: cp, fade: 'black', card: false, fadeIn: 0.9 });
       if (G.scenes.trans) G.scenes.trans.t = 0.6;
       G.counters.caught = (G.counters.caught || 0) + 1;
@@ -188,13 +195,16 @@ function live(ctx) {
   // hand goes out (a press at the prompt's edge, 1.5 m off, stretched an
   // arm to it or closed a hand short of it). The step is a quarter second
   // at most and starts at once; the controls come back when the hand has it.
-  const approach = (at, near, then, hold = 0.35) => {
+  const approach = (at, near, then, hold = 0.35, rise = false) => {
     const C = G.controller;
     const p0 = typeof at === 'function' ? at() : at;
     const d = Math.hypot(p0.x - C.pos.x, p0.z - C.pos.z);
     C.frozen = true;
     C.vel.x = C.vel.z = 0;
-    L.approach = { at, near, then, hold, t: 0, dur: Math.min(0.26, Math.max(0.1, (d - near) / 2.6)), fx: C.pos.x, fz: C.pos.z, y0: C.yaw, p0: C.pitch };
+    L.approach = { at, near, then, hold, rise, t: 0, dur: Math.min(0.26, Math.max(0.1, (d - near) / 2.6)), fx: C.pos.x, fz: C.pos.z, y0: C.yaw, p0: C.pitch };
+    // (the blow from behind is struck standing: I come up out of the crouch
+    // as I step in, and go down again with him - takeDown)
+    if (rise && C.sneak && C.sneak.crouch) { C.sneak.crouch = false; L.recrouch = true; } else if (rise) L.recrouch = false;
   };
   const busy = () => G.player.hands.busy || !!L.approach;
   // the side door (from outside)
@@ -240,7 +250,7 @@ function live(ctx) {
   // a man from behind (only one who has not noticed me)
   for (const m of crew.men) {
     I.add({ id: 'b6ko_' + m.name, at: () => m.eye(new THREE.Vector3()).add(V(0, -0.35, 0)), range: 1.75, cone: 0.55, prompt: 'knock him out',
-      when: () => !L.approach && canTakeDown(m, G), onUse: () => approach(() => m.eye(new THREE.Vector3()).add(V(0, -0.35, 0)), 0.72, () => takeDown(ctx, m), null) });
+      when: () => !L.approach && canTakeDown(m, G), onUse: () => approach(() => m.eye(new THREE.Vector3()).add(V(0, -0.3, 0)), 0.8, () => takeDown(ctx, m), null, true) });
   }
   // the bay's side door (only once there is a reason to leave)
   I.add({ id: 'b6bay', at: V(PIER.shed.x1 - 0.2, 1.05, PIER.bayDoor.z - 0.4), range: 2.2, cone: 1.1, prompt: 'open', when: () => !shed.bayDoor.isOpen && ctx.beat === 'out',
@@ -266,8 +276,8 @@ function live(ctx) {
       C.vel.x = C.vel.z = 0;
       const wantY = Math.atan2(-(p.x - C.pos.x), -(p.z - C.pos.z));
       const wantP = Math.atan2(p.y - G.eye.y, Math.max(0.3, Math.hypot(p.x - C.pos.x, p.z - C.pos.z)));
-      C.yaw = A.y0 + Math.atan2(Math.sin(wantY - A.y0), Math.cos(wantY - A.y0)) * 0.85 * u;
-      C.pitch = A.p0 + (wantP - A.p0) * 0.6 * u;
+      C.yaw = A.y0 + Math.atan2(Math.sin(wantY - A.y0), Math.cos(wantY - A.y0)) * u;
+      C.pitch = A.p0 + (wantP - A.p0) * (A.rise ? 0.9 : 0.6) * u;
       if (A.t >= A.dur) {
         L.approach = null;
         if (A.hold != null) L.thawAt = G.time + A.hold;
@@ -324,7 +334,12 @@ function takeDown(ctx, m) {
   G.controller.frozen = true;
   H.play('sn_blow', { onMark: {
     hit: () => { m.knockDown(); G.sfx.play('blow', m.eye(new THREE.Vector3()), {}, { ref: 2 }); G.sfx.play('gasp', m.eye(new THREE.Vector3()), {}, { ref: 2 }); G.sfx.play('fold', m.pos.clone(), {}, { ref: 2, delay: 0.2 }); },
-    lowered: () => { G.controller.frozen = false; },
+    lowered: () => {
+      G.controller.frozen = false;
+      // (down with him: crouched again if I was)
+      const L = ctx.flags.live;
+      if (L && L.recrouch && G.controller.sneak) { G.controller.sneak.crouch = true; L.recrouch = false; }
+    },
   } });
   ctx.flags.takedowns = (ctx.flags.takedowns || 0) + 1;
 }
@@ -335,7 +350,9 @@ function* listenBeat(ctx) {
   const card = L.card;
   const win = ctx.stage.anchor('pier9.office.window.in');
   yield wait(0.8);
-  for (let i = 0; i < LINES.length; i++) {
+  // (back at the window after the cosh: the order is not heard twice - his
+  // last line, and he comes to the window)
+  for (let i = L.retry ? LINES.length - 1 : 0; i < LINES.length; i++) {
     L.said = i + 1;
     yield* ctx.say(LINES[i], 3.0);
     yield wait(i === LINES.length - 1 ? 0.6 : 1.0);
