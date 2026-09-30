@@ -6,12 +6,17 @@
 set -uo pipefail
 QS="${1:-shot=street}"
 CHROME="/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
+# a throwaway disk cache, removed when the run ends: without it headless
+# Chrome leaves ~17 MB per run under ~/Library/Caches/Google/Chrome-headless
+# (scoped_dir*) and never removes it (200 GB after a few days of captures)
+PROF="$(mktemp -d /tmp/noir-shot-XXXXXX)"
+trap 'rm -rf "$PROF"' EXIT
 # (audiotest=1 renders on the audio thread, which a virtual-time budget does
 # not wait for: that page is loaded in real time until data-audio appears)
 if [[ "$QS" == *audiotest=1* ]]; then
   DUMP() { node "$(dirname "$0")/waitdom.mjs" "$QS" audio 90; }
 else
-  DUMP() { "$CHROME" --headless=new --mute-audio --use-angle=metal --hide-scrollbars --window-size=1200,800 \
+  DUMP() { "$CHROME" --headless=new --disk-cache-dir="$PROF/cache" --mute-audio --use-angle=metal --hide-scrollbars --window-size=1200,800 \
     --virtual-time-budget=${VTB:-8000} --dump-dom "http://127.0.0.1:${NOIR_PORT:-5173}/?${QS}" 2>/dev/null; }
 fi
 DUMP | python3 -c '
@@ -39,3 +44,4 @@ elif "audiotest=1" in sys.argv[1] if len(sys.argv)>1 else False:
 ' "$QS"
 # headless Chrome leaves a temp file per run in the user's temp folder: the stale ones go
 find "${TMPDIR:-/tmp}" -maxdepth 1 -name '.com.google.Chrome.*' -type f -mmin +60 -delete 2>/dev/null || true
+find "$HOME/Library/Caches/Google/Chrome-headless" "$HOME/Library/Application Support/Google/Chrome-headless" -maxdepth 1 -name 'scoped_dir*' -mmin +30 -exec rm -rf {} + 2>/dev/null || true

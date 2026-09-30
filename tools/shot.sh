@@ -9,10 +9,16 @@ QS="${2:-shot=default}"
 W="${3:-1600}"
 H="${4:-1000}"
 CHROME="/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
+# a throwaway disk cache, removed when the run ends: without it headless
+# Chrome leaves ~17 MB per run under ~/Library/Caches/Google/Chrome-headless
+# (scoped_dir*) and never removes it (200 GB after a few days of captures)
+PROF="$(mktemp -d /tmp/noir-shot-XXXXXX)"
+trap 'rm -rf "$PROF"' EXIT
 URL="http://127.0.0.1:${NOIR_PORT:-5173}/?${QS}"
 mkdir -p "$(dirname "$OUT")"
-"$CHROME" --headless=new --mute-audio --use-angle=metal --hide-scrollbars --force-device-scale-factor=1 \
-  --window-size="${W},${H}" --virtual-time-budget=12000 --screenshot="$OUT" "$URL" 2>/dev/null
+"$CHROME" --headless=new --disk-cache-dir="$PROF/cache" --mute-audio --use-angle=metal --hide-scrollbars --force-device-scale-factor=1 \
+  --window-size="${W},${H}" --virtual-time-budget=12000 --screenshot="$OUT" "$URL" 2>/dev/null || true   # (a loaded machine: Chrome's teardown watchdog exits 2 after the frame is written)
 echo "wrote $OUT ($(sips -g pixelWidth -g pixelHeight "$OUT" 2>/dev/null | awk '/pixel/ {printf "%s ", $2}'))"
 # headless Chrome leaves a temp file per run in the user's temp folder: the stale ones go
 find "${TMPDIR:-/tmp}" -maxdepth 1 -name '.com.google.Chrome.*' -type f -mmin +60 -delete 2>/dev/null || true
+find "$HOME/Library/Caches/Google/Chrome-headless" "$HOME/Library/Application Support/Google/Chrome-headless" -maxdepth 1 -name 'scoped_dir*' -mmin +30 -exec rm -rf {} + 2>/dev/null || true
