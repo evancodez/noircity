@@ -93,7 +93,7 @@ export default async function drive({ js, turn, keyDown, keyUp, mouse, shot, log
     if (s.end || s.state === 'end') { rec.ended = true; break; }
     if (s.scene !== 'shootout' || s.trans || s.dying) { await setW(false); await fire(false); target = null; route = null; await sleep(120); continue; }
     if (s.deaths > lastDeaths) { lastDeaths = s.deaths; rec.deaths++; route = null; mode = 'go'; log(`b7 play: down in ${s.beat}`); }
-    if (s.beat !== lastBeat) { lastBeat = s.beat; rec.beats.push(s.beat); route = null; mode = 'go'; log(`b7 play: beat ${s.beat} at ${((Date.now() - T0) / 1000).toFixed(0)} s`); if (!shotsTaken.has(s.beat)) { shotsTaken.add(s.beat); await shot('b7_' + s.beat); } }
+    if (s.beat !== lastBeat) { rec.at = rec.at || {}; rec.at[s.beat] = { t: +((Date.now() - T0) / 1000).toFixed(0), K: await js('(() => { const K = G.counters; return [K.damageTaken, K.hoodShots, K.hoodHits, K.kills, K.shots]; })()') }; lastBeat = s.beat; rec.beats.push(s.beat); route = null; mode = 'go'; log(`b7 play: beat ${s.beat} at ${((Date.now() - T0) / 1000).toFixed(0)} s`); if (!shotsTaken.has(s.beat)) { shotsTaken.add(s.beat); await shot('b7_' + s.beat); } }
     if (s.frozen || s.mode === 'cutscene') { await setW(false); await fire(false); await sleep(100); continue; }
     const now = Date.now();
     // ---- the gun on the counter ------------------------------------------------------
@@ -180,6 +180,7 @@ export default async function drive({ js, turn, keyDown, keyUp, mouse, shot, log
   }
   await setW(false); await fire(false);
   rec.time = +((Date.now() - T0) / 1000).toFixed(0);
+  rec.K = await js('(() => { const K = G.counters; return { damageTaken: K.damageTaken, hoodShots: K.hoodShots, hoodHits: K.hoodHits, kills: K.kills, shots: K.shots, explosions: K.explosions, windows: K.windows }; })()');
   return rec;
 
   // hold a burst on a man's chest while on him

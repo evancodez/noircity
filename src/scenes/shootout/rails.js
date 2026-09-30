@@ -69,7 +69,7 @@ export class Rails {
     };
     if (lights) {
       for (let i = 0; i < 2; i++) {
-        const cone = makeConeMesh(S.U, { apex: V(0, -50, 0), axis: BEAM.clone(), tan: 0.24, height: 13, r0: 0.11, intensity: 0.22, seed: car.id * 3 + i });
+        const cone = makeConeMesh(S.U, { apex: V(0, -50, 0), axis: BEAM.clone(), tan: 0.2, height: 14, r0: 0.1, intensity: 0.55, fadeEnd: 0.9, edgeSoft: 0.45, seed: car.id * 3 + i });
         cone.layers.set(LAYER.VOLUME);
         cone.userData.noRay = true;
         S.scene.add(cone);

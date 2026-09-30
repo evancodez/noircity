@@ -189,6 +189,8 @@ export function markBeat(ctx, b) {
 function die(ctx) {
   const G = ctx.game, R = RIG;
   if (!R || R.dying) return;
+  // (a beat's frame in shot mode is looked at, not played: nobody dies in it)
+  if (G.shotMode) { G.health.reset(); return; }
   R.dying = { t: 0, beat: G.scenes.beat };
   G.controller.frozen = true;
   G.weapon.trigger = false;

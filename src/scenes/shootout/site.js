@@ -76,7 +76,7 @@ export const SITE = {
   },
   // ---- the Cardinal: the saloon rolls up and stops under the lamp north of
   // the diner (the post at z -17.5: its pool on the road)
-  saloon: { rail: [[-0.6, -100], [-1.0, -50], [-1.7, -26], [-1.9, -17.2]], head: [0, 1] },
+  saloon: { rail: [[-0.6, -72], [-1.0, -48], [-1.7, -26], [-1.9, -17.2]], head: [0, 1] },
   heavies: [
     { door: 'rf', entry: [{ x: -4.2, z: -12.0 }], post: { x: -5.0, z: -7.4 }, leash: 2.6 },
     { door: 'lf', entry: [{ x: 1.0, z: -12.5 }], post: { x: -1.6, z: -4.6 }, leash: 2.6 },

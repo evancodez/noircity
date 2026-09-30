@@ -544,10 +544,9 @@ function spawnCardinal(ctx, at) {
     if (B.stage === 1 && wounds >= W.knee) {
       B.stage = 2;
       // a knee goes: down on it a moment, then up and on, slower
-      B.hold = 1.5;
       h.speed = 0;
-      if (h.anim.clips.cardinal_knee || (h.anim.bank && h.anim.bank.has('cardinal_knee'))) { h.state = 'cardinal_knee'; h.anim.play('cardinal_knee', { fade: 0.12 }); }
-      else h.stagger();
+      if (h.anim.bank && h.anim.bank.has('cardinal_knee')) { B.hold = 1.8; h.state = 'cardinal_knee'; h._b7clip = null; h.anim.play('cardinal_knee', { fade: 0.12 }); }
+      else { B.hold = 1.2; h.stagger(); }
       G.sfx.play('grunt', h.pos.clone().setY(1.2), { f0: 70, k: 0.5, dur: 0.3 });
     }
     if (wounds >= W.total && !h.b7down) {
@@ -570,7 +569,6 @@ function spawnCardinal(ctx, at) {
     fig = man(ctx, { group: 'cardinal', at: { x: at.x, z: at.z }, yaw, heavy: true, variant: { unarmed: true, coat: 0, brim: 1, tall: 1 }, brain: 'b7_cardinal', hp: 1e6, aim: 0.7, opts: { path: SITE.cardinal.path, onWound } });
   }
   fig.b7beat = 'cardinal';
-  fig.setState('walk', 0.3);
   G.director.groups.get('cardinal') ? G.director.groups.get('cardinal').push(fig) : G.director.groups.set('cardinal', [fig]);
   return fig;
 }
@@ -622,8 +620,8 @@ function* theFrame(ctx) {
   const fwd = hat ? hat.fwd : V(-0.4, 0, 0.92), side = hat ? hat.side : V(0.92, 0, 0.4);
   const eye = at.clone().addScaledVector(fwd, 1.2).addScaledVector(side, 0.28);
   eye.y = G.stage.surfaceY(eye.x, eye.z) + 1.08;
-  const lookAt = at.clone().addScaledVector(fwd, -2.3).addScaledVector(side, -0.12);
-  lookAt.y = 0.28;
+  const lookAt = at.clone().addScaledVector(fwd, -1.25).addScaledVector(side, -0.1);
+  lookAt.y = 0.1;
   const yaw = Math.atan2(-(lookAt.x - eye.x), -(lookAt.z - eye.z));
   const pitch = Math.atan2(lookAt.y - eye.y, Math.hypot(lookAt.x - eye.x, lookAt.z - eye.z));
   const to = { x: eye.x, y: eye.y, z: eye.z, yaw, pitch };

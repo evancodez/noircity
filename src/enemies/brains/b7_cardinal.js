@@ -19,24 +19,38 @@ export default {
     const path = opts.path || [];
     const pace = opts.pace || [0.95, 0.72, 0.5];
     let i = 0, mode = 'walk', fireAt = game.time + r.range(3.2, 4.2), aimT = 0, shots = 0, hp0 = hood.hp;
+    // (his own clips when he has them - the cast kind's heavy walk with the
+    // cane, the one-handed aim, the stance - else the Hood's)
+    const own = (n) => hood.anim && hood.anim.bank && hood.anim.bank.has(n);
+    const set = (state) => {
+      const clip = { walk: 'cardinal_walk', aim: 'cardinal_aim', idle: 'cardinal_stance' }[state];
+      if (clip && own(clip)) {
+        if (hood.state === state && hood._b7clip === clip) return;
+        hood.state = state; hood._b7clip = clip;
+        hood.anim.play(clip, { fade: 0.35, timeScale: state === 'walk' ? hood.gaitScale(1.0) : 1 });
+        if (state === 'aim') hood.aiming = true;
+        return;
+      }
+      if (hood.state !== state) hood.setState(state, 0.35);
+    };
     const B = {
       state: 'walk', wounds: 0, stage: 0, hold: 0,
       get mode() { return mode; },
       update(dt, t) {
         const p = body.player;
-        if (B.hold > 0) { B.hold -= dt; hood.speed = 0; return; }
+        if (B.hold > 0) { B.hold -= dt; hood.speed = 0; if (B.hold <= 0) hood._b7clip = null; return; }
         if (mode === 'walk') {
           const wp = path[i];
-          if (!wp) { mode = 'stand'; hood.speed = 0; hood.setState('aim', 0.3); return; }
+          if (!wp) { mode = 'stand'; hood.speed = 0; set('aim'); return; }
           const d = Math.hypot(wp.x - hood.pos.x, wp.z - hood.pos.z);
           if (d < 0.35) { i++; return; }
           body.faceTo(wp.x, wp.z, dt, 2.2);
           hood.speed = pace[Math.min(pace.length - 1, B.stage)];
-          if (hood.state !== 'walk') hood.setState('walk', 0.35);
+          set('walk');
           hood.lookAt(_v.copy(p).setY(p.y - 0.3));
           // (he stops to shoot when he has a line, never mid-stride through a door)
           if (t >= fireAt && body.distToPlayer() < 40 && body.checkLOS(dt)) {
-            mode = 'aim'; hood.speed = 0; hood.setState('aim', 0.3); aimT = r.range(0.55, 0.8); shots = r.int(1, 2);
+            mode = 'aim'; hood.speed = 0; set('aim'); aimT = r.range(0.55, 0.8); shots = r.int(1, 2);
           }
           return;
         }
@@ -47,7 +61,7 @@ export default {
         aimT -= dt;
         if (aimT > 0) return;
         if (shots > 0) { body.fire(t); shots--; aimT = r.range(0.5, 0.75); return; }
-        if (mode === 'aim') { mode = 'walk'; fireAt = t + r.range(2.6, 3.6) + B.stage * 0.6; }
+        if (mode === 'aim') { mode = 'walk'; hood.aiming = false; fireAt = t + r.range(2.6, 3.6) + B.stage * 0.6; }
         else { shots = r.int(1, 2); aimT = r.range(1.2, 1.8); }
       },
       onHit(dir) {
