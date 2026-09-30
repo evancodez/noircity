@@ -265,6 +265,36 @@ function dotGunPose(s) {
   return (t) => samplePoseKeys(K, t);
 }
 
+// [second pass] Dot's resupply (scene 9, any beat after the first): from
+// down behind the counter she comes up with two drums in her right hand, sets
+// them on the top before me (the drums' path of the gun clip, retimed) and
+// goes back down. Object first, as the gun clip: the scene puts the real
+// drums on dotResupplyAt(t).
+export const DOT_DRUMS = { drumsUp: 0.3, drumsDown: 0.75, duration: 1.4 };
+const DRUMS_SHIFT = DOT_CLIP.drumsUp - DOT_DRUMS.drumsUp;
+export const dotResupplyAt = (t) => dotDrumsAt(t + DRUMS_SHIFT);
+const DUCK = { hipsPos: [0, 0.42, -0.1], hips: [34, 0, 0], spine: [26, 0, 0], chest: [20, 0, 0], neck: [20, 0, 0], head: [10, 0, 0],
+  footL: [0.13, ANKLE_Y, 0.16], footR: [-0.13, 0.1, -0.22], footRotL: [0, 10, 0], footRotR: [-50, 8, 0], kneeL: [0.3, 0.2, 1], kneeR: [-0.2, -0.2, 1],
+  handTR: [-0.04, 1.02, 0.12], elbowPoleR: [-1, 0.5, 0.3], handTL: [0.16, 0.6, 0.32], elbowPoleL: [1, -0.5, 0], handR: [-60, 0, -20], handL: [-60, 0, 20] };
+function dotDrumsPose(s) {
+  const w = (p, dx = 0) => [(p[0] + dx) / s, (p[1] + 0.075) / s, (p[2] - 0.045) / s];
+  const dr = (t) => w(dotResupplyAt(t).p, 0.02);
+  // (the crouch as the cast's own duck holds it: that clip follows this one)
+  const keys = [[0, { ...LEAN, ...DUCK }]];
+  // up from the crouch, the right hand coming up from under the counter with them
+  keys.push([0.22, { hipsPos: [0, 0.78, 0.0], hips: [18, 0, 0], spine: [16, 0, 0], chest: [10, -6, 0], neck: [12, 0, 0], head: [6, 0, 0],
+    footL: [0.12, ANKLE_Y, 0.14], footR: [-0.12, ANKLE_Y, -0.1], footRotR: [-20, 8, 0], kneeL: [0.3, 0.2, 1], kneeR: [-0.2, 0, 1],
+    handTR: [-0.1 / s, 0.66 / s, 0.28 / s], handR: [-80, 0, -10], handTL: w([0.2, 1.05, 0.34]), handL: [-40, 0, 20], elbowPoleR: [-1, -0.3, -0.2] }]);
+  for (const t of [0.3, 0.42, 0.55, 0.65, 0.75]) {
+    const u = Math.min(1, (t - 0.3) / 0.3);
+    keys.push([t, { handTR: [dr(t)[0], dr(t)[1] + 0.06 / s, dr(t)[2]], handR: [-85, 0, -10], hipsPos: [0, 0.82 + 0.1 * u, 0.01], hips: [16 - 6 * u, 0, 0], chest: [10, -10, 0] }]);
+  }
+  keys.push([0.9, { handTR: w([-0.36, 1.18, 0.5]), handR: [-60, 0, -20] }]);
+  keys.push([DOT_DRUMS.duration, { ...DUCK }]);
+  const K = chainKeys(keys);
+  return (t) => samplePoseKeys(K, t);
+}
+
 export default {
   kind: 'cardinal', h: 1.9, name: 'cardinal',
   costume: CARDINAL,
@@ -286,6 +316,9 @@ export default {
     // (Dot's, scene 9: the gun up from under the counter, the drums after it)
     b7_dotGun: { duration: DOT_CLIP.duration, marks: { gun: DOT_CLIP.gun, gunDown: DOT_CLIP.gunDown, drumsUp: DOT_CLIP.drumsUp, drumsDown: DOT_CLIP.drumsDown }, then: 'lean',
       def: (ctx) => ({ armSpace: 'root', fps: 60, pose: dotGunPose(ctx.s) }) },
+    // (hers too: the drums up again when I come back to the counter for more)
+    b7_dotDrums: { duration: DOT_DRUMS.duration, marks: { drumsUp: DOT_DRUMS.drumsUp, drumsDown: DOT_DRUMS.drumsDown }, then: 'duck',
+      def: (ctx) => ({ armSpace: 'root', fps: 60, pose: dotDrumsPose(ctx.s) }) },
     // his walk: the Hood's, heavier (a wider stance), the cane swung out and
     // planted with the right foot
     cardinal_walk: { duration: 1.1, loop: true, def: () => ({ pose: (t) => {

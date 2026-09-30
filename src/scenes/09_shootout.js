@@ -5,7 +5,8 @@ import { SITE, BEATS, DINER, DOORS } from './shootout/site.js';
 import { stageBeat, rig, markBeat, man, setLights, roundAt, everyStep, RESERVE, V } from './shootout/rig.js';
 import { endHat } from './shootout/ending.js';
 import { mackWindow } from './shootout/room.js';
-import { DOT_CLIP, dotGunAt, dotDrumsAt } from '../cast/kinds/cardinal.js';
+import { DOT_CLIP, dotGunAt, dotDrumsAt, DOT_DRUMS, dotResupplyAt } from '../cast/kinds/cardinal.js';
+import { palm, wrap, OPEN } from '../player/handPoses.js';
 
 // Scene 9, The Block (B7; docs/story/briefs/B7_SHOOTOUT.md). Back on the
 // block, in the diner; I get there first. Dot hands me the Tommy gun from
@@ -97,57 +98,144 @@ function registerProps(ctx) {
     id: 'b7.drums', at: () => (R.gun.stack.visible ? R.gun.stack.position.clone().setY(DINER.counter.topY + 0.08) : V(SITE.resupply.x, DINER.counter.topY + 0.1, SITE.resupply.z)),
     range: 2.3, cone: 0.9,
     prompt: 'drums', when: () => R.gunTaken && !R.dying && R.reserve < RESERVE.max && !R.slide && (R.stackReady || !R.gun.stack.visible),
-    onUse: () => (R.gun.stack.visible ? scoop(ctx) : dotSlides(ctx)),
+    onUse: () => (R.gun.stack.visible ? takeDrums(ctx) : dotResupply(ctx)),
   });
 }
 
-// the drums on the counter into my coat: the gun dips as the other arm
-// rakes them off the counter's edge; they go down out of the frame
-function scoop(ctx) {
-  const G = ctx.game, R = rig();
-  const st = R.gun.stack;
-  if (!st.visible) return;
+// run a generator of the scene's own (one step a yield) under the rig's
+// ticks; a death on the way stops it (onAbort puts things back)
+function runGen(gen, onAbort = null) {
+  const R = rig();
+  R.ticks.push(() => {
+    if (R.dying) { if (onAbort) onAbort(); return false; }
+    return !gen.next().done;
+  });
+}
+
+// [second pass] the drums on the counter into my coat, by my left hand
+// (object first): the gun dips out of the frame, the eye leans over the
+// counter, the left hand comes up to the stack, closes on it and carries it
+// down toward me out of the frame; the gun comes back up. (The hand is seen
+// through the eye's own lens while the gun is out of sight, as the take's.)
+function takeDrums(ctx) {
+  const R = rig();
+  if (!R.gun.stack.visible || R.slide) return;
   R.slide = { t: 0 };
-  R.reserve = Math.min(RESERVE.max, R.reserve + RESERVE.slide);
   R.stackReady = false;
-  G.sfx.play('b7_drumTake', null);
-  G.vm.lowerTo(0.28);
-  const p0 = st.position.clone(), eye = G.eye.clone();
-  const toward = V(eye.x - p0.x, 0, eye.z - p0.z).normalize();
-  const edge = p0.clone().addScaledVector(toward, Math.max(0.05, (DINER.counter.frontX - p0.x) / Math.max(0.2, toward.x)));
-  let t = 0, vy = 0;
-  R.ticks.push((dt) => {
-    t += dt;
-    if (t < 0.14) st.position.lerpVectors(p0, edge, t / 0.14);
-    else { vy -= 9.8 * dt; st.position.addScaledVector(toward, 1.4 * dt); st.position.y += vy * dt; st.rotation.z += dt * 3; }
-    if (t > 0.2 && G.vm.lowerTarget > 0) G.vm.lowerTo(0);
-    if (st.position.y < DINER.counter.topY - 0.55 || t > 0.6) { st.visible = false; st.rotation.set(0, 0, 0); R.slide = null; return false; }
-    return true;
-  });
+  // (no round leaves a gun that is off the shoulder)
+  const G = ctx.game, H = G.hands, fire0 = G.weapon.fire, still0 = H.still;
+  G.weapon.fire = () => {};
+  const restore = () => { G.weapon.fire = fire0; H.still = still0; H.studyFov = false; R.slide = null; };
+  runGen(drumsGen(ctx, restore), restore);
+}
+const HAND_IN = V(-0.13, -0.62, -0.26), HAND_OUT = V(-0.16, -0.95, -0.34);
+// (the sleeve comes up from the bottom edge, not past the lens)
+const ELBOW_L = [-0.3, -0.64, -0.12];
+// (the gun this far down is out of the frame, and the hands' root still drawn:
+// Viewmodel hides the root from 0.98)
+const DOWN = 0.97;
+function* drumsGen(ctx, restore) {
+  const G = ctx.game, R = rig(), C = G.controller, H = G.hands, vm = G.vm, cam = G.camera;
+  const st = R.gun.stack;
+  const top = () => st.position.clone().setY(st.position.y + 0.13);
+  // the gun off the shoulder, fast, while he steps / leans in
+  const lower0 = vm.lower;
+  const P00 = C.eyePose();
+  const at = top();
+  const dh0 = Math.hypot(at.x - P00.x, at.z - P00.z);
+  const far = dh0 > REACH + LEAN_MAX + 0.05;
+  if (far) {
+    const gen = stepIn(C, at);
+    let t = 0;
+    for (let r = gen.next(); !r.done; r = gen.next()) { t += 1 / 60; vm.lowerTo(Math.min(DOWN, lower0 + (DOWN - lower0) * Math.min(1, t / 0.2)), true); yield null; }
+  }
+  const P0 = C.eyePose();
+  const dx = at.x - P0.x, dz = at.z - P0.z, dh = Math.hypot(dx, dz);
+  const lean = Math.max(0, Math.min(LEAN_MAX, dh - REACH));
+  if (lean > 0.02) C.ease({ x: P0.x + dx / dh * lean, y: P0.y - 0.2 * lean / LEAN_MAX, z: P0.z + dz / dh * lean, yaw: Math.atan2(-dx, -dz), pitch: Math.atan2(at.y - (P0.y - 0.2), Math.max(0.3, dh - lean)) + 0.1 }, 0.26);
+  for (let t = 0; t < 0.2; t += 1 / 60) { vm.lowerTo(Math.max(vm.lower, Math.min(DOWN, t / 0.2)), true); yield null; }
+  vm.lowerTo(DOWN, true);
+  // the left hand, seen through the eye's own lens
+  const still0 = H.still;
+  H.studyFov = true;
+  const camInv = new THREE.Matrix4();
+  const toCam = (p) => { cam.updateMatrixWorld(true); return p.clone().applyMatrix4(camInv.copy(cam.matrixWorld).invert()); };
+  const pose = (wrist, grip, k) => {
+    // (the palm on the stack's top, the fingers over its far rim: the way
+    // from the eye to the stack, level, and down, in the eye's frame)
+    const inv = camInv.copy(cam.matrixWorld).invert();
+    const w = st.position.clone().sub(cam.position).setY(0).normalize();
+    const away = w.addScaledVector(V(0, -1, 0), 0.35).transformDirection(inv);
+    const down = V(0, -1, 0).transformDirection(inv);
+    return palm('cam', [wrist.x, wrist.y, wrist.z], [down.x, down.y, down.z], [away.x, away.y, away.z], k < 1 ? mixF(OPEN, grip, k) : grip, ELBOW_L);
+  };
+  const GRIPF = wrap(0.07, { k: 0.75, thumb: [0.45, 0.3, 0.3, 0.3, 0.25] });
+  // the reach (0.26 s): up from below the frame onto the stack
+  const T1 = 0.26, T2 = 0.08, T3 = 0.3;
+  for (let t = 0; t <= T1 + 1e-6; t += 1 / 60) {
+    const u = t / T1, e = 1 - (1 - u) * (1 - u);
+    const g = toCam(top());
+    const p = HAND_IN.clone().lerp(g, e);
+    p.y += 0.06 * Math.sin(Math.PI * u);
+    H.still = { ...(still0 || {}), L: pose(p, GRIPF, Math.max(0, (u - 0.6) / 0.4)) };
+    yield null;
+  }
+  G.sfx.play('b7_drumTake', st.position.clone());
+  // the grip
+  for (let t = 0; t < T2; t += 1 / 60) { H.still = { ...(still0 || {}), L: pose(toCam(top()), GRIPF, 1) }; yield null; }
+  // the carry: the stack comes off the counter toward me and down out of the
+  // frame (its path first, the hand on it)
+  const g0 = toCam(top()), o0 = toCam(st.position);
+  const off = o0.clone().sub(g0);
+  cam.updateMatrixWorld(true);
+  const q0 = st.quaternion.clone();
+  for (let t = 0; t <= T3 + 1e-6; t += 1 / 60) {
+    const u = Math.min(1, t / T3), e = u * u * (3 - 2 * u);
+    const g = g0.clone().lerp(HAND_OUT, e);
+    g.y += 0.07 * Math.sin(Math.PI * Math.min(1, u * 1.4));
+    st.position.copy(g.clone().add(off).applyMatrix4(cam.matrixWorld));
+    st.quaternion.copy(q0).premultiply(new THREE.Quaternion().setFromAxisAngle(V(0, 0, 1).transformDirection(cam.matrixWorld), -0.5 * e));
+    H.still = { ...(still0 || {}), L: pose(g, GRIPF, 1) };
+    yield null;
+  }
+  st.visible = false;
+  st.quaternion.copy(q0);
+  R.reserve = Math.min(RESERVE.max, R.reserve + RESERVE.slide);
+  restore();
+  // back up, the gun to the shoulder (0.28 s)
+  if (lean > 0.02) C.ease({ ...P0, pitch: Math.max(-0.15, Math.min(0.05, P0.pitch)) }, 0.3);
+  for (let t = 0; t < 0.28; t += 1 / 60) { const u = t / 0.28; vm.lowerTo(DOWN * (1 - u * u * (3 - 2 * u)), true); yield null; }
+  vm.lowerTo(0, true);
+}
+// fingers between two grips
+function mixF(a, b, k) {
+  const o = {};
+  for (const n of ['i', 'm', 'r', 'l', 't']) o[n] = (a[n] || b[n]).map((v, i) => v + ((b[n] ? b[n][i] : 0) - v) * k);
+  return o;
 }
 
-// Dot comes up behind the counter and slides two drums over to me; they
-// are raked off the counter's edge as they reach me
-function dotSlides(ctx) {
+// Dot comes up from behind the counter with two drums (her clip: the drums
+// on its path, object first) and sets them on the top before me; my hand
+// takes them as they come to rest
+function dotResupply(ctx) {
   const G = ctx.game, R = rig();
   const dot = ctx.cast.get('dot');
-  R.slide = { t: 0 };
-  if (dot) dot.setState('lean');
   const st = R.gun.stack;
-  const e = G.eye;
-  const zTo = Math.max(DINER.counter.z0 + 0.4, Math.min(DINER.counter.z1 - 0.4, e.z));
-  const from = V(DINER.counter.frontX - DINER.counter.depth + 0.08, DINER.counter.topY, zTo), to = V(DINER.counter.frontX - 0.2, DINER.counter.topY, zTo);
-  st.position.copy(from); st.rotation.set(0, 0, 0); st.visible = true;
-  G.sfx.play('b7_drumSlide', from);
-  R.ticks.push((dt) => {
-    R.slide.t += dt;
-    const u = Math.min(1, R.slide.t / 0.45), k = 1 - (1 - u) * (1 - u);
-    st.position.lerpVectors(from, to, k);
-    if (u >= 1) {
+  if (!dot || R.slide) return;
+  R.slide = { t: 0 };
+  st.visible = false; st.rotation.set(0, 0, 0);
+  const h = dot.play('b7_dotDrums', { fade: 0.15, onMark: {
+    drumsUp: () => { st.visible = true; G.sfx.play('b7_drumSlide', st.position.clone()); },
+    drumsDown: () => { G.sfx.play('b7_drumDown', st.position.clone()); },
+  } });
+  R.ticks.push(() => {
+    const t = h.t;
+    if (t >= DOT_DRUMS.drumsUp - 1e-3) dotToWorld(dot, dotResupplyAt(Math.min(t, DOT_DRUMS.drumsDown)).p, st.position);
+    if (t >= DOT_DRUMS.drumsDown + 0.08 || h.done) {
+      st.visible = true;
       R.slide = null;
-      if (dot && ctx.beat !== 'arrive') dot.setState('duck');
       R.stackReady = true;
-      scoop(ctx);
+      takeDrums(ctx);
       return false;
     }
     return true;
@@ -183,6 +271,14 @@ function* arrive(ctx) {
     }
     return !h.done && h.t < h.duration;
   });
+  // [second pass] a round fired in the room puts her down behind the counter
+  // (once her hands are free: the gun and the drums are laid first)
+  const shots0 = G.counters.shots;
+  R.ticks.push(() => {
+    if (ctx.beat !== 'arrive' || dot.state === 'duck') return false;
+    if (G.counters.shots > shots0 && (h.done || h.t >= h.duration)) { dot.setState('duck', 0.18); return false; }
+    return true;
+  });
   // E take it (at the counter), from the moment it lies there
   yield until(() => down);
   let taken = false;
@@ -192,6 +288,27 @@ function* arrive(ctx) {
   yield* takeGun(ctx);
   // a breath, then the engines
   yield wait(2.5);
+}
+
+// [second pass] reaching things on the counter: the eye leans in until the
+// thing lies a forearm's reach away (REACH, horizontally), at most LEAN_MAX;
+// from further off than that he steps in to the counter first, along the
+// aisle side of the stools (the take place), so no arm ever stretches
+const REACH = 0.62, LEAN_MAX = 0.8;
+function* stepIn(C, at) {
+  const P = C.eyePose();
+  const dh = Math.hypot(at.x - P.x, at.z - P.z);
+  if (dh <= REACH + LEAN_MAX + 0.05) return;
+  // the place: on the aisle side of the stools (the take place's line),
+  // at the gap between two stools nearest the thing
+  const S = DINER.stools, g0 = S.z1 - S.step / 2;
+  const gz = g0 + S.step * Math.round((at.z - g0) / S.step);
+  const T = { x: SITE.take.x, z: Math.max(DINER.counter.z0 + 0.4, Math.min(DINER.counter.z1 - 0.4, gz)) };
+  const d = Math.hypot(T.x - P.x, T.z - P.z);
+  const yaw = Math.atan2(-(at.x - T.x), -(at.z - T.z));
+  const dur = Math.min(0.75, 0.14 + 0.2 * d);
+  C.ease({ x: T.x, y: P.y, z: T.z, yaw, pitch: Math.atan2(at.y - P.y, Math.hypot(at.x - T.x, at.z - T.z)) * 0.8 }, dur);
+  for (let t = 0; t < dur; t += 1 / 60) yield null;
 }
 
 // a point of Dot's own frame (metres: x her left, y up, z ahead) in the world
@@ -209,6 +326,9 @@ function dotToWorld(dot, p, out = new THREE.Vector3()) {
 function* takeGun(ctx) {
   const G = ctx.game, R = rig(), H = G.hands, vm = G.vm, cam = G.camera;
   const mesh = R.gun.mesh;
+  // [second pass] (no round leaves the gun until it is at the shoulder)
+  const fire0 = G.weapon.fire;
+  G.weapon.fire = () => {};
   const _m = new THREE.Matrix4(), p = new THREE.Vector3(), q = new THREE.Quaternion(), sc = new THREE.Vector3();
   const onCounter = () => {
     cam.updateWorldMatrix(true, false); mesh.updateWorldMatrix(true, false);
@@ -217,13 +337,17 @@ function* takeGun(ctx) {
   };
   // (a man leans over the counter to take a thing lying at its far side:
   // the eye goes to it, and back as the gun comes up)
-  const C = G.controller, P0 = C.eyePose();
+  const C = G.controller;
   mesh.updateWorldMatrix(true, false);
   const at = new THREE.Vector3().setFromMatrixPosition(mesh.matrixWorld);
+  // [second pass] from further off than a lean, a step in to the counter
+  // first (at once, as E goes down): the arms never stretch across the room
+  yield* stepIn(C, at);
+  const P0 = C.eyePose();
   const dx = at.x - P0.x, dz = at.z - P0.z, dh = Math.hypot(dx, dz);
-  const lean = Math.max(0, Math.min(0.42, dh - 0.85));
-  const Pl = { x: P0.x + dx / dh * lean, y: P0.y - 0.12 * lean / 0.42, z: P0.z + dz / dh * lean, yaw: Math.atan2(-dx, -dz), pitch: Math.atan2(at.y - (P0.y - 0.1), Math.max(0.3, dh - lean)) + 0.12 };
-  if (lean > 0.02) C.ease(Pl, 0.24);
+  const lean = Math.max(0, Math.min(LEAN_MAX, dh - REACH));
+  const Pl = { x: P0.x + dx / dh * lean, y: P0.y - 0.2 * lean / LEAN_MAX, z: P0.z + dz / dh * lean, yaw: Math.atan2(-dx, -dz), pitch: Math.atan2(at.y - (P0.y - 0.2), Math.max(0.3, dh - lean)) + 0.12 };
+  if (lean > 0.02) C.ease(Pl, 0.26);
   H.studyFov = true;
   // (the hands come from where they were: below the frame)
   H.snapshot(0.24);
@@ -260,6 +384,8 @@ function* takeGun(ctx) {
   vm.lowerTo(1, true);
   vm.lowerTo(0);
   G.sfx.play('b7_bolt', null);
+  G.weapon.fire = fire0;
+  G.weapon.trigger = false;
   yield wait(0.35);
 }
 
@@ -269,7 +395,7 @@ function* carsBeat(ctx) {
   const cars = [];
   // (Dot hears them first: down behind the counter)
   const dot = ctx.cast.get('dot');
-  if (dot) R.ticks.push(((t0) => (dt) => { if ((t0 -= dt) > 0) return true; dot.setState('duck'); return false; })(2.2));
+  if (dot) R.ticks.push(((t0) => (dt) => { if ((t0 -= dt) > 0) return true; if (dot.state !== 'duck') dot.setState('duck'); return false; })(2.2));
   SITE.cars.forEach((spec, i) => {
     R.ticks.push(((t0) => (dt) => {
       if ((t0 -= dt) > 0) return true;
@@ -688,8 +814,23 @@ function* ending(ctx) {
   yield* theFrame(ctx);
 }
 
-// the men still up break off: they run, down the avenue away from me, and
-// are gone once well off (or after a few seconds, wherever they are)
+// the men still up break off: they run from me, by the Hoods' grid (round
+// the cars and the columns, never through them), back into the dark under
+// the el's far side where they came from, and on down the avenue; a man is
+// gone only once I cannot see him (out of the frame or behind something),
+// never in view [second pass]
+const _fr = new THREE.Frustum(), _pm = new THREE.Matrix4();
+function inSight(G, h) {
+  const cam = G.camera;
+  _pm.multiplyMatrices(cam.projectionMatrix, cam.matrixWorldInverse);
+  _fr.setFromProjectionMatrix(_pm);
+  const c = new THREE.Vector3(h.pos.x, (h.pos.y || 0) + 1.2, h.pos.z);
+  if (!_fr.containsPoint(c)) return false;
+  const d = c.clone().sub(G.eye), L = d.length();
+  if (L > 55) return false;
+  d.divideScalar(L);
+  return !G.rays.raycast(G.eye, d, Math.max(0.1, L - 0.5), { anyHit: true, skip: (en) => !!(en.mesh.userData.pane) });
+}
 function scatter(ctx) {
   const G = ctx.game, S = ctx.stage, R = rig();
   for (const h of [...S.hoods.list]) {
@@ -700,21 +841,35 @@ function scatter(ctx) {
     G.ais.delete(h);
     if (h.setAim) h.setAim(false);
     if (h.lookAt) h.lookAt(null);
-    const sgn = h.pos.z < G.eye.z ? -1 : 1;
-    const tx = Math.max(-1, Math.min(8, h.pos.x));
-    let t = 0;
+    // (a man on the el's deck has nowhere to run: he is gone when unseen)
+    const onDeck = (h.pos.y || 0) > 3;
+    const down = h.pos.z < G.eye.z ? -1 : 1;
+    const goals = [{ x: 18.5, z: Math.max(-40, Math.min(18, h.pos.z + down * 6)) }, { x: 18.5, z: -60 }];
+    let path = null, pi = 0, gi = 0, t = 0, stuck = 0, last = h.pos.clone(), unseen = 0;
+    const plan = () => { const g = goals[Math.min(gi, goals.length - 1)]; path = G.nav.findPath(h.pos.x, h.pos.z, g.x, g.z); pi = 0; };
+    if (!onDeck) plan();
     h.script = (hd, tt, dt) => {
       if (!hd.alive) { hd.script = null; return; }
       t += dt;
-      const yaw = Math.atan2(tx - hd.pos.x, sgn * 20);
-      hd.yaw += Math.atan2(Math.sin(yaw - hd.yaw), Math.cos(yaw - hd.yaw)) * Math.min(1, dt * 6);
+      if (onDeck || !path) { hd.speed = 0; return; }
+      let wp = path[pi];
+      while (wp && Math.hypot(wp.x - hd.pos.x, wp.z - hd.pos.z) < 0.6) wp = path[++pi];
+      if (!wp) { gi++; plan(); return; }
+      const yaw = Math.atan2(wp.x - hd.pos.x, wp.z - hd.pos.z);
+      const dy = Math.atan2(Math.sin(yaw - hd.yaw), Math.cos(yaw - hd.yaw));
+      hd.yaw += dy * Math.min(1, dt * 7);
       if (hd.state !== 'run') hd.setState('run', 0.2);
-      hd.speed = 3.1;
+      hd.speed = Math.abs(dy) > 1.2 ? 1.2 : 3.1;
+      // (stuck on something: the way again)
+      if ((stuck += dt) > 1.2) { if (hd.pos.distanceTo(last) < 0.4) plan(); stuck = 0; last.copy(hd.pos); }
     };
-    R.ticks.push(() => {
+    R.ticks.push((dt) => {
       if (!S.hoods.list.includes(h)) return false;
       if (!h.alive) { h.script = null; return false; }
-      if (Math.hypot(h.pos.x - G.eye.x, h.pos.z - G.eye.z) > 30 || t > 8) { G.removeHood(h); return false; }
+      unseen = inSight(G, h) ? 0 : unseen + dt;
+      // gone once out of sight a moment (well off, or after a little run),
+      // and at the very last whatever: nobody holds the end
+      if ((unseen > 0.25 && (t > 1.5 || Math.hypot(h.pos.x - G.eye.x, h.pos.z - G.eye.z) > 24)) || t > 20) { G.removeHood(h); return false; }
       return true;
     });
   }

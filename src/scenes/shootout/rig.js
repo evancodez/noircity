@@ -153,7 +153,11 @@ export function stageBeat(ctx, b) {
     G.hands.equip('empty', { skin: 'glove' });
   }
   const A = retry && R.beatAt[b];
-  const P = A ? A.pose : b === 'arrive' ? SITE.spawn : b === 'doorways' || b === 'el' ? SITE.stations.B2 : b === 'cardinal' || b === 'end' ? SITE.stations.B4 : SITE.stations.door;
+  // [second pass] a retry puts me where the beat began only if that was in
+  // the room: never back out in the road before the men who shot me
+  const inRoom = (p) => p && p.x < DINER.innerX - 0.25;
+  const station = b === 'arrive' ? SITE.spawn : b === 'doorways' || b === 'el' ? SITE.stations.B2 : b === 'cardinal' || b === 'end' ? SITE.stations.B4 : SITE.stations.door;
+  const P = A && inRoom(A.pose) ? A.pose : station;
   G.controller.setPose(P.x, P.z, P.yaw, P.pitch ?? 0);
   // (the door: shut, unless the story comes in through it this second)
   const front = S.part('dinerFront');
