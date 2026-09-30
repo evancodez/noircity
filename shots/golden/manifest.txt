@@ -26,3 +26,7 @@ storm|shot=storm
 perf|shot=perf
 title|shot=title
 end|shot=end
+diner_settle|scene=diner&beat=settle
+diner_order|scene=diner&beat=order
+fight_round1|scene=fight&beat=round1
+dinerfront|shot=dinerfront
