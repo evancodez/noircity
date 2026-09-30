@@ -476,6 +476,7 @@ export function makeInkMaterial(tex, fogUniforms) {
         // pale flat slab beside the camera.) The walnut (stock, grips) is
         // broken by the brush field in the gun's own frame, so it reads as
         // dry-brushed dark wood with strokes along it, not a painted plank.
+        float skinF = 0.0;   // [R2-B] a bare hand's two tones: kept out of the bands below
         if ( vmF > 0.5 ) {
           float vmPart = -idc - ${VM_ID0.toFixed(1)};
           if ( vmPart > -0.5 ) {
@@ -525,32 +526,34 @@ export function makeInkMaterial(tex, fogUniforms) {
               // or a stride from the lamp everything is 2 .. 4 stops lower)
               float lg = log2( max( L * exposure, 1e-6 ) );
               vec3 upV = vec3( uViewInv[ 0 ][ 1 ], uViewInv[ 1 ][ 1 ], uViewInv[ 2 ][ 1 ] );
-              float ndl = dot( n, normalize( upV + vec3( 0.0, 0.0, 0.3 ) ) );
-              // (the split follows the FORM - the faces turned up to the
-              // lamps are the lit side wherever the hand is - with a
-              // push from the light itself: a face in a lamp's hot spot is
-              // lit, one in a cast shadow is not)
-              // (polish: the hands print the same indoors, at the broken
-              // window and on the street - the form sets the split, the
-              // light only nudges it, and the two values move little with
-              // the exposure: the open window's brighter look turned the
-              // whole hand to its lit value, a pale glove)
-              float lm = 0.8 * smoothstep( -0.25, 0.45, ndl ) + 0.2 * smoothstep( -3.2, 0.6, lg );
-              float litV = mix( 0.56, 0.68, smoothstep( -2.2, 1.8, lg ) );
-              float shV = mix( 0.3, 0.36, smoothstep( -4.0, -0.5, lg ) );
-              float bs = clamp( br.r, 0.16, 0.84 ), bh = clamp( br.g, 0.12, 0.88 );
-              float side = smoothstep( bs - 0.14, bs + 0.14, clamp( ( lm - 0.5 ) / 0.16 + 0.5, 0.0, 1.0 ) );
-              // (the highlight: where the form turns its face between the
-              // lamp over it and the eye - the knuckles' curves, a rolled
-              // edge - and the light is strong; a flat back of the hand
-              // under the lamp stays the lit grey)
-              vec3 hV = normalize( upV + normalize( - vpos ) );
-              float spec = pow( max( dot( n, hV ), 0.0 ), 60.0 );
-              // (round 2: no paper highlight on the skin - on the knuckles'
-              // small spheres it printed as white speckles; the hand is two
-              // values, its contour and its dark ticks)
-              float hiK = 0.0 * smoothstep( bh - 0.1, bh + 0.1, clamp( ( spec - 0.45 ) / 0.3 + 0.5, 0.0, 1.0 ) ) * smoothstep( 0.5, 2.0, lg );
-              v = mix( mix( shV, litV, side ), 0.95, hiK ) * mix( 0.97, 1.03, br.b );
+              // [R2-B] Two hard tones, as the Hoods' light shapes are (the
+              // art director, round 2: the hands printed one flat grey, a
+              // pale mitten): the lit planes near paper, the shadow planes
+              // ink, a hard terminator between them that follows the FORM.
+              // The key is one designed light for both hands, wherever they
+              // are: from above (the world's up, so a hand on a counter has
+              // its back lit however the head is bent) and from the upper
+              // left of the frame, a little toward the eye (the composition's
+              // street lamp, as the viewmodel's own key) - so the backs and
+              // the left faces of the fingers are paper, their right faces,
+              // the undersides and the gaps between them ink: the fingers
+              // separate, the knuckle row and the thumb's web read. The light
+              // on the hand only nudges the terminator (a face in a lamp's hot
+              // spot is lit, one in a cast shadow is not) and sets how pale
+              // the lit side is; in real darkness the lit side goes down to
+              // the ink too (a hand in the black is a silhouette).
+              vec3 keyV = normalize( upV * 0.6 + vec3( -0.75, 0.0, 0.3 ) );
+              float ndl = dot( n, keyV );
+              float lm = ndl + 0.16 * ( smoothstep( -4.5, 0.5, lg ) - 0.5 );
+              // (the edge is a dry brush's: a small tear from the field, never
+              // a mottle across the planes)
+              float th = 0.1 + ( clamp( br.r, 0.15, 0.85 ) - 0.5 ) * 0.16;
+              float side = smoothstep( th - 0.02, th + 0.02, lm );
+              float litV = mix( 0.7, 0.84, smoothstep( -4.0, 1.5, lg ) );
+              litV = mix( 0.16, litV, smoothstep( -6.2, -4.8, lg ) );
+              float shV = 0.12;
+              v = mix( shV, litV, side ) * mix( 0.98, 1.02, br.b );
+              skinF = 1.0;
               // (the lighter's flame, within ~8 cm: a warm-white lift through
               // the skin's own print, no new light; the warmth is added below)
               float fl = 1.0 - smoothstep( 0.015, 0.08, length( vpos - uFlame.xyz ) );
@@ -757,7 +760,7 @@ export function makeInkMaterial(tex, fogUniforms) {
         // smoke is a soft wash with its own brushed alpha (fx/fxTextures
         // SMOKE): banded by the surface behind it, its tone stepped at every
         // tower and wall edge it drifted across
-        brushAmt *= ( 1.0 - fxCov ) * ( 1.0 - litF ) * ( 1.0 - castF );
+        brushAmt *= ( 1.0 - fxCov ) * ( 1.0 - litF ) * ( 1.0 - castF ) * ( 1.0 - skinF );
         v = mix( v, vBand, brushAmt );
         // (the muzzle puff: its tone laid in the ink's flat bands, their
         // edges broken by the brush field - a brushed puff with a darker core,
