@@ -147,6 +147,8 @@ export class Brawl {
     this.fadeBack = 0;
     if (!retry) { this.stats = freshStats(); this.blackT = 0; this.did = {}; }
     this.opts = { onRetry, onKO, onGlass, onLanded, onManner, onBottle, onHop };
+    // ([B8] a thing of his still in the air when I went down falls where it is)
+    if (this.flying && this.flying.length) this.dropFlying();
     if (this.room && this.room !== room && this.room.leave) this.room.leave();
     this.room = room;
     if (room.enter) room.enter();
@@ -163,7 +165,10 @@ export class Brawl {
     this.max = this.who.hp || BRAWL.himHp;
     const h0 = hp ?? BRAWL.manners[manner] * this.max / 100;
     this.him = {
-      hp: h0, manner: mannerOf(h0 * 100 / this.max), state: 'move', clip: null, h: null, t: 0,
+      // (the percent rounded: 65 % of 116 read back as 65.00000000000001, his
+      // measured manner - a retry in his dirty one, a jump to round 2, put
+      // him back in his first at the top of it)
+      hp: h0, manner: mannerOf(+(h0 * 100 / this.max).toFixed(6)), state: 'move', clip: null, h: null, t: 0,
       next: 1.0, circle: 1, circleT: 1, backT: 0, vel: V(0, 0, 0), speed: 0, yawRate: 0,
       holding: null, prop: null, task: null, pending: null, want: null, spot: null, atSpot: false, quietT: 0, loco: null, locoT: 0,
       hadBottle: false, hadStool: false, throws: 0, acts: 0, thingActs: 0, mannerT: 0,
@@ -241,6 +246,7 @@ export class Brawl {
     this.stepMe(dt);
     this.stepHim(dt);
     this.stepFlying(dt);
+    this.drawFlying();
     // (a throw cut off before it went: the chevron goes with it)
     if (this._cards && this._cards.chev && this._cards.chev.side && !(this.him.state === 'attack' && BR_ATTACKS[this.him.clip] && BR_ATTACKS[this.him.clip].kind === 'throw') && !(this.flying && this.flying.length)) this._cards.chevron(null);
     if (this.lesson) this.lesson.update(dt);
@@ -944,7 +950,7 @@ export class Brawl {
       him.hurt = [];
       this.later(0.35, () => { const h = this.him; if (!this.active || h.state === 'reel' || h.state === 'ko') return; h.coverT = Math.max(h.coverT, 1.3); h.open.L = h.open.R = 0; h.backT = 1.2; h.next = Math.max(h.next, 1.0); this.stats.shells = (this.stats.shells || 0) + 1; });
     }
-    const m = mannerOf(this.pct(him.hp));
+    const m = mannerOf(+this.pct(him.hp).toFixed(6));
     if (m !== him.manner && m !== 'out') this.setManner(m);
   }
 
@@ -1430,7 +1436,9 @@ export class Brawl {
     G.stage.scene.add(o); o.position.copy(from); o.updateMatrixWorld(true);
     this.sfx('b8throw', from, { k: 1 });
     const lane = V(to.x - from.x, 0, to.z - from.z).normalize();
-    (this.flying || (this.flying = [])).push({ o, kind, v, t: 0, from: from.clone(), lane, judged: false, spin: V(this.rng.range(6, 12), this.rng.range(8, 14), 0), by: 'him' });
+    // ([B8] its middle and its size, for the rim drawn round it on the frame)
+    const sph = new THREE.Box3().setFromObject(o, true).getBoundingSphere(new THREE.Sphere());
+    (this.flying || (this.flying = [])).push({ o, kind, v, t: 0, from: from.clone(), lane, judged: false, spin: V(this.rng.range(6, 12), this.rng.range(8, 14), 0), by: 'him', c: o.worldToLocal(sph.center.clone()), rad: Math.max(0.06, sph.radius) });
     this.stats.thrown = (this.stats.thrown || 0) + 1;
   }
 
@@ -1488,6 +1496,23 @@ export class Brawl {
       this.flying.splice(i, 1);
     }
   }
+  // [B8] (second pass) his thrown thing on the frame: speed lines back
+  // along the way it came and a white rim - a dark plate against the dark
+  // room at five metres was not seen at all, only the chevron and his arm
+  drawFlying() {
+    const G = this.game, out = [];
+    for (const F of this.flying || []) {
+      if (F.by !== 'him' || !F.o.parent) continue;
+      const mid = F.c ? F.o.localToWorld(_d.copy(F.c)) : _d.copy(F.o.position);
+      const h = G.screenOf(mid), f = G.screenOf(F.from);
+      if (!h) continue;
+      const d = mid.distanceTo(G.camera.position);
+      const r = Math.max(9, Math.min(64, (F.rad || 0.12) * 1.1 / Math.max(0.3, d) * innerHeight * 0.74));
+      out.push({ x: h.x, y: h.y, fx: f ? f.x : h.x, fy: f ? f.y : h.y - 1, r, t: F.t });
+    }
+    if (out.length || this._flyShown) this.cards.flying(out.length ? out : null);
+    this._flyShown = out.length > 0;
+  }
   burstThing(o, kind, at, dir) {
     const B = this.game.stage.breakables;
     const k = kind === 'mug' ? 'mug' : kind === 'bottle' ? 'bottle' : 'plate';
@@ -1499,7 +1524,8 @@ export class Brawl {
   dropFlying() {
     for (const F of this.flying || []) this.dropInWorld(F.o, F.kind, F.o.position.clone(), F.lane, 0.8);
     this.flying = [];
-    if (this._cards) this._cards.chevron(null);
+    if (this._cards) { this._cards.chevron(null); this._cards.flying(null); }
+    this._flyShown = false;
   }
 
   // which side of the frame to step to from a thrown thing: away from the
@@ -1771,12 +1797,16 @@ export class Brawl {
       // [B8] (he has got his breath back, a little: at most `retryBack` of
       // him, never past the start of his manner - failing costs about ten
       // seconds, not the round)
-      // (and more each time I go down in the same manner: 8 %, 16 %, 24 %...)
+      // (second pass: the same each time - 8, 16, 24 %... a down caught a
+      // player who struggled in one manner there for good, five minutes and
+      // fifteen downs; and from the third down in a manner I come up whole:
+      // the fight gives a little to the man who keeps getting up. A masher
+      // still gets nowhere: his answers and the blows caught punching do that)
       const MD = this.stats.mannerDowns || (this.stats.mannerDowns = {}); MD[m] = (MD[m] || 0) + 1;
-      const back = Math.min(BRAWL.manners[m] * this.max / 100, this.him.hp + BRAWL.retryBack * MD[m] * this.max / 100);
+      const back = Math.min(BRAWL.manners[m] * this.max / 100, this.him.hp + BRAWL.retryBack * this.max / 100);
       const left = Math.max(0.05, BRAWL.down - me.downT);
       G.health.reset();
-      G.health.hp = BRAWL.retryHp;
+      G.health.hp = MD[m] >= 3 ? BRAWL.meHp : BRAWL.retryHp;
       if (G.sfx && G.sfx.hush) G.sfx.hush(left + 0.3);
       if (this.opts.onRetry) this.opts.onRetry(m, back);
       G.hud.fade(1);

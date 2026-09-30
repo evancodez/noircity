@@ -235,8 +235,11 @@ function brawlRoom(ctx) {
     // [B8] the service aisle behind the counter is shut while we fight (a
     // man knocked round the counter's end, into the gap by the jukebox,
     // could not be got back to a window): the rules' room.enter / leave
-    enter() { if (!gate) gate = stage.colliders.addBox((DINER.backX + DINER.counter.frontX) / 2, DINER.counter.z0 - 0.12, (DINER.counter.frontX - DINER.backX) / 2, 0.12, 0, 'counter'); },
-    leave() { if (gate) { const A = stage.colliders.boxes, k = A.indexOf(gate); if (k >= 0) A.splice(k, 1); gate = null; } },
+    // (and the street door stays shut: it opened inwards whenever the eye
+    // came within 2 m of it, and its leaf swung into the ring between us - he
+    // was fought through it, his legs under its blind)
+    enter() { if (!gate) gate = stage.colliders.addBox((DINER.backX + DINER.counter.frontX) / 2, DINER.counter.z0 - 0.12, (DINER.counter.frontX - DINER.backX) / 2, 0.12, 0, 'counter'); front.door.shut = true; },
+    leave() { if (gate) { const A = stage.colliders.boxes, k = A.indexOf(gate); if (k >= 0) A.splice(k, 1); gate = null; } front.door.shut = false; },
     jukebox, pieCase,
     // Dot slides me a bottle down the counter (the lesson; his first bottle;
     // when he bleeds): it stops opposite me (the rules' room.gift)

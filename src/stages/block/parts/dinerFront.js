@@ -554,7 +554,8 @@ export default {
     // after it has gone
     const d = api.door, D = DINER;
     const e = camera.position;
-    if (Math.hypot(e.x - (XD + 0.3), e.z - (D.door.hingeZ + D.door.w / 2)) < 2.0) d.open();
+    // ([B8] not while a fight is on: d.shut - the leaf swung into the ring and they fought through it)
+    if (!d.shut && Math.hypot(e.x - (XD + 0.3), e.z - (D.door.hingeZ + D.door.w / 2)) < 2.0) d.open();
     else if (d.target === 1 && (d.holdT -= dt) <= 0) d.close();
     const prev = d.angle;
     d.angle += Math.sign(d.target - d.angle) * Math.min(Math.abs(d.target - d.angle), dt * 2.2);

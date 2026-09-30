@@ -153,7 +153,9 @@ export class Autoplay {
       if (!this.plan || this.plan.id !== id) {
         const A = BR_ATTACKS[him.clip];
         const feint = /^br_feint/.test(him.clip);
-        const read = r.chance(B.lesson ? 0.95 : 0.8);
+        // ([B8] 'rough': a first-timer who struggles - a read in two goes
+        // wrong or is missed, and he sees the tell late)
+        const read = r.chance(B.lesson ? 0.95 : style === 'rough' ? 0.55 : 0.8);
         let act = 'none';
         if (A || feint) {
           const hand = feint ? (him.clip === 'br_feint' ? 'R' : 'L') : A.hand;
@@ -174,7 +176,7 @@ export class Autoplay {
         }
         const cl = c.clip(him.clip);
         const at = cl.marks.tell ?? 0;
-        this.plan = { id, act, at: this.t - him.t + at + 0.22 + r.gauss() * 0.03, contact: this.t - him.t + (cl.marks.contact ?? cl.marks.release ?? cl.marks.strike ?? 0.5) + (him.clip === 'br_throw' ? 0.25 : 0), done: false };
+        this.plan = { id, act, at: this.t - him.t + at + (style === 'rough' && !B.lesson ? 0.3 : 0.22) + r.gauss() * 0.03, contact: this.t - him.t + (cl.marks.contact ?? cl.marks.release ?? cl.marks.strike ?? 0.5) + (him.clip === 'br_throw' ? 0.25 : 0), done: false };
       }
       const P = this.plan;
       if (!P.done && this.t >= P.at) {
@@ -241,7 +243,7 @@ export class Autoplay {
     }
     if (style !== 'fists' && B.round >= 2 && !me.holding && him.state === 'move' && this.every('grab', 7, 12) && B.reachable()) { this.tap('KeyE'); return; }
     // (impatience: a punch into the guard now and then)
-    if (him.state === 'move' && this.every('poke', 2.2, 4.2)) this.tap(r.chance(0.5) ? 'Mouse0' : 'Mouse2');
+    if (him.state === 'move' && (style === 'rough' ? this.every('poke', 1.0, 2.0) : this.every('poke', 2.2, 4.2))) this.tap(r.chance(0.5) ? 'Mouse0' : 'Mouse2');
   }
 
   // step toward (or away from) him to a distance, with the room's keys; held

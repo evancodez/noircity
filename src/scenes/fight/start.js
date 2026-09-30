@@ -181,7 +181,23 @@ export function* startFight(ctx) {
   const st4 = d.stool(SEAT);
   if (st4 && st4.spin) st4.spin(-0.5);
   snd('stoolSqueak', V(DINER.stools.x, 0.9, stoolZ(SEAT)), { k: 0.8 });
+  // (second pass: he pulls me round as he steps back off me, and lets go -
+  // face to face he stands at arm's length. Standing where his hand lay, 0.8
+  // m off, his chest filled the frame for most of a second, his forearm a
+  // grey stump across its corner)
+  const mH = { x: m.pos.x, z: m.pos.z };
+  const ax = mH.x - seatEye.x, az = mH.z - seatEye.z, aL = Math.hypot(ax, az) || 1;
+  const BACK = 0.36;
+  m.setState('br_stepB', 0.1);
   for (let u = 0; u < T.pull; u += 1 / 60) {
+    const kb = ss(u / T.pull);
+    // (his feet: the guard's shuffle back at the speed he goes)
+    m.fig.anim.setTimeScale(Math.max(0.35, Math.min(2, BACK * (ss((u + 1 / 60) / T.pull) - kb) * 60)));
+    m.fig.pos.x = mH.x + ax / aL * BACK * kb; m.fig.pos.z = mH.z + az / aL * BACK * kb;
+    m.fig.yaw += wrap(Math.atan2(S.eye.x - m.pos.x, S.eye.z - m.pos.z) - m.fig.yaw) * 0.2;
+    // (the hand leaves the shoulder as the yank ends: down and back to him)
+    if (u > T.pull * 0.35) drop = Math.min(1, drop + 1 / 60 / 0.24);
+    if (drop > 0.6) wHand = Math.max(0, wHand - 1 / 60 / 0.2);
     // (where his hand lay, measured a step after it landed, once the pose
     // has put it there: for the plays, which may look a little late)
     if (u > 0 && !ctx.flags.handAt && m.bones && m.bones.handL) {
@@ -227,7 +243,6 @@ export function* startFight(ctx) {
   } });
   const E0 = S.eye.clone(), E1 = V(START.me.x, DINER.brawlEyeY, START.me.z);
   const m0 = { x: m.pos.x, z: m.pos.z };
-  m.setState('br_stepB', 0.15);
   let stepping = true;
   for (let u = 0; u < T.swing; u += 1 / 60) {
     // the eye: up first, then out into the aisle (a man getting off a stool)
