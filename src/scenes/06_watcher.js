@@ -32,6 +32,8 @@ const V = (x, y, z) => new THREE.Vector3(x, y, z);
 // what the detective carries by now (a cold start gets it too)
 const INV = ['matchbook', 'tornHalf', 'note', 'ledger', 'revolver'];
 const EYE = 1.63;
+// the lens at the slit (degrees): the eye narrows on him as it leans in
+const PEEK = 44;
 
 // ---- the things every beat's setup does -------------------------------------------------------
 function common(ctx) {
@@ -188,7 +190,7 @@ export default defineScene({
         t += 1 / 60;
         if (t > 0.26) blind.part(Math.min(1, (t - 0.26) / 0.3));
         if (Math.abs(t - 0.3) < 0.01) G.sfx.play('w_slats', gap);
-        lens(G, fov0 + (54 - fov0) * Math.min(1, t / 0.6) ** 2 * (3 - 2 * Math.min(1, t / 0.6)));
+        lens(G, fov0 + (PEEK - fov0) * Math.min(1, t / 0.6) ** 2 * (3 - 2 * Math.min(1, t / 0.6)));
         return t >= 0.6;
       });
       // he looks up at the window; held a second and a half
@@ -206,7 +208,7 @@ export default defineScene({
       C.place(0.6);
       yield wait(1.0);
       H.play('releaseSlats');
-      for (let t = 0; t < 0.3; t += 1 / 60) { blind.part(Math.max(0, 1 - t / 0.2)); lens(G, 54 + (ctx.flags.fov0 - 54) * (t / 0.3)); yield null; }
+      for (let t = 0; t < 0.3; t += 1 / 60) { blind.part(Math.max(0, 1 - t / 0.2)); lens(G, PEEK + (ctx.flags.fov0 - PEEK) * (t / 0.3)); yield null; }
       blind.part(0);
       lens(G, ctx.flags.fov0);
       G.sfx.play('w_slats', gap);
@@ -283,6 +285,9 @@ export default defineScene({
       yield beat('run');
       G.music.cue('chase', { fade: 0.4 });
       C.active = true;
+      // (from a standing start - a cold start at the ladder's foot - the
+      // same grace as a retry's; running on from the ladder it is never felt)
+      C.grace = 2.0;
       C.onLost = (i) => restageStretch(ctx, i);
       const chase = G.stage.part('chase');
       let taught = false, dog = false, through = false, breath = 0.4;
@@ -323,8 +328,26 @@ export default defineScene({
       yield until(() => C.act === 'gone');
       const car = makeDrive(stage, cars, cars.his);
       ctx.flags.car = car;
+      // (the eye is drawn to it, softly, from the moment its lamps come on
+      // until it is well away: the mouse still turns me, the draw only
+      // leans the look toward the red of its tail lamps)
+      const pull = { t: -1, dur: 3.2 };
+      const wrapA = (a) => Math.atan2(Math.sin(a), Math.cos(a));
+      ctx.onStep((dt) => {
+        if (pull.t < 0 || pull.t >= pull.dur) return;
+        const ctl = G.controller;
+        if (ctl.mode !== 'run' && ctl.mode !== 'walk') return;
+        pull.t += dt;
+        const P = car.pos(), e = G.eye;
+        const want = Math.atan2(-(P.x - e.x), -(P.z - e.z));
+        const w = Math.min(1, pull.t / 0.3) * Math.min(1, (pull.dur - pull.t) / 1.0);
+        const k = (1 - Math.exp(-dt * 3.2)) * w;
+        ctl.yaw += wrapA(want - ctl.yaw) * k;
+        ctl.pitch += (-0.04 - ctl.pitch) * k;
+      });
       yield wait(0.5);
       car.start();
+      pull.t = 0;
       G.sfx.play('w_engine', car.pos());
       yield wait(0.9);
       car.go();
@@ -470,9 +493,21 @@ function* seenInOffice(ctx) {
   const eyeY = (a) => (a.eyeY != null ? a.eyeY : a.pos.y + 1.65);
   G.controller.setPose(aw.pos.x, aw.pos.z, aw.yaw, -0.3, eyeY(aw) - EYE);
   G.controller.frozen = true;
-  const blind = makeBlind(O, {});
-  const fx = -Math.sin(aw.yaw), fz = -Math.cos(aw.yaw);
-  blind.place(V(aw.pos.x + fx * 0.3, eyeY(aw) - 0.05, aw.pos.z + fz * 0.3), aw.yaw);
+  // (the room's own blind, lane B2's: its slats each an instance with a
+  // sag and a lift - the two at my eye are pushed apart; else one of mine)
+  const room = O.part && O.part('room');
+  const RB = room && room.blind && room.blind.slats && room.blind.set ? room.blind : null;
+  let blind;
+  if (RB) {
+    const ey = eyeY(aw);
+    let lo = RB.slats.findIndex((S) => S.y < ey - 0.02);
+    if (lo < 1) lo = Math.floor(RB.slats.length / 2);
+    blind = { part(k) { RB.set(lo, { sag: 0.055 * k }); RB.set(lo - 1, { lift: 0.035 * k }); } };
+  } else {
+    blind = makeBlind(O, {});
+    const fx = -Math.sin(aw.yaw), fz = -Math.cos(aw.yaw);
+    blind.place(V(aw.pos.x + fx * 0.3, eyeY(aw) - 0.05, aw.pos.z + fz * 0.3), aw.yaw);
+  }
   const C = ctx.flags.chase;
   const w = O.cast.spawn(O.cast.has('watcher') ? 'watcher' : 'couple_him', { at: 'office.street.watcher', name: 'watcher' });
   if (w.kind === 'watcher') w.setState('watcher_stand', 0);
@@ -495,6 +530,10 @@ function* seenInOffice(ctx) {
   fig.yaw = away;
   let t = 0;
   yield until(() => { t += 1 / 60; fig.pos.x += Math.sin(fig.yaw) * 6.5 / 60; fig.pos.z += Math.cos(fig.yaw) * 6.5 / 60; return t > 2.5; });
+  // (the fingers let the slats go: they spring shut)
+  for (let k = 0; k < 0.2; k += 1 / 60) { blind.part(1 - k / 0.2); yield null; }
+  blind.part(0);
+  G.sfx.play('w_slats');
   G.controller.frozen = false;
   yield* ctx.prompt({ text: 'the fire escape' });
   G.controller.ease({ x: ew.pos.x, y: eyeY(ew), z: ew.pos.z, yaw: ew.yaw, pitch: -0.05 }, 1.0);

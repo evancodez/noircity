@@ -104,6 +104,10 @@ export class Chase {
     this.onLost = null;
     this.pace = null;           // (s) -> target: the escape beat's pacing
     this.lostN = 0;             // times I lost him (the play's record)
+    // (a stretch's first seconds - the run's start, the fade up after a
+    // "Lost him." - are a grace: he does not pull away from a man still
+    // finding his feet, and cannot be lost; after it, the rules)
+    this.grace = 0;
   }
 
   // ---- him ------------------------------------------------------------------------------
@@ -166,6 +170,7 @@ export class Chase {
       else if (gap < 9) want = Math.max(mine + 0.8, 7.8);
       else if (gap > 22) want = 4.5;
       else want = Math.min(8.2, Math.max(5.6, mine * 0.97 + (gap - 14) * 0.08));
+      if (this.active && this.grace > 0) { this.grace -= dt; want = Math.min(want, Math.max(2.8, mine + 2.2)); }
       this.v += (want - this.v) * (1 - Math.exp(-dt * 2.5));
       // (behind the black of a "Lost him." he waits where the stretch has
       // him: the retry begins as it will be played, 15 m)
@@ -257,6 +262,7 @@ export class Chase {
   rules(dt) {
     const G = this.G;
     if (this.act === 'gone' || this.act === 'carIn') return;
+    if (this.grace > 0) { this.unseen = 0; return; }
     const gap = this.s - this.sp;
     this.losT -= dt;
     if (this.losT <= 0) {
@@ -295,7 +301,7 @@ export class Chase {
     else if (L.t > 1.1) {
       const k = Math.min(1, (L.t - 1.1) / 0.45);
       G.hud.fade(1 - k * k * (3 - 2 * k));
-      if (k >= 1) { this.lost = null; G.hud.fade(0); }
+      if (k >= 1) { this.lost = null; G.hud.fade(0); this.grace = 2.5; }
     }
   }
 
