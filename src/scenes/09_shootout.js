@@ -409,8 +409,12 @@ function* takeGun(ctx) {
 // [R2-F] (his two heavies were 1.2: a first-timer's plays went down three
 // times in the Cardinal's beat alone; 0.95 leaves them dangerous at a window
 // held too long, not a wall)
-// [R2-F, round 2] (the intruder 1.5 -> 1.35, and his first two rounds wide)
-const AIM = { cars: 1.4, doorways: 1.3, intruder: 1.35, el: 1.1, heavies: 0.95 };
+// [R2-F, round 2] (the intruder 1.5 -> 1.35, and his first two rounds wide;
+// the rest about a quarter up - cars 1.4, doorways 1.3, el 1.1, heavies 0.95
+// were - with the retries' mercy under it: a first-timer's plays on those
+// won in 2.4 - 2.6 minutes and never went down. His, the Cardinal's, and the
+// drive-by's gunner's in AIM too)
+const AIM = { cars: 1.75, doorways: 1.6, intruder: 1.35, el: 1.35, heavies: 1.15, cardinal: 0.85, driveby: 0.7 };
 
 // ---- 2. cars ------------------------------------------------------------------------------------
 function* carsBeat(ctx) {
@@ -698,7 +702,7 @@ function* driveby(ctx) {
     rounds++;
     if (rounds % 2) {
       // (the first rounds are the tell: they chew the front, not me)
-      ai.aim = rounds < 7 ? 0 : 0.55 * mercy(ctx);
+      ai.aim = rounds < 7 ? 0 : AIM.driveby * mercy(ctx);
       G.hoodFire(ai, t);
     } else {
       const z = c.pos.z + r.range(-2.5, 2.5);
@@ -848,7 +852,10 @@ function spawnCardinal(ctx, at, { climbYaw = null } = {}) {
     S.hoods.list.push(fig);
     fig.hp = 1e6;
     fig.heavy = false;
-    G.ais.set(fig, makeBrain(G, fig, 'b7_cardinal', { path: SITE.cardinal.path, onWound, aim: 0.7 * mercy(ctx) }));
+    G.ais.set(fig, makeBrain(G, fig, 'b7_cardinal', { path: SITE.cardinal.path, onWound, aim: AIM.cardinal * mercy(ctx) }));
+    // [R2-F] (the switch sets every man's aim from this: without it the
+    // lights put out in his beat set his to 1)
+    fig.b7aim = AIM.cardinal * mercy(ctx);
     fig.b7char = c;
     // [R2-F] out of the car first: his brain holds while the clip plays
     if (climbYaw != null && fig.anim.bank && fig.anim.bank.has('cardinal_carOut')) {
@@ -859,7 +866,7 @@ function spawnCardinal(ctx, at, { climbYaw = null } = {}) {
       if (B) B.hold = CARDINAL_OUT;
     }
   } else {
-    fig = man(ctx, { group: 'cardinal', at: { x: at.x, z: at.z }, yaw, heavy: true, variant: { unarmed: true, coat: 0, brim: 1, tall: 1 }, brain: 'b7_cardinal', hp: 1e6, aim: 0.7, opts: { path: SITE.cardinal.path, onWound } });
+    fig = man(ctx, { group: 'cardinal', at: { x: at.x, z: at.z }, yaw, heavy: true, variant: { unarmed: true, coat: 0, brim: 1, tall: 1 }, brain: 'b7_cardinal', hp: 1e6, aim: AIM.cardinal, opts: { path: SITE.cardinal.path, onWound } });
   }
   fig.b7beat = 'cardinal';
   G.director.groups.get('cardinal') ? G.director.groups.get('cardinal').push(fig) : G.director.groups.set('cardinal', [fig]);
