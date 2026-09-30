@@ -330,8 +330,11 @@ export default defineScene({
       DOOR.at = door.clone();
       SLAT.cam = G.camera;
       G.controller.frozen = true;
+      // (a step to the door, facing it, while the hand goes out to it)
+      const gy = G.stage.surfaceY(door.x + 0.75, door.z - 0.1);
+      G.controller.ease({ x: door.x + 0.75, y: gy + 1.63, z: door.z - 0.1, yaw: Math.PI / 2 + 0.25, pitch: -0.42 }, 0.4);
       H.play('carDoor', { onMark: { grip: () => G.sfx.play('w_carDoorOpen', door) } });
-      yield wait(0.75);
+      yield wait(0.85);
       ctx.next();
     }
   },

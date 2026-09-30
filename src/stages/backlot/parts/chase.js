@@ -75,7 +75,7 @@ export default {
         // never a clear view: they overlap from line to line)
         let x = YARD.x0 + 0.6 + r.range(0, 0.8);
         while (x < YARD.x1 - 1.4) {
-          const w = r.range(1.5, 2.3), h = r.range(1.7, 2.1);
+          const w = r.range(1.5, 2.3), h = r.range(2.15, 2.45);
           if (x + w > YARD.x1 - 0.4) break;
           const sheet = makeSheet(w, h, cloth, r);
           const cx = x + w / 2;

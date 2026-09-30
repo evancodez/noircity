@@ -332,6 +332,7 @@ export default {
       facade('north', Fn, GATE.x + 2.0, YARD.x1, H, { bay: 3.2, litP: 0.1, pipes: [34.6] });
       facade('mid', { axis: 'z', at: PASSAGE.z1, n: -1 }, 0, YARD.x0, 14, { bay: 3.2, litP: 0.06, pipes: [19.8] });
       door('north', Fn, 17.2);
+      door('north', Fn, 43.2, 1.2, 2.3);
       // the dog's pen behind the gate: its walls either side of the gate (the
       // gate itself swings: chase.js)
       for (const [a, b] of [[GATE.x - 2.0, GATE.x - GATE.w / 2], [GATE.x + GATE.w / 2, GATE.x + 2.0]]) {
@@ -384,10 +385,14 @@ export default {
     // 3 the yard: at its far end, behind the sheets (the back light) and at
     // its entry
     lamps.y1 = L.wall(YARD.x1, 4.6, -78.6, -1, 0, { out: 0.6, strength: 1.0 });
-    // a flood on the far wall of the yard, thrown down the yard through the
-    // washing: the sheets glow with it, and a man between it and them is a
-    // shadow on them
-    lamps.y3 = L.wall(43.2, 5.4, PASSAGE.z0, 0, 1, { out: 2.3, half: 0.62, strength: 1.0, height: 26 });
+    // a lamp over the door in the far wall of the yard, low, thrown down the
+    // yard through the washing: the sheets glow with it, and a man just
+    // past a line of them is his own shadow on them, as tall as he is
+    lamps.y3 = L.wall(43.2, 2.95, PASSAGE.z0, 0, 1, { out: 7.5, half: 0.55, strength: 0.9, height: 30 });
+    // (its light carries the length of the yard: the washing 10 .. 26 m off
+    // must be lit through, not just the ground under it)
+    lamps.y3.light.intensity = 700;
+    lamps.y3.light.angle = 0.55;
     // (not one of the pool's: the far lamp behind the washing must have
     // a shadow-casting light as I come up the yard)
     lamps.y2 = L.wall(YARD.x1, 4.2, -50.4, -1, 0, { real: false });
