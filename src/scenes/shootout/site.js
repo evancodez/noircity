@@ -54,10 +54,12 @@ export const SITE = {
   ],
   // ---- the doorways: out of the dark under the el's far side, up between
   // the columns and the parked car; one round to the diner's door
+  // (they come through the columns and out into the road: the middle of it
+  // is open, so they fight from where they stand, 13 - 16 m off)
   doorways: [
-    { at: { x: 18.0, z: 14.5 }, entry: [{ x: 15.2, z: 12.0 }], post: { x: 12.4, z: 14.4 }, leash: 2.2 },
-    { at: { x: 18.2, z: -2.0 }, entry: [{ x: 15.4, z: -1.0 }], post: { x: 12.9, z: 0.4 }, leash: 1.8 },
-    { at: { x: 18.0, z: -14.0 }, entry: [{ x: 15.8, z: -9.5 }], post: { x: 11.8, z: -7.6 }, leash: 2.0, heavy: true },
+    { at: { x: 18.0, z: 14.5 }, entry: [{ x: 15.2, z: 11.0 }, { x: 9.6, z: 7.8 }], post: { x: 4.2, z: 8.6 }, leash: 2.4 },
+    { at: { x: 18.2, z: -2.0 }, entry: [{ x: 15.6, z: -2.6 }, { x: 11.0, z: -3.6 }], post: { x: 3.4, z: -2.8 }, leash: 2.2 },
+    { at: { x: 18.0, z: -14.0 }, entry: [{ x: 14.6, z: -12.6 }, { x: 9.8, z: -13.4 }], post: { x: 4.6, z: -10.8 }, leash: 2.6, heavy: true },
   ],
   // the close one: out of the side alley, down the pavement, in at the door
   intruder: { at: { x: -9.0, z: -24.0 }, entry: [{ x: -8.7, z: -10.5 }, { x: -9.1, z: -0.4 }, { x: -9.4, z: 0.6 }, { x: -10.9, z: 0.6 }], post: { x: -11.6, z: 0.4 } },

@@ -35,10 +35,13 @@ export class Rails {
     this.stage = stage;
     this.list = [];
     this.spots = [];
-    // two pooled SpotLights for the headlamps (made once per scene entry:
+    // one pooled SpotLight for the headlamps (b7spots=<n> for more: every
+    // light is paid by every lit pixel; made once per scene entry:
     // a light added or taken away recompiles every lit material, so it is
     // done under the black of the scene's start, never in play)
-    for (let i = 0; i < 2; i++) {
+    const q = typeof location !== 'undefined' ? new URLSearchParams(location.search).get('b7spots') : null;
+    const nSpots = q != null ? +q : 1;
+    for (let i = 0; i < nSpots; i++) {
       const sp = new THREE.SpotLight(0xffffff, 0, 34, 0.42, 0.55, 2.0);
       sp.position.set(0, -60, 0); sp.target.position.set(0, -61, 0);
       stage.scene.add(sp, sp.target);
