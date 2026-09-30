@@ -53,6 +53,8 @@ function chase() {
       // (&at=x,z: me there after the restage, looking north; &ws= his s ahead)
       if (P.get('at')) { const [x, z] = P.get('at').split(',').map(Number); controller.setPose(x, z, num('ay', 0), num('ap', 0)); if (ctx && P.get('w') !== '0') startRun(ctx); }
       if (P.get('hz') && ctx && ctx.flags.chase) { const [x, z] = P.get('hz').split(',').map(Number); ctx.flags.chase.place(project(x, z, 0, 1e9).s); }
+      // (&fov= a narrower lens for a study of him)
+      if (P.get('fov')) { camera.fov = num('fov', 70); camera.updateProjectionMatrix(); if (controller.run) controller.run.fov0 = camera.fov; }
     },
   };
 }
