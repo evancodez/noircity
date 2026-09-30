@@ -76,7 +76,7 @@ export default {
       E.v = (L1 - L0) / E.ladderTime;
       if (k >= 1) { E.s = E.len; E.onEvent('ladderStop', {}); }
     } else if (E.s < E.len) {
-      const want = f > 0 ? (kind === 'stair' ? 2.9 : 3.3) : 0;
+      const want = f > 0 ? (next.duck ? next.duck.speed : kind === 'stair' ? 2.9 : 3.3) : 0;
       E.v += (want - E.v) * (1 - Math.exp(-dt * (want > E.v ? 7 : 12)));
       const s0 = E.s;
       E.s = Math.min(E.len, E.s + E.v * dt);
@@ -94,7 +94,16 @@ export default {
     }
     const p = pointAt(E, E.s, _a);
     ctl.pos.set(p.x, 0, p.z);
-    ctl.groundY = p.y;
+    // a segment through a low opening (a window under its raised sash):
+    // bent low through it and up again on the far side, the palms on the
+    // sill while the body goes over it
+    const di = segIndex(E, E.s), D = E.rail[di + 1].duck || null;
+    let duck = 0, du = 0;
+    if (D) {
+      du = Math.min(1, Math.max(0, (E.s - E.rail[di].s) / Math.max(1e-6, E.rail[di + 1].s - E.rail[di].s)));
+      duck = sm(du / D.k0) * (1 - sm((du - D.k1) / (1 - D.k1)));
+    }
+    ctl.groundY = p.y - (D ? D.drop * duck : 0);
     // the way ahead turns the body; the look is laid on it and eases back
     // to it once the mouse has rested 0.6 s (faster while moving)
     let h = headingAt(E, E.s);
@@ -104,12 +113,12 @@ export default {
     E.idle += dt;
     if (E.idle > 0.6 && E.v > 0.5) { const k = Math.exp(-dt * 2.4); E.look.yaw *= k; E.look.pitch = E.look.pitch * k; }
     const onStair = kind === 'stair' && E.v > 0.3;
-    E.pitchBase += ((onStair ? -0.32 : kind === 'ladder' ? -0.2 + 0.17 * E.ladderK : -0.08) - E.pitchBase) * (1 - Math.exp(-dt * 4));
+    E.pitchBase += ((onStair ? -0.32 : kind === 'ladder' ? -0.2 + 0.17 * E.ladderK : -0.08 - (D ? D.pitch * duck : 0)) - E.pitchBase) * (1 - Math.exp(-dt * (D ? 9 : 4)));
     ctl.yaw = E.heading + E.look.yaw;
     ctl.pitch = Math.max(-1.45, Math.min(1.45, E.pitchBase + E.look.pitch));
     // the stride's bob, and the hands: one on the flight's handrail
     ctl.vel.set(0, 0, 0);
-    const moving = E.v > 0.3 && kind !== 'ladder';
+    const moving = E.v > 0.3 && kind !== 'ladder' && !D;
     ctl.bobAmp += ((moving ? 0.75 : 0) - ctl.bobAmp) * (1 - Math.exp(-dt * 8));
     ctl.bobPhase += dt * (moving ? 2.1 + E.v * 1.6 : 0);
     RUNHANDS.phase = ctl.bobPhase;
@@ -118,7 +127,14 @@ export default {
     // point beside me and a little ahead, at the rail's height); on the
     // ladder both hands hold its sides as it drops, and let go as I turn
     const seg = E.rail[Math.min(E.rail.length - 1, segIndex(E, E.s) + 1)];
-    if (seg.kind === 'stair' && seg.rail) {
+    if (D && D.hands && du > 0.08 && du < D.k1 + 0.3) {
+      // (through the window: both palms go to the sill as the body bends to
+      // it, stay while it goes over, and come off as it rises outside)
+      RUNHANDS.plantR.set(...D.hands[0]);
+      RUNHANDS.plantL.set(...D.hands[1]);
+      RUNHANDS.lift = Math.max(0, Math.min(1, (du - D.k1) / 0.26));
+      RUNHANDS.set('plant');
+    } else if (seg.kind === 'stair' && seg.rail) {
       const i = segIndex(E, E.s), a = E.rail[i], b = E.rail[i + 1];
       const hx = b.x - a.x, hz = b.z - a.z, hl = Math.hypot(hx, hz) || 1;
       const fx = hx / hl, fz = hz / hl;

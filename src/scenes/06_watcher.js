@@ -332,14 +332,22 @@ export default defineScene({
       // until it is well away: the mouse still turns me, the draw only
       // leans the look toward the red of its tail lamps)
       // (then, more gently, back to my own car at the kerb: where to go)
-      const door = V(MY_CAR.x + 1.0, 1.1, MY_CAR.z + 0.35);
+      // (my car's handle, on the kerb side: the stage's cars put it there)
+      const door = cars.mine && cars.mine.handleAt ? cars.mine.handleAt() : V(MY_CAR.x + 0.76, 0.99, MY_CAR.z + 0.2);
+      const doorOut = cars.mine && cars.mine.handleOut ? cars.mine.handleOut() : V(1, 0, 0);
       let driven = false;
       const pull = { t: -1, dur: 5.4, rate: 3.2, pitch: -0.04, at: () => car.pos(),
         next: { dur: 1.8, rate: 1.8, pitch: -0.1, at: () => door } };
       const wrapA = (a) => Math.atan2(Math.sin(a), Math.cos(a));
+      // (the player's own look always wins: a turn of the mouse - the look
+      // moved since the last step by more than a hair - lets the draw go for
+      // good, so the eye is never fought for)
+      let lastYaw = null, lastPitch = null;
       ctx.onStep((dt) => {
         if (pull.t < 0 || driven) return;
         const ctl = G.controller, e = G.eye;
+        if (lastYaw != null && (Math.abs(wrapA(ctl.yaw - lastYaw)) > 0.004 || Math.abs(ctl.pitch - lastPitch) > 0.004)) { pull.t = -1; return; }
+        lastYaw = null;
         if (pull.t >= pull.dur) {
           // (not when I am already at it, or already looking its way)
           const N = pull.next;
@@ -355,6 +363,7 @@ export default defineScene({
         const k = (1 - Math.exp(-dt * pull.rate)) * w;
         ctl.yaw += wrapA(want - ctl.yaw) * k;
         ctl.pitch += (pull.pitch - ctl.pitch) * k;
+        lastYaw = ctl.yaw; lastPitch = ctl.pitch;
       });
       yield wait(0.5);
       car.start();
@@ -372,11 +381,16 @@ export default defineScene({
       // my hand on the handle (object first: the handle, then the hand on
       // it), the door's click, and away after him
       DOOR.at = door.clone();
+      DOOR.out = doorOut.clone();
       SLAT.cam = G.camera;
       G.controller.frozen = true;
-      // (a step to the door, facing it, while the hand goes out to it)
-      const gy = G.stage.surfaceY(door.x + 0.75, door.z - 0.1);
-      G.controller.ease({ x: door.x + 0.75, y: gy + 1.63, z: door.z - 0.1, yaw: Math.PI / 2 + 0.25, pitch: -0.42 }, 0.4);
+      // (a step to the door, facing it, while the hand goes out to it: the
+      // eye a forearm and a half off the side, the handle a little right of
+      // and below the middle of the frame, the window's line over it)
+      const ex = door.x + doorOut.x * 0.7 - doorOut.z * 0.1, ez = door.z + doorOut.z * 0.7 + doorOut.x * 0.1;
+      const gy = G.stage.surfaceY(ex, ez);
+      const dy = gy + 1.63 - door.y, dd = Math.hypot(door.x - ex, door.z - ez);
+      G.controller.ease({ x: ex, y: gy + 1.63, z: ez, yaw: Math.atan2(-(door.x - ex), -(door.z - ez)) + 0.1, pitch: -Math.atan2(dy, dd) + 0.2 }, 0.4);
       H.play('carDoor', { onMark: { grip: () => G.sfx.play('w_carDoorOpen', door) } });
       yield wait(0.85);
       ctx.next();

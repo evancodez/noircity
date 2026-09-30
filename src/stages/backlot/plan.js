@@ -43,9 +43,13 @@ export const ESC = {
   ladder: { x: 0.95, z: -9.45 },
 };
 // the body's way down (the escape mode's rail: y the feet)
+// (out through the window first: its lower sash is up behind the upper, the
+// opening under it 0.9 m from the sill to the sash's rail - a man ducks
+// through it, bent low, both palms on the sill, and comes up on the iron:
+// `duck`, fractions of the segment, see player/modes/escape.js)
 export const ESC_RAIL = [
-  { x: -0.6, y: L3Y, z: -10.0 },
-  { x: 0.45, y: L3Y, z: -10.0, kind: 'walk' },
+  { x: -0.8, y: L3Y, z: -10.0 },
+  { x: 0.45, y: L3Y, z: -10.0, kind: 'walk', duck: { k0: 0.36, k1: 0.66, drop: 0.52, pitch: 0.42, speed: 1.45, hands: [[-0.1, L3Y + 0.56, -9.8], [-0.1, L3Y + 0.56, -10.2]] } },
   { x: 0.5, y: L3Y, z: -10.65, kind: 'walk' },
   { x: 0.95, y: L3Y, z: -11.05, kind: 'walk' },
   { x: 0.95, y: 2 * FLOOR, z: -14.65, kind: 'stair', rail: 'R' },

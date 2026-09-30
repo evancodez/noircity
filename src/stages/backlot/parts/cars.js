@@ -47,6 +47,29 @@ export default {
       h.group.add(m);
     }
     h.tail = { mat: tailMat, set(k) { tailMat.color.copy(accent('crew', { gain: 0.35 + 5.5 * k })); } };
+    // my car's front door handles (the block's sedan has none): a chrome bar
+    // on two stems at each front door's rear edge, standing off the side a
+    // hand's thickness - the thing my hand closes over at the end of the
+    // scene (the scene reads mine.handleAt())
+    {
+      const m = C.mine;
+      const bar = new THREE.CylinderGeometry(0.011, 0.011, 0.15, 10).rotateZ(Math.PI / 2);
+      const stems = [-0.06, 0.06].map((x) => new THREE.CylinderGeometry(0.008, 0.008, 0.05, 6).rotateX(Math.PI / 2).translate(x, 0, -0.025));
+      for (const s of [1, -1]) {
+        for (const geo of [bar, ...stems]) {
+          const k = new THREE.Mesh(geo, stage.M.chrome);
+          k.position.set(-0.2, 0.99, s * 0.755);
+          if (s < 0) k.rotation.y = Math.PI;
+          k.userData.inkId = m.meshes.paint.userData.inkId;
+          k.userData.part = 'body';
+          m.group.add(k);
+        }
+      }
+      m.group.updateMatrixWorld(true);
+      // (the kerb side's: local +z, which the car's yaw turns east)
+      m.handleAt = (out = new THREE.Vector3()) => out.set(-0.2, 0.99, 0.755).applyMatrix4(m.group.matrixWorld);
+      m.handleOut = (out = new THREE.Vector3()) => out.set(0, 0, 1).transformDirection(m.group.matrixWorld);
+    }
     stage.onShadowLod((on) => C.shadowLod(on));
     return C;
   },

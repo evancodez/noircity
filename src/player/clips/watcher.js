@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { palm } from '../handPoses.js';
+import { palm, wrap } from '../handPoses.js';
 
 // The hands at room 304's street window (lane B4, scene 6): two fingers
 // part the blind's slats. Object first: the pose is read live from where
@@ -42,18 +42,24 @@ const live = () => {
   return o;
 };
 
-// my car's door: the right hand to its handle (DOOR.at, world), the
-// fingers hooked under it, the thumb on the button
-export const DOOR = { at: null };
-const HOOK = { i: C(0.7, 0.9, 0.5, -0.02), m: C(0.75, 0.95, 0.5), r: C(0.8, 1.0, 0.55, 0.03), l: C(0.9, 1.05, 0.6, 0.07), t: [0.4, 0.1, 0.3, 0.2, 0.2] };
+// my car's door: the right hand closes over its handle (DOOR.at, world: the
+// middle of a chrome bar along the car's side, DOOR.out the side's outward
+// normal - the stage's cars put the bar there): the palm on the bar's top a
+// little back from it toward me, the fingers over it and down round its far
+// side, the thumb along it
+export const DOOR = { at: null, out: null };
+const OVER = wrap(0.011, { k: 1.05, thumb: [0.45, 0.35, 0.25, 0.3, 0.3] });
+const _o = new THREE.Vector3(), _d = new THREE.Vector3();
 function doorPose() {
   const cam = SLAT.cam;
-  if (!DOOR.at || !cam) return { frame: 'cam', p: [0.15, -0.3, -0.35], f: [-0.2, 0.2, -0.95], b: [0.9, 0.3, 0.1], F: HOOK };
+  if (!DOOR.at || !cam) return { frame: 'cam', p: [0.15, -0.3, -0.35], f: [-0.2, 0.2, -0.95], b: [0.9, 0.3, 0.1], F: OVER };
   cam.updateMatrixWorld();
   const inv = _m.copy(cam.matrixWorld).invert();
-  const at = _v.copy(DOOR.at).applyMatrix4(inv).toArray();
-  // (the palm up under the handle, the fingers ahead along it)
-  return palm('cam', [at[0], at[1] - 0.025, at[2] + 0.02], [0.05, 1, 0.1], [-0.35, 0.05, -0.93], HOOK, [at[0] + 0.25, at[1] - 0.28, at[2] + 0.3]);
+  const out = DOOR.out ? _o.copy(DOOR.out) : _o.set(1, 0, 0);
+  const at = _v.copy(DOOR.at).addScaledVector(out, 0.042).add(_d.set(0, 0.014, 0)).applyMatrix4(inv).toArray();
+  const n = _d.set(0, -1, 0).transformDirection(inv).toArray();
+  const f = _d.copy(out).negate().transformDirection(inv).toArray();
+  return palm('cam', at, n, f, OVER, [at[0] + 0.18, at[1] - 0.34, at[2] + 0.26]);
 }
 const liveOf = (fn) => {
   const o = { frame: 'cam' };
