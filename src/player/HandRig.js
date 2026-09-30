@@ -165,12 +165,16 @@ function palmSlab(g0) {
   const zAt = (u, x) => (u <= uh ? lerp(zBack, zHeel, u / uh) : lerp(zHeel, knuckleZ(x) + 0.001, (u - uh) / (1 - uh)));
   const uh = 0.32;
   const sec = (u) => {
+    // (at the heel it is still no wider than the bare forearm there, and
+    // round-cornered: it squares and widens only past the heel, where the
+    // forearm has ended - a squared heel stood out of it as a flat plate)
     if (u <= uh) {
       const k = sstep(0, 1, u / uh);
-      return { hw: lerp(0.0282, 0.0306, k), hh: lerp(0.0188, 0.0118, k), hb: lerp(0.0188, 0.0168, k), cy: lerp(0, -0.0012, k), nt: lerp(2.05, 4.2, k), nb: lerp(2.05, 2.8, k), arch: k };
+      return { hw: lerp(0.0282, 0.0288, k), hh: lerp(0.0188, 0.0118, k), hb: lerp(0.0188, 0.0168, k), cy: lerp(0, -0.0012, k), nt: lerp(2.05, 3.0, k), nb: lerp(2.05, 2.4, k), arch: k };
     }
     const v = (u - uh) / (1 - uh);
-    return { hw: lerp(0.0306, 0.0425, Math.min(1, v / 0.75)), hh: lerp(0.0118, 0.0082, v), hb: lerp(0.0168, 0.0106, Math.min(1, v * 1.15)), cy: -0.0012, nt: 4.2, nb: 2.8, arch: 1 };
+    const q = sstep(0, 0.35, v);
+    return { hw: lerp(0.0288, 0.0425, Math.min(1, v / 0.75)), hh: lerp(0.0118, 0.0082, v), hb: lerp(0.0168, 0.0106, Math.min(1, v * 1.15)), cy: -0.0012, nt: lerp(3.0, 4.2, q), nb: lerp(2.4, 2.8, q), arch: 1 };
   };
   for (let i = 0; i <= rows; i++) {
     const u = i / rows, S = sec(u);
