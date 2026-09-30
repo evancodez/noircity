@@ -89,16 +89,20 @@ export function makeCounterGun(stage, build) {
   m.userData.inkId = id;
   m.castShadow = true; m.receiveShadow = true;
   g.userData.mesh = m;
-  const drums = SITE.drums.map((p, i) => {
+  // the drums: two, lying flat one on the other (a stack her hand carries by
+  // the rims), the winding keys up; the stack's origin at its foot
+  const stack = new THREE.Group();
+  stack.name = 'b7.drums';
+  const sid = allocInkId();
+  for (let i = 0; i < 2; i++) {
     const dm = new THREE.Mesh(drum, mat);
-    // standing on its rim, the winding key toward the room
-    dm.rotation.set(0, Math.PI / 2 + (i ? 0.35 : -0.2), 0);
-    dm.position.set(p.x, DINER.counter.topY + 0.0935, p.z);
-    dm.userData.inkId = allocInkId();
+    dm.rotation.set(0, i * 0.9, Math.PI / 2);
+    dm.position.set(0, 0.025 + i * 0.063, 0);
+    dm.userData.inkId = sid;
     dm.castShadow = true;
-    return dm;
-  });
-  return { group: g, mesh: m, drums };
+    stack.add(dm);
+  }
+  return { group: g, mesh: m, stack, drums: [stack] };
 }
 
 // ---- the switch by the door ------------------------------------------------------------

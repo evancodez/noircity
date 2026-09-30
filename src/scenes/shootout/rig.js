@@ -104,8 +104,10 @@ export function stageBeat(ctx, b) {
     freshRoom(ctx);
     // a jump into a later beat: what the story has done by then
     if (bi > BEATS.indexOf('cars')) laterRoom(ctx, R, b);
-    R.lightsOn = true;
-    R.reserve = RESERVE.start;
+    // (b7lights=0, look development: the room already dark)
+    R.lightsOn = !(typeof location !== 'undefined' && new URLSearchParams(location.search).get('b7lights') === '0');
+    // (the drums lie on the counter by the gun until I take them)
+    R.reserve = b === 'arrive' ? 0 : RESERVE.start;
   } else {
     // this beat's cars come again; the wrecks of the beats before stay
     for (const [k, car] of Object.entries(R.cars)) if (car.b7beat === b) { R.rails.remove(car); delete R.cars[k]; }
@@ -128,6 +130,7 @@ export function stageBeat(ctx, b) {
   R.gunTaken = armed;
   R.gun.group.visible = false;
   for (const d of R.gun.drums) d.visible = false;
+  R.stackReady = false; R.slide = null;
   if (armed) {
     G.weapon.reset();
     G.player.weapons.equip('tommy');

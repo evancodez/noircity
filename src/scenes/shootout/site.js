@@ -13,12 +13,12 @@ export { DINER, stoolZ };
 export const SITE = {
   // I come in from the street: the scene opens just inside the door, the
   // door swinging shut behind me
-  spawn: { x: -12.05, z: 0.6, yaw: Math.PI / 2 },
+  spawn: { x: -12.35, z: 0.6, yaw: Math.PI / 2 },
   // Dot behind the counter opposite the door, where she lays the gun
   dot: { x: -15.25, z: 0.62 },
   // the gun on the counter (its middle), lying along the counter, muzzle
   // toward -z; the two drums beside it
-  gun: { x: -14.64, z: 0.5 },
+  gun: { x: -14.64, z: 0.25 },
   drums: [{ x: -14.66, z: 1.18 }, { x: -14.58, z: 1.42 }],
   // where I stand to take it (clear of stools 6 and 7)
   take: { x: -13.3, z: 0.62 },

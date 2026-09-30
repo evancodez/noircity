@@ -4,6 +4,7 @@ import { makeBrain } from '../enemies/HoodBrains.js';
 import { SITE, BEATS, DINER, DOORS } from './shootout/site.js';
 import { stageBeat, rig, markBeat, man, setLights, roundAt, everyStep, RESERVE, V } from './shootout/rig.js';
 import { endHat } from './shootout/ending.js';
+import { DOT_CLIP, dotGunAt, dotDrumsAt } from '../cast/kinds/cardinal.js';
 
 // Scene 9, The Block (B7; docs/story/briefs/B7_SHOOTOUT.md). Back on the
 // block, in the diner; I get there first. Dot hands me the Tommy gun from
@@ -92,27 +93,62 @@ function registerProps(ctx) {
     onUse: () => setLights(ctx, !R.lightsOn),
   });
   ctx.interact.add({
-    id: 'b7.drums', at: V(SITE.resupply.x, DINER.counter.topY + 0.1, SITE.resupply.z), range: 2.3, cone: 0.9,
-    prompt: 'drums', when: () => R.gunTaken && !R.dying && R.reserve < RESERVE.max && !R.slide,
-    onUse: () => dotSlides(ctx),
+    id: 'b7.drums', at: () => (R.gun.stack.visible ? R.gun.stack.position.clone().setY(DINER.counter.topY + 0.08) : V(SITE.resupply.x, DINER.counter.topY + 0.1, SITE.resupply.z)),
+    range: 2.3, cone: 0.9,
+    prompt: 'drums', when: () => R.gunTaken && !R.dying && R.reserve < RESERVE.max && !R.slide && (R.stackReady || !R.gun.stack.visible),
+    onUse: () => (R.gun.stack.visible ? scoop(ctx) : dotSlides(ctx)),
   });
 }
 
-// Dot comes up behind the counter and slides two drums over to me
+// the drums on the counter into my coat: the gun dips as the other arm
+// rakes them off the counter's edge; they go down out of the frame
+function scoop(ctx) {
+  const G = ctx.game, R = rig();
+  const st = R.gun.stack;
+  if (!st.visible) return;
+  R.slide = { t: 0 };
+  R.reserve = Math.min(RESERVE.max, R.reserve + RESERVE.slide);
+  R.stackReady = false;
+  G.sfx.play('b7_drumTake', null);
+  G.vm.lowerTo(0.28);
+  const p0 = st.position.clone(), eye = G.eye.clone();
+  const toward = V(eye.x - p0.x, 0, eye.z - p0.z).normalize();
+  const edge = p0.clone().addScaledVector(toward, Math.max(0.05, (DINER.counter.frontX - p0.x) / Math.max(0.2, toward.x)));
+  let t = 0, vy = 0;
+  R.ticks.push((dt) => {
+    t += dt;
+    if (t < 0.14) st.position.lerpVectors(p0, edge, t / 0.14);
+    else { vy -= 9.8 * dt; st.position.addScaledVector(toward, 1.4 * dt); st.position.y += vy * dt; st.rotation.z += dt * 3; }
+    if (t > 0.2 && G.vm.lowerTarget > 0) G.vm.lowerTo(0);
+    if (st.position.y < DINER.counter.topY - 0.55 || t > 0.6) { st.visible = false; st.rotation.set(0, 0, 0); R.slide = null; return false; }
+    return true;
+  });
+}
+
+// Dot comes up behind the counter and slides two drums over to me; they
+// are raked off the counter's edge as they reach me
 function dotSlides(ctx) {
   const G = ctx.game, R = rig();
   const dot = ctx.cast.get('dot');
   R.slide = { t: 0 };
   if (dot) dot.setState('lean');
-  G.sfx.play('b7_drumSlide', V(SITE.resupply.x, DINER.counter.topY, SITE.resupply.z));
+  const st = R.gun.stack;
+  const e = G.eye;
+  const zTo = Math.max(DINER.counter.z0 + 0.4, Math.min(DINER.counter.z1 - 0.4, e.z));
+  const from = V(DINER.counter.frontX - DINER.counter.depth + 0.08, DINER.counter.topY, zTo), to = V(DINER.counter.frontX - 0.2, DINER.counter.topY, zTo);
+  st.position.copy(from); st.rotation.set(0, 0, 0); st.visible = true;
+  G.sfx.play('b7_drumSlide', from);
   R.ticks.push((dt) => {
     R.slide.t += dt;
-    if (R.slide.t >= 0.45 && !R.slide.given) {
-      R.slide.given = true;
-      R.reserve = Math.min(RESERVE.max, R.reserve + RESERVE.slide);
-      G.sfx.play('b7_drumTake', null);
+    const u = Math.min(1, R.slide.t / 0.45), k = 1 - (1 - u) * (1 - u);
+    st.position.lerpVectors(from, to, k);
+    if (u >= 1) {
+      R.slide = null;
+      if (dot && ctx.beat !== 'arrive') dot.setState('duck');
+      R.stackReady = true;
+      scoop(ctx);
+      return false;
     }
-    if (R.slide.t >= 1.4) { if (dot && ctx.beat !== 'arrive') dot.setState('duck'); R.slide = null; return false; }
     return true;
   });
 }
@@ -122,28 +158,34 @@ function* arrive(ctx) {
   const G = ctx.game, S = ctx.stage, R = rig();
   const dot = ctx.cast.get('dot');
   yield wait(1.1);
-  yield* ctx.say("They're coming here.", 2.0);
-  // Dot brings the gun up from under the counter and lays it down, and two drums
-  if (dot) dot.setState('duck');
-  yield wait(0.9);
+  G.hud.say("They're coming here.", 2.0);
+  yield wait(0.7);
+  // Dot brings the gun up from under the counter and lays it down before
+  // me, then two drums: her clip, the things on its paths (object first)
   const gun = R.gun;
-  gun.group.position.set(SITE.gun.x, DINER.counter.topY - 0.45, SITE.gun.z);
-  gun.group.visible = true;
-  if (dot) dot.setState('lean');
-  let u = 0;
-  while (u < 1) {
-    u = Math.min(1, u + 1 / 60 / 0.55);
-    const e = 1 - (1 - u) * (1 - u);
-    gun.group.position.y = DINER.counter.topY - 0.45 * (1 - e) + 0.12 * Math.sin(Math.PI * e);
-    yield null;
-  }
-  gun.group.position.y = DINER.counter.topY;
-  G.sfx.play('b7_gunDown', V(SITE.gun.x, DINER.counter.topY, SITE.gun.z));
-  yield wait(0.35);
-  for (const d of gun.drums) { d.visible = true; G.sfx.play('b7_drumDown', d.position); yield wait(0.25); }
-  // E take it (at the counter)
+  let down = false;
+  const h = dot.play('b7_dotGun', { fade: 0.25, onMark: {
+    gun: () => { gun.group.visible = true; },
+    gunDown: () => { down = true; G.sfx.play('b7_gunDown', gun.group.position); },
+    drumsUp: () => { gun.stack.visible = true; },
+    drumsDown: () => { G.sfx.play('b7_drumDown', gun.stack.position); R.stackReady = true; },
+  } });
+  R.ticks.push(() => {
+    const t = h.t;
+    if (t >= DOT_CLIP.gun - 1e-3 && !R.gunTaken) {
+      const { p, tilt } = dotGunAt(Math.min(t, DOT_CLIP.gunDown));
+      dotToWorld(dot, p, gun.group.position);
+      gun.group.rotation.set(tilt, dot.yaw + Math.PI / 2, 0, 'YXZ');
+    }
+    if (t >= DOT_CLIP.drumsUp - 1e-3 && !R.stackReady && gun.stack.visible) {
+      dotToWorld(dot, dotDrumsAt(Math.min(t, DOT_CLIP.drumsDown)).p, gun.stack.position);
+    }
+    return !h.done && h.t < h.duration;
+  });
+  // E take it (at the counter), from the moment it lies there
+  yield until(() => down);
   let taken = false;
-  ctx.interact.add({ id: 'b7.take', at: V(SITE.gun.x, DINER.counter.topY + 0.08, SITE.gun.z), range: 2.2, cone: 0.8, prompt: 'take it', onUse: () => { taken = true; } });
+  ctx.interact.add({ id: 'b7.take', at: () => gun.group.position.clone().setY(DINER.counter.topY + 0.08), range: 2.3, cone: 0.85, prompt: 'take it', onUse: () => { taken = true; } });
   yield until(() => taken);
   ctx.interact.remove('b7.take');
   yield* takeGun(ctx);
@@ -151,25 +193,82 @@ function* arrive(ctx) {
   yield wait(2.5);
 }
 
+// a point of Dot's own frame (metres: x her left, y up, z ahead) in the world
+function dotToWorld(dot, p, out = new THREE.Vector3()) {
+  const s = Math.sin(dot.yaw), c = Math.cos(dot.yaw);
+  return out.set(dot.pos.x + p[2] * s + p[0] * c, dot.pos.y + p[1], dot.pos.z + p[2] * c - p[0] * s);
+}
+
 // the hands take the gun off the counter and it comes up to the shoulder
+// (object first): the viewmodel's own gun is put where the one on the
+// counter lies (seen through the eye's own lens), the gloved hands come up
+// onto its grips; the one on the counter goes and the hands' one is lifted
+// off, toward me and down out of the frame; there, out of sight, the lens
+// goes back to the gun's own and it comes up to the shoulder as it always did
 function* takeGun(ctx) {
-  const G = ctx.game, R = rig();
-  G.sfx.play('b7_take', null);
-  R.gun.group.visible = false;
-  for (const d of R.gun.drums) d.visible = false;
+  const G = ctx.game, R = rig(), H = G.hands, vm = G.vm, cam = G.camera;
+  const mesh = R.gun.mesh;
+  const _m = new THREE.Matrix4(), p = new THREE.Vector3(), q = new THREE.Quaternion(), sc = new THREE.Vector3();
+  const onCounter = () => {
+    cam.updateWorldMatrix(true, false); mesh.updateWorldMatrix(true, false);
+    _m.copy(cam.matrixWorld).invert().multiply(mesh.matrixWorld).decompose(p, q, sc);
+    vm.base.pos.copy(p); vm.base.rot.setFromQuaternion(q, 'YXZ');
+  };
+  // (a man leans over the counter to take a thing lying at its far side:
+  // the eye goes to it, and back as the gun comes up)
+  const C = G.controller, P0 = C.eyePose();
+  mesh.updateWorldMatrix(true, false);
+  const at = new THREE.Vector3().setFromMatrixPosition(mesh.matrixWorld);
+  const dx = at.x - P0.x, dz = at.z - P0.z, dh = Math.hypot(dx, dz);
+  const lean = Math.max(0, Math.min(0.42, dh - 0.85));
+  const Pl = { x: P0.x + dx / dh * lean, y: P0.y - 0.12 * lean / 0.42, z: P0.z + dz / dh * lean, yaw: Math.atan2(-dx, -dz), pitch: Math.atan2(at.y - (P0.y - 0.1), Math.max(0.3, dh - lean)) + 0.12 };
+  if (lean > 0.02) C.ease(Pl, 0.24);
+  H.studyFov = true;
+  // (the hands come from where they were: below the frame)
+  H.snapshot(0.24);
+  const fr = { R: H.from.R, L: H.from.L };
   G.player.weapons.equip('tommy');
   G.weapon.reset();
-  G.vm.lowerTo(1, true);
-  G.vm.lowerTo(0);
+  vm.lowerTo(0, true);
+  H.from.R = fr.R; H.from.L = fr.L; H.blendT = 0; H.blendDur = 0.24;
+  vm.gun.visible = false;
+  onCounter();
+  G.sfx.play('b7_take', null);
+  // the reach
+  for (let t = 0; t < 0.24; t += 1 / 60) { onCounter(); vm.gun.visible = false; yield null; }
+  // the grip: the gun is in my hands
+  onCounter();
+  R.gun.group.visible = false;
+  vm.gun.visible = true;
   R.gunTaken = true;
-  R.reserve = RESERVE.start;
-  yield wait(0.5);
+  // the lift: off the counter, toward me, down out of the frame
+  const p0 = vm.base.pos.clone(), q0 = new THREE.Quaternion().setFromEuler(vm.base.rot);
+  const p1 = new THREE.Vector3(0.24, -0.66, -0.4);
+  const q1 = new THREE.Quaternion().setFromEuler(new THREE.Euler(R.vmBase0.rot.x - 0.75, R.vmBase0.rot.y, R.vmBase0.rot.z - 0.3, 'YXZ'));
+  const T = 0.38;
+  if (lean > 0.02) C.ease({ ...P0, pitch: Math.max(-0.12, Math.min(0.05, P0.pitch)) }, 0.42);
+  for (let t = 0; t < T; t += 1 / 60) {
+    const u = Math.min(1, t / T), e = u * u * (3 - 2 * u);
+    vm.base.pos.lerpVectors(p0, p1, e).y += 0.1 * Math.sin(Math.PI * Math.min(1, u * 1.6));
+    vm.base.rot.setFromQuaternion(new THREE.Quaternion().slerpQuaternions(q0, q1, e), 'YXZ');
+    yield null;
+  }
+  // out of sight: the gun's own lens, and up to the shoulder
+  H.studyFov = false;
+  vm.base.pos.copy(R.vmBase0.pos); vm.base.rot.copy(R.vmBase0.rot);
+  vm.lowerTo(1, true);
+  vm.lowerTo(0);
+  G.sfx.play('b7_bolt', null);
+  yield wait(0.35);
 }
 
 // ---- 2. cars ------------------------------------------------------------------------------------
 function* carsBeat(ctx) {
   const G = ctx.game, S = ctx.stage, R = rig();
   const cars = [];
+  // (Dot hears them first: down behind the counter)
+  const dot = ctx.cast.get('dot');
+  if (dot) R.ticks.push(((t0) => (dt) => { if ((t0 -= dt) > 0) return true; dot.setState('duck'); return false; })(2.2));
   SITE.cars.forEach((spec, i) => {
     R.ticks.push(((t0) => (dt) => {
       if ((t0 -= dt) > 0) return true;

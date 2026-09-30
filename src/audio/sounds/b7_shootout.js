@@ -53,6 +53,15 @@ export default (k) => {
         burst(ctx, out, R, t0 + 0.52, 'white', ['bandpass', 2300, 2.5], 0.2, 0.0005, 0.025);
         return 0.8;
       },
+      // the gun at the shoulder: the bolt drawn back and let go
+      b7_bolt(ctx, out, t0, p, R) {
+        burst(ctx, out, R, t0, 'white', ['bandpass', 2400, 2.5], 0.3, 0.0005, 0.025);
+        thud(ctx, out, t0, 300, 180, 0.12, 0.04);
+        burst(ctx, out, R, t0 + 0.13, 'white', ['bandpass', 3100, 3], 0.35, 0.0005, 0.02);
+        thud(ctx, out, t0 + 0.13, 420, 240, 0.16, 0.04);
+        ping(ctx, out, t0 + 0.13, [[3900, 0.03, 0.05]]);
+        return 0.3;
+      },
       // hard braking: the tyres' squeal on the wet stone, a wobble in it
       b7_brake(ctx, out, t0, p, R) {
         const dur = p.dur ?? 0.55;
