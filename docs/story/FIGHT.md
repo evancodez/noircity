@@ -255,4 +255,6 @@ steps (`nododge`) wins none (10 to 13 downs, stuck in his first two
 manners); a player who takes whatever is in reach (`things`, mean 81.5 s)
 wins faster than one who never picks anything up (`fists`, 95.2 s). Strips of each exchange: `?shot=b8duel`
 (`src/debug/shots/B8_fight.js`). The plays `slice`, `fight`, `autoplay`,
-`continue` pass by real input.
+`continue` pass by real input, each twice in a row; the real-input driver's
+fights run 79 to 110 s, longer when it keeps going down in one manner
+(each down there gives him back more).
