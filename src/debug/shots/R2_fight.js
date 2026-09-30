@@ -164,7 +164,7 @@ function stageDuel(stage, camera, controller, game) {
     else if (what === 'break') { for (let i = 0; i < 3; i++) at(1.0 + i * 0.75, 'b' + i, () => press(i % 2 ? 'Mouse0' : 'Mouse2', 0.3)); }
     else if (what === 'bottle') { B.him.next = 0; B.him.manner = 'dirty'; }
     else if (what === 'stool') { const it = B.room.hisItem('stool', c.pos); if (it) { B.him.task = { kind: 'stool', item: it, t: 0 }; B.him.state = 'arm'; } }
-    else if (what === 'reel') { B.damageHim(B.him.hp - 12); B.startReel(); }
+    else if (what === 'reel') { B.damageHim(B.him.hp - 0.12 * B.max); B.startReel(); }
     // (polish: do=mystool|mybottle - a stool or a bottle into my right hand,
     // then the right button held &hold s (default 1.0) and let go)
     else if (what === 'mystool' || what === 'mybottle') {

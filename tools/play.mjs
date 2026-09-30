@@ -133,12 +133,13 @@ async function fight({ timeout = 240000, shots = {} } = {}) {
     return { time: +(t1 - R.t0).toFixed(1), lesson: +(R.lesson || 0).toFixed(1), dur, perMin: dur.map((d, i) => +((R.his[i + 1] || 0) / Math.max(1, d) * 60).toFixed(1)), throws: R.throws, downs: B.stats.downs, landed: B.stats.landed, taken: B.stats.taken, dodged: B.stats.dodged, blocked: B.stats.myBlocked, window: B.stats.window }; })()`);
   // his blow: its hand and kind (a swing is left AWAY from its hand)
   const INFO = { br_jab: ['L', 's'], br_jabR: ['R', 's'], br_cross: ['R', 's'], br_hook: ['R', 'w'], br_hookL: ['L', 'w'], br_body: ['R', 'w'], br_bodyL: ['L', 'w'],
-    br_haymaker: ['R', 'o'], br_haymakerL: ['L', 'o'], br_rush: ['R', 'r'], br_shove: ['B', 'p'], br_bottle: ['R', 's'], br_bottle_thrust: ['R', 's'], br_stoolSwing: ['R', 'w'], br_throw: ['R', 't'], br_feint: ['R', 'w'], br_feintL: ['L', 'w'] };
+    br_haymaker: ['R', 'o'], br_haymakerL: ['L', 'o'], br_rush: ['R', 'r'], br_shove: ['B', 'p'], br_bottle: ['R', 's'], br_bottle_thrust: ['R', 's'], br_stoolSwing: ['R', 'w'], br_throw: ['R', 't'], br_feint: ['R', 'w'], br_feintL: ['L', 'w'],
+    br_answerL: ['L', 's'], br_answerR: ['R', 's'] };  // [B8] his answer to a punch into his guard
   for (;;) {
     const s = await js(`(() => { const B = G.brawl; if (!B.active) return { off: true, finished: !!B.finished, won: !!B.stats.won };
       const h = B.him, m = B.me, c = B.c; const cl = h.clip ? c.clip(h.clip) : null; const e = G.eye;
       return { round: B.round, state: h.state, clip: h.clip, t: h.t, tell: cl && (cl.marks.tell ?? 0), strike: cl && cl.marks.strike, contact: cl && (cl.marks.contact ?? cl.marks.release), open: B.openSides(), missT: h.missT, atSpot: !!h.atSpot,
-        me: m.act, holding: !!m.holding, reach: !!B.reachable(), his: B.stats.his || 0, d: Math.hypot(c.pos.x - e.x, c.pos.z - e.z), lesson: B.lesson ? B.lesson.step : 0, bounced: !!(B.lesson && B.lesson.bounced) }; })()`);
+        me: m.act, holding: !!m.holding, reach: !!B.reachable(), his: B.stats.his || 0, d: Math.hypot(c.pos.x - e.x, c.pos.z - e.z), lesson: B.lesson ? B.lesson.step : 0, kind: B.lesson ? B.lesson.kind : null, chev: B._cards && B._cards.chev ? B._cards.chev.side : null, bounced: !!(B.lesson && B.lesson.bounced) }; })()`);  // [B8] the lesson's step by what it teaches; the throw's chevron
     for (const [name, expr] of Object.entries(shots)) if (!done.has(name) && await js(expr) === true) { done.add(name); await shot(name); }
     const now = Date.now();
     for (const [code, at] of [...held]) if (now >= at) { held.delete(code); if (code[0] === 'M') await mouse('mouseReleased', cx, cy, code.slice(1)); else await keyUp(code); }
@@ -147,19 +148,19 @@ async function fight({ timeout = 240000, shots = {} } = {}) {
     if (s.me === 'down') { await sleep(50); continue; }
     // (arm's length: W in; a hop back when he is on top of me; out of his
     // way while he reels to the window)
-    const want = s.state === 'reel' ? (s.atSpot ? 1.35 : 2.6) : 1.4;
+    const want = s.state === 'reel' ? (s.atSpot ? 1.35 : 2.6) : s.kind === 'throw' ? 3.0 : 1.4;
     if (!held.has('Space') && s.d > want + 0.2) await down('KeyW', 150);
     // the lesson: as its card asks, a human moment after it shows
-    if (s.lesson && s.lesson <= 4) {
+    if (['jabL', 'jabR', 'guard', 'hold'].includes(s.kind) && s.state !== 'attack') {  // [B8]
       if (s.lesson !== lessonStep) { lessonStep = s.lesson; lessonAt = now + rr(1300, 2000); }
       if (now > lessonAt && s.me === 'idle' && s.d < 1.75) {
-        if (s.lesson === 4) { if (s.open) { await btnDown(Math.random() < 0.5 ? 'left' : 'right', rr(620, 800)); lessonAt = now + 1500; } }
+        if (s.kind === 'hold') { if (s.open) { await btnDown(Math.random() < 0.5 ? 'left' : 'right', rr(620, 800)); lessonAt = now + 1500; } }
         else if (s.open) { await btnDown(arm(s.open[0]), 60); lessonAt = now + rr(700, 1100); }
-        else if (s.lesson === 3 && !s.bounced) { await btnDown(Math.random() < 0.5 ? 'left' : 'right', 60); lessonAt = now + 1000; }
+        else if (s.kind === 'guard' && !s.bounced) { await btnDown(Math.random() < 0.5 ? 'left' : 'right', 60); lessonAt = now + 1000; }
       }
       await sleep(16); continue;
     }
-    if (s.lesson === 8) { if (s.reach) await tapKey('KeyE'); await sleep(200); continue; }
+    if (s.kind === 'grab') { if (s.reach) await tapKey('KeyE'); await sleep(200); continue; }
     // his blow: seen 0.2 .. 0.3 s after its tell starts, answered by the rule
     if (s.state === 'attack' && s.contact != null) {
       const key = s.clip + '@' + s.his;
@@ -168,12 +169,13 @@ async function fight({ timeout = 240000, shots = {} } = {}) {
         const away = hand === 'R' ? 'KeyD' : hand === 'L' ? 'KeyA' : (Math.random() < 0.5 ? 'KeyA' : 'KeyD');
         const r = Math.random();
         let act;
-        if (s.lesson === 7) act = 'block'; else if (s.lesson) act = away;
+        // [B8] (a thrown thing: the hop the chevron points to)
+        if (s.kind === 'block') act = 'block'; else if (kind === 't') act = s.chev === 'L' ? 'KeyA' : s.chev === 'R' ? 'KeyD' : r < 0.5 ? 'KeyA' : 'KeyD'; else if (s.lesson) act = away;
         else if (kind === 'w' || kind === 'o') act = away;
-        else if (kind === 'r' || kind === 't') act = r < 0.5 ? 'KeyA' : 'KeyD';
+        else if (kind === 'r') act = r < 0.5 ? 'KeyA' : 'KeyD';
         else if (kind === 'p') act = r < 0.5 ? 'KeyS' : away;
         else act = r < 0.35 ? 'KeyA' : r < 0.7 ? 'KeyD' : r < 0.85 ? 'block' : 'KeyS';
-        plans.set(key, { act: !s.lesson && Math.random() < 0.2 ? null : act, seen: (s.clip === 'br_throw' ? s.contact : s.tell) + rr(0.2, 0.3) });
+        plans.set(key, { act: !s.lesson && Math.random() < 0.2 ? null : act, seen: s.tell + rr(0.2, 0.3) });
       }
       const P = plans.get(key);
       if (P && P.act && s.t >= P.seen) {
@@ -194,7 +196,7 @@ async function fight({ timeout = 240000, shots = {} } = {}) {
     else if (s.open) {
       const side = s.open.length === 2 ? (lastSide = lastSide === 'L' ? 'R' : 'L') : s.open;
       const big = s.state === 'stun' || s.missT > 0.35;
-      await btnDown(arm(side), big && Math.random() < 0.55 ? rr(300, 500) : 60);
+      await btnDown(arm(side), big && Math.random() < 0.55 ? (s.state === 'stun' ? rr(430, 680) : rr(250, 450)) : 60);  // [B8] held to the second or third tick
       seenAt = now + rr(180, 300);
     } else if (s.round >= 2 && s.reach && !s.holding && s.state === 'move' && now > grabT) { grabT = now + 9000; await tapKey('KeyE'); }
     else if (s.state === 'move' && now > pokeT) { pokeT = now + rr(1600, 3200); await btnDown(Math.random() < 0.5 ? 'left' : 'right', 60); }

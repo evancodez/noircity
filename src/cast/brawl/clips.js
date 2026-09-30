@@ -147,8 +147,10 @@ function pivot() {
 
 // ---- his blows ------------------------------------------------------------------------------
 // the jab: the left shoulder dips, the left fist flicks out straight
+// ([B8] the tell is the cocked fist itself, bigger and held: drawn back
+// by the shoulder, out past his outline, the shoulder turned away to load)
 const JAB = [
-  [0.2, { chest: [8, 4, -10], shoulderL: [0, 0, -8], handTL: [0.14, 1.14, 0.26], elbowPoleL: [1, -1.4, 0], hipsPos: [0, 0.89, -0.07] }],
+  [0.2, { chest: [6, 16, -8], spine: [2, 6, 0], shoulderL: [0, 0, -10], handTL: [0.3, 1.36, -0.1], elbowPoleL: [1, -0.4, -0.9], handL: [-30, 0, 20], hipsPos: [0, 0.9, -0.08] }],
   [0.3, { chest: [6, -14, -4], hips: [4, -22, 0], handTL: [0.12, 1.3, 0.42], footL: [0.14, A, 0.3] }],
   [0.38, { chest: [4, -24, 0], spine: [8, -8, 0], hipsPos: [0, 0.9, 0.04], handTL: [0.03, 1.46, 0.76], handL: [-80, 0, 30], elbowPoleL: [1, -0.4, 0], shoulderL: [0, 12, 0] }],
   [0.5, { handTL: [0.05, 1.42, 0.7] }],
@@ -158,7 +160,7 @@ const JAB = [
 // the right fist goes straight down the middle
 const CROSS = [
   [0.18, { chest: [6, -16, 6], hips: [2, -24, 0], shoulderR: [0, 0, 8], handTR: [-0.22, 1.3, 0.04], elbowPoleR: [-1, -0.8, -0.4], hipsPos: [0, 0.9, -0.1] }],
-  [0.28, { chest: [6, -20, 6], handTR: [-0.26, 1.34, -0.02] }],
+  [0.28, { chest: [6, -24, 6], handTR: [-0.36, 1.4, -0.16], elbowPoleR: [-1, -0.3, -0.9] }],
   [0.46, { chest: [6, 18, -4], hips: [4, 8, 0], spine: [6, 6, 0], hipsPos: [0, 0.9, 0.06], handTR: [0.02, 1.44, 0.8], handR: [-80, 0, -30], elbowPoleR: [-1, -0.4, 0], footRotR: [-18, 12, 0], shoulderR: [0, -12, 0] }],
   [0.58, { handTR: [0.0, 1.42, 0.72] }],
   [0.85, { ...GUARD }],
@@ -168,7 +170,7 @@ const CROSS = [
 const HOOK = [
   [0.18, { chest: [8, -18, 10], shoulderR: [0, 0, 10], handTR: [-0.34, 1.24, 0.08], elbowPoleR: [-1, -0.1, -1] }],
   [0.3, { chest: [8, -26, 8], hips: [4, -24, 0], spine: [8, -8, 0], handTR: [-0.4, 1.3, 0.02], elbowPoleR: [-1, 0.1, -1], hipsPos: [0, 0.88, -0.08] }],
-  [0.44, { chest: [6, -30, 4], handTR: [-0.46, 1.42, 0.02], elbowPoleR: [-1, 0.3, -0.7] }],
+  [0.44, { chest: [6, -34, 4], handTR: [-0.6, 1.48, -0.1], elbowPoleR: [-1, 0.45, -0.7] }],
   [0.66, { chest: [6, 22, -4], hips: [4, 4, 0], spine: [8, 6, 0], hipsPos: [0, 0.9, 0.04], handTR: [0.04, 1.5, 0.6], elbowPoleR: [-1, 0.6, 0.1], handR: [-60, 0, 60], footRotR: [-20, 10, 0] }],
   [0.84, { chest: [8, 30, -4], handTR: [0.26, 1.42, 0.4], elbowPoleR: [-0.3, 0.3, 1] }],
   [1.0, { ...GUARD }],
@@ -176,7 +178,7 @@ const HOOK = [
 // to the body: he dips, the right shoulder low, the fist comes up under
 const BODY = [
   [0.2, { hipsPos: [0, 0.84, -0.06], hips: [8, -26, 0], spine: [10, -10, 0], chest: [10, -26, 12], shoulderR: [0, 0, 12], handTR: [-0.36, 1.02, 0.02], elbowPoleR: [-1, -0.2, -1] }],
-  [0.34, { handTR: [-0.4, 0.98, -0.04], chest: [10, -32, 12] }],
+  [0.34, { handTR: [-0.5, 1.0, -0.14], chest: [10, -36, 12], elbowPoleR: [-1, -0.1, -0.9] }],
   [0.58, { hipsPos: [0, 0.84, 0.08], hips: [10, 6, 0], spine: [12, 6, 0], chest: [12, 18, -2], handTR: [0.02, 1.16, 0.72], handR: [-40, 0, 70], elbowPoleR: [-1, 0.2, 0.2], footRotR: [-16, 10, 0] }],
   [0.74, { handTR: [0.12, 1.2, 0.56] }],
   [1.0, { ...GUARD }],
@@ -225,7 +227,7 @@ const SHOVE_RM = (t) => [0, 0.22 * sstep(0.1, 0.5, t)];
 // beside the shoulder, the body wound to his right, then driven at my chest
 const THRUST = [
   [0.14, { hips: [4, -24, 0], chest: [6, -26, 4], spine: [6, -8, 0], handTR: [-0.4, 1.3, -0.06], elbowPoleR: [-1, -0.2, -0.5], handR: [-40, 0, 0], hipsPos: [0, 0.9, -0.1] }],
-  [0.28, { chest: [4, -26, 6], hips: [4, -26, 0], handTR: [-0.42, 1.28, -0.12], hipsPos: [0, 0.89, -0.12] }],
+  [0.28, { chest: [4, -30, 6], hips: [4, -28, 0], handTR: [-0.5, 1.32, -0.24], hipsPos: [0, 0.89, -0.12] }],
   [0.5, { hipsPos: [0, 0.86, 0.14], hips: [8, 4, 0], chest: [12, 12, 0], spine: [10, 4, 0], handTR: [-0.02, 1.18, 0.84], elbowPoleR: [-1, -0.3, 0], handR: [-80, 0, 0], footL: [0.14, A, 0.38] }],
   [0.62, { handTR: [0.0, 1.16, 0.8] }],
   [0.9, { ...GUARD, handTR: [-0.22, 1.08, 0.22], handR: [-20, 0, -10] }],
@@ -292,11 +294,13 @@ const HIT_BODY = [
 // knocked back along the line of the blow: two stumbling steps back, the
 // arms thrown out, the head back; authored for 1 m (the rules scale it to
 // 0.6 .. 1.5 m). The feet are set down where they land and stay there.
+// ([B8] his fists stay up about his face as he goes back: version 3's arms
+// flung out wide read as a T-pose from the front)
 const KNOCK = [
   [0.08, { hipsPos: [0, 0.92, -0.12], hips: [-10, -8, 0], spine: [-8, 0, 0], chest: [-14, 6, 0], neck: [-10, 0, 0], head: [-24, 10, 6],
-    handTL: [0.36, 1.26, 0.06], handTR: [-0.34, 1.22, -0.02], elbowPoleL: [1, -0.5, 0], elbowPoleR: [-1, -0.5, 0], footR: [-0.18, A + 0.08, -0.3] }],
+    handTL: [0.22, 1.3, 0.1], handTR: [-0.2, 1.26, 0.04], elbowPoleL: [1, -0.8, 0.2], elbowPoleR: [-1, -0.8, 0.2], footR: [-0.18, A + 0.08, -0.3] }],
   [0.22, { hipsPos: [0, 0.9, -0.42], footR: [-0.2, A, -0.62], footRotR: [0, 30, 0] }],
-  [0.4, { hipsPos: [0, 0.9, -0.74], hips: [-6, -8, 0], chest: [-8, 4, 0], footL: [0.16, A + 0.09, -0.4], handTL: [0.34, 1.12, -0.6], handTR: [-0.33, 1.06, -0.68], elbowPoleL: [1, -0.6, 0], elbowPoleR: [-1, -0.6, 0] }],
+  [0.4, { hipsPos: [0, 0.9, -0.74], hips: [-6, -8, 0], chest: [-8, 4, 0], footL: [0.16, A + 0.09, -0.4], handTL: [0.21, 1.24, -0.56], handTR: [-0.2, 1.2, -0.62], elbowPoleL: [1, -0.8, 0.2], elbowPoleR: [-1, -0.8, 0.2] }],
   [0.54, { hipsPos: [0, 0.9, -0.92], footL: [0.16, A, -0.84], footRotL: [0, 12, 0] }],
   [0.8, { ...GUARD, hipsPos: [0, 0.93, -1.0], footL: [0.14, A, -0.8], footR: [-0.18, A, -1.24], handTL: [0.155, 1.44, -0.75], handTR: [-0.13, 1.41, -0.81] }],
 ];
@@ -312,7 +316,7 @@ const knockSnap = (s) => KNOCK.map(([t, p], i) => [t, i === 0 ? { ...p, neck: [-
 // the root; the rules put the thing there
 const INTO = [
   [0.1, { hipsPos: [0, 0.88, -0.12], hips: [-16, 0, 0], spine: [-10, 0, 0], chest: [-18, 0, 0], neck: [-18, 0, 0], head: [-30, 12, 0],
-    handTL: [0.58, 1.2, -0.3], handTR: [-0.56, 1.1, -0.36], elbowPoleL: [1, 0, 0], elbowPoleR: [-1, 0, 0], footR: [-0.2, A, -0.3] }],
+    handTL: [0.42, 1.1, -0.34], handTR: [-0.24, 1.22, 0.02], elbowPoleL: [1, 0, 0], elbowPoleR: [-1, -0.6, 0.2], footR: [-0.2, A, -0.3] }],
   [0.3, { hipsPos: [0, 0.84, -0.14], chest: [-12, 0, 0], head: [-20, 14, 6] }],
   [0.7, { hipsPos: [0, 0.88, -0.02], chest: [2, 0, 0], spine: [4, 0, 0], head: [4, 0, 0], handTL: [0.3, 1.2, 0.1], handTR: [-0.3, 1.14, 0.06] }],
   [1.1, { ...GUARD, hipsPos: [0, 0.93, 0.06], footL: [0.14, A, 0.3], footR: [-0.18, A, -0.14] }],
@@ -469,6 +473,10 @@ export const TELL = {
   br_stoolSwing: { peak: 0.55, snap: 0.15, T: 0.45, C: 0.59, D: 1.09, cOld: 0.95, dOld: 1.6 },
 };
 TELL.br_jabR = TELL.br_jab; TELL.br_hookL = TELL.br_hook; TELL.br_bodyL = TELL.br_body; TELL.br_haymakerL = TELL.br_haymaker;
+// [B8] his answer to a punch into his guard (§3): the hand that blocked
+// cocks (0.2 s, the fist back beyond his outline) and goes straight in, fast
+TELL.br_answerL = { peak: 0.22, snap: 0.07, T: 0.2, C: 0.28, D: 0.62, cOld: 0.38, dOld: 0.7 };
+TELL.br_answerR = TELL.br_answerL;
 // a feint: the same snap and hold, then back to the guard with no blow
 const FEINT_T = { peak: 0.34, snap: 0.12, T: 0.30, D: 0.55, dOld: 0.6 };
 const feintT = (defFn) => timed(defFn, [[0, 0], [FEINT_T.snap, FEINT_T.peak], [FEINT_T.T, FEINT_T.peak], [FEINT_T.D, FEINT_T.dOld]], FEINT_T.D);
@@ -518,6 +526,7 @@ export const BR_DEFS = {
   br_openL: openSide('L'), br_openR: openSide('R'), br_openBoth: openSide('both'),
   br_jab: told(fight(0.7, JAB), TELL.br_jab),
   br_jabR: told(fightL(0.7, JAB), TELL.br_jab),     // (his right jab: a jab with the right)
+  br_answerL: told(fight(0.7, JAB), TELL.br_answerL), br_answerR: told(fightL(0.7, JAB), TELL.br_answerR),
   br_cross: told(fight(0.85, CROSS), TELL.br_cross),
   br_hook: told(fight(1.0, HOOK), TELL.br_hook), br_hookL: told(fightL(1.0, HOOK), TELL.br_hook),
   br_body: told(fight(1.0, BODY), TELL.br_body), br_bodyL: told(fightL(1.0, BODY), TELL.br_body),
@@ -611,22 +620,27 @@ const PATH = {
   shove: { lo: -0.35, hi: 0.35, reach: 1.8, over: 0.3 },
   stool: { lo: -1.05, hi: 0.32, reach: 2.05, over: 0.4 },
 };
+// ([B8] version 4: his damage about a third up on version 3's - a player
+// who never steps off the line must lose)
 export const BR_ATTACKS = {
-  br_jab: { hand: 'L', kind: 'straight', dmg: 5, block: 0, push: 0, stun: 0.2, miss: { open: 'R', t: 0.5 }, path: PATH.straight },
-  br_jabR: { hand: 'R', kind: 'straight', dmg: 5, block: 0, push: 0, stun: 0.2, miss: { open: 'L', t: 0.5 }, path: PATH.straight },
-  br_cross: { hand: 'R', kind: 'straight', dmg: 7, block: 0, push: 0.1, stun: 0.24, miss: { open: 'L', t: 0.5 }, path: PATH.straight },
-  br_hook: { hand: 'R', kind: 'swing', dmg: 10, block: 0.25, push: 0.1, stun: 0.3, miss: { open: 'LR', t: 0.8 }, path: PATH.swingR },
-  br_hookL: { hand: 'L', kind: 'swing', dmg: 10, block: 0.25, push: 0.1, stun: 0.3, miss: { open: 'LR', t: 0.8 }, path: PATH.swingL },
-  br_body: { hand: 'R', kind: 'swing', dmg: 8, block: 0.25, push: 0.05, stun: 0.28, miss: { open: 'L', t: 0.6 }, path: PATH.swingR },
-  br_bodyL: { hand: 'L', kind: 'swing', dmg: 8, block: 0.25, push: 0.05, stun: 0.28, miss: { open: 'R', t: 0.6 }, path: PATH.swingL },
-  br_haymaker: { hand: 'R', kind: 'over', dmg: 18, block: null, push: 0.4, stun: 0.45, miss: { open: 'LR', t: 1.1 }, path: PATH.over, heavy: true },
-  br_haymakerL: { hand: 'L', kind: 'over', dmg: 18, block: null, push: 0.4, stun: 0.45, miss: { open: 'LR', t: 1.1 }, path: PATH.over, heavy: true },
-  br_rush: { hand: 'R', kind: 'rush', dmg: 18, block: null, push: 0.5, stun: 0.45, miss: { open: 'LR', t: 1.0 }, path: PATH.rush, heavy: true },
+  br_jab: { hand: 'L', kind: 'straight', dmg: 6, block: 0, push: 0, stun: 0.2, miss: { open: 'R', t: 0.5 }, path: PATH.straight },
+  br_jabR: { hand: 'R', kind: 'straight', dmg: 6, block: 0, push: 0, stun: 0.2, miss: { open: 'L', t: 0.5 }, path: PATH.straight },
+  // [B8] the answer: fast, a little harder than a jab (a masher pays for it)
+  br_answerL: { hand: 'L', kind: 'straight', dmg: 8, block: 0, push: 0.05, stun: 0.24, miss: { open: 'R', t: 0.55 }, path: PATH.straight, answer: true },
+  br_answerR: { hand: 'R', kind: 'straight', dmg: 8, block: 0, push: 0.05, stun: 0.24, miss: { open: 'L', t: 0.55 }, path: PATH.straight, answer: true },
+  br_cross: { hand: 'R', kind: 'straight', dmg: 9, block: 0, push: 0.1, stun: 0.24, miss: { open: 'L', t: 0.5 }, path: PATH.straight },
+  br_hook: { hand: 'R', kind: 'swing', dmg: 13, block: 0.25, push: 0.1, stun: 0.3, miss: { open: 'LR', t: 0.8 }, path: PATH.swingR },
+  br_hookL: { hand: 'L', kind: 'swing', dmg: 13, block: 0.25, push: 0.1, stun: 0.3, miss: { open: 'LR', t: 0.8 }, path: PATH.swingL },
+  br_body: { hand: 'R', kind: 'swing', dmg: 10, block: 0.25, push: 0.05, stun: 0.28, miss: { open: 'L', t: 0.6 }, path: PATH.swingR },
+  br_bodyL: { hand: 'L', kind: 'swing', dmg: 10, block: 0.25, push: 0.05, stun: 0.28, miss: { open: 'R', t: 0.6 }, path: PATH.swingL },
+  br_haymaker: { hand: 'R', kind: 'over', dmg: 22, block: null, push: 0.4, stun: 0.45, miss: { open: 'LR', t: 1.1 }, path: PATH.over, heavy: true },
+  br_haymakerL: { hand: 'L', kind: 'over', dmg: 22, block: null, push: 0.4, stun: 0.45, miss: { open: 'LR', t: 1.1 }, path: PATH.over, heavy: true },
+  br_rush: { hand: 'R', kind: 'rush', dmg: 22, block: null, push: 0.5, stun: 0.45, miss: { open: 'LR', t: 1.0 }, path: PATH.rush, heavy: true },
   br_shove: { hand: 'both', kind: 'shove', dmg: 3, block: null, push: 1.2, stun: 0.45, miss: { open: 'LR', t: 0.5 }, path: PATH.shove },
-  br_bottle: { hand: 'R', kind: 'straight', dmg: 14, block: 0, push: 0.1, stun: 0.3, miss: { open: 'LR', t: 0.8 }, path: PATH.straight, heavy: true },
-  br_bottle_thrust: { hand: 'R', kind: 'straight', dmg: 14, block: 0, push: 0.1, stun: 0.3, miss: { open: 'LR', t: 0.8 }, path: PATH.straight },
-  br_throw: { hand: 'R', kind: 'throw', dmg: 8, block: 0, push: 0, stun: 0.25, miss: { open: 'LR', t: 0.8 }, path: PATH.straight },
-  br_stoolSwing: { hand: 'R', kind: 'swing', dmg: 20, block: null, push: 0.6, stun: 0.5, miss: { open: 'LR', t: 0.8 }, path: PATH.stool, heavy: true },
+  br_bottle: { hand: 'R', kind: 'straight', dmg: 16, block: 0, push: 0.1, stun: 0.3, miss: { open: 'LR', t: 0.8 }, path: PATH.straight, heavy: true },
+  br_bottle_thrust: { hand: 'R', kind: 'straight', dmg: 16, block: 0, push: 0.1, stun: 0.3, miss: { open: 'LR', t: 0.8 }, path: PATH.straight },
+  br_throw: { hand: 'R', kind: 'throw', dmg: 10, block: 0, push: 0, stun: 0.25, miss: { open: 'LR', t: 0.8 }, path: PATH.straight },
+  br_stoolSwing: { hand: 'R', kind: 'swing', dmg: 24, block: null, push: 0.6, stun: 0.5, miss: { open: 'LR', t: 0.8 }, path: PATH.stool, heavy: true },
 };
 // the side of MY SCREEN a blow of his opens while he throws it (the hand
 // that swings has left its guard): his right hand is on my left

@@ -1,11 +1,16 @@
 import * as THREE from 'three';
 import { defineScene, wait, until, beat } from '../game/script.js';
-import { dinerRoom, makeJobs, clip, counterAt, V, DINER, stoolZ, MACK_AT, EYE_AT, BRAWL_EYE } from './_diner_room.js';
+import { dinerRoom, seatPlayer, makeJobs, clip, counterAt, V, DINER, stoolZ, MACK_AT, EYE_AT, BRAWL_EYE } from './_diner_room.js';
 import { KO_OUT } from '../cast/brawl/clips.js';
+import { startSetup, startFight, layStool } from './fight/start.js';
 
 // Scene 2, the fist fight (round 2: docs/story/FIGHT.md, the user's spec).
 // The rules are game/Brawl.js (with his brain, src/cast/brawl/); this file
 // stages the room round them. Beats:
+//   start    [B8] after his line: he stands, comes down the counter, his
+//            hand on my shoulder pulls me round; I come up, the stool beside
+//            me sent skidding, fists up (scenes/fight/start.js); a retry
+//            skips it
 //   lesson   he rises, squares up and waits: the first exchange is taught,
 //            one card at a time (game/BrawlLesson.js); ?step=<1..7> jumps
 //            into it. The room clears as it starts (the couple out into the
@@ -133,16 +138,74 @@ function brawlRoom(ctx) {
     }
     return out;
   };
-  let slides = 0;
-  return {
-    stools, cafe, counterX: DINER.counter.frontX,
+  let slides = 0, gate = null;
+  const jukebox = { pos: V(DINER.jukebox.x, 0, DINER.zMin + 0.62), hit: (p) => d.jukebox.hit(p), next: () => d.jukebox.next() };
+  const pieCase = { pos: pcPos, get broken() { return !!(pc && pc.handle && pc.handle.broken); }, burst: (dir) => { if (pc && pc.handle) B.hit(pc.handle, { point: pcPos.clone(), dir: dir.clone(), power: 9, by: 'body' }); } };
+  const up = (h) => !h.toppled && !h.broken;
+  const room = {
+    stools, cafe,
+    // [B8] the rules' room (FIGHT.md v4 §10): the open lane down the room
+    // (the aisle, 1.4 m off the counter's front), the walls, the finishes
+    lane: DINER.counter.frontX + 1.4,
     bounds: { x0: DINER.backX, x1: DINER.innerX, z0: DINER.zMin, z1: DINER.zMax },
-    jukebox: { pos: V(DINER.jukebox.x, 0, DINER.zMin + 0.62), hit: (p) => d.jukebox.hit(p), next: () => d.jukebox.next() },
-    pieCase: { pos: pcPos, get broken() { return !!(pc && pc.handle && pc.handle.broken); }, burst: (dir) => { if (pc && pc.handle) B.hit(pc.handle, { point: pcPos.clone(), dir: dir.clone(), power: 9, by: 'body' }); } },
-    windows: WINDOWS.map((name) => ({ name, spot: DINER.finish[name], pane: front.panes[name], land: landing(name) })),
+    finishes: WINDOWS.map((name) => ({ name, spot: DINER.finish[name], pane: front.panes[name], land: landing(name), clip: 'br_ko_window' })),
+    // what stands on the floor to be knocked into (a stool he may catch at as he reels)
+    knockables() {
+      const out = [];
+      for (const st of stools) if (up(st.handle) && !st.taken) out.push({ pos: st.pos, r: 0.2, what: 'stools', st, handle: st.handle, catch: true, spin: (k) => st.st.spin(k) });
+      for (const t of cafe) {
+        if (up(t.handle)) out.push({ pos: t.pos, r: 0.31, what: 'table', t, handle: t.handle });
+        for (const ch of t.chairs) if (up(ch.handle) && !ch.taken) out.push({ pos: ch.pos, r: 0.2, what: 'chair', t: ch, handle: ch.handle });
+      }
+      return out;
+    },
+    // a hard thing, by its collider's tag (the counter before the pie case is the pie case)
+    hardAt(tag, x, z) {
+      if (tag === 'counter') return !pieCase.broken && Math.abs(pieCase.pos.z - z) < 0.75 ? 'piecase' : 'counter';
+      return tag === 'jukebox' || tag === 'booth' ? tag : 'wall';
+    },
+    // his back into it: the stools go down one after another, the counter's
+    // cups jump and its china flies, the pie case bursts, the jukebox skips
+    onInto(hit, dir, at, Br) {
+      const c = Br.c;
+      if (hit.what === 'stools') {
+        const st = hit.obj.st;
+        const row = stools.filter((q) => q !== st && up(q.handle) && !q.taken && Math.abs(q.pos.x - st.pos.x) < 0.3);
+        const sgn = Math.abs(dir.z) > 0.2 ? Math.sign(dir.z) : (st.pos.z > c.pos.z ? 1 : -1);
+        row.sort((a2, b2) => (a2.pos.z - st.pos.z) * sgn - (b2.pos.z - st.pos.z) * sgn);
+        B.topple(st.handle, V(dir.x, 0, dir.z + sgn * 0.6).multiplyScalar(1.4));
+        let k = 0;
+        for (const q of row) {
+          const ahead = (q.pos.z - st.pos.z) * sgn;
+          if (ahead <= 0 || ahead > 2.8) continue;
+          k++;
+          Br.later(0.18 * k, () => B.topple(q.handle, V(dir.x * 0.5, 0, sgn).multiplyScalar(1.2)));
+        }
+        Br.sfx('bodyStools', at, {});
+        return 'br_into_stools';
+      }
+      if (hit.what === 'counter' || hit.what === 'piecase') {
+        room.counterHit(at, dir);
+        if (hit.what === 'piecase') pieCase.burst(dir);
+        Br.sfx('counter', at, { k: 1 });
+        return 'br_into';
+      }
+      if (hit.what === 'jukebox') { jukebox.hit(1.2); Br.later(1.1, () => jukebox.next()); Br.sfx('bodyThud', at, { k: 1 }); return 'br_into'; }
+      if (hit.what === 'table' || hit.what === 'chair') {
+        const t = hit.obj.t;
+        B.topple(t.handle, V(dir.x, 0, dir.z).multiplyScalar(1.4));
+        if (t.chairs) for (const ch of t.chairs) if (!ch.taken) Br.later(0.15, () => B.topple(ch.handle, V(ch.pos.x - t.pos.x, 0, ch.pos.z - t.pos.z).add(dir)));
+        Br.sfx('bodyThud', at, { k: 0.8 });
+        return 'br_into';
+      }
+      Br.sfx('bodyThud', at, { k: 0.9 });
+      return 'br_into';
+    },
+    // me driven into the counter: the cups jump
+    onBump(at, speed, Br) { if (Math.abs(at.x - DINER.counter.frontX) < 0.8) { room.counterBump(at, speed); Br.sfx('cups', at, { k: Math.min(1, speed / 4) }); } },
     items: () => [...counterItems(), ...floorItems()],
     hisItem(kind, near) {
-      const all = kind === 'stool' ? floorItems().filter((x) => x.kind === 'stool') : counterItems().filter((x) => x.kind === kind);
+      const all = kind === 'stool' || kind === 'chair' ? floorItems().filter((x) => x.kind === kind) : counterItems().filter((x) => x.kind === kind);
       let best = null, bd = 6;
       const e = G.eye;
       for (const it of all) {
@@ -169,9 +232,18 @@ function brawlRoom(ctx) {
       }
     },
     counterBump() { d.cupsRattle(1.2, 0.7); },
+    // [B8] the service aisle behind the counter is shut while we fight (a
+    // man knocked round the counter's end, into the gap by the jukebox,
+    // could not be got back to a window): the rules' room.enter / leave
+    // (and the street door stays shut: it opened inwards whenever the eye
+    // came within 2 m of it, and its leaf swung into the ring between us - he
+    // was fought through it, his legs under its blind)
+    enter() { if (!gate) gate = stage.colliders.addBox((DINER.backX + DINER.counter.frontX) / 2, DINER.counter.z0 - 0.12, (DINER.counter.frontX - DINER.backX) / 2, 0.12, 0, 'counter'); front.door.shut = true; },
+    leave() { if (gate) { const A = stage.colliders.boxes, k = A.indexOf(gate); if (k >= 0) A.splice(k, 1); gate = null; } front.door.shut = false; },
+    jukebox, pieCase,
     // Dot slides me a bottle down the counter (the lesson; his first bottle;
-    // when he bleeds): it stops opposite me
-    dotSlide(why) {
+    // when he bleeds): it stops opposite me (the rules' room.gift)
+    gift(why) {
       if (slides >= 3) return;
       slides++;
       const dot = ctx.cast.get('dot');
@@ -195,6 +267,7 @@ function brawlRoom(ctx) {
       })());
     },
   };
+  return room;
 }
 
 // the room as a part of the fight finds it (a jump, a retry under the black)
@@ -205,6 +278,8 @@ function stageFight(ctx, part, { retry = false } = {}) {
   // (the café tables and chairs as they stood; the rack on the counter)
   for (const t of d.booths.cafe || []) { stage.breakables.restore(t.handle); for (const c of t.chairs) stage.breakables.restore(c.handle); }
   d.stool(DINER.brawlerStool).topple(V(1, 0, -0.3));
+  // [B8] (the stool I sent skidding lies where it stopped)
+  layStool(stage);
   clearRoom(ctx, true);
   setRack(ctx);
   ctx.flags.room = null;
@@ -229,12 +304,12 @@ function beginFight(ctx, mack, { manner = 'measured', hp = null, lesson = false,
     opponent: mack, manner, hp, rng: ctx.rng, retry, lesson, room,
     // (a retry: the room set again under the black, without a sound; the
     // lesson is not taught twice)
-    onRetry: (m) => {
+    onRetry: (m, hp = null) => {
       const part = m === 'out' ? 'round3' : MANNER_BEAT[m];
       const mk = stageFight(ctx, part, { retry: true });
-      beginFight(ctx, mk, { manner: m, hp: m === 'out' ? 12 : null, retry: true });
+      beginFight(ctx, mk, { manner: m, hp, retry: true });
     },
-    onManner: (m) => { if (m === 'wild') room.dotSlide('bleeds'); },
+    onManner: (m) => { if (m === 'wild') room.gift('bleeds'); },
     onGlass: (w) => {
       if (!w) return;
       const hip = mack.bones.chest.getWorldPosition(V(0, 0, 0));
@@ -253,10 +328,12 @@ function beginFight(ctx, mack, { manner = 'measured', hp = null, lesson = false,
 
 export default defineScene({
   id: 'fight', stage: 'block', title: 'II', name: 'The Fight',
-  beats: ['lesson', 'round1', 'round2', 'round3', 'reel', 'ko', 'outside', 'matchbook'],
+  beats: ['start', 'lesson', 'round1', 'round2', 'round3', 'reel', 'ko', 'outside', 'matchbook'],
   save: ['lesson', 'round1', 'round2', 'round3', 'outside'],
 
   setup: {
+    // [B8] his line said: he on his stool turned to me, I on mine (a cold entry)
+    start(ctx) { ctx.flags.jobs = makeJobs(); startSetup(ctx, dinerRoom, seatPlayer); },
     lesson(ctx) {
       ctx.flags.jobs = makeJobs();
       stageFight(ctx, 'lesson');
@@ -278,8 +355,8 @@ export default defineScene({
       const yaw = Math.atan2(-(s.x - me.x), -(s.z - me.z));
       ctx.controller.setPose(me.x, me.z, yaw, -0.1);
       ctx.controller.setMode('brawl', { opponent: m, eyeY: BRAWL_EYE, pos: me, yaw });
-      const B = beginFight(ctx, m, { manner: 'out', hp: 12 });
-      const win = ctx.flags.room.windows.find((x) => x.name === w);
+      const B = beginFight(ctx, m, { manner: 'out' });
+      const win = ctx.flags.room.finishes.find((x) => x.name === w);
       Object.assign(B.him, { window: win, spot: win.spot, atSpot: true, state: 'reel' });
       B.ko();
     },
@@ -309,24 +386,23 @@ export default defineScene({
     const mack = () => cast.get('mack');
     const fighting = ['lesson', 'round1', 'round2', 'round3', 'reel'];
 
-    // ---- into the fight: the lesson (the first time), or the part jumped to
-    if (ctx.kept) {
-      // (a cut straight from the diner: the room goes on as it stands; he
-      // squares up from where he stood, turning to me the short way)
+    // ---- into the fight: the way in and the lesson (the first time), or the part jumped to
+    if (ctx.kept || ctx.from === 'start') {
+      // [B8] (a cut straight from the diner, his line just said: the room goes
+      // on as it stands; the move of scenes/fight/start.js, then the lesson)
+      yield beat('start');
       const m = mack();
+      ctx.flags.onFall = () => clearRoom(ctx, false);
+      const end = yield* startFight(ctx);
       setRack(ctx);
-      const P = G.controller.eyePose();
-      G.controller.setMode('brawl', { opponent: m, eyeY: BRAWL_EYE, pos: { x: P.x, z: P.z }, yaw: P.yaw });
-      H.hold(null, 'R'); H.hold(null, 'L');
-      H.equip('fists');
+      G.controller.setMode('brawl', { opponent: m, eyeY: BRAWL_EYE, pos: { x: end.eye.x, z: end.eye.z }, yaw: end.yaw, ease: 0.2 });
       beginFight(ctx, m, { lesson: true });
-      clearRoom(ctx, false);
     } else if (fighting.includes(ctx.from)) {
       if (ctx.from === 'lesson') beginFight(ctx, mack(), { lesson: ctx.flags.startLesson || 1 });
-      else if (ctx.from === 'reel') beginFight(ctx, mack(), { manner: 'out', hp: 12 });
+      else if (ctx.from === 'reel') beginFight(ctx, mack(), { manner: 'out' });
       else beginFight(ctx, mack(), { manner: BEAT_MANNER[ctx.from] });
     }
-    // (the cut from the diner arrives as 'round1' kept: it is the lesson)
+    // (the way in ends in the lesson)
     const taught = ctx.kept || ctx.at('lesson');
     if (ctx.at('reel') || ctx.kept) {
       if (taught) {

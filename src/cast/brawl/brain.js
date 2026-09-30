@@ -34,10 +34,11 @@ const wrap = (a) => Math.atan2(Math.sin(a), Math.cos(a));
 // ---- choices -------------------------------------------------------------------------------
 export function think(B, dt) {
   const him = B.him, c = B.c, eye = B.game.eye, r = B.rng;
-  const M = MANNERS[him.manner] || MANNERS.measured;
+  const MM = B.manners || MANNERS, M = MM[him.manner] || MM.measured;
   const d = Math.hypot(eye.x - c.pos.x, eye.z - c.pos.z);
   // (circling: which way, for how long)
   him.circleT -= dt;
+  if (him.thingCool > 0) him.thingCool -= dt;
   if (him.circleT <= 0) { him.circleT = r.range(1.8, 3.6); him.circle = r.chance(0.5) ? 1 : -1; if (r.chance(0.25)) him.circle = 0; }
   if (him.backT > 0) him.backT -= dt;
   if (B.lessonHold) { him.goal = null; return; }
@@ -58,26 +59,35 @@ function pickAttack(B, M, d) {
   if (him.answer) { const a = him.answer; him.answer = null; return { clip: a, reach: REACH.straight + 0.1 }; }
   if (him.pending) { const p = him.pending; him.pending = null; return { clip: p, reach: REACH[BR_ATTACKS[p]?.kind] || 1.9 }; }
   // what he holds decides first
-  if (him.holding === 'stool') return { clip: 'br_stoolSwing', reach: 2.0 };
-  if (him.holding === 'plate' || him.holding === 'mug') {
-    // (a throw from 3 m: he backs off first)
-    if (d < 2.4) { him.backT = 1.0; return null; }
+  if (him.holding === 'stool' || him.holding === 'chair') return { clip: 'br_stoolSwing', reach: 2.0 };
+  if (him.holding === 'plate' || him.holding === 'mug' || him.holding === 'bottle') {
+    // (a throw from 2.5 m and more: he backs off first)
+    him.throwWait = (him.throwWait || 0) + 0.3;
+    // (pressed, he throws from where he is: point-blank, the tell and the
+    // chevron as ever; holding a thing is never a reason to stand and take it)
+    if (d < 2.4 && !(him.throwWait > 1.2 && d > 0.95)) { him.backT = 1.0; return null; }
+    him.throwWait = 0;
     return { clip: 'br_throw', reach: 7 };
   }
-  // arming himself: the first bottle in his dirty manner, a plate or a mug
-  // now and then, a stool when he is wild
   const room = B.room;
-  if (him.manner === 'dirty' && !him.holding && !him.hadBottle && room.hisItem) {
+  him.acts = (him.acts || 0) + 1;
+  // his first bottle in his dirty manner: broken on the counter, the neck
+  if (him.manner === 'dirty' && !him.holding && !him.hadBottle && room.hisItem && !(him.thingCool > 0)) {
     const it = room.hisItem('bottle', B.c.pos);
-    if (it) return { task: { kind: 'bottle', item: it, t: 0 } };
+    if (it) { him.thingActs = (him.thingActs || 0) + 1; return { task: { kind: 'bottle', item: it, t: 0, first: true } }; }
   }
-  if (him.manner === 'dirty' && !him.holding && (him.throws || 0) < 2 && r.chance(0.18) && room.hisItem) {
-    const it = room.hisItem(r.chance(0.5) ? 'plate' : 'mug', B.c.pos);
-    if (it) return { task: { kind: it.kind, item: it, t: 0 } };
-  }
-  if (him.manner === 'wild' && !him.holding && !him.hadStool && r.chance(0.3) && room.hisItem) {
-    const it = room.hisItem('stool', B.c.pos);
-    if (it) return { task: { kind: 'stool', item: it, t: 0 } };
+  // [B8] he uses the room (FIGHT.md v4 §4): from his measured manner on,
+  // about one of his actions in four is with a thing, while things last -
+  // when one is within his reach and I am not on top of him: a plate, a mug
+  // or a bottle to throw, a stool or a chair to swing
+  if (!him.holding && room.hisItem && d > 1.05 && !(him.thingCool > 0)) {
+    // (a thing in reach first; then kept to about one action in four)
+    // ([B8] second pass: 0.25 of his free choices came to one of his blows
+    // in six or seven, counting his answers and his follow-ups; 0.4 of them
+    // is about one in four, as the brief asks)
+    const p = M.things ?? 0.4, ratio = (him.thingActs || 0) / Math.max(1, him.acts);
+    const task = pickThing(B, M);
+    if (task && r.chance(ratio < p ? 0.85 : 0.15)) { him.thingActs = (him.thingActs || 0) + 1; return { task }; }
   }
   // a feint now and then (it teaches the tell)
   if (r.chance(M.feint)) return { clip: r.chance(0.5) ? 'br_feint' : 'br_feintL', reach: 2.4 };
@@ -97,12 +107,34 @@ function pickAttack(B, M, d) {
   return { clip, reach: REACH[BR_ATTACKS[clip]?.kind] || 1.9 };
 }
 
+// a thing within his reach (its place to stand at most `REACH_THING` from
+// him), by his manner: throwables more often than a stool
+const REACH_THING = 3.2;
+function pickThing(B, M) {
+  const r = B.rng, c = B.c, room = B.room;
+  const kinds = M.thingKinds || ['plate', 'mug', 'bottle', 'stool', 'chair'];
+  const found = [];
+  for (const k of kinds) {
+    if (k === 'bottle' && !B.him.hadBottle) continue;
+    const it = room.hisItem(k, c.pos);
+    if (!it) continue;
+    const p = it.stand || it.pos;
+    if (Math.hypot(p.x - c.pos.x, p.z - c.pos.z) > REACH_THING) continue;
+    found.push({ it, w: k === 'stool' || k === 'chair' ? 0.8 : 1 });
+  }
+  if (!found.length) return null;
+  let tot = 0; for (const f of found) tot += f.w;
+  let x = r.next() * tot;
+  for (const f of found) { x -= f.w; if (x <= 0) return { kind: f.it.kind, item: f.it, t: 0 }; }
+  return { kind: found[0].it.kind, item: found[0].it, t: 0 };
+}
+
 // ---- steering --------------------------------------------------------------------------------
 // where he wants to be this step (null: stay)
 function goalOf(B) {
   const him = B.him, c = B.c, eye = B.game.eye;
   if (B.holdStill) return null;
-  const M = MANNERS[him.manner] || MANNERS.measured;
+  const MM = B.manners || MANNERS, M = MM[him.manner] || MM.measured;
   // (reeling to the window: there in three seconds at most, however far)
   // (the clear floor before the glass is come at square, from the room:
   // first to a point 1.1 m in front of the spot, then back onto it - the
@@ -116,7 +148,8 @@ function goalOf(B) {
     // the café tables and never got there)
     if (!him.reelPath || him.reelPath.spot !== S) {
       // (the aisle's middle: between the stools' seats and the booths' ends)
-      const aisle = (B.room && B.room.counterX != null ? B.room.counterX : -14.35) + 1.4;
+      // (the room's open lane: in the diner the aisle, 1.4 m off the counter)
+      const aisle = B.room && B.room.lane != null ? B.room.lane : c.pos.x;
       const P = [];
       // (straight to the lane when nothing stands between: sampled every 15 cm)
       const clear = (x0, z0, x1, z1) => {
@@ -188,7 +221,7 @@ export function steer(B, dt) {
     if (him.wedgeT > 1.5) him.outT = 1.0;
     if (him.outT > 0) {
       him.outT -= dt;
-      const ax = B.room && B.room.counterX != null ? B.room.counterX + 1.5 : F.pos.x + 0.9;
+      const ax = B.room && B.room.lane != null ? B.room.lane + 0.1 : F.pos.x + 0.9;
       g.x = Math.max(ax, F.pos.x + 0.5); g.z = F.pos.z;
       if (him.outT <= 0) him.wedgeT = 0;
     }

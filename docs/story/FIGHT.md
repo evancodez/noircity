@@ -1,260 +1,278 @@
-# The fist fight — design, version 3: ARCADE
+# The fist fight — design, version 4
 
-The user played version 2 on 2026-09-30. It looks a lot better and plays
-better, and it is still not fun enough. His words:
-
-- "it just feels really slow and super, super heavy"; "you want a really
-  arcadey feel";
-- "it doesn't really look like your punches land";
-- "when the character lets his guard down, that's when you have to strike;
-  if his guard is up you can't get through"; "maybe his guard is down only
-  on one side";
-- "you shouldn't have that line showing you where to dodge after the
-  tutorial";
-- "because it's so slow it's actually harder: you see him go for the
-  punch, you dodge, then you come back and the hit lands";
-- "make sure it feels smooth and doesn't feel janky";
-- "it's paramount that gameplay feels fun to play and not super
-  stiff / scripted. Things that occur should make sense from a game
-  perspective";
-- bug: a stool floats in the air after I hit him with it.
-
-Version 3 keeps what worked (each button an arm, click and hold, a fight in
-a room with things to grab, the finish through a window) and changes the
-feel: **fast, light, readable, fair**. When this document and an older one
-disagree, this one wins.
+The user played version 3 on 2026-09-30: "The fighting mechanics are
+definitely significantly improved", and "It's almost there, but it doesn't
+feel polished... you can just spam punches and you're just going to win.
+You should have to dodge." Version 4 (lane B8, `docs/story/briefs/B8_FIGHT.md`)
+keeps what worked in version 3 (each button an arm, the guard with two
+sides, blows that hit places, a dodge that is a step, punches that land, the
+room as a weapon rack, the finish through a window) and changes five things:
+the way in, the wind-up, the answer to a punch into the guard, the things
+he picks up and throws, and the things in my hands. It also makes the rules
+take their room as data, so the second fist fight (Pier 9) is a small job.
+When this document and an older one disagree, this one wins.
 
 ## 0. The feel, in one paragraph
 
-Every press does something at once. I hit fast and he reacts to every hit.
-He shows me when he is open and when he is about to swing, a beat before
-it matters, and then things happen quickly. A dodge is a step: I am simply
-not where the blow goes. Nothing is decided by a hidden window or a dice
-roll. If I read him, I win the exchange; if I mash into his guard, I get
-nowhere and get hit.
+Every press does something at once. A tap is a jab; a hold loads a hard
+punch I can see and hear loading, three ticks at the fist, and it lands
+three sizes bigger. He shows me when he is open and when he is about to
+swing, a beat before it matters. If I punch into his guard he hits me back
+straight away, unless I get out of the way; if I read him, step off the
+line and hit the opening, I win. He fights with the room: he throws plates
+at me (a chevron tells me which way to step) and swings stools; so can I,
+and a thing hits harder than a fist.
 
-## 1. Controls
+## 1. The way in (scene 2's first beat, `start`)
+
+After his line, one continuous move of about four seconds, no cut, the look
+still mine within 0.3 rad (controller mode `brawlIn`): he stands (his stool
+goes over; the room starts to clear), comes down the counter behind my
+right shoulder; his left hand lands on my shoulder (his palm is solved onto
+the shoulder's place every step: the hand and the forearm at the right edge
+of the frame); he pulls me round on the stool to face him, stepping back
+off me as he pulls and letting go, so that face to face he stands at arm's
+length (1.2 m: at 0.8 m his chest filled the frame); I come up and
+back a step, my left hand takes the stool I sat on by its seat (the hand
+solved onto the seat's rim while it moves) and sends it skidding into the
+counter's foot, where it goes over and lies (a thing in the room from now
+on, in every later beat and retry); my fists come up; he gives ground and
+squares up. The lesson's first card follows. A retry never plays it again.
+`scenes/fight/start.js`; `?scene=fight&beat=start&t=<s>` scrubs it.
+
+## 2. Controls
 
 | Input | Action |
 | --- | --- |
-| **Left mouse button** | my **left** arm. It strikes the opening on the **left of the screen** |
-| **Right mouse button** | my **right** arm. It strikes the opening on the **right of the screen** |
-| click | a **jab** |
-| hold, then let go | a **hard punch**: power by hold time, 0 at 0.15 s to 1 at 0.6 s |
-| **A / D** | a **side-step**: a quick hop 0.55 m to that side. Held on, I keep circling |
-| **S** | a **back-step**: a hop 0.6 m back. Held on, I keep backing away |
-| **W** | step in, walk forward |
-| **SPACE** (held) | **block**: both forearms up |
-| **E** | grab what I am looking at and can reach |
-| mouse | look; my body keeps turning to face him |
+| **Left / right mouse button** | that arm. Tap: a **jab**. Hold: the **wind-up**; let go: the **hard punch** |
+| **A / D** | a side-step, 0.55 m in 0.10 s (held on: circling) |
+| **S** | a back-step, 0.6 m (held on: backing away) |
+| **W** | walk in |
+| **SPACE** (held) | block |
+| **E** | take the thing I am looking at and can reach |
+| mouse | look; the body keeps turning to face him |
 
-Two punches exist, the jab and the hard punch. With something in a hand,
-that hand's button uses it.
+What a hand holds is used by that hand's button: a bottle, a plate, a mug
+goes into the hand on its side of the frame (a click swings or smashes it,
+a hold throws it); a stool or a chair is held in both hands and either
+button swings it (a click a swing, a hold a bigger one); the other hand
+still jabs.
 
-## 2. Speed (the numbers that make it arcade)
+## 3. My side
 
-All times in seconds. "Startup" is from the press (or the release, for a
-hard punch) to contact.
+- **The jab** is on the press, always: contact 0.06 s after it. The other
+  hand may start 0.10 s after contact. Damage **3**.
+- **The wind-up.** Held past 0.12 s, the same fist goes on into the
+  wind-up from the jab's return (no dead time, no second jab). It loads in
+  three levels as the hold passes **0.2, 0.4 and 0.6 s**: at each the fist
+  snaps back a step further (it trembles more as it goes), a white ink tick
+  flicks out at the fist and stays (one, two, three), a rising knock is
+  heard, the view leans back a degree or two; at full the fist flashes (a
+  ring of white strokes). Let go before the first level and the fist just
+  comes home. A hop or a blow cancels it; a button still held after a blow
+  winds again.
+- **The hard punch**, by level 1 / 2 / 3: damage **9 / 15 / 22**; the lunge
+  of the view 0.04 / 0.075 / 0.12 m; the burst 140 / 185 / 245 px at 1440 x
+  900; the hit stop 3 / 4 / 6 steps; the view's kick 1.2 / 1.7 / 2.4 deg;
+  he is driven back 0.55 / 0.95 / 1.45 m and open (stunned) 0.6 / 0.9 /
+  1.2 s. Contact 0.08 s after the release.
+- **A full-power punch into his raised guard breaks it** on its own: his
+  arms knocked apart, open on both sides for a second, no bounce. (Three
+  lesser hard punches blocked within 4 s still break it too.)
+- **A press that could not act yet** waits 0.15 s, or for as long as the
+  button is held: it then goes straight into the wind-up. Nothing is
+  swallowed.
+- **Things** (`Brawl.js THINGS`; a room adds its own kinds): bottle **22**
+  (it breaks on him and its neck stays in the fist), neck **14** (twice),
+  plate or mug **12**, stool or chair **35** and it breaks his guard. They
+  count at level 2 or 3 for everything a blow does to him. His guard stops
+  a bottle, a plate, a mug (it breaks on his forearm); nothing stops a stool.
+  A thing swung at the air stays in the hand. Hit for 12 or more, knocked
+  down, or at the end of the fight, what is in my hands falls and lies.
+- Counters (a blow landing in his tell) count half again; a hard punch or
+  a thing in his tell stops his blow; **a jab stops nothing** (version 3's
+  jab stopped straights: a masher bought himself out of every blow).
+  Combos: the second hit within 0.5 s 1.2 x, the third 1.4 x and a knock,
+  after the fourth he covers up and steps away.
+- My health 100; a retry starts at 60.
 
-| Mine | Startup | Recovery | Notes |
+## 4. His guard and his answer
+
+His guard has two sides (named by my screen: L is his right side). A side
+comes down when he swings with that hand, after a blow of his misses me
+(0.5 to 1.1 s), while he breathes (a hand dropped and shaken out), when a
+hard punch lands (the stun above), when his guard is broken, when he is out
+on his feet. A punch into a side that is up is **blocked**: a dull knock,
+grey dust, my fist bounces back.
+
+**The answer.** About three times in four a blocked punch is answered at
+once, from the side that blocked: his fist cocks (a 0.2 s tell) and comes
+straight in (contact 0.28 s after my punch landed). A blocked jab leaves me
+able to hop or block after 0.12 s and to punch again after 0.4 s; a blocked
+hard punch 0.3 s and 0.56 s: quick hands get out of a jab's answer, a
+blocked hard punch is paid for. His guard stays up through the answer (a
+jab into it bounces too). Pounded three times in 1.5 s, he answers with a
+hook. Answer damage 8.
+
+## 5. His blows
+
+Told, fast, avoidable by moving (version 3 §4, unchanged in its rules):
+the tell is a held pose, the fist cocked back beyond his outline; each blow
+has a path aimed where I stood when the tell began; a hop out of the path
+is a miss and opens him. A swing is left by a step away from the hand that
+swings; a straight by a step either way or back; the block stops straights
+and takes a quarter of a hook; a haymaker, a stool swing, a shove break it.
+
+| His | Tell | Contact | Damage |
 | --- | --- | --- | --- |
-| jab | 0.06 | 0.14 | the other hand may start 0.10 after contact: five jabs a second, L R L R |
-| hard punch | 0.08 after release | 0.26 | the wind-up can be held; a side-step cancels it |
-| side-step, back-step | the hop takes 0.10 | 0.05 | a punch may start 0.12 after the hop begins; next hop after 0.25 |
-| block | up in 0.05 | down in 0.08 | |
-| walking | 3.2 m/s, full speed in 0.1 | | |
-| grab | 0.15 | | |
+| jab (either hand) | 0.30 | 0.40 | 6 |
+| answer (either hand) | 0.20 | 0.28 | 8 |
+| cross | 0.32 | 0.42 | 9 |
+| hook (either hand) | 0.38 | 0.50 | 13 |
+| body (either hand) | 0.36 | 0.48 | 10 |
+| haymaker (either hand) | 0.50 | 0.64 | 22 |
+| rush | 0.45 | 0.70 | 22 |
+| shove | 0.30 | 0.42 | 3 and a push |
+| bottle neck thrust | 0.45 | 0.59 | 16 |
+| stool / chair swing | 0.45 | 0.59 | 24 |
+| throw | 0.45 | release 0.59 | 10 |
 
-| His | Tell | Strike | Recovery | If it misses |
-| --- | --- | --- | --- | --- |
-| jab (either hand) | 0.30 | 0.10 | 0.35 | open on that side 0.5 |
-| hook (either hand) | 0.38 | 0.12 | 0.45 | open on both sides 0.8 |
-| body shot | 0.36 | 0.12 | 0.4 | open on that side 0.6 |
-| haymaker, overhand | 0.50 | 0.14 | 0.6 | open on both sides 1.1, off balance |
-| rush | 0.45 | 0.25 (two steps) | 0.6 | runs past me, his back to me, 1.0 |
-| shove | 0.30 | 0.12 | 0.4 | open 0.5 |
-| bottle thrust, stool swing, throw | 0.45 | 0.14 | 0.5 | open 0.8 |
+(His damage is about a third up on version 3's: a player who never steps
+off the line must lose.) **Caught punching** (a fist out, bounced off his
+guard, or winding) his blow lands half again: trading blows with him is a
+losing game. A blow that lands, he presses: a second on its heels 35 / 45 /
+55 % of the time by manner.
 
-His pace: the quiet between his attacks is 0.9 to 1.5 while he is
-measured, 0.7 to 1.2 dirty, 0.4 to 0.8 wild. He often throws two in a row.
-The whole fight: **60 to 100 s** for a first-time player.
+## 6. He uses the room
 
-Every input is taken on the step it arrives. An input that arrives while
-I cannot act yet is kept for 0.15 s and fires the moment I can.
+From his measured manner on, he goes for a thing on **0.4 of his free
+choices** while things last (his answers and his follow-ups are not
+choices), when one stands within 3.2 m of him and I am not on top of him
+(1.05 m): a plate, a mug or a bottle to throw, a stool or a chair to swing.
+In the seeded fights he takes up three to eight things in a fight, about
+one of his blows in five or six: what is within his reach, not the rule,
+is what limits it. His first bottle in his dirty manner is still broken on
+the counter's edge and used by the neck.
 
-## 3. His guard: strike when it is down
+- **A throw.** He backs off to 2.4 m or more (pressed, he throws from
+  where he is after 1.2 s: holding a thing is never a reason to stand and
+  take it), draws back with the thing (the tell, 0.45 s) and
+  **a small inked chevron shows low at the side of the frame to step to**:
+  away from the throwing hand unless a wall or the counter is that way.
+  The chevron stays in the game after the lesson, for thrown things only.
+  The thing flies on a real arc (12.5 m/s) along a lane aimed where I stood
+  when the tell began; a hop to either side leaves it; it bursts on
+  whatever is behind me (the room, the floor) and its pieces come to rest.
+  In the air it is inked on the frame: three speed lines trailing back
+  toward his hand and a paper-white rim round it (a dark plate against the
+  dark room at five metres was not seen at all).
+- **A swing with a thing** follows the rule for fists (step away from the
+  hand that swings, or back), with no indicator, and reaches further (a
+  stool 2.05 m).
+- Going for a thing he keeps his guard up; only the reach and the take
+  open him. Struck off an errand, he fights with his fists for 5 s.
 
-He has a guard with **two sides**. On each side it is **up** or **down**.
+## 7. The lesson (the first exchange)
 
-- **Up**: the fist is at the jaw on that side, the forearm upright in
-  front of the face and ribs.
-- **Down**: the fist has dropped to the hip or has been thrown; that side
-  of his head and body shows.
-- A punch into a side that is **up is blocked**: a dull knock, a puff of
-  grey dust at his forearm, my fist bounces back, no damage, no hit stop.
-  I have wasted the beat and he may answer.
-- A punch into a side that is **down lands**.
-- **Which hand**: the opening on the left of the screen takes my left;
-  on the right, my right. With both sides down either lands, and
-  alternating hands builds a combo.
+One card at a time, low in the frame; the game does not pause. Blows in the
+lesson do half damage; his health stays at 70 % and is full when it ends.
 
-When a side comes down (each of these is something the player can see and
-learn):
-
-| Cause | Which side | How long |
-| --- | --- | --- |
-| he **attacks**: the hand that swings has left its guard | that hand's side, from the start of the tell until he has recovered | the attack's own length |
-| his attack **misses** me | see the table in §2 | 0.5 to 1.1 |
-| he **breathes**: between attacks he lowers one hand, shakes it out, rolls a shoulder, wipes his mouth | one side | 0.6 to 1.0, more often and longer as he tires (every 2.5 s measured, 1.8 s dirty; wild: one side hangs low almost all the time) |
-| I land a **hard punch** on an open side | both | **stunned** 1.2: he sways, arms loose |
-| I **break** his guard: three hard punches blocked within 4 s | both | 1.0 |
-| he is **out on his feet** | both | until the finish |
-
-A blow that lands while he is in the **tell** of a jab, hook, body shot
-or shove is a **counter**: it stops his attack and counts half again. A
-haymaker, a rush and a swing with a stool do not stop for a jab; a hard
-punch stops anything.
-
-**Showing it.** The opening is drawn by his body: the dropped fist, the
-lowered shoulder, the head exposed. For the first 0.15 s of an opening a
-small white ink tick flicks at the open side of his jaw. No arrows, no
-text, no outline.
-
-**Combos.** Hits on an open man chain: each hit within 0.5 s of the last
-is one more in the combo; the second does 1.2 x, the third 1.4 x and
-knocks him back a step; after the fourth he covers up and steps away.
-
-## 4. His attacks: told, fast, and avoidable by moving
-
-- **The tell** is a pose he snaps into and holds: the fist cocked back
-  beyond his outline, the shoulder dropped. On the first frame of a tell a
-  white glint flicks on the fist that will swing, and he grunts. After the
-  tell the blow is quick.
-- **A blow hits a place, not a man.** Each blow has a reach and a path:
-  - a straight (jab, thrust) covers a lane 0.35 m wide in front of him,
-    to 1.5 m;
-  - a swing from **his right** hand sweeps from **my left** across the
-    middle; it covers my left and centre, to 1.4 m;
-  - a swing from **his left** sweeps from **my right**;
-  - an overhand covers the lane in front of him and a little to each
-    side, to 1.6 m.
-  He aims where I am when the tell ends. During the strike he cannot
-  re-aim. If at contact I stand outside the path, it misses.
-- So **a side-step away from the swinging hand gets me out** (his right
-  hand swings: I step right, D). A step **toward** the swing keeps me in
-  its path and it lands a quarter harder. A straight is left by a step to
-  either side or back. Once I have stepped I am out; nothing drags me
-  back in. A back-step leaves any blow except the rush.
-- **Blocking** (SPACE) stops jabs and straights; takes a hook or a body
-  shot for a quarter of its damage; a haymaker, a stool or a shove breaks
-  the block and staggers me 0.5.
-- He turns to face me at 5 rad/s between attacks and during a tell.
-- **After the lesson nothing on the screen tells me which way to go.**
-  The arrow and the slow motion belong to the lesson only.
-
-## 5. Punches that land
-
-When my punch lands on an open man, all of this happens on the same
-frame:
-
-1. **The fist is there.** My fist is drawn reaching his jaw or his ribs on
-   the screen: the punch's end point is his head (or body) as the eye sees
-   it, and the fist grows smaller as it goes out, so it arrives on him,
-   not in the air in front of me.
-2. **Hit stop**: the world holds 2 steps for a jab, 4 for a hard punch.
-3. **Impact**: a white ink burst at the point of contact, 90 px for a jab
-   to 220 px for a full hard punch at 1440 x 900, jagged, two frames,
-   then a few flung drops of sweat.
-4. **He takes it**: the head snaps away from the blow (30 degrees for a
-   jab, 60 for a hard punch), overshoots and comes back in 0.25 s; the
-   shoulders follow; a hard punch bends him and drives him back 0.6 to
-   1.5 m; the cap jumps.
-5. **The view**: a kick of 1.5 degrees and a push-in of 2 degrees of
-   field of view for 0.1 s on a hard punch; half that on a jab.
-6. **The sound**: a sharp crack over a low thud; a blocked punch is a
-   dull knock; a miss is a whiff of air. Three clearly different sounds.
-7. **His health** drops on a thin ink bar at the top of the frame, with
-   his name, MACK; the lost part flashes white and drains. Mine is at
-   the bottom left as now.
-
-A blocked punch and a miss each look and sound unlike a hit, so that
-after ten seconds a player knows which is which without thinking.
-
-## 6. The lesson (the first exchange)
-
-He squares up and **waits**; he does not hurt me until step 5. One card
-at a time, low in the frame. The game does not pause. The arrow and the
-slow motion exist only here.
-
-| Step | What he does | Card | Ends when |
+| # | What he does | Card | Ends when |
 | --- | --- | --- | --- |
-| 1 | lowers his left hand (the left of the screen is open) | `HIS GUARD IS DOWN   LEFT CLICK` | my left jab lands |
+| 1 | lowers his right hand | `HIS GUARD IS DOWN   LEFT CLICK` | my left jab lands |
 | 2 | lowers the other | `RIGHT CLICK` | my right jab lands |
-| 3 | guard up, both sides | `GUARD UP: YOUR PUNCHES BOUNCE OFF.  WAIT FOR AN OPENING` | I have had one punch blocked, or 3 s; then he lowers a hand and I land one |
-| 4 | lowers both hands, taunting | `HOLD, THEN LET GO   THE LONGER, THE HARDER` | a hard punch of power 0.5 or more lands |
-| 5 | a slow right hook, the world at 0.4 x through the tell, an inked arrow from his fist to my safe side | `D   STEP AWAY FROM THE HAND THAT SWINGS` | it misses; `HE IS OPEN` while he is |
+| 3 | guard up; answers my first punch into it (slowed) | `GUARD UP: HE ANSWERS A PUNCH INTO IT.   WAIT FOR AN OPENING` | a hand drops and I land one |
+| 4 | both hands down | `TAP TO JAB.   HOLD TO LOAD, THEN LET GO` | a hard punch of level 2 or 3 lands |
+| 5 | a slow right hook, the arrow | `D   STEP AWAY FROM THE HAND THAT SWINGS` | it misses |
 | 6 | the same from his left | `A` | it misses |
-| 7 | jabs | `SPACE   BLOCK` | I block one |
-| 8 | backs off; Dot slides a bottle down the counter | `E   GRAB WHAT IS IN REACH` | 3 s, or I grab something |
+| 7 | takes a plate, backs off, throws it (slowed), the chevron | `A + D   HE THROWS: STEP WHERE THE MARK POINTS` | it misses me |
+| 8 | jabs | `SPACE   BLOCK` | I block one |
+| 9 | backs off; a bottle slides down the counter | `E   GRAB WHAT IS IN REACH` | 3 s or a grab |
 
-Then `NOW FIGHT.` for one second. A step already performed is skipped.
-The lesson takes 25 to 40 s. His health is full when it ends. A retry
-skips it.
+Then `NOW FIGHT.` The lesson takes 20 to 30 s for the autoplayer, a little
+more for a first-timer.
 
-## 7. The open fight
+## 8. The open fight
 
-As in version 2, and faster:
+His health is **116**; his manners change at 65 %, 30 % and 12 % of it:
+measured, dirty, wild, out on his feet. What he does in each is version
+3's (§7 there), plus the things above. Two rules keep the fight's length
+fair:
 
-- **We both move**, anywhere in the room, but never out of it: the door
-  is shut while we fight.
-- **Blows move people.** A hard punch knocks him back; whatever stands
-  behind him takes him: stools go down one after another, the jukebox
-  skips, the pie case bursts, plates fly off the counter, a café table
-  tips. He shoves me too.
-- **The room is a weapon rack**: bottles, plates and mugs on the counter,
-  stools and chairs; Dot slides me a bottle. **E takes the thing I am
-  looking at.** A bottle breaks on its first blow and its neck is good
-  for two more; a plate or a mug is thrown and breaks; a stool or a chair
-  is good for one swing and **comes apart on him**: its pieces fall,
-  bounce and lie still. Whatever leaves a hand, mine or his, falls under
-  gravity and comes to rest. Nothing ever hangs in the air.
-- His guard stops a bottle or a plate; a stool or a chair breaks his
-  guard.
-- **He changes as he is hurt**:
+- **Hurt fast** (16 % of him in 4 s) he covers up and gives ground a
+  moment; and **a manner holds 9 s**: in its first nine seconds a run of
+  blows takes him no further than the edge of the next. A run of luck does
+  not end the fight in a breath. After that, no blow takes him past the
+  next manner: he is always wild before he is out on his feet.
+- **Losing is not failing**: at 0 I go down, black, and up again with 60;
+  he has got his breath back a little (8 % of him each time, never past the
+  start of his manner). From the third down in the same manner I come up
+  whole (100): the fight gives a little to the man who keeps getting up.
+  A life spent pounding his guard (more than 30 punches into it a minute:
+  a masher throws about 45, a first-timer who struggles 10 to 19) is paid
+  for as version 4 had it: 8, 16, 24 %... of him back, up with 60.
+  Failing costs about ten seconds. (Version 4's first cut gave him back 8,
+  16, 24 %... and a player who struggled was held in one manner for good;
+  and 65 % of him read back as his measured manner, so a down in his dirty
+  one could put him back at the top of his first. Both are gone.)
 
-| His health | Manner | What he does |
-| --- | --- | --- |
-| 100 to 65 | measured | jabs, hooks from both hands, body shots; tight guard, short breathers |
-| 65 to 30 | dirty | takes a bottle and breaks it on the counter, thrusts with the neck; throws a plate or a mug from 3 m; shoves; feints (a tell with no blow: the glint is grey, not white) |
-| 30 to 12 | wild | haymakers, rushes, picks up a stool; one hand hangs low; he bleeds, his cap is gone |
-| 12 and under | out on his feet | §8 |
+Blows move people and the room takes them (the stools, the counter, the
+jukebox, the pie case, the café tables); a blow's own travel never carries
+him through the counter or a wall (it is pushed back out every step). The
+service aisle behind the counter is shut while we fight, and the street
+door stays shut (it swung into the ring whenever the eye came within 2 m
+of it) (`room.enter`).
 
-- **Damage**: he has 100. Jab 3, hard punch 7 to 15 by power, bottle 16,
-  neck 10, plate or mug 8, stool or chair 22. Counter x 1.5, on a man
-  open after a miss x 1.5, combo as in §3. I have 100: his jab 5, hook
-  10, body shot 8, haymaker 18, thrust 14, thrown plate 8, stool 20,
-  shove 3 and a stagger.
-- **Losing is not failing**: at 0 I go down, the frame goes black, and I
-  come up at the start of his current manner with 60.
+## 9. The finish
 
-## 8. The finish: out through a window, wherever we are
+At 12 % he is out on his feet and reels to the nearer finish spot (the
+room's `finishes`: in the diner the clear floor before the glass of bays
+B2 and B4); my next hard punch of level 2 or more, or a thing, is the last:
+slow motion, out through the glass, onto his back on the pavement. Standing
+in his way, I am shouldered out of it. If he cannot get to either window
+(held up three times, or 12 s) he comes round and fights on: a fight that
+cannot end is a bug.
 
-Unchanged from version 2. Two finish spots, the clear floor in front of
-the plate glass of bays B2 and B4. At 12 health he is out on his feet and
-reels to the nearer one; my next hard punch of power 0.5 or more is the
-last: slow motion, he goes back over the sill and through the glass, which
-bursts outwards, and lands on his back on the wet pavement. Every shard
-comes to rest. Nothing floats.
+## 10. One fight system, two rooms
 
-## 9. Smooth, never janky
+`game.brawl.start({ opponent, room, who, manner, lesson, ... })`. The rules
+(`src/game/Brawl.js`, `BrawlLesson.js`, `src/cast/brawl/*`) name no diner
+thing; the room is data (scene 2's `brawlRoom` in `src/scenes/02_fight.js`
+is the first user):
 
-- Every action of mine starts on the step of its input.
-- My hands blend between poses in 0.05 s or more; his body in 0.08 s or
-  more. Nothing pops, nothing teleports.
-- His feet do not slide: a step moves the body, standing keeps the feet
-  still. His knock-back is a stagger with steps.
-- No spinning: headings are wrapped, bones blend the short way.
-- The view never enters a body, a wall or a piece of furniture.
-- 60 frames a second through the whole fight.
-- Proof is a film strip at 30 frames a second of each exchange
-  (`tools/strip.py`), and a played fight.
+| room. | what |
+| --- | --- |
+| `bounds` | { x0, x1, z0, z1 }: the fight stays inside |
+| `enter()`, `leave()` | the room made ready for the fight and given back (the diner shuts its service aisle and keeps its street door shut) |
+| `items()` | what can be picked up now: { name, kind, object, pos, stand, take(), available() } |
+| `hisItem(kind, near)` | the nearest thing of a kind he may go for |
+| `things` | kinds of its own for `THINGS` (dmg, uses, hands, throw, then, breaksGuard, big, level) |
+| `knockables()` | what stands on the floor to be knocked into: { pos, r, what, catch?, spin? } |
+| `hardAt(tag, x, z)` | the name of a hard thing by its collider's tag (the counter, the pie case, the jukebox) |
+| `onInto(hit, dir, at, brawl)` | what his back into it does; returns his clip (`br_into`, `br_into_stools`) |
+| `onBump(at, speed, brawl)` | me driven into something |
+| `finishes` | the finish spots: { name, spot, pane, land, clip } |
+| `gift(why)` | someone slides me a thing ('lesson', 'first', 'bleeds') |
+| `lane` | the x of the room's open aisle (his reel path, his way out of a corner) |
+
+`who = { name, hp, manners }`: the bar's name, his hit points, his table by
+manner (`src/cast/brawl/brain.js MANNERS` by default). Pier 9 adds a
+room object, its things (a crate lid, a hook, a chain, a lantern), its
+finishes (the plank doors, with their own clip) and its man.
+
+## 11. Judged by play
+
+The in-page autoplayer (`?shot=r2play&beat=lesson&seed=<n>&style=<s>&t=300`,
+ten seeds each, the lesson included; second pass, final code): the
+human-paced reader (`player`) wins 10 of 10, all in 60 to 110 s (73 to 104,
+mean 86, 0 or 1 down); a first-timer who struggles (`rough`: half his reads
+wrong or late, a punch into the guard every second or two) wins 10 of 10 in
+111 to 217 s (mean 167, 3 to 8 downs); the masher (`mash`) wins none (4 to
+32 downs: two held in his measured manner, one in dirty, two in wild, five
+got him out on his feet at 72 to 286 s and could not finish him); the
+player who never steps (`nododge`) wins none (10 to 12 downs, all held in
+his measured manner); a player who takes whatever is in reach (`things`,
+mean 82 s) wins faster than one who never picks anything up (`fists`,
+91 s). No seed skips his wild manner. Strips of each exchange: `?shot=b8duel` (`src/debug/shots/B8_fight.js`).
+The plays `slice`, `fight`, `autoplay`, `continue` pass by real input, each
+twice in a row.

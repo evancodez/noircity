@@ -1,0 +1,179 @@
+{
+ "about": "[B8] Scene 2, the fist fight version 4, by real input from its first beat (?start=fight: his line said, the way in) to its last (the matchbook, the shots, the next chapter). node tools/play.mjs tools/plays/fight.json",
+ "url": "/?mute=1&start=fight",
+ "size": [
+  1280,
+  800
+ ],
+ "out": "shots/play/fight",
+ "steps": [
+  {
+   "until": "G.state === 'title' && !document.getElementById('title').classList.contains('hidden')",
+   "timeout": 20000
+  },
+  {
+   "wait": 2000
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]"
+  },
+  {
+   "name": "the way in: he stands, his hand on my shoulder, the stool sent skidding, fists up"
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'fight' && (G.controller.mode === 'brawlIn' || !!G.scenes.ctx.flags.inT)",
+   "timeout": 20000
+  },
+  {
+   "eval": "(window.__startT = N.time, 'the way in began')"
+  },
+  {
+   "wait": 1200
+  },
+  {
+   "shot": "f00_he_stands"
+  },
+  {
+   "until": "!!G.scenes.ctx.flags.handOn",
+   "timeout": 8000
+  },
+  {
+   "until": "!!G.scenes.ctx.flags.handAt",
+   "timeout": 4000
+  },
+  {
+   "expect": "(() => { const a = G.scenes.ctx.flags.handAt; return a.xz < 0.45 && a.dy < 0 && a.dy > -0.45; })()",
+   "label": "his left hand on my right shoulder (where it lay, measured in the game)"
+  },
+  {
+   "shot": "f01_shoulder"
+  },
+  {
+   "until": "!!G.scenes.ctx.flags.rise",
+   "timeout": 4000
+  },
+  {
+   "wait": 300
+  },
+  {
+   "shot": "f02_stool"
+  },
+  {
+   "until": "G.brawl.active && G.controller.mode === 'brawl'",
+   "timeout": 6000
+  },
+  {
+   "expect": "(() => { const f = G.scenes.ctx.flags, d = f.upT - f.inT; return d > 3.2 && d < 5.4; })()",
+   "label": "the way in, in about four seconds (game time), no cut"
+  },
+  {
+   "expect": "(() => { const s = G.stage.part('diner').stool(4); return s.handle.toppled && s.object.position.x < -13.95; })()",
+   "label": "the stool I sat on went skidding into the counter and lies there"
+  },
+  {
+   "expect": "G.scenes.beat === 'lesson' && !!G.brawl.lesson && G.hands.set === 'fists'",
+   "label": "fists up; the lesson's first card"
+  },
+  {
+   "wait": 600
+  },
+  {
+   "shot": "f03_lesson"
+  },
+  {
+   "name": "the fight, played by a first-timer's pace"
+  },
+  {
+   "fight": {
+    "timeout": 400000,
+    "shots": {
+     "f04_hold": "G.brawl.me.act === 'wind' && G.brawl.me.holdT > 0.45",
+     "f05_lesson_throw": "G.brawl.lesson && G.brawl.lesson.kind === 'throw' && G.brawl.him.clip === 'br_throw' && G.brawl.him.t > 0.25",
+     "f06_answer": "!G.brawl.lesson && /^br_answer/.test(G.brawl.him.clip || '') && G.brawl.him.t > 0.12",
+     "f07_round2": "G.brawl.round === 2 && G.brawl.him.state === 'attack'",
+     "f08_throw": "!G.brawl.lesson && G.brawl.him.clip === 'br_throw' && G.brawl.him.t > 0.25",
+     "f09_round3": "G.brawl.round === 3 && G.brawl.him.state === 'attack' && /haymaker|rush|stool/.test(G.brawl.him.clip)",
+     "f10_reel": "G.brawl.him && G.brawl.him.state === 'reel' && G.brawl.him.atSpot",
+     "f11_ko": "G.brawl.him && G.brawl.him.state === 'ko' && G.brawl.him.t > 0.4"
+    },
+    "expect": "F.time >= 45 && F.time <= 170 && F.lesson > 5 && F.lesson < 50 && F.dur[2] > 0",
+    "label": "a first-timer's fight by real input: the lesson under 50 s, then won in 45..170 s of game time, his three manners"
+   }
+  },
+  {
+   "until": "!G.brawl.active && G.scenes.beat === 'ko'",
+   "timeout": 10000
+  },
+  {
+   "expect": "G.brawl.stats.won === true && ['B2', 'B4'].includes(G.brawl.stats.window) && G.stage.part('dinerFront').panes[G.brawl.stats.window].state === 'gone'",
+   "label": "out through the nearer window's glass"
+  },
+  {
+   "expect": "!G.brawl.me.holding && !(G.brawl.flying && G.brawl.flying.length) && !G.hands.held.L && !G.hands.held.R",
+   "label": "nothing left in a hand or in the air"
+  },
+  {
+   "eval": "G.cast.list.map((c) => c.name + '@' + c.pos.x.toFixed(2) + ',' + c.pos.z.toFixed(2) + ':' + c.state + (c.down ? ':down' : ''))"
+  },
+  {
+   "name": "out through the door"
+  },
+  {
+   "walk": "(() => { const z = (G.brawl.stats.window || 'B4') === 'B2' ? 5.0 : -3.8; return [[-12.6, 0.6], [-11.2, 0.6], [-9.2, 0.6], [-8.3, z + (z > 0.6 ? -1.8 : 1.8)]]; })()",
+   "timeout": 40000
+  },
+  {
+   "until": "G.scenes.beat === 'outside'",
+   "timeout": 8000
+  },
+  {
+   "look": [
+    0,
+    160
+   ],
+   "steps": 8
+  },
+  {
+   "wait": 400
+  },
+  {
+   "shot": "f12_outside"
+  },
+  {
+   "until": "G.hud.promptShown.includes('search')",
+   "timeout": 8000
+  },
+  {
+   "key": "KeyE"
+  },
+  {
+   "until": "G.scenes.beat === 'matchbook' && !!G.inspect.active",
+   "timeout": 8000
+  },
+  {
+   "wait": 1200
+  },
+  {
+   "shot": "f13_matchbook"
+  },
+  {
+   "key": "KeyE"
+  },
+  {
+   "until": "G.scenes.ctx.flags.shots === 2",
+   "timeout": 6000
+  },
+  {
+   "expect": "G.save.inventory.includes('matchbook')",
+   "label": "the matchbook pocketed"
+  },
+  {
+   "until": "G.state === 'end' || (G.scenes.current && G.scenes.current.id !== 'fight')",
+   "timeout": 10000
+  },
+  {
+   "expect": "true",
+   "label": "scene 2 ended on ctx.next()"
+  }
+ ]
+}
