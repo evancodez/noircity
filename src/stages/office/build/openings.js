@@ -89,7 +89,7 @@ export function buildOpenings(kit, mats, stage) {
   const frost = makeFrosted({ w: W - 0.24, h: DOOR.glass[1] - DOOR.glass[0], text: ['AMES', 'BOOKKEEPING'], seed: 3 });
   frost.userData.glow(0.55, 1.15);
   // (round 2: lit from the corridor's globe - white toward it, a grey away from it)
-  frost.userData.fall({ base: 0.014, peak: 1.3, sigma: 1.05 });
+  frost.userData.fall({ base: 0.012, peak: 1.3, sigma: 0.85 });
   const pane = G.addPane({ centre: V(0, (DOOR.glass[0] + DOOR.glass[1]) / 2, W / 2), normal: V(1, 0, 0), w: W - 0.24, h: DOOR.glass[1] - DOOR.glass[0], material: frost, parent: hinge, tag: 'door304', thick: 0.005 });
   pane.mesh.layers.set(LAYER.WORLD);
   pane.mesh.userData.noRay = true;
@@ -103,7 +103,7 @@ export function buildOpenings(kit, mats, stage) {
   const sw = SIDE.z1 - SIDE.z0, sh = SIDE.y1 - SIDE.y0;
   const sideFrost = makeFrosted({ w: sw, h: sh, text: null, seed: 7 });
   sideFrost.userData.glow(0.5, 1.2);
-  sideFrost.userData.fall({ base: 0.014, peak: 1.3, sigma: 1.1 });
+  sideFrost.userData.fall({ base: 0.012, peak: 1.3, sigma: 0.75 });
   const side = G.addPane({ centre: V(-0.07, (SIDE.y0 + SIDE.y1) / 2, (SIDE.z0 + SIDE.z1) / 2), normal: V(1, 0, 0), w: sw, h: sh, material: sideFrost, tag: 'sidelight', thick: 0.005 });
   side.mesh.layers.set(LAYER.WORLD);
   side.mesh.userData.noRay = true;
@@ -115,7 +115,7 @@ export function buildOpenings(kit, mats, stage) {
   const tw = DOOR.z1 - DOOR.z0, th = DOOR.transom[1] - DOOR.transom[0];
   const trFrost = makeFrosted({ w: tw, h: th, text: ['304'], seed: 11 });
   trFrost.userData.glow(0.45, 1.1);
-  trFrost.userData.fall({ base: 0.02, peak: 1.2, sigma: 0.9 });
+  trFrost.userData.fall({ base: 0.016, peak: 1.1, sigma: 0.6 });
   const tr = new THREE.Mesh(new THREE.PlaneGeometry(tw, th), trFrost);
   tr.position.set(-0.07, (DOOR.transom[0] + DOOR.transom[1]) / 2, (DOOR.z0 + DOOR.z1) / 2);
   tr.rotation.y = Math.PI / 2;

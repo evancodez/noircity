@@ -27,7 +27,9 @@ export function officeMats() {
     // eye sees of a wall, not an even grey)
     plaster: fall(std('plaster', 0x5a5a5a, 0.95, 'plaster'), 3.1),
     plasterDark: fall(std('plasterDark', 0x3a3a3a, 0.95, 'plaster'), 2.95),
-    ceil: std('ceil', 0x0c0c0c, 1.0, 'plaster'),
+    // (a dark plaster: black in the room's air, but the street's light up
+    // through the blind draws the slats' lines on it)
+    ceil: std('ceil', 0x2e2e2e, 1.0, 'plaster'),
     wainscot: std('wainscot', 0x1a1a1a, 0.6, 'wood'),
     trim: std('trim', 0x121212, 0.5, 'wood'),
     boards: std('boards', 0x2a2a2a, 0.7, 'wood'),

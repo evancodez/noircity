@@ -29,18 +29,36 @@ export function buildFurniture(kit, mats, stage) {
   body.position.set(D.d / 2, 0, 0);          // the desk's centre in the pivot's frame
   pivot.add(body);
   const dk = [];
-  // the top: a thick slab with a rounded edge
-  dk.push(slab(D.d + 0.04, 0.045, D.w + 0.04, { bevel: 0.012, corner: 0.02 }).translate(0, D.h - 0.045, 0));
+  // the top: a thick slab with a rounded edge, standing proud of the
+  // pedestals all round (round 2: over on its front, its edge frames the
+  // pedestals' feet, so the shape behind the cover reads as a desk)
+  dk.push(slab(D.d + 0.06, 0.05, D.w + 0.12, { bevel: 0.014, corner: 0.02 }).translate(0, D.h - 0.05, 0));
+  // (a moulding under the top's edge)
+  dk.push(slab(D.d + 0.02, 0.03, D.w + 0.04, { bevel: 0.008, corner: 0.012 }).translate(0, D.h - 0.08, 0));
   // two pedestals of drawers and the modesty panel on the front (-x)
   const pw = 0.44;
   for (const s of [-1, 1]) {
     const zc = s * (D.w / 2 - pw / 2);
-    dk.push(new THREE.BoxGeometry(D.d - 0.04, D.h - 0.12, pw).translate(0, (D.h - 0.12) / 2 + 0.07, zc));
-    // the plinth
-    dk.push(new THREE.BoxGeometry(D.d - 0.08, 0.07, pw - 0.04).translate(0, 0.035, zc));
+    dk.push(new THREE.BoxGeometry(D.d - 0.04, D.h - 0.14, pw).translate(0, (D.h - 0.14) / 2 + 0.07, zc));
+    // the plinth, set back, on four square feet
+    dk.push(new THREE.BoxGeometry(D.d - 0.1, 0.06, pw - 0.06).translate(0, 0.04, zc));
+    for (const fx2 of [-1, 1]) for (const fz of [-1, 1]) dk.push(new THREE.BoxGeometry(0.06, 0.03, 0.06).translate(fx2 * (D.d / 2 - 0.06), 0.015, zc + fz * (pw / 2 - 0.05)));
   }
-  dk.push(new THREE.BoxGeometry(0.025, D.h - 0.25, D.w - 2 * pw).translate(-D.d / 2 + 0.03, (D.h - 0.25) / 2 + 0.18, 0));
+  dk.push(new THREE.BoxGeometry(0.025, D.h - 0.27, D.w - 2 * pw).translate(-D.d / 2 + 0.03, (D.h - 0.27) / 2 + 0.18, 0));
   kit.add(M(dk), mats.desk, { parent: body, name: 'desk' });
+  // the pedestals' undersides: a paler raw board with two battens across it
+  // (on the floor, never seen; over on its front, it faces the man behind it)
+  kit.piece();
+  {
+    const u = [];
+    for (const s of [-1, 1]) {
+      const zc = s * (D.w / 2 - pw / 2);
+      u.push(new THREE.BoxGeometry(D.d - 0.14, 0.004, pw - 0.1).translate(0, 0.068, zc));
+      for (const bx of [-0.18, 0.18]) u.push(new THREE.BoxGeometry(0.05, 0.012, pw - 0.1).translate(bx, 0.062, zc));
+    }
+    // (the knee hole's underside: the top's raw board between the pedestals, dark)
+    kit.add(M(u), mats.deskTop, { parent: body, cast: false, name: 'desk_under' });
+  }
   // the drawers' fronts on the chair's side (+x), most of them pulled out, papers spilling
   // (and the same drawers run home: when the desk goes over they stand
   // straight up and slide back in, so its back is a clean edge to shoot over)
@@ -55,12 +73,15 @@ export function buildFurniture(kit, mats, stage) {
         // (the drawer's box, out of the pedestal)
         dr.push(new THREE.BoxGeometry(pulled + 0.1, 0.12, pw - 0.08).translate(D.d / 2 + pulled / 2 - 0.05, y + 0.07, zc));
       }
-      dr.push(new THREE.BoxGeometry(0.02, 0.012, 0.08).translate(D.d / 2 + pulled + 0.014, y + 0.1, zc));
+      // (a brass bail pull: two posts and the bail between them)
+      dr.push(new THREE.BoxGeometry(0.02, 0.012, 0.1).translate(D.d / 2 + pulled + 0.022, y + 0.1, zc));
+      for (const pz of [-0.045, 0.045]) dr.push(new THREE.BoxGeometry(0.018, 0.016, 0.012).translate(D.d / 2 + pulled + 0.011, y + 0.104, zc + pz));
     }
     return kit.add(M(dr), mats.deskTop, { parent: body });
   };
   const drawersOpen = drawersOf(true), drawersShut = drawersOf(false);
   drawersShut.visible = false;
+  const fixedKids = new Set(body.children);
   // the blotter, the pad's leather corners
   kit.piece();
   const top = D.h;
@@ -96,6 +117,10 @@ export function buildFurniture(kit, mats, stage) {
   kit.add(new THREE.BoxGeometry(0.3, 0.05, 0.24).rotateY(0.3).translate(4.2 - D.x, top + 0.025, 4.55 - D.z), mats.deskTop, { parent: body });
   kit.add(M([0, 1, 2, 3].map((k) => new THREE.BoxGeometry(0.28, 0.003, 0.21).rotateY(0.3 + k * 0.2).translate(4.2 - D.x - k * 0.02, top + 0.05 + k * 0.004, 4.55 - D.z + k * 0.03))), mats.paperDim, { parent: body, cast: false });
   out.desk = { pivot, body, tipped: 0, x: D.x, z: D.z, top, drawers: { open: drawersOpen, shut: drawersShut } };
+  // (what is the desk itself and stays on it when it goes over: the rest - the
+  // blotter, the pad, the telephone, the tray, the pencil - comes off its top
+  // onto the floor beyond it, parts/room.js)
+  out.desk.fixed = fixedKids;
   out.desk.collider = C.addBox(D.x, D.z, D.d / 2, D.w / 2, 0, 'booth');
 
   // ---- the banker's lamp: brass stand, the shade (green glass: a grey here), the chain ----
@@ -118,6 +143,7 @@ export function buildFurniture(kit, mats, stage) {
   const bulb = kit.add(new THREE.CylinderGeometry(0.018, 0.018, 0.2, 10).rotateX(Math.PI / 2).translate(0, -0.03, 0), mats.bulb, { parent: shadeG, cast: false });
   kit.add(tubeAlong([V(0.03, -0.02, 0.1), V(0.035, -0.08, 0.1), V(0.03, -0.12, 0.1)], 0.0025, 5, 10), mats.brass, { parent: shadeG, cast: false });
   out.lamp = { group: lampG, shadeG, shadeMesh, inner, bulb, localHead: V(-0.03, 0.31, 0) };
+  fixedKids.add(lampG);
 
   // ---- the swivel chair, on its side behind the desk -----------------------------------------
   kit.piece();
@@ -303,27 +329,65 @@ export function buildFurniture(kit, mats, stage) {
   }
 
   // ---- paper over the floor -------------------------------------------------------------------
+  // (round 2: an office turned over - drifts of it under the cabinets they
+  // were pulled from, round the desk's pulled drawers, a trail to the door:
+  // sheets, sheets folded once, envelopes, a few balled up, file folders
+  // open on their spines. Ink shapes: pale where a light falls, grey in
+  // the dark. Two merged meshes, the paper and the manila.)
   kit.piece();
   {
-    const P = [];
-    const spots = [[1.2, 5.8, 1.1], [2.0, 5.2, 0.9], [4.6, 3.0, 0.8], [3.2, 2.4, 0.9], [1.4, 2.4, 0.7], [4.9, 5.4, 0.6], [2.6, 4.6, 0.8], [0.8, 6.2, 0.5]];
+    const P = [], Q = [];
+    // [x, z, radius, count]
+    const spots = [
+      [1.0, 6.3, 0.75, 26], [0.55, 5.4, 0.45, 10], [1.8, 5.9, 0.6, 12],
+      [4.9, 3.0, 0.5, 12], [4.95, 4.5, 0.45, 12], [5.2, 3.7, 0.35, 8],
+      [3.1, 2.3, 0.7, 10], [2.2, 4.6, 0.6, 9], [1.5, 2.9, 0.5, 7],
+      [2.8, 0.7, 0.45, 8], [1.7, 1.5, 0.5, 6], [4.2, 5.8, 0.5, 8],
+    ];
+    const sheet = (w, h) => new THREE.PlaneGeometry(w, h, 2, 2).rotateX(-Math.PI / 2);
     let n = 0;
-    for (const [cx, cz, r] of spots) {
-      for (let k = 0; k < 7; k++, n++) {
-        const a = hash(n, 1) * 6.28, d = hash(n, 2) * r;
+    for (const [cx, cz, r, cnt] of spots) {
+      for (let k = 0; k < cnt; k++, n++) {
+        const a = hash(n, 1) * 6.28, d = Math.sqrt(hash(n, 2)) * r;
         const x = cx + Math.cos(a) * d, z = cz + Math.sin(a) * d;
-        if (x < 0.2 || x > ROOM.x1 - 0.2 || z < 0.2 || z > ROOM.z1 - 0.2) continue;
+        if (x < 0.15 || x > ROOM.x1 - 0.15 || z < 0.15 || z > ROOM.z1 - 0.15) continue;
         // (not under the desk's feet, nor in the door's swing)
-        if (Math.abs(x - DESK.x) < DESK.d / 2 + 0.05 && Math.abs(z - DESK.z) < DESK.w / 2 + 0.05) continue;
+        if (Math.abs(x - DESK.x) < DESK.d / 2 + 0.05 && Math.abs(z - DESK.z) < DESK.w / 2 + 0.08) continue;
         if (x < 1.1 && z < 1.6) continue;
-        const g = new THREE.PlaneGeometry(0.215, 0.28, 2, 2).rotateX(-Math.PI / 2);
-        const p = g.getAttribute('position');
-        for (let i = 0; i < p.count; i++) p.setY(i, 0.004 * Math.abs(p.getX(i) / 0.1) * hash(n, 5) + 0.002);
-        g.rotateY(hash(n, 3) * 6.28).translate(x, FLOOR + 0.002 + (k % 3) * 0.0015, z);
-        P.push(g);
+        const kind = hash(n, 7);
+        const y0 = FLOOR + 0.002 + (k % 4) * 0.0012;
+        let g, to = P;
+        if (kind < 0.5) {
+          // a sheet, a little cupped
+          g = sheet(0.215, 0.28);
+          const p = g.getAttribute('position');
+          for (let i = 0; i < p.count; i++) p.setY(i, 0.005 * Math.abs(p.getX(i) / 0.1) * hash(n, 5) + 0.001);
+        } else if (kind < 0.68) {
+          // a sheet folded once: two leaves at an angle, the fold on the floor
+          const h = 0.14, lift = 0.25 + hash(n, 9) * 0.5;
+          const l1 = sheet(0.215, h).translate(0, 0, h / 2).rotateX(-lift * 0.5);
+          const l2 = sheet(0.215, h).translate(0, 0, -h / 2).rotateX(lift * 0.5);
+          g = M([l1, l2]).translate(0, 0.002, 0);
+        } else if (kind < 0.8) {
+          // an envelope
+          g = sheet(0.235, 0.105); to = Q;
+        } else if (kind < 0.9) {
+          // a sheet balled up
+          g = new THREE.IcosahedronGeometry(0.035 + hash(n, 4) * 0.015, 0).scale(1, 0.75, 1.1).translate(0, 0.028, 0);
+        } else {
+          // a file folder open on its spine, a sheet half out of it
+          const lift = 0.15 + hash(n, 9) * 0.3;
+          const c1 = sheet(0.24, 0.31).translate(0.12, 0, 0).rotateZ(lift);
+          const c2 = sheet(0.24, 0.31).translate(-0.12, 0, 0);
+          g = M([c1, c2]).translate(0, 0.002, 0); to = Q;
+          P.push(sheet(0.215, 0.28).rotateY(0.3).translate(0.08, 0.004, 0.06).rotateY(hash(n, 3) * 6.28).translate(x, y0 + 0.002, z));
+        }
+        g.rotateY(hash(n, 3) * 6.28).translate(x, y0, z);
+        to.push(g);
       }
     }
     kit.add(M(P), mats.paper, { cast: false, name: 'floor_papers', noRay: true });
+    kit.add(M(Q), mats.paperDim, { cast: false, name: 'floor_folders', noRay: true });
   }
   return out;
 }

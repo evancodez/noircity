@@ -12,6 +12,8 @@ import { FLOOR, CEIL, ROOM, CORR, DOOR, DESK, PAD, LAMP, WIN, ESC, SAFE, PICTURE
 const DESK_LAMP_I = 30, DESK_LAMP_A = 1.3;
 // the muzzle flashes' light in this room (fx/MuzzleFlash.js: the street's 32 and 22)
 const FLASH_I = { player: 11, hood: 6.5 };
+// the street's light up through the blind onto the ceiling
+const UP_I = 16000;
 
 // Room 304 and its corridor (lane B2): the whole third floor of the stage.
 // Built from ./build/*; this part lights it, gives it its Looks, its dry
@@ -81,7 +83,23 @@ export default {
     const corrHead = V(CORR_LAMP.x, CORR.ceil - 0.36, CORR_LAMP.z);
     const corrLamp = lamps.addCustom({ head: corrHead, axis: V(0, -1, 0), height: CORR.ceil - 0.36, half: 0.8, real: true, bulb: globe, fadeEnd: 0.85, edgeSoft: 0.5, strength: 0.45, tag: 'corridor' });
     Object.assign(corrLamp.light, { intensity: 38, angle: 1.2, penumbra: 0.85, distance: 8 });
-    corrLamp.priority = 2;
+    // (in the corridor its shadow before the street's light up through the blind)
+    corrLamp.priority = (eye) => (eye.x < -0.1 ? 6 : 2);
+    // the street's light up through the blind onto the ceiling (round 2): the
+    // lamp post across the way, three floors down - its light comes in
+    // rising through the slats and lays their lines over the black ceiling
+    // and the top of the door's wall, and the fan turns through it: its
+    // blades' slow shadow goes round up there. A shadowed light or none
+    // (unshadowed it would be a blot on the ceiling), and only while the
+    // eye is in the room.
+    const upFrom = street.post.head.clone().add(V(-0.35, 0.05, 0));
+    const upAt = V(1.6, CEIL, (WIN.z0 + WIN.z1) / 2 - 0.25);
+    const upLamp = lamps.addCustom({ head: upFrom, axis: upAt.clone().sub(upFrom).normalize(), height: 4, half: 0.09, real: true, strength: 0, tag: 'streetUp' });
+    Object.assign(upLamp.light, { intensity: UP_I, angle: 0.1, penumbra: 0.35, distance: 30 });
+    upLamp.cone.visible = false;
+    upLamp.priority = (eye) => (eye.x > 0 ? 4 : 0);
+    upLamp.shadowOnly = true;
+    upLamp.shadow = { radius: 1.4, mapSize: 1024, bias: -0.0003, normalBias: 0.02, near: 11 };
     // the dead end of the corridor by the lift: a dim bulb over the gate (no pool: a mark in the dark)
     kit.add(new THREE.SphereGeometry(0.035, 12, 8).translate((-1.62 - 0.52) / 2, 2.55, CORR.z0 + 0.06), mats.litDim, { cast: false });
 
@@ -126,7 +144,7 @@ export default {
       door, desk: furn.desk, pad: furn.pad, pencilAt: furn.pencilAt, picture: furn.picture, safe: furn.safe,
       blind: open.blind, curtain: open.curtain, fan: furn.fan, cooler: furn.cooler, cabinets: furn.cabinets,
       window: open.window, escape: open.escape, side: open.side, frosted,
-      lights: { blind: blindLight, desk: deskLamp, corridor: corrLamp, post: street.post.lamp },
+      lights: { blind: blindLight, desk: deskLamp, corridor: corrLamp, post: street.post.lamp, up: upLamp },
       lamp: { lamp: deskLamp, parts: dl, fallen: 0, fall: null },
       neon: street.neon,
       gust: 0,
@@ -156,7 +174,7 @@ export default {
         d.tip = { t: 0, a: now ? Math.PI / 2 : 0, v: 0 };
         d.tipNow = now;
         // (over at once: its collider and the bullets' copy where it lies, before anyone stands by it)
-        if (now) { d.tip.done = true; d.pivot.rotation.z = Math.PI / 2; d.pivot.updateMatrixWorld(true); d.tipped = 1; drawersHome(api, stage, true); afterTip(api, stage); }
+        if (now) { d.tip.done = true; d.pivot.rotation.z = Math.PI / 2; d.pivot.updateMatrixWorld(true); d.tipped = 1; drawersHome(api, stage, true); spill(api, stage); afterTip(api, stage); }
         return true;
       },
       // ---- the picture swings aside on its wire -------------------------------------------
@@ -216,6 +234,8 @@ export default {
       dk.tipped = T.a / (Math.PI / 2);
       // (past halfway the pulled drawers point up and run home, one bang)
       if (!dk.slid && dk.tipped > 0.55) { drawersHome(api, stage, true); if (G && !dk.tipNow) G.sfx.play('office_drawer', V(dk.x - 0.2, 0.9, dk.z), { k: 1 }); }
+      // (what was on its top slides off beyond it, out of my sight behind it)
+      if (!dk.spill && dk.tipped > 0.45) spill(api, stage);
     }
     // (the drawers' shut copy out of the bullets' way until it is wanted)
     if (!dk._raysInit && G && G.rays) { dk._raysInit = true; drawersHome(api, stage, !!dk.slid); }
@@ -238,6 +258,11 @@ export default {
     // the fan: its slow turn (a bent blade ticks round)
     const F = api.fan;
     F.rotor.rotation.y -= (F.rpm / 60) * Math.PI * 2 * dt;
+    // (its shadow in the street's light on the ceiling: that light's map
+    // follows the blades every other step)
+    if (dt > 0 && (api._fanK = (api._fanK || 0) + 1) % 2 === 0) {
+      for (const sl of stage.lamps.pool) if (sl.lamp === api.lights.up && sl.shadow) sl.spot.shadow.needsUpdate = true;
+    }
     // the curtain in the air from under the sash
     api.gust += (Math.sin(t * 0.37) * 0.5 + Math.sin(t * 1.13 + 1) * 0.3 - api.gust) * Math.min(1, dt * 0.8);
     api.curtain.step(t, Math.max(0, api.gust));
@@ -260,7 +285,7 @@ export default {
 function afterTip(api, stage) {
   const d = api.desk, c = d.collider;
   // (lying on its front: 0.78 deep along x now, its old front edge the pivot)
-  c.cx = d.x - DESK.d / 2 - DESK.h / 2 + 0.02; c.hx = DESK.h / 2; c.hz = DESK.w / 2;
+  c.cx = d.x - DESK.d / 2 - DESK.h / 2 + 0.02; c.hx = DESK.h / 2; c.hz = DESK.w / 2 + 0.05;
   deskRays(api, stage);
 }
 // the bullets' copy of the desk where the desk is (tipped, or stood up again)
@@ -268,6 +293,41 @@ function deskRays(api, stage) {
   const G = stage.game, d = api.desk;
   if (G && G.rays) d.body.traverse((m) => { if (m.isMesh && stage.solids.includes(m)) G.rays.refresh(m); });
   if (G && G.pipeline && G.pipeline.dirtyShadows) G.pipeline.dirtyShadows();
+}
+// the things on the desk's top (not the desk, not the lamp) come off it as it
+// goes over and lie on the floor beyond it, flat, turned every way; put back
+// on it by the reset. (Object first: a telephone stuck to a desk standing on
+// its front is a thing in the air.)
+const _bb = new THREE.Box3(), _bc = new THREE.Vector3();
+function spill(api, stage) {
+  const d = api.desk, G = stage.game;
+  if (d.spill) return;
+  d.spill = [];
+  const loose = d.body.children.filter((c) => !d.fixed.has(c));
+  loose.forEach((c, i) => {
+    d.spill.push({ obj: c, pos: c.position.clone(), quat: c.quaternion.clone() });
+    c.updateWorldMatrix(true, true);
+    _bb.setFromObject(c).getCenter(_bc);
+    const zc = Math.max(DESK.z - DESK.w / 2, Math.min(DESK.z + DESK.w / 2, _bc.z));
+    const h = (k) => { const x = Math.sin((i + 1) * 127.1 + k * 311.7) * 43758.5453; return x - Math.floor(x); };
+    stage.scene.add(c);
+    // (on its side, the telephone; the flat things flat)
+    const tall = _bb.max.y - _bb.min.y > 0.1;
+    c.quaternion.setFromEuler(new THREE.Euler(0, h(1) * 6.28, tall ? Math.PI / 2 : 0, 'YXZ'));
+    c.position.set(0, 0, 0);
+    c.updateWorldMatrix(true, true);
+    _bb.setFromObject(c).getCenter(_bc);
+    const rx = DESK.x - DESK.d / 2 - 0.95 - h(2) * 0.55, rz = zc + (h(3) - 0.5) * 0.5;
+    c.position.set(rx - _bc.x, FLOOR + 0.003 * (1 + (i % 4)) - _bb.min.y, rz - _bc.z);
+    c.updateWorldMatrix(true, true);
+    if (G && G.rays) c.traverse((m) => { if (m.isMesh && stage.solids.includes(m)) G.rays.refresh(m); });
+  });
+}
+function unspill(api) {
+  const d = api.desk;
+  if (!d.spill) return;
+  for (const s of d.spill) { d.body.add(s.obj); s.obj.position.copy(s.pos); s.obj.quaternion.copy(s.quat); }
+  d.spill = null;
 }
 // the drawers pulled out (the room as found) or run home (the desk over)
 function drawersHome(api, stage, shut) {
@@ -353,6 +413,7 @@ function resetRoom(api, stage) {
   const d = api.desk;
   d.tip = null; d.tipped = 0; d.pivot.rotation.z = 0; d.tipNow = false;
   d.collider.cx = d.x; d.collider.hx = DESK.d / 2; d.collider.hz = DESK.w / 2;
+  unspill(api);
   drawersHome(api, stage, false);
   const Lp = api.lamp, lamp = Lp.lamp;
   if (Lp.fall || Lp.parts.group.parent !== d.body) {
