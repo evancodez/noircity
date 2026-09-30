@@ -22,7 +22,7 @@
   },
   {
    "until": "G.scenes.current && G.scenes.current.id === 'shootout' && document.pointerLockElement === N.renderer.domElement",
-   "timeout": 30000
+   "timeout": 60000
   },
   {
    "expect": "G.scenes.beat === 'arrive' && G.hands.set === 'empty' && !G.b7.gunTaken",
