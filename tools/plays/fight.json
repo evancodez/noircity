@@ -15,7 +15,10 @@
    "wait": 2000
   },
   {
-   "clickOn": "#title .opt[data-k=begin]"
+   "clickOn": "#title .opt[data-k=begin]",
+   "taken": "G.state !== 'title'",
+   "retries": 5,
+   "every": 4000
   },
   {
    "name": "the way in: he stands, his hand on my shoulder, the stool sent skidding, fists up"

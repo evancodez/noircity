@@ -93,8 +93,8 @@
    "shot": "a08_matchbook"
   },
   {
-   "until": "G.state === 'end'",
-   "timeout": 40000,
+   "until": "G.state === 'end' || (G.scenes.current && G.scenes.current.id !== 'fight')",
+   "timeout": 60000,
    "log": true
   },
   {

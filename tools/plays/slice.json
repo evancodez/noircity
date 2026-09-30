@@ -31,7 +31,10 @@
    "label": "a key on the title opens the sound"
   },
   {
-   "clickOn": "#title .opt[data-k=begin]"
+   "clickOn": "#title .opt[data-k=begin]",
+   "taken": "G.state !== 'title'",
+   "retries": 5,
+   "every": 4000
   },
   {
    "name": "scene 1, the diner: settle"
