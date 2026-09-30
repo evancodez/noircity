@@ -235,16 +235,29 @@ export class Controller {
       const M = this.brawlMove || { f: 0, s: 0 };
       const fy = this.faceYaw ?? this.yaw;
       const sin = Math.sin(fy), cos = Math.cos(fy);
-      const sp = M.f < 0 ? 1.7 : M.f > 0 ? 2.1 : 1.8;
+      // (the arcade pass, FIGHT.md v3 §1-2: W walks in at 3.2 m/s, full speed
+      // in a tenth of a second; A / D / S held on after a hop keep circling
+      // at 2.2 and backing away at 2.0; the hop itself is brawlHop)
+      const sp = M.f < 0 ? 2.0 : M.f > 0 ? 3.2 : 2.2;
       const len = Math.hypot(M.f, M.s) || 1;
       const tx = ((-sin * M.f + cos * M.s) / len) * sp * Math.min(1, Math.hypot(M.f, M.s));
       const tz = ((-cos * M.f - sin * M.s) / len) * sp * Math.min(1, Math.hypot(M.f, M.s));
-      const a = 1 - Math.exp(-(Math.abs(M.f) + Math.abs(M.s) > 0.05 ? 11 : 14) * dt);
+      const a = 1 - Math.exp(-30 * dt);
       this.vel.x += (tx - this.vel.x) * a; this.vel.z += (tz - this.vel.z) * a;
       const P = this.brawlPush;
       const px = this.pos.x, pz = this.pos.z;
       this.pos.x += (this.vel.x + (P ? P.x : 0)) * dt;
       this.pos.z += (this.vel.z + (P ? P.z : 0)) * dt;
+      // the hop: 0.55 m aside or 0.6 back in 0.10 s, fast out and settling
+      // (ease-out), through the same walls as a step
+      const HP = this.brawlHop;
+      if (HP && HP.t < HP.dur) {
+        const e = (u) => 1 - Math.pow(1 - Math.min(1, u), 2.2);
+        const t1 = Math.min(HP.dur, HP.t + dt);
+        const k = e(t1 / HP.dur) - e(HP.t / HP.dur);
+        HP.t = t1;
+        this.pos.x += HP.x * HP.dist * k; this.pos.z += HP.z * HP.dist * k;
+      }
       const wx = this.pos.x, wz = this.pos.z;
       if (this.world.colliders) this.world.colliders.resolve(this.pos, this.radius * 0.85);
       this.keepOff(px, pz);
@@ -320,6 +333,13 @@ export class Controller {
     this.apply(dt);
   }
 
+  // a landed blow's kick of the view (the fight, FIGHT.md v3 §5.5): the view
+  // kicked `deg` degrees and the lens pushed in `fovDeg` for `dur` seconds,
+  // then back
+  kick(deg = 1.5, fovDeg = 2, dur = 0.1) {
+    this._kick = { a: THREE.MathUtils.degToRad(deg), f: fovDeg, t: 0, dur, sgn: (this._kickN = -(this._kickN || 1)) };
+  }
+
   // a blast's kick (Phase 3a): strength falls with distance
   shake(strength = 1, dist = 0) {
     const k = strength / (1 + Math.max(0, dist - 4) * 0.15);
@@ -371,6 +391,20 @@ export class Controller {
       const sn = Math.sin(this.yaw), cs = Math.cos(this.yaw);
       ox = -sn * V.fwd + cs * V.side; oz = -cs * V.fwd - sn * V.side; oy = -V.down;
       vy = V.yaw; vp += V.pitch; vr = V.roll;
+    }
+    // (a landed blow's kick and the lens pushed in: up fast, back over the
+    // rest of its tenth of a second)
+    const Kk = this._kick;
+    if (Kk) {
+      if (Kk.fov0 == null) Kk.fov0 = this._kickFov0 ?? c.fov;
+      this._kickFov0 = Kk.fov0;
+      Kk.t += dt;
+      const u = Kk.t / Kk.dur;
+      const env = u >= 1 ? 0 : u < 0.3 ? u / 0.3 : 1 - (u - 0.3) / 0.7;
+      vp += Kk.a * env; vy += Kk.a * 0.35 * Kk.sgn * env;
+      const f = Kk.fov0 - Kk.f * env;
+      if (Math.abs(c.fov - f) > 1e-4) { c.fov = f; c.updateProjectionMatrix(); }
+      if (u >= 1) { this._kick = null; this._kickFov0 = null; }
     }
     c.position.set(this.pos.x + Math.cos(this.yaw) * bobX + ox, this.groundY + EYE - 0.02 + bobY + oy, this.pos.z - Math.sin(this.yaw) * bobX + oz);
     c.rotation.order = 'YXZ';

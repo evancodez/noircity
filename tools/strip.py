@@ -34,8 +34,23 @@ def main():
     for i, t in enumerate(times):
         p = os.path.join(tmp, 'f%02d.png' % i)
         q = query.replace('{t}', '%.2f' % t)
-        subprocess.run(['bash', os.path.join(ROOT, 'tools', 'shot.sh'), p, q, str(w), str(h)],
-                       stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        # (a headless Chrome now and then hangs on a loaded machine: each
+        # frame gets 120 s, then its whole process group is killed and the
+        # frame is tried once more)
+        for attempt in range(2):
+            pr = subprocess.Popen(['bash', os.path.join(ROOT, 'tools', 'shot.sh'), p, q, str(w), str(h)],
+                                  stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, start_new_session=True)
+            try:
+                pr.wait(timeout=120)
+                break
+            except subprocess.TimeoutExpired:
+                import signal
+                try:
+                    os.killpg(pr.pid, signal.SIGKILL)
+                except Exception:
+                    pass
+                pr.wait()
+                print('frame t=%.2f hung; killed%s' % (t, ', retrying' if attempt == 0 else ''))
         if os.path.exists(p):
             frames.append((t, Image.open(p).convert('RGB')))
         else:

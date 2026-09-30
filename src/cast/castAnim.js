@@ -589,7 +589,8 @@ export function castBank(kind) {
       const def = DEFS[b];
       if (!def) throw new Error(`cast: no clip '${name}' for '${kind}'`);
       const d = def(ctx, arg);
-      const c = bake(name, d.duration, d.pose, { loop: !!d.loop, armSpace: d.armSpace || 'chest', rig, rootMotion: d.rootMotion || null });
+      // (the fight's blows bake at 60 fps: a 0.10 s strike is six samples)
+      const c = bake(name, d.duration, d.pose, { loop: !!d.loop, armSpace: d.armSpace || 'chest', rig, rootMotion: d.rootMotion || null, fps: d.fps || undefined });
       clips[name] = c;
       return c;
     },

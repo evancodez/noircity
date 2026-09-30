@@ -771,11 +771,14 @@ Object.assign(B, {
   pocket(ctx, out, t0, p, R) { burst(ctx, out, R, t0, 'white', ['bandpass', 1900, 0.8], 0.06, 0.03, 0.22); return 0.3; },
   // ---- the fight --------------------------------------------------------------------------------
   // a jab: a short slap of skin with a knock under it
+  // (the arcade pass, FIGHT.md v3 §5.6: a landed blow is a sharp CRACK over
+  // a low thud; a blocked one a dull knock; a miss a whiff of air)
   f_jab(ctx, out, t0, p, R) {
     const k = p.k ?? 0.5;
-    burst(ctx, out, R, t0, 'white', ['highpass', 1300], 0.35 * (0.6 + k), 0.0008, 0.035);
-    thud(ctx, out, t0, 150, 70, 0.45 * (0.6 + k), 0.07);
-    return 0.12;
+    burst(ctx, out, R, t0, 'white', ['highpass', 2600], 0.5 * (0.6 + k), 0.0005, 0.018);
+    burst(ctx, out, R, t0 + 0.002, 'white', ['bandpass', 1400, 1.2], 0.3 * (0.6 + k), 0.0008, 0.04);
+    thud(ctx, out, t0, 130, 55, 0.55 * (0.6 + k), 0.09);
+    return 0.14;
   },
   // a heavy one: a deep thud with the body in it, the slap on top
   f_heavy(ctx, out, t0, p, R) {
@@ -784,6 +787,7 @@ Object.assign(B, {
     thud(ctx, sat, t0, 95, 38, 0.9 * (0.6 + 0.4 * k), 0.22);
     burst(ctx, sat, R, t0, 'brown', ['lowpass', 420], 0.8 * k, 0.001, 0.14);
     burst(ctx, out, R, t0, 'white', ['highpass', 1100], 0.35 * k, 0.0008, 0.05);
+    burst(ctx, out, R, t0, 'white', ['highpass', 2800], 0.55 * k, 0.0005, 0.022);
     return 0.3;
   },
   f_hisGrunt(ctx, out, t0, p, R) { return voice(ctx, out, t0 + 0.03, R, { f0: rng(78, 92), f1: 62, dur: rng(0.2, 0.3), formants: [[480, 5], [900, 7], [2300, 10]], breath: 0.6, level: 0.45 * (p.k ?? 1) }); },

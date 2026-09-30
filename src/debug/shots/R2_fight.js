@@ -139,13 +139,26 @@ function stageDuel(stage, camera, controller, game) {
   B.him.next = 99; B.lessonHold = true;
   // (him where the moment wants him: he holds his ground until it starts)
   if (what === 'stools') B.holdStill = true;
+  // (the arcade pass: &open=L|R|LR holds that side of his guard down - the
+  // side of MY screen - for the whole moment)
+  const open = q.get('open');
+  if (open) game.scripts.push(() => { if (B.him && B.him.state === 'move') B.him.taunt = open; });
+  const hold = parseFloat(q.get('hold') || '0.5');
+  // (&burst=<px>: a held burst at his jaw from 1.0 s - the burst's look)
+  if (q.get('burst')) game.scripts.push((t) => { if (!stageDuel._b && t >= 1.0) { stageDuel._b = true; const h = c.bones.head.getWorldPosition(new THREE.Vector3()); const at = game.eye.clone().lerp(h, 0.85); game.fx.hit.punch(at, new THREE.Vector3(0, 0, 1), 1, { px: +q.get('burst'), camera: game.camera, hold: true }); } });
+  const once = new Set();
+  const at = (t0, key, fn) => game.scripts.push((tt) => { if (tt >= t0 && !once.has(key)) { once.add(key); fn(); } });
   game.scripts.push((t) => {
     if (done || t < 1.0) return;
     done = true;
     B.lessonHold = false;
     if (what === 'stools') game.scripts.push((tt) => { if (tt > 3.5) B.holdStill = false; });
-    if (what === 'stools' || what === 'hard') press(q.get('arm') === 'L' ? 'Mouse0' : 'Mouse2', 0.85);
+    if (what === 'stools' || what === 'hard') press(q.get('arm') === 'L' ? 'Mouse0' : 'Mouse2', hold);
     else if (what === 'jab') press(q.get('arm') === 'R' ? 'Mouse2' : 'Mouse0');
+    // do=combo: L R L R jabs 0.17 s apart into an open man; do=break: three
+    // hard punches into his guard
+    else if (what === 'combo') { B.him.taunt = 'LR'; ['Mouse0', 'Mouse2', 'Mouse0', 'Mouse2'].forEach((b, i) => at(1.0 + i * 0.17, 'c' + i, () => press(b))); }
+    else if (what === 'break') { for (let i = 0; i < 3; i++) at(1.0 + i * 0.75, 'b' + i, () => press(i % 2 ? 'Mouse0' : 'Mouse2', 0.3)); }
     else if (what === 'bottle') { B.him.next = 0; B.him.manner = 'dirty'; }
     else if (what === 'stool') { const it = B.room.hisItem('stool', c.pos); if (it) { B.him.task = { kind: 'stool', item: it, t: 0 }; B.him.state = 'arm'; } }
     else if (what === 'reel') { B.damageHim(B.him.hp - 12); B.startReel(); }
@@ -155,20 +168,20 @@ function stageDuel(stage, camera, controller, game) {
       const k = what === 'mystool' ? 'stool' : 'bottle';
       const it = B.room.items().filter((x) => x.kind === k).sort((a, b) => Math.hypot(a.pos.x - game.eye.x, a.pos.z - game.eye.z) - Math.hypot(b.pos.x - game.eye.x, b.pos.z - game.eye.z))[0];
       if (it) B.grab(it);
-      game.scripts.push((tt) => { if (!B._mySent && tt >= 1.8) { B._mySent = true; press('Mouse2', parseFloat(q.get('hold') || '1.0')); } });
+      game.scripts.push((tt) => { if (!B._mySent && tt >= 1.6) { B._mySent = true; press('Mouse2', q.get('click') ? 1 / 60 : hold); } });
     }
     else {
+      // his blow at 1.0 s; my answer &react s after its tell starts (a
+      // human's 0.22 by default): &slip=L|R (a hop: A / D), back (S), block
+      // (SPACE held), counter (a jab into the side his swing opens), none
       B.hisAttack(what);
       const slip = q.get('slip') || 'none';
-      const cl = c.clip(what);
-      const at = (cl.marks.contact ?? 0.5) - (slip === 'cover' ? 0.3 : slip === 'lean' ? 0.24 : 0.16);
-      let sent = false;
-      game.scripts.push((tt) => {
-        if (sent || tt < 1.0 + at) return;
-        sent = true;
-        if (slip === 'L' || slip === 'R') { press('Space', 0.2); press(slip === 'L' ? 'KeyA' : 'KeyD'); }
-        else if (slip === 'lean') press('Space', 0.35);
-        else if (slip === 'cover') press('ShiftLeft', 0.6);
+      const react = parseFloat(q.get('react') || '0.22');
+      at(1.0 + react, 'answer', () => {
+        if (slip === 'L' || slip === 'R') press(slip === 'L' ? 'KeyA' : 'KeyD');
+        else if (slip === 'back') press('KeyS');
+        else if (slip === 'block' || slip === 'cover') press('Space', 0.6);
+        else if (slip === 'counter') press(/L$/.test(what) ? 'Mouse2' : 'Mouse0');
       });
     }
   });

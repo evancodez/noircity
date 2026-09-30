@@ -223,32 +223,43 @@ try {
   const card1 = await js(`document.querySelector('#fightcards .fc .t').textContent`);
   const btn = (b) => ({ button: b, buttons: b === 'right' ? 2 : 1 });
   const press = async (b, ms = 60) => { await mouse('mousePressed', W / 2, H / 2, btn(b)); await sleep(ms); await mouse('mouseReleased', W / 2, H / 2, { ...btn(b), buttons: 0 }); };
-  await sleep(900);
+  // (the arcade pass, FIGHT.md v3 §6: a press is the jab at once; his guard
+  // is down on the side the card names; step 3 his guard is up - a punch
+  // bounces off it - then a hand comes down; step 4 both hands down, a hold
+  // of 0.7 s and let go; step 5 his slow right hook, a hop away: D)
+  await sleep(1500);
   await press('left');
   const j1 = await until(`N.game.brawl.did.jabL === true`, 3000);
-  await sleep(700);
+  await sleep(1500);
   await press('right');
   const j2 = await until(`N.game.brawl.did.jabR === true`, 3000);
-  await sleep(700);
-  await press('right', 820);
+  await sleep(1200);
+  const s3 = await until(`N.game.brawl.lesson && N.game.brawl.lesson.step === 3`, 3000);
+  await press('left');
+  const bounced = await until(`N.game.brawl.lesson && (N.game.brawl.lesson.bounced || N.game.brawl.lesson.step > 3)`, 2000);
+  const low = await until(`N.game.brawl.lesson && (N.game.brawl.lesson.step > 3 || !!N.game.brawl.lesson.lowered)`, 5000);
+  const side = await L(`B.lesson && B.lesson.lowered`);
+  await sleep(500);
+  if (side) await press(side === 'L' ? 'left' : 'right');
+  const s4 = await until(`N.game.brawl.lesson && N.game.brawl.lesson.step === 4`, 3000);
+  await sleep(900);
+  await press('right', 700);
   const j3 = await until(`N.game.brawl.did.hard === true`, 3000);
-  const jinfo = await L(`({ jabs: B.stats.jabs, hards: B.stats.hards, landed: B.stats.landed, act: B.me.act, d: +Math.hypot(B.c.pos.x - N.game.eye.x, B.c.pos.z - N.game.eye.z).toFixed(2), tgt: B.onTarget(), step: B.lesson && B.lesson.step, locked: document.pointerLockElement === N.renderer.domElement })`);
-  check('the lesson by real input: LEFT CLICK a left jab, RIGHT CLICK a right jab, hold and let go a hard punch', /LEFT CLICK/.test(card1) && j1 && j2 && j3, JSON.stringify({ card1, j1, j2, j3, ...jinfo }));
-  // step 4: his slow right hook - SPACE + D, as it comes
-  // (as a player would: when the hook is on its way, SPACE and D; a miss and
-  // he throws it again, so up to three tries)
+  const jinfo = await L(`({ jabs: B.stats.jabs, hards: B.stats.hards, landed: B.stats.landed, blocked: B.stats.myBlocked, act: B.me.act, d: +Math.hypot(B.c.pos.x - N.game.eye.x, B.c.pos.z - N.game.eye.z).toFixed(2), tgt: B.onTarget(), step: B.lesson && B.lesson.step, locked: document.pointerLockElement === N.renderer.domElement })`);
+  check('the lesson by real input: LEFT CLICK into his open left, RIGHT CLICK, a punch bounced off his guard then one into the hand he dropped, hold and let go a hard punch', /LEFT CLICK/.test(card1) && j1 && j2 && s3 && bounced && low && s4 && j3, JSON.stringify({ card1, j1, j2, s3, bounced, low, side, s4, j3, ...jinfo }));
+  // step 5: his slow right hook - D, a hop away from the hand that swings
+  // (as a player would: when the hook is on its way; missed, he throws it
+  // again, so up to three tries)
   let slipped = false;
   for (let k = 0; k < 3 && !slipped; k++) {
-    await until(`N.game.brawl.lesson && N.game.brawl.lesson.step === 4 && N.game.brawl.him.clip === 'br_hook' && N.game.brawl.him.state === 'attack' && N.game.brawl.him.t > 0.32 && N.game.brawl.him.t < 0.5`, 12000);
-    await send('Input.dispatchKeyEvent', { type: 'keyDown', code: 'Space', key: ' ', windowsVirtualKeyCode: 32 });
+    await until(`N.game.brawl.lesson && N.game.brawl.lesson.step === 5 && N.game.brawl.him.clip === 'br_hook' && N.game.brawl.him.state === 'attack' && N.game.brawl.him.t > 0.2 && N.game.brawl.him.t < 0.36`, 12000);
     await send('Input.dispatchKeyEvent', { type: 'keyDown', code: 'KeyD', key: 'd', windowsVirtualKeyCode: 68 });
-    await sleep(90);
+    await sleep(60);
     await send('Input.dispatchKeyEvent', { type: 'keyUp', code: 'KeyD', key: 'd', windowsVirtualKeyCode: 68 });
-    await send('Input.dispatchKeyEvent', { type: 'keyUp', code: 'Space', key: ' ', windowsVirtualKeyCode: 32 });
-    slipped = await until(`N.game.brawl.lesson && (N.game.brawl.lesson.slipped || N.game.brawl.lesson.step > 4)`, 2500);
+    slipped = await until(`N.game.brawl.lesson && (N.game.brawl.lesson.missed || N.game.brawl.lesson.step > 5)`, 2500);
   }
-  const open = await L(`({ open: +B.him.open.toFixed(2), flash: document.querySelector('#fightcards .fl').textContent, slipped: B.stats.slipped, wrong: B.stats.wrongSlips, taken: B.stats.taken, his: B.stats.his, clips: B.stats.clips, step: B.lesson && B.lesson.step, st: B.him.state, clip: B.him.clip, me: B.me.act, hp: N.game.health.hp })`);
-  check('his right hook, slipped away from the hand (SPACE + D): he is open', slipped && open.slipped >= 1, JSON.stringify(open));
+  const open = await L(`({ open: B.openSides(), flash: document.querySelector('#fightcards .fl').textContent, dodged: B.stats.dodged, into: B.stats.wrongSlips, taken: B.stats.taken, his: B.stats.his, clips: B.stats.clips, step: B.lesson && B.lesson.step, st: B.him.state, clip: B.him.clip, me: B.me.act, hp: N.game.health.hp })`);
+  check('his right hook, left by a hop away from the hand (D): it misses and he is open', slipped && open.dodged >= 1, JSON.stringify(open));
 
   // ---- a lost round: the room set again under the black, quietly -------------------------------------
   // (down: the black comes in over 0.35 s, the room is re-staged behind it

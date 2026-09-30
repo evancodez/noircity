@@ -107,8 +107,8 @@
    "eval": "G.brawl.stats"
   },
   {
-   "expect": "G.brawl.stats.won === true && G.brawl.stats.time >= 90 && G.brawl.stats.time <= 150 && G.brawl.stats.lesson > 5 && G.brawl.stats.lesson < 45 && G.brawl.stats.throws >= 1",
-   "label": "the fight played by the autoplay at a human pace (game/Autoplay.js): the lesson under 45 s, then won in 90..150 s of game time all told, at least one knock into the room"
+   "expect": "G.brawl.stats.won === true && G.brawl.stats.time >= 55 && G.brawl.stats.time <= 110 && G.brawl.stats.lesson > 5 && G.brawl.stats.lesson < 45 && G.brawl.stats.throws >= 1",
+   "label": "the fight played by the autoplay at a human pace (game/Autoplay.js): the lesson under 45 s, then won in 55..110 s of game time all told (FIGHT.md v3: 60..100), at least one knock into the room"
   },
   {
    "expect": "G.save.inventory.includes('matchbook')",
