@@ -55,7 +55,7 @@ export class Hud {
   // brush: the ink pass's dry-brush field (render/textures.js, a 1024^2
   // canvas, R/G/B = diagonal / vertical / horizontal stroke families): the
   // card splats' and strokes' edges are frayed with it
-  constructor({ onBegin, onContinue = null, onRestart, onResume, onSetting = null, brush = null }) {
+  constructor({ onBegin, onContinue = null, onChapter = null, onRestart, onResume, onSetting = null, brush = null }) {
     setBrush(brush);
     this.onSetting = onSetting;
     const style = document.createElement('style');
@@ -91,6 +91,16 @@ export class Hud {
       #title .sep { width: 6px; height: 6px; border-radius: 50%; background: #d8d6d0; box-shadow: 0 0 4px #000; }
       #title .sep.hidden { display: none; }
       #title .go { margin-top: 10px; animation: noirBlink 2.6s ease-in-out infinite; }
+      #title .toc { display: none; position: absolute; right: 5%; top: 46%; transform: translateY(-50%); z-index: 2; padding: min(2.2vh, 18px) 6px; text-transform: uppercase;
+        color: #eeece6; background: #050505; border: 1px solid #55534e; box-shadow: 0 0 0 5px #050505, 0 0 34px 14px rgba(0, 0, 0, 0.8); }
+      #title.toc-open .toc { display: block; }
+      #title .toc .row { display: flex; align-items: baseline; gap: 1.3em; padding: min(1.15vh, 9px) 30px min(1.15vh, 9px) 18px; font-size: min(1.75vw, 2.6vh, 16px); letter-spacing: 0.34em; cursor: pointer; white-space: nowrap; }
+      #title .toc .row b { display: inline-block; width: 3.6em; text-align: right; font-weight: normal; color: #a9a7a1; letter-spacing: 0.2em; }
+      #title .toc .row:hover { background: #eeece6; color: #000; }
+      #title .toc .row:hover b { color: #000; }
+      #title .toc .row.off, #title .toc .row.off b { color: #4f4e4a; cursor: default; }
+      #title .toc .row.off:hover { background: none; color: #4f4e4a; }
+      #title .toc .row.off:hover b { color: #4f4e4a; }
       #title .keys { margin-top: 14px; }
       @keyframes noirBlink { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
       #endcard { z-index: 19; cursor: pointer; background: radial-gradient(ellipse at 50% 46%, rgba(0,0,0,0.2) 0%, rgba(0,0,0,0.5) 50%, rgba(0,0,0,0.88) 100%); }
@@ -204,6 +214,12 @@ export class Hud {
     this.sepEl = document.createElement('div'); this.sepEl.className = 'sep hidden'; opts.appendChild(this.sepEl);
     this.contOpt = opt('continue', 'continue', 4102);
     this.contOpt.classList.add('hidden');
+    // CHAPTERS: the table of contents (setChapters): start at any chapter
+    const sep2 = document.createElement('div'); sep2.className = 'sep'; opts.appendChild(sep2);
+    this.chapOpt = opt('chapters', 'chapters', 4103);
+    this.toc = document.createElement('div');
+    this.toc.className = 'toc';
+    this.title.appendChild(this.toc);
     this.title.appendChild(opts);
     this.titlePrompt = document.createElement('p'); this.titlePrompt.className = 'go'; this.title.appendChild(this.titlePrompt);
     const keys = document.createElement('p'); keys.className = 'keys'; keys.textContent = KEYS; this.title.appendChild(keys);
@@ -224,6 +240,12 @@ export class Hud {
     this.title.addEventListener('mousedown', (e) => {
       if (e.button !== 0) return;
       const o = e.target.closest && e.target.closest('.opt');
+      // (the table of contents: a row starts that chapter; CHAPTERS opens
+      // and shuts it; while it is open a click elsewhere only shuts it)
+      const row = e.target.closest && e.target.closest('.toc .row');
+      if (row) { if (!row.classList.contains('off') && onChapter) { this.title.classList.remove('toc-open'); onChapter(row.dataset.id); } return; }
+      if (o && o.dataset.k === 'chapters') { this.title.classList.toggle('toc-open'); return; }
+      if (this.title.classList.contains('toc-open') && !o) { this.title.classList.remove('toc-open'); return; }
       const k = o ? o.dataset.k : this.canContinue ? null : 'begin';
       if (k === 'continue' && onContinue) onContinue();
       else if (k === 'begin' && onBegin) onBegin();
@@ -246,6 +268,20 @@ export class Hud {
     this.msgT = 0;
     this.paused = false;
     this.epiRng = null;       // (shot mode: a seeded epitaph)
+  }
+
+  // the table of contents behind CHAPTERS: [{ id, numeral, title, ready }]
+  // (a chapter without a scene file yet is listed, dimmed)
+  setChapters(list) {
+    this.toc.textContent = '';
+    for (const c of list) {
+      const r = document.createElement('div');
+      r.className = 'row' + (c.ready ? '' : ' off');
+      r.dataset.id = c.id;
+      const n = document.createElement('b'); n.textContent = c.numeral; r.appendChild(n);
+      const t = document.createElement('span'); t.textContent = c.title; r.appendChild(t);
+      this.toc.appendChild(r);
+    }
   }
 
   // the title's hint while the browser still holds the sound back

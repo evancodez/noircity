@@ -17,6 +17,7 @@ import { DEATH_REPORT } from './enemies/Hood.js';
 import { Game } from './game/Game.js';
 import { Sfx, audioTest } from './audio/Sfx.js';
 import { Autoplay } from './game/Autoplay.js';
+import { ORDER } from './scenes/order.js';
 
 // ---- URL params (DESIGN.md §9) -------------------------------------------
 const params = new URLSearchParams(location.search);
@@ -85,11 +86,16 @@ const sfx = new Sfx({ enabled: !shotMode, forceMute: autoMute });
 // before it, by hand or by tools/play.mjs)
 const startParam = shotMode ? null : params.get('start');
 const startAt = startParam ? { scene: startParam.split('.')[0], beat: startParam.split('.')[1] || null } : null;
-let startFrom = null;
+let startFrom = null, chosen = null;
 const hud = new Hud({
   brush: tex.brush.image,
-  onBegin: () => { startFrom = startAt; sfx.unlock(); controller.lock(); },
+  onBegin: () => { startFrom = chosen || startAt; sfx.unlock(); controller.lock(); },
   onContinue: () => { startFrom = game.save.read(); sfx.unlock(); controller.lock(); },
+  // (CHAPTERS on the title: the table of contents starts the story at any
+  // chapter, the save unread)
+  // (the choice is kept: if the browser refuses the mouse on that click, the
+  // next click anywhere - "click again to take the mouse" - starts there too)
+  onChapter: (id) => { chosen = { scene: id, beat: null }; startFrom = chosen; sfx.unlock(); controller.lock(); },
   // (the slice's end card goes back to the title; THE END tries again)
   onRestart: (kind) => { sfx.unlock(); if (kind === 'cont') { game.toTitle(); return; } game.restart(); controller.lock(); },
   onResume: () => { sfx.unlock(); controller.lock(); },
@@ -127,6 +133,7 @@ settings.load();
 hud.settings = () => settings.get();
 // the title offers CONTINUE when a checkpoint exists
 if (!shotMode) hud.showTitle('', { canContinue: game.save.exists });
+hud.setChapters(ORDER.map((c) => ({ ...c, ready: !!game.scenes.get(c.id) })));
 if (startAt && !game.scenes.get(startAt.scene)) console.error(`start=${startParam}: no scene '${startAt.scene}' (scenes: ${game.scenes.names.join(', ')})`);
 else if (startAt && startAt.beat && !game.scenes.get(startAt.scene).beats.includes(startAt.beat)) console.error(`start=${startParam}: '${startAt.scene}' has no beat '${startAt.beat}'`);
 // (play and the fight presets: every Hood variant + combat program up front)

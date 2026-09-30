@@ -1,0 +1,19 @@
+{
+ "about": "The title's table of contents: CHAPTERS opens it, a row starts the story at that chapter. node tools/play.mjs tools/plays/chapters.json",
+ "url": "/?mute=1",
+ "size": [1280, 800],
+ "out": "shots/play/chapters",
+ "steps": [
+  { "wait": 1500 },
+  { "expect": "document.querySelectorAll('#title .toc .row').length === 9", "label": "nine chapters listed" },
+  { "clickOn": "#title .opt[data-k=chapters]" },
+  { "wait": 300 },
+  { "expect": "document.querySelector('#title').classList.contains('toc-open')", "label": "CHAPTERS opens the table of contents" },
+  { "shot": "toc" },
+  { "clickOn": "#title .toc .row[data-id=body]" },
+  { "until": "G.scenes.current && G.scenes.current.id === 'body'", "timeout": 12000, "label": "a row starts the story at that chapter" },
+  { "wait": 2500 },
+  { "shot": "body_start" },
+  { "expect": "G.state === 'playing'", "label": "playing" }
+ ]
+}
