@@ -143,6 +143,27 @@ export default {
     const gl = new THREE.Mesh(new THREE.PlaneGeometry(1.4, 26).rotateX(-Math.PI / 2).translate(ride.x - 4.2, PIER.waterY + 0.02, ride.z + 13), glintMaterial(stage.U, { gain: 0.5 }));
     gl.layers.set(LAYER.FX); gl.userData.noRay = true;
     g.add(gl);
+    // ([R2-E round 2] a cargo lamp on a davit at her rail, over the channel
+    // between her and the shed's loading doors: its cone in the rain and its
+    // light broken on the black water - what a man sees through a loading
+    // door, and what the splash is white against)
+    kit.piece();
+    const cl = V(F.x - 5.5, PIER.waterY + 6.4 + 2.1, -35.2);
+    const cAx = V(-2.9, -8.4, 0).normalize();
+    kit.add(mergeGeos([
+      new THREE.CylinderGeometry(0.05, 0.06, 2.4, 8).translate(F.x - 4.55, PIER.waterY + 6.4 + 1.2, cl.z),
+      new THREE.CylinderGeometry(0.045, 0.045, 1.05, 8).rotateZ(Math.PI / 2).translate(F.x - 5.05, PIER.waterY + 6.4 + 2.36, cl.z),
+      lathe([[0.03, 0.14], [0.09, 0.1], [0.2, 0.0], [0.22, -0.02]], 20).applyMatrix4(new THREE.Matrix4().makeRotationFromQuaternion(new THREE.Quaternion().setFromUnitVectors(V(0, -1, 0), cAx))).translate(cl.x, cl.y, cl.z),
+    ]), M.iron, { cast: false });
+    const cb = kit.add(new THREE.SphereGeometry(0.08, 12, 8).translate(cl.x + cAx.x * 0.04, cl.y + cAx.y * 0.04, cl.z), M.bulb, { cast: false, noRay: true });
+    const cargo = stage.lamps.addCustom({ head: cl.clone(), axis: cAx, height: 9.6, half: 0.36, real: true, bulb: cb, fadeEnd: 0.85, edgeSoft: 0.35, strength: 0.85, tag: 'cargo' });
+    if (cargo.light) { cargo.light.intensity = 120; cargo.light.distance = 16; }
+    // (where the cone meets the river: its light in dashes on the swell, the
+    // column running from her side toward the doors)
+    const pool = V(cl.x + cAx.x * (cl.y - PIER.waterY) / -cAx.y, PIER.waterY + 0.015, cl.z);
+    const cg = new THREE.Mesh(new THREE.PlaneGeometry(1.9, 6.5).rotateX(-Math.PI / 2).rotateY(Math.PI / 2).translate(pool.x - 1.9, pool.y, pool.z), glintMaterial(stage.U, { gain: 0.5 }));
+    cg.layers.set(LAYER.FX); cg.userData.noRay = true;
+    g.add(cg);
     // the gate lamp's own glint where the land meets the river is its wet
     // street column (the ground's reflection); the shed's door lamp too
 

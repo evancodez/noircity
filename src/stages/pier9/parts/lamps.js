@@ -247,7 +247,10 @@ export default {
   build(stage) {
     const L = PierLamps.make(stage);
     for (const [name, x, y, z, half, row] of PIER.lamps) {
-      L.hang(name, V(x, y, z), { half, row, drop: name === 'B3' ? PIER.trussY - 0.1 - y - 0.2 : null });
+      // ([R2-E] the bay's lamp over the ring a little harder: its pool on the
+      // planks printed one grey step, never the paper heart the aisles'
+      // pools have - the fight is drawn on its white)
+      L.hang(name, V(x, y, z), { half, row, strength: name === 'bay' ? 1.7 : 1, drop: name === 'B3' ? PIER.trussY - 0.1 - y - 0.2 : null });
     }
     return L;
   },

@@ -1772,8 +1772,11 @@ export class Brawl {
     const t = him.t;
     if (!him.landed && t >= him.koLand) {
       him.landed = true;
-      this.sfx('bodyPavement', V(c.pos.x, 0.2, c.pos.z), { k: 1 });
-      this.controller.shake(0.2, 3);
+      // ([R2-E] a finish into water has its own sound: the room's splash)
+      if (!(him.window && him.window.water)) {
+        this.sfx('bodyPavement', V(c.pos.x, 0.2, c.pos.z), { k: 1 });
+        this.controller.shake(0.2, 3);
+      }
       if (this.opts.onLanded) this.opts.onLanded(him.window);
     }
     if (!him.fell && t >= him.koEnd) {

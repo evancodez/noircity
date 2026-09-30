@@ -23,6 +23,9 @@ import { buildProp } from '../../props/index.js';
 //                boards, the splash, the rain coming in through the hole
 const V = (x, y, z) => new THREE.Vector3(x, y, z);
 const _a = new THREE.Vector3(), _b = new THREE.Vector3(), _q = new THREE.Quaternion();
+// (where he goes in: his root's travel back through the door and his hips
+// behind it as he lands - cast/kinds/foreman.js KO_RIVER at its 'land' key)
+const RIVER_OUT = 2.8 + 1.04;
 
 // ---- his blows with the hook -----------------------------------------------------------
 // the swing: a long flat arc at arm's length and a hook's length, from his
@@ -119,7 +122,7 @@ export function bayRoom(ctx, fight) {
     bounds: { ...RING },
     things: FM_THINGS,
     // the loading doors: his back to one, 0.45 m from its planks
-    finishes: shed.loading.map((d, i) => ({ name: 'door' + (i + 1), spot: { x: PIER.shed.x1 - PIER.shed.t - 0.5, z: d.z }, door: d, clip: 'fm_ko_river' })),
+    finishes: shed.loading.map((d, i) => ({ name: 'door' + (i + 1), spot: { x: PIER.shed.x1 - PIER.shed.t - 0.5, z: d.z }, door: d, clip: 'fm_ko_river', water: true })),
     items() {
       const out = [];
       for (const it of items) {
@@ -490,11 +493,44 @@ export class PierFight {
     this.sfx('b9burst', at, {}, { ref: 5 });
     this.hole = d;
   }
+  // ([R2-E round 2] the eye follows him out: as the planks go it comes up
+  // toward the sill and looks down at the water where he goes in. The
+  // rules' own look after the last blow follows his chest, held above
+  // -0.75 rad from where I threw it: from the ring the pier's edge hid the
+  // splash and the frame was the black beyond the hole.)
+  watchFall(w, fm) {
+    const G = this.G, C = G.controller;
+    if (!w || !w.spot) return;
+    const P0 = C.eyePose();
+    const sill = PIER.shed.x1;
+    // (up to 0.5 m from the sill's outer edge, in the doorway's mouth -
+    // any further back and the pier's edge hides where he goes in - and a
+    // little up on the toes; along the door's line, its jambs either side)
+    const ex = Math.max(P0.x, Math.min(sill - 0.5, P0.x + 1.7)), ez = P0.z + (w.spot.z - P0.z) * 0.7;
+    const land = V(w.spot.x + RIVER_OUT, PIER.waterY, w.spot.z);
+    let yaw = P0.yaw, pitch = P0.pitch, T = 0;
+    const tgt = V(0, 0, 0);
+    C.setMode('cutscene', { ease: 0.05, track: (t, dt = 1 / 60) => {
+      T += dt;
+      const e = smooth01(0, 1.0, T);
+      const x = P0.x + (ex - P0.x) * e, z = P0.z + (ez - P0.z) * e, y = P0.y + 0.1 * e;
+      const u = smooth01(0.2, 0.75, T);
+      fm.bones.chest.getWorldPosition(tgt);
+      tgt.lerp(this.fallAt || land, u);
+      const ty = Math.atan2(-(tgt.x - x), -(tgt.z - z));
+      const tp = Math.atan2(tgt.y - y, Math.max(0.3, Math.hypot(tgt.x - x, tgt.z - z)));
+      const k = 1 - Math.exp(-dt * 7);
+      yaw += Math.atan2(Math.sin(ty - yaw), Math.cos(ty - yaw)) * k;
+      pitch += (Math.max(-0.95, Math.min(0.3, tp)) - pitch) * k;
+      return { x, y, z, yaw, pitch };
+    } });
+  }
   // he goes into the river: the splash, then the rain coming in through
   // the hole (and its sound: the river and the rain, the room opened)
   splash(at) {
     const F = this.G.fx, r = this.rng;
     const p = V(at.x, PIER.waterY + 0.02, at.z);
+    this.fallAt = p.clone();   // (the eye's look goes to it: watchFall)
     // the crown: a white column of spray thrown up round him and falling
     // back, a sheet of it, drops; then rings going out on the black water
     const spray = (n, up, out, size, delay = 0) => {
@@ -504,9 +540,18 @@ export class PierFight {
         F.splash.spawn({ pos: p.clone().add(V(Math.cos(a) * 0.35, 0.05, Math.sin(a) * 0.35)), vel: V(Math.cos(a) * s, r.range(up[0], up[1]), Math.sin(a) * s), life: r.range(0.7, 1.4) + delay, size: [size * r.range(0.6, 1.2), size * r.range(1.6, 2.6)], stretch: 0.07, col: [0.9, 0.9, 0.9], alpha: 1, cell: ATLAS.DROP, gravity: 9.8, ground: PIER.waterY, fadeOut: 0.12 });
       }
     };
-    spray(110, [3.0, 7.5], [0.4, 1.6], 0.05);
-    spray(40, [1.5, 3.5], [1.5, 3.2], 0.09);
-    this.tweens.push({ t: 0, dur: 0.35, step: () => {}, end: () => spray(40, [1.2, 3.2], [0.2, 1.0], 0.045) });
+    spray(90, [3.0, 7.5], [0.4, 1.6], 0.07);
+    spray(36, [1.5, 3.5], [1.5, 3.2], 0.11);
+    this.tweens.push({ t: 0, dur: 0.35, step: () => {}, end: () => spray(36, [1.2, 3.2], [0.2, 1.0], 0.06) });
+    // ([R2-E round 2] the crown as ink: a few big white blots thrown up and
+    // falling back - the thin drops alone read as a handful of scratches on
+    // the black water at the eye's distance)
+    if (F && F.splash) for (let k = 0; k < 7; k++) {
+      const a = r.next() * Math.PI * 2, s = r.range(0.2, 0.9), big = k < 3;
+      F.splash.spawn({ pos: p.clone().add(V(Math.cos(a) * 0.25, big ? 0.25 : 0.1, Math.sin(a) * 0.25)), vel: V(Math.cos(a) * s, big ? r.range(2.6, 4.2) : r.range(1.2, 2.4), Math.sin(a) * s),
+        life: r.range(0.55, 0.85), size: big ? [r.range(0.7, 1.0), r.range(1.0, 1.5)] : [r.range(0.45, 0.7), r.range(0.45, 0.7)], rot: r.gauss() * 0.4, spin: r.gauss() * 0.6,
+        col: [0.95, 0.95, 0.95], alpha: 1, cell: ATLAS.SPLAT[k % 4], gravity: 9.8, grow: 0.5, ground: PIER.waterY - 0.3, fadeOut: 0.3 });
+    }
     for (let i = 0; i < 3; i++) this.ripple(p, 0.25 * i, 1.4 + i * 0.5, 2.2 + i * 1.3);
     this.sfx('b9splash', p, {}, { ref: 6 });
     this.G.emit('b9:splash', { at: p });
@@ -638,10 +683,12 @@ export class PierFight {
     this.flot = [];
     this.rain = null;
     this.hole = null;
+    this.fallAt = null;
   }
 }
 
 function findMat(o) { let m = null; o.traverse((x) => { if (!m && x.isMesh) m = x.material; }); return m; }
+const smooth01 = (a, b, x) => { const u = Math.max(0, Math.min(1, (x - a) / (b - a))); return u * u * (3 - 2 * u); };
 
 // ---- the crew kept out of it: the fight is quiet (fists), the men at the
 // far end of the shed go on with their rounds; a man who could see the bay

@@ -130,7 +130,9 @@ const DISARMED = [
 // falls feet over head, into the water on his back (land 1.02: the splash),
 // and goes under (the water hides him by 1.7 s). Every key's hips over the
 // river are below the floor only past the pier's edge.
-export const RIVER = { door: 0.45, edge: 1.45, water: -1.7, travel: 2.2 };
+// ([R2-E round 2] travel 2.2 -> 2.8: he went in so close under the pier's
+// edge that from the doorway the edge hid the splash)
+export const RIVER = { door: 0.45, edge: 1.45, water: -1.7, travel: 2.8 };
 const Z = RIVER.travel;
 const KO_RIVER = [
   [0, REEL],

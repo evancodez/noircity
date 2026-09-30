@@ -229,7 +229,7 @@ function beginPierFight(ctx, fm, { manner = 'measured', hp = null, retry = false
     opponent: fm, manner, hp, room, rng: ctx.rng, retry, lesson: false,
     who: { name: FOREMAN.name, hp: FOREMAN.hp, manners: FM_MANNERS },
     onRetry: (m, hp2) => { const f2 = restageRing(ctx); beginPierFight(ctx, f2, { manner: m, hp: hp2, retry: true }); },
-    onGlass: (w) => L.fight.burstDoor(w),
+    onGlass: (w) => { L.fight.burstDoor(w); L.fight.watchFall(w, fm); },
     // (the splash; he is under the black water by 0.7 s after it: gone)
     onLanded: () => { L.fight.splash(fm.bones.hips.getWorldPosition(V(0, 0, 0))); L.fight.tweens.push({ t: 0, dur: 0.72, step: () => {}, end: () => { fm.fig.object.visible = false; } }); },
   });
@@ -799,9 +799,12 @@ const _hv = new THREE.Vector3();
 function backToFeet(ctx) {
   const G = ctx.game, C = G.controller, L = LIVE;
   const P = C.eyePose();
-  // (inside the shed, by the hole: never out over the water)
-  C.setPose(Math.min(14.2, P.x), P.z, P.yaw, Math.max(-0.25, P.pitch));
-  C.setMode('sneak', { crouch: false, sfx: G.sfx });
+  // (inside the shed, by the hole: never out over the water; [R2-E round 2]
+  // the look eased up from the water, not cut - setPose snapped it)
+  C.pos.set(Math.min(14.2, P.x), 0, P.z);
+  C.yaw = P.yaw; C.pitch = Math.max(-0.25, P.pitch);
+  C.vel.set(0, 0, 0);
+  C.setMode('sneak', { crouch: false, sfx: G.sfx, ease: 0.8 });
   L.stealth.dress();
   L.won = true;
   if (L.fm) { L.fm.fig.object.visible = false; }
