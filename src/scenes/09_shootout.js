@@ -852,7 +852,9 @@ function* ending(ctx) {
     dot.setState('watch');
     return false;
   };
-  R.ticks.push(dotAt);
+  // [second pass] (she walks there, out from behind the counter, while I go
+  // out to him: the look-development jump still places her at once)
+  if (frameNow) R.ticks.push(dotAt); else runGen(dotToWindow(ctx));
   // I walk out to it
   let idle = 0;
   if (frameNow) { yield wait(2.5); yield* theFrame(ctx); return; }
@@ -866,6 +868,31 @@ function* ending(ctx) {
   G.hud.clearPrompt('scene');
   // the frame: down at the hat and the ember, the lamp's cone beyond it
   yield* theFrame(ctx);
+}
+
+// [second pass] Dot, out from behind the counter to the broken window while
+// I go out to him: round the end of the counter, across the aisle, to the
+// glass; she turns to the street there and watches (no placing her unseen)
+function* dotToWindow(ctx) {
+  const G = ctx.game, R = rig();
+  const dot = ctx.cast.get('dot');
+  if (!dot || R.dotOut) return;
+  R.dotOut = true;
+  const bay = DINER.bays[mackWindow(G)];
+  const w = { x: -11.15, z: bay + 0.35 };
+  const south = bay < 0;
+  const endZ = south ? DINER.counter.z0 - 0.8 : DINER.counter.z1 + 0.6;
+  const pts = [{ x: SITE.dot.x, z: endZ }, { x: -12.9, z: endZ }];
+  if (!south) pts.push({ x: -12.9, z: w.z });
+  pts.push(w);
+  // (up from the crouch first)
+  dot.setState('idle', 0.35);
+  for (let t = 0; t < 0.5; t += 1 / 60) yield null;
+  for (const p of pts) yield* dot.walkTo(p, { speed: 1.35 });
+  const y0 = dot.yaw, dy = Math.atan2(Math.sin(Math.PI / 2 - y0), Math.cos(Math.PI / 2 - y0));
+  for (let t = 0; t < 0.45; t += 1 / 60) { const u = t / 0.45; dot.yaw = y0 + dy * u * u * (3 - 2 * u); yield null; }
+  dot.yaw = Math.PI / 2;
+  dot.setState('watch', 0.4);
 }
 
 // the men still up break off: they run from me, by the Hoods' grid (round
