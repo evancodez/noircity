@@ -30,7 +30,9 @@ still mine within 0.3 rad (controller mode `brawlIn`): he stands (his stool
 goes over; the room starts to clear), comes down the counter behind my
 right shoulder; his left hand lands on my shoulder (his palm is solved onto
 the shoulder's place every step: the hand and the forearm at the right edge
-of the frame); he pulls me round on the stool to face him; I come up and
+of the frame); he pulls me round on the stool to face him, stepping back
+off me as he pulls and letting go, so that face to face he stands at arm's
+length (1.2 m: at 0.8 m his chest filled the frame); I come up and
 back a step, my left hand takes the stool I sat on by its seat (the hand
 solved onto the seat's rim while it moves) and sends it skidding into the
 counter's foot, where it goes over and lies (a thing in the room from now
@@ -143,12 +145,13 @@ losing game. A blow that lands, he presses: a second on its heels 35 / 45 /
 
 ## 6. He uses the room
 
-From his measured manner on, about **one of his actions in four is with a
-thing** while things last (one of his free choices in four: his answers
-and his follow-ups are not choices), when one stands within 3.2 m of him
-and I am not on top of him (1.05 m): a plate, a mug or a bottle to throw, a
-stool or a chair to swing. In the seeded fights he takes up three to five
-things in a fight. His first bottle in his dirty manner is still broken on
+From his measured manner on, he goes for a thing on **0.4 of his free
+choices** while things last (his answers and his follow-ups are not
+choices), when one stands within 3.2 m of him and I am not on top of him
+(1.05 m): a plate, a mug or a bottle to throw, a stool or a chair to swing.
+In the seeded fights he takes up three to eight things in a fight, about
+one of his blows in five or six: what is within his reach, not the rule,
+is what limits it. His first bottle in his dirty manner is still broken on
 the counter's edge and used by the neck.
 
 - **A throw.** He backs off to 2.4 m or more (pressed, he throws from
@@ -160,6 +163,9 @@ the counter's edge and used by the neck.
   The thing flies on a real arc (12.5 m/s) along a lane aimed where I stood
   when the tell began; a hop to either side leaves it; it bursts on
   whatever is behind me (the room, the floor) and its pieces come to rest.
+  In the air it is inked on the frame: three speed lines trailing back
+  toward his hand and a paper-white rim round it (a dark plate against the
+  dark room at five metres was not seen at all).
 - **A swing with a thing** follows the rule for fists (step away from the
   hand that swings, or back), with no indicator, and reaches further (a
   stool 2.05 m).
@@ -196,17 +202,26 @@ fair:
 - **Hurt fast** (16 % of him in 4 s) he covers up and gives ground a
   moment; and **a manner holds 9 s**: in its first nine seconds a run of
   blows takes him no further than the edge of the next. A run of luck does
-  not end the fight in a breath.
+  not end the fight in a breath. After that, no blow takes him past the
+  next manner: he is always wild before he is out on his feet.
 - **Losing is not failing**: at 0 I go down, black, and up again with 60;
-  he has got his breath back a little (8 % of him the first time in a
-  manner, 16 % the second, 24 % the third..., never past the start of his
-  manner). Failing costs about ten seconds; failing the same way again
-  costs more.
+  he has got his breath back a little (8 % of him each time, never past the
+  start of his manner). From the third down in the same manner I come up
+  whole (100): the fight gives a little to the man who keeps getting up.
+  A life spent pounding his guard (more than 30 punches into it a minute:
+  a masher throws about 45, a first-timer who struggles 10 to 19) is paid
+  for as version 4 had it: 8, 16, 24 %... of him back, up with 60.
+  Failing costs about ten seconds. (Version 4's first cut gave him back 8,
+  16, 24 %... and a player who struggled was held in one manner for good;
+  and 65 % of him read back as his measured manner, so a down in his dirty
+  one could put him back at the top of his first. Both are gone.)
 
 Blows move people and the room takes them (the stools, the counter, the
 jukebox, the pie case, the café tables); a blow's own travel never carries
 him through the counter or a wall (it is pushed back out every step). The
-service aisle behind the counter is shut while we fight (`room.enter`).
+service aisle behind the counter is shut while we fight, and the street
+door stays shut (it swung into the ring whenever the eye came within 2 m
+of it) (`room.enter`).
 
 ## 9. The finish
 
@@ -228,7 +243,7 @@ is the first user):
 | room. | what |
 | --- | --- |
 | `bounds` | { x0, x1, z0, z1 }: the fight stays inside |
-| `enter()`, `leave()` | the room made ready for the fight and given back (the diner shuts its service aisle) |
+| `enter()`, `leave()` | the room made ready for the fight and given back (the diner shuts its service aisle and keeps its street door shut) |
 | `items()` | what can be picked up now: { name, kind, object, pos, stand, take(), available() } |
 | `hisItem(kind, near)` | the nearest thing of a kind he may go for |
 | `things` | kinds of its own for `THINGS` (dmg, uses, hands, throw, then, breaksGuard, big, level) |
@@ -247,14 +262,17 @@ finishes (the plank doors, with their own clip) and its man.
 
 ## 11. Judged by play
 
-The in-page autoplayer (`?shot=r2play&beat=lesson&seed=<n>&style=<s>&t=220`,
-ten seeds each): the human-paced reader (`player`) wins 10 of 10, all in
-60 to 110 s (71 to 108, lesson included); the masher (`mash`) wins none and
-goes down 22 to 27 times, never past his wild manner; the player who never
-steps (`nododge`) wins none (10 to 13 downs, stuck in his first two
-manners); a player who takes whatever is in reach (`things`, mean 81.5 s)
-wins faster than one who never picks anything up (`fists`, 95.2 s). Strips of each exchange: `?shot=b8duel`
-(`src/debug/shots/B8_fight.js`). The plays `slice`, `fight`, `autoplay`,
-`continue` pass by real input, each twice in a row; the real-input driver's
-fights run 79 to 110 s, longer when it keeps going down in one manner
-(each down there gives him back more).
+The in-page autoplayer (`?shot=r2play&beat=lesson&seed=<n>&style=<s>&t=300`,
+ten seeds each, the lesson included; second pass, final code): the
+human-paced reader (`player`) wins 10 of 10, all in 60 to 110 s (73 to 104,
+mean 86, 0 or 1 down); a first-timer who struggles (`rough`: half his reads
+wrong or late, a punch into the guard every second or two) wins 10 of 10 in
+111 to 217 s (mean 167, 3 to 8 downs); the masher (`mash`) wins none (4 to
+32 downs: two held in his measured manner, one in dirty, two in wild, five
+got him out on his feet at 72 to 286 s and could not finish him); the
+player who never steps (`nododge`) wins none (10 to 12 downs, all held in
+his measured manner); a player who takes whatever is in reach (`things`,
+mean 82 s) wins faster than one who never picks anything up (`fists`,
+91 s). No seed skips his wild manner. Strips of each exchange: `?shot=b8duel` (`src/debug/shots/B8_fight.js`).
+The plays `slice`, `fight`, `autoplay`, `continue` pass by real input, each
+twice in a row.
