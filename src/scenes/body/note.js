@@ -13,6 +13,40 @@ import { allocInkId } from '../../render/layers.js';
 export const NOTE = { w: 0.15, d: 0.095 };
 const W = NOTE.w, D = NOTE.d;
 
+// ---- the pencil hand: capitals as strokes (x across, y up; the cap
+// height 1), written quickly: every point shaken a little by the hand ------
+const ell = (cx, cy, rx, ry, a0, a1, n = 14) => Array.from({ length: n + 1 }, (_, i) => { const a = a0 + (a1 - a0) * i / n; return [cx + rx * Math.cos(a), cy + ry * Math.sin(a)]; });
+const GLYPH = {
+  H: { w: 0.62, s: [[[0, 0], [0.02, 1]], [[0.6, 0.02], [0.62, 1]], [[0.01, 0.5], [0.6, 0.53]]] },
+  A: { w: 0.64, s: [[[0, 0], [0.3, 1], [0.62, 0]], [[0.13, 0.38], [0.5, 0.41]]] },
+  R: { w: 0.6, s: [[[0, 0], [0.01, 1], [0.36, 0.98], [0.52, 0.86], [0.5, 0.66], [0.34, 0.55], [0.01, 0.54]], [[0.24, 0.55], [0.6, 0]]] },
+  B: { w: 0.6, s: [[[0, 0], [0.01, 1], [0.34, 0.98], [0.5, 0.87], [0.48, 0.67], [0.3, 0.56], [0.02, 0.54]], [[0.3, 0.56], [0.52, 0.46], [0.57, 0.25], [0.45, 0.06], [0.2, 0], [0, 0.01]]] },
+  O: { w: 0.7, s: [ell(0.34, 0.5, 0.34, 0.5, Math.PI * 0.55, Math.PI * 2.62, 18)] },
+  L: { w: 0.54, s: [[[0.02, 1], [0, 0], [0.52, 0.03]]] },
+  D: { w: 0.62, s: [[[0, 0], [0.01, 1], [0.24, 0.98], [0.5, 0.83], [0.6, 0.5], [0.52, 0.17], [0.26, 0.02], [0, 0.01]]] },
+  G: { w: 0.7, s: [[...ell(0.34, 0.5, 0.34, 0.5, Math.PI * 0.28, Math.PI * 1.95, 16), [0.66, 0.46], [0.4, 0.46]]] },
+  '.': { w: 0.2, s: [[[0.02, 0.03], [0.07, 0]]] },
+  M: { w: 0.76, s: [[[0, 0], [0.05, 1], [0.37, 0.32], [0.68, 1], [0.74, 0]]] },
+  '3': { w: 0.6, s: [[[0.02, 0.88], [0.2, 1], [0.42, 0.97], [0.53, 0.82], [0.44, 0.63], [0.22, 0.55]], [[0.22, 0.55], [0.47, 0.47], [0.57, 0.26], [0.46, 0.06], [0.24, 0], [0, 0.08]]] },
+  '0': { w: 0.6, s: [ell(0.29, 0.5, 0.29, 0.5, Math.PI * 0.5, Math.PI * 2.56, 18)] },
+  '4': { w: 0.64, s: [[[0.44, 0], [0.43, 1], [0, 0.3], [0.64, 0.33]]] },
+  ' ': { w: 0.34, s: [] },
+};
+function pencilLine(text, seed) {
+  let d = seed;
+  const r = () => { d = (d * 16807) % 2147483647; return d / 2147483647 - 0.5; };
+  const list = [];
+  let x0 = 0;
+  for (const ch of text) {
+    const g = GLYPH[ch] || GLYPH[' '];
+    // (each letter a little bigger or smaller, a little up or down)
+    const sc = 1 + r() * 0.1, dy = r() * 0.06;
+    for (const st of g.s) list.push(st.map(([x, y]) => [x0 + x * sc + r() * 0.025, dy + y * sc + r() * 0.025]));
+    x0 += g.w * sc + 0.13;
+  }
+  return { list, width: x0 - 0.13 };
+}
+
 // the paper: wet grey, the pencil, the run of the rain
 let TEX = null;
 function noteTexture() {
@@ -32,23 +66,58 @@ function noteTexture() {
   // faint ruled lines of a pad sheet
   x.strokeStyle = 'rgba(80,80,80,0.18)'; x.lineWidth = 3;
   for (let y = H * 0.18; y < H; y += H * 0.2) { x.beginPath(); x.moveTo(0, y); x.lineTo(1024, y + 3); x.stroke(); }
-  // the pencil: a quick hand, leaning, pressed hard
-  const font = (px) => `italic 700 ${px}px "Bradley Hand", "Noteworthy", "Marker Felt", "Segoe Print", "Comic Sans MS", cursive`;
-  const line = (text, y, px, tilt) => {
-    x.save();
-    x.translate(512, y); x.rotate(tilt);
-    x.font = font(px);
-    x.textAlign = 'center'; x.textBaseline = 'middle';
-    // the run: the letters smeared down a little by the wet
-    for (let k = 5; k >= 1; k--) { x.fillStyle = `rgba(40,40,40,${0.05})`; x.fillText(text, (k % 2 ? 1 : -1) * k * 0.8, k * 4.2); }
-    x.fillStyle = 'rgba(28,28,28,0.92)';
-    x.fillText(text, 0, 0);
-    x.restore();
+  // the pencil: a quick hand, leaning, pressed hard [second pass: baked
+  // as strokes of its own - it was a system cursive font, and read
+  // differently, or as Comic Sans, on a machine without Bradley Hand]
+  const line = (text, cx, cy, capPx, tilt, seed) => {
+    const strokes = pencilLine(text, seed);
+    const k = capPx, w = strokes.width * k;
+    const pt = ([x, y]) => {
+      // (the hand leans: a shear; the line tilts a little)
+      const X = (x + y * 0.2) * k - w / 2, Y = -y * k + capPx / 2;
+      return [cx + X * Math.cos(tilt) - Y * Math.sin(tilt), cy + X * Math.sin(tilt) + Y * Math.cos(tilt)];
+    };
+    x.lineCap = 'round'; x.lineJoin = 'round';
+    const draw = (dx, dy, a, wk) => {
+      x.strokeStyle = `rgba(28,28,28,${a})`;
+      strokes.list.forEach((st, j) => {
+        // one path a stroke, smoothed through the midpoints (no beads at
+        // the joints); the pressure a stroke's own
+        const P = st.map(pt);
+        x.lineWidth = capPx * wk * (0.075 + 0.02 * ((j * 7) % 5) / 4);
+        x.beginPath(); x.moveTo(P[0][0] + dx, P[0][1] + dy);
+        for (let i = 1; i < P.length - 1; i++) {
+          // (a sharp turn stays a corner - the apex of an A, the foot of an
+          // L; a gentle one is rounded through the midpoint)
+          const ax = P[i][0] - P[i - 1][0], ay = P[i][1] - P[i - 1][1], bx = P[i + 1][0] - P[i][0], by = P[i + 1][1] - P[i][1];
+          const turn = Math.acos(Math.max(-1, Math.min(1, (ax * bx + ay * by) / (Math.hypot(ax, ay) * Math.hypot(bx, by) || 1))));
+          if (turn > 0.9) x.lineTo(P[i][0] + dx, P[i][1] + dy);
+          else x.quadraticCurveTo(P[i][0] + dx, P[i][1] + dy, (P[i][0] + P[i + 1][0]) / 2 + dx, (P[i][1] + P[i + 1][1]) / 2 + dy);
+        }
+        x.lineTo(P[P.length - 1][0] + dx, P[P.length - 1][1] + dy);
+        x.stroke();
+      });
+    };
+    // the run: the graphite smeared down a little by the wet
+    for (let k2 = 5; k2 >= 1; k2--) draw((k2 % 2 ? 1 : -1) * k2 * 0.8, k2 * 4.2, 0.05, 1.3);
+    // and a drip or two off the heavier letters
+    let d = seed;
+    const rr = () => { d = (d * 16807) % 2147483647; return d / 2147483647; };
+    for (const st of strokes.list) {
+      if (rr() > 0.3) continue;
+      const [px, py] = pt(st[st.length - 1]);
+      const g = x.createLinearGradient(px, py, px, py + capPx * 0.5);
+      g.addColorStop(0, 'rgba(40,40,40,0.16)'); g.addColorStop(1, 'rgba(40,40,40,0)');
+      x.fillStyle = g; x.fillRect(px - 2, py, 4, capPx * (0.25 + rr() * 0.3));
+    }
+    draw(0, 0, 0.9, 1);
+    // (a second, lighter pass a hair off: the grain of a soft lead)
+    draw(0.9, -0.6, 0.25, 0.55);
   };
-  line('HARBOR BLDG.', H * 0.3, 128, -0.03);
-  line('RM 304', H * 0.72, 160, -0.02);
+  line('HARBOR BLDG.', 512, H * 0.3, 92, -0.03, 11);
+  line('RM 304', 512, H * 0.72, 112, -0.02, 29);
   // a thumb's smudge
-  x.fillStyle = 'rgba(50,50,50,0.12)'; x.beginPath(); x.ellipse(830, H * 0.8, 70, 40, 0.5, 0, 7); x.fill();
+  { x.save(); x.translate(830, H * 0.8); x.rotate(0.5); x.scale(70, 40); const g = x.createRadialGradient(0, 0, 0, 0, 0, 1); g.addColorStop(0, 'rgba(50,50,50,0.14)'); g.addColorStop(1, 'rgba(50,50,50,0)'); x.fillStyle = g; x.beginPath(); x.arc(0, 0, 1, 0, 7); x.fill(); x.restore(); }
   TEX = new THREE.CanvasTexture(c);
   TEX.colorSpace = THREE.SRGBColorSpace;
   TEX.anisotropy = 8;

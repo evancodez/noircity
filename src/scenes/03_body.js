@@ -385,11 +385,6 @@ export default defineScene({
         yield until(() => !F.ladderAnim);
       }
       // W: up it
-      let up = false;
-      // (W held at the foot of it: a man walking into a ladder goes up it)
-      I.add({ id: 'body.climb', key: 'KeyW', hold: 0.12, at: () => V(L.x, ALLEY.y + 1.4, lz), range: 1.9, cone: 0.9, prompt: 'climb', onUse: () => { up = true; } });
-      yield until(() => up || acted('climb'));
-      I.remove('body.climb');
       const zc = lz + 0.42, top = ALLEY.esc.y1 + 1.65, y0 = ALLEY.y + 1.65;
       const path = (u) => {
         // up the face of it, then over onto the landing
@@ -399,11 +394,29 @@ export default defineScene({
         const x = L.x + 0.45 * (b * b * (3 - 2 * b));
         return { x, y, z };
       };
-      C.setMode('climb', { path, u: 0, speed: 0.34, face: 0, drive: acted('climb') && !up ? 1 : null });
-      // (square to the ladder and a little up it: where I am going, both
-      // hands on it; the mode's blend turns the eye there from where it was)
-      C.yaw = 0; C.pitch = 0.2;
-      yield until(() => C.climb && C.climb.u >= 1);
+      // [second pass] S held at the foot steps back off it (it held me on
+      // the bottom rung until I went up)
+      for (;;) {
+        let up = false;
+        // (W held at the foot of it: a man walking into a ladder goes up it)
+        I.add({ id: 'body.climb', key: 'KeyW', hold: 0.12, at: () => V(L.x, ALLEY.y + 1.4, lz), range: 1.9, cone: 0.9, prompt: 'climb', onUse: () => { up = true; } });
+        yield until(() => up || acted('climb'));
+        I.remove('body.climb');
+        C.setMode('climb', { path, u: 0, speed: 0.34, face: 0, drive: acted('climb') && !up ? 1 : null });
+        // (square to the ladder and a little up it: where I am going, both
+        // hands on it; the mode's blend turns the eye there from where it was)
+        C.yaw = 0; C.pitch = 0.2;
+        let backT = -1;
+        yield until(() => {
+          if (!C.climb) return true;
+          const S = C.keys.has('KeyS') || C.keys.has('ArrowDown');
+          if (C.climb.u <= 0.001 && S) { if (backT < 0) backT = G.time; } else backT = -1;
+          return C.climb.u >= 1 || (backT >= 0 && G.time - backT > 0.25);
+        });
+        if (C.climb && C.climb.u >= 1) break;
+        C.setMode('walk', { pose: { x: L.x, y: y0, z: zc + 0.35, yaw: 0, pitch: 0 }, ease: 0.3 });
+        yield wait(0.3);
+      }
       // on the landing, under the rain, over the alley: along it to where
       // he stood (the casings, the red)
       // [second pass] a step back along the landing from where he stood,
