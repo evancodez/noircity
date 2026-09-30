@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { SITE, BEATS, DINER, DOORS } from './site.js';
 import { Rails } from './rails.js';
-import { freshRoom, placeDot, makeCounterGun, makeSwitch, setRoomLights, restoreRoomLights, reserveLayer } from './room.js';
+import { freshRoom, placeDot, makeCounterGun, makeSwitch, setRoomLights, restoreRoomLights, reserveLayer, clearBottles } from './room.js';
 import { buildTommyGeometry, buildDrumGeometry } from '../../player/Viewmodel.js';
 import { WEAPON } from '../../player/Weapon.js';
 
@@ -14,6 +14,8 @@ import { WEAPON } from '../../player/Weapon.js';
 const V = (x, y, z) => new THREE.Vector3(x, y, z);
 const _v = new THREE.Vector3(), _w = new THREE.Vector3();
 export const RESERVE = { start: 2, max: 4, slide: 2 };
+// the men outside shoot worse at what they cannot see: their aim, the room dark
+export const LIGHTS_OFF = 0.7;
 
 let RIG = null;
 // a death sends the scene back to the start of its beat: the room as it is
@@ -66,6 +68,7 @@ export function teardown(R) {
   if (G.b7 === R) G.b7 = null;
   G.off('scene:exit', R.onExit);
   G.director.stop();
+  G.director.level = 0;
   for (const h of [...S.hoods.list]) G.removeHood(h);
   G.corpses.length = 0;
   G.pending.length = 0;
@@ -73,6 +76,7 @@ export function teardown(R) {
   S.scene.remove(R.gun.group, R.sw, ...R.gun.drums);
   if (R.hat) { S.scene.remove(R.hat.obj); if (R.hat.cigar) S.scene.remove(R.hat.cigar); }
   restoreRoomLights(S);
+  clearBottles(S);
   G.weapon.reload = R.reload0;
   if (R.fire0) G.weapon.fire = R.fire0;
   G.health.onDeath = R.onDeath0;
@@ -93,6 +97,8 @@ export function stageBeat(ctx, b) {
   const R = rigFor(ctx);
   const bi = BEATS.indexOf(b);
   G.director.stop();
+  // (how many may fire at once: two in the cars beat, three after it)
+  G.director.level = bi > BEATS.indexOf('cars') ? 5 : 4;
   // the men: a retry keeps the dead of the beats before; a fresh entry, nobody
   for (const h of [...S.hoods.list]) if (!retry || h.alive || h.b7beat === b) G.removeHood(h);
   G.corpses = G.corpses.filter((h) => S.hoods.list.includes(h));
@@ -217,7 +223,7 @@ function dyingStep(ctx, dt) {
 // room's lights on his aim
 export function man(ctx, spec) {
   const G = ctx.game, R = RIG;
-  const aim = (spec.aim ?? 1) * (R.lightsOn ? 1 : 0.6);
+  const aim = (spec.aim ?? 1) * (R.lightsOn ? 1 : LIGHTS_OFF);
   const h = G.director.spawn({ who: spec.heavy ? 'heavy' : 'hood', at: spec.at, yaw: spec.yaw ?? null, group: spec.group, entry: spec.entry || 'idle', run: spec.run, post: spec.post, leash: spec.leash, wake: spec.wake, aim, hp: spec.hp, brain: spec.brain || 'cover', variant: spec.variant || null, ...(spec.opts || {}) });
   h.b7beat = ctx.beat;
   h.b7aim = spec.aim ?? 1;
@@ -231,12 +237,12 @@ export function setLights(ctx, on) {
   setRoomLights(ctx.stage, on);
   R.sw.userData.set(on);
   G.sfx.play('b7_switch', V(SITE.switch.x, SITE.switch.y, SITE.switch.z));
-  for (const [h, ai] of G.ais) if (h.alive) ai.aim = (h.b7aim ?? 1) * (on ? 1 : 0.6) * (h.b7aimK ?? 1);
+  for (const [h, ai] of G.ais) if (h.alive) ai.aim = (h.b7aim ?? 1) * (on ? 1 : LIGHTS_OFF) * (h.b7aimK ?? 1);
 }
 
 // a round from a man's gun at a point (the windows, a lamp, the front): his
 // flash and his shot's sound, the round's real ray
-export function roundAt(G, h, target, { heavy = false } = {}) {
+export function roundAt(G, h, target, { heavy = false, shatter = false } = {}) {
   if (!h.alive) return;
   const muzzle = h.fire();
   if (!muzzle) return;
@@ -247,13 +253,16 @@ export function roundAt(G, h, target, { heavy = false } = {}) {
   G.counters.hoodShots++;
   G.pacing.shot(G.time);
   const hit = G.rays.raycast(muzzle, dir, muzzle.distanceTo(target) + 6);
-  if (hit) G.react.bullet(hit, dir.clone());
+  // (a pane's second round: the whole of it goes)
+  if (hit && shatter && hit.mesh.userData.pane && hit.mesh.userData.pane.state !== 'gone') G.stage.glass.shatter(hit.mesh.userData.pane, { dir: dir.clone(), power: 1.1, at: hit.point });
+  else if (hit) G.react.bullet(hit, dir.clone());
 }
 
 // ---- every step under the script -------------------------------------------------------------
 export function everyStep(ctx, dt) {
   const R = RIG, G = ctx.game, S = ctx.stage;
   if (!R) return;
+  if (G.shotMode) devStep(ctx);
   R.rails.update(dt, G.time);
   for (const f of [...R.ticks]) if (f(dt) === false) R.ticks.splice(R.ticks.indexOf(f), 1);
   if (R.dying) dyingStep(ctx, dt);
@@ -282,6 +291,30 @@ export function everyStep(ctx, dt) {
       G.fx.puff.spawn({ pos: p, vel: V(0.01, 0.13, 0), life: 2.2, size: [0.05, 0.05], grow: 0.08, rot: 0, spin: 0.2, col: [0.5, 0.5, 0.5], alpha: 0.2, drag: 0.5, fadeIn: 0.3, fadeOut: 0.8, cell: 0 });
     }
   }
+}
+
+// look development (shot mode only): b7kill=<group>@<t> kills that group's
+// men at scene time t (the falls); b7wound=<n>@<t> gives the Cardinal n
+// wounds (his knee, his fall); b7cripple=<t> cripples the drive-by's car
+function devStep(ctx) {
+  const R = RIG, G = ctx.game;
+  if (!R.dev) {
+    const q = typeof location !== 'undefined' ? new URLSearchParams(location.search) : new URLSearchParams('');
+    const at = (k) => { const v = q.get(k); if (!v) return null; const [a, b] = v.split('@'); return { a, t: parseFloat(b ?? a) }; };
+    R.dev = { kill: at('b7kill'), wound: at('b7wound'), cripple: at('b7cripple') };
+  }
+  const t = ctx.sceneTime, D = R.dev;
+  if (D.kill && t >= D.kill.t) {
+    for (const h of G.director.groups.get(D.kill.a) || []) if (h.alive) G.damageHood(h, 999, new THREE.Vector3(1, 0, 0.2).normalize(), { head: false });
+    D.kill = null;
+  }
+  if (D.wound && t >= D.wound.t && R.cardinal) {
+    const h = R.cardinal, ai = G.ais.get(h);
+    for (let i = 0; i < +D.wound.a && h.alive; i++) G.damageHood(h, 52, new THREE.Vector3(1, 0, -0.3).normalize(), {});
+    D.wound = null;
+    void ai;
+  }
+  if (D.cripple && t >= D.cripple.t && R.cars.driveby) { R.cars.driveby.pts = 7; D.cripple = null; }
 }
 
 // the headlamps of a car facing the diner light the room through its

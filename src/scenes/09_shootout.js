@@ -294,8 +294,9 @@ function* carsBeat(ctx) {
   R.ticks.push(tick);
   yield until(() => cars[0] && cars[1] && cars[0].rail.done && cars[1].rail.done);
   const t0 = G.time;
+  G.director.level = 4;
   yield wait(2.5);
-  yield until(() => G.director.alive('cars') <= 2 || G.time - t0 > 75);
+  yield until(() => G.director.alive('cars') <= 2 || G.time - t0 > 50);
 }
 
 // a car at its stop: doors open, men out behind them, the first rounds into the glass
@@ -315,11 +316,13 @@ function arrived(ctx, car, i) {
       const L = (x, z) => V(x, 0, z).applyMatrix4(car.group.matrixWorld);
       const out = L(D.hinge[0] - 0.45, D.side * 1.25);
       const post = m.post === 'door' ? L(D.hinge[0] - 0.62, D.side * 1.28) : m.post === 'nose' ? L(2.9, -0.7 * D.side) : m.post === 'tail' ? L(-2.95, -0.55 * D.side) : m.post;
-      const h = man(ctx, { group: 'cars', at: { x: out.x, z: out.z }, entry: [{ x: post.x, z: post.z }], run: m.run ?? false, post: { x: post.x, z: post.z }, leash: m.leash, heavy: m.heavy, aim: 0.9 });
+      const h = man(ctx, { group: 'cars', at: { x: out.x, z: out.z }, entry: [{ x: post.x, z: post.z }], run: m.run ?? false, post: { x: post.x, z: post.z }, leash: m.leash, heavy: m.heavy, aim: 1.25 });
       h.yaw = Math.atan2(G.eye.x - h.pos.x, G.eye.z - h.pos.z);
       h.setState('stepOut', 0.1);
       // the first rounds: into the diner's glass, pane by pane
       suppress(ctx, h, 2 + (m.heavy ? 5 : 2), 0.9 + m.delay);
+      // (and the first man of the lead car puts out a lamp over the booths)
+      if (i === 0 && m === specs[0]) shootPendant(ctx, h, 3.6);
     }
     R.rails.settle(car);
   });
@@ -340,38 +343,65 @@ function suppress(ctx, h, n, delay) {
     const c = p.centre || p.center || (p.mesh ? p.mesh.getWorldPosition(new THREE.Vector3()) : null);
     if (!c) return false;
     const target = c.clone().add(V(0, r.range(-0.5, 0.6), r.range(-(p.w || 1) * 0.35, (p.w || 1) * 0.35)));
-    roundAt(G, h, target, { heavy: !!h.heavy });
+    // (the first round stars the pane; the next brings it down)
+    const R2 = rig(), k = (R2.paneRounds || (R2.paneRounds = new Map())).get(p) || 0;
+    R2.paneRounds.set(p, k + 1);
+    roundAt(G, h, target, { heavy: !!h.heavy, shatter: k >= 1 });
     left--;
     t = h.heavy ? r.range(0.08, 0.12) : r.range(0.35, 0.6);
     return true;
   });
 }
 
+// a round at the pendant over the booths nearest the windows: it goes out
+// in sparks and swings on its cord
+function shootPendant(ctx, h, delay) {
+  const G = ctx.game, S = ctx.stage, R = rig();
+  const d = S.part('diner');
+  let t = delay;
+  R.ticks.push((dt) => {
+    if ((t -= dt) > 0) return true;
+    if (!h.alive) return false;
+    const lamps = d.lamps.filter((l) => !l.dead && l.head.x > -12.2).sort((a, b) => Math.hypot(a.head.x - h.pos.x, a.head.z - h.pos.z) - Math.hypot(b.head.x - h.pos.x, b.head.z - h.pos.z));
+    const l = lamps[0];
+    if (!l) return false;
+    roundAt(G, h, l.head.clone());
+    if (!l.dead) {
+      const dir = l.head.clone().sub(h.pos).setY(0).normalize();
+      S.lamps.shootOut(l, dir);
+      if (l.swing) l.swing(dir.multiplyScalar(1.4));
+    }
+    return false;
+  });
+}
+
 // ---- 3. doorways -------------------------------------------------------------------------------
 function* doorways(ctx) {
   const G = ctx.game;
+  // (louder: three men may fire at once from here on)
+  G.director.level = 5;
   for (const m of SITE.doorways) {
-    man(ctx, { group: 'doorways', at: m.at, entry: m.entry, run: true, post: m.post, leash: m.leash, heavy: m.heavy, aim: 0.85 });
+    man(ctx, { group: 'doorways', at: m.at, entry: m.entry, run: true, post: m.post, leash: m.leash, heavy: m.heavy, aim: 1.15 });
     yield wait(1.1);
   }
-  yield wait(4.5);
+  yield wait(2.5);
   // the close one: out of the side alley, down the pavement, in at the door
   const I = SITE.intruder;
-  const h = man(ctx, { group: 'doorways', at: I.at, entry: I.entry, run: true, post: I.post, leash: 0, aim: 1.1 });
+  const h = man(ctx, { group: 'doorways', at: I.at, entry: I.entry, run: true, post: I.post, leash: 0, aim: 1.35 });
   h.b7intruder = true;
   const t0 = G.time;
-  yield until(() => G.director.alive('doorways') <= 1 || G.time - t0 > 70);
+  yield until(() => G.director.alive('doorways') <= 1 || G.time - t0 > 45);
 }
 
 // ---- 4. el ----------------------------------------------------------------------------------------
 function* elBeat(ctx) {
   const G = ctx.game, R = rig();
   const E = SITE.el;
-  const h = man(ctx, { group: 'el', at: { x: E.x, z: E.z }, heavy: true, brain: 'b7_el', aim: 0.9, hp: 100, opts: { deckY: E.y, onFall: (hd) => overTheRail(ctx, hd) } });
+  const h = man(ctx, { group: 'el', at: { x: E.x, z: E.z }, heavy: true, brain: 'b7_el', aim: 1.0, hp: 1e6, opts: { deckY: E.y, onFall: (hd) => overTheRail(ctx, hd) } });
   h.surface = () => E.y;
   h.pos.y = E.y;
   const t0 = G.time;
-  yield until(() => G.director.alive('el') === 0 || G.time - t0 > 50);
+  yield until(() => G.director.alive('el') === 0 || G.time - t0 > 35);
   yield wait(1.5);
 }
 
@@ -381,20 +411,37 @@ function overTheRail(ctx, h) {
   const cars = Object.values(R.cars).filter((c) => c.state !== 'dead');
   let best = null, bd = 6;
   for (const c of cars) { const d = Math.hypot(c.pos.x - h.pos.x, c.pos.z - h.pos.z); if (d < bd) { bd = d; best = c; } }
-  const land = best ? best.pos.clone() : V(h.pos.x - 1.6, 0, h.pos.z);
+  // (onto the nearest part of its cabin's roof)
+  let land = V(h.pos.x - 1.6, 0, h.pos.z);
+  if (best) {
+    const lp = G.stage.cars.local(best, V(h.pos.x, 1, h.pos.z), new THREE.Vector3());
+    lp.set(Math.max(-1.5, Math.min(0.5, lp.x)), 1.6, Math.max(-0.45, Math.min(0.45, lp.z)));
+    land = lp.applyMatrix4(best.group.matrixWorld).setY(0);
+  }
   const top = best ? (best.state === 'burning' ? 1.25 : 1.68) : 0;
   const p0 = h.pos.clone(), y0 = h.pos.y;
-  const T = Math.sqrt(2 * (y0 - top) / 9.8);
+  // over the rail first (0.4 s: he tips over it, outward), then the drop
+  const out = V(land.x - p0.x, 0, land.z - p0.z).normalize();
+  const p1 = p0.clone().addScaledVector(out, 0.75);
+  const y1 = y0 - 0.5, T1 = 0.4;
+  const T2 = Math.sqrt(2 * Math.max(0.1, y1 - top) / 9.8);
   let t = 0, landed = false;
   h.script = (hd, tt, dt) => {
     if (landed) return;
     t += dt;
-    const u = Math.min(1, t / T);
-    hd.pos.x = p0.x + (land.x - p0.x) * u;
-    hd.pos.z = p0.z + (land.z - p0.z) * u;
-    const y = Math.max(top, y0 + 1.2 * t - 4.9 * t * t);
+    let x, z, y;
+    if (t < T1) {
+      const u = t / T1, e = u * u * (3 - 2 * u);
+      x = p0.x + (p1.x - p0.x) * e; z = p0.z + (p1.z - p0.z) * e;
+      y = y0 + 0.25 * Math.sin(Math.PI * u * 0.8) - 0.5 * u * u;
+    } else {
+      const u = Math.min(1, (t - T1) / T2);
+      x = p1.x + (land.x - p1.x) * u; z = p1.z + (land.z - p1.z) * u;
+      y = Math.max(top, y1 - 4.9 * (t - T1) * (t - T1));
+    }
+    hd.pos.x = x; hd.pos.z = z;
     hd.surface = () => y;
-    if (t > 0.2 && y <= top + 1e-3) {
+    if (t > T1 && y <= top + 1e-3) {
       landed = true;
       hd.surface = () => top;
       G.sfx.play('b7_bodyRoof', hd.pos.clone().setY(top), { k: best ? 1 : 0.6 });
@@ -511,7 +558,7 @@ function* cardinal(ctx) {
     R.rails.doorBox(car, door);
     const D = DOORS[hv.door];
     const out = L(D.hinge[0] - 0.45, D.side * 1.25);
-    const h = man(ctx, { group: 'cardinal', at: { x: out.x, z: out.z }, entry: hv.entry, post: hv.post, leash: hv.leash, heavy: true, aim: 0.75 });
+    const h = man(ctx, { group: 'cardinal', at: { x: out.x, z: out.z }, entry: hv.entry, post: hv.post, leash: hv.leash, heavy: true, aim: 1.0 });
     h.setState('stepOut', 0.1);
     yield wait(0.7);
   }

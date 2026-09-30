@@ -45,7 +45,32 @@ export function freshRoom(ctx) {
   const booth = d.booths && d.booths[0];
   if (booth) d.place('newspaper', V(-11.45, DINER.booths.tableY + DINER.floorY + 0.02, booth.z - 0.1), { name: 'b7.paper', yaw: 0.9 });
   d.jukebox.slot = d.jukebox.slot || null;
+  backBarBottles(ctx, d);
   return d;
+}
+
+// bottles standing along the back bar's working top and its first shelf:
+// what a round into the room finds and bursts (the bar's own painted rows
+// stand behind them)
+const BOTTLES = [];
+export function backBarBottles(ctx, d) {
+  const { stage } = ctx;
+  clearBottles(stage);
+  const x = DINER.backX + 0.3, top = DINER.floorY + 0.95, shelf = 1.52;
+  const V = ['rye', 'gin', 'scotch', 'beer', 'rye', 'gin'];
+  let k = 0;
+  for (const [z, y] of [[-3.1, top], [-2.4, shelf], [-1.2, top], [-0.4, shelf], [0.3, top], [1.3, shelf], [2.2, shelf], [4.2, shelf], [5.0, top], [6.3, shelf], [7.4, top], [7.9, shelf]]) {
+    const name = 'b7.bottle' + k;
+    const o = d.place('bottle', new THREE.Vector3(x + (k % 2) * 0.08, y, z), { name, variant: V[k % V.length] === 'scotch' ? 'rye' : V[k % V.length], yaw: k * 1.3 });
+    const h = stage.breakables.add(o, { kind: 'bottle', hp: 1, solid: false });
+    BOTTLES.push({ name, h });
+    k++;
+  }
+}
+export function clearBottles(stage) {
+  const d = stage.part('diner');
+  for (const b of BOTTLES) { d.take(b.name); stage.breakables.remove(b.h); }
+  BOTTLES.length = 0;
 }
 
 // Dot behind the counter, opposite the door

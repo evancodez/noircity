@@ -62,7 +62,7 @@ export const SITE = {
   // the close one: out of the side alley, down the pavement, in at the door
   intruder: { at: { x: -9.0, z: -24.0 }, entry: [{ x: -8.7, z: -10.5 }, { x: -9.1, z: -0.4 }, { x: -9.4, z: 0.6 }, { x: -10.9, z: 0.6 }], post: { x: -11.6, z: 0.4 } },
   // ---- the el: a gunman at the deck's west rail, above car A
-  el: { x: 12.55, z: 7.2, y: 10.72 },
+  el: { x: 11.95, z: 0.3, y: 10.72 },
   // ---- the drive-by: down the near side of the road past the diner, round
   // at the end of the block, back up the far side, away
   driveby: {
