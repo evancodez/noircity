@@ -36,7 +36,8 @@ const BOOK_H = 0.0052;
 
 export const HALVES = {
   id: 'body.halves',
-  table: { anchor: 'body.step', size: [0.5, 0.3], fov: 46 },
+  // (close over the step [second pass]: the book a sixth of the frame, not a stamp)
+  table: { anchor: 'body.step', size: [0.34, 0.2], fov: 30 },
   build(ctx, a) {
     const S = ctx.stage;
     const G = ctx.game;

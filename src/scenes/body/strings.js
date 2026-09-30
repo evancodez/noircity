@@ -100,13 +100,15 @@ export function runStrings(ctx, R, O, { from = null } = {}) {
   const P1 = { x: STUDY.x, y: STUDY.y, z: STUDY.z, yaw: STUDY.yaw, pitch: STUDY.pitch };
   const EASE = 1.3;
   let push = 0;
+  const PUSH = SHOOTER.clone().sub(V(P1.x, P1.y, P1.z)).setLength(0.3);
   const track = (t) => {
     const u = Math.min(1, t / EASE), k = u * u * (3 - 2 * u);
     const L = (a, b) => a + (b - a) * k;
     const dy = Math.atan2(Math.sin(P1.yaw - P0.yaw), Math.cos(P1.yaw - P0.yaw));
-    // (solved: a slow push toward where the lines cross)
-    const px = -push * 0.9, py = push * 0.35, pp = push * 0.1;
-    return { x: L(P0.x, P1.x) + px, y: L(P0.y, P1.y) + py, z: L(P0.z, P1.z), yaw: P0.yaw + dy * k, pitch: L(P0.pitch, P1.pitch) + pp };
+    // (solved: a slow push toward where the lines cross, 0.3 m along the
+    // line from the eye to it [second pass: toward it from any study view])
+    const px = PUSH.x * push, py = PUSH.y * push, pz = PUSH.z * push, pp = push * 0.1;
+    return { x: L(P0.x, P1.x) + px, y: L(P0.y, P1.y) + py, z: L(P0.z, P1.z) + pz, yaw: P0.yaw + dy * k, pitch: L(P0.pitch, P1.pitch) + pp };
   };
   C.setMode('cutscene', { track });
   const fov0 = cam.fov;

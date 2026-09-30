@@ -39,10 +39,17 @@ export const KNEEL = { x: -10.38, z: -24.82, yaw: 1.2, eyeY: ALLEY.y + 1.02 };
 // the view the strings are worked from: out on the pavement's edge at the
 // mouth, the plane of the line of fire face on
 export const STUDY = (() => {
-  // (south of the phone booth at the mouth, so it stands at the frame's edge)
-  const cam = V(-8.05, ALLEY.y + 1.85, -24.95), look = V(XV, 2.95, -26.7);
+  // [second pass] from the kerb, south of the phone booth (it stands at
+  // the right, dark, and hides nothing that matters): the pins in the brick,
+  // the wounds and the outline a third in from the left, low; the landing
+  // and the gun's point up to the right; the lamp high on the left. (It was
+  // from the pavement's middle, 2 m nearer: the pins were off the frame and
+  // the wounds on its edge.) (?studycam=x,y,z,lookY,lookZ,fov: look dev)
+  const Q = typeof location !== 'undefined' && location.search.includes('studycam') ? new URLSearchParams(location.search).get('studycam') : null;
+  const q = Q ? Q.split(',').map(Number) : [-6.4, 2.05, -25.55, 2.9, -26.35, 60];
+  const cam = V(q[0], q[1], q[2]), look = V(XV, q[3], q[4]);
   const d = look.clone().sub(cam);
-  return { x: cam.x, y: cam.y, z: cam.z, yaw: Math.atan2(-d.x, -d.z), pitch: Math.atan2(d.y, Math.hypot(d.x, d.z)), fov: 60 };
+  return { x: cam.x, y: cam.y, z: cam.z, yaw: Math.atan2(-d.x, -d.z), pitch: Math.atan2(d.y, Math.hypot(d.x, d.z)), fov: q[5] };
 })();
 
 // where the scene begins: by Mack on the pavement (the window he went out
@@ -181,8 +188,10 @@ function bloodOnFlags(stage) {
   };
   // under his back, and a second lobe where it gathered by his side
   const back = V(LIES.x + Math.sin(LIES.yaw) * -0.3, 0, LIES.z + Math.cos(LIES.yaw) * -0.3);
-  blob(back.x, back.z, 0.24, 1.3, LIES.yaw + Math.PI / 2, 1.5);
-  blob(LIES.x + 0.12, LIES.z - 0.28, 0.12, 4.1, 1.2, 1.3);
+  // [second pass] smaller: out from under him by a hand, not a cape round
+  // his shoulders (the red is an accent: one pool, one run)
+  blob(back.x, back.z, 0.165, 1.3, LIES.yaw + Math.PI / 2, 1.4);
+  blob(LIES.x + 0.1, LIES.z - 0.26, 0.085, 4.1, 1.2, 1.3);
   // the run: a thread that narrows as it wanders down the flags, into the
   // gutter, to the drain
   const path = new THREE.CatmullRomCurve3([V(LIES.x + 0.12, 0, LIES.z - 0.36), V(-11.02, 0, -25.9), V(-10.96, 0, -26.3), V(-11.03, 0, -26.7), V(-11.02, 0, -26.93), V(ALLEY.drainX - 0.08, 0, ALLEY.gutterZ + 0.02)]);

@@ -89,7 +89,8 @@ export default {
     B.shinL.add(sock);
     // the torn paper shut in his right fist: a wet crumple showing between
     // the fingers and the thumb
-    const paper = own(new THREE.Mesh(new THREE.IcosahedronGeometry(0.028, 1).scale(1, 0.75, 1.3), new THREE.MeshStandardMaterial({ color: 0x8c8c8c, roughness: 0.95 })));
+    const paper = own(new THREE.Mesh(new THREE.IcosahedronGeometry(0.028, 1).scale(1, 0.75, 1.3), new THREE.MeshStandardMaterial({ color: 0xc8c8c8, roughness: 0.95, flatShading: true })));
+    paper.userData.inkSurface = 'paper';   // [second pass] (pale: paper in a fist, seen at a glance)
     paper.position.set(0.012, -0.075, 0.03);
     B.handR.add(paper);
     c.items.set('paper', paper);

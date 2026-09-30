@@ -136,7 +136,8 @@ const SCATTER = [[0.085, 0.05, 2.4], [-0.16, -0.035, -0.9], [0.2, -0.045, 0.55],
 
 export const NOTE_PUZZLE = {
   id: 'body.note',
-  table: { anchor: 'body.step', size: [0.55, 0.3], fov: 48 },
+  // (close over the step [second pass]: the pencil read on every piece)
+  table: { anchor: 'body.step', size: [0.46, 0.26], fov: 38 },
   build(ctx, a) {
     const S = ctx.stage, G = ctx.game;
     const top = a.pos.y + 0.0006;

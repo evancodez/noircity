@@ -236,7 +236,7 @@ export default defineScene({
       if (F.halvesSt && acted('join')) F.halvesSt.autoJoin = true;
       // my fingertip on the step's puzzles
       const PA = G.puzzles.active;
-      if (PA && (PA.id === 'body.halves' || PA.id === 'body.note')) { F.finger = F.finger || {}; tableFinger(ctx, F.finger, PA.pointer.world, PA.pointer.down); }
+      if (PA && (PA.id === 'body.halves' || PA.id === 'body.note')) { F.finger = F.finger || {}; tableFinger(ctx, F.finger, PA.pointer.world, PA.pointer.down, 0, PA.id === 'body.halves' ? !!(F.halvesSt && F.halvesSt.snapped) : !!(F.noteSt && F.noteSt.whole)); }
       else if (F.finger) { F.finger = null; handsOff(H); }
     });
 
@@ -246,11 +246,20 @@ export default defineScene({
       // (the fade in, the chapter card; then the car pulls out of the mouth)
       yield wait(1.5);
       if (F.car) { F.car.go(); snd('carAway', V(-15, 1, -28.2), {}); }
+      // [second pass] what I heard, so a first look knows where to go (once
+      // the chapter card has gone)
+      yield wait(1.0);
+      G.hud.say('Two shots. From the alley.', 2.6);
       // the el train over the avenue as I walk
-      yield wait(1.4);
+      yield wait(0.4);
       if (stage.train && !stage.train.active && G.director) G.director.cue('train', { z: -14, ahead: -70, dir: 1 });
-      // down the pavement to him
-      yield until(() => flat(G.eye, chest()) < 3.6);
+      // down the pavement to him (gone the wrong way a while: once, where)
+      let nudged = false;
+      const tA = G.time;
+      while (flat(G.eye, chest()) >= 3.6) {
+        if (!nudged && G.time - tA > 25 && flat(G.eye, V(ALLEY.mouthX, 0, -27)) > 9) { nudged = true; G.hud.say('The alley. Where the car came out.', 3); }
+        yield null;
+      }
     }
 
     // ---- 2. the body ---------------------------------------------------------------------
@@ -258,7 +267,9 @@ export default defineScene({
       yield beat('body');
       // E kneel, beside him
       let knelt = false;
-      I.add({ id: 'body.kneel', at: () => chest(), range: 3.4, cone: 1.0, prompt: 'kneel', onUse: () => { knelt = true; } });
+      // (from his right side, where the kneel is: the eye goes down beside
+      // him in one ease, never a cut across the alley or over him)
+      I.add({ id: 'body.kneel', at: () => chest(), range: 3.4, cone: 1.0, prompt: 'kneel', when: () => flat(G.eye, V(KNEEL.x, 0, KNEEL.z)) < 2.3, onUse: () => { knelt = true; } });
       yield until(() => knelt || acted('kneel'));
       I.remove('body.kneel');
       snd('kneel');
@@ -278,8 +289,13 @@ export default defineScene({
         onUse: () => { F.saw.fist = true; busy = true; F.do = 'fist'; } });
       I.add({ id: 'body.marks', at: () => MARKS[0].clone().lerp(MARKS[1], 0.5), range: 3.0, cone: 0.3, prompt: 'the marks', when: () => !F.saw.marks && !busy,
         onUse: () => { F.saw.marks = true; busy = true; F.do = 'marks'; } });
+      // [second pass] a look not found in a while: one quiet line naming it
+      const NUDGE = { wounds: 'The blood on his shirt.', fist: 'Something in his fist.', marks: 'The brick behind where he stood.' };
+      let quiet = G.time;
       while (!(F.saw.wounds && F.saw.fist && F.saw.marks) || busy) {
         for (const n of ['wounds', 'fist', 'marks']) if (!busy && !F.saw[n] && acted(n)) { F.saw[n] = true; busy = true; F.do = n; }
+        if (busy || F.do) quiet = G.time;
+        if (G.time - quiet > 14) { quiet = G.time; const n = ['wounds', 'fist', 'marks'].find((k) => !F.saw[k]); if (n) G.hud.say(NUDGE[n], 3); }
         if (F.do === 'wounds') {
           F.do = null;
           look(aimAt(chest()), 0.5);
@@ -376,7 +392,9 @@ export default defineScene({
         return { x, y, z };
       };
       C.setMode('climb', { path, u: 0, speed: 0.34, face: 0, drive: acted('climb') && !up ? 1 : null });
-      C.pitch = 0.02;
+      // (square to the ladder and a little up it: where I am going, both
+      // hands on it; the mode's blend turns the eye there from where it was)
+      C.yaw = 0; C.pitch = 0.2;
       yield until(() => C.climb && C.climb.u >= 1);
       // on the landing, under the rain, over the alley: along it to where
       // he stood (the casings, the red)
@@ -481,20 +499,21 @@ export default defineScene({
         R.group.traverse((o) => { if (o.material && o.material.uniforms && o.material.uniforms.uOpacity) o.material.uniforms.uOpacity.value = Math.min(o.material.uniforms.uOpacity.value, F.stringsFade); });
         if (!F.stringsFade) R.group.visible = false;
       });
-      // (back across the alley to the foot of the fire escape: the lamp high
-      // on the wall, its one cone in the rain, him at its edge)
-      const to = V(-11.85, ALLEY.y + 1.85, ALLEY.zS - 0.4);
-      const P1 = { x: -11.85, y: ALLEY.y + 1.74, z: ALLEY.zN + 0.45 };
-      P1.yaw = Math.atan2(-(to.x - P1.x), -(to.z - P1.z));
-      P1.pitch = Math.atan2(to.y - P1.y, Math.hypot(to.x - P1.x, to.z - P1.z)) - 0.06;
-      const DUR = 3.6;
-      C.setMode('cutscene', { track: (t) => {
-        const u = Math.min(1, t / DUR), k = u * u * (3 - 2 * u);
-        const Lr = (a, b) => a + (b - a) * k;
-        const dy = Math.atan2(Math.sin(P1.yaw - P0.yaw), Math.cos(P1.yaw - P0.yaw));
-        return { x: Lr(P0.x, P1.x), y: Lr(P0.y, P1.y), z: Lr(P0.z, P1.z), yaw: P0.yaw + dy * k, pitch: Lr(P0.pitch, P1.pitch) };
-      } });
-      yield wait(DUR + 2.2);
+      // [second pass] I stand from the step, turned to the way out (no glide
+      // across the alley: the eye only rises and turns, as a man stands):
+      // him at my feet at the edge of the pool, his blood to the drain, the
+      // street beyond the mouth. Then I walk: out of the alley is the next
+      // chapter (or, standing on, after a while)
+      const look = V(-10.45, ALLEY.y + 0.35, -25.75);
+      const P1 = { x: ALLEY.step.x + 0.25, y: ALLEY.y + 1.65, z: ALLEY.zS - 0.85 };
+      P1.yaw = Math.atan2(-(look.x - P1.x), -(look.z - P1.z));
+      P1.pitch = Math.atan2(look.y - P1.y, Math.hypot(look.x - P1.x, look.z - P1.z));
+      void P0;
+      C.setMode('walk', { pose: P1, ease: 1.1 });
+      yield wait(1.2);
+      G.hud.say('Harbor Building. Room 304.', 2.8);
+      const t0 = G.time;
+      yield until(() => G.eye.x > ALLEY.mouthX - 0.35 || G.time - t0 > 24);
       ctx.next();
     }
   },

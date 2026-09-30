@@ -1,5 +1,5 @@
 {
- "about": "Scene 3, the body (lane B1), by real input (tools/play.mjs): ?start=body, the walk down the pavement, the kneel, the wounds, his hand, the marks, the strings (the pointer through each wound), the drop ladder and the climb, the torn half, the halves on the step, the seven pieces of the note, the last look and the next chapter. NOIR_PORT=5311 node tools/play.mjs tools/plays/body.json",
+ "about": "Scene 3, the body (lane B1), by real input (tools/play.mjs): ?start=body, the walk down the pavement, the kneel, the wounds, his hand, the marks, the strings (the pointer through each wound), the drop ladder and the climb, the torn half, the halves on the step, the seven pieces of the note, I stand, walk out of the alley, and the next chapter. NOIR_PORT=5311 node tools/play.mjs tools/plays/body.json",
  "url": "/?mute=1&start=body",
  "size": [
   1280,
@@ -242,8 +242,8 @@
   },
   {
    "look": [
-    878,
-    -634
+    651,
+    -515
    ],
    "steps": 10
   },
@@ -262,8 +262,8 @@
   },
   {
    "look": [
-    465,
-    -302
+    658,
+    -565
    ],
    "steps": 10
   },
@@ -1078,10 +1078,34 @@
    "label": "in my coat: the matchbook, the torn half, the note"
   },
   {
-   "wait": 3300
+   "wait": 1600
   },
   {
    "shot": "b16_leave"
+  },
+  {
+   "name": "out of the alley, walking (the next chapter at its mouth)"
+  },
+  {
+   "expect": "G.controller.mode === 'walk' && G.scenes.beat === 'leave'",
+   "label": "leave: standing, walking under my own control"
+  },
+  {
+   "walk": [
+    [
+     -12.2,
+     -26.4
+    ],
+    [
+     -11.0,
+     -26.75
+    ],
+    [
+     -10.45,
+     -26.7
+    ]
+   ],
+   "timeout": 15000
   },
   {
    "until": "G.state === 'end' || (G.scenes.current && G.scenes.current.id !== 'body')",
