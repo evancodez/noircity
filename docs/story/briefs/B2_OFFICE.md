@@ -79,7 +79,7 @@ The Harbor Building, third floor, night.
    one of them a heavy. Six men in all, about a minute to ninety seconds.
 4. `quiet` — The last one falls. Smoke in the lamp's light, paper coming
    down, the fan ticking round with a bent blade. Three seconds of it,
-   then `yield* ctx.next()` (lane B4's scene opens in this room).
+   then `ctx.next()` (lane B4's scene opens in this room).
 
 ## What makes the gunfight premium
 - The first shooter in this game felt right: the same Hoods, the same hit

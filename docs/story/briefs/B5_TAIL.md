@@ -71,7 +71,7 @@ First person from the driver's seat of a 1937 coupe:
    water, I walk him to the rail and bend him back over it. He breaks:
    subtitle, **"Pier nine."** If the player only stares at him, he says
    nothing; after a while a small prompt: *look at the river*. I let go;
-   he slides down the railing. `yield* ctx.next()`.
+   he slides down the railing. `ctx.next()`.
 
 ## The rules under it
 - Failing is soft: if he gets more than ninety metres ahead for five

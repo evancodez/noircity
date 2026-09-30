@@ -86,7 +86,7 @@ faster one for a player who uses the switch, the chain or a bottle.
    floor: I must be down (**C**) and still, or it is the alarm.
 6. `out` — the way I came is shut (the truck has backed against it).
    Along the catwalk, down the far stairs, through the loading bay and
-   out of its side door to the pier. `yield* ctx.next()`.
+   out of its side door to the pier. `ctx.next()`.
 
 ## What makes it premium
 - It is fair: I am never seen by a man I could not have known was

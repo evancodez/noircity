@@ -145,7 +145,7 @@ them.
 
 **Order and ids** (`src/scenes/order.js`): diner, fight, body, office,
 gunfight, watcher, tail, warehouse, shootout. A scene ends with
-`yield* ctx.next()` (fade to black, the next chapter's card). Every scene's
+`ctx.next()` (a plain call, see seams/X.md: fade to black, the next chapter's card). Every scene's
 `setup` must make sense when entered cold (`?start=<id>`): give the player
 what the story has given him by then (below).
 

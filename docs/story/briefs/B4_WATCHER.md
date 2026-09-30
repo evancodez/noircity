@@ -61,7 +61,7 @@ of it before anything else in the scene is polished).
      prints to it. Through it, the street.
 4. `car` — He is in his sedan, the lamps come on, it pulls away: red tail
    lamps (crew) going down the wet street (your own rail). Mine is at the
-   kerb. **E drive**: my hand on the door, `yield* ctx.next()`.
+   kerb. **E drive**: my hand on the door, `ctx.next()`.
 
 ## The rules under it
 - He is never caught on foot and rarely lost: his speed follows mine to

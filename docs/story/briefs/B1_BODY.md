@@ -69,7 +69,7 @@ frame in the story: compose it.
    move as one. Whole, it reads in a quick pencil hand: **HARBOR BLDG.
    RM 304**, the ink run a little by the rain. A beat on it, then I fold
    it into my coat.
-7. `leave` — I stand. The lamp, the body, the rain. `yield* ctx.next()`.
+7. `leave` — I stand. The lamp, the body, the rain. `ctx.next()`.
 
 ## What makes it premium
 - The three puzzles feel like handling real things: the cursor is one to
