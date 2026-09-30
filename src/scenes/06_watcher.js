@@ -634,7 +634,7 @@ function* outOfOffice(ctx) {
     if (cm && cur && W.wall - cur.pose.z < 1.0) {
       if (!swish) { swish = true; G.sfx.play('w_curtain', V(W.x, 1.4, W.wall - 0.1)); }
       swept = Math.min(1, swept + dt / 0.22);
-      const k = swept * swept * (3 - 2 * swept), sc = c0.s * (1 - 0.74 * k);
+      const k = swept * swept * (3 - 2 * swept), sc = c0.s * (1 - 0.82 * k);
       cm.scale.x = sc;
       cm.position.x = c0.x + (c0.w / 2) * (c0.s - sc);
     }
