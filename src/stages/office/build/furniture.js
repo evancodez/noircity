@@ -249,7 +249,9 @@ export function buildFurniture(kit, mats, stage) {
     const P = PICTURE;
     // the pivot: the nail above it (it swings aside on its wire)
     const nail = new THREE.Group();
-    nail.position.set(P.x, P.y + P.h / 2 + 0.16, ROOM.z0 + 0.012);
+    // (it stands off the wall on the safe's dial and handle behind it: they
+    // must never show through the print)
+    nail.position.set(P.x, P.y + P.h / 2 + 0.16, ROOM.z0 + 0.062);
     kit.g.add(nail);
     const hang = new THREE.Group();
     nail.add(hang);

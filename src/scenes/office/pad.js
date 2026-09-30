@@ -27,16 +27,16 @@ export function padPuzzle(ctx) {
       if (P.active || P.done) return;
       P.active = true;
       P.prevPose = C.eyePose();
-      // the eye over the pad from the chair's side, looking down on it
-      // (leaning over the desk from its chair side: the pad ahead and below, the
-      // forearms in from the frame's lower corners, not up its middle)
+      // the eye over the pad from the chair's side, leaning over the desk:
+      // the pad ahead and below, the forearms in from the frame's lower
+      // corners, not up its middle
       const pose = { x: PAD.x + 0.42, y: DESK.h + 0.47, z: PAD.z - 0.01, yaw: Math.PI / 2 - 0.06, pitch: -0.86 };
       C.setMode('table', { pose, fov: 44, ease: 0.45 });
       // the pencil from the blotter into my hand (it goes where the hand takes it)
       const pc = O.pencil;
       H.equip('empty');
       H.hold(pc, 'R');
-      // the left hand flat on the pad's far left corner, holding it still
+      // the left hand flat on the blotter beside the pad, holding it still
       live(H, { R: 'b2liveR', L: 'b2liveL' });
       P.leftHand();
       P.place(0);

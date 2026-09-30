@@ -1,7 +1,8 @@
 import * as THREE from 'three';
 import { defineScene, wait, until, beat } from '../game/script.js';
 import { roomAs, carry, office, stand, V } from './office/room.js';
-import { live } from './office/hands.js';
+import { live, palmOn } from './office/hands.js';
+import { PROP_KINDS } from '../props/index.js';
 import { standInGun } from './office/gunHud.js';
 import { MEN, send, coverFrom, glassMen, roomReacts, glassReward, fallHook, papers, note } from './office/fight.js';
 import { DESK, DOOR, SIDE, SAFE, FAN, PICTURE } from '../stages/office/plan.js';
@@ -46,6 +47,12 @@ export default defineScene({
     F.men = [];
     D.stop(); D.groups.clear();
     D.begin();
+    // (an encounter on until the quiet: the HUD shows my health in a fight
+    // only while the director has one running - with no script of its own
+    // it stood down on its first step and the bar never showed. The lull
+    // breaker it steps asks the men's brain to press, and the office brain
+    // has no press: nothing else changes)
+    D.run(function* () { for (;;) yield null; });
     roomReacts(ctx);
     // (the plain revolver has no model yet: where it points, what is in it)
     standInGun(ctx);
@@ -240,6 +247,7 @@ function tipPrompt(ctx) {
     if (!O.tipDesk()) return;
     G.sfx.play('office_deskTip', V(DESK.x, 0.6, DESK.z));
     F.tipped = true;
+    heave(ctx);
     ctx.interact.remove('tip');
     // (then, once: how to get behind it)
     F.duckT = 1.4;
@@ -248,6 +256,58 @@ function tipPrompt(ctx) {
     if (F.duckT > 0) { F.duckT -= dt; if (F.duckT <= 0 && !F.ducked) { G.hud.prompt('C  duck', null, 'duck'); F.duckShown = G.time; } }
     if (F.duckShown && !F.ducked && (ctx.controller.crouchK > 0.5 || G.time - F.duckShown > 4)) { F.ducked = true; G.hud.clearPrompt('duck'); }
   });
+}
+
+// the heave: from the chair's side, both palms on the desk's near edge as it
+// goes up and over, off it as it falls away (object first: the edge's path
+// is the desk's; the palms ride it). While the revolver has no model its
+// hands' set is hidden, so the bare hands are put up for the heave and the
+// revolver's set given back after; with a model only the left hand heaves.
+function heave(ctx) {
+  const G = ctx.game, O = office(ctx), H = ctx.hands, e = G.eye;
+  const d = O.desk;
+  // (only from behind it, within an arm: anywhere else it goes over on its own)
+  const edgeX = DESK.x + DESK.d / 2;
+  if (e.x < edgeX - 0.05 || e.x - edgeX > 0.85 || Math.abs(e.z - DESK.z) > DESK.w / 2 + 0.2) return;
+  const bare = !PROP_KINDS.includes('revolver');
+  if (bare) H.equip('empty');
+  // (the two grips on the near top edge, a shoulder's width apart, in the desk's own frame)
+  const zc = Math.max(DESK.z - DESK.w / 2 + 0.3, Math.min(DESK.z + DESK.w / 2 - 0.3, e.z));
+  d.pivot.updateMatrixWorld(true);
+  const at = { R: d.pivot.worldToLocal(V(edgeX - 0.03, DESK.h + 0.005, zc - 0.22)), L: d.pivot.worldToLocal(V(edgeX - 0.03, DESK.h + 0.005, zc + 0.22)) };
+  const sides = bare ? ['R', 'L'] : ['L'];
+  const pin = () => {
+    for (const s of sides) {
+      const p = d.pivot.localToWorld(at[s].clone());
+      // (palm down on the top, fingers over toward the far side; as it rises, into its underside)
+      const n = V(0, -1, 0).transformDirection(d.pivot.matrixWorld);
+      const f = V(-1, 0, s === 'R' ? 0.18 : -0.18).transformDirection(d.pivot.matrixWorld);
+      palmOn(H, s, p, n, f);
+    }
+  };
+  pin();
+  live(H, bare ? { R: 'b2liveR', L: 'b2liveL' } : { L: 'b2liveL' });
+  // (the view dips with the heave - the body bends to it - and comes back up:
+  // the hands on the edge are in the frame, not under it)
+  const C = ctx.controller;
+  let dipped = 0;
+  const dip = (want) => { const k = Math.max(-0.02, Math.min(0.02, want - dipped)); C.pitch += k; dipped += k; };
+  let t = 0, off = -1;
+  const stepFn = () => {
+    t += 1 / 60;
+    dip(off < 0 ? -0.26 * Math.min(1, t / 0.14) : 0);
+    if (off < 0) {
+      if (d.tipped < 0.3 && t < 0.6) { pin(); return; }
+      // (let go: the hands drop away)
+      off = t;
+      live(H, {});
+    } else if (bare && off > 0 && t - off > 0.26) {
+      // (the revolver's set back once they are down out of the frame)
+      off = 0;
+      if (ctx.player.weapons.current === 'revolver' && H.set === 'empty') H.equip('revolver');
+    }
+  };
+  ctx.onStep(stepFn);
 }
 
 // the door kicked in: the heel, the bang, its glass, the kicker through it

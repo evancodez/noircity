@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { palm } from '../../player/handPoses.js';
 import { SAFE, COMBO } from '../../stages/office/plan.js';
-import { live, setLive } from './hands.js';
+import { live, setLive, palmOn } from './hands.js';
 import { office, V } from './room.js';
 
 // Puzzle E, the safe (lane B2's brief): the dial turned by the mouse, my
@@ -77,7 +77,13 @@ export function safePuzzle(ctx) {
       // the hand's grip follows the turn; past 50 degrees it lets go and takes the knob again
       if (S.regrip > 0) { S.regrip -= dt; S.grip *= Math.exp(-dt * 25); }
       else if (Math.abs(S.grip) > 0.9) S.regrip = 0.16;
-      S.place();
+      // (the handle: the hand goes from the dial to it, turns it with it, pulls
+      // the door round by it, and lets go as the door swings on its weight -
+      // never left in the air where the dial was)
+      if (S.opening) {
+        if (S.opening.t < 1.0) S.placeHandle();
+        else if (!S.opening.let) { S.opening.let = true; live(H, { R: null, L: O.sheet ? 'b2liveL' : null }); }
+      } else S.place();
       if (S.cracked && !S.opened) {
         if (!S.handlePrompt) { S.handlePrompt = true; G.hud.prompt('E  the handle', G.screenOf(safe.handleG.getWorldPosition(V(0, 0, 0))), 'safe'); }
         if (G.pressed('KeyE') || S.demoOpen) S.openDoor();
@@ -145,10 +151,20 @@ export function safePuzzle(ctx) {
       }
       ctx.flags.safeStage = S.stage;
     },
+    // the palm on the T's right arm, the fingers round it
+    placeHandle() {
+      const hg = safe.handleG;
+      hg.updateMatrixWorld(true);
+      const p = hg.localToWorld(V(0.052, -0.012, 0.058));
+      palmOn(H, 'R', p, V(-0.25, 0.35, -1).normalize().transformDirection(hg.matrixWorld), V(0.1, -1, 0).transformDirection(hg.matrixWorld),
+        { i: [0.9, 1.1, 0.6, -0.03], m: [0.95, 1.15, 0.6, 0], r: [1.0, 1.2, 0.6, 0.02], l: [1.05, 1.2, 0.6, 0.05], t: [0.6, 0.3, 0.4, 0.3, 0.3] }, [0.3, -0.5, 0.05]);
+    },
     // the handle down, the bolts back, the door's weight
     openDoor() {
       if (S.opening) return;
       S.opening = { t: 0 };
+      // (from the dial's knob down to the handle: a short blend, not a jump)
+      H.snapshot(0.16);
       G.hud.clearPrompt('safe');
       G.sfx.play('office_safeHandle', safe.centre);
     },

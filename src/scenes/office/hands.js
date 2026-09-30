@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { HAND_POSES } from '../../player/handPoses.js';
+import { HAND_POSES, palm, OPEN } from '../../player/handPoses.js';
 
 // The hands on a thing that moves under the player's own mouse (object
 // first): the scene decides where the THING is every step (the pencil's
@@ -61,11 +61,25 @@ const SHEETF = { i: [0.3, 0.35, 0.18, -0.02], m: [0.35, 0.4, 0.2, 0], r: [0.45, 
 // (the defaults: walking, the whole sheet at the frame's lower left, its
 // three figures clear of the hand and of the frame's edge; `down` 0..1 takes
 // it down out of the frame, into a pocket)
-export function holdSheet(H, sheet, { pos = [-0.3, -0.25, -0.6], face = [0.3, 0.35, 1], foot = [-0.08, -1, 0.3], down = 0 } = {}) {
+export function holdSheet(H, sheet, { pos = [-0.3, -0.205, -0.62], face = [0.3, 0.35, 1], foot = [-0.08, -1, 0.3], down = 0 } = {}) {
   const cam = H.game.camera;
   cam.updateMatrixWorld();
   const e = down * down * (3 - 2 * down);
   const M = place(new THREE.Vector3(pos[0] - 0.05 * e, pos[1] - 0.42 * e, pos[2] + 0.12 * e), new THREE.Vector3(...face), new THREE.Vector3(...foot));
   _cm.multiplyMatrices(cam.matrixWorld, M);
   return holdAt(H, 'L', sheet, _cm, SHEETF, [-0.3, -0.55, 0.05]);
+}
+
+// a palm flat on a thing at a world point (object first: the scene says where
+// the thing is this step, the hand is put on it): `n` the way the palm faces
+// (into the thing), `f` the way the fingers point, both world; written into
+// that side's live pose (show it with live()). The thing moves, the palm rides it.
+const _pi = new THREE.Matrix4();
+export function palmOn(H, side, p, n, f, F = OPEN, e = null) {
+  const root = H.vm.root;
+  root.updateMatrixWorld(true);
+  _pi.copy(root.matrixWorld).invert();
+  const pc = p.clone().applyMatrix4(_pi);
+  const nc = n.clone().transformDirection(_pi), fc = f.clone().transformDirection(_pi);
+  return setLive(side, palm('cam', pc.toArray(), nc.toArray(), fc.toArray(), F, e || (side === 'R' ? [0.26, -0.45, -0.08] : [-0.26, -0.45, -0.08])));
 }

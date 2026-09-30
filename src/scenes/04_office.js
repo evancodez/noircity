@@ -2,7 +2,7 @@ import { defineScene, wait, until, beat } from '../game/script.js';
 import { roomAs, carry, office, stand, roomLines, sheetOf, V } from './office/room.js';
 import { padPuzzle } from './office/pad.js';
 import { safePuzzle, safeDemo } from './office/safe.js';
-import { live, holdSheet } from './office/hands.js';
+import { live, holdSheet, palmOn } from './office/hands.js';
 import { DOOR, PAD, DESK, SAFE, PICTURE } from '../stages/office/plan.js';
 import { HAND_POSES as HP } from '../player/handPoses.js';
 
@@ -109,8 +109,31 @@ export default defineScene({
         return (d < 0.95 && toward) || (d < 1.6 && ctx.pressed('KeyE'));
       });
       G.hud.clearPrompt('scene');
-      const h = H.play('b2_push', { onMark: { touch: () => { O.swingDoor(1.45, 2.2); G.sfx.play('office_doorPush', V(-0.07, 1.1, 1.0)); } } });
-      yield until(() => h.done);
+      // (object first: the palm goes onto the leaf where it is, rides it
+      // while it is pushed, and lets go as it swings on on its own weight)
+      const T = O.door.W * 0.8;
+      const touch = () => O.door.hinge.localToWorld(V(0, 1.36, T));
+      const into = () => { const n = V(1, 0, 0).transformDirection(O.door.hinge.matrixWorld); const p = touch(); if (n.x * (p.x - G.eye.x) + n.z * (p.z - G.eye.z) < 0) n.negate(); return n; };
+      // (out of arm's reach: a short step in first, the eye on the door)
+      {
+        const e = G.eye, p = touch(), dx = p.x - e.x, dz = p.z - e.z, d = Math.hypot(dx, dz);
+        if (d > 0.7) { const k = (d - 0.62) / d; C.ease({ x: e.x + dx * k, y: e.y, z: e.z + dz * k, yaw: Math.atan2(-dx, -dz), pitch: -0.2 }, 0.2); yield wait(0.2); }
+      }
+      const up = V(0, 1, 0);
+      palmOn(H, 'R', touch(), into(), up);
+      live(H, { R: 'b2liveR' });
+      let t = 0, pushed = false;
+      yield until(() => {
+        t += 1 / 60;
+        // (the reach: the palm arrives; then the push: the leaf goes with it)
+        if (!pushed && t > 0.2) { pushed = true; O.swingDoor(O.door.angle + 0.32, 0.95); G.sfx.play('office_doorPush', V(-0.07, 1.1, 1.0)); }
+        palmOn(H, 'R', touch(), into(), up.clone().addScaledVector(into(), -0.15));
+        return t > 0.5;
+      });
+      // (let go: it swings in on its own weight, the hand drops away)
+      O.swingDoor(1.45, 2.2);
+      live(H, {});
+      yield wait(0.25);
     }
 
     // ---- 2. the room -----------------------------------------------------------------------
@@ -151,12 +174,33 @@ export default defineScene({
       const I = G.inspect.open({ prop: L, options: { dist: 0.52, spin: [1.15, 0.0], scale: 0.95 }, onDone: () => { put = true; } });
       I.pivot.rotation.set(1.15, 0.0, 0);
       let t = 0;
+      // (object first: held in both hands by its lower corners, the palms
+      // under its boards, riding it however the mouse turns it - not a book
+      // hanging in the air)
+      const lw = 0.21;
+      const grip = () => {
+        L.updateMatrixWorld(true);
+        const up = V(0, 1, 0).transformDirection(L.matrixWorld);
+        const Rp = L.localToWorld(V(0.06, -0.004, 0.105)), Rf = V(-0.35, 0, -1).transformDirection(L.matrixWorld);
+        palmOn(H, 'R', Rp, up, Rf);
+        // (the left on the front board's outside: it swings the board open and
+        // holds it there, the palm riding it from over the book to under it)
+        const cv = L.getObjectByName('cover');
+        if (cv) {
+          cv.updateMatrixWorld(true);
+          palmOn(H, 'L', cv.localToWorld(V(lw - 0.07, 0.004, 0.105)), V(0, -1, 0).transformDirection(cv.matrixWorld), V(0.35, 0, -1).transformDirection(cv.matrixWorld));
+        }
+      };
+      grip();
+      live(H, { R: 'b2liveR', L: 'b2liveL' });
       yield until(() => {
         t += 1 / 60;
         L.userData.setOpen(Math.min(1, Math.max(0, (t - 0.35) / 0.6)));
         if (t > 0.4 && t < 0.45) G.sfx.play('office_pages', G.eye);
+        grip();
         return put;
       });
+      live(H, {});
       // inside my coat
       if (L.parent) L.parent.remove(L);
       O.ledger = null;
