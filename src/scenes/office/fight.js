@@ -39,9 +39,16 @@ export function send(ctx, name, extra = {}) {
   h.b2 = name;
   const F = ctx.flags;
   (F.men || (F.men = [])).push(h);
+  note(ctx, 'in ' + name);
   return h;
 }
 export const brainOf = (G, h) => { const ai = G.ais.get(h); return ai && ai.brain ? ai : null; };
+
+// the fight's own record (plain text in the flags: the headless tools read it)
+export function note(ctx, what) {
+  const F = ctx.flags;
+  F.log = (F.log || '') + `${ctx.sceneTime.toFixed(1)} ${what}; `;
+}
 
 // ---- the cover I have from a shooter at `from` (0 none .. 1 all) -----------------------------
 // crouched, with the desk (tipped or not), a cabinet or the cooler between

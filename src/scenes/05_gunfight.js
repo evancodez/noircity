@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { defineScene, wait, until, beat } from '../game/script.js';
 import { roomAs, carry, office, stand, V } from './office/room.js';
 import { live } from './office/hands.js';
-import { MEN, send, coverFrom, glassMen, roomReacts, glassReward, fallHook, papers } from './office/fight.js';
+import { MEN, send, coverFrom, glassMen, roomReacts, glassReward, fallHook, papers, note } from './office/fight.js';
 import { DESK, DOOR, SIDE, SAFE, FAN, PICTURE } from '../stages/office/plan.js';
 
 // Scene 5, The Door (lane B2's brief; STORY.md). The same room, a minute
@@ -47,6 +47,10 @@ export default defineScene({
     D.begin();
     roomReacts(ctx);
     const shotFn = () => { F.shotAt = true; };
+    const downFn = (e) => { const h = e && e.hood; void h; };
+    void downFn;
+    let lastK = G.counters.kills;
+    ctx.onStep(() => { if (G.counters.kills !== lastK) { lastK = G.counters.kills; const dead = (F.men || []).filter((h) => !h.alive && !h._b2noted); for (const h of dead) { h._b2noted = true; note(ctx, 'down ' + h.b2); } } if (G.health.hp < (F.hpLow ?? 101) - 20) { F.hpLow = G.health.hp; note(ctx, 'hp ' + Math.round(G.health.hp)); } if (G.health.hp > (F.hpLow ?? 101) + 30) F.hpLow = G.health.hp; });
     G.on('shot', shotFn);
     const offs = [glassReward(ctx), fallHook(ctx, () => fall(ctx)), () => G.off('shot', shotFn)];
     const off = () => { for (const f of offs) f(); G.off('scene:exit', exitFn); };
@@ -192,7 +196,7 @@ function holdUntilKicked(ctx, h, delay = 0) {
   const G = ctx.game, F = ctx.flags;
   const ai = G.ais.get(h);
   if (!ai) return;
-  ai.hold = (state) => (state !== 'enter' && state !== 'settle' && (!F.kicked || G.time - F.kicked < delay)) || F.down;
+  ai.hold = (state) => (state !== 'enter' && state !== 'settle' && (F.kicked == null || G.time - F.kicked < delay)) || !!F.down;
 }
 
 // E: the desk over on its front, the lamp thrown off it; then C to duck
@@ -227,7 +231,8 @@ function kick(ctx) {
   // the kicker: in through the door and behind its open leaf, out from it to shoot
   const k = (F.men || []).find((h) => h.b2 === 'kicker');
   const ai = k && G.ais.get(k);
-  if (ai && ai.brain.send) ai.brain.send({ path: [{ x: 0.35, z: 1.02 }, { x: 0.62, z: 0.32 }], hide: { x: 0.62, z: 0.3 }, fire: { x: 0.95, z: 1.05 }, wait: 0.2 });
+  // (he comes in two steps and stands his ground: the first of them, in the open)
+  if (ai && ai.brain.send) ai.brain.send({ path: [{ x: 0.35, z: 1.02 }, { x: 0.95, z: 1.45 }], hide: null, fire: { x: 0.95, z: 1.45 }, wait: 0.35 });
 }
 
 // the Tommy gun through the curtain: holes where his rounds pass through it

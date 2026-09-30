@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { mergeGeos, lathe, tubeAlong } from '../../../props/lib.js';
+import { wallGeos } from './walls.js';
 import { makeRoomMaterial } from '../../../render/glass.js';
 import { accentMaterial } from '../../../render/accents.js';
 import { LAYER, markFigure } from '../../../render/layers.js';
@@ -73,7 +74,7 @@ export function buildFireEscape(kit, mats, stage) {
   }
   // our own wall's outside face: brick where the stucco of the room is
   kit.piece();
-  kit.add(new THREE.BoxGeometry(8.5, 12, 0.02).translate(2.4, STREET.y + 12 - 0.2, ROOM.z1 + T + 0.011).translate(0, 0, 0), mats.brick, { cast: false, name: 'harbor_north_face' });
+  kit.add(M(wallGeos({ axis: 'x', a: [ROOM.z1 + T + 0.001, ROOM.z1 + T + 0.021], s: [-1.85, 6.65], y: [STREET.y + 6, 6.0], holes: [[ESC.x0, ESC.x1, ESC.y0, ESC.y1]] })), mats.brick, { cast: false, name: 'harbor_north_face' });
   out.mesh = mesh;
   return out;
 }
@@ -232,4 +233,4 @@ const GLYPHS = {
   E: [[[1, 1], [0, 1], [0, 0], [1, 0]], [[0, 0.52], [0.72, 0.52]]],
   L: [[[0, 1], [0, 0], [0.95, 0]]],
 };
-void ESC; void FLOOR;
+void FLOOR;

@@ -19,6 +19,8 @@
 //                                        mouse turns him toward the next, W held
 //   { "clickOn": "css selector" }        a click at the centre of that element
 //   { "reload": true }                   reload the page (a save survives it)
+//   { "shoot": { "until": "expr", "cover": true, "timeout": ms, "shots": { name: expr }, "expect": "expr over F" } }
+//                                        [B2] a gunfight by real input at a human pace (shoot() below)
 //   { "fight": { "timeout": ms, "shots": { "name": "expr", ... }, "expect": "expr over F" } }
 //                                        play the brawl by real input: read his
 //                                        clip and its marks, hop / block / punish
@@ -219,6 +221,74 @@ async function walk(points, timeout) {
   return true;
 }
 
+// [B2] a gunfight by real input, at a human's pace (scene 5's play, and any
+// scene with the revolver): the man in sight nearest the middle of the view
+// is picked; after a reaction time the view is turned onto his chest by
+// trusted mouse moves (a hand's aim: a little off, settling), LMB fires,
+// a breath, again or the next man. R reloads an empty gun. With cover: true
+// C ducks while reloading or with nobody in sight, and rises (C) to shoot.
+// Ends when `until` (an expression over N, G) is true, or on the timeout;
+// returns what was fired and taken.
+async function shoot({ until = 'false', timeout = 150000, cover = false, react = [260, 460], err = 0.025, shots = {} } = {}) {
+  const T0 = Date.now();
+  const rr = (a, b) => a + (b - a) * Math.random();
+  const done = new Set();
+  let fired = 0, target = null, aimedAt = 0, last = 0;
+  const tap = async (code) => { await keyDown(code); await sleep(40); await keyUp(code); };
+  for (;;) {
+    const s = await js(`(() => { const C = N.controller, e = G.eye, W = G.player.weapons.active;
+      const out = { done: !!(${until}), yaw: C.yaw, pitch: C.pitch, sens: C.sensitivity, crouch: C.crouchK || 0, hp: G.health.hp, dead: G.health.dead,
+        ammo: W ? W.ammo : 0, reloading: !!(W && W.reloading), men: [] };
+      const d = new N.THREE.Vector3();
+      for (const h of G.stage.hoods.list) {
+        if (!h.alive) continue;
+        const c = h.bones.chest.getWorldPosition(new N.THREE.Vector3());
+        d.subVectors(c, e); const L = d.length(); d.divideScalar(L);
+        // (in sight: nothing solid between; a pane of glass is seen through)
+        let o = e.clone(), left = L, seen = true;
+        for (let k = 0; k < 4 && seen; k++) { const hit = G.rays.raycast(o, d, left - 0.25); if (!hit) break; if (hit.mesh.userData.pane) { o = hit.point.clone().addScaledVector(d, 0.02); left -= hit.t + 0.02; } else seen = false; }
+        out.men.push({ id: h.slot, x: c.x, y: c.y, z: c.z, L, seen });
+      }
+      return out; })()`);
+    for (const [name, expr] of Object.entries(shots)) if (!done.has(name) && await js(expr) === true) { done.add(name); await shot(name); }
+    if (s.done) return { fired, time: (Date.now() - T0) / 1000, hp: s.hp, done: true };
+    if (Date.now() - T0 > timeout) { check('the gunfight ended in time', false, JSON.stringify({ men: s.men.length })); return { fired, done: false }; }
+    if (s.dead) { await sleep(300); continue; }
+    const eye = await js('({ x: G.eye.x, y: G.eye.y, z: G.eye.z })');
+    const seen = s.men.filter((m) => m.seen);
+    // reload an empty gun (down behind the cover while it goes)
+    if (!s.reloading && s.ammo <= 0) { if (cover && s.crouch < 0.5) await tap('KeyC'); await tap('KeyR'); await sleep(rr(300, 500)); continue; }
+    if (s.reloading) { await sleep(120); continue; }
+    if (!seen.length) {
+      // nobody in sight: down behind it (while standing, a man at the window
+      // or in the door may still be out of the line)
+      if (cover && s.crouch < 0.5 && Date.now() - last > 900) { await tap('KeyC'); last = Date.now(); }
+      else if (cover && s.crouch > 0.5 && Date.now() - last > 1600) { await tap('KeyC'); last = Date.now(); }
+      await sleep(150); target = null; continue;
+    }
+    // the man nearest the middle of the view
+    const ang = (m) => { const yw = Math.atan2(-(m.x - eye.x), -(m.z - eye.z)), pt = Math.atan2(m.y - eye.y, Math.hypot(m.x - eye.x, m.z - eye.z));
+      return { dy: Math.atan2(Math.sin(yw - s.yaw), Math.cos(yw - s.yaw)), dp: pt - s.pitch }; };
+    seen.sort((a, b) => { const A = ang(a), B = ang(b); return Math.hypot(A.dy, A.dp) - Math.hypot(B.dy, B.dp); });
+    const m = seen[0];
+    if (cover && s.crouch > 0.5) { await tap('KeyC'); await sleep(rr(220, 320)); continue; }
+    if (!target || target.id !== m.id) { target = m; await sleep(rr(react[0], react[1])); aimedAt = 0; continue; }
+    // the turn onto him in a few moves: most of the way, then the settle, a little off
+    const A = ang(m);
+    const ey = (Math.random() - 0.5) * 2 * err, ep = (Math.random() - 0.5) * 2 * err;
+    const px = Math.round(-(A.dy + ey) / s.sens), py = Math.round(-(A.dp + ep) / s.sens);
+    const n = Math.min(6, Math.max(2, Math.ceil(Math.hypot(px, py) / 60)));
+    for (let i = 0; i < n; i++) { await turn(Math.round(px / n), Math.round(py / n)); await sleep(16); }
+    await sleep(rr(60, 140));
+    if (!aimedAt) aimedAt = Date.now();
+    await mouse('mousePressed', mx ?? W / 2, my ?? H / 2, 'left'); await sleep(40); await mouse('mouseReleased', mx ?? W / 2, my ?? H / 2, 'left');
+    fired++;
+    await sleep(rr(330, 520));
+    // (two at a man, then down again behind the desk for a breath)
+    if (cover && fired % 2 === 0 && Math.random() < 0.6) { await tap('KeyC'); last = Date.now(); await sleep(rr(500, 900)); }
+  }
+}
+
 try {
   let ver;
   for (let k = 0; k < CHROME_WAIT_STEPS; k++) { try { ver = await (await fetch(`http://127.0.0.1:${PORT}/json/version`)).json(); break; } catch { await sleep(100); } }
@@ -265,6 +335,12 @@ try {
       const r = await fight(S.fight);
       log(`fight ${JSON.stringify(r)}`);
       if (S.fight.expect) { const ok = new Function('F', `return (${S.fight.expect});`)(r) === true; check(S.fight.label || S.fight.expect, ok, ok ? '' : JSON.stringify(r)); }
+    }
+    // [B2] a gunfight by real input (shoot above)
+    else if (S.shoot) {
+      const r = await shoot(S.shoot);
+      log(`shoot ${JSON.stringify(r)}`);
+      if (S.shoot.expect) { const ok = new Function('F', `return (${S.shoot.expect});`)(r) === true; check(S.shoot.label || S.shoot.expect, ok, ok ? '' : JSON.stringify(r)); }
     }
     // (a walk's points may be an expression: where the fight left him)
     else if (S.walk) { const pts = typeof S.walk === 'string' ? await js(S.walk) : S.walk; const ok = await walk(pts, S.timeout ?? 30000); check(`walk ${JSON.stringify(pts)}`, ok); if (!ok && S.stop !== false) break; }

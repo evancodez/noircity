@@ -40,7 +40,7 @@ export default {
     };
     const eye = () => B.player;
     const walkTo = (p, run = false) => { B.path = [p.clone()]; B.pathI = 0; B.run = run; B.stuckT = 0; B.lastPos.copy(h.pos); h.setAim(false); h.lookAt(null); };
-    const at = (p, d = 0.22) => Math.hypot(h.pos.x - p.x, h.pos.z - p.z) < d;
+    const at = (p, d = 0.34) => Math.hypot(h.pos.x - p.x, h.pos.z - p.z) < d;
     const look = () => { const p = eye(); h.lookAt(V(p.x, p.y - 0.25, p.z)); };
     // one shot: the cover I have from him scales his aim
     const shoot = (t) => {
@@ -95,16 +95,19 @@ export default {
             S.wait -= dt;
             if (S.wait > 0) break;
             if (!B.token()) { S.wait = r.range(0.3, 0.7); break; }
-            if (S.fire && !at(S.fire)) { walkTo(S.fire, false); S.state = 'out'; } else { S.state = 'aim'; S.t = 0; h.setState('aim', 0.2); }
+            if (S.fire && !at(S.fire)) { walkTo(S.fire, false); S.state = 'out'; S.t = 0; } else { S.state = 'aim'; S.t = 0; h.setState('aim', 0.2); }
             break;
           }
           case 'out': {
-            if (B.follow(dt)) { B.stop(); S.state = 'aim'; S.t = 0; h.setState('aim', 0.2); }
+            // (out to his mark; a path he cannot finish is given up after 2 s: he shoots from there)
+            if (B.follow(dt) || S.t > 2.5) { B.path = null; B.stop(); S.state = 'aim'; S.t = 0; h.setState('aim', 0.2); }
             break;
           }
           case 'aim': {
             h.speed = 0;
             if (h.state !== 'aim') h.setState('aim', 0.2);
+            // (the last of the step onto his mark as the gun comes up: a follow stops 0.3 short)
+            if (S.fire) { const dx = S.fire.x - h.pos.x, dz = S.fire.z - h.pos.z, d = Math.hypot(dx, dz); if (d > 0.03 && d < 0.6) { const k = Math.min(1, 1.1 * dt / d); h.pos.x += dx * k; h.pos.z += dz * k; } }
             look();
             B.faceTo(p.x, p.z, dt, 7);
             if (S.t < (heavy ? 0.4 : r.range(0.35, 0.55))) break;
@@ -128,11 +131,12 @@ export default {
           // back behind the jamb, the wall, the cabinet
           case 'back': {
             h.setAim(false);
-            if (S.hide && !at(S.hide)) {
+            if (S.hide && !at(S.hide) && !S.backDone) {
               if (!B.path) walkTo(S.hide, true);
-              if (B.follow(dt)) B.path = null;
+              if (B.follow(dt)) { B.path = null; S.backDone = true; }
               break;
             }
+            S.backDone = false;
             B.path = null;
             B.stop();
             S.state = 'wait';

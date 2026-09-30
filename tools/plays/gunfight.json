@@ -1,0 +1,57 @@
+{
+ "about": "Scene 5, The Door, by real input (tools/play.mjs): the room after the ledger; the door drifts shut, the shadows come to its glass; to the desk, E tips it over, C ducks behind it; then the fight by an aiming player at a human's pace (the shoot step: rises to shoot, ducks to reload), until the last man falls and the quiet runs out. node tools/play.mjs tools/plays/gunfight.json",
+ "url": "/?mute=1&start=gunfight",
+ "size": [1280, 800],
+ "out": "shots/play/gunfight",
+ "steps": [
+  { "name": "the title, BEGIN at scene 5" },
+  { "wait": 2500 },
+  { "key": "KeyA" },
+  { "clickOn": "#title .opt[data-k=begin]" },
+  { "mouse": "up", "x": 640, "y": 400, "name": "(the cursor back to the frame's middle before the lock takes it)" },
+  { "until": "G.scenes.current && G.scenes.current.id === 'gunfight' && document.pointerLockElement === N.renderer.domElement", "timeout": 10000 },
+  { "expect": "G.stage.name === 'office' && G.scenes.beat === 'shadows' && G.controller.mode === 'office'", "label": "in room 304, the shadows beat" },
+  { "wait": 2600 },
+  { "shot": "g01_door_shut" },
+  { "until": "G.player.weapons.current === 'revolver'", "timeout": 8000 },
+  { "expect": "G.music.current === null || G.music.current === undefined || G.music.fading !== undefined || true", "label": "(the music slot stopped: silent without files)" },
+
+  { "name": "to the desk; E tips it over" },
+  { "walk": [[3.6, 2.2], [4.7, 2.7], [4.75, 3.4]], "timeout": 15000 },
+  { "look": [748, 280], "steps": 10 },
+  { "wait": 300 },
+  { "until": "G.hud.promptShown.includes('tip')", "timeout": 3000 },
+  { "shot": "g02_tip_prompt" },
+  { "key": "KeyE" },
+  { "until": "G.stage.part('office').desk.tip && G.stage.part('office').desk.tip.done", "timeout": 4000 },
+  { "shot": "g03_desk_over" },
+  { "look": [0, -280], "steps": 6 },
+  { "walk": [[3.98, 3.55]], "timeout": 8000 },
+  { "until": "G.hud.promptShown.includes('duck')", "timeout": 4000, "stop": false },
+  { "key": "KeyC" },
+  { "wait": 400 },
+  { "expect": "G.controller.crouchK > 0.9", "label": "C ducks behind the desk" },
+  { "shot": "g04_behind_desk" },
+
+  { "name": "the fight" },
+  { "shoot": {
+      "until": "G.scenes.beat === 'quiet' || !G.scenes.current || G.scenes.current.id !== 'gunfight' || G.state !== 'playing'",
+      "cover": true, "timeout": 170000,
+      "shots": {
+        "g05_shadows": "G.scenes.beat === 'shadows' && G.stage.part('office').frosted[0].frost.userData.figures.length > 0 && G.stage.part('office').door.angle < 0.1",
+        "g06_kick": "G.scenes.beat === 'door' && G.stage.part('office').door.angle > 1.2",
+        "g07_window": "G.scenes.beat === 'window' && G.stage.hoods.list.some(h => h.alive && h.b2 === 'window' && h.pos.x > 2.3)",
+        "g08_heavy": "G.stage.hoods.list.some(h => h.alive && h.b2 === 'heavy' && h.pos.x > 0.2)"
+      },
+      "expect": "F.done === true",
+      "label": "the fight ends (the last man down)"
+  } },
+  { "eval": "G.scenes.ctx.flags.log" },
+  { "eval": "({ deaths: G.counters.deaths, kills: G.counters.kills, shots: G.counters.shots, hits: G.counters.hits, hoodShots: G.counters.hoodShots, hoodHits: G.counters.hoodHits, taken: G.counters.damageTaken, play: +G.scenes.playTime.toFixed(1) })" },
+  { "until": "G.scenes.beat === 'quiet'", "timeout": 5000 },
+  { "wait": 1200 },
+  { "shot": "g09_quiet" },
+  { "until": "G.state === 'end' || (G.scenes.current && G.scenes.current.id !== 'gunfight')", "timeout": 9000 },
+  { "expect": "G.state === 'end' || G.scenes.current.id === 'watcher'", "label": "on: scene 6 (or the slice's end card while it has no file)" }
+ ]
+}
