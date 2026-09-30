@@ -278,11 +278,11 @@ export class Question {
     // behind him, hidden by his own shoulders)
     const side = new THREE.Vector3(F.fx, 0, F.fz).multiplyScalar(Math.sign(this.water ? project(this.water.x, this.water.z, this.railS, {}).s - this.railS : 1) || 1);
     const dir = away.clone().lerp(out, 0.5).normalize().addScaledVector(side, 0.65).normalize();
-    // [R2] (up off his head and well out over the water, as his head jerks
+    // [R2] (off his head and well out over the water, as his head jerks
     // back: it tumbled 1 m out and fell behind his own shoulders, and the
     // eyes that went down after it found his coat)
     this.hatS = {
-      hat, obj, at, vel: dir.multiplyScalar(2.5).add(new THREE.Vector3(0, 1.9, 0)),
+      hat, obj, at, vel: dir.multiplyScalar(2.5).add(new THREE.Vector3(0, 1.25, 0)),
       axis: new THREE.Vector3(dir.z, 0, -dir.x).normalize(), spin: 7.5, t: 0, wet: false, drift: new THREE.Vector3(F.fx, 0, F.fz).multiplyScalar(-0.35).addScaledVector(out, 0.12),
       q: hat.getWorldQuaternion(new THREE.Quaternion()),
     };
