@@ -14,3 +14,5 @@ mkdir -p "$(dirname "$OUT")"
 "$CHROME" --headless=new --mute-audio --use-angle=metal --hide-scrollbars --force-device-scale-factor=1 \
   --window-size="${W},${H}" --virtual-time-budget=12000 --screenshot="$OUT" "$URL" 2>/dev/null
 echo "wrote $OUT ($(sips -g pixelWidth -g pixelHeight "$OUT" 2>/dev/null | awk '/pixel/ {printf "%s ", $2}'))"
+# headless Chrome leaves a temp file per run in the user's temp folder: the stale ones go
+find "${TMPDIR:-/tmp}" -maxdepth 1 -name '.com.google.Chrome.*' -type f -mmin +60 -delete 2>/dev/null || true

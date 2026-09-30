@@ -37,3 +37,5 @@ if a:
 elif "audiotest=1" in sys.argv[1] if len(sys.argv)>1 else False:
   print("AUDIO: (no data-audio yet: raise VTB)")
 ' "$QS"
+# headless Chrome leaves a temp file per run in the user's temp folder: the stale ones go
+find "${TMPDIR:-/tmp}" -maxdepth 1 -name '.com.google.Chrome.*' -type f -mmin +60 -delete 2>/dev/null || true

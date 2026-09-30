@@ -20,3 +20,5 @@ if c:
 else:
   print("COUNTERS: (none)")
 '
+# headless Chrome leaves a temp file per run in the user's temp folder: the stale ones go
+find "${TMPDIR:-/tmp}" -maxdepth 1 -name '.com.google.Chrome.*' -type f -mmin +60 -delete 2>/dev/null || true

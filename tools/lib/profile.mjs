@@ -4,6 +4,7 @@
 // profile when it ends, and sweeps any stale one (older than 20 minutes,
 // from a run that was killed) when it starts.
 import { rmSync, readdirSync, statSync } from 'node:fs';
+import { tmpdir } from 'node:os';
 import { execSync } from 'node:child_process';
 
 // (polish: an hour - a long autoplay run in parallel keeps its profile
