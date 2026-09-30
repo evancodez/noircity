@@ -63,7 +63,9 @@ function pickAttack(B, M, d) {
   if (him.holding === 'plate' || him.holding === 'mug' || him.holding === 'bottle') {
     // (a throw from 2.5 m and more: he backs off first)
     him.throwWait = (him.throwWait || 0) + 0.3;
-    if (d < 2.4 && !(him.throwWait > 2.5 && d > 1.4)) { him.backT = 1.0; return null; }
+    // (pressed, he throws from where he is: point-blank, the tell and the
+    // chevron as ever; holding a thing is never a reason to stand and take it)
+    if (d < 2.4 && !(him.throwWait > 1.2 && d > 0.95)) { him.backT = 1.0; return null; }
     him.throwWait = 0;
     return { clip: 'br_throw', reach: 7 };
   }

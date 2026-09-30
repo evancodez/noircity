@@ -156,7 +156,7 @@ export class Lesson {
     B.cards.flash('NOW FIGHT.', 1.0);
     B.lessonHold = false; B.lessonBack = false;
     B.him.taunt = null;
-    B.him.hp = B.max; B.c.hp = B.max;
+    B.him.hp = B.max; B.c.hp = B.max; B.him.mannerT = B.T;
     B.him.next = 1.2;
     B.lesson = null;
     B.stats.lesson = +this.total.toFixed(1);

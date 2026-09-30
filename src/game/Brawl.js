@@ -46,7 +46,7 @@ import { Lesson } from './BrawlLesson.js';
 export const BRAWL = {
   // [B8] his hit points (a room's man may have his own: who.hp); his
   // manners change at these PERCENT of them
-  himHp: 120, meHp: 100, retryHp: 60, retryBack: 8, shell: 0.16,
+  himHp: 116, meHp: 100, retryHp: 60, retryBack: 8, shell: 0.16, mannerHold: 9,
   manners: { measured: 100, dirty: 65, wild: 30, out: 12 },
   order: ['measured', 'dirty', 'wild', 'out'],
   reach: 1.8, cone: 38 * Math.PI / 180, itemReach: 2.0,
@@ -166,7 +166,7 @@ export class Brawl {
       hp: h0, manner: mannerOf(h0 * 100 / this.max), state: 'move', clip: null, h: null, t: 0,
       next: 1.0, circle: 1, circleT: 1, backT: 0, vel: V(0, 0, 0), speed: 0, yawRate: 0,
       holding: null, prop: null, task: null, pending: null, want: null, spot: null, atSpot: false, quietT: 0, loco: null, locoT: 0,
-      hadBottle: false, hadStool: false, throws: 0, acts: 0, thingActs: 0,
+      hadBottle: false, hadStool: false, throws: 0, acts: 0, thingActs: 0, mannerT: 0,
       // the guard (§3): each side's time left down, by cause
       open: { L: 0, R: 0 }, missT: 0, coverT: 0, breatheT: 0, hang: null, hangT: 0, taunt: null, wasOpen: { L: false, R: false },
       aim: null, strikeAt: 0, hit: false, blockedHards: [], combo: 0, lastHitT: -9, ov: null,
@@ -928,7 +928,12 @@ export class Brawl {
   damageHim(n) {
     const him = this.him;
     n *= BRAWL.tough;
-    him.hp = Math.max(this.lesson ? 0.7 * this.max : 0, him.hp - n);
+    // [B8] (a manner holds a while: for its first `hold` seconds a run of
+    // blows takes him no further than the edge of the next - a burst does
+    // not skip his dirty or his wild fight)
+    const order = BRAWL.order, next = order[order.indexOf(him.manner) + 1];
+    const floor = !this.lesson && next && this.T - (him.mannerT ?? -99) < BRAWL.mannerHold ? (BRAWL.manners[next] + 0.5) * this.max / 100 : 0;
+    him.hp = Math.max(this.lesson ? 0.7 * this.max : 0, Math.min(him.hp, Math.max(floor, him.hp - n)));
     this.c.hp = him.hp;
     him.quietT = 0;
     // [B8] (hurt fast - a fifth of him and more in four seconds - he covers
@@ -946,6 +951,7 @@ export class Brawl {
   setManner(m) {
     const him = this.him, G = this.game, c = this.c;
     him.manner = m;
+    him.mannerT = this.T;
     this.stats.manners[m] = this.stats.manners[m] ?? this.stats.time;
     G.emit('brawl:round', { n: this.round, manner: m });
     him.next = Math.max(him.next, 0.8);
@@ -1269,6 +1275,9 @@ export class Brawl {
     let dmg = A.dmg * K;
     // (a step toward the swing keeps me in its path, and it lands harder)
     if (res.into) { dmg *= 1.25; this.stats.wrongSlips++; }
+    // [B8] (caught punching - a fist out, or bounced off him, or winding -
+    // it lands half again: trading blows with him is a losing game)
+    if (!L && /^(jab|hard|bounce|wind|cock|strike)$/.test(me.act)) { dmg *= 1.5; this.stats.caught = (this.stats.caught || 0) + 1; }
     this.hurtMe(dmg, from, { stun: A.stun + (res.into ? 0.08 : 0) });
     { const HB = this.stats.hurtBy || (this.stats.hurtBy = {}); HB[clip] = +((HB[clip] || 0) + dmg).toFixed(1); }
     // (a blow that finds me, he presses: a second one on its heels - trading
@@ -1762,7 +1771,9 @@ export class Brawl {
       // [B8] (he has got his breath back, a little: at most `retryBack` of
       // him, never past the start of his manner - failing costs about ten
       // seconds, not the round)
-      const back = Math.min(BRAWL.manners[m] * this.max / 100, this.him.hp + BRAWL.retryBack * this.max / 100);
+      // (and more each time I go down in the same manner: 8 %, 16 %, 24 %...)
+      const MD = this.stats.mannerDowns || (this.stats.mannerDowns = {}); MD[m] = (MD[m] || 0) + 1;
+      const back = Math.min(BRAWL.manners[m] * this.max / 100, this.him.hp + BRAWL.retryBack * MD[m] * this.max / 100);
       const left = Math.max(0.05, BRAWL.down - me.downT);
       G.health.reset();
       G.health.hp = BRAWL.retryHp;
