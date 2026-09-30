@@ -22,7 +22,10 @@ import * as THREE from 'three';
 // vertex colour and adds its light share t (0..1) to the length, 29 + 1.8 t,
 // so the ink knows the shapes (it decodes class 14 or 15 and t from it).
 export const SURFACE = { plaster: 1, wall: 1, ceiling: 1, wood: 2, panel: 2, panelling: 2, lino: 3, linoleum: 3, floor: 3, enamel: 4, cloth: 5, leather: 5, fabric: 5,
-  skin: 7, paper: 8, glass: 9, amberGlass: 11, metal: 12, chrome: 12, lit: 13, castFig: 14, amberIn: 16 };
+  skin: 7, paper: 8, glass: 9, amberGlass: 11, metal: 12, chrome: 12, lit: 13, castFig: 14, amberIn: 16,
+  // [R2-B] (class 18) the detective's black leather gloves in the hands
+  // (the revolver, the wheel, the lapels): ink with a white sheen
+  glove: 18 };
 
 // Normal + object-id pass (used as scene.overrideMaterial).
 // Output: rgb = view-space normal, a = object id (integer, exact in half float).

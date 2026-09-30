@@ -10,6 +10,7 @@
 // solved onto its grip; the left hand onto the cylinder or the rounds.
 import * as THREE from 'three';
 import { wrap, mirror } from '../handPoses.js';
+import { HAND } from '../HandRig.js';
 
 const C = (mcp, pip = mcp * 1.15, dip = pip * 0.7, s = 0) => [mcp, pip, dip, s];
 
@@ -36,13 +37,46 @@ function gripSocket() {
   const e = M.elements;
   return { bone: 'hand', p: [e[12], e[13], e[14]], basis: [[e[0], e[1], e[2]], [e[4], e[5], e[6]], [e[8], e[9], e[10]]] };
 }
+// [R2-B] the feed's pinch: the index and middle hooked down over the
+// chambers, the pair of rounds held at their tips, the thumb in under them;
+// the ring and little fingers curled away (B3's pinch held the first two
+// fingers straight, flat along the rear face - turned up to the eye it read
+// as two fingers raised, 0.7 to 1.25 s of every reload)
+const C0 = (mcp, pip = mcp * 1.15, dip = pip * 0.7, s = 0) => [mcp, pip, dip, s];
+export const L_PINCH = { i: [0.45, 0.62, 0.3, 0.05], m: [0.5, 0.66, 0.32, -0.03], r: C0(1.15, 1.3, 0.7), l: C0(1.25, 1.3, 0.7), t: [0.62, 0.35, 0.7, 0.45, 0.35] };
+// where the pinched pair sits on the hand with those fingers: forward
+// kinematics of the rig (HandRig's bones: each finger's MCP at its place on
+// the hand with its spread, then its three phalanges, each turned by its
+// curl), the pads' point near each tip; the rounds run on out of the
+// fingertips (the socket's -y), their heads between the two pads
+function pinchSocket(F) {
+  const V3 = (x, y, z) => new THREE.Vector3(x, y, z);
+  const pts = [], dirs = [];
+  for (const name of ['i', 'm']) {
+    const [, x, z, len, , r1, spread] = HAND.fingers.find((f) => f[0] === name);
+    const f = F[name], PH = HAND.phal;
+    const m = new THREE.Matrix4().makeTranslation(x, 0.0005, z)
+      .multiply(new THREE.Matrix4().makeRotationFromEuler(new THREE.Euler(-f[0], spread + (f[3] || 0), 0, 'YXZ')))
+      .multiply(new THREE.Matrix4().makeTranslation(0, 0, -len * PH[0])).multiply(new THREE.Matrix4().makeRotationX(-f[1]))
+      .multiply(new THREE.Matrix4().makeTranslation(0, 0, -len * PH[1])).multiply(new THREE.Matrix4().makeRotationX(-f[2]));
+    pts.push(V3(0, -r1 * 0.55, -len * PH[2] * 0.92).applyMatrix4(m));
+    dirs.push(V3(0, 0, -1).transformDirection(m));
+  }
+  const p = pts[0].add(pts[1]).multiplyScalar(0.5);
+  const d = dirs[0].add(dirs[1]).normalize();
+  const y = d.clone().negate();
+  const x = V3(1, 0, 0).addScaledVector(y, -y.x).normalize();
+  const z = new THREE.Vector3().crossVectors(x, y);
+  p.addScaledVector(d, 0.002);
+  return { bone: 'hand', p: p.toArray(), basis: [x.toArray(), y.toArray(), z.toArray()] };
+}
 export const SOCKETS = {
   revolver: gripSocket(),
-  // the loose rounds: the front pair's heads under the pads of the index
-  // and middle fingers, the rounds hanging from them out of the palm's side
-  // (the hand flat over them as it feeds: it never stands between the eye
-  // and the cylinder), the rest behind them in the curl of the fingers
-  roundsHand: { bone: 'hand', p: [-0.019, -0.019, -0.142], basis: [[1, 0, 0], [0, 1, 0], [0, 0, 1]] },
+  // the loose rounds: the front pair's heads at the tips of the index and
+  // middle fingers hooked down over the chambers, the rounds running on out
+  // of them into the chambers; the rest behind them in the curl of the
+  // fingers ([R2-B]: fitted to L_PINCH by the rig's own kinematics)
+  roundsHand: pinchSocket(L_PINCH),
 };
 
 // the fingers on the grip: the three below the trigger guard wrapped round
@@ -69,14 +103,18 @@ export const COCKED_F = { ...GRIP_F, t: TG.map((v, i) => v + (TS[i] - v) * 0.05)
 export const L_OPEN = { i: C(0.18, 0.2, 0.1), m: C(0.2, 0.22, 0.1), r: C(0.24, 0.24, 0.12), l: C(0.28, 0.26, 0.12), t: [0.2, 0.1, 0.2, 0.1, 0.1] };
 export const L_CRADLE = { i: C(0.7, 0.8, 0.4), m: C(0.75, 0.85, 0.45), r: C(0.8, 0.9, 0.45), l: C(0.85, 0.9, 0.45), t: [0.35, 0.1, 0.5, 0.3, 0.2] };
 export const L_STRIKE = { i: C(0.12, 0.15, 0.08), m: C(0.14, 0.16, 0.08), r: C(0.16, 0.18, 0.09), l: C(0.2, 0.2, 0.1), t: [0.25, 0.1, 0.1, 0.1, 0.05] };
-export const L_PINCH = { i: C(0.22, 0.32, 0.18, 0.04), m: C(0.24, 0.34, 0.2, -0.02), r: C(0.9, 1.1, 0.6), l: C(1.0, 1.15, 0.6), t: [0.55, 0.3, 0.6, 0.35, 0.3] };
 
 export const SETS = {
-  // bare hands, the coat sleeves (the shirt cuff at the wrist); a gun set
-  // (the viewmodel's lens, no breath: the weapon sways it); the right hand
-  // posed by the weapon, the left out of sight unless the weapon brings it
+  // [R2-B] gloved, as the Tommy gun's hands are (black leather, a rim of
+  // light, the gauntlet over the wrist): the bare hand at the grip printed as
+  // a pale mitten with the shirt cuff a white band under it (the art
+  // director, round 2); in the office and the car the gun hand is a dark
+  // shape against the light, as the reference's gunman is. The coat
+  // sleeves; a gun set (the viewmodel's lens, no breath: the weapon sways
+  // it); the right hand posed by the weapon, the left out of sight unless
+  // the weapon brings it
   revolver: {
-    skin: 'bare', sleeve: 'coat', cuff: true, gun: true, R: 'downR', L: 'downL', hideAtRest: true, brush: 'R',
+    skin: 'glove', leather: true, sleeve: 'coat', gun: true, R: 'downR', L: 'downL', hideAtRest: true, brush: 'R',
     pose: (H, side, out) => { const w = H.game.weapons && H.game.weapons.get('revolver'); return w && w.handPose ? w.handPose(H, side, out) : false; },
   },
 };
@@ -88,7 +126,12 @@ export const SETS = {
 // frame, so the gun lay sideways at the bottom edge with the thumb as a bar
 // over it; now the eye looks down the gun from behind its hammer: the
 // cylinder, the frame and the barrel read, the back of the hand wraps it.)
-const GUN_READY = { p: [0.125, -0.09, -0.335], yaw: 0.09, pitch: 0.12, roll: 0.4 };
+// [R2-B] Up at the eye's height, the classic frame (the brief's; the second
+// pass had left it low right): the arm out, the gun right of the centre on
+// the line of the far street, its barrel running in toward the centre and
+// canted in a little; the gloved hand and the sleeve a dark shape rising
+// from the lower right corner.
+const GUN_READY = { p: [0.13, -0.072, -0.42], yaw: 0.11, pitch: 0.035, roll: 0.32 };
 function gripPose(side) {
   const S = SOCKETS.revolver;
   const q = new THREE.Quaternion().setFromEuler(new THREE.Euler(GUN_READY.pitch, GUN_READY.yaw, GUN_READY.roll, 'YXZ'));

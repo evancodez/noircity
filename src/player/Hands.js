@@ -177,6 +177,11 @@ export class Hands {
     // leather gloves keep the gun's 0.28 ceiling, as they always printed
     this.mats.bare.userData.inkSurface = 'skin';
     this.mats.glove.userData.inkSurface = 'metal';
+    // [R2-B] the same gloves printed as black leather with its sheen (ink
+    // class 'glove'): a set with `leather: true` (the revolver, the wheel,
+    // the lapels) wears these; the Tommy gun's keep their accepted print
+    this.mats.leather = this.mats.glove.clone();
+    this.mats.leather.userData = { inkSurface: 'glove' };
     this.mats.cuff.userData.inkSurface = 'paper';
     if (this.mats.sleeve && !this.mats.sleeve.userData.inkSurface) this.mats.sleeve.userData.inkSurface = 'cloth';
     // ink ids (CONTRACTS §9.4, allocVmId): each hand's skin, each sleeve, the cuffs
@@ -216,6 +221,9 @@ export class Hands {
     if (set !== 'tommy') { this.game.weapon.trigger = false; }
     for (const h of ['R', 'L']) {
       const r = this.rig[h];
+      // [R2-B] the gloves' print: black leather for a set that asks for it
+      const gm = S.leather ? this.mats.leather : this.mats.glove;
+      if (r.glove.material !== gm) { r.glove.material = gm; r.gauntlet.material = gm; }
       if (S.skin) r.setSkin(opts.skin || S.skin);
       r.cuffOn = !!S.cuff;
       if (S.sleeve) r.setSleeve(opts.sleeve || S.sleeve, true);

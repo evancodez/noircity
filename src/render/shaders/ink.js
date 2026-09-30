@@ -466,6 +466,20 @@ export function makeInkMaterial(tex, fogUniforms) {
           // probe's own normal edges
           castShapeK = shapeK * ( 1.0 - smoothstep( 6.0, 14.0, dist ) ); castTb = tb;
           float shapeV = mix( shS * mix( 0.72, 1.0, litK ), mix( shS + 0.12, litS, litK ), sideS );
+          // [R2-B] At the lens (a blow landing, a hand on my shoulder: the
+          // man within a stride of the eye) the light shape is printed as
+          // the detective's own hands are: two hard tones, the lit plane
+          // near paper, the shadow plane ink, the terminator following the
+          // form under the same designed key. (Its mid-grey shadow side,
+          // soft-torn by the brush, printed his arm at 0.3 m as a smooth
+          // grey tube.)
+          float nearC = 1.0 - smoothstep( 0.5, 1.3, dist );
+          if ( nearC > 0.0 ) {
+            vec3 keyH = normalize( upC * 0.6 + vec3( -0.75, 0.0, 0.3 ) );
+            float thH = 0.1 + ( clamp( br.r, 0.15, 0.85 ) - 0.5 ) * 0.16;
+            float sideH = smoothstep( thH - 0.02, thH + 0.02, dot( nid.xyz, keyH ) + 0.16 * ( keyC - 0.5 ) );
+            shapeV = mix( shapeV, mix( 0.12, mix( 0.7, 0.86, hiA ), sideH ), nearC );
+          }
           // (past ~14 m only the brightest shape holds, dimmed: a cut-out)
           shapeV *= 1.0 - 0.45 * smoothstep( 14.0, 30.0, dist );
           v = mix( massV, shapeV, shapeK );
@@ -494,6 +508,25 @@ export function makeInkMaterial(tex, fogUniforms) {
             float lit = smoothstep( 0.08, 0.4, v );
             if ( surf > 7.5 && surf < 8.5 ) {
               v = mix( min( v * 3.0, 0.7 ), 0.86 + 0.14 * smoothstep( 0.3, 0.6, v ), lit );
+            } else if ( surf > 17.5 && surf < 18.5 ) {
+              // [R2-B] Black leather (the gloves of the revolver, the wheel,
+              // the lapels): ink, its lit planes a dark grey, and the
+              // leather's sheen as an inker lays it - a few hard paper-white
+              // shapes where the form turns its face between the key and
+              // the eye (the knuckles, the thumb's back, the top of the hand),
+              // their edges torn by the brush. The same designed key as the
+              // bare hands; in the black (no light on it) the sheen goes.
+              float lgG = log2( max( L * exposure, 1e-6 ) );
+              vec3 upG = vec3( uViewInv[ 0 ][ 1 ], uViewInv[ 1 ][ 1 ], uViewInv[ 2 ][ 1 ] );
+              vec3 keyG = normalize( upG * 0.6 + vec3( -0.75, 0.0, 0.3 ) );
+              float ndlG = dot( n, keyG );
+              float shG = clamp( br.g, 0.15, 0.85 );
+              float litG = smoothstep( 0.08 + ( shG - 0.5 ) * 0.12, 0.12 + ( shG - 0.5 ) * 0.12, ndlG );
+              vec3 hG = normalize( keyG + normalize( - vpos ) );
+              float thG = 0.9 + ( clamp( br.r, 0.15, 0.85 ) - 0.5 ) * 0.08;
+              float sheen = smoothstep( thG - 0.012, thG + 0.012, dot( n, hG ) ) * smoothstep( -6.0, -4.2, lgG );
+              v = mix( mix( 0.05, 0.17, litG * smoothstep( -6.0, -3.5, lgG ) ), 0.82, sheen );
+              skinF = 1.0;
             } else if ( surf > 4.5 && surf < 5.5 ) {
               v = 0.22 * ( 1.0 - exp( -v / 0.22 ) );
             } else if ( ( surf > 3.5 && surf < 4.5 ) || metalF > 0.5 ) {

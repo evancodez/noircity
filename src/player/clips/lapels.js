@@ -61,6 +61,7 @@ function refresh() {
 const liveProxy = (P) => new Proxy(P, { get(t, key) { if (key === 'p' || key === 'f' || key === 'b' || key === 'e' || key === 'F') refresh(); return t[key]; } });
 export const POSES = { lapelR: liveProxy(R), lapelL: liveProxy(L) };
 export const SETS = {
-  lapels: { skin: 'glove', sleeve: 'coat', R: 'lapelR', L: 'lapelL', brush: 'R' },
+  // ([R2-B] the gloves printed as black leather with its sheen)
+  lapels: { skin: 'glove', leather: true, sleeve: 'coat', R: 'lapelR', L: 'lapelL', brush: 'R' },
 };
 void RELAX;
