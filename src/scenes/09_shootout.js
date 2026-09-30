@@ -406,7 +406,10 @@ function* takeGun(ctx) {
 // first pass had the scripted player hit by 2-7 % of their rounds and never
 // down; these are about a tenth to a sixth up (a quarter up drew the cars
 // beat out to a minute and a half: the scripted player backing off hurt)
-const AIM = { cars: 1.4, doorways: 1.3, intruder: 1.5, el: 1.1, heavies: 1.2 };
+// [R2-F] (his two heavies were 1.2: a first-timer's plays went down three
+// times in the Cardinal's beat alone; 0.95 leaves them dangerous at a window
+// held too long, not a wall)
+const AIM = { cars: 1.4, doorways: 1.3, intruder: 1.5, el: 1.1, heavies: 0.95 };
 
 // ---- 2. cars ------------------------------------------------------------------------------------
 function* carsBeat(ctx) {
@@ -708,17 +711,24 @@ function wrecked(ctx, car, at) {
 // ---- 6. the Cardinal ---------------------------------------------------------------------------------
 function* cardinal(ctx) {
   const G = ctx.game, S = ctx.stage, R = rig();
+  // [R2-F] a retry of this beat (I went down to him or his men) does not
+  // wait through the quiet and the saloon's whole approach again (27 s
+  // before he was out): the saloon already near the end of its run - his
+  // men are out about six seconds in, he about ten
+  const retry = !!(ctx.flags.b7 && ctx.flags.b7.retry);
   // (the last of the others first: whoever is left after a while pulls back
   // down the avenue, so the quiet is a quiet)
   const t0 = G.time;
-  yield until(() => G.director.alive() === 0 || G.time - t0 > 15);
+  if (!retry) yield until(() => G.director.alive() === 0 || G.time - t0 > 15);
   scatter(ctx);
   yield until(() => G.director.alive() === 0);
   // a quiet, long enough to hear the rain (no fight in it)
   R.calm = true;
   G.music.stop(4);
-  yield wait(7);
+  yield wait(retry ? 0.2 : 7);
   const car = R.rails.spawn({ rail: SITE.saloon.rail, lights: true, v0: 7, cruise: 7, decel: 2.2, lat: 4, armored: true });
+  // (on a retry it comes in under the black of the fade, 22 m out)
+  if (retry) { car.rail.s = Math.max(0, car.rail.L - 22); R.rails.place(car, 0); }
   car.b7beat = 'cardinal';
   R.cars.saloon = car;
   car.meshes.lens.material = S.M.headlamp;
