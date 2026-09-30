@@ -85,7 +85,9 @@ export function inkPrompt(ctx) {
   const L = ctx.hud.layer('b2ink');
   if (L.firstChild) return;
   const s = document.createElement('style');
-  s.textContent = '#hud .prompt .t { text-shadow: 0 0 9px #000, 0 0 5px #000, 0 0 3px #000, 0 0 2px #000, 0 0 1px #000; }';
+  // (a soft smudge of ink under the words, and the halo: over the dark it is not seen)
+  s.textContent = '#hud .prompt .t { padding: 7px 18px; margin-left: -8px; background: radial-gradient(closest-side, rgba(0,0,0,0.62), rgba(0,0,0,0.42) 62%, rgba(0,0,0,0)); '
+    + 'text-shadow: 0 0 9px #000, 0 0 5px #000, 0 0 3px #000, 0 0 2px #000, 0 0 1px #000; }';
   L.appendChild(s);
 }
 
