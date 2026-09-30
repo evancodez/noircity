@@ -143,12 +143,15 @@ export function* startFight(ctx) {
     const fx = -Math.sin(b), fz = -Math.cos(b), rx = Math.cos(b), rz = -Math.sin(b);
     return _w.set(ex + rx * 0.19 - fx * 0.04, S.eye.y - 0.2, ez + rz * 0.19 - fz * 0.04);
   };
-  let wHand = 0;
+  let wHand = 0, drop = 0;
   hands.L = {
     flat: () => {
       const p = shoulder().clone();
       // (the fingers over the shoulder toward my back, from where he stands)
       const fwd = V(p.x - m.pos.x, 0, p.z - m.pos.z).normalize();
+      // (letting go: the hand slides off the shoulder, down and back to his
+      // side - never up across my face)
+      if (drop > 0) { const e = ss(drop); p.y -= 0.55 * e; p.addScaledVector(fwd, -0.3 * e); }
       return { point: p, normal: V(0, 1, 0), fwd };
     },
     pole: () => V(m.pos.x + Math.cos(m.fig.yaw) * 0.8, 0.9, m.pos.z - Math.sin(m.fig.yaw) * 0.8),
@@ -223,7 +226,8 @@ export function* startFight(ctx) {
     S.eye.set(lerp(E0.x, E1.x, kx), lerp(E0.y, E1.y, ky), lerp(E0.z, E1.z, kx));
     S.body = face();
     // his hand lets go as I come up; he gives ground a step and a half
-    wHand = Math.max(0, wHand - 1 / 60 / 0.2);
+    drop = Math.min(1, drop + 1 / 60 / 0.24);
+    if (drop > 0.6) wHand = Math.max(0, wHand - 1 / 60 / 0.2);
     const kb = ss((u - 0.05) / 0.7), kb1 = ss((u - 0.05 + 1 / 60) / 0.7);
     m.fig.pos.x = lerp(m0.x, START.him.x, kb); m.fig.pos.z = lerp(m0.z, START.him.z, kb);
     // (his feet: the guard's shuffle back at the speed he goes, then the guard)
