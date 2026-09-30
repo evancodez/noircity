@@ -204,18 +204,26 @@ async function walk(points, timeout) {
   const T = Date.now() + timeout;
   let wDown = false;
   const setW = async (on) => { if (on !== wDown) { wDown = on; await (on ? keyDown('KeyW') : keyUp('KeyW')); } };
+  let prev = null;   // [B4]
   for (const [x, z] of points) {
+    let from = prev;   // [B4]
     for (;;) {
       const s = await js(`({ x: N.controller.pos.x, z: N.controller.pos.z, yaw: N.controller.yaw, sens: N.controller.sensitivity, mode: N.controller.mode })`);
       if (Date.now() > T) { await setW(false); log(`walk stuck at ${JSON.stringify(s)} going to ${[x, z]}`); return false; }
+      if (!from) from = [s.x, s.z];   // [B4]
       const dx = x - s.x, dz = z - s.z, d = Math.hypot(dx, dz);
       if (d < 0.4) break;
+      // [B4] in scene 6's run (7.5 m/s) a slow poll on a loaded machine can
+      // step past a point: one already behind me along its leg, and near, is
+      // reached (turning back for it is a man standing at a corner)
+      if (s.mode === 'run' && dx * (x - from[0]) + dz * (z - from[1]) < 0 && d < 2.5) break;
       const want = Math.atan2(-dx, -dz);
       const err = Math.atan2(Math.sin(want - s.yaw), Math.cos(want - s.yaw));
       if (Math.abs(err) > 0.03) await turn(Math.round(Math.max(-40, Math.min(40, -err * 0.6 / s.sens))), 0);
       await setW(Math.abs(err) < 0.6);
       await sleep(33);
     }
+    prev = [x, z];   // [B4]
   }
   await setW(false);
   return true;

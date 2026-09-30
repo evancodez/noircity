@@ -143,6 +143,9 @@ function contactMaterial() {
 }
 
 let TEMPLATE = null, TEMPLATE_LO = null;
+// [B4] the sedan's two builds for a stage that places its own cars (the
+// backlot's: Cars.prototype.spawn reads them as this.T / this.TL)
+export function sedanTemplates() { return { T: TEMPLATE || (TEMPLATE = buildTemplate()), TL: TEMPLATE_LO || (TEMPLATE_LO = buildTemplate(0.4)) }; }
 function buildTemplate(q = 1) {
   CQ = q;
   try { return buildTemplateParts(); } finally { CQ = 1; }
