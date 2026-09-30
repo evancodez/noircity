@@ -40,39 +40,79 @@ export const ALLEY = {
 const A = ALLEY;
 const STEP_TOP = A.y + A.step.h;
 
-// the brick: a canvas of courses laid by hand, uneven tones, worn joints,
-// rain streaks down from the sills; low contrast (the ink lays its own
-// strokes over it: a crisp even grid would print as graph paper)
+// the brick, as an inker indicates it [second pass]: a plain wet wall (the
+// ink lays its own brush over it, as on every wall of the block) with the
+// courses drawn only here and there - a few bricks in a patch by a corner,
+// under a sill, where the plaster has gone - as hand-drawn joints that fade
+// out at the patch's edge. A wall of bricks laid edge to edge in even tones
+// printed as graph paper under the lamp; this does not. One tile is 7 m by
+// 4.75 m of wall (the wall is two by two of it).
+export const BRICK_TILE = [7.0, 4.75];
 function brickTexture() {
-  const W = 1024, H = 1024;
+  const W = 2048, H = 1392;
   const c = document.createElement('canvas'); c.width = W; c.height = H;
   const x = c.getContext('2d');
   let s = 91;
   const r = () => { s = (s * 16807) % 2147483647; return s / 2147483647; };
-  // (the joints barely lighter than the bricks and broken off in places;
-  // the courses read by the bricks' own uneven tones, in patches, as a
-  // brush would lay them: a clean even grid prints as graph paper)
-  x.fillStyle = '#5e5e5e'; x.fillRect(0, 0, W, H);
-  const bw = 128, bh = 44;
-  // slow patches of tone across the wall: soot, damp, sun-faded
-  const patch = (px, py) => 0.5 + 0.5 * Math.sin(px * 0.006 + 1.3) * Math.sin(py * 0.009 + 0.4) + 0.25 * Math.sin(px * 0.017 + py * 0.011);
-  for (let row = 0; row * bh < H + bh; row++) {
-    const off = (row % 2) * bw * 0.5 + (r() - 0.5) * 10;
-    for (let col = -1; col * bw < W + bw; col++) {
-      const bx = col * bw + off + 2 + (r() - 0.5) * 4, by = row * bh + 2 + (r() - 0.5) * 3;
-      const v = Math.round(52 + 26 * patch(bx, by) + (r() - 0.5) * 14 - (r() < 0.1 ? 14 : 0));
-      x.fillStyle = `rgb(${v},${v},${v})`;
-      // (a joint washed out: the brick runs into its neighbour)
-      const gap = r() < 0.35 ? 0 : 3;
-      x.fillRect(bx, by, bw - gap + (r() - 0.5) * 6, bh - (r() < 0.3 ? 0 : 3));
-      if (r() < 0.2) { x.fillStyle = `rgba(30,30,30,0.5)`; x.beginPath(); x.moveTo(bx, by); x.lineTo(bx + 10 + r() * 20, by); x.lineTo(bx, by + 6 + r() * 12); x.fill(); }
+  const pxM = W / BRICK_TILE[0], pyM = H / BRICK_TILE[1];
+  // the wall's own tone: a slow wash of soot and damp, low contrast
+  x.fillStyle = '#5a5a5a'; x.fillRect(0, 0, W, H);
+  for (let k = 0; k < 26; k++) {
+    const cx = r() * W, cy = r() * H, rx = 150 + r() * 420, ry = 90 + r() * 260, v = r() < 0.5 ? 40 : 120, a = 0.05 + r() * 0.07;
+    // (drawn at the wrapped copies too: the tile repeats without a seam)
+    for (const ox of [-W, 0, W]) for (const oy of [-H, 0, H]) {
+      x.save(); x.translate(cx + ox, cy + oy); x.scale(rx, ry);
+      const gg = x.createRadialGradient(0, 0, 0, 0, 0, 1);
+      gg.addColorStop(0, `rgba(${v},${v},${v},${a})`); gg.addColorStop(1, `rgba(${v},${v},${v},0)`);
+      x.fillStyle = gg; x.beginPath(); x.arc(0, 0, 1, 0, 7); x.fill(); x.restore();
+    }
+  }
+  // the patches of brick: a few courses of real size (22 x 7 cm), the
+  // joints a dark hand-drawn line, broken, fading out to the patch's edge
+  const bw = 0.225 * pxM, bh = 0.075 * pyM;
+  const line = (x0, y0, x1, y1, a) => {
+    x.strokeStyle = `rgba(22,22,22,${a})`;
+    x.lineWidth = 2 + r() * 1.4;
+    x.beginPath(); x.moveTo(x0 + (r() - 0.5) * 2, y0 + (r() - 0.5) * 2); x.lineTo(x1 + (r() - 0.5) * 2, y1 + (r() - 0.5) * 2); x.stroke();
+  };
+  const PATCHES = 14;
+  for (let p = 0; p < PATCHES; p++) {
+    const cx = r() * W, cy = 60 + r() * (H - 120);
+    const rx = (0.5 + r() * 0.6) * pxM, ry = (0.22 + r() * 0.3) * pyM;
+    const row0 = Math.floor((cy - ry) / bh), row1 = Math.ceil((cy + ry) / bh);
+    for (let row = row0; row <= row1; row++) {
+      const y = row * bh, off = (row & 1) * bw * 0.5;
+      // the course's bed joint: drawn where it is inside the patch
+      const dy = (y - cy) / ry;
+      if (Math.abs(dy) >= 1) continue;
+      const half = rx * Math.sqrt(1 - dy * dy) * (0.75 + r() * 0.3);
+      const xa = cx - half, xb = cx + half;
+      let xs = xa;
+      while (xs < xb) {
+        const seg = (0.2 + r() * 0.5) * pxM;
+        const e = Math.min(xb, xs + seg);
+        const edge = 1 - Math.pow(Math.abs(((xs + e) / 2 - cx) / Math.max(1, half)), 2);
+        if (r() < 0.8) line(xs, y, e, y, 0.35 + 0.4 * edge * (1 - Math.abs(dy)));
+        xs = e + (r() < 0.3 ? bw * 0.3 : 0);
+      }
+      // the head joints of the course below: every brick's end
+      if (row < row1) {
+        for (let k = Math.floor((xa - off) / bw); k * bw + off < xb; k++) {
+          const hx = k * bw + off + (r() - 0.5) * 3;
+          if (hx < xa || hx > xb || r() < 0.2) continue;
+          const edge = 1 - Math.pow(Math.abs((hx - cx) / Math.max(1, half)), 2);
+          line(hx, y, hx, y + bh, 0.3 + 0.4 * edge * (1 - Math.abs(dy)));
+          // (now and then a brick a shade darker, as a brush would touch it in)
+          if (r() < 0.12) { x.fillStyle = 'rgba(30,30,30,0.18)'; x.fillRect(hx + 2, y + 2, bw - 4, bh - 4); }
+        }
+      }
     }
   }
   // grime: long wet streaks down the wall, darker toward the foot
-  for (let k = 0; k < 90; k++) {
-    const sx = r() * W, len = 120 + r() * 700, w = 4 + r() * 22;
+  for (let k = 0; k < 110; k++) {
+    const sx = r() * W, len = 160 + r() * 900, w = 5 + r() * 26;
     const g = x.createLinearGradient(0, 0, 0, len);
-    g.addColorStop(0, 'rgba(20,20,20,0)'); g.addColorStop(0.3, `rgba(20,20,20,${0.12 + r() * 0.2})`); g.addColorStop(1, 'rgba(20,20,20,0)');
+    g.addColorStop(0, 'rgba(20,20,20,0)'); g.addColorStop(0.3, `rgba(20,20,20,${0.1 + r() * 0.16})`); g.addColorStop(1, 'rgba(20,20,20,0)');
     x.fillStyle = g; x.save(); x.translate(sx, r() * H * 0.6); x.fillRect(-w / 2, 0, w, len); x.restore();
   }
   const t = new THREE.CanvasTexture(c);
@@ -93,7 +133,8 @@ export default {
     const std = (o) => new THREE.MeshStandardMaterial({ envMap: M.envSoft, envMapIntensity: 0.25, ...o });
     const brickMap = brickTexture();
     const MAT = {
-      brick: std({ color: 0xa4a4a4, map: brickMap, bumpMap: brickMap, bumpScale: 0.25, roughness: 0.92, envMapIntensity: 0.18 }),
+      // (no bump: the joints under the lamp's grazing pool printed as a grid)
+      brick: std({ color: 0xa4a4a4, map: brickMap, roughness: 0.92, envMapIntensity: 0.18 }),
       stone: std({ color: 0x3c3c3c, roughness: 0.85 }),
       stepTop: std({ color: 0x5a5a5a, roughness: 0.9 }),
       iron: M.iron,
@@ -131,9 +172,9 @@ export default {
       const geo = new THREE.PlaneGeometry(len, wallH);
       if (facing < 0) geo.rotateY(Math.PI);
       geo.translate((A.mouthX + A.gateX) / 2, wallH / 2, z);
-      // (brick courses in world metres: 1.8 m of wall a repeat)
+      // (the brick's tile in world metres)
       const uv = geo.getAttribute('uv'), p = geo.getAttribute('position');
-      for (let i = 0; i < uv.count; i++) uv.setXY(i, p.getX(i) / 2.4 * (facing < 0 ? -1 : 1), p.getY(i) / 2.3);
+      for (let i = 0; i < uv.count; i++) uv.setXY(i, p.getX(i) / BRICK_TILE[0] * (facing < 0 ? -1 : 1) + (facing < 0 ? 0.37 : 0), p.getY(i) / BRICK_TILE[1]);
       return geo;
     };
     const wallS = add(face(A.zS - 0.01, -1), MAT.brick, { name: 'alley_wallS' });
