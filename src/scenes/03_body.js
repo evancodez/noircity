@@ -4,6 +4,7 @@ import { V, ALLEY, XV, STOOD, SHOOTER, WOUNDS, MARKS, LIES, KNEEL, STUDY, startP
 import { makeOutline, makeStrings, runStrings } from './body/strings.js';
 import { HALVES, clearHalves } from './body/halves.js';
 import { NOTE_PUZZLE, clearNote } from './body/note.js';
+import { openFist, pullLadder, climbHands, handsOff, takeHalf, tableFinger } from './body/hands.js';
 
 // Scene 3, the body (STORY.md; lane B1's brief). The side alley thirty
 // metres down the pavement from the diner, under its one wall lamp.
@@ -193,6 +194,10 @@ export default defineScene({
     const chest = () => ames.bones.chest.getWorldPosition(V(0, 0, 0));
     const fist = () => ames.bones.handR.getWorldPosition(V(0, 0, 0));
     const flat = (a, b) => Math.hypot(a.x - b.x, a.z - b.z);
+    // (shot mode, the strips: act=kneel@0.3,fist@1.5,... does what E would
+    // at those scene times - the look development of each moment)
+    const ACT = G.shotMode && typeof location !== 'undefined' ? (new URLSearchParams(location.search).get('act') || '').split(',').filter(Boolean).map((a) => { const [n, t] = a.split('@'); return { n, t: +t || 0 }; }) : [];
+    const acted = (n) => ACT.some((a) => a.n === n && ctx.sceneTime >= a.t - 1e-6);
 
     // ---- under every beat ------------------------------------------------------------
     ctx.onStep((dt) => {
@@ -204,13 +209,21 @@ export default defineScene({
       if (F.ladderAnim) {
         const A = F.ladderAnim;
         A.t += dt;
-        // it falls under its own weight in the guides, hits, bounces once
-        const u = Math.min(1, A.t / 0.42);
-        let k = u * u;
-        if (A.t > 0.42) { const b = A.t - 0.42; k = 1 - 0.035 * Math.max(0, Math.sin(b / 0.16 * Math.PI)) * (b < 0.16 ? 1 : 0); }
+        // it falls the rest of the way under its own weight in the guides,
+        // hits, bounces once
+        const T = 0.34, u = Math.min(1, A.t / T);
+        let k = A.from + (1 - A.from) * u * u;
+        if (A.t > T) { const b = A.t - T; k = 1 - 0.035 * Math.max(0, Math.sin(b / 0.16 * Math.PI)) * (b < 0.16 ? 1 : 0); }
         alley.ladder.set(k);
-        if (A.t > 0.7) { alley.ladder.set(1); F.ladderAnim = null; }
+        if (A.t > T + 0.3) { alley.ladder.set(1); F.ladderAnim = null; }
       }
+      // my hands on the rungs while I am on the ladder
+      if (C.mode === 'climb') { F.climbS = F.climbS || { onRung: () => {} }; climbHands(ctx, alley.ladder, F.climbS); }
+      else if (F.climbS) { F.climbS = null; handsOff(H); }
+      // my fingertip on the step's puzzles
+      const PA = G.puzzles.active;
+      if (PA && (PA.id === 'body.halves' || PA.id === 'body.note')) { F.finger = F.finger || {}; tableFinger(ctx, F.finger, PA.pointer.world, PA.pointer.down); }
+      else if (F.finger) { F.finger = null; handsOff(H); }
     });
 
     // ---- 1. the approach ---------------------------------------------------------------
@@ -232,7 +245,7 @@ export default defineScene({
       // E kneel, beside him
       let knelt = false;
       I.add({ id: 'body.kneel', at: () => chest(), range: 3.2, cone: 0.7, prompt: 'kneel', onUse: () => { knelt = true; } });
-      yield until(() => knelt);
+      yield until(() => knelt || acted('kneel'));
       I.remove('body.kneel');
       snd('kneel');
       const anchor = { pos: V(KNEEL.x, 0, KNEEL.z), yaw: KNEEL.yaw, eyeY: KNEEL.eyeY };
@@ -252,6 +265,7 @@ export default defineScene({
       I.add({ id: 'body.marks', at: () => MARKS[0].clone().lerp(MARKS[1], 0.5), range: 3.0, cone: 0.3, prompt: 'the marks', when: () => !F.saw.marks && !busy,
         onUse: () => { F.saw.marks = true; busy = true; F.do = 'marks'; } });
       while (!(F.saw.wounds && F.saw.fist && F.saw.marks) || busy) {
+        for (const n of ['wounds', 'fist', 'marks']) if (!busy && !F.saw[n] && acted(n)) { F.saw[n] = true; busy = true; F.do = n; }
         if (F.do === 'wounds') {
           F.do = null;
           look(aimAt(chest()), 0.5);
@@ -263,12 +277,10 @@ export default defineScene({
           busy = false;
         } else if (F.do === 'fist') {
           F.do = null;
+          // my hand into his: the fingers worked open, the wet paper out
           snd('fistOpen', fist());
-          yield wait(0.45);
-          const p = ames.items.get('paper'); if (p) p.visible = false;
+          yield* openFist(ctx, ames, { onPaper: () => { F.havePieces = true; } });
           snd('pocket');
-          F.havePieces = true;
-          yield wait(0.5);
           busy = false;
         } else if (F.do === 'marks') {
           F.do = null;
@@ -318,17 +330,17 @@ export default defineScene({
       if (alley.ladder.down < 0.99) {
         let pulled = false;
         I.add({ id: 'body.ladder', at: () => V(L.x, alley.ladder.footY() + 0.05, lz), range: 3.0, cone: 0.5, prompt: 'pull the ladder down', onUse: () => { pulled = true; } });
-        yield until(() => pulled);
+        yield until(() => pulled || acted('pull'));
         I.remove('body.ladder');
-        F.ladderAnim = { t: 0 };
-        snd('ladderDrop', V(L.x, 2, lz));
+        // my hand up for its lowest rung, down with it, let go: it drops
+        yield* pullLadder(ctx, alley.ladder, { onLetGo: () => { F.ladderAnim = { t: 0, from: alley.ladder.down }; snd('ladderDrop', V(L.x, 2, lz)); } });
         yield until(() => !F.ladderAnim);
       }
       // W: up it
       let up = false;
       // (W held at the foot of it: a man walking into a ladder goes up it)
       I.add({ id: 'body.climb', key: 'KeyW', hold: 0.12, at: () => V(L.x, ALLEY.y + 1.4, lz), range: 1.9, cone: 0.9, prompt: 'climb', onUse: () => { up = true; } });
-      yield until(() => up);
+      yield until(() => up || acted('climb'));
       I.remove('body.climb');
       const zc = lz + 0.42, top = ALLEY.esc.y1 + 1.65, y0 = ALLEY.y + 1.65;
       const path = (u) => {
@@ -339,25 +351,24 @@ export default defineScene({
         const x = L.x + 0.45 * (b * b * (3 - 2 * b));
         return { x, y, z };
       };
-      C.setMode('climb', { path, u: 0, speed: 0.5, face: 0, onRung: (i, dir) => snd('rung', V(L.x, ALLEY.y + i * 0.3, lz), { f: 380 + (i % 3) * 40 }) });
+      C.setMode('climb', { path, u: 0, speed: 0.5, face: 0, drive: acted('climb') && !up ? 1 : null, onRung: (i, dir) => snd('rung', V(L.x, ALLEY.y + i * 0.3, lz), { f: 380 + (i % 3) * 40 }) });
       yield until(() => C.climb && C.climb.u >= 1);
-      // on the landing, under the rain, over the alley
-      const stand = { pos: V(L.x + 0.45, 0, ALLEY.zN + 0.55), yaw: -Math.PI / 2 + 0.05, eyeY: ALLEY.esc.y1 + 1.62 };
-      C.setMode('seated', { anchor: stand, yawRange: [-2.2, 2.2], pitchRange: [-1.3, 0.8], lean: 0.05, forward: 0, pitch: -0.55, ease: 0.35 });
-      C.pitch = -0.55;
+      // on the landing, under the rain, over the alley: along it to where
+      // he stood (the casings, the red)
+      const stand = { pos: V(XV - 0.5, 0, ALLEY.zN + 0.55), yaw: -Math.PI / 2 + 0.12, eyeY: ALLEY.esc.y1 + 1.62 };
+      C.setMode('seated', { anchor: stand, yawRange: [-2.2, 2.2], pitchRange: [-1.3, 0.8], lean: 0.05, forward: 0, pitch: -0.6, ease: 0.9 });
+      C.pitch = -0.6;
       let taken = false;
-      I.add({ id: 'body.half', at: () => ev.half.getWorldPosition(V(0, 0, 0)), range: 2.6, cone: 0.4, prompt: 'take', onUse: () => { taken = true; } });
-      yield until(() => taken);
+      I.add({ id: 'body.half', at: () => ev.half.getWorldPosition(V(0, 0, 0)), range: 2.6, cone: 0.45, prompt: 'take', onUse: () => { taken = true; } });
+      yield until(() => taken || acted('take'));
       I.remove('body.half');
-      snd('matchbook', ev.half.position);
-      yield wait(0.25);
-      ev.half.visible = false;
+      yield* takeHalf(ctx, ev.half, { onTaken: () => snd('matchbook', ev.half.position) });
       snd('pocket');
       if (!G.save.inventory.includes('matchbookHalf')) G.save.inventory.push('matchbookHalf');
       F.halfTaken = true;
       yield wait(0.5);
-      // back down the ladder, on its own
-      C.setMode('climb', { path, u: 1, speed: 0.55, face: 0, drive: -1, onRung: (i) => snd('rung', V(L.x, ALLEY.y + i * 0.3, lz), { f: 360 + (i % 3) * 40 }) });
+      // back along the landing and down the ladder, on its own
+      C.setMode('climb', { path, u: 1, speed: 0.55, face: 0, drive: -1, ease: 0.7, onRung: (i) => snd('rung', V(L.x, ALLEY.y + i * 0.3, lz), { f: 360 + (i % 3) * 40 }) });
       C.yaw = 0; C.pitch = -0.1;
       yield until(() => C.climb && C.climb.u <= 0);
       const P = C.eyePose();

@@ -35,7 +35,7 @@ export const MARKS = WOUNDS.map((w) => {
 // into the alley; the feet toward the gutter and the mouth)
 export const LIES = { x: -11.2, z: -25.25, yaw: Math.PI - 0.3 };
 // the kneel: on his right side, at the building line, facing into the alley
-export const KNEEL = { x: -10.3, z: -25.45, yaw: Math.PI / 2 + 0.12, eyeY: ALLEY.y + 1.02 };
+export const KNEEL = { x: -10.38, z: -24.82, yaw: 1.2, eyeY: ALLEY.y + 1.02 };
 // the view the strings are worked from: out on the pavement's edge at the
 // mouth, the plane of the line of fire face on
 export const STUDY = (() => {
@@ -57,7 +57,7 @@ export function startPose(game) {
   const L = mackLanding(game);
   const x = -8.15, z = L.z - 1.6;
   // (down the pavement to the alley's mouth, where the car comes out)
-  const d = V(-9.6 - x, 1.2 - 1.8, -27.0 - z);
+  const d = V(-9.4 - x, 1.1 - 1.8, -28.6 - z);
   return { x, z, yaw: Math.atan2(-d.x, -d.z), pitch: 0.03 };
 }
 
@@ -124,19 +124,10 @@ export function evidence(ctx) {
   // (it glows a breath of its own red: the clue must show in the dark)
   ev.half.traverse((o) => { if (o.isMesh && o.material && o.material.userData && o.material.userData.accent === 'crew') { o.material = o.material.clone(); o.material.emissive = accentMaterial('crew').color.clone().multiplyScalar(0.35); } });
   ev.casings = [put('casing', V(XV - 0.12, Ly + 0.001, ALLEY.zN + 0.8), [0, 0.4, 0]), put('casing', V(XV + 0.42, Ly + 0.001, ALLEY.zN + 0.48), [0, 2.1, 0])];
-  // the blood: a pool under his back and a run of it to the drain
-  const D = game.fx && game.fx.decals;
-  if (D) {
-    const t0 = stage.time - 60;
-    const chest = V(LIES.x + Math.sin(LIES.yaw) * -0.35, ALLEY.y, LIES.z + Math.cos(LIES.yaw) * -0.35);
-    D.pool(chest, 0.62, 1, t0);
-    D.pool(V(LIES.x + 0.1, ALLEY.y, LIES.z - 0.2), 0.38, 1, t0);
-    // the run: a thread of it along the fall of the flags to the gutter and the drain
-    const run = [[-11.06, -25.72, 0.16], [-11.02, -25.98, 0.13], [-10.99, -26.24, 0.12], [-10.98, -26.5, 0.11], [-10.98, -26.76, 0.12], [-11.0, -26.95, 0.16]];
-    for (const [x, z, s] of run) D.pool(V(x, ALLEY.y - 0.01, z), s, 1, t0);
-    // the marks in the brick: two small dark holes, the brick chipped round them
-    for (const m of MARKS) { try { D.ink(m.clone(), V(0, 0, -1)); } catch (e) { /* */ } }
-  }
+  // the blood: a pool under his back and a run of it down the fall of the
+  // flags to the gutter and along it to the drain
+  ev.blood = bloodOnFlags(stage);
+  out.push(ev.blood);
   // the holes themselves (a decal alone washes out under the lamp)
   const holeMat = new THREE.MeshBasicMaterial({ color: 0x000000 });
   const chip = new THREE.MeshStandardMaterial({ color: 0x5a5a5a, roughness: 1 });
@@ -144,8 +135,8 @@ export function evidence(ctx) {
   const hid = allocInkId();
   for (const m of MARKS) {
     const g = new THREE.Group();
-    const hole = new THREE.Mesh(new THREE.CircleGeometry(0.011, 14), holeMat);
-    const rim = new THREE.Mesh(new THREE.RingGeometry(0.011, 0.032, 14, 1), chip);
+    const hole = new THREE.Mesh(new THREE.CircleGeometry(0.016, 16), holeMat);
+    const rim = new THREE.Mesh(new THREE.RingGeometry(0.016, 0.05, 16, 1), chip);
     for (const o of [hole, rim]) { o.rotation.y = Math.PI; o.userData.noRay = true; o.userData.inkId = hid; g.add(o); }
     rim.position.z = 0.0005;
     g.position.set(m.x, m.y, ALLEY.zS - 0.014);
@@ -156,6 +147,57 @@ export function evidence(ctx) {
   ev.all = out;
   ctx.flags.ev = ev;
   return ev;
+}
+
+// the floor of the alley where it falls to the gutter (parts/alley.js)
+const floorY = (z) => ALLEY.y - (0.035 * Math.exp(-(((z - ALLEY.gutterZ) / 0.22) ** 2)) + 0.01 * (1 - Math.min(1, Math.abs(z - ALLEY.gutterZ) / 3)));
+// the blood as flat shapes of its own, on the flags' own ink id (no line
+// round it: the red alone)
+function bloodOnFlags(stage) {
+  const g = new THREE.Group();
+  g.name = 'body_blood';
+  const mat = accentMaterial('blood');
+  mat.polygonOffset = true; mat.polygonOffsetFactor = -2; mat.polygonOffsetUnits = -2;
+  mat.side = THREE.DoubleSide;
+  const floor = stage.part('alley').meshes.find((m) => m.name === 'alley_floor');
+  const id = floor ? floor.userData.inkId : allocInkId();
+  const add = (geo) => { const m = new THREE.Mesh(geo, mat); m.userData.noRay = true; m.userData.inkId = id; g.add(m); return m; };
+  // a pool: an uneven blob, longer along the way it runs
+  const blob = (cx, cz, r, seed, ax = 0, stretch = 1.25) => {
+    const pts = [];
+    for (let k = 0; k < 56; k++) {
+      const a = k / 56 * Math.PI * 2;
+      const rr = r * (1 + 0.2 * Math.sin(3 * a + seed) + 0.1 * Math.sin(7 * a + seed * 2.1) + 0.05 * Math.sin(13 * a + seed * 3.7));
+      const lx = Math.cos(a) * rr * stretch, lz = Math.sin(a) * rr;
+      pts.push(new THREE.Vector2(cx + lx * Math.cos(ax) - lz * Math.sin(ax), -(cz + lx * Math.sin(ax) + lz * Math.cos(ax))));
+    }
+    const geo = new THREE.ShapeGeometry(new THREE.Shape(pts), 1).rotateX(-Math.PI / 2);
+    const p = geo.getAttribute('position');
+    for (let i = 0; i < p.count; i++) p.setY(i, floorY(p.getZ(i)) + 0.003);
+    return add(geo);
+  };
+  // under his back, and a second lobe where it gathered by his side
+  const back = V(LIES.x + Math.sin(LIES.yaw) * -0.3, 0, LIES.z + Math.cos(LIES.yaw) * -0.3);
+  blob(back.x, back.z, 0.24, 1.3, LIES.yaw + Math.PI / 2, 1.5);
+  blob(LIES.x + 0.12, LIES.z - 0.28, 0.12, 4.1, 1.2, 1.3);
+  // the run: a thread that narrows as it wanders down the flags, into the
+  // gutter, to the drain
+  const path = new THREE.CatmullRomCurve3([V(LIES.x + 0.12, 0, LIES.z - 0.36), V(-11.02, 0, -25.9), V(-10.96, 0, -26.3), V(-11.03, 0, -26.7), V(-11.02, 0, -26.93), V(ALLEY.drainX - 0.08, 0, ALLEY.gutterZ + 0.02)]);
+  const N = 60, pos = [], idx = [];
+  for (let i = 0; i <= N; i++) {
+    const u = i / N, c = path.getPointAt(u), t = path.getTangentAt(u);
+    const w = (0.028 - 0.014 * u) * (1 + 0.35 * Math.sin(u * 37) * Math.sin(u * 13 + 1));
+    const nx = -t.z, nz = t.x;
+    for (const sg of [-1, 1]) { const x = c.x + nx * w * sg, z = c.z + nz * w * sg; pos.push(x, floorY(z) + 0.003, z); }
+    if (i < N) { const a = i * 2; idx.push(a, a + 1, a + 2, a + 1, a + 3, a + 2); }
+  }
+  const run = new THREE.BufferGeometry();
+  run.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+  run.setIndex(idx);
+  run.computeVertexNormals();
+  add(run);
+  stage.scene.add(g);
+  return g;
 }
 
 // what the scene put in the world goes when it ends
@@ -194,7 +236,9 @@ export function gutterHat(ctx) {
 
 // ---- the car that pulls out of the alley and goes: the block's sedan, its
 // tail lamps the crew's red, on a rail of its own ------------------------------------------
-const RAIL = [[-17.0, -28.2], [-13.0, -28.2], [-9.4, -28.45], [-7.2, -29.9], [-5.9, -32.6], [-4.4, -37.5], [-2.3, -45], [-1.6, -58], [-1.5, -90], [-1.5, -150]];
+// (out along the alley's north side - past the phone booth at the mouth,
+// off the kerb - then a left turn and away down the avenue)
+const RAIL = [[-17.5, -28.9], [-13.0, -28.9], [-9.7, -29.0], [-7.6, -30.1], [-6.1, -32.6], [-4.6, -37.5], [-2.4, -45], [-1.6, -58], [-1.5, -90], [-1.5, -150]];
 export function crewCar(ctx) {
   const { stage } = ctx;
   const cars = stage.part('cars');
@@ -208,13 +252,12 @@ export function crewCar(ctx) {
   addM(T.glass, M.carGlass);
   markFigure(g);
   // the tail lamps: two small red discs glowing at the back (+ their sheen)
-  const red = accentMaterial('crew', { gain: 5, additive: false });
-  red.name = 'body_tail';
-  const tailM = new THREE.MeshBasicMaterial({ color: red.color.clone() });
+  const tailM = new THREE.MeshBasicMaterial({ color: accentMaterial('crew').color.clone().multiplyScalar(16) });
+  tailM.name = 'body_tail';
   tailM.userData.accent = 'crew';
   for (const z of [0.74, -0.74]) {
-    const d = new THREE.Mesh(new THREE.SphereGeometry(0.055, 14, 10).scale(0.5, 1, 1), tailM);
-    d.position.set(-2.34, 0.84, z);
+    const d = new THREE.Mesh(new THREE.SphereGeometry(0.075, 16, 10).scale(0.45, 1, 1), tailM);
+    d.position.set(-2.33, 0.85, z);
     d.userData.inkId = id; d.userData.noRay = true;
     g.add(d);
   }
@@ -225,7 +268,11 @@ export function crewCar(ctx) {
   const place = () => {
     const u = Math.min(1, C.s / L);
     const p = curve.getPointAt(u), tn = curve.getTangentAt(u);
-    g.position.set(p.x, 0, p.z);
+    // (on the walking surface: the alley's flags and the pavement, off the
+    // kerb onto the road)
+    const y = stage.surfaceY(p.x, p.z);
+    C.y = C.y == null ? y : C.y + (y - C.y) * 0.35;
+    g.position.set(p.x, C.y, p.z);
     g.rotation.set(0, Math.atan2(-tn.z, tn.x), 0);
   };
   place();

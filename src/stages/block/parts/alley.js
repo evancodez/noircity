@@ -33,7 +33,7 @@ export const ALLEY = {
   step: { x: -12.95, w: 1.2, d: 0.42, h: 0.17 },
   // the fire escape on the north wall
   esc: { x0: -14.1, x1: -10.75, d: 1.15, y1: 4.15, y2: 7.3 },
-  ladder: { x: -13.55, len: 4.6, up: 2.35 },
+  ladder: { x: -13.55, len: 4.6, up: 1.85 },
   gutterZ: -27.0,
   drainX: -11.0,
 };
@@ -49,17 +49,23 @@ function brickTexture() {
   const x = c.getContext('2d');
   let s = 91;
   const r = () => { s = (s * 16807) % 2147483647; return s / 2147483647; };
-  x.fillStyle = '#6a6a6a'; x.fillRect(0, 0, W, H);
+  // (the joints barely lighter than the bricks and broken off in places;
+  // the courses read by the bricks' own uneven tones, in patches, as a
+  // brush would lay them: a clean even grid prints as graph paper)
+  x.fillStyle = '#5e5e5e'; x.fillRect(0, 0, W, H);
   const bw = 128, bh = 44;
+  // slow patches of tone across the wall: soot, damp, sun-faded
+  const patch = (px, py) => 0.5 + 0.5 * Math.sin(px * 0.006 + 1.3) * Math.sin(py * 0.009 + 0.4) + 0.25 * Math.sin(px * 0.017 + py * 0.011);
   for (let row = 0; row * bh < H + bh; row++) {
-    const off = (row % 2) * bw * 0.5 + (r() - 0.5) * 6;
+    const off = (row % 2) * bw * 0.5 + (r() - 0.5) * 10;
     for (let col = -1; col * bw < W + bw; col++) {
-      const v = 70 + Math.floor(r() * 40) - (r() < 0.12 ? 26 : 0);
+      const bx = col * bw + off + 2 + (r() - 0.5) * 4, by = row * bh + 2 + (r() - 0.5) * 3;
+      const v = Math.round(52 + 26 * patch(bx, by) + (r() - 0.5) * 14 - (r() < 0.1 ? 14 : 0));
       x.fillStyle = `rgb(${v},${v},${v})`;
-      const bx = col * bw + off + 3 + (r() - 0.5) * 3, by = row * bh + 3 + (r() - 0.5) * 2;
-      x.fillRect(bx, by, bw - 6 + (r() - 0.5) * 4, bh - 6);
-      // a chipped corner, a crack now and then
-      if (r() < 0.25) { x.fillStyle = '#5a5a5a'; x.beginPath(); x.moveTo(bx, by); x.lineTo(bx + 10 + r() * 14, by); x.lineTo(bx, by + 6 + r() * 10); x.fill(); }
+      // (a joint washed out: the brick runs into its neighbour)
+      const gap = r() < 0.35 ? 0 : 3;
+      x.fillRect(bx, by, bw - gap + (r() - 0.5) * 6, bh - (r() < 0.3 ? 0 : 3));
+      if (r() < 0.2) { x.fillStyle = `rgba(30,30,30,0.5)`; x.beginPath(); x.moveTo(bx, by); x.lineTo(bx + 10 + r() * 20, by); x.lineTo(bx, by + 6 + r() * 12); x.fill(); }
     }
   }
   // grime: long wet streaks down the wall, darker toward the foot
@@ -87,7 +93,7 @@ export default {
     const std = (o) => new THREE.MeshStandardMaterial({ envMap: M.envSoft, envMapIntensity: 0.25, ...o });
     const brickMap = brickTexture();
     const MAT = {
-      brick: std({ color: 0x9a9a9a, map: brickMap, bumpMap: brickMap, bumpScale: 0.6, roughness: 0.92, envMapIntensity: 0.18 }),
+      brick: std({ color: 0xa4a4a4, map: brickMap, bumpMap: brickMap, bumpScale: 0.25, roughness: 0.92, envMapIntensity: 0.18 }),
       stone: std({ color: 0x3c3c3c, roughness: 0.85 }),
       stepTop: std({ color: 0x5a5a5a, roughness: 0.9 }),
       iron: M.iron,
@@ -127,7 +133,7 @@ export default {
       geo.translate((A.mouthX + A.gateX) / 2, wallH / 2, z);
       // (brick courses in world metres: 1.8 m of wall a repeat)
       const uv = geo.getAttribute('uv'), p = geo.getAttribute('position');
-      for (let i = 0; i < uv.count; i++) uv.setXY(i, p.getX(i) / 1.8 * (facing < 0 ? -1 : 1), p.getY(i) / 1.72);
+      for (let i = 0; i < uv.count; i++) uv.setXY(i, p.getX(i) / 2.4 * (facing < 0 ? -1 : 1), p.getY(i) / 2.3);
       return geo;
     };
     const wallS = add(face(A.zS - 0.01, -1), MAT.brick, { name: 'alley_wallS' });
@@ -225,6 +231,13 @@ export default {
     // touch an accepted frame)
     lamp.on = false;
     lamp.cone.visible = false;
+    // (its light reaches further than its cone of lit rain: a wide soft pool
+    // thrown across the alley, so the far wall, the fire escape and the
+    // drop ladder stand dark against a grey wash, not black on black)
+    if (lamp.light) {
+      lamp.light.angle = 1.12; lamp.light.penumbra = 0.9; lamp.light.intensity = 85; lamp.light.distance = 16;
+      lamp.light.target.set(-12.9, 0.4, A.zN + 0.6);
+    }
 
     // ---- the north wall: the fire escape -------------------------------------------------------
     const E = A.esc;
@@ -308,11 +321,11 @@ export default {
       add(p, MAT.bin);
       bins.push({ x, z, r: 0.34 });
     };
-    binAt(-16.4, A.zN + 0.45); binAt(-17.05, A.zN + 0.5, false); binAt(-20.6, A.zS - 0.45);
+    binAt(-20.4, A.zN + 0.45); binAt(-21.05, A.zN + 0.5, false); binAt(-16.2, A.zS - 0.42);
     // a crate on its side and a plank
-    add([rbox(0.7, 0.55, 0.55, -18.2, A.y + 0.275, A.zN + 0.45, 0.02).rotateY(0.3)], MAT.wood);
-    bins.push({ x: -18.2, z: A.zN + 0.45, r: 0.42 });
-    add([rbox(0.06, 1.9, 0.22, -21.6, A.y + 0.95, A.zN + 0.15, 0.01).rotateZ(0.2)], MAT.wood);
+    add([rbox(0.7, 0.55, 0.55, 0, 0, 0, 0.02).rotateY(0.3).translate(-18.6, A.y + 0.275, A.zS - 0.45)], MAT.wood);
+    bins.push({ x: -18.6, z: A.zS - 0.45, r: 0.42 });
+    add([rbox(0.06, 1.9, 0.22, 0, 0, 0, 0.01).rotateZ(0.2).translate(-22.4, A.y + 0.92, A.zN + 0.15)], MAT.wood);
 
     // ---- colliders, anchors, the sound of the place ----------------------------------------------
     const cols = [];
