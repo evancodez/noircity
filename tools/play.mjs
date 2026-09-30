@@ -18,6 +18,10 @@
 //   { "walk": [[x, z], ...], "timeout": ms }   walk the points by real input: the
 //                                        mouse turns him toward the next, W held
 //   { "clickOn": "css selector" }        a click at the centre of that element
+//   { "drive": "tools/lib/<x>.mjs", "check": "expr over D", ... }   [B7] a
+//                                        module's default export plays by real
+//                                        input with this tool's primitives;
+//                                        D = what it returns
 //   { "reload": true }                   reload the page (a save survives it)
 //   { "shoot": { "until": "expr", "cover": true, "timeout": ms, "shots": { name: expr }, "expect": "expr over F" } }
 //                                        [B2] a gunfight by real input at a human pace (shoot() below)
@@ -425,6 +429,14 @@ try {
       if (S.shoot.expect) { const ok = new Function('F', `return (${S.shoot.expect});`)(r) === true; check(S.shoot.label || S.shoot.expect, ok, ok ? '' : JSON.stringify(r)); }
     }
     else if (S.drive) { await drive(S.drive); log('drive done'); }   // [B5]
+    // [B7] a driver of the play's own: a module whose default export plays a
+    // stretch by real input with the tools above (the gunfight of scene 9)
+    else if (S.drive) {
+      const mod = await import(resolve(S.drive));
+      const r = await mod.default({ js, turn, keyDown, keyUp, mouse, shot, log, check, sleep, send, W, H, opts: S });
+      log(`drive ${S.drive} -> ${JSON.stringify(r)}`);
+      if (S.check) { const ok = new Function('D', `return (${S.check});`)(r) === true; check(S.label || S.check, ok, ok ? '' : JSON.stringify(r)); }
+    }
     // (a walk's points may be an expression: where the fight left him)
     else if (S.walk) { const pts = typeof S.walk === 'string' ? await js(S.walk) : S.walk; const ok = await walk(pts, S.timeout ?? 30000); check(`walk ${JSON.stringify(pts)}`, ok); if (!ok && S.stop !== false) break; }
     else if (S.clickOn) {

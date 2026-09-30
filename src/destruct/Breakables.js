@@ -319,7 +319,7 @@ export class Breakables {
       const mat = m.material;
       const lum = mat.color ? mat.color.r + mat.color.g + mat.color.b : 0;
       if (mat.isMeshBasicMaterial || (mat.emissive && mat.emissive.getHex() !== 0) || lum > 1.5) {
-        if (!m.userData.ownMat) { m.material = mat.clone(); m.userData.ownMat = true; m.userData.col0 = m.material.color.clone(); m.userData.em0 = m.material.emissive ? m.material.emissive.clone() : null; }
+        if (!m.userData.ownMat) { m.material = mat.clone(); m.userData.ownMat = true; m.userData.col0 = m.material.color ? m.material.color.clone() : null; m.userData.lv0 = m.material.uniforms && m.material.uniforms.uLevel ? m.material.uniforms.uLevel.value : null; m.userData.em0 = m.material.emissive ? m.material.emissive.clone() : null; }
         glows.push(m);
       }
     });
@@ -464,7 +464,7 @@ export class Breakables {
       f.t += dt;
       const on = f.t >= f.dur || Math.sin(f.t * 47 + f.seed) + Math.sin(f.t * 23 + f.seed * 2) > -0.2;
       const k = f.t >= f.dur ? 1 : on ? 1 : 0.15;
-      for (const m of f.meshes) { m.material.color.copy(m.userData.col0).multiplyScalar(k); if (m.userData.em0) m.material.emissive.copy(m.userData.em0).multiplyScalar(k); }
+      for (const m of f.meshes) { const M = m.material; if (m.userData.col0 && M.color) M.color.copy(m.userData.col0).multiplyScalar(k); else if (m.userData.lv0 != null && M.uniforms && M.uniforms.uLevel) M.uniforms.uLevel.value = m.userData.lv0 * k; if (m.userData.em0 && M.emissive) M.emissive.copy(m.userData.em0).multiplyScalar(k); }   // [B7] (a shader tube: its level; a material swapped since, left be)
       if (f.t >= f.dur) this.flickers.splice(i, 1);
     }
   }
@@ -770,7 +770,8 @@ const HIT = {
     const G = this.game, r = this.R, o = h.object;
     if (h.out) return 'hit';
     h.out = true;
-    o.traverse((m) => { if (m.isMesh) { m.material = m.material.clone(); m.material.color.setRGB(0.02, 0.02, 0.025); if (m.material.emissive) m.material.emissive.setRGB(0, 0, 0); } });
+    // [B7] (the tube's accent material is a shader: its level, not a colour, goes dark)
+    o.traverse((m) => { if (m.isMesh) { m.material = m.material.clone(); if (m.material.color) m.material.color.setRGB(0.02, 0.02, 0.025); else if (m.material.uniforms && m.material.uniforms.uLevel) m.material.uniforms.uLevel.value = 0.003; if (m.material.emissive) m.material.emissive.setRGB(0, 0, 0); } });
     const at = point || o.getWorldPosition(new THREE.Vector3());
     if (G) {
       for (let k = 0; k < 18; k++) G.fx.sparks.spawn({ pos: at.clone(), vel: new THREE.Vector3(r.gauss() * 1.4, r.range(0, 1.6), r.gauss() * 1.4), life: r.range(0.15, 0.5), size: [0.008, 0.012], stretch: 0.03, col: [6, 6, 6], cell: ATLAS.DROP, gravity: 9.8, ground: this.floorAt(at), fadeOut: 0.3 });
@@ -783,7 +784,7 @@ const HIT = {
       if (n.object.getWorldPosition(_v).distanceTo(p) > 0.9) continue;
       const meshes = [];
       this.snapshot(n);
-      n.object.traverse((m) => { if (m.isMesh) { if (!m.userData.ownMat) { m.material = m.material.clone(); m.userData.ownMat = true; m.userData.col0 = m.material.color.clone(); m.userData.em0 = m.material.emissive ? m.material.emissive.clone() : null; } meshes.push(m); } });
+      n.object.traverse((m) => { if (m.isMesh) { if (!m.userData.ownMat) { m.material = m.material.clone(); m.userData.ownMat = true; m.userData.col0 = m.material.color ? m.material.color.clone() : null; m.userData.lv0 = m.material.uniforms && m.material.uniforms.uLevel ? m.material.uniforms.uLevel.value : null; m.userData.em0 = m.material.emissive ? m.material.emissive.clone() : null; } meshes.push(m); } });
       this.flickers.push({ h: n, meshes, t: 0, dur: r.range(0.8, 1.6), seed: r.next() * 100 });
     }
     return 'break';
