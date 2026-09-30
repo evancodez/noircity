@@ -114,7 +114,8 @@ export function bayRoom(ctx, fight) {
     return o;
   };
   const room = {
-    lane: 11.9,
+    // (the open line he reels along to a door: clear of the post between them)
+    lane: 12.9,
     bounds: { ...RING },
     things: FM_THINGS,
     // the loading doors: his back to one, 0.45 m from its planks
