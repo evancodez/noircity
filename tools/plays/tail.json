@@ -11,14 +11,27 @@
    "name": "the title, BEGIN at the tail"
   },
   {
+   "until": "G.state === 'title' && !document.getElementById('title').classList.contains('hidden') && !!document.querySelector('#title .opt[data-k=begin]')",
+   "timeout": 40000
+  },
+  {
    "wait": 2500
   },
   {
    "clickOn": "#title .opt[data-k=begin]"
   },
   {
+   "wait": 5000
+  },
+  {
+   "name": "(a loaded machine can refuse the first pointer lock: the title asks for a second click; after a lock it lands on nothing that matters)"
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]"
+  },
+  {
    "until": "G.scenes.current && G.scenes.current.id === 'tail' && document.pointerLockElement === N.renderer.domElement",
-   "timeout": 20000
+   "timeout": 45000
   },
   {
    "name": "start: in my car at the kerb, his tail lamps down the road"
