@@ -299,8 +299,8 @@
      -26.6
     ],
     [
-     -13.45,
-     -26.85
+     -13.5,
+     -26.2
     ],
     [
      -13.5,
@@ -308,6 +308,12 @@
     ]
    ],
    "timeout": 15000
+  },
+  {
+   "name": "(a long straight last leg toward the ladder and a settle: under load the walk's queued turns can overshoot, and the look after it is a fixed move)"
+  },
+  {
+   "wait": 600
   },
   {
    "until": "!N.controller._ease && !G.hands.still",
@@ -318,8 +324,8 @@
   },
   {
    "look": [
-    80,
-    -50
+    -150,
+    -30
    ],
    "steps": 6
   },
@@ -386,8 +392,8 @@
   },
   {
    "look": [
-    457,
-    245
+    137,
+    21
    ],
    "steps": 6
   },
