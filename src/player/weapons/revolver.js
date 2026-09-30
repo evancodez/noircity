@@ -54,7 +54,7 @@ const P = (p, yaw, pitch, roll, e) => ({ p: V(...p), q: new THREE.Quaternion().s
 const POSE = {
   // low right, the barrel running into the picture toward the centre,
   // canted in (clips/revolver.js GUN_READY)
-  ready: P(GUN_READY.p, GUN_READY.yaw, GUN_READY.pitch, GUN_READY.roll, [0.24, -0.3, -0.12]),
+  ready: P(GUN_READY.p, GUN_READY.yaw, GUN_READY.pitch, GUN_READY.roll, [0.22, -0.4, -0.1]),
   // steadied: up on the eye's line, square, the front sight on the centre
   steady: P([0.0, -0.078, -0.45], 0, 0, 0, [0.06, -0.22, -0.26]),
   // in the coat (the shoulder holster, under the left arm): just under the

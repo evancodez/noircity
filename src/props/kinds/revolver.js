@@ -255,21 +255,33 @@ export const SPECS = {
         // (the rod does not ride the stroke's full length forward: it is the
         // plunger; it stays put while the star comes back) - modelled as one
         // piece moving together; the rod's tip slides in the lug
-        const rounds = [];
-        for (let i = 0; i < 6; i++) {
-          const th = i * Math.PI / 3;
-          const rg = new THREE.Group(); rg.name = 'round' + i;
-          rg.position.set(-Math.sin(th) * CR, Math.cos(th) * CR, -CY0);
-          const cm = pieces(mergeGeos([R.cas, R.primer]), M.brass, 5);
-          const bm = pieces(R.bullet, M.lead, 5);
-          rg.add(cm, bm);
-          rg.userData.bullet = bm;
-          ej.add(rg);
-          rounds.push(rg);
-        }
+        // (second pass: the six rounds are two meshes - the cases, the lead
+        // noses - rebuilt when a chamber changes, not twelve: ten fewer draw
+        // calls for the gun in hand)
+        const caseOne = mergeGeos([R.cas, R.primer]);
+        const at = (i, geo) => { const th = i * Math.PI / 3; return geo.clone().translate(-Math.sin(th) * CR, Math.cos(th) * CR, -CY0); };
+        const casesM = pieces(new THREE.BufferGeometry(), M.brass, 5); casesM.name = 'cases';
+        const nosesM = pieces(new THREE.BufferGeometry(), M.lead, 5); nosesM.name = 'noses';
+        ej.add(casesM, nosesM);
+        let roundsKey = '';
+        const buildRounds = () => {
+          const key = ud.chambers.join();
+          if (key === roundsKey) return;
+          roundsKey = key;
+          const cs = [], ns = [];
+          for (let i = 0; i < 6; i++) {
+            if (ud.chambers[i] !== 'empty') cs.push(at(i, caseOne));
+            if (ud.chambers[i] === 'live') ns.push(at(i, R.bullet));
+          }
+          for (const [m, list] of [[casesM, cs], [nosesM, ns]]) {
+            m.geometry.dispose();
+            m.geometry = list.length ? mergeGeos(list) : new THREE.BufferGeometry();
+            m.visible = list.length > 0;
+          }
+        };
         Object.assign(by, { crane, cyl: cylG, eject: ej });
-        ud.rounds = rounds;
         ud.chambers = ['live', 'live', 'live', 'live', 'live', 'live'];
+        buildRounds();
         ud.open = 0; ud.turn = 0; ud.hammer = 0; ud.trigger = 0; ud.eject = 0;
         // the crane swings the cylinder out to the left and a little down
         ud.setOpen = (k) => { ud.open = Math.max(0, Math.min(1, k)); crane.rotation.z = ud.open * 1.42; };
@@ -279,12 +291,8 @@ export const SPECS = {
         // the stroke: the star comes back 17 mm, the rounds with it
         ud.setEject = (k) => { ud.eject = k; ej.position.z = k * 0.017; };
         ud.setChambers = (arr) => {
-          for (let i = 0; i < 6; i++) {
-            const s = arr[i] || 'empty';
-            ud.chambers[i] = s;
-            rounds[i].visible = s !== 'empty';
-            rounds[i].userData.bullet.visible = s === 'live';
-          }
+          for (let i = 0; i < 6; i++) ud.chambers[i] = arr[i] || 'empty';
+          buildRounds();
         };
         // a chamber's rear mouth, gun-local (as the cylinder stands now)
         ud.chamberAt = (i, out = new THREE.Vector3()) => {

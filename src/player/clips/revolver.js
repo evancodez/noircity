@@ -86,7 +86,7 @@ export const SETS = {
 // frame, so the gun lay sideways at the bottom edge with the thumb as a bar
 // over it; now the eye looks down the gun from behind its hammer: the
 // cylinder, the frame and the barrel read, the back of the hand wraps it.)
-const GUN_READY = { p: [0.115, -0.085, -0.3], yaw: 0.08, pitch: 0.12, roll: 0.4 };
+const GUN_READY = { p: [0.125, -0.09, -0.335], yaw: 0.09, pitch: 0.12, roll: 0.4 };
 function gripPose(side) {
   const S = SOCKETS.revolver;
   const q = new THREE.Quaternion().setFromEuler(new THREE.Euler(GUN_READY.pitch, GUN_READY.yaw, GUN_READY.roll, 'YXZ'));
