@@ -473,7 +473,7 @@ export function makeInkMaterial(tex, fogUniforms) {
           // form under the same designed key. (Its mid-grey shadow side,
           // soft-torn by the brush, printed his arm at 0.3 m as a smooth
           // grey tube.)
-          float nearC = 1.0 - smoothstep( 0.5, 1.3, dist );
+          float nearC = 1.0 - smoothstep( 0.7, 1.4, dist );
           if ( nearC > 0.0 ) {
             vec3 keyH = normalize( upC * 0.6 + vec3( -0.75, 0.0, 0.3 ) );
             float thH = 0.1 + ( clamp( br.r, 0.15, 0.85 ) - 0.5 ) * 0.16;

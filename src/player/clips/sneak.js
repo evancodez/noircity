@@ -29,8 +29,11 @@ export const SNEAK_REST = {
 // the fingers raised and fanned, held low, they read as claws)
 const LOW_F = { i: C(0.65, 0.85, 0.45, -0.04), m: C(0.72, 0.9, 0.5), r: C(0.8, 0.95, 0.52, 0.03), l: C(0.88, 1.0, 0.55, 0.07), t: [0.45, 0.2, 0.45, 0.35, 0.3] };
 export const POSES = {
-  sneakR: { frame: 'cam', p: [...SNEAK_REST.R.stand], f: [-0.12, -0.3, -0.95], b: [0.7, 0.65, 0.3], F: LOW_F, e: [0.3, -0.56, -0.08] },
-  sneakL: mirror({ frame: 'cam', p: [...SNEAK_REST.L.stand], f: [-0.18, -0.28, -0.94], b: [0.72, 0.62, 0.3], F: LOW_F, e: [0.3, -0.56, -0.12] }),
+  // (on their sides: the backs turned out, the thumb and the index's side
+  // up to the eye - seen from above, a hand with its back up and its
+  // fingers curled under it is a claw whatever the curl)
+  sneakR: { frame: 'cam', p: [...SNEAK_REST.R.stand], f: [-0.12, -0.3, -0.95], b: [0.95, 0.2, 0.22], F: LOW_F, e: [0.3, -0.56, -0.08] },
+  sneakL: mirror({ frame: 'cam', p: [...SNEAK_REST.L.stand], f: [-0.18, -0.28, -0.94], b: [0.95, 0.2, 0.22], F: LOW_F, e: [0.3, -0.56, -0.12] }),
   // the bottle by its neck, up by the shoulder, ready
   sn_holdR: { frame: 'cam', p: [0.2, -0.2, -0.34], f: [-0.25, 0.85, -0.45], b: [0.9, 0.1, 0.4], F: GRIPB, e: [0.3, -0.5, -0.02] },
   // drawn back over the shoulder, the other hand out before me to aim
