@@ -57,10 +57,12 @@ export const GRIP_F = {
 };
 // the index finger's pull: the pad drawn back, the finger curled in
 export const PULL_F = { ...GRIP_F, i: [1.42, 1.1, 0.45, -0.06] };
-// the thumb up off the frame onto the hammer's spur (the cock), and drawing
-// it back
-export const COCK_F = { ...GRIP_F, t: [0.5, 0.45, 1.5, 0.6, 0.45] };
-export const COCKED_F = { ...GRIP_F, t: [0.62, 0.6, 1.7, 0.85, 0.3] };
+// the thumb's flick up toward the hammer's spur and back as the hammer is
+// cocked (halfway to the spur: all the way - fitted in the page - it stood
+// straight up beside the gun like a thumbs-up)
+const TG = GRIP_F.t, TS = [0.719, 0.614, 0.172, -1.2, -0.266];
+export const COCK_F = { ...GRIP_F, t: TG.map((v, i) => v + (TS[i] - v) * 0.45) };
+export const COCKED_F = { ...GRIP_F, t: TG.map((v, i) => v + (TS[i] - v) * 0.2) };
 // the left hand: open as it comes, cradling, the palm's strike, the pinch
 export const L_OPEN = { i: C(0.18, 0.2, 0.1), m: C(0.2, 0.22, 0.1), r: C(0.24, 0.24, 0.12), l: C(0.28, 0.26, 0.12), t: [0.2, 0.1, 0.2, 0.1, 0.1] };
 export const L_CRADLE = { i: C(0.7, 0.8, 0.4), m: C(0.75, 0.85, 0.45), r: C(0.8, 0.9, 0.45), l: C(0.85, 0.9, 0.45), t: [0.35, 0.1, 0.5, 0.3, 0.2] };
