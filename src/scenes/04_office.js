@@ -1,5 +1,5 @@
 import { defineScene, wait, until, beat } from '../game/script.js';
-import { roomAs, carry, office, stand, roomLines, sheetOf, V } from './office/room.js';
+import { roomAs, carry, office, stand, roomLines, sheetOf, inkPrompt, V } from './office/room.js';
 import { padPuzzle } from './office/pad.js';
 import { safePuzzle, safeDemo } from './office/safe.js';
 import { live, holdSheet, palmOn } from './office/hands.js';
@@ -78,6 +78,7 @@ export default defineScene({
     const O = office(ctx);
     const F = ctx.flags;
     const demo = Q().get('demo') === '1';
+    inkPrompt(ctx);
     ctx.music.cue('office', { fade: 2.5 });
     const pad = F.pad = padPuzzle(ctx);
     const safe = F.safe = safePuzzle(ctx);

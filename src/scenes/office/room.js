@@ -75,6 +75,20 @@ export function sheetOf(O) {
   return s;
 }
 
+// (round 2) the prompt's words read over the lamp's pool and the slats: in
+// this room the thing a prompt names is often the brightest thing in the
+// frame (the desk in the banker's lamp, the dial in the blind's light, the
+// ledger's page), and the HUD's thin halo left "TIP THE DESK" white on white.
+// A heavier ink halo round the words, for these two scenes only: a style in
+// a scene layer of the HUD (the layers go when the scene exits, and it with them)
+export function inkPrompt(ctx) {
+  const L = ctx.hud.layer('b2ink');
+  if (L.firstChild) return;
+  const s = document.createElement('style');
+  s.textContent = '#hud .prompt .t { text-shadow: 0 0 9px #000, 0 0 5px #000, 0 0 3px #000, 0 0 2px #000, 0 0 1px #000; }';
+  L.appendChild(s);
+}
+
 // the player standing at a place of the room (walk mode, or the office's own)
 export function stand(ctx, x, z, yaw, pitch = 0, mode = 'walk') {
   const C = ctx.controller;

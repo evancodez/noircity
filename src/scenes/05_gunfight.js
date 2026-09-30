@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { defineScene, wait, until, beat } from '../game/script.js';
-import { roomAs, carry, office, stand, V } from './office/room.js';
+import { roomAs, carry, office, stand, inkPrompt, V } from './office/room.js';
 import { live, palmOn } from './office/hands.js';
 import { MEN, send, coverFrom, glassMen, roomReacts, glassReward, fallHook, papers, note } from './office/fight.js';
 import { DESK, DOOR, SIDE, SAFE, FAN, PICTURE } from '../stages/office/plan.js';
@@ -38,6 +38,7 @@ export default defineScene({
   *script(ctx) {
     const { game: G, controller: C } = ctx;
     const O = office(ctx), F = ctx.flags;
+    inkPrompt(ctx);
     const D = G.director;
     const snd = (n, p = null, q = {}) => G.sfx.play(n, p, q);
     // (continuing straight from scene 4: the room as it stands)
