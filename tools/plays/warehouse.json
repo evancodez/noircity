@@ -97,7 +97,9 @@
   { "shot": "w06_under_the_mezzanine" },
   { "name": "(in the dark behind the stores: out to the stairs' foot when the man at the stairs is back at his post, his back to them, and the Hood with the torch sets off east)" },
   { "until": "M('hood1').mode === 'hold' && M('hood2').mode === 'patrol' && M('hood2').ri === 1 && M('hood2').wait <= 0 && M('hood2').pos.x < 1.4", "timeout": 60000 },
-  { "walk": [[-2.0, -43.2], [-2.0, -40.2], [-9.4, -40.2], [-10.3, -40.3], [-10.3, -41.9], [-1.0, -41.75]], "timeout": 25000 },
+  { "eval": "CS()" },
+  { "walk": [[-2.0, -43.2], [-2.0, -40.2], [-9.4, -40.2], [-10.3, -40.3], [-10.3, -41.9], [-1.0, -41.75]], "timeout": 25000, "stop": false },
+  { "eval": "CS() + ' | caught ' + G.counters.caught + ' | ' + JSON.stringify(LOG)" },
 
   { "name": "listen: under the office window" },
   { "until": "G.scenes.beat === 'listen'", "timeout": 5000 },

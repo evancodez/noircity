@@ -45,9 +45,11 @@ const CREW = [
   { name: 'rusty', kind: 'dockhand', light: 'torch', at: [6.0, -14.2], yaw: PI / 2, ri: 1,
     route: [{ x: 3.9, z: -14.2, wait: 1.6, looks: [PI / 2] }, { x: 9.2, z: -14.2, wait: 2.6, looks: [PI, 0.2] },
       { x: 10.3, z: -4.7, wait: 1.6, looks: [-PI / 2] }, { x: 2.6, z: -4.0, wait: 0 }, { x: 2.6, z: -12.6, wait: 0 }] },
-  // aisle B's man (its lamps are his: when they go, he goes to the switch)
+  // aisle B's man (its lamps are his: when they go, he goes to the switch;
+  // his round stops short of the strip: his lantern never reaches the
+  // stairs' foot)
   { name: 'bert', kind: 'dockhand', light: 'lantern', at: [0, -25], yaw: PI, ri: 1, row: 'B',
-    route: [{ x: 0, z: -22.6, wait: 2.4, looks: [PI / 2, -PI / 2] }, { x: 0, z: -32.4, wait: 3.2, looks: [PI, PI / 2] }] },
+    route: [{ x: 0, z: -22.6, wait: 2.4, looks: [PI / 2, -PI / 2] }, { x: 0, z: -31.0, wait: 3.2, looks: [PI / 2, -PI / 2] }] },
   // aisle C's north half and the loading bay (he looks at the loading doors)
   { name: 'cal', kind: 'dockhand', light: 'torch', at: [11, -22], yaw: PI, ri: 2,
     route: [{ x: 11, z: -17.4, wait: 2.0, looks: [0.0, -PI / 2] }, { x: 11, z: -26, wait: 0 }, { x: 12, z: -34, wait: 3.0, looks: [PI / 2, 0.2] }, { x: 11, z: -26, wait: 0 }] },
