@@ -108,6 +108,14 @@ export function glassMen(ctx) {
       L.push({ k: 1, joints: h._b2j });
     }
   }
+  // the man on the fire escape: his outline on the curtain (the light-well behind him)
+  const C = O.curtain.frost.userData.figures;
+  C.length = 0;
+  for (const h of F.men || []) {
+    if (C.length >= 2 || h.pos.z < 7.1 || !(h.alive || (h._deathT ?? 0) < 1.6)) continue;
+    if (!h._b2j) h._b2j = hoodJoints(h);
+    C.push({ k: 1, joints: h._b2j });
+  }
 }
 
 // ---- the room answers every round (the player's and theirs) ---------------------------------

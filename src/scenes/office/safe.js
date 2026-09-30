@@ -184,7 +184,7 @@ export function safePuzzle(ctx) {
 export function safeDemo(S) {
   const plan = [];
   let r = S.reading;
-  const go = (to, dir) => { let d = dir < 0 ? (r - to + 100) % 100 : (to - r + 100) % 100; if (d < 8) d += 100; plan.push({ n: d + 1.2, dir }); r = to - dir * 1.2; };
+  const go = (to, dir) => { let d = dir < 0 ? (r - to + 100) % 100 : (to - r + 100) % 100; if (d < 8) d += 100; plan.push({ n: d + 1.2, dir }); r = to + dir * 1.2; };
   const COMBO_ = [36, 12, 57];
   go(COMBO_[0], -1); go(COMBO_[1], 1); go(COMBO_[2], -1);
   let i = 0, left = null;

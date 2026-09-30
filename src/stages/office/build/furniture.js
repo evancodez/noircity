@@ -68,7 +68,8 @@ export function buildFurniture(kit, mats, stage) {
   // the pad: its sheets (a block), its top sheet's canvas
   kit.piece();
   const pad = makePad();
-  const padMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.95, map: pad.texture });
+  // (a little grey under the lamp's full pool: the graphite must stay dark where the paper prints white)
+  const padMat = new THREE.MeshStandardMaterial({ color: 0x9a9a9a, roughness: 0.95, map: pad.texture });
   padMat.name = 'office_pad';
   padMat.userData.inkSurface = 'plaster';
   const padBlock = kit.add(slab(PAD.d, 0.014, PAD.w, { bevel: 0.002, corner: 0.004 }).translate(PAD.x - D.x, top + 0.006, PAD.z - D.z), mats.paperDim, { parent: body });

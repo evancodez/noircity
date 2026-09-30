@@ -172,7 +172,10 @@ export function padPuzzle(ctx) {
       const t = P.dT;
       // (a stroke ~9 cm each way, three a second; the hand working down the sheet)
       const sweep = Math.cos(t * 9.4) * 34;           // side to side (px of mouse a step)
-      const creep = t < 0.3 ? -26 : 1.6;              // down the sheet slowly
+      // (down the sheet slowly, and back up it over the gaps at its foot)
+      if (P.tip.x > PAD.x + PAD.d / 2 - 0.035) P.dDir = -1;
+      else if (P.tip.x < PAD.x - PAD.d / 2 + 0.03) P.dDir = 1;
+      const creep = t < 0.3 ? -26 : 1.5 * (P.dDir || 1);
       return [sweep, creep, t > 0.3];
     },
   };

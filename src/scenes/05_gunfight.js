@@ -245,6 +245,7 @@ function curtainShot(ctx, h) {
   const G = ctx.game, O = office(ctx), F = ctx.flags;
   const m = h.muzzleWorld ? h.muzzleWorld() : h.pos.clone().setY(1.4);
   const e = G.eye;
+  O.curtain.flash(m);
   const zc = O.curtain.mesh.position.z;
   if ((m.z - zc) * (e.z - zc) >= 0) return;
   const t = (zc - m.z) / (e.z - m.z);

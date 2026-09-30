@@ -55,6 +55,9 @@ export function makeFrosted({ w = 1, h = 1, text = null, lit = 'back', seed = 0 
     tText: { value: tex }, uText: { value: text ? 1 : 0 },
     uSeed: { value: seed },
     uHole: { value: 0 },
+    // (a cloth's holes: a mask canvas, black where a round went through; a flash behind it)
+    tHoles: { value: null }, uHoles: { value: 0 }, uSrcD: { value: 1.25 },
+    uFl: { value: new THREE.Vector3(0, -99, 0) }, uFlK: { value: 0 },
   };
   const m = new THREE.ShaderMaterial({
     name: 'OfficeFrosted',
@@ -74,6 +77,9 @@ export function makeFrosted({ w = 1, h = 1, text = null, lit = 'back', seed = 0 
       uniform vec3 uJ[ ${MAXF * NJ} ];
       uniform float uFK[ ${MAXF} ];
       uniform sampler2D tText;
+      uniform sampler2D tHoles;
+      uniform float uHoles, uFlK, uSrcD;
+      uniform vec3 uFl;
       varying vec3 vW;
       // (the lamp's projection of a world point onto the pane: its u, v and
       // how far it stands off the glass)
@@ -101,6 +107,7 @@ export function makeFrosted({ w = 1, h = 1, text = null, lit = 'back', seed = 0 
       void main() {
         vec3 d = vW - uC;
         vec2 p = vec2( dot( d, uU ), dot( d, uV ) );
+        if ( uHoles > 0.5 && texture2D( tHoles, p / uWH + 0.5 ).r < 0.5 ) discard;
         // the man's outline: capsules between his projected joints, their
         // edge softer the further he stands from the glass
         float sh = 0.0;
@@ -116,7 +123,7 @@ export function makeFrosted({ w = 1, h = 1, text = null, lit = 'back', seed = 0 
           // (the source's magnification of a man between it and the glass:
           // his widths grow as his joints' places do; his edge softens with
           // his distance from the glass)
-          float sc = 1.25 / max( 0.3, 1.25 - ch.z );
+          float sc = uSrcD / max( 0.3, uSrcD - ch.z );
           float blur = 0.006 + 0.06 * ch.z;
           vec2 X = vec2( 1.0, 0.0 );
           float dd = 1e3;
@@ -155,6 +162,8 @@ export function makeFrosted({ w = 1, h = 1, text = null, lit = 'back', seed = 0 
         vec2 eg = uWH * 0.5 - abs( p );
         float rim = 0.8 + 0.2 * smoothstep( 0.0, 0.07, min( eg.x, eg.y ) );
         float I = min( 1.05, glow * uLampK * ( 0.6 + 2.2 * fall ) ) * mottle * rim;
+        // (a flash behind it: the cloth white round it for a moment)
+        if ( uFlK > 0.0 ) { vec3 fq = uFl - vW; I = min( 1.05, I + uFlK * 2.5 / ( 1.0 + 6.0 * dot( fq, fq ) ) ); }
         // the gilt letters: pale, keylined; read the right way round from the
         // lamp's side (the text is drawn for a reader facing -N)
         vec2 tuv = vec2( 0.5 - p.x / uWH.x, p.y / uWH.y + 0.5 );
@@ -176,7 +185,7 @@ export function makeFrosted({ w = 1, h = 1, text = null, lit = 'back', seed = 0 
   ud.setFrame = (c, u, v, n) => {
     U.uC.value.copy(c); U.uU.value.copy(u); U.uV.value.copy(v); U.uN.value.copy(n);
     // (the shadows' source: 1.9 m behind the glass, at a man's shoulder)
-    U.uSrc.value.copy(c).addScaledVector(n, -1.25); U.uSrc.value.y = 1.55;
+    U.uSrc.value.copy(c).addScaledVector(n, -U.uSrcD.value); U.uSrc.value.y = 1.55;
   };
   ud.setLamp = (p, k = 1) => { U.uLamp.value.copy(p); U.uLampK.value = k; };
   ud.glow = (f, b) => { U.uGlowF.value = f; U.uGlowB.value = b; };

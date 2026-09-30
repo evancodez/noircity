@@ -329,12 +329,22 @@ function buildCurtain(kit, mats, stage) {
   cg.fillStyle = '#fff'; cg.fillRect(0, 0, 128, 192);
   const tex = new THREE.CanvasTexture(cv);
   tex.colorSpace = THREE.NoColorSpace;
-  const mat = new THREE.MeshStandardMaterial({ color: 0x4a4a4a, roughness: 0.95, side: THREE.DoubleSide, alphaMap: tex, alphaTest: 0.5 });
+  // (thin cloth with the light-well's night behind it: it glows a little,
+  // and a man on the fire escape throws his outline on it - the frosted
+  // glass's shader, with the holes the rounds tear in it and his flashes)
+  const mat = makeFrosted({ w, h, text: null, seed: 23 });
   mat.name = 'office_curtain';
-  mat.userData.inkSurface = 'cloth';
-  const m = kit.add(geo, mat, { name: 'curtain', noRay: true });
+  mat.uniforms.tHoles.value = tex; mat.uniforms.uHoles.value = 1;
+  mat.userData.glow(0.42, 0.42);
+  const m = kit.add(geo, mat, { name: 'curtain', noRay: true, cast: false });
+  m.layers.set(LAYER.WORLD);
+  m.userData.inkSurface = 'lit';
   const zc = ROOM.z1 - 0.1, xc = (ESC.x0 + ESC.x1) / 2, yc = CEIL - 0.34 - h / 2;
   m.position.set(xc, yc, zc);
+  // (his outline thrown from well behind him: the light-well's windows, not a lamp at his back)
+  mat.uniforms.uSrcD.value = 3.2;
+  mat.userData.setFrame(V(xc, yc, zc), V(1, 0, 0), V(0, 1, 0), V(0, 0, -1));
+  mat.userData.setLamp(V(xc, 2.4, ROOM.z1 + 2.2), 1);
   // (drawn to one side: the curtain covers the window's left two thirds)
   const rod = kit.add(new THREE.CylinderGeometry(0.009, 0.009, w + 0.2, 8).rotateZ(Math.PI / 2).translate(xc, CEIL - 0.32, zc), mats.brass, { cast: false });
   void rod;
@@ -356,9 +366,16 @@ function buildCurtain(kit, mats, stage) {
       holes.push([u, v]);
       return true;
     },
-    reset() { cg.fillStyle = '#fff'; cg.fillRect(0, 0, 128, 192); tex.needsUpdate = true; holes.length = 0; },
+    reset() { cg.fillStyle = '#fff'; cg.fillRect(0, 0, 128, 192); tex.needsUpdate = true; holes.length = 0; mat.uniforms.uFlK.value = 0; mat.userData.figures.length = 0; },
+    // a muzzle's flash behind it (a world point): the cloth lit round it, fading
+    flash(at) { mat.uniforms.uFl.value.copy(at); mat.uniforms.uFlK.value = 1; },
+    frost: mat,
     // the air from under the sash: a slow billow, stronger low down
     step(t, gust = 0) {
+      // (the flash dies in a few frames; the men behind it are drawn from their joints)
+      const U = mat.uniforms;
+      if (U.uFlK.value > 0) { U.uFlK.value *= 0.55; if (U.uFlK.value < 0.02) U.uFlK.value = 0; }
+      mat.userData.update();
       const p = geo.getAttribute('position');
       for (let i = 0; i < p.count; i++) {
         const bx = base[i * 3], by = base[i * 3 + 1];
