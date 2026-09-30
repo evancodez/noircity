@@ -163,7 +163,12 @@ export default {
           for (const s of stacks) {
             const dir = s.c.side > 0 ? 1 : -1;
             if (s.pulled) s.t = Math.min(1.4, s.t + dt);
-            s.items.forEach((it, j) => place(it, s.pulled ? s.t : 0, dir, j === 2 ? 0 : 0.12 + j * 0.1));
+            s.items.forEach((it, j) => {
+              // (a kick is a skid: the crate slides to where it was shoved
+              // over a third of a second, fast then slowing on the wet)
+              if (it.kickTo) { if (!it.kick) it.kick = new THREE.Vector3(); it.kick.lerp(it.kickTo, dt > 0 ? 1 - Math.exp(-dt * 9) : 1); }
+              place(it, s.pulled ? s.t : 0, dir, j === 2 ? 0 : 0.12 + j * 0.1);
+            });
           }
         },
         // the fallen crates a circle at (x, z) of radius r overlaps (a stumble)
@@ -181,14 +186,15 @@ export default {
         },
         // a body ran into it: it is shoved along the way it was going
         kick(it, dx, dz) {
-          if (!it.kick) it.kick = new THREE.Vector3();
-          it.kick.x += dx; it.kick.z += dz;
-          // (never through the walls of the passage)
-          const c = it.g.position.z + dz;
-          if (c < PASSAGE.z0 + 0.35 || c > PASSAGE.z1 - 0.35) it.kick.z -= dz;
+          if (!it.kickTo) it.kickTo = new THREE.Vector3();
+          // (never through the walls of the passage: where it will come to
+          // rest - the slide still to go, and this shove - stays off them)
+          const c = it.g.position.z + (it.kickTo.z - (it.kick ? it.kick.z : 0)) + dz;
+          it.kickTo.x += dx;
+          if (c > PASSAGE.z0 + 0.35 && c < PASSAGE.z1 - 0.35) it.kickTo.z += dz;
           it.kickYaw = (it.kickYaw || 0) + (Math.random() - 0.5) * 0.6;
         },
-        reset() { for (const s of stacks) { s.pulled = false; s.t = 0; for (const it of s.items) { it.kick = null; it.kickYaw = 0; } } this.update(0); },
+        reset() { for (const s of stacks) { s.pulled = false; s.t = 0; for (const it of s.items) { it.kick = null; it.kickTo = null; it.kickYaw = 0; } } this.update(0); },
       };
       api.crates.update(0);
     }

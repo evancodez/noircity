@@ -112,8 +112,8 @@ export default (kit) => {
       // my breath, running (p.k: how hard): a pair of rough exhales
       w_breath(ctx, out, t0, p, R) {
         const k = p.k ?? 1;
-        burst(ctx, out, R, t0, 'pink', ['bandpass', 620, 0.9], 0.05 * k, 0.03, 0.16);
-        burst(ctx, out, R, t0, 'white', ['bandpass', 1400, 1.4], 0.02 * k, 0.03, 0.12);
+        burst(ctx, out, R, t0, 'pink', ['bandpass', 620, 0.9], 0.13 * k, 0.03, 0.16);
+        burst(ctx, out, R, t0, 'white', ['bandpass', 1400, 1.4], 0.05 * k, 0.03, 0.12);
         return 0.25;
       },
       // the dog behind the gate: two barks, low and hard
