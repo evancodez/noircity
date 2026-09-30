@@ -153,8 +153,15 @@ const LIGHT = {
       [1.18, CG(cigInPack(0), PINCH_OPEN, { off: [0, 0.015, 0.02] })],
       [1.28, CG(cigInPack(0), CIGF)],
       [1.52, CG(cigInPack(0.07), CIGF)],
+      // ([B3] the hand kept under the frame on its way to the lips: the
+      // cigarette goes down under the chin first and rises into the mouth
+      // from below - it had swept across the eye at 17 cm)
+      [1.66, CG(cigLipsAt([0.012, -0.1, -0.1]), CIGF, { e: [-0.2, -0.5, -0.06], ef: 'cam' })],
       [1.78, CG(cigLipsAt([0.004, -0.03, -0.05]), CIGF, { e: [-0.18, -0.46, -0.04], ef: 'cam' })],
       [1.9, CG(cigLipsAt(), CIGF, { e: [-0.18, -0.46, -0.04], ef: 'cam' })],
+      // (and let go, the hand drops straight down out of the frame before it
+      // goes back to the counter)
+      [2.04, { frame: 'cam', p: [-0.05, -0.3, -0.16], f: [0.25, 0.55, -0.8], b: [-0.55, 0.3, 0.78], F: CIGF, e: [-0.2, -0.62, 0.02] }, 'in'],
       [2.35, '@rest'],
     ],
   },
