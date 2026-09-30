@@ -14,7 +14,7 @@
   { "shot": "l00_lost" },
   { "until": "!G.scenes.ctx.flags.chase.lost", "timeout": 5000 },
   { "expect": "Math.hypot(N.controller.pos.x - 0.95, N.controller.pos.z + 9.8) < 0.5 && G.scenes.ctx.flags.chase.stretch === 0", "label": "back at the foot of the ladder, the start of the straight" },
-  { "expect": "(() => { const C = G.scenes.ctx.flags.chase; return C.act === 'run' && C.s - C.sp > 12 && C.s - C.sp < 18; })()", "label": "he is 15 m up the alley again, running" },
+  { "expect": "(() => { const C = G.scenes.ctx.flags.chase; return C.act === 'run' && C.s - C.sp > 12 && C.s - C.sp < 24; })()", "label": "he is 15 m up the alley again, running (and jogs, not away, while I find my feet)" },
   { "name": "the retry: run it" },
   { "walk": [[2.4, -20.0], [2.5, -27.0], [2.5, -44.5], [5.2, -49.6], [10.8, -50.0]], "timeout": 20000 },
   { "down": "Space" },

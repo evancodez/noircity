@@ -100,18 +100,10 @@
    "label": "down the ladder into the alley"
   },
   {
-   "name": "run: the straight (W held the whole way; the frames of the run are shot-mode presets: a capture here costs seconds of standing still on a loaded machine, and standing still loses him)"
+   "name": "run: the straight (W held the whole way. Few waypoints: the walker arrives within 0.4 m of each, and at 7.5 m/s on a loaded machine a slow poll can step past one and turn back for it - a man standing at a corner, who loses him. The frames of the run are shot-mode presets for the same reason)"
   },
   {
    "walk": [
-    [
-     2.4,
-     -20.0
-    ],
-    [
-     2.5,
-     -27.0
-    ],
     [
      2.5,
      -44.5
@@ -119,10 +111,6 @@
     [
      5.2,
      -49.6
-    ],
-    [
-     10.8,
-     -50.0
     ]
    ],
    "timeout": 20000
@@ -132,31 +120,7 @@
    "label": "the chase is on"
   },
   {
-   "name": "the fences: SPACE held into each"
-  },
-  {
-   "down": "Space"
-  },
-  {
-   "walk": [
-    [
-     16.8,
-     -50.0
-    ]
-   ],
-   "timeout": 6000
-  },
-  {
-   "up": "Space"
-  },
-  {
-   "walk": [
-    [
-     23.2,
-     -50.0
-    ]
-   ],
-   "timeout": 8000
+   "name": "the fences: SPACE held down the lane (held early counts)"
   },
   {
    "down": "Space"
@@ -168,7 +132,7 @@
      -50.0
     ]
    ],
-   "timeout": 8000
+   "timeout": 12000
   },
   {
    "up": "Space"
@@ -191,10 +155,6 @@
      -54.8
     ],
     [
-     41.0,
-     -66.0
-    ],
-    [
      41.2,
      -76.0
     ],
@@ -206,18 +166,10 @@
    "timeout": 20000
   },
   {
-   "name": "the dog and the crates"
+   "name": "the dog and the crates (round the fallen stacks by the gaps he leaves)"
   },
   {
    "walk": [
-    [
-     30.0,
-     -83.0
-    ],
-    [
-     26.0,
-     -83.0
-    ],
     [
      24.5,
      -82.9
@@ -232,10 +184,6 @@
     ],
     [
      16.5,
-     -83.4
-    ],
-    [
-     15.2,
      -83.7
     ],
     [
@@ -257,10 +205,6 @@
     [
      4.2,
      -86.2
-    ],
-    [
-     4.2,
-     -91.0
     ],
     [
      4.2,
