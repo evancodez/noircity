@@ -348,13 +348,16 @@ function buildSafe(kit, mats, stage) {
   // the dial: a ring of numbers round a fluted knob, turning about the door's normal
   kit.piece();
   const dialG = new THREE.Group();
-  dialG.position.set((w - 0.02) / 2 + 0.02, 0.05, 0.012);
+  // (the door's face is 5 cm out from its hinge line: the dial, the handle, the plate stand on it)
+  const FZ = 0.052;
+  dialG.position.set((w - 0.02) / 2 + 0.02, 0.05, FZ);
   hinge.add(dialG);
   const dtex = new THREE.CanvasTexture(dialFace());
   dtex.colorSpace = THREE.SRGBColorSpace;
   dtex.anisotropy = 8;
-  const dm = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.35, map: dtex });
-  dm.name = 'office_dial'; dm.userData.inkSurface = 'enamel';
+  // (the figures white on the dark face, readable in any light: a lit print)
+  const dm = new THREE.MeshBasicMaterial({ color: new THREE.Color(0.75, 0.75, 0.75), map: dtex });
+  dm.name = 'office_dial'; dm.userData.inkSurface = 'lit';
   const face = kit.add(new THREE.CylinderGeometry(0.058, 0.062, 0.012, 48).rotateX(Math.PI / 2).translate(0, 0, 0.006), dm, { parent: dialG, name: 'dial_face' });
   // (the face's top cap takes the texture: the cylinder's cap uv is a disc)
   const knob = [];
@@ -364,16 +367,16 @@ function buildSafe(kit, mats, stage) {
   knob.push(new THREE.CylinderGeometry(0.018, 0.024, 0.006, 24).rotateX(Math.PI / 2).translate(0, 0, 0.043));
   kit.add(M(knob), mats.iron, { parent: dialG, name: 'dial_knob' });
   // the index mark over the dial (on the door, fixed)
-  kit.add(new THREE.BoxGeometry(0.006, 0.014, 0.006).translate((w - 0.02) / 2 + 0.02, 0.05 + 0.068, 0.012), mats.steelLight, { parent: hinge, cast: false });
+  kit.add(new THREE.BoxGeometry(0.006, 0.014, 0.006).translate((w - 0.02) / 2 + 0.02, 0.05 + 0.068, FZ + 0.003), mats.steelLight, { parent: hinge, cast: false });
   // the handle: a spoked T below the dial
   kit.piece();
   const handleG = new THREE.Group();
-  handleG.position.set((w - 0.02) / 2 + 0.02, -0.09, 0.012);
+  handleG.position.set((w - 0.02) / 2 + 0.02, -0.09, FZ);
   hinge.add(handleG);
   kit.add(M([new THREE.CylinderGeometry(0.012, 0.012, 0.04, 10).rotateX(Math.PI / 2).translate(0, 0, 0.02), new THREE.CylinderGeometry(0.009, 0.009, 0.14, 10).rotateZ(Math.PI / 2).translate(0, 0, 0.042), ...[-0.07, 0.07].map((x) => new THREE.SphereGeometry(0.014, 10, 8).translate(x, 0, 0.042))]), mats.brass, { parent: handleG, name: 'safe_handle' });
   // a nameplate
-  kit.add(new THREE.BoxGeometry(0.12, 0.022, 0.003).translate((w - 0.02) / 2 + 0.02, 0.16, 0.003), mats.brass, { parent: hinge, cast: false });
-  return { group: g, hinge, door, dialG, handleG, face, angle: 0, open: 0, dial: 0, handle: 0, centre: new THREE.Vector3(S.x + 0.02, S.y + 0.05, z + 0.03), inside: new THREE.Vector3(S.x, S.y - h / 2 + 0.02, z - dz / 2) };
+  kit.add(new THREE.BoxGeometry(0.12, 0.022, 0.003).translate((w - 0.02) / 2 + 0.02, 0.16, FZ + 0.0015), mats.brass, { parent: hinge, cast: false });
+  return { group: g, hinge, door, dialG, handleG, face, angle: 0, open: 0, dial: 0, handle: 0, centre: new THREE.Vector3(S.x + 0.02, S.y + 0.05, z + 0.056 + 0.03), inside: new THREE.Vector3(S.x, S.y - h / 2 + 0.02, z - dz / 2) };
 }
 
 // the dial's face: 100 ticks, a figure every ten, on dark steel

@@ -52,3 +52,16 @@ export function place(pos, up, fwd) {
   const z = new THREE.Vector3().crossVectors(x, y);
   return new THREE.Matrix4().makeBasis(x, y, z).setPosition(pos);
 }
+
+// the torn sheet held up in the left hand at a place of the eye's frame:
+// the sheet's place is authored (its face to the eye, its top up), the hand
+// is solved onto its edge every step
+const _cm = new THREE.Matrix4();
+const SHEETF = { i: [0.3, 0.35, 0.18, -0.02], m: [0.35, 0.4, 0.2, 0], r: [0.45, 0.5, 0.25, 0.02], l: [0.55, 0.55, 0.28, 0.05], t: [0.65, 0.25, 0.45, 0.1, 0.05] };
+export function holdSheet(H, sheet, { pos = [-0.24, -0.26, -0.56], face = [0.3, 0.35, 1], foot = [-0.12, -1, 0.3] } = {}) {
+  const cam = H.game.camera;
+  cam.updateMatrixWorld();
+  const M = place(new THREE.Vector3(...pos), new THREE.Vector3(...face), new THREE.Vector3(...foot));
+  _cm.multiplyMatrices(cam.matrixWorld, M);
+  return holdAt(H, 'L', sheet, _cm, SHEETF, [-0.3, -0.55, 0.05]);
+}

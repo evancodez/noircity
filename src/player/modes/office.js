@@ -1,12 +1,12 @@
 // Walking in a room where men shoot (lane B2, scene 5): today's walk, a
 // little slower (a room, not an avenue), and a crouch. C ducks and rises
 // again (a toggle), Ctrl held ducks while it is held: the eye goes down to
-// 0.72 m in a fifth of a second - behind the tipped desk, the filing
+// 0.95 m in a fifth of a second - behind the tipped desk, the filing
 // cabinets, the water cooler - and a crouched man moves at a creep.
 //   controller.setMode('office', { crouch: false })
 //   controller.crouchK   0 standing .. 1 down (read by the scene: cover)
 //   controller.crouchOn  the toggle's state (a scene may set it)
-const DOWN = 0.93;           // how far the eye goes down (1.65 -> 0.72)
+const DOWN = 0.7;            // how far the eye goes down (1.65 -> 0.95: the eyes just over a desk on its side)
 const TIME = 0.2;
 
 export default {

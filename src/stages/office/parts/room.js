@@ -313,7 +313,7 @@ function resetRoom(api, stage) {
   const P = api.picture;
   P.angle = P.target = PICTURE.tilt; P.vel = 0; P.swinging = false; P.hang.rotation.z = P.angle;
   const S = api.safe;
-  S.open = 0; S.hinge.rotation.y = 0; S.dial = 0; S.dialG.rotation.z = 0; S.handle = 0; S.handleG.rotation.z = 0;
+  S.open = 0; S.hinge.rotation.y = 0; S.dial = 0; S.dialG.rotation.z = -Math.PI * 1.5; S.handle = 0; S.handleG.rotation.z = 0;
   api.blind.reset();
   api.curtain.reset();
   const F = api.fan;

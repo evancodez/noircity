@@ -28,7 +28,7 @@ export function padPuzzle(ctx) {
       P.active = true;
       P.prevPose = C.eyePose();
       // the eye over the pad from the chair's side, looking down on it
-      const pose = { x: PAD.x + 0.47, y: DESK.h + 0.46, z: PAD.z + 0.02, yaw: Math.PI / 2, pitch: -0.86 };
+      const pose = { x: PAD.x + 0.43, y: DESK.h + 0.44, z: PAD.z + 0.05, yaw: Math.PI / 2 + 0.05, pitch: -0.88 };
       C.setMode('table', { pose, fov: 50, ease: 0.45 });
       // the pencil from the blotter into my hand (it goes where the hand takes it)
       const pc = O.pencil;
@@ -69,7 +69,7 @@ export function padPuzzle(ctx) {
       const M = place(V(0, 0, 0), up, axis);
       const off = V(0, 0.0006, 0.073).applyMatrix4(new THREE.Matrix4().extractRotation(M));
       M.setPosition(_w.copy(P.tip).setY(TOP + lift).sub(off));
-      holdAt(H, 'R', pc, M, { i: [0.35, 0.45, 0.25, -0.03], m: [0.55, 0.7, 0.4, 0], r: [0.8, 0.95, 0.5, 0], l: [0.9, 1.0, 0.5, 0.05], t: [0.55, 0.35, 0.55, 0.25, 0.3] }, [0.3, -0.5, -0.05]);
+      holdAt(H, 'R', pc, M, { i: [0.35, 0.45, 0.25, -0.03], m: [0.55, 0.7, 0.4, 0], r: [0.8, 0.95, 0.5, 0], l: [0.9, 1.0, 0.5, 0.05], t: [0.55, 0.35, 0.55, 0.25, 0.3] }, [0.36, -0.5, 0.08]);
       void dt;
     },
     // the sheet's canvas coordinates of a point on it
@@ -103,6 +103,13 @@ export function padPuzzle(ctx) {
       } else P.idle += dt;
       pad.flush();
       P.place(dt);
+      // (the left hand stays on the pad's corner in the world as the view eases in)
+      if (!P.tore) P.leftHand();
+      // (a player who has not found it: the prompt again after a while idle;
+      // once, a line on how)
+      P.inT = (P.inT || 0) + dt;
+      if (P.solvedT < 0 && P.idle > 6 && !(P.teachT > 0) && P.press === 0) { G.hud.prompt('LMB  hold and rub', null, 'pad'); P.teachT = 3; P.idle = 0; }
+      if (P.solvedT < 0 && P.inT > 16 && P.shown < 0.25 && !P.hinted) { P.hinted = true; G.hud.say('The side of the lead. The whole sheet.', 3); }
       // what reads (measured four times a second)
       P.checkT -= dt;
       if (P.checkT <= 0 && P.solvedT < 0) {
@@ -141,7 +148,7 @@ export function padPuzzle(ctx) {
     },
     finish() {
       P.done = true;
-      live(H, { R: null, L: 'b2sheetL' });
+      live(H, { R: null, L: 'b2liveL' });
       P.close();
     },
     close() {

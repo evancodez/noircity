@@ -16,9 +16,9 @@ import { office, V } from './room.js';
 const STAIRS_IN = [{ x: -1.55, z: -5.75 }, { x: -1.15, z: -4.6 }];
 export const MEN = {
   // the kicker: to the door's glass, then (after the kick) in and behind the open door leaf
-  kicker: { at: { x: -2.3, z: -5.8 }, path: [...STAIRS_IN, { x: -0.7, z: -1.2 }, { x: -0.56, z: 1.02 }], role: 'enter', hp: 100, aim: 0.55 },
+  kicker: { at: { x: -2.3, z: -5.8 }, path: [...STAIRS_IN, { x: -0.7, z: -1.2 }, { x: -0.4, z: 1.02 }], role: 'enter', hp: 100, aim: 0.55 },
   // the glass man: behind the sidelight
-  glass: { at: { x: -2.3, z: -6.0 }, path: [...STAIRS_IN, { x: -1.4, z: -0.6 }, { x: -1.4, z: 1.9 }, { x: -0.58, z: 2.52 }], role: 'glass', hp: 100, aim: 0.5, fire: { x: -0.58, z: 2.52 } },
+  glass: { at: { x: -2.3, z: -6.0 }, path: [...STAIRS_IN, { x: -1.4, z: -0.6 }, { x: -1.4, z: 1.9 }, { x: -0.42, z: 2.52 }], role: 'glass', hp: 100, aim: 0.5, fire: { x: -0.42, z: 2.52 } },
   // the doorway man: out of sight south of the jamb, a step into the door to fire
   doorway: { at: { x: -2.3, z: -5.8 }, path: [...STAIRS_IN, { x: -0.7, z: -0.8 }, { x: -0.6, z: 0.08 }], role: 'hall', hp: 100, aim: 0.55, hide: { x: -0.6, z: 0.08 }, fire: { x: -0.42, z: 0.98 } },
   // the Tommy gun at the fire-escape window: up the flight from the floor below
@@ -72,8 +72,10 @@ function segBox(b, pad) {
 }
 export function coverFrom(ctx, from) {
   const G = ctx.game, C = ctx.controller, e = G.eye;
-  const k = C.crouchK || 0;
-  if (k < 0.55) return 0;
+  // (a shot from behind the cover shows me over it for a moment: a second after each)
+  const shown = Math.max(0, 1 - (G.time - (ctx.flags.lastShotT ?? -9)) / 1.1);
+  const k = (C.crouchK || 0) * (1 - 0.8 * shown);
+  if (k < 0.45) return 0;
   _seg.ax = from.x; _seg.az = from.z; _seg.bx = e.x; _seg.bz = e.z;
   for (const b of ctx.stage.colliders.boxes) {
     if (b.tag !== 'booth' && b.tag !== 'crates' && b.tag !== 'can') continue;

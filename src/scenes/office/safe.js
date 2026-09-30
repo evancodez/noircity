@@ -31,9 +31,9 @@ export function safePuzzle(ctx) {
       S.prevPose = C.eyePose();
       // the eye before the dial, a little above it, close
       const c = safe.centre;
-      const pose = { x: c.x + 0.07, y: c.y + 0.12, z: c.z + 0.46, yaw: 0.12, pitch: -0.2 };
-      C.setMode('table', { pose, fov: 44, ease: 0.45 });
-      live(H, { R: 'b2liveR', L: O.sheet ? 'b2sheetL' : null });
+      const pose = { x: c.x - 0.03, y: c.y + 0.1, z: c.z + 0.6, yaw: 0.0, pitch: -0.15 };
+      C.setMode('table', { pose, fov: 42, ease: 0.45 });
+      live(H, { R: 'b2liveR', L: O.sheet ? 'b2liveL' : null });
       S.place();
       if (!S.taught) { S.taught = true; G.hud.prompt('MOUSE  turn the dial', null, 'safe'); S.teachT = 3.2; }
     },
@@ -44,15 +44,17 @@ export function safePuzzle(ctx) {
       const a = -S.grip;                      // (the hand's own turn about the dial's axis)
       const ca = Math.cos(a), sa = Math.sin(a);
       const rot = (x, y) => [x * ca - y * sa, x * sa + y * ca];
-      const [ox, oy] = rot(0.045, -0.035);
-      const at = V(c.x + ox, c.y + oy, c.z + 0.045);
-      const [nx, ny] = rot(-0.7, 0.45);
-      const [fx, fy] = rot(-0.55, 0.8);
+      // (the palm to the right of the knob, facing the wall; the fingers
+      // pointing left along the dial's face to its rim, index over, thumb under)
+      const [ox, oy] = rot(0.078, -0.02);
+      const at = V(c.x + ox, c.y + oy, c.z + 0.075);
+      const [nx, ny] = rot(-0.3, 0.05);
+      const [fx, fy] = rot(-1, 0.22);
       const root = H.vm.root; root.updateMatrixWorld(true);
       const inv = new THREE.Matrix4().copy(root.matrixWorld).invert();
       const p = at.clone().applyMatrix4(inv);
-      const n = V(nx, ny, -0.55).normalize().transformDirection(inv);
-      const f = V(fx, fy, -0.25).normalize().transformDirection(inv);
+      const n = V(nx, ny, -1).normalize().transformDirection(inv);
+      const f = V(fx, fy, -0.1).normalize().transformDirection(inv);
       const lift = S.regrip > 0 ? Math.sin(Math.PI * (1 - S.regrip / 0.16)) * 0.012 : 0;
       p.addScaledVector(V(0, 0, 1).transformDirection(inv), lift);
       setLive('R', palm('cam', p.toArray(), n.toArray(), f.toArray(),
@@ -65,9 +67,13 @@ export function safePuzzle(ctx) {
       const dx = S.demo ? S.demo(dt) : G.mouse.dx;
       const d = -dx * PER_PX;                       // (mouse right: turn right: the reading falls)
       if (!S.cracked) S.turn(d, dt);
+      // (once, a line: the order of the turns; the sheet has the numbers)
+      S.inT = (S.inT || 0) + dt;
+      if (!S.cracked && S.stage === 0 && S.inT > 28 && !S.hinted) { S.hinted = true; G.hud.say('Right to the first. Left to the second. Right again.', 3.5); }
       S.twitch *= Math.exp(-dt * 30);
       safe.dial = S.reading;
-      safe.dialG.rotation.z = (S.reading / 100) * Math.PI * 2 + S.twitch;
+      // (the face's figures sit a quarter turn round on its disc: 75 is at the index at rest)
+      safe.dialG.rotation.z = ((S.reading - 75) / 100) * Math.PI * 2 + S.twitch;
       // the hand's grip follows the turn; past 50 degrees it lets go and takes the knob again
       if (S.regrip > 0) { S.regrip -= dt; S.grip *= Math.exp(-dt * 25); }
       else if (Math.abs(S.grip) > 0.9) S.regrip = 0.16;
@@ -163,7 +169,7 @@ export function safePuzzle(ctx) {
       if (!S.active) return;
       S.active = false;
       G.hud.clearPrompt('safe');
-      live(H, { R: null, L: O.sheet ? 'b2sheetL' : null });
+      live(H, { R: null, L: O.sheet ? 'b2liveL' : null });
       const back = S.prevPose || C.eyePose();
       C.setMode(ctx.flags.walkMode || 'walk');
       C.ease({ ...back, pitch: Math.max(-0.5, back.pitch) }, 0.45);

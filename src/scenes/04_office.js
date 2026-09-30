@@ -2,8 +2,9 @@ import { defineScene, wait, until, beat } from '../game/script.js';
 import { roomAs, carry, office, stand, roomLines, sheetOf, V } from './office/room.js';
 import { padPuzzle } from './office/pad.js';
 import { safePuzzle, safeDemo } from './office/safe.js';
-import { live } from './office/hands.js';
+import { live, holdSheet } from './office/hands.js';
 import { DOOR, PAD, DESK, SAFE, PICTURE } from '../stages/office/plan.js';
+import { HAND_POSES as HP } from '../player/handPoses.js';
 
 // Scene 4, Room 304 (lane B2's brief; STORY.md). The Harbor Building, the
 // third floor, night. Beats:
@@ -79,7 +80,14 @@ export default defineScene({
     ctx.music.cue('office', { fade: 2.5 });
     const pad = F.pad = padPuzzle(ctx);
     const safe = F.safe = safePuzzle(ctx);
-    ctx.onStep((dt) => { pad.step(dt); safe.step(dt); });
+    ctx.onStep((dt) => {
+      pad.step(dt); safe.step(dt);
+      // the torn sheet in my left hand: held up at the frame's lower left (higher at the dial, to be read)
+      if (O.sheet && H.held.L === O.sheet && (!H.clips[0] || H.clips[0].done || H.clips[0].name !== 'b2_tear')) {
+        holdSheet(H, O.sheet, safe.active ? { pos: [-0.2, -0.17, -0.52], face: [0.25, 0.15, 1], foot: [-0.12, -1, 0.1] } : {});
+        if (!H.still || H.still.L !== HP.b2liveL) live(H, { R: H.still && H.still.R ? 'b2liveR' : null, L: 'b2liveL' });
+      }
+    });
 
     // ---- 1. the corridor ------------------------------------------------------------------
     if (ctx.at('corridor')) {
@@ -133,8 +141,10 @@ export default defineScene({
       yield until(() => tk.t >= H.clip('b2_take').marks.take);
       // held up and opened: columns, sums, the bird by the big ones
       let put = false;
-      const I = G.inspect.open({ prop: L, options: { dist: 0.44, spin: [0.95, 0.1], scale: 1.3 }, onDone: () => { put = true; } });
-      I.pivot.rotation.set(0.95, 0.1, 0);
+      // (square to me, its spine up the middle of the view: held up, open)
+      L.rotation.set(0, 0, 0);
+      const I = G.inspect.open({ prop: L, options: { dist: 0.52, spin: [1.15, 0.0], scale: 0.95 }, onDone: () => { put = true; } });
+      I.pivot.rotation.set(1.15, 0.0, 0);
       let t = 0;
       yield until(() => {
         t += 1 / 60;
@@ -173,6 +183,6 @@ function giveSheet(ctx, O, fresh) {
     ctx.stage.scene.add(O.sheet);
   }
   if (H.held.L !== O.sheet) H.hold(O.sheet, 'L');
-  live(H, { R: H.still && H.still.R ? 'b2liveR' : null, L: 'b2sheetL' });
+  live(H, { R: H.still && H.still.R ? 'b2liveR' : null, L: 'b2liveL' });
   void SAFE;
 }

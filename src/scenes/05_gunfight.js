@@ -46,7 +46,7 @@ export default defineScene({
     D.stop(); D.groups.clear();
     D.begin();
     roomReacts(ctx);
-    const shotFn = () => { F.shotAt = true; };
+    const shotFn = () => { F.shotAt = true; F.lastShotT = G.time; };
     const downFn = (e) => { const h = e && e.hood; void h; };
     void downFn;
     let lastK = G.counters.kills;
@@ -103,7 +103,7 @@ export default defineScene({
       let t = 0;
       yield until(() => {
         t += 1 / 60;
-        const atDoor = kicker.pos.distanceTo(V(-0.56, 0, 1.02)) < 0.45 && glass.pos.distanceTo(V(-0.58, 0, 2.52)) < 0.5;
+        const atDoor = kicker.pos.distanceTo(V(-0.4, 0, 1.02)) < 0.45 && glass.pos.distanceTo(V(-0.42, 0, 2.52)) < 0.5;
         const nearDoor = G.eye.x < 1.2 && Math.abs(G.eye.z - (DOOR.z0 + DOOR.z1) / 2) < 1.1;
         return (atDoor && t > 5.5) || t > 11 || (atDoor && (nearDoor || F.shotAt));
       });
@@ -140,6 +140,8 @@ export default defineScene({
       if (F.jump === 'quiet') jumpTo(ctx, 'quiet');
       yield beat('quiet');
       D.stop();
+      // (up from behind the desk to see it: the smoke in the light, the paper coming down)
+      C.crouchOn = false;
       // smoke in the light, paper coming down
       const rng = ctx.stage.rng.fork(3071);
       papers(ctx, V(DESK.x - 0.6, 2.4, DESK.z), V(0, -1, 0), rng, 5);
@@ -182,9 +184,9 @@ function jumpTo(ctx, b) {
   tipPrompt(ctx);
   if (b === 'door') {
     O.setDoor(0.035);
-    const k = send(ctx, 'kicker', { at: { x: -0.56, z: 1.02 }, path: [] });
+    const k = send(ctx, 'kicker', { at: { x: -0.4, z: 1.02 }, path: [] });
     holdUntilKicked(ctx, k);
-    const g = send(ctx, 'glass', { at: { x: -0.58, z: 2.52 }, path: [] });
+    const g = send(ctx, 'glass', { at: { x: -0.42, z: 2.52 }, path: [] });
     holdUntilKicked(ctx, g, 0.9);
   }
   if (b === 'window') { O.kickDoor(); O.door.angle = 1.72; O.door.hinge.rotation.y = 1.72; O.doorCollider(); }

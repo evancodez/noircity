@@ -17,29 +17,29 @@ function pagesCanvas() {
   const g = c.getContext('2d');
   for (let s = 0; s < 2; s++) {
     const x0 = s * 256;
-    g.fillStyle = '#cfccc3'; g.fillRect(x0, 0, 256, 360);
+    g.fillStyle = '#e4e1d8'; g.fillRect(x0, 0, 256, 360);
     // the rules: a header band, columns
-    g.fillStyle = '#6a6862';
+    g.fillStyle = '#3a3936';
     g.fillRect(x0 + 10, 34, 236, 2);
-    for (const cx of [60, 150, 196]) g.fillRect(x0 + cx, 24, 1.5, 326);
-    for (let y = 50; y < 350; y += 14) g.fillRect(x0 + 10, y, 236, 0.8);
+    for (const cx of [60, 150, 196]) g.fillRect(x0 + cx, 24, 2.5, 326);
+    for (let y = 50; y < 350; y += 14) g.fillRect(x0 + 10, y, 236, 1.2);
     // a heading, dates and names as dashes, the sums in figures
     g.fillStyle = '#1c1c1c';
     g.font = 'bold 15px Georgia, serif';
     g.fillText(s ? 'PIER 9  -  DOCK' : 'CARDINAL CLUB', x0 + 14, 22);
-    g.font = 'italic 11px Georgia, serif';
+    g.font = 'bold italic 12px Georgia, serif';
     let seed = 13 + s * 7;
     const rnd = () => { seed = (seed * 16807) % 2147483647; return seed / 2147483647; };
     for (let r = 0; r < 20; r++) {
       const y = 60 + r * 14;
-      g.fillRect(x0 + 14, y - 4, 20 + rnd() * 20, 1.4);
-      g.fillRect(x0 + 66, y - 4, 40 + rnd() * 40, 1.4);
+      g.fillRect(x0 + 14, y - 5, 20 + rnd() * 20, 2.6);
+      g.fillRect(x0 + 66, y - 5, 40 + rnd() * 40, 2.6);
       const amt = Math.floor(rnd() * 900 + 40) + (rnd() > 0.8 ? Math.floor(rnd() * 9) * 1000 : 0);
       g.fillText(String(amt) + '.00', x0 + 154, y);
       const big = amt >= 1000;
       if (big) {
         // the stamp: a small black bird by the sum
-        g.save(); g.translate(x0 + 222, y - 4); g.scale(0.22, 0.22);
+        g.save(); g.translate(x0 + 224, y - 5); g.scale(0.3, 0.3);
         g.beginPath(); g.moveTo(-30, 20); g.bezierCurveTo(-20, -8, 4, -18, 18, -14); g.lineTo(26, -30); g.lineTo(24, -12); g.lineTo(36, -8); g.lineTo(24, -2);
         g.bezierCurveTo(26, 16, 10, 28, -8, 30); g.lineTo(-40, 44); g.lineTo(-34, 30); g.closePath(); g.fill();
         g.restore();
@@ -87,9 +87,12 @@ export const SPECS = {
     mat.name = 'prop_paper';
     return {
       parts: [{ geo: g, mat, id: 0, name: 'sheet', keep: true }],
-      grip: [0.07, 0.002, 0.09],
+      grip: [-0.095, 0.002, 0.03],
       init(grp, ud, by) {
         ud.setPaper = (tex) => { by.sheet.material.map = tex; by.sheet.material.needsUpdate = true; };
+        // (in a left hand the hands mirror what they hold: the sheet is
+        // mirrored back, so its figures read)
+        ud.leftHanded = (on) => { by.sheet.scale.x = on ? -1 : 1; };
       },
     };
   },
@@ -108,13 +111,20 @@ export const SPECS = {
     s.moveTo(-0.03, 0.02); s.bezierCurveTo(-0.02, -0.008, 0.004, -0.018, 0.018, -0.014); s.lineTo(0.026, -0.03); s.lineTo(0.024, -0.012);
     s.lineTo(0.036, -0.008); s.lineTo(0.024, -0.002); s.bezierCurveTo(0.026, 0.016, 0.01, 0.028, -0.008, 0.03); s.lineTo(-0.04, 0.044); s.lineTo(-0.034, 0.03);
     const bird = new THREE.ShapeGeometry(s, 6).rotateX(-Math.PI / 2).scale(0.8, 1, 0.8).translate(w / 2, 0.0062, -0.04);
-    // the pages as they show when it is open: the block's top with the columns
-    const pg = new THREE.PlaneGeometry(w * 2 - 0.02, d - 0.02).rotateX(-Math.PI / 2).translate(0, t - 0.004, 0);
+    // the pages as they show when it is open: the right page on the block's
+    // top, the left on the inside of the front board (it turns up as it opens)
     const tex = new THREE.CanvasTexture(pagesCanvas());
     tex.colorSpace = THREE.SRGBColorSpace;
     tex.anisotropy = 8;
     const pm = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.95, map: tex });
     pm.name = 'prop_paper';
+    // (held up in the inspection, not in a hand: it prints as paper by its own tag)
+    pm.userData.inkSurface = 'paper';
+    const half = (u0, u1) => { const g = new THREE.PlaneGeometry(w - 0.02, d - 0.02); const uv = g.getAttribute('uv'); for (let i = 0; i < uv.count; i++) uv.setX(i, u0 + uv.getX(i) * (u1 - u0)); return g; };
+    // (the right page: its top edge toward -z, read from +z with +x to the right)
+    const right = half(0.5, 1).rotateX(-Math.PI / 2).translate(0.003, t - 0.0025, 0);
+    // (the left page: on the board's inside face, which faces down while it is shut)
+    const left = half(0, 0.5).rotateX(Math.PI / 2).rotateY(Math.PI).translate(w / 2, -0.003, 0);
     return {
       parts: [
         { geo: back, mat: P.crew, id: 0 },
@@ -122,7 +132,8 @@ export const SPECS = {
         { geo: spine, mat: P.crew, id: 0 },
         { geo: front, mat: P.crew, id: 2, name: 'cover', pivot: [-w / 2, t - 0.006, 0] },
         { geo: bird, mat: P.black, id: 2, parent: 'cover', cast: false },
-        { geo: pg, mat: pm, id: 3, name: 'pages', keep: true, cast: false },
+        { geo: right, mat: pm, id: 3, cast: false },
+        { geo: left, mat: pm, id: 3, parent: 'cover', cast: false },
       ],
       grip: [0.05, t / 2, 0.02], accent: 'crew',
       init(grp, ud, by) {
@@ -132,8 +143,6 @@ export const SPECS = {
           ud.open = Math.max(0, Math.min(1, k));
           const e = ud.open * ud.open * (3 - 2 * ud.open);
           by.cover.rotation.z = e * Math.PI;
-          by.pages.visible = ud.open > 0.5;
-          by.pages.position.x = -w / 2;
         };
         ud.setOpen(0);
       },

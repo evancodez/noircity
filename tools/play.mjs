@@ -260,10 +260,10 @@ async function shoot({ until = 'false', timeout = 150000, cover = false, react =
     if (!s.reloading && s.ammo <= 0) { if (cover && s.crouch < 0.5) await tap('KeyC'); await tap('KeyR'); await sleep(rr(300, 500)); continue; }
     if (s.reloading) { await sleep(120); continue; }
     if (!seen.length) {
-      // nobody in sight: down behind it (while standing, a man at the window
-      // or in the door may still be out of the line)
-      if (cover && s.crouch < 0.5 && Date.now() - last > 900) { await tap('KeyC'); last = Date.now(); }
-      else if (cover && s.crouch > 0.5 && Date.now() - last > 1600) { await tap('KeyC'); last = Date.now(); }
+      // nobody in sight: down behind it; nobody in sight from down there
+      // for a while: up to look
+      if (cover && s.crouch < 0.5 && Date.now() - last > 1200) { await tap('KeyC'); last = Date.now(); }
+      else if (cover && s.crouch > 0.5 && Date.now() - last > 1800) { await tap('KeyC'); last = Date.now(); }
       await sleep(150); target = null; continue;
     }
     // the man nearest the middle of the view
@@ -271,7 +271,6 @@ async function shoot({ until = 'false', timeout = 150000, cover = false, react =
       return { dy: Math.atan2(Math.sin(yw - s.yaw), Math.cos(yw - s.yaw)), dp: pt - s.pitch }; };
     seen.sort((a, b) => { const A = ang(a), B = ang(b); return Math.hypot(A.dy, A.dp) - Math.hypot(B.dy, B.dp); });
     const m = seen[0];
-    if (cover && s.crouch > 0.5) { await tap('KeyC'); await sleep(rr(220, 320)); continue; }
     if (!target || target.id !== m.id) { target = m; await sleep(rr(react[0], react[1])); aimedAt = 0; continue; }
     // the turn onto him in a few moves: most of the way, then the settle, a little off
     const A = ang(m);
@@ -284,8 +283,8 @@ async function shoot({ until = 'false', timeout = 150000, cover = false, react =
     await mouse('mousePressed', mx ?? W / 2, my ?? H / 2, 'left'); await sleep(40); await mouse('mouseReleased', mx ?? W / 2, my ?? H / 2, 'left');
     fired++;
     await sleep(rr(330, 520));
-    // (two at a man, then down again behind the desk for a breath)
-    if (cover && fired % 2 === 0 && Math.random() < 0.6) { await tap('KeyC'); last = Date.now(); await sleep(rr(500, 900)); }
+    // (standing to shoot: two at a man, then down behind the desk for a breath)
+    if (cover && s.crouch < 0.5 && fired % 2 === 0 && Math.random() < 0.6) { await tap('KeyC'); last = Date.now(); await sleep(rr(500, 900)); }
   }
 }
 

@@ -107,20 +107,29 @@ export function makeFrosted({ w = 1, h = 1, text = null, lit = 'back', seed = 0 
         for ( int f = 0; f < ${MAXF}; f ++ ) {
           float k = uFK[ f ];
           if ( k <= 0.0 ) continue;
+          // (a man behind the light, or on the room's side of the glass: no shadow here)
+          float front = dot( uJ[ f * ${NJ} + 2 ] - uSrc, uN ), gap = dot( uC - uJ[ f * ${NJ} + 2 ], uN );
+          if ( front < 0.15 || gap < 0.05 ) continue;
+          k *= smoothstep( 0.15, 0.35, front );
           vec3 hd = proj( uJ[ f * ${NJ} + 0 ] ), ht = proj( uJ[ f * ${NJ} + 1 ] ), ch = proj( uJ[ f * ${NJ} + 2 ] );
           vec3 hp = proj( uJ[ f * ${NJ} + 3 ] ), hr = proj( uJ[ f * ${NJ} + 4 ] ), hl = proj( uJ[ f * ${NJ} + 5 ] ), kn = proj( uJ[ f * ${NJ} + 6 ] );
           // (the source's magnification of a man between it and the glass:
           // his widths grow as his joints' places do; his edge softens with
           // his distance from the glass)
-          float sc = 1.9 / max( 0.35, 1.9 - ch.z );
+          float sc = 1.25 / max( 0.3, 1.25 - ch.z );
           float blur = 0.006 + 0.06 * ch.z;
           vec2 X = vec2( 1.0, 0.0 );
           float dd = 1e3;
           // the head, the hat's crown, its wide brim
-          vec2 brim = mix( hd.xy, ht.xy, 0.72 );
-          dd = min( dd, length( ( p - mix( hd.xy, ht.xy, 0.3 ) ) / vec2( 1.0, 1.25 ) ) - 0.09 * sc );
-          dd = min( dd, segD( p, brim, ht.xy + vec2( 0.0, 0.04 ) * sc ) - 0.075 * sc );
-          dd = min( dd, segD( p, brim - X * 0.2 * sc, brim + X * 0.2 * sc ) - 0.02 * sc );
+          // (hd: the head's bone, ht 0.2 over it: the head a ball on the
+          // bone, the brim a flat wide bar at its crown, the crown a low
+          // rounded block on the brim with its pinch)
+          vec2 up = ( ht.xy - hd.xy ) / 0.2;
+          vec2 brim = hd.xy + up * 0.14;
+          dd = min( dd, length( ( p - ( hd.xy + up * 0.05 ) ) / vec2( 1.0, 1.2 ) ) - 0.088 * sc );
+          dd = min( dd, segD( p, brim - X * 0.165 * sc, brim + X * 0.165 * sc ) - 0.022 * sc );
+          dd = min( dd, segD( p, brim + up * 0.04 * sc - X * 0.045 * sc, brim + up * 0.04 * sc + X * 0.045 * sc ) - 0.052 * sc );
+          dd = min( dd, segD( p, brim + up * 0.1 * sc - X * 0.03 * sc, brim + up * 0.1 * sc + X * 0.03 * sc ) - 0.035 * sc );
           // the shoulders, the coat to the hips and on past them to the knee
           vec2 sh0 = mix( ch.xy, hd.xy, 0.28 );
           dd = min( dd, segD( p, sh0 - X * 0.17 * sc, sh0 + X * 0.17 * sc ) - 0.075 * sc );
@@ -142,7 +151,7 @@ export function makeFrosted({ w = 1, h = 1, text = null, lit = 'back', seed = 0 
         float glow = ( front == ( lampFace < 0.0 ) ) ? uGlowB : uGlowF;
         float fall = 1.0 / ( 1.0 + 0.35 * dot( uLamp - vW, uLamp - vW ) );
         float mottle = 0.82 + 0.18 * noise( p * 9.0 ) + 0.06 * noise( p * 41.0 );
-        float I = min( 1.5, glow * uLampK * ( 0.35 + 3.2 * fall ) ) * mottle;
+        float I = min( 1.05, glow * uLampK * ( 0.35 + 3.2 * fall ) ) * mottle;
         // the gilt letters: pale, keylined; read the right way round from the
         // lamp's side (the text is drawn for a reader facing -N)
         vec2 tuv = vec2( 0.5 - p.x / uWH.x, p.y / uWH.y + 0.5 );
@@ -164,7 +173,7 @@ export function makeFrosted({ w = 1, h = 1, text = null, lit = 'back', seed = 0 
   ud.setFrame = (c, u, v, n) => {
     U.uC.value.copy(c); U.uU.value.copy(u); U.uV.value.copy(v); U.uN.value.copy(n);
     // (the shadows' source: 1.9 m behind the glass, at a man's shoulder)
-    U.uSrc.value.copy(c).addScaledVector(n, -1.9); U.uSrc.value.y = 1.45;
+    U.uSrc.value.copy(c).addScaledVector(n, -1.25); U.uSrc.value.y = 1.55;
   };
   ud.setLamp = (p, k = 1) => { U.uLamp.value.copy(p); U.uLampK.value = k; };
   ud.glow = (f, b) => { U.uGlowF.value = f; U.uGlowB.value = b; };
