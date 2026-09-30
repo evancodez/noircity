@@ -73,10 +73,29 @@ export function endHat(ctx, hood, { now = false } = {}) {
 // the cigar lies
 function plan(H, S, headAt) {
   const back = H.fwd.clone().negate();
-  const land = headAt.clone().setY(0).addScaledVector(back, 0.25).addScaledVector(H.side, 0.1);
-  const rest = land.clone().addScaledVector(back, 0.6).addScaledVector(H.side, 0.62);
+  // (it rolls where there is street to roll on: never under a car, into a
+  // wall or a post; the side and the length that leave it clear)
+  const clear = (p, m = 0.38) => {
+    if (p.x < -9.9) return false;
+    for (const b of S.colliders.boxes) {
+      if (b.tag !== 'car' && b.tag !== 'wall') continue;
+      const dx = p.x - b.cx, dz = p.z - b.cz, lx = dx * b.c - dz * b.s, lz = dx * b.s + dz * b.c;
+      if (Math.hypot(Math.max(0, Math.abs(lx) - b.hx), Math.max(0, Math.abs(lz) - b.hz)) < m) return false;
+    }
+    for (const c of S.colliders.circles) if (c.tag !== 'hood' && Math.hypot(p.x - c.x, p.z - c.z) < c.r + m) return false;
+    return true;
+  };
+  let land = headAt.clone().setY(0).addScaledVector(back, 0.25).addScaledVector(H.side, 0.1);
+  let rest = null;
+  for (const [b, s] of [[0.6, 0.62], [0.6, -0.62], [0.3, 0.75], [0.3, -0.75], [-0.3, 0.8], [-0.3, -0.8], [0.1, 0.3]]) {
+    const r = land.clone().addScaledVector(back, b).addScaledVector(H.side, s);
+    const c = r.clone().addScaledVector(H.side, -0.36 * Math.sign(s)).addScaledVector(H.fwd, 0.2);
+    if (clear(r) && clear(c, 0.2)) { rest = r; H.cigSide = Math.sign(s); break; }
+  }
+  if (!rest) { rest = land.clone(); H.cigSide = 1; }
+  if (!clear(land, 0.2)) land = rest.clone().addScaledVector(H.side, -0.3);
   rest.y = S.surfaceY(rest.x, rest.z);
-  const cigRest = rest.clone().setY(0).addScaledVector(H.side, -0.36).addScaledVector(H.fwd, 0.2);
+  const cigRest = rest.clone().setY(0).addScaledVector(H.side, -0.36 * H.cigSide).addScaledVector(H.fwd, 0.2);
   cigRest.y = S.surfaceY(cigRest.x, cigRest.z);
   const mid = land.clone().lerp(rest, 0.5).addScaledVector(back, 0.3);
   Object.assign(H, { land, rest, arc: new THREE.QuadraticBezierCurve3(land.clone().setY(0), mid.setY(0), rest.clone().setY(0)) });

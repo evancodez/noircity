@@ -657,6 +657,17 @@ function* ending(ctx) {
   yield* theFrame(ctx);
 }
 
+// a place a man can kneel: clear of the cars, the walls and the posts
+function standClear(S, p, m = 0.45) {
+  if (p.x < -9.9) return false;
+  for (const b of S.colliders.boxes) {
+    const dx = p.x - b.cx, dz = p.z - b.cz, lx = dx * b.c - dz * b.s, lz = dx * b.s + dz * b.c;
+    if (Math.hypot(Math.max(0, Math.abs(lx) - b.hx), Math.max(0, Math.abs(lz) - b.hz)) < m) return false;
+  }
+  for (const c of S.colliders.circles) if (c.tag !== 'hood' && Math.hypot(p.x - c.x, p.z - c.z) < c.r + m) return false;
+  return true;
+}
+
 function* theFrame(ctx) {
   const G = ctx.game, R = rig(), C = G.controller;
   const hat = R.hat;
@@ -664,8 +675,17 @@ function* theFrame(ctx) {
   // down on one knee by his head, looking past it along the way he came: the
   // hat and the ember low in the frame, the wet street, the lamp beyond
   const at = hat ? hat.rest.clone() : V(-5.6, 0, -11);
-  const fwd = hat ? hat.fwd : V(-0.4, 0, 0.92), side = hat ? hat.side : V(0.92, 0, 0.4);
-  const eye = at.clone().addScaledVector(fwd, 1.2).addScaledVector(side, 0.28);
+  const fwd0 = hat ? hat.fwd : V(-0.4, 0, 0.92);
+  // (the way it looks turned, if it must be, until the eye stands clear of
+  // cars, walls and posts)
+  let fwd = fwd0, eye = null;
+  for (const a of [0, 0.35, -0.35, 0.7, -0.7, 1.1, -1.1, 1.6, -1.6]) {
+    const f = fwd0.clone().applyAxisAngle(V(0, 1, 0), a), sd = V(f.z, 0, -f.x);
+    const e = at.clone().addScaledVector(f, 1.2).addScaledVector(sd, 0.28);
+    if (standClear(G.stage, e)) { fwd = f; eye = e; break; }
+  }
+  const side = V(fwd.z, 0, -fwd.x);
+  if (!eye) eye = at.clone().addScaledVector(fwd, 1.2).addScaledVector(side, 0.28);
   eye.y = G.stage.surfaceY(eye.x, eye.z) + 1.08;
   const lookAt = at.clone().addScaledVector(fwd, -1.25).addScaledVector(side, -0.1);
   lookAt.y = 0.1;
