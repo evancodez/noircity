@@ -28,5 +28,10 @@ export const presets = {
     stage(stage) { stage.part('office').tipDesk(); },
   }),
   b2_window: beat('gunfight', 'window', 9.0, { x: 3.9, z: 3.6, yaw: 2.85, pitch: -0.05, fov: 68 }),
+  // down behind the desk, the door over its edge
+  b2_cover: beat('gunfight', 'door', 2.8, {
+    x: 3.98, z: 3.55, yaw: 1.02, pitch: 0.0, fov: 72,
+    stage(stage) { stage.part('office').tipDesk(); stage.game.controller.setMode('office', { crouch: true }); },
+  }),
 };
 void office;

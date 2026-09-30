@@ -42,19 +42,25 @@ export function buildFurniture(kit, mats, stage) {
   dk.push(new THREE.BoxGeometry(0.025, D.h - 0.25, D.w - 2 * pw).translate(-D.d / 2 + 0.03, (D.h - 0.25) / 2 + 0.18, 0));
   kit.add(M(dk), mats.desk, { parent: body, name: 'desk' });
   // the drawers' fronts on the chair's side (+x), most of them pulled out, papers spilling
-  kit.piece();
-  const dr = [];
-  for (const s of [-1, 1]) for (let k = 0; k < 3; k++) {
-    const zc = s * (D.w / 2 - pw / 2), y = 0.12 + k * 0.2;
-    const pulled = (k + (s > 0 ? 1 : 0)) % 2 === 0 ? 0.22 + 0.1 * hash(k, s) : 0;
-    dr.push(new THREE.BoxGeometry(0.02, 0.17, pw - 0.04).translate(D.d / 2 + pulled, y + 0.09, zc));
-    if (pulled > 0) {
-      // (the drawer's box, out of the pedestal)
-      dr.push(new THREE.BoxGeometry(pulled + 0.1, 0.12, pw - 0.08).translate(D.d / 2 + pulled / 2 - 0.05, y + 0.07, zc));
+  // (and the same drawers run home: when the desk goes over they stand
+  // straight up and slide back in, so its back is a clean edge to shoot over)
+  const drawersOf = (open) => {
+    kit.piece();
+    const dr = [];
+    for (const s of [-1, 1]) for (let k = 0; k < 3; k++) {
+      const zc = s * (D.w / 2 - pw / 2), y = 0.12 + k * 0.2;
+      const pulled = open && (k + (s > 0 ? 1 : 0)) % 2 === 0 ? 0.22 + 0.1 * hash(k, s) : 0;
+      dr.push(new THREE.BoxGeometry(0.02, 0.17, pw - 0.04).translate(D.d / 2 + pulled, y + 0.09, zc));
+      if (pulled > 0) {
+        // (the drawer's box, out of the pedestal)
+        dr.push(new THREE.BoxGeometry(pulled + 0.1, 0.12, pw - 0.08).translate(D.d / 2 + pulled / 2 - 0.05, y + 0.07, zc));
+      }
+      dr.push(new THREE.BoxGeometry(0.02, 0.012, 0.08).translate(D.d / 2 + pulled + 0.014, y + 0.1, zc));
     }
-    dr.push(new THREE.BoxGeometry(0.02, 0.012, 0.08).translate(D.d / 2 + pulled + 0.014, y + 0.1, zc));
-  }
-  kit.add(M(dr), mats.deskTop, { parent: body });
+    return kit.add(M(dr), mats.deskTop, { parent: body });
+  };
+  const drawersOpen = drawersOf(true), drawersShut = drawersOf(false);
+  drawersShut.visible = false;
   // the blotter, the pad's leather corners
   kit.piece();
   const top = D.h;
@@ -88,7 +94,7 @@ export function buildFurniture(kit, mats, stage) {
   kit.piece();
   kit.add(new THREE.BoxGeometry(0.3, 0.05, 0.24).rotateY(0.3).translate(4.2 - D.x, top + 0.025, 4.55 - D.z), mats.deskTop, { parent: body });
   kit.add(M([0, 1, 2, 3].map((k) => new THREE.BoxGeometry(0.28, 0.003, 0.21).rotateY(0.3 + k * 0.2).translate(4.2 - D.x - k * 0.02, top + 0.05 + k * 0.004, 4.55 - D.z + k * 0.03))), mats.paperDim, { parent: body, cast: false });
-  out.desk = { pivot, body, tipped: 0, x: D.x, z: D.z, top };
+  out.desk = { pivot, body, tipped: 0, x: D.x, z: D.z, top, drawers: { open: drawersOpen, shut: drawersShut } };
   out.desk.collider = C.addBox(D.x, D.z, D.d / 2, D.w / 2, 0, 'booth');
 
   // ---- the banker's lamp: brass stand, the shade (green glass: a grey here), the chain ----

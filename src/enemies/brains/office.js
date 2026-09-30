@@ -57,7 +57,7 @@ export default {
         S.shots = 0;
         B.dropToken();
         if (S.state === 'fire' || S.state === 'aim' || S.state === 'out') S.state = 'back';
-        S.wait = r.range(1.4, 2.4);
+        S.wait = r.range(1.0, 1.8);
       },
       update(dt, t) {
         if (!h.alive) return;
@@ -110,9 +110,9 @@ export default {
             if (S.fire) { const dx = S.fire.x - h.pos.x, dz = S.fire.z - h.pos.z, d = Math.hypot(dx, dz); if (d > 0.03 && d < 0.6) { const k = Math.min(1, 1.1 * dt / d); h.pos.x += dx * k; h.pos.z += dz * k; } }
             look();
             B.faceTo(p.x, p.z, dt, 7);
-            if (S.t < (heavy ? 0.4 : r.range(0.35, 0.55))) break;
+            if (S.t < (heavy ? 0.4 : r.range(0.3, 0.45))) break;
             S.state = 'fire';
-            S.shots = heavy ? r.int(5, 8) : r.int(2, 3) + (r.chance(0.3) ? 1 : 0);
+            S.shots = heavy ? r.int(6, 9) : r.int(3, 4) + (r.chance(0.3) ? 1 : 0);
             S.shotT = 0;
             break;
           }
@@ -122,10 +122,10 @@ export default {
             B.faceTo(p.x, p.z, dt, 7);
             S.shotT -= dt;
             if (S.shotT > 0) break;
-            if (S.shots <= 0) { B.dropToken(); S.cycles++; S.state = S.hide ? 'back' : 'wait'; S.wait = r.range(1.1, 2.1) * (heavy ? 1.2 : 1); break; }
+            if (S.shots <= 0) { B.dropToken(); S.cycles++; S.state = S.hide ? 'back' : 'wait'; S.wait = r.range(0.8, 1.5) * (heavy ? 1.2 : 1); break; }
             shoot(t);
             S.shots--;
-            S.shotT = heavy ? r.range(0.085, 0.11) : r.range(0.38, 0.55);
+            S.shotT = heavy ? r.range(0.085, 0.11) : r.range(0.3, 0.45);
             break;
           }
           // back behind the jamb, the wall, the cabinet

@@ -196,7 +196,11 @@ export default {
       }
       dk.pivot.rotation.z = T.a;
       dk.tipped = T.a / (Math.PI / 2);
+      // (past halfway the pulled drawers point up and run home, one bang)
+      if (!dk.slid && dk.tipped > 0.55) { drawersHome(api, stage, true); if (G) G.sfx.play('office_drawer', V(dk.x - 0.2, 0.9, dk.z), { k: 1 }); }
     }
+    // (the drawers' shut copy out of the bullets' way until it is wanted)
+    if (!dk._raysInit && G && G.rays) { dk._raysInit = true; drawersHome(api, stage, !!dk.slid); }
     // the desk lamp rides the desk, or lies where it fell
     lampFollow(api, stage);
     // the picture on its wire
@@ -234,9 +238,20 @@ function afterTip(api, stage) {
   const d = api.desk, c = d.collider;
   // (lying on its front: 0.78 deep along x now, its old front edge the pivot)
   c.cx = d.x - DESK.d / 2 - DESK.h / 2 + 0.02; c.hx = DESK.h / 2; c.hz = DESK.w / 2;
-  const G = stage.game;
+  deskRays(api, stage);
+}
+// the bullets' copy of the desk where the desk is (tipped, or stood up again)
+function deskRays(api, stage) {
+  const G = stage.game, d = api.desk;
   if (G && G.rays) d.body.traverse((m) => { if (m.isMesh && stage.solids.includes(m)) G.rays.refresh(m); });
   if (G && G.pipeline && G.pipeline.dirtyShadows) G.pipeline.dirtyShadows();
+}
+// the drawers pulled out (the room as found) or run home (the desk over)
+function drawersHome(api, stage, shut) {
+  const G = stage.game, D = api.desk.drawers;
+  D.open.visible = !shut; D.shut.visible = shut;
+  if (G && G.rays) { G.rays.setEnabled(D.open, !shut); G.rays.setEnabled(D.shut, shut); }
+  api.desk.slid = shut;
 }
 
 // the banker's lamp: its light follows its head wherever the desk takes it;
@@ -266,7 +281,13 @@ function lampFollow(api, stage) {
     parts.group.position.copy(p);
     // (it lands on its side, the shade's mouth toward the door, a little up)
     parts.group.rotation.set(0, 0.4 * u, (Math.PI / 2 - 0.2) * u);
-    if (u >= 1) { F.done = true; const G = stage.game; if (G) G.sfx.play('office_lampLand', p, {}); }
+    if (u >= 1) {
+      F.done = true;
+      const G = stage.game;
+      if (G) G.sfx.play('office_lampLand', p, {});
+      // (the bullets' copy of it where it lies: it can be shot out on the floor)
+      if (G && G.rays) { parts.group.updateWorldMatrix(true, true); parts.group.traverse((m) => { if (m.isMesh && stage.solids.includes(m)) G.rays.refresh(m); }); }
+    }
   }
   // the head and the aim from the shade's own frame, every step
   parts.shadeG.updateWorldMatrix(true, false);
@@ -299,12 +320,14 @@ function resetRoom(api, stage) {
   const d = api.desk;
   d.tip = null; d.tipped = 0; d.pivot.rotation.z = 0;
   d.collider.cx = d.x; d.collider.hx = DESK.d / 2; d.collider.hz = DESK.w / 2;
+  drawersHome(api, stage, false);
   const Lp = api.lamp, lamp = Lp.lamp;
   if (Lp.fall || Lp.parts.group.parent !== d.body) {
     d.body.add(Lp.parts.group);
     Lp.parts.group.position.set(LAMP.x - DESK.x, DESK.h, LAMP.z - DESK.z);
     Lp.parts.group.rotation.set(0, 0, 0);
   }
+  deskRays(api, stage);
   Lp.fall = null;
   Object.assign(lamp.light, { intensity: 7.5, angle: 1.15, distance: 4.5 });
   if (lamp.dead) { lamp.dead = false; lamp.buzz = null; lamp.dieNow = false; lamp.deadK = 0; lamp.on = true; if (lamp.bulb) lamp.bulb.material = api.mats.bulb; }

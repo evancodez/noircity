@@ -96,7 +96,7 @@ export default defineScene({
       F.drawn = true;
       yield wait(0.6);
       const glass = send(ctx, 'glass');
-      holdUntilKicked(ctx, glass, 0.9);
+      holdUntilKicked(ctx, glass, 0.3);
       // one prompt: the desk (the player may ignore it)
       tipPrompt(ctx);
       // the door goes in when they are both at the glass, or when I go at it
@@ -118,7 +118,7 @@ export default defineScene({
       send(ctx, 'doorway');
       // the window when the door is down to one, or when it has gone on long enough
       let t = 0;
-      yield until(() => { t += 1 / 60; return (alive(ctx, ['kicker', 'glass', 'doorway']) <= 1 && t > 8) || t > 24; });
+      yield until(() => { t += 1 / 60; return (alive(ctx, ['kicker', 'glass', 'doorway']) <= 1 && t > 7) || t > 20; });
     }
 
     // ---- 3. the window ----------------------------------------------------------------------
@@ -127,10 +127,12 @@ export default defineScene({
       yield beat('window');
       const w = send(ctx, 'window', { onFire: (h) => curtainShot(ctx, h) });
       void w;
+      // (the last two are on the stairs while he is still on the iron: a
+      // crossfire if he lives long enough)
       let t = 0;
-      yield until(() => { t += 1 / 60; return t > 9 || alive(ctx, ['window']) === 0; });
+      yield until(() => { t += 1 / 60; return t > 4.5 || alive(ctx, ['window']) === 0; });
       send(ctx, 'second');
-      yield wait(1.2);
+      yield wait(1.5);
       send(ctx, 'heavy');
       yield until(() => alive(ctx) === 0);
     }
@@ -179,6 +181,7 @@ function keptRoom(ctx) {
 // a jump into a later beat (?scene=gunfight&beat=door): the men as they would stand
 function jumpTo(ctx, b) {
   const G = ctx.game, O = office(ctx), F = ctx.flags;
+  ctx.controller.setMode('office', {});
   ctx.player.weapons.equip('revolver');
   F.drawn = true;
   tipPrompt(ctx);
@@ -262,6 +265,8 @@ function fall(ctx) {
   const G = ctx.game, C = ctx.controller, F = ctx.flags;
   if (F.down) return;
   F.down = true;
+  // (each fall's record kept on the game for the headless plays: the log, the cover per shot)
+  (G._b2falls || (G._b2falls = [])).push(`${F.log || ''}| ks ${(F.ks || []).join(' ')}`);
   const from = C.eyePose();
   C.setMode('cutscene', { track: (t) => {
     const u = Math.min(1, t / 0.9), e = u * u;

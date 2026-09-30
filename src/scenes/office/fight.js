@@ -16,16 +16,16 @@ import { office, V } from './room.js';
 const STAIRS_IN = [{ x: -1.55, z: -5.75 }, { x: -1.15, z: -4.6 }];
 export const MEN = {
   // the kicker: to the door's glass, then (after the kick) in and behind the open door leaf
-  kicker: { at: { x: -2.3, z: -5.8 }, path: [...STAIRS_IN, { x: -0.7, z: -1.2 }, { x: -0.4, z: 1.02 }], role: 'enter', hp: 100, aim: 0.55 },
+  kicker: { at: { x: -2.3, z: -5.8 }, path: [...STAIRS_IN, { x: -0.7, z: -1.2 }, { x: -0.4, z: 1.02 }], role: 'enter', hp: 100, aim: 0.7 },
   // the glass man: behind the sidelight
-  glass: { at: { x: -2.3, z: -6.0 }, path: [...STAIRS_IN, { x: -1.4, z: -0.6 }, { x: -1.4, z: 1.9 }, { x: -0.42, z: 2.52 }], role: 'glass', hp: 100, aim: 0.5, fire: { x: -0.42, z: 2.52 } },
+  glass: { at: { x: -2.3, z: -6.0 }, path: [...STAIRS_IN, { x: -1.4, z: -0.6 }, { x: -1.4, z: 1.9 }, { x: -0.42, z: 2.52 }], role: 'glass', hp: 100, aim: 0.65, fire: { x: -0.42, z: 2.52 } },
   // the doorway man: out of sight south of the jamb, a step into the door to fire
-  doorway: { at: { x: -2.3, z: -5.8 }, path: [...STAIRS_IN, { x: -0.7, z: -0.8 }, { x: -0.6, z: 0.08 }], role: 'hall', hp: 100, aim: 0.55, hide: { x: -0.6, z: 0.08 }, fire: { x: -0.42, z: 0.98 } },
+  doorway: { at: { x: -2.3, z: -5.8 }, path: [...STAIRS_IN, { x: -0.7, z: -0.8 }, { x: -0.6, z: 0.08 }], role: 'hall', hp: 100, aim: 0.7, hide: { x: -0.6, z: 0.08 }, fire: { x: -0.42, z: 0.98 } },
   // the Tommy gun at the fire-escape window: up the flight from the floor below
-  window: { at: { x: -1.75, z: 7.62 }, path: [{ x: 0.9, z: 7.62 }, { x: 1.55, z: 7.72 }], role: 'window', heavy: true, hp: 110, aim: 0.6, hide: { x: 1.7, z: 7.74 }, fire: { x: 2.72, z: 7.72 } },
+  window: { at: { x: -1.75, z: 7.62 }, path: [{ x: 0.9, z: 7.62 }, { x: 1.55, z: 7.72 }], role: 'window', heavy: true, hp: 130, aim: 0.75, hide: { x: 1.7, z: 7.74 }, fire: { x: 2.72, z: 7.72 } },
   // the last two: another at the door, the heavy on into the room
-  second: { at: { x: -2.3, z: -5.8 }, path: [...STAIRS_IN, { x: -0.62, z: -0.6 }, { x: -0.6, z: 0.1 }], role: 'hall', hp: 100, aim: 0.6, hide: { x: -0.6, z: 0.1 }, fire: { x: -0.35, z: 1.05 } },
-  heavy: { at: { x: -2.3, z: -6.0 }, path: [...STAIRS_IN, { x: -0.9, z: -0.3 }, { x: -0.55, z: 1.02 }, { x: 0.55, z: 1.1 }], role: 'rush', heavy: true, hp: 170, aim: 0.5 },
+  second: { at: { x: -2.3, z: -5.8 }, path: [...STAIRS_IN, { x: -0.62, z: -0.6 }, { x: -0.6, z: 0.1 }], role: 'hall', hp: 110, aim: 0.75, hide: { x: -0.6, z: 0.1 }, fire: { x: -0.35, z: 1.05 } },
+  heavy: { at: { x: -2.3, z: -6.0 }, path: [...STAIRS_IN, { x: -0.9, z: -0.3 }, { x: -0.55, z: 1.02 }, { x: 0.55, z: 1.1 }], role: 'rush', heavy: true, hp: 200, aim: 0.65 },
 };
 
 // a man sent in: spawned out of sight, his brain, his feet on the stage's floor
@@ -35,7 +35,8 @@ export function send(ctx, name, extra = {}) {
   const h = G.spawnHood(o.at.x, o.at.z, { brain: 'office', heavy: !!o.heavy, hp: o.hp, role: o.role, path: o.path, hide: o.hide || null, fire: o.fire || null, aim: o.aim, run: !!o.run, wait0: o.wait0, onFire: o.onFire || null, state: 'idle' });
   h.surface = (x, z) => ctx.stage.surfaceY(x, z);
   const ai = G.ais.get(h);
-  if (ai) { ai.coverK = (from) => coverFrom(ctx, from); ai.hold = () => !!ctx.flags.down; }
+  // (each shot's cover is kept in the flags: the headless plays read it)
+  if (ai) { ai.coverK = (from) => { const k = coverFrom(ctx, from), F = ctx.flags; (F.ks || (F.ks = [])).push(Math.round(k * 100) / 100); return k; }; ai.hold = () => !!ctx.flags.down; }
   h.b2 = name;
   const F = ctx.flags;
   (F.men || (F.men = [])).push(h);
@@ -71,6 +72,12 @@ function segBox(b, pad) {
   return true;
 }
 export function coverFrom(ctx, from) {
+  // (the desk lamp shot out: the room is the slats' light alone, darker for them too)
+  const k = coverRaw(ctx, from);
+  const L = office(ctx).lights.desk;
+  return L && L.dead ? 1 - (1 - k) * 0.7 : k;
+}
+function coverRaw(ctx, from) {
   const G = ctx.game, C = ctx.controller, e = G.eye;
   // (a shot from behind the cover shows me over it for a moment: a second after each)
   const shown = Math.max(0, 1 - (G.time - (ctx.flags.lastShotT ?? -9)) / 1.1);
@@ -81,7 +88,8 @@ export function coverFrom(ctx, from) {
     if (b.tag !== 'booth' && b.tag !== 'crates' && b.tag !== 'can') continue;
     const d = Math.hypot(e.x - b.cx, e.z - b.cz) - Math.max(b.hx, b.hz);
     if (d > 1.3) continue;
-    if (segBox(b, 0.05)) return k;
+    // (down behind it my hat still shows over its edge: most, not all)
+    if (segBox(b, 0.05)) return 0.85 * k;
   }
   return 0.3 * k;
 }
