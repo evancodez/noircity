@@ -389,6 +389,12 @@ function* takeGun(ctx) {
   yield wait(0.35);
 }
 
+// [second pass] how well the men shoot (x the lights: 0.7 in the dark). The
+// first pass had the scripted player hit by 2-7 % of their rounds and never
+// down; these are about a tenth to a sixth up (a quarter up drew the cars
+// beat out to a minute and a half: the scripted player backing off hurt)
+const AIM = { cars: 1.4, doorways: 1.3, intruder: 1.5, el: 1.1, heavies: 1.2 };
+
 // ---- 2. cars ------------------------------------------------------------------------------------
 function* carsBeat(ctx) {
   const G = ctx.game, S = ctx.stage, R = rig();
@@ -423,8 +429,11 @@ function* carsBeat(ctx) {
   const t0 = G.time;
   G.director.level = 4;
   yield wait(2.5);
-  yield until(() => G.director.alive('cars') <= 2 || G.time - t0 > 50);
+  // [second pass] (the beat has a floor: men shot as they step out do not
+  // end it in ten seconds; the rain and the burning cars hold the gap)
+  yield until(() => (G.director.alive('cars') <= 2 && G.time - t0 > CARS_MIN) || G.time - t0 > 50);
 }
+const CARS_MIN = 15;
 
 // a car at its stop: doors open, men out behind them, the first rounds into the glass
 function arrived(ctx, car, i) {
@@ -443,7 +452,7 @@ function arrived(ctx, car, i) {
       const L = (x, z) => V(x, 0, z).applyMatrix4(car.group.matrixWorld);
       const out = L(D.hinge[0] - 0.45, D.side * 1.25);
       const post = m.post === 'door' ? L(D.hinge[0] - 0.62, D.side * 1.28) : m.post === 'nose' ? L(2.9, -0.7 * D.side) : m.post === 'tail' ? L(-2.95, -0.55 * D.side) : m.post;
-      const h = man(ctx, { group: 'cars', at: { x: out.x, z: out.z }, entry: [{ x: post.x, z: post.z }], run: m.run ?? false, post: { x: post.x, z: post.z }, leash: m.leash, heavy: m.heavy, aim: 1.25 });
+      const h = man(ctx, { group: 'cars', at: { x: out.x, z: out.z }, entry: [{ x: post.x, z: post.z }], run: m.run ?? false, post: { x: post.x, z: post.z }, leash: m.leash, heavy: m.heavy, aim: AIM.cars });
       h.yaw = Math.atan2(G.eye.x - h.pos.x, G.eye.z - h.pos.z);
       h.setState('stepOut', 0.1);
       // the first rounds: into the diner's glass, pane by pane
@@ -508,13 +517,13 @@ function* doorways(ctx) {
   // (louder: three men may fire at once from here on)
   G.director.level = 5;
   for (const m of SITE.doorways) {
-    man(ctx, { group: 'doorways', at: m.at, entry: m.entry, run: true, post: m.post, leash: m.leash, heavy: m.heavy, aim: 1.15 });
+    man(ctx, { group: 'doorways', at: m.at, entry: m.entry, run: true, post: m.post, leash: m.leash, heavy: m.heavy, aim: AIM.doorways });
     yield wait(1.1);
   }
   yield wait(2.5);
   // the close one: out of the side alley, down the pavement, in at the door
   const I = SITE.intruder;
-  const h = man(ctx, { group: 'doorways', at: I.at, entry: I.entry, run: true, post: I.post, leash: 0, aim: 1.35 });
+  const h = man(ctx, { group: 'doorways', at: I.at, entry: I.entry, run: true, post: I.post, leash: 0, aim: AIM.intruder });
   h.b7intruder = true;
   const t0 = G.time;
   yield until(() => G.director.alive('doorways') <= 1 || G.time - t0 > 45);
@@ -524,7 +533,7 @@ function* doorways(ctx) {
 function* elBeat(ctx) {
   const G = ctx.game, R = rig();
   const E = SITE.el;
-  const h = man(ctx, { group: 'el', at: { x: E.x, z: E.z }, heavy: true, brain: 'b7_el', aim: 1.0, hp: 1e6, opts: { deckY: E.y, onFall: (hd) => overTheRail(ctx, hd) } });
+  const h = man(ctx, { group: 'el', at: { x: E.x, z: E.z }, heavy: true, brain: 'b7_el', aim: AIM.el, hp: 1e6, opts: { deckY: E.y, onFall: (hd) => overTheRail(ctx, hd) } });
   h.surface = () => E.y;
   h.pos.y = E.y;
   const t0 = G.time;
@@ -697,7 +706,7 @@ function* cardinal(ctx) {
     R.rails.doorBox(car, door);
     const D = DOORS[hv.door];
     const out = L(D.hinge[0] - 0.45, D.side * 1.25);
-    const h = man(ctx, { group: 'cardinal', at: { x: out.x, z: out.z }, entry: hv.entry, post: hv.post, leash: hv.leash, heavy: true, aim: 1.0 });
+    const h = man(ctx, { group: 'cardinal', at: { x: out.x, z: out.z }, entry: hv.entry, post: hv.post, leash: hv.leash, heavy: true, aim: AIM.heavies });
     h.setState('stepOut', 0.1);
     yield wait(0.7);
   }

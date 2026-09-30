@@ -142,18 +142,26 @@ export class Rails {
     panel.push(roundedBox(len - 0.04, 0.56, 0.05, 0.02, 2).translate(-len / 2, 0.79, 0));
     // the window frame: two posts and the top rail (the glass is gone: the
     // men wound it down to shoot over)
+    // [second pass] the frame is the car's chrome trim (and the belt line's
+    // strip): a black leaf on a black car read as nothing at night; its
+    // bright edges draw the open door against the body
     const top = 1.56;
-    panel.push(roundedBox(0.045, top - 1.07, 0.035, 0.012, 2).translate(-0.05, (1.07 + top) / 2, -0.01));
-    panel.push(roundedBox(0.045, top - 1.07, 0.035, 0.012, 2).translate(-len + 0.06, (1.07 + top) / 2 - 0.02, -0.01));
-    panel.push(roundedBox(len - 0.12, 0.04, 0.035, 0.012, 2).translate(-len / 2, top, -0.01));
+    const trim = [];
+    trim.push(roundedBox(0.045, top - 1.07, 0.035, 0.012, 2).translate(-0.05, (1.07 + top) / 2, -0.01));
+    trim.push(roundedBox(0.045, top - 1.07, 0.035, 0.012, 2).translate(-len + 0.06, (1.07 + top) / 2 - 0.02, -0.01));
+    trim.push(roundedBox(len - 0.12, 0.04, 0.035, 0.012, 2).translate(-len / 2, top, -0.01));
+    trim.push(roundedBox(len - 0.06, 0.03, 0.03, 0.01, 2).translate(-len / 2, 1.075, 0.018));
     const geo = merge(panel);
     const mesh = new THREE.Mesh(geo, M[car.paintKey || 'paint'] || M.paint);
+    const chrome = new THREE.Mesh(merge(trim), M.chrome || M.paint);
+    chrome.castShadow = true;
     mesh.castShadow = true; mesh.receiveShadow = true;
     const id = car.ids.glassId;
     Object.assign(mesh.userData, { inkId: id, inkFigure: true, part: 'body', car });
+    Object.assign(chrome.userData, { inkId: car.ids.seamId, inkFigure: true, part: 'body', car, noRay: true });
     const hinge = new THREE.Group();
     hinge.position.set(D.hinge[0], 0, D.hinge[1] + D.side * 0.04);
-    hinge.add(mesh);
+    hinge.add(mesh, chrome);
     car.group.add(hinge);
     // the opening it leaves in the side: a dark panel over the body there
     const hole = new THREE.Mesh(new THREE.PlaneGeometry(len - 0.08, 0.95).translate(0, 1.02, 0), M.black || new THREE.MeshBasicMaterial({ color: 0 }));
