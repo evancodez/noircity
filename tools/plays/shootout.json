@@ -5,6 +5,7 @@
  "out": "shots/play/shootout",
  "steps": [
   { "name": "the title, BEGIN at scene 9" },
+  { "until": "G.state === 'title' && !document.getElementById('title').classList.contains('hidden') && !!document.querySelector('#title .opt[data-k=begin]')", "timeout": 60000 },
   { "wait": 2500 },
   { "clickOn": "#title .opt[data-k=begin]" },
   { "until": "G.scenes.current && G.scenes.current.id === 'shootout' && document.pointerLockElement === N.renderer.domElement", "timeout": 30000 },
