@@ -389,7 +389,7 @@ export default {
     // a lamp over the door in the far wall of the yard, low, thrown down the
     // yard through the washing: the sheets glow with it, and a man just
     // past a line of them is his own shadow on them, as tall as he is
-    lamps.y3 = L.wall(43.2, 2.6, PASSAGE.z0, 0, 1, { out: 7.5, half: 0.34, strength: 0.9, height: 30 });
+    lamps.y3 = L.wall(43.2, 2.6, PASSAGE.z0, 0, 1, { out: 4.6, half: 0.34, strength: 0.9, height: 30 });
     // (its light carries the length of the yard: the washing 10 .. 26 m off
     // must be lit through, not just the ground under it)
     // ([R2-C] a narrower, harder beam: the washing, not the walls round it)

@@ -226,7 +226,8 @@ export default defineScene({
           if (k > 0) { k = Math.max(0, k - dt / 0.3); G.hud.fade(k * k * (3 - 2 * k)); }
           const e = G.controller.esc;
           if (!e || draw === -2) return;
-          if (draw < 0 && e.s >= e.autoTo) draw = 0;
+          // (from the moment the head is out from under the sash)
+          if (draw < 0 && e.s >= e.autoTo - 0.4) draw = 0;
           if (draw < 0) return;
           // (a turn of the mouse or a step down the iron lets it go)
           if (e.idle < draw - 1e-6 || G.held('KeyW') || G.held('ArrowUp')) { draw = -2; return; }
