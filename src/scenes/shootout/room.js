@@ -161,11 +161,28 @@ export function setRoomLights(stage, on) {
     l.dipBase.light = on ? l._b7.light : 0;
     l.on = !!on && !!d.near;
     if (l.bulb) l.bulb.visible = !!on;
+    shadeInside(l, on);
+  }
+}
+// (the inside of a shade is a lit grey round the bulb: dark with it)
+let INNER_DARK = null;
+function shadeInside(l, on) {
+  const head = l.bulb && l.bulb.parent;
+  if (!head) return;
+  for (const m of head.children) {
+    if (!m.isMesh || m === l.bulb) continue;
+    const mat = m.userData.b7mat || m.material;
+    if (!mat || mat.name !== 'diner_lampInner') continue;
+    if (!on) {
+      if (!INNER_DARK) { INNER_DARK = mat.clone(); INNER_DARK.color.setRGB(0.012, 0.012, 0.012); }
+      m.userData.b7mat = mat;
+      m.material = INNER_DARK;
+    } else if (m.userData.b7mat) { m.material = m.userData.b7mat; delete m.userData.b7mat; }
   }
 }
 export function restoreRoomLights(stage) {
   const d = stage.part('diner');
-  for (const l of d.lamps) if (l._b7) { l.dipBase.cone = l._b7.cone; l.dipBase.light = l._b7.light; delete l._b7; if (l.bulb) l.bulb.visible = true; }
+  for (const l of d.lamps) if (l._b7) { l.dipBase.cone = l._b7.cone; l.dipBase.light = l._b7.light; delete l._b7; if (l.bulb) l.bulb.visible = true; shadeInside(l, true); }
 }
 
 // ---- the HUD: the drums I carry, beside the ammo -----------------------------------------

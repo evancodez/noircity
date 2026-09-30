@@ -465,6 +465,7 @@ function* driveby(ctx) {
   const driver = man(ctx, { group: 'driveby', at: seat(0.1, -0.35), brain: 'none', hp: 60 });
   const gunner = man(ctx, { group: 'driveby', at: seat(-0.85, 0.35), heavy: true, brain: 'none', hp: 70 });
   for (const h of [driver, gunner]) { h.setState('sitCar', 0); if (h.collider) h.collider.r = 0.01; }
+  car.b7riders = [driver, gunner];
   const ai = { h: gunner, heavy: true, aim: 0 };
   let fireT = 0, burst = 0, rounds = 0, crashed = false;
   const r = ctx.rng;
@@ -533,6 +534,8 @@ function wrecked(ctx, car, at) {
   for (const l of S.lamps.lamps) if (l.kind === 'post' && Math.hypot(l.head.x - 1.5 - at.x, l.head.z - at.z) < 3 && !l.dead) S.lamps.shootOut(l, V(0, 0, 1));
   car.rail.engine = false;
   S.cars.startSmoke(car, 2.2);
+  // (whoever was in it does not get out)
+  for (const h of car.b7riders || []) if (h.alive) G.killHood(h, V(0, 0.3, 1).normalize(), false, 'deathBack');
   const R = rig();
   R.rails.settle(car);
 }
@@ -540,6 +543,12 @@ function wrecked(ctx, car, at) {
 // ---- 6. the Cardinal ---------------------------------------------------------------------------------
 function* cardinal(ctx) {
   const G = ctx.game, S = ctx.stage, R = rig();
+  // (the last of the others first: whoever is left after a while pulls back
+  // down the avenue, so the quiet is a quiet)
+  const t0 = G.time;
+  yield until(() => G.director.alive() === 0 || G.time - t0 > 15);
+  scatter(ctx);
+  yield until(() => G.director.alive() === 0);
   // a quiet, long enough to hear the rain
   G.music.stop(4);
   yield wait(7);
@@ -634,7 +643,9 @@ function* ending(ctx) {
     G.killHood(him, V(-Math.sin(him.yaw), 0, -Math.cos(him.yaw)), false, 'deathBack');
     endHat(ctx, him);
   }
-  // the last of them
+  // the last of them: with him down the rest break and run (no man I
+  // cannot find holds the ending)
+  scatter(ctx);
   yield until(() => G.director.alive() === 0);
   yield wait(1.2);
   // the gun lowers by itself; it will not fire again
@@ -672,6 +683,38 @@ function* ending(ctx) {
   G.hud.clearPrompt('scene');
   // the frame: down at the hat and the ember, the lamp's cone beyond it
   yield* theFrame(ctx);
+}
+
+// the men still up break off: they run, down the avenue away from me, and
+// are gone once well off (or after a few seconds, wherever they are)
+function scatter(ctx) {
+  const G = ctx.game, S = ctx.stage, R = rig();
+  for (const h of [...S.hoods.list]) {
+    if (!h.alive || h.b7char || h.b7flee || h.b7down) continue;
+    h.b7flee = true;
+    const ai = G.ais.get(h);
+    if (ai && ai.release) ai.release();
+    G.ais.delete(h);
+    if (h.setAim) h.setAim(false);
+    if (h.lookAt) h.lookAt(null);
+    const sgn = h.pos.z < G.eye.z ? -1 : 1;
+    const tx = Math.max(-1, Math.min(8, h.pos.x));
+    let t = 0;
+    h.script = (hd, tt, dt) => {
+      if (!hd.alive) { hd.script = null; return; }
+      t += dt;
+      const yaw = Math.atan2(tx - hd.pos.x, sgn * 20);
+      hd.yaw += Math.atan2(Math.sin(yaw - hd.yaw), Math.cos(yaw - hd.yaw)) * Math.min(1, dt * 6);
+      if (hd.state !== 'run') hd.setState('run', 0.2);
+      hd.speed = 3.1;
+    };
+    R.ticks.push(() => {
+      if (!S.hoods.list.includes(h)) return false;
+      if (!h.alive) { h.script = null; return false; }
+      if (Math.hypot(h.pos.x - G.eye.x, h.pos.z - G.eye.z) > 30 || t > 8) { G.removeHood(h); return false; }
+      return true;
+    });
+  }
 }
 
 // a place a man can kneel: clear of the cars, the walls and the posts

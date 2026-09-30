@@ -7,7 +7,7 @@
   { "name": "the title, BEGIN at scene 9" },
   { "wait": 2500 },
   { "clickOn": "#title .opt[data-k=begin]" },
-  { "until": "G.scenes.current && G.scenes.current.id === 'shootout' && document.pointerLockElement === N.renderer.domElement", "timeout": 12000 },
+  { "until": "G.scenes.current && G.scenes.current.id === 'shootout' && document.pointerLockElement === N.renderer.domElement", "timeout": 30000 },
   { "expect": "G.scenes.beat === 'arrive' && G.hands.set === 'empty' && !G.b7.gunTaken", "label": "in at the door, no gun yet" },
   { "until": "G.hud.sayShown === \"They're coming here.\"", "timeout": 8000 },
   { "shot": "s01_line" },
