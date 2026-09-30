@@ -24,7 +24,7 @@ import { Stealth } from './warehouse/stealth.js';
 // Caught: the cosh from behind, black, back at the last checkpoint.
 const V = (x, y, z) => new THREE.Vector3(x, y, z);
 const PI = Math.PI;
-const BEATS = ['arrive', 'floor', 'lamps', 'stairs', 'listen', 'out'];
+const BEATS = ['arrive', 'floor', 'lamps', 'aisle', 'stairs', 'listen', 'out'];
 const LINES = ['The diner. Tonight.', 'The waitress saw Mack talk.', 'No one leaves.'];
 
 // ---- the crew's rounds (designed: there is always a readable way through
@@ -64,6 +64,8 @@ const START = {
   arrive: { x: PIER.start.x, z: PIER.start.z, yaw: PIER.start.yaw, pitch: 0.02 },
   floor: { x: -10.4, z: -1.2, yaw: 0.05, pitch: -0.02 },
   lamps: { x: -6.65, z: -11.1, yaw: 0.4, pitch: -0.05, crouch: true },
+  // (the pocket at the corner of the second stack, deep: the aisle's far end cannot see it)
+  aisle: { x: -7.65, z: -17.3, yaw: 1.25, pitch: -0.02, crouch: true },
   stairs: { x: -7.95, z: -33.1, yaw: PI / 2 - 0.35, pitch: 0.0, crouch: true },
   listen: { x: -1.0, z: -41.7, yaw: 0.0, pitch: 0.2, crouch: true, up: true },
   out: { x: 4.2, z: -41.7, yaw: -PI / 2, pitch: -0.1, crouch: true, up: true },
@@ -93,6 +95,8 @@ function setupAt(ctx, b) {
   // (he stands in aisle A walking north, not at the truck's tail: the way
   // from there to his round's far end is through the stacks)
   if (b !== 'arrive' && b !== 'floor') { const s = crew.get('sully'); s.entry = null; s.c.place({ x: -11.2, z: -8.2 }, PI); s.look = s.light = s.lookWant = PI; s.setMode('patrol'); }
+  // (back in the pocket by the second stack: he has just gone by it, south, his back to me)
+  if (b === 'aisle') { const s = crew.get('sully'); s.c.place({ x: -11.2, z: -14.6 }, 0); s.look = s.light = s.lookWant = 0; s.ri = 1; s.wait = 0; s.path = null; }
   // the office: the Cardinal (lane B7's kind when it is here) and his two men
   const office = [];
   const cardKind = ctx.cast.has('cardinal') ? 'cardinal' : 'heavy';
@@ -121,7 +125,7 @@ function setupAt(ctx, b) {
   G.controller.lookLocked = true;
   const stealth = new Stealth(ctx, crew);
   stealth.dress();
-  LIVE = { crew, stealth, props, bottles, office, card, beat: b, cp: b === 'arrive' ? 'arrive' : b === 'listen' ? 'stairs' : b };
+  LIVE = { crew, stealth, props, bottles, office, card, beat: b, cp: b };
   ctx.flags.live = LIVE;
   ctx.flags.cp = LIVE.cp;
   G.music.cue('warehouse');
@@ -218,6 +222,7 @@ function live(ctx) {
           G.sfx.play('switch', P.pos, {}, { ref: 3 });
           for (const l of stage.lamps.rows.get('B')) stage.lamps.dim(l, true);
           L.fixer = null;
+          L.switchBack = true;
         } };
         m.setMode('fix');
         m.go(P.stand.x, P.stand.z);
@@ -302,7 +307,7 @@ function* walkFig(c, x, z, speed) {
 export default defineScene({
   id: 'warehouse', stage: 'pier9',
   beats: BEATS,
-  save: ['floor', 'lamps', 'stairs', 'out'],
+  save: ['floor', 'lamps', 'aisle', 'stairs', 'listen', 'out'],
   setup: Object.fromEntries(BEATS.map((b) => [b, (ctx) => setupAt(ctx, b)])),
   *script(ctx) {
     const G = ctx.game, stage = ctx.stage;
@@ -337,6 +342,12 @@ export default defineScene({
     if (ctx.at('lamps')) {
       yield beat('lamps');
       cp('lamps');
+      // (on up the aisle once the switch is back - or past the second stack)
+      yield until(() => (L.switchBack && C.pos.z < -16.3) || C.pos.z < -25 || stage.part('mezz').up);
+    }
+    if (ctx.at('aisle')) {
+      yield beat('aisle');
+      cp('aisle');
       yield until(() => C.pos.z < -33.2 || stage.part('mezz').up);
     }
     if (ctx.at('stairs')) {
@@ -347,6 +358,7 @@ export default defineScene({
     }
     if (ctx.at('listen')) {
       yield beat('listen');
+      cp('listen');
       yield* listenBeat(ctx);
     }
     if (ctx.at('out')) {

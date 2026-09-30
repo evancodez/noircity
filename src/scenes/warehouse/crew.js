@@ -35,7 +35,7 @@ export const TUNE = {
 };
 const V = (x, y, z) => new THREE.Vector3(x, y, z);
 const wrap = (a) => Math.atan2(Math.sin(a), Math.cos(a));
-const _a = new THREE.Vector3(), _b = new THREE.Vector3(), _d = new THREE.Vector3(), _q = new THREE.Quaternion();
+const _a = new THREE.Vector3(), _b = new THREE.Vector3(), _c = new THREE.Vector3(), _d = new THREE.Vector3(), _q = new THREE.Quaternion();
 const _X = V(1, 0, 0);
 
 // one man of the crew
@@ -530,9 +530,39 @@ export class Crew {
 
   step(dt, t) {
     for (const m of this.men) m.update(dt, t);
+    // a man found lying: the one who finds him goes to him, and the
+    // nearest with him; they look about (a search), then go back
+    this.findT = (this.findT || 0) - dt;
+    if (this.findT <= 0 && this.alarmT < 0) { this.findT = 0.25; this.findDown(t); }
     if (this.alarmT >= 0) {
       this.alarmT += dt;
       if (this.alarmT >= TUNE.alarmCosh && !this.caught) { this.caught = true; if (this.onCaught) this.onCaught(this.alarmBy); }
+    }
+  }
+
+  findDown(t) {
+    const G = this.game;
+    for (const d of this.men) {
+      if (!d.down || d.found) continue;
+      const p = _c.set(d.pos.x, 0.35, d.pos.z);
+      for (const m of this.men) {
+        if (m.down || !(m.mode === 'patrol' || m.mode === 'hold' || m.mode === 'return' || m.mode === 'wait' || m.mode === 'curious')) continue;
+        const eye = m.eye(_b);
+        const dx = p.x - eye.x, dz = p.z - eye.z, L = Math.hypot(dx, dz);
+        if (L > 9) continue;
+        if (Math.abs(wrap(Math.atan2(dx, dz) - m.look)) > TUNE.viewHalf) continue;
+        // (in his beam, or near enough to make out in the dark)
+        const inBeam = m.lamp && m.lamp.on && m.lampPos && _d.subVectors(p, m.lampPos).normalize().dot(m.lamp.axis) > Math.cos(TUNE.beamHalf * 1.6);
+        if (!inBeam && L > 4.5) continue;
+        _d.subVectors(p, eye); const Ld = _d.length(); _d.divideScalar(Ld);
+        if (G.rays.raycast(_a.copy(eye).addScaledVector(_d, 0.25), _d, Math.max(0.05, Ld - 0.6), { anyHit: true })) continue;
+        d.found = true;
+        this.sound('hm', eye);
+        G.emit('b6:found', { by: m.name, down: d.name, t: +t.toFixed(2) });
+        m.hear(V(d.pos.x, 0, d.pos.z), 1e9, 'crash');
+        this.sendNearest(V(d.pos.x, 0, d.pos.z), 2, 'crash', 30);
+        break;
+      }
     }
   }
 

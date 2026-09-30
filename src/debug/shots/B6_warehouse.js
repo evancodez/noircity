@@ -58,8 +58,9 @@ const scene = (beat, t, fn, fov = null) => ({
   stage(stage, camera, controller, game) { fn(game, controller, live(game), stage); },
 });
 // (a man parked out of the moment: at a point, standing, looking one way)
-// (the men blind and deaf: a frame of the place, not a moment of the game)
-const blind = (L) => { for (const m of L.crew.men) { m.perceive = () => 0; m.hear = () => {}; } };
+// (the men blind to me: a frame of the place, not a moment of the game;
+// they still hear a crash and find a man lying)
+const blind = (L) => { for (const m of L.crew.men) m.perceive = () => 0; };
 const park = (m, x, z, yaw) => { m.c.place({ x, z }, yaw); m.route = []; m.spec = { ...m.spec, at: [x, z], yaw, looks: [yaw] }; m.setMode('hold'); m.look = m.light = m.lookWant = yaw; };
 
 export const presets = {
@@ -103,6 +104,25 @@ export const presets = {
     use(game, 'b6ko_sully', 0.9);
   }, 78),
 
+  // the chain: E at the cleat at 0.3 s, the load down at the far end of
+  // aisle C (a crash); the two nearest men go to look (seen from the cross
+  // aisle by the cleat, looking up aisle C)
+  b6s_chain: scene('lamps', 4, (game, C, L) => {
+    blind(L);
+    stand(game, C, 10.2, -12.6, Math.PI - 0.08, 0.02, false);
+    use(game, 'b6hoist', 0.3);
+  }, 60),
+  // a man found lying: the first man knocked down where the cross aisle
+  // meets aisle B (0.3 s); the loop's man comes up from the truck, finds
+  // him, and he and the nearest search (the camera from the pocket in the
+  // second stack's edge)
+  b6s_found: scene('lamps', 8, (game, C, L) => {
+    blind(L);
+    const s = L.crew.get('sully');
+    park(s, 0, -14.4, Math.PI);
+    when(game, 0.3, () => s.knockDown());
+    stand(game, C, -4.2, -16.9, -2.18, -0.05);
+  }),
   // the hands: in the door's pool / in the dark of the stacks' pocket
   // (?shot=b6f_hands&hands=lit|dark)
   b6f_hands: scene('lamps', 1.5, (game, C, L) => {
