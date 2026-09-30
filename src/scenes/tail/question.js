@@ -178,7 +178,11 @@ export class Question {
     if (dir.lengthSq() < 1e-6) dir.subVectors(P[2], P[1]);
     dir.y = 0; dir.normalize();
     const heading = Math.atan2(-dir.x, -dir.z);   // (he faces away from where he is going)
-    this.hd = this.hd == null ? this.face : this.hd + Math.atan2(Math.sin(heading - this.hd), Math.cos(heading - this.hd)) * (1 - Math.exp(-dt * 5));
+    // [2nd pass] he turns as he is walked, not before: over his first metre
+    // back (he was turned a quarter round at once as the question began, and
+    // the eye in front of him swung round with him)
+    const moved = this.lastAt ? Math.hypot(at.x - this.lastAt.x, at.z - this.lastAt.z) : 0;
+    this.hd = this.hd == null ? this.face : this.hd + Math.atan2(Math.sin(heading - this.hd), Math.cos(heading - this.hd)) * (1 - Math.exp(-moved * 2.6));
     // (our feet on the wet stones as I walk him back: a step each way)
     if (this.lastAt) { this.stepAcc = (this.stepAcc || 0) + this.lastAt.distanceTo(at); if (this.stepAcc > 0.5) { this.stepAcc = 0; G.sfx.step(at.clone(), false, false); G.sfx.step(null, false, true); } }
     (this.lastAt || (this.lastAt = new THREE.Vector3())).copy(at);
@@ -212,7 +216,20 @@ export class Question {
     man.play('tail_slide', { hold: true, fade: 0.2 });
     G.sfx.play('tail_slump', man.pos, {}, { ref: 3 });
     for (let t = 0; t < 1.4; t += 1 / 60) {
-      if (H && back) { const u = ease(Math.min(1, t / 1.2)); const fx = Math.sin(this.hd), fz = Math.cos(this.hd); H.at.set(back.x + fx * 0.45 * u, back.y + 0.12 * u, back.z + fz * 0.45 * u); }
+      if (H && back) { const u = ease(Math.min(1, t / 1.2)); const fx = Math.sin(this.hd), fz = Math.cos(this.hd); H.at.set(back.x + fx * 1.0 * u, back.y + 0.12 * u, back.z + fz * 1.0 * u); }
+      // [2nd pass] the eyes go down with him: the last image is him slumped
+      // against the rail with the river behind him (the eyes stayed on the
+      // far bank and he dropped out of the frame, as if gone)
+      if (H) {
+        const e = G.camera.position, m = man.pos;
+        const wy = Math.atan2(-(m.x - e.x), -(m.z - e.z)) - H.face;
+        // (to his hat as he sits: he is in the frame's lower half, the rail,
+        // the black water and the far bank's haze above him)
+        const wp = Math.atan2(m.y + 0.6 - e.y, Math.hypot(m.x - e.x, m.z - e.z));
+        const k = 1 - Math.exp(-(1 / 60) * 3.2);
+        H.look.yaw += Math.atan2(Math.sin(wy - H.look.yaw), Math.cos(wy - H.look.yaw)) * k;
+        H.look.pitch += (clamp(wp, -0.6, 0.35) - H.look.pitch) * k;
+      }
       yield null;
     }
   }

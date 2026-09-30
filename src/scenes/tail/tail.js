@@ -265,13 +265,20 @@ export class Tail {
     }
     // the truck out of its side street, as he passes it
     const TS = STREETS.find((x) => Math.abs(x.s - M.truck) < 1).s;
-    if (!fl.truck && his.s > TS - 40 && my.s > TS - 110) {
+    // [2nd pass] early enough to be seen: its lamps swing out from under the
+    // el ahead of us both and it stops across the lane as I come up (it
+    // started as I passed the street, off the screen's edge behind the
+    // pillar, and nobody saw a truck)
+    if (!fl.truck && his.s > TS - 150 && my.s > TS - 185) {
       fl.truck = true;
       this.watcher.avoid.push({ s0: TS - 30, s1: TS + 14, d: 4.4 });
       const tr = this.V.spawn('truck', { at: roadPoint(TS, -30), yaw: carYawAt(TS) - Math.PI / 2, lights: true });
+      // (its nose stops at the crown of the road: the far lane is shut, mine
+      // is open; seen early it had stopped with its nose in his swerve and he
+      // hit it head-on, and I hit him)
       tr.driver = new PathDriver([
-        { s: TS, d: -30, t: 0 }, { s: TS, d: -17, t: 1.3 }, { s: TS + 2.5, d: -6.5, t: 2.6 }, { s: TS + 5.5, d: -2.2, t: 3.7 }, { s: TS + 6, d: -1.8, t: 9 },
-        { s: TS - 20, d: -2.4, t: 16 }, { s: TS - 90, d: -2.4, t: 26 },
+        { s: TS, d: -30, t: 0 }, { s: TS, d: -17, t: 1.3 }, { s: TS + 2.5, d: -7.2, t: 2.6 }, { s: TS + 5, d: -3.8, t: 3.7 }, { s: TS + 5.5, d: -3.5, t: 9 },
+        { s: TS - 20, d: -2.6, t: 16 }, { s: TS - 90, d: -2.6, t: 26 },
       ]);
       tr.spec.mass = 6;
       this.truck = tr;
@@ -348,6 +355,9 @@ export class Tail {
         this.wrecked = false;
         this.failT = 0;
         this.spawn({ my: { s: c, d: 2.2, speed: 16 }, his: { s: c + 42, d: 1.9, speed: 18 }, state: this.state === 'close' ? 'close' : 'chase' });
+        // [2nd pass] (the truck and the oncoming car went with the old cars:
+        // their engines' loops and the bot's avoiding went on at the stale ones)
+        this.truck = null; this.oncoming = null;
         // (the events already passed stay passed)
         this.flags.train = c > ROAD.marks.train;
         this.flags.truck = c > ROAD.marks.truck;

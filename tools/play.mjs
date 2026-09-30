@@ -234,7 +234,9 @@ async function drive({ until = 'false', timeout = 240000, line = 2.4, shots = {}
   for (;;) {
     if (await js(until) === true) break;
     if (Date.now() - T0 > timeout) { check('the tail ended in time', false); break; }
-    for (const [name, expr] of Object.entries(shots)) if (!done.has(name) && await js(expr) === true) { done.add(name); await shot(name); }
+    // (a screenshot blocks the loop for a second on a loaded machine: the
+    // wheel is let go first, or a held A / D put the car into the rail)
+    for (const [name, expr] of Object.entries(shots)) if (!done.has(name) && await js(expr) === true) { done.add(name); await set('KeyA', false); await set('KeyD', false); await shot(name); }
     const s = await js(`(() => { const T = G.scenes.ctx && G.scenes.ctx.flags.tail; if (!T || !T.my) return { none: true };
       const v = T.my, R = N.stage.track, C = N.controller, cam = N.camera;
       const out = { state: T.state, mode: C.mode, sens: C.sensitivity, speed: v.speed, gap: T.gap, prompt: G.hud.promptShown, fade: !!T.fade };
@@ -258,7 +260,7 @@ async function drive({ until = 'false', timeout = 240000, line = 2.4, shots = {}
         const q = new N.THREE.Vector3(m.x, 1.3, m.z).applyMatrix4(cam.matrixWorldInverse); out.my = Math.atan2(q.x, -q.z);
         if (Q.water) { const w = Q.water.clone().applyMatrix4(cam.matrixWorldInverse); out.wy = Math.atan2(w.x, -w.z); out.wp = Math.atan2(w.y, Math.hypot(w.x, w.z)); } }
       return out; })()`);
-    if (!s || s.none || s.fade) { await sleep(40); continue; }
+    if (!s || s.none || s.fade) { await set('KeyA', false); await set('KeyD', false); await sleep(40); continue; }
     if (s.mode === 'drive') {
       const drivingOn = s.state === 'start' || s.state === 'chase' || s.state === 'close';
       await set('KeyW', drivingOn && !(s.gap < 9 && s.speed > 8));

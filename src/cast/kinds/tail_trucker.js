@@ -106,8 +106,10 @@ export default {
         [0, { hipsPos: [0, 0.96, -0.02], hips: [-10, 0, 0], spine: [-19, 0, 0], chest: [-17, 0, 0], neck: [-2, 0, 0], head: [12, 8, 0], handTL: [0.12, 1.14, 0.36], handTR: [-0.11, 1.12, 0.38] }],
         [0.5, { hipsPos: [0, 0.8, 0.02], hips: [10, 0, 0], spine: [4, 0, 0], chest: [0, 0, 0], neck: [10, 0, 0], head: [10, 0, 0], handTL: [0.3, 0.8, 0.05], handTR: [-0.3, 0.82, 0.04],
           footL: [0.15, A, 0.3], footR: [-0.15, A, 0.28] }],
+        // [2nd pass] the hands down by his hips on the stones, the elbows
+        // back (they stuck out sideways: from above he was a cross)
         [1.2, { hipsPos: [0, 0.28, 0.02], hips: [70, 0, 0], spine: [8, 0, 0], chest: [4, 0, 0], neck: [26, 0, 0], head: [24, 10, 0],
-          handTL: [0.32, 0.14, 0.18], handTR: [-0.34, 0.16, 0.2], elbowPoleL: [1, 0, 0], elbowPoleR: [-1, 0, 0],
+          handTL: [0.25, 0.1, 0.06], handTR: [-0.26, 0.12, 0.1], elbowPoleL: [0.4, 0, -1], elbowPoleR: [-0.4, 0, -1],
           footL: [0.2, A, 0.62], footR: [-0.16, A + 0.02, 0.5], footRotL: [0, 20, 0], footRotR: [0, -14, 0], kneeL: [0.2, 0.6, 1], kneeR: [-0.2, 0.7, 1] }],
         [1.6, { hipsPos: [0, 0.27, 0.02], head: [30, 12, 0] }],
       ]) }),
