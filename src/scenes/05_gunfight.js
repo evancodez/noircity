@@ -99,7 +99,11 @@ export default defineScene({
         F.tipped = true; F.ducked = true;
         C.setPose(4.0, 3.7, 1.0, 0.0);
         C.setMode('office', { crouch: true });
-      } else C.setMode('office', {});
+      } else {
+        // (not tipped last time: at the desk's chair side, the door over it, the prompt under the eye)
+        C.setPose(4.75, DESK.z, Math.atan2(4.82, 2.72), -0.55);
+        C.setMode('office', {});
+      }
       ctx.player.weapons.equip('revolver');
       live(ctx.hands, {});
       F.drawn = true;

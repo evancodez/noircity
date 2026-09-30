@@ -24,9 +24,9 @@ export const MEN = {
   // the Tommy gun at the fire-escape window: up the flight from the floor below
   window: { at: { x: -1.75, z: 7.62 }, path: [{ x: 0.9, z: 7.62 }, { x: 1.55, z: 7.72 }], role: 'window', heavy: true, hp: 130, aim: 0.75, hide: { x: 1.7, z: 7.74 }, fire: { x: 2.72, z: 7.72 } },
   // the last two: another at the door, the heavy on into the room
-  second: { at: { x: -2.3, z: -5.8 }, path: [...STAIRS_IN, { x: -0.62, z: -0.6 }, { x: -0.6, z: 0.1 }], role: 'hall', hp: 110, aim: 0.75, hide: { x: -0.6, z: 0.1 }, fire: { x: -0.35, z: 1.05 } },
+  second: { at: { x: -2.3, z: -5.8 }, path: [...STAIRS_IN, { x: -0.62, z: -0.6 }, { x: -0.6, z: 0.1 }], role: 'hall', hp: 110, aim: 0.7, hide: { x: -0.6, z: 0.1 }, fire: { x: -0.35, z: 1.05 } },
   // (on past the kicker's place, so the two do not end in one heap by the door)
-  heavy: { at: { x: -2.3, z: -6.0 }, path: [...STAIRS_IN, { x: -0.9, z: -0.3 }, { x: -0.55, z: 1.02 }, { x: 0.55, z: 1.1 }, { x: 1.2, z: 2.1 }], role: 'rush', heavy: true, hp: 200, aim: 0.65 },
+  heavy: { at: { x: -2.3, z: -6.0 }, path: [...STAIRS_IN, { x: -0.9, z: -0.3 }, { x: -0.55, z: 1.02 }, { x: 0.55, z: 1.1 }, { x: 1.2, z: 2.1 }], role: 'rush', heavy: true, hp: 200, aim: 0.58 },
 };
 
 // a man sent in: spawned out of sight, his brain, his feet on the stage's floor
