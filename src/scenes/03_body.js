@@ -3,7 +3,7 @@ import { defineScene, wait, until, beat } from '../game/script.js';
 import { V, ALLEY, XV, STOOD, SHOOTER, WOUNDS, MARKS, LIES, KNEEL, STUDY, startPose, mackOut, layVictim, evidence, clearEvidence, gutterHat, crewCar } from './body/place.js';
 import { makeOutline, makeStrings, runStrings } from './body/strings.js';
 import { HALVES, clearHalves } from './body/halves.js';
-import { NOTE_PUZZLE, clearNote } from './body/note.js';
+import { NOTE_PUZZLE, clearNote, layNoteWhole } from './body/note.js';
 import { DINER_SIGHT } from '../stages/block/site.js';
 import { openFist, pullLadder, climbHands, handsOff, takeHalf, tableFinger } from './body/hands.js';
 
@@ -210,6 +210,8 @@ export default defineScene({
       ctx.onStep(() => { if (over) return; if (done()) { over = true; return; } if (G.time - t0 > secs) { over = true; G.hud.say(line, 3); } });
     };
     // (shot mode, the strips: act=kneel@0.3,fist@1.5,... does what E would
+    // [second pass: also step (the matchbook on the step) and whole (the
+    // note laid whole)]
     // at those scene times - the look development of each moment)
     const ACT = G.shotMode && typeof location !== 'undefined' ? (new URLSearchParams(location.search).get('act') || '').split(',').filter(Boolean).map((a) => { const [n, t] = a.split('@'); return { n, t: +t || 0 }; }) : [];
     const acted = (n) => ACT.some((a) => a.n === n && ctx.sceneTime >= a.t - 1e-6);
@@ -241,6 +243,7 @@ export default defineScene({
       if (C.mode === 'climb') { F.climbS = F.climbS || { onRung: (side) => snd('rung', V(ALLEY.ladder.x + (side === 'R' ? 0.13 : -0.13), G.eye.y, alley.ladder.z), { f: side === 'R' ? 420 : 470 }) }; climbHands(ctx, alley.ladder, F.climbS); }
       else if (F.climbS) { F.climbS = null; handsOff(H); }
       if (F.halvesSt && acted('join')) F.halvesSt.autoJoin = true;
+      if (F.noteSt && acted('whole') && !F.noteSt.whole) layNoteWhole(F.noteSt);
       // my fingertip on the step's puzzles
       const PA = G.puzzles.active;
       if (PA && (PA.id === 'body.halves' || PA.id === 'body.note')) { F.finger = F.finger || {}; tableFinger(ctx, F.finger, PA.pointer.world, PA.pointer.down, 0, PA.id === 'body.halves' ? !!(F.halvesSt && F.halvesSt.snapped) : !!(F.noteSt && F.noteSt.whole)); }
@@ -259,7 +262,7 @@ export default defineScene({
       G.hud.say('Two shots. From the alley.', 2.6);
       // the el train over the avenue as I walk
       yield wait(0.4);
-      if (stage.train && !stage.train.active && G.director) G.director.cue('train', { z: -14, ahead: -70, dir: 1 });
+      if (stage.train && !stage.train.active && G.director) G.director.cue('train', { z: -14, ahead: -55, dir: -1 });   // [second pass] up the avenue toward me, in the frame as I walk (going away, from 70 m behind, it came into view at 9 s, once I was in the alley)
       // down the pavement to him (gone the wrong way a while: once, where)
       let nudged = false;
       const tA = G.time;
@@ -306,11 +309,14 @@ export default defineScene({
         if (F.do === 'wounds') {
           F.do = null;
           look(aimAt(chest()), 0.5);
-          yield* ctx.say('Two. In the chest. He was standing.', 3.0);
+          // [second pass] the line runs on while the outline rises (the
+          // look held me 4.7 s; now 2.2)
+          G.hud.say('Two. In the chest. He was standing.', 3.0);
+          yield wait(1.3);
           // where he stood, raised: the view goes to it
           O.raise(true);
-          look(aimAt(V(XV, 1.3, STOOD.z)), 0.9);
-          yield wait(1.2);
+          look(aimAt(V(XV, 1.3, STOOD.z)), 0.8);
+          yield wait(0.9);
           busy = false;
         } else if (F.do === 'fist') {
           F.do = null;
@@ -458,7 +464,7 @@ export default defineScene({
       nudge('The dry step under the lamp. His matchbook and the half.', () => flat(G.eye, stepAt()) < 2.4 || C.mode !== 'walk');
       let go = false;
       I.add({ id: 'body.step', at: () => stepAt(), range: 2.6, cone: 0.85, prompt: 'the matchbook', onUse: () => { go = true; } });
-      yield until(() => go);
+      yield until(() => go || acted('step'));
       I.remove('body.step');
       yield null;   // (the E that brought me here must not leave the puzzle)
       let done = false;

@@ -374,6 +374,13 @@ function placeOf(a, b) {
   return a.g.position.clone().add(local);
 }
 
+// (shot mode, look development: every piece laid where it tore from the
+// first - the puzzle then finds the note whole and squares it)
+export function layNoteWhole(st) {
+  const P = st.pieces, a = P[0];
+  for (const q of P) { if (q === a) continue; const w = placeOf(a, q); q.g.position.x = w.x; q.g.position.z = w.z; q.g.rotation.y = a.g.rotation.y; q.group = a.group; }
+}
+
 export function clearNote(st) {
   if (!st) return;
   for (const q of st.pieces) if (q.g.parent) q.g.parent.remove(q.g);
