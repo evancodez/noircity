@@ -71,7 +71,7 @@ function wheelFrame(cam, car) {
 // palm on the grip's left side, the fingers round its front, the index
 // along the frame. DRIVE.gun: { prop (drawn in the hands' scene: the scene
 // adds it), kick (0..1, a shot's recoil) }
-const GRIP = new THREE.Vector3(-0.05, -0.108, -0.5);      // the grip at the aim (the sights under the view's centre)
+const GRIP = new THREE.Vector3(-0.055, -0.115, -0.42);      // the grip at the aim (the sights under the view's centre)
 const LOW = new THREE.Vector3(-0.16, -0.62, -0.24);       // ... in the holster, out of sight
 const _gm = new THREE.Matrix4(), _gx = new THREE.Vector3(), _gy = new THREE.Vector3(), _gz = new THREE.Vector3(), _gp = new THREE.Vector3();
 function gunMatrix(k, kick) {
@@ -158,7 +158,13 @@ function refresh() {
     return;
   }
   const m = gunMatrix(k2, G ? G.kick || 0 : 0);
-  if (G && G.prop) { G.prop.matrix.copy(m); G.prop.matrixWorldNeedsUpdate = true; }
+  // (a prop's grip is where the palm holds it: lane B3's revolver keeps its
+  // origin at its base, so the path's point is its grip, not its origin)
+  if (G && G.prop) {
+    const gi = G.gripInv || (G.gripInv = G.prop.userData.grip ? G.prop.userData.grip.clone().invert() : new THREE.Matrix4());
+    G.prop.matrix.copy(m).multiply(gi);
+    G.prop.matrixWorldNeedsUpdate = true;
+  }
   onGrip(L, m);
 }
 function copyPose(o, a) { for (const k of ['p', 'f', 'b', 'e']) for (let i = 0; i < 3; i++) o[k][i] = a[k][i]; o.F = a.F; }

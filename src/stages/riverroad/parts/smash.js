@@ -60,7 +60,7 @@ export default {
       im.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
       if (figure) markFigure(im);
       for (let i = 0; i < cap; i++) im.setMatrixAt(i, ZERO);
-      im.count = cap;
+      im.count = 0;   // (only the instances in use are drawn: alloc raises it)
       group.add(im);
       const P = { name, im, cap, used: 0, free: [], owner: new Array(cap).fill(null) };
       pools[name] = P;
@@ -69,6 +69,7 @@ export default {
     const ZERO = new THREE.Matrix4().makeScale(0, 0, 0);
     const alloc = (P, owner) => {
       let i = P.free.length ? P.free.pop() : P.used < P.cap ? P.used++ : -1;
+      if (P.im.count < P.used) P.im.count = P.used;
       if (i < 0) {
         // the pool is full: the oldest settled piece far from the eye goes
         const cam = stage.game ? stage.game.camera.position : null;

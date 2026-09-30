@@ -397,7 +397,14 @@ export class Tail {
     const origin = cam.position.clone();
     // the muzzle: the prop's, in the world
     const muzzle = new THREE.Vector3();
-    if (this.gunProp) { this.gunProp.updateMatrixWorld(true); muzzle.copy(this.gunProp.userData.muzzle || new THREE.Vector3(0, 0.06, 0.11)).applyMatrix4(this.gunProp.matrixWorld); }
+    if (this.gunProp) {
+      this.gunProp.updateMatrixWorld(true);
+      // (the prop's own muzzle, or the front of its box: another lane's gun)
+      const ud = this.gunProp.userData;
+      let mz = ud.muzzle;
+      if (!mz) { const b = new THREE.Box3().setFromObject(this.gunProp); const inv = this.gunProp.matrixWorld.clone().invert(); b.applyMatrix4(inv); mz = ud.muzzle = new THREE.Vector3((b.min.x + b.max.x) / 2, b.max.y - 0.015, b.max.z); }
+      muzzle.copy(mz).applyMatrix4(this.gunProp.matrixWorld);
+    }
     else muzzle.copy(origin).addScaledVector(dir, 0.6);
     G.fx.flash.player(muzzle.clone(), muzzle.clone(), dir.clone(), G.time);
     G.sfx.pistol(muzzle.clone(), 0);
@@ -465,6 +472,7 @@ export class Tail {
     if (this.state !== 'close') return;
     const G = this.game, his = this.his, stage = this.stage;
     this.state = 'shot';
+    G.hud.clearPrompt('tail');
     const wi = side > 0 ? 3 : 2;       // (Cars: 0 FL(+z) 1 FR(-z) 2 RL 3 RR by z sign)
     his.car.tyres[side > 0 ? 2 : 3] = 1;
     G.sfx.play('tyre', his.pos, {}, { ref: 5 });

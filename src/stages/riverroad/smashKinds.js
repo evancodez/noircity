@@ -26,7 +26,7 @@ export function fruitHeapGeo(rng) {
   const parts = [];
   for (let i = 0; i < 12; i++) {
     const r = 0.055 + rng.next() * 0.015;
-    parts.push(new THREE.SphereGeometry(r, 9, 7).translate(-0.24 + (i % 4) * 0.16 + rng.gauss() * 0.015, 0.3 + (i % 3 === 1 ? 0.03 : 0), -0.12 + Math.floor(i / 4) * 0.12 + rng.gauss() * 0.015));
+    parts.push(new THREE.SphereGeometry(r, 7, 5).translate(-0.24 + (i % 4) * 0.16 + rng.gauss() * 0.015, 0.3 + (i % 3 === 1 ? 0.03 : 0), -0.12 + Math.floor(i / 4) * 0.12 + rng.gauss() * 0.015));
   }
   return merge(parts);
 }

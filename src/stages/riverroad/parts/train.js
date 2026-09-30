@@ -48,7 +48,8 @@ export default {
       // the train at s (its head), running toward -1 (back up the road,
       // over the player's head) or +1
       run(s, dir = -1) { this.active = true; this.s = s; this.dir = dir; this.near = false; group.visible = true; },
-      stop() { this.active = false; group.visible = false; if (this.onRumble) this.onRumble(0, null); },
+      stop() { this.active = false; group.visible = false; this.light.intensity = 0; if (this.onRumble) this.onRumble(0, null); },
+      light: stage.lights.add({ position: new THREE.Vector3(0, -50, 0), direction: new THREE.Vector3(0, -1, 0), halfAngle: Math.PI, range: 14, intensity: 0 }),
       update(dt, t, { camera = null } = {}) {
         if (!this.active) return;
         this.s += this.dir * SPEED * dt;
@@ -66,6 +67,13 @@ export default {
           if (camera) { const d = p.distanceTo(camera.position); if (d < nd) { nd = d; nearest = p; } }
         }
         if (this.onRumble) this.onRumble(nearest ? Math.max(0, 1 - nd / 140) : 0, nearest);
+        // its lit windows light the rain round it; overhead, the iron shakes
+        // the lamps on it and the car under it
+        if (nearest) { this.light.position.copy(nearest).setY(nearest.y + 1.5); this.light.intensity = 0.9; }
+        const L = stage.lamps;
+        if (nearest && nd < 40 && L && L.tremble) L.tremble(nearest.x, nearest.z, (1 - nd / 40) * dt * 30);
+        const G = stage.game;
+        if (nearest && nd < 22 && G) G.controller.shake(0.12 * (1 - nd / 22), 0);
         const tail = this.s - this.dir * CARS * (LEN + GAP);
         if ((this.dir < 0 && tail < -200) || (this.dir > 0 && tail > ROAD.len + 200) || (camera && this.near && nd > 380)) this.stop();
         if (nd < 150) this.near = true;
