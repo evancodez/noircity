@@ -5,7 +5,8 @@ import { SITE, BEATS, DINER, DOORS } from './shootout/site.js';
 import { stageBeat, rig, markBeat, man, setLights, roundAt, everyStep, RESERVE, V } from './shootout/rig.js';
 import { endHat } from './shootout/ending.js';
 import { mackWindow } from './shootout/room.js';
-import { DOT_CLIP, dotGunAt, dotDrumsAt, DOT_DRUMS, dotResupplyAt } from '../cast/kinds/cardinal.js';
+import { climbOut, doorOut, CLIMB } from './shootout/carOut.js';
+import { DOT_CLIP, dotGunAt, dotDrumsAt, DOT_DRUMS, dotResupplyAt, CARDINAL_OUT } from '../cast/kinds/cardinal.js';
 import { palm, wrap, OPEN } from '../player/handPoses.js';
 
 // Scene 9, The Block (B7; docs/story/briefs/B7_SHOOTOUT.md). Back on the
@@ -458,17 +459,17 @@ function arrived(ctx, car, i) {
       if (car.state === 'burning') continue;
       const door = R.rails.openDoor(car, m.door);
       G.sfx.play('b7_carDoor', car.pos.clone().setY(1));
-      yield d.wait(0.18);
-      R.rails.doorBox(car, door);
+      // [R2-F] he is in the seat as it opens, and climbs out (carOut.js)
       const D = DOORS[m.door];
       const L = (x, z) => V(x, 0, z).applyMatrix4(car.group.matrixWorld);
-      const out = L(D.hinge[0] - 0.45, D.side * 1.25);
+      const out = doorOut(car, m.door);
       const post = m.post === 'door' ? L(D.hinge[0] - 0.62, D.side * 1.28) : m.post === 'nose' ? L(2.9, -0.7 * D.side) : m.post === 'tail' ? L(-2.95, -0.55 * D.side) : m.post;
-      const h = man(ctx, { group: 'cars', at: { x: out.x, z: out.z }, entry: [{ x: post.x, z: post.z }], run: m.run ?? false, post: { x: post.x, z: post.z }, leash: m.leash, heavy: m.heavy, aim: AIM.cars });
-      h.yaw = Math.atan2(G.eye.x - h.pos.x, G.eye.z - h.pos.z);
-      h.setState('stepOut', 0.1);
-      // the first rounds: into the diner's glass, pane by pane
-      suppress(ctx, h, 2 + (m.heavy ? 5 : 2), 0.9 + m.delay);
+      const h = man(ctx, { group: 'cars', at: { x: out.x, z: out.z }, yaw: out.yaw, entry: [{ x: post.x, z: post.z }], run: m.run ?? false, post: { x: post.x, z: post.z }, leash: m.leash, heavy: m.heavy, aim: AIM.cars });
+      climbOut(G, h, R.ticks, { yaw: out.yaw });
+      yield d.wait(0.18);
+      R.rails.doorBox(car, door);
+      // the first rounds, once he is out: into the diner's glass, pane by pane
+      suppress(ctx, h, 2 + (m.heavy ? 5 : 2), CLIMB + 0.35 + m.delay * 0.5);
       // (and the first man of the lead car puts out a lamp over the booths)
       if (i === 0 && m === specs[0]) shootPendant(ctx, h, 3.6);
     }
@@ -729,12 +730,12 @@ function* cardinal(ctx) {
   for (const hv of SITE.heavies) {
     const door = R.rails.openDoor(car, hv.door, { speed: 3 });
     G.sfx.play('b7_carDoor', car.pos.clone().setY(1));
+    // [R2-F] out of the seat, as the door opens
+    const out = doorOut(car, hv.door);
+    const h = man(ctx, { group: 'cardinal', at: { x: out.x, z: out.z }, yaw: out.yaw, entry: hv.entry, post: hv.post, leash: hv.leash, heavy: true, aim: AIM.heavies });
+    climbOut(G, h, R.ticks, { yaw: out.yaw });
     yield wait(0.25);
     R.rails.doorBox(car, door);
-    const D = DOORS[hv.door];
-    const out = L(D.hinge[0] - 0.45, D.side * 1.25);
-    const h = man(ctx, { group: 'cardinal', at: { x: out.x, z: out.z }, entry: hv.entry, post: hv.post, leash: hv.leash, heavy: true, aim: AIM.heavies });
-    h.setState('stepOut', 0.1);
     R.calm = false;
     yield wait(0.7);
   }
@@ -742,13 +743,15 @@ function* cardinal(ctx) {
   // then him
   const door = R.rails.openDoor(car, SITE.cardinal.door, { speed: 2.2 });
   G.sfx.play('b7_carDoor', car.pos.clone().setY(1));
+  // [R2-F] he climbs out of the back as the door comes open
+  const D = DOORS[SITE.cardinal.door];
+  const out = L(D.hinge[0] - 0.4, D.side * 1.3);
+  const oy = doorOut(car, SITE.cardinal.door).yaw;
+  const him = spawnCardinal(ctx, out, { climbYaw: oy });
+  R.cardinal = him;
   yield wait(0.6);
   R.rails.doorBox(car, door);
   R.rails.settle(car);
-  const D = DOORS[SITE.cardinal.door];
-  const out = L(D.hinge[0] - 0.4, D.side * 1.3);
-  const him = spawnCardinal(ctx, out);
-  R.cardinal = him;
   yield until(() => him.b7down);
 }
 
@@ -772,10 +775,10 @@ function fallRoom(S, h, dir) {
 
 // him: the cast kind 'cardinal' (else a heavy Hood, unarmed, as a stand-in),
 // made to be shot like a Hood, with his own brain
-function spawnCardinal(ctx, at) {
+function spawnCardinal(ctx, at, { climbYaw = null } = {}) {
   const G = ctx.game, S = ctx.stage, R = rig();
   const toDoor = SITE.cardinal.path[0];
-  const yaw = Math.atan2(toDoor.x - at.x, toDoor.z - at.z);
+  const yaw = climbYaw ?? Math.atan2(toDoor.x - at.x, toDoor.z - at.z);
   let fig;
   const W = { total: 15, slow: 5, knee: 10 };
   const onWound = (h, { wounds, dir }) => {
@@ -810,6 +813,14 @@ function spawnCardinal(ctx, at) {
     fig.heavy = false;
     G.ais.set(fig, makeBrain(G, fig, 'b7_cardinal', { path: SITE.cardinal.path, onWound, aim: 0.7 }));
     fig.b7char = c;
+    // [R2-F] out of the car first: his brain holds while the clip plays
+    if (climbYaw != null && fig.anim.bank && fig.anim.bank.has('cardinal_carOut')) {
+      fig.yaw = climbYaw;
+      fig.anim.play('cardinal_carOut', { fade: 0 });
+      fig.state = 'b7_carOut'; fig._b7clip = 'cardinal_carOut';
+      const B = G.ais.get(fig).brain;
+      if (B) B.hold = CARDINAL_OUT;
+    }
   } else {
     fig = man(ctx, { group: 'cardinal', at: { x: at.x, z: at.z }, yaw, heavy: true, variant: { unarmed: true, coat: 0, brim: 1, tall: 1 }, brain: 'b7_cardinal', hp: 1e6, aim: 0.7, opts: { path: SITE.cardinal.path, onWound } });
   }

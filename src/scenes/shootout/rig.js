@@ -326,6 +326,13 @@ export function everyStep(ctx, dt) {
     if (!h.alive) continue;
     if (Math.abs(h.pos.z - (D.door.hingeZ + D.door.w / 2)) < 1.2 && h.pos.x < -8.6 && h.pos.x > -12.5) front.door.open();
   }
+  // [R2-F] a man who falls back with a car, a door or a wall at his back
+  // goes down forward instead (never back through the car he stood by)
+  for (const h of S.hoods.list) {
+    if (h.alive || h.b7fall || h.b7char || !(h._deathT >= 0) || h._deathT > 0.12) continue;
+    h.b7fall = true;
+    if (h.state === 'deathBack' && (h.pos.y || 0) < 1 && !roomBehind(S, h)) { h.anim.play('deathKnees', { fade: 0.1 }); h.state = h._deathKind = 'deathKnees'; }
+  }
   headlampsInRoom(ctx);
   // [second pass] the fight is on from the cars until he is down (not in
   // the quiet before him): the director runs, so the health bar shows (the
@@ -353,6 +360,21 @@ export function everyStep(ctx, dt) {
       G.fx.puff.spawn({ pos: p, vel: V(0.01, 0.13, 0), life: 2.2, size: [0.05, 0.05], grow: 0.08, rot: 0, spin: 0.2, col: [0.5, 0.5, 0.5], alpha: 0.2, drag: 0.5, fadeIn: 0.3, fadeOut: 0.8, cell: 0 });
     }
   }
+}
+
+// [R2-F] the street behind a man (as he faces) clear of cars, doors, walls
+// and posts for a body's length
+function roomBehind(S, h) {
+  const back = V(-Math.sin(h.yaw), 0, -Math.cos(h.yaw));
+  for (const L of [0.6, 1.2, 1.8]) {
+    const p = h.pos.clone().addScaledVector(back, L);
+    for (const b of S.colliders.boxes) {
+      const dx = p.x - b.cx, dz = p.z - b.cz, lx = dx * b.c - dz * b.s, lz = dx * b.s + dz * b.c;
+      if (Math.hypot(Math.max(0, Math.abs(lx) - b.hx), Math.max(0, Math.abs(lz) - b.hz)) < 0.25) return false;
+    }
+    for (const c of S.colliders.circles) if (c.tag !== 'hood' && c !== h.collider && Math.hypot(p.x - c.x, p.z - c.z) < c.r + 0.25) return false;
+  }
+  return true;
 }
 
 // look development (shot mode only): b7kill=<group>@<t> kills that group's
