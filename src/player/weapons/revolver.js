@@ -183,8 +183,9 @@ export default (game) => {
       G.fx.flash.player(mz.vm, mz.world, fwd.clone(), time, mz.fwd);
       G.sfx.play('revolver', null, {}, { gain: 1.0 });
       G.sfx.duck(0.7, 0.45);
-      // the view kicks a little (up and back in a fifth of a second)
-      G.controller.kick(1.1 - 0.4 * this.steady, 0, 0.2);
+      // (the view's kick is the shot's own clock: update() lays it on the
+      // hands' viewFx, never on the lens - controller.kick pins the fov for
+      // its length, and the steady's zoom would drift off it)
       this.kickR = rng.range(-1, 1); this.kickY = rng.range(-1, 1);
       // the shot: the Tommy gun's path
       const hood = G.rays.raycastHoods(origin, dir, REVOLVER.range, G.world.hoods.list);
@@ -293,6 +294,12 @@ export default (game) => {
       // lay the hands now: the gun's place of this step, not the last one's
       G.hands.pose3();
       VF.eyes = eyes;
+      // the view kicks with the shot (1.1 degrees up, 0.7 steadied, a hair
+      // sideways; up at once and back in a fifth of a second); the aim itself
+      // is never moved
+      const kv = this.dry ? 0 : climbK(this.sinceShot) * (1 - ss(0.12, 0.26, this.sinceShot));
+      VF.pitch += 0.019 * (1 - 0.35 * this.steady) * kv;
+      VF.yaw += 0.004 * this.kickY * kv;
     },
 
     // the reload's moments that change the gun (its pose is pose()'s)
