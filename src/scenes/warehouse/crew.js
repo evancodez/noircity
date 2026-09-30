@@ -404,6 +404,17 @@ export class Man {
     if (this.searchT > TUNE.searchLook) { this.a = Math.min(this.a, 0.2); this.crew.sound('shrug', this.eye(V(0, 0, 0))); this.resume(); }
   }
 
+  // a new post: he walks there and stands it, looking about (his round is
+  // over; a sound or a glimpse still turns him, and he comes back here)
+  sendTo(x, z, yaw, looks = null) {
+    if (this.down || this.mode === 'alarm') return;
+    this.route = [];
+    this.spec = { ...this.spec, at: [x, z], yaw, looks: looks || [yaw], lookEvery: 3.2 };
+    this.wait = 0;
+    this.setMode('return');
+    this.go(x, z);
+  }
+
   // back to his round: to the nearest point of it
   resume() {
     if (this.route.length < 2) {

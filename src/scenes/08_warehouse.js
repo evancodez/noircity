@@ -56,6 +56,9 @@ const CREW = [
   { name: 'hood2', kind: 'hood', light: 'torch', at: [3.0, -36.4], yaw: PI / 2, ri: 1, variant: { coat: 2, brim: 0, tall: 0 }, speed: 1.1,
     route: [{ x: -0.6, z: -36.4, wait: 2.6, looks: [0.15, -0.6] }, { x: 6.8, z: -36.4, wait: 2.6, looks: [-0.1, 0.5] }] },
 ];
+// when the truck backs in, the Hood with the torch goes down to meet it and
+// stands by its tail (the strip at the stairs' foot is left to the other)
+const HOOD2_TRUCK = { at: [-6.9, -5.2], yaw: -PI / 2, looks: [-PI / 2, 0.3, -PI / 2 - 0.5] };
 // where each checkpoint puts me (in the dark)
 const START = {
   arrive: { x: PIER.start.x, z: PIER.start.z, yaw: PIER.start.yaw, pitch: 0.02 },
@@ -85,7 +88,7 @@ function setupAt(ctx, b) {
   if (b === 'out') { W.truck.place(1); W.truck.lights(true); }
   // the crew
   const crew = new Crew(G, stage, { rng: ctx.rng.fork(81) });
-  for (const spec of CREW) crew.add(spec);
+  for (const spec of CREW) crew.add(b === 'out' && spec.name === 'hood2' ? { ...spec, ...HOOD2_TRUCK, route: null, ri: 0, lookEvery: 3.2 } : spec);
   // (a jump past the door: the first man is already on his round)
   if (b !== 'arrive' && b !== 'floor') { const s = crew.get('sully'); s.entry = null; s.setMode('patrol'); }
   // the office: the Cardinal (lane B7's kind when it is here) and his two men
@@ -353,6 +356,10 @@ export default defineScene({
         shed.sideDoor.close();
         W.truck.back(7);
         G.sfx.play('engine', V(PIER.truck.from.x, 1, PIER.truck.from.z), { dur: 8 }, { ref: 10 });
+        // (the engine calls the Hood with the torch down to it)
+        yield wait(1.6);
+        const h2 = crew.get('hood2');
+        if (h2) h2.sendTo(HOOD2_TRUCK.at[0], HOOD2_TRUCK.at[1], HOOD2_TRUCK.yaw, HOOD2_TRUCK.looks);
       }
       yield until(() => C.pos.x > PIER.shed.x1 + 0.4 && C.pos.z > PIER.bayDoor.z - 1.5);
       // (out on the apron, a few steps from the door: the scene ends on the
