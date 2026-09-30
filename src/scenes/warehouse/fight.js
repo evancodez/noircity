@@ -422,7 +422,9 @@ export class PierFight {
     while (f.acc >= 1) {
       f.acc -= 1;
       const a = r.next() * Math.PI * 2, d = Math.sqrt(r.next()) * f.r * (0.6 + 0.4 * k);
-      const w = r.range(0.28, 0.5) * (0.6 + 0.4 * k), h = r.range(0.14, 0.26) * (0.7 + 0.3 * k);
+      // ([R2-E round 2] a sheet a man's shin high: at 0.14-0.26 m it read
+      // as a few orange flecks at his feet from across the ring)
+      const w = r.range(0.34, 0.6) * (0.6 + 0.4 * k), h = r.range(0.26, 0.46) * (0.7 + 0.3 * k);
       const ball = r.chance(0.35);
       F.fire.spawn({ pos: V(f.at.x + Math.cos(a) * d, 0.02 + h * (ball ? 0.3 : 0.42), f.at.z + Math.sin(a) * d), vel: V(r.gauss() * 0.05, r.range(0.08, 0.25), r.gauss() * 0.05),
         life: r.range(0.3, 0.55), size: [w, ball ? h * 0.6 : h], grow: 0.1, rot: r.gauss() * 0.05, spin: 0,
@@ -431,7 +433,7 @@ export class PierFight {
     f.accT += dt * 12 * (0.4 + 0.6 * k);
     while (f.accT >= 1) {
       f.accT -= 1;
-      const a = r.next() * Math.PI * 2, d = Math.sqrt(r.next()) * f.r * 0.8, s = r.range(0.2, 0.42) * (0.6 + 0.4 * k);
+      const a = r.next() * Math.PI * 2, d = Math.sqrt(r.next()) * f.r * 0.8, s = r.range(0.34, 0.68) * (0.6 + 0.4 * k);
       F.fire.spawn({ pos: V(f.at.x + Math.cos(a) * d, 0.1 + s * 0.4, f.at.z + Math.sin(a) * d), vel: V(r.gauss() * 0.1, r.range(0.35, 0.8), r.gauss() * 0.1),
         life: r.range(0.22, 0.42), size: [s * 0.8, s], grow: 0.2, rot: r.gauss() * 0.2, spin: r.gauss() * 0.3,
         col: FIRE_COL.yellow, colEnd: FIRE_COL.deep, colPow: 1.4, cell: FIRE.FLAME[r.int(0, 3)], fadeIn: 0.06, fadeOut: 0.3, drag: 0.6 });
