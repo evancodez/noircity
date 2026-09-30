@@ -38,6 +38,10 @@ solved onto the seat's rim while it moves) and sends it skidding into the
 counter's foot, where it goes over and lies (a thing in the room from now
 on, in every later beat and retry); my fists come up; he gives ground and
 squares up. The lesson's first card follows. A retry never plays it again.
+Entered from the title (a chapter chosen, a CONTINUE) the chapter card is
+up: the room comes up under it, his line said, and the move begins once the
+card has gone (round 1 drew the numeral II over him as he rose). A cut from
+the diner has no card and waits for nothing.
 `scenes/fight/start.js`; `?scene=fight&beat=start&t=<s>` scrubs it.
 
 ## 2. Controls
@@ -163,9 +167,14 @@ the counter's edge and used by the neck.
   The thing flies on a real arc (12.5 m/s) along a lane aimed where I stood
   when the tell began; a hop to either side leaves it; it bursts on
   whatever is behind me (the room, the floor) and its pieces come to rest.
-  In the air it is inked on the frame: three speed lines trailing back
-  toward his hand and a paper-white rim round it (a dark plate against the
-  dark room at five metres was not seen at all).
+  In the air it is inked on the frame with three speed lines trailing back
+  along the way it comes, and nothing else: the ring and the white rim round
+  it were loud (round 2). The plate itself is lighter: a plate or a mug in
+  his hand comes up paper-white over the tell (a clone of its china, its
+  albedo and an emissive lifted with the tell's 0.4 s, so nothing pops at the
+  release), stays white in the air, and goes back to china when it bursts,
+  falls or he is struck off it (a dark plate against the dark room at five
+  metres was not seen at all). A bottle stays dark: the lines carry it.
 - **A swing with a thing** follows the rule for fists (step away from the
   hand that swings, or back), with no indicator, and reaches further (a
   stool 2.05 m).
@@ -232,6 +241,15 @@ slow motion, out through the glass, onto his back on the pavement. Standing
 in his way, I am shouldered out of it. If he cannot get to either window
 (held up three times, or 12 s) he comes round and fights on: a fight that
 cannot end is a bug.
+
+**The card at the window** (round 2). Nothing told a player that only a
+loaded punch (or a thing) ends it, and a player who mashes jabs a swaying
+man for ever. So when he stands at the window, 0.7 s after he gets there, a
+card low in the frame, in the lesson's hand: `OUT ON HIS FEET.   HOLD TO
+LOAD, THEN LET GO` (the mouse inked). It stays 6 s. It does not come for a
+player who has loaded a punch (level 2 or more, blocked or not) in the last
+30 s: he knows. If I go on jabbing the swaying man, six blows, it comes
+again for 4 s. It goes with him (the last blow, or his coming round).
 
 ## 10. One fight system, two rooms
 

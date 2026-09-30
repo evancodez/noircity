@@ -1105,6 +1105,7 @@ export class Brawl {
       case 'reel': this.stepReel(dt); break;
     }
     this.finishCard();
+    this.stepThrownLight(dt);
     steer(this, dt);
     this.keepInRoom();
     this.drawGuard();
@@ -1449,7 +1450,7 @@ export class Brawl {
     const hd = Math.hypot(to.x - from.x, to.z - from.z), sp = 12.5, tt = Math.max(0.12, hd / sp), g = 9.8;
     const v = V((to.x - from.x) / tt, (to.y - from.y + 0.5 * g * tt * tt) / tt, (to.z - from.z) / tt);
     G.stage.scene.add(o); o.position.copy(from); o.updateMatrixWorld(true);
-    this.lightThing(o, true);   // [R2-H] up light in the air: china catches the eye
+    this.lightThing(o, true); him.lightK = 0;   // [R2-H] up light in the air (it came up over the tell): china catches the eye
     this.sfx('b8throw', from, { k: 1 });
     const lane = V(to.x - from.x, 0, to.z - from.z).normalize();
     // ([B8] its middle and its size, for the rim drawn round it on the frame)
@@ -1512,28 +1513,45 @@ export class Brawl {
       this.flying.splice(i, 1);
     }
   }
-  // [R2-H] his thrown china is drawn light in the air: a dark plate against
-  // the dark room at five metres was not seen, and the ring drawn round it
-  // to find it was loud. Its meshes swap to unlit paper-white (as the glass
-  // ticks are) and the ink outlines it; put back when it bursts or falls.
-  lightThing(o, on) {
+  // [R2-H] his thrown china is drawn light: a dark plate against the dark
+  // room at five metres was not seen, and the ring drawn round it to find it
+  // was loud. Its materials are cloned (the shared china stays as it was) and
+  // lifted by k (0 .. 1): an emissive and a lighter albedo, so the ink prints
+  // it paper-white with its rim. It comes up over the tell, in his hand (the
+  // plate catching the light is the tell's own mark: nothing pops at the
+  // release) and goes back when it bursts, falls or he is struck off it.
+  lightThing(o, on, k = 1) {
     if (!o) return;
     o.traverse((m) => {
       if (!m.isMesh || !m.material || Array.isArray(m.material)) return;
       if (on) {
-        const M = m.material;
-        if (m.userData.r2hMat || M.transparent || !/^prop_china/.test(M.name || '')) return;
-        m.userData.r2hMat = M;
-        const c = M.clone();
-        c.emissive = new THREE.Color(1, 1, 1).multiplyScalar(THROWN_LIFT);
-        c.color.multiplyScalar(2.2);
-        m.material = c;
+        let c = m.userData.r2hMat && m.material;
+        if (!c) {
+          const M = m.material;
+          if (M.transparent || !/^prop_china/.test(M.name || '')) return;
+          m.userData.r2hMat = M;
+          c = M.clone();
+          c.userData.r2hBase = M.color.clone();
+          c.emissive = new THREE.Color(0, 0, 0);
+          m.material = c;
+        }
+        c.emissive.setScalar(THROWN_LIFT * k);
+        c.color.copy(c.userData.r2hBase).multiplyScalar(1 + 1.2 * k);
       } else if (m.userData.r2hMat) {
         m.material.dispose && m.material.dispose();
         m.material = m.userData.r2hMat;
         delete m.userData.r2hMat;
       }
     });
+  }
+  // (each step: the plate in his hand comes up over the throw's tell; one he
+  // is struck off goes back to china)
+  stepThrownLight(dt) {
+    const him = this.him, o = him.prop;
+    if (o && him.state === 'attack' && him.clip === 'br_throw') {
+      him.lightK = Math.min(1, (him.lightK || 0) + dt / 0.4);
+      this.lightThing(o, true, him.lightK);
+    } else if (o && him.lightK) { him.lightK = 0; this.lightThing(o, false); }
   }
   // [B8] (second pass) his thrown thing on the frame: speed lines back
   // along the way it came and a white rim - a dark plate against the dark
