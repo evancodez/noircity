@@ -49,6 +49,8 @@ export function rigFor(ctx) {
     if (ok) RIG.reserve--;
     return ok;
   };
+  // (the headless play reads the rig here: the drums I carry, the hat)
+  G.b7 = R;
   // (the scene is over when it leaves: the next entry makes a new rig)
   R.onExit = () => {
     if (RETRY) return;
@@ -61,6 +63,7 @@ export function rigFor(ctx) {
 export function teardown(R) {
   const G = R.game, S = R.stage;
   if (RIG === R) RIG = null;
+  if (G.b7 === R) G.b7 = null;
   G.off('scene:exit', R.onExit);
   G.director.stop();
   for (const h of [...S.hoods.list]) G.removeHood(h);

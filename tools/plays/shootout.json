@@ -1,0 +1,21 @@
+{
+ "about": "Scene 9, The Block (B7), by real input (tools/play.mjs): BEGIN at start=shootout, then the whole scene played by a human-paced gunman (tools/lib/b7_shootout.mjs): the gun taken off the counter, the lights put out, every beat fought from a window or the door, drums fetched from the counter, the car that will not stop shot at, and the walk out to the hat; the end card. node tools/play.mjs tools/plays/shootout.json",
+ "url": "/?mute=1&start=shootout",
+ "size": [1280, 800],
+ "out": "shots/play/shootout",
+ "steps": [
+  { "name": "the title, BEGIN at scene 9" },
+  { "wait": 2500 },
+  { "clickOn": "#title .opt[data-k=begin]" },
+  { "until": "G.scenes.current && G.scenes.current.id === 'shootout' && document.pointerLockElement === N.renderer.domElement", "timeout": 12000 },
+  { "expect": "G.scenes.beat === 'arrive' && G.hands.set === 'empty' && !G.b7.gunTaken", "label": "in at the door, no gun yet" },
+  { "until": "G.hud.sayShown === \"They're coming here.\"", "timeout": 8000 },
+  { "shot": "s01_line" },
+  { "name": "the whole scene, by real input" },
+  { "drive": "tools/lib/b7_shootout.mjs", "timeout": 780000, "check": "D.ended && D.beats.includes('cardinal') && D.beats.includes('end')", "label": "the scene played from the door to the end card" },
+  { "wait": 800 },
+  { "expect": "G.hud.endShown && document.querySelector('#endcard h1').textContent === 'THE END'", "label": "THE END" },
+  { "expect": "!!G.b7 === false || G.b7.hat != null", "label": "his hat in the street" },
+  { "shot": "s99_end" }
+ ]
+}

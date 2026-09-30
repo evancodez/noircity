@@ -113,7 +113,7 @@ const CARDINAL = {
       [1.512, 0.105, 0.094, 0.1, -0.017, 2.3],
     ],
     shoulderX: 0.232, shoulderY: 1.41, upper: 0.31, fore: 0.28, hipX: 0.112,
-    neckR: 0.078, neckFlare: 0.03, neckY: 1.48, headY: 1.556, headS: 1.04, headW: 1.05, jaw: 0.14, hairLine: 0.2,
+    neckR: 0.066, neckFlare: 0.03, neckY: 1.48, headY: 1.556, headS: 1.04, headW: 1.05, jaw: 0.14, hairLine: 0.2,
   },
   cover: { kind: 'none', hatDY: 0.118, hatDZ: 0.004, pitch: 0.04 },
   garments: [
@@ -122,7 +122,7 @@ const CARDINAL = {
     { kind: 'skirt', y0: 1.0, hem: 0.3, split: 0.35, flare: [1.3, 1.42], back: 0.6, folds: 0.9, grow: 0.014, shade: 'coat' },
     { kind: 'lapels', near: true, top: 1.46, low: 1.18, shade: 'lapel' },
     // the fur: a thick ring standing round the jaw and lying on the shoulders
-    { kind: 'collar', style: 'fur', r: 0.074, shade: 'fur', nu: 72, nv: 14 },
+    { kind: 'collar', style: 'fur', r: 0.042, shade: 'fur', nu: 72, nv: 14 },
     { kind: 'sleeves', style: 'long', r: 0.098, cuff: 0.088 },
     { kind: 'legs', r: 1.15 },
     { kind: 'shoes' },

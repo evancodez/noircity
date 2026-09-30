@@ -35,11 +35,12 @@ export const SITE = {
   },
   // ---- the cars beat: two sedans up the avenue, swinging in nose-first at
   // the far side of the road, their headlamps into the room
+  // (each runs up the far side of the road, then swings hard right: it
+  // stops nose in, its lamps through the windows - A's into B1 / B2, B's
+  // into the door and B4)
   cars: [
-    // car A: the lead car, stops level with B2 / B1, nose toward the diner
-    { rail: [[3.0, -86], [3.6, -46], [4.6, -18], [6.4, -4], [8.6, 3.2], [9.3, 5.4]], stop: 9.3, head: [-0.62, 0.78], delay: 0 },
-    // car B: a length behind it, stops level with B4
-    { rail: [[4.2, -96], [4.6, -56], [5.6, -26], [7.4, -12], [9.2, -5.4], [9.6, -3.8]], stop: 9.6, head: [-0.52, 0.85], delay: 0.7 },
+    { rail: [[3.0, -86], [3.6, -46], [5.2, -20], [8.2, -8.5], [9.1, -2.2], [9.0, 0.6], [7.1, 1.3]], delay: 0 },
+    { rail: [[4.2, -98], [4.6, -58], [5.8, -32], [8.2, -17], [9.3, -11.4], [9.4, -7.6], [7.5, -6.6]], delay: 0.8 },
   ],
   // the men: the car (0 | 1), the door they get out of (local: 'rf' right
   // front, 'rr' right rear, 'lr' left rear), where they fight from
