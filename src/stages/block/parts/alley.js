@@ -337,7 +337,7 @@ export default {
       g.add(b);
       // (down, a little out over the mouth and back toward the pavement I
       // come from: the pool on the flags of the mouth and the kerb's edge)
-      const l = stage.lamps.addCustom({ head: head.clone(), axis: (Q && Q[3] != null ? V3(Q[3], -1, Q[4]) : V3(0.15, -1, 0.25)).normalize(), height: wy - 0.3, half: 0.44, real: !(Q && Q[5] === 0), bulb: b, fadeEnd: 0.72, edgeSoft: 0.3, strength: Q && Q[6] ? Q[6] : 1.4, tag: 'alleyMouth' });
+      const l = stage.lamps.addCustom({ head: head.clone(), axis: (Q && Q[3] != null ? V3(Q[3], -1, Q[4]) : V3(0.15, -1, 0.25)).normalize(), height: wy - 0.3, half: 0.44, real: !(Q && Q[5] === 0), bulb: b, fadeEnd: 0.72, edgeSoft: 0.3, strength: Q && Q[6] ? Q[6] : 2.2, tag: 'alleyMouth' });   // (2.2: at 1.4 its cone at 30 m was a grey breath beside the booth's light)
       l.on = false;
       l.cone.visible = false;
       if (l.light) { l.light.angle = 0.6; l.light.penumbra = 0.85; l.light.intensity = 70; l.light.distance = 12; }
