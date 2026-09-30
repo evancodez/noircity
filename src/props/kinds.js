@@ -2,6 +2,8 @@ import * as THREE from 'three';
 import { PM, lathe, flutedLathe, slab, boxUV, tubeAlong, handleArc, flatPoly, uvRect, planarUV, mergeGeos, smooth, AT, V3, V2, hash } from './lib.js';
 import { makeLiquid } from './liquid.js';
 import { accentMaterial } from '../render/accents.js';
+// [B1] the matchbook's back, torn across the bird (scene 3: the half that tore off)
+import { tornBack, birdMaterial, edgeMaterial } from './kinds/body.js';
 
 // The prop kinds (docs/story/CONTRACTS.md §8.1), each a function of
 // (variant, lod) returning a spec:
@@ -527,7 +529,9 @@ export const SPECS = {
   matchbook(v, lod) {
     const P = PM();
     const w = 0.038, L = 0.05, t = 0.0022;
-    const back = slab(w, t, L, { bevel: 0.0007, corner: 0.0015, seg: 2 });
+    // [B1] the back torn across (half of it and half the black bird on it
+    // gone): seen only when the book is turned over or opened
+    const torn = tornBack();
     const strip = new THREE.PlaneGeometry(w - 0.004, 0.007).rotateX(-Math.PI / 2).translate(0, t + 0.00015, L / 2 - 0.006);
     // the matches: a comb of ten flat sticks with round dark heads
     const sticks = [], heads = [];
@@ -546,7 +550,9 @@ export const SPECS = {
     const coverG = new THREE.Group();
     return {
       parts: [
-        { geo: back, mat: P.crew, id: 0 },
+        { geo: torn.keep.geo, mat: P.crew, id: 0 },
+        { geo: torn.keep.decal, mat: birdMaterial(), id: 0, cast: false },
+        { geo: torn.edgeKeep, mat: edgeMaterial(), id: 0, cast: false },
         { geo: strip, mat: P.dark, id: 0, cast: false },
         { geo: mergeGeos(sticks), mat: P.paperLight, id: 1 },
         { geo: mergeGeos(heads), mat: P.black, id: 1 },
@@ -557,6 +563,7 @@ export const SPECS = {
       init(g, ud, by) {
         void coverG;
         ud.open = 0;
+        ud.torn = true;   // [B1]
         ud.setOpen = (k) => { ud.open = Math.max(0, Math.min(1, k)); const e = ud.open * ud.open * (3 - 2 * ud.open); by.cover.rotation.x = -e * 2.7; };
       },
     };
