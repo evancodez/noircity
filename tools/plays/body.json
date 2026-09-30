@@ -1,0 +1,1037 @@
+{
+ "about": "Scene 3, the body (lane B1), by real input (tools/play.mjs): ?start=body, the walk down the pavement, the kneel, the wounds, his hand, the marks, the strings (the pointer through each wound), the drop ladder and the climb, the torn half, the halves on the step, the seven pieces of the note, the last look and the next chapter. NOIR_PORT=5311 node tools/play.mjs tools/plays/body.json",
+ "url": "/?mute=1&start=body",
+ "size": [
+  1280,
+  800
+ ],
+ "out": "shots/play/body",
+ "steps": [
+  {
+   "name": "the title, BEGIN at scene 3"
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]"
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'body' && document.pointerLockElement === N.renderer.domElement",
+   "timeout": 10000
+  },
+  {
+   "look": [
+    0,
+    0
+   ],
+   "steps": 1
+  },
+  {
+   "look": [
+    0,
+    280
+   ],
+   "steps": 4
+  },
+  {
+   "expect": "G.scenes.beat === 'approach' && G.controller.mode === 'walk' && G.stage.part('alley').shown && G.stage.part('alley').lamp.on",
+   "label": "approach: the alley shown, its lamp lit, walking"
+  },
+  {
+   "expect": "G.save.inventory.includes('matchbook')",
+   "label": "the matchbook in my pocket (scene 2's)"
+  },
+  {
+   "until": "G.scenes.ctx.flags.car && G.scenes.ctx.flags.car.s > 22",
+   "timeout": 10000
+  },
+  {
+   "shot": "b01_car"
+  },
+  {
+   "name": "down the pavement to the alley"
+  },
+  {
+   "walk": [
+    [
+     -8.2,
+     -12.0
+    ],
+    [
+     -8.3,
+     -21.5
+    ]
+   ],
+   "timeout": 20000
+  },
+  {
+   "shot": "b02_walk"
+  },
+  {
+   "walk": [
+    [
+     -8.7,
+     -24.7
+    ],
+    [
+     -9.5,
+     -25.2
+    ]
+   ],
+   "timeout": 12000
+  },
+  {
+   "until": "G.scenes.beat === 'body'",
+   "timeout": 6000
+  },
+  {
+   "name": "the body: kneel"
+  },
+  {
+   "eval": "__body.aimAt('chest')"
+  },
+  {
+   "look": [
+    -164,
+    309
+   ],
+   "steps": 6
+  },
+  {
+   "until": "G.hud.promptShown.includes('kneel')",
+   "timeout": 4000
+  },
+  {
+   "shot": "b03_body"
+  },
+  {
+   "key": "KeyE"
+  },
+  {
+   "until": "G.controller.mode === 'seated'",
+   "timeout": 3000
+  },
+  {
+   "wait": 1300
+  },
+  {
+   "shot": "b04_kneel"
+  },
+  {
+   "name": "the wounds"
+  },
+  {
+   "eval": "__body.aimAt('chest')"
+  },
+  {
+   "look": [
+    -162,
+    80
+   ],
+   "steps": 6
+  },
+  {
+   "until": "G.hud.promptShown.includes('the wounds')",
+   "timeout": 4000
+  },
+  {
+   "key": "KeyE"
+  },
+  {
+   "until": "G.hud.sayShown.includes('Two. In the chest')",
+   "timeout": 3000
+  },
+  {
+   "wait": 4400
+  },
+  {
+   "shot": "b05_outline"
+  },
+  {
+   "name": "his hand"
+  },
+  {
+   "eval": "__body.aimAt('fist')"
+  },
+  {
+   "look": [
+    113,
+    537
+   ],
+   "steps": 6
+  },
+  {
+   "until": "G.hud.promptShown.includes('his hand')",
+   "timeout": 4000
+  },
+  {
+   "key": "KeyE"
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "expect": "G.scenes.ctx.flags.havePieces === true",
+   "label": "the seven wet pieces came away"
+  },
+  {
+   "name": "the marks"
+  },
+  {
+   "eval": "__body.aimAt('marks')"
+  },
+  {
+   "look": [
+    -202,
+    -448
+   ],
+   "steps": 6
+  },
+  {
+   "until": "G.hud.promptShown.includes('the marks')",
+   "timeout": 4000
+  },
+  {
+   "key": "KeyE"
+  },
+  {
+   "until": "G.scenes.beat === 'strings'",
+   "timeout": 8000
+  },
+  {
+   "name": "the strings"
+  },
+  {
+   "wait": 1600
+  },
+  {
+   "shot": "b06_study"
+  },
+  {
+   "expect": "G.hud.promptShown.includes('string')",
+   "label": "the one prompt: the string through the wound"
+  },
+  {
+   "eval": "__body.toShooter()"
+  },
+  {
+   "look": [
+    878,
+    -634
+   ],
+   "steps": 10
+  },
+  {
+   "until": "G.scenes.ctx.flags.strings.strings[0].taut",
+   "timeout": 3000
+  },
+  {
+   "shot": "b07_taut1"
+  },
+  {
+   "wait": 500
+  },
+  {
+   "eval": "__body.toShooter()"
+  },
+  {
+   "look": [
+    465,
+    -302
+   ],
+   "steps": 10
+  },
+  {
+   "until": "G.scenes.ctx.flags.strings.strings[1].taut",
+   "timeout": 3000
+  },
+  {
+   "wait": 1300
+  },
+  {
+   "shot": "b08_solved"
+  },
+  {
+   "until": "G.scenes.beat === 'landing'",
+   "timeout": 8000
+  },
+  {
+   "name": "the landing"
+  },
+  {
+   "expect": "G.controller.mode === 'walk'",
+   "label": "walking again after the strings"
+  },
+  {
+   "walk": [
+    [
+     -9.9,
+     -26.3
+    ],
+    [
+     -12.4,
+     -26.6
+    ],
+    [
+     -13.45,
+     -26.85
+    ],
+    [
+     -13.5,
+     -27.7
+    ]
+   ],
+   "timeout": 15000
+  },
+  {
+   "eval": "__body.aimAt('ladder')"
+  },
+  {
+   "look": [
+    40,
+    -139
+   ],
+   "steps": 6
+  },
+  {
+   "until": "G.hud.promptShown.includes('pull the ladder')",
+   "timeout": 4000
+  },
+  {
+   "shot": "b09_ladder"
+  },
+  {
+   "key": "KeyE"
+  },
+  {
+   "until": "G.stage.part('alley').ladder.down === 1 && !G.scenes.ctx.flags.ladderAnim",
+   "timeout": 3000
+  },
+  {
+   "eval": "__body.aimAt('climb')"
+  },
+  {
+   "look": [
+    76,
+    202
+   ],
+   "steps": 6
+  },
+  {
+   "down": "KeyW"
+  },
+  {
+   "until": "G.controller.mode === 'climb'",
+   "timeout": 3000
+  },
+  {
+   "wait": 900
+  },
+  {
+   "shot": "b10_climb"
+  },
+  {
+   "until": "G.controller.mode === 'seated'",
+   "timeout": 6000
+  },
+  {
+   "up": "KeyW"
+  },
+  {
+   "wait": 700
+  },
+  {
+   "shot": "b11_landing"
+  },
+  {
+   "eval": "__body.aimAt('half')"
+  },
+  {
+   "look": [
+    42,
+    73
+   ],
+   "steps": 6
+  },
+  {
+   "until": "G.hud.promptShown.includes('take')",
+   "timeout": 4000
+  },
+  {
+   "key": "KeyE"
+  },
+  {
+   "until": "G.save.inventory.includes('matchbookHalf')",
+   "timeout": 3000
+  },
+  {
+   "until": "G.scenes.beat === 'halves' && G.controller.mode === 'walk'",
+   "timeout": 8000
+  },
+  {
+   "name": "the halves"
+  },
+  {
+   "walk": [
+    [
+     -13.0,
+     -26.4
+    ],
+    [
+     -12.95,
+     -25.15
+    ]
+   ],
+   "timeout": 12000
+  },
+  {
+   "eval": "__body.aimAt('step')"
+  },
+  {
+   "look": [
+    108,
+    346
+   ],
+   "steps": 6
+  },
+  {
+   "until": "G.hud.promptShown.includes('the matchbook')",
+   "timeout": 4000
+  },
+  {
+   "key": "KeyE"
+  },
+  {
+   "until": "G.puzzles.active && G.puzzles.active.id === 'body.halves'",
+   "timeout": 3000
+  },
+  {
+   "wait": 900
+  },
+  {
+   "shot": "b12_halves"
+  },
+  {
+   "eval": "__body.halvesPlan()"
+  },
+  {
+   "look": [
+    176,
+    -48
+   ],
+   "steps": 8
+  },
+  {
+   "look": [
+    7,
+    -2
+   ],
+   "steps": 1
+  },
+  {
+   "wait": 120
+  },
+  {
+   "mouse": "down",
+   "button": "left"
+  },
+  {
+   "wait": 120
+  },
+  {
+   "look": [
+    -253,
+    55
+   ],
+   "steps": 11
+  },
+  {
+   "look": [
+    -9,
+    8
+   ],
+   "steps": 1
+  },
+  {
+   "wait": 120
+  },
+  {
+   "mouse": "up",
+   "button": "left"
+  },
+  {
+   "wait": 120
+  },
+  {
+   "mouse": "down",
+   "button": "right"
+  },
+  {
+   "wait": 120
+  },
+  {
+   "look": [
+    216,
+    0
+   ],
+   "steps": 9
+  },
+  {
+   "look": [
+    1,
+    0
+   ],
+   "steps": 1
+  },
+  {
+   "wait": 120
+  },
+  {
+   "mouse": "up",
+   "button": "right"
+  },
+  {
+   "wait": 120
+  },
+  {
+   "until": "G.scenes.ctx.flags.halvesSt && G.scenes.ctx.flags.halvesSt.snapped",
+   "timeout": 3000
+  },
+  {
+   "wait": 300
+  },
+  {
+   "shot": "b13_halves_whole"
+  },
+  {
+   "name": "the note"
+  },
+  {
+   "until": "G.scenes.beat === 'note' && G.puzzles.active && G.puzzles.active.id === 'body.note'",
+   "timeout": 6000
+  },
+  {
+   "wait": 900
+  },
+  {
+   "shot": "b14_note"
+  },
+  {
+   "eval": "__body.notePlan()"
+  },
+  {
+   "look": [
+    -264,
+    55
+   ],
+   "steps": 11
+  },
+  {
+   "look": [
+    -3,
+    3
+   ],
+   "steps": 1
+  },
+  {
+   "wait": 120
+  },
+  {
+   "mouse": "down",
+   "button": "right"
+  },
+  {
+   "wait": 120
+  },
+  {
+   "look": [
+    322,
+    0
+   ],
+   "steps": 14
+  },
+  {
+   "look": [
+    9,
+    0
+   ],
+   "steps": 1
+  },
+  {
+   "wait": 120
+  },
+  {
+   "mouse": "up",
+   "button": "right"
+  },
+  {
+   "wait": 120
+  },
+  {
+   "mouse": "down",
+   "button": "left"
+  },
+  {
+   "wait": 120
+  },
+  {
+   "look": [
+    360,
+    -165
+   ],
+   "steps": 15
+  },
+  {
+   "look": [
+    3,
+    -11
+   ],
+   "steps": 1
+  },
+  {
+   "wait": 120
+  },
+  {
+   "mouse": "up",
+   "button": "left"
+  },
+  {
+   "wait": 120
+  },
+  {
+   "look": [
+    230,
+    190
+   ],
+   "steps": 10
+  },
+  {
+   "look": [
+    7,
+    3
+   ],
+   "steps": 1
+  },
+  {
+   "wait": 120
+  },
+  {
+   "mouse": "down",
+   "button": "right"
+  },
+  {
+   "wait": 120
+  },
+  {
+   "look": [
+    -198,
+    0
+   ],
+   "steps": 9
+  },
+  {
+   "look": [
+    -8,
+    0
+   ],
+   "steps": 1
+  },
+  {
+   "wait": 120
+  },
+  {
+   "mouse": "up",
+   "button": "right"
+  },
+  {
+   "wait": 120
+  },
+  {
+   "mouse": "down",
+   "button": "left"
+  },
+  {
+   "wait": 120
+  },
+  {
+   "look": [
+    -288,
+    -240
+   ],
+   "steps": 12
+  },
+  {
+   "look": [
+    -1,
+    -3
+   ],
+   "steps": 1
+  },
+  {
+   "wait": 120
+  },
+  {
+   "mouse": "up",
+   "button": "left"
+  },
+  {
+   "wait": 120
+  },
+  {
+   "look": [
+    -76,
+    24
+   ],
+   "steps": 4
+  },
+  {
+   "look": [
+    -2,
+    2
+   ],
+   "steps": 1
+  },
+  {
+   "wait": 120
+  },
+  {
+   "mouse": "down",
+   "button": "right"
+  },
+  {
+   "wait": 120
+  },
+  {
+   "look": [
+    184,
+    0
+   ],
+   "steps": 8
+  },
+  {
+   "look": [
+    3,
+    0
+   ],
+   "steps": 1
+  },
+  {
+   "wait": 120
+  },
+  {
+   "mouse": "up",
+   "button": "right"
+  },
+  {
+   "wait": 120
+  },
+  {
+   "mouse": "down",
+   "button": "left"
+  },
+  {
+   "wait": 120
+  },
+  {
+   "look": [
+    48,
+    -60
+   ],
+   "steps": 4
+  },
+  {
+   "look": [
+    2,
+    -3
+   ],
+   "steps": 1
+  },
+  {
+   "wait": 120
+  },
+  {
+   "mouse": "up",
+   "button": "left"
+  },
+  {
+   "wait": 120
+  },
+  {
+   "look": [
+    -176,
+    88
+   ],
+   "steps": 8
+  },
+  {
+   "look": [
+    -7,
+    0
+   ],
+   "steps": 1
+  },
+  {
+   "wait": 120
+  },
+  {
+   "mouse": "down",
+   "button": "right"
+  },
+  {
+   "wait": 120
+  },
+  {
+   "look": [
+    -126,
+    0
+   ],
+   "steps": 6
+  },
+  {
+   "look": [
+    -2,
+    0
+   ],
+   "steps": 1
+  },
+  {
+   "wait": 120
+  },
+  {
+   "mouse": "up",
+   "button": "right"
+  },
+  {
+   "wait": 120
+  },
+  {
+   "mouse": "down",
+   "button": "left"
+  },
+  {
+   "wait": 120
+  },
+  {
+   "look": [
+    312,
+    -13
+   ],
+   "steps": 13
+  },
+  {
+   "look": [
+    8,
+    -5
+   ],
+   "steps": 1
+  },
+  {
+   "wait": 120
+  },
+  {
+   "mouse": "up",
+   "button": "left"
+  },
+  {
+   "wait": 120
+  },
+  {
+   "look": [
+    -110,
+    242
+   ],
+   "steps": 11
+  },
+  {
+   "look": [
+    -10,
+    9
+   ],
+   "steps": 1
+  },
+  {
+   "wait": 120
+  },
+  {
+   "mouse": "down",
+   "button": "right"
+  },
+  {
+   "wait": 120
+  },
+  {
+   "look": [
+    60,
+    0
+   ],
+   "steps": 4
+  },
+  {
+   "look": [
+    1,
+    0
+   ],
+   "steps": 1
+  },
+  {
+   "wait": 120
+  },
+  {
+   "mouse": "up",
+   "button": "right"
+  },
+  {
+   "wait": 120
+  },
+  {
+   "mouse": "down",
+   "button": "left"
+  },
+  {
+   "wait": 120
+  },
+  {
+   "look": [
+    65,
+    -299
+   ],
+   "steps": 13
+  },
+  {
+   "look": [
+    7,
+    -3
+   ],
+   "steps": 1
+  },
+  {
+   "wait": 120
+  },
+  {
+   "mouse": "up",
+   "button": "left"
+  },
+  {
+   "wait": 120
+  },
+  {
+   "look": [
+    184,
+    56
+   ],
+   "steps": 8
+  },
+  {
+   "look": [
+    2,
+    4
+   ],
+   "steps": 1
+  },
+  {
+   "wait": 120
+  },
+  {
+   "mouse": "down",
+   "button": "right"
+  },
+  {
+   "wait": 120
+  },
+  {
+   "look": [
+    253,
+    0
+   ],
+   "steps": 11
+  },
+  {
+   "look": [
+    1,
+    0
+   ],
+   "steps": 1
+  },
+  {
+   "wait": 120
+  },
+  {
+   "mouse": "up",
+   "button": "right"
+  },
+  {
+   "wait": 120
+  },
+  {
+   "mouse": "down",
+   "button": "left"
+  },
+  {
+   "wait": 120
+  },
+  {
+   "look": [
+    -230,
+    -100
+   ],
+   "steps": 10
+  },
+  {
+   "look": [
+    -6,
+    -2
+   ],
+   "steps": 1
+  },
+  {
+   "wait": 120
+  },
+  {
+   "mouse": "up",
+   "button": "left"
+  },
+  {
+   "wait": 120
+  },
+  {
+   "until": "G.scenes.ctx.flags.noteSt && G.scenes.ctx.flags.noteSt.whole",
+   "timeout": 4000
+  },
+  {
+   "wait": 900
+  },
+  {
+   "shot": "b15_note_whole"
+  },
+  {
+   "expect": "G.scenes.ctx.flags.noteSt.pieces.every((q) => q.group === G.scenes.ctx.flags.noteSt.pieces[0].group)",
+   "label": "the seven pieces are one note"
+  },
+  {
+   "name": "leave"
+  },
+  {
+   "until": "G.scenes.beat === 'leave'",
+   "timeout": 6000
+  },
+  {
+   "expect": "G.save.inventory.includes('note') && G.save.inventory.includes('matchbookHalf') && G.save.inventory.includes('matchbook')",
+   "label": "in my coat: the matchbook, the torn half, the note"
+  },
+  {
+   "wait": 3300
+  },
+  {
+   "shot": "b16_leave"
+  },
+  {
+   "until": "G.state === 'end' || (G.scenes.current && G.scenes.current.id !== 'body')",
+   "timeout": 10000
+  },
+  {
+   "expect": "G.state === 'end' || (G.scenes.current && G.scenes.current.id === 'office')",
+   "label": "on to the next chapter (the end card while scene 4 is not merged)"
+  }
+ ]
+}
