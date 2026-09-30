@@ -216,12 +216,26 @@ export function* openFist(ctx, ames, { onPaper = null } = {}) {
 // the drop ladder: up for its lowest rung, the fingers round it, down with
 // it half way, let go (it drops the rest on its own weight). ~1.0 s
 export function* pullLadder(ctx, ladder, { onLetGo = null } = {}) {
-  const { game: G, hands: H } = ctx;
+  const { game: G, hands: H, controller: Ctl } = ctx;
   const T = 1.05;
   let t = 0, let_ = false;
   const k0 = ladder.down;
+  // [R2-G] the eye goes with the hand: up to the rung, down with it as it
+  // comes, and stays on it as it is let go (the pull went out of the bottom
+  // of the frame, and the hand with it). The look is eased toward it, not
+  // taken: the mouse still turns the eye, on top of it
+  const look = (p, rate) => {
+    const e = G.eye, d = Math.hypot(p.x - e.x, p.z - e.z);
+    const pw = Math.atan2(p.y - e.y, d) - 0.06, yw = Math.atan2(-(p.x - e.x), -(p.z - e.z));
+    const a = 1 - Math.exp(-(1 / 60) / rate);
+    Ctl.pitch += (pw - Ctl.pitch) * a;
+    Ctl.yaw += Math.atan2(Math.sin(yw - Ctl.yaw), Math.cos(yw - Ctl.yaw)) * a * 0.5;
+  };
   while (t < T) {
     t += 1 / 60;
+    if (t < 0.8) look(ladder.rung(0).add(V(0.07, 0, 0)), t < 0.3 ? 0.14 : 0.08);
+    // (let go: up the ladder it came down, to the landing - where I go)
+    else look(ladder.rung(8), 0.3);
     // the hand pulls: the ladder comes down with it between 0.4 and 0.72
     if (t > 0.4 && t <= 0.72) ladder.set(k0 + 0.42 * sstep(0.4, 0.72, t));
     // (the fingers hooked over the lowest rung from my side, fitted round
