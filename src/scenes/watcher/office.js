@@ -43,6 +43,21 @@ export function officeAfterFight(O) {
   void ODOOR;
 }
 
+// B2's curtain over the fire-escape window, pushed aside to the window's
+// far side (k 1: gathered on its rod, its outer edge where it hung; 0: as
+// B2 hangs it) - the way out goes through the window, and the man at the
+// window in the gunfight had it aside. A scale on its mesh (its own cloth
+// motion is in its vertices); given back when the scene leaves the office.
+export function curtainAside(O, k) {
+  const room = O.part('office');
+  const cm = room && room.curtain && room.curtain.mesh;
+  if (!cm) return;
+  const c0 = O._r2cCurtain0 || (O._r2cCurtain0 = { x: cm.position.x, s: cm.scale.x, w: room.curtain.w });
+  const sc = c0.s * (1 - 0.82 * k);
+  cm.scale.x = sc;
+  cm.position.x = c0.x + (c0.w / 2) * (c0.s - sc);
+}
+
 // ---- the blind ----------------------------------------------------------------------------
 // B2's slat: a crowned strip, width along x (the street side +x), its length
 // along z, tilted about z (street edge up) - openings.js buildBlind

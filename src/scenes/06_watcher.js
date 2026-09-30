@@ -6,7 +6,7 @@ import { makeUmbrella } from './watcher/umbrella.js';
 import { makeBlind } from './watcher/blind.js';
 import { RUNHANDS } from '../player/clips/run.js';
 import { SLAT, DOOR } from '../player/clips/watcher.js';
-import { officeStreet, officeAfterFight, makeOfficeBlind, officeRun, wayOut, WAY_OUT } from './watcher/office.js';
+import { officeStreet, officeAfterFight, makeOfficeBlind, officeRun, wayOut, WAY_OUT, curtainAside } from './watcher/office.js';
 import { ROOM as OROOM, STREET as STREET_O } from '../stages/office/plan.js';
 import { BLIND as OBLIND } from '../stages/office/build/openings.js';
 
@@ -513,6 +513,12 @@ function atOfficeWindow(ctx, C, O) {
   G.enterStage(O);
   officeStreet(O);
   officeAfterFight(O);
+  // (the escape window's curtain aside while the scene is in the office;
+  // hung again when it leaves - through the window, or any other way)
+  curtainAside(O, 1);
+  if (!O._r2cCurtainHook) {
+    O._r2cCurtainHook = G.on('scene:exit', () => curtainAside(O, 0));
+  }
   const aw = O.anchor('office.window.street'), sw = O.anchor('office.street.watcher');
   // him under the lamp across the street, the umbrella up, looking up at
   // this window
@@ -618,13 +624,9 @@ function* outOfOffice(ctx) {
   RUNHANDS.plantR.set(W.x - 0.24, W.sill + 0.012, W.wall + 0.035);
   RUNHANDS.plantL.set(W.x + 0.24, W.sill + 0.012, W.wall + 0.035);
   let cur = null, black = 0, t = 0, steps = 0, sill = false;
-  // the curtain over the window (B2's, drawn across it): swept aside to its
-  // far side as I come to it - gathered on its rod, its outer edge where it
-  // was - and hung again behind the black
-  const room = ctx.flags.office.part('office');
-  const cm = room && room.curtain && room.curtain.mesh;
-  const c0 = cm ? { x: cm.position.x, s: cm.scale.x, w: room.curtain.w } : null;
-  let swept = 0, swish = false;
+  // (the curtain, pushed aside to the window's far side since the setup:
+  // its cloth brushed as I go past it)
+  let swish = false;
   G.controller.setMode('cutscene', { ease: 0.05, track: (tt) => { cur = track(tt); return cur.pose; } });
   yield until(() => {
     const dt = 1 / 60;
@@ -632,13 +634,7 @@ function* outOfOffice(ctx) {
     // (my feet on the boards across the room, the palms slapped on the sill)
     if (steps < 3 && t > 0.22 + steps * 0.24) { steps++; G.sfx.step(null, true, true, true); }
     if (!sill && cur && cur.duck > 0.45) { sill = true; G.sfx.play('w_sill', V(W.x, W.sill, W.wall)); }
-    if (cm && cur && W.wall - cur.pose.z < 1.0) {
-      if (!swish) { swish = true; G.sfx.play('w_curtain', V(W.x, 1.4, W.wall - 0.1)); }
-      swept = Math.min(1, swept + dt / 0.22);
-      const k = swept * swept * (3 - 2 * swept), sc = c0.s * (1 - 0.82 * k);
-      cm.scale.x = sc;
-      cm.position.x = c0.x + (c0.w / 2) * (c0.s - sc);
-    }
+    if (!swish && cur && W.wall - cur.pose.z < 0.55) { swish = true; G.sfx.play('w_curtain', V(W.x + 0.35, 1.4, W.wall - 0.1)); }
     // (a quick stride across the room, the hands low; then down to the sill)
     RUNHANDS.phase += dt * 9;
     RUNHANDS.k += ((cur && cur.duck > 0.05 ? 0 : 0.35) - RUNHANDS.k) * (1 - Math.exp(-dt * 8));
@@ -648,7 +644,7 @@ function* outOfOffice(ctx) {
     return black >= 1;
   });
   G.hud.fade(1);
-  if (cm) { cm.scale.x = c0.s; cm.position.x = c0.x; }
+  curtainAside(ctx.flags.office, 0);
   // the backlot: the same window of the same building, the eye under its
   // sash as it was under the office's; him running for the side alley
   const pitch = G.controller.pitch;
