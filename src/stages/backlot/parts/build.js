@@ -226,7 +226,7 @@ export default {
       K.box('room', MAT.room, ROOM.x0 + 0.3, ROOM.x0 + 1.2, ROOM.y0, ROOM.y0 + 0.78, -11.4, -9.6);
       K.box('room', MAT.room, ROOM.x0 + 0.2, ROOM.x0 + 0.75, ROOM.y0, ROOM.y0 + 1.35, ROOM.z0 + 0.2, ROOM.z0 + 0.8);
       stage.dry.push(new THREE.Box3(V3(ROOM.x0, ROOM.y0, ROOM.z0), V3(0, ROOM.y1, -7.5)));
-      stage.addLook(new THREE.Box3(V3(ROOM.x0, ROOM.y0 - 0.1, ROOM.z0), V3(-0.05, ROOM.y1, -7.8)), { rainOverlay: 0.25, room: 'office304' });
+      stage.addLook(new THREE.Box3(V3(ROOM.x0, ROOM.y0 - 0.1, ROOM.z0), V3(-0.05, ROOM.y1, -7.8)), { rainOverlay: 0.25, ambient: 0.45, room: 'office304' });
       // the east wall over the straight: windows (the escape's on the three
       // upper floors), a door, pipes
       const F = { axis: 'x', at: 0, n: 1 };
@@ -404,6 +404,9 @@ export default {
     // for its pools, one every eight metres or so, so the way reads)
     lamps.p4 = L.wall(23.6, 3.7, PASSAGE.z1, 0, -1, { out: 0.25, strength: 0.9 });
     lamps.p5 = L.wall(11.2, 3.8, PASSAGE.z0, 0, 1, { out: 0.25, strength: 0.9 });
+    // (a slot 2.4 m wide: a full pool light paints the far wall as a flat
+    // grey egg; these two a softer one)
+    for (const l of [lamps.p4, lamps.p5]) l.light.intensity = 26;
     // 5 the dead end, the street
     lamps.d1 = L.wall(DEADEND.x1, 3.8, -94.8, -1, 0, { out: 0.5 });
     lamps.b1 = L.post(0.9, -104.5, Math.PI / 2 + Math.PI / 2, { y: 0.15 });

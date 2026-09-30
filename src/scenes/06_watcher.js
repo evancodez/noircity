@@ -212,9 +212,19 @@ export default defineScene({
       G.sfx.play('w_slats', gap);
       yield* ctx.prompt({ text: 'the fire escape' });
       // across the room to the side window and out through it
+      // (the head turns to the side window first - a third of a second - and
+      // the body follows it across the dark room, the eye already on the
+      // iron and the rain outside)
       const e = ESC_RAIL[0];
-      G.controller.ease({ x: e.x, y: e.y + EYE, z: e.z, yaw: -Math.PI / 2, pitch: -0.05 }, 1.0);
-      yield wait(1.0);
+      const P0 = G.controller.eyePose();
+      const wrapA = (a) => Math.atan2(Math.sin(a), Math.cos(a));
+      const dyaw = wrapA(-Math.PI / 2 - P0.yaw);
+      const sm = (x) => (x <= 0 ? 0 : x >= 1 ? 1 : x * x * (3 - 2 * x));
+      G.controller.setMode('cutscene', { ease: 0.05, track: (t) => {
+        const a = sm(t / 0.4), b = sm((t - 0.1) / 0.72);
+        return { x: P0.x + (e.x - P0.x) * b, y: P0.y + (e.y + EYE - P0.y) * b, z: P0.z + (e.z - P0.z) * b, yaw: P0.yaw + dyaw * a, pitch: P0.pitch + (-0.22 - P0.pitch) * a };
+      } });
+      yield wait(0.82);
     } else if (ctx.at('seen') && ctx.flags.office) {
       yield beat('seen');
       yield* seenInOffice(ctx);
@@ -384,6 +394,8 @@ export function restageStretch(ctx, i) {
   // (what he knocked down after this stretch began is put back)
   if (i <= 3) chase.crates.reset();
   if (i <= 4) chase.board.reset();
+  // (a retry past the board: he has just gone through it, it swings)
+  if (i >= 4) chase.board.push(2.2);
   chase.sheets.reset();
   chase.gate.reset();
   C.restage(i);
