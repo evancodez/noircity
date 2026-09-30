@@ -68,18 +68,24 @@ export const SPECS = {
     const M = mats();
     const planks = [];
     // ([R2-E] the small one: off a crate a man carries, three planks on two
-    // battens, 0.66 x 0.64 - held up before me in both hands it covers the
+    // battens, 0.5 x 0.5 - held up before me in both hands it covers the
     // chest and he is seen over it; the grip at the middle of its right
     // side, the battens' ends)
     if (v === 'small') {
       for (let i = 0; i < 3; i++) {
-        const p = slab(0.21, 0.02, 0.64, { bevel: 0.004, corner: 0.006, seg: 1, curve: 2 });
+        const p = slab(0.158, 0.02, 0.5, { bevel: 0.004, corner: 0.006, seg: 1, curve: 2 });
         p.deleteAttribute('uv');
-        p.translate(-0.22 + i * 0.22, 0.028, 0);
+        p.translate(-0.165 + i * 0.165, 0.028, 0);
         planks.push(p);
       }
-      const bat = [new THREE.BoxGeometry(0.64, 0.028, 0.08).translate(0, 0.014, -0.22), new THREE.BoxGeometry(0.64, 0.028, 0.08).translate(0, 0.014, 0.22)];
-      return { parts: [{ geo: mergeGeos(planks), mat: M.plank, id: 0 }, { geo: mergeGeos(bat), mat: M.wood, id: 0 }], grip: [0.32, 0.02, 0] };
+      const bat = [new THREE.BoxGeometry(0.5, 0.028, 0.07).translate(0, 0.014, -0.17), new THREE.BoxGeometry(0.5, 0.028, 0.07).translate(0, 0.014, 0.17)];
+      // (the grip's frame turns it upright before me in the fight's two-handed
+      // hold - clips/fight.js BIG_R, the hands' default socket: its face to
+      // me, spreading left of my right hand, held near its top corner so he
+      // is seen over it)
+      const grip = new THREE.Matrix4().makeBasis(V3(0.688, -0.065, -0.723), V3(-0.653, 0.351, -0.653), V3(0.297, 0.921, 0.198)).setPosition(0.25, 0.02, -0.16);
+      // (a pale deal lid: it prints grey with its grain, never a black plate)
+      return { parts: [{ geo: mergeGeos(planks), mat: std('p9_lidDeal', { color: 0x6a6a6a, roughness: 0.85, surface: 'wood' }), id: 0 }, { geo: mergeGeos(bat), mat: M.wood, id: 0 }], grip };
     }
     for (let i = 0; i < 4; i++) {
       const p = slab(0.29, 0.022, 1.18, { bevel: 0.004, corner: 0.006, seg: 1, curve: 2 });
@@ -104,29 +110,42 @@ export const SPECS = {
     }
     return { parts: [{ geo: mergeGeos(links), mat: M.steel, id: 0 }], grip: [0.18, 0.05, 0] };
   },
-  // [R2-E] the foreman's work jacket, laid over a barrel's top and hanging
-  // down its side: a heavy dark cloth, its collar and a sleeve over the rim
-  // (origin: the barrel's top centre; the drape falls toward +z)
+  // [R2-E] the foreman's work jacket: one cloth with two shapes, held by
+  // its collar hanging from his hand (the grip, the origin) and laid over a
+  // barrel's top and down its side (the barrel's top centre the origin, the
+  // drape falling toward +z); variant 'draped' starts laid. The scene lays
+  // it from one to the other (geometry.userData.shape(k): 0 held, 1 laid),
+  // the vertices moved on the CPU so every pass draws the same cloth.
   jacket: (v, lod) => {
-    const M = mats();
-    const nu = lod ? 8 : 14, nv = lod ? 12 : 22;
+    const nu = lod ? 8 : 12, nv = lod ? 12 : 20;
     const geo = new THREE.PlaneGeometry(1, 1, nu, nv);
     const P = geo.getAttribute('position');
-    const R = 0.3, W = 0.56;
+    const held = new Float32Array(P.count * 3), laid = new Float32Array(P.count * 3);
     for (let i = 0; i < P.count; i++) {
-      const u = P.getX(i) + 0.5, v2 = 0.5 - P.getY(i);
-      const x = (u - 0.5) * W * (1 + 0.12 * v2);
-      // along its length: 0.34 across the top, then over the rim and down 0.62
-      const s = v2 * 0.96, flat = 0.34;
+      const u = P.getX(i) + 0.5, s = (0.5 - P.getY(i)) * 0.94;
+      const fold = Math.sin(u * 17 + 1.3), fold2 = Math.sin(u * 7.1 + s * 3);
+      // held by the collar: hanging, bunched at the top
+      held[i * 3] = (u - 0.5) * (0.26 + 0.24 * Math.min(1, s * 3));
+      held[i * 3 + 1] = -s * 0.82;
+      held[i * 3 + 2] = 0.022 * fold * Math.min(1, s * 4) + 0.015 * fold2;
+      // laid: across the top, over the rim, down the side
       let y, z;
-      if (s < flat) { y = 0.012 + 0.018 * Math.sin(u * 9 + s * 11) * 0.5; z = -flat + s + 0.04; }
-      else { const d = s - flat; const a = Math.min(1, d / 0.08) * Math.PI / 2; y = -Math.sin(a) * Math.min(d, 0.08) - Math.max(0, d - 0.08); z = 0.04 + Math.sin(Math.min(1, d / 0.08) * Math.PI / 2) * 0.05 + Math.max(0, d - 0.08) * 0.08; z = Math.min(z, R + 0.03 + 0.06 * d); }
-      // folds: long soft ripples down the drape
-      const f = 0.012 * Math.sin(u * 17 + 1.3) * Math.min(1, s * 3);
-      P.setXYZ(i, x, y + f * 0.2, z + f);
+      if (s < 0.3) { y = 0.012 + 0.008 * fold2; z = -0.03 + s; }
+      else if (s < 0.38) { const k = (s - 0.3) / 0.08 * Math.PI / 2; y = 0.012 - 0.03 * (1 - Math.cos(k)); z = 0.27 + 0.03 * Math.sin(k); }
+      else { y = -0.02 - (s - 0.38); z = 0.3 + 0.08 * Math.min(1, (s - 0.38) / 0.44) + 0.012 * fold * Math.min(1, (s - 0.38) * 4); }
+      laid[i * 3] = (u - 0.5) * 0.56 * (1 - 0.18 * Math.max(0, Math.min(1, (s - 0.38) / 0.5)));
+      laid[i * 3 + 1] = y;
+      laid[i * 3 + 2] = z;
     }
-    geo.computeVertexNormals();
-    return { parts: [{ geo, mat: std('p9_jacket', { color: 0x121212, roughness: 0.95, surface: 'cloth', side: THREE.DoubleSide }), id: 0 }], grip: [0, 0, -0.2] };
+    const shape = (k) => {
+      for (let i = 0; i < held.length; i++) P.array[i] = held[i] + (laid[i] - held[i]) * k;
+      P.needsUpdate = true;
+      geo.computeVertexNormals();
+      geo.computeBoundingSphere();
+    };
+    geo.userData.shape = shape;
+    shape(v === 'draped' ? 1 : 0);
+    return { parts: [{ geo, mat: std('p9_jacket', { color: 0x121212, roughness: 0.95, surface: 'cloth', side: THREE.DoubleSide }), id: 0 }], grip: [0, 0, 0] };
   },
   rope: (v, lod) => {
     const M = mats();

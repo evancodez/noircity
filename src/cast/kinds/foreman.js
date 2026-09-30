@@ -163,6 +163,18 @@ const KO_RIVER_RM = (t) => [0, -Z * sstep(0.08, 0.95, t)];
 const HOOK_DOWN = {
   handTR: [-0.3, 0.98, 0.14], elbowPoleR: [-1, -0.3, -0.4], handR: [-10, 0, -20],
 };
+// his jacket by its collar in his left hand, hanging at his side
+const JACKET_HELD = { handTL: [0.27, 1.12, 0.1], elbowPoleL: [1, -0.4, -0.3], handL: [0, 0, 10] };
+// the jacket laid over the barrel at his front left: the left hand lifts it
+// out and lays it down (lay: the scene takes the cloth from the hand onto
+// the barrel), then comes back to his side; the right keeps the hook low
+const JACKET = [
+  [0.0, { ...HOOK_DOWN, ...JACKET_HELD }],
+  [0.3, { handTL: [0.42, 1.36, 0.34], elbowPoleL: [1, -0.2, -0.2], chest: [4, 14, 0], spine: [4, 6, 0], head: [8, 18, 0] }],
+  [0.46, { handTL: [0.55, 1.12, 0.52], elbowPoleL: [1, -0.4, 0.2], chest: [10, 18, 0], spine: [8, 8, 0], hipsPos: [0, 0.93, 0.02] }],
+  [0.7, { handTL: [0.3, 1.04, 0.22], chest: [4, 8, 0], spine: [4, 2, 0] }],
+  [1.0, { ...HOOK_DOWN, handTL: [0.21, 0.97, 0.05], elbowPoleL: [1, -0.3, -0.3], handL: [0, 0, 6] }],
+];
 
 export default {
   kind: 'foreman', h: 1.97, costume: FOREMAN,
@@ -173,6 +185,9 @@ export default {
     fm_ko_river: { duration: 2.2, marks: { door: 0.22, glass: 0.24, over: 0.62, land: 1.02 }, hold: true, selfTravel: true, def: clip(KO_RIVER, { base: REEL, rm: KO_RIVER_RM }) },
     // (an upper-body overlay over his walk: the hook low in his right hand)
     fm_hookLow: { duration: 1.2, loop: true, def: () => ({ armSpace: 'root', pose: (t) => mergePose(NEUTRAL, { ...HOOK_DOWN, handTR: [-0.3, 0.98 + 0.01 * S(TAU * t / 1.2), 0.14] }) }) },
+    // (the same, the jacket by its collar in the left)
+    fm_hookJacket: { duration: 1.2, loop: true, def: () => ({ armSpace: 'root', pose: (t) => mergePose(NEUTRAL, { ...HOOK_DOWN, ...JACKET_HELD, handTR: [-0.3, 0.98 + 0.01 * S(TAU * t / 1.2), 0.14], handTL: [0.27, 1.12 - 0.01 * S(TAU * t / 1.2), 0.1] }) }) },
+    fm_jacket: { duration: 1.0, marks: { lay: 0.46 }, def: () => ({ armSpace: 'root', fps: 60, pose: keyed([[0, NEUTRAL], ...JACKET]) }) },
   },
 };
 

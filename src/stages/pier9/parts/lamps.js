@@ -70,7 +70,10 @@ export class PierLamps extends Lamps {
     for (const m of [iron, sh, inn, bulb]) { m.userData.noRay = m !== sh; pivot.add(m); }
     const lamp = this.addCustom({ head: head.clone(), axis: _dn.clone(), height: head.y - 0.05, half, real: true, bulb, fadeEnd: 0.8, edgeSoft: 0.45, strength, tag: 'hang' });
     // (the pool: a white disc on the boards some 4 m across, black between)
-    if (lamp.light) { lamp.light.intensity = 95 * strength; lamp.light.angle = Math.min(1.1, half * 1.45); lamp.light.penumbra = 0.6; lamp.light.distance = head.y * 2.4 + 2; }
+    // ([R2-E] the light held to its cone: a pool on the boards, paper white
+    // in its middle, and black between the pools - at 1.45 x the cone it
+    // lit the walls and the crates round it grey)
+    if (lamp.light) { lamp.light.intensity = 150 * strength; lamp.light.angle = Math.min(0.95, half * 1.12); lamp.light.penumbra = 0.42; lamp.light.distance = head.y * 1.9 + 1.5; }
     lamp.entry.range = head.y + 0.4;
     Object.assign(lamp, { name, row, pivot, cordLen: cord + 0.2, sw: { x: 0, z: 0, vx: 0, vz: 0 }, hangAt: pivot.position.clone(), aim0: _dn.clone() });
     lamp.swing = (v) => { lamp.sw.vx += v.x / lamp.cordLen; lamp.sw.vz += v.z / lamp.cordLen; };

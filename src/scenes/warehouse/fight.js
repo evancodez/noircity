@@ -182,6 +182,7 @@ export class PierFight {
     this.rain = null;
     this.boards = [];
     this.stuck = [];
+    this.flot = [];
   }
 
   get bay() { return this.stage.part('bay'); }
@@ -222,7 +223,7 @@ export class PierFight {
           this.sfx('crash', o.getWorldPosition(V(0, 0, 0)), {}, { delay: 0.35 });
         });
       }
-      this.dust(at, 10);
+      this.splinters(at.clone().setY(0.9), dir, 5);
       Br.sfx('bodyThud', at, { k: 1 });
       this.sfx('b9crate', at);
       return;
@@ -237,7 +238,7 @@ export class PierFight {
         // (the second time the post is hit the lantern jumps off its nail)
         if (L.knocks >= 2) Br.later(0.12, () => this.lanternFalls());
       }
-      this.dust(at.clone().setY(2.6), 6, 0.5);
+
       return;
     }
     if (what === 'barrel' && obj && obj.b) { this.jolt(obj.b.object, dir, 0.05); Br.sfx('bodyThud', at, { k: 0.8 }); this.sfx('b9barrel', at); return; }
@@ -245,7 +246,7 @@ export class PierFight {
       // the loading door takes his back: it shudders on its bar, dust off it
       const d = this.stage.part('shed').loading.find((x) => Math.abs(x.z - at.z) < 1.4);
       if (d) for (const p of d.pieces) this.jolt(p.mesh, V(1, 0, 0), 0.02);
-      this.dust(at.clone().setY(2.2), 8, 0.6);
+
       Br.sfx('bodyThud', at, { k: 1 });
       this.sfx('b9door', at);
       return;
@@ -457,7 +458,12 @@ export class PierFight {
       m.updateMatrixWorld(true);
       const up = m.position.y;
       const v = V(r.range(3.2, 6.2) * (0.7 + 0.3 * (1 - up / PIER.loadingH)), r.range(0.4, 2.4), (m.position.z - d.z) * r.range(1.2, 2.6) + r.gauss() * 0.5);
-      this.field(m, true, v, V(r.gauss() * 6, r.gauss() * 4, r.gauss() * 6));
+      // (out over the river: its own flight, onto the water, where it lies
+      // flat and drifts - the pieces' field stands a long board on its end)
+      const wp = m.getWorldPosition(V(0, 0, 0)), wq = m.getWorldQuaternion(new THREE.Quaternion());
+      if (m.parent) m.parent.remove(m);
+      this.stage.scene.add(m); m.position.copy(wp); m.quaternion.copy(wq);
+      this.flot.push({ m, v, w: V(r.gauss() * 4, r.gauss() * 3, r.gauss() * 4), state: 'fly', t: 0, ph: r.next() * 6.28 });
       this.boards.push(m);
     }
     const at = V(PIER.shed.x1, 1.2, d.z);
@@ -539,6 +545,48 @@ export class PierFight {
       if (f.t > f.life) { f.lamp.on = false; this.fires.splice(i, 1); }
     }
     this.stepRain(dt);
+    this.stepBoards(dt);
+  }
+
+  // the door's boards: flying out, glancing off the pier's edge, onto the
+  // water (they lie flat on it, bob and drift slowly off); one that falls
+  // inside lies on the planks
+  stepBoards(dt) {
+    const WY = PIER.waterY, edge = PIER.shed.x1 + 0.4;
+    for (const b of this.flot) {
+      const m = b.m;
+      b.t += dt;
+      if (b.state === 'fly') {
+        b.v.y -= 9.8 * dt;
+        m.position.addScaledVector(b.v, dt);
+        if (b.w.lengthSq() > 1e-6) { _q.setFromAxisAngle(_a.copy(b.w).normalize(), b.w.length() * dt); m.quaternion.premultiply(_q); }
+        const x = m.position.x;
+        if (x > PIER.shed.x1 && x < edge && m.position.y < 0.06 && b.v.y < 0) { m.position.y = 0.06; b.v.y = Math.abs(b.v.y) * 0.25; b.v.x = Math.max(b.v.x, 1.2); this.sfx('b9plank', m.position.clone(), {}, { ref: 3 }); }
+        else if (x < PIER.shed.x1 && m.position.y < 0.03) { b.state = 'rest'; m.position.y = 0.03; this.flatten(m, 1); }
+        else if (x >= edge && m.position.y <= WY + 0.02) {
+          b.state = 'float'; b.t = 0; m.position.y = WY + 0.02; b.v.multiplyScalar(0.2); b.v.y = 0; b.w.multiplyScalar(0.1);
+          this.plop(m.position.clone());
+        }
+      } else if (b.state === 'float') {
+        this.flatten(m, Math.min(1, dt * 3));
+        b.v.x += (0.14 - b.v.x) * Math.min(1, dt * 0.4); b.v.z *= Math.exp(-dt * 0.6);
+        m.position.x += b.v.x * dt; m.position.z += b.v.z * dt;
+        m.position.y = WY + 0.012 + 0.012 * Math.sin(b.t * 1.6 + b.ph);
+      }
+    }
+  }
+  // a board laid flat: its thin axis (local x) turned upright, its length
+  // kept where it points
+  flatten(m, k) {
+    const up = _a.set(1, 0, 0).applyQuaternion(m.quaternion);
+    const tgt = _b.set(0, up.y >= 0 ? 1 : -1, 0);
+    _q.setFromUnitVectors(up, tgt);
+    m.quaternion.premultiply(new THREE.Quaternion().slerp(_q, k));
+  }
+  plop(p) {
+    const F = this.G.fx, r = this.rng;
+    if (F && F.splash) for (let k = 0; k < 14; k++) { const a = r.next() * 6.28, s = r.range(0.3, 1.1); F.splash.spawn({ pos: p.clone(), vel: V(Math.cos(a) * s, r.range(1.0, 2.6), Math.sin(a) * s), life: 0.6, size: [0.03, 0.06], stretch: 0.05, col: [0.8, 0.8, 0.8], alpha: 0.9, cell: ATLAS.DROP, gravity: 9.8, ground: PIER.waterY, fadeOut: 0.1 }); }
+    this.sfx('b9plop', p, {}, { ref: 4 });
   }
 
   // the room as it was (a beat's setup)
@@ -547,6 +595,7 @@ export class PierFight {
     this.tweens = [];
     for (const m of this.boards) if (m.parent) m.parent.remove(m);
     this.boards = [];
+    this.flot = [];
     this.rain = null;
     this.hole = null;
   }

@@ -275,7 +275,7 @@ export default {
     // ---- inside: the dry volume, the interior's Look, the room's sound
     const room = new THREE.Box3(V(S.x0, -0.5, S.z0), V(S.x1, S.ridgeY + 0.5, S.z1));
     stage.dry.push(room);
-    const inLook = { fogDensity: FOG.density * 5.5, fogColor: FOG.color.clone().multiplyScalar(0.28), rainOverlay: 0, rain3d: 0, haze: 0.62, ambient: 0.3, reflect: 'none', room: 'warehouse' };
+    const inLook = { fogDensity: FOG.density * 5.5, fogColor: FOG.color.clone().multiplyScalar(0.28), rainOverlay: 0, rain3d: 0, haze: 0.2, ambient: 0.12, reflect: 'none', room: 'warehouse' };
     stage.addLook(new THREE.Box3(V(S.x0 + 0.05, -1, S.z0 + 0.05), V(S.x1 - 0.05, S.ridgeY, S.z1 - 0.12)), inLook);
 
     return { group: g, sideDoor, bayDoor, loading, room, inLook, outLamp };

@@ -96,9 +96,10 @@ export default {
       { name: 'south2', pos: cS2.pos, r: 0.5, box: cS2, top: null },
     ];
 
-    // ---- the post by the stairs' foot, a lantern on a nail on it (lit)
+    // ---- the post against the east wall between the loading doors, a
+    // lantern on a nail on it (lit): its beam low across the ring
     kit.piece();
-    const postAt = V(14.28, 0, -38.95);
+    const postAt = V(14.56, 0, -35.2);
     const postGeo = new THREE.BoxGeometry(0.22, PIER.trussY, 0.22).translate(postAt.x, PIER.trussY / 2, postAt.z);
     kit.add(postGeo, M.timber, { cast: true, name: 'bay_post' });
     C.addBox(postAt.x, postAt.z, 0.13, 0.13, 0, 'column');
@@ -111,7 +112,7 @@ export default {
     // (hanging by its bail: the bail's top at the nail; the lens toward the
     // ring, south-west)
     lanternProp.position.set(0, -0.34, 0);
-    lanternProp.rotation.y = -2.2;
+    lanternProp.rotation.y = -1.75;
     pivot.add(lanternProp);
     lanternProp.traverse((o) => { if (o.isMesh) o.castShadow = false; });
     const post = { pos: postAt.clone(), r: 0.16, nail: nail.clone() };

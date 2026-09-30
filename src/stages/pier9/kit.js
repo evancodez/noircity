@@ -15,7 +15,7 @@ export const hex = (h) => new THREE.Color(h);
 // ---- canvas maps ------------------------------------------------------------------------
 // the deck's planks: long boards running north-south, their seams, knots,
 // oil stains where the trucks stand; one map repeated in world metres
-function plankMap(W = 512, H = 1024, { boards = 8, light = 44, seam = 10 } = {}) {
+function plankMap(W = 512, H = 1024, { boards = 8, light = 60, seam = 8 } = {}) {
   const c = document.createElement('canvas'); c.width = W; c.height = H;
   const g = c.getContext('2d');
   g.fillStyle = `rgb(${light},${light},${light})`; g.fillRect(0, 0, W, H);

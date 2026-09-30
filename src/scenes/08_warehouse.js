@@ -188,6 +188,36 @@ function spawnForeman(ctx, at, yaw = null) {
   c.hookPivot = pivot; c.hookInner = hook;
   return c;
 }
+// his jacket: by its collar in his left hand, or laid over the barrel by
+// the door (the barrel's top, the drape toward the ring)
+const JACKET_Q = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), PI);
+function jacketOn(ctx, c = null) {
+  const L = LIVE, bay = ctx.stage.part('bay');
+  const J = buildProp('jacket', { variant: c ? null : 'draped' });
+  J.traverse((o) => { if (o.isMesh) o.userData.noRay = true; });
+  if (c) c.hold(J, 'L', { grip: 'hang' });
+  else { ctx.stage.scene.add(J); J.position.copy(bay.jacketAt); J.quaternion.copy(JACKET_Q); }
+  if (L) L.props.push(J);
+  return J;
+}
+// laid from his hand onto the barrel: the cloth's own path (object first),
+// its shape going from hanging to laid over the rim as it goes
+function layJacket(ctx, c) {
+  const L = LIVE, J = c.held.L, G = ctx.game;
+  if (!J) return;
+  J.updateMatrixWorld(true);
+  const p0 = J.getWorldPosition(V(0, 0, 0)), q0 = J.getWorldQuaternion(new THREE.Quaternion());
+  c.hold(null, 'L');
+  ctx.stage.scene.add(J); J.position.copy(p0); J.quaternion.copy(q0); J.scale.setScalar(1);
+  const p1 = ctx.stage.part('bay').jacketAt.clone(), geo = J.children[0] && J.children[0].geometry;
+  G.sfx.play('clothRustle', p1, {}, { ref: 2 });
+  L.fight.tweens.push({ t: 0, dur: 0.4, step: (u) => {
+    const e = u * u * (3 - 2 * u);
+    J.position.lerpVectors(p0, p1, e); J.position.y += Math.sin(u * Math.PI) * 0.12;
+    J.quaternion.copy(q0).slerp(JACKET_Q, e);
+    if (geo && geo.userData.shape) geo.userData.shape(e);
+  }, end: () => { J.position.copy(p1); J.quaternion.copy(JACKET_Q); if (geo && geo.userData.shape) geo.userData.shape(1); } });
+}
 // into the rules: the bay as the room, the foreman as the man
 function beginPierFight(ctx, fm, { manner = 'measured', hp = null, retry = false } = {}) {
   const G = ctx.game, L = LIVE;
@@ -228,6 +258,7 @@ function stageKO(ctx, L) {
   const n = parseInt(new URLSearchParams(typeof location !== 'undefined' ? location.search : '').get('door') || '1', 10) === 2 ? 1 : 0;
   L.stealth.undress();
   L.fightOn = true;
+  jacketOn(ctx);
   const room = L.room || (L.room = bayRoom(ctx, L.fight));
   const w = room.finishes[n];
   const fm = spawnForeman(ctx, { x: w.spot.x, z: w.spot.z }, -PI / 2);
@@ -243,6 +274,7 @@ function stageKO(ctx, L) {
 // after: the door he went through burst, the rain coming in; me in the bay
 function stageAfter(ctx, L) {
   const shed = ctx.stage.part('shed');
+  jacketOn(ctx);
   L.fightOn = true;
   L.won = true;
   const d = shed.loading[0];
@@ -677,16 +709,52 @@ function* pierFight(ctx) {
   L.fightOn = true;
   if (ctx.from !== 'fight') quietCrew(ctx, L);
   G.music.stop(2.5);
+  // (look development, ?quick=1: the ring as a retry stages it, the fight
+  // at once - the review's moments, b9duel)
+  if (G.shotMode && typeof location !== 'undefined' && new URLSearchParams(location.search).get('quick') === '1') {
+    L.stealth.undress();
+    jacketOn(ctx);
+    const f0 = restageRing(ctx);
+    beginPierFight(ctx, f0);
+    L.fightT = G.time;
+    yield until(() => !B.active);
+    L.won = true;
+    backToFeet(ctx);
+    return;
+  }
   // ---- he steps out
   const fm = spawnForeman(ctx, 'pier9.bay.foreman');
+  jacketOn(ctx, fm);
   L.fm = fm;
-  const mark = { x: 13.25, z: -32.7 };
+  const mark = { x: 13.25, z: -32.7 }, layAt = { x: 13.22, z: -29.98 };
   G.sfx.play('step', V(14.2, 0.1, -30.4), { run: false, k: 0.7 }, { ref: 3 });
   G.sfx.play('b9hookScrape', V(14.2, 1.1, -30.4), {}, { ref: 3 });
   L.spin = 1;
   let arrived = false;
-  L.jobs = [(function* () { yield* fm.walkTo(mark, { speed: 1.1 }); arrived = true; fm.face(Math.atan2(G.eye.x - fm.pos.x, G.eye.z - fm.pos.z)); fm.setState('br_guard', 0.4); })()];
-  try { fm.fig.anim.setOverlay('fm_hookLow', 0.3); } catch (e) { /* */ }
+  const over = (name) => { try { fm.fig.anim.setOverlay(name, 0.25); } catch (e) { /* */ } };
+  // (out of the dark along the south crates to the barrel by the door; he
+  // waits there till he has seen my hand go to the coat, lays his jacket
+  // over the barrel, and comes on into the ring)
+  L.jobs = [(function* () {
+    over('fm_hookJacket');
+    yield* walkFig(fm, layAt.x, layAt.z, 1.05);
+    over('fm_hookJacket');
+    const bz = ctx.stage.part('bay').jacketAt;
+    const face = Math.atan2(bz.x - fm.pos.x, bz.z - fm.pos.z) - 0.75;
+    for (let k = 0; k < 20; k++) { fm.fig.yaw += Math.atan2(Math.sin(face - fm.fig.yaw), Math.cos(face - fm.fig.yaw)) * 0.2; yield null; }
+    const w0 = G.time;
+    while (!(L.coatAt != null && G.time > L.coatAt + 0.4) && G.time - w0 < 5) yield null;
+    over(null);
+    const h = fm.play('fm_jacket', { fade: 0.15, onMark: { lay: () => layJacket(ctx, fm) } });
+    while (!h.done && h.t < h.duration) yield null;
+    over('fm_hookLow');
+    L.spin = 0;
+    yield* walkFig(fm, mark.x, mark.z, 1.25);
+    arrived = true;
+    over(null);
+    fm.face(Math.atan2(G.eye.x - fm.pos.x, G.eye.z - fm.pos.z));
+    fm.setState('br_guard', 0.4);
+  })()];
   // ---- I come down to him (or he comes on): at most a few seconds
   const t0 = G.time;
   yield until(() => { crewOutOfSight(ctx, L); return (C.groundY < 0.3 && C.pos.z > -40.9 && C.pos.x > 9.9) || G.time - t0 > 6; });
@@ -694,7 +762,7 @@ function* pierFight(ctx) {
   // ---- one eased move: into the ring, facing him, my hand to the revolver
   // and away (the look stays mine within 0.3 rad)
   const P0 = C.eyePose();
-  const me = { x: Math.max(11.0, Math.min(13.0, C.pos.x)), z: Math.max(-38.9, Math.min(-35.6, C.pos.z)) };
+  const me = { x: Math.max(11.2, Math.min(12.6, C.pos.x)), z: Math.max(-37.4, Math.min(-35.6, C.pos.z)) };
   const dur = 1.1;
   C.setMode('brawlIn', { look: [0.3, 0.2], track: (t) => {
     const u = Math.min(1, t / dur), e = u * u * (3 - 2 * u);
@@ -706,12 +774,11 @@ function* pierFight(ctx) {
   } });
   H.equip('sneak');
   H.play('sn_coat');
+  L.coatAt = G.time;
   G.sfx.play('pocket', null, {}, { send: false });
   yield wait(0.9);
-  // (he saw it: the hook stops turning; he comes on)
-  L.spin = 0;
-  yield until(() => arrived || G.time - t0 > 9);
-  try { fm.fig.anim.setOverlay(null, 0.25); } catch (e) { /* */ }
+  // (he saw it: the jacket over the barrel; he comes on)
+  yield until(() => arrived || G.time - t0 > 11);
   // ---- the fight
   const Pm = C.eyePose();
   const yaw = Math.atan2(-(fm.pos.x - Pm.x), -(fm.pos.z - Pm.z));
