@@ -280,18 +280,22 @@
      -94.5
     ],
     [
-     -1.4,
-     -92.4
+     -1.6,
+     -91.6
+    ],
+    [
+     -2.35,
+     -90.3
     ]
    ],
-   "timeout": 10000
+   "timeout": 12000
   },
   {
    "look": [
-    260,
-    60
+    0,
+    40
    ],
-   "steps": 8
+   "steps": 4
   },
   {
    "until": "G.hud.promptShown.includes('drive')",

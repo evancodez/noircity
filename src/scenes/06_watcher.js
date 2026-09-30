@@ -543,8 +543,10 @@ function* seenAtWindow(ctx) {
   const blind = ctx.flags.blind;
   const umb = ctx.flags.umbO || ctx.flags.umb;
   // (the chapter card first: the room comes up out of the black, the
-  // slivers of the lamp through the slats; then the prompt)
-  yield wait(1.6);
+  // slivers of the lamp through the slats; then the prompt, once the card
+  // has gone - not printed over it)
+  yield wait(1.0);
+  yield until(() => !(G.hud.cardT > 0.15));
   yield* ctx.prompt({ text: 'look out', at: () => blind.gapAt(V(0, 0, 0)) });
   // two fingers part the slats: the hand comes up (0.3 s), the slat goes
   // down under them (0.3 .. 0.6 s) and the eye leans to the slit, on the
