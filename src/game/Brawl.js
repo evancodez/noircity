@@ -59,7 +59,7 @@ export const BRAWL = {
   hitStop: { hard: 3, jab: 1 }, slowmo: { k: 0.35, dur: 0.8 },
   down: 1.5, stageAt: 0.4,
   comeRound: 6, comeRoundHp: 20,
-  grab: { counter: 1.35, floor: 1.15, stools: 4 },
+  grab: { counter: 1.5, floor: 1.15, stools: 4, preferCounter: 0.9 },
   // his blows' weight by his manner
   dmgK: { measured: 1, dirty: 1, wild: 0.85, out: 1 },
 };
@@ -101,6 +101,11 @@ export class Brawl {
     if (!retry) { this.stats = freshStats(); this.blackT = 0; this.did = {}; }
     this.opts = { onRetry, onKO, onGlass, onLanded, onManner, onBottle };
     this.room = room;
+    // (polish, the bug hunt: the fight stays in the room - the front door was
+    // walkable in the brawl, and backing off by it took the fight out onto
+    // the pavement, where the finish, the windows and the room's rules no
+    // longer hold. The controller keeps my eye inside the room's walls)
+    G.controller.brawlBounds = room.bounds || null;
     this.rng = rng;
     this.c = opponent;
     const h0 = hp ?? BRAWL.manners[manner];
@@ -135,6 +140,7 @@ export class Brawl {
     this.lesson = null;
     const C = this.controller;
     C.slip = 0;
+    C.brawlBounds = null;
     if (C.brawlMove) { C.brawlMove.f = 0; C.brawlMove.s = 0; }
     if (this.me && this.me.holding) { this.hands.hold(null, 'R', { keep: true }); this.me.holding = null; }
     if (this._cards) this._cards.clear();
@@ -204,10 +210,21 @@ export class Brawl {
     // E: what is in reach
     if (G.pressed('KeyE') && me.act === 'idle' && !me.holding) { const it = this.reachable(); if (it) { this.grab(it); return; } }
     // the arms: a press starts the cock; a short click is a jab, a hold a wind-up
+    // (polish, the bug hunt: a press made while the other fist is still out
+    // - the first 0.13 s of a jab, a hard punch, a grab - is kept for 0.3 s
+    // and thrown as soon as the hands are free, not dropped: mashing both
+    // buttons swallowed every right-hand click)
+    const free = me.act === 'idle' || (me.act === 'jab' && me.h && me.h.t > 0.13);
+    if (me.buf) { me.buf.t += dt; if (me.buf.t > 0.3) me.buf = null; }
     for (const [btn, arm] of [['Mouse0', 'L'], ['Mouse2', 'R']]) {
-      if (G.pressed(btn) && (me.act === 'idle' || (me.act === 'jab' && me.h && me.h.t > 0.13))) {
+      if (G.pressed(btn) && !free && me.act !== 'cock' && me.act !== 'wind') me.buf = { btn, arm, t: 0 };
+    }
+    for (const [btn, arm] of [['Mouse0', 'L'], ['Mouse2', 'R']]) {
+      const buffered = me.buf && me.buf.btn === btn;
+      if ((G.pressed(btn) || buffered) && free) {
+        me.buf = null;
         me.act = 'cock'; me.arm = arm; me.pressT = 0; me.btn = btn;
-        me.h = H.play(me.holding && arm === 'R' ? 'windItem' : arm === 'L' ? 'windL' : 'windR');
+        me.h = H.play(me.holding && arm === 'R' ? (me.holding.kind === 'stool' || me.holding.kind === 'chair' ? 'windBig' : 'windItem') : arm === 'L' ? 'windL' : 'windR');
         return;
       }
     }
@@ -268,7 +285,7 @@ export class Brawl {
       me.h = H.play('throwItem', { onMark: { release: () => this.throwHeld(k) } });
       return;
     }
-    const clip = big ? 'swingStool' : it.kind === 'plate' ? 'swingPlate' : wound ? 'smashItem' : 'swingBottle';
+    const clip = big ? (wound ? 'swingBig' : 'swingStool') : it.kind === 'plate' ? 'swingPlate' : wound ? 'smashItem' : 'swingBottle';
     me.h = H.play(clip, { onMark: { contact: () => this.myContact('item', 'R', wound ? Math.max(0.5, k) : 0.5) } });
     this.sfx('whiff', null, { k: big ? 1 : 0.7 });
   }
@@ -1070,13 +1087,30 @@ export class Brawl {
   reachable() {
     const R = this.room, eye = this.game.eye, me = this.me;
     if (!R.items) return null;
-    let best = null, bd = Infinity;
+    // (polish, the bug hunt: the nearest used to win, and a stool always
+    // stands nearer than the counter - the stools at the counter's foot,
+    // the bottles and plates on its top half a metre further - so E never
+    // took anything off the counter. Now the choice is by distance and by
+    // where I look, and a thing on the counter within its reach is
+    // preferred: the stools are many, the counter's things few, and the
+    // counter is reached across the stools)
+    // (the look in 3D: looking down at a stool takes the stool; looking level
+    // or away, the thing on the counter)
+    const C = this.controller, cp = Math.cos(C.pitch || 0);
+    const lx = -Math.sin(C.yaw) * cp, ly = Math.sin(C.pitch || 0), lz = -Math.cos(C.yaw) * cp;
+    let best = null, bs = Infinity;
     for (const it of R.items()) {
       if ((it.kind === 'stool') && me.stools >= BRAWL.grab.stools) continue;
       const p = it.pos || it.object.getWorldPosition(_c);
-      const d = Math.hypot(p.x - eye.x, p.z - eye.z);
-      const lim = it.kind === 'stool' || it.kind === 'chair' ? BRAWL.grab.floor : BRAWL.grab.counter;
-      if (d < lim && d < bd) { bd = d; best = it; }
+      const dx = p.x - eye.x, dz = p.z - eye.z, d = Math.hypot(dx, dz);
+      const floor = it.kind === 'stool' || it.kind === 'chair';
+      const lim = floor ? BRAWL.grab.floor : BRAWL.grab.counter;
+      if (d >= lim) continue;
+      const dy = (floor ? p.y + 0.7 : p.y) - eye.y, d3 = Math.hypot(dx, dy, dz);
+      const ang = d3 > 1e-3 ? Math.acos(Math.max(-1, Math.min(1, (dx * lx + dy * ly + dz * lz) / d3))) : 0;
+      // (past a right angle all behind me counts alike: then the counter wins)
+      const score = d + 0.9 * Math.min(ang, 1.6) - (floor ? 0 : BRAWL.grab.preferCounter);
+      if (score < bs) { bs = score; best = it; }
     }
     return best;
   }

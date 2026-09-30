@@ -2,14 +2,14 @@
 // it is ready, print the JSON result. Look development / profiling helper.
 //   node tools/evalpage.mjs "shot=perf&t=1&anim=1" 1440 900 "await __noir.gpuProfile(3)"
 import { spawn } from 'node:child_process';
-import { sweepProfiles, endChrome } from './lib/profile.mjs';
+import { sweepProfiles, endChrome, freePort, CHROME_WAIT_STEPS } from './lib/profile.mjs';
 sweepProfiles();
 import { rmSync } from 'node:fs';
 const QS = process.argv[2] || 'shot=street';
 const W = +(process.argv[3] || 1440), H = +(process.argv[4] || 900);
 const EXPR = process.argv[5] || '__noir.renderer.info.render';
 const WAIT = +(process.env.WAIT || 1500);
-const PORT = 9800 + Math.floor(Math.random() * 150);
+const PORT = await freePort();
 const CHROME = '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome';
 const chrome = spawn(CHROME, ['--headless=new', '--mute-audio', '--use-angle=metal', '--hide-scrollbars', '--force-device-scale-factor=1', `--window-size=${W},${H}`,
   `--remote-debugging-port=${PORT}`, '--no-first-run', '--no-default-browser-check', '--disable-background-timer-throttling', '--disable-renderer-backgrounding',
@@ -19,7 +19,8 @@ let ws, id = 0; const pending = new Map();
 const send = (method, params = {}, sessionId) => new Promise((res) => { const i = ++id; pending.set(i, res); ws.send(JSON.stringify({ id: i, method, params, sessionId })); });
 try {
   let ver;
-  for (let k = 0; k < 50; k++) { try { ver = await (await fetch(`http://127.0.0.1:${PORT}/json/version`)).json(); break; } catch { await sleep(100); } }
+  for (let k = 0; k < CHROME_WAIT_STEPS; k++) { try { ver = await (await fetch(`http://127.0.0.1:${PORT}/json/version`)).json(); break; } catch { await sleep(100); } }
+  if (!ver) throw new Error(`headless Chrome did not open DevTools on port ${PORT} within ${CHROME_WAIT_STEPS / 10} s`);
   ws = new WebSocket(ver.webSocketDebuggerUrl);
   await new Promise((r) => ws.addEventListener('open', r));
   ws.addEventListener('message', (e) => { const m = JSON.parse(e.data); if (m.id && pending.has(m.id)) { pending.get(m.id)(m); pending.delete(m.id); } });

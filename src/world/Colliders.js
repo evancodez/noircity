@@ -38,6 +38,9 @@ export class Colliders {
         }
       }
       for (const b of this.boxes) {
+        // (a gap in a wall along z - a burst window: b.holes [[z0, z1]], for
+        // boxes at angle 0 only; a circle standing in it passes)
+        if (b.holes && b.holes.some((h) => pos.z > h[0] && pos.z < h[1])) continue;
         // to box-local (angle = rotation about +Y, three.js convention)
         const dx = pos.x - b.cx, dz = pos.z - b.cz;
         const lx = dx * b.c - dz * b.s;

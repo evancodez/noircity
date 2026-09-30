@@ -183,6 +183,7 @@ export function makeInkMaterial(tex, fogUniforms) {
         // a cast figure (class 14 / 15, idpass): its light share t, 0 on the
         // dark cloth, toward 1 on its light shapes
         float castF = 0.0, castT = 0.0;
+        float castShapeK = 0.0, castTb = 0.5;   // (polish: a light shape's own contour, set below)
         {
           float nLen = length( nid.xyz );
           if ( nLen > 2.0 ) { surf = floor( ( nLen - 1.0 ) * 0.5 + 0.5 ); nid.xyz /= nLen; }
@@ -311,6 +312,12 @@ export function makeInkMaterial(tex, fogUniforms) {
         float hoodF = isFig * isHood( nid.w ) * ( 1.0 - smoothstep( 60.0, 110.0, dist ) );
         vol *= 1.0 - 0.9 * hoodF;
         bloom *= 1.0 - 0.85 * hoodF;
+        // (polish: skin never glows) the bare hands are nearer than any
+        // lamp: no halo is laid over them (their bloom is not made either,
+        // bloom.js keepW); the flame's warmth on the fingers is the skin's
+        // own lift below (uFlame)
+        bloom *= 1.0 - vmF * step( - nid.w, ${(VM_ID0 - 0.5).toFixed(1)} )
+                     * ( 1.0 - step( 9.5, surf ) * step( surf, 10.5 ) - step( 16.5, surf ) * step( surf, 17.5 ) );
         float L = luma( hdr );
         float exposure = uExposure * ( 1.0 + 2.5 * uLightning );
         // v: the inked surface tone (gets brush bands + lines);
@@ -437,7 +444,28 @@ export function makeInkMaterial(tex, fogUniforms) {
           float litS = mix( 0.62, 0.9, hiA ), shS = mix( 0.3, 0.44, hiA );
           float bs = clamp( br.r, 0.2, 0.8 );
           float sideS = smoothstep( bs - 0.12, bs + 0.12, clamp( ( lgC + 0.8 ) / 2.2 + 0.5, 0.0, 1.0 ) );
-          float shapeV = mix( shS, litS, sideS );
+          // (polish: a light shape has form - Mack's forearms printed as flat
+          // grey slabs. The faces turned from the light over it and toward
+          // the eye - its under side, the flanks of an arm - are its one
+          // shadow shape, split from the lit side by a torn edge of the
+          // brush; as the bare hands are split, by the form)
+          float bu = clamp( br.g, 0.2, 0.8 );
+          vec3 upC = vec3( uViewInv[ 0 ][ 1 ], uViewInv[ 1 ][ 1 ], uViewInv[ 2 ][ 1 ] );
+          // (the key: the nearest lamp, lifted toward up and the eye)
+          vec3 keyL = upC + vec3( 0.0, 0.0, 0.45 );
+          if ( uRimLamps[ 0 ].w > 0.0 ) keyL = normalize( uRimLamps[ 0 ].xyz - vpos ) * 0.8 + upC * 0.45 + vec3( 0.0, 0.0, 0.3 );
+          float ndlC = dot( nid.xyz, normalize( keyL ) );
+          float under = 1.0 - smoothstep( bu - 0.14, bu + 0.14, clamp( ( ndlC - 0.3 ) / 0.3 + 0.5, 0.0, 1.0 ) );
+          // (the form decides the side; the light how light the lit side is:
+          // a figure against the light still shows its arm's turn)
+          float litK = max( sideS, 0.45 * ( 1.0 - under ) );
+          sideS = 1.0 - under;
+          // its thin contour, where the light shape meets the dark mass: in
+          // the contour probe below (its taps are already paid for); its
+          // creases (the knuckle line across a fist, the wrist) are the
+          // probe's own normal edges
+          castShapeK = shapeK * ( 1.0 - smoothstep( 6.0, 14.0, dist ) ); castTb = tb;
+          float shapeV = mix( shS * mix( 0.72, 1.0, litK ), mix( shS + 0.12, litS, litK ), sideS );
           // (past ~14 m only the brightest shape holds, dimmed: a cut-out)
           shapeV *= 1.0 - 0.45 * smoothstep( 14.0, 30.0, dist );
           v = mix( massV, shapeV, shapeK );
@@ -476,7 +504,11 @@ export function makeInkMaterial(tex, fogUniforms) {
             } else if ( glassE > 0.5 ) {
               // the empty glass of a tumbler (its thick base, the wall above
               // the scotch): dark, a white tick where the light catches it
-              v = mix( min( v, 0.9 ) * 0.42, 0.05, smoothstep( 0.35, 0.85, 1.0 - abs( n.z ) ) );
+              // (polish: clear glass - what is behind it shows through, a
+              // shade darker; dark only where the wall turns edge-on, its two
+              // sides and the rim's ellipse: at 0.42 the wall printed as a
+              // grey can over the white counter)
+              v = mix( min( v, 0.95 ) * 0.82, 0.05, smoothstep( 0.6, 0.9, 1.0 - abs( n.z ) ) );
             } else {
               // Skin (fix round A4): a hand, not a white glove. Two values
               // split by a torn brush edge that follows the form: the lit
@@ -498,9 +530,14 @@ export function makeInkMaterial(tex, fogUniforms) {
               // lamps are the lit side wherever the hand is - with a
               // push from the light itself: a face in a lamp's hot spot is
               // lit, one in a cast shadow is not)
-              float lm = 0.62 * smoothstep( -0.25, 0.45, ndl ) + 0.38 * smoothstep( -3.2, 0.6, lg );
-              float litV = mix( 0.48, 0.72, smoothstep( -2.2, 1.8, lg ) );
-              float shV = mix( 0.3, 0.38, smoothstep( -4.0, -0.5, lg ) );
+              // (polish: the hands print the same indoors, at the broken
+              // window and on the street - the form sets the split, the
+              // light only nudges it, and the two values move little with
+              // the exposure: the open window's brighter look turned the
+              // whole hand to its lit value, a pale glove)
+              float lm = 0.8 * smoothstep( -0.25, 0.45, ndl ) + 0.2 * smoothstep( -3.2, 0.6, lg );
+              float litV = mix( 0.56, 0.68, smoothstep( -2.2, 1.8, lg ) );
+              float shV = mix( 0.3, 0.36, smoothstep( -4.0, -0.5, lg ) );
               float bs = clamp( br.r, 0.16, 0.84 ), bh = clamp( br.g, 0.12, 0.88 );
               float side = smoothstep( bs - 0.14, bs + 0.14, clamp( ( lm - 0.5 ) / 0.16 + 0.5, 0.0, 1.0 ) );
               // (the highlight: where the form turns its face between the
@@ -712,7 +749,8 @@ export function makeInkMaterial(tex, fogUniforms) {
           // it, black where the glass turns edge-on (its walls' edges, the
           // base's two ellipses); the white tick is its own stroke
           float gFres = smoothstep( 0.35, 0.85, 1.0 - abs( n.z ) );
-          room = mix( room, mix( min( vRaw, 0.9 ) * 0.42, 0.05, gFres ), glassE );
+          // (polish: clear, as in the hand - see there)
+          room = mix( room, mix( min( vRaw, 0.95 ) * 0.82, 0.05, smoothstep( 0.6, 0.9, 1.0 - abs( n.z ) ) ), glassE );
           brushAmt = sky ? 0.0 : nearF * ( 1.0 - smoothstep( 0.8, 0.98, glow ) );
           vBand = room;
         }
@@ -835,6 +873,7 @@ export function makeInkMaterial(tex, fogUniforms) {
         float halo = 0.0;    // we are just behind a Hood's silhouette
         vec2 haloUV = uv;    // ... at this neighbouring Hood pixel,
         vec3 haloN = vec3( 0.0, 0.0, 1.0 );   // whose normal is this
+        float shapeLine = 0.0;
         const vec2 dirs[ 4 ] = vec2[ 4 ]( vec2( 1.0, 0.0 ), vec2( 0.0, 1.0 ), vec2( 0.7071, 0.7071 ), vec2( 0.7071, -0.7071 ) );
         // (Phase 3b performance: a sky pixel's contour terms all end up zero -
         // its edge fades out at zc = uFar, its id edge, halo, rim and structure
@@ -851,6 +890,15 @@ export function makeInkMaterial(tex, fogUniforms) {
           float lap = abs( w1 + w2 - 2.0 * wcl ) / max( max( wcl, max( w1, w2 ) ), 1e-6 );
           edge = max( edge, smoothstep( 0.025, 0.07, lap ) );
           vec4 n1 = texture2D( tNormalId, uvL + o ), n2 = texture2D( tNormalId, uvL - o );
+          // (polish: the light shape's contour - a neighbour of the same
+          // figure that is not the shape; its class and light share ride on
+          // the normal's length, idpass)
+          if ( castShapeK > 0.01 ) {
+            float l1 = length( n1.xyz ), l2 = length( n2.xyz );
+            float t1 = step( abs( n1.w - cN.w ), 0.5 ) * step( 28.5, l1 ) * step( l1, 31.9 ) * clamp( ( l1 - 29.0 ) / 1.8, 0.0, 1.0 );
+            float t2 = step( abs( n2.w - cN.w ), 0.5 ) * step( 28.5, l2 ) * step( l2, 31.9 ) * clamp( ( l2 - 29.0 ) / 1.8, 0.0, 1.0 );
+            shapeLine = max( shapeLine, castShapeK * ( 1.0 - smoothstep( castTb - 0.05, castTb + 0.05, min( t1, t2 ) ) ) );
+          }
           if ( dot( n1.xyz, n1.xyz ) > 4.0 ) n1.xyz = normalize( n1.xyz );
           if ( dot( n2.xyz, n2.xyz ) > 4.0 ) n2.xyz = normalize( n2.xyz );
           float nd = max( 1.0 - dot( cN.xyz, n1.xyz ) * step( 0.5, abs( n1.w ) ), 1.0 - dot( cN.xyz, n2.xyz ) * step( 0.5, abs( n2.w ) ) );
@@ -870,6 +918,7 @@ export function makeInkMaterial(tex, fogUniforms) {
           silFront = max( silFront, step( 1.25, wc / max( wf, 1e-7 ) ) );
         }
         }
+        edge = max( edge, shapeLine );
         // lines break up a little like a dry brush, and dissolve into the fog
         float lineBreak = mix( 1.0, smoothstep( 0.08, 0.3, br.g * 0.6 + br.r * 0.4 ), 0.35 + 0.5 * fogA );
         edge *= lineBreak * pow( nearF, 1.6 ) * ( 1.0 - smoothstep( 45.0, 140.0, zc ) );

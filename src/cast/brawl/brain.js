@@ -16,12 +16,14 @@ export const MANNERS = {
     mix: { br_jab: 0.34, br_hook: 0.2, br_hookL: 0.16, br_body: 0.12, br_bodyL: 0.08, br_cross: 0.1 } },
   dirty: { keep: [1.25, 1.7], speed: 1.3, gap: [1.1, 1.7], low: 0.18, feint: 0.18, combo: 0.2, shove: 0.12,
     mix: { br_jab: 0.2, br_cross: 0.12, br_hook: 0.18, br_hookL: 0.16, br_body: 0.08, br_bodyL: 0.06, br_shove: 0.1, br_bottle_thrust: 0.3 } },
-  wild: { keep: [0.95, 1.45], speed: 1.45, gap: [0.6, 1.0], low: 0.1, feint: 0.05, combo: 0.35,
+  wild: { keep: [1.2, 1.5], speed: 1.45, gap: [0.6, 1.0], low: 0.1, feint: 0.05, combo: 0.35,
     mix: { br_haymaker: 0.24, br_haymakerL: 0.18, br_hook: 0.14, br_hookL: 0.12, br_rush: 0.14, br_cross: 0.08, br_jab: 0.1, br_bottle_thrust: 0.2 } },
 };
 export function mannerOf(hp) { return hp > 65 ? 'measured' : hp > 30 ? 'dirty' : hp > 12 ? 'wild' : 'out'; }
+// the nearest he comes to my eye (his root), and a rush's end
+export const KEEP_OFF = { eye: 1.1, rush: 1.2, body: 1.0, pass: 0.85 };
 export const REACH = { straight: 1.95, swing: 1.85, over: 1.95, shove: 1.7, throw: 7, rush: 2.9 };
-const _v = new THREE.Vector3(), _w = new THREE.Vector3();
+const _v = new THREE.Vector3(), _w = new THREE.Vector3(), _g = new THREE.Vector3();
 const wrap = (a) => Math.atan2(Math.sin(a), Math.cos(a));
 
 // ---- choices -------------------------------------------------------------------------------
@@ -118,7 +120,7 @@ function goalOf(B) {
   if (d < 1e-3) { _v.set(0, 0, 1); d = 1; }
   _v.divideScalar(d);
   let keep = B.lessonHold ? 1.5 : (M.keep[0] + M.keep[1]) / 2;
-  if (him.want) keep = Math.min(keep, 1.2);
+  if (him.want) keep = Math.min(keep, 1.25);
   if (him.backT > 0) keep = him.holding === 'plate' || him.holding === 'mug' ? 3.1 : Math.max(keep, 2.3);
   if (B.lessonBack) keep = 2.8;
   // (circling: a step to the side round me)
@@ -131,6 +133,35 @@ export function steer(B, dt) {
   const S = B.game.stage;
   const free = him.state === 'move' || (him.state === 'reel' && !him.atSpot) || (him.state === 'arm' && him.task && him.task.phase !== 'take');
   const g = free ? goalOf(B) : null;
+  // (polish: a place he can stand - the point at arm's length from me can
+  // fall on a stool or the counter, and with me in the gap between the
+  // stools and the counter he stood off behind the stool for good: no blow
+  // in reach, the lesson waiting on one. The goal is pushed out of the
+  // furniture as his own body would be)
+  if (g && him.state !== 'reel') {
+    // (the block's colliders are many: the push is looked for again only
+    // when the goal has moved 12 cm or a fifth of a second has gone)
+    const GC = him.goalC || (him.goalC = { x: 1e9, z: 1e9, ox: 0, oz: 0, t: 0 });
+    GC.t -= dt;
+    if (GC.t <= 0 || Math.hypot(g.x - GC.x, g.z - GC.z) > 0.12) {
+      const q = _g.set(g.x, 0, g.z);
+      S.colliders.resolve(q, (F.collider ? F.collider.r : 0.35), F.collider);
+      GC.x = g.x; GC.z = g.z; GC.ox = q.x - g.x; GC.oz = q.z - g.z; GC.t = 0.2;
+    }
+    g.x += GC.ox; g.z += GC.oz;
+    // (and wedged - in the pocket between the counter, a stool and a stool
+    // knocked over, wanting to move and not moving for a second and a half -
+    // he steps out into the open aisle, away from the counter, first)
+    const want = Math.hypot(g.x - F.pos.x, g.z - F.pos.z) > 0.3;
+    him.wedgeT = want && (him.speed || 0) < 0.08 ? (him.wedgeT || 0) + dt : Math.max(0, (him.wedgeT || 0) - dt * 2);
+    if (him.wedgeT > 1.5) him.outT = 1.0;
+    if (him.outT > 0) {
+      him.outT -= dt;
+      const ax = B.room && B.room.counterX != null ? B.room.counterX + 1.5 : F.pos.x + 0.9;
+      g.x = Math.max(ax, F.pos.x + 0.5); g.z = F.pos.z;
+      if (him.outT <= 0) him.wedgeT = 0;
+    }
+  }
   // the velocity he wants: toward the goal, easing in, capped
   const tv = _w.set(0, 0, 0);
   if (g) {
@@ -159,12 +190,41 @@ export function steer(B, dt) {
   } else him.speed = 0;
   // (never into me: my body is a circle he stops at - a blow's root motion,
   // a rush, a walk to the counter all end at arm's length)
+  // (polish: 1.1 m from my eye, a rush 1.2 m - at 0.78 m a rush or an
+  // overhand leaning in filled the frame, a black mass with the camera
+  // almost inside him; his fists still reach, his arms are long)
   {
-    const dx = F.pos.x - eye.x, dz = F.pos.z - eye.z, dd = Math.hypot(dx, dz), R = 0.78;
+    const dx = F.pos.x - eye.x, dz = F.pos.z - eye.z, dd = Math.hypot(dx, dz);
+    let R = him.clip === 'br_rush' ? KEEP_OFF.rush : KEEP_OFF.eye;
+    // (walking - circling, stepping out of a corner, going for a bottle -
+    // his steering keeps him 1.25 m and more from me anyway; closer than
+    // that he is only passing, and in the 1.1 m aisle a 1.1 m ring round my
+    // eye walled him into the corner by the counter for good: he may pass
+    // at arm's length)
+    if (him.state === 'move' || him.state === 'arm') R = KEEP_OFF.pass;
+    // (and his body: a haymaker or an overhand throws the chest and the
+    // head well past the feet - they too stay KEEP_OFF.body from my eye:
+    // the root goes back by as much as the body leans in toward me)
+    if (R !== KEEP_OFF.pass && dd > 1e-4 && c.object && c.bones.chest && c.bones.head) {
+      const o = c.object.position, ux = -dx / dd, uz = -dz / dd;
+      let lean = 0;
+      for (const b of [c.bones.chest, c.bones.head]) {
+        const e = b.matrixWorld.elements;
+        lean = Math.max(lean, (e[12] - o.x) * ux + (e[14] - o.z) * uz);
+      }
+      R = Math.max(R, KEEP_OFF.body + Math.min(0.8, lean));
+    }
     if (dd < R && him.state !== 'ko') {
       const k = dd > 1e-4 ? R / dd : 0;
+      const x0 = F.pos.x, z0 = F.pos.z;
       F.pos.x = eye.x + (dd > 1e-4 ? dx * k : R); F.pos.z = eye.z + dz * k;
       S.colliders.resolve(F.pos, (F.collider ? F.collider.r : 0.35), F.collider);
+      // (a travelling clip sets his root from where it began every step:
+      // its origin goes back with him, or the clip would carry him in again;
+      // and the figure is drawn where he now stands, this frame)
+      const ddx = F.pos.x - x0, ddz = F.pos.z - z0;
+      if (F._rmClip) { F._rmClip.x0 += ddx; F._rmClip.z0 += ddz; }
+      if (c.object) { c.object.position.x = F.pos.x; c.object.position.z = F.pos.z; }
     }
   }
   // facing: at me (the short way round, at most 4 rad/s; slower in a blow's tell)

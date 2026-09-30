@@ -25,10 +25,10 @@ export class FightCards {
       #fightcards .fc { position: absolute; left: 50%; bottom: 11%; transform: translateX(-50%); display: none; align-items: center; gap: 18px;
         font-family: ${TYPE}; font-size: 15px; letter-spacing: 0.3em; color: #efede7; text-transform: uppercase; white-space: pre;
         text-shadow: 0 0 5px #000, 0 0 2px #000, 0 0 1px #000; }
-      #fightcards .fc .bg { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); z-index: -1; opacity: 0.86; }
+      #fightcards .fc .bg { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); z-index: -1; opacity: 0.85; }
       #fightcards .fc .pic { position: relative; display: flex; gap: 6px; align-items: center; }
       #fightcards .fc .pic canvas { display: block; }
-      #fightcards .fc .key { position: relative; min-width: 40px; height: 40px; line-height: 40px; text-align: center; font-size: 13px; letter-spacing: 0.08em; padding: 0 8px; box-sizing: border-box; }
+      #fightcards .fc .key { position: relative; min-width: 66px; height: 66px; line-height: 66px; text-align: center; font-size: 14px; letter-spacing: 0.08em; padding: 0 8px; box-sizing: border-box; }
       #fightcards .fc .key canvas { position: absolute; left: -4px; top: 0; width: calc(100% + 8px); height: 100%; }
       #fightcards .fc .key span { position: relative; color: #0a0a0a; text-shadow: none; font-weight: bold; }
       #fightcards .fc .plus { font-size: 13px; letter-spacing: 0; }
@@ -60,8 +60,14 @@ export class FightCards {
     this.pic.innerHTML = '';
     for (const el of picture(pic)) this.pic.appendChild(el);
     const old = this.fc.querySelector('.bg'); if (old) old.remove();
-    const w = Math.round(text.length * 15 + 150 + (pic ? 120 : 0));
-    const bg = makeTornStroke(w, 70, hashSeed(text));
+    // (polish: the backing covers the whole card - the text is spaced 0.3 em
+    // a letter, so it ran past the stroke - black, torn, 85 % opaque)
+    const meas = (this._mg || (this._mg = document.createElement('canvas').getContext('2d')));
+    meas.font = '15px ' + TYPE;
+    const tw = meas.measureText(text).width + text.length * 4.5;
+    const pw = pic ? (typeof pic === 'string' ? 36 : (Array.isArray(pic) ? pic.length : 1) * 64) + 18 : 0;
+    const w = Math.round(tw + pw + 190);
+    const bg = makeTornStroke(w, 96, hashSeed(text));
     bg.className = 'bg';
     this.fc.insertBefore(bg, this.fc.firstChild);
     this.fc.style.display = 'flex';
@@ -92,32 +98,62 @@ export class FightCards {
     if (L < 10) return;
     const ux = dx / L, uy = dy / L, px = -uy, py = ux;
     const rng = new RNG(311);
-    const draw = (col, grow) => {
-      g.fillStyle = col;
-      g.beginPath();
-      // the shaft: pressed at its start, thinning, a slight bow
-      const n = 18;
-      const pts = [];
-      for (let i = 0; i <= n; i++) {
-        const u = i / n, w = (5 + 4 * Math.sin(Math.min(1, u / 0.3) * Math.PI / 2) * (1 - 0.5 * u)) + grow;
-        const bow = Math.sin(u * Math.PI) * L * 0.08;
-        pts.push([a.x + dx * u * 0.84 + px * bow, a.y + dy * u * 0.84 + py * bow, w]);
-      }
-      g.moveTo(pts[0][0] + px * pts[0][2], pts[0][1] + py * pts[0][2]);
-      for (const [x, y, w] of pts) g.lineTo(x + px * w, y + py * w);
-      for (let i = pts.length - 1; i >= 0; i--) g.lineTo(pts[i][0] - px * pts[i][2], pts[i][1] - py * pts[i][2]);
-      g.closePath(); g.fill();
-      // the head: a pressed wedge
-      const hx = b.x, hy = b.y, bx = b.x - ux * (34 + grow), by = b.y - uy * (34 + grow), hw = 20 + grow;
-      g.beginPath();
-      g.moveTo(hx + ux * grow, hy + uy * grow);
-      g.lineTo(bx + px * hw, by + py * hw);
-      g.quadraticCurveTo(bx + ux * 8, by + uy * 8, bx - px * hw, by - py * hw);
-      g.closePath(); g.fill();
-      blob(g, a.x, a.y, 7 + grow, rng, 0.25);
+    // (polish: a dry brush, not a clean vector line - the shaft is a bundle
+    // of bristles laid along the bowed path, each pressed at the start and
+    // running dry at its own point toward the end, the gaps between them
+    // torn; the head two pressed, ragged strokes)
+    const at = (u, off) => {
+      const bow = Math.sin(u * Math.PI) * L * 0.08;
+      const kk = 1 - 14 / L;
+      return [a.x + dx * u * kk + px * (bow + off), a.y + dy * u * kk + py * (bow + off)];
     };
-    draw('rgba(5,5,5,0.9)', 3);
-    draw('#f2f0ea', 0);
+    const width = (u) => 5 + 4 * Math.sin(Math.min(1, u / 0.3) * Math.PI / 2) * (1 - 0.5 * u);
+    g.lineCap = 'round'; g.lineJoin = 'round';
+    const draw = (col, grow, seed) => {
+      const r = new RNG(seed);
+      g.strokeStyle = col; g.fillStyle = col;
+      const NB = 11;
+      for (let i = 0; i < NB; i++) {
+        const v = (i / (NB - 1)) * 2 - 1;
+        const dryAt = Math.abs(v) < 0.5 ? 1.01 : r.range(0.82, 1.01);
+        const lw = r.range(1.2, 3.2) + grow * 0.8;
+        g.lineWidth = lw;
+        g.globalAlpha = r.range(0.75, 1);
+        g.beginPath();
+        const n = 24;
+        let moved = false;
+        for (let k = 0; k <= n; k++) {
+          const u = k / n;
+          if (u > dryAt) break;
+          // (a gap now and then where the bristle skips)
+          if (u > 0.3 && r.next() < 0.08 * (u / dryAt)) { moved = false; continue; }
+          const [x, y] = at(u, v * (width(u) + grow) + r.gauss() * 0.4);
+          if (!moved) { g.moveTo(x, y); moved = true; } else g.lineTo(x, y);
+        }
+        g.stroke();
+      }
+      g.globalAlpha = 1;
+      // the head: two pressed, ragged strokes meeting at the point
+      const tip = [b.x + ux * grow, b.y + uy * grow];
+      for (const sgn of [1, -1]) {
+        const hw = 26 + grow, back = 40 + grow;
+        const e = [b.x - ux * back + px * hw * sgn, b.y - uy * back + py * hw * sgn];
+        for (let j = 0; j < 5; j++) {
+          g.lineWidth = r.range(4.5, 8) + grow;
+          g.globalAlpha = r.range(0.7, 1);
+          const o = (j - 2) * 2.2;
+          g.beginPath();
+          g.moveTo(e[0] + px * o + r.gauss(), e[1] + py * o + r.gauss());
+          g.quadraticCurveTo((e[0] + tip[0]) / 2 + ux * 4 + px * o * 0.5, (e[1] + tip[1]) / 2 + uy * 4 + py * o * 0.5, tip[0] + r.gauss() * 0.6, tip[1] + r.gauss() * 0.6);
+          g.stroke();
+        }
+      }
+      g.globalAlpha = 1;
+      blob(g, a.x, a.y, 6 + grow, r, 0.3);
+    };
+    draw('rgba(5,5,5,0.85)', 2.5, 311);
+    draw('#f2f0ea', 0, 312);
+    void rng;
   }
 
   // the charge: a short brush stroke beside the fist, growing, grey to white
@@ -174,10 +210,12 @@ function picture(pic) {
 }
 
 function mouse(which) {
+  // (polish: 48 px tall, drawn at twice that for a crisp line)
   const c = document.createElement('canvas');
-  c.width = 44; c.height = 60;
-  c.style.width = '33px'; c.style.height = '45px';
+  c.width = 70; c.height = 96;
+  c.style.width = '35px'; c.style.height = '48px';
   const g = c.getContext('2d');
+  g.scale(70 / 44, 96 / 60);
   const rng = new RNG(which === 'L' ? 51 : 52);
   // the body: a pebble drawn in a pressed line
   const path = () => {

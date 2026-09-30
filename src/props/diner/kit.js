@@ -50,7 +50,8 @@ export function roomMats() {
     kitchen: glow('kitchen', 0.32, { vertexColors: true }),
     kitchenDark: std('kitchenDark', 0x0a0a0a, 0.8, 'plaster'),
     mirror: glow('mirror', 1.0, { vertexColors: true }),
-    lampInner: glow('lampInner', 2.5, { side: THREE.DoubleSide }),
+    // (polish: the shade's inside a lit grey round the bulb, not paper white)
+    lampInner: glow('lampInner', 0.32, { side: THREE.DoubleSide }),
     bulb: glow('bulb', 9),
   };
   return MATS;

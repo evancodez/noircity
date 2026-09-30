@@ -185,6 +185,27 @@ export class Controller {
     this._ease = { from: from || this.eyePose(), to: pose, t: 0, dur: Math.max(1e-3, seconds) };
   }
 
+  // (polish: no figure fills the frame) my eye stops 1.1 m from a standing
+  // figure of the cast (not a Hood: the shooter's own rules; not a man lying
+  // down: I kneel to search him). A figure's collider let the eye come to
+  // ~0.65 m of his root, the camera almost inside his coat.
+  // (it stops MY step toward a figure, and never shoves me: a figure that
+  // walks past me - the old man going to hide - must not push me along, and
+  // the fight's man keeps his own distance, cast/brawl/brain.js)
+  keepOff(px, pz, R = 1.1) {
+    const cast = this.world && this.world.cast;
+    if (!cast || !cast.list) return;
+    for (const c of cast.list) {
+      if (!c.own || c.down || c.alive === false || c.state === 'ko' || !c.pos) continue;
+      const dx = this.pos.x - c.pos.x, dz = this.pos.z - c.pos.z, d = Math.hypot(dx, dz);
+      if (d >= R || d < 1e-4) continue;
+      const d0 = Math.hypot(px - c.pos.x, pz - c.pos.z);
+      if (d >= d0) continue;
+      const k = Math.min(R, d0) / d;
+      this.pos.x = c.pos.x + dx * k; this.pos.z = c.pos.z + dz * k;
+    }
+  }
+
   // one step of a mode that is not 'walk' (no input: the mouse handler and
   // update() give the input)
   modeStep(dt) {
@@ -226,6 +247,14 @@ export class Controller {
       this.pos.z += (this.vel.z + (P ? P.z : 0)) * dt;
       const wx = this.pos.x, wz = this.pos.z;
       if (this.world.colliders) this.world.colliders.resolve(this.pos, this.radius * 0.85);
+      this.keepOff(px, pz);
+      // (the fight's room: its walls hold me, the door's gap too - Brawl sets it)
+      const BB = this.brawlBounds;
+      if (BB) {
+        const m = this.radius * 0.85;
+        this.pos.x = Math.max(BB.x0 + m, Math.min(BB.x1 - m, this.pos.x));
+        this.pos.z = Math.max(BB.z0 + m, Math.min(BB.z1 - m, this.pos.z));
+      }
       // (driven into something hard: what, and how hard)
       if (P && P.lengthSq() > 0.8 && Math.hypot(this.pos.x - wx, this.pos.z - wz) > 0.3 * P.length() * dt) {
         this.bump = { at: this.pos.clone(), speed: P.length(), from: { x: px, z: pz } };
@@ -274,9 +303,11 @@ export class Controller {
     const a = 1 - Math.exp(-accel * dt);
     this.vel.x += (tx - this.vel.x) * a;
     this.vel.z += (tz - this.vel.z) * a;
+    const kx = this.pos.x, kz = this.pos.z;
     this.pos.x += this.vel.x * dt;
     this.pos.z += this.vel.z * dt;
     this.world.colliders.resolve(this.pos, this.radius);
+    this.keepOff(kx, kz);
 
     const gy = this.world.surfaceY(this.pos.x, this.pos.z);
     this.groundY += (gy - this.groundY) * (1 - Math.exp(-14 * dt));

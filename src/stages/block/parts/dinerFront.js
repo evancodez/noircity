@@ -478,8 +478,7 @@ export default {
     const cz0 = D.zMin - 0.3, cz1 = D.zMax + 0.3;
     const wx0 = Xi, wx1 = XR + 0.01;
     const wallBox = (za, zb) => colliders.addBox((wx0 + wx1) / 2, (za + zb) / 2, (wx1 - wx0) / 2, (zb - za) / 2, 0, 'wall');
-    wallBox(cz0, bz0 + 0.26);
-    wallBox(bz1 - 0.26, cz1);
+    const wallBoxes = [wallBox(cz0, bz0 + 0.26), wallBox(bz1 - 0.26, cz1)];
     for (const s of splay) colliders.addBox(s.mid.x, s.mid.z, 0.06, s.len / 2, s.ang, 'wall');
     for (const pz of D.pilasters) colliders.addBox(X + 0.18, pz, 0.26, D.pilasterW / 2, 0, 'wall');
     const col = colliders.addBox(XD - 0.03, (dz0 + dz1) / 2, 0.04, dz.w / 2, 0, 'door');
@@ -516,7 +515,30 @@ export default {
       },
     };
     const nLetter = letters.find((l) => l.ch === 'N');
+    // (polish, the bug hunt: a window a man has gone out through is a way
+    // out - the burst pane's hole looked open, the sill under the hands, but
+    // the front's wall collider ran on across it, an invisible wall at the
+    // glass. openBay(name) opens a gap in the wall the width of the pane
+    // less the frame, and a region of the net through the wall's thickness;
+    // it closes again when the pane is put back)
+    const holes = {};
+    const openBay = (name) => {
+      const z = D.bays[name];
+      if (z == null || holes[name]) return;
+      const h = [z - W.w / 2 + 0.4, z + W.w / 2 - 0.4];
+      for (const b of wallBoxes) (b.holes || (b.holes = [])).push(h);
+      holes[name] = { h, region: colliders.addRegion(Xi - 1.2, X + 1.2, h[0], h[1], 'diner.hole.' + name) };
+    };
+    const closeBay = (name) => {
+      const o = holes[name];
+      if (!o) return;
+      for (const b of wallBoxes) if (b.holes) b.holes = b.holes.filter((x) => x !== o.h);
+      const k = colliders.regions.indexOf(o.region); if (k >= 0) colliders.regions.splice(k, 1);
+      delete holes[name];
+    };
+    for (const name of ['B2', 'B4']) if (panes[name] && panes[name].on) panes[name].on('state', (pane) => { if (!pane.broken) closeBay(name); });
     return {
+      openBay, closeBay,
       group: g, wall, door, panes, sign, awning, near: null, stage, facade: stage.part('facade'),
       drips, pools, neonOn, neonOff, nLetter, flickRng: rng.fork(7), nextFlick: 2.5, flickLeft: 0,
     };

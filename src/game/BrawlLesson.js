@@ -46,6 +46,7 @@ export class Lesson {
     this.attackAt = n >= 4 && n <= 6 ? 1.1 : Infinity;
     this.feintAt = 2.4;
     this.openT = 0;
+    this.pending = false;
     B.lessonHold = true;
     B.lessonBack = !!(LESSON[n] && LESSON[n].back);
     const S = LESSON[n];
@@ -61,6 +62,7 @@ export class Lesson {
   onHisBlow(clip, how) {
     const S = LESSON[this.step];
     if (!S || !S.attack || clip !== S.attack) return;
+    this.pending = false;
     this.B.cards.arrow(null);
     if (how === 'slipped') {
       this.slipped = true;
@@ -97,7 +99,17 @@ export class Lesson {
     if (S.attack && this.t >= this.attackAt && him.state === 'move' && dd < 1.7) {
       this.attackAt = Infinity;
       B.hisAttack(S.attack, { slow: S.hand ? LESSON_SLOW : 0 });
+      this.pending = true;
       if (S.attack === 'br_jab') this.attackAt = this.t + 1.9;
+    }
+    // (his blow cut off before it came - my hard punch into his tell knocks
+    // him out of it, and its contact never comes: he goes again in a
+    // moment. The step waited on onHisBlow alone, so he stood still for
+    // good and the lesson hung at step 4 or 5)
+    if (this.pending && !(him.state === 'attack' && him.clip === S.attack)) {
+      this.pending = false;
+      B.cards.arrow(null);
+      if (!this.slipped && !this.covered && this.attackAt === Infinity) this.attackAt = this.t + 1.6;
     }
     // the arrow: from the swinging hand to my safe side, through the tell
     if (S.hand && him.state === 'attack' && him.clip === S.attack) {

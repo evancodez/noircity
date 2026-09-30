@@ -149,6 +149,14 @@ function stageDuel(stage, camera, controller, game) {
     else if (what === 'bottle') { B.him.next = 0; B.him.manner = 'dirty'; }
     else if (what === 'stool') { const it = B.room.hisItem('stool', c.pos); if (it) { B.him.task = { kind: 'stool', item: it, t: 0 }; B.him.state = 'arm'; } }
     else if (what === 'reel') { B.damageHim(B.him.hp - 12); B.startReel(); }
+    // (polish: do=mystool|mybottle - a stool or a bottle into my right hand,
+    // then the right button held &hold s (default 1.0) and let go)
+    else if (what === 'mystool' || what === 'mybottle') {
+      const k = what === 'mystool' ? 'stool' : 'bottle';
+      const it = B.room.items().filter((x) => x.kind === k).sort((a, b) => Math.hypot(a.pos.x - game.eye.x, a.pos.z - game.eye.z) - Math.hypot(b.pos.x - game.eye.x, b.pos.z - game.eye.z))[0];
+      if (it) B.grab(it);
+      game.scripts.push((tt) => { if (!B._mySent && tt >= 1.8) { B._mySent = true; press('Mouse2', parseFloat(q.get('hold') || '1.0')); } });
+    }
     else {
       B.hisAttack(what);
       const slip = q.get('slip') || 'none';

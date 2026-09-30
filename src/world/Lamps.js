@@ -176,6 +176,20 @@ export class Lamps {
 
   updatePool(dt, camPos, camFwd) {
     this._poolTimer -= dt;
+    // (polish: the lamps are lit from the first frame of a beat. The eye put
+    // somewhere new - a scene, a beat, a preset, a cut - finds the pool
+    // still on the lamps it left, fading those out and the near ones in
+    // over half a second: the diner's counter printed black for the first
+    // frames. A jump of the eye re-deals the pool at once, at full light.)
+    // (and a room's lamps switched on as the eye comes into it - they are off
+    // while out of sight - are dealt in at once, at full light, likewise)
+    const lc = this._lastCam;
+    let onN = 0;
+    for (const l of this.lamps) if (l.light && l.on) onN++;
+    const snap = !lc || Math.hypot(camPos.x - lc.x, camPos.y - lc.y, camPos.z - lc.z) > 2.0 || onN !== this._onN;
+    this._onN = onN;
+    (this._lastCam || (this._lastCam = camPos.clone())).copy(camPos);
+    if (snap) this._poolTimer = 0;
     if (this._poolTimer <= 0) {
       this._poolTimer = 0.25;
       const cands = this.lamps.filter((l) => l.light && l.on);
@@ -196,12 +210,12 @@ export class Lamps {
     for (const slot of this.pool) {
       const wanted = slot.lamp && (slot.shadow ? this._wantShadow.has(slot.lamp) : this._want.has(slot.lamp));
       if (slot.lamp && !wanted) {
-        slot.k = Math.max(0, slot.k - dt * 4);
+        slot.k = snap ? 0 : Math.max(0, slot.k - dt * 4);
         if (slot.k === 0) { held.delete(slot.lamp); slot.lamp = null; }
-      } else if (slot.lamp) slot.k = Math.min(1, slot.k + dt * 4);
+      } else if (slot.lamp) slot.k = snap ? 1 : Math.min(1, slot.k + dt * 4);
       if (!slot.lamp) {
         const pick = [...(slot.shadow ? this._wantShadow : this._want)].find((l) => !held.has(l));
-        if (pick) { this.assign(slot, pick); held.add(pick); }
+        if (pick) { this.assign(slot, pick); held.add(pick); if (snap) slot.k = 1; }
       }
       const L = slot.lamp;
       slot.spot.intensity = L ? L.light.intensity * slot.k * L._k : 0;

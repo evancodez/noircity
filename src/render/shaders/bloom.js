@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { FULLSCREEN_VERT, LUMA_GLSL } from './common.js';
+import { VM_LO, VM_ID0 } from '../layers.js';
 
 // Small mip-chain bloom (prefilter -> 4-tap downsamples -> tent upsamples).
 // Runs in linear HDR so lamp heads, cones and (later) muzzle flashes glow.
@@ -26,13 +27,28 @@ export function makeBloomPrefilter() {
         float n = length( texture2D( tId, uv ).xyz );
         return step( 20.0, n ) * step( n, 22.0 );
       }
+      // (polish: skin never glows) the bare hands and what they hold (ids
+      // ${VM_LO} .. ${VM_ID0 - 1}, stored negative) give the bloom nothing:
+      // under a pendant or at the street's open window they are several
+      // times paper white in the scene, and their bloom printed a soft white
+      // halo round the fists. Only the emitters in them keep it: an ember
+      // (class 10) and the lighter's flame (class 17).
+      float keepW( vec2 uv ) {
+        vec4 t = texture2D( tId, uv );
+        float w = - t.w;
+        float hand = step( ${(VM_LO - 0.5).toFixed(1)}, w ) * step( w, ${(VM_ID0 - 0.5).toFixed(1)} );
+        float n = length( t.xyz );
+        float emit = step( 20.0, n ) * step( n, 22.0 ) + step( 34.0, n ) * step( n, 36.0 );
+        return 1.0 - hand * ( 1.0 - emit );
+      }
       void main() {
         vec3 a = texture2D( tSrc, vUv + uTexel * vec2( -0.5, -0.5 ) ).rgb;
         vec3 b = texture2D( tSrc, vUv + uTexel * vec2(  0.5, -0.5 ) ).rgb;
         vec3 c = texture2D( tSrc, vUv + uTexel * vec2( -0.5,  0.5 ) ).rgb;
         vec3 d = texture2D( tSrc, vUv + uTexel * vec2(  0.5,  0.5 ) ).rgb;
         // clamp fireflies before averaging
-        vec3 pa = min( prefilter( a ), 60.0 ), pb = min( prefilter( b ), 60.0 ), pc = min( prefilter( c ), 60.0 ), pd = min( prefilter( d ), 60.0 );
+        vec3 pa = min( prefilter( a ), 60.0 ) * keepW( vUv + uTexel * vec2( -0.5, -0.5 ) ), pb = min( prefilter( b ), 60.0 ) * keepW( vUv + uTexel * vec2( 0.5, -0.5 ) ),
+             pc = min( prefilter( c ), 60.0 ) * keepW( vUv + uTexel * vec2( -0.5, 0.5 ) ), pd = min( prefilter( d ), 60.0 ) * keepW( vUv + uTexel * vec2( 0.5, 0.5 ) );
         vec3 s = pa + pb + pc + pd;
         // alpha: the share of this glow that is an ember's (idpass class
         // 10, the normal's length 21): the ink warms the ember's glow by it,

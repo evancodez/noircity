@@ -556,10 +556,33 @@ export class ShardField {
   }
 
   restMat() {
-    // lying on the street: a faint pale sheen (the lamps catch the flats).
-    // (a shard at rest goes back to the world layer and takes the ink's own
-    // outline: the glass on the pavement of s18_matchbook is the level)
-    return this._rest || (this._rest = new THREE.MeshStandardMaterial({ color: 0x202020, roughness: 0.3, metalness: 0.3, envMap: this.mat.envMap, envMapIntensity: 0.35, emissive: new THREE.Color(0.03, 0.03, 0.03), transparent: true, opacity: 0.55, depthWrite: false, side: THREE.DoubleSide }));
+    // (polish: glass at rest is dark and clear) lying on the pavement or
+    // the floor, a shard lets what it lies on show through, a shade darker;
+    // what prints of it is its thin light edge (restLineMat) and, on a few
+    // pieces, one small glint (restGlint). It stays on the effects layer:
+    // on the world layer the ink printed each piece as a surface of its own
+    // - its sheen stepped to paper by the street's bands, its heavy outline
+    // round it - so the pavement lay under flat paper-white sheets.
+    return this._rest || (this._rest = new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.1, depthWrite: false, side: THREE.DoubleSide, fog: false }));
+  }
+  restLineMat() {
+    return this._restLine || (this._restLine = new THREE.LineBasicMaterial({ color: new THREE.Color(0.2, 0.2, 0.2), transparent: true, opacity: 0.7, depthWrite: false }));
+  }
+  // one small glint on a piece: a point of light at one of its corners
+  restGlint(s) {
+    const r = this.rng;
+    if (s.area < 0.003 || !s.sh.line || r.next() > 0.3) return;
+    const mat = this._glintMat || (this._glintMat = new THREE.SpriteMaterial({ color: new THREE.Color(3.2, 3.2, 3.2), depthWrite: false, fog: false }));
+    const sp = new THREE.Sprite(mat);
+    const pa = s.sh.line.getAttribute('position');
+    const k = Math.floor(r.next() * (pa.count / 2)) * 2;
+    sp.position.set(pa.getX(k), pa.getY(k), pa.getZ(k) + 0.002);
+    sp.scale.setScalar(0.009);
+    sp.layers.set(LAYER.FX);
+    sp.renderOrder = 4;
+    sp.userData.noRay = true;
+    s.mesh.add(sp);
+    s.mesh.userData.glint = sp;
   }
 
   // (Wave A fix D4) A shard carries a thin contour, not the ink's heavy one:
@@ -644,10 +667,14 @@ export class ShardField {
     const n = _v.set(0, 0, 1).applyQuaternion(m.quaternion);
     const toEye = new THREE.Vector3().subVectors(cam, m.position).normalize();
     const h = toEye.add(UP).normalize();
-    const g = Math.pow(Math.abs(n.dot(h)), 60);
-    const e = 0.02 + 3.5 * g;
+    // (polish: a glint is a spark, not a sheet: a big pane turning in the
+    // burst lit up whole - the window filled with blown-out white bloom -
+    // so the flash falls with the piece's size, and it never goes past a
+    // bright grey on its own; the small pieces still flash paper white)
+    const g = Math.pow(Math.abs(n.dot(h)), 60) / (1 + s.area / 0.006);
+    const e = 0.02 + 2.4 * g;
     m.material.emissive.setRGB(e, e, e);
-    m.material.opacity = Math.min(1, 0.32 + 2 * g);
+    m.material.opacity = Math.min(1, 0.32 + 1.6 * g);
   }
 
   update(dt) {
@@ -667,7 +694,8 @@ export class ShardField {
           s.slide = false; s.vel = new THREE.Vector3(0, 0, 0); s.spin = new THREE.Vector3(0, 0, 0); s.t = 0.3; s.gyT = 0;
           s.mesh.layers.set(LAYER.FX);
           s.mesh.material = this.matFor();
-          if (s.mesh.userData.line) s.mesh.userData.line.visible = true;
+          if (s.mesh.userData.line) { s.mesh.userData.line.material = this.lineMat(); s.mesh.userData.line.visible = s.area > 0.0035; }
+          if (s.mesh.userData.glint) s.mesh.userData.glint.visible = false;
           this.live.push(s);
           if (!this.rest.length) break;
         }
@@ -719,8 +747,14 @@ export class ShardField {
           s.vel.set(0, 0, 0);
           if (m.material !== this._rest) (this.pool || (this.pool = [])).push(m.material);
           m.material = this.restMat();
-          m.layers.set(LAYER.WORLD);
-          if (m.userData.line) m.userData.line.visible = false;
+          // (it stays on the effects layer: its thin light edge, not the ink's)
+          if (!m.userData.line && s.sh.line && s.area > 0.0012) {
+            const l = new THREE.LineSegments(s.sh.line, this.restLineMat());
+            l.layers.set(LAYER.FX); l.renderOrder = 3; l.userData.noRay = true;
+            m.add(l); m.userData.line = l;
+          }
+          if (m.userData.line) { m.userData.line.material = this.restLineMat(); m.userData.line.visible = true; }
+          if (m.userData.glint) m.userData.glint.visible = true; else this.restGlint(s);
           this.live.splice(i, 1);
           this.rest.push(s);
           while (this.rest.length > REST_CAP) this.kill(this.rest.shift());
