@@ -1,8 +1,9 @@
 import * as THREE from 'three';
-import { LAYER, tagInk, allocInkId } from '../../../render/layers.js';
+import { LAYER, tagInk, allocInkId, allocSkylineId } from '../../../render/layers.js';
 import { makeGroundMaterial } from '../../../render/shaders/ground.js';
 import { smoothNormals } from '../../../world/geom.js';
 import { ROAD, frameAt, project, groundAt } from '../road.js';
+import { makeWaterMaterial } from '../water.js';
 
 // The wet road, its pavements and kerbs, the quay wall and the river below
 // it. Ribbons along the road's line (the ground shaders read the world
@@ -110,12 +111,17 @@ export default {
       chunks.push({ meshes: [road, paveL, paveR, kerbs, quay], s0, s1 });
     }
     const road = chunks[0].meshes[0], paveL = chunks[0].meshes[1], paveR = chunks[0].meshes[2], kerbs = chunks[0].meshes[3], quay = chunks[0].meshes[4];
-    // the river: one wide plane, black water under the wet shader
-    const water = new THREE.Mesh(new THREE.PlaneGeometry(2600, 2600).rotateX(-Math.PI / 2), makeGroundMaterial(U, { paving: 0 }));
+    // the river: one wide plane, black water that carries the lights
+    // ([R2] its own shader, ../water.js: the street's wet stone printed it as
+    // black ground and took no light off the far bank)
+    const water = new THREE.Mesh(new THREE.PlaneGeometry(2600, 2600).rotateX(-Math.PI / 2), makeWaterMaterial(U, ROAD.waterY));
     const mid = frameAt(ROAD.len / 2, {});
     water.position.set(mid.x + 900, ROAD.waterY, mid.z);
     water.layers.set(LAYER.GROUND);
-    water.userData.inkId = allocInkId();
+    // (a skyline id: the ink leaves it its own tones - no dry-brush field,
+    // none of the street's paper slashes, which on open water printed as
+    // long grey scratches over the black)
+    water.userData.inkId = allocSkylineId();
     water.userData.noRay = true;
     water.name = 'river';
     scene.add(water);

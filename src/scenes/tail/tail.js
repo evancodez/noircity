@@ -49,7 +49,7 @@ export class Tail {
     // where it struck (screen.js), the view flinches
     const onHit = (e) => { if (!this.my || this.out) return; const now = this.t; if (now - (this._hitT || -9) < 0.12) return; this._hitT = now; G.sfx.play('tail_screenHit', null, { k: e.k }); G.controller.kick(0.8 * e.k + 0.3, 0.5, 0.08); if (this.screen && e.k > 0.45) this.screen.crack(e.lz, e.k); };
     G.on('screenHit', onHit);
-    const off = () => { this.dispose(); G.off('scene:exit', off); G.off('screenHit', onHit); };
+    const off = () => { this.dispose(); if (this.question) this.question.dispose(); G.off('scene:exit', off); G.off('screenHit', onHit); };
     G.on('scene:exit', off);
   }
 
@@ -693,6 +693,15 @@ class Wreck {
     this.swing = { a: 0, v: 3.4 };
     this.q0 = g.quaternion.clone();
     this.L = L;
+    // [R2] where the question will be asked: the water just past the rail
+    // at the end of his car nearest mine (question.js grab() puts it there
+    // exactly), so the cone falls in front of the eye there - down past his
+    // shoulders onto the river - rather than round it; the shade swings
+    // round onto it as the post settles
+    this.aimAt = roadPoint(post.s + 0.2 - 4.7, ROAD.quay + 2.2, ROAD.waterY + 0.3);
+    // (the cone's own length: built to reach the pavement straight down, it
+    // is lengthened to reach the water where it now falls)
+    this.coneH0 = post.cone.material.uniforms.uHeight.value;
     // the horn stuck: it sounds, then dies over ~4 s
     G.sfx.play('tail_hornStuck', v.pos, { dur: 4.2 }, { ref: 6 });
     // the tail lamp on the side that struck the post goes (if none of my
@@ -724,12 +733,28 @@ class Wreck {
     // (the head, its cone and its light follow the bent post)
     const head = this.L.geo.head.clone().applyMatrix4(g.matrixWorld);
     const target = head.clone().add(new THREE.Vector3(0, -1, 0).applyAxisAngle(this.axis, this.lean * 0.6 + this.swing.a * 0.25).multiplyScalar(5));
+    // [R2] the bent lamp's shade hangs toward the rail where the question is
+    // asked (the question sets aimAt), so it is asked under the one lamp:
+    // hard light on his brim, the rail and the water; the swing rides on it
+    if (this.aimAt) {
+      this.aimK = Math.min(1, (this.aimK || 0) + dt * 1.5);
+      const want = _v.subVectors(this.aimAt, head).normalize().multiplyScalar(5).add(head);
+      want.addScaledVector(new THREE.Vector3(0, -1, 0).applyAxisAngle(this.axis, this.swing.a * 0.25).sub(new THREE.Vector3(0, -1, 0)), 5);
+      target.lerp(want, this.aimK * this.aimK * (3 - 2 * this.aimK));
+    }
     l.head.copy(head);
     l.axis.copy(target).sub(head).normalize();
     l.cone.position.copy(head);
     l.cone.quaternion.setFromUnitVectors(new THREE.Vector3(0, -1, 0), l.axis);
     l.cone.material.uniforms.uApex.value.copy(head);
     l.cone.material.uniforms.uAxis.value.copy(l.axis);
+    if (this.aimAt) {
+      const H = Math.max(this.coneH0, head.distanceTo(this.aimAt) * 1.02);
+      const Hc = this.coneH0 + (H - this.coneH0) * this.aimK;
+      l.cone.material.uniforms.uHeight.value = Hc;
+      l.cone.scale.setScalar(Hc / this.coneH0);
+      l.entry.range = Hc;
+    }
     l.entry.position.copy(head); l.entry.direction.copy(l.axis);
     if (l.light) { l.light.pos.copy(head); l.light.target.copy(head).addScaledVector(l.axis, 6); for (const sl of this.L.pool) if (sl.lamp === l) { sl.spot.position.copy(head); sl.spot.target.position.copy(l.light.target); sl.spot.target.updateMatrixWorld(); } }
     // steam from under the hood

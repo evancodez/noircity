@@ -42,6 +42,24 @@ export class Question {
     const yaw = Math.atan2(out.x, out.z);
     this.man = C.spawn(kind, { at: { x: door.x, z: door.z }, yaw });
     this.man.play('tail_crawl', { hold: true, fade: 0.05 });
+    // [R2] his raincoat soaked through: a pale coat (scene 6's, the runner
+    // the eye follows in the alleys) printed at the rail as a flat paper
+    // plate filling the frame; wet, it is a dark grey the lamp above picks
+    // out on the shoulders and the brim. (The ink reads a figure's print off
+    // its albedo, the geometry's colours: his own copies of the three LODs,
+    // the costume's are shared with scene 6's man)
+    const fig = this.man.fig;
+    if (fig && fig.lods && fig.mesh) {
+      const cur = fig.lods.indexOf(fig.mesh.geometry);
+      fig.lods = fig.lods.map((g) => {
+        const c = g.clone();
+        const col = c.getAttribute('color');
+        if (col) { for (let i = 0; i < col.array.length; i++) col.array[i] *= 0.42; col.needsUpdate = true; }
+        return c;
+      });
+      fig.mesh.geometry = fig.lods[Math.max(0, cur)];
+      this._wetLods = fig.lods;
+    }
     this.carSide = { x: rz.x * side, z: rz.z * side };   // out of his car's side
     return this.man;
   }
@@ -123,6 +141,10 @@ export class Question {
     // lights lie on it)
     this.water = roadPoint(sRail + Math.sign(sRail - pin.s || 1) * 1.5, ROAD.rail + 8, ROAD.waterY);   // (8 m out: a look at it takes in the river and the far bank, not the stones at my feet)
     this.railS = pr.s;
+    // [R2] the bent lamp's shade on the spot where he will go over the rail
+    // (on the water ahead of me as I look at it past him: the cone falls
+    // from over my shoulder into the frame, past him onto the river)
+    if (this.tail.wreck) this.tail.wreck.aimAt = roadPoint(sRail + Math.sign(sRail - pin.s || 1) * 1.2, ROAD.quay + 2.2, ROAD.waterY + 0.3);
     yield wait(0.35);
   }
 
@@ -146,7 +168,7 @@ export class Question {
       const e = G.camera.position, w = this.water;
       // (on the way, the eyes lift off the water a little, toward the far
       // bank: still inside the look's cone, and the river reads as a river)
-      const yaw = Math.atan2(-(w.x - e.x), -(w.z - e.z)) - H.face, pitch = Math.atan2(w.y - e.y, Math.hypot(w.x - e.x, w.z - e.z)) + (this.p > 0.35 ? 0.1 : 0);
+      const yaw = Math.atan2(-(w.x - e.x), -(w.z - e.z)) - H.face, pitch = Math.atan2(w.y - e.y, Math.hypot(w.x - e.x, w.z - e.z)) + (this.p > 0.35 ? 0.03 : 0);
       const k = 1 - Math.exp(-dt * 3);
       H.look.yaw += (Math.atan2(Math.sin(yaw), Math.cos(yaw)) - H.look.yaw) * k;
       H.look.pitch += (pitch - H.look.pitch) * k;
@@ -193,15 +215,105 @@ export class Question {
     // the eye: in front of him, leaning over him as he goes back
     const fx = Math.sin(this.hd), fz = Math.cos(this.hd);   // his forward (toward me)
     const gy = G.stage.surfaceY(at.x, at.z);
-    H.at.set(at.x + fx * (0.64 - bend * 0.12), gy + 1.68 - bend * 0.12, at.z + fz * (0.64 - bend * 0.12));
+    // [R2] (over him: my weight goes onto him as he goes back, so my eye
+    // stands over his feet and looks down on his brim, the rail and the
+    // water - his bend is deep now, and a step back from it left my fists a
+    // metre out)
+    const lean = 0.64 - bend * 0.4;
+    H.at.set(at.x + fx * lean, gy + 1.68 - bend * 0.03, at.z + fz * lean);
     // [2nd pass] the look stays where the player put it in the world as he
     // is walked round (it was kept relative to him, so the view swung with
     // him and the eyes slid off the water they had found)
     const face = Math.atan2(fx, fz), dFace = Math.atan2(Math.sin(face - H.face), Math.cos(face - H.face));
     H.look.yaw = clamp(H.look.yaw - dFace, -1.9, 1.9);
     H.face = face;
-    if (this.p >= 1 && !this.broken) { this.broken = true; return true; }
+    if (this.p >= 1 && !this.broken) { this.broken = true; this.hatOff(); return true; }
     return false;
+  }
+
+  // (his own copies of the figure's geometry go with the scene)
+  dispose() { if (this._wetLods) for (const g of this._wetLods) g.dispose(); this._wetLods = null; }
+
+  // ---- [R2] his hat into the river as he breaks ---------------------------------------------------
+  // The bowler goes off the back of his head over the water: it turns over
+  // in the air, drops the three metres to the river, slaps down (a ring on
+  // the water under the lamp, the plop), rights itself crown up and rides
+  // off on the current, rocking. His own flight for a knocked-off hat lands
+  // it on the ground he stands on; this one's ground is the river.
+  hatOff() {
+    const fig = this.man && this.man.fig;
+    if (!fig || !fig.bones || !fig.bones.hat || fig.hat || !fig.throwCover) return;
+    fig.throwCover(new THREE.Vector3(0, 0, 0));
+    if (!fig.hat) return;
+    fig.hat.rest = true;
+    const hat = fig.hat.bone, obj = fig.object;
+    obj.updateMatrixWorld(true);
+    const at = hat.getWorldPosition(new THREE.Vector3());
+    // back, away from me (his heading faces me), and up off his head
+    const away = new THREE.Vector3(-Math.sin(this.hd), 0, -Math.cos(this.hd));
+    frameAt(this.railS, F);
+    const out = new THREE.Vector3(F.rx, 0, F.rz);
+    // (and off to the side of him, past his shoulder: straight back it fell
+    // behind him, hidden by his own shoulders)
+    const side = new THREE.Vector3(F.fx, 0, F.fz).multiplyScalar(Math.sign(this.water ? project(this.water.x, this.water.z, this.railS, {}).s - this.railS : 1) || 1);
+    const dir = away.clone().lerp(out, 0.5).normalize().addScaledVector(side, 0.55).normalize();
+    this.hatS = {
+      hat, obj, at, vel: dir.multiplyScalar(1.25).add(new THREE.Vector3(0, 0.45, 0)),
+      axis: new THREE.Vector3(dir.z, 0, -dir.x).normalize(), spin: 7.5, t: 0, wet: false, drift: new THREE.Vector3(F.fx, 0, F.fz).multiplyScalar(-0.35).addScaledVector(out, 0.12),
+      q: hat.getWorldQuaternion(new THREE.Quaternion()),
+    };
+    this.ctx.onStep((dt) => this.hatStep(dt));
+  }
+  hatStep(dt) {
+    const H = this.hatS;
+    if (!H || dt <= 0) return;
+    const G = this.game;
+    H.t += dt;
+    if (!H.wet) {
+      H.vel.y -= 9.8 * dt;
+      H.at.addScaledVector(H.vel, dt);
+      // (the quay: it clears the edge before it drops below the stones)
+      const pr = project(H.at.x, H.at.z, this.railS, {});
+      if (pr.d < ROAD.quay + 0.25 && H.at.y < ROAD.pave + 0.2) { const p = roadPoint(pr.s, ROAD.quay + 0.25, H.at.y); H.at.x = p.x; H.at.z = p.z; }
+      H.q.premultiply(new THREE.Quaternion().setFromAxisAngle(H.axis, H.spin * dt));
+      if (H.at.y <= ROAD.waterY + 0.02) {
+        H.wet = true; H.at.y = ROAD.waterY + 0.02; H.tWet = H.t;
+        G.sfx.play('tail_hatSplash', H.at.clone(), {}, { ref: 5 });
+        const W = G.stage.street && G.stage.street.water;
+        if (W && W.material.uniforms.uDrop) W.material.uniforms.uDrop.value.set(H.at.x, H.at.z, G.stage.U.uTime.value, 1.2);
+        const r = this.ctx.rng;
+        for (let i = 0; i < 26; i++) G.fx.sparks.spawn({ pos: H.at.clone(), vel: new THREE.Vector3(r.gauss() * 0.8, r.range(1.0, 2.8), r.gauss() * 0.8), life: r.range(0.3, 0.6), size: [0.014, 0.022], stretch: 0.04, col: [3, 3, 3], cell: 4, gravity: 9.8, fadeOut: 0.3 });
+      }
+    } else {
+      // afloat: crown up, rocking, carried off on the current
+      const u = H.t - H.tWet;
+      H.at.addScaledVector(H.drift, dt);
+      H.at.y = ROAD.waterY + 0.02 + Math.sin(u * 3.1) * 0.012 * Math.exp(-u * 0.4);
+      const up = new THREE.Vector3(0, 1, 0).applyQuaternion(H.q);
+      H.q.premultiply(new THREE.Quaternion().slerp(new THREE.Quaternion().setFromUnitVectors(up, new THREE.Vector3(0, 1, 0)), Math.min(1, dt * 6)));
+      H.q.premultiply(new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), dt * 0.4));
+      const rock = new THREE.Quaternion().setFromAxisAngle(H.axis, Math.sin(u * 2.3) * 0.08 * Math.exp(-u * 0.3));
+      H.qShow = H.q.clone().premultiply(rock);
+    }
+    // (the eyes go down with it, as they went with his spin: its fall and the
+    // splash under the lamp are the moment he breaks - then they are the
+    // player's again)
+    const C = G.controller, HL = C.hold;
+    if (HL && H.vel.y < 0 && H.t < (H.tWet ?? 9) + 0.7) {
+      const e = G.camera.position;
+      const yaw = Math.atan2(-(H.at.x - e.x), -(H.at.z - e.z)) - HL.face;
+      const pitch = Math.atan2(H.at.y - e.y, Math.hypot(H.at.x - e.x, H.at.z - e.z)) + 0.12;
+      const k = 1 - Math.exp(-dt * 4.5);
+      HL.look.yaw += Math.atan2(Math.sin(yaw - HL.look.yaw), Math.cos(yaw - HL.look.yaw)) * k * 0.5;
+      HL.look.pitch += (Math.max(-0.85, pitch) - HL.look.pitch) * k * 0.7;
+    }
+    // (into the man's frame: the hat bone hangs from his root now)
+    const h = H.hat, o = H.obj;
+    o.updateMatrixWorld(true);
+    h.position.copy(o.worldToLocal(H.at.clone()));
+    const oq = o.getWorldQuaternion(new THREE.Quaternion()).invert();
+    h.quaternion.copy(oq.multiply(H.qShow && H.wet ? H.qShow : H.q));
+    h.updateMatrixWorld(true);
   }
 
   // ---- I let go: he slides down the railing ---------------------------------------------------------
@@ -216,7 +328,7 @@ export class Question {
     man.play('tail_slide', { hold: true, fade: 0.2 });
     G.sfx.play('tail_slump', man.pos, {}, { ref: 3 });
     for (let t = 0; t < 1.4; t += 1 / 60) {
-      if (H && back) { const u = ease(Math.min(1, t / 1.2)); const fx = Math.sin(this.hd), fz = Math.cos(this.hd); H.at.set(back.x + fx * 1.0 * u, back.y + 0.12 * u, back.z + fz * 1.0 * u); }
+      if (H && back) { const u = ease(Math.min(1, t / 1.3)); const fx = Math.sin(this.hd), fz = Math.cos(this.hd); H.at.set(back.x + fx * 1.7 * u, back.y + 0.06 * u, back.z + fz * 1.7 * u); }
       // [2nd pass] the eyes go down with him: the last image is him slumped
       // against the rail with the river behind him (the eyes stayed on the
       // far bank and he dropped out of the frame, as if gone)
@@ -225,10 +337,12 @@ export class Question {
         const wy = Math.atan2(-(m.x - e.x), -(m.z - e.z)) - H.face;
         // (to his chest as he sits: he is in the frame's lower half, the
         // rail and the black water above him)
-        const wp = Math.atan2(m.y + 0.6 - e.y, Math.hypot(m.x - e.x, m.z - e.z));
+        // [R2] (a little over him: he sits in the lower half, the rail across
+        // the frame, the black river and its lights above him)
+        const wp = Math.atan2(m.y + 0.5 - e.y, Math.hypot(m.x - e.x, m.z - e.z)) + 0.14;
         const k = 1 - Math.exp(-(1 / 60) * 3.2);
         H.look.yaw += Math.atan2(Math.sin(wy - H.look.yaw), Math.cos(wy - H.look.yaw)) * k;
-        H.look.pitch += (clamp(wp, -0.6, 0.35) - H.look.pitch) * k;
+        H.look.pitch += (clamp(wp, -0.5, 0.35) - H.look.pitch) * k;
       }
       yield null;
     }

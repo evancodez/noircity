@@ -69,30 +69,66 @@ export default {
       chunks.push({ mesh: m, mid: roadPoint(Math.max(0, Math.min(ROAD.len, s0 + CH / 2)), d) });
     }
 
-    // ---- the far bank: sheds on piles, a few lamps and lit windows ---------
-    const bank = [], lights = [];
-    const lit = new THREE.MeshBasicMaterial({ color: new THREE.Color().setScalar(3.2) });
-    const dim = new THREE.MeshBasicMaterial({ color: new THREE.Color().setScalar(0.9) });
-    const dimParts = [];
-    for (let s = -300; s < ROAD.len + 400; s += rng.range(26, 60)) {
+    // ---- the far bank (R2): a low broken line of sheds, warehouses and a
+    // few tall blocks on the far quay, 150 .. 200 m off, lost in the fog but
+    // for their lights - the quay's lamps at odd spacings, lit windows in
+    // twos and threes on the taller blocks, a light high on a stack. The
+    // river carries each of them (the water's columns: `far`).
+    // (it was a row of like sheds 230 m off with a lamp on each: in the fog
+    // a flat grey band under a row of cut-out towers, its lamps sub-pixel)
+    const bank = [], lights = [], wins = [], far = [];
+    const lit = new THREE.MeshBasicMaterial({ color: new THREE.Color().setScalar(3.4) });
+    const dim = new THREE.MeshBasicMaterial({ color: new THREE.Color().setScalar(1.25) });
+    const FARQ = 158;
+    const faceYaw = () => Math.atan2(F.fx, F.fz) + Math.PI / 2;
+    for (let s = -300; s < ROAD.len + 400; s += rng.range(12, 46)) {
       const sc = Math.max(0, Math.min(ROAD.len, s));
       frameAt(sc, F);
-      const dd = 230 + rng.range(-20, 30);
-      const c = roadPoint(sc, dd, 0).addScaledVector(V3(F.fx, 0, F.fz), s - sc);
-      const w = rng.range(18, 46), h = rng.range(6, 14), dp = rng.range(12, 22);
-      const g = new THREE.BoxGeometry(w, h, dp).translate(0, h / 2 + ROAD.waterY + 1.2, 0);
-      g.rotateY(Math.atan2(F.fx, F.fz) + Math.PI / 2);
+      const along = s - sc;
+      // mostly low sheds; now and then a warehouse block, rarely a tall one
+      const kind = rng.next();
+      const h = kind < 0.62 ? rng.range(4, 10) : kind < 0.92 ? rng.range(12, 22) : rng.range(28, 46);
+      const w = kind < 0.62 ? rng.range(14, 40) : rng.range(12, 26), dp = rng.range(10, 24);
+      const dd = FARQ + dp / 2 + rng.range(1, kind < 0.62 ? 6 : 26);
+      const c = roadPoint(sc, dd, 0).addScaledVector(V3(F.fx, 0, F.fz), along);
+      const y0 = ROAD.waterY + 1.4;
+      const g = new THREE.BoxGeometry(w, h, dp).translate(0, h / 2 + y0, 0);
+      g.rotateY(faceYaw());
       g.translate(c.x, 0, c.z);
       bank.push(g);
-      // a lamp on the far quay (a bright point: the water streaks it)
-      if (rng.chance(0.55)) {
-        const lp = roadPoint(sc, dd - dp / 2 - 3, 0).addScaledVector(V3(F.fx, 0, F.fz), s - sc + rng.range(-8, 8));
-        lights.push(new THREE.SphereGeometry(0.45, 8, 6).translate(lp.x, ROAD.waterY + 6.5, lp.z));
+      // a stack on a works now and then, a lamp at its top
+      if (kind > 0.8 && rng.chance(0.35)) {
+        const sh = h + rng.range(14, 26);
+        const sp = roadPoint(sc, dd + rng.range(-3, 3), 0).addScaledVector(V3(F.fx, 0, F.fz), along + rng.range(-w / 3, w / 3));
+        bank.push(new THREE.CylinderGeometry(0.9, 1.4, sh, 8).translate(sp.x, y0 + sh / 2, sp.z));
+        lights.push(new THREE.SphereGeometry(0.5, 8, 6).translate(sp.x, y0 + sh + 0.6, sp.z));
+        far.push({ p: V3(sp.x, y0 + sh + 0.6, sp.z), k: 0.9, w: 0.8 });
       }
-      // a lit window or two in the shed's face
-      if (rng.chance(0.4)) {
-        const wp = roadPoint(sc, dd - dp / 2 - 0.2, 0).addScaledVector(V3(F.fx, 0, F.fz), s - sc + rng.range(-w / 3, w / 3));
-        dimParts.push(new THREE.PlaneGeometry(1.4, 1.1).rotateY(Math.atan2(F.fx, F.fz) + Math.PI / 2).translate(wp.x, ROAD.waterY + 1.2 + h * 0.55, wp.z));
+      // lit windows on the face toward me: in twos and threes on a floor or
+      // up a corner, on a block more than a shed
+      const nWin = kind < 0.62 ? (rng.chance(0.25) ? 1 : 0) : rng.int(1, kind > 0.92 ? 6 : 4);
+      for (let i = 0; i < nWin; i++) {
+        const floors = Math.max(1, Math.floor((h - 2) / 3.4));
+        const f = rng.int(0, floors - 1), x0 = rng.range(-w / 2 + 2, w / 2 - 2);
+        const run = rng.int(1, 3), up = rng.chance(0.35);
+        for (let j = 0; j < run; j++) {
+          const wp = roadPoint(sc, dd - dp / 2 - 0.25, 0).addScaledVector(V3(F.fx, 0, F.fz), along + x0 + (up ? 0 : j * 2.6));
+          const wy = y0 + 2.2 + (f + (up ? j : 0)) * 3.4;
+          if (wy > y0 + h - 1) break;
+          wins.push(new THREE.PlaneGeometry(1.3, 1.7).rotateY(faceYaw()).translate(wp.x, wy, wp.z));
+          if (j === 0 && rng.chance(0.5)) far.push({ p: V3(wp.x, wy, wp.z), k: 0.3, w: 1.1 });
+        }
+      }
+    }
+    // the far quay's lamps: at odd spacings along its edge, some in pairs
+    for (let s = -200; s < ROAD.len + 300; s += rng.range(22, 90)) {
+      const sc = Math.max(0, Math.min(ROAD.len, s));
+      frameAt(sc, F);
+      for (let j = 0, n = rng.chance(0.25) ? 2 : 1; j < n; j++) {
+        const lp = roadPoint(sc, FARQ - rng.range(0.5, 2), 0).addScaledVector(V3(F.fx, 0, F.fz), s - sc + j * 9);
+        const ly = ROAD.waterY + 1.4 + rng.range(5, 7);
+        lights.push(new THREE.SphereGeometry(0.55, 8, 6).translate(lp.x, ly, lp.z));
+        far.push({ p: V3(lp.x, ly, lp.z), k: rng.range(0.7, 1.6), w: 0.8 });
       }
     }
     const bankMesh = new THREE.Mesh(merge(bank), M.brickFar);
@@ -102,7 +138,7 @@ export default {
     const lm = new THREE.Mesh(merge(lights), lit);
     lm.userData.inkId = bankMesh.userData.inkId; lm.userData.noRay = true;
     group.add(lm);
-    if (dimParts.length) { const dm = new THREE.Mesh(merge(dimParts), dim); dm.userData.inkId = bankMesh.userData.inkId; dm.userData.noRay = true; group.add(dm); }
+    if (wins.length) { const dm = new THREE.Mesh(merge(wins), dim); dm.userData.inkId = bankMesh.userData.inkId; dm.userData.noRay = true; group.add(dm); }
 
     // ---- a freighter moored along the quay (before the close) -------------
     const hull = { s0: ROAD.marks.hull, s1: ROAD.marks.hull + 80 };
@@ -164,15 +200,21 @@ export default {
     const sk = Object.create(Skyline.prototype);
     Object.assign(sk, { world: stage, windows: [], _az: [], wrng: stage.rng.fork(702), group });
     const trng = stage.rng.fork(703);
+    // [R2] across the river the towers stand in clusters with open sky
+    // between, at depths that overlap (a tower's density along the road
+    // swells and dies away): seen from the rail they were a row of like
+    // cut-outs at one spacing on one line
     const rings = [
-      { d: [420, 520], h: [40, 95], w: [16, 28], gap: [34, 60], side: 1 },
-      { d: [620, 760], h: [70, 160], w: [18, 32], gap: [44, 80], side: 1 },
+      { d: [360, 560], h: [34, 100], w: [14, 28], gap: [18, 52], side: 1, cl: 0.0 },
+      { d: [600, 820], h: [60, 180], w: [18, 32], gap: [22, 60], side: 1, cl: 2.1 },
       { d: [-260, -330], h: [40, 90], w: [16, 26], gap: [40, 70], side: -1 },
       { d: [-480, -620], h: [80, 180], w: [20, 34], gap: [50, 90], side: -1 },
     ];
+    const cluster = (s, ph) => { const u = 0.5 + 0.5 * Math.sin(s / 190 + ph) * Math.cos(s / 470 + ph * 0.7); return 0.12 + 0.88 * u * u; };
     rings.forEach((R, ri) => {
       const parts = [];
       for (let s = -500; s < ROAD.len + 700; s += trng.range(R.gap[0], R.gap[1])) {
+        if (R.side > 0 && trng.next() > cluster(s, R.cl)) continue;
         const sc = Math.max(0, Math.min(ROAD.len, s));
         frameAt(sc, F);
         const p = roadPoint(sc, trng.range(R.d[0], R.d[1]), 0).addScaledVector(V3(F.fx, 0, F.fz), s - sc);
@@ -190,13 +232,28 @@ export default {
     sk.buildWindows();
     if (sk.windowMesh) sk.windowMesh.userData.noRay = true;
 
+    // ---- the lights the river carries (R2): the quay's own lamps near the eye
+    // (the bent one too, wherever it swings) and the far bank's
+    const cand = [];
+    const res = { x: 1, y: 1 };
     return {
-      group, railD: d, hull, chunks,
-      update(camera) {
+      group, railD: d, hull, chunks, far,
+      update(camera, pixelHeight) {
         const p = camera.position;
         for (const c of chunks) c.mesh.visible = Math.hypot(c.mid.x - p.x, c.mid.z - p.z) < 300;
+        const water = stage.street && stage.street.water;
+        if (!water || !water.material.setLights || !water.visible) return;
+        cand.length = 0;
+        const L = stage.lamps;
+        if (L && L.posts) for (const l of L.posts) {
+          if (l.dead || Math.abs(l.head.x - p.x) + Math.abs(l.head.z - p.z) > 320) continue;
+          cand.push({ p: l.head, k: 3.2, w: 0.55 });
+        }
+        for (const f of far) cand.push(f);
+        res.y = pixelHeight || 900; res.x = res.y * camera.aspect;
+        water.material.setLights(cand, camera, res);
       },
     };
   },
-  update: (r, dt, t, camera) => r.update(camera),
+  update: (r, dt, t, camera, ph) => r.update(camera, ph),
 };
