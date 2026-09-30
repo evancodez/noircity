@@ -1,14 +1,14 @@
 {
  "about": "Scene 5, The Door, by real input (tools/play.mjs): the room after the ledger; the door drifts shut, the shadows come to its glass; to the desk, E tips it over, C ducks behind it; then the fight by an aiming player at a human's pace (the shoot step: rises to shoot, ducks to reload), until the last man falls and the quiet runs out. node tools/play.mjs tools/plays/gunfight.json",
  "url": "/?mute=1&start=gunfight",
- "size": [1280, 800],
+ "size": [1440, 900],
  "out": "shots/play/gunfight",
  "steps": [
   { "name": "the title, BEGIN at scene 5" },
   { "wait": 2500 },
   { "key": "KeyA" },
   { "clickOn": "#title .opt[data-k=begin]" },
-  { "mouse": "up", "x": 640, "y": 400, "name": "(the cursor back to the frame's middle before the lock takes it)" },
+  { "mouse": "up", "x": 720, "y": 450, "name": "(the cursor back to the frame's middle before the lock takes it)" },
   { "until": "G.scenes.current && G.scenes.current.id === 'gunfight' && document.pointerLockElement === N.renderer.domElement", "timeout": 10000 },
   { "expect": "G.stage.name === 'office' && G.scenes.beat === 'shadows' && G.controller.mode === 'office'", "label": "in room 304, the shadows beat" },
   { "wait": 2600 },

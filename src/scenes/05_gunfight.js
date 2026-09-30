@@ -243,8 +243,10 @@ function kick(ctx) {
 // the Tommy gun through the curtain: holes where his rounds pass through it
 function curtainShot(ctx, h) {
   const G = ctx.game, O = office(ctx), F = ctx.flags;
-  const m = h.muzzleWorld ? h.muzzleWorld() : h.pos.clone().setY(1.4);
+  // (the muzzle: his hands' height, a step toward me - the bones' own muzzle can lag a frame)
   const e = G.eye;
+  const m = h.pos.clone(); m.y += 1.3;
+  { const dx = e.x - m.x, dz = e.z - m.z, L = Math.hypot(dx, dz) || 1; m.x += dx / L * 0.45; m.z += dz / L * 0.45; }
   O.curtain.flash(m);
   const zc = O.curtain.mesh.position.z;
   if ((m.z - zc) * (e.z - zc) >= 0) return;
