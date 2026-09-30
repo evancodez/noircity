@@ -24,7 +24,12 @@ const VIEW = {
 // (over the thing made: its middle in the middle of the frame, the pool's
 // edge and the door's foot still in the picture)
 const CLOSE = {
-  halves: { up: 0.32, pitch: -1.12, fov: 30 },
+  // (the halves: over it at a slant toward the door, not straight down on
+  // it - straight down at 0.32 m the frame was the step's lit stone edge to
+  // edge, a flat white field with a red stamp in
+  // it; lift: the view pitched up over the line to it, so the door's foot
+  // takes the top of the picture and the thing lies below the middle)
+  halves: { up: 0.36, pitch: -0.84, fov: 28, lift: 0.08 },
   note: { up: 0.42, pitch: -1.08, fov: 40 },
 };
 const sstep = (u) => { const t = Math.min(1, Math.max(0, u)); return t * t * (3 - 2 * t); };
@@ -39,7 +44,7 @@ function poseOf(a, v) {
 // over a world point `f`: the eye `up` over it, pitched so it is in the middle
 function overOf(a, f, v) {
   const yaw = a.yaw ?? 0, back = v.up / Math.tan(-v.pitch);
-  return { x: f.x + Math.sin(yaw) * back, y: f.y + v.up, z: f.z + Math.cos(yaw) * back, yaw, pitch: v.pitch, fov: v.fov };
+  return { x: f.x + Math.sin(yaw) * back, y: f.y + v.up, z: f.z + Math.cos(yaw) * back, yaw, pitch: v.pitch + (v.lift || 0), fov: v.fov };
 }
 
 // One per scene run: M.open(which, done, focus) right after puzzles.open(id);
