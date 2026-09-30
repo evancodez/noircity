@@ -122,7 +122,8 @@ export function evidence(ctx) {
   const Ly = ALLEY.esc.y1 + 0.003;
   // (caught at the landing's outer edge under the rail, a corner of it out
   // over the alley: from below, where the lines cross, the red shows)
-  ev.half = put('matchHalf', V(XV + 0.06, Ly, ALLEY.zN + ALLEY.esc.d - 0.012), [0.18, 0.5, 0]);
+  ev.half = put('matchHalf', V(XV + 0.06, ALLEY.esc.y1 - 0.012, ALLEY.zN + ALLEY.esc.d + 0.045), [0.75, 0.15, 0]);
+  ev.half.scale.setScalar(1.3);
   // (it glows a breath of its own red: the clue must show in the dark)
   ev.half.traverse((o) => { if (o.isMesh && o.material && o.material.userData && o.material.userData.accent === 'crew') { o.material = o.material.clone(); o.material.emissive = accentMaterial('crew').color.clone().multiplyScalar(0.8); } });
   ev.casings = [put('casing', V(XV - 0.12, Ly + 0.001, ALLEY.zN + 0.8), [0, 0.4, 0]), put('casing', V(XV + 0.42, Ly + 0.001, ALLEY.zN + 0.48), [0, 2.1, 0])];

@@ -309,6 +309,14 @@ export default defineScene({
         // the lightning shows it: the lines crossing on the landing, the red
         if (G.storm && G.storm.strike) G.storm.strike(0.7);
         solvedLight = true;
+        // (and the red on the landing's edge catches it)
+        F.glint = 0;
+        ctx.onStep((dt) => {
+          if (F.glint == null || F.glint > 2.2) return;
+          F.glint += dt;
+          const k = 0.8 + 2.4 * Math.max(0, Math.sin(Math.min(1, F.glint / 2.2) * Math.PI));
+          ev.half.traverse((o) => { if (o.isMesh && o.material && o.material.emissive) o.material.emissiveIntensity = k / 0.8; });
+        });
       };
       yield wait(1.1);
       G.hud.prompt('MOUSE  the string through the wound', null, 'scene');
