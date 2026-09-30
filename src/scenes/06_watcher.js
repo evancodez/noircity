@@ -525,7 +525,10 @@ function* seenInOffice(ctx) {
   ctx.onStep((dt) => umb.update(dt));
   yield* ctx.prompt({ text: 'look out' });
   G.sfx.play('w_slats');
-  for (let t = 0; t < 0.35; t += 1 / 60) { blind.part(Math.min(1, t / 0.35)); yield null; }
+  // (the lens closes on him as the slats part, as in the stand-in's beat)
+  const fov0 = G.camera.fov;
+  for (let t = 0; t < 0.35; t += 1 / 60) { const k = Math.min(1, t / 0.35); blind.part(k); lens(G, fov0 + (PEEK - fov0) * k * k * (3 - 2 * k)); yield null; }
+  lens(G, PEEK);
   yield wait(1.5);
   if (w.kind === 'watcher') w.play('watcher_notice', { fade: 0.1, hold: true });
   yield wait(0.35);
@@ -540,8 +543,9 @@ function* seenInOffice(ctx) {
   let t = 0;
   yield until(() => { t += 1 / 60; fig.pos.x += Math.sin(fig.yaw) * 6.5 / 60; fig.pos.z += Math.cos(fig.yaw) * 6.5 / 60; return t > 2.5; });
   // (the fingers let the slats go: they spring shut)
-  for (let k = 0; k < 0.2; k += 1 / 60) { blind.part(1 - k / 0.2); yield null; }
+  for (let k = 0; k < 0.2; k += 1 / 60) { blind.part(1 - k / 0.2); lens(G, PEEK + (fov0 - PEEK) * (k / 0.2)); yield null; }
   blind.part(0);
+  lens(G, fov0);
   G.sfx.play('w_slats');
   G.controller.frozen = false;
   yield* ctx.prompt({ text: 'the fire escape' });
