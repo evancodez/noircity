@@ -283,7 +283,14 @@ function buildSleeve(F, sgn, g) {
   // seam - a flat top that turns down at an edge - not the dome of a
   // balloon's arm)
   const cap = [[-0.036, 0], [-0.036, r * 0.5], [-0.034, r * 0.8], [-0.026, r * 0.96], [-0.012, r * 1.01], [0, r]];
-  if (g.style === 'rolled') {
+  if (g.style === 'rolled' && (g.len ?? 0) > R.L_UPPER) {
+    // (rolled below the elbow: the sleeve follows the arm past the elbow and
+    // ends in a flat roll on the forearm, so the light shape of the arm is
+    // the wrist and the fist, not a whole bare forearm)
+    const e = g.len, U = R.L_UPPER;
+    prof = [...cap, [0.06, r * 0.99], [U * 0.6, r * 0.94], [U - 0.02, r * 0.88], [U + 0.04, r * 0.9],
+      [e - 0.05, r * 0.82], [e - 0.034, r * 0.93], [e - 0.012, r * 0.97], [e + 0.004, r * 0.93], [e + 0.012, r * 0.8], [e + 0.01, r * 0.68]];
+  } else if (g.style === 'rolled') {
     const e = g.len ?? R.L_UPPER * 0.72;
     prof = [...cap, [0.06, r * 0.99], [e * 0.6, r * 0.93],
       [e - 0.05, r * 0.9], [e - 0.035, r * 1.08], [e - 0.012, r * 1.14], [e + 0.004, r * 1.08], [e + 0.012, r * 0.92], [e + 0.01, r * 0.78]];

@@ -67,7 +67,9 @@ const BRAWLER = {
         return base + (1.1 - base) * (1 - sstep(0.02, 0.3, a));
       } },
     { kind: 'collar', style: 'band', h: 0.028, hFront: 0.022, open: 0.42, gap: 0.004, lean: 0.002, flareOut: 0.002, shade: 0.34 },
-    { kind: 'sleeves', style: 'rolled', r: 0.09, shade: 'shirt' },
+    // (rolled to the middle of the forearm: his light shapes are the wrists
+    // and the fists, what the eye follows in the fight)
+    { kind: 'sleeves', style: 'rolled', r: 0.09, len: 0.318 + 0.13, shade: 'shirt' },
     // heavy forearms, the wrist 0.075 across (world)
     { kind: 'arms', r: 0.062, d0: 0.19, wrist: 0.5 },
     { kind: 'legs', r: 1.3, boot: true },
