@@ -287,6 +287,12 @@ export default {
       lamp.light.target.set(-12.9, 0.4, A.zN + 0.6);
     }
 
+    // ---- [R2-G] two lamps of the scene's own: their cone seeds from a fork of
+    // their own (addCustom draws from the block's one custom stream: every
+    // lamp made after them, the shootout's among them, keeps its draws)
+    const keepRng = stage.lamps.customRng;
+    stage.lamps.customRng = stage.rng.fork(3207);
+
     // ---- [R2-G] the lamp's light on the step, for the table views ------------------------------
     // (the lamp's own pool is thrown across the alley, to the fire escape:
     // the step under it stood at the pool's edge, a flat grey slab. The
@@ -337,6 +343,8 @@ export default {
       if (l.light) { l.light.angle = 0.6; l.light.penumbra = 0.85; l.light.intensity = 70; l.light.distance = 12; }
       return l;
     })();
+
+    stage.lamps.customRng = keepRng;
 
     // ---- the north wall: the fire escape -------------------------------------------------------
     const E = A.esc;
