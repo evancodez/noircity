@@ -941,7 +941,12 @@ export class Brawl {
     // not skip his dirty or his wild fight)
     const order = BRAWL.order, next = order[order.indexOf(him.manner) + 1];
     const floor = !this.lesson && next && this.T - (him.mannerT ?? -99) < BRAWL.mannerHold ? (BRAWL.manners[next] + 0.5) * this.max / 100 : 0;
-    him.hp = Math.max(this.lesson ? 0.7 * this.max : 0, Math.min(him.hp, Math.max(floor, him.hp - n)));
+    // ([B8] second pass: and no blow takes him past the next manner - a
+    // chair for 35 late in his dirty one put him out on his feet, and his
+    // wild fight, the haymakers, the blood, the cap, was never seen)
+    const after = order[order.indexOf(him.manner) + 2];
+    const floor2 = !this.lesson && after ? (BRAWL.manners[after] + 0.5) * this.max / 100 : 0;
+    him.hp = Math.max(this.lesson ? 0.7 * this.max : 0, Math.min(him.hp, Math.max(floor, floor2, him.hp - n)));
     this.c.hp = him.hp;
     him.quietT = 0;
     // [B8] (hurt fast - a fifth of him and more in four seconds - he covers
