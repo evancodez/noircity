@@ -22,7 +22,9 @@ export const MEN = {
   // the doorway man: out of sight south of the jamb, a step into the door to fire
   doorway: { at: { x: -2.3, z: -5.8 }, path: [...STAIRS_IN, { x: -0.7, z: -0.8 }, { x: -0.6, z: 0.08 }], role: 'hall', hp: 100, aim: 0.7, hide: { x: -0.6, z: 0.08 }, fire: { x: -0.42, z: 0.98 } },
   // the Tommy gun at the fire-escape window: up the flight from the floor below
-  window: { at: { x: -1.75, z: 7.62 }, path: [{ x: 0.9, z: 7.62 }, { x: 1.55, z: 7.72 }], role: 'window', heavy: true, hp: 130, aim: 0.75, hide: { x: 1.7, z: 7.74 }, fire: { x: 2.72, z: 7.72 } },
+  // (round 2: aim 0.75 -> 0.68 - from the north the desk covers a third of me,
+  // and the scripted aimer's falls came in the last overlap, his crossfire in most)
+  window: { at: { x: -1.75, z: 7.62 }, path: [{ x: 0.9, z: 7.62 }, { x: 1.55, z: 7.72 }], role: 'window', heavy: true, hp: 130, aim: 0.68, hide: { x: 1.7, z: 7.74 }, fire: { x: 2.72, z: 7.72 } },
   // the last two: another at the door, the heavy on into the room
   second: { at: { x: -2.3, z: -5.8 }, path: [...STAIRS_IN, { x: -0.62, z: -0.6 }, { x: -0.6, z: 0.1 }], role: 'hall', hp: 110, aim: 0.7, hide: { x: -0.6, z: 0.1 }, fire: { x: -0.35, z: 1.05 } },
   // (on past the kicker's place, so the two do not end in one heap by the door)
