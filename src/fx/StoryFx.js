@@ -437,8 +437,8 @@ export class Punch {
     const r = this.rng, F = this.fx;
     for (let k = 0; k < 6; k++) {
       const v = dir.clone().multiplyScalar(-r.range(0.2, 0.6)).add(new THREE.Vector3(r.gauss() * 0.4, r.range(0.05, 0.4), r.gauss() * 0.4));
-      const sz = r.range(0.05, 0.09);
-      F.dust.spawn({ pos: pos.clone().add(new THREE.Vector3(r.gauss() * 0.03, r.gauss() * 0.03, r.gauss() * 0.03)), vel: v, life: r.range(0.3, 0.5), size: [sz, sz], grow: 0.8, rot: r.next() * 6.28, col: [0.34, 0.34, 0.34], alpha: 0.55, drag: 4, fadeOut: 0.3 });
+      const sz = r.range(0.08, 0.14);
+      F.dust.spawn({ pos: pos.clone().add(new THREE.Vector3(r.gauss() * 0.03, r.gauss() * 0.03, r.gauss() * 0.03)), vel: v, life: r.range(0.3, 0.5), size: [sz, sz], grow: 0.9, rot: r.next() * 6.28, col: [0.5, 0.5, 0.5], alpha: 0.7, drag: 4, fadeOut: 0.3 });
     }
   }
   // the tell's glint: a small white star on the fist that will swing, one

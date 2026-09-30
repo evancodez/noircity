@@ -21,7 +21,7 @@
 //   { "reload": true }                   reload the page (a save survives it)
 //   { "fight": { "timeout": ms, "shots": { "name": "expr", ... }, "expect": "expr over F" } }
 //                                        play the brawl by real input: read his
-//                                        clip and its marks, block / slip / punish
+//                                        clip and its marks, hop / block / punish
 //                                        at a first-timer's pace (a reaction time,
 //                                        a wrong read now and then), until it ends;
 //                                        a shot the first time each expr is true;

@@ -243,6 +243,7 @@ export class Brawl {
       const held = me.btn && G.held(me.btn) && !G.released(me.btn);
       if ((me.act === 'jab' || (me.act === 'bounce' && me.t >= 0.1)) && held && me.holdT >= BRAWL.hold.min) {
         me.act = 'wind'; me.t = 0; me.itemCock = false;
+        this.stats.input.length < 400 && this.stats.input.push([+this.T.toFixed(3), 'wind' + me.arm, +me.holdT.toFixed(2)]);
         const it = me.holding && me.arm === 'R';
         me.h = H.play(it ? (me.holding.kind === 'stool' || me.holding.kind === 'chair' ? 'windBig' : 'windItem') : me.arm === 'L' ? 'windL' : 'windR');
         this.sfx('wind', null, {});
@@ -436,9 +437,9 @@ export class Brawl {
     // the knuckles at arm's length along it (a jab 0.66 deep, a hard punch
     // 0.70); a fist that meets his guard stops 0.05 short; bouncing, it comes
     // back 0.12 and up
-    const depth = { jab: 0.66, hard: 0.7, follow: 0.74, block: 0.6, bounce: 0.5 }[kind] ?? 0.66;
+    const depth = { jab: 0.66, hard: 0.7, follow: 0.74, block: 0.6, bounce: 0.44 }[kind] ?? 0.66;
     const K = dir.clone().multiplyScalar(depth / Math.max(0.3, -dir.z));
-    if (kind === 'bounce') { K.y += 0.03; K.x += sgn * 0.03; }
+    if (kind === 'bounce') { K.y += 0.05; K.x += sgn * 0.04; }
     if (kind === 'follow') K.x -= sgn * 0.06;
     const sh = V(sgn * 0.2, -0.3, 0.05);
     const f = K.clone().sub(sh).normalize();

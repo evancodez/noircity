@@ -203,15 +203,19 @@ export function steer(B, dt) {
   V.lerp(tv, 1 - Math.exp(-dt * 7));
   if (!free) V.multiplyScalar(Math.exp(-dt * 12));
   let moved = 0;
+  // (reeling and held up a second - fallen stools round him in the pocket
+  // by the counter - he stumbles over the stools and the chairs: only the
+  // walls, the counter and the booths stop him)
+  const blind = him.state === 'reel' && (him.stuckT || 0) > 1.0;
   if (free && V.lengthSq() > 1e-6) {
     const x0 = F.pos.x, z0 = F.pos.z;
     const p = _v.set(x0 + V.x * dt, 0, z0 + V.z * dt);
-    S.colliders.resolve(p, (F.collider ? F.collider.r : 0.35), F.collider);
+    S.colliders.resolve(p, (F.collider ? F.collider.r : 0.35), F.collider, !blind);
     // (round the furniture: blocked this way, he tries a way either side)
     if (Math.hypot(p.x - x0, p.z - z0) < V.length() * dt * 0.4) {
       for (const a of [0.7, -0.7, 1.3, -1.3]) {
         const q = new THREE.Vector3(x0 + (V.x * Math.cos(a) - V.z * Math.sin(a)) * dt, 0, z0 + (V.x * Math.sin(a) + V.z * Math.cos(a)) * dt);
-        S.colliders.resolve(q, (F.collider ? F.collider.r : 0.35), F.collider);
+        S.colliders.resolve(q, (F.collider ? F.collider.r : 0.35), F.collider, !blind);
         if (Math.hypot(q.x - x0, q.z - z0) > V.length() * dt * 0.6) { p.copy(q); break; }
       }
     }

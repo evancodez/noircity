@@ -58,7 +58,7 @@ const jab = (side) => {
 const bounce = (side) => {
   const g = side === 'L' ? gL : gR, s = side === 'L' ? -1 : 1;
   return { duration: 0.45, marks: {}, blend: 0.05,
-    keys: { [side]: [[0, aim('block')], [0.07, aim('bounce'), 'snap'], [0.3, g], [0.45, g]], [side === 'L' ? 'R' : 'L']: [[0, side === 'L' ? gR : gL]] },
+    keys: { [side]: [[0, aim('block')], [0.06, aim('bounce'), 'snap'], [0.2, g], [0.45, g]], [side === 'L' ? 'R' : 'L']: [[0, side === 'L' ? gR : gL]] },
     view: [[0, { fwd: 0.01 }], [0.06, { fwd: -0.02, yaw: 0.008 * s }, 'snap'], [0.26, {}]] };
 };
 // the hard punch: from the wind-up, across and into him, turned over (0.08),

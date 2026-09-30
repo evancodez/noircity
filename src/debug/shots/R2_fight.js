@@ -117,7 +117,9 @@ function stageDuel(stage, camera, controller, game) {
   const manner = what === 'bottle' ? 'round2' : what === 'stool' || what === 'reel' ? 'round3' : 'round1';
   game.scenes.shot('fight', manner);
   const B = game.brawl, V = game.vin;
-  const press = (code, secs = 1 / 60) => { V.down.add(code); V.held.add(code); const at = game.time + secs; game.scripts.push((t) => { if (t >= at - 1e-6 && V.held.has(code)) { V.held.delete(code); V.up.add(code); } }); };
+  // (each release fires once: a later press of the same button is not let go
+  // by an old press's release)
+  const press = (code, secs = 1 / 60) => { V.down.add(code); V.held.add(code); const at = game.time + secs; let gone = false; game.scripts.push((t) => { if (!gone && t >= at - 1e-6) { gone = true; if (V.held.has(code)) { V.held.delete(code); V.up.add(code); } } }); };
   const c = B.c;
   if (what === 'stools') {
     // (him between me and the stools, near stool 5)
@@ -151,7 +153,8 @@ function stageDuel(stage, camera, controller, game) {
   game.scripts.push((t) => {
     if (done || t < 1.0) return;
     done = true;
-    B.lessonHold = false;
+    // (do=break: he only guards - no answer - while the three land on it)
+    B.lessonHold = what === 'break';
     if (what === 'stools') game.scripts.push((tt) => { if (tt > 3.5) B.holdStill = false; });
     if (what === 'stools' || what === 'hard') press(q.get('arm') === 'L' ? 'Mouse0' : 'Mouse2', hold);
     else if (what === 'jab') press(q.get('arm') === 'R' ? 'Mouse2' : 'Mouse0');
