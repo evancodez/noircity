@@ -1186,8 +1186,19 @@ export class PieceField {
         R.speed = Math.max(0, R.speed - dt * 0.9);
         R.dir.applyAxisAngle(UP, R.turn * dt);
         m.position.addScaledVector(R.dir, R.speed * dt);
+        // (a wall, the counter's foot, a booth stop it: it bounces off, slowed -
+        // it never rolls on through them)
+        const Cl = this.stage.colliders;
+        if (Cl && Cl.resolve && this.stage.breakables.rimFix) {
+          const q = _c3.set(m.position.x, 0, m.position.z);
+          Cl.resolve(q, Math.min(0.12, p.rad * 0.5));
+          if (Math.hypot(q.x - m.position.x, q.z - m.position.z) > 1e-4) { m.position.x = q.x; m.position.z = q.z; R.dir.negate(); R.speed *= 0.35; }
+        }
         R.ang += R.speed / Math.max(0.05, p.rad) * dt;
-        if (R.speed < 0.35) R.lean += dt * (1.5 + R.lean * 4) * Math.sign(R.turn || 1);
+        // (the lean grows by its size, whichever way it goes: with a turn to the
+        // left the old sum met zero at -0.375 rad and the disc stood on its rim
+        // for ever - never lying down)
+        if (R.speed < 0.35) R.lean += dt * (1.5 + (this.stage.breakables.rimFix ? Math.abs(R.lean) : R.lean) * 4) * Math.sign(R.turn || 1);
         const axle = new THREE.Vector3(-R.dir.z, 0, R.dir.x);
         const q0 = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), axle);
         m.quaternion.copy(new THREE.Quaternion().setFromAxisAngle(R.dir, R.lean)).multiply(new THREE.Quaternion().setFromAxisAngle(axle, R.ang)).multiply(q0);

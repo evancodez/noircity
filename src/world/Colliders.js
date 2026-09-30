@@ -25,9 +25,11 @@ export class Colliders {
 
   // Push a circle of radius r at (pos.x, pos.z) out of everything
   // (except `skip`: a Hood's own circle).
-  resolve(pos, r, skip = null) {
+  // (circles = false: the walls, the counter, the booths only - a man
+  // reeling blind stumbles over the stools and the chairs in his way)
+  resolve(pos, r, skip = null, circles = true) {
     for (let iter = 0; iter < 3; iter++) {
-      for (const c of this.circles) {
+      if (circles) for (const c of this.circles) {
         if (c === skip) continue;
         const dx = pos.x - c.x, dz = pos.z - c.z;
         const d2 = dx * dx + dz * dz, rr = c.r + r;

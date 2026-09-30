@@ -272,7 +272,7 @@
    "fight": {
     "timeout": 400000,
     "shots": {
-     "s12a_lesson_hook": "G.brawl.lesson && G.brawl.lesson.step === 4 && G.brawl.him.clip === 'br_hook' && G.brawl.him.t > 0.35",
+     "s12a_lesson_hook": "G.brawl.lesson && G.brawl.lesson.step === 5 && G.brawl.him.clip === 'br_hook' && G.brawl.him.t > 0.25",
      "s12b_now_fight": "!G.brawl.lesson && G.brawl.round === 1 && document.querySelector('#fightcards .fl').textContent === 'NOW FIGHT.'",
      "s13_round2": "G.brawl.round === 2 && G.brawl.him.state === 'attack'",
      "s13a_bottle": "G.brawl.him && G.brawl.him.clip === 'br_bottle' && G.brawl.him.t > 0.8",
@@ -280,8 +280,8 @@
      "s15_reel": "G.brawl.him && G.brawl.him.state === 'reel' && G.brawl.him.atSpot",
      "s16_ko": "G.brawl.him && G.brawl.him.state === 'ko' && G.brawl.him.t > 0.4"
     },
-    "expect": "F.time >= 85 && F.time <= 175 && F.lesson > 5 && F.lesson < 45 && F.dur[2] > 0 && F.throws.length >= 1",
-    "label": "a first-timer's fight by real input: the lesson under 45 s, then won in 85..175 s of game time (tuned: 90..150 for most), his three manners, at least one knock into the room"
+    "expect": "F.time >= 45 && F.time <= 160 && F.lesson > 5 && F.lesson < 45 && F.dur[2] > 0 && F.throws.length >= 1",
+    "label": "a first-timer's fight by real input: the lesson under 45 s, then won in 45..160 s of game time (FIGHT.md v3: 60..100 for most), his three manners, at least one knock into the room"
    }
   },
   {

@@ -585,6 +585,9 @@ export class Game {
     if (this.autopilot && this.state !== 'dead') this.autopilot.update(dt);
     // (?autoplay=1: the story played by its own driver, through game.vin)
     if (this.autoplay) this.autoplay.update(dt);
+    // (the fist fight's input acts on the step it arrives: before the
+    // controller moves the eye and before the hands pose - FIGHT.md v3 §9)
+    if (this.brawl.active) this.brawl.inputStep(dt);
     if (this.state === 'title') this.titleDrift(t - (this.titleT0 || 0));
     else if (!this.shotMode || this.autopilot) C.update(dt);
     else C.apply(dt);

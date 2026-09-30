@@ -81,8 +81,157 @@ export class FightCards {
     this.shownFlash = text;
   }
 
-  tick(dt) {
+  tick(dt, side = null, dur = 0) {
+    // (tick(at, side, dur): the opening's tick - see mark())
+    if (typeof dt === 'object' && dt) { this.mark(dt, side, dur); return; }
     if (this.flT > 0) { this.flT -= dt; if (this.flT <= 0) { this.fl.style.display = 'none'; this.shownFlash = ''; } }
+    // the burst: two frames of game time
+    if (this.bursts && this.bursts.length) {
+      for (const b of this.bursts) b.f++;
+      this.bursts = this.bursts.filter((b) => b.f < 2);
+      this.drawBurst();
+    }
+    // the ticks run out
+    if (this.ticks && this.ticks.length) {
+      for (const k of this.ticks) k.t -= dt;
+      this.ticks = this.ticks.filter((k) => k.t > 0);
+      this.drawTicks();
+    }
+    // his health: the lost part flashes white, holds a moment, drains
+    const B = this.hbS;
+    if (B) {
+      let ch = false;
+      if (B.flash > 0) { B.flash -= dt; ch = true; }
+      if (B.hold > 0) B.hold -= dt;
+      else if (B.drain > B.f + 1e-4) { B.drain = Math.max(B.f, B.drain - dt * 0.55); ch = true; }
+      if (ch || B.dirty) { B.dirty = false; this.drawHealth(); }
+    }
+  }
+
+  // ---- the impact (FIGHT.md v3 §5.3): a jagged white ink burst at the
+  // point of contact, px across (90 for a jab .. 220 for a full hard punch at
+  // 1440 x 900, scaled with the frame's height), held two frames of game
+  // time (the hit stop holds it with the world), the second broken open
+  burst(at, px, seed = 1) {
+    if (!at) return;
+    this.bursts = [{ x: at.x, y: at.y, r: px * innerHeight / 900 / 2, f: 0, seed }];
+    this.drawBurst();
+  }
+  drawBurst() {
+    const c = this.burstC || (this.burstC = (() => { const e = document.createElement('canvas'); e.className = 'burst'; e.style.cssText = 'position:absolute;left:0;top:0'; this.root.appendChild(e); return e; })());
+    const W = innerWidth, H = innerHeight;
+    if (c.width !== W || c.height !== H) { c.width = W; c.height = H; }
+    const g = c.getContext('2d');
+    g.clearRect(0, 0, W, H);
+    for (const b of this.bursts || []) {
+      const r = new RNG(b.seed * 31 + b.f);
+      const n = 13 + r.int(0, 4);
+      const pts = [];
+      const rot = r.next() * 6.28;
+      for (let i = 0; i < n * 2; i++) {
+        const a = rot + (i / (n * 2)) * Math.PI * 2 + r.gauss() * 0.06;
+        const spike = i % 2 === 0;
+        const R = b.r * (spike ? r.range(0.72, 1.0) * (r.next() < 0.25 ? 1.18 : 1) : r.range(0.3, 0.45)) * (b.f ? 1.12 : 1);
+        pts.push([b.x + Math.cos(a) * R, b.y + Math.sin(a) * R]);
+      }
+      const path = () => { g.beginPath(); pts.forEach(([x, y], i) => (i ? g.lineTo(x, y) : g.moveTo(x, y))); g.closePath(); };
+      g.lineJoin = 'miter';
+      if (!b.f) {
+        // the first frame: a solid paper-white star with a black ink edge
+        path(); g.lineWidth = 4; g.strokeStyle = 'rgba(5,5,5,0.9)'; g.stroke();
+        g.fillStyle = '#f4f2ec'; g.fill();
+      } else {
+        // the second: the star broken open - its spikes only, and flung drops
+        g.lineCap = 'round';
+        for (let i = 0; i < pts.length; i += 2) {
+          const [x, y] = pts[i];
+          const dx = x - b.x, dy = y - b.y;
+          g.strokeStyle = 'rgba(5,5,5,0.85)'; g.lineWidth = 5.5;
+          g.beginPath(); g.moveTo(b.x + dx * 0.55, b.y + dy * 0.55); g.lineTo(x, y); g.stroke();
+          g.strokeStyle = '#f4f2ec'; g.lineWidth = 3;
+          g.beginPath(); g.moveTo(b.x + dx * 0.55, b.y + dy * 0.55); g.lineTo(x, y); g.stroke();
+          if (r.next() < 0.5) { g.fillStyle = '#f4f2ec'; g.beginPath(); g.arc(b.x + dx * 1.25, b.y + dy * 1.25, r.range(1.5, 3.5), 0, 6.28); g.fill(); }
+        }
+      }
+    }
+  }
+
+  // ---- the opening's tick (FIGHT.md v3 §3): for its first 0.15 s a small
+  // white ink tick flicks at the open side of his jaw (at: CSS px of that
+  // side; side 'L' | 'R' of the screen)
+  mark(at, side, dur = 0.15) {
+    if (!at) return;
+    (this.ticks || (this.ticks = [])).push({ x: at.x, y: at.y, side, t: dur, dur, seed: Math.floor(at.x * 7 + at.y * 13) });
+    this.drawTicks();
+  }
+  drawTicks() {
+    const c = this.tickC || (this.tickC = (() => { const e = document.createElement('canvas'); e.className = 'ticks'; e.style.cssText = 'position:absolute;left:0;top:0'; this.root.appendChild(e); return e; })());
+    const W = innerWidth, H = innerHeight;
+    if (c.width !== W || c.height !== H) { c.width = W; c.height = H; }
+    const g = c.getContext('2d');
+    g.clearRect(0, 0, W, H);
+    g.lineCap = 'round';
+    for (const k of this.ticks || []) {
+      const u = 1 - k.t / k.dur;
+      const s = k.side === 'L' ? -1 : 1;
+      const r = new RNG(k.seed);
+      // two short strokes flicked outward from the jaw, growing then thinning
+      const len = 10 + 14 * Math.min(1, u * 3), w = 3.2 * (1 - u * 0.6);
+      for (const [ang, off] of [[-0.35, 0], [0.25, 7]]) {
+        const a = ang + r.gauss() * 0.05;
+        const x0 = k.x + s * off, y0 = k.y + off * 0.6;
+        const dx = s * Math.cos(a), dy = Math.sin(a);
+        g.strokeStyle = 'rgba(5,5,5,0.8)'; g.lineWidth = w + 2.5;
+        g.beginPath(); g.moveTo(x0, y0); g.lineTo(x0 + dx * len, y0 + dy * len); g.stroke();
+        g.strokeStyle = '#f2f0ea'; g.lineWidth = w;
+        g.beginPath(); g.moveTo(x0, y0); g.lineTo(x0 + dx * len, y0 + dy * len); g.stroke();
+      }
+    }
+  }
+
+  // ---- his health (FIGHT.md v3 §5.7): a thin ink bar at the top of the
+  // frame with his name; the lost part flashes white and drains
+  health(f, name = 'MACK', reset = false) {
+    if (f == null) { if (this.hbEl) this.hbEl.style.display = 'none'; this.hbS = null; return; }
+    if (!this.hbEl) {
+      const el = document.createElement('div');
+      el.className = 'hb';
+      el.style.cssText = `position:absolute;left:50%;top:26px;transform:translateX(-50%);display:flex;align-items:center;gap:14px;font-family:${TYPE};font-size:13px;letter-spacing:0.34em;color:#efede7;text-shadow:0 0 4px #000,0 0 2px #000`;
+      el.innerHTML = '<span class="n"></span><canvas width="420" height="22"></canvas>';
+      this.root.appendChild(el);
+      this.hbEl = el; this.hbC = el.querySelector('canvas'); this.hbN = el.querySelector('.n');
+      this.hbStrokes = []; const r = new RNG(771);
+      for (let i = 0; i < 26; i++) this.hbStrokes.push({ y: r.range(0.3, 0.7), w: r.range(1.0, 2.4), a: r.range(0.65, 1), end: r.range(0.94, 1.0), start: r.range(0, 0.03), wob: r.range(0, 6) });
+    }
+    this.hbEl.style.display = 'flex';
+    this.hbN.textContent = name;
+    let B = this.hbS;
+    if (!B || reset) B = this.hbS = { f, drain: f, flash: 0, hold: 0, dirty: true };
+    if (f < B.f - 1e-4) { B.flash = 0.1; B.hold = 0.3; B.drain = Math.max(B.drain, B.f); B.dirty = true; }
+    if (f > B.f + 1e-4) { B.drain = f; B.dirty = true; }
+    B.f = f;
+    if (B.dirty) { B.dirty = false; this.drawHealth(); }
+  }
+  drawHealth() {
+    const B = this.hbS, g = this.hbC && this.hbC.getContext('2d');
+    if (!B || !g) return;
+    const W = this.hbC.width, H = this.hbC.height;
+    g.clearRect(0, 0, W, H);
+    g.lineCap = 'round';
+    // the track: a thin broken line
+    g.strokeStyle = 'rgba(230,230,230,0.3)'; g.lineWidth = 1.5;
+    g.beginPath(); g.moveTo(3, H * 0.5); g.lineTo(W - 3, H * 0.5); g.stroke();
+    const stroke = (f0, f1, col) => {
+      for (const s of this.hbStrokes) {
+        const x0 = 4 + (W - 8) * Math.max(f0, s.start), x1 = 4 + (W - 8) * f1 * s.end;
+        if (x1 <= x0) continue;
+        g.strokeStyle = col.replace('A', s.a.toFixed(2)); g.lineWidth = s.w;
+        g.beginPath(); g.moveTo(x0, H * s.y); g.quadraticCurveTo((x0 + x1) / 2, H * s.y + Math.sin(s.wob) * 1.5, x1, H * s.y + Math.cos(s.wob)); g.stroke();
+      }
+    };
+    stroke(0, B.f, 'rgba(226,224,218,A)');
+    // the part just lost: paper white while it flashes, then grey, draining
+    if (B.drain > B.f) stroke(B.f, B.drain, B.flash > 0 ? 'rgba(255,255,255,A)' : 'rgba(130,130,128,A)');
   }
 
   // an inked arrow on the frame: a tapering stroke from a to b with a

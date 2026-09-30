@@ -397,35 +397,66 @@ export class Cig {
 
 export class Punch {
   constructor(fx) { this.fx = fx; this.rng = fx.world.rng.fork(7103); this.queue = []; }
-  punch(pos, dir = new THREE.Vector3(0, 0, -1), power = 0.5) {
+  // (the arcade pass, FIGHT.md v3 §5: opts.px sizes the burst on the screen
+  // - 90 px for a jab, 220 for a full hard punch at 1440 x 900 - whatever
+  // the distance; opts.vm draws it in the hands' pass, over the fist that
+  // lands, at the point of contact; opts.from: where the sweat flies from)
+  punch(pos, dir = new THREE.Vector3(0, 0, -1), power = 0.5, opts = {}) {
     const r = this.rng, F = this.fx;
     const d = dir.clone().normalize();
     // the white ink burst: the muzzle flash's splatter, two frames
-    const s = 0.22 + 0.3 * power;
-    const W = F.flash && F.flash.world3;
-    if (W) {
-      W.spawn({ pos: pos.clone(), life: 1.01 / 60, size: [s, s], rot: r.next() * 6.28, col: [3.2, 3.2, 3.2], cell: FLASH.RADIAL[r.int(0, 5)], fadeOut: 0 });
-      this.queue.push({ pos: pos.clone().addScaledVector(d, 0.03), s: s * 0.7, rot: r.next() * 6.28, cell: FLASH.SMALL[r.int(0, 1)], t: 1 });
+    let s = 0.22 + 0.3 * power;
+    const cam = opts.camera;
+    if (opts.px && cam) {
+      const dist = Math.max(0.2, cam.position.distanceTo(pos));
+      // (the splatter cell fills about 45 % of its quad: the quad is sized up)
+      s = 2.2 * opts.px / 900 * 2 * dist * Math.tan(THREE.MathUtils.degToRad(cam.fov) / 2);
+    }
+    const W = opts.vm && F.flash && F.flash.vm ? F.flash.vm : F.flash && F.flash.world3;
+    if (W && !opts.noBurst) {
+      const P0 = W.spawn({ pos: pos.clone(), life: 1.01 / 60, size: [s, s], rot: r.next() * 6.28, col: [3.2, 3.2, 3.2], cell: FLASH.RADIAL[r.int(0, 5)], fadeOut: 0 });
+      if (opts.hold && P0) P0.hold = true;
+      this.queue.push({ W, pos: pos.clone().addScaledVector(d, 0.02), s: s * 0.75, rot: r.next() * 6.28, cell: FLASH.SMALL[r.int(0, 1)], t: 1 });
     }
     // sweat: a spray of fine pale drops flung on with the blow
-    for (let k = 0; k < 8 + 8 * power; k++) {
-      const v = new THREE.Vector3(r.gauss(), r.gauss() * 0.6 + 0.3, r.gauss()).normalize().multiplyScalar(r.range(0.6, 2.2)).addScaledVector(d, r.range(0.8, 2));
-      F.splash.spawn({ pos: pos.clone(), vel: v, life: r.range(0.25, 0.5), size: [0.006, 0.012], stretch: 0.02, col: [0.45, 0.45, 0.45], alpha: 0.9, cell: ATLAS.DROP, gravity: 9.8, ground: 0.16, fadeOut: 0.15 });
+    const from = opts.from || pos;
+    for (let k = 0; k < 8 + 10 * power; k++) {
+      const v = new THREE.Vector3(r.gauss(), r.gauss() * 0.6 + 0.3, r.gauss()).normalize().multiplyScalar(r.range(0.6, 2.2)).addScaledVector(d, r.range(0.8, 2.2));
+      F.splash.spawn({ pos: from.clone(), vel: v, life: r.range(0.25, 0.5), size: [0.006, 0.012], stretch: 0.02, col: [0.45, 0.45, 0.45], alpha: 0.9, cell: ATLAS.DROP, gravity: 9.8, ground: 0.16, fadeOut: 0.15 });
     }
     // a hard one: a few drops of blood (never a fountain)
     if (power > 0.7) {
       for (let k = 0; k < 3 + Math.round((power - 0.7) * 8); k++) {
         const v = new THREE.Vector3(r.gauss() * 0.5, r.range(0.3, 1.1), r.gauss() * 0.5).addScaledVector(d, r.range(0.8, 1.6));
-        F.blood.spawn({ pos: pos.clone(), vel: v, life: r.range(0.4, 0.7), size: [0.01, 0.016], stretch: 0.02, col: BLOOD_AIR, cell: 0, gravity: 9.8, ground: 0.16, fadeOut: 0.1 });
+        F.blood.spawn({ pos: from.clone(), vel: v, life: r.range(0.4, 0.7), size: [0.01, 0.016], stretch: 0.02, col: BLOOD_AIR, cell: 0, gravity: 9.8, ground: 0.16, fadeOut: 0.1 });
       }
     }
   }
+  // a fist into his guard: a puff of grey dust off the forearm, no burst
+  puff(pos, dir = new THREE.Vector3(0, 0, -1)) {
+    const r = this.rng, F = this.fx;
+    for (let k = 0; k < 6; k++) {
+      const v = dir.clone().multiplyScalar(-r.range(0.2, 0.6)).add(new THREE.Vector3(r.gauss() * 0.4, r.range(0.05, 0.4), r.gauss() * 0.4));
+      const sz = r.range(0.08, 0.14);
+      F.dust.spawn({ pos: pos.clone().add(new THREE.Vector3(r.gauss() * 0.03, r.gauss() * 0.03, r.gauss() * 0.03)), vel: v, life: r.range(0.3, 0.5), size: [sz, sz], grow: 0.9, rot: r.next() * 6.28, col: [0.5, 0.5, 0.5], alpha: 0.7, drag: 4, fadeOut: 0.3 });
+    }
+  }
+  // the tell's glint: a small white star on the fist that will swing, one
+  // frame and a smaller second (grey for a feint)
+  glint(pos, k = 1) {
+    const r = this.rng, F = this.fx;
+    const W = F.flash && F.flash.world3;
+    if (!W) return;
+    const c = 2.6 * k;
+    W.spawn({ pos: pos.clone(), life: 1.01 / 60, size: [0.14, 0.14], rot: r.next() * 6.28, col: [c, c, c], cell: FLASH.SMALL[r.int(0, 1)], fadeOut: 0 });
+    this.queue.push({ W, pos: pos.clone(), s: 0.1, rot: r.next() * 6.28, cell: FLASH.SMALL[r.int(0, 1)], t: 1, col: c * 0.8 });
+  }
   update() {
-    const W = this.fx.flash && this.fx.flash.world3;
     for (let i = this.queue.length - 1; i >= 0; i--) {
       const q = this.queue[i];
       if (--q.t > 0) continue;
-      if (W) W.spawn({ pos: q.pos, life: 1.01 / 60, size: [q.s, q.s], rot: q.rot, col: [2.6, 2.6, 2.6], cell: q.cell, fadeOut: 0 });
+      const W = q.W || (this.fx.flash && this.fx.flash.world3), c = q.col ?? 2.6;
+      if (W) W.spawn({ pos: q.pos, life: 1.01 / 60, size: [q.s, q.s], rot: q.rot, col: [c, c, c], cell: q.cell, fadeOut: 0 });
       this.queue.splice(i, 1);
     }
   }

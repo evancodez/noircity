@@ -12,17 +12,22 @@ import { BR_ATTACKS, STEP } from './clips.js';
 // His manner follows his health: measured (100..65), dirty (65..30), wild
 // (30..12), out on his feet (12 and under: the rules take him to a window).
 export const MANNERS = {
-  measured: { keep: [1.4, 1.8], speed: 1.15, gap: [1.6, 2.4], low: 0.2, feint: 0.15, combo: 0.1,
-    mix: { br_jab: 0.34, br_hook: 0.2, br_hookL: 0.16, br_body: 0.12, br_bodyL: 0.08, br_cross: 0.1 } },
-  dirty: { keep: [1.25, 1.7], speed: 1.3, gap: [1.1, 1.7], low: 0.18, feint: 0.18, combo: 0.2, shove: 0.12,
-    mix: { br_jab: 0.2, br_cross: 0.12, br_hook: 0.18, br_hookL: 0.16, br_body: 0.08, br_bodyL: 0.06, br_shove: 0.1, br_bottle_thrust: 0.3 } },
-  wild: { keep: [1.2, 1.5], speed: 1.45, gap: [0.6, 1.0], low: 0.1, feint: 0.05, combo: 0.35,
+  // (the arcade pass, FIGHT.md v3 §2: the quiet between his blows - gap -
+  // 0.9 .. 1.5 s measured, 0.7 .. 1.2 dirty, 0.4 .. 0.8 wild; he often
+  // throws two in a row - combo; he breathes - lowers a hand - every
+  // `breathe` seconds; wild, one hand hangs low almost all the time)
+  measured: { keep: [1.3, 1.6], speed: 1.9, gap: [0.9, 1.5], breathe: 3.2, open: [0.55, 0.75], feint: 0.12, combo: 0.25,
+    mix: { br_jab: 0.3, br_jabR: 0.08, br_hook: 0.2, br_hookL: 0.16, br_body: 0.12, br_bodyL: 0.08, br_cross: 0.06 } },
+  dirty: { keep: [1.25, 1.55], speed: 2.1, gap: [0.7, 1.2], breathe: 2.4, open: [0.6, 0.85], feint: 0.16, combo: 0.35, shove: 0.12,
+    mix: { br_jab: 0.18, br_cross: 0.12, br_hook: 0.18, br_hookL: 0.16, br_body: 0.08, br_bodyL: 0.06, br_shove: 0.1, br_bottle_thrust: 0.3 } },
+  wild: { keep: [1.2, 1.45], speed: 2.3, gap: [0.4, 0.8], breathe: 1.8, open: [0.7, 0.95], hang: true, feint: 0.06, combo: 0.5,
     mix: { br_haymaker: 0.24, br_haymakerL: 0.18, br_hook: 0.14, br_hookL: 0.12, br_rush: 0.14, br_cross: 0.08, br_jab: 0.1, br_bottle_thrust: 0.2 } },
 };
 export function mannerOf(hp) { return hp > 65 ? 'measured' : hp > 30 ? 'dirty' : hp > 12 ? 'wild' : 'out'; }
 // the nearest he comes to my eye (his root), and a rush's end
-export const KEEP_OFF = { eye: 1.1, rush: 1.2, body: 1.0, pass: 0.85 };
-export const REACH = { straight: 1.95, swing: 1.85, over: 1.95, shove: 1.7, throw: 7, rush: 2.9 };
+export const KEEP_OFF = { eye: 1.1, rush: 1.2, body: 1.0, pass: 0.85, reel: 0.5 };
+// (how near he comes before he throws it: a little inside the blow's own reach)
+export const REACH = { straight: 1.75, swing: 1.65, over: 1.8, shove: 1.6, throw: 7, rush: 3.0 };
 const _v = new THREE.Vector3(), _w = new THREE.Vector3(), _g = new THREE.Vector3();
 const wrap = (a) => Math.atan2(Math.sin(a), Math.cos(a));
 
@@ -35,8 +40,6 @@ export function think(B, dt) {
   him.circleT -= dt;
   if (him.circleT <= 0) { him.circleT = r.range(1.8, 3.6); him.circle = r.chance(0.5) ? 1 : -1; if (r.chance(0.25)) him.circle = 0; }
   if (him.backT > 0) him.backT -= dt;
-  // hands low for a moment (cocky, tired)
-  if (him.lowT > 0) { him.lowT -= dt; if (him.lowT <= 0) him.low = false; }
   if (B.lessonHold) { him.goal = null; return; }
   // going for something to fight with
   if (him.task) return;
@@ -52,6 +55,7 @@ export function think(B, dt) {
 
 function pickAttack(B, M, d) {
   const him = B.him, r = B.rng;
+  if (him.answer) { const a = him.answer; him.answer = null; return { clip: a, reach: REACH.straight + 0.1 }; }
   if (him.pending) { const p = him.pending; him.pending = null; return { clip: p, reach: REACH[BR_ATTACKS[p]?.kind] || 1.9 }; }
   // what he holds decides first
   if (him.holding === 'stool') return { clip: 'br_stoolSwing', reach: 2.0 };
@@ -106,10 +110,37 @@ function goalOf(B) {
   if (him.state === 'reel') {
     if (!him.spot) return null;
     const S = him.spot, ax = S.x - 1.1;
-    if (!him.lane && (Math.abs(c.pos.z - S.z) < 0.3 || Math.hypot(c.pos.x - ax, c.pos.z - S.z) < 0.3)) him.lane = true;
-    const tx = him.lane ? S.x : ax;
-    if (him.reelSpeed == null) him.reelSpeed = Math.max(1.1, Math.min(2.2, (Math.hypot(ax - c.pos.x, S.z - c.pos.z) + 1.1) / 2.7));
-    return { x: tx, z: S.z, speed: him.reelSpeed, face: 'spot', tx };
+    // (the arcade pass: by the open aisle - out into it where he stands, along
+    // it to the window's bay, into the clear lane square to the glass, back
+    // onto the spot. Straight at the lane point he caught on the booths and
+    // the café tables and never got there)
+    if (!him.reelPath || him.reelPath.spot !== S) {
+      // (the aisle's middle: between the stools' seats and the booths' ends)
+      const aisle = (B.room && B.room.counterX != null ? B.room.counterX : -14.35) + 1.4;
+      const P = [];
+      // (straight to the lane when nothing stands between: sampled every 15 cm)
+      const clear = (x0, z0, x1, z1) => {
+        const n = Math.ceil(Math.hypot(x1 - x0, z1 - z0) / 0.15);
+        for (let i = 1; i <= n; i++) {
+          const x = x0 + (x1 - x0) * i / n, z = z0 + (z1 - z0) * i / n;
+          const q = _g.set(x, 0, z);
+          B.game.stage.colliders.resolve(q, 0.35, c.fig.collider);
+          if (Math.hypot(q.x - x, q.z - z) > 0.02) return false;
+        }
+        return true;
+      };
+      if (Math.abs(c.pos.z - S.z) > 0.6 && !clear(c.pos.x, c.pos.z, ax, S.z)) { P.push({ x: aisle, z: c.pos.z }, { x: aisle, z: S.z }); }
+      P.push({ x: ax, z: S.z, lane: true }, { x: S.x, z: S.z, lane: true });
+      him.reelPath = P; P.spot = S; him.reelI = 0; him.lane = false;
+      let L = 0, px = c.pos.x, pz = c.pos.z;
+      for (const q of P) { L += Math.hypot(q.x - px, q.z - pz); px = q.x; pz = q.z; }
+      him.reelSpeed = Math.max(1.2, Math.min(3.0, L / 2.7));
+    }
+    const P = him.reelPath;
+    while (him.reelI < P.length - 1 && Math.hypot(P[him.reelI].x - c.pos.x, P[him.reelI].z - c.pos.z) < 0.3) him.reelI++;
+    const q = P[him.reelI];
+    if (q.lane) him.lane = true;
+    return { x: q.x, z: q.z, speed: him.reelSpeed, face: 'spot', tx: q.x };
   }
   if (him.task && him.task.item && him.task.phase !== 'take') {
     const p = him.task.item.stand || him.task.item.pos;
@@ -172,15 +203,19 @@ export function steer(B, dt) {
   V.lerp(tv, 1 - Math.exp(-dt * 7));
   if (!free) V.multiplyScalar(Math.exp(-dt * 12));
   let moved = 0;
+  // (reeling and held up a second - fallen stools round him in the pocket
+  // by the counter - he stumbles over the stools and the chairs: only the
+  // walls, the counter and the booths stop him)
+  const blind = him.state === 'reel' && (him.stuckT || 0) > 1.0;
   if (free && V.lengthSq() > 1e-6) {
     const x0 = F.pos.x, z0 = F.pos.z;
     const p = _v.set(x0 + V.x * dt, 0, z0 + V.z * dt);
-    S.colliders.resolve(p, (F.collider ? F.collider.r : 0.35), F.collider);
+    S.colliders.resolve(p, (F.collider ? F.collider.r : 0.35), F.collider, !blind);
     // (round the furniture: blocked this way, he tries a way either side)
     if (Math.hypot(p.x - x0, p.z - z0) < V.length() * dt * 0.4) {
       for (const a of [0.7, -0.7, 1.3, -1.3]) {
         const q = new THREE.Vector3(x0 + (V.x * Math.cos(a) - V.z * Math.sin(a)) * dt, 0, z0 + (V.x * Math.sin(a) + V.z * Math.cos(a)) * dt);
-        S.colliders.resolve(q, (F.collider ? F.collider.r : 0.35), F.collider);
+        S.colliders.resolve(q, (F.collider ? F.collider.r : 0.35), F.collider, !blind);
         if (Math.hypot(q.x - x0, q.z - z0) > V.length() * dt * 0.6) { p.copy(q); break; }
       }
     }
@@ -202,10 +237,12 @@ export function steer(B, dt) {
     // eye walled him into the corner by the counter for good: he may pass
     // at arm's length)
     if (him.state === 'move' || him.state === 'arm') R = KEEP_OFF.pass;
+    // (reeling to the window he brushes past me: I may stand in his lane)
+    if (him.state === 'reel' && !him.atSpot) R = KEEP_OFF.reel;
     // (and his body: a haymaker or an overhand throws the chest and the
     // head well past the feet - they too stay KEEP_OFF.body from my eye:
     // the root goes back by as much as the body leans in toward me)
-    if (R !== KEEP_OFF.pass && dd > 1e-4 && c.object && c.bones.chest && c.bones.head) {
+    if (R !== KEEP_OFF.pass && R !== KEEP_OFF.reel && dd > 1e-4 && c.object && c.bones.chest && c.bones.head) {
       const o = c.object.position, ux = -dx / dd, uz = -dz / dd;
       let lean = 0;
       for (const b of [c.bones.chest, c.bones.head]) {
@@ -218,6 +255,15 @@ export function steer(B, dt) {
       const k = dd > 1e-4 ? R / dd : 0;
       const x0 = F.pos.x, z0 = F.pos.z;
       F.pos.x = eye.x + (dd > 1e-4 ? dx * k : R); F.pos.z = eye.z + dz * k;
+      // (reeling with me in his lane: he stumbles round me, not into me - a
+      // turn about my eye toward the side his window lies)
+      if (him.state === 'reel' && g && dd > 1e-4) {
+        const gx = g.x - eye.x, gz = g.z - eye.z;
+        const cr = dx * gz - dz * gx;
+        const a = (cr >= 0 ? 1 : -1) * Math.min(0.06, 1.6 * dt);
+        const ca = Math.cos(a), sa = Math.sin(a), rx = F.pos.x - eye.x, rz = F.pos.z - eye.z;
+        F.pos.x = eye.x + rx * ca - rz * sa; F.pos.z = eye.z + rx * sa + rz * ca;
+      }
       S.colliders.resolve(F.pos, (F.collider ? F.collider.r : 0.35), F.collider);
       // (a travelling clip sets his root from where it began every step:
       // its origin goes back with him, or the clip would carry him in again;
@@ -227,10 +273,13 @@ export function steer(B, dt) {
       if (c.object) { c.object.position.x = F.pos.x; c.object.position.z = F.pos.z; }
     }
   }
-  // facing: at me (the short way round, at most 4 rad/s; slower in a blow's tell)
-  const turnable = him.state === 'move' || him.state === 'arm' || (him.state === 'reel' && !him.atSpot) || (him.state === 'attack' && him.t < him.aimFor);
+  // facing: at me (the short way round, 5 rad/s: FIGHT.md v3 §4); through
+  // a tell, at the place his blow is aimed (fixed when the tell began); in
+  // the strike and after it, no turn at all
+  const aimT = him.state === 'attack' && him.aim && him.t < him.strikeAt;
+  const turnable = him.state === 'move' || him.state === 'arm' || (him.state === 'reel' && !him.atSpot) || aimT;
   if (turnable) {
-    let want = Math.atan2(eye.x - F.pos.x, eye.z - F.pos.z);
+    let want = aimT ? Math.atan2(him.aim.x - F.pos.x, him.aim.z - F.pos.z) : Math.atan2(eye.x - F.pos.x, eye.z - F.pos.z);
     // (reeling, he backs to the glass: his back to where he goes, so he
     // stands there with his back to it)
     if (him.state === 'reel' && g && g.face === 'spot') {
@@ -238,7 +287,7 @@ export function steer(B, dt) {
       want = him.lane || Math.hypot(dx, dz) < 0.3 ? -Math.PI / 2 : Math.atan2(-dx, -dz);
     }
     const d = wrap(want - F.yaw);
-    const rate = him.state === 'attack' ? 2.5 : 4;
+    const rate = 5;
     const step = Math.sign(d) * Math.min(Math.abs(d), rate * dt);
     F.yaw = wrap(F.yaw + step);
     him.yawRate = step / dt;
@@ -253,7 +302,7 @@ function locomote(B, dt, v) {
   if (him.state === 'reel' && him.atSpot) return;
   const reel = him.state === 'reel';
   let clip;
-  if (v < 0.12) clip = Math.abs(him.yawRate || 0) > 1.0 && !reel ? 'br_pivot' : reel ? 'br_reel' : him.low ? 'idle' : 'br_guard';
+  if (v < 0.12) clip = Math.abs(him.yawRate || 0) > 1.0 && !reel ? 'br_pivot' : reel ? 'br_reel' : 'br_guard';
   else if (reel) clip = 'br_reelBack';
   else {
     const V = him.vel, s = Math.sin(F.yaw), co = Math.cos(F.yaw);
