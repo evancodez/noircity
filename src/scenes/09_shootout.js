@@ -484,11 +484,14 @@ function* driveby(ctx) {
     // crippled: the driver hit, or the engine: off the rail into a post
     if (!driver.alive || c.pts >= 6) {
       const ahead = V(Math.cos(c.yaw), 0, -Math.sin(c.yaw));
-      let best = null, bd = 30;
+      // (the one it swerves least for: a post on its own side before a
+      // column across the road)
+      let best = null, bs = Infinity;
       for (const q of [...D.posts, ...COLUMNS]) {
         const dx = q.x - c.pos.x, dz = q.z - c.pos.z, dd = Math.hypot(dx, dz);
-        if (dd < 5 || dd > bd || (dx * ahead.x + dz * ahead.z) / dd < 0.35) continue;
-        bd = dd; best = q;
+        if (dd < 5 || dd > 30 || (dx * ahead.x + dz * ahead.z) / dd < 0.35) continue;
+        const score = dd + 2 * Math.abs(dx * ahead.z - dz * ahead.x);
+        if (score < bs) { bs = score; best = q; }
       }
       crashed = true;
       c.rail.onCrash = (cc, at) => wrecked(ctx, cc, at);
