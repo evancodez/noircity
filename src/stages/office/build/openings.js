@@ -161,7 +161,7 @@ export function buildOpenings(kit, mats, stage) {
     for (let i = 0; i < 6; i++) steps.push(new THREE.BoxGeometry(1.1, 0.18, 0.28).translate(CORR.x0 - 0.9, FLOOR + 0.09 + i * 0.18, STAIRS.z1 + 0.3 - i * 0.28));
     kit.add(M(steps), mats.iron);
     out.stairsDoor = g;
-    stage.colliders.addRegion(CORR.x0 - 2.4, CORR.x0, STAIRS.z0 - 0.3, STAIRS.z1 + 1.0, 'stairwell');
+    stage.colliders.addRegion(CORR.x0 - 2.4, CORR.x0 + 0.8, STAIRS.z0 - 0.3, STAIRS.z1 + 1.0, 'stairwell');
   }
   // the lift: a black shaft behind a scissor gate, the floor dial over it
   {

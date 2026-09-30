@@ -24,7 +24,7 @@ export function buildShell(kit, mats, stage) {
   };
   const west = { axis: 'z', a: [CORR.x0 - T, CORR.x0], s: [CORR.z0 - T, CORR.z1 + T], y: [FLOOR, CEIL], holes: [
     ...DOORS.filter((d) => d[2] === 'W').map(([, z]) => [z - 0.475, z + 0.475, FLOOR, DOOR.h]),
-    [STAIRS.z0, STAIRS.z1, FLOOR, DOOR.h],
+    [STAIRS.z0, STAIRS.z1, FLOOR, DOOR.h, 'open'],
   ] };
   const south = { axis: 'x', a: [CORR.z0 - T, CORR.z0], s: [CORR.x0 - T, CORR.x1], y: [FLOOR, CEIL], holes: [[LIFT.x0, LIFT.x1, FLOOR, 2.25]] };
   const north = { axis: 'x', a: [CORR.z1, CORR.z1 + T], s: [CORR.x0 - T, CORR.x1], y: [FLOOR, CEIL], holes: [] };

@@ -1,0 +1,277 @@
+import * as THREE from 'three';
+import { defineScene, wait, until, beat } from '../game/script.js';
+import { roomAs, carry, office, stand, V } from './office/room.js';
+import { live } from './office/hands.js';
+import { MEN, send, coverFrom, glassMen, roomReacts, glassReward, fallHook, papers } from './office/fight.js';
+import { DESK, DOOR, SIDE, SAFE, FAN, PICTURE } from '../stages/office/plan.js';
+
+// Scene 5, The Door (lane B2's brief; STORY.md). The same room, a minute
+// after the ledger went into my coat. Beats:
+//   shadows  a board creaks in the corridor; a shadow on the door's frosted
+//            glass, then one on the sidelight's; the music is gone; my hand
+//            into my coat and out with the revolver. E tips the desk over
+//            (the lamp falls and burns on from the floor; the desk is
+//            cover); C ducks behind it
+//   door     the door is kicked in: one man through it (behind the open
+//            leaf, then out to shoot), one firing through the frosted
+//            sidelight - shoot his outline and he comes through the glass -
+//            and one in the doorway after them
+//   window   up the fire escape: a Tommy gun at the side window (the
+//            curtain shreds, the wall behind me is stitched); then two more
+//            down the corridor, one of them a heavy. Six men in all
+//   quiet    the last one down: smoke in the lamp's light, paper coming
+//            down, the fan ticking round on a bent blade; three seconds,
+//            then on (scene 6 opens in this room)
+// Dying: the view goes down, black, and I am back at the shadows.
+export default defineScene({
+  id: 'gunfight', stage: 'office',
+  beats: ['shadows', 'door', 'window', 'quiet'],
+  save: ['shadows'],
+
+  setup: {
+    shadows(ctx) { fightRoom(ctx); },
+    door(ctx) { fightRoom(ctx); ctx.flags.jump = 'door'; },
+    window(ctx) { fightRoom(ctx); ctx.flags.jump = 'window'; },
+    quiet(ctx) { fightRoom(ctx); ctx.flags.jump = 'quiet'; },
+  },
+
+  *script(ctx) {
+    const { game: G, controller: C } = ctx;
+    const O = office(ctx), F = ctx.flags;
+    const D = G.director;
+    const snd = (n, p = null, q = {}) => G.sfx.play(n, p, q);
+    // (continuing straight from scene 4: the room as it stands)
+    if (ctx.kept) { carry(ctx, { ledger: true }); keptRoom(ctx); }
+    F.men = [];
+    D.stop(); D.groups.clear();
+    D.begin();
+    roomReacts(ctx);
+    const shotFn = () => { F.shotAt = true; };
+    G.on('shot', shotFn);
+    const offs = [glassReward(ctx), fallHook(ctx, () => fall(ctx)), () => G.off('shot', shotFn)];
+    const off = () => { for (const f of offs) f(); G.off('scene:exit', exitFn); };
+    const exitFn = () => off();
+    G.on('scene:exit', exitFn);
+    // the corridor men's feet on the boards; the window man's on the iron
+    const hs = ctx.stage.hoods, step0 = hs._b2step0 || (hs._b2step0 = hs.onStep);
+    hs.onStep = (h, x, z, run) => {
+      if (z > 7.1) snd('office_ironStep', V(x, h.pos.y + 0.1, z), { k: run ? 1 : 0.7 });
+      else if (step0) step0(h, x, z, run);
+      if (x < -0.2 && !F.creaked && z > -2) { F.creaked = true; snd('office_boardCreak', V(x, 0.1, z), { k: 1 }); }
+    };
+    ctx.onStep((dt) => {
+      glassMen(ctx);
+      // the fan's bent blade ticks once a turn
+      const Fn = O.fan;
+      if (Fn.bent) { Fn.tickA = (Fn.tickA || 0) + (Fn.rpm / 60) * dt; if (Fn.tickA >= 1) { Fn.tickA -= 1; snd('office_fanTick', V(FAN.x, 2.7, FAN.z), { k: 0.8 }); } }
+      // the smoke hangs in the lamp's light (the room's own haze thickens with the shooting)
+      F.t = (F.t || 0) + dt;
+    });
+
+    // ---- 1. the shadows ---------------------------------------------------------------
+    if (ctx.at('shadows') && !F.jump) {
+      yield beat('shadows');
+      ctx.music.stop(2.5);
+      C.setMode('office', {});
+      // the draft from the fire escape: the curtain lifts, the door swings to
+      yield wait(0.4);
+      O.gust = 1.4;
+      if (O.door.angle > 0.2) { O.swingDoor(0.035, 0.9); snd('office_doorCreak', V(-0.07, 1.2, 1.0), { dur: 1.3, k: 0.6 }); }
+      yield until(() => !O.door.moving);
+      snd('office_doorBang', V(-0.07, 1.2, 1.0), { k: 0.25 });
+      yield wait(0.5);
+      snd('office_boardCreak', V(-1.1, 0.1, -2.2), { k: 0.9 });
+      // the first shape comes up the corridor to the door's glass
+      const kicker = send(ctx, 'kicker');
+      holdUntilKicked(ctx, kicker);
+      yield wait(0.7);
+      // the hand into the coat and out with the revolver
+      snd('office_draw', G.eye);
+      ctx.player.weapons.equip('revolver');
+      live(ctx.hands, {});
+      F.drawn = true;
+      yield wait(0.6);
+      const glass = send(ctx, 'glass');
+      holdUntilKicked(ctx, glass, 0.9);
+      // one prompt: the desk (the player may ignore it)
+      tipPrompt(ctx);
+      // the door goes in when they are both at the glass, or when I go at it
+      let t = 0;
+      yield until(() => {
+        t += 1 / 60;
+        const atDoor = kicker.pos.distanceTo(V(-0.56, 0, 1.02)) < 0.45 && glass.pos.distanceTo(V(-0.58, 0, 2.52)) < 0.5;
+        const nearDoor = G.eye.x < 1.2 && Math.abs(G.eye.z - (DOOR.z0 + DOOR.z1) / 2) < 1.1;
+        return (atDoor && t > 5.5) || t > 11 || (atDoor && (nearDoor || F.shotAt));
+      });
+    }
+
+    // ---- 2. the door --------------------------------------------------------------------
+    if (ctx.at('door') && F.jump !== 'window' && F.jump !== 'quiet') {
+      if (F.jump === 'door') jumpTo(ctx, 'door');
+      yield beat('door');
+      kick(ctx);
+      yield wait(3.5);
+      send(ctx, 'doorway');
+      // the window when the door is down to one, or when it has gone on long enough
+      let t = 0;
+      yield until(() => { t += 1 / 60; return (alive(ctx, ['kicker', 'glass', 'doorway']) <= 1 && t > 8) || t > 24; });
+    }
+
+    // ---- 3. the window ----------------------------------------------------------------------
+    if (ctx.at('window') && F.jump !== 'quiet') {
+      if (F.jump === 'window') jumpTo(ctx, 'window');
+      yield beat('window');
+      const w = send(ctx, 'window', { onFire: (h) => curtainShot(ctx, h) });
+      void w;
+      let t = 0;
+      yield until(() => { t += 1 / 60; return t > 9 || alive(ctx, ['window']) === 0; });
+      send(ctx, 'second');
+      yield wait(1.2);
+      send(ctx, 'heavy');
+      yield until(() => alive(ctx) === 0);
+    }
+
+    // ---- 4. the quiet --------------------------------------------------------------------------
+    if (ctx.at('quiet')) {
+      if (F.jump === 'quiet') jumpTo(ctx, 'quiet');
+      yield beat('quiet');
+      D.stop();
+      // smoke in the light, paper coming down
+      const rng = ctx.stage.rng.fork(3071);
+      papers(ctx, V(DESK.x - 0.6, 2.4, DESK.z), V(0, -1, 0), rng, 5);
+      yield wait(3.2);
+      ctx.next();
+    }
+  },
+
+  auto(ctx, A) {
+    if (A.prompting()) A.pressAfter('KeyE', 1.0, 2.0);
+  },
+});
+
+// the room at the start of the fight (entered cold, or after a fall)
+function fightRoom(ctx) {
+  carry(ctx, { ledger: true });
+  const O = roomAs(ctx, 'taken');
+  O.setDoor(1.45);
+  const a = ctx.stage.anchor('office.safe');
+  stand(ctx, a.pos.x + 0.35, a.pos.z + 0.55, 0.35, -0.02);
+  ctx.controller.setMode('office', {});
+  ctx.player.weapons.equip(null);
+  ctx.game.health.reset();
+  void SAFE;
+}
+// straight on from scene 4 (the room as it stands; the eye where it was)
+function keptRoom(ctx) {
+  const C = ctx.controller;
+  const P = C.eyePose();
+  C.setPose(P.x, P.z, P.yaw, P.pitch);
+  C.setMode('office', {});
+  ctx.game.health.reset();
+}
+
+// a jump into a later beat (?scene=gunfight&beat=door): the men as they would stand
+function jumpTo(ctx, b) {
+  const G = ctx.game, O = office(ctx), F = ctx.flags;
+  ctx.player.weapons.equip('revolver');
+  F.drawn = true;
+  tipPrompt(ctx);
+  if (b === 'door') {
+    O.setDoor(0.035);
+    const k = send(ctx, 'kicker', { at: { x: -0.56, z: 1.02 }, path: [] });
+    holdUntilKicked(ctx, k);
+    const g = send(ctx, 'glass', { at: { x: -0.58, z: 2.52 }, path: [] });
+    holdUntilKicked(ctx, g, 0.9);
+  }
+  if (b === 'window') { O.kickDoor(); O.door.angle = 1.72; O.door.hinge.rotation.y = 1.72; O.doorCollider(); }
+  void G;
+}
+
+// the kicker and the glass man wait at the glass until the door goes in
+function holdUntilKicked(ctx, h, delay = 0) {
+  const G = ctx.game, F = ctx.flags;
+  const ai = G.ais.get(h);
+  if (!ai) return;
+  ai.hold = (state) => (state !== 'enter' && state !== 'settle' && (!F.kicked || G.time - F.kicked < delay)) || F.down;
+}
+
+// E: the desk over on its front, the lamp thrown off it; then C to duck
+function tipPrompt(ctx) {
+  const G = ctx.game, O = office(ctx), F = ctx.flags;
+  ctx.interact.add({ id: 'tip', at: V(DESK.x + 0.1, DESK.h + 0.1, DESK.z), range: 1.9, cone: 0.55, prompt: 'tip the desk', when: () => !O.desk.tip, onUse: () => {
+    if (!O.tipDesk()) return;
+    G.sfx.play('office_deskTip', V(DESK.x, 0.6, DESK.z));
+    F.tipped = true;
+    ctx.interact.remove('tip');
+    // (then, once: how to get behind it)
+    F.duckT = 1.4;
+  } });
+  ctx.onStep((dt) => {
+    if (F.duckT > 0) { F.duckT -= dt; if (F.duckT <= 0 && !F.ducked) { G.hud.prompt('C  duck', null, 'duck'); F.duckShown = G.time; } }
+    if (F.duckShown && !F.ducked && (ctx.controller.crouchK > 0.5 || G.time - F.duckShown > 4)) { F.ducked = true; G.hud.clearPrompt('duck'); }
+  });
+}
+
+// the door kicked in: the heel, the bang, its glass, the kicker through it
+function kick(ctx) {
+  const G = ctx.game, O = office(ctx), F = ctx.flags;
+  F.kicked = G.time;
+  G.sfx.play('office_doorKick', V(-0.1, 1.0, 1.2));
+  O.kickDoor();
+  G.controller.shake(0.45, Math.hypot(G.eye.x, G.eye.z - 1));
+  const p = O.door.pane;
+  if (p.state !== 'gone') ctx.stage.glass.shatter(p, { dir: V(1, 0, 0.2), power: 1.6, by: 'body' });
+  // splinters off the jamb where the lock was
+  const r = ctx.stage.rng.fork(3063);
+  for (let k = 0; k < 14; k++) G.fx.debris.spawn({ pos: V(-0.04, 1.0 + r.gauss() * 0.1, DOOR.z1 - 0.02), vel: V(r.range(0.8, 2.6), r.range(0, 1.6), r.gauss() * 0.8), life: r.range(0.6, 1.2), size: [0.02, 0.006], rot: r.next() * 6, spin: r.gauss() * 12, col: [0.12, 0.12, 0.12], cell: 12, gravity: 9.8, ground: 0.01, fadeOut: 0.2 });
+  // the kicker: in through the door and behind its open leaf, out from it to shoot
+  const k = (F.men || []).find((h) => h.b2 === 'kicker');
+  const ai = k && G.ais.get(k);
+  if (ai && ai.brain.send) ai.brain.send({ path: [{ x: 0.35, z: 1.02 }, { x: 0.62, z: 0.32 }], hide: { x: 0.62, z: 0.3 }, fire: { x: 0.95, z: 1.05 }, wait: 0.2 });
+}
+
+// the Tommy gun through the curtain: holes where his rounds pass through it
+function curtainShot(ctx, h) {
+  const G = ctx.game, O = office(ctx), F = ctx.flags;
+  const m = h.muzzleWorld ? h.muzzleWorld() : h.pos.clone().setY(1.4);
+  const e = G.eye;
+  const zc = O.curtain.mesh.position.z;
+  if ((m.z - zc) * (e.z - zc) >= 0) return;
+  const t = (zc - m.z) / (e.z - m.z);
+  const r = F.cr || (F.cr = ctx.stage.rng.fork(3067));
+  const p = V(m.x + (e.x - m.x) * t + r.gauss() * 0.12, m.y + (e.y - m.y) * t + r.gauss() * 0.15, zc);
+  O.curtain.tear(p, r);
+}
+
+// the living men (of the named ones, or all)
+function alive(ctx, names = null) {
+  let n = 0;
+  for (const h of ctx.flags.men || []) if (h.alive && (!names || names.includes(h.b2))) n++;
+  return n;
+}
+
+// the fall: the view goes down, black, back at the shadows (ten seconds at most)
+function fall(ctx) {
+  const G = ctx.game, C = ctx.controller, F = ctx.flags;
+  if (F.down) return;
+  F.down = true;
+  const from = C.eyePose();
+  C.setMode('cutscene', { track: (t) => {
+    const u = Math.min(1, t / 0.9), e = u * u;
+    return { x: from.x, y: from.y + (0.35 - from.y) * e, z: from.z, yaw: from.yaw + 0.3 * e, pitch: from.pitch + (0.5 - from.pitch) * e };
+  } });
+  G.sfx.play('grunt', null, { f0: 80, k: 0.5, dur: 0.3 }, { send: false });
+  G.sfx.play('f_bodyFloor', G.eye);
+  ctx.hud.clearPrompt();
+  // (after a second on the floor: black, the room set again, up at the shadows)
+  let t = 0;
+  ctx.onStep((dt) => {
+    t += dt;
+    if (t > 1.1 && !F.goneBlack) {
+      F.goneBlack = true;
+      G.health.reset();
+      G.scenes.go('gunfight', { beat: 'shadows', fade: 'black', card: false, fadeIn: 0.8 });
+    }
+  });
+}
+void THREE; void SIDE; void PICTURE; void MEN; void coverFrom;
