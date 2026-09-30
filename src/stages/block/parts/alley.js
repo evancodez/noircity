@@ -99,7 +99,7 @@ export default {
       iron: M.iron,
       rust: std({ color: 0x0a0a0a, roughness: 0.7, metalness: 0.3 }),
       door: std({ color: 0x101010, roughness: 0.75 }),
-      pane: std({ color: 0x050505, roughness: 0.15, envMapIntensity: 0.9 }),
+      pane: std({ color: 0x080808, roughness: 0.85, envMapIntensity: 0.1 }),
       bin: std({ color: 0x151515, roughness: 0.6, metalness: 0.3 }),
       wood: std({ color: 0x2a2a2a, roughness: 0.9, envMapIntensity: 0.1 }),
     };

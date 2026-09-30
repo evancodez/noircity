@@ -120,9 +120,11 @@ export function evidence(ctx) {
   ev.shoe.position.y = ALLEY.y + 0.045;
   // up on the landing: the half, and the two brass cases
   const Ly = ALLEY.esc.y1 + 0.003;
-  ev.half = put('matchHalf', V(XV + 0.18, Ly, ALLEY.zN + 0.62), [0, 2.2, 0]);
+  // (caught at the landing's outer edge under the rail, a corner of it out
+  // over the alley: from below, where the lines cross, the red shows)
+  ev.half = put('matchHalf', V(XV + 0.06, Ly, ALLEY.zN + ALLEY.esc.d - 0.012), [0.18, 0.5, 0]);
   // (it glows a breath of its own red: the clue must show in the dark)
-  ev.half.traverse((o) => { if (o.isMesh && o.material && o.material.userData && o.material.userData.accent === 'crew') { o.material = o.material.clone(); o.material.emissive = accentMaterial('crew').color.clone().multiplyScalar(0.35); } });
+  ev.half.traverse((o) => { if (o.isMesh && o.material && o.material.userData && o.material.userData.accent === 'crew') { o.material = o.material.clone(); o.material.emissive = accentMaterial('crew').color.clone().multiplyScalar(0.8); } });
   ev.casings = [put('casing', V(XV - 0.12, Ly + 0.001, ALLEY.zN + 0.8), [0, 0.4, 0]), put('casing', V(XV + 0.42, Ly + 0.001, ALLEY.zN + 0.48), [0, 2.1, 0])];
   // the blood: a pool under his back and a run of it down the fall of the
   // flags to the gutter and along it to the drain
@@ -186,7 +188,7 @@ function bloodOnFlags(stage) {
   const N = 60, pos = [], idx = [];
   for (let i = 0; i <= N; i++) {
     const u = i / N, c = path.getPointAt(u), t = path.getTangentAt(u);
-    const w = (0.028 - 0.014 * u) * (1 + 0.35 * Math.sin(u * 37) * Math.sin(u * 13 + 1));
+    const w = (0.017 - 0.009 * u) * (1 + 0.45 * Math.sin(u * 37) * Math.sin(u * 13 + 1)) * (u > 0.93 ? 1.6 : 1);
     const nx = -t.z, nz = t.x;
     for (const sg of [-1, 1]) { const x = c.x + nx * w * sg, z = c.z + nz * w * sg; pos.push(x, floorY(z) + 0.003, z); }
     if (i < N) { const a = i * 2; idx.push(a, a + 1, a + 2, a + 1, a + 3, a + 2); }
@@ -256,7 +258,7 @@ export function crewCar(ctx) {
   tailM.name = 'body_tail';
   tailM.userData.accent = 'crew';
   for (const z of [0.74, -0.74]) {
-    const d = new THREE.Mesh(new THREE.SphereGeometry(0.075, 16, 10).scale(0.45, 1, 1), tailM);
+    const d = new THREE.Mesh(new THREE.SphereGeometry(0.095, 16, 10).scale(0.45, 1, 1), tailM);
     d.position.set(-2.33, 0.85, z);
     d.userData.inkId = id; d.userData.noRay = true;
     g.add(d);

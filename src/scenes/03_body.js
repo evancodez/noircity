@@ -218,7 +218,7 @@ export default defineScene({
         if (A.t > T + 0.3) { alley.ladder.set(1); F.ladderAnim = null; }
       }
       // my hands on the rungs while I am on the ladder
-      if (C.mode === 'climb') { F.climbS = F.climbS || { onRung: () => {} }; climbHands(ctx, alley.ladder, F.climbS); }
+      if (C.mode === 'climb') { F.climbS = F.climbS || { onRung: (side) => snd('rung', V(ALLEY.ladder.x + (side === 'R' ? 0.13 : -0.13), G.eye.y, alley.ladder.z), { f: side === 'R' ? 420 : 470 }) }; climbHands(ctx, alley.ladder, F.climbS); }
       else if (F.climbS) { F.climbS = null; handsOff(H); }
       // my fingertip on the step's puzzles
       const PA = G.puzzles.active;
@@ -230,10 +230,10 @@ export default defineScene({
     if (ctx.at('approach')) {
       yield beat('approach');
       // (the fade in, the chapter card; then the car pulls out of the mouth)
-      yield wait(0.9);
+      yield wait(1.5);
       if (F.car) { F.car.go(); snd('carAway', V(-15, 1, -28.2), {}); }
       // the el train over the avenue as I walk
-      yield wait(1.6);
+      yield wait(1.4);
       if (stage.train && !stage.train.active && G.director) G.director.cue('train', { z: -14, ahead: -70, dir: 1 });
       // down the pavement to him
       yield until(() => flat(G.eye, chest()) < 3.6);
@@ -351,7 +351,8 @@ export default defineScene({
         const x = L.x + 0.45 * (b * b * (3 - 2 * b));
         return { x, y, z };
       };
-      C.setMode('climb', { path, u: 0, speed: 0.5, face: 0, drive: acted('climb') && !up ? 1 : null, onRung: (i, dir) => snd('rung', V(L.x, ALLEY.y + i * 0.3, lz), { f: 380 + (i % 3) * 40 }) });
+      C.setMode('climb', { path, u: 0, speed: 0.34, face: 0, drive: acted('climb') && !up ? 1 : null });
+      C.pitch = 0.02;
       yield until(() => C.climb && C.climb.u >= 1);
       // on the landing, under the rain, over the alley: along it to where
       // he stood (the casings, the red)
@@ -363,12 +364,20 @@ export default defineScene({
       yield until(() => taken || acted('take'));
       I.remove('body.half');
       yield* takeHalf(ctx, ev.half, { onTaken: () => snd('matchbook', ev.half.position) });
+      // held up and turned: the crew's red, half the black bird, the torn
+      // edge (E puts it away)
+      let away = false;
+      ev.half.visible = true;
+      G.inspect.open({ prop: ev.half, options: { spin: [1.05, 0.5], dist: 0.24, scale: 2.6 }, onDone: () => { away = true; } });
+      yield until(() => away || !G.inspect.active || acted('pocket'));
+      if (G.inspect.active) G.inspect.close(false);
+      ev.half.visible = false;
       snd('pocket');
       if (!G.save.inventory.includes('matchbookHalf')) G.save.inventory.push('matchbookHalf');
       F.halfTaken = true;
       yield wait(0.5);
       // back along the landing and down the ladder, on its own
-      C.setMode('climb', { path, u: 1, speed: 0.55, face: 0, drive: -1, ease: 0.7, onRung: (i) => snd('rung', V(L.x, ALLEY.y + i * 0.3, lz), { f: 360 + (i % 3) * 40 }) });
+      C.setMode('climb', { path, u: 1, speed: 0.4, face: 0, drive: -1, ease: 0.7 });
       C.yaw = 0; C.pitch = -0.1;
       yield until(() => C.climb && C.climb.u <= 0);
       const P = C.eyePose();
@@ -381,7 +390,7 @@ export default defineScene({
     if (ctx.at('halves')) {
       yield beat('halves');
       let go = false;
-      I.add({ id: 'body.step', at: () => stepAt(), range: 2.6, cone: 0.6, prompt: 'the matchbook', onUse: () => { go = true; } });
+      I.add({ id: 'body.step', at: () => stepAt(), range: 2.6, cone: 0.85, prompt: 'the matchbook', onUse: () => { go = true; } });
       yield until(() => go);
       I.remove('body.step');
       yield null;   // (the E that brought me here must not leave the puzzle)
@@ -392,7 +401,7 @@ export default defineScene({
         // (E left it: the step is still there, and so is the puzzle)
         while (!done) {
           let again = false;
-          I.add({ id: 'body.step', at: () => stepAt(), range: 2.6, cone: 0.6, prompt: 'the matchbook', onUse: () => { again = true; } });
+          I.add({ id: 'body.step', at: () => stepAt(), range: 2.6, cone: 0.85, prompt: 'the matchbook', onUse: () => { again = true; } });
           yield until(() => again);
           I.remove('body.step');
           yield null;
@@ -418,7 +427,7 @@ export default defineScene({
       yield until(() => done || !G.puzzles.active);
       while (!done) {
         let again = false;
-        I.add({ id: 'body.step', at: () => stepAt(), range: 2.6, cone: 0.6, prompt: 'the note', onUse: () => { again = true; } });
+        I.add({ id: 'body.step', at: () => stepAt(), range: 2.6, cone: 0.85, prompt: 'the note', onUse: () => { again = true; } });
         yield until(() => again);
         I.remove('body.step');
         yield null;
@@ -437,13 +446,24 @@ export default defineScene({
     // ---- 7. leave ----------------------------------------------------------------------------------------
     if (ctx.at('leave')) {
       yield beat('leave');
-      // I stand: the lamp, the body, the rain (the eye rises and turns to him)
+      // I stand: the lamp, the body, the rain (the eye rises and turns to him;
+      // the strings and the outline were the working, they go)
       const P0 = C.eyePose();
-      const to = V(LIES.x - 0.2, 0.55, LIES.z - 0.1);
-      const P1 = { x: -12.35, y: ALLEY.y + 1.68, z: -27.35 };
-      P1.yaw = Math.atan2(-(to.x - P1.x), -(to.z - P1.z)) - 0.2;
-      P1.pitch = Math.atan2(ALLEY.lamp.y * 0.55 + to.y * 0.45 - P1.y, Math.hypot(to.x - P1.x, to.z - P1.z)) - 0.05;
-      const DUR = 3.2;
+      O.raise(false);
+      F.stringsFade = 1;
+      ctx.onStep((dt) => {
+        if (!F.stringsFade) return;
+        F.stringsFade = Math.max(0, F.stringsFade - dt / 1.2);
+        R.group.traverse((o) => { if (o.material && o.material.uniforms && o.material.uniforms.uOpacity) o.material.uniforms.uOpacity.value = Math.min(o.material.uniforms.uOpacity.value, F.stringsFade); });
+        if (!F.stringsFade) R.group.visible = false;
+      });
+      // (back across the alley to the foot of the fire escape: the lamp high
+      // on the wall, its one cone in the rain, him at its edge)
+      const to = V(-11.85, ALLEY.y + 1.85, ALLEY.zS - 0.4);
+      const P1 = { x: -11.85, y: ALLEY.y + 1.74, z: ALLEY.zN + 0.45 };
+      P1.yaw = Math.atan2(-(to.x - P1.x), -(to.z - P1.z));
+      P1.pitch = Math.atan2(to.y - P1.y, Math.hypot(to.x - P1.x, to.z - P1.z)) - 0.06;
+      const DUR = 3.6;
       C.setMode('cutscene', { track: (t) => {
         const u = Math.min(1, t / DUR), k = u * u * (3 - 2 * u);
         const Lr = (a, b) => a + (b - a) * k;

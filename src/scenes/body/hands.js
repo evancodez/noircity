@@ -174,7 +174,7 @@ export function climbHands(ctx, ladder, S) {
   // (the rung a hand wants: the highest one under shoulder height + 0.35)
   if (!S.init) {
     S.init = true;
-    const base = Math.max(0, Math.round((eye.y - 0.1 - foot) / 0.3));
+    const base = Math.max(0, Math.round((eye.y + 0.05 - foot) / 0.3) - 1);
     S.R = { i: base, from: null, t: 1 }; S.L = { i: base + 1, from: null, t: 1 };
     S.next = 'R';
   }
@@ -183,10 +183,10 @@ export function climbHands(ctx, ladder, S) {
     const h = S[side];
     // too low (under the chin by 0.45): up to two above the other hand
     const other = S[side === 'R' ? 'L' : 'R'];
-    if (h.t >= 1 && rungY(h.i) < eye.y - 0.42 && S.next === side) { h.from = h.i; h.i = Math.min(ladder.rungs.length - 1, other.i + 1); h.t = 0; S.next = side === 'R' ? 'L' : 'R'; S.onRung && S.onRung(side); }
+    if (h.t >= 1 && rungY(h.i) < eye.y - 0.24 && S.next === side) { h.from = h.i; h.i = Math.min(ladder.rungs.length - 1, Math.max(other.i + 1, Math.round((eye.y + 0.32 - foot) / 0.3) - 1)); h.t = 0; S.next = side === 'R' ? 'L' : 'R'; S.onRung && S.onRung(side); }
     // (going down: the hand too high goes down past the other)
-    if (h.t >= 1 && rungY(h.i) > eye.y + 0.35 && S.next === side) { h.from = h.i; h.i = Math.max(0, other.i - 1); h.t = 0; S.next = side === 'R' ? 'L' : 'R'; S.onRung && S.onRung(side); }
-    h.t = Math.min(1, h.t + dt / 0.2);
+    if (h.t >= 1 && rungY(h.i) > eye.y + 0.45 && S.next === side) { h.from = h.i; h.i = Math.max(0, Math.min(other.i - 1, Math.round((eye.y - 0.12 - foot) / 0.3) - 1)); h.t = 0; S.next = side === 'R' ? 'L' : 'R'; S.onRung && S.onRung(side); }
+    h.t = Math.min(1, h.t + dt / 0.15);
   }
   const s = (side) => (side === 'R' ? 1 : -1);
   const at = (side, i) => ladder.rung(i).clone().add(V(s(side) * 0.13, -0.012, 0.03));
@@ -207,49 +207,43 @@ export function climbHands(ctx, ladder, S) {
 }
 export function handsOff(H) { setHand(H, 'R', null); setHand(H, 'L', null); }
 
-// the torn half off the grating: down on my heels, the fingers pinch it up,
-// it comes up before my eyes (the red, the half bird), into my coat. ~1.9 s
+// the torn half off the grating: down on my heels, the fingers pinch it up
+// (then the scene holds it up to be turned: inspect, as scene 2's
+// matchbook). ~0.9 s
 export function* takeHalf(ctx, half, { onTaken = null } = {}) {
   const { game: G, hands: H, controller: Ctl } = ctx;
   const P0 = Ctl.eyePose();
   const hp = half.getWorldPosition(V(0, 0, 0));
   const d = V(hp.x - P0.x, 0, hp.z - P0.z);
   const dist = d.length(); d.normalize();
-  // (down on my heels, closer: the eye 0.95 over the grating)
-  const low = { x: P0.x + d.x * Math.max(0, dist - 0.5), y: hp.y + 0.95, z: P0.z + d.z * Math.max(0, dist - 0.5), yaw: Math.atan2(-d.x, -d.z), pitch: -0.95 };
-  Ctl.ease(low, 0.4);
-  const T = 2.0;
+  // (down on my heels, closer, the eyes on it)
+  const low = { x: P0.x + d.x * Math.max(0, dist - 0.45), y: hp.y + 0.9, z: P0.z + d.z * Math.max(0, dist - 0.45) };
+  low.yaw = Math.atan2(-(hp.x - low.x), -(hp.z - low.z));
+  low.pitch = Math.atan2(hp.y - low.y, Math.hypot(hp.x - low.x, hp.z - low.z)) + 0.3;
+  Ctl.ease(low, 0.38);
+  const T = 0.95;
   let t = 0, got = false;
-  const holder = new THREE.Group();
   while (t < T) {
     t += 1 / 60;
     const tip = hp.clone().add(V(0, 0.006, 0));
     const fd = d.clone().multiplyScalar(0.5).add(V(0, -0.85, 0)), bd = d.clone().multiplyScalar(0.55).add(V(0, 0.6, 0));
     const aOver = tipW(G, 'R', tip.clone().add(V(0, 0.06, 0)), fd, bd, CLAW);
     const aOn = tipW(G, 'R', tip, fd, bd, PINCHF);
-    const show = { frame: 'cam', p: [0.05, -0.17, -0.3], f: [-0.3, 0.6, -0.74], b: [0.5, 0.45, 0.74], F: PINCHF, e: [0.2, -0.46, -0.08] };
     const away = awayW(G, 'R');
     let pose;
-    if (t < 0.45) pose = mixPose(away, aOver, sstep(0.05, 0.45, t));
-    else if (t < 0.62) pose = mixPose(aOver, aOn, sstep(0.45, 0.62, t));
-    else if (t < 1.05) pose = mixPose(aOn, show, sstep(0.66, 1.05, t));
-    else if (t < 1.55) pose = show;
-    else pose = mixPose(show, away, sstep(1.55, T, t));
-    if (!got && t >= 0.64) {
+    if (t < 0.4) pose = mixPose(away, aOver, sstep(0.02, 0.4, t));
+    else if (t < 0.56) pose = mixPose(aOver, aOn, sstep(0.4, 0.56, t));
+    else pose = mixPose(aOn, away, sstep(0.6, T, t));
+    if (!got && t >= 0.58) {
       got = true;
-      // (the half itself into my fingers)
-      H.hold(half, 'R');
       if (onTaken) onTaken();
+      Ctl.ease({ ...P0 }, 0.45);
     }
-    if (t >= 0.7 && t < 0.7 + 1 / 60) Ctl.ease({ ...P0 }, 0.6);
     setHand(H, 'R', pose);
     yield null;
   }
-  H.hold(null, 'R', { keep: true });
-  half.visible = false;
   setHand(H, 'R', null);
   Ctl._ease = null;
-  void holder;
 }
 
 // a table puzzle's fingertip: the index's tip on the pointer (on the thing

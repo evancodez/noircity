@@ -45,8 +45,8 @@ function noteTexture() {
     x.fillText(text, 0, 0);
     x.restore();
   };
-  line('HARBOR BLDG.', H * 0.3, 150, -0.03);
-  line('RM 304', H * 0.72, 170, -0.02);
+  line('HARBOR BLDG.', H * 0.3, 128, -0.03);
+  line('RM 304', H * 0.72, 160, -0.02);
   // a thumb's smudge
   x.fillStyle = 'rgba(50,50,50,0.12)'; x.beginPath(); x.ellipse(830, H * 0.8, 70, 40, 0.5, 0, 7); x.fill();
   TEX = new THREE.CanvasTexture(c);

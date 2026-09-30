@@ -89,6 +89,10 @@
    "name": "the body: kneel"
   },
   {
+   "until": "!N.controller._ease && !G.hands.still",
+   "timeout": 5000
+  },
+  {
    "eval": "__body.aimAt('chest')"
   },
   {
@@ -122,12 +126,16 @@
    "name": "the wounds"
   },
   {
+   "until": "!N.controller._ease && !G.hands.still",
+   "timeout": 5000
+  },
+  {
    "eval": "__body.aimAt('chest')"
   },
   {
    "look": [
-    -162,
-    80
+    -108,
+    123
    ],
    "steps": 6
   },
@@ -152,12 +160,16 @@
    "name": "his hand"
   },
   {
+   "until": "!N.controller._ease && !G.hands.still",
+   "timeout": 5000
+  },
+  {
    "eval": "__body.aimAt('fist')"
   },
   {
    "look": [
-    113,
-    537
+    528,
+    564
    ],
    "steps": 6
   },
@@ -179,12 +191,16 @@
    "name": "the marks"
   },
   {
+   "until": "!N.controller._ease && !G.hands.still",
+   "timeout": 5000
+  },
+  {
    "eval": "__body.aimAt('marks')"
   },
   {
    "look": [
-    -202,
-    -448
+    -696,
+    -436
    ],
    "steps": 6
   },
@@ -285,12 +301,16 @@
    "timeout": 15000
   },
   {
+   "until": "!N.controller._ease && !G.hands.still",
+   "timeout": 5000
+  },
+  {
    "eval": "__body.aimAt('ladder')"
   },
   {
    "look": [
-    40,
-    -139
+    80,
+    -50
    ],
    "steps": 6
   },
@@ -307,6 +327,10 @@
   {
    "until": "G.stage.part('alley').ladder.down === 1 && !G.scenes.ctx.flags.ladderAnim",
    "timeout": 3000
+  },
+  {
+   "until": "!N.controller._ease && !G.hands.still",
+   "timeout": 5000
   },
   {
    "eval": "__body.aimAt('climb')"
@@ -345,18 +369,39 @@
    "shot": "b11_landing"
   },
   {
+   "until": "!N.controller._ease && !G.hands.still",
+   "timeout": 5000
+  },
+  {
    "eval": "__body.aimAt('half')"
   },
   {
    "look": [
-    42,
-    73
+    111,
+    279
    ],
    "steps": 6
   },
   {
    "until": "G.hud.promptShown.includes('take')",
    "timeout": 4000
+  },
+  {
+   "key": "KeyE"
+  },
+  {
+   "until": "!!G.inspect.active",
+   "timeout": 4000
+  },
+  {
+   "wait": 1300
+  },
+  {
+   "expect": "G.inspect.active.obj.userData.kind === 'matchHalf'",
+   "label": "the torn half held up in my hand"
+  },
+  {
+   "shot": "b11b_half"
   },
   {
    "key": "KeyE"
@@ -386,12 +431,16 @@
    "timeout": 12000
   },
   {
+   "until": "!N.controller._ease && !G.hands.still",
+   "timeout": 5000
+  },
+  {
    "eval": "__body.aimAt('step')"
   },
   {
    "look": [
-    108,
-    346
+    200,
+    360
    ],
    "steps": 6
   },
