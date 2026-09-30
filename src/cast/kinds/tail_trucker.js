@@ -93,15 +93,17 @@ export default {
       duration: 1.6, loop: true,
       def: () => ({ duration: 1.6, loop: true, armSpace: 'root', pose: (t) => {
         const b = S(TAU * t / 1.6);
-        return P({ hipsPos: [0, 0.96, -0.02], hips: [-14, 0, 0], spine: [-30 + b * 2, 0, 0], chest: [-30 + b * 2, 0, 0], neck: [-22, 0, 0], head: [-26, 8, 0], headLevel: [0],
-          handTL: [0.12, 1.1 + b * 0.015, 0.4], handTR: [-0.11, 1.08 + b * 0.015, 0.42], elbowPoleL: [1, -0.3, -0.3], elbowPoleR: [-1, -0.3, -0.3], handL: [0, 0, 60], handR: [0, 0, -60],
+        // (back over it far enough that the water is under his shoulders,
+        // not so far that his face goes out of my sight: it stays up, on me)
+        return P({ hipsPos: [0, 0.96, -0.02], hips: [-10, 0, 0], spine: [-19 + b * 2, 0, 0], chest: [-17 + b * 2, 0, 0], neck: [-2, 0, 0], head: [12, 8, 0], headLevel: [0],
+          handTL: [0.12, 1.14 + b * 0.015, 0.36], handTR: [-0.11, 1.12 + b * 0.015, 0.38], elbowPoleL: [1, -0.3, -0.3], elbowPoleR: [-1, -0.3, -0.3], handL: [0, 0, 60], handR: [0, 0, -60],
           footL: [0.13, A + 0.04, 0.26], footR: [-0.13, A + 0.06, 0.22], footRotL: [-24, 8, 0], footRotR: [-26, -6, 0] });
       } }),
     },
     tail_slide: {
       duration: 1.6, hold: true,
       def: () => ({ duration: 1.6, armSpace: 'root', pose: keyed([
-        [0, { hipsPos: [0, 0.96, -0.02], hips: [-14, 0, 0], spine: [-30, 0, 0], chest: [-30, 0, 0], neck: [-22, 0, 0], head: [-26, 8, 0], handTL: [0.12, 1.1, 0.4], handTR: [-0.11, 1.08, 0.42] }],
+        [0, { hipsPos: [0, 0.96, -0.02], hips: [-10, 0, 0], spine: [-19, 0, 0], chest: [-17, 0, 0], neck: [-2, 0, 0], head: [12, 8, 0], handTL: [0.12, 1.14, 0.36], handTR: [-0.11, 1.12, 0.38] }],
         [0.5, { hipsPos: [0, 0.8, 0.02], hips: [10, 0, 0], spine: [4, 0, 0], chest: [0, 0, 0], neck: [10, 0, 0], head: [10, 0, 0], handTL: [0.3, 0.8, 0.05], handTR: [-0.3, 0.82, 0.04],
           footL: [0.15, A, 0.3], footR: [-0.15, A, 0.28] }],
         [1.2, { hipsPos: [0, 0.28, 0.02], hips: [70, 0, 0], spine: [8, 0, 0], chest: [4, 0, 0], neck: [26, 0, 0], head: [24, 10, 0],
