@@ -22,7 +22,10 @@ export default {
   name: 'drive',
   enter(ctl, opts) {
     const v = opts.vehicle;
-    ctl.drive = { v, look: { yaw: 0, pitch: opts.pitch ?? -0.07 }, idle: 9, lean: 0, aim: false, fov0: ctl.camera.fov, eye: (opts.eye || new THREE.Vector3(-0.42, 1.44, -0.34)).clone(), fov: ctl.camera.fov };
+    // [R2] opts.fov: the lens at rest in the seat (the car's own: a longer
+    // lens than on foot, so the road through the screen is the picture)
+    const base = opts.fov ?? ctl.camera.fov;
+    ctl.drive = { v, look: { yaw: 0, pitch: opts.pitch ?? -0.07 }, idle: 9, lean: 0, aim: false, fov0: ctl.camera.fov, base, eye: (opts.eye || new THREE.Vector3(-0.42, 1.44, -0.34)).clone(), fov: opts.fov != null && opts.ease != null && opts.ease < 0.01 ? base : ctl.camera.fov };
     ctl.bobAmp = 0;
     this.step(ctl, 0);
   },
@@ -95,7 +98,7 @@ export default {
     // the lens widens with speed (68 -> 77 degrees flat out); [2nd pass] on
     // a thing the eyes follow (his spin into the post) it closes in, as a
     // camera would push in on the wreck (it was a small car turning 30 m off)
-    const want = D.focus ? D.fov0 - 22 : D.fov0 + 9 * clamp((v.speed - 8) / 20, 0, 1);
+    const want = D.focus ? D.base - 14 : D.base + 9 * clamp((v.speed - 8) / 20, 0, 1);
     D.fov += (want - D.fov) * (dt > 0 ? 1 - Math.exp(-dt * (D.focus ? 2.2 : 2.5)) : 0);
     if (!ctl._kick && Math.abs(ctl.camera.fov - D.fov) > 0.01) { ctl.camera.fov = D.fov; ctl.camera.updateProjectionMatrix(); }
   },

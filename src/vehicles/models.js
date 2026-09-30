@@ -43,7 +43,9 @@ function coupeBody() {
 // little narrower and lower as it goes, its sides down between the fenders
 // (a loft of superellipse sections: no facets, a soft crown the lamps run
 // along); x from the cowl, top and half width at each station
-export const HOOD = { x0: 0.64, x1: 2.25, top0: 1.155, top1: 1.075, w0: 0.5, w1: 0.37, side: 0.78 };
+// [R2] the nose raked lower (top1 1.075 -> 1.0, the grille's shell with
+// it): from the raised seat the road runs on down past the ornament
+export const HOOD = { x0: 0.64, x1: 2.25, top0: 1.155, top1: 1.0, w0: 0.5, w1: 0.37, side: 0.78 };
 export function hoodTop(x) { const u = Math.min(1, Math.max(0, (x - HOOD.x0) / (HOOD.x1 - HOOD.x0))); return HOOD.top0 + (HOOD.top1 - HOOD.top0) * Math.pow(u, 1.4); }
 function hoodLoft() {
   const NX = 28, NA = 24, pos = [], idx = [];
@@ -123,18 +125,21 @@ function coupeShell() {
 }
 
 // where the driver's eye sits (car frame) and the dials' centre
+// [R2] the windscreen is the picture: the eye 10 cm higher (the road ahead
+// was a 12 % band between the horizon and the hood, the dash and the wheel
+// 40 % of the frame); the wheel rises with it, so the hands keep their place
 export const COUPE = {
-  eye: V3(-0.42, 1.42, -0.34),
+  eye: V3(-0.38, 1.56, -0.34),
   halfL: 2.45, halfW: 0.94, wheelbase: 3.1,
   lamps: [V3(2.3, 0.98, -0.6), V3(2.3, 0.98, 0.6)],
   tail: [V3(-2.3, 0.84, -0.74), V3(-2.3, 0.84, 0.74)],
   window: { x0: -0.95, x1: 0.62, y0: 1.14, y1: 1.74, z: -0.66 },
   screen: { base: 0.66, baseY: 1.13, top: 0.43, topY: 1.77, halfW: 0.62 },
   wipers: [V3(0.655, 1.14, -0.5), V3(0.655, 1.14, 0.08)],
-  dial: V3(0.375, 0.98, -0.34),
+  dial: V3(0.375, 1.0, -0.34),
   // the wheel: its hub, its face toward the eye (tilted back on its raked
   // column), its rim's radius; it turns up to WHEEL_TURN either way
-  hub: V3(-0.02, 1.07, -0.34),
+  hub: V3(0.06, 1.19, -0.34),
   wheelN: V3(-0.72, 0.69, 0).normalize(),
   rimR: 0.205,
 };
@@ -173,10 +178,10 @@ export function buildCoupe(M) {
   }
   // grille, hood strip, the ornament (a winged thing on the radiator cap)
   const gs = new THREE.Shape();
-  gs.moveTo(-0.22, 0.52); gs.lineTo(0.22, 0.52); gs.quadraticCurveTo(0.25, 0.86, 0.0, 1.08); gs.quadraticCurveTo(-0.25, 0.86, -0.22, 0.52);
+  gs.moveTo(-0.22, 0.52); gs.lineTo(0.22, 0.52); gs.quadraticCurveTo(0.25, 0.82, 0.0, 1.0); gs.quadraticCurveTo(-0.25, 0.82, -0.22, 0.52);
   const grille = new THREE.ExtrudeGeometry(gs, { depth: 0.06, bevelEnabled: true, bevelThickness: 0.02, bevelSize: 0.02, bevelSegments: 2, curveSegments: 12 });
   dark.push(smoothNormals(grille.rotateY(Math.PI / 2).translate(2.3, 0, 0), 1e-4));
-  for (let z = -0.16; z <= 0.161; z += 0.04) { const top = 1.05 - Math.pow(Math.abs(z) / 0.23, 2) * 0.36; chrome.push(new THREE.CylinderGeometry(0.009, 0.009, top - 0.55, 6).translate(2.39, (top + 0.55) / 2, z)); }
+  for (let z = -0.16; z <= 0.161; z += 0.04) { const top = 0.97 - Math.pow(Math.abs(z) / 0.23, 2) * 0.33; chrome.push(new THREE.CylinderGeometry(0.009, 0.009, top - 0.55, 6).translate(2.39, (top + 0.55) / 2, z)); }
   chrome.push(tube([0.7, 1.1, 1.5, 1.9, 2.2].map((x) => V3(x, hoodTop(x) + 0.004, 0)), 0.011, 5, 24));
   // the hood's side seams, where it lifts
   for (const sgn of [-1, 1]) chrome.push(tube([0.72, 1.3, 1.9, 2.2].map((x) => { const u = (x - HOOD.x0) / (HOOD.x1 - HOOD.x0); const w = HOOD.w0 + (HOOD.w1 - HOOD.w0) * u * u; return V3(x, hoodTop(x) - 0.05, sgn * (w * 0.93)); }), 0.006, 4, 16));
