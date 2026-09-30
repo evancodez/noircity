@@ -87,7 +87,7 @@ export function buildOpenings(kit, mats, stage) {
     kit.add(M(sp), mats.deskTop, { cast: false });
   }
   const frost = makeFrosted({ w: W - 0.24, h: DOOR.glass[1] - DOOR.glass[0], text: ['AMES', 'BOOKKEEPING'], seed: 3 });
-  frost.userData.glow(0.55, 1.15);
+  frost.userData.glow(0.14, 1.15);
   // (round 2: lit from the corridor's globe - white toward it, a grey away from it)
   frost.userData.fall({ base: 0.012, peak: 1.3, sigma: 0.85 });
   const pane = G.addPane({ centre: V(0, (DOOR.glass[0] + DOOR.glass[1]) / 2, W / 2), normal: V(1, 0, 0), w: W - 0.24, h: DOOR.glass[1] - DOOR.glass[0], material: frost, parent: hinge, tag: 'door304', thick: 0.005 });
@@ -102,7 +102,7 @@ export function buildOpenings(kit, mats, stage) {
   kit.piece();
   const sw = SIDE.z1 - SIDE.z0, sh = SIDE.y1 - SIDE.y0;
   const sideFrost = makeFrosted({ w: sw, h: sh, text: null, seed: 7 });
-  sideFrost.userData.glow(0.5, 1.2);
+  sideFrost.userData.glow(0.14, 1.2);
   sideFrost.userData.fall({ base: 0.012, peak: 1.3, sigma: 0.75 });
   const side = G.addPane({ centre: V(-0.07, (SIDE.y0 + SIDE.y1) / 2, (SIDE.z0 + SIDE.z1) / 2), normal: V(1, 0, 0), w: sw, h: sh, material: sideFrost, tag: 'sidelight', thick: 0.005 });
   side.mesh.layers.set(LAYER.WORLD);
@@ -114,7 +114,7 @@ export function buildOpenings(kit, mats, stage) {
   kit.piece();
   const tw = DOOR.z1 - DOOR.z0, th = DOOR.transom[1] - DOOR.transom[0];
   const trFrost = makeFrosted({ w: tw, h: th, text: ['304'], seed: 11 });
-  trFrost.userData.glow(0.45, 1.1);
+  trFrost.userData.glow(0.16, 1.1);
   trFrost.userData.fall({ base: 0.016, peak: 1.1, sigma: 0.6 });
   const tr = new THREE.Mesh(new THREE.PlaneGeometry(tw, th), trFrost);
   tr.position.set(-0.07, (DOOR.transom[0] + DOOR.transom[1]) / 2, (DOOR.z0 + DOOR.z1) / 2);
@@ -351,7 +351,7 @@ function buildCurtain(kit, mats, stage) {
   // through where the window is and nowhere else, strongest at a man's
   // height, where the Tommy gun's outline will fall; the cloth over the wall is dark)
   mat.userData.setLamp(V(xc - 0.05, 1.5, ROOM.z1 + 0.55), 1);
-  mat.userData.glow(0.14, 0.14);
+  mat.userData.glow(0.085, 0.085);
   mat.userData.fall({ base: 0.02, mid: 0.07, peak: 0.95, sigma: 1.2 }, [ESC.x0 - xc, ESC.y0 - yc, ESC.x1 - xc, ESC.y1 - yc]);
   // (drawn to one side: the curtain covers the window's left two thirds)
   const rod = kit.add(new THREE.CylinderGeometry(0.009, 0.009, w + 0.2, 8).rotateZ(Math.PI / 2).translate(xc, CEIL - 0.32, zc), mats.brass, { cast: false });
