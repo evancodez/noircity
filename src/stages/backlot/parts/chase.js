@@ -27,7 +27,7 @@ export default {
     // the washing's cloth: lit from either side (a wet sheet with a lamp
     // behind it glows through, and the shadow of a man between them shows on
     // it: the lamp's own shadow map, read on both faces)
-    const cloth = std({ color: 0x5c5c5c, roughness: 0.96, side: THREE.DoubleSide, envMap: M.envSoft, envMapIntensity: 0.04 });
+    const cloth = std({ color: 0xa8a8a8, roughness: 0.96, side: THREE.DoubleSide, envMap: M.envSoft, envMapIntensity: 0.04 });
     cloth.onBeforeCompile = (sh) => {
       sh.fragmentShader = sh.fragmentShader.replace('#include <lights_physical_pars_fragment>',
         THREE.ShaderChunk.lights_physical_pars_fragment.replace('float dotNL = saturate( dot( geometryNormal, directLight.direction ) );', 'float dotNL = abs( dot( geometryNormal, directLight.direction ) ) * 0.9;'));

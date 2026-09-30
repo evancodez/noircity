@@ -15,6 +15,9 @@ import { RUNHANDS } from '../clips/run.js';
 //               landing reached (it rings), 'ladder' the ladder begins,
 //               'ladderStop' it hits its stop, 'end'
 //   opts.ladderTime (0.95 s)  the ride down the ladder, at its own pace
+//   opts.autoTo (s) the way goes on by itself until s (out through the
+//               window: the E that began it carries the body onto the iron)
+//   opts.v      the speed it comes in with; opts.pitchBase the look's base
 // ctl.esc.s / .len / .done; ctl.esc.ladderK (0..1 of the ride).
 const _a = new THREE.Vector3(), _b = new THREE.Vector3();
 const wrap = (a) => Math.atan2(Math.sin(a), Math.cos(a));
@@ -28,10 +31,11 @@ export default {
     rail[0].s = 0;
     for (let i = 1; i < rail.length; i++) { len += Math.hypot(rail[i].x - rail[i - 1].x, rail[i].y - rail[i - 1].y, rail[i].z - rail[i - 1].z); rail[i].s = len; }
     ctl.esc = {
-      rail, len, s: opts.s ?? 0, v: 0, look: { yaw: 0, pitch: 0 }, idle: 0, done: false, heading: null,
+      rail, len, s: opts.s ?? 0, v: opts.v ?? 0, look: { yaw: 0, pitch: 0 }, idle: 0, done: false, heading: null, autoTo: opts.autoTo ?? null,
       onEvent: opts.onEvent || (() => {}), endYaw: opts.endYaw ?? null, ladderTime: opts.ladderTime ?? 0.95, ladderT: 0, ladderK: 0,
-      footAcc: 0, seg: 0, game: opts.game || null, pitchBase: -0.1, ladder: opts.ladder || null,
+      footAcc: 0, seg: 0, game: opts.game || null, pitchBase: opts.pitchBase ?? -0.1, ladder: opts.ladder || null,
     };
+    ctl.esc.seg = segIndex(ctl.esc, ctl.esc.s);
     // (the look the eye had comes with it: an offset from the way ahead)
     const E = ctl.esc;
     const h = headingAt(E, E.s);
@@ -60,6 +64,7 @@ export default {
     let f = (held('KeyW') || held('ArrowUp') ? 1 : 0) - (held('KeyS') || held('ArrowDown') ? 1 : 0);
     if (ctl.auto) f = ctl.auto.f || 0;
     if (ctl.frozen) f = 0;
+    if (E.autoTo != null && E.s < E.autoTo) f = 1;
     const i = segIndex(E, E.s);
     const next = E.rail[Math.min(E.rail.length - 1, i + 1)];
     const kind = next.kind || 'walk';

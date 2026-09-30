@@ -66,6 +66,14 @@ export default {
     // dealt one of the three shadowed lights there: `lamp.keen(camPos)` true
     // counts it as the nearest while the pool deals. Its own place is put
     // back at once: only the deal sees it moved)
+    // ([R2-C] a lamp may ask for a harder shadow than the pool's soft one:
+    // `lamp.shadowRadius` - the yard's flood, so his shadow on a sheet has
+    // an edge; given back to the slot's own when another lamp takes it)
+    const assign = L.assign;
+    L.assign = function (slot, lamp) {
+      assign.call(this, slot, lamp);
+      if (slot.shadow) slot.spot.shadow.radius = lamp.shadowRadius ?? 5;
+    };
     const deal = L.updatePool;
     const _h = [];
     L.updatePool = function (dt, camPos, camFwd) {
