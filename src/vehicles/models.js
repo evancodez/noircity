@@ -337,6 +337,7 @@ export function buildCoupe(M) {
     meshes.wheelGroup = wheel;
   }
   for (const m of Object.values(meshes)) if (m && m.isMesh) { m.castShadow = false; m.receiveShadow = true; }
+  meshes.contact = contactShadow(g, 5.3, 2.35);
   return { group: g, meshes, needles, wipers, wheel: meshes.wheelGroup, wheelMount: meshes.wheelMount };
 }
 
@@ -364,10 +365,40 @@ export function buildTruck(M) {
   for (const p of TRUCK.lamps) lens.push(new THREE.CircleGeometry(0.11, 20).rotateY(Math.PI / 2).translate(p.x + 0.05, p.y, p.z));
   meshes.lens = mk(lens, M.headlamp);
   meshes.lens.userData.emitter = true;
+  meshes.contact = contactShadow(g, 8.0, 2.9, -0.4);
   return { group: g, meshes };
 }
 
 // red tail lamps (the crew's red, lit): two small discs behind a sedan
+// a soft dark footprint under a car (the block's sedans have one: without it
+// a black car floats on its own reflections and on the headlamps' wet road).
+// FX layer: the main pass only, never reflected or outlined.
+let CONTACT = null;
+function contactShadow(g, len, wid, x = 0) {
+  if (!CONTACT) {
+    const W = 256, H = 128;
+    const c = document.createElement('canvas');
+    c.width = W; c.height = H;
+    const x2 = c.getContext('2d');
+    x2.filter = 'blur(10px)';
+    x2.fillStyle = 'rgba(0,0,0,0.8)';
+    x2.beginPath(); x2.roundRect(W * 0.1, H * 0.2, W * 0.8, H * 0.6, 26); x2.fill();
+    x2.filter = 'blur(5px)';
+    x2.fillStyle = 'rgba(0,0,0,0.95)';
+    for (const [u, v] of [[0.21, 0.24], [0.79, 0.24], [0.21, 0.76], [0.79, 0.76]]) { x2.beginPath(); x2.ellipse(u * W, v * H, W * 0.07, H * 0.1, 0, 0, Math.PI * 2); x2.fill(); }
+    const tex = new THREE.CanvasTexture(c);
+    tex.colorSpace = THREE.NoColorSpace;
+    CONTACT = new THREE.MeshBasicMaterial({ color: 0x000000, alphaMap: tex, transparent: true, depthWrite: false, fog: false, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 });
+  }
+  const m = new THREE.Mesh(new THREE.PlaneGeometry(len, wid).rotateX(-Math.PI / 2).translate(x, 0.014, 0), CONTACT);
+  m.layers.set(LAYER.FX);
+  m.renderOrder = 1;
+  m.userData.noRay = true;
+  m.castShadow = false;
+  g.add(m);
+  return m;
+}
+
 export function tailLamps(g, at, gain = 7) {
   const mat = new THREE.MeshBasicMaterial({ color: accent('crew', { gain }) });
   mat.name = 'accent_crew_lamp';

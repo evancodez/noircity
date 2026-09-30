@@ -144,7 +144,9 @@ export class Question {
     if (this.autoLook === undefined) this.autoLook = typeof location !== 'undefined' && new URLSearchParams(location.search).get('tailLookRiver') === '1';
     if (this.autoLook && (this.heldT = (this.heldT || 0) + dt) > 0.9) {
       const e = G.camera.position, w = this.water;
-      const yaw = Math.atan2(-(w.x - e.x), -(w.z - e.z)) - H.face, pitch = Math.atan2(w.y - e.y, Math.hypot(w.x - e.x, w.z - e.z));
+      // (on the way, the eyes lift off the water a little, toward the far
+      // bank: still inside the look's cone, and the river reads as a river)
+      const yaw = Math.atan2(-(w.x - e.x), -(w.z - e.z)) - H.face, pitch = Math.atan2(w.y - e.y, Math.hypot(w.x - e.x, w.z - e.z)) + (this.p > 0.35 ? 0.24 : 0);
       const k = 1 - Math.exp(-dt * 3);
       H.look.yaw += (Math.atan2(Math.sin(yaw), Math.cos(yaw)) - H.look.yaw) * k;
       H.look.pitch += (pitch - H.look.pitch) * k;
