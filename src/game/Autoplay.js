@@ -169,6 +169,12 @@ export class Autoplay {
           else if (kind === 'over') act = r.chance(0.7) ? away : 'KeyS';
           else if (kind === 'rush') act = r.chance(0.5) ? 'KeyA' : 'KeyD';
           else if (kind === 'shove') act = r.chance(0.5) ? 'KeyS' : away;
+          // ([R2-E] the foreman's long hook swing: a hop aside is not
+          // enough - back out of it, or step in inside it)
+          else if (kind === 'long') act = r.chance(0.8) ? 'KeyS' : 'in';
+          // ([R2-E] a weapon's wind-up read in time: in, and a jab on the
+          // arm that holds it - it goes out of his fist)
+          if (!B.lesson && style !== 'nododge' && style !== 'rough' && A && A.drops && him.holding === A.drops && r.chance(0.3)) act = 'disarm';
           // (now and then, read right, a counter into the side his swing opens)
           if (!B.lesson && style !== 'nododge' && !feint && !A.answer && /^br_(jab|jabR|cross|hook|hookL|body|bodyL|shove)$/.test(him.clip) && r.chance(0.25)) act = 'counter:' + (hand === 'R' ? 'Mouse0' : 'Mouse2');
           // (a misread: nothing, or the wrong way)
@@ -185,6 +191,9 @@ export class Autoplay {
         this.release('Mouse0'); this.release('Mouse2');
         if (P.act === 'block') this.hold('Space', Math.max(0.1, P.contact - this.t + 0.12));
         else if (P.act.startsWith('counter:')) this.tap(P.act.slice(8));
+        // ([R2-E] in on him (W held), or in and a jab on his weapon arm)
+        else if (P.act === 'in') this.hold('KeyW', 0.42);
+        else if (P.act === 'disarm') { if (d > 1.6) this.hold('KeyW', 0.14); this.keys.push({ code: 'Mouse0', down: this.t + (d > 1.6 ? 0.1 : 0), up: this.t + (d > 1.6 ? 0.12 : 0.02), sent: false }); }
         else if (P.act !== 'none') this.tap(P.act);
       }
       if (this.t < P.contact + 0.05) return;

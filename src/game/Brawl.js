@@ -112,6 +112,8 @@ const OTHER = { L: 'R', R: 'L' };
 // a rush and a stool do not stop for a jab; a hard punch stops anything)
 const STOPS = /^br_(jab|jabR|cross|hook|hookL|body|bodyL|shove|bottle_thrust|throw|answerL|answerR)$/;
 const JAB_STOPS = /^$/;   // ([B8] a jab into his tell counts half again, and stops nothing)
+// ([R2-E] a clip the man's kind knows: c.clip throws on an unknown name)
+const CLIP_OK = (c, name) => { try { return !!c.clip(name); } catch (e) { return false; } };
 
 export class Brawl {
   constructor(game) {
@@ -612,7 +614,7 @@ export class Brawl {
     if (!this.active || this.finished) return;
     const item = kind === 'item' ? me.holding : null;
     const T = item ? THINGS_OF(item) : null;
-    const tgt = this.onTarget(item ? BRAWL.itemReach + (T.big ? 0.2 : 0) : BRAWL.reach);
+    const tgt = this.onTarget(item ? BRAWL.itemReach + (T.big ? 0.2 : 0) + (T.reach || 0) : BRAWL.reach);   // ([R2-E] a thing's own reach: the chain)
     const head = _a.setFromMatrixPosition(c.bones.head.matrixWorld).clone();
     const dir = _b.set(c.pos.x - G.eye.x, 0, c.pos.z - G.eye.z).normalize().clone();
     // (the level of the blow's feel: a jab its own; a thing by what it is)
@@ -719,6 +721,9 @@ export class Brawl {
     if (heavy) this.sfx('hisGrunt', head, { k: 0.6 + 0.13 * lvF });
     if (this.pct(him.hp) <= BRAWL.manners.out && him.state !== 'reel') { this.startReel(dir); return; }
     if (him.state === 'knock' || him.state === 'into') return;
+    // [R2-E] hit on the arm that holds his weapon while he winds up (his
+    // blow's `drops`: the foreman's hook): it goes out of his fist
+    { const A = counter && BR_ATTACKS[him.clip]; if (A && A.drops && him.holding === A.drops && side === OPENS(A)) { this.disarm(dir); return; } }
     // (my left fist lands on his right: his head goes to his left)
     if (!heavy) {
       if (him.state === 'attack' && !stops) return;
@@ -756,6 +761,24 @@ export class Brawl {
       this.stats.answers = (this.stats.answers || 0) + 1;
       if (lessonOK) L.answered = true;
     });
+  }
+
+  // [R2-E] his weapon knocked out of his fist (the foreman's hook): it falls
+  // (the room takes it: a thing in reach), his blow is spoilt, his hand
+  // shaken out, that side open a moment
+  disarm(dir) {
+    const him = this.him;
+    this.dropHisProp();
+    him.holding = null; him.prop = null;
+    this.stats.disarms = (this.stats.disarms || 0) + 1;
+    this.did.disarm = true;
+    this.sfx('blocked', null, { k: 1 });
+    this.hisState('react', this.c.clip && CLIP_OK(this.c, 'fm_disarmed') ? 'fm_disarmed' : 'br_hitHeadR', 0.05);
+    this.lower('L', 0.7, 'disarm');
+    him.next = Math.max(him.next, 0.7);
+    him.pending = null;
+    this.game.emit('brawl:disarm', {});
+    void dir;
   }
 
   breakGuard() {
@@ -864,6 +887,9 @@ export class Brawl {
   // outright here (breakIt, whatever its handle says): its pieces fall.
   breakInWorld(o, kind, at, dir) {
     const G = this.game;
+    // ([R2-E] a room's own thing spent: the room says what it becomes - the
+    // pier's hook sticks in a crate, its lid splits, its lantern burns)
+    if (this.room && this.room.spent && this.room.spent(kind, o, at, dir, this)) return;
     if (kind === 'neck') { this.dropInWorld(o, 'neck', at, dir, 1.2); return; }
     G.stage.scene.add(o);
     o.position.copy(at); o.quaternion.identity(); o.scale.setScalar(1);
@@ -1259,6 +1285,25 @@ export class Brawl {
     him.hit = true;
     const K = (BRAWL.dmgK[him.manner] ?? 1) * (L ? 0.5 : 1);
     const dirMe = _c.set(eye.x - c.pos.x, 0, eye.z - c.pos.z).normalize().clone();
+    // [R2-E] a thing held up as a shield (THINGS' `shield`: the crate lid)
+    // stops the blow, whatever it is; a heavy one (or one that breaks a
+    // block) splits it, and his weapon bites into it: he is open a moment
+    if (me.act === 'block' && me.holding && THINGS_OF(me.holding).shield) {
+      this.stats.blocked++; this.stats.shielded = (this.stats.shielded || 0) + 1;
+      this.did.block = true; this.did.shield = true;
+      const splits = !!(A.heavy || A.block === null);
+      this.sfx('blocked', eye, { k: 1 });
+      me.h = H.play(this.bothHands() ? 'blockBig' : 'blockHit');
+      me.act = 'hurt'; me.stun = 0.16; me.t = 0;
+      this.controller.shake(0.2, 0);
+      if (splits) {
+        this.spendHeld(null, dirMe.clone().negate());
+        this.lower('LR', 0.8, 'shield'); him.missT = Math.max(him.missT, 0.8); him.punished = false;
+      }
+      this.later(0.17, () => { if (this.me.act === 'idle' && this.game.held('Space')) this.block(true); });
+      G.emit('brawl:hit', { by: 'him', kind: clip, power: 0, zone: 'shield', split: splits });
+      return;
+    }
     if (me.act === 'block') {
       if (A.block !== null) {
         // ---- the block holds (a straight stopped, a swing a quarter through)
@@ -1314,7 +1359,9 @@ export class Brawl {
     const ex = eye.x - c.pos.x, ez = eye.z - c.pos.z;
     const lat = ex * rx + ez * rz, dep = ex * fx + ez * fz;
     const reach = Math.min(P.reach, dA + P.over);
-    const hit = lat >= P.lo && lat <= P.hi && dep > 0.2 && dep <= reach;
+    // ([R2-E] a path's `min`: inside it - a long arc's point passes behind a
+    // man who has stepped in on it; the first fight's paths have none)
+    const hit = lat >= P.lo && lat <= P.hi && dep > (P.min ?? 0.2) && dep <= reach;
     // (toward the swing: out on the side it comes from, past the aim line)
     const into = hit && ((A.hand === 'R' && A.kind === 'swing' && lat < -0.3) || (A.hand === 'L' && A.kind === 'swing' && lat > 0.3));
     return { hit, into, lat, dep, reach };
@@ -1563,6 +1610,9 @@ export class Brawl {
     const w = o.getWorldPosition(V(0, 0, 0));
     const q = o.getWorldQuaternion(new THREE.Quaternion());
     c.hold(null, 'R');
+    // ([R2-E] a room's own thing out of his hand - the foreman's hook: the
+    // room lets it fall and makes it a thing in reach)
+    if (this.room && this.room.onHisDrop && this.room.onHisDrop(kind, o, w, q, this)) return;
     if (kind === 'neck' || kind === 'bottle') { o.quaternion.copy(q); this.dropInWorld(o, kind, w, null, 0.3); return; }
     G.stage.scene.add(o);
     o.position.copy(w); o.quaternion.copy(q); o.scale.setScalar(1);

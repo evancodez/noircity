@@ -127,8 +127,13 @@ export default {
     for (let z = -2; z > A.z0; z -= 3) pile(A.x1 + 0.2, z);
     kit.addMerged(piles, M.timber, { cast: false });
 
-    // ---- the walking surface: the pier's deck at 0
-    stage.addSurface(() => 0);
+    // ---- the walking surface: the pier's deck at 0, the river off it ([R2-E]:
+    // a thing that goes out over the edge - a board of a burst loading door -
+    // falls to the water and lies on it; nobody walks there, the edges hold)
+    const onDeck = (x, z) => (z > -0.45 && x > L.x0 && x < L.x1 && z < L.z1)
+      || (x > S.x0 - 0.45 && x < S.x1 + 0.45 && z > S.z0 - 0.45 && z < S.z1)
+      || (x >= S.x1 && x < A.x1 + 0.45 && z > A.z0 - 0.45 && z < 0);
+    stage.addSurface((x, z) => (onDeck(x, z) ? 0 : PIER.waterY));
 
     // ---- the water's edges hold me (and the outer net)
     const C = stage.colliders;
