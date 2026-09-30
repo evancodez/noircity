@@ -450,7 +450,8 @@ function* carsBeat(ctx) {
   // end it in ten seconds; the rain and the burning cars hold the gap)
   yield until(() => (G.director.alive('cars') <= 2 && G.time - t0 > CARS_MIN) || G.time - t0 > 50);
 }
-const CARS_MIN = 15;
+// [R2-F, round 2] 15 -> 20 (the opener was over 16 s after the cars stopped)
+const CARS_MIN = 20;
 
 // a car at its stop: doors open, men out behind them, the first rounds into the glass
 function arrived(ctx, car, i) {
@@ -813,7 +814,10 @@ function spawnCardinal(ctx, at, { climbYaw = null } = {}) {
   const toDoor = SITE.cardinal.path[0];
   const yaw = climbYaw ?? Math.atan2(toDoor.x - at.x, toDoor.z - at.z);
   let fig;
-  const W = { total: 15, slow: 5, knee: 10 };
+  // [R2-F, round 2] (15 / 5 / 10 were: a first-timer had him down five
+  // seconds after he stood clear of his car - the climax over before it
+  // began; the knee now comes in the middle of a half drum on him)
+  const W = { total: 24, slow: 8, knee: 16 };
   const onWound = (h, { wounds, dir }) => {
     const B = G.ais.get(h) && G.ais.get(h).brain;
     if (!B) return;
