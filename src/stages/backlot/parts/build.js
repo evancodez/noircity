@@ -448,13 +448,14 @@ export default {
 // with gaps, a top rail (where the hands plant); its collider
 function fence(K, MAT, x, z0, z1, h, rng) {
   const g = 'fence' + Math.round(x);
-  K.box(g, MAT.woodDark, x - 0.06, x + 0.06, 0, h + 0.08, z0, z0 + 0.12);
-  K.box(g, MAT.woodDark, x - 0.06, x + 0.06, 0, h + 0.08, z1 - 0.12, z1);
-  for (const y of [0.35, h - 0.3]) K.box(g, MAT.woodDark, x + 0.03, x + 0.1, y - 0.06, y + 0.06, z0, z1);
-  K.box(g, MAT.wood, x - 0.07, x + 0.07, h - 0.04, h + 0.02, z0, z1);
+  const NR = { noRay: true };
+  K.box(g, MAT.woodDark, x - 0.06, x + 0.06, 0, h + 0.08, z0, z0 + 0.12, 1 / 6, NR);
+  K.box(g, MAT.woodDark, x - 0.06, x + 0.06, 0, h + 0.08, z1 - 0.12, z1, 1 / 6, NR);
+  for (const y of [0.35, h - 0.3]) K.box(g, MAT.woodDark, x + 0.03, x + 0.1, y - 0.06, y + 0.06, z0, z1, 1 / 6, NR);
+  K.box(g, MAT.wood, x - 0.07, x + 0.07, h - 0.04, h + 0.02, z0, z1, 1 / 6, NR);
   for (let z = z0 + 0.14; z < z1 - 0.14; z += 0.155) {
     const top = h - 0.04 - rng.range(0, 0.05);
-    K.box(g, MAT.wood, x - 0.03, x + 0.03, 0.04, top, z, z + 0.135);
+    K.box(g, MAT.wood, x - 0.03, x + 0.03, 0.04, top, z, z + 0.135, 1 / 6, NR);
   }
   return K.stage.colliders.addBox(x, (z0 + z1) / 2, 0.1, (z1 - z0) / 2, 0, 'fence');
 }

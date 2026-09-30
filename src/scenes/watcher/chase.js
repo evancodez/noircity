@@ -17,6 +17,7 @@ import { WRUN, layOn } from '../../cast/kinds/watcher.js';
 //   chase.place(s)          him at route distance s (running)
 //   chase.onLost            fn(stretch) the scene sets (it re-stages)
 const V = (x, z) => new THREE.Vector3(x, 0, z);
+const _t = new THREE.Vector3();
 const sm = (x) => (x <= 0 ? 0 : x >= 1 ? 1 : x * x * (3 - 2 * x));
 const wrap = (a) => Math.atan2(Math.sin(a), Math.cos(a));
 
@@ -261,14 +262,19 @@ export class Chase {
     if (this.losT <= 0) {
       this.losT = 0.2;
       const eye = G.eye;
-      const tgt = this.fig.bones.chest.getWorldPosition(new THREE.Vector3());
-      const dir = tgt.clone().sub(eye);
-      const d = dir.length();
-      dir.divideScalar(d);
-      const hit = G.rays.raycast(eye, dir, d - 0.6, { anyHit: true });
-      this.seen = !hit;
+      // (his hat over a fence or a crate is him: the head and the chest
+      // each get a ray; either clear is seen)
+      this.seen = false;
+      for (const bone of ['head', 'chest']) {
+        const tgt = this.fig.bones[bone].getWorldPosition(_t);
+        const dir = tgt.sub(eye);
+        const d = dir.length();
+        dir.divideScalar(d);
+        if (!G.rays.raycast(eye, dir, d - 0.5, { anyHit: true })) { this.seen = true; break; }
+      }
     }
-    this.unseen = this.seen ? 0 : this.unseen + dt;
+    // (close behind him round a corner is not losing him)
+    this.unseen = this.seen || gap < 12 ? 0 : this.unseen + dt;
     if (gap > 30 || this.unseen > 6) { (this.lostLog || (this.lostLog = [])).push({ sp: +this.sp.toFixed(1), s: +this.s.toFixed(1), gap: +gap.toFixed(1), unseen: +this.unseen.toFixed(1), stretch: this.stretch, eye: [+G.eye.x.toFixed(1), +G.eye.z.toFixed(1)] }); this.lose(); }
   }
 
