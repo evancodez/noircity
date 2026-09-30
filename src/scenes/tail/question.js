@@ -81,9 +81,15 @@ export class Question {
     G.player.hands.equip('empty');
     // (out through the door: down and out, then up to standing)
     const dur = 1.25;
+    // [R2] (the lens eases from the car's back to a man's on foot: the drive
+    // mode gives the lens back at once as it lets go, and from the spin's
+    // push-in that was a 24 degree jump on the first frame out of the seat)
+    const cam = G.camera, fovFrom = from.fov, fovTo = C.drive ? C.drive.fov0 : cam.fov;
     C.setMode('cutscene', {
       track: (t) => {
         const u = clamp(t / dur, 0, 1), e = ease(u);
+        const f = fovFrom + (fovTo - fovFrom) * e;
+        if (Math.abs(cam.fov - f) > 1e-3) { cam.fov = f; cam.updateProjectionMatrix(); }
         const dip = Math.sin(u * Math.PI) * 0.18;
         return { x: from.x + (to.x - from.x) * e, y: from.y + (to.y - from.y) * e - dip, z: from.z + (to.z - from.z) * e,
           yaw: from.yaw + Math.atan2(Math.sin(yaw - from.yaw), Math.cos(yaw - from.yaw)) * e, pitch: from.pitch + (-0.12 - from.pitch) * e };

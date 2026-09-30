@@ -77,6 +77,8 @@ export function makeWaterMaterial(U, waterY) {
           float span = max( c.y - c.z, 1.0 );            // foot above the mirror (px, y up)
           float u = ( c.y - fc.y ) / span;               // 0 at the foot, 1 at the mirror image
           if ( u < -0.05 || u > 1.0 + k.y ) continue;
+          // (well clear of it, wobble and all: no taps)
+          if ( abs( fc.x - c.x ) > c.w * ( 0.75 + 0.6 * u ) * 2.0 ) continue;
           // (each dash row sits a little to one side: the ripples' wobble)
           float wob = ( texture2D( tNoise, vec2( a * 0.004 + float( i ) * 0.137, b * k.z * 0.25 ) ).g - 0.5 ) * 1.3;
           float hw = c.w * ( 0.75 + 0.6 * u );
