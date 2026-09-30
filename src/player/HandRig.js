@@ -150,34 +150,36 @@ function knuckleZ(x) {
   const L = K.length - 1;
   return K[L][1] + (x - K[L][0]) * ((K[L][1] - K[L - 1][1]) / (K[L][0] - K[L - 1][0]));
 }
-// the back of the hand: a flat, slightly wedge-shaped slab from the heel to
-// the knuckle line (thicker at the heel on the palm's side, the back arched
-// a little across), its front edge slanted along the knuckles
+// the wrist and the back of the hand, one surface: from inside the cuff (the
+// bare forearm's own section, an ellipse 58 x 38 mm, so it sinks into the
+// forearm or the cuff without a corner) the section eases into the hand's
+// flat, slightly wedge-shaped slab (thicker at the heel on the palm's side,
+// the back arched a little across) and runs to the knuckle line, its front
+// edge slanted along the knuckles. (One loft, no seam: two pieces crossing
+// each other's tops drew a hard line across the back of the hand.)
 function palmSlab(g0) {
-  const rows = 14, cols = 44;
-  // (the heel starts inside the wrist, narrower, and widens out of it: no
-  // end face shows where the hand meets the wrist)
-  const zBack = 0.014;
+  const rows = 20, cols = 44;
+  const zBack = 0.046, zHeel = 0.004;
   const pos = [], idx = [];
-  const h0 = 0.13;
-  const sec = (u) => (u < h0 ? {
-    hw: lerp(0.0262, 0.0322, sstep(0, 1, u / h0)) * g0,
-    hh: lerp(0.0092, 0.0112, sstep(0, 1, u / h0)) * g0,
-    hb: lerp(0.0142, 0.0165, sstep(0, 1, u / h0)) * g0,
-  } : {
-    hw: lerp(0.0322, 0.0425, Math.min(1, (u - h0) / 0.62)) * g0,
-    hh: lerp(0.0112, 0.0082, (u - h0) / (1 - h0)) * g0,
-    hb: lerp(0.0165, 0.0106, Math.min(1, (u - h0) * 1.2)) * g0,
-  });
+  // u runs from the cuff (0) to the knuckles (1); the heel at uh
+  const zAt = (u, x) => (u <= uh ? lerp(zBack, zHeel, u / uh) : lerp(zHeel, knuckleZ(x) + 0.001, (u - uh) / (1 - uh)));
+  const uh = 0.32;
+  const sec = (u) => {
+    if (u <= uh) {
+      const k = sstep(0, 1, u / uh);
+      return { hw: lerp(0.0282, 0.0306, k), hh: lerp(0.0188, 0.0118, k), hb: lerp(0.0188, 0.0168, k), cy: lerp(0, -0.0012, k), nt: lerp(2.05, 4.2, k), nb: lerp(2.05, 2.8, k), arch: k };
+    }
+    const v = (u - uh) / (1 - uh);
+    return { hw: lerp(0.0306, 0.0425, Math.min(1, v / 0.75)), hh: lerp(0.0118, 0.0082, v), hb: lerp(0.0168, 0.0106, Math.min(1, v * 1.15)), cy: -0.0012, nt: 4.2, nb: 2.8, arch: 1 };
+  };
   for (let i = 0; i <= rows; i++) {
     const u = i / rows, S = sec(u);
     for (let j = 0; j < cols; j++) {
       const a = (j / cols) * Math.PI * 2;
-      let [x, y] = sePt(a, S.hw, S.hh, S.hb, 4.2, 2.8);
+      let [x, y] = sePt(a, S.hw * g0, S.hh * g0, S.hb * g0, S.nt, S.nb);
       // (the back's gentle arch across the hand)
-      if (y > 0) y += 0.0016 * g0 * (1 - Math.min(1, (x / S.hw) ** 2));
-      const z = lerp(zBack, knuckleZ(x) + 0.001, u);
-      pos.push(x, y - 0.0012, z);
+      if (y > 0) y += 0.0016 * g0 * S.arch * (1 - Math.min(1, (x / (S.hw * g0)) ** 2));
+      pos.push(x, y + S.cy, zAt(u, x));
     }
   }
   for (let i = 0; i < rows; i++) for (let j = 0; j < cols; j++) {
@@ -394,9 +396,10 @@ export class HandRig {
     const H = this.hand;
     const glove = !dims;
     const g0 = glove ? 1.06 : 1;       // (the leather's girth)
-    // the back of the hand and the palm: its radial edge between the index's
-    // knuckle and the heel is the web, weighted into the thumb's metacarpal,
-    // so when the thumb opens the skin between them stretches as one fold
+    // the wrist and the back of the hand, one surface; the palm's radial
+    // edge between the index's knuckle and the heel is the web, weighted
+    // into the thumb's metacarpal, so when the thumb opens the skin between
+    // them stretches as one fold
     {
       const bh = B(H), bt = B(this.thumb.b[0]);
       add(palmSlab(g0), H, 1, (v) => {
@@ -404,12 +407,6 @@ export class HandRig {
         return [bh, bt, w];
       });
     }
-    // the wrist: a flattened box from inside the heel back into the cuff
-    // (its top eases down under the back of the hand where they meet, so the
-    // two planes run on without a step)
-    // (its back end is the bare forearm's own section - an ellipse 58 x 39
-    // mm - so it sinks into the forearm or the cuff without a corner)
-    add(loft((u) => { const k = sstep(0.3, 1, u), q = sstep(0.72, 1, u); return { hw: lerp(0.0282, 0.0292, k) * g0, hh: lerp(0.0188, 0.0112, k) * g0, hb: lerp(0.0188, 0.0172, k) * g0, cy: lerp(0, -0.0016, k), nt: lerp(2.05, 4.2, q), nb: lerp(2.05, 3.0, q), z: lerp(0.046, -0.012, u) }; }, { rows: 8, cols: 32 }), H);
     const PH = HAND.phal;
     for (const [name, , , len, gr0, gr1] of HAND.fingers) {
       const [r0, r1] = dims ? dims.fingers[name] : [gr0, gr1];
