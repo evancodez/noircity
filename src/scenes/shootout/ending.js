@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { accentMaterial } from '../../render/accents.js';
 import { allocInkId } from '../../render/layers.js';
-import { homburgGeometry, makeCigar } from '../../cast/kinds/cardinal.js';
+import { homburgGeometry, makeCigar, HAT_K } from '../../cast/kinds/cardinal.js';
 import { rig } from './rig.js';
 
 // The end of it (B7, scene 9): he falls in the street. His hat leaves him
@@ -48,31 +48,40 @@ export function endHat(ctx, hood, { now = false } = {}) {
   const G = ctx.game, S = ctx.stage, R = rig();
   if (!R) return;
   if (R.hat) { S.scene.remove(R.hat.obj); if (R.hat.cigar) S.scene.remove(R.hat.cigar); }
-  const hat = makeHat(1.04 * (hood ? hood.scale : 1)), cigar = makeCigar({ inkId: allocInkId() });
+  const hat = makeHat(HAT_K * (hood ? hood.scale : 1)), cigar = makeCigar({ inkId: allocInkId() });
   S.scene.add(hat, cigar);
   hat.visible = false; cigar.visible = false;
-  // where it ends: in the water ahead of him and to his right
-  let fwd = V(-0.55, 0, 0.84), side = V(0.84, 0, 0.55), head = V(-5.4, 0, -8.6);
+  // where it ends: he falls back (away from my rounds); the hat leaves his
+  // head as it meets the road, and rolls on behind him and aside into the
+  // water; the cigar lies by his head
+  let fwd = V(-0.4, 0, 0.92), side = V(0.92, 0, 0.4), pos = V(-5.6, 0, -9.6);
   if (hood) {
     fwd = V(Math.sin(hood.yaw), 0, Math.cos(hood.yaw));
     side = V(Math.cos(hood.yaw), 0, -Math.sin(hood.yaw));
-    head = hood.pos.clone().addScaledVector(fwd, 1.45).setY(0);
+    pos = hood.pos.clone().setY(0);
   }
-  const land = head.clone().addScaledVector(fwd, 0.35).addScaledVector(side, 0.15);
-  const rest = land.clone().addScaledVector(fwd, 0.55).addScaledVector(side, 0.95);
-  const y0 = S.surfaceY(rest.x, rest.z);
-  rest.y = y0;
-  const cigRest = rest.clone().addScaledVector(fwd, -0.22).addScaledVector(side, -0.42);
-  cigRest.y = S.surfaceY(cigRest.x, cigRest.z);
-  const H = R.hat = { obj: hat, cigar, rest, land, t: 0, done: false, fwd, side, hood, from: null, spin: 0 };
-  // the roll: an arc on the street from where it lands to where it lies
-  const mid = land.clone().lerp(rest, 0.5).addScaledVector(fwd, 0.35);
-  H.arc = new THREE.QuadraticBezierCurve3(land.clone().setY(0), mid.setY(0), rest.clone().setY(0));
-  H.arcLen = H.arc.getLength();
-  H.cig = { from: null, rest: cigRest, t: 0, yaw: Math.atan2(-side.z, side.x) + 0.6 };
+  const H = R.hat = { obj: hat, cigar, t: 0, done: false, fwd, side, hood, from: null, spin: 0, rng: ctx.rng.fork ? ctx.rng.fork(77) : ctx.rng };
+  H.cig = { from: null, t: 0, yaw: Math.atan2(-side.z, side.x) + 0.6 };
+  // (until the release says where exactly: his head a man's length behind him)
+  plan(H, S, pos.clone().addScaledVector(fwd, -1.45));
   R.hatReset = () => { S.scene.remove(hat, cigar); R.hat = null; R.hatReset = null; };
   if (now || !hood) { placeRest(H, S); H.done = true; H.cig.done = true; }
   R.ticks.push((dt) => step(ctx, H, dt));
+}
+
+// where it lands (the head's place on the road), where it rolls to, where
+// the cigar lies
+function plan(H, S, headAt) {
+  const back = H.fwd.clone().negate();
+  const land = headAt.clone().setY(0).addScaledVector(back, 0.25).addScaledVector(H.side, 0.1);
+  const rest = land.clone().addScaledVector(back, 0.6).addScaledVector(H.side, 0.62);
+  rest.y = S.surfaceY(rest.x, rest.z);
+  const cigRest = rest.clone().setY(0).addScaledVector(H.side, -0.36).addScaledVector(H.fwd, 0.2);
+  cigRest.y = S.surfaceY(cigRest.x, cigRest.z);
+  const mid = land.clone().lerp(rest, 0.5).addScaledVector(back, 0.3);
+  Object.assign(H, { land, rest, arc: new THREE.QuadraticBezierCurve3(land.clone().setY(0), mid.setY(0), rest.clone().setY(0)) });
+  H.arcLen = H.arc.getLength();
+  H.cig.rest = cigRest;
 }
 
 // the hat at rest, crown up; the cigar beside it
@@ -97,6 +106,7 @@ function step(ctx, H, dt) {
     const p = V(0, 0, 0).applyMatrix4(b.matrixWorld);
     const q = b.getWorldQuaternion(new THREE.Quaternion());
     H.from = { p, q, t: H.t };
+    plan(H, S, p);
     b.scale.setScalar(1e-4);
     H.obj.visible = true;
     H.obj.position.copy(p); H.obj.quaternion.copy(q);
@@ -116,10 +126,10 @@ function step(ctx, H, dt) {
     e.scale.setScalar(0.9 + 0.2 * k);
     H.hissT = (H.hissT || 0) - dt;
     if (H.hissT <= 0 && H.cig.done) {
-      H.hissT = 0.35 + Math.random() * 0.8;
+      H.hissT = 0.35 + H.rng.next() * 0.8;
       const tip = V(H.cigar.userData.len + 0.013, 0, 0).applyMatrix4(H.cigar.matrixWorld);
       if (G.fx && G.fx.puff) G.fx.puff.spawn({ pos: tip.clone().add(V(0, 0.01, 0)), vel: V(0.02, 0.09, 0), life: 1.1, size: [0.02, 0.02], grow: 0.06, rot: 0, spin: 0.4, col: [0.55, 0.55, 0.55], alpha: 0.25, drag: 0.6, fadeIn: 0.1, fadeOut: 0.5, cell: 0 });
-      if (Math.random() < 0.6) G.sfx.play('b7_hiss', tip, { k: 0.4 + Math.random() * 0.5 }, { ref: 1.2 });
+      if (H.rng.next() < 0.6) G.sfx.play('b7_hiss', tip, { k: 0.4 + 0.5 * H.rng.next() }, { ref: 1.2 });
     }
   }
   return true;

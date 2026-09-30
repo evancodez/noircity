@@ -306,7 +306,7 @@ export class Rails {
       L.position.set(2.75, 1.0, 0).applyMatrix4(g.matrixWorld);
       L.target.position.set(16, -0.6, 0).applyMatrix4(g.matrixWorld);
       L.target.updateMatrixWorld();
-      L.intensity = 120 * car.lensBroken.filter((b) => !b).length / 2;
+      L.intensity = 42 * car.lensBroken.filter((b) => !b).length / 2;
     });
   }
 

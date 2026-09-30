@@ -552,7 +552,7 @@ function spawnCardinal(ctx, at) {
     }
     if (wounds >= W.total && !h.b7down) {
       h.b7down = true;
-      G.killHood(h, dir || V(-1, 0, 0), false, 'deathKnees');
+      G.killHood(h, dir || V(1, 0, 0), false, 'deathBack');
       endHat(ctx, h);
     }
   };
@@ -578,9 +578,15 @@ function spawnCardinal(ctx, at) {
 // ---- 7. the end ----------------------------------------------------------------------------------------
 function* ending(ctx) {
   const G = ctx.game, R = rig();
+  const frameNow = Q().get('b7frame') === '1';
   if (ctx.flags.endJump) {
-    // (a jump: he is already down, his hat in the water)
-    endHat(ctx, null, { now: true });
+    // (a jump: he falls where the story has him fall, as the beat begins)
+    const P = SITE.cardinal.path;
+    const him = spawnCardinal(ctx, { x: P[1].x + 0.4, z: P[1].z + 1.2 });
+    him.yaw = Math.atan2(P[2].x - P[1].x, P[2].z - P[1].z);
+    him.b7down = true;
+    G.killHood(him, V(-Math.sin(him.yaw), 0, -Math.cos(him.yaw)), false, 'deathBack');
+    endHat(ctx, him);
   }
   // the last of them
   yield until(() => G.director.alive() === 0);
@@ -593,6 +599,7 @@ function* ending(ctx) {
   const hat = R.hat;
   // I walk out to it
   let idle = 0;
+  if (frameNow) { yield wait(2.5); yield* theFrame(ctx); return; }
   yield until(() => {
     idle += 1 / 60;
     const e = G.eye;
@@ -609,12 +616,16 @@ function* theFrame(ctx) {
   const G = ctx.game, R = rig(), C = G.controller;
   const hat = R.hat;
   const from = C.eyePose();
-  const at = hat ? hat.rest.clone() : V(-5.6, 0, -8);
-  // stand back from it toward the diner's corner, looking down the avenue
-  const eye = V(at.x - 0.55, 1.58, at.z + 2.05);
-  const lookAt = at.clone().add(V(0.35, 0.18, -0.4));
+  // down on one knee by his head, looking past it along the way he came: the
+  // hat and the ember low in the frame, the wet street, the lamp beyond
+  const at = hat ? hat.rest.clone() : V(-5.6, 0, -11);
+  const fwd = hat ? hat.fwd : V(-0.4, 0, 0.92), side = hat ? hat.side : V(0.92, 0, 0.4);
+  const eye = at.clone().addScaledVector(fwd, 1.2).addScaledVector(side, 0.28);
+  eye.y = G.stage.surfaceY(eye.x, eye.z) + 1.08;
+  const lookAt = at.clone().addScaledVector(fwd, -2.3).addScaledVector(side, -0.12);
+  lookAt.y = 0.28;
   const yaw = Math.atan2(-(lookAt.x - eye.x), -(lookAt.z - eye.z));
-  const pitch = Math.atan2(lookAt.y - eye.y, Math.hypot(lookAt.x - eye.x, lookAt.z - eye.z)) + 0.1;
+  const pitch = Math.atan2(lookAt.y - eye.y, Math.hypot(lookAt.x - eye.x, lookAt.z - eye.z));
   const to = { x: eye.x, y: eye.y, z: eye.z, yaw, pitch };
   const dur = 2.6;
   C.setMode('cutscene', { ease: 0.01, track: (t) => {

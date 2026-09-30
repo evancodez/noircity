@@ -164,6 +164,17 @@ function laterRoom(ctx, R, b) {
     S.cars.wreckNow(car, i ? 'B' : 'C', { fire: b === 'doorways', rollSgn: 1 });
     R.rails.settle(car);
   });
+  // (and at the end, his saloon where it stopped, its doors open)
+  if (b === 'end') {
+    const car = R.rails.spawn({ rail: SITE.saloon.rail, lights: true, v0: 0, armored: true });
+    car.rail.s = car.rail.L; car.rail.done = true; car.rail.stopped = true;
+    R.rails.place(car, 0);
+    car.meshes.lens.material = S.M.headlamp;
+    car.b7beat = 'cardinal';
+    R.cars.saloon = car;
+    for (const k of ['rf', 'lf', 'rr']) { const d = R.rails.openDoor(car, k); d.a = d.to * 0.94; d.hinge.rotation.y = -d.D.side * d.a; d.hole.visible = true; }
+    R.rails.settle(car);
+  }
 }
 
 // what a beat began with (a retry puts me back there)
@@ -251,6 +262,9 @@ export function everyStep(ctx, dt) {
     if (Math.abs(h.pos.z - (D.door.hingeZ + D.door.w / 2)) < 1.2 && h.pos.x < -8.6 && h.pos.x > -12.5) front.door.open();
   }
   headlampsInRoom(ctx);
+  // (the room dark: the diner's own update puts its pendants back on when the
+  // room comes into sight; they stay off while the switch is down)
+  if (!R.lightsOn) for (const l of S.part('diner').lamps) { l.on = false; if (l.bulb) l.bulb.visible = false; }
   // the drums I carry, beside the ammo
   const L = R.res || (R.res = reserveLayer(G.hud));
   R.outT = Math.max(0, (R.outT || 0) - dt);

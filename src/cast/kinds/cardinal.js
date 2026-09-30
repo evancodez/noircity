@@ -20,6 +20,8 @@ import { accentMaterial } from '../../render/accents.js';
 const A = Math.abs;
 const TAU = Math.PI * 2;
 const B = JOINT_INDEX;
+// the homburg's size on him (and in the street after)
+export const HAT_K = 1.12;
 
 // ---- the homburg: a stiff crown with a gutter crease down its middle, a band,
 // a brim rolled up all round (more at the sides); in the hat bone's space,
@@ -92,6 +94,39 @@ function makePistol() {
   return g;
 }
 
+// ---- the fur shawl: over the shoulders from the neck to their slope, open at
+// the front, and down both fronts as a broad fur facing to the belt; its
+// surface a little off the coat, ragged at the edges (fur, not a board)
+function furShawl(F, H) {
+  const T = F.torso, out = [];
+  const shade = F.shade('fur');
+  const tuft = (a, b) => 0.006 * Math.sin(a * 23 + b * 7) + 0.004 * Math.sin(a * 41 - b * 13);
+  // the shoulders: theta from one front edge round the back to the other
+  const open = 0.42;
+  const sh = H.grid(H.seg(80, 24), H.seg(10, 4), (u, v, p) => {
+    const th = open + u * (TAU - 2 * open);
+    const t = th > Math.PI ? th - TAU : th;
+    const back = (1 - Math.cos(t)) * 0.5;
+    const y = H.lerp(1.505, 1.345 - 0.03 * back, v);
+    T.point(t, y, p, 0.022 + 0.018 * Math.sin(Math.PI * v) + tuft(t, v) + 0.01 * (1 - v));
+  }, { wrapU: false });
+  H.orientOut(sh, new THREE.Vector3(0, 1.4, 0));
+  out.push({ geo: sh, shade, weights: (x, y) => H.torsoWeights(F, x, y) });
+  // the fronts: from the shawl's front edges down to the belt
+  for (const sg of [1, -1]) {
+    const fr = H.grid(H.seg(10, 4), H.seg(28, 10), (u, v, p) => {
+      const y = H.lerp(1.49, 1.0, v);
+      const c = H.lerp(open + 0.02, 0.1, Math.pow(v, 0.8));
+      const w = H.lerp(0.34, 0.16, v);
+      const t = sg * (c + (u - 0.5) * w);
+      T.point(t, y, p, 0.02 + 0.012 * Math.sin(Math.PI * u) + tuft(t * 3, v));
+    }, { wrapU: false });
+    H.orientOut(fr, new THREE.Vector3(0, 1.2, -0.2));
+    out.push({ geo: fr, shade, weights: (x, y) => H.torsoWeights(F, x, y) });
+  }
+  return out;
+}
+
 // ---- the costume ---------------------------------------------------------------------
 const CARDINAL = {
   h: 1.9,
@@ -121,8 +156,10 @@ const CARDINAL = {
     // the overcoat's skirt to the calf, heavy, barely parted
     { kind: 'skirt', y0: 1.0, hem: 0.3, split: 0.35, flare: [1.3, 1.42], back: 0.6, folds: 0.9, grow: 0.014, shade: 'coat' },
     { kind: 'lapels', near: true, top: 1.46, low: 1.18, shade: 'lapel' },
-    // the fur: a thick ring standing round the jaw and lying on the shoulders
-    { kind: 'collar', style: 'fur', r: 0.042, shade: 'fur', nu: 72, nv: 14 },
+    // the fur: a thick roll at the neck, and the shawl of it lying over his
+    // shoulders and down the fronts to the belt (the pale V on the black coat)
+    { kind: 'collar', style: 'fur', r: 0.036, shade: 'fur', nu: 72, nv: 12 },
+    { kind: 'custom', build: (F, H) => furShawl(F, H) },
     { kind: 'sleeves', style: 'long', r: 0.098, cuff: 0.088 },
     { kind: 'legs', r: 1.15 },
     { kind: 'shoes' },
@@ -131,13 +168,13 @@ const CARDINAL = {
     { kind: 'custom', build: (F, H) => {
       const hb = F.rig.BIND.hat, c = F.cover;
       const tilt = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(1, 0, 0), c.pitch ?? 0.05);
-      const geo = H.grid(H.seg(72, 20), H.seg(HOMBURG.length * 3, 12), (u, v, p) => { homburgPoint(u, v, p, 1.04); p.applyQuaternion(tilt).add(hb); });
+      const geo = H.grid(H.seg(72, 20), H.seg(HOMBURG.length * 3, 12), (u, v, p) => { homburgPoint(u, v, p, HAT_K); p.applyQuaternion(tilt).add(hb); });
       H.orientOut(geo, hb.clone().add(new THREE.Vector3(0, 0.05, 0)));
       const band = F.shade('band'), felt = F.shade('cover');
       return [{ geo, shade: (x, y) => { const h = y - hb.y; return h > 0.012 && h < 0.036 && Math.hypot(x - hb.x, 0) < 0.12 ? band : felt; }, weights: () => [[B.hat, 1]] }];
     } },
   ],
-  skin: { coat: 0.011, lapel: 0.01, fur: 0.07, hand: 0.022, skin: 0.03, cover: 0.007, band: 0.002, trousers: 0.006, shoes: 0.004 },
+  skin: { coat: 0.011, lapel: 0.01, fur: 0.17, hand: 0.022, skin: 0.03, cover: 0.007, band: 0.002, trousers: 0.006, shoes: 0.004 },
   collider: 0.4,
 };
 
