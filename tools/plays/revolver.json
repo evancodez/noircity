@@ -1,0 +1,326 @@
+{
+ "about": "The revolver by real input (lane B3): the range (src/scenes/90_range.js, not in the story's order). Q draws the .38; RMB held steadies it; two rounds into each of the three Hoods down the avenue (the aim is mouse moves computed from where the range puts them); six fired, R reloads (1.7 s); one more round at each for any still standing; Q puts it away; the end card. node tools/play.mjs tools/plays/revolver.json (A click is sent where the cursor already is: a press elsewhere warps the locked cursor without a move, and the next look would be measured from there.)",
+ "url": "/?mute=1&start=range",
+ "size": [
+  1280,
+  800
+ ],
+ "out": "shots/play/revolver",
+ "steps": [
+  {
+   "wait": 2000
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]"
+  },
+  {
+   "name": "the range: holstered, the prompt"
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'range' && document.pointerLockElement === N.renderer.domElement",
+   "timeout": 10000
+  },
+  {
+   "until": "G.hud.promptShown.includes('draw')",
+   "timeout": 10000
+  },
+  {
+   "expect": "G.weapons.current === null || G.weapons.current === 'fists' || G.hands.set === 'empty'",
+   "label": "nothing in the hands before the draw"
+  },
+  {
+   "shot": "r00_ready"
+  },
+  {
+   "name": "Q: the draw (0.35 s)"
+  },
+  {
+   "key": "KeyQ"
+  },
+  {
+   "wait": 120
+  },
+  {
+   "shot": "r01_drawing"
+  },
+  {
+   "wait": 450
+  },
+  {
+   "expect": "G.weapons.current === 'revolver' && G.weapons.active.phase === 'ready' && G.weapons.active.ammo === 6",
+   "label": "drawn: the .38 up, six in the cylinder"
+  },
+  {
+   "expect": "!!document.querySelector('#hud .layer[data-layer=revolver] svg.rv')",
+   "label": "the count is up bottom right"
+  },
+  {
+   "shot": "r02_drawn"
+  },
+  {
+   "name": "steady (RMB held), on the first man"
+  },
+  {
+   "mouse": "down",
+   "button": "right",
+   "x": 640,
+   "y": 400
+  },
+  {
+   "look": [
+    48,
+    16
+   ],
+   "steps": 8
+  },
+  {
+   "wait": 350
+  },
+  {
+   "expect": "G.weapons.active.steady > 0.9",
+   "label": "steadied: the gun up on the eye's line"
+  },
+  {
+   "shot": "r03_steady"
+  },
+  {
+   "mouse": "click",
+   "button": "left",
+   "x": 688,
+   "y": 416
+  },
+  {
+   "wait": 40
+  },
+  {
+   "shot": "r04_shot"
+  },
+  {
+   "wait": 420
+  },
+  {
+   "expect": "G.counters.shots === 1 && G.weapons.active.ammo === 5",
+   "label": "one press, one round"
+  },
+  {
+   "mouse": "click",
+   "button": "left",
+   "x": 688,
+   "y": 416
+  },
+  {
+   "wait": 450
+  },
+  {
+   "name": "the second man"
+  },
+  {
+   "look": [
+    75,
+    -3
+   ],
+   "steps": 3
+  },
+  {
+   "wait": 300
+  },
+  {
+   "mouse": "click",
+   "button": "left",
+   "x": 763,
+   "y": 413
+  },
+  {
+   "wait": 450
+  },
+  {
+   "mouse": "click",
+   "button": "left",
+   "x": 763,
+   "y": 413
+  },
+  {
+   "wait": 450
+  },
+  {
+   "name": "the third man"
+  },
+  {
+   "look": [
+    -236,
+    -8
+   ],
+   "steps": 4
+  },
+  {
+   "wait": 350
+  },
+  {
+   "mouse": "click",
+   "button": "left",
+   "x": 527,
+   "y": 405
+  },
+  {
+   "wait": 450
+  },
+  {
+   "mouse": "click",
+   "button": "left",
+   "x": 527,
+   "y": 405
+  },
+  {
+   "wait": 500
+  },
+  {
+   "expect": "G.counters.shots === 6 && G.weapons.active.ammo === 0",
+   "label": "six fired, the cylinder empty"
+  },
+  {
+   "eval": "({ kills: G.counters.kills, hits: G.counters.hits, head: G.counters.headshots, alive: G.world.hoods.list.filter((h) => h.alive).length, hp: G.health.hp })"
+  },
+  {
+   "name": "R: the reload (1.7 s)"
+  },
+  {
+   "mouse": "up",
+   "button": "right",
+   "x": 527,
+   "y": 405
+  },
+  {
+   "key": "KeyR"
+  },
+  {
+   "wait": 300
+  },
+  {
+   "expect": "G.weapons.active.phase === 'reload'",
+   "label": "reloading"
+  },
+  {
+   "shot": "r05_reload_open"
+  },
+  {
+   "wait": 500
+  },
+  {
+   "shot": "r06_reload_feed"
+  },
+  {
+   "wait": 1000
+  },
+  {
+   "expect": "G.weapons.active.phase === 'ready' && G.weapons.active.ammo === 6",
+   "label": "reloaded: six again"
+  },
+  {
+   "name": "one more round at each still standing"
+  },
+  {
+   "mouse": "down",
+   "button": "right",
+   "x": 527,
+   "y": 405
+  },
+  {
+   "wait": 300
+  },
+  {
+   "mouse": "click",
+   "button": "left",
+   "x": 527,
+   "y": 405
+  },
+  {
+   "wait": 420
+  },
+  {
+   "look": [
+    236,
+    8
+   ],
+   "steps": 4
+  },
+  {
+   "wait": 300
+  },
+  {
+   "mouse": "click",
+   "button": "left",
+   "x": 763,
+   "y": 413
+  },
+  {
+   "wait": 420
+  },
+  {
+   "look": [
+    -75,
+    3
+   ],
+   "steps": 3
+  },
+  {
+   "wait": 300
+  },
+  {
+   "mouse": "click",
+   "button": "left",
+   "x": 688,
+   "y": 416
+  },
+  {
+   "wait": 500
+  },
+  {
+   "mouse": "up",
+   "button": "right",
+   "x": 688,
+   "y": 416
+  },
+  {
+   "until": "G.world.hoods.list.filter((h) => h.alive).length === 0",
+   "timeout": 4000
+  },
+  {
+   "expect": "G.counters.kills >= 3 && G.state === 'playing'",
+   "label": "all three down, and me standing"
+  },
+  {
+   "shot": "r07_down"
+  },
+  {
+   "name": "Q: put away, the end"
+  },
+  {
+   "until": "G.hud.promptShown.includes('put away')",
+   "timeout": 6000
+  },
+  {
+   "key": "KeyQ"
+  },
+  {
+   "wait": 150
+  },
+  {
+   "shot": "r08_holster"
+  },
+  {
+   "until": "G.weapons.current !== 'revolver'",
+   "timeout": 3000
+  },
+  {
+   "expect": "!document.querySelector('#hud .layer[data-layer=revolver]')",
+   "label": "the count gone with the gun"
+  },
+  {
+   "until": "G.state === 'end'",
+   "timeout": 6000
+  },
+  {
+   "eval": "({ kills: G.counters.kills, shots: G.counters.shots, hits: G.counters.hits, head: G.counters.headshots, hp: G.health.hp, hoodShots: G.counters.hoodShots, hoodHits: G.counters.hoodHits })"
+  }
+ ]
+}
