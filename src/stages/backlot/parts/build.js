@@ -388,11 +388,14 @@ export default {
     // a lamp over the door in the far wall of the yard, low, thrown down the
     // yard through the washing: the sheets glow with it, and a man just
     // past a line of them is his own shadow on them, as tall as he is
-    lamps.y3 = L.wall(43.2, 2.95, PASSAGE.z0, 0, 1, { out: 7.5, half: 0.55, strength: 0.9, height: 30 });
+    lamps.y3 = L.wall(43.2, 2.6, PASSAGE.z0, 0, 1, { out: 7.5, half: 0.55, strength: 0.9, height: 30 });
     // (its light carries the length of the yard: the washing 10 .. 26 m off
     // must be lit through, not just the ground under it)
     lamps.y3.light.intensity = 700;
     lamps.y3.light.angle = 0.55;
+    // (and it casts its shadows - his, on the sheets - whenever the eye is
+    // in the yard or coming into it: one of the pool's three shadowed lights)
+    lamps.y3.keen = (c) => c.x > YARD.x0 - 8 && c.x < YARD.x1 + 1 && c.z < YARD.z1 + 3 && c.z > YARD.z0 - 1;
     // (not one of the pool's: the far lamp behind the washing must have
     // a shadow-casting light as I come up the yard)
     lamps.y2 = L.wall(YARD.x1, 4.2, -50.4, -1, 0, { real: false });

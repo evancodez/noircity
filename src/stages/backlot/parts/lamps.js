@@ -61,6 +61,18 @@ export default {
       return lamp;
     };
     L.hang = (x, y, z, { real = true } = {}) => L.addHanging(V3(x, y, z), { real });
+    // (a lamp whose shadow tells the story where the eye is - the yard's
+    // flood behind the washing, a man between it and a sheet - may ask to be
+    // dealt one of the three shadowed lights there: `lamp.keen(camPos)` true
+    // counts it as the nearest while the pool deals. Its own place is put
+    // back at once: only the deal sees it moved)
+    const deal = L.updatePool;
+    const _h = [];
+    L.updatePool = function (dt, camPos, camFwd) {
+      _h.length = 0;
+      for (const l of this.lamps) if (l.keen && l.on && l.keen(camPos)) { _h.push(l, l.head.clone()); l.head.set(camPos.x, l.head.y, camPos.z); }
+      try { return deal.call(this, dt, camPos, camFwd); } finally { for (let i = 0; i < _h.length; i += 2) _h[i].head.copy(_h[i + 1]); }
+    };
     return L;
   },
   update: (L, dt, t, camera) => L.update(dt, t, camera),
