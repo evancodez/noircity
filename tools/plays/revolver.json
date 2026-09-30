@@ -1,5 +1,5 @@
 {
- "about": "The revolver by real input (lane B3): the range (src/scenes/90_range.js, not in the story's order). Q draws the .38; RMB held steadies it; two rounds into each of the three Hoods down the avenue (the aim is mouse moves computed from where the range puts them); six fired, R reloads (1.7 s); one more round at each for any still standing; Q puts it away; the end card. node tools/play.mjs tools/plays/revolver.json (A click is sent where the cursor already is: a press elsewhere warps the locked cursor without a move, and the next look would be measured from there.)",
+ "about": "The revolver by real input (lane B3): the range (src/scenes/90_range.js, not in the story's order). Q draws the .38; RMB held steadies it; two rounds into each of the three Hoods down the avenue (the aim is mouse moves computed from where the range puts them); six fired, R reloads (1.7 s); one more round at each for any still standing; Q puts it away; the end card. node tools/play.mjs tools/plays/revolver.json (A click is sent where the cursor already is: a press elsewhere warps the locked cursor without a move, and the next look would be measured from there.) (Second pass: the start waits for the title, and a click on the view takes the pointer lock again if the loaded headless page lost it.)",
  "url": "/?mute=1&start=range",
  "size": [
   1280,
@@ -11,13 +11,30 @@
    "wait": 2000
   },
   {
+   "until": "G.state === 'title' && !!document.querySelector('#title .opt[data-k=begin]') && !document.getElementById('title').classList.contains('hidden')",
+   "timeout": 20000
+  },
+  {
    "clickOn": "#title .opt[data-k=begin]"
   },
   {
    "name": "the range: holstered, the prompt"
   },
   {
-   "until": "G.scenes.current && G.scenes.current.id === 'range' && document.pointerLockElement === N.renderer.domElement",
+   "until": "G.scenes.current && G.scenes.current.id === 'range' && G.state === 'playing'",
+   "timeout": 20000
+  },
+  {
+   "eval": "document.pointerLockElement === N.renderer.domElement"
+  },
+  {
+   "mouse": "click",
+   "button": "left",
+   "x": 640,
+   "y": 400
+  },
+  {
+   "until": "document.pointerLockElement === N.renderer.domElement",
    "timeout": 10000
   },
   {

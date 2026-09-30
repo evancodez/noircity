@@ -73,7 +73,7 @@ const POSE = {
   present: P([0.03, -0.13, -0.33], 1.15, -0.2, 0.15, [0.25, -0.5, -0.05]),
   // the muzzle up for the ejector's stroke, the rear face down (low: the
   // left palm on the rod stays in the lower half)
-  eject: P([0.05, -0.24, -0.35], 1.0, 1.1, 0.1, [0.25, -0.55, -0.05]),
+  eject: P([0.03, -0.27, -0.33], 1.0, 1.0, 0.1, [0.25, -0.55, -0.05]),
   // the muzzle down and left to feed the chambers: the swung-out cylinder's
   // rear face turned up to the eye, the left hand under it
   load: P([0.02, -0.14, -0.33], 0.9, -0.35, 0.5, [0.25, -0.5, -0.05]),
@@ -82,9 +82,10 @@ const POSE = {
 // (second pass: it stood out left, and the left sleeve lay across the frame)
 const EL = [-0.2, -0.6, -0.1];
 // (second pass) the left hand's cradle from under the cylinder, the push
-// that shuts it, and the elbow for the strike (under the hand: the forearm
-// rises from the frame's bottom edge instead of lying across it)
-const LH = { under: 0.75, shutUnder: 0.3, eStrike: [-0.1, -0.65, -0.1] };
+// that shuts it, and the elbow for the strike (out left at the hand's
+// height: the forearm comes in flat from the left edge and the palm slaps
+// down across the muzzle-up gun, instead of a sleeve standing up mid-frame)
+const LH = { under: 0.75, shutUnder: 0.3, eStrike: [-0.4, -0.4, -0.12] };
 // the reload, seconds from its start (the sounds land on the same marks)
 export const RL = {
   dur: 1.7, look: 0.17,
