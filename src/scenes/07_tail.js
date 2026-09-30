@@ -121,11 +121,7 @@ export default defineScene({
       yield beat('shot');
       yield until(() => T.state === 'crashed');
       // my car to a stop behind him (it brakes itself if I do not)
-      // (beside his car, on the road by the kerb where he lies - or past it,
-      // if I come on too fast to stop there: the car brakes itself, eased)
-      const post = T.spin.post, my = T.my, sp = Math.max(0, my.speed);
-      const beside = post.s - 2.5, reach = my.s + (sp * sp) / (2 * 8.5) + 1.5;
-      T.stop = T.stop || { s: Math.max(beside, reach), d: 2.8, fixed: true };
+      // (my car eases to a stop beside his: Tail.tyre set the stop)
     }
     if (ctx.at('crash')) {
       yield beat('crash');

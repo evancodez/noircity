@@ -7,6 +7,7 @@ import { PROP_KINDS, buildProp } from '../../props/index.js';
 import { LAYER, allocVmId } from '../../render/layers.js';
 import { Watcher, PathDriver } from './driver.js';
 import { Screen } from './screen.js';
+import { FIRE } from '../../fx/fxTextures.js';
 
 // Scene 7's machinery (lane B5): the two cars, the road's events, the gun
 // out of the window, the failures and the markers. The script
@@ -115,6 +116,10 @@ export class Tail {
     const S = this.stop;
     if (!S) return false;
     const I = v.input;
+    // (the player's own hands still count: a harder brake, the steering)
+    const G = this.game, held = (c) => G.held(c);
+    const pBrake = held('KeyS') || held('ArrowDown') ? 1 : 0;
+    const pSteer = ((held('KeyA') || held('ArrowLeft')) ? 1 : 0) - ((held('KeyD') || held('ArrowRight')) ? 1 : 0);
     // (a stop it can make: never past the point, never backing up to it)
     if (!S.fixed) { S.fixed = true; S.s = Math.max(S.s, v.s + (v.speed * v.speed) / (2 * 9) + 2); }
     if (v.speed < 0.25 && S.s - v.s < 1.5) { I.throttle = 0; I.brake = 0; I.steer = 0; v.vel.set(0, 0, 0); v.parkedT = (v.parkedT || 0) + dt; return true; }
@@ -131,6 +136,8 @@ export class Tail {
     const c = Math.cos(v.yaw), sn = Math.sin(v.yaw);
     const lx = dx * c - dz * sn, lz = dx * sn + dz * c;
     I.steer = clamp(Math.atan2(-lz, lx) * 2.2, -0.7, 0.7) * (sp > 0.5 ? 1 : 0);
+    if (pSteer) I.steer = clamp(I.steer * 0.3 + pSteer, -1, 1);
+    if (pBrake) { I.brake = Math.max(I.brake, 1); I.throttle = 0; }
     void F2;
     return true;
   }
@@ -465,6 +472,13 @@ export class Tail {
     const post = L.posts.find((p) => p.s > his.s + Math.max(26, his.speed * 1.35)) || L.posts[L.posts.length - 1];
     this.spin = new Spin(this, his, post, side);
     his.driver = this.spin;
+    // the chase is done: my car eases down to stop beside where he will
+    // end (the player may brake harder), the eyes go with him, and the
+    // moment runs slow for a breath
+    this.stop = { s: post.s - 2.5, d: 2.8, fixed: false };
+    const C = G.controller;
+    if (C.drive) C.drive.focus = his;
+    G.slowmo(0.5, 0.8);
     void wi;
   }
   spinStep(dt) { this.spin.fx(dt); }
@@ -525,7 +539,7 @@ class Spin {
       this.acc -= 1;
       const p = v.seat(new THREE.Vector3(r.range(-2, -1.1), 0.1, r.range(-0.8, 0.8)), new THREE.Vector3());
       G.fx.smoke.spawn({ pos: p, vel: new THREE.Vector3(r.gauss() * 0.6, r.range(0.4, 1.0), r.gauss() * 0.6).addScaledVector(v.vel, 0.15), life: r.range(0.9, 1.6), size: [0.5, 0.5], grow: 0.7, rot: r.next() * 6.28, spin: r.gauss() * 0.4,
-        col: [0.07, 0.07, 0.07], colEnd: [0.09, 0.09, 0.09], alpha: 0.5, drag: 1.2, fadeIn: 0.05, fadeOut: 0.5, cell: 0 });
+        col: [0.035, 0.035, 0.035], colEnd: [0.045, 0.045, 0.045], alpha: 0.5, drag: 1.2, fadeIn: 0.05, fadeOut: 0.5, cell: FIRE.SMOKE[r.int(0, 3)] });
     }
     if (!this.screech) { this.screech = true; G.sfx.play('tail_screech', v.pos, { dur: this.T }, { ref: 6 }); }
   }
@@ -594,13 +608,13 @@ class Wreck {
     if (l.light) { l.light.pos.copy(head); l.light.target.copy(head).addScaledVector(l.axis, 6); for (const sl of this.L.pool) if (sl.lamp === l) { sl.spot.position.copy(head); sl.spot.target.position.copy(l.light.target); sl.spot.target.updateMatrixWorld(); } }
     // steam from under the hood
     if (this.t < 40) {
-      this.steamAcc += dt * (this.t < 6 ? 9 : 4);
+      this.steamAcc += dt * (this.t < 5 ? 5 : 1.6) * (this.t < 18 ? 1 : 0);
       while (this.steamAcc >= 1) {
         this.steamAcc -= 1;
         const p = v.seat(new THREE.Vector3(r.range(1.3, 2.1), 1.05, r.range(-0.5, 0.5)), new THREE.Vector3());
-        const gcol = r.range(0.1, 0.16);
-        G.fx.smoke.spawn({ pos: p, vel: new THREE.Vector3(r.gauss() * 0.25, r.range(0.8, 1.6), r.gauss() * 0.25), life: r.range(1.6, 2.6), size: [0.35, 0.35], grow: 0.8, rot: r.next() * 6.28, spin: r.gauss() * 0.3,
-          col: [gcol, gcol, gcol], colEnd: [gcol * 0.8, gcol * 0.8, gcol * 0.8], alpha: 0.55, drag: 0.6, fadeIn: 0.1, fadeOut: 0.7, cell: 0 });
+        const gcol = r.range(0.03, 0.05);
+        G.fx.smoke.spawn({ pos: p, vel: new THREE.Vector3(r.gauss() * 0.15, r.range(0.5, 1.0), r.gauss() * 0.15), life: r.range(1.4, 2.2), size: [0.22, 0.22], grow: 0.55, rot: r.next() * 6.28, spin: r.gauss() * 0.3,
+          col: [gcol, gcol, gcol], colEnd: [gcol * 0.8, gcol * 0.8, gcol * 0.8], alpha: 0.4, drag: 0.6, fadeIn: 0.1, fadeOut: 0.7, cell: FIRE.SMOKE[r.int(0, 3)] });
       }
     }
   }

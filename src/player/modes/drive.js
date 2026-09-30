@@ -59,12 +59,20 @@ export default {
     // the look: back to the road ahead once the mouse rests (never while aiming)
     D.idle += dt;
     const R = D.aim ? AIM : LOOK;
-    if (!D.aim && D.idle > 0.7 && dt > 0) {
+    if (!D.aim && !D.focus && D.idle > 0.7 && dt > 0) {
       const k = 1 - Math.exp(-dt * 1.8);
       D.look.yaw += (0 - D.look.yaw) * k;
       D.look.pitch += ((O.pitch ?? -0.07) - D.look.pitch) * k;
     }
-    D.look.yaw = clamp(D.look.yaw, R.yaw[0], R.yaw[1]);
+    // a thing the eyes follow (his car spinning out): the look eases to it
+    if (D.focus && dt > 0 && !D.aim) {
+      const f = D.focus.pos || D.focus, e = ctl.camera.position;
+      const want = Math.atan2(-(f.x - e.x), -(f.z - e.z)) - (v.yaw - Math.PI / 2);
+      const w = Math.atan2(Math.sin(want), Math.cos(want));
+      const k = 1 - Math.exp(-dt * (D.idle > 0.5 ? 3.0 : 0.8));
+      D.look.yaw += (clamp(w, -0.75, 0.75) - D.look.yaw) * k;
+    }
+    D.look.yaw = clamp(D.look.yaw, D.focus ? -0.75 : R.yaw[0], D.focus ? 0.75 : R.yaw[1]);
     D.look.pitch = clamp(D.look.pitch, R.pitch[0], R.pitch[1]);
     // the eye in its seat (the head out of the window as it leans)
     const L = D.lean;

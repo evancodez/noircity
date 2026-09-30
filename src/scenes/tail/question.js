@@ -40,7 +40,7 @@ export class Question {
     const out = { x: rz.x * side, z: rz.z * side };
     const yaw = Math.atan2(out.x, out.z);
     this.man = C.spawn(kind, { at: { x: door.x, z: door.z }, yaw });
-    this.man.play('rise', { hold: true });
+    this.man.play('tail_crawl', { hold: true, fade: 0.05 });
     this.carSide = { x: rz.x * side, z: rz.z * side };   // out of his car's side
     return this.man;
   }
@@ -91,7 +91,7 @@ export class Question {
     void side;
     const face = Math.atan2(cs.x, cs.z);   // his heading: away from the car
     man.place({ x: wall.x, z: wall.z }, face);
-    man.play('br_stun', { hold: true, fade: 0.15 });
+    man.play('tail_pinned', { fade: 0.12 });
     this.pin = wall.clone();
     this.face = face;
     // the eye: a forearm's length in front of him, looking at him
@@ -108,7 +108,9 @@ export class Question {
     const P1 = his.seat(new THREE.Vector3(lend + Math.sign(lend) * 0.9, 0, this.side * -(his.spec.halfW + 0.3)), new THREE.Vector3());
     const pr = project(P1.x, P1.z, his.s, {});
     this.path = [this.pin.clone(), roadPoint(pr.s, Math.max(pr.d, 6.8)), roadPoint(pr.s, ROAD.rail - 0.42)];
-    this.water = roadPoint(pr.s, ROAD.rail + 3.2, ROAD.waterY);
+    // (the water beyond him, out where the far lights lie on it: the eyes
+    // on it put him in the lower frame, bent over the rail, the river behind)
+    this.water = roadPoint(pr.s + 2, ROAD.rail + 14, ROAD.waterY);
     this.railS = pr.s;
     yield wait(0.35);
   }
@@ -150,11 +152,8 @@ export class Question {
     const heading = Math.atan2(-dir.x, -dir.z);   // (he faces away from where he is going)
     this.hd = this.hd == null ? this.face : this.hd + Math.atan2(Math.sin(heading - this.hd), Math.cos(heading - this.hd)) * (1 - Math.exp(-dt * 5));
     man.place({ x: at.x, z: at.z }, this.hd);
-    // (the bend: his body tipped back over the rail, pivoting at his hips)
-    const o = man.object;
-    o.rotation.order = 'YXZ';
-    o.rotation.x = -bend * 0.95;
-    if (bend > 0) { const lift = Math.sin(bend * 0.95) * 0.95; o.position.addScaledVector(dir, lift * 0.4); o.position.y += (1 - Math.cos(bend * 0.95)) * 0.95 * 0.6; }
+    // (the bend: back over the rail - his clip - as the walk ends)
+    if (bend > 0.02 && !this.bent) { this.bent = true; man.play('tail_overRail', { fade: 0.55 }); G.sfx.play('tail_thud', at, { k: 0.6 }, { ref: 3 }); G.controller.kick(1.2, 0.8, 0.12); }
     LAPELS.bend = bend;
     // the eye: in front of him, leaning over him as he goes back
     const fx = Math.sin(this.hd), fz = Math.cos(this.hd);   // his forward (toward me)
@@ -169,16 +168,17 @@ export class Question {
   *release() {
     const G = this.game, man = this.man;
     LAPELS.k = 0;
+    LAPELS.man = null;
     G.player.hands.equip('empty');
-    const o = man.object;
-    const r0 = o.rotation.x;
-    for (let t = 0; t < 1.1; t += 1 / 60) {
-      const u = ease(Math.min(1, t / 1.1));
-      o.rotation.x = r0 * (1 - u);
+    // (I step back from him as he goes down)
+    const H = G.controller.hold;
+    const back = H ? H.at.clone() : null;
+    man.play('tail_slide', { hold: true, fade: 0.2 });
+    G.sfx.play('tail_slump', man.pos, {}, { ref: 3 });
+    for (let t = 0; t < 1.4; t += 1 / 60) {
+      if (H && back) { const u = ease(Math.min(1, t / 1.2)); const fx = Math.sin(this.hd), fz = Math.cos(this.hd); H.at.set(back.x + fx * 0.45 * u, back.y + 0.12 * u, back.z + fz * 0.45 * u); }
       yield null;
     }
-    man.play('koFall', { hold: true, fade: 0.2 });
-    G.sfx.play('tail_slump', man.pos, {}, { ref: 3 });
   }
 }
 export { until };
