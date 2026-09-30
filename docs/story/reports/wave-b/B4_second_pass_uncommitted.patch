@@ -1,0 +1,216 @@
+diff --git a/src/player/clips/watcher.js b/src/player/clips/watcher.js
+index 5b83cc7..bb94d20 100644
+--- a/src/player/clips/watcher.js
++++ b/src/player/clips/watcher.js
+@@ -1,5 +1,5 @@
+ import * as THREE from 'three';
+-import { palm } from '../handPoses.js';
++import { palm, wrap } from '../handPoses.js';
+ 
+ // The hands at room 304's street window (lane B4, scene 6): two fingers
+ // part the blind's slats. Object first: the pose is read live from where
+@@ -42,18 +42,24 @@ const live = () => {
+   return o;
+ };
+ 
+-// my car's door: the right hand to its handle (DOOR.at, world), the
+-// fingers hooked under it, the thumb on the button
+-export const DOOR = { at: null };
+-const HOOK = { i: C(0.7, 0.9, 0.5, -0.02), m: C(0.75, 0.95, 0.5), r: C(0.8, 1.0, 0.55, 0.03), l: C(0.9, 1.05, 0.6, 0.07), t: [0.4, 0.1, 0.3, 0.2, 0.2] };
++// my car's door: the right hand closes over its handle (DOOR.at, world: the
++// middle of a chrome bar along the car's side, DOOR.out the side's outward
++// normal - the stage's cars put the bar there): the palm on the bar's top a
++// little back from it toward me, the fingers over it and down round its far
++// side, the thumb along it
++export const DOOR = { at: null, out: null };
++const OVER = wrap(0.011, { k: 1.05, thumb: [0.45, 0.35, 0.25, 0.3, 0.3] });
++const _o = new THREE.Vector3(), _d = new THREE.Vector3();
+ function doorPose() {
+   const cam = SLAT.cam;
+-  if (!DOOR.at || !cam) return { frame: 'cam', p: [0.15, -0.3, -0.35], f: [-0.2, 0.2, -0.95], b: [0.9, 0.3, 0.1], F: HOOK };
++  if (!DOOR.at || !cam) return { frame: 'cam', p: [0.15, -0.3, -0.35], f: [-0.2, 0.2, -0.95], b: [0.9, 0.3, 0.1], F: OVER };
+   cam.updateMatrixWorld();
+   const inv = _m.copy(cam.matrixWorld).invert();
+-  const at = _v.copy(DOOR.at).applyMatrix4(inv).toArray();
+-  // (the palm up under the handle, the fingers ahead along it)
+-  return palm('cam', [at[0], at[1] - 0.025, at[2] + 0.02], [0.05, 1, 0.1], [-0.35, 0.05, -0.93], HOOK, [at[0] + 0.25, at[1] - 0.28, at[2] + 0.3]);
++  const out = DOOR.out ? _o.copy(DOOR.out) : _o.set(1, 0, 0);
++  const at = _v.copy(DOOR.at).addScaledVector(out, 0.042).add(_d.set(0, 0.014, 0)).applyMatrix4(inv).toArray();
++  const n = _d.set(0, -1, 0).transformDirection(inv).toArray();
++  const f = _d.copy(out).negate().transformDirection(inv).toArray();
++  return palm('cam', at, n, f, OVER, [at[0] + 0.18, at[1] - 0.34, at[2] + 0.26]);
+ }
+ const liveOf = (fn) => {
+   const o = { frame: 'cam' };
+diff --git a/src/player/modes/escape.js b/src/player/modes/escape.js
+index 0626f09..a45c87e 100644
+--- a/src/player/modes/escape.js
++++ b/src/player/modes/escape.js
+@@ -76,7 +76,7 @@ export default {
+       E.v = (L1 - L0) / E.ladderTime;
+       if (k >= 1) { E.s = E.len; E.onEvent('ladderStop', {}); }
+     } else if (E.s < E.len) {
+-      const want = f > 0 ? (kind === 'stair' ? 2.9 : 3.3) : 0;
++      const want = f > 0 ? (next.duck ? next.duck.speed : kind === 'stair' ? 2.9 : 3.3) : 0;
+       E.v += (want - E.v) * (1 - Math.exp(-dt * (want > E.v ? 7 : 12)));
+       const s0 = E.s;
+       E.s = Math.min(E.len, E.s + E.v * dt);
+@@ -94,7 +94,16 @@ export default {
+     }
+     const p = pointAt(E, E.s, _a);
+     ctl.pos.set(p.x, 0, p.z);
+-    ctl.groundY = p.y;
++    // a segment through a low opening (a window under its raised sash):
++    // bent low through it and up again on the far side, the palms on the
++    // sill while the body goes over it
++    const di = segIndex(E, E.s), D = E.rail[di + 1].duck || null;
++    let duck = 0, du = 0;
++    if (D) {
++      du = Math.min(1, Math.max(0, (E.s - E.rail[di].s) / Math.max(1e-6, E.rail[di + 1].s - E.rail[di].s)));
++      duck = sm(du / D.k0) * (1 - sm((du - D.k1) / (1 - D.k1)));
++    }
++    ctl.groundY = p.y - (D ? D.drop * duck : 0);
+     // the way ahead turns the body; the look is laid on it and eases back
+     // to it once the mouse has rested 0.6 s (faster while moving)
+     let h = headingAt(E, E.s);
+@@ -104,12 +113,12 @@ export default {
+     E.idle += dt;
+     if (E.idle > 0.6 && E.v > 0.5) { const k = Math.exp(-dt * 2.4); E.look.yaw *= k; E.look.pitch = E.look.pitch * k; }
+     const onStair = kind === 'stair' && E.v > 0.3;
+-    E.pitchBase += ((onStair ? -0.32 : kind === 'ladder' ? -0.2 + 0.17 * E.ladderK : -0.08) - E.pitchBase) * (1 - Math.exp(-dt * 4));
++    E.pitchBase += ((onStair ? -0.32 : kind === 'ladder' ? -0.2 + 0.17 * E.ladderK : -0.08 - (D ? D.pitch * duck : 0)) - E.pitchBase) * (1 - Math.exp(-dt * (D ? 9 : 4)));
+     ctl.yaw = E.heading + E.look.yaw;
+     ctl.pitch = Math.max(-1.45, Math.min(1.45, E.pitchBase + E.look.pitch));
+     // the stride's bob, and the hands: one on the flight's handrail
+     ctl.vel.set(0, 0, 0);
+-    const moving = E.v > 0.3 && kind !== 'ladder';
++    const moving = E.v > 0.3 && kind !== 'ladder' && !D;
+     ctl.bobAmp += ((moving ? 0.75 : 0) - ctl.bobAmp) * (1 - Math.exp(-dt * 8));
+     ctl.bobPhase += dt * (moving ? 2.1 + E.v * 1.6 : 0);
+     RUNHANDS.phase = ctl.bobPhase;
+@@ -118,7 +127,14 @@ export default {
+     // point beside me and a little ahead, at the rail's height); on the
+     // ladder both hands hold its sides as it drops, and let go as I turn
+     const seg = E.rail[Math.min(E.rail.length - 1, segIndex(E, E.s) + 1)];
+-    if (seg.kind === 'stair' && seg.rail) {
++    if (D && D.hands && du > 0.08 && du < D.k1 + 0.3) {
++      // (through the window: both palms go to the sill as the body bends to
++      // it, stay while it goes over, and come off as it rises outside)
++      RUNHANDS.plantR.set(...D.hands[0]);
++      RUNHANDS.plantL.set(...D.hands[1]);
++      RUNHANDS.lift = Math.max(0, Math.min(1, (du - D.k1) / 0.26));
++      RUNHANDS.set('plant');
++    } else if (seg.kind === 'stair' && seg.rail) {
+       const i = segIndex(E, E.s), a = E.rail[i], b = E.rail[i + 1];
+       const hx = b.x - a.x, hz = b.z - a.z, hl = Math.hypot(hx, hz) || 1;
+       const fx = hx / hl, fz = hz / hl;
+diff --git a/src/scenes/06_watcher.js b/src/scenes/06_watcher.js
+index ded7261..669353b 100644
+--- a/src/scenes/06_watcher.js
++++ b/src/scenes/06_watcher.js
+@@ -332,14 +332,22 @@ export default defineScene({
+       // until it is well away: the mouse still turns me, the draw only
+       // leans the look toward the red of its tail lamps)
+       // (then, more gently, back to my own car at the kerb: where to go)
+-      const door = V(MY_CAR.x + 1.0, 1.1, MY_CAR.z + 0.35);
++      // (my car's handle, on the kerb side: the stage's cars put it there)
++      const door = cars.mine && cars.mine.handleAt ? cars.mine.handleAt() : V(MY_CAR.x + 0.76, 0.99, MY_CAR.z + 0.2);
++      const doorOut = cars.mine && cars.mine.handleOut ? cars.mine.handleOut() : V(1, 0, 0);
+       let driven = false;
+       const pull = { t: -1, dur: 5.4, rate: 3.2, pitch: -0.04, at: () => car.pos(),
+         next: { dur: 1.8, rate: 1.8, pitch: -0.1, at: () => door } };
+       const wrapA = (a) => Math.atan2(Math.sin(a), Math.cos(a));
++      // (the player's own look always wins: a turn of the mouse - the look
++      // moved since the last step by more than a hair - lets the draw go for
++      // good, so the eye is never fought for)
++      let lastYaw = null, lastPitch = null;
+       ctx.onStep((dt) => {
+         if (pull.t < 0 || driven) return;
+         const ctl = G.controller, e = G.eye;
++        if (lastYaw != null && (Math.abs(wrapA(ctl.yaw - lastYaw)) > 0.004 || Math.abs(ctl.pitch - lastPitch) > 0.004)) { pull.t = -1; return; }
++        lastYaw = null;
+         if (pull.t >= pull.dur) {
+           // (not when I am already at it, or already looking its way)
+           const N = pull.next;
+@@ -355,6 +363,7 @@ export default defineScene({
+         const k = (1 - Math.exp(-dt * pull.rate)) * w;
+         ctl.yaw += wrapA(want - ctl.yaw) * k;
+         ctl.pitch += (pull.pitch - ctl.pitch) * k;
++        lastYaw = ctl.yaw; lastPitch = ctl.pitch;
+       });
+       yield wait(0.5);
+       car.start();
+@@ -372,11 +381,16 @@ export default defineScene({
+       // my hand on the handle (object first: the handle, then the hand on
+       // it), the door's click, and away after him
+       DOOR.at = door.clone();
++      DOOR.out = doorOut.clone();
+       SLAT.cam = G.camera;
+       G.controller.frozen = true;
+-      // (a step to the door, facing it, while the hand goes out to it)
+-      const gy = G.stage.surfaceY(door.x + 0.75, door.z - 0.1);
+-      G.controller.ease({ x: door.x + 0.75, y: gy + 1.63, z: door.z - 0.1, yaw: Math.PI / 2 + 0.25, pitch: -0.42 }, 0.4);
++      // (a step to the door, facing it, while the hand goes out to it: the
++      // eye a forearm and a half off the side, the handle a little right of
++      // and below the middle of the frame, the window's line over it)
++      const ex = door.x + doorOut.x * 0.7 - doorOut.z * 0.1, ez = door.z + doorOut.z * 0.7 + doorOut.x * 0.1;
++      const gy = G.stage.surfaceY(ex, ez);
++      const dy = gy + 1.63 - door.y, dd = Math.hypot(door.x - ex, door.z - ez);
++      G.controller.ease({ x: ex, y: gy + 1.63, z: ez, yaw: Math.atan2(-(door.x - ex), -(door.z - ez)) + 0.1, pitch: -Math.atan2(dy, dd) + 0.2 }, 0.4);
+       H.play('carDoor', { onMark: { grip: () => G.sfx.play('w_carDoorOpen', door) } });
+       yield wait(0.85);
+       ctx.next();
+diff --git a/src/stages/backlot/parts/cars.js b/src/stages/backlot/parts/cars.js
+index 24bf7b1..0650f0a 100644
+--- a/src/stages/backlot/parts/cars.js
++++ b/src/stages/backlot/parts/cars.js
+@@ -47,6 +47,29 @@ export default {
+       h.group.add(m);
+     }
+     h.tail = { mat: tailMat, set(k) { tailMat.color.copy(accent('crew', { gain: 0.35 + 5.5 * k })); } };
++    // my car's front door handles (the block's sedan has none): a chrome bar
++    // on two stems at each front door's rear edge, standing off the side a
++    // hand's thickness - the thing my hand closes over at the end of the
++    // scene (the scene reads mine.handleAt())
++    {
++      const m = C.mine;
++      const bar = new THREE.CylinderGeometry(0.011, 0.011, 0.15, 10).rotateZ(Math.PI / 2);
++      const stems = [-0.06, 0.06].map((x) => new THREE.CylinderGeometry(0.008, 0.008, 0.05, 6).rotateX(Math.PI / 2).translate(x, 0, -0.025));
++      for (const s of [1, -1]) {
++        for (const geo of [bar, ...stems]) {
++          const k = new THREE.Mesh(geo, stage.M.chrome);
++          k.position.set(-0.2, 0.99, s * 0.755);
++          if (s < 0) k.rotation.y = Math.PI;
++          k.userData.inkId = m.meshes.paint.userData.inkId;
++          k.userData.part = 'body';
++          m.group.add(k);
++        }
++      }
++      m.group.updateMatrixWorld(true);
++      // (the kerb side's: local +z, which the car's yaw turns east)
++      m.handleAt = (out = new THREE.Vector3()) => out.set(-0.2, 0.99, 0.755).applyMatrix4(m.group.matrixWorld);
++      m.handleOut = (out = new THREE.Vector3()) => out.set(0, 0, 1).transformDirection(m.group.matrixWorld);
++    }
+     stage.onShadowLod((on) => C.shadowLod(on));
+     return C;
+   },
+diff --git a/src/stages/backlot/plan.js b/src/stages/backlot/plan.js
+index 0093742..b3c3073 100644
+--- a/src/stages/backlot/plan.js
++++ b/src/stages/backlot/plan.js
+@@ -43,9 +43,13 @@ export const ESC = {
+   ladder: { x: 0.95, z: -9.45 },
+ };
+ // the body's way down (the escape mode's rail: y the feet)
++// (out through the window first: its lower sash is up behind the upper, the
++// opening under it 0.9 m from the sill to the sash's rail - a man ducks
++// through it, bent low, both palms on the sill, and comes up on the iron:
++// `duck`, fractions of the segment, see player/modes/escape.js)
+ export const ESC_RAIL = [
+-  { x: -0.6, y: L3Y, z: -10.0 },
+-  { x: 0.45, y: L3Y, z: -10.0, kind: 'walk' },
++  { x: -0.8, y: L3Y, z: -10.0 },
++  { x: 0.45, y: L3Y, z: -10.0, kind: 'walk', duck: { k0: 0.36, k1: 0.66, drop: 0.52, pitch: 0.42, speed: 1.45, hands: [[-0.1, L3Y + 0.56, -9.8], [-0.1, L3Y + 0.56, -10.2]] } },
+   { x: 0.5, y: L3Y, z: -10.65, kind: 'walk' },
+   { x: 0.95, y: L3Y, z: -11.05, kind: 'walk' },
+   { x: 0.95, y: 2 * FLOOR, z: -14.65, kind: 'stair', rail: 'R' },
