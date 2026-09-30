@@ -32,6 +32,7 @@ const BEAM = V(1, -0.09, 0).normalize();
 // (a dim, even grey: the inside of the cab with its dome light on)
 let CAB = null;
 const cabLight = () => CAB || (CAB = new THREE.MeshBasicMaterial({ color: new THREE.Color(0.1, 0.1, 0.1), side: THREE.DoubleSide }));
+export const cabMaterial = cabLight;
 
 export class Rails {
   constructor(game, stage) {
