@@ -442,7 +442,7 @@ export function tailLamps(g, at, gain = 7) {
   return m;
 }
 let GLOW = null;
-function glowTexture() {
+export function glowTexture() {
   if (GLOW) return GLOW;
   const c = document.createElement('canvas');
   c.width = c.height = 64;
