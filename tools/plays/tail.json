@@ -96,8 +96,8 @@
    "eval": "JSON.stringify({ log: window.__tail && window.__tail.log, events: window.__tail && window.__tail.evlog })"
   },
   {
-   "expect": "G.state === 'end'",
-   "label": "the scene ends with ctx.next() (the next scene's file is another lane's: the end card here)"
+   "expect": "G.state === 'end' || (G.scenes.current && G.scenes.current.id === 'warehouse')",
+   "label": "the scene ends with ctx.next(): chapter VIII (Pier Nine) opens (or the end card, without its file)"
   },
   {
    "shot": "t16_end"
