@@ -58,14 +58,14 @@ export default (kit) => {
         return 0.7;
       },
       revDry(ctx, out, t0, p, R) { click(ctx, out, R, t0, 2800, 0.5, 0.5); click(ctx, out, R, t0 + 0.012, 1700, 0.2); return 0.1; },
-      revCock(ctx, out, t0, p, R) { click(ctx, out, R, t0, 3300, 0.18); click(ctx, out, R, t0 + 0.06, 2600, 0.26); return 0.12; },
+      revCock(ctx, out, t0, p, R) { click(ctx, out, R, t0, 3300, 0.3); click(ctx, out, R, t0 + 0.07, 2500, 0.42, 0.5); return 0.14; },
       revOpen(ctx, out, t0, p, R) {
-        click(ctx, out, R, t0, 3000, 0.28);
+        click(ctx, out, R, t0, 3000, 0.4);
         const n = noise(ctx, R, 'white', t0 + 0.02, 0.14);
         const bp = filt(ctx, 'bandpass', 2400, 3); bp.frequency.setValueAtTime(2400, t0 + 0.02); bp.frequency.linearRampToValueAtTime(1500, t0 + 0.12);
-        const g = gain(ctx); env(g, t0 + 0.02, 0.16, 0.01, 0.09);
+        const g = gain(ctx); env(g, t0 + 0.02, 0.24, 0.01, 0.09);
         chain(n, bp, g, out);
-        click(ctx, out, R, t0 + 0.12, 1900, 0.2);
+        click(ctx, out, R, t0 + 0.12, 1900, 0.32);
         return 0.2;
       },
       revEject(ctx, out, t0, p, R) {
@@ -86,8 +86,8 @@ export default (kit) => {
         const n = noise(ctx, R, 'white', t0, 0.06);
         const g = gain(ctx); env(g, t0, 0.12, 0.003, 0.04);
         chain(n, filt(ctx, 'bandpass', 3600, 2.5), g, out);
-        click(ctx, out, R, t0 + 0.035, 2400, 0.14, 0.2);
-        click(ctx, out, R, t0 + 0.045, 2700, 0.12, 0.2);
+        click(ctx, out, R, t0 + 0.035, 2400, 0.3, 0.3);
+        click(ctx, out, R, t0 + 0.046, 2700, 0.26, 0.3);
         return 0.1;
       },
       revShut(ctx, out, t0, p, R) {
@@ -99,20 +99,20 @@ export default (kit) => {
       revDraw(ctx, out, t0, p, R) {
         // the coat's cloth, the leather of the holster, the gun out
         const n = noise(ctx, R, 'pink', t0, 0.3);
-        const g = gain(ctx); env(g, t0, 0.14, 0.03, 0.18);
+        const g = gain(ctx); env(g, t0, 0.3, 0.03, 0.18);
         chain(n, filt(ctx, 'bandpass', 900, 0.9), g, out);
         const l = noise(ctx, R, 'brown', t0 + 0.12, 0.18, 1.6);
-        const gl = gain(ctx); env(gl, t0 + 0.12, 0.2, 0.01, 0.1);
+        const gl = gain(ctx); env(gl, t0 + 0.12, 0.42, 0.01, 0.1);
         chain(l, filt(ctx, 'bandpass', 520, 1.4), gl, out);
-        click(ctx, out, R, t0 + 0.3, 3100, 0.1, 0.3);
+        click(ctx, out, R, t0 + 0.3, 3100, 0.22, 0.3);
         return 0.4;
       },
       revHolster(ctx, out, t0, p, R) {
         const l = noise(ctx, R, 'brown', t0 + 0.05, 0.2, 1.6);
-        const gl = gain(ctx); env(gl, t0 + 0.05, 0.18, 0.01, 0.12);
+        const gl = gain(ctx); env(gl, t0 + 0.05, 0.4, 0.01, 0.12);
         chain(l, filt(ctx, 'bandpass', 480, 1.4), gl, out);
         const n = noise(ctx, R, 'pink', t0 + 0.12, 0.25);
-        const g = gain(ctx); env(g, t0 + 0.12, 0.12, 0.03, 0.15);
+        const g = gain(ctx); env(g, t0 + 0.12, 0.26, 0.03, 0.15);
         chain(n, filt(ctx, 'bandpass', 900, 0.9), g, out);
         return 0.4;
       },

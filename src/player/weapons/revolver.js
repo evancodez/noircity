@@ -223,8 +223,7 @@ export default (game) => {
       this.loaded = 0; this.dropped = false; this.fed = 0; this.snapped = false;
       // (what is spent or live goes out: a dump, as a man does in a fight)
       this.feedTurn0 = this.top;
-      G.sfx.play('revOpen', null, {}, { send: false, gain: 0.9, delay: RL.open[0] });
-      G.sfx.play('revEject', null, {}, { send: false, gain: 0.9, delay: RL.strike[0] });
+      this.heard = {};
       return true;
     },
     // a press during the reload: shut on what is in and fire (once a pair is in)
@@ -245,7 +244,10 @@ export default (game) => {
     update(dt, t) {
       const C = G.controller;
       this.cool = Math.max(0, this.cool - dt);
+      const st0 = this.sinceShot;
       this.sinceShot += dt;
+      // (the thumb's cock after a shot: two clicks as the hammer comes back)
+      if (this.turnFrom != null && st0 < 0.13 && this.sinceShot >= 0.13) G.sfx.play('revCock', null, {}, { send: false, gain: 0.8 });
       if (this.reloadAfter > 0) { this.reloadAfter -= dt; if (this.reloadAfter <= 0) { this.reloadAfter = 0; this.reload(); } }
       if (this.phase === 'away') return;
       this.t += dt;
@@ -304,6 +306,10 @@ export default (game) => {
         if (u >= CUT.ready) this.endReload();
         return;
       }
+      // (each sound on its moment, so a cut reload does not play the rest)
+      const hear = (k, at, name, gain = 0.9) => { if (!this.heard[k] && t >= at) { this.heard[k] = true; G.sfx.play(name, null, {}, { send: false, gain }); } };
+      hear('open', RL.open[0], 'revOpen');
+      hear('eject', RL.strike[0], 'revEject');
       if (!this.dropped && t >= RL.drop) {
         this.dropped = true;
         this.dropCases();
