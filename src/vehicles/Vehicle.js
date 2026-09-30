@@ -278,7 +278,10 @@ export class Vehicle {
     if (!best) return;
     const c = Math.cos(this.yaw), sn = Math.sin(this.yaw);
     const nx = best.lx * c + best.lz * sn, nz = -best.lx * sn + best.lz * c;   // me -> him
-    const m1 = this.spec.mass, m2 = o.spec.mass, k1 = m2 / (m1 + m2), k2 = m1 / (m1 + m2);
+    // (a car on a scripted path - the truck, the car coming the other way - is
+    // not pushed: it is a wall that moves)
+    const fixed = !!(o.driver && o.driver.kinematic);
+    const m1 = this.spec.mass, m2 = fixed ? 1e6 : o.spec.mass, k1 = m2 / (m1 + m2), k2 = m1 / (m1 + m2);
     this.pos.x -= nx * best.pen * k1; this.pos.z -= nz * best.pen * k1;
     o.pos.x += nx * best.pen * k2; o.pos.z += nz * best.pen * k2;
     const rv = (this.vel.x - o.vel.x) * nx + (this.vel.z - o.vel.z) * nz;
@@ -288,7 +291,10 @@ export class Vehicle {
     o.vel.x += nx * j * k2; o.vel.z += nz * j * k2;
     const f = this.fwd, headOn = Math.abs(f.x * nx + f.z * nz);
     const point = new THREE.Vector3(best.px, 0.8, best.pz);
-    if (rv > 6 && headOn > 0.7 && m2 >= m1 * 2) {
+    if (rv > 6 && headOn > 0.7 && (m2 >= m1 * 2)) {
+      // (stopped against it, carried back a little by it: rolling again soon)
+      this.vel.set(o.vel.x * 0.5 - nx * 1.5, 0, o.vel.z * 0.5 - nz * 1.5);
+      this.yawRate *= 0.2;
       this.hardT = 0; this.shake = 1; this.pitchV -= 2.2;
       this.emit('crash', { point, k: Math.min(1, rv / 18), what: o.kind, thing: o });
     } else {

@@ -589,6 +589,13 @@ class Wreck {
     this.L = L;
     // the horn stuck: it sounds, then dies over ~4 s
     G.sfx.play('tail_hornStuck', v.pos, { dur: 4.2 }, { ref: 6 });
+    // the tail lamp on the side that struck the post goes (if none of my
+    // rounds took one): one still red
+    if (!tail.lampOut && v.tail) {
+      const l = v.local(post.group.position, new THREE.Vector3());
+      tail.lampOut = l.z > 0 ? 1 : -1;
+      tail.killTailLamp(tail.lampOut);
+    }
     // the car against the post: a collider for the man on foot
     tail.stage.colliders.addBox(v.pos.x, v.pos.z, v.spec.halfL, v.spec.halfW, v.yaw, 'car');
     // the other tail lamp, the one still red, stays; the hood's steam

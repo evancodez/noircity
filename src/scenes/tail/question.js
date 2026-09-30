@@ -136,6 +136,16 @@ export class Question {
   step(dt) {
     const G = this.game, C = G.controller, H = C.hold, man = this.man;
     if (!H || !this.path) return false;
+    // (look development, ?tailLookRiver=1: the eyes go to the water by
+    // themselves, a second after he is taken - the shot mode has no mouse)
+    if (this.autoLook === undefined) this.autoLook = typeof location !== 'undefined' && new URLSearchParams(location.search).get('tailLookRiver') === '1';
+    if (this.autoLook && (this.heldT = (this.heldT || 0) + dt) > 0.9) {
+      const e = G.camera.position, w = this.water;
+      const yaw = Math.atan2(-(w.x - e.x), -(w.z - e.z)) - H.face, pitch = Math.atan2(w.y - e.y, Math.hypot(w.x - e.x, w.z - e.z));
+      const k = 1 - Math.exp(-dt * 3);
+      H.look.yaw += (Math.atan2(Math.sin(yaw), Math.cos(yaw)) - H.look.yaw) * k;
+      H.look.pitch += (pitch - H.look.pitch) * k;
+    }
     // is the eye on the water? (the angle between the look and the water)
     const eye = G.camera.position;
     const fwd = _w.set(0, 0, -1).transformDirection(G.camera.matrixWorld);
