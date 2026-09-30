@@ -120,7 +120,7 @@ export const SPECS = {
     crown.computeVertexNormals();
     const brim = lathe([[0.092, 0.004], [0.13, 0.0], [0.155, -0.006], [0.158, -0.004], [0.13, 0.006], [0.092, 0.012]], seg);
     const band = lathe([[0.0915, 0.012], [0.0925, 0.012], [0.0905, 0.032], [0.0895, 0.032]], seg);
-    const felt = std('hatFelt', { color: 0x5a5a5a, roughness: 0.9, surface: 'cloth' });
+    const felt = std('hatFelt', { color: 0x767676, roughness: 0.9, surface: 'cloth' });   // [R2-G] (a pale felt: it must read on black water)
     return { parts: [{ geo: crown, mat: felt, id: 0 }, { geo: brim, mat: felt, id: 0 }, { geo: band, mat: P.black, id: 1 }], grip: [0, 0.07, 0] };
   },
   amesShoe(v, lod) {

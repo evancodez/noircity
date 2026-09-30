@@ -102,13 +102,7 @@
    "timeout": 5000
   },
   {
-   "eval": "__body.aimAt('chest')"
-  },
-  {
-   "look": [
-    -187,
-    305
-   ],
+   "look": "__body.aimAt('chest')",
    "steps": 6
   },
   {
@@ -139,13 +133,7 @@
    "timeout": 5000
   },
   {
-   "eval": "__body.aimAt('chest')"
-  },
-  {
-   "look": [
-    -108,
-    123
-   ],
+   "look": "__body.aimAt('chest')",
    "steps": 6
   },
   {
@@ -173,13 +161,7 @@
    "timeout": 5000
   },
   {
-   "eval": "__body.aimAt('fist')"
-  },
-  {
-   "look": [
-    528,
-    564
-   ],
+   "look": "__body.aimAt('fist')",
    "steps": 6
   },
   {
@@ -204,13 +186,7 @@
    "timeout": 5000
   },
   {
-   "eval": "__body.aimAt('marks')"
-  },
-  {
-   "look": [
-    -696,
-    -436
-   ],
+   "look": "__body.aimAt('marks')",
    "steps": 6
   },
   {
@@ -238,13 +214,7 @@
    "label": "the one prompt: the string through the wound"
   },
   {
-   "eval": "__body.toShooter()"
-  },
-  {
-   "look": [
-    651,
-    -515
-   ],
+   "look": "__body.toShooter()",
    "steps": 10
   },
   {
@@ -258,13 +228,7 @@
    "wait": 500
   },
   {
-   "eval": "__body.toShooter()"
-  },
-  {
-   "look": [
-    658,
-    -565
-   ],
+   "look": "__body.toShooter()",
    "steps": 10
   },
   {
@@ -292,11 +256,11 @@
    "walk": [
     [
      -9.9,
-     -26.3
+     -26.75
     ],
     [
      -12.4,
-     -26.6
+     -26.75
     ],
     [
      -13.5,
@@ -320,13 +284,7 @@
    "timeout": 5000
   },
   {
-   "eval": "__body.aimAt('ladder')"
-  },
-  {
-   "look": [
-    -150,
-    -30
-   ],
+   "look": "__body.aimAt('ladder')",
    "steps": 6
   },
   {
@@ -348,13 +306,7 @@
    "timeout": 5000
   },
   {
-   "eval": "__body.aimAt('climb')"
-  },
-  {
-   "look": [
-    76,
-    202
-   ],
+   "look": "__body.aimAt('climb')",
    "steps": 6
   },
   {
@@ -388,13 +340,7 @@
    "timeout": 5000
   },
   {
-   "eval": "__body.aimAt('half')"
-  },
-  {
-   "look": [
-    137,
-    21
-   ],
+   "look": "__body.aimAt('half')",
    "steps": 6
   },
   {
@@ -450,13 +396,7 @@
    "timeout": 5000
   },
   {
-   "eval": "__body.aimAt('step')"
-  },
-  {
-   "look": [
-    200,
-    360
-   ],
+   "look": "__body.aimAt('step')",
    "steps": 6
   },
   {

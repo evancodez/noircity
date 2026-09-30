@@ -9,7 +9,8 @@
 //   { "key": "KeyE", "hold": ms }        a key down, held, up (hold default 60)
 //   { "down": "Space" } / { "up": "Space" }
 //   { "mouse": "click" | "down" | "up", "button": "left" | "right", "x", "y", "hold": ms }
-//   { "look": [dx, dy], "steps": 8 }     mouse moves (movementX / Y under pointer lock)
+//   { "look": [dx, dy], "steps": 8 }     mouse moves (movementX / Y under pointer lock);
+//                                        [R2-G] or an expression giving [dx, dy]
 //   { "until": "expr", "timeout": ms }   poll an expression over N = window.__noir,
 //                                        G = N.game, until it is true (a FAIL on timeout)
 //   { "shot": "name" }                   a screenshot to <out>/<name>.png
@@ -408,7 +409,11 @@ try {
       if (S.mouse !== 'down') await mouse('mouseReleased', x, y, b);
     } else if (S.look) {
       const n = S.steps || 8;
-      for (let i = 0; i < n; i++) { await turn(Math.round(S.look[0] / n), Math.round(S.look[1] / n)); await sleep(16); }
+      // [R2-G] (a look may be an expression, as a walk's points may: the
+      // mouse move onto a thing from wherever the last walk left the eye)
+      const L = typeof S.look === 'string' ? await js(S.look) : S.look;
+      if (typeof S.look === 'string') log(`look  ${S.look} -> ${JSON.stringify(L)}`);
+      for (let i = 0; i < n; i++) { await turn(Math.round(L[0] / n), Math.round(L[1] / n)); await sleep(16); }
     } else if (S.until) {
       const T = Date.now() + (S.timeout ?? 20000);
       let ok = false, v;

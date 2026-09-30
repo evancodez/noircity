@@ -75,6 +75,13 @@ export function tipW(G, side, tip, f, b, F = POINT) {
   const w = tip.clone().addScaledVector(fn, -0.158).addScaledVector(bn, 0.004);
   return poseW(G, side, w, fn, bn, F);
 }
+// [R2-G] a fingertip pose with the elbow put elsewhere (the eye's frame)
+const ELBOW_OUT = V(0.36, 0.22, -0.1);
+function tipWe(G, side, tip, f, b, F, eOff) {
+  const fn = f.clone().normalize(), bn = b.clone().normalize();
+  const w = tip.clone().addScaledVector(fn, -0.158).addScaledVector(bn, 0.004);
+  return poseW(G, side, w, fn, bn, F, eOff);
+}
 // a pose off the frame, low at the side (where a hand comes from and goes to)
 export function awayW(G, side) {
   const s = side === 'R' ? 1 : -1;
@@ -343,7 +350,10 @@ export function tableFinger(ctx, S, world, down, lift = 0, gone = false) {
   const fd = fwd.clone().multiplyScalar(0.55).addScaledVector(right, -0.3).add(V(0, -0.78, 0));
   const bd = fwd.clone().multiplyScalar(0.4).addScaledVector(right, 0.25).add(V(0, 0.85, 0));
   const tip = world.clone().add(V(0, 0.004 + (down ? 0 : 0.012) + lift, 0));
-  const want = tipW(G, 'R', tip, fd, bd, POINT);
+  // [R2-G] (the elbow out to the right and low: from the crouch over the
+  // step the forearm comes in from the frame's right edge, not up the
+  // middle of the picture from under the eye)
+  const want = tipWe(G, 'R', tip, fd, bd, POINT, ELBOW_OUT);
   // (a short ease toward where it goes: never a lag behind the pointer)
   if (!S.pose) S.pose = mixPose(awayW(G, 'R'), want, 0);
   S.k = gone ? Math.max(0, (S.k || 0) - 1 / 60 / 0.35) : Math.min(1, (S.k || 0) + 1 / 60 / 0.25);

@@ -26,7 +26,7 @@ export const WOUNDS = [V(XV + 0.05, 1.6, STOOD.z - 0.13), V(XV - 0.05, 1.36, STO
 // brick of the south wall
 export const MARKS = WOUNDS.map((w) => {
   const d = w.clone().sub(SHOOTER);
-  const t = (ALLEY.zS - 0.012 - SHOOTER.z) / d.z;
+  const t = (ALLEY.faceS - 0.003 - SHOOTER.z) / d.z;   // [R2-G] (the wall's visible face)
   return SHOOTER.clone().addScaledVector(d, t);
 });
 
@@ -149,7 +149,7 @@ export function evidence(ctx) {
     const rim = new THREE.Mesh(new THREE.RingGeometry(0.016, 0.05, 16, 1), chip);
     for (const o of [hole, rim]) { o.rotation.y = Math.PI; o.userData.noRay = true; o.userData.inkId = hid; g.add(o); }
     rim.position.z = 0.0005;
-    g.position.set(m.x, m.y, ALLEY.zS - 0.014);
+    g.position.set(m.x, m.y, ALLEY.faceS - 0.005);
     stage.scene.add(g);
     ev.holes.push(g);
     out.push(g);
@@ -231,14 +231,17 @@ export function gutterHat(ctx) {
   pivot.add(h);
   h.rotation.x = 0.32;
   h.position.y = 0.012;
-  pivot.position.set(-5.78, 0.0, -13.2);
+  // [R2-G] in the kerb lamp's pool, a few steps short of it (at -13.2 it
+  // lay in the dark between the lamps: a black lump on black water); it
+  // drifts on into the light as I come
+  pivot.position.set(-5.74, 0.0, -16.5);
   stage.scene.add(pivot);
   const H = { pivot, hat: h, t: 0 };
   H.step = (dt) => {
     H.t += dt;
     // it turns slowly in the run of the gutter and drifts a little with it
     pivot.rotation.y += dt * 0.42;
-    pivot.position.z -= dt * 0.035;
+    pivot.position.z = Math.max(-17.6, pivot.position.z - dt * 0.035);
     h.rotation.z = 0.06 * Math.sin(H.t * 1.7);
     h.rotation.x = 0.32 + 0.04 * Math.sin(H.t * 1.1);
     pivot.position.y = 0.004 * Math.sin(H.t * 2.3);

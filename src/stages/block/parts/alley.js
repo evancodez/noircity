@@ -27,6 +27,11 @@ import { STREET } from '../../../world/Street.js';
 export const ALLEY = {
   mouthX: STREET.facadeX, gateX: STREET.facadeX - 14,
   zS: -24.0, zN: -30.0, y: 0.15,
+  // [R2-G] the south wall's visible face: the near building's side quoin
+  // (world/Facade.js, a 0.4 m slab along its whole end) stands 8 cm out
+  // into the alley and hid the brick, the door's planks and the two bullet
+  // holes behind it; the south wall's things stand on this face instead
+  faceS: -24.09,
   lamp: new THREE.Vector3(-12.5, 4.14, -24.3),
   // the doorway and its dry step (the step's top is the puzzles' table)
   door: { x: -12.95, w: 1.0, h: 2.2 },
@@ -139,7 +144,7 @@ export default {
       stepTop: std({ color: 0x5a5a5a, roughness: 0.9 }),
       iron: M.iron,
       rust: std({ color: 0x0a0a0a, roughness: 0.7, metalness: 0.3 }),
-      door: std({ color: 0x101010, roughness: 0.75 }),
+      door: std({ color: 0x262626, roughness: 0.75 }),   // [R2-G] (was 0x101010: under the step's light the planks' foot read as a flat black plane)
       pane: std({ color: 0x080808, roughness: 0.85, envMapIntensity: 0.1 }),
       bin: std({ color: 0x151515, roughness: 0.6, metalness: 0.3 }),
       wood: std({ color: 0x2a2a2a, roughness: 0.9, envMapIntensity: 0.1 }),
@@ -177,7 +182,7 @@ export default {
       for (let i = 0; i < uv.count; i++) uv.setXY(i, p.getX(i) / BRICK_TILE[0] * (facing < 0 ? -1 : 1) + (facing < 0 ? 0.37 : 0), p.getY(i) / BRICK_TILE[1]);
       return geo;
     };
-    const wallS = add(face(A.zS - 0.01, -1), MAT.brick, { name: 'alley_wallS' });
+    const wallS = add(face(A.faceS, -1), MAT.brick, { name: 'alley_wallS' });
     const wallN = add(face(A.zN + 0.01, 1), MAT.brick, { name: 'alley_wallN' });
     // the corners at the mouth: dressed stone quoins so the brick does not
     // end on a raw edge at the building line
@@ -222,38 +227,40 @@ export default {
     const D = A.door, S = A.step;
     {
       const frame = [];
-      const zf = A.zS - 0.05;
+      const zf = A.faceS - 0.04;
       frame.push(rbox(0.14, D.h + 0.12, 0.12, D.x - D.w / 2 - 0.07, A.y + (D.h + 0.12) / 2, zf));
       frame.push(rbox(0.14, D.h + 0.12, 0.12, D.x + D.w / 2 + 0.07, A.y + (D.h + 0.12) / 2, zf));
       frame.push(rbox(D.w + 0.42, 0.2, 0.16, D.x, A.y + D.h + 0.14, zf - 0.01));
       add(frame, MAT.stone);
       // the door: planks in a frame, recessed, a dark glass light above
-      const planks = [];
-      for (let k = 0; k < 5; k++) planks.push(box(D.w / 5 - 0.012, D.h - 0.02, 0.05, D.x - D.w / 2 + (k + 0.5) * D.w / 5, A.y + D.h / 2, A.zS - 0.03));
-      add(planks, MAT.door);
-      add(box(0.05, 0.05, 0.03, D.x + D.w / 2 - 0.12, A.y + 1.0, A.zS - 0.07), MAT.iron);
+      // [R2-G] each plank its own ink (the ink draws the seams between
+      // them: one mesh of five read as a flat black plane under the step's
+      // light), two iron straps across, the handle, the keyhole plate
+      for (let k = 0; k < 5; k++) add(box(D.w / 5 - 0.012, D.h - 0.02, 0.05, D.x - D.w / 2 + (k + 0.5) * D.w / 5, A.y + D.h / 2, A.faceS - 0.02), MAT.door, { cast: false });
+      add([box(D.w - 0.06, 0.06, 0.012, D.x, A.y + 0.42, A.faceS - 0.051), box(D.w - 0.06, 0.06, 0.012, D.x, A.y + 1.78, A.faceS - 0.051),
+        box(0.05, 0.05, 0.03, D.x + D.w / 2 - 0.12, A.y + 1.0, A.faceS - 0.06), box(0.035, 0.09, 0.008, D.x + D.w / 2 - 0.12, A.y + 0.9, A.faceS - 0.048)], MAT.iron);
       // the step: a worn slab of stone, a hollow in its middle
-      const st = rbox(S.w, S.h, S.d, S.x, A.y + S.h / 2, A.zS - S.d / 2 - 0.005, 0.03);
+      const st = rbox(S.w, S.h, S.d, S.x, A.y + S.h / 2, A.faceS - S.d / 2 + 0.005, 0.03);
       add(st, MAT.stepTop, { name: 'alley_step' });
       // the hood over the door: a slab on two iron brackets
       const hoodY = A.y + D.h + 0.42;
       // (it keeps the rain off the step, not the lamp's light: no shadow)
-      add(rbox(D.w + 0.7, 0.09, 0.62, D.x, hoodY, A.zS - 0.31, 0.02), MAT.stone, { cast: false });
+      add(rbox(D.w + 0.7, 0.09, 0.62, D.x, hoodY, A.faceS - 0.31, 0.02), MAT.stone, { cast: false });
       const br = [];
-      for (const sx of [-1, 1]) br.push(tube([V3(D.x + sx * (D.w / 2 + 0.2), hoodY - 0.5, A.zS - 0.02), V3(D.x + sx * (D.w / 2 + 0.2), hoodY - 0.15, A.zS - 0.35), V3(D.x + sx * (D.w / 2 + 0.2), hoodY - 0.05, A.zS - 0.55)], 0.015, 6, 12));
+      for (const sx of [-1, 1]) br.push(tube([V3(D.x + sx * (D.w / 2 + 0.2), hoodY - 0.5, A.faceS - 0.01), V3(D.x + sx * (D.w / 2 + 0.2), hoodY - 0.15, A.faceS - 0.35), V3(D.x + sx * (D.w / 2 + 0.2), hoodY - 0.05, A.faceS - 0.55)], 0.015, 6, 12));
       add(br, MAT.iron, { cast: false });
       // (the hood keeps the rain off the step)
       stage.dry.push(new THREE.Box3(V3(D.x - D.w / 2 - 0.35, A.y - 0.2, A.zS - 0.62), V3(D.x + D.w / 2 + 0.35, hoodY, A.zS)));
       // a drainpipe down the wall, its shoe over the gutter's side
       const px = -15.6;
-      const pipe = [cyl(0.05, 8.6, px, 4.45, A.zS - 0.08, 12), new THREE.CylinderGeometry(0.05, 0.07, 0.25, 12).rotateX(0.6).translate(px, 0.28, A.zS - 0.17)];
-      for (let y = 1.2; y < 8.6; y += 2.1) pipe.push(new THREE.TorusGeometry(0.06, 0.012, 6, 14).rotateX(Math.PI / 2).translate(px, y, A.zS - 0.08));
+      const pipe = [cyl(0.05, 8.6, px, 4.45, A.faceS - 0.07, 12), new THREE.CylinderGeometry(0.05, 0.07, 0.25, 12).rotateX(0.6).translate(px, 0.28, A.faceS - 0.16)];
+      for (let y = 1.2; y < 8.6; y += 2.1) pipe.push(new THREE.TorusGeometry(0.06, 0.012, 6, 14).rotateX(Math.PI / 2).translate(px, y, A.faceS - 0.07));
       add(pipe, MAT.rust);
       // two dark windows up the wall, their sills
       const win = [], sill = [];
       for (const [wx, wy] of [[-17.2, 3.4], [-12.0, 6.9], [-19.8, 6.9]]) {
-        win.push(box(1.0, 1.5, 0.04, wx, wy, A.zS - 0.02));
-        sill.push(rbox(1.2, 0.08, 0.16, wx, wy - 0.8, A.zS - 0.07, 0.015), rbox(1.16, 0.1, 0.1, wx, wy + 0.8, A.zS - 0.04, 0.015));
+        win.push(box(1.0, 1.5, 0.04, wx, wy, A.faceS - 0.01));
+        sill.push(rbox(1.2, 0.08, 0.16, wx, wy - 0.8, A.faceS - 0.06, 0.015), rbox(1.16, 0.1, 0.1, wx, wy + 0.8, A.faceS - 0.03, 0.015));
       }
       add(win, MAT.pane);
       add(sill, MAT.stone);
@@ -279,6 +286,57 @@ export default {
       lamp.light.angle = 1.12; lamp.light.penumbra = 0.9; lamp.light.intensity = 85; lamp.light.distance = 16;
       lamp.light.target.set(-12.9, 0.4, A.zN + 0.6);
     }
+
+    // ---- [R2-G] the lamp's light on the step, for the table views ------------------------------
+    // (the lamp's own pool is thrown across the alley, to the fire escape:
+    // the step under it stood at the pool's edge, a flat grey slab. The
+    // same head's light down onto the step and the foot of the door, faded
+    // in as I go down to the step and out as I rise - no cone of its own,
+    // the lamp's cone is already there)
+    const stepLamp = (() => {
+      const head = A.lamp.clone().add(V3(0, -0.08, 0.02));
+      const at = V3(S.x - 0.05, STEP_TOP, A.faceS - 0.2);
+      const l = stage.lamps.addCustom({ head, axis: at.clone().sub(head).normalize(), height: head.y - STEP_TOP, half: 0.3, real: true, bulb: null, strength: 1, tag: 'alleyStep' });
+      l.on = false;
+      l.cone.visible = false;
+      const Q = typeof location !== 'undefined' && location.search.includes('steplight') ? new URLSearchParams(location.search).get('steplight').split(',').map(Number) : null;
+      if (l.light) { l.light.angle = Q ? Q[0] : 0.12; l.light.penumbra = Q ? Q[1] : 0.8; l.light.distance = 7; l.light.target = at.clone(); }
+      l.full = Q ? Q[2] : 170;
+      if (l.light) l.light.intensity = 0;
+      return l;
+    })();
+
+    // ---- [R2-G] the mouth lamp: a gooseneck on the far block's corner --------------------------
+    // (the wall lamp over the door cannot be seen from the pavement: it is
+    // 2.3 m in behind the near building's end. From where scene 2 leaves me,
+    // 20 m up the pavement, this is the alley's light: a head out over the
+    // pavement at the corner, its cone in the rain on the mouth, where the
+    // car comes out, and its sheen on the wet running back down the
+    // pavement to me - the line to it. Off, and hidden with the rest of
+    // the alley, until the scene lights it.)
+    const mouth = (() => {
+      const Q = typeof location !== 'undefined' && location.search.includes('mouthlamp') ? new URLSearchParams(location.search).get('mouthlamp').split(',').map(Number) : null;
+      // (Q: y, z of the wall plate, reach, axis x, axis z, light scale)
+      const wx = A.mouthX + 0.02, wy = Q ? Q[0] : 4.9, wz = Q ? Q[1] : A.zN - 1.5, R = Q ? Q[2] : 0.45;
+      const arm = [V3(wx, wy, wz), V3(wx + R * 0.4, wy + 0.1, wz + 0.03), V3(wx + R * 0.75, wy + 0.08, wz + 0.08), V3(wx + R * 0.97, wy - 0.06, wz + 0.12), V3(wx + R, wy - 0.2, wz + 0.13)];
+      const head = V3(wx + R, wy - 0.46, wz + 0.13);
+      const iron = [tube(arm, 0.028, 8, 32), new THREE.CylinderGeometry(0.11, 0.11, 0.04, 16).rotateZ(Math.PI / 2).translate(wx + 0.02, wy, wz)];
+      const shade = lathe([[0.02, 0.06], [0.05, 0.03], [0.12, -0.04], [0.21, -0.12], [0.25, -0.15], [0.235, -0.15]], 28).translate(head.x, head.y + 0.2, head.z);
+      const id = allocInkId();
+      add(iron, M.lampIron || MAT.iron, { id, name: 'alley_mouthIron' });
+      add(shade, M.lampShade || MAT.iron, { id, figure: true, name: 'alley_mouthShade' });
+      const b = new THREE.Mesh(new THREE.CircleGeometry(0.19, 32).rotateX(Math.PI / 2).translate(head.x, head.y + 0.06, head.z), M.bulbDim);
+      b.userData.noRay = true;
+      b.userData.inkId = allocInkId();
+      g.add(b);
+      // (down, a little out over the mouth and back toward the pavement I
+      // come from: the pool on the flags of the mouth and the kerb's edge)
+      const l = stage.lamps.addCustom({ head: head.clone(), axis: (Q && Q[3] != null ? V3(Q[3], -1, Q[4]) : V3(0.15, -1, 0.25)).normalize(), height: wy - 0.3, half: 0.44, real: !(Q && Q[5] === 0), bulb: b, fadeEnd: 0.72, edgeSoft: 0.3, strength: Q && Q[6] ? Q[6] : 1.4, tag: 'alleyMouth' });
+      l.on = false;
+      l.cone.visible = false;
+      if (l.light) { l.light.angle = 0.6; l.light.penumbra = 0.85; l.light.intensity = 70; l.light.distance = 12; }
+      return l;
+    })();
 
     // ---- the north wall: the fire escape -------------------------------------------------------
     const E = A.esc;
@@ -379,7 +437,7 @@ export default {
     const cols = [];
     const colSpecs = () => {
       const out = [];
-      out.push(['box', S.x, A.zS - S.d / 2, S.w / 2, S.d / 2 + 0.02, 0, 'step']);
+      out.push(['box', S.x, A.faceS - S.d / 2, S.w / 2, S.d / 2 + 0.02, 0, 'step']);
       for (const b of bins) out.push(['circle', b.x, b.z, b.r, 'can']);
       // the drop ladder, once it is down, stands in the way
       return out;
@@ -392,16 +450,16 @@ export default {
     };
     // the step: its top is the paper puzzles' table (the eye stands north
     // of it and looks south, down onto it)
-    stage.addAnchor('body.step', { pos: V3(S.x, STEP_TOP, A.zS - S.d / 2 - 0.01), yaw: Math.PI, size: [S.w - 0.1, S.d - 0.06] });
+    stage.addAnchor('body.step', { pos: V3(S.x, STEP_TOP, A.faceS - S.d / 2), yaw: Math.PI, size: [S.w - 0.1, S.d - 0.06] });
     stage.addAnchor('body.ladder', { pos: V3(L.x, A.y, zo + 0.75), yaw: 0 });
     stage.addAnchor('body.landing', { pos: V3(L.x + 0.55, E.y1, (zw + zo) / 2 + 0.05), yaw: 0 });
     // the walking surface: the step and, while the scene is on, the landing
-    stage.addSurface((x, z) => (api.shown && Math.abs(x - S.x) < S.w / 2 && z > A.zS - S.d && z < A.zS ? STEP_TOP : undefined));
+    stage.addSurface((x, z) => (api.shown && Math.abs(x - S.x) < S.w / 2 && z > A.faceS - S.d && z < A.zS ? STEP_TOP : undefined));
     // (the alley's own room: the street's rain, the gutters and the drains)
     stage.addLook(new THREE.Box3(V3(A.gateX, -1, A.zN), V3(A.mouthX - 0.3, 12, A.zS)), { room: 'alley' });
 
     api = {
-      group: g, meshes, lamp, bulb, ladder, escape: esc, walls: { S: wallS, N: wallN }, shown: false,
+      group: g, meshes, lamp, bulb, mouth, ladder, escape: esc, walls: { S: wallS, N: wallN }, shown: false,
       stepTop: STEP_TOP,
       // the scene shows the place (and its colliders); the lamp is the scene's
       show(on = true) {
@@ -415,6 +473,18 @@ export default {
         lamp.on = !!on;
         lamp.cone.visible = !!on;
         if (bulb) bulb.visible = !!on;
+        // [R2-G] (and the mouth lamp with it)
+        const mo = on && !(typeof location !== 'undefined' && location.search.includes('nomouth'));
+        mouth.on = !!mo;
+        mouth.cone.visible = !!mo;
+        if (mouth.bulb) mouth.bulb.visible = !!mo;
+        if (!on) api.stepLight(0);
+      },
+      // [R2-G] the step's light, 0..1 (the table views: in as I go down to it)
+      stepLight(k) {
+        const on = api.shown && k > 0.002;
+        stepLamp.on = on;
+        if (stepLamp.light) stepLamp.light.intensity = stepLamp.full * Math.max(0, Math.min(1, k));
       },
       // the meshes a drawn ray may strike (the strings)
       rayTargets() { return meshes.filter((m) => m.visible !== false); },
