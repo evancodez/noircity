@@ -71,7 +71,11 @@ function wheelFrame(cam, car) {
 // palm on the grip's left side, the fingers round its front, the index
 // along the frame. DRIVE.gun: { prop (drawn in the hands' scene: the scene
 // adds it), kick (0..1, a shot's recoil) }
-const GRIP = new THREE.Vector3(-0.055, -0.115, -0.42);      // the grip at the aim (the sights under the view's centre)
+// [2nd pass] the sights ON the view's centre (the top strap and the front
+// blade on the line of the eye): a player sees where the round goes. They
+// sat 6 degrees left and 4 below it, and the gun was a dark lump at the
+// frame's foot that told the hand nothing.
+const GRIP = new THREE.Vector3(0.0, -0.085, -0.4);        // the grip at the aim
 const LOW = new THREE.Vector3(-0.16, -0.62, -0.24);       // ... in the holster, out of sight
 const _gm = new THREE.Matrix4(), _gx = new THREE.Vector3(), _gy = new THREE.Vector3(), _gz = new THREE.Vector3(), _gp = new THREE.Vector3();
 function gunMatrix(k, kick) {

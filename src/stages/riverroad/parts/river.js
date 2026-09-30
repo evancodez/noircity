@@ -7,7 +7,7 @@ import { ROAD, roadPoint, frameAt } from '../road.js';
 // The river side: the cast-iron railing on the quay (the car's right wall,
 // the rail a man is bent back over), the far bank's low sheds and its
 // lights (they come down the black water in long streaks), a freighter
-// moored along the quay near the road's end, and the city across the river
+// moored along the quay before the close, and the city across the river
 // (the block's own deco towers, set far out on the other bank and on the
 // el's side behind the warehouses).
 // API: { railD, hull: { s0, s1 }, group }
@@ -104,7 +104,7 @@ export default {
     group.add(lm);
     if (dimParts.length) { const dm = new THREE.Mesh(merge(dimParts), dim); dm.userData.inkId = bankMesh.userData.inkId; dm.userData.noRay = true; group.add(dm); }
 
-    // ---- a freighter moored along the quay near the road's end -------------
+    // ---- a freighter moored along the quay (before the close) -------------
     const hull = { s0: ROAD.marks.hull, s1: ROAD.marks.hull + 80 };
     {
       const L = hull.s1 - hull.s0, B = 11, Hh = ROAD.waterY + 5.2;

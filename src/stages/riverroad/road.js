@@ -25,7 +25,10 @@ export const ROAD = {
   // the story's marks on the road
   // (the chase ~1.3 km: a minute flat out, longer for a first-timer; the
   // close ~400 m, round the origin: the bullets' world)
-  marks: { start: 14, train: 250, market: 400, marketEnd: 700, truck: 862, stand: 1012, oncoming: 1150, close: 1330, hull: 1560, end: 1740 },
+  // (the freighter lies along the chase, not the close: wherever his tyre
+  // goes, the wreck and the question have open water and the far bank
+  // behind them, never a hull's black side)
+  marks: { start: 14, train: 250, market: 400, marketEnd: 700, truck: 862, stand: 1012, oncoming: 1150, close: 1330, hull: 1195, end: 1740 },
   // where a failed stretch goes back to (the last one passed)
   checkpoints: [14, 420, 820, 1200],
 };

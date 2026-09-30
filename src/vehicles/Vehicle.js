@@ -160,8 +160,27 @@ export class Vehicle {
     this.pos.x += this.vel.x * dt;
     this.pos.z += this.vel.z * dt;
     this.hardT += dt;
+    this.touch = false;
     this.collide(dt);
+    this.unstick(dt, th);
     this.pose(dt);
+  }
+
+  // [2nd pass] never wedged: W held against something (a lamp post and the
+  // rail, a column under the el) and not moving, the nose scrabbles round
+  // toward the road and the car eases off it; rolling again in a second (a
+  // car at rest could not turn at all: nose to a post, it sat there until
+  // he was lost)
+  unstick(dt, th) {
+    const T = this.track;
+    const stuck = this.touch && th > 0 && this.speedAbs < 1.5;
+    this.pinT = stuck ? (this.pinT || 0) + dt : Math.max(0, (this.pinT || 0) - dt * 3);
+    if (!T || this.pinT < 0.3) return;
+    const F = T.frame(this.s, this._f || (this._f = {}));
+    const want = F.h + Math.PI / 2 + clamp(this.d * 0.07, -0.5, 0.5);
+    const dy = Math.atan2(Math.sin(want - this.yaw), Math.cos(want - this.yaw));
+    this.yaw += clamp(dy, -1.3 * dt, 1.3 * dt);
+    if (Math.abs(this.d) > 3) { const sg = -Math.sign(this.d); this.pos.x += F.rx * sg * 0.9 * dt; this.pos.z += F.rz * sg * 0.9 * dt; }
   }
 
   // ---- collisions -------------------------------------------------------------------------
@@ -181,8 +200,8 @@ export class Vehicle {
       if (dd > dMax) { dMax = dd; pMax = [x, z]; }
       if (dd < dMin) { dMin = dd; pMin = [x, z]; }
     }
-    if (dMax > T.right) this.wall(dMax - T.right, -F.rx, -F.rz, pMax, 'rail');
-    if (dMin < T.left) this.wall(T.left - dMin, F.rx, F.rz, pMin, 'wall');
+    if (dMax > T.right) this.wall(dMax - T.right, -F.rx, -F.rz, pMax, 'rail', dt);
+    if (dMin < T.left) this.wall(T.left - dMin, F.rx, F.rz, pMin, 'wall', dt);
     // the hard round things
     const list = T.circles(this.s - 8, this.s + 8, this._c);
     for (const k of list) {
@@ -213,20 +232,26 @@ export class Vehicle {
   }
 
   // against a wall along the road (n: into the road)
-  wall(pen, nx, nz, at, what) {
+  wall(pen, nx, nz, at, what, dt = 1 / 60) {
     this.pos.x += nx * pen; this.pos.z += nz * pen;
+    this.touch = true;
     const vn = this.vel.x * nx + this.vel.z * nz;
     if (vn >= 0) return;
     // lose the speed into the wall, a little along it; turned along it
     this.vel.x -= nx * vn * 1.25; this.vel.z -= nz * vn * 1.25;
     const k = Math.min(1, -vn / 9);
-    this.vel.multiplyScalar(1 - 0.12 * k - 0.02);
-    // (the nose swings away from the wall)
+    // [2nd pass] the strike costs speed by how hard it was, once; held
+    // against the wall the scrape is a drag (it holds ~60 km/h with W down),
+    // never a grind to a stop (it was 2 % a step: a scrape stopped the car
+    // dead in a second)
+    this.vel.multiplyScalar((1 - 0.2 * k) * Math.exp(-0.35 * dt));
+    // (the nose swings away from the wall, and keeps swinging while it is
+    // held against it: the car runs along the wall, not into it)
     const f = this.fwd;
     const along = -(f.x * nx + f.z * nz);
     // (turned along the wall: f x n says which way is away from it)
     const away = Math.sign(f.z * nx - f.x * nz) || 1;
-    this.yaw += away * clamp(along, 0, 1) * 0.35 * k * Math.sign(this.speed || 1);
+    this.yaw += away * clamp(along, 0, 1) * (0.35 * k + 2.5 * dt) * Math.sign(this.speed || 1);
     this.yawRate *= 0.6;
     this.shake = Math.min(1, this.shake + 0.5 * k + 0.1);
     this.emit('scrape', { point: new THREE.Vector3(at[0], 0.5, at[1]), k: Math.max(0.15, k), what, n: new THREE.Vector3(nx, 0, nz) });
@@ -235,6 +260,7 @@ export class Vehicle {
   // against a column, a post (n: from the car toward it)
   hitRound(k, nx, nz, pen, at) {
     this.pos.x -= nx * pen; this.pos.z -= nz * pen;
+    this.touch = true;
     const vn = this.vel.x * nx + this.vel.z * nz;
     if (vn <= 0) return;
     const f = this.fwd;
@@ -252,9 +278,16 @@ export class Vehicle {
     }
     // glancing: deflected, a bit of speed lost, turned away
     this.vel.x -= nx * vn * 1.3; this.vel.z -= nz * vn * 1.3;
-    this.vel.multiplyScalar(0.93);
+    // [2nd pass] the strike costs speed once, by how hard it was (it was 7 %
+    // a step: nose to a column with W held, the car sat there)
+    this.vel.multiplyScalar(1 - 0.25 * Math.min(1, vn / 12));
     const r = this.fwd; const side = r.x * nz - r.z * nx;
-    this.yawRate += -Math.sign(side) * Math.min(0.6, vn * 0.05);
+    this.yawRate += -(Math.sign(side) || 1) * Math.min(0.6, 0.12 + vn * 0.05);
+    // (and it slides off round the thing: pushed along its side, the way
+    // the nose already points, so W held never leaves the car stuck on it)
+    const tx = -nz, tz = nx, sg = Math.sign(r.x * tx + r.z * tz) || 1;
+    const dt = 1 / 60;
+    this.pos.x += tx * sg * 1.6 * dt; this.pos.z += tz * sg * 1.6 * dt;
     this.shake = Math.min(1, this.shake + 0.6);
     this.emit('scrape', { point, k: Math.min(1, vn / 12), what: k.kind, thing: k, n: new THREE.Vector3(-nx, 0, -nz) });
   }

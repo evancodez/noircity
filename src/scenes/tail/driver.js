@@ -60,7 +60,10 @@ export class Watcher {
     // (far ahead he eases off - a man who thinks he has lost me - so a
     // crash costs me the ground, not the tail)
     target = clamp(target, s < 40 ? 14 : gap > 62 ? 5 : 11, top);
-    if (T.state === 'start') target = Math.min(target, 16);
+    // [2nd pass] until I move he rolls off from the kerb and waits ~85 m
+    // down the road, his tail lamps red (a man at a crossing): a player
+    // who sits and looks round first is not failed the moment he sets off
+    if (T.state === 'start') target = clamp((85 - gap) * 0.35, 0, 5);
     // the steering: aim at a point on his line ahead (pure pursuit)
     const ahead = clamp(7 + sp * 0.55, 8, 22);
     const sa = s + ahead;

@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { ROAD, roadPoint, carYawAt, frameAt, eyeYawAt } from '../../stages/riverroad/road.js';
+import { ROAD, roadPoint, carYawAt, frameAt, eyeYawAt, project } from '../../stages/riverroad/road.js';
 import { STREETS } from '../../stages/riverroad/parts/buildings.js';
 import { COUPE, WHEEL_TURN } from '../../vehicles/models.js';
 import { DRIVE } from '../../player/clips/drive.js';
@@ -150,7 +150,12 @@ export class Tail {
     I.throttle = sp < want - 1 ? clamp((want - sp) / 5, 0.2, 0.8) : 0;
     I.brake = sp > 0.3 && (ds < 0.6 || sp > want + 1 || need > 4) ? clamp(Math.max(need / 10, (sp - want) / 6, ds < 0.6 ? 1 : 0), 0.15, 1) : 0;
     // steer onto the stop's line
-    const aim = roadPoint(v.s + 7, S.d);
+    let aim = roadPoint(v.s + 7, S.d);
+    // [2nd pass] while he is still sliding my nose follows him, so his spin
+    // plays in the windscreen (on the stop's line alone he slid left, behind
+    // the corner pillar, for the whole of the slow moment); the stop's line
+    // once he has struck
+    if (this.state === 'shot' && this.his) { const hp = project(this.his.pos.x, this.his.pos.z, this.his.s, {}); aim = roadPoint(Math.max(v.s + 7, hp.s), clamp(hp.d, -2, 5.2)); }
     const dx = aim.x - v.pos.x, dz = aim.z - v.pos.z;
     const c = Math.cos(v.yaw), sn = Math.sin(v.yaw);
     const lx = dx * c - dz * sn, lz = dx * sn + dz * c;
@@ -326,6 +331,8 @@ export class Tail {
     const G = this.game;
     this.note('fail', this.gap);
     this.fade = { t: 0, phase: 'out' };
+    // [2nd pass] the rule said once, as it bites: the black is not a mystery
+    if (!this.wrecked) G.hud.say('Lost him.', 1.7);
     G.emit('tail:fail', { s: this.my.s, gap: this.gap });
   }
   tickFade(dt) {
@@ -364,6 +371,22 @@ export class Tail {
     this.fireBuf = Math.max(0, this.fireBuf - dt);
     this.snapT = Math.max(0, this.snapT - dt);
     const want = held || this.snapT > 0 ? 1 : 0;
+    // [2nd pass] as the gun comes up the eye comes onto him: the look eases
+    // to his car's back over the arm's rise (from the leaning head he sat
+    // 8 degrees right of the view's centre, and a player who clicked where
+    // he was looking missed with all six); the mouse has the last word
+    if (want && !this._wantAim) this.aimSnap = 0.32;
+    this._wantAim = !!want;
+    if (this.aimSnap > 0 && C.drive && this.his) {
+      this.aimSnap -= dt;
+      const D = C.drive, e = G.camera.position, v = this.my;
+      const p = this.his.seat(_d.set(-2.05, 0.72, 0), _v);
+      const wy = Math.atan2(-(p.x - e.x), -(p.z - e.z)) - (v.yaw - Math.PI / 2);
+      const wp = Math.atan2(p.y - e.y, Math.hypot(p.x - e.x, p.z - e.z)) - v.pitch * 0.9;
+      const k = 1 - Math.exp(-dt * 12);
+      D.look.yaw += (clamp(Math.atan2(Math.sin(wy), Math.cos(wy)), -0.7, 0.34) - D.look.yaw) * k;
+      D.look.pitch += (clamp(wp, -0.3, 0.2) - D.look.pitch) * k;
+    }
     const rate = want ? 1 / 0.22 : 1 / 0.3;
     this.aimK = clamp(this.aimK + Math.sign(want - this.aimK) * rate * dt, 0, 1);
     DRIVE.aim = this.aimK;

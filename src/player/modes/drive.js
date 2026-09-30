@@ -92,9 +92,11 @@ export default {
     V.roll = -v.roll * 0.85 + Math.sin(t * 41) * 0.004 * sh;
     V.pitch = (V.pitch || 0) + Math.sin(t * 53 + 0.7) * 0.006 * sh;
     V.yaw = (V.yaw || 0) + Math.sin(t * 47 + 1.9) * 0.004 * sh;
-    // the lens widens with speed (68 -> 77 degrees flat out)
-    const want = D.fov0 + 9 * clamp((v.speed - 8) / 20, 0, 1);
-    D.fov += (want - D.fov) * (dt > 0 ? 1 - Math.exp(-dt * 2.5) : 0);
+    // the lens widens with speed (68 -> 77 degrees flat out); [2nd pass] on
+    // a thing the eyes follow (his spin into the post) it closes in, as a
+    // camera would push in on the wreck (it was a small car turning 30 m off)
+    const want = D.focus ? D.fov0 - 22 : D.fov0 + 9 * clamp((v.speed - 8) / 20, 0, 1);
+    D.fov += (want - D.fov) * (dt > 0 ? 1 - Math.exp(-dt * (D.focus ? 2.2 : 2.5)) : 0);
     if (!ctl._kick && Math.abs(ctl.camera.fov - D.fov) > 0.01) { ctl.camera.fov = D.fov; ctl.camera.updateProjectionMatrix(); }
   },
 };

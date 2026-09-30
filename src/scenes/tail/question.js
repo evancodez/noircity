@@ -190,7 +190,12 @@ export class Question {
     const fx = Math.sin(this.hd), fz = Math.cos(this.hd);   // his forward (toward me)
     const gy = G.stage.surfaceY(at.x, at.z);
     H.at.set(at.x + fx * (0.64 - bend * 0.12), gy + 1.68 - bend * 0.12, at.z + fz * (0.64 - bend * 0.12));
-    H.face = Math.atan2(fx, fz);
+    // [2nd pass] the look stays where the player put it in the world as he
+    // is walked round (it was kept relative to him, so the view swung with
+    // him and the eyes slid off the water they had found)
+    const face = Math.atan2(fx, fz), dFace = Math.atan2(Math.sin(face - H.face), Math.cos(face - H.face));
+    H.look.yaw = clamp(H.look.yaw - dFace, -1.9, 1.9);
+    H.face = face;
     if (this.p >= 1 && !this.broken) { this.broken = true; return true; }
     return false;
   }
