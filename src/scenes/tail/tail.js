@@ -189,10 +189,10 @@ export class Tail {
       for (const c of ROAD.checkpoints) if (my.s > c + 10) this.checkpoint = Math.max(this.checkpoint || 0, c);
     }
     if (this.state === 'close') this.gunStep(dt);
+    else this.holster(dt);
     // (mercy: near the road's end his tyre goes whatever my aim - a
     // first-timer who cannot hit it still gets his crash)
     if (this.state === 'close' && his.s > ROAD.marks.end - 70) this.tyre(1);
-    else this.holster(dt);
     if (this.spin) this.spinStep(dt);
     if (this.wreck) this.wreckStep(dt);
   }
@@ -358,7 +358,9 @@ export class Tail {
   gunStep(dt) {
     const G = this.game, C = G.controller;
     const held = G.held('Mouse2');
-    if (G.pressed('Mouse0')) { this.fireBuf = 0.15; if (!held && this.aimK < 0.5) this.snapT = 0.9; }
+    // (a click with the gun down brings it up and fires once it is up: the
+    // shot waits the 0.2 s the arm takes)
+    if (G.pressed('Mouse0')) { this.fireBuf = this.aimK < 0.9 ? 0.35 : 0.15; if (!held && this.aimK < 0.5) this.snapT = 0.9; }
     this.fireBuf = Math.max(0, this.fireBuf - dt);
     this.snapT = Math.max(0, this.snapT - dt);
     const want = held || this.snapT > 0 ? 1 : 0;
