@@ -170,6 +170,7 @@ export function stageBeat(ctx, b) {
   // [second pass] (a scene's entry drops the HUD's layers: the drums I carry
   // get theirs again, or they vanish after the first death)
   R.res = null;
+  R.calm = false;
   placeDot(ctx, b === 'arrive' ? 'lean' : 'duck');
   setRoomLights(S, R.lightsOn);
   R.sw.userData.set(R.lightsOn);
@@ -326,6 +327,11 @@ export function everyStep(ctx, dt) {
     if (Math.abs(h.pos.z - (D.door.hingeZ + D.door.w / 2)) < 1.2 && h.pos.x < -8.6 && h.pos.x > -12.5) front.door.open();
   }
   headlampsInRoom(ctx);
+  // [second pass] the fight is on from the cars until he is down (not in
+  // the quiet before him): the director runs, so the health bar shows (the
+  // HUD hides it outside a fight: I was shot at with no bar) and the Hoods'
+  // lull breaker works. The director stops at every retry: it is started again
+  if (R.gunTaken && !R.calm && !R.dying && ctx.beat !== 'arrive' && !G.director.active) G.director.run(function* (d) { yield d.until(() => !RIG || RIG.calm || RIG !== R); });
   // (the room dark: the diner's own update puts its pendants back on when the
   // room comes into sight; they stay off while the switch is down)
   if (!R.lightsOn) for (const l of S.part('diner').lamps) { l.on = false; if (l.bulb) l.bulb.visible = false; }

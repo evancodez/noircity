@@ -707,7 +707,8 @@ function* cardinal(ctx) {
   yield until(() => G.director.alive() === 0 || G.time - t0 > 15);
   scatter(ctx);
   yield until(() => G.director.alive() === 0);
-  // a quiet, long enough to hear the rain
+  // a quiet, long enough to hear the rain (no fight in it)
+  R.calm = true;
   G.music.stop(4);
   yield wait(7);
   const car = R.rails.spawn({ rail: SITE.saloon.rail, lights: true, v0: 7, cruise: 7, decel: 2.2, lat: 4, armored: true });
@@ -728,6 +729,7 @@ function* cardinal(ctx) {
     const out = L(D.hinge[0] - 0.45, D.side * 1.25);
     const h = man(ctx, { group: 'cardinal', at: { x: out.x, z: out.z }, entry: hv.entry, post: hv.post, leash: hv.leash, heavy: true, aim: AIM.heavies });
     h.setState('stepOut', 0.1);
+    R.calm = false;
     yield wait(0.7);
   }
   yield wait(1.3);
@@ -828,7 +830,8 @@ function* ending(ctx) {
   scatter(ctx);
   yield until(() => G.director.alive() === 0);
   yield wait(1.2);
-  // the gun lowers by itself; it will not fire again
+  // the gun lowers by itself; it will not fire again (the fight is over)
+  R.calm = true;
   G.weapon.trigger = false;
   R.fire0 = G.weapon.fire;
   G.weapon.fire = () => {};
