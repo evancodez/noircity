@@ -82,7 +82,10 @@ function pickAttack(B, M, d) {
   // or a bottle to throw, a stool or a chair to swing
   if (!him.holding && room.hisItem && d > 1.05 && !(him.thingCool > 0)) {
     // (a thing in reach first; then kept to about one action in four)
-    const p = M.things ?? 0.25, ratio = (him.thingActs || 0) / Math.max(1, him.acts);
+    // ([B8] second pass: 0.25 of his free choices came to one of his blows
+    // in six or seven, counting his answers and his follow-ups; 0.4 of them
+    // is about one in four, as the brief asks)
+    const p = M.things ?? 0.4, ratio = (him.thingActs || 0) / Math.max(1, him.acts);
     const task = pickThing(B, M);
     if (task && r.chance(ratio < p ? 0.85 : 0.15)) { him.thingActs = (him.thingActs || 0) + 1; return { task }; }
   }

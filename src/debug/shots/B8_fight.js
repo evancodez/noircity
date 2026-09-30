@@ -112,7 +112,10 @@ function stageDuel(stage, camera, controller, game) {
     }
     B.him.taunt = 'LR';
     const h = q.get('hold');
-    at(1.2, 'press', () => press(btn === 'L' ? 'Mouse0' : 'Mouse2', h ? parseFloat(h) : 1 / 60));
+    // (&then=L|R|back|block: a hop or the block with it in my hands instead)
+    const then = q.get('then');
+    if (then) at(1.2, 'press', () => (then === 'block' ? press('Space', 0.8) : press(hopKey(then))));
+    else at(1.2, 'press', () => press(btn === 'L' ? 'Mouse0' : 'Mouse2', h ? parseFloat(h) : 1 / 60));
   }
   void DINER; void THREE;
 }

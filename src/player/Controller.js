@@ -305,9 +305,11 @@ export class Controller {
       const x = this.pos.x, z = this.pos.z;
       const want = Math.atan2(-(op.x - x), -(op.z - z));
       const turn = wrap(want - fy);
-      // [B8] (eased as well as rate-limited: after a hop the body comes round
-      // to him smoothly, not at 7 rad/s from the first frame)
-      this.faceYaw = fy + Math.sign(turn) * Math.min(Math.abs(turn) * (1 - Math.exp(-dt * 16)), (O.turn ?? 7) * dt);
+      // [B8] (for half a second after a hop, eased as well as rate-limited:
+      // the body comes round to him smoothly, not at 7 rad/s from the first
+      // frame; otherwise as it was)
+      this.sinceHop = HP && HP.t < HP.dur ? 0 : (this.sinceHop ?? 9) + dt;
+      this.faceYaw = fy + Math.sign(turn) * Math.min(Math.abs(turn) * (this.sinceHop < 0.5 ? 1 - Math.exp(-dt * 16) : 1), (O.turn ?? 7) * dt);
       this.nudgeIdle = (this.nudgeIdle || 0) + dt;
       if (this.nudgeIdle > 0.35) { const k = Math.exp(-dt * 1.6); this.nudge.yaw *= k; this.nudge.pitch *= k; }
       const ty = (op.y || 0) + 1.45 * (O.opponent.fig ? O.opponent.fig.scale : 1) * 0.78;

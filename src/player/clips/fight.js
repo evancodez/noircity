@@ -193,7 +193,11 @@ export const BIG = { R: BIG_R, L: BIG_L };
   void low;
 }
 FIGHT_CLIPS.guardBig = { duration: 1.0, marks: {}, hold: true, blocking: false, blend: 0.1, keys: { R: [[0, BIG_R]], L: [[0, BIG_L]] } };
-FIGHT_CLIPS.blockBig = { duration: 0.08, marks: { up: 0.08 }, hold: true, blocking: false, blend: 0.06, keys: { R: [[0, BIG_R], [0.08, 'stoolUpR', 'out']], L: [[0, BIG_L], [0.08, 'stoolUpL', 'out']] } };
+// ([B8] second pass: the block with a stool or a chair holds it up across
+// the chest, its top below the eye - raised to the face, as the overhead
+// swing's wind-up, its seat filled three quarters of the frame and he was
+// not to be seen while I blocked)
+FIGHT_CLIPS.blockBig = { duration: 0.08, marks: { up: 0.08 }, hold: true, blocking: false, blend: 0.06, keys: { R: [[0, BIG_R], [0.08, shift(BIG_R, [-0.02, 0.1, 0.02]), 'out']], L: [[0, BIG_L], [0.08, shift(BIG_L, [0.02, 0.1, 0.02]), 'out']] } };
 for (const [n, dir] of [['hopLBig', -1], ['hopRBig', 1]]) FIGHT_CLIPS[n] = { ...FIGHT_CLIPS[n.slice(0, 4)], keys: { R: [[0, BIG_R]], L: [[0, BIG_L]] }, view: [[0, {}], [0.05, { roll: -0.035 * dir, down: 0.025 }, 'out'], [0.15, {}]] };
 FIGHT_CLIPS.hopBBig = { ...FIGHT_CLIPS.hopB, keys: { R: [[0, BIG_R]], L: [[0, BIG_L]] } };
 
