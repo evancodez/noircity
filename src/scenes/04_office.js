@@ -113,9 +113,9 @@ export default defineScene({
     if (ctx.at('safe')) {
       roomLines(ctx);
       // the pad (under the lamp) and the picture (crooked in the slats' light)
-      ctx.interact.add({ id: 'pad', at: V(PAD.x, DESK.h + 0.02, PAD.z), range: 1.7, cone: 0.42, prompt: 'the pad', when: () => !pad.done && !pad.active && !safe.active, onUse: () => pad.open() });
-      ctx.interact.add({ id: 'picture', at: V(PICTURE.x, PICTURE.y, 0.05), range: 1.8, cone: 0.4, prompt: 'the picture', when: () => !O.picture.target || O.picture.target < 0.5, onUse: () => { O.swingPicture(); G.sfx.play('office_pictureSwing', V(PICTURE.x, PICTURE.y, 0.05)); ctx.interact.remove('picture'); } });
-      ctx.interact.add({ id: 'safe', at: () => O.safe.centre, range: 1.5, cone: 0.35, prompt: 'the dial', when: () => O.picture.target > 0.5 && !safe.opened && !safe.active && !pad.active, onUse: () => safe.open() });
+      ctx.interact.add({ id: 'pad', at: V(PAD.x, DESK.h + 0.02, PAD.z), range: 1.8, cone: 0.55, prompt: 'the pad', when: () => !pad.done && !pad.active && !safe.active, onUse: () => pad.open() });
+      ctx.interact.add({ id: 'picture', at: V(PICTURE.x, PICTURE.y, 0.05), range: 1.9, cone: 0.6, prompt: 'the picture', when: () => !O.picture.target || O.picture.target < 0.5, onUse: () => { O.swingPicture(); G.sfx.play('office_pictureSwing', V(PICTURE.x, PICTURE.y, 0.05)); ctx.interact.remove('picture'); } });
+      ctx.interact.add({ id: 'safe', at: () => O.safe.centre, range: 1.7, cone: 0.55, prompt: 'the dial', when: () => O.picture.target > 0.5 && !safe.opened && !safe.active && !pad.active, onUse: () => safe.open() });
       if (F.openPad) pad.open();
       if (F.openSafe) safe.open();
       if (demo && F.openPad) pad.demo = true;

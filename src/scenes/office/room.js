@@ -89,7 +89,7 @@ export function roomLines(ctx) {
   const once = (k, text, secs = 2.4) => { if (said[k]) return; said[k] = true; G.hud.say(text, secs); };
   // the filing cabinets: somebody was here first (a drawer run in and out)
   O.cabinets.forEach((c, i) => {
-    I.add({ id: 'cab' + i, at: V(c.x, 1.0, c.z - 0.5), range: 1.7, cone: 0.45, prompt: 'the drawers', onUse: () => {
+    I.add({ id: 'cab' + i, at: V(c.x, 1.0, c.z - 0.5), range: 1.9, cone: 0.6, prompt: 'the drawers', onUse: () => {
       const d = c.drawers.find((q) => q.out > 0.1) || c.drawers[0];
       d.group.position.z -= 0.08;
       G.sfx.play('office_drawer', V(c.x, d.y + 0.2, c.z - 0.5));
@@ -99,12 +99,12 @@ export function roomLines(ctx) {
     } });
   });
   // the coat on the stand: his; the pockets turned out
-  I.add({ id: 'coat', at: V(STAND.x + 0.1, 1.3, STAND.z), range: 1.6, cone: 0.4, prompt: 'the coat', onUse: () => {
+  I.add({ id: 'coat', at: V(STAND.x + 0.1, 1.3, STAND.z), range: 1.8, cone: 0.55, prompt: 'the coat', onUse: () => {
     G.sfx.play('office_paperRustle', V(STAND.x, 1.3, STAND.z), { k: 0.6 });
     once('coat', 'Pockets inside out. They were thorough.');
     I.remove('coat');
   } });
   // the water cooler: a paper cup, a glug (no line)
-  I.add({ id: 'cooler', at: V(COOLER.x, 1.0, COOLER.z), range: 1.5, cone: 0.45, prompt: 'a drink', onUse: () => { G.sfx.play('office_coolerGlug', V(COOLER.x, 1.0, COOLER.z)); } });
+  I.add({ id: 'cooler', at: V(COOLER.x, 1.0, COOLER.z), range: 1.6, cone: 0.5, prompt: 'a drink', onUse: () => { G.sfx.play('office_coolerGlug', V(COOLER.x, 1.0, COOLER.z)); } });
   void ROOM; void DOOR; void DESK; void PAD; void PICTURE; void WIN; void CABS; void ESC; void CORR;
 }
