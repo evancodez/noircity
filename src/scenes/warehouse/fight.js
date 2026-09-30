@@ -64,13 +64,18 @@ export const FM_MANNERS = {
 //            his whatever it is, and a heavy one splits it; or swung once
 //   chain    a long reach, two swings
 //   lantern  swung or thrown: it breaks and the oil burns on the floor
+// ([R2-E round 2] harder in the hand: hook 40 -> 50, lid 20 -> 24, lantern
+// 12 -> 16 - a player who used the bay won no faster than one who did not,
+// a grab costing the time a punch would have taken)
 export const FM_THINGS = {
-  hook: { dmg: 40, uses: 1, hands: 1, throw: false, breaksGuard: true, level: 3 },
-  lid: { dmg: 20, uses: 1, hands: 2, throw: false, breaksGuard: true, big: true, level: 3, shield: true },
+  hook: { dmg: 50, uses: 1, hands: 1, throw: false, breaksGuard: true, level: 3 },
+  lid: { dmg: 24, uses: 1, hands: 2, throw: false, breaksGuard: true, big: true, level: 3, shield: true },
   chain: { dmg: 15, uses: 2, hands: 1, throw: false, level: 2, reach: 0.7 },
-  lantern: { dmg: 12, uses: 1, hands: 1, throw: true, level: 2 },
+  lantern: { dmg: 16, uses: 1, hands: 1, throw: true, level: 2 },
 };
-export const FOREMAN = { name: 'THE FOREMAN', hp: 136 };
+// ([R2-E round 2] 136 -> 146: ten seeds of the human-paced autoplay won in 41
+// to 71 s, four of them under the brief's 50)
+export const FOREMAN = { name: 'THE FOREMAN', hp: 146 };
 
 // where the fight finds us (a retry, a jump): him toward the doors, me off
 // the stairs' foot
@@ -360,8 +365,14 @@ export class PierFight {
     this.stage.scene.add(o);
     o.position.copy(w); o.quaternion.copy(q); o.scale.setScalar(1); o.visible = true;
     o.updateMatrixWorld(true);
-    const c = Br.c, side = V(Math.cos(c.fig.yaw), 0, -Math.sin(c.fig.yaw));
-    this.field(o, true, V(-side.x * r.range(0.8, 1.6), r.range(0.8, 1.5), -side.z * r.range(0.8, 1.6)), V(r.gauss() * 6, r.gauss() * 6, r.gauss() * 6));
+    // ([R2-E round 2] it skitters out onto the floor between us, a stride
+    // before me and in my look - a thing that asks to be taken; knocked off
+    // to his side it lay out of reach and out of sight, and no one took it)
+    const eye = this.G.eye, toMe = V(eye.x - w.x, 0, eye.z - w.z);
+    const dMe = Math.max(0.5, toMe.length()); toMe.normalize();
+    const lat = V(-toMe.z, 0, toMe.x).multiplyScalar(r.gauss() * 0.35);
+    const k = Math.max(0.4, Math.min(1.6, (dMe - 0.95) / 0.62));
+    this.field(o, true, toMe.multiplyScalar(k * r.range(0.9, 1.1)).add(lat).setY(r.range(0.9, 1.3)), V(r.gauss() * 6, r.gauss() * 6, r.gauss() * 6));
     this.sfx('b9clatter', w, {}, { delay: 0.45 });
   }
 
