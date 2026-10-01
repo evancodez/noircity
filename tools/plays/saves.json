@@ -1144,7 +1144,7 @@
    "label": "[14_body_note] out of the black, playing"
   },
   {
-   "expect": "JSON.stringify(G.save.inventory.slice().sort()) === \"[\\\"matchbook\\\", \\\"matchbookHalf\\\"]\"",
+   "expect": "JSON.stringify(G.save.inventory.slice().sort()) === \"[\\\"matchbook\\\",\\\"matchbookHalf\\\"]\"",
    "label": "[14_body_note] the inventory as saved"
   },
   {
@@ -1224,7 +1224,7 @@
    "label": "[15_office_corridor] out of the black, playing"
   },
   {
-   "expect": "JSON.stringify(G.save.inventory.slice().sort()) === \"[\\\"matchbook\\\", \\\"matchbookHalf\\\", \\\"note\\\"]\"",
+   "expect": "JSON.stringify(G.save.inventory.slice().sort()) === \"[\\\"matchbook\\\",\\\"matchbookHalf\\\",\\\"note\\\"]\"",
    "label": "[15_office_corridor] the inventory as saved"
   },
   {
@@ -1304,7 +1304,7 @@
    "label": "[16_office_room] out of the black, playing"
   },
   {
-   "expect": "JSON.stringify(G.save.inventory.slice().sort()) === \"[\\\"matchbook\\\", \\\"matchbookHalf\\\", \\\"note\\\"]\"",
+   "expect": "JSON.stringify(G.save.inventory.slice().sort()) === \"[\\\"matchbook\\\",\\\"matchbookHalf\\\",\\\"note\\\"]\"",
    "label": "[16_office_room] the inventory as saved"
   },
   {
@@ -1384,7 +1384,7 @@
    "label": "[17_office_pad] out of the black, playing"
   },
   {
-   "expect": "JSON.stringify(G.save.inventory.slice().sort()) === \"[\\\"matchbook\\\", \\\"matchbookHalf\\\", \\\"note\\\"]\"",
+   "expect": "JSON.stringify(G.save.inventory.slice().sort()) === \"[\\\"matchbook\\\",\\\"matchbookHalf\\\",\\\"note\\\"]\"",
    "label": "[17_office_pad] the inventory as saved"
   },
   {
@@ -1464,7 +1464,7 @@
    "label": "[18_office_safe] out of the black, playing"
   },
   {
-   "expect": "JSON.stringify(G.save.inventory.slice().sort()) === \"[\\\"matchbook\\\", \\\"matchbookHalf\\\", \\\"note\\\"]\"",
+   "expect": "JSON.stringify(G.save.inventory.slice().sort()) === \"[\\\"matchbook\\\",\\\"matchbookHalf\\\",\\\"note\\\"]\"",
    "label": "[18_office_safe] the inventory as saved"
   },
   {
@@ -1544,7 +1544,7 @@
    "label": "[19_office_ledger] out of the black, playing"
   },
   {
-   "expect": "JSON.stringify(G.save.inventory.slice().sort()) === \"[\\\"matchbook\\\", \\\"matchbookHalf\\\", \\\"note\\\"]\"",
+   "expect": "JSON.stringify(G.save.inventory.slice().sort()) === \"[\\\"matchbook\\\",\\\"matchbookHalf\\\",\\\"note\\\"]\"",
    "label": "[19_office_ledger] the inventory as saved"
   },
   {
@@ -1624,7 +1624,7 @@
    "label": "[20_gunfight_shadows] out of the black, playing"
   },
   {
-   "expect": "JSON.stringify(G.save.inventory.slice().sort()) === \"[\\\"ledger\\\", \\\"matchbook\\\", \\\"matchbookHalf\\\", \\\"note\\\"]\"",
+   "expect": "JSON.stringify(G.save.inventory.slice().sort()) === \"[\\\"ledger\\\",\\\"matchbook\\\",\\\"matchbookHalf\\\",\\\"note\\\"]\"",
    "label": "[20_gunfight_shadows] the inventory as saved"
   },
   {
@@ -1703,7 +1703,7 @@
    "label": "[21_watcher_seen] out of the black, playing"
   },
   {
-   "expect": "JSON.stringify(G.save.inventory.slice().sort()) === \"[\\\"ledger\\\", \\\"matchbook\\\", \\\"matchbookHalf\\\", \\\"note\\\", \\\"revolver\\\"]\"",
+   "expect": "JSON.stringify(G.save.inventory.slice().sort()) === \"[\\\"ledger\\\",\\\"matchbook\\\",\\\"matchbookHalf\\\",\\\"note\\\",\\\"revolver\\\"]\"",
    "label": "[21_watcher_seen] the inventory as saved"
   },
   {
@@ -1779,7 +1779,7 @@
    "label": "[22_watcher_escape] out of the black, playing"
   },
   {
-   "expect": "JSON.stringify(G.save.inventory.slice().sort()) === \"[\\\"ledger\\\", \\\"matchbook\\\", \\\"matchbookHalf\\\", \\\"note\\\", \\\"revolver\\\"]\"",
+   "expect": "JSON.stringify(G.save.inventory.slice().sort()) === \"[\\\"ledger\\\",\\\"matchbook\\\",\\\"matchbookHalf\\\",\\\"note\\\",\\\"revolver\\\"]\"",
    "label": "[22_watcher_escape] the inventory as saved"
   },
   {
@@ -1855,7 +1855,7 @@
    "label": "[23_watcher_run] out of the black, playing"
   },
   {
-   "expect": "JSON.stringify(G.save.inventory.slice().sort()) === \"[\\\"ledger\\\", \\\"matchbook\\\", \\\"matchbookHalf\\\", \\\"note\\\", \\\"revolver\\\"]\"",
+   "expect": "JSON.stringify(G.save.inventory.slice().sort()) === \"[\\\"ledger\\\",\\\"matchbook\\\",\\\"matchbookHalf\\\",\\\"note\\\",\\\"revolver\\\"]\"",
    "label": "[23_watcher_run] the inventory as saved"
   },
   {
@@ -1931,7 +1931,7 @@
    "label": "[24_watcher_car] out of the black, playing"
   },
   {
-   "expect": "JSON.stringify(G.save.inventory.slice().sort()) === \"[\\\"ledger\\\", \\\"matchbook\\\", \\\"matchbookHalf\\\", \\\"note\\\", \\\"revolver\\\"]\"",
+   "expect": "JSON.stringify(G.save.inventory.slice().sort()) === \"[\\\"ledger\\\",\\\"matchbook\\\",\\\"matchbookHalf\\\",\\\"note\\\",\\\"revolver\\\"]\"",
    "label": "[24_watcher_car] the inventory as saved"
   },
   {
@@ -2007,7 +2007,7 @@
    "label": "[25_tail_start] out of the black, playing"
   },
   {
-   "expect": "JSON.stringify(G.save.inventory.slice().sort()) === \"[\\\"ledger\\\", \\\"matchbook\\\", \\\"matchbookHalf\\\", \\\"note\\\", \\\"revolver\\\"]\"",
+   "expect": "JSON.stringify(G.save.inventory.slice().sort()) === \"[\\\"ledger\\\",\\\"matchbook\\\",\\\"matchbookHalf\\\",\\\"note\\\",\\\"revolver\\\"]\"",
    "label": "[25_tail_start] the inventory as saved"
   },
   {
@@ -2087,7 +2087,7 @@
    "label": "[26_tail_chase] out of the black, playing"
   },
   {
-   "expect": "JSON.stringify(G.save.inventory.slice().sort()) === \"[\\\"ledger\\\", \\\"matchbook\\\", \\\"matchbookHalf\\\", \\\"note\\\", \\\"revolver\\\"]\"",
+   "expect": "JSON.stringify(G.save.inventory.slice().sort()) === \"[\\\"ledger\\\",\\\"matchbook\\\",\\\"matchbookHalf\\\",\\\"note\\\",\\\"revolver\\\"]\"",
    "label": "[26_tail_chase] the inventory as saved"
   },
   {
@@ -2167,7 +2167,7 @@
    "label": "[27_tail_close] out of the black, playing"
   },
   {
-   "expect": "JSON.stringify(G.save.inventory.slice().sort()) === \"[\\\"ledger\\\", \\\"matchbook\\\", \\\"matchbookHalf\\\", \\\"note\\\", \\\"revolver\\\"]\"",
+   "expect": "JSON.stringify(G.save.inventory.slice().sort()) === \"[\\\"ledger\\\",\\\"matchbook\\\",\\\"matchbookHalf\\\",\\\"note\\\",\\\"revolver\\\"]\"",
    "label": "[27_tail_close] the inventory as saved"
   },
   {
@@ -2247,7 +2247,7 @@
    "label": "[28_warehouse_arrive] out of the black, playing"
   },
   {
-   "expect": "JSON.stringify(G.save.inventory.slice().sort()) === \"[\\\"ledger\\\", \\\"matchbook\\\", \\\"matchbookHalf\\\", \\\"note\\\", \\\"revolver\\\"]\"",
+   "expect": "JSON.stringify(G.save.inventory.slice().sort()) === \"[\\\"ledger\\\",\\\"matchbook\\\",\\\"matchbookHalf\\\",\\\"note\\\",\\\"revolver\\\"]\"",
    "label": "[28_warehouse_arrive] the inventory as saved"
   },
   {
@@ -2323,7 +2323,7 @@
    "label": "[29_warehouse_floor] out of the black, playing"
   },
   {
-   "expect": "JSON.stringify(G.save.inventory.slice().sort()) === \"[\\\"ledger\\\", \\\"matchbook\\\", \\\"matchbookHalf\\\", \\\"note\\\", \\\"revolver\\\"]\"",
+   "expect": "JSON.stringify(G.save.inventory.slice().sort()) === \"[\\\"ledger\\\",\\\"matchbook\\\",\\\"matchbookHalf\\\",\\\"note\\\",\\\"revolver\\\"]\"",
    "label": "[29_warehouse_floor] the inventory as saved"
   },
   {
@@ -2399,7 +2399,7 @@
    "label": "[30_warehouse_lamps] out of the black, playing"
   },
   {
-   "expect": "JSON.stringify(G.save.inventory.slice().sort()) === \"[\\\"ledger\\\", \\\"matchbook\\\", \\\"matchbookHalf\\\", \\\"note\\\", \\\"revolver\\\"]\"",
+   "expect": "JSON.stringify(G.save.inventory.slice().sort()) === \"[\\\"ledger\\\",\\\"matchbook\\\",\\\"matchbookHalf\\\",\\\"note\\\",\\\"revolver\\\"]\"",
    "label": "[30_warehouse_lamps] the inventory as saved"
   },
   {
@@ -2475,7 +2475,7 @@
    "label": "[31_warehouse_aisle] out of the black, playing"
   },
   {
-   "expect": "JSON.stringify(G.save.inventory.slice().sort()) === \"[\\\"ledger\\\", \\\"matchbook\\\", \\\"matchbookHalf\\\", \\\"note\\\", \\\"revolver\\\"]\"",
+   "expect": "JSON.stringify(G.save.inventory.slice().sort()) === \"[\\\"ledger\\\",\\\"matchbook\\\",\\\"matchbookHalf\\\",\\\"note\\\",\\\"revolver\\\"]\"",
    "label": "[31_warehouse_aisle] the inventory as saved"
   },
   {
@@ -2551,7 +2551,7 @@
    "label": "[32_warehouse_stairs] out of the black, playing"
   },
   {
-   "expect": "JSON.stringify(G.save.inventory.slice().sort()) === \"[\\\"ledger\\\", \\\"matchbook\\\", \\\"matchbookHalf\\\", \\\"note\\\", \\\"revolver\\\"]\"",
+   "expect": "JSON.stringify(G.save.inventory.slice().sort()) === \"[\\\"ledger\\\",\\\"matchbook\\\",\\\"matchbookHalf\\\",\\\"note\\\",\\\"revolver\\\"]\"",
    "label": "[32_warehouse_stairs] the inventory as saved"
   },
   {
@@ -2627,7 +2627,7 @@
    "label": "[33_warehouse_listen] out of the black, playing"
   },
   {
-   "expect": "JSON.stringify(G.save.inventory.slice().sort()) === \"[\\\"ledger\\\", \\\"matchbook\\\", \\\"matchbookHalf\\\", \\\"note\\\", \\\"revolver\\\"]\"",
+   "expect": "JSON.stringify(G.save.inventory.slice().sort()) === \"[\\\"ledger\\\",\\\"matchbook\\\",\\\"matchbookHalf\\\",\\\"note\\\",\\\"revolver\\\"]\"",
    "label": "[33_warehouse_listen] the inventory as saved"
   },
   {
@@ -2703,7 +2703,7 @@
    "label": "[34_warehouse_out] out of the black, playing"
   },
   {
-   "expect": "JSON.stringify(G.save.inventory.slice().sort()) === \"[\\\"ledger\\\", \\\"matchbook\\\", \\\"matchbookHalf\\\", \\\"note\\\", \\\"revolver\\\"]\"",
+   "expect": "JSON.stringify(G.save.inventory.slice().sort()) === \"[\\\"ledger\\\",\\\"matchbook\\\",\\\"matchbookHalf\\\",\\\"note\\\",\\\"revolver\\\"]\"",
    "label": "[34_warehouse_out] the inventory as saved"
   },
   {
@@ -2779,7 +2779,7 @@
    "label": "[35_warehouse_fight] out of the black, playing"
   },
   {
-   "expect": "JSON.stringify(G.save.inventory.slice().sort()) === \"[\\\"ledger\\\", \\\"matchbook\\\", \\\"matchbookHalf\\\", \\\"note\\\", \\\"revolver\\\"]\"",
+   "expect": "JSON.stringify(G.save.inventory.slice().sort()) === \"[\\\"ledger\\\",\\\"matchbook\\\",\\\"matchbookHalf\\\",\\\"note\\\",\\\"revolver\\\"]\"",
    "label": "[35_warehouse_fight] the inventory as saved"
   },
   {
@@ -2855,7 +2855,7 @@
    "label": "[36_shootout_arrive] out of the black, playing"
   },
   {
-   "expect": "JSON.stringify(G.save.inventory.slice().sort()) === \"[\\\"ledger\\\", \\\"matchbook\\\", \\\"matchbookHalf\\\", \\\"note\\\", \\\"revolver\\\"]\"",
+   "expect": "JSON.stringify(G.save.inventory.slice().sort()) === \"[\\\"ledger\\\",\\\"matchbook\\\",\\\"matchbookHalf\\\",\\\"note\\\",\\\"revolver\\\"]\"",
    "label": "[36_shootout_arrive] the inventory as saved"
   },
   {
@@ -2931,7 +2931,7 @@
    "label": "[37_shootout_cars] out of the black, playing"
   },
   {
-   "expect": "JSON.stringify(G.save.inventory.slice().sort()) === \"[\\\"ledger\\\", \\\"matchbook\\\", \\\"matchbookHalf\\\", \\\"note\\\", \\\"revolver\\\"]\"",
+   "expect": "JSON.stringify(G.save.inventory.slice().sort()) === \"[\\\"ledger\\\",\\\"matchbook\\\",\\\"matchbookHalf\\\",\\\"note\\\",\\\"revolver\\\"]\"",
    "label": "[37_shootout_cars] the inventory as saved"
   },
   {
@@ -3007,7 +3007,7 @@
    "label": "[38_shootout_doorways] out of the black, playing"
   },
   {
-   "expect": "JSON.stringify(G.save.inventory.slice().sort()) === \"[\\\"ledger\\\", \\\"matchbook\\\", \\\"matchbookHalf\\\", \\\"note\\\", \\\"revolver\\\"]\"",
+   "expect": "JSON.stringify(G.save.inventory.slice().sort()) === \"[\\\"ledger\\\",\\\"matchbook\\\",\\\"matchbookHalf\\\",\\\"note\\\",\\\"revolver\\\"]\"",
    "label": "[38_shootout_doorways] the inventory as saved"
   },
   {
@@ -3083,7 +3083,7 @@
    "label": "[39_shootout_el] out of the black, playing"
   },
   {
-   "expect": "JSON.stringify(G.save.inventory.slice().sort()) === \"[\\\"ledger\\\", \\\"matchbook\\\", \\\"matchbookHalf\\\", \\\"note\\\", \\\"revolver\\\"]\"",
+   "expect": "JSON.stringify(G.save.inventory.slice().sort()) === \"[\\\"ledger\\\",\\\"matchbook\\\",\\\"matchbookHalf\\\",\\\"note\\\",\\\"revolver\\\"]\"",
    "label": "[39_shootout_el] the inventory as saved"
   },
   {
@@ -3159,7 +3159,7 @@
    "label": "[40_shootout_driveby] out of the black, playing"
   },
   {
-   "expect": "JSON.stringify(G.save.inventory.slice().sort()) === \"[\\\"ledger\\\", \\\"matchbook\\\", \\\"matchbookHalf\\\", \\\"note\\\", \\\"revolver\\\"]\"",
+   "expect": "JSON.stringify(G.save.inventory.slice().sort()) === \"[\\\"ledger\\\",\\\"matchbook\\\",\\\"matchbookHalf\\\",\\\"note\\\",\\\"revolver\\\"]\"",
    "label": "[40_shootout_driveby] the inventory as saved"
   },
   {
@@ -3235,7 +3235,7 @@
    "label": "[41_shootout_cardinal] out of the black, playing"
   },
   {
-   "expect": "JSON.stringify(G.save.inventory.slice().sort()) === \"[\\\"ledger\\\", \\\"matchbook\\\", \\\"matchbookHalf\\\", \\\"note\\\", \\\"revolver\\\"]\"",
+   "expect": "JSON.stringify(G.save.inventory.slice().sort()) === \"[\\\"ledger\\\",\\\"matchbook\\\",\\\"matchbookHalf\\\",\\\"note\\\",\\\"revolver\\\"]\"",
    "label": "[41_shootout_cardinal] the inventory as saved"
   },
   {

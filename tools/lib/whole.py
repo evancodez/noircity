@@ -71,7 +71,9 @@ RECORDER = r"""(() => {
   G.sfx.glass = (...a) => { R.glass.push(at()); return gl(...a); };
   let lastOver = '', blackT = 0;
   G.scripts.push((t, dt) => {
-    const up = G.hud.cardT > 0, txt = (G.hud.sayShown ? 'say:' + G.hud.sayShown : '') + (G.hud.promptShown ? ' prompt:' + G.hud.promptShown : '');
+    // (a prompt kept out of sight under the card - #hud.carded - is not printed over it)
+    const up = G.hud.cardT > 0, hid = G.hud.root.classList.contains('carded');
+    const txt = (G.hud.sayShown ? 'say:' + G.hud.sayShown : '') + (G.hud.promptShown && !hid ? ' prompt:' + G.hud.promptShown : '');
     if (up && txt && txt !== lastOver) R.over.push([...at(), +G.hud.cardT.toFixed(2), txt]);
     lastOver = up ? txt : '';
     if (S.fadeK > 0.99) blackT += dt; else if (blackT > 0) { R.black.push([...at(), +blackT.toFixed(2)]); blackT = 0; }
@@ -100,7 +102,7 @@ MEASURE = r"""(() => {
     mode: G.controller.mode, frozen: !!G.controller.frozen, hands: G.hands.set, held: [G.hands.held && G.hands.held.L ? G.hands.held.L.userData.kind : null, G.hands.held && G.hands.held.R ? G.hands.held.R.userData.kind : null],
     weapon: G.player.weapons.current, inv: G.save.inventory.join(','), flags: JSON.stringify(G.save.flags), music: G.music.current,
     prompt: G.hud.promptShown, say: G.hud.sayShown, fov: +N.camera.fov.toFixed(1), hp: G.health.hp, interact: G.interact.list ? G.interact.list.length : null,
-    fade: +G.scenes.fadeK.toFixed(2), timeScale: G.timeScale };
+    fade: +G.scenes.fadeK.toFixed(2), timeScale: G.timeScale, room: G._room, loops: N.sfx.loops ? [...N.sfx.loops.keys()].join(',') : null, live: !!N.sfx.live };
 })()"""
 
 # the frame rate over two seconds of play (requestAnimationFrame)
