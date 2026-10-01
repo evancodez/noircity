@@ -437,7 +437,7 @@ try {
       log(`shoot ${JSON.stringify(r)}`);
       if (S.shoot.expect) { const ok = new Function('F', `return (${S.shoot.expect});`)(r) === true; check(S.shoot.label || S.shoot.expect, ok, ok ? '' : JSON.stringify(r)); }
     }
-    else if (S.drive) { await drive(S.drive); log('drive done'); }   // [B5]
+    else if (S.drive && typeof S.drive === 'object') { await drive(S.drive); log('drive done'); }   // [B5] ([R2-F] an object: a path string is B7's driver below)
     // [B7] a driver of the play's own: a module whose default export plays a
     // stretch by real input with the tools above (the gunfight of scene 9)
     else if (S.drive) {

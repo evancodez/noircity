@@ -5,7 +5,10 @@ import { freshRoom, placeDot, makeCounterGun, makeSwitch, setRoomLights, restore
 import { buildTommyGeometry, buildDrumGeometry } from '../../player/Viewmodel.js';
 import { WEAPON } from '../../player/Weapon.js';
 import { merge } from '../../world/geom.js';
-import { allocInkId } from '../../render/layers.js';
+import { allocInkId, LAYER } from '../../render/layers.js';
+import { ShardField } from '../../destruct/Glass.js';
+import { wreckMaterials } from '../../destruct/Wreck.js';
+import { cabMaterial } from './rails.js';
 
 // The scene's machinery (B7, scene 9): what lives across the beats and the
 // retries (the cars on their rails, the gun and the drums on the counter,
@@ -84,6 +87,8 @@ export function teardown(R) {
   if (R.hat) { S.scene.remove(R.hat.obj); if (R.hat.cigar) S.scene.remove(R.hat.cigar); }
   restoreRoomLights(S);
   clearBottles(S);
+  if (S.glass && S.glass.shards) S.glass.shards.batchRest = false;
+  if (R.passes) R.passes.done();
   G.weapon.reload = R.reload0;
   if (R.fire0) G.weapon.fire = R.fire0;
   G.health.onDeath = R.onDeath0;
@@ -252,6 +257,10 @@ function die(ctx) {
   // (a beat's frame in shot mode is looked at, not played: nobody dies in it)
   if (G.shotMode) { G.health.reset(); return; }
   R.dying = { t: 0, beat: G.scenes.beat };
+  // [R2-F] (how often I have gone down in this beat: its men shoot a little
+  // worse at each retry - see mercy)
+  R.downs = R.downs || {};
+  R.downs[R.dying.beat] = (R.downs[R.dying.beat] || 0) + 1;
   G.controller.frozen = true;
   G.weapon.trigger = false;
   G.vm.lowerTo(1);
@@ -277,11 +286,22 @@ function dyingStep(ctx, dt) {
 // room's lights on his aim
 export function man(ctx, spec) {
   const G = ctx.game, R = RIG;
-  const aim = (spec.aim ?? 1) * (R.lightsOn ? 1 : LIGHTS_OFF);
+  const aim0 = (spec.aim ?? 1) * mercy(ctx);
+  const aim = aim0 * (R.lightsOn ? 1 : LIGHTS_OFF);
   const h = G.director.spawn({ who: spec.heavy ? 'heavy' : 'hood', at: spec.at, yaw: spec.yaw ?? null, group: spec.group, entry: spec.entry || 'idle', run: spec.run, post: spec.post, leash: spec.leash, wake: spec.wake, aim, hp: spec.hp, brain: spec.brain || 'cover', variant: spec.variant || null, ...(spec.opts || {}) });
   h.b7beat = ctx.beat;
-  h.b7aim = spec.aim ?? 1;
+  h.b7aim = aim0;
   return h;
+}
+
+// [R2-F] fail softly: at each retry of a beat I went down in, its men shoot
+// a fifth worse (at most down to 0.55 of their aim). The first try is the
+// beat as written; a player who keeps dying in one place is let through it
+// in a try or two instead of a loop (a first-timer's play went down three
+// times running in the doorways beat)
+export function mercy(ctx) {
+  const R = RIG, n = (R && R.downs && R.downs[ctx.beat]) || 0;
+  return Math.max(0.55, Math.pow(0.8, n));
 }
 
 // the lights: the men outside shoot worse at what they cannot see
@@ -317,6 +337,15 @@ export function everyStep(ctx, dt) {
   const R = RIG, G = ctx.game, S = ctx.stage;
   if (!R) return;
   if (G.shotMode) devStep(ctx);
+  // [R2-F] (the scene's first entry, under the card: the passes seen over
+  // its first frames, then the programs compiled for each)
+  if (!R.warmed) {
+    R.warmN = (R.warmN || 0) + 1;
+    const on = !G.shotMode || (typeof location !== 'undefined' && new URLSearchParams(location.search).get('b7warm') === '1');
+    if (on && R.warmN === 1) watchPasses(G, S, R);
+    // (after a few frames drawn: every pass seen; at most 3 s in)
+    if ((R.warmN >= 4 && (!R.passes || R.passes.calls() >= 40)) || R.warmN > 180) { R.warmed = true; if (on) warm(ctx); }
+  }
   R.rails.update(dt, G.time);
   for (const f of [...R.ticks]) if (f(dt) === false) R.ticks.splice(R.ticks.indexOf(f), 1);
   if (R.dying) dyingStep(ctx, dt);
@@ -326,7 +355,17 @@ export function everyStep(ctx, dt) {
     if (!h.alive) continue;
     if (Math.abs(h.pos.z - (D.door.hingeZ + D.door.w / 2)) < 1.2 && h.pos.x < -8.6 && h.pos.x > -12.5) front.door.open();
   }
+  // [R2-F] a man who falls back with a car, a door or a wall at his back
+  // goes down forward instead (never back through the car he stood by)
+  for (const h of S.hoods.list) {
+    if (h.alive || h.b7fall || h.b7char || !(h._deathT >= 0) || h._deathT > 0.12) continue;
+    h.b7fall = true;
+    if (h.state === 'deathBack' && (h.pos.y || 0) < 1 && !roomBehind(S, h)) { h.anim.play('deathKnees', { fade: 0.1 }); h.state = h._deathKind = 'deathKnees'; }
+  }
   headlampsInRoom(ctx);
+  // [R2-F] the glass at rest drawn as one batch (destruct/Glass.js)
+  const F = S.glass && S.glass.shards;
+  if (F && !F.batchRest && R.batchGlass !== false) F.batchRest = R.batchGlass = !(typeof location !== 'undefined' && new URLSearchParams(location.search).get('b7batch') === '0');
   // [second pass] the fight is on from the cars until he is down (not in
   // the quiet before him): the director runs, so the health bar shows (the
   // HUD hides it outside a fight: I was shot at with no bar) and the Hoods'
@@ -353,6 +392,152 @@ export function everyStep(ctx, dt) {
       G.fx.puff.spawn({ pos: p, vel: V(0.01, 0.13, 0), life: 2.2, size: [0.05, 0.05], grow: 0.08, rot: 0, spin: 0.2, col: [0.5, 0.5, 0.5], alpha: 0.2, drag: 0.5, fadeIn: 0.3, fadeOut: 0.8, cell: 0 });
     }
   }
+}
+
+// [R2-F] the street behind a man (as he faces) clear of cars, doors, walls
+// and posts for a body's length
+function roomBehind(S, h) {
+  const back = V(-Math.sin(h.yaw), 0, -Math.cos(h.yaw));
+  for (const L of [0.6, 1.2, 1.8]) {
+    const p = h.pos.clone().addScaledVector(back, L);
+    for (const b of S.colliders.boxes) {
+      const dx = p.x - b.cx, dz = p.z - b.cz, lx = dx * b.c - dz * b.s, lz = dx * b.s + dz * b.c;
+      if (Math.hypot(Math.max(0, Math.abs(lx) - b.hx), Math.max(0, Math.abs(lz) - b.hz)) < 0.25) return false;
+    }
+    for (const c of S.colliders.circles) if (c.tag !== 'hood' && c !== h.collider && Math.hypot(p.x - c.x, p.z - c.z) < c.r + 0.25) return false;
+  }
+  return true;
+}
+
+// [R2-F] the programs the scene will need, compiled on its first steps (under
+// the chapter card) as they will be drawn: into the pipeline's targets. A
+// first draw of a material the renderer has no program for stalls the frame
+// (a tenth of a second and more): in play that was the first bullet hole,
+// the first gunsmoke, the first shard, the first wreck - each at the moment
+// it counted. (The Game's own prewarm compiles for the canvas, not for the
+// pipeline's linear targets, so its programs are not the ones drawn.)
+// Everything in the scene is compiled, hidden or not (the particle and decal
+// systems wait there empty); what this scene makes later gets a hidden
+// stand-in for the compile: the glass's pieces, their batch, the lit cabs,
+// the wrecks' char.
+// (each pass of the pipeline draws the world with its own camera layers,
+// and so with its own set of lights: a program is made per set. The passes
+// are read off the renderer over a few frames: camera, layers, override)
+function watchPasses(G, S, R) {
+  const r = G.pipeline && G.pipeline.renderer;
+  if (!r || R.passes) return;
+  const seen = new Map();
+  const render0 = r.render;
+  let calls = 0;
+  r.render = function (scene, camera) {
+    calls++;
+    if (scene === S.scene && camera) {
+      const k = camera.uuid + ':' + camera.layers.mask + ':' + (scene.overrideMaterial ? scene.overrideMaterial.uuid : '');
+      if (!seen.has(k)) seen.set(k, { camera, mask: camera.layers.mask, override: scene.overrideMaterial, rt: r.getRenderTarget() });
+    }
+    return render0.call(this, scene, camera);
+  };
+  R.passes = { seen, calls: () => calls, done: () => { r.render = render0; } };
+}
+let CHUNK = null;
+function warm(ctx) {
+  const G = ctx.game, S = ctx.stage, P = G.pipeline, r = P && P.renderer;
+  if (!r || !P.rtScene) return;
+  const t0 = performance.now();
+  const passes = RIG.passes ? [...RIG.passes.seen.values()] : [];
+  if (RIG.passes) RIG.passes.done();
+  const hold = new THREE.Group();
+  // (the geometry's attributes are part of a program too: a plane with its
+  // uvs for what has them, bare positions and normals for the pieces, bare
+  // positions for the cracks, colours for the wreck's shell)
+  const geo = new THREE.PlaneGeometry(0.02, 0.02);
+  const ngeo = new THREE.BufferGeometry(); ngeo.setAttribute('position', geo.attributes.position.clone()); ngeo.setAttribute('normal', geo.attributes.normal.clone()); ngeo.setIndex(geo.index.clone());
+  const pgeo = new THREE.BufferGeometry(); pgeo.setAttribute('position', geo.attributes.position.clone()); pgeo.setIndex(geo.index.clone());
+  const cgeo = ngeo.clone(); cgeo.setAttribute('color', new THREE.Float32BufferAttribute(new Array(cgeo.attributes.position.count * 3).fill(0.5), 3));
+  const lgeo = new THREE.BufferGeometry().setFromPoints([V(0, 0, 0), V(0.02, 0, 0)]);
+  // (each on the layers the real thing is drawn on: the glass's pieces on the
+  // effects layer, a shared pane's crack and halo on the world's)
+  const FXL = [LAYER.FX], BOTH = [LAYER.FX, LAYER.WORLD], WL = [LAYER.WORLD];
+  const put = (o, layers, rs = false) => { for (const L of layers) { const c = o.clone(); c.layers.set(L); c.receiveShadow = rs; c.castShadow = rs; hold.add(c); } };
+  const mesh = (m, layers = WL, g = geo, rs = false) => put(new THREE.Mesh(g, m), layers, rs);
+  const temp = [];
+  if (S.glass) {
+    const GM = S.glass.materials();
+    mesh(GM.crack, BOTH, pgeo); mesh(GM.halo, BOTH);
+    mesh(GM.backing); mesh(GM.shard, WL, ngeo);
+    const F = S.glass.shards || (S.glass.shards = new ShardField(S, GM.shard));
+    const live = F.matFor();
+    temp.push(() => (F.pool || (F.pool = [])).push(live));
+    mesh(live, FXL, ngeo); mesh(F.restMat(), FXL, ngeo);
+    // (the batch at rest: positions only)
+    mesh(F.restMat(), FXL, pgeo);
+    put(new THREE.LineSegments(lgeo, F.lineMat()), FXL); put(new THREE.LineSegments(lgeo, F.restLineMat()), FXL);
+    const gm = F._glintMat || (F._glintMat = new THREE.SpriteMaterial({ color: new THREE.Color(3.2, 3.2, 3.2), depthWrite: false, fog: false }));
+    put(new THREE.Sprite(gm), FXL);
+    F.batchRest = true;
+    F.rebuildBatch();
+  }
+  mesh(cabMaterial());
+  const W = wreckMaterials(S.M);
+  mesh(W.shell, WL, cgeo, true); mesh(W.lines, WL, ngeo, true); mesh(W.rims, WL, ngeo, true);
+  // (a blast's flying chunks: fx/Explosion.js's unlit black, drawn late)
+  // (kept, never disposed: a program whose last material goes is deleted)
+  const chunk = CHUNK || (CHUNK = new THREE.MeshBasicMaterial({ color: 0x030303, transparent: true, opacity: 1, depthWrite: true }));
+  mesh(chunk, WL, ngeo);
+  // a man and a heavy (the figures' id-pass programs: an override material,
+  // which a compile of the scene does not reach)
+  const H = S.hoods, men = H ? [H.spawn([G.eye.x, G.eye.z - 40], { coat: 0, brim: 0, tall: 1, heavy: false }, {}), H.spawn([G.eye.x, G.eye.z - 41], { coat: 1, brim: 1, tall: 1, heavy: true }, {})] : [];
+  hold.visible = false;
+  S.scene.add(hold);
+  // (what is drawn already has its programs: only what is hidden - the
+  // stand-ins, the empty effect systems, the props waiting - is compiled,
+  // each for the passes whose layers draw it, through a proxy of its kind
+  // with its geometry and material: a program does not depend on where a
+  // thing is, only on what it is)
+  const targets = [];
+  const walk = (o, vis) => {
+    vis = vis && o.visible;
+    if (!vis && (o.isMesh || o.isLine || o.isPoints || o.isSprite) && !o.isSkinnedMesh && o.material && !Array.isArray(o.material)) targets.push(o);
+    for (const c of o.children) walk(c, vis);
+  };
+  walk(S.scene, true);
+  const proxy = (o, mat) => {
+    const p = o.isInstancedMesh ? new THREE.InstancedMesh(o.geometry, mat, 1) : o.isSprite ? new THREE.Sprite(mat) : o.isPoints ? new THREE.Points(o.geometry, mat)
+      : o.isLineSegments ? new THREE.LineSegments(o.geometry, mat) : o.isLine ? new THREE.Line(o.geometry, mat) : new THREE.Mesh(o.geometry, mat);
+    if (o.isInstancedMesh && o.instanceColor) p.instanceColor = o.instanceColor;
+    p.receiveShadow = o.receiveShadow; p.castShadow = o.castShadow;
+    return p;
+  };
+  const rt0 = r.getRenderTarget();
+  const list = passes.length ? passes : [{ camera: G.camera, mask: G.camera.layers.mask, override: null, rt: P.rtScene }];
+  let n = 0;
+  try {
+    for (const p of list) {
+      const m0 = p.camera.layers.mask;
+      p.camera.layers.mask = p.mask;
+      r.setRenderTarget(p.rt || P.rtScene);
+      const tmp = new THREE.Group();
+      for (const o of targets) if (o.layers.test(p.camera.layers)) tmp.add(proxy(o, p.override || o.material));
+      n += tmp.children.length;
+      if (tmp.children.length) r.compile(tmp, p.camera, S.scene);
+      // (and the men, whose skinned programs a proxy would not make)
+      for (const h of men) {
+        if (!h.mesh.layers.test(p.camera.layers)) continue;
+        const m = h.mesh.material;
+        if (p.override) h.mesh.material = p.override;
+        r.compile(h.object, p.camera, S.scene);
+        h.mesh.material = m;
+      }
+      p.camera.layers.mask = m0;
+    }
+  } finally { r.setRenderTarget(rt0); }
+  RIG.warmTargets = n;
+  S.scene.remove(hold);
+  for (const h of men) H.remove(h);
+  for (const g of [geo, ngeo, pgeo, cgeo, lgeo]) g.dispose();
+  for (const f of temp) f();
+  RIG.warmMs = performance.now() - t0;
+  RIG.warmPasses = list.length;
 }
 
 // look development (shot mode only): b7kill=<group>@<t> kills that group's

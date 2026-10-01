@@ -1,0 +1,63 @@
+{
+ "about": "[R2-F] Scene 9 as a first-timer plays it (tools/play.mjs, by real input): BEGIN at start=shootout, then the scene's driver (tools/lib/b7_shootout.mjs) with the profile 'first': slower to see a man (0.55-0.95 s) and to turn onto him, a hand whose sights wander (a sway of 0.055 rad), no lead, long bursts, holds a window until badly hurt, never uses the light switch. Measures how long a first-timer's scene runs and how often he dies. node tools/play.mjs tools/plays/shootout_first.json",
+ "url": "/?mute=1&start=shootout",
+ "size": [
+  1280,
+  800
+ ],
+ "out": "shots/play/shootout_first",
+ "steps": [
+  {
+   "name": "the title, BEGIN at scene 9"
+  },
+  {
+   "until": "G.state === 'title' && !document.getElementById('title').classList.contains('hidden') && !!document.querySelector('#title .opt[data-k=begin]')",
+   "timeout": 60000
+  },
+  {
+   "wait": 2500
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]"
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'shootout' && document.pointerLockElement === N.renderer.domElement",
+   "timeout": 60000
+  },
+  {
+   "expect": "G.scenes.beat === 'arrive' && G.hands.set === 'empty' && !G.b7.gunTaken",
+   "label": "in at the door, no gun yet"
+  },
+  {
+   "until": "G.hud.sayShown === \"They're coming here.\"",
+   "timeout": 8000
+  },
+  {
+   "shot": "s01_line"
+  },
+  {
+   "name": "the whole scene, by real input"
+  },
+  {
+   "drive": "tools/lib/b7_shootout.mjs",
+   "timeout": 1200000,
+   "check": "D.ended && D.beats.includes('end')",
+   "label": "a first-timer's scene, played to the end card",
+   "profile": "first"
+  },
+  {
+   "wait": 800
+  },
+  {
+   "expect": "G.hud.endShown && document.querySelector('#endcard h1').textContent === 'THE END'",
+   "label": "THE END"
+  },
+  {
+   "expect": "!!G.b7 === false || G.b7.hat != null",
+   "label": "his hat in the street"
+  },
+  {
+   "shot": "s99_end"
+  }
+ ]
+}

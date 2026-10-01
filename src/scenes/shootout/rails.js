@@ -32,6 +32,7 @@ const BEAM = V(1, -0.09, 0).normalize();
 // (a dim, even grey: the inside of the cab with its dome light on)
 let CAB = null;
 const cabLight = () => CAB || (CAB = new THREE.MeshBasicMaterial({ color: new THREE.Color(0.1, 0.1, 0.1), side: THREE.DoubleSide }));
+export const cabMaterial = cabLight;
 
 export class Rails {
   constructor(game, stage) {
@@ -45,7 +46,24 @@ export class Rails {
     // done under the black of the scene's start, never in play)
     const q = typeof location !== 'undefined' ? new URLSearchParams(location.search).get('b7spots') : null;
     const nSpots = q != null ? +q : 1;
-    for (let i = 0; i < nSpots; i++) {
+    // [R2-F] the first is not a light of its own: it is one of the lamp
+    // pool's four plain SpotLights, taken out of the pool for the scene (the
+    // lamp that would have had it - the seventh nearest - is lit by its cone
+    // and bulb alone meanwhile) and given back at the end. A light added to
+    // the scene changed every lit material's program: each figure, shard and
+    // wreck compiled again the first time it was drawn, in play (a stall at
+    // every first appearance), and every lit pixel paid for one light more.
+    const pool = stage.lamps && stage.lamps.pool;
+    const slot = nSpots > 0 && pool ? pool.find((p) => !p.shadow) : null;
+    if (slot) {
+      pool.splice(pool.indexOf(slot), 1);
+      const sp = slot.spot;
+      this.borrowed = { slot, angle: sp.angle, penumbra: sp.penumbra, distance: sp.distance, decay: sp.decay };
+      slot.lamp = null;
+      sp.intensity = 0; sp.angle = 0.42; sp.penumbra = 0.55; sp.distance = 34; sp.decay = 2.0;
+      this.spots.push({ light: sp, car: null, borrowed: true });
+    }
+    for (let i = slot ? 1 : 0; i < nSpots; i++) {
       const sp = new THREE.SpotLight(0xffffff, 0, 34, 0.42, 0.55, 2.0);
       sp.position.set(0, -60, 0); sp.target.position.set(0, -61, 0);
       stage.scene.add(sp, sp.target);
@@ -67,10 +85,12 @@ export class Rails {
     C.cars.push(car);
     // (its meshes join the bullets' world as they would have at the build)
     car.group.traverse((o) => { if (o.isMesh && o.layers.mask & 3 && !o.userData.noRay) S.addSolid(o); });
+    // [R2-F] its own wheels: the front pair steers on the rail
+    const wheels = ownWheels(car, C.T);
     if (armored) { car.limit = 1e9; car.armored = true; }
     const R = car.rail = {
       curve, L, s: 0, v: v0, plan: plan(curve, L, { cruise, v0, decel, accel, stop, lat }), stopped: false, done: false,
-      pitch: 0, pv: 0, roll: 0, rv: 0, slip: 0, sv: 0, lastV: v0, lastYaw: yaw0,
+      pitch: 0, pv: 0, roll: 0, rv: 0, slip: 0, sv: 0, lastV: v0, lastYaw: yaw0, wheels, steer: 0, steerDrawn: 0,
       lights, lit: lights, doors: {}, cones: [], entry: null, engine: true, sound: 'b7car' + car.id, nav: null, covers: [], cols: [],
       crash: null, onStop: null, riders: [],
     };
@@ -108,10 +128,28 @@ export class Rails {
       // the tail steps out when it swings in hard and braking
       const want = Math.max(-0.35, Math.min(0.35, -yawRate * 0.12 * Math.min(1, Math.max(0, -aLong) / 5)));
       R.sv += (-40 * (R.slip - want) - 8 * R.sv) * dt; R.slip += R.sv * dt;
+      // [R2-F] the front wheels: along the path the car is on (the bend over
+      // the wheelbase), against the slide when the tail steps out; held
+      // where they were once it stops (it stands with its wheels turned)
+      // (the last metres before a stop are not steered: the rail's end wiggle
+      // at a walking pace would throw the wheels over the other way)
+      if (R.v > 2) this.steerTo(car, Math.atan(3.1 * yawRate / R.v) - R.slip, dt);
     }
     car.pos.set(p.x, 0, p.z);
     car.yaw = yawT + R.slip;
     this.pose(car);
+  }
+
+  // [R2-F] the front wheels turned toward `want` (rad, + to the left), eased
+  // as hands on a wheel would; their vertices are redrawn only when the
+  // angle has moved (no draw of their own)
+  steerTo(car, want, dt) {
+    const R = car.rail;
+    want = Math.max(-0.6, Math.min(0.6, want));
+    R.steer += (want - R.steer) * Math.min(1, dt * 9);
+    if (Math.abs(R.steer - R.steerDrawn) < 0.004 || !R.wheels) return;
+    R.steerDrawn = R.steer;
+    turnWheels(R.wheels, R.steer);
   }
 
   // the group's transform (the intact car of Cars.pose, and our pitch and roll)
@@ -228,6 +266,10 @@ export class Rails {
     car.pos.set(C.p0.x + (C.h.x * (1 - bend) + C.dir.x * bend) * along, 0, C.p0.z + (C.h.z * (1 - bend) + C.dir.z * bend) * along);
     car.yaw = C.yaw0 + wrap(C.yaw1 - C.yaw0) * bend;
     R.v = C.v0 * (1 - u);
+    // [R2-F] (the wheels hauled over into the swerve)
+    const yr = dt > 0 ? wrap(car.yaw - (C.lastYaw ?? car.yaw)) / dt : 0;
+    C.lastYaw = car.yaw;
+    if (R.v > 0.6) this.steerTo(car, Math.atan(3.1 * yr / R.v) * 1.3, dt);
     R.pitch = -0.06 * Math.sin(Math.PI * Math.min(1, u * 1.3));
     if (u >= 1 && !C.hit) {
       C.hit = true;
@@ -408,6 +450,7 @@ export class Rails {
     if (G && G.react) G.react.hazards = G.react.hazards.filter((h) => h.car !== car);
     if (G && G.fx) for (let p = 0; p < car.panes.length; p++) G.fx.decals.hideOwner('car' + car.id + ':' + p);
     car.group.traverse((o) => { if (o.isMesh) S.removeSolid(o); });
+    if (R && R.wheels) for (const w of R.wheels) w.mesh.geometry.dispose();
     S.scene.remove(car.group);
     if (car.shadow && car.shadow.parent) car.shadow.parent.remove(car.shadow);
     car.state = 'dead';
@@ -418,8 +461,94 @@ export class Rails {
   // the rig itself goes (the scene ends): its spots out of the scene
   dispose() {
     this.clear();
-    for (const S of this.spots) { this.stage.scene.remove(S.light, S.light.target); S.light.dispose(); }
+    for (const S of this.spots) if (!S.borrowed) { this.stage.scene.remove(S.light, S.light.target); S.light.dispose(); }
+    // [R2-F] the lamp pool's light back as it was
+    const B = this.borrowed;
+    if (B) {
+      const sp = B.slot.spot;
+      Object.assign(sp, { angle: B.angle, penumbra: B.penumbra, distance: B.distance, decay: B.decay, intensity: 0 });
+      B.slot.lamp = null; B.slot.k = 0;
+      const pool = this.stage.lamps && this.stage.lamps.pool;
+      if (pool && !pool.includes(B.slot)) pool.push(B.slot);
+      this.borrowed = null;
+    }
     this.spots.length = 0;
+  }
+}
+
+// ---- [R2-F] the front wheels ------------------------------------------------------------------------
+// The block's sedan (world/Cars.js) draws its four wheels inside five merged
+// meshes (the tyres with the running boards, the whitewalls, the hub discs,
+// the caps, the dark discs with the grille). A car on a rail gets its own
+// copy of those five geometries - the same five draws - and the front wheels'
+// vertices (the triangles whose middle lies in a front wheel's round) are
+// turned about the wheel's upright as the rail bends. The bullets keep the
+// shared template (userData.rayGeo: its BVH is already built); the far build
+// (Cars.lodUpdate, shadowLod) passes these meshes by: they are kept under
+// keys of the car's own.
+const WHEEL_KEYS = ['rubber', 'white', 'hubs', 'caps', 'dark'];
+const FRONT = [[1.55, 0.78], [1.55, -0.78]];
+const WHEEL_Y = 0.375;
+const FRONT_SEL = new Map();
+function frontOf(geo) {
+  let sel = FRONT_SEL.get(geo);
+  if (sel) return sel;
+  const pa = geo.getAttribute('position');
+  sel = FRONT.map(([cx, cz]) => {
+    const idx = [];
+    for (let t = 0; t + 2 < pa.count; t += 3) {
+      let x = 0, y = 0, z = 0;
+      for (let k = 0; k < 3; k++) { x += pa.getX(t + k); y += pa.getY(t + k); z += pa.getZ(t + k); }
+      x /= 3; y /= 3; z /= 3;
+      if (Math.abs(x - cx) < 0.42 && Math.abs(y - WHEEL_Y) < 0.42 && Math.abs(z - cz) < 0.2) idx.push(t, t + 1, t + 2);
+    }
+    // (contiguous runs: only they are uploaded again)
+    const ranges = [];
+    for (const i of idx) { const r = ranges[ranges.length - 1]; if (r && r[0] + r[1] === i) r[1]++; else ranges.push([i, 1]); }
+    return { cx, cz, idx: Int32Array.from(idx), ranges };
+  });
+  FRONT_SEL.set(geo, sel);
+  return sel;
+}
+function ownWheels(car, T) {
+  const out = [];
+  for (const k of WHEEL_KEYS) {
+    const m = car.meshes[k], src = T[k];
+    if (!m || !src || !src.getAttribute('normal')) continue;
+    const sel = frontOf(src);
+    if (!sel.some((s) => s.idx.length)) continue;
+    const geo = new THREE.BufferGeometry();
+    const pos = src.getAttribute('position').clone(), nor = src.getAttribute('normal').clone();
+    pos.setUsage(THREE.DynamicDrawUsage); nor.setUsage(THREE.DynamicDrawUsage);
+    geo.setAttribute('position', pos); geo.setAttribute('normal', nor);
+    if (!src.boundingSphere) src.computeBoundingSphere();
+    geo.boundingSphere = src.boundingSphere.clone();
+    if (src.boundingBox) geo.boundingBox = src.boundingBox.clone();
+    m.geometry = geo;
+    m.userData.rayGeo = src;
+    delete car.meshes[k];
+    car.meshes['b7' + k] = m;
+    out.push({ mesh: m, pos, nor, p0: src.getAttribute('position').array, n0: src.getAttribute('normal').array, sel });
+  }
+  return out;
+}
+function turnWheels(W, a) {
+  const c = Math.cos(a), s = Math.sin(a);
+  for (const w of W) {
+    const P = w.pos.array, N = w.nor.array, P0 = w.p0, N0 = w.n0;
+    w.pos.clearUpdateRanges(); w.nor.clearUpdateRanges();
+    for (const S of w.sel) {
+      const I = S.idx;
+      for (let j = 0; j < I.length; j++) {
+        const i = I[j] * 3;
+        const dx = P0[i] - S.cx, dz = P0[i + 2] - S.cz;
+        P[i] = S.cx + dx * c + dz * s; P[i + 2] = S.cz - dx * s + dz * c;
+        const nx = N0[i], nz = N0[i + 2];
+        N[i] = nx * c + nz * s; N[i + 2] = -nx * s + nz * c;
+      }
+      for (const [st, n] of S.ranges) { w.pos.addUpdateRange(st * 3, n * 3); w.nor.addUpdateRange(st * 3, n * 3); }
+    }
+    w.pos.needsUpdate = true; w.nor.needsUpdate = true;
   }
 }
 

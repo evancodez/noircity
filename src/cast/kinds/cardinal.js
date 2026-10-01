@@ -212,6 +212,31 @@ const KNEE = chainKeys([
   [1.8, STANCE],
 ]);
 
+// [R2-F] out of the back of his saloon: in the seat, turned to the open
+// door, he puts the cane out and down onto the street first, then his right
+// foot; heaves himself up on the cane, ducked under the roof, and steps
+// clear into his stance. His root stands where he ends (on the street, 1.3 m
+// out from the car's middle, facing out); the clip carries his hips from the
+// seat. (1.7 s: a big, slow man)
+export const CARDINAL_OUT = 1.7;
+const OUT = chainKeys([
+  [0, { ...STANCE, hipsPos: [0, 0.9, -0.84], hips: [-14, 0, 0], spine: [10, 0, 0], chest: [14, 0, 0], neck: [10, 0, 0], head: [-6, 0, 0], headLevel: [0.3], headRoot: [12, 0, 0],
+    footL: [0.14, 0.54, -0.44], footR: [-0.14, 0.54, -0.42], kneeL: [0.12, 0.4, 1], kneeR: [-0.12, 0.4, 1],
+    handTL: [0.28, 1.0, -0.46], elbowPoleL: [1, -0.2, -0.5], armR: [-0.13, -1, 0.3, 0], elbowR: [40] }],
+  // the cane out and down onto the street
+  [0.35, { hipsPos: [0, 0.89, -0.8], chest: [18, 0, 0], handTL: [0.3, 0.72, -0.12] }],
+  // the right foot down beside it, leaning out over them
+  [0.7, { hipsPos: [0, 0.87, -0.68], hips: [-4, 0, 0], spine: [14, 0, 0], chest: [22, 0, 0], neck: [12, 0, 0], head: [-10, 0, 0],
+    footR: [-0.14, ANKLE_Y, -0.12], footRotR: [0, 10, 0], handTL: [0.3, 0.7, -0.06] }],
+  // up on the cane
+  [1.1, { hipsPos: [0, 0.91, -0.38], hips: [2, 0, 0], spine: [8, 0, 0], chest: [12, 0, 0], neck: [10, 0, 0], head: [-6, 0, 0], headLevel: [0.2],
+    footL: [0.14, 0.24, -0.24], footRotL: [-20, 12, 0], kneeL: [0.12, 0.2, 1], handTL: [0.3, 0.8, 0.02] }],
+  // clear of the door, the left foot down
+  [1.4, { hipsPos: [0, 0.94, -0.1], hips: [-2, 0, 0], spine: [2, 0, 0], chest: [-2, 0, 0], neck: [6, 0, 0], head: [-3, 0, 0], headLevel: [0],
+    footL: [0.14, ANKLE_Y, 0.02], footRotL: [0, 12, 0], kneeL: [0.12, 0, 1], handTL: [0.3, 0.84, 0.1], armR: [-0.13, -1, 0.18, 0], elbowR: [24] }],
+  [CARDINAL_OUT, { ...STANCE }],
+]);
+
 // ---- Dot's clip with the gun (scene 9's arrival): object first --------------------------
 // She bends behind the counter, comes up with the Tommy gun lying flat in
 // her two hands, lays it on the counter top before me, then brings up two
@@ -314,6 +339,8 @@ export default {
       return p;
     } }) },
     cardinal_knee: { duration: 1.8, def: () => ({ armSpace: 'root', pose: (t) => samplePoseKeys(KNEE, t) }) },
+    // [R2-F] out of his saloon's back door
+    cardinal_carOut: { duration: CARDINAL_OUT, def: () => ({ armSpace: 'root', pose: (t) => samplePoseKeys(OUT, t) }) },
     // (Dot's, scene 9: the gun up from under the counter, the drums after it)
     b7_dotGun: { duration: DOT_CLIP.duration, marks: { gun: DOT_CLIP.gun, gunDown: DOT_CLIP.gunDown, drumsUp: DOT_CLIP.drumsUp, drumsDown: DOT_CLIP.drumsDown }, then: 'lean',
       def: (ctx) => ({ armSpace: 'root', fps: 60, pose: dotGunPose(ctx.s) }) },

@@ -2,10 +2,11 @@ import * as THREE from 'three';
 import { defineScene, wait, until, beat } from '../game/script.js';
 import { makeBrain } from '../enemies/HoodBrains.js';
 import { SITE, BEATS, DINER, DOORS } from './shootout/site.js';
-import { stageBeat, rig, markBeat, man, setLights, roundAt, everyStep, RESERVE, V } from './shootout/rig.js';
+import { stageBeat, rig, markBeat, man, mercy, setLights, roundAt, everyStep, RESERVE, LIGHTS_OFF, V } from './shootout/rig.js';
 import { endHat } from './shootout/ending.js';
 import { mackWindow } from './shootout/room.js';
-import { DOT_CLIP, dotGunAt, dotDrumsAt, DOT_DRUMS, dotResupplyAt } from '../cast/kinds/cardinal.js';
+import { climbOut, doorOut, CLIMB } from './shootout/carOut.js';
+import { DOT_CLIP, dotGunAt, dotDrumsAt, DOT_DRUMS, dotResupplyAt, CARDINAL_OUT } from '../cast/kinds/cardinal.js';
 import { palm, wrap, OPEN } from '../player/handPoses.js';
 
 // Scene 9, The Block (B7; docs/story/briefs/B7_SHOOTOUT.md). Back on the
@@ -372,16 +373,22 @@ function* takeGun(ctx) {
   R.gun.group.visible = false;
   vm.gun.visible = true;
   R.gunTaken = true;
-  // the lift: off the counter, toward me, down out of the frame
+  // the lift: off the counter, turned muzzle-forward and a little up (the
+  // stock DOWN, never up at the lens), and down out of the bottom of the
+  // frame; not in toward the eye [R2-F: the first pass tipped the muzzle
+  // down as it came in, and the stock swept up across the lens]
   const p0 = vm.base.pos.clone(), q0 = new THREE.Quaternion().setFromEuler(vm.base.rot);
-  const p1 = new THREE.Vector3(0.24, -0.66, -0.4);
-  const q1 = new THREE.Quaternion().setFromEuler(new THREE.Euler(R.vmBase0.rot.x - 0.75, R.vmBase0.rot.y, R.vmBase0.rot.z - 0.3, 'YXZ'));
-  const T = 0.38;
+  const p1 = new THREE.Vector3(0.22, -0.95, Math.min(-0.5, p0.z + 0.12));
+  const q1 = new THREE.Quaternion().setFromEuler(new THREE.Euler(R.vmBase0.rot.x + 0.45, R.vmBase0.rot.y, R.vmBase0.rot.z - 0.25, 'YXZ'));
+  const T = 0.34;
   if (lean > 0.02) C.ease({ ...P0, pitch: Math.max(-0.12, Math.min(0.05, P0.pitch)) }, 0.42);
   for (let t = 0; t < T; t += 1 / 60) {
-    const u = Math.min(1, t / T), e = u * u * (3 - 2 * u);
-    vm.base.pos.lerpVectors(p0, p1, e).y += 0.1 * Math.sin(Math.PI * Math.min(1, u * 1.6));
-    vm.base.rot.setFromQuaternion(new THREE.Quaternion().slerpQuaternions(q0, q1, e), 'YXZ');
+    const u = Math.min(1, t / T);
+    // (off the counter first - a few centimetres up - then down and away;
+    // it turns as it goes, a little behind the move)
+    const ep = u * u * (3 - 2 * u), er = Math.min(1, u * 1.15) ** 1.3;
+    vm.base.pos.lerpVectors(p0, p1, ep).y += 0.07 * Math.sin(Math.PI * Math.min(1, u * 2.2));
+    vm.base.rot.setFromQuaternion(new THREE.Quaternion().slerpQuaternions(q0, q1, er * er * (3 - 2 * er)), 'YXZ');
     yield null;
   }
   // out of sight: the gun's own lens, and up to the shoulder
@@ -399,7 +406,15 @@ function* takeGun(ctx) {
 // first pass had the scripted player hit by 2-7 % of their rounds and never
 // down; these are about a tenth to a sixth up (a quarter up drew the cars
 // beat out to a minute and a half: the scripted player backing off hurt)
-const AIM = { cars: 1.4, doorways: 1.3, intruder: 1.5, el: 1.1, heavies: 1.2 };
+// [R2-F] (his two heavies were 1.2: a first-timer's plays went down three
+// times in the Cardinal's beat alone; 0.95 leaves them dangerous at a window
+// held too long, not a wall)
+// [R2-F, round 2] (the intruder 1.5 -> 1.35, and his first two rounds wide;
+// the rest about a quarter up - cars 1.4, doorways 1.3, el 1.1, heavies 0.95
+// were - with the retries' mercy under it: a first-timer's plays on those
+// won in 2.4 - 2.6 minutes and never went down. His, the Cardinal's, and the
+// drive-by's gunner's in AIM too)
+const AIM = { cars: 1.75, doorways: 1.6, intruder: 1.35, el: 1.35, heavies: 1.15, cardinal: 0.85, driveby: 0.7 };
 
 // ---- 2. cars ------------------------------------------------------------------------------------
 function* carsBeat(ctx) {
@@ -439,7 +454,8 @@ function* carsBeat(ctx) {
   // end it in ten seconds; the rain and the burning cars hold the gap)
   yield until(() => (G.director.alive('cars') <= 2 && G.time - t0 > CARS_MIN) || G.time - t0 > 50);
 }
-const CARS_MIN = 15;
+// [R2-F, round 2] 15 -> 20 (the opener was over 16 s after the cars stopped)
+const CARS_MIN = 20;
 
 // a car at its stop: doors open, men out behind them, the first rounds into the glass
 function arrived(ctx, car, i) {
@@ -452,17 +468,17 @@ function arrived(ctx, car, i) {
       if (car.state === 'burning') continue;
       const door = R.rails.openDoor(car, m.door);
       G.sfx.play('b7_carDoor', car.pos.clone().setY(1));
-      yield d.wait(0.18);
-      R.rails.doorBox(car, door);
+      // [R2-F] he is in the seat as it opens, and climbs out (carOut.js)
       const D = DOORS[m.door];
       const L = (x, z) => V(x, 0, z).applyMatrix4(car.group.matrixWorld);
-      const out = L(D.hinge[0] - 0.45, D.side * 1.25);
+      const out = doorOut(car, m.door);
       const post = m.post === 'door' ? L(D.hinge[0] - 0.62, D.side * 1.28) : m.post === 'nose' ? L(2.9, -0.7 * D.side) : m.post === 'tail' ? L(-2.95, -0.55 * D.side) : m.post;
-      const h = man(ctx, { group: 'cars', at: { x: out.x, z: out.z }, entry: [{ x: post.x, z: post.z }], run: m.run ?? false, post: { x: post.x, z: post.z }, leash: m.leash, heavy: m.heavy, aim: AIM.cars });
-      h.yaw = Math.atan2(G.eye.x - h.pos.x, G.eye.z - h.pos.z);
-      h.setState('stepOut', 0.1);
-      // the first rounds: into the diner's glass, pane by pane
-      suppress(ctx, h, 2 + (m.heavy ? 5 : 2), 0.9 + m.delay);
+      const h = man(ctx, { group: 'cars', at: { x: out.x, z: out.z }, yaw: out.yaw, entry: [{ x: post.x, z: post.z }], run: m.run ?? false, post: { x: post.x, z: post.z }, leash: m.leash, heavy: m.heavy, aim: AIM.cars });
+      climbOut(G, h, R.ticks, { yaw: out.yaw });
+      yield d.wait(0.18);
+      R.rails.doorBox(car, door);
+      // the first rounds, once he is out: into the diner's glass, pane by pane
+      suppress(ctx, h, 2 + (m.heavy ? 5 : 2), CLIMB + 0.35 + m.delay * 0.5);
       // (and the first man of the lead car puts out a lamp over the booths)
       if (i === 0 && m === specs[0]) shootPendant(ctx, h, 3.6);
     }
@@ -531,6 +547,7 @@ function* doorways(ctx) {
   const I = SITE.intruder;
   const h = man(ctx, { group: 'doorways', at: I.at, entry: I.entry, run: true, post: I.post, leash: 0, aim: AIM.intruder });
   h.b7intruder = true;
+  wideFirst(ctx, h, 2);
   // [second pass] heard before he is seen: his shoes on the stoop, three
   // heavy steps up to the door before its bell
   const door = V(-9.3, 0, 0.6);
@@ -547,6 +564,27 @@ function* doorways(ctx) {
   });
   const t0 = G.time;
   yield until(() => G.director.alive('doorways') <= 1 || G.time - t0 > 45);
+}
+
+// [R2-F] a man's first rounds go wide - past me into the room, the tell -
+// then he shoots as he is: the close one, in at the door at my side, gave a
+// first-timer no second to turn before he hit
+function wideFirst(ctx, h, n) {
+  const G = ctx.game, R = rig();
+  h.b7aimK = 0;
+  const ai0 = G.ais.get(h);
+  if (ai0) ai0.aim = 0;
+  let last = G.lastHoodShot.get(h), fired = 0;
+  R.ticks.push(() => {
+    if (!h.alive) return false;
+    const t = G.lastHoodShot.get(h);
+    if (t != null && t !== last) { last = t; fired++; }
+    if (fired < n) return true;
+    h.b7aimK = 1;
+    const ai = G.ais.get(h);
+    if (ai) ai.aim = (h.b7aim ?? 1) * (R.lightsOn ? 1 : LIGHTS_OFF);
+    return false;
+  });
 }
 
 // ---- 4. el ----------------------------------------------------------------------------------------
@@ -664,7 +702,7 @@ function* driveby(ctx) {
     rounds++;
     if (rounds % 2) {
       // (the first rounds are the tell: they chew the front, not me)
-      ai.aim = rounds < 7 ? 0 : 0.55;
+      ai.aim = rounds < 7 ? 0 : AIM.driveby * mercy(ctx);
       G.hoodFire(ai, t);
     } else {
       const z = c.pos.z + r.range(-2.5, 2.5);
@@ -701,17 +739,24 @@ function wrecked(ctx, car, at) {
 // ---- 6. the Cardinal ---------------------------------------------------------------------------------
 function* cardinal(ctx) {
   const G = ctx.game, S = ctx.stage, R = rig();
+  // [R2-F] a retry of this beat (I went down to him or his men) does not
+  // wait through the quiet and the saloon's whole approach again (27 s
+  // before he was out): the saloon already near the end of its run - his
+  // men are out about six seconds in, he about ten
+  const retry = !!(ctx.flags.b7 && ctx.flags.b7.retry);
   // (the last of the others first: whoever is left after a while pulls back
   // down the avenue, so the quiet is a quiet)
   const t0 = G.time;
-  yield until(() => G.director.alive() === 0 || G.time - t0 > 15);
+  if (!retry) yield until(() => G.director.alive() === 0 || G.time - t0 > 15);
   scatter(ctx);
   yield until(() => G.director.alive() === 0);
   // a quiet, long enough to hear the rain (no fight in it)
   R.calm = true;
   G.music.stop(4);
-  yield wait(7);
+  yield wait(retry ? 0.2 : 7);
   const car = R.rails.spawn({ rail: SITE.saloon.rail, lights: true, v0: 7, cruise: 7, decel: 2.2, lat: 4, armored: true });
+  // (on a retry it comes in under the black of the fade, 22 m out)
+  if (retry) { car.rail.s = Math.max(0, car.rail.L - 22); R.rails.place(car, 0); }
   car.b7beat = 'cardinal';
   R.cars.saloon = car;
   car.meshes.lens.material = S.M.headlamp;
@@ -723,12 +768,12 @@ function* cardinal(ctx) {
   for (const hv of SITE.heavies) {
     const door = R.rails.openDoor(car, hv.door, { speed: 3 });
     G.sfx.play('b7_carDoor', car.pos.clone().setY(1));
+    // [R2-F] out of the seat, as the door opens
+    const out = doorOut(car, hv.door);
+    const h = man(ctx, { group: 'cardinal', at: { x: out.x, z: out.z }, yaw: out.yaw, entry: hv.entry, post: hv.post, leash: hv.leash, heavy: true, aim: AIM.heavies });
+    climbOut(G, h, R.ticks, { yaw: out.yaw });
     yield wait(0.25);
     R.rails.doorBox(car, door);
-    const D = DOORS[hv.door];
-    const out = L(D.hinge[0] - 0.45, D.side * 1.25);
-    const h = man(ctx, { group: 'cardinal', at: { x: out.x, z: out.z }, entry: hv.entry, post: hv.post, leash: hv.leash, heavy: true, aim: AIM.heavies });
-    h.setState('stepOut', 0.1);
     R.calm = false;
     yield wait(0.7);
   }
@@ -736,13 +781,15 @@ function* cardinal(ctx) {
   // then him
   const door = R.rails.openDoor(car, SITE.cardinal.door, { speed: 2.2 });
   G.sfx.play('b7_carDoor', car.pos.clone().setY(1));
+  // [R2-F] he climbs out of the back as the door comes open
+  const D = DOORS[SITE.cardinal.door];
+  const out = L(D.hinge[0] - 0.4, D.side * 1.3);
+  const oy = doorOut(car, SITE.cardinal.door).yaw;
+  const him = spawnCardinal(ctx, out, { climbYaw: oy });
+  R.cardinal = him;
   yield wait(0.6);
   R.rails.doorBox(car, door);
   R.rails.settle(car);
-  const D = DOORS[SITE.cardinal.door];
-  const out = L(D.hinge[0] - 0.4, D.side * 1.3);
-  const him = spawnCardinal(ctx, out);
-  R.cardinal = him;
   yield until(() => him.b7down);
 }
 
@@ -766,12 +813,15 @@ function fallRoom(S, h, dir) {
 
 // him: the cast kind 'cardinal' (else a heavy Hood, unarmed, as a stand-in),
 // made to be shot like a Hood, with his own brain
-function spawnCardinal(ctx, at) {
+function spawnCardinal(ctx, at, { climbYaw = null } = {}) {
   const G = ctx.game, S = ctx.stage, R = rig();
   const toDoor = SITE.cardinal.path[0];
-  const yaw = Math.atan2(toDoor.x - at.x, toDoor.z - at.z);
+  const yaw = climbYaw ?? Math.atan2(toDoor.x - at.x, toDoor.z - at.z);
   let fig;
-  const W = { total: 15, slow: 5, knee: 10 };
+  // [R2-F, round 2] (15 / 5 / 10 were: a first-timer had him down five
+  // seconds after he stood clear of his car - the climax over before it
+  // began; the knee now comes in the middle of a half drum on him)
+  const W = { total: 24, slow: 8, knee: 16 };
   const onWound = (h, { wounds, dir }) => {
     const B = G.ais.get(h) && G.ais.get(h).brain;
     if (!B) return;
@@ -802,10 +852,21 @@ function spawnCardinal(ctx, at) {
     S.hoods.list.push(fig);
     fig.hp = 1e6;
     fig.heavy = false;
-    G.ais.set(fig, makeBrain(G, fig, 'b7_cardinal', { path: SITE.cardinal.path, onWound, aim: 0.7 }));
+    G.ais.set(fig, makeBrain(G, fig, 'b7_cardinal', { path: SITE.cardinal.path, onWound, aim: AIM.cardinal * mercy(ctx) }));
+    // [R2-F] (the switch sets every man's aim from this: without it the
+    // lights put out in his beat set his to 1)
+    fig.b7aim = AIM.cardinal * mercy(ctx);
     fig.b7char = c;
+    // [R2-F] out of the car first: his brain holds while the clip plays
+    if (climbYaw != null && fig.anim.bank && fig.anim.bank.has('cardinal_carOut')) {
+      fig.yaw = climbYaw;
+      fig.anim.play('cardinal_carOut', { fade: 0 });
+      fig.state = 'b7_carOut'; fig._b7clip = 'cardinal_carOut';
+      const B = G.ais.get(fig).brain;
+      if (B) B.hold = CARDINAL_OUT;
+    }
   } else {
-    fig = man(ctx, { group: 'cardinal', at: { x: at.x, z: at.z }, yaw, heavy: true, variant: { unarmed: true, coat: 0, brim: 1, tall: 1 }, brain: 'b7_cardinal', hp: 1e6, aim: 0.7, opts: { path: SITE.cardinal.path, onWound } });
+    fig = man(ctx, { group: 'cardinal', at: { x: at.x, z: at.z }, yaw, heavy: true, variant: { unarmed: true, coat: 0, brim: 1, tall: 1 }, brain: 'b7_cardinal', hp: 1e6, aim: AIM.cardinal, opts: { path: SITE.cardinal.path, onWound } });
   }
   fig.b7beat = 'cardinal';
   G.director.groups.get('cardinal') ? G.director.groups.get('cardinal').push(fig) : G.director.groups.set('cardinal', [fig]);
@@ -982,15 +1043,16 @@ function* theFrame(ctx) {
   // (the way it looks turned, if it must be, until the eye stands clear of
   // cars, walls and posts)
   let fwd = fwd0, eye = null;
+  const BACK = 1.2, ON = 1.25;
   for (const a of [0, 0.35, -0.35, 0.7, -0.7, 1.1, -1.1, 1.6, -1.6]) {
     const f = fwd0.clone().applyAxisAngle(V(0, 1, 0), a), sd = V(f.z, 0, -f.x);
-    const e = at.clone().addScaledVector(f, 1.2).addScaledVector(sd, 0.28);
+    const e = at.clone().addScaledVector(f, BACK).addScaledVector(sd, 0.28);
     if (standClear(G.stage, e)) { fwd = f; eye = e; break; }
   }
   const side = V(fwd.z, 0, -fwd.x);
-  if (!eye) eye = at.clone().addScaledVector(fwd, 1.2).addScaledVector(side, 0.28);
+  if (!eye) eye = at.clone().addScaledVector(fwd, BACK).addScaledVector(side, 0.28);
   eye.y = G.stage.surfaceY(eye.x, eye.z) + 1.08;
-  const lookAt = at.clone().addScaledVector(fwd, -1.25).addScaledVector(side, -0.1);
+  const lookAt = at.clone().addScaledVector(fwd, -ON).addScaledVector(side, -0.1);
   lookAt.y = 0.1;
   const yaw = Math.atan2(-(lookAt.x - eye.x), -(lookAt.z - eye.z));
   const pitch = Math.atan2(lookAt.y - eye.y, Math.hypot(lookAt.x - eye.x, lookAt.z - eye.z));
@@ -1000,11 +1062,17 @@ function* theFrame(ctx) {
     const u = Math.min(1, t / dur), k = u * u * (3 - 2 * u);
     const L = (a, b) => a + (b - a) * k;
     const dy = Math.atan2(Math.sin(to.yaw - from.yaw), Math.cos(to.yaw - from.yaw));
-    return { x: L(from.x, to.x), y: L(from.y, to.y), z: L(from.z, to.z), yaw: from.yaw + dy * k, pitch: L(from.pitch, to.pitch) - 0.02 * Math.sin(Math.min(1, t / 9) * Math.PI) };
+    // [R2-F] (and once down, the eye lifts a little, slowly, off the hat to
+    // the street and the el as the train goes away along it: the hat and the
+    // ember stay in the frame's foot)
+    const w = Math.min(1, Math.max(0, (t - dur - 0.4) / 5)), lift = 0.15 * w * w * (3 - 2 * w);
+    return { x: L(from.x, to.x), y: L(from.y, to.y), z: L(from.z, to.z), yaw: from.yaw + dy * k, pitch: L(from.pitch, to.pitch) - 0.02 * Math.sin(Math.min(1, t / 9) * Math.PI) + lift };
   } });
   G.vm.lowerTo(1);
-  // the el train goes over
-  G.director.cue('train', { z: at.z + 10, ahead: 40, dir: -1 });
+  // the el train goes over: [R2-F] from behind me and away down the avenue,
+  // along the deck at the top right of the frame (the first pass sent it the
+  // other way, out of the frame: heard, never seen)
+  G.director.cue('train', { z: at.z, ahead: -22, dir: 1 });
   yield wait(dur);
   G.music.cue('end', { fade: 3 });
   yield wait(6);
