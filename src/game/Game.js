@@ -349,6 +349,10 @@ export class Game {
     this.controller.frozen = false;
     this.hud.hideTitle();
     this.setViewmodelVisible(this.vmWanted);
+    // [R3] a night begun from the title starts clean: the marks an earlier
+    // one left on the place the title stands in (after THE END, scene 9's
+    // blood and bullet holes all over the block) go
+    this.fx.clear();
     if (from && from.scene && this.scenes.get(from.scene)) {
       this.save.flags = { ...(from.flags || {}) };
       this.save.inventory = [...(from.inventory || [])];

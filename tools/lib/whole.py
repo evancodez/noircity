@@ -222,7 +222,8 @@ def build():
         {'eval': '__measure()'},
         {'eval': "(async () => ({ benchFrameMs: (await N.bench({ frames: 30, k: 1 })).frame, size: N.pipeline.width + 'x' + N.pipeline.height }))()"},
         {'heap': 'second_evening'},
-        {'expect': "G.stage.hoods.list.length === 0 && G.corpses.length === 0 && G.stage.cars.fires.length === 0", 'label': 'a second evening: no gunman, body or burning car left on the block'},
+        {'expect': "G.stage.hoods.list.length === 0 && G.corpses.length === 0 && G.stage.cars.fires.length === 0 && !N.sfx.loops.has('fire0')", 'label': 'a second evening: no gunman, body or burning car left on the block, no fire roaring'},
+        {'expect': "G.fx.decals.total === 0", 'label': 'a second evening: the last night\'s blood and bullet holes gone from the block'},
         {'expect': "Object.values(G.stage.part('dinerFront').panes).every((p) => p.state !== 'gone') && G.save.inventory.length === 0 && G.music.current === 'jukebox_a'", 'label': 'a second evening: the glass whole, empty pockets, the first record'},
         {'expect': "G.controller.mode === 'seated' && G.hands.set === 'smoke' && G.player.weapons.current !== 'tommy' || G.hands.set === 'smoke'", 'label': 'a second evening: on the stool, the smoke set'},
     ]

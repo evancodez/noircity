@@ -3345,8 +3345,12 @@
    "heap": "second_evening"
   },
   {
-   "expect": "G.stage.hoods.list.length === 0 && G.corpses.length === 0 && G.stage.cars.fires.length === 0",
-   "label": "a second evening: no gunman, body or burning car left on the block"
+   "expect": "G.stage.hoods.list.length === 0 && G.corpses.length === 0 && G.stage.cars.fires.length === 0 && !N.sfx.loops.has('fire0')",
+   "label": "a second evening: no gunman, body or burning car left on the block, no fire roaring"
+  },
+  {
+   "expect": "G.fx.decals.total === 0",
+   "label": "a second evening: the last night's blood and bullet holes gone from the block"
   },
   {
    "expect": "Object.values(G.stage.part('dinerFront').panes).every((p) => p.state !== 'gone') && G.save.inventory.length === 0 && G.music.current === 'jukebox_a'",
