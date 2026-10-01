@@ -38,7 +38,7 @@ def build(saves):
     seen, pts = set(), []
     for s in saves:
         k = (s['scene'], s['beat'])
-        if k in seen or s['scene'] not in ORDER:
+        if k in seen or s['scene'] not in ORDER or s['flags'].get('ended'):
             continue
         seen.add(k)
         pts.append(s)
@@ -74,6 +74,18 @@ def build(saves):
             {'key': 'KeyW', 'hold': 500},
             {'wait': 1000},
             {'expect': "!document.getElementById('errlog').textContent.trim()", 'label': '[%s] no errors' % tag},
+        ]
+    # the story played to THE END: the title offers no CONTINUE (BEGIN, CHAPTERS)
+    ended = [s for s in saves if s['flags'].get('ended')]
+    if ended:
+        steps += [
+            {'name': '---- the save of a story played to THE END'},
+            {'eval': "(G.save.enabled = false, localStorage.setItem('noir.save', %s), true)" % json.dumps(json.dumps(ended[-1]))},
+            {'reload': True},
+            {'until': "G.state === 'title'", 'timeout': 40000},
+            {'wait': 1200},
+            {'expect': "document.querySelector('#title .opt[data-k=continue]').classList.contains('hidden') && !document.querySelector('#title .opt[data-k=begin]').classList.contains('hidden')", 'label': '[ended] the title offers BEGIN, not CONTINUE'},
+            {'shot': 'k_ended_title'},
         ]
     play = {
         'about': '[R3] CONTINUE from every save point the whole game writes (tools/lib/saves.py from a whole.json run): '

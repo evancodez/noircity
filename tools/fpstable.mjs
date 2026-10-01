@@ -20,7 +20,8 @@ const MOMENTS = [
   ['III body: the approach, the car and the train', 'scene=body&beat=approach&t=5.5&anim=1'],
   ['IV office: the room, the lamp and the slats', 'scene=office&beat=room&t=2&anim=1'],
   ['V door: the kick, the glass man, the flashes', 'scene=gunfight&beat=door&t=1.8&anim=1'],
-  ['VI watcher: the fire escape', 'scene=watcher&beat=escape&t=2&anim=1'],
+  ['VI watcher: the fire escape, the street below', 'shot=bl_escape&t=1&anim=1'],
+  ['VI watcher: the run, the yard', 'scene=watcher&beat=run&t=3&anim=1'],
   ['VII tail: the market at 24 m/s', 'scene=tail&beat=chase&tailAt=520,2.2,24,30&tailCruise=1&t=1&anim=1'],
   ['VIII pier: the lamps beat', 'scene=warehouse&beat=lamps&t=3&anim=1'],
   ['VIII pier: the foreman, the oil burning', 'shot=b9duel&do=lantern&t=3.4&anim=1'],
@@ -46,6 +47,9 @@ const send = (method, params = {}) => new Promise((res) => { const i = ++id; pen
 const evalJS = async (expr) => (await send('Runtime.evaluate', { expression: expr, awaitPromise: true, returnByValue: true })).result?.result?.value;
 
 async function measure(label, qs) {
+  // (the GPU's load from others: read with this page blank, not rendering)
+  await send('Page.navigate', { url: 'about:blank' });
+  await sleep(1200);
   const gpu0 = gpuUtil();
   await send('Page.navigate', { url: `http://127.0.0.1:${process.env.NOIR_PORT || 5173}/?${qs}` });
   await sleep(800);

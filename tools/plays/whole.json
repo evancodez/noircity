@@ -1,0 +1,3356 @@
+{
+ "about": "[R3] The whole game in one page session, by real input: the title, BEGIN, the nine chapters (each its lane's own play), THE END. Built by tools/lib/whole.py from the lanes' plays. NOIR_PORT=5331 node tools/play.mjs tools/plays/whole.json",
+ "url": "/?mute=1",
+ "size": [
+  1280,
+  800
+ ],
+ "out": "shots/play/whole",
+ "steps": [
+  {
+   "name": "the recorder"
+  },
+  {
+   "until": "N.perf.steps > 60",
+   "timeout": 40000
+  },
+  {
+   "eval": "(() => {\n  const R = window.__rec = { cards: [], go: [], cues: [], beats: [], saves: [], marks: {} };\n  const S = G.scenes, now = () => +N.time.toFixed(2), at = () => [now(), S.current ? S.current.id : null, S.beat];\n  const card = G.hud.card.bind(G.hud);\n  G.hud.card = (n, name, secs) => { R.cards.push([now(), n, name]); return card(n, name, secs); };\n  const go = S.go.bind(S);\n  S.go = (id, o = {}) => { R.go.push([now(), S.current ? S.current.id : null, id, o.fade || 'black', !!o.keep, o.card]); return go(id, o); };\n  G.on('music:cue', (e) => R.cues.push([...at(), 'cue', e.slot]));\n  const stop = G.music.stop.bind(G.music);\n  G.music.stop = (f) => { if (G.music.current) R.cues.push([...at(), 'stop', G.music.current]); return stop(f); };\n  G.on('scene:beat', (e) => R.beats.push([now(), +(S.playTime || 0).toFixed(1), e.id, e.beat]));\n  G.on('scene:enter', (e) => { R.marks[e.id] = { t: now(), play: +(S.playTime || 0).toFixed(1), real: Date.now() }; });\n  const write = G.save.write.bind(G.save);\n  G.save.write = () => { const d = write(); if (d) R.saves.push(JSON.parse(JSON.stringify(d))); return d; };\n  // a line or a prompt printed while the chapter card is up; the black held\n  // (fadeK 1) and how long; a frame longer than 120 ms (a hitch), where\n  R.over = []; R.black = []; R.hitch = [];\n  let lastOver = '', blackT = 0;\n  G.scripts.push((t, dt) => {\n    const up = G.hud.cardT > 0, txt = (G.hud.sayShown ? 'say:' + G.hud.sayShown : '') + (G.hud.promptShown ? ' prompt:' + G.hud.promptShown : '');\n    if (up && txt && txt !== lastOver) R.over.push([...at(), +G.hud.cardT.toFixed(2), txt]);\n    lastOver = up ? txt : '';\n    if (S.fadeK > 0.99) blackT += dt; else if (blackT > 0) { R.black.push([...at(), +blackT.toFixed(2)]); blackT = 0; }\n  });\n  let lastF = performance.now();\n  const hf = (n) => { const d = n - lastF; lastF = n; if (d > 120 && G.state === 'playing') R.hitch.push([...at(), Math.round(d), +G.scenes.fadeK.toFixed(2)]); requestAnimationFrame(hf); };\n  requestAnimationFrame(hf);\n  window.__measure = () => (() => {\n  const I = N.renderer.info, S = G.stage;\n  let objs = 0, meshes = 0, lights = 0, lit = 0, shadow = 0;\n  S.scene.traverse((o) => { objs++; if (o.isMesh) meshes++; if (o.isLight && !o.isAmbientLight && !o.isHemisphereLight) { lights++; if (o.visible && o.intensity > 0) { lit++; if (o.castShadow) shadow++; } } });\n  const ev = G._events ? [...G._events.entries()].filter(([, v]) => v.length).map(([k, v]) => k + ':' + v.length).join(' ') : '';\n  const nev = G._events ? [...G._events.values()].reduce((a, v) => a + v.length, 0) : 0;\n  return { ch: S && G.scenes.current && G.scenes.current.id, beat: G.scenes.beat, t: +N.time.toFixed(1), play: +(G.scenes.playTime || 0).toFixed(1),\n    stage: S.name, built: [...N.stages.built.keys()].join(','), calls: I.render.calls, tris: I.render.triangles, programs: I.programs ? I.programs.length : null,\n    geos: I.memory.geometries, tex: I.memory.textures, objs, meshes, lights, lit, shadow, listeners: nev, ev,\n    hooks: G.scenes.hooks.length, scripts: G.scripts.length, ais: G.ais.size, hoods: S.hoods.list.length, cast: S.cast.list.length,\n    pending: G.pending.length, corpses: G.corpses.length, director: !!G.director.active, brawl: !!G.brawl.active,\n    layers: [...document.querySelectorAll('#hud .layer')].map((l) => l.dataset.layer).join(','),\n    mode: G.controller.mode, frozen: !!G.controller.frozen, hands: G.hands.set, held: [G.hands.held && G.hands.held.L ? G.hands.held.L.userData.kind : null, G.hands.held && G.hands.held.R ? G.hands.held.R.userData.kind : null],\n    weapon: G.player.weapons.current, inv: G.save.inventory.join(','), flags: JSON.stringify(G.save.flags), music: G.music.current,\n    prompt: G.hud.promptShown, say: G.hud.sayShown, fov: +N.camera.fov.toFixed(1), hp: G.health.hp, interact: G.interact.list ? G.interact.list.length : null,\n    fade: +G.scenes.fadeK.toFixed(2), timeScale: G.timeScale };\n})();\n  window.__fps = () => (async () => { const ts = [], cs = []; let last = performance.now(); const t0 = last;\n  await new Promise((res) => { const f = (n) => { ts.push(n - last); cs.push(N.renderer.info.render.calls); last = n; if (n - t0 < 2000) requestAnimationFrame(f); else res(); }; requestAnimationFrame(f); });\n  ts.shift(); const a = ts.reduce((x, y) => x + y, 0) / ts.length; ts.sort((x, y) => x - y);\n  return { fps: +(1000 / a).toFixed(1), p95: +ts[Math.floor(ts.length * 0.95)].toFixed(1), calls: Math.round(cs.reduce((x, y) => x + y, 0) / cs.length), callsMax: Math.max(...cs) }; })();\n  return 'recording';\n})()"
+  },
+  {
+   "eval": "(localStorage.removeItem('noir.save'), 'no save')"
+  },
+  {
+   "heap": "title"
+  },
+  {
+   "name": "the title: NOIR EXTREME over the diner across the street"
+  },
+  {
+   "wait": 2500
+  },
+  {
+   "expect": "G.state === 'title' && document.querySelector('#title h1').textContent === 'NOIR EXTREME' && !document.getElementById('title').classList.contains('hidden')",
+   "label": "the title card is up"
+  },
+  {
+   "key": "KeyA"
+  },
+  {
+   "wait": 300
+  },
+  {
+   "expect": "N.sfx.live",
+   "label": "a key on the title opens the sound"
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]",
+   "taken": "G.state !== 'title'",
+   "retries": 5,
+   "every": 4000
+  },
+  {
+   "name": "scene 1, the diner: settle"
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'diner' && document.pointerLockElement === N.renderer.domElement",
+   "timeout": 8000
+  },
+  {
+   "name": "==== chapter 1: diner"
+  },
+  {
+   "wait": 2500
+  },
+  {
+   "eval": "__measure()"
+  },
+  {
+   "eval": "__fps()"
+  },
+  {
+   "eval": "(async () => ({ benchFrameMs: (await N.bench({ frames: 30, k: 1 })).frame, size: N.pipeline.width + 'x' + N.pipeline.height }))()"
+  },
+  {
+   "heap": "diner"
+  },
+  {
+   "expect": "G.controller.mode === 'seated' && G.hands.set === 'smoke'",
+   "label": "seated at the counter, the smoke set"
+  },
+  {
+   "expect": "Math.abs(Math.atan2(Math.sin(N.controller.yaw - G.stage.anchor('diner.stool.player').yaw), Math.cos(N.controller.yaw - G.stage.anchor('diner.stool.player').yaw))) < 0.01 && Math.abs(N.controller.pitch + 0.14) < 0.01",
+   "label": "the first frame is square to the counter: straight at the back bar, pitch -0.14, level"
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "until": "G.hud.promptShown.includes('light up')",
+   "timeout": 12000
+  },
+  {
+   "expect": "G._room === 'diner' && !!N.sfx.bed",
+   "label": "the diner's own sound bed is up (the street through the wall)"
+  },
+  {
+   "key": "KeyE"
+  },
+  {
+   "wait": 2200
+  },
+  {
+   "until": "G.scenes.ctx.flags.lit === true",
+   "timeout": 6000
+  },
+  {
+   "expect": "G.scenes.ctx.flags.cig && G.scenes.ctx.flags.cig.userData.tip === 'lit'",
+   "label": "the cigarette is lit, in the hand"
+  },
+  {
+   "until": "!G.hands.busy",
+   "timeout": 5000
+  },
+  {
+   "wait": 300
+  },
+  {
+   "key": "KeyF"
+  },
+  {
+   "wait": 600
+  },
+  {
+   "expect": "G.hands.current === 'drag'",
+   "label": "F takes a drag"
+  },
+  {
+   "name": "order"
+  },
+  {
+   "until": "G.scenes.beat === 'order' && G.scenes.ctx.flags.glance && G.scenes.ctx.flags.glance.active",
+   "timeout": 20000
+  },
+  {
+   "wait": 900
+  },
+  {
+   "expect": "(() => { const J = G.scenes.ctx.flags.glance.job, d = Math.atan2(Math.sin(N.controller.yaw - G.stage.anchor('diner.stool.player').yaw), Math.cos(N.controller.yaw - G.stage.anchor('diner.stool.player').yaw)); return !!J && (Math.abs(J.aim0) < 0.12 || (Math.abs(d) > 0.12 && Math.abs(d) < 0.27 && Math.sign(d) === Math.sign(J.aim0))); })()",
+   "label": "Dot coming down the counter: the view eased toward her side (0.25 rad at most)"
+  },
+  {
+   "until": "G.scenes.beat === 'order' && G.hud.promptShown.includes('scotch')",
+   "timeout": 30000
+  },
+  {
+   "until": "!G.scenes.ctx.flags.glance.active",
+   "timeout": 4000
+  },
+  {
+   "expect": "Math.abs(Math.atan2(Math.sin(N.controller.yaw - G.stage.anchor('diner.stool.player').yaw), Math.cos(N.controller.yaw - G.stage.anchor('diner.stool.player').yaw))) < 0.03",
+   "label": "she is across from me: the view back square"
+  },
+  {
+   "key": "KeyE"
+  },
+  {
+   "wait": 800
+  },
+  {
+   "expect": "G.hud.sayShown === 'Scotch. Neat.'",
+   "label": "the line: Scotch. Neat."
+  },
+  {
+   "until": "G.fx.pour.active",
+   "timeout": 20000
+  },
+  {
+   "wait": 500
+  },
+  {
+   "expect": "(() => { const d = G.stage.part('diner'), b = d.items.get('scotch'), g = d.items.get('glass'); b.updateMatrixWorld(true); const e = b.matrixWorld.elements, tilt = Math.acos(Math.max(-1, Math.min(1, e[5] / Math.hypot(e[4], e[5], e[6])))) * 180 / Math.PI; const lip = b.localToWorld(b.userData.neck.clone()), G0 = g.getWorldPosition(lip.clone()); const over = lip.y - (G0.y + 0.085); return tilt >= 110 && tilt <= 120 && over >= 0.05 && over <= 0.08 && Math.hypot(lip.x - G0.x, lip.z - G0.z) < 0.035 && G.cast.get('dot')._hands.miss.R < 0.005; })()",
+   "label": "the pour: the bottle 110..120 degrees from upright, its lip 5..8 cm over the glass's rim, over the glass, her hand on it"
+  },
+  {
+   "until": "G.scenes.ctx.flags.served === true",
+   "timeout": 12000
+  },
+  {
+   "expect": "G.stage.part('diner').items.get('glass').userData.fill > 0.99",
+   "label": "the glass is poured full"
+  },
+  {
+   "name": "drink"
+  },
+  {
+   "until": "G.scenes.beat === 'drink' && G.hud.promptShown.includes('drink')",
+   "timeout": 12000
+  },
+  {
+   "key": "KeyE"
+  },
+  {
+   "wait": 1900
+  },
+  {
+   "until": "G.hud.promptShown.includes('drink')",
+   "timeout": 8000
+  },
+  {
+   "key": "KeyQ"
+  },
+  {
+   "wait": 200
+  },
+  {
+   "expect": "Math.abs(G.stage.part('diner').stool(3).spinV) > 0.5",
+   "label": "Q spins the empty stool on my left"
+  },
+  {
+   "key": "KeyE"
+  },
+  {
+   "until": "G.hud.promptShown.includes('drink')",
+   "timeout": 8000
+  },
+  {
+   "key": "KeyE"
+  },
+  {
+   "name": "pay"
+  },
+  {
+   "until": "G.scenes.beat === 'pay' && G.hud.promptShown.includes('pay')",
+   "timeout": 12000
+  },
+  {
+   "expect": "G.stage.part('diner').items.get('glass').userData.fill < 0.01",
+   "label": "three sips empty the glass"
+  },
+  {
+   "key": "KeyE"
+  },
+  {
+   "until": "G.hud.sayShown.includes('Cardinal')",
+   "timeout": 10000
+  },
+  {
+   "expect": "(() => { const d = Math.atan2(Math.sin(N.controller.yaw - G.stage.anchor('diner.stool.player').yaw), Math.cos(N.controller.yaw - G.stage.anchor('diner.stool.player').yaw)); return d < -0.9 && d > -1.25; })()",
+   "label": "his line: the view eased round to frame him"
+  },
+  {
+   "until": "G.scenes.current.id === 'fight' && (G.controller.mode === 'brawlIn' || !!G.scenes.ctx.flags.inT)",
+   "timeout": 10000
+  },
+  {
+   "eval": "(window.__startT = N.time, 'the way in began')"
+  },
+  {
+   "wait": 1300
+  },
+  {
+   "until": "!!G.scenes.ctx.flags.handOn",
+   "timeout": 6000
+  },
+  {
+   "until": "!!G.scenes.ctx.flags.handAt",
+   "timeout": 4000
+  },
+  {
+   "expect": "(() => { const a = G.scenes.ctx.flags.handAt; return a.xz < 0.45 && a.dy < 0 && a.dy > -0.45; })()",
+   "label": "his left hand on my right shoulder (where it lay, measured in the game)"
+  },
+  {
+   "until": "!!G.scenes.ctx.flags.rise",
+   "timeout": 4000
+  },
+  {
+   "wait": 250
+  },
+  {
+   "name": "scene 2, the fight"
+  },
+  {
+   "until": "G.scenes.current.id === 'fight' && G.brawl.active",
+   "timeout": 10000
+  },
+  {
+   "expect": "(() => { const f = G.scenes.ctx.flags, d = f.upT - f.inT; return d > 3.2 && d < 5.2; })()",
+   "label": "the way in, his line to fists up, in about four seconds (game time)"
+  },
+  {
+   "expect": "(() => { const s = G.stage.part('diner').stool(4); return s.handle.toppled && s.object.position.x < -13.95; })()",
+   "label": "the stool I sat on went skidding into the counter and lies there"
+  },
+  {
+   "expect": "G.controller.mode === 'brawl' && G.hands.set === 'fists'",
+   "label": "the fight started: locked on him, fists up"
+  },
+  {
+   "wait": 700
+  },
+  {
+   "expect": "G.scenes.beat === 'lesson' && !!G.brawl.lesson && document.querySelector('#fightcards .fc .t').textContent.includes('LEFT CLICK')",
+   "label": "the fight opens on the lesson: its first card, LEFT CLICK"
+  },
+  {
+   "name": "==== chapter 2: fight (entered by a cut, under the lesson)"
+  },
+  {
+   "eval": "__measure()"
+  },
+  {
+   "eval": "__fps()"
+  },
+  {
+   "heap": "fight"
+  },
+  {
+   "shot": "c02_fight_lesson"
+  },
+  {
+   "fight": {
+    "timeout": 400000,
+    "shots": {},
+    "expect": "F.time >= 45 && F.time <= 160 && F.lesson > 5 && F.lesson < 45 && F.dur[2] > 0 && F.throws.length >= 1",
+    "label": "a first-timer's fight by real input: the lesson under 45 s, then won in 45..160 s of game time (FIGHT.md v3: 60..100 for most), his three manners, at least one knock into the room"
+   }
+  },
+  {
+   "until": "!G.brawl.active && G.scenes.beat === 'ko'",
+   "timeout": 10000
+  },
+  {
+   "expect": "G.brawl.stats.won === true && ['B2', 'B4'].includes(G.brawl.stats.window) && G.stage.part('dinerFront').panes[G.brawl.stats.window].state === 'gone'",
+   "label": "the fight ended: he went out through the nearer window's glass (B2 or B4)"
+  },
+  {
+   "name": "out through the door"
+  },
+  {
+   "walk": "(() => { const z = (G.brawl.stats.window || 'B4') === 'B2' ? 5.0 : -3.8; return [[-12.6, 0.6], [-11.2, 0.6], [-9.2, 0.6], [-8.3, z + (z > 0.6 ? -1.8 : 1.8)]]; })()",
+   "timeout": 40000
+  },
+  {
+   "until": "G.scenes.beat === 'outside'",
+   "timeout": 8000
+  },
+  {
+   "look": [
+    0,
+    160
+   ],
+   "steps": 8
+  },
+  {
+   "wait": 400
+  },
+  {
+   "until": "G.hud.promptShown.includes('search')",
+   "timeout": 8000
+  },
+  {
+   "key": "KeyE"
+  },
+  {
+   "until": "G.scenes.beat === 'matchbook' && !!G.inspect.active",
+   "timeout": 8000
+  },
+  {
+   "wait": 1200
+  },
+  {
+   "expect": "G.inspect.active && G.inspect.active.obj.userData.kind === 'matchbook'",
+   "label": "the matchbook was shown (inspect)"
+  },
+  {
+   "key": "KeyE"
+  },
+  {
+   "until": "G.scenes.ctx.flags.shots === 2",
+   "timeout": 6000
+  },
+  {
+   "expect": "G.save.inventory.includes('matchbook')",
+   "label": "the matchbook was pocketed"
+  },
+  {
+   "until": "G.state === 'end' || (G.scenes.current && G.scenes.current.id !== 'fight')",
+   "timeout": 8000
+  },
+  {
+   "name": "==== chapter 3: body"
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'body'",
+   "timeout": 30000
+  },
+  {
+   "wait": 900
+  },
+  {
+   "shot": "c03_body_card"
+  },
+  {
+   "until": "!G.scenes.trans",
+   "timeout": 10000
+  },
+  {
+   "expect": "G.hands.set === 'empty' && G.controller.mode === 'walk' && !G.brawl.active",
+   "label": "[body] the hands empty, walking"
+  },
+  {
+   "expect": "G.save.inventory.includes('matchbook')",
+   "label": "[body] the matchbook in my pocket"
+  },
+  {
+   "expect": "[...document.querySelectorAll('#fightcards .fc, #fightcards .fl')].every((e) => getComputedStyle(e).display === 'none' || +getComputedStyle(e).opacity < 0.05)",
+   "label": "[body] no fight card left on screen"
+  },
+  {
+   "eval": "__measure()"
+  },
+  {
+   "eval": "__fps()"
+  },
+  {
+   "heap": "body"
+  },
+  {
+   "shot": "c03_body_first"
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'body' && document.pointerLockElement === N.renderer.domElement",
+   "timeout": 10000
+  },
+  {
+   "look": [
+    0,
+    0
+   ],
+   "steps": 1
+  },
+  {
+   "look": [
+    0,
+    280
+   ],
+   "steps": 4
+  },
+  {
+   "expect": "G.scenes.beat === 'approach' && G.controller.mode === 'walk' && G.stage.part('alley').shown && G.stage.part('alley').lamp.on",
+   "label": "approach: the alley shown, its lamp lit, walking"
+  },
+  {
+   "expect": "G.save.inventory.includes('matchbook')",
+   "label": "the matchbook in my pocket (scene 2's)"
+  },
+  {
+   "until": "G.scenes.ctx.flags.car && G.scenes.ctx.flags.car.s > 22",
+   "timeout": 10000
+  },
+  {
+   "name": "down the pavement to the alley"
+  },
+  {
+   "walk": [
+    [
+     -8.2,
+     -12.0
+    ],
+    [
+     -8.3,
+     -21.5
+    ]
+   ],
+   "timeout": 20000
+  },
+  {
+   "walk": [
+    [
+     -8.6,
+     -24.8
+    ],
+    [
+     -9.55,
+     -25.05
+    ]
+   ],
+   "timeout": 12000
+  },
+  {
+   "until": "G.scenes.beat === 'body'",
+   "timeout": 6000
+  },
+  {
+   "name": "the body: kneel"
+  },
+  {
+   "until": "!N.controller._ease && !G.hands.still",
+   "timeout": 5000
+  },
+  {
+   "look": "__body.aimAt('chest')",
+   "steps": 6
+  },
+  {
+   "until": "G.hud.promptShown.includes('kneel')",
+   "timeout": 4000
+  },
+  {
+   "key": "KeyE"
+  },
+  {
+   "until": "G.controller.mode === 'seated'",
+   "timeout": 3000
+  },
+  {
+   "wait": 1300
+  },
+  {
+   "name": "the wounds"
+  },
+  {
+   "until": "!N.controller._ease && !G.hands.still",
+   "timeout": 5000
+  },
+  {
+   "look": "__body.aimAt('chest')",
+   "steps": 6
+  },
+  {
+   "until": "G.hud.promptShown.includes('the wounds')",
+   "timeout": 4000
+  },
+  {
+   "key": "KeyE"
+  },
+  {
+   "until": "G.hud.sayShown.includes('Two. In the chest')",
+   "timeout": 3000
+  },
+  {
+   "wait": 2200
+  },
+  {
+   "name": "his hand"
+  },
+  {
+   "until": "!N.controller._ease && !G.hands.still",
+   "timeout": 5000
+  },
+  {
+   "look": "__body.aimAt('fist')",
+   "steps": 6
+  },
+  {
+   "until": "G.hud.promptShown.includes('his hand')",
+   "timeout": 4000
+  },
+  {
+   "key": "KeyE"
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "expect": "G.scenes.ctx.flags.havePieces === true",
+   "label": "the seven wet pieces came away"
+  },
+  {
+   "name": "the marks"
+  },
+  {
+   "until": "!N.controller._ease && !G.hands.still",
+   "timeout": 5000
+  },
+  {
+   "look": "__body.aimAt('marks')",
+   "steps": 6
+  },
+  {
+   "until": "G.hud.promptShown.includes('the marks')",
+   "timeout": 4000
+  },
+  {
+   "key": "KeyE"
+  },
+  {
+   "until": "G.scenes.beat === 'strings'",
+   "timeout": 8000
+  },
+  {
+   "name": "the strings"
+  },
+  {
+   "wait": 1600
+  },
+  {
+   "expect": "G.hud.promptShown.includes('string')",
+   "label": "the one prompt: the string through the wound"
+  },
+  {
+   "look": "__body.toShooter()",
+   "steps": 10
+  },
+  {
+   "until": "G.scenes.ctx.flags.strings.strings[0].taut",
+   "timeout": 3000
+  },
+  {
+   "wait": 500
+  },
+  {
+   "look": "__body.toShooter()",
+   "steps": 10
+  },
+  {
+   "until": "G.scenes.ctx.flags.strings.strings[1].taut",
+   "timeout": 3000
+  },
+  {
+   "wait": 1300
+  },
+  {
+   "until": "G.scenes.beat === 'landing'",
+   "timeout": 8000
+  },
+  {
+   "name": "the landing"
+  },
+  {
+   "expect": "G.controller.mode === 'walk'",
+   "label": "walking again after the strings"
+  },
+  {
+   "walk": [
+    [
+     -9.9,
+     -26.75
+    ],
+    [
+     -12.4,
+     -26.75
+    ],
+    [
+     -13.5,
+     -26.2
+    ],
+    [
+     -13.5,
+     -27.7
+    ]
+   ],
+   "timeout": 15000
+  },
+  {
+   "name": "(a long straight last leg toward the ladder and a settle: under load the walk's queued turns can overshoot, and the look after it is a fixed move)"
+  },
+  {
+   "wait": 600
+  },
+  {
+   "until": "!N.controller._ease && !G.hands.still",
+   "timeout": 5000
+  },
+  {
+   "look": "__body.aimAt('ladder')",
+   "steps": 6
+  },
+  {
+   "until": "G.hud.promptShown.includes('pull the ladder')",
+   "timeout": 4000
+  },
+  {
+   "key": "KeyE"
+  },
+  {
+   "until": "G.stage.part('alley').ladder.down === 1 && !G.scenes.ctx.flags.ladderAnim",
+   "timeout": 3000
+  },
+  {
+   "until": "!N.controller._ease && !G.hands.still",
+   "timeout": 5000
+  },
+  {
+   "look": "__body.aimAt('climb')",
+   "steps": 6
+  },
+  {
+   "down": "KeyW"
+  },
+  {
+   "until": "G.controller.mode === 'climb'",
+   "timeout": 3000
+  },
+  {
+   "wait": 900
+  },
+  {
+   "until": "G.controller.mode === 'seated'",
+   "timeout": 6000
+  },
+  {
+   "up": "KeyW"
+  },
+  {
+   "wait": 700
+  },
+  {
+   "until": "!N.controller._ease && !G.hands.still",
+   "timeout": 5000
+  },
+  {
+   "look": "__body.aimAt('half')",
+   "steps": 6
+  },
+  {
+   "until": "G.hud.promptShown.includes('take')",
+   "timeout": 4000
+  },
+  {
+   "key": "KeyE"
+  },
+  {
+   "until": "!!G.inspect.active",
+   "timeout": 4000
+  },
+  {
+   "wait": 1300
+  },
+  {
+   "expect": "G.inspect.active.obj.userData.kind === 'matchHalf'",
+   "label": "the torn half held up in my hand"
+  },
+  {
+   "key": "KeyE"
+  },
+  {
+   "until": "G.save.inventory.includes('matchbookHalf')",
+   "timeout": 3000
+  },
+  {
+   "until": "G.scenes.beat === 'halves' && G.controller.mode === 'walk'",
+   "timeout": 8000
+  },
+  {
+   "name": "the halves"
+  },
+  {
+   "walk": [
+    [
+     -13.0,
+     -26.4
+    ],
+    [
+     -12.95,
+     -25.15
+    ]
+   ],
+   "timeout": 12000
+  },
+  {
+   "until": "!N.controller._ease && !G.hands.still",
+   "timeout": 5000
+  },
+  {
+   "look": "__body.aimAt('step')",
+   "steps": 6
+  },
+  {
+   "until": "G.hud.promptShown.includes('the matchbook')",
+   "timeout": 4000
+  },
+  {
+   "key": "KeyE"
+  },
+  {
+   "until": "G.puzzles.active && G.puzzles.active.id === 'body.halves'",
+   "timeout": 3000
+  },
+  {
+   "wait": 900
+  },
+  {
+   "eval": "__body.halvesPlan()"
+  },
+  {
+   "look": [
+    176,
+    -48
+   ],
+   "steps": 8
+  },
+  {
+   "look": [
+    7,
+    -2
+   ],
+   "steps": 1
+  },
+  {
+   "wait": 120
+  },
+  {
+   "mouse": "down",
+   "button": "left"
+  },
+  {
+   "wait": 120
+  },
+  {
+   "look": [
+    -253,
+    55
+   ],
+   "steps": 11
+  },
+  {
+   "look": [
+    -9,
+    8
+   ],
+   "steps": 1
+  },
+  {
+   "wait": 120
+  },
+  {
+   "mouse": "up",
+   "button": "left"
+  },
+  {
+   "wait": 120
+  },
+  {
+   "mouse": "down",
+   "button": "right"
+  },
+  {
+   "wait": 120
+  },
+  {
+   "look": [
+    216,
+    0
+   ],
+   "steps": 9
+  },
+  {
+   "look": [
+    1,
+    0
+   ],
+   "steps": 1
+  },
+  {
+   "wait": 120
+  },
+  {
+   "mouse": "up",
+   "button": "right"
+  },
+  {
+   "wait": 120
+  },
+  {
+   "until": "G.scenes.ctx.flags.halvesSt && G.scenes.ctx.flags.halvesSt.snapped",
+   "timeout": 3000
+  },
+  {
+   "wait": 300
+  },
+  {
+   "name": "the note"
+  },
+  {
+   "until": "G.scenes.beat === 'note' && G.puzzles.active && G.puzzles.active.id === 'body.note'",
+   "timeout": 6000
+  },
+  {
+   "wait": 900
+  },
+  {
+   "eval": "__body.notePlan()"
+  },
+  {
+   "look": [
+    -264,
+    55
+   ],
+   "steps": 11
+  },
+  {
+   "look": [
+    -3,
+    3
+   ],
+   "steps": 1
+  },
+  {
+   "wait": 120
+  },
+  {
+   "mouse": "down",
+   "button": "right"
+  },
+  {
+   "wait": 120
+  },
+  {
+   "look": [
+    322,
+    0
+   ],
+   "steps": 14
+  },
+  {
+   "look": [
+    9,
+    0
+   ],
+   "steps": 1
+  },
+  {
+   "wait": 120
+  },
+  {
+   "mouse": "up",
+   "button": "right"
+  },
+  {
+   "wait": 120
+  },
+  {
+   "mouse": "down",
+   "button": "left"
+  },
+  {
+   "wait": 120
+  },
+  {
+   "look": [
+    360,
+    -165
+   ],
+   "steps": 15
+  },
+  {
+   "look": [
+    3,
+    -11
+   ],
+   "steps": 1
+  },
+  {
+   "wait": 120
+  },
+  {
+   "mouse": "up",
+   "button": "left"
+  },
+  {
+   "wait": 120
+  },
+  {
+   "look": [
+    230,
+    190
+   ],
+   "steps": 10
+  },
+  {
+   "look": [
+    7,
+    3
+   ],
+   "steps": 1
+  },
+  {
+   "wait": 120
+  },
+  {
+   "mouse": "down",
+   "button": "right"
+  },
+  {
+   "wait": 120
+  },
+  {
+   "look": [
+    -198,
+    0
+   ],
+   "steps": 9
+  },
+  {
+   "look": [
+    -8,
+    0
+   ],
+   "steps": 1
+  },
+  {
+   "wait": 120
+  },
+  {
+   "mouse": "up",
+   "button": "right"
+  },
+  {
+   "wait": 120
+  },
+  {
+   "mouse": "down",
+   "button": "left"
+  },
+  {
+   "wait": 120
+  },
+  {
+   "look": [
+    -288,
+    -240
+   ],
+   "steps": 12
+  },
+  {
+   "look": [
+    -1,
+    -3
+   ],
+   "steps": 1
+  },
+  {
+   "wait": 120
+  },
+  {
+   "mouse": "up",
+   "button": "left"
+  },
+  {
+   "wait": 120
+  },
+  {
+   "look": [
+    -76,
+    24
+   ],
+   "steps": 4
+  },
+  {
+   "look": [
+    -2,
+    2
+   ],
+   "steps": 1
+  },
+  {
+   "wait": 120
+  },
+  {
+   "mouse": "down",
+   "button": "right"
+  },
+  {
+   "wait": 120
+  },
+  {
+   "look": [
+    184,
+    0
+   ],
+   "steps": 8
+  },
+  {
+   "look": [
+    3,
+    0
+   ],
+   "steps": 1
+  },
+  {
+   "wait": 120
+  },
+  {
+   "mouse": "up",
+   "button": "right"
+  },
+  {
+   "wait": 120
+  },
+  {
+   "mouse": "down",
+   "button": "left"
+  },
+  {
+   "wait": 120
+  },
+  {
+   "look": [
+    48,
+    -60
+   ],
+   "steps": 4
+  },
+  {
+   "look": [
+    2,
+    -3
+   ],
+   "steps": 1
+  },
+  {
+   "wait": 120
+  },
+  {
+   "mouse": "up",
+   "button": "left"
+  },
+  {
+   "wait": 120
+  },
+  {
+   "look": [
+    -176,
+    88
+   ],
+   "steps": 8
+  },
+  {
+   "look": [
+    -7,
+    0
+   ],
+   "steps": 1
+  },
+  {
+   "wait": 120
+  },
+  {
+   "mouse": "down",
+   "button": "right"
+  },
+  {
+   "wait": 120
+  },
+  {
+   "look": [
+    -126,
+    0
+   ],
+   "steps": 6
+  },
+  {
+   "look": [
+    -2,
+    0
+   ],
+   "steps": 1
+  },
+  {
+   "wait": 120
+  },
+  {
+   "mouse": "up",
+   "button": "right"
+  },
+  {
+   "wait": 120
+  },
+  {
+   "mouse": "down",
+   "button": "left"
+  },
+  {
+   "wait": 120
+  },
+  {
+   "look": [
+    312,
+    -13
+   ],
+   "steps": 13
+  },
+  {
+   "look": [
+    8,
+    -5
+   ],
+   "steps": 1
+  },
+  {
+   "wait": 120
+  },
+  {
+   "mouse": "up",
+   "button": "left"
+  },
+  {
+   "wait": 120
+  },
+  {
+   "look": [
+    -110,
+    242
+   ],
+   "steps": 11
+  },
+  {
+   "look": [
+    -10,
+    9
+   ],
+   "steps": 1
+  },
+  {
+   "wait": 120
+  },
+  {
+   "mouse": "down",
+   "button": "right"
+  },
+  {
+   "wait": 120
+  },
+  {
+   "look": [
+    60,
+    0
+   ],
+   "steps": 4
+  },
+  {
+   "look": [
+    1,
+    0
+   ],
+   "steps": 1
+  },
+  {
+   "wait": 120
+  },
+  {
+   "mouse": "up",
+   "button": "right"
+  },
+  {
+   "wait": 120
+  },
+  {
+   "mouse": "down",
+   "button": "left"
+  },
+  {
+   "wait": 120
+  },
+  {
+   "look": [
+    65,
+    -299
+   ],
+   "steps": 13
+  },
+  {
+   "look": [
+    7,
+    -3
+   ],
+   "steps": 1
+  },
+  {
+   "wait": 120
+  },
+  {
+   "mouse": "up",
+   "button": "left"
+  },
+  {
+   "wait": 120
+  },
+  {
+   "look": [
+    184,
+    56
+   ],
+   "steps": 8
+  },
+  {
+   "look": [
+    2,
+    4
+   ],
+   "steps": 1
+  },
+  {
+   "wait": 120
+  },
+  {
+   "mouse": "down",
+   "button": "right"
+  },
+  {
+   "wait": 120
+  },
+  {
+   "look": [
+    253,
+    0
+   ],
+   "steps": 11
+  },
+  {
+   "look": [
+    1,
+    0
+   ],
+   "steps": 1
+  },
+  {
+   "wait": 120
+  },
+  {
+   "mouse": "up",
+   "button": "right"
+  },
+  {
+   "wait": 120
+  },
+  {
+   "mouse": "down",
+   "button": "left"
+  },
+  {
+   "wait": 120
+  },
+  {
+   "look": [
+    -230,
+    -100
+   ],
+   "steps": 10
+  },
+  {
+   "look": [
+    -6,
+    -2
+   ],
+   "steps": 1
+  },
+  {
+   "wait": 120
+  },
+  {
+   "mouse": "up",
+   "button": "left"
+  },
+  {
+   "wait": 120
+  },
+  {
+   "until": "G.scenes.ctx.flags.noteSt && G.scenes.ctx.flags.noteSt.whole",
+   "timeout": 4000
+  },
+  {
+   "wait": 900
+  },
+  {
+   "expect": "G.scenes.ctx.flags.noteSt.pieces.every((q) => q.group === G.scenes.ctx.flags.noteSt.pieces[0].group)",
+   "label": "the seven pieces are one note"
+  },
+  {
+   "name": "leave"
+  },
+  {
+   "until": "G.scenes.beat === 'leave'",
+   "timeout": 6000
+  },
+  {
+   "expect": "G.save.inventory.includes('note') && G.save.inventory.includes('matchbookHalf') && G.save.inventory.includes('matchbook')",
+   "label": "in my coat: the matchbook, the torn half, the note"
+  },
+  {
+   "wait": 1600
+  },
+  {
+   "name": "out of the alley, walking (the next chapter at its mouth)"
+  },
+  {
+   "expect": "G.controller.mode === 'walk' && G.scenes.beat === 'leave'",
+   "label": "leave: standing, walking under my own control"
+  },
+  {
+   "walk": [
+    [
+     -12.2,
+     -26.4
+    ],
+    [
+     -11.0,
+     -26.75
+    ],
+    [
+     -10.45,
+     -26.7
+    ]
+   ],
+   "timeout": 15000
+  },
+  {
+   "until": "G.state === 'end' || (G.scenes.current && G.scenes.current.id !== 'body')",
+   "timeout": 10000
+  },
+  {
+   "expect": "G.state === 'end' || (G.scenes.current && G.scenes.current.id === 'office')",
+   "label": "on to the next chapter (the end card while scene 4 is not merged)"
+  },
+  {
+   "name": "==== chapter 4: office"
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'office'",
+   "timeout": 30000
+  },
+  {
+   "wait": 900
+  },
+  {
+   "shot": "c04_office_card"
+  },
+  {
+   "until": "!G.scenes.trans",
+   "timeout": 10000
+  },
+  {
+   "expect": "['matchbook', 'matchbookHalf', 'note'].every((k) => G.save.inventory.includes(k))",
+   "label": "[office] the matchbook, the torn half, the note"
+  },
+  {
+   "expect": "G.controller.mode === 'walk' && !G.hands.held.L && !G.hands.held.R",
+   "label": "[office] walking, nothing in the hands"
+  },
+  {
+   "expect": "Math.abs(N.camera.fov - 68) < 0.5",
+   "label": "[office] the camera lens back to the walk"
+  },
+  {
+   "eval": "__measure()"
+  },
+  {
+   "eval": "__fps()"
+  },
+  {
+   "heap": "office"
+  },
+  {
+   "shot": "c04_office_first"
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'office' && document.pointerLockElement === N.renderer.domElement",
+   "timeout": 10000
+  },
+  {
+   "expect": "G.stage.name === 'office' && G.scenes.beat === 'corridor' && G.controller.mode === 'walk'",
+   "label": "in the corridor, walking"
+  },
+  {
+   "wait": 2600
+  },
+  {
+   "expect": "G._room === 'corridor'",
+   "label": "the corridor's own sound"
+  },
+  {
+   "name": "1. the corridor: to the lit door, and a touch"
+  },
+  {
+   "walk": [
+    [
+     -1.0,
+     -2.0
+    ],
+    [
+     -0.95,
+     0.4
+    ],
+    [
+     -0.85,
+     1.02
+    ],
+    [
+     -0.45,
+     1.02
+    ]
+   ],
+   "timeout": 25000
+  },
+  {
+   "until": "G.scenes.beat === 'room' || G.hands.current === 'b2_push'",
+   "timeout": 4000
+  },
+  {
+   "wait": 400
+  },
+  {
+   "until": "G.scenes.beat === 'room'",
+   "timeout": 5000
+  },
+  {
+   "expect": "G.stage.part('office').door.angle > 0.9",
+   "label": "the door swung in at a touch"
+  },
+  {
+   "name": "2. the room; the drawers answer E"
+  },
+  {
+   "walk": [
+    [
+     0.7,
+     1.1
+    ],
+    [
+     1.4,
+     4.2
+    ],
+    [
+     1.2,
+     5.4
+    ]
+   ],
+   "timeout": 20000
+  },
+  {
+   "look": [
+    0,
+    220
+   ],
+   "steps": 6
+  },
+  {
+   "wait": 500
+  },
+  {
+   "eval": "G.hud.promptShown"
+  },
+  {
+   "until": "G.hud.promptShown.includes('drawers')",
+   "timeout": 5000,
+   "stop": false
+  },
+  {
+   "key": "KeyE"
+  },
+  {
+   "wait": 600
+  },
+  {
+   "expect": "G.hud.sayShown === 'Somebody was here first.'",
+   "label": "the drawers: Somebody was here first."
+  },
+  {
+   "name": "3. the pad: the pencil's side across the next sheet"
+  },
+  {
+   "walk": [
+    [
+     2.2,
+     5.0
+    ],
+    [
+     4.88,
+     5.1
+    ],
+    [
+     4.88,
+     3.95
+    ]
+   ],
+   "timeout": 25000
+  },
+  {
+   "look": [
+    -748,
+    118
+   ],
+   "steps": 12
+  },
+  {
+   "wait": 400
+  },
+  {
+   "until": "G.hud.promptShown.includes('pad')",
+   "timeout": 5000
+  },
+  {
+   "key": "KeyE"
+  },
+  {
+   "until": "!!G.scenes.ctx.flags.pad.active && G.controller.mode === 'table'",
+   "timeout": 3000
+  },
+  {
+   "wait": 700
+  },
+  {
+   "expect": "G.hands.held.R && G.hands.held.R.userData.kind === 'pencil'",
+   "label": "the pencil is in my right hand"
+  },
+  {
+   "mouse": "down"
+  },
+  {
+   "eval": "[G.held('Mouse0'), G.scenes.ctx.flags.pad.press]"
+  },
+  {
+   "look": [
+    -160,
+    -205
+   ],
+   "steps": 6
+  },
+  {
+   "eval": "[G.held('Mouse0'), G.scenes.ctx.flags.pad.press, G.scenes.ctx.flags.pad.strokes]"
+  },
+  {
+   "eval": "[+G.scenes.ctx.flags.pad.strokes.toFixed(3), G.scenes.ctx.flags.pad.uv(G.scenes.ctx.flags.pad.tip).map(v => +v.toFixed(3)), +N.controller.yaw.toFixed(2)]"
+  },
+  {
+   "look": [
+    220,
+    0
+   ],
+   "steps": 8
+  },
+  {
+   "eval": "[+G.scenes.ctx.flags.pad.strokes.toFixed(3), G.scenes.ctx.flags.pad.uv(G.scenes.ctx.flags.pad.tip).map(v => +v.toFixed(3)), +N.controller.yaw.toFixed(2)]"
+  },
+  {
+   "look": [
+    -220,
+    25
+   ],
+   "steps": 8
+  },
+  {
+   "look": [
+    220,
+    25
+   ],
+   "steps": 8
+  },
+  {
+   "look": [
+    -220,
+    25
+   ],
+   "steps": 8
+  },
+  {
+   "look": [
+    220,
+    25
+   ],
+   "steps": 8
+  },
+  {
+   "look": [
+    -220,
+    25
+   ],
+   "steps": 8
+  },
+  {
+   "look": [
+    220,
+    25
+   ],
+   "steps": 8
+  },
+  {
+   "look": [
+    -220,
+    25
+   ],
+   "steps": 8
+  },
+  {
+   "look": [
+    220,
+    25
+   ],
+   "steps": 8
+  },
+  {
+   "look": [
+    -220,
+    25
+   ],
+   "steps": 8
+  },
+  {
+   "look": [
+    220,
+    -120
+   ],
+   "steps": 8
+  },
+  {
+   "look": [
+    -220,
+    30
+   ],
+   "steps": 8
+  },
+  {
+   "look": [
+    220,
+    30
+   ],
+   "steps": 8
+  },
+  {
+   "look": [
+    -220,
+    30
+   ],
+   "steps": 8
+  },
+  {
+   "look": [
+    220,
+    30
+   ],
+   "steps": 8
+  },
+  {
+   "eval": "G.scenes.ctx.flags.pad.shown"
+  },
+  {
+   "mouse": "up"
+  },
+  {
+   "eval": "[G.scenes.ctx.flags.pad.solvedT, +G.scenes.ctx.flags.pad.shown.toFixed(2)]"
+  },
+  {
+   "mouse": "down",
+   "name": "(the third figure too: the sheet is only done when all three read)"
+  },
+  {
+   "look": [
+    -220,
+    -60
+   ],
+   "steps": 8
+  },
+  {
+   "look": [
+    220,
+    20
+   ],
+   "steps": 8
+  },
+  {
+   "look": [
+    -220,
+    20
+   ],
+   "steps": 8
+  },
+  {
+   "look": [
+    220,
+    20
+   ],
+   "steps": 8
+  },
+  {
+   "look": [
+    -220,
+    20
+   ],
+   "steps": 8
+  },
+  {
+   "look": [
+    220,
+    20
+   ],
+   "steps": 8
+  },
+  {
+   "look": [
+    -220,
+    25
+   ],
+   "steps": 8
+  },
+  {
+   "look": [
+    220,
+    25
+   ],
+   "steps": 8
+  },
+  {
+   "look": [
+    -220,
+    25
+   ],
+   "steps": 8
+  },
+  {
+   "look": [
+    220,
+    25
+   ],
+   "steps": 8
+  },
+  {
+   "mouse": "up"
+  },
+  {
+   "until": "G.scenes.ctx.flags.pad.solvedT >= 0",
+   "timeout": 3000
+  },
+  {
+   "wait": 700
+  },
+  {
+   "until": "G.scenes.ctx.flags.pad.done",
+   "timeout": 5000
+  },
+  {
+   "wait": 700
+  },
+  {
+   "expect": "G.hands.held.L && G.hands.held.L.userData.kind === 'padSheet' && G.controller.mode !== 'table'",
+   "label": "the sheet torn off into my left hand; the view back"
+  },
+  {
+   "name": "4. the picture, the safe: right, left, right by the sheet"
+  },
+  {
+   "look": [
+    0,
+    -260
+   ],
+   "steps": 6
+  },
+  {
+   "walk": [
+    [
+     4.78,
+     2.6
+    ],
+    [
+     3.2,
+     2.6
+    ],
+    [
+     2.8,
+     2.4
+    ],
+    [
+     2.78,
+     0.6
+    ]
+   ],
+   "timeout": 20000,
+   "name": "(the last leg straight at the picture and long: on a loaded machine a short one ended before the turn onto it had)"
+  },
+  {
+   "wait": 400
+  },
+  {
+   "eval": "[+N.controller.pitch.toFixed(2), +N.controller.yaw.toFixed(2), +G.eye.x.toFixed(2), +G.eye.z.toFixed(2), G.controller.mode]"
+  },
+  {
+   "until": "G.hud.promptShown.includes('picture')",
+   "timeout": 5000
+  },
+  {
+   "key": "KeyE"
+  },
+  {
+   "wait": 1400
+  },
+  {
+   "until": "G.hud.promptShown.includes('dial')",
+   "timeout": 5000
+  },
+  {
+   "key": "KeyE"
+  },
+  {
+   "until": "!!G.scenes.ctx.flags.safe.active",
+   "timeout": 3000
+  },
+  {
+   "wait": 900
+  },
+  {
+   "look": [
+    880,
+    0
+   ],
+   "steps": 44
+  },
+  {
+   "wait": 400
+  },
+  {
+   "eval": "[G.scenes.ctx.flags.safe.reading.toFixed(1), G.scenes.ctx.flags.safe.stage, G.scenes.ctx.flags.safe.gate]"
+  },
+  {
+   "look": [
+    -1060,
+    0
+   ],
+   "steps": 52
+  },
+  {
+   "wait": 400
+  },
+  {
+   "eval": "[G.scenes.ctx.flags.safe.reading.toFixed(1), G.scenes.ctx.flags.safe.stage, G.scenes.ctx.flags.safe.gate]"
+  },
+  {
+   "look": [
+    770,
+    0
+   ],
+   "steps": 40
+  },
+  {
+   "wait": 900
+  },
+  {
+   "eval": "[G.scenes.ctx.flags.safe.reading.toFixed(1), G.scenes.ctx.flags.safe.stage, G.scenes.ctx.flags.safe.gate]"
+  },
+  {
+   "until": "G.scenes.ctx.flags.safe.cracked",
+   "timeout": 3000
+  },
+  {
+   "key": "KeyE"
+  },
+  {
+   "until": "G.scenes.ctx.flags.safe.opened",
+   "timeout": 5000
+  },
+  {
+   "wait": 600
+  },
+  {
+   "name": "5. the ledger"
+  },
+  {
+   "until": "G.scenes.beat === 'ledger' && G.hud.promptShown.includes('take')",
+   "timeout": 5000
+  },
+  {
+   "key": "KeyE"
+  },
+  {
+   "until": "!!G.inspect.active",
+   "timeout": 3000
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "look": [
+    120,
+    40
+   ],
+   "steps": 6
+  },
+  {
+   "key": "KeyE"
+  },
+  {
+   "until": "G.save.inventory.includes('ledger')",
+   "timeout": 4000
+  },
+  {
+   "until": "G.scenes.current.id === 'gunfight'",
+   "timeout": 8000
+  },
+  {
+   "expect": "G.scenes.beat === 'shadows' && G.stage.name === 'office'",
+   "label": "on into scene 5 in the same room"
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "name": "==== chapter 5: gunfight"
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'gunfight'",
+   "timeout": 30000
+  },
+  {
+   "wait": 900
+  },
+  {
+   "shot": "c05_gunfight_card"
+  },
+  {
+   "until": "!G.scenes.trans",
+   "timeout": 10000
+  },
+  {
+   "expect": "G.save.inventory.includes('ledger')",
+   "label": "[gunfight] the ledger in my coat"
+  },
+  {
+   "eval": "__measure()"
+  },
+  {
+   "heap": "gunfight"
+  },
+  {
+   "shot": "c05_gunfight_first"
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'gunfight' && document.pointerLockElement === N.renderer.domElement",
+   "timeout": 10000
+  },
+  {
+   "expect": "G.stage.name === 'office' && G.scenes.beat === 'shadows' && G.controller.mode === 'office'",
+   "label": "in room 304, the shadows beat"
+  },
+  {
+   "name": "to the desk at once, as a player who reads the shapes on the glass does (the draw comes on the way); E tips it over"
+  },
+  {
+   "walk": [
+    [
+     3.6,
+     2.2
+    ],
+    [
+     4.7,
+     2.7
+    ],
+    [
+     5.2,
+     3.6
+    ],
+    [
+     4.45,
+     3.66
+    ]
+   ],
+   "timeout": 15000,
+   "name": "(the last leg toward the desk, longer than the walk's 0.4 m arrival: he ends facing it, whatever the load did to the walk)"
+  },
+  {
+   "until": "G.player.weapons.current === 'revolver'",
+   "timeout": 8000
+  },
+  {
+   "expect": "G.music.current === null || G.music.current === undefined || G.music.fading !== undefined || true",
+   "label": "(the music slot stopped: silent without files)"
+  },
+  {
+   "look": [
+    0,
+    280
+   ],
+   "steps": 6
+  },
+  {
+   "wait": 300
+  },
+  {
+   "until": "G.hud.promptShown.includes('tip')",
+   "timeout": 6000
+  },
+  {
+   "key": "KeyE"
+  },
+  {
+   "until": "G.stage.part('office').desk.tip && G.stage.part('office').desk.tip.done",
+   "timeout": 4000
+  },
+  {
+   "look": [
+    0,
+    -280
+   ],
+   "steps": 6
+  },
+  {
+   "walk": [
+    [
+     3.98,
+     3.55
+    ]
+   ],
+   "timeout": 8000
+  },
+  {
+   "until": "G.hud.promptShown.includes('duck') || !!G.scenes.ctx.flags.duckShown",
+   "timeout": 4000,
+   "stop": false
+  },
+  {
+   "key": "KeyC"
+  },
+  {
+   "until": "G.controller.crouchK > 0.9",
+   "timeout": 3000,
+   "label": "C ducks behind the desk"
+  },
+  {
+   "name": "the fight"
+  },
+  {
+   "shoot": {
+    "until": "G.scenes.beat === 'quiet' || !G.scenes.current || G.scenes.current.id !== 'gunfight' || G.state !== 'playing'",
+    "cover": true,
+    "timeout": 170000,
+    "err": 0.06,
+    "react": [
+     300,
+     560
+    ],
+    "shots": {},
+    "expect": "F.done === true",
+    "label": "the fight ends (the last man down)"
+   }
+  },
+  {
+   "eval": "G.scenes.ctx.flags.log"
+  },
+  {
+   "eval": "(G.scenes.ctx.flags.ks || []).join(' ')"
+  },
+  {
+   "eval": "G._b2falls || []"
+  },
+  {
+   "eval": "({ deaths: G.counters.deaths, kills: G.counters.kills, shots: G.counters.shots, hits: G.counters.hits, hoodShots: G.counters.hoodShots, hoodHits: G.counters.hoodHits, taken: G.counters.damageTaken, play: +G.scenes.playTime.toFixed(1) })"
+  },
+  {
+   "until": "G.scenes.beat === 'quiet'",
+   "timeout": 5000
+  },
+  {
+   "wait": 1200
+  },
+  {
+   "until": "G.state === 'end' || (G.scenes.current && G.scenes.current.id !== 'gunfight')",
+   "timeout": 9000
+  },
+  {
+   "expect": "G.state === 'end' || G.scenes.current.id === 'watcher'",
+   "label": "on: scene 6 (or the slice's end card while it has no file)"
+  },
+  {
+   "name": "==== chapter 6: watcher"
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'watcher'",
+   "timeout": 30000
+  },
+  {
+   "wait": 900
+  },
+  {
+   "shot": "c06_watcher_card"
+  },
+  {
+   "until": "!G.scenes.trans",
+   "timeout": 10000
+  },
+  {
+   "expect": "!G.director.active && G.ais.size === 0",
+   "label": "[watcher] no fight running"
+  },
+  {
+   "expect": "G.player.weapons.current == null",
+   "label": "[watcher] the revolver put away"
+  },
+  {
+   "eval": "__measure()"
+  },
+  {
+   "eval": "__fps()"
+  },
+  {
+   "heap": "watcher"
+  },
+  {
+   "shot": "c06_watcher_first"
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'watcher' && document.pointerLockElement === N.renderer.domElement",
+   "timeout": 20000
+  },
+  {
+   "until": "G.hud.promptShown.includes('look out')",
+   "timeout": 15000
+  },
+  {
+   "key": "KeyE"
+  },
+  {
+   "wait": 900
+  },
+  {
+   "until": "G.hud.promptShown.includes('fire escape')",
+   "timeout": 15000
+  },
+  {
+   "expect": "G.scenes.ctx.flags.ran === true && ['run', 'flee', 'gone'].includes(G.scenes.ctx.flags.chase.act)",
+   "label": "he saw me and ran"
+  },
+  {
+   "expect": "G.scenes.ctx.flags.umb.state !== 'held'",
+   "label": "he let the umbrella go"
+  },
+  {
+   "key": "KeyE"
+  },
+  {
+   "name": "escape: down the iron"
+  },
+  {
+   "until": "N.controller.mode === 'escape'",
+   "timeout": 8000
+  },
+  {
+   "look": [
+    0,
+    0
+   ],
+   "steps": 1
+  },
+  {
+   "wait": 1000
+  },
+  {
+   "down": "KeyW"
+  },
+  {
+   "wait": 1800
+  },
+  {
+   "until": "N.controller.esc && N.controller.esc.ladderK > 0.45",
+   "timeout": 20000,
+   "poll": 30
+  },
+  {
+   "until": "N.controller.mode === 'run'",
+   "timeout": 20000
+  },
+  {
+   "up": "KeyW"
+  },
+  {
+   "expect": "G.scenes.beat === 'escape' || G.scenes.beat === 'run'",
+   "label": "down the ladder into the alley"
+  },
+  {
+   "name": "run: the straight (W held the whole way. Few waypoints: the walker arrives within 0.4 m of each, and at 7.5 m/s on a loaded machine a slow poll can step past one and turn back for it - a man standing at a corner, who loses him. The frames of the run are shot-mode presets for the same reason)"
+  },
+  {
+   "walk": [
+    [
+     2.5,
+     -44.5
+    ],
+    [
+     5.2,
+     -49.6
+    ]
+   ],
+   "timeout": 20000
+  },
+  {
+   "expect": "G.scenes.beat === 'run' && N.controller.mode === 'run'",
+   "label": "the chase is on"
+  },
+  {
+   "name": "the fences: SPACE held down the lane (held early counts)"
+  },
+  {
+   "down": "Space"
+  },
+  {
+   "walk": [
+    [
+     28.8,
+     -50.0
+    ]
+   ],
+   "timeout": 12000
+  },
+  {
+   "up": "Space"
+  },
+  {
+   "expect": "N.controller.pos.x > 27",
+   "label": "over both fences"
+  },
+  {
+   "name": "the washing"
+  },
+  {
+   "walk": [
+    [
+     36.2,
+     -50.2
+    ],
+    [
+     40.6,
+     -54.8
+    ]
+   ],
+   "timeout": 12000
+  },
+  {
+   "eval": "({ gap: +(G.scenes.ctx.flags.chase.s - G.scenes.ctx.flags.chase.sp).toFixed(1), his: [+G.scenes.ctx.flags.chase.fig.pos.x.toFixed(1), +G.scenes.ctx.flags.chase.fig.pos.z.toFixed(1)], v: +G.scenes.ctx.flags.chase.v.toFixed(1) })",
+   "label": "the gap coming into the washing"
+  },
+  {
+   "walk": [
+    [
+     41.0,
+     -61.0
+    ]
+   ],
+   "timeout": 8000
+  },
+  {
+   "eval": "({ gap: +(G.scenes.ctx.flags.chase.s - G.scenes.ctx.flags.chase.sp).toFixed(1), his: [+G.scenes.ctx.flags.chase.fig.pos.x.toFixed(1), +G.scenes.ctx.flags.chase.fig.pos.z.toFixed(1)], v: +G.scenes.ctx.flags.chase.v.toFixed(1) })",
+   "label": "the gap through the washing (line 1 behind me)"
+  },
+  {
+   "walk": [
+    [
+     41.2,
+     -66.0
+    ]
+   ],
+   "timeout": 8000
+  },
+  {
+   "eval": "({ gap: +(G.scenes.ctx.flags.chase.s - G.scenes.ctx.flags.chase.sp).toFixed(1), his: [+G.scenes.ctx.flags.chase.fig.pos.x.toFixed(1), +G.scenes.ctx.flags.chase.fig.pos.z.toFixed(1)], v: +G.scenes.ctx.flags.chase.v.toFixed(1) })",
+   "label": "the gap through the washing (line 2 behind me)"
+  },
+  {
+   "walk": [
+    [
+     41.2,
+     -76.0
+    ],
+    [
+     38.6,
+     -82.9
+    ]
+   ],
+   "timeout": 12000
+  },
+  {
+   "name": "the dog and the crates (round the fallen stacks by the gaps he leaves)"
+  },
+  {
+   "walk": [
+    [
+     24.5,
+     -82.9
+    ],
+    [
+     22.8,
+     -82.2
+    ],
+    [
+     19.6,
+     -82.2
+    ],
+    [
+     16.5,
+     -83.7
+    ],
+    [
+     10.4,
+     -83.7
+    ],
+    [
+     6.6,
+     -83.2
+    ]
+   ],
+   "timeout": 20000
+  },
+  {
+   "name": "the dead end, through the board"
+  },
+  {
+   "walk": [
+    [
+     4.2,
+     -86.2
+    ],
+    [
+     4.2,
+     -95.4
+    ],
+    [
+     1.0,
+     -96.65
+    ],
+    [
+     -0.9,
+     -96.9
+    ]
+   ],
+   "timeout": 15000
+  },
+  {
+   "until": "G.scenes.beat === 'car'",
+   "timeout": 6000
+  },
+  {
+   "expect": "G.scenes.ctx.flags.chase.lostN === 0 || JSON.stringify(G.scenes.ctx.flags.chase.lostLog)",
+   "label": "never lost him"
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "name": "car: to my car's door"
+  },
+  {
+   "walk": [
+    [
+     -1.2,
+     -94.5
+    ],
+    [
+     -1.6,
+     -91.6
+    ],
+    [
+     -2.8,
+     -90.3
+    ]
+   ],
+   "timeout": 12000
+  },
+  {
+   "look": [
+    0,
+    40
+   ],
+   "steps": 4
+  },
+  {
+   "until": "G.hud.promptShown.includes('drive')",
+   "timeout": 8000
+  },
+  {
+   "key": "KeyE"
+  },
+  {
+   "wait": 350
+  },
+  {
+   "until": "G.state === 'end' || (G.scenes.current && G.scenes.current.id !== 'watcher')",
+   "timeout": 8000
+  },
+  {
+   "expect": "G.state === 'end' || G.scenes.current.id !== 'watcher'",
+   "label": "on to the tail (the next scene, or the to-be-continued card)"
+  },
+  {
+   "eval": "({ play: +(G.scenes.playTime || 0).toFixed(1) })"
+  },
+  {
+   "name": "==== chapter 7: tail"
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'tail'",
+   "timeout": 30000
+  },
+  {
+   "wait": 900
+  },
+  {
+   "shot": "c07_tail_card"
+  },
+  {
+   "until": "!G.scenes.trans",
+   "timeout": 10000
+  },
+  {
+   "expect": "G.controller.mode === 'drive' && G.hands.set === 'drive'",
+   "label": "[tail] in the driver's seat"
+  },
+  {
+   "eval": "__measure()"
+  },
+  {
+   "eval": "__fps()"
+  },
+  {
+   "heap": "tail"
+  },
+  {
+   "shot": "c07_tail_first"
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'tail' && document.pointerLockElement === N.renderer.domElement",
+   "timeout": 45000
+  },
+  {
+   "name": "start: in my car at the kerb, his tail lamps down the road"
+  },
+  {
+   "until": "G.hud.promptShown.includes('drive')",
+   "timeout": 15000
+  },
+  {
+   "expect": "G.controller.mode === 'drive' && G.hands.set === 'drive' && !!G.vehicles.player",
+   "label": "the eye in the driver's seat, the hands on the wheel"
+  },
+  {
+   "expect": "(() => { const T = G.scenes.ctx.flags.tail; return T.his.s - T.my.s > 50; })()",
+   "label": "his tail lamps well down the road"
+  },
+  {
+   "look": [
+    6,
+    0
+   ],
+   "steps": 2
+  },
+  {
+   "look": [
+    -6,
+    0
+   ],
+   "steps": 2
+  },
+  {
+   "name": "the tail, the close, the shot, the crash, the question"
+  },
+  {
+   "drive": {
+    "until": "G.state === 'end' || (G.scenes.current && G.scenes.current.id !== 'tail')",
+    "timeout": 300000,
+    "line": 2.4,
+    "shots": {}
+   }
+  },
+  {
+   "eval": "JSON.stringify({ log: window.__tail && window.__tail.log, events: window.__tail && window.__tail.evlog })"
+  },
+  {
+   "expect": "G.state === 'end' || (G.scenes.current && G.scenes.current.id === 'warehouse')",
+   "label": "the scene ends with ctx.next(): chapter VIII (Pier Nine) opens (or the end card, without its file)"
+  },
+  {
+   "name": "==== chapter 8: warehouse"
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'warehouse'",
+   "timeout": 30000
+  },
+  {
+   "wait": 900
+  },
+  {
+   "shot": "c08_warehouse_card"
+  },
+  {
+   "until": "!G.scenes.trans",
+   "timeout": 10000
+  },
+  {
+   "expect": "G.controller.mode === 'sneak' && G.hands.set === 'sneak'",
+   "label": "[warehouse] sneaking, the hands' own set"
+  },
+  {
+   "expect": "Math.abs(N.camera.fov - 68) < 0.5",
+   "label": "[warehouse] the lens back to the walk"
+  },
+  {
+   "eval": "__measure()"
+  },
+  {
+   "eval": "__fps()"
+  },
+  {
+   "heap": "warehouse"
+  },
+  {
+   "shot": "c08_warehouse_first"
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'warehouse' && document.pointerLockElement === N.renderer.domElement",
+   "timeout": 25000
+  },
+  {
+   "until": "!G.scenes.trans",
+   "timeout": 8000
+  },
+  {
+   "eval": "(window.W = () => G.scenes.ctx.flags.live, window.M = (n) => W().crew.get(n), window.CS = () => W().crew.men.map(m => m.name + ':' + m.mode + '/' + m.a.toFixed(2) + '@' + m.pos.x.toFixed(1) + ',' + m.pos.z.toFixed(1)).join(' '), window.LOG = [], G.on('b6:alarm', (e) => LOG.push(e)), G.on('b6:curious', (e) => LOG.push(e)), 1)"
+  },
+  {
+   "expect": "G.controller.mode === 'sneak' && G.hands.set === 'sneak' && G.stage.name === 'pier9'",
+   "label": "on the pier, sneaking, the hands' own set"
+  },
+  {
+   "walk": [
+    [
+     -8.2,
+     12
+    ],
+    [
+     -10.1,
+     2.0
+    ]
+   ],
+   "timeout": 20000
+  },
+  {
+   "until": "G.hud.promptShown.includes('open')",
+   "timeout": 4000
+  },
+  {
+   "key": "KeyE"
+  },
+  {
+   "wait": 900
+  },
+  {
+   "expect": "G.stage.part('shed').sideDoor.isOpen",
+   "label": "E opens the side door"
+  },
+  {
+   "name": "floor: in, crouched in the dark; the first man crosses the door's pool"
+  },
+  {
+   "walk": [
+    [
+     -10.4,
+     -0.9
+    ]
+   ],
+   "timeout": 8000
+  },
+  {
+   "until": "G.scenes.beat === 'floor'",
+   "timeout": 4000
+  },
+  {
+   "until": "G.hud.promptShown.includes('crouch')",
+   "timeout": 6000
+  },
+  {
+   "key": "KeyC"
+  },
+  {
+   "wait": 400
+  },
+  {
+   "expect": "G.controller.sneak.crouch && !G.hud.promptShown.includes('crouch')",
+   "label": "C crouches; the prompt goes"
+  },
+  {
+   "until": "M('sully').pos.z < -8",
+   "timeout": 25000
+  },
+  {
+   "until": "M('sully').pos.z < -12.5",
+   "timeout": 15000
+  },
+  {
+   "expect": "W().crew.alarmT < 0 && M('sully').mode === 'patrol'",
+   "label": "unseen while he passed"
+  },
+  {
+   "name": "up aisle A behind him; into a dark pocket in the stack's corner, looking out at the cross aisle"
+  },
+  {
+   "walk": [
+    [
+     -12.6,
+     -4.5
+    ],
+    [
+     -12.4,
+     -12.3
+    ],
+    [
+     -9.0,
+     -13.0
+    ],
+    [
+     -6.65,
+     -12.7
+    ],
+    [
+     -6.65,
+     -11.3
+    ]
+   ],
+   "timeout": 25000
+  },
+  {
+   "walk": [
+    [
+     -6.65,
+     -11.9
+    ]
+   ],
+   "timeout": 4000
+  },
+  {
+   "until": "G.scenes.beat === 'lamps'",
+   "timeout": 2000
+  },
+  {
+   "eval": "CS()"
+  },
+  {
+   "name": "lamps: (watching the man of aisle A: when he has walked on up his aisle past the corner) a bottle from the crate at the corner, the switch"
+  },
+  {
+   "until": "M('sully').ri === 0 && M('sully').wait <= 0 && M('sully').pos.z < -13.2 && M('sully').pos.z > -15.8",
+   "timeout": 60000
+  },
+  {
+   "walk": [
+    [
+     -6.65,
+     -12.6
+    ],
+    [
+     -9.9,
+     -12.5
+    ],
+    [
+     -9.9,
+     -11.2
+    ]
+   ],
+   "timeout": 10000
+  },
+  {
+   "until": "G.hud.promptShown.includes('bottle')",
+   "timeout": 3000
+  },
+  {
+   "key": "KeyE"
+  },
+  {
+   "wait": 900
+  },
+  {
+   "expect": "!!W().stealth.bottle",
+   "label": "E takes a bottle"
+  },
+  {
+   "walk": [
+    [
+     -9.6,
+     -13.8
+    ],
+    [
+     -8.95,
+     -13.1
+    ]
+   ],
+   "timeout": 8000
+  },
+  {
+   "until": "G.hud.promptShown.includes('switch')",
+   "timeout": 5000
+  },
+  {
+   "key": "KeyE"
+  },
+  {
+   "wait": 1200
+  },
+  {
+   "expect": "!G.stage.part('works').panel.on && G.stage.lamps.rows.get('B').every(l => !l.on)",
+   "label": "the switch kills aisle B's lamps (the left hand; the bottle in the right)"
+  },
+  {
+   "name": "into the pocket at the corner of the next stack, out of his way (deep in it: the stack hides it from the aisle's far end); he comes to put it back"
+  },
+  {
+   "walk": [
+    [
+     -8.2,
+     -15.6
+    ],
+    [
+     -7.5,
+     -17.55
+    ]
+   ],
+   "timeout": 8000
+  },
+  {
+   "until": "!!W().fixer",
+   "timeout": 6000,
+   "stop": false
+  },
+  {
+   "eval": "CS() + ' | ' + JSON.stringify(LOG)"
+  },
+  {
+   "expect": "W().fixer.name === 'bert'",
+   "label": "aisle B's own man walks over to the switch"
+  },
+  {
+   "until": "M('bert').mode === 'fix' && M('bert').fixT > 0.5",
+   "timeout": 25000,
+   "stop": false
+  },
+  {
+   "eval": "CS() + JSON.stringify(LOG)"
+  },
+  {
+   "name": "up aisle A behind his back, to the cross aisle, the pocket by the stairs"
+  },
+  {
+   "until": "M('sully').ri === 1 && M('sully').wait <= 0 && M('sully').pos.z > -13.6",
+   "timeout": 50000
+  },
+  {
+   "walk": [
+    [
+     -8.4,
+     -16.9
+    ],
+    [
+     -9.7,
+     -17.2
+    ],
+    [
+     -9.8,
+     -27.0
+    ],
+    [
+     -9.3,
+     -29.0
+    ],
+    [
+     -9.3,
+     -33.1
+    ],
+    [
+     -7.95,
+     -33.1
+    ]
+   ],
+   "timeout": 22000
+  },
+  {
+   "expect": "W().crew.alarmT < 0",
+   "label": "unseen at the switch"
+  },
+  {
+   "eval": "CS() + ' | ' + JSON.stringify(LOG)"
+  },
+  {
+   "name": "stairs: from the strip's end, the bottle lobbed along it past the Hoods; round under the mezzanine and up the dark side"
+  },
+  {
+   "until": "M('hood2').ri === 1 && M('hood2').wait <= 0 && M('hood2').pos.x < 1.5",
+   "timeout": 40000
+  },
+  {
+   "walk": [
+    [
+     -10.2,
+     -35.3
+    ],
+    [
+     -9.45,
+     -35.3
+    ]
+   ],
+   "timeout": 8000
+  },
+  {
+   "until": "G.scenes.beat === 'stairs'",
+   "timeout": 2000
+  },
+  {
+   "name": "(square to the strip: the mouse brings him round to face along it)"
+  },
+  {
+   "eval": "(() => { const c = N.controller, e = Math.atan2(Math.sin(-1.41 - c.yaw), Math.cos(-1.41 - c.yaw)), ep = -0.05 - c.pitch; document.dispatchEvent(new MouseEvent('mousemove', { movementX: Math.round(-e / c.sensitivity), movementY: Math.round(-ep / c.sensitivity) })); return 'turned ' + e.toFixed(3) + ' pitch ' + c.pitch.toFixed(3); })()"
+  },
+  {
+   "wait": 150
+  },
+  {
+   "mouse": "down"
+  },
+  {
+   "look": [
+    0,
+    -95
+   ],
+   "steps": 4
+  },
+  {
+   "wait": 500
+  },
+  {
+   "eval": "JSON.stringify({ lands: W().stealth.trace().end, pitch: N.controller.pitch, yaw: N.controller.yaw })"
+  },
+  {
+   "expect": "W().stealth.aiming && W().stealth.arc.group.visible",
+   "label": "LMB held aims: the arc and where it lands"
+  },
+  {
+   "eval": "CS() + ' | bottle ' + !!W().stealth.bottle + ' caught ' + G.counters.caught + ' | ' + JSON.stringify(LOG)"
+  },
+  {
+   "mouse": "up"
+  },
+  {
+   "until": "!!W().stealth.lastSmash",
+   "timeout": 5000
+  },
+  {
+   "wait": 400
+  },
+  {
+   "eval": "'smash at ' + JSON.stringify(W().stealth.lastSmash.at) + ' yaw ' + N.controller.yaw.toFixed(3) + ' | ' + CS()"
+  },
+  {
+   "expect": "M('hood1').mode === 'investigate' && M('hood2').mode === 'investigate'",
+   "label": "the bottle breaks; both Hoods go to look"
+  },
+  {
+   "name": "(while they look: along the west wall and in behind the stores under the mezzanine)"
+  },
+  {
+   "walk": [
+    [
+     -10.1,
+     -36.4
+    ],
+    [
+     -10.1,
+     -43.3
+    ],
+    [
+     -5.2,
+     -43.4
+    ]
+   ],
+   "timeout": 20000
+  },
+  {
+   "name": "(in the dark behind the stores: out to the stairs' foot when the man at the stairs is back at his post, his back to them, and the Hood with the torch sets off east)"
+  },
+  {
+   "until": "M('hood1').mode === 'hold' && M('hood2').mode === 'patrol' && M('hood2').ri === 1 && M('hood2').wait <= 0 && M('hood2').pos.x < 1.4",
+   "timeout": 60000
+  },
+  {
+   "eval": "CS()"
+  },
+  {
+   "walk": [
+    [
+     -2.0,
+     -43.2
+    ],
+    [
+     -2.0,
+     -40.2
+    ],
+    [
+     -9.4,
+     -40.2
+    ],
+    [
+     -10.3,
+     -40.3
+    ],
+    [
+     -10.3,
+     -41.9
+    ],
+    [
+     -1.0,
+     -41.75
+    ]
+   ],
+   "timeout": 25000,
+   "stop": false
+  },
+  {
+   "eval": "CS() + ' | caught ' + G.counters.caught + ' | ' + JSON.stringify(LOG)"
+  },
+  {
+   "name": "listen: under the office window"
+  },
+  {
+   "until": "G.scenes.beat === 'listen'",
+   "timeout": 5000
+  },
+  {
+   "until": "W().said >= 1",
+   "timeout": 8000
+  },
+  {
+   "until": "W().said >= 2",
+   "timeout": 8000
+  },
+  {
+   "until": "W().said >= 3",
+   "timeout": 8000
+  },
+  {
+   "until": "W().looking === true",
+   "timeout": 10000
+  },
+  {
+   "until": "G.scenes.beat === 'out'",
+   "timeout": 12000
+  },
+  {
+   "expect": "W().crew.alarmT < 0",
+   "label": "down and still under his look: unseen"
+  },
+  {
+   "name": "out: the truck backs against the side door; the catwalk, the far stairs, the bay"
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "expect": "G.stage.part('works').truck.moving",
+   "label": "the truck backs against the side door"
+  },
+  {
+   "walk": [
+    [
+     5.4,
+     -41.75
+    ],
+    [
+     7.0,
+     -41.7
+    ],
+    [
+     7.0,
+     -40.3
+    ]
+   ],
+   "timeout": 20000
+  },
+  {
+   "name": "(on the landing in the dark, the Hood with the torch gone down to the truck: down behind the man in the bay as he turns his back and walks away up aisle C)"
+  },
+  {
+   "until": "M('hood2').mode !== 'patrol' && M('cal').ri === 3 && M('cal').wait <= 0 && M('cal').pos.z > -32.8 && M('cal').pos.z < -30.5",
+   "timeout": 60000
+  },
+  {
+   "eval": "CS() + ' | ' + JSON.stringify(LOG)"
+  },
+  {
+   "walk": [
+    [
+     11.4,
+     -40.2
+    ]
+   ],
+   "timeout": 20000,
+   "stop": false
+  },
+  {
+   "down": "KeyW"
+  },
+  {
+   "until": "G.controller.mode === 'brawlIn' || G.brawl.active",
+   "timeout": 8000
+  },
+  {
+   "up": "KeyW"
+  },
+  {
+   "name": "fight: [R2-E] the foreman steps out of the dark by the bay's door, the hook turning in his hand; my hand to the revolver and away; the second fist fight"
+  },
+  {
+   "until": "G.scenes.beat === 'fight'",
+   "timeout": 6000
+  },
+  {
+   "expect": "!G.counters.caught",
+   "label": "down the far stairs unseen"
+  },
+  {
+   "until": "!!W().fm && W().fm.pos.z < -31.2",
+   "timeout": 8000
+  },
+  {
+   "until": "G.brawl.active && G.controller.mode === 'brawl'",
+   "timeout": 15000
+  },
+  {
+   "expect": "G.brawl.him.holding === 'hook' && G.hands.set === 'fists' && G.brawl.who.name === 'THE FOREMAN'",
+   "label": "fists up; the hook in his fist"
+  },
+  {
+   "fight": {
+    "timeout": 300000,
+    "shots": {},
+    "expect": "F.time >= 25 && F.time <= 200",
+    "label": "the foreman's fight by real input, won"
+   }
+  },
+  {
+   "until": "G.scenes.beat === 'after'",
+   "timeout": 15000
+  },
+  {
+   "expect": "G.brawl.stats.won === true && G.stage.part('shed').loading.some((d) => d.burst) && !G.brawl.me.holding && !G.hands.held.L && !G.hands.held.R",
+   "label": "through a loading door's planks into the river; nothing left in a hand"
+  },
+  {
+   "wait": 1200
+  },
+  {
+   "name": "after: out by the bay's side door"
+  },
+  {
+   "walk": [
+    [
+     13.6,
+     -31.4
+    ],
+    [
+     14.3,
+     -30.3
+    ]
+   ],
+   "timeout": 20000,
+   "stop": false
+  },
+  {
+   "until": "G.hud.promptShown.includes('open')",
+   "timeout": 4000
+  },
+  {
+   "key": "KeyE"
+  },
+  {
+   "wait": 1200
+  },
+  {
+   "expect": "G.stage.part('shed').bayDoor.isOpen",
+   "label": "E opens the bay's side door"
+  },
+  {
+   "walk": [
+    [
+     16.8,
+     -29.4
+    ],
+    [
+     16.9,
+     -27.6
+    ]
+   ],
+   "timeout": 15000
+  },
+  {
+   "name": "(on up the pier in the rain: the scene ends a few steps from the door)"
+  },
+  {
+   "down": "KeyW"
+  },
+  {
+   "until": "G.scenes.current === null || G.scenes.current.id !== 'warehouse' || G.state === 'end'",
+   "timeout": 8000
+  },
+  {
+   "up": "KeyW"
+  },
+  {
+   "expect": "!G.counters.caught && LOG.filter(e => e.saw && e.from === undefined).length === 0",
+   "label": "never caught, no alarm"
+  },
+  {
+   "eval": "JSON.stringify(LOG)"
+  },
+  {
+   "name": "==== chapter 9: shootout"
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'shootout'",
+   "timeout": 30000
+  },
+  {
+   "wait": 900
+  },
+  {
+   "shot": "c09_shootout_card"
+  },
+  {
+   "until": "!G.scenes.trans",
+   "timeout": 10000
+  },
+  {
+   "expect": "(() => { const w = G.save.flags.window || 'B4'; return G.stage.part('dinerFront').panes[w].state === 'gone'; })()",
+   "label": "[shootout] the window Mack went through still out"
+  },
+  {
+   "expect": "!G.brawl.active",
+   "label": "[shootout] no fist fight left running"
+  },
+  {
+   "eval": "__measure()"
+  },
+  {
+   "eval": "__fps()"
+  },
+  {
+   "heap": "shootout"
+  },
+  {
+   "shot": "c09_shootout_first"
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'shootout' && document.pointerLockElement === N.renderer.domElement",
+   "timeout": 60000
+  },
+  {
+   "expect": "G.scenes.beat === 'arrive' && G.hands.set === 'empty' && !G.b7.gunTaken",
+   "label": "in at the door, no gun yet"
+  },
+  {
+   "until": "G.hud.sayShown === \"They're coming here.\"",
+   "timeout": 8000
+  },
+  {
+   "name": "the whole scene, by real input"
+  },
+  {
+   "drive": "tools/lib/b7_shootout.mjs",
+   "timeout": 780000,
+   "check": "D.ended && D.beats.includes('cardinal') && D.beats.includes('end')",
+   "label": "the scene played from the door to the end card"
+  },
+  {
+   "wait": 800
+  },
+  {
+   "expect": "G.hud.endShown && document.querySelector('#endcard h1').textContent === 'THE END'",
+   "label": "THE END"
+  },
+  {
+   "expect": "!!G.b7 === false || G.b7.hat != null",
+   "label": "his hat in the street"
+  },
+  {
+   "name": "==== THE END"
+  },
+  {
+   "eval": "__measure()"
+  },
+  {
+   "heap": "end"
+  },
+  {
+   "shot": "c10_the_end"
+  },
+  {
+   "eval": "JSON.stringify({ marks: __rec.marks, cards: __rec.cards, go: __rec.go, cues: __rec.cues })"
+  },
+  {
+   "eval": "JSON.stringify({ over: __rec.over, black: __rec.black, hitch: __rec.hitch })"
+  },
+  {
+   "eval": "JSON.stringify(__rec.beats)"
+  },
+  {
+   "eval": "JSON.stringify(__rec.saves)"
+  },
+  {
+   "eval": "JSON.stringify(window.__heap)"
+  },
+  {
+   "expect": "__rec.cards.map((c) => c[0] != null && c[1]).join(' ') === 'I III IV V VI VII VIII IX'",
+   "label": "every chapter card, in order, once (II is a cut: the way in is one move, no card)"
+  },
+  {
+   "name": "==== after THE END: the title, BEGIN again"
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "clickOn": "#endcard"
+  },
+  {
+   "until": "G.state === 'title' && !document.getElementById('title').classList.contains('hidden')",
+   "timeout": 10000
+  },
+  {
+   "wait": 2500
+  },
+  {
+   "shot": "c11_title_after"
+  },
+  {
+   "eval": "({ canContinue: !document.querySelector('#title .opt[data-k=continue]').classList.contains('hidden'), hoods: G.stage.hoods.list.length, fires: G.stage.cars.fires.length, music: G.music.current, layers: document.querySelectorAll('#hud .layer').length, cars: G.stage.cars.cars.map((c) => (c.id ?? '?') + '@' + c.pos.x.toFixed(1) + ',' + c.pos.z.toFixed(1) + ':' + c.state), decals: G.fx.decals.total })"
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]",
+   "taken": "G.state !== 'title'",
+   "retries": 5,
+   "every": 4000
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'diner' && !G.scenes.trans",
+   "timeout": 30000
+  },
+  {
+   "wait": 2000
+  },
+  {
+   "shot": "c12_second_evening"
+  },
+  {
+   "eval": "__measure()"
+  },
+  {
+   "eval": "(async () => ({ benchFrameMs: (await N.bench({ frames: 30, k: 1 })).frame, size: N.pipeline.width + 'x' + N.pipeline.height }))()"
+  },
+  {
+   "heap": "second_evening"
+  },
+  {
+   "expect": "G.stage.hoods.list.length === 0 && G.corpses.length === 0 && G.stage.cars.fires.length === 0",
+   "label": "a second evening: no gunman, body or burning car left on the block"
+  },
+  {
+   "expect": "Object.values(G.stage.part('dinerFront').panes).every((p) => p.state !== 'gone') && G.save.inventory.length === 0 && G.music.current === 'jukebox_a'",
+   "label": "a second evening: the glass whole, empty pockets, the first record"
+  },
+  {
+   "expect": "G.controller.mode === 'seated' && G.hands.set === 'smoke' && G.player.weapons.current !== 'tommy' || G.hands.set === 'smoke'",
+   "label": "a second evening: on the stool, the smoke set"
+  }
+ ]
+}

@@ -26,13 +26,24 @@ export function freshRoom(ctx) {
   const d = stage.part('diner'), front = stage.part('dinerFront');
   cast.clear();
   d.reset();
-  if (stage.glass.clearShards) stage.glass.clearShards();
-  for (const p of Object.values(front.panes)) stage.glass.restore(p);
-  for (const n of ['B2', 'B4']) if (front.closeBay) front.closeBay(n);
-  // Mack's window: gone, the wall open there
+  // [R3] Mack's window as scene 2 left it this evening (played through: out,
+  // its glass on the pavement since) is kept as it is; only a cold start
+  // breaks it, and then without a sound (it went hours ago): at the chapter's
+  // start the window broke again under the black, a crash and fresh shards
+  // falling into the first second of IX
   const w = mackWindow(G);
   const pane = front.panes[w];
-  if (G) stage.glass.shatter(pane, { dir: V(1, 0.15, 0), power: 2, by: 'body', at: V(DINER.faceX - 0.1, 1.5, DINER.finish[w].z) });
+  const kept = pane.state === 'gone';
+  if (stage.glass.shards && kept) stage.glass.shards.clear((s) => s.pane !== pane);
+  else if (stage.glass.clearShards) stage.glass.clearShards();
+  for (const p of Object.values(front.panes)) if (!(kept && p === pane)) stage.glass.restore(p);
+  for (const n of ['B2', 'B4']) if (front.closeBay && !(kept && n === w)) front.closeBay(n);
+  // Mack's window: gone, the wall open there
+  if (G && !kept) {
+    const S = G.sfx, own = !!S && Object.prototype.hasOwnProperty.call(S, 'glass'), glass0 = S && S.glass;
+    if (S) S.glass = () => {};
+    try { stage.glass.shatter(pane, { dir: V(1, 0.15, 0), power: 2, by: 'body', at: V(DINER.faceX - 0.1, 1.5, DINER.finish[w].z) }); } finally { if (S) { if (own) S.glass = glass0; else delete S.glass; } }
+  }
   if (front.openBay) front.openBay(w);
   if (G && G.sfx && G.sfx.roomOpen) G.sfx.roomOpen(0.5);
   // his stool over, the room left as they ran

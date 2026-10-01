@@ -141,7 +141,7 @@ def build():
     fight_in = [{'name': '==== chapter 2: fight (entered by a cut, under the lesson)'},
                 {'eval': '__measure()'}, {'eval': '__fps()'}, {'heap': 'fight'}, {'shot': 'c02_fight_lesson'}]
     d = next(i for i, s in enumerate(sl) if 'until' in s and "G.scenes.current.id === 'diner'" in s['until'])
-    diner_in = [{'name': '==== chapter 1: diner'}, {'wait': 2500}, {'eval': '__measure()'}, {'eval': '__fps()'}, {'heap': 'diner'}]
+    diner_in = [{'name': '==== chapter 1: diner'}, {'wait': 2500}, {'eval': '__measure()'}, {'eval': '__fps()'}, {'eval': "(async () => ({ benchFrameMs: (await N.bench({ frames: 30, k: 1 })).frame, size: N.pipeline.width + 'x' + N.pipeline.height }))()"}, {'heap': 'diner'}]
     steps += sl[:d + 1] + diner_in + sl[d + 1:k] + fight_in + sl[k:]
     # ---- III the body ----
     steps += chapter(3, 'body', checks=[
@@ -201,7 +201,25 @@ def build():
         {'eval': 'JSON.stringify(__rec.beats)'},
         {'eval': 'JSON.stringify(__rec.saves)'},
         {'eval': 'JSON.stringify(window.__heap)'},
-        {'expect': "__rec.cards.map((c) => c[0] != null && c[1]).join(' ') === 'I II III IV V VI VII VIII IX'", 'label': 'every chapter card, in order, once'},
+        {'expect': "__rec.cards.map((c) => c[0] != null && c[1]).join(' ') === 'I III IV V VI VII VIII IX'", 'label': 'every chapter card, in order, once (II is a cut: the way in is one move, no card)'},
+        # ---- after THE END: the card's click, the title, and a second evening ----
+        {'name': '==== after THE END: the title, BEGIN again'},
+        {'wait': 1500},
+        {'clickOn': '#endcard'},
+        {'until': "G.state === 'title' && !document.getElementById('title').classList.contains('hidden')", 'timeout': 10000},
+        {'wait': 2500},
+        {'shot': 'c11_title_after'},
+        {'eval': "({ canContinue: !document.querySelector('#title .opt[data-k=continue]').classList.contains('hidden'), hoods: G.stage.hoods.list.length, fires: G.stage.cars.fires.length, music: G.music.current, layers: document.querySelectorAll('#hud .layer').length, cars: G.stage.cars.cars.map((c) => (c.id ?? '?') + '@' + c.pos.x.toFixed(1) + ',' + c.pos.z.toFixed(1) + ':' + c.state), decals: G.fx.decals.total })"},
+        {'clickOn': '#title .opt[data-k=begin]', 'taken': "G.state !== 'title'", 'retries': 5, 'every': 4000},
+        {'until': "G.scenes.current && G.scenes.current.id === 'diner' && !G.scenes.trans", 'timeout': 30000},
+        {'wait': 2000},
+        {'shot': 'c12_second_evening'},
+        {'eval': '__measure()'},
+        {'eval': "(async () => ({ benchFrameMs: (await N.bench({ frames: 30, k: 1 })).frame, size: N.pipeline.width + 'x' + N.pipeline.height }))()"},
+        {'heap': 'second_evening'},
+        {'expect': "G.stage.hoods.list.length === 0 && G.corpses.length === 0 && G.stage.cars.fires.length === 0", 'label': 'a second evening: no gunman, body or burning car left on the block'},
+        {'expect': "Object.values(G.stage.part('dinerFront').panes).every((p) => p.state !== 'gone') && G.save.inventory.length === 0 && G.music.current === 'jukebox_a'", 'label': 'a second evening: the glass whole, empty pockets, the first record'},
+        {'expect': "G.controller.mode === 'seated' && G.hands.set === 'smoke' && G.player.weapons.current !== 'tommy' || G.hands.set === 'smoke'", 'label': 'a second evening: on the stool, the smoke set'},
     ]
     play = {
         'about': '[R3] The whole game in one page session, by real input: the title, BEGIN, the nine chapters '

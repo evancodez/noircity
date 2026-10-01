@@ -1,0 +1,3300 @@
+{
+ "about": "[R3] CONTINUE from every save point the whole game writes (tools/lib/saves.py from a whole.json run): the save as written, a reload, CONTINUE by a real click, the beat up out of the black with what the story gave by then, three seconds of play. NOIR_PORT=5331 node tools/play.mjs tools/plays/saves.json",
+ "url": "/?mute=1",
+ "size": [
+  1280,
+  800
+ ],
+ "out": "shots/play/saves",
+ "steps": [
+  {
+   "until": "G.state === 'title'",
+   "timeout": 40000
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "name": "---- CONTINUE at diner.settle"
+  },
+  {
+   "eval": "(G.save.enabled = false, localStorage.setItem('noir.save', \"{\\\"v\\\": 1, \\\"scene\\\": \\\"diner\\\", \\\"beat\\\": \\\"settle\\\", \\\"flags\\\": {}, \\\"inventory\\\": []}\"), true)"
+  },
+  {
+   "reload": true
+  },
+  {
+   "until": "G.state === 'title' && !document.querySelector('#title .opt[data-k=continue]').classList.contains('hidden')",
+   "timeout": 40000
+  },
+  {
+   "wait": 1200
+  },
+  {
+   "clickOn": "#title .opt[data-k=continue]",
+   "taken": "G.state !== 'title'",
+   "retries": 5,
+   "every": 4000
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === \"diner\" && G.scenes.get(\"diner\").beats.indexOf(G.scenes.beat) >= G.scenes.get(\"diner\").beats.indexOf(\"settle\")",
+   "timeout": 30000
+  },
+  {
+   "until": "!G.scenes.trans",
+   "timeout": 15000
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "expect": "G.state === 'playing' && G.scenes.fadeK < 0.05 && document.pointerLockElement === N.renderer.domElement",
+   "label": "[00_diner_settle] out of the black, playing"
+  },
+  {
+   "expect": "JSON.stringify(G.save.inventory.slice().sort()) === \"[]\"",
+   "label": "[00_diner_settle] the inventory as saved"
+  },
+  {
+   "expect": "Object.entries({}).every(([k, v]) => JSON.stringify(G.save.flags[k]) === JSON.stringify(v))",
+   "label": "[00_diner_settle] the flags as saved"
+  },
+  {
+   "expect": "G.music.current === \"jukebox_a\"",
+   "label": "[00_diner_settle] the music jukebox_a"
+  },
+  {
+   "eval": "({ beat: G.scenes.beat, mode: G.controller.mode, hands: G.hands.set, weapon: G.player.weapons.current, music: G.music.current, prompt: G.hud.promptShown, say: G.hud.sayShown, fov: +N.camera.fov.toFixed(1), stage: G.stage.name, hp: G.health.hp })"
+  },
+  {
+   "shot": "k00_diner_settle"
+  },
+  {
+   "look": [
+    120,
+    0
+   ],
+   "steps": 6
+  },
+  {
+   "look": [
+    -120,
+    20
+   ],
+   "steps": 6
+  },
+  {
+   "key": "KeyW",
+   "hold": 500
+  },
+  {
+   "wait": 1000
+  },
+  {
+   "expect": "!document.getElementById('errlog').textContent.trim()",
+   "label": "[00_diner_settle] no errors"
+  },
+  {
+   "name": "---- CONTINUE at diner.order"
+  },
+  {
+   "eval": "(G.save.enabled = false, localStorage.setItem('noir.save', \"{\\\"v\\\": 1, \\\"scene\\\": \\\"diner\\\", \\\"beat\\\": \\\"order\\\", \\\"flags\\\": {}, \\\"inventory\\\": []}\"), true)"
+  },
+  {
+   "reload": true
+  },
+  {
+   "until": "G.state === 'title' && !document.querySelector('#title .opt[data-k=continue]').classList.contains('hidden')",
+   "timeout": 40000
+  },
+  {
+   "wait": 1200
+  },
+  {
+   "clickOn": "#title .opt[data-k=continue]",
+   "taken": "G.state !== 'title'",
+   "retries": 5,
+   "every": 4000
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === \"diner\" && G.scenes.get(\"diner\").beats.indexOf(G.scenes.beat) >= G.scenes.get(\"diner\").beats.indexOf(\"order\")",
+   "timeout": 30000
+  },
+  {
+   "until": "!G.scenes.trans",
+   "timeout": 15000
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "expect": "G.state === 'playing' && G.scenes.fadeK < 0.05 && document.pointerLockElement === N.renderer.domElement",
+   "label": "[01_diner_order] out of the black, playing"
+  },
+  {
+   "expect": "JSON.stringify(G.save.inventory.slice().sort()) === \"[]\"",
+   "label": "[01_diner_order] the inventory as saved"
+  },
+  {
+   "expect": "Object.entries({}).every(([k, v]) => JSON.stringify(G.save.flags[k]) === JSON.stringify(v))",
+   "label": "[01_diner_order] the flags as saved"
+  },
+  {
+   "expect": "G.music.current === \"jukebox_a\"",
+   "label": "[01_diner_order] the music jukebox_a"
+  },
+  {
+   "eval": "({ beat: G.scenes.beat, mode: G.controller.mode, hands: G.hands.set, weapon: G.player.weapons.current, music: G.music.current, prompt: G.hud.promptShown, say: G.hud.sayShown, fov: +N.camera.fov.toFixed(1), stage: G.stage.name, hp: G.health.hp })"
+  },
+  {
+   "shot": "k01_diner_order"
+  },
+  {
+   "look": [
+    120,
+    0
+   ],
+   "steps": 6
+  },
+  {
+   "look": [
+    -120,
+    20
+   ],
+   "steps": 6
+  },
+  {
+   "key": "KeyW",
+   "hold": 500
+  },
+  {
+   "wait": 1000
+  },
+  {
+   "expect": "!document.getElementById('errlog').textContent.trim()",
+   "label": "[01_diner_order] no errors"
+  },
+  {
+   "name": "---- CONTINUE at diner.drink"
+  },
+  {
+   "eval": "(G.save.enabled = false, localStorage.setItem('noir.save', \"{\\\"v\\\": 1, \\\"scene\\\": \\\"diner\\\", \\\"beat\\\": \\\"drink\\\", \\\"flags\\\": {}, \\\"inventory\\\": []}\"), true)"
+  },
+  {
+   "reload": true
+  },
+  {
+   "until": "G.state === 'title' && !document.querySelector('#title .opt[data-k=continue]').classList.contains('hidden')",
+   "timeout": 40000
+  },
+  {
+   "wait": 1200
+  },
+  {
+   "clickOn": "#title .opt[data-k=continue]",
+   "taken": "G.state !== 'title'",
+   "retries": 5,
+   "every": 4000
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === \"diner\" && G.scenes.get(\"diner\").beats.indexOf(G.scenes.beat) >= G.scenes.get(\"diner\").beats.indexOf(\"drink\")",
+   "timeout": 30000
+  },
+  {
+   "until": "!G.scenes.trans",
+   "timeout": 15000
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "expect": "G.state === 'playing' && G.scenes.fadeK < 0.05 && document.pointerLockElement === N.renderer.domElement",
+   "label": "[02_diner_drink] out of the black, playing"
+  },
+  {
+   "expect": "JSON.stringify(G.save.inventory.slice().sort()) === \"[]\"",
+   "label": "[02_diner_drink] the inventory as saved"
+  },
+  {
+   "expect": "Object.entries({}).every(([k, v]) => JSON.stringify(G.save.flags[k]) === JSON.stringify(v))",
+   "label": "[02_diner_drink] the flags as saved"
+  },
+  {
+   "expect": "G.music.current === \"jukebox_a\"",
+   "label": "[02_diner_drink] the music jukebox_a"
+  },
+  {
+   "eval": "({ beat: G.scenes.beat, mode: G.controller.mode, hands: G.hands.set, weapon: G.player.weapons.current, music: G.music.current, prompt: G.hud.promptShown, say: G.hud.sayShown, fov: +N.camera.fov.toFixed(1), stage: G.stage.name, hp: G.health.hp })"
+  },
+  {
+   "shot": "k02_diner_drink"
+  },
+  {
+   "look": [
+    120,
+    0
+   ],
+   "steps": 6
+  },
+  {
+   "look": [
+    -120,
+    20
+   ],
+   "steps": 6
+  },
+  {
+   "key": "KeyW",
+   "hold": 500
+  },
+  {
+   "wait": 1000
+  },
+  {
+   "expect": "!document.getElementById('errlog').textContent.trim()",
+   "label": "[02_diner_drink] no errors"
+  },
+  {
+   "name": "---- CONTINUE at diner.pay"
+  },
+  {
+   "eval": "(G.save.enabled = false, localStorage.setItem('noir.save', \"{\\\"v\\\": 1, \\\"scene\\\": \\\"diner\\\", \\\"beat\\\": \\\"pay\\\", \\\"flags\\\": {}, \\\"inventory\\\": []}\"), true)"
+  },
+  {
+   "reload": true
+  },
+  {
+   "until": "G.state === 'title' && !document.querySelector('#title .opt[data-k=continue]').classList.contains('hidden')",
+   "timeout": 40000
+  },
+  {
+   "wait": 1200
+  },
+  {
+   "clickOn": "#title .opt[data-k=continue]",
+   "taken": "G.state !== 'title'",
+   "retries": 5,
+   "every": 4000
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === \"diner\" && G.scenes.get(\"diner\").beats.indexOf(G.scenes.beat) >= G.scenes.get(\"diner\").beats.indexOf(\"pay\")",
+   "timeout": 30000
+  },
+  {
+   "until": "!G.scenes.trans",
+   "timeout": 15000
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "expect": "G.state === 'playing' && G.scenes.fadeK < 0.05 && document.pointerLockElement === N.renderer.domElement",
+   "label": "[03_diner_pay] out of the black, playing"
+  },
+  {
+   "expect": "JSON.stringify(G.save.inventory.slice().sort()) === \"[]\"",
+   "label": "[03_diner_pay] the inventory as saved"
+  },
+  {
+   "expect": "Object.entries({}).every(([k, v]) => JSON.stringify(G.save.flags[k]) === JSON.stringify(v))",
+   "label": "[03_diner_pay] the flags as saved"
+  },
+  {
+   "expect": "G.music.current === \"jukebox_a\"",
+   "label": "[03_diner_pay] the music jukebox_a"
+  },
+  {
+   "eval": "({ beat: G.scenes.beat, mode: G.controller.mode, hands: G.hands.set, weapon: G.player.weapons.current, music: G.music.current, prompt: G.hud.promptShown, say: G.hud.sayShown, fov: +N.camera.fov.toFixed(1), stage: G.stage.name, hp: G.health.hp })"
+  },
+  {
+   "shot": "k03_diner_pay"
+  },
+  {
+   "look": [
+    120,
+    0
+   ],
+   "steps": 6
+  },
+  {
+   "look": [
+    -120,
+    20
+   ],
+   "steps": 6
+  },
+  {
+   "key": "KeyW",
+   "hold": 500
+  },
+  {
+   "wait": 1000
+  },
+  {
+   "expect": "!document.getElementById('errlog').textContent.trim()",
+   "label": "[03_diner_pay] no errors"
+  },
+  {
+   "name": "---- CONTINUE at fight.start"
+  },
+  {
+   "eval": "(G.save.enabled = false, localStorage.setItem('noir.save', \"{\\\"v\\\": 1, \\\"scene\\\": \\\"fight\\\", \\\"beat\\\": \\\"start\\\", \\\"flags\\\": {}, \\\"inventory\\\": []}\"), true)"
+  },
+  {
+   "reload": true
+  },
+  {
+   "until": "G.state === 'title' && !document.querySelector('#title .opt[data-k=continue]').classList.contains('hidden')",
+   "timeout": 40000
+  },
+  {
+   "wait": 1200
+  },
+  {
+   "clickOn": "#title .opt[data-k=continue]",
+   "taken": "G.state !== 'title'",
+   "retries": 5,
+   "every": 4000
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === \"fight\" && G.scenes.get(\"fight\").beats.indexOf(G.scenes.beat) >= G.scenes.get(\"fight\").beats.indexOf(\"start\")",
+   "timeout": 30000
+  },
+  {
+   "until": "!G.scenes.trans",
+   "timeout": 15000
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "expect": "G.state === 'playing' && G.scenes.fadeK < 0.05 && document.pointerLockElement === N.renderer.domElement",
+   "label": "[04_fight_start] out of the black, playing"
+  },
+  {
+   "expect": "JSON.stringify(G.save.inventory.slice().sort()) === \"[]\"",
+   "label": "[04_fight_start] the inventory as saved"
+  },
+  {
+   "expect": "Object.entries({}).every(([k, v]) => JSON.stringify(G.save.flags[k]) === JSON.stringify(v))",
+   "label": "[04_fight_start] the flags as saved"
+  },
+  {
+   "eval": "({ beat: G.scenes.beat, mode: G.controller.mode, hands: G.hands.set, weapon: G.player.weapons.current, music: G.music.current, prompt: G.hud.promptShown, say: G.hud.sayShown, fov: +N.camera.fov.toFixed(1), stage: G.stage.name, hp: G.health.hp })"
+  },
+  {
+   "shot": "k04_fight_start"
+  },
+  {
+   "look": [
+    120,
+    0
+   ],
+   "steps": 6
+  },
+  {
+   "look": [
+    -120,
+    20
+   ],
+   "steps": 6
+  },
+  {
+   "key": "KeyW",
+   "hold": 500
+  },
+  {
+   "wait": 1000
+  },
+  {
+   "expect": "!document.getElementById('errlog').textContent.trim()",
+   "label": "[04_fight_start] no errors"
+  },
+  {
+   "name": "---- CONTINUE at fight.lesson"
+  },
+  {
+   "eval": "(G.save.enabled = false, localStorage.setItem('noir.save', \"{\\\"v\\\": 1, \\\"scene\\\": \\\"fight\\\", \\\"beat\\\": \\\"lesson\\\", \\\"flags\\\": {}, \\\"inventory\\\": []}\"), true)"
+  },
+  {
+   "reload": true
+  },
+  {
+   "until": "G.state === 'title' && !document.querySelector('#title .opt[data-k=continue]').classList.contains('hidden')",
+   "timeout": 40000
+  },
+  {
+   "wait": 1200
+  },
+  {
+   "clickOn": "#title .opt[data-k=continue]",
+   "taken": "G.state !== 'title'",
+   "retries": 5,
+   "every": 4000
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === \"fight\" && G.scenes.get(\"fight\").beats.indexOf(G.scenes.beat) >= G.scenes.get(\"fight\").beats.indexOf(\"lesson\")",
+   "timeout": 30000
+  },
+  {
+   "until": "!G.scenes.trans",
+   "timeout": 15000
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "expect": "G.state === 'playing' && G.scenes.fadeK < 0.05 && document.pointerLockElement === N.renderer.domElement",
+   "label": "[05_fight_lesson] out of the black, playing"
+  },
+  {
+   "expect": "JSON.stringify(G.save.inventory.slice().sort()) === \"[]\"",
+   "label": "[05_fight_lesson] the inventory as saved"
+  },
+  {
+   "expect": "Object.entries({}).every(([k, v]) => JSON.stringify(G.save.flags[k]) === JSON.stringify(v))",
+   "label": "[05_fight_lesson] the flags as saved"
+  },
+  {
+   "eval": "({ beat: G.scenes.beat, mode: G.controller.mode, hands: G.hands.set, weapon: G.player.weapons.current, music: G.music.current, prompt: G.hud.promptShown, say: G.hud.sayShown, fov: +N.camera.fov.toFixed(1), stage: G.stage.name, hp: G.health.hp })"
+  },
+  {
+   "shot": "k05_fight_lesson"
+  },
+  {
+   "look": [
+    120,
+    0
+   ],
+   "steps": 6
+  },
+  {
+   "look": [
+    -120,
+    20
+   ],
+   "steps": 6
+  },
+  {
+   "key": "KeyW",
+   "hold": 500
+  },
+  {
+   "wait": 1000
+  },
+  {
+   "expect": "!document.getElementById('errlog').textContent.trim()",
+   "label": "[05_fight_lesson] no errors"
+  },
+  {
+   "name": "---- CONTINUE at fight.round1"
+  },
+  {
+   "eval": "(G.save.enabled = false, localStorage.setItem('noir.save', \"{\\\"v\\\": 1, \\\"scene\\\": \\\"fight\\\", \\\"beat\\\": \\\"round1\\\", \\\"flags\\\": {}, \\\"inventory\\\": []}\"), true)"
+  },
+  {
+   "reload": true
+  },
+  {
+   "until": "G.state === 'title' && !document.querySelector('#title .opt[data-k=continue]').classList.contains('hidden')",
+   "timeout": 40000
+  },
+  {
+   "wait": 1200
+  },
+  {
+   "clickOn": "#title .opt[data-k=continue]",
+   "taken": "G.state !== 'title'",
+   "retries": 5,
+   "every": 4000
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === \"fight\" && G.scenes.get(\"fight\").beats.indexOf(G.scenes.beat) >= G.scenes.get(\"fight\").beats.indexOf(\"round1\")",
+   "timeout": 30000
+  },
+  {
+   "until": "!G.scenes.trans",
+   "timeout": 15000
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "expect": "G.state === 'playing' && G.scenes.fadeK < 0.05 && document.pointerLockElement === N.renderer.domElement",
+   "label": "[06_fight_round1] out of the black, playing"
+  },
+  {
+   "expect": "JSON.stringify(G.save.inventory.slice().sort()) === \"[]\"",
+   "label": "[06_fight_round1] the inventory as saved"
+  },
+  {
+   "expect": "Object.entries({}).every(([k, v]) => JSON.stringify(G.save.flags[k]) === JSON.stringify(v))",
+   "label": "[06_fight_round1] the flags as saved"
+  },
+  {
+   "eval": "({ beat: G.scenes.beat, mode: G.controller.mode, hands: G.hands.set, weapon: G.player.weapons.current, music: G.music.current, prompt: G.hud.promptShown, say: G.hud.sayShown, fov: +N.camera.fov.toFixed(1), stage: G.stage.name, hp: G.health.hp })"
+  },
+  {
+   "shot": "k06_fight_round1"
+  },
+  {
+   "look": [
+    120,
+    0
+   ],
+   "steps": 6
+  },
+  {
+   "look": [
+    -120,
+    20
+   ],
+   "steps": 6
+  },
+  {
+   "key": "KeyW",
+   "hold": 500
+  },
+  {
+   "wait": 1000
+  },
+  {
+   "expect": "!document.getElementById('errlog').textContent.trim()",
+   "label": "[06_fight_round1] no errors"
+  },
+  {
+   "name": "---- CONTINUE at fight.round2"
+  },
+  {
+   "eval": "(G.save.enabled = false, localStorage.setItem('noir.save', \"{\\\"v\\\": 1, \\\"scene\\\": \\\"fight\\\", \\\"beat\\\": \\\"round2\\\", \\\"flags\\\": {}, \\\"inventory\\\": []}\"), true)"
+  },
+  {
+   "reload": true
+  },
+  {
+   "until": "G.state === 'title' && !document.querySelector('#title .opt[data-k=continue]').classList.contains('hidden')",
+   "timeout": 40000
+  },
+  {
+   "wait": 1200
+  },
+  {
+   "clickOn": "#title .opt[data-k=continue]",
+   "taken": "G.state !== 'title'",
+   "retries": 5,
+   "every": 4000
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === \"fight\" && G.scenes.get(\"fight\").beats.indexOf(G.scenes.beat) >= G.scenes.get(\"fight\").beats.indexOf(\"round2\")",
+   "timeout": 30000
+  },
+  {
+   "until": "!G.scenes.trans",
+   "timeout": 15000
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "expect": "G.state === 'playing' && G.scenes.fadeK < 0.05 && document.pointerLockElement === N.renderer.domElement",
+   "label": "[07_fight_round2] out of the black, playing"
+  },
+  {
+   "expect": "JSON.stringify(G.save.inventory.slice().sort()) === \"[]\"",
+   "label": "[07_fight_round2] the inventory as saved"
+  },
+  {
+   "expect": "Object.entries({}).every(([k, v]) => JSON.stringify(G.save.flags[k]) === JSON.stringify(v))",
+   "label": "[07_fight_round2] the flags as saved"
+  },
+  {
+   "eval": "({ beat: G.scenes.beat, mode: G.controller.mode, hands: G.hands.set, weapon: G.player.weapons.current, music: G.music.current, prompt: G.hud.promptShown, say: G.hud.sayShown, fov: +N.camera.fov.toFixed(1), stage: G.stage.name, hp: G.health.hp })"
+  },
+  {
+   "shot": "k07_fight_round2"
+  },
+  {
+   "look": [
+    120,
+    0
+   ],
+   "steps": 6
+  },
+  {
+   "look": [
+    -120,
+    20
+   ],
+   "steps": 6
+  },
+  {
+   "key": "KeyW",
+   "hold": 500
+  },
+  {
+   "wait": 1000
+  },
+  {
+   "expect": "!document.getElementById('errlog').textContent.trim()",
+   "label": "[07_fight_round2] no errors"
+  },
+  {
+   "name": "---- CONTINUE at fight.round3"
+  },
+  {
+   "eval": "(G.save.enabled = false, localStorage.setItem('noir.save', \"{\\\"v\\\": 1, \\\"scene\\\": \\\"fight\\\", \\\"beat\\\": \\\"round3\\\", \\\"flags\\\": {}, \\\"inventory\\\": []}\"), true)"
+  },
+  {
+   "reload": true
+  },
+  {
+   "until": "G.state === 'title' && !document.querySelector('#title .opt[data-k=continue]').classList.contains('hidden')",
+   "timeout": 40000
+  },
+  {
+   "wait": 1200
+  },
+  {
+   "clickOn": "#title .opt[data-k=continue]",
+   "taken": "G.state !== 'title'",
+   "retries": 5,
+   "every": 4000
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === \"fight\" && G.scenes.get(\"fight\").beats.indexOf(G.scenes.beat) >= G.scenes.get(\"fight\").beats.indexOf(\"round3\")",
+   "timeout": 30000
+  },
+  {
+   "until": "!G.scenes.trans",
+   "timeout": 15000
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "expect": "G.state === 'playing' && G.scenes.fadeK < 0.05 && document.pointerLockElement === N.renderer.domElement",
+   "label": "[08_fight_round3] out of the black, playing"
+  },
+  {
+   "expect": "JSON.stringify(G.save.inventory.slice().sort()) === \"[]\"",
+   "label": "[08_fight_round3] the inventory as saved"
+  },
+  {
+   "expect": "Object.entries({}).every(([k, v]) => JSON.stringify(G.save.flags[k]) === JSON.stringify(v))",
+   "label": "[08_fight_round3] the flags as saved"
+  },
+  {
+   "eval": "({ beat: G.scenes.beat, mode: G.controller.mode, hands: G.hands.set, weapon: G.player.weapons.current, music: G.music.current, prompt: G.hud.promptShown, say: G.hud.sayShown, fov: +N.camera.fov.toFixed(1), stage: G.stage.name, hp: G.health.hp })"
+  },
+  {
+   "shot": "k08_fight_round3"
+  },
+  {
+   "look": [
+    120,
+    0
+   ],
+   "steps": 6
+  },
+  {
+   "look": [
+    -120,
+    20
+   ],
+   "steps": 6
+  },
+  {
+   "key": "KeyW",
+   "hold": 500
+  },
+  {
+   "wait": 1000
+  },
+  {
+   "expect": "!document.getElementById('errlog').textContent.trim()",
+   "label": "[08_fight_round3] no errors"
+  },
+  {
+   "name": "---- CONTINUE at fight.outside"
+  },
+  {
+   "eval": "(G.save.enabled = false, localStorage.setItem('noir.save', \"{\\\"v\\\": 1, \\\"scene\\\": \\\"fight\\\", \\\"beat\\\": \\\"outside\\\", \\\"flags\\\": {\\\"window\\\": \\\"B2\\\", \\\"won\\\": true}, \\\"inventory\\\": []}\"), true)"
+  },
+  {
+   "reload": true
+  },
+  {
+   "until": "G.state === 'title' && !document.querySelector('#title .opt[data-k=continue]').classList.contains('hidden')",
+   "timeout": 40000
+  },
+  {
+   "wait": 1200
+  },
+  {
+   "clickOn": "#title .opt[data-k=continue]",
+   "taken": "G.state !== 'title'",
+   "retries": 5,
+   "every": 4000
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === \"fight\" && G.scenes.get(\"fight\").beats.indexOf(G.scenes.beat) >= G.scenes.get(\"fight\").beats.indexOf(\"outside\")",
+   "timeout": 30000
+  },
+  {
+   "until": "!G.scenes.trans",
+   "timeout": 15000
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "expect": "G.state === 'playing' && G.scenes.fadeK < 0.05 && document.pointerLockElement === N.renderer.domElement",
+   "label": "[09_fight_outside] out of the black, playing"
+  },
+  {
+   "expect": "JSON.stringify(G.save.inventory.slice().sort()) === \"[]\"",
+   "label": "[09_fight_outside] the inventory as saved"
+  },
+  {
+   "expect": "Object.entries({\"window\": \"B2\", \"won\": true}).every(([k, v]) => JSON.stringify(G.save.flags[k]) === JSON.stringify(v))",
+   "label": "[09_fight_outside] the flags as saved"
+  },
+  {
+   "eval": "({ beat: G.scenes.beat, mode: G.controller.mode, hands: G.hands.set, weapon: G.player.weapons.current, music: G.music.current, prompt: G.hud.promptShown, say: G.hud.sayShown, fov: +N.camera.fov.toFixed(1), stage: G.stage.name, hp: G.health.hp })"
+  },
+  {
+   "shot": "k09_fight_outside"
+  },
+  {
+   "look": [
+    120,
+    0
+   ],
+   "steps": 6
+  },
+  {
+   "look": [
+    -120,
+    20
+   ],
+   "steps": 6
+  },
+  {
+   "key": "KeyW",
+   "hold": 500
+  },
+  {
+   "wait": 1000
+  },
+  {
+   "expect": "!document.getElementById('errlog').textContent.trim()",
+   "label": "[09_fight_outside] no errors"
+  },
+  {
+   "name": "---- CONTINUE at fight.matchbook"
+  },
+  {
+   "eval": "(G.save.enabled = false, localStorage.setItem('noir.save', \"{\\\"v\\\": 1, \\\"scene\\\": \\\"fight\\\", \\\"beat\\\": \\\"matchbook\\\", \\\"flags\\\": {\\\"window\\\": \\\"B2\\\", \\\"won\\\": true}, \\\"inventory\\\": [\\\"matchbook\\\"]}\"), true)"
+  },
+  {
+   "reload": true
+  },
+  {
+   "until": "G.state === 'title' && !document.querySelector('#title .opt[data-k=continue]').classList.contains('hidden')",
+   "timeout": 40000
+  },
+  {
+   "wait": 1200
+  },
+  {
+   "clickOn": "#title .opt[data-k=continue]",
+   "taken": "G.state !== 'title'",
+   "retries": 5,
+   "every": 4000
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === \"fight\" && G.scenes.get(\"fight\").beats.indexOf(G.scenes.beat) >= G.scenes.get(\"fight\").beats.indexOf(\"matchbook\")",
+   "timeout": 30000
+  },
+  {
+   "until": "!G.scenes.trans",
+   "timeout": 15000
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "expect": "G.state === 'playing' && G.scenes.fadeK < 0.05 && document.pointerLockElement === N.renderer.domElement",
+   "label": "[10_fight_matchbook] out of the black, playing"
+  },
+  {
+   "expect": "JSON.stringify(G.save.inventory.slice().sort()) === \"[\\\"matchbook\\\"]\"",
+   "label": "[10_fight_matchbook] the inventory as saved"
+  },
+  {
+   "expect": "Object.entries({\"window\": \"B2\", \"won\": true}).every(([k, v]) => JSON.stringify(G.save.flags[k]) === JSON.stringify(v))",
+   "label": "[10_fight_matchbook] the flags as saved"
+  },
+  {
+   "eval": "({ beat: G.scenes.beat, mode: G.controller.mode, hands: G.hands.set, weapon: G.player.weapons.current, music: G.music.current, prompt: G.hud.promptShown, say: G.hud.sayShown, fov: +N.camera.fov.toFixed(1), stage: G.stage.name, hp: G.health.hp })"
+  },
+  {
+   "shot": "k10_fight_matchbook"
+  },
+  {
+   "look": [
+    120,
+    0
+   ],
+   "steps": 6
+  },
+  {
+   "look": [
+    -120,
+    20
+   ],
+   "steps": 6
+  },
+  {
+   "key": "KeyW",
+   "hold": 500
+  },
+  {
+   "wait": 1000
+  },
+  {
+   "expect": "!document.getElementById('errlog').textContent.trim()",
+   "label": "[10_fight_matchbook] no errors"
+  },
+  {
+   "name": "---- CONTINUE at body.approach"
+  },
+  {
+   "eval": "(G.save.enabled = false, localStorage.setItem('noir.save', \"{\\\"v\\\": 1, \\\"scene\\\": \\\"body\\\", \\\"beat\\\": \\\"approach\\\", \\\"flags\\\": {\\\"window\\\": \\\"B2\\\", \\\"won\\\": true}, \\\"inventory\\\": [\\\"matchbook\\\"]}\"), true)"
+  },
+  {
+   "reload": true
+  },
+  {
+   "until": "G.state === 'title' && !document.querySelector('#title .opt[data-k=continue]').classList.contains('hidden')",
+   "timeout": 40000
+  },
+  {
+   "wait": 1200
+  },
+  {
+   "clickOn": "#title .opt[data-k=continue]",
+   "taken": "G.state !== 'title'",
+   "retries": 5,
+   "every": 4000
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === \"body\" && G.scenes.get(\"body\").beats.indexOf(G.scenes.beat) >= G.scenes.get(\"body\").beats.indexOf(\"approach\")",
+   "timeout": 30000
+  },
+  {
+   "until": "!G.scenes.trans",
+   "timeout": 15000
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "expect": "G.state === 'playing' && G.scenes.fadeK < 0.05 && document.pointerLockElement === N.renderer.domElement",
+   "label": "[11_body_approach] out of the black, playing"
+  },
+  {
+   "expect": "JSON.stringify(G.save.inventory.slice().sort()) === \"[\\\"matchbook\\\"]\"",
+   "label": "[11_body_approach] the inventory as saved"
+  },
+  {
+   "expect": "Object.entries({\"window\": \"B2\", \"won\": true}).every(([k, v]) => JSON.stringify(G.save.flags[k]) === JSON.stringify(v))",
+   "label": "[11_body_approach] the flags as saved"
+  },
+  {
+   "expect": "G.music.current === \"body\"",
+   "label": "[11_body_approach] the music body"
+  },
+  {
+   "eval": "({ beat: G.scenes.beat, mode: G.controller.mode, hands: G.hands.set, weapon: G.player.weapons.current, music: G.music.current, prompt: G.hud.promptShown, say: G.hud.sayShown, fov: +N.camera.fov.toFixed(1), stage: G.stage.name, hp: G.health.hp })"
+  },
+  {
+   "shot": "k11_body_approach"
+  },
+  {
+   "look": [
+    120,
+    0
+   ],
+   "steps": 6
+  },
+  {
+   "look": [
+    -120,
+    20
+   ],
+   "steps": 6
+  },
+  {
+   "key": "KeyW",
+   "hold": 500
+  },
+  {
+   "wait": 1000
+  },
+  {
+   "expect": "!document.getElementById('errlog').textContent.trim()",
+   "label": "[11_body_approach] no errors"
+  },
+  {
+   "name": "---- CONTINUE at body.body"
+  },
+  {
+   "eval": "(G.save.enabled = false, localStorage.setItem('noir.save', \"{\\\"v\\\": 1, \\\"scene\\\": \\\"body\\\", \\\"beat\\\": \\\"body\\\", \\\"flags\\\": {\\\"window\\\": \\\"B2\\\", \\\"won\\\": true}, \\\"inventory\\\": [\\\"matchbook\\\"]}\"), true)"
+  },
+  {
+   "reload": true
+  },
+  {
+   "until": "G.state === 'title' && !document.querySelector('#title .opt[data-k=continue]').classList.contains('hidden')",
+   "timeout": 40000
+  },
+  {
+   "wait": 1200
+  },
+  {
+   "clickOn": "#title .opt[data-k=continue]",
+   "taken": "G.state !== 'title'",
+   "retries": 5,
+   "every": 4000
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === \"body\" && G.scenes.get(\"body\").beats.indexOf(G.scenes.beat) >= G.scenes.get(\"body\").beats.indexOf(\"body\")",
+   "timeout": 30000
+  },
+  {
+   "until": "!G.scenes.trans",
+   "timeout": 15000
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "expect": "G.state === 'playing' && G.scenes.fadeK < 0.05 && document.pointerLockElement === N.renderer.domElement",
+   "label": "[12_body_body] out of the black, playing"
+  },
+  {
+   "expect": "JSON.stringify(G.save.inventory.slice().sort()) === \"[\\\"matchbook\\\"]\"",
+   "label": "[12_body_body] the inventory as saved"
+  },
+  {
+   "expect": "Object.entries({\"window\": \"B2\", \"won\": true}).every(([k, v]) => JSON.stringify(G.save.flags[k]) === JSON.stringify(v))",
+   "label": "[12_body_body] the flags as saved"
+  },
+  {
+   "expect": "G.music.current === \"body\"",
+   "label": "[12_body_body] the music body"
+  },
+  {
+   "eval": "({ beat: G.scenes.beat, mode: G.controller.mode, hands: G.hands.set, weapon: G.player.weapons.current, music: G.music.current, prompt: G.hud.promptShown, say: G.hud.sayShown, fov: +N.camera.fov.toFixed(1), stage: G.stage.name, hp: G.health.hp })"
+  },
+  {
+   "shot": "k12_body_body"
+  },
+  {
+   "look": [
+    120,
+    0
+   ],
+   "steps": 6
+  },
+  {
+   "look": [
+    -120,
+    20
+   ],
+   "steps": 6
+  },
+  {
+   "key": "KeyW",
+   "hold": 500
+  },
+  {
+   "wait": 1000
+  },
+  {
+   "expect": "!document.getElementById('errlog').textContent.trim()",
+   "label": "[12_body_body] no errors"
+  },
+  {
+   "name": "---- CONTINUE at body.landing"
+  },
+  {
+   "eval": "(G.save.enabled = false, localStorage.setItem('noir.save', \"{\\\"v\\\": 1, \\\"scene\\\": \\\"body\\\", \\\"beat\\\": \\\"landing\\\", \\\"flags\\\": {\\\"window\\\": \\\"B2\\\", \\\"won\\\": true}, \\\"inventory\\\": [\\\"matchbook\\\"]}\"), true)"
+  },
+  {
+   "reload": true
+  },
+  {
+   "until": "G.state === 'title' && !document.querySelector('#title .opt[data-k=continue]').classList.contains('hidden')",
+   "timeout": 40000
+  },
+  {
+   "wait": 1200
+  },
+  {
+   "clickOn": "#title .opt[data-k=continue]",
+   "taken": "G.state !== 'title'",
+   "retries": 5,
+   "every": 4000
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === \"body\" && G.scenes.get(\"body\").beats.indexOf(G.scenes.beat) >= G.scenes.get(\"body\").beats.indexOf(\"landing\")",
+   "timeout": 30000
+  },
+  {
+   "until": "!G.scenes.trans",
+   "timeout": 15000
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "expect": "G.state === 'playing' && G.scenes.fadeK < 0.05 && document.pointerLockElement === N.renderer.domElement",
+   "label": "[13_body_landing] out of the black, playing"
+  },
+  {
+   "expect": "JSON.stringify(G.save.inventory.slice().sort()) === \"[\\\"matchbook\\\"]\"",
+   "label": "[13_body_landing] the inventory as saved"
+  },
+  {
+   "expect": "Object.entries({\"window\": \"B2\", \"won\": true}).every(([k, v]) => JSON.stringify(G.save.flags[k]) === JSON.stringify(v))",
+   "label": "[13_body_landing] the flags as saved"
+  },
+  {
+   "expect": "G.music.current === \"body\"",
+   "label": "[13_body_landing] the music body"
+  },
+  {
+   "eval": "({ beat: G.scenes.beat, mode: G.controller.mode, hands: G.hands.set, weapon: G.player.weapons.current, music: G.music.current, prompt: G.hud.promptShown, say: G.hud.sayShown, fov: +N.camera.fov.toFixed(1), stage: G.stage.name, hp: G.health.hp })"
+  },
+  {
+   "shot": "k13_body_landing"
+  },
+  {
+   "look": [
+    120,
+    0
+   ],
+   "steps": 6
+  },
+  {
+   "look": [
+    -120,
+    20
+   ],
+   "steps": 6
+  },
+  {
+   "key": "KeyW",
+   "hold": 500
+  },
+  {
+   "wait": 1000
+  },
+  {
+   "expect": "!document.getElementById('errlog').textContent.trim()",
+   "label": "[13_body_landing] no errors"
+  },
+  {
+   "name": "---- CONTINUE at body.note"
+  },
+  {
+   "eval": "(G.save.enabled = false, localStorage.setItem('noir.save', \"{\\\"v\\\": 1, \\\"scene\\\": \\\"body\\\", \\\"beat\\\": \\\"note\\\", \\\"flags\\\": {\\\"window\\\": \\\"B2\\\", \\\"won\\\": true}, \\\"inventory\\\": [\\\"matchbook\\\", \\\"matchbookHalf\\\"]}\"), true)"
+  },
+  {
+   "reload": true
+  },
+  {
+   "until": "G.state === 'title' && !document.querySelector('#title .opt[data-k=continue]').classList.contains('hidden')",
+   "timeout": 40000
+  },
+  {
+   "wait": 1200
+  },
+  {
+   "clickOn": "#title .opt[data-k=continue]",
+   "taken": "G.state !== 'title'",
+   "retries": 5,
+   "every": 4000
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === \"body\" && G.scenes.get(\"body\").beats.indexOf(G.scenes.beat) >= G.scenes.get(\"body\").beats.indexOf(\"note\")",
+   "timeout": 30000
+  },
+  {
+   "until": "!G.scenes.trans",
+   "timeout": 15000
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "expect": "G.state === 'playing' && G.scenes.fadeK < 0.05 && document.pointerLockElement === N.renderer.domElement",
+   "label": "[14_body_note] out of the black, playing"
+  },
+  {
+   "expect": "JSON.stringify(G.save.inventory.slice().sort()) === \"[\\\"matchbook\\\", \\\"matchbookHalf\\\"]\"",
+   "label": "[14_body_note] the inventory as saved"
+  },
+  {
+   "expect": "Object.entries({\"window\": \"B2\", \"won\": true}).every(([k, v]) => JSON.stringify(G.save.flags[k]) === JSON.stringify(v))",
+   "label": "[14_body_note] the flags as saved"
+  },
+  {
+   "expect": "G.music.current === \"body\"",
+   "label": "[14_body_note] the music body"
+  },
+  {
+   "eval": "({ beat: G.scenes.beat, mode: G.controller.mode, hands: G.hands.set, weapon: G.player.weapons.current, music: G.music.current, prompt: G.hud.promptShown, say: G.hud.sayShown, fov: +N.camera.fov.toFixed(1), stage: G.stage.name, hp: G.health.hp })"
+  },
+  {
+   "shot": "k14_body_note"
+  },
+  {
+   "look": [
+    120,
+    0
+   ],
+   "steps": 6
+  },
+  {
+   "look": [
+    -120,
+    20
+   ],
+   "steps": 6
+  },
+  {
+   "key": "KeyW",
+   "hold": 500
+  },
+  {
+   "wait": 1000
+  },
+  {
+   "expect": "!document.getElementById('errlog').textContent.trim()",
+   "label": "[14_body_note] no errors"
+  },
+  {
+   "name": "---- CONTINUE at office.corridor"
+  },
+  {
+   "eval": "(G.save.enabled = false, localStorage.setItem('noir.save', \"{\\\"v\\\": 1, \\\"scene\\\": \\\"office\\\", \\\"beat\\\": \\\"corridor\\\", \\\"flags\\\": {\\\"window\\\": \\\"B2\\\", \\\"won\\\": true, \\\"note\\\": \\\"HARBOR BLDG. RM 304\\\"}, \\\"inventory\\\": [\\\"matchbook\\\", \\\"matchbookHalf\\\", \\\"note\\\"]}\"), true)"
+  },
+  {
+   "reload": true
+  },
+  {
+   "until": "G.state === 'title' && !document.querySelector('#title .opt[data-k=continue]').classList.contains('hidden')",
+   "timeout": 40000
+  },
+  {
+   "wait": 1200
+  },
+  {
+   "clickOn": "#title .opt[data-k=continue]",
+   "taken": "G.state !== 'title'",
+   "retries": 5,
+   "every": 4000
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === \"office\" && G.scenes.get(\"office\").beats.indexOf(G.scenes.beat) >= G.scenes.get(\"office\").beats.indexOf(\"corridor\")",
+   "timeout": 30000
+  },
+  {
+   "until": "!G.scenes.trans",
+   "timeout": 15000
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "expect": "G.state === 'playing' && G.scenes.fadeK < 0.05 && document.pointerLockElement === N.renderer.domElement",
+   "label": "[15_office_corridor] out of the black, playing"
+  },
+  {
+   "expect": "JSON.stringify(G.save.inventory.slice().sort()) === \"[\\\"matchbook\\\", \\\"matchbookHalf\\\", \\\"note\\\"]\"",
+   "label": "[15_office_corridor] the inventory as saved"
+  },
+  {
+   "expect": "Object.entries({\"window\": \"B2\", \"won\": true, \"note\": \"HARBOR BLDG. RM 304\"}).every(([k, v]) => JSON.stringify(G.save.flags[k]) === JSON.stringify(v))",
+   "label": "[15_office_corridor] the flags as saved"
+  },
+  {
+   "expect": "G.music.current === \"office\"",
+   "label": "[15_office_corridor] the music office"
+  },
+  {
+   "eval": "({ beat: G.scenes.beat, mode: G.controller.mode, hands: G.hands.set, weapon: G.player.weapons.current, music: G.music.current, prompt: G.hud.promptShown, say: G.hud.sayShown, fov: +N.camera.fov.toFixed(1), stage: G.stage.name, hp: G.health.hp })"
+  },
+  {
+   "shot": "k15_office_corridor"
+  },
+  {
+   "look": [
+    120,
+    0
+   ],
+   "steps": 6
+  },
+  {
+   "look": [
+    -120,
+    20
+   ],
+   "steps": 6
+  },
+  {
+   "key": "KeyW",
+   "hold": 500
+  },
+  {
+   "wait": 1000
+  },
+  {
+   "expect": "!document.getElementById('errlog').textContent.trim()",
+   "label": "[15_office_corridor] no errors"
+  },
+  {
+   "name": "---- CONTINUE at office.room"
+  },
+  {
+   "eval": "(G.save.enabled = false, localStorage.setItem('noir.save', \"{\\\"v\\\": 1, \\\"scene\\\": \\\"office\\\", \\\"beat\\\": \\\"room\\\", \\\"flags\\\": {\\\"window\\\": \\\"B2\\\", \\\"won\\\": true, \\\"note\\\": \\\"HARBOR BLDG. RM 304\\\"}, \\\"inventory\\\": [\\\"matchbook\\\", \\\"matchbookHalf\\\", \\\"note\\\"]}\"), true)"
+  },
+  {
+   "reload": true
+  },
+  {
+   "until": "G.state === 'title' && !document.querySelector('#title .opt[data-k=continue]').classList.contains('hidden')",
+   "timeout": 40000
+  },
+  {
+   "wait": 1200
+  },
+  {
+   "clickOn": "#title .opt[data-k=continue]",
+   "taken": "G.state !== 'title'",
+   "retries": 5,
+   "every": 4000
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === \"office\" && G.scenes.get(\"office\").beats.indexOf(G.scenes.beat) >= G.scenes.get(\"office\").beats.indexOf(\"room\")",
+   "timeout": 30000
+  },
+  {
+   "until": "!G.scenes.trans",
+   "timeout": 15000
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "expect": "G.state === 'playing' && G.scenes.fadeK < 0.05 && document.pointerLockElement === N.renderer.domElement",
+   "label": "[16_office_room] out of the black, playing"
+  },
+  {
+   "expect": "JSON.stringify(G.save.inventory.slice().sort()) === \"[\\\"matchbook\\\", \\\"matchbookHalf\\\", \\\"note\\\"]\"",
+   "label": "[16_office_room] the inventory as saved"
+  },
+  {
+   "expect": "Object.entries({\"window\": \"B2\", \"won\": true, \"note\": \"HARBOR BLDG. RM 304\"}).every(([k, v]) => JSON.stringify(G.save.flags[k]) === JSON.stringify(v))",
+   "label": "[16_office_room] the flags as saved"
+  },
+  {
+   "expect": "G.music.current === \"office\"",
+   "label": "[16_office_room] the music office"
+  },
+  {
+   "eval": "({ beat: G.scenes.beat, mode: G.controller.mode, hands: G.hands.set, weapon: G.player.weapons.current, music: G.music.current, prompt: G.hud.promptShown, say: G.hud.sayShown, fov: +N.camera.fov.toFixed(1), stage: G.stage.name, hp: G.health.hp })"
+  },
+  {
+   "shot": "k16_office_room"
+  },
+  {
+   "look": [
+    120,
+    0
+   ],
+   "steps": 6
+  },
+  {
+   "look": [
+    -120,
+    20
+   ],
+   "steps": 6
+  },
+  {
+   "key": "KeyW",
+   "hold": 500
+  },
+  {
+   "wait": 1000
+  },
+  {
+   "expect": "!document.getElementById('errlog').textContent.trim()",
+   "label": "[16_office_room] no errors"
+  },
+  {
+   "name": "---- CONTINUE at office.pad"
+  },
+  {
+   "eval": "(G.save.enabled = false, localStorage.setItem('noir.save', \"{\\\"v\\\": 1, \\\"scene\\\": \\\"office\\\", \\\"beat\\\": \\\"pad\\\", \\\"flags\\\": {\\\"window\\\": \\\"B2\\\", \\\"won\\\": true, \\\"note\\\": \\\"HARBOR BLDG. RM 304\\\"}, \\\"inventory\\\": [\\\"matchbook\\\", \\\"matchbookHalf\\\", \\\"note\\\"]}\"), true)"
+  },
+  {
+   "reload": true
+  },
+  {
+   "until": "G.state === 'title' && !document.querySelector('#title .opt[data-k=continue]').classList.contains('hidden')",
+   "timeout": 40000
+  },
+  {
+   "wait": 1200
+  },
+  {
+   "clickOn": "#title .opt[data-k=continue]",
+   "taken": "G.state !== 'title'",
+   "retries": 5,
+   "every": 4000
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === \"office\" && G.scenes.get(\"office\").beats.indexOf(G.scenes.beat) >= G.scenes.get(\"office\").beats.indexOf(\"pad\")",
+   "timeout": 30000
+  },
+  {
+   "until": "!G.scenes.trans",
+   "timeout": 15000
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "expect": "G.state === 'playing' && G.scenes.fadeK < 0.05 && document.pointerLockElement === N.renderer.domElement",
+   "label": "[17_office_pad] out of the black, playing"
+  },
+  {
+   "expect": "JSON.stringify(G.save.inventory.slice().sort()) === \"[\\\"matchbook\\\", \\\"matchbookHalf\\\", \\\"note\\\"]\"",
+   "label": "[17_office_pad] the inventory as saved"
+  },
+  {
+   "expect": "Object.entries({\"window\": \"B2\", \"won\": true, \"note\": \"HARBOR BLDG. RM 304\"}).every(([k, v]) => JSON.stringify(G.save.flags[k]) === JSON.stringify(v))",
+   "label": "[17_office_pad] the flags as saved"
+  },
+  {
+   "expect": "G.music.current === \"office\"",
+   "label": "[17_office_pad] the music office"
+  },
+  {
+   "eval": "({ beat: G.scenes.beat, mode: G.controller.mode, hands: G.hands.set, weapon: G.player.weapons.current, music: G.music.current, prompt: G.hud.promptShown, say: G.hud.sayShown, fov: +N.camera.fov.toFixed(1), stage: G.stage.name, hp: G.health.hp })"
+  },
+  {
+   "shot": "k17_office_pad"
+  },
+  {
+   "look": [
+    120,
+    0
+   ],
+   "steps": 6
+  },
+  {
+   "look": [
+    -120,
+    20
+   ],
+   "steps": 6
+  },
+  {
+   "key": "KeyW",
+   "hold": 500
+  },
+  {
+   "wait": 1000
+  },
+  {
+   "expect": "!document.getElementById('errlog').textContent.trim()",
+   "label": "[17_office_pad] no errors"
+  },
+  {
+   "name": "---- CONTINUE at office.safe"
+  },
+  {
+   "eval": "(G.save.enabled = false, localStorage.setItem('noir.save', \"{\\\"v\\\": 1, \\\"scene\\\": \\\"office\\\", \\\"beat\\\": \\\"safe\\\", \\\"flags\\\": {\\\"window\\\": \\\"B2\\\", \\\"won\\\": true, \\\"note\\\": \\\"HARBOR BLDG. RM 304\\\"}, \\\"inventory\\\": [\\\"matchbook\\\", \\\"matchbookHalf\\\", \\\"note\\\"]}\"), true)"
+  },
+  {
+   "reload": true
+  },
+  {
+   "until": "G.state === 'title' && !document.querySelector('#title .opt[data-k=continue]').classList.contains('hidden')",
+   "timeout": 40000
+  },
+  {
+   "wait": 1200
+  },
+  {
+   "clickOn": "#title .opt[data-k=continue]",
+   "taken": "G.state !== 'title'",
+   "retries": 5,
+   "every": 4000
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === \"office\" && G.scenes.get(\"office\").beats.indexOf(G.scenes.beat) >= G.scenes.get(\"office\").beats.indexOf(\"safe\")",
+   "timeout": 30000
+  },
+  {
+   "until": "!G.scenes.trans",
+   "timeout": 15000
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "expect": "G.state === 'playing' && G.scenes.fadeK < 0.05 && document.pointerLockElement === N.renderer.domElement",
+   "label": "[18_office_safe] out of the black, playing"
+  },
+  {
+   "expect": "JSON.stringify(G.save.inventory.slice().sort()) === \"[\\\"matchbook\\\", \\\"matchbookHalf\\\", \\\"note\\\"]\"",
+   "label": "[18_office_safe] the inventory as saved"
+  },
+  {
+   "expect": "Object.entries({\"window\": \"B2\", \"won\": true, \"note\": \"HARBOR BLDG. RM 304\"}).every(([k, v]) => JSON.stringify(G.save.flags[k]) === JSON.stringify(v))",
+   "label": "[18_office_safe] the flags as saved"
+  },
+  {
+   "expect": "G.music.current === \"office\"",
+   "label": "[18_office_safe] the music office"
+  },
+  {
+   "eval": "({ beat: G.scenes.beat, mode: G.controller.mode, hands: G.hands.set, weapon: G.player.weapons.current, music: G.music.current, prompt: G.hud.promptShown, say: G.hud.sayShown, fov: +N.camera.fov.toFixed(1), stage: G.stage.name, hp: G.health.hp })"
+  },
+  {
+   "shot": "k18_office_safe"
+  },
+  {
+   "look": [
+    120,
+    0
+   ],
+   "steps": 6
+  },
+  {
+   "look": [
+    -120,
+    20
+   ],
+   "steps": 6
+  },
+  {
+   "key": "KeyW",
+   "hold": 500
+  },
+  {
+   "wait": 1000
+  },
+  {
+   "expect": "!document.getElementById('errlog').textContent.trim()",
+   "label": "[18_office_safe] no errors"
+  },
+  {
+   "name": "---- CONTINUE at office.ledger"
+  },
+  {
+   "eval": "(G.save.enabled = false, localStorage.setItem('noir.save', \"{\\\"v\\\": 1, \\\"scene\\\": \\\"office\\\", \\\"beat\\\": \\\"ledger\\\", \\\"flags\\\": {\\\"window\\\": \\\"B2\\\", \\\"won\\\": true, \\\"note\\\": \\\"HARBOR BLDG. RM 304\\\"}, \\\"inventory\\\": [\\\"matchbook\\\", \\\"matchbookHalf\\\", \\\"note\\\"]}\"), true)"
+  },
+  {
+   "reload": true
+  },
+  {
+   "until": "G.state === 'title' && !document.querySelector('#title .opt[data-k=continue]').classList.contains('hidden')",
+   "timeout": 40000
+  },
+  {
+   "wait": 1200
+  },
+  {
+   "clickOn": "#title .opt[data-k=continue]",
+   "taken": "G.state !== 'title'",
+   "retries": 5,
+   "every": 4000
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === \"office\" && G.scenes.get(\"office\").beats.indexOf(G.scenes.beat) >= G.scenes.get(\"office\").beats.indexOf(\"ledger\")",
+   "timeout": 30000
+  },
+  {
+   "until": "!G.scenes.trans",
+   "timeout": 15000
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "expect": "G.state === 'playing' && G.scenes.fadeK < 0.05 && document.pointerLockElement === N.renderer.domElement",
+   "label": "[19_office_ledger] out of the black, playing"
+  },
+  {
+   "expect": "JSON.stringify(G.save.inventory.slice().sort()) === \"[\\\"matchbook\\\", \\\"matchbookHalf\\\", \\\"note\\\"]\"",
+   "label": "[19_office_ledger] the inventory as saved"
+  },
+  {
+   "expect": "Object.entries({\"window\": \"B2\", \"won\": true, \"note\": \"HARBOR BLDG. RM 304\"}).every(([k, v]) => JSON.stringify(G.save.flags[k]) === JSON.stringify(v))",
+   "label": "[19_office_ledger] the flags as saved"
+  },
+  {
+   "expect": "G.music.current === \"office\"",
+   "label": "[19_office_ledger] the music office"
+  },
+  {
+   "eval": "({ beat: G.scenes.beat, mode: G.controller.mode, hands: G.hands.set, weapon: G.player.weapons.current, music: G.music.current, prompt: G.hud.promptShown, say: G.hud.sayShown, fov: +N.camera.fov.toFixed(1), stage: G.stage.name, hp: G.health.hp })"
+  },
+  {
+   "shot": "k19_office_ledger"
+  },
+  {
+   "look": [
+    120,
+    0
+   ],
+   "steps": 6
+  },
+  {
+   "look": [
+    -120,
+    20
+   ],
+   "steps": 6
+  },
+  {
+   "key": "KeyW",
+   "hold": 500
+  },
+  {
+   "wait": 1000
+  },
+  {
+   "expect": "!document.getElementById('errlog').textContent.trim()",
+   "label": "[19_office_ledger] no errors"
+  },
+  {
+   "name": "---- CONTINUE at gunfight.shadows"
+  },
+  {
+   "eval": "(G.save.enabled = false, localStorage.setItem('noir.save', \"{\\\"v\\\": 1, \\\"scene\\\": \\\"gunfight\\\", \\\"beat\\\": \\\"shadows\\\", \\\"flags\\\": {\\\"window\\\": \\\"B2\\\", \\\"won\\\": true, \\\"note\\\": \\\"HARBOR BLDG. RM 304\\\"}, \\\"inventory\\\": [\\\"matchbook\\\", \\\"matchbookHalf\\\", \\\"note\\\", \\\"ledger\\\"]}\"), true)"
+  },
+  {
+   "reload": true
+  },
+  {
+   "until": "G.state === 'title' && !document.querySelector('#title .opt[data-k=continue]').classList.contains('hidden')",
+   "timeout": 40000
+  },
+  {
+   "wait": 1200
+  },
+  {
+   "clickOn": "#title .opt[data-k=continue]",
+   "taken": "G.state !== 'title'",
+   "retries": 5,
+   "every": 4000
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === \"gunfight\" && G.scenes.get(\"gunfight\").beats.indexOf(G.scenes.beat) >= G.scenes.get(\"gunfight\").beats.indexOf(\"shadows\")",
+   "timeout": 30000
+  },
+  {
+   "until": "!G.scenes.trans",
+   "timeout": 15000
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "expect": "G.state === 'playing' && G.scenes.fadeK < 0.05 && document.pointerLockElement === N.renderer.domElement",
+   "label": "[20_gunfight_shadows] out of the black, playing"
+  },
+  {
+   "expect": "JSON.stringify(G.save.inventory.slice().sort()) === \"[\\\"ledger\\\", \\\"matchbook\\\", \\\"matchbookHalf\\\", \\\"note\\\"]\"",
+   "label": "[20_gunfight_shadows] the inventory as saved"
+  },
+  {
+   "expect": "Object.entries({\"window\": \"B2\", \"won\": true, \"note\": \"HARBOR BLDG. RM 304\"}).every(([k, v]) => JSON.stringify(G.save.flags[k]) === JSON.stringify(v))",
+   "label": "[20_gunfight_shadows] the flags as saved"
+  },
+  {
+   "eval": "'music: ' + G.music.current"
+  },
+  {
+   "eval": "({ beat: G.scenes.beat, mode: G.controller.mode, hands: G.hands.set, weapon: G.player.weapons.current, music: G.music.current, prompt: G.hud.promptShown, say: G.hud.sayShown, fov: +N.camera.fov.toFixed(1), stage: G.stage.name, hp: G.health.hp })"
+  },
+  {
+   "shot": "k20_gunfight_shadows"
+  },
+  {
+   "look": [
+    120,
+    0
+   ],
+   "steps": 6
+  },
+  {
+   "look": [
+    -120,
+    20
+   ],
+   "steps": 6
+  },
+  {
+   "key": "KeyW",
+   "hold": 500
+  },
+  {
+   "wait": 1000
+  },
+  {
+   "expect": "!document.getElementById('errlog').textContent.trim()",
+   "label": "[20_gunfight_shadows] no errors"
+  },
+  {
+   "name": "---- CONTINUE at watcher.seen"
+  },
+  {
+   "eval": "(G.save.enabled = false, localStorage.setItem('noir.save', \"{\\\"v\\\": 1, \\\"scene\\\": \\\"watcher\\\", \\\"beat\\\": \\\"seen\\\", \\\"flags\\\": {\\\"window\\\": \\\"B2\\\", \\\"won\\\": true, \\\"note\\\": \\\"HARBOR BLDG. RM 304\\\"}, \\\"inventory\\\": [\\\"matchbook\\\", \\\"matchbookHalf\\\", \\\"note\\\", \\\"ledger\\\", \\\"revolver\\\"]}\"), true)"
+  },
+  {
+   "reload": true
+  },
+  {
+   "until": "G.state === 'title' && !document.querySelector('#title .opt[data-k=continue]').classList.contains('hidden')",
+   "timeout": 40000
+  },
+  {
+   "wait": 1200
+  },
+  {
+   "clickOn": "#title .opt[data-k=continue]",
+   "taken": "G.state !== 'title'",
+   "retries": 5,
+   "every": 4000
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === \"watcher\" && G.scenes.get(\"watcher\").beats.indexOf(G.scenes.beat) >= G.scenes.get(\"watcher\").beats.indexOf(\"seen\")",
+   "timeout": 30000
+  },
+  {
+   "until": "!G.scenes.trans",
+   "timeout": 15000
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "expect": "G.state === 'playing' && G.scenes.fadeK < 0.05 && document.pointerLockElement === N.renderer.domElement",
+   "label": "[21_watcher_seen] out of the black, playing"
+  },
+  {
+   "expect": "JSON.stringify(G.save.inventory.slice().sort()) === \"[\\\"ledger\\\", \\\"matchbook\\\", \\\"matchbookHalf\\\", \\\"note\\\", \\\"revolver\\\"]\"",
+   "label": "[21_watcher_seen] the inventory as saved"
+  },
+  {
+   "expect": "Object.entries({\"window\": \"B2\", \"won\": true, \"note\": \"HARBOR BLDG. RM 304\"}).every(([k, v]) => JSON.stringify(G.save.flags[k]) === JSON.stringify(v))",
+   "label": "[21_watcher_seen] the flags as saved"
+  },
+  {
+   "eval": "({ beat: G.scenes.beat, mode: G.controller.mode, hands: G.hands.set, weapon: G.player.weapons.current, music: G.music.current, prompt: G.hud.promptShown, say: G.hud.sayShown, fov: +N.camera.fov.toFixed(1), stage: G.stage.name, hp: G.health.hp })"
+  },
+  {
+   "shot": "k21_watcher_seen"
+  },
+  {
+   "look": [
+    120,
+    0
+   ],
+   "steps": 6
+  },
+  {
+   "look": [
+    -120,
+    20
+   ],
+   "steps": 6
+  },
+  {
+   "key": "KeyW",
+   "hold": 500
+  },
+  {
+   "wait": 1000
+  },
+  {
+   "expect": "!document.getElementById('errlog').textContent.trim()",
+   "label": "[21_watcher_seen] no errors"
+  },
+  {
+   "name": "---- CONTINUE at watcher.escape"
+  },
+  {
+   "eval": "(G.save.enabled = false, localStorage.setItem('noir.save', \"{\\\"v\\\": 1, \\\"scene\\\": \\\"watcher\\\", \\\"beat\\\": \\\"escape\\\", \\\"flags\\\": {\\\"window\\\": \\\"B2\\\", \\\"won\\\": true, \\\"note\\\": \\\"HARBOR BLDG. RM 304\\\"}, \\\"inventory\\\": [\\\"matchbook\\\", \\\"matchbookHalf\\\", \\\"note\\\", \\\"ledger\\\", \\\"revolver\\\"]}\"), true)"
+  },
+  {
+   "reload": true
+  },
+  {
+   "until": "G.state === 'title' && !document.querySelector('#title .opt[data-k=continue]').classList.contains('hidden')",
+   "timeout": 40000
+  },
+  {
+   "wait": 1200
+  },
+  {
+   "clickOn": "#title .opt[data-k=continue]",
+   "taken": "G.state !== 'title'",
+   "retries": 5,
+   "every": 4000
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === \"watcher\" && G.scenes.get(\"watcher\").beats.indexOf(G.scenes.beat) >= G.scenes.get(\"watcher\").beats.indexOf(\"escape\")",
+   "timeout": 30000
+  },
+  {
+   "until": "!G.scenes.trans",
+   "timeout": 15000
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "expect": "G.state === 'playing' && G.scenes.fadeK < 0.05 && document.pointerLockElement === N.renderer.domElement",
+   "label": "[22_watcher_escape] out of the black, playing"
+  },
+  {
+   "expect": "JSON.stringify(G.save.inventory.slice().sort()) === \"[\\\"ledger\\\", \\\"matchbook\\\", \\\"matchbookHalf\\\", \\\"note\\\", \\\"revolver\\\"]\"",
+   "label": "[22_watcher_escape] the inventory as saved"
+  },
+  {
+   "expect": "Object.entries({\"window\": \"B2\", \"won\": true, \"note\": \"HARBOR BLDG. RM 304\"}).every(([k, v]) => JSON.stringify(G.save.flags[k]) === JSON.stringify(v))",
+   "label": "[22_watcher_escape] the flags as saved"
+  },
+  {
+   "eval": "({ beat: G.scenes.beat, mode: G.controller.mode, hands: G.hands.set, weapon: G.player.weapons.current, music: G.music.current, prompt: G.hud.promptShown, say: G.hud.sayShown, fov: +N.camera.fov.toFixed(1), stage: G.stage.name, hp: G.health.hp })"
+  },
+  {
+   "shot": "k22_watcher_escape"
+  },
+  {
+   "look": [
+    120,
+    0
+   ],
+   "steps": 6
+  },
+  {
+   "look": [
+    -120,
+    20
+   ],
+   "steps": 6
+  },
+  {
+   "key": "KeyW",
+   "hold": 500
+  },
+  {
+   "wait": 1000
+  },
+  {
+   "expect": "!document.getElementById('errlog').textContent.trim()",
+   "label": "[22_watcher_escape] no errors"
+  },
+  {
+   "name": "---- CONTINUE at watcher.run"
+  },
+  {
+   "eval": "(G.save.enabled = false, localStorage.setItem('noir.save', \"{\\\"v\\\": 1, \\\"scene\\\": \\\"watcher\\\", \\\"beat\\\": \\\"run\\\", \\\"flags\\\": {\\\"window\\\": \\\"B2\\\", \\\"won\\\": true, \\\"note\\\": \\\"HARBOR BLDG. RM 304\\\"}, \\\"inventory\\\": [\\\"matchbook\\\", \\\"matchbookHalf\\\", \\\"note\\\", \\\"ledger\\\", \\\"revolver\\\"]}\"), true)"
+  },
+  {
+   "reload": true
+  },
+  {
+   "until": "G.state === 'title' && !document.querySelector('#title .opt[data-k=continue]').classList.contains('hidden')",
+   "timeout": 40000
+  },
+  {
+   "wait": 1200
+  },
+  {
+   "clickOn": "#title .opt[data-k=continue]",
+   "taken": "G.state !== 'title'",
+   "retries": 5,
+   "every": 4000
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === \"watcher\" && G.scenes.get(\"watcher\").beats.indexOf(G.scenes.beat) >= G.scenes.get(\"watcher\").beats.indexOf(\"run\")",
+   "timeout": 30000
+  },
+  {
+   "until": "!G.scenes.trans",
+   "timeout": 15000
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "expect": "G.state === 'playing' && G.scenes.fadeK < 0.05 && document.pointerLockElement === N.renderer.domElement",
+   "label": "[23_watcher_run] out of the black, playing"
+  },
+  {
+   "expect": "JSON.stringify(G.save.inventory.slice().sort()) === \"[\\\"ledger\\\", \\\"matchbook\\\", \\\"matchbookHalf\\\", \\\"note\\\", \\\"revolver\\\"]\"",
+   "label": "[23_watcher_run] the inventory as saved"
+  },
+  {
+   "expect": "Object.entries({\"window\": \"B2\", \"won\": true, \"note\": \"HARBOR BLDG. RM 304\"}).every(([k, v]) => JSON.stringify(G.save.flags[k]) === JSON.stringify(v))",
+   "label": "[23_watcher_run] the flags as saved"
+  },
+  {
+   "eval": "({ beat: G.scenes.beat, mode: G.controller.mode, hands: G.hands.set, weapon: G.player.weapons.current, music: G.music.current, prompt: G.hud.promptShown, say: G.hud.sayShown, fov: +N.camera.fov.toFixed(1), stage: G.stage.name, hp: G.health.hp })"
+  },
+  {
+   "shot": "k23_watcher_run"
+  },
+  {
+   "look": [
+    120,
+    0
+   ],
+   "steps": 6
+  },
+  {
+   "look": [
+    -120,
+    20
+   ],
+   "steps": 6
+  },
+  {
+   "key": "KeyW",
+   "hold": 500
+  },
+  {
+   "wait": 1000
+  },
+  {
+   "expect": "!document.getElementById('errlog').textContent.trim()",
+   "label": "[23_watcher_run] no errors"
+  },
+  {
+   "name": "---- CONTINUE at watcher.car"
+  },
+  {
+   "eval": "(G.save.enabled = false, localStorage.setItem('noir.save', \"{\\\"v\\\": 1, \\\"scene\\\": \\\"watcher\\\", \\\"beat\\\": \\\"car\\\", \\\"flags\\\": {\\\"window\\\": \\\"B2\\\", \\\"won\\\": true, \\\"note\\\": \\\"HARBOR BLDG. RM 304\\\"}, \\\"inventory\\\": [\\\"matchbook\\\", \\\"matchbookHalf\\\", \\\"note\\\", \\\"ledger\\\", \\\"revolver\\\"]}\"), true)"
+  },
+  {
+   "reload": true
+  },
+  {
+   "until": "G.state === 'title' && !document.querySelector('#title .opt[data-k=continue]').classList.contains('hidden')",
+   "timeout": 40000
+  },
+  {
+   "wait": 1200
+  },
+  {
+   "clickOn": "#title .opt[data-k=continue]",
+   "taken": "G.state !== 'title'",
+   "retries": 5,
+   "every": 4000
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === \"watcher\" && G.scenes.get(\"watcher\").beats.indexOf(G.scenes.beat) >= G.scenes.get(\"watcher\").beats.indexOf(\"car\")",
+   "timeout": 30000
+  },
+  {
+   "until": "!G.scenes.trans",
+   "timeout": 15000
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "expect": "G.state === 'playing' && G.scenes.fadeK < 0.05 && document.pointerLockElement === N.renderer.domElement",
+   "label": "[24_watcher_car] out of the black, playing"
+  },
+  {
+   "expect": "JSON.stringify(G.save.inventory.slice().sort()) === \"[\\\"ledger\\\", \\\"matchbook\\\", \\\"matchbookHalf\\\", \\\"note\\\", \\\"revolver\\\"]\"",
+   "label": "[24_watcher_car] the inventory as saved"
+  },
+  {
+   "expect": "Object.entries({\"window\": \"B2\", \"won\": true, \"note\": \"HARBOR BLDG. RM 304\"}).every(([k, v]) => JSON.stringify(G.save.flags[k]) === JSON.stringify(v))",
+   "label": "[24_watcher_car] the flags as saved"
+  },
+  {
+   "eval": "({ beat: G.scenes.beat, mode: G.controller.mode, hands: G.hands.set, weapon: G.player.weapons.current, music: G.music.current, prompt: G.hud.promptShown, say: G.hud.sayShown, fov: +N.camera.fov.toFixed(1), stage: G.stage.name, hp: G.health.hp })"
+  },
+  {
+   "shot": "k24_watcher_car"
+  },
+  {
+   "look": [
+    120,
+    0
+   ],
+   "steps": 6
+  },
+  {
+   "look": [
+    -120,
+    20
+   ],
+   "steps": 6
+  },
+  {
+   "key": "KeyW",
+   "hold": 500
+  },
+  {
+   "wait": 1000
+  },
+  {
+   "expect": "!document.getElementById('errlog').textContent.trim()",
+   "label": "[24_watcher_car] no errors"
+  },
+  {
+   "name": "---- CONTINUE at tail.start"
+  },
+  {
+   "eval": "(G.save.enabled = false, localStorage.setItem('noir.save', \"{\\\"v\\\": 1, \\\"scene\\\": \\\"tail\\\", \\\"beat\\\": \\\"start\\\", \\\"flags\\\": {\\\"window\\\": \\\"B2\\\", \\\"won\\\": true, \\\"note\\\": \\\"HARBOR BLDG. RM 304\\\"}, \\\"inventory\\\": [\\\"matchbook\\\", \\\"matchbookHalf\\\", \\\"note\\\", \\\"ledger\\\", \\\"revolver\\\"]}\"), true)"
+  },
+  {
+   "reload": true
+  },
+  {
+   "until": "G.state === 'title' && !document.querySelector('#title .opt[data-k=continue]').classList.contains('hidden')",
+   "timeout": 40000
+  },
+  {
+   "wait": 1200
+  },
+  {
+   "clickOn": "#title .opt[data-k=continue]",
+   "taken": "G.state !== 'title'",
+   "retries": 5,
+   "every": 4000
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === \"tail\" && G.scenes.get(\"tail\").beats.indexOf(G.scenes.beat) >= G.scenes.get(\"tail\").beats.indexOf(\"start\")",
+   "timeout": 30000
+  },
+  {
+   "until": "!G.scenes.trans",
+   "timeout": 15000
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "expect": "G.state === 'playing' && G.scenes.fadeK < 0.05 && document.pointerLockElement === N.renderer.domElement",
+   "label": "[25_tail_start] out of the black, playing"
+  },
+  {
+   "expect": "JSON.stringify(G.save.inventory.slice().sort()) === \"[\\\"ledger\\\", \\\"matchbook\\\", \\\"matchbookHalf\\\", \\\"note\\\", \\\"revolver\\\"]\"",
+   "label": "[25_tail_start] the inventory as saved"
+  },
+  {
+   "expect": "Object.entries({\"window\": \"B2\", \"won\": true, \"note\": \"HARBOR BLDG. RM 304\"}).every(([k, v]) => JSON.stringify(G.save.flags[k]) === JSON.stringify(v))",
+   "label": "[25_tail_start] the flags as saved"
+  },
+  {
+   "expect": "G.music.current === \"tail\"",
+   "label": "[25_tail_start] the music tail"
+  },
+  {
+   "eval": "({ beat: G.scenes.beat, mode: G.controller.mode, hands: G.hands.set, weapon: G.player.weapons.current, music: G.music.current, prompt: G.hud.promptShown, say: G.hud.sayShown, fov: +N.camera.fov.toFixed(1), stage: G.stage.name, hp: G.health.hp })"
+  },
+  {
+   "shot": "k25_tail_start"
+  },
+  {
+   "look": [
+    120,
+    0
+   ],
+   "steps": 6
+  },
+  {
+   "look": [
+    -120,
+    20
+   ],
+   "steps": 6
+  },
+  {
+   "key": "KeyW",
+   "hold": 500
+  },
+  {
+   "wait": 1000
+  },
+  {
+   "expect": "!document.getElementById('errlog').textContent.trim()",
+   "label": "[25_tail_start] no errors"
+  },
+  {
+   "name": "---- CONTINUE at tail.chase"
+  },
+  {
+   "eval": "(G.save.enabled = false, localStorage.setItem('noir.save', \"{\\\"v\\\": 1, \\\"scene\\\": \\\"tail\\\", \\\"beat\\\": \\\"chase\\\", \\\"flags\\\": {\\\"window\\\": \\\"B2\\\", \\\"won\\\": true, \\\"note\\\": \\\"HARBOR BLDG. RM 304\\\"}, \\\"inventory\\\": [\\\"matchbook\\\", \\\"matchbookHalf\\\", \\\"note\\\", \\\"ledger\\\", \\\"revolver\\\"]}\"), true)"
+  },
+  {
+   "reload": true
+  },
+  {
+   "until": "G.state === 'title' && !document.querySelector('#title .opt[data-k=continue]').classList.contains('hidden')",
+   "timeout": 40000
+  },
+  {
+   "wait": 1200
+  },
+  {
+   "clickOn": "#title .opt[data-k=continue]",
+   "taken": "G.state !== 'title'",
+   "retries": 5,
+   "every": 4000
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === \"tail\" && G.scenes.get(\"tail\").beats.indexOf(G.scenes.beat) >= G.scenes.get(\"tail\").beats.indexOf(\"chase\")",
+   "timeout": 30000
+  },
+  {
+   "until": "!G.scenes.trans",
+   "timeout": 15000
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "expect": "G.state === 'playing' && G.scenes.fadeK < 0.05 && document.pointerLockElement === N.renderer.domElement",
+   "label": "[26_tail_chase] out of the black, playing"
+  },
+  {
+   "expect": "JSON.stringify(G.save.inventory.slice().sort()) === \"[\\\"ledger\\\", \\\"matchbook\\\", \\\"matchbookHalf\\\", \\\"note\\\", \\\"revolver\\\"]\"",
+   "label": "[26_tail_chase] the inventory as saved"
+  },
+  {
+   "expect": "Object.entries({\"window\": \"B2\", \"won\": true, \"note\": \"HARBOR BLDG. RM 304\"}).every(([k, v]) => JSON.stringify(G.save.flags[k]) === JSON.stringify(v))",
+   "label": "[26_tail_chase] the flags as saved"
+  },
+  {
+   "expect": "G.music.current === \"tail\"",
+   "label": "[26_tail_chase] the music tail"
+  },
+  {
+   "eval": "({ beat: G.scenes.beat, mode: G.controller.mode, hands: G.hands.set, weapon: G.player.weapons.current, music: G.music.current, prompt: G.hud.promptShown, say: G.hud.sayShown, fov: +N.camera.fov.toFixed(1), stage: G.stage.name, hp: G.health.hp })"
+  },
+  {
+   "shot": "k26_tail_chase"
+  },
+  {
+   "look": [
+    120,
+    0
+   ],
+   "steps": 6
+  },
+  {
+   "look": [
+    -120,
+    20
+   ],
+   "steps": 6
+  },
+  {
+   "key": "KeyW",
+   "hold": 500
+  },
+  {
+   "wait": 1000
+  },
+  {
+   "expect": "!document.getElementById('errlog').textContent.trim()",
+   "label": "[26_tail_chase] no errors"
+  },
+  {
+   "name": "---- CONTINUE at tail.close"
+  },
+  {
+   "eval": "(G.save.enabled = false, localStorage.setItem('noir.save', \"{\\\"v\\\": 1, \\\"scene\\\": \\\"tail\\\", \\\"beat\\\": \\\"close\\\", \\\"flags\\\": {\\\"window\\\": \\\"B2\\\", \\\"won\\\": true, \\\"note\\\": \\\"HARBOR BLDG. RM 304\\\"}, \\\"inventory\\\": [\\\"matchbook\\\", \\\"matchbookHalf\\\", \\\"note\\\", \\\"ledger\\\", \\\"revolver\\\"]}\"), true)"
+  },
+  {
+   "reload": true
+  },
+  {
+   "until": "G.state === 'title' && !document.querySelector('#title .opt[data-k=continue]').classList.contains('hidden')",
+   "timeout": 40000
+  },
+  {
+   "wait": 1200
+  },
+  {
+   "clickOn": "#title .opt[data-k=continue]",
+   "taken": "G.state !== 'title'",
+   "retries": 5,
+   "every": 4000
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === \"tail\" && G.scenes.get(\"tail\").beats.indexOf(G.scenes.beat) >= G.scenes.get(\"tail\").beats.indexOf(\"close\")",
+   "timeout": 30000
+  },
+  {
+   "until": "!G.scenes.trans",
+   "timeout": 15000
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "expect": "G.state === 'playing' && G.scenes.fadeK < 0.05 && document.pointerLockElement === N.renderer.domElement",
+   "label": "[27_tail_close] out of the black, playing"
+  },
+  {
+   "expect": "JSON.stringify(G.save.inventory.slice().sort()) === \"[\\\"ledger\\\", \\\"matchbook\\\", \\\"matchbookHalf\\\", \\\"note\\\", \\\"revolver\\\"]\"",
+   "label": "[27_tail_close] the inventory as saved"
+  },
+  {
+   "expect": "Object.entries({\"window\": \"B2\", \"won\": true, \"note\": \"HARBOR BLDG. RM 304\"}).every(([k, v]) => JSON.stringify(G.save.flags[k]) === JSON.stringify(v))",
+   "label": "[27_tail_close] the flags as saved"
+  },
+  {
+   "expect": "G.music.current === \"tail\"",
+   "label": "[27_tail_close] the music tail"
+  },
+  {
+   "eval": "({ beat: G.scenes.beat, mode: G.controller.mode, hands: G.hands.set, weapon: G.player.weapons.current, music: G.music.current, prompt: G.hud.promptShown, say: G.hud.sayShown, fov: +N.camera.fov.toFixed(1), stage: G.stage.name, hp: G.health.hp })"
+  },
+  {
+   "shot": "k27_tail_close"
+  },
+  {
+   "look": [
+    120,
+    0
+   ],
+   "steps": 6
+  },
+  {
+   "look": [
+    -120,
+    20
+   ],
+   "steps": 6
+  },
+  {
+   "key": "KeyW",
+   "hold": 500
+  },
+  {
+   "wait": 1000
+  },
+  {
+   "expect": "!document.getElementById('errlog').textContent.trim()",
+   "label": "[27_tail_close] no errors"
+  },
+  {
+   "name": "---- CONTINUE at warehouse.arrive"
+  },
+  {
+   "eval": "(G.save.enabled = false, localStorage.setItem('noir.save', \"{\\\"v\\\": 1, \\\"scene\\\": \\\"warehouse\\\", \\\"beat\\\": \\\"arrive\\\", \\\"flags\\\": {\\\"window\\\": \\\"B2\\\", \\\"won\\\": true, \\\"note\\\": \\\"HARBOR BLDG. RM 304\\\", \\\"b6taught\\\": {}}, \\\"inventory\\\": [\\\"matchbook\\\", \\\"matchbookHalf\\\", \\\"note\\\", \\\"ledger\\\", \\\"revolver\\\"]}\"), true)"
+  },
+  {
+   "reload": true
+  },
+  {
+   "until": "G.state === 'title' && !document.querySelector('#title .opt[data-k=continue]').classList.contains('hidden')",
+   "timeout": 40000
+  },
+  {
+   "wait": 1200
+  },
+  {
+   "clickOn": "#title .opt[data-k=continue]",
+   "taken": "G.state !== 'title'",
+   "retries": 5,
+   "every": 4000
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === \"warehouse\" && G.scenes.get(\"warehouse\").beats.indexOf(G.scenes.beat) >= G.scenes.get(\"warehouse\").beats.indexOf(\"arrive\")",
+   "timeout": 30000
+  },
+  {
+   "until": "!G.scenes.trans",
+   "timeout": 15000
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "expect": "G.state === 'playing' && G.scenes.fadeK < 0.05 && document.pointerLockElement === N.renderer.domElement",
+   "label": "[28_warehouse_arrive] out of the black, playing"
+  },
+  {
+   "expect": "JSON.stringify(G.save.inventory.slice().sort()) === \"[\\\"ledger\\\", \\\"matchbook\\\", \\\"matchbookHalf\\\", \\\"note\\\", \\\"revolver\\\"]\"",
+   "label": "[28_warehouse_arrive] the inventory as saved"
+  },
+  {
+   "expect": "Object.entries({\"window\": \"B2\", \"won\": true, \"note\": \"HARBOR BLDG. RM 304\", \"b6taught\": {}}).every(([k, v]) => JSON.stringify(G.save.flags[k]) === JSON.stringify(v))",
+   "label": "[28_warehouse_arrive] the flags as saved"
+  },
+  {
+   "eval": "({ beat: G.scenes.beat, mode: G.controller.mode, hands: G.hands.set, weapon: G.player.weapons.current, music: G.music.current, prompt: G.hud.promptShown, say: G.hud.sayShown, fov: +N.camera.fov.toFixed(1), stage: G.stage.name, hp: G.health.hp })"
+  },
+  {
+   "shot": "k28_warehouse_arrive"
+  },
+  {
+   "look": [
+    120,
+    0
+   ],
+   "steps": 6
+  },
+  {
+   "look": [
+    -120,
+    20
+   ],
+   "steps": 6
+  },
+  {
+   "key": "KeyW",
+   "hold": 500
+  },
+  {
+   "wait": 1000
+  },
+  {
+   "expect": "!document.getElementById('errlog').textContent.trim()",
+   "label": "[28_warehouse_arrive] no errors"
+  },
+  {
+   "name": "---- CONTINUE at warehouse.floor"
+  },
+  {
+   "eval": "(G.save.enabled = false, localStorage.setItem('noir.save', \"{\\\"v\\\": 1, \\\"scene\\\": \\\"warehouse\\\", \\\"beat\\\": \\\"floor\\\", \\\"flags\\\": {\\\"window\\\": \\\"B2\\\", \\\"won\\\": true, \\\"note\\\": \\\"HARBOR BLDG. RM 304\\\", \\\"b6taught\\\": {}}, \\\"inventory\\\": [\\\"matchbook\\\", \\\"matchbookHalf\\\", \\\"note\\\", \\\"ledger\\\", \\\"revolver\\\"]}\"), true)"
+  },
+  {
+   "reload": true
+  },
+  {
+   "until": "G.state === 'title' && !document.querySelector('#title .opt[data-k=continue]').classList.contains('hidden')",
+   "timeout": 40000
+  },
+  {
+   "wait": 1200
+  },
+  {
+   "clickOn": "#title .opt[data-k=continue]",
+   "taken": "G.state !== 'title'",
+   "retries": 5,
+   "every": 4000
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === \"warehouse\" && G.scenes.get(\"warehouse\").beats.indexOf(G.scenes.beat) >= G.scenes.get(\"warehouse\").beats.indexOf(\"floor\")",
+   "timeout": 30000
+  },
+  {
+   "until": "!G.scenes.trans",
+   "timeout": 15000
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "expect": "G.state === 'playing' && G.scenes.fadeK < 0.05 && document.pointerLockElement === N.renderer.domElement",
+   "label": "[29_warehouse_floor] out of the black, playing"
+  },
+  {
+   "expect": "JSON.stringify(G.save.inventory.slice().sort()) === \"[\\\"ledger\\\", \\\"matchbook\\\", \\\"matchbookHalf\\\", \\\"note\\\", \\\"revolver\\\"]\"",
+   "label": "[29_warehouse_floor] the inventory as saved"
+  },
+  {
+   "expect": "Object.entries({\"window\": \"B2\", \"won\": true, \"note\": \"HARBOR BLDG. RM 304\", \"b6taught\": {}}).every(([k, v]) => JSON.stringify(G.save.flags[k]) === JSON.stringify(v))",
+   "label": "[29_warehouse_floor] the flags as saved"
+  },
+  {
+   "eval": "({ beat: G.scenes.beat, mode: G.controller.mode, hands: G.hands.set, weapon: G.player.weapons.current, music: G.music.current, prompt: G.hud.promptShown, say: G.hud.sayShown, fov: +N.camera.fov.toFixed(1), stage: G.stage.name, hp: G.health.hp })"
+  },
+  {
+   "shot": "k29_warehouse_floor"
+  },
+  {
+   "look": [
+    120,
+    0
+   ],
+   "steps": 6
+  },
+  {
+   "look": [
+    -120,
+    20
+   ],
+   "steps": 6
+  },
+  {
+   "key": "KeyW",
+   "hold": 500
+  },
+  {
+   "wait": 1000
+  },
+  {
+   "expect": "!document.getElementById('errlog').textContent.trim()",
+   "label": "[29_warehouse_floor] no errors"
+  },
+  {
+   "name": "---- CONTINUE at warehouse.lamps"
+  },
+  {
+   "eval": "(G.save.enabled = false, localStorage.setItem('noir.save', \"{\\\"v\\\": 1, \\\"scene\\\": \\\"warehouse\\\", \\\"beat\\\": \\\"lamps\\\", \\\"flags\\\": {\\\"window\\\": \\\"B2\\\", \\\"won\\\": true, \\\"note\\\": \\\"HARBOR BLDG. RM 304\\\", \\\"b6taught\\\": {\\\"crouch\\\": true}}, \\\"inventory\\\": [\\\"matchbook\\\", \\\"matchbookHalf\\\", \\\"note\\\", \\\"ledger\\\", \\\"revolver\\\"]}\"), true)"
+  },
+  {
+   "reload": true
+  },
+  {
+   "until": "G.state === 'title' && !document.querySelector('#title .opt[data-k=continue]').classList.contains('hidden')",
+   "timeout": 40000
+  },
+  {
+   "wait": 1200
+  },
+  {
+   "clickOn": "#title .opt[data-k=continue]",
+   "taken": "G.state !== 'title'",
+   "retries": 5,
+   "every": 4000
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === \"warehouse\" && G.scenes.get(\"warehouse\").beats.indexOf(G.scenes.beat) >= G.scenes.get(\"warehouse\").beats.indexOf(\"lamps\")",
+   "timeout": 30000
+  },
+  {
+   "until": "!G.scenes.trans",
+   "timeout": 15000
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "expect": "G.state === 'playing' && G.scenes.fadeK < 0.05 && document.pointerLockElement === N.renderer.domElement",
+   "label": "[30_warehouse_lamps] out of the black, playing"
+  },
+  {
+   "expect": "JSON.stringify(G.save.inventory.slice().sort()) === \"[\\\"ledger\\\", \\\"matchbook\\\", \\\"matchbookHalf\\\", \\\"note\\\", \\\"revolver\\\"]\"",
+   "label": "[30_warehouse_lamps] the inventory as saved"
+  },
+  {
+   "expect": "Object.entries({\"window\": \"B2\", \"won\": true, \"note\": \"HARBOR BLDG. RM 304\", \"b6taught\": {\"crouch\": true}}).every(([k, v]) => JSON.stringify(G.save.flags[k]) === JSON.stringify(v))",
+   "label": "[30_warehouse_lamps] the flags as saved"
+  },
+  {
+   "eval": "({ beat: G.scenes.beat, mode: G.controller.mode, hands: G.hands.set, weapon: G.player.weapons.current, music: G.music.current, prompt: G.hud.promptShown, say: G.hud.sayShown, fov: +N.camera.fov.toFixed(1), stage: G.stage.name, hp: G.health.hp })"
+  },
+  {
+   "shot": "k30_warehouse_lamps"
+  },
+  {
+   "look": [
+    120,
+    0
+   ],
+   "steps": 6
+  },
+  {
+   "look": [
+    -120,
+    20
+   ],
+   "steps": 6
+  },
+  {
+   "key": "KeyW",
+   "hold": 500
+  },
+  {
+   "wait": 1000
+  },
+  {
+   "expect": "!document.getElementById('errlog').textContent.trim()",
+   "label": "[30_warehouse_lamps] no errors"
+  },
+  {
+   "name": "---- CONTINUE at warehouse.aisle"
+  },
+  {
+   "eval": "(G.save.enabled = false, localStorage.setItem('noir.save', \"{\\\"v\\\": 1, \\\"scene\\\": \\\"warehouse\\\", \\\"beat\\\": \\\"aisle\\\", \\\"flags\\\": {\\\"window\\\": \\\"B2\\\", \\\"won\\\": true, \\\"note\\\": \\\"HARBOR BLDG. RM 304\\\", \\\"b6taught\\\": {\\\"crouch\\\": true}}, \\\"inventory\\\": [\\\"matchbook\\\", \\\"matchbookHalf\\\", \\\"note\\\", \\\"ledger\\\", \\\"revolver\\\"]}\"), true)"
+  },
+  {
+   "reload": true
+  },
+  {
+   "until": "G.state === 'title' && !document.querySelector('#title .opt[data-k=continue]').classList.contains('hidden')",
+   "timeout": 40000
+  },
+  {
+   "wait": 1200
+  },
+  {
+   "clickOn": "#title .opt[data-k=continue]",
+   "taken": "G.state !== 'title'",
+   "retries": 5,
+   "every": 4000
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === \"warehouse\" && G.scenes.get(\"warehouse\").beats.indexOf(G.scenes.beat) >= G.scenes.get(\"warehouse\").beats.indexOf(\"aisle\")",
+   "timeout": 30000
+  },
+  {
+   "until": "!G.scenes.trans",
+   "timeout": 15000
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "expect": "G.state === 'playing' && G.scenes.fadeK < 0.05 && document.pointerLockElement === N.renderer.domElement",
+   "label": "[31_warehouse_aisle] out of the black, playing"
+  },
+  {
+   "expect": "JSON.stringify(G.save.inventory.slice().sort()) === \"[\\\"ledger\\\", \\\"matchbook\\\", \\\"matchbookHalf\\\", \\\"note\\\", \\\"revolver\\\"]\"",
+   "label": "[31_warehouse_aisle] the inventory as saved"
+  },
+  {
+   "expect": "Object.entries({\"window\": \"B2\", \"won\": true, \"note\": \"HARBOR BLDG. RM 304\", \"b6taught\": {\"crouch\": true}}).every(([k, v]) => JSON.stringify(G.save.flags[k]) === JSON.stringify(v))",
+   "label": "[31_warehouse_aisle] the flags as saved"
+  },
+  {
+   "eval": "({ beat: G.scenes.beat, mode: G.controller.mode, hands: G.hands.set, weapon: G.player.weapons.current, music: G.music.current, prompt: G.hud.promptShown, say: G.hud.sayShown, fov: +N.camera.fov.toFixed(1), stage: G.stage.name, hp: G.health.hp })"
+  },
+  {
+   "shot": "k31_warehouse_aisle"
+  },
+  {
+   "look": [
+    120,
+    0
+   ],
+   "steps": 6
+  },
+  {
+   "look": [
+    -120,
+    20
+   ],
+   "steps": 6
+  },
+  {
+   "key": "KeyW",
+   "hold": 500
+  },
+  {
+   "wait": 1000
+  },
+  {
+   "expect": "!document.getElementById('errlog').textContent.trim()",
+   "label": "[31_warehouse_aisle] no errors"
+  },
+  {
+   "name": "---- CONTINUE at warehouse.stairs"
+  },
+  {
+   "eval": "(G.save.enabled = false, localStorage.setItem('noir.save', \"{\\\"v\\\": 1, \\\"scene\\\": \\\"warehouse\\\", \\\"beat\\\": \\\"stairs\\\", \\\"flags\\\": {\\\"window\\\": \\\"B2\\\", \\\"won\\\": true, \\\"note\\\": \\\"HARBOR BLDG. RM 304\\\", \\\"b6taught\\\": {\\\"crouch\\\": true}}, \\\"inventory\\\": [\\\"matchbook\\\", \\\"matchbookHalf\\\", \\\"note\\\", \\\"ledger\\\", \\\"revolver\\\"]}\"), true)"
+  },
+  {
+   "reload": true
+  },
+  {
+   "until": "G.state === 'title' && !document.querySelector('#title .opt[data-k=continue]').classList.contains('hidden')",
+   "timeout": 40000
+  },
+  {
+   "wait": 1200
+  },
+  {
+   "clickOn": "#title .opt[data-k=continue]",
+   "taken": "G.state !== 'title'",
+   "retries": 5,
+   "every": 4000
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === \"warehouse\" && G.scenes.get(\"warehouse\").beats.indexOf(G.scenes.beat) >= G.scenes.get(\"warehouse\").beats.indexOf(\"stairs\")",
+   "timeout": 30000
+  },
+  {
+   "until": "!G.scenes.trans",
+   "timeout": 15000
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "expect": "G.state === 'playing' && G.scenes.fadeK < 0.05 && document.pointerLockElement === N.renderer.domElement",
+   "label": "[32_warehouse_stairs] out of the black, playing"
+  },
+  {
+   "expect": "JSON.stringify(G.save.inventory.slice().sort()) === \"[\\\"ledger\\\", \\\"matchbook\\\", \\\"matchbookHalf\\\", \\\"note\\\", \\\"revolver\\\"]\"",
+   "label": "[32_warehouse_stairs] the inventory as saved"
+  },
+  {
+   "expect": "Object.entries({\"window\": \"B2\", \"won\": true, \"note\": \"HARBOR BLDG. RM 304\", \"b6taught\": {\"crouch\": true}}).every(([k, v]) => JSON.stringify(G.save.flags[k]) === JSON.stringify(v))",
+   "label": "[32_warehouse_stairs] the flags as saved"
+  },
+  {
+   "eval": "({ beat: G.scenes.beat, mode: G.controller.mode, hands: G.hands.set, weapon: G.player.weapons.current, music: G.music.current, prompt: G.hud.promptShown, say: G.hud.sayShown, fov: +N.camera.fov.toFixed(1), stage: G.stage.name, hp: G.health.hp })"
+  },
+  {
+   "shot": "k32_warehouse_stairs"
+  },
+  {
+   "look": [
+    120,
+    0
+   ],
+   "steps": 6
+  },
+  {
+   "look": [
+    -120,
+    20
+   ],
+   "steps": 6
+  },
+  {
+   "key": "KeyW",
+   "hold": 500
+  },
+  {
+   "wait": 1000
+  },
+  {
+   "expect": "!document.getElementById('errlog').textContent.trim()",
+   "label": "[32_warehouse_stairs] no errors"
+  },
+  {
+   "name": "---- CONTINUE at warehouse.listen"
+  },
+  {
+   "eval": "(G.save.enabled = false, localStorage.setItem('noir.save', \"{\\\"v\\\": 1, \\\"scene\\\": \\\"warehouse\\\", \\\"beat\\\": \\\"listen\\\", \\\"flags\\\": {\\\"window\\\": \\\"B2\\\", \\\"won\\\": true, \\\"note\\\": \\\"HARBOR BLDG. RM 304\\\", \\\"b6taught\\\": {\\\"crouch\\\": true, \\\"throw\\\": true}}, \\\"inventory\\\": [\\\"matchbook\\\", \\\"matchbookHalf\\\", \\\"note\\\", \\\"ledger\\\", \\\"revolver\\\"]}\"), true)"
+  },
+  {
+   "reload": true
+  },
+  {
+   "until": "G.state === 'title' && !document.querySelector('#title .opt[data-k=continue]').classList.contains('hidden')",
+   "timeout": 40000
+  },
+  {
+   "wait": 1200
+  },
+  {
+   "clickOn": "#title .opt[data-k=continue]",
+   "taken": "G.state !== 'title'",
+   "retries": 5,
+   "every": 4000
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === \"warehouse\" && G.scenes.get(\"warehouse\").beats.indexOf(G.scenes.beat) >= G.scenes.get(\"warehouse\").beats.indexOf(\"listen\")",
+   "timeout": 30000
+  },
+  {
+   "until": "!G.scenes.trans",
+   "timeout": 15000
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "expect": "G.state === 'playing' && G.scenes.fadeK < 0.05 && document.pointerLockElement === N.renderer.domElement",
+   "label": "[33_warehouse_listen] out of the black, playing"
+  },
+  {
+   "expect": "JSON.stringify(G.save.inventory.slice().sort()) === \"[\\\"ledger\\\", \\\"matchbook\\\", \\\"matchbookHalf\\\", \\\"note\\\", \\\"revolver\\\"]\"",
+   "label": "[33_warehouse_listen] the inventory as saved"
+  },
+  {
+   "expect": "Object.entries({\"window\": \"B2\", \"won\": true, \"note\": \"HARBOR BLDG. RM 304\", \"b6taught\": {\"crouch\": true, \"throw\": true}}).every(([k, v]) => JSON.stringify(G.save.flags[k]) === JSON.stringify(v))",
+   "label": "[33_warehouse_listen] the flags as saved"
+  },
+  {
+   "eval": "({ beat: G.scenes.beat, mode: G.controller.mode, hands: G.hands.set, weapon: G.player.weapons.current, music: G.music.current, prompt: G.hud.promptShown, say: G.hud.sayShown, fov: +N.camera.fov.toFixed(1), stage: G.stage.name, hp: G.health.hp })"
+  },
+  {
+   "shot": "k33_warehouse_listen"
+  },
+  {
+   "look": [
+    120,
+    0
+   ],
+   "steps": 6
+  },
+  {
+   "look": [
+    -120,
+    20
+   ],
+   "steps": 6
+  },
+  {
+   "key": "KeyW",
+   "hold": 500
+  },
+  {
+   "wait": 1000
+  },
+  {
+   "expect": "!document.getElementById('errlog').textContent.trim()",
+   "label": "[33_warehouse_listen] no errors"
+  },
+  {
+   "name": "---- CONTINUE at warehouse.out"
+  },
+  {
+   "eval": "(G.save.enabled = false, localStorage.setItem('noir.save', \"{\\\"v\\\": 1, \\\"scene\\\": \\\"warehouse\\\", \\\"beat\\\": \\\"out\\\", \\\"flags\\\": {\\\"window\\\": \\\"B2\\\", \\\"won\\\": true, \\\"note\\\": \\\"HARBOR BLDG. RM 304\\\", \\\"b6taught\\\": {\\\"crouch\\\": true, \\\"throw\\\": true}}, \\\"inventory\\\": [\\\"matchbook\\\", \\\"matchbookHalf\\\", \\\"note\\\", \\\"ledger\\\", \\\"revolver\\\"]}\"), true)"
+  },
+  {
+   "reload": true
+  },
+  {
+   "until": "G.state === 'title' && !document.querySelector('#title .opt[data-k=continue]').classList.contains('hidden')",
+   "timeout": 40000
+  },
+  {
+   "wait": 1200
+  },
+  {
+   "clickOn": "#title .opt[data-k=continue]",
+   "taken": "G.state !== 'title'",
+   "retries": 5,
+   "every": 4000
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === \"warehouse\" && G.scenes.get(\"warehouse\").beats.indexOf(G.scenes.beat) >= G.scenes.get(\"warehouse\").beats.indexOf(\"out\")",
+   "timeout": 30000
+  },
+  {
+   "until": "!G.scenes.trans",
+   "timeout": 15000
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "expect": "G.state === 'playing' && G.scenes.fadeK < 0.05 && document.pointerLockElement === N.renderer.domElement",
+   "label": "[34_warehouse_out] out of the black, playing"
+  },
+  {
+   "expect": "JSON.stringify(G.save.inventory.slice().sort()) === \"[\\\"ledger\\\", \\\"matchbook\\\", \\\"matchbookHalf\\\", \\\"note\\\", \\\"revolver\\\"]\"",
+   "label": "[34_warehouse_out] the inventory as saved"
+  },
+  {
+   "expect": "Object.entries({\"window\": \"B2\", \"won\": true, \"note\": \"HARBOR BLDG. RM 304\", \"b6taught\": {\"crouch\": true, \"throw\": true}}).every(([k, v]) => JSON.stringify(G.save.flags[k]) === JSON.stringify(v))",
+   "label": "[34_warehouse_out] the flags as saved"
+  },
+  {
+   "eval": "({ beat: G.scenes.beat, mode: G.controller.mode, hands: G.hands.set, weapon: G.player.weapons.current, music: G.music.current, prompt: G.hud.promptShown, say: G.hud.sayShown, fov: +N.camera.fov.toFixed(1), stage: G.stage.name, hp: G.health.hp })"
+  },
+  {
+   "shot": "k34_warehouse_out"
+  },
+  {
+   "look": [
+    120,
+    0
+   ],
+   "steps": 6
+  },
+  {
+   "look": [
+    -120,
+    20
+   ],
+   "steps": 6
+  },
+  {
+   "key": "KeyW",
+   "hold": 500
+  },
+  {
+   "wait": 1000
+  },
+  {
+   "expect": "!document.getElementById('errlog').textContent.trim()",
+   "label": "[34_warehouse_out] no errors"
+  },
+  {
+   "name": "---- CONTINUE at warehouse.fight"
+  },
+  {
+   "eval": "(G.save.enabled = false, localStorage.setItem('noir.save', \"{\\\"v\\\": 1, \\\"scene\\\": \\\"warehouse\\\", \\\"beat\\\": \\\"fight\\\", \\\"flags\\\": {\\\"window\\\": \\\"B2\\\", \\\"won\\\": true, \\\"note\\\": \\\"HARBOR BLDG. RM 304\\\", \\\"b6taught\\\": {\\\"crouch\\\": true, \\\"throw\\\": true}}, \\\"inventory\\\": [\\\"matchbook\\\", \\\"matchbookHalf\\\", \\\"note\\\", \\\"ledger\\\", \\\"revolver\\\"]}\"), true)"
+  },
+  {
+   "reload": true
+  },
+  {
+   "until": "G.state === 'title' && !document.querySelector('#title .opt[data-k=continue]').classList.contains('hidden')",
+   "timeout": 40000
+  },
+  {
+   "wait": 1200
+  },
+  {
+   "clickOn": "#title .opt[data-k=continue]",
+   "taken": "G.state !== 'title'",
+   "retries": 5,
+   "every": 4000
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === \"warehouse\" && G.scenes.get(\"warehouse\").beats.indexOf(G.scenes.beat) >= G.scenes.get(\"warehouse\").beats.indexOf(\"fight\")",
+   "timeout": 30000
+  },
+  {
+   "until": "!G.scenes.trans",
+   "timeout": 15000
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "expect": "G.state === 'playing' && G.scenes.fadeK < 0.05 && document.pointerLockElement === N.renderer.domElement",
+   "label": "[35_warehouse_fight] out of the black, playing"
+  },
+  {
+   "expect": "JSON.stringify(G.save.inventory.slice().sort()) === \"[\\\"ledger\\\", \\\"matchbook\\\", \\\"matchbookHalf\\\", \\\"note\\\", \\\"revolver\\\"]\"",
+   "label": "[35_warehouse_fight] the inventory as saved"
+  },
+  {
+   "expect": "Object.entries({\"window\": \"B2\", \"won\": true, \"note\": \"HARBOR BLDG. RM 304\", \"b6taught\": {\"crouch\": true, \"throw\": true}}).every(([k, v]) => JSON.stringify(G.save.flags[k]) === JSON.stringify(v))",
+   "label": "[35_warehouse_fight] the flags as saved"
+  },
+  {
+   "eval": "({ beat: G.scenes.beat, mode: G.controller.mode, hands: G.hands.set, weapon: G.player.weapons.current, music: G.music.current, prompt: G.hud.promptShown, say: G.hud.sayShown, fov: +N.camera.fov.toFixed(1), stage: G.stage.name, hp: G.health.hp })"
+  },
+  {
+   "shot": "k35_warehouse_fight"
+  },
+  {
+   "look": [
+    120,
+    0
+   ],
+   "steps": 6
+  },
+  {
+   "look": [
+    -120,
+    20
+   ],
+   "steps": 6
+  },
+  {
+   "key": "KeyW",
+   "hold": 500
+  },
+  {
+   "wait": 1000
+  },
+  {
+   "expect": "!document.getElementById('errlog').textContent.trim()",
+   "label": "[35_warehouse_fight] no errors"
+  },
+  {
+   "name": "---- CONTINUE at shootout.arrive"
+  },
+  {
+   "eval": "(G.save.enabled = false, localStorage.setItem('noir.save', \"{\\\"v\\\": 1, \\\"scene\\\": \\\"shootout\\\", \\\"beat\\\": \\\"arrive\\\", \\\"flags\\\": {\\\"window\\\": \\\"B2\\\", \\\"won\\\": true, \\\"note\\\": \\\"HARBOR BLDG. RM 304\\\", \\\"b6taught\\\": {\\\"crouch\\\": true, \\\"throw\\\": true}}, \\\"inventory\\\": [\\\"matchbook\\\", \\\"matchbookHalf\\\", \\\"note\\\", \\\"ledger\\\", \\\"revolver\\\"]}\"), true)"
+  },
+  {
+   "reload": true
+  },
+  {
+   "until": "G.state === 'title' && !document.querySelector('#title .opt[data-k=continue]').classList.contains('hidden')",
+   "timeout": 40000
+  },
+  {
+   "wait": 1200
+  },
+  {
+   "clickOn": "#title .opt[data-k=continue]",
+   "taken": "G.state !== 'title'",
+   "retries": 5,
+   "every": 4000
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === \"shootout\" && G.scenes.get(\"shootout\").beats.indexOf(G.scenes.beat) >= G.scenes.get(\"shootout\").beats.indexOf(\"arrive\")",
+   "timeout": 30000
+  },
+  {
+   "until": "!G.scenes.trans",
+   "timeout": 15000
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "expect": "G.state === 'playing' && G.scenes.fadeK < 0.05 && document.pointerLockElement === N.renderer.domElement",
+   "label": "[36_shootout_arrive] out of the black, playing"
+  },
+  {
+   "expect": "JSON.stringify(G.save.inventory.slice().sort()) === \"[\\\"ledger\\\", \\\"matchbook\\\", \\\"matchbookHalf\\\", \\\"note\\\", \\\"revolver\\\"]\"",
+   "label": "[36_shootout_arrive] the inventory as saved"
+  },
+  {
+   "expect": "Object.entries({\"window\": \"B2\", \"won\": true, \"note\": \"HARBOR BLDG. RM 304\", \"b6taught\": {\"crouch\": true, \"throw\": true}}).every(([k, v]) => JSON.stringify(G.save.flags[k]) === JSON.stringify(v))",
+   "label": "[36_shootout_arrive] the flags as saved"
+  },
+  {
+   "eval": "({ beat: G.scenes.beat, mode: G.controller.mode, hands: G.hands.set, weapon: G.player.weapons.current, music: G.music.current, prompt: G.hud.promptShown, say: G.hud.sayShown, fov: +N.camera.fov.toFixed(1), stage: G.stage.name, hp: G.health.hp })"
+  },
+  {
+   "shot": "k36_shootout_arrive"
+  },
+  {
+   "look": [
+    120,
+    0
+   ],
+   "steps": 6
+  },
+  {
+   "look": [
+    -120,
+    20
+   ],
+   "steps": 6
+  },
+  {
+   "key": "KeyW",
+   "hold": 500
+  },
+  {
+   "wait": 1000
+  },
+  {
+   "expect": "!document.getElementById('errlog').textContent.trim()",
+   "label": "[36_shootout_arrive] no errors"
+  },
+  {
+   "name": "---- CONTINUE at shootout.cars"
+  },
+  {
+   "eval": "(G.save.enabled = false, localStorage.setItem('noir.save', \"{\\\"v\\\": 1, \\\"scene\\\": \\\"shootout\\\", \\\"beat\\\": \\\"cars\\\", \\\"flags\\\": {\\\"window\\\": \\\"B2\\\", \\\"won\\\": true, \\\"note\\\": \\\"HARBOR BLDG. RM 304\\\", \\\"b6taught\\\": {\\\"crouch\\\": true, \\\"throw\\\": true}}, \\\"inventory\\\": [\\\"matchbook\\\", \\\"matchbookHalf\\\", \\\"note\\\", \\\"ledger\\\", \\\"revolver\\\"]}\"), true)"
+  },
+  {
+   "reload": true
+  },
+  {
+   "until": "G.state === 'title' && !document.querySelector('#title .opt[data-k=continue]').classList.contains('hidden')",
+   "timeout": 40000
+  },
+  {
+   "wait": 1200
+  },
+  {
+   "clickOn": "#title .opt[data-k=continue]",
+   "taken": "G.state !== 'title'",
+   "retries": 5,
+   "every": 4000
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === \"shootout\" && G.scenes.get(\"shootout\").beats.indexOf(G.scenes.beat) >= G.scenes.get(\"shootout\").beats.indexOf(\"cars\")",
+   "timeout": 30000
+  },
+  {
+   "until": "!G.scenes.trans",
+   "timeout": 15000
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "expect": "G.state === 'playing' && G.scenes.fadeK < 0.05 && document.pointerLockElement === N.renderer.domElement",
+   "label": "[37_shootout_cars] out of the black, playing"
+  },
+  {
+   "expect": "JSON.stringify(G.save.inventory.slice().sort()) === \"[\\\"ledger\\\", \\\"matchbook\\\", \\\"matchbookHalf\\\", \\\"note\\\", \\\"revolver\\\"]\"",
+   "label": "[37_shootout_cars] the inventory as saved"
+  },
+  {
+   "expect": "Object.entries({\"window\": \"B2\", \"won\": true, \"note\": \"HARBOR BLDG. RM 304\", \"b6taught\": {\"crouch\": true, \"throw\": true}}).every(([k, v]) => JSON.stringify(G.save.flags[k]) === JSON.stringify(v))",
+   "label": "[37_shootout_cars] the flags as saved"
+  },
+  {
+   "eval": "({ beat: G.scenes.beat, mode: G.controller.mode, hands: G.hands.set, weapon: G.player.weapons.current, music: G.music.current, prompt: G.hud.promptShown, say: G.hud.sayShown, fov: +N.camera.fov.toFixed(1), stage: G.stage.name, hp: G.health.hp })"
+  },
+  {
+   "shot": "k37_shootout_cars"
+  },
+  {
+   "look": [
+    120,
+    0
+   ],
+   "steps": 6
+  },
+  {
+   "look": [
+    -120,
+    20
+   ],
+   "steps": 6
+  },
+  {
+   "key": "KeyW",
+   "hold": 500
+  },
+  {
+   "wait": 1000
+  },
+  {
+   "expect": "!document.getElementById('errlog').textContent.trim()",
+   "label": "[37_shootout_cars] no errors"
+  },
+  {
+   "name": "---- CONTINUE at shootout.doorways"
+  },
+  {
+   "eval": "(G.save.enabled = false, localStorage.setItem('noir.save', \"{\\\"v\\\": 1, \\\"scene\\\": \\\"shootout\\\", \\\"beat\\\": \\\"doorways\\\", \\\"flags\\\": {\\\"window\\\": \\\"B2\\\", \\\"won\\\": true, \\\"note\\\": \\\"HARBOR BLDG. RM 304\\\", \\\"b6taught\\\": {\\\"crouch\\\": true, \\\"throw\\\": true}}, \\\"inventory\\\": [\\\"matchbook\\\", \\\"matchbookHalf\\\", \\\"note\\\", \\\"ledger\\\", \\\"revolver\\\"]}\"), true)"
+  },
+  {
+   "reload": true
+  },
+  {
+   "until": "G.state === 'title' && !document.querySelector('#title .opt[data-k=continue]').classList.contains('hidden')",
+   "timeout": 40000
+  },
+  {
+   "wait": 1200
+  },
+  {
+   "clickOn": "#title .opt[data-k=continue]",
+   "taken": "G.state !== 'title'",
+   "retries": 5,
+   "every": 4000
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === \"shootout\" && G.scenes.get(\"shootout\").beats.indexOf(G.scenes.beat) >= G.scenes.get(\"shootout\").beats.indexOf(\"doorways\")",
+   "timeout": 30000
+  },
+  {
+   "until": "!G.scenes.trans",
+   "timeout": 15000
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "expect": "G.state === 'playing' && G.scenes.fadeK < 0.05 && document.pointerLockElement === N.renderer.domElement",
+   "label": "[38_shootout_doorways] out of the black, playing"
+  },
+  {
+   "expect": "JSON.stringify(G.save.inventory.slice().sort()) === \"[\\\"ledger\\\", \\\"matchbook\\\", \\\"matchbookHalf\\\", \\\"note\\\", \\\"revolver\\\"]\"",
+   "label": "[38_shootout_doorways] the inventory as saved"
+  },
+  {
+   "expect": "Object.entries({\"window\": \"B2\", \"won\": true, \"note\": \"HARBOR BLDG. RM 304\", \"b6taught\": {\"crouch\": true, \"throw\": true}}).every(([k, v]) => JSON.stringify(G.save.flags[k]) === JSON.stringify(v))",
+   "label": "[38_shootout_doorways] the flags as saved"
+  },
+  {
+   "eval": "({ beat: G.scenes.beat, mode: G.controller.mode, hands: G.hands.set, weapon: G.player.weapons.current, music: G.music.current, prompt: G.hud.promptShown, say: G.hud.sayShown, fov: +N.camera.fov.toFixed(1), stage: G.stage.name, hp: G.health.hp })"
+  },
+  {
+   "shot": "k38_shootout_doorways"
+  },
+  {
+   "look": [
+    120,
+    0
+   ],
+   "steps": 6
+  },
+  {
+   "look": [
+    -120,
+    20
+   ],
+   "steps": 6
+  },
+  {
+   "key": "KeyW",
+   "hold": 500
+  },
+  {
+   "wait": 1000
+  },
+  {
+   "expect": "!document.getElementById('errlog').textContent.trim()",
+   "label": "[38_shootout_doorways] no errors"
+  },
+  {
+   "name": "---- CONTINUE at shootout.el"
+  },
+  {
+   "eval": "(G.save.enabled = false, localStorage.setItem('noir.save', \"{\\\"v\\\": 1, \\\"scene\\\": \\\"shootout\\\", \\\"beat\\\": \\\"el\\\", \\\"flags\\\": {\\\"window\\\": \\\"B2\\\", \\\"won\\\": true, \\\"note\\\": \\\"HARBOR BLDG. RM 304\\\", \\\"b6taught\\\": {\\\"crouch\\\": true, \\\"throw\\\": true}}, \\\"inventory\\\": [\\\"matchbook\\\", \\\"matchbookHalf\\\", \\\"note\\\", \\\"ledger\\\", \\\"revolver\\\"]}\"), true)"
+  },
+  {
+   "reload": true
+  },
+  {
+   "until": "G.state === 'title' && !document.querySelector('#title .opt[data-k=continue]').classList.contains('hidden')",
+   "timeout": 40000
+  },
+  {
+   "wait": 1200
+  },
+  {
+   "clickOn": "#title .opt[data-k=continue]",
+   "taken": "G.state !== 'title'",
+   "retries": 5,
+   "every": 4000
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === \"shootout\" && G.scenes.get(\"shootout\").beats.indexOf(G.scenes.beat) >= G.scenes.get(\"shootout\").beats.indexOf(\"el\")",
+   "timeout": 30000
+  },
+  {
+   "until": "!G.scenes.trans",
+   "timeout": 15000
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "expect": "G.state === 'playing' && G.scenes.fadeK < 0.05 && document.pointerLockElement === N.renderer.domElement",
+   "label": "[39_shootout_el] out of the black, playing"
+  },
+  {
+   "expect": "JSON.stringify(G.save.inventory.slice().sort()) === \"[\\\"ledger\\\", \\\"matchbook\\\", \\\"matchbookHalf\\\", \\\"note\\\", \\\"revolver\\\"]\"",
+   "label": "[39_shootout_el] the inventory as saved"
+  },
+  {
+   "expect": "Object.entries({\"window\": \"B2\", \"won\": true, \"note\": \"HARBOR BLDG. RM 304\", \"b6taught\": {\"crouch\": true, \"throw\": true}}).every(([k, v]) => JSON.stringify(G.save.flags[k]) === JSON.stringify(v))",
+   "label": "[39_shootout_el] the flags as saved"
+  },
+  {
+   "eval": "({ beat: G.scenes.beat, mode: G.controller.mode, hands: G.hands.set, weapon: G.player.weapons.current, music: G.music.current, prompt: G.hud.promptShown, say: G.hud.sayShown, fov: +N.camera.fov.toFixed(1), stage: G.stage.name, hp: G.health.hp })"
+  },
+  {
+   "shot": "k39_shootout_el"
+  },
+  {
+   "look": [
+    120,
+    0
+   ],
+   "steps": 6
+  },
+  {
+   "look": [
+    -120,
+    20
+   ],
+   "steps": 6
+  },
+  {
+   "key": "KeyW",
+   "hold": 500
+  },
+  {
+   "wait": 1000
+  },
+  {
+   "expect": "!document.getElementById('errlog').textContent.trim()",
+   "label": "[39_shootout_el] no errors"
+  },
+  {
+   "name": "---- CONTINUE at shootout.driveby"
+  },
+  {
+   "eval": "(G.save.enabled = false, localStorage.setItem('noir.save', \"{\\\"v\\\": 1, \\\"scene\\\": \\\"shootout\\\", \\\"beat\\\": \\\"driveby\\\", \\\"flags\\\": {\\\"window\\\": \\\"B2\\\", \\\"won\\\": true, \\\"note\\\": \\\"HARBOR BLDG. RM 304\\\", \\\"b6taught\\\": {\\\"crouch\\\": true, \\\"throw\\\": true}}, \\\"inventory\\\": [\\\"matchbook\\\", \\\"matchbookHalf\\\", \\\"note\\\", \\\"ledger\\\", \\\"revolver\\\"]}\"), true)"
+  },
+  {
+   "reload": true
+  },
+  {
+   "until": "G.state === 'title' && !document.querySelector('#title .opt[data-k=continue]').classList.contains('hidden')",
+   "timeout": 40000
+  },
+  {
+   "wait": 1200
+  },
+  {
+   "clickOn": "#title .opt[data-k=continue]",
+   "taken": "G.state !== 'title'",
+   "retries": 5,
+   "every": 4000
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === \"shootout\" && G.scenes.get(\"shootout\").beats.indexOf(G.scenes.beat) >= G.scenes.get(\"shootout\").beats.indexOf(\"driveby\")",
+   "timeout": 30000
+  },
+  {
+   "until": "!G.scenes.trans",
+   "timeout": 15000
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "expect": "G.state === 'playing' && G.scenes.fadeK < 0.05 && document.pointerLockElement === N.renderer.domElement",
+   "label": "[40_shootout_driveby] out of the black, playing"
+  },
+  {
+   "expect": "JSON.stringify(G.save.inventory.slice().sort()) === \"[\\\"ledger\\\", \\\"matchbook\\\", \\\"matchbookHalf\\\", \\\"note\\\", \\\"revolver\\\"]\"",
+   "label": "[40_shootout_driveby] the inventory as saved"
+  },
+  {
+   "expect": "Object.entries({\"window\": \"B2\", \"won\": true, \"note\": \"HARBOR BLDG. RM 304\", \"b6taught\": {\"crouch\": true, \"throw\": true}}).every(([k, v]) => JSON.stringify(G.save.flags[k]) === JSON.stringify(v))",
+   "label": "[40_shootout_driveby] the flags as saved"
+  },
+  {
+   "eval": "({ beat: G.scenes.beat, mode: G.controller.mode, hands: G.hands.set, weapon: G.player.weapons.current, music: G.music.current, prompt: G.hud.promptShown, say: G.hud.sayShown, fov: +N.camera.fov.toFixed(1), stage: G.stage.name, hp: G.health.hp })"
+  },
+  {
+   "shot": "k40_shootout_driveby"
+  },
+  {
+   "look": [
+    120,
+    0
+   ],
+   "steps": 6
+  },
+  {
+   "look": [
+    -120,
+    20
+   ],
+   "steps": 6
+  },
+  {
+   "key": "KeyW",
+   "hold": 500
+  },
+  {
+   "wait": 1000
+  },
+  {
+   "expect": "!document.getElementById('errlog').textContent.trim()",
+   "label": "[40_shootout_driveby] no errors"
+  },
+  {
+   "name": "---- CONTINUE at shootout.cardinal"
+  },
+  {
+   "eval": "(G.save.enabled = false, localStorage.setItem('noir.save', \"{\\\"v\\\": 1, \\\"scene\\\": \\\"shootout\\\", \\\"beat\\\": \\\"cardinal\\\", \\\"flags\\\": {\\\"window\\\": \\\"B2\\\", \\\"won\\\": true, \\\"note\\\": \\\"HARBOR BLDG. RM 304\\\", \\\"b6taught\\\": {\\\"crouch\\\": true, \\\"throw\\\": true}}, \\\"inventory\\\": [\\\"matchbook\\\", \\\"matchbookHalf\\\", \\\"note\\\", \\\"ledger\\\", \\\"revolver\\\"]}\"), true)"
+  },
+  {
+   "reload": true
+  },
+  {
+   "until": "G.state === 'title' && !document.querySelector('#title .opt[data-k=continue]').classList.contains('hidden')",
+   "timeout": 40000
+  },
+  {
+   "wait": 1200
+  },
+  {
+   "clickOn": "#title .opt[data-k=continue]",
+   "taken": "G.state !== 'title'",
+   "retries": 5,
+   "every": 4000
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === \"shootout\" && G.scenes.get(\"shootout\").beats.indexOf(G.scenes.beat) >= G.scenes.get(\"shootout\").beats.indexOf(\"cardinal\")",
+   "timeout": 30000
+  },
+  {
+   "until": "!G.scenes.trans",
+   "timeout": 15000
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "expect": "G.state === 'playing' && G.scenes.fadeK < 0.05 && document.pointerLockElement === N.renderer.domElement",
+   "label": "[41_shootout_cardinal] out of the black, playing"
+  },
+  {
+   "expect": "JSON.stringify(G.save.inventory.slice().sort()) === \"[\\\"ledger\\\", \\\"matchbook\\\", \\\"matchbookHalf\\\", \\\"note\\\", \\\"revolver\\\"]\"",
+   "label": "[41_shootout_cardinal] the inventory as saved"
+  },
+  {
+   "expect": "Object.entries({\"window\": \"B2\", \"won\": true, \"note\": \"HARBOR BLDG. RM 304\", \"b6taught\": {\"crouch\": true, \"throw\": true}}).every(([k, v]) => JSON.stringify(G.save.flags[k]) === JSON.stringify(v))",
+   "label": "[41_shootout_cardinal] the flags as saved"
+  },
+  {
+   "eval": "({ beat: G.scenes.beat, mode: G.controller.mode, hands: G.hands.set, weapon: G.player.weapons.current, music: G.music.current, prompt: G.hud.promptShown, say: G.hud.sayShown, fov: +N.camera.fov.toFixed(1), stage: G.stage.name, hp: G.health.hp })"
+  },
+  {
+   "shot": "k41_shootout_cardinal"
+  },
+  {
+   "look": [
+    120,
+    0
+   ],
+   "steps": 6
+  },
+  {
+   "look": [
+    -120,
+    20
+   ],
+   "steps": 6
+  },
+  {
+   "key": "KeyW",
+   "hold": 500
+  },
+  {
+   "wait": 1000
+  },
+  {
+   "expect": "!document.getElementById('errlog').textContent.trim()",
+   "label": "[41_shootout_cardinal] no errors"
+  },
+  {
+   "name": "---- the save of a story played to THE END"
+  },
+  {
+   "eval": "(G.save.enabled = false, localStorage.setItem('noir.save', \"{\\\"v\\\": 1, \\\"scene\\\": \\\"shootout\\\", \\\"beat\\\": \\\"end\\\", \\\"flags\\\": {\\\"window\\\": \\\"B2\\\", \\\"won\\\": true, \\\"note\\\": \\\"HARBOR BLDG. RM 304\\\", \\\"b6taught\\\": {\\\"crouch\\\": true, \\\"throw\\\": true}, \\\"ended\\\": true}, \\\"inventory\\\": [\\\"matchbook\\\", \\\"matchbookHalf\\\", \\\"note\\\", \\\"ledger\\\", \\\"revolver\\\"]}\"), true)"
+  },
+  {
+   "reload": true
+  },
+  {
+   "until": "G.state === 'title'",
+   "timeout": 40000
+  },
+  {
+   "wait": 1200
+  },
+  {
+   "expect": "document.querySelector('#title .opt[data-k=continue]').classList.contains('hidden') && !document.querySelector('#title .opt[data-k=begin]').classList.contains('hidden')",
+   "label": "[ended] the title offers BEGIN, not CONTINUE"
+  },
+  {
+   "shot": "k_ended_title"
+  }
+ ]
+}
