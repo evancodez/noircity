@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { wrap, RELAX, FIST } from '../handPoses.js';
+import { SOCKETS as REV_SOCKETS, GRIP_F as REV_GRIP_F, PULL_F as REV_PULL_F } from './revolver.js';
 
 // The hands in the car (lane B5): object first. The wheel turns (the car's
 // v.steer, vehicles/models.js's wheel) and both hands ride its rim where
@@ -66,55 +67,72 @@ function wheelFrame(cam, car) {
 
 // The gun out of the window (object first): the revolver's own path in the
 // eye's frame - up from the holster below the frame, then out past the
-// pillar, its muzzle on the view's centre far down the road, kicked up by a
-// shot and settling - and the left hand on its grip wherever it is: the
-// palm on the grip's left side, the fingers round its front, the index
-// along the frame. DRIVE.gun: { prop (drawn in the hands' scene: the scene
-// adds it), kick (0..1, a shot's recoil) }
-// [2nd pass] the sights ON the view's centre (the top strap and the front
-// blade on the line of the eye): a player sees where the round goes. They
-// sat 6 degrees left and 4 below it, and the gun was a dark lump at the
-// frame's foot that told the hand nothing.
-const GRIP = new THREE.Vector3(0.0, -0.085, -0.4);        // the grip at the aim
-const LOW = new THREE.Vector3(-0.16, -0.62, -0.24);       // ... in the holster, out of sight
+// pillar at arm's length, its barrel converging on the view's centre far
+// down the road, kicked up by a shot and settling - and the left hand on
+// its grip wherever it is. DRIVE.gun: { prop (drawn in the hands' scene:
+// the scene adds it), kick (0..1, a shot's recoil) }
+// [R2] lane B3's .38 (props/kinds/revolver.js: +x right, +y up, the muzzle
+// -z, the origin the palm's centre on the stocks), held by B3's own socket
+// mirrored for the left hand (clips/revolver.js revolverGripL is that grip
+// at B3's ready; here it rides this path). The gun sits low and left of the
+// view's centre: a silhouette against the lit road, his car clear above its
+// muzzle and its flash. (The stand-in's path ran its barrel along +z: B3's
+// gun was held backwards, its muzzle and flash toward the lens; and the
+// sights on the centre put the gun and the flash over his car.)
+const GRIP = new THREE.Vector3(-0.115, -0.088, -0.42);     // the grip at the aim
+const LOW = new THREE.Vector3(-0.16, -0.62, -0.24);        // ... in the holster, out of sight
+const CANT = -0.2;                                          // the top rolled out: its right side to the eye
+// (the barrel is laid across the view onto a point a metre out on the
+// line of the eye: drawn from the left toward the centre it points at his
+// car, and it is seen along its length - aimed at the car itself it was
+// seen end-on, a lump. The round goes down the eye's line, as the Tommy
+// gun's does)
+const AIM_AT = new THREE.Vector3(0.02, -0.03, -0.95);
 const _gm = new THREE.Matrix4(), _gx = new THREE.Vector3(), _gy = new THREE.Vector3(), _gz = new THREE.Vector3(), _gp = new THREE.Vector3();
+const _km = new THREE.Matrix4();
 function gunMatrix(k, kick) {
   // (k 0: low in the holster, pointing down and forward; 1: at the aim)
   const e = k * k * (3 - 2 * k);
   _gp.lerpVectors(LOW, GRIP, e);
-  _gp.y += Math.sin(e * Math.PI) * 0.04;
-  // the barrel: at the aim on the view's centre 25 m out; low, down the leg
-  _gz.set(0, 0, -25).sub(_gp).normalize();
+  _gp.y += Math.sin(e * Math.PI) * 0.05;
+  _gp.x -= Math.sin(e * Math.PI) * 0.04;
+  // the muzzle's way (the gun's -z): at the aim across onto the eye's line;
+  // low, down along the leg
+  _gz.copy(AIM_AT).sub(_gp).normalize();
   const low = _t.set(0.1, -0.8, -0.6).normalize();
-  _gz.lerp(low, 1 - e).normalize();
-  // (a shot kicks the muzzle up about the grip, 14 degrees, and it settles)
-  _gy.set(0, 1, 0);
+  _gz.lerp(low, 1 - e).normalize().negate();
+  _gy.set(Math.sin(CANT * e), Math.cos(CANT * e), 0);
   _gx.crossVectors(_gy, _gz).normalize();
   _gy.crossVectors(_gz, _gx).normalize();
-  if (kick > 0) { const q = new THREE.Quaternion().setFromAxisAngle(_gx, -0.25 * kick); _gz.applyQuaternion(q); _gy.applyQuaternion(q); _gp.addScaledVector(_gz, -0.025 * kick); }
-  // (the prop's +z is its barrel, +y its top: x = y cross z)
-  _gx.crossVectors(_gy, _gz).normalize();
-  return _gm.makeBasis(_gx, _gy, _gz).setPosition(_gp);
+  _gm.makeBasis(_gx, _gy, _gz).setPosition(_gp);
+  // (a shot climbs the muzzle about the grip, 15 degrees, and drives the gun
+  // back a little; it settles as the kick does)
+  if (kick > 0) {
+    _gm.multiply(_km.makeRotationX(0.26 * kick));
+    _gm.elements[12] += _gz.x * 0.03 * kick; _gm.elements[13] += _gz.y * 0.03 * kick; _gm.elements[14] += _gz.z * 0.03 * kick;
+  }
+  return _gm;
 }
-// the left hand on the grip of the gun at matrix m (the eye's frame)
-function onGrip(P, m) {
-  const x = _a.set(1, 0, 0).transformDirection(m), y = _rd.set(0, 1, 0).transformDirection(m), z = _f.set(0, 0, 1).transformDirection(m);
-  const g = _q.setFromMatrixPosition(m);
-  // (the grip is raked back 0.32 rad: its axis runs down and back)
-  const axis = _t.copy(y).multiplyScalar(-Math.cos(0.32)).addScaledVector(z, -Math.sin(0.32)).normalize();
-  // the palm on the grip's left face, the fingers round its front
-  const at = g.clone().addScaledVector(x, -0.02).addScaledVector(axis, 0.02);
-  const n = x.clone();                                       // the palm faces the grip (+x)
-  const dir = z.clone().multiplyScalar(0.55).addScaledVector(axis, 0.35).addScaledVector(x, 0.25).normalize();
-  const f = dir.addScaledVector(n, -dir.dot(n)).normalize();
-  const b = n.clone().negate();
-  const p = at.addScaledVector(b, 0.018).addScaledVector(f, -0.047);
-  P.p[0] = p.x; P.p[1] = p.y; P.p[2] = p.z;
-  P.f[0] = f.x; P.f[1] = f.y; P.f[2] = f.z;
-  P.b[0] = b.x; P.b[1] = b.y; P.b[2] = b.z;
-  P.F = GUN_F;
-  // the elbow: back along the sill, out of the window
-  P.e[0] = p.x - 0.16; P.e[1] = p.y - 0.2; P.e[2] = p.z + 0.3;
+// the left hand on the grip of the gun at matrix m (the eye's frame): B3's
+// socket seats a right hand on it; the left is that grip mirrored (the gun
+// mirrored across the eye's x, the right hand solved onto it, the pose
+// mirrored back)
+const _S = new THREE.Matrix4().makeScale(-1, 1, 1), _mr = new THREE.Matrix4(), _sock = new THREE.Matrix4();
+{
+  const S = REV_SOCKETS.revolver;
+  _sock.makeBasis(...S.basis.map((v) => new THREE.Vector3(...v))).setPosition(...S.p).invert();
+}
+function onGrip(P, m, kick) {
+  _mr.copy(_S).multiply(m).multiply(_S).multiply(_sock);
+  const p = _q.setFromMatrixPosition(_mr);
+  const f = _a.set(0, 0, -1).transformDirection(_mr), b = _rd.set(0, 1, 0).transformDirection(_mr);
+  P.p[0] = -p.x; P.p[1] = p.y; P.p[2] = p.z;
+  P.f[0] = -f.x; P.f[1] = f.y; P.f[2] = f.z;
+  P.b[0] = -b.x; P.b[1] = b.y; P.b[2] = b.z;
+  // (the index draws the trigger as the shot goes)
+  P.F = kick > 0.55 ? REV_PULL_F : REV_GRIP_F;
+  // the elbow: down, out and back along the car's side
+  P.e[0] = P.p[0] - 0.22; P.e[1] = P.p[1] - 0.24; P.e[2] = P.p[2] + 0.3;
 }
 // the hand gone down to the holster (below the frame)
 function holsterPose(P) {
@@ -161,15 +179,15 @@ function refresh() {
     L.F = lerpF(GRIP_F, GUN_F, e);
     return;
   }
-  const m = gunMatrix(k2, G ? G.kick || 0 : 0);
-  // (a prop's grip is where the palm holds it: lane B3's revolver keeps its
-  // origin at its base, so the path's point is its grip, not its origin)
+  const kick = G ? G.kick || 0 : 0;
+  const m = gunMatrix(k2, kick);
+  // (the path's point is the prop's grip: B3's revolver keeps its origin there)
   if (G && G.prop) {
     const gi = G.gripInv || (G.gripInv = G.prop.userData.grip ? G.prop.userData.grip.clone().invert() : new THREE.Matrix4());
     G.prop.matrix.copy(m).multiply(gi);
     G.prop.matrixWorldNeedsUpdate = true;
   }
-  onGrip(L, m);
+  onGrip(L, m, kick);
 }
 function copyPose(o, a) { for (const k of ['p', 'f', 'b', 'e']) for (let i = 0; i < 3; i++) o[k][i] = a[k][i]; o.F = a.F; }
 

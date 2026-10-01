@@ -396,14 +396,40 @@ export class Vehicle {
 function poolMaterial(points, reach, gain) {
   return new THREE.ShaderMaterial({
     name: 'HeadlampPool',
-    uniforms: { uL: { value: points.map((p) => new THREE.Vector2(p.x, p.z)) }, uReach: { value: reach }, uGain: { value: gain } },
+    uniforms: { uL: { value: points.map((p) => new THREE.Vector2(p.x, p.z)) }, uReach: { value: reach }, uGain: { value: gain },
+      // [R2] the cars in the beams (up to two, in this car's frame): each
+      // throws its shadow down the pool - his car black in my light, the
+      // road behind it dark - where the wash slid on under him as if he
+      // were not there
+      uOcc: { value: [new THREE.Vector4(), new THREE.Vector4()] }, uOccR: { value: [new THREE.Vector2(1, 0), new THREE.Vector2(1, 0)] }, uOccN: { value: 0 } },
     vertexShader: /* glsl */`
       varying vec2 vP;
       void main() { vP = position.xz; gl_Position = projectionMatrix * modelViewMatrix * vec4( position, 1.0 ); }`,
     fragmentShader: /* glsl */`
       uniform vec2 uL[ 2 ];
       uniform float uReach, uGain;
+      uniform vec4 uOcc[ 2 ];   // centre x, z, half length, half width
+      uniform vec2 uOccR[ 2 ];  // its turn: cos, sin
+      uniform int uOccN;
       varying vec2 vP;
+      // does the beam from the lamp at a to the road at b pass a car?
+      float blocked( vec2 a, vec2 b ) {
+        float k = 1.0;
+        for ( int j = 0; j < 2; j ++ ) {
+          if ( j >= uOccN ) break;
+          vec4 o = uOcc[ j ]; vec2 r = uOccR[ j ];
+          vec2 pa = a - o.xy, pb = b - o.xy;
+          pa = vec2( pa.x * r.x - pa.y * r.y, pa.x * r.y + pa.y * r.x );
+          pb = vec2( pb.x * r.x - pb.y * r.y, pb.x * r.y + pb.y * r.x );
+          vec2 d = pb - pa;
+          vec2 inv = 1.0 / ( d + vec2( d.x >= 0.0 ? 1e-5 : -1e-5, d.y >= 0.0 ? 1e-5 : -1e-5 ) );
+          vec2 t0 = ( - o.zw - pa ) * inv, t1 = ( o.zw - pa ) * inv;
+          vec2 tn2 = min( t0, t1 ), tf2 = max( t0, t1 );
+          float tn = max( tn2.x, tn2.y ), tf = min( tf2.x, tf2.y );
+          if ( tf >= max( tn, 0.0 ) && tn <= 1.0 ) k = 0.06;
+        }
+        return k;
+      }
       void main() {
         float a = 0.0;
         for ( int i = 0; i < 2; i++ ) {
@@ -415,7 +441,9 @@ function poolMaterial(points, reach, gain) {
           float w = 0.5 + x * 0.2;
           float across = exp( - ( d.y * d.y ) / ( w * w ) );
           float along = smoothstep( 2.0, 7.5, x ) * ( 1.0 - smoothstep( uReach * 0.35, uReach, x ) ) * ( 9.0 / max( x, 6.0 ) );
-          a += across * along;
+          float c = across * along;
+          if ( c > 0.002 && uOccN > 0 ) c *= blocked( uL[ i ], vP );
+          a += c;
         }
         gl_FragColor = vec4( vec3( a * uGain * 0.06 ), 1.0 );
       }`,
@@ -464,6 +492,28 @@ export class Headlamps {
     const T = car.track;
     this.pool.position.set(car.pos.x, (T ? T.ground(car.d) : 0) + 0.025, car.pos.z);
     this.pool.rotation.set(0, car.yaw, 0);
+    // [R2] the cars ahead in the beams: into this car's frame (x ahead, z
+    // across), nearest first
+    const U = this.pool.material.uniforms, list = car.vehicles ? car.vehicles.list : [];
+    const c0 = Math.cos(car.yaw), s0 = Math.sin(car.yaw);
+    let n = 0;
+    const cand = [];
+    for (const v of list) {
+      if (v === car || !v.spec) continue;
+      const dx = v.pos.x - car.pos.x, dz = v.pos.z - car.pos.z;
+      const lx = dx * c0 - dz * s0, lz = dx * s0 + dz * c0;
+      if (lx < 1 || lx > this.reach + 4 || Math.abs(lz) > 8) continue;
+      cand.push([lx, lz, v]);
+    }
+    cand.sort((a, b) => a[0] - b[0]);
+    for (const [lx, lz, v] of cand) {
+      if (n >= 2) break;
+      const rel = v.yaw - car.yaw;
+      U.uOcc.value[n].set(lx, lz, v.spec.halfL * 0.95, v.spec.halfW * 0.95);
+      U.uOccR.value[n].set(Math.cos(rel), Math.sin(rel));
+      n++;
+    }
+    U.uOccN.value = n;
     // (aimed a little down the road: the pools slide over the wet ahead)
     const dir = this._d.set(1, -0.055, 0).transformDirection(m);
     for (let i = 0; i < this.cones.length; i++) {

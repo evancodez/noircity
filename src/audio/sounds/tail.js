@@ -192,6 +192,15 @@ export default (kit) => {
         burst(ctx, out, R, t0 + 0.02, 'pink', ['bandpass', 2400, 1.5], 0.08, 0.002, 0.2);
         return 0.4;
       },
+      // [R2] his bowler into the river, three metres down: a small flat slap
+      // on the water, the plop's drop in pitch, a spatter falling back
+      tail_hatSplash(ctx, out, t0, p, R) {
+        burst(ctx, out, R, t0, 'white', ['bandpass', 1400, 0.9], 0.28, 0.002, 0.09);
+        thud(ctx, out, t0 + 0.004, 620, 180, 0.16, 0.12);
+        burst(ctx, out, R, t0 + 0.05, 'white', ['highpass', 3200], 0.1, 0.01, 0.35);
+        burst(ctx, out, R, t0 + 0.02, 'pink', ['lowpass', 500, 0.7], 0.12, 0.004, 0.18);
+        return 0.6;
+      },
       tail_slump(ctx, out, t0, p, R) {
         burst(ctx, out, R, t0, 'pink', ['lowpass', 900, 0.7], 0.15, 0.05, 0.5);
         thud(ctx, out, t0 + 0.45, 80, 50, 0.3, 0.12);

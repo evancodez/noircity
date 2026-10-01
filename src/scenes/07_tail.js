@@ -52,6 +52,14 @@ function build(ctx, which) {
     T.his.place(roadPoint2(s + gap, 1.9), carYaw2(s + gap), sp);
     if (q.get('tailCruise')) T.cruise = sp;
   }
+  // (?tailView=s,d,y,yaw,pitch[,fov]: an eye standing on the road there, for the
+  // river's and the far bank's look; yaw 0 looks down the road)
+  if (q && q.get('tailView')) {
+    const [s, d, y, yw, pt, fov] = q.get('tailView').split(',').map(Number);
+    const p = roadPoint2(s, d);
+    const pose = { x: p.x, y: ctx.stage.surfaceY(p.x, p.z) + y, z: p.z, yaw: eyeYaw2(s) + yw, pitch: pt };
+    ctx.onStep(() => { const C = ctx.game.controller; if (C.mode !== 'cutscene') { C.setMode('cutscene', { track: () => pose, ease: 0.001 }); if (fov) { ctx.game.camera.fov = fov; ctx.game.camera.updateProjectionMatrix(); } } });
+  }
   return T;
 }
 
@@ -83,7 +91,7 @@ function buildCrash(ctx, { out = false } = {}) {
   T.my.parkedT = 1;
   return T;
 }
-import { roadPoint as roadPoint2, carYawAt as carYaw2 } from '../stages/riverroad/road.js';
+import { roadPoint as roadPoint2, carYawAt as carYaw2, eyeYawAt as eyeYaw2 } from '../stages/riverroad/road.js';
 
 export default defineScene({
   id: 'tail', stage: 'riverroad',

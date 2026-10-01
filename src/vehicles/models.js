@@ -43,7 +43,9 @@ function coupeBody() {
 // little narrower and lower as it goes, its sides down between the fenders
 // (a loft of superellipse sections: no facets, a soft crown the lamps run
 // along); x from the cowl, top and half width at each station
-export const HOOD = { x0: 0.64, x1: 2.25, top0: 1.155, top1: 1.075, w0: 0.5, w1: 0.37, side: 0.78 };
+// [R2] the nose raked lower (top1 1.075 -> 1.0, the grille's shell with
+// it): from the raised seat the road runs on down past the ornament
+export const HOOD = { x0: 0.64, x1: 2.25, top0: 1.155, top1: 1.0, w0: 0.5, w1: 0.37, side: 0.78 };
 export function hoodTop(x) { const u = Math.min(1, Math.max(0, (x - HOOD.x0) / (HOOD.x1 - HOOD.x0))); return HOOD.top0 + (HOOD.top1 - HOOD.top0) * Math.pow(u, 1.4); }
 function hoodLoft() {
   const NX = 28, NA = 24, pos = [], idx = [];
@@ -123,18 +125,21 @@ function coupeShell() {
 }
 
 // where the driver's eye sits (car frame) and the dials' centre
+// [R2] the windscreen is the picture: the eye 10 cm higher (the road ahead
+// was a 12 % band between the horizon and the hood, the dash and the wheel
+// 40 % of the frame); the wheel rises with it, so the hands keep their place
 export const COUPE = {
-  eye: V3(-0.42, 1.42, -0.34),
+  eye: V3(-0.38, 1.56, -0.34),
   halfL: 2.45, halfW: 0.94, wheelbase: 3.1,
   lamps: [V3(2.3, 0.98, -0.6), V3(2.3, 0.98, 0.6)],
   tail: [V3(-2.3, 0.84, -0.74), V3(-2.3, 0.84, 0.74)],
   window: { x0: -0.95, x1: 0.62, y0: 1.14, y1: 1.74, z: -0.66 },
   screen: { base: 0.66, baseY: 1.13, top: 0.43, topY: 1.77, halfW: 0.62 },
   wipers: [V3(0.655, 1.14, -0.5), V3(0.655, 1.14, 0.08)],
-  dial: V3(0.375, 0.98, -0.34),
+  dial: V3(0.375, 1.0, -0.34),
   // the wheel: its hub, its face toward the eye (tilted back on its raked
   // column), its rim's radius; it turns up to WHEEL_TURN either way
-  hub: V3(-0.02, 1.07, -0.34),
+  hub: V3(0.06, 1.19, -0.34),
   wheelN: V3(-0.72, 0.69, 0).normalize(),
   rimR: 0.205,
 };
@@ -173,10 +178,10 @@ export function buildCoupe(M) {
   }
   // grille, hood strip, the ornament (a winged thing on the radiator cap)
   const gs = new THREE.Shape();
-  gs.moveTo(-0.22, 0.52); gs.lineTo(0.22, 0.52); gs.quadraticCurveTo(0.25, 0.86, 0.0, 1.08); gs.quadraticCurveTo(-0.25, 0.86, -0.22, 0.52);
+  gs.moveTo(-0.22, 0.52); gs.lineTo(0.22, 0.52); gs.quadraticCurveTo(0.25, 0.82, 0.0, 1.0); gs.quadraticCurveTo(-0.25, 0.82, -0.22, 0.52);
   const grille = new THREE.ExtrudeGeometry(gs, { depth: 0.06, bevelEnabled: true, bevelThickness: 0.02, bevelSize: 0.02, bevelSegments: 2, curveSegments: 12 });
   dark.push(smoothNormals(grille.rotateY(Math.PI / 2).translate(2.3, 0, 0), 1e-4));
-  for (let z = -0.16; z <= 0.161; z += 0.04) { const top = 1.05 - Math.pow(Math.abs(z) / 0.23, 2) * 0.36; chrome.push(new THREE.CylinderGeometry(0.009, 0.009, top - 0.55, 6).translate(2.39, (top + 0.55) / 2, z)); }
+  for (let z = -0.16; z <= 0.161; z += 0.04) { const top = 0.97 - Math.pow(Math.abs(z) / 0.23, 2) * 0.33; chrome.push(new THREE.CylinderGeometry(0.009, 0.009, top - 0.55, 6).translate(2.39, (top + 0.55) / 2, z)); }
   chrome.push(tube([0.7, 1.1, 1.5, 1.9, 2.2].map((x) => V3(x, hoodTop(x) + 0.004, 0)), 0.011, 5, 24));
   // the hood's side seams, where it lifts
   for (const sgn of [-1, 1]) chrome.push(tube([0.72, 1.3, 1.9, 2.2].map((x) => { const u = (x - HOOD.x0) / (HOOD.x1 - HOOD.x0); const w = HOOD.w0 + (HOOD.w1 - HOOD.w0) * u * u; return V3(x, hoodTop(x) - 0.05, sgn * (w * 0.93)); }), 0.006, 4, 16));
@@ -337,7 +342,10 @@ export function buildCoupe(M) {
     meshes.wheelGroup = wheel;
   }
   for (const m of Object.values(meshes)) if (m && m.isMesh) { m.castShadow = false; m.receiveShadow = true; }
-  meshes.contact = contactShadow(g, 5.3, 2.35);
+  // [R2] (wider than the car and darker at its heart: from the pavement it
+  // stood on the bright wash of its own lamps' streaks with no dark under
+  // its sills, lifted off the road)
+  meshes.contact = contactShadow(g, 6.1, 2.9);
   return { group: g, meshes, needles, wipers, wheel: meshes.wheelGroup, wheelMount: meshes.wheelMount };
 }
 
@@ -374,15 +382,18 @@ export function buildTruck(M) {
 // a black car floats on its own reflections and on the headlamps' wet road).
 // FX layer: the main pass only, never reflected or outlined.
 let CONTACT = null;
-function contactShadow(g, len, wid, x = 0) {
+export function contactShadow(g, len, wid, x = 0) {
   if (!CONTACT) {
     const W = 256, H = 128;
     const c = document.createElement('canvas');
     c.width = W; c.height = H;
     const x2 = c.getContext('2d');
-    x2.filter = 'blur(10px)';
-    x2.fillStyle = 'rgba(0,0,0,0.8)';
-    x2.beginPath(); x2.roundRect(W * 0.1, H * 0.2, W * 0.8, H * 0.6, 26); x2.fill();
+    x2.filter = 'blur(12px)';
+    x2.fillStyle = 'rgba(0,0,0,0.75)';
+    x2.beginPath(); x2.roundRect(W * 0.08, H * 0.16, W * 0.84, H * 0.68, 30); x2.fill();
+    x2.filter = 'blur(7px)';
+    x2.fillStyle = 'rgba(0,0,0,0.97)';
+    x2.beginPath(); x2.roundRect(W * 0.16, H * 0.27, W * 0.68, H * 0.46, 18); x2.fill();
     x2.filter = 'blur(5px)';
     x2.fillStyle = 'rgba(0,0,0,0.95)';
     for (const [u, v] of [[0.21, 0.24], [0.79, 0.24], [0.21, 0.76], [0.79, 0.76]]) { x2.beginPath(); x2.ellipse(u * W, v * H, W * 0.07, H * 0.1, 0, 0, Math.PI * 2); x2.fill(); }
@@ -431,7 +442,7 @@ export function tailLamps(g, at, gain = 7) {
   return m;
 }
 let GLOW = null;
-function glowTexture() {
+export function glowTexture() {
   if (GLOW) return GLOW;
   const c = document.createElement('canvas');
   c.width = c.height = 64;

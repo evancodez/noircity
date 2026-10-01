@@ -10,7 +10,8 @@ import { chainKeys } from '../../enemies/HoodAnim.js';
 //   tail_pinned    held by the lapels, his back against his car: leaning
 //                  back from me, his hands on my wrists, breathing hard
 //   tail_overRail  bent back over the rail, his hands clutching my arms,
-//                  his head back over the water, up on his toes
+//                  his head back over the water, up on his toes, fighting it
+//   tail_broken    [R2] still over the rail, the fight gone out of him
 //   tail_slide     let go: down the railing to sit on the wet pavement
 // Poses face +z (toward me), in the figure's root space (model metres).
 const A = ANKLE_Y;
@@ -74,6 +75,12 @@ const crawlK = keyed([
   [2.8, { hipsPos: [0, 0.92, 0.36], hips: [8, 0, 0], spine: [6, 0, 0], chest: [4, 0, 0], head: [-2, 0, 0], handTL: [0.3, 0.88, 0.34], handTR: [-0.28, 0.9, 0.3] }],
 ]);
 const crawlRM = (t) => [0, 0.36 * sstep(1.4, 2.8, t)];
+// bent back over the rail (tail_overRail; the slide starts from it)
+// (w: the struggle - his head twisting off toward the water and back to
+// me, his hips working against the rail, his grip on my wrists)
+const OVER_RAIL = (b = 0, w = 0) => ({ hipsPos: [0, 0.97, -0.05], hips: [-16, 5 * w, 2 * w], spine: [-28 + b * 2, -3 * w, 0], chest: [-24 + b * 2, -4 * w, 0], neck: [8, 6 * w, 0], head: [26 + 3 * Math.abs(w), 8 + 14 * w, 3 * w], headLevel: [0],
+  handTL: [0.12, 1.08 + b * 0.012 + 0.015 * w, 0.02], handTR: [-0.11, 1.06 + b * 0.012 - 0.015 * w, 0.04], elbowPoleL: [1, -0.4, -0.2], elbowPoleR: [-1, -0.4, -0.2], handL: [0, 0, 60], handR: [0, 0, -60],
+  footL: [0.13, A + 0.04, 0.3], footR: [-0.13, A + 0.06, 0.26], footRotL: [-24, 8, 0], footRotR: [-26, -6, 0] });
 
 export default {
   kind: 'tail_trucker', h: 1.8, name: 'trucker',
@@ -95,15 +102,31 @@ export default {
         const b = S(TAU * t / 1.6);
         // (back over it far enough that the water is under his shoulders,
         // not so far that his face goes out of my sight: it stays up, on me)
-        return P({ hipsPos: [0, 0.96, -0.02], hips: [-10, 0, 0], spine: [-19 + b * 2, 0, 0], chest: [-17 + b * 2, 0, 0], neck: [-2, 0, 0], head: [12, 8, 0], headLevel: [0],
-          handTL: [0.12, 1.14 + b * 0.015, 0.36], handTR: [-0.11, 1.12 + b * 0.015, 0.38], elbowPoleL: [1, -0.3, -0.3], elbowPoleR: [-1, -0.3, -0.3], handL: [0, 0, 60], handR: [0, 0, -60],
-          footL: [0.13, A + 0.04, 0.26], footR: [-0.13, A + 0.06, 0.22], footRotL: [-24, 8, 0], footRotR: [-26, -6, 0] });
+        // [R2] deeper: his shoulders out over the water and his head below
+        // my eye, so I look down on him - the brim, the rail and the water
+        // under the one lamp (the shallow bend kept his coat's front filling
+        // the frame, his head at mine); his hands on my wrists at his chest
+        const w = S(TAU * t / 0.8 + 0.6) * (0.6 + 0.4 * S(TAU * t / 1.6 + 1.3));
+        return P(OVER_RAIL(b, w));
+      } }),
+    },
+    // [R2] he breaks: the fight goes out of him over the rail - his head
+    // falls back and aside toward the water, his hands slack on my wrists,
+    // his chest heaving (the struggle stopped dead, not looping on under
+    // "Pier nine.")
+    tail_broken: {
+      duration: 2.4, loop: true,
+      def: () => ({ duration: 2.4, loop: true, armSpace: 'root', pose: (t) => {
+        const b = S(TAU * t / 2.4);
+        const o = OVER_RAIL(1, 0);
+        return P({ ...o, spine: [-26 + b * 1.5, 2, 0], chest: [-22 + b * 2.5, 3, 0], neck: [2, -8, 0], head: [8, -26, -10],
+          handTL: [0.13, 1.0 + b * 0.008, 0.05], handTR: [-0.12, 0.99 + b * 0.008, 0.06], handL: [0, 0, 40], handR: [0, 0, -40] });
       } }),
     },
     tail_slide: {
       duration: 1.6, hold: true,
       def: () => ({ duration: 1.6, armSpace: 'root', pose: keyed([
-        [0, { hipsPos: [0, 0.96, -0.02], hips: [-10, 0, 0], spine: [-19, 0, 0], chest: [-17, 0, 0], neck: [-2, 0, 0], head: [12, 8, 0], handTL: [0.12, 1.14, 0.36], handTR: [-0.11, 1.12, 0.38] }],
+        [0, OVER_RAIL(0)],
         // [2nd pass] down the rail, not up off it: his back stays on it and
         // his hands go back to it as his knees give (he stood straight up
         // with his fists at his sides first, then dropped)

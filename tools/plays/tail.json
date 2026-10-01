@@ -76,6 +76,7 @@
     "shots": {
      "t01_pulling_away": "G.scenes.ctx.flags.tail.my.speed > 12",
      "t02_speed": "G.scenes.ctx.flags.tail.my.speed > 24",
+     "t02b_train": "!!G.stage.train && G.stage.train.active && G.stage.train.s - G.scenes.ctx.flags.tail.my.s < 110 && G.stage.train.s - G.scenes.ctx.flags.tail.my.s > 60",
      "t03_market": "G.scenes.ctx.flags.tail.my.s > 520",
      "t04_truck": "!!G.scenes.ctx.flags.tail.truck && G.scenes.ctx.flags.tail.truck.s - G.scenes.ctx.flags.tail.my.s < 30",
      "t05_oncoming": "!!G.scenes.ctx.flags.tail.oncoming && G.scenes.ctx.flags.tail.oncoming.s - G.scenes.ctx.flags.tail.my.s < 45",
@@ -96,8 +97,8 @@
    "eval": "JSON.stringify({ log: window.__tail && window.__tail.log, events: window.__tail && window.__tail.evlog })"
   },
   {
-   "expect": "G.state === 'end'",
-   "label": "the scene ends with ctx.next() (the next scene's file is another lane's: the end card here)"
+   "expect": "G.state === 'end' || (G.scenes.current && G.scenes.current.id === 'warehouse')",
+   "label": "the scene ends with ctx.next(): chapter VIII (Pier Nine) opens (or the end card, without its file)"
   },
   {
    "shot": "t16_end"

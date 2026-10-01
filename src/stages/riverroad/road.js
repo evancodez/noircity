@@ -28,7 +28,11 @@ export const ROAD = {
   // (the freighter lies along the chase, not the close: wherever his tyre
   // goes, the wreck and the question have open water and the far bank
   // behind them, never a hull's black side)
-  marks: { start: 14, train: 250, market: 400, marketEnd: 700, truck: 862, stand: 1012, oncoming: 1150, close: 1330, hull: 1195, end: 1740 },
+  // [R2] (the train early, on the straight off the kerb: the el runs clear
+  // down the road there, and its lamp is seen coming the whole way in; at
+  // 250 the road bends left into the market and the el crossed in front,
+  // its deck above the roof's header)
+  marks: { start: 14, train: 80, market: 400, marketEnd: 700, truck: 862, stand: 1012, oncoming: 1150, close: 1330, hull: 1195, end: 1740 },
   // where a failed stretch goes back to (the last one passed)
   checkpoints: [14, 420, 820, 1200],
 };

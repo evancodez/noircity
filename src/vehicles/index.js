@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { Vehicle, Headlamps } from './Vehicle.js';
-import { buildCoupe, buildTruck, tailLamps, figureInk, COUPE, TRUCK } from './models.js';
+import { buildCoupe, buildTruck, tailLamps, figureInk, contactShadow, COUPE, TRUCK } from './models.js';
 import { releaseHoodSlot, LAYER } from '../render/layers.js';
 
 // Vehicles (docs/story/CONTRACTS.md §11; wave B, lane B5): game.vehicles.
@@ -49,6 +49,10 @@ export class Vehicles {
       // [2nd pass] its contact shadow after the headlamps' pools (as my
       // coupe's, models.js): my pool lit the road under his wreck
       car.group.traverse((m) => { if (m.isMesh && m.renderOrder === 1 && m.layers.isEnabled(LAYER.FX)) m.renderOrder = 3; });
+      // [R2] and one of the tail's own under it, wider and darker (the
+      // block's is made for a car parked in the dark, not one on the bright
+      // wash of the lamps' streaks: from the pavement the wreck stood lifted)
+      contactShadow(car.group, 6.0, 2.8);
       model = { group: car.group, meshes: car.meshes, car };
       lampPts = [new THREE.Vector3(2.3, 0.98, 0.6), new THREE.Vector3(2.3, 0.98, -0.6)];
       tailPts = [new THREE.Vector3(-2.3, 0.84, 0.74), new THREE.Vector3(-2.3, 0.84, -0.74)];

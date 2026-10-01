@@ -7,7 +7,7 @@ import { PROP_KINDS, buildProp } from '../../props/index.js';
 import { LAYER, allocVmId } from '../../render/layers.js';
 import { Watcher, PathDriver } from './driver.js';
 import { Screen } from './screen.js';
-import { FIRE } from '../../fx/fxTextures.js';
+import { FIRE, FLASH } from '../../fx/fxTextures.js';
 
 // Scene 7's machinery (lane B5): the two cars, the road's events, the gun
 // out of the window, the failures and the markers. The script
@@ -49,7 +49,7 @@ export class Tail {
     // where it struck (screen.js), the view flinches
     const onHit = (e) => { if (!this.my || this.out) return; const now = this.t; if (now - (this._hitT || -9) < 0.12) return; this._hitT = now; G.sfx.play('tail_screenHit', null, { k: e.k }); G.controller.kick(0.8 * e.k + 0.3, 0.5, 0.08); if (this.screen && e.k > 0.45) this.screen.crack(e.lz, e.k); };
     G.on('screenHit', onHit);
-    const off = () => { this.dispose(); G.off('scene:exit', off); G.off('screenHit', onHit); };
+    const off = () => { this.dispose(); if (this.question) this.question.dispose(); G.off('scene:exit', off); G.off('screenHit', onHit); };
     G.on('scene:exit', off);
   }
 
@@ -58,6 +58,7 @@ export class Tail {
     if (S && S.live) for (const k of ['tail_his', 'tail_truck']) if (S.loops.has(k)) S.stopLoop(k);
     DRIVE.car = null;
     if (DRIVE.gun && DRIVE.gun.prop) DRIVE.gun.prop.visible = false;
+    if (this.gunKey) { if (this.gunKey.parent) this.gunKey.parent.remove(this.gunKey); this.gunKey = null; }
     if (this.cabinBox) { this.cabinBox.min.set(1e5, 1e5, 1e5); this.cabinBox.max.set(1e5, 1e5, 1e5); }
   }
 
@@ -104,7 +105,7 @@ export class Tail {
     // the hands on the wheel; the eye in the seat
     DRIVE.car = mine; DRIVE.camera = G.camera; DRIVE.aim = 0; DRIVE.grip = null;
     G.player.hands.equip('drive');
-    G.controller.setMode('drive', { vehicle: mine, game: G, eye: COUPE.eye, control: (v, dt) => this.control(v, dt), ease: 0.001 });
+    G.controller.setMode('drive', { vehicle: mine, game: G, eye: COUPE.eye, pitch: -0.12, fov: 58, control: (v, dt) => this.control(v, dt), ease: 0.001 });
     G.setViewmodelVisible(true);
     // the cabin: its own room (the rain on the roof, the engine), no rain
     // inside it, the windscreen's rain and the wipers
@@ -115,6 +116,16 @@ export class Tail {
     this.screen.attach(mine);
     this.screen.clearCracks();
     this.gunProp = null;
+    // (the gun's key light: made with the scene, behind its fade - a light
+    // added when the gun first comes up would recompile the hands' shaders
+    // mid-chase)
+    if (!this.gunKey) {
+      const L = new THREE.PointLight(0xffffff, 0, 1.4, 2);
+      L.layers.enableAll();
+      L.position.set(0.12, 0.3, 0.02);
+      G.vm.root.add(L);
+      this.gunKey = L;
+    }
     this.placeCabin();
   }
 
@@ -439,6 +450,12 @@ export class Tail {
       DRIVE.gun = { prop: p, kick: 0 };
     }
     if (!on) this.gunProp.visible = false;
+    // [R2] its own key light out there: the viewmodel's key hangs up and to
+    // the left for the Tommy gun at the right of the frame, so a gun at the
+    // left showed the eye its dark side (one black lump on the dark road);
+    // this one comes from over my right shoulder onto the side I see, and
+    // the gun reads as a revolver against the rain
+    if (this.gunKey) this.gunKey.intensity = on ? 0.35 * clamp((this.aimK - 0.25) / 0.5, 0, 1) : 0;
   }
   fire() {
     const G = this.game, cam = G.camera, his = this.his;
@@ -460,7 +477,7 @@ export class Tail {
       muzzle.copy(mz).applyMatrix4(this.gunProp.matrixWorld);
     }
     else muzzle.copy(origin).addScaledVector(dir, 0.6);
-    G.fx.flash.player(muzzle.clone(), muzzle.clone(), dir.clone(), G.time);
+    this.flashOut(muzzle, dir);
     G.sfx.pistol(muzzle.clone(), 0);
     G.controller.kick(1.8, 1.2, 0.11);
     if (DRIVE.gun) DRIVE.gun.kick = 1;
@@ -476,6 +493,41 @@ export class Tail {
     }
     G.emit('shot', { weapon: 'revolver', hit, car: good });
     if (this.rounds <= 0) { this.reloadT = 1.3; G.sfx.play('tail_reload', null, {}, { delay: 0.25 }); }
+  }
+  // [R2] the flash out of the window: the Tommy gun's (fx.flash.player) is a
+  // 0.5 m splat for a gun seen from behind at the eye; at arm's length it
+  // covered his car on the frame of the shot. A revolver's: a small hard
+  // star at the muzzle and a short spray along the barrel, drawn with the
+  // gun (the viewmodel's layer), a frame and a smaller second; the wet
+  // street's stand-in and the light as the player's flash has them
+  flashOut(mz, fwd) {
+    const G = this.game, F = G.fx.flash, r = this.ctx.rng, FR = 1 / 60;
+    const gf = new THREE.Vector3(0, 0, -1);
+    if (this.gunProp) gf.transformDirection(this.gunProp.matrixWorld);
+    else gf.copy(fwd);
+    const s = r.range(0.06, 0.075), rot = r.next() * Math.PI * 2;
+    const p = mz.clone().addScaledVector(gf, 0.02);
+    // (half a step's life: spawned after the effects stepped, it is drawn
+    // this frame and gone before the next - with a whole step it was drawn
+    // again where it was while the head leaned on and the view kicked, a
+    // white star fallen to the frame's foot)
+    F.vm.spawn({ pos: p, life: FR * 0.5, size: [s, s], rot, col: [3.2, 3.2, 3.2], cell: FLASH.RADIAL[r.int(0, 5)], fadeOut: 0 });
+    F.vm.spawn({ pos: p.clone().addScaledVector(gf, 0.03), vel: gf.clone(), life: FR * 0.5, size: [s * 0.5, s * 0.3], stretch: s * 1.3, col: [2.6, 2.6, 2.6], cell: FLASH.SMALL[r.int(0, 1)], fadeOut: 0 });
+    // (the second frame is spawned where the muzzle is then)
+    const gun = this.gunProp;
+    const anchor = { alive: true, muzzleWorld: (out) => (gun ? (gun.updateMatrixWorld(true), out.copy(gun.userData.muzzle).applyMatrix4(gun.matrixWorld)) : out.copy(p)) };
+    F.queue.push({ sys: F.vm, pos: p.clone(), size: s * 0.6, cell: FLASH.RADIAL[r.int(0, 5)], rot: rot + 1.3, col: 2.2, t: G.time + FR, anchor });
+    // (no stand-in in the street's mirror: 1.5 m up at arm's length its image
+    // lies under the frame, and the streak it left was a white splat on the
+    // road at the frame's foot)
+    // (the light a stride out along the barrel: it rakes the wet road and his
+    // car's back more than it floods my glove - near the muzzle it printed
+    // the hand as a white mitten for four frames)
+    const w = mz.clone().addScaledVector(gf, 1.6);
+    F.light.position.copy(w);
+    F.lightT = 0; F.lightI = F.intensity.player * 0.55; F.light.intensity = F.lightI;
+    F.playerEntry.position.copy(F.light.position); F.playerEntry.intensity = 0.3;
+    F.puff(mz.clone().addScaledVector(gf, 0.04), gf, 0.35, true);
   }
   // a round into his car: his tail lamp on that side goes, sparks off the
   // trunk; a round near a rear wheel (a generous one) or the fifth good one
@@ -641,6 +693,15 @@ class Wreck {
     this.swing = { a: 0, v: 3.4 };
     this.q0 = g.quaternion.clone();
     this.L = L;
+    // [R2] where the question will be asked: the water just past the rail
+    // at the end of his car nearest mine (question.js grab() puts it there
+    // exactly), so the cone falls in front of the eye there - down past his
+    // shoulders onto the river - rather than round it; the shade swings
+    // round onto it as the post settles
+    this.aimAt = roadPoint(post.s + 0.2 - 4.7, ROAD.quay + 2.2, ROAD.waterY + 0.3);
+    // (the cone's own length: built to reach the pavement straight down, it
+    // is lengthened to reach the water where it now falls)
+    this.coneH0 = post.cone.material.uniforms.uHeight.value;
     // the horn stuck: it sounds, then dies over ~4 s
     G.sfx.play('tail_hornStuck', v.pos, { dur: 4.2 }, { ref: 6 });
     // the tail lamp on the side that struck the post goes (if none of my
@@ -672,12 +733,30 @@ class Wreck {
     // (the head, its cone and its light follow the bent post)
     const head = this.L.geo.head.clone().applyMatrix4(g.matrixWorld);
     const target = head.clone().add(new THREE.Vector3(0, -1, 0).applyAxisAngle(this.axis, this.lean * 0.6 + this.swing.a * 0.25).multiplyScalar(5));
+    // [R2] the bent lamp's shade hangs toward the rail where the question is
+    // asked (the question sets aimAt), so it is asked under the one lamp:
+    // hard light on his brim, the rail and the water; the swing rides on it
+    if (this.aimAt) {
+      this.aimK = Math.min(1, (this.aimK || 0) + dt * 1.5);
+      const want = _v.subVectors(this.aimAt, head).normalize().multiplyScalar(5).add(head);
+      want.addScaledVector(new THREE.Vector3(0, -1, 0).applyAxisAngle(this.axis, this.swing.a * 0.25).sub(new THREE.Vector3(0, -1, 0)), 5);
+      target.lerp(want, this.aimK * this.aimK * (3 - 2 * this.aimK));
+    }
     l.head.copy(head);
     l.axis.copy(target).sub(head).normalize();
     l.cone.position.copy(head);
     l.cone.quaternion.setFromUnitVectors(new THREE.Vector3(0, -1, 0), l.axis);
     l.cone.material.uniforms.uApex.value.copy(head);
     l.cone.material.uniforms.uAxis.value.copy(l.axis);
+    if (this.aimAt) {
+      const H = Math.max(this.coneH0, head.distanceTo(this.aimAt) * 1.02);
+      const Hc = this.coneH0 + (H - this.coneH0) * this.aimK;
+      l.cone.material.uniforms.uHeight.value = Hc;
+      l.cone.scale.setScalar(Hc / this.coneH0);
+      // (its light reaches on past the water: the lamps' falloff dies at
+      // its range, and with the range at the water the patch there was black)
+      l.entry.range = Hc * 1.7;
+    }
     l.entry.position.copy(head); l.entry.direction.copy(l.axis);
     if (l.light) { l.light.pos.copy(head); l.light.target.copy(head).addScaledVector(l.axis, 6); for (const sl of this.L.pool) if (sl.lamp === l) { sl.spot.position.copy(head); sl.spot.target.position.copy(l.light.target); sl.spot.target.updateMatrixWorld(); } }
     // steam from under the hood

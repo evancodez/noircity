@@ -1,5 +1,7 @@
 import * as THREE from 'three';
-import { tagInk, allocInkId, markFigure } from '../../../render/layers.js';
+import { LAYER, tagInk, allocInkId, markFigure } from '../../../render/layers.js';
+import { makeConeMesh } from '../../../render/shaders/cone.js';
+import { glowTexture } from '../../../vehicles/models.js';
 import { merge, roundedBox, V3 } from '../../../world/geom.js';
 import { OVERPASS } from '../../../world/Overpass.js';
 import { ROAD, roadPoint, frameAt } from '../road.js';
@@ -43,12 +45,46 @@ export default {
       group.add(g);
       cars.push(g);
     }
+    // [R2] its headlamp: one hard white eye high on the lead car's face and
+    // its beam down the line ahead of it in the rain. The train comes down
+    // the el at me, and from the driver's seat its windows were lost in the
+    // fog at 200 m and its side hidden by the roof as it passed: the lamp is
+    // what carries - a white point at the far end of the el growing, its
+    // beam, its streak on the wet road - then the roar overhead
+    const LAMP = new THREE.Vector3(LEN / 2 + 0.06, 3.25, 0);
+    {
+      const lead = cars[0];
+      const lamp = merge([
+        new THREE.CylinderGeometry(0.3, 0.34, 0.2, 18).rotateZ(Math.PI / 2).translate(LAMP.x - 0.08, LAMP.y, 0),
+      ]);
+      const hood = new THREE.Mesh(lamp, M.iron);
+      const lens = new THREE.Mesh(new THREE.CircleGeometry(0.24, 20).rotateY(Math.PI / 2).translate(LAMP.x + 0.03, LAMP.y, 0), M.headlamp);
+      lens.userData.emitter = true;
+      hood.userData.noRay = true; lens.userData.noRay = true;
+      tagInk(hood, id); tagInk(lens, id);
+      lead.add(hood, lens);
+    }
+    // (its halo in the rain, unfogged: the lens alone is a pixel at 150 m,
+    // lost among the windows; the halo carries down the el, and the wet road
+    // takes it in a streak - LAYER.FX_REFL, as the cars' tail lamps)
+    const halo = new THREE.Sprite(new THREE.SpriteMaterial({ map: glowTexture(), color: new THREE.Color().setScalar(1.7), blending: THREE.AdditiveBlending, depthWrite: false, transparent: true, fog: false }));
+    halo.layers.set(LAYER.FX_REFL);
+    halo.renderOrder = 6;
+    halo.userData.noRay = true;
+    halo.visible = false;
+    scene.add(halo);
+    const beam = makeConeMesh(stage.U, { apex: new THREE.Vector3(), axis: new THREE.Vector3(1, 0, 0), tan: 0.13, height: 34, r0: 0.2, intensity: 0.34, seed: 11.3 });
+    beam.layers.set(LAYER.VOLUME);
+    beam.frustumCulled = false;
+    beam.visible = false;
+    scene.add(beam);
+    const _a = new THREE.Vector3(), _x = new THREE.Vector3(), _up = new THREE.Vector3(0, -1, 0);
     const api = {
-      group, active: false, s: 0, dir: -1, onRumble: null, onSqueal: null,
+      group, active: false, s: 0, dir: -1, onRumble: null, onSqueal: null, beam, halo,
       // the train at s (its head), running toward -1 (back up the road,
       // over the player's head) or +1
-      run(s, dir = -1) { this.active = true; this.s = s; this.dir = dir; this.near = false; group.visible = true; },
-      stop() { this.active = false; group.visible = false; this.light.intensity = 0; if (this.onRumble) this.onRumble(0, null); },
+      run(s, dir = -1) { this.active = true; this.s = s; this.dir = dir; this.near = false; group.visible = true; beam.visible = true; halo.visible = true; },
+      stop() { this.active = false; group.visible = false; beam.visible = false; halo.visible = false; this.light.intensity = 0; if (this.onRumble) this.onRumble(0, null); },
       light: stage.lights.add({ position: new THREE.Vector3(0, -50, 0), direction: new THREE.Vector3(0, -1, 0), halfAngle: Math.PI, range: 14, intensity: 0 }),
       update(dt, t, { camera = null } = {}) {
         if (!this.active) return;
@@ -58,13 +94,32 @@ export default {
           const sc = this.s - this.dir * (i * (LEN + GAP) + LEN / 2);
           const c = Math.max(0, Math.min(ROAD.len, sc));
           frameAt(c, F);
-          const p = roadPoint(c, (ROAD.elA + ROAD.elB) / 2 + 1.7 * (this.dir > 0 ? 1 : -1), OVERPASS.deckY + OVERPASS.girderH - 0.1);
+          // [R2] (coming at me, on the track nearest the road: on the far one
+          // the near girder hid it from the road the whole way in)
+          const p = roadPoint(c, (ROAD.elA + ROAD.elB) / 2 + 1.7 * (this.dir > 0 ? -1 : 1), OVERPASS.deckY + OVERPASS.girderH - 0.1);
           p.x += F.fx * (sc - c); p.z += F.fz * (sc - c);
           const g = cars[i];
           g.position.copy(p);
           g.rotation.y = F.h + Math.PI / 2 + (this.dir > 0 ? 0 : Math.PI);
           g.updateMatrixWorld(true);
           if (camera) { const d = p.distanceTo(camera.position); if (d < nd) { nd = d; nearest = p; } }
+        }
+        // (the beam: from the lamp along the line ahead, a little down onto
+        // the deck and the rails)
+        {
+          const m = cars[0].matrixWorld;
+          _a.copy(LAMP).applyMatrix4(m);
+          _x.set(1, -0.06, 0).transformDirection(m);
+          beam.position.copy(_a);
+          beam.quaternion.setFromUnitVectors(_up, _x);
+          beam.material.uniforms.uApex.value.copy(_a);
+          beam.material.uniforms.uAxis.value.copy(_x);
+          halo.position.copy(_a).addScaledVector(_x, 0.25);
+          // (a little larger with distance, so it holds a few pixels far off;
+          // dimmer out in the fog)
+          const d = camera ? _a.distanceTo(camera.position) : 60;
+          halo.scale.setScalar(Math.min(6, 2.2 + d * 0.015));
+          halo.material.opacity = 1 - 0.55 * Math.min(1, Math.max(0, (d - 140) / 220));
         }
         if (this.onRumble) this.onRumble(nearest ? Math.max(0, 1 - nd / 140) : 0, nearest);
         // its lit windows light the rain round it; overhead, the iron shakes
