@@ -33,7 +33,9 @@ import { BLIND as OBLIND } from '../stages/office/build/openings.js';
 // stretch.
 const V = (x, y, z) => new THREE.Vector3(x, y, z);
 // what the detective carries by now (a cold start gets it too)
-const INV = ['matchbook', 'tornHalf', 'note', 'ledger', 'revolver'];
+// ([R3] the torn half by scene 3's name for it, matchbookHalf: played
+// through, the coat held it twice under two names)
+const INV = ['matchbook', 'matchbookHalf', 'note', 'ledger', 'revolver'];
 const EYE = 1.63;
 // the lens at the slit (degrees): the eye narrows on him as it leans in
 const PEEK = 44;

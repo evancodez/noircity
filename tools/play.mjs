@@ -468,6 +468,15 @@ try {
           await mouse('mousePressed', r[0], r[1]); await sleep(40); await mouse('mouseReleased', r[0], r[1]);
         }
       }
+    }
+    // [R3] { "heap": "label" }: a garbage collection, then the page's JS heap
+    // in use (DevTools, exact), logged and kept in window.__heap[label] (MB)
+    else if (S.heap) {
+      await send('HeapProfiler.collectGarbage', {});
+      const h = (await send('Runtime.getHeapUsage', {})).result || {};
+      const mb = +((h.usedSize || 0) / 1048576).toFixed(1);
+      await js(`((window.__heap = window.__heap || {})[${JSON.stringify(S.heap)}] = ${mb}, 1)`);
+      log(`heap  ${S.heap}: ${mb} MB used of ${((h.totalSize || 0) / 1048576).toFixed(1)} MB`);
     } else if (S.reload) {
       await send('Page.reload', {});
       await sleep(500);

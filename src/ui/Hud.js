@@ -134,6 +134,7 @@ export class Hud {
       #hud .prompt .k canvas { position: absolute; left: -4px; top: 0; width: calc(100% + 8px); height: 100%; }
       #hud .prompt .k span { position: relative; }
       #hud .tick { position: absolute; width: 26px; height: 26px; margin: -24px 0 0 -2px; display: none; }
+      #hud.carded .prompt, #hud.carded .tick { visibility: hidden; }
       #hud .say { position: absolute; left: 50%; bottom: 7.5%; transform: translateX(-50%); display: none; }
       #hud .say canvas { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); }
       #hud .say span { position: relative; display: block; padding: 0 30px; font: ${SAY_FONT}; line-height: 58px; color: #f2f0ea; white-space: nowrap; letter-spacing: 0.02em; }
@@ -407,6 +408,10 @@ export class Hud {
     this.tickCard(0);
   }
   tickCard(dt) {
+    // [R3] a prompt waits for the chapter card: the card alone in the frame,
+    // the prompt as it goes (the key still works under it)
+    const up = this.cardT - dt > 0.7;
+    if (up !== !!this._carded) { this._carded = up; this.root.classList.toggle('carded', up); }
     if (this.cardT <= 0) return;
     this.cardT -= dt;
     const C = this.el.chapter;
