@@ -92,7 +92,7 @@
 
   { "name": "4. the picture, the safe: right, left, right by the sheet" },
   { "look": [0, -260], "steps": 6 },
-  { "walk": [[4.78, 2.6], [3.4, 1.9], [2.8, 2.1], [2.8, 0.95]], "timeout": 20000 },
+  { "walk": [[4.78, 2.6], [3.2, 2.6], [2.8, 2.4], [2.78, 0.6]], "timeout": 20000, "name": "(the last leg straight at the picture and long: on a loaded machine a short one ended before the turn onto it had)" },
   { "wait": 400 },
   { "eval": "[+N.controller.pitch.toFixed(2), +N.controller.yaw.toFixed(2), +G.eye.x.toFixed(2), +G.eye.z.toFixed(2), G.controller.mode]" },
   { "until": "G.hud.promptShown.includes('picture')", "timeout": 5000 },

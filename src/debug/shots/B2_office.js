@@ -4,6 +4,7 @@
 //   b2_corridor   the corridor from the lift's dark end: 304's lit glass, the lamp's pool
 //   b2_room       the room from the door: the desk and its lamp, the blind, the slats on the wall
 //   b2_slats      the picture hung crooked in the blind's light
+//   b2_overview   (round 2) the room as lit, the ceiling's slats and the fan
 //   b2_pad        puzzle D: the pencil's side across the next sheet (the demo hand)
 //   b2_dial       puzzle E: the fingers on the dial, the sheet at the frame's edge
 //   b2_safe       the safe open, the ledger in it (red)
@@ -20,6 +21,9 @@ export const presets = {
   b2_corridor: beat('office', 'corridor', 2.5),
   b2_room: beat('office', 'room', 1.5, { x: 0.45, z: 1.25, yaw: -1.62, pitch: -0.1, fov: 72 }),
   b2_slats: beat('office', 'room', 1.5, { x: 3.6, z: 3.0, yaw: 0.5, pitch: -0.1, fov: 70 }),
+  // (round 2) the room as lit: the banker's lamp's pool, the blind, the street's light up
+  // through it on the ceiling and the fan in it, the slats on the floor
+  b2_overview: beat('office', 'room', 1.5, { x: 0.7, z: 2.0, yaw: -1.75, pitch: 0.14, fov: 72 }),
   b2_pad: beat('office', 'pad', 6.2),
   b2_dial: beat('office', 'safe', 2.2),
   b2_safe: beat('office', 'ledger', 1.2),

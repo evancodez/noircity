@@ -82,6 +82,14 @@ export function buildFireEscape(kit, mats, stage) {
 export function buildStreet(kit, mats, stage, lamps) {
   const out = {};
   const S = STREET, y0 = S.y;
+  // (round 2: the street's ground for anyone standing on it - the watcher
+  // under the lamp, scene 6: a figure put at a place takes its feet from the
+  // stage's surface, and without this one it stood on the third floor's
+  // level in the air across the street)
+  stage.addSurface((x, z) => {
+    if (x < S.face || x > S.far || Math.abs(z) > 44) return undefined;
+    return x > S.kerb && x < S.farKerb ? y0 : y0 + 0.15;
+  });
   // ---- the street, the pavements ----------------------------------------------------------------
   kit.piece();
   kit.add(new THREE.BoxGeometry(S.farKerb - S.kerb, 0.1, 90).translate((S.kerb + S.farKerb) / 2, y0 - 0.05, 0), mats.asphalt, { name: 'street_road', cast: false });
@@ -100,7 +108,11 @@ export function buildStreet(kit, mats, stage, lamps) {
   const winMats = [];
   for (let fl = 0; fl < 5; fl++) for (let k = -9; k <= 9; k++) {
     const z = k * 3.2 + 0.6, y = y0 + 4.8 + fl * 3.6;
-    const lit = hash(k * 7 + fl, 3) > 0.84 ? 0.55 + hash(k, fl) * 0.45 : 0;
+    // (round 2: a few lit panes where the room's eye meets the facade
+    // through the blind - from the door, the desk, the window - so the
+    // window is a night window with lights in it, never a black plate)
+    const seen = (fl === 1 && k === 4) || (fl === 0 && k === 3) || (fl === 2 && k === 5) || (fl === 1 && k === 1);
+    const lit = seen ? 0.7 + hash(k, fl) * 0.3 : hash(k * 7 + fl, 3) > 0.84 ? 0.55 + hash(k, fl) * 0.45 : 0;
     if (lit > 0) {
       const m = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), makeRoomMaterial({ seed: k * 11 + fl, lit }));
       m.position.set(S.far - 0.01, y, z); m.rotation.y = -Math.PI / 2; m.scale.set(1.3, 1.9, 1);

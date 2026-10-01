@@ -22,7 +22,9 @@ export const MEN = {
   // the doorway man: out of sight south of the jamb, a step into the door to fire
   doorway: { at: { x: -2.3, z: -5.8 }, path: [...STAIRS_IN, { x: -0.7, z: -0.8 }, { x: -0.6, z: 0.08 }], role: 'hall', hp: 100, aim: 0.7, hide: { x: -0.6, z: 0.08 }, fire: { x: -0.42, z: 0.98 } },
   // the Tommy gun at the fire-escape window: up the flight from the floor below
-  window: { at: { x: -1.75, z: 7.62 }, path: [{ x: 0.9, z: 7.62 }, { x: 1.55, z: 7.72 }], role: 'window', heavy: true, hp: 130, aim: 0.75, hide: { x: 1.7, z: 7.74 }, fire: { x: 2.72, z: 7.72 } },
+  // (round 2: aim 0.75 -> 0.68 - from the north the desk covers a third of me,
+  // and the scripted aimer's falls came in the last overlap, his crossfire in most)
+  window: { at: { x: -1.75, z: 7.62 }, path: [{ x: 0.9, z: 7.62 }, { x: 1.55, z: 7.72 }], role: 'window', heavy: true, hp: 130, aim: 0.68, hide: { x: 1.7, z: 7.74 }, fire: { x: 2.72, z: 7.72 } },
   // the last two: another at the door, the heavy on into the room
   second: { at: { x: -2.3, z: -5.8 }, path: [...STAIRS_IN, { x: -0.62, z: -0.6 }, { x: -0.6, z: 0.1 }], role: 'hall', hp: 110, aim: 0.7, hide: { x: -0.6, z: 0.1 }, fire: { x: -0.35, z: 1.05 } },
   // (on past the kicker's place, so the two do not end in one heap by the door)
@@ -254,10 +256,23 @@ function roomHit(ctx, O, hit, dir, rng) {
 
 // sheets of paper up off a hit, drifting down (they settle and stay)
 const PAPER = { mat: null };
+// (round 2: a sheet in the air up by the ceiling crosses the street's light
+// up through the blind - a light made to reach the ceiling from three
+// floors down - and printed as a glowing white card, a white wall across
+// the frame's top when it came down near me in the quiet. Paper is paper:
+// it never prints brighter than a sheet in the lamp's pool, and no glow)
+function paperMat() {
+  const m = new THREE.MeshStandardMaterial({ color: 0x6e6e6e, roughness: 0.9, side: THREE.DoubleSide });
+  m.onBeforeCompile = (sh) => {
+    sh.fragmentShader = sh.fragmentShader.replace('#include <opaque_fragment>', 'outgoingLight = min( outgoingLight, vec3( 0.85 ) );\n#include <opaque_fragment>');
+  };
+  m.customProgramCacheKey = () => 'b2paper';
+  return m;
+}
 export function papers(ctx, at, dir, rng, n = 5) {
   const B = ctx.stage.breakables;
   // (a sheet's paper, not a light: at 0x9a one in the floor lamp's beam printed as a glowing card)
-  const mat = PAPER.mat || (PAPER.mat = new THREE.MeshStandardMaterial({ color: 0x6e6e6e, roughness: 0.9, side: THREE.DoubleSide }));
+  const mat = PAPER.mat || (PAPER.mat = paperMat());
   mat.userData.inkSurface = 'plaster';
   for (let k = 0; k < n; k++) {
     // (its face on local y: the field lays a thin piece down on local y - an
@@ -267,7 +282,14 @@ export function papers(ctx, at, dir, rng, n = 5) {
     m.position.copy(at).add(V(rng.gauss() * 0.08, rng.range(0, 0.08), rng.gauss() * 0.08));
     m.rotation.set(rng.next() * 6, rng.next() * 6, rng.next() * 6);
     m.userData.inkId = 3; m.userData.noRay = true;
-    B.field.add(m, V(rng.gauss() * 0.9, rng.range(1.6, 3.2), rng.gauss() * 0.9).addScaledVector(dir, 0.5), V(rng.gauss() * 3, rng.gauss() * 3, rng.gauss() * 3), { paper: true, thin: true });
+    // (round 2: a burst off the desk I am down behind flew up through my eye
+    // and a sheet a hand from the lens was a white wall across the frame:
+    // near me they go up less and off away from me)
+    const e = ctx.game.eye, ex = at.x - e.x, ez = at.z - e.z, ed = Math.hypot(ex, ez) || 1;
+    const near = Math.max(0, 1 - ed / 1.8);
+    const vel = V(rng.gauss() * 0.9, rng.range(1.6, 3.2) * (1 - 0.45 * near), rng.gauss() * 0.9).addScaledVector(dir, 0.5);
+    vel.x += ex / ed * 1.6 * near; vel.z += ez / ed * 1.6 * near;
+    B.field.add(m, vel, V(rng.gauss() * 3, rng.gauss() * 3, rng.gauss() * 3), { paper: true, thin: true });
   }
   ctx.game.sfx.play('office_papers', at);
 }

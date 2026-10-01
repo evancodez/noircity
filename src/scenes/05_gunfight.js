@@ -1,9 +1,7 @@
 import * as THREE from 'three';
 import { defineScene, wait, until, beat } from '../game/script.js';
-import { roomAs, carry, office, stand, V } from './office/room.js';
+import { roomAs, carry, office, stand, inkPrompt, V } from './office/room.js';
 import { live, palmOn } from './office/hands.js';
-import { PROP_KINDS } from '../props/index.js';
-import { standInGun } from './office/gunHud.js';
 import { MEN, send, coverFrom, glassMen, roomReacts, glassReward, fallHook, papers, note } from './office/fight.js';
 import { DESK, DOOR, SIDE, SAFE, FAN, PICTURE } from '../stages/office/plan.js';
 
@@ -40,6 +38,7 @@ export default defineScene({
   *script(ctx) {
     const { game: G, controller: C } = ctx;
     const O = office(ctx), F = ctx.flags;
+    inkPrompt(ctx);
     const D = G.director;
     const snd = (n, p = null, q = {}) => G.sfx.play(n, p, q);
     // (continuing straight from scene 4: the room as it stands)
@@ -56,8 +55,6 @@ export default defineScene({
     // director running into the next one)
     D.run(function* () { while (G.scenes.ctx === ctx) yield null; });
     roomReacts(ctx);
-    // (the plain revolver has no model yet: where it points, what is in it)
-    standInGun(ctx);
     const shotFn = () => { F.shotAt = true; F.lastShotT = G.time; };
     const downFn = (e) => { const h = e && e.hood; void h; };
     void downFn;
@@ -188,7 +185,14 @@ export default defineScene({
       C.crouchOn = false;
       // smoke in the light, paper coming down
       const rng = ctx.stage.rng.fork(3071);
-      papers(ctx, V(DESK.x - 0.6, 2.4, DESK.z), V(0, -1, 0), rng, 5);
+      // (round 2: where I am looking, a couple of metres off, not over my head:
+      // over the desk they came down past the lens as a white card)
+      const fw = G.camera.getWorldDirection(V(0, 0, 0)).setY(0);
+      if (fw.lengthSq() < 1e-4) fw.set(-1, 0, 0);
+      fw.normalize();
+      const pAt = V(G.eye.x + fw.x * 1.9, 2.3, G.eye.z + fw.z * 1.9);
+      pAt.x = Math.max(0.5, Math.min(5.1, pAt.x)); pAt.z = Math.max(0.5, Math.min(6.5, pAt.z));
+      papers(ctx, pAt, V(0, -1, 0), rng, 5);
       yield wait(3.2);
       ctx.next();
     }
@@ -249,7 +253,9 @@ function holdUntilKicked(ctx, h, delay = 0) {
 // E: the desk over on its front, the lamp thrown off it; then C to duck
 function tipPrompt(ctx) {
   const G = ctx.game, O = office(ctx), F = ctx.flags;
-  ctx.interact.add({ id: 'tip', at: V(DESK.x + 0.1, DESK.h + 0.1, DESK.z), range: 1.9, cone: 0.55, prompt: 'tip the desk', when: () => !O.desk.tip, onUse: () => {
+  // (round 2: a wide cone - the desk is 1.6 m of it and the prompt is the one thing
+  // in the room then: near its chair side and looking at any of it, the prompt shows)
+  ctx.interact.add({ id: 'tip', at: V(DESK.x + 0.1, DESK.h + 0.1, DESK.z), range: 1.9, cone: 0.85, prompt: 'tip the desk', when: () => !O.desk.tip, onUse: () => {
     if (!O.tipDesk()) return;
     G.sfx.play('office_deskTip', V(DESK.x, 0.6, DESK.z));
     F.tipped = true;
@@ -266,22 +272,20 @@ function tipPrompt(ctx) {
 
 // the heave: from the chair's side, both palms on the desk's near edge as it
 // goes up and over, off it as it falls away (object first: the edge's path
-// is the desk's; the palms ride it). While the revolver has no model its
-// hands' set is hidden, so the bare hands are put up for the heave and the
-// revolver's set given back after; with a model only the left hand heaves.
+// is the desk's; the palm rides it). The revolver stays in the right hand
+// (round 2: B3's .38); the left hand heaves, and lets go once the edge has
+// risen past a hand's push - it never follows the desk up out of reach.
 function heave(ctx) {
   const G = ctx.game, O = office(ctx), H = ctx.hands, e = G.eye;
   const d = O.desk;
   // (only from behind it, within an arm: anywhere else it goes over on its own)
   const edgeX = DESK.x + DESK.d / 2;
   if (e.x < edgeX - 0.05 || e.x - edgeX > 0.85 || Math.abs(e.z - DESK.z) > DESK.w / 2 + 0.2) return;
-  const bare = !PROP_KINDS.includes('revolver');
-  if (bare) H.equip('empty');
   // (the two grips on the near top edge, a shoulder's width apart, in the desk's own frame)
   const zc = Math.max(DESK.z - DESK.w / 2 + 0.3, Math.min(DESK.z + DESK.w / 2 - 0.3, e.z));
   d.pivot.updateMatrixWorld(true);
   const at = { R: d.pivot.worldToLocal(V(edgeX - 0.03, DESK.h + 0.005, zc - 0.22)), L: d.pivot.worldToLocal(V(edgeX - 0.03, DESK.h + 0.005, zc + 0.22)) };
-  const sides = bare ? ['R', 'L'] : ['L'];
+  const sides = ['L'];
   const pin = () => {
     for (const s of sides) {
       const p = d.pivot.localToWorld(at[s].clone());
@@ -292,7 +296,7 @@ function heave(ctx) {
     }
   };
   pin();
-  live(H, bare ? { R: 'b2liveR', L: 'b2liveL' } : { L: 'b2liveL' });
+  live(H, { L: 'b2liveL' });
   // (the view dips with the heave - the body bends to it - and comes back up:
   // the hands on the edge are in the frame, not under it)
   const C = ctx.controller;
@@ -303,15 +307,11 @@ function heave(ctx) {
     t += 1 / 60;
     dip(off < 0 ? -0.26 * Math.min(1, t / 0.14) : 0);
     if (off < 0) {
-      // (the first 15 degrees: after that the edge goes up and away out of reach)
-      if (d.tipped < 0.17 && t < 0.5) { pin(); return; }
+      // (the first 9 degrees: after that the edge goes up and away out of reach)
+      if (d.tipped < 0.08 && t < 0.24) { pin(); return; }
       // (let go: the hands drop away)
       off = t;
       live(H, {});
-    } else if (bare && off > 0 && t - off > 0.26) {
-      // (the revolver's set back once they are down out of the frame)
-      off = 0;
-      if (ctx.player.weapons.current === 'revolver' && H.set === 'empty') H.equip('revolver');
     }
   };
   ctx.onStep(stepFn);
@@ -348,7 +348,15 @@ function curtainShot(ctx, h) {
   if ((m.z - zc) * (e.z - zc) >= 0) return;
   const t = (zc - m.z) / (e.z - m.z);
   const r = F.cr || (F.cr = ctx.stage.rng.fork(3067));
-  const p = V(m.x + (e.x - m.x) * t + r.gauss() * 0.12, m.y + (e.y - m.y) * t + r.gauss() * 0.15, zc);
+  // (round 2: a Tommy gun's burst climbs and walks - each round of a burst a
+  // little higher and to his right of the last, and wide: the holes stitch
+  // a line across the cloth instead of one blot where he stood)
+  const G2 = ctx.game;
+  F.crN = G2.time - (F.crT ?? -9) < 0.45 ? (F.crN || 0) + 1 : 0;
+  F.crT = G2.time;
+  const n = Math.min(F.crN, 7), side = F.crSide ?? (F.crSide = r.chance(0.5) ? 1 : -1);
+  if (n === 0) F.crSide = r.chance(0.5) ? 1 : -1;
+  const p = V(m.x + (e.x - m.x) * t + r.gauss() * 0.22 + side * n * 0.07, m.y + (e.y - m.y) * t + r.gauss() * 0.2 + n * 0.09 - 0.12, zc);
   O.curtain.tear(p, r);
 }
 

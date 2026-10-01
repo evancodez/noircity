@@ -11,7 +11,9 @@ import { Lamps } from '../../../world/Lamps.js';
 //     and `noShadow` (it never takes a shadowed light);
 //   - a lamp may carry `shadow: { radius, mapSize, bias, normalBias }` for
 //     the shadowed light it is dealt (the slats want a sharper map than a
-//     street lamp's soft pool).
+//     street lamp's soft pool);
+//   - (round 2) `priority` may be a function of the eye's place, and a lamp
+//     may be `shadowOnly` (dealt a shadowed light or no light at all).
 export class RoomLamps {
   constructor(stage) {
     // (Lamps' constructor builds the block's posts along its street: the
@@ -66,12 +68,16 @@ function updatePool(dt, camPos, camFwd) {
       const dx = l.head.x - camPos.x, dz = l.head.z - camPos.z;
       const d = Math.hypot(dx, dz);
       const ahead = (dx * camFwd.x + dz * camFwd.z) / Math.max(d, 1e-3);
-      l._score = d * (ahead < -0.2 ? 1.6 : 1.0) - (l.priority || 0) * 1000;
+      // (round 2: a priority may depend on where the eye is)
+      const pr = typeof l.priority === 'function' ? l.priority(camPos) : l.priority || 0;
+      l._score = d * (ahead < -0.2 ? 1.6 : 1.0) - pr * 1000;
     }
     cands.sort((a, b) => a._score - b._score);
     const nShadow = this.pool.filter((p) => p.shadow).length;
-    this._want = new Set(cands.slice(0, this.pool.length));
     this._wantShadow = new Set(cands.filter((l) => !l.noShadow).slice(0, nShadow));
+    // (a lamp that is nothing without its shadow - the street's light up
+    // through the blind - takes a shadowed light or none)
+    this._want = new Set(cands.filter((l) => !l.shadowOnly || this._wantShadow.has(l)).slice(0, this.pool.length));
   }
   if (!this._want) return;
   const held = new Set(this.pool.map((p) => p.lamp).filter(Boolean));

@@ -264,6 +264,8 @@ async function shoot({ until = 'false', timeout = 150000, cover = false, react =
         out.men.push({ id: h.slot, x: c.x, y: c.y, z: c.z, L, seen });
       }
       return out; })()`);
+    // [R2-A] (a read that threw - the room being set again after a fall - is tried again)
+    if (!s || s.__exc) { await sleep(200); if (Date.now() - T0 > timeout) { check('the gunfight ended in time', false, s && s.__exc); return { fired, done: false }; } continue; }
     for (const [name, expr] of Object.entries(shots)) if (!done.has(name) && await js(expr) === true) { done.add(name); await shot(name); }
     if (s.done) return { fired, time: (Date.now() - T0) / 1000, hp: s.hp, done: true };
     if (Date.now() - T0 > timeout) { check('the gunfight ended in time', false, JSON.stringify({ men: s.men.length })); return { fired, done: false }; }

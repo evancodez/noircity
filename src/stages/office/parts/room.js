@@ -6,10 +6,17 @@ import { buildShell } from '../build/shell.js';
 import { buildOpenings, syncFrosted } from '../build/openings.js';
 import { buildFurniture } from '../build/furniture.js';
 import { buildFireEscape, buildStreet } from '../build/outside.js';
+import { makeGobo } from '../build/gobo.js';
 import { FLOOR, CEIL, ROOM, CORR, DOOR, DESK, PAD, LAMP, WIN, ESC, SAFE, PICTURE, STREET, POST, CORR_LAMP, BLIND_LIGHT, PICTURE_ASIDE } from '../plan.js';
 // the banker's lamp's strength (the pad sits close under it, in the heart of its pool: at
 // this the graphite on the sheet still prints dark, and the blotter round it white)
-const DESK_LAMP_I = 6;
+const DESK_LAMP_I = 30, DESK_LAMP_A = 1.3;
+// the muzzle flashes' light in this room (fx/MuzzleFlash.js: the street's 32 and 22)
+const FLASH_I = { player: 11, hood: 6.5 };
+// the street's light up through the blind onto the ceiling
+const UP_I = 16000;
+// the blind's light on the hands, against its light on the room (build/gobo.js)
+const GOBO_K = 0.3;
 
 // Room 304 and its corridor (lane B2): the whole third floor of the stage.
 // Built from ./build/*; this part lights it, gives it its Looks, its dry
@@ -59,9 +66,12 @@ export default {
     const dl = furn.lamp;
     g.updateMatrixWorld(true);
     const deskHead = dl.shadeG.localToWorld(V(-0.01, -0.03, 0));
-    const deskAxis = V(PAD.x, DESK.h, PAD.z + 0.05).sub(deskHead).normalize();
-    const deskLamp = lamps.addCustom({ head: deskHead, axis: deskAxis, height: 0.8, half: 0.95, real: true, bulb: dl.bulb, fadeEnd: 0.8, edgeSoft: 0.6, strength: 0.25, tag: 'desk' });
-    Object.assign(deskLamp.light, { intensity: DESK_LAMP_I, angle: 1.15, penumbra: 0.75, distance: 4.5 });
+    // (round 2: aimed nearly straight down and wide, as the shade throws it:
+    // one pool over the blotter, the pad, the papers and the desk's edges,
+    // falling off over its sides - the room's warm pool, as the diner's counter)
+    const deskAxis = V(-0.15, -1, 0.05).normalize();
+    const deskLamp = lamps.addCustom({ head: deskHead, axis: deskAxis, height: 0.42, half: 0.62, real: true, bulb: dl.bulb, fadeEnd: 0.95, edgeSoft: 0.55, strength: 0.34, tag: 'desk' });
+    Object.assign(deskLamp.light, { intensity: DESK_LAMP_I, angle: DESK_LAMP_A, penumbra: 0.45, distance: 5 });
     deskLamp.priority = 5;
     deskLamp.shadow = { radius: 3, mapSize: 1024, near: 0.05 };
     // (its head and aim in the shade's own frame: they ride the shade when the desk goes over)
@@ -76,15 +86,31 @@ export default {
     const corrHead = V(CORR_LAMP.x, CORR.ceil - 0.36, CORR_LAMP.z);
     const corrLamp = lamps.addCustom({ head: corrHead, axis: V(0, -1, 0), height: CORR.ceil - 0.36, half: 0.8, real: true, bulb: globe, fadeEnd: 0.85, edgeSoft: 0.5, strength: 0.45, tag: 'corridor' });
     Object.assign(corrLamp.light, { intensity: 38, angle: 1.2, penumbra: 0.85, distance: 8 });
-    corrLamp.priority = 2;
+    // (in the corridor its shadow before the street's light up through the blind)
+    corrLamp.priority = (eye) => (eye.x < -0.1 ? 6 : 2);
+    // the street's light up through the blind onto the ceiling (round 2): the
+    // lamp post across the way, three floors down - its light comes in
+    // rising through the slats and lays their lines over the black ceiling
+    // and the top of the door's wall, and the fan turns through it: its
+    // blades' slow shadow goes round up there. A shadowed light or none
+    // (unshadowed it would be a blot on the ceiling), and only while the
+    // eye is in the room.
+    const upFrom = street.post.head.clone().add(V(-0.35, 0.05, 0));
+    const upAt = V(1.6, CEIL, (WIN.z0 + WIN.z1) / 2 - 0.25);
+    const upLamp = lamps.addCustom({ head: upFrom, axis: upAt.clone().sub(upFrom).normalize(), height: 4, half: 0.09, real: true, strength: 0, tag: 'streetUp' });
+    Object.assign(upLamp.light, { intensity: UP_I, angle: 0.1, penumbra: 0.35, distance: 30 });
+    upLamp.cone.visible = false;
+    upLamp.priority = (eye) => (eye.x > 0 ? 4 : 0);
+    upLamp.shadowOnly = true;
+    upLamp.shadow = { radius: 1.4, mapSize: 1024, bias: -0.0003, normalBias: 0.02, near: 11 };
     // the dead end of the corridor by the lift: a dim bulb over the gate (no pool: a mark in the dark)
     kit.add(new THREE.SphereGeometry(0.035, 12, 8).translate((-1.62 - 0.52) / 2, 2.55, CORR.z0 + 0.06), mats.litDim, { cast: false });
 
     // ---- the Looks, the dry volumes, the walls of the stage ----------------------------------
     stage.dry.push(shell.roomBox, shell.corrBox);
-    const inside = { fogDensity: FOG.density * 0.3, rainOverlay: 0, haze: 0.65, reflect: 'none', ambient: 0.3 };
+    const inside = { fogDensity: FOG.density * 0.3, rainOverlay: 0, haze: 0.65, reflect: 'none', ambient: 0.2 };
     stage.addLook(shell.roomBox, { ...inside, room: 'office' });
-    stage.addLook(shell.corrBox, { ...inside, ambient: 0.25, haze: 0.45, room: 'corridor' });
+    stage.addLook(shell.corrBox, { ...inside, ambient: 0.18, haze: 0.45, room: 'corridor' });
     stage.colliders.setBounds(-2.5, 6.2, -7.3, 9.0);
 
     // ---- the anchors -------------------------------------------------------------------------
@@ -93,7 +119,10 @@ export default {
     A('door', -0.62, (DOOR.z0 + DOOR.z1) / 2, -Math.PI / 2, { r: 1.2 });
     A('desk', 4.8, PAD.z + 0.02, Math.PI / 2);
     A('safe', SAFE.x + 0.02, 0.78, 0);
-    A('window.street', 5.02, (WIN.z0 + WIN.z1) / 2, -Math.PI / 2);
+    // (round 2: leaning over the radiator, the eye a hand from the slats - two
+    // fingers part the pair at the eye and the line down to the lamp post
+    // across the way passes through the gap they make)
+    A('window.street', 5.42, (WIN.z0 + WIN.z1) / 2 + 0.3, -Math.PI / 2 - 0.02, { eyeY: 1.72 });
     A('window.escape', (ESC.x0 + ESC.x1) / 2, ROOM.z1 - 0.62, Math.PI);
     stage.addAnchor('office.street.watcher', { pos: V(POST.x - 0.25, STREET.y + 0.15, POST.z - 0.7), yaw: Math.PI / 2 });
     // the gunfight's places: behind the desk (tipped or not), the men's marks
@@ -121,10 +150,12 @@ export default {
       door, desk: furn.desk, pad: furn.pad, pencilAt: furn.pencilAt, picture: furn.picture, safe: furn.safe,
       blind: open.blind, curtain: open.curtain, fan: furn.fan, cooler: furn.cooler, cabinets: furn.cabinets,
       window: open.window, escape: open.escape, side: open.side, frosted,
-      lights: { blind: blindLight, desk: deskLamp, corridor: corrLamp, post: street.post.lamp },
+      lights: { blind: blindLight, desk: deskLamp, corridor: corrLamp, post: street.post.lamp, up: upLamp },
       lamp: { lamp: deskLamp, parts: dl, fallen: 0, fall: null },
       neon: street.neon,
       gust: 0,
+      // (the pad's close-up: the lamp eased down, 0..1; lampDimTo its target)
+      lampDim: 0, lampDimTo: 0,
       // ---- the door --------------------------------------------------------------------
       // swing it to `angle` (rad, 0 shut, ~1.7 open against the wall) with a
       // speed (rad/s); kick(): flung open, it bangs off its stop and comes to rest
@@ -149,7 +180,7 @@ export default {
         d.tip = { t: 0, a: now ? Math.PI / 2 : 0, v: 0 };
         d.tipNow = now;
         // (over at once: its collider and the bullets' copy where it lies, before anyone stands by it)
-        if (now) { d.tip.done = true; d.pivot.rotation.z = Math.PI / 2; d.pivot.updateMatrixWorld(true); d.tipped = 1; drawersHome(api, stage, true); afterTip(api, stage); }
+        if (now) { d.tip.done = true; d.pivot.rotation.z = Math.PI / 2; d.pivot.updateMatrixWorld(true); d.tipped = 1; drawersHome(api, stage, true); spill(api, stage); afterTip(api, stage); }
         return true;
       },
       // ---- the picture swings aside on its wire -------------------------------------------
@@ -162,6 +193,10 @@ export default {
 
   update(api, dt, t, camera) {
     const stage = api.kit.stage, G = stage.game;
+    // (round 2: a muzzle's flash in a small dark room - the street's flash
+    // light, at a metre from a wall, lit a hard white disc on it; here it
+    // lifts the walls to a grey for its two frames and the men stand black in it)
+    if (!api._flashSet && stage.fx && stage.fx.flash) { api._flashSet = true; Object.assign(stage.fx.flash.intensity, FLASH_I); }
     // the frosted panes: their frames (the door swings) and the men behind them
     const L = api.lights.corridor;
     for (const f of api.frosted) {
@@ -205,11 +240,18 @@ export default {
       dk.tipped = T.a / (Math.PI / 2);
       // (past halfway the pulled drawers point up and run home, one bang)
       if (!dk.slid && dk.tipped > 0.55) { drawersHome(api, stage, true); if (G && !dk.tipNow) G.sfx.play('office_drawer', V(dk.x - 0.2, 0.9, dk.z), { k: 1 }); }
+      // (what was on its top slides off beyond it, out of my sight behind it)
+      if (!dk.spill && dk.tipped > 0.45) spill(api, stage);
     }
     // (the drawers' shut copy out of the bullets' way until it is wanted)
     if (!dk._raysInit && G && G.rays) { dk._raysInit = true; drawersHome(api, stage, !!dk.slid); }
     // the desk lamp rides the desk, or lies where it fell
     lampFollow(api, stage);
+    // (round 2: over the pad the eye is a hand's length from the bulb - the
+    // lamp's full pool would print the sheet and its graphite one white, so
+    // the light eases down while the pad is up, as an eye adapts, and back)
+    api.lampDim += ((api.lampDimTo || 0) - api.lampDim) * Math.min(1, dt * 7);
+    if (!api.lamp.fall && !api.lamp.lamp.dead) api.lamp.lamp.light.intensity = DESK_LAMP_I * (1 - 0.74 * api.lampDim);
     // the picture on its wire
     const P = api.picture;
     if (P.swinging) {
@@ -222,6 +264,11 @@ export default {
     // the fan: its slow turn (a bent blade ticks round)
     const F = api.fan;
     F.rotor.rotation.y -= (F.rpm / 60) * Math.PI * 2 * dt;
+    // (its shadow in the street's light on the ceiling: that light's map
+    // follows the blades every third step: 20 a second)
+    if (dt > 0 && (api._fanK = (api._fanK || 0) + 1) % 3 === 0) {
+      for (const sl of stage.lamps.pool) if (sl.lamp === api.lights.up && sl.shadow) sl.spot.shadow.needsUpdate = true;
+    }
     // the curtain in the air from under the sash
     api.gust += (Math.sin(t * 0.37) * 0.5 + Math.sin(t * 1.13 + 1) * 0.3 - api.gust) * Math.min(1, dt * 0.8);
     api.curtain.step(t, Math.max(0, api.gust));
@@ -236,6 +283,9 @@ export default {
       bl.base = on ? 1 : 0.82;
       if (bl.light) bl.light.intensity = 40000 * bl.base;
     }
+    // (round 2) the slats across my hands and the gun, where the light through the blind reaches me
+    if (G && api._gobo === undefined) api._gobo = makeGobo(G, stage, api.blind, api.lights.blind) || null;
+    if (api._gobo) api._gobo.update((api.lights.blind._k ?? 1) * GOBO_K);
   },
 };
 
@@ -244,7 +294,7 @@ export default {
 function afterTip(api, stage) {
   const d = api.desk, c = d.collider;
   // (lying on its front: 0.78 deep along x now, its old front edge the pivot)
-  c.cx = d.x - DESK.d / 2 - DESK.h / 2 + 0.02; c.hx = DESK.h / 2; c.hz = DESK.w / 2;
+  c.cx = d.x - DESK.d / 2 - DESK.h / 2 + 0.02; c.hx = DESK.h / 2; c.hz = DESK.w / 2 + 0.05;
   deskRays(api, stage);
 }
 // the bullets' copy of the desk where the desk is (tipped, or stood up again)
@@ -252,6 +302,41 @@ function deskRays(api, stage) {
   const G = stage.game, d = api.desk;
   if (G && G.rays) d.body.traverse((m) => { if (m.isMesh && stage.solids.includes(m)) G.rays.refresh(m); });
   if (G && G.pipeline && G.pipeline.dirtyShadows) G.pipeline.dirtyShadows();
+}
+// the things on the desk's top (not the desk, not the lamp) come off it as it
+// goes over and lie on the floor beyond it, flat, turned every way; put back
+// on it by the reset. (Object first: a telephone stuck to a desk standing on
+// its front is a thing in the air.)
+const _bb = new THREE.Box3(), _bc = new THREE.Vector3();
+function spill(api, stage) {
+  const d = api.desk, G = stage.game;
+  if (d.spill) return;
+  d.spill = [];
+  const loose = d.body.children.filter((c) => !d.fixed.has(c));
+  loose.forEach((c, i) => {
+    d.spill.push({ obj: c, pos: c.position.clone(), quat: c.quaternion.clone() });
+    c.updateWorldMatrix(true, true);
+    _bb.setFromObject(c).getCenter(_bc);
+    const zc = Math.max(DESK.z - DESK.w / 2, Math.min(DESK.z + DESK.w / 2, _bc.z));
+    const h = (k) => { const x = Math.sin((i + 1) * 127.1 + k * 311.7) * 43758.5453; return x - Math.floor(x); };
+    stage.scene.add(c);
+    // (on its side, the telephone; the flat things flat)
+    const tall = _bb.max.y - _bb.min.y > 0.1;
+    c.quaternion.setFromEuler(new THREE.Euler(0, h(1) * 6.28, tall ? Math.PI / 2 : 0, 'YXZ'));
+    c.position.set(0, 0, 0);
+    c.updateWorldMatrix(true, true);
+    _bb.setFromObject(c).getCenter(_bc);
+    const rx = DESK.x - DESK.d / 2 - 0.95 - h(2) * 0.55, rz = zc + (h(3) - 0.5) * 0.5;
+    c.position.set(rx - _bc.x, FLOOR + 0.003 * (1 + (i % 4)) - _bb.min.y, rz - _bc.z);
+    c.updateWorldMatrix(true, true);
+    if (G && G.rays) c.traverse((m) => { if (m.isMesh && stage.solids.includes(m)) G.rays.refresh(m); });
+  });
+}
+function unspill(api) {
+  const d = api.desk;
+  if (!d.spill) return;
+  for (const s of d.spill) { d.body.add(s.obj); s.obj.position.copy(s.pos); s.obj.quaternion.copy(s.quat); }
+  d.spill = null;
 }
 // the drawers pulled out (the room as found) or run home (the desk over)
 function drawersHome(api, stage, shut) {
@@ -337,6 +422,7 @@ function resetRoom(api, stage) {
   const d = api.desk;
   d.tip = null; d.tipped = 0; d.pivot.rotation.z = 0; d.tipNow = false;
   d.collider.cx = d.x; d.collider.hx = DESK.d / 2; d.collider.hz = DESK.w / 2;
+  unspill(api);
   drawersHome(api, stage, false);
   const Lp = api.lamp, lamp = Lp.lamp;
   if (Lp.fall || Lp.parts.group.parent !== d.body) {
@@ -346,7 +432,8 @@ function resetRoom(api, stage) {
   }
   deskRays(api, stage);
   Lp.fall = null;
-  Object.assign(lamp.light, { intensity: DESK_LAMP_I, angle: 1.15, distance: 4.5 });
+  api.lampDim = api.lampDimTo = 0;
+  Object.assign(lamp.light, { intensity: DESK_LAMP_I, angle: DESK_LAMP_A, distance: 5 });
   if (lamp.dead) { lamp.dead = false; lamp.buzz = null; lamp.dieNow = false; lamp.deadK = 0; lamp.on = true; if (lamp.bulb) lamp.bulb.material = api.mats.bulb; }
   lamp.on = true;
   // the picture back crooked on its nail, the safe shut

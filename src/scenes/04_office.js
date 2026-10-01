@@ -1,5 +1,5 @@
 import { defineScene, wait, until, beat } from '../game/script.js';
-import { roomAs, carry, office, stand, roomLines, sheetOf, V } from './office/room.js';
+import { roomAs, carry, office, stand, roomLines, sheetOf, inkPrompt, V } from './office/room.js';
 import { padPuzzle } from './office/pad.js';
 import { safePuzzle, safeDemo } from './office/safe.js';
 import { live, holdSheet, palmOn } from './office/hands.js';
@@ -41,7 +41,8 @@ export default defineScene({
       carry(ctx);
       const O = roomAs(ctx, 'found');
       O.setDoor(1.45);
-      stand(ctx, 0.55, 1.1, -Math.PI / 2 + 0.25, -0.08);
+      // (round 2: the pool on the desk and the slats on the wall both in the first look)
+      stand(ctx, 0.55, 1.1, -Math.PI / 2 + 0.03, -0.1);
     },
     pad(ctx) {
       carry(ctx);
@@ -77,6 +78,7 @@ export default defineScene({
     const O = office(ctx);
     const F = ctx.flags;
     const demo = Q().get('demo') === '1';
+    inkPrompt(ctx);
     ctx.music.cue('office', { fade: 2.5 });
     const pad = F.pad = padPuzzle(ctx);
     const safe = F.safe = safePuzzle(ctx);

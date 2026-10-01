@@ -27,6 +27,8 @@ export function padPuzzle(ctx) {
       if (P.active || P.done) return;
       P.active = true;
       P.prevPose = C.eyePose();
+      // (the lamp eases down for the close-up: stages/office/parts/room.js)
+      O.lampDimTo = 1;
       // the eye over the pad from the chair's side, leaning over the desk:
       // the pad ahead and below, the forearms in from the frame's lower
       // corners, not up its middle
@@ -158,6 +160,7 @@ export function padPuzzle(ctx) {
     close() {
       if (!P.active) return;
       P.active = false;
+      O.lampDimTo = 0;
       G.hud.clearPrompt('pad');
       if (!P.tore) {
         // the pencil back down on the blotter
