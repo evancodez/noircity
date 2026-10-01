@@ -320,6 +320,9 @@ export default defineScene({
     // ---- car: the sedan pulls away, mine at the kerb ------------------------------------------------
     if (ctx.at('car')) {
       yield beat('car');
+      // [R3] (continued from the car's save: the chase's music, as a play
+      // through has it here until the tail's takes over - it was silence)
+      if (ctx.from === 'car') G.music.cue('chase', { fade: 0.4 });
       const stage = G.stage;
       const cars = stage.part('cars');
       // (he is in it: the chase put him there; a jump here finds him in it)

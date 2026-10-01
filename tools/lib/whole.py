@@ -66,7 +66,9 @@ RECORDER = r"""(() => {
   G.save.write = () => { const d = write(); if (d) R.saves.push(JSON.parse(JSON.stringify(d))); return d; };
   // a line or a prompt printed while the chapter card is up; the black held
   // (fadeK 1) and how long; a frame longer than 120 ms (a hitch), where
-  R.over = []; R.black = []; R.hitch = [];
+  R.over = []; R.black = []; R.hitch = []; R.glass = [];
+  const gl = G.sfx.glass.bind(G.sfx);
+  G.sfx.glass = (...a) => { R.glass.push(at()); return gl(...a); };
   let lastOver = '', blackT = 0;
   G.scripts.push((t, dt) => {
     const up = G.hud.cardT > 0, txt = (G.hud.sayShown ? 'say:' + G.hud.sayShown : '') + (G.hud.promptShown ? ' prompt:' + G.hud.promptShown : '');
@@ -187,6 +189,7 @@ def build():
     steps += chapter(9, 'shootout', checks=[
         ('the window Mack went through still out', "(() => { const w = G.save.flags.window || 'B4'; return G.stage.part('dinerFront').panes[w].state === 'gone'; })()"),
         ('no fist fight left running', '!G.brawl.active'),
+        ('no glass broke as the chapter came in (the window was out already)', "!__rec.glass.some((g) => g[1] === 'shootout' && g[0] - __rec.marks.shootout.t < 1.5)"),
     ])
     sh = strip_shots(from_entry('shootout', 'shootout'))
     steps += sh
@@ -197,7 +200,7 @@ def build():
         {'heap': 'end'},
         {'shot': 'c10_the_end'},
         {'eval': 'JSON.stringify({ marks: __rec.marks, cards: __rec.cards, go: __rec.go, cues: __rec.cues })'},
-        {'eval': 'JSON.stringify({ over: __rec.over, black: __rec.black, hitch: __rec.hitch })'},
+        {'eval': 'JSON.stringify({ over: __rec.over, black: __rec.black, hitch: __rec.hitch, glass: __rec.glass.length })'},
         {'eval': 'JSON.stringify(__rec.beats)'},
         {'eval': 'JSON.stringify(__rec.saves)'},
         {'eval': 'JSON.stringify(window.__heap)'},

@@ -58,7 +58,7 @@ def build(saves):
             {'until': '!G.scenes.trans', 'timeout': 15000},
             {'wait': 1500},
             {'expect': "G.state === 'playing' && G.scenes.fadeK < 0.05 && document.pointerLockElement === N.renderer.domElement", 'label': '[%s] out of the black, playing' % tag},
-            {'expect': "JSON.stringify(G.save.inventory.slice().sort()) === %s" % json.dumps(json.dumps(sorted(s['inventory']))), 'label': '[%s] the inventory as saved' % tag},
+            {'expect': "JSON.stringify(G.save.inventory.slice().sort()) === %s" % json.dumps(json.dumps(sorted(s['inventory']), separators=(',', ':'))), 'label': '[%s] the inventory as saved' % tag},
             {'expect': "Object.entries(%s).every(([k, v]) => JSON.stringify(G.save.flags[k]) === JSON.stringify(v))" % json.dumps(s['flags']), 'label': '[%s] the flags as saved' % tag},
         ]
         mu = MUSIC.get(sc)
