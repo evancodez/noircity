@@ -3,6 +3,8 @@ import { defineScene, wait, until, beat } from '../game/script.js';
 import { PIER, inShed } from '../stages/pier9/site.js';
 import { Crew } from './warehouse/crew.js';
 import { Stealth } from './warehouse/stealth.js';
+import { PierFight, bayRoom, quietCrew, crewOutOfSight, FM_MANNERS, FOREMAN, RING_START, EYE_Y } from './warehouse/fight.js';
+import { buildProp } from '../props/index.js';
 
 // Scene 8, Pier Nine (lane B6; docs/story/briefs/B6_WAREHOUSE.md). Pools of
 // lamp light and black between them; I stay in the black. The light on my
@@ -19,12 +21,21 @@ import { Stealth } from './warehouse/stealth.js';
 //           three lines; he comes to the window and looks down: I must be
 //           down and still
 //   out     the truck backs against the side door; along the catwalk,
-//           down the far stairs, through the bay and out of its side door
-//           to the pier (ctx.next())                             checkpoint
+//           down the far stairs into the bay                     checkpoint
+//   fight   [R2-E] the foreman steps out of the dark by the bay's door, the
+//           hook turning in his hand; my hand goes to the revolver and
+//           comes away; the second fist fight (warehouse/fight.js, the
+//           first fight's rules in this room); the last blow puts him back
+//           through a loading door's planks into the river      checkpoint
+//   ko      (a jump: the last blow, him out on his feet at door 1 or 2
+//           - &door=2 -, my punch on its way; t= scrubs his fall)
+//   after   the hole, the rain coming in; out by the bay's side door onto
+//           the pier (ctx.next())
 // Caught: the cosh from behind, black, back at the last checkpoint.
 const V = (x, y, z) => new THREE.Vector3(x, y, z);
 const PI = Math.PI;
-const BEATS = ['arrive', 'floor', 'lamps', 'aisle', 'stairs', 'listen', 'out'];
+const BEATS = ['arrive', 'floor', 'lamps', 'aisle', 'stairs', 'listen', 'out', 'fight', 'ko', 'after'];
+const BAY_BEATS = new Set(['fight', 'ko', 'after']);
 const LINES = ['The diner. Tonight.', 'The waitress saw Mack talk.', 'No one leaves.'];
 
 // ---- the crew's rounds (designed: there is always a readable way through
@@ -53,7 +64,9 @@ const CREW = [
   // aisle C's north half and the loading bay (he looks at the loading doors)
   { name: 'cal', kind: 'dockhand', light: 'torch', at: [11, -22], yaw: PI, ri: 2,
     route: [{ x: 11, z: -17.4, wait: 2.0, looks: [0.0, -PI / 2] }, { x: 11, z: -26, wait: 0 }, { x: 12, z: -34, wait: 3.0, looks: [PI / 2, 0.2] }, { x: 11, z: -26, wait: 0 }] },
-  { name: 'hood1', kind: 'hood', light: null, at: [-2.8, -37.6], yaw: 0.6, variant: { coat: 1, brim: 1, tall: 1, cig: true },
+  // ([R2-E] every man on the floor carries a light: the Hood at the stairs
+  // too - his torch low before him as he smokes at his post)
+  { name: 'hood1', kind: 'hood', light: 'torch', at: [-2.8, -37.6], yaw: 0.6, variant: { coat: 1, brim: 1, tall: 1, cig: true },
     looks: [0.65, -0.35, 0.2], lookEvery: 4.2 },
   { name: 'hood2', kind: 'hood', light: 'torch', at: [3.0, -36.4], yaw: PI / 2, ri: 1, variant: { coat: 2, brim: 0, tall: 0 }, speed: 1.1,
     route: [{ x: -0.6, z: -36.4, wait: 2.6, looks: [0.15, -0.6] }, { x: 6.8, z: -36.4, wait: 2.6, looks: [-0.1, 0.5] }] },
@@ -75,6 +88,10 @@ const START = {
   stairs: { x: -7.95, z: -33.1, yaw: 0.9, pitch: 0.05, crouch: true },
   listen: { x: -1.0, z: -41.7, yaw: 0.0, pitch: 0.2, crouch: true, up: true },
   out: { x: 4.2, z: -41.7, yaw: -PI / 2, pitch: -0.1, crouch: true, up: true },
+  // [R2-E] at the foot of the far stairs, looking down the bay to its door
+  fight: { x: 14.15, z: -39.85, yaw: 2.85, pitch: -0.08 },
+  ko: { x: 12.9, z: -33.9, yaw: -PI / 2, pitch: -0.1 },
+  after: { x: 12.6, z: -34.2, yaw: -PI / 2 - 0.3, pitch: -0.12 },
 };
 let LIVE = null;   // the scene's running state (its crew, its stealth, its props)
 let HOOKED = null; // (the game whose scene:exit puts the hands back)
@@ -84,25 +101,32 @@ let RETRY = null;  // the checkpoint the cosh sends me back to (a beat heard onc
 function setupAt(ctx, b) {
   const G = ctx.game, stage = ctx.stage;
   if (HOOKED !== G) { HOOKED = G; G.on('scene:exit', (e) => { if (e && e.id === 'warehouse') leaveWarehouse(); }); }
-  if (LIVE) { LIVE.crew.clear(); LIVE.stealth.undress(); for (const o of LIVE.props) if (o.parent) o.parent.remove(o); LIVE = null; }
+  if (LIVE) { LIVE.crew.clear(); LIVE.stealth.undress(); for (const o of LIVE.props) if (o.parent) o.parent.remove(o); if (LIVE.fight) LIVE.fight.clear(); LIVE = null; }
+  if (G.brawl.active) G.brawl.stop();
   const W = stage.part('works'), shed = stage.part('shed'), mezz = stage.part('mezz'), L = stage.lamps;
+  // [R2-E] the bay as it stood: its things home, the loading doors whole
+  stage.part('bay').reset();
+  for (const d of shed.loading) d.reset();
+  if (G.sfx && G.sfx.roomOpen) G.sfx.roomOpen(0);
   // the place: lamps on, the switch up, the load hanging, the truck by the
   // big doors, the doors as the beat has them
   W.panel.throw(true); W.panel.k = 1; W.panel.drive = null;
   for (const l of L.lamps) if (l.row) { l.on = true; l.dying = null; }
   W.hoist.reset();
   W.truck.reset();
-  shed.sideDoor.snap(b === 'arrive' || b === 'out' ? 0 : 1);
+  const bayB = BAY_BEATS.has(b);
+  shed.sideDoor.snap(b === 'arrive' || b === 'out' || bayB ? 0 : 1);
   shed.bayDoor.snap(0);
   blinds(stage, 0);
-  if (b === 'out') { W.truck.place(1); W.truck.lights(true); }
-  // the crew
+  if (b === 'out' || bayB) { W.truck.place(1); W.truck.lights(true); }
+  // the crew (in the bay's beats they are about their rounds at the shed's
+  // far end, out of it: the fight is quiet)
   const crew = new Crew(G, stage, { rng: ctx.rng.fork(81) });
-  for (const spec of CREW) crew.add(b === 'out' && spec.name === 'hood2' ? { ...spec, ...HOOD2_TRUCK, route: null, ri: 0, lookEvery: 3.2 } : spec);
+  if (!bayB) for (const spec of CREW) crew.add(b === 'out' && spec.name === 'hood2' ? { ...spec, ...HOOD2_TRUCK, route: null, ri: 0, lookEvery: 3.2 } : spec);
   // (a jump past the door: the first man is already on his round)
   // (he stands in aisle A walking north, not at the truck's tail: the way
   // from there to his round's far end is through the stacks)
-  if (b !== 'arrive' && b !== 'floor') { const s = crew.get('sully'); s.entry = null; s.c.place({ x: -11.2, z: -8.2 }, PI); s.look = s.light = s.lookWant = PI; s.setMode('patrol'); }
+  if (b !== 'arrive' && b !== 'floor' && !bayB) { const s = crew.get('sully'); s.entry = null; s.c.place({ x: -11.2, z: -8.2 }, PI); s.look = s.light = s.lookWant = PI; s.setMode('patrol'); }
   // (back in the pocket by the second stack: he has just gone by it, south, his back to me)
   if (b === 'aisle') { const s = crew.get('sully'); s.c.place({ x: -11.2, z: -14.6 }, 0); s.look = s.light = s.lookWant = 0; s.ri = 1; s.wait = 0; s.path = null; }
   // the office: the Cardinal (lane B7's kind when it is here) and his two men
@@ -133,12 +157,134 @@ function setupAt(ctx, b) {
   G.controller.lookLocked = true;
   const stealth = new Stealth(ctx, crew);
   stealth.dress();
-  LIVE = { crew, stealth, props, bottles, office, card, beat: b, cp: b, retry: RETRY === b };
+  LIVE = { crew, stealth, props, bottles, office, card, beat: b, cp: b, retry: RETRY === b, fight: new PierFight(ctx) };
   RETRY = null;
   ctx.flags.live = LIVE;
   ctx.flags.cp = LIVE.cp;
-  G.music.cue('warehouse');
+  // (the fight is quiet: no music under it - the rain on the roof, the
+  // water, our feet on the planks)
+  if (!bayB) G.music.cue('warehouse');
+  else G.music.stop(0.5);
+  // [R2-E] the bay's beats: the foreman where the beat has him
+  if (b === 'ko') stageKO(ctx, LIVE);
+  if (b === 'after') stageAfter(ctx, LIVE);
   return LIVE;
+}
+
+// ---- [R2-E] the second fist fight (warehouse/fight.js) ------------------------------------
+// the foreman: the kind of his own, on the pier's floor, the hook in his
+// right fist (a pivot at its grip: the scene turns it in his hand)
+function spawnForeman(ctx, at, yaw = null) {
+  const c = ctx.cast.spawn('foreman', { at, yaw, name: 'foreman' });
+  c.fig.surface = () => 0;
+  c.noGlance = true;
+  const pivot = new THREE.Group();
+  pivot.name = 'foremanHook';
+  const hook = buildProp('cargoHook');
+  const gp = hook.userData.grip ? new THREE.Vector3().setFromMatrixPosition(hook.userData.grip) : new THREE.Vector3();
+  hook.position.copy(gp).negate();
+  pivot.add(hook);
+  pivot.userData.kind = 'cargoHook';
+  pivot.userData.grip = new THREE.Matrix4();
+  c.hold(pivot, 'R', { grip: 'upright' });
+  c.hookPivot = pivot; c.hookInner = hook;
+  return c;
+}
+// his jacket: by its collar in his left hand, or laid over the barrel by
+// the door (the barrel's top, the drape toward the ring)
+const JACKET_Q = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), PI);
+function jacketOn(ctx, c = null) {
+  const L = LIVE, bay = ctx.stage.part('bay');
+  const J = buildProp('jacket', { variant: c ? null : 'draped' });
+  J.traverse((o) => { if (o.isMesh) o.userData.noRay = true; });
+  if (c) c.hold(J, 'L', { grip: 'hang' });
+  else { ctx.stage.scene.add(J); J.position.copy(bay.jacketAt); J.quaternion.copy(JACKET_Q); }
+  if (L) L.props.push(J);
+  return J;
+}
+// laid from his hand onto the barrel: the cloth's own path (object first),
+// its shape going from hanging to laid over the rim as it goes
+function layJacket(ctx, c) {
+  const L = LIVE, J = c.held.L, G = ctx.game;
+  if (!J) return;
+  J.updateMatrixWorld(true);
+  const p0 = J.getWorldPosition(V(0, 0, 0)), q0 = J.getWorldQuaternion(new THREE.Quaternion());
+  c.hold(null, 'L');
+  ctx.stage.scene.add(J); J.position.copy(p0); J.quaternion.copy(q0); J.scale.setScalar(1);
+  const p1 = ctx.stage.part('bay').jacketAt.clone(), geo = J.children[0] && J.children[0].geometry;
+  G.sfx.play('clothRustle', p1, {}, { ref: 2 });
+  L.fight.tweens.push({ t: 0, dur: 0.4, step: (u) => {
+    const e = u * u * (3 - 2 * u);
+    J.position.lerpVectors(p0, p1, e); J.position.y += Math.sin(u * Math.PI) * 0.12;
+    J.quaternion.copy(q0).slerp(JACKET_Q, e);
+    if (geo && geo.userData.shape) geo.userData.shape(e);
+  }, end: () => { J.position.copy(p1); J.quaternion.copy(JACKET_Q); if (geo && geo.userData.shape) geo.userData.shape(1); } });
+}
+// into the rules: the bay as the room, the foreman as the man
+function beginPierFight(ctx, fm, { manner = 'measured', hp = null, retry = false } = {}) {
+  const G = ctx.game, L = LIVE;
+  const room = L.room || (L.room = bayRoom(ctx, L.fight));
+  const B = G.brawl;
+  B.start({
+    opponent: fm, manner, hp, room, rng: ctx.rng, retry, lesson: false,
+    who: { name: FOREMAN.name, hp: FOREMAN.hp, manners: FM_MANNERS },
+    onRetry: (m, hp2) => { const f2 = restageRing(ctx); beginPierFight(ctx, f2, { manner: m, hp: hp2, retry: true }); },
+    onGlass: (w) => { L.fight.burstDoor(w); L.fight.watchFall(w, fm); },
+    // (the splash; he is under the black water by 0.7 s after it: gone)
+    onLanded: () => { L.fight.splash(fm.bones.hips.getWorldPosition(V(0, 0, 0))); L.fight.tweens.push({ t: 0, dur: 0.72, step: () => {}, end: () => { fm.fig.object.visible = false; } }); },
+  });
+  // (his first bottle is the diner's rule: here he has had it)
+  B.him.hadBottle = true;
+  if (fm.held.R && fm.held.R === fm.hookPivot) { B.him.holding = 'hook'; B.him.prop = fm.hookPivot; }
+  L.fm = fm;
+  return B;
+}
+// the ring as a retry or a jump finds it (under the black): him toward the
+// doors, me off the stairs' foot, squared up
+function restageRing(ctx, { hook = null } = {}) {
+  const G = ctx.game, C = G.controller, L = LIVE;
+  const fm = L.fm || spawnForeman(ctx, { x: RING_START.him.x, z: RING_START.him.z });
+  L.fight.putOut();
+  const S = RING_START;
+  fm.place({ x: S.him.x, z: S.him.z }, Math.atan2(S.me.x - S.him.x, S.me.z - S.him.z));
+  if (hook === false && fm.held.R) { const o = fm.hold(null, 'R'); if (o && o.parent) o.parent.remove(o); }
+  const yaw = Math.atan2(-(S.him.x - S.me.x), -(S.him.z - S.me.z));
+  G.player.hands.hold(null, 'R'); G.player.hands.hold(null, 'L');
+  C.setPose(S.me.x, S.me.z, yaw, -0.08);
+  C.setMode('brawl', { opponent: fm, eyeY: EYE_Y, pos: S.me, yaw });
+  return fm;
+}
+// ko (a jump): him out on his feet at a loading door, my punch on its way
+function stageKO(ctx, L) {
+  const G = ctx.game, C = G.controller;
+  const n = parseInt(new URLSearchParams(typeof location !== 'undefined' ? location.search : '').get('door') || '1', 10) === 2 ? 1 : 0;
+  L.stealth.undress();
+  L.fightOn = true;
+  jacketOn(ctx);
+  const room = L.room || (L.room = bayRoom(ctx, L.fight));
+  const w = room.finishes[n];
+  const fm = spawnForeman(ctx, { x: w.spot.x, z: w.spot.z }, -PI / 2);
+  const o = fm.hold(null, 'R'); if (o && o.parent) o.parent.remove(o);
+  const me = { x: w.spot.x - 1.35, z: w.spot.z + 0.2 };
+  const yaw = Math.atan2(-(w.spot.x - me.x), -(w.spot.z - me.z));
+  C.setPose(me.x, me.z, yaw, -0.1);
+  C.setMode('brawl', { opponent: fm, eyeY: EYE_Y, pos: me, yaw });
+  const B = beginPierFight(ctx, fm, { manner: 'out' });
+  Object.assign(B.him, { window: w, spot: w.spot, atSpot: true, state: 'reel' });
+  B.ko();
+}
+// after: the door he went through burst, the rain coming in; me in the bay
+function stageAfter(ctx, L) {
+  const shed = ctx.stage.part('shed');
+  jacketOn(ctx);
+  L.fightOn = true;
+  L.won = true;
+  const d = shed.loading[0];
+  for (const p of d.pieces) p.mesh.visible = false;
+  d.burst = true;
+  L.fight.hole = d;
+  L.fight.rainIn();
+  if (ctx.game.sfx && ctx.game.sfx.roomOpen) ctx.game.sfx.roomOpen(0.45);
 }
 
 // ---- what lives under the beats: the crew, me, the things E reaches ----------------------
@@ -253,13 +399,33 @@ function live(ctx) {
       when: () => !L.approach && canTakeDown(m, G), onUse: () => approach(() => m.eye(new THREE.Vector3()).add(V(0, -0.3, 0)), 0.8, () => takeDown(ctx, m), null, true) });
   }
   // the bay's side door (only once there is a reason to leave)
-  I.add({ id: 'b6bay', at: V(PIER.shed.x1 - 0.2, 1.05, PIER.bayDoor.z - 0.4), range: 2.2, cone: 1.1, prompt: 'open', when: () => !shed.bayDoor.isOpen && ctx.beat === 'out',
+  // (the bay's side door: the way out, once the foreman is in the river)
+  I.add({ id: 'b6bay', at: V(PIER.shed.x1 - 0.2, 1.05, PIER.bayDoor.z - 0.4), range: 2.2, cone: 1.1, prompt: 'open', when: () => !shed.bayDoor.isOpen && ctx.beat === 'after',
     onUse: () => { shed.bayDoor.open(1); G.sfx.play('creak', V(PIER.shed.x1, 1.2, PIER.bayDoor.z), {}, { ref: 3 }); } });
 
   ctx.onStep((dt) => {
     if (!LIVE || LIVE !== L) return;
     if (G.controller.lookLocked && !G.scenes.trans && ctx.sceneTime > 0.5) G.controller.lookLocked = false;
-    stealth.step(dt);
+    // [R2-E] the fight's life: his walk out of the dark, the hook turning in
+    // his hand, the fire, the boards, the rain through the hole
+    L.fight.step(dt);
+    if (L.jobs) for (let i = L.jobs.length - 1; i >= 0; i--) if (L.jobs[i].next().done) L.jobs.splice(i, 1);
+    if (L.fm && L.fm.hookInner) {
+      L.spinA = (L.spinA || 0) + dt * 9 * (L.spin || 0);
+      if (!L.spin) L.spinA = Math.round(L.spinA / (Math.PI * 2)) * Math.PI * 2 + (L.spinA % (Math.PI * 2)) * Math.exp(-dt * 10);
+      L.fm.hookPivot.rotation.x = L.spinA;
+    }
+    // (standing in the burning oil hurts; so does being knocked into it)
+    if (L.fightOn && G.brawl.active && !G.brawl.finished) {
+      const heat = L.fight.heatAt(G.eye.x, G.eye.z);
+      if (heat > 0.2) { G.health.damage(heat * 9 * dt); L.burnT = (L.burnT || 0) + dt; if (L.burnT > 0.5) { L.burnT = 0; G.controller.shake(0.12, 0); } }
+      const fm = L.fm, him = G.brawl.him;
+      if (fm && him && him.state !== 'ko' && him.state !== 'reel') {
+        const h2 = L.fight.heatAt(fm.pos.x, fm.pos.z);
+        if (h2 > 0.25) { G.brawl.damageHim(h2 * 7 * dt); L.hisBurn = (L.hisBurn || 0) + dt; }
+      }
+    }
+    if (!L.fightOn || L.won) stealth.step(dt);
     crew.step(dt, G.time);
     // the step in to a thing E took (approach): glide, square up, then the hand
     const A = L.approach;
@@ -424,7 +590,7 @@ function* walkFig(c, x, z, speed) {
 export default defineScene({
   id: 'warehouse', stage: 'pier9',
   beats: BEATS,
-  save: ['floor', 'lamps', 'aisle', 'stairs', 'listen', 'out'],
+  save: ['floor', 'lamps', 'aisle', 'stairs', 'listen', 'out', 'fight'],
   setup: Object.fromEntries(BEATS.map((b) => [b, (ctx) => setupAt(ctx, b)])),
   *script(ctx) {
     const G = ctx.game, stage = ctx.stage;
@@ -492,6 +658,23 @@ export default defineScene({
         const h2 = crew.get('hood2');
         if (h2) h2.sendTo(HOOD2_TRUCK.at[0], HOOD2_TRUCK.at[1], HOOD2_TRUCK.yaw, HOOD2_TRUCK.looks);
       }
+      // [R2-E] down the far stairs (or round by the gap at the bay's door):
+      // the bay
+      yield until(() => nearBay(stage, C));
+    }
+    if (ctx.at('fight')) {
+      yield beat('fight');
+      cp('fight');
+      yield* pierFight(ctx);
+    }
+    if (ctx.at('ko') && ctx.from === 'ko') {
+      yield beat('ko');
+      yield until(() => !G.brawl.active);
+      backToFeet(ctx);
+    }
+    if (ctx.at('after')) {
+      yield beat('after');
+      // out by the bay's side door onto the pier in the rain
       yield until(() => C.pos.x > PIER.shed.x1 + 0.4 && C.pos.z > PIER.bayDoor.z - 1.5);
       // (out on the apron, a few steps from the door: the scene ends on the
       // pier in the rain)
@@ -501,9 +684,133 @@ export default defineScene({
       ctx.next();
     }
   },
+  // the autoplay driver: the fight read by its marks (the stealth is not
+  // autoplayed: tools/plays/warehouse.json plays it by real input)
+  auto(ctx, A) {
+    const G = ctx.game;
+    if (G.brawl.active) { A.fight(G.brawl); return; }
+    A.stopWalk();
+  },
 });
+
+// [R2-E] am I at the bay: on the far stairs' lower half going down, or on
+// its floor, or in the gap by its door
+function nearBay(stage, C) {
+  if (stage.part('mezz').up && !(C.pos.x > 11.2 && Math.abs(C.pos.z - PIER.stairs.E.z) < 0.7)) return false;
+  const onStairs = C.pos.x > 11.2 && C.pos.x < PIER.stairs.E.foot + 0.1 && Math.abs(C.pos.z - PIER.stairs.E.z) < 0.7;
+  const inBay = C.pos.x > 9.9 && C.pos.z > -41.2 && C.pos.z < -28.3 && C.groundY < 0.5;
+  return onStairs || inBay;
+}
+
+// the fight's beat: he steps out of the dark by the door, the hook turning
+// in his hand; I come to the ring (the look eased round to him, my hand to
+// the revolver and away); the fight; the last blow; on my feet again
+function* pierFight(ctx) {
+  const G = ctx.game, C = G.controller, L = LIVE, stage = ctx.stage, H = G.player.hands;
+  const B = G.brawl;
+  L.fightOn = true;
+  if (ctx.from !== 'fight') quietCrew(ctx, L);
+  G.music.stop(2.5);
+  // (look development, ?quick=1: the ring as a retry stages it, the fight
+  // at once - the review's moments, b9duel)
+  if (G.shotMode && typeof location !== 'undefined' && new URLSearchParams(location.search).get('quick') === '1') {
+    L.stealth.undress();
+    jacketOn(ctx);
+    const f0 = restageRing(ctx);
+    beginPierFight(ctx, f0);
+    L.fightT = G.time;
+    yield until(() => !B.active);
+    L.won = true;
+    backToFeet(ctx);
+    return;
+  }
+  // ---- he steps out
+  const fm = spawnForeman(ctx, 'pier9.bay.foreman');
+  jacketOn(ctx, fm);
+  L.fm = fm;
+  const mark = { x: 13.25, z: -32.7 }, layAt = { x: 13.22, z: -29.98 };
+  G.sfx.play('step', V(14.2, 0.1, -30.4), { run: false, k: 0.7 }, { ref: 3 });
+  G.sfx.play('b9hookScrape', V(14.2, 1.1, -30.4), {}, { ref: 3 });
+  L.spin = 1;
+  let arrived = false;
+  const over = (name) => { try { fm.fig.anim.setOverlay(name, 0.25); } catch (e) { /* */ } };
+  // (out of the dark along the south crates to the barrel by the door; he
+  // waits there till he has seen my hand go to the coat, lays his jacket
+  // over the barrel, and comes on into the ring)
+  L.jobs = [(function* () {
+    over('fm_hookJacket');
+    yield* walkFig(fm, layAt.x, layAt.z, 1.05);
+    over('fm_hookJacket');
+    const bz = ctx.stage.part('bay').jacketAt;
+    const face = Math.atan2(bz.x - fm.pos.x, bz.z - fm.pos.z) - 0.75;
+    for (let k = 0; k < 20; k++) { fm.fig.yaw += Math.atan2(Math.sin(face - fm.fig.yaw), Math.cos(face - fm.fig.yaw)) * 0.2; yield null; }
+    const w0 = G.time;
+    while (!(L.coatAt != null && G.time > L.coatAt + 0.4) && G.time - w0 < 5) yield null;
+    over(null);
+    const h = fm.play('fm_jacket', { fade: 0.15, onMark: { lay: () => layJacket(ctx, fm) } });
+    while (!h.done && h.t < h.duration) yield null;
+    over('fm_hookLow');
+    L.spin = 0;
+    yield* walkFig(fm, mark.x, mark.z, 1.25);
+    arrived = true;
+    over(null);
+    fm.face(Math.atan2(G.eye.x - fm.pos.x, G.eye.z - fm.pos.z));
+    fm.setState('br_guard', 0.4);
+  })()];
+  // ---- I come down to him (or he comes on): at most a few seconds
+  const t0 = G.time;
+  yield until(() => { crewOutOfSight(ctx, L); return (C.groundY < 0.3 && C.pos.z > -40.9 && C.pos.x > 9.9) || G.time - t0 > 6; });
+  L.stealth.undress();
+  // ---- one eased move: into the ring, facing him, my hand to the revolver
+  // and away (the look stays mine within 0.3 rad)
+  const P0 = C.eyePose();
+  const me = { x: Math.max(11.2, Math.min(12.6, C.pos.x)), z: Math.max(-37.4, Math.min(-35.6, C.pos.z)) };
+  const dur = 1.1;
+  C.setMode('brawlIn', { look: [0.3, 0.2], track: (t) => {
+    const u = Math.min(1, t / dur), e = u * u * (3 - 2 * u);
+    const x = P0.x + (me.x - P0.x) * e, z = P0.z + (me.z - P0.z) * e;
+    const hx = fm.bones.chest.getWorldPosition(_hv);
+    const ty = Math.atan2(-(hx.x - x), -(hx.z - z)), tp = Math.atan2(hx.y - (EYE_Y + 0.02), Math.max(0.6, Math.hypot(hx.x - x, hx.z - z)));
+    const y = P0.y + (EYE_Y - P0.y) * e;
+    return { x, y, z, yaw: P0.yaw + Math.atan2(Math.sin(ty - P0.yaw), Math.cos(ty - P0.yaw)) * e, pitch: P0.pitch + (tp - P0.pitch) * e };
+  } });
+  H.equip('sneak');
+  H.play('sn_coat');
+  L.coatAt = G.time;
+  G.sfx.play('pocket', null, {}, { send: false });
+  yield wait(0.9);
+  // (he saw it: the jacket over the barrel; he comes on)
+  yield until(() => arrived || G.time - t0 > 11);
+  // ---- the fight
+  const Pm = C.eyePose();
+  const yaw = Math.atan2(-(fm.pos.x - Pm.x), -(fm.pos.z - Pm.z));
+  C.setMode('brawl', { opponent: fm, eyeY: EYE_Y, pos: { x: Pm.x, z: Pm.z }, yaw, ease: 0.3 });
+  beginPierFight(ctx, fm);
+  L.fightT = G.time;
+  yield until(() => B.finished || !B.active);
+  yield until(() => !B.active);
+  L.won = true;
+  backToFeet(ctx);
+  if (!ctx.at('after') || true) { /* on into the walk out */ }
+}
+const _hv = new THREE.Vector3();
+
+// after the last blow: on my feet again in the bay, the hands mine
+function backToFeet(ctx) {
+  const G = ctx.game, C = G.controller, L = LIVE;
+  const P = C.eyePose();
+  // (inside the shed, by the hole: never out over the water; [R2-E round 2]
+  // the look eased up from the water, not cut - setPose snapped it)
+  C.pos.set(Math.min(14.2, P.x), 0, P.z);
+  C.yaw = P.yaw; C.pitch = Math.max(-0.25, P.pitch);
+  C.vel.set(0, 0, 0);
+  C.setMode('sneak', { crouch: false, sfx: G.sfx, ease: 0.8 });
+  L.stealth.dress();
+  L.won = true;
+  if (L.fm) { L.fm.fig.object.visible = false; }
+}
 
 // (the scene leaving: the hands and their light back as they were)
 export function leaveWarehouse() {
-  if (LIVE) { LIVE.crew.clear(); LIVE.stealth.undress(); for (const o of LIVE.props) if (o.parent) o.parent.remove(o); LIVE = null; }
+  if (LIVE) { LIVE.crew.clear(); LIVE.stealth.undress(); for (const o of LIVE.props) if (o.parent) o.parent.remove(o); if (LIVE.fight) LIVE.fight.clear(); if (LIVE.fightOn && HOOKED && HOOKED.brawl.active) HOOKED.brawl.stop(); LIVE = null; }
 }

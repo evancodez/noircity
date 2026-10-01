@@ -208,19 +208,47 @@ export default {
     }
     big.push(kit.box(bd.x0 - 0.3, bd.x1 + 0.3, bd.h + 0.02, bd.h + 0.2, S.z1 - t - 0.2, S.z1 - t - 0.05));
     kit.addMerged(big, M.plankDoor, { cast: true });
+    // ([R2-E] each loading door is its planks, its ledges and its bar, each
+    // a piece of its own: the last blow of the second fight puts a man back
+    // through one and every piece of it goes out over the river - burst(dir);
+    // the door's own ink id holds them together as one door until then)
     const loading = PIER.loading.map((l, i) => {
       kit.piece();
       const pz0 = l.z - PIER.loadingW / 2, pz1 = l.z + PIER.loadingW / 2, x = S.x1 - t / 2;
-      const parts = [];
+      const grp = new THREE.Group();
+      grp.name = 'loadingDoor' + (i + 1);
+      g.add(grp);
+      const pieces = [];
+      // a piece: its geometry centred on its own middle (it turns about it
+      // when it flies)
+      const piece = (geo, name) => {
+        geo.computeBoundingBox();
+        const c = geo.boundingBox.getCenter(new THREE.Vector3());
+        geo.translate(-c.x, -c.y, -c.z);
+        const m = kit.add(geo, M.plankDoor, { parent: grp, name });
+        m.position.copy(c);
+        pieces.push({ mesh: m, home: c.clone() });
+        return m;
+      };
       for (const [za, zb] of [[pz0, l.z - 0.01], [l.z + 0.01, pz1]]) {
-        parts.push(worldUV(kit.box(x - 0.04, x + 0.04, 0.02, PIER.loadingH, za + 0.02, zb - 0.02), 1.6));
-        parts.push(kit.box(x - 0.1, x - 0.04, 0.5, 0.65, za + 0.06, zb - 0.06), kit.box(x - 0.1, x - 0.04, PIER.loadingH - 0.65, PIER.loadingH - 0.5, za + 0.06, zb - 0.06));
+        // three planks a leaf, the ledges across them
+        const n = 3, w = (zb - za - 0.04) / n;
+        for (let k = 0; k < n; k++) piece(worldUV(kit.box(x - 0.04, x + 0.04, 0.02, PIER.loadingH, za + 0.02 + k * w + 0.004, za + 0.02 + (k + 1) * w - 0.004), 1.6), 'plank');
+        piece(kit.box(x - 0.1, x - 0.04, 0.5, 0.65, za + 0.06, zb - 0.06), 'ledge');
+        piece(kit.box(x - 0.1, x - 0.04, PIER.loadingH - 0.65, PIER.loadingH - 0.5, za + 0.06, zb - 0.06), 'ledge');
       }
       // the bar across them in its brackets
-      parts.push(kit.box(x - 0.2, x - 0.1, 1.2, 1.32, pz0 - 0.1, pz1 + 0.1));
-      const m = kit.add(mergeGeos(parts, { uv: true }), M.plankDoor);
-      m.name = 'loadingDoor' + (i + 1);
-      return { mesh: m, z: l.z };
+      piece(kit.box(x - 0.2, x - 0.1, 1.2, 1.32, pz0 - 0.1, pz1 + 0.1), 'bar');
+      const D = { group: grp, z: l.z, pieces, burst: false, x0: S.x1 - t, x1: S.x1 };
+      // put back (a beat's setup)
+      D.reset = () => {
+        for (const p of pieces) {
+          if (p.mesh.parent !== grp) { if (p.mesh.parent) p.mesh.parent.remove(p.mesh); grp.add(p.mesh); }
+          p.mesh.position.copy(p.home); p.mesh.quaternion.identity(); p.mesh.visible = true;
+        }
+        D.burst = false;
+      };
+      return D;
     });
 
     // ---- PIER 9 on the south gable, over the big doors
@@ -247,7 +275,7 @@ export default {
     // ---- inside: the dry volume, the interior's Look, the room's sound
     const room = new THREE.Box3(V(S.x0, -0.5, S.z0), V(S.x1, S.ridgeY + 0.5, S.z1));
     stage.dry.push(room);
-    const inLook = { fogDensity: FOG.density * 5.5, fogColor: FOG.color.clone().multiplyScalar(0.28), rainOverlay: 0, rain3d: 0, haze: 0.62, ambient: 0.3, reflect: 'none', room: 'warehouse' };
+    const inLook = { fogDensity: FOG.density * 5.5, fogColor: FOG.color.clone().multiplyScalar(0.28), rainOverlay: 0, rain3d: 0, haze: 0.2, ambient: 0.12, reflect: 'none', room: 'warehouse' };
     stage.addLook(new THREE.Box3(V(S.x0 + 0.05, -1, S.z0 + 0.05), V(S.x1 - 0.05, S.ridgeY, S.z1 - 0.12)), inLook);
 
     return { group: g, sideDoor, bayDoor, loading, room, inLook, outLamp };

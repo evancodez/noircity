@@ -15,7 +15,7 @@ export const hex = (h) => new THREE.Color(h);
 // ---- canvas maps ------------------------------------------------------------------------
 // the deck's planks: long boards running north-south, their seams, knots,
 // oil stains where the trucks stand; one map repeated in world metres
-function plankMap(W = 512, H = 1024, { boards = 8, light = 44, seam = 10 } = {}) {
+function plankMap(W = 512, H = 1024, { boards = 8, light = 60, seam = 8 } = {}) {
   const c = document.createElement('canvas'); c.width = W; c.height = H;
   const g = c.getContext('2d');
   g.fillStyle = `rgb(${light},${light},${light})`; g.fillRect(0, 0, W, H);
@@ -43,7 +43,9 @@ function plankMap(W = 512, H = 1024, { boards = 8, light = 44, seam = 10 } = {})
   for (let i = 0; i < 26; i++) {
     const x = hash(i, 21) * W, y = hash(i, 22) * H, r = 20 + hash(i, 23) * 70;
     const gr = g.createRadialGradient(x, y, 0, x, y, r);
-    gr.addColorStop(0, `rgba(10,10,10,${0.25 + hash(i, 24) * 0.35})`); gr.addColorStop(1, 'rgba(10,10,10,0)');
+    // ([R2-E] fainter: at 0.25-0.6 they printed as black spots through the
+    // paper heart of a pool - a leopard's hide, not a wet deck)
+    gr.addColorStop(0, `rgba(10,10,10,${0.1 + hash(i, 24) * 0.16})`); gr.addColorStop(1, 'rgba(10,10,10,0)');
     g.fillStyle = gr; g.beginPath(); g.arc(x, y, r, 0, 7); g.fill();
   }
   const t = new THREE.CanvasTexture(c);

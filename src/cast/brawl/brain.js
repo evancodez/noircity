@@ -93,7 +93,9 @@ function pickAttack(B, M, d) {
   if (r.chance(M.feint)) return { clip: r.chance(0.5) ? 'br_feint' : 'br_feintL', reach: 2.4 };
   // the rush from a little way off
   if (him.manner === 'wild' && d > 1.9 && d < 3.1 && r.chance(0.5)) return { clip: 'br_rush', reach: REACH.rush };
-  const mix = { ...M.mix };
+  // ([R2-E] a weapon in his fist has its own mix: M.with[what he holds] -
+  // the foreman's hook)
+  const mix = { ...((him.holding && M.with && M.with[him.holding]) || M.mix) };
   if (!(him.holding === 'neck')) delete mix.br_bottle_thrust;
   else { delete mix.br_hook; delete mix.br_cross; delete mix.br_haymaker; delete mix.br_rush; delete mix.br_body; }
   let tot = 0; for (const v of Object.values(mix)) tot += v;
@@ -197,6 +199,9 @@ export function steer(B, dt) {
   const S = B.game.stage;
   const free = him.state === 'move' || (him.state === 'reel' && !him.atSpot) || (him.state === 'arm' && him.task && him.task.phase !== 'take');
   const g = free ? goalOf(B) : null;
+  // ([R2-E] the room keeps his feet out of what he will not stand in: the
+  // pier's burning oil)
+  if (g && B.room && B.room.avoid && him.state !== 'reel') B.room.avoid(g, B);
   // (polish: a place he can stand - the point at arm's length from me can
   // fall on a stool or the counter, and with me in the gap between the
   // stools and the counter he stood off behind the stool for good: no blow

@@ -135,7 +135,8 @@ async function fight({ timeout = 240000, shots = {} } = {}) {
   // his blow: its hand and kind (a swing is left AWAY from its hand)
   const INFO = { br_jab: ['L', 's'], br_jabR: ['R', 's'], br_cross: ['R', 's'], br_hook: ['R', 'w'], br_hookL: ['L', 'w'], br_body: ['R', 'w'], br_bodyL: ['L', 'w'],
     br_haymaker: ['R', 'o'], br_haymakerL: ['L', 'o'], br_rush: ['R', 'r'], br_shove: ['B', 'p'], br_bottle: ['R', 's'], br_bottle_thrust: ['R', 's'], br_stoolSwing: ['R', 'w'], br_throw: ['R', 't'], br_feint: ['R', 'w'], br_feintL: ['L', 'w'],
-    br_answerL: ['L', 's'], br_answerR: ['R', 's'] };  // [B8] his answer to a punch into his guard
+    br_answerL: ['L', 's'], br_answerR: ['R', 's'],  // [B8] his answer to a punch into his guard
+    fm_hookSwing: ['R', 'l'], fm_hookChop: ['R', 'o'] };  // [R2-E] the foreman's hook: its long arc is left by a step back (or in)
   for (;;) {
     const s = await js(`(() => { const B = G.brawl; if (!B.active) return { off: true, finished: !!B.finished, won: !!B.stats.won };
       const h = B.him, m = B.me, c = B.c; const cl = h.clip ? c.clip(h.clip) : null; const e = G.eye;
@@ -174,6 +175,7 @@ async function fight({ timeout = 240000, shots = {} } = {}) {
         if (s.kind === 'block') act = 'block'; else if (kind === 't') act = s.chev === 'L' ? 'KeyA' : s.chev === 'R' ? 'KeyD' : r < 0.5 ? 'KeyA' : 'KeyD'; else if (s.lesson) act = away;
         else if (kind === 'w' || kind === 'o') act = away;
         else if (kind === 'r') act = r < 0.5 ? 'KeyA' : 'KeyD';
+        else if (kind === 'l') act = r < 0.8 ? 'KeyS' : 'in';  // [R2-E]
         else if (kind === 'p') act = r < 0.5 ? 'KeyS' : away;
         else act = r < 0.35 ? 'KeyA' : r < 0.7 ? 'KeyD' : r < 0.85 ? 'block' : 'KeyS';
         plans.set(key, { act: !s.lesson && Math.random() < 0.2 ? null : act, seen: s.tell + rr(0.2, 0.3) });
@@ -183,6 +185,7 @@ async function fight({ timeout = 240000, shots = {} } = {}) {
         const act = P.act; P.act = null;
         if (held.has('KeyW')) { held.delete('KeyW'); await keyUp('KeyW'); }
         if (act === 'block') await down('Space', Math.max(120, (s.contact - s.t + 0.15) * 1000));
+        else if (act === 'in') await down('KeyW', 420);  // [R2-E] in, inside the hook's arc
         else await tapKey(act);
       }
       if (s.t < s.contact + 0.05) { await sleep(16); continue; }

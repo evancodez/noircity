@@ -52,18 +52,41 @@ export const SPECS = {
       init(g, ud) { ud.lens = V3(0, 0.035, 0.14); ud.beam = V3(0, 0, 1); },
     };
   },
+  // ([R2-E] the foreman's signature: it must read at arm's length and at
+  // five metres - a hook as long as a forearm, its steel a worn grey that
+  // catches the light along its curve)
   cargoHook: (v, lod) => {
     const M = mats();
-    const handle = new THREE.CylinderGeometry(0.02, 0.02, 0.13, lod ? 8 : 14).rotateZ(Math.PI / 2).translate(0, 0.02, 0);
-    const shank = [V3(0, 0.02, 0), V3(0, 0.02, 0.1), V3(0, 0.03, 0.2), V3(0.005, 0.06, 0.26), V3(0.01, 0.1, 0.25), V3(0.012, 0.11, 0.2), V3(0.01, 0.1, 0.17)];
+    const handle = new THREE.CylinderGeometry(0.022, 0.022, 0.14, lod ? 8 : 14).rotateZ(Math.PI / 2).translate(0, 0.02, 0);
+    const shank = [V3(0, 0.02, 0), V3(0, 0.02, 0.12), V3(0, 0.04, 0.22), V3(0.004, 0.1, 0.29), V3(0.008, 0.18, 0.285), V3(0.01, 0.235, 0.23), V3(0.01, 0.235, 0.17)];
     return {
-      parts: [{ geo: handle, mat: M.wood, id: 0 }, { geo: tubeOf(shank, 0.007, 7), mat: M.steel, id: 1 }],
+      parts: [{ geo: handle, mat: M.wood, id: 0 }, { geo: tubeOf(shank, 0.0095, 8), mat: std('p9_hookSteel', { color: 0x464646, roughness: 0.28, surface: 'metal' }), id: 1 }],
       grip: [0, 0.02, 0],
     };
   },
   crateLid: (v, lod) => {
     const M = mats();
     const planks = [];
+    // ([R2-E] the small one: off a crate a man carries, three planks on two
+    // battens, 0.5 x 0.5 - held up before me in both hands it covers the
+    // chest and he is seen over it; the grip at the middle of its right
+    // side, the battens' ends)
+    if (v === 'small') {
+      for (let i = 0; i < 3; i++) {
+        const p = slab(0.158, 0.02, 0.5, { bevel: 0.004, corner: 0.006, seg: 1, curve: 2 });
+        p.deleteAttribute('uv');
+        p.translate(-0.165 + i * 0.165, 0.028, 0);
+        planks.push(p);
+      }
+      const bat = [new THREE.BoxGeometry(0.5, 0.028, 0.07).translate(0, 0.014, -0.17), new THREE.BoxGeometry(0.5, 0.028, 0.07).translate(0, 0.014, 0.17)];
+      // (the grip's frame turns it upright before me in the fight's two-handed
+      // hold - clips/fight.js BIG_R, the hands' default socket: its face to
+      // me, spreading left of my right hand, held near its top corner so he
+      // is seen over it)
+      const grip = new THREE.Matrix4().makeBasis(V3(0.688, -0.065, -0.723), V3(-0.653, 0.351, -0.653), V3(0.297, 0.921, 0.198)).setPosition(0.25, 0.02, -0.16);
+      // (a pale deal lid: it prints grey with its grain, never a black plate)
+      return { parts: [{ geo: mergeGeos(planks), mat: std('p9_lidDeal', { color: 0x6a6a6a, roughness: 0.85, surface: 'wood' }), id: 0 }, { geo: mergeGeos(bat), mat: M.wood, id: 0 }], grip };
+    }
     for (let i = 0; i < 4; i++) {
       const p = slab(0.29, 0.022, 1.18, { bevel: 0.004, corner: 0.006, seg: 1, curve: 2 });
       p.deleteAttribute('uv');
@@ -76,6 +99,20 @@ export const SPECS = {
   chainCoil: (v, lod) => {
     const M = mats();
     const links = [];
+    // ([R2-E] 'hank': a length of it taken up in the fist - two turns round
+    // the knuckles and 0.6 m hanging out of the bottom of the fist and
+    // curling forward: the reach it swings with; the grip its top)
+    if (v === 'hank') {
+      const pts = [];
+      for (let i = 0; i < 16; i++) { const s = i / 15; pts.push([0.0, -0.04 - s * 0.42 + 0.12 * s * s * s, 0.02 + 0.3 * s * s]); }
+      pts.forEach(([x, y, z], i) => {
+        const link = new THREE.TorusGeometry(0.028, 0.008, 5, 10).rotateX(Math.PI / 2 * (i % 2)).rotateZ(Math.PI / 2);
+        link.translate(x, y, z);
+        links.push(link);
+      });
+      for (let i = 0; i < 8; i++) { const a = i / 8 * Math.PI * 2; const link = new THREE.TorusGeometry(0.026, 0.008, 5, 10).rotateY(a); link.translate(Math.cos(a) * 0.05, 0.01 * (i % 2), Math.sin(a) * 0.05); links.push(link); }
+      return { parts: [{ geo: mergeGeos(links), mat: std('p9_hookSteel', { color: 0x464646, roughness: 0.28, surface: 'metal' }), id: 0 }], grip: [0, 0, 0] };
+    }
     const n = lod ? 26 : 52;
     for (let i = 0; i < n; i++) {
       const a = i * 0.55, r = 0.08 + 0.12 * (i / n);
@@ -86,6 +123,43 @@ export const SPECS = {
       links.push(link);
     }
     return { parts: [{ geo: mergeGeos(links), mat: M.steel, id: 0 }], grip: [0.18, 0.05, 0] };
+  },
+  // [R2-E] the foreman's work jacket: one cloth with two shapes, held by
+  // its collar hanging from his hand (the grip, the origin) and laid over a
+  // barrel's top and down its side (the barrel's top centre the origin, the
+  // drape falling toward +z); variant 'draped' starts laid. The scene lays
+  // it from one to the other (geometry.userData.shape(k): 0 held, 1 laid),
+  // the vertices moved on the CPU so every pass draws the same cloth.
+  jacket: (v, lod) => {
+    const nu = lod ? 8 : 12, nv = lod ? 12 : 20;
+    const geo = new THREE.PlaneGeometry(1, 1, nu, nv);
+    const P = geo.getAttribute('position');
+    const held = new Float32Array(P.count * 3), laid = new Float32Array(P.count * 3);
+    for (let i = 0; i < P.count; i++) {
+      const u = P.getX(i) + 0.5, s = (0.5 - P.getY(i)) * 0.94;
+      const fold = Math.sin(u * 17 + 1.3), fold2 = Math.sin(u * 7.1 + s * 3);
+      // held by the collar: hanging, bunched at the top
+      held[i * 3] = (u - 0.5) * (0.26 + 0.24 * Math.min(1, s * 3));
+      held[i * 3 + 1] = -s * 0.82;
+      held[i * 3 + 2] = 0.022 * fold * Math.min(1, s * 4) + 0.015 * fold2;
+      // laid: across the top, over the rim, down the side
+      let y, z;
+      if (s < 0.3) { y = 0.012 + 0.008 * fold2; z = -0.03 + s; }
+      else if (s < 0.38) { const k = (s - 0.3) / 0.08 * Math.PI / 2; y = 0.012 - 0.03 * (1 - Math.cos(k)); z = 0.27 + 0.03 * Math.sin(k); }
+      else { y = -0.02 - (s - 0.38); z = 0.3 + 0.08 * Math.min(1, (s - 0.38) / 0.44) + 0.012 * fold * Math.min(1, (s - 0.38) * 4); }
+      laid[i * 3] = (u - 0.5) * 0.56 * (1 - 0.18 * Math.max(0, Math.min(1, (s - 0.38) / 0.5)));
+      laid[i * 3 + 1] = y;
+      laid[i * 3 + 2] = z;
+    }
+    const shape = (k) => {
+      for (let i = 0; i < held.length; i++) P.array[i] = held[i] + (laid[i] - held[i]) * k;
+      P.needsUpdate = true;
+      geo.computeVertexNormals();
+      geo.computeBoundingSphere();
+    };
+    geo.userData.shape = shape;
+    shape(v === 'draped' ? 1 : 0);
+    return { parts: [{ geo, mat: std('p9_jacket', { color: 0x121212, roughness: 0.95, surface: 'cloth', side: THREE.DoubleSide }), id: 0 }], grip: [0, 0, 0] };
   },
   rope: (v, lod) => {
     const M = mats();
