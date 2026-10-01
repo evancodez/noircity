@@ -77,7 +77,7 @@ function stageDuel(stage, camera, controller, game) {
     // (him with the thing in his hand, 2.6 m off for a throw, 1.5 for a swing)
     const kind = what === 'throw' ? (q.get('kind') || 'plate') : (q.get('kind') || 'stool');
     const it = B.room.hisItem(kind, c.pos) || B.room.items().find((x) => x.kind === kind);
-    const E = game.eye, d = what === 'throw' ? 2.6 : 1.5;
+    const E = game.eye, d = q.get('d') ? parseFloat(q.get('d')) : what === 'throw' ? 2.6 : 1.5;   // ([R2-H] &d= the distance: a throw from close up)
     const P = controller.pos, dl = Math.hypot(c.pos.x - P.x, c.pos.z - P.z) || 1, fx = (c.pos.x - P.x) / dl, fz = (c.pos.z - P.z) / dl;
     c.place({ x: P.x + fx * d, z: P.z + fz * d }, Math.atan2(-fx, -fz));
     if (it) {

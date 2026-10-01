@@ -86,6 +86,10 @@ export const BRAWL = {
   // (version 3 counted 0.7 of every blow; version 4's numbers are the damage)
   tough: 1,
 };
+// [R2-H] the last blow's card (the lesson's words: HOLD TO LOAD, THEN LET GO)
+const FINISH_CARD = 'OUT ON HIS FEET.   HOLD TO LOAD, THEN LET GO';
+// [R2-H] how white his thrown china prints in the air (the glass ticks' 1.6)
+const THROWN_LIFT = 0.45;
 // [B8] what a thing does in my hands (§5): its damage, how many blows it is
 // good for, one hand or both, whether a wind-up throws it, what it becomes
 // when it breaks, whether it breaks his guard, its level of feel. A room may
@@ -105,7 +109,7 @@ const THINGS_OF = (it) => (it && (ACTIVE[it.kind] || THINGS[it.kind])) || THINGS
 export { THINGS_OF };
 const freshStats = () => ({ landed: 0, taken: 0, blocked: 0, slipped: 0, dodged: 0, wrongSlips: 0, myBlocked: 0, counters: 0, combos: 0, breaks: 0, throws: 0, downs: 0, time: 0, jabs: 0, hards: 0, grabs: 0, his: 0, knocks: 0, into: [], manners: {}, hisItems: [], clips: {}, input: [] });
 const V = (x, y, z) => new THREE.Vector3(x, y, z);
-const _a = new THREE.Vector3(), _b = new THREE.Vector3(), _c = new THREE.Vector3(), _d = new THREE.Vector3();
+const _a = new THREE.Vector3(), _b = new THREE.Vector3(), _c = new THREE.Vector3(), _d = new THREE.Vector3(), _e = new THREE.Vector3();
 const wrap = (a) => Math.atan2(Math.sin(a), Math.cos(a));
 const OTHER = { L: 'R', R: 'L' };
 // (a jab or a shove, a hook or a body shot stop for a counter; a haymaker,
@@ -612,6 +616,7 @@ export class Brawl {
   myContact(kind, arm, lv) {
     const G = this.game, him = this.him, c = this.c, me = this.me;
     if (!this.active || this.finished) return;
+    if (kind === 'hard' && lv >= 2) me.loadedT = this.T;   // [R2-H] the last time I loaded a punch (the finish card reads it)
     const item = kind === 'item' ? me.holding : null;
     const T = item ? THINGS_OF(item) : null;
     const tgt = this.onTarget(item ? BRAWL.itemReach + (T.big ? 0.2 : 0) + (T.reach || 0) : BRAWL.reach);   // ([R2-E] a thing's own reach: the chain)
@@ -636,6 +641,8 @@ export class Brawl {
       if (last && him.atSpot) { if (item) this.spendHeld(head, dir); this.ko(); return; }
       if (item) this.spendHeld(head, dir);
       him.quietT = 0;
+      // ([R2-H] a swaying man that is only jabbed: six in a row and the card comes again)
+      if (him.atSpot && (him.reelHits = (him.reelHits || 0) + 1) >= 6) { him.reelHits = 0; him.nagT = this.T + 4; }
       if (him.atSpot) { this.c.play('br_sway', { fade: 0.06 }); him.swayT = 0.8; }
       this.feel(kind === 'jab' ? 'jab' : 1, head, dir);
       this.sfx(kind === 'jab' ? 'jab' : 'heavy', head, { k: 0.5 });
@@ -1123,6 +1130,8 @@ export class Brawl {
       case 'arm': this.stepTask(dt); break;
       case 'reel': this.stepReel(dt); break;
     }
+    this.finishCard();
+    this.stepThrownLight(dt);
     steer(this, dt);
     this.keepInRoom();
     this.drawGuard();
@@ -1488,6 +1497,7 @@ export class Brawl {
     const hd = Math.hypot(to.x - from.x, to.z - from.z), sp = 12.5, tt = Math.max(0.12, hd / sp), g = 9.8;
     const v = V((to.x - from.x) / tt, (to.y - from.y + 0.5 * g * tt * tt) / tt, (to.z - from.z) / tt);
     G.stage.scene.add(o); o.position.copy(from); o.updateMatrixWorld(true);
+    this.lightThing(o, true); him.lightK = 0;   // [R2-H] up light in the air (it came up over the tell): china catches the eye
     this.sfx('b8throw', from, { k: 1 });
     const lane = V(to.x - from.x, 0, to.z - from.z).normalize();
     // ([B8] its middle and its size, for the rim drawn round it on the frame)
@@ -1550,6 +1560,46 @@ export class Brawl {
       this.flying.splice(i, 1);
     }
   }
+  // [R2-H] his thrown china is drawn light: a dark plate against the dark
+  // room at five metres was not seen, and the ring drawn round it to find it
+  // was loud. Its materials are cloned (the shared china stays as it was) and
+  // lifted by k (0 .. 1): an emissive and a lighter albedo, so the ink prints
+  // it paper-white with its rim. It comes up over the tell, in his hand (the
+  // plate catching the light is the tell's own mark: nothing pops at the
+  // release) and goes back when it bursts, falls or he is struck off it.
+  lightThing(o, on, k = 1) {
+    if (!o) return;
+    o.traverse((m) => {
+      if (!m.isMesh || !m.material || Array.isArray(m.material)) return;
+      if (on) {
+        let c = m.userData.r2hMat && m.material;
+        if (!c) {
+          const M = m.material;
+          if (M.transparent || !/^prop_china/.test(M.name || '')) return;
+          m.userData.r2hMat = M;
+          c = M.clone();
+          c.userData.r2hBase = M.color.clone();
+          c.emissive = new THREE.Color(0, 0, 0);
+          m.material = c;
+        }
+        c.emissive.setScalar(THROWN_LIFT * k);
+        c.color.copy(c.userData.r2hBase).multiplyScalar(1 + 1.2 * k);
+      } else if (m.userData.r2hMat) {
+        m.material.dispose && m.material.dispose();
+        m.material = m.userData.r2hMat;
+        delete m.userData.r2hMat;
+      }
+    });
+  }
+  // (each step: the plate in his hand comes up over the throw's tell; one he
+  // is struck off goes back to china)
+  stepThrownLight(dt) {
+    const him = this.him, o = him.prop;
+    if (o && him.state === 'attack' && him.clip === 'br_throw') {
+      him.lightK = Math.min(1, (him.lightK || 0) + dt / 0.4);
+      this.lightThing(o, true, him.lightK);
+    } else if (o && him.lightK) { him.lightK = 0; this.lightThing(o, false); }
+  }
   // [B8] (second pass) his thrown thing on the frame: speed lines back
   // along the way it came and a white rim - a dark plate against the dark
   // room at five metres was not seen at all, only the chevron and his arm
@@ -1562,12 +1612,17 @@ export class Brawl {
       if (!h) continue;
       const d = mid.distanceTo(G.camera.position);
       const r = Math.max(9, Math.min(64, (F.rad || 0.12) * 1.1 / Math.max(0.3, d) * innerHeight * 0.74));
-      out.push({ x: h.x, y: h.y, fx: f ? f.x : h.x, fy: f ? f.y : h.y - 1, r, t: F.t });
+      // ([R2-H] the lines trail along the way it is going: back up its own
+      // velocity, so the first frames, with the thing still at his hand,
+      // show which way it comes from)
+      const tl = G.screenOf(_e.copy(mid).addScaledVector(F.v, -0.05));
+      out.push({ x: h.x, y: h.y, fx: f ? f.x : h.x, fy: f ? f.y : h.y - 1, r, t: F.t, tx: tl ? tl.x - h.x : 0, ty: tl ? tl.y - h.y : 0 });
     }
     if (out.length || this._flyShown) this.cards.flying(out.length ? out : null);
     this._flyShown = out.length > 0;
   }
   burstThing(o, kind, at, dir) {
+    this.lightThing(o, false);
     const B = this.game.stage.breakables;
     const k = kind === 'mug' ? 'mug' : kind === 'bottle' ? 'bottle' : 'plate';
     o.visible = true;
@@ -1576,7 +1631,7 @@ export class Brawl {
   }
   // (the fight stops with things in the air: they fall where they are)
   dropFlying() {
-    for (const F of this.flying || []) this.dropInWorld(F.o, F.kind, F.o.position.clone(), F.lane, 0.8);
+    for (const F of this.flying || []) { this.lightThing(F.o, false); this.dropInWorld(F.o, F.kind, F.o.position.clone(), F.lane, 0.8); }
     this.flying = [];
     if (this._cards) { this._cards.chevron(null); this._cards.flying(null); }
     this._flyShown = false;
@@ -1606,6 +1661,7 @@ export class Brawl {
     const him = this.him, c = this.c, G = this.game, o = him.prop;
     if (!o) return;
     him.prop = null; const kind = him.holding; him.holding = null;
+    if (him.lightK) { him.lightK = 0; this.lightThing(o, false); }   // ([R2-H] a plate lit over his tell goes back to china before it falls and comes apart)
     o.updateWorldMatrix(true, true);
     const w = o.getWorldPosition(V(0, 0, 0));
     const q = o.getWorldQuaternion(new THREE.Quaternion());
@@ -1636,13 +1692,31 @@ export class Brawl {
     this.stats.manners.out = this.stats.manners.out ?? this.stats.time;
     G.emit('brawl:round', { n: 4, manner: 'out' });
     G.emit('brawl:reel', {});
-    him.state = 'reel'; him.clip = null; him.t = 0; him.open.L = him.open.R = 0; him.quietT = 0; him.atSpot = false; him.loco = null; him.reelSpeed = null; him.caught = false; him.catchT = 0; him.lane = false; him.stuckT = 0; him.aim = null; him.bestD = null; him.reelPath = null; him.switched = 0; him.reelT = 0;
+    him.state = 'reel'; him.clip = null; him.t = 0; him.open.L = him.open.R = 0; him.quietT = 0; him.atSpot = false; him.loco = null; him.reelSpeed = null; him.caught = false; him.catchT = 0; him.lane = false; him.stuckT = 0; him.aim = null; him.bestD = null; him.reelPath = null; him.switched = 0; him.reelT = 0; him.spotT = null;
     let best = null, bd = Infinity;
     for (const w of R.finishes || []) { const d = Math.hypot(w.spot.x - c.pos.x, w.spot.z - c.pos.z); if (d < bd) { bd = d; best = w; } }
     him.window = best;
     him.spot = best ? best.spot : { x: c.pos.x, z: c.pos.z };
     try { c.fig.anim.setOverlay(null, 0.1); } catch (e) { /* */ }
     c.setState('br_reel', 0.3);
+  }
+
+  // [R2-H] The last blow, taught where it is needed. Out on his feet at the
+  // window, the one thing that finishes him is a loaded punch (or a thing),
+  // and a player who mashes has no reason to know it: one card at the fist,
+  // with the mouse in it, a moment after he gets there - unless I have loaded
+  // a punch in the last half minute (I know) - and again only if I go on
+  // jabbing a man who does nothing but sway (six blows). Gone with him.
+  finishCard() {
+    const him = this.him, C = this.cards;
+    let want = false;
+    if (him.state === 'reel' && him.atSpot && !this.lesson) {
+      if (him.spotT == null) { him.spotT = this.T; him.reelHits = 0; him.nagT = 0; him.cardOff = this.T - (this.me.loadedT ?? -99) < 30; }
+      const age = this.T - him.spotT;
+      want = (age > 0.7 && age < 6 && !him.cardOff) || this.T < him.nagT;
+    } else if (him.state !== 'reel') him.spotT = null;
+    if (want) { C.card(FINISH_CARD, 'mouseLR'); this._finCard = true; }
+    else if (this._finCard) { C.card(''); this._finCard = false; }
   }
 
   stepReel(dt) {

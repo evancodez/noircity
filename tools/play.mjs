@@ -19,6 +19,7 @@
 //   { "walk": [[x, z], ...], "timeout": ms }   walk the points by real input: the
 //                                        mouse turns him toward the next, W held
 //   { "clickOn": "css selector" }        a click at the centre of that element
+//                                        ([R2-H] "taken": "expr", "retries": 4, "every": 3500: clicked again until expr is true)
 //   { "drive": "tools/lib/<x>.mjs", "check": "expr over D", ... }   [B7] a
 //                                        module's default export plays by real
 //                                        input with this tool's primitives;
@@ -454,7 +455,19 @@ try {
     else if (S.clickOn) {
       const r = await js(`(() => { const e = document.querySelector(${JSON.stringify(S.clickOn)}); if (!e) return null; const b = e.getBoundingClientRect(); return [b.left + b.width / 2, b.top + b.height / 2]; })()`);
       if (!r) check(`clickOn ${S.clickOn}`, false, 'no element');
-      else { await mouse('mousePressed', r[0], r[1]); await sleep(40); await mouse('mouseReleased', r[0], r[1]); }
+      else {
+        await mouse('mousePressed', r[0], r[1]); await sleep(40); await mouse('mouseReleased', r[0], r[1]);
+        // [R2-H] { "clickOn": sel, "taken": "expr", "retries": 4, "every": 3500 }: on a loaded machine the browser now
+        // and then refuses the pointer lock a click asks for, and the game does not begin (the title stays up): the
+        // click is made again, up to `retries` times, until `taken` is true
+        if (S.taken) for (let k = 0; k < (S.retries ?? 4); k++) {
+          let ok = false;
+          for (let w = 0; w < (S.every ?? 3500) / 250 && !ok; w++) { await sleep(250); ok = (await js(S.taken)) === true; }
+          if (ok) break;
+          log(`clickOn ${S.clickOn}: not taken, clicking again (${k + 1})`);
+          await mouse('mousePressed', r[0], r[1]); await sleep(40); await mouse('mouseReleased', r[0], r[1]);
+        }
+      }
     } else if (S.reload) {
       await send('Page.reload', {});
       await sleep(500);

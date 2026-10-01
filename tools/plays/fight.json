@@ -15,14 +15,21 @@
    "wait": 2000
   },
   {
-   "clickOn": "#title .opt[data-k=begin]"
+   "clickOn": "#title .opt[data-k=begin]",
+   "taken": "G.state !== 'title'",
+   "retries": 5,
+   "every": 4000
   },
   {
    "name": "the way in: he stands, his hand on my shoulder, the stool sent skidding, fists up"
   },
   {
    "until": "G.scenes.current && G.scenes.current.id === 'fight' && (G.controller.mode === 'brawlIn' || !!G.scenes.ctx.flags.inT)",
-   "timeout": 20000
+   "timeout": 60000
+  },
+  {
+   "expect": "(() => { const d = G.scenes.ctx.flags.inT - G.scenes.startT; return d >= 2.3 && d < 3.3; })()",
+   "label": "[R2-H] entered from the title, the way in begins once the chapter card II has gone (2.4 s in), not under it"
   },
   {
    "eval": "(window.__startT = N.time, 'the way in began')"

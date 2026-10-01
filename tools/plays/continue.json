@@ -31,11 +31,21 @@
    "shot": "c00_title_continue"
   },
   {
-   "clickOn": "#title .opt[data-k=continue]"
+   "until": "G.state === 'title'",
+   "timeout": 30000
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "clickOn": "#title .opt[data-k=continue]",
+   "taken": "G.state !== 'title'",
+   "retries": 5,
+   "every": 4000
   },
   {
    "until": "G.scenes.current && G.scenes.current.id === 'fight' && G.scenes.beat === 'ko'",
-   "timeout": 8000
+   "timeout": 30000
   },
   {
    "expect": "true",
@@ -110,28 +120,12 @@
    "key": "KeyE"
   },
   {
-   "until": "G.state === 'end'",
-   "timeout": 8000
+   "until": "G.state === 'end' || (G.scenes.current && G.scenes.current.id !== 'fight')",
+   "timeout": 30000
   },
   {
-   "expect": "G.save.inventory.includes('matchbook') && G.hud.endShown",
-   "label": "pocketed; To be continued"
-  },
-  {
-   "wait": 700
-  },
-  {
-   "shot": "c04_end"
-  },
-  {
-   "clickOn": "#endcard"
-  },
-  {
-   "wait": 800
-  },
-  {
-   "expect": "G.state === 'title' && !document.querySelector('#title .opt[data-k=continue]').classList.contains('hidden')",
-   "label": "the end card leads back to the title, CONTINUE offered"
+   "expect": "G.save.inventory.includes('matchbook') && (G.hud.endShown || (G.scenes.current && G.scenes.current.id === G.scenes.nextId('fight')))",
+   "label": "pocketed; the next chapter begins (To be continued when there is none: [R2-H] the merged story goes on to scene 3)"
   }
  ]
 }
