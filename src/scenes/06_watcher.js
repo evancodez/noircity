@@ -6,6 +6,9 @@ import { makeUmbrella } from './watcher/umbrella.js';
 import { makeBlind } from './watcher/blind.js';
 import { RUNHANDS } from '../player/clips/run.js';
 import { SLAT, DOOR } from '../player/clips/watcher.js';
+import { officeStreet, officeAfterFight, makeOfficeBlind, officeRun, wayOut, WAY_OUT, curtainAside } from './watcher/office.js';
+import { ROOM as OROOM, STREET as STREET_O } from '../stages/office/plan.js';
+import { BLIND as OBLIND } from '../stages/office/build/openings.js';
 
 // Scene 6, The Watcher (lane B4): the chase on foot. Beats:
 //   seen     at room 304's street window, E: two fingers part the blind.
@@ -34,6 +37,8 @@ const INV = ['matchbook', 'tornHalf', 'note', 'ledger', 'revolver'];
 const EYE = 1.63;
 // the lens at the slit (degrees): the eye narrows on him as it leans in
 const PEEK = 44;
+// (the office: the slit's place along the blind, between its ladder tapes)
+const SLIT_Z = 4.46;
 
 // ---- the things every beat's setup does -------------------------------------------------------
 function common(ctx) {
@@ -117,7 +122,7 @@ export default defineScene({
     seen(ctx) {
       const C = common(ctx);
       const O = office(ctx.game);
-      if (O) { ctx.flags.office = O; return; }
+      if (O) { ctx.flags.office = O; atOfficeWindow(ctx, C, O); return; }
       watcherAtLamp(ctx, C);
       streetWindow(ctx);
     },
@@ -161,75 +166,32 @@ export default defineScene({
     const G = ctx.game;
     const C = ctx.flags.chase;
     const H = G.hands;
-    ctx.onStep((dt) => { C.step(dt); if (ctx.flags.umb) ctx.flags.umb.update(dt); if (ctx.flags.car) ctx.flags.car.step(dt); });
+    ctx.onStep((dt) => { C.step(dt); if (ctx.flags.umb) ctx.flags.umb.update(dt); if (ctx.flags.umbO) ctx.flags.umbO.update(dt); if (ctx.flags.car) ctx.flags.car.step(dt); });
 
     // ---- seen: the slats, the man under the lamp -------------------------------------------------
-    if (ctx.at('seen') && !ctx.flags.office) {
+    // (in lane B2's office - the room as the gunfight left it - or, with no
+    // office, the backlot's stand-in corner of it: the same beat on either
+    // blind)
+    if (ctx.at('seen')) {
       yield beat('seen');
-      const blind = ctx.flags.blind;
-      // (the chapter card first: the room comes up out of the black, the
-      // slivers of the lamp through the slats; then the prompt)
-      yield wait(1.6);
-      yield* ctx.prompt({ text: 'look out', at: () => blind.gapAt(V(0, 0, 0)) });
-      // two fingers part the slats: the hand comes up (0.3 s), the slat goes
-      // down under them (0.3 .. 0.6 s) and the eye leans to the slit, on the
-      // line from him through it
-      SLAT.blind = blind; SLAT.cam = G.camera;
-      H.play('partSlats');
-      blind.part(1);
-      const gap = blind.gapAt(V(0, 0, 0), -0.1);
-      blind.part(0);
-      const him = C.fig.bones.chest.getWorldPosition(V(0, 0, 0));
-      const dir = gap.clone().sub(him).normalize();
-      const eye = gap.clone().addScaledVector(dir, 0.4);
-      G.controller.ease({ x: eye.x, y: eye.y, z: eye.z, yaw: Math.atan2(dir.x, dir.z), pitch: Math.asin(-dir.y) }, 0.55);
-      // (and the eye narrows on him: the lens closes in as it leans)
-      const fov0 = ctx.flags.fov0 = G.camera.fov;
-      let t = 0;
-      yield until(() => {
-        t += 1 / 60;
-        if (t > 0.26) blind.part(Math.min(1, (t - 0.26) / 0.3));
-        if (Math.abs(t - 0.3) < 0.01) G.sfx.play('w_slats', gap);
-        lens(G, fov0 + (PEEK - fov0) * Math.min(1, t / 0.6) ** 2 * (3 - 2 * Math.min(1, t / 0.6)));
-        return t >= 0.6;
-      });
-      // he looks up at the window; held a second and a half
-      yield wait(1.5);
-      // he sees me see him: the start, the umbrella goes
-      C.w.play('watcher_notice', { fade: 0.1, hold: true });
-      yield wait(0.35);
-      const hv = V(Math.sin(C.fig.yaw) * -0.4, -0.2, Math.cos(C.fig.yaw) * -0.4);
-      ctx.flags.umb.drop(hv, { wind: V(0.9, 0, -0.3) });
-      G.sfx.play('w_umbrella', C.fig.pos.clone().setY(1));
-      G.music.cue('chase', { fade: 0.4 });
-      yield wait(0.55);
-      // he turns and runs for the alley's mouth (under this window: out of
-      // the slit in a second); the fingers let the slat go, it springs shut
-      C.place(0.6);
-      yield wait(1.0);
-      H.play('releaseSlats');
-      for (let t = 0; t < 0.3; t += 1 / 60) { blind.part(Math.max(0, 1 - t / 0.2)); lens(G, PEEK + (ctx.flags.fov0 - PEEK) * (t / 0.3)); yield null; }
-      blind.part(0);
-      lens(G, ctx.flags.fov0);
-      G.sfx.play('w_slats', gap);
-      yield* ctx.prompt({ text: 'the fire escape' });
-      // across the room to the side window and out through it
-      // (the head turns to the side window first - a third of a second - and
-      // the body follows it across the dark room, the eye already on the
-      // iron and the rain outside)
-      const e = ESC_RAIL[0];
-      const P0 = G.controller.eyePose();
-      const wrapA = (a) => Math.atan2(Math.sin(a), Math.cos(a));
-      const dyaw = wrapA(-Math.PI / 2 - P0.yaw);
-      const sm = (x) => (x <= 0 ? 0 : x >= 1 ? 1 : x * x * (3 - 2 * x));
-      G.controller.setMode('cutscene', { ease: 0.05, track: (t) => {
-        const a = sm(t / 0.4), b = sm((t - 0.1) / 0.72);
-        return { x: P0.x + (e.x - P0.x) * b, y: P0.y + (e.y + EYE - P0.y) * b, z: P0.z + (e.z - P0.z) * b, yaw: P0.yaw + dyaw * a, pitch: P0.pitch + (-0.22 - P0.pitch) * a };
-      } });
-      yield wait(0.82);
-    } else if (ctx.at('seen') && ctx.flags.office) {
-      yield beat('seen');
-      yield* seenInOffice(ctx);
+      yield* seenAtWindow(ctx);
+      if (ctx.flags.office) yield* outOfOffice(ctx);
+      else {
+        // across the room to the side window and out through it
+        // (the head turns to the side window first - a third of a second - and
+        // the body follows it across the dark room, the eye already on the
+        // iron and the rain outside)
+        const e = ESC_RAIL[0];
+        const P0 = G.controller.eyePose();
+        const wrapA = (a) => Math.atan2(Math.sin(a), Math.cos(a));
+        const dyaw = wrapA(-Math.PI / 2 - P0.yaw);
+        const sm = (x) => (x <= 0 ? 0 : x >= 1 ? 1 : x * x * (3 - 2 * x));
+        G.controller.setMode('cutscene', { ease: 0.05, track: (t) => {
+          const a = sm(t / 0.4), b = sm((t - 0.1) / 0.72);
+          return { x: P0.x + (e.x - P0.x) * b, y: P0.y + (e.y + EYE - P0.y) * b, z: P0.z + (e.z - P0.z) * b, yaw: P0.yaw + dyaw * a, pitch: P0.pitch + (-0.22 - P0.pitch) * a };
+        } });
+        yield wait(0.82);
+      }
     }
 
     // ---- escape: down the iron ------------------------------------------------------------------
@@ -238,10 +200,15 @@ export default defineScene({
       G.music.cue('chase', { fade: 0.4 });
       H.equip('run');
       const chase = G.stage.part('chase');
-      const from = ctx.from === 'escape' || ctx.flags.office ? 1 : 0;
+      // (from the office: the eye comes in under the sash, mid-duck, on the
+      // black of the cut, and the way goes on by itself until I am out on
+      // the iron; entered here: on the landing)
+      const T = ctx.flags.through;
+      const s0 = T ? T.s : ctx.from === 'escape' ? railS(1) : 0;
       let ended = false;
       G.controller.setMode('escape', {
-        rail: ESC_RAIL, s: from ? railS(from) : 0, endYaw: 0, game: G, ladder: ESC.ladder,
+        rail: ESC_RAIL, s: s0, endYaw: 0, game: G, ladder: ESC.ladder,
+        ...(T ? { v: T.v, autoTo: railS(1) + 0.12, pitchBase: T.pitch } : {}),
         onEvent: (name, d) => {
           if (name === 'foot') G.sfx.play(d.kind === 'stair' ? 'w_ironStep' : 'w_ironWalk', G.eye.clone().setY(d.y));
           if (name === 'landing') G.sfx.play('w_landing', G.eye.clone().setY(d.y));
@@ -250,6 +217,35 @@ export default defineScene({
           if (name === 'end') ended = true;
         },
       });
+      // (and the black of the cut lifts as I come up under the sash; out on
+      // the iron the look is drawn down to him in the street below, crossing
+      // for the alley's mouth - where to go - until the mouse or W takes it)
+      if (T) {
+        let k = 1, draw = 0;
+        // (the head is past the wall's face - out from under the sash - here)
+        const sOut = railS(1) - 0.45;
+        ctx.onStep((dt) => {
+          if (k > 0) { k = Math.max(0, k - dt / 0.3); G.hud.fade(k * k * (3 - 2 * k)); }
+          const e = G.controller.esc;
+          if (!e || draw === -2) return;
+          // (a turn of the mouse or a step down the iron lets it go)
+          if (e.idle < draw - 1e-6 || G.held('KeyW') || G.held('ArrowUp')) { draw = -2; return; }
+          draw += dt;
+          e.idle = draw;
+          if (draw > 1.8) { draw = -2; return; }
+          // (from the cut: the eyes go down to the street at once - under the
+          // sash the iron and the street are what the opening shows, not the
+          // wall across the light well - and round to him as the head comes
+          // out past the wall's face)
+          const him = C.fig.bones.chest.getWorldPosition(V(0, 0, 0)), eye = G.eye;
+          const yawTo = Math.atan2(-(him.x - eye.x), -(him.z - eye.z));
+          const pitchTo = Math.atan2(him.y - eye.y, Math.hypot(him.x - eye.x, him.z - eye.z));
+          const out = Math.min(1, Math.max(0, (e.s - sOut) / 0.3));
+          const a = 1 - Math.exp(-dt * 4.2);
+          e.look.yaw += Math.atan2(Math.sin(yawTo - e.heading - e.look.yaw), Math.cos(yawTo - e.heading - e.look.yaw)) * a * (0.25 + 0.75 * out * out * (3 - 2 * out));
+          e.look.pitch += (pitchTo - e.pitchBase - e.look.pitch) * a;
+        });
+      }
       // his pace follows mine down the iron: he is 15 m up the alley when I land
       const E = () => G.controller.esc;
       const goal = STRETCH_S[0] + 15;
@@ -270,7 +266,7 @@ export default defineScene({
           const L0 = e.rail[i].s;
           chase.ladder.set(e.s > L0 ? Math.min(1, (e.s - L0) / (e.len - L0)) : 0);
           // the prompt to go on down, once, if I stand still on the landing
-          still = e.s < 0.8 && e.v < 0.1 ? still + 1 / 60 : 0;
+          still = e.s < railS(3) && e.v < 0.1 ? still + 1 / 60 : 0;
           if (still > 2.5) G.hud.prompt('W  down', null, 'scene'); else G.hud.clearPrompt('scene');
         }
         return ended;
@@ -332,14 +328,22 @@ export default defineScene({
       // until it is well away: the mouse still turns me, the draw only
       // leans the look toward the red of its tail lamps)
       // (then, more gently, back to my own car at the kerb: where to go)
-      const door = V(MY_CAR.x + 1.0, 1.1, MY_CAR.z + 0.35);
+      // (my car's handle, on the kerb side: the stage's cars put it there)
+      const door = cars.mine && cars.mine.handleAt ? cars.mine.handleAt() : V(MY_CAR.x + 0.76, 0.99, MY_CAR.z + 0.2);
+      const doorOut = cars.mine && cars.mine.handleOut ? cars.mine.handleOut() : V(1, 0, 0);
       let driven = false;
       const pull = { t: -1, dur: 5.4, rate: 3.2, pitch: -0.04, at: () => car.pos(),
         next: { dur: 1.8, rate: 1.8, pitch: -0.1, at: () => door } };
       const wrapA = (a) => Math.atan2(Math.sin(a), Math.cos(a));
+      // (the player's own look always wins: a turn of the mouse - the look
+      // moved since the last step by more than a hair - lets the draw go for
+      // good, so the eye is never fought for)
+      let lastYaw = null, lastPitch = null;
       ctx.onStep((dt) => {
         if (pull.t < 0 || driven) return;
         const ctl = G.controller, e = G.eye;
+        if (lastYaw != null && (Math.abs(wrapA(ctl.yaw - lastYaw)) > 0.004 || Math.abs(ctl.pitch - lastPitch) > 0.004)) { pull.t = -1; return; }
+        lastYaw = null;
         if (pull.t >= pull.dur) {
           // (not when I am already at it, or already looking its way)
           const N = pull.next;
@@ -355,6 +359,7 @@ export default defineScene({
         const k = (1 - Math.exp(-dt * pull.rate)) * w;
         ctl.yaw += wrapA(want - ctl.yaw) * k;
         ctl.pitch += (pull.pitch - ctl.pitch) * k;
+        lastYaw = ctl.yaw; lastPitch = ctl.pitch;
       });
       yield wait(0.5);
       car.start();
@@ -372,13 +377,24 @@ export default defineScene({
       // my hand on the handle (object first: the handle, then the hand on
       // it), the door's click, and away after him
       DOOR.at = door.clone();
+      DOOR.out = doorOut.clone();
       SLAT.cam = G.camera;
       G.controller.frozen = true;
-      // (a step to the door, facing it, while the hand goes out to it)
-      const gy = G.stage.surfaceY(door.x + 0.75, door.z - 0.1);
-      G.controller.ease({ x: door.x + 0.75, y: gy + 1.63, z: door.z - 0.1, yaw: Math.PI / 2 + 0.25, pitch: -0.42 }, 0.4);
+      // (a step to the door, facing it, while the hand goes out to it: the
+      // eye a forearm and a half off the side, the handle a little right of
+      // and below the middle of the frame, the window's line over it)
+      const ex = door.x + doorOut.x * 0.7 - doorOut.z * 0.1, ez = door.z + doorOut.z * 0.7 + doorOut.x * 0.1;
+      const gy = G.stage.surfaceY(ex, ez);
+      const dy = gy + 1.63 - door.y, dd = Math.hypot(door.x - ex, door.z - ez);
+      const P1 = { x: ex, y: gy + 1.63, z: ez, yaw: Math.atan2(-(door.x - ex), -(door.z - ez)) + 0.1, pitch: -Math.atan2(dy, dd) + 0.2 };
+      G.controller.ease(P1, 0.4);
       H.play('carDoor', { onMark: { grip: () => G.sfx.play('w_carDoorOpen', door) } });
-      yield wait(0.85);
+      // (the click, and on it the black: the chapter's fade, the eye going
+      // on down toward the car's side as a man ducks in to its seat - the
+      // tail opens in that seat)
+      yield wait(0.55);
+      const P2 = { ...P1, x: P1.x - doorOut.x * 0.25, z: P1.z - doorOut.z * 0.25, y: P1.y - 0.45, pitch: P1.pitch + 0.18 };
+      G.controller.ease(P2, 0.75);
       ctx.next();
     }
   },
@@ -493,76 +509,157 @@ function makeDrive(stage, cars, car) {
   };
 }
 
-// ---- seen in lane B2's office (when it exists) ---------------------------------------------------
-function* seenInOffice(ctx) {
+// ---- seen: at the street window ---------------------------------------------------------------
+// (office: lane B2's room 304, entered in the setup so the first frame after
+// the chapter card is it; the room as the gunfight left it)
+function atOfficeWindow(ctx, C, O) {
   const G = ctx.game;
-  const O = ctx.flags.office;
   G.enterStage(O);
-  const aw = O.anchor('office.window.street'), sw = O.anchor('office.street.watcher'), ew = O.anchor('office.window.escape');
-  const eyeY = (a) => (a.eyeY != null ? a.eyeY : a.pos.y + 1.65);
-  G.controller.setPose(aw.pos.x, aw.pos.z, aw.yaw, -0.3, eyeY(aw) - EYE);
-  G.controller.frozen = true;
-  // (the room's own blind, lane B2's: its slats each an instance with a
-  // sag and a lift - the two at my eye are pushed apart; else one of mine)
-  const room = O.part && O.part('room');
-  const RB = room && room.blind && room.blind.slats && room.blind.set ? room.blind : null;
-  let blind;
-  if (RB) {
-    const ey = eyeY(aw);
-    let lo = RB.slats.findIndex((S) => S.y < ey - 0.02);
-    if (lo < 1) lo = Math.floor(RB.slats.length / 2);
-    blind = { part(k) { RB.set(lo, { sag: 0.055 * k }); RB.set(lo - 1, { lift: 0.035 * k }); } };
-  } else {
-    blind = makeBlind(O, {});
-    const fx = -Math.sin(aw.yaw), fz = -Math.cos(aw.yaw);
-    blind.place(V(aw.pos.x + fx * 0.3, eyeY(aw) - 0.05, aw.pos.z + fz * 0.3), aw.yaw);
+  officeStreet(O);
+  officeAfterFight(O);
+  // (the escape window's curtain aside while the scene is in the office;
+  // hung again when it leaves - through the window, or any other way)
+  curtainAside(O, 1);
+  if (!O._r2cCurtainHook) {
+    O._r2cCurtainHook = G.on('scene:exit', () => curtainAside(O, 0));
   }
-  const C = ctx.flags.chase;
-  const w = O.cast.spawn(O.cast.has('watcher') ? 'watcher' : 'couple_him', { at: 'office.street.watcher', name: 'watcher' });
-  if (w.kind === 'watcher') w.setState('watcher_stand', 0);
-  const umb = makeUmbrella(O);
-  umb.hold(w.fig);
-  ctx.onStep((dt) => umb.update(dt));
-  yield* ctx.prompt({ text: 'look out' });
-  G.sfx.play('w_slats');
-  // (the lens closes on him as the slats part, as in the stand-in's beat)
-  const fov0 = G.camera.fov;
-  for (let t = 0; t < 0.35; t += 1 / 60) { const k = Math.min(1, t / 0.35); blind.part(k); lens(G, fov0 + (PEEK - fov0) * k * k * (3 - 2 * k)); yield null; }
-  lens(G, PEEK);
+  const aw = O.anchor('office.window.street'), sw = O.anchor('office.street.watcher');
+  // him under the lamp across the street, the umbrella up, looking up at
+  // this window
+  const yaw = Math.atan2(OROOM.x1 - sw.pos.x, aw.pos.z - sw.pos.z);
+  C.spawn({ x: sw.pos.x, z: sw.pos.z }, yaw, 'watcher_stand');
+  C.act = 'stand';
+  const umb = O._b4umb || (O._b4umb = makeUmbrella(O));
+  umb.hold(C.fig);
+  ctx.flags.umbO = umb;
+  // the slit: a little under my eye, between two of the blind's ladder
+  // tapes (they hang at its middle and 0.62 m either side), the fingers a
+  // hand's breadth right of it; the eye leans to it on the line to him
+  const eyeY = 1.64;
+  const zSlit = SLIT_Z;
+  // (one at a time: a scene left with the slats parted gives the room's
+  // own back when it is entered again)
+  if (O._r2cBlind) O._r2cBlind.dispose();
+  ctx.flags.blind = O._r2cBlind = makeOfficeBlind(O, { gapY: 1.5, zAt: zSlit + 0.1 });
+  // standing a step back from the window, square to the slit, the look free
+  const at = { pos: V(OBLIND.x - 0.92, 0, zSlit - 0.02), yaw: aw.yaw, eyeY };
+  G.controller.setMode('seated', { anchor: at, eyeY, pitch: -0.12, forward: 0, lean: 0.02, yawRange: [-1.7, 1.7], pitchRange: [-0.95, 0.6], swivel: 9 });
+  void STREET_O;
+  G.hands.equip('empty');
+}
+
+// the slats parted, him seen, his run; the slats let go (either blind)
+function* seenAtWindow(ctx) {
+  const G = ctx.game, C = ctx.flags.chase, H = G.hands;
+  const blind = ctx.flags.blind;
+  const umb = ctx.flags.umbO || ctx.flags.umb;
+  // (the chapter card first: the room comes up out of the black, the
+  // slivers of the lamp through the slats; then the prompt, once the card
+  // has gone - not printed over it)
+  yield wait(1.0);
+  yield until(() => !(G.hud.cardT > 0.15));
+  yield* ctx.prompt({ text: 'look out', at: () => blind.gapAt(V(0, 0, 0)) });
+  // two fingers part the slats: the hand comes up (0.3 s), the slat goes
+  // down under them (0.3 .. 0.6 s) and the eye leans to the slit, on the
+  // line from him through it
+  SLAT.blind = blind; SLAT.cam = G.camera;
+  H.play('partSlats');
+  blind.part(1);
+  const gap = blind.gapAt(V(0, 0, 0), -0.1);
+  blind.part(0);
+  const him = C.fig.bones.chest.getWorldPosition(V(0, 0, 0));
+  const dir = gap.clone().sub(him).normalize();
+  // (the office's slit is further from him: the eye nearer it, the lens
+  // narrower, so he is as big in it as the stand-in's man)
+  const O = !!ctx.flags.office, peek = O ? 38 : PEEK;
+  const eye = gap.clone().addScaledVector(dir, O ? 0.32 : 0.4);
+  G.controller.ease({ x: eye.x, y: eye.y, z: eye.z, yaw: Math.atan2(dir.x, dir.z), pitch: Math.asin(-dir.y) }, 0.55);
+  // (and the eye narrows on him: the lens closes in as it leans)
+  const fov0 = ctx.flags.fov0 = G.camera.fov;
+  let t = 0;
+  yield until(() => {
+    t += 1 / 60;
+    if (t > 0.26) blind.part(Math.min(1, (t - 0.26) / 0.3));
+    if (Math.abs(t - 0.3) < 0.01) G.sfx.play('w_slats', gap);
+    lens(G, fov0 + (peek - fov0) * Math.min(1, t / 0.6) ** 2 * (3 - 2 * Math.min(1, t / 0.6)));
+    return t >= 0.6;
+  });
+  // he looks up at the window; held a second and a half
   yield wait(1.5);
-  if (w.kind === 'watcher') w.play('watcher_notice', { fade: 0.1, hold: true });
+  // he sees me see him: the start, the umbrella goes
+  C.w.play('watcher_notice', { fade: 0.1, hold: true });
   yield wait(0.35);
-  umb.drop(V(0, -0.2, 0));
+  const hv = V(Math.sin(C.fig.yaw) * -0.4, -0.2, Math.cos(C.fig.yaw) * -0.4);
+  // (the wind takes it along the pavement: the backlot's east, the
+  // office's north)
+  umb.drop(hv, { wind: ctx.flags.office ? V(-0.25, 0, 0.9) : V(0.9, 0, -0.3) });
+  G.sfx.play('w_umbrella', C.fig.pos.clone().setY(C.fig.pos.y + 1));
   G.music.cue('chase', { fade: 0.4 });
   yield wait(0.55);
-  // he runs out of the frame (away from the window)
-  const fig = w.fig;
-  if (w.kind === 'watcher') w.setState('watcher_run', 0.15);
-  const away = Math.atan2(fig.pos.x - aw.pos.x, fig.pos.z - aw.pos.z) + 1.2;
-  fig.yaw = away;
-  let t = 0;
-  yield until(() => { t += 1 / 60; fig.pos.x += Math.sin(fig.yaw) * 6.5 / 60; fig.pos.z += Math.cos(fig.yaw) * 6.5 / 60; return t > 2.5; });
-  // (the fingers let the slats go: they spring shut)
-  for (let k = 0; k < 0.2; k += 1 / 60) { blind.part(1 - k / 0.2); lens(G, PEEK + (fov0 - PEEK) * (k / 0.2)); yield null; }
+  // he turns and runs for the alley's mouth (under this window: out of
+  // the slit in a second); the fingers let the slat go, it springs shut
+  if (ctx.flags.office) {
+    const R = officeRun(C);
+    ctx.onStep((dt) => R.step(dt));
+  } else C.place(0.6);
+  ctx.flags.ran = true;
+  // (in the office he has further to go out of the slit: held till he has)
+  yield wait(ctx.flags.office ? 1.35 : 1.0);
+  H.play('releaseSlats');
+  for (let t = 0; t < 0.3; t += 1 / 60) { blind.part(Math.max(0, 1 - t / 0.2)); lens(G, peek + (ctx.flags.fov0 - peek) * (t / 0.3)); yield null; }
   blind.part(0);
-  lens(G, fov0);
-  G.sfx.play('w_slats');
-  G.controller.frozen = false;
+  if (blind.restore) blind.restore();
+  lens(G, ctx.flags.fov0);
+  G.sfx.play('w_slats', gap);
   yield* ctx.prompt({ text: 'the fire escape' });
-  G.controller.ease({ x: ew.pos.x, y: eyeY(ew), z: ew.pos.z, yaw: ew.yaw, pitch: -0.05 }, 1.0);
-  yield wait(1.0);
-  // through the window: a breath of black, and the iron outside it (the
-  // backlot: the same building's fire escape)
-  for (let k = 0; k < 1; k += 1 / 60 / 0.25) { G.hud.fade(k); yield null; }
+}
+
+// out of the office: across the room to the fire-escape window, both palms
+// on its sill, down under the raised sash; the rail and the wall fill the
+// frame - black - and on that black the backlot's same window, the eye still
+// under its sash, coming up onto the iron (the escape beat lifts the black)
+function* outOfOffice(ctx) {
+  const G = ctx.game, H = G.hands;
+  const track = wayOut(G.controller.eyePose());
+  H.equip('run');
+  RUNHANDS.cam = G.camera; RUNHANDS.set('pump'); RUNHANDS.w = 1; RUNHANDS.k = 0.05; RUNHANDS.lift = 0;
+  const W = WAY_OUT;
+  // (facing the window, +z: my right is -x)
+  RUNHANDS.plantR.set(W.x - 0.24, W.sill + 0.012, W.wall + 0.035);
+  RUNHANDS.plantL.set(W.x + 0.24, W.sill + 0.012, W.wall + 0.035);
+  let cur = null, black = 0, t = 0, steps = 0, sill = false;
+  // (the curtain, pushed aside to the window's far side since the setup:
+  // its cloth brushed as I go past it)
+  let swish = false;
+  G.controller.setMode('cutscene', { ease: 0.05, track: (tt) => { cur = track(tt); return cur.pose; } });
+  yield until(() => {
+    const dt = 1 / 60;
+    t += dt;
+    // (my feet on the boards across the room, the palms slapped on the sill)
+    if (steps < 3 && t > 0.22 + steps * 0.24) { steps++; G.sfx.step(null, true, true, true); }
+    if (!sill && cur && cur.duck > 0.45) { sill = true; G.sfx.play('w_sill', V(W.x, W.sill, W.wall)); }
+    if (!swish && cur && W.wall - cur.pose.z < 0.55) { swish = true; G.sfx.play('w_curtain', V(W.x + 0.35, 1.4, W.wall - 0.1)); }
+    // (a quick stride across the room, the hands low; then down to the sill)
+    RUNHANDS.phase += dt * 9;
+    RUNHANDS.k += ((cur && cur.duck > 0.05 ? 0 : 0.35) - RUNHANDS.k) * (1 - Math.exp(-dt * 8));
+    if (cur && cur.duck > 0.2) RUNHANDS.set('plant');
+    RUNHANDS.step(dt, 6);
+    if (cur && (cur.under || cur.end)) { black = Math.min(1, black + dt / 0.1); G.hud.fade(black); }
+    return black >= 1;
+  });
   G.hud.fade(1);
+  curtainAside(ctx.flags.office, 0);
+  // the backlot: the same window of the same building, the eye under its
+  // sash as it was under the office's; him running for the side alley
+  const pitch = G.controller.pitch;
   G.enterStage('backlot');
-  const C2 = ctx.flags.chase;
-  C2.stage = G.stage;
-  C2.spawn({ x: WATCH_AT.x, z: WATCH_AT.z }, 0, 'watcher_run');
-  C2.place(4.5);
+  const C = ctx.flags.chase;
+  C.stage = G.stage;
+  C.spawn({ x: WATCH_AT.x, z: WATCH_AT.z }, 0, 'watcher_run');
+  C.place(4.5);
   umbrellaDown(ctx);
-  const e = ESC_RAIL[1];
-  G.controller.setPose(e.x, e.z, -Math.PI / 2, -0.1, e.y);
-  for (let k = 1; k > 0; k -= 1 / 60 / 0.35) { G.hud.fade(k); yield null; }
-  G.hud.fade(0);
+  const s = railS(1) * 0.5;
+  const r0 = ESC_RAIL[0], r1 = ESC_RAIL[1];
+  G.controller.setPose(r0.x + (r1.x - r0.x) * 0.5, r0.z + (r1.z - r0.z) * 0.5, -Math.PI / 2, pitch, L3Y);
+  ctx.flags.through = { s, v: 1.45, pitch };
 }

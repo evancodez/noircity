@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { ROUTE, STRETCH, FENCES, LANE, CRATES, PASSAGE, GATE, BOARD, HIS_CAR, DEADEND, EYE, YARD } from '../../stages/backlot/plan.js';
+import { ROUTE, STRETCH, FENCES, LANE, CRATES, PASSAGE, GATE, BOARD, HIS_CAR, DEADEND, EYE, YARD, SHEETS } from '../../stages/backlot/plan.js';
 import { WRUN, layOn } from '../../cast/kinds/watcher.js';
 
 // The chase on foot (lane B4, scene 6): the watcher's run along the route
@@ -66,6 +66,8 @@ export const CRATE_S = CRATES.map((c) => sOfX(c.x, (PASSAGE.z0 + PASSAGE.z1) / 2
 export const GATE_S = sOfX(GATE.x, (PASSAGE.z0 + PASSAGE.z1) / 2);
 export const BOARD_S = sOfX(BOARD.x, BOARD.z);
 export const CAR_S = PATH.len;
+// (the washing's last line, and a stride past it)
+export const WASH_S = sOfX(41.2, SHEETS[SHEETS.length - 1] - 1.5);
 // the corners where the way turns more than 60 degrees: he skids on the
 // wet at the first he takes at speed (the end of the straight), and leans
 // hard into the rest
@@ -164,8 +166,14 @@ export class Chase {
       const gap = this.s - this.sp;
       const mine = G.controller.run ? G.controller.run.v : 0;
       let want;
+      // ([R2-C] from the second fence to the end of the washing he tires
+      // and the wet sheets are in his face: he lets me close to five or six
+      // metres, so as I come through one line of washing he is just through
+      // the next - his shadow on the lit sheet in front of me)
+      const washing = this.s > FENCE_S[1] + 2 && this.s < WASH_S;
       if (this.pace) want = this.pace(this.s);
       else if (!this.active) want = 6.2;
+      else if (washing) want = gap < 3.5 ? 8.8 : Math.min(8.2, Math.max(4.4, mine - (gap - 5.6) * 1.0));
       else if (gap < 5) want = 9.6;
       else if (gap < 9) want = Math.max(mine + 0.8, 7.8);
       else if (gap > 22) want = 4.5;
@@ -317,12 +325,15 @@ export class Chase {
     this.skidDone = SKID ? SKID.s < STRETCH_S[i] + 15 : true;
     this.skid = null; this.pull = null;
     this.fig.object.visible = true;
-    this.place(STRETCH_S[i] + 15);
+    // ([R2-C] the washing's retry: nearer, so he is a line ahead of me
+    // there as he is in a run that never lost him)
+    this.place(STRETCH_S[i] + (i === 2 ? 10 : 15));
   }
 
   // ---- his figure, laid on the clip each step ----------------------------------------------------
   afterPose(h, dt) {
-    const v = this.act === 'run' || this.act === 'vault' ? this.v : 0;
+    // ('flee': his run off in the office's street, driven by the scene)
+    const v = this.act === 'run' || this.act === 'vault' || this.act === 'flee' ? this.v : 0;
     if (this.act !== 'run') this.lean *= Math.exp(-dt * 8);
     // (the arm toward the stack: its side of him - he runs west down the
     // passage, so the north wall is on his right)

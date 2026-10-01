@@ -14,6 +14,12 @@
    "clickOn": "#title .opt[data-k=begin]"
   },
   {
+   "wait": 6000
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]"
+  },
+  {
    "name": "seen: the street window"
   },
   {
@@ -41,7 +47,7 @@
    "timeout": 15000
   },
   {
-   "expect": "G.scenes.ctx.flags.chase.act === 'run'",
+   "expect": "G.scenes.ctx.flags.ran === true && ['run', 'flee', 'gone'].includes(G.scenes.ctx.flags.chase.act)",
    "label": "he saw me and ran"
   },
   {
@@ -153,7 +159,42 @@
     [
      40.6,
      -54.8
-    ],
+    ]
+   ],
+   "timeout": 12000
+  },
+  {
+   "eval": "({ gap: +(G.scenes.ctx.flags.chase.s - G.scenes.ctx.flags.chase.sp).toFixed(1), his: [+G.scenes.ctx.flags.chase.fig.pos.x.toFixed(1), +G.scenes.ctx.flags.chase.fig.pos.z.toFixed(1)], v: +G.scenes.ctx.flags.chase.v.toFixed(1) })",
+   "label": "the gap coming into the washing"
+  },
+  {
+   "walk": [
+    [
+     41.0,
+     -61.0
+    ]
+   ],
+   "timeout": 8000
+  },
+  {
+   "eval": "({ gap: +(G.scenes.ctx.flags.chase.s - G.scenes.ctx.flags.chase.sp).toFixed(1), his: [+G.scenes.ctx.flags.chase.fig.pos.x.toFixed(1), +G.scenes.ctx.flags.chase.fig.pos.z.toFixed(1)], v: +G.scenes.ctx.flags.chase.v.toFixed(1) })",
+   "label": "the gap through the washing (line 1 behind me)"
+  },
+  {
+   "walk": [
+    [
+     41.2,
+     -66.0
+    ]
+   ],
+   "timeout": 8000
+  },
+  {
+   "eval": "({ gap: +(G.scenes.ctx.flags.chase.s - G.scenes.ctx.flags.chase.sp).toFixed(1), his: [+G.scenes.ctx.flags.chase.fig.pos.x.toFixed(1), +G.scenes.ctx.flags.chase.fig.pos.z.toFixed(1)], v: +G.scenes.ctx.flags.chase.v.toFixed(1) })",
+   "label": "the gap through the washing (line 2 behind me)"
+  },
+  {
+   "walk": [
     [
      41.2,
      -76.0
@@ -163,7 +204,7 @@
      -82.9
     ]
    ],
-   "timeout": 20000
+   "timeout": 12000
   },
   {
    "name": "the dog and the crates (round the fallen stacks by the gaps he leaves)"
@@ -245,18 +286,22 @@
      -94.5
     ],
     [
-     -1.4,
-     -92.4
+     -1.6,
+     -91.6
+    ],
+    [
+     -2.8,
+     -90.3
     ]
    ],
-   "timeout": 10000
+   "timeout": 12000
   },
   {
    "look": [
-    260,
-    60
+    0,
+    40
    ],
-   "steps": 8
+   "steps": 4
   },
   {
    "until": "G.hud.promptShown.includes('drive')",

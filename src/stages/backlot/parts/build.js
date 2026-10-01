@@ -384,21 +384,32 @@ export default {
     lamps.l2 = L.wall(31.6, 4.0, LANE.z0, 0, 1);
     // 3 the yard: at its far end, behind the sheets (the back light) and at
     // its entry
-    lamps.y1 = L.wall(YARD.x1, 4.6, -78.6, -1, 0, { out: 0.6, strength: 1.0 });
+    // ([R2-C] not a real light: the flood below is the yard's one light)
+    lamps.y1 = L.wall(YARD.x1, 4.6, -78.6, -1, 0, { out: 0.6, strength: 0.6, real: false });
     // a lamp over the door in the far wall of the yard, low, thrown down the
     // yard through the washing: the sheets glow with it, and a man just
     // past a line of them is his own shadow on them, as tall as he is
-    lamps.y3 = L.wall(43.2, 2.6, PASSAGE.z0, 0, 1, { out: 7.5, half: 0.55, strength: 0.9, height: 30 });
+    lamps.y3 = L.wall(43.2, 2.6, PASSAGE.z0, 0, 1, { out: 4.6, half: 0.34, strength: 0.9, height: 30 });
     // (its light carries the length of the yard: the washing 10 .. 26 m off
     // must be lit through, not just the ground under it)
-    lamps.y3.light.intensity = 700;
-    lamps.y3.light.angle = 0.55;
+    // ([R2-C] a narrower, harder beam: the washing, not the walls round it)
+    lamps.y3.light.intensity = 1300;
+    lamps.y3.light.penumbra = 0.45;
+    lamps.y3.light.angle = 0.36;
+    lamps.y3.shadowRadius = 1.5;
     // (and it casts its shadows - his, on the sheets - whenever the eye is
     // in the yard or coming into it: one of the pool's three shadowed lights)
     lamps.y3.keen = (c) => c.x > YARD.x0 - 8 && c.x < YARD.x1 + 1 && c.z < YARD.z1 + 3 && c.z > YARD.z0 - 1;
     // (not one of the pool's: the far lamp behind the washing must have
     // a shadow-casting light as I come up the yard)
     lamps.y2 = L.wall(YARD.x1, 4.2, -50.4, -1, 0, { real: false });
+    // [R2-C] the yard at night: the sky's grey off the walls (the ambient
+    // down, the fog thinner and darker), so the washing is the lit thing
+    // in it and the brick falls into ink round it; eased in over the corner
+    // from the lane (the Look blends a quarter second)
+    stage.addLook(new THREE.Box3(V3(YARD.x0 - 3.5, -1, YARD.z0), V3(YARD.x1, 30, YARD.z1 + 1.5)), {
+      ambient: 0.12, exposure: 1.05, fogDensity: 0.0026, fogColor: new THREE.Color(0.04, 0.04, 0.04), haze: 0.35,
+    });
     // 4 the passage
     lamps.p1 = L.wall(32.4, 3.9, PASSAGE.z1, 0, -1, { out: 0.05 });
     lamps.p2 = L.wall(16.0, 4.0, PASSAGE.z0, 0, 1, { out: 0.05 });
@@ -424,6 +435,9 @@ export default {
     lamps.b1 = L.post(0.9, -104.5, Math.PI / 2 + Math.PI / 2, { y: 0.15 });
     lamps.b2 = L.post(-13.6, -124.0, -Math.PI / 2 + Math.PI / 2, { y: 0.15, real: true });
     lamps.b3 = L.post(0.9, -130.0, Math.PI, { real: false });
+    // ([R2-C] my car at the kerb stands under one: what to go to, once his
+    // tail lamps are gone - it was in the dark between the pools)
+    lamps.b4 = L.post(-0.35, -87.6, Math.PI, { y: 0.15 });
 
     // ================= the neon at the end of the straight's sight line ==========
     api.neon = neonSign(stage, V3(2.5, 5.2, LANE.z0 + 0.06));

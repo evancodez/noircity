@@ -1,30 +1,147 @@
 {
  "about": "Scene 6, losing him and the retry, by real input: BEGIN at ?start=watcher.run, stand still at the foot of the ladder until he is lost (\"Lost him.\", black, back at the start of the straight, he 15 m ahead again), then run the straight and the fences with SPACE held into them, the chase going on. node tools/play.mjs tools/plays/watcher_lost.json",
  "url": "/?mute=1&start=watcher.run",
- "size": [1280, 800],
+ "size": [
+  1280,
+  800
+ ],
  "out": "shots/play/watcher_lost",
  "steps": [
-  { "wait": 1500 },
-  { "clickOn": "#title .opt[data-k=begin]" },
-  { "until": "G.scenes.current && G.scenes.current.id === 'watcher' && G.scenes.beat === 'run' && document.pointerLockElement === N.renderer.domElement", "timeout": 20000 },
-  { "name": "stand and look around: he gets away" },
-  { "look": [300, 0], "steps": 10 },
-  { "until": "G.scenes.ctx.flags.chase.lostN === 1", "timeout": 15000 },
-  { "expect": "G.hud.sayShown && G.hud.sayShown.includes('Lost him')", "label": "Lost him. (the one line)" },
-  { "shot": "l00_lost" },
-  { "until": "!G.scenes.ctx.flags.chase.lost", "timeout": 5000 },
-  { "expect": "Math.hypot(N.controller.pos.x - 0.95, N.controller.pos.z + 9.8) < 0.5 && G.scenes.ctx.flags.chase.stretch === 0", "label": "back at the foot of the ladder, the start of the straight" },
-  { "expect": "(() => { const C = G.scenes.ctx.flags.chase; return C.act === 'run' && C.s - C.sp > 12 && C.s - C.sp < 24; })()", "label": "he is 15 m up the alley again, running (and jogs, not away, while I find my feet)" },
-  { "name": "the retry: run it" },
-  { "walk": [[2.4, -20.0], [2.5, -27.0], [2.5, -44.5], [5.2, -49.6], [10.8, -50.0]], "timeout": 20000 },
-  { "down": "Space" },
-  { "walk": [[16.8, -50.0]], "timeout": 6000 },
-  { "up": "Space" },
-  { "walk": [[23.2, -50.0]], "timeout": 8000 },
-  { "down": "Space" },
-  { "walk": [[28.8, -50.0]], "timeout": 8000 },
-  { "up": "Space" },
-  { "walk": [[36.2, -50.2], [40.6, -54.8]], "timeout": 8000 },
-  { "expect": "G.scenes.ctx.flags.chase.lostN === 1 && G.scenes.beat === 'run'", "label": "the retry kept him in sight to the yard" }
+  {
+   "wait": 1500
+  },
+  {
+   "eval": "(G.__says = [], G.hud.say = ((f) => function (t, d) { G.__says.push(String(t)); return f.apply(this, arguments); })(G.hud.say), 'recording says')"
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]"
+  },
+  {
+   "wait": 6000
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]"
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'watcher' && G.scenes.beat === 'run' && document.pointerLockElement === N.renderer.domElement",
+   "timeout": 20000
+  },
+  {
+   "name": "stand and look around: he gets away"
+  },
+  {
+   "look": [
+    300,
+    0
+   ],
+   "steps": 10
+  },
+  {
+   "until": "G.scenes.ctx.flags.chase.lostN === 1",
+   "timeout": 15000
+  },
+  {
+   "expect": "G.__says.filter((t) => t.includes('Lost him')).length === 1",
+   "label": "Lost him. (the one line)"
+  },
+  {
+   "shot": "l00_lost"
+  },
+  {
+   "until": "!G.scenes.ctx.flags.chase.lost",
+   "timeout": 5000
+  },
+  {
+   "expect": "Math.hypot(N.controller.pos.x - 0.95, N.controller.pos.z + 9.8) < 0.5 && G.scenes.ctx.flags.chase.stretch === 0",
+   "label": "back at the foot of the ladder, the start of the straight"
+  },
+  {
+   "expect": "(() => { const C = G.scenes.ctx.flags.chase; return C.act === 'run' && C.s - C.sp > 12 && C.s - C.sp < 24; })()",
+   "label": "he is 15 m up the alley again, running (and jogs, not away, while I find my feet)"
+  },
+  {
+   "name": "the retry: run it"
+  },
+  {
+   "walk": [
+    [
+     2.4,
+     -20.0
+    ],
+    [
+     2.5,
+     -27.0
+    ],
+    [
+     2.5,
+     -44.5
+    ],
+    [
+     5.2,
+     -49.6
+    ],
+    [
+     10.8,
+     -50.0
+    ]
+   ],
+   "timeout": 20000
+  },
+  {
+   "down": "Space"
+  },
+  {
+   "walk": [
+    [
+     16.8,
+     -50.0
+    ]
+   ],
+   "timeout": 6000
+  },
+  {
+   "up": "Space"
+  },
+  {
+   "walk": [
+    [
+     23.2,
+     -50.0
+    ]
+   ],
+   "timeout": 8000
+  },
+  {
+   "down": "Space"
+  },
+  {
+   "walk": [
+    [
+     28.8,
+     -50.0
+    ]
+   ],
+   "timeout": 8000
+  },
+  {
+   "up": "Space"
+  },
+  {
+   "walk": [
+    [
+     36.2,
+     -50.2
+    ],
+    [
+     40.6,
+     -54.8
+    ]
+   ],
+   "timeout": 8000
+  },
+  {
+   "expect": "G.scenes.ctx.flags.chase.lostN === 1 && G.scenes.beat === 'run'",
+   "label": "the retry kept him in sight to the yard"
+  }
  ]
 }
