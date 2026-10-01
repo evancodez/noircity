@@ -71,7 +71,8 @@ export function safePuzzle(ctx) {
       if (!S.cracked) S.turn(d, dt);
       // (once, a line: the order of the turns; the sheet has the numbers)
       S.inT = (S.inT || 0) + dt;
-      if (!S.cracked && S.stage === 0 && S.inT > 28 && !S.hinted) { S.hinted = true; G.hud.say('Right to the first. Left. Right again.', 3.5);   // [R3] (the one line is 42 characters at most: the long one was a warning in the log) }
+      // [R3] (the line is 42 characters at most: the long one was a warning in the log)
+      if (!S.cracked && S.stage === 0 && S.inT > 28 && !S.hinted) { S.hinted = true; G.hud.say('Right to the first. Left. Right again.', 3.5); }
       S.twitch *= Math.exp(-dt * 30);
       safe.dial = S.reading;
       // (the face's figures sit a quarter turn round on its disc: 75 is at the index at rest)
