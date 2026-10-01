@@ -136,7 +136,8 @@ export const HALVES = {
   },
   // solved once home and held together its beat
   solved(st) { return st.snapped && st.snapT > 1.1; },
-  hint(st, level) { return ['The torn edges.', 'Drag the red half to the book; the wheel turns it.', 'Hold the left button on the half, lay it on the book; turn it with the wheel.'][level - 1]; },
+  // [R3] (42 characters at most: the longer two were warnings in the log)
+  hint(st, level) { return ['The torn edges.', 'Drag the red half onto the book.', 'Hold LMB on the half; the wheel turns it.'][level - 1]; },
   exit(st) {},
 };
 

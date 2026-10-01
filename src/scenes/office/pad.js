@@ -25,6 +25,9 @@ export function padPuzzle(ctx) {
     rubT: 0, strokes: 0, ph: 0,
     open() {
       if (P.active || P.done) return;
+      // [R3] (the E that stepped back from the desk, this very step, is the press that would open it again: the
+      // prompt is back the moment the pad is closed and the interact reads the same key)
+      if (G.time - (P.closedAt ?? -9) < 0.25) return;
       P.active = true;
       P.prevPose = C.eyePose();
       // (the lamp eases down for the close-up: stages/office/parts/room.js)
@@ -160,6 +163,7 @@ export function padPuzzle(ctx) {
     close() {
       if (!P.active) return;
       P.active = false;
+      P.closedAt = G.time;   // [R3]
       O.lampDimTo = 0;
       G.hud.clearPrompt('pad');
       if (!P.tore) {
