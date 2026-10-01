@@ -718,6 +718,9 @@ export class Game {
     addEventListener('keyup', (e) => { this.keysUp.add(e.code); });
     addEventListener('keydown', (e) => {
       if (!locked()) return;
+      // [R3] Tab has no use in the game, and the page has nothing to focus: the browser sends the focus out of the
+      // page to its own bar, the pointer lock goes with it and the game stands behind the pause card
+      if (e.code === 'Tab') e.preventDefault();
       if (!e.repeat) this.keysDown.add(e.code);
       if (e.code === 'KeyR' && this.hands.set === 'tommy') this.weapon.reload();
       if (e.code === 'KeyM') { this.muted = this.sfx.toggleMute(); this.hud.message(this.muted ? 'sound off' : 'sound on'); }
