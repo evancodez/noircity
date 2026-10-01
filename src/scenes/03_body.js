@@ -1,11 +1,13 @@
 import * as THREE from 'three';
 import { defineScene, wait, until, beat } from '../game/script.js';
-import { V, ALLEY, XV, STOOD, SHOOTER, WOUNDS, MARKS, LIES, KNEEL, STUDY, startPose, mackOut, layVictim, evidence, clearEvidence, gutterHat, crewCar } from './body/place.js';
+import { V, ALLEY, XV, STOOD, SHOOTER, WOUNDS, MARKS, LIES, KNEEL, STUDY, startPose, mackOut, layVictim, evidence, clearEvidence, gutterHat, crewCar, halfGlint } from './body/place.js';
 import { makeOutline, makeStrings, runStrings } from './body/strings.js';
 import { HALVES, clearHalves } from './body/halves.js';
 import { NOTE_PUZZLE, clearNote, layNoteWhole } from './body/note.js';
 import { DINER_SIGHT } from '../stages/block/site.js';
-import { openFist, pullLadder, climbHands, handsOff, takeHalf, tableFinger } from './body/hands.js';
+import { openFist, pullLadder, climbHands, handsOff, takeHalf, tableFinger, stringHand } from './body/hands.js';
+import { stepLens } from './body/stepview.js';
+import { alleySight } from './body/sight.js';
 
 // Scene 3, the body (STORY.md; lane B1's brief). The side alley thirty
 // metres down the pavement from the diner, under its one wall lamp.
@@ -65,6 +67,9 @@ function stageBody(ctx, b) {
   alley.light(true);
   alley.ladder.set(atOrAfter(b, 'halves') ? 1 : 0);
   LIVE = { removers: [], fov0: G.camera.fov };
+  // [R2-G] what cannot be seen through the alley's mouth is not drawn
+  const sight = LIVE.sight = alleySight(stage, ALLEY);
+  LIVE.removers.push(() => sight.restore());
   // (the blood of an earlier try in this place goes before it is laid again)
   if (G.fx && G.fx.decals && G.fx.decals.clearIn) G.fx.decals.clearIn(new THREE.Box3(V(ALLEY.gateX, -1, ALLEY.zN), V(ALLEY.mouthX + 0.5, 3, ALLEY.zS + 0.1)));
   // what the story has given me by now
@@ -135,6 +140,8 @@ const PROBE = {
   // point on the line (every string through its wound goes there)
   toShooter() {
     const G = window.__noir.game, run = G.scenes.ctx.flags.run;
+    // [R2-G] (both taut already, or not begun: nowhere to carry it)
+    if (!run || !run.active || run.solvedT >= 0) return [0, 0];
     const v = SHOOTER.clone().project(G.camera);
     return [Math.round((v.x - run.ndc.x) * innerWidth / 2), Math.round(-(v.y - run.ndc.y) * innerHeight / 2)];
   },
@@ -183,6 +190,8 @@ const PROBE = {
   },
 };
 if (typeof window !== 'undefined') window.__body = PROBE;
+// (look development: the alley's sight culling)
+PROBE.sight = () => (LIVE && LIVE.sight ? LIVE.sight.debug() : null);
 
 export default defineScene({
   id: 'body', stage: 'block',
@@ -199,6 +208,7 @@ export default defineScene({
     if (G.music) G.music.cue('body', { fade: 2 });
     G.puzzles.define(HALVES);
     G.puzzles.define(NOTE_PUZZLE);
+    F.lens = stepLens(ctx);
     const chest = () => ames.bones.chest.getWorldPosition(V(0, 0, 0));
     const fist = () => ames.bones.handR.getWorldPosition(V(0, 0, 0));
     const flat = (a, b) => Math.hypot(a.x - b.x, a.z - b.z);
@@ -223,11 +233,13 @@ export default defineScene({
       // a frustum's, and from the step it looks straight through the wall)
       const e = G.eye;
       DINER_SIGHT.force = e.x < ALLEY.mouthX - 0.2 && e.z < ALLEY.zS + 0.05 && e.z > ALLEY.zN - 0.05 ? false : null;
+      if (LIVE && LIVE.sight) LIVE.sight.step(e, !(typeof location !== 'undefined' && location.search.includes('nosight')));
       if (F.hat) F.hat.step(dt);
       if (F.car) F.car.step(dt);
       O.step(dt);
       for (const s of R.strings) if (s.taut && !F.run) R.drawTaut(s);
-      if (F.run) F.run.step(dt);
+      if (F.run) { F.run.step(dt); F.strHand = F.strHand || {}; stringHand(ctx, F.strHand, F.run); }
+      else if (F.strHand) { F.strHand = null; handsOff(H); }
       if (F.ladderAnim) {
         const A = F.ladderAnim;
         A.t += dt;
@@ -246,6 +258,8 @@ export default defineScene({
       if (F.noteSt && acted('whole') && !F.noteSt.whole) layNoteWhole(F.noteSt);
       // my fingertip on the step's puzzles
       const PA = G.puzzles.active;
+      // [R2-G] the step's view under the lamp (its lens and light, eased)
+      F.lens.step(dt);
       if (PA && (PA.id === 'body.halves' || PA.id === 'body.note')) { F.finger = F.finger || {}; tableFinger(ctx, F.finger, PA.pointer.world, PA.pointer.down, 0, PA.id === 'body.halves' ? !!(F.halvesSt && F.halvesSt.snapped) : !!(F.noteSt && F.noteSt.whole)); }
       else if (F.finger) { F.finger = null; handsOff(H); }
     });
@@ -256,18 +270,21 @@ export default defineScene({
       // (the fade in, the chapter card; then the car pulls out of the mouth)
       yield wait(1.5);
       if (F.car) { F.car.go(); snd('carAway', V(-15, 1, -28.2), {}); }
-      // [second pass] what I heard, so a first look knows where to go (once
-      // the chapter card has gone)
-      yield wait(1.0);
-      G.hud.say('Two shots. From the alley.', 2.6);
+      yield wait(1.4);
       // the el train over the avenue as I walk
-      yield wait(0.4);
       if (stage.train && !stage.train.active && G.director) G.director.cue('train', { z: -14, ahead: -55, dir: -1 });   // [second pass] up the avenue toward me, in the frame as I walk (going away, from 70 m behind, it came into view at 9 s, once I was in the alley)
-      // down the pavement to him (gone the wrong way a while: once, where)
-      let nudged = false;
+      // down the pavement to him. [R2-G] The world says where (the car out
+      // of the mouth, the lamp at its corner, its sheen down the wet to me):
+      // no line unless I stand and do not go - then what I heard, once; and
+      // gone the wrong way a while, where, once
+      const mouthAt = V(ALLEY.mouthX, 0, -27);
+      const d0 = flat(G.eye, mouthAt);
+      let heard = false, nudged = false;
       const tA = G.time;
       while (flat(G.eye, chest()) >= 3.6) {
-        if (!nudged && G.time - tA > 25 && flat(G.eye, V(ALLEY.mouthX, 0, -27)) > 9) { nudged = true; G.hud.say('The alley. Where the car came out.', 3); }
+        const dm = flat(G.eye, mouthAt);
+        if (!heard && G.time - tA > 6 && dm > d0 - 2.5) { heard = true; G.hud.say('Two shots. From the alley.', 2.6); }
+        if (!nudged && G.time - tA > 25 && dm > 9) { nudged = true; G.hud.say('The alley. Where the car came out.', 3); }
         yield null;
       }
     }
@@ -356,6 +373,10 @@ export default defineScene({
         solvedLight = true;
         // (and the red on the landing's edge catches it)
         F.glint = 0;
+        // [R2-G] a star of its red on the landing's edge, with the flash
+        const gl = halfGlint(ctx, ev.half);
+        LIVE && LIVE.removers.push(() => gl.remove());
+        ctx.onStep((dt) => gl.step(dt));
         ctx.onStep((dt) => {
           if (F.glint == null || F.glint > 2.2) return;
           F.glint += dt;
@@ -468,7 +489,11 @@ export default defineScene({
       I.remove('body.step');
       yield null;   // (the E that brought me here must not leave the puzzle)
       let done = false;
-      G.puzzles.open('body.halves', { onSolved: () => { done = true; } });
+      const openHalves = () => {
+        G.puzzles.open('body.halves', { onSolved: () => { done = true; } });
+        F.lens.open('halves', () => !!(F.halvesSt && F.halvesSt.snapped), () => F.halvesSt.tgt.clone());
+      };
+      openHalves();
       yield until(() => done || !G.puzzles.active);
       if (!done) {
         // (E left it: the step is still there, and so is the puzzle)
@@ -478,7 +503,7 @@ export default defineScene({
           yield until(() => again);
           I.remove('body.step');
           yield null;
-          G.puzzles.open('body.halves', { onSolved: () => { done = true; } });
+          openHalves();
           yield until(() => done || !G.puzzles.active);
         }
       }
@@ -495,6 +520,7 @@ export default defineScene({
         // (from the halves the eye is still down at the step: when it leaves
         // it rises to where I stand)
         if (G.puzzles.active) G.puzzles.active.prevPose = standAtStep();
+        F.lens.open('note', () => !!(F.noteSt && F.noteSt.whole), () => F.noteSt.world(0, 0.01));
       };
       if (!G.puzzles.active) open();
       yield until(() => done || !G.puzzles.active);
@@ -542,9 +568,13 @@ export default defineScene({
       void P0;
       C.setMode('walk', { pose: P1, ease: 1.1 });
       yield wait(1.2);
-      G.hud.say('Harbor Building. Room 304.', 2.8);
-      const t0 = G.time;
-      yield until(() => G.eye.x > ALLEY.mouthX - 0.35 || G.time - t0 > 24);
+      // [R2-G] (the note said it; the line only if I stand on and do not go)
+      const t0 = G.time, at0 = G.eye.clone();
+      let said = false;
+      yield until(() => {
+        if (!said && G.time - t0 > 9 && flat(G.eye, at0) < 1.5) { said = true; G.hud.say('Harbor Building. Room 304.', 2.8); }
+        return G.eye.x > ALLEY.mouthX - 0.35 || G.time - t0 > 24;
+      });
       ctx.next();
     }
   },

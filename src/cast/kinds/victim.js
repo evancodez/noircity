@@ -46,8 +46,10 @@ const AMES = {
     { kind: 'sleeves', r: 0.064, cuff: 0.056 },
     { kind: 'legs', r: 0.86 },
     { kind: 'shoes' },
-    // the right hand shut hard on the paper; the left open
-    { kind: 'hands', s: 0.9, fistR: true, fistL: false },
+    // [R2-G] both hands a dead man's, the fingers loosely curled: the right
+    // round the wet paper (a hard fist stayed shut on nothing once it was
+    // out), the left palm up
+    { kind: 'hands', s: 0.9, fistR: false, fistL: false, curl: 0.62 },
   ],
   skin: { coat: 0.012, hand: 0.05, skin: 0.022, hair: 0.004, trousers: 0.01, shoes: 0.004 },
   collider: 0.26,
@@ -91,7 +93,7 @@ export default {
     // the fingers and the thumb
     const paper = own(new THREE.Mesh(new THREE.IcosahedronGeometry(0.028, 1).scale(1, 0.75, 1.3), new THREE.MeshStandardMaterial({ color: 0xc8c8c8, roughness: 0.95, flatShading: true })));
     paper.userData.inkSurface = 'paper';   // [second pass] (pale: paper in a fist, seen at a glance)
-    paper.position.set(0.012, -0.075, 0.03);
+    paper.position.set(0.03, -0.082, 0.028);   // [R2-G] (in the curl of the fingers, showing: the hand is no longer a fist)
     B.handR.add(paper);
     c.items.set('paper', paper);
     // the two wounds in the shirt front, the blood soaked round them

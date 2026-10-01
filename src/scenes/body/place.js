@@ -26,7 +26,7 @@ export const WOUNDS = [V(XV + 0.05, 1.6, STOOD.z - 0.13), V(XV - 0.05, 1.36, STO
 // brick of the south wall
 export const MARKS = WOUNDS.map((w) => {
   const d = w.clone().sub(SHOOTER);
-  const t = (ALLEY.zS - 0.012 - SHOOTER.z) / d.z;
+  const t = (ALLEY.faceS - 0.003 - SHOOTER.z) / d.z;   // [R2-G] (the wall's visible face)
   return SHOOTER.clone().addScaledVector(d, t);
 });
 
@@ -130,7 +130,8 @@ export function evidence(ctx) {
   // (caught at the landing's outer edge under the rail, a corner of it out
   // over the alley: from below, where the lines cross, the red shows)
   ev.half = put('matchHalf', V(XV + 0.06, ALLEY.esc.y1 - 0.012, ALLEY.zN + ALLEY.esc.d + 0.045), [0.75, 0.15, 0]);
-  ev.half.scale.setScalar(1.3);
+  // [R2-G] (a bigger piece of the red: it must read from the kerb, 7 m off)
+  ev.half.scale.setScalar(1.75);
   // (it glows a breath of its own red: the clue must show in the dark)
   ev.half.traverse((o) => { if (o.isMesh && o.material && o.material.userData && o.material.userData.accent === 'crew') { o.material = o.material.clone(); o.material.emissive = accentMaterial('crew').color.clone().multiplyScalar(0.8); } });
   ev.casings = [put('casing', V(XV - 0.12, Ly + 0.001, ALLEY.zN + 0.8), [0, 0.4, 0]), put('casing', V(XV + 0.42, Ly + 0.001, ALLEY.zN + 0.48), [0, 2.1, 0])];
@@ -149,7 +150,7 @@ export function evidence(ctx) {
     const rim = new THREE.Mesh(new THREE.RingGeometry(0.016, 0.05, 16, 1), chip);
     for (const o of [hole, rim]) { o.rotation.y = Math.PI; o.userData.noRay = true; o.userData.inkId = hid; g.add(o); }
     rim.position.z = 0.0005;
-    g.position.set(m.x, m.y, ALLEY.zS - 0.014);
+    g.position.set(m.x, m.y, ALLEY.faceS - 0.005);
     stage.scene.add(g);
     ev.holes.push(g);
     out.push(g);
@@ -213,6 +214,63 @@ function bloodOnFlags(stage) {
   return g;
 }
 
+// [R2-G] the torn half's glint when the lightning finds it (the strings
+// solved): a small star of the crew's red on the landing's edge, flaring
+// with the flash and dying away - from the kerb, 7 m below, the red must
+// be seen, not a fleck. A flat star turned to the eye every step (FX: no
+// ink line round it), added to what is behind it.
+let STAR = null;
+function starTexture() {
+  if (STAR) return STAR;
+  const c = document.createElement('canvas'); c.width = c.height = 128;
+  const x = c.getContext('2d');
+  const g = x.createRadialGradient(64, 64, 0, 64, 64, 15);
+  g.addColorStop(0, 'rgba(255,255,255,1)'); g.addColorStop(0.5, 'rgba(255,255,255,0.8)'); g.addColorStop(1, 'rgba(255,255,255,0)');
+  x.fillStyle = g; x.fillRect(0, 0, 128, 128);
+  // four rays, long across, short up and down (a glint off a wet edge)
+  x.fillStyle = '#fff';
+  // (tilted off the square: a glint, never a sight's cross)
+  for (const [a, L, w] of [[-0.3, 63, 5], [1.2, 38, 4], [0.45, 24, 2.6], [-1.05, 20, 2.4]]) {
+    x.save(); x.translate(64, 64); x.rotate(a);
+    x.beginPath(); x.moveTo(-L, 0); x.lineTo(0, -w); x.lineTo(L, 0); x.lineTo(0, w); x.closePath(); x.fill();
+    x.restore();
+  }
+  STAR = new THREE.CanvasTexture(c);
+  STAR.colorSpace = THREE.SRGBColorSpace;
+  return STAR;
+}
+export function halfGlint(ctx, half, T = 2.4) {
+  const { stage, game: G } = ctx;
+  const mat = accentMaterial('crew', { additive: true, gain: 6, map: starTexture() });
+  // (drawn over what stands nearer: a glint is light in the eye, and from
+  // the kerb the booth's roof cut it in half)
+  mat.depthTest = false;
+  const m = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), mat);
+  m.layers.set(LAYER.FX);
+  m.userData.noRay = true;
+  m.renderOrder = 4;
+  const at = half.getWorldPosition(V(0, 0, 0)).add(V(0, 0.05, 0.03));
+  m.position.copy(at);
+  stage.scene.add(m);
+  const base = mat.color.clone();
+  const S = { t: 0, done: false };
+  S.step = (dt) => {
+    if (S.done) return;
+    S.t += dt;
+    const u = S.t / T;
+    if (u >= 1) { S.remove(); return; }
+    // flares with the flash, then a slow dying pulse
+    const k = u < 0.08 ? u / 0.08 : Math.pow(1 - (u - 0.08) / 0.92, 1.6) * (0.85 + 0.15 * Math.sin(S.t * 19));
+    const d = G.camera.position.distanceTo(at);
+    // (a size held on the screen: about 5 % of the frame's height across)
+    m.scale.setScalar(d * 0.085 * (0.6 + 0.6 * k));
+    m.quaternion.copy(G.camera.quaternion);
+    mat.color.copy(base).multiplyScalar(Math.max(0, k));
+  };
+  S.remove = () => { S.done = true; if (m.parent) m.parent.remove(m); mat.dispose(); };
+  return S;
+}
+
 // what the scene put in the world goes when it ends
 export function clearEvidence(ctx) {
   const ev = ctx.flags && ctx.flags.ev;
@@ -231,14 +289,17 @@ export function gutterHat(ctx) {
   pivot.add(h);
   h.rotation.x = 0.32;
   h.position.y = 0.012;
-  pivot.position.set(-5.78, 0.0, -13.2);
+  // [R2-G] in the kerb lamp's pool, a few steps short of it (at -13.2 it
+  // lay in the dark between the lamps: a black lump on black water); it
+  // drifts on into the light as I come
+  pivot.position.set(-5.74, 0.0, -16.5);
   stage.scene.add(pivot);
   const H = { pivot, hat: h, t: 0 };
   H.step = (dt) => {
     H.t += dt;
     // it turns slowly in the run of the gutter and drifts a little with it
     pivot.rotation.y += dt * 0.42;
-    pivot.position.z -= dt * 0.035;
+    pivot.position.z = Math.max(-17.6, pivot.position.z - dt * 0.035);
     h.rotation.z = 0.06 * Math.sin(H.t * 1.7);
     h.rotation.x = 0.32 + 0.04 * Math.sin(H.t * 1.1);
     pivot.position.y = 0.004 * Math.sin(H.t * 2.3);

@@ -112,7 +112,7 @@ export function runStrings(ctx, R, O, { from = null } = {}) {
   };
   C.setMode('cutscene', { track });
   const fov0 = cam.fov;
-  const run = { active: true, done: false, t: 0, cur: 0, ndc: new THREE.Vector2(), progress: 0, idle: 0, hinted: 0, solvedT: -1 };
+  const run = { active: true, done: false, t: 0, cur: 0, ndc: new THREE.Vector2(), progress: 0, idle: 0, hinted: 0, solvedT: -1, ease: EASE };
   const S = R.strings;
   // the pointer starts on the first pin
   const toNdc = (p) => { const v = p.clone().project(cam); return new THREE.Vector2(v.x, v.y); };
@@ -152,7 +152,7 @@ export function runStrings(ctx, R, O, { from = null } = {}) {
       hit.y = Math.max(ALLEY.y + 0.05, Math.min(9, hit.y));
       st.end.copy(hit);
     }
-    G.hud.cursor(G.screenOf(st.end));
+    // [R2-G] (my hand holds the end now, hands.js stringHand: no cross)
     // the string from the pin to my end; the ray on from it to what it strikes
     const dir = st.end.clone().sub(st.mark);
     const len = dir.length();

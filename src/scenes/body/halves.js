@@ -74,7 +74,8 @@ export const HALVES = {
     return st;
   },
   input(st, p) {
-    if (st.snapped) return;
+    // [R2-G] (made whole, the hand draws off: the pointer's cross goes with it)
+    if (st.snapped) { st.G.hud.cursor(null); return; }
     const G = st.G;
     // (the right button turns what is under the pointer: the pointer stays)
     if (p.right) {
