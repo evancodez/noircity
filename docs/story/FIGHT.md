@@ -291,6 +291,14 @@ got him out on his feet at 72 to 286 s and could not finish him); the
 player who never steps (`nododge`) wins none (10 to 12 downs, all held in
 his measured manner); a player who takes whatever is in reach (`things`,
 mean 82 s) wins faster than one who never picks anything up (`fists`,
-91 s). No seed skips his wild manner. Strips of each exchange: `?shot=b8duel` (`src/debug/shots/B8_fight.js`).
+91 s). No seed skips his wild manner. Round 2 adds two masher styles, for
+the question "does a player who mostly mashes but lands a loaded punch still
+reach his wild manner and the finish": `mashone` mashes the whole fight and
+holds once, out on his feet at the window, after a few seconds of jabbing a
+man who only sways (wins 4 of 10, in 84 to 226 s; his wild manner comes in 7
+of 10, out on his feet in 5 of 10, and every one of those 5 ends but the one
+the clock stopped at the window), `mashload` holds a button every 14 to 24 s
+among the mashing (wins 8 of 10 in 102 to 275 s, 6 to 25 downs; wild in 9,
+out on his feet in 9). The plain masher still wins none. Strips of each exchange: `?shot=b8duel` (`src/debug/shots/B8_fight.js`).
 The plays `slice`, `fight`, `autoplay`, `continue` pass by real input, each
 twice in a row.

@@ -1614,6 +1614,7 @@ export class Brawl {
     const him = this.him, c = this.c, G = this.game, o = him.prop;
     if (!o) return;
     him.prop = null; const kind = him.holding; him.holding = null;
+    if (him.lightK) { him.lightK = 0; this.lightThing(o, false); }   // ([R2-H] a plate lit over his tell goes back to china before it falls and comes apart)
     o.updateWorldMatrix(true, true);
     const w = o.getWorldPosition(V(0, 0, 0));
     const q = o.getWorldQuaternion(new THREE.Quaternion());
