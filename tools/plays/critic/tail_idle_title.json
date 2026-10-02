@@ -1,0 +1,192 @@
+{
+ "about": "Critic (C3, 2nd look): from the title, BEGIN at the tail, hands off: what the screen says every 1.5 s; must lose with a warning first (WAVE_C 1.1, 1.2). NOIR_PORT=5343 node tools/play.mjs tools/plays/critic/tail_idle_title.json --size 1440x900",
+ "url": "/?mute=1&start=tail",
+ "size": [
+  1440,
+  900
+ ],
+ "out": "shots/c3c2/idle",
+ "steps": [
+  {
+   "eval": "(window.__st = (() => {\n  // [C3 critic, 2nd look] the status a stepplay session prints after each move: what the screen says\n  // (the kit's objective, teach card, warning, the prompt, the fail) and where the cars are.\n  const sc = G.scenes, C = sc.ctx && sc.ctx.flags && sc.ctx.flags.chase, K = G.hud.kit;\n  const vis = (e) => !!e && getComputedStyle(e).display !== 'none' && getComputedStyle(e).visibility !== 'hidden';\n  const o = { scene: sc.current && sc.current.id, beat: sc.beat, state: G.state, t: +N.time.toFixed(2), mode: G.controller.mode,\n    obj: K && K.obj ? K.obj.text + ':' + K.obj.phase : null,\n    teach: K && K.teachCur ? K.teachCur.text || K.teachCur.id : null,\n    warnTxt: K && vis(K.warnEl) ? K.warnEl.textContent.trim() : '',\n    prompt: G.hud.promptShown, say: G.hud.sayShown, failing: !!G.failing,\n    lastFail: G.lastFail ? G.lastFail.why + '@' + (+G.lastFail.t).toFixed(1) : null };\n  if (C && C.my) {\n    const g = C.gun;\n    Object.assign(o, { phase: C.phase, my: [+C.my.pos.x.toFixed(1), +C.my.pos.z.toFixed(1), +C.my.yaw.toFixed(3)], kmh: +(C.my.speed * 3.6).toFixed(0),\n      his: [+C.his.pos.x.toFixed(1), +C.his.pos.z.toFixed(1), +C.his.yaw.toFixed(3)], hkmh: +((C.his.speed || 0) * 3.6).toFixed(0),\n      gap: +C.gap().toFixed(1), seen: C.seen, unseen: +(C.unseen || 0).toFixed(1), dmg: +C.my.damage.toFixed(2),\n      cfail: !!C.failing, warn: C.kit && C.kit.warning, wrecked: !!C.wrecked,\n      hisDmg: C.hisDmg ? JSON.parse(JSON.stringify(C.hisDmg)) : null,\n      gun: g ? { r: g.rounds, p: g.pocket, s: g.shots, h: g.hits, aim: +(g.aimK || 0).toFixed(2), up: +(g.upK || g.raiseK || 0).toFixed(2) } : null,\n      fails: (globalThis.__tailFails || []).map((f) => f.why).join('|'), bot: !!C.bot });\n  }\n  return o; }), 1)"
+  },
+  {
+   "name": "the title, as a first-timer sees it"
+  },
+  {
+   "until": "G.state === 'title' && !document.getElementById('title').classList.contains('hidden') && !!document.querySelector('#title .opt[data-k=begin]')",
+   "timeout": 40000
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "shot": "i00_title"
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]",
+   "taken": "G.state === 'playing' && document.pointerLockElement === N.renderer.domElement",
+   "retries": 4,
+   "every": 4000
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'tail' && !!G.scenes.ctx.flags.chase && !!G.scenes.ctx.flags.chase.my",
+   "timeout": 45000
+  },
+  {
+   "eval": "(window.__t0 = N.time, 'start ' + N.time.toFixed(1))"
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "eval": "JSON.stringify(window.__st())"
+  },
+  {
+   "shot": "i01"
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "eval": "JSON.stringify(window.__st())"
+  },
+  {
+   "shot": "i02"
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "eval": "JSON.stringify(window.__st())"
+  },
+  {
+   "shot": "i03"
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "eval": "JSON.stringify(window.__st())"
+  },
+  {
+   "shot": "i04"
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "eval": "JSON.stringify(window.__st())"
+  },
+  {
+   "shot": "i05"
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "eval": "JSON.stringify(window.__st())"
+  },
+  {
+   "shot": "i06"
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "eval": "JSON.stringify(window.__st())"
+  },
+  {
+   "shot": "i07"
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "eval": "JSON.stringify(window.__st())"
+  },
+  {
+   "shot": "i08"
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "eval": "JSON.stringify(window.__st())"
+  },
+  {
+   "shot": "i09"
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "eval": "JSON.stringify(window.__st())"
+  },
+  {
+   "shot": "i10"
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "eval": "JSON.stringify(window.__st())"
+  },
+  {
+   "shot": "i11"
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "eval": "JSON.stringify(window.__st())"
+  },
+  {
+   "shot": "i12"
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "eval": "JSON.stringify(window.__st())"
+  },
+  {
+   "shot": "i13"
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "eval": "JSON.stringify(window.__st())"
+  },
+  {
+   "shot": "i14"
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "eval": "JSON.stringify(window.__st())"
+  },
+  {
+   "shot": "i15"
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "eval": "JSON.stringify(window.__st())"
+  },
+  {
+   "shot": "i16"
+  },
+  {
+   "expect": "!!G.lastFail && /Lost/.test(G.lastFail.why)",
+   "label": "hands off: 'Lost him.' within 24 s"
+  },
+  {
+   "expect": "!!G.lastFail && G.lastFail.warnedFor > 1.5",
+   "label": "the warning was up for over 1.5 s before the fail"
+  }
+ ]
+}

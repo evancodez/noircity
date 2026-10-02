@@ -1,0 +1,160 @@
+{
+ "about": "Critic (C3, 2nd look): the owner's tail_seam (from V, the city warmed once a frame, then the cut into the seat) with frames after the cut and while pulling out, and a watch for the chapter's small card over the windscreen. FAILS today: 07_tail.js smallCard = !G.hud.cardT is false after V's own card (Hud.js leaves cardT at -1/60), so the card never shows. NOIR_PORT=5343 node tools/play.mjs tools/plays/critic/tail_seam_frames.json --size 1440x900",
+ "url": "/?mute=1&start=watcher",
+ "size": [
+  1440,
+  900
+ ],
+ "out": "shots/c3c2/seam",
+ "steps": [
+  {
+   "until": "G.state === 'title' && !document.getElementById('title').classList.contains('hidden') && !!document.querySelector('#title .opt[data-k=begin]')",
+   "timeout": 40000
+  },
+  {
+   "wait": 2000
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]",
+   "taken": "G.state === 'playing' && document.pointerLockElement === N.renderer.domElement",
+   "retries": 4,
+   "every": 4000
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'watcher'",
+   "timeout": 45000
+  },
+  {
+   "wait": 4000
+  },
+  {
+   "eval": "(() => { const R = window.__seam = { warm: [], gaps: [], done: false, cut: null, after: [] }; let last = performance.now(); (function loop() { const now = performance.now(); R.gaps.push(+(now - last).toFixed(1)); last = now; if (!R.done) { const t0 = performance.now(); const ok = G.stages.warm('city', 6); R.warm.push(+(performance.now() - t0).toFixed(1)); if (ok) R.done = true; requestAnimationFrame(loop); } })(); return 1; })()"
+  },
+  {
+   "until": "window.__seam.done",
+   "timeout": 60000
+  },
+  {
+   "wait": 1000
+  },
+  {
+   "eval": "(() => { const R = window.__seam, info = N.renderer.info; R.prog = [info.programs.length]; R.p0 = new Set(info.programs); R.geo = [info.memory.geometries]; const t0 = performance.now(); G.scenes.go('tail', { beat: 'start', fade: 'cut', card: false }); R.cut = +(performance.now() - t0).toFixed(1); R.prog.push(info.programs.length); R.geo.push(info.memory.geometries); let last = performance.now(), n = 0; (function loop() { const now = performance.now(); R.after.push(+(now - last).toFixed(1)); last = now; if (n < 4) { R.prog.push(info.programs.length); R.geo.push(info.memory.geometries); } if (++n < 40) requestAnimationFrame(loop); })(); return R.cut; })()"
+  },
+  {
+   "eval": "(() => { window.__sawCard = null; const t0 = performance.now(); (function w() { const c = document.querySelector('.c3card'); if (c && c.style.display === 'block' && +c.style.opacity > 0.3) window.__sawCard = c.textContent.trim(); if (performance.now() - t0 < 9000) requestAnimationFrame(w); })(); return 1; })()"
+  },
+  {
+   "shot": "c00_cut_plus0"
+  },
+  {
+   "wait": 150
+  },
+  {
+   "shot": "c01_cut_150ms"
+  },
+  {
+   "wait": 350
+  },
+  {
+   "shot": "c02_cut_500ms"
+  },
+  {
+   "wait": 1000
+  },
+  {
+   "shot": "c03_cut_1500ms"
+  },
+  {
+   "eval": "JSON.stringify({ cardT: G.hud.cardT, carded: document.getElementById('hud').classList.contains('carded'), obj: G.hud.kit.obj && G.hud.kit.obj.text, teach: G.hud.kit.teachCur && G.hud.kit.teachCur.text })"
+  },
+  {
+   "down": "KeyW"
+  },
+  {
+   "wait": 400
+  },
+  {
+   "eval": "JSON.stringify({ t: +N.time.toFixed(2), phase: G.scenes.ctx.flags.chase.phase, card: (() => { const c = document.querySelector('.c3card'); return c ? c.style.display + '/' + c.style.opacity + '/' + c.textContent.trim() : 'none'; })(), cardT: G.hud.cardT })"
+  },
+  {
+   "wait": 400
+  },
+  {
+   "eval": "JSON.stringify({ t: +N.time.toFixed(2), phase: G.scenes.ctx.flags.chase.phase, card: (() => { const c = document.querySelector('.c3card'); return c ? c.style.display + '/' + c.style.opacity + '/' + c.textContent.trim() : 'none'; })(), cardT: G.hud.cardT })"
+  },
+  {
+   "wait": 400
+  },
+  {
+   "eval": "JSON.stringify({ t: +N.time.toFixed(2), phase: G.scenes.ctx.flags.chase.phase, card: (() => { const c = document.querySelector('.c3card'); return c ? c.style.display + '/' + c.style.opacity + '/' + c.textContent.trim() : 'none'; })(), cardT: G.hud.cardT })"
+  },
+  {
+   "wait": 400
+  },
+  {
+   "eval": "JSON.stringify({ t: +N.time.toFixed(2), phase: G.scenes.ctx.flags.chase.phase, card: (() => { const c = document.querySelector('.c3card'); return c ? c.style.display + '/' + c.style.opacity + '/' + c.textContent.trim() : 'none'; })(), cardT: G.hud.cardT })"
+  },
+  {
+   "wait": 400
+  },
+  {
+   "eval": "JSON.stringify({ t: +N.time.toFixed(2), phase: G.scenes.ctx.flags.chase.phase, card: (() => { const c = document.querySelector('.c3card'); return c ? c.style.display + '/' + c.style.opacity + '/' + c.textContent.trim() : 'none'; })(), cardT: G.hud.cardT })"
+  },
+  {
+   "wait": 400
+  },
+  {
+   "eval": "JSON.stringify({ t: +N.time.toFixed(2), phase: G.scenes.ctx.flags.chase.phase, card: (() => { const c = document.querySelector('.c3card'); return c ? c.style.display + '/' + c.style.opacity + '/' + c.textContent.trim() : 'none'; })(), cardT: G.hud.cardT })"
+  },
+  {
+   "wait": 400
+  },
+  {
+   "eval": "JSON.stringify({ t: +N.time.toFixed(2), phase: G.scenes.ctx.flags.chase.phase, card: (() => { const c = document.querySelector('.c3card'); return c ? c.style.display + '/' + c.style.opacity + '/' + c.textContent.trim() : 'none'; })(), cardT: G.hud.cardT })"
+  },
+  {
+   "wait": 400
+  },
+  {
+   "eval": "JSON.stringify({ t: +N.time.toFixed(2), phase: G.scenes.ctx.flags.chase.phase, card: (() => { const c = document.querySelector('.c3card'); return c ? c.style.display + '/' + c.style.opacity + '/' + c.textContent.trim() : 'none'; })(), cardT: G.hud.cardT })"
+  },
+  {
+   "shot": "c04_pulling_out"
+  },
+  {
+   "wait": 1200
+  },
+  {
+   "shot": "c05_pulling_out2"
+  },
+  {
+   "up": "KeyW"
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "eval": "(() => { const R = window.__seam, W = R.warm, A = R.after; const before = R.gaps.slice(5); return JSON.stringify({ calls: W.length, warmMax: Math.max(...W), warmOver16: W.filter((x) => x > 16).length, warmSum: +W.reduce((a, b) => a + b, 0).toFixed(0), frameMaxWhileWarming: Math.max(...before), cut: R.cut, firstFrames: A.slice(0, 12), maxAfter: Math.max(...A), stall: +(R.cut + Math.max(...A.slice(0, 3))).toFixed(0) }); })()"
+  },
+  {
+   "eval": "JSON.stringify(G.stages.warmLog || [])"
+  },
+  {
+   "eval": "JSON.stringify({ prog: window.__seam.prog, geo: window.__seam.geo, names: N.renderer.info.programs.filter((p) => !window.__seam.p0.has(p)).map((p) => p.name + ':' + (p.cacheKey || '').slice(0, 60)) })"
+  },
+  {
+   "shot": "s01_after_cut"
+  },
+  {
+   "expect": "G.scenes.current.id === 'tail' && G.controller.mode === 'drive'",
+   "label": "in the driver's seat after the cut"
+  },
+  {
+   "eval": "JSON.stringify({ sawCard: window.__sawCard, cardT: G.hud.cardT })"
+  },
+  {
+   "expect": "!!window.__sawCard",
+   "label": "in by the cut from V: the chapter's card lettered small over the windscreen as I pull out (C3_CITY.md 5)"
+  }
+ ]
+}

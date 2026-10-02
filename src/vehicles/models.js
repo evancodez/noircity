@@ -145,9 +145,13 @@ export const COUPE = {
 };
 export const WHEEL_TURN = 1.7;
 
-export function buildCoupe(M) {
+// ([C3 3rd] built a few steps at a time when a stage is warmed: the same
+// geometry, the same order; buildCoupe runs it through at once)
+export function buildCoupe(M) { const it = buildCoupeSteps(M); let r; while (!(r = it.next()).done); return r.value; }
+export function* buildCoupeSteps(M) {
   const paint = [], chrome = [], rubber = [], dark = [], hubs = [], cabin = [], trim = [];
   paint.push(ext(coupeBody(), 1.2, 0.1, 0.08, 5));
+  yield;
   paint.push(hoodLoft());
   // the front's frame under the hood, between the fenders (dark)
   dark.push(roundedBox(1.7, 0.36, 0.86, 0.05, 2).translate(1.45, 0.62, 0));
@@ -155,6 +159,7 @@ export function buildCoupe(M) {
   // sides frames round the windows: a solid cabin enclosed the eye, and the
   // id pass, which draws both faces, saw a wall where the windscreen is)
   paint.push(...coupeShell());
+  yield;
   for (const sgn of [1, -1]) {
     // the door skins over the well, up to the belt
     paint.push(roundedBox(1.98, 0.6, 0.06, 0.025, 2).translate(-0.31, 0.83, sgn * 0.675));
@@ -175,6 +180,7 @@ export function buildCoupe(M) {
     dark.push(lathe([[0, -0.08], [0.045, -0.06], [0.055, 0.0], [0.04, 0.03]], 12).rotateZ(Math.PI / 2).translate(-2.3, 0.84, sgn * 0.74));
     // chrome belt line
     chrome.push(tube([V3(0.62, 1.1, sgn * 0.705), V3(-0.5, 1.09, sgn * 0.71), V3(-1.6, 1.03, sgn * 0.7)], 0.012, 5, 24));
+    yield;
   }
   // grille, hood strip, the ornament (a winged thing on the radiator cap)
   const gs = new THREE.Shape();
@@ -203,6 +209,7 @@ export function buildCoupe(M) {
     chrome.push(g);
   }
   const skirt = roundedBox(3.3, 0.4, 1.36, 0.08, 2).translate(0.0, 0.3, 0);
+  yield;
 
   // ---- what the driver sees from his seat ----------------------------------------------------
   const S = COUPE.screen;
@@ -257,14 +264,16 @@ export function buildCoupe(M) {
     dials.push(new THREE.CircleGeometry(r - 0.004, 28).rotateY(-Math.PI / 2).translate(0.37, COUPE.dial.y, z));
   }
 
+  yield;
   const g = new THREE.Group();
   g.name = 'coupe';
   const mk = (list, mat, name) => { const m = new THREE.Mesh(list.isBufferGeometry ? list : merge(list), mat); m.name = name; g.add(m); return m; };
-  const meshes = {
-    paint: mk(paint, M.paint, 'paint'), chrome: mk(chrome, M.chrome, 'chrome'), rubber: mk(rubber, M.rubber, 'rubber'),
-    dark: mk(dark, M.rubber, 'dark'), hubs: mk(hubs, M.hubcap, 'hubs'), skirt: mk(skirt, M.black, 'skirt'),
-    cabin: mk(cabin, M.iron, 'cabin'), trim: mk(trim, M.chrome, 'trim'),
-  };
+  const meshes = {};
+  meshes.paint = mk(paint, M.paint, 'paint'); yield;
+  meshes.chrome = mk(chrome, M.chrome, 'chrome'); yield;
+  meshes.rubber = mk(rubber, M.rubber, 'rubber');
+  meshes.dark = mk(dark, M.rubber, 'dark'); meshes.hubs = mk(hubs, M.hubcap, 'hubs'); meshes.skirt = mk(skirt, M.black, 'skirt'); yield;
+  meshes.cabin = mk(cabin, M.iron, 'cabin'); meshes.trim = mk(trim, M.chrome, 'trim'); yield;
   // the dial faces: a dim pale glow; the needles are their own meshes
   const dialMat = new THREE.MeshBasicMaterial({ color: new THREE.Color().setScalar(0.06) });
   meshes.dials = mk(dials, dialMat, 'dials');
@@ -308,6 +317,7 @@ export function buildCoupe(M) {
     return { pivot: w, arm };
   });
   meshes.wipers = wipers;
+  yield;
   // the wheel: a mount on the column (x away from the eye, y up its face, z
   // to the car's right), the wheel turning in it about its x (+ clockwise)
   {

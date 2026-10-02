@@ -57,6 +57,9 @@ export default {
       I.throttle = !fz && (held('KeyW') || held('ArrowUp')) ? 1 : 0;
       I.brake = !fz && (held('KeyS') || held('ArrowDown')) ? 1 : 0;
       I.steer = fz ? 0 : ((held('KeyA') || held('ArrowLeft')) ? 1 : 0) - ((held('KeyD') || held('ArrowRight')) ? 1 : 0);
+      // [C3] SPACE: the handbrake (the body's big move: the tail round for a
+      // right-angle corner)
+      I.handbrake = !fz && held('Space') ? 1 : 0;
     }
     if (dt > 0 && v.driver === 'player') v.step(dt);
     // the look: back to the road ahead once the mouse rests (never while aiming)
@@ -64,7 +67,12 @@ export default {
     const R = D.aim ? AIM : LOOK;
     if (!D.aim && !D.focus && D.idle > 0.7 && dt > 0) {
       const k = 1 - Math.exp(-dt * 1.8);
-      D.look.yaw += (0 - D.look.yaw) * k;
+      // [C3] (the eyes go into a corner ahead of the car: a little of the
+      // turn, more of a slide's, as a driver's do)
+      // [C3 2nd] (a glance, not a turn of the head: at 0.32 rad the
+      // windscreen swung off his car at every corner and hung there after)
+      const into = O.lookInto ? Math.max(-0.17, Math.min(0.17, v.yawRate * 0.13 + (v.slipR || 0) * -0.4)) * Math.min(1, Math.abs(v.speed) / 6) : 0;
+      D.look.yaw += (into - D.look.yaw) * k * (O.lookInto ? 1.6 : 1);
       D.look.pitch += ((O.pitch ?? -0.07) - D.look.pitch) * k;
     }
     // a thing the eyes follow (his car spinning out): the look eases to it
@@ -72,11 +80,17 @@ export default {
       const f = D.focus.pos || D.focus, e = ctl.camera.position;
       const want = Math.atan2(-(f.x - e.x), -(f.z - e.z)) - (v.yaw - Math.PI / 2);
       const w = Math.atan2(Math.sin(want), Math.cos(want));
-      const k = 1 - Math.exp(-dt * (D.idle > 0.5 ? 3.0 : 0.8));
-      D.look.yaw += (clamp(w, -0.75, 0.75) - D.look.yaw) * k;
+      const k = 1 - Math.exp(-dt * (D.focusRate ?? (D.idle > 0.5 ? 3.0 : 0.8)));
+      // [C3 2nd] (focusMax: how far the head may turn to it; focusPitch: up
+      // to it - out of the side window at the pier's doors and the name
+      // over them, as I get out)
+      const fm = D.focusMax ?? 0.75;
+      D.look.yaw += (clamp(w, -fm, fm) - D.look.yaw) * k;
+      if (D.focusPitch != null) D.look.pitch += (D.focusPitch - D.look.pitch) * k;
     }
-    D.look.yaw = clamp(D.look.yaw, D.focus ? -0.75 : R.yaw[0], D.focus ? 0.75 : R.yaw[1]);
-    D.look.pitch = clamp(D.look.pitch, R.pitch[0], R.pitch[1]);
+    const fm = D.focusMax ?? 0.75;
+    D.look.yaw = clamp(D.look.yaw, D.focus ? -fm : R.yaw[0], D.focus ? fm : R.yaw[1]);
+    D.look.pitch = clamp(D.look.pitch, R.pitch[0], D.focusPitch != null && D.focus ? Math.max(R.pitch[1], D.focusPitch) : R.pitch[1]);
     // the eye in its seat (the head out of the window as it leans)
     const L = D.lean;
     _e.copy(D.eye).addScaledVector(LEAN, L * L * (3 - 2 * L));
@@ -98,7 +112,7 @@ export default {
     // the lens widens with speed (68 -> 77 degrees flat out); [2nd pass] on
     // a thing the eyes follow (his spin into the post) it closes in, as a
     // camera would push in on the wreck (it was a small car turning 30 m off)
-    const want = D.focus ? D.base - 14 : D.base + 9 * clamp((v.speed - 8) / 20, 0, 1);
+    const want = D.focus ? D.base - (D.focusFov ?? 14) : D.base + 9 * clamp((v.speed - 8) / 20, 0, 1);
     D.fov += (want - D.fov) * (dt > 0 ? 1 - Math.exp(-dt * (D.focus ? 2.2 : 2.5)) : 0);
     if (!ctl._kick && Math.abs(ctl.camera.fov - D.fov) > 0.01) { ctl.camera.fov = D.fov; ctl.camera.updateProjectionMatrix(); }
   },

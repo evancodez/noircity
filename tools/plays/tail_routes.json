@@ -1,0 +1,18 @@
+{
+ "about": "C3 4th owner: not the same film - the good hands (src/scenes/tail/bot.js 'good', as virtual keys) drive phase a from the kerb four times, each try with its own draw (chase.trySeed: ?tailSeed=3, then 4, 5, 6), simulated without rendering (N.sim); prints the junctions he took each time and whether he was kept. The critic, 2nd look: three clean runs, his route identical to the metre. NOIR_PORT=5343 node tools/play.mjs tools/plays/tail_routes.json",
+ "url": "/?mute=1&start=tail&tailSeed=3",
+ "size": [960, 600],
+ "out": "shots/c3/routes",
+ "steps": [
+  { "until": "G.state === 'title' && !document.getElementById('title').classList.contains('hidden') && !!document.querySelector('#title .opt[data-k=begin]')", "timeout": 40000 },
+  { "wait": 1000 },
+  { "clickOn": "#title .opt[data-k=begin]", "taken": "G.state === 'playing' && document.pointerLockElement === N.renderer.domElement", "retries": 4, "every": 4000 },
+  { "until": "G.scenes.current && G.scenes.current.id === 'tail' && !!G.scenes.ctx.flags.chase && !!G.scenes.ctx.flags.chase.my && !G.scenes.fadeK", "timeout": 45000 },
+  { "eval": "(window.__route = () => { window.__tailFails = []; if (window.__routeN) G.scenes.go('tail', { beat: 'start', fade: 'cut', card: false }); window.__routeN = (window.__routeN || 0) + 1; const C = G.scenes.ctx.flags.chase; C.useBot('good', { seed: 7 }); C.autoBot = true; while (C.t < 110 && C.phase !== 'b' && !C.failing) N.sim(1); return JSON.stringify({ seed: C.trySeed, phase: C.phase, t: +C.t.toFixed(0), fails: window.__tailFails.map((f) => f.why), choices: C.driver.choices, way: (C.driver.allIds || []).join(' ') }); }, 1)" },
+  { "eval": "window.__route()" },
+  { "eval": "window.__route()" },
+  { "eval": "window.__route()" },
+  { "eval": "window.__route()" },
+  { "expect": "true", "label": "four tries driven" }
+ ]
+}

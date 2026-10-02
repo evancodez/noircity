@@ -1,0 +1,89 @@
+{
+ "about": "Critic (lane C3): the frame rate when my car goes through the market square's stalls, by real input in real time, against the same measure on a plain street. BEGIN at the tail; (a) on Cooper St, W held 4 s; (b) at Cooper x Market St's corner, W held 4 s into the square's stalls (his 'near' way, corner to corner). The square must hold the street's rate (within ~25 %). Today (2026-10-02, the machine shared) the square fell to a few frames a second. node tools/play.mjs tools/plays/critic/tail_square_fps.json --size 1440x900 (NOIR_PORT=5343)",
+ "url": "/?mute=1&start=tail",
+ "size": [
+  1440,
+  900
+ ],
+ "out": "shots/c3critic/squarefps",
+ "steps": [
+  {
+   "until": "G.state === 'title' && !document.getElementById('title').classList.contains('hidden') && !!document.querySelector('#title .opt[data-k=begin]')",
+   "timeout": 40000
+  },
+  {
+   "wait": 2000
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]",
+   "taken": "G.state === 'playing' && document.pointerLockElement === N.renderer.domElement",
+   "retries": 4,
+   "every": 4000
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'tail' && G.controller.mode === 'drive'",
+   "timeout": 45000
+  },
+  {
+   "eval": "(G.scenes.go('tail', { beat: 'pier', fade: 'cut', card: false }), 1)"
+  },
+  {
+   "wait": 2500
+  },
+  {
+   "name": "(a) a plain street: Cooper St going north"
+  },
+  {
+   "eval": "(() => { G.scenes.ctx.flags.chase.my.damage = 0; G.scenes.ctx.flags.chase.my.place(new N.THREE.Vector3(-176.5, 0, -30), 1.5708, 8); return 1; })()"
+  },
+  {
+   "eval": "(window.__fr = [], (function loop(t) { window.__fr.push(t); if (window.__fr.length < 4000) requestAnimationFrame(loop); })(performance.now()), 1)"
+  },
+  {
+   "down": "KeyW"
+  },
+  {
+   "wait": 4000
+  },
+  {
+   "up": "KeyW"
+  },
+  {
+   "eval": "window.__a = (() => { const f = window.__fr; const n = f.length; const d = []; for (let i = 1; i < n; i++) d.push(f[i] - f[i - 1]); d.sort((a, b) => b - a); return JSON.stringify({ fps: +((n - 1) / ((f[n - 1] - f[0]) / 1000)).toFixed(1), worstMs: d.slice(0, 5).map((x) => +x.toFixed(0)), pieces: G.stage.smash.pieces.length }); })()"
+  },
+  {
+   "shot": "a_street"
+  },
+  {
+   "name": "(b) into the market square's stalls, corner to corner"
+  },
+  {
+   "eval": "(() => { G.scenes.ctx.flags.chase.my.damage = 0; G.scenes.ctx.flags.chase.my.place(new N.THREE.Vector3(-171, 0, -171), 0.785, 8); return 1; })()"
+  },
+  {
+   "eval": "(window.__fr = [], (function loop(t) { window.__fr.push(t); if (window.__fr.length < 4000) requestAnimationFrame(loop); })(performance.now()), 1)"
+  },
+  {
+   "down": "KeyW"
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "shot": "b_square"
+  },
+  {
+   "wait": 2500
+  },
+  {
+   "up": "KeyW"
+  },
+  {
+   "eval": "window.__b = (() => { const f = window.__fr; const n = f.length; const d = []; for (let i = 1; i < n; i++) d.push(f[i] - f[i - 1]); d.sort((a, b) => b - a); return JSON.stringify({ fps: +((n - 1) / ((f[n - 1] - f[0]) / 1000)).toFixed(1), worstMs: d.slice(0, 5).map((x) => +x.toFixed(0)), pieces: G.stage.smash.pieces.length }); })()"
+  },
+  {
+   "expect": "JSON.parse(window.__b).fps >= 0.75 * JSON.parse(window.__a).fps",
+   "label": "the square holds the street's frame rate (within 25 %)"
+  }
+ ]
+}

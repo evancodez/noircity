@@ -1,0 +1,120 @@
+{
+ "about": "Critic (lane C3), phase b: LMB alone, never aimed. Hands off the keys and the mouse never moves; LMB is clicked once a second (no RMB). The contest must NOT be won this way (WAVE_C 1.1: nothing wins itself). Today it FAILS: every click raises the revolver and gun.js aimSnap swings the eye onto his car's tank (his.seat(-1.9, 0.75, 0)) before the round goes, so 4 of 4 land and he crashes within about 5 s. node tools/play.mjs tools/plays/critic/tail_b_noaim.json (NOIR_PORT=5343)",
+ "url": "/?mute=1&start=tail.river",
+ "size": [
+  1280,
+  800
+ ],
+ "out": "shots/c3critic/noaim",
+ "steps": [
+  {
+   "name": "the title, BEGIN at the river road (phase b's checkpoint)"
+  },
+  {
+   "until": "G.state === 'title' && !document.getElementById('title').classList.contains('hidden') && !!document.querySelector('#title .opt[data-k=begin]')",
+   "timeout": 40000
+  },
+  {
+   "wait": 2000
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]",
+   "taken": "G.state === 'playing' && document.pointerLockElement === N.renderer.domElement",
+   "retries": 4,
+   "every": 4000
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'tail' && G.scenes.ctx.flags.chase && G.scenes.ctx.flags.chase.phase === 'b' && !G.scenes.fadeK",
+   "timeout": 45000
+  },
+  {
+   "wait": 300
+  },
+  {
+   "eval": "(window.__c3c0 = N.time, 'phase b from ' + N.time.toFixed(1) + ', gap ' + G.scenes.ctx.flags.chase.gap().toFixed(1))"
+  },
+  {
+   "mouse": "click",
+   "button": "left",
+   "x": 640,
+   "y": 400
+  },
+  {
+   "wait": 1000
+  },
+  {
+   "mouse": "click",
+   "button": "left",
+   "x": 640,
+   "y": 400
+  },
+  {
+   "wait": 200
+  },
+  {
+   "shot": "n00_second_click"
+  },
+  {
+   "wait": 800
+  },
+  {
+   "mouse": "click",
+   "button": "left",
+   "x": 640,
+   "y": 400
+  },
+  {
+   "wait": 1000
+  },
+  {
+   "mouse": "click",
+   "button": "left",
+   "x": 640,
+   "y": 400
+  },
+  {
+   "wait": 1000
+  },
+  {
+   "mouse": "click",
+   "button": "left",
+   "x": 640,
+   "y": 400
+  },
+  {
+   "wait": 1000
+  },
+  {
+   "mouse": "click",
+   "button": "left",
+   "x": 640,
+   "y": 400
+  },
+  {
+   "wait": 1000
+  },
+  {
+   "mouse": "click",
+   "button": "left",
+   "x": 640,
+   "y": 400
+  },
+  {
+   "wait": 1000
+  },
+  {
+   "eval": "JSON.stringify({ phase: G.scenes.ctx.flags.chase.phase, shots: G.scenes.ctx.flags.chase.gun.shots, hits: G.scenes.ctx.flags.chase.gun.hits, hisDmg: G.scenes.ctx.flags.chase.hisDmg, secs: +(N.time - window.__c3c0).toFixed(1) })"
+  },
+  {
+   "shot": "n01_after_seven_clicks"
+  },
+  {
+   "expect": "G.scenes.ctx.flags.chase.gun.hits <= 1",
+   "label": "seven clicks with no aim land at most one round"
+  },
+  {
+   "expect": "G.scenes.ctx.flags.chase.phase === 'b'",
+   "label": "seven clicks with no aim do not put him off the road"
+  }
+ ]
+}
