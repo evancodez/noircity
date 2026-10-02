@@ -68,7 +68,7 @@ export const BRAWL = {
   // own snaps at 0.08, 0.28, 0.48 s after it begins); let go, it is thrown.
   // A press that arrives while I cannot act (hit, knocked down a moment)
   // waits up to `wait` s and then jabs: nothing is swallowed.
-  hold: { min: 0.3, start: 0.3, levels: [0.38, 0.58, 0.78] }, buffer: 0.15, wait: 0.35, other: 0.10,
+  hold: { min: 0.34, start: 0.34, levels: [0.42, 0.62, 0.82] }, buffer: 0.15, wait: 0.35, other: 0.10,
   hop: { side: 0.55, back: 0.6, dur: 0.10, punchAt: 0.12, again: 0.25, blockAt: 0.08 },
   mine: { jab: 3, hard: [9, 15, 22] },
   counter: 1.5, missOpen: 1.5, combo: [1, 1, 1.2, 1.4, 1.4], comboGap: 0.5,
@@ -140,6 +140,22 @@ export class Brawl {
     this.stats = freshStats();
     this.blackT = 0;
     this.did = {};
+    // [C4] how long a mouse button is really held, from the events' own
+    // times: a slow frame (the sim catching up several steps at once) must
+    // not make a 280 ms click look like a 400 ms hold and load a punch
+    this.stamps = {};
+    if (typeof addEventListener !== 'undefined') {
+      addEventListener('mousedown', (e) => { this.stamps['Mouse' + e.button] = { down: e.timeStamp, up: null }; });
+      addEventListener('mouseup', (e) => { const s = this.stamps['Mouse' + e.button]; if (s && s.up == null) s.up = e.timeStamp; });
+    }
+  }
+  // (the time a press has been held, s: by its events when it has them, else
+  // by the steps - the autoplay's and the shots' presses have no events)
+  heldFor(b, code) {
+    const s = b.stamp;
+    if (!s) return b.t;
+    const end = s.up != null ? s.up : (typeof performance !== 'undefined' ? performance.now() : s.down);
+    return Math.max(0, (end - s.down) / 1000);
   }
 
   get hands() { return this.game.player.hands; }
@@ -227,7 +243,7 @@ export class Brawl {
     if (this.cue) this.cue.end('gone');
     this.game.worldK = 1;
     if (this.warned) { this.warned = false; this.game.hud.warn(null); }
-    if (this.downWhy) { this.game.hud.kit.failLine(null); this.downWhy = null; }
+    if (this.downWhy) { this.game.hud.kit.failLine(null); this.downWhy = null; if (this.game.hud.setFailing && !this.game.failing) this.game.hud.setFailing(false); }
     this.active = false;
     this.lesson = null;
     const C = this.controller;
@@ -276,7 +292,7 @@ export class Brawl {
       G.hud.fade(1);
       // [C4] (the black says in a word what went wrong, in the kit's lettering)
       if (this.downWhy) G.hud.kit.failK(Math.min(1, (this.downBlack - this.blackT) / 0.2) * Math.min(1, this.blackT / 0.25));
-      if (this.blackT <= 0) { this.blackT = 0; this.fadeBack = 0.6; if (this.downWhy) { G.hud.kit.failLine(null); this.downWhy = null; } }
+      if (this.blackT <= 0) { this.blackT = 0; this.fadeBack = 0.6; if (this.downWhy) { G.hud.kit.failLine(null); this.downWhy = null; } if (G.hud.setFailing && !G.failing) G.hud.setFailing(false); }
       return;
     }
     if (this.fadeBack > 0) { this.fadeBack -= dt; G.hud.fade(Math.max(0, this.fadeBack / 0.6)); }
@@ -353,18 +369,18 @@ export class Brawl {
     const Bt = me.btns;
     for (const code of ['Mouse0', 'Mouse2']) {
       if (G.pressed(code)) {
-        Bt[code] = { age: 0, t: 0, down: G.held(code) && !G.released(code), used: false, at: this.RT };
+        { const st = this.stamps[code], now = typeof performance !== 'undefined' ? performance.now() : 0; Bt[code] = { age: 0, t: 0, down: G.held(code) && !G.released(code), used: false, at: this.RT, stamp: st && now - st.down < 400 ? st : null }; } this.stats.presses = (this.stats.presses || 0) + 1; this.lastInputT = this.RT;
         this.stats.input.length < 400 && this.stats.input.push([+this.T.toFixed(3), code, me.act]);
         continue;
       }
       const b = Bt[code];
       if (!b) continue;
       b.age += dt;
-      if (b.down) { if (G.held(code) && !G.released(code)) b.t += dt; else b.down = false; }
+      if (b.down) { if (G.held(code) && !G.released(code)) b.t = b.stamp ? this.heldFor(b) : b.t + dt; else b.down = false; }
     }
     // the keys: the newest kept 0.15 s if it cannot act yet
     for (const code of ['KeyA', 'KeyD', 'KeyS', 'KeyE']) {
-      if (G.pressed(code)) { me.buf = { code, t: 0 }; this.stats.input.length < 400 && this.stats.input.push([+this.T.toFixed(3), code, me.act]); }
+      if (G.pressed(code)) { me.buf = { code, t: 0 }; this.lastInputT = this.RT; this.stats.input.length < 400 && this.stats.input.push([+this.T.toFixed(3), code, me.act]); }
     }
     if (me.buf) { if (me.buf.t > BRAWL.buffer) me.buf = null; else me.buf.t += dt; }
     // ---- the wind-up: it loads while held; let go, the blow
@@ -518,6 +534,7 @@ export class Brawl {
     me.h.t = Math.min(0.48, me.holdT - BRAWL.hold.min);
     this.stats.input.length < 400 && this.stats.input.push([+this.T.toFixed(3), 'wind' + arm, +me.holdT.toFixed(2)]);
     this.sfx('wind', null, {});
+    this.stats.winds = (this.stats.winds || 0) + 1;   // [C4]
   }
   // the hard punch, by its level (1..3): the lunge, the burst, the hit stop,
   // how far he goes back, the bite out of his bar all grow with it
@@ -692,6 +709,7 @@ export class Brawl {
     this.stats.input.length < 400 && this.stats.input.push([+this.T.toFixed(3), 'contact:' + kind + arm + (lv || ''), tgt.ok ? this.openSides() : 'air']);
     if (!tgt.ok || him.state === 'ko') {
       // a miss: a whiff of air, nothing else
+      if (kind === 'jab') { this.stats.jabAir = (this.stats.jabAir || 0) + 1; this.stats.lastAir = { d: +tgt.d.toFixed(2), ang: +tgt.ang.toFixed(2), st: him.state }; }
       this.sfx('whiff', null, { k: kind === 'jab' ? 0.5 : 0.9 });
       G.emit('brawl:hit', { by: 'me', kind, power: lv, zone: 'air', arm });
       // ([B8] a thing swung at the air is still in the hand: it breaks on
@@ -1465,6 +1483,8 @@ export class Brawl {
     const G = this.game, me = this.me, H = this.hands;
     // [C4] (nobody goes down unwarned: a blow that would take the last of me
     // while the warning has not been up a second leaves one - and puts it up)
+    // (the lesson is a safe place: his blows sting but never put me down there)
+    if (this.lesson) n = Math.max(0, Math.min(n, G.health.hp - 30));
     if (!this.lesson && G.health.hp - n <= 0 && !(this.warned && this.T - (this.warnedAt ?? this.T) >= 1.0)) {
       n = Math.max(0, G.health.hp - 1);
       this.stats.spared = (this.stats.spared || 0) + 1;
@@ -1810,7 +1830,7 @@ export class Brawl {
     } else if (this.reteach && G.hud && G.hud.teach) {
       // (failed twice: the card once more, not held)
       this.reteach = false;
-      G.hud.teach.again('dodge', null, { hold: false, secs: 2.4, until: () => !this.cue || this.cue.done });
+      G.hud.teach.again('dodge', DODGE_CARD, { hold: false, secs: 2.4, until: () => !this.cue || this.cue.done });
     }
     this.cue = new DodgeCue(this, { ...spec, held });
     this.cue.atk = spec.atk;
@@ -2098,6 +2118,8 @@ export class Brawl {
     this.downWhyKey = why;
     (this.stats.downWhy || (this.stats.downWhy = [])).push(why);
     if (why === 'late' || why === 'wrong') { this.cueDowns = (this.cueDowns || 0) + 1; if (this.cueDowns === 2) this.reteach = true; }
+    // (how long the warning had been up: the proofs read it)
+    (this.stats.downWarned || (this.stats.downWarned = [])).push(this.warned ? this.T - (this.warnedAt ?? this.T) : null);
     if (this.warned) { this.warned = false; G.hud.warn(null); }
     this.hands.play('downMe');
     this.sfx('bodyFloor', null, { k: 1 });
@@ -2138,6 +2160,7 @@ export class Brawl {
       this.downWhy = DOWN_WHY[this.downWhyKey] || DOWN_WHY.down;
       this.downBlack = left;
       if (G.hud.kit) { G.hud.kit.failLine(this.downWhy); G.hud.kit.failK(0); }
+      if (G.hud.setFailing) G.hud.setFailing(true);   // (the HUD's lines and his bar off the black, as a fail's)
     }
   }
 

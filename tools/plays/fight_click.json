@@ -1,0 +1,17 @@
+{
+ "about": "[C4] The click test (docs/story/briefs/C4_FIGHT.md §3): him standing in the diner with his guard down, doing nothing; each mouse button pressed 30 times at each of 60, 120, 200 and 280 ms by real input, shuffled, 0.12 .. 0.55 s apart. Every press must start a jab in its step and reach its contact within 0.08 s; none may turn into a wind-up. node tools/play.mjs tools/plays/fight_click.json",
+ "url": "/?mute=1&start=fight",
+ "size": [1280, 800],
+ "out": "shots/play/fight_click",
+ "steps": [
+  { "until": "G.state === 'title' && !document.getElementById('title').classList.contains('hidden')", "timeout": 20000 },
+  { "wait": 1500 },
+  { "clickOn": "#title .opt[data-k=begin]", "taken": "G.state !== 'title'", "retries": 5, "every": 4000 },
+  { "until": "G.scenes.current && G.scenes.current.id === 'fight' && G.brawl.active && !!G.brawl.lesson", "timeout": 60000 },
+  { "wait": 800 },
+  { "drive": "tools/lib/fight_bot.mjs", "profile": "click", "n": 30, "timeout": 300000,
+    "check": "D.sent === 240 && D.pressed === 240 && D.jabs === 240 && D.contacts === 240 && D.late === 0 && D.max <= 0.08 && D.clickWinds === 0 && D.winds <= D.stretched.length && D.air === 0",
+    "label": "[C4] 240 clicks of 60 to 280 ms, both buttons: a jab on every press, its contact within 0.08 s, never a wind-up from a click (a press the loaded machine stretched past 0.3 s may load, and is counted apart)" },
+  { "shot": "c00_after" }
+ ]
+}

@@ -49,7 +49,7 @@ export class Lesson {
     this.step = n;
     this.t = 0;
     (B.stats.lessonSteps || (B.stats.lessonSteps = [])).push([n, +(this.total || 0).toFixed(1)]);
-    this.missed = false; this.covered = false; this.landedOpen = false;
+    this.missed = false; this.covered = false; this.landedOpen = false; this.stepHits = 0;
     this.bounced = false; this.lowered = null; this.answered = false; this.fetch = false;
     this.attackAt = LESSON[n] && LESSON[n].attack ? 1.5 : Infinity;
     this.openT = 0;
@@ -94,6 +94,10 @@ export class Lesson {
     if (!this.missed && !this.covered) {
       this.attackAt = this.t + 1.5;
       if (S.hand || S.throw) { this.hits++; if (this.hits === 2) this.B.reteach = true; }
+      // ([C4] three times caught in one step - a dodge, the block: the step
+      // lets me go; the lesson is never a wall, the fight teaches the rest)
+      this.stepHits = (this.stepHits || 0) + 1;
+      if (this.stepHits >= 3) { if (S.attack === 'br_jab') this.covered = true; else this.missed = true; this.B.stats.lessonLetGo = (this.B.stats.lessonLetGo || 0) + 1; }
     }
   }
 
@@ -111,6 +115,10 @@ export class Lesson {
       this.go(this.step + 1);
       return;
     }
+    // ([C4] hands off for twelve seconds at a card that waits on me: he has
+    // waited long enough - the lesson is over and the fight is on. Nothing
+    // waits for ever on a player who does nothing: he loses, as anywhere)
+    if (this.t > 12 && (B.RT || 0) - (B.lastInputT ?? 0) > 12 && !B.cue) { B.stats.lessonCut = this.step; return this.finish(); }
     // step 3: the guard up until a punch has bounced off it (or 3 s); then a
     // hand comes down
     if (S.guard && !this.lowered && (this.bounced || this.t >= 3)) {
@@ -153,6 +161,8 @@ export class Lesson {
     B.lessonHold = false; B.lessonBack = false;
     B.him.taunt = null;
     B.him.hp = B.max; B.c.hp = B.max; B.him.mannerT = B.T;
+    // ([C4] and I am whole for the fight itself)
+    B.game.health.reset();
     B.him.next = 1.2;
     B.lesson = null;
     B.stats.lesson = +this.total.toFixed(1);

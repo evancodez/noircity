@@ -22,6 +22,7 @@ export class FightCards {
     const st = document.createElement('style');
     st.textContent = `
       #fightcards { position: absolute; inset: 0; pointer-events: none; }
+      #hud.failing #fightcards { visibility: hidden; }
       #fightcards .fc { position: absolute; left: 50%; bottom: 11%; transform: translateX(-50%); display: none; align-items: center; gap: 18px;
         font-family: ${TYPE}; font-size: 15px; letter-spacing: 0.3em; color: #efede7; text-transform: uppercase; white-space: pre;
         text-shadow: 0 0 5px #000, 0 0 2px #000, 0 0 1px #000; }

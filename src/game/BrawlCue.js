@@ -25,6 +25,7 @@ import { BR_ATTACKS } from '../cast/brawl/clips.js';
 // until the key toward the light is pressed; the other is not taken).
 export const CUE = {
   window: 0.34,     // s of real time to press in (a first-timer gets about half; a practised player nearly all)
+  lessonWindow: 0.46,   // s, the lesson's (after its first, held)
   k: 1 / 3,         // the world's speed under it
   in: 0.05,         // s (real) the ink takes to press in
   aimOff: 0.25,     // m: a straight blow or a throw aimed this far to the dark side of me
@@ -46,7 +47,8 @@ export class DodgeCue {
     this.B = B;
     this.clip = clip; this.A = A; this.side = side; this.flying = flying;
     this.from = side === 'L' ? 'R' : 'L';
-    this.window = CUE.window;
+    // (in the lesson a little longer: it is being learnt)
+    this.window = B.lesson ? CUE.lessonWindow : CUE.window;
     // (the world's speed: the window holds what is left of the blow, in real
     // time, at about a third - less if the blow is nearer than that)
     this.k = Math.max(0.06, Math.min(1, remain / this.window));
