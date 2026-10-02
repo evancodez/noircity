@@ -15,7 +15,7 @@ import { parkedOf } from '../layout.js';
 // slides a little on its locked wheels and stops), rocked and marked by a
 // blow. Nothing here ever blows up.
 //   cars.parked: [body]   body: { pos, yaw, vel, yawRate, spec, box(), ... }
-const NEAR = 42;
+const NEAR = 42, FAR = 110;
 const _m = new THREE.Matrix4(), _q = new THREE.Quaternion(), _p = new THREE.Vector3(), _s = new THREE.Vector3(1, 1, 1), _e = new THREE.Euler();
 
 export default {
@@ -36,12 +36,25 @@ export default {
       paint: merge([tpl.paint]), chrome: merge([tpl.chrome, tpl.caps, tpl.seams]),
       dark: merge([tpl.rubber, tpl.dark, tpl.hubs, tpl.skirt].filter(Boolean)), glass: merge([tpl.glass, tpl.lenses]),
     });
-    const parts = { hi: group(T), lo: group(TL) };
+    // (and a third, far off down a street in the rain: the sedan's masses
+    // as boxes and its wheels - a car's shape, a few hundred triangles; the
+    // light build is fourteen thousand, and two hundred of them far off were
+    // most of the city's triangles)
+    const box = (x0, x1, y0, y1, z0, z1) => new THREE.BoxGeometry(x1 - x0, y1 - y0, z1 - z0).translate((x0 + x1) / 2, (y0 + y1) / 2, (z0 + z1) / 2);
+    const wheels = [];
+    for (const x of [1.55, -1.75]) for (const z of [-0.82, 0.82]) wheels.push(new THREE.CylinderGeometry(0.38, 0.38, 0.24, 10).rotateX(Math.PI / 2).translate(x, 0.38, z));
+    const far = {
+      paint: merge([box(-2.45, 2.45, 0.42, 1.12, -0.94, 0.94), box(-1.6, 0.85, 1.12, 1.78, -0.78, 0.78)]),
+      chrome: merge([box(2.45, 2.6, 0.45, 0.6, -0.9, 0.9), box(-2.6, -2.45, 0.45, 0.6, -0.9, 0.9)]),
+      dark: merge(wheels),
+      glass: merge([box(-1.66, 0.91, 1.2, 1.6, -0.8, 0.8)]),
+    };
+    const parts = { hi: group(T), lo: group(TL), far };
     const mats = { paint: M.paint, chrome: M.chrome, dark: M.rubber, glass: M.carGlass };
     const n = parked.length;
     const base = allocInkId(Math.max(1, n));
     const inst = {};
-    for (const lod of ['hi', 'lo']) {
+    for (const lod of ['hi', 'lo', 'far']) {
       inst[lod] = {};
       for (const k of Object.keys(mats)) {
         const im = new THREE.InstancedMesh(parts[lod][k], mats[k], n);
@@ -83,22 +96,23 @@ export default {
     // one; rewritten when a body moves or the split changes
     const relayout = (camera) => {
       const p = camera ? camera.position : null;
-      let nh = 0, nl = 0;
+      const n3 = { hi: 0, lo: 0, far: 0 };
       for (const b of bodies) {
-        const lod = p && Math.hypot(b.pos.x - p.x, b.pos.z - p.z) < NEAR ? 'hi' : 'lo';
+        const d = p ? Math.hypot(b.pos.x - p.x, b.pos.z - p.z) : 1e9;
+        const lod = d < NEAR ? 'hi' : d < FAR ? 'lo' : 'far';
         b.lod = lod;
         const m = write(b);
-        const I = inst[lod], k = lod === 'hi' ? nh++ : nl++;
+        const I = inst[lod], k = n3[lod]++;
         for (const im of Object.values(I)) im.setMatrixAt(k, m);
         shadow.setMatrixAt(b.i, _m.compose(_p.set(b.pos.x, groundAt(b.pos.x, b.pos.z) + 0.012, b.pos.z), _q.setFromAxisAngle(_p.set(0, 1, 0), b.yaw), _s));
       }
-      for (const im of Object.values(inst.hi)) { im.count = nh; im.instanceMatrix.needsUpdate = true; }
-      for (const im of Object.values(inst.lo)) { im.count = nl; im.instanceMatrix.needsUpdate = true; }
+      for (const lod of ['hi', 'lo', 'far']) for (const im of Object.values(inst[lod])) { im.count = n3[lod]; im.instanceMatrix.needsUpdate = true; }
       shadow.instanceMatrix.needsUpdate = true;
-      for (const L of [inst.hi, inst.lo]) for (const im of Object.values(L)) { if (!im.boundingSphere) im.computeBoundingSphere(); }
+      // (each build's sphere round the cars it holds now: the near ones are
+      // culled with the view, not drawn wherever the eye looks)
+      for (const L of [inst.hi, inst.lo, inst.far]) for (const im of Object.values(L)) { im.computeBoundingSphere(); im.boundingSphere.radius += 3; }
     };
     relayout(null);
-    for (const L of [inst.hi, inst.lo]) for (const im of Object.values(L)) { im.computeBoundingSphere(); im.boundingSphere.radius += 30; }
     let dealT = 0, moving = false;
     C.parkedUpdate = (dt, camera) => {
       // a shunted car slides on its locked wheels and stops; rocks and settles
