@@ -2,8 +2,8 @@ import * as THREE from 'three';
 import { allocInkId, allocSkylineId, LAYER, tagInk, markFigure } from '../../../render/layers.js';
 import { merge, lathe, roundedBox, tube, V3 } from '../../../world/geom.js';
 import { makeKit, worldUV } from '../../pier9/kit.js';
-import { glowTexture } from '../../../vehicles/models.js';
-import { PIER, GASOMETER, WATER_TOWER, CLOCK, CINEMA, ROADWORKS, NS, EW, CANAL, YARD_X, DEPOT_Z, WHARF_X, PAVE, WATER_Y, riverPoint, riverFrame, riverSAtZ, RIVER } from '../plan.js';
+import { glowTexture, buildTruck } from '../../../vehicles/models.js';
+import { PIER, GASOMETER, WATER_TOWER, CLOCK, CINEMA, ROADWORKS, NS, EW, CANAL, YARD_X, DEPOT_Z, WHARF_X, PAVE, WATER_Y, riverPoint, riverFrame, riverSAtZ, RIVER, groundAt } from '../plan.js';
 
 // What makes the city a place you can read without a map (lane C3): Pier 9
 // at the river road's end (the yard, the shed on the pier with PIER 9 on
@@ -27,9 +27,15 @@ function signMap(lines, { w = 512, h = 256, bg = '#080808', fg = 'rgba(232,230,2
   lines.forEach((t, i) => {
     const size = Math.round((h * 0.62) / n);
     g.font = `${font} ${size}px "Arial Narrow", "Helvetica Neue", Arial, sans-serif`;
-    g.save(); g.scale(0.82, 1); g.fillText(t, (w / 2 - (arrow ? h * 0.3 * arrow : 0)) / 0.82, h * (i + 0.55) / n); g.restore();
+    const sh = arrow === 2 ? 1 : arrow;
+    g.save(); g.scale(0.82, 1); g.fillText(t, (w / 2 - (arrow ? h * 0.3 * sh : 0)) / 0.82, h * (i + 0.55) / n); g.restore();
   });
-  if (arrow) {
+  if (arrow === 2) {
+    // ([3rd owner] straight on: the arrow up, at the end)
+    const ax = w - h * 0.42, ay = h / 2, s = h * 0.22;
+    g.beginPath(); g.moveTo(ax, ay - s * 1.2); g.lineTo(ax + s * 0.9, ay - s * 0.2); g.lineTo(ax + s * 0.35, ay - s * 0.2); g.lineTo(ax + s * 0.35, ay + s * 1.1);
+    g.lineTo(ax - s * 0.35, ay + s * 1.1); g.lineTo(ax - s * 0.35, ay - s * 0.2); g.lineTo(ax - s * 0.9, ay - s * 0.2); g.closePath(); g.fill();
+  } else if (arrow) {
     // a pointing arrow at the end
     const ax = arrow > 0 ? w - h * 0.42 : h * 0.42, ay = h / 2, s = h * 0.22;
     g.beginPath(); g.moveTo(ax + s * arrow, ay); g.lineTo(ax - s * 0.2 * arrow, ay - s * 0.9); g.lineTo(ax - s * 0.2 * arrow, ay - s * 0.35); g.lineTo(ax - s * 1.2 * arrow, ay - s * 0.35);
@@ -197,6 +203,41 @@ export default {
       }
       kit.addMerged(yd, K.timber);
       kit.addMerged(ir, K.iron);
+      // [3rd owner] the yard's west half: a lorry parked along the wall (its
+      // lamps dark), crates stacked by the way in, timber by the water's
+      // edge; and the loading bay painted white on the stones before the
+      // gate, where I stop (the critic: nothing on the ground said where)
+      {
+        const Lo = PIER.lorry, T = buildTruck(M);
+        T.meshes.lens.material = M.rubber; T.meshes.lens.userData.emitter = false;
+        T.group.position.set(Lo.x, groundAt(Lo.x, Lo.z), Lo.z);
+        T.group.rotation.y = Lo.yaw;
+        tagInk(T.group);
+        group.add(T.group);
+        kit.piece();
+        const st = [];
+        for (const [x, z, hx, hz, h] of PIER.stacks) {
+          const y0 = groundAt(x, z);
+          if (hz < 1) {
+            // (timber: planks along x, a little ragged)
+            for (let k = 0; k < 6; k++) st.push(new THREE.BoxGeometry(hx * 2 - (k % 3) * 0.2, 0.14, hz * 2 / 3 - 0.04).translate(x + (k % 2) * 0.1, y0 + 0.07 + Math.floor(k / 3) * 0.15, z - hz + (k % 3 + 0.5) * hz * 2 / 3));
+          } else {
+            for (let yy = 0; yy < h - 0.01; yy += 1.05) for (const zz of [-0.6, 0.6]) {
+              st.push(roundedBox(hx * 2 - 0.1, 1.0, 1.15, 0.04, 1).translate(x, y0 + yy + 0.5, z + zz * (hz / 1.3)));
+              for (const ys of [-0.38, 0.38]) st.push(new THREE.BoxGeometry(hx * 2 - 0.05, 0.11, 1.2).translate(x, y0 + yy + 0.5 + ys, z + zz * (hz / 1.3)));
+            }
+          }
+        }
+        kit.addMerged(st, K.timber);
+        const B = PIER.bay, by = groundAt(B.x, B.z) + 0.012, paint = [];
+        for (const sz of [-1, 1]) paint.push(new THREE.PlaneGeometry(B.hx * 2, 0.14).rotateX(-Math.PI / 2).translate(B.x, by, B.z + sz * B.hz));
+        paint.push(new THREE.PlaneGeometry(0.14, B.hz * 2 + 0.14).rotateX(-Math.PI / 2).translate(B.x - B.hx, by, B.z));
+        // (a cross in the bay: LOADING, as the docks paint it)
+        for (const a of [0.46, -0.46]) paint.push(new THREE.PlaneGeometry(B.hx * 1.7, 0.11).rotateX(-Math.PI / 2).rotateY(a).translate(B.x + 0.2, by, B.z));
+        const pm = new THREE.MeshStandardMaterial({ color: 0x8c8c8c, roughness: 0.85 });
+        const bay = add(merge(paint), pm, { noRay: true });
+        bay.receiveShadow = true;
+      }
     }
 
     yield;
@@ -266,7 +307,10 @@ export default {
     {
       kit.piece();
       const docksR = signMap(['DOCKS'], { arrow: 1 }), docksL = signMap(['DOCKS'], { arrow: -1 });
-      const pier = signMap(['PIER 9'], { arrow: 1 });
+      // ([3rd owner] on the river road the pier is straight on: the arrow
+      // pointed right, toward the warehouses, while the shed showed ahead on
+      // the left)
+      const pier = signMap(['PIER 9'], { arrow: 2 });
       // (on a building's corner, high on the brick: x, z, the face's normal,
       // which way the arrow points)
       const at = [

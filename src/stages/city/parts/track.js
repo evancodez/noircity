@@ -110,6 +110,10 @@ export function makeTrack({ lots, columns, posts }) {
     rect(gx - 4.15, gx - 1.85, PIER.gate.z - 15.85, PIER.gate.z - 14.45, 'wall');
     rect(gx - 6.9, gx - 5.1, PIER.gate.z + 6.9, PIER.gate.z + 8.1, 'wall');
     for (let x = Y.x0 + 4; x < Y.x1 - 2; x += 4) addCircle(x, Y.z1 - 0.6, 0.21, 'post');
+    // [3rd owner] the lorry parked in the yard's west half, the stacks
+    const Lo = PIER.lorry, lc = Math.cos(Lo.yaw), ls = Math.sin(Lo.yaw);
+    addBox(Lo.x - 0.45 * lc, Lo.z + 0.45 * ls, 3.9, 1.22, Lo.yaw, 'truck');
+    for (const [x, z, hx, hz] of PIER.stacks) rect(x - hx, x + hx, z - hz, z + hz, 'wall');
   }
   // the el's columns
   for (const c of columns) addCircle(c.x, c.z, c.r, 'column');

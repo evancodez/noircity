@@ -575,7 +575,7 @@ export class Chase {
       G.emit('tail:horn', {});
     }
     // (E at the pier's gate is the getting out: toPier has it)
-    if (G.pressed('KeyE') && !(this.phase === 'c' && Math.hypot(my.pos.x - PIER.park.x, my.pos.z - PIER.park.z) < 11)) {
+    if (G.pressed('KeyE') && !(this.phase === 'c' && Math.hypot(my.pos.x - PIER.park.x, my.pos.z - PIER.park.z) < 14)) {
       const on = !(my.lamps && my.lamps.on);
       if (my.lamps) my.lamps.setOn(on);
       this.cabin.lampSwitch(on);
@@ -679,7 +679,9 @@ export class Chase {
     if (this.phase !== 'c') return;
     const G = this.game, v = this.my;
     const d = Math.hypot(v.pos.x - PIER.park.x, v.pos.z - PIER.park.z);
-    const here = d < 11 && v.speedAbs < 0.6;
+    // ([3rd owner] anywhere in the painted bay or near it, stopped or
+    // nearly: the critic found the stop hard to find)
+    const here = d < 14 && v.speedAbs < 0.9;
     if (here && !this.parked) G.hud.prompt('E  get out', null, 'tail');
     else if (!this.parked) G.hud.clearPrompt('tail');
     if (here && !this.parked && G.pressed('KeyE')) {

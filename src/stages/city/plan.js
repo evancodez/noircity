@@ -213,6 +213,12 @@ export const PIER = {
   shed: { x0: 142, x1: 205, z0: 166, z1: 190, h: 11 },
   freighter: { x0: 150, x1: 250, z: 201, beam: 13 },
   crane: { x: 178, z: 194 },
+  // [3rd owner] what stands in the yard's west half (the critic: 44 x 38 m of
+  // bare paving): a lorry parked along the west wall, crates stacked by the
+  // way in, timber by the water; and the loading bay painted where I stop
+  lorry: { x: 106.5, z: 181, yaw: Math.PI / 2 },
+  stacks: [[101.4, 165.5, 1.1, 1.3, 1.05], [101.4, 169.6, 1.1, 1.3, 2.1], [103.9, 165.5, 1.1, 1.3, 1.05], [113.5, 192.6, 2.4, 0.8, 0.9]],
+  bay: { x: 133, z: 176, hx: 3.4, hz: 1.7 },
 };
 export const BRIDGE = { x: NS.avenue.x, z0: -258, z1: -292 };   // the lift bridge, up
 export const CANAL = { z0: -258, z1: -296 };

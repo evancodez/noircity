@@ -39,9 +39,13 @@ function build(ctx, which) {
   if (which === 'start') {
     C.spawn({ my: { ...START.my, speed: 0 }, his: { ...START.his, speed: 0 }, leg: 0, phase: 'start' });
   } else if (which === 'chase2') {
-    // on Canal St, heading east for Baxter; he 30 m ahead
+    // on Canal St, heading east for Baxter; he 30 m ahead ([3rd owner] at 25
+    // km/h, not 40: the critic's player came out of the black straight into
+    // the Baxter turn too fast and met the van parked past its corner four
+    // retries running; now there are 70 m to brake for it, and he is near
+    // enough the corner to show it with his brake lamps)
     const z = EW.canal.z + lane;
-    C.spawn({ my: { x: NS.baxter.x - 70, z, yaw: 0, speed: 11 }, his: { x: NS.baxter.x - 38, z, yaw: 0, speed: 12 }, leg: 2, prev: 'avenue.canal', phase: 'a' });
+    C.spawn({ my: { x: NS.baxter.x - 70, z, yaw: 0, speed: 7 }, his: { x: NS.baxter.x - 40, z, yaw: 0, speed: 9 }, leg: 2, prev: 'avenue.canal', phase: 'a' });
     C.driver.state = 'go';
   } else if (which === 'river' || which === 'wreck' || which === 'pier') {
     // (phase b's checkpoint where phase b begins: the river road's north
