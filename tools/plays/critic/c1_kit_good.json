@@ -1,0 +1,11 @@
+{ "about": "Critic: the kit's test bed played well (aim at him, fire): two wins in a row, no fail.",
+  "url": "/?mute=1&start=kit", "size": [1440, 900], "out": "shots/critic/kit_good",
+  "steps": [
+    { "wait": 2500 },
+    { "clickOn": "#title .opt[data-k=begin]" },
+    { "until": "G.scenes.current && G.scenes.current.id === 'kit' && G.state === 'playing' && !G.stills.active", "timeout": 30000 },
+    { "wait": 1200 },
+    { "shoot": { "until": "(G.kitWins || 0) >= 2", "timeout": 90000, "shots": { "won1": "(G.kitWins||0) >= 1 && G.hud.objectiveText === 'Done.'", "won2": "(G.kitWins||0) >= 2" } } },
+    { "eval": "JSON.stringify({wins: G.kitWins, fails: G.fails('ready'), obj: G.hud.objectiveText, t: G.time})" },
+    { "expect": "(G.kitWins || 0) >= 2 && G.fails('ready') === 0" }
+  ] }
