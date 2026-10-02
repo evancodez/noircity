@@ -1,7 +1,6 @@
 import * as THREE from 'three';
 import { defineScene, wait, until, beat } from '../game/script.js';
 import { gunsOf } from '../guns/Guns.js';
-import { objective, teach, warn } from '../guns/kitStub.js';
 import { DESK, HOUSE } from '../stages/killhouse/plan.js';
 
 // The gun kit's test bed (lane C2): NOT a scene of the story (not in
@@ -152,6 +151,11 @@ export default defineScene({
   id: 'guns', stage: 'killhouse', title: '', name: 'The Killhouse',
   beats: ['ready', 'door', 'two_ways', 'pin', 'rush', 'street', 'street_rev', 'done', 'lab'],
   save: [],
+  // (each beat's line, set as it begins, a retry included; the ready beat's
+  // later lines are its script's)
+  objectives: { ...Object.fromEntries(Object.entries(BEATS).map(([k, b]) => [k, b.obj])), done: 'Every beat won. E: again.', lab: null },
+  // (going down in a contest is the kit's fall - its words, K.why() - and
+  // the warning before it is the kit's, K.warning(), set every step below)
   setup: { ...Object.fromEntries(['ready', 'door', 'two_ways', 'pin', 'rush', 'street', 'street_rev', 'done'].map((b) => [b, (ctx) => room(ctx, b === 'done' ? 'ready' : b)])), lab: (ctx) => lab(ctx) },
 
   *script(ctx) {
@@ -161,41 +165,34 @@ export default defineScene({
     // (a director's encounter while the scene lasts: the HUD shows the health in it)
     G.director.stop(); G.director.begin();
     G.director.run(function* () { while (G.scenes.ctx === ctx) yield null; });
-    const exitFn = () => { K.end(); G.off('scene:exit', exitFn); for (const n of ['c2objective', 'c2teach', 'c2warn']) G.hud.dropLayer(n); };
+    const exitFn = () => { K.end(); G.off('scene:exit', exitFn); ctx.hud.warn(null); };
     G.on('scene:exit', exitFn);
     // the doors: E opens and shuts them (a locked one rattles)
     const doorH = Object.entries(house.doors).map(([name, d]) => ({ d, h: ctx.interact.add({ id: 'door' + name, at: d.centre.clone().setY(1.1), range: 1.5, cone: 0.7, prompt: 'open', onUse: () => { if (d.shut) d.open(G.eye); else d.close(); } }) }));
     ctx.onStep(() => { for (const { d, h } of doorH) h.prompt = d.shut ? 'open' : 'shut'; });
-    // the warning before a fall: hurt with a man on me; the heavy close
-    ctx.onStep(() => {
-      if (!K.active || G.health.dead) return;
-      const heavy = (F.c2 ? F.c2.men : []).find((h) => h.alive && h.gunKind === 'rusher' && Math.hypot(h.pos.x - G.eye.x, h.pos.z - G.eye.z) < 4.2);
-      const through = K.lastKill && G.time - K.lastKill.t < 1.2 && K.lastKill.through && (C.crouchK || 0) > 0.5;
-      if (heavy) warn(G, 'Stop him!');
-      else if (through) warn(G, 'Your cover won\'t hold. Move!');
-      else if (G.health.hp < 45 && K.lineOnMe > 0) warn(G, (C.crouchK || 0) > 0.6 ? 'They have your angle. Move!' : 'Get down!');
-      else if (G.health.hp < 45) warn(G, null);
-      else warn(G, null);
-    });
+    // the warning before a fall: the kit's, for the moment (the heavy close,
+    // my cover shot through, hurt with a man on me, hurt and safe)
+    ctx.onStep(() => ctx.hud.warn(K.active ? K.warning() : null));
 
     // ---- ready: the teach -----------------------------------------------------------------------
     if (ctx.at('ready') && ctx.beat === 'ready') {
       yield beat('ready');
-      objective(G, BEATS.ready.obj);
-      const desk = house.desk;
+      const hud = ctx.hud, desk = house.desk;
       ctx.interact.add({ id: 'tip', at: V(DESK.x, DESK.h + 0.25, DESK.z), range: 2.1, cone: 0.85, prompt: 'tip the desk over', when: () => !desk.tip, onUse: () => {
         const dir = Math.sign(DESK.x - G.eye.x) || 1;
         if (desk.tipOver(dir)) ctx.interact.remove('tip');
       } });
       yield until(() => !!desk.tip && desk.tip.done);
-      teach(G, 'low', 'get low', { key: 'KeyC', until: () => (C.crouchK || 0) > 0.6 });
-      yield until(() => (C.crouchK || 0) > 0.6);
-      objective(G, 'Rise over it. Shoot the bottles.');
+      // (behind it: within a step of its back, on the side away from the door)
+      const behind = () => { const b = desk.back(), ax = (G.eye.x - b.x) * desk.dir; return Math.abs(G.eye.z - b.z) < 1.0 && ax < 0.15 && ax > -1.0; };
+      K.teach('crouch');
+      yield until(() => (C.crouchK || 0) > 0.6 && behind());
+      hud.objective('Rise over it. Shoot the bottles.');
       yield wait(0.4);
-      teach(G, 'rise', 'rise and aim', { key: 'Mouse2', until: () => (C.riseK || 0) > 0.7 });
+      K.teach('rise');
       yield until(() => house.teachBottles.filter((b) => b.h.broken).length >= 2 || G.time - F.c2.t0 > 60);
-      teach(G, 'reload', 'reload, down behind it', { key: 'KeyR', until: () => !!(ctx.player.weapons.active && ctx.player.weapons.active.reloading) });
-      objective(G, 'Reload behind the desk.');
+      hud.objective('Reload behind the desk.');
+      K.teach('reload');
       yield until(() => !!(ctx.player.weapons.active && ctx.player.weapons.active.reloading) || G.time - F.c2.t0 > 75);
       yield until(() => !(ctx.player.weapons.active && ctx.player.weapons.active.reloading));
       yield wait(0.8);
@@ -206,19 +203,26 @@ export default defineScene({
     const name = ctx.beat;
     if (name === 'done') {
       yield beat('done');
-      objective(G, 'Every beat won. E: again.');
       yield* ctx.prompt({ text: 'again', key: 'KeyE' });
       G.scenes.go('guns', { beat: 'door', fade: 'black', card: false });
       return;
     }
     if (!CONTESTS.includes(name)) return;
     yield beat(name);
-    objective(G, BEATS[name].obj);
-    yield until(() => alive() === 0);
+    // (failed it twice: the card that answers it, once more - the crouch;
+    // fails() is 2 for the one try after the second fall)
+    if (G.fails(name) === 2) K.teach('crouch', { again: true });
+    // (a beat played cold - ?start=guns.<beat> - teaches what it needs too:
+    // the cards come once per save, so after the ready beat these are nothing)
+    else K.teach('crouch');
+    let rose = false;
+    yield until(() => {
+      if (!rose && (C.crouchK || 0) > 0.6) { rose = true; K.teach('rise'); }
+      return alive() === 0;
+    });
     F.c2.won = true;
     (G._c2won || (G._c2won = [])).push(name);
-    objective(G, null);
-    warn(G, null);
+    ctx.hud.objective('Clear.');
     yield wait(1.8);
     G.scenes.go('guns', { beat: NEXT[name], fade: 'black', card: false });
   },

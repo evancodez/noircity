@@ -1,54 +1,194 @@
 {
- "about": "[C2] The test bed's teach (src/scenes/91_guns.js, beat ready) by real input: the desk over (E at its prompt), the teach card [C] get low and C, the card [RMB] rise and aim and RMB held (up over the desk), the bottles on the cabinet by the door shot, the card [R] reload and R down behind it, on to the door beat; each card shown once. node tools/play.mjs tools/plays/guns_teach.json",
+ "about": "[C2] The test bed's teach (src/scenes/91_guns.js, beat ready) by real input: the desk over (E at its prompt), the teach card [C] get low and C, up to the desk's back, the card [RMB] rise and aim and RMB held (up over the desk), the bottles on the cabinet by the door shot, the card [R] reload and R down behind it, on to the door beat; each card shown once. node tools/play.mjs tools/plays/guns_teach.json",
  "url": "/?mute=1&start=guns",
- "size": [1280, 800],
+ "size": [
+  1280,
+  800
+ ],
  "out": "shots/play/guns_teach",
  "steps": [
-  { "name": "the title, BEGIN at the test bed" },
-  { "until": "G.state === 'title' && !!document.querySelector('#title .opt[data-k=begin]')", "timeout": 60000 },
-  { "wait": 1500 },
-  { "clickOn": "#title .opt[data-k=begin]", "taken": "G.scenes.current && G.scenes.current.id === 'guns'", "retries": 4 },
-  { "until": "G.scenes.current && G.scenes.current.id === 'guns' && G.scenes.beat === 'ready' && document.pointerLockElement === N.renderer.domElement", "timeout": 30000 },
-  { "wait": 1200 },
-  { "name": "the desk: its prompt, E" },
-  { "look": [0, 160], "steps": 4 },
-  { "until": "G.hud.promptShown.includes('tip the desk')", "timeout": 6000 },
-  { "shot": "t01_tip_prompt" },
-  { "key": "KeyE" },
-  { "until": "G.stage.part('house').desk.tip && G.stage.part('house').desk.tip.done", "timeout": 5000 },
-  { "look": [0, -160], "steps": 4 },
-  { "name": "[C] get low" },
-  { "until": "(G._c2taught || []).includes('low')", "timeout": 4000 },
-  { "shot": "t02_teach_low" },
-  { "key": "KeyC" },
-  { "until": "N.controller.crouchK > 0.9", "timeout": 3000 },
-  { "name": "[RMB] rise and aim; onto the bottles on the cabinet" },
-  { "until": "(G._c2taught || []).includes('rise')", "timeout": 4000 },
-  { "shot": "t03_teach_rise" },
-  { "mouse": "down", "button": "right" },
-  { "until": "N.controller.riseK > 0.9", "timeout": 3000 },
-  { "look": "(() => { const b = G.stage.part('house').teachBottles.find(q => !q.h.broken); const p = new N.THREE.Vector3(); b.obj.getWorldPosition(p); p.y += 0.12; const e = G.eye, C = N.controller; const yw = Math.atan2(-(p.x - e.x), -(p.z - e.z)), pt = Math.atan2(p.y - e.y, Math.hypot(p.x - e.x, p.z - e.z)); const dy = Math.atan2(Math.sin(yw - C.yaw), Math.cos(yw - C.yaw)); return [Math.round(-dy / C.sensitivity), Math.round(-(pt - C.pitch) / C.sensitivity)]; })()", "steps": 6 },
-  { "wait": 300 },
-  { "shot": "t04_up_on_bottles" },
-  { "mouse": "click" },
-  { "wait": 450 },
-  { "look": "(() => { const b = G.stage.part('house').teachBottles.find(q => !q.h.broken); if (!b) return [0, 0]; const p = new N.THREE.Vector3(); b.obj.getWorldPosition(p); p.y += 0.12; const e = G.eye, C = N.controller; const yw = Math.atan2(-(p.x - e.x), -(p.z - e.z)), pt = Math.atan2(p.y - e.y, Math.hypot(p.x - e.x, p.z - e.z)); const dy = Math.atan2(Math.sin(yw - C.yaw), Math.cos(yw - C.yaw)); return [Math.round(-dy / C.sensitivity), Math.round(-(pt - C.pitch) / C.sensitivity)]; })()", "steps": 4 },
-  { "wait": 250 },
-  { "mouse": "click" },
-  { "wait": 450 },
-  { "look": "(() => { const b = G.stage.part('house').teachBottles.find(q => !q.h.broken); if (!b) return [0, 0]; const p = new N.THREE.Vector3(); b.obj.getWorldPosition(p); p.y += 0.12; const e = G.eye, C = N.controller; const yw = Math.atan2(-(p.x - e.x), -(p.z - e.z)), pt = Math.atan2(p.y - e.y, Math.hypot(p.x - e.x, p.z - e.z)); const dy = Math.atan2(Math.sin(yw - C.yaw), Math.cos(yw - C.yaw)); return [Math.round(-dy / C.sensitivity), Math.round(-(pt - C.pitch) / C.sensitivity)]; })()", "steps": 4 },
-  { "wait": 250 },
-  { "mouse": "click" },
-  { "wait": 500 },
-  { "expect": "G.stage.part('house').teachBottles.filter(q => q.h.broken).length >= 2", "label": "two of the bottles shot from over the desk" },
-  { "mouse": "up", "button": "right" },
-  { "name": "[R] reload, down behind it" },
-  { "until": "(G._c2taught || []).includes('reload')", "timeout": 4000 },
-  { "shot": "t05_teach_reload" },
-  { "key": "KeyR" },
-  { "until": "G.player.weapons.active.reloading", "timeout": 2000 },
-  { "until": "G.scenes.beat === 'door'", "timeout": 12000 },
-  { "expect": "G._c2taught.filter(i => i === 'low').length === 1 && G._c2taught.filter(i => i === 'rise').length === 1 && G._c2taught.filter(i => i === 'reload').length === 1", "label": "each card shown once" },
-  { "expect": "G.scenes.beat === 'door' && N.controller.mode === 'gun'", "label": "on to the door beat" }
+  {
+   "name": "the title, BEGIN at the test bed"
+  },
+  {
+   "until": "G.state === 'title' && !!document.querySelector('#title .opt[data-k=begin]')",
+   "timeout": 60000
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]",
+   "taken": "G.scenes.current && G.scenes.current.id === 'guns'",
+   "retries": 4
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'guns' && G.scenes.beat === 'ready' && document.pointerLockElement === N.renderer.domElement",
+   "timeout": 30000
+  },
+  {
+   "wait": 1200
+  },
+  {
+   "name": "the desk: its prompt, E"
+  },
+  {
+   "look": [
+    0,
+    160
+   ],
+   "steps": 4
+  },
+  {
+   "until": "G.hud.promptShown.includes('tip the desk')",
+   "timeout": 6000
+  },
+  {
+   "shot": "t01_tip_prompt"
+  },
+  {
+   "key": "KeyE"
+  },
+  {
+   "until": "G.stage.part('house').desk.tip && G.stage.part('house').desk.tip.done",
+   "timeout": 5000
+  },
+  {
+   "look": [
+    0,
+    -160
+   ],
+   "steps": 4
+  },
+  {
+   "name": "[C] get low"
+  },
+  {
+   "until": "(G.hud.kit.shown.crouch || 0) >= 1",
+   "timeout": 4000
+  },
+  {
+   "shot": "t02_teach_low"
+  },
+  {
+   "key": "KeyC"
+  },
+  {
+   "until": "N.controller.crouchK > 0.9",
+   "timeout": 3000
+  },
+  {
+   "name": "up to the desk's back, down"
+  },
+  {
+   "walk": [
+    [
+     -4.82,
+     -3.9
+    ]
+   ],
+   "timeout": 6000
+  },
+  {
+   "look": "(() => { const C = N.controller; const dy = Math.atan2(Math.sin(-Math.PI/2 - C.yaw), Math.cos(-Math.PI/2 - C.yaw)); return [Math.round(-dy / C.sensitivity), Math.round(-(-0.05 - C.pitch) / C.sensitivity)]; })()",
+   "steps": 4
+  },
+  {
+   "name": "[RMB] rise and aim; onto the bottles on the cabinet"
+  },
+  {
+   "until": "(G.hud.kit.shown.rise || 0) >= 1",
+   "timeout": 4000
+  },
+  {
+   "shot": "t03_teach_rise"
+  },
+  {
+   "mouse": "down",
+   "button": "right"
+  },
+  {
+   "until": "N.controller.riseK > 0.9",
+   "timeout": 3000
+  },
+  {
+   "look": "(() => { const b = G.stage.part('house').teachBottles.find(q => !q.h.broken); const p = new N.THREE.Vector3(); b.obj.getWorldPosition(p); p.y += 0.12; const e = G.eye, C = N.controller; const yw = Math.atan2(-(p.x - e.x), -(p.z - e.z)), pt = Math.atan2(p.y - e.y, Math.hypot(p.x - e.x, p.z - e.z)); const dy = Math.atan2(Math.sin(yw - C.yaw), Math.cos(yw - C.yaw)); return [Math.round(-dy / C.sensitivity), Math.round(-(pt - C.pitch) / C.sensitivity)]; })()",
+   "steps": 6
+  },
+  {
+   "wait": 300
+  },
+  {
+   "shot": "t04_up_on_bottles"
+  },
+  {
+   "mouse": "click"
+  },
+  {
+   "wait": 450
+  },
+  {
+   "look": "(() => { const b = G.stage.part('house').teachBottles.find(q => !q.h.broken); if (!b) return [0, 0]; const p = new N.THREE.Vector3(); b.obj.getWorldPosition(p); p.y += 0.12; const e = G.eye, C = N.controller; const yw = Math.atan2(-(p.x - e.x), -(p.z - e.z)), pt = Math.atan2(p.y - e.y, Math.hypot(p.x - e.x, p.z - e.z)); const dy = Math.atan2(Math.sin(yw - C.yaw), Math.cos(yw - C.yaw)); return [Math.round(-dy / C.sensitivity), Math.round(-(pt - C.pitch) / C.sensitivity)]; })()",
+   "steps": 4
+  },
+  {
+   "wait": 250
+  },
+  {
+   "mouse": "click"
+  },
+  {
+   "wait": 450
+  },
+  {
+   "look": "(() => { const b = G.stage.part('house').teachBottles.find(q => !q.h.broken); if (!b) return [0, 0]; const p = new N.THREE.Vector3(); b.obj.getWorldPosition(p); p.y += 0.12; const e = G.eye, C = N.controller; const yw = Math.atan2(-(p.x - e.x), -(p.z - e.z)), pt = Math.atan2(p.y - e.y, Math.hypot(p.x - e.x, p.z - e.z)); const dy = Math.atan2(Math.sin(yw - C.yaw), Math.cos(yw - C.yaw)); return [Math.round(-dy / C.sensitivity), Math.round(-(pt - C.pitch) / C.sensitivity)]; })()",
+   "steps": 4
+  },
+  {
+   "wait": 250
+  },
+  {
+   "mouse": "click"
+  },
+  {
+   "wait": 500
+  },
+  {
+   "expect": "G.stage.part('house').teachBottles.filter(q => q.h.broken).length >= 2",
+   "label": "two of the bottles shot from over the desk"
+  },
+  {
+   "mouse": "up",
+   "button": "right"
+  },
+  {
+   "name": "[R] reload, down behind it"
+  },
+  {
+   "until": "(G.hud.kit.shown.reload || 0) >= 1",
+   "timeout": 4000
+  },
+  {
+   "shot": "t05_teach_reload"
+  },
+  {
+   "key": "KeyR"
+  },
+  {
+   "until": "G.player.weapons.active.reloading",
+   "timeout": 2000
+  },
+  {
+   "until": "G.scenes.beat === 'door'",
+   "timeout": 12000
+  },
+  {
+   "expect": "G.hud.kit.shown.crouch === 1 && G.hud.kit.shown.rise === 1 && G.hud.kit.shown.reload === 1",
+   "label": "each card shown once"
+  },
+  {
+   "expect": "G.scenes.beat === 'door' && N.controller.mode === 'gun'",
+   "label": "on to the door beat"
+  }
  ]
 }

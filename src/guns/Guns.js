@@ -1,7 +1,6 @@
 import * as THREE from 'three';
 import { ATLAS } from '../fx/fxTextures.js';
 import { FIRE } from '../fx/fxTextures.js';
-import { stubTeach, fail as failKit } from './kitStub.js';
 import { Covers } from './Covers.js';
 import { GUNMAN } from '../enemies/brains/gunman.js';
 
@@ -18,7 +17,10 @@ import { GUNMAN } from '../enemies/brains/gunman.js';
 //   K.hoodRound(ai, aimAt, sigma, dmg)    a gunman's round, from his muzzle
 //   K.playerBody()                  the player's body as the rounds see it
 //   K.see(from, to)                 a clear line for the eyes (clear glass is seen through)
-//   K.teach(id, text, opts)         hud.teach (lane C1) or a stand-in
+//   K.teach('crouch' | 'rise' | 'reload', opts)   the kit's three cards (hud.teach,
+//        lane C1's: once per save; { again: true } once more after two fails)
+//   K.warning()                     the line before a fall, for this moment (or null):
+//        a scene sets it each step - ctx.hud.warn(K.warning())
 //
 // THE COVER KINDS (a stage sets them as data on its meshes:
 // mesh.userData.cover = { kind, hp }; the kit keeps their state there):
@@ -45,6 +47,10 @@ export const COVER = {
   // what a round of each takes off a wood section's hp
   chew: { revolver: 1.5, tommy: 1, pistol: 1, hoodTommy: 1 },
 };
+
+// the kit's three teach cards (WAVE_C §2's keys and words; ids shared with
+// the rest of the game: 'crouch' is lane C1's IV stand-in too)
+export const TEACH = { crouch: '[C] get low', rise: '[RMB] rise and aim', reload: '[R] reload' };
 
 // the player's body as the rounds and the eyes see it (m, from the eye)
 export const BODY = { head: 0.12, r: 0.24, crouchR: 0.3, chest: 0.36, belly: 0.72 };
@@ -89,8 +95,8 @@ export class Guns {
     if (!G.scripts.includes(this.stepFn)) G.scripts.push(this.stepFn);
     // the health's mending reads whether anyone has a line on me
     G.health.exposed = () => (this.lineOnMe > 0 ? 1 : 0);
-    // going down is the chapter's fail (lane C1's game.fail, or the stand-in):
-    // the fall, black, the reason in a few words, back at cfg.to (the beat)
+    // going down is the chapter's fail (lane C1's game.fail): the fall,
+    // black, the reason in a few words (K.why()), back at cfg.to (the beat)
     if (!this._death0) {
       this._death0 = G.health.onDeath;
       G.health.onDeath = () => this.down();
@@ -199,7 +205,7 @@ export class Guns {
     const why = this.why();
     this.events.push({ t: G.time, what: 'down', why });
     for (const ai of G.ais.values()) if (ai.brain && ai.brain.playerDown) ai.brain.playerDown();
-    failKit(G, { why, to: this.cfg.to || (G.scenes && G.scenes.beat), fall: true });
+    G.fail({ why, to: this.cfg.to || (G.scenes && G.scenes.beat), fall: true });
   }
   // (the stage changed under the men: the desk went over) their nav grid and cover
   rebuild() { if (this.onRebuild) this.onRebuild(); }
@@ -514,11 +520,36 @@ export class Guns {
     return W.open || 'Shot standing in the open.';
   }
 
-  // ---- the teach card (lane C1's, or a stand-in) ----------------------------------------------------------
-  teach(id, text, opts = {}) {
-    const H = this.game.hud;
-    if (typeof H.teach === 'function') return H.teach(id, text, opts);
-    return stubTeach(this.game, id, text, opts);
+  // ---- the teach cards (lane C1's hud.teach; the words are the rulebook's) ---------------------------------
+  // K.teach('crouch' | 'rise' | 'reload', { again, ...hud.teach's opts }) -> the card's handle.
+  // Once per save; `again: true` shows it once more (after two fails of it).
+  // The scene picks the safe second; the card goes when the thing is done.
+  teach(id, opts = {}) {
+    const G = this.game, H = G.hud, C = G.controller;
+    const W = () => G.player.weapons.active;
+    const T = TEACH[id];
+    if (!T || !H.teach) return null;
+    const until = { crouch: () => (C.crouchK || 0) > 0.6, rise: () => (C.riseK || 0) > 0.7, reload: () => !!(W() && W().reloading) }[id];
+    const { again = false, ...o } = opts;
+    return again ? H.teach.again(id, T, { until, ...o }) : H.teach(id, T, { until, ...o });
+  }
+
+  // ---- the warning before a fall (WAVE_C §1 rule 2), for this moment --------------------------------------
+  // what the player must do now, or null: the heavy is close; my cover is
+  // being shot through; hurt with a man who has me (down: he has my angle;
+  // standing: get down); hurt and safe: stay down while it mends. The kit's
+  // own low line (Game.lowStep) is under it.
+  warning() {
+    const G = this.game, C = G.controller, H = G.health, W = this.cfg.warn || {};
+    if (!this.active || H.dead || G.failing) return null;
+    const down = (C.crouchK || 0) > 0.5 && (C.riseK || 0) < 0.5;
+    for (const [h, ai] of G.ais) if (h.alive && ai.brain && ai.brain.kind === 'rusher' && Math.hypot(h.pos.x - G.eye.x, h.pos.z - G.eye.z) < 4.2 && !ai.brain.S.entry) return W.rush || 'Stop him!';
+    const L = this.lastKill;
+    if (L && G.time - L.t < 1.2 && L.through && down) return W.cover || 'Your cover won\u2019t hold. Move!';
+    const low = H.hp < 45 || (G.lowWarn && H.hp < 60);
+    if (low && this.lineOnMe > 0) return down ? (W.angle || 'They have your angle. Move!') : (W.open || 'Get down!');
+    if (low && down) return W.mend || 'Stay down. Let it mend.';
+    return null;
   }
 
   // ---- per step (game.scripts: before the controller and the men) -----------------------------------------

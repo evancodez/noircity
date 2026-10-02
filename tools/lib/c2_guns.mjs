@@ -50,10 +50,11 @@ export default async function drive({ js, turn, keyDown, keyUp, mouse, shot, log
       men.push({ id: h.slot, x: c.x, y: c.y, z: c.z, hy: hd.y, fx: h.pos.x, fz: h.pos.z, see: K && K.see(e, c, 0.3), seeH: K && K.see(e, hd, 0.2),
         kind: a.brain && a.brain.kind, st: S && S.state, line: !!(a.brain && a.brain.hasLine), entry: !!(S && S.entry), d: Math.hypot(c.x - e.x, c.z - e.z) });
     }
-    return { scene: sc.current && sc.current.id, beat: sc.beat, trans: !!sc.trans, fade: sc.fadeK, failing: !!G._c2failing, dead: G.health.dead, hp: G.health.hp,
+    const BEATS = ['door', 'two_ways', 'pin', 'rush', 'street', 'street_rev'];
+    return { scene: sc.current && sc.current.id, beat: sc.beat, trans: !!sc.trans, fade: sc.fadeK, failing: !!G.failing, dead: G.health.dead, hp: G.health.hp,
       x: C.pos.x, z: C.pos.z, ex: e.x, ey: e.y, ez: e.z, yaw: C.yaw, pitch: C.pitch, sens: C.sensitivity, mode: C.mode, ck: C.crouchK || 0, rk: C.riseK || 0, on: !!C.crouchOn,
       ammo: W ? W.ammo : 0, reloading: !!(W && W.reloading), gun: G.player.weapons.current, men, spots: F ? F.spots : [], open: F ? F.open : null, won: !!(F && F.won),
-      broke: K ? K.events.filter((q) => q.what === 'break' && G.time - q.t < 1.2 && q.at && Math.hypot(q.at[0] - e.x, q.at[1] - e.z) < 2.2).length : 0, wins: (G._c2won || []).length, fails: G._c2fails ? { ...G._c2fails } : {}, why: (G._c2why || []).slice(-1)[0] || null, warned: (G._c2warned || []).length, shots: G.counters.shots, hits: G.counters.hits, warn: G._c2warn || null };
+      broke: K ? K.events.filter((q) => q.what === 'break' && G.time - q.t < 1.2 && q.at && Math.hypot(q.at[0] - e.x, q.at[1] - e.z) < 2.2).length : 0, wins: (G._c2won || []).length, fails: Object.fromEntries(BEATS.map((b) => [b, G.fails(b, 'guns')])), why: G.lastFail ? G.lastFail.why : null, warnedFor: G.lastFail ? G.lastFail.warnedFor : null, nFails: G.counters.fails || 0, shots: G.counters.shots, hits: G.counters.hits, warn: G.hud.warnText || null };
   })()`;
   // the beat's cover spot hidden from the most men as they stand now (then the nearest)
   const BEST = `(() => { const G = N.game, K = G.guns, F = G.scenes.ctx && G.scenes.ctx.flags.c2, V = N.THREE.Vector3;
@@ -96,7 +97,7 @@ export default async function drive({ js, turn, keyDown, keyUp, mouse, shot, log
       await sleep(400);
       const t0 = Date.now();
       let s0 = await js(ST);
-      const fails0 = (s0.fails && s0.fails[beat]) || 0, shots0 = s0.shots, hits0 = s0.hits, wins0 = s0.wins;
+      const fails0 = s0.nFails, shots0 = s0.shots, hits0 = s0.hits, wins0 = s0.wins;
       const dbg = {}, noticed = new Map(), visAt = new Map(); let lastSeenAt = null, tellAt = 0, lastUp = Date.now(), upAt = 0, snapT = 0, target = null, seenAt = 0, onSpot = null, goTo = null, moveCool = 0, downUntil = 0, burstLeft = 0, lastShot = 0, warnedBefore = false, lowHp = 100, outThere = false, answerUntil = 0, answerId = null, traceT = 0;
       let end = null;
       while (!end) {
@@ -107,12 +108,12 @@ export default async function drive({ js, turn, keyDown, keyUp, mouse, shot, log
         if (opts.snaps && Date.now() - (snapT || 0) > opts.snaps * 1000) { snapT = Date.now(); await shot(`${rec.profile}_${beat}_${k}_${Math.round((Date.now() - t0) / 1000)}`); log(`snap ${JSON.stringify({ hp: Math.round(s.hp), ck: +s.ck.toFixed(2), rk: +s.rk.toFixed(2), on: s.on, x: +s.x.toFixed(2), z: +s.z.toFixed(2), ammo: s.ammo, men: s.men.map((m) => `${m.st}${m.line ? '!' : ''}${m.see ? '*' : ''}@${m.fx.toFixed(1)},${m.fz.toFixed(1)}`), dbg })}`); }
         if (s.warn) warnedBefore = true;
         if (Date.now() - t0 > beatTimeout) { end = { won: false, why: 'timeout', men: s.men.map((q) => `${q.kind}:${q.st}@${q.fx.toFixed(1)},${q.fz.toFixed(1)}`), hpMen: await js('[...N.game.ais.keys()].filter(h => h.alive).map(h => Math.round(h.hp))') }; break; }
-        if ((s.fails[beat] || 0) > fails0 || s.failing || s.dead) {
-          // the fall: wait for the reason and the way back
+        if (s.nFails > fails0 || s.failing || s.dead) {
+          // the fall (game.fail): the warning's time up before it, the reason, the way back
           await releaseAll();
+          const f = await js(ST);
           for (let w = 0; w < 30; w++) { const q = await js(ST); if (q && !q.failing && !q.dead && q.beat === beat && q.fade < 0.5) break; await sleep(250); }
-          const q = await js(ST);
-          end = { won: false, why: q.why, warned: warnedBefore || q.warned > 0 };
+          end = { won: false, why: f.why, warnedFor: f.warnedFor, warned: f.warnedFor != null && f.warnedFor >= 1 };
           break;
         }
         // (won: the scene's own record of it; a page that went back to the title is no win)
@@ -251,6 +252,7 @@ export default async function drive({ js, turn, keyDown, keyUp, mouse, shot, log
   rec.wonFirst = Object.values(rec.beats).filter((b) => b.wonFirst).length;
   rec.lost = Object.values(rec.beats).filter((b) => !b.won).length;
   rec.falls = all.filter((t) => !t.won).map((t) => t.why);
+  // (every fall had its warning up a second or more before it: WAVE_C §1 rule 2, seams/Z.md §3)
   rec.allWarned = all.filter((t) => !t.won && t.why !== 'timeout').every((t) => t.warned);
   void shot; void H;
   return rec;

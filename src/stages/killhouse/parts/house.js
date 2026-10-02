@@ -470,6 +470,8 @@ function buildDesk(stage, kit, mats, piece, C) {
       if (now) { this.tip.done = true; this.apply(Math.PI / 2); this.landed(); }
       return true;
     },
+    // (over: where its back is - the edge it went over on, the side I crouch at)
+    back() { return { x: Dk.x + this.dir * Dk.d / 2, z: Dk.z }; },
     apply(a) {
       pivot.rotation.z = -this.dir * a;
       this.tipped = a / (Math.PI / 2);
