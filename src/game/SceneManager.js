@@ -24,6 +24,19 @@
 //         from, at(beat), pressed(code), say, prompt, onStep(fn), flags,
 //         next(opts) }
 // A scene leaving drops the HUD's layers (hud.layer(name)).
+// [C1] wave C's kit (docs/story/seams/Z.md): a scene may declare
+//   objective: 'text' | objectives: { beat: 'text' }   the objective line
+//       (hud.objective), set when the scene is entered and when a beat of
+//       objectives begins; the chapter's stand-in (scenes/order.js) when the
+//       scene sets none; dropped when another scene is entered (a retry of the
+//       same scene keeps it)
+//   music / beatMusic   the music rule (Z.md §6, docs/story/MUSIC.md): the
+//       slot is cued on entering the scene or continuing into any of its beats,
+//       a beat of beatMusic cues its own as it begins; the next scene's
+//       declaration stops it unless it declares the same slot
+//   onDown: { why, to } | (ctx) => { why, to }   what health reaching zero does
+//       here (game.fail); else game.setCheckpoint's, else 'Down.' at the beat
+// and the chapter's carry / flags (order.js) go into the save on entering.
 // ctx.onStep(fn(dt, ctx)) runs fn every step while the scene lasts (what
 // lives under the beats: the room, a key that works all scene long).
 // ctx.from is the beat the scene was entered at; ctx.at(b) is true when the
@@ -54,7 +67,9 @@
 // this module loads the scene files)
 import { wait, keyLabel, ORDER } from './script.js';
 export { wait, until, beat, defineScene, keyLabel } from './script.js';
-const SCENE_MODS = import.meta.glob('../scenes/*.js', { eager: true });
+// [C1] (a file whose name starts with `_` is a helper or a parked scene, never
+// a scene: _diner_room.js, _body_cut.js)
+const SCENE_MODS = import.meta.glob(['../scenes/*.js', '!../scenes/_*.js'], { eager: true });
 
 const FADE = 0.6;
 
@@ -102,7 +117,10 @@ export class SceneManager {
     if (opts.beat && !def.beats.includes(opts.beat)) throw new Error(`scenes.go: '${id}' has no beat '${opts.beat}' (beats: ${def.beats.join(', ')})`);
     const fade = opts.fade ?? 'black';
     if (fade === 'cut' || this.game.shotMode) { this.trans = null; this.enter(def, opts); this.setFade(0); return; }
-    this.trans = { phase: 'out', t: 0, def, opts, fadeIn: opts.fadeIn ?? FADE };
+    // [C1] (from where the fade stands: already black - after the stills, a
+    // fail - it stays black, it never flashes the old picture; hold: seconds
+    // more of black after the scene is entered, before it comes up)
+    this.trans = { phase: 'out', t: 0, def, opts, fadeIn: opts.fadeIn ?? FADE, k0: this.fadeK, hold: opts.hold || 0 };
   }
 
   // no scene at all (the title): the script, its hooks and its prompts end
@@ -146,10 +164,19 @@ export class SceneManager {
       const H = G.hands;
       if (H.clips.some((c) => c.hold)) { H.clips = H.clips.filter((c) => !c.hold); H.keyMemo = null; H.snapshot(0.18); }
     }
+    // [C1] the kit: a retry of the same scene keeps its objective line, its
+    // fail counts and its checkpoint; another scene starts them afresh. A
+    // warning, a teach card and a fail's line never follow the player in.
+    const same = !!(this.current && this.current.id === def.id);
+    const K = G.hud.kit;
+    if (K) { K.warn(null, { now: true }); K.dismissTeach(); if (!same) K.objective(null, { now: true }); }
+    if (!same && G.kitReset) G.kitReset(def.id);
     const stage = G.enterStage(def.stage);
     const from = b || def.beats[0] || null;
     this.current = def;
     this.beat = from;
+    // [C1] what the detective carries by this chapter (order.js / def.carry)
+    carry(G.save, def);
     const ctx = this.makeCtx(def, stage, from, keep);
     this.ctx = ctx;
     // the room as the beat has it: setup puts every figure and the player
@@ -164,6 +191,14 @@ export class SceneManager {
       const a = stage.anchor(def.spawn.anchor);
       if (a) G.controller.setPose(a.pos.x, a.pos.z, a.yaw, 0);
     }
+    // [C1] the objective line as the beat has it (the setup may have set one
+    // itself), and the music the scene and the beat declare
+    if (K) {
+      const want = def.objectives && def.objectives[from];
+      if (want !== undefined) K.objective(want, { strike: false });
+      else if (!K.objectiveText && def.objective) K.objective(def.objective, { strike: false });
+    }
+    this.applyMusic(def, from, true);
     G.emit('scene:enter', { id: def.id });
     if (card !== false && (card === true || typeof card === 'string') && !G.shotMode) G.hud.card(def.title, typeof card === 'string' ? card : def.name);
     this.it = def.script ? def.script(ctx) : null;
@@ -217,11 +252,13 @@ export class SceneManager {
     if (T) {
       T.t += dt;
       if (T.phase === 'out') {
-        this.setFade(Math.min(1, T.t / FADE));
-        if (T.t >= FADE) { this.enter(T.def, { ...T.opts, card: T.opts.card ?? true }); T.phase = 'in'; T.t = 0; }
+        // [C1] (k0: the black it started from; 0 as it always was)
+        const k0 = T.k0 || 0, out = k0 >= 1 ? 0 : FADE * (1 - k0);
+        this.setFade(out > 0 ? k0 + (1 - k0) * Math.min(1, T.t / out) : 1);
+        if (T.t >= out) { this.enter(T.def, { ...T.opts, card: T.opts.card ?? true }); T.phase = 'in'; T.t = -(T.hold || 0); }
       } else {
         // (the fade in eases out: the room comes up out of the black)
-        const u = Math.min(1, T.t / T.fadeIn);
+        const u = Math.max(0, Math.min(1, T.t / T.fadeIn));
         this.setFade(1 - u * u * (3 - 2 * u));
         if (T.t >= T.fadeIn) this.trans = null;
       }
@@ -260,8 +297,53 @@ export class SceneManager {
   setBeat(name) {
     const def = this.current;
     if (def && !def.beats.includes(name)) throw new Error(`scene '${def.id}': no beat '${name}'`);
+    const was = this.beat;
     this.beat = name;
+    // [C1] a beat that has its own objective line or music begins
+    if (def && name !== was) {
+      const K = this.game.hud.kit;
+      if (K && def.objectives && def.objectives[name] !== undefined) K.objective(def.objectives[name]);
+      this.applyMusic(def, name, false);
+    }
     this.game.emit('scene:beat', { id: def.id, beat: name });
     if (def.save && def.save.includes(name) && !this.game.shotMode) this.game.save.write();
   }
+
+  // [C1] the music rule (seams/Z.md §6, docs/story/MUSIC.md "The rule"):
+  // entering a scene - a chapter's start, a CONTINUE, a retry, a jump - cues
+  // what it declares for that beat (its beatMusic's, else its music); a beat
+  // of beatMusic cues its own as it begins. A spec: 'slot' | { slot, fade } |
+  // null | { stop: fade } | 'room' (the scene plays its own: left alone) |
+  // undefined (not declared: left alone). Leaving a scene stops its slot only
+  // through the next scene's declaration (a slot of its own crossfades, the
+  // same slot plays on, null stops it); the title stops it (Game.toTitle).
+  musicFor(def, beatName) {
+    const bm = def.beatMusic;
+    if (bm && beatName && Object.prototype.hasOwnProperty.call(bm, beatName)) return bm[beatName];
+    return def.music;
+  }
+  applyMusic(def, beatName, entering) {
+    const G = this.game, M = G.music;
+    if (!M || G.shotMode) return;
+    const bm = def.beatMusic;
+    // (a beat with nothing of its own changes nothing as it begins)
+    if (!entering && !(bm && Object.prototype.hasOwnProperty.call(bm, beatName))) return;
+    const m = this.musicFor(def, beatName);
+    if (m === undefined || m === 'room') return;
+    if (m === null) { if (M.current) M.stop(2); return; }
+    if (typeof m === 'string') { M.cue(m, { fade: 2.5 }); return; }
+    if (m.slot) M.cue(m.slot, { fade: m.fade ?? 2.5 });
+    else if (m.stop != null) { if (M.current) M.stop(m.stop); }
+  }
+}
+
+// [C1] what the detective carries by a chapter's start (WAVE_C §4): the
+// chapter's carry and flags (scenes/order.js, or the scene's own) added to
+// the save where they are missing; nothing is ever taken away here
+function carry(save, def) {
+  if (!save) return;
+  const inv = save.inventory || (save.inventory = []);
+  for (const k of def.carry || []) if (!inv.includes(k)) inv.push(k);
+  const F = save.flags || (save.flags = {});
+  for (const [k, v] of Object.entries(def.flags || {})) if (F[k] === undefined) F[k] = v;
 }

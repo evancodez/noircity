@@ -24,7 +24,10 @@ const params = new URLSearchParams(location.search);
 const shotName = params.get('shot');
 // ?scene=<id>&beat=<name>: a story beat's frame (Shots.js sceneShot)
 const sceneName = params.get('scene');
-const shot = shotName ? getShot(shotName) : sceneName ? sceneShot(sceneName, params.get('beat')) : null;
+// [C1] ?still=<id>&panel=<n>: one page of a stills run, drawn as it would
+// stand with panels 0..n landed (shot mode; game/Stills.js)
+const stillName = params.get('still');
+const shot = shotName ? getShot(shotName) : sceneName ? sceneShot(sceneName, params.get('beat')) : stillName ? { name: 'still:' + stillName, t: 0, x: -7.3, z: 6.2, yaw: -0.2, pitch: 0.02 } : null;
 const shotMode = !!shot;
 // HUD: on in play unless hud=0; in shot mode only with hud=1
 const hudOn = shotMode ? params.get('hud') === '1' : params.get('hud') !== '0';
@@ -154,9 +157,17 @@ document.addEventListener('pointerlockchange', () => {
     sfx.pauseMix(false);
     if (game.state === 'title') { game.start(startFrom); chosen = null; }   // [R3] (the chapter picked is spent: BEGIN on a later title starts the story, not that chapter again)
   } else if (game.state === 'playing') {
+    // [C1] (under the stills the first ESC is the browser's - it lets the
+    // mouse go -: the page counts it as the first of the two that skip, and a
+    // click goes on; the pause card waits for the end of the run)
+    if (game.stills.active) { game.stills.lockLost(); return; }
     hud.showPause();
     sfx.pauseMix(true);
   }
+});
+// [C1] a stills run ended with the mouse let go: the pause card now
+game.on('stills:end', () => {
+  if (!shotMode && game.state === 'playing' && document.pointerLockElement !== renderer.domElement) { hud.showPause(); sfx.pauseMix(true); }
 });
 // the viewmodel: in play; in shot mode for the combat presets or vm=1
 // vmpos=x,y,z / vmrot=pitch,yaw,roll: viewmodel composition (look development)
@@ -260,6 +271,12 @@ if (params.get('card') === 'pause') hud.showPause();
 // card, the slice's end card, a subtitle, held over the frame
 if (params.get('card') === 'chapter') { hud.card('I', 'The Diner', 1e6); hud.tickCard(1.0); }
 if (params.get('card') === 'cont') hud.showEnd({ kind: 'cont' });
+// [C1] the stills' page (?still=<id>&panel=<n>) over the frame; obj=<text>,
+// warn=<text>, teach=<text> (with hud=1): the kit's lines held for a look
+if (stillName) game.stills.shot(stillName, parseInt(params.get('panel') ?? '0', 10) || 0);
+if (shotMode && params.get('obj')) hud.objective(params.get('obj'), { now: true });
+if (shotMode && params.get('warn')) { hud.warn(params.get('warn')); hud.kit.warnT = 1; hud.kit.applyWarn(); }
+if (shotMode && params.get('teach')) { hud.kit.teach('look', params.get('teach'), { secs: 1e6 }); hud.kit.tickTeach(0.5); }
 if (params.get('say')) hud.say(params.get('say'), 1e6);
 
 // gdbg=<n>: wet-street term debug (render/shaders/ground.js)
@@ -289,10 +306,16 @@ function frame(now) {
   last = now;
   const tA = performance.now();
   // in play, the fight pauses behind the "click to resume" card
-  const paused = !shotMode && !autoplay && game.state === 'playing' && document.pointerLockElement !== renderer.domElement;
+  const unlocked = !shotMode && !autoplay && game.state === 'playing' && document.pointerLockElement !== renderer.domElement;
+  // [C1] the stills' page: the game is held under it (its own clock is real time)
+  const stilled = game.stills.active;
+  const paused = unlocked || stilled;
+  if (stilled) game.stills.update(dt * speed);
+  if (!unlocked && !stilled) game.failUpdate(dt);
   if (animate && !paused) {
-    // (the last blow of the fight runs slow: game.timeScale)
-    acc += dt * game.timeScale * speed;
+    // (the last blow of the fight runs slow: game.timeScale; [C1] a held
+    // teach card crawls, a fail's black holds: game.crawl)
+    acc += dt * game.timeScale * game.crawl * speed;
     let n = 0;
     const cap = Math.ceil(6 * speed);
     while (acc >= STEP && n < cap) { simStep(STEP); acc -= STEP; n++; }
@@ -307,7 +330,8 @@ function frame(now) {
   pipeline.setLook(S.lookAt(camera.position));
   camera.updateMatrixWorld();
   game.vm.sync(camera);
-  pipeline.render(S.scene, camera, simTime);
+  // [C1] (nothing of the frame shows under the stills' page: it is not drawn)
+  if (!game.stills.opaque && !game.stills.shotOpaque) pipeline.render(S.scene, camera, simTime);
   game.hudUpdate(dt);
   if (sfx.live) sfx.update(dt, { fires: S.cars ? S.cars.fires : NO_FIRES, hp: game.health.hp, dead: game.state === 'dead', listener: camera });
   const tC = performance.now();
@@ -338,7 +362,10 @@ function writeCounters() {
     particles: game.fx.liveParticles, ffMs: Math.round(ffMs), rays: game.rays.stats.rays, rayMs: +game.rays.stats.ms.toFixed(1),
     states: game.world.hoods.list.map((h) => (h.alive ? (game.ais.get(h)?.state || h.state) : 'dead')).join(','),
     scene: game.scenes.current ? game.scenes.current.id : null, beat: game.scenes.beat, mode: controller.mode, hands: game.hands.set,
-    fight: game.brawl.state, play: +(game.scenes.playTime || 0).toFixed(1), prompt: hud.promptShown, say: hud.sayShown, flags: game.scenes.ctx ? plainFlags(game.scenes.ctx.flags) : null };
+    fight: game.brawl.state, play: +(game.scenes.playTime || 0).toFixed(1), prompt: hud.promptShown, say: hud.sayShown, flags: game.scenes.ctx ? plainFlags(game.scenes.ctx.flags) : null,
+    // [C1] the kit's state for the plays
+    objective: hud.objectiveText, warn: hud.warnText, teach: hud.kit.teachCur ? hud.kit.teachCur.id : null, stills: game.stills.run ? game.stills.run.id : null,
+    failing: game.failing ? game.failing.phase : null, music: game.music.current };
   counterEl.dataset.json = JSON.stringify(K);
 }
 writeCounters();

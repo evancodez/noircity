@@ -20,6 +20,7 @@ import { Exposure } from './Exposure.js';
 import { Save } from './Save.js';
 import { Music } from '../audio/Music.js';
 import { Vehicles } from '../vehicles/index.js';
+import { Stills } from './Stills.js';
 
 // The game: the player (Controller + Tommy gun + Health), the Hoods' AI,
 // the encounter director (game/Director.js), combat resolution (the
@@ -93,6 +94,14 @@ export class Game {
     this.puzzles = new Puzzles(this);
     this.scenes = new SceneManager(this);
     this.brawl = new Brawl(this);
+    // [C1] wave C's kit (docs/story/seams/Z.md): the stills player, the fail,
+    // the checkpoints and the fail counts; the HUD's lines read the game
+    this.stills = new Stills(this);
+    this.failing = null;       // a fail under way (fail())
+    this.failCounts = new Map();
+    this.checkpoint = null;    // { beat, why } for health reaching zero
+    this.crawl = 1;            // a held teach card's slow time (main.js)
+    hud.game = this;
     // hit feel (the brawl): steps the simulation skips (a hit stop), and a
     // slow-motion scale on the real-time loop (main.js)
     this.hitStop = 0;
@@ -336,14 +345,17 @@ export class Game {
 
   // in play and in the fight: the gun works, the Hoods' rounds can hit
   // (legacyWaves' lull safes them)
-  get live() { return this.state === 'playing' && !this.director.lull; }
+  get live() { return this.state === 'playing' && !this.director.lull && !this.failing; }
 
   // ---- lifecycle ---------------------------------------------------------------
   // the title leads into the story's first scene: the diner (a fade from
   // black and the chapter card)
   // from: a save ({ scene, beat, flags, inventory }) to continue from, or
   // main.js's ?start=<id>[.<beat>] ({ scene, beat }: no flags, no inventory)
-  start(from = null) {
+  // [C1] BEGIN (from null) plays the opening stills first, over black, then
+  // the diner comes up out of the black under its card; not a CONTINUE, not a
+  // chapter picked, not ?start= (opts.stills false skips them too)
+  start(from = null, { stills = true } = {}) {
     if (this.state !== 'title') return;
     this.state = 'playing';
     this.controller.frozen = false;
@@ -353,6 +365,19 @@ export class Game {
     // one left on the place the title stands in (after THE END, scene 9's
     // blood and bullet holes all over the block) go
     this.fx.clear();
+    // [C1] (what played over the last night's end goes with it)
+    if (this.music.current) this.music.stop(1.2);
+    this.failCounts.clear();
+    if (!from && stills && this.stills.has('opening')) {
+      this.save.flags = {};
+      this.save.inventory = [];
+      this.scenes.setFade(1);
+      this.stills.play('opening', { onDone: () => {
+        if (this.state !== 'playing' || this.scenes.current) return;
+        this.scenes.go('diner', { fade: 'black', card: true, fadeIn: 2.5 });
+      } });
+      return;
+    }
     if (from && from.scene && this.scenes.get(from.scene)) {
       this.save.flags = { ...(from.flags || {}) };
       this.save.inventory = [...(from.inventory || [])];
@@ -370,6 +395,10 @@ export class Game {
   // back to the title card (after the slice's end card): the diner across
   // the street, CONTINUE offered
   toTitle() {
+    // [C1] (the end's music, or any, does not play on over the title)
+    if (this.music.current) this.music.stop(2);
+    if (this.stills.active) this.stills.finish(true);
+    this.failing = null; this.crawl = 1; this.hud.setFailing(false); this.hud.kit.failLine(null);
     this.scenes.stop();
     this.brawl.stop();
     this.brawl.finished = false;
@@ -403,6 +432,16 @@ export class Game {
       this.health.hp = 60;
       return;
     }
+    // [C1] in the story, going down is the chapter's fail: a short fall,
+    // black, the scene's own words, back at its checkpoint (seams/Z.md §3)
+    const S = this.scenes;
+    if (S.current && this.state === 'playing' && !this.shotMode) {
+      const def = S.current;
+      let spec = typeof def.onDown === 'function' ? def.onDown(S.ctx) : def.onDown;
+      if (!spec && this.checkpoint) spec = { why: this.checkpoint.why, to: this.checkpoint.beat };
+      this.fail({ why: 'Down.', to: S.beat, fall: true, ...(spec || {}) });
+      return;
+    }
     this.state = 'dead';
     this.weapon.trigger = false;
     this.controller.frozen = true;
@@ -428,6 +467,113 @@ export class Game {
     const S = this.scenes;
     if (S.current) S.go(S.current.id, { beat: S.beat, fade: 'black', card: false });
     else this.controller.setPose(-7.3, 6.2, -0.2, 0.02);
+  }
+
+  // ---- [C1] the fail: the one way a chapter loses (docs/story/seams/Z.md §3) -------
+  // game.fail({ why, to, fall, keepWorld, hold })
+  //   why        a few words on the black ('Lost him.', 'They saw you.')
+  //   to         the beat to go back to (default: the current one); the world
+  //              as that beat's setup makes it
+  //   fall       the short fall of a man shot (0.9 s: the eye sinks and tips),
+  //              else a hard stop (the frame holds and goes to black)
+  //   keepWorld  the scene keeps its own Hoods, shots in flight and marks (its
+  //              setup sets them); by default they go with the black
+  //   hold       seconds of the words on the black (default 1.3)
+  // Under ten seconds from the fail to control (a fall about 3.3 s, a stop
+  // 2.4 s). Counted per beat: game.fails(beat). Health reaching zero calls it
+  // with the scene's onDown, else game.setCheckpoint's, else 'Down.'.
+  fail({ why = '', to = null, fall = false, keepWorld = false, hold = 1.3 } = {}) {
+    const S = this.scenes;
+    if (this.failing || this.shotMode || !S.current) return false;
+    const def = S.current;
+    const beat = to && def.beats.includes(to) ? to : S.beat;
+    if (to && !def.beats.includes(to)) console.warn(`game.fail: '${def.id}' has no beat '${to}' (back to '${S.beat}')`);
+    const key = def.id + ':' + S.beat;
+    this.failCounts.set(key, (this.failCounts.get(key) || 0) + 1);
+    this.counters.fails = (this.counters.fails || 0) + 1;
+    this.failing = { why, to: beat, fall, keepWorld, hold, t: 0, phase: fall ? 'fall' : 'stop', from: S.beat, id: def.id };
+    S.trans = null;
+    this.controller.frozen = true;
+    this.weapon.trigger = false;
+    this.vm.lowerTo(1);
+    this.hud.clearPrompt();
+    this.hud.kit.warn(null);
+    this.hud.kit.dismissTeach();
+    this.crawl = 1;
+    if (fall) {
+      // (lifted from scenes 5 and 9: the eye sinks to the floor and tips)
+      const C = this.controller, P = C.eyePose();
+      this.failing.pose = P;
+      C.setMode('cutscene', { track: (t) => {
+        const u = Math.min(1, t / 0.9), e = u * u;
+        return { x: P.x, y: P.y + (0.35 - P.y) * e, z: P.z, yaw: P.yaw + 0.3 * e, pitch: P.pitch + (0.5 - P.pitch) * e };
+      } });
+      this.sfx.play('grunt', null, { f0: 80, k: 0.5, dur: 0.3 }, { send: false });
+      this.sfx.play('f_bodyFloor', this.eye);
+    } else {
+      // (the hard stop: the world holds where it is)
+      this.crawl = 0;
+    }
+    this.sfx.play('kit_fail', null, {}, { send: false });
+    this.emit('fail', { why, to: beat, from: S.beat, scene: def.id });
+    return true;
+  }
+  // how often the player has failed a beat of this scene (default: the current)
+  fails(beatName = null, sceneId = null) {
+    const S = this.scenes;
+    const id = sceneId || (S.current && S.current.id);
+    return this.failCounts.get(id + ':' + (beatName || S.beat)) || 0;
+  }
+  // where health reaching zero sends the player in this scene, and the words
+  setCheckpoint(beatName, why = 'Down.') { this.checkpoint = { beat: beatName, why }; }
+  // (a scene other than the last: its counts and checkpoint start afresh)
+  kitReset() { this.failCounts.clear(); this.checkpoint = null; }
+
+  // the fail's timeline, per rendered frame in real time (the game may be
+  // held still under it): the fall, the black, the words, up again
+  failUpdate(dt) {
+    const F = this.failing;
+    if (!F) return;
+    const S = this.scenes, K = this.hud.kit;
+    F.t += dt;
+    if (F.phase === 'fall' || F.phase === 'stop') {
+      const t0 = F.phase === 'fall' ? 0.9 : 0.12, dur = F.phase === 'fall' ? 0.3 : 0.28;
+      const u = Math.max(0, Math.min(1, (F.t - t0) / dur));
+      S.setFade(Math.max(S.fadeK, u));
+      if (u >= 1) {
+        // black: the world as the beat's setup has it, under the black
+        F.phase = 'black'; F.t = 0;
+        this.crawl = 0;
+        this.hud.setFailing(true);
+        K.failLine(F.why);
+        const def = S.current;
+        if (!F.keepWorld) {
+          for (const h of [...this.world.hoods.list]) this.removeHood(h);
+          this.corpses.length = 0;
+          this.pending.length = 0;
+          this.director.stop();
+          this.fx.clear();
+        }
+        if (this.brawl.active) this.brawl.stop();
+        this.health.reset();
+        this.vm.lowerTo(0, true);
+        // (up off the floor: where he stood, for a setup that does not place him)
+        const C = this.controller;
+        if (F.pose && C.mode === 'cutscene') C.setPose(F.pose.x, F.pose.z, F.pose.yaw, 0, F.pose.y - 1.63);
+        this.controller.frozen = false;
+        if (this.sfx.hush) this.sfx.hush(0.4);
+        if (def) S.enter(def, { beat: F.to, card: false });
+        // (the scene's setup may have frozen him again for its own reasons)
+        S.setFade(1);
+      }
+    } else if (F.phase === 'black') {
+      K.failK(Math.min(1, F.t / 0.25) * Math.min(1, Math.max(0, (F.hold + 0.25 - F.t) / 0.3)));
+      if (F.t >= F.hold + 0.25) { F.phase = 'up'; F.t = 0; this.crawl = 1; K.failLine(null); this.hud.setFailing(false); }
+    } else if (F.phase === 'up') {
+      const u = Math.min(1, F.t / 0.7);
+      S.setFade(1 - u * u * (3 - 2 * u));
+      if (u >= 1) { this.failing = null; S.setFade(0); this.emit('fail:back', { scene: F.id, beat: F.to }); }
+    }
   }
 
   // ---- Hoods -------------------------------------------------------------------

@@ -476,6 +476,9 @@ export default defineScene({
       const mb = mack() && mack().items.get('matchbook');
       if (mb) mb.visible = false;
       if (!G.save.inventory.includes('matchbook')) G.save.inventory.push('matchbook');
+      // [C1] (wave C: Ames's card, crossed through in red, is in his waistcoat too;
+      // lane C4 stages the find - for now it is pocketed with the matchbook)
+      if (!G.save.inventory.includes('amesCard')) G.save.inventory.push('amesCard');
       ctx.flags.pocketed = true;
       G.save.write();
       yield wait(0.8);

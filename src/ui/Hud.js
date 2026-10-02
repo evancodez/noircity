@@ -1,5 +1,6 @@
 import { RNG } from '../util/rng.js';
 import { setBrush, frayEdges, drawInkSplat, makeTornStroke, makeKeyDab, makeTick, hashSeed } from './inkArt.js';
+import { KitUi } from './kit.js';
 
 // DOM overlay: the in-game HUD and the ink cards (Phase 3b presentation,
 // the story pass). Monochrome and ink-styled (DESIGN.md §8); the only colour
@@ -28,6 +29,12 @@ import { setBrush, frayEdges, drawInkSplat, makeTornStroke, makeKeyDab, makeTick
 //            "To be continued" (the end of the slice); no counters
 //     pause  pointer lock lost: the frame dims under a smaller card,
 //            "click to resume", a settings line (mouse, volume, subtitles)
+//   [C1] wave C's kit (ui/kit.js; the contract: docs/story/seams/Z.md)
+//     objective  hud.objective(text | null): a few words top left, brushed
+//                in, then quiet
+//     teach      hud.teach(id, '[SPACE] vault', opts) -> handle: one card, the
+//                key as a key cap, once per save; hud.teach.again(id)
+//     warn       hud.warn(text | null): centre low, the line before a loss
 // Hidden entirely in ?shot= mode unless hud=1 (shot=title / shot=end show
 // their card). Every timer runs on game time (tick), never on the page's.
 const KEYS = 'WASD walk · mouse look · E use · F smoke · M sound · ESC pause';
@@ -269,7 +276,26 @@ export class Hud {
     this.msgT = 0;
     this.paused = false;
     this.epiRng = null;       // (shot mode: a seeded epitaph)
+    // [C1] the kit's lines (ui/kit.js): the objective, the teach card, the
+    // warning, the fail's words on the black. hud.game is set by the Game
+    // (a teach card reads the save and the keys)
+    this.game = null;
+    this.kit = new KitUi(this);
+    this.teach = (id, text, opts) => this.kit.teach(id, text, opts);
+    this.teach.again = (id, text, opts) => this.kit.teachAgain(id, text, opts);
+    this.teach.dismiss = () => this.kit.dismissTeach();
   }
+
+  // [C1] the objective line: a few words, top left (null clears it);
+  // opts { strike = true, now = false } (ui/kit.js)
+  objective(text, opts) { this.kit.objective(text, opts); }
+  get objectiveText() { return this.kit.objectiveText; }
+  // [C1] the warning that comes before a loss (null: the danger has passed)
+  warn(text, opts) { this.kit.warn(text, opts); }
+  get warnText() { return this.kit.warnText; }
+  // [C1] the HUD's lines go under the stills' page and under a fail's black
+  setStilled(on) { this.root.classList.toggle('stilled', !!on); }
+  setFailing(on) { this.root.classList.toggle('failing', !!on); }
 
   // the table of contents behind CHAPTERS: [{ id, numeral, title, ready }]
   // (a chapter without a scene file yet is listed, dimmed)
@@ -432,6 +458,7 @@ export class Hud {
   tick(dt) {
     if (this.sayT > 0) { this.sayT -= dt; if (this.sayT <= 0) this.el.say.style.display = 'none'; }
     this.tickCard(dt);
+    this.kit.tick(dt);   // [C1]
   }
   // shot mode: every CSS animation and transition stops where it starts, so
   // a card in a screenshot never depends on when the page loaded

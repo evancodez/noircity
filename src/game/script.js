@@ -12,10 +12,15 @@ export const beat = (name) => ({ kind: 'beat', name });
 // a scene's definition with its defaults (see game/SceneManager.js); its
 // chapter card's numeral (title) and name come from the story's order
 // (src/scenes/order.js) unless it gives its own
+// [C1] (and the chapter's kit defaults: its stand-in objective line, its
+// music and beatMusic, what the detective carries by then - order.js; a key
+// the scene gives itself wins, docs/story/seams/Z.md)
 export function defineScene(def) {
   if (!def.id) throw new Error('defineScene: an id');
   const O = ORDER.find((o) => o.id === def.id);
-  return { stage: 'block', title: O ? O.numeral : '', name: O ? O.title : '', beats: [], setup: {}, save: [], spawn: null, ...def };
+  const kit = {};
+  if (O) for (const k of ['objective', 'music', 'beatMusic', 'carry', 'flags']) if (Object.prototype.hasOwnProperty.call(O, k)) kit[k] = O[k];
+  return { stage: 'block', title: O ? O.numeral : '', name: O ? O.title : '', beats: [], setup: {}, save: [], spawn: null, ...kit, ...def };
 }
 
 // a key's name for a prompt ('KeyE' -> 'E')
