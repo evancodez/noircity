@@ -248,8 +248,8 @@ export class FightCards {
       for (const [a, l] of [[-1.05, 0.75], [-0.55, 1.0], [-0.05, 0.75]]) {
         const ang = -Math.PI / 2 + (a + 0.55) * k.s * -1;
         const dx = Math.cos(ang), dy = Math.sin(ang);
-        const r0 = 34 * K, len = (12 + 20 * l * grow) * K;
-        stroke(k.x + dx * r0, k.y + dy * r0, k.x + dx * (r0 + len), k.y + dy * (r0 + len), 5 * K);
+        const r0 = 44 * K, len = (18 + 30 * l * grow) * K;
+        stroke(k.x + dx * r0, k.y + dy * r0, k.x + dx * (r0 + len), k.y + dy * (r0 + len), 7 * K);
       }
       g.globalAlpha = 1;
     }

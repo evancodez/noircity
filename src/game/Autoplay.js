@@ -134,7 +134,8 @@ export class Autoplay {
       this.walkTo(B, d, kind === 'throw' ? 3.0 : 1.4);
       const open = B.openSides();
       if (['jabL', 'jabR', 'guard', 'hold'].includes(kind) && this.t >= this.lessonAt && !busyHands && me.act === 'idle' && d < 1.75 && him.state === 'move') {
-        if (kind === 'hold') { if (open) { this.hold(r.chance(0.5) ? 'Mouse0' : 'Mouse2', r.range(0.66, 0.92)); this.lessonAt = this.t + 1.4; } return; }
+        // ([C4] 'clicker': a man who only ever clicks - the HOLD card lets him go)
+        if (kind === 'hold') { if (open) { if (style === 'clicker') { this.tap(r.chance(0.5) ? 'Mouse0' : 'Mouse2'); this.lessonAt = this.t + 0.45; } else { this.hold(r.chance(0.5) ? 'Mouse0' : 'Mouse2', r.range(0.66, 0.92)); this.lessonAt = this.t + 1.4; } } return; }
         if (open) { this.tap(arm(open[0])); this.lessonAt = this.t + r.range(0.7, 1.1); return; }
         // (the guard up: a punch into it, as a first-timer would)
         if (kind === 'guard' && !L.bounced) { this.tap(r.chance(0.5) ? 'Mouse0' : 'Mouse2'); this.lessonAt = this.t + 1.0; }
@@ -352,7 +353,7 @@ export class Autoplay {
       const big = him.state === 'stun' || him.missT > 0.35;
       // (in a hurry to punish a miss the hold is short; a stunned man waits
       // for the second or third tick)
-      if (big && r.chance(0.55) && this.every('hard', 0.6, 1.0)) this.hold(arm(s), him.state === 'stun' ? r.range(0.62, 0.88) : r.range(0.42, 0.62));
+      if (big && style !== 'clicker' && r.chance(0.55) && this.every('hard', 0.6, 1.0)) this.hold(arm(s), him.state === 'stun' ? r.range(0.62, 0.88) : r.range(0.42, 0.62));
       else this.tap(arm(s));
       this.seenAt = this.t + r.range(0.18, 0.3);
       return;
