@@ -1,4 +1,4 @@
-# The fist fight — design, version 5
+# The fist fight — design, version 5.1
 
 The user played version 4 in the Wave B playtest (2026-10-02) and asked to
 keep the fight and tighten it (`docs/story/WAVE_C.md` §6 II, lane C4's brief
@@ -19,6 +19,16 @@ what he felt:
 - **The room clears round me** at the start; **the street door is barred**
   while we fight and pushed open after; **on the man in the street**, Ames's
   card crossed through in red (§1, §9).
+
+**Version 5.1** (after the cold player, `docs/story/reports/wave-c/C4_CRITIC.md`):
+the lesson never waits on one right action (§7); the heavy's card says what
+to do and its wind-up sits in the frame under his face (§3); a clumsy
+first-timer is told in words what to change, gets the block's and the
+opening's cards again, and a written mercy after repeated downs in one of his
+manners, so medium hands get through (§8); his small blows' tell is drawn at
+his fist (§4); a slip is judged by where my feet got to (§5); the warning
+goes with his fall; the way out after the last blow is shown wherever I stand
+(§9).
 
 When this document and an older one disagree, this one wins.
 
@@ -90,7 +100,10 @@ and either button swings it at once (held: a bigger swing).
   jabs as soon as I can (up to 0.35 s later). Damage **3**.
 - **The wind-up.** The button still held when the jab is home (**0.34 s**: a
   loaded machine stretches some presses, and a 280 ms click must never load),
-  the same fist comes back cocked and loads in three levels as the hold
+  the same fist comes back cocked - **up by my jaw, in the lower middle of the
+  frame under his face** (5.1: version 5 drew it back and down into the bottom
+  corner, missed by a player watching him; `player/clips/c4.js c4wind*`) - and
+  loads in three levels as the hold
   passes **0.42, 0.62 and 0.82 s**: at each the fist snaps back a step further,
   a white ink tick flicks out at the fist and stays, a rising knock, the view
   leans back; at full the fist flashes. Let go before the first level: the
@@ -113,8 +126,11 @@ and either button swings it at once (held: a bigger swing).
 
 As version 4: two sides; a punch into a raised side is blocked and about
 three times in four answered at once from that side (a 0.2 s tell; contact
-0.28 s after my punch). His answer and his jab have **no dodge cue**: the
-body's tell alone (a cue on every jab made the fight a quick-time event).
+0.28 s after my punch; less often after repeated downs: §8). His answer and
+his jab have **no dodge cue** (a cue on every jab made the fight a quick-time
+event), but (5.1) **their tell is drawn**: as the fist cocks, three short white
+strokes flick out round it for a fifth of a second (`FightCards.tellMark`) -
+his jab, his cross, his answer, a feint. Blocked with SPACE they do nothing.
 **Pounded** (three punches into his guard in 1.5 s) he answers every time, and
 with that fast straight - version 4 answered pounding with a hook, and a hook
 now comes with the dodge cue: a masher who slipped it was handed the opening.
@@ -140,7 +156,8 @@ and its first break, every thrown thing, a room's blow marked `cue` or of kind
   instant I act or the window closes. Sound: a held breath drawn in, a rising
   tick, the room ducked (`f_c4cue`).
 - **The window**: **0.34 s of real time** (`CUE.window`; 0.46 in the lesson
-  after its first, which is held). Measured in-page: the reader (0.13 .. 0.24
+  after its first, which is held); 5.1: 0.05 s more after each down that the
+  black called `Too slow.`, at most 0.2 s more (`MERCY.cue`). Measured in-page: the reader (0.13 .. 0.24
   s to react) answers nearly all; the struggling first-timer (0.2 .. 0.42 s,
   the wrong way three times in ten) about half.
 - **The cue on the frame**: ink, not UI. The side the blow comes from goes
@@ -160,8 +177,11 @@ and its first break, every thrown thing, a room's blow marked `cue` or of kind
   dark side at its tell, so the light side leaves it and the dark side does
   not, and the side is the one with room (away from its hand first).
 - **The answer**: A or D toward the light inside the window is a clean slip:
-  the blow goes by where my head was (whatever the room let my feet do), he is
-  open (his miss table) and my next blow is a counter (half again). The wrong
+  the blow goes by where my head was, he is open (his miss table) and my next
+  blow is a counter (half again). 5.1: unless the room stopped my feet - a
+  hop toward the light that a wall or the counter cut short (under half of its
+  way) is no slip, and the blow is judged where I stand (`Brawl.hopBlocked`;
+  the black: `No room. Get off the wall.`). The wrong
   side, or late, and it lands (into a swing a quarter harder, as ever). S, the
   block, a punch, E end the slowdown and the old rules judge.
 - **Taught**: the first cue of a save, wherever it comes (the lesson's first
@@ -192,17 +212,25 @@ One card at a time, low in the frame. Blows in the lesson do half damage and
 | 1 | lowers his right hand | `HIS GUARD IS DOWN   LEFT CLICK` | my left jab lands |
 | 2 | lowers the other | `RIGHT CLICK` | my right jab lands |
 | 3 | guard up; answers my first punch into it (slowed) | `GUARD UP: HE ANSWERS A PUNCH INTO IT.   WAIT FOR AN OPENING` | a hand drops and I land one |
-| 4 | both hands down | `HOLD ON AFTER THE JAB: IT LOADS.   LET GO` | a hard punch of level 2 or 3 lands |
+| 4 | both hands down | `KEEP IT PRESSED: IT LOADS.   LET GO TO HIT` (5.1) | a hard punch of level 2 or 3 lands |
 | 5 | a right hook: the dodge cue, **held** | the kit's `[A] [D] dodge toward the light` | it misses |
 | 6 | the same from his left: the cue, its lesson window | - | it misses |
 | 7 | takes a plate, backs off, throws it: the cue on the plate | - | it misses me |
-| 8 | jabs | `SPACE   BLOCK` | I block one |
+| 8 | jabs | `SPACE   HOLD TO BLOCK HIS JAB` (5.1) | I block one |
 | 9 | backs off; a bottle slides down the counter | `E   GRAB WHAT IS IN REACH` | 3 s or a grab |
 
 Then `NOW FIGHT.` **The lesson is never a wall**: caught three times in one
 of its blows' steps, the step lets me go; hands off for twelve seconds, he has
 waited long enough and the fight is on. Pinned with me on top of him, he
-throws from where he is.
+throws from where he is. **5.1: no step waits on one right action**
+(`BrawlLesson PATIENCE`): pressing, but not what the card asks, the step
+flashes what it wants once (`KEEP IT PRESSED` at the fourth press of the HOLD
+step) and lets me go after ten presses or fifteen seconds; a step whose blow
+never came (he was kept busy, I stood on him) lets me go after its fifteen
+seconds. The fight teaches what was let go: the heavy's card at his first
+opening worth it (stunned, or open after a miss) for a man who has never
+loaded a punch, the block's after his jab put me down. A clicker who never
+holds was walled in at the HOLD card for seven minutes in version 5.
 
 ## 8. The open fight
 
@@ -216,16 +244,39 @@ up whole, a life spent pounding his guard paid for as before). Version 5 adds:
   down unwarned**: a blow that would take the last of me while the warning has
   not been up a second leaves one, and puts it up (measured: every down of the
   idle and the clumsy proofs warned 1.9 to 12.5 s before).
-- **The black says in a word what went wrong** (the kit's lettering, the HUD's
-  lines and his bar off it): `Too slow.` (a cued blow not answered), `Wrong
-  way.` (answered toward the dark), `Caught swinging.` (hit while punching),
-  `Into his guard.` (his answer), else `Down.`. The black is 1.6 s.
+- **The black says what went wrong, and what to change** (5.1; the kit's
+  lettering, the HUD's lines and his bar off it), by cause in this order:
+  `No room. Get off the wall.` (a slip the room stopped), `Too slow.` (a cued
+  blow not answered), `Wrong way.` (answered toward the dark), `Into his
+  guard. Wait for an opening.` (his answer to a punch into his guard),
+  `Caught swinging. Hit when he’s open.` (hit while punching), `Block his
+  jab.` (his jab or cross, not blocked), `Get out of the big ones.` (a big
+  blow taken, or blocked when it breaks the block), else `Down.`. The black is
+  1.6 s. Version 5 said `Down.` for his jab and `Caught swinging.` for his
+  answer.
+- **The cards again** (5.1): as the black lifts after his jab put me down, the
+  kit's `[SPACE] hold to block his jab` (once a save - a lesson let go or a
+  save begun at Pier 9 never saw it - and again after every two more such
+  downs); after his answer or a blow that caught me punching, `[LMB] [RMB] hit
+  only where his guard is down`. After two downs off a cued blow, the dodge
+  card at the next cue (version 5).
+- **A written mercy** (5.1, `Brawl.js MERCY`): for each down in his present
+  manner (up to three, and one for every three in his manners before) that
+  was not a life spent pounding his guard, he answers a punch into his guard
+  less often (0.75 → 0.55 → 0.35 → 0.15 of the time), presses a blow that
+  found me less often, breathes and stays open after a miss a quarter longer
+  each, and waits 0.15 s more between his blows; I come up whole from the
+  second such down in a manner (was the third). It wins nothing by itself: a
+  man who stands there still takes every blow as hard, a man who pounds his
+  guard is answered every time.
 
 ## 9. The finish, and after
 
 The finish as version 4 (out on his feet at 12 %, he reels to the nearer
 window; a loaded punch or a thing is the last; the card at the window says
-so: `OUT ON HIS FEET.   HOLD ON AFTER THE JAB: IT LOADS.   LET GO`).
+so: `OUT ON HIS FEET.   KEEP IT PRESSED, LET GO TO HIT`). 5.1: the warning
+goes with his fall (it stayed through the reel, the KO and out on the
+pavement: the fight's last step put it back up after the fight had stopped).
 
 **The street door** (`stages/block/parts/dinerFront.js`, version 5) is a push
 door opening outward onto the pavement on its closer. From inside it is
@@ -246,18 +297,29 @@ open by me so that it cannot slam and the bar cannot drop.
 **After the last blow** the objective says `See to him.` Two ways out:
 
 - **The door**: E at the bar (`lift the bar`: the right hand closes on it and
-  lifts it up onto its keeper), then walk into the door.
+  lifts it up onto its keeper), then walk into the door. 5.1: the prompt shows
+  wherever I look at the door, from up against it to 2.5 m back (it sits on
+  the point of the leaf my view crosses); walked into after the last blow, the
+  door shows the prompt, not `Barred.`.
 - **Over the sill** of the bay he went through: SPACE (`climb out`) - a hand
   on the sill, up and over the riser, down on the pavement beside him (not
-  over him). The broken bay is no walk-through: the sill and riser stand (the
-  old hole in the wall's collider is gone).
+  over him). 5.1: the prompt wherever I stand at the broken bay (in the hole,
+  at chest height, in front of me), so at the end of the last blow, looking
+  down at him, SPACE takes me out; never onto him (a body's width off where
+  he lies). The broken bay is no walk-through: the sill and riser stand.
+- **The room after** (5.1, WAVE_C §1 rule 7): the docker (`Not my fight,
+  mister.`), Dot, who gets up from behind the counter (`You’d better go.
+  They’ll send more.`), the cook in his hatch (`Kitchen’s closed.`, his bell)
+  answer E; the jukebox plays its next record; a stool walked into turns.
 
 **On him** (`outside`, `matchbook`): E search; the red matchbook (THE
 CARDINAL, the black bird), E; folded in it **Ames's card** comes out and turns
 over in my fingers - `J. AMES`, `PRIVATE INVESTIGATIONS`, `HARBOR BLDG. RM
 304`, crossed through in the crew's red with a grease pencil, the print
-reading through the wax (prop `amesCard`, `props/kinds/c4.js`). E puts both
-away; the objective writes in `Harbor Building. Room 304.`; the still
+reading through the wax (prop `amesCard`, `props/kinds/c4.js`). 5.1: in the
+right hand's fingers by its edge (`c4readCard`: brought up with its back to
+me and turned over), never hung in the air; its face unlit, so every word and
+the cross read under the lamp. E puts both away; the objective writes in `Harbor Building. Room 304.`; the still
 `AMES. MARKED.`; chapter III. The two far shots (the Body's) are gone.
 
 ## 10. One fight system, two rooms

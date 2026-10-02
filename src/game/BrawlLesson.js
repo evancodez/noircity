@@ -36,10 +36,11 @@ export const LESSON = [
 const LAST = LESSON.length - 1;
 // [C4] after the critic (B1): no step waits on one right action. A step not
 // done in `PATIENCE.secs`, or after `PATIENCE.presses` inputs that did not do
-// it, lets me go to the next (the fight teaches the rest: the block's and the
-// heavy's cards come again there); a step that asks for a press nudges once,
-// half way, with what it wants. Hands off, the lesson is cut at 12 s as before.
-export const PATIENCE = { secs: 15, presses: 10, nudgeAt: 4 };
+// it (and at least `pressSecs` in it), lets me go to the next (the fight
+// teaches the rest: the block's and the heavy's cards come again there); a
+// step that asks for a press flashes what it wants at the fourth and the
+// tenth press. Hands off, the lesson is cut at 12 s as before.
+export const PATIENCE = { secs: 15, presses: 16, pressSecs: 8, nudgeAt: [4, 10] };
 
 export class Lesson {
   constructor(B, step = 1) {
@@ -134,8 +135,8 @@ export class Lesson {
     // the step lets me go; a step that never came to its blow (he was kept
     // busy, I stood on him) lets me go after its time)
     const pressed = (B.inputN || 0) - this.inputs0;
-    if (S.nudge && !this.nudged && pressed >= PATIENCE.nudgeAt && !B.cue) { this.nudged = true; B.cards.flash(S.nudge, 1.6); }
-    if (!B.cue && !this.pending && ((this.t > PATIENCE.secs) || (pressed >= PATIENCE.presses && !S.attack && this.t > 4))) {
+    if (S.nudge && !B.cue && PATIENCE.nudgeAt.includes(pressed) && this.nudged !== pressed) { this.nudged = pressed; B.cards.flash(S.nudge, 1.6); }
+    if (!B.cue && !this.pending && ((this.t > PATIENCE.secs) || (pressed >= PATIENCE.presses && !S.attack && this.t > PATIENCE.pressSecs))) {
       B.stats.lessonLetGo = (B.stats.lessonLetGo || 0) + 1;
       (B.stats.lessonPassed || (B.stats.lessonPassed = [])).push(S.kind);
       if (S.kind === 'hold') B.heavyUntaught = true;

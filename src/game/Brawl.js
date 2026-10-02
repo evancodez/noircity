@@ -265,6 +265,10 @@ export class Brawl {
     if (this.downWhy) { this.game.hud.kit.failLine(null); this.downWhy = null; if (this.game.hud.setFailing && !this.game.failing) this.game.hud.setFailing(false); }
     this.active = false;
     this.lesson = null;
+    // ([C4] the fight's blows are over: the kit's own warning ('You’re hit.')
+    // must not read the fight's last blow as a hit in the last second - at
+    // Pier 9 it came up over 'Get to the diner.')
+    if (this.game.health) this.game.health.sinceHit = 99;
     const C = this.controller;
     C.slip = 0;
     C.brawlBounds = null;
@@ -2295,7 +2299,10 @@ export class Brawl {
       const pounding = rate > BRAWL.pound;
       const key = pounding ? 'pounding' : 'mannerDowns';
       const MD = this.stats[key] || (this.stats[key] = {}); MD[m] = (MD[m] || 0) + 1;
-      const back = Math.min(BRAWL.manners[m] * this.max / 100, this.him.hp + BRAWL.retryBack * (pounding ? MD[m] : 1) * this.max / 100);
+      // ([C4] B3, the mercy: a man who keeps getting up without pounding his
+      // guard keeps more of what he did - half of it back at the first down
+      // in a manner, none after)
+      const back = Math.min(BRAWL.manners[m] * this.max / 100, this.him.hp + BRAWL.retryBack * (pounding ? MD[m] : MD[m] <= 1 ? 0.5 : 0) * this.max / 100);
       const left = Math.max(0.05, BRAWL.down - me.downT);
       G.health.reset();
       G.health.hp = !pounding && MD[m] >= MERCY.whole ? BRAWL.meHp : BRAWL.retryHp;   // ([C4] whole from the second such down: was the third)
