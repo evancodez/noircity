@@ -40,6 +40,7 @@ export class WindowGun {
   }
 
   dispose() {
+    this.chase.kit.aimMark(0);
     if (DRIVE.gun && DRIVE.gun.prop) DRIVE.gun.prop.visible = false;
     if (this.key) this.key.intensity = 0;
     DRIVE.aim = 0;
@@ -72,6 +73,7 @@ export class WindowGun {
     DRIVE.aim = this.aimK;
     if (C.drive) { C.drive.lean = this.aimK; C.drive.aim = this.aimK > 0.5; }
     this.show(this.aimK > 0.25);
+    ch.kit.aimMark(this.aimK);
     this.cool = Math.max(0, this.cool - dt);
     if (DRIVE.gun) DRIVE.gun.kick = Math.max(0, (DRIVE.gun.kick || 0) - dt / 0.16);
     if (this.reloadT > 0) { this.reloadT -= dt; if (this.reloadT <= 0) { const n = Math.min(6 - this.rounds, this.pocket); this.rounds += n; this.pocket -= n; } }
@@ -84,6 +86,7 @@ export class WindowGun {
     const C = this.game.controller;
     if (C.drive) { C.drive.lean = this.aimK; C.drive.aim = false; }
     this.show(this.aimK > 0.25);
+    this.chase.kit.aimMark(this.aimK);
   }
   startReload() {
     if (this.pocket <= 0) return false;

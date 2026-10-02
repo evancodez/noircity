@@ -104,7 +104,9 @@ export class His {
   drive(v, dt) {
     this.t += dt;
     const I = v.input;
-    if (this.state === 'wait' || this.state === 'stopped') { I.throttle = 0; I.brake = 1; I.steer = 0; I.handbrake = 0; return; }
+    // (at the kerb, or stopped: his foot holds the brake - he does not roll
+    // back onto my bonnet)
+    if (this.state === 'wait' || this.state === 'stopped') { I.throttle = 0; I.brake = 1; I.steer = 0; I.handbrake = 0; I.hold = 1; return; }
     if (this.state === 'lost') { this.crashing(v, dt); return; }
     const P = this.pilot;
     P.o.pace = this.pace * (this.duck > 0 ? 0.72 : 1) * (this.control < 1 ? 0.85 + 0.15 * this.control : 1);
@@ -147,6 +149,7 @@ export class His {
     I.throttle = this.lostT < 0.9 ? 0.7 : 0;
     I.brake = this.lostT > 1.3 ? 0.5 : 0;
     I.handbrake = this.lostT < 0.6 ? 1 : 0;
+    I.hold = 1;
   }
 }
 

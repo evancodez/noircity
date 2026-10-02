@@ -27,7 +27,7 @@ export function run(W, v, secs, input, every = 0.25) {
   const dt = 1 / 60, out = [];
   let t = 0, next = 0;
   for (let i = 0; i < secs * 60; i++) {
-    Object.assign(v.input, { throttle: 0, brake: 0, steer: 0, handbrake: 0 }, input(t, v));
+    Object.assign(v.input, { throttle: 0, brake: 0, steer: 0, handbrake: 0, hold: 0 }, input(t, v));
     v.step(dt);
     for (const o of W.vehicles.list) if (o !== v) o.step(dt);
     W.game.time += dt; t += dt;
@@ -71,6 +71,16 @@ const TESTS = {
     return { rMax, t63: t63 && +(t63.t - 0.1).toFixed(2) };
   },
   // the handbrake at 40 with the wheel over: how far round, how fast after
+  // [2nd owner] S from a stop: how far back in 0.5, 1 and 1.5 s (backing off
+  // a parked car's bumper); a held brake (the city's drivers) never moves
+  reverse() {
+    const W = makeWorld(); const v = W.spawn('coupe', 0, 0, 0, 0);
+    const o = run(W, v, 1.6, () => ({ brake: 1 }), 0.05);
+    const at = (tt) => o.find((r) => r.t >= tt);
+    const W2 = makeWorld(); const h = W2.spawn('sedan', 0, 0, 0, 0);
+    const o2 = run(W2, h, 3, () => ({ brake: 1, hold: 1 }), 0.5);
+    return { m05: at(0.5).x, m10: at(1.0).x, m15: at(1.5).x, kmh15: at(1.5).kmh, held3s: o2[o2.length - 1].x };
+  },
   handbrake() {
     const res = {};
     for (const kmh of [30, 40, 50]) {

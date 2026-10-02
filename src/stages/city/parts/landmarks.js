@@ -169,9 +169,29 @@ export default {
       kit.piece();
       const yd = [];
       for (let x = Y.x0 + 4; x < Y.x1 - 2; x += 4) yd.push(lathe([[0, 0], [0.2, 0], [0.16, 0.12], [0.14, 0.4], [0.19, 0.48], [0, 0.52]], 12).translate(x, PAVE, Y.z1 - 0.6));
-      yd.push(new THREE.CylinderGeometry(0.9, 0.9, 1.2, 18).rotateX(Math.PI / 2).translate(gx - 6, 0.9, PIER.gate.z + 7.5));
-      for (let k = 0; k < 4; k++) yd.push(roundedBox(1.1, 1.0, 1.1, 0.04, 1).translate(gx - 3 - (k % 2) * 1.2, 0.5 + Math.floor(k / 2) * 1.0, PIER.gate.z - 6 - (k % 2) * 0.3));
+      // [2nd owner] the cable drum: two planked flanges, the cable wound
+      // between them in turns, an iron hub, the cable's end run out over
+      // the stones (it read as one flat grey disc by the rail, in the
+      // chapter's last frame); the crates battened and cornered
+      const dx = gx - 6, dy = 0.9, dz = PIER.gate.z + 7.5;
+      const ir = [];
+      for (const sz of [-1, 1]) {
+        yd.push(new THREE.CylinderGeometry(0.9, 0.9, 0.08, 22).rotateX(Math.PI / 2).translate(dx, dy, dz + sz * 0.58));
+        for (const yy of [-0.42, 0, 0.42]) yd.push(new THREE.BoxGeometry(Math.sqrt(Math.max(0.05, 0.81 - yy * yy)) * 2 - 0.08, 0.035, 0.03).translate(dx, dy + yy, dz + sz * 0.635));
+        ir.push(new THREE.TorusGeometry(0.2, 0.05, 6, 14).translate(dx, dy, dz + sz * 0.64));
+        ir.push(new THREE.CylinderGeometry(0.13, 0.13, 0.06, 10).rotateX(Math.PI / 2).translate(dx, dy, dz + sz * 0.64));
+      }
+      ir.push(new THREE.CylinderGeometry(0.64, 0.64, 1.08, 22).rotateX(Math.PI / 2).translate(dx, dy, dz));
+      for (let k = 0; k < 6; k++) ir.push(new THREE.TorusGeometry(0.645, 0.032, 5, 26).translate(dx, dy, dz - 0.45 + k * 0.18));
+      ir.push(tube([V3(dx + 0.15, dy + 0.62, dz + 0.3), V3(dx + 0.7, dy + 0.45, dz + 0.4), V3(dx + 1.2, 0.06, dz + 0.5), V3(dx + 2.4, 0.04, dz + 0.1), V3(dx + 3.3, 0.04, dz - 0.6)], 0.032, 6, 24));
+      for (let k = 0; k < 4; k++) {
+        const cx0 = gx - 3 - (k % 2) * 1.2, cy0 = 0.5 + Math.floor(k / 2) * 1.0, cz0 = PIER.gate.z - 6 - (k % 2) * 0.3;
+        yd.push(roundedBox(1.1, 1.0, 1.1, 0.04, 1).translate(cx0, cy0, cz0));
+        for (const yy of [-0.38, 0.38]) yd.push(new THREE.BoxGeometry(1.15, 0.12, 1.15).translate(cx0, cy0 + yy, cz0));
+        for (const [sx, sz] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) yd.push(new THREE.BoxGeometry(0.11, 0.98, 0.11).translate(cx0 + sx * 0.53, cy0, cz0 + sz * 0.53));
+      }
       kit.addMerged(yd, K.timber);
+      kit.addMerged(ir, K.iron);
     }
 
     yield;

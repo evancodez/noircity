@@ -135,9 +135,11 @@ export default defineScene({
       ctx.flags.check = 'pier';
       yield beat('pier');
       yield until(() => C.phase === 'parked');
-      yield wait(0.6);
+      // (the head turns to the shed's doors - chase.js - a beat on them,
+      // the door, the cut)
+      yield wait(0.9);
       G.sfx.play('tail_door', null, { open: true });
-      yield wait(0.5);
+      yield wait(0.7);
       G.music.stop(2);
       ctx.next();
     }

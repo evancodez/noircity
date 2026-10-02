@@ -41,6 +41,10 @@ export const CAR_SPECS = {
 // the damage steps (v.damage crosses each): what the eye sees of them is
 // the scene's (a lamp out, the bonnet up and steaming, the wheel pulling)
 export const DAMAGE = { steps: [1, 2, 3], wreck: 4 };
+// S held at a stop: the breath before it reverses (s), and the reverse's
+// pull (x the engine's): quick enough to back off a parked car's bumper in
+// a second (2nd owner: 0.3 s and 0.6 took two seconds of S to move a metre)
+const REV_BREATH = 0.2, REV_K = 0.95;
 
 let NEXT_ID = 1;
 
@@ -61,7 +65,7 @@ export class Car {
     this.steer = 0;            // the wheel's eased turn, -1 .. 1 (+ left)
     this.delta = 0;            // the front wheels' angle (rad, + left)
     this.accel = 0; this.lat = 0; this.slide = 0;
-    this.input = { throttle: 0, brake: 0, steer: 0, handbrake: 0 };
+    this.input = { throttle: 0, brake: 0, steer: 0, handbrake: 0, hold: 0 };
     this.driver = null;
     this.s = 0; this.d = 0;    // (the old track's: unused on the plane)
     this.roll = 0; this.pitch = 0; this.rollV = 0; this.pitchV = 0; this.heave = 0; this.heaveV = 0;
@@ -172,11 +176,16 @@ export class Car {
     ax += drive;
     if (th > 0 && u < -0.4) ax += th * S.brake;                 // (W while rolling back: a brake)
     let braking = 0;
-    // (stopped on the brake, a breath, then S reverses)
+    // (stopped on the brake, a breath, then S reverses - a man's foot on the
+    // brake: the drivers of the city's cars hold it (input.hold) and never
+    // roll back into the car behind; only the player's S, or a driver who
+    // means to back off a thing, reverses)
+    const hold = !!I.hold;
     this.stopT = br > 0 && th === 0 && Math.abs(u) < 0.4 ? (this.stopT || 0) + dt : u < -0.4 ? 9 : 0;
     if (br > 0) {
       if (u > 0.4) braking = br * S.brake;
-      else if (th === 0 && u > -S.rev && this.stopT > 0.3) ax -= br * S.accel * 0.6;
+      else if (hold) { if (u < -0.4) braking = br * S.brake; }
+      else if (th === 0 && u > -S.rev && this.stopT > REV_BREATH) ax -= br * S.accel * REV_K;
     }
     if (braking) ax -= braking * Math.sign(u);
     if (hb && Math.abs(u) > 0.3) ax -= Math.sign(u) * S.hbBrake;
@@ -230,7 +239,7 @@ export class Car {
       w *= 1 - kin;
     }
     // (a stop is a stop: the brake does not push it backwards)
-    if (br > 0 && th === 0 && Math.abs(u) < 0.4 && this.stopT <= 0.3) u = 0;
+    if (br > 0 && th === 0 && Math.abs(u) < 0.4 && (this.stopT <= REV_BREATH || hold)) u = 0;
     if (!th && !br && Math.abs(u) < 0.12) u = 0;
     this.yaw += r * dt;
     this.yawRate = r;
@@ -458,7 +467,7 @@ export class Car {
     this.touchT = this.touch ? 0 : (this.touchT ?? 9) + dt;
     // (stood on the brake against a thing is a stop, not a wedge: only a
     // wish to go - the throttle, or S held past the breath that reverses)
-    const stuck = this.touchT < 0.3 && (th > 0 || (br > 0 && (this.stopT || 0) > 0.3)) && moved < 0.8;
+    const stuck = this.touchT < 0.3 && (th > 0 || (br > 0 && !this.input.hold && (this.stopT || 0) > REV_BREATH)) && moved < 0.8;
     this.pinT = stuck ? (this.pinT || 0) + dt : Math.max(0, (this.pinT || 0) - dt * 2);
     if (this.pinT < 0.35) return;
     const st = clamp(this.input.steer, -1, 1);

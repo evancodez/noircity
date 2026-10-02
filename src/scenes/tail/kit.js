@@ -21,16 +21,53 @@ const CSS = `
     text-shadow: 0 0 8px #000, 0 0 2px #000; white-space: nowrap; pointer-events: none; display: none; }
   .c3card .n { display: block; font-size: 13px; letter-spacing: 0.5em; margin-bottom: 6px; }
   .c3card .t { display: block; font-size: 15px; letter-spacing: 0.42em; text-transform: uppercase; }
+  .c3veil { position: absolute; inset: 0; background: #000; opacity: 0; display: flex; align-items: center; justify-content: center; }
+  .c3veil span { font-size: 22px; letter-spacing: 0.34em; color: #efede7; text-transform: uppercase; opacity: 0; text-shadow: 0 0 8px #000; }
+  .c3aim { position: absolute; left: 50%; top: 50%; width: 6px; height: 6px; margin: -3px 0 0 -3px; border-radius: 50%;
+    background: #f1eee7; box-shadow: 0 0 0 1.5px #000, 0 0 5px rgba(0,0,0,0.9); opacity: 0; pointer-events: none; }
 `;
+
+// [2nd owner] the fail's black (until C1's game.fail): the frame goes to
+// black, the why is lettered on it and held long enough to read (it was a
+// subtitle over a fade that came back up in under a second), then the cut
+// to the checkpoint under the black and the room fades up out of it. Module
+// state: the veil outlives the Chase that failed (the new one's kit steps
+// it on). Its own layer, above the objective line.
+const VEIL = { out: 0.45, hold: 1.15, in: 0.75 };
+let veil = null;
+function veilStep(G, dt) {
+  if (!veil) return;
+  const V = veil;
+  V.t += dt;
+  const el = V.el, sp = el.firstChild && el.firstChild.firstChild;
+  const smooth = (u) => { u = Math.max(0, Math.min(1, u)); return u * u * (3 - 2 * u); };
+  if (V.phase === 'out') {
+    el.firstChild.style.opacity = smooth(V.t / VEIL.out).toFixed(3);
+    if (V.t >= VEIL.out) { V.phase = 'hold'; V.t = 0; }
+  } else if (V.phase === 'hold') {
+    el.firstChild.style.opacity = '1';
+    if (sp) sp.style.opacity = smooth(V.t / 0.25).toFixed(3);
+    if (V.t >= VEIL.hold) {
+      V.phase = 'in'; V.t = 0;
+      // (under the black: the cut back to the checkpoint)
+      G.scenes.go('tail', { beat: V.to, fade: 'cut', card: false });
+    }
+  } else {
+    el.firstChild.style.opacity = (1 - smooth(V.t / VEIL.in)).toFixed(3);
+    if (sp) sp.style.opacity = (1 - smooth(V.t / 0.3)).toFixed(3);
+    if (V.t >= VEIL.in) { el.firstChild.style.opacity = '0'; veil = null; }
+  }
+}
+export function failing() { return !!veil; }
 
 export function makeKit(G) {
   const H = G.hud;
-  let el = null, warnText = null, teachT = 0, teachUntil = null, objFresh = 0, cardT = 0, cardDur = 0;
+  let el = null, warnText = null, teachT = 0, teachUntil = null, objFresh = 0, cardT = 0, cardDur = 0, aimShown = 0;
   const layer = () => {
     if (el && el.isConnected) return el;
     el = H.layer('c3kit');
     if (!document.getElementById('c3kitcss')) { const st = document.createElement('style'); st.id = 'c3kitcss'; st.textContent = CSS; document.head.appendChild(st); }
-    el.innerHTML = '<div class="c3obj"></div><div class="c3warn"></div><div class="c3teach"></div><div class="c3card"><span class="n"></span><span class="t"></span></div>';
+    el.innerHTML = '<div class="c3obj"></div><div class="c3warn"></div><div class="c3teach"></div><div class="c3card"><span class="n"></span><span class="t"></span></div><div class="c3aim"></div>';
     return el;
   };
   const q = (c) => layer().querySelector(c);
@@ -69,6 +106,17 @@ export function makeKit(G) {
       w.style.display = text ? 'block' : 'none';
     },
     get warning() { return warnText; },
+    // [2nd owner] the revolver out of the window: the round goes down the
+    // eye's line, and the barrel (out at arm's length, low and left) is not
+    // on it - a small mark at the frame's middle while the arm is out says
+    // where it goes (k: the arm's 0..1)
+    aimMark(k) {
+      if (G.shotMode && !/hud=1/.test(location.search)) return;
+      const a = Math.max(0, Math.min(1, (k - 0.75) / 0.25));
+      if (a === aimShown) return;
+      aimShown = a;
+      q('.c3aim').style.opacity = (a * 0.9).toFixed(2);
+    },
     // the chapter's card lettered small over the windscreen as I pull out
     // (the cut from the foot chase into the seat has no card on black)
     smallCard(num, name, secs = 3.4) {
@@ -85,10 +133,16 @@ export function makeKit(G) {
       kit.failed = (kit.failed || 0) + 1;
       G._tailRetry = true;   // (back at a beat: no card of any size)
       if (G.fail) return G.fail({ why, to });
-      H.say(why, 2.4);
-      G.scenes.go('tail', { beat: to, fade: 'black', card: false, fadeIn: 0.8 });
+      if (G.shotMode) { G.scenes.go('tail', { beat: to, fade: 'cut', card: false }); return; }
+      layer();
+      const el = H.layer('c3veil');
+      if (!el.firstChild) el.innerHTML = '<div class="c3veil"><span></span></div>';
+      el.firstChild.firstChild.textContent = why;
+      el.firstChild.firstChild.style.opacity = '0';
+      veil = { el, t: 0, phase: 'out', why, to };
     },
     step(dt) {
+      veilStep(G, dt);
       if (cardT > 0 && el) {
         cardT -= dt;
         const c = q('.c3card'), age = cardDur - cardT;

@@ -50,6 +50,7 @@ export class Chase {
   }
 
   dispose() {
+    this.gone = true;
     const S = this.game.sfx;
     if (S && S.live) for (const k of ['tail_his', 'c3_traffic0', 'c3_traffic1', 'c3_tram']) if (S.loops && S.loops.has(k)) S.stopLoop(k);
     if (this.gun) this.gun.dispose();
@@ -129,10 +130,13 @@ export class Chase {
 
   step(dt) {
     const G = this.game, my = this.my, his = this.his;
-    if (!my) return;
+    if (!my || this.gone) return;
     this.t += dt;
     if (this.bot) { this.botKeys = this.bot.tick(dt); this.botAim = this.bot.aim ? this.bot.aim() : null; if (this.autoBot) this.autoKeys(); }
     this.kit.step(dt);
+    // (the fail's black cut to the checkpoint inside that step: the rest of
+    // it belongs to the new chase)
+    if (this.gone) return;
     this.V.update(dt);
     this.cabin.step(dt);
     if (this.traffic) this.traffic.step(dt);
@@ -491,6 +495,20 @@ export class Chase {
     if (his.driverFig) { const want = D.duck > 0 || D.state === 'lost' || D.state === 'stopped' ? -0.3 : 0; his.driverFig.position.y += (want - his.driverFig.position.y) * (1 - Math.exp(-dt * 10)); }
     // the sag on a flat
     if (his.flat) { his.sagRoll = ((his.flat.fr || 0) + (his.flat.rr || 0) - (his.flat.fl || 0) - (his.flat.rl || 0)) * 0.035; his.sagPitch = ((his.flat.rl || 0) + (his.flat.rr || 0) - (his.flat.fl || 0) - (his.flat.fr || 0)) * 0.02; }
+    // [2nd owner] the spray off his tyres on the wet: a wake of mist that
+    // hangs a moment where he went - round a corner the last of it, lit by
+    // the lamps, shows which way he turned (a trace to read)
+    if (!his.frozen && his.speedAbs > 5 && G.fx.dust) {
+      this.sprayAcc = (this.sprayAcc || 0) + dt * Math.min(20, his.speedAbs * 1.3);
+      while (this.sprayAcc >= 1) {
+        this.sprayAcc -= 1;
+        const sd = r.next() < 0.5 ? -0.8 : 0.8;
+        const p = his.seat(_v.set(-1.6 - r.next() * 0.5, 0.18, sd + r.gauss() * 0.12), new THREE.Vector3());
+        const g = r.range(1.5, 2.0);
+        G.fx.dust.spawn({ pos: p, vel: new THREE.Vector3(r.gauss() * 0.5, r.range(0.25, 0.8), r.gauss() * 0.5).addScaledVector(his.vel, 0.3), life: r.range(1.0, 1.7), size: [0.42, 0.42], grow: 1.4, rot: r.next() * 6.28,
+          col: [g, g, g], alpha: 0.16, drag: 1.8, fadeOut: 0.7 });
+      }
+    }
     // a rim on the road: sparks
     if (his.flat && his.speedAbs > 3 && !his.frozen) {
       for (const [k, x, z] of [['fl', 1.55, -0.78], ['fr', 1.55, 0.78], ['rl', -1.55, -0.76], ['rr', -1.55, 0.76]]) {
@@ -551,6 +569,9 @@ export class Chase {
       if (v.lamps) v.lamps.setOn(false);
       this.lampsOff = true;
       this.phase = 'parked';
+      // (the head turns out of the side window to the shed's doors as the
+      // door opens: chapter VII begins at them)
+      if (G.controller.drive) Object.assign(G.controller.drive, { focus: new THREE.Vector3(PIER.gate.x, 3.2, PIER.gate.z), focusMax: 1.2, focusPitch: 0.3, focusFov: -2, focusRate: 1.7 });
       G.emit('tail:parked', {});
     }
   }

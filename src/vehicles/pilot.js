@@ -123,7 +123,7 @@ export class Pilot {
     // with the wheel the other way, then on)
     if (this.backT > 0) {
       this.backT -= dt;
-      I.throttle = 0; I.brake = 1; I.steer = -this.backSteer; I.handbrake = 0;
+      I.throttle = 0; I.brake = 1; I.steer = -this.backSteer; I.handbrake = 0; I.hold = 0;
       return;
     }
     this.stuckT = want > 2 && sp < 0.8 ? (this.stuckT || 0) + dt : 0;
@@ -133,5 +133,8 @@ export class Pilot {
     I.brake = e < -0.8 ? clamp(-e / 4, 0.1, 1) : 0;
     if (want < 0.2 && sp < 0.6) { I.throttle = 0; I.brake = 1; }
     I.handbrake = 0;
+    // (a foot on the brake at a stop holds the car there: it never rolls
+    // back into the car behind - Car.js reverses only an unheld brake)
+    I.hold = 1;
   }
 }
