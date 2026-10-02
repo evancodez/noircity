@@ -79,8 +79,9 @@ export default {
       get flanking() { return !!S.flank; },
       get behindMe() { return behindMe(); },
       // ---- the kit's director asks -------------------------------------------------------
-      // ([C2] after the critic: the pistol men go round; the Tommy gunner pins - a flank by him was one burst and down)
-      canFlank() { return kind === 'pistol' && !S.flank && (S.state === 'hold' || S.state === 'back' || S.state === 'move' || S.state === 'open') && S.mag > 2 && !S.entry; },
+      // (the pistol men go round; the Tommy gunner only when he is the last - from his own range, 6 - 7.5 m,
+      // with the warning: [C2] after the critic, he no longer comes looking or walks in by any other way)
+      canFlank() { return (kind === 'pistol' || (kind === 'tommy' && alone())) && !S.flank && (S.state === 'hold' || S.state === 'back' || S.state === 'move' || S.state === 'open') && S.mag > 2 && !S.entry; },
       goFlank(spot) {
         S.flank = spot; brain.drop();
         // (his cover let go: he fights from where the flank takes him)

@@ -245,10 +245,11 @@ K.spawn({ kind: 'tommy', at: { x, z }, cover: true, wait: 2.4 });   // there alr
   - **the flank** (the director): when I hold one place down for
     `flankAfter` seconds, the man best placed goes round (a run you hear: a
     scuff and quick heels) to a place that sees me, off the others' line;
-    the last man alive goes round too (after 1.5 x `flankAfter`). Only pistol
-    men go round: the Tommy gunner pins (a flank by him was one burst and
-    down); with no line he rakes where he last saw me (or the flash of my
-    gun), from cover or from the open - he never comes looking.
+    the last man alive goes round too (after 1.5 x `flankAfter`), the Tommy
+    gunner only then, and to his own range (6 - 7.5 m). Otherwise the Tommy
+    gunner pins: with no line he rakes where he last saw me (or the flash of
+    my gun), from cover or from the open; he never comes looking, and takes
+    no cover nearer me than 5.5 m.
 - **The director** (the kit): at most `maxFiring` pistol men shoot at once
   while I fight from cover (down, or risen over it); standing up, I am every
   man's; the Tommy gunner and the heavy fire whatever the count (they count
