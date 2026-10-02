@@ -1823,8 +1823,11 @@ export class Brawl {
     // (the lesson's first: held, with the kit's teach card - time crawls
     // until the key toward the light is pressed; once a save)
     let held = false, teach = null;
-    if (this.lesson && this.lesson.dodge && G.hud && G.hud.teach) {
-      this.lesson.dodge = false;
+    // (the first cue of the save, wherever it comes - the diner's lesson, or
+    // Pier 9 for a player who began there: the card, held)
+    const K = G.hud && G.hud.kit, untaught = K && K.taught && !K.taught().dodge;
+    if (((this.lesson && this.lesson.dodge) || untaught) && G.hud && G.hud.teach) {
+      if (this.lesson) this.lesson.dodge = false;
       teach = G.hud.teach('dodge', DODGE_CARD, { hold: true, holdMax: 6, until: () => !this.cue || this.cue.done });
       held = !teach.done;
     } else if (this.reteach && G.hud && G.hud.teach) {

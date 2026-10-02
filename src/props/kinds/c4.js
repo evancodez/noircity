@@ -44,6 +44,9 @@ function pencil(g, text, x, y, px, { align = 'left', seed = 3, rise = -0.012 } =
   g.font = `bold ${px}px ${HAND}`;
   g.textAlign = align; g.textBaseline = 'alphabetic';
   g.fillStyle = PENCIL;
+  // (pressed hard: the graphite laid on twice, a stroke round each letter)
+  g.strokeStyle = PENCIL; g.lineWidth = Math.max(1.5, px * 0.07); g.lineJoin = 'round';
+  g.strokeText(text, 0, 0);
   g.fillText(text, 0, 0);
   g.globalAlpha = 0.45;
   g.fillText(text, px * 0.02, -px * 0.015);
@@ -72,7 +75,7 @@ export function drawGuestCheck(g, W, H, lines = [], { total = null, sign = 'than
   g.fillText('TABLE', bx[0] + 6 * K, 176 * K); g.fillText('GUESTS', bx[1] + 6 * K, 176 * K); g.fillText('SERVER', bx[2] + 6 * K, 176 * K);
   // the ruled lines and the price column
   const top = 240 * K, step = 46 * K, rows = Math.floor((H - top - 110 * K) / step);
-  g.strokeStyle = 'rgba(60,70,90,0.55)'; g.lineWidth = 1.6 * K;
+  g.strokeStyle = 'rgba(40,46,60,0.7)'; g.lineWidth = 2.4 * K;
   for (let i = 0; i <= rows; i++) { const y = top + i * step; g.beginPath(); g.moveTo(28 * K, y); g.lineTo(W - 28 * K, y); g.stroke(); }
   const px = W - 120 * K;
   g.strokeStyle = 'rgba(150,20,30,0.6)';
@@ -94,11 +97,11 @@ export function drawGuestCheck(g, W, H, lines = [], { total = null, sign = 'than
   } else {
     lines.forEach((ln, i) => {
       const [item, price] = String(ln).split('|');
-      pencil(g, item, 38 * K, top + step * (i + 1) - 10 * K, Math.round(31 * K), { seed: seed + 20 + i });
-      if (price) pencil(g, price, W - 40 * K, top + step * (i + 1) - 10 * K, Math.round(31 * K), { align: 'right', seed: seed + 40 + i });
+      pencil(g, item, 38 * K, top + step * (i + 1) - 8 * K, Math.round(38 * K), { seed: seed + 20 + i });
+      if (price) pencil(g, price, W - 40 * K, top + step * (i + 1) - 8 * K, Math.round(38 * K), { align: 'right', seed: seed + 40 + i });
     });
     if (total) pencil(g, total, W - 40 * K, fy + 42 * K, Math.round(33 * K), { align: 'right', seed: seed + 60 });
-    if (sign) pencil(g, sign, W / 2 + 40 * K, fy - 14 * K, Math.round(34 * K), { align: 'center', seed: seed + 61, rise: -0.05 });
+    if (sign) pencil(g, sign, W / 2 + 20 * K, fy - 30 * K, Math.round(46 * K), { align: 'center', seed: seed + 61, rise: -0.05 });
   }
 }
 
@@ -149,23 +152,26 @@ export function drawAmesCard(g, W, H, { crossed = true, seed = 304 } = {}) {
   g.globalCompositeOperation = 'source-over';
 }
 
-function paperMat(canvas, name) {
+function paperMat(canvas, name, surface = 'paper') {
   const tex = new THREE.CanvasTexture(canvas);
   tex.colorSpace = THREE.SRGBColorSpace;
   tex.anisotropy = 8;
-  const m = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.95, map: tex });
+  // (unlit for the check on the counter: under the pendant's pool a lit
+  // face printed white, its print and all; the card in the hand is lit)
+  const m = surface === 'unlit' ? new THREE.MeshBasicMaterial({ color: new THREE.Color(0.92, 0.92, 0.92), map: tex }) : new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.95, map: tex });
   m.name = 'prop_' + name;
   // (printed as paper in the hands too: its own white, the grey of its print)
-  m.userData.inkSurface = 'paper';
+  m.userData.inkSurface = surface === 'unlit' ? 'paper' : surface;
   return m;
 }
 const plainMat = () => { const m = new THREE.MeshStandardMaterial({ color: 0xc9c4b8, roughness: 0.95 }); m.name = 'prop_cardback'; m.userData.inkSurface = 'paper'; return m; };
 
 // a sheet: its face a canvas on top (+y), its head toward -z, read from +z
-function sheet(w, t, d, canvas, name) {
+function sheet(w, t, d, canvas, name, surface = 'paper') {
   const body = slab(w, t, d, { bevel: t * 0.4, corner: 0.002, seg: 1, curve: 3 });
-  const face = new THREE.PlaneGeometry(w - 0.0004, d - 0.0004).rotateX(-Math.PI / 2).translate(0, t + 0.00005, 0);
-  return { body, face, mat: paperMat(canvas, name) };
+  // (the face a hair above the body - 0.8 mm: closer, the depth test lost it to the body at half a metre)
+  const face = new THREE.PlaneGeometry(w - 0.0004, d - 0.0004).rotateX(-Math.PI / 2).translate(0, t + 0.0008, 0);
+  return { body, face, mat: paperMat(canvas, name, surface) };
 }
 
 export const SPECS = {
@@ -186,7 +192,9 @@ export const SPECS = {
     const g2 = c.getContext('2d');
     const first = v === 'pier9' ? { lines: [], opts: { big: ['PIER 9', 'MIDNIGHT', '— DOT'], sign: null } } : { lines: ['1  Scotch, neat|.35'], opts: { total: '.35' } };
     drawGuestCheck(g2, W, H, first.lines, first.opts);
-    const S = sheet(0.085, 0.0004, 0.14, c, 'guestCheck');
+    // (on the lit counter the paper class prints all of it white: its print is
+    // read as an ordinary surface's albedo, the ink's own greys)
+    const S = sheet(0.085, 0.0004, 0.14, c, 'guestCheck', 'unlit');
     return {
       parts: [{ geo: S.body, mat: plainMat(), id: 0 }, { geo: S.face, mat: S.mat, id: 0, cast: false, name: 'face' }],
       grip: [0.03, 0.0002, 0.05],

@@ -37,7 +37,10 @@ const RIVER_OUT = 2.8 + 1.04;
 // or back). Either, hit on the hook arm while he winds up: he drops it
 // (the rules' `drops`: Brawl.disarm).
 export const FM_ATTACKS = {
-  fm_hookSwing: { hand: 'R', kind: 'long', dmg: 19, block: null, push: 0.35, stun: 0.45, miss: { open: 'LR', t: 0.75 }, path: { lo: -1.35, hi: 0.95, reach: 2.45, over: 0.45, min: 1.35 }, heavy: true, drops: 'hook' },
+  // [C4] (the dodge cue's answer is a hop to the light: away from the hand
+  // that swings, as for every swing in the game - the arc now ends at 0.45 m
+  // on that side, so the hop leaves it; back out of it or in inside it, as before)
+  fm_hookSwing: { hand: 'R', kind: 'long', dmg: 19, block: null, push: 0.35, stun: 0.45, miss: { open: 'LR', t: 0.75 }, path: { lo: -1.35, hi: 0.45, reach: 2.45, over: 0.45, min: 1.35 }, heavy: true, drops: 'hook' },
   fm_hookChop: { hand: 'R', kind: 'over', dmg: 17, block: null, push: 0.25, stun: 0.4, miss: { open: 'LR', t: 0.7 }, path: { lo: -0.42, hi: 0.42, reach: 2.15, over: 0.4 }, heavy: true, drops: 'hook' },
 };
 for (const [k, v] of Object.entries(FM_ATTACKS)) BR_ATTACKS[k] = v;

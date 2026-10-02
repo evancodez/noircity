@@ -87,8 +87,8 @@ function clearRoom(ctx, now) {
     })());
   };
   if (old) go(old, 1.0, { speed: 1.9, out: true });
-  if (her) go(her, 0.9, { speed: 2.6, out: true });
-  if (him) go(him, 1.35, { speed: 2.7, out: true });
+  if (her) go(her, 0.9, { speed: 2.9, out: true });
+  if (him) go(him, 1.35, { speed: 3.0, out: true });
   if (dot) jobs.add('dot', (function* () { yield wait(0.6); yield* clip(dot, 'startle'); dot.setState('duck'); })());
   if (dk) jobs.add('docker', (function* () { yield wait(2.2); yield* flee(ctx, dk, ROUTES.docker, { speed: 1.3, run: false, log }); dk.face(Math.PI); dk.setState('idle'); })());
 }

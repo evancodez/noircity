@@ -31,7 +31,7 @@ export const ROUTES = {
 };
 export const DOCKER_AT = { x: -13.1, z: 10.9 };
 
-const _v = new THREE.Vector3();
+const _v = new THREE.Vector3(), _y = new THREE.Vector3(0, 1, 0), _q = new THREE.Quaternion();
 const wrap = (a) => Math.atan2(Math.sin(a), Math.cos(a));
 
 // the bodies a runner keeps off: me, Mack, the cast still on their feet
@@ -57,6 +57,18 @@ export function* flee(ctx, c, pts, { speed = 2.6, run = true, out = false, r = 0
   F.speed = 0;
   let i = 0, t0 = G.time, last = G.time, slow = 0, stuck = 0, best = 1e9;
   const rec = log ? (log[c.name] = { min: 9, minWho: null, through: 0 }) : null;
+  // (the shoulders turned to squeeze past: the spine and the chest twisted
+  // after the clip's pose - the figure's bones are written fresh every step,
+  // cast/diner/steady.js, so the twist never winds on)
+  const prevAfter = F.afterPose;
+  c._twist = 0;
+  F.afterPose = (h, dt) => {
+    if (prevAfter) prevAfter(h, dt);
+    const want = (c.turnShoulders || 0) * 0.62;
+    c._twist += (want - c._twist) * Math.min(1, dt * 9);
+    if (Math.abs(c._twist) < 1e-3) return;
+    for (const b of [h.bones.spine, h.bones.chest]) if (b) b.quaternion.multiply(_q.setFromAxisAngle(_y, c._twist / 2));
+  };
   for (let n = 0; n < 60 * 30 && i < pts.length; n++) {
     const dt = Math.max(1 / 240, Math.min(1 / 20, G.time - last || 1 / 60)); last = G.time;
     const B = bodies(ctx, c);
@@ -99,13 +111,14 @@ export function* flee(ctx, c, pts, { speed = 2.6, run = true, out = false, r = 0
     F.yaw = wrap(F.yaw + Math.sign(wrap(want - F.yaw)) * Math.min(Math.abs(wrap(want - F.yaw)), 9 * dt));
     // (squeezing past a body: slower, the shoulders turned - his chest turned
     // across the way, a quarter turn of the upper body)
-    slow += ((squeeze > 0.15 ? 0.55 : 1) - slow) * Math.min(1, dt * 8);
+    slow += ((squeeze > 0.15 ? 0.68 : 1) - slow) * Math.min(1, dt * 8);
     F.speed = speed * slow;
     c.turnShoulders = squeeze > 0.15 ? Math.sign(wrap(want - Math.atan2(dx, dz))) || 1 : 0;
     yield null;
   }
   F.speed = 0;
   c.turnShoulders = 0;
+  F.afterPose = prevAfter;
   c.base = 'idle'; c.state = 'idle';
   c._anim('idle', 0.3);
   if (out) ctx.cast.remove(c);
