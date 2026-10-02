@@ -43,7 +43,7 @@ export const ORDER = [
     objectives: { shadows: 'Watch the door. Get ready.', door: 'Stay alive.', window: 'Stay alive.', quiet: null } },
   { id: 'watcher', numeral: 'V', title: 'The Watcher', music: null,
     beatMusic: { escape: { slot: 'chase', fade: 0.4 }, run: { slot: 'chase', fade: 0.4 }, car: { slot: 'chase', fade: 0.4 } }, carry: ARMED, flags: NOTE,
-    objectives: { seen: 'Check the street.', escape: 'After him. Down the iron.', run: 'Don’t lose him.', car: 'Get to your car.' } },
+    objectives: { seen: 'Check the street.', escape: 'After him. Down the fire escape.', run: 'Don’t lose him.', car: 'Get to your car.' } },
   { id: 'tail', numeral: 'VI', title: 'The Tail', music: { slot: 'tail', fade: 2.5 }, carry: ARMED, flags: NOTE,
     objectives: { start: 'Stay on his tail lamps.', chase: 'Stay on his tail lamps.', close: 'Put him off the road.', shot: 'Put him off the road.',
       crash: 'Get out. Take him.', interrogate: 'Make him talk.' } },
