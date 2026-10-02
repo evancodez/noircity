@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { Vehicle, Headlamps } from './Vehicle.js';
+import { Car } from './Car.js';
 import { buildCoupe, buildTruck, tailLamps, figureInk, contactShadow, COUPE, TRUCK } from './models.js';
 import { releaseHoodSlot, LAYER } from '../render/layers.js';
 
@@ -15,7 +16,8 @@ import { releaseHoodSlot, LAYER } from '../render/layers.js';
 //   vehicles.list, vehicles.player (the one driven by the player), remove(v),
 //   clear(), update(dt) (steps every car but the player's: the drive mode
 //   steps that one, before the eye is placed)
-// A stage that has cars has a track (stage.track: the river road's).
+// A stage that has cars has a track (stage.track: the river road's; [C3] the
+// city's is a plane: its cars are vehicles/Car.js, free on it).
 // Models: src/vehicles/models.js; physics: src/vehicles/Vehicle.js.
 export class Vehicles {
   constructor(game) {
@@ -24,7 +26,7 @@ export class Vehicles {
     this.player = null;
   }
 
-  spawn(kind, { at, yaw = 0, speed = 0, lights = true, tail = null, paint = 'paint' } = {}) {
+  spawn(kind, { at, yaw = 0, speed = 0, lights = true, tail = null, paint = 'paint', spec = null } = {}) {
     const G = this.game, stage = G.stage;
     const pos = at && at.isVector3 ? at.clone() : new THREE.Vector3(at?.x ?? 0, 0, at?.z ?? 0);
     const T = stage.track;
@@ -61,7 +63,8 @@ export class Vehicles {
       stage.scene.add(model.group);
       lampPts = TRUCK.lamps;
     } else throw new Error(`vehicles.spawn: no kind '${kind}' (coupe, sedan, truck)`);
-    const v = new Vehicle(this, kind, model, { pos, yaw, s: T ? T.project(pos.x, pos.z, null, {}).s : null });
+    // [C3] a stage whose track is a plane (the city): the car free on it
+    const v = T && T.plane ? new Car(this, kind, model, { pos, yaw, spec }) : new Vehicle(this, kind, model, { pos, yaw, s: T ? T.project(pos.x, pos.z, null, {}).s : null });
     v.car = model.car || null;
     if (tail === 'crew' && tailPts) v.tail = tailLamps(model.group, tailPts);
     v.inkSlot = figureInk(model.group);

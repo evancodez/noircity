@@ -57,6 +57,9 @@ export default {
       I.throttle = !fz && (held('KeyW') || held('ArrowUp')) ? 1 : 0;
       I.brake = !fz && (held('KeyS') || held('ArrowDown')) ? 1 : 0;
       I.steer = fz ? 0 : ((held('KeyA') || held('ArrowLeft')) ? 1 : 0) - ((held('KeyD') || held('ArrowRight')) ? 1 : 0);
+      // [C3] SPACE: the handbrake (the body's big move: the tail round for a
+      // right-angle corner)
+      I.handbrake = !fz && held('Space') ? 1 : 0;
     }
     if (dt > 0 && v.driver === 'player') v.step(dt);
     // the look: back to the road ahead once the mouse rests (never while aiming)
@@ -64,7 +67,10 @@ export default {
     const R = D.aim ? AIM : LOOK;
     if (!D.aim && !D.focus && D.idle > 0.7 && dt > 0) {
       const k = 1 - Math.exp(-dt * 1.8);
-      D.look.yaw += (0 - D.look.yaw) * k;
+      // [C3] (the eyes go into a corner ahead of the car: a little of the
+      // turn, more of a slide's, as a driver's do)
+      const into = O.lookInto ? Math.max(-0.32, Math.min(0.32, v.yawRate * 0.22 + (v.slipR || 0) * -0.6)) * Math.min(1, Math.abs(v.speed) / 6) : 0;
+      D.look.yaw += (into - D.look.yaw) * k * (O.lookInto ? 1.6 : 1);
       D.look.pitch += ((O.pitch ?? -0.07) - D.look.pitch) * k;
     }
     // a thing the eyes follow (his car spinning out): the look eases to it
