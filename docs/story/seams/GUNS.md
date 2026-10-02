@@ -227,7 +227,9 @@ K.spawn({ kind: 'tommy', at: { x, z }, cover: true, wait: 2.4 });   // there alr
     behind his cover (0.3 s); the last he saw of me I was standing, he looks
     out again in 0.6 - 1.1 s, not 2.5 - 4;
   - **a doorway worked by two**: the first at the jamb waits (up to 4 s) for
-    his mate on his way to it, then they go out together;
+    his mate on his way to it, then they go out together; a third waits his
+    turn along the wall, out of the doorway's line, and takes a side as one
+    comes free (up to 14 s, then he goes through);
   - **on the way**: a man in the open on his way, with me standing within
     9 m in his line, stops and shoots (the tell and the settle as ever);
   - **the push**: out from one cover 3 - 5 times with no line on me, he
@@ -236,9 +238,9 @@ K.spawn({ kind: 'tommy', at: { x, z }, cover: true, wait: 2.4 });   // there alr
   - **the last man** with no line on me for 6 s leaves his cover and comes
     to find me (a last man once held a pavement for 40 s): to a place round
     me that sees me, else in at me by the grid's way, stopping where he has
-    me (not the Tommy gunner: he pins - he rakes where he last saw me, or
-    the flash of my gun, for 12 s after, from cover or from the open, and
-    then waits for me to show);
+    me (a lone Tommy gunner only after 18 s, and only to a place at his own
+    range: he pins - he rakes where he last saw me, or the flash of my gun,
+    for 12 s after, from cover or from the open);
   - **the seek**: a man with no cover and no line goes to a place that sees
     me, or in at me by the way there is; nine seconds without a line, he
     comes straight in (nobody waits the clock out either);
@@ -248,8 +250,8 @@ K.spawn({ kind: 'tommy', at: { x, z }, cover: true, wait: 2.4 });   // there alr
     the last man alive goes round too (after 1.5 x `flankAfter`), the Tommy
     gunner only then, and to his own range (6 - 7.5 m). Otherwise the Tommy
     gunner pins: with no line he rakes where he last saw me (or the flash of
-    my gun), from cover or from the open; he never comes looking, and takes
-    no cover nearer me than 5.5 m.
+    my gun), from cover or from the open; he takes no cover nearer me than
+    5.5 m, and comes looking only as the last man (above).
 - **The director** (the kit): at most `maxFiring` pistol men shoot at once
   while I fight from cover (down, or risen over it); standing up, I am every
   man's; the Tommy gunner and the heavy fire whatever the count (they count

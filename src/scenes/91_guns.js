@@ -77,9 +77,9 @@ export const BEATS = {
     area: { x0: HOUSE.x0, x1: HOUSE.x1, z0: HOUSE.z0, z1: HOUSE.z1 - 0.2 },
     men: [
       { kind: 'rusher', at: { x: -0.5, z: 10.5 }, way: [{ x: -0.5, z: 7.6 }, { door: 'SD' }], wait: 1.5 },
-      // ([C2] after the critic: wait 7 -> 10 - his rounds now reach me past A2's jamb, and with the heavy still
+      // ([C2] after the critic: wait 7 -> 14 - his rounds now reach me past A2's jamb, and with the heavy still
       // up the first-timer lost the rush to him three tries running; he is the 'One more. Find him.')
-      { kind: 'pistol', at: { x: -7.4, z: -6.8 }, way: [{ door: 'A2' }], wait: 10.0, door: 'hold' },
+      { kind: 'pistol', at: { x: -7.4, z: -6.8 }, way: [{ door: 'A2' }], wait: 14.0, door: 'hold' },
     ],
     spots: [{ x: -3.5, z: 2.4, yaw: SOUTH }],
     open: { x: -5.3, z: 3.0 },
