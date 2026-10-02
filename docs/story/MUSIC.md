@@ -24,7 +24,8 @@ A scene declares its slot, and a beat may override it: `music` and
 chapter's entry in `src/scenes/order.js`. A spec is a slot (`'office'` or
 `{ slot, fade }`), `null` (silence), `{ stop: fade }`, or `'room'` (the scene
 plays its own diegetic music, the diner's jukebox: the rule leaves it
-alone). **Entering a scene, or continuing into any beat of it - a chapter's
+alone); a scene that declares nothing (the test beds) stops the music as it
+is entered from another scene. **Entering a scene, or continuing into any beat of it - a chapter's
 start, a CONTINUE, a retry after a fail, a chapter picked, a jump - cues
 what that beat declares (its beatMusic's, else the scene's); a beat of
 beatMusic cues its own as it begins.** Leaving a scene stops its slot only

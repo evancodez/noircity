@@ -80,7 +80,8 @@ hud.teach.dismiss();                // the one up and the queue, now
 - **Once per save**: shown, it is marked in `save.flags.taught[id]` and
   never shown again in this save (BEGIN and a chapter picked start a fresh
   save; CONTINUE keeps it). `again(id)` shows it once more regardless: call
-  it when the player has failed that thing twice (`game.fails(beat) >= 2`).
+  it when the player has failed that thing twice (`game.fails(beat) === 2`,
+  and once: every call shows it again; the test bed keeps a flag).
 - `opts.until`: a key code (`'Space'`, `'KeyC'`, `'Mouse2'`), a list of
   them, or a predicate `() => bool`; the card goes when it is met. Default:
   the codes of the key caps in the text (`'[A] [D] step aside'` waits for
@@ -199,7 +200,9 @@ export default { panels: [
 - `caption`: six words at most, capitals, in a lettered box at a corner
   (`cap: 'tl' | 'tr' | 'bl' | 'br'`, default `'tl'`); none for a wordless one.
 - `secs`: 2 to 4 (default 3). `from` / `to`: the slow drift inside the frame
-  (`s` scale, `x` `y` offset as a share of the frame), never a zoom you notice.
+  (`s` scale, `x` `y` offset as a share of the frame; or a rect of the
+  picture the frame shows, `{ x, y, w, h }` in shares of the picture), never
+  a zoom you notice. A picture keeps its proportions and covers its frame.
 - `newPage: true` starts a fresh page; a page holds up to three panels laid
   out by count (one large; two side by side; two over one wide), earlier ones
   staying as the next come in. `rect: { x, y, w, h }` (shares of the page)
@@ -252,7 +255,7 @@ A scene declares its slot, `music`, and a beat may override it,
 `beatMusic: { beat: spec }`. A spec is `'slot'`, `{ slot, fade }`, `null`
 (silence, a 2 s fade), `{ stop: fade }`, `'room'` (the scene plays its own
 diegetic music: the manager leaves it alone) or undefined (not declared:
-left alone). **Entering a scene, or continuing into any beat of it (a
+coming in from another scene stops the music; a retry changes nothing). **Entering a scene, or continuing into any beat of it (a
 CONTINUE, a retry, a chapter picked), cues the beat's spec (its beatMusic's,
 else the scene's); a beat of beatMusic cues its own as it begins.** Leaving
 a scene stops its slot only through the next scene's declaration (another

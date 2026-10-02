@@ -204,7 +204,7 @@ export class SceneManager {
       if (want !== undefined) K.objective(want, { strike: false });
       else if (def.objective) K.objective(def.objective, { strike: false });
     }
-    this.applyMusic(def, from, true);
+    this.applyMusic(def, from, true, !same);
     G.emit('scene:enter', { id: def.id });
     if (card !== false && (card === true || typeof card === 'string') && !G.shotMode) G.hud.card(def.title, typeof card === 'string' ? card : def.name);
     this.it = def.script ? def.script(ctx) : null;
@@ -328,14 +328,18 @@ export class SceneManager {
     if (bm && beatName && Object.prototype.hasOwnProperty.call(bm, beatName)) return bm[beatName];
     return def.music;
   }
-  applyMusic(def, beatName, entering) {
+  applyMusic(def, beatName, entering, newScene = false) {
     const G = this.game, M = G.music;
     if (!M || G.shotMode) return;
     const bm = def.beatMusic;
     // (a beat with nothing of its own changes nothing as it begins)
     if (!entering && !(bm && Object.prototype.hasOwnProperty.call(bm, beatName))) return;
-    const m = this.musicFor(def, beatName);
-    if (m === undefined || m === 'room') return;
+    let m = this.musicFor(def, beatName);
+    // (a scene that declares nothing: coming in from another scene, the music
+    // stops - leaving a scene stops its slot unless the next declares it; a
+    // retry of the same scene changes nothing)
+    if (m === undefined) { if (!entering || !newScene) return; m = null; }
+    if (m === 'room') return;
     if (m === null) { if (M.current) M.stop(2); return; }
     if (typeof m === 'string') { M.cue(m, { fade: 2.5 }); return; }
     if (m.slot) M.cue(m.slot, { fade: m.fade ?? 2.5 });

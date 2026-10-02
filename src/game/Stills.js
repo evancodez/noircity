@@ -246,7 +246,15 @@ export class Stills {
       this.cache.set(key, src);
       if (P.img) {
         const im = new Image();
-        im.onload = () => { const g2 = src.getContext('2d'); g2.drawImage(im, 0, 0, cw, ch); for (const L of this.run ? this.run.landed : []) if (L.i === i && this.run.id === def.id) L.redraw && L.redraw(); };
+        // (the picture keeps its own proportions: it covers the frame, centred)
+        im.onload = () => {
+          const g2 = src.getContext('2d');
+          const k = Math.max(cw / im.width, ch / im.height), dw = im.width * k, dh = im.height * k;
+          g2.fillStyle = '#050505'; g2.fillRect(0, 0, cw, ch);
+          g2.drawImage(im, (cw - dw) / 2, (ch - dh) / 2, dw, dh);
+          for (const L of this.run ? this.run.landed : []) if (L.i === i && this.run.id === def.id) L.redraw && L.redraw();
+          if (this.shotRun) for (const el of this.el.querySelectorAll('.panel')) if (el._pic && el._pic._redraw) el._pic._redraw();
+        };
         im.onerror = () => { /* the placeholder stays */ };
         im.src = P.img;
       }
@@ -298,7 +306,7 @@ export class Stills {
     L.el.style.transform = `translateY(${((1 - a) * -10).toFixed(1)}px) rotate(${tilt}deg)`;
     const span = Math.max(2, Math.min(4, P.secs ?? 3)) + 5;
     const u = ease(Math.min(1, L.t / span));
-    const f = P.from || { s: 1.04, x: -0.012, y: 0.004 }, t = P.to || { s: 1.09, x: 0.012, y: -0.008 };
+    const f = driftKey(P.from, { s: 1.04, x: -0.012, y: 0.004 }), t = driftKey(P.to, { s: 1.09, x: 0.012, y: -0.008 });
     const s = f.s + (t.s - f.s) * u, x = f.x + (t.x - f.x) * u, y = f.y + (t.y - f.y) * u;
     const pic = L.el._pic;
     if (pic) pic.style.transform = `translate(${(x * 100).toFixed(3)}%, ${(y * 100).toFixed(3)}%) scale(${s.toFixed(4)})`;
@@ -357,6 +365,18 @@ export class Stills {
     this.game.hud.setStilled(true);
   }
   get shotOpaque() { return !!this.shotRun; }
+}
+
+// a drift key: { s, x, y } (scale, offset as a share of the frame), or a rect
+// of the picture the frame shows, { x, y, w, h } (shares of the picture)
+function driftKey(k, d) {
+  if (!k) return d;
+  if (k.w != null) {
+    const w = Math.max(0.05, Math.min(1, k.w)), h = Math.max(0.05, Math.min(1, k.h ?? k.w));
+    const s = 1 / Math.min(w, h);
+    return { s, x: (0.5 - ((k.x ?? 0) + w / 2)) * s, y: (0.5 - ((k.y ?? 0) + h / 2)) * s };
+  }
+  return { s: k.s ?? 1, x: k.x ?? 0, y: k.y ?? 0 };
 }
 
 // a comic's frame line: one ink line round the picture, a hair off square,

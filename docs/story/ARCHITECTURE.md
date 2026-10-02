@@ -881,6 +881,14 @@ the `#errlog` contents (a non-empty log is a fail) and exits 1 on any fail.
 `tools/playtest.mjs` is the older Phase 3 scripted play-through; the plays above
 supersede it for the story.
 
+[C1] Wave C: `whole.json`, `saves.json`, `body.json`, `body_continue.json` are
+parked under `tools/plays/_wave_b/` (they pass through The Body); `chapters`,
+`continue` and `slice` follow the new order; the kit's plays are `kit.json`
+(the stills, the objective, a teach card once, a fail) and its three proofs
+on the test bed, `kit_idle`, `kit_bad`, `kit_good` (`tools/lib/kit_bot.mjs`),
+and `kit_downs` (IV and VIII going down through `game.fail`). A drive module
+gets `cursor()` from `play.mjs`: press there, or the view jumps.
+
 ### 10.6 The tools and their hygiene
 
 `tools/shot.sh` (a frame: `tools/shot.sh out.png "scene=body&beat=strings&t=3" 1440 900`),
