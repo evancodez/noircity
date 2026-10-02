@@ -35,7 +35,10 @@ const V = (x, y, z) => new THREE.Vector3(x, y, z);
 // what the detective carries by now (a cold start gets it too)
 // ([R3] the torn half by scene 3's name for it, matchbookHalf: played
 // through, the coat held it twice under two names)
-const INV = ['matchbook', 'matchbookHalf', 'note', 'ledger', 'revolver'];
+// [C1] wave C (WAVE_C §4): the matchbook and Ames's crossed card from II, the
+// torn check from III, the revolver (the ledger and the body's half are gone
+// with The Body)
+const INV = ['matchbook', 'amesCard', 'check', 'revolver'];
 const EYE = 1.63;
 // the lens at the slit (degrees): the eye narrows on him as it leans in
 const PEEK = 44;

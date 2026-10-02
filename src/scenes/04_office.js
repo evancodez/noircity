@@ -210,6 +210,9 @@ export default defineScene({
       O.ledger = null;
       const co = H.play('b2_coat', { onMark: { in: () => G.sfx.play('pocket') } });
       if (!ctx.save.inventory.includes('ledger')) ctx.save.inventory.push('ledger');
+      // [C1] (wave C: what III gives is the torn check, PIER 9; lane C5 rebuilds the safe's find)
+      if (!ctx.save.inventory.includes('check')) ctx.save.inventory.push('check');
+      ctx.save.flags.note = 'PIER 9';
       yield until(() => co.done);
       // (the sheet goes into a pocket too)
       if (O.sheet) { H.hold(null, 'L', { keep: true }); O.sheet = null; }

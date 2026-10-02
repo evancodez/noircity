@@ -1,0 +1,120 @@
+{
+ "about": "Critic: the end of II (from its last blow): out the door, the search, on to Room 304: what the screen says, what I carry, the music.",
+ "url": "/?mute=1&start=fight.ko",
+ "size": [
+  1440,
+  900
+ ],
+ "out": "shots/critic/fight_end",
+ "steps": [
+  {
+   "wait": 2500
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]"
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'fight' && G.state === 'playing' && !G.stills.active",
+   "timeout": 30000
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "eval": "JSON.stringify({t: +G.time.toFixed(1), sc: G.scenes.current && G.scenes.current.id, beat: G.scenes.beat, obj: G.hud.objectiveText, prompt: G.hud.promptShown, music: G.music.current, inv: G.save.inventory.join(','), stills: G.stills.active, st: G.state, save: localStorage.getItem('noir.save') && JSON.parse(localStorage.getItem('noir.save')).scene + '.' + JSON.parse(localStorage.getItem('noir.save')).beat})"
+  },
+  {
+   "shot": "y1_ko"
+  },
+  {
+   "walk": "(() => { const z = (G.brawl.stats && G.brawl.stats.window || 'B4') === 'B2' ? 5.0 : -3.8; return [[-12.6, 0.6], [-11.2, 0.6], [-9.2, 0.6], [-8.3, z + (z > 0.6 ? -1.8 : 1.8)]]; })()",
+   "timeout": 40000
+  },
+  {
+   "until": "G.scenes.beat === 'outside'",
+   "timeout": 8000
+  },
+  {
+   "look": [
+    0,
+    160
+   ],
+   "steps": 8
+  },
+  {
+   "wait": 400
+  },
+  {
+   "until": "G.hud.promptShown.includes('search')",
+   "timeout": 8000
+  },
+  {
+   "eval": "JSON.stringify({t: +G.time.toFixed(1), sc: G.scenes.current && G.scenes.current.id, beat: G.scenes.beat, obj: G.hud.objectiveText, prompt: G.hud.promptShown, music: G.music.current, inv: G.save.inventory.join(','), stills: G.stills.active, st: G.state, save: localStorage.getItem('noir.save') && JSON.parse(localStorage.getItem('noir.save')).scene + '.' + JSON.parse(localStorage.getItem('noir.save')).beat})"
+  },
+  {
+   "shot": "y2_outside"
+  },
+  {
+   "key": "KeyE"
+  },
+  {
+   "until": "G.hud.promptShown.includes('put away')",
+   "timeout": 10000
+  },
+  {
+   "eval": "JSON.stringify({t: +G.time.toFixed(1), sc: G.scenes.current && G.scenes.current.id, beat: G.scenes.beat, obj: G.hud.objectiveText, prompt: G.hud.promptShown, music: G.music.current, inv: G.save.inventory.join(','), stills: G.stills.active, st: G.state, save: localStorage.getItem('noir.save') && JSON.parse(localStorage.getItem('noir.save')).scene + '.' + JSON.parse(localStorage.getItem('noir.save')).beat})"
+  },
+  {
+   "shot": "y3_matchbook"
+  },
+  {
+   "key": "KeyE"
+  },
+  {
+   "wait": 1000
+  },
+  {
+   "eval": "JSON.stringify({t: +G.time.toFixed(1), sc: G.scenes.current && G.scenes.current.id, beat: G.scenes.beat, obj: G.hud.objectiveText, prompt: G.hud.promptShown, music: G.music.current, inv: G.save.inventory.join(','), stills: G.stills.active, st: G.state, save: localStorage.getItem('noir.save') && JSON.parse(localStorage.getItem('noir.save')).scene + '.' + JSON.parse(localStorage.getItem('noir.save')).beat})"
+  },
+  {
+   "shot": "y4"
+  },
+  {
+   "wait": 2000
+  },
+  {
+   "eval": "JSON.stringify({t: +G.time.toFixed(1), sc: G.scenes.current && G.scenes.current.id, beat: G.scenes.beat, obj: G.hud.objectiveText, prompt: G.hud.promptShown, music: G.music.current, inv: G.save.inventory.join(','), stills: G.stills.active, st: G.state, save: localStorage.getItem('noir.save') && JSON.parse(localStorage.getItem('noir.save')).scene + '.' + JSON.parse(localStorage.getItem('noir.save')).beat})"
+  },
+  {
+   "shot": "y5"
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id !== 'fight'",
+   "timeout": 30000
+  },
+  {
+   "eval": "JSON.stringify({t: +G.time.toFixed(1), sc: G.scenes.current && G.scenes.current.id, beat: G.scenes.beat, obj: G.hud.objectiveText, prompt: G.hud.promptShown, music: G.music.current, inv: G.save.inventory.join(','), stills: G.stills.active, st: G.state, save: localStorage.getItem('noir.save') && JSON.parse(localStorage.getItem('noir.save')).scene + '.' + JSON.parse(localStorage.getItem('noir.save')).beat})"
+  },
+  {
+   "shot": "y6_next"
+  },
+  {
+   "wait": 2500
+  },
+  {
+   "eval": "JSON.stringify({t: +G.time.toFixed(1), sc: G.scenes.current && G.scenes.current.id, beat: G.scenes.beat, obj: G.hud.objectiveText, prompt: G.hud.promptShown, music: G.music.current, inv: G.save.inventory.join(','), stills: G.stills.active, st: G.state, save: localStorage.getItem('noir.save') && JSON.parse(localStorage.getItem('noir.save')).scene + '.' + JSON.parse(localStorage.getItem('noir.save')).beat})"
+  },
+  {
+   "shot": "y7"
+  },
+  {
+   "wait": 3000
+  },
+  {
+   "eval": "JSON.stringify({t: +G.time.toFixed(1), sc: G.scenes.current && G.scenes.current.id, beat: G.scenes.beat, obj: G.hud.objectiveText, prompt: G.hud.promptShown, music: G.music.current, inv: G.save.inventory.join(','), stills: G.stills.active, st: G.state, save: localStorage.getItem('noir.save') && JSON.parse(localStorage.getItem('noir.save')).scene + '.' + JSON.parse(localStorage.getItem('noir.save')).beat})"
+  },
+  {
+   "shot": "y8"
+  }
+ ]
+}

@@ -710,7 +710,8 @@ function* pierFight(ctx) {
   const B = G.brawl;
   L.fightOn = true;
   if (ctx.from !== 'fight') quietCrew(ctx, L);
-  G.music.stop(2.5);
+  // [C1] (the music rule: beat 'fight' cues the `fight` slot over the
+  // warehouse's, scenes/order.js beatMusic; it was stopped here, silent)
   // (look development, ?quick=1: the ring as a retry stages it, the fight
   // at once - the review's moments, b9duel)
   if (G.shotMode && typeof location !== 'undefined' && new URLSearchParams(location.search).get('quick') === '1') {

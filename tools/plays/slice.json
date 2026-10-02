@@ -1,5 +1,5 @@
 {
- "about": "The wave A slice by real input (tools/play.mjs): the title, BEGIN, the whole of scene 1 (the diner) and scene 2 (the fight), a screenshot at every beat, and the expectations the brief asks for. node tools/play.mjs tools/plays/slice.json",
+ "about": "The slice by real input (tools/play.mjs): the title, BEGIN, the opening stills (wave C: stepped through by clicks), the whole of I (the diner, its objective lines) and II (the fight), a screenshot at every beat, and the expectations the brief asks for; II ends on III's start (The Body is cut). node tools/play.mjs tools/plays/slice.json",
  "url": "/?mute=1",
  "size": [
   1280,
@@ -37,6 +37,42 @@
    "every": 4000
   },
   {
+   "name": "[C1] the opening stills, stepped through by clicks"
+  },
+  {
+   "until": "G.stills.active",
+   "timeout": 8000
+  },
+  {
+   "expect": "G.stills.run.id === 'opening'",
+   "label": "BEGIN plays the opening stills"
+  },
+  {
+   "wait": 900
+  },
+  {
+   "mouse": "click"
+  },
+  {
+   "wait": 700
+  },
+  {
+   "mouse": "click"
+  },
+  {
+   "wait": 700
+  },
+  {
+   "shot": "s00a_stills"
+  },
+  {
+   "mouse": "click"
+  },
+  {
+   "until": "!G.stills.active",
+   "timeout": 4000
+  },
+  {
    "name": "scene 1, the diner: settle"
   },
   {
@@ -46,6 +82,10 @@
   {
    "expect": "G.controller.mode === 'seated' && G.hands.set === 'smoke'",
    "label": "seated at the counter, the smoke set"
+  },
+  {
+   "expect": "G.hud.objectiveText === 'Light up.'",
+   "label": "[C1] the diner's objective line from its first beat"
   },
   {
    "expect": "Math.abs(Math.atan2(Math.sin(N.controller.yaw - G.stage.anchor('diner.stool.player').yaw), Math.cos(N.controller.yaw - G.stage.anchor('diner.stool.player').yaw))) < 0.01 && Math.abs(N.controller.pitch + 0.14) < 0.01",
@@ -230,7 +270,7 @@
    "key": "KeyE"
   },
   {
-   "until": "G.hud.sayShown.includes('Cardinal')",
+   "until": "G.hud.sayShown.includes('nothing to say')",
    "timeout": 10000
   },
   {
@@ -388,8 +428,26 @@
    "label": "the matchbook was pocketed"
   },
   {
-   "until": "G.state === 'end' || (G.scenes.current && G.scenes.current.id !== 'fight')",
+   "until": "G.stills.active && G.stills.run.id === 'ames'",
    "timeout": 8000
+  },
+  {
+   "wait": 900
+  },
+  {
+   "shot": "s18b_ames_card"
+  },
+  {
+   "expect": "G.hud.root.classList.contains('stilled') && G.scenes.fadeK === 1",
+   "label": "[C1] the end of II: Ames's card (the 'ames' still) over black, the scene black under it"
+  },
+  {
+   "until": "G.state === 'end' || (G.scenes.current && G.scenes.current.id !== 'fight')",
+   "timeout": 14000
+  },
+  {
+   "expect": "G.stills.last && G.stills.last.id === 'ames' && !G.stills.last.skipped",
+   "label": "[C1] Ames's card was shown before III"
   },
   {
    "wait": 700

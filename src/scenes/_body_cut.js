@@ -1,3 +1,8 @@
+// [C1] PARKED (wave C cuts The Body, WAVE_C.md §4): this was src/scenes/03_body.js.
+// The scene manager skips files whose name starts with `_`, so it is not a
+// scene any more (?start=body reports and plays the diner). Kept whole: the
+// alley part of the block (stages/block/parts/alley.js) and the table puzzles
+// (scenes/body/*) may be reused by other lanes.
 import * as THREE from 'three';
 import { defineScene, wait, until, beat } from '../game/script.js';
 import { V, ALLEY, XV, STOOD, SHOOTER, WOUNDS, MARKS, LIES, KNEEL, STUDY, startPose, mackOut, layVictim, evidence, clearEvidence, gutterHat, crewCar, halfGlint } from './body/place.js';

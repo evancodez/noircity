@@ -9,11 +9,13 @@ import { live } from './hands.js';
 export const V = (x, y, z) => new THREE.Vector3(x, y, z);
 export const office = (ctx) => ctx.stage.part('office');
 
-// what the detective carries by the start of each (WAVE_B.md §4): the
-// red matchbook, the torn half, the note; from scene 5 the ledger too
+// what the detective carries by the start of each ([C1] WAVE_C §4: the red
+// matchbook and Ames's crossed card from II; after the safe the torn check,
+// PIER 9, and the ledger while lane C5 has not rebuilt the find)
 export function carry(ctx, { ledger = false } = {}) {
   const inv = ctx.save.inventory || (ctx.save.inventory = []);
-  for (const k of ['matchbook', 'matchbookHalf', 'note', ...(ledger ? ['ledger'] : [])]) if (!inv.includes(k)) inv.push(k);
+  for (const k of ['matchbook', 'amesCard', ...(ledger ? ['ledger', 'check'] : [])]) if (!inv.includes(k)) inv.push(k);
+  if (ledger) ctx.save.flags.note = 'PIER 9';
 }
 
 // the room as it stands at a point of the story:
