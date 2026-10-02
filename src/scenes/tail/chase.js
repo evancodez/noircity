@@ -403,6 +403,7 @@ export class Chase {
       this.kit.warn(null);
     }
     this.crashT += dt;
+    this.leanForCrash(dt);
     // the tyre smoke while he slides
     const r = this.ctx.rng;
     if (his.speedAbs > 2) for (let k = 0; k < 2; k++) {
@@ -413,6 +414,16 @@ export class Chase {
     // stopped (or long enough): the wreck
     this.stillT = his.speedAbs < 0.8 ? (this.stillT || 0) + dt : 0;
     if (this.stillT > 0.5 || this.crashT > 7) this.wrecked2();
+  }
+  // (his car behind the screen's left pillar as I watch him go: the head
+  // leans out of the window to see past it, and back once he is clear of it)
+  leanForCrash(dt) {
+    const my = this.my, his = this.his;
+    const e = this.game.camera.position;
+    const w0 = Math.atan2(-(his.pos.x - e.x), -(his.pos.z - e.z)) - (my.yaw - Math.PI / 2);
+    const w = Math.atan2(Math.sin(w0), Math.cos(w0));
+    const want = this.phase === 'crash' || this.phase === 'wreck' ? (w > 0.16 && w < 0.5 ? 0.75 : 0) : 0;
+    this.crashLean = (this.crashLean || 0) + (want - (this.crashLean || 0)) * (1 - Math.exp(-dt * 4));
   }
   wrecked2() {
     if (this.phase === 'wreck') return;
@@ -452,6 +463,7 @@ export class Chase {
   wreckStep(dt) {
     const W = this.wreck, his = this.his, G = this.game, r = this.ctx.rng;
     W.t += dt;
+    this.leanForCrash(dt);
     // the red lamps going out, one and then the other
     if (his.tail && W.t > 1.6 && W.lamps === 0) { W.lamps = 1; for (const sp of his.tail.userData.glows || []) if (sp.userData.side > 0) sp.visible = false; }
     if (his.tail && W.t > 3.4 && W.lamps === 1) { W.lamps = 2; his.tail.visible = false; for (const sp of his.tail.userData.glows || []) sp.visible = false; if (his.lamps) his.lamps.setOn(false); }

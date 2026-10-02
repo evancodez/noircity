@@ -71,7 +71,9 @@ export class WindowGun {
     const rate = want ? 1 / 0.22 : 1 / 0.3;
     this.aimK = clamp(this.aimK + Math.sign(want - this.aimK) * rate * dt, 0, 1);
     DRIVE.aim = this.aimK;
-    if (C.drive) { C.drive.lean = this.aimK; C.drive.aim = this.aimK > 0.5; }
+    // ([2nd owner] the head out of the window to see past the screen's
+    // pillar while the eyes are on his crash - chase.crashLean - gun or no)
+    if (C.drive) { C.drive.lean = Math.max(this.aimK, ch.crashLean || 0); C.drive.aim = this.aimK > 0.5; }
     this.show(this.aimK > 0.25);
     ch.kit.aimMark(this.aimK);
     this.cool = Math.max(0, this.cool - dt);
@@ -80,11 +82,11 @@ export class WindowGun {
     if (this.fireBuf > 0 && this.aimK > 0.9 && this.cool <= 0 && this.reloadT <= 0) { this.fireBuf = 0; this.fire(); }
   }
   holster(dt) {
-    if (this.aimK <= 0) return;
+    const C = this.game.controller, cl = this.chase.crashLean || 0;
+    if (this.aimK <= 0) { if (C.drive && (cl > 0.001 || C.drive.lean > 0.001)) C.drive.lean = cl; return; }
     this.aimK = Math.max(0, this.aimK - dt / 0.3);
     DRIVE.aim = this.aimK;
-    const C = this.game.controller;
-    if (C.drive) { C.drive.lean = this.aimK; C.drive.aim = false; }
+    if (C.drive) { C.drive.lean = Math.max(this.aimK, cl); C.drive.aim = false; }
     this.show(this.aimK > 0.25);
     this.chase.kit.aimMark(this.aimK);
   }
