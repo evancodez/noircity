@@ -23,9 +23,9 @@
 const PROFILES = {
   idle: { act: false },
   bad: { act: true, cover: false, react: [450, 800], errM: 0.3, settle: [120, 260], gap: [250, 450], renotice: 600 },
-  good: { act: true, cover: true, react: [300, 550], errM: 0.29, settle: [60, 120], gap: [380, 620], burst: [1, 1], down: [450, 800], shadows: true },
+  good: { act: true, cover: true, react: [300, 550], errM: 0.29, settle: [60, 120], gap: [380, 620], burst: [1, 1], down: [450, 800], shadows: true, duck: [120, 260], watchFlank: true },
   clumsy: { act: true, cover: true, react: [550, 900], errM: 0.42, settle: [100, 220], gap: [420, 700], burst: [1, 2], down: [350, 700],
-    upLong: 0.35, standReload: 0.3, crouchLate: [500, 1400], wrongKey: 0.12, lateMove: true },
+    upLong: 0.35, standReload: 0.3, crouchLate: [500, 1400], wrongKey: 0.12, lateMove: true, duck: [300, 550] },
 };
 
 export default async function drive({ js, turn, keyDown, keyUp, mouse, shot, log, sleep, W, H, opts }) {
@@ -66,6 +66,7 @@ export default async function drive({ js, turn, keyDown, keyUp, mouse, shot, log
     return { scene: sc.current && sc.current.id, beat: sc.beat, trans: !!sc.trans, fade: sc.fadeK, failing: !!G.failing, dead: G.health.dead, hp: G.health.hp,
       x: C.pos.x, z: C.pos.z, ex: e.x, ey: e.y, ez: e.z, yaw: C.yaw, pitch: C.pitch, sens: C.sensitivity, mode: C.mode, ck: C.crouchK || 0, rk: C.riseK || 0, on: !!C.crouchOn,
       ammo: W ? W.ammo : 0, reloading: !!(W && W.reloading), gun: G.player.weapons.current, men, spots: F ? F.spots : [], open: F ? F.open : null, won: !!(F && F.won),
+      flankId: K && K.flank && !K.flank.done && K.flank.ai.h.alive ? K.flank.ai.h.slot : null,
       broke: K ? K.events.filter((q) => q.what === 'break' && G.time - q.t < 1.2 && q.at && Math.hypot(q.at[0] - e.x, q.at[1] - e.z) < 2.2).length : 0, wins: (G._c2won || []).length, fails: Object.fromEntries(BEATS.map((b) => [b, G.fails(b, 'guns')])), why: G.lastFail ? G.lastFail.why : null, warnedFor: G.lastFail ? G.lastFail.warnedFor : null, nFails: G.counters.fails || 0, shots: G.counters.shots, hits: G.counters.hits, warn: G.hud.warnText || null };
   })()`;
   // the beat's cover spot hidden from the most men as they stand now (then the nearest)
@@ -111,12 +112,16 @@ export default async function drive({ js, turn, keyDown, keyUp, mouse, shot, log
       const g0 = await js('N.game.time');
       let s0 = await js(ST);
       const fails0 = s0.nFails, shots0 = s0.shots, hits0 = s0.hits, wins0 = s0.wins;
-      const dbg = {}, noticed = new Map(), visAt = new Map(); let lastSeenAt = null, tellAt = 0, lastUp = Date.now(), upAt = 0, snapT = 0, target = null, seenAt = 0, onSpot = null, goTo = null, moveCool = 0, downUntil = 0, burstLeft = 0, lastShot = 0, warnedBefore = false, lowHp = 100, outThere = false, answerUntil = 0, answerId = null, traceT = 0;
+      const dbg = {}, noticed = new Map(), visAt = new Map(); let lastSeenAt = null, tellAt = 0, lastUp = Date.now(), upAt = 0, snapT = 0, target = null, seenAt = 0, onSpot = null, goTo = null, moveCool = 0, downUntil = 0, burstLeft = 0, lastShot = 0, warnedBefore = false, lowHp = 100, prevHp = 100, duckAt = 0, outThere = false, answerUntil = 0, answerId = null, traceT = 0;
       let end = null;
       while (!end) {
         const s = await js(ST);
         if (!s || s.__exc) { await sleep(150); dbg['exc'] = (dbg['exc'] || 0) + 1; continue; }
         lowHp = Math.min(lowHp, s.hp);
+        // (hit while up over the cover: a person's reflex is down - a reaction later)
+        if (P.duck && s.hp < prevHp - 0.5 && s.rk > 0.5 && answerId == null && !duckAt) duckAt = Date.now() + rr(P.duck[0], P.duck[1]);
+        prevHp = s.hp;
+        if (duckAt && Date.now() >= duckAt) { duckAt = 0; await set('RMB', false); downUntil = Date.now() + rr(500, 900); tellAt = 0; }
         // (opts.snaps: a frame every so many seconds, to look at what the play did)
         if (opts.snaps && Date.now() - (snapT || 0) > opts.snaps * 1000) { snapT = Date.now(); await shot(`${rec.profile}_${beat}_${k}_${Math.round((Date.now() - t0) / 1000)}`); log(`snap ${JSON.stringify({ hp: Math.round(s.hp), ck: +s.ck.toFixed(2), rk: +s.rk.toFixed(2), on: s.on, x: +s.x.toFixed(2), z: +s.z.toFixed(2), ammo: s.ammo, men: s.men.map((m) => `${m.st}${m.line ? '!' : ''}${m.see ? '*' : ''}@${m.fx.toFixed(1)},${m.fz.toFixed(1)}`), dbg })}`); }
         if (s.warn) warnedBefore = true;
@@ -209,8 +214,10 @@ export default async function drive({ js, turn, keyDown, keyUp, mouse, shot, log
           if (wantUp && s.rk < 0.2) upAt = now;
           if (!wantUp || s.rk < 0.85) {
             // (down: turned to where they are, ready to come up onto them)
-            const any = tells[0] || s.men.filter((m) => !m.entry).sort((a, b) => a.d - b.d)[0];
-            if (any) await aim(s, yawTo(s, any.x, any.z), Math.max(-0.1, pitchTo(s, any.x, any.y, any.z)), 0.35, 0.12);
+            // (a man going round me: I watch him, to answer him as he comes round)
+            const fl = P.watchFlank && s.flankId != null ? s.men.find((m) => m.id === s.flankId) : null;
+            const any = fl || tells[0] || s.men.filter((m) => !m.entry).sort((a, b) => a.d - b.d)[0];
+            if (any) await aim(s, yawTo(s, any.x, any.z), Math.max(-0.1, pitchTo(s, any.x, any.y, any.z)), fl ? 0.55 : 0.35, fl ? 0.2 : 0.12);
             target = null; await sleep(50); dbg['down'] = (dbg['down'] || 0) + 1; continue;
           }
           lastUp = now;

@@ -97,9 +97,12 @@ export default {
     // wider than the opening, where a man waits out of sight before he comes
     kit.piece();
     const W = STREET.wall, OP = OPENINGS;
-    const ww = wallGeos({ axis: 'x', a: [W, W + 0.4], s: [STREET.x0 - 2, STREET.x1 + 2], y: [0, 7.5], holes: OP.map((o) => [o.x0, o.x1, 0, o.h]) });
+    const WH = 5.2;
+    const ww = wallGeos({ axis: 'x', a: [W, W + 0.4], s: [STREET.x0 - 2, STREET.x1 + 2], y: [0, WH], holes: OP.map((o) => [o.x0, o.x1, 0, o.h]) });
     const wm = kit.add(mergeGeos(ww), mats.brick, { name: 'kh_warehouse' });
     wm.userData.cover = { kind: 'stone' };
+    // (its parapet's coping, a line against the sky: the towers rise over it)
+    kit.add(kit.box(STREET.x0 - 2, STREET.x1 + 2, WH, WH + 0.14, W - 0.06, W + 0.46), mats.stone, { name: 'kh_coping' });
     kit.piece();
     const rec = [];
     for (const o of OP) {

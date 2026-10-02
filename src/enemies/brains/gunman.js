@@ -43,7 +43,7 @@ export const GUNMAN = {
   walk: 1.5, run: 3.0,
   pistol: { hp: 100, dmg: 24, mag: 7, burst: [2, 3], gap: [0.4, 0.52], reload: 1.7 },
   tommy: { hp: 120, dmg: 8, burst: [10, 14], rate: 10.5, climb: 0.0035, sigma0: 0.01, drum: 2.6 },
-  rusher: { hp: 250, dmg: 10, burst: [5, 8], rate: 9, every: 1.2, close: 2.4, hitStop: 0.45, walk: 1.3 },
+  rusher: { hp: 250, dmg: 10, burst: [4, 6], rate: 9, every: 1.5, close: 2.4, hitStop: 0.45, walk: 1.3 },
 };
 const T = GUNMAN;
 const V = (x, y, z) => new THREE.Vector3(x, y, z);

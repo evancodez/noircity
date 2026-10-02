@@ -123,8 +123,7 @@ export default {
         kit.piece();
         const w = x1 - x0, h = P.top - P.dado - 0.05;
         const frost = makeFrosted({ w, h, text: i === 1 ? ['THE BLUE BELL', 'PRIVATE'] : null, seed: 40 + i });
-        frost.userData.glow(0.16, 1.0);
-        frost.userData.fall({ base: 0.012, peak: 1.0, sigma: 1.1 });
+        frost.userData.glow(0.16, 0.95);
         // (the lettering reads the right way round from the lobby: the pane faces the bar)
         const pane = stage.glass.addPane({ centre: V((x0 + x1) / 2, P.dado + 0.05 + h / 2, P.z + T / 2), normal: V(0, 0, -1), w, h, material: frost, tag: 'partition' + i, thick: 0.005 });
         pane.mesh.layers.set(LAYER.WORLD);
@@ -299,10 +298,13 @@ export default {
     api.lights = {
       A: pendant(-4.5, -3.6, { strength: 0.5, intensity: 40 }),
       A2: pendant(-6.6, -0.8, { strength: 0.3, intensity: 20, angle: 0.6 }),
+      // (a pool inside room A's door from the corridor: a man coming through it steps into the light)
+      A3: pendant(-2.35, -4.1, { strength: 0.42, intensity: 26, angle: 0.62, half: 0.55 }),
       B1: pendant(3.6, -4.9, { strength: 0.45 }),
       B2: pendant(6.3, -4.9, { strength: 0.45 }),
       B3: pendant(4.4, -1.4, { strength: 0.32, intensity: 22, angle: 0.62 }),
-      corr: pendant(-0.4, -3.2, { drop: 0.35, half: 0.7, strength: 0.32, intensity: 18, angle: 0.75, dist: 4.5 }),
+      corr: pendant(-0.4, -3.2, { drop: 0.35, half: 0.7, strength: 0.6, intensity: 36, angle: 0.8, dist: 4.8 }),
+      corrBack: pendant(-0.4, -6.6, { drop: 0.35, half: 0.66, strength: 0.45, intensity: 26, angle: 0.75, dist: 4.5 }),
       lobby: pendant(-0.4, 3.5, { strength: 0.42, intensity: 30 }),
       lobby2: pendant(-5.6, 4.2, { strength: 0.3, intensity: 18, angle: 0.62 }),
       lobby3: pendant(5.8, 3.8, { strength: 0.3, intensity: 18, angle: 0.62 }),
@@ -314,10 +316,10 @@ export default {
     // ---- the Looks, the dry volume, the floor -------------------------------------------------------------
     const box = new THREE.Box3(V(HOUSE.x0 - 0.05, FLOOR - 0.5, HOUSE.z0 - 0.05), V(HOUSE.x1 + 0.05, CEIL + 0.2, HOUSE.z1 + 0.02));
     stage.dry.push(box);
-    const inLook = { fogDensity: FOG.density * 0.3, rainOverlay: 0, haze: 0.6, reflect: 'none', ambient: 0.22 };
+    const inLook = { fogDensity: FOG.density * 0.3, rainOverlay: 0, haze: 0.6, reflect: 'none', ambient: 0.12 };
     stage.addLook(new THREE.Box3(V(ROOM_A.x0, FLOOR - 0.5, ROOM_A.z0), V(ROOM_A.x1, CEIL + 0.2, ROOM_A.z1)), { ...inLook, room: 'office' });
     stage.addLook(new THREE.Box3(V(ROOM_B.x0, FLOOR - 0.5, ROOM_B.z0), V(ROOM_B.x1, CEIL + 0.2, ROOM_B.z1)), { ...inLook, room: 'office' });
-    stage.addLook(box, { ...inLook, ambient: 0.2, haze: 0.5, room: 'corridor' });
+    stage.addLook(box, { ...inLook, ambient: 0.11, haze: 0.5, room: 'corridor' });
     stage.addSurface((x, z) => (x > HOUSE.x0 - 0.2 && x < HOUSE.x1 + 0.2 && z > HOUSE.z0 - 0.2 && z < HOUSE.z1 + 0.1 ? FLOOR : undefined));
     api.box = box;
 
@@ -334,7 +336,10 @@ export default {
         // (the light behind it: the lamp on the far side from the eye)
         const G = stage.game, e = G ? G.eye : c;
         const side = Math.sign((e.x - c.x) * nn.x + (e.z - c.z) * nn.z) || 1;
-        const lamp = side > 0 ? api.lights.lobby : api.lights.B3;
+        // (the light behind it: the nearest lamp on the far side from the eye)
+        const Ls = side > 0 ? [api.lights.lobby, api.lights.lobby2, api.lights.lobby3] : [api.lights.B1, api.lights.B2, api.lights.B3];
+        let lamp = Ls[0], bd = Infinity;
+        for (const L of Ls) { const d = L.head.distanceTo(c); if (d < bd && !L.dead) { bd = d; lamp = L; } }
         fr.userData.setLamp(f.door ? (side > 0 ? api.lights.lobby.head : api.lights.corr.head) : lamp.head, 1);
         const L2 = fr.userData.figures;
         L2.length = 0;

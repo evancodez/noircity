@@ -541,21 +541,42 @@ export class Guns {
   }
 
   // ---- the warning before a fall (WAVE_C §1 rule 2), for this moment --------------------------------------
-  // what the player must do now, or null: the heavy is close; my cover is
-  // being shot through; hurt with a man who has me (down: he has my angle;
-  // standing: get down); hurt and safe: stay down while it mends. The kit's
-  // own low line (Game.lowStep) is under it.
+  // what the player must do now, or null, most urgent first: the heavy is
+  // close; a round just came through what I hide behind; down, a man has my
+  // angle (a flanker there); a man going round me (which side); hurt and
+  // standing in a man's line; hurt and safe, down: stay down while it mends.
+  // A line once shown stays a second (unless a more urgent one comes), so it
+  // never flickers with a man's line of sight. The kit's own low line
+  // (Game.lowStep) is under it. Words in cfg.warn by key.
   warning() {
     const G = this.game, C = G.controller, H = G.health, W = this.cfg.warn || {};
-    if (!this.active || H.dead || G.failing) return null;
+    if (!this.active || H.dead || G.failing) { this._w = null; return null; }
     const down = (C.crouchK || 0) > 0.5 && (C.riseK || 0) < 0.5;
-    for (const [h, ai] of G.ais) if (h.alive && ai.brain && ai.brain.kind === 'rusher' && Math.hypot(h.pos.x - G.eye.x, h.pos.z - G.eye.z) < 4.2 && !ai.brain.S.entry) return W.rush || 'Stop him!';
+    const e = G.eye;
+    let pri = 9, text = null;
+    const say = (p, t) => { if (p < pri) { pri = p; text = t; } };
+    for (const [h, ai] of G.ais) {
+      if (!h.alive || !ai.brain) continue;
+      if (ai.brain.kind === 'rusher' && !ai.brain.S.entry && Math.hypot(h.pos.x - e.x, h.pos.z - e.z) < 4.2) say(0, W.rush || 'Stop him!');
+      if (down && ai.brain.hasLine) say(2, W.angle || 'They have your angle. Move!');
+    }
     const L = this.lastKill;
-    if (L && G.time - L.t < 1.2 && L.through && down) return W.cover || 'Your cover won\u2019t hold. Move!';
+    if (L && G.time - L.t < 1.2 && L.through && down) say(1, W.cover || 'Your cover won\u2019t hold. Move!');
+    const F = this.flank;
+    if (F && !F.done && F.ai.h.alive && !F.ai.brain.hasLine && F.ai.brain.S.state === 'move') {
+      // (the side he is going round, as I face)
+      const fx = F.at.x - e.x, fz = F.at.z - e.z;
+      const right = (-Math.cos(C.yaw)) * fx + (Math.sin(C.yaw)) * fz < 0;
+      say(3, right ? (W.flankR || 'One\u2019s going round on your right.') : (W.flankL || 'One\u2019s going round on your left.'));
+    }
     const low = H.hp < 45 || (G.lowWarn && H.hp < 60);
-    if (low && this.lineOnMe > 0) return down ? (W.angle || 'They have your angle. Move!') : (W.open || 'Get down!');
-    if (low && down) return W.mend || 'Stay down. Let it mend.';
-    return null;
+    if (low && !down && this.lineOnMe > 0) say(4, W.open || 'Get down!');
+    if (low && down) say(5, W.mend || 'Stay down. Let it mend.');
+    // (held a second, unless something more urgent comes)
+    const P = this._w;
+    if (P && P.text && P.text !== text && G.time - P.t < 1.0 && (text == null || pri >= P.pri)) return P.text;
+    if (!P || P.text !== text) this._w = { text, pri, t: G.time };
+    return text;
   }
 
   // ---- per step (game.scripts: before the controller and the men) -----------------------------------------
