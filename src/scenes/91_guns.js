@@ -28,13 +28,13 @@ export const BEATS = {
     at: [DESK.x + 0.02, DESK.z + 0.1, EAST], gun: 'revolver', tipped: true, crouch: false, max: 2, flankAfter: 9,
     obj: 'They are coming. Hold the room.',
     // [C2] after the critic: three through the one door - two who work it
-    // together from its jambs, and a third close behind them (two were a fair
-    // duel for a man standing up and shooting fast: he won it)
+    // together from its jambs, and a third some seconds behind them (two were
+    // a fair duel for a man standing up and shooting fast: he won it)
     area: { x0: HOUSE.x0, x1: HOUSE.x1, z0: HOUSE.z0, z1: HOUSE.z1 - 0.2 },
     men: [
       { kind: 'pistol', at: { x: -0.4, z: -9.5 }, way: [{ door: 'BD' }, { x: -0.45, z: -6.2, run: true }, { door: 'A1' }], wait: 0.8, door: 'hold' },
       { kind: 'pistol', at: { x: -0.4, z: -9.7 }, way: [{ door: 'BD' }, { x: -0.5, z: -5.6, run: true }, { door: 'A1' }], wait: 1.2, door: 'hold' },
-      { kind: 'pistol', at: { x: -0.2, z: -9.9 }, way: [{ door: 'BD' }, { x: -0.4, z: -6.0, run: true }, { door: 'A1' }], wait: 5.0, door: 'hold' },
+      { kind: 'pistol', at: { x: -0.2, z: -9.9 }, way: [{ door: 'BD' }, { x: -0.4, z: -6.0, run: true }, { door: 'A1' }], wait: 8.0, door: 'hold' },
     ],
     spots: [{ x: DESK.x + 0.02, z: DESK.z + 0.1, yaw: EAST }, { x: DESK.x + 0.02, z: DESK.z - 0.55, yaw: EAST }, { x: -7.25, z: -2.35, yaw: EAST + 0.4 }],
     open: { x: -3.6, z: -2.4 },
@@ -77,7 +77,9 @@ export const BEATS = {
     area: { x0: HOUSE.x0, x1: HOUSE.x1, z0: HOUSE.z0, z1: HOUSE.z1 - 0.2 },
     men: [
       { kind: 'rusher', at: { x: -0.5, z: 10.5 }, way: [{ x: -0.5, z: 7.6 }, { door: 'SD' }], wait: 1.5 },
-      { kind: 'pistol', at: { x: -7.4, z: -6.8 }, way: [{ door: 'A2' }], wait: 7.0, door: 'hold' },
+      // ([C2] after the critic: wait 7 -> 10 - his rounds now reach me past A2's jamb, and with the heavy still
+      // up the first-timer lost the rush to him three tries running; he is the 'One more. Find him.')
+      { kind: 'pistol', at: { x: -7.4, z: -6.8 }, way: [{ door: 'A2' }], wait: 10.0, door: 'hold' },
     ],
     spots: [{ x: -3.5, z: 2.4, yaw: SOUTH }],
     open: { x: -5.3, z: 3.0 },
