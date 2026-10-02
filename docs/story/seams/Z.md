@@ -287,14 +287,17 @@ chapter picked start with empty flags and inventory (then the chapter's
 ---------------------------------------------------------------------------
 ## Z8. The kit's test bed and the plays
 
-`?start=kit` (`src/scenes/92_kit.js`, not in the order): a man walks up the
-avenue at me; the revolver is out. The objective, two teach cards (`[LMB]
-fire`, `[RMB] steady the aim`; the second once more after two fails), the
-warning at 7 m, the fail ('He reached you.') back at `ready`; won, 'Done.'
-and the round again (`game.kitWins`). The plays: `tools/plays/kit.json`
-(the stills, the objective, teach once, the fail from a debug hook),
-`kit_idle.json`, `kit_bad.json`, `kit_good.json` (the three proofs of
-WAVE_C §7 on the test bed's contest).
+`?start=kit` (`src/scenes/92_kit.js`, not in the order): a man runs up the
+avenue at me, side to side round the parked car (brain `kit_walker`: he
+never fires; after two fails here he walks: the mercy); the revolver is out.
+The objective, two teach cards (`[LMB] fire`, `[RMB] steady the aim`; the
+second once more after two fails), the warning at 7 m, the fail ('He reached
+you.') back at `ready`; won, 'Done.' and the round again (`game.kitWins`).
+The plays: `tools/plays/kit.json` (the stills, the objective, teach once,
+the fail from a debug hook), `kit_idle.json`, `kit_bad.json`,
+`kit_good.json` (the three proofs of WAVE_C §7 on the test bed's contest,
+by `tools/lib/kit_bot.mjs`: a model of each kind of player; copy it for a
+chapter's own proofs), `kit_downs.json` (going down in IV, VIII and the bed).
 
 The counters (`#counters`, `tools/counters.sh`, a play's `K`) carry
 `objective`, `warn`, `teach` (the card up), `stills` (the run up), `failing`

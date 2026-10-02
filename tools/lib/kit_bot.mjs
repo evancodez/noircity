@@ -1,17 +1,20 @@
 // [C1] The kit's test bed (src/scenes/92_kit.js) played by real input, for
 // the three proofs (WAVE_C §7): { "drive": "tools/lib/kit_bot.mjs",
 // "profile": "idle" | "bad" | "good", "stop": "expr", "timeout": ms }.
-//   idle  does nothing (the man walks up to me: the warning, then the fail)
+//   idle  does nothing (the man runs up to me: the warning, then the fail)
 //   bad   a clumsy first-timer: slow to see him and slower to turn (0.7 to
 //         1.1 s), a hand that wanders (an error up to 0.075 rad, about a metre
 //         at 15 m), fires before the turn has settled two times in five,
 //         never steadies with RMB, fires as fast as the gun lets him, presses a
 //         wrong key now and then (F, Q, C, E)
 //   good  uses what was taught: sees him in 0.3 to 0.55 s, turns onto his
-//         chest in a few moves, RMB held to steady, a breath, LMB; reloads
-//         (R) when the cylinder is empty
+//         chest in a few moves, RMB held to steady, a second look and a
+//         small correction a hair ahead of him (he runs side to side), LMB;
+//         reloads (R) when the cylinder is empty
 // Ends when `stop` (an expression over N, G) is true or on the timeout.
-// Returns { wins, fails, shots, secs, done, warnedBeforeFail }.
+// Returns { profile, wins, fails, shots, secs, done, lastFailWarnedFor }.
+// Presses go where the cursor stands (play.mjs's cursor()): a press anywhere
+// else moves the cursor first and the view jumps.
 export default async function drive({ js, turn, keyDown, keyUp, mouse, log, sleep, W, H, opts, cursor }) {
   const T0 = Date.now(), timeout = opts.timeout ?? 120000;
   const prof = opts.profile || 'good';
