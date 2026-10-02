@@ -4,6 +4,12 @@ import { BR_ATTACKS, OPENS } from '../cast/brawl/clips.js';
 import { think, steer, mannerOf, MANNERS } from '../cast/brawl/brain.js';
 import { FightCards } from '../ui/fightCards.js';
 import { Lesson } from './BrawlLesson.js';
+import { DodgeCue, CUE, cued } from './BrawlCue.js';
+// [C4] the line before going down, and the word on the black after
+const FIGHT_WARN = 'One more and you’re down.';
+// (the dodge's teach card: the kit's, once a save, wherever the first cue comes)
+export const DODGE_CARD = '[A] [D] dodge toward the light';
+const DOWN_WHY = { late: 'Too slow.', wrong: 'Wrong way.', caught: 'Caught swinging.', answer: 'Into his guard.', down: 'Down.' };
 
 // The fist fight's rules, the arcade pass (docs/story/FIGHT.md version 3:
 // fast, light, readable, fair). A rules engine over clips and their marks:
@@ -55,7 +61,14 @@ export const BRAWL = {
   // passes `levels` (power 1/3, 2/3, full): three ticks at the fist, a flash
   // at full; let go and the hard punch goes, bigger by level in everything.
   // Let go before the first level and the fist just comes home.
-  hold: { min: 0.12, levels: [0.2, 0.4, 0.6] }, buffer: 0.15, other: 0.10,
+  // [C4] version 5: every press is a jab at once (contact 0.06 s after it,
+  // whatever the press's length: a click of 60 to 280 ms is a jab); a button
+  // still held when that jab is home (`start`, 0.3 s) cocks the same fist and
+  // loads it - the three levels as the hold passes `levels` (the wind clip's
+  // own snaps at 0.08, 0.28, 0.48 s after it begins); let go, it is thrown.
+  // A press that arrives while I cannot act (hit, knocked down a moment)
+  // waits up to `wait` s and then jabs: nothing is swallowed.
+  hold: { min: 0.3, start: 0.3, levels: [0.38, 0.58, 0.78] }, buffer: 0.15, wait: 0.35, other: 0.10,
   hop: { side: 0.55, back: 0.6, dur: 0.10, punchAt: 0.12, again: 0.25, blockAt: 0.08 },
   mine: { jab: 3, hard: [9, 15, 22] },
   counter: 1.5, missOpen: 1.5, combo: [1, 1, 1.2, 1.4, 1.4], comboGap: 0.5,
@@ -79,7 +92,7 @@ export const BRAWL = {
   slowmo: { k: 0.35, dur: 0.8 },
   kick: { dur: 0.1 },
   tick: 0.15,
-  down: 1.5, stageAt: 0.4,
+  down: 2.0, stageAt: 0.4,   // ([C4] 1.5 -> 2.0: the black says in a word what went wrong)
   comeRound: 6, comeRoundHp: 20,
   grab: { counter: 1.5, floor: 1.2, stools: 4, preferCounter: 0.25 },
   dmgK: { measured: 1, dirty: 1, wild: 1, out: 1 },
@@ -87,7 +100,7 @@ export const BRAWL = {
   tough: 1,
 };
 // [R2-H] the last blow's card (the lesson's words: HOLD TO LOAD, THEN LET GO)
-const FINISH_CARD = 'OUT ON HIS FEET.   HOLD TO LOAD, THEN LET GO';
+const FINISH_CARD = 'OUT ON HIS FEET.   HOLD ON AFTER THE JAB: IT LOADS.   LET GO';   // ([C4] version 5's words)
 // [R2-H] how white his thrown china prints in the air (the glass ticks' 1.6)
 const THROWN_LIFT = 0.45;
 // [B8] what a thing does in my hands (§5): its damage, how many blows it is
@@ -151,7 +164,11 @@ export class Brawl {
     this.finished = false;
     this.done = false;
     this.fadeBack = 0;
-    if (!retry) { this.stats = freshStats(); this.blackT = 0; this.did = {}; }
+    if (!retry) { this.stats = freshStats(); this.blackT = 0; this.did = {}; this.cueDowns = 0; this.reteach = false; this.lastHurt = null; this.lastCue = null; }
+    // ([C4] no cue carried over; the world at its own speed)
+    if (this.cue) this.cue.end('gone');
+    this.cue = null; G.worldK = 1;
+    if (this.warned) { this.warned = false; G.hud.warn(null); }
     // ([B8] this life's start: how hard it pounded his guard is read at a down)
     this.stats.life = { t: this.stats.time, b: this.stats.myBlocked };
     this.opts = { onRetry, onKO, onGlass, onLanded, onManner, onBottle, onHop };
@@ -206,6 +223,11 @@ export class Brawl {
 
   stop() {
     if (!this.active) return;
+    // ([C4] the cue, the warning and the black's word go with the fight)
+    if (this.cue) this.cue.end('gone');
+    this.game.worldK = 1;
+    if (this.warned) { this.warned = false; this.game.hud.warn(null); }
+    if (this.downWhy) { this.game.hud.kit.failLine(null); this.downWhy = null; }
     this.active = false;
     this.lesson = null;
     const C = this.controller;
@@ -229,68 +251,79 @@ export class Brawl {
   inputStep(dt) {
     if (!this.active || this.blackT > 0) return;
     const me = this.me;
+    // ([C4] my own clock: real game time, never slowed by the dodge cue)
+    this.RT = (this.RT || 0) + dt;
     if (me.act === 'down' || this.finished) { this.moveKeys(false); return; }
     me.t += dt;
     this.input(dt);
+    // [C4] the dodge cue runs on my clock: its window closes in real time
+    if (this.cue) this.cue.step(dt);
   }
 
   // ---- per step (Game.post) ----------------------------------------------------------------
-  update(dt) {
+  // [C4] dt: mine (my hands, the cards, the black); wdt: the world's (him,
+  // what he throws, his timers) - the same but under the dodge cue
+  update(dt, wdt = dt) {
     if (!this.active) return;
     const G = this.game;
-    this.T += dt;
+    this.T += wdt;
     for (const x of [...this.timers]) if (this.T >= x.at) { this.timers.splice(this.timers.indexOf(x), 1); x.fn(); }
-    this.stats.time += dt;
+    this.stats.time += wdt;
     G.health.sinceHit = 0;
     if (this._cards) { this._cards.tick(dt); this._cards.health(this.him.hp / this.max, this.who.name); }
     if (this.blackT > 0) {
       this.blackT -= dt;
       G.hud.fade(1);
-      if (this.blackT <= 0) { this.blackT = 0; this.fadeBack = 0.6; }
+      // [C4] (the black says in a word what went wrong, in the kit's lettering)
+      if (this.downWhy) G.hud.kit.failK(Math.min(1, (this.downBlack - this.blackT) / 0.2) * Math.min(1, this.blackT / 0.25));
+      if (this.blackT <= 0) { this.blackT = 0; this.fadeBack = 0.6; if (this.downWhy) { G.hud.kit.failLine(null); this.downWhy = null; } }
       return;
     }
     if (this.fadeBack > 0) { this.fadeBack -= dt; G.hud.fade(Math.max(0, this.fadeBack / 0.6)); }
     if (this.me.act === 'down') { this.stepDown(dt); return; }
     this.stepMe(dt);
-    this.stepHim(dt);
-    this.stepFlying(dt);
+    this.stepHim(wdt);
+    this.stepFlying(wdt);
     this.drawFlying();
-    // (a throw cut off before it went: the chevron goes with it)
-    if (this._cards && this._cards.chev && this._cards.chev.side && !(this.him.state === 'attack' && BR_ATTACKS[this.him.clip] && BR_ATTACKS[this.him.clip].kind === 'throw') && !(this.flying && this.flying.length)) this._cards.chevron(null);
-    if (this.lesson) this.lesson.update(dt);
+    if (this.cue) this.cue.draw(dt);
+    if (this.lesson) this.lesson.update(wdt);
     this.drawWind();
     this.drawTicks();
     this.bumps();
+    this.lowWarn(dt);
   }
 
   // ---- my side --------------------------------------------------------------------------------
-  // [B8] version 4. Each mouse button is an arm, and each keeps its own
-  // record: pressed (age), held (t), let go. A press jabs at once; a press
-  // that could not act yet waits 0.15 s, or for as long as the button is
-  // held (it then goes straight into the wind-up: nothing is swallowed); a
-  // hold goes on into the wind-up from the jab's return (no dead time, no
-  // second jab); a button still held after a blow took me out of the
-  // wind-up winds again. What a hand holds is used by that hand's button;
-  // a stool or a chair is in both hands and either button swings it.
+  // [C4] version 5. Each mouse button is an arm, and each keeps its own
+  // record: pressed (age), held (t), let go. EVERY PRESS IS A JAB AT ONCE:
+  // the fist starts in the step the press arrives and its contact is 0.06 s
+  // later, whatever the press's length (a person's click is 60 to 280 ms;
+  // version 4 turned a press held past 0.12 s into the wind-up, and a
+  // normal click let go before its first level showed nothing landing). A
+  // press that comes while a fist is still out sends that blow home first
+  // (its contact is never lost) and jabs. Held on past the jab
+  // (BRAWL.hold.start, 0.3 s: the jab has landed and come home), the same
+  // fist cocks and loads; let go, the hard punch. A press that arrives while
+  // I cannot act (hit, grabbing) waits up to BRAWL.hold.wait and then jabs.
+  // What a hand holds is used by that hand's button: in reach a click swings
+  // it at once; out of his reach a click throws it; held on, it loads.
   // what I may start now: 'punch' (with `arm`), 'hop', 'block', 'grab'
   can(what, arm = null) {
     const me = this.me, a = me.act, t = me.t;
+    void arm;
     if (a === 'idle') return true;
     if (a === 'hurt' || a === 'stagger' || a === 'down' || a === 'grab') return false;
+    // ([C4] a press is a jab from anything I do but being hit: from the
+    // block, a hop, a jab, a wind-up, a fist bounced off his guard)
+    if (what === 'punch') return true;
     if (a === 'block') return what === 'hop';
-    if (a === 'hop') return what === 'punch' ? t >= BRAWL.hop.punchAt : what === 'block' ? t >= BRAWL.hop.blockAt : what === 'hop' ? this.T - me.lastHop >= BRAWL.hop.again && t >= BRAWL.hop.dur : false;
-    if (a === 'jab') {
-      // (the other hand 0.10 after contact: five jabs a second, L R L R; the
-      // same hand when this one is home)
-      const contact = 0.06;
-      if (what === 'punch') return arm !== me.arm && !this.bothHands() ? t >= contact + BRAWL.other : false;
-      return t >= contact;
-    }
+    if (a === 'hop') return what === 'block' ? t >= BRAWL.hop.blockAt : what === 'hop' ? this.T - me.lastHop >= BRAWL.hop.again && t >= BRAWL.hop.dur : false;
+    if (a === 'jab') return t >= 0.06;
     if (a === 'wind' || a === 'cock') return what === 'hop' || what === 'block';
-    if (a === 'hard') return what === 'punch' ? t >= 0.2 && arm !== me.arm && !this.bothHands() : t >= 0.18;
-    // (a fist bounced off his guard: the beat is wasted, and a blocked hard
-    // punch longer than a blocked jab)
-    if (a === 'bounce') { const L = BRAWL.bounce[me.bounceKind] || BRAWL.bounce.jab; return what === 'hop' || what === 'block' ? t >= L[0] : what === 'punch' ? t >= L[1] : false; }
+    if (a === 'hard') return t >= 0.18;
+    // (a fist bounced off his guard: the feet and the block come back after
+    // a moment, a blocked hard punch later than a blocked jab)
+    if (a === 'bounce') { const L = BRAWL.bounce[me.bounceKind] || BRAWL.bounce.jab; return t >= L[0]; }
     if (a === 'strike') return what === 'hop' ? me.h && me.h.t >= 0.2 : false;
     return false;
   }
@@ -320,7 +353,7 @@ export class Brawl {
     const Bt = me.btns;
     for (const code of ['Mouse0', 'Mouse2']) {
       if (G.pressed(code)) {
-        Bt[code] = { age: 0, t: 0, down: G.held(code) && !G.released(code), used: false };
+        Bt[code] = { age: 0, t: 0, down: G.held(code) && !G.released(code), used: false, at: this.RT };
         this.stats.input.length < 400 && this.stats.input.push([+this.T.toFixed(3), code, me.act]);
         continue;
       }
@@ -344,64 +377,90 @@ export class Brawl {
         this.stats.input.length < 400 && this.stats.input.push([+this.T.toFixed(3), 'release' + me.arm, lv]);
         if (me.windThing) this.strike(true, Math.max(1, lv));
         else if (lv >= 1) this.hard(me.arm, lv);
-        else { me.act = 'idle'; me.t = 0; me.h = this.hands.play('guard'); }
+        else { me.act = 'idle'; me.t = 0; me.h = this.hands.play(this.restClip()); }
         return;
       }
     }
-    // ---- a thing drawn back on the press: a click strikes with it as the
-    // button comes up; held on, it is wound
+    // ---- [C4] a thing drawn back to throw (he is out of reach): let go, it flies
     if (me.act === 'cock') {
       const b = Bt[me.code];
-      if (!b || !b.down) { this.strike(false, THINGS_OF(me.holding).level); return; }
-      if (b.t >= BRAWL.hold.min + 0.06) { this.wind(me.arm, me.code, b.t, true); return; }
+      if (!b || !b.down) { this.strike(true, Math.max(1, this.levelOf(b ? b.t : 0))); return; }
+      if (b.t >= BRAWL.hold.start) { b.wound = true; this.wind(me.arm, me.code, b.t, true); return; }
     }
-    // ---- a jab (or a bounced fist) whose button is still held goes on into the wind-up
-    if ((me.act === 'jab' || me.act === 'bounce') && me.code) {
+    // ---- [C4] the jab home (or a bounced fist, or a thing swung) and its
+    // button still held past hold.start: the same fist cocks and loads
+    if ((me.act === 'jab' || me.act === 'bounce' || me.act === 'strike') && me.code) {
       const b = Bt[me.code];
       const bl = me.act === 'bounce' ? (BRAWL.bounce[me.bounceKind] || BRAWL.bounce.jab)[0] : 0;
-      if (b && b.down && b.t >= BRAWL.hold.min && me.t >= bl) { this.wind(me.arm, me.code, b.t); return; }
+      const swung = me.act !== 'strike' || (me.h && (me.h.done || me.h.t >= Math.min(me.h.duration, 0.26)));
+      if (b && b.down && !b.wound && b.t >= BRAWL.hold.start && me.t >= bl && swung) {
+        b.wound = true;
+        if (me.holding && this.handUses(me.arm)) this.wind(me.arm, me.code, b.t, true);
+        else this.wind(me.arm, me.code, b.t);
+        return;
+      }
+    }
+    // ---- the presses: the newest first. [C4] Every press jabs at once - from
+    // the block, a hop, the other fist's wind-up, a fist still out; only a
+    // blow that has me reeling holds it (then it jabs, up to hold.wait later)
+    const order = ['Mouse0', 'Mouse2'].filter((c) => Bt[c] && !Bt[c].used).sort((a, b) => Bt[a].age - Bt[b].age);
+    for (const code of order) {
+      const b = Bt[code];
+      if (b.age > BRAWL.hold.wait) { b.used = true; continue; }
+      const arm = code === 'Mouse0' ? 'L' : 'R';
+      if (!this.can('punch', arm)) continue;
+      b.used = true;
+      // (a blow of mine still on its way lands first: its contact is never lost)
+      this.flushContact();
+      if (this.cue) this.cue.act('punch');
+      if (this.handUses(arm)) {
+        // (a thing in this hand: in reach it is swung at once; out of his
+        // reach it is drawn back to throw, and goes when the button comes up)
+        const T = THINGS_OF(me.holding);
+        const tgt = this.onTarget(BRAWL.itemReach + (T.big ? 0.2 : 0) + (T.reach || 0) + 0.25);
+        this.cock(arm, code);
+        if (!(T.throw && !tgt.ok)) this.strike(false, T.level);
+        return;
+      }
+      this.jab(arm, code);
+      return;
     }
     if (locked) return;
     // ---- SPACE held: the block (up in 0.05, down in 0.08)
     const space = G.held('Space');
-    if (space && me.act !== 'block' && this.can('block')) { this.block(true); return; }
+    if (space && me.act !== 'block' && this.can('block')) { if (this.cue) this.cue.act('block'); this.block(true); return; }
     if (!space && me.act === 'block') this.block(false);
     // ---- the keys: a hop, E
     const k = me.buf;
-    if (k && (k.code === 'KeyA' || k.code === 'KeyD' || k.code === 'KeyS')) { if (this.can('hop')) { me.buf = null; this.hop(k.code); } return; }
-    if (k && k.code === 'KeyE') {
-      if (me.act === 'idle' && !me.holding) { me.buf = null; const it = this.reachable(); if (it) this.grab(it); }
+    if (k && (k.code === 'KeyA' || k.code === 'KeyD' || k.code === 'KeyS')) {
+      // ([C4] the cue held for the lesson's first dodge: only the key toward
+      // the light lets time go; the other is not taken)
+      if (this.cue && this.cue.refuse(k.code)) { me.buf = null; return; }
+      if (this.can('hop')) { me.buf = null; this.hop(k.code); }
       return;
     }
-    // ---- the presses: the newest first
-    const order = ['Mouse0', 'Mouse2'].filter((c) => Bt[c] && !Bt[c].used).sort((a, b) => Bt[a].age - Bt[b].age);
-    for (const code of order) {
-      const b = Bt[code];
-      // (a click that could not act in time is gone; one still held waits)
-      if (!b.down && b.age > BRAWL.buffer) { b.used = true; continue; }
-      const arm = code === 'Mouse0' ? 'L' : 'R';
-      if (!this.can('punch', arm)) continue;
-      b.used = true;
-      if (this.handUses(arm)) {
-        // (a thing in this hand: it is drawn back at once; a click strikes
-        // with it as the button comes up, a hold winds it)
-        if (!b.down) { this.cock(arm, code); this.strike(false, THINGS_OF(me.holding).level); }
-        else if (b.t >= BRAWL.hold.min) this.wind(arm, code, b.t, true);
-        else this.cock(arm, code);
-        return;
-      }
-      // (a press kept waiting while held past the jab: straight into the wind-up)
-      if (b.down && b.t >= BRAWL.hold.min) this.wind(arm, code, b.t);
-      else this.jab(arm, code);
+    if (k && k.code === 'KeyE') {
+      if (me.act === 'idle' && !me.holding) { me.buf = null; const it = this.reachable(); if (it) { if (this.cue) this.cue.act('grab'); this.grab(it); } }
       return;
     }
     // ---- a button still held from a press a blow took me out of: wind again
     if (me.act === 'idle') {
       for (const code of ['Mouse0', 'Mouse2']) {
         const b = Bt[code], arm = code === 'Mouse0' ? 'L' : 'R';
-        if (b && b.used && b.down && b.t >= BRAWL.hold.min && me.rewind !== b) { me.rewind = b; if (this.handUses(arm)) this.wind(arm, code, BRAWL.hold.min, true); else this.wind(arm, code, BRAWL.hold.min); return; }
+        if (b && b.used && b.down && b.t >= BRAWL.hold.start && me.rewind !== b) { me.rewind = b; b.wound = true; if (this.handUses(arm)) this.wind(arm, code, BRAWL.hold.start, true); else this.wind(arm, code, BRAWL.hold.start); return; }
       }
     }
+  }
+
+  // [C4] a blow of mine whose contact has not come yet, sent home now (a new
+  // press cuts its clip short: the hands play one clip at a time)
+  flushContact() {
+    const h = this.me.h;
+    if (!h || h.done || !h.onMark || !h.marks) return;
+    const name = h.marks.contact != null ? 'contact' : h.marks.release != null ? 'release' : null;
+    if (!name || h.fired.has(name)) return;
+    h.fired.add(name);
+    if (h.onMark[name]) h.onMark[name](name);
   }
 
   cancelArm() { const me = this.me; if (me.act === 'wind' || me.act === 'jab' || me.act === 'cock') { me.act = 'idle'; me.arm = null; me.windThing = false; } }
@@ -417,6 +476,8 @@ export class Brawl {
   // a hop: 0.55 m aside (A / D) or 0.6 m back (S) in 0.10 s
   hop(code) {
     const me = this.me, C = this.controller, H = BRAWL.hop;
+    // ([C4] the dodge cue up: this is its answer - toward the light, a slip)
+    if (this.cue) this.cue.act('hop', code);
     this.cancelArm();
     const fy = C.faceYaw ?? C.yaw;
     const fx = -Math.sin(fy), fz = -Math.cos(fy), rx = Math.cos(fy), rz = -Math.sin(fy);
@@ -434,7 +495,11 @@ export class Brawl {
   jab(arm, code) {
     const me = this.me;
     me.act = 'jab'; me.arm = arm; me.code = code; me.t = 0; me.holdT = 0; me.windThing = false;
-    me.h = this.hands.play(arm === 'L' ? 'jabL' : 'jabR', { onMark: { contact: () => this.myContact('jab', arm, 0) } });
+    // ([C4] each press and its contact on my clock: the click play reads them)
+    const b = me.btns[code], rec = [code, +((b && b.at != null ? b.at : this.RT) || 0).toFixed(3), +(this.RT || 0).toFixed(3), null];
+    const C = this.stats.clicks || (this.stats.clicks = []);
+    if (C.length < 2000) C.push(rec);
+    me.h = this.hands.play(arm === 'L' ? 'jabL' : 'jabR', { onMark: { contact: () => { rec[3] = +(this.RT || 0).toFixed(3); this.myContact('jab', arm, 0); } } });
     this.stats.jabs++;
   }
   // the wind-up: the fist draws back further and further and trembles; the
@@ -1095,6 +1160,8 @@ export class Brawl {
     const him = this.him, c = this.c;
     him.t += dt;
     if (him.state === 'ko') { this.stepKO(dt); return; }
+    // [C4] his big blow at its commit, coming at me: the dodge cue
+    this.cueCheck();
     for (const s of ['L', 'R']) if (him.open[s] > 0) him.open[s] -= dt;
     if (him.missT > 0) him.missT -= dt;
     if (him.coverT > 0) him.coverT -= dt;
@@ -1243,9 +1310,17 @@ export class Brawl {
     // (a thrown thing is aimed where I stand as the tell begins: no lead)
     const lead = A && A.kind === 'throw' ? 0 : Math.min(0.9, tc * 0.8);
     him.aim = { x: G.eye.x + Cv.x * lead, z: G.eye.z + Cv.z * lead, from: { x: c.pos.x, z: c.pos.z } };
-    // [B8] (a throw: the chevron low at the side of the frame to step to,
-    // from the first frame of the tell until the thing has passed)
-    if (A && A.kind === 'throw') this.cards.chevron(this.throwSide(A.hand));
+    // [C4] (the chevron is gone: a thrown thing gets the dodge cue in its
+    // flight, as his big blows do at their commit - BrawlCue.js). Each blow
+    // its own number: the cue looks once, a slip or a wrong way is this one's
+    him.atk = (him.atk || 0) + 1; him.slipped = null;
+    // [C4] the side the cue will open is chosen now: away from the hand that
+    // swings (a swing's own path leaves that side open), else the side with
+    // room; a blow that comes straight at me (an overhand, a rush, a shove,
+    // the bottle's thrust, a throw) is aimed a hand's width to the other side,
+    // so the light side leaves it and the dark side does not
+    him.cueSide = A && cued(clip) ? this.safeSide(A) : null;
+    this.cueAim(A);
     him.hit = false;
     this.stats.his++;
     this.stats.clips[clip] = (this.stats.clips[clip] || 0) + 1;
@@ -1260,7 +1335,7 @@ export class Brawl {
   hisTell(clip) {
     const G = this.game, c = this.c, A = BR_ATTACKS[clip];
     // (his first bottle: the aim is taken again when the neck is cocked)
-    if (clip === 'br_bottle') { const Cv = this.controller.vel || V(0, 0, 0); this.him.aim = { x: G.eye.x + Cv.x * 0.4, z: G.eye.z + Cv.z * 0.4 }; }
+    if (clip === 'br_bottle') { const Cv = this.controller.vel || V(0, 0, 0); this.him.aim = { x: G.eye.x + Cv.x * 0.4, z: G.eye.z + Cv.z * 0.4 }; this.cueAim(A); }
     const feint = /^br_feint/.test(clip);
     const hand = feint ? (clip === 'br_feint' ? 'R' : 'L') : A ? (A.hand === 'both' ? 'R' : A.hand) : 'R';
     const p = c.bones[hand === 'L' ? 'handL' : 'handR'].getWorldPosition(V(0, 0, 0));
@@ -1278,6 +1353,10 @@ export class Brawl {
     const eye = G.eye, L = this.lesson;
     // (a thrown thing is judged in its flight: stepFlying)
     const res = opts.force ? { hit: true, into: false, lat: 0, dep: 1 } : this.inPath(A, eye);
+    // [C4] (the dodge cue answered: toward the light it goes by, whatever the
+    // room let my feet do; toward the dark it lands, a straight one too)
+    if (!opts.force && him.slipped === clip) { res.hit = false; res.slip = true; }
+    if (this.cue && !this.cue.flying && this.cue.clip === clip) this.cue.end(res.hit ? 'late' : 'gone');
     const from = A.hand === 'R' ? 'L' : A.hand === 'L' ? 'R' : 'F';   // the side of me it comes from
     if (!res.hit) {
       // ---- it misses: the air, and he is open
@@ -1344,7 +1423,13 @@ export class Brawl {
     if (res.into) { dmg *= 1.25; this.stats.wrongSlips++; }
     // [B8] (caught punching - a fist out, or bounced off him, or winding -
     // it lands half again: trading blows with him is a losing game)
-    if (!L && /^(jab|hard|bounce|wind|cock|strike)$/.test(me.act)) { dmg *= 1.5; this.stats.caught = (this.stats.caught || 0) + 1; }
+    const caught = !L && /^(jab|hard|bounce|wind|cock|strike)$/.test(me.act);
+    if (caught) { dmg *= 1.5; this.stats.caught = (this.stats.caught || 0) + 1; }
+    // [C4] (what put me down, said in a word on the black)
+    if (!opts.thrown) {
+      const lc = this.lastCue && this.lastCue.atk === him.atk && !this.lastCue.flying ? this.lastCue.answer : null;
+      this.lastHurt = { clip, answer: !!A.answer, caught, cue: lc, at: this.T };
+    } else this.lastHurt.caught = caught;
     this.hurtMe(dmg, from, { stun: A.stun + (res.into ? 0.08 : 0) });
     { const HB = this.stats.hurtBy || (this.stats.hurtBy = {}); HB[clip] = +((HB[clip] || 0) + dmg).toFixed(1); }
     // (a blow that finds me, he presses: a second one on its heels - trading
@@ -1378,6 +1463,13 @@ export class Brawl {
 
   hurtMe(n, from = 'F', { soft = false, stun = 0.3 } = {}) {
     const G = this.game, me = this.me, H = this.hands;
+    // [C4] (nobody goes down unwarned: a blow that would take the last of me
+    // while the warning has not been up a second leaves one - and puts it up)
+    if (!this.lesson && G.health.hp - n <= 0 && !(this.warned && this.T - (this.warnedAt ?? this.T) >= 1.0)) {
+      n = Math.max(0, G.health.hp - 1);
+      this.stats.spared = (this.stats.spared || 0) + 1;
+      if (!this.warned) { this.warned = true; this.warnedAt = this.T; G.hud.warn(FIGHT_WARN); }
+    }
     this.stats.taken++;
     this.stats.dmgTaken = (this.stats.dmgTaken || 0) + n;
     G.emit('brawl:hit', { by: 'him', kind: 'hit', power: n / 20, zone: soft ? 'chip' : 'head' });
@@ -1488,7 +1580,7 @@ export class Brawl {
   // tell goes when it has passed.
   hisThrow() {
     const him = this.him, c = this.c, G = this.game, o = him.prop;
-    if (!o) { this.cards.chevron(null); return; }
+    if (!o) return;
     him.prop = null; const kind = him.holding; him.holding = null;
     c.hold(null, 'R');
     const from = c.bones.handR.getWorldPosition(V(0, 0, 0));
@@ -1502,7 +1594,9 @@ export class Brawl {
     const lane = V(to.x - from.x, 0, to.z - from.z).normalize();
     // ([B8] its middle and its size, for the rim drawn round it on the frame)
     const sph = new THREE.Box3().setFromObject(o, true).getBoundingSphere(new THREE.Sphere());
-    (this.flying || (this.flying = [])).push({ o, kind, v, t: 0, from: from.clone(), lane, judged: false, spin: V(this.rng.range(6, 12), this.rng.range(8, 14), 0), by: 'him', c: o.worldToLocal(sph.center.clone()), rad: Math.max(0.06, sph.radius) });
+    // ([C4] the cue's side was chosen at his tell: the lane runs a hand's
+    // width to the other side of me)
+    (this.flying || (this.flying = [])).push({ o, kind, v, t: 0, from: from.clone(), lane, judged: false, spin: V(this.rng.range(6, 12), this.rng.range(8, 14), 0), by: 'him', c: o.worldToLocal(sph.center.clone()), rad: Math.max(0.06, sph.radius), side: him.cueSide || this.throwSide('R'), atk: him.atk });
     this.stats.thrown = (this.stats.thrown || 0) + 1;
   }
 
@@ -1521,16 +1615,30 @@ export class Brawl {
       // on me: where it crosses my depth, if I am still in its lane
       const eye = G.eye;
       const dep0 = (p0.x - eye.x) * F.lane.x + (p0.z - eye.z) * F.lane.z, dep1 = (p1.x - eye.x) * F.lane.x + (p1.z - eye.z) * F.lane.z;
+      // [C4] the dodge cue: when what is left of its flight to me is the
+      // cue's share of the window, if it would find me where I stand
+      // (from where this step leaves it: this step's move is already made)
+      if (!F.judged && !F.cueDone && F.by === 'him' && dep1 < 0) {
+        const vh = F.v.x * F.lane.x + F.v.z * F.lane.z;
+        const remain = vh > 0.1 ? -dep1 / vh : 9;
+        if (remain <= CUE.window * CUE.k + 1e-4) {
+          F.cueDone = true;
+          const qx = p1.x + F.v.x * remain, qz = p1.z + F.v.z * remain, qy = p1.y + F.v.y * remain - 4.9 * remain * remain;
+          if (!this.cue && Math.hypot(qx - eye.x, qz - eye.z) < 0.36 && qy > eye.y - 1.3 && qy < eye.y + 0.25 && this.me.act !== 'down' && !this.finished) this.startCue({ clip: 'br_throw', A: BR_ATTACKS.br_throw, side: F.side, remain, flying: F, atk: F.atk });
+        }
+      }
       if (!F.judged && dep0 < 0 && dep1 >= 0) {
         F.judged = true;
         const u = -dep0 / Math.max(1e-6, dep1 - dep0);
         const q = p0.clone().lerp(p1, u);
         const lat = Math.hypot(q.x - eye.x, q.z - eye.z);
-        this.cards.chevron(null);
-        if (lat < 0.36 && q.y > eye.y - 1.3 && q.y < eye.y + 0.25 && this.me.act !== 'down' && this.active) {
+        // ([C4] slipped under the cue: it goes past my ear, whatever the room let my feet do)
+        if (!F.slipped && lat < 0.36 && q.y > eye.y - 1.3 && q.y < eye.y + 0.25 && this.me.act !== 'down' && this.active) {
           // it finds me (or my block)
           him.aim = { x: eye.x, z: eye.z };
-          this.hisContact('br_throw', { force: true });
+          const lc = this.lastCue && this.lastCue.flying === F ? this.lastCue.answer : null;
+          this.lastHurt = { clip: 'br_throw', thrown: true, cue: lc, at: this.T };
+          this.hisContact('br_throw', { force: true, thrown: true });
           o.position.copy(q); o.updateMatrixWorld(true);
           this.burstThing(o, F.kind, q, F.lane);
           this.flying.splice(i, 1);
@@ -1555,7 +1663,12 @@ export class Brawl {
       else if (F.t > 3) { /* (never forever) */ }
       else { o.position.copy(p1); o.updateMatrixWorld(true); continue; }
       o.updateMatrixWorld(true);
-      if (!F.judged) { F.judged = true; this.cards.chevron(null); }
+      if (!F.judged) {
+        F.judged = true;
+        // ([C4] it struck the room before it reached me: on the record)
+        const TS = this.stats.thrownShort || (this.stats.thrownShort = []);
+        if (TS.length < 20) TS.push({ at: [+o.position.x.toFixed(2), +o.position.y.toFixed(2), +o.position.z.toFixed(2)], what: hit ? (hit.mesh && (hit.mesh.name || (hit.mesh.parent && hit.mesh.parent.name))) || 'mesh' : 'floor', eye: [+G.eye.x.toFixed(2), +G.eye.y.toFixed(2), +G.eye.z.toFixed(2)] });
+      }
       this.burstThing(o, F.kind, o.position.clone(), hit ? hit.normal.clone().negate() : F.lane);
       this.flying.splice(i, 1);
     }
@@ -1653,6 +1766,66 @@ export class Brawl {
     const s0 = want === 'R' ? 1 : -1;
     if (room(s0)) return want;
     return room(-s0) ? (want === 'R' ? 'L' : 'R') : want;
+  }
+
+  // ---- [C4] the dodge cue (BrawlCue.js) ---------------------------------------------------------
+  // the side of my screen a blow of his is left by: away from the hand that
+  // swings (its path leaves only that side); a blow that comes straight at
+  // me, the side with room (away from its hand first)
+  safeSide(A) {
+    const away = A.hand === 'L' ? 'L' : 'R';
+    if (A.kind === 'swing' || A.kind === 'long') return away;
+    return this.throwSide(A.hand === 'both' ? (this.rng.chance(0.5) ? 'L' : 'R') : away);
+  }
+  // a straight blow (or a throw) aimed a hand's width to the dark side of me
+  cueAim(A) {
+    const him = this.him, G = this.game, c = this.c;
+    if (!him.cueSide || !him.aim || !A || A.kind === 'swing' || A.kind === 'long') return;
+    const dx = G.eye.x - c.pos.x, dz = G.eye.z - c.pos.z, dl = Math.hypot(dx, dz) || 1;
+    const rx = dz / dl, rz = -dx / dl, s = (him.cueSide === 'R' ? -1 : 1) * CUE.aimOff;
+    him.aim.x += rx * s; him.aim.z += rz * s;
+  }
+  // (his side, a step: is his blow at its commit, coming at me where I stand?)
+  cueCheck() {
+    const him = this.him;
+    if (this.cue || this.finished || this.me.act === 'down' || this.blackT > 0) return;
+    if (him.state !== 'attack' || !him.clip || !him.cueSide || him.cueAtk === him.atk) return;
+    const A = BR_ATTACKS[him.clip];
+    if (!A || A.kind === 'throw' || him.contactAt == null) { him.cueAtk = him.atk; return; }
+    const at = Math.max(him.strikeAt ?? 0, him.contactAt - CUE.window * CUE.k);
+    if (him.t < at) return;
+    him.cueAtk = him.atk;
+    if (!this.inPath(A, this.game.eye).hit) return;
+    this.startCue({ clip: him.clip, A, side: him.cueSide, remain: Math.max(0.02, him.contactAt - him.t), atk: him.atk });
+  }
+  startCue(spec) {
+    const G = this.game;
+    // (the lesson's first: held, with the kit's teach card - time crawls
+    // until the key toward the light is pressed; once a save)
+    let held = false, teach = null;
+    if (this.lesson && this.lesson.dodge && G.hud && G.hud.teach) {
+      this.lesson.dodge = false;
+      teach = G.hud.teach('dodge', DODGE_CARD, { hold: true, holdMax: 6, until: () => !this.cue || this.cue.done });
+      held = !teach.done;
+    } else if (this.reteach && G.hud && G.hud.teach) {
+      // (failed twice: the card once more, not held)
+      this.reteach = false;
+      G.hud.teach.again('dodge', null, { hold: false, secs: 2.4, until: () => !this.cue || this.cue.done });
+    }
+    this.cue = new DodgeCue(this, { ...spec, held });
+    this.cue.atk = spec.atk;
+    this.cue.teach = teach;
+  }
+
+  // [C4] the warning before I go down (WAVE_C §1 rule 2): one line low in
+  // the frame (the kit's), up while my health is low, gone as it comes back
+  lowWarn() {
+    const G = this.game, K = G.hud && G.hud.kit;
+    if (!K || this.lesson) return;
+    const hp = G.health.hp;
+    const on = this.warned ? hp < 40 : hp < 30 && this.me.act !== 'down';
+    if (on && !this.warned) { this.warned = true; this.warnedAt = this.T; G.hud.warn(FIGHT_WARN); }
+    else if (!on && this.warned) { this.warned = false; G.hud.warn(null); }
   }
 
   // the stool (or anything) out of his hands: it falls from where his hands
@@ -1914,9 +2087,18 @@ export class Brawl {
     if (me.act === 'down') return;
     this.cancelArm();
     if (me.holding) this.dropMine();
+    if (this.cue) this.cue.end('gone');
     me.act = 'down'; me.downT = 0;
     this.controller.brawlHop = null;
     this.stats.downs++;
+    // [C4] what put me down, in a word for the black; two downs off a blow
+    // the cue told me of: its card once more at the next
+    const LH = this.lastHurt || {};
+    const why = LH.cue === 'late' ? 'late' : LH.cue === 'wrong' ? 'wrong' : LH.caught ? 'caught' : LH.answer ? 'answer' : 'down';
+    this.downWhyKey = why;
+    (this.stats.downWhy || (this.stats.downWhy = [])).push(why);
+    if (why === 'late' || why === 'wrong') { this.cueDowns = (this.cueDowns || 0) + 1; if (this.cueDowns === 2) this.reteach = true; }
+    if (this.warned) { this.warned = false; G.hud.warn(null); }
     this.hands.play('downMe');
     this.sfx('bodyFloor', null, { k: 1 });
     G.emit('player:down', { brawl: true });
@@ -1952,6 +2134,10 @@ export class Brawl {
       if (this.opts.onRetry) this.opts.onRetry(m, back);
       G.hud.fade(1);
       this.blackT = left;
+      // [C4] (the word on the black, in the kit's lettering)
+      this.downWhy = DOWN_WHY[this.downWhyKey] || DOWN_WHY.down;
+      this.downBlack = left;
+      if (G.hud.kit) { G.hud.kit.failLine(this.downWhy); G.hud.kit.failK(0); }
     }
   }
 

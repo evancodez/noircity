@@ -250,10 +250,13 @@ let simTime = 0;
 function simStep(dt) {
   // a hit stop (the brawl): the world holds for a step or three
   if (game.hitStop > 0) { game.hitStop--; return; }
+  // [C4] (the fight's dodge cue slows the world, not me: my input, look and
+  // hands take dt in pre; the stage, his blows and what he throws take wdt)
+  const wdt = game.worldK === 1 ? dt : dt * game.worldK;
   game.pre(dt, simTime);
-  game.stage.update(dt, simTime, camera, pipeline.height);
-  game.post(dt, simTime);
-  simTime += dt;
+  game.stage.update(wdt, simTime, camera, pipeline.height);
+  game.post(dt, simTime, wdt);
+  simTime += wdt;
 }
 // staged warm-up (shot=battle): simulated before the clock starts
 if (game.warmup > 0) {

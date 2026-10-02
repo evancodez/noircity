@@ -142,13 +142,22 @@ async function fight({ timeout = 240000, shots = {} } = {}) {
     const s = await js(`(() => { const B = G.brawl; if (!B.active) return { off: true, finished: !!B.finished, won: !!B.stats.won };
       const h = B.him, m = B.me, c = B.c; const cl = h.clip ? c.clip(h.clip) : null; const e = G.eye;
       return { round: B.round, state: h.state, clip: h.clip, t: h.t, tell: cl && (cl.marks.tell ?? 0), strike: cl && cl.marks.strike, contact: cl && (cl.marks.contact ?? cl.marks.release), open: B.openSides(), missT: h.missT, atSpot: !!h.atSpot,
-        me: m.act, holding: !!m.holding, reach: !!B.reachable(), his: B.stats.his || 0, d: Math.hypot(c.pos.x - e.x, c.pos.z - e.z), lesson: B.lesson ? B.lesson.step : 0, kind: B.lesson ? B.lesson.kind : null, chev: B._cards && B._cards.chev ? B._cards.chev.side : null, bounced: !!(B.lesson && B.lesson.bounced) }; })()`);  // [B8] the lesson's step by what it teaches; the throw's chevron
+        me: m.act, holding: !!m.holding, reach: !!B.reachable(), his: B.stats.his || 0, d: Math.hypot(c.pos.x - e.x, c.pos.z - e.z), lesson: B.lesson ? B.lesson.step : 0, kind: B.lesson ? B.lesson.kind : null, chev: null, cue: B.cue && !B.cue.done ? B.cue.side : null, cueId: B.cue ? B.cue.rec.t0 : null, bounced: !!(B.lesson && B.lesson.bounced) }; })()`);  // [B8] the lesson's step by what it teaches; the throw's chevron
     for (const [name, expr] of Object.entries(shots)) if (!done.has(name) && await js(expr) === true) { done.add(name); await shot(name); }
     const now = Date.now();
     for (const [code, at] of [...held]) if (now >= at) { held.delete(code); if (code[0] === 'M') await mouse('mouseReleased', cx, cy, code.slice(1)); else await keyUp(code); }
     if (s.off) { for (const code of [...held.keys()]) { if (code[0] === 'M') await mouse('mouseReleased', cx, cy, code.slice(1)); else await keyUp(code); } return { ...s, ...(await record()) }; }
     if (now - T0 > timeout) { check('the fight ended in time', false, JSON.stringify(s)); return { ...s, ...(await record()) }; }
     if (s.me === 'down') { await sleep(50); continue; }
+    // [C4] the dodge cue: the key toward the light, a first-timer's reaction
+    // after it shows (0.15 .. 0.28 s; one in ten the wrong way)
+    if (s.cue) {
+      const key = 'cue@' + s.cueId;
+      if (!plans.has(key)) plans.set(key, { act: s.lesson ? (s.cue === 'R' ? 'KeyD' : 'KeyA') : Math.random() < 0.1 ? (s.cue === 'R' ? 'KeyA' : 'KeyD') : (s.cue === 'R' ? 'KeyD' : 'KeyA'), at: now + rr(150, 280) });
+      const P = plans.get(key);
+      if (P.act && now >= P.at) { const a = P.act; P.act = null; if (held.has('KeyW')) { held.delete('KeyW'); await keyUp('KeyW'); } await tapKey(a); }
+      await sleep(8); continue;
+    }
     // (arm's length: W in; a hop back when he is on top of me; out of his
     // way while he reels to the window)
     const want = s.state === 'reel' ? (s.atSpot ? 1.35 : 2.6) : s.kind === 'throw' ? 3.0 : 1.4;
@@ -157,7 +166,7 @@ async function fight({ timeout = 240000, shots = {} } = {}) {
     if (['jabL', 'jabR', 'guard', 'hold'].includes(s.kind) && s.state !== 'attack') {  // [B8]
       if (s.lesson !== lessonStep) { lessonStep = s.lesson; lessonAt = now + rr(1300, 2000); }
       if (now > lessonAt && s.me === 'idle' && s.d < 1.75) {
-        if (s.kind === 'hold') { if (s.open) { await btnDown(Math.random() < 0.5 ? 'left' : 'right', rr(620, 800)); lessonAt = now + 1500; } }
+        if (s.kind === 'hold') { if (s.open) { await btnDown(Math.random() < 0.5 ? 'left' : 'right', rr(720, 920)); lessonAt = now + 1500; } }
         else if (s.open) { await btnDown(arm(s.open[0]), 60); lessonAt = now + rr(700, 1100); }
         else if (s.kind === 'guard' && !s.bounced) { await btnDown(Math.random() < 0.5 ? 'left' : 'right', 60); lessonAt = now + 1000; }
       }
@@ -173,7 +182,8 @@ async function fight({ timeout = 240000, shots = {} } = {}) {
         const r = Math.random();
         let act;
         // [B8] (a thrown thing: the hop the chevron points to)
-        if (s.kind === 'block') act = 'block'; else if (kind === 't') act = s.chev === 'L' ? 'KeyA' : s.chev === 'R' ? 'KeyD' : r < 0.5 ? 'KeyA' : 'KeyD'; else if (s.lesson) act = away;
+        const cuedK = /[worptl]/.test(kind) || /bottle/.test(s.clip);   // [C4] most wait for the dodge cue (the lesson's always)
+        if (s.kind === 'block') act = 'block'; else if (cuedK && (s.lesson || Math.random() < 0.6)) act = null; else if (kind === 't') act = s.chev === 'L' ? 'KeyA' : s.chev === 'R' ? 'KeyD' : r < 0.5 ? 'KeyA' : 'KeyD'; else if (s.lesson) act = away;
         else if (kind === 'w' || kind === 'o') act = away;
         else if (kind === 'r') act = r < 0.5 ? 'KeyA' : 'KeyD';
         else if (kind === 'l') act = r < 0.8 ? 'KeyS' : 'in';  // [R2-E]
@@ -192,7 +202,7 @@ async function fight({ timeout = 240000, shots = {} } = {}) {
       if (s.t < s.contact + 0.05) { await sleep(16); continue; }
     }
     if (s.me !== 'idle' || held.has('Mleft') || held.has('Mright') || held.has('Space') || s.d > 1.75) { await sleep(16); continue; }
-    if (s.state === 'reel') { if (s.atSpot) await btnDown(Math.random() < 0.5 ? 'left' : 'right', rr(650, 850)); await sleep(16); continue; }
+    if (s.state === 'reel') { if (s.atSpot) await btnDown(Math.random() < 0.5 ? 'left' : 'right', rr(700, 900)); await sleep(16); continue; }
     // an opening, seen a beat late
     const look = s.open + ':' + s.state + ':' + (s.missT > 0);
     if (look !== seen) { seen = look; seenAt = now + (s.missT > 0 ? rr(200, 300) : rr(280, 450)); }
@@ -201,7 +211,7 @@ async function fight({ timeout = 240000, shots = {} } = {}) {
     else if (s.open) {
       const side = s.open.length === 2 ? (lastSide = lastSide === 'L' ? 'R' : 'L') : s.open;
       const big = s.state === 'stun' || s.missT > 0.35;
-      await btnDown(arm(side), big && Math.random() < 0.55 ? (s.state === 'stun' ? rr(430, 680) : rr(250, 450)) : 60);  // [B8] held to the second or third tick
+      await btnDown(arm(side), big && Math.random() < 0.55 ? (s.state === 'stun' ? rr(640, 880) : rr(440, 620)) : 60);  // [B8] held to the second or third tick ([C4] version 5: the load begins 0.3 s into the hold)
       seenAt = now + rr(180, 300);
     } else if (s.round >= 2 && s.reach && !s.holding && s.state === 'move' && now > grabT) { grabT = now + 9000; await tapKey('KeyE'); }
     else if (s.state === 'move' && now > pokeT) { pokeT = now + rr(1600, 3200); await btnDown(Math.random() < 0.5 ? 'left' : 'right', 60); }

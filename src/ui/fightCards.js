@@ -105,6 +105,8 @@ export class FightCards {
     }
     // [B8] the chevron (a thrown thing): pops in, then holds
     if (this.chev && this.chev.side) { this.chev.t += dt; this.drawChevron(); }
+    // [C4] the dodge cue going: its ink lifts in a tenth of a second
+    if (this.cueOut) { this.cueOut.t += dt; this.drawCue(); }
     // his health: the lost part flashes white, holds a moment, drains
     const B = this.hbS;
     if (B) {
@@ -428,6 +430,178 @@ export class FightCards {
     g.globalAlpha = 1;
   }
 
+  // ---- [C4] the dodge cue (FIGHT.md version 5 §5; game/BrawlCue.js) ----------------------
+  // Ink, not UI: the frame itself says "go that way". The side the blow
+  // comes from goes black - a loaded brush laid on from that edge, its inner
+  // edge torn, bristles dragged inward; the safe side opens up white - a
+  // flare of paper at that edge and speed strokes drawn toward it; what is
+  // coming (his fist, the thrown thing) is rimmed in white, as a comic
+  // panel's emphasis. cue({ side: 'L' | 'R' (the safe side), k (0..1 in),
+  // t, held, at (the threat on the frame, CSS px), px (its size) }) each
+  // step; cue(null, answer) lets it go (0.14 s; a slip flashes the light).
+  // ?cue=wash draws the second design (the dark half a soft wash, one big
+  // stroke to the light), ?cue=lines the third (speed lines from the dark
+  // edge, converging on the fist): the strips compared them (report).
+  cue(s, answer = null) {
+    if (!s) {
+      if (this.cueS) this.cueOut = { t: 0, answer, s: this.cueS };
+      this.cueS = null;
+      this.drawCue();
+      return;
+    }
+    this.cueS = s; this.cueOut = null; this.shownCue = s.side;
+    this.drawCue();
+  }
+  drawCue() {
+    const c = this.cueC || (this.cueC = (() => { const e = document.createElement('canvas'); e.className = 'cue'; e.style.cssText = 'position:absolute;left:0;top:0'; this.root.insertBefore(e, this.root.firstChild); return e; })());
+    const W = innerWidth, H = innerHeight;
+    if (c.width !== W || c.height !== H) { c.width = W; c.height = H; }
+    const g = c.getContext('2d');
+    g.clearRect(0, 0, W, H);
+    let S = this.cueS, fade = 1, flash = 0;
+    if (!S && this.cueOut) {
+      const u = this.cueOut.t / 0.14;
+      if (u >= 1) { this.cueOut = null; this.shownCue = null; return; }
+      S = this.cueOut.s; fade = 1 - u;
+      if (this.cueOut.answer === 'right') flash = 1 - u;
+    }
+    if (!S) return;
+    const style = this.cueStyle || (this.cueStyle = (typeof location !== 'undefined' && new URLSearchParams(location.search).get('cue')) || 'ink');
+    const K = H / 900, s = S.side === 'R' ? 1 : -1;
+    const e = 1 - Math.pow(1 - Math.min(1, S.k), 2);
+    // (held for the lesson: the ink breathes a little)
+    const breath = S.held ? 1 + 0.04 * Math.sin(S.t * 9) : 1;
+    const edgeD = s > 0 ? 0 : W;          // the dark edge (the side it comes from)
+    const edgeL = s > 0 ? W : 0;          // the light edge
+    const inward = s > 0 ? 1 : -1;        // from the dark edge into the frame
+    const r = new RNG(S.side === 'R' ? 4411 : 4412);
+    g.lineCap = 'round'; g.lineJoin = 'round';
+    if (style === 'wash') {
+      // the dark half a wash of ink from its edge to the middle
+      const gr = g.createLinearGradient(edgeD, 0, W / 2, 0);
+      gr.addColorStop(0, `rgba(4,4,4,${(0.9 * e * fade).toFixed(3)})`); gr.addColorStop(0.55, `rgba(4,4,4,${(0.55 * e * fade).toFixed(3)})`); gr.addColorStop(1, 'rgba(4,4,4,0)');
+      g.fillStyle = gr; g.fillRect(Math.min(edgeD, W / 2), 0, W / 2, H);
+      // one big curved stroke toward the light
+      const y = H * 0.52, x0 = W / 2 + s * W * 0.04, x1 = W / 2 + s * W * (0.1 + 0.3 * e);
+      for (const [col, w] of [['rgba(5,5,5,0.85)', 30], ['rgba(244,242,236,0.95)', 20]]) {
+        g.strokeStyle = col; g.globalAlpha = fade; g.lineWidth = w * K;
+        g.beginPath(); g.moveTo(x0, y + 26 * K); g.quadraticCurveTo((x0 + x1) / 2, y - 30 * K, x1, y - 6 * K); g.stroke();
+      }
+      g.globalAlpha = 1;
+    } else if (style === 'lines') {
+      // speed lines from the dark edge, converging on what comes
+      const at = S.at || { x: W / 2 - s * W * 0.15, y: H * 0.45 };
+      for (let i = 0; i < 16; i++) {
+        const y0 = H * (i + 0.5) / 16 + r.gauss() * 8;
+        const len = (0.35 + 0.4 * r.next()) * e;
+        const x1 = edgeD + (at.x - edgeD) * len, y1 = y0 + (at.y - y0) * len;
+        for (const [col, w] of [['rgba(5,5,5,0.9)', 7], ['rgba(244,242,236,0.9)', 3]]) {
+          g.strokeStyle = col; g.globalAlpha = fade; g.lineWidth = w * K;
+          g.beginPath(); g.moveTo(edgeD, y0); g.lineTo(x1, y1); g.stroke();
+        }
+      }
+      g.globalAlpha = 1;
+      const gl = g.createLinearGradient(edgeL, 0, edgeL - s * W * 0.14, 0);
+      gl.addColorStop(0, `rgba(244,242,236,${(0.45 * e * fade + 0.4 * flash).toFixed(3)})`); gl.addColorStop(1, 'rgba(244,242,236,0)');
+      g.fillStyle = gl; g.fillRect(s > 0 ? W - W * 0.14 : 0, 0, W * 0.14, H);
+    } else {
+      // ---- 'ink' (kept): the dark side, a loaded brush laid on from its edge
+      const D = W * 0.27 * e * breath;
+      const n = 28, pts = [];
+      for (let i = 0; i <= n; i++) {
+        const y = H * i / n;
+        // (the torn inner edge: deeper at the middle where the blow comes,
+        // teeth and runs of the dry brush)
+        const mid = 1 - Math.pow((y / H - 0.48) * 1.7, 2) * 0.35;
+        const tooth = (i % 2 ? 0.86 : 1.0) + r.gauss() * 0.06;
+        pts.push([edgeD + inward * D * mid * tooth, y]);
+      }
+      g.globalAlpha = 0.93 * fade;
+      g.fillStyle = '#050505';
+      g.beginPath(); g.moveTo(edgeD, -2);
+      for (const [x, y] of pts) g.lineTo(x, y);
+      g.lineTo(edgeD, H + 2); g.closePath(); g.fill();
+      // bristles dragged on inward from the edge, running dry
+      for (let i = 0; i < 22; i++) {
+        const y = H * (0.04 + 0.92 * r.next());
+        const base = pts[Math.round(y / H * n)][0];
+        const len = (24 + 110 * r.next()) * K * e;
+        g.lineWidth = (2 + 5 * r.next()) * K;
+        g.strokeStyle = 'rgba(5,5,5,0.85)';
+        g.beginPath(); g.moveTo(base - inward * 4, y); g.lineTo(base + inward * len, y + r.gauss() * 5 * K); g.stroke();
+      }
+      g.globalAlpha = 1;
+      // the light side: paper torn open at its edge (a flare of white, its
+      // torn inner edge inked), white bristles drawn in from it
+      const PD = W * 0.12 * (0.55 + 0.45 * e) * breath;
+      // (torn, not cut: teeth of every size at uneven steps)
+      const lp = [];
+      for (let y = 0, i = 0; y <= H + 1; i++) {
+        const mid = 1 - Math.pow((y / H - 0.5) * 1.6, 2) * 0.45;
+        const tooth = i % 2 ? 0.62 + 0.3 * r.next() : 0.92 + 0.22 * r.next();
+        lp.push([edgeL - inward * PD * mid * tooth, Math.min(H, y)]);
+        y += H * (0.012 + 0.03 * r.next());
+      }
+      const lpAt = (y) => { let best = lp[0]; for (const p of lp) if (Math.abs(p[1] - y) < Math.abs(best[1] - y)) best = p; return best[0]; };
+      const lightA = Math.min(1, 0.86 * e * fade + 0.6 * flash);
+      g.globalAlpha = lightA;
+      g.fillStyle = '#f4f2ec';
+      g.beginPath(); g.moveTo(edgeL, -2);
+      for (const [x, y] of lp) g.lineTo(x, y);
+      g.lineTo(edgeL, H + 2); g.closePath(); g.fill();
+      for (let i = 0; i < 14; i++) {
+        const y = H * (0.06 + 0.88 * r.next());
+        const base = lpAt(y);
+        const len = (18 + 70 * r.next()) * K * e;
+        g.lineWidth = (2 + 4 * r.next()) * K;
+        g.strokeStyle = '#f4f2ec';
+        g.beginPath(); g.moveTo(base + inward * 3, y); g.lineTo(base - inward * len, y + r.gauss() * 4 * K); g.stroke();
+      }
+      g.globalAlpha = 1;
+      // and three brush strokes drawn toward it, sliding out with the window
+      const go = Math.min(1, (S.t || 0) / 0.34);
+      for (const [yk, l0, w0] of [[0.4, 0.17, 15], [0.5, 0.23, 20], [0.6, 0.15, 13]]) {
+        const y = H * yk + Math.sin(yk * 40) * 6 * K;
+        const x0 = W / 2 + s * W * (0.1 + 0.06 * go), x1 = x0 + s * W * l0 * e;
+        for (const [col, extra] of [['rgba(5,5,5,0.88)', 5], ['#f4f2ec', 0]]) {
+          g.fillStyle = col; g.globalAlpha = fade;
+          // (pressed at its root, running to a dry point at the light)
+          const ww = (w0 * K + extra) / 2, tip = (1.5 * K + extra) / 2;
+          const xm = x0 + (x1 - x0) * 0.25;
+          g.beginPath();
+          g.moveTo(x0, y);
+          g.quadraticCurveTo(x0 + s * 4 * K, y - ww, xm, y - ww);
+          g.lineTo(x1, y - tip); g.lineTo(x1 + s * 3 * K, y); g.lineTo(x1, y + tip);
+          g.lineTo(xm, y + ww * 0.8);
+          g.quadraticCurveTo(x0 + s * 4 * K, y + ww * 0.8, x0, y);
+          g.closePath(); g.fill();
+        }
+      }
+      g.globalAlpha = 1;
+    }
+    // what is coming, marked in white: three strokes trailing it from the
+    // dark side, as a comic draws a fist on its way (a thrown thing has its
+    // own speed lines: drawFlying)
+    if (S.at && !this.cueOut && S.kind !== 'thing') {
+      const R0 = Math.max(18, S.px * 0.45);
+      for (const [col, extra] of [['rgba(5,5,5,0.88)', 5], ['#f4f2ec', 0]]) {
+        g.fillStyle = col; g.globalAlpha = e * fade;
+        for (const [a, l, w] of [[-0.42, 0.8, 9], [0, 1.15, 12], [0.42, 0.75, 8]]) {
+          const dx = -inward * Math.cos(a), dy = Math.sin(a);
+          const x0 = S.at.x + dx * R0, y0 = S.at.y + dy * R0;
+          const L = (40 + 70 * l) * K * e;
+          const x1 = x0 + dx * L, y1 = y0 + dy * L;
+          const px = -dy, py = dx, ww = (w * K + extra) / 2, tail = (1.2 * K + extra) / 2;
+          g.beginPath();
+          g.moveTo(x0 + px * ww, y0 + py * ww); g.lineTo(x1 + px * tail, y1 + py * tail);
+          g.lineTo(x1 - px * tail, y1 - py * tail); g.lineTo(x0 - px * ww, y0 - py * ww);
+          g.closePath(); g.fill();
+        }
+      }
+      g.globalAlpha = 1;
+    }
+  }
+
   // [B8] (second pass) a thing he has thrown, on the frame: three speed
   // lines trailing back toward his hand, inked like the chevron (a dark
   // plate against the dark room at five metres was lost). [R2-H] Speed
@@ -474,7 +648,7 @@ export class FightCards {
     }
   }
 
-  clear() { this.flying(null); this.card(''); this.fl.style.display = 'none'; this.flT = 0; this.shownFlash = ''; this.arrow(null); this.charge(null, 0); this.chevron(null); if (this.wm) { this.wm.lv = 0; this.drawTicks(); } }
+  clear() { this.cueS = null; this.cueOut = null; if (this.cueC) this.drawCue(); this.flying(null); this.card(''); this.fl.style.display = 'none'; this.flT = 0; this.shownFlash = ''; this.arrow(null); this.charge(null, 0); this.chevron(null); if (this.wm) { this.wm.lv = 0; this.drawTicks(); } }
 }
 
 // the small inked pictures: the mouse, one button inked in; keys as dabs
