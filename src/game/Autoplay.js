@@ -150,6 +150,20 @@ export class Autoplay {
     // few seconds of jabbing a man who only sways, holds once; 'mashload': one
     // who now and then - every 14 to 24 s - holds a button down: the loaded
     // punch among the mashing)
+    // ([C4] 'mashcue': the first-timer of fight_bad.json - mashes jabs (a side
+    // at random two times in three, the open one the third), now and then
+    // (one press in twenty) holds one to the second tick, and reads the dodge
+    // cue as 'rough' does)
+    if (style === 'mashcue' && !B.lesson && !(B.cue && !B.cue.done)) {
+      this.walkTo(B, d, 1.35);
+      if (busyHands) return;
+      if (him.state === 'reel' && him.atSpot && this.every('finish', 2, 4)) { this.hold(r.chance(0.5) ? 'Mouse0' : 'Mouse2', r.range(0.68, 0.9)); return; }
+      if (this.every('mash', 0.15, 0.42)) {
+        const open = B.openSides(), s = open && r.chance(0.35) ? open[0] : r.chance(0.5) ? 'L' : 'R';
+        if (r.chance(0.05)) this.hold(arm(s), r.range(0.66, 0.9)); else this.tap(arm(s));
+      }
+      return;
+    }
     if ((style === 'mash' || style === 'mashone' || style === 'mashload') && !B.lesson) {
       this.walkTo(B, d, 1.35);
       if (style === 'mashone') {
@@ -168,7 +182,7 @@ export class Autoplay {
       if (!this.cuePlan || this.cuePlan.id !== id) {
         // (the reader sees it in 0.13 .. 0.24 s and nearly never goes the
         // wrong way; 'rough' in 0.2 .. 0.42 s, the wrong way three times in ten)
-        const lv = B.lesson ? { rt: [0.16, 0.27], wrong: 0, miss: 0 } : style === 'rough' ? { rt: [0.2, 0.42], wrong: 0.3, miss: 0.12 } : { rt: [0.13, 0.24], wrong: 0.04, miss: 0.04 };
+        const lv = B.lesson ? { rt: [0.16, 0.27], wrong: 0, miss: 0 } : style === 'rough' || style === 'mashcue' ? { rt: [0.2, 0.42], wrong: 0.3, miss: 0.12 } : { rt: [0.13, 0.24], wrong: 0.04, miss: 0.04 };
         const safe = B.cue.side === 'R' ? 'KeyD' : 'KeyA';
         const act = r.chance(lv.miss) ? 'none' : r.chance(lv.wrong) ? (safe === 'KeyD' ? 'KeyA' : 'KeyD') : safe;
         this.cuePlan = { id, act, at: this.t + r.range(lv.rt[0], lv.rt[1]), done: false };

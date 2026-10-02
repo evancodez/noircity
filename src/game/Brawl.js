@@ -843,8 +843,13 @@ export class Brawl {
     // three times in a second and a half, he answers with a hook)
     him.pounded = (him.pounded || []).filter((x) => this.T - x < 1.5); him.pounded.push(this.T);
     if (him.state !== 'move' || him.task || this.finished) return;
-    if (!lessonOK && !this.rng.chance(BRAWL.answer)) return;
-    const clip = !lessonOK && him.pounded.length >= 3 ? (side === 'L' ? 'br_hook' : 'br_hookL') : side === 'L' ? 'br_answerR' : 'br_answerL';
+    // [C4] (pounded - three punches into it in a second and a half - he
+    // answers every time, and with the fast straight, not a hook: a hook
+    // now comes with the dodge cue, and a masher who slipped it was handed
+    // the opening; the straight is told by his body alone)
+    const pounded = !lessonOK && him.pounded.length >= 3;
+    if (!lessonOK && !pounded && !this.rng.chance(BRAWL.answer)) return;
+    const clip = side === 'L' ? 'br_answerR' : 'br_answerL';
     this.later(0.03, () => {
       if (!this.active || this.finished || this.him.state !== 'move' || this.me.act === 'down') return;
       this.hisAttack(clip, { slow: lessonOK ? 0.5 : 0 });

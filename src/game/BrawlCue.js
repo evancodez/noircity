@@ -28,6 +28,7 @@ export const CUE = {
   lessonWindow: 0.46,   // s, the lesson's (after its first, held)
   k: 1 / 3,         // the world's speed under it
   in: 0.05,         // s (real) the ink takes to press in
+  kHeld: 0.03,      // the world's speed while the first cue is held for its card
   aimOff: 0.25,     // m: a straight blow or a throw aimed this far to the dark side of me
 };
 const SMALL = /^br_(jab|jabR|cross|answerL|answerR|feint|feintL)$/;
@@ -57,7 +58,9 @@ export class DodgeCue {
     this.answer = null;
     this.held = held;
     this.done = false;
-    B.game.worldK = this.k;
+    // (held for the card: the world all but stopped - the kit's crawl slows
+    // me too; let go, it runs at the cue's third again)
+    B.game.worldK = held ? CUE.kHeld : this.k;
     const S = B.stats.cues || (B.stats.cues = { shown: 0, right: 0, wrong: 0, late: 0, act: 0, held: 0, list: [] });
     S.shown++;
     if (held) S.held++;
@@ -102,7 +105,7 @@ export class DodgeCue {
       // hold ran out - the rest of the window runs)
       const K = B.game.hud && B.game.hud.kit, cur = K && K.teachCur;
       const still = cur && this.teach && cur.h === this.teach && cur.held;
-      if (!still && this.t > 0.1) { this.held = false; this.t = this.window * 0.5; }
+      if (!still && this.t > 0.1) { this.held = false; this.t = this.window * 0.5; B.game.worldK = this.k; }
       return;
     }
     if (this.t >= this.window) this.end('late');

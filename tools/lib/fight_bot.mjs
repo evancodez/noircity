@@ -89,7 +89,7 @@ export default async function drive({ js, keyDown, keyUp, mouse, log, sleep, W, 
       cue: B.cue && !B.cue.done ? B.cue.side : null, cueId: B.cue ? B.cue.rec.t0 : null, downs: B.stats.downs, hp: G.health.hp, bounced: !!(B.lesson && B.lesson.bounced), black: B.blackT > 0 }; })()`;
   const recordFight = async () => js(`(() => { const S = G.brawl.stats, C = S.cues || {}; return { won: !!S.won, time: +S.time.toFixed(1), downs: S.downs, lesson: S.lesson ?? null, cues: [C.shown || 0, C.right || 0, C.wrong || 0, C.late || 0, C.act || 0], why: (S.downWhy || []).join(','), warned: (S.downWarned || []).map((v) => v == null ? null : +v.toFixed(2)), spared: S.spared || 0, landed: S.landed, jabs: S.jabs, hards: S.levels || [0, 0, 0], manner: G.brawl.him && G.brawl.him.manner, hp: G.brawl.him && +G.brawl.him.hp.toFixed(1) }; })()`);
   // (the bad player learns: his wrong reads fewer after each time he goes down)
-  const badWrong = () => Math.max(0.1, 0.28 - 0.05 * downsSeen);
+  const badWrong = () => Math.max(0.12, 0.32 - 0.05 * downsSeen);
   for (;;) {
     const now = Date.now();
     await release();
@@ -122,7 +122,7 @@ export default async function drive({ js, keyDown, keyUp, mouse, log, sleep, W, 
       if (!plans.has(key)) {
         const safe = s.cue === 'R' ? 'KeyD' : 'KeyA', wrong = s.cue === 'R' ? 'KeyA' : 'KeyD';
         let act = safe, rt = rr(160, 260);
-        if (prof === 'bad') { rt = rr(170, 420); if (Math.random() < badWrong()) act = wrong; if (!s.lesson && Math.random() < 0.15) act = null; }
+        if (prof === 'bad') { rt = rr(200, 460); if (Math.random() < badWrong()) act = wrong; if (!s.lesson && Math.random() < 0.15) act = null; }
         if (s.lesson && prof === 'bad') rt = rr(220, 520);
         plans.set(key, { act, at: now + rt });
       }
@@ -175,10 +175,16 @@ export default async function drive({ js, keyDown, keyUp, mouse, log, sleep, W, 
     }
     // ---- the bad player mashes: a jab every 0.15 .. 0.4 s at whatever he sees
     if (prof === 'bad') {
+      // (he learns, a little, each time he goes down - the black said why:
+      // fewer punches thrown blind, more of them at a side he has dropped)
+      const learnt = Math.min(4, downsSeen);
       if (now > pokeAt) {
-        pokeAt = now + rr(150, 420);
-        const side = s.open && Math.random() < 0.35 ? s.open[0] : Math.random() < 0.5 ? 'L' : 'R';
-        await press(armB(side), Math.random() < 0.12 ? rr(700, 900) : rr(60, 220));
+        pokeAt = now + rr(150 + 90 * learnt, 420 + 140 * learnt);
+        // (his guard up: after a down or two, he holds back now and then)
+        if (s.open || Math.random() >= 0.2 * learnt) {
+          const side = s.open && Math.random() < 0.35 + 0.13 * learnt ? s.open[0] : Math.random() < 0.5 ? 'L' : 'R';
+          await press(armB(side), Math.random() < 0.05 ? rr(700, 900) : rr(60, 220));
+        }
       }
       await sleep(16); continue;
     }

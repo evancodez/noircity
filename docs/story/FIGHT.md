@@ -111,10 +111,13 @@ and either button swings it at once (held: a bigger swing).
 
 ## 4. His guard and his answer
 
-Unchanged from version 4: two sides; a punch into a raised side is blocked
-and about three times in four answered at once from that side (a 0.2 s tell;
-contact 0.28 s after my punch). His answer and his jab have **no dodge cue**:
-the body's tell alone (a cue on every jab made the fight a quick-time event).
+As version 4: two sides; a punch into a raised side is blocked and about
+three times in four answered at once from that side (a 0.2 s tell; contact
+0.28 s after my punch). His answer and his jab have **no dodge cue**: the
+body's tell alone (a cue on every jab made the fight a quick-time event).
+**Pounded** (three punches into his guard in 1.5 s) he answers every time, and
+with that fast straight - version 4 answered pounding with a hook, and a hook
+now comes with the dodge cue: a masher who slipped it was handed the opening.
 
 ## 5. His blows, and the dodge cue
 
