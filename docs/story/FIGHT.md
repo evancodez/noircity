@@ -260,15 +260,20 @@ up whole, a life spent pounding his guard paid for as before). Version 5 adds:
   downs); after his answer or a blow that caught me punching, `[LMB] [RMB] hit
   only where his guard is down`. After two downs off a cued blow, the dodge
   card at the next cue (version 5).
-- **A written mercy** (5.1, `Brawl.js MERCY`): for each down in his present
-  manner (up to three, and one for every three in his manners before) that
-  was not a life spent pounding his guard, he answers a punch into his guard
-  less often (0.75 → 0.55 → 0.35 → 0.15 of the time), presses a blow that
-  found me less often, breathes and stays open after a miss a quarter longer
-  each, and waits 0.15 s more between his blows; I come up whole from the
-  second such down in a manner (was the third). It wins nothing by itself: a
-  man who stands there still takes every blow as hard, a man who pounds his
-  guard is answered every time.
+- **A written mercy** (5.1, `Brawl.js MERCY`), for a man who is **trying**:
+  a down counts toward it when in that life I landed three punches, slipped a
+  cue or blocked a blow, and was not pounding his guard (more than 30 punches
+  into it a minute). For each such down in his present manner (up to three,
+  and one for every three in his manners before) he answers a punch into his
+  guard less often (0.75 → 0.55 → 0.35 → 0.15 of the time), presses a blow
+  that found me less often, breathes and stays open after a miss a quarter
+  longer each, and waits 0.15 s more between his blows; he gets back half of
+  his 8 % at the first such down in a manner and none after (my work is
+  kept); I come up whole from the second such down in a manner (was the
+  third, for every down). It wins nothing by itself: a man who stands there or
+  leans on W gets none of it (up at 60, he gets his 8 % back, his pace as
+  ever: the W-holder went down twice in six minutes in version 5, ten times
+  now), and a man who pounds his guard is answered every time.
 
 ## 9. The finish, and after
 

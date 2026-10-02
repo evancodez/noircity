@@ -18,8 +18,10 @@ const DOWN_WHY = { late: 'Too slow.', wrong: 'Wrong way.', pinned: 'No room. Get
 const BLOCK_CARD = '[SPACE] hold to block his jab';
 const OPENING_CARD = '[LMB] [RMB] hit only where his guard is down';
 // [C4] after the critic (B3): a written mercy for a man who keeps going
-// down in one manner of his - never for one who pounds his guard (a masher)
-// or does nothing (he still attacks, as hard): each such down, up to three,
+// down in one manner of his while trying (three landed, a cue slipped or a
+// blow blocked in that life: stepDown) - never for one who pounds his guard
+// (a masher) or does nothing (he still attacks, as hard, and gets none of
+// it): each such down, up to three,
 // makes him answer a punch into his guard less often, press a blow that
 // found me less often, breathe longer and leave longer openings after a
 // miss, and wait a little longer between his blows; the dodge cue's window
