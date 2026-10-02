@@ -78,7 +78,8 @@ export default async function drive({ js, turn, keyDown, keyUp, mouse, shot, log
       const eye = new V(sp.x, G.stage.surfaceY(sp.x, sp.z) + 0.66, sp.z);
       let n = 0;
       for (const h of men) if (K.see(new V(h.pos.x, h.pos.y + 1.55, h.pos.z), eye, 0.3)) n++;
-      const sc = n * 10 + Math.hypot(sp.x - G.eye.x, sp.z - G.eye.z) + (sp.here ? -1 : 0);
+      // (where I am is worse once it is spent: hit down there, or its cover shot through - window.C2SPENT)
+      const sc = n * 10 + Math.hypot(sp.x - G.eye.x, sp.z - G.eye.z) + (sp.here ? -1 + (window.C2SPENT ? 12 : 0) : 0);
       if (!best || sc < best.sc) best = { x: sp.x, z: sp.z, yaw: sp.yaw, sc, n, here: !!sp.here };
     }
     return best; })()`;
@@ -161,11 +162,13 @@ export default async function drive({ js, turn, keyDown, keyUp, mouse, shot, log
           // (a man who has me while I am DOWN: one who has my side - not one who sees me because I rose to shoot)
           // (a man coming in through a door with a line on me is one too)
           const threats = s.rk < 0.3 ? s.men.filter((m) => m.line && m.see) : [];
-          const pressed = P.lateMove ? (threats.length >= 2 || (threats.length >= 1 && s.hp < 25)) : threats.length >= 2 || (threats.length >= 1 && s.hp < 40) || s.broke > 0 || (s.warn && /cover/.test(s.warn));
+          // (the warning says move: a man has my angle, one is going round, my cover is going - the good hand moves)
+          const pressed = P.lateMove ? (threats.length >= 2 || (threats.length >= 1 && s.hp < 25)) : threats.length >= 2 || (threats.length >= 1 && s.hp < 40) || s.broke > 0 || (s.warn && /cover|angle|going round/.test(s.warn));
           if (!onSpot || (pressed && now > moveCool)) {
             // the spot hidden best from the men as they stand now, near
             if (!goTo || pressed) {
-              goTo = await js(BEST); moveCool = now + (P.lateMove ? 7000 : 4500);
+              const spent = s.broke > 0 || (hitTimes.length > 0 && s.rk < 0.3);
+              goTo = await js(`(window.C2SPENT = ${spent ? 1 : 0}, ${BEST})`); moveCool = now + (P.lateMove ? 7000 : 4500);
               // (better where I am than anywhere else: I stay and answer them)
               if (goTo && goTo.here && onSpot) goTo = null;
               else { onSpot = null; await set('RMB', false); }

@@ -45,7 +45,7 @@ export const BEATS = {
   },
   pin: {
     at: [4.6, -5.55, SOUTH], gun: 'revolver', crouch: false, max: 2, flankAfter: 8,
-    obj: 'A Tommy gun. Stay down while it fires.',
+    obj: 'Down through the burst. Up when he reloads.',
     men: [
       { kind: 'tommy', at: { x: 4.7, z: 4.6 }, way: [{ x: 4.7, z: 2.6 }, { door: 'B2' }], wait: 1.0, door: 'hold' },
       { kind: 'pistol', at: { x: -0.4, z: -9.5 }, way: [{ door: 'BD' }, { x: -0.45, z: -2.2, run: true }, { door: 'B1' }], wait: 3.0 },
