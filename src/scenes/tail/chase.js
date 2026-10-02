@@ -73,6 +73,7 @@ export class Chase {
     this.my.damage = cfg.damage || 0;
     this.his = V.spawn('sedan', { at: new THREE.Vector3(his.x, 0, his.z), yaw: his.yaw, speed: his.speed || 0, lights: true, tail: 'crew' });
     this.his.car.limit = 1e9;
+    V.prefer = this.his;
     this.driver = new His(this, this.his, { leg: cfg.leg ?? 0, choice: cfg.choice, prev: cfg.prev || null });
     this.his.driver = this.driver;
     this.driverFigure(this.his);
@@ -212,7 +213,9 @@ export class Chase {
     if (this.failing) return;
     this.failing = true;
     this.log.push([+this.t.toFixed(1), 'FAIL', why, to]);
-    (globalThis.__tailFails || (globalThis.__tailFails = [])).push({ why, to, t: +this.t.toFixed(1), phase: this.phase });
+    (globalThis.__tailFails || (globalThis.__tailFails = [])).push({ why, to, t: +this.t.toFixed(1), phase: this.phase,
+      my: [+this.my.pos.x.toFixed(0), +this.my.pos.z.toFixed(0)], his: [+this.his.pos.x.toFixed(0), +this.his.pos.z.toFixed(0)], gap: +this.gap().toFixed(0), unseen: +this.unseen.toFixed(1), leg: this.driver.legIndex,
+      traffic: this.traffic ? this.traffic.cars.map((c) => [+c.v.pos.x.toFixed(0), +c.v.pos.z.toFixed(0), +c.v.speedAbs.toFixed(1)]) : [] });
     // (the gun stays out through the black: holstered with the cars gone)
     this.kit.fail({ why, to });
   }
@@ -311,7 +314,9 @@ export class Chase {
     const tyreAt = [[1.55, 0.78, 'fr'], [1.55, -0.78, 'fl'], [-1.55, 0.76, 'rr'], [-1.55, -0.76, 'rl']];
     let tyre = null;
     for (const [x, z, k] of tyreAt) if (Math.abs(lp.x - x) < 0.65 && Math.abs(lp.z - z) < 0.45 && lp.y < 0.9) tyre = k;
-    if (!tyre && lp.x < -1.2 && lp.y < 0.78 && Math.abs(lp.z) > 0.3) tyre = lp.z > 0 ? 'rr' : 'rl';
+    // ([2nd owner] the quarter over the wheel, not the whole low back: the
+    // middle half metre is the tank's)
+    if (!tyre && lp.x < -1.2 && lp.y < 0.72 && Math.abs(lp.z) > 0.42) tyre = lp.z > 0 ? 'rr' : 'rl';
     if (tyre) {
       const pullDir = tyre[1] === 'r' ? -1 : 1;
       if (his.grip[tyre] > 0.5) {
@@ -378,7 +383,9 @@ export class Chase {
       for (const k of ['fl', 'fr', 'rl', 'rr']) his.grip[k] = Math.min(his.grip[k], 0.55);
       G.sfx.play('tail_screech', his.pos, { dur: 1.8 }, { ref: 6 });
       G.slowmo(0.5, 0.8);
-      if (G.controller.drive) G.controller.drive.focus = his;
+      // (the eyes drawn to him - no further than the windscreen's edge: with
+      // him alongside, a turn of 0.75 looked into my own passenger door)
+      if (G.controller.drive) Object.assign(G.controller.drive, { focus: his, focusMax: 0.42 });
       this.kit.warn(null);
     }
     this.crashT += dt;
@@ -499,14 +506,14 @@ export class Chase {
     // hangs a moment where he went - round a corner the last of it, lit by
     // the lamps, shows which way he turned (a trace to read)
     if (!his.frozen && his.speedAbs > 5 && G.fx.dust) {
-      this.sprayAcc = (this.sprayAcc || 0) + dt * Math.min(20, his.speedAbs * 1.3);
+      this.sprayAcc = (this.sprayAcc || 0) + dt * Math.min(30, his.speedAbs * 2);
       while (this.sprayAcc >= 1) {
         this.sprayAcc -= 1;
         const sd = r.next() < 0.5 ? -0.8 : 0.8;
         const p = his.seat(_v.set(-1.6 - r.next() * 0.5, 0.18, sd + r.gauss() * 0.12), new THREE.Vector3());
-        const g = r.range(1.5, 2.0);
-        G.fx.dust.spawn({ pos: p, vel: new THREE.Vector3(r.gauss() * 0.5, r.range(0.25, 0.8), r.gauss() * 0.5).addScaledVector(his.vel, 0.3), life: r.range(1.0, 1.7), size: [0.42, 0.42], grow: 1.4, rot: r.next() * 6.28,
-          col: [g, g, g], alpha: 0.16, drag: 1.8, fadeOut: 0.7 });
+        const g = r.range(1.0, 1.35);
+        G.fx.dust.spawn({ pos: p, vel: new THREE.Vector3(r.gauss() * 0.4, r.range(0.2, 0.6), r.gauss() * 0.4).addScaledVector(his.vel, 0.3), life: r.range(0.9, 1.5), size: [0.5, 0.3], grow: 0.35, rot: r.next() * 6.28,
+          col: [g, g, g], alpha: 0.085, drag: 1.8, fadeOut: 0.75 });
       }
     }
     // a rim on the road: sparks

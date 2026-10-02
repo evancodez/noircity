@@ -13,7 +13,7 @@
   { "drive": "tools/lib/c3_tail.mjs", "profile": "bad", "seed": 11, "timeout": 900000,
     "stop": "G.scenes.current && G.scenes.current.id !== 'tail'",
     "shots": {
-      "b01_first_fail": "(window.__tailFails || []).length >= 1 && G.scenes.fadeK > 0.6",
+      "b01_first_fail": "(window.__tailFails || []).length >= 1 && (G.scenes.fadeK > 0.6 || (!!document.querySelector('.c3veil') && +document.querySelector('.c3veil').style.opacity > 0.95))",
       "b02_river": "!!G.scenes.ctx.flags.chase && G.scenes.ctx.flags.chase.phase === 'b' && G.scenes.ctx.flags.chase.gun.aimK > 0.9",
       "b03_wreck": "!!G.scenes.ctx.flags.chase && G.scenes.ctx.flags.chase.phase === 'wreck'"
     },

@@ -87,6 +87,11 @@ export class Vehicles {
       const d = Math.hypot(v.pos.x - eye.x, v.pos.z - eye.z);
       if (d < bd) { bd = d; best = v; }
     }
+    // [C3 2nd] (a car the scene names - his, in the tail - keeps the light
+    // while it is near: his beams sweep the far wall as he takes a corner I
+    // cannot see round, a trace to follow)
+    const pf = this.prefer;
+    if (pf && pf !== P && pf.lamps && pf.lamps.on && this.list.includes(pf) && Math.hypot(pf.pos.x - eye.x, pf.pos.z - eye.z) < 110) best = pf;
     for (const v of this.list) {
       if (!v.lamps) continue;
       const want = v === P ? T.spots[0] : v === best ? T.spots[1] : null;
@@ -112,7 +117,7 @@ export class Vehicles {
     if (this.player === v) this.player = null;
   }
 
-  clear() { for (const v of [...this.list]) this.remove(v); }
+  clear() { for (const v of [...this.list]) this.remove(v); this.prefer = null; }
 
   update(dt) {
     this.dealT = (this.dealT || 0) - dt;

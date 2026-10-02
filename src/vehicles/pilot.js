@@ -47,7 +47,7 @@ export class Pilot {
     // or out into the other lane to pass)
     this.offNow = (this.offNow || 0) + ((this.offset || 0) + (this.passing || 0) - (this.offNow || 0)) * (1 - Math.exp(-dt * 2.2));
     if (this.offNow) { tx += -T.fz * this.offNow; tz += T.fx * this.offNow; }
-    if (O.wander) { const w = Math.sin(this.t * 0.9) * O.wander; tx += -T.fz * w; tz += T.fx * w; }
+    if (O.wander) { this.wph = (this.wph || 0) + dt * (O.wanderRate ?? 0.9); const w = Math.sin(this.wph) * O.wander; tx += -T.fz * w; tz += T.fx * w; }
     const c = Math.cos(v.yaw), sn = Math.sin(v.yaw);
     const dx = tx - v.pos.x, dz = tz - v.pos.z;
     const fx = dx * c - dz * sn, fz = dx * sn + dz * c;     // (car frame: ahead, right)

@@ -82,7 +82,11 @@ export default {
       add(merge(wires.concat(poles)), M.lampIron, { noRay: true });
       add(merge(bulbs), new THREE.MeshBasicMaterial({ color: new THREE.Color().setScalar(6) }), { noRay: true });
       const gm = new THREE.SpriteMaterial({ map: glowTexture(), color: new THREE.Color().setScalar(0.5), blending: THREE.AdditiveBlending, depthWrite: false, transparent: true, fog: false });
-      for (const p of glows) { const sp = new THREE.Sprite(gm); sp.position.copy(p); sp.scale.setScalar(1.3); sp.layers.set(LAYER.FX_REFL); sp.renderOrder = 6; sp.userData.noRay = true; group.add(sp); }
+      // [2nd owner] (a bulb's glow keeps about its size on the screen as the
+      // car passes under the string: at 1.3 m fixed, the nearest one swelled
+      // into a white disc a fifth of the frame wide)
+      const near = (sp) => (renderer, scene, cam) => { const k = Math.min(1.3, Math.max(0.18, sp.position.distanceTo(cam.position) * 0.085)); if (Math.abs(k - sp.scale.x) > 0.01) { sp.scale.setScalar(k); sp.updateMatrixWorld(); } };
+      for (const p of glows) { const sp = new THREE.Sprite(gm); sp.position.copy(p); sp.scale.setScalar(1.3); sp.layers.set(LAYER.FX_REFL); sp.renderOrder = 6; sp.userData.noRay = true; sp.onBeforeRender = near(sp); group.add(sp); }
       // (the square's light on the stalls: three of the lamps' hanging kind)
       const L = stage.part('lamps');
       if (L) for (const z of [sq.z0 + 16, sq.z1 - 16]) L.addHanging(V3((sq.x0 + sq.x1) / 2, 6.3, z), { real: true });

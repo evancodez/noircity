@@ -110,7 +110,14 @@ export class His {
     if (this.state === 'lost') { this.crashing(v, dt); return; }
     const P = this.pilot;
     P.o.pace = this.pace * (this.duck > 0 ? 0.72 : 1) * (this.control < 1 ? 0.85 + 0.15 * this.control : 1);
-    P.o.wander = this.duck > 0 ? 1.4 : this.control < 0.6 ? 0.7 : 0;
+    // [2nd owner] (the river road: the revolver out of my window in his
+    // mirror, he weaves across his lane - a moving mark, aimed at, not a
+    // target that drives straight at the end of my sights)
+    const G0 = this.chase.gun;
+    const seesGun = this.state === 'river' && G0 && G0.aimK > 0.5 && this.chase.gap() < 45;
+    this.weave = Math.max(0, Math.min(1, (this.weave || 0) + (seesGun ? dt * 1.5 : -dt * 0.5)));
+    P.o.wander = this.duck > 0 ? 1.4 : Math.max(this.control < 0.6 ? 0.7 : 0, 1.15 * this.weave);
+    P.o.wanderRate = this.duck > 0 ? 0.9 : this.weave > 0 ? 2.3 : 0.9;
     this.duck = Math.max(0, this.duck - dt);
     P.drive(v, dt);
     // (near a leg's end, before its corner: the next leg decided by where I
