@@ -179,6 +179,14 @@ export class Chase {
     const seen = this.sees();
     this.seen = seen;
     this.unseen = seen ? Math.max(0, this.unseen - dt * 2) : this.unseen + dt;
+    // (out of sight round a corner: his horn at whoever is in his way - a
+    // trace to follow by ear, from where he is; once a spell, 6 s apart)
+    this.hornT = (this.hornT ?? 0) - dt;
+    if (this.phase === 'a' && !seen && this.unseen > 1.2 && !this.honked && this.hornT <= 0 && gap < 110) {
+      this.honked = true; this.hornT = 6;
+      this.game.sfx.play('tail_horn', this.his.pos, { k: 0.7, dur: 0.45 }, { ref: 9 });
+    }
+    if (seen) this.honked = false;
     this.farT = gap > R.farWarn + 15 ? this.farT + dt : Math.max(0, this.farT - dt * 2);
     const hisZ = this.his.pos.z;
     const gateNear = this.phase === 'b' && this.driver.state !== 'lost' && hisZ > R.gateWarnZ;

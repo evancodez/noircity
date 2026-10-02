@@ -94,6 +94,11 @@ export default defineScene({
     const C = ctx.flags.chase;
     const K = C.kit;
     G.music.cue('tail', { fade: 2.5 });
+    // (came in by the cut from the foot chase - no card on black: the
+    // chapter's card small over the windscreen as I pull out; never on a
+    // retry)
+    const smallCard = !G.hud.cardT && !G._tailRetry;
+    G._tailRetry = false;
     if (ctx.at('start') && ctx.from === 'start') {
       yield beat('start');
       K.objective("Don't lose him.");
@@ -101,6 +106,7 @@ export default defineScene({
       yield wait(2.2);
       K.teach('tail_drive', [['W', 'drive'], ['A D', 'steer'], ['S', 'brake']], { secs: 5, until: 'KeyW' });
       yield until(() => C.phase !== 'start');
+      if (smallCard) { const D = G.scenes.current; K.smallCard(D.title, D.name); }
       // the handbrake: taught as he takes his first corner
       yield until(() => C.driver.legIndex >= 0 && C.driver.pilot && C.driver.pilot.s > 30);
       K.teach('tail_handbrake', [['SPACE', 'handbrake: the tail round a tight corner']], { secs: 5, until: 'Space' });
