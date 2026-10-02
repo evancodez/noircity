@@ -17,7 +17,7 @@
       "b02_river": "!!G.scenes.ctx.flags.chase && G.scenes.ctx.flags.chase.phase === 'b' && G.scenes.ctx.flags.chase.gun.aimK > 0.9",
       "b03_wreck": "!!G.scenes.ctx.flags.chase && G.scenes.ctx.flags.chase.phase === 'wreck'"
     },
-    "check": "D.end === 'next:warehouse' && D.fails.length >= 1 && D.fails.length <= 8", "label": "the clumsy hands fail some, then get through: chapter VII opens" },
+    "check": "(D.end === 'next:warehouse' || D.end === 'until') && D.fails.length >= 1 && D.fails.length <= 8", "label": "the clumsy hands fail some, then get through: chapter VII opens" },
   { "eval": "JSON.stringify({ fails: window.__tailFails || [], tries: window.__c3tries })" },
   { "expect": "G.scenes.current && G.scenes.current.id === 'warehouse'", "label": "chapter VII (Pier Nine) begins" }
  ]

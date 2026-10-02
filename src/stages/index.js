@@ -21,6 +21,8 @@ export class Stages {
 
   // (opts.scene: the scene to build it into, main.js's for the first stage)
   get(name, opts = {}) {
+    // [C3] (a stage being warmed is finished at once)
+    if (this.warming && this.warming.has(name)) { const w = this.warming.get(name); for (let r = w.it.next(); !r.done; r = w.it.next()); this.warming.delete(name); }
     if (this.built.has(name)) return this.built.get(name);
     const def = STAGE_DEFS.get(name);
     if (!def) throw new Error(`no stage '${name}' (stages: ${this.names.join(', ')})`);
@@ -31,5 +33,29 @@ export class Stages {
     });
     this.built.set(name, stage);
     return stage;
+  }
+
+  // [C3] build a stage a little at a time before it is needed (a scene's
+  // last stretch calls it every frame: lane C6's foot chase for the city):
+  // parts until `budgetMs` is spent, then the place's systems; true once it
+  // stands. get(name) finishes it at once if called first.
+  warm(name, budgetMs = 6) {
+    if (this.built.has(name) && !(this.warming && this.warming.has(name))) return true;
+    const W = this.warming || (this.warming = new Map());
+    if (!W.has(name)) {
+      const def = STAGE_DEFS.get(name);
+      if (!def) throw new Error(`no stage '${name}' (stages: ${this.names.join(', ')})`);
+      const { renderer, U, tex, rng } = this.ctx;
+      const stage = new Stage({ name, renderer, U, tex, rng: def.salt == null ? rng : rng.fork(def.salt), parts: def.parts, look: def.look || null, deferred: true });
+      this.built.set(name, stage);
+      W.set(name, { stage, it: stage.buildSteps() });
+      return false;
+    }
+    const w = W.get(name), t0 = performance.now();
+    for (;;) {
+      const r = w.it.next();
+      if (r.done) { W.delete(name); return true; }
+      if (performance.now() - t0 > budgetMs) return false;
+    }
   }
 }

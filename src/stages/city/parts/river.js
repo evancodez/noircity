@@ -16,7 +16,7 @@ const ROW_TONE = [0.30, 0.32, 0.33, 0.34], ROW_HAZE = [0.08, 0.12, 0.16, 0.2];
 
 export default {
   name: 'river', order: 70,
-  build(stage) {
+  *buildSteps(stage) {
     const { scene, M, U } = stage;
     const rng = stage.rng.fork(701);
     const group = new THREE.Group();
@@ -66,6 +66,7 @@ export default {
     const railM = new THREE.Mesh(merge(rails), M.lampIron);
     tagInk(railM); railM.userData.noRay = true;
     group.add(railM);
+    yield;
     // ---- the lift bridge at the avenue's end: up -------------------------------------
     {
       const parts = [];
@@ -91,6 +92,7 @@ export default {
       bm.userData.inkId = m.userData.inkId; bm.userData.noRay = true;
       group.add(bm);
     }
+    yield;
     // ---- the far bank: its low sheds and its lights ------------------------------------
     const far = [];
     const lit = new THREE.MeshBasicMaterial({ color: new THREE.Color().setScalar(2.2) });
@@ -124,7 +126,9 @@ export default {
       { at: (u) => [-560 - trng.range(0, 200), u], span: [-700, 500], h: [40, 140], w: [16, 30], gap: [30, 70] },
       { at: (u) => [u, 420 + trng.range(0, 200)], span: [-700, 380], h: [30, 110], w: [16, 30], gap: [34, 80] },
     ];
-    rings.forEach((R, ri) => {
+    yield;
+    for (let ri = 0; ri < rings.length; ri++) {
+      const R = rings[ri];
       const parts = [];
       for (let u = R.span[0]; u < R.span[1]; u += trng.range(R.gap[0], R.gap[1])) {
         const [x, z] = R.at(u);
@@ -138,7 +142,8 @@ export default {
       mesh.userData.noRay = true;
       mesh.frustumCulled = false;
       group.add(mesh);
-    });
+      yield;
+    }
     sk.buildWindows();
     if (sk.windowMesh) sk.windowMesh.userData.noRay = true;
     // ---- the lights the water carries: the quay's lamps near the eye, the far bank's
@@ -167,5 +172,7 @@ export default {
       },
     };
   },
+  // (built whole, or a step at a time when the stage is warmed: Stages.warm)
+  build(stage) { const it = this.buildSteps(stage); let r; while (!(r = it.next()).done); return r.value; },
   update: (r, dt, t, camera, ph) => r.update(camera, ph),
 };

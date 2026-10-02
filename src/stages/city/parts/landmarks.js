@@ -45,7 +45,7 @@ function signMap(lines, { w = 512, h = 256, bg = '#080808', fg = 'rgba(232,230,2
 
 export default {
   name: 'landmarks', order: 75,
-  build(stage) {
+  *buildSteps(stage) {
     const { scene, M, U } = stage;
     const group = new THREE.Group();
     group.name = 'landmarks';
@@ -140,6 +140,7 @@ export default {
       const fp = [hull, roundedBox(12, 5, 9, 0.2, 2).translate(-L / 2 + 13, Hh + 2.5, 0), roundedBox(8, 3, 7, 0.2, 2).translate(-L / 2 + 13, Hh + 6.5, 0),
         lathe([[0, 0], [1.0, 0], [0.9, 6], [0, 6.2]], 16).translate(-L / 2 + 20, Hh + 5, 0)];
       for (const x of [-10, 22]) fp.push(new THREE.CylinderGeometry(0.2, 0.3, 18, 8).translate(x, Hh + 9, 0));
+      yield;
       const fm = add(merge(fp), M.iron);
       fm.position.set((F.x0 + F.x1) / 2, 0, F.z);
       const holes = [], fl = [];
@@ -173,6 +174,7 @@ export default {
       kit.addMerged(yd, K.timber);
     }
 
+    yield;
     // ---- the gasworks over the canal: the gasometer, its frame ------------------------------
     {
       const G = GASOMETER, parts = [];
@@ -183,6 +185,7 @@ export default {
       const m = add(merge(parts), M.tower || M.iron, { noRay: true, id: allocSkylineId() });
       void m;
     }
+    yield;
     // ---- the water tower over the rail yard -------------------------------------------------
     {
       const W = WATER_TOWER, parts = [];
@@ -192,6 +195,7 @@ export default {
       parts.push(lathe([[0, 0], [3.6, 0], [3.6, 5.5], [3.0, 6.4], [0.4, 7.4], [0, 7.5]], 24).translate(W.x, th, W.z));
       add(merge(parts), M.iron, { noRay: true, id: allocSkylineId() });
     }
+    yield;
     // ---- the clock tower at Clock St and Baxter: four lit faces ---------------------------------
     {
       kit.piece();
@@ -208,6 +212,7 @@ export default {
       const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: glowTexture(), color: new THREE.Color().setScalar(0.5), blending: THREE.AdditiveBlending, depthWrite: false, transparent: true, fog: false }));
       sp.position.set(C.x, fy, C.z); sp.scale.setScalar(12); sp.layers.set(LAYER.FX_REFL); sp.userData.noRay = true; group.add(sp);
     }
+    yield;
     // ---- the Bijou's marquee over Fifth St ------------------------------------------------
     {
       kit.piece();
@@ -230,6 +235,7 @@ export default {
       const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: glowTexture(), color: new THREE.Color().setScalar(0.45), blending: THREE.AdditiveBlending, depthWrite: false, transparent: true, fog: false }));
       sp.position.set(C.x, y0 + 1, z0 + 3.6); sp.scale.set(26, 8, 1); sp.layers.set(LAYER.FX_REFL); sp.userData.noRay = true; group.add(sp);
     }
+    yield;
     // ---- the signs: DOCKS and a hand, at the corners where the way to the
     // river turns; PIER 9 on the river road -----------------------------------------------
     {
@@ -261,6 +267,7 @@ export default {
         sign(p.x, PAVE + 2.6, p.z, -f.fx, -f.fz, 1.6, 0.8, pier, { glow: 0.6 });
       }
     }
+    yield;
     // ---- the roadworks on Baxter (between Fifth St and Dock Rd) -------------------------
     {
       kit.piece();
@@ -292,6 +299,7 @@ export default {
       add(merge(lan), M.lampIron);
       add(merge(lanLit), lit(5), { noRay: true });
     }
+    yield;
     // ---- beyond the edges: the rail yard's wagons, the depot's sheds, the
     // gasworks' sheds over the canal (flat dark masses) --------------------------------
     {
@@ -320,6 +328,8 @@ export default {
     };
     return api;
   },
+  // (built whole, or a step at a time when the stage is warmed: Stages.warm)
+  build(stage) { const it = this.buildSteps(stage); let r; while (!(r = it.next()).done); return r.value; },
 };
 
 // the clock's face: the hours, the hands at ten to midnight

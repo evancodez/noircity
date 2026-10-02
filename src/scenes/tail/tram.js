@@ -60,7 +60,7 @@ export class Tram {
     stage.scene.add(m.group);
     const v = new Car(C.V, 'truck', m, { pos: new THREE.Vector3(x0, 0, EW.market.z), yaw: dir > 0 ? 0 : Math.PI, spec: { halfL: LEN / 2, halfW: WID / 2, mass: 30 } });
     v.inkSlot = figureInk(m.group);
-    v.lamps = new Headlamps(stage, v, [new THREE.Vector3(LEN / 2, 1.2, 0)], { reach: 26, intensity: 140, cone: 0.22 });
+    v.lamps = new Headlamps(stage, v, [new THREE.Vector3(LEN / 2, 1.2, -0.25), new THREE.Vector3(LEN / 2, 1.2, 0.25)], { reach: 26, intensity: 140, cone: 0.16 });
     v.kind = 'tram';
     const self = this;
     v.driver = { kinematic: true, drive(car, dt) { car.pos.x += dir * SPEED * dt; car.vel.set(dir * SPEED, 0, 0); car.yawRate = 0; self.x = car.pos.x; } };

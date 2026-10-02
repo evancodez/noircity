@@ -21,7 +21,7 @@ const P = Overpass.prototype;
 
 export default {
   name: 'el', order: 30, tick: 20,
-  build(stage) {
+  *buildSteps(stage) {
     const { scene, M } = stage;
     const group = new THREE.Group();
     group.name = 'el';
@@ -76,12 +76,14 @@ export default {
       meshLo.userData.noRay = true;
       stations.push({ s: st[k], mesh, meshLo, mid: V3(f.x, 0, f.z), lod: 0 });
       columns.push({ x: A.x, z: A.z, r: 0.66, s: st[k] }, { x: B.x, z: B.z, r: 0.66, s: st[k] });
+      if (k % 5 === 4) yield;
     }
     // the deck: two plate girders and the slab, in chunks of ~80 m, the
     // railing's two rails on top
     const H = O.girderH, fw = 0.26, ft = 0.08, wt = 0.05, R = O.railH;
     const ibeam = [[-fw, 0], [fw, 0], [fw, ft], [wt, ft], [wt, H - ft], [fw, H - ft], [fw, H], [-fw, H], [-fw, H - ft], [-wt, H - ft], [-wt, ft], [-fw, ft]];
     const rail = (p, y, w, h) => sweep(p, [[-w, y], [w, y], [w, y + h], [-w, y + h]], { flat: true });
+    yield;
     const chunks = [];
     const CH = 80;
     for (let s0 = 0; s0 < line.len; s0 += CH) {
@@ -154,5 +156,7 @@ export default {
     stage.onShadowLod((on) => api.lod(on));
     return api;
   },
+  // (built whole, or a step at a time when the stage is warmed: Stages.warm)
+  build(stage) { const it = this.buildSteps(stage); let r; while (!(r = it.next()).done); return r.value; },
   update: (el, dt, t, camera) => el.update(camera),
 };

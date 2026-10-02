@@ -6,6 +6,7 @@ import { PIER, START, EW, riverPoint, riverFrame, riverSAtZ, RIVER } from '../..
 import { His, LEGS } from './his.js';
 import { WindowGun } from './gun.js';
 import { Traffic } from './traffic.js';
+import { Walkers } from './walkers.js';
 import { makeKit } from './kit.js';
 import { RULES } from './rules.js';
 import { makeBot } from './bot.js';
@@ -53,6 +54,7 @@ export class Chase {
     if (S && S.live) for (const k of ['tail_his', 'c3_traffic0', 'c3_traffic1', 'c3_tram']) if (S.loops && S.loops.has(k)) S.stopLoop(k);
     if (this.gun) this.gun.dispose();
     if (this.traffic) this.traffic.dispose();
+    if (this.walkers) this.walkers.dispose();
     if (this.cabin) this.cabin.dispose();
     this.kit.warn(null);
   }
@@ -86,6 +88,7 @@ export class Chase {
     this.cabin.attach(mine);
     this.gun = new WindowGun(this);
     this.traffic = new Traffic(this);
+    this.walkers = new Walkers(this);
     // the damage I bring from the checkpoint shows
     this.showDamage(true);
     this.place = { my, his };
@@ -132,6 +135,7 @@ export class Chase {
     this.V.update(dt);
     this.cabin.step(dt);
     if (this.traffic) this.traffic.step(dt);
+    if (this.walkers) this.walkers.step(dt);
     this.sound(dt);
     const gap = this.gap();
     this.gapNow = gap;

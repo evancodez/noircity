@@ -16,7 +16,7 @@ const SHOW = 330;
 
 export default {
   name: 'buildings', order: 60,
-  build(stage) {
+  *buildSteps(stage) {
     const { scene, M } = stage;
     const lots = lotsOf(stage.rng.fork(601));
     const rng = stage.rng.fork(603);
@@ -28,7 +28,9 @@ export default {
     const lit = new THREE.MeshBasicMaterial({ color: new THREE.Color().setScalar(0.085) }), shop = new THREE.MeshBasicMaterial({ color: new THREE.Color().setScalar(0.055) });
     const box = (x0, x1, y0, y1, z0, z1) => new THREE.BoxGeometry(x1 - x0, y1 - y0, z1 - z0).translate((x0 + x1) / 2, (y0 + y1) / 2, (z0 + z1) / 2);
     const byBlock = new Map();
+    let nLot = 0;
     for (const l of lots) {
+      if (++nLot % 12 === 0) yield;
       if (!byBlock.has(l.block)) byBlock.set(l.block, { body: [], dark: [], lit: [], shop: [], lots: [] });
       const B = byBlock.get(l.block);
       B.lots.push(l);
@@ -86,6 +88,7 @@ export default {
       };
       mk(B.body, M.brickFar); mk(B.dark, M.black); mk(B.lit, lit); mk(B.shop, shop);
       blocks.push({ b, meshes, mid, lots: B.lots });
+      yield;
     }
     const api = {
       group, lots, blocks,
@@ -102,5 +105,7 @@ export default {
     };
     return api;
   },
+  // (built whole, or a step at a time when the stage is warmed: Stages.warm)
+  build(stage) { const it = this.buildSteps(stage); let r; while (!(r = it.next()).done); return r.value; },
   update: (b, dt, t, camera) => b.update(camera),
 };

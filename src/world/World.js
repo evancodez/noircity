@@ -57,7 +57,7 @@ const BASE_LOOK = {
 const NO_STREET = { addImpact() {}, addBlast() {} };
 
 export class Stage {
-  constructor({ name, renderer, scene = null, U, tex, rng, parts = [], look = null }) {
+  constructor({ name, renderer, scene = null, U, tex, rng, parts = [], look = null, deferred = false }) {
     this.name = name;
     this.renderer = renderer;
     this.scene = scene || new THREE.Scene();
@@ -116,17 +116,28 @@ export class Stage {
     // the RNG draws and the scene graph: never reorder a stage's parts)
     this.parts = new Map();
     this.updaters = [];
-    const defs = [...parts].sort((a, b) => a.order - b.order || (a.name < b.name ? -1 : 1));
-    for (const def of defs) {
-      if (this.parts.has(def.name)) throw new Error(`stage ${name}: two parts named '${def.name}'`);
-      if (def.name in this && this[def.name] !== NO_STREET) throw new Error(`stage ${name}: '${def.name}' is the stage's own, not a part name`);
-      const api = def.build(this);
-      this.parts.set(def.name, api);
-      this[def.name] = api;
-      if (def.update) this.updaters.push({ tick: def.tick ?? def.order, fn: def.update, api });
-    }
-    this.updaters.sort((a, b) => a.tick - b.tick);
+    this._defs = [...parts].sort((a, b) => a.order - b.order || (a.name < b.name ? -1 : 1));
+    // [C3] (deferred: the parts and the systems are built by buildSteps(),
+    // a step at a time - Stages.warm builds a stage over several frames)
+    if (deferred) { this.deferred = true; return; }
+    for (const def of this._defs) this.buildPart(def);
+    this.finish();
+  }
 
+  // [C3] one part (the constructor's loop, as it was)
+  buildPart(def, built = undefined) {
+    const name = this.name;
+    if (this.parts.has(def.name)) throw new Error(`stage ${name}: two parts named '${def.name}'`);
+    if (def.name in this && this[def.name] !== NO_STREET) throw new Error(`stage ${name}: '${def.name}' is the stage's own, not a part name`);
+    const api = built !== undefined ? built : def.build(this);
+    this.parts.set(def.name, api);
+    this[def.name] = api;
+    if (def.update) this.updaters.push({ tick: def.tick ?? def.order, fn: def.update, api });
+  }
+  // [C3] the place's systems once its parts stand (the constructor's tail, as it was)
+  finish() {
+    const scene = this.scene;
+    this.updaters.sort((a, b) => a.tick - b.tick);
     this.solids = [];
     scene.traverse((o) => { if (o.isMesh && o.layers.mask & 3 && !o.isInstancedMesh && !o.userData.noRay) this.solids.push(o); });
     this._rim = [];
@@ -140,6 +151,37 @@ export class Stage {
     this.fx = new Fx(this);
     this.fxRef = this.fx;
     this.react = null;
+    this.deferred = false;
+  }
+  // [C3] the deferred build, a part a step, then the systems as finish()
+  // builds them (the bullets' world a few milliseconds a step)
+  *buildSteps() {
+    // (a part that can build in steps - def.buildSteps(stage), a generator
+    // returning the api - is stepped through too)
+    for (const def of this._defs) {
+      if (def.buildSteps) { const it = def.buildSteps(this); let r; while (!(r = it.next()).done) yield def.name; this.buildPart(def, r.value); }
+      else this.buildPart(def);
+      yield def.name;
+    }
+    const scene = this.scene;
+    this.updaters.sort((a, b) => a.tick - b.tick);
+    const all = [];
+    scene.traverse((o) => { if (o.isMesh && o.layers.mask & 3 && !o.isInstancedMesh && !o.userData.noRay) all.push(o); });
+    this._rim = [];
+    this.hoods = new Hoods(this);
+    this.cast = new Cast(this);
+    yield 'cast';
+    this.solids = [];
+    this.rays = new RayWorld(this);
+    this.solids = all;
+    { let t0 = performance.now(); for (const m of all) { this.rays.add(m); if (performance.now() - t0 > 3) { yield 'rays'; t0 = performance.now(); } } }
+    this.nav = new NavGrid(this.colliders);
+    this.covers = new CoverSet(this, this.nav);
+    yield 'nav';
+    this.fx = new Fx(this);
+    this.fxRef = this.fx;
+    this.react = null;
+    this.deferred = false;
   }
 
   // the Game enters this stage (Game.enterStage): the reactive world binds
