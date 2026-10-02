@@ -107,10 +107,12 @@ The line that must come before a loss ("He's getting away.", "They've seen
 something."). Centre low, italic, on a torn stroke; it pulses once as it
 comes, with a low thump; it stays until `hud.warn(null)` (fades in 0.4 s).
 The same text again does nothing, so a scene may set it every step from a
-condition:
+condition (give the condition a little hysteresis - on at 22 m, off at 18 -
+or a warning that flickers across its line pulses and thumps each time):
 
 ```js
-ctx.onStep(() => ctx.hud.warn(gap() > 22 ? 'He’s getting away.' : null));
+let away = false;
+ctx.onStep(() => { const g = gap(); away = away ? g > 18 : g > 22; ctx.hud.warn(away ? 'He’s getting away.' : null); });
 ```
 
 ### `game.fail({ why, to, fall, keepWorld, hold }) -> bool`

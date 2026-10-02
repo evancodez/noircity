@@ -13,7 +13,8 @@
 //   objectives  { beat: line } the stand-in for a beat whose goal changes
 //   music       its music slot: 'slot' | { slot, fade } | null (silence) |
 //               { stop: fade } | 'room' (the scene's own diegetic music: the
-//               manager leaves it alone); undefined: the manager leaves it
+//               manager leaves it alone); undefined: entered from another
+//               scene, the music stops (a retry changes nothing)
 //   beatMusic   { beat: same } a beat that overrides it, applied when that
 //               beat begins and when the scene is entered at it
 //   carry       what the detective carries by the start of the chapter

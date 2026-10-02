@@ -320,7 +320,8 @@ export class SceneManager {
   // what it declares for that beat (its beatMusic's, else its music); a beat
   // of beatMusic cues its own as it begins. A spec: 'slot' | { slot, fade } |
   // null | { stop: fade } | 'room' (the scene plays its own: left alone) |
-  // undefined (not declared: left alone). Leaving a scene stops its slot only
+  // undefined (not declared: entered from another scene, the music stops; a
+  // retry changes nothing). Leaving a scene stops its slot only
   // through the next scene's declaration (a slot of its own crossfades, the
   // same slot plays on, null stops it); the title stops it (Game.toTitle).
   musicFor(def, beatName) {
