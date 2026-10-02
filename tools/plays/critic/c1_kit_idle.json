@@ -1,0 +1,393 @@
+{
+ "about": "Critic: the kit's test bed hands off (idle proof), three rounds.",
+ "url": "/?mute=1&start=kit",
+ "size": [
+  1440,
+  900
+ ],
+ "out": "shots/critic/kit_idle",
+ "steps": [
+  {
+   "wait": 2500
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]"
+  },
+  {
+   "wait": 1000
+  },
+  {
+   "eval": "JSON.stringify({t: +G.time.toFixed(1), st: G.state, sc: G.scenes.current && G.scenes.current.id, beat: G.scenes.beat, warn: G.hud.warnText, failing: !!G.failing, obj: G.hud.objectiveText, prompt: G.hud.promptShown, teach: G.hud.kit.teachId || (G.hud.kit.card && G.hud.kit.card.id), fails: G.fails('ready'), stills: G.stills.active, crawl: G.crawl})"
+  },
+  {
+   "shot": "k_begin"
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'kit' && G.state === 'playing' && !G.stills.active",
+   "timeout": 30000
+  },
+  {
+   "eval": "Object.keys(G.hud.kit).join(',')"
+  },
+  {
+   "wait": 900
+  },
+  {
+   "eval": "JSON.stringify({t: +G.time.toFixed(1), st: G.state, sc: G.scenes.current && G.scenes.current.id, beat: G.scenes.beat, warn: G.hud.warnText, failing: !!G.failing, obj: G.hud.objectiveText, prompt: G.hud.promptShown, teach: G.hud.kit.teachId || (G.hud.kit.card && G.hud.kit.card.id), fails: G.fails('ready'), stills: G.stills.active, crawl: G.crawl})"
+  },
+  {
+   "shot": "k00"
+  },
+  {
+   "wait": 900
+  },
+  {
+   "eval": "JSON.stringify({t: +G.time.toFixed(1), st: G.state, sc: G.scenes.current && G.scenes.current.id, beat: G.scenes.beat, warn: G.hud.warnText, failing: !!G.failing, obj: G.hud.objectiveText, prompt: G.hud.promptShown, teach: G.hud.kit.teachId || (G.hud.kit.card && G.hud.kit.card.id), fails: G.fails('ready'), stills: G.stills.active, crawl: G.crawl})"
+  },
+  {
+   "shot": "k01"
+  },
+  {
+   "wait": 900
+  },
+  {
+   "eval": "JSON.stringify({t: +G.time.toFixed(1), st: G.state, sc: G.scenes.current && G.scenes.current.id, beat: G.scenes.beat, warn: G.hud.warnText, failing: !!G.failing, obj: G.hud.objectiveText, prompt: G.hud.promptShown, teach: G.hud.kit.teachId || (G.hud.kit.card && G.hud.kit.card.id), fails: G.fails('ready'), stills: G.stills.active, crawl: G.crawl})"
+  },
+  {
+   "shot": "k02"
+  },
+  {
+   "wait": 900
+  },
+  {
+   "eval": "JSON.stringify({t: +G.time.toFixed(1), st: G.state, sc: G.scenes.current && G.scenes.current.id, beat: G.scenes.beat, warn: G.hud.warnText, failing: !!G.failing, obj: G.hud.objectiveText, prompt: G.hud.promptShown, teach: G.hud.kit.teachId || (G.hud.kit.card && G.hud.kit.card.id), fails: G.fails('ready'), stills: G.stills.active, crawl: G.crawl})"
+  },
+  {
+   "shot": "k03"
+  },
+  {
+   "wait": 900
+  },
+  {
+   "eval": "JSON.stringify({t: +G.time.toFixed(1), st: G.state, sc: G.scenes.current && G.scenes.current.id, beat: G.scenes.beat, warn: G.hud.warnText, failing: !!G.failing, obj: G.hud.objectiveText, prompt: G.hud.promptShown, teach: G.hud.kit.teachId || (G.hud.kit.card && G.hud.kit.card.id), fails: G.fails('ready'), stills: G.stills.active, crawl: G.crawl})"
+  },
+  {
+   "shot": "k04"
+  },
+  {
+   "wait": 900
+  },
+  {
+   "eval": "JSON.stringify({t: +G.time.toFixed(1), st: G.state, sc: G.scenes.current && G.scenes.current.id, beat: G.scenes.beat, warn: G.hud.warnText, failing: !!G.failing, obj: G.hud.objectiveText, prompt: G.hud.promptShown, teach: G.hud.kit.teachId || (G.hud.kit.card && G.hud.kit.card.id), fails: G.fails('ready'), stills: G.stills.active, crawl: G.crawl})"
+  },
+  {
+   "shot": "k05"
+  },
+  {
+   "wait": 900
+  },
+  {
+   "eval": "JSON.stringify({t: +G.time.toFixed(1), st: G.state, sc: G.scenes.current && G.scenes.current.id, beat: G.scenes.beat, warn: G.hud.warnText, failing: !!G.failing, obj: G.hud.objectiveText, prompt: G.hud.promptShown, teach: G.hud.kit.teachId || (G.hud.kit.card && G.hud.kit.card.id), fails: G.fails('ready'), stills: G.stills.active, crawl: G.crawl})"
+  },
+  {
+   "shot": "k06"
+  },
+  {
+   "wait": 900
+  },
+  {
+   "eval": "JSON.stringify({t: +G.time.toFixed(1), st: G.state, sc: G.scenes.current && G.scenes.current.id, beat: G.scenes.beat, warn: G.hud.warnText, failing: !!G.failing, obj: G.hud.objectiveText, prompt: G.hud.promptShown, teach: G.hud.kit.teachId || (G.hud.kit.card && G.hud.kit.card.id), fails: G.fails('ready'), stills: G.stills.active, crawl: G.crawl})"
+  },
+  {
+   "shot": "k07"
+  },
+  {
+   "wait": 900
+  },
+  {
+   "eval": "JSON.stringify({t: +G.time.toFixed(1), st: G.state, sc: G.scenes.current && G.scenes.current.id, beat: G.scenes.beat, warn: G.hud.warnText, failing: !!G.failing, obj: G.hud.objectiveText, prompt: G.hud.promptShown, teach: G.hud.kit.teachId || (G.hud.kit.card && G.hud.kit.card.id), fails: G.fails('ready'), stills: G.stills.active, crawl: G.crawl})"
+  },
+  {
+   "shot": "k08"
+  },
+  {
+   "wait": 900
+  },
+  {
+   "eval": "JSON.stringify({t: +G.time.toFixed(1), st: G.state, sc: G.scenes.current && G.scenes.current.id, beat: G.scenes.beat, warn: G.hud.warnText, failing: !!G.failing, obj: G.hud.objectiveText, prompt: G.hud.promptShown, teach: G.hud.kit.teachId || (G.hud.kit.card && G.hud.kit.card.id), fails: G.fails('ready'), stills: G.stills.active, crawl: G.crawl})"
+  },
+  {
+   "shot": "k09"
+  },
+  {
+   "wait": 900
+  },
+  {
+   "eval": "JSON.stringify({t: +G.time.toFixed(1), st: G.state, sc: G.scenes.current && G.scenes.current.id, beat: G.scenes.beat, warn: G.hud.warnText, failing: !!G.failing, obj: G.hud.objectiveText, prompt: G.hud.promptShown, teach: G.hud.kit.teachId || (G.hud.kit.card && G.hud.kit.card.id), fails: G.fails('ready'), stills: G.stills.active, crawl: G.crawl})"
+  },
+  {
+   "shot": "k10"
+  },
+  {
+   "wait": 900
+  },
+  {
+   "eval": "JSON.stringify({t: +G.time.toFixed(1), st: G.state, sc: G.scenes.current && G.scenes.current.id, beat: G.scenes.beat, warn: G.hud.warnText, failing: !!G.failing, obj: G.hud.objectiveText, prompt: G.hud.promptShown, teach: G.hud.kit.teachId || (G.hud.kit.card && G.hud.kit.card.id), fails: G.fails('ready'), stills: G.stills.active, crawl: G.crawl})"
+  },
+  {
+   "shot": "k11"
+  },
+  {
+   "wait": 900
+  },
+  {
+   "eval": "JSON.stringify({t: +G.time.toFixed(1), st: G.state, sc: G.scenes.current && G.scenes.current.id, beat: G.scenes.beat, warn: G.hud.warnText, failing: !!G.failing, obj: G.hud.objectiveText, prompt: G.hud.promptShown, teach: G.hud.kit.teachId || (G.hud.kit.card && G.hud.kit.card.id), fails: G.fails('ready'), stills: G.stills.active, crawl: G.crawl})"
+  },
+  {
+   "shot": "k12"
+  },
+  {
+   "wait": 900
+  },
+  {
+   "eval": "JSON.stringify({t: +G.time.toFixed(1), st: G.state, sc: G.scenes.current && G.scenes.current.id, beat: G.scenes.beat, warn: G.hud.warnText, failing: !!G.failing, obj: G.hud.objectiveText, prompt: G.hud.promptShown, teach: G.hud.kit.teachId || (G.hud.kit.card && G.hud.kit.card.id), fails: G.fails('ready'), stills: G.stills.active, crawl: G.crawl})"
+  },
+  {
+   "shot": "k13"
+  },
+  {
+   "wait": 900
+  },
+  {
+   "eval": "JSON.stringify({t: +G.time.toFixed(1), st: G.state, sc: G.scenes.current && G.scenes.current.id, beat: G.scenes.beat, warn: G.hud.warnText, failing: !!G.failing, obj: G.hud.objectiveText, prompt: G.hud.promptShown, teach: G.hud.kit.teachId || (G.hud.kit.card && G.hud.kit.card.id), fails: G.fails('ready'), stills: G.stills.active, crawl: G.crawl})"
+  },
+  {
+   "shot": "k14"
+  },
+  {
+   "wait": 900
+  },
+  {
+   "eval": "JSON.stringify({t: +G.time.toFixed(1), st: G.state, sc: G.scenes.current && G.scenes.current.id, beat: G.scenes.beat, warn: G.hud.warnText, failing: !!G.failing, obj: G.hud.objectiveText, prompt: G.hud.promptShown, teach: G.hud.kit.teachId || (G.hud.kit.card && G.hud.kit.card.id), fails: G.fails('ready'), stills: G.stills.active, crawl: G.crawl})"
+  },
+  {
+   "shot": "k15"
+  },
+  {
+   "wait": 900
+  },
+  {
+   "eval": "JSON.stringify({t: +G.time.toFixed(1), st: G.state, sc: G.scenes.current && G.scenes.current.id, beat: G.scenes.beat, warn: G.hud.warnText, failing: !!G.failing, obj: G.hud.objectiveText, prompt: G.hud.promptShown, teach: G.hud.kit.teachId || (G.hud.kit.card && G.hud.kit.card.id), fails: G.fails('ready'), stills: G.stills.active, crawl: G.crawl})"
+  },
+  {
+   "shot": "k16"
+  },
+  {
+   "wait": 900
+  },
+  {
+   "eval": "JSON.stringify({t: +G.time.toFixed(1), st: G.state, sc: G.scenes.current && G.scenes.current.id, beat: G.scenes.beat, warn: G.hud.warnText, failing: !!G.failing, obj: G.hud.objectiveText, prompt: G.hud.promptShown, teach: G.hud.kit.teachId || (G.hud.kit.card && G.hud.kit.card.id), fails: G.fails('ready'), stills: G.stills.active, crawl: G.crawl})"
+  },
+  {
+   "shot": "k17"
+  },
+  {
+   "wait": 900
+  },
+  {
+   "eval": "JSON.stringify({t: +G.time.toFixed(1), st: G.state, sc: G.scenes.current && G.scenes.current.id, beat: G.scenes.beat, warn: G.hud.warnText, failing: !!G.failing, obj: G.hud.objectiveText, prompt: G.hud.promptShown, teach: G.hud.kit.teachId || (G.hud.kit.card && G.hud.kit.card.id), fails: G.fails('ready'), stills: G.stills.active, crawl: G.crawl})"
+  },
+  {
+   "shot": "k18"
+  },
+  {
+   "wait": 900
+  },
+  {
+   "eval": "JSON.stringify({t: +G.time.toFixed(1), st: G.state, sc: G.scenes.current && G.scenes.current.id, beat: G.scenes.beat, warn: G.hud.warnText, failing: !!G.failing, obj: G.hud.objectiveText, prompt: G.hud.promptShown, teach: G.hud.kit.teachId || (G.hud.kit.card && G.hud.kit.card.id), fails: G.fails('ready'), stills: G.stills.active, crawl: G.crawl})"
+  },
+  {
+   "shot": "k19"
+  },
+  {
+   "wait": 900
+  },
+  {
+   "eval": "JSON.stringify({t: +G.time.toFixed(1), st: G.state, sc: G.scenes.current && G.scenes.current.id, beat: G.scenes.beat, warn: G.hud.warnText, failing: !!G.failing, obj: G.hud.objectiveText, prompt: G.hud.promptShown, teach: G.hud.kit.teachId || (G.hud.kit.card && G.hud.kit.card.id), fails: G.fails('ready'), stills: G.stills.active, crawl: G.crawl})"
+  },
+  {
+   "shot": "k20"
+  },
+  {
+   "wait": 900
+  },
+  {
+   "eval": "JSON.stringify({t: +G.time.toFixed(1), st: G.state, sc: G.scenes.current && G.scenes.current.id, beat: G.scenes.beat, warn: G.hud.warnText, failing: !!G.failing, obj: G.hud.objectiveText, prompt: G.hud.promptShown, teach: G.hud.kit.teachId || (G.hud.kit.card && G.hud.kit.card.id), fails: G.fails('ready'), stills: G.stills.active, crawl: G.crawl})"
+  },
+  {
+   "shot": "k21"
+  },
+  {
+   "wait": 900
+  },
+  {
+   "eval": "JSON.stringify({t: +G.time.toFixed(1), st: G.state, sc: G.scenes.current && G.scenes.current.id, beat: G.scenes.beat, warn: G.hud.warnText, failing: !!G.failing, obj: G.hud.objectiveText, prompt: G.hud.promptShown, teach: G.hud.kit.teachId || (G.hud.kit.card && G.hud.kit.card.id), fails: G.fails('ready'), stills: G.stills.active, crawl: G.crawl})"
+  },
+  {
+   "shot": "k22"
+  },
+  {
+   "wait": 900
+  },
+  {
+   "eval": "JSON.stringify({t: +G.time.toFixed(1), st: G.state, sc: G.scenes.current && G.scenes.current.id, beat: G.scenes.beat, warn: G.hud.warnText, failing: !!G.failing, obj: G.hud.objectiveText, prompt: G.hud.promptShown, teach: G.hud.kit.teachId || (G.hud.kit.card && G.hud.kit.card.id), fails: G.fails('ready'), stills: G.stills.active, crawl: G.crawl})"
+  },
+  {
+   "shot": "k23"
+  },
+  {
+   "wait": 900
+  },
+  {
+   "eval": "JSON.stringify({t: +G.time.toFixed(1), st: G.state, sc: G.scenes.current && G.scenes.current.id, beat: G.scenes.beat, warn: G.hud.warnText, failing: !!G.failing, obj: G.hud.objectiveText, prompt: G.hud.promptShown, teach: G.hud.kit.teachId || (G.hud.kit.card && G.hud.kit.card.id), fails: G.fails('ready'), stills: G.stills.active, crawl: G.crawl})"
+  },
+  {
+   "shot": "k24"
+  },
+  {
+   "wait": 900
+  },
+  {
+   "eval": "JSON.stringify({t: +G.time.toFixed(1), st: G.state, sc: G.scenes.current && G.scenes.current.id, beat: G.scenes.beat, warn: G.hud.warnText, failing: !!G.failing, obj: G.hud.objectiveText, prompt: G.hud.promptShown, teach: G.hud.kit.teachId || (G.hud.kit.card && G.hud.kit.card.id), fails: G.fails('ready'), stills: G.stills.active, crawl: G.crawl})"
+  },
+  {
+   "shot": "k25"
+  },
+  {
+   "wait": 900
+  },
+  {
+   "eval": "JSON.stringify({t: +G.time.toFixed(1), st: G.state, sc: G.scenes.current && G.scenes.current.id, beat: G.scenes.beat, warn: G.hud.warnText, failing: !!G.failing, obj: G.hud.objectiveText, prompt: G.hud.promptShown, teach: G.hud.kit.teachId || (G.hud.kit.card && G.hud.kit.card.id), fails: G.fails('ready'), stills: G.stills.active, crawl: G.crawl})"
+  },
+  {
+   "shot": "k26"
+  },
+  {
+   "wait": 900
+  },
+  {
+   "eval": "JSON.stringify({t: +G.time.toFixed(1), st: G.state, sc: G.scenes.current && G.scenes.current.id, beat: G.scenes.beat, warn: G.hud.warnText, failing: !!G.failing, obj: G.hud.objectiveText, prompt: G.hud.promptShown, teach: G.hud.kit.teachId || (G.hud.kit.card && G.hud.kit.card.id), fails: G.fails('ready'), stills: G.stills.active, crawl: G.crawl})"
+  },
+  {
+   "shot": "k27"
+  },
+  {
+   "wait": 900
+  },
+  {
+   "eval": "JSON.stringify({t: +G.time.toFixed(1), st: G.state, sc: G.scenes.current && G.scenes.current.id, beat: G.scenes.beat, warn: G.hud.warnText, failing: !!G.failing, obj: G.hud.objectiveText, prompt: G.hud.promptShown, teach: G.hud.kit.teachId || (G.hud.kit.card && G.hud.kit.card.id), fails: G.fails('ready'), stills: G.stills.active, crawl: G.crawl})"
+  },
+  {
+   "shot": "k28"
+  },
+  {
+   "wait": 900
+  },
+  {
+   "eval": "JSON.stringify({t: +G.time.toFixed(1), st: G.state, sc: G.scenes.current && G.scenes.current.id, beat: G.scenes.beat, warn: G.hud.warnText, failing: !!G.failing, obj: G.hud.objectiveText, prompt: G.hud.promptShown, teach: G.hud.kit.teachId || (G.hud.kit.card && G.hud.kit.card.id), fails: G.fails('ready'), stills: G.stills.active, crawl: G.crawl})"
+  },
+  {
+   "shot": "k29"
+  },
+  {
+   "wait": 900
+  },
+  {
+   "eval": "JSON.stringify({t: +G.time.toFixed(1), st: G.state, sc: G.scenes.current && G.scenes.current.id, beat: G.scenes.beat, warn: G.hud.warnText, failing: !!G.failing, obj: G.hud.objectiveText, prompt: G.hud.promptShown, teach: G.hud.kit.teachId || (G.hud.kit.card && G.hud.kit.card.id), fails: G.fails('ready'), stills: G.stills.active, crawl: G.crawl})"
+  },
+  {
+   "shot": "k30"
+  },
+  {
+   "wait": 900
+  },
+  {
+   "eval": "JSON.stringify({t: +G.time.toFixed(1), st: G.state, sc: G.scenes.current && G.scenes.current.id, beat: G.scenes.beat, warn: G.hud.warnText, failing: !!G.failing, obj: G.hud.objectiveText, prompt: G.hud.promptShown, teach: G.hud.kit.teachId || (G.hud.kit.card && G.hud.kit.card.id), fails: G.fails('ready'), stills: G.stills.active, crawl: G.crawl})"
+  },
+  {
+   "shot": "k31"
+  },
+  {
+   "wait": 900
+  },
+  {
+   "eval": "JSON.stringify({t: +G.time.toFixed(1), st: G.state, sc: G.scenes.current && G.scenes.current.id, beat: G.scenes.beat, warn: G.hud.warnText, failing: !!G.failing, obj: G.hud.objectiveText, prompt: G.hud.promptShown, teach: G.hud.kit.teachId || (G.hud.kit.card && G.hud.kit.card.id), fails: G.fails('ready'), stills: G.stills.active, crawl: G.crawl})"
+  },
+  {
+   "shot": "k32"
+  },
+  {
+   "wait": 900
+  },
+  {
+   "eval": "JSON.stringify({t: +G.time.toFixed(1), st: G.state, sc: G.scenes.current && G.scenes.current.id, beat: G.scenes.beat, warn: G.hud.warnText, failing: !!G.failing, obj: G.hud.objectiveText, prompt: G.hud.promptShown, teach: G.hud.kit.teachId || (G.hud.kit.card && G.hud.kit.card.id), fails: G.fails('ready'), stills: G.stills.active, crawl: G.crawl})"
+  },
+  {
+   "shot": "k33"
+  },
+  {
+   "wait": 900
+  },
+  {
+   "eval": "JSON.stringify({t: +G.time.toFixed(1), st: G.state, sc: G.scenes.current && G.scenes.current.id, beat: G.scenes.beat, warn: G.hud.warnText, failing: !!G.failing, obj: G.hud.objectiveText, prompt: G.hud.promptShown, teach: G.hud.kit.teachId || (G.hud.kit.card && G.hud.kit.card.id), fails: G.fails('ready'), stills: G.stills.active, crawl: G.crawl})"
+  },
+  {
+   "shot": "k34"
+  },
+  {
+   "wait": 900
+  },
+  {
+   "eval": "JSON.stringify({t: +G.time.toFixed(1), st: G.state, sc: G.scenes.current && G.scenes.current.id, beat: G.scenes.beat, warn: G.hud.warnText, failing: !!G.failing, obj: G.hud.objectiveText, prompt: G.hud.promptShown, teach: G.hud.kit.teachId || (G.hud.kit.card && G.hud.kit.card.id), fails: G.fails('ready'), stills: G.stills.active, crawl: G.crawl})"
+  },
+  {
+   "shot": "k35"
+  },
+  {
+   "wait": 900
+  },
+  {
+   "eval": "JSON.stringify({t: +G.time.toFixed(1), st: G.state, sc: G.scenes.current && G.scenes.current.id, beat: G.scenes.beat, warn: G.hud.warnText, failing: !!G.failing, obj: G.hud.objectiveText, prompt: G.hud.promptShown, teach: G.hud.kit.teachId || (G.hud.kit.card && G.hud.kit.card.id), fails: G.fails('ready'), stills: G.stills.active, crawl: G.crawl})"
+  },
+  {
+   "shot": "k36"
+  },
+  {
+   "wait": 900
+  },
+  {
+   "eval": "JSON.stringify({t: +G.time.toFixed(1), st: G.state, sc: G.scenes.current && G.scenes.current.id, beat: G.scenes.beat, warn: G.hud.warnText, failing: !!G.failing, obj: G.hud.objectiveText, prompt: G.hud.promptShown, teach: G.hud.kit.teachId || (G.hud.kit.card && G.hud.kit.card.id), fails: G.fails('ready'), stills: G.stills.active, crawl: G.crawl})"
+  },
+  {
+   "shot": "k37"
+  },
+  {
+   "wait": 900
+  },
+  {
+   "eval": "JSON.stringify({t: +G.time.toFixed(1), st: G.state, sc: G.scenes.current && G.scenes.current.id, beat: G.scenes.beat, warn: G.hud.warnText, failing: !!G.failing, obj: G.hud.objectiveText, prompt: G.hud.promptShown, teach: G.hud.kit.teachId || (G.hud.kit.card && G.hud.kit.card.id), fails: G.fails('ready'), stills: G.stills.active, crawl: G.crawl})"
+  },
+  {
+   "shot": "k38"
+  },
+  {
+   "wait": 900
+  },
+  {
+   "eval": "JSON.stringify({t: +G.time.toFixed(1), st: G.state, sc: G.scenes.current && G.scenes.current.id, beat: G.scenes.beat, warn: G.hud.warnText, failing: !!G.failing, obj: G.hud.objectiveText, prompt: G.hud.promptShown, teach: G.hud.kit.teachId || (G.hud.kit.card && G.hud.kit.card.id), fails: G.fails('ready'), stills: G.stills.active, crawl: G.crawl})"
+  },
+  {
+   "shot": "k39"
+  }
+ ]
+}

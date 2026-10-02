@@ -1,0 +1,18 @@
+{ "about": "Critic: BEGIN from the title, hands off through the stills and into the diner. What does the screen tell a first-timer?",
+  "url": "/?mute=1", "size": [1440, 900], "out": "shots/critic/begin_idle",
+  "steps": [
+    { "wait": 2500 },
+    { "clickOn": "#title .opt[data-k=begin]" },
+    { "wait": 700 }, { "shot": "s01" }, { "eval": "JSON.stringify({st: G.state, active: G.stills.active, last: G.stills.last, scene: G.scenes.current && G.scenes.current.id})" },
+    { "wait": 1200 }, { "shot": "s02" },
+    { "wait": 1500 }, { "shot": "s03" },
+    { "wait": 1500 }, { "shot": "s04" },
+    { "wait": 1500 }, { "shot": "s05" }, { "eval": "JSON.stringify({st: G.state, active: G.stills.active, scene: G.scenes.current && G.scenes.current.id, beat: G.scenes.beat})" },
+    { "wait": 1500 }, { "shot": "s06" },
+    { "wait": 1500 }, { "shot": "s07" },
+    { "wait": 2000 }, { "shot": "s08" }, { "eval": "JSON.stringify({st: G.state, active: G.stills.active, scene: G.scenes.current && G.scenes.current.id, beat: G.scenes.beat, obj: G.hud.objectiveText})" },
+    { "wait": 2000 }, { "shot": "s09" },
+    { "wait": 3000 }, { "shot": "s10" }, { "eval": "JSON.stringify({st: G.state, active: G.stills.active, scene: G.scenes.current && G.scenes.current.id, beat: G.scenes.beat, obj: G.hud.objectiveText})" },
+    { "wait": 5000 }, { "shot": "s11" },
+    { "wait": 8000 }, { "shot": "s12" }, { "eval": "JSON.stringify({st: G.state, scene: G.scenes.current && G.scenes.current.id, beat: G.scenes.beat, obj: G.hud.objectiveText})" }
+  ] }

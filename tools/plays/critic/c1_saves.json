@@ -1,0 +1,20 @@
+{ "about": "Critic: saves as a player meets them: an old wave-B save, a junk save, then a real checkpoint in the diner, the page reloaded, CONTINUE.",
+  "url": "/?mute=1", "size": [1440, 900], "out": "shots/critic/saves",
+  "steps": [
+    { "wait": 2500 },
+    { "eval": "(localStorage.setItem('noir.save', JSON.stringify({ v: 1, scene: 'body', beat: 'table', flags: { taught: {} }, inventory: ['matchbookHalf','tornHalf'] })), true)" },
+    { "reload": true }, { "wait": 2500 },
+    { "shot": "s1_v1_title" },
+    { "eval": "JSON.stringify({cont: !document.querySelector('#title .opt[data-k=continue]').classList.contains('hidden'), save: localStorage.getItem('noir.save'), txt: document.querySelector('#title').innerText.replace(/\\n/g,' | ')})" },
+    { "eval": "(localStorage.setItem('noir.save', '{not json'), true)" },
+    { "reload": true }, { "wait": 2500 },
+    { "eval": "JSON.stringify({cont: !document.querySelector('#title .opt[data-k=continue]').classList.contains('hidden'), save: localStorage.getItem('noir.save')})" },
+    { "eval": "(localStorage.setItem('noir.save', JSON.stringify({ v: 2, scene: 'body', beat: 'table', flags: {}, inventory: [] })), true)" },
+    { "reload": true }, { "wait": 2500 },
+    { "eval": "JSON.stringify({cont: !document.querySelector('#title .opt[data-k=continue]').classList.contains('hidden')})" },
+    { "shot": "s2_v2body_title" },
+    { "clickOn": "#title .opt[data-k=continue]" },
+    { "wait": 6000 },
+    { "shot": "s3_v2body_continue" },
+    { "eval": "JSON.stringify({st: G.state, sc: G.scenes.current && G.scenes.current.id, beat: G.scenes.beat, stills: G.stills.active, obj: G.hud.objectiveText, err: document.querySelector('#errlog') && document.querySelector('#errlog').innerText.slice(0,300)})" }
+  ] }

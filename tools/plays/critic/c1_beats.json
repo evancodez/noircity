@@ -1,0 +1,3 @@
+{ "url": "/?mute=1", "size": [1440, 900], "out": "shots/critic/beats",
+  "steps": [ { "wait": 2500 },
+    { "eval": "JSON.stringify(Object.fromEntries(['diner','fight','office','gunfight','watcher','tail','warehouse','shootout'].map(id => [id, G.scenes.get(id).beats.join(' ')])))" } ] }

@@ -1,0 +1,15 @@
+{
+ "about": "[C1] Proof 3 of WAVE_C §7 on the kit's test bed (?start=kit): a player who uses what was taught (sees him, turns onto him, RMB steadies, LMB fires, R reloads: tools/lib/kit_bot.mjs 'good') WINS, twice in a row without a fail. node tools/play.mjs tools/plays/kit_good.json",
+ "url": "/?mute=1&start=kit",
+ "size": [1280, 800],
+ "out": "shots/play/kit_good",
+ "steps": [
+  { "wait": 1500 },
+  { "clickOn": "#title .opt[data-k=begin]", "taken": "G.state !== 'title'", "retries": 5, "every": 4000 },
+  { "until": "G.scenes.current && G.scenes.current.id === 'kit'", "timeout": 8000 },
+  { "drive": "tools/lib/kit_bot.mjs", "profile": "good", "stop": "(G.kitWins || 0) >= 2", "timeout": 90000, "check": "D.done && D.wins >= 2 && D.fails === 0", "label": "the taught player wins twice in a row, no fail" },
+  { "until": "G.scenes.beat === 'done' || G.hud.objectiveText === 'Done.'", "timeout": 4000 },
+  { "shot": "g00_done" },
+  { "eval": "({ fails: G.counters.fails || 0, wins: G.kitWins, shots: G.counters.shots, hits: G.counters.hits })" }
+ ]
+}
