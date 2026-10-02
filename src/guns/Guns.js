@@ -499,7 +499,9 @@ export class Guns {
     G.counters.hoodHits++;
     G.counters.damageTaken += amount;
     C.shake(0.25, 0);
-    this.events.push({ t: G.time, what: 'hit', dmg: amount, by: ai && ai.brain ? ai.brain.kind : '?' });
+    // (how I was when it came: down, up over the cover, standing; moving)
+    const pose = (C.crouchK || 0) > 0.5 ? ((C.riseK || 0) > 0.5 ? 'risen' : 'down') : 'standing';
+    this.events.push({ t: G.time, what: 'hit', dmg: amount, by: ai && ai.brain ? ai.brain.kind : '?', pose, flank: this.lastKill.flank, through: this.lastKill.through });
   }
 
   // a round past the ear: the crack, on the side it passed

@@ -260,7 +260,9 @@ export default async function drive({ js, turn, keyDown, keyUp, mouse, shot, log
       }
       await releaseAll();
       const sN = await js(ST);
-      const tr = { ...end, secs: +((Date.now() - t0) / 1000).toFixed(1), shots: sN.shots - shots0, hits: sN.hits - hits0, lowHp: Math.round(lowHp) };
+      // (where the rounds into me came from: my pose, the man's kind, a flanker's, through my cover)
+      const took = await js(`(() => { const o = {}; for (const e of N.game.guns.events) if (e.what === 'hit' && e.t >= ${g0}) { const k = e.pose + ':' + e.by + (e.flank ? ':flank' : '') + (e.through ? ':through' : ''); o[k] = (o[k] || 0) + e.dmg; } return o; })()`);
+      const tr = { ...end, secs: +((Date.now() - t0) / 1000).toFixed(1), shots: sN.shots - shots0, hits: sN.hits - hits0, lowHp: Math.round(lowHp), took };
       B.tries.push(tr);
       log(`c2 ${rec.profile} ${beat} try ${k + 1}: ${JSON.stringify(tr)}`);
       if (end.won) break;

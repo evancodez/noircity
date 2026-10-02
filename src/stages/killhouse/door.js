@@ -141,6 +141,14 @@ export function makeDoor(stage, kit, mats, name, spec) {
       }
       this.apply();
     },
+    // the collider as it stands fully open (the men's nav grid has the open
+    // leaf where it will be: they go round it, never get pinned behind it)
+    openBox() {
+      const a = (spec.swing || 1) * OPEN, c = Math.cos(a), s = Math.sin(a);
+      const dx = along ? s : c, dz = along ? c : -s;
+      const hx = along ? THICK / 2 + 0.02 : w / 2, hz = along ? w / 2 : THICK / 2 + 0.02;
+      return { cx: hinge.position.x + dx * w / 2, cz: hinge.position.z + dz * w / 2, hx, hz, c, s, angle: a };
+    },
     // the leaf's distance at angle `a` from a point (plan)
     dist(a, px, pz) {
       const c = Math.cos(a), s = Math.sin(a);

@@ -20,6 +20,14 @@ const STEP = 0.75;         // along a face
 const V = (x, y, z) => new THREE.Vector3(x, y, z);
 const _a = V(0, 0, 0), _b = V(0, 0, 0);
 
+// every door of the stage (a part's `doors`; the gun kit's own list)
+export function doorsOf(S) {
+  const out = [];
+  for (const p of S.parts.values()) if (p && p.doors) out.push(...Object.values(p.doors));
+  if (S._c2doors) for (const D of Object.values(S._c2doors)) if (!out.includes(D)) out.push(D);
+  return out;
+}
+
 export class Covers {
   constructor(game) {
     this.game = game;
@@ -32,17 +40,24 @@ export class Covers {
     const G = this.game, S = G.stage, C = S.colliders;
     // (the doors' colliders out of the grid: a doorway is a way through)
     // (nor the dead: a body never blocks the living's way)
-    const doors = C.boxes.filter((b) => b.tag === 'door');
-    const keep = doors.map((b) => [b.hx, b.hz]);
-    const dead = C.circles.filter((c) => c.tag === 'corpse');
-    const keepR = dead.map((c) => c.r);
-    for (const b of doors) { b.hx = 0.001; b.hz = 0.001; }
-    for (const c of dead) c.r = 0;
+    // (a locked door stays shut in the grid: a man looking for a way never
+    // paths through it - the way through it is an entry's, who has the key)
+    const all = doorsOf(S);
+    for (const D of all) if (D.locked && D.shut && !D.live && D.apply) { D.live = true; D.apply(); }
+    const locked = new Set(all.filter((D) => D.locked && D.shut).map((D) => D.col));
+    const doors = new Set(C.boxes.filter((b) => b.tag === 'door' && !locked.has(b)));
+    // (out of the lists while the grid is built - not shrunk to a point: a
+    // point still blocks the cells round it, and a shut leaf's point is the
+    // doorway's middle)
+    const boxes = C.boxes, circles = C.circles;
+    // (a door that can stand open is in the grid as it stands open: the leaf
+    // into the room is a thing to go round, the doorway a way through)
+    const opened = all.filter((D) => doors.has(D.col) && D.openBox).map((D) => ({ ...D.col, ...D.openBox(), tag: 'door' }));
+    C.boxes = [...boxes.filter((b) => !doors.has(b)), ...opened];
+    C.circles = circles.filter((c) => c.tag !== 'corpse');
     // (a quarter-metre grid, 0.3 m round what stands: a 1 m doorway is a way
     // through - the stage's own 0.5 m grid closes it)
-    S.nav = new NavGrid(C, { cell: 0.25, inflate: 0.3 });
-    doors.forEach((b, i) => { b.hx = keep[i][0]; b.hz = keep[i][1]; });
-    dead.forEach((c, i) => { c.r = keepR[i]; });
+    try { S.nav = new NavGrid(C, { cell: 0.25, inflate: 0.3 }); } finally { C.boxes = boxes; C.circles = circles; }
     const nav = S.nav;
     const P = [];
     for (const b of C.boxes) {

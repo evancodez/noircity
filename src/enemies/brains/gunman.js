@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { addGunClips } from '../gunClips.js';
 import { chooseDeath } from '../../guns/deaths.js';
+import { doorsOf } from '../../guns/Covers.js';
 addGunClips();
 
 // The gunman (lane C2): a brain for any room or street, from the data the
@@ -40,9 +41,9 @@ export const GUNMAN = {
   wait: [0.5, 1.3],            // s: behind cover between his times out
   watch: 1.3,                  // s: he holds his aim on where I went down before going back
   walk: 1.5, run: 3.0,
-  pistol: { hp: 100, dmg: 17, mag: 7, burst: [2, 3], gap: [0.4, 0.52], reload: 1.7 },
+  pistol: { hp: 100, dmg: 24, mag: 7, burst: [2, 3], gap: [0.4, 0.52], reload: 1.7 },
   tommy: { hp: 120, dmg: 8, burst: [10, 14], rate: 10.5, climb: 0.0035, sigma0: 0.01, drum: 2.6 },
-  rusher: { hp: 300, dmg: 10, burst: [5, 8], rate: 9, every: 1.2, close: 2.4, hitStop: 0.35, walk: 1.3 },
+  rusher: { hp: 250, dmg: 10, burst: [5, 8], rate: 9, every: 1.2, close: 2.4, hitStop: 0.45, walk: 1.3 },
 };
 const T = GUNMAN;
 const V = (x, y, z) => new THREE.Vector3(x, y, z);
@@ -144,8 +145,59 @@ export default {
       h.setAim(false);
     };
     // (the body's path walking: turns, 1.5 m/s walking, 2.9 running, a new
-    // path when he is stuck; the colliders keep him out of everything)
-    const follow = (dt) => B.follow(dt);
+    // path when he is stuck; the colliders keep him out of everything) - and
+    // a shut door on his way is opened as a man opens it: he stops at it, it
+    // swings (pushed, its sound), and he goes through; a locked one rattles
+    // and he goes another way (the grid keeps locked doors shut: Covers)
+    const follow = (dt) => {
+      let W = S.door;
+      if (W && (!B.path || W.D.open01 > 0.7 || G.time > W.until)) { if (W && G.time > W.until) S.doorSkip = { D: W.D, until: G.time + 5 }; W = S.door = null; }
+      const D = W ? W.D : (B.path && !S.entry ? doorAhead() : null);
+      if (!D) return B.follow(dt);
+      if (!W) W = S.door = { D, tries: 0, phase: 'open', until: G.time + 7 };
+      const c = D.centre;
+      if (W.phase === 'back') {
+        // (out of the leaf's sweep, then he opens it)
+        W.bt = (W.bt || 0) + dt;
+        if (B.follow(dt) || Math.hypot(h.pos.x - W.bx, h.pos.z - W.bz) < 0.3 || W.bt > 1.6) { W.phase = 'open'; W.tries = 0; if (B.path && B.pathI === 0 && B.path.length > 1) B.pathI = 1; }
+        return false;
+      }
+      h.speed = 0;
+      if (h.state === 'walk' || h.state === 'run') h.setState('idle', 0.15);
+      B.faceTo(c.x, c.z, dt, 6);
+      B.stuckT = 0; B.lastPos.copy(h.pos);
+      if (D.locked) { D.rattle(); S.door = null; S.doorSkip = { D, until: G.time + 6 }; B.path = null; return true; }
+      if (!D.moving && D.open01 < 0.7) {
+        if (W.tries >= 2 && !W.backed) {
+          // the leaf swings his way and stops against him: a step back out of its sweep
+          const nx = D.spec.outside.x - D.spec.inside.x, nz = D.spec.outside.z - D.spec.inside.z, L = Math.hypot(nx, nz) || 1;
+          const sd = Math.sign((h.pos.x - c.x) * nx + (h.pos.z - c.z) * nz) || 1;
+          W.bx = c.x + nx / L * sd * 1.4; W.bz = c.z + nz / L * sd * 1.4;
+          W.backed = true; W.phase = 'back';
+          B.path = [V(W.bx, 0, W.bz), ...B.path.slice(B.pathI || 0)]; B.pathI = 0; B.run = false;
+          return false;
+        }
+        if (W.tries >= 5) { S.door = null; S.doorSkip = { D, until: G.time + 5 }; return B.follow(dt); }
+        D.open(h.pos); W.tries++;
+      }
+      return false;
+    };
+    // the shut door just ahead on his path (he is at it, his way goes through it)
+    const doorAhead = () => {
+      const P = B.path, i0 = B.pathI || 0;
+      if (!P || !P.length) return null;
+      for (const D of doorsOf(G.stage)) {
+        if (!D.spec || D.open01 > 0.7) continue;
+        if (S.doorSkip && S.doorSkip.D === D && G.time < S.doorSkip.until) continue;
+        const c = D.centre;
+        if (Math.hypot(h.pos.x - c.x, h.pos.z - c.z) > 1.3) continue;
+        const nx = D.spec.outside.x - D.spec.inside.x, nz = D.spec.outside.z - D.spec.inside.z;
+        const side = (x, z) => Math.sign((x - c.x) * nx + (z - c.z) * nz);
+        const me = side(h.pos.x, h.pos.z);
+        for (let k = i0; k < Math.min(P.length, i0 + 3); k++) if (side(P[k].x, P[k].z) !== me && Math.hypot(P[k].x - c.x, P[k].z - c.z) < 2.6) return D;
+      }
+      return null;
+    };
     const stand = (crouch) => {
       h.speed = 0;
       S.low = !!crouch;
@@ -362,6 +414,8 @@ export default {
           break;
         }
         case 'move': {
+          // (a way that will not open up - a leaf, a crowd - is given up: he fights from where he is)
+          if (S.t > 12) { B.path = null; stand(false); if (S.flank) { S.flank = null; const F = Kt.flank; if (F && F.ai === B) F.done = true; } S.state = 'open'; S.t = 0; S.wait = r.range(0.3, 0.7); break; }
           if (S.flank) {
             const F = S.flank;
             if (follow(dt) || Math.hypot(h.pos.x - F.x, h.pos.z - F.z) < 0.4) {
