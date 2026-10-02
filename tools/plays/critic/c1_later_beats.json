@@ -1,0 +1,168 @@
+{
+ "about": "Critic: the objective line at a later beat of each chapter (does the stand-in still tell the truth?).",
+ "url": "/?mute=1",
+ "size": [
+  1440,
+  900
+ ],
+ "out": "shots/critic/beats",
+ "steps": [
+  {
+   "wait": 2000
+  },
+  {
+   "eval": "(localStorage.clear(), location.href = '/?mute=1&start=office.safe', true)"
+  },
+  {
+   "wait": 4000
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]"
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'office' && G.state === 'playing'",
+   "timeout": 20000
+  },
+  {
+   "wait": 4000
+  },
+  {
+   "eval": "JSON.stringify({sc: G.scenes.current && G.scenes.current.id, beat: G.scenes.beat, obj: G.hud.objectiveText, prompt: G.hud.promptShown, music: G.music.current})"
+  },
+  {
+   "shot": "office_safe"
+  },
+  {
+   "eval": "(localStorage.clear(), location.href = '/?mute=1&start=gunfight.window', true)"
+  },
+  {
+   "wait": 4000
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]"
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'gunfight' && G.state === 'playing'",
+   "timeout": 20000
+  },
+  {
+   "wait": 4000
+  },
+  {
+   "eval": "JSON.stringify({sc: G.scenes.current && G.scenes.current.id, beat: G.scenes.beat, obj: G.hud.objectiveText, prompt: G.hud.promptShown, music: G.music.current})"
+  },
+  {
+   "shot": "gunfight_window"
+  },
+  {
+   "eval": "(localStorage.clear(), location.href = '/?mute=1&start=watcher.car', true)"
+  },
+  {
+   "wait": 4000
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]"
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'watcher' && G.state === 'playing'",
+   "timeout": 20000
+  },
+  {
+   "wait": 4000
+  },
+  {
+   "eval": "JSON.stringify({sc: G.scenes.current && G.scenes.current.id, beat: G.scenes.beat, obj: G.hud.objectiveText, prompt: G.hud.promptShown, music: G.music.current})"
+  },
+  {
+   "shot": "watcher_car"
+  },
+  {
+   "eval": "(localStorage.clear(), location.href = '/?mute=1&start=tail.shot', true)"
+  },
+  {
+   "wait": 4000
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]"
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'tail' && G.state === 'playing'",
+   "timeout": 20000
+  },
+  {
+   "wait": 4000
+  },
+  {
+   "eval": "JSON.stringify({sc: G.scenes.current && G.scenes.current.id, beat: G.scenes.beat, obj: G.hud.objectiveText, prompt: G.hud.promptShown, music: G.music.current})"
+  },
+  {
+   "shot": "tail_shot"
+  },
+  {
+   "eval": "(localStorage.clear(), location.href = '/?mute=1&start=tail.interrogate', true)"
+  },
+  {
+   "wait": 4000
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]"
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'tail' && G.state === 'playing'",
+   "timeout": 20000
+  },
+  {
+   "wait": 4000
+  },
+  {
+   "eval": "JSON.stringify({sc: G.scenes.current && G.scenes.current.id, beat: G.scenes.beat, obj: G.hud.objectiveText, prompt: G.hud.promptShown, music: G.music.current})"
+  },
+  {
+   "shot": "tail_interrogate"
+  },
+  {
+   "eval": "(localStorage.clear(), location.href = '/?mute=1&start=warehouse.fight', true)"
+  },
+  {
+   "wait": 4000
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]"
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'warehouse' && G.state === 'playing'",
+   "timeout": 20000
+  },
+  {
+   "wait": 4000
+  },
+  {
+   "eval": "JSON.stringify({sc: G.scenes.current && G.scenes.current.id, beat: G.scenes.beat, obj: G.hud.objectiveText, prompt: G.hud.promptShown, music: G.music.current})"
+  },
+  {
+   "shot": "warehouse_fight"
+  },
+  {
+   "eval": "(localStorage.clear(), location.href = '/?mute=1&start=shootout.cardinal', true)"
+  },
+  {
+   "wait": 4000
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]"
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'shootout' && G.state === 'playing'",
+   "timeout": 20000
+  },
+  {
+   "wait": 4000
+  },
+  {
+   "eval": "JSON.stringify({sc: G.scenes.current && G.scenes.current.id, beat: G.scenes.beat, obj: G.hud.objectiveText, prompt: G.hud.promptShown, music: G.music.current})"
+  },
+  {
+   "shot": "shootout_cardinal"
+  }
+ ]
+}

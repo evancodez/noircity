@@ -1,0 +1,13 @@
+{ "about": "Critic: the kit's test bed played badly (slow to react, a wide aim, a wrong key first): fails some, gets through, never stuck.",
+  "url": "/?mute=1&start=kit", "size": [1440, 900], "out": "shots/critic/kit_bad",
+  "steps": [
+    { "wait": 2500 },
+    { "clickOn": "#title .opt[data-k=begin]" },
+    { "until": "G.scenes.current && G.scenes.current.id === 'kit' && G.state === 'playing' && !G.stills.active", "timeout": 30000 },
+    { "wait": 2500 },
+    { "key": "KeyE" }, { "key": "Space" }, { "wait": 800 },
+    { "mouse": "click", "button": "right", "x": 720, "y": 450 },
+    { "shoot": { "until": "(G.kitWins || 0) >= 1", "timeout": 150000, "react": [1600, 2600], "err": 0.15,
+       "shots": { "fail1": "G.fails('ready') === 1 && !!G.failing", "again": "G.fails('ready') >= 2 && !G.failing && !!G.hud.kit.teachCur", "won": "(G.kitWins||0) >= 1" } } },
+    { "eval": "JSON.stringify({wins: G.kitWins, fails: G.fails('ready'), t: G.time})" }
+  ] }

@@ -1,0 +1,19 @@
+{ "about": "Critic: odds and ends a player pokes at: ?start=body, the pause card over the kit's lines, a teach card and a scene prompt on screen together (the card called by hand at the diner's E prompt: a lane will do this).",
+  "url": "/?mute=1&start=body", "size": [1440, 900], "out": "shots/critic/odds",
+  "steps": [
+    { "wait": 2500 },
+    { "eval": "JSON.stringify({err: document.querySelector('#errlog') && document.querySelector('#errlog').innerText.slice(0, 200)})" },
+    { "clickOn": "#title .opt[data-k=begin]" },
+    { "wait": 2000 },
+    { "eval": "JSON.stringify({stills: G.stills.active, sc: G.scenes.current && G.scenes.current.id})" },
+    { "until": "G.scenes.current && G.scenes.current.id === 'diner' && G.state === 'playing' && !G.stills.active", "timeout": 30000 },
+    { "until": "!!G.hud.promptShown", "timeout": 20000 },
+    { "wait": 400 },
+    { "eval": "(G.hud.teach('critic_demo', '[E] light up', { secs: 30 }), true)" },
+    { "wait": 600 },
+    { "shot": "o1_teach_and_prompt" },
+    { "eval": "(document.exitPointerLock(), true)" },
+    { "wait": 800 },
+    { "shot": "o2_pause" },
+    { "eval": "JSON.stringify({paused: G.hud.paused, txt: document.querySelector('#hud').innerText.replace(/\\n/g, ' | ').slice(0, 400)})" }
+  ] }

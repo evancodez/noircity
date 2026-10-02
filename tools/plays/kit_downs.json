@@ -1,0 +1,223 @@
+{
+ "about": "[C1] Going down through the kit (game.fail): IV The Door and VIII The Block share the Game's fall now (their own retries kept: IV's door already shut, VIII's dead of the beats before); health reaching zero in a scene with neither (the kit's test bed) uses the default. Health is taken by a debug hook (G.health.damage), the rest is the game's. node tools/play.mjs tools/plays/kit_downs.json",
+ "url": "/?mute=1&start=gunfight",
+ "size": [
+  1280,
+  800
+ ],
+ "out": "shots/play/kit_downs",
+ "steps": [
+  {
+   "name": "IV The Door: down, back at the shadows"
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]",
+   "taken": "G.state !== 'title'",
+   "retries": 5,
+   "every": 4000
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'gunfight' && G.scenes.ctx.flags.drawn",
+   "timeout": 15000
+  },
+  {
+   "wait": 800
+  },
+  {
+   "eval": "(G.health.damage(150), G.health.hp)"
+  },
+  {
+   "wait": 250
+  },
+  {
+   "expect": "G.health.hp >= 1 && G.health.hp < 5 && G.health.spared >= 1 && G.hud.warnText === 'You’re hit. Get to cover.' && !G.failing",
+   "label": "[C1] the hit that would take the last before any warning is spared: one left, the warning up"
+  },
+  {
+   "wait": 1100
+  },
+  {
+   "eval": "(window.__t0 = performance.now(), G.health.damage(150), G.health.hp)"
+  },
+  {
+   "until": "G.failing && G.failing.phase === 'black'",
+   "timeout": 4000
+  },
+  {
+   "expect": "G.lastFail.why === 'They got you.' && G.lastFail.fall === true && G.lastFail.to === 'shadows' && G.lastFail.warnedFor >= 1",
+   "label": "IV: down is the kit's fall, 'They got you.', back to the shadows (warned a second and more before)"
+  },
+  {
+   "wait": 400
+  },
+  {
+   "shot": "d00_door_black"
+  },
+  {
+   "until": "!G.failing",
+   "timeout": 8000
+  },
+  {
+   "expect": "performance.now() - window.__t0 < 10000 && G.scenes.current.id === 'gunfight' && G.scenes.beat === 'shadows' && G.health.hp === 100 && !G.controller.frozen && G.controller.mode === 'office'",
+   "label": "IV: up at the shadows with control, under ten seconds"
+  },
+  {
+   "wait": 1200
+  },
+  {
+   "expect": "G.scenes.ctx.flags.drawn === true && G.stage.part('office').door.angle < 0.1",
+   "label": "IV: its own retry kept: the revolver out, the door already shut"
+  },
+  {
+   "shot": "d01_door_back"
+  },
+  {
+   "name": "VIII The Block: down in the doorways, back at the doorways"
+  },
+  {
+   "eval": "(localStorage.removeItem('noir.save'), location.search = '?mute=1&start=shootout.doorways', 1)"
+  },
+  {
+   "wait": 2500
+  },
+  {
+   "until": "!!window.__noirReady && N.game.state === 'title'",
+   "timeout": 30000
+  },
+  {
+   "wait": 1000
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]",
+   "taken": "G.state !== 'title'",
+   "retries": 5,
+   "every": 4000
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'shootout' && G.scenes.beat === 'doorways' && !!G.b7",
+   "timeout": 15000
+  },
+  {
+   "wait": 3500
+  },
+  {
+   "eval": "(G.health.damage(150), G.health.hp)"
+  },
+  {
+   "wait": 250
+  },
+  {
+   "expect": "G.health.hp >= 1 && G.health.hp < 5 && G.health.spared >= 1 && G.hud.warnText === 'You’re hit. Get to cover.' && !G.failing",
+   "label": "[C1] the hit that would take the last before any warning is spared: one left, the warning up"
+  },
+  {
+   "wait": 1100
+  },
+  {
+   "eval": "(window.__t0 = performance.now(), G.health.damage(150), G.health.hp)"
+  },
+  {
+   "until": "G.failing && G.failing.phase === 'black'",
+   "timeout": 4000
+  },
+  {
+   "expect": "G.lastFail.why === 'They got you.' && G.lastFail.to === 'doorways' && G.lastFail.warnedFor >= 1",
+   "label": "VIII: down is the kit's fall, back to the doorways (warned a second and more before)"
+  },
+  {
+   "until": "!G.failing",
+   "timeout": 8000
+  },
+  {
+   "expect": "performance.now() - window.__t0 < 10000 && G.scenes.beat === 'doorways' && G.health.hp === 100 && !G.controller.frozen && G.b7 && G.b7.downs && G.b7.downs.doorways === 1",
+   "label": "VIII: up in the doorways with control, its mercy counting the down"
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "shot": "d02_block_back"
+  },
+  {
+   "name": "the test bed: no onDown, no checkpoint: the default"
+  },
+  {
+   "eval": "(localStorage.removeItem('noir.save'), location.search = '?mute=1&start=kit', 1)"
+  },
+  {
+   "wait": 2500
+  },
+  {
+   "until": "!!window.__noirReady && N.game.state === 'title'",
+   "timeout": 30000
+  },
+  {
+   "wait": 1000
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]",
+   "taken": "G.state !== 'title'",
+   "retries": 5,
+   "every": 4000
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'kit'",
+   "timeout": 8000
+  },
+  {
+   "wait": 2000
+  },
+  {
+   "eval": "(G.health.damage(150), G.health.hp)"
+  },
+  {
+   "wait": 1100
+  },
+  {
+   "eval": "(G.health.damage(150), G.health.hp)"
+  },
+  {
+   "until": "!!G.failing",
+   "timeout": 3000
+  },
+  {
+   "expect": "G.lastFail.why === 'Down.' && G.lastFail.to === 'ready' && G.lastFail.fall === true",
+   "label": "health at zero with nothing declared: 'Down.' at the beat"
+  },
+  {
+   "until": "!G.failing",
+   "timeout": 8000
+  },
+  {
+   "wait": 1200
+  },
+  {
+   "eval": "(G.setCheckpoint('ready', 'Shot down.'), G.health.damage(150), 1)"
+  },
+  {
+   "wait": 1100
+  },
+  {
+   "eval": "(G.health.damage(150), 1)"
+  },
+  {
+   "until": "!!G.failing",
+   "timeout": 3000
+  },
+  {
+   "expect": "G.lastFail.why === 'Shot down.'",
+   "label": "game.setCheckpoint's words when there is no onDown"
+  },
+  {
+   "until": "!G.failing",
+   "timeout": 8000
+  },
+  {
+   "expect": "G.state === 'playing' && !G.hud.endShown",
+   "label": "never THE END card in the story"
+  }
+ ]
+}

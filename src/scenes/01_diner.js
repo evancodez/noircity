@@ -32,6 +32,9 @@ export default defineScene({
   spawn: { anchor: 'diner.stool.player' },
   beats: ['settle', 'order', 'drink', 'pay'],
   save: ['order', 'drink', 'pay'],
+  // [C1] the objective line per beat (the kit: docs/story/seams/Z.md)
+  // (settle: 'Light up.' struck through as it is done, then 'Watch the room.')
+  objectives: { settle: 'Light up.', order: 'Order a drink.', drink: 'Drink. Watch the big man.', pay: 'Pay the tab.' },
 
   setup: {
     settle(ctx) { dinerRoom(ctx); seatPlayer(ctx); },
@@ -116,6 +119,8 @@ export default defineScene({
       } });
       yield until(() => h.done);
       ctx.flags.litAt = ctx.sceneTime;
+      // [C1] (the first half done: struck through, the second written in)
+      G.hud.objective('Watch the room.');
       // (polish: the first drag follows the light on its own - the hand takes
       // the cigarette from the lips and rests with it on the counter. Left
       // in the lips until F, it stood at the bottom of the view for good,
@@ -194,7 +199,9 @@ export default defineScene({
       const mackAt = () => { const p = m.bones.head.getWorldPosition(V(0, 0, 0)); p.y -= 0.12; return p; };
       look.to({ at: mackAt, frame: 0.3, max: 1.2, pitch: true, in: 1.1, hold: Infinity });
       yield wait(1.2);
-      yield* ctx.say('You’re the one asking about the Cardinal.', 2.6);
+      // [C1] (WAVE_C §6 I: he is there for her, not for me - the licence tells
+      // him what I am, and who I would have come to talk to)
+      yield* ctx.say('She’s got nothing to say to you.', 2.6);
       // [B8] his hands free for the fight: the cigarette out of the lips as he
       // moves; then scene 2 takes the room as it stands, no cut: he stands,
       // comes down the counter, his hand on my shoulder (scenes/fight/start.js)

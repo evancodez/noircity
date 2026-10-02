@@ -1,0 +1,354 @@
+{
+ "about": "Critic: II The Fight hands off.",
+ "url": "/?mute=1",
+ "size": [
+  1440,
+  900
+ ],
+ "out": "shots/critic/fight_idle",
+ "steps": [
+  {
+   "wait": 2500
+  },
+  {
+   "clickOn": "#title .opt[data-k=chapters]"
+  },
+  {
+   "wait": 400
+  },
+  {
+   "clickOn": "#title .toc .row[data-id=fight]"
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'fight' && G.state === 'playing'",
+   "timeout": 20000
+  },
+  {
+   "eval": "Object.keys(G.brawl||{}).join(',')"
+  },
+  {
+   "wait": 2500
+  },
+  {
+   "eval": "JSON.stringify({t: +G.time.toFixed(1), st: G.state, beat: G.scenes.beat, warn: G.hud.warnText, failing: !!G.failing, obj: G.hud.objectiveText, prompt: G.hud.promptShown, music: G.music.current, fails: G.fails(), b: G.brawl && G.brawl.state, me: G.brawl && G.brawl.me && JSON.stringify(G.brawl.me).slice(0,120)})"
+  },
+  {
+   "shot": "f00"
+  },
+  {
+   "wait": 2500
+  },
+  {
+   "eval": "JSON.stringify({t: +G.time.toFixed(1), st: G.state, beat: G.scenes.beat, warn: G.hud.warnText, failing: !!G.failing, obj: G.hud.objectiveText, prompt: G.hud.promptShown, music: G.music.current, fails: G.fails(), b: G.brawl && G.brawl.state, me: G.brawl && G.brawl.me && JSON.stringify(G.brawl.me).slice(0,120)})"
+  },
+  {
+   "shot": "f01"
+  },
+  {
+   "wait": 2500
+  },
+  {
+   "eval": "JSON.stringify({t: +G.time.toFixed(1), st: G.state, beat: G.scenes.beat, warn: G.hud.warnText, failing: !!G.failing, obj: G.hud.objectiveText, prompt: G.hud.promptShown, music: G.music.current, fails: G.fails(), b: G.brawl && G.brawl.state, me: G.brawl && G.brawl.me && JSON.stringify(G.brawl.me).slice(0,120)})"
+  },
+  {
+   "shot": "f02"
+  },
+  {
+   "wait": 2500
+  },
+  {
+   "eval": "JSON.stringify({t: +G.time.toFixed(1), st: G.state, beat: G.scenes.beat, warn: G.hud.warnText, failing: !!G.failing, obj: G.hud.objectiveText, prompt: G.hud.promptShown, music: G.music.current, fails: G.fails(), b: G.brawl && G.brawl.state, me: G.brawl && G.brawl.me && JSON.stringify(G.brawl.me).slice(0,120)})"
+  },
+  {
+   "shot": "f03"
+  },
+  {
+   "wait": 2500
+  },
+  {
+   "eval": "JSON.stringify({t: +G.time.toFixed(1), st: G.state, beat: G.scenes.beat, warn: G.hud.warnText, failing: !!G.failing, obj: G.hud.objectiveText, prompt: G.hud.promptShown, music: G.music.current, fails: G.fails(), b: G.brawl && G.brawl.state, me: G.brawl && G.brawl.me && JSON.stringify(G.brawl.me).slice(0,120)})"
+  },
+  {
+   "shot": "f04"
+  },
+  {
+   "wait": 2500
+  },
+  {
+   "eval": "JSON.stringify({t: +G.time.toFixed(1), st: G.state, beat: G.scenes.beat, warn: G.hud.warnText, failing: !!G.failing, obj: G.hud.objectiveText, prompt: G.hud.promptShown, music: G.music.current, fails: G.fails(), b: G.brawl && G.brawl.state, me: G.brawl && G.brawl.me && JSON.stringify(G.brawl.me).slice(0,120)})"
+  },
+  {
+   "shot": "f05"
+  },
+  {
+   "wait": 2500
+  },
+  {
+   "eval": "JSON.stringify({t: +G.time.toFixed(1), st: G.state, beat: G.scenes.beat, warn: G.hud.warnText, failing: !!G.failing, obj: G.hud.objectiveText, prompt: G.hud.promptShown, music: G.music.current, fails: G.fails(), b: G.brawl && G.brawl.state, me: G.brawl && G.brawl.me && JSON.stringify(G.brawl.me).slice(0,120)})"
+  },
+  {
+   "shot": "f06"
+  },
+  {
+   "wait": 2500
+  },
+  {
+   "eval": "JSON.stringify({t: +G.time.toFixed(1), st: G.state, beat: G.scenes.beat, warn: G.hud.warnText, failing: !!G.failing, obj: G.hud.objectiveText, prompt: G.hud.promptShown, music: G.music.current, fails: G.fails(), b: G.brawl && G.brawl.state, me: G.brawl && G.brawl.me && JSON.stringify(G.brawl.me).slice(0,120)})"
+  },
+  {
+   "shot": "f07"
+  },
+  {
+   "wait": 2500
+  },
+  {
+   "eval": "JSON.stringify({t: +G.time.toFixed(1), st: G.state, beat: G.scenes.beat, warn: G.hud.warnText, failing: !!G.failing, obj: G.hud.objectiveText, prompt: G.hud.promptShown, music: G.music.current, fails: G.fails(), b: G.brawl && G.brawl.state, me: G.brawl && G.brawl.me && JSON.stringify(G.brawl.me).slice(0,120)})"
+  },
+  {
+   "shot": "f08"
+  },
+  {
+   "wait": 2500
+  },
+  {
+   "eval": "JSON.stringify({t: +G.time.toFixed(1), st: G.state, beat: G.scenes.beat, warn: G.hud.warnText, failing: !!G.failing, obj: G.hud.objectiveText, prompt: G.hud.promptShown, music: G.music.current, fails: G.fails(), b: G.brawl && G.brawl.state, me: G.brawl && G.brawl.me && JSON.stringify(G.brawl.me).slice(0,120)})"
+  },
+  {
+   "shot": "f09"
+  },
+  {
+   "wait": 2500
+  },
+  {
+   "eval": "JSON.stringify({t: +G.time.toFixed(1), st: G.state, beat: G.scenes.beat, warn: G.hud.warnText, failing: !!G.failing, obj: G.hud.objectiveText, prompt: G.hud.promptShown, music: G.music.current, fails: G.fails(), b: G.brawl && G.brawl.state, me: G.brawl && G.brawl.me && JSON.stringify(G.brawl.me).slice(0,120)})"
+  },
+  {
+   "shot": "f10"
+  },
+  {
+   "wait": 2500
+  },
+  {
+   "eval": "JSON.stringify({t: +G.time.toFixed(1), st: G.state, beat: G.scenes.beat, warn: G.hud.warnText, failing: !!G.failing, obj: G.hud.objectiveText, prompt: G.hud.promptShown, music: G.music.current, fails: G.fails(), b: G.brawl && G.brawl.state, me: G.brawl && G.brawl.me && JSON.stringify(G.brawl.me).slice(0,120)})"
+  },
+  {
+   "shot": "f11"
+  },
+  {
+   "wait": 2500
+  },
+  {
+   "eval": "JSON.stringify({t: +G.time.toFixed(1), st: G.state, beat: G.scenes.beat, warn: G.hud.warnText, failing: !!G.failing, obj: G.hud.objectiveText, prompt: G.hud.promptShown, music: G.music.current, fails: G.fails(), b: G.brawl && G.brawl.state, me: G.brawl && G.brawl.me && JSON.stringify(G.brawl.me).slice(0,120)})"
+  },
+  {
+   "shot": "f12"
+  },
+  {
+   "wait": 2500
+  },
+  {
+   "eval": "JSON.stringify({t: +G.time.toFixed(1), st: G.state, beat: G.scenes.beat, warn: G.hud.warnText, failing: !!G.failing, obj: G.hud.objectiveText, prompt: G.hud.promptShown, music: G.music.current, fails: G.fails(), b: G.brawl && G.brawl.state, me: G.brawl && G.brawl.me && JSON.stringify(G.brawl.me).slice(0,120)})"
+  },
+  {
+   "shot": "f13"
+  },
+  {
+   "wait": 2500
+  },
+  {
+   "eval": "JSON.stringify({t: +G.time.toFixed(1), st: G.state, beat: G.scenes.beat, warn: G.hud.warnText, failing: !!G.failing, obj: G.hud.objectiveText, prompt: G.hud.promptShown, music: G.music.current, fails: G.fails(), b: G.brawl && G.brawl.state, me: G.brawl && G.brawl.me && JSON.stringify(G.brawl.me).slice(0,120)})"
+  },
+  {
+   "shot": "f14"
+  },
+  {
+   "wait": 2500
+  },
+  {
+   "eval": "JSON.stringify({t: +G.time.toFixed(1), st: G.state, beat: G.scenes.beat, warn: G.hud.warnText, failing: !!G.failing, obj: G.hud.objectiveText, prompt: G.hud.promptShown, music: G.music.current, fails: G.fails(), b: G.brawl && G.brawl.state, me: G.brawl && G.brawl.me && JSON.stringify(G.brawl.me).slice(0,120)})"
+  },
+  {
+   "shot": "f15"
+  },
+  {
+   "wait": 2500
+  },
+  {
+   "eval": "JSON.stringify({t: +G.time.toFixed(1), st: G.state, beat: G.scenes.beat, warn: G.hud.warnText, failing: !!G.failing, obj: G.hud.objectiveText, prompt: G.hud.promptShown, music: G.music.current, fails: G.fails(), b: G.brawl && G.brawl.state, me: G.brawl && G.brawl.me && JSON.stringify(G.brawl.me).slice(0,120)})"
+  },
+  {
+   "shot": "f16"
+  },
+  {
+   "wait": 2500
+  },
+  {
+   "eval": "JSON.stringify({t: +G.time.toFixed(1), st: G.state, beat: G.scenes.beat, warn: G.hud.warnText, failing: !!G.failing, obj: G.hud.objectiveText, prompt: G.hud.promptShown, music: G.music.current, fails: G.fails(), b: G.brawl && G.brawl.state, me: G.brawl && G.brawl.me && JSON.stringify(G.brawl.me).slice(0,120)})"
+  },
+  {
+   "shot": "f17"
+  },
+  {
+   "wait": 2500
+  },
+  {
+   "eval": "JSON.stringify({t: +G.time.toFixed(1), st: G.state, beat: G.scenes.beat, warn: G.hud.warnText, failing: !!G.failing, obj: G.hud.objectiveText, prompt: G.hud.promptShown, music: G.music.current, fails: G.fails(), b: G.brawl && G.brawl.state, me: G.brawl && G.brawl.me && JSON.stringify(G.brawl.me).slice(0,120)})"
+  },
+  {
+   "shot": "f18"
+  },
+  {
+   "wait": 2500
+  },
+  {
+   "eval": "JSON.stringify({t: +G.time.toFixed(1), st: G.state, beat: G.scenes.beat, warn: G.hud.warnText, failing: !!G.failing, obj: G.hud.objectiveText, prompt: G.hud.promptShown, music: G.music.current, fails: G.fails(), b: G.brawl && G.brawl.state, me: G.brawl && G.brawl.me && JSON.stringify(G.brawl.me).slice(0,120)})"
+  },
+  {
+   "shot": "f19"
+  },
+  {
+   "wait": 2500
+  },
+  {
+   "eval": "JSON.stringify({t: +G.time.toFixed(1), st: G.state, beat: G.scenes.beat, warn: G.hud.warnText, failing: !!G.failing, obj: G.hud.objectiveText, prompt: G.hud.promptShown, music: G.music.current, fails: G.fails(), b: G.brawl && G.brawl.state, me: G.brawl && G.brawl.me && JSON.stringify(G.brawl.me).slice(0,120)})"
+  },
+  {
+   "shot": "f20"
+  },
+  {
+   "wait": 2500
+  },
+  {
+   "eval": "JSON.stringify({t: +G.time.toFixed(1), st: G.state, beat: G.scenes.beat, warn: G.hud.warnText, failing: !!G.failing, obj: G.hud.objectiveText, prompt: G.hud.promptShown, music: G.music.current, fails: G.fails(), b: G.brawl && G.brawl.state, me: G.brawl && G.brawl.me && JSON.stringify(G.brawl.me).slice(0,120)})"
+  },
+  {
+   "shot": "f21"
+  },
+  {
+   "wait": 2500
+  },
+  {
+   "eval": "JSON.stringify({t: +G.time.toFixed(1), st: G.state, beat: G.scenes.beat, warn: G.hud.warnText, failing: !!G.failing, obj: G.hud.objectiveText, prompt: G.hud.promptShown, music: G.music.current, fails: G.fails(), b: G.brawl && G.brawl.state, me: G.brawl && G.brawl.me && JSON.stringify(G.brawl.me).slice(0,120)})"
+  },
+  {
+   "shot": "f22"
+  },
+  {
+   "wait": 2500
+  },
+  {
+   "eval": "JSON.stringify({t: +G.time.toFixed(1), st: G.state, beat: G.scenes.beat, warn: G.hud.warnText, failing: !!G.failing, obj: G.hud.objectiveText, prompt: G.hud.promptShown, music: G.music.current, fails: G.fails(), b: G.brawl && G.brawl.state, me: G.brawl && G.brawl.me && JSON.stringify(G.brawl.me).slice(0,120)})"
+  },
+  {
+   "shot": "f23"
+  },
+  {
+   "wait": 2500
+  },
+  {
+   "eval": "JSON.stringify({t: +G.time.toFixed(1), st: G.state, beat: G.scenes.beat, warn: G.hud.warnText, failing: !!G.failing, obj: G.hud.objectiveText, prompt: G.hud.promptShown, music: G.music.current, fails: G.fails(), b: G.brawl && G.brawl.state, me: G.brawl && G.brawl.me && JSON.stringify(G.brawl.me).slice(0,120)})"
+  },
+  {
+   "shot": "f24"
+  },
+  {
+   "wait": 2500
+  },
+  {
+   "eval": "JSON.stringify({t: +G.time.toFixed(1), st: G.state, beat: G.scenes.beat, warn: G.hud.warnText, failing: !!G.failing, obj: G.hud.objectiveText, prompt: G.hud.promptShown, music: G.music.current, fails: G.fails(), b: G.brawl && G.brawl.state, me: G.brawl && G.brawl.me && JSON.stringify(G.brawl.me).slice(0,120)})"
+  },
+  {
+   "shot": "f25"
+  },
+  {
+   "wait": 2500
+  },
+  {
+   "eval": "JSON.stringify({t: +G.time.toFixed(1), st: G.state, beat: G.scenes.beat, warn: G.hud.warnText, failing: !!G.failing, obj: G.hud.objectiveText, prompt: G.hud.promptShown, music: G.music.current, fails: G.fails(), b: G.brawl && G.brawl.state, me: G.brawl && G.brawl.me && JSON.stringify(G.brawl.me).slice(0,120)})"
+  },
+  {
+   "shot": "f26"
+  },
+  {
+   "wait": 2500
+  },
+  {
+   "eval": "JSON.stringify({t: +G.time.toFixed(1), st: G.state, beat: G.scenes.beat, warn: G.hud.warnText, failing: !!G.failing, obj: G.hud.objectiveText, prompt: G.hud.promptShown, music: G.music.current, fails: G.fails(), b: G.brawl && G.brawl.state, me: G.brawl && G.brawl.me && JSON.stringify(G.brawl.me).slice(0,120)})"
+  },
+  {
+   "shot": "f27"
+  },
+  {
+   "wait": 2500
+  },
+  {
+   "eval": "JSON.stringify({t: +G.time.toFixed(1), st: G.state, beat: G.scenes.beat, warn: G.hud.warnText, failing: !!G.failing, obj: G.hud.objectiveText, prompt: G.hud.promptShown, music: G.music.current, fails: G.fails(), b: G.brawl && G.brawl.state, me: G.brawl && G.brawl.me && JSON.stringify(G.brawl.me).slice(0,120)})"
+  },
+  {
+   "shot": "f28"
+  },
+  {
+   "wait": 2500
+  },
+  {
+   "eval": "JSON.stringify({t: +G.time.toFixed(1), st: G.state, beat: G.scenes.beat, warn: G.hud.warnText, failing: !!G.failing, obj: G.hud.objectiveText, prompt: G.hud.promptShown, music: G.music.current, fails: G.fails(), b: G.brawl && G.brawl.state, me: G.brawl && G.brawl.me && JSON.stringify(G.brawl.me).slice(0,120)})"
+  },
+  {
+   "shot": "f29"
+  },
+  {
+   "wait": 2500
+  },
+  {
+   "eval": "JSON.stringify({t: +G.time.toFixed(1), st: G.state, beat: G.scenes.beat, warn: G.hud.warnText, failing: !!G.failing, obj: G.hud.objectiveText, prompt: G.hud.promptShown, music: G.music.current, fails: G.fails(), b: G.brawl && G.brawl.state, me: G.brawl && G.brawl.me && JSON.stringify(G.brawl.me).slice(0,120)})"
+  },
+  {
+   "shot": "f30"
+  },
+  {
+   "wait": 2500
+  },
+  {
+   "eval": "JSON.stringify({t: +G.time.toFixed(1), st: G.state, beat: G.scenes.beat, warn: G.hud.warnText, failing: !!G.failing, obj: G.hud.objectiveText, prompt: G.hud.promptShown, music: G.music.current, fails: G.fails(), b: G.brawl && G.brawl.state, me: G.brawl && G.brawl.me && JSON.stringify(G.brawl.me).slice(0,120)})"
+  },
+  {
+   "shot": "f31"
+  },
+  {
+   "wait": 2500
+  },
+  {
+   "eval": "JSON.stringify({t: +G.time.toFixed(1), st: G.state, beat: G.scenes.beat, warn: G.hud.warnText, failing: !!G.failing, obj: G.hud.objectiveText, prompt: G.hud.promptShown, music: G.music.current, fails: G.fails(), b: G.brawl && G.brawl.state, me: G.brawl && G.brawl.me && JSON.stringify(G.brawl.me).slice(0,120)})"
+  },
+  {
+   "shot": "f32"
+  },
+  {
+   "wait": 2500
+  },
+  {
+   "eval": "JSON.stringify({t: +G.time.toFixed(1), st: G.state, beat: G.scenes.beat, warn: G.hud.warnText, failing: !!G.failing, obj: G.hud.objectiveText, prompt: G.hud.promptShown, music: G.music.current, fails: G.fails(), b: G.brawl && G.brawl.state, me: G.brawl && G.brawl.me && JSON.stringify(G.brawl.me).slice(0,120)})"
+  },
+  {
+   "shot": "f33"
+  },
+  {
+   "wait": 2500
+  },
+  {
+   "eval": "JSON.stringify({t: +G.time.toFixed(1), st: G.state, beat: G.scenes.beat, warn: G.hud.warnText, failing: !!G.failing, obj: G.hud.objectiveText, prompt: G.hud.promptShown, music: G.music.current, fails: G.fails(), b: G.brawl && G.brawl.state, me: G.brawl && G.brawl.me && JSON.stringify(G.brawl.me).slice(0,120)})"
+  },
+  {
+   "shot": "f34"
+  },
+  {
+   "wait": 2500
+  },
+  {
+   "eval": "JSON.stringify({t: +G.time.toFixed(1), st: G.state, beat: G.scenes.beat, warn: G.hud.warnText, failing: !!G.failing, obj: G.hud.objectiveText, prompt: G.hud.promptShown, music: G.music.current, fails: G.fails(), b: G.brawl && G.brawl.state, me: G.brawl && G.brawl.me && JSON.stringify(G.brawl.me).slice(0,120)})"
+  },
+  {
+   "shot": "f35"
+  }
+ ]
+}

@@ -1,0 +1,261 @@
+{
+ "about": "Critic: VIII The Block hands off.",
+ "url": "/?mute=1",
+ "size": [
+  1440,
+  900
+ ],
+ "out": "shots/critic/block_idle",
+ "steps": [
+  {
+   "wait": 2500
+  },
+  {
+   "clickOn": "#title .opt[data-k=chapters]"
+  },
+  {
+   "wait": 400
+  },
+  {
+   "clickOn": "#title .toc .row[data-id=shootout]"
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'shootout' && G.state === 'playing'",
+   "timeout": 20000
+  },
+  {
+   "wait": 2500
+  },
+  {
+   "eval": "JSON.stringify({t: +G.time.toFixed(1), st: G.state, beat: G.scenes.beat, hp: G.health && Math.round(G.health.hp), warn: G.hud.warnText, failing: !!G.failing, obj: G.hud.objectiveText, prompt: G.hud.promptShown, music: G.music.current, fails: G.fails()})"
+  },
+  {
+   "shot": "v00"
+  },
+  {
+   "wait": 2500
+  },
+  {
+   "eval": "JSON.stringify({t: +G.time.toFixed(1), st: G.state, beat: G.scenes.beat, hp: G.health && Math.round(G.health.hp), warn: G.hud.warnText, failing: !!G.failing, obj: G.hud.objectiveText, prompt: G.hud.promptShown, music: G.music.current, fails: G.fails()})"
+  },
+  {
+   "shot": "v01"
+  },
+  {
+   "wait": 2500
+  },
+  {
+   "eval": "JSON.stringify({t: +G.time.toFixed(1), st: G.state, beat: G.scenes.beat, hp: G.health && Math.round(G.health.hp), warn: G.hud.warnText, failing: !!G.failing, obj: G.hud.objectiveText, prompt: G.hud.promptShown, music: G.music.current, fails: G.fails()})"
+  },
+  {
+   "shot": "v02"
+  },
+  {
+   "wait": 2500
+  },
+  {
+   "eval": "JSON.stringify({t: +G.time.toFixed(1), st: G.state, beat: G.scenes.beat, hp: G.health && Math.round(G.health.hp), warn: G.hud.warnText, failing: !!G.failing, obj: G.hud.objectiveText, prompt: G.hud.promptShown, music: G.music.current, fails: G.fails()})"
+  },
+  {
+   "shot": "v03"
+  },
+  {
+   "wait": 2500
+  },
+  {
+   "eval": "JSON.stringify({t: +G.time.toFixed(1), st: G.state, beat: G.scenes.beat, hp: G.health && Math.round(G.health.hp), warn: G.hud.warnText, failing: !!G.failing, obj: G.hud.objectiveText, prompt: G.hud.promptShown, music: G.music.current, fails: G.fails()})"
+  },
+  {
+   "shot": "v04"
+  },
+  {
+   "wait": 2500
+  },
+  {
+   "eval": "JSON.stringify({t: +G.time.toFixed(1), st: G.state, beat: G.scenes.beat, hp: G.health && Math.round(G.health.hp), warn: G.hud.warnText, failing: !!G.failing, obj: G.hud.objectiveText, prompt: G.hud.promptShown, music: G.music.current, fails: G.fails()})"
+  },
+  {
+   "shot": "v05"
+  },
+  {
+   "wait": 2500
+  },
+  {
+   "eval": "JSON.stringify({t: +G.time.toFixed(1), st: G.state, beat: G.scenes.beat, hp: G.health && Math.round(G.health.hp), warn: G.hud.warnText, failing: !!G.failing, obj: G.hud.objectiveText, prompt: G.hud.promptShown, music: G.music.current, fails: G.fails()})"
+  },
+  {
+   "shot": "v06"
+  },
+  {
+   "wait": 2500
+  },
+  {
+   "eval": "JSON.stringify({t: +G.time.toFixed(1), st: G.state, beat: G.scenes.beat, hp: G.health && Math.round(G.health.hp), warn: G.hud.warnText, failing: !!G.failing, obj: G.hud.objectiveText, prompt: G.hud.promptShown, music: G.music.current, fails: G.fails()})"
+  },
+  {
+   "shot": "v07"
+  },
+  {
+   "wait": 2500
+  },
+  {
+   "eval": "JSON.stringify({t: +G.time.toFixed(1), st: G.state, beat: G.scenes.beat, hp: G.health && Math.round(G.health.hp), warn: G.hud.warnText, failing: !!G.failing, obj: G.hud.objectiveText, prompt: G.hud.promptShown, music: G.music.current, fails: G.fails()})"
+  },
+  {
+   "shot": "v08"
+  },
+  {
+   "wait": 2500
+  },
+  {
+   "eval": "JSON.stringify({t: +G.time.toFixed(1), st: G.state, beat: G.scenes.beat, hp: G.health && Math.round(G.health.hp), warn: G.hud.warnText, failing: !!G.failing, obj: G.hud.objectiveText, prompt: G.hud.promptShown, music: G.music.current, fails: G.fails()})"
+  },
+  {
+   "shot": "v09"
+  },
+  {
+   "wait": 2500
+  },
+  {
+   "eval": "JSON.stringify({t: +G.time.toFixed(1), st: G.state, beat: G.scenes.beat, hp: G.health && Math.round(G.health.hp), warn: G.hud.warnText, failing: !!G.failing, obj: G.hud.objectiveText, prompt: G.hud.promptShown, music: G.music.current, fails: G.fails()})"
+  },
+  {
+   "shot": "v10"
+  },
+  {
+   "wait": 2500
+  },
+  {
+   "eval": "JSON.stringify({t: +G.time.toFixed(1), st: G.state, beat: G.scenes.beat, hp: G.health && Math.round(G.health.hp), warn: G.hud.warnText, failing: !!G.failing, obj: G.hud.objectiveText, prompt: G.hud.promptShown, music: G.music.current, fails: G.fails()})"
+  },
+  {
+   "shot": "v11"
+  },
+  {
+   "wait": 2500
+  },
+  {
+   "eval": "JSON.stringify({t: +G.time.toFixed(1), st: G.state, beat: G.scenes.beat, hp: G.health && Math.round(G.health.hp), warn: G.hud.warnText, failing: !!G.failing, obj: G.hud.objectiveText, prompt: G.hud.promptShown, music: G.music.current, fails: G.fails()})"
+  },
+  {
+   "shot": "v12"
+  },
+  {
+   "wait": 2500
+  },
+  {
+   "eval": "JSON.stringify({t: +G.time.toFixed(1), st: G.state, beat: G.scenes.beat, hp: G.health && Math.round(G.health.hp), warn: G.hud.warnText, failing: !!G.failing, obj: G.hud.objectiveText, prompt: G.hud.promptShown, music: G.music.current, fails: G.fails()})"
+  },
+  {
+   "shot": "v13"
+  },
+  {
+   "wait": 2500
+  },
+  {
+   "eval": "JSON.stringify({t: +G.time.toFixed(1), st: G.state, beat: G.scenes.beat, hp: G.health && Math.round(G.health.hp), warn: G.hud.warnText, failing: !!G.failing, obj: G.hud.objectiveText, prompt: G.hud.promptShown, music: G.music.current, fails: G.fails()})"
+  },
+  {
+   "shot": "v14"
+  },
+  {
+   "wait": 2500
+  },
+  {
+   "eval": "JSON.stringify({t: +G.time.toFixed(1), st: G.state, beat: G.scenes.beat, hp: G.health && Math.round(G.health.hp), warn: G.hud.warnText, failing: !!G.failing, obj: G.hud.objectiveText, prompt: G.hud.promptShown, music: G.music.current, fails: G.fails()})"
+  },
+  {
+   "shot": "v15"
+  },
+  {
+   "wait": 2500
+  },
+  {
+   "eval": "JSON.stringify({t: +G.time.toFixed(1), st: G.state, beat: G.scenes.beat, hp: G.health && Math.round(G.health.hp), warn: G.hud.warnText, failing: !!G.failing, obj: G.hud.objectiveText, prompt: G.hud.promptShown, music: G.music.current, fails: G.fails()})"
+  },
+  {
+   "shot": "v16"
+  },
+  {
+   "wait": 2500
+  },
+  {
+   "eval": "JSON.stringify({t: +G.time.toFixed(1), st: G.state, beat: G.scenes.beat, hp: G.health && Math.round(G.health.hp), warn: G.hud.warnText, failing: !!G.failing, obj: G.hud.objectiveText, prompt: G.hud.promptShown, music: G.music.current, fails: G.fails()})"
+  },
+  {
+   "shot": "v17"
+  },
+  {
+   "wait": 2500
+  },
+  {
+   "eval": "JSON.stringify({t: +G.time.toFixed(1), st: G.state, beat: G.scenes.beat, hp: G.health && Math.round(G.health.hp), warn: G.hud.warnText, failing: !!G.failing, obj: G.hud.objectiveText, prompt: G.hud.promptShown, music: G.music.current, fails: G.fails()})"
+  },
+  {
+   "shot": "v18"
+  },
+  {
+   "wait": 2500
+  },
+  {
+   "eval": "JSON.stringify({t: +G.time.toFixed(1), st: G.state, beat: G.scenes.beat, hp: G.health && Math.round(G.health.hp), warn: G.hud.warnText, failing: !!G.failing, obj: G.hud.objectiveText, prompt: G.hud.promptShown, music: G.music.current, fails: G.fails()})"
+  },
+  {
+   "shot": "v19"
+  },
+  {
+   "wait": 2500
+  },
+  {
+   "eval": "JSON.stringify({t: +G.time.toFixed(1), st: G.state, beat: G.scenes.beat, hp: G.health && Math.round(G.health.hp), warn: G.hud.warnText, failing: !!G.failing, obj: G.hud.objectiveText, prompt: G.hud.promptShown, music: G.music.current, fails: G.fails()})"
+  },
+  {
+   "shot": "v20"
+  },
+  {
+   "wait": 2500
+  },
+  {
+   "eval": "JSON.stringify({t: +G.time.toFixed(1), st: G.state, beat: G.scenes.beat, hp: G.health && Math.round(G.health.hp), warn: G.hud.warnText, failing: !!G.failing, obj: G.hud.objectiveText, prompt: G.hud.promptShown, music: G.music.current, fails: G.fails()})"
+  },
+  {
+   "shot": "v21"
+  },
+  {
+   "wait": 2500
+  },
+  {
+   "eval": "JSON.stringify({t: +G.time.toFixed(1), st: G.state, beat: G.scenes.beat, hp: G.health && Math.round(G.health.hp), warn: G.hud.warnText, failing: !!G.failing, obj: G.hud.objectiveText, prompt: G.hud.promptShown, music: G.music.current, fails: G.fails()})"
+  },
+  {
+   "shot": "v22"
+  },
+  {
+   "wait": 2500
+  },
+  {
+   "eval": "JSON.stringify({t: +G.time.toFixed(1), st: G.state, beat: G.scenes.beat, hp: G.health && Math.round(G.health.hp), warn: G.hud.warnText, failing: !!G.failing, obj: G.hud.objectiveText, prompt: G.hud.promptShown, music: G.music.current, fails: G.fails()})"
+  },
+  {
+   "shot": "v23"
+  },
+  {
+   "wait": 2500
+  },
+  {
+   "eval": "JSON.stringify({t: +G.time.toFixed(1), st: G.state, beat: G.scenes.beat, hp: G.health && Math.round(G.health.hp), warn: G.hud.warnText, failing: !!G.failing, obj: G.hud.objectiveText, prompt: G.hud.promptShown, music: G.music.current, fails: G.fails()})"
+  },
+  {
+   "shot": "v24"
+  },
+  {
+   "wait": 2500
+  },
+  {
+   "eval": "JSON.stringify({t: +G.time.toFixed(1), st: G.state, beat: G.scenes.beat, hp: G.health && Math.round(G.health.hp), warn: G.hud.warnText, failing: !!G.failing, obj: G.hud.objectiveText, prompt: G.hud.promptShown, music: G.music.current, fails: G.fails()})"
+  },
+  {
+   "shot": "v25"
+  }
+ ]
+}

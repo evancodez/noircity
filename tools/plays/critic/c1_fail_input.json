@@ -1,0 +1,136 @@
+{
+ "about": "Critic: W held through a fail's black: does the detective walk before the picture is back?",
+ "url": "/?mute=1&start=kit",
+ "size": [
+  1440,
+  900
+ ],
+ "out": "shots/critic/fail_input",
+ "steps": [
+  {
+   "wait": 2500
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]"
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'kit' && G.state === 'playing'",
+   "timeout": 30000
+  },
+  {
+   "until": "!!G.failing",
+   "timeout": 20000
+  },
+  {
+   "eval": "JSON.stringify({w: Date.now() % 100000, t: +G.time.toFixed(2), failing: !!G.failing, fade: +G.scenes.fadeK.toFixed(2), eye: [+G.eye.x.toFixed(2), +G.eye.z.toFixed(2)], frozen: G.controller.frozen})"
+  },
+  {
+   "down": "KeyW"
+  },
+  {
+   "wait": 250
+  },
+  {
+   "eval": "JSON.stringify({w: Date.now() % 100000, t: +G.time.toFixed(2), failing: !!G.failing, fade: +G.scenes.fadeK.toFixed(2), eye: [+G.eye.x.toFixed(2), +G.eye.z.toFixed(2)], frozen: G.controller.frozen})"
+  },
+  {
+   "wait": 250
+  },
+  {
+   "eval": "JSON.stringify({w: Date.now() % 100000, t: +G.time.toFixed(2), failing: !!G.failing, fade: +G.scenes.fadeK.toFixed(2), eye: [+G.eye.x.toFixed(2), +G.eye.z.toFixed(2)], frozen: G.controller.frozen})"
+  },
+  {
+   "wait": 250
+  },
+  {
+   "eval": "JSON.stringify({w: Date.now() % 100000, t: +G.time.toFixed(2), failing: !!G.failing, fade: +G.scenes.fadeK.toFixed(2), eye: [+G.eye.x.toFixed(2), +G.eye.z.toFixed(2)], frozen: G.controller.frozen})"
+  },
+  {
+   "wait": 250
+  },
+  {
+   "eval": "JSON.stringify({w: Date.now() % 100000, t: +G.time.toFixed(2), failing: !!G.failing, fade: +G.scenes.fadeK.toFixed(2), eye: [+G.eye.x.toFixed(2), +G.eye.z.toFixed(2)], frozen: G.controller.frozen})"
+  },
+  {
+   "wait": 250
+  },
+  {
+   "eval": "JSON.stringify({w: Date.now() % 100000, t: +G.time.toFixed(2), failing: !!G.failing, fade: +G.scenes.fadeK.toFixed(2), eye: [+G.eye.x.toFixed(2), +G.eye.z.toFixed(2)], frozen: G.controller.frozen})"
+  },
+  {
+   "wait": 250
+  },
+  {
+   "eval": "JSON.stringify({w: Date.now() % 100000, t: +G.time.toFixed(2), failing: !!G.failing, fade: +G.scenes.fadeK.toFixed(2), eye: [+G.eye.x.toFixed(2), +G.eye.z.toFixed(2)], frozen: G.controller.frozen})"
+  },
+  {
+   "wait": 250
+  },
+  {
+   "eval": "JSON.stringify({w: Date.now() % 100000, t: +G.time.toFixed(2), failing: !!G.failing, fade: +G.scenes.fadeK.toFixed(2), eye: [+G.eye.x.toFixed(2), +G.eye.z.toFixed(2)], frozen: G.controller.frozen})"
+  },
+  {
+   "wait": 250
+  },
+  {
+   "eval": "JSON.stringify({w: Date.now() % 100000, t: +G.time.toFixed(2), failing: !!G.failing, fade: +G.scenes.fadeK.toFixed(2), eye: [+G.eye.x.toFixed(2), +G.eye.z.toFixed(2)], frozen: G.controller.frozen})"
+  },
+  {
+   "wait": 250
+  },
+  {
+   "eval": "JSON.stringify({w: Date.now() % 100000, t: +G.time.toFixed(2), failing: !!G.failing, fade: +G.scenes.fadeK.toFixed(2), eye: [+G.eye.x.toFixed(2), +G.eye.z.toFixed(2)], frozen: G.controller.frozen})"
+  },
+  {
+   "wait": 250
+  },
+  {
+   "eval": "JSON.stringify({w: Date.now() % 100000, t: +G.time.toFixed(2), failing: !!G.failing, fade: +G.scenes.fadeK.toFixed(2), eye: [+G.eye.x.toFixed(2), +G.eye.z.toFixed(2)], frozen: G.controller.frozen})"
+  },
+  {
+   "wait": 250
+  },
+  {
+   "eval": "JSON.stringify({w: Date.now() % 100000, t: +G.time.toFixed(2), failing: !!G.failing, fade: +G.scenes.fadeK.toFixed(2), eye: [+G.eye.x.toFixed(2), +G.eye.z.toFixed(2)], frozen: G.controller.frozen})"
+  },
+  {
+   "wait": 250
+  },
+  {
+   "eval": "JSON.stringify({w: Date.now() % 100000, t: +G.time.toFixed(2), failing: !!G.failing, fade: +G.scenes.fadeK.toFixed(2), eye: [+G.eye.x.toFixed(2), +G.eye.z.toFixed(2)], frozen: G.controller.frozen})"
+  },
+  {
+   "wait": 250
+  },
+  {
+   "eval": "JSON.stringify({w: Date.now() % 100000, t: +G.time.toFixed(2), failing: !!G.failing, fade: +G.scenes.fadeK.toFixed(2), eye: [+G.eye.x.toFixed(2), +G.eye.z.toFixed(2)], frozen: G.controller.frozen})"
+  },
+  {
+   "wait": 250
+  },
+  {
+   "eval": "JSON.stringify({w: Date.now() % 100000, t: +G.time.toFixed(2), failing: !!G.failing, fade: +G.scenes.fadeK.toFixed(2), eye: [+G.eye.x.toFixed(2), +G.eye.z.toFixed(2)], frozen: G.controller.frozen})"
+  },
+  {
+   "wait": 250
+  },
+  {
+   "eval": "JSON.stringify({w: Date.now() % 100000, t: +G.time.toFixed(2), failing: !!G.failing, fade: +G.scenes.fadeK.toFixed(2), eye: [+G.eye.x.toFixed(2), +G.eye.z.toFixed(2)], frozen: G.controller.frozen})"
+  },
+  {
+   "wait": 250
+  },
+  {
+   "eval": "JSON.stringify({w: Date.now() % 100000, t: +G.time.toFixed(2), failing: !!G.failing, fade: +G.scenes.fadeK.toFixed(2), eye: [+G.eye.x.toFixed(2), +G.eye.z.toFixed(2)], frozen: G.controller.frozen})"
+  },
+  {
+   "up": "KeyW"
+  },
+  {
+   "wait": 300
+  },
+  {
+   "eval": "JSON.stringify({w: Date.now() % 100000, t: +G.time.toFixed(2), failing: !!G.failing, fade: +G.scenes.fadeK.toFixed(2), eye: [+G.eye.x.toFixed(2), +G.eye.z.toFixed(2)], frozen: G.controller.frozen})"
+  }
+ ]
+}

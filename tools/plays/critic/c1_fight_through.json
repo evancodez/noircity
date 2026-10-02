@@ -1,0 +1,132 @@
+{
+ "about": "Critic: II The Fight played by real input from CHAPTERS, out through the door, the search, on to what comes next.",
+ "url": "/?mute=1",
+ "size": [
+  1440,
+  900
+ ],
+ "out": "shots/critic/fight_through",
+ "steps": [
+  {
+   "wait": 2500
+  },
+  {
+   "clickOn": "#title .opt[data-k=chapters]"
+  },
+  {
+   "wait": 400
+  },
+  {
+   "clickOn": "#title .toc .row[data-id=fight]"
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'fight' && G.brawl.active",
+   "timeout": 30000
+  },
+  {
+   "eval": "JSON.stringify({t: +G.time.toFixed(1), sc: G.scenes.current && G.scenes.current.id, beat: G.scenes.beat, obj: G.hud.objectiveText, prompt: G.hud.promptShown, music: G.music.current, inv: G.save.inventory.join(','), stills: G.stills.active, st: G.state})"
+  },
+  {
+   "fight": {
+    "timeout": 400000,
+    "shots": {
+     "x1_fighting": "!G.brawl.lesson && G.brawl.round === 1",
+     "x2_r2": "G.brawl.round === 2"
+    }
+   }
+  },
+  {
+   "eval": "JSON.stringify(G.brawl.stats)"
+  },
+  {
+   "until": "!G.brawl.active && G.scenes.beat === 'ko'",
+   "timeout": 10000
+  },
+  {
+   "eval": "JSON.stringify({t: +G.time.toFixed(1), sc: G.scenes.current && G.scenes.current.id, beat: G.scenes.beat, obj: G.hud.objectiveText, prompt: G.hud.promptShown, music: G.music.current, inv: G.save.inventory.join(','), stills: G.stills.active, st: G.state})"
+  },
+  {
+   "shot": "x3_ko"
+  },
+  {
+   "wait": 3000
+  },
+  {
+   "eval": "JSON.stringify({t: +G.time.toFixed(1), sc: G.scenes.current && G.scenes.current.id, beat: G.scenes.beat, obj: G.hud.objectiveText, prompt: G.hud.promptShown, music: G.music.current, inv: G.save.inventory.join(','), stills: G.stills.active, st: G.state})"
+  },
+  {
+   "shot": "x4_after"
+  },
+  {
+   "walk": "(() => { const z = (G.brawl.stats.window || 'B4') === 'B2' ? 5.0 : -3.8; return [[-12.6, 0.6], [-11.2, 0.6], [-9.2, 0.6], [-8.3, z + (z > 0.6 ? -1.8 : 1.8)]]; })()",
+   "timeout": 40000
+  },
+  {
+   "until": "G.scenes.beat === 'outside'",
+   "timeout": 8000
+  },
+  {
+   "look": [
+    0,
+    160
+   ],
+   "steps": 8
+  },
+  {
+   "wait": 400
+  },
+  {
+   "eval": "JSON.stringify({t: +G.time.toFixed(1), sc: G.scenes.current && G.scenes.current.id, beat: G.scenes.beat, obj: G.hud.objectiveText, prompt: G.hud.promptShown, music: G.music.current, inv: G.save.inventory.join(','), stills: G.stills.active, st: G.state})"
+  },
+  {
+   "shot": "x5_outside"
+  },
+  {
+   "until": "G.hud.promptShown.includes('search')",
+   "timeout": 8000
+  },
+  {
+   "key": "KeyE"
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "eval": "JSON.stringify({t: +G.time.toFixed(1), sc: G.scenes.current && G.scenes.current.id, beat: G.scenes.beat, obj: G.hud.objectiveText, prompt: G.hud.promptShown, music: G.music.current, inv: G.save.inventory.join(','), stills: G.stills.active, st: G.state})"
+  },
+  {
+   "shot": "x6_search"
+  },
+  {
+   "key": "KeyE"
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "eval": "JSON.stringify({t: +G.time.toFixed(1), sc: G.scenes.current && G.scenes.current.id, beat: G.scenes.beat, obj: G.hud.objectiveText, prompt: G.hud.promptShown, music: G.music.current, inv: G.save.inventory.join(','), stills: G.stills.active, st: G.state})"
+  },
+  {
+   "shot": "x7"
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id !== 'fight'",
+   "timeout": 20000
+  },
+  {
+   "eval": "JSON.stringify({t: +G.time.toFixed(1), sc: G.scenes.current && G.scenes.current.id, beat: G.scenes.beat, obj: G.hud.objectiveText, prompt: G.hud.promptShown, music: G.music.current, inv: G.save.inventory.join(','), stills: G.stills.active, st: G.state})"
+  },
+  {
+   "shot": "x8_next"
+  },
+  {
+   "wait": 4000
+  },
+  {
+   "eval": "JSON.stringify({t: +G.time.toFixed(1), sc: G.scenes.current && G.scenes.current.id, beat: G.scenes.beat, obj: G.hud.objectiveText, prompt: G.hud.promptShown, music: G.music.current, inv: G.save.inventory.join(','), stills: G.stills.active, st: G.state})"
+  },
+  {
+   "shot": "x9_office"
+  }
+ ]
+}

@@ -1,0 +1,358 @@
+{
+ "about": "Critic: every chapter from CHAPTERS, what the first seconds say (objective line, prompt).",
+ "url": "/?mute=1",
+ "size": [
+  1440,
+  900
+ ],
+ "out": "shots/critic/chapters",
+ "steps": [
+  {
+   "wait": 2500
+  },
+  {
+   "eval": "(localStorage.clear(), true)"
+  },
+  {
+   "reload": true
+  },
+  {
+   "wait": 2500
+  },
+  {
+   "clickOn": "#title .opt[data-k=chapters]"
+  },
+  {
+   "wait": 400
+  },
+  {
+   "shot": "diner_toc"
+  },
+  {
+   "clickOn": "#title .toc .row[data-id=diner]"
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'diner' && G.state === 'playing'",
+   "timeout": 20000
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "eval": "JSON.stringify({c:'diner', t1: 1.5, beat: G.scenes.beat, obj: G.hud.objectiveText, music: G.music && (G.music.slot || G.music.current || G.music.playing)})"
+  },
+  {
+   "shot": "diner_1"
+  },
+  {
+   "wait": 3500
+  },
+  {
+   "eval": "JSON.stringify({c:'diner', t2: 5, beat: G.scenes.beat, obj: G.hud.objectiveText, prompt: G.hud.promptShown})"
+  },
+  {
+   "shot": "diner_2"
+  },
+  {
+   "eval": "(localStorage.clear(), true)"
+  },
+  {
+   "reload": true
+  },
+  {
+   "wait": 2500
+  },
+  {
+   "clickOn": "#title .opt[data-k=chapters]"
+  },
+  {
+   "wait": 400
+  },
+  {
+   "wait": 1
+  },
+  {
+   "clickOn": "#title .toc .row[data-id=fight]"
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'fight' && G.state === 'playing'",
+   "timeout": 20000
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "eval": "JSON.stringify({c:'fight', t1: 1.5, beat: G.scenes.beat, obj: G.hud.objectiveText, music: G.music && (G.music.slot || G.music.current || G.music.playing)})"
+  },
+  {
+   "shot": "fight_1"
+  },
+  {
+   "wait": 3500
+  },
+  {
+   "eval": "JSON.stringify({c:'fight', t2: 5, beat: G.scenes.beat, obj: G.hud.objectiveText, prompt: G.hud.promptShown})"
+  },
+  {
+   "shot": "fight_2"
+  },
+  {
+   "eval": "(localStorage.clear(), true)"
+  },
+  {
+   "reload": true
+  },
+  {
+   "wait": 2500
+  },
+  {
+   "clickOn": "#title .opt[data-k=chapters]"
+  },
+  {
+   "wait": 400
+  },
+  {
+   "wait": 1
+  },
+  {
+   "clickOn": "#title .toc .row[data-id=office]"
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'office' && G.state === 'playing'",
+   "timeout": 20000
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "eval": "JSON.stringify({c:'office', t1: 1.5, beat: G.scenes.beat, obj: G.hud.objectiveText, music: G.music && (G.music.slot || G.music.current || G.music.playing)})"
+  },
+  {
+   "shot": "office_1"
+  },
+  {
+   "wait": 3500
+  },
+  {
+   "eval": "JSON.stringify({c:'office', t2: 5, beat: G.scenes.beat, obj: G.hud.objectiveText, prompt: G.hud.promptShown})"
+  },
+  {
+   "shot": "office_2"
+  },
+  {
+   "eval": "(localStorage.clear(), true)"
+  },
+  {
+   "reload": true
+  },
+  {
+   "wait": 2500
+  },
+  {
+   "clickOn": "#title .opt[data-k=chapters]"
+  },
+  {
+   "wait": 400
+  },
+  {
+   "wait": 1
+  },
+  {
+   "clickOn": "#title .toc .row[data-id=gunfight]"
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'gunfight' && G.state === 'playing'",
+   "timeout": 20000
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "eval": "JSON.stringify({c:'gunfight', t1: 1.5, beat: G.scenes.beat, obj: G.hud.objectiveText, music: G.music && (G.music.slot || G.music.current || G.music.playing)})"
+  },
+  {
+   "shot": "gunfight_1"
+  },
+  {
+   "wait": 3500
+  },
+  {
+   "eval": "JSON.stringify({c:'gunfight', t2: 5, beat: G.scenes.beat, obj: G.hud.objectiveText, prompt: G.hud.promptShown})"
+  },
+  {
+   "shot": "gunfight_2"
+  },
+  {
+   "eval": "(localStorage.clear(), true)"
+  },
+  {
+   "reload": true
+  },
+  {
+   "wait": 2500
+  },
+  {
+   "clickOn": "#title .opt[data-k=chapters]"
+  },
+  {
+   "wait": 400
+  },
+  {
+   "wait": 1
+  },
+  {
+   "clickOn": "#title .toc .row[data-id=watcher]"
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'watcher' && G.state === 'playing'",
+   "timeout": 20000
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "eval": "JSON.stringify({c:'watcher', t1: 1.5, beat: G.scenes.beat, obj: G.hud.objectiveText, music: G.music && (G.music.slot || G.music.current || G.music.playing)})"
+  },
+  {
+   "shot": "watcher_1"
+  },
+  {
+   "wait": 3500
+  },
+  {
+   "eval": "JSON.stringify({c:'watcher', t2: 5, beat: G.scenes.beat, obj: G.hud.objectiveText, prompt: G.hud.promptShown})"
+  },
+  {
+   "shot": "watcher_2"
+  },
+  {
+   "eval": "(localStorage.clear(), true)"
+  },
+  {
+   "reload": true
+  },
+  {
+   "wait": 2500
+  },
+  {
+   "clickOn": "#title .opt[data-k=chapters]"
+  },
+  {
+   "wait": 400
+  },
+  {
+   "wait": 1
+  },
+  {
+   "clickOn": "#title .toc .row[data-id=tail]"
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'tail' && G.state === 'playing'",
+   "timeout": 20000
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "eval": "JSON.stringify({c:'tail', t1: 1.5, beat: G.scenes.beat, obj: G.hud.objectiveText, music: G.music && (G.music.slot || G.music.current || G.music.playing)})"
+  },
+  {
+   "shot": "tail_1"
+  },
+  {
+   "wait": 3500
+  },
+  {
+   "eval": "JSON.stringify({c:'tail', t2: 5, beat: G.scenes.beat, obj: G.hud.objectiveText, prompt: G.hud.promptShown})"
+  },
+  {
+   "shot": "tail_2"
+  },
+  {
+   "eval": "(localStorage.clear(), true)"
+  },
+  {
+   "reload": true
+  },
+  {
+   "wait": 2500
+  },
+  {
+   "clickOn": "#title .opt[data-k=chapters]"
+  },
+  {
+   "wait": 400
+  },
+  {
+   "wait": 1
+  },
+  {
+   "clickOn": "#title .toc .row[data-id=warehouse]"
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'warehouse' && G.state === 'playing'",
+   "timeout": 20000
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "eval": "JSON.stringify({c:'warehouse', t1: 1.5, beat: G.scenes.beat, obj: G.hud.objectiveText, music: G.music && (G.music.slot || G.music.current || G.music.playing)})"
+  },
+  {
+   "shot": "warehouse_1"
+  },
+  {
+   "wait": 3500
+  },
+  {
+   "eval": "JSON.stringify({c:'warehouse', t2: 5, beat: G.scenes.beat, obj: G.hud.objectiveText, prompt: G.hud.promptShown})"
+  },
+  {
+   "shot": "warehouse_2"
+  },
+  {
+   "eval": "(localStorage.clear(), true)"
+  },
+  {
+   "reload": true
+  },
+  {
+   "wait": 2500
+  },
+  {
+   "clickOn": "#title .opt[data-k=chapters]"
+  },
+  {
+   "wait": 400
+  },
+  {
+   "wait": 1
+  },
+  {
+   "clickOn": "#title .toc .row[data-id=shootout]"
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'shootout' && G.state === 'playing'",
+   "timeout": 20000
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "eval": "JSON.stringify({c:'shootout', t1: 1.5, beat: G.scenes.beat, obj: G.hud.objectiveText, music: G.music && (G.music.slot || G.music.current || G.music.playing)})"
+  },
+  {
+   "shot": "shootout_1"
+  },
+  {
+   "wait": 3500
+  },
+  {
+   "eval": "JSON.stringify({c:'shootout', t2: 5, beat: G.scenes.beat, obj: G.hud.objectiveText, prompt: G.hud.promptShown})"
+  },
+  {
+   "shot": "shootout_2"
+  }
+ ]
+}

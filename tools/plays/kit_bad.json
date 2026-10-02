@@ -1,0 +1,13 @@
+{
+ "about": "[C1] Proof 2 of WAVE_C §7 on the kit's test bed (?start=kit): a clumsy first-timer (slow eyes and hands, a wandering aim, no steadying, wrong keys now and then: tools/lib/kit_bot.mjs 'bad') fails some and gets through within a few tries, never stuck. node tools/play.mjs tools/plays/kit_bad.json",
+ "url": "/?mute=1&start=kit",
+ "size": [1280, 800],
+ "out": "shots/play/kit_bad",
+ "steps": [
+  { "wait": 1500 },
+  { "clickOn": "#title .opt[data-k=begin]", "taken": "G.state !== 'title'", "retries": 5, "every": 4000 },
+  { "until": "G.scenes.current && G.scenes.current.id === 'kit'", "timeout": 8000 },
+  { "drive": "tools/lib/kit_bot.mjs", "profile": "bad", "stop": "(G.kitWins || 0) >= 1", "timeout": 150000, "check": "D.done && D.wins >= 1 && D.fails <= 4", "label": "the clumsy player wins within five tries" },
+  { "eval": "({ fails: G.counters.fails || 0, wins: G.kitWins, shots: G.counters.shots, hits: G.counters.hits })" }
+ ]
+}
