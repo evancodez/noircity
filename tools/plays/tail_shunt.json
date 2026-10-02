@@ -47,7 +47,8 @@
    "maxTries": 1,
    "stop": "!!G.scenes.ctx.flags.chase && (G.scenes.ctx.flags.chase.phase === 'crash' || (window.__tailFails || []).length > 0)",
    "shots": {
-    "s02_beside_his_quarter": "!!G.scenes.ctx.flags.chase && (() => { const C = G.scenes.ctx.flags.chase; const l = C.his.local(C.my.pos); return Math.abs(l.x + 3.6) < 1.6 && Math.abs(l.z + 2.4) < 1.1; })()"
+    "s02_beside_his_quarter": "!!G.scenes.ctx.flags.chase && (() => { const C = G.scenes.ctx.flags.chase; const l = C.his.local(C.my.pos); return Math.abs(l.x + 3.6) < 1.6 && Math.abs(l.z + 2.4) < 1.1; })()",
+    "s01b_the_dry_card": "!!G.hud.kit.teachCur && G.hud.kit.teachCur.id === 'tail_ram' && G.hud.kit.teachCur.t > 0.6"
    }
   },
   {

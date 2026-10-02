@@ -49,10 +49,25 @@
    "eval": "JSON.stringify({ dmg: +G.scenes.ctx.flags.chase.my.damage.toFixed(2), warn: G.hud.kit.warnText })"
   },
   {
-   "name": "second knock"
+   "name": "knocks until past 2.6 (two at 50 km/h, or three)"
   },
   {
-   "eval": "(() => { const C = G.scenes.ctx.flags.chase, T = N.THREE; C.my.place(new T.Vector3(113, 0, C.my.pos.z + 6), 0, 50 / 3.6); return 1; })()"
+   "eval": "(() => { const C = G.scenes.ctx.flags.chase, T = N.THREE; if (C.my.damage >= 2.6) return 'past 2.6: ' + C.my.damage.toFixed(2); C.my.place(new T.Vector3(113, 0, C.my.pos.z + 6), 0, 50 / 3.6); return +C.my.damage.toFixed(2); })()"
+  },
+  {
+   "down": "KeyW"
+  },
+  {
+   "wait": 1200
+  },
+  {
+   "up": "KeyW"
+  },
+  {
+   "wait": 300
+  },
+  {
+   "eval": "(() => { const C = G.scenes.ctx.flags.chase, T = N.THREE; if (C.my.damage >= 2.6) return 'past 2.6: ' + C.my.damage.toFixed(2); C.my.place(new T.Vector3(113, 0, C.my.pos.z + 6), 0, 50 / 3.6); return +C.my.damage.toFixed(2); })()"
   },
   {
    "down": "KeyW"
@@ -73,8 +88,8 @@
    "shot": "m01_second_knock_the_line"
   },
   {
-   "expect": "G.scenes.ctx.flags.chase.my.damage >= 2.6 && G.hud.kit.warnText === \"She won't take much more.\"",
-   "label": "after the second knock at 50 km/h: 'She won't take much more.'"
+   "expect": "window.__lines.some((r) => r[1] === \"She won't take much more.\" && r[3] >= 2.6)",
+   "label": "the knock that takes it past 2.6 of the 4 steps: 'She won't take much more.' lettered (the screen's lines, logged every frame)"
   },
   {
    "name": "knocks until it gives"
