@@ -134,11 +134,18 @@ export class SceneManager {
     if (G.puzzles.active) G.puzzles.close();
     G.hud.clearPrompt();
     G.hud.dropLayers();
-    // [R3] a chapter entered afresh starts from a free eye, as it does when it
-    // is entered cold: the last one may have left it frozen or its look held
-    // for its own last seconds (scene 6 froze it for the duck into the car,
-    // and scene 7's car would not move: W did nothing)
-    if (!keep) { G.controller.frozen = false; G.controller.lookLocked = false; }
+    // [R3] what the scene before left running does not follow the player in (the watcher froze him at his car's
+    // door and its car-door grip was a hold-clip: in the tail the car would not drive, the right arm stood up
+    // across the windscreen). The controls come back and a clip that holds a pose is let go; a scene may set
+    // either again in its setup, which runs after this. A cut straight on (keep) leaves the hands as they are.
+    G.controller.frozen = false;
+    this.prompting = null;
+    if (!keep) {
+      G.controller.lookLocked = false;
+      // (a hold-clip keeps its last pose until another clip is played, done or not: it has to go from the list)
+      const H = G.hands;
+      if (H.clips.some((c) => c.hold)) { H.clips = H.clips.filter((c) => !c.hold); H.keyMemo = null; H.snapshot(0.18); }
+    }
     const stage = G.enterStage(def.stage);
     const from = b || def.beats[0] || null;
     this.current = def;

@@ -324,7 +324,8 @@ export const NOTE_PUZZLE = {
     }
   },
   solved(st) { return st.whole && st.wholeT > 1.8; },
-  hint(st, level) { return ['The words run across the pieces.', 'Drag a piece; the wheel turns it.', 'Lay torn edges together: they join on their own.'][level - 1]; },
+  // [R3] (42 characters at most: the last was a warning in the log)
+  hint(st, level) { return ['The words run across the pieces.', 'Drag a piece; the wheel turns it.', 'Lay torn edges together: they join.'][level - 1]; },
   exit(st) {},
 };
 

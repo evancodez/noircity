@@ -152,7 +152,7 @@ document.addEventListener('pointerlockchange', () => {
     hud.hideTitle();
     hud.hidePause();
     sfx.pauseMix(false);
-    if (game.state === 'title') game.start(startFrom);
+    if (game.state === 'title') { game.start(startFrom); chosen = null; }   // [R3] (the chapter picked is spent: BEGIN on a later title starts the story, not that chapter again)
   } else if (game.state === 'playing') {
     hud.showPause();
     sfx.pauseMix(true);
