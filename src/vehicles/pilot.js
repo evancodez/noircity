@@ -45,7 +45,8 @@ export class Pilot {
     let tx = T.x, tz = T.z;
     // (a lane change: off the path to its right by `offset` m - pulling over,
     // or out into the other lane to pass)
-    this.offNow = (this.offNow || 0) + ((this.offset || 0) + (this.passing || 0) - (this.offNow || 0)) * (1 - Math.exp(-dt * 2.2));
+    this.dodgeT = Math.max(0, (this.dodgeT || 0) - dt);
+    this.offNow = (this.offNow || 0) + ((this.offset || 0) + (this.passing || 0) + (this.dodgeT > 0 ? 2.2 : 0) + (this.roundT > 0 ? this.roundOff * Math.min(1, this.roundT / 1.2) : 0) - (this.offNow || 0)) * (1 - Math.exp(-dt * 2.2));
     if (this.offNow) { tx += -T.fz * this.offNow; tz += T.fx * this.offNow; }
     if (O.wander) { this.wph = (this.wph || 0) + dt * (O.wanderRate ?? 0.9); const w = Math.sin(this.wph) * O.wander; tx += -T.fz * w; tz += T.fx * w; }
     const c = Math.cos(v.yaw), sn = Math.sin(v.yaw);
@@ -67,7 +68,7 @@ export class Pilot {
       let nudge = 0;
       for (const o of O.bodies()) {
         // ([C3 3rd] skip: a car it is going round - not followed)
-        if (o === v || !o.solid || o === this.skip) continue;
+        if (o === v || !o.solid || o === this.skip || (this.roundT > 0 && o === this.roundOf)) continue;
         // (a parked car into the lane: steered round, not followed)
         if (o.parked) {
           const ox = o.pos.x - v.pos.x, oz = o.pos.z - v.pos.z;
@@ -89,6 +90,16 @@ export class Pilot {
         const pz = (pa.x - v.pos.x) * sn + (pa.z - v.pos.z) * c;
         if (Math.abs(az - pz) > 2.0) continue;
         if (ax < best) { best = ax; this.ahead = o; }
+      }
+      // [C3 4th] (a car coming the other way in my corridor - a pass that met
+      // the oncoming, or a car out in my lane: no standoff, nose to nose for
+      // ever, each following the other to a stop. Out of the pass at once,
+      // and over to my own side a moment to let it by; followed to a stop
+      // only when it is very near)
+      if (this.ahead && Math.cos((this.ahead.yaw || 0) - v.yaw) < -0.5) {
+        if (this.passing) { this.passing = 0; this.passT = 0; }
+        this.dodgeT = 1.4;
+        if (best > 9) this.ahead = null;
       }
       if (nudge) { const nl = Math.atan(((-2 * (fz + nudge)) / Math.max(1, fx * fx + fz * fz)) * L) / Math.max(0.05, lock); I.steer = clamp(nl - v.yawRate * 0.06, -1, 1); }
       // (stuck behind a slower car with the other lane clear ahead: out and
@@ -114,9 +125,26 @@ export class Pilot {
         const ov = Math.max(0, (o.vel.x * c - o.vel.z * sn));
         const gap = best - 2 * 2.45 - O.keep;
         const vf = Math.sqrt(Math.max(0, 2 * 5 * Math.max(0, gap))) + ov;
-        want = Math.min(want, vf);
+        // [C3 4th] (held up for good: wanting to go, the car ahead standing
+        // still - stopped across the road, a car that got ahead and stopped,
+        // two cars nose to nose - and no pass ever comes, because a pass
+        // wants a car slower than me and I am not moving. After a moment:
+        // back off a little if it is close, and round it on the side with
+        // the room. The bench's phase b runs found gridlocks of a minute)
+        const held = want > 2 && sp < 1 && Math.hypot(o.vel.x, o.vel.z) < 1;
+        this.heldT = held ? (this.heldT || 0) + dt : Math.max(0, (this.heldT || 0) - dt);
+        if (this.heldT > 2.4) {
+          this.heldT = 0;
+          const oz2 = (o.pos.x - v.pos.x) * sn + (o.pos.z - v.pos.z) * c;
+          const pa2 = P.at(Math.min(P.len, this.s + best), this._b);
+          const pz2 = (pa2.x - v.pos.x) * sn + (pa2.z - v.pos.z) * c;
+          this.roundOf = o; this.roundT = 4.5; this.roundOff = oz2 > pz2 ? -3.0 : 3.0;
+          if (best < 6.8) { this.backT = 0.9; this.backSteer = this.roundOff > 0 ? -1 : 1; }
+        }
+        if (!(this.roundT > 0 && o === this.roundOf)) want = Math.min(want, vf);
       }
     }
+    this.roundT = Math.max(0, (this.roundT || 0) - dt);
     if (O.stopAt != null) want = Math.min(want, Math.sqrt(Math.max(0, 2 * 4.5 * (O.stopAt - this.s - 0.5))));
     if (this.done) want = 0;
     this.want = want;

@@ -317,7 +317,8 @@ export class KitUi {
   showWarn({ now = false } = {}) {
     const want = this.sceneWarn || this.lowText || null;
     const E = this.warnEl;
-    if (want === this.warnText) return;
+    // ([C3] gone at once, even while it is still fading out)
+    if (want === this.warnText && !(now && !want && E.style.display !== 'none')) return;
     this.warnText = want;
     if (!want) {
       if (now) { E.style.display = 'none'; this.warnOut = 0; this.hud.root.classList.remove('kwarned'); }

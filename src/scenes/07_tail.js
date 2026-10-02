@@ -126,7 +126,10 @@ export default defineScene({
     // (came in by the cut from the foot chase - no card on black: the
     // chapter's card small over the windscreen as I pull out; never on a
     // retry)
-    const smallCard = !G.hud.cardT && !G._tailRetry;
+    // ([4th owner] the critic, 2nd look: never shown in by the cut - the Hud
+    // leaves cardT a step below 0 after V's own card, so !cardT was false;
+    // a card is up only while cardT > 0)
+    const smallCard = !(G.hud.cardT > 0) && !G._tailRetry;
     G._tailRetry = false;
     // [3rd owner] the keys taught once, each at its moment (C.teachStep): the
     // driving keys at the kerb, held until W (or 6 s); the handbrake as his
@@ -137,7 +140,11 @@ export default defineScene({
       yield beat('start');
       G.sfx.play('tail_start', null, {});
       yield wait(1.0);
-      K.teach('tail_drive', TEACH.drive, { secs: 6, until: 'KeyW' });
+      // ([4th owner] until W has been held a moment: a press only came when W
+      // went down after the card - held from BEGIN, the card stayed its 6 s
+      // over the road; the moment is time to read the rest of it)
+      let w0 = null;
+      K.teach('tail_drive', TEACH.drive, { secs: 6, until: () => { if (!G.held('KeyW')) { w0 = null; return false; } if (w0 == null) w0 = G.time; return G.time - w0 > 1.5; } });
       yield until(() => C.phase !== 'start');
       if (smallCard) { const D = G.scenes.current; K.smallCard(D.title, D.name); }
     }

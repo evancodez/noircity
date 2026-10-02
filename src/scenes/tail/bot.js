@@ -30,6 +30,12 @@ const PROFILES = {
   // [3rd owner] the good hands on the wheel, the gun never drawn: keeps up
   // with him down the river road and never stops him (he reaches the gate)
   follow: { aLat: 7.2, brake: 6.5, lag: 0.08, wobble: 0, keep: 13, far: 26, hb: true, wrong: 0, look: 1.0, gunGap: 14, noGun: true },
+  // [4th owner] hands that aim like hands (bot.aim: the eye drifts round the
+  // mark, the press comes after a reaction): the critic's 'good aim' and
+  // 'sloppy' (good driving), and 'badsloppy' (the bad driving and a sloppy hand)
+  aimer: { aLat: 7.2, brake: 6.5, lag: 0.08, wobble: 0, keep: 13, far: 26, hb: true, wrong: 0, look: 1.0, gunGap: 14, gunAt: 30, aimSd: 0.006, aimTol: 0.012, aimReact: 0.18, aimGain: 6, fireGap: 0.6 },
+  sloppy: { aLat: 7.2, brake: 6.5, lag: 0.08, wobble: 0, keep: 13, far: 26, hb: true, wrong: 0, look: 1.0, gunGap: 14, gunAt: 30, aimSd: 0.02, aimTol: 0.035, aimReact: 0.1, aimGain: 3.5, fireGap: 0.45, aimAt: 'any' },
+  badsloppy: { aLat: 8.6, brake: 4.8, lag: 0.15, wobble: 0.04, keep: 10, far: 22, hb: false, wrong: 0.5, look: 0.9, damp: 0.2, gunGap: 18, gunAt: 30, aimSd: 0.02, aimTol: 0.035, aimReact: 0.1, aimGain: 3.5, fireGap: 0.45, aimAt: 'any' },
 };
 
 export function makeBot(chase, name, { seed = 7, track = null, attempt = 0 } = {}) {
@@ -220,18 +226,39 @@ export function makeBot(chase, name, { seed = 7, track = null, attempt = 0 } = {
       if (chase.phase !== 'b' || !chase.his || !chase.game || P.noGun) return null;
       const G = chase.game, cam = G.camera, his = chase.his, gap = chase.gap();
       const out = { rmb: gap < (P.gunAt ?? 28), fire: false, dyaw: 0, dpitch: 0 };
-      if (!out.rmb || !chase.gun || chase.gun.aimK < 0.95) return out;
+      // ([4th owner] the dt of this step, for the hand's drift and its wait)
+      const dtA = Math.max(0, Math.min(0.1, B.t - (B.aimT ?? B.t))); B.aimT = B.t;
+      if (!out.rmb || !chase.gun || chase.gun.aimK < 0.95) { B.onT = 0; return out; }
       // the target on his car (its frame: x ahead, z right): the rear tyre on
-      // the near side, or the rear window
-      const tgt = B.target || (B.target = P.aimAt === 'window' ? [-1.6, 1.3, 0] : [-1.55, 0.42, 0.76]);
+      // the near side, or the rear window ([4th owner] or, for a hand that
+      // shoots at whatever it can: a quarter, the window or the tank)
+      const pick = () => { const a = P.aimAt === 'any' ? ['quarter', 'quarter', 'window', 'tank'][Math.floor(rng.next() * 4)] : P.aimAt || 'quarter'; return a === 'window' ? [-1.6, 1.3, 0] : a === 'tank' ? [-2.3, 0.75, 0] : [-1.55, 0.42, 0.76]; };
+      const tgt = B.target || (B.target = pick());
       const w = his.seat(new (cam.position.constructor)(tgt[0], tgt[1], tgt[2] * (B.side || 1)));
       w.applyMatrix4(cam.matrixWorldInverse);
       const ay = Math.atan2(w.x, -w.z), ap = Math.atan2(w.y, Math.hypot(w.x, w.z));
-      const jit = (P.aimJit ?? 0.004) * (rng.next() - 0.5);
-      out.dyaw = ay + jit; out.dpitch = ap + jit;
       const tol = P.aimTol ?? 0.012;
-      out.fire = Math.abs(ay) < tol && Math.abs(ap) < tol * 1.5 && B.t - (B.lastFire || -9) > (P.fireGap ?? 0.45);
-      if (out.fire) { B.lastFire = B.t; B.side = rng.next() < 0.5 ? 1 : -1; B.target = null; }
+      if (P.aimSd) {
+        // [4th owner] a hand, not a turret (the critic, 2nd look: the proofs'
+        // aim was perfect): where the mouse puts the eye drifts round the mark
+        // (an Ornstein-Uhlenbeck wander of P.aimSd rad, P.aimTh 1/s), and the
+        // press comes once the eye has sat within the hand's tolerance for
+        // its reaction time - wherever the round then goes
+        const th = P.aimTh ?? 2, o = B.off || (B.off = [0, 0]);
+        for (let k = 0; k < 2; k++) o[k] += -o[k] * th * dtA + P.aimSd * Math.sqrt(2 * th * dtA) * rng.gauss();
+        out.dyaw = ay + o[0]; out.dpitch = ap + o[1];
+        B.onT = Math.abs(ay) < tol && Math.abs(ap) < tol * 1.5 ? (B.onT || 0) + dtA : 0;
+        out.fire = B.onT >= (P.aimReact ?? 0.12) && B.t - (B.lastFire || -9) > (P.fireGap ?? 0.45);
+        // (the hand closes the gap at its own rate: whoever moves the mouse
+        // - autoKeys each step, tools/lib/c3_tail.mjs each poll - moves it by
+        // 1 - exp(-gain dt) of the way)
+        out.gain = P.aimGain ?? 6;
+      } else {
+        const jit = (P.aimJit ?? 0.004) * (rng.next() - 0.5);
+        out.dyaw = ay + jit; out.dpitch = ap + jit;
+        out.fire = Math.abs(ay) < tol && Math.abs(ap) < tol * 1.5 && B.t - (B.lastFire || -9) > (P.fireGap ?? 0.45);
+      }
+      if (out.fire) { B.lastFire = B.t; B.onT = 0; B.side = rng.next() < 0.5 ? 1 : -1; B.target = null; }
       return out;
     },
     // back on his way from wherever I am: the streets from the nearest

@@ -145,9 +145,20 @@ export class Traffic {
     };
     // drop what the streets had (out of my sight by now): the road's own come instead
     for (let i = this.cars.length - 1; i >= 0; i--) if (!this.cars[i].river && this.cars[i].v.pos.distanceTo(C.my.pos) > 60) { C.V.remove(this.cars[i].v); this.cars.splice(i, 1); }
-    place(hs + 58, true, { pace: 1, vmax: 7.2, speed: 7 });
-    place(hs + 175, false, { pace: 1, vmax: 10, speed: 9 });
-    place(hs + 255, true, { pace: 1, vmax: 8, speed: 8 });
+    // [4th owner] (the critic, 2nd look: the first was 58 m ahead of him and
+    // reached as he went down - the road's traffic never mattered.) The first
+    // slow car just ahead of him (he must pass it at once, then so must I,
+    // with the gun out), the one coming the other way timed to meet me as I
+    // pass it, a second slow one and another coming further down. (Out of my
+    // sight as it comes: behind the corner's warehouse in a run from the
+    // streets, under the black at the checkpoint; else further on, as before)
+    const e = this.game.camera.position, T = C.stage.track;
+    const q1 = riverPoint(hs + 34, 1.6);
+    const hid = C.ctx.from === 'river' && C.t < 0.5 || T.blocked(e.x, e.z, q1.x, q1.z, ['wall']);
+    place(hs + (hid ? 34 : 58), true, { pace: 1, vmax: 7.2, speed: 7 });
+    place(hs + 150, false, { pace: 1, vmax: 10, speed: 9 });
+    place(hs + 225, true, { pace: 1, vmax: 8, speed: 8 });
+    place(hs + 310, false, { pace: 1, vmax: 10, speed: 9 });
   }
 
   spawnOne() {
@@ -193,6 +204,14 @@ export class Traffic {
     if (car.hornT > 0) return;
     car.hornT = 2.5;
     this.game.sfx.play('tail_horn', car.v.pos, { k, dur: 0.35 + this.rng.next() * 0.4, low: this.rng.next() < 0.5 ? 1 : 0 }, { ref: 7 });
+  }
+
+  // [4th owner] a round of mine into one of them: the horn, and over to its
+  // kerb, slow (as for my horn, longer)
+  shotAt(car) {
+    if (!car) return;
+    this.honk(car, 1);
+    car.aside = Math.max(car.aside || 0, 5);
   }
 
   // my horn: a car ahead of me in my way pulls over toward its kerb and

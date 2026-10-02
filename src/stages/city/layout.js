@@ -106,7 +106,12 @@ export function parkedOf(rng) {
     }
   }
   for (let z = PELL.z0 + 10; z < PELL.z1 - 6; z += rng.range(6, 9)) if (rng.chance(0.5)) spots.push({ x: PELL.x - PELL.hw + 1.15, z, yaw: -Math.PI / 2 });
-  return spots.filter((p) => clearOf(p.x, p.z) && !inMouth(p.x, p.z));
+  // ([C3 4th owner] the west kerb of Baxter just past Canal St is the inside
+  // of his right turn from the chase2 checkpoint: the critic's careful hands
+  // met a car parked there on 6 of 6 retries. Dropped after the draws, so
+  // every other spot in the city stays where it was)
+  const turnIn = (p) => Math.abs(p.x - (NS.baxter.x - NS.baxter.hw + 1.15)) < 1 && p.z > EW.canal.z && p.z < EW.canal.z + 26;
+  return spots.filter((p) => clearOf(p.x, p.z) && !inMouth(p.x, p.z) && !turnIn(p));
 }
 
 // the lamp posts: { x, z, yaw, overWater? } (the lamps part adds the el's

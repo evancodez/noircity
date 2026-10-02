@@ -143,11 +143,34 @@ export class WindowGun {
     // his car: its own meshes, tested directly (it moves; the bullets'
     // world keeps the still things)
     let hisHit = null;
+    this.ray.set(origin, dir); this.ray.far = 140;
+    const meshesOf = (v) => Object.values(v.car.meshes).filter((m) => m && m.isMesh && m.visible && !m.userData.noRay);
     if (his && his.car) {
-      this.ray.set(origin, dir); this.ray.far = 140;
-      const meshes = Object.values(his.car.meshes).filter((m) => m && m.isMesh && m.visible && !m.userData.noRay);
-      const hits = this.ray.intersectObjects(meshes, false);
+      const hits = this.ray.intersectObjects(meshesOf(his), false);
       if (hits.length) hisHit = hits[0];
+    }
+    // [4th owner] (a car of the traffic between us takes the round: the
+    // critic's "steer round traffic while aiming" - a round went through a
+    // car on the river road to find him)
+    let carHit = null, carV = null;
+    for (const c of (ch.traffic && ch.traffic.cars) || []) {
+      const v = c.v;
+      if (!v || !v.car || v.pos.distanceTo(origin) > (hisHit ? hisHit.distance + 3 : 140)) continue;
+      const hits = this.ray.intersectObjects(meshesOf(v), false);
+      if (hits.length && (!carHit || hits[0].distance < carHit.distance)) { carHit = hits[0]; carV = c; }
+    }
+    if (carHit && (!hisHit || carHit.distance < hisHit.distance)) {
+      const world0 = G.rays.raycast(origin, dir, carHit.distance);
+      if (!world0 || world0.t > carHit.distance) {
+        const hit = { t: carHit.distance, point: carHit.point, normal: carHit.face ? carHit.face.normal.clone().transformDirection(carHit.object.matrixWorld) : dir.clone().negate(), mesh: carHit.object, surf: 0 };
+        let r = null;
+        try { r = this.game.stage.cars.hit(carV.v.car, hit, dir); } catch (e) { r = null; }
+        if (!r) this.sparks(hit.point, hit.normal);
+        if (ch.traffic.shotAt) ch.traffic.shotAt(carV);
+        G.emit('tail:hitTraffic', { point: hit.point });
+        if (this.rounds <= 0 && this.pocket > 0) this.startReload();
+        return;
+      }
     }
     const world = G.rays.raycast(origin, dir, hisHit ? hisHit.distance : 140);
     if (hisHit && (!world || world.t > hisHit.distance)) {
