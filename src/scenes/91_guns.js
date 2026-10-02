@@ -102,6 +102,8 @@ function lab(ctx) {
   const [mx, mz, my] = L.man, [ex, ez] = L.me;
   ctx.controller.setPose(ex, ez, Math.atan2(-(mx - ex), -(mz - ez)), -0.12);
   const h = K.spawn({ kind: 'pistol', at: { x: mx, z: mz }, yaw: my, start: () => false, wait: 1e9 });
+  // (a figure for the frames: his brain held still - no cover taken, no shot)
+  { const ai = G.ais.get(h); if (ai && ai.brain && ai.brain.S) ai.brain.S.state = 'watch'; }
   if (L.open) ctx.stage.part('house').doors[L.open].set(-1.62);
   if (L.state) h.setState(L.state, 0);
   h.lookAt(G.eye.clone());
@@ -132,7 +134,8 @@ function room(ctx, name) {
   // (the desk over first: the mode's first step pushes me out of whatever stands where I am)
   if (B.tipped) house.desk.tipOver(1, true);
   C.setPose(B.at[0], B.at[1], B.at[2], -0.05);
-  C.setMode('gun', { crouch: !!B.crouch });
+  // (?c2pose=stand: the beat from standing - the review frames' look over the cover)
+  C.setMode('gun', { crouch: !!B.crouch && new URLSearchParams(location.search).get('c2pose') !== 'stand' });
   ctx.player.weapons.equip(B.gun || 'revolver');
   if (B.gun === 'tommy') G.weapon.reset();
   const K = gunsOf(G);
