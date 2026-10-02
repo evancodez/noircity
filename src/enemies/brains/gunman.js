@@ -260,6 +260,8 @@ export default {
         if (pref && pref.advance && p === S.cover) continue;
         const d = Math.hypot(p.x - e.x, p.z - e.z);
         if (d < 3.2 || d > 17) continue;
+        // (the Tommy gunner pins from his range, never from across my own car - a stand-off at 3 m that nothing ended)
+        if (kind === 'tommy' && d < 5.5) continue;
         if (pref && pref.advance && S.cover && d > Math.hypot(S.cover.x - e.x, S.cover.z - e.z) - 1) continue;
         if (sideOf && (sideOf(p) !== sideOf.want || Math.hypot(p.x - pref.near.x, p.z - pref.near.z) > 2.6)) continue;
         const travel = Math.hypot(p.x - h.pos.x, p.z - h.pos.z);

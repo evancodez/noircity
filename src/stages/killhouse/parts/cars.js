@@ -19,6 +19,12 @@ export default {
       const car = C.spawn({ pos: new THREE.Vector3(c.x, 0, c.z), yaw: c.yaw, lights: false, paint: c.paint });
       C.cars.push(car);
       car.group.traverse((o) => { if (o.isMesh) o.userData.cover = { kind: o.userData.part === 'glass' || o.userData.part === 'lens' ? 'glass' : 'steel' }; });
+      // [C2] after the critic: the test bed's cars do not go up - a car shot
+      // to burning in a long Tommy-gun street stayed burning into the next
+      // beat and its retries (nothing mends a car), and burned me there
+      // (a fall with no round in it: 'Shot.'). A chapter that lets its cars
+      // burn must put them back itself on a retry.
+      car.limit = Infinity;
     }
     stage.onShadowLod((on) => C.shadowLod(on));
     return C;
