@@ -62,18 +62,21 @@ export const BEATS = {
     ],
     spots: [{ x: -3.5, z: 2.4, yaw: SOUTH }],
   },
+  // (the brief's street: four men and the cars - I start down behind the
+  // near car, they come out of the warehouse's openings across the way;
+  // the street door is locked behind me: the fight is out here)
   street: {
-    at: [-0.5, 5.2, SOUTH], gun: 'tommy', crouch: false, max: 3, flankAfter: 8,
-    obj: 'Six of them in the street. Cover to cover.',
+    at: [-5.0, 7.85, SOUTH], gun: 'tommy', crouch: true, max: 2, flankAfter: 9, lock: ['SD'],
+    obj: 'Four of them across the street. Cover to cover.',
+    // (three there already, down behind the far cars; the fourth out of the loading door later)
     men: [
-      { kind: 'pistol', at: { x: -15.6, z: 20.2 }, way: [{ x: -12.85, z: 19.4 }, { x: -12.85, z: 17.4, run: true }], wait: 0.5 },
-      { kind: 'pistol', at: { x: 14.6, z: 20.2 }, way: [{ x: 11.85, z: 19.4 }, { x: 11.85, z: 17.4, run: true }], wait: 0.9 },
-      { kind: 'tommy', at: { x: -4.4, z: 20.0 }, way: [{ x: -1.0, z: 19.6 }, { x: -1.0, z: 17.5, run: true }], wait: 1.6 },
-      { kind: 'pistol', at: { x: -15.6, z: 20.6 }, way: [{ x: -12.85, z: 19.4 }, { x: -12.85, z: 17.4, run: true }], wait: 2.6 },
-      { kind: 'pistol', at: { x: 3.4, z: 20.2 }, way: [{ x: 0.2, z: 19.6 }, { x: 0.2, z: 17.5, run: true }], wait: 4.5 },
-      { kind: 'pistol', at: { x: 15.0, z: 20.6 }, way: [{ x: 11.85, z: 19.4 }, { x: 11.85, z: 17.4, run: true }], wait: 6.5 },
+      { kind: 'pistol', at: { x: 5.3, z: 16.4 }, cover: true, wait: 1.6 },
+      { kind: 'tommy', at: { x: -12.9, z: 13.5 }, cover: true, wait: 2.4 },
+      { kind: 'pistol', at: { x: -15.1, z: 13.4 }, cover: true, wait: 3.2 },
+      { kind: 'pistol', at: { x: 3.4, z: 20.2 }, way: [{ x: 0.2, z: 19.6 }, { x: 0.2, z: 17.5, run: true }], wait: 7.0 },
     ],
-    spots: [{ x: -5.3, z: 5.55, yaw: SOUTH }, { x: 4.4, z: 5.55, yaw: SOUTH }, { x: -0.5, z: 5.45, yaw: SOUTH }, { x: -6.6, z: 5.55, yaw: SOUTH }],
+    spots: [{ x: -5.0, z: 7.85, yaw: SOUTH }, { x: -8.75, z: 9.3, yaw: EAST }, { x: -2.45, z: 9.3, yaw: -EAST }, { x: 9.6, z: 6.7, yaw: SOUTH }, { x: 14.2, z: 7.85, yaw: SOUTH }],
+    open: { x: -0.6, z: 7.7 },
   },
 };
 BEATS.street_rev = { ...BEATS.street, gun: 'revolver', obj: 'Again, with the revolver.' };
@@ -123,6 +126,7 @@ function room(ctx, name) {
   G.corpses.length = 0; G.pending.length = 0;
   G.fx.clear();
   house.reset();
+  for (const n of B.lock || []) house.doors[n].locked = true;
   G.health.reset();
   const C = ctx.controller;
   // (the desk over first: the mode's first step pushes me out of whatever stands where I am)
@@ -134,9 +138,9 @@ function room(ctx, name) {
   const K = gunsOf(G);
   K.end();
   K.begin({ maxFiring: B.max ?? 2, flankAfter: B.flankAfter ?? 7, to: name });
-  ctx.flags.c2 = { beat: name, men: [], won: false, t0: G.time, spots: B.spots || [] };
+  ctx.flags.c2 = { beat: name, men: [], won: false, t0: G.time, spots: B.spots || [], open: B.open || null };
   for (const m of B.men || []) {
-    const h = K.spawn({ kind: m.kind, at: m.at, way: { steps: m.way }, wait: m.wait ?? 0, hp: m.hp, door: m.door });
+    const h = K.spawn({ kind: m.kind, at: m.at, way: m.way ? { steps: m.way } : null, wait: m.wait ?? 0, hp: m.hp, door: m.door, cover: !!m.cover, yaw: m.yaw ?? null });
     ctx.flags.c2.men.push(h);
   }
 }

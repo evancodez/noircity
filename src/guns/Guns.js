@@ -111,13 +111,13 @@ export class Guns {
   // ---- the men -----------------------------------------------------------------------------------
   // a gunman: { kind: 'pistol' | 'tommy' | 'rusher', at: {x, z}, way: { door?, path: [{x, z}], run? },
   //             start?: fn(game, hood) -> bool, wait?: s, frame?: s (in the doorway), yaw?, hp?, variant? }
-  spawn({ kind = 'pistol', at = null, way = null, start = null, wait = 0, frame, door = null, yaw = null, hp = null, variant = null, name = null } = {}) {
+  spawn({ kind = 'pistol', at = null, way = null, start = null, wait = 0, frame, door = null, cover = false, yaw = null, hp = null, variant = null, name = null } = {}) {
     const G = this.game, K = GUNMAN[kind];
     const p = at || (way && way.at);
     const n = (this.spawned = (this.spawned || 0) + 1);
     const v = variant || (kind === 'pistol' ? { coat: n % 3, brim: n % 2, tall: (n >> 1) % 2, cig: n % 4 === 1 }
       : kind === 'tommy' ? { coat: 1, brim: 1, tall: 1, heavy: true } : { coat: 0, brim: 1, tall: 1, heavy: true });
-    const h = G.spawnHood(p.x, p.z, { brain: 'gunman', kind, heavy: kind !== 'pistol', hp: hp ?? K.hp, variant: v, yaw, state: 'idle', way, start, wait, frame, door });
+    const h = G.spawnHood(p.x, p.z, { brain: 'gunman', kind, heavy: kind !== 'pistol', hp: hp ?? K.hp, variant: v, yaw, state: 'idle', way, start, wait, frame, door, cover });
     h.surface = (x, z) => G.stage.surfaceY(x, z);
     h.gunKind = kind;
     if (name) h.c2name = name;
@@ -547,7 +547,7 @@ export class Guns {
     const men = [...G.ais.entries()].filter(([h, ai]) => h.alive && ai.brain && ai.brain.canFlank && ai.brain.canFlank());
     if (men.length < 1) return;
     const alive = [...G.ais.keys()].filter((h) => h.alive).length;
-    if (alive < 2 && !this.cfg.flankAlone) return;
+    if (alive < 2 && !this.cfg.flankAlone && this.post.t < this.cfg.flankAfter * 1.5) return;
     const e = G.eye, B = this.playerBody();
     // the threat's bearing (the mean of where they are)
     let bx = 0, bz = 0;

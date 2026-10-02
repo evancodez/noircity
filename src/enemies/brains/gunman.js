@@ -30,7 +30,7 @@ addGunClips();
 // .pistol.dmg and the director's maxFiring - docs/story/seams/GUNS.md):
 export const GUNMAN = {
   raise: 0.26,                 // s: the tell - the arm comes up, the glint, the click
-  settle: [0.36, 0.85],        // s: his aim settling, at 3 m .. at 18 m
+  settle: [0.4, 0.9],          // s: his aim settling, at 3 m .. at 18 m
   settleMoving: 1.4,           // x while I move across his line
   settleRattled: 1.5,          // x for 1.5 s after a round came near him or hit him
   notice: 0.25,                // s: I come up (or out) into his line: he sees me, then settles
@@ -68,7 +68,7 @@ export default {
       get hasLine() { return S.line && h.alive; },
       get flanking() { return !!S.flank; },
       // ---- the kit's director asks -------------------------------------------------------
-      canFlank() { return kind === 'pistol' && !S.flank && (S.state === 'hold' || S.state === 'back' || S.state === 'move' || S.state === 'open') && S.mag > 2 && !S.entry; },
+      canFlank() { return (kind === 'pistol' || (kind === 'tommy' && alone())) && !S.flank && (S.state === 'hold' || S.state === 'back' || S.state === 'move' || S.state === 'open') && S.mag > 2 && !S.entry; },
       goFlank(spot) {
         S.flank = spot; brain.drop();
         // (his cover let go: he fights from where the flank takes him)
@@ -80,8 +80,8 @@ export default {
       playerDown() { brain.drop(); if (S.state === 'aim' || S.state === 'fire') { S.state = 'watch'; S.t = 0; } },
       drop() { const K2 = kit(); if (K2) K2.drop(B); },
       onHit(dir) {
-        S.settle = 0; S.rattledT = 1.5;
-        if (kind === 'rusher') { S.stopT = K.hitStop; return; }
+        S.settleKeep = S.settle; S.settle = 0; S.rattledT = 1.5;
+        if (kind === 'rusher') { S.stopT = K.hitStop; S.settle = Math.max(0, (S.settleKeep || 0) * 0.5); return; }
         // (hit: he is knocked off his aim; back down behind his cover)
         if (S.state === 'aim' || S.state === 'fire') { brain.drop(); S.state = 'back'; S.t = 0; }
         S.wait = r.range(0.8, 1.4);
@@ -90,6 +90,7 @@ export default {
       release() { brain.drop(); if (S.cover) S.cover.taken = null; },
       // (Game.killHood asks: the fall by what is beside him)
       deathKind(dir, head, kind0) { return chooseDeath(G, h, dir, head, kind0); },
+      pickCover: (pref) => pickCover(pref),   // (for the plays and the probes: where he would go now)
       update(dt, t) { if (!h.alive) return; step(dt, t); },
     };
 
@@ -120,6 +121,7 @@ export default {
       } else { S.lostT += dt; if (S.lostT > 0.3) S.lineT = 0; if (S.lostT > 1.2) S.aimOk = false; }
     };
     const dist = () => Math.hypot(G.eye.x - h.pos.x, G.eye.z - h.pos.z);
+    const alone = () => { for (const o of G.ais.keys()) if (o !== h && o.alive) return false; return true; };
     const settleTime = () => {
       const d = dist();
       let s = T.settle[0] + (T.settle[1] - T.settle[0]) * Math.min(1, Math.max(0, (d - 3) / 15));
@@ -187,15 +189,19 @@ export default {
       }
       cands.sort((a, b) => a.pre - b.pre);
       let best = null;
-      for (const c of cands.slice(0, 10)) {
+      const why = S.pickWhy = { n: cands.length, open: 0, nofire: 0, nopath: 0 };
+      let paths = 0;
+      for (const c of cands.slice(0, 32)) {
+        if (paths >= 8) break;
         if (best && c.pre > best.score) break;
         const st = C.state(c.p, e);
-        if (st === 'open') continue;
+        if (st === 'open') { why.open++; continue; }
         const f = C.fire(c.p, e, st);
-        if (!f) continue;
+        if (!f) { why.nofire++; continue; }
         // (the way there: by the nav grid, not as the crow flies through a wall)
+        paths++;
         const path = nav.findPath(h.pos.x, h.pos.z, c.p.x, c.p.z, 16000);
-        if (!path) continue;
+        if (!path) { why.nopath++; continue; }
         let L = 0, px = h.pos.x, pz = h.pos.z;
         for (const q of path) { L += Math.hypot(q.x - px, q.z - pz); px = q.x; pz = q.z; }
         const score = c.pre + (L - Math.hypot(c.p.x - h.pos.x, c.p.z - h.pos.z)) * 0.3 - (st === 'tall' ? 0.4 : 0);
@@ -208,7 +214,7 @@ export default {
       if (S.cover) S.cover.taken = null;
       if (!c) { S.cover = null; S.fire = null; return false; }
       c.p.taken = B;
-      S.cover = c.p; S.fire = c.f; S.coverLow = c.st === 'low';
+      S.cover = c.p; S.fire = c.f; S.fireFrom = { x: G.eye.x, z: G.eye.z }; S.coverLow = c.st === 'low';
       moveTo(c.p.x, c.p.z, run);
       S.state = 'move'; S.t = 0;
       return true;
@@ -219,7 +225,8 @@ export default {
       const st = kit().covers.state(S.cover, G.eye);
       if (st === 'open') return false;
       S.coverLow = st === 'low';
-      if (!S.fire || S.fireStale) { S.fire = kit().covers.fire(S.cover, G.eye, st); S.fireStale = false; }
+      // (where he shoots from, judged again when I have moved: a spot that had me may not now)
+      if (!S.fire || !S.fireFrom || Math.hypot(G.eye.x - S.fireFrom.x, G.eye.z - S.fireFrom.z) > 0.8) { S.fire = kit().covers.fire(S.cover, G.eye, st); S.fireFrom = { x: G.eye.x, z: G.eye.z }; }
       return !!S.fire;
     };
 
@@ -227,7 +234,7 @@ export default {
     // stops and shoots - the gun up, the settle, as ever - then goes on)
     const snap = (dt) => {
       if (kind === 'rusher' || S.flank || (G.controller.crouchK || 0) > 0.5) return false;
-      if (!S.line || S.lineT < 0.3 || dist() > 16 || G.time - (S.snapT || -9) < 3) return false;
+      if (!S.line || S.lineT < 0.3 || dist() > 9 || G.time - (S.snapT || -9) < 3) return false;
       if (!kit().token(B)) return false;
       S.snapT = G.time; B.path = null; S.resume = S.state === 'entry' ? 'entry' : 'move';
       raise();
@@ -379,12 +386,14 @@ export default {
           // (one of them going out: the others go with him - two guns at once on the man who stands to answer)
           const mate = [...G.ais.values()].some((a) => a !== B && a.brain && a.brain.S && (a.brain.S.state === 'out' || a.brain.S.state === 'aim') && a.h.alive);
           if (mate && kind === 'pistol' && S.wait > 0.3) S.wait = 0.3;
+          if (S.line && (G.controller.crouchK || 0) < 0.5 && S.wait > 0.3) S.wait = 0.3;
           S.wait -= dt;
           if (S.wait > 0) break;
           // (out from here a few times and no nearer: on to cover nearer me - nobody hides out the clock)
-          if (kind === 'pistol' && (S.peeks || 0) >= (S.pushAt || (S.pushAt = r.int(3, 5))) && !(Kt.flank && Kt.flank.ai === B)) {
+          if ((kind === 'pistol' || alone()) && (S.peeks || 0) >= (S.pushAt || (S.pushAt = r.int(3, 5))) && !(Kt.flank && Kt.flank.ai === B)) {
             S.peeks = 0; S.pushAt = 0;
             if (takeCover(true, { advance: true })) { Kt.events.push({ t: +G.time.toFixed(2), what: 'push', kind, at: [+S.cover.x.toFixed(1), +S.cover.z.toFixed(1)] }); break; }
+            if (S.lostT > 6) { if (S.cover) S.cover.taken = null; S.cover = null; S.fire = null; S.state = 'open'; S.t = 0; S.seekT = 0; S.wait = 0.5; break; }
           }
           // (the Tommy gunner keeps my head down: he fires at where I went down, line or not)
           const suppress = kind === 'tommy' && !S.line && S.lastSeen && G.time - S.lastSeen.t < 12;
@@ -409,8 +418,8 @@ export default {
         }
         // the tell, then the settle
         case 'aim': {
-          h.speed = 0;
-          if (h.state !== 'aim') h.setState('aim', 0.15);
+          if (kind === 'rusher') rushOn(dt);
+          else { h.speed = 0; if (h.state !== 'aim') h.setState('aim', 0.15); }
           face(dt, 7);
           if (S.target) h.lookAt(S.aimP);
           S.raiseT += dt;
@@ -425,7 +434,7 @@ export default {
           break;
         }
         case 'fire': {
-          h.speed = 0;
+          if (kind === 'rusher') rushOn(dt); else h.speed = 0;
           face(dt, 7);
           if (S.target) h.lookAt(S.aimP);
           if (kind === 'pistol' && !S.line) {
@@ -512,6 +521,22 @@ export default {
         default: break;
       }
     }
+    // (the heavy's walk at me, gun up, through his aim and his burst: stopped
+    // only by a hit, a moment, or by being on top of me)
+    function rushOn(dt) {
+      if (S.stopT > 0) { S.stopT -= dt; h.speed = 0; if (h.state === 'walk') h.setState('idle', 0.12); return; }
+      if (dist() < 1.9) { h.speed = 0; if (h.state === 'walk') h.setState('idle', 0.2); return; }
+      S.repathT = (S.repathT || 0) - dt;
+      if (S.repathT <= 0 || !B.path) {
+        S.repathT = 0.7;
+        const e = G.eye, dx = h.pos.x - e.x, dz = h.pos.z - e.z, L = Math.hypot(dx, dz) || 1;
+        const k = Math.min(1, 1.6 / L);
+        moveTo(e.x + dx * k, e.z + dz * k, false);
+      }
+      follow(dt);
+      h.speed = K.walk * 0.85;
+      h.setAim(true);
+    }
     const burstOf = () => (kind === 'pistol' ? r.int(K.burst[0], K.burst[1]) : r.int(K.burst[0], K.burst[1]));
     function afterBurst() {
       S.burstN = 0;
@@ -529,6 +554,20 @@ export default {
       S.resume = null;
       if (S.flank) { S.flank = null; const F = kit().flank; if (F && F.ai === B) F.done = true; S.state = 'open'; S.t = 0; S.wait = r.range(0.4, 0.9); return; }
       S.state = 'back'; S.t = 0;
+    }
+    // (opts.cover: he is there already when it starts - down behind the
+    // cover point nearest where he was put, his first time out after `wait`)
+    if (opts.cover && !opts.way) {
+      const C = kit() && kit().covers;
+      let best = null, bd = 1.3;
+      for (const p of (C && C.points) || []) { const d = Math.hypot(p.x - h.pos.x, p.z - h.pos.z); if (d < bd && !p.taken) { bd = d; best = p; } }
+      if (best) {
+        best.taken = B; S.cover = best;
+        const st = C.state(best, G.eye);
+        S.coverLow = st === 'low'; S.fire = st === 'open' ? null : C.fire(best, G.eye, st);
+        h.pos.x = best.x; h.pos.z = best.z;
+        S.low = S.coverLow; h.setState(S.coverLow ? 'kneel' : 'idle', 0);
+      }
     }
     return brain;
   },

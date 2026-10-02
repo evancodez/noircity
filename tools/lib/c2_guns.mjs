@@ -17,7 +17,7 @@
 //         error tuned for 60 - 70 % of aimed rounds landing.
 const PROFILES = {
   idle: { act: false },
-  bad: { act: true, cover: false, react: [450, 800], errM: 0.3, settle: [120, 260], gap: [250, 450] },
+  bad: { act: true, cover: false, react: [450, 800], errM: 0.3, settle: [120, 260], gap: [250, 450], renotice: 600 },
   good: { act: true, cover: true, react: [300, 550], errM: 0.17, settle: [60, 120], gap: [380, 620], burst: [1, 1], down: [450, 800] },
 };
 
@@ -52,7 +52,7 @@ export default async function drive({ js, turn, keyDown, keyUp, mouse, shot, log
     }
     return { scene: sc.current && sc.current.id, beat: sc.beat, trans: !!sc.trans, fade: sc.fadeK, failing: !!G._c2failing, dead: G.health.dead, hp: G.health.hp,
       x: C.pos.x, z: C.pos.z, ex: e.x, ey: e.y, ez: e.z, yaw: C.yaw, pitch: C.pitch, sens: C.sensitivity, mode: C.mode, ck: C.crouchK || 0, rk: C.riseK || 0, on: !!C.crouchOn,
-      ammo: W ? W.ammo : 0, reloading: !!(W && W.reloading), gun: G.player.weapons.current, men, spots: F ? F.spots : [], won: !!(F && F.won),
+      ammo: W ? W.ammo : 0, reloading: !!(W && W.reloading), gun: G.player.weapons.current, men, spots: F ? F.spots : [], open: F ? F.open : null, won: !!(F && F.won),
       broke: K ? K.events.filter((q) => q.what === 'break' && G.time - q.t < 1.2 && q.at && Math.hypot(q.at[0] - e.x, q.at[1] - e.z) < 2.2).length : 0, wins: (G._c2won || []).length, fails: G._c2fails ? { ...G._c2fails } : {}, why: (G._c2why || []).slice(-1)[0] || null, warned: (G._c2warned || []).length, shots: G.counters.shots, hits: G.counters.hits, warn: G._c2warn || null };
   })()`;
   // the beat's cover spot hidden from the most men as they stand now (then the nearest)
@@ -97,7 +97,7 @@ export default async function drive({ js, turn, keyDown, keyUp, mouse, shot, log
       const t0 = Date.now();
       let s0 = await js(ST);
       const fails0 = (s0.fails && s0.fails[beat]) || 0, shots0 = s0.shots, hits0 = s0.hits, wins0 = s0.wins;
-      const dbg = {}, noticed = new Map(); let lastSeenAt = null, tellAt = 0, lastUp = Date.now(), upAt = 0, snapT = 0, target = null, seenAt = 0, onSpot = null, goTo = null, moveCool = 0, downUntil = 0, burstLeft = 0, lastShot = 0, warnedBefore = false, lowHp = 100;
+      const dbg = {}, noticed = new Map(), visAt = new Map(); let lastSeenAt = null, tellAt = 0, lastUp = Date.now(), upAt = 0, snapT = 0, target = null, seenAt = 0, onSpot = null, goTo = null, moveCool = 0, downUntil = 0, burstLeft = 0, lastShot = 0, warnedBefore = false, lowHp = 100, outThere = false;
       let end = null;
       while (!end) {
         const s = await js(ST);
@@ -127,6 +127,9 @@ export default async function drive({ js, turn, keyDown, keyUp, mouse, shot, log
           await tap('KeyR'); await sleep(rr(200, 350)); dbg['reloadTap'] = (dbg['reloadTap'] || 0) + 1; continue;
         }
         if (s.reloading) { await set('RMB', false); await sleep(100); dbg['reloading'] = (dbg['reloading'] || 0) + 1; continue; }
+        if (!P.cover && s.on) { await tap('KeyC'); await sleep(60); continue; }
+        // (the bad player out into the open first, where the beat has one: the street's pavement)
+        if (!P.cover && s.open && !outThere) { if (await walkTo(s, s.open.x, s.open.z, 0.4)) outThere = true; else { await sleep(40); continue; } }
         const men = s.men.filter((m) => !m.entry || m.see);
         // ---- the good player: cover first
         let threat = null;
@@ -152,6 +155,8 @@ export default async function drive({ js, turn, keyDown, keyUp, mouse, shot, log
         }
         // ---- the target: the nearest that shows (from risen, for the good player: what he would see over it)
         const visible = men.filter((m) => m.see || m.seeH);
+        // (bad: out of sight a moment and back: a new reaction before the shot)
+        if (P.renotice) for (const m of visible) { if (now - (visAt.get(m.id) || 0) > P.renotice) noticed.set(m.id, now + rr(P.react[0], P.react[1])); visAt.set(m.id, now); }
         // (where each was last seen: the angle a player holds - the doorway he peeks from)
         for (const m of visible) lastSeenAt = { x: m.x, y: m.see ? m.y : m.hy - 0.05, z: m.z, t: now };
         const heavy = s.men.find((m) => m.kind === 'rusher' && m.d < 9);
