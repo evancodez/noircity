@@ -357,7 +357,7 @@ export default defineScene({
   // [C4] every beat's line (the kit: docs/story/seams/Z.md Z1): the fight,
   // the last blow, the way out to him; once the card is read, where it sends
   // me (written in by the script: AMES_LINE)
-  objectives: { start: 'Put him down.', lesson: 'Put him down.', round1: 'Put him down.', round2: 'Put him down.', round3: 'Put him down.', reel: 'Finish him.', ko: 'See to him.', outside: 'See to him.', matchbook: null },
+  objectives: { start: 'Put him down.', lesson: 'Put him down.', round1: 'Put him down.', round2: 'Put him down.', round3: 'Put him down.', reel: 'Finish him.', ko: 'See to him.', outside: 'See to him.', matchbook: 'See to him.' },
 
   setup: {
     // [B8] his line said: he on his stool turned to me, I on mine (a cold entry)
@@ -496,7 +496,11 @@ export default defineScene({
       yield beat('outside');
       if (ctx.from !== 'matchbook') {
         const m = mack();
-        yield* ctx.prompt({ text: 'search', at: () => m.bones.chest.getWorldPosition(V(0, 0, 0)) });
+        // [C4] (at him, looking at him: E from across the pavement or at the
+        // door searched him from five metres - and held the door's own E)
+        let searched = false;
+        ctx.interact.add({ id: 'c4.search', at: () => m.bones.chest.getWorldPosition(V(0, 0, 0)), range: 2.3, cone: 0.75, prompt: 'search', onUse: () => { searched = true; ctx.interact.remove('c4.search'); } });
+        yield until(() => searched);
         G.sfx.play('crouch');
         const s = H.play('searchBody', { onMark: { found: () => G.sfx.play('clothRustle') } });
         yield until(() => s.done);
@@ -554,6 +558,13 @@ export default defineScene({
       return;
     }
     A.stopWalk();
+    // ([C4] the search is at him: the eye onto him first)
+    if (ctx.beat === 'outside' && !G.interact.current && ctx.cast.get('mack')) {
+      const C = G.controller, p = ctx.cast.get('mack').bones.chest.getWorldPosition(V(0, 0, 0)), e = G.eye;
+      const want = Math.atan2(-(p.x - e.x), -(p.z - e.z)), wp = Math.atan2(p.y - e.y, Math.hypot(p.x - e.x, p.z - e.z));
+      C.yaw += Math.atan2(Math.sin(want - C.yaw), Math.cos(want - C.yaw)) * 0.15; C.pitch += (wp - C.pitch) * 0.15;
+      if (Math.hypot(p.x - e.x, p.z - e.z) > 2.0) C.auto = { f: 1, s: 0 }; else C.auto = null;
+    }
     if (A.prompting() || G.inspect.active) A.pressAfter('KeyE', 1.0, 2.2);
   },
 });

@@ -706,7 +706,9 @@ function stepDoor(api, d, dt, camera) {
     if (!sp) continue;
     // (in the room or the doorway, or already behind the open leaf: it is
     // pushed ahead of the body; out on the pavement before it: it stops)
-    if (b.x < XD + 0.08 || cur >= sp[0] - 0.02) need = Math.max(need, sp[1] + 0.05);
+    // (behind it means the leaf is open past him already: a man on the
+    // pavement walking into the shut leaf does not push a pull door in)
+    if (b.x < XD + 0.08 || (cur > 0.03 && cur >= sp[0] - 0.02)) need = Math.max(need, sp[1] + 0.05);
     else block = Math.min(block, Math.max(0, sp[0] - 0.05));
   }
   // (one of them in the doorway from inside is on his way out: it gives a
@@ -730,6 +732,10 @@ function stepDoor(api, d, dt, camera) {
     want = 0;
     d.holdT = 0; d.target = 0;
   } else {
+    // (held open while I am at it on the street side: pulled, a man steps
+    // back out of its swing and then walks round it; it does not swing shut
+    // in his face while he does)
+    if (d.target === 1 && e.x > XD && Math.hypot(e.x - XD, e.z - midZ) < 1.7) d.holdT = Math.max(d.holdT, 0.9);
     if (d.target === 1 && (d.holdT -= dt) <= 0) d.close();
     want = Math.max(need, d.target === 1 ? Math.min(OPEN_MAX, block) : 0);
   }
@@ -774,12 +780,12 @@ function stepDoor(api, d, dt, camera) {
   }
   // E at the door: inside it is pushed (or tried), from the street pulled
   if (G && G.interact && !api.doorUse) {
-    const at = (out) => () => new THREE.Vector3(XD + (out ? 0.06 : -0.08), D.floorY + 1.05, hz + w - 0.25);
+    const at = (out) => () => new THREE.Vector3(XD + (out ? 0.06 : -0.08), D.floorY + 1.3, hz + w / 2 + 0.1);
     const ok = () => G.stage === S && !(G.brawl && G.brawl.active) && G.state === 'playing';
     api.doorUse = [
-      G.interact.add({ id: 'diner.door.push', scope: 'stage', at: at(false), range: 1.5, cone: 0.6, prompt: 'push', when: () => ok() && !d.barred && G.eye.x < XD && d.angle < 0.3,
+      G.interact.add({ id: 'diner.door.push', scope: 'stage', at: at(false), range: 1.6, cone: 0.85, prompt: 'push', when: () => ok() && !d.barred && G.eye.x < XD && d.angle < 0.3,
         onUse: () => { if (d.barred || d.shut) d.tried(); else { d.open(); d.holdT = 1.6; } } }),
-      G.interact.add({ id: 'diner.door.pull', scope: 'stage', at: at(true), range: 1.6, cone: 0.6, prompt: 'pull', when: () => ok() && G.eye.x > XD + 0.1 && d.angle < 0.3,
+      G.interact.add({ id: 'diner.door.pull', scope: 'stage', at: at(true), range: 1.7, cone: 0.85, prompt: 'pull', when: () => ok() && G.eye.x > XD + 0.1 && d.angle < 0.3,
         onUse: () => { if (d.barred || d.shut) d.tried(); else d.pull(); } }),
     ];
   }
