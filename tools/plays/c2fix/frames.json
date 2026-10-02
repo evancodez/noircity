@@ -1,0 +1,24 @@
+{
+  "about": "C2 after the critic: two review frames - the desk's things on the floor where they slid off (looked at from the door's side after a tip by E), and the rush's line once the heavy is down (the heavy killed by a probe round for the frame)",
+  "url": "/?mute=1&start=guns",
+  "size": [1440, 900],
+  "out": "shots/c2fix/frames",
+  "steps": [
+    { "wait": 2500 },
+    { "clickOn": "#title .opt[data-k=begin]", "taken": "G.state === 'playing' && N.controller.mode === 'gun'", "retries": 3 },
+    { "wait": 1500 },
+    { "key": "KeyE" },
+    { "wait": 2500 },
+    { "eval": "(N.controller.setPose(-2.3, -2.9, Math.atan2(-(-3.4 + 2.3), -(-3.9 + 2.9)), -0.55), N.controller.setMode('gun', { crouch: false }), 'posed')" },
+    { "wait": 800 },
+    { "shot": "desk_things" },
+    { "eval": "JSON.stringify(G.stage.part('house').desk.loose.getWorldPosition(new N.THREE.Vector3()))" },
+    { "eval": "(G.scenes.go('guns', { beat: 'rush', fade: 'cut', card: false }), 'rush')" },
+    { "until": "G.scenes.beat === 'rush' && [...G.ais.values()].some((a) => a.brain.kind === 'rusher' && a.brain.S.state === 'rush')", "timeout": 20000 },
+    { "wait": 1200 },
+    { "eval": "(() => { const h = [...G.ais.keys()].find((x) => G.ais.get(x).brain.kind === 'rusher'); const d = new N.THREE.Vector3(0, 0, 1); G.killHood(h, d, false); return 'heavy down'; })()" },
+    { "wait": 2600 },
+    { "eval": "G.hud.kit.objectiveText" },
+    { "shot": "rush_one_more" }
+  ]
+}

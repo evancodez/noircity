@@ -329,10 +329,10 @@ a new stage drops the old stage's bodies.
 | beat | what it asks | the men |
 | --- | --- | --- |
 | `ready` | the teach: tip the desk (E), low (C), rise (RMB), two bottles, reload (R) down | none |
-| `door` | the exposure of a doorway | three pistol men through one door: two work it together from its jambs, a third close behind |
-| `two_ways` | watch two ways: the flank | two through one door, one through the other |
-| `pin` | wait out the burst, rise on the drum | a pistol man working B1 first, then a Tommy gunner (170 hp: four rounds) at the glazed door - two guns at once on a man standing up |
-| `rush` | answer the heavy at once | the heavy in at the street door, a pistol man later (the fight's `area` the house; the line changes when the heavy is down) |
+| `door` | the exposure of a doorway | three pistol men through one door: two work it together from its jambs, a third (8 s behind) waits his turn along the wall |
+| `two_ways` | watch two ways: the flank | two through one door, one through the other (flankAfter 9) |
+| `pin` | wait out the burst, rise on the drum | the Tommy gunner first at the glazed door B2 (the first thing met is the burst), then two pistol men working B1 while he changes his drum; the bar's front panels take two bursts at one place |
+| `rush` | answer the heavy at once | the heavy in at the street door, a pistol man at 14 s through A2 (the fight's `area` the house; "One more. Find him." when the heavy is down) |
 | `street` | cover to cover (Tommy gun) | three behind the far cars, one out of the loading door |
 | `street_rev` | the same, with the revolver | the same |
 
