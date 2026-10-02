@@ -306,17 +306,27 @@ export class Car {
     let px, pz;
     const corner = (cx, cz, hx, hz, c, s, sx, sz) => [cx + sx * hx * c + sz * hz * s, cz - sx * hx * s + sz * hz * c];
     if (bi < 2) {
-      // B's corner deepest into me (furthest along n, toward me)
-      let bd = -Infinity;
-      for (const sx of [-1, 1]) for (const sz of [-1, 1]) { const [x, z] = corner(B.cx, B.cz, B.hx, B.hz, bc, bs, sx, sz); const p = x * bn[0] + z * bn[1]; if (p > bd) { bd = p; px = x; pz = z; } }
+      // B's corner deepest into me (furthest along n, toward me; two as deep
+      // - a face of it met flat - their middle)
+      const cs = [];
+      for (const sx of [-1, 1]) for (const sz of [-1, 1]) { const [x, z] = corner(B.cx, B.cz, B.hx, B.hz, bc, bs, sx, sz); cs.push([-(x * bn[0] + z * bn[1]), x, z]); }
+      cs.sort((a, b) => a[0] - b[0]);
+      const k = clamp(1 - (cs[1][0] - cs[0][0]) / 0.25, 0, 1) * 0.5;
+      px = cs[0][1] + (cs[1][1] - cs[0][1]) * k; pz = cs[0][2] + (cs[1][2] - cs[0][2]) * k;
       // (on a face that long - a building - its corner may lie far off: the
       // contact is my face's point nearest it)
       const l = this.local(_v.set(px, 0, pz), _w);
       const qx = clamp(l.x, -S.halfL, S.halfL), qz = clamp(l.z, -S.halfW, S.halfW);
       const p = this.world(qx, qz, _v); px = p.x; pz = p.z;
     } else {
-      let bd = Infinity;
-      for (const sx of [-1, 1]) for (const sz of [-1, 1]) { const [x, z] = corner(this.pos.x, this.pos.z, S.halfL, S.halfW, ca, sa, sx, sz); const p = x * bn[0] + z * bn[1]; if (p < bd) { bd = p; px = x; pz = z; } }
+      // my corner deepest into B; (a face met flat - the second corner as
+      // deep, near enough - is met at its middle: a square blow does not
+      // spin the car on a corner it never struck alone)
+      const cs = [];
+      for (const sx of [-1, 1]) for (const sz of [-1, 1]) { const [x, z] = corner(this.pos.x, this.pos.z, S.halfL, S.halfW, ca, sa, sx, sz); cs.push([x * bn[0] + z * bn[1], x, z]); }
+      cs.sort((a, b) => a[0] - b[0]);
+      const k = clamp(1 - (cs[1][0] - cs[0][0]) / 0.25, 0, 1) * 0.5;
+      px = cs[0][1] + (cs[1][1] - cs[0][1]) * k; pz = cs[0][2] + (cs[1][2] - cs[0][2]) * k;
     }
     this.contact(bn[0], bn[1], best, px, pz, body, B);
     return true;
@@ -446,7 +456,9 @@ export class Car {
     const moved = Math.hypot(this.pos.x - lp.x, this.pos.z - lp.z) / Math.max(dt, 1e-4);
     lp.copy(this.pos);
     this.touchT = this.touch ? 0 : (this.touchT ?? 9) + dt;
-    const stuck = this.touchT < 0.3 && (th > 0 || br > 0) && moved < 0.8;
+    // (stood on the brake against a thing is a stop, not a wedge: only a
+    // wish to go - the throttle, or S held past the breath that reverses)
+    const stuck = this.touchT < 0.3 && (th > 0 || (br > 0 && (this.stopT || 0) > 0.3)) && moved < 0.8;
     this.pinT = stuck ? (this.pinT || 0) + dt : Math.max(0, (this.pinT || 0) - dt * 2);
     if (this.pinT < 0.35) return;
     const st = clamp(this.input.steer, -1, 1);
