@@ -56,6 +56,11 @@ not pad it.
 
 ## The scenes
 
+Each scene carries an *As built* line where what was built differs from the
+outline (round 3, from the lane reports in `docs/story/reports/wave-b/`; the
+keys are in the README's "How to play", the scene by scene machinery in
+`ARCHITECTURE.md` §10). The outline itself is left as it was written.
+
 ### 1. The diner  (Wave A)
 Fade in from black. Inside, night, rain running down the plate glass,
 the street and the el dim beyond it. I am on a stool at the counter. The
@@ -83,6 +88,11 @@ Beats, in order (each is a named beat for `?scene=diner&beat=<name>`):
 5. `pay`: **E pay**. My hands open the wallet: the licence card shows for a
    second. The big man two stools down is looking at it. His one line:
    "You're the one asking about the Cardinal." He stands. The stool falls.
+
+*As built:* the pay beat ends on his line and the room passes with no cut into
+scene 2's first beat, where he stands and the stool goes over; Q spins the
+empty stool beside me, F takes a drag, LMB taps the ash; there is no stand-up
+key.
 
 ### 2. The fist fight  (Wave A)
 First person, fists up in the bottom corners of the frame. It starts in one
@@ -112,6 +122,15 @@ line as the dodge); the list below is the story's shape.
   down the pavement. Wave A ends here, on the matchbook in my hand and the
   sound of the shots.
 
+*As built (FIGHT.md, version 4):* the way in lasts four seconds and a
+nine-card lesson of about thirty seconds follows; the rounds are four manners
+of his by his hit points (measured, dirty, wild, out on his feet), not timed;
+each button is an arm (a tap a jab, a hold a loaded hard punch), A / D hop
+aside, S back, SPACE blocks, E takes; he throws plates (a chevron says where to
+step) and swings stools; going down is black and up again in the same manner;
+the finish is out through the nearer of the two end windows (the save
+remembers which); the matchbook leads straight into scene 3, not an end card.
+
 ### 3. The body  (Wave B)
 Thirty metres down the pavement, in the mouth of the side alley under a wall
 lamp: a man on his back in the rain, blood going into the gutter.
@@ -126,6 +145,14 @@ lamp: a man on his back in the rain, blood going into the gutter.
   pieces. On the dry step under the lamp I put it back together: HARBOR
   BLDG. RM 304.
 
+*As built:* a crew car pulls out of the alley as the scene opens; before the
+strings I kneel (E) and look at three things (the wounds, his hand, the two
+marks), and the wet paper comes out of his hand there; my hand holds each
+string; the torn half hangs over the fire escape's landing, which I reach by
+pulling its drop ladder down (E) and climbing it (W); puzzles B and C are on
+the dry step under the lamp (E the matchbook, E the note); leaving is walking
+out of the alley's mouth.
+
 ### 4. The office  (Wave B)
 Room 304. AMES, BOOKKEEPING on the frosted glass. The room has been
 turned over once already.
@@ -135,11 +162,24 @@ turned over once already.
   feel: the click is louder and the dial twitches at the right numbers.
   Inside: the ledger, its cover red.
 
+*As built:* it opens in the third-floor corridor (the lift, doors 302, 303 and
+306, 304's glass lit, its lock splintered: a push opens it); the pad is
+rubbed with the pencil's side (hold LMB), R 36 / L 12 / R 57 come up white and
+the sheet is torn off into my left hand; the safe is right to 36, left to 12,
+right to 57, then E the handle; the ledger opens in my hands (CARDINAL CLUB,
+PIER 9 - DOCK, the black bird); the scene cuts into scene 5 in the same room.
+
 ### 5. The first gunfight  (Wave B)
 A shadow on the frosted glass, then two. I draw the revolver (six rounds,
 slow, heavy). The door goes in. Three Hoods: one through the door, one
 firing through the glass, one from the fire escape window. The room comes
 apart: the desk lamp, the glass door, paper in the air.
+
+*As built:* six men, not three (a kicker, a man firing through the frosted
+sidelight, a doorway man, a Tommy gunner on the fire escape, then another
+doorway man and a heavy); E tips the desk for cover and C ducks behind it; the
+music goes as the shadows come; going down is a short fall, black, and back at
+the shadows with the door already shut.
 
 ### 6. The watcher  (Wave B)
 In the quiet after, through the window: a man across the street under a
@@ -147,6 +187,15 @@ lamp, under an umbrella, looking up. He sees me see him. He runs.
 Down the fire escape, through the alley: fences to vault, washing lines, a
 dog behind a gate, crates he pulls down behind him. He reaches his car
 first. Mine is parked at the alley mouth.
+
+*As built:* it opens in room 304 at the street window (E look out: two fingers
+part the slats) and E the fire escape takes me out under the raised sash; the
+run has five stretches (the straight, the fences with SPACE to vault, the
+washing, the dog and the crates, the dead end's loose board); losing him is
+"Lost him.", black, and back at the stretch's start; his raincoat is pale so
+he reads in the dark; his sedan pulls away from the street beyond the board
+and mine is a coupe at that kerb, not at the alley mouth; E drive opens
+scene 7 in it.
 
 ### 7. The tail  (Wave B)
 The river road in the rain, his tail lamps ahead (red: the crew's colour).
@@ -156,6 +205,13 @@ close: RMB puts the revolver out of the window, LMB fires. A rear tyre goes,
 he spins into a lamp post. He crawls out. **Interrogation**: I hold him
 against the car by the lapels; one question, asked with a look at the river;
 he gives it up in two words: "Pier nine."
+
+*As built:* my coupe's cabin, wheel and wipers; the road is 1.76 km (the chase
+about 1.3) with the train over the el, the market, a truck out of a side street
+and a car coming the other way; he is the watcher; failing is black and back
+to the last of four marks; the question is both fists on his lapels, then I
+walk him to the rail and bend him over it, he fights and breaks, his bowler goes
+into the river, "Pier nine.", and he slides down the rail.
 
 ### 8. The warehouse  (Wave B)
 Pier 9. Pools of lamp light and black between them. I stay in the black.
@@ -170,6 +226,17 @@ the waitress saw Mack talk. No one leaves.
   crate lid, bottles, a coil of chain, a lantern). No lesson this time. It
   ends with him going through the planks of a loading door into the river.
 
+*As built:* ten beats (arrive, floor, lamps, aisle, stairs, listen, out, fight,
+ko, after); the Cardinal is a black shape on the blinds of the lit office (the
+real `cardinal` kind) and the three lines are subtitles; the "chain" is the
+hoist's cord (let the load go), the knife switch kills aisle B's lamps, a bottle
+(hold LMB for the arc) turns heads, E from behind knocks a man out, and LMB with
+nothing in hand reaches for the revolver and puts it back; being caught is the
+cosh and the last checkpoint; the foreman's cargo hook is knocked out of his
+fist by a jab on his arm, and the bay's things are the hook, the crate lid (a
+shield), the chain and the lantern (its oil burns); the fight is silent; then
+out past the bay's side door onto the pier.
+
 ### 9. The big shootout  (Wave B)
 Back on the block. I get there first. Dot hands me the Tommy gun from under
 the counter. They come as the story, not as waves: two cars pull up and
@@ -178,11 +245,20 @@ gunman on the el firing down; a car that does not stop. The diner's windows
 go. The last car is the Cardinal's. It ends on him: his hat in the wet
 street, the cigar still lit beside it.
 
-After the shootout: stop. The user decides what comes next.
+*As built:* as outlined, plus the light switch by the door (the men shoot worse
+at a dark room), the drums (E at the counter; Dot slides two more), a man
+climbing out of each car, an intruder in at the door, the Cardinal's walk (a
+cane, a pistol, a cigar; twenty-four wounds), Dot at the broken window in the
+last frame and the el train going away along the deck.
+
+After the shootout: stop. The user decides what comes next. *As built:* it
+stops on the THE END card, whose click goes back to the title.
 
 ## Music (the user adds real jazz at the end)
 No music is composed. The game has named music slots that are silent until
-a file is dropped in (see CONTRACTS.md, Music). The slots:
+a file is dropped in (see CONTRACTS.md, Music; `docs/story/MUSIC.md` says which
+scene cues which slot, when it starts and stops, and how long each runs). The
+slots:
 `jukebox_a`, `jukebox_b`, `jukebox_c` (diner, from the jukebox, heard in the
 room), `fight`, `body`, `office`, `chase`, `tail`, `warehouse`, `shootout`,
 `end`.
