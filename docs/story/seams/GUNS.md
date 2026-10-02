@@ -24,11 +24,13 @@ ctx.player.weapons.equip('revolver');               // or 'tommy'
 - **C** toggles the crouch, **Ctrl** holds it: the eye 0.64 m above the floor
   (under a desk on its side, a counter, a crate, a car's wing). Crouched,
   1.7 m/s.
-- **RMB crouched**: up over what is in front, only as high as the gun needs
-  to clear it (0.15 s up, 0.15 s down on release; re-judged every 0.1 s as
-  the view turns); at the end of something too tall to rise over (a jamb, a
-  wall's end, anything over a standing eye), a lean out round its side,
-  0.46 m, where the view's own line is clear past the edge. Under about 1.4 m
+- **RMB crouched**: up over what is in front (anything within 2.4 m of the
+  eye along the view: a desk on its side seen through its knee space is
+  still the desk), only as high as the gun needs to clear it (0.15 s up,
+  0.15 s down on release; re-judged every 0.1 s as the view turns); at the
+  end of something too tall to rise over (a jamb, a wall's end, anything
+  over a standing eye), a lean out round its side, 0.46 m, where the view's
+  own line is clear past the edge for 1.3 m. Under about 1.4 m
   is risen over, not leaned round. **RMB standing**: the gun's own steady
   (the revolver's).
 - **LMB** fires, **R** reloads (the revolver's cylinder face / the Tommy gun's
@@ -43,13 +45,17 @@ ctx.player.weapons.equip('revolver');               // or 'tommy'
 ```js
 import { gunsOf } from '../guns/Guns.js';
 const K = gunsOf(ctx.game);
-K.end(); K.begin({ to: 'beatName', maxFiring: 2, flankAfter: 7, settleK: 1, dmgK: 1, why: {} });
+K.end(); K.begin({ to: 'beatName', maxFiring: 2, flankAfter: 7, settleK: 1, dmgK: 1, why: {}, area: null });
 ...
 G.on('scene:exit', () => K.end());   // a scene that leaves ends its encounter
 ```
 - `begin` in the beat's **setup** (it runs again on a retry): it builds the
   men's nav grid and cover from the stage as it stands, takes the health's
   death (a fall is the chapter's fail, back at `to`), and steps the director.
+- `area` (`{ x0, x1, z0, z1 }`, optional): the place the fight is in - the
+  men take no cover outside it (the test bed's lobby fight keeps them off the
+  pavement outside the street door). Nothing of one `begin`'s numbers carries
+  into the next.
 - `to`: the beat a fall goes back to. `why`: the fall's reasons in your
   words, by key; the kit picks the key from the killing round (`K.why()`):
 
@@ -127,7 +133,14 @@ mesh.userData.cover = { kind: 'wood', hp: 8, name: 'crate' };
   door reaches for it a step off, it swings (pushed or pulled - a leaf that
   swings at him: a step back out of its sweep first), he goes through; a
   locked one rattles and he goes another way; a way that will not open in
-  12 s is given up. A man on his `way` opens a locked door (he has the key:
+  12 s is given up. **The player's E** (the test bed's `doorPoint` in
+  `91_guns.js`: copy it): the use point is where on the doorway the view's
+  line meets it (knee to head height, inside its width), so a man up against
+  a door, looking at its panel or its knob, gets the prompt; range 1.7 m. A
+  door that swings toward me as I open it does not stop ajar against me: it
+  is pulled open and I give way before it (slower, `door.shove`), and only
+  where there is room behind me (against a wall it stops); a door stopped
+  ajar (against a man) is opened on by E, not shut. A man on his `way` opens a locked door (he has the key:
   the grid is built again through it); `locked` keeps the player out (a
   rattle) - lock a door you
   do not want me to go through (the test bed's street locks the street door
@@ -184,20 +197,44 @@ K.spawn({ kind: 'tommy', at: { x, z }, cover: true, wait: 2.4 });   // there alr
   stand up still in it - a man standing in the open is an easy mark; x1.5
   for 1.5 s after a round near him or into him); a settled round at a man
   standing still in the open hits (0.0055 rad); his aim trails a moving
-  target by 0.2 s. Out of his line, the settle drains (0.6 s). A hit knocks
-  a pistol man or a Tommy gunner off his aim and back behind his cover. A
-  pistol man whose mark stands up in his line, with nothing coming near him,
-  does not go back: two more bursts, the gun still up.
+  target by 0.2 s. Out of his line, the settle drains (0.6 s) - whatever he
+  is doing: behind his cover too (out again, he settles again). The star of
+  the glint shows on the barrel when it is up (0.75 of the raise), with the
+  click or the bolt as it starts.
+- **A hit is a flinch**, not a knock-out: the body jerks a step off it
+  (`Hood.flinch`), his settle is halved and does not grow for 0.18 s; a man
+  already firing keeps firing, his next rounds wider for 0.35 s (a Tommy
+  gunner's burst climbs). He does not go back behind his cover for it: a
+  man who has me standing in the open goes on shooting through it, one who
+  loses me goes back as ever. No random stagger for a kit gunman. A pistol
+  man whose mark stands up in his line does not go back between bursts:
+  two more, at once, the gun still up.
+- **Shot at before he is in** (a round into him or past him while he is on
+  his `way`, or waiting to start): he does not walk on into it - the gun up
+  if he has me, the Tommy gunner rakes where the shot came from (aimed: he
+  saw the flash), else the nearest cover. A round into a Tommy gunner from
+  where he could not see me tells him where I am.
+- **His gun at a jamb or over a car**: the place he shoots from needs a
+  clear line for a gun hand as well as his eyes; a round from a gun still
+  behind the edge while his eyes have me is laid from his sight line, not
+  into the wall beside him.
+- **He does not shoot through his mate** (he holds the round); a stray one
+  into a mate does what it would do to me.
 - **How they press** (nobody hides out the clock):
   - **together**: when one goes out, the others behind cover go with him
     (two guns on the man who rises to answer);
   - **standing**: me standing in a man's line, he does not wait his turn
-    behind his cover (0.3 s);
+    behind his cover (0.3 s); the last he saw of me I was standing, he looks
+    out again in 0.6 - 1.1 s, not 2.5 - 4;
+  - **a doorway worked by two**: the first at the jamb waits (up to 4 s) for
+    his mate on his way to it, then they go out together;
   - **on the way**: a man in the open on his way, with me standing within
     9 m in his line, stops and shoots (the tell and the settle as ever);
   - **the push**: out from one cover 3 - 5 times with no line on me, he
     goes on to cover nearer me; nothing nearer and no line for 6 s, he
     goes to find a place that sees me;
+  - **the last man** with no line on me for 6 s leaves his cover and comes
+    to find me (a last man once held a pavement for 40 s);
   - **the seek**: a man with no cover and no line goes to a place that sees
     me, or in at me by the way there is; nine seconds without a line, he
     comes straight in (nobody waits the clock out either);
@@ -236,14 +273,19 @@ ctx.onStep(() => ctx.hud.warn(K.active ? K.warning() : null));   // the warning,
   goes when the thing is done; `hud.teach`'s opts pass through.
 - **The warning** (`K.warning()`, WAVE_C §1 rule 2), most urgent first:
   `Stop him!` (the heavy within 4.2 m), `Behind you!` (a man has me from off
-  my screen), `Your cover won't hold. Move!` (down, a round just came through
-  what I hide behind), `They have your angle. Move!` (down, a man has me),
+  my screen), `Tommy gun! Get down!` (a Tommy gunner bringing it up or firing
+  at me while I am not down), `Your cover won't hold. Move!` (down, a round
+  just came through what I hide behind - or their rounds are chewing the
+  last of the wood within 1.6 m of me), `They have your angle. Move!` (down,
+  a man who has had me a moment, or has his gun up at me),
   `One's going round on your left.` / `...right.` (a flanker on his way, the
-  side as I face), and, hurt (under 45, or the kit's low line up and under
-  60): `Get down!` (standing, a man has me), `Stay down. Let it mend.` (down,
-  nobody has me). A line stays a second unless a more urgent one comes.
-  Words in `cfg.warn` by key (`rush`, `behind`, `cover`, `angle`, `flankL`,
-  `flankR`, `open`, `mend`). Over the kit's own low line (`You're hit. Get to
+  side as I face), `Get down!` (standing in a man's line and hit in the last
+  2.5 s - from the first hit, not only once low - or hurt under 45),
+  `Stay down. Let it mend.` (down, hurt, nobody has me). A line stays a
+  second unless a more urgent one comes, or the man it is about is down.
+  Words in `cfg.warn` by key (`rush`, `behind`, `tommy`, `cover`, `angle`,
+  `flankL`, `flankR`, `open`, `mend`). A scene sets no warning once its room
+  is won (the test bed: `won`). Over the kit's own low line (`You're hit. Get to
   cover.`); with the kit's rule that no fall comes before a warning has been
   up a second (`Game.spareLast`; a warning that changes its words is one
   warning).
@@ -252,8 +294,10 @@ ctx.onStep(() => ctx.hud.warn(K.active ? K.warning() : null));   // the warning,
   black, the reason, back at `to` with the world as its setup makes it
   (`begin` runs again there). Do not also give `onDown` for those beats.
   The low state is the health's own: the ink closing in and the heartbeat
-  under 35, each hit's splash at the edge it came from; the mending starts
-  later and runs slower while any man has a line on me.
+  under 35, each hit's splash a compass of where he is (`splashAt`: ahead at
+  the top edge's middle, to a side at that edge, behind at the bottom edge's
+  middle - never a corner, where the objective line and the HUD are); the
+  mending starts later and runs slower while any man has a line on me.
 
 ---------------------------------------------------------------------------
 ## 6. Bodies: `game.bodies` (for any figure)
@@ -276,10 +320,10 @@ a new stage drops the old stage's bodies.
 | beat | what it asks | the men |
 | --- | --- | --- |
 | `ready` | the teach: tip the desk (E), low (C), rise (RMB), two bottles, reload (R) down | none |
-| `door` | the exposure of a doorway | two pistol men through one door, working it |
+| `door` | the exposure of a doorway | three pistol men through one door: two work it together from its jambs, a third close behind |
 | `two_ways` | watch two ways: the flank | two through one door, one through the other |
-| `pin` | wait out the burst, rise on the drum | a Tommy gunner working the glazed door, a pistol man |
-| `rush` | answer the heavy at once | the heavy in at the street door, a pistol man later |
+| `pin` | wait out the burst, rise on the drum | a pistol man working B1 first, then a Tommy gunner (170 hp: four rounds) at the glazed door - two guns at once on a man standing up |
+| `rush` | answer the heavy at once | the heavy in at the street door, a pistol man later (the fight's `area` the house; the line changes when the heavy is down) |
 | `street` | cover to cover (Tommy gun) | three behind the far cars, one out of the loading door |
 | `street_rev` | the same, with the revolver | the same |
 

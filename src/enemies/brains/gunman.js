@@ -16,6 +16,9 @@ addGunClips();
 // a settled round at a man standing still in the open hits. His aim trails
 // a moving target (LAG): moving across his line is an answer; ducking out of
 // it spoils the settle (it drains while he has no line). No hidden misses.
+// A HIT IS A FLINCH: his aim spoiled (half the settle, a breath; a man
+// firing keeps firing, wider), not a knock back to cover - standing up and
+// trading is his game, not mine. Shot at on his way in, he answers.
 // HE USES THE ROOM: cover to cover (crouched behind what is low, standing
 // behind what is tall), out to shoot (risen, or a step to the side) and back,
 // reloads behind it, moves when he is seen in it, when I have his angle.
