@@ -536,6 +536,60 @@ export default {
         }
         return n;
       },
+      // [3rd owner] nothing inside my car's body (the bonnet, the cabin, the
+      // boot, up to the roof): a piece found in it is put on the surface over
+      // it - the bonnet, the roof, the boot lid - and thrown up and back off
+      // it, or out of its side if it is low by a door. Run after the pieces
+      // move (update) and after the car moves (Car.collide), so no frame ever
+      // draws one inside.
+      guardBody(me) {
+        if (!me || !me.spec || !pieces.length) return;
+        const c = Math.cos(me.yaw), sn = Math.sin(me.yaw);
+        const S = me.spec, gy = me.groundY ?? me.pos.y;
+        const inBody = (x, y, z, r) => {
+          const dx = x - me.pos.x, dz = z - me.pos.z;
+          const lx = dx * c - dz * sn, lz = dx * sn + dz * c, ly = y - gy;
+          if (Math.abs(lx) > S.halfL + r * 0.5 || Math.abs(lz) > S.halfW + r * 0.5) return null;
+          const top = lx > 0.85 ? 1.06 : lx < -1.05 ? 1.1 : 1.6;
+          // (under the floor - a plank flat on the stones, a fruit in the
+          // road - is under the car, not in it: kickPieces has those)
+          if (ly > top + r || ly < 0.28) return null;
+          return { lx, lz, ly, top };
+        };
+        for (const p of pieces) {
+          const half = p.name === 'plank' ? p.scale.x * 0.5 : 0;
+          if (Math.abs(p.pos.x - me.pos.x) > 3.2 + half || Math.abs(p.pos.z - me.pos.z) > 3.2 + half) continue;
+          const r = Math.min(p.r, 0.12);
+          let hit = inBody(p.pos.x, p.pos.y, p.pos.z, r), lift = hit ? hit.top + r - hit.ly : 0;
+          // (a long plank or a stall's pole: its two ends too - a pole whose
+          // middle is outside crossed the windscreen inside the glass)
+          if (half > 0.35) {
+            _v.set(half, 0, 0).applyQuaternion(p.q);
+            for (const k of [1, -1]) {
+              const e = inBody(p.pos.x + _v.x * k, p.pos.y + _v.y * k, p.pos.z + _v.z * k, 0.03);
+              if (e) { const l = e.top + 0.05 - e.ly; if (!hit || l > lift) { hit = hit || e; lift = Math.max(lift, l); } }
+            }
+            if (hit && lift > 0) { p.pos.y += lift + 0.02; const back = rnd(2, 4); p.vel.set(me.vel.x - c * back + gs() * 1.2, rnd(2.0, 3.4), me.vel.z + sn * back + gs() * 1.2); p.rest = false; p.restT = 0; setPiece(p); }
+            continue;
+          }
+          if (!hit) continue;
+          const { lx, lz, ly, top } = hit;
+          const side = lz >= 0 ? 1 : -1;
+          const rx = me.vel.x, rz = me.vel.z;
+          if (ly < 0.75 && S.halfW + r - Math.abs(lz) < 0.35) {
+            const nz = side * (S.halfW + r + 0.04);
+            p.pos.x = me.pos.x + lx * c + nz * sn; p.pos.z = me.pos.z - lx * sn + nz * c;
+            const out = rnd(1.5, 3) * side;
+            p.vel.set(rx + sn * out, Math.max(0.5, p.vel.y), rz + c * out);
+          } else {
+            p.pos.y = gy + top + r + 0.02;
+            const back = rnd(2, 4.5), out = gs() * 1.6 + side * 0.8;
+            p.vel.set(rx - c * back + sn * out, rnd(2.2, 3.8), rz + sn * back + c * out);
+          }
+          p.rest = false; p.restT = 0;
+          setPiece(p);
+        }
+      },
       update(dt, t) {
         this.t = t;
         // what flies back into my windscreen is thrown off it, up and over
@@ -552,53 +606,6 @@ export default {
             p.vel.set(me.vel.x + (p.vel.x - me.vel.x) * -0.25, 2.5 + Math.random() * 3, me.vel.z + (p.vel.z - me.vel.z) * -0.25);
             p.ang.multiplyScalar(-0.6);
             if (!p.paper) G0.emit('screenHit', { pos: p.pos.clone(), k: Math.min(1, -rvx / 12), lz });
-          }
-          // [3rd owner] nothing inside my car's body (the bonnet, the cabin,
-          // the boot, up to the roof): a piece found in it is put on the
-          // surface over it - the bonnet, the roof, the boot lid - and thrown
-          // up and back off it, or out of its side if it is low by a door
-          const S = me.spec, gy = me.groundY ?? me.pos.y;
-          const inBody = (x, y, z, r) => {
-            const dx = x - me.pos.x, dz = z - me.pos.z;
-            const lx = dx * c - dz * sn, lz = dx * sn + dz * c, ly = y - gy;
-            if (Math.abs(lx) > S.halfL + r * 0.5 || Math.abs(lz) > S.halfW + r * 0.5) return null;
-            const top = lx > 0.85 ? 1.06 : lx < -1.05 ? 1.1 : 1.6;
-            // (under the floor - a plank flat on the stones, a fruit in the
-            // road - is under the car, not in it: kickPieces has those)
-            if (ly > top + r || ly < 0.28) return null;
-            return { lx, lz, ly, top };
-          };
-          for (const p of pieces) {
-            const half = p.name === 'plank' ? p.scale.x * 0.5 : 0;
-            if (Math.abs(p.pos.x - me.pos.x) > 3.2 + half || Math.abs(p.pos.z - me.pos.z) > 3.2 + half) continue;
-            const r = Math.min(p.r, 0.12);
-            let hit = inBody(p.pos.x, p.pos.y, p.pos.z, r), lift = hit ? hit.top + r - hit.ly : 0;
-            // (a long plank or a stall's pole: its two ends too - a pole whose
-            // middle is outside crossed the windscreen inside the glass)
-            if (half > 0.35) {
-              _v.set(half, 0, 0).applyQuaternion(p.q);
-              for (const k of [1, -1]) {
-                const e = inBody(p.pos.x + _v.x * k, p.pos.y + _v.y * k, p.pos.z + _v.z * k, 0.03);
-                if (e) { const l = e.top + 0.05 - e.ly; if (!hit || l > lift) { hit = hit || e; lift = Math.max(lift, l); } }
-              }
-              if (hit && lift > 0) { p.pos.y += lift + 0.02; const back = rnd(2, 4); p.vel.set(me.vel.x - c * back + gs() * 1.2, rnd(2.0, 3.4), me.vel.z + sn * back + gs() * 1.2); p.rest = false; p.restT = 0; }
-              continue;
-            }
-            if (!hit) continue;
-            const { lx, lz, ly, top } = hit;
-            const side = lz >= 0 ? 1 : -1;
-            const rx = me.vel.x, rz = me.vel.z;
-            if (ly < 0.75 && S.halfW + r - Math.abs(lz) < 0.35) {
-              const nz = side * (S.halfW + r + 0.04);
-              p.pos.x = me.pos.x + lx * c + nz * sn; p.pos.z = me.pos.z - lx * sn + nz * c;
-              const out = rnd(1.5, 3) * side;
-              p.vel.set(rx + sn * out, Math.max(0.5, p.vel.y), rz + c * out);
-            } else {
-              p.pos.y = gy + top + r + 0.02;
-              const back = rnd(2, 4.5), out = gs() * 1.6 + side * 0.8;
-              p.vel.set(rx - c * back + sn * out, rnd(2.2, 3.8), rz + sn * back + c * out);
-            }
-            p.rest = false; p.restT = 0;
           }
         }
         for (let j = pieces.length - 1; j >= 0; j--) {
@@ -632,6 +639,7 @@ export default {
           }
           setPiece(p);
         }
+        if (me && me.model && me.model.wheel) this.guardBody(me);
         const g = stage.game;
         for (const gz of geysers) {
           gz.t += dt;

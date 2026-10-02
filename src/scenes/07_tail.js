@@ -78,6 +78,9 @@ function build(ctx, which) {
     const [x, z, yaw, sp = 0] = q.get('tailAt').split(',').map(Number);
     C.my.place(new THREE.Vector3(x, 0, z), yaw, sp);
   }
+  // (look development: ?tailGun=1 holds the revolver out of the window, the
+  // head leaning out after it - phase b's frame)
+  if (q && q.get('tailGun')) { C.gun.snapT = 1e9; C.gun.aimK = 1; }
   return C;
 }
 

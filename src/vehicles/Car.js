@@ -288,6 +288,8 @@ export class Car {
         this.emit('smash', { item: it, k: 1 - it.drag });
       }
       T.smash.kickPieces(this);
+      // ([C3 3rd] nothing left inside my own car's body once it has moved)
+      if (T.smash.guardBody && this.vehicles && this.vehicles.player === this) T.smash.guardBody(this);
     }
     // the kerbs: a bump crossing one at speed
     const g = T.ground(this.pos.x + Math.cos(this.yaw) * S.halfL * 0.6, this.pos.z - Math.sin(this.yaw) * S.halfL * 0.6);

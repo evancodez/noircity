@@ -18,6 +18,7 @@ import { postsOf } from '../layout.js';
 //   api: the Lamps (stage.lamps), plus posts: [lamp] (the lamp posts a car
 //   can bend: the track's round things), near(x, z, r)
 const SHOW = 170;
+const QUAY_CONE = 1.6;
 
 export default {
   name: 'lamps', order: 50, tick: 40,
@@ -54,7 +55,10 @@ export default {
     // every junction, the quay's on the river road
     for (const P of postsOf(stage.rng.fork(502))) {
       const l = post(P.x, P.z, P.yaw, true);
-      if (P.overWater) l.overWater = true;
+      // ([3rd owner] the quay's lamps over the river road: their cones the
+      // brightest thing in phase b's frame, white under the head - the
+      // critic measured 3 to 5 % white there against the reference's 8)
+      if (P.overWater) { l.overWater = true; l.coneBase *= QUAY_CONE; }
     }
     // ... and under the el (avenue, Harbor St, the river road's south half):
     // hung from the deck's middle every other span

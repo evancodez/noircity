@@ -3,7 +3,8 @@ import { allocInkId, allocSkylineId, LAYER, tagInk } from '../../../render/layer
 import { merge, lathe, roundedBox, V3 } from '../../../world/geom.js';
 import { Skyline, makeTowerMaterial } from '../../../world/Skyline.js';
 import { makeWaterMaterial } from '../../riverroad/water.js';
-import { RIVER, RIVER_LEN, riverFrame, riverPoint, WATER_Y, CANAL, PAVE, BRIDGE, NS, PIER } from '../plan.js';
+import { RIVER, RIVER_LEN, riverFrame, riverPoint, WATER_Y, CANAL, PAVE, BRIDGE, NS, PIER, WHARF_X } from '../plan.js';
+import { FOG } from '../../../render/fog.js';
 
 // The water: the river east of the quay and the canal along the north, one
 // black plane that carries the lights in it as broken columns (the river
@@ -13,6 +14,8 @@ import { RIVER, RIVER_LEN, riverFrame, riverPoint, WATER_Y, CANAL, PAVE, BRIDGE,
 // and its towers in clusters, the city round the district's other edges.
 // API: { water, far, update(camera, pixelHeight) }
 const ROW_TONE = [0.30, 0.32, 0.33, 0.34], ROW_HAZE = [0.08, 0.12, 0.16, 0.2];
+// [3rd owner] the river road's Look: the fog's colour and the exposure, x the block's
+export const RIVER_LOOK = { fog: 0.6, exposure: 1.0 };
 
 export default {
   name: 'river', order: 70,
@@ -24,6 +27,16 @@ export default {
     scene.add(group);
     // the water: one plane under the land (the land's shape stops at the
     // quay and the canal's edge)
+    // [3rd owner] the river road's own Look (the critic: phase b's climax
+    // read 43 to 48 % mid-grey against the reference's 28 - the sky, the
+    // towers, the far water and the mist all one paper grey): over the quay
+    // and the water the night is darker - the fog and the sky it tints go
+    // toward black, so the towers stand as masses against it and the lamps,
+    // their cones and their streaks are what is light (eased in over a
+    // quarter second as the eye crosses onto the river road)
+    stage.addLook(new THREE.Box3(new THREE.Vector3(WHARF_X - 6, -60, -320), new THREE.Vector3(1400, 600, 900)), {
+      fogColor: FOG.color.clone().multiplyScalar(RIVER_LOOK.fog), exposure: stage.look.exposure * RIVER_LOOK.exposure,
+    });
     const water = new THREE.Mesh(new THREE.PlaneGeometry(3000, 3000).rotateX(-Math.PI / 2), makeWaterMaterial(U, WATER_Y));
     water.position.set(300, WATER_Y, -100);
     water.layers.set(LAYER.GROUND);

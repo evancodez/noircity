@@ -385,12 +385,16 @@ export class Chase {
       return;
     }
     if (lp.x < -0.9 && lp.y > 1.05 && Math.abs(lp.z) < 0.62) {
-      // through the rear window: the first round he ducks (and weaves), the
-      // second finds him
+      // through the rear window: the first round he ducks (and weaves);
+      // ([3rd owner] while he is down below the seat back a round through
+      // the glass goes over him - wait for him to come up: the critic's
+      // clumsy aim at the middle of his car finished him in two rounds)
+      // the second hurts him, the third finds him
+      if (D.duck > 0.25 && H.man >= 1) { H.body++; cost(0.05); return; }
       H.man++;
       D.duck = 1.8;
       G.sfx.play('grunt', his.pos.clone().setY(1.3), { f0: 96, k: 0.5, dur: 0.18 }, { ref: 5 });
-      cost(H.man >= 2 ? 0.6 : 0.25);
+      cost(H.man >= 3 ? 0.6 : H.man === 2 ? 0.3 : 0.15);
       return;
     }
     if (lp.x < -1.45 && lp.y < 1.05) {
@@ -728,7 +732,9 @@ export function bendPost(stage, l, car, G) {
     stage.updaters.push({ tick: 41, fn: (api, dt) => { stage._posts = stage._posts.filter((f) => f(dt)); }, api: null });
     stage.updaters.sort((a, b) => a.tick - b.tick);
   }
-  // it goes out after a buzz
-  if (L.shootOut && G) L.shootOut(l, away);
+  // it goes out after a buzz ([3rd owner] a short one: a shot lamp may buzz
+  // back on for up to 1.3 s, and the critic saw a bent post's glowing head
+  // still lit 1.5 s after the blow, riding in front of the bonnet)
+  if (L.shootOut && G) { L.shootOut(l, away); l.buzz = { t: 0, at: 0.04, len: 0.18 }; }
 }
 void START; void EW; void riverPoint; void riverFrame; void riverSAtZ; void RIVER; void LEGS; void clamp;

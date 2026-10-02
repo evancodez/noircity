@@ -64,10 +64,11 @@ export function makeKit(G) {
     fail({ why, to }) {
       kit.warn(null);
       G._tailRetry = true;   // (back at a beat: no card of any size)
-      if (G.fail({ why, to })) return true;
-      // (shot mode has no fail: ?c3auto look development goes straight back)
-      if (G.shotMode) G.scenes.go('tail', { beat: to, fade: 'cut', card: false });
-      return false;
+      // (shot mode has no fail: the frame holds where it is. [3rd owner] it
+      // used to go straight back to the beat - with ?tailAt placing my car
+      // where a fail is due (too far behind), every frame re-entered the
+      // scene: the critic's 3.5 fps at the market square in fps.mjs)
+      return G.fail({ why, to });
     },
     step(dt) {
       if (cardT > 0 && el) {

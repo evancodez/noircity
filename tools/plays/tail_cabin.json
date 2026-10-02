@@ -1,0 +1,137 @@
+{
+ "about": "C3 3rd owner: the critic's blocker 2 (fruit in the cabin). Phase c (no pressure), my car placed at the wharf market's ends and driven through its stalls and over what they spilled, six times, 38 to 58 km/h, W held; every frame, every piece within 4 m is tested against my car's body (lx within the half length, lz within the half width, above the floor and below the bonnet / roof / boot lid). node tools/play.mjs tools/plays/tail_cabin.json --size 1440x900 (NOIR_PORT=5343)",
+ "url": "/?mute=1&start=tail.pier",
+ "size": [
+  1440,
+  900
+ ],
+ "out": "shots/c3/play_cabin",
+ "steps": [
+  {
+   "until": "G.state === 'title' && !document.getElementById('title').classList.contains('hidden') && !!document.querySelector('#title .opt[data-k=begin]')",
+   "timeout": 40000
+  },
+  {
+   "wait": 2000
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]",
+   "taken": "G.state === 'playing' && document.pointerLockElement === N.renderer.domElement",
+   "retries": 4,
+   "every": 4000
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'tail' && G.scenes.ctx.flags.chase && G.scenes.ctx.flags.chase.phase === 'c' && !G.scenes.fadeK",
+   "timeout": 45000
+  },
+  {
+   "wait": 500
+  },
+  {
+   "eval": "(() => { const C = G.scenes.ctx.flags.chase, sm = G.stage.part('smash'); window.__cab = { frames: 0, bad: 0, worst: null, n: 0 }; (function loop() { const me = C.my, S = me.spec, c = Math.cos(me.yaw), sn = Math.sin(me.yaw), gy = me.groundY || 0; let k = 0; for (const p of sm.pieces) { const dx = p.pos.x - me.pos.x, dz = p.pos.z - me.pos.z; if (Math.abs(dx) > 4 || Math.abs(dz) > 4) continue; const lx = dx * c - dz * sn, lz = dx * sn + dz * c, ly = p.pos.y - gy; const top = lx > 0.85 ? 1.0 : lx < -1.05 ? 1.05 : 1.55; if (Math.abs(lx) < S.halfL - 0.1 && Math.abs(lz) < S.halfW - 0.1 && ly > 0.4 && ly < top) { k++; if (!window.__cab.worst) window.__cab.worst = [p.name, +lx.toFixed(2), +ly.toFixed(2), +lz.toFixed(2), +me.speedAbs.toFixed(1)]; } } window.__cab.frames++; if (k) window.__cab.bad++; window.__cab.n = Math.max(window.__cab.n, k); if (!window.__cabStop) requestAnimationFrame(loop); })(); return 1; })()"
+  },
+  {
+   "eval": "(G.scenes.ctx.flags.chase.my.place(new N.THREE.Vector3(112.8, 0, -168), -1.5708, 50 / 3.6), G.scenes.ctx.flags.chase.my.damage = 0, 1)"
+  },
+  {
+   "down": "KeyW"
+  },
+  {
+   "wait": 6500
+  },
+  {
+   "up": "KeyW"
+  },
+  {
+   "shot": "c00"
+  },
+  {
+   "eval": "JSON.stringify(window.__cab) + ' dmg ' + G.scenes.ctx.flags.chase.my.damage.toFixed(2) + ' at ' + G.scenes.ctx.flags.chase.my.pos.z.toFixed(0)"
+  },
+  {
+   "eval": "(G.scenes.ctx.flags.chase.my.place(new N.THREE.Vector3(113.6, 0, -70), 1.5708, 45 / 3.6), G.scenes.ctx.flags.chase.my.damage = 0, 1)"
+  },
+  {
+   "down": "KeyW"
+  },
+  {
+   "wait": 6500
+  },
+  {
+   "up": "KeyW"
+  },
+  {
+   "eval": "JSON.stringify(window.__cab) + ' dmg ' + G.scenes.ctx.flags.chase.my.damage.toFixed(2) + ' at ' + G.scenes.ctx.flags.chase.my.pos.z.toFixed(0)"
+  },
+  {
+   "eval": "(G.scenes.ctx.flags.chase.my.place(new N.THREE.Vector3(112.2, 0, -168), -1.5708, 58 / 3.6), G.scenes.ctx.flags.chase.my.damage = 0, 1)"
+  },
+  {
+   "down": "KeyW"
+  },
+  {
+   "wait": 6500
+  },
+  {
+   "up": "KeyW"
+  },
+  {
+   "eval": "JSON.stringify(window.__cab) + ' dmg ' + G.scenes.ctx.flags.chase.my.damage.toFixed(2) + ' at ' + G.scenes.ctx.flags.chase.my.pos.z.toFixed(0)"
+  },
+  {
+   "eval": "(G.scenes.ctx.flags.chase.my.place(new N.THREE.Vector3(114.5, 0, -70), 1.5708, 38 / 3.6), G.scenes.ctx.flags.chase.my.damage = 0, 1)"
+  },
+  {
+   "down": "KeyW"
+  },
+  {
+   "wait": 6500
+  },
+  {
+   "up": "KeyW"
+  },
+  {
+   "shot": "c03"
+  },
+  {
+   "eval": "JSON.stringify(window.__cab) + ' dmg ' + G.scenes.ctx.flags.chase.my.damage.toFixed(2) + ' at ' + G.scenes.ctx.flags.chase.my.pos.z.toFixed(0)"
+  },
+  {
+   "eval": "(G.scenes.ctx.flags.chase.my.place(new N.THREE.Vector3(112.8, 0, -168), -1.5708, 40 / 3.6), G.scenes.ctx.flags.chase.my.damage = 0, 1)"
+  },
+  {
+   "down": "KeyW"
+  },
+  {
+   "wait": 6500
+  },
+  {
+   "up": "KeyW"
+  },
+  {
+   "eval": "JSON.stringify(window.__cab) + ' dmg ' + G.scenes.ctx.flags.chase.my.damage.toFixed(2) + ' at ' + G.scenes.ctx.flags.chase.my.pos.z.toFixed(0)"
+  },
+  {
+   "eval": "(G.scenes.ctx.flags.chase.my.place(new N.THREE.Vector3(113.0, 0, -72), 1.5708, 55 / 3.6), G.scenes.ctx.flags.chase.my.damage = 0, 1)"
+  },
+  {
+   "down": "KeyW"
+  },
+  {
+   "wait": 6500
+  },
+  {
+   "up": "KeyW"
+  },
+  {
+   "eval": "JSON.stringify(window.__cab) + ' dmg ' + G.scenes.ctx.flags.chase.my.damage.toFixed(2) + ' at ' + G.scenes.ctx.flags.chase.my.pos.z.toFixed(0)"
+  },
+  {
+   "eval": "(window.__cabStop = true, JSON.stringify(window.__cab))"
+  },
+  {
+   "expect": "window.__cab.bad === 0",
+   "label": "no piece ever inside my car's body (the cabin, the bonnet, the boot) through six ploughs of the wharf market"
+  }
+ ]
+}
