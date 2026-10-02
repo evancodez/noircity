@@ -5,6 +5,7 @@ export const RULES = {
   unseenWarn: 3.0, unseenLost: 7.0,     // s out of my sight
   farWarn: 85, farLost: 135, farT: 5,   // m behind (and for how long past farWarn + 15)
   gateWarnZ: 70, gateZ: 150,            // his z on the river road: the warning, the pier's gate
+  wreckWarn: 2.6,                       // [4th owner] my damage: "She won't take much more." (a wreck at 4)
 };
 // [4th owner] what my rounds cost him (chase.js hisHit), and the ends they
 // make: his hold on the car (control) goes 1 .. 0, and at HIT.lose or under

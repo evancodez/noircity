@@ -1,0 +1,228 @@
+{
+ "about": "C3 4th owner: the critic's 2nd look's minors by play, from the river road's checkpoint and the wreck. (1) My car into the river's rail at 50 km/h three times (placed short of it, W held): a line before 'Wrecked.' - 'She won't take much more.' after the second knock, and no single blow wrecks it from below the warning (Car.js warnAt). (2) The retry after that fail: the old line not lettered again as the scene comes up. (3) At the wreck (?start=tail.wreck is entered from here: the beat), stopped by his car, E: the head turns to him, 'No time. Pier 9.'. NOIR_PORT=5343 node tools/play.mjs tools/plays/tail_minors.json --size 1440x900",
+ "url": "/?mute=1&start=tail.river",
+ "size": [
+  1440,
+  900
+ ],
+ "out": "shots/c3/minors",
+ "steps": [
+  {
+   "until": "G.state === 'title' && !document.getElementById('title').classList.contains('hidden') && !!document.querySelector('#title .opt[data-k=begin]')",
+   "timeout": 40000
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]",
+   "taken": "G.state === 'playing' && document.pointerLockElement === N.renderer.domElement",
+   "retries": 4,
+   "every": 4000
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'tail' && !!G.scenes.ctx.flags.chase && G.scenes.ctx.flags.chase.phase === 'b' && !G.scenes.fadeK",
+   "timeout": 45000
+  },
+  {
+   "eval": "(() => { window.__lines = []; let lw = null; const K = G.hud.kit; (function loop() { const vis = K.warnEl && getComputedStyle(K.warnEl).display !== 'none' && getComputedStyle(K.warnEl).visibility !== 'hidden' && +getComputedStyle(K.warnEl).opacity > 0.05; const w = vis ? K.warnEl.textContent.trim() : ''; const C = G.scenes.ctx && G.scenes.ctx.flags.chase; const f = G.failing ? G.failing.phase : ''; const k = w + '|' + f; if (k !== lw) { window.__lines.push([+N.time.toFixed(2), w, f, C && C.my ? +C.my.damage.toFixed(2) : null, C ? C.t.toFixed(2) : null]); lw = k; } requestAnimationFrame(loop); })(); return 1; })()"
+  },
+  {
+   "name": "first knock"
+  },
+  {
+   "eval": "(() => { const C = G.scenes.ctx.flags.chase; const p = N.game.stage && C.my.pos; const T = N.THREE; const x = C.my.pos.x, z = C.my.pos.z; C.my.place(new T.Vector3(113, 0, z), 0, 50 / 3.6); return [x.toFixed(1), z.toFixed(1)]; })()"
+  },
+  {
+   "down": "KeyW"
+  },
+  {
+   "wait": 1200
+  },
+  {
+   "up": "KeyW"
+  },
+  {
+   "wait": 400
+  },
+  {
+   "eval": "JSON.stringify({ dmg: +G.scenes.ctx.flags.chase.my.damage.toFixed(2), warn: G.hud.kit.warnText })"
+  },
+  {
+   "name": "second knock"
+  },
+  {
+   "eval": "(() => { const C = G.scenes.ctx.flags.chase, T = N.THREE; C.my.place(new T.Vector3(113, 0, C.my.pos.z + 6), 0, 50 / 3.6); return 1; })()"
+  },
+  {
+   "down": "KeyW"
+  },
+  {
+   "wait": 1200
+  },
+  {
+   "up": "KeyW"
+  },
+  {
+   "wait": 300
+  },
+  {
+   "eval": "JSON.stringify({ dmg: +G.scenes.ctx.flags.chase.my.damage.toFixed(2), warn: G.hud.kit.warnText })"
+  },
+  {
+   "shot": "m01_second_knock_the_line"
+  },
+  {
+   "expect": "G.scenes.ctx.flags.chase.my.damage >= 2.6 && G.hud.kit.warnText === \"She won't take much more.\"",
+   "label": "after the second knock at 50 km/h: 'She won't take much more.'"
+  },
+  {
+   "name": "knocks until it gives"
+  },
+  {
+   "eval": "(() => { const C = G.scenes.ctx.flags.chase, T = N.THREE; if (G.failing || G.lastFail) return 'done'; C.my.place(new T.Vector3(113, 0, C.my.pos.z + 6), 0, 50 / 3.6); return +C.my.damage.toFixed(2); })()"
+  },
+  {
+   "down": "KeyW"
+  },
+  {
+   "wait": 1100
+  },
+  {
+   "up": "KeyW"
+  },
+  {
+   "wait": 200
+  },
+  {
+   "eval": "(() => { const C = G.scenes.ctx.flags.chase, T = N.THREE; if (G.failing || G.lastFail) return 'done'; C.my.place(new T.Vector3(113, 0, C.my.pos.z + 6), 0, 50 / 3.6); return +C.my.damage.toFixed(2); })()"
+  },
+  {
+   "down": "KeyW"
+  },
+  {
+   "wait": 1100
+  },
+  {
+   "up": "KeyW"
+  },
+  {
+   "wait": 200
+  },
+  {
+   "eval": "(() => { const C = G.scenes.ctx.flags.chase, T = N.THREE; if (G.failing || G.lastFail) return 'done'; C.my.place(new T.Vector3(113, 0, C.my.pos.z + 6), 0, 50 / 3.6); return +C.my.damage.toFixed(2); })()"
+  },
+  {
+   "down": "KeyW"
+  },
+  {
+   "wait": 1100
+  },
+  {
+   "up": "KeyW"
+  },
+  {
+   "wait": 200
+  },
+  {
+   "until": "!!G.lastFail",
+   "timeout": 4000
+  },
+  {
+   "eval": "JSON.stringify(G.lastFail)"
+  },
+  {
+   "expect": "!!G.lastFail && G.lastFail.why === 'Wrecked.' && G.lastFail.warnedFor > 0.5",
+   "label": "the third knock: 'Wrecked.', the line up before it"
+  },
+  {
+   "until": "G.failing && G.failing.phase === 'up'",
+   "timeout": 6000
+  },
+  {
+   "wait": 150
+  },
+  {
+   "shot": "m02_retry_coming_up"
+  },
+  {
+   "until": "!G.failing",
+   "timeout": 4000
+  },
+  {
+   "wait": 600
+  },
+  {
+   "eval": "JSON.stringify(window.__lines)"
+  },
+  {
+   "expect": "(() => { const L = window.__lines; const i = L.findIndex((r) => r[2] === 'up'); return i >= 0 && L.slice(i).filter((r) => r[1] && r[4] != null && +r[4] < 1.0).length === 0; })()",
+   "label": "the retry: no old line lettered over the checkpoint as it comes up"
+  },
+  {
+   "name": "his wreck: E"
+  },
+  {
+   "eval": "(G.scenes.go('tail', { beat: 'wreck', fade: 'cut', card: false }), 1)"
+  },
+  {
+   "until": "G.scenes.ctx.flags.chase.phase === 'c'",
+   "timeout": 8000
+  },
+  {
+   "eval": "(() => { const C = G.scenes.ctx.flags.chase; return JSON.stringify({ my: [C.my.pos.x.toFixed(1), C.my.pos.z.toFixed(1)], his: [C.his.pos.x.toFixed(1), C.his.pos.z.toFixed(1)], d: Math.hypot(C.my.pos.x - C.his.pos.x, C.my.pos.z - C.his.pos.z).toFixed(1) }); })()"
+  },
+  {
+   "down": "KeyW"
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "up": "KeyW"
+  },
+  {
+   "down": "KeyS"
+  },
+  {
+   "until": "G.scenes.ctx.flags.chase.my.speedAbs < 1",
+   "timeout": 4000
+  },
+  {
+   "up": "KeyS"
+  },
+  {
+   "wait": 500
+  },
+  {
+   "eval": "(() => { const C = G.scenes.ctx.flags.chase; return JSON.stringify({ d: Math.hypot(C.my.pos.x - C.his.pos.x, C.my.pos.z - C.his.pos.z).toFixed(1), v: C.my.speedAbs.toFixed(2), prompt: G.hud.promptShown }); })()"
+  },
+  {
+   "expect": "/look/.test(G.hud.promptShown || '')",
+   "label": "stopped by his wreck: E look offered"
+  },
+  {
+   "key": "KeyE"
+  },
+  {
+   "wait": 900
+  },
+  {
+   "shot": "m03_the_look_at_his_wreck"
+  },
+  {
+   "eval": "JSON.stringify({ say: G.hud.sayShown, focus: G.controller.drive && G.controller.drive.focus === G.scenes.ctx.flags.chase.his, lamps: G.scenes.ctx.flags.chase.my.lamps && G.scenes.ctx.flags.chase.my.lamps.on })"
+  },
+  {
+   "expect": "/No time/.test(G.hud.sayShown || '') && G.controller.drive.focus === G.scenes.ctx.flags.chase.his",
+   "label": "E by his wreck: the head turns to him, 'No time. Pier 9.'"
+  },
+  {
+   "wait": 2200
+  },
+  {
+   "expect": "!G.controller.drive.focus",
+   "label": "and the look comes back to the road"
+  }
+ ]
+}

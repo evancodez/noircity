@@ -33,7 +33,8 @@ export class Traffic {
     this.cars = [];
     this.t = 0;
     this.nextT = 1.5;
-    this.rng = chase.ctx.rng.fork(7100 + seed);
+    // ([4th owner] and the try's own draw: chase.trySeed)
+    this.rng = chase.ctx.rng.fork(7100 + seed + 131 * ((chase.trySeed || 0) % 9973));
     this.tram = new Tram(chase);
     this.n = 0;
   }

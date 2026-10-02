@@ -13,6 +13,7 @@ import { RULES, TEACH, HIT, RAM } from './rules.js';
 import { makeBot } from './bot.js';
 import { FIRE } from '../../fx/fxTextures.js';
 import { FIRE_COL } from '../../fx/Explosion.js';
+import { RNG } from '../../util/rng.js';
 
 // Chapter VI's machinery (lane C3): my coupe and his sedan in the city, the
 // rules of the tail, the gun out of the window, his car coming apart under
@@ -44,6 +45,15 @@ export class Chase {
     this.t = 0;
     this.unseen = 0; this.farT = 0;
     this.log = [];
+    // [4th owner] this try's own draw (his choice of way when I am near, the
+    // traffic's walks): a retry, or another night, is not the same film.
+    // ?tailSeed=n makes it repeatable (n, then n + 1 each try); shot mode
+    // keeps it fixed
+    const q = typeof location !== 'undefined' ? new URLSearchParams(location.search).get('tailSeed') : null;
+    const G0 = ctx.game;
+    G0._tailTries = (G0._tailTries || 0) + 1;
+    this.trySeed = G0.shotMode ? 1 : q != null ? (+q || 0) + G0._tailTries - 1 : ((Math.random() * 0x7fffffff) | 0);
+    this.routeRng = new RNG(this.trySeed * 2654435761 + 17);
     globalThis.__tail = this;
     const G = this.game;
     const onHit = (e) => { if (!this.my || this.out) return; if (this.t - (this._hitT || -9) < 0.12) return; this._hitT = this.t; G.sfx.play('tail_screenHit', null, { k: e.k }); G.controller.kick(0.8 * e.k + 0.3, 0.5, 0.08); if (this.cabin && e.k > 0.45) this.cabin.screen.crack(e.lz, e.k); };
@@ -75,6 +85,7 @@ export class Chase {
     this.my = V.spawn('coupe', { at: new THREE.Vector3(my.x, 0, my.z), yaw: my.yaw, speed: my.speed || 0, lights: true });
     V.setPlayer(this.my);
     this.my.damage = cfg.damage || 0;
+    this.my.warnAt = RULES.wreckWarn;
     this.his = V.spawn('sedan', { at: new THREE.Vector3(his.x, 0, his.z), yaw: his.yaw, speed: his.speed || 0, lights: true, tail: 'crew' });
     this.his.car.limit = 1e9;
     V.prefer = this.his;
@@ -171,7 +182,7 @@ export class Chase {
     if (this.phase === 'crash') this.crashing(dt);
     if (this.wreck) this.wreckStep(dt);
     this.hisFx(dt);
-    if (this.phase === 'c' || this.phase === 'wreck') this.toPier(dt);
+    if (this.phase === 'c' || this.phase === 'wreck') { this.toPier(dt); this.atWreck(dt); }
     this.damageStep(dt);
     this.toys(dt);
   }
@@ -246,6 +257,16 @@ export class Chase {
     // later at the pier's gate)
     if (this.phase === 'b' && this.driver.state !== 'lost' && gap > R.farWarn) warn = "He's getting away.";
     if (gateNear) warn = "He's nearly at the pier.";
+    // [4th owner] (my car one knock from a wreck: said, for a few seconds
+    // after each knock past RULES.wreckWarn - the crack and the steam were
+    // all a player had, and the third square blow at 50 km/h was "Wrecked."
+    // with no line; Car.js warnAt: no single blow wrecks it from below that)
+    const dmg = this.my.damage;
+    if (dmg > (this._dmg0 ?? dmg) + 0.01 && dmg >= R.wreckWarn) this.dmgWarnT = 4.5;
+    this._dmg0 = dmg;
+    this.dmgWarnT = Math.max(0, (this.dmgWarnT || 0) - dt);
+    // (first, for two seconds after the knock; then under the chase's own)
+    if (this.dmgWarnT > 0 && (!warn || this.dmgWarnT > 2.5)) warn = "She won't take much more.";
     K.warn(warn);
     if (this.failing) return;
     const to = this.checkpoint();
@@ -615,7 +636,7 @@ export class Chase {
       G.emit('tail:horn', {});
     }
     // (E at the pier's gate is the getting out: toPier has it)
-    if (G.pressed('KeyE') && !(this.phase === 'c' && Math.hypot(my.pos.x - PIER.park.x, my.pos.z - PIER.park.z) < 14)) {
+    if (G.pressed('KeyE') && !(this.phase === 'c' && Math.hypot(my.pos.x - PIER.park.x, my.pos.z - PIER.park.z) < 14) && !this.byWreck) {
       const on = !(my.lamps && my.lamps.on);
       if (my.lamps) my.lamps.setOn(on);
       this.cabin.lampSwitch(on);
@@ -714,6 +735,27 @@ export class Chase {
     const f = a && a.gain ? 1 - Math.exp(-a.gain / 60) : 0.5;
     if (a && a.rmb && G.controller.drive) { const L = G.controller.drive.look; L.yaw -= a.dyaw * f; L.pitch += a.dpitch * f; }
     if (a && a.fire) V.down.add('Mouse0');
+  }
+
+  // [4th owner] stopped by his wreck, E: a look at him (the head turns to
+  // his car a moment) and, the first time, a line - I do not get out: the
+  // critic, 2nd look, found E there answered nothing (WAVE_C 1.7)
+  atWreck(dt) {
+    const G = this.game, my = this.my, his = this.his;
+    if (!his || this.parked) return;
+    const d = Math.hypot(my.pos.x - his.pos.x, my.pos.z - his.pos.z);
+    const near = this.phase === 'c' && d < 11 && my.speedAbs < 1.5 && Math.hypot(my.pos.x - PIER.park.x, my.pos.z - PIER.park.z) > 20;
+    if (near !== !!this.byWreck) { this.byWreck = near; if (near) G.hud.prompt('E  look', null, 'tailwreck'); else G.hud.clearPrompt('tailwreck'); }
+    if (this.wreckLookT > 0) {
+      this.wreckLookT -= dt;
+      if (this.wreckLookT <= 0 && G.controller.drive && G.controller.drive.focus === his) G.controller.drive.focus = null;
+    }
+    if (near && G.pressed('KeyE')) {
+      if (G.controller.drive) Object.assign(G.controller.drive, { focus: his, focusMax: 0.75, focusPitch: null, focusFov: 6, focusRate: 2.4 });
+      this.wreckLookT = 1.8;
+      if (!this.wreckSaid) { this.wreckSaid = true; G.hud.say('No time. Pier 9.', 2.4); }
+      G.emit('tail:wreckLook', {});
+    }
   }
 
   // ---- the drive to the pier, the stop by its gate ---------------------------------------------

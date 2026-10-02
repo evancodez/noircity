@@ -68,7 +68,11 @@ export class His {
   }
   makeLeg(i, decide = true, prev = null) {
     const L = LEGS[i];
-    if (decide && !L.ids) this.choices[L.name] = this.chase.gap() < NEAR ? 'near' : 'far';
+    // ([4th owner] near, he tries to shake me either way - the tighter one
+    // more often - by the try's own draw: the critic, 2nd look, saw a good
+    // player get the same film to the metre every run, the choice read only
+    // my gap; far, the plainer way, as before)
+    if (decide && !L.ids) this.choices[L.name] = this.chase.gap() < NEAR ? (this.chase.routeRng && this.chase.routeRng.next() < 0.4 ? 'far' : 'near') : 'far';
     // (from the junction before the leg's start: its corner is in the path)
     let ids = (prev ? [prev] : []).concat(this.idsOf(i));
     // (on through the next leg as it stands now: the far choice by default)

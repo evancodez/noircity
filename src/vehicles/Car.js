@@ -462,7 +462,12 @@ export class Car {
     if (k <= 0) return;
     if (globalThis.__c3debug) console.log('hurt', k.toFixed(2), this.kind);
     const before = Math.floor(this.damage);
+    // ([C3 4th] a car with a warning level - mine in the tail, warnAt - is
+    // never wrecked by one blow from below it: the blow leaves it at half a
+    // step short, and the warning comes first; WAVE_C 1.2)
+    const was = this.damage;
     this.damage = Math.min(DAMAGE.wreck + 0.5, this.damage + k);
+    if (this.warnAt != null && was < this.warnAt && this.damage >= DAMAGE.wreck) this.damage = DAMAGE.wreck - 0.5;
     this.stats.hits++;
     const after = Math.floor(this.damage);
     if (after > before) this.emit('damage', { level: after, k, point });
