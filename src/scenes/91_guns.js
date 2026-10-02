@@ -48,7 +48,7 @@ export const BEATS = {
     at: [4.6, -5.55, SOUTH], gun: 'revolver', crouch: false, max: 2, flankAfter: 8,
     obj: 'A Tommy gun. Stay down while it fires.',
     men: [
-      { kind: 'tommy', at: { x: 4.7, z: 4.6 }, way: [{ x: 4.7, z: 2.6 }, { door: 'B2' }], wait: 1.0 },
+      { kind: 'tommy', at: { x: 4.7, z: 4.6 }, way: [{ x: 4.7, z: 2.6 }, { door: 'B2' }], wait: 1.0, door: 'hold' },
       { kind: 'pistol', at: { x: -0.4, z: -9.5 }, way: [{ door: 'BD' }, { x: -0.45, z: -2.2, run: true }, { door: 'B1' }], wait: 3.0 },
     ],
     spots: [{ x: 4.6, z: -5.55, yaw: SOUTH }, { x: 6.6, z: -5.55, yaw: SOUTH }, { x: 2.9, z: -5.6, yaw: SOUTH + 0.3 }],
@@ -63,16 +63,17 @@ export const BEATS = {
     spots: [{ x: -3.5, z: 2.4, yaw: SOUTH }],
   },
   street: {
-    at: [-0.5, 7.05, SOUTH], gun: 'tommy', crouch: false, max: 3, flankAfter: 8,
-    obj: 'Five of them in the street. Cover to cover.',
+    at: [-0.5, 5.2, SOUTH], gun: 'tommy', crouch: false, max: 3, flankAfter: 8,
+    obj: 'Six of them in the street. Cover to cover.',
     men: [
-      { kind: 'pistol', at: { x: -21.0, z: 17.2 }, way: [{ x: -15, z: 16.9, run: true }], wait: 0.4 },
-      { kind: 'pistol', at: { x: 21.0, z: 9.4 }, way: [{ x: 15, z: 9.6, run: true }], wait: 1.0 },
-      { kind: 'tommy', at: { x: -0.5, z: 20.6 }, way: [{ x: -0.5, z: 17.6, run: true }], wait: 2.0 },
-      { kind: 'pistol', at: { x: -21.0, z: 9.6 }, way: [{ x: -15, z: 9.8, run: true }], wait: 5.0 },
-      { kind: 'pistol', at: { x: 0.5, z: 20.6 }, way: [{ x: 0.5, z: 17.6, run: true }], wait: 9.0 },
+      { kind: 'pistol', at: { x: -15.6, z: 20.2 }, way: [{ x: -12.85, z: 19.4 }, { x: -12.85, z: 17.4, run: true }], wait: 0.5 },
+      { kind: 'pistol', at: { x: 14.6, z: 20.2 }, way: [{ x: 11.85, z: 19.4 }, { x: 11.85, z: 17.4, run: true }], wait: 0.9 },
+      { kind: 'tommy', at: { x: -4.4, z: 20.0 }, way: [{ x: -1.0, z: 19.6 }, { x: -1.0, z: 17.5, run: true }], wait: 1.6 },
+      { kind: 'pistol', at: { x: -15.6, z: 20.6 }, way: [{ x: -12.85, z: 19.4 }, { x: -12.85, z: 17.4, run: true }], wait: 2.6 },
+      { kind: 'pistol', at: { x: 3.4, z: 20.2 }, way: [{ x: 0.2, z: 19.6 }, { x: 0.2, z: 17.5, run: true }], wait: 4.5 },
+      { kind: 'pistol', at: { x: 15.0, z: 20.6 }, way: [{ x: 11.85, z: 19.4 }, { x: 11.85, z: 17.4, run: true }], wait: 6.5 },
     ],
-    spots: [{ x: -5.6, z: 8.05, yaw: SOUTH }, { x: -3.0, z: 9.35, yaw: EAST }, { x: 9.6, z: 6.6, yaw: SOUTH }, { x: -1.9, z: 7.4, yaw: SOUTH }],
+    spots: [{ x: -5.3, z: 5.55, yaw: SOUTH }, { x: 4.4, z: 5.55, yaw: SOUTH }, { x: -0.5, z: 5.45, yaw: SOUTH }, { x: -6.6, z: 5.55, yaw: SOUTH }],
   },
 };
 BEATS.street_rev = { ...BEATS.street, gun: 'revolver', obj: 'Again, with the revolver.' };
@@ -162,7 +163,9 @@ export default defineScene({
     ctx.onStep(() => {
       if (!K.active || G.health.dead) return;
       const heavy = (F.c2 ? F.c2.men : []).find((h) => h.alive && h.gunKind === 'rusher' && Math.hypot(h.pos.x - G.eye.x, h.pos.z - G.eye.z) < 4.2);
+      const through = K.lastKill && G.time - K.lastKill.t < 1.2 && K.lastKill.through && (C.crouchK || 0) > 0.5;
       if (heavy) warn(G, 'Stop him!');
+      else if (through) warn(G, 'Your cover won\'t hold. Move!');
       else if (G.health.hp < 45 && K.lineOnMe > 0) warn(G, (C.crouchK || 0) > 0.6 ? 'They have your angle. Move!' : 'Get down!');
       else if (G.health.hp < 45) warn(G, null);
       else warn(G, null);

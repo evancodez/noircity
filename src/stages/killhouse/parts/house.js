@@ -232,7 +232,7 @@ export default {
       // the front: four panels of wood (each a section: shot to pieces, a gap)
       for (let i = 0; i < n; i++) {
         const x0 = K.x0 + i * sw;
-        piece(new THREE.BoxGeometry(sw - 0.01, K.h - FLOOR - 0.06, 0.05).translate(x0 + sw / 2, FLOOR + (K.h - FLOOR - 0.06) / 2, K.z + K.d / 2 - 0.025), mats.desk, { kind: 'wood', hp: 9, name: 'counter ' + i }, { name: 'kh_counterPanel' });
+        piece(new THREE.BoxGeometry(sw - 0.01, K.h - FLOOR - 0.06, 0.05).translate(x0 + sw / 2, FLOOR + (K.h - FLOOR - 0.06) / 2, K.z + K.d / 2 - 0.025), mats.desk, { kind: 'wood', hp: 15, name: 'counter ' + i }, { name: 'kh_counterPanel' });
       }
       // the ends, the plinth, the top (stone)
       kit.piece();
@@ -271,7 +271,7 @@ export default {
     // ---- the lobby: the reception counter, the bench ------------------------------------------------
     {
       const R = RECEPTION, n = 2, sw = (R.x1 - R.x0) / n;
-      for (let i = 0; i < n; i++) piece(new THREE.BoxGeometry(sw - 0.01, R.h - FLOOR - 0.05, 0.05).translate(R.x0 + i * sw + sw / 2, FLOOR + (R.h - FLOOR - 0.05) / 2, R.z1 - 0.025), mats.desk, { kind: 'wood', hp: 9, name: 'reception ' + i }, { name: 'kh_reception' });
+      for (let i = 0; i < n; i++) piece(new THREE.BoxGeometry(sw - 0.01, R.h - FLOOR - 0.05, 0.05).translate(R.x0 + i * sw + sw / 2, FLOOR + (R.h - FLOOR - 0.05) / 2, R.z1 - 0.025), mats.desk, { kind: 'wood', hp: 14, name: 'reception ' + i }, { name: 'kh_reception' });
       kit.piece();
       kit.add(M([kit.box(R.x0 - 0.05, R.x0, FLOOR, R.h - 0.05, R.z0, R.z1), kit.box(R.x1, R.x1 + 0.05, FLOOR, R.h - 0.05, R.z0, R.z1), kit.box(R.x0, R.x1, FLOOR, R.h - 0.05, R.z0, R.z0 + 0.04)]), mats.desk);
       piece(slab(R.x1 - R.x0 + 0.14, 0.05, R.z1 - R.z0 + 0.1, { bevel: 0.01, corner: 0.015 }).translate((R.x0 + R.x1) / 2, R.h - 0.05, (R.z0 + R.z1) / 2), mats.deskTop, { kind: 'wood', hp: 6 });
@@ -436,7 +436,7 @@ function buildDesk(stage, kit, mats, piece, C) {
   const n = 3, bw = (Dk.w + 0.12) / n;
   for (let i = 0; i < n; i++) {
     const zc = -Dk.w / 2 - 0.06 + bw * (i + 0.5);
-    piece(slab(Dk.d + 0.06, 0.05, bw - 0.004, { bevel: 0.01, corner: 0.012 }).translate(0, Dk.h - 0.05, zc), mats.deskTop, { kind: 'wood', hp: 8, name: 'desk top ' + i }, { parent: body, name: 'kh_deskTop' });
+    piece(slab(Dk.d + 0.06, 0.05, bw - 0.004, { bevel: 0.01, corner: 0.012 }).translate(0, Dk.h - 0.05, zc), mats.deskTop, { kind: 'wood', hp: 11, name: 'desk top ' + i }, { parent: body, name: 'kh_deskTop' });
   }
   // the pedestals of drawers (thick: wood, more to chew)
   for (const s of [-1, 1]) {

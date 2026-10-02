@@ -353,7 +353,7 @@ export class Guns {
     for (let i = 0; i < 4; i++) F.dust.spawn({ pos: c.clone().add(V(r.gauss() * 0.2, r.gauss() * 0.1, r.gauss() * 0.2)), vel: V(r.gauss() * 0.3, r.range(0.1, 0.5), r.gauss() * 0.3), life: r.range(0.6, 1.1), size: [0.35, 0.35], grow: 0.8, rot: r.next() * 6.28, col: [0.08, 0.08, 0.08], alpha: 0.45, drag: 2.5, fadeOut: 0.8 });
     this.sound('c2_woodBreak', c, 1);
     // (the cover that held this section is less: the men read it)
-    this.events.push({ t: G.time, what: 'break', name: D.name || mesh.name });
+    this.events.push({ t: G.time, what: 'break', name: D.name || mesh.name, at: [+c.x.toFixed(2), +c.z.toFixed(2)] });
     if (G.pipeline && G.pipeline.dirtyShadows) G.pipeline.dirtyShadows();
   }
 
@@ -566,27 +566,38 @@ export class Guns {
   }
   // a place a man can see my crouched head from, round the side of what I
   // hide behind: on rings round me, free, reached by a path, off the threat's line
-  flankSpot(ai, tb, B, minOff = 0.9) {
+  flankSpot(ai, tb, B, minOff = 0.9, notNear = 0) {
     const G = this.game, nav = G.nav, e = G.eye, h = ai.h;
     const head = B.head.clone();
-    let best = null;
+    // (the places that see me, by a first guess at their worth; the ways
+    // there are searched for the best few only)
+    const cands = [];
     for (const R of [3.2, 4.5, 6, 7.5]) {
       for (let k = 0; k < 20; k++) {
         const a = (k / 20) * Math.PI * 2;
         const x = e.x + Math.sin(a) * R, z = e.z + Math.cos(a) * R;
         if (!nav.free(x, z)) continue;
-        let off = Math.abs(Math.atan2(Math.sin(a - tb), Math.cos(a - tb)));
+        const off = Math.abs(Math.atan2(Math.sin(a - tb), Math.cos(a - tb)));
         if (off < minOff) continue;
-        if (!this.see(V(x, G.stage.surfaceY(x, z) + 1.45, z), head, 0.25)) continue;
-        const path = nav.findPath(h.pos.x, h.pos.z, x, z, 4000);
-        if (!path) continue;
-        let L = 0, px = h.pos.x, pz = h.pos.z;
-        for (const p of path) { L += Math.hypot(p.x - px, p.z - pz); px = p.x; pz = p.z; }
-        if (L > 26) continue;
-        // (a near flank on a short path; not one straight through my line of fire)
-        const score = L * 0.6 + Math.abs(R - 5) * 0.8 - Math.min(off, 2.2) * 1.5;
-        if (!best || score < best.score) best = { x, z, score, path, R, off };
+        const crow = Math.hypot(x - h.pos.x, z - h.pos.z);
+        if (crow > 20 || crow < notNear) continue;
+        cands.push({ x, z, R, off, pre: crow * 0.6 + Math.abs(R - 5) * 0.8 - Math.min(off, 2.2) * 1.5 });
       }
+    }
+    cands.sort((p, q) => p.pre - q.pre);
+    let best = null, tried = 0;
+    for (const c of cands) {
+      if (tried >= 6 || (best && c.pre > best.score)) break;
+      if (!this.see(V(c.x, G.stage.surfaceY(c.x, c.z) + 1.45, c.z), head, 0.25)) continue;
+      tried++;
+      const path = nav.findPath(h.pos.x, h.pos.z, c.x, c.z, 16000);
+      if (!path) continue;
+      let L = 0, px = h.pos.x, pz = h.pos.z;
+      for (const p of path) { L += Math.hypot(p.x - px, p.z - pz); px = p.x; pz = p.z; }
+      if (L > 26) continue;
+      // (a near flank on a short path; not one straight through my line of fire)
+      const score = L * 0.6 + Math.abs(c.R - 5) * 0.8 - Math.min(c.off, 2.2) * 1.5;
+      if (!best || score < best.score) best = { x: c.x, z: c.z, score, path, R: c.R, off: c.off };
     }
     return best;
   }

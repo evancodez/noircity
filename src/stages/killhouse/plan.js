@@ -103,6 +103,10 @@ export const CARS = [
 export const STREET_CRATES = [[9.2, 7.25, 0.9, 0.9, 0.12], [10.05, 7.4, 0.85, 0.85, -0.1], [9.6, 7.3, 0.8, 0.8, 0.3, 0.9]];
 export const HYDRANT = { x: -1.9, z: 7.95 };
 export const POSTS = [{ x: -10.5, z: 7.95, yaw: 0 }, { x: 11.5, z: 16.45, yaw: Math.PI }];
-// the warehouse across the street: its loading door (the men come out of it)
-export const LOADING = { x0: -2.5, x1: 1.5 };
-export const BOUNDS = { minX: -22, maxX: 22, minZ: -10, maxZ: 18.1 };
+// the warehouse across the street: its openings - the loading door, two
+// alleys' mouths - each with a dark recess behind it, wider than the
+// opening: the men wait there out of sight (the street's ends are fenced)
+export const OPENINGS = [{ x0: -2.5, x1: 1.5, h: 3.3, name: 'bay' }, { x0: -13.8, x1: -11.9, h: 3.0, name: 'alleyW' }, { x0: 10.9, x1: 12.8, h: 3.0, name: 'alleyE' }];
+export const LOADING = OPENINGS[0];
+export const RECESS = { depth: 3.2, side: 2.4 };
+export const BOUNDS = { minX: -22, maxX: 22, minZ: -10, maxZ: 21.6 };

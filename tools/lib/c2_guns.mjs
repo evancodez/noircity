@@ -53,7 +53,7 @@ export default async function drive({ js, turn, keyDown, keyUp, mouse, shot, log
     return { scene: sc.current && sc.current.id, beat: sc.beat, trans: !!sc.trans, fade: sc.fadeK, failing: !!G._c2failing, dead: G.health.dead, hp: G.health.hp,
       x: C.pos.x, z: C.pos.z, ex: e.x, ey: e.y, ez: e.z, yaw: C.yaw, pitch: C.pitch, sens: C.sensitivity, mode: C.mode, ck: C.crouchK || 0, rk: C.riseK || 0, on: !!C.crouchOn,
       ammo: W ? W.ammo : 0, reloading: !!(W && W.reloading), gun: G.player.weapons.current, men, spots: F ? F.spots : [], won: !!(F && F.won),
-      wins: (G._c2won || []).length, fails: G._c2fails ? { ...G._c2fails } : {}, why: (G._c2why || []).slice(-1)[0] || null, warned: (G._c2warned || []).length, shots: G.counters.shots, hits: G.counters.hits, warn: G._c2warn || null };
+      broke: K ? K.events.filter((q) => q.what === 'break' && G.time - q.t < 1.2 && q.at && Math.hypot(q.at[0] - e.x, q.at[1] - e.z) < 2.2).length : 0, wins: (G._c2won || []).length, fails: G._c2fails ? { ...G._c2fails } : {}, why: (G._c2why || []).slice(-1)[0] || null, warned: (G._c2warned || []).length, shots: G.counters.shots, hits: G.counters.hits, warn: G._c2warn || null };
   })()`;
   // the beat's cover spot hidden from the most men as they stand now (then the nearest)
   const BEST = `(() => { const G = N.game, K = G.guns, F = G.scenes.ctx && G.scenes.ctx.flags.c2, V = N.THREE.Vector3;
@@ -133,7 +133,7 @@ export default async function drive({ js, turn, keyDown, keyUp, mouse, shot, log
         if (P.cover) {
           // the men who have a line on me and whom I can see (a flanker in the open)
           const threats = s.men.filter((m) => m.line && m.see && !m.entry);
-          const pressed = threats.length >= 2 || (threats.length >= 1 && s.hp < 40);
+          const pressed = threats.length >= 2 || (threats.length >= 1 && s.hp < 40) || s.broke > 0 || (s.warn && /cover/.test(s.warn));
           if (!onSpot || (pressed && now > moveCool)) {
             // the spot hidden best from the men as they stand now, near
             if (!goTo || pressed) {

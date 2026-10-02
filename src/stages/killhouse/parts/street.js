@@ -6,7 +6,7 @@ import { makeKit } from '../../../props/diner/kit.js';
 import { mergeGeos, lathe } from '../../../props/lib.js';
 import { officeMats } from '../../office/build/mats.js';
 import { wallGeos } from '../../office/build/walls.js';
-import { FLOOR, T, HOUSE, STREET, DOORS, DOOR_H, WINDOWS, WIN_Y, LOADING, BOUNDS, HYDRANT, STREET_CRATES } from '../plan.js';
+import { FLOOR, T, HOUSE, STREET, DOORS, DOOR_H, WINDOWS, WIN_Y, OPENINGS, RECESS, BOUNDS, HYDRANT, STREET_CRATES } from '../plan.js';
 
 // The killhouse's street (lane C2): one wet plane at y 0 (the wet-street
 // shader: puddles, ripples, the lamps streaked down it), the near pavement
@@ -92,40 +92,50 @@ export default {
     const signMat = new THREE.MeshStandardMaterial({ map: signTex, roughness: 0.6 });
     signMat.userData.inkSurface = 'wood';
     kit.add(new THREE.BoxGeometry(5.2, 0.62, 0.08).translate(-0.5, 3.0, HOUSE.z1 + T + 0.1), signMat, { name: 'kh_sign' });
-    // the warehouse across the way: a long brick wall, its loading door
+    // the warehouse across the way: a long brick wall, its openings (the
+    // loading door, two alleys' mouths) - each with a dark recess behind it,
+    // wider than the opening, where a man waits out of sight before he comes
     kit.piece();
-    const W = STREET.wall;
-    const ww = wallGeos({ axis: 'x', a: [W, W + 0.4], s: [STREET.x0 - 2, STREET.x1 + 2], y: [0, 7.5], holes: [[LOADING.x0, LOADING.x1, 0, 3.3]] });
+    const W = STREET.wall, OP = OPENINGS;
+    const ww = wallGeos({ axis: 'x', a: [W, W + 0.4], s: [STREET.x0 - 2, STREET.x1 + 2], y: [0, 7.5], holes: OP.map((o) => [o.x0, o.x1, 0, o.h]) });
     const wm = kit.add(mergeGeos(ww), mats.brick, { name: 'kh_warehouse' });
     wm.userData.cover = { kind: 'stone' };
-    // the bay behind the loading door: black, its floor and walls
     kit.piece();
-    kit.add(mergeGeos([
-      kit.box(LOADING.x0 - 0.3, LOADING.x1 + 0.3, 0, 3.6, W + 3.2, W + 3.4),
-      kit.box(LOADING.x0 - 0.3, LOADING.x0, 0, 3.6, W + 0.4, W + 3.2),
-      kit.box(LOADING.x1, LOADING.x1 + 0.3, 0, 3.6, W + 0.4, W + 3.2),
-      kit.box(LOADING.x0 - 0.3, LOADING.x1 + 0.3, 3.3, 3.6, W + 0.4, W + 3.2),
-    ]), mats.black, { name: 'kh_bay' });
-    colliders.addRegion(LOADING.x0, LOADING.x1, W - 0.2, W + 3.0);
-    colliders.addBox((LOADING.x0 + LOADING.x1) / 2, W + 3.3, (LOADING.x1 - LOADING.x0) / 2 + 0.3, 0.1, 0, 'wall');
-    // its rolled-up shutter over the opening
-    kit.piece();
-    kit.add(mergeGeos([kit.box(LOADING.x0 - 0.1, LOADING.x1 + 0.1, 3.3, 3.75, W - 0.05, W + 0.15), new THREE.CylinderGeometry(0.2, 0.2, LOADING.x1 - LOADING.x0 + 0.3, 16).rotateZ(Math.PI / 2).translate((LOADING.x0 + LOADING.x1) / 2, 3.55, W - 0.1)]), mats.iron, { name: 'kh_shutter' });
-    // the wall's colliders (the loading door open)
-    colliders.addBox((STREET.x0 + LOADING.x0) / 2, W + 0.2, (LOADING.x0 - STREET.x0) / 2 + 2, 0.2, 0, 'wall');
-    colliders.addBox((LOADING.x1 + STREET.x1) / 2, W + 0.2, (STREET.x1 - LOADING.x1) / 2 + 2, 0.2, 0, 'wall');
-    // the house's front's collider is the house part's (its walls)
-    // ---- the street's ends: barricades (sawhorses and a board) ---------------------------------
-    for (const x of [STREET.x0 + 0.6, STREET.x1 - 0.6]) {
+    const rec = [];
+    for (const o of OP) {
+      const r0 = o.x0 - RECESS.side, r1 = o.x1 + RECESS.side, zb = W + RECESS.depth;
+      rec.push(kit.box(r0 - 0.3, r1 + 0.3, 0, o.h + 0.3, zb, zb + 0.2));
+      rec.push(kit.box(r0 - 0.3, r0, 0, o.h + 0.3, W + 0.4, zb));
+      rec.push(kit.box(r1, r1 + 0.3, 0, o.h + 0.3, W + 0.4, zb));
+      rec.push(kit.box(r0 - 0.3, r1 + 0.3, o.h, o.h + 0.3, W + 0.4, zb));
+      colliders.addRegion(r0, r1, W - 0.2, zb);
+      colliders.addBox((r0 + r1) / 2, zb + 0.1, (r1 - r0) / 2 + 0.3, 0.1, 0, 'wall');
+      colliders.addBox(r0 - 0.15, (W + 0.4 + zb) / 2, 0.15, (zb - W - 0.4) / 2, 0, 'wall');
+      colliders.addBox(r1 + 0.15, (W + 0.4 + zb) / 2, 0.15, (zb - W - 0.4) / 2, 0, 'wall');
+    }
+    kit.add(mergeGeos(rec), mats.black, { name: 'kh_recesses' });
+    // the loading door's rolled-up shutter
+    {
+      const o = OP[0];
       kit.piece();
-      const bars = [];
-      for (const z of [8.9, 11.6, 14.3]) {
-        bars.push(kit.box(x - 0.04, x + 0.04, 0.95, 1.15, z - 1.2, z + 1.2));
-        for (const s of [-1, 1]) for (const zz of [z - 1.0, z + 1.0]) bars.push(new THREE.BoxGeometry(0.05, 1.1, 0.05).rotateZ(s * 0.25).translate(x + s * 0.14, 0.52, zz));
-      }
-      const b = kit.add(mergeGeos(bars), mats.wainscot, { name: 'kh_barricade' });
-      b.userData.cover = { kind: 'thin' };
-      colliders.addBox(x, 11.6, 0.2, 3.9, 0, 'wall');
+      kit.add(mergeGeos([kit.box(o.x0 - 0.1, o.x1 + 0.1, o.h, o.h + 0.45, W - 0.05, W + 0.15), new THREE.CylinderGeometry(0.2, 0.2, o.x1 - o.x0 + 0.3, 16).rotateZ(Math.PI / 2).translate((o.x0 + o.x1) / 2, o.h + 0.25, W - 0.1)]), mats.iron, { name: 'kh_shutter' });
+    }
+    // the wall's colliders (the openings open)
+    {
+      let cur = STREET.x0 - 2;
+      for (const o of [...OP].sort((p, q) => p.x0 - q.x0)) { colliders.addBox((cur + o.x0) / 2, W + 0.2, (o.x0 - cur) / 2, 0.2, 0, 'wall'); cur = o.x1; }
+      colliders.addBox((cur + STREET.x1 + 2) / 2, W + 0.2, (STREET.x1 + 2 - cur) / 2, 0.2, 0, 'wall');
+    }
+    // ---- the street's ends: board fences across it, wall to wall (a reason you can see) ----------
+    for (const x of [STREET.x0 + 0.5, STREET.x1 - 0.5]) {
+      kit.piece();
+      const bd = [];
+      const z0 = HOUSE.z1 + T, z1 = W;
+      for (let z = z0; z < z1 - 0.01; z += 0.24) bd.push(kit.box(x - 0.03, x + 0.03, 0, 2.3 + 0.12 * Math.sin(z * 7.1), z, Math.min(z1, z + 0.22)));
+      for (const y of [0.4, 1.8]) bd.push(kit.box(x - 0.08, x - 0.03, y, y + 0.12, z0, z1));
+      const f = kit.add(mergeGeos(bd), mats.wainscot, { name: 'kh_fence' });
+      f.userData.cover = { kind: 'thin' };
+      colliders.addBox(x, (z0 + z1) / 2, 0.08, (z1 - z0) / 2, 0, 'wall');
     }
     // ---- a hydrant, the crates on the near pavement -------------------------------------------
     kit.piece();

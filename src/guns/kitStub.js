@@ -88,6 +88,9 @@ export function fail(G, { why = '', to = null, fall = true } = {}) {
     G.sfx.play('f_bodyFloor', G.eye);
   }
   G.hud.clearPrompt();
+  // (the black is the reason's alone: the warning, the line, the cards go)
+  warn(G, null);
+  for (const n of ['c2objective', 'c2teach']) { const L = G.hud.layers && G.hud.layers.get(n); if (L) L.style.visibility = 'hidden'; }
   // the reason, lettered on the black (above the fade)
   let el = document.getElementById('c2why');
   if (!el) {
@@ -107,6 +110,7 @@ export function fail(G, { why = '', to = null, fall = true } = {}) {
       el.style.opacity = '0';
       const i = G.scripts.indexOf(fn); if (i >= 0) G.scripts.splice(i, 1);
       G.health.reset();
+      for (const n of ['c2objective', 'c2teach']) { const L = G.hud.layers && G.hud.layers.get(n); if (L) L.style.visibility = ''; }
       S.go(S.current.id, { beat, fade: 'cut', card: false });
       S.setFade(1);
       S.trans = { phase: 'in', t: 0, def: S.current, opts: {}, fadeIn: 0.7 };

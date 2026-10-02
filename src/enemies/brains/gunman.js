@@ -40,9 +40,9 @@ export const GUNMAN = {
   wait: [0.5, 1.3],            // s: behind cover between his times out
   watch: 1.3,                  // s: he holds his aim on where I went down before going back
   walk: 1.5, run: 3.0,
-  pistol: { hp: 100, dmg: 15, mag: 7, burst: [2, 3], gap: [0.4, 0.52], reload: 1.7 },
-  tommy: { hp: 120, dmg: 7, burst: [10, 14], rate: 10.5, climb: 0.005, sigma0: 0.012, drum: 2.6 },
-  rusher: { hp: 300, dmg: 8, burst: [5, 8], rate: 9, every: 1.2, close: 2.4, hitStop: 0.35, walk: 1.3 },
+  pistol: { hp: 100, dmg: 17, mag: 7, burst: [2, 3], gap: [0.4, 0.52], reload: 1.7 },
+  tommy: { hp: 120, dmg: 8, burst: [10, 14], rate: 10.5, climb: 0.0035, sigma0: 0.01, drum: 2.6 },
+  rusher: { hp: 300, dmg: 10, burst: [5, 8], rate: 9, every: 1.2, close: 2.4, hitStop: 0.35, walk: 1.3 },
 };
 const T = GUNMAN;
 const V = (x, y, z) => new THREE.Vector3(x, y, z);
@@ -194,7 +194,7 @@ export default {
         const f = C.fire(c.p, e, st);
         if (!f) continue;
         // (the way there: by the nav grid, not as the crow flies through a wall)
-        const path = nav.findPath(h.pos.x, h.pos.z, c.p.x, c.p.z, 6000);
+        const path = nav.findPath(h.pos.x, h.pos.z, c.p.x, c.p.z, 16000);
         if (!path) continue;
         let L = 0, px = h.pos.x, pz = h.pos.z;
         for (const q of path) { L += Math.hypot(q.x - px, q.z - pz); px = q.x; pz = q.z; }
@@ -223,6 +223,16 @@ export default {
       return !!S.fire;
     };
 
+    // (on his way, in the open, with me standing in his line near enough: he
+    // stops and shoots - the gun up, the settle, as ever - then goes on)
+    const snap = (dt) => {
+      if (kind === 'rusher' || S.flank || (G.controller.crouchK || 0) > 0.5) return false;
+      if (!S.line || S.lineT < 0.3 || dist() > 16 || G.time - (S.snapT || -9) < 3) return false;
+      if (!kit().token(B)) return false;
+      S.snapT = G.time; B.path = null; S.resume = S.state === 'entry' ? 'entry' : 'move';
+      raise();
+      return true;
+    };
     // ---- his gun ------------------------------------------------------------------------------------
     const glint = () => {
       const m = h.muzzleWorld(V(0, 0, 0));
@@ -270,7 +280,7 @@ export default {
           S.wait -= dt;
           const w = opts.start;
           const awake = S.wait <= 0 && (!w || (typeof w === 'function' ? w(G, h) : true));
-          if (awake) { S.state = 'entry'; S.t = 0; }
+          if (awake) { S.state = 'entry'; S.t = 0; if (kind === 'tommy') S.lastSeen = { p: kit().playerBody().chest.clone(), t: G.time }; }
           break;
         }
         // his way in, step by step: points walked to; a door gone up to from
@@ -288,6 +298,7 @@ export default {
             break;
           }
           if (!st.door) {
+            if (snap(dt)) break;
             if (!B.path) moveTo(st.x, st.z, !!st.run);
             if (follow(dt) || near(st, 0.35)) { B.path = null; E.i++; }
             break;
@@ -313,12 +324,12 @@ export default {
             if (D.open01 > 0.72 || E.t > 3) { E.ph = 'through'; E.t = 0; }
             break;
           }
-          if (E.ph === 'through' && last && (opts.door === 'hold' || E.hold)) {
+          if (E.ph === 'through' && last && (opts.door === 'hold' || E.hold) && !E.noHold) {
             // (he works the doorway from his side of it: beside the jamb, a
-            // step into the opening to shoot, back - he does not walk in to be shot)
-            E.i = steps.length; S.entry = null;
-            if (!takeCover(false, { near: E.from, side: E.from, door: D })) { S.state = 'open'; S.t = 0; }
-            break;
+            // step into the opening to shoot, back - he does not walk in to be
+            // shot; with nothing beside it to work it from, he goes through)
+            if (takeCover(false, { near: E.from, side: E.from, door: D })) { E.i = steps.length; S.entry = null; break; }
+            E.noHold = true; S.state = 'entry';
           }
           if (E.ph === 'through') {
             // (the doorway taken: the man before him still in it)
@@ -354,6 +365,7 @@ export default {
             // (on his way round, a snap shot if he has me close)
             break;
           }
+          if (S.cover && snap(dt)) break;
           if (follow(dt)) { B.path = null; stand(S.coverLow); S.state = 'hold'; S.t = 0; S.wait = r.range(0.25, 0.6); break; }
           break;
         }
@@ -364,6 +376,9 @@ export default {
           S.coverT += dt;
           if (S.t > 0.35 && !coverHolds()) { if (!takeCover(true)) { S.state = 'open'; S.t = 0; } break; }
           if (kind === 'pistol' && S.mag <= 0) { S.state = 'reload'; S.t = 0; G.sfx.play('c2_magOut', h.pos.clone().setY(h.pos.y + 1.1), {}, { ref: 3 }); break; }
+          // (one of them going out: the others go with him - two guns at once on the man who stands to answer)
+          const mate = [...G.ais.values()].some((a) => a !== B && a.brain && a.brain.S && (a.brain.S.state === 'out' || a.brain.S.state === 'aim') && a.h.alive);
+          if (mate && kind === 'pistol' && S.wait > 0.3) S.wait = 0.3;
           S.wait -= dt;
           if (S.wait > 0) break;
           // (out from here a few times and no nearer: on to cover nearer me - nobody hides out the clock)
@@ -373,10 +388,11 @@ export default {
           }
           // (the Tommy gunner keeps my head down: he fires at where I went down, line or not)
           const suppress = kind === 'tommy' && !S.line && S.lastSeen && G.time - S.lastSeen.t < 12;
-          if (!S.line && !suppress && S.t < (S.peekT || (S.peekT = r.range(2.5, 4)))) { S.wait = r.range(0.25, 0.5); break; }
+          if (!S.line && !suppress && !mate && S.t < (S.peekT || (S.peekT = r.range(2.5, 4)))) { S.wait = r.range(0.25, 0.5); break; }
           S.peekT = 0;
           if (!Kt.token(B, kind === 'tommy')) { S.wait = r.range(0.3, 0.6); break; }
-          if (S.fire && !S.fire.rise && Math.hypot(S.fire.x - h.pos.x, S.fire.z - h.pos.z) > 0.2) {
+          // (the Tommy gunner with no line rakes where I went down from where he stands: through frosted glass, a door, a crate)
+          if (S.fire && !S.fire.rise && !suppress && Math.hypot(S.fire.x - h.pos.x, S.fire.z - h.pos.z) > 0.2) {
             // (the gun comes up as he steps out: the tell shows as he appears)
             B.path = [V(S.fire.x, 0, S.fire.z)]; B.pathI = 0; B.run = false; S.state = 'out'; S.t = 0; S.raiseT = 0;
             h.setAim(true); glint();
@@ -462,7 +478,13 @@ export default {
             S.seekT = 2;
             const e = G.eye; let bx = 0, bz = 0;
             for (const [o] of G.ais) if (o.alive) { bx += o.pos.x - e.x; bz += o.pos.z - e.z; }
-            const spot = Kt.flankSpot(B, Math.atan2(bx, bz) + Math.PI, Kt.playerBody(), 0);
+            let spot = Kt.flankSpot(B, Math.atan2(bx, bz) + Math.PI, Kt.playerBody(), 0, 1.0);
+            // (no place that sees me, or none but where he stands: in at me, by the way there is)
+            S.seeks = (S.seeks || 0) + 1;
+            if (!spot || S.seeks > 2) {
+              const path = G.nav.findPath(h.pos.x, h.pos.z, e.x, e.z, 16000);
+              if (path && path.length) { let k = path.length - 1; while (k > 0 && Math.hypot(path[k].x - e.x, path[k].z - e.z) < 2.2) k--; spot = { x: path[k].x, z: path[k].z }; S.seeks = 0; }
+            }
             if (spot) { moveTo(spot.x, spot.z, true); S.flank = spot; S.state = 'move'; S.t = 0; Kt.events.push({ t: +G.time.toFixed(2), what: 'seek', kind, at: [+spot.x.toFixed(1), +spot.z.toFixed(1)] }); }
           }
           break;
@@ -502,6 +524,9 @@ export default {
         return;
       }
       if (kind === 'rusher') { S.state = 'rush'; S.t = 0; h.setState('walk', 0.2); return; }
+      if (S.resume === 'entry' && S.entry) { S.resume = null; S.state = 'entry'; S.t = 0; return; }
+      if (S.resume === 'move' && S.cover) { S.resume = null; moveTo(S.cover.x, S.cover.z, true); S.state = 'move'; S.t = 0; return; }
+      S.resume = null;
       if (S.flank) { S.flank = null; const F = kit().flank; if (F && F.ai === B) F.done = true; S.state = 'open'; S.t = 0; S.wait = r.range(0.4, 0.9); return; }
       S.state = 'back'; S.t = 0;
     }
