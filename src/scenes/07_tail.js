@@ -3,6 +3,7 @@ import { defineScene, wait, until, beat } from '../game/script.js';
 import { Chase } from './tail/chase.js';
 import { resetCity } from './tail/reset.js';
 import { TEACH } from './tail/rules.js';
+import { WARM_AFTER } from '../stages/index.js';
 import { START, EW, NS, riverPoint, riverFrame, riverSAtZ, PIER } from '../stages/city/plan.js';
 
 // Chapter VI, The Tail (lane C3; docs/story/briefs/C3_CITY.md). The city at
@@ -83,6 +84,17 @@ function build(ctx, which) {
   if (q && q.get('tailGun')) { C.gun.snapT = 1e9; C.gun.aimK = 1; }
   return C;
 }
+
+// [3rd owner] what the cut into the driver's seat would otherwise build all
+// at once, built ahead as the city is warmed (lane C6 calls
+// game.stages.warm('city') once a frame through the foot chase's last
+// stretch): my coupe's model and the chapter's objective lines
+const LINES = ["Don't lose him.", 'Stop him before the docks.', 'Pier 9.'];
+WARM_AFTER.set('city', function* (stage, G) {
+  if (G.vehicles && G.vehicles.prebuild) yield* G.vehicles.prebuild(stage, 'coupe');
+  const K = G.hud && G.hud.kit;
+  if (K && K.prepareObjective) for (const t of LINES) { K.prepareObjective(t); yield 'line'; }
+});
 
 export default defineScene({
   id: 'tail', stage: 'city',

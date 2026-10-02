@@ -1,0 +1,63 @@
+{
+ "about": "C3 3rd owner: the seam with the foot chase, in real time (the critic's major 7). From V The Watcher (?start=watcher), the city warmed once a frame as lane C6's last stretch will (game.stages.warm('city', 6)): each call's time and the frame intervals meanwhile; then the cut into the driver's seat (scenes.go('tail', { beat: 'start', fade: 'cut', card: false })) and the 40 frames after it. Measured on the machine as it is (a shared GPU): read the numbers, not one run. node tools/play.mjs tools/plays/tail_seam.json --size 1440x900 (NOIR_PORT=5343)",
+ "url": "/?mute=1&start=watcher",
+ "size": [
+  1440,
+  900
+ ],
+ "out": "shots/c3/play_seam",
+ "steps": [
+  {
+   "until": "G.state === 'title' && !document.getElementById('title').classList.contains('hidden') && !!document.querySelector('#title .opt[data-k=begin]')",
+   "timeout": 40000
+  },
+  {
+   "wait": 2000
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]",
+   "taken": "G.state === 'playing' && document.pointerLockElement === N.renderer.domElement",
+   "retries": 4,
+   "every": 4000
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'watcher'",
+   "timeout": 45000
+  },
+  {
+   "wait": 4000
+  },
+  {
+   "eval": "(() => { const R = window.__seam = { warm: [], gaps: [], done: false, cut: null, after: [] }; let last = performance.now(); (function loop() { const now = performance.now(); R.gaps.push(+(now - last).toFixed(1)); last = now; if (!R.done) { const t0 = performance.now(); const ok = G.stages.warm('city', 6); R.warm.push(+(performance.now() - t0).toFixed(1)); if (ok) R.done = true; requestAnimationFrame(loop); } })(); return 1; })()"
+  },
+  {
+   "until": "window.__seam.done",
+   "timeout": 60000
+  },
+  {
+   "wait": 1000
+  },
+  {
+   "eval": "(() => { const R = window.__seam, info = N.renderer.info; R.prog = [info.programs.length]; R.p0 = new Set(info.programs); R.geo = [info.memory.geometries]; const t0 = performance.now(); G.scenes.go('tail', { beat: 'start', fade: 'cut', card: false }); R.cut = +(performance.now() - t0).toFixed(1); R.prog.push(info.programs.length); R.geo.push(info.memory.geometries); let last = performance.now(), n = 0; (function loop() { const now = performance.now(); R.after.push(+(now - last).toFixed(1)); last = now; if (n < 4) { R.prog.push(info.programs.length); R.geo.push(info.memory.geometries); } if (++n < 40) requestAnimationFrame(loop); })(); return R.cut; })()"
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "eval": "(() => { const R = window.__seam, W = R.warm, A = R.after; const before = R.gaps.slice(5); return JSON.stringify({ calls: W.length, warmMax: Math.max(...W), warmOver16: W.filter((x) => x > 16).length, warmSum: +W.reduce((a, b) => a + b, 0).toFixed(0), frameMaxWhileWarming: Math.max(...before), cut: R.cut, firstFrames: A.slice(0, 12), maxAfter: Math.max(...A), stall: +(R.cut + Math.max(...A.slice(0, 3))).toFixed(0) }); })()"
+  },
+  {
+   "eval": "JSON.stringify(G.stages.warmLog || [])"
+  },
+  {
+   "eval": "JSON.stringify({ prog: window.__seam.prog, geo: window.__seam.geo, names: N.renderer.info.programs.filter((p) => !window.__seam.p0.has(p)).map((p) => p.name + ':' + (p.cacheKey || '').slice(0, 60)) })"
+  },
+  {
+   "shot": "s01_after_cut"
+  },
+  {
+   "expect": "G.scenes.current.id === 'tail' && G.controller.mode === 'drive'",
+   "label": "in the driver's seat after the cut"
+  }
+ ]
+}

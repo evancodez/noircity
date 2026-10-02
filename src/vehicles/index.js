@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { Vehicle, Headlamps } from './Vehicle.js';
 import { Car } from './Car.js';
-import { buildCoupe, buildTruck, tailLamps, figureInk, contactShadow, COUPE, TRUCK } from './models.js';
+import { buildCoupe, buildCoupeSteps, buildTruck, tailLamps, figureInk, contactShadow, COUPE, TRUCK } from './models.js';
 import { releaseHoodSlot, LAYER } from '../render/layers.js';
 
 // Vehicles (docs/story/CONTRACTS.md §11; wave B, lane B5): game.vehicles.
@@ -32,7 +32,10 @@ export class Vehicles {
     const T = stage.track;
     let model, lampPts, tailPts;
     if (kind === 'coupe') {
-      model = buildCoupe(stage.M);
+      // ([C3 3rd] a coupe's model is ~40 ms to build: one let go in this stage
+      // is used again, and a stage being warmed may build one ahead -
+      // vehicles.prebuild - so the cut into the driver's seat does not)
+      model = (stage._coupeFree && stage._coupeFree.pop()) || buildCoupe(stage.M);
       stage.scene.add(model.group);
       lampPts = COUPE.lamps; tailPts = COUPE.tail;
     } else if (kind === 'sedan') {
@@ -115,6 +118,22 @@ export class Vehicles {
     }
     if (v.body.parent) v.body.parent.remove(v.body);
     if (this.player === v) this.player = null;
+    // ([C3 3rd] my coupe's model kept for the next spawn, as it was built)
+    if (v.kind === 'coupe' && v.model && v.model.group) {
+      const m = v.model;
+      if (m.meshes && m.meshes.hood) m.meshes.hood.rotation.set(0, 0, 0);
+      m.group.position.set(0, 0, 0); m.group.quaternion.identity();
+      (stage._coupeFree || (stage._coupeFree = [])).push(m);
+    }
+  }
+  // [C3 3rd] a coupe's model built ahead in a stage, a few steps at a time
+  // (a stage's warm: yield* vehicles.prebuild(stage))
+  *prebuild(stage, kind = 'coupe') {
+    if (kind !== 'coupe' || (stage._coupeFree && stage._coupeFree.length)) return;
+    const it = buildCoupeSteps(stage.M);
+    let r;
+    while (!(r = it.next()).done) yield 'coupe';
+    (stage._coupeFree || (stage._coupeFree = [])).push(r.value);
   }
 
   clear() { for (const v of [...this.list]) this.remove(v); this.prefer = null; }

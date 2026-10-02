@@ -103,6 +103,7 @@ export default {
       for (const z of [PIER.gate.z - 2.25, PIER.gate.z + 2.25]) doors.push(worldUV(box(gx - 0.12, gx + 0.05, 0, 5.6, z - 2.2, z + 2.2), 1.6));
       kit.addMerged(doors, K.plankDoor, { cast: true });
       kit.addMerged([box(gx - 0.16, gx - 0.1, 1.2, 1.35, PIER.gate.z - 4.4, PIER.gate.z + 4.4), box(gx - 0.16, gx - 0.1, 4.2, 4.35, PIER.gate.z - 4.4, PIER.gate.z + 4.4)], K.iron);
+      yield;
       // PIER 9 on the gable, tall, white on the boards
       kit.piece();
       const lm = signMap(['PIER 9'], { w: 1024, h: 256, bg: 'rgba(0,0,0,0)', border: false });
@@ -115,6 +116,7 @@ export default {
       for (let z = Y.z0; z < PIER.gate.z - 4.6; z += 0.25) rail.push(new THREE.CylinderGeometry(0.02, 0.02, 2.2, 5).translate(gx - 0.5, 1.1, z));
       for (const y of [0.2, 2.0]) rail.push(new THREE.BoxGeometry(0.05, 0.05, PIER.gate.z - 4.6 - Y.z0).translate(gx - 0.5, y, (Y.z0 + PIER.gate.z - 4.6) / 2));
       kit.addMerged(rail, K.iron);
+      yield;
       // the crane on the pier: a lattice tower and its jib over the water,
       // work lamps on it
       kit.piece();
@@ -159,6 +161,7 @@ export default {
       for (const l of lights) { const sp = new THREE.Sprite(haloMat); sp.position.copy(l.p); sp.scale.setScalar(3.2); sp.layers.set(LAYER.FX_REFL); sp.renderOrder = 6; sp.userData.noRay = true; group.add(sp); }
       // the crane's work lamps
       for (const p of [V3(cx, ch + 3.2, cz - 2.1), V3(cx + 26, ch + 8.6, cz + 8)]) { const sp = new THREE.Sprite(haloMat); sp.position.copy(p); sp.scale.setScalar(2.4); sp.layers.set(LAYER.FX_REFL); sp.userData.noRay = true; group.add(sp); lights.push({ p, k: 1.2, w: 0.6 }); }
+      yield;
       // the pier's deck under the shed and its apron, on piles in the water
       kit.piece();
       const deck = [box(S.x0 - 0.2, S.x1 + 3, WATER_Y - 0.6, PAVE, S.z0 - 3, PIER.yard.z1 + 4)];
