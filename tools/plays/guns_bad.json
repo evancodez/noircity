@@ -1,5 +1,5 @@
 {
- "about": "[C2] The gun kit's proof 2 (WAVE_C \u00a77, the brief's own: 'stand and trade shots in the open'): a player who stands where he is put and trades shots with the men - sees a man 0.4 .. 0.75 s after he shows, turns onto him at a hand's pace with a wide error, never gets down, reloads standing - LOSES most contests (and is never stuck: each loss is a fall with its reason, back at the beat). node tools/play.mjs tools/plays/guns_bad.json",
+ "about": "[C2] The gun kit's proof 2 (WAVE_C \u00a77, the brief's own: 'stand and trade shots in the open'): a player who stands and trades shots with the men - where the beat puts him, and in the street out on the pavement between the cars - sees a man 0.45 .. 0.8 s after he shows (again each time he shows again), turns onto him at a hand's pace with a wide error, fires, never gets down, reloads standing - LOSES most contests, each loss a fall with its reason, back at the beat (never a stalemate). node tools/play.mjs tools/plays/guns_bad.json",
  "url": "/?mute=1&start=guns.door",
  "size": [
   1280,
@@ -42,8 +42,8 @@
     "street",
     "street_rev"
    ],
-   "check": "D.lost >= 4 && D.falls.every((w) => w && w !== 'timeout' && !/reload/.test(w) ? true : true)",
-   "label": "standing and trading shots in the open loses most contests"
+   "check": "D.lost >= 4 && D.falls.every((w) => w && w !== 'timeout')",
+   "label": "standing and trading shots in the open loses most contests, each by a fall with its reason"
   },
   {
    "eval": "(N.game.guns.events || []).filter((e) => e.what === 'down' || e.what === 'flank').map((e) => e.what + ' ' + (e.why || e.at))"
