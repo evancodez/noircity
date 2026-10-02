@@ -31,7 +31,9 @@ export const HIT = {
 // or under) puts him off the road; anywhere else, or whole, it only jolts
 // him. A straight bump from behind never does (the critic's blocker: one
 // round anywhere and a touch from behind ended it).
-export const RAM = { imp: 2.5, across: 0.6, behind: -0.6, flank: 0.55, hurtControl: 0.5, jolt: 0.06 };
+// (or leaned on - held into his quarter across him, the contact unbroken -
+// for RAM.lean s)
+export const RAM = { imp: 2.5, across: 0.6, behind: -0.6, flank: 0.55, hurtControl: 0.5, jolt: 0.06, lean: 0.6 };
 // [3rd owner] the teach cards (the kit draws [X] as a key cap, [LMB] / [RMB]
 // as a mouse; seams/Z.md §2)
 export const TEACH = {

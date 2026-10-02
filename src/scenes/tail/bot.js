@@ -205,7 +205,8 @@ export function makeBot(chase, name, { seed = 7, track = null, attempt = 0 } = {
         const l = his.local(my.pos);
         const lead = his.vel.clone().multiplyScalar(0.35);
         const set = (q) => { const ddx = q.x + lead.x - my.pos.x, ddz = q.z + lead.z - my.pos.z; fx = ddx * c - ddz * sn; fz = ddx * sn + ddz * c; };
-        const beside = Math.abs(l.x + 3.6) < 1.6 && Math.abs(l.z - side * 2.4) < 1.1;
+        // (a hand at a poll's pace needs a wider window than one each step)
+        const beside = Math.abs(l.x + 3.4) < 2.2 && Math.abs(l.z - side * 3.0) < 1.4;
         // (out beside him only when near and the other lane is clear ahead:
         // far behind, close up on his line first)
         let clearSide = true;
@@ -220,9 +221,10 @@ export function makeBot(chase, name, { seed = 7, track = null, attempt = 0 } = {
         B.pitShut = !clearSide && l.x > -14 ? (B.pitShut || 0) + dt : 0;
         if (B.pitShut > 2.5) { B.pitShut = 0; B.pitSide = -side; }
         if (l.x < -11 || !clearSide) { pitWant = l.x < -11 ? his.speed + clamp((-8 - l.x) * 0.5, 0, 6) : his.speed - 1; B.pitIn = 0; }
-        else if (hurt && beside) { set(his.world(-1.2, side * 0.4)); pitWant = his.speed + 2.5; B.pitIn = (B.pitIn || 0) + dt; }
-        else { set(his.world(-3.6, side * 2.4)); pitWant = his.speed + clamp((-3.6 - l.x) * 0.8, -4, 6); B.pitIn = 0; }
-        if (B.pitIn > 1.6) { B.pitIn = 0; B.pitSide = -side; }
+        else if (hurt && (beside || B.pitIn > 0)) { set(his.world(-0.8, -side * 0.8)); pitWant = his.speed + 3; B.pitIn = (B.pitIn || 0) + dt; }
+        else { set(his.world(-3.6, side * 3.0)); pitWant = his.speed + clamp((-3.6 - l.x) * 0.8, -4, 6); B.pitIn = 0; }
+        // (a turn-in that met nothing in 2.5 s: out again and once more)
+        if (B.pitIn > 2.5) { B.pitIn = 0; B.pitTries = (B.pitTries || 0) + 1; if (B.pitTries % 3 === 0) B.pitSide = -side; }
       }
       // (a car standing in my way - his wreck, a parked one into the road, a
       // car stopped at a junction - is steered round, as anyone would)

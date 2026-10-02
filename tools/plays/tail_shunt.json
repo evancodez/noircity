@@ -1,23 +1,70 @@
 {
  "about": "C3 4th owner: the shunt (rules.js RAM) by real input. From the river road's checkpoint, the gun dry and his right rear tyre already gone (set up as a round would leave it: the game's state, not the hands), the hands ('pitter' in src/scenes/tail/bot.js: up beside his back quarter on the other lane's side, then the wheel into it) shunt him: he goes off the road (C._ramWin). A straight bump from behind never does (the critic's tools/plays/critic/c3c2_drive.mjs 'ram one'). The teach card for the dry gun is read from the kit. NOIR_PORT=5343 node tools/play.mjs tools/plays/tail_shunt.json --size 1440x900",
  "url": "/?mute=1&start=tail.river&tailSeed=5",
- "size": [1440, 900],
+ "size": [
+  1440,
+  900
+ ],
  "out": "shots/c3/shunt",
  "steps": [
-  { "until": "G.state === 'title' && !document.getElementById('title').classList.contains('hidden') && !!document.querySelector('#title .opt[data-k=begin]')", "timeout": 40000 },
-  { "wait": 1500 },
-  { "clickOn": "#title .opt[data-k=begin]", "taken": "G.state === 'playing' && document.pointerLockElement === N.renderer.domElement", "retries": 4, "every": 4000 },
-  { "until": "G.scenes.current && G.scenes.current.id === 'tail' && !!G.scenes.ctx.flags.chase && G.scenes.ctx.flags.chase.phase === 'b' && !G.scenes.fadeK", "timeout": 45000 },
-  { "eval": "(() => { const C = G.scenes.ctx.flags.chase; C.gun.rounds = 0; C.gun.pocket = 0; C.hisDmg = { tyres: 1, man: 0, tank: 0, body: 0, rims: 0, nick: { rr: 1 }, nicks: 1 }; C.his.grip.rr = 0.32; C.his.flat = { rr: 1 }; C.driver.pace *= 0.88; C.driver.control = 0.72; window.__tailFails = []; window.__c3tries = 0; return 'dry, his right rear gone'; })()" },
-  { "wait": 1200 },
-  { "eval": "JSON.stringify({ teach: G.hud.kit.teachCur && G.hud.kit.teachCur.text })" },
-  { "shot": "s01_dry_the_card" },
-  { "drive": "tools/lib/c3_tail.mjs", "profile": "pitter", "seed": 5, "timeout": 60000, "maxTries": 1,
-    "stop": "!!G.scenes.ctx.flags.chase && (G.scenes.ctx.flags.chase.phase === 'crash' || (window.__tailFails || []).length > 0)",
-    "shots": { "s02_beside_his_quarter": "!!G.scenes.ctx.flags.chase && (() => { const C = G.scenes.ctx.flags.chase; const l = C.his.local(C.my.pos); return Math.abs(l.x + 3.6) < 1.6 && Math.abs(l.z + 2.4) < 1.1; })()" } },
-  { "wait": 600 },
-  { "shot": "s03_off_the_road" },
-  { "eval": "JSON.stringify({ phase: G.scenes.ctx.flags.chase.phase, ramWin: !!G.scenes.ctx.flags.chase._ramWin, lastRam: G.scenes.ctx.flags.chase.lastRam, fails: (window.__tailFails || []).map((f) => f.why) })" },
-  { "expect": "!!G.scenes.ctx.flags.chase._ramWin && G.scenes.ctx.flags.chase.phase !== 'b'", "label": "the shunt on his back quarter, from the side, with a tyre gone: he goes off the road" }
+  {
+   "until": "G.state === 'title' && !document.getElementById('title').classList.contains('hidden') && !!document.querySelector('#title .opt[data-k=begin]')",
+   "timeout": 40000
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]",
+   "taken": "G.state === 'playing' && document.pointerLockElement === N.renderer.domElement",
+   "retries": 4,
+   "every": 4000
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'tail' && !!G.scenes.ctx.flags.chase && G.scenes.ctx.flags.chase.phase === 'b' && !G.scenes.fadeK",
+   "timeout": 45000
+  },
+  {
+   "eval": "(() => { const C = G.scenes.ctx.flags.chase; C.gun.rounds = 0; C.gun.pocket = 0; C.hisDmg = { tyres: 1, man: 0, tank: 0, body: 0, rims: 0, nick: { rr: 1 }, nicks: 1 }; C.his.grip.rr = 0.32; C.his.flat = { rr: 1 }; C.driver.pace *= 0.88; C.driver.control = 0.72; window.__tailFails = []; window.__c3tries = 0; return 'dry, his right rear gone'; })()"
+  },
+  {
+   "wait": 1200
+  },
+  {
+   "eval": "JSON.stringify({ teach: G.hud.kit.teachCur && G.hud.kit.teachCur.text })"
+  },
+  {
+   "shot": "s01_dry_the_card"
+  },
+  {
+   "eval": "(() => { window.__pitLog = []; const id = setInterval(() => { const C = G.scenes.ctx && G.scenes.ctx.flags.chase; if (!C || !C.my || C.phase !== 'b') return; const l = C.his.local(C.my.pos), B = C.bot || {}; window.__pitLog.push(`${C.t.toFixed(1)} l ${l.x.toFixed(1)},${l.z.toFixed(1)} side ${B.pitSide} shut ${(B.pitShut||0).toFixed(1)} in ${(B.pitIn||0).toFixed(1)} v ${C.my.speed.toFixed(1)}/${C.his.speed.toFixed(1)} k ${JSON.stringify(C.botKeys||{})} st ${(C.my.input.steer||0).toFixed(2)} yr ${C.my.yawRate.toFixed(2)} hy ${(C.his.yaw - C.my.yaw).toFixed(2)} at ${C.my.pos.x.toFixed(1)},${C.my.pos.z.toFixed(1)}`); }, 500); return 1; })()"
+  },
+  {
+   "drive": "tools/lib/c3_tail.mjs",
+   "profile": "pitter",
+   "seed": 5,
+   "timeout": 60000,
+   "maxTries": 1,
+   "stop": "!!G.scenes.ctx.flags.chase && (G.scenes.ctx.flags.chase.phase === 'crash' || (window.__tailFails || []).length > 0)",
+   "shots": {
+    "s02_beside_his_quarter": "!!G.scenes.ctx.flags.chase && (() => { const C = G.scenes.ctx.flags.chase; const l = C.his.local(C.my.pos); return Math.abs(l.x + 3.6) < 1.6 && Math.abs(l.z + 2.4) < 1.1; })()"
+   }
+  },
+  {
+   "wait": 600
+  },
+  {
+   "shot": "s03_off_the_road"
+  },
+  {
+   "eval": "JSON.stringify({ phase: G.scenes.ctx.flags.chase.phase, ramWin: !!G.scenes.ctx.flags.chase._ramWin, lastRam: G.scenes.ctx.flags.chase.lastRam, fails: (window.__tailFails || []).map((f) => f.why) })"
+  },
+  {
+   "eval": "window.__pitLog.join('\\n')"
+  },
+  {
+   "expect": "!!G.scenes.ctx.flags.chase._ramWin && G.scenes.ctx.flags.chase.phase !== 'b'",
+   "label": "the shunt on his back quarter, from the side, with a tyre gone: he goes off the road"
+  }
  ]
 }

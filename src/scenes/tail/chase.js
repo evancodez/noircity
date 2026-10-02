@@ -100,6 +100,12 @@ export class Chase {
     mine.on('damage', (e) => this.damaged(e));
     mine.on('post', (e) => this.bentPost(e));
     this.his.on('bump', (e) => this.rammed(e));
+    // [4th owner] (the same contact resolved from his side - his car's step
+    // found mine - arrives on mine: it is the same shunt, the push on him the
+    // other way. A shunt counted only when my car's step happened to find it)
+    mine.on('bump', (e) => { if (e.by && e.by === this.his) this.rammed({ by: mine, imp: e.imp, point: e.point, n: e.n ? e.n.clone().negate() : null, k: e.k }); });
+    this.his.on('lean', (e) => this.rammed(e));
+    mine.on('lean', (e) => { if (e.by && e.by === this.his) this.rammed({ by: mine, imp: 0, point: e.point, n: e.n ? e.n.clone().negate() : null }); });
     this.his.on('post', (e) => this.bentPost(e));
     // the cabin: the eye in the seat, the hands on the wheel, the dials
     this.cabin = stage._cabin || (stage._cabin = new Cabin(G));
@@ -522,6 +528,13 @@ export class Chase {
     const hurt = (H.tyres || 0) >= 1 || (H.man || 0) >= 2 || (H.tank || 0) >= HIT.tankSmoke || D.control <= RAM.hurtControl;
     this.lastRam = { t: +this.t.toFixed(2), imp: +e.imp.toFixed(1), lx: +l.x.toFixed(2), lz: +l.z.toFixed(2), nf: +nf.toFixed(2), nr: +nr.toFixed(2), quarter, hurt };
     if (e.imp > RAM.imp && quarter && hurt) { this._ramWin = true; D.lose(nr > 0 ? 1 : -1); return; }
+    // (or leaned on: my car held into his back quarter across him, the
+    // contact unbroken RAM.lean s - the same push, slower: his back end goes)
+    if (quarter) {
+      this.leanT = this.t - (this._leanAt ?? -9) < 0.15 ? (this.leanT || 0) + (this.t - this._leanAt) : 0;
+      this._leanAt = this.t;
+      if (hurt && this.leanT > RAM.lean) { this._ramWin = true; D.lose(nr > 0 ? 1 : -1); return; }
+    }
     if (e.imp > RAM.imp && quarter) { D.control -= RAM.jolt; D.swerve(nr > 0 ? 1 : -1, 0.7); }
     if (e.imp > 2) D.duck = Math.max(D.duck, 0.5);
   }

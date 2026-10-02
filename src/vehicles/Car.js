@@ -412,7 +412,9 @@ export class Car {
     if (o) { r2x = px - o.pos.x; r2z = pz - o.pos.z; v2x = o.vel.x + or * r2z; v2z = o.vel.z - or * r2x; }
     const rvx = v1x - v2x, rvz = v1z - v2z;
     const vn = rvx * nx + rvz * nz;
-    if (vn >= 0) return;
+    // ([C3 4th] a car resting against a car - held into it, closing at
+    // nothing - is told so too: 'lean' (the tail's shunt held on his quarter))
+    if (vn >= 0) { if (o && o.emit && o.spec) o.emit('lean', { by: this, imp: 0, point: new THREE.Vector3(px, 0.6, pz), n: new THREE.Vector3(-nx, 0, -nz) }); return; }
     // (r x n: the turn an impulse along n gives; in the plane, + left)
     const c1 = r1z * nx - r1x * nz, c2 = r2z * nx - r2x * nz;
     const e = 0.18;
