@@ -201,14 +201,14 @@ K.spawn({ kind: 'tommy', at: { x, z }, cover: true, wait: 2.4 });   // there alr
   is doing: behind his cover too (out again, he settles again). The star of
   the glint shows on the barrel when it is up (0.75 of the raise), with the
   click or the bolt as it starts.
-- **A hit is a flinch**, not a knock-out: the body jerks a step off it
-  (`Hood.flinch`), his settle is halved and does not grow for 0.18 s; a man
-  already firing keeps firing, his next rounds wider for 0.35 s (a Tommy
-  gunner's burst climbs). He does not go back behind his cover for it: a
-  man who has me standing in the open goes on shooting through it, one who
-  loses me goes back as ever. No random stagger for a kit gunman. A pistol
-  man whose mark stands up in his line does not go back between bursts:
-  two more, at once, the gun still up.
+- **A hit** is a flinch (the body jerks a step off it, `Hood.flinch`; his
+  settle is halved and does not grow for 0.18 s; a man already firing keeps
+  firing, his next rounds wider for 0.35 s; a Tommy gunner's burst climbs).
+  Shot by me **fighting from cover** (down, or risen over it) he ducks back
+  behind his own, his aim gone; shot by me **standing in the open** he
+  stays and trades. No random stagger for a kit gunman. A pistol man whose
+  mark stands up in his line does not go back between bursts: two more, at
+  once, the gun still up.
 - **Shot at before he is in** (a round into him or past him while he is on
   his `way`, or waiting to start): he does not walk on into it - the gun up
   if he has me, the Tommy gunner rakes where the shot came from (aimed: he

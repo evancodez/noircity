@@ -17,8 +17,10 @@ addGunClips();
 // a moving target (LAG): moving across his line is an answer; ducking out of
 // it spoils the settle (it drains while he has no line). No hidden misses.
 // A HIT IS A FLINCH: his aim spoiled (half the settle, a breath; a man
-// firing keeps firing, wider), not a knock back to cover - standing up and
-// trading is his game, not mine. Shot at on his way in, he answers.
+// firing keeps firing, wider). Shot by a man fighting from cover he ducks
+// back behind his own; shot by a man standing in the open he stays and
+// trades - standing up and trading is his game, not mine. Shot at on his
+// way in, he answers.
 // HE USES THE ROOM: cover to cover (crouched behind what is low, standing
 // behind what is tall), out to shoot (risen, or a step to the side) and back,
 // reloads behind it, moves when he is seen in it, when I have his angle.
@@ -108,6 +110,10 @@ export default {
         if (kind === 'rusher') { S.stopT = K.hitStop; S.settle = Math.max(0, S.settle * 0.5); return; }
         // (a round into the Tommy gunner throws his burst up and off: it climbs as if it were twice as long)
         if (S.state === 'fire' && kind === 'tommy') S.burstN = (S.burstN || 0) + 8;
+        // (shot by a man fighting from cover - down behind it, or risen over it -
+        // he is the one out-shot: he ducks back behind his own, his aim gone; shot
+        // by a man standing in the open, he stands and trades - that one is his)
+        if ((S.state === 'aim' || S.state === 'fire' || S.state === 'out') && (G.controller.crouchK || 0) > 0.5) { S.settle = 0; brain.drop(); B.path = null; S.state = 'back'; S.t = 0; S.wait = r.range(0.8, 1.4); }
         // (a round into him from where he could not see me: the flash says where I am)
         if (!S.line) S.flashAt = { p: kit().playerBody().chest.clone(), t: G.time };
         // (shot before he has started in: he does not stand and wait for the next one)
