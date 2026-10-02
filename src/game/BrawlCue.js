@@ -49,7 +49,8 @@ export class DodgeCue {
     this.clip = clip; this.A = A; this.side = side; this.flying = flying;
     this.from = side === 'L' ? 'R' : 'L';
     // (in the lesson a little longer: it is being learnt)
-    this.window = B.lesson ? CUE.lessonWindow : CUE.window;
+    // ([C4] m6: a little longer after each time 'Too slow.' put me down: B.cueWin)
+    this.window = B.cueWin ? B.cueWin() : B.lesson ? CUE.lessonWindow : CUE.window;
     // (the world's speed: the window holds what is left of the blow, in real
     // time, at about a third - less if the blow is nearer than that)
     this.k = Math.max(0.06, Math.min(1, remain / this.window));
@@ -121,7 +122,9 @@ export class DodgeCue {
     const S = B.stats.cues;
     if (S[answer] != null) S[answer]++;
     if (answer === 'right') {
-      // the slip: whatever the room let my feet do, the blow goes by
+      // the slip
+      // ([C4] m7: the side is right; the blow is judged at its contact by
+      // where my feet got to - a slip the room stopped lands: Brawl.hopBlocked)
       if (this.flying) this.flying.slipped = true;
       else B.him.slipped = this.clip;
       B.sfx('c4slip', null, {});

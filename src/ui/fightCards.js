@@ -94,9 +94,11 @@ export class FightCards {
     }
     // the ticks run out
     const wm = this.wm;
-    if ((this.ticks && this.ticks.length) || (wm && wm.lv)) {
+    if ((this.ticks && this.ticks.length) || (wm && wm.lv) || (this.tells && this.tells.length)) {
       for (const k of this.ticks || []) k.t -= dt;
       this.ticks = (this.ticks || []).filter((k) => k.t > 0);
+      for (const k of this.tells || []) k.t -= dt;
+      this.tells = (this.tells || []).filter((k) => k.t > 0);
       if (wm && wm.lv) {
         for (let i = 0; i < 3; i++) wm.age[i] += dt;
         if (wm.flash > 0) wm.flash -= dt;
@@ -175,6 +177,16 @@ export class FightCards {
     (this.ticks || (this.ticks = [])).push({ x: at.x, y: at.y, side, t: dur, dur, seed: Math.floor(at.x * 7 + at.y * 13) });
     this.drawTicks();
   }
+  // [C4] after the critic (B3): the tell of a small blow of his (his jab,
+  // his cross, his answer, a feint) - three short white strokes flicked out
+  // round the fist that cocks, for a fifth of a second: a comic's 'here it
+  // comes' (no slowdown, no side: the big ones have the cue). at: the fist
+  // on the frame (CSS px); side: the side of the frame it comes from
+  tellMark(at, side, dur = 0.22) {
+    if (!at) return;
+    (this.tells || (this.tells = [])).push({ x: at.x, y: at.y, s: side === 'L' ? -1 : 1, t: dur, dur });
+    this.drawTicks();
+  }
   // [B8] the wind-up's ticks (§2): as the held punch passes each level a
   // white ink tick flicks out at the fist and stays while it is held (one,
   // two, three: the load read at a glance, never a bar), the ticks riding
@@ -224,6 +236,20 @@ export class FightCards {
           const a = (i / 14) * Math.PI * 2 + r.gauss() * 0.07, r0 = (84 + r.range(0, 14)) * K, r1 = r0 + (40 + r.range(0, 36)) * K;
           stroke(Wm.x + Math.cos(a) * r0, Wm.y + Math.sin(a) * r0, Wm.x + Math.cos(a) * r1, Wm.y + Math.sin(a) * r1, 7 * K);
         }
+      }
+      g.globalAlpha = 1;
+    }
+    // ([C4] the small blow's tell: three strokes out from the fist, the
+    // middle one longest, toward the side it comes from and up)
+    for (const k of this.tells || []) {
+      const age = k.dur - k.t, grow = Math.min(1, age / 0.05), fade = Math.min(1, k.t / 0.06);
+      const K = innerHeight / 900;
+      g.globalAlpha = fade;
+      for (const [a, l] of [[-1.05, 0.75], [-0.55, 1.0], [-0.05, 0.75]]) {
+        const ang = -Math.PI / 2 + (a + 0.55) * k.s * -1;
+        const dx = Math.cos(ang), dy = Math.sin(ang);
+        const r0 = 34 * K, len = (12 + 20 * l * grow) * K;
+        stroke(k.x + dx * r0, k.y + dy * r0, k.x + dx * (r0 + len), k.y + dy * (r0 + len), 5 * K);
       }
       g.globalAlpha = 1;
     }
@@ -649,7 +675,7 @@ export class FightCards {
     }
   }
 
-  clear() { this.cueS = null; this.cueOut = null; if (this.cueC) this.drawCue(); this.flying(null); this.card(''); this.fl.style.display = 'none'; this.flT = 0; this.shownFlash = ''; this.arrow(null); this.charge(null, 0); this.chevron(null); if (this.wm) { this.wm.lv = 0; this.drawTicks(); } }
+  clear() { this.cueS = null; this.cueOut = null; if (this.cueC) this.drawCue(); this.flying(null); this.card(''); this.fl.style.display = 'none'; this.flT = 0; this.shownFlash = ''; this.arrow(null); this.charge(null, 0); this.chevron(null); if (this.wm) this.wm.lv = 0; this.tells = []; this.ticks = []; if (this.tickC) this.drawTicks(); }
 }
 
 // the small inked pictures: the mouse, one button inked in; keys as dabs

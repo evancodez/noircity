@@ -175,6 +175,65 @@ export class Autoplay {
       if (this.every('mash', 0.1, 0.16)) this.tap(this.lastArm = this.lastArm === 'Mouse0' ? 'Mouse2' : 'Mouse0');
       return;
     }
+    // ---- [C4] after the critic: the cold player's clumsy hands, for seeded
+    // runs of the B3 mercy ('medium': the cue answered 0.24 .. 0.36 s after
+    // it shows, one in ten missed, one in seven the wrong way; an opening
+    // struck 0.30 .. 0.45 s late, the wrong fist one in seven, one press in
+    // five held; a jab into his guard every 1.5 .. 3 s; never SPACE.
+    // 'slow': the cue at 0.32 .. 0.5 s, one in four missed, one in five the
+    // wrong way; openings 0.45 .. 0.7 s late, the wrong fist one in three;
+    // a jab into the guard every 0.7 .. 1.5 s; a stray S or SPACE now and then.
+    // Neither learns: the critic's c4_bot.mjs profiles, in the page)
+    // ('slowlearn': the slow hands that read the word on the black and change
+    // that one thing - 'Into his guard' / 'Caught swinging': fewer punches
+    // thrown at his guard; 'Block his jab': SPACE on his straight blows, more
+    // each time; 'Wrong way': fewer wrong reads)
+    if ((style === 'medium' || style === 'slow' || style === 'slowlearn') && !B.lesson) {
+      const slow = style !== 'medium';
+      const L = this.learnt || (this.learnt = { poke: 1, block: 0, wrong: 1, n: 0 });
+      if (style === 'slowlearn' && B.stats.downs > L.n) {
+        L.n = B.stats.downs;
+        const why = (B.stats.downWhy || []).slice(-1)[0];
+        if (why === 'answer' || why === 'caught') L.poke *= 1.6;
+        else if (why === 'jab') L.block = Math.min(0.75, L.block + 0.25);
+        else if (why === 'wrong') L.wrong *= 0.5;
+      }
+      if (B.cue && !B.cue.done) {
+        const id = 'cue:' + B.stats.his + ':' + B.cue.clip + ':' + (B.cue.flying ? 'f' : 'b');
+        if (!this.cuePlan || this.cuePlan.id !== id) {
+          const safe = B.cue.side === 'R' ? 'KeyD' : 'KeyA', x = r.next();
+          const act = x < (slow ? 0.25 : 0.1) ? 'none' : x < (slow ? 0.25 + 0.2 * L.wrong : 0.25) ? (safe === 'KeyD' ? 'KeyA' : 'KeyD') : safe;
+          this.cuePlan = { id, act, at: this.t + (slow ? r.range(0.32, 0.5) : r.range(0.24, 0.36)), done: false };
+        }
+        const P = this.cuePlan;
+        if (!P.done && this.t >= P.at) { P.done = true; for (const k of moves) this.release(k); if (P.act !== 'none') this.tap(P.act); }
+        return;
+      }
+      // (a learner's block: his straight blow seen a beat late, SPACE held through it)
+      if (L.block > 0 && him.state === 'attack' && /^br_(jab|jabR|cross|answerL|answerR)$/.test(him.clip || '')) {
+        const id = 'blk:' + B.stats.his;
+        if (this.blkId !== id) { this.blkId = id; const cl = c.clip(him.clip); this.blkAt = r.chance(L.block) ? this.t - him.t + (cl.marks.tell ?? 0) + r.range(0.12, 0.22) : null; this.blkEnd = this.t - him.t + (cl.marks.contact ?? 0.4) + 0.12; }
+        if (this.blkAt != null && this.t >= this.blkAt) { this.blkAt = null; this.release('Mouse0'); this.release('Mouse2'); this.hold('Space', Math.max(0.1, this.blkEnd - this.t)); }
+      }
+      if (busyHands || me.act === 'down') return;
+      const out = him.state === 'reel';
+      this.walkTo(B, d, out ? (him.atSpot ? 1.3 : 2.6) : 1.45);
+      if (slow && this.every('stray', 3, 7)) { this.tap(r.chance(0.5) ? 'KeyS' : 'Space'); return; }
+      if (out) { if (him.atSpot && d < 1.75 && me.act === 'idle' && this.every('last', 0.6, 1.0)) { if (r.chance(slow ? 0.5 : 0.8)) this.hold(r.chance(0.5) ? 'Mouse0' : 'Mouse2', r.range(0.75, 0.9)); else this.tap(r.chance(0.5) ? 'Mouse0' : 'Mouse2'); } return; }
+      if (me.act !== 'idle' || d > 1.8) return;
+      const open = B.openSides();
+      const look = open + ':' + him.state + ':' + (him.missT > 0);
+      if (this.seen !== look) { this.seen = look; this.seenAt = this.t + (slow ? r.range(0.45, 0.7) : r.range(0.3, 0.45)); }
+      if (open && this.t >= this.seenAt && him.state !== 'attack') {
+        let side = open.length === 2 ? (r.chance(0.5) ? 'L' : 'R') : open[0];
+        if (r.chance(slow ? 0.33 : 0.15)) side = side === 'L' ? 'R' : 'L';
+        if (r.chance(0.2)) this.hold(arm(side), r.range(0.5, 0.9)); else this.tap(arm(side));
+        this.seenAt = this.t + (slow ? r.range(0.4, 0.7) : r.range(0.3, 0.5));
+        return;
+      }
+      if (!open && him.state === 'move' && this.every('poke', (slow ? 0.7 : 1.5) * L.poke, (slow ? 1.5 : 3.0) * L.poke)) this.tap(r.chance(0.5) ? 'Mouse0' : 'Mouse2');
+      return;
+    }
     // ---- [C4] the dodge cue up: the key toward the light, a reaction time
     // after it shows (on my clock: the world is slowed under it, I am not)
     if (B.cue && !B.cue.done && (style !== 'nododge' || B.lesson)) {
