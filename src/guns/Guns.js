@@ -210,11 +210,15 @@ export class Guns {
   // (the stage changed under the men: the desk went over) their nav grid and cover
   rebuild() { if (this.onRebuild) this.onRebuild(); }
 
-  // the fire tokens: at most cfg.maxFiring men shoot at once; force always
+  // the fire tokens: at most cfg.maxFiring men shoot at once; force always.
+  // The limit is room for the player who fights from cover: a man standing
+  // up (not down behind something, not risen over it) is every man's to
+  // shoot - stand and trade in the open and they all come out at once
   token(ai, force = false) {
     const T = this.tokens;
     if (T.has(ai)) return true;
     for (const [a] of T) if (!a.h.alive) T.delete(a);
+    if (!force && (this.game.controller.crouchK || 0) < 0.5) force = true;
     if (T.size >= this.cfg.maxFiring && !force) return false;
     T.set(ai, this.game.time);
     return true;

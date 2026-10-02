@@ -194,27 +194,38 @@ K.spawn({ kind: 'tommy', at: { x, z }, cover: true, wait: 2.4 });   // there alr
   the living men's way.
 
 ---------------------------------------------------------------------------
-## 5. The teach, the warning, the fail (lane C1's kit)
+## 5. The teach, the warning, the fail (lane C1's kit, seams/Z.md)
 
-Call them through `src/guns/kitStub.js` (they pass to C1's `hud.teach`,
-`hud.objective`, `hud.warn`, `game.fail` the moment those exist):
+The kit uses lane C1's lines; a chapter declares its beats' `objectives` in
+its `defineScene` (Z.md §1) and the kit gives the rest:
 ```js
-import { objective, teach, warn } from '../guns/kitStub.js';
-objective(G, 'Hold the room.');
-teach(G, 'low', 'get low', { key: 'KeyC', until: () => C.crouchK > 0.6 });
-teach(G, 'rise', 'rise and aim', { key: 'Mouse2', until: () => C.riseK > 0.7 });
-teach(G, 'reload', 'reload, down behind it', { key: 'KeyR', until: () => W.reloading });
-warn(G, 'Get down!');   // and warn(G, null)
+K.teach('crouch');                 // [C] get low        (until: down)
+K.teach('rise');                   // [RMB] rise and aim (until: up over it)
+K.teach('reload');                 // [R] reload         (until: reloading)
+K.teach('crouch', { again: true }); // once more: in a beat failed twice (G.fails(beat) === 2)
+ctx.onStep(() => ctx.hud.warn(K.active ? K.warning() : null));   // the warning, every step
 ```
-The fail needs no call: health at zero is the kit's `down()`: the fall
-(0.9 s), black (the warning, the objective and the cards go), the reason,
-back at `to`. The warning before it is the scene's (the test bed's, in
-`91_guns.js`: `Get down!` when hurt with a man on me, `They have your
-angle. Move!` when that is so down behind cover, `Your cover won't hold.
-Move!` when it is being shot through, `Stop him!` for the heavy within 4 m),
-with the health's own: the ink closing in, the heartbeat, each hit's
-splash at the edge it came from; the mending starts later and runs slower
-while any man has a line on me.
+- **The cards** (`TEACH` in `Guns.js`, ids shared with the rest of the game:
+  IV's stand-in gives `crouch` too) are once per save; the scene picks the
+  safe second - the test bed: `crouch` as a contest opens (the men are seconds
+  away), `rise` the first time I am down, `reload` in the ready beat. A card
+  goes when the thing is done; `hud.teach`'s opts pass through.
+- **The warning** (`K.warning()`, WAVE_C §1 rule 2): `Stop him!` (the heavy
+  within 4.2 m), `Your cover won't hold. Move!` (down, and a round just came
+  through what I hide behind), and, hurt (under 45, or the kit's low line up
+  and under 60): `They have your angle. Move!` (down, a man has me), `Get
+  down!` (standing, a man has me), `Stay down. Let it mend.` (down, nobody
+  has me). Words in `cfg.warn` by the same keys (`rush`, `cover`, `angle`,
+  `open`, `mend`). Over the kit's own low line (`You're hit. Get to cover.`);
+  with the kit's rule that no fall comes before a warning has been up a
+  second (`Game.spareLast`).
+- **The fail needs no call**: health at zero in an encounter is the kit's
+  `down()` -> `game.fail({ why: K.why(), to: cfg.to, fall: true })`: the fall,
+  black, the reason, back at `to` with the world as its setup makes it
+  (`begin` runs again there). Do not also give `onDown` for those beats.
+  The low state is the health's own: the ink closing in and the heartbeat
+  under 35, each hit's splash at the edge it came from; the mending starts
+  later and runs slower while any man has a line on me.
 
 ---------------------------------------------------------------------------
 ## 6. Bodies: `game.bodies` (for any figure)

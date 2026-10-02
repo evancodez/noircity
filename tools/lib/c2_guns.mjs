@@ -15,10 +15,17 @@
 //         keeps down through a Tommy gun's burst and rises when it stops;
 //         answers the heavy at once. Reactions 300 .. 550 ms; the aim's
 //         error tuned for 60 - 70 % of aimed rounds landing.
+//   clumsy the first-timer of WAVE_C §7 (who was taught the cover, and
+//         uses it badly): slow (reactions 550 .. 900 ms), a wide hand, now
+//         and then stays up over the cover a second too long, reloads where
+//         he stands, gets down late on a new spot, presses a wrong key, moves
+//         only when it is bad - fails some, gets through in three tries
 const PROFILES = {
   idle: { act: false },
   bad: { act: true, cover: false, react: [450, 800], errM: 0.3, settle: [120, 260], gap: [250, 450], renotice: 600 },
-  good: { act: true, cover: true, react: [300, 550], errM: 0.29, settle: [60, 120], gap: [380, 620], burst: [1, 1], down: [450, 800] },
+  good: { act: true, cover: true, react: [300, 550], errM: 0.29, settle: [60, 120], gap: [380, 620], burst: [1, 1], down: [450, 800], shadows: true },
+  clumsy: { act: true, cover: true, react: [550, 900], errM: 0.42, settle: [100, 220], gap: [420, 700], burst: [1, 2], down: [350, 700],
+    upLong: 0.35, standReload: 0.3, crouchLate: [500, 1400], wrongKey: 0.12, lateMove: true },
 };
 
 export default async function drive({ js, turn, keyDown, keyUp, mouse, shot, log, sleep, W, H, opts }) {
@@ -47,7 +54,12 @@ export default async function drive({ js, turn, keyDown, keyUp, mouse, shot, log
       const c = new V().setFromMatrixPosition(h.bones.chest.matrixWorld);
       const hd = new V().setFromMatrixPosition(h.bones.head.matrixWorld);
       const S = a.brain && a.brain.S;
-      men.push({ id: h.slot, x: c.x, y: c.y, z: c.z, hy: hd.y, fx: h.pos.x, fz: h.pos.z, see: K && K.see(e, c, 0.3), seeH: K && K.see(e, hd, 0.2),
+      const see = K && K.see(e, c, 0.3);
+      // (his shadow on a frosted pane: nothing but glass between us, and the
+      // pane near him shows him - a person shoots the shadow through it)
+      let shade = false;
+      if (K && !see) { const d = c.clone().sub(e); const L = d.length(); d.divideScalar(L); shade = !G.rays.raycast(e, d, L - 0.3, { anyHit: true, skip: (q) => !!q.mesh.userData.pane }) && !!G.rays.raycast(e, d, L - 0.3, { anyHit: true }); }
+      men.push({ id: h.slot, x: c.x, y: c.y, z: c.z, hy: hd.y, fx: h.pos.x, fz: h.pos.z, see, seeH: K && K.see(e, hd, 0.2), shade,
         kind: a.brain && a.brain.kind, st: S && S.state, line: !!(a.brain && a.brain.hasLine), entry: !!(S && S.entry), d: Math.hypot(c.x - e.x, c.z - e.z) });
     }
     const BEATS = ['door', 'two_ways', 'pin', 'rush', 'street', 'street_rev'];
@@ -96,6 +108,7 @@ export default async function drive({ js, turn, keyDown, keyUp, mouse, shot, log
       await js(`(N.game.scenes.go('guns', { beat: '${beat}', fade: 'cut', card: false }), 1)`);
       await sleep(400);
       const t0 = Date.now();
+      const g0 = await js('N.game.time');
       let s0 = await js(ST);
       const fails0 = s0.nFails, shots0 = s0.shots, hits0 = s0.hits, wins0 = s0.wins;
       const dbg = {}, noticed = new Map(), visAt = new Map(); let lastSeenAt = null, tellAt = 0, lastUp = Date.now(), upAt = 0, snapT = 0, target = null, seenAt = 0, onSpot = null, goTo = null, moveCool = 0, downUntil = 0, burstLeft = 0, lastShot = 0, warnedBefore = false, lowHp = 100, outThere = false, answerUntil = 0, answerId = null, traceT = 0;
@@ -113,7 +126,9 @@ export default async function drive({ js, turn, keyDown, keyUp, mouse, shot, log
           await releaseAll();
           const f = await js(ST);
           for (let w = 0; w < 30; w++) { const q = await js(ST); if (q && !q.failing && !q.dead && q.beat === beat && q.fade < 0.5) break; await sleep(250); }
-          end = { won: false, why: f.why, warnedFor: f.warnedFor, warned: f.warnedFor != null && f.warnedFor >= 1 };
+          // (how fast it went: the first round into me to the fall, in game seconds, and how many)
+          const hd = await js(`(() => { const E = N.game.guns.events; const h = E.filter((e) => e.what === 'hit' && e.t >= ${g0}); const d = E.filter((e) => e.what === 'down' && e.t >= ${g0}); return { first: h.length ? h[0].t : null, down: d.length ? d[0].t : null, n: h.length }; })()`);
+          end = { won: false, why: f.why, warnedFor: f.warnedFor, warned: f.warnedFor != null && f.warnedFor >= 1, downIn: hd && hd.first != null && hd.down != null ? +(hd.down - hd.first).toFixed(1) : null, hitsTaken: hd ? hd.n : null };
           break;
         }
         // (won: the scene's own record of it; a page that went back to the title is no win)
@@ -124,7 +139,7 @@ export default async function drive({ js, turn, keyDown, keyUp, mouse, shot, log
         // ---- reload: empty -> down (good) and R
         if (s.ammo <= 0 && !s.reloading) {
           await set('RMB', false);
-          if (P.cover && s.ck < 0.5 && !s.on) await tap('KeyC');
+          if (P.cover && s.ck < 0.5 && !s.on && !(P.standReload && Math.random() < P.standReload)) await tap('KeyC');
           await tap('KeyR'); await sleep(rr(200, 350)); dbg['reloadTap'] = (dbg['reloadTap'] || 0) + 1; continue;
         }
         if (s.reloading) { await set('RMB', false); await sleep(100); dbg['reloading'] = (dbg['reloading'] || 0) + 1; continue; }
@@ -138,11 +153,11 @@ export default async function drive({ js, turn, keyDown, keyUp, mouse, shot, log
           // the men who have a line on me and whom I can see (a flanker in the open)
           // (a man who has me while I am DOWN: one who has my side - not one who sees me because I rose to shoot)
           const threats = s.rk < 0.3 ? s.men.filter((m) => m.line && m.see && !m.entry) : [];
-          const pressed = threats.length >= 2 || (threats.length >= 1 && s.hp < 40) || s.broke > 0 || (s.warn && /cover/.test(s.warn));
+          const pressed = P.lateMove ? (threats.length >= 2 || (threats.length >= 1 && s.hp < 25)) : threats.length >= 2 || (threats.length >= 1 && s.hp < 40) || s.broke > 0 || (s.warn && /cover/.test(s.warn));
           if (!onSpot || (pressed && now > moveCool)) {
             // the spot hidden best from the men as they stand now, near
             if (!goTo || pressed) {
-              goTo = await js(BEST); moveCool = now + 4500;
+              goTo = await js(BEST); moveCool = now + (P.lateMove ? 7000 : 4500);
               // (better where I am than anywhere else: I stay and answer them)
               if (goTo && goTo.here && onSpot) goTo = null;
               else { onSpot = null; await set('RMB', false); }
@@ -151,12 +166,17 @@ export default async function drive({ js, turn, keyDown, keyUp, mouse, shot, log
             onSpot = goTo || onSpot || { x: s.x, z: s.z }; goTo = null;
             await set('KeyW', false);
           }
-          if (!s.on) { await tap('KeyC'); await sleep(60); dbg['crouchTap'] = (dbg['crouchTap'] || 0) + 1; continue; }
+          if (!s.on) {
+            if (P.crouchLate) { if (!onSpot.lateT) onSpot.lateT = now + rr(P.crouchLate[0], P.crouchLate[1]); if (now < onSpot.lateT) { await sleep(60); continue; } }
+            if (P.wrongKey && Math.random() < P.wrongKey) { await tap(Math.random() < 0.5 ? 'KeyV' : 'KeyX'); await sleep(rr(200, 400)); }
+            await tap('KeyC'); await sleep(60); dbg['crouchTap'] = (dbg['crouchTap'] || 0) + 1; continue;
+          }
           // a man who has me from the open: answered from where I am (no need to rise)
           threat = threats.sort((a, b) => a.d - b.d)[0] || null;
         }
         // ---- the target: the nearest that shows (from risen, for the good player: what he would see over it)
-        const visible = men.filter((m) => m.see || m.seeH);
+        // (a shadow on frosted glass is a target for a hand that was shown it: profile.shadows)
+        const visible = men.filter((m) => m.see || m.seeH || (P.shadows && m.shade));
         // (bad: out of sight a moment and back: a new reaction before the shot)
         if (P.renotice) for (const m of visible) { if (now - (visAt.get(m.id) || 0) > P.renotice) noticed.set(m.id, now + rr(P.react[0], P.react[1])); visAt.set(m.id, now); }
         // (the man I am answering, first: not the one across the street)
@@ -216,7 +236,7 @@ export default async function drive({ js, turn, keyDown, keyUp, mouse, shot, log
         target.py = yNow; target.pt = now;
         const lead = Math.max(-0.12, Math.min(0.12, (target.w || 0) * 0.12));
         seenAt = noticed.get(m.id);
-        const ty = m.see ? m.y : m.hy - 0.05;
+        const ty = m.see || m.shade ? m.y : m.hy - 0.05;
         const e = await aim(s, yNow + lead + target.err[0], pitchTo(s, m.x, ty, m.z) + target.err[1], 0.65, 0.25);
         if (now < seenAt) { await sleep(30); dbg['react'] = (dbg['react'] || 0) + 1; continue; }
         if (e < 0.012 + 0.08 / Math.max(2, m.d) && now - lastShot > rr(P.gap[0], P.gap[1])) {
@@ -228,7 +248,12 @@ export default async function drive({ js, turn, keyDown, keyUp, mouse, shot, log
           target.err = errOf();
           if (P.cover && !heavy && !(answerId != null && m.id === answerId)) {
             burstLeft = (burstLeft || Math.round(rr(P.burst[0], P.burst[1]))) - 1;
-            if (burstLeft <= 0) { burstLeft = 0; answerUntil = 0; downUntil = Date.now() + rr(P.down[0], P.down[1]); await set('RMB', false); }
+            if (burstLeft <= 0) {
+              burstLeft = 0; answerUntil = 0;
+              // (the clumsy hand stays up a second too long now and then, looking)
+              if (P.upLong && Math.random() < P.upLong) await sleep(rr(800, 1500));
+              downUntil = Date.now() + rr(P.down[0], P.down[1]); await set('RMB', false);
+            }
           }
         }
         await sleep(30);
