@@ -171,7 +171,7 @@ block goes down twenty times without getting through, told "Down." or
 | contest | idle | holding W | spam | clumsy (no learning) | clumsy who learns | practised |
 | --- | --- | --- | --- | --- | --- | --- |
 | II The Fight | loses: first down at 38 s, then every 12 .. 20 s, warned each time, `Too slow.`; never wins | loses slowly (2 downs in 6 min, warned, `Down.`) | **stuck in the lesson 7 min** (B1); with W: **stuck at BLOCK** (B1); passing the lesson then spamming: 52 downs in 6.5 min, never past round 1 | medium: **21 downs, round 2 at 8 min**; slow eyes: **28 downs, round 1** (B3) | won after 10 downs, 6 min 9 s | won 4 of 4 (169 s with 0 downs; three more, 1 down at most); faster hands won 208 s, 1 down |
-| VII Pier 9 foreman | loses: 8 downs in 2.5 min, each warned | - | 39 downs in 5 min, never wins | medium: **18 downs, 7 punches landed, him full** (B3) | - | won 229 s, 1 down (a second run in `c4_pier_human2.json`) |
+| VII Pier 9 foreman | loses: 8 downs in 2.5 min, each warned | - | 39 downs in 5 min, never wins | medium: **18 downs, 7 punches landed, him full** (B3) | - | won 2 of 2 (229 s each, 1 down each; 54 .. 62 of 58 .. 66 cues in time) |
 
 Idle never wins anywhere; spam never wins; practised play wins; clumsy play
 does not get through without learning exactly the right thing, and is not
