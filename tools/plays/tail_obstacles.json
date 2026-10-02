@@ -90,6 +90,42 @@
   {
    "expect": "!G.scenes.ctx.flags.chase.traffic.cars.includes(window.__tc) || window.__tc.pilot.s > window.__tc0.s + 8",
    "label": "within 9 s it has gone on past me (or out of the street)"
+  },
+  {
+   "name": "a lamp post at 50 km/h (the critic: still lit 1.5 s after the blow, its head riding before my bonnet)"
+  },
+  {
+   "eval": "(() => { const C = G.scenes.ctx.flags.chase, l = G.stage.part('lamps').near(-168.8, -34.7, 3); window.__lp = l; C.my.damage = 0; C.my.place(new N.THREE.Vector3(l.post.x, 0, l.post.z - 16), -Math.PI / 2, 50 / 3.6); return [l.post.x, l.post.z, l.on].join(' '); })()"
+  },
+  {
+   "down": "KeyW"
+  },
+  {
+   "until": "window.__lp.bent",
+   "timeout": 5000
+  },
+  {
+   "eval": "(window.__lpT = N.time, 'bent at ' + N.time.toFixed(2))"
+  },
+  {
+   "up": "KeyW"
+  },
+  {
+   "until": "!window.__lp.on",
+   "timeout": 3000
+  },
+  {
+   "eval": "'out ' + (N.time - window.__lpT).toFixed(2) + ' s after the blow'"
+  },
+  {
+   "expect": "N.time - window.__lpT < 0.6",
+   "label": "a bent post goes out within about half a second"
+  },
+  {
+   "wait": 600
+  },
+  {
+   "shot": "j04_post_out"
   }
  ]
 }
