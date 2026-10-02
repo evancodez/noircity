@@ -624,6 +624,12 @@ export default {
         return;
       }
       if (kind === 'rusher') { S.state = 'rush'; S.t = 0; h.setState('walk', 0.2); return; }
+      // (I am standing up in his line, and nothing has come near him: he has
+      // no reason to go back - another two or three, the gun still up)
+      if (kind === 'pistol' && (G.controller.crouchK || 0) < 0.5 && S.line && S.mag > 0 && S.rattledT <= 0 && (S.stay = (S.stay || 0) + 1) <= 2) {
+        S.state = 'fire'; S.t = 0; S.shots = burstOf(); S.shotT = r.range(0.3, 0.45); S.burstN = 0; kit().token(B); return;
+      }
+      S.stay = 0;
       if (S.resume === 'entry' && S.entry) { S.resume = null; S.state = 'entry'; S.t = 0; return; }
       if (S.resume === 'move' && S.cover) { S.resume = null; moveTo(S.cover.x, S.cover.z, true); S.state = 'move'; S.t = 0; return; }
       S.resume = null;
