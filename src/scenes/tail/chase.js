@@ -7,6 +7,7 @@ import { His, LEGS } from './his.js';
 import { WindowGun } from './gun.js';
 import { Traffic } from './traffic.js';
 import { Walkers } from './walkers.js';
+import { Cat } from './cat.js';
 import { makeKit } from './kit.js';
 import { RULES } from './rules.js';
 import { makeBot } from './bot.js';
@@ -27,6 +28,8 @@ import { FIRE_COL } from '../../fx/Explosion.js';
 // fail names (the checkpoints: start, chase2, river, pier).
 const clamp = (x, a, b) => Math.max(a, Math.min(b, x));
 const _v = new THREE.Vector3(), _w = new THREE.Vector3();
+// (the cat's wall: Pell Lane's brick wall north of the board fence, its cap)
+const PELL_CAT = { x: -203.06, z: 8, y: 3.62 };
 
 export { RULES };
 
@@ -56,6 +59,7 @@ export class Chase {
     if (this.gun) this.gun.dispose();
     if (this.traffic) this.traffic.dispose();
     if (this.walkers) this.walkers.dispose();
+    for (const c of this.cats || []) c.dispose();
     if (this.cabin) this.cabin.dispose();
     if (this.hat) { this.hat.removeFromParent(); this.hat = null; }
     this.kit.warn(null);
@@ -92,6 +96,15 @@ export class Chase {
     this.gun = new WindowGun(this);
     this.traffic = new Traffic(this);
     this.walkers = new Walkers(this);
+    // [2nd owner] a cat on a doorstep in Pell Lane that bolts as he pulls
+    // away, and one on the crates by the pier's gate that goes as I drive in
+    this.cats = [];
+    // (Pell Lane's sits on the brick wall's top past the board fence, black
+    // against the lit wall beyond, and drops off the back of it as his car
+    // goes by; the pier's jumps down off the crates and runs along the shed
+    // to the water's edge)
+    if (this.phase === 'start') this.cats.push(new Cat(this, { x: PELL_CAT.x, z: PELL_CAT.z, y: PELL_CAT.y, yaw: -Math.PI / 2, near: 9.5, path: [[PELL_CAT.x + 1.6, PELL_CAT.z - 0.4]] }));
+    this.cats.push(new Cat(this, { x: PIER.gate.x - 3, z: PIER.gate.z - 6, y: 2.0, yaw: -Math.PI / 2, near: 12, path: [[140.2, 180], [139.4, 193]] }));
     // the damage I bring from the checkpoint shows
     this.showDamage(true);
     this.place = { my, his };
@@ -142,6 +155,7 @@ export class Chase {
     this.cabin.step(dt);
     if (this.traffic) this.traffic.step(dt);
     if (this.walkers) this.walkers.step(dt);
+    for (const c of this.cats || []) c.step(dt);
     this.sound(dt);
     const gap = this.gap();
     this.gapNow = gap;
