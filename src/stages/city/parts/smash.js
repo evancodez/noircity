@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { allocInkId, markFigure } from '../../../render/layers.js';
 import { lathe, merge } from '../../../world/geom.js';
 import { crateGeo, CRATE, BARREL, stallGeo, fenceGeo, FENCE, standGeo, hydrantGeo } from '../../riverroad/smashKinds.js';
-import { NS, EW, NS_LIST, EW_LIST, PAVE, RIVER, riverFrame, riverPoint, riverSAtZ, blockAt, ROADWORKS, WHARF_X, groundAt, PELL } from '../plan.js';
+import { NS, EW, NS_LIST, EW_LIST, PAVE, RIVER, riverFrame, riverPoint, riverSAtZ, blockAt, ROADWORKS, WHARF_X, groundAt, PELL, CINEMA, SPECIAL } from '../plan.js';
 
 // What a car goes through in the city (the river road's things: fruit
 // crates, stalls, barrels, newsstands, board fences, hydrants; and the
@@ -30,6 +30,10 @@ const KIND = {
   hydrant: { r: 0.22, drag: 0.94, sound: 'smash_hydrant' },
   bin: { r: 0.33, drag: 0.975, sound: 'city_bin' },
   horse: { r: 0.9, drag: 0.97, sound: 'smash_fence' },
+  // [2nd owner] a dairy's milk cans, a café's tables and chairs
+  can: { r: 0.21, drag: 0.985, sound: 'city_bin' },
+  table: { r: 0.4, drag: 0.975, sound: 'smash_crate' },
+  chair: { r: 0.27, drag: 0.985, sound: 'smash_crate' },
 };
 
 // a sawhorse (two A-legs, a rail, a white board); the dustbin is binLite below
@@ -45,6 +49,23 @@ function boardGeo() { return new THREE.BoxGeometry(1.9, 0.22, 0.03).translate(0,
 // fruit heaped in a crate (12 apples of 5 x 4 sides: 672 -> 360 triangles),
 // a barrel (16 sides, its hoops thinner: 1672 -> 760), a dustbin (14 sides:
 // 1120 -> 790)
+// a milk can (a churn: the shoulder, the neck, the lid, a band), a café's
+// round table on its stem and a bentwood chair
+function canGeo() {
+  const body = lathe([[0, 0], [0.16, 0], [0.17, 0.02], [0.17, 0.4], [0.19, 0.44], [0.19, 0.5], [0.12, 0.6], [0.1, 0.66], [0.13, 0.68], [0.13, 0.71], [0, 0.72]], 12);
+  return merge([body, new THREE.TorusGeometry(0.172, 0.012, 3, 12).rotateX(Math.PI / 2).translate(0, 0.2, 0)]);
+}
+function tableGeo() {
+  return merge([new THREE.CylinderGeometry(0.36, 0.36, 0.03, 18).translate(0, 0.73, 0), new THREE.CylinderGeometry(0.025, 0.03, 0.7, 6).translate(0, 0.37, 0),
+    new THREE.CylinderGeometry(0.2, 0.22, 0.03, 12).translate(0, 0.015, 0)]);
+}
+function chairGeo() {
+  const P = [new THREE.CylinderGeometry(0.2, 0.2, 0.03, 14).translate(0, 0.45, 0)];
+  for (const [x, z] of [[-0.14, -0.14], [0.14, -0.14], [-0.14, 0.14], [0.14, 0.14]]) P.push(new THREE.CylinderGeometry(0.013, 0.013, 0.46, 5).translate(x, 0.225, z));
+  P.push(new THREE.TorusGeometry(0.15, 0.012, 4, 14, Math.PI).translate(0, 0.72, -0.17));
+  for (const x of [-0.15, 0.15]) P.push(new THREE.CylinderGeometry(0.012, 0.012, 0.28, 5).translate(x, 0.6, -0.17));
+  return merge(P);
+}
 function fruitLite(rng) {
   const parts = [];
   for (let i = 0; i < 12; i++) {
@@ -137,6 +158,9 @@ export default {
     pool('hydrant', hydrantGeo(), iron, 40, { figure: true });
     pool('bin', binLite(), M.paintedMetal, 90);
     pool('horse', horseGeo(), wood, 12);
+    pool('can', canGeo(), M.paintedMetal, 30);
+    pool('table', tableGeo(), white, 10);
+    pool('chair', chairGeo(), wood, 20);
     pool('board', boardGeo(), white, 12);
     pool('plank', new THREE.BoxGeometry(1, 1, 1), wood, 1100);
     pool('apple', new THREE.SphereGeometry(1, 9, 7), fruitM, 800);
@@ -200,6 +224,12 @@ export default {
     const hydrant = (x, z) => { const it = place('hydrant', x, z, 0); show(it, 'hydrant'); return it; };
     const bin = (x, z) => { const it = place('bin', x, z, rng.next() * 6); show(it, 'bin'); return it; };
     const horse = (x, z, yaw) => { const it = place('horse', x, z, yaw); show(it, 'horse'); show(it, 'board'); return it; };
+    const cans = (x, z, ax, az, n) => { for (let j = 0; j < n; j++) { const it = place('can', x + ax * j * 0.42 + rng.gauss() * 0.03, z + az * j * 0.42 + rng.gauss() * 0.03, rng.next() * 6); show(it, 'can'); } };
+    // (a table and its two chairs, the chairs turned to it)
+    const cafe = (x, z) => {
+      const t = place('table', x, z, rng.next() * 6); show(t, 'table');
+      for (const s of [-1, 1]) { const a = rng.next() * 6, cx = x + Math.cos(a) * 0.62 * s, cz = z + Math.sin(a) * 0.62 * s; const c = place('chair', cx, cz, Math.atan2(cx - x, cz - z)); show(c, 'chair'); }
+    };
 
     const wharf = [];
     const layout = () => {
@@ -257,6 +287,24 @@ export default {
           if (rng.chance(0.55)) bin(x, z); else crates(x, z, rng.int(1, 2), rng.int(1, 2), 0);
         }
       }
+      // [2nd owner] a dairy's cans: a delivery left in the alley through the
+      // block (he takes the alley when I am near: through them, ringing), and
+      // rows of them by shop doors on Cooper and Water St; a café's tables
+      // under the Bijou's marquee and along the square's north edge under the
+      // bulbs (what a car mounting the kerb finds)
+      {
+        const ax = SPECIAL['3,2'].alleyNS;
+        cans(ax - 0.9, -62, 1, 0.15, 4);
+        cans(ax + 1.6, -48, 0, 1, 3);
+        const C = NS.cooper;
+        cans(C.x + C.hw + C.p - 0.6, -58, 0, 1, 4);
+        const W = NS.water;
+        cans(W.x - W.hw - W.p + 0.6, -142, 0, 1, 3);
+        const fz = EW.fifth.z - EW.fifth.hw - EW.fifth.p / 2;
+        for (const x of [CINEMA.x - 8.5, CINEMA.x - 5, CINEMA.x + 5.5, CINEMA.x + 9]) cafe(x, fz);
+        const sq = blockAt(1, 1);
+        for (const x of [sq.x0 + 10, sq.x0 + 22, sq.x1 - 14]) cafe(x, sq.z0 + 2.2);
+      }
       // the roadworks on Baxter: sawhorses with their white boards across the
       // street at each end of the trench
       for (const z of [ROADWORKS.z0, ROADWORKS.z1]) for (const x of [-3.3, -1.1, 1.1, 3.3]) horse(NS.baxter.x + x, z, 0);
@@ -271,6 +319,27 @@ export default {
     layout();
 
     // ---- the pieces ------------------------------------------------------------------
+    // [2nd owner] a thing that flies off whole (a crate, a barrel, a bin, a
+    // hydrant, a can, a table, a chair) is drawn about its middle - its
+    // geometry stands on its foot, so a whole piece was drawn half its
+    // height above where it was, and lay on the road a hand off the stones
+    // (a crate 0.17 m, a bin on its side 0.2 m): the matrix takes its
+    // middle back to the piece's place, and the piece rests on the lowest
+    // point of its box (or of its drum, rolled on its side) as it lies
+    const _off = new THREE.Matrix4(), _mm = new THREE.Matrix4();
+    const bbOf = (P) => { if (!P.bb) { const g = P.im.geometry; if (!g.boundingBox) g.computeBoundingBox(); const b = g.boundingBox; P.bb = { c: b.getCenter(new THREE.Vector3()), e: b.getSize(new THREE.Vector3()).multiplyScalar(0.5) }; } return P.bb; };
+    const setPiece = (p) => {
+      if (!p.bb) { setM(p.P, p.i, p.pos, p.q, p.scale); return; }
+      _mm.compose(p.pos, p.q, p.scale).multiply(_off.makeTranslation(-p.bb.c.x, -p.bb.c.y, -p.bb.c.z));
+      p.P.im.setMatrixAt(p.i, _mm); p.P.im.instanceMatrix.needsUpdate = true;
+    };
+    const halfY = (p) => {
+      if (!p.bb) return p.pivotY ?? p.r * 0.5;
+      const q = p.q, e = p.bb.e;
+      const ax = Math.abs(2 * (q.x * q.y + q.w * q.z)), ay = Math.abs(1 - 2 * (q.x * q.x + q.z * q.z)), az = Math.abs(2 * (q.y * q.z - q.w * q.x));
+      if (p.roll) return Math.max(e.x, e.z) * Math.sqrt(Math.max(0, 1 - ay * ay)) + e.y * ay;
+      return ax * e.x + ay * e.y + az * e.z;
+    };
     const piece = (name, pos, q, scale, vel, ang, { r = 0.1, paper: isPaper = false, whole = null, bounce = 0.3 } = {}) => {
       const P = pools[name];
       const p = { piece: true, name, P, pos: pos.clone(), q: q.clone(), scale: scale.clone(), vel: vel.clone(), ang: ang.clone(), r, paper: isPaper, rest: false, t: 0, bounce, whole, restT: 0 };
@@ -278,7 +347,8 @@ export default {
       if (i < 0) return null;
       p.i = i;
       P.owner[i] = p;
-      setM(P, i, p.pos, p.q, p.scale);
+      if (whole) p.bb = bbOf(P);
+      setPiece(p);
       pieces.push(p);
       return p;
     };
@@ -338,6 +408,9 @@ export default {
         b.inst = [];
       },
       bin: (b, v) => { wholeRoll(b, 'bin', 0.96, 0.3, v); b.inst = []; },
+      can: (b, v) => { wholeRoll(b, 'can', 0.72, 0.19, v); b.inst = []; },
+      table: (it, v) => { const bi = it.inst[0]; const p = piece('table', it.pos.clone().setY(it.pos.y + 0.37), it.q, ONE, flung(v, 0.7, 1.0), spin(0.8), { r: 0.36, whole: bi, bounce: 0.3 }); if (p) p.pivotY = 0.37; it.inst = []; },
+      chair: (it, v) => { const bi = it.inst[0]; const p = piece('chair', it.pos.clone().setY(it.pos.y + 0.4), it.q, ONE, flung(v, 1.0, 1.2), spin(1.0), { r: 0.25, whole: bi, bounce: 0.35 }); if (p) p.pivotY = 0.4; it.inst = []; },
       stall: (it, v) => {
         for (const x of it.inst) release(x.P, x.i);
         const top = it.pos.clone().setY(it.pos.y + 2.3);
@@ -473,7 +546,7 @@ export default {
           p.pos.addScaledVector(p.vel, dt);
           const w = p.ang.length();
           if (w > 1e-4) { _q.setFromAxisAngle(_v.copy(p.ang).divideScalar(w), w * dt); p.q.premultiply(_q); }
-          const gy = groundAt(p.pos.x, p.pos.z) + (p.pivotY ?? p.r * 0.5);
+          const gy = groundAt(p.pos.x, p.pos.z) + halfY(p);
           if (p.pos.y < gy) {
             p.pos.y = gy;
             if (p.vel.y < -1.2 && !p.paper) {
@@ -487,7 +560,7 @@ export default {
             }
             if (Math.hypot(p.vel.x, p.vel.z) < 0.08 && p.ang.length() < 0.2) { p.restT += dt; if (p.restT > 0.3) { p.rest = true; p.vel.set(0, 0, 0); p.ang.set(0, 0, 0); } }
           }
-          setM(p.P, p.i, p.pos, p.q, p.scale);
+          setPiece(p);
         }
         const g = stage.game;
         for (const gz of geysers) {
@@ -512,9 +585,15 @@ export default {
       },
     };
     const settleFlat = (p, dt) => {
-      if (p.pivotY != null && !p.roll) return;
+      // ([2nd owner] a whole box - a crate, a hydrant, a table - comes down on
+      // the face nearest the ground, never balanced on an edge)
+      if (p.pivotY != null && !p.roll && !p.bb) return;
       const s = p.scale;
-      const ax = s.x <= s.y && s.x <= s.z ? 0 : s.y <= s.z ? 1 : 2;
+      let ax = s.x <= s.y && s.x <= s.z ? 0 : s.y <= s.z ? 1 : 2;
+      if (p.bb && !p.roll) {
+        const q = p.q, ys = [Math.abs(2 * (q.x * q.y + q.w * q.z)), Math.abs(1 - 2 * (q.x * q.x + q.z * q.z)), Math.abs(2 * (q.y * q.z - q.w * q.x))];
+        ax = ys[0] >= ys[1] && ys[0] >= ys[2] ? 0 : ys[1] >= ys[2] ? 1 : 2;
+      }
       _v.set(ax === 0 ? 1 : 0, ax === 1 ? 1 : 0, ax === 2 ? 1 : 0).applyQuaternion(p.q);
       const target = _s.set(0, _v.y >= 0 ? 1 : -1, 0);
       _q.setFromUnitVectors(_v, target);
