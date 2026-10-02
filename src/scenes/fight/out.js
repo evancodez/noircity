@@ -153,10 +153,10 @@ export function afterKO(ctx, w) {
 function roomAnswers(ctx, free) {
   const G = ctx.game, cast = ctx.cast, d = ctx.stage.part('diner');
   const head = (c) => () => c && c.bones && c.bones.head ? c.bones.head.getWorldPosition(V(0, 0, 0)) : null;
-  const talk = (id, c, lines, prompt, then, range = 2.6) => {
+  const talk = (id, c, lines, prompt, then, range = 3.2) => {
     if (!c) return;
     let n = 0;
-    ctx.interact.add({ id, at: head(c), range, cone: 0.45, prompt, when: free,
+    ctx.interact.add({ id, at: head(c), range, cone: 0.6, prompt, when: free,
       onUse: () => { const line = lines[Math.min(n, lines.length - 1)]; n++; G.hud.say(line, 2.4); if (then) then(n); } });
   };
   const dk = cast.get('docker'), dot = cast.get('dot'), cook = cast.get('cook');
@@ -171,8 +171,10 @@ function roomAnswers(ctx, free) {
   talk('c4.cook', cook, ['Kitchen’s closed.', 'I said closed.'], 'talk', () => { if (d.bell) d.bell.ring(); }, 4.2);
   if (d.jukebox) {
     const J = DINER.jukebox;
-    ctx.interact.add({ id: 'c4.jukebox', at: V(J.x, DINER.floorY + 1.1, DINER.zMin + 0.45), range: 2.2, cone: 0.5, prompt: 'play', when: free,
-      onUse: () => { d.jukebox.next(); G.sfx.play('clothRustle', V(J.x, 1.0, DINER.zMin + 0.5), { k: 0.3 }); } });
+    // (its lit face, at the end wall: the prompt on it from anywhere in front)
+    ctx.interact.add({ id: 'c4.jukebox', at: V(J.x, DINER.floorY + 1.0, J.z + 0.35), range: 2.6, cone: 0.7, prompt: 'play', when: free,
+      // (the arm lifts, the mechanism turns, a new record: its own clunks)
+      onUse: () => { d.jukebox.next(); ctx.flags.juked = (ctx.flags.juked || 0) + 1; } });
   }
   // (a stool walked into turns on its post, with its squeak)
   const cool = new Map();
