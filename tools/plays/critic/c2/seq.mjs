@@ -45,8 +45,27 @@ export default async function ({ js, turn, keyDown, keyUp, mouse, shot, log, sle
         for (let j = 0; j < n; j++) { await turn(Math.round(px / n), Math.round(py / n)); await sleep(16); }
         await sleep(40);
       }
+    } else if (op === 'go') {
+      // walk to (x, z) by W and mouse turns; logs where it stopped if it could not get there (an invisible wall, a shut door)
+      const x = +a, z = +b, T = Date.now() + (+(c || 12000)); let w = false, last = null, still = 0;
+      for (;;) {
+        const s = await js(`({ x: N.controller.pos.x, z: N.controller.pos.z, yaw: N.controller.yaw, sens: N.controller.sensitivity })`);
+        const dx = x - s.x, dz = z - s.z, d = Math.hypot(dx, dz);
+        if (d < 0.35) break;
+        if (last && Math.hypot(s.x - last[0], s.z - last[1]) < 0.01) still++; else still = 0;
+        last = [s.x, s.z];
+        if (Date.now() > T || still > 40) { log(`go STOPPED at ${s.x.toFixed(2)},${s.z.toFixed(2)} short of ${x},${z} (${d.toFixed(2)} m)`); break; }
+        const want = Math.atan2(-dx, -dz), err = Math.atan2(Math.sin(want - s.yaw), Math.cos(want - s.yaw));
+        if (Math.abs(err) > 0.03) await turn(Math.round(Math.max(-40, Math.min(40, -err * 0.6 / s.sens))), 0);
+        const on = Math.abs(err) < 0.6; if (on !== w) { w = on; await (on ? keyDown('KeyW') : keyUp('KeyW')); }
+        await sleep(33);
+      }
+      if (w) await keyUp('KeyW');
+    } else if (op === 'pitch') {
+      // the view's pitch to a value (rad, + up), by mouse moves
+      for (let i = 0; i < 3; i++) { const s = await js(`({ p: N.controller.pitch, sens: N.controller.sensitivity })`); const d = s.p - (+a); if (Math.abs(d) < 0.01) break; await turn(0, Math.round(d / s.sens)); await sleep(30); }
     } else if (op === 'face') {
-      for (let i = 0; i < 6; i++) {
+      for (let i = 0; i < 30; i++) {
         const s = await js(`({ x: N.controller.pos.x, z: N.controller.pos.z, yaw: N.controller.yaw, sens: N.controller.sensitivity })`);
         const want = Math.atan2(-(+a - s.x), -(+b - s.z)); const err = Math.atan2(Math.sin(want - s.yaw), Math.cos(want - s.yaw));
         if (Math.abs(err) < 0.03) break;

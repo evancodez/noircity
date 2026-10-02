@@ -77,7 +77,7 @@ export default async function ({ js, turn, keyDown, keyUp, mouse, shot, log, sle
   for (const b of beats) {
     // from the title, as a player starts it
     await letGo();
-    await send('Page.navigate', { url: `http://127.0.0.1:${PORT}/?mute=1&start=guns.${b}` });
+    await send('Page.navigate', { url: `http://127.0.0.1:${PORT}/?mute=1${opts.query || ""}&start=guns.${b}` });
     await sleep(800);
     for (let k = 0; k < 100; k++) { if (await js('!!window.__noirReady') === true) break; await sleep(200); }
     await sleep(1500);
@@ -88,6 +88,15 @@ export default async function ({ js, turn, keyDown, keyUp, mouse, shot, log, sle
       for (let w = 0; w < 14 && !ok; w++) { await sleep(250); ok = await js(`G.state === 'playing' && !!G.scenes.current && G.scenes.beat === '${b}'`) === true; }
       if (ok) break;
     }
+    // (the view as the beat set it: the click on BEGIN left the cursor on the
+    // button, so the harness's first mouse move would jump the view - a
+    // person's mouse never does; the view is put back where it was)
+    { const v0 = await js(`({ yaw: N.controller.yaw, pitch: N.controller.pitch, sens: N.controller.sensitivity })`);
+      await turn(0, 0); await sleep(120);
+      const v1 = await js(`({ yaw: N.controller.yaw, pitch: N.controller.pitch })`);
+      await turn(Math.round(-(Math.atan2(Math.sin(v0.yaw - v1.yaw), Math.cos(v0.yaw - v1.yaw))) / v0.sens), Math.round((v1.pitch - v0.pitch) / v0.sens)); await sleep(60);
+      const v2 = await js(`({ yaw: N.controller.yaw, pitch: N.controller.pitch })`);
+      log(`${b}: view put back (jump ${(v1.yaw - v0.yaw).toFixed(2)}, ${(v1.pitch - v0.pitch).toFixed(2)} rad; now off ${(v2.yaw - v0.yaw).toFixed(3)}, ${(v2.pitch - v0.pitch).toFixed(3)})`); }
     const R = { tries: 1, won: false, falls: [], hits: 0, shots: 0, time: 0, kills: 0 };
     const T0 = now();
     // the hands' state for this life
@@ -140,7 +149,10 @@ export default async function ({ js, turn, keyDown, keyUp, mouse, shot, log, sle
       const t = now();
       // (a man down: a frame as he falls and one as he lies - opts.deathShots)
       { const ids = new Set(s.men.map((m) => m.id));
-        if (life.ids) for (const id of life.ids) if (!ids.has(id)) { R.kills++; if (opts.deathShots && (R.deathN = (R.deathN || 0) + 1) <= 6) { await shot(`${b}_${style}_death${R.deathN}a`); life.deathAt = t; life.deathN = R.deathN; } }
+        if (life.ids) for (const id of life.ids) if (!ids.has(id)) { R.kills++; if (opts.deathShots && (R.deathN = (R.deathN || 0) + 1) <= 6) { await shot(`${b}_${style}_death${R.deathN}a`); life.deathAt = t; life.deathN = R.deathN;
+          // (opts.deathFilm: [n, ms] - a film of the fall, the hands still, his body's place logged each frame)
+          if (opts.deathFilm) { for (let i = 0; i < opts.deathFilm[0]; i++) { await sleep(opts.deathFilm[1]); log(`  death ${R.deathN} f${i}: ` + JSON.stringify(await js(`G.stage.hoods.list.filter((h) => !h.alive).map((h) => [h.state, +h.pos.x.toFixed(2), +h.pos.z.toFixed(2), +G.time.toFixed(2)])`))); await shot(`${b}_${style}_death${R.deathN}_f${i}`); } }
+        } }
         life.ids = ids;
         if (life.deathAt && t - life.deathAt > 1600) { await shot(`${b}_${style}_death${life.deathN}b`); life.deathAt = 0; } }
       if (opts.debug && t - (life.dbgS || 0) > 3000) { life.dbgS = t; await shot(`${b}_dbg_${String(Math.round((t - T0) / 1000)).padStart(3, '0')}_${life.phase}`); }
@@ -164,6 +176,8 @@ export default async function ({ js, turn, keyDown, keyUp, mouse, shot, log, sle
       // ---- the start: C, as taught (the open style never)
       if (life.phase === 'start') {
         if (!open && !s.on) { if (P.wrong && Math.random() < P.wrong) await tap(Math.random() < 0.5 ? 'KeyE' : 'Space'); await sleep(rr(k.react[0], k.react[1])); await tap('KeyC'); }
+        // (the open style stands up where a beat starts him down - the street)
+        if (open && s.on) { await sleep(rr(300, 500)); await tap('KeyC'); }
         life.phase = 'down'; life.downUntil = t + rr(400, 900);
         await sleep(100); continue;
       }

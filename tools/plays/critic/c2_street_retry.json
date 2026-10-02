@@ -1,0 +1,19 @@
+{
+  "about": "C2 critic: the street's retry, hands off: after the fall, the beat back - is 'They have your angle. Move!' up at once again, with nobody shooting?",
+  "url": "/?mute=1&start=guns.street",
+  "size": [1440, 900],
+  "out": "shots/critic/c2/street_retry",
+  "steps": [
+    { "wait": 2500 },
+    { "clickOn": "#title .opt[data-k=begin]", "taken": "G.state === 'playing' && G.scenes.beat === 'street'", "retries": 3 },
+    { "until": "!!G.failing", "timeout": 60000 },
+    { "until": "!G.failing && G.state === 'playing'", "timeout": 20000, "poll": 30 },
+    { "drive": "tools/plays/critic/c2/seq.mjs", "seq": [
+      "e ['retry t0', G.hud.kit.warnText, Math.round(G.health.hp), [...G.ais.values()].filter((a) => a.brain.S.line).map((a) => a.brain.kind + '@' + a.h.pos.x.toFixed(1) + ',' + a.h.pos.z.toFixed(1)).join(' ')]",
+      "s r00", "w 400",
+      "e ['retry +0.4 s', G.hud.kit.warnText, Math.round(G.health.hp)]", "s r01", "w 600",
+      "e ['retry +1 s', G.hud.kit.warnText, Math.round(G.health.hp)]", "s r02", "w 1000",
+      "e ['retry +2 s', G.hud.kit.warnText, Math.round(G.health.hp)]", "s r03"
+    ] }
+  ]
+}

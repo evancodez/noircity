@@ -1,0 +1,22 @@
+{
+  "about": "C2 critic: the desk going over in slow time (speed 0.25): the blotter, the telephone and the lamp on its top - do they slide off or vanish?",
+  "url": "/?mute=1&speed=0.25&start=guns",
+  "size": [1440, 900],
+  "out": "shots/critic/c2/tip",
+  "steps": [
+    { "wait": 2500 },
+    { "clickOn": "#title .opt[data-k=begin]", "taken": "G.state === 'playing' && N.controller.mode === 'gun'", "retries": 3 },
+    { "wait": 2500 },
+    { "drive": "tools/plays/critic/c2/seq.mjs", "seq": [
+      "pitch -0.35", "w 400", "s t00", "k KeyE 200",
+      "w 300", "e [G.stage.part('house').desk.tipped.toFixed(2)]", "s t01",
+      "w 300", "e [G.stage.part('house').desk.tipped.toFixed(2)]", "s t02",
+      "w 300", "e [G.stage.part('house').desk.tipped.toFixed(2)]", "s t03",
+      "w 300", "e [G.stage.part('house').desk.tipped.toFixed(2)]", "s t04",
+      "w 300", "e [G.stage.part('house').desk.tipped.toFixed(2)]", "s t05",
+      "w 300", "e [G.stage.part('house').desk.tipped.toFixed(2)]", "s t06",
+      "w 300", "e [G.stage.part('house').desk.tipped.toFixed(2)]", "s t07",
+      "w 600", "e [G.stage.part('house').desk.tipped.toFixed(2), G.stage.part('house').desk.tip.done]", "s t08"
+    ] }
+  ]
+}

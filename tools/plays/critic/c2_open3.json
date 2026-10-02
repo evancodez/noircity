@@ -1,0 +1,10 @@
+{
+  "about": "C2 critic: stand in the open and trade, every contest, with the view put back after BEGIN (the harness's first mouse move had tipped the view up in the first open runs)",
+  "url": "/?mute=1",
+  "size": [1440, 900],
+  "out": "shots/critic/c2/open3",
+  "steps": [
+    { "wait": 1500 },
+    { "drive": "tools/plays/critic/c2/hands.mjs", "style": "open", "tries": 3, "timeout": 120000 }
+  ]
+}

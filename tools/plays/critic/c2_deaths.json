@@ -1,0 +1,10 @@
+{
+  "about": "C2 critic: the falls in slow time (speed 0.3): the good hands in the door, two_ways and street beats, a film of each man's fall (8 frames) with his body's place logged - does anyone slide, float, go through a desk or a car?",
+  "url": "/?mute=1",
+  "size": [1440, 900],
+  "out": "shots/critic/c2/deaths",
+  "steps": [
+    { "wait": 1500 },
+    { "drive": "tools/plays/critic/c2/hands.mjs", "query": "&speed=0.3", "style": "good", "tries": 3, "timeout": 200000, "beats": ["door", "two_ways", "street"], "deathShots": true, "deathFilm": [8, 220] }
+  ]
+}
