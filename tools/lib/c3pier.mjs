@@ -7,11 +7,11 @@
 import * as THREE from 'three';
 const { makeCity } = await import('./c3city.mjs');
 const P = await import('../../src/stages/city/plan.js');
-const BOT = await import('../../src/scenes/tail/bot.js');
+const BOT = await import(process.env.BOT || '../../src/scenes/tail/bot.js');
 
 const cases = [];
 for (let z = -150; z <= 130; z += 20) {
-  for (const d of [-4.2, -1.5, 1.5, 4.2]) for (const turn of [0.7, 1.57, -1.0]) for (const me of ['behind', 'slant']) cases.push({ z, d, turn, me });
+  for (const d of [-4.2, -1.5, 1.5, 4.2]) for (const turn of [0.7, 1.57, -1.0]) for (const me of ['behind', 'slant', 'touch']) cases.push({ z, d, turn, me });
 }
 
 function run(c, verbose = false) {
@@ -21,8 +21,21 @@ function run(c, verbose = false) {
   const his = W.spawn('sedan', hp.x, hp.z, f.yaw + c.turn, 0);
   his.frozen = true;
   // mine: stopped 9 to 14 m behind it, straight or at a slant toward it
-  const mp = P.riverPoint(s - (c.me === 'slant' ? 9 : 14), c.me === 'slant' ? -c.d * 0.3 : 1.9);
-  const yaw = c.me === 'slant' ? Math.atan2(-(hp.z - mp.z), hp.x - mp.x) : f.yaw;
+  // ('touch': my nose against his side or his back, as a ram leaves it)
+  const back = c.me === 'slant' ? 9 : c.me === 'touch' ? 0 : 14;
+  let mp = P.riverPoint(s - back, c.me === 'slant' ? -c.d * 0.3 : 1.9);
+  let yaw = c.me === 'behind' ? f.yaw : Math.atan2(-(hp.z - mp.z), hp.x - mp.x);
+  if (c.me === 'touch') {
+    // from the road's middle toward him, stopped where my nose meets his box
+    const o = P.riverPoint(s - 12, 0.65);
+    yaw = Math.atan2(-(hp.z - o.z), hp.x - o.x);
+    const fx = Math.cos(yaw), fz = -Math.sin(yaw);
+    let k = 0;
+    const hb = his.box();
+    const inside = (x, z) => { const lx = (x - hb.cx) * hb.c - (z - hb.cz) * hb.s, lz = (x - hb.cx) * hb.s + (z - hb.cz) * hb.c; return Math.abs(lx) < hb.hx + 0.05 && Math.abs(lz) < hb.hz + 0.05; };
+    while (k < 12 && !inside(o.x + fx * (k + 2.5), o.z + fz * (k + 2.5))) k += 0.1;
+    mp = { x: o.x + fx * k, z: o.z + fz * k };
+  }
   const my = W.spawn('coupe', mp.x, mp.z, yaw, 0);
   W.vehicles.player = my; W.game.vehicles = W.vehicles;
   // (a start inside a column or a wall is the harness's, not the game's)

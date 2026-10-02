@@ -41,10 +41,12 @@ function build(ctx, which) {
     C.spawn({ my: { x: NS.baxter.x - 70, z, yaw: 0, speed: 11 }, his: { x: NS.baxter.x - 38, z, yaw: 0, speed: 12 }, leg: 2, prev: 'avenue.canal', phase: 'a' });
     C.driver.state = 'go';
   } else if (which === 'river' || which === 'wreck' || which === 'pier') {
-    const s0 = riverSAtZ(EW.market.z + 26);
+    // (phase b's checkpoint where phase b begins: the river road's north
+    // end by the canal's mouth, he 26 m ahead - the whole run to the gate)
+    const s0 = riverSAtZ(EW.canal.z + 14);
     const at = (s, d) => { const p = riverPoint(s, d), f = riverFrame(s, {}); return { x: p.x, z: p.z, yaw: f.yaw }; };
     if (which === 'river') {
-      C.spawn({ my: { ...at(s0, 1.9), speed: 12 }, his: { ...at(s0 + 34, 1.9), speed: 13 }, leg: 4, phase: 'b' });
+      C.spawn({ my: { ...at(s0, 1.9), speed: 12 }, his: { ...at(s0 + 26, 1.9), speed: 12 }, leg: 4, phase: 'b' });
       C.driver.toRiver();
       C.phase = 'b';
     } else {

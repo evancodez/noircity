@@ -47,9 +47,9 @@ export function runChase({ seed = 1937, bot = 'idle', beat = 'start', secs = 200
     my = W.spawn('coupe', P.NS.baxter.x - 70, z, 0, 11); his = W.spawn('sedan', P.NS.baxter.x - 38, z, 0, 12);
   }
   else if (beat === 'river') {
-    const s0 = P.riverSAtZ(P.EW.market.z + 26);
+    const s0 = P.riverSAtZ(P.EW.canal.z + 14);
     const at = (s, d) => { const p = P.riverPoint(s, d), f = P.riverFrame(s, {}); return [p.x, p.z, f.yaw]; };
-    my = W.spawn('coupe', ...at(s0, 1.9), 12); his = W.spawn('sedan', ...at(s0 + 34, 1.9), 13);
+    my = W.spawn('coupe', ...at(s0, 1.9), 12); his = W.spawn('sedan', ...at(s0 + 26, 1.9), 12);
   }
   W.game.vehicles = W.vehicles; W.vehicles.player = my;
   ch.my = my; ch.his = his;
