@@ -22,7 +22,7 @@
 //         only when it is bad - fails some, gets through in three tries
 const PROFILES = {
   idle: { act: false },
-  bad: { act: true, cover: false, react: [450, 800], errM: 0.3, settle: [120, 260], gap: [250, 450], renotice: 600 },
+  bad: { act: true, cover: false, react: [450, 800], errM: 0.4, settle: [120, 260], gap: [250, 450], renotice: 600 },
   good: { act: true, cover: true, react: [300, 550], errM: 0.29, settle: [60, 120], gap: [380, 620], burst: [1, 1], down: [450, 800], shadows: true, duck: [120, 260], watchFlank: true },
   clumsy: { act: true, cover: true, react: [550, 900], errM: 0.42, settle: [100, 220], gap: [420, 700], burst: [1, 2], down: [350, 700],
     upLong: 0.35, standReload: 0.3, crouchLate: [500, 1400], wrongKey: 0.12, lateMove: true, duck: [300, 550], learns: true },

@@ -33,7 +33,7 @@ export const GUNMAN = {
   raise: 0.26,                 // s: the tell - the arm comes up, the glint, the click
   settle: [0.4, 0.9],          // s: his aim settling, at 3 m .. at 18 m
   settleMoving: 1.4,           // x while I move across his line
-  settleStill: 0.75,           // x while I stand up still in his line (a man standing in the open is an easy mark)
+  settleStill: 0.6,            // x while I stand up still in his line (a man standing in the open is an easy mark)
   settleRattled: 1.5,          // x for 1.5 s after a round came near him or hit him
   notice: 0.25,                // s: I come up (or out) into his line: he sees me, then settles
   behind: 0.45,                // s more, when he has me from outside my view (behind, the far side): in time to turn
