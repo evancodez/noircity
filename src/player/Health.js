@@ -84,6 +84,10 @@ export class Health {
     drawScreenSplatter(this.g, this.canvas.width, this.canvas.height, this.rng, Math.min(1.5, amount / 10), this.hudRects());
     this.splatA = 1;
     this.hitA = 1;
+    // [C1] the kit's rule (seams/Z.md §3): no fall before its warning has been
+    // up a second - the hit that would take the last of it before then leaves
+    // one (game.spareLast decides; the warning comes with this hit)
+    if (this.hp <= 0 && this.spare && this.spare()) { this.hp = 1; this.spared = (this.spared || 0) + 1; }
     if (this.hp <= 0) {
       this.dead = true;
       if (this.onDeath) this.onDeath();

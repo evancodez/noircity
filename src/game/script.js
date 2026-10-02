@@ -15,12 +15,18 @@ export const beat = (name) => ({ kind: 'beat', name });
 // [C1] (and the chapter's kit defaults: its stand-in objective line, its
 // music and beatMusic, what the detective carries by then - order.js; a key
 // the scene gives itself wins, docs/story/seams/Z.md)
+// (the objective lines: a scene file that declares its own `objective` or
+// `objectives` takes over the chapter's lines whole; else the chapter's are
+// stand-ins - objStandIn - which the manager takes down in a beat that has none)
 export function defineScene(def) {
   if (!def.id) throw new Error('defineScene: an id');
   const O = ORDER.find((o) => o.id === def.id);
+  const has = (o, k) => Object.prototype.hasOwnProperty.call(o, k);
+  const own = has(def, 'objective') || has(def, 'objectives');
   const kit = {};
-  if (O) for (const k of ['objective', 'objectives', 'music', 'beatMusic', 'carry', 'flags']) if (Object.prototype.hasOwnProperty.call(O, k)) kit[k] = O[k];
-  return { stage: 'block', title: O ? O.numeral : '', name: O ? O.title : '', beats: [], setup: {}, save: [], spawn: null, ...kit, ...def };
+  if (O) for (const k of ['objective', 'objectives', 'music', 'beatMusic', 'carry', 'flags']) if (has(O, k) && !(own && (k === 'objective' || k === 'objectives'))) kit[k] = O[k];
+  const standIn = !own && !!O && (has(O, 'objective') || has(O, 'objectives'));
+  return { stage: 'block', title: O ? O.numeral : '', name: O ? O.title : '', beats: [], setup: {}, save: [], spawn: null, ...kit, objStandIn: standIn, ...def };
 }
 
 // a key's name for a prompt ('KeyE' -> 'E')

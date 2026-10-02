@@ -11,8 +11,9 @@ import { defineScene, wait, until, beat } from '../game/script.js';
 //   the fail             he reaches me: 'He reached you.', black, back at
 //                        the start of 'ready', the world as its setup makes it
 // A man runs up the avenue at me, side to side (brain kit_walker: he never
-// fires; a hit checks him for half a second). The revolver is out. Two body
-// hits or one in the head put him down. Won: 'Done.', then the round again
+// fires; a hit checks him for half a second). The revolver is out. Three body
+// hits or one in the head put him down (two was won by a clumsy hand at once:
+// the critic's m5). Won: 'Done.', then the round again
 // (game.kitWins counts). Idle, he reaches me in about 8 s: the warning
 // about 2.5 s before. Mercy: after two fails here he walks instead (the
 // steady card comes once more then too).
@@ -34,7 +35,7 @@ function spawnWalker(ctx) {
   const h = G.spawnHood(x, z, {
     variant: { coat: 1, brim: 1, tall: 1, cig: false }, yaw: Math.atan2(B.goal.x - x, B.goal.z - z),
     // (mercy: after two fails here he walks it)
-    brain: 'kit_walker', path: B.path, run: G.fails('ready') < 2, hp: 100,
+    brain: 'kit_walker', path: B.path, run: G.fails('ready') < 2, hp: 120,
     onArrive: () => { F.arrived = true; },
   });
   return h;

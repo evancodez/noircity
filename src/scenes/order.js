@@ -8,9 +8,14 @@
 //
 // Each chapter also carries the defaults a scene file may override in its own
 // defineScene (seams/Z.md §5, §6):
-//   objective   the stand-in objective line for a scene that sets none of its
-//               own (hud.objective), shown from its first second
-//   objectives  { beat: line } the stand-in for a beat whose goal changes
+//   objectives  { beat: line | null } the stand-in objective line of every
+//               beat (hud.objective), from WAVE_C §4 and what each beat of
+//               the wave B scene asks of the player today; null: no line in
+//               that beat (better nothing than a wrong goal). A stand-in is
+//               taken down when a beat begins that has none here. A scene
+//               file that declares its own `objective` or `objectives` takes
+//               over the chapter's lines whole: none of these apply then.
+//   objective   (optional) one line for every beat that has none above
 //   music       its music slot: 'slot' | { slot, fade } | null (silence) |
 //               { stop: fade } | 'room' (the scene's own diegetic music: the
 //               manager leaves it alone); undefined: entered from another
@@ -23,18 +28,31 @@
 //   flags       story flags by then (added where not already set)
 const ARMED = ['matchbook', 'amesCard', 'check', 'revolver'];
 const NOTE = { note: 'PIER 9' };
+// (the same line for a run of beats)
+const each = (beats, line) => Object.fromEntries(beats.map((b) => [b, line]));
 export const ORDER = [
+  // I: the scene file declares its own lines (01_diner.js)
   { id: 'diner', numeral: 'I', title: 'The Diner', music: 'room', carry: [] },
-  { id: 'fight', numeral: 'II', title: 'The Fight', objective: 'Put the big man down.', music: 'room', carry: [],
-    objectives: { ko: 'Go out to him.', outside: 'Search him.', matchbook: 'Search him.' } },
-  { id: 'office', numeral: 'III', title: 'Room 304', objective: 'Find Ames. Room 304.', music: { slot: 'office', fade: 2.5 }, carry: ['matchbook', 'amesCard'] },
-  { id: 'gunfight', numeral: 'IV', title: 'The Door', objective: 'Stay alive.', music: { stop: 2.5 }, carry: ARMED, flags: NOTE },
-  { id: 'watcher', numeral: 'V', title: 'The Watcher', objective: 'Catch him before the pier.', music: null,
-    beatMusic: { escape: { slot: 'chase', fade: 0.4 }, run: { slot: 'chase', fade: 0.4 }, car: { slot: 'chase', fade: 0.4 } }, carry: ARMED, flags: NOTE },
-  { id: 'tail', numeral: 'VI', title: 'The Tail', objective: 'Stay on his tail lamps.', music: { slot: 'tail', fade: 2.5 }, carry: ARMED, flags: NOTE },
-  { id: 'warehouse', numeral: 'VII', title: 'Pier Nine', objective: 'Reach the lit office. Quietly.', music: { slot: 'warehouse', fade: 1.5 },
-    beatMusic: { fight: { slot: 'fight', fade: 2.5 }, ko: { slot: 'fight', fade: 2.5 }, after: { stop: 3 } }, carry: ARMED, flags: NOTE },
-  { id: 'shootout', numeral: 'VIII', title: 'The Block', objective: 'Get to Dot.', music: null,
+  { id: 'fight', numeral: 'II', title: 'The Fight', music: 'room', carry: [],
+    objectives: { ...each(['start', 'lesson', 'round1', 'round2', 'round3', 'reel'], 'Put the big man down.'),
+      ko: 'Go out to him.', outside: 'Search him.', matchbook: 'Pocket it.' } },
+  { id: 'office', numeral: 'III', title: 'Room 304', music: { slot: 'office', fade: 2.5 }, carry: ['matchbook', 'amesCard'],
+    objectives: { corridor: 'Find Ames. Room 304.', room: 'Ames is dead. Search the room.', pad: 'Shade the pad. Read it.',
+      safe: 'Open the safe.', ledger: 'Take what he hid.' } },
+  { id: 'gunfight', numeral: 'IV', title: 'The Door', music: { stop: 2.5 }, carry: ARMED, flags: NOTE,
+    objectives: { shadows: 'Watch the door. Get ready.', door: 'Stay alive.', window: 'Stay alive.', quiet: null } },
+  { id: 'watcher', numeral: 'V', title: 'The Watcher', music: null,
+    beatMusic: { escape: { slot: 'chase', fade: 0.4 }, run: { slot: 'chase', fade: 0.4 }, car: { slot: 'chase', fade: 0.4 } }, carry: ARMED, flags: NOTE,
+    objectives: { seen: 'Check the street.', escape: 'After him. Down the iron.', run: 'Don’t lose him.', car: 'Get to your car.' } },
+  { id: 'tail', numeral: 'VI', title: 'The Tail', music: { slot: 'tail', fade: 2.5 }, carry: ARMED, flags: NOTE,
+    objectives: { start: 'Stay on his tail lamps.', chase: 'Stay on his tail lamps.', close: 'Put him off the road.', shot: 'Put him off the road.',
+      crash: 'Get out. Take him.', interrogate: 'Make him talk.' } },
+  { id: 'warehouse', numeral: 'VII', title: 'Pier Nine', music: { slot: 'warehouse', fade: 1.5 },
+    beatMusic: { fight: { slot: 'fight', fade: 2.5 }, ko: { slot: 'fight', fade: 2.5 }, after: { stop: 3 } }, carry: ARMED, flags: NOTE,
+    objectives: { arrive: 'Get inside. Quietly.', ...each(['floor', 'lamps', 'aisle', 'stairs'], 'Reach the lit office. Quietly.'),
+      listen: 'Stay down. Listen.', out: 'Find another way out.', fight: 'Put him down.', ko: 'Put him down.', after: 'Get to the diner.' } },
+  { id: 'shootout', numeral: 'VIII', title: 'The Block', music: null,
     beatMusic: { cars: { slot: 'shootout', fade: 2.5 }, doorways: { slot: 'shootout', fade: 2.5 }, el: { slot: 'shootout', fade: 2.5 }, driveby: { slot: 'shootout', fade: 2.5 } },
-    carry: [...ARMED, 'shells'], flags: NOTE },
+    carry: [...ARMED, 'shells'], flags: NOTE,
+    objectives: { arrive: 'Take the gun.', ...each(['cars', 'doorways', 'el', 'driveby'], 'Hold the diner.'), cardinal: 'Here he comes. Stop him.', end: null } },
 ];

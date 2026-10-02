@@ -152,20 +152,26 @@ export const ART = {
     g.fillStyle = 'rgba(236,233,225,0.24)';
     g.beginPath(); g.moveTo(dx, dy + dh); g.lineTo(dx + dw, dy + dh); g.lineTo(dx + dw * 1.9, h); g.lineTo(dx - dw * 0.9, h); g.closePath(); g.fill();
     g.fillStyle = INK; g.fillRect(dx - w * 0.012, dy - h * 0.01, w * 0.012, dh + h * 0.01); g.fillRect(dx + dw, dy - h * 0.01, w * 0.012, dh + h * 0.01); g.fillRect(dx - w * 0.012, dy - h * 0.02, dw + w * 0.024, h * 0.02);
-    // the third man, inside, behind her: black in the light
-    hatMan(g, w * 0.5, dy + dh, h / 470, 0);
-    // her: small, between them, the white apron in front of his coat
-    g.fillStyle = '#1c1c1c';
-    g.beginPath(); g.ellipse(w * 0.5, h * 0.53, w * 0.017, h * 0.035, 0, 0, Math.PI * 2); g.fill();
-    g.beginPath(); g.moveTo(w * 0.478, h * 0.575); g.lineTo(w * 0.522, h * 0.575); g.lineTo(w * 0.535, h * 0.83); g.lineTo(w * 0.465, h * 0.83); g.closePath(); g.fill();
+    // [C1] (after the critic: three hats and her - she was lost in front of
+    // the third man's coat, the two at the door black on black)
+    // the third man, inside, to one side: his hat and shoulders black in the light
+    hatMan(g, w * 0.548, dy + dh, h / 505, 0);
+    // her: small, against the light between them - a bun, the dress, the
+    // white apron catching the doorway's light
+    const dX = w * 0.463, hu = h / 100;
+    g.fillStyle = '#121212';
+    g.beginPath(); g.ellipse(dX, 50.5 * hu, 1.9 * hu, 2.9 * hu, 0, 0, Math.PI * 2); g.fill();
+    g.beginPath(); g.arc(dX + 0.5 * hu, 47.2 * hu, 1.35 * hu, 0, Math.PI * 2); g.fill();
+    g.beginPath(); g.moveTo(dX - 2.2 * hu, 54 * hu); g.lineTo(dX + 2.2 * hu, 54 * hu); g.lineTo(dX + 3.1 * hu, 66 * hu);
+    g.lineTo(dX + 5.2 * hu, dy + dh - 0.4 * hu); g.lineTo(dX - 5.2 * hu, dy + dh - 0.4 * hu); g.lineTo(dX - 3.1 * hu, 66 * hu); g.closePath(); g.fill();
     g.fillStyle = PAPER;
-    g.beginPath(); g.moveTo(w * 0.486, h * 0.64); g.lineTo(w * 0.514, h * 0.64); g.lineTo(w * 0.522, h * 0.77); g.lineTo(w * 0.478, h * 0.77); g.closePath(); g.fill();
-    g.fillRect(w * 0.474, h * 0.635, w * 0.052, h * 0.008);
-    g.fillRect(w * 0.488, h * 0.49, w * 0.024, h * 0.012);
-    // the two at the door, big and black, the light round their inside edges
-    // (their hats against the door's light; her apron between their shoulders)
-    hatMan(g, w * 0.385, h * 1.05, h / 375, 1);
-    hatMan(g, w * 0.615, h * 1.04, h / 385, -1);
+    g.fillRect(dX - 1.3 * hu, 56.5 * hu, 2.6 * hu, 6.5 * hu);
+    g.beginPath(); g.moveTo(dX - 2.4 * hu, 63 * hu); g.lineTo(dX + 2.4 * hu, 63 * hu); g.lineTo(dX + 3.6 * hu, 77 * hu); g.lineTo(dX - 3.6 * hu, 77 * hu); g.closePath(); g.fill();
+    g.fillRect(dX - 3.3 * hu, 62.6 * hu, 6.6 * hu, 0.8 * hu);
+    // the two at the door, big and black, framing her: their hats cut into
+    // the doorway's light, its rim on their inside edges
+    hatMan(g, w * 0.352, h * 1.05, h / 372, 1);
+    hatMan(g, w * 0.648, h * 1.04, h / 382, -1);
   },
   // (no words) - the diner's neon through a wet windscreen
   neon(g, w, h, rng) {

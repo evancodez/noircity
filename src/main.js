@@ -144,8 +144,35 @@ if (!shotMode || shot.prewarm) game.prewarm(renderer);
 document.addEventListener('pointerlockerror', () => {
   if (shotMode) return;
   if (game.state === 'title') hud.showTitle('click again to take the mouse');
+  // [C1] (under the stills, or the scene coming up after them with the mouse
+  // let go: no pause card, the next click tries again - Chrome refuses the
+  // lock for a moment after an ESC let it go)
+  else if (game.stills.active) return;
+  else if (mouseFree) mouseFree.text = 'click again to take the mouse';
   else if (game.state !== 'dead') hud.showPause('click again to take the mouse');
 });
+// [C1] a stills run ended with the mouse let go (ESC ESC under the pointer
+// lock: the browser's ESC lets it go): not the pause card - the scene comes up
+// out of the black as it would, a quiet line asks for a click, and the click
+// takes the mouse. The game runs meanwhile, but not for long: after FREE_MAX
+// seconds without a click, or a hit, or a warning, or an ESC, the pause card.
+let mouseFree = null;
+const FREE_MAX = 8;
+addEventListener('mousedown', (e) => {
+  if (!mouseFree || shotMode || e.button !== 0 || game.stills.active) return;
+  if (document.pointerLockElement !== renderer.domElement) controller.lock();
+}, true);
+addEventListener('keydown', (e) => {
+  if (mouseFree && e.code === 'Escape' && !game.stills.active) { mouseFree = null; hud.showPause(); sfx.pauseMix(true); }
+}, true);
+function freeStep(dt) {
+  if (!mouseFree) return;
+  mouseFree.t += dt;
+  if (document.pointerLockElement === renderer.domElement || game.state !== 'playing') { mouseFree = null; hud.message('', 0.01); return; }
+  hud.message(mouseFree.text, 0.3);
+  const danger = game.health.sinceHit < 0.2 || !!game.hud.warnText;
+  if (mouseFree.t > FREE_MAX || danger) { mouseFree = null; hud.message('', 0.01); hud.showPause(); sfx.pauseMix(true); }
+}
 // pointer lock lost in play: the fight pauses (see the loop) under the
 // dimmed pause card, the sound drops back; the click that takes the mouse
 // again resumes
@@ -165,9 +192,10 @@ document.addEventListener('pointerlockchange', () => {
     sfx.pauseMix(true);
   }
 });
-// [C1] a stills run ended with the mouse let go: the pause card now
+// [C1] a stills run ended with the mouse let go: the scene comes up anyway
+// (mouseFree above), a click takes the mouse
 game.on('stills:end', () => {
-  if (!shotMode && game.state === 'playing' && document.pointerLockElement !== renderer.domElement) { hud.showPause(); sfx.pauseMix(true); }
+  if (!shotMode && !autoplay && game.state === 'playing' && document.pointerLockElement !== renderer.domElement) mouseFree = { t: 0, text: 'click to take the mouse' };
 });
 // the viewmodel: in play; in shot mode for the combat presets or vm=1
 // vmpos=x,y,z / vmrot=pitch,yaw,roll: viewmodel composition (look development)
@@ -307,7 +335,9 @@ function frame(now) {
   last = now;
   const tA = performance.now();
   // in play, the fight pauses behind the "click to resume" card
-  const unlocked = !shotMode && !autoplay && game.state === 'playing' && document.pointerLockElement !== renderer.domElement;
+  // [C1] (the scene coming up after the stills with the mouse let go runs: mouseFree)
+  freeStep(dt);
+  const unlocked = !shotMode && !autoplay && game.state === 'playing' && document.pointerLockElement !== renderer.domElement && !mouseFree;
   // [C1] the stills' page: the game is held under it (its own clock is real time)
   const stilled = game.stills.active;
   const paused = unlocked || stilled;

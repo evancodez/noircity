@@ -137,12 +137,25 @@
    "key": "KeyE"
   },
   {
+   "until": "G.stills.active && G.stills.run.id === 'ames'",
+   "timeout": 10000,
+   "label": "Ames's card, after the matchbook"
+  },
+  {
+   "wait": 700
+  },
+  {
+   "mouse": "click",
+   "x": 640,
+   "y": 400
+  },
+  {
    "until": "G.state === 'end' || (G.scenes.current && G.scenes.current.id !== 'fight')",
    "timeout": 30000
   },
   {
-   "expect": "G.save.inventory.includes('matchbook') && G.save.inventory.includes('amesCard') && G.scenes.current && G.scenes.current.id === 'office'",
-   "label": "pocketed, the matchbook and Ames's card; chapter III, Room 304, begins (The Body is cut)"
+   "expect": "G.save.inventory.includes('matchbook') && G.save.inventory.includes('amesCard') && G.scenes.current && G.scenes.current.id === 'office' && G.stills.last && G.stills.last.id === 'ames'",
+   "label": "pocketed, the matchbook and Ames's card; the card shown (the 'ames' still, a click moves on); chapter III, Room 304, begins (The Body is cut)"
   }
  ]
 }

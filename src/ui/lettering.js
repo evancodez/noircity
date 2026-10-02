@@ -113,18 +113,24 @@ export function mouseGlyph(button = 'L', { h = 40, scale = 2 } = {}) {
     g.quadraticCurveTo(x0, y0 + h, x0, y0 + h - rx * 0.9);
     g.closePath();
   };
-  g.fillStyle = '#eeebe3'; body(); g.fill();
-  // the button pressed: inked
+  // [C1] (after the critic: a dark mouse, the button to press lit white with
+  // its letter in it - a black button on a white mouse read as the half missing)
+  g.fillStyle = '#141414'; body(); g.fill();
   const split = y0 + h * 0.44;
   g.save(); body(); g.clip();
-  g.fillStyle = '#070707';
-  if (button === 'L') g.fillRect(x0 - 1, y0 - 1, rx + 1, split - y0 + 1);
-  else g.fillRect(cx, y0 - 1, rx + 2, split - y0 + 1);
+  g.fillStyle = '#f4f2ec';
+  const bx = button === 'L' ? x0 - 1 : cx, bw = rx + (button === 'L' ? 1 : 2);
+  g.fillRect(bx, y0 - 1, bw, split - y0 + 1);
   g.restore();
-  g.strokeStyle = '#060606'; g.lineWidth = 2.2; g.lineJoin = 'round'; g.lineCap = 'round';
+  g.strokeStyle = '#e8e5dd'; g.lineWidth = 2.0; g.lineJoin = 'round'; g.lineCap = 'round';
   body(); g.stroke();
   g.beginPath(); g.moveTo(x0 + 1, split + rng.gauss() * 0.3); g.lineTo(x0 + w - 1, split + rng.gauss() * 0.3); g.stroke();
   g.beginPath(); g.moveTo(cx, y0 + 1); g.lineTo(cx + rng.gauss() * 0.3, split); g.stroke();
+  // (its letter, inked in the lit button)
+  g.fillStyle = '#0a0a0a';
+  g.font = `700 ${Math.round(h * 0.24)}px "American Typewriter", "Courier New", monospace`;
+  g.textAlign = 'center'; g.textBaseline = 'middle';
+  g.fillText(button === 'L' ? 'L' : 'R', bx + bw / 2 + (button === 'L' ? 1 : -1), y0 + (split - y0) * 0.58);
   c.style.width = (w + 8) + 'px'; c.style.height = (h + 8) + 'px';
   return c;
 }

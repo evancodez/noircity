@@ -53,13 +53,14 @@ export class KitUi {
       #hud .kobj .t { position: relative; display: block; font-family: ${TYPE}; font-size: 13px; line-height: 30px; letter-spacing: 0.3em;
         text-transform: uppercase; color: #ebe8e1; white-space: nowrap; text-shadow: 0 0 4px #000, 0 0 2px #000, 0 0 1px #000; }
       #hud .kobj .s { position: absolute; left: -6px; top: 50%; transform: translateY(-50%); clip-path: inset(0 100% 0 0); }
-      #hud .kteach { position: absolute; left: 50%; bottom: 22%; transform: translateX(-50%); display: none; align-items: center; pointer-events: none; }
+      #hud .kteach { position: absolute; left: 50%; bottom: 22%; transform: translateX(-50%); display: none; align-items: center; pointer-events: none; transition: bottom 0.25s ease-out; }
+      #hud.kwarned .kteach { bottom: 33.5%; }
       #hud .kteach .g { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); opacity: 0.9; }
       #hud .kteach .row { position: relative; display: flex; align-items: center; gap: 12px; padding: 0 26px; }
       #hud .kteach .w { font-family: ${TYPE}; font-size: 16px; letter-spacing: 0.3em; text-transform: uppercase; color: #f1efe9; white-space: nowrap;
         text-shadow: 0 0 5px #000, 0 0 2px #000; }
       #hud .kteach canvas.cap { display: block; filter: drop-shadow(0 0 3px rgba(0,0,0,0.9)); }
-      #hud .kwarn { position: absolute; left: 50%; top: 61%; transform: translate(-50%, -50%); display: none; pointer-events: none; }
+      #hud .kwarn { position: absolute; left: 50%; top: 71%; transform: translate(-50%, -50%); display: none; pointer-events: none; }
       #hud .kwarn .g { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); }
       #hud .kwarn span { position: relative; display: block; padding: 0 34px; font-family: ${BOOK}; font-style: italic; font-size: 23px; line-height: 56px;
         color: #f4f2ec; white-space: nowrap; letter-spacing: 0.03em; text-shadow: 0 0 6px #000; }
@@ -88,8 +89,10 @@ export class KitUi {
     this.teachQ = [];
     this.teachCur = null;
     this.shown = {};            // how often each card has been shown (the plays read it)
-    // the warning
+    // the warning (what shows; the scene's line and the kit's own)
     this.warnText = null;
+    this.sceneWarn = null;
+    this.lowText = null;
     this.warnT = 0; this.warnOut = 0;
   }
   get game() { return this.hud.game || null; }
@@ -292,16 +295,25 @@ export class KitUi {
   }
 
   // ---- the warning ------------------------------------------------------------------------
-  warn(text, { now = false } = {}) {
-    const want = text == null || text === '' ? null : String(text);
+  // two sources, one line: the scene's (warn) and the kit's own as health
+  // falls (low, from Game.lowStep); the scene's wins while it has one, so a
+  // scene that sets warn(null) every step never puts the kit's out
+  warn(text, opts = {}) { this.sceneWarn = text == null || text === '' ? null : String(text); this.showWarn(opts); }
+  low(text, opts = {}) { this.lowText = text == null || text === '' ? null : String(text); this.showWarn(opts); }
+  clearWarn(opts = {}) { this.sceneWarn = null; this.lowText = null; this.showWarn(opts); }
+  showWarn({ now = false } = {}) {
+    const want = this.sceneWarn || this.lowText || null;
     const E = this.warnEl;
     if (want === this.warnText) return;
     this.warnText = want;
     if (!want) {
-      if (now) { E.style.display = 'none'; this.warnOut = 0; }
+      if (now) { E.style.display = 'none'; this.warnOut = 0; this.hud.root.classList.remove('kwarned'); }
       else this.warnOut = 0.4;
       return;
     }
+    // (low in the frame, under what is aimed at; a teach card up with it
+    // lifts above it - hud.kwarned)
+    this.hud.root.classList.add('kwarned');
     for (const c of [...E.querySelectorAll('canvas')]) c.remove();
     E.querySelector('span').textContent = want;
     const g = this._wctx || (this._wctx = document.createElement('canvas').getContext('2d'));
@@ -331,7 +343,7 @@ export class KitUi {
     const E = this.warnEl;
     if (E.style.display === 'none') return;
     this.warnT += dt;
-    if (!this.warnText) { this.warnOut -= dt; if (this.warnOut <= 0) { E.style.display = 'none'; return; } }
+    if (!this.warnText) { this.warnOut -= dt; if (this.warnOut <= 0) { E.style.display = 'none'; this.hud.root.classList.remove('kwarned'); return; } }
     this.applyWarn();
   }
 

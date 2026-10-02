@@ -45,6 +45,10 @@ import { Stills } from './Stills.js';
 // (a key or 'Mouse0' / 'Mouse2' went down since the last step),
 // game.released(code), game.mouse { dx, dy, wheel } (this step's).
 export const GAME = { corpseCap: 16, hoodHp: 100, heavyHp: 170 };
+// [C1] the warning before going down: on under `on` with a hit in the last
+// second, off as health mends past `off`; no fall before a warning has been
+// up `read` seconds (seams/Z.md §3)
+export const LOW = { on: 45, off: 60, read: 1.0 };
 
 export class Game {
   // stages: the registry (src/stages/index.js); stage: the one to start in
@@ -101,6 +105,8 @@ export class Game {
     this.failCounts = new Map();
     this.checkpoint = null;    // { beat, why } for health reaching zero
     this.crawl = 1;            // a held teach card's slow time (main.js)
+    this.lowWarn = null;       // the warning a falling health put up (lowStep)
+    this.health.spare = () => this.spareLast();
     hud.game = this;
     // hit feel (the brawl): steps the simulation skips (a hit stop), and a
     // slow-motion scale on the real-time loop (main.js)
@@ -501,7 +507,7 @@ export class Game {
     this.weapon.trigger = false;
     this.vm.lowerTo(1);
     this.hud.clearPrompt();
-    this.hud.kit.warn(null);
+    this.hud.kit.clearWarn();
     this.hud.kit.dismissTeach();
     this.crawl = 1;
     if (fall) {
@@ -532,6 +538,32 @@ export class Game {
   setCheckpoint(beatName, why = 'Down.') { this.checkpoint = { beat: beatName, why }; }
   // (a scene other than the last: its counts and checkpoint start afresh)
   kitReset() { this.failCounts.clear(); this.checkpoint = null; }
+
+  // [C1] the warning before going down (WAVE_C §1 rule 2, seams/Z.md §3): in
+  // the story, outside a fist fight, health falling under LOW.on with a hit in
+  // the last second puts up the scene's `lowWarn` (a string or (ctx) => string)
+  // or 'You’re hit. Get to cover.'; it goes as health mends past LOW.off, or
+  // with the fail. It is the kit's own line under the scene's: a scene's
+  // warning shows over it while the scene has one (hud.kit.low). Per step.
+  inStory() { const S = this.scenes; return !!S.current && this.state === 'playing' && !this.shotMode && !this.failing && !this.brawl.active && !this.autopilot && !this.inWarmup; }
+  lowStep() {
+    const K = this.hud.kit, H = this.health;
+    if (!this.inStory()) { if (this.lowWarn) { K.low(null); this.lowWarn = null; } return; }
+    const hurt = this.lowWarn ? H.hp < LOW.off : H.hp < LOW.on && H.sinceHit < 1.0;
+    if (hurt && !this.lowWarn) {
+      const def = this.scenes.current;
+      const w = typeof def.lowWarn === 'function' ? def.lowWarn(this.scenes.ctx) : def.lowWarn;
+      this.lowWarn = w || 'You’re hit. Get to cover.';
+      K.low(this.lowWarn);
+    } else if (!hurt && this.lowWarn) { K.low(null); this.lowWarn = null; }
+  }
+  // the hit that would take the last of health is spared (it leaves one)
+  // while no warning has been up a second yet: nobody goes down unwarned
+  spareLast() {
+    if (!this.inStory()) return false;
+    const K = this.hud.kit;
+    return !(K.warnText && this.time - (K.warnAt ?? this.time) >= LOW.read);
+  }
 
   // the fail's timeline, per rendered frame in real time (the game may be
   // held still under it): the fall, the black, the words, up again
@@ -797,6 +829,7 @@ export class Game {
     const rm = W.rain.rainMat.uniforms;
     rm.uBase.value = 0.03 * (1 + 5 * this.storm.rainBoost);
     this.health.update(dt);
+    this.lowStep();
     const alive = this.world.hoods.list.reduce((n, h) => n + (h.alive ? 1 : 0), 0);
     this.counters.alive = alive;
     this.director.update(dt, t);

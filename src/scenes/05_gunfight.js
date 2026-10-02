@@ -131,6 +131,9 @@ export default defineScene({
       ctx.player.weapons.equip('revolver');
       live(ctx.hands, {});
       F.drawn = true;
+      // [C1] (the kit's stand-in teach cards, once per save: the revolver's
+      // first verbs in the safe second before the door; lane C5 places its own)
+      if (G.hud.teach) { G.hud.teach('fire', '[LMB] fire'); G.hud.teach('crouch', '[C] get low'); }
       yield wait(0.6);
       const glass = send(ctx, 'glass');
       holdUntilKicked(ctx, glass, 0.3);

@@ -295,6 +295,10 @@ function* arrive(ctx) {
   yield until(() => taken);
   ctx.interact.remove('b7.take');
   yield* takeGun(ctx);
+  // [C1] (the kit's stand-in teach card, once per save, and the goal now the
+  // gun is in my hands; lane C8 places its own)
+  if (G.hud.teach) G.hud.teach('fire', '[LMB] fire');
+  if (G.hud.objective) G.hud.objective('Hold the diner.');
   // a breath, then the engines
   yield wait(2.5);
 }

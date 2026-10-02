@@ -84,7 +84,7 @@
    "label": "seated at the counter, the smoke set"
   },
   {
-   "expect": "G.hud.objectiveText === 'Light up. Watch the room.'",
+   "expect": "G.hud.objectiveText === 'Light up.'",
    "label": "[C1] the diner's objective line from its first beat"
   },
   {
@@ -428,8 +428,26 @@
    "label": "the matchbook was pocketed"
   },
   {
-   "until": "G.state === 'end' || (G.scenes.current && G.scenes.current.id !== 'fight')",
+   "until": "G.stills.active && G.stills.run.id === 'ames'",
    "timeout": 8000
+  },
+  {
+   "wait": 900
+  },
+  {
+   "shot": "s18b_ames_card"
+  },
+  {
+   "expect": "G.hud.root.classList.contains('stilled') && G.scenes.fadeK === 1",
+   "label": "[C1] the end of II: Ames's card (the 'ames' still) over black, the scene black under it"
+  },
+  {
+   "until": "G.state === 'end' || (G.scenes.current && G.scenes.current.id !== 'fight')",
+   "timeout": 14000
+  },
+  {
+   "expect": "G.stills.last && G.stills.last.id === 'ames' && !G.stills.last.skipped",
+   "label": "[C1] Ames's card was shown before III"
   },
   {
    "wait": 700

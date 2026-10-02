@@ -487,7 +487,11 @@ export default defineScene({
       yield wait(0.7);
       G.sfx.pistol(far, G.eye.distanceTo(far));
       ctx.flags.shots = 2;
-      yield wait(2);
+      yield wait(1.4);
+      // [C1] (the card the search found, shown before III asks for Ames: the
+      // 'ames' still, WAVE_C §5; lane C4 stages the find itself. The run ends
+      // on black and III comes up out of it)
+      if (G.stills && G.stills.has('ames')) { const st = G.stills.play('ames'); yield until(() => st.done); }
       // (on to the next scene of the story's order; with none yet, the
       // "to be continued" card)
       ctx.next();

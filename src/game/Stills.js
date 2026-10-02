@@ -67,8 +67,9 @@ export class Stills {
       #stills .panel .frame > * { position: absolute; left: 0; top: 0; width: 100%; height: 100%; transform-origin: 50% 50%; object-fit: cover; }
       #stills .panel .rim { position: absolute; left: 0; top: 0; pointer-events: none; }
       #stills .panel .cap { position: absolute; }
-      #stills .hint { position: absolute; right: 30px; bottom: 22px; font-family: "American Typewriter", "Courier New", monospace; font-size: 11px;
-        letter-spacing: 0.3em; text-transform: uppercase; color: #8d8b85; }
+      #stills .hint { position: absolute; left: 50%; bottom: 2.6%; transform: translateX(-50%); font-family: "American Typewriter", "Courier New", monospace; font-size: 13px;
+        letter-spacing: 0.3em; text-transform: uppercase; color: #c9c6be; white-space: nowrap; }
+      #stills .hint.on { color: #f1eee7; }
     `;
     document.head.appendChild(st);
     this.el = document.createElement('div');
@@ -101,10 +102,15 @@ export class Stills {
     this.el.textContent = '';
     this.el.style.display = 'block';
     this.el.style.opacity = '1';
-    this.hint.textContent = 'click · esc esc skips';
+    this.hint.textContent = 'click: next · esc esc: skip';
+    this.hint.classList.remove('on');
     this.el.appendChild(this.hint);
     G.hud.setStilled(true);
     G.hud.clearPrompt();
+    // (the scene goes to black under the page - unseen -, so the run ends on
+    // black: a script that goes on to another scene keeps it, one that goes on
+    // here comes up out of it - scenes.rise in finish)
+    if (G.scenes.current && !G.shotMode) { this.run.black = true; G.scenes.riseT = null; G.scenes.setFade(1); }
     addEventListener('keydown', this.onKey, true);
     addEventListener('keyup', this.onKeyUp, true);
     addEventListener('mousedown', this.onMouse, true);
@@ -118,7 +124,7 @@ export class Stills {
     const R = this.run;
     if (!R) return;
     if (e.code === 'Escape') {
-      if (!e.repeat) this.escPress(); else if (this.esc.downAt != null && performance.now() - this.esc.downAt > 600) this.skip();
+      if (!e.repeat) this.escPress('key'); else if (this.esc.downAt != null && performance.now() - this.esc.downAt > 600) this.skip();
       if (this.esc.downAt == null) this.esc.downAt = performance.now();
       e.preventDefault();
       return;
@@ -135,15 +141,20 @@ export class Stills {
     this.advance();
   }
   // one ESC (a key event, or the pointer lock let go: the browser takes the
-  // first ESC under the lock for itself); two within 1.2 s skip the run
-  escPress() {
+  // first ESC under the lock for itself); two within 1.2 s skip the run.
+  // [C1] (after the critic: only a key event and the lock's loss within
+  // 160 ms are one press seen twice - two key events are two presses, however
+  // quick the double tap)
+  escPress(src = 'key') {
     const now = performance.now();
-    if (now - this.esc.last < 160) return;   // (one press seen twice)
+    if (now - this.esc.last < 160 && src !== this.esc.src) return;   // (one press seen twice)
     if (now - this.esc.last < 1200) { this.skip(); return; }
     this.esc.last = now;
+    this.esc.src = src;
     this.hint.textContent = 'esc again skips · click goes on';
+    this.hint.classList.add('on');
   }
-  lockLost() { if (this.run) { this.escPress(); this.hint.textContent = 'esc again skips · click goes on'; } }
+  lockLost() { if (this.run) this.escPress('lock'); }
 
   advance() {
     const R = this.run;
@@ -331,6 +342,9 @@ export class Stills {
     this.last = { id: R.id, skipped: R.skipped, panels: R.landed.length, secs: +R.t.toFixed(2) };
     G.emit('stills:end', { id: R.id, skipped: R.skipped });
     R.h.finish({ id: R.id, skipped: R.skipped });
+    // (the scene it was played in goes on: up out of the black, unless its
+    // script goes on to another scene first - go() cancels the rise)
+    if (R.black && !quiet && G.scenes.current && !G.scenes.trans) G.scenes.rise();
   }
 
   // the rain and the room's bed duck under the page; the music plays on

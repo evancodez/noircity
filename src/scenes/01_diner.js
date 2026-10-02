@@ -33,7 +33,8 @@ export default defineScene({
   beats: ['settle', 'order', 'drink', 'pay'],
   save: ['order', 'drink', 'pay'],
   // [C1] the objective line per beat (the kit: docs/story/seams/Z.md)
-  objectives: { settle: 'Light up. Watch the room.', order: 'Order a drink.', drink: 'Drink. Watch the big man.', pay: 'Pay the tab.' },
+  // (settle: 'Light up.' struck through as it is done, then 'Watch the room.')
+  objectives: { settle: 'Light up.', order: 'Order a drink.', drink: 'Drink. Watch the big man.', pay: 'Pay the tab.' },
 
   setup: {
     settle(ctx) { dinerRoom(ctx); seatPlayer(ctx); },
@@ -118,6 +119,8 @@ export default defineScene({
       } });
       yield until(() => h.done);
       ctx.flags.litAt = ctx.sceneTime;
+      // [C1] (the first half done: struck through, the second written in)
+      G.hud.objective('Watch the room.');
       // (polish: the first drag follows the light on its own - the hand takes
       // the cigarette from the lips and rests with it on the counter. Left
       // in the lips until F, it stood at the bottom of the view for good,
