@@ -206,7 +206,16 @@ export function makeBot(chase, name, { seed = 7, track = null, attempt = 0 } = {
         const lead = his.vel.clone().multiplyScalar(0.35);
         const set = (q) => { const ddx = q.x + lead.x - my.pos.x, ddz = q.z + lead.z - my.pos.z; fx = ddx * c - ddz * sn; fz = ddx * sn + ddz * c; };
         const beside = Math.abs(l.x + 3.6) < 1.6 && Math.abs(l.z - side * 2.4) < 1.1;
-        if (hurt && beside) { set(his.world(-1.2, side * 0.4)); pitWant = his.speed + 2.5; B.pitIn = (B.pitIn || 0) + dt; }
+        // (out beside him only when near and the other lane is clear ahead:
+        // far behind, close up on his line first)
+        let clearSide = true;
+        for (const o of chase.bodies ? chase.bodies() : []) {
+          if (o === my || o === his || !o.solid) continue;
+          const q = his.local(o.pos);
+          if (q.x > -12 && q.x < 45 && Math.sign(q.z || 1) === side && Math.abs(q.z) < 6) { clearSide = false; break; }
+        }
+        if (l.x < -11 || !clearSide) { pitWant = l.x < -11 ? his.speed + clamp((-8 - l.x) * 0.5, 0, 6) : his.speed - 1; B.pitIn = 0; }
+        else if (hurt && beside) { set(his.world(-1.2, side * 0.4)); pitWant = his.speed + 2.5; B.pitIn = (B.pitIn || 0) + dt; }
         else { set(his.world(-3.6, side * 2.4)); pitWant = his.speed + clamp((-3.6 - l.x) * 0.8, -4, 6); B.pitIn = 0; }
         if (B.pitIn > 1.6) { B.pitIn = 0; B.pitSide = -side; }
       }
@@ -268,7 +277,9 @@ export function makeBot(chase, name, { seed = 7, track = null, attempt = 0 } = {
     aim() {
       if (chase.phase !== 'b' || !chase.his || !chase.game || P.noGun) return null;
       const G = chase.game, cam = G.camera, his = chase.his, gap = chase.gap();
-      const out = { rmb: gap < (P.gunAt ?? 28), fire: false, dyaw: 0, dpitch: 0 };
+      // ([4th owner] dry: the gun goes back in, the eyes on the road)
+      const dry = chase.gun && chase.gun.rounds <= 0 && chase.gun.pocket <= 0 && chase.gun.reloadT <= 0;
+      const out = { rmb: gap < (P.gunAt ?? 28) && !dry, fire: false, dyaw: 0, dpitch: 0 };
       // ([4th owner] the dt of this step, for the hand's drift and its wait)
       const dtA = Math.max(0, Math.min(0.1, B.t - (B.aimT ?? B.t))); B.aimT = B.t;
       if (!out.rmb || !chase.gun || chase.gun.aimK < 0.95) { B.onT = 0; return out; }
