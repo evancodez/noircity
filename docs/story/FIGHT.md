@@ -236,7 +236,12 @@ it, its collider follows it at every angle); from the street it is pulled (E,
 shuts with a knock and the bell. **Barred while we fight**: the bar - an iron
 flat bar on a pivot at the latch jamb, stowed upright on a keeper - dropped
 across it when the last one out let it slam. Walked into or tried, it gives a
-centimetre, the bar knocks in its brackets, the bell shivers: `Barred.`.
+centimetre, the bar knocks in its brackets, the bell shivers: `Barred.` -
+once as I come against it, not again while I stay pinned to it. In a fist
+fight my body opens it not at all: in the lesson's first seconds, while the
+last of them still go out by it, the shut leaf stops my back as a door does
+(the fight's bounds hold the doorway, as in version 4), and it is never held
+open by me so that it cannot slam and the bar cannot drop.
 
 **After the last blow** the objective says `See to him.` Two ways out:
 
@@ -271,19 +276,27 @@ The three proofs of WAVE_C §7, by real input (`tools/lib/fight_bot.mjs`):
   fight is on; down three times in 61 s, each warned 1.9 to 8.8 s before,
   `Too slow.` on each black; never a win.
 - `fight_bad.json`: a clumsy first-timer (mashes jabs at random sides, sees
-  the cue late and goes the wrong way a quarter of the time, learning a little
-  at each down, holds now and then at the wrong time, a wrong key now and
-  then): down twice, warned each time, and wins (177 s, the lesson included).
+  the cue late and goes the wrong way a third of the time, holds now and then
+  at the wrong time, a wrong key now and then; after each down a little less
+  blind - the black told him why): down five times (eight in the run
+  before), mostly `Caught swinging.`, warned each time, and wins (118 s; 163 s
+  the run before; the lesson included).
 - `fight_good.json`: a player who uses what was taught (the cue read in 0.16
   .. 0.26 s, slips, punishes the opening with a loaded punch, blocks his jab,
-  finishes loaded): wins twice in a row without going down, 55 and 65 s each
-  (the lesson included), 11 cues of 11 answered.
+  finishes loaded): wins twice in a row without going down, 78 and 73 s each
+  (the lesson included), 22 cues of 23 answered.
 - `fight_click.json`: 240 clicks (each button 30 times at 60, 120, 200 and 280
   ms, shuffled, 0.12 .. 0.55 s apart): 240 jabs, every contact 0.05 s after its
   press, no click wound up.
+- `fight_tries.json`, `fight_out.json`, `fight_door.json`: the street door
+  tried at every moment of the chapter - in the lesson while they still go
+  out by it, in the lesson barred, rounds 1 to 3, the reel, after the last
+  blow (barred; over the sill), out on the pavement (pulled, pushed, shut on
+  its closer) - the leaf never in a body.
 
 The in-page autoplay (`?shot=r2play&beat=lesson&seed=<n>&style=<s>&t=300`):
-the reader (`player`) wins 5 of 5 in 63 to 91 s (version 4: 73 to 104), the
-struggling first-timer (`rough`) 5 of 5 in 115 to 243 s with 3 to 9 downs
-(version 4: 111 to 217), the masher none (42 to 44 downs). See the report
-`docs/story/reports/wave-c/C4.md` for the whole gate.
+the reader (`player`) wins 5 of 5 in 63 to 89 s (version 4: 73 to 104), the
+struggling first-timer (`rough`) 5 of 5 in 117 to 229 s with 4 to 9 downs
+(version 4: 111 to 217), the masher none (43 to 44 downs), the masher who
+reads the cue (`mashcue`) none (35 to 37 downs, "Caught swinging."). See the
+report `docs/story/reports/wave-c/C4.md` for the whole gate.

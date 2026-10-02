@@ -1,0 +1,319 @@
+{
+ "about": "[C4] The diner's street door tried at every moment of II (docs/story/briefs/C4_FIGHT.md, Proofs: 'The door: try it at every moment of the chapter'), by real input from ?start=fight: in the lesson's first moment while the room still clears (not barred yet: they are going out by it - I stay inside, the leaf never in me), in the lesson once the bar is down, in rounds 1 to 3 and in the reel (each beat jumped to with G.scenes.go), and after the last blow. In a fist fight W walks at him and A / D are slips, so the play puts me a pace inside the doorway and him a pace further in, and I back into the door with S, away from him (real keys). The way in itself is not mine to move; after the last blow fight_out walks into it and fight_door pulls and pushes it. node tools/play.mjs tools/plays/fight_tries.json",
+ "url": "/?mute=1&start=fight",
+ "size": [
+  1280,
+  800
+ ],
+ "out": "shots/play/fight_tries",
+ "steps": [
+  {
+   "until": "G.state === 'title' && !document.getElementById('title').classList.contains('hidden')",
+   "timeout": 20000
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]",
+   "taken": "G.state !== 'title'",
+   "retries": 5,
+   "every": 4000
+  },
+  {
+   "name": "the way in: the room clears as he rises (I am not mine to move until the fists are up)"
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'fight' && G.brawl.active && G.controller.mode === 'brawl'",
+   "timeout": 60000
+  },
+  {
+   "eval": "(() => { const d = G.stage.part('dinerFront').door; return { beat: G.scenes.beat, eyeX: +G.eye.x.toFixed(2), barred: d.barred, angle: +d.angle.toFixed(2), rattles: G.counters.rattles || 0, fleeing: G.scenes.ctx.flags.fleeing || 0, through: G.counters.doorThrough || 0, throughMe: G.counters.doorThroughMe || 0, mode: G.controller.mode, him: [+G.cast.get('mack').pos.x.toFixed(2), +G.cast.get('mack').pos.z.toFixed(2)] }; })()"
+  },
+  {
+   "name": "the door tried: the lesson's first moment, the room still clearing"
+  },
+  {
+   "eval": "(() => { const C = N.controller; C.pos.x = -11.45; C.pos.z = 0.6; C.vel.set(0, 0, 0); const m = G.cast.get('mack'); m.pos.x = -12.7; m.pos.z = 0.6; window.__r0 = G.counters.rattles || 0; window.__t0 = G.counters.doorThroughMe || 0; return 'placed a pace inside the door; rattles so far ' + window.__r0; })()"
+  },
+  {
+   "wait": 350
+  },
+  {
+   "down": "KeyS"
+  },
+  {
+   "wait": 650
+  },
+  {
+   "shot": "t00_clearing"
+  },
+  {
+   "up": "KeyS"
+  },
+  {
+   "wait": 300
+  },
+  {
+   "eval": "(() => { const d = G.stage.part('dinerFront').door; return { beat: G.scenes.beat, eyeX: +G.eye.x.toFixed(2), barred: d.barred, angle: +d.angle.toFixed(2), rattles: G.counters.rattles || 0, fleeing: G.scenes.ctx.flags.fleeing || 0, through: G.counters.doorThrough || 0, throughMe: G.counters.doorThroughMe || 0, mode: G.controller.mode, him: [+G.cast.get('mack').pos.x.toFixed(2), +G.cast.get('mack').pos.z.toFixed(2)] }; })()"
+  },
+  {
+   "expect": "G.eye.x < -10.5 && (G.counters.doorThroughMe || 0) === window.__t0",
+   "label": "[C4] the lesson's first moment, the room still clearing: backed into the street door (not barred yet: they are still going out by it): in a fist fight my back does not open it; I stay inside; the leaf never in me"
+  },
+  {
+   "name": "back into the fight, off the door: the last one out lets it slam, the bar drops"
+  },
+  {
+   "down": "KeyW"
+  },
+  {
+   "wait": 500
+  },
+  {
+   "up": "KeyW"
+  },
+  {
+   "until": "G.stage.part('dinerFront').door.barred",
+   "timeout": 25000
+  },
+  {
+   "eval": "(() => { const d = G.stage.part('dinerFront').door; return { beat: G.scenes.beat, eyeX: +G.eye.x.toFixed(2), barred: d.barred, angle: +d.angle.toFixed(2), rattles: G.counters.rattles || 0, fleeing: G.scenes.ctx.flags.fleeing || 0, through: G.counters.doorThrough || 0, throughMe: G.counters.doorThroughMe || 0, mode: G.controller.mode, him: [+G.cast.get('mack').pos.x.toFixed(2), +G.cast.get('mack').pos.z.toFixed(2)] }; })()"
+  },
+  {
+   "name": "the door tried: the lesson, the room cleared and the bar down"
+  },
+  {
+   "eval": "(() => { const C = N.controller; C.pos.x = -11.45; C.pos.z = 0.6; C.vel.set(0, 0, 0); const m = G.cast.get('mack'); m.pos.x = -12.7; m.pos.z = 0.6; window.__r0 = G.counters.rattles || 0; window.__t0 = G.counters.doorThroughMe || 0; return 'placed a pace inside the door; rattles so far ' + window.__r0; })()"
+  },
+  {
+   "wait": 350
+  },
+  {
+   "down": "KeyS"
+  },
+  {
+   "wait": 650
+  },
+  {
+   "shot": "t01_lesson"
+  },
+  {
+   "up": "KeyS"
+  },
+  {
+   "wait": 300
+  },
+  {
+   "eval": "(() => { const d = G.stage.part('dinerFront').door; return { beat: G.scenes.beat, eyeX: +G.eye.x.toFixed(2), barred: d.barred, angle: +d.angle.toFixed(2), rattles: G.counters.rattles || 0, fleeing: G.scenes.ctx.flags.fleeing || 0, through: G.counters.doorThrough || 0, throughMe: G.counters.doorThroughMe || 0, mode: G.controller.mode, him: [+G.cast.get('mack').pos.x.toFixed(2), +G.cast.get('mack').pos.z.toFixed(2)] }; })()"
+  },
+  {
+   "expect": "(() => { const d = G.stage.part('dinerFront').door; return d.barred && (G.counters.rattles || 0) > window.__r0 && G.eye.x < -10.5 && (G.counters.doorThroughMe || 0) === window.__t0; })()",
+   "label": "[C4] the lesson, the room cleared and the bar down: backed into the street door, it rattles on its bar and holds; I stay inside"
+  },
+  {
+   "eval": "(G.scenes.go('fight', { beat: 'round1', fade: 'black', card: false }), 'to round1')"
+  },
+  {
+   "until": "G.scenes.beat === 'round1' && G.brawl.active && G.controller.mode === 'brawl' && !G.brawl.down",
+   "timeout": 20000
+  },
+  {
+   "wait": 900
+  },
+  {
+   "expect": "G.stage.part('dinerFront').door.barred",
+   "label": "[C4] round1: the street door barred"
+  },
+  {
+   "name": "the door tried: round1"
+  },
+  {
+   "eval": "(() => { const C = N.controller; C.pos.x = -11.45; C.pos.z = 0.6; C.vel.set(0, 0, 0); const m = G.cast.get('mack'); m.pos.x = -12.7; m.pos.z = 0.6; window.__r0 = G.counters.rattles || 0; window.__t0 = G.counters.doorThroughMe || 0; return 'placed a pace inside the door; rattles so far ' + window.__r0; })()"
+  },
+  {
+   "wait": 350
+  },
+  {
+   "down": "KeyS"
+  },
+  {
+   "wait": 650
+  },
+  {
+   "shot": "t_round1"
+  },
+  {
+   "up": "KeyS"
+  },
+  {
+   "wait": 300
+  },
+  {
+   "eval": "(() => { const d = G.stage.part('dinerFront').door; return { beat: G.scenes.beat, eyeX: +G.eye.x.toFixed(2), barred: d.barred, angle: +d.angle.toFixed(2), rattles: G.counters.rattles || 0, fleeing: G.scenes.ctx.flags.fleeing || 0, through: G.counters.doorThrough || 0, throughMe: G.counters.doorThroughMe || 0, mode: G.controller.mode, him: [+G.cast.get('mack').pos.x.toFixed(2), +G.cast.get('mack').pos.z.toFixed(2)] }; })()"
+  },
+  {
+   "expect": "(() => { const d = G.stage.part('dinerFront').door; return d.barred && (G.counters.rattles || 0) > window.__r0 && G.eye.x < -10.5 && (G.counters.doorThroughMe || 0) === window.__t0; })()",
+   "label": "[C4] round1: backed into the street door, it rattles on its bar and holds; I stay inside"
+  },
+  {
+   "eval": "(G.scenes.go('fight', { beat: 'round2', fade: 'black', card: false }), 'to round2')"
+  },
+  {
+   "until": "G.scenes.beat === 'round2' && G.brawl.active && G.controller.mode === 'brawl' && !G.brawl.down",
+   "timeout": 20000
+  },
+  {
+   "wait": 900
+  },
+  {
+   "expect": "G.stage.part('dinerFront').door.barred",
+   "label": "[C4] round2: the street door barred"
+  },
+  {
+   "name": "the door tried: round2"
+  },
+  {
+   "eval": "(() => { const C = N.controller; C.pos.x = -11.45; C.pos.z = 0.6; C.vel.set(0, 0, 0); const m = G.cast.get('mack'); m.pos.x = -12.7; m.pos.z = 0.6; window.__r0 = G.counters.rattles || 0; window.__t0 = G.counters.doorThroughMe || 0; return 'placed a pace inside the door; rattles so far ' + window.__r0; })()"
+  },
+  {
+   "wait": 350
+  },
+  {
+   "down": "KeyS"
+  },
+  {
+   "wait": 650
+  },
+  {
+   "shot": "t_round2"
+  },
+  {
+   "up": "KeyS"
+  },
+  {
+   "wait": 300
+  },
+  {
+   "eval": "(() => { const d = G.stage.part('dinerFront').door; return { beat: G.scenes.beat, eyeX: +G.eye.x.toFixed(2), barred: d.barred, angle: +d.angle.toFixed(2), rattles: G.counters.rattles || 0, fleeing: G.scenes.ctx.flags.fleeing || 0, through: G.counters.doorThrough || 0, throughMe: G.counters.doorThroughMe || 0, mode: G.controller.mode, him: [+G.cast.get('mack').pos.x.toFixed(2), +G.cast.get('mack').pos.z.toFixed(2)] }; })()"
+  },
+  {
+   "expect": "(() => { const d = G.stage.part('dinerFront').door; return d.barred && (G.counters.rattles || 0) > window.__r0 && G.eye.x < -10.5 && (G.counters.doorThroughMe || 0) === window.__t0; })()",
+   "label": "[C4] round2: backed into the street door, it rattles on its bar and holds; I stay inside"
+  },
+  {
+   "eval": "(G.scenes.go('fight', { beat: 'round3', fade: 'black', card: false }), 'to round3')"
+  },
+  {
+   "until": "G.scenes.beat === 'round3' && G.brawl.active && G.controller.mode === 'brawl' && !G.brawl.down",
+   "timeout": 20000
+  },
+  {
+   "wait": 900
+  },
+  {
+   "expect": "G.stage.part('dinerFront').door.barred",
+   "label": "[C4] round3: the street door barred"
+  },
+  {
+   "name": "the door tried: round3"
+  },
+  {
+   "eval": "(() => { const C = N.controller; C.pos.x = -11.45; C.pos.z = 0.6; C.vel.set(0, 0, 0); const m = G.cast.get('mack'); m.pos.x = -12.7; m.pos.z = 0.6; window.__r0 = G.counters.rattles || 0; window.__t0 = G.counters.doorThroughMe || 0; return 'placed a pace inside the door; rattles so far ' + window.__r0; })()"
+  },
+  {
+   "wait": 350
+  },
+  {
+   "down": "KeyS"
+  },
+  {
+   "wait": 650
+  },
+  {
+   "shot": "t_round3"
+  },
+  {
+   "up": "KeyS"
+  },
+  {
+   "wait": 300
+  },
+  {
+   "eval": "(() => { const d = G.stage.part('dinerFront').door; return { beat: G.scenes.beat, eyeX: +G.eye.x.toFixed(2), barred: d.barred, angle: +d.angle.toFixed(2), rattles: G.counters.rattles || 0, fleeing: G.scenes.ctx.flags.fleeing || 0, through: G.counters.doorThrough || 0, throughMe: G.counters.doorThroughMe || 0, mode: G.controller.mode, him: [+G.cast.get('mack').pos.x.toFixed(2), +G.cast.get('mack').pos.z.toFixed(2)] }; })()"
+  },
+  {
+   "expect": "(() => { const d = G.stage.part('dinerFront').door; return d.barred && (G.counters.rattles || 0) > window.__r0 && G.eye.x < -10.5 && (G.counters.doorThroughMe || 0) === window.__t0; })()",
+   "label": "[C4] round3: backed into the street door, it rattles on its bar and holds; I stay inside"
+  },
+  {
+   "eval": "(G.scenes.go('fight', { beat: 'reel', fade: 'black', card: false }), 'to reel')"
+  },
+  {
+   "until": "G.scenes.beat === 'reel' && G.brawl.active && G.controller.mode === 'brawl' && !G.brawl.down",
+   "timeout": 20000
+  },
+  {
+   "wait": 900
+  },
+  {
+   "expect": "G.stage.part('dinerFront').door.barred",
+   "label": "[C4] reel: the street door barred"
+  },
+  {
+   "name": "the door tried: reel"
+  },
+  {
+   "eval": "(() => { const C = N.controller; C.pos.x = -11.45; C.pos.z = 0.6; C.vel.set(0, 0, 0); const m = G.cast.get('mack'); m.pos.x = -12.7; m.pos.z = 0.6; window.__r0 = G.counters.rattles || 0; window.__t0 = G.counters.doorThroughMe || 0; return 'placed a pace inside the door; rattles so far ' + window.__r0; })()"
+  },
+  {
+   "wait": 350
+  },
+  {
+   "down": "KeyS"
+  },
+  {
+   "wait": 650
+  },
+  {
+   "shot": "t_reel"
+  },
+  {
+   "up": "KeyS"
+  },
+  {
+   "wait": 300
+  },
+  {
+   "eval": "(() => { const d = G.stage.part('dinerFront').door; return { beat: G.scenes.beat, eyeX: +G.eye.x.toFixed(2), barred: d.barred, angle: +d.angle.toFixed(2), rattles: G.counters.rattles || 0, fleeing: G.scenes.ctx.flags.fleeing || 0, through: G.counters.doorThrough || 0, throughMe: G.counters.doorThroughMe || 0, mode: G.controller.mode, him: [+G.cast.get('mack').pos.x.toFixed(2), +G.cast.get('mack').pos.z.toFixed(2)] }; })()"
+  },
+  {
+   "expect": "(() => { const d = G.stage.part('dinerFront').door; return d.barred && (G.counters.rattles || 0) > window.__r0 && G.eye.x < -10.5 && (G.counters.doorThroughMe || 0) === window.__t0; })()",
+   "label": "[C4] reel: backed into the street door, it rattles on its bar and holds; I stay inside"
+  },
+  {
+   "name": "after the last blow (fight_out walks into it; fight_door pulls and pushes it outside)"
+  },
+  {
+   "eval": "(G.scenes.go('fight', { beat: 'ko', fade: 'black', card: false }), 'to ko')"
+  },
+  {
+   "until": "G.scenes.beat === 'ko' && !G.brawl.active && G.controller.mode === 'walk'",
+   "timeout": 30000
+  },
+  {
+   "wait": 800
+  },
+  {
+   "expect": "G.stage.part('dinerFront').door.barred",
+   "label": "[C4] ko: the street door still barred until I lift the bar"
+  },
+  {
+   "eval": "(() => { const d = G.stage.part('dinerFront').door; return { beat: G.scenes.beat, eyeX: +G.eye.x.toFixed(2), barred: d.barred, angle: +d.angle.toFixed(2), rattles: G.counters.rattles || 0, fleeing: G.scenes.ctx.flags.fleeing || 0, through: G.counters.doorThrough || 0, throughMe: G.counters.doorThroughMe || 0, mode: G.controller.mode, him: [+G.cast.get('mack').pos.x.toFixed(2), +G.cast.get('mack').pos.z.toFixed(2)] }; })()"
+  },
+  {
+   "expect": "(G.counters.doorThrough || 0) === 0",
+   "label": "[C4] the leaf never in a body, at any moment of it"
+  }
+ ]
+}

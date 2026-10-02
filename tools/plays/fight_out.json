@@ -40,7 +40,7 @@
   { "shot": "o04_card" },
   { "key": "KeyE" },
   { "until": "G.hud.objectiveText === 'Harbor Building. Room 304.'", "timeout": 6000 },
-  { "wait": 900 },
+  { "wait": 2100 },
   { "shot": "o05_line" },
   { "until": "G.stills.active && G.stills.run.id === 'ames'", "timeout": 8000 },
   { "until": "G.scenes.current && G.scenes.current.id !== 'fight'", "timeout": 14000 },

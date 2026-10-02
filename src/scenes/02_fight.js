@@ -529,9 +529,11 @@ export default defineScene({
       if (!G.save.inventory.includes('amesCard')) G.save.inventory.push('amesCard');
       ctx.flags.pocketed = true;
       G.save.write();
-      // (where it sends me, written in; a moment to read it; then the still)
+      // (where it sends me, written in; a moment to read it; then the still:
+      // the old line's strike and the new one's writing take 1.5 s, so the
+      // line sits two seconds before the still covers it)
       G.hud.objective(AMES_LINE);
-      yield wait(2.6);
+      yield wait(3.5);
       if (G.stills && G.stills.has('ames')) { const st = G.stills.play('ames'); yield until(() => st.done); }
       // (on to the next scene of the story's order: III Room 304)
       ctx.next();

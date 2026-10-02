@@ -176,6 +176,9 @@ export class Brawl {
   // bar), manners (his table by manner, brain.js MANNERS by default) }.
   start({ opponent, manner = 'measured', hp = null, room = {}, who = {}, rng, lesson = false, retry = false, myHp = null, onRetry = null, onKO = null, onGlass = null, onLanded = null, onManner = null, onBottle = null, onHop = null }) {
     const G = this.game;
+    // ([C4] a fight begun over one still on - a beat jumped to - starts
+    // with no card of the last one left up: the lesson's stayed into round 1)
+    if (!retry && this.active && this._cards) this._cards.clear();
     this.active = true;
     this.finished = false;
     this.done = false;

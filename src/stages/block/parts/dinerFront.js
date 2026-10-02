@@ -698,8 +698,16 @@ function stepDoor(api, d, dt, camera) {
   if (S.cast) for (const c of S.cast.list) if (c.fig && !c.down && near(c.pos.x, c.pos.z)) _bodies.push({ x: c.pos.x, z: c.pos.z, r: 0.3 });
   if (S.hoods) for (const h of S.hoods.list) if (h.alive && near(h.pos.x, h.pos.z)) _bodies.push({ x: h.pos.x, z: h.pos.z, r: 0.3 });
   const cur = d.angle * OPEN_MAX;
+  // (in a fist fight the room holds me - the bounds, the door's gap: my back
+  // in the doorway opened it ahead of me onto a wall of nothing while the
+  // last of them were still going out by it, and held it so that it never
+  // slammed and the bar never dropped. There my body opens nothing: the
+  // shut leaf stops me as a door does; open for a runner, it is only kept
+  // off me. Barred, walking into it rattles it as ever)
+  const fist = !!(G && G.brawl && G.brawl.active) && !d.barred;
   let need = 0, block = OPEN_MAX;
   for (const b of _bodies) {
+    if (b.me && fist && cur < 0.03) continue;
     // (a man of the cast comes on at a run: the leaf gives a hand's breadth
     // before him; me, only when I touch it - or push: below)
     const sp = leafSpan(b.x, b.z, b.r + (b.me ? 0.05 : 0.16));
@@ -722,13 +730,17 @@ function stepDoor(api, d, dt, camera) {
   }
   // me walking into it from inside: it gives ahead of me (a step's lookahead)
   const inDoor = Math.abs(e.z - midZ) < w / 2 - 0.05 && e.x > XD - 0.85 && e.x < XD + 0.05;
-  const pushing = inDoor && vx > 0.25;
+  const pushing = inDoor && vx > 0.25 && !fist;
   if (pushing) { const sp = leafSpan(e.x + 0.32, e.z, 0.41); if (sp) need = Math.max(need, sp[1] + 0.05); }
+  // (leaning on the barred door - pinned to it in the fight - it rattles as I
+  // come against it, not again every moment I stay there)
+  const touch = need > 0.02, touched = d._touch;
+  d._touch = touch;
   d.push = need;
   if (d.rattleT > 0) d.rattleT -= dt;
   let want;
   if (d.barred || d.shut) {
-    if (d.barred && (pushing || need > 0.02)) d.tried();
+    if (d.barred && (pushing || (touch && !touched))) d.tried();
     want = 0;
     d.holdT = 0; d.target = 0;
   } else {
