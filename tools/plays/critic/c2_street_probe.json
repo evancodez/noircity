@@ -1,0 +1,25 @@
+{
+  "about": "C2 critic: the street's first seconds hands off - who has a line on me while 'They have your angle. Move!' is up, and does he shoot?",
+  "url": "/?mute=1&start=guns.street",
+  "size": [1440, 900],
+  "out": "shots/critic/c2/street_probe",
+  "steps": [
+    { "wait": 2500 },
+    { "clickOn": "#title .opt[data-k=begin]", "taken": "G.state === 'playing' && G.scenes.beat === 'street'", "retries": 3 },
+    { "drive": "tools/plays/critic/c2/seq.mjs", "seq": [
+      "e [...G.ais.values()].map((a) => a.brain.kind + ':' + a.brain.S.state + (a.brain.S.line ? ':LINE' : '') + '@' + a.h.pos.x.toFixed(1) + ',' + a.h.pos.z.toFixed(1)).join(' ') + ' | warn=' + G.hud.kit.warnText + ' hp=' + G.health.hp",
+      "s p00", "w 1000",
+      "e [...G.ais.values()].map((a) => a.brain.kind + ':' + a.brain.S.state + (a.brain.S.line ? ':LINE' : '') + '@' + a.h.pos.x.toFixed(1) + ',' + a.h.pos.z.toFixed(1)).join(' ') + ' | warn=' + G.hud.kit.warnText + ' hp=' + G.health.hp",
+      "s p01", "w 1000",
+      "e [...G.ais.values()].map((a) => a.brain.kind + ':' + a.brain.S.state + (a.brain.S.line ? ':LINE' : '') + '@' + a.h.pos.x.toFixed(1) + ',' + a.h.pos.z.toFixed(1)).join(' ') + ' | warn=' + G.hud.kit.warnText + ' hp=' + G.health.hp",
+      "s p02", "w 1500",
+      "e [...G.ais.values()].map((a) => a.brain.kind + ':' + a.brain.S.state + (a.brain.S.line ? ':LINE' : '') + '@' + a.h.pos.x.toFixed(1) + ',' + a.h.pos.z.toFixed(1)).join(' ') + ' | warn=' + G.hud.kit.warnText + ' hp=' + G.health.hp",
+      "s p03", "w 1500",
+      "e [...G.ais.values()].map((a) => a.brain.kind + ':' + a.brain.S.state + (a.brain.S.line ? ':LINE' : '') + '@' + a.h.pos.x.toFixed(1) + ',' + a.h.pos.z.toFixed(1)).join(' ') + ' | warn=' + G.hud.kit.warnText + ' hp=' + G.health.hp",
+      "s p04", "w 1500",
+      "e [...G.ais.values()].map((a) => a.brain.kind + ':' + a.brain.S.state + (a.brain.S.line ? ':LINE' : '') + '@' + a.h.pos.x.toFixed(1) + ',' + a.h.pos.z.toFixed(1)).join(' ') + ' | warn=' + G.hud.kit.warnText + ' hp=' + G.health.hp",
+      "e G.guns.events.filter((e) => e.t > G.guns.events.filter((x) => x.what === 'begin').pop().t).map((e) => e.what + '@' + e.t + (e.kind ? ':' + e.kind : '') + (e.name ? ':' + e.name : '')).join(' ')",
+      "s p05"
+    ] }
+  ]
+}

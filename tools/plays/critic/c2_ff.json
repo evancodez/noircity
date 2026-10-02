@@ -1,0 +1,7 @@
+{
+  "about": "C2 critic: their rounds into each other (Guns.js hoodRound, x2.2): how often, in play, hands off",
+  "url": "/?mute=1",
+  "size": [1440, 900],
+  "out": "shots/critic/c2/ff",
+  "steps": [ { "wait": 1500 }, { "drive": "tools/plays/critic/c2/ff.mjs", "beats": ["pin", "street", "two_ways"], "dur": 25000 } ]
+}
