@@ -170,7 +170,8 @@ export default async function drive({ js, turn, keyDown, keyUp, mouse, shot, log
           if (!onSpot || (pressed && now > moveCool)) {
             // the spot hidden best from the men as they stand now, near
             if (!goTo || pressed) {
-              const spent = s.broke > 0 || (hitTimes.length > 0 && s.rk < 0.3);
+              // ([C2] after the critic: the warning that the cover will not hold says this spot is spent, as a break or a hit down here does)
+              const spent = s.broke > 0 || (hitTimes.length > 0 && s.rk < 0.3) || !!(s.warn && /won.t hold/.test(s.warn));
               goTo = await js(`(window.C2SPENT = ${spent ? 1 : 0}, ${BEST})`); moveCool = now + (P.lateMove ? 7000 : 4500);
               // (better where I am than anywhere else: I stay and answer them)
               if (goTo && goTo.here && onSpot) goTo = null;

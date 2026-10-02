@@ -56,12 +56,14 @@ export const BEATS = {
     obj: 'Down through the burst. Up when he reloads.',
     area: { x0: HOUSE.x0, x1: HOUSE.x1, z0: HOUSE.z0, z1: HOUSE.z1 - 0.2 },
     men: [
-      // (the pistol man first, working B1 from the corridor; the Tommy gunner
-      // at the glazed door as he does: two guns at once on a man standing up)
+      // ([C2] after the critic: the first thing met is the burst - the Tommy
+      // gunner at the glazed door, raking where I stand; then two pistol men
+      // working B1 from the corridor's side of it while he changes his drum:
+      // guns from two ways on a man standing up)
       { kind: 'pistol', at: { x: -0.4, z: -9.5 }, way: [{ door: 'BD' }, { x: -0.45, z: -2.2, run: true }, { door: 'B1' }], wait: 0.4, door: 'hold' },
-      // (he waits out of the bar's sight - the lobby's west end, behind the corridor's wall - and comes along the glass;
-      // a big man in a heavy coat: four rounds, not three - he is not dropped from standing before his burst)
-      { kind: 'tommy', at: { x: -2.2, z: 4.4 }, way: [{ x: 2.6, z: 3.0 }, { door: 'B2' }], wait: 2.4, door: 'hold', hp: 170 },
+      { kind: 'pistol', at: { x: -0.4, z: -9.8 }, way: [{ door: 'BD' }, { x: -0.5, z: -3.0, run: true }, { door: 'B1' }], wait: 1.0, door: 'hold' },
+      // (he waits out of the bar's sight - the lobby's west end, behind the corridor's wall - and comes along the glass)
+      { kind: 'tommy', at: { x: -2.2, z: 4.4 }, way: [{ x: 2.6, z: 3.0 }, { door: 'B2' }], wait: 0.3, door: 'hold' },
     ],
     spots: [{ x: 4.6, z: -5.55, yaw: SOUTH }, { x: 6.6, z: -5.55, yaw: SOUTH }, { x: 2.9, z: -5.6, yaw: SOUTH + 0.3 }],
     open: { x: 1.6, z: -5.45 },

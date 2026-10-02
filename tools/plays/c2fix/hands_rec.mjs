@@ -1,6 +1,8 @@
 // C2 after the critic: a copy of the critic's hands (tools/plays/critic/c2/hands.mjs)
-// that, on a timeout, logs the brains' record (?c2rec=1, window.__c2rec) and
-// the kit's events - to find a man who stalls. Otherwise the critic's own.
+// that, on a timeout (and with opts.recFalls on a fall), logs the brains'
+// record (?c2rec=1, window.__c2rec) and the kit's events - to find a man who
+// stalls; and with opts.fairGlass, sees a man through frosted glass only
+// within 1.2 m of it (his shadow), not anywhere beyond. Otherwise the critic's own.
 // C2 critic: a player's hands in the gun kit's test bed, by real input only
 // (keys, mouse buttons, mouse moves). The critic's own, not the owner's bot.
 // What the hands may know is what the screen and the speakers give:
@@ -71,7 +73,12 @@ export default async function ({ js, turn, keyDown, keyUp, mouse, shot, log, sle
       const inView = p.z < 1 && Math.abs(p.x) < 0.92 && Math.abs(p.y) < 0.92;
       d.subVectors(c, e); const L = d.length(); d.divideScalar(L);
       let o = e.clone(), left = L, seen = true, glass = false;
-      for (let k = 0; k < 4 && seen; k++) { const hit = G.rays.raycast(o, d, left - 0.25); if (!hit) break; if (hit.mesh.userData.pane) { glass = true; o = hit.point.clone().addScaledVector(d, 0.02); left -= hit.t + 0.02; } else seen = false; }
+      for (let k = 0; k < 4 && seen; k++) { const hit = G.rays.raycast(o, d, left - 0.25); if (!hit) break; if (hit.mesh.userData.pane) {
+          // (opts.fairGlass: frosted glass shows a man only as his shadow, sharp only within a step of it - the critic's
+          // hands saw a man through it anywhere in the lit room beyond; clear glass is seen through)
+          const pm = hit.mesh.userData.pane.mesh, frosted = !!(pm && pm.material && pm.material.name === 'OfficeFrosted');
+          if (${opts.fairGlass ? 'true' : 'false'} && frosted && (left - hit.t) > 1.2) { seen = false; break; }
+          glass = true; o = hit.point.clone().addScaledVector(d, 0.02); left -= hit.t + 0.02; } else seen = false; }
       const ai = G.ais.get(h), st = ai && ai.brain && ai.brain.S ? ai.brain.S.state : '';
       out.men.push({ st: st + (ai && ai.brain && ai.brain.S ? ':' + (ai.brain.S.line ? 'L' : '') + (ai.brain.S.cover ? 'c' : '') + Math.round(ai.brain.S.mag) : ''), id: h.slot, kind: ai && ai.brain ? ai.brain.kind : '', x: c.x, y: c.y, z: c.z, hy: hd.y, L, seen, glass, inView, up: inView && seen && (st === 'aim' || st === 'fire' || st === 'out') });
     }

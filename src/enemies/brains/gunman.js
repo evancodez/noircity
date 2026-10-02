@@ -47,6 +47,7 @@ export const GUNMAN = {
   watch: 1.3,                  // s: he holds his aim on where I went down before going back
   flinch: 0.18,                // s: a round into him: his settle halved, and this long before it grows again (he is not knocked out of the fight)
   find: 6,                     // s without a line on me before the last man leaves his cover to find me
+  rake: 12,                    // s: the Tommy gunner rakes where he last saw me (or the flash of my gun) this long after; he pins, he never comes looking (one who went round, or came in to find me, was one burst and down)
   flash: 2.5,                  // s: a round into him from where he could not see me tells him where I am (a Tommy gunner rakes it, aimed)
   walk: 1.5, run: 3.0,
   pistol: { hp: 100, dmg: 17, mag: 7, burst: [2, 3], gap: [0.4, 0.52], reload: 1.7 },
@@ -78,7 +79,8 @@ export default {
       get flanking() { return !!S.flank; },
       get behindMe() { return behindMe(); },
       // ---- the kit's director asks -------------------------------------------------------
-      canFlank() { return (kind === 'pistol' || (kind === 'tommy' && alone())) && !S.flank && (S.state === 'hold' || S.state === 'back' || S.state === 'move' || S.state === 'open') && S.mag > 2 && !S.entry; },
+      // ([C2] after the critic: the pistol men go round; the Tommy gunner pins - a flank by him was one burst and down)
+      canFlank() { return kind === 'pistol' && !S.flank && (S.state === 'hold' || S.state === 'back' || S.state === 'move' || S.state === 'open') && S.mag > 2 && !S.entry; },
       goFlank(spot) {
         S.flank = spot; brain.drop();
         // (his cover let go: he fights from where the flank takes him)
@@ -103,7 +105,8 @@ export default {
         if (S.state !== 'fire') S.settle = Math.max(0, S.settle * 0.5);
         S.flinchT = T.flinch; S.hitAt = G.time;
         if (kind === 'rusher') { S.stopT = K.hitStop; S.settle = Math.max(0, S.settle * 0.5); return; }
-        if (S.state === 'fire' && kind === 'tommy') S.burstN = (S.burstN || 0) + 4;
+        // (a round into the Tommy gunner throws his burst up and off: it climbs as if it were twice as long)
+        if (S.state === 'fire' && kind === 'tommy') S.burstN = (S.burstN || 0) + 8;
         // (a round into him from where he could not see me: the flash says where I am)
         if (!S.line) S.flashAt = { p: kit().playerBody().chest.clone(), t: G.time };
         // (shot before he has started in: he does not stand and wait for the next one)
@@ -360,8 +363,11 @@ export default {
       if (kind !== 'pistol') { sigma = K.sigma0 ?? 0.012; sigma += (S.burstN || 0) * (K.climb ?? 0.004); }
       // (hit a moment ago: the round goes wider)
       if (S.flinchT > 0 || G.time - (S.hitAt || -9) < 0.35) sigma += 0.025;
-      // (raking where I went down is a guess, wide; at a flash he has just seen, it is aimed)
-      if (suppress && !(S.lastSeen && S.lastSeen.flash && G.time - S.lastSeen.t < T.flash)) sigma += 0.02;
+      // (raking where I went down is a guess, wide; where he knows I am - the
+      // flash of my gun a moment ago, or where he last saw me, or was told I
+      // was as he came, in the last 5 s - it is aimed: standing still there
+      // is standing in his burst; down behind something, it goes over or into it)
+      if (suppress && !(S.lastSeen && G.time - S.lastSeen.t < (S.lastSeen.flash ? T.flash : 5))) sigma += 0.02;
       Kt.hoodRound(B, tgt, sigma, dmg, { tommy: kind !== 'pistol' });
       h.fire();
       B.lastShot = G.time;
@@ -489,7 +495,10 @@ export default {
           if (S.t > 12) { B.path = null; stand(false); if (S.flank) { S.flank = null; const F = Kt.flank; if (F && F.ai === B) F.done = true; } S.state = 'open'; S.t = 0; S.wait = r.range(0.3, 0.7); break; }
           if (S.flank) {
             const F = S.flank;
-            if (follow(dt) || Math.hypot(h.pos.x - F.x, h.pos.z - F.z) < 0.4) {
+            // ([C2] after the critic: a man going to find a place that sees me
+            // stops where he has me - he has found one)
+            const found = S.line && S.lineT > 0.35 && dist() < (kind === 'tommy' ? 10 : 8);
+            if (found || follow(dt) || Math.hypot(h.pos.x - F.x, h.pos.z - F.z) < (F.at ? (kind === 'tommy' ? 4.5 : 1.6) : 0.4)) {
               B.path = null; stand(false);
               // there: he has me from here; he shoots from here
               S.state = 'open'; S.t = 0;
@@ -519,7 +528,8 @@ export default {
           // with no line on me): the last of them, 6 s without a line, leaves
           // his cover and comes to find me (the others press by the push and
           // the director's flank)
-          if (alone() && S.lostT > T.find && !(Kt.flank && Kt.flank.ai === B)) {
+          // (a Tommy gunner who can still rake where I went down is not hiding: he pins - his bursts say where he is)
+          if (kind !== 'tommy' && alone() && S.lostT > T.find && !(Kt.flank && Kt.flank.ai === B)) {
             if (S.cover) S.cover.taken = null;
             S.cover = null; S.fire = null; S.peeks = 0;
             S.state = 'open'; S.t = 0; S.seeks = 3; S.seekT = 0; S.wait = 0.3;
@@ -533,7 +543,7 @@ export default {
             if (S.lostT > 6) { if (S.cover) S.cover.taken = null; S.cover = null; S.fire = null; S.state = 'open'; S.t = 0; S.seekT = 0; S.wait = 0.5; break; }
           }
           // (the Tommy gunner keeps my head down: he fires at where I went down, line or not)
-          const suppress = kind === 'tommy' && !S.line && S.lastSeen && G.time - S.lastSeen.t < 12;
+          const suppress = kind === 'tommy' && !S.line && S.lastSeen && G.time - S.lastSeen.t < T.rake;
           // [C2] after the critic: (a doorway worked by two: the first at the
           // jamb waits for his mate on his way to it, then they go out together)
           if (S.workDoor && S.t < 4 && [...G.ais.values()].some((a) => a !== B && a.h && a.h.alive && a.brain && a.brain.S && (a.brain.S.state === 'entry' || (a.brain.S.state === 'move' && a.brain.S.workDoor === S.workDoor)) && Math.hypot(a.h.pos.x - h.pos.x, a.h.pos.z - h.pos.z) < 7)) { S.wait = 0.2; break; }
@@ -567,7 +577,7 @@ export default {
           if (S.target) h.lookAt(S.aimP);
           S.raiseT += dt;
           if (S.raiseT < T.raise) break;
-          const suppress = kind === 'tommy' && !S.line && S.lastSeen && G.time - S.lastSeen.t < 12;
+          const suppress = kind === 'tommy' && !S.line && S.lastSeen && G.time - S.lastSeen.t < T.rake;
           // (I come up into his line: he has to see me first, then settle)
           if (S.flinchT > 0) { /* (the flinch: a breath) */ }
           else if (S.line && S.lineT >= noticeOf()) S.settle += dt / settleTime();
@@ -628,10 +638,13 @@ export default {
           if (kind === 'pistol' && S.mag <= 0) { S.state = 'reload'; S.t = 0; G.sfx.play('c2_magOut', h.pos.clone().setY(h.pos.y + 1.1), {}, { ref: 3 }); break; }
           if (S.t > 2.5 && !S.flank && S.t % 3 < dt && takeCover(true)) break;
           if (S.line && S.wait <= 0 && Kt.token(B)) { raise(); break; }
+          // (the Tommy gunner in the open with no line: he rakes where he last saw me, as from cover)
+          if (kind === 'tommy' && !S.line && S.lastSeen && G.time - S.lastSeen.t < T.rake && S.wait <= 0 && S.lostT > 1.5 && Kt.token(B, true)) { S.wait = r.range(2.5, 4); raise(); break; }
           // (no line on me for a while: on to a place that has one; long
           // without one, straight in at me - nobody hides out the clock, nor waits it out)
           if (!S.line && S.lostT > 9) S.seeks = Math.max(S.seeks || 0, 3);
-          if (!S.line && S.lostT > 3 && (S.seekT = (S.seekT || 0) - dt) <= 0) {
+          // (the Tommy gunner does not go looking: he pins - from the open he takes cover again, rakes, or waits for me to show)
+          if (!S.line && kind !== 'tommy' && S.lostT > 3 && (S.seekT = (S.seekT || 0) - dt) <= 0) {
             S.seekT = 2;
             const e = G.eye; let bx = 0, bz = 0;
             for (const [o] of G.ais) if (o.alive) { bx += o.pos.x - e.x; bz += o.pos.z - e.z; }
@@ -639,19 +652,29 @@ export default {
             // (no place that sees me, or none but where he stands: in at me, by the way there is)
             S.seeks = (S.seeks || 0) + 1;
             if (!spot || S.seeks > 2) {
-              const a0 = Math.atan2(h.pos.x - e.x, h.pos.z - e.z);
-              let tries = 0, got = null;
-              for (const R of [2.2, 1.6, 3.0]) {
-                for (let k = 0; k < 9 && !got && tries < 6; k++) {
+              // (in at me by the way there is: a place round me, free and
+              // reached, that sees me - the first found; else the nearest
+              // reached; else straight at me by the grid's way. [C2] after the
+              // critic: a Tommy gunner 5 m off behind my car went from place to
+              // place that did not see me for 150 s)
+              const a0 = Math.atan2(h.pos.x - e.x, h.pos.z - e.z), head = Kt.playerBody().head;
+              let paths = 0, got = null, any = null;
+              for (const R of kind === 'tommy' ? [5.5, 4.5, 6.5, 7.5] : [2.2, 1.6, 3.0, 4.0]) {
+                for (let k = 0; k < 11 && !got && paths < 14; k++) {
                   const a = a0 + (k % 2 ? 1 : -1) * Math.ceil(k / 2) * 0.55;
                   const x = e.x + Math.sin(a) * R, z = e.z + Math.cos(a) * R;
                   if (!G.nav.free(x, z)) continue;
-                  tries++;
-                  if (G.nav.findPath(h.pos.x, h.pos.z, x, z, 16000)) got = { x, z };
+                  const sees = Kt.see(V(x, G.stage.surfaceY(x, z) + 1.45, z), head, 0.25);
+                  if (!sees && any) continue;
+                  paths++;
+                  if (!G.nav.findPath(h.pos.x, h.pos.z, x, z, 16000)) continue;
+                  if (sees) got = { x, z }; else any = { x, z };
                 }
                 if (got) break;
               }
-              if (got) { spot = got; S.seeks = 0; }
+              if (got || any) { spot = got || any; S.seeks = 0; }
+              // (nowhere that sees me, or only where he stands: straight at me, stopping where he has me)
+              if ((!spot || Math.hypot(spot.x - h.pos.x, spot.z - h.pos.z) < 1.0) && G.nav.findPath(h.pos.x, h.pos.z, e.x, e.z, 16000)) spot = { x: e.x, z: e.z, at: true };
             }
             if (spot) { moveTo(spot.x, spot.z, true); S.flank = spot; S.state = 'move'; S.t = 0; Kt.events.push({ t: +G.time.toFixed(2), what: 'seek', kind, at: [+spot.x.toFixed(1), +spot.z.toFixed(1)] }); }
           }

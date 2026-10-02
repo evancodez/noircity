@@ -228,10 +228,11 @@ export default {
     // ---- room B: the bar ----------------------------------------------------------------------------
     {
       const K = COUNTER, n = 4, sw = (K.x1 - K.x0) / n;
-      // the front: four panels of wood (each a section: shot to pieces, a gap)
+      // the front: four panels of wood (each a section: shot to pieces, a gap) - a bar's
+      // front is heavy: two of the Tommy gun's bursts at one place, not one ([C2] after the critic)
       for (let i = 0; i < n; i++) {
         const x0 = K.x0 + i * sw;
-        piece(new THREE.BoxGeometry(sw - 0.01, K.h - FLOOR - 0.06, 0.05).translate(x0 + sw / 2, FLOOR + (K.h - FLOOR - 0.06) / 2, K.z + K.d / 2 - 0.025), mats.desk, { kind: 'wood', hp: 15, name: 'counter ' + i }, { name: 'kh_counterPanel' });
+        piece(new THREE.BoxGeometry(sw - 0.01, K.h - FLOOR - 0.06, 0.05).translate(x0 + sw / 2, FLOOR + (K.h - FLOOR - 0.06) / 2, K.z + K.d / 2 - 0.025), mats.desk, { kind: 'wood', hp: 24, name: 'counter ' + i }, { name: 'kh_counterPanel' });
       }
       // the ends, the plinth, the top (stone)
       kit.piece();

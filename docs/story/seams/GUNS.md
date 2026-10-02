@@ -234,15 +234,21 @@ K.spawn({ kind: 'tommy', at: { x, z }, cover: true, wait: 2.4 });   // there alr
     goes on to cover nearer me; nothing nearer and no line for 6 s, he
     goes to find a place that sees me;
   - **the last man** with no line on me for 6 s leaves his cover and comes
-    to find me (a last man once held a pavement for 40 s);
+    to find me (a last man once held a pavement for 40 s): to a place round
+    me that sees me, else in at me by the grid's way, stopping where he has
+    me (not the Tommy gunner: he pins - he rakes where he last saw me, or
+    the flash of my gun, for 12 s after, from cover or from the open, and
+    then waits for me to show);
   - **the seek**: a man with no cover and no line goes to a place that sees
     me, or in at me by the way there is; nine seconds without a line, he
     comes straight in (nobody waits the clock out either);
   - **the flank** (the director): when I hold one place down for
     `flankAfter` seconds, the man best placed goes round (a run you hear: a
     scuff and quick heels) to a place that sees me, off the others' line;
-    the last man alive goes round too (after 1.5 x `flankAfter`), Tommy gun
-    or not.
+    the last man alive goes round too (after 1.5 x `flankAfter`). Only pistol
+    men go round: the Tommy gunner pins (a flank by him was one burst and
+    down); with no line he rakes where he last saw me (or the flash of my
+    gun), from cover or from the open - he never comes looking.
 - **The director** (the kit): at most `maxFiring` pistol men shoot at once
   while I fight from cover (down, or risen over it); standing up, I am every
   man's; the Tommy gunner and the heavy fire whatever the count (they count
