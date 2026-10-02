@@ -199,7 +199,8 @@ export class Stills {
     const el = document.createElement('div');
     el.className = 'panel';
     Object.assign(el.style, { left: x + 'px', top: y + 'px', width: w + 'px', height: h + 'px' });
-    el.dataset.tilt = (rng.gauss() * 0.45).toFixed(3);
+    // (a hair off square, as a hand pastes it: less for a big panel)
+    el.dataset.tilt = (Math.max(-0.55, Math.min(0.55, rng.gauss() * 0.35)) * (r.w > 0.6 ? 0.6 : 1)).toFixed(3);
     const fr = document.createElement('div');
     fr.className = 'frame';
     el.appendChild(fr);

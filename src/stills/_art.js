@@ -163,8 +163,9 @@ export const ART = {
     g.fillRect(w * 0.474, h * 0.635, w * 0.052, h * 0.008);
     g.fillRect(w * 0.488, h * 0.49, w * 0.024, h * 0.012);
     // the two at the door, big and black, the light round their inside edges
-    hatMan(g, w * 0.33, h * 1.06, h / 300, 1);
-    hatMan(g, w * 0.67, h * 1.04, h / 310, -1);
+    // (their hats against the door's light; her apron between their shoulders)
+    hatMan(g, w * 0.385, h * 1.05, h / 375, 1);
+    hatMan(g, w * 0.615, h * 1.04, h / 385, -1);
   },
   // (no words) - the diner's neon through a wet windscreen
   neon(g, w, h, rng) {

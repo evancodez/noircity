@@ -53,13 +53,13 @@ export class KitUi {
       #hud .kobj .t { position: relative; display: block; font-family: ${TYPE}; font-size: 13px; line-height: 30px; letter-spacing: 0.3em;
         text-transform: uppercase; color: #ebe8e1; white-space: nowrap; text-shadow: 0 0 4px #000, 0 0 2px #000, 0 0 1px #000; }
       #hud .kobj .s { position: absolute; left: -6px; top: 50%; transform: translateY(-50%); clip-path: inset(0 100% 0 0); }
-      #hud .kteach { position: absolute; left: 50%; bottom: 25%; transform: translateX(-50%); display: none; align-items: center; pointer-events: none; }
+      #hud .kteach { position: absolute; left: 50%; bottom: 22%; transform: translateX(-50%); display: none; align-items: center; pointer-events: none; }
       #hud .kteach .g { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); opacity: 0.9; }
       #hud .kteach .row { position: relative; display: flex; align-items: center; gap: 12px; padding: 0 26px; }
       #hud .kteach .w { font-family: ${TYPE}; font-size: 16px; letter-spacing: 0.3em; text-transform: uppercase; color: #f1efe9; white-space: nowrap;
         text-shadow: 0 0 5px #000, 0 0 2px #000; }
       #hud .kteach canvas.cap { display: block; filter: drop-shadow(0 0 3px rgba(0,0,0,0.9)); }
-      #hud .kwarn { position: absolute; left: 50%; top: 64%; transform: translate(-50%, -50%); display: none; pointer-events: none; }
+      #hud .kwarn { position: absolute; left: 50%; top: 61%; transform: translate(-50%, -50%); display: none; pointer-events: none; }
       #hud .kwarn .g { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); }
       #hud .kwarn span { position: relative; display: block; padding: 0 34px; font-family: ${BOOK}; font-style: italic; font-size: 23px; line-height: 56px;
         color: #f4f2ec; white-space: nowrap; letter-spacing: 0.03em; text-shadow: 0 0 6px #000; }
