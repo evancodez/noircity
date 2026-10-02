@@ -96,9 +96,12 @@ export class Autoplay {
     if (Math.hypot(dx, dz) < 0.35) { P.i++; return; }
     // (turn toward it as a man does, not in one snap)
     const want = Math.atan2(-dx, -dz);
-    C.yaw += Math.atan2(Math.sin(want - C.yaw), Math.cos(want - C.yaw)) * 0.12;
+    const err = Math.atan2(Math.sin(want - C.yaw), Math.cos(want - C.yaw));
+    C.yaw += err * 0.12;
     C.pitch += (-0.12 - C.pitch) * 0.1;
-    C.auto = { f: 1, s: 0 };
+    // ([C4] turned well away from the point: turn first, then walk - at full
+    // pace it circled a point near it for good, in the diner's doorway)
+    C.auto = { f: Math.abs(err) < 0.7 ? 1 : 0, s: 0 };
   }
   stopWalk() { const C = this.game.controller; if (C.auto) C.auto = null; this.path = null; }
 

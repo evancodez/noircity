@@ -79,22 +79,52 @@
    "timeout": 10000
   },
   {
+   "name": "[C4] the bar lifted off the street door, the door pushed open"
+  },
+  {
    "walk": [
     [
      -12.85,
      0.2
     ],
     [
-     -11.2,
-     0.6
+     -11.3,
+     0.72
+    ]
+   ],
+   "timeout": 30000
+  },
+  {
+   "look": "(() => { const C = N.controller, d = G.stage.part('dinerFront').door; const b = d.makeBar().pivot; b.updateMatrixWorld(true); const p = new N.THREE.Vector3(-0.035, 0, -0.42).applyMatrix4(b.matrixWorld), e = G.eye; const yaw = Math.atan2(-(p.x - e.x), -(p.z - e.z)), pt = Math.atan2(p.y - e.y, Math.hypot(p.x - e.x, p.z - e.z)); const dy = Math.atan2(Math.sin(yaw - C.yaw), Math.cos(yaw - C.yaw)); return [Math.round(-dy / C.sensitivity), Math.round(-(pt - C.pitch) / C.sensitivity)]; })()",
+   "steps": 6
+  },
+  {
+   "until": "G.interact.current && G.interact.current.id === 'c4.bar'",
+   "timeout": 6000
+  },
+  {
+   "key": "KeyE"
+  },
+  {
+   "until": "!G.stage.part('dinerFront').door.barred",
+   "timeout": 4000
+  },
+  {
+   "wait": 1600
+  },
+  {
+   "walk": [
+    [
+     -11.0,
+     0.62
     ],
     [
      -9.2,
-     0.6
+     0.62
     ],
     [
      -8.4,
-     -1.6
+     -1.8
     ]
    ],
    "timeout": 40000
@@ -132,6 +162,17 @@
   },
   {
    "shot": "c03_matchbook"
+  },
+  {
+   "key": "KeyE"
+  },
+  {
+   "until": "G.inspect.active && G.inspect.active.obj.userData.kind === 'amesCard'",
+   "timeout": 6000,
+   "label": "[C4] Ames's card out of the matchbook"
+  },
+  {
+   "wait": 1200
   },
   {
    "key": "KeyE"

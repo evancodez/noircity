@@ -499,7 +499,7 @@ export default defineScene({
         // [C4] (at him, looking at him: E from across the pavement or at the
         // door searched him from five metres - and held the door's own E)
         let searched = false;
-        ctx.interact.add({ id: 'c4.search', at: () => m.bones.chest.getWorldPosition(V(0, 0, 0)), range: 2.3, cone: 0.75, prompt: 'search', onUse: () => { searched = true; ctx.interact.remove('c4.search'); } });
+        ctx.interact.add({ id: 'c4.search', at: () => m.bones.chest.getWorldPosition(V(0, 0, 0)), range: 2.9, cone: 0.8, prompt: 'search', onUse: () => { searched = true; ctx.interact.remove('c4.search'); } });
         yield until(() => searched);
         G.sfx.play('crouch');
         const s = H.play('searchBody', { onMark: { found: () => G.sfx.play('clothRustle') } });
