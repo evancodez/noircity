@@ -1,310 +1,313 @@
-# C3 critic: chapter VI The Tail, played cold (2026-10-02)
+# C3 critic, second look: chapter VI The Tail, played cold again (2026-10-02)
 
-The code played: `wave-c/C3-city` at 93bf060 (the second owner's handover).
-Played as the user will: from the title (`?start=tail`, `?start=tail.river`,
-`mute=1`), by trusted input, before reading the owner's report. Most of it
-frozen between moves (`tools/stepplay.mjs`), looking at every frame; the
-contests by my own player (`tools/plays/critic/c3c_drive.mjs`: it follows
-only what it has seen of his car, brakes for the bends of his trail, aims
-the mouse onto a tyre), not the owner's bot; the findings that matter
-re-checked in real time with `tools/play.mjs` plays of my own
-(`tools/plays/critic/*.json`). Frames: `docs/story/review/wave-c/C3/critic/`.
+The code played: `wave-c/C3-city` at e95959a (the third owner's answer to the
+first look). The first look's report is in git (aa5b177); its findings are
+checked one by one below ("The first list, in play"). Played as the user will:
+from the title (`?start=tail`, `?start=tail.river`, `mute=1`), by trusted input,
+before reading the owner's report. Real time with `tools/play.mjs`; frozen
+between moves with `tools/stepplay.mjs` and my own player
+(`tools/plays/critic/c3c2_drive.mjs`: it follows only what it has seen of his
+car, brakes for the bends of his trail, aims by moving the mouse onto a point
+of his car; it logs every line the screen shows and the deepest overlap of any
+two cars' boxes every 4 frames). Frames: `docs/story/review/wave-c/C3/critic/2nd/`.
 
-**Verdict.** The chase on the streets is the real thing: he is on no leash,
-hands off loses with a warning, a player who follows what he sees keeps him,
-the car is a car and the city has hard edges. Phase b is not a contest:
-**LMB alone, never aimed, stops him in about five seconds** (6 of 6 rounds
-land). Fix that first; then the two things a player will see pass through
-(fruit in my lap, a walker into a wall), the teach cards, the kit merge and
-the seam's stall.
+**Verdict.** The first list is answered: no more aim of the game's own, nothing
+in my lap, walkers clear of the walls, the cards readable and at their
+moment, the kit's lines and VI, stalls that cost, a head-on car that backs off
+and goes round, a much shorter seam, a darker river road. Phase a is a real
+tail (idle and W-only lose with a warning; careful hands keep him; careless
+hands lose him at corners). **Phase b is the problem now: one round anywhere
+on his car and then a bump from behind puts him off the road** - and a player
+who closes in to shoot bumps him without meaning to. Fix that first, then the
+chapter card that never shows when coming in by the cut, then the length of
+phase b.
 
 ---------------------------------------------------------------------------
 ## Findings, most felt first
 
-### 1. BLOCKER: phase b wins with no aiming (the game aims for me)
-- **What.** On the river road, clicking LMB once a second with the mouse
-  never moved and RMB never pressed lands every round on his car and puts
-  him off the road. Real time, real input: 6 shots, 6 hits (most on the tank),
-  his wreck 6.6 s after phase b starts, my hands off the wheel the
-  whole time (`tools/plays/critic/tail_b_noaim.json`, run three times at
-  1280 and 1440 wide: wrecked every time; 6 of 6 in both runs whose count
-  I read). Frozen, with my car following him:
-  4 of 4, he crashes in 4.4 s (twice, identical). Frame
-  `01_lmb_alone_eye_on_him.jpg`: 0.2 s after a click, the eye is centred on
-  his car's back without the mouse having moved.
-- **Why** (`src/scenes/tail/gun.js`):
-  - line 52: LMB with the gun down sets `snapT = 0.9`: the click raises the
-    revolver and fires once the arm is up (`fireBuf`), so a bare click is a
-    full aimed shot;
-  - line 58: every raise sets `aimSnap = 0.32`, and lines 61-66 swing the
-    look onto `his.seat(-1.9, 0.75, 0)` - the middle of his back, low -
-    which is exactly `chase.js` line 365's tank zone (`lp.x < -1.45 &&
-    lp.y < 1.05`). Three tank rounds set him on fire (line 370) and the fire
-    takes him 2.5 s later (line 578); four take his hold (0.22 each).
-  - his weave (`his.js`, `seesGun` needs `aimK > 0.5` for a while) never
-    builds while the gun bobs up and down between clicks.
-- **The player feels**: I clicked, he blew up. Nothing was asked of me.
-- **Fix.** No automatic aim: drop `aimSnap` (or keep a slight ease that
-  never reaches him), and make LMB with the gun down only raise it (no
-  round until the arm is up and LMB is pressed again). The aim mark is
-  enough to aim with. Then judge phase b again (finding 5). The play
-  `tail_b_noaim.json` must pass: at most one hit, he is still driving.
-- Note: RMB held and LMB spammed with the mouse still (W held,
-  `tail_b_rmbspam.json`) landed 2 of 6 and did not stop him in real time:
-  once the gun stays up his weave works. The cheat is the per-raise snap.
+### 1. BLOCKER: after one round lands, any bump from behind ends phase b (my shots do not cause the crash)
+- **What.** On the river road, one round anywhere on his car (a body graze,
+  the rear window) and then my car into his back at speed: he loses it and
+  spins off. Frozen session, by trusted input, my player aiming once at his
+  roof then holding W into him: **2 of 2, and a 3rd for the frames**: one
+  round at 30 to 35 m, the crash 3.4 to 4.4 s later at a bump (gap 5.2 m),
+  with 5 rounds still in the cylinder. And without meaning to: in my first
+  natural run with the good hands (follow at his speed, aim at a tyre), 2
+  shots, **1 body hit**, he slowed after it, my car closed in, touched him, and
+  he went off 1.4 s later (`hisDmg` body 1, nothing else). A player who drives
+  up close to shoot will see this as "I grazed him and he crashed by himself".
+  Frame `01_one_round_then_a_bump_wins` (his car slewed across my bonnet;
+  the one round was `05_the_one_round_35m`).
+- **Steps.** `NOIR_PORT=5343 node tools/stepplay.mjs --url "/?mute=1&start=tail.river" --dir <d> --size 1440x900 --status tools/plays/critic/c3c2_status.js --ready "G.state === 'playing' && !!G.scenes.ctx.flags.chase && G.scenes.ctx.flags.chase.phase === 'b' && !G.scenes.fadeK"`,
+  then `SEED=41 node tools/plays/critic/c3c2_drive.mjs <d> ram one 30 0.25 c`
+  (`ram`: once a round has landed, W held straight at his car; `one`: one
+  round at his roof from behind, then the gun goes back in).
+- **Why** (`src/scenes/tail/chase.js` `rammed`):
+  - line 463: `hurt = ... tyres || man || tank ... || D.control < 1` - any one
+    round makes him "hurt" (a body graze costs 0.12 of his 1.0 hold);
+  - line 462: `quarter = Math.abs(l.x) > 0.6` - `l.x` is along his car, so
+    his rear bumper counts as "the quarter": a straight rear-end qualifies;
+  - line 464: `e.imp > 2.5 && quarter && hurt` -> `D.lose(...)`: the whole
+    contest decided by one touch. (My car tops 72 km/h, his ~55: closing in
+    is easy and a bump is the natural end of closing in.)
+- **Fix.** The brief's ram is for a dry gun on a hurt car. Make "hurt" mean
+  really hurt (a tyre gone, or the man hit twice, or his control under 0.5)
+  and "the quarter" the side behind the rear wheel (`l.x < -1.2 &&
+  |l.z| > 0.55`, the shunt that spins a car), never a straight rear-end; or
+  let a ram cost control like a round (0.2 to 0.3, his car jolted) instead of
+  ending it. The play to pass: `ram one` must not end phase b on the bump.
 
-### 2. BLOCKER: fruit inside the cabin, in my lap (a pass-through seen in play)
-- **What.** After his crash I drove on through the wharf market's stalls
-  and over what they spilled (36 to 60 km/h). A melon-sized fruit sat in
-  front of the steering wheel between my hands, a second over the dash on
-  the left, and stall poles crossed the windscreen inside the glass, in
-  front of the mirror's stalk. Frame `02_fruit_in_the_cabin.jpg` (phase c,
-  t 179.5, my car at (127, -59) heading south).
-- **Why.** Pieces never collide with the car's body. `smash.js`
-  `kickPieces` (line 501, called from `Car.js` line 281) throws a piece
-  the car overlaps up at 0.8 to 1.15 of the car's speed - so it falls back
-  through the bonnet - and the only guard is the windscreen band in
-  `update()` (lines 523-526: 1.0 to 1.95 m up, 0.25 to 0.85 m ahead of the
-  car's middle, |z| < 0.7). A piece lower, wider or slower than that band
-  passes through the bonnet, the pillars and the cabin. (A probe of a clean
-  plough at 50 km/h found none inside; it happened over pieces already
-  lying in the road and on a piece kicked twice. It is intermittent, and
-  ugly when it comes.)
-- **Fix.** Keep every piece out of my car's body box, not only out of one
-  band of the windscreen: anything inside it (below 1.5 m, within the
-  car's half length and half width) is put on its surface and thrown off
-  it; never kick a piece from inside the box toward the rear.
+### 2. MAJOR: in by the cut from V, the chapter is never named (the small card never shows)
+- **What.** The seam (C3_CITY.md 5): "chapter VI's card is lettered small over
+  the windscreen as I pull out". From V The Watcher, warm then
+  `scenes.go('tail', { beat: 'start', fade: 'cut', card: false })`, W held:
+  no card at all, in 3 of 3 runs; the `.c3card` element is never even made.
+  A player who plays through from the title never sees "VI THE TAIL".
+  Frame `02_seam_no_chapter_card` (pulling out, 4 s after the cut).
+- **Steps.** `NOIR_PORT=5343 node tools/play.mjs tools/plays/critic/tail_seam_frames.json --size 1440x900`
+  (FAILS: "the chapter's card lettered small over the windscreen as I pull out").
+- **Why.** `src/scenes/07_tail.js` line 129: `smallCard = !G.hud.cardT && ...`.
+  After any chapter card has run (V's own), `src/ui/Hud.js` lines 444-447
+  leave `cardT` at -1/60 (it is decremented past 0), so `!G.hud.cardT` is
+  false and line 142 never calls `K.smallCard`. Only a session that has never
+  shown a card would see it.
+- **Fix.** `!(G.hud.cardT > 0)` (and check line 142 passes the numeral and the
+  name the way `kit.smallCard(num, name)` wants them: `D.title, D.name`).
 
-### 3. MAJOR: a walker who jumps clear goes into the building
-- **What.** Drive at a figure under an umbrella on Cooper St's west pavement
-  at 40 km/h: he jumps toward the wall and ends 0.7 to 2.7 m inside the
-  facade (x -184.2, -184.7, -186.2 in three runs; Cooper's west building
-  line is x -183.5 = -175 - 5.5 - 3). `tools/plays/critic/tail_walker_wall.json`
-  (real time) fails.
-- **Why.** `walkers.js` line 96-98: the jump runs 4.2 m/s for 0.55 s
-  toward the wall's side with no test against the building line; the
-  'never under a car' push (line 122) moves him out of the car's box with
-  no wall test either.
-- **Fix.** Clamp a walker to his pavement strip (between the kerb and the
-  building line) every step; jump along the pavement or into a doorway,
-  never into brick. Three of the four walkers are on his route's pavements.
+### 3. MAJOR: phase b is still short and forgiving; the clumsy hand never fails it
+- **What.** From the river road's checkpoint, every hand that aims at all
+  wins the first try, before the river road's traffic matters:
+  - sloppy aim (slow, shaky, fires early; `bad sloppy`, `good sloppy`):
+    **3 of 3 first-try wins**, 4 to 10 shots, 3 to 4 hits, his crash 8 to 12 s
+    after the checkpoint; no "He's nearly at the pier." in any;
+  - good aim (`good aim`): 4 of 4, 3 to 4 shots, 3 hits, 3 to 10 s;
+  - lazy hands (steer at him, RMB held, LMB twice a second, mouse never
+    moved, bump): 0 hits in 3 tries ("He warned them.", fair), a tyre and the
+    bump on the 4th.
+  Three hits end it: a tyre 0.4 + the rim 0.25 + the tank 0.22 of his hold
+  (`chase.js` `hisHit` lines 349, 378, 383, 406). The first slow car of the
+  river road is placed 58 m ahead of him (`traffic.js` `riverTraffic`, line
+  148): he reaches it ~7 s in, about when he goes down, so the "steer round
+  traffic while aiming" of the brief barely happens. (The owner's own proof
+  says 14 to 33 s; my hands, which aim less well than his, end it faster
+  because they do not wait for a tyre.) WAVE_C 7.4: the clumsy hand should
+  fail some.
+- **Steps.** In the river session above: `SEED=31 node tools/plays/critic/c3c2_drive.mjs <d> bad sloppy 90 5 c`
+  (and 32, 111); `good aim` with 21, 22.
+- **Fix** (after 1): one more hit to finish him (control costs down a third,
+  or the crash only from two tyres, the man three times, the fire, or a real
+  quarter ram); the first river car 20 to 30 m ahead of him and a parked
+  lorry or a stall on his lane in the first 150 m, so he swerves and I must
+  steer while the gun is out.
 
-### 4. MAJOR: the driving keys are never readable; the handbrake is taught at the kerb
-- **What.** BEGIN at the tail, touch nothing: the card `W drive / A D steer
-  / S brake` shows for 0.2 s (t 4.58 to 4.78) and is replaced by `SPACE
-  handbrake: the tail round a tight corner` the instant he pulls away, at
-  the kerb, nowhere near a corner. A first-timer reads neither: the first
-  was gone before it could be read, the second is about a corner he cannot
-  see. `tools/plays/critic/tail_teach.json` fails (both checks). Frame
-  `04_handbrake_card_at_the_kerb.jpg`.
-- **Why.** `src/scenes/07_tail.js` line 113: `pilot.s > 30` is already true
-  at the kerb (the path starts at the junction before him), so line 114's
-  card follows line 109's at once.
-- **Fix.** Hold the drive card until W is pressed (or 5 s); teach the
-  handbrake when he brakes for his first corner (his brake lamps flare) or
-  when I arrive at it above 35 km/h. `kit.teachAgain` exists and is used
-  nowhere: after two "Wrecked."/"Lost him." at a corner, teach it again
-  (WAVE_C §3).
-- The wording "the tail round a tight corner" reads like the chapter's name;
-  "SPACE handbrake: swing round a tight corner" says it.
+### 4. MINOR: the warning of the failed try comes back for 0.4 s as the retry starts
+- **What.** After every "LOST HIM." / "HE WARNED THEM." black, the last
+  warning ("He's getting away." / "He's nearly at the pier.") is lettered
+  over the scene again as it comes up from black, then fades: seen after
+  every one of the 20-odd fails in my runs (the screen's line logged 0.35 to
+  0.4 s into each retry). The player reads "He's getting away." at the
+  checkpoint with his car 30 m ahead. Frame `03_old_warning_after_lost_him`.
+- **Why.** `src/game/Game.js` `fail()` (line 510) calls `this.hud.kit.clearWarn()`
+  without `{ now: true }`: `src/ui/kit.js` (lines 323-324, 359) fades the line
+  over 0.4 s of game time, and game time is stopped under the black, so the
+  fade happens after it. (A C1 file: every chapter has it; this one fails
+  often.)
+- **Fix.** `clearWarn({ now: true })` in `fail()`.
 
-### 5. MAJOR: phase b is a gallery even with honest aim; a hit does not show
-- **What.** Aiming as taught (RMB, the mouse onto a tyre, LMB): 3 shots, 2
-  hits, he is off the road 7 s into phase b; another run 10 s; a sloppy
-  aim (slow, shaky, firing early) 7 shots, 3 hits, 6 s. He starts 26 m
-  ahead in my lane on a straight, with nothing between us; there is no
-  steering-and-shooting problem to solve. The brief: "Steering and shooting
-  at once is the difficulty: traffic and things in the road while I aim."
-- **A hit does not show at range.** A tyre hit at 22 m (`hisDmg.tyres` 1):
-  the next 24 frames show nothing on his car - no spark, no puff, no sag
-  readable at that size; only his speed drops 55 to 51 km/h and he pulls a
-  little (`06_tyre_hit_nothing_shows.jpg`, and crops at 4x). Muted, a hit and
-  a miss look the same. Smoke shows from the second tank hit; that one
-  reads.
-- **Fix** (after 1): a hit needs a mark at the place it lands, readable at
-  20 to 40 m in the ink (a white spark star, a burst of black rubber, the
-  car's quarter dropping visibly); put traffic and parked cars on the river
-  road's first 200 m, have him change lanes round them and swerve when
-  hit, so I must steer while aiming. The owner's Left 2 says the same; with
-  1 fixed it is the next thing a player feels.
+### 5. MINOR: "Wrecked." has no warning line
+- **What.** Into the canal rail at 50 km/h three times (phase a): 1.46,
+  2.93, then "WRECKED." No line at any step; at 2.93 the frame shows a crack
+  and a lamp less (`06_two_steps_of_damage_no_line`). WAVE_C 1.2 wants a
+  warning before every fail; a first-timer does not know the third hit is the
+  last. (My careless hands carried 1.0 to 1.9 damage through most tries.)
+- **Fix.** At the third step (`chase.js` `showDamage`, damage >= 3) the kit's
+  warning until the checkpoint mends it: "She won't take another." (or the
+  like).
 
-### 6. MAJOR: the lane still runs the wave B order and its own kit; the integration's kit is ready
-- **What a player sees today.** The card says **VII THE TAIL**
-  (`05_card_VII.jpg`) and the next chapter **VIII PIER NINE**: WAVE_C §4
-  numbers them VI and VII.
-- **Why.** `wave-c/integration` has had the C1 kit since 0b46889 (with
-  `docs/story/seams/Z.md`); this branch has not merged it. The owner's
-  report ("Z.md is not on wave-c/integration yet") is out of date.
-- **What the merge will bring** (check it in play, not only in the build):
-  integration's `src/scenes/order.js` gives `tail` stand-in objectives for
-  the wave B beats - `start: 'Stay on his tail lamps.'`, `close` / `shot`:
-  'Put him off the road.', `crash: 'Get out. Take him.'`, `interrogate:
-  'Make him talk.'` - and a stand-in is taken down when a beat begins that
-  has none (this scene's `chase2`, `river`, `pier`). The tail sets its
-  lines through `kit.objective` around its beats (`07_tail.js` lines 106,
-  118, 124, 134; `chase.js` 192 and 485): declare them as the scene's own `objectives` in
-  `defineScene` (Z.md §5) so the manager does not show the old lines or take
-  the new ones down. Then `teach(id, text)`'s signature, `game.fail`'s black
-  (long enough to read the why), and drop the shim's fallbacks as the
-  report already plans.
+### 6. MINOR: the chase2 checkpoint still meets the van on the inside of the Baxter turn
+- **What.** From "Lost him." in the second half, back on Canal St: my good
+  hands (which kept him clean from the kerb in 3 of 3 full runs) hit the van
+  parked on Baxter's west kerb just past the corner on **6 of 6 retries**
+  (33 km/h into the right turn on his line, stopped dead at (-29.4, -240.3),
+  then lost him). At the checkpoint he is 30 to 45 m ahead and already round
+  the corner, so the line into the turn is the inside one. Frame
+  `04_baxter_van_on_the_inside_line`. The first look saw the same; the owner
+  slowed the start (25 km/h), which does not move the van.
+- **Fix.** Move that van 15 m down Baxter or to its east kerb, or leave the
+  first 12 m of the west kerb past the corner clear.
 
-### 7. MAJOR: the seam's warm-up and the cut stall
-- **Measured** (frozen session, the city not yet built, from the watcher
-  chapter; CPU time per call/frame, the machine shared with another lane):
-  `game.stages.warm('city', 6)` once a frame: 38 frames, 396 ms in all, the
-  longest slice 35 ms, six over 16 ms (a part's build cannot be cut). Then
-  `scenes.go('tail', { beat: 'start', fade: 'cut', card: false })`: 224 ms
-  inside the call, and the first frame of the city 580 ms (its shaders and
-  buffers): about 0.8 s frozen at the cut. Later cuts into the city: 77 to
-  99 ms in the call, then single frames of 130 to 490 ms within the first
-  12 frames.
-- **Why it matters.** The user's ask is a cut inside the act of getting in,
-  with no hitch and no black: a 0.8 s freeze on the door frame is the black
-  card in another form.
-- **Fix.** Compile the city's materials during the warm (a hidden render of
-  its parts, or `renderer.compile` on its scene) and build the chase's
-  objects (cars, traffic, walkers, cast) in the warm too, so `scenes.go`
-  only places them; slice the parts that take over 16 ms. Say in the report
-  what C6 must call: today nobody calls `warm` (the owner's Left 5).
+### 7. MINOR: E by his wreck answers nothing
+- **What.** Stopped beside his wreck on the river road, E: no prompt, no line,
+  nothing (`07_by_his_wreck_E_answers_nothing`). It is the first thing a
+  curious player tries there (WAVE_C 1.7: a small answer for anything tried).
+  The brief allows not getting out; then say so once: a line ("No time.
+  Pier 9.") or the head turning to him.
 
-### 8. MAJOR: phase b's river road reads grey
-- **What.** The chapter's climax is drawn in mid-grey: sky, skyline, road
-  and railing all between 70 and 170. Share of the frame (480 x 300,
-  luminance): the reference 50 % black / 8 % white / 28 % mid-grey; the
-  river road with the gun out (`01`, `06`) 44 to 49 % black, 3 to 5 %
-  white, **43 to 44 % mid-grey**; Harbor St with the el 48 % mid-grey. The
-  streets seen from the cabin are black-heavy, not grey (Pell Lane 79 / 1 /
-  11, the market square 75 / 2 / 13 - `08_keep_the_market_square.jpg`),
-  though with few whites everywhere (1 to 2 %: the reference's lamp cones and wet
-  streaks are 8 %).
-- **Fix.** Darker sky over the river (the reference's sky is lighter only
-  round the lamps and the skyline is a mass, not a tint), black water,
-  stronger lamp cones and their streaks on the wet road along the quay,
-  black masses (the el's columns, the wharf's sheds) nearer the road.
+### 8. MINOR (polish)
+- **A good player always sees the same film.** Three clean runs from the kerb:
+  his route identical to the metre (the route choice reads only my gap, and
+  good hands keep it the same). The brief: "so a retry is not the same film".
+  A random pick between the two at each leg when I am near would do.
+- **The drive card waits for a W press it never gets** when W is already down
+  as it appears (W held from BEGIN): it stays its full 6 s over the road.
+- **The seam's cost moves with the machine's load**: three runs of
+  `tail_seam_frames`: the cut 36 / 52 / 37 ms + a first frame of 69 / 59 / 121
+  ms (stall 105 / 110 / 158 ms); the warm's longest call 27 / 28 / 91 ms, 3 to 6
+  over 16 ms. Eight programs still compile at the cut (the cast's cloth, the
+  id pass's, the headlamp pool, the tail screen, a lambert and a physical):
+  warm them with the rest and the first frame drops.
+- **Whites are scarce** (the owner's Left 1): the river road with the gun out
+  54 to 58 % black, 2 to 3 % white, 30 to 34 % mid-grey (the reference 52 / 6 /
+  27); the streets 74 to 91 % black and 0 to 1 % white. The river road is no
+  longer grey; it is short of lamp light.
+- **I reach the pier with 9 rounds** in a good run (the story: an empty gun).
+  VII's to say, but the tail could spend them (see 3).
 
-### 9. MAJOR: things in the way cost nothing; the traffic is seldom in the way
-- **Stalls.** Through a row of eight wharf-market stalls at 50 km/h, W
-  held: 0 damage, the speed rose 47 to 59 km/h, and for two seconds the
-  windscreen was nothing but black planks (`03_stall_row_costs_nothing.jpg`).
-  `smash.js` line 27: a stall costs `drag 0.93` once, then the engine has
-  it back. A player learns that a stall is a free shortcut. (Lamp posts do
-  cost: 57 to 45 km/h and 1.3 damage; parked cars, columns and edges are
-  hard: see Good.)
-- **Traffic.** At most four sedans, spawned 70 to 170 m off and away from
-  his line: in my two clean good runs not one was in my way. When one meets
-  me head-on it stops 9 m off and waits (7 s and counting), never backing
-  or going round; I can reverse round it.
-- **Fix.** A stall should take real speed (a third of it) and shake me;
-  put the traffic on his line ahead of us at the junctions he takes (he
-  overtakes, I must too), and let a car facing me back off after 2 s.
+---------------------------------------------------------------------------
+## The first list, in play
 
-### 10. MINOR
-- **A player who falls far behind in phase a starts phase b already lost**:
-  my clumsy player turned onto the river road 114 m behind; no warning for
-  23 s ("He's nearly at the pier." comes only at his z 70), then "He warned
-  them.". Fail at once ("Lost him.") if I reach the river road more than
-  85 m behind, or warn at once.
-- **The chase2 checkpoint starts 33 m behind him at 40 km/h straight into
-  the Baxter turn**, a parked van on Baxter's west kerb at the corner: my
-  player hit it four restarts running (once it had lost him for other
-  reasons). Start chase2 a little further back from the corner or with him
-  closer to it.
-- **A bent lamp post stays lit**: 1.5 s after the blow its lamp is still on
-  (`on: true`) and its glowing head rides in front of my bonnet like a
-  bottle on the ornament. The report says they go out.
-- **The yard reads bare**: Pier 9's yard is 44 x 38 m; its west half is
-  empty paving to the river rail (`07_yard_bare_plain.jpg`). The doors,
-  drum, crates and lamp are by the gate; `E get out` shows only within 11 m
-  of (133, 176) and under 0.6 m/s, with nothing on the ground to say where.
-  A second sign or a lamp over the stop helps.
-- **The `PIER 9 ->` sign at z 110 points right while the shed shows on the
-  left**; it means the yard. Fine once known; a first-timer looked right.
-- **`tools/fps.mjs` at the market square with `tailAt=-150,-160,0.79,9`
-  measured 3.5 and 4.2 fps (twice)** while my real-time play into the
-  square's stalls measured 72 fps: a shot-mode CPU storm (a car placed into
-  a stall?) worth a look before anyone quotes a square number.
-- **The traffic car stopped facing me showed unlit headlamps.**
+| # | first finding | now | what I saw |
+| --- | --- | --- | --- |
+| 1 | B: LMB alone wins phase b | fixed | `tail_b_noaim` 5 shots 0 hits; `tail_b_rmbspam` 6 / 0; W held + RMB + LMB spam (`tail_b_wram`) 12 / 0, he reached the pier; no snap of the eye |
+| 2 | B: fruit in the cabin | fixed | four ploughs (the wharf market at 50 km/h, the square's row of eight): 0 frames with a piece inside my car's body (`c3c2_plough.mjs`); the planks tangle in front of the glass for a moment, outside it |
+| 3 | M: a walker into a facade | fixed | 7 approaches at 40 km/h on the 3 walkers (on their line and off it): they jump into the road, never into brick, never nearer than 0.95 m to my body (`c3c2_walker.mjs`) |
+| 4 | M: the driving keys never readable | fixed | the drive card 6.25 s; the handbrake card as his lamps flare for his first corner; the gun card as the river road begins; each again after two fails (seen for the gun and the handbrake) |
+| 5 | M: a gallery; a hit does not show | half | a tyre hit at 27 m shows: a white puff at the wheel and the quarter down (~10 px of white at 1440); a rim hit, a lean; but phase b is still a gallery (finding 3) and can be ended by a bump (finding 1) |
+| 6 | M: wave B order and its own kit | fixed | VI THE TAIL, then VII PIER NINE; the beats' lines from the first second and at each change; `game.fail`'s black with the why |
+| 7 | M: the seam stalls | mostly | ~0.1 to 0.16 s at the cut (was ~0.8), no black, no card on black; but the small card never shows (finding 2) |
+| 8 | M: the river road grey | mostly | 54-58 / 2-3 / 30-34 % (was 44-49 / 3-5 / 43-44); short of whites (8) |
+| 9 | M: things in the way cost nothing; traffic not in the way | fixed | eight stalls: 52 -> 20..27 km/h, 0.94 damage; a lamp post 1.08 damage and out 0.27 s after; a car I face stops at 9 m, backs off at 2 s, goes round in ~8 s with its lamps on; traffic ahead of him in phase a and on the river road |
+| 10 | m: far behind at the river road | fixed | "He's getting away." at once at 85 m, "Lost him." 3.6 s later |
+| 10 | m: chase2 into the Baxter van | not fixed | finding 6 |
+| 10 | m: a bent post stays lit | fixed | `on` false 0.27 s after the blow |
+| 10 | m: the yard bare; the sign points right | fixed | the PIER 9 signs point straight on; `E get out` came at the bay (133.4, 171.1) |
+| 10 | m: fps at the square | not re-measured | (one fps run only; see the frame rate) |
+
+---------------------------------------------------------------------------
+## The three proofs, mine (every contest)
+
+| contest | idle (hands off / W only) | bad | good |
+| --- | --- | --- | --- |
+| **a, the tail** | from the title, hands off (`tail_idle_title`, real time): "He's getting away." then "Lost him." ~16 s in; W only (`tail_wonly`): into him, off a wall, down the wrong street at 69 km/h, the warning, "Lost him." 3.9 s later; back at the kerb in under 2 s | `bad` hands (late brakes, a wrong key now and then): through on the 1st try, 83 s, never warned; `rough` hands (corners 10 km/h too fast, more wrong keys): lost him at corners 7 times in 240 s and 10 in 300 s (my bot reverses badly, so a floor, not a measure) | through, 80 s, no warning, 3 of 3 from the kerb (the same route each time) |
+| **b, stop him** | hands off at the river road: the warning 6 s in, "Lost him." 3.6 s later (x4); followed but never shot at: "He's nearly at the pier.", "He warned them." 5 to 10 s later (x2) | sloppy aim: 3 of 3 won on the first try in 8 to 12 s (finding 3); lazy spam (steer at him, RMB, LMB spam, bump) 1 of 4 | 4 of 4 in 3 to 10 s; one round + a bump 3 of 3 (finding 1) |
+| **c, Pier 9** | (no contest: nothing fails there) | - | my player drove from his wreck to the bay in 34 s; E; the doors; VII |
+
+Every fail had its line first ("He's getting away." 2.9 to 6.7 s before "Lost
+him.", "He's nearly at the pier." 5 to 10 s before "He warned them."),
+except "Wrecked." (finding 5). The teach card came again after two fails at
+the beat. No error in the page in any play.
+
+---------------------------------------------------------------------------
+## Exploring (the jank walk)
+
+- **Edges** (my car at 50 km/h into each, W then S): the rail yard (west), the
+  depot wall (south), the canal rail (north, twice), the river rail (east), the
+  el's column by the pier road, the far corners: all stop me, all are things I
+  can see, no launch (height 0), 1.3 to 1.7 damage, and S frees every one
+  (3 to 3.6 m) (`c3c2_edges.mjs`).
+- **Stuck?** Turning round in the alley through the block south of the
+  avenue: wedged across it at 0.8 rad; W and S alone do nothing, S with the
+  other lock frees it. A player gets out.
+- **No car through a car**: the deepest overlap of any two cars' boxes, every 4
+  frames, through 3 full runs, the careless runs and the phase b runs: never
+  over 0.15 m. Rammed him at 72 km/h: no overlap.
+- **People**: the walkers as above; nobody under a car.
+- **Keys in the car**: E at the kerb and on the river road, F, C, R, Q: nothing
+  breaks; E answers only at the pier's bay (and not at his wreck: 7). Mouse
+  look turns my head in the cabin and eases back.
+- **Things that give**: the stalls, crates, barrels and a lamp post as
+  measured; what bursts over the bonnet stays outside the glass.
+- **The yard**: the lorry and the stacks are there; I did not walk it on foot
+  (E ends the chapter).
 
 ---------------------------------------------------------------------------
 ## Cheats and losses without a tell (from the code)
 
-- `src/scenes/tail/gun.js` line 52 + line 58 + lines 61-66: LMB raises the
-  gun and fires once it is up, and every raise swings the eye onto his
-  tank: an automatic aim that decides phase b (finding 1).
-- `src/scenes/tail/chase.js` line 134 `sees()`: "in sight" is blocked only
-  by walls, fences, the works and the gate - parked cars, traffic, the el's
-  columns and distance never hide him. Generous rather than winning (it only
-  delays "Lost him."), but write it down.
-- No rubber band: `his.js` drives a fixed path; its pace is his own (duck,
-  hurt, weave), never my distance (only the route's two choices read the
-  gap). No mercy tyre, no scripted crash: `D.lose` is called only from my
-  rounds (`chase.js` 325, 346), a ram on a hurt car (387) and the fire my
-  rounds lit (578).
-- Every loss has a tell: "He's getting away." about 4 s before "Lost him.";
-  "He's nearly at the pier." 5 s before "He warned them."; damage shows in
-  steps before "Wrecked.".
-- `?c3auto=good|bad` plays for the player, but only from the URL (debug).
+- `src/scenes/tail/chase.js` lines 462-464 (`rammed`): any one round makes
+  him "hurt" and any bump off his middle (his rear bumper included) puts him
+  off the road: the contest decided by a touch (finding 1). **Must change.**
+- `chase.js` line 137 `sees()`: in sight unless a wall, fence, the works or the
+  gate is between; parked cars, traffic, the el and distance never hide him.
+  Generous (only delays "Lost him."), written down by the owner; unchanged.
+- No rubber band: `his.js` drives his own pace (duck, hurt, weave); my gap only
+  picks his next leg (line 69). No mercy tyre, no scripted crash: `D.lose` only
+  from my rounds (two tyres, his hold at 0.15), the fire my rounds lit
+  (`chase.js` ~663) and the ram above.
+- `src/vehicles/Car.js` line 227: a yaw assist toward the steered rate (the
+  car's stability, same for every car). Fine.
+- The gun reloads itself on an empty cylinder (R also works): not a cheat.
+- `?c3auto=good|bad` and `?tailGun=1`, `?tailAt`: URL only (debug).
+- Loss without a tell: "Wrecked." (finding 5).
 
 ---------------------------------------------------------------------------
 ## The user's asks, as played
 
 | # | ask | met | what I saw |
 | --- | --- | --- | --- |
-| 1 | a city, real turns, better driving | yes | a grid of real junctions; the car is heavy and answers: 0.9 rad/s of yaw at 30 km/h, 0.75 at 45; the handbrake pivots (1.1 rad in 0.8 s at 40, the tail out 0.8 rad, down to 16 km/h); S 47 to 0 km/h in 1.5 s; flat out ~72 |
-| 2 | tail him, can lose him | yes | hands off: "He's getting away." about 12 s in, "Lost him." at about 16 s (twice); W held: into the wall, lost; my good player (eyes only) kept him clean in 2 runs of 3 (80 s), the third lost him at traffic and a parked van |
-| 3 | traffic and obstacles not trivial; destruction; not fast | no | destruction yes; not fast yes; but stalls cost nothing and traffic is seldom on the line (finding 9) |
-| 4 | my shots cause the crash, each hit shows | no | only my rounds crash him, but LMB alone does it without aiming (1), and a tyre hit shows nothing at 22 m (5) |
-| 5 | drive to Pier 9 by landmarks and signs | yes | PIER 9 signs, the crane, the shed; under a minute; E at the gate, the lamps off, the doors, chapter VII |
-| 6 | nothing passes through; real edges; never stuck | no | cars, columns, walls and every edge are solid and real at 60 (Good); but fruit in the cabin (2) and a walker into a wall (3); never stuck (reverse frees every wedge I made) |
-| 7 | always clear what to do; gun and handbrake taught | no | the objective line from the first second and at each change; the gun card at the river; but the drive card lasts 0.2 s and the handbrake card comes at the kerb (4) |
-| 8 | the seam: no fade, no card on black, warmed without a hitch | no | `warm` exists and the cut lands in the seat with no card; but ~0.8 s frozen at the first cut, a 35 ms slice in the warm (7); C6's side not testable yet |
-| 9 | every frame the ink; the frame rate of perf | no | frame rate yes (fps.mjs, the GPU shared: perf 31-35, the kerb 71, Canal St 64, the river road 38; real time Cooper St 36, the square 72); the streets are the ink, the river road is grey (8) |
+| 1 | a city with real turns; the driving a pleasure | yes | a grid of junctions, an alley, the square, the river road; handbrake from 50: 1.1 rad in 0.8 s down to 21 km/h, then W+A: round a right angle in ~12 m; S from 50 to 4 km/h in 1.5 s, 12 m; flat out ~72; the head looks round the cabin |
+| 2 | really tail him, can lose him | yes | idle loses in ~16 s, W only in ~26 s, each with the warning ~4 s first; careful hands keep him (3 of 3 from the kerb); careless corners lose him; he waits for nobody |
+| 3 | traffic and obstacles not trivial; destruction; not fast | yes | traffic on his line and on the river road, a car that backs off and goes round; stalls cost a third of the speed and some damage; things burst and scatter; ~72 top |
+| 4 | my shots cause the crash; each hit shows and matters | **no** | only my doing crashes him, but one round + a bump does it (1); hits show modestly (a puff, the quarter down) |
+| 5 | drive to Pier 9 myself by landmarks and signs | yes | PIER 9 signs straight on, the crane, the shed; 34 s; the painted bay, E |
+| 6 | nothing through anything; real edges; never stuck | yes | overlap probe never over 0.15 m; edges solid and visible; every wedge freed by reversing |
+| 7 | always clear what to do; gun and handbrake taught | yes, but | the line from the first second and at each change, the cards at their moment; but a stale warning at each retry (4), no line before "Wrecked." (5) |
+| 8 | the seam: no fade, no card on black, warmed without a hitch | partly | no fade, no black card, ~0.1 to 0.16 s at the cut; the chapter is never named on that path (2); C6's end not testable here |
+| 9 | every frame the ink; the frame rate of perf | yes | the river road under the el is the reference's picture (`08`); short of whites (8); 41.3 fps at the river road with the gun out against `shot=perf` 33.9 measured just before it (1.22 x; the GPU 100 % busy with other work, so ratios only) |
 
 ---------------------------------------------------------------------------
 ## Good: keep it, do not break it
 
-- His driver: no leash, his own pace, two route choices by my gap; brake
-  lamps before a corner; he overtakes.
-- The idle and fail shape: warning, then the fail; the black with the why
-  lettered (1.15 s), back at the checkpoint in under 2 s; checkpoints at the
-  kerb, Canal St, the river road; damage mended there.
-- The car on the wet: weight, a tail that steps out under the handbrake and
-  comes back, brakes that matter.
-- A solid world (`c3c_jank.mjs`, phase c, my car placed and W held): a
-  parked car at 60 km/h: stopped, the car shunted, 1.9 damage, centres
-  4.98 m apart (no overlap); an el column at 60: stopped dead 3.1 m from its
-  centre, 1.6 damage; the rail yard's railing and wagons (west), the canal
-  railing (north), the lift bridge's end, the depot wall (south), the river
-  rail (east), the roadworks' sawhorses (they give) and trench (it stops
-  me): all solid at 60, about 1.7 damage, no launch (pitch under 0.12 rad),
-  all of them visible things. Rammed his car at the kerb and alongside: no
-  overlap.
-- The city's look on the streets: Pell Lane's fence and lit wall, the market
-  square's bulb strings over wet stones (`08`), the el's arches at the
-  river's end, his red lamps down a black street.
-- The crash and the wreck: caused, varied, the slow motion, the hat; the
-  drive to the pier and the getting out.
-- `tools/errors.sh` clean on start, chase2, river, pier; no errors in any of
-  my plays.
+- His driver on no leash; the warning then the fail, back at the checkpoint in
+  under 2 s; the teach card again after two fails.
+- The car: weight, the handbrake swing, brakes that stop, the cabin's look
+  round; damage that shows (the crack, a lamp out).
+- The first list's fixes: no aim of the game's own, `guardBody`, the walkers'
+  jump, the cards' timing, stalls that cost, the head-on car that goes round,
+  the bent post going out, PIER 9 signs straight on, the yard's bay.
+- A solid city: every edge a thing, no car in a car, reverse frees everything.
+- The river road under the el in the rain with his red lamps ahead
+  (`08_keep_the_river_road_under_the_el`): this is the reference.
+- The seam's warm (~0.1 s at the cut, from ~0.8).
+
+---------------------------------------------------------------------------
+## The owner's Left, as a player would feel it
+
+1 (whites) seen, minor. 2 (clumsy hands vary) fine: my careless hands lose
+him at corners, my clumsy ones get through. 3 / 4 (the seam's 0.1 s, C6
+untested) fine, but the small card is broken (2). **5 (phase b length) is
+felt, and worse than the report says**: 7 to 12 s with sloppy aim, and the
+bump (1) is not in the report at all. 6 (thin traces out of sight) felt in
+phase a at corners only by a player who is already far back (muted, I could
+not judge the horn). 7 (unlit lenses on traffic) not seen: the head-on car's
+lamps were on. 8 (a red ring under his car) seen as red dashes under him on
+the wet at 18 to 30 m: minor. 9 (planks over the glass) seen, fine. 10
+(`sees()`) fine. 11 (no getting out at the wreck) felt: 7. 12-14 fine.
 
 ---------------------------------------------------------------------------
 ## My plays and tools (tools/plays/critic/)
 
 | file | what | today |
 | --- | --- | --- |
-| `tail_b_noaim.json` | phase b: LMB once a second, no RMB, the mouse never moves; must not stop him | FAILS (6/6 hits, wreck at 6.6 s) |
-| `tail_b_rmbspam.json` | RMB held, LMB twice a second, the mouse still, W held; must not stop him | passes (2/6 hits) |
-| `tail_teach.json` | the drive card up 3 s; no handbrake card at the kerb | FAILS (0.2 s; the handbrake card at the kerb) |
-| `tail_walker_wall.json` | a walker jumping clear stays out of the facade | FAILS (x -184.2 against -183.5) |
-| `tail_square_fps.json` | the square's stalls hold the street's frame rate | passes (36 vs 72 fps) |
-| `c3c_drive.mjs` (+ `c3c_status.js`, `c3c_proj.js`) | my player for a `stepplay` session: good / bad / idle / W-only hands; aim / sloppy / tap / rmbspam / none gun | good aim: through twice (130 s); bad sloppy: "He warned them." once, through on the 2nd try |
-| `c3c_jank.mjs` | my car placed and driven into a thing in a `stepplay` session, the least distance and the damage read every 2 frames | see Good |
+| `tail_idle_title.json` | from the title, hands off, the screen every 1.5 s | passes (lost ~16 s, warned first) |
+| `tail_wonly.json` | from the title, W held only | passes (lost, warned 3.9 s) |
+| `tail_b_wram.json` | phase b: W held, RMB, LMB spam, mouse still | passes (0 hits, he reaches the pier) |
+| `tail_seam_frames.json` | the seam from V with frames and a watch for the small card | **FAILS** (finding 2) |
+| `c3c2_drive.mjs` (+ `c3c2_status.js`, `c3c2_proj.js`, `c3c2_cmd.mjs`) | my player for a `stepplay` session: drives `good / bad / rough / ram / idle / w`, guns `aim / sloppy / one / tap / rmbspam / none`; logs the lines on screen, fails, hits, overlaps; `HITSHOTS=1` frames each hit and the crash | see the proofs |
+| `c3c2_plough.mjs` | my car through a thing: pieces inside its body each 2 frames | 0 |
+| `c3c2_walker.mjs` | my car at a walker on his pavement | never in a wall |
+| `c3c2_edges.mjs` | my car into the city's edges, then reverse | all solid, all freed |
 
-Run the plays with `NOIR_PORT=5343 node tools/play.mjs tools/plays/critic/<play>.json --size 1440x900`.
+The first look's plays still in the folder: `tail_b_noaim`, `tail_b_rmbspam`,
+`tail_teach`, `tail_walker_wall` pass today; `tail_square_fps` not run (one
+fps measure only); `c3c_*` are its tools.
+Run: `NOIR_PORT=5343 node tools/play.mjs tools/plays/critic/<play>.json --size 1440x900`.
 
-## Frames (docs/story/review/wave-c/C3/critic/)
+## Frames (docs/story/review/wave-c/C3/critic/2nd/)
 
-`01_lmb_alone_eye_on_him` (1), `02_fruit_in_the_cabin` (2),
-`03_stall_row_costs_nothing` (9), `04_handbrake_card_at_the_kerb` (4),
-`05_card_VII` (6), `06_tyre_hit_nothing_shows` (5),
-`07_yard_bare_plain` (10), `08_keep_the_market_square` (Good).
+`01_one_round_then_a_bump_wins` (1), `02_seam_no_chapter_card` (2),
+`03_old_warning_after_lost_him` (4), `04_baxter_van_on_the_inside_line` (6),
+`05_the_one_round_35m` (1: the round through his rear window that made him
+"hurt"), `06_two_steps_of_damage_no_line` (5),
+`07_by_his_wreck_E_answers_nothing` (7), `08_keep_the_river_road_under_the_el`
+(Good). The first look's frames stay in `critic/` (the owner's report cites
+them).
