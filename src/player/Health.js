@@ -149,17 +149,28 @@ export class Health {
 // [C2] a hit's splash at the edge it came from: a blot on the frame's edge
 // toward `angle` (screen: 0 right, PI/2 down), its drops thrown inward; from
 // behind, at both near corners of that side
-function drawEdgeSplash(g, W, H, rng, strength, { angle, behind = false }) {
+// [C2] after the critic: or `at` [x, y] (fractions of the frame, on its edge:
+// the gun kit's compass of where he is - Guns.js splashAt), never a corner
+function drawEdgeSplash(g, W, H, rng, strength, { angle = 0, behind = false, at = null }) {
   g.fillStyle = '#c8102e';
   g.strokeStyle = '#c8102e';
   const cx = W / 2, cy = H / 2;
   const n = behind ? 2 : 1;
   for (let i = 0; i < n; i++) {
-    const a = angle + (behind ? (i ? 0.45 : -0.45) : rng.gauss() * 0.08);
-    // the point where the ray from the centre at `a` meets the frame
+    let x, y, a;
+    if (at) {
+      // (behind: two, a little either side of the bottom edge's middle)
+      x = (at[0] + (behind ? (i ? 0.06 : -0.06) : rng.gauss() * 0.01)) * W; y = at[1] * H;
+      x = Math.min(W * 0.985, Math.max(W * 0.015, x)); y = Math.min(H * 0.985, Math.max(H * 0.015, y));
+      a = Math.atan2(y - cy, x - cx);
+    } else {
+      a = angle + (behind ? (i ? 0.45 : -0.45) : rng.gauss() * 0.08);
+      // the point where the ray from the centre at `a` meets the frame
+      const ddx = Math.cos(a), ddy = Math.sin(a);
+      const k = Math.min(Math.abs((W / 2) / (ddx || 1e-6)), Math.abs((H / 2) / (ddy || 1e-6)));
+      x = cx + ddx * k * 0.97; y = cy + ddy * k * 0.97;
+    }
     const dx = Math.cos(a), dy = Math.sin(a);
-    const k = Math.min(Math.abs((W / 2) / (dx || 1e-6)), Math.abs((H / 2) / (dy || 1e-6)));
-    const x = cx + dx * k * 0.97, y = cy + dy * k * 0.97;
     const R = Math.min(W, H) * rng.range(0.05, 0.075) * (0.75 + 0.35 * strength);
     g.globalAlpha = rng.range(0.75, 0.88);
     drawSplatter(g, x, y, R * 1.3, rng, rng.int(18, 30));

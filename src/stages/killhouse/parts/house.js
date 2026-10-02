@@ -464,6 +464,32 @@ function buildDesk(stage, kit, mats, piece, C) {
     lathe([[0.0001, 0], [0.06, 0], [0.058, 0.01], [0.035, 0.03], [0.02, 0.08], [0.018, 0.2], [0.03, 0.21], [0.0001, 0.212]], 18).translate(0.15, Dk.h, 0.55),
   ]), mats.iron, { parent: body, name: 'kh_deskThings' });
   const col = C.addBox(Dk.x, Dk.z, Dk.d / 2, Dk.w / 2, 0, 'booth');
+  // [C2] after the critic (they rode the top glued at 45 degrees, then were
+  // hidden): the things on the top slide off as it goes and land on the floor
+  // in front of it, where they stay
+  const loose0 = { p: loose.position.clone(), q: loose.quaternion.clone() };
+  const _q = new THREE.Quaternion(), _e = new THREE.Euler();
+  const fall = { on: false, t: 0, p0: V(0, 0, 0), q0: new THREE.Quaternion(), p1: V(0, 0, 0), q1: new THREE.Quaternion() };
+  const looseOff = (dir, now) => {
+    const G = stage.game;
+    if (G && G.rays) G.rays.setEnabled(loose, false);
+    kit.g.attach(loose);
+    fall.p0.copy(loose.position); fall.q0.copy(loose.quaternion);
+    // (the floor in front of the top, the things flat on it, a little turned)
+    fall.p1.set(Dk.x + dir * (Dk.d / 2 + Dk.h + 0.32), FLOOR - Dk.h + 0.004, Dk.z + 0.05);
+    fall.q1.setFromEuler(_e.set(0, dir * 0.35, 0));
+    fall.t = 0; fall.on = !now;
+    if (now) { loose.position.copy(fall.p1); loose.quaternion.copy(fall.q1); }
+  };
+  const looseStep = (dt) => {
+    if (!fall.on) return;
+    fall.t = Math.min(1, fall.t + dt / 0.5);
+    const u = fall.t, e = u * u;
+    loose.position.lerpVectors(fall.p0, fall.p1, e);
+    loose.position.y += Math.sin(u * Math.PI) * 0.12;
+    loose.quaternion.copy(_q.copy(fall.q0).slerp(fall.q1, Math.min(1, u * 1.2)));
+    if (u >= 1) { fall.on = false; const G = stage.game; if (G && G.sfx) G.sfx.play('c2_woodHit', fall.p1.clone().setY(FLOOR + 0.05), { k: 0.4 }, { ref: 3 }); if (G && G.pipeline && G.pipeline.dirtyShadows) G.pipeline.dirtyShadows(); }
+  };
   const D = {
     pivot, body, col, loose, tipped: 0, tip: null, dir: 1,
     // over it goes, away from `dir` (+1 toward +x)
@@ -473,8 +499,8 @@ function buildDesk(stage, kit, mats, piece, C) {
       // (the pivot to the edge it goes over; the body re-centred on it)
       pivot.position.set(Dk.x + this.dir * Dk.d / 2, FLOOR, Dk.z);
       body.position.set(-this.dir * Dk.d / 2, 0, 0);
-      this.tip = { a: now ? Math.PI / 2 : 0, v: 0, done: false };
-      if (now) { this.tip.done = true; this.apply(Math.PI / 2); this.landed(); }
+      this.tip = { a: now ? Math.PI / 2 : 0, v: 0, done: false, slid: !!now };
+      if (now) { this.tip.done = true; this.apply(Math.PI / 2); looseOff(this.dir, true); this.landed(); }
       return true;
     },
     // (over: where its back is - the edge it went over on, the side I crouch at)
@@ -489,15 +515,16 @@ function buildDesk(stage, kit, mats, piece, C) {
     landed() {
       // the collider: the desk lying on its front, its top a wall toward `dir`
       col.cx = Dk.x + this.dir * (Dk.d / 2 + Dk.h / 2); col.hx = Dk.h / 2 + 0.03; col.hz = Dk.w / 2 + 0.06;
-      loose.visible = false;
       const G = stage.game;
-      if (G && G.rays) G.rays.setEnabled(loose, false);
       if (G && G.guns && G.guns.rebuild) G.guns.rebuild();
       if (G && G.pipeline && G.pipeline.dirtyShadows) G.pipeline.dirtyShadows();
     },
     update(dt) {
+      looseStep(dt);
       const T = this.tip;
       if (!T || T.done) return;
+      // (past a third of the way over, what is on the top goes)
+      if (!T.slid && T.a > 0.5) { T.slid = true; looseOff(this.dir, false); }
       const tq = 9.8 * Math.sin(Math.max(0.05, T.a) + 0.6) * 0.9;
       T.v += (T.a < 0.02 ? 4.5 : tq) * dt;
       T.a += T.v * dt;
@@ -514,6 +541,9 @@ function buildDesk(stage, kit, mats, piece, C) {
       pivot.position.set(Dk.x, FLOOR, Dk.z); body.position.set(0, 0, 0); pivot.rotation.z = 0;
       pivot.updateMatrixWorld(true);
       col.cx = Dk.x; col.hx = Dk.d / 2; col.hz = Dk.w / 2;
+      // (the things back on the top)
+      fall.on = false;
+      body.add(loose); loose.position.copy(loose0.p); loose.quaternion.copy(loose0.q);
       loose.visible = true;
       const G = stage.game;
       if (G && G.rays) { body.traverse((m) => { if (m.isMesh && stage.solids.includes(m)) G.rays.refresh(m); }); G.rays.setEnabled(loose, true); }

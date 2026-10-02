@@ -27,9 +27,14 @@ export const BEATS = {
   door: {
     at: [DESK.x + 0.02, DESK.z + 0.1, EAST], gun: 'revolver', tipped: true, crouch: false, max: 2, flankAfter: 9,
     obj: 'They are coming. Hold the room.',
+    // [C2] after the critic: three through the one door - two who work it
+    // together from its jambs, and a third close behind them (two were a fair
+    // duel for a man standing up and shooting fast: he won it)
+    area: { x0: HOUSE.x0, x1: HOUSE.x1, z0: HOUSE.z0, z1: HOUSE.z1 - 0.2 },
     men: [
       { kind: 'pistol', at: { x: -0.4, z: -9.5 }, way: [{ door: 'BD' }, { x: -0.45, z: -6.2, run: true }, { door: 'A1' }], wait: 0.8, door: 'hold' },
       { kind: 'pistol', at: { x: -0.4, z: -9.7 }, way: [{ door: 'BD' }, { x: -0.5, z: -5.6, run: true }, { door: 'A1' }], wait: 1.2, door: 'hold' },
+      { kind: 'pistol', at: { x: -0.2, z: -9.9 }, way: [{ door: 'BD' }, { x: -0.4, z: -6.0, run: true }, { door: 'A1' }], wait: 5.0, door: 'hold' },
     ],
     spots: [{ x: DESK.x + 0.02, z: DESK.z + 0.1, yaw: EAST }, { x: DESK.x + 0.02, z: DESK.z - 0.55, yaw: EAST }, { x: -7.25, z: -2.35, yaw: EAST + 0.4 }],
     open: { x: -3.6, z: -2.4 },
@@ -37,6 +42,7 @@ export const BEATS = {
   two_ways: {
     at: [DESK.x + 0.02, DESK.z + 0.1, EAST], gun: 'revolver', tipped: true, crouch: false, max: 2, flankAfter: 7,
     obj: 'Three of them. Watch both doors.',
+    area: { x0: HOUSE.x0, x1: HOUSE.x1, z0: HOUSE.z0, z1: HOUSE.z1 - 0.2 },
     men: [
       { kind: 'pistol', at: { x: -0.4, z: -9.5 }, way: [{ door: 'BD' }, { x: -0.45, z: -6.2, run: true }, { door: 'A1' }], wait: 0.8, door: 'hold' },
       { kind: 'pistol', at: { x: -0.4, z: -9.7 }, way: [{ door: 'BD' }, { x: -0.5, z: -5.5, run: true }, { door: 'A1' }], wait: 1.2, door: 'hold' },
@@ -48,16 +54,22 @@ export const BEATS = {
   pin: {
     at: [4.6, -5.55, SOUTH], gun: 'revolver', crouch: false, max: 2, flankAfter: 8,
     obj: 'Down through the burst. Up when he reloads.',
+    area: { x0: HOUSE.x0, x1: HOUSE.x1, z0: HOUSE.z0, z1: HOUSE.z1 - 0.2 },
     men: [
-      { kind: 'tommy', at: { x: 4.7, z: 4.6 }, way: [{ x: 4.7, z: 2.6 }, { door: 'B2' }], wait: 1.0, door: 'hold' },
-      { kind: 'pistol', at: { x: -0.4, z: -9.5 }, way: [{ door: 'BD' }, { x: -0.45, z: -2.2, run: true }, { door: 'B1' }], wait: 3.0 },
+      // (the pistol man first, working B1 from the corridor; the Tommy gunner
+      // at the glazed door as he does: two guns at once on a man standing up)
+      { kind: 'pistol', at: { x: -0.4, z: -9.5 }, way: [{ door: 'BD' }, { x: -0.45, z: -2.2, run: true }, { door: 'B1' }], wait: 0.4, door: 'hold' },
+      // (he waits out of the bar's sight - the lobby's west end, behind the corridor's wall - and comes along the glass)
+      { kind: 'tommy', at: { x: -2.2, z: 4.4 }, way: [{ x: 2.6, z: 3.0 }, { door: 'B2' }], wait: 2.4, door: 'hold' },
     ],
     spots: [{ x: 4.6, z: -5.55, yaw: SOUTH }, { x: 6.6, z: -5.55, yaw: SOUTH }, { x: 2.9, z: -5.6, yaw: SOUTH + 0.3 }],
     open: { x: 1.6, z: -5.45 },
   },
   rush: {
     at: [-3.5, 2.4, SOUTH], gun: 'revolver', crouch: false, max: 2, flankAfter: 0,
-    obj: 'Something big at the street door.',
+    obj: 'Something big at the street door.', afterHeavy: 'One more. Find him.',
+    // (the fight is in the house: no cover out on the pavement)
+    area: { x0: HOUSE.x0, x1: HOUSE.x1, z0: HOUSE.z0, z1: HOUSE.z1 - 0.2 },
     men: [
       { kind: 'rusher', at: { x: -0.5, z: 10.5 }, way: [{ x: -0.5, z: 7.6 }, { door: 'SD' }], wait: 1.5 },
       { kind: 'pistol', at: { x: -7.4, z: -6.8 }, way: [{ door: 'A2' }], wait: 7.0, door: 'hold' },
@@ -123,6 +135,29 @@ function lab(ctx) {
   });
 }
 
+// a door's use point (Interact `at`): where the view's line meets the
+// doorway's plane, kept inside the doorway (its width, knee to head height) -
+// up against a door, at its knob or its panel, the point is where I look
+function doorPoint(G, d) {
+  const s = d.spec, along = s.axis === 'z';
+  const s0 = (along ? s.z0 : s.x0) + 0.08, s1 = (along ? s.z1 : s.x1) - 0.08;
+  const y0 = d.centre.y + 0.3, y1 = d.centre.y + 2.0;
+  const out = V(0, 0, 0), f = V(0, 0, 0);
+  return () => {
+    const cam = G.camera, o = cam.position;
+    f.set(0, 0, -1).transformDirection(cam.matrixWorld);
+    // (the plane: x = s.x for a door along z, z = s.z for one along x)
+    const n = along ? f.x : f.z, w = along ? s.x - o.x : s.z - o.z;
+    let k = Math.abs(n) > 1e-4 ? w / n : -1;
+    if (!(k > 0)) k = Math.abs(w);
+    const px = o.x + f.x * k, py = o.y + f.y * k, pz = o.z + f.z * k;
+    const u = Math.min(s1, Math.max(s0, along ? pz : px));
+    if (along) out.set(s.x, Math.min(y1, Math.max(y0, py)), u);
+    else out.set(u, Math.min(y1, Math.max(y0, py)), s.z);
+    return out;
+  };
+}
+
 // the room for a beat: everything mended, the men gone, me where I start
 function room(ctx, name) {
   const G = ctx.game, B = BEATS[name] || BEATS.ready;
@@ -139,11 +174,16 @@ function room(ctx, name) {
   C.setPose(B.at[0], B.at[1], B.at[2], -0.05);
   // (?c2pose=stand: the beat from standing - the review frames' look over the cover)
   C.setMode('gun', { crouch: !!B.crouch && new URLSearchParams(location.search).get('c2pose') !== 'stand' });
+  // [C2] after the critic: the eye where the beat puts me now, not where the
+  // last beat left it (the street's men read their cover against it as they
+  // are placed: against the lobby's eye they stood up in their first frames,
+  // in my line - the false "They have your angle")
+  G.eye.copy(G.camera.position);
   ctx.player.weapons.equip(B.gun || 'revolver');
   if (B.gun === 'tommy') G.weapon.reset();
   const K = gunsOf(G);
   K.end();
-  K.begin({ maxFiring: B.max ?? 2, flankAfter: B.flankAfter ?? 7, to: name });
+  K.begin({ maxFiring: B.max ?? 2, flankAfter: B.flankAfter ?? 7, to: name, area: B.area || null });
   ctx.flags.c2 = { beat: name, men: [], won: false, t0: G.time, spots: B.spots || [], open: B.open || null };
   for (const m of B.men || []) {
     const h = K.spawn({ kind: m.kind, at: m.at, way: m.way ? { steps: m.way } : null, wait: m.wait ?? 0, hp: m.hp, door: m.door, cover: !!m.cover, yaw: m.yaw ?? null });
@@ -171,26 +211,44 @@ export default defineScene({
     G.director.run(function* () { while (G.scenes.ctx === ctx) yield null; });
     const exitFn = () => { K.end(); G.off('scene:exit', exitFn); ctx.hud.warn(null); };
     G.on('scene:exit', exitFn);
-    // the doors: E opens and shuts them (a locked one rattles)
-    const doorH = Object.entries(house.doors).map(([name, d]) => ({ d, h: ctx.interact.add({ id: 'door' + name, at: d.centre.clone().setY(1.1), range: 1.5, cone: 0.7, prompt: 'open', onUse: () => { if (d.shut) d.open(G.eye); else d.close(); } }) }));
-    ctx.onStep(() => { for (const { d, h } of doorH) h.prompt = d.shut ? 'open' : 'shut'; });
+    // the doors: E opens and shuts them (a locked one rattles). [C2] after the
+    // critic: the use point is where on the doorway I am looking (up against
+    // it, at its knob, at its panel: the prompt is there); a door stopped ajar
+    // (against a man) is opened on, not shut
+    const ajar = (d) => !d.shut && !d.moving && d.target !== 0 && d.open01 < 0.85;
+    const doorH = Object.entries(house.doors).map(([name, d]) => ({ d, h: ctx.interact.add({ id: 'door' + name, at: doorPoint(G, d), range: 1.7, cone: 0.6, prompt: 'open', onUse: () => { if (d.shut || ajar(d)) d.open(G.eye); else d.close(); } }) }));
+    ctx.onStep(() => { for (const { d, h } of doorH) h.prompt = d.shut || ajar(d) ? 'open' : 'shut'; });
     // the warning before a fall: the kit's, for the moment (the heavy close,
-    // my cover shot through, hurt with a man on me, hurt and safe)
-    ctx.onStep(() => ctx.hud.warn(K.active ? K.warning() : null));
+    // my cover shot through, hurt with a man on me, hurt and safe) - none once
+    // the room is won
+    let won = false;
+    ctx.onStep(() => ctx.hud.warn(K.active && !won ? K.warning() : null));
 
     // ---- ready: the teach -----------------------------------------------------------------------
     if (ctx.at('ready') && ctx.beat === 'ready') {
       yield beat('ready');
       const hud = ctx.hud, desk = house.desk;
-      ctx.interact.add({ id: 'tip', at: V(DESK.x, DESK.h + 0.25, DESK.z), range: 2.1, cone: 0.85, prompt: 'tip the desk over', when: () => !desk.tip, onUse: () => {
-        const dir = Math.sign(DESK.x - G.eye.x) || 1;
-        if (desk.tipOver(dir)) ctx.interact.remove('tip');
+      // [C2] after the critic: it goes over toward the door (A1), its top a
+      // wall between me and where they come from, from whichever side I push
+      // it - but never onto me: from the door's side, a step back first (the
+      // prompt shows only out of where it lands)
+      const landing = () => G.eye.x > DESK.x + 0.2 && G.eye.x < DESK.x + DESK.d / 2 + DESK.h + 0.55 && Math.abs(G.eye.z - DESK.z) < DESK.w / 2 + 0.45;
+      ctx.interact.add({ id: 'tip', at: V(DESK.x, DESK.h + 0.25, DESK.z), range: 2.1, cone: 0.85, prompt: 'tip the desk over', when: () => !desk.tip && !landing(), onUse: () => {
+        if (desk.tipOver(1)) ctx.interact.remove('tip');
       } });
       yield until(() => !!desk.tip && desk.tip.done);
-      // (behind it: within a step of its back, on the side away from the door)
-      const behind = () => { const b = desk.back(), ax = (G.eye.x - b.x) * desk.dir; return Math.abs(G.eye.z - b.z) < 1.0 && ax < 0.15 && ax > -1.0; };
+      // (behind it: on the side away from the door, near enough that it hides
+      // me - where the tip leaves me, 1.4 m back, counts: the rise looks 1.8 m
+      // ahead, so RMB from there clears it)
+      const behind = () => { const b = desk.back(), ax = (G.eye.x - b.x) * desk.dir; return Math.abs(G.eye.z - b.z) < 1.1 && ax < 0.15 && ax > -1.7; };
       K.teach('crouch');
-      yield until(() => (C.crouchK || 0) > 0.6 && behind());
+      // (down but not behind it: the line says where)
+      let said = false;
+      yield until(() => {
+        const low = (C.crouchK || 0) > 0.6;
+        if (low && !behind() && !said) { said = true; hud.objective('Behind the desk. Get close to it.'); }
+        return low && behind();
+      });
       hud.objective('Rise over it. Shoot the bottles.');
       yield wait(0.4);
       K.teach('rise');
@@ -219,16 +277,28 @@ export default defineScene({
     // (a beat played cold - ?start=guns.<beat> - teaches what it needs too:
     // the cards come once per save, so after the ready beat these are nothing)
     else K.teach('crouch');
-    let rose = false;
+    let rose = false, n0 = alive(), heavy = false;
+    const Bt = BEATS[name];
     yield until(() => {
       if (!rose && (C.crouchK || 0) > 0.6) { rose = true; K.teach('rise'); }
-      return alive() === 0;
+      // [C2] after the critic: the line follows the fight - the heavy down,
+      // the last man left (it named the heavy for a minute after he fell)
+      const n = alive();
+      if (n < n0 && n > 0) {
+        const hv = F.c2.men.some((h) => !h.alive && h.gunKind === 'rusher');
+        if (hv && !heavy) { heavy = true; ctx.hud.objective(Bt.afterHeavy || (n === 1 ? 'The big one is down. One more.' : 'The big one is down.')); }
+        else if (n === 1) ctx.hud.objective(Bt.last || 'One left.');
+      }
+      n0 = n;
+      return n === 0;
     });
     F.c2.won = true;
+    won = true; ctx.hud.warn(null);
     (G._c2won || (G._c2won = [])).push(name);
     ctx.hud.objective('Clear.');
     yield wait(1.8);
+    // ('Clear.' goes as the picture does: the next beat writes its own line in)
+    ctx.hud.objective(null);
     G.scenes.go('guns', { beat: NEXT[name], fade: 'black', card: false });
   },
 });
-void HOUSE;

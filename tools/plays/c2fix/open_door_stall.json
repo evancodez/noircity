@@ -1,0 +1,10 @@
+{
+  "about": "C2 after the critic: the open hands on the door, four sessions, 45 s each; a stall logs the brains",
+  "url": "/?mute=1",
+  "size": [1440, 900],
+  "out": "shots/c2fix/open_door_stall",
+  "steps": [
+    { "wait": 1500 },
+    { "drive": "tools/plays/c2fix/hands_rec.mjs", "style": "open", "tries": 2, "timeout": 45000, "beats": ["door", "door", "door", "door", "door", "door"], "query": "&c2rec=1" }
+  ]
+}

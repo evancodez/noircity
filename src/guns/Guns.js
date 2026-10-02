@@ -8,8 +8,9 @@ import { GUNMAN } from '../enemies/brains/gunman.js';
 // Door, VII Pier Nine's loud pass and VIII The Block. game.guns (gunsOf(game)).
 //
 //   const K = gunsOf(game);
-//   K.begin({ maxFiring: 2, flankAfter: 7, why: {...} })   an encounter: their
-//        fire tokens, the flank, the reasons a fall is given; K.end()
+//   K.begin({ maxFiring: 2, flankAfter: 7, why: {...}, area })   an encounter: their
+//        fire tokens, the flank, the reasons a fall is given (area: { x0, x1, z0, z1 },
+//        the place the fight is in - the men take no cover outside it); K.end()
 //   K.trace(origin, dir, opts)      a round as a ray: what is solid stops it,
 //        what is thin or glass lets it through (losing aim and force), wood
 //        is chewed until its section breaks away (the cover kinds below)
@@ -60,6 +61,8 @@ const _o = V(0, 0, 0), _d = V(0, 0, 0), _a = V(0, 0, 0), _b = V(0, 0, 0), _p = V
 const HEAD = new Set(['head', 'hat']);
 const TORSO = new Set(['chest', 'spine', 'hips', 'neck']);
 
+const REC = typeof location !== 'undefined' && /[?&]c2rec=1/.test(location.search);
+
 export function gunsOf(game) { return game.guns || (game.guns = new Guns(game)); }
 
 export class Guns {
@@ -83,10 +86,11 @@ export class Guns {
   // ---- an encounter ------------------------------------------------------------------------
   begin(cfg = {}) {
     const G = this.game;
-    Object.assign(this.cfg, { maxFiring: 2, flankAfter: 7, flankCool: 6 }, cfg);
+    // (an encounter's numbers are its own: nothing of the last one's - its `area`, its words - carries over)
+    this.cfg = Object.assign({ maxFiring: 2, flankAfter: 7, flankCool: 6 }, cfg);
     this.active = true;
     this.tokens.clear();
-    this.flank = null; this.flankCoolT = 0; this.lastKill = null;
+    this.flank = null; this.flankCoolT = 0; this.lastKill = null; this.chewT = -9; this._w = null;
     this.post = { x: G.eye.x, z: G.eye.z, t: 0 };
     // (the record runs on across encounters, a marker at each: the plays read it)
     if (this.events.length > 600) this.events.splice(0, this.events.length - 400);
@@ -330,6 +334,8 @@ export class Guns {
       // the last ones with light in them
       this.woodMarks(hit, dir, 1, D.hp < D.hp0 * 0.45);
       this.sound('c2_woodHit', hit.point, 1);
+      // (their rounds chewing the last of the wood I am down behind: the warning, before one comes through)
+      if (weak && D.hp < D.hp0 * 0.45 && Math.hypot(hit.point.x - G.eye.x, hit.point.z - G.eye.z) < 1.6) this.chewT = G.time;
       if (D.hp > 0) return null;
       // spent: a section breaks away (a gap); a piece marked section: false
       // stays, riddled, and lets the rounds through
@@ -420,8 +426,9 @@ export class Guns {
       const dmg = W.dmg(res.hood, head) * (head ? 1 : res.k);
       G.damageHood(h, head ? 999 : dmg, res.dir.clone(), { head, joint: res.hood.joint, time: G.time });
       if (W.onHood) W.onHood(h, res.hood, res.dir, head);
-      const ai = G.ais.get(h);
-      if (ai && ai.brain && ai.brain.shotNear) ai.brain.shotNear(1);
+      // ([C2] after the critic: the man hit takes it in his brain's onHit - the
+      // flinch; it is not also a round past him, which took 60 % of his settle
+      // again and broke off a burst)
     }
     this.events.push({ t: +G.time.toFixed(2), what: 'shot', name: res.hood ? 'hood:' + res.hood.joint : res.wall ? (res.wall.mesh.name || res.wall.surf) : 'air', from: blockedGun ? 'gun-in-cover' : '', at: res.passed.map((p) => p.kind) });
     // the men the round passed near: their aim is spoiled (rattled)
@@ -441,8 +448,20 @@ export class Guns {
   // is there. Returns { hit: bool, point }
   hoodRound(ai, aimAt, sigma, dmg, { tommy = false } = {}) {
     const G = this.game, h = ai.h, r = this.R;
-    const muzzle = h.muzzleWorld(V(0, 0, 0));
-    // (a muzzle inside his own cover's edge - a pistol along a jamb - is laid a hand forward)
+    let muzzle = h.muzzleWorld(V(0, 0, 0));
+    // (a gun along a jamb - the hand's pose a little behind the wall's edge
+    // while his eyes have me: the gun is held out past it, on his sight line)
+    // [C2] after the critic: their rounds went into the jamb beside them
+    if (ai.brain && ai.brain.hasLine) {
+      _d.subVectors(aimAt, muzzle); const L0 = _d.length(); _d.divideScalar(L0);
+      const near = G.rays.raycast(muzzle, _d, Math.min(1.0, L0 - 0.2), { anyHit: true, skip: SEE_SKIP });
+      if (near) {
+        const eye = V(h.pos.x, h.pos.y + 1.45 * h.scale, h.pos.z);
+        const toward = aimAt.clone().sub(eye).normalize();
+        const held = eye.clone().addScaledVector(toward, 0.45);
+        if (!G.rays.raycast(eye, toward, 0.47, { anyHit: true })) muzzle = held;
+      }
+    }
     const d = aimAt.clone().sub(muzzle).normalize();
     if (sigma > 0) {
       const ax = _a.set(r.gauss(), r.gauss(), r.gauss()).cross(d).normalize();
@@ -461,13 +480,17 @@ export class Guns {
       return { hit: true, point: res.player.point };
     }
     if (res.hood && live) {
-      // (a round into another of them: it is a round; it hurts him)
+      // (a stray round into another of them - a man holds his fire when his
+      // mate is in his line (gunman.js shoot), so only a wide one, or one that
+      // went off its line through glass or wood: it is a round; it does to him
+      // what it would do to me, no more) // [C2] after the critic: was x2.2
       const o = res.hood.hood;
       G.fx.bloodFx.hit(res.hood.point, res.dir, { strength: 0.8, rays: G.rays });
-      G.damageHood(o, dmg * 2.2 * res.k, res.dir.clone(), { head: false, time: G.time });
+      G.damageHood(o, dmg * res.k, res.dir.clone(), { head: false, time: G.time });
     }
     // a miss: the crack past the ear if it came close
     const e = G.eye;
+    if (REC) this.events.push({ t: +G.time.toFixed(2), what: 'miss', kind: ai.brain && ai.brain.kind, name: res.wall ? (res.wall.mesh.name || 'wall') : res.hood ? 'hood' : 'air' });
     const end = res.wall ? res.wall.point : res.hood ? res.hood.point : res.end || muzzle.clone().addScaledVector(d, 60);
     const ca = closest(muzzle, end, e);
     const dist = ca.distanceTo(e);
@@ -484,15 +507,21 @@ export class Guns {
     const from = dir.clone().negate();
     const right = V(1, 0, 0).transformDirection(cam.matrixWorld), up = V(0, 1, 0).transformDirection(cam.matrixWorld), fwd = V(0, 0, -1).transformDirection(cam.matrixWorld);
     const sx = from.dot(right), sy = from.dot(up), sf = from.dot(fwd);
-    // (behind me: the edge it is nearest to, pushed out to the side)
-    const ang = Math.atan2(-sy, sx + (sf < 0 ? 0 : 0) * 1e-3);
+    void sy;
+    // [C2] after the critic (a round from straight ahead put the splash in
+    // the top-left corner, over the objective line): the splash is a compass
+    // of where he is, as I stand - ahead at the top edge's middle, his side
+    // at that side's edge, behind me at the bottom edge - and never in the
+    // corners (the objective line, the health, the count)
+    const bear = Math.atan2(sx, sf);
+    const at = splashAt(bear);
     const B = this.playerBody();
     this.lastKill = {
       t: G.time, ai, crouched: B.crouched, risen: (C.riseK || 0) > 0.5, through: !!(res && res.passed && res.passed.length), reloading: !!(G.player.weapons.active && G.player.weapons.active.reloading),
       flank: !!(ai && ai.brain && ai.brain.flanking), rush: !!(ai && ai.brain && ai.brain.kind === 'rusher'), tommy: !!(ai && ai.brain && ai.brain.kind === 'tommy'),
       dist: ai ? Math.hypot(ai.h.pos.x - G.eye.x, ai.h.pos.z - G.eye.z) : 0, behind: sf < -0.3, moving: C.vel.length() > 1.2,
     };
-    G.health.damage(amount, { angle: ang, behind: sf < -0.2 });
+    G.health.damage(amount, at);
     G.emit('player:hit', { dmg: amount, dir, from: ai ? ai.h : null });
     G.sfx.play('grunt', null, { f0: 88, k: 0.35, dur: 0.14 }, { send: false });
     G.sfx.play('c2_hitMe', null, { k: Math.min(1, amount / 14) }, { send: false });
@@ -554,29 +583,45 @@ export class Guns {
     const down = (C.crouchK || 0) > 0.5 && (C.riseK || 0) < 0.5;
     const e = G.eye;
     let pri = 9, text = null;
-    const say = (p, t) => { if (p < pri) { pri = p; text = t; } };
+    // (who a line is about: a line about a man is not held past his death)
+    let who = null;
+    const say = (p, t, ai = null) => { if (p < pri) { pri = p; text = t; who = ai; } };
     for (const [h, ai] of G.ais) {
       if (!h.alive || !ai.brain) continue;
-      if (ai.brain.kind === 'rusher' && !ai.brain.S.entry && Math.hypot(h.pos.x - e.x, h.pos.z - e.z) < 4.2) say(0, W.rush || 'Stop him!');
-      if (ai.brain.hasLine && ai.brain.behindMe) say(1, W.behind || 'Behind you!');
-      if (down && ai.brain.hasLine) say(2, W.angle || 'They have your angle. Move!');
+      const S = ai.brain.S || {};
+      if (ai.brain.kind === 'rusher' && !S.entry && Math.hypot(h.pos.x - e.x, h.pos.z - e.z) < 4.2) say(0, W.rush || 'Stop him!', ai);
+      if (ai.brain.hasLine && ai.brain.behindMe) say(1, W.behind || 'Behind you!', ai);
+      // [C2] after the critic: the Tommy gun coming up at me, standing - the
+      // tell said out loud (his raise may be a shadow on glass, a dark arm in
+      // a doorway): get down before the burst
+      if (!down && ai.brain.kind === 'tommy' && (S.state === 'aim' || S.state === 'fire') &&(ai.brain.hasLine || (S.lastSeen && G.time - S.lastSeen.t < 3))) say(1, W.tommy || 'Tommy gun! Get down!', ai);
+      // [C2] after the critic (the street opened with this while nobody was
+      // firing): a man who has had me a moment, or has his gun up at me
+      if (down && ai.brain.hasLine && ((S.lineT || 0) > 0.45 || S.state === 'aim' || S.state === 'fire' || S.state === 'out')) say(2, W.angle || 'They have your angle. Move!', ai);
     }
     const L = this.lastKill;
     if (L && G.time - L.t < 1.2 && L.through && down) say(1, W.cover || 'Your cover won\u2019t hold. Move!');
+    // (and before a round comes through: the wood I hide behind being chewed to its last)
+    if (down && G.time - (this.chewT || -9) < 1.2) say(1, W.cover || 'Your cover won\u2019t hold. Move!');
     const F = this.flank;
     if (F && !F.done && F.ai.h.alive && !F.ai.brain.hasLine && F.ai.brain.S.state === 'move') {
       // (the side he is going round, as I face)
       const fx = F.at.x - e.x, fz = F.at.z - e.z;
       const right = (-Math.cos(C.yaw)) * fx + (Math.sin(C.yaw)) * fz < 0;
-      say(3, right ? (W.flankR || 'One\u2019s going round on your right.') : (W.flankL || 'One\u2019s going round on your left.'));
+      say(3, right ? (W.flankR || 'One\u2019s going round on your right.') : (W.flankL || 'One\u2019s going round on your left.'), F.ai);
     }
     const low = H.hp < 45 || (G.lowWarn && H.hp < 60);
-    if (low && !down && this.lineOnMe > 0) say(4, W.open || 'Get down!');
+    // [C2] after the critic: standing in a man's line and hit - from the first
+    // hit, not only once low (the line came so late in a stand-up trade that
+    // the kit's mercy - no fall before a warning has been up a second - kept a
+    // man standing in the open alive at 1 hp to win it)
+    const shotUp = this.lastKill && !this.lastKill.crouched && G.time - this.lastKill.t < 2.5;
+    if ((low || shotUp) && !down && this.lineOnMe > 0) say(4, W.open || 'Get down!');
     if (low && down) say(5, W.mend || 'Stay down. Let it mend.');
-    // (held a second, unless something more urgent comes)
+    // (held a second, unless something more urgent comes, or the man it was about is down)
     const P = this._w;
-    if (P && P.text && P.text !== text && G.time - P.t < 1.0 && (text == null || pri >= P.pri)) return P.text;
-    if (!P || P.text !== text) this._w = { text, pri, t: G.time };
+    if (P && P.text && P.text !== text && G.time - P.t < 1.0 && (text == null || pri >= P.pri) && !(P.who && !P.who.h.alive)) return P.text;
+    if (!P || P.text !== text) this._w = { text, pri, t: G.time, who };
     return text;
   }
 
@@ -589,6 +634,12 @@ export class Guns {
     let n = 0;
     for (const [h, ai] of G.ais) if (h.alive && ai.brain && ai.brain.hasLine) n++;
     this.lineOnMe = n;
+    // (?c2rec=1: every man's brain each step, for the plays - window.__c2rec)
+    if (REC) {
+      const R = window.__c2rec || (window.__c2rec = []);
+      if (R.length > 6000) R.splice(0, 2000);
+      R.push([+G.time.toFixed(2), +(G.controller.crouchK || 0).toFixed(1), Math.round(G.health.hp), Object.values(G.stage._c2doors || {}).concat(...[...G.stage.parts.values()].filter((q) => q && q.doors).map((q) => Object.values(q.doors))).map((D) => D.name + (D.open01 * 9 | 0)).join(''), ...[...G.ais].filter(([h]) => h.alive && G.ais.get(h).brain && G.ais.get(h).brain.S).map(([h, ai]) => { const S = ai.brain.S; return `${h.slot}${ai.brain.kind[0]}:${S.state}${S.entry && S.entry.ph ? '/' + S.entry.ph : ''}:s${S.settle.toFixed(2)}:${S.line ? 'L' : '-'}${(S.lineT || 0).toFixed(1)}:hp${Math.round(h.hp)}@${h.pos.x.toFixed(1)},${h.pos.z.toFixed(1)}:m${S.mag}h${S.heldN || 0}n${S.shots}:d${S.door ? S.door.D.name + S.door.phase + S.door.tries : ''}:p${ai.path ? ai.pathI + '/' + ai.path.length + (ai.path.length ? '>' + ai.path[ai.path.length - 1].x.toFixed(1) + ',' + ai.path[ai.path.length - 1].z.toFixed(1) : '') : '-'}:f${S.flank ? 1 : 0}`; })]);
+    }
     // the flank's clock: how long I have held one spot down behind something
     const e = G.eye, C = G.controller, P = this.post;
     if (Math.hypot(e.x - P.x, e.z - P.z) > 1.6 || (C.crouchK || 0) < 0.5) { P.x = e.x; P.z = e.z; P.t = 0; }
@@ -661,6 +712,18 @@ export class Guns {
     }
     return best;
   }
+}
+
+// a hit's splash on the frame, from the bearing of the man who fired (rad,
+// 0 ahead, + to my right, +-PI behind): { at: [x, y] as fractions of the
+// frame, behind } for Health.damage - ahead: the top edge's middle; to a
+// side: that edge, higher the more ahead he is; behind: the bottom edge's
+// middle. Never a corner (the objective line, the health, the count are there).
+export function splashAt(bear) {
+  const b = Math.abs(bear), s = Math.sign(bear) || 1;
+  if (b <= 0.4) return { at: [0.5 + (bear / 0.4) * 0.06, 0], behind: false };
+  if (b < 2.5) return { at: [s > 0 ? 1 : 0, 0.3 + ((b - 0.4) / 2.1) * 0.45], behind: false };
+  return { at: [0.5 + s * ((Math.PI - b) / (Math.PI - 2.5)) * 0.12, 1], behind: true };
 }
 
 // (the eyes see through clear glass: a pane that is not frosted, a car's windows)

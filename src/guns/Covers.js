@@ -125,9 +125,23 @@ export class Covers {
       if (!nav.free(x, z) || !nav.lineFree(pt.x, pt.z, x, z)) continue;
       if (!this.seen(x, z, eye, false)) continue;
       if (!this.armRoom(x, z, eye)) continue;
+      // [C2] after the critic: and his gun has the line too - out far enough
+      // that the hand with the gun clears the jamb (his rounds went into it)
+      if (!this.gunLine(x, z, eye, px, pz)) continue;
       return { x, z, rise: false, step: k };
     }
     return null;
+  }
+  // the line from a gun held at either side of him (0.22 m, at 1.35 m) to the eye
+  gunLine(x, z, eye, px, pz) {
+    const G = this.game, y = this.floor(x, z) + 1.35;
+    for (const s of [0.22, -0.22]) {
+      const o = _a.set(x + px * s, y, z + pz * s);
+      const d = _b.set(eye.x - o.x, eye.y - o.y, eye.z - o.z);
+      const L = d.length(); d.divideScalar(L);
+      if (G.rays.raycast(o, d, Math.max(0.01, L - 0.3), { anyHit: true, skip: (e) => !!e.mesh.userData.pane })) return false;
+    }
+    return true;
   }
   // a gun held out at the eye from (x, z): no wall within the arm's reach
   armRoom(x, z, eye) {

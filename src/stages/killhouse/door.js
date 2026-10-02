@@ -131,9 +131,15 @@ export function makeDoor(stage, kit, mats, name, spec) {
       if (!this.moving) return;
       const e = this.target - this.angle;
       const step = Math.sign(e) * Math.min(Math.abs(e), this.speed * dt * (0.4 + Math.min(1, Math.abs(e) * 2.5)));
-      // (the leaf stops against a man or the player in its way: it never passes through anyone)
-      const next = this.angle + step;
-      if (this.blocked(next)) { this.moving = false; return; }
+      // (the leaf stops against a man in its way: it never passes through
+      // anyone. [C2] after the critic: against the player it does not stop
+      // ajar - it is pulled open into him and he gives way before it, as a
+      // man pulling a door steps back: slower, and only where there is room
+      // behind him; against a wall, it stops)
+      let next = this.angle + step;
+      let b = this.blocked(next);
+      if (b === 'player') { next = this.angle + step * 0.45; b = this.blocked(next); if (b === 'player' && this.shove(next)) b = false; }
+      if (b) { this.moving = false; return; }
       this.angle = next;
       if (Math.abs(this.target - this.angle) < 1e-3) {
         this.angle = this.target; this.moving = false;
@@ -159,13 +165,32 @@ export function makeDoor(stage, kit, mats, name, spec) {
     },
     // would the leaf, swinging to `a`, cut into the player or a living man?
     // (it stops against him as a real door does; it never passes through anyone)
+    // -> 'man' | 'player' | false
     blocked(a) {
       const G = stage.game;
       if (!G) return false;
       const test = (x, z, r) => { const d1 = this.dist(a, x, z); return d1 < r && d1 < this.dist(this.angle, x, z) - 1e-4; };
-      if (test(G.eye.x, G.eye.z, 0.36)) return true;
-      for (const h of stage.hoods.list) if (h.alive && test(h.pos.x, h.pos.z, 0.3)) return true;
+      for (const h of stage.hoods.list) if (h.alive && test(h.pos.x, h.pos.z, 0.3)) return 'man';
+      if (test(G.controller.pos.x, G.controller.pos.z, 0.36)) return 'player';
       return false;
+    },
+    // the player out of the leaf's way at angle `a`: on, along the line from
+    // the leaf to him, to just clear of it (true), or nowhere to go (false)
+    shove(a) {
+      const G = stage.game, C = G.controller, R = 0.385;
+      const c = Math.cos(a), s = Math.sin(a);
+      const dx = along ? s : c, dz = along ? c : -s;
+      const hx = hinge.position.x, hz = hinge.position.z;
+      const t = Math.max(0, Math.min(w, (C.pos.x - hx) * dx + (C.pos.z - hz) * dz));
+      const qx = hx + dx * t, qz = hz + dz * t;
+      let nx = C.pos.x - qx, nz = C.pos.z - qz, d = Math.hypot(nx, nz);
+      // (on the leaf's line: out the way it swings)
+      if (d < 1e-3) { const sg = Math.sign(a - this.angle) || 1; nx = (along ? c : -s) * sg; nz = (along ? -s : -c) * sg; d = 1; }
+      const p = { x: qx + (nx / d) * R, z: qz + (nz / d) * R };
+      stage.colliders.resolve(p, C.radius);
+      if (this.dist(a, p.x, p.z) < 0.36 - 0.005 || Math.hypot(p.x - C.pos.x, p.z - C.pos.z) > 0.25) return false;
+      C.pos.x = p.x; C.pos.z = p.z;
+      return true;
     },
   };
   // the doorway's frame (both faces): the casings are the shell's
