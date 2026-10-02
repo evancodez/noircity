@@ -62,7 +62,9 @@ export function makeKit(G) {
     // the one way the chapter loses (game.fail: the hard stop, black, the
     // why lettered on it, back at the beat with the world as its setup makes it)
     fail({ why, to }) {
-      kit.warn(null);
+      // (the warning stays up into the fail: game.fail takes it down, and
+      // records how long it was read - G.lastFail.warnedFor)
+      warnText = null;
       G._tailRetry = true;   // (back at a beat: no card of any size)
       // (shot mode has no fail: the frame holds where it is. [3rd owner] it
       // used to go straight back to the beat - with ?tailAt placing my car

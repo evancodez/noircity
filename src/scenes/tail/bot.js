@@ -18,6 +18,8 @@ import { RNG } from '../../util/rng.js';
 //          wrong turn now and then (on past his corner: round the block
 //          by the streets to find him again)
 //   chaser (tuning) follows his way at his speed, as close as is safe
+//   follow the good hands' driving with the gun never drawn (a proof that
+//          he reaches the pier's gate if I do not stop him)
 const clamp = (x, a, b) => Math.max(a, Math.min(b, x));
 
 const PROFILES = {
@@ -25,6 +27,9 @@ const PROFILES = {
   good: { aLat: 7.2, brake: 6.5, lag: 0.08, wobble: 0, keep: 13, far: 26, hb: true, wrong: 0, look: 1.0, gunGap: 14, gunAt: 26, aimTol: 0.01, aimJit: 0.004 },
   bad: { aLat: 8.6, brake: 4.8, lag: 0.15, wobble: 0.04, keep: 10, far: 22, hb: false, wrong: 0.5, look: 0.9, damp: 0.2, gunGap: 18, gunAt: 30, aimTol: 0.03, aimJit: 0.05, fireGap: 0.35, aimAt: 'window' },
   chaser: { aLat: 7.5, brake: 6, lag: 0, wobble: 0, keep: 11, far: 22, hb: false, wrong: 0, look: 1.0 },
+  // [3rd owner] the good hands on the wheel, the gun never drawn: keeps up
+  // with him down the river road and never stops him (he reaches the gate)
+  follow: { aLat: 7.2, brake: 6.5, lag: 0.08, wobble: 0, keep: 13, far: 26, hb: true, wrong: 0, look: 1.0, gunGap: 14, noGun: true },
 };
 
 export function makeBot(chase, name, { seed = 7, track = null, attempt = 0 } = {}) {
@@ -212,7 +217,7 @@ export function makeBot(chase, name, { seed = 7, track = null, attempt = 0 } = {
     // back - a tyre for the good hand, wherever for the bad - LMB when on).
     // { rmb, dyaw, dpitch (radians: the turn the mouse must make), fire }
     aim() {
-      if (chase.phase !== 'b' || !chase.his || !chase.game) return null;
+      if (chase.phase !== 'b' || !chase.his || !chase.game || P.noGun) return null;
       const G = chase.game, cam = G.camera, his = chase.his, gap = chase.gap();
       const out = { rmb: gap < (P.gunAt ?? 28), fire: false, dyaw: 0, dpitch: 0 };
       if (!out.rmb || !chase.gun || chase.gun.aimK < 0.95) return out;
