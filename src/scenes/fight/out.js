@@ -153,10 +153,10 @@ export function afterKO(ctx, w) {
 function roomAnswers(ctx, free) {
   const G = ctx.game, cast = ctx.cast, d = ctx.stage.part('diner');
   const head = (c) => () => c && c.bones && c.bones.head ? c.bones.head.getWorldPosition(V(0, 0, 0)) : null;
-  const talk = (id, c, lines, prompt, then) => {
+  const talk = (id, c, lines, prompt, then, range = 2.6) => {
     if (!c) return;
     let n = 0;
-    ctx.interact.add({ id, at: head(c), range: 2.6, cone: 0.45, prompt, when: free,
+    ctx.interact.add({ id, at: head(c), range, cone: 0.45, prompt, when: free,
       onUse: () => { const line = lines[Math.min(n, lines.length - 1)]; n++; G.hud.say(line, 2.4); if (then) then(n); } });
   };
   const dk = cast.get('docker'), dot = cast.get('dot'), cook = cast.get('cook');
@@ -167,7 +167,8 @@ function roomAnswers(ctx, free) {
     // (up from behind the counter at the first word)
     if (n === 1 && dot.setState) { try { dot.setState('idle', 0.4); } catch (e) { /* */ } }
   });
-  talk('c4.cook', cook, ['Kitchen’s closed.', 'I said closed.'], 'talk', () => { if (d.bell) d.bell.ring(); });
+  // (the cook is across the counter and the back bar, in his hatch)
+  talk('c4.cook', cook, ['Kitchen’s closed.', 'I said closed.'], 'talk', () => { if (d.bell) d.bell.ring(); }, 4.2);
   if (d.jukebox) {
     const J = DINER.jukebox;
     ctx.interact.add({ id: 'c4.jukebox', at: V(J.x, DINER.floorY + 1.1, DINER.zMin + 0.45), range: 2.2, cone: 0.5, prompt: 'play', when: free,
@@ -184,7 +185,8 @@ function roomAnswers(ctx, free) {
       const p = st.object.getWorldPosition(V(0, 0, 0));
       const k = (cool.get(i) || 0) - dt;
       cool.set(i, k);
-      if (k <= 0 && Math.hypot(p.x - e.x, p.z - e.z) < 0.5) { st.spin(0.9); G.sfx.play('stoolSqueak', V(p.x, 0.9, p.z)); cool.set(i, 2.5); }
+      // (my body against its seat: my radius and its, and a little)
+      if (k <= 0 && Math.hypot(p.x - e.x, p.z - e.z) < 0.68) { st.spin(0.9); G.sfx.play('stoolSqueak', V(p.x, 0.9, p.z)); cool.set(i, 2.5); ctx.flags.spun = (ctx.flags.spun || 0) + 1; }
     }
   };
 }

@@ -205,7 +205,7 @@ export class Brawl {
     this.cue = null; G.worldK = 1;
     if (this.warned) { this.warned = false; G.hud.warn(null); }
     // ([B8] this life's start: how hard it pounded his guard is read at a down)
-    this.stats.life = { t: this.stats.time, b: this.stats.myBlocked };
+    this.stats.life = { t: this.stats.time, b: this.stats.myBlocked, l: this.stats.landed, c: (this.stats.cues && this.stats.cues.right) || 0, k: this.stats.blocked };
     this.opts = { onRetry, onKO, onGlass, onLanded, onManner, onBottle, onHop };
     // ([B8] a thing of his still in the air when I went down falls where it is)
     if (this.flying && this.flying.length) this.dropFlying();
@@ -315,7 +315,7 @@ export class Brawl {
       G.hud.fade(1);
       // [C4] (the black says in a word what went wrong, in the kit's lettering)
       if (this.downWhy) G.hud.kit.failK(Math.min(1, (this.downBlack - this.blackT) / 0.2) * Math.min(1, this.blackT / 0.25));
-      if (this.blackT <= 0) { this.blackT = 0; this.fadeBack = 0.6; if (this.downWhy) { G.hud.kit.failLine(null); this.downWhy = null; } if (G.hud.setFailing && !G.failing) G.hud.setFailing(false); this.cardBack(); }
+      if (this.blackT <= 0) { this.blackT = 0; this.fadeBack = 0.6; this.upAt = this.T; if (this.downWhy) { G.hud.kit.failLine(null); this.downWhy = null; } if (G.hud.setFailing && !G.failing) G.hud.setFailing(false); this.cardBack(); }
       return;
     }
     if (this.fadeBack > 0) { this.fadeBack -= dt; G.hud.fade(Math.max(0, this.fadeBack / 0.6)); }
@@ -1980,7 +1980,7 @@ export class Brawl {
     // ([C4] after the last blow there is nothing left to warn of: the line
     // goes with his fall, and a fight stopped in this very step - stepKO's
     // stop() - must not put it back up for good, as it did at both fights)
-    if (this.finished || !this.active) { if (this.warned) { this.warned = false; G.hud.warn(null); } return; }
+    if (this.finished || !this.active) { if (this.warned) { this.warned = false; G.hud.warn(null, { now: true }); } return; }
     const hp = G.health.hp;
     const on = this.warned ? hp < 40 : hp < 30 && this.me.act !== 'down';
     if (on && !this.warned) { this.warned = true; this.warnedAt = this.T; G.hud.warn(FIGHT_WARN); }
@@ -2271,6 +2271,7 @@ export class Brawl {
     if (card) { N[card] = (N[card] || 0) + 1; this.reCard = card; }
     // (how long the warning had been up: the proofs read it)
     (this.stats.downWarned || (this.stats.downWarned = [])).push(this.warned ? this.T - (this.warnedAt ?? this.T) : null);
+    { const DL = this.stats.downLog || (this.stats.downLog = []); if (DL.length < 100) DL.push([+this.T.toFixed(2), why, LH.clip || null, +(this.T - (LH.at ?? this.T)).toFixed(2), this.upAt != null ? +(this.T - this.upAt).toFixed(2) : null]); }
     if (this.warned) { this.warned = false; G.hud.warn(null); }
     this.hands.play('downMe');
     this.sfx('bodyFloor', null, { k: 1 });
@@ -2297,15 +2298,19 @@ export class Brawl {
       const L0 = this.stats.life || { t: 0, b: 0 };
       const rate = (this.stats.myBlocked - L0.b) / Math.max(20, this.stats.time - L0.t) * 60;
       const pounding = rate > BRAWL.pound;
-      const key = pounding ? 'pounding' : 'mannerDowns';
+      // ([C4] the mercy is for a man who is trying - who landed three, slipped
+      // a cue or blocked a blow in that life: a man who stands there or
+      // leans on W gets none of it, and goes down as often as ever)
+      const trying = !pounding && ((this.stats.landed - (L0.l ?? 0)) >= 3 || (((this.stats.cues && this.stats.cues.right) || 0) - (L0.c ?? 0)) >= 1 || (this.stats.blocked - (L0.k ?? 0)) >= 1);
+      const key = pounding ? 'pounding' : trying ? 'mannerDowns' : 'idleDowns';
       const MD = this.stats[key] || (this.stats[key] = {}); MD[m] = (MD[m] || 0) + 1;
       // ([C4] B3, the mercy: a man who keeps getting up without pounding his
       // guard keeps more of what he did - half of it back at the first down
       // in a manner, none after)
-      const back = Math.min(BRAWL.manners[m] * this.max / 100, this.him.hp + BRAWL.retryBack * (pounding ? MD[m] : MD[m] <= 1 ? 0.5 : 0) * this.max / 100);
+      const back = Math.min(BRAWL.manners[m] * this.max / 100, this.him.hp + BRAWL.retryBack * (pounding ? MD[m] : !trying ? 1 : MD[m] <= 1 ? 0.5 : 0) * this.max / 100);
       const left = Math.max(0.05, BRAWL.down - me.downT);
       G.health.reset();
-      G.health.hp = !pounding && MD[m] >= MERCY.whole ? BRAWL.meHp : BRAWL.retryHp;   // ([C4] whole from the second such down: was the third)
+      G.health.hp = trying && MD[m] >= MERCY.whole ? BRAWL.meHp : BRAWL.retryHp;   // ([C4] whole from the second such down: was the third)
       if (G.sfx && G.sfx.hush) G.sfx.hush(left + 0.3);
       if (this.opts.onRetry) this.opts.onRetry(m, back);
       G.hud.fade(1);
