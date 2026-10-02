@@ -212,8 +212,13 @@ export function makeBot(chase, name, { seed = 7, track = null, attempt = 0 } = {
         for (const o of chase.bodies ? chase.bodies() : []) {
           if (o === my || o === his || !o.solid) continue;
           const q = his.local(o.pos);
-          if (q.x > -12 && q.x < 45 && Math.sign(q.z || 1) === side && Math.abs(q.z) < 6) { clearSide = false; break; }
+          // (a car on that side near him, or one coming the other way there)
+          const coming = Math.cos((o.yaw || 0) - his.yaw) < -0.5;
+          if (q.x > -12 && q.x < (coming ? 40 : 14) && Math.sign(q.z || 1) === side && Math.abs(q.z) < 6) { clearSide = false; break; }
         }
+        // (that side shut a while: the other)
+        B.pitShut = !clearSide && l.x > -14 ? (B.pitShut || 0) + dt : 0;
+        if (B.pitShut > 2.5) { B.pitShut = 0; B.pitSide = -side; }
         if (l.x < -11 || !clearSide) { pitWant = l.x < -11 ? his.speed + clamp((-8 - l.x) * 0.5, 0, 6) : his.speed - 1; B.pitIn = 0; }
         else if (hurt && beside) { set(his.world(-1.2, side * 0.4)); pitWant = his.speed + 2.5; B.pitIn = (B.pitIn || 0) + dt; }
         else { set(his.world(-3.6, side * 2.4)); pitWant = his.speed + clamp((-3.6 - l.x) * 0.8, -4, 6); B.pitIn = 0; }

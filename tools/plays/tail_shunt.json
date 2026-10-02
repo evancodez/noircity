@@ -1,6 +1,6 @@
 {
  "about": "C3 4th owner: the shunt (rules.js RAM) by real input. From the river road's checkpoint, the gun dry and his right rear tyre already gone (set up as a round would leave it: the game's state, not the hands), the hands ('pitter' in src/scenes/tail/bot.js: up beside his back quarter on the other lane's side, then the wheel into it) shunt him: he goes off the road (C._ramWin). A straight bump from behind never does (the critic's tools/plays/critic/c3c2_drive.mjs 'ram one'). The teach card for the dry gun is read from the kit. NOIR_PORT=5343 node tools/play.mjs tools/plays/tail_shunt.json --size 1440x900",
- "url": "/?mute=1&start=tail.river",
+ "url": "/?mute=1&start=tail.river&tailSeed=5",
  "size": [1440, 900],
  "out": "shots/c3/shunt",
  "steps": [

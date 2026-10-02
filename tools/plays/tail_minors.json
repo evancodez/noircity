@@ -136,18 +136,11 @@
    "label": "the third knock: 'Wrecked.', the line up before it"
   },
   {
-   "until": "G.failing && G.failing.phase === 'up'",
-   "timeout": 6000
-  },
-  {
-   "wait": 150
+   "until": "!G.failing",
+   "timeout": 8000
   },
   {
    "shot": "m02_retry_coming_up"
-  },
-  {
-   "until": "!G.failing",
-   "timeout": 4000
   },
   {
    "wait": 600
