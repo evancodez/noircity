@@ -1439,6 +1439,9 @@ export class Sfx {
       this.loop(key, f.pos, 0.55 * I, 'brown', 480);
       if (Math.random() < dt * 16 * I) this.play('crackle', f.pos, { k: rng(0.4, 1) * I }, { ref: 4, send: false });
     });
+    // [R3] a fire gone from the list (its wreck taken away when scene 9
+    // ends, or the list another place's) roars no more
+    for (let i = fires.length; this.loops.has('fire' + i); i++) this.stopLoop('fire' + i);
     // the heartbeat under 35 hp (~70 bpm, harder the lower)
     const low = dead ? 0 : Math.max(0, 1 - hp / 35);
     if (low > 0) {

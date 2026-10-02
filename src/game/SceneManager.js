@@ -134,6 +134,11 @@ export class SceneManager {
     if (G.puzzles.active) G.puzzles.close();
     G.hud.clearPrompt();
     G.hud.dropLayers();
+    // [R3] a chapter entered afresh starts from a free eye, as it does when it
+    // is entered cold: the last one may have left it frozen or its look held
+    // for its own last seconds (scene 6 froze it for the duck into the car,
+    // and scene 7's car would not move: W did nothing)
+    if (!keep) { G.controller.frozen = false; G.controller.lookLocked = false; }
     const stage = G.enterStage(def.stage);
     const from = b || def.beats[0] || null;
     this.current = def;

@@ -33,7 +33,9 @@ import { BLIND as OBLIND } from '../stages/office/build/openings.js';
 // stretch.
 const V = (x, y, z) => new THREE.Vector3(x, y, z);
 // what the detective carries by now (a cold start gets it too)
-const INV = ['matchbook', 'tornHalf', 'note', 'ledger', 'revolver'];
+// ([R3] the torn half by scene 3's name for it, matchbookHalf: played
+// through, the coat held it twice under two names)
+const INV = ['matchbook', 'matchbookHalf', 'note', 'ledger', 'revolver'];
 const EYE = 1.63;
 // the lens at the slit (degrees): the eye narrows on him as it leans in
 const PEEK = 44;
@@ -318,6 +320,9 @@ export default defineScene({
     // ---- car: the sedan pulls away, mine at the kerb ------------------------------------------------
     if (ctx.at('car')) {
       yield beat('car');
+      // [R3] (continued from the car's save: the chase's music, as a play
+      // through has it here until the tail's takes over - it was silence)
+      if (ctx.from === 'car') G.music.cue('chase', { fade: 0.4 });
       const stage = G.stage;
       const cars = stage.part('cars');
       // (he is in it: the chase put him there; a jump here finds him in it)

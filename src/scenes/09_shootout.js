@@ -254,6 +254,8 @@ function* arrive(ctx) {
   const G = ctx.game, S = ctx.stage, R = rig();
   const dot = ctx.cast.get('dot');
   yield wait(1.1);
+  // [R3] (the chapter card first: the line once it has gone, not under it)
+  yield until(() => !(G.hud.cardT > 0.15));
   G.hud.say("They're coming here.", 2.0);
   yield wait(0.7);
   // Dot brings the gun up from under the counter and lays it down before

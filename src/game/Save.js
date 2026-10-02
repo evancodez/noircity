@@ -31,7 +31,9 @@ export class Save {
     } catch (e) { return null; }
   }
 
-  get exists() { return !!this.read(); }
+  // [R3] (a story played to THE END is not continued: the title offers
+  // BEGIN and the chapters again, not the last ten seconds of the ending)
+  get exists() { const d = this.read(); return !!d && !(d.flags && d.flags.ended); }
 
   clear() {
     this.flags = {};

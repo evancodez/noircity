@@ -164,6 +164,11 @@ export class Game {
     const prev = this.entered;
     if (prev === stage) return stage;
     if (prev) this.vm.scene.remove(prev.fx.flash.vm.mesh);
+    // [R3] the old place's own sounds go with it: a train rumbling over the
+    // block as the chapter changed droned on through room 304 and the
+    // gunfight (its train no longer stepped, nothing let its loop go), and a
+    // shot hydrant would hiss on in the next place
+    if (prev && this.sfx) { this.sfx.train(0); if (this.sfx.loops && this.sfx.loops.has('hydrant')) this.sfx.stopLoop('hydrant'); }
     this.world = stage;
     this.entered = stage;
     stage.bind(this);
@@ -344,6 +349,10 @@ export class Game {
     this.controller.frozen = false;
     this.hud.hideTitle();
     this.setViewmodelVisible(this.vmWanted);
+    // [R3] a night begun from the title starts clean: the marks an earlier
+    // one left on the place the title stands in (after THE END, scene 9's
+    // blood and bullet holes all over the block) go
+    this.fx.clear();
     if (from && from.scene && this.scenes.get(from.scene)) {
       this.save.flags = { ...(from.flags || {}) };
       this.save.inventory = [...(from.inventory || [])];
