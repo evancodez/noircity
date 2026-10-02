@@ -1,5 +1,5 @@
 {
- "about": "Save and continue across a reload (P1), and the end of the slice from the last blow: a checkpoint at the fight's last blow, the page reloaded, CONTINUE on the title, the walk out through the door by real input, the search, the matchbook, the card. node tools/play.mjs tools/plays/continue.json",
+ "about": "Save and continue across a reload (P1; wave C: saves v2, a v1 save dropped quietly), and the end of II from the last blow: a v1 save is not offered; a v2 checkpoint at the fight's last blow, the page reloaded, CONTINUE on the title (no stills), the walk out through the door by real input, the search, the matchbook and Ames's card, on to III. node tools/play.mjs tools/plays/continue.json",
  "url": "/?mute=1",
  "size": [
   1280,
@@ -15,7 +15,20 @@
    "label": "a fresh browser: no CONTINUE"
   },
   {
-   "eval": "(localStorage.setItem('noir.save', JSON.stringify({ v: 1, scene: 'fight', beat: 'ko', flags: {}, inventory: [] })), true)"
+   "eval": "(localStorage.setItem('noir.save', JSON.stringify({ v: 1, scene: 'body', beat: 'approach', flags: {}, inventory: ['matchbook'] })), true)"
+  },
+  {
+   "reload": true
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "expect": "document.querySelector('#title .opt[data-k=continue]').classList.contains('hidden') && localStorage.getItem('noir.save') === null",
+   "label": "a v1 save (wave B's order) is dropped quietly: BEGIN and CHAPTERS only"
+  },
+  {
+   "eval": "(localStorage.setItem('noir.save', JSON.stringify({ v: 2, scene: 'fight', beat: 'ko', flags: {}, inventory: [] })), true)"
   },
   {
    "reload": true
@@ -50,6 +63,10 @@
   {
    "expect": "true",
    "label": "continued at the checkpoint: the fight's last blow"
+  },
+  {
+   "expect": "!G.stills.active && G.stills.last == null",
+   "label": "CONTINUE plays no stills"
   },
   {
    "wait": 700
@@ -124,8 +141,8 @@
    "timeout": 30000
   },
   {
-   "expect": "G.save.inventory.includes('matchbook') && (G.hud.endShown || (G.scenes.current && G.scenes.current.id === G.scenes.nextId('fight')))",
-   "label": "pocketed; the next chapter begins (To be continued when there is none: [R2-H] the merged story goes on to scene 3)"
+   "expect": "G.save.inventory.includes('matchbook') && G.save.inventory.includes('amesCard') && G.scenes.current && G.scenes.current.id === 'office'",
+   "label": "pocketed, the matchbook and Ames's card; chapter III, Room 304, begins (The Body is cut)"
   }
  ]
 }

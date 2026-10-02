@@ -446,7 +446,9 @@ try {
     // stretch by real input with the tools above (the gunfight of scene 9)
     else if (S.drive) {
       const mod = await import(resolve(S.drive));
-      const r = await mod.default({ js, turn, keyDown, keyUp, mouse, shot, log, check, sleep, send, W, H, opts: S });
+      // [C1] (cursor(): where the cursor stands after the trusted turns - a press
+      // anywhere else moves it there first and the view jumps by the distance)
+      const r = await mod.default({ js, turn, keyDown, keyUp, mouse, shot, log, check, sleep, send, W, H, opts: S, cursor: () => [mx ?? W / 2, my ?? H / 2] });
       log(`drive ${S.drive} -> ${JSON.stringify(r)}`);
       if (S.check) { const ok = new Function('D', `return (${S.check});`)(r) === true; check(S.label || S.check, ok, ok ? '' : JSON.stringify(r)); }
     }

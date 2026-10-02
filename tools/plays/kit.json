@@ -67,7 +67,7 @@
   { "expect": "!G.stills.active && G.stills.last == null", "label": "a chapter picked / ?start= plays no stills" },
   { "wait": 400 },
   { "shot": "k04_teach" },
-  { "expect": "G.hud.kit.teachCur.id === 'fire' && G.hud.objectiveText === 'Stop the walking man.' && G.save.flags.taught.fire === true", "label": "the teach card: [LMB] fire, the objective, taught recorded in the save's flags" },
+  { "expect": "G.hud.kit.teachCur.id === 'fire' && G.hud.objectiveText === 'Stop the running man.' && G.save.flags.taught.fire === true", "label": "the teach card: [LMB] fire, the objective, taught recorded in the save's flags" },
   { "wait": 800 },
   { "eval": "(window.__failT = performance.now(), G.fail({ why: 'Test.', to: 'ready' }))" },
   { "until": "G.failing && G.failing.phase === 'black'", "timeout": 3000 },

@@ -491,6 +491,10 @@ export class Game {
     const key = def.id + ':' + S.beat;
     this.failCounts.set(key, (this.failCounts.get(key) || 0) + 1);
     this.counters.fails = (this.counters.fails || 0) + 1;
+    // (was the player warned, and how long before: the proofs read it)
+    const K0 = this.hud.kit;
+    const warnedFor = K0.warnText ? +(this.time - (K0.warnAt ?? this.time)).toFixed(2) : null;
+    this.lastFail = { why, to: beat, from: S.beat, scene: def.id, fall, warnedFor, t: this.time };
     this.failing = { why, to: beat, fall, keepWorld, hold, t: 0, phase: fall ? 'fall' : 'stop', from: S.beat, id: def.id };
     S.trans = null;
     this.controller.frozen = true;

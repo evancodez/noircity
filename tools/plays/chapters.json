@@ -1,19 +1,26 @@
 {
- "about": "The title's table of contents: CHAPTERS opens it, a row starts the story at that chapter. node tools/play.mjs tools/plays/chapters.json",
+ "about": "The title's table of contents (wave C: eight chapters, The Body cut): CHAPTERS opens it, a row starts the story at that chapter with what the detective carries by then and the chapter's objective line, no stills. node tools/play.mjs tools/plays/chapters.json",
  "url": "/?mute=1",
  "size": [1280, 800],
  "out": "shots/play/chapters",
  "steps": [
   { "wait": 1500 },
-  { "expect": "document.querySelectorAll('#title .toc .row').length === 9", "label": "nine chapters listed" },
+  { "expect": "document.querySelectorAll('#title .toc .row').length === 8", "label": "eight chapters listed" },
+  { "expect": "[...document.querySelectorAll('#title .toc .row')].map((r) => r.dataset.id).join(',') === 'diner,fight,office,gunfight,watcher,tail,warehouse,shootout'", "label": "the order: the diner, the fight, room 304, the door, the watcher, the tail, pier nine, the block" },
+  { "expect": "[...document.querySelectorAll('#title .toc .row b')].map((b) => b.textContent).join(',') === 'I,II,III,IV,V,VI,VII,VIII' && !document.querySelector('#title .toc .row.off')", "label": "numbered I to VIII, every one ready" },
+  { "expect": "!G.scenes.get('body') && G.scenes.names.includes('office')", "label": "The Body is not a scene any more" },
   { "clickOn": "#title .opt[data-k=chapters]" },
   { "wait": 300 },
   { "expect": "document.querySelector('#title').classList.contains('toc-open')", "label": "CHAPTERS opens the table of contents" },
   { "shot": "toc" },
-  { "clickOn": "#title .toc .row[data-id=body]" },
-  { "until": "G.scenes.current && G.scenes.current.id === 'body'", "timeout": 12000, "label": "a row starts the story at that chapter" },
-  { "wait": 2500 },
-  { "shot": "body_start" },
-  { "expect": "G.state === 'playing'", "label": "playing" }
+  { "clickOn": "#title .toc .row[data-id=office]" },
+  { "until": "G.scenes.current && G.scenes.current.id === 'office'", "timeout": 12000, "label": "a row starts the story at that chapter" },
+  { "expect": "!G.stills.active && G.stills.last == null", "label": "a chapter picked plays no stills" },
+  { "wait": 3500 },
+  { "shot": "office_start" },
+  { "expect": "G.state === 'playing' && G.scenes.beat === 'corridor'", "label": "playing, at the chapter's first beat" },
+  { "expect": "G.save.inventory.includes('matchbook') && G.save.inventory.includes('amesCard') && !G.save.inventory.includes('matchbookHalf')", "label": "carrying what II gave: the matchbook and Ames's card" },
+  { "expect": "G.hud.objectiveText === 'Find Ames. Room 304.'", "label": "the chapter's objective line from its first second" },
+  { "expect": "(() => { const s = JSON.parse(localStorage.getItem('noir.save')); return s && s.v === 2 && s.scene === 'office'; })()", "label": "a v2 save written at the chapter's start" }
  ]
 }

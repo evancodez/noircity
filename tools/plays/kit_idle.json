@@ -1,0 +1,26 @@
+{
+ "about": "[C1] Proof 1 of WAVE_C §7 on the kit's test bed (?start=kit): the player does nothing and LOSES, the warning first and the reason said; twice, and the third round shows the steady card once more (teach.again after two fails). node tools/play.mjs tools/plays/kit_idle.json",
+ "url": "/?mute=1&start=kit",
+ "size": [1280, 800],
+ "out": "shots/play/kit_idle",
+ "steps": [
+  { "wait": 1500 },
+  { "clickOn": "#title .opt[data-k=begin]", "taken": "G.state !== 'title'", "retries": 5, "every": 4000 },
+  { "until": "G.scenes.current && G.scenes.current.id === 'kit'", "timeout": 8000 },
+  { "until": "!!G.hud.warnText", "timeout": 30000 },
+  { "eval": "(window.__warnT = N.time, G.hud.warnText)" },
+  { "shot": "i00_warn" },
+  { "until": "!!G.failing", "timeout": 15000 },
+  { "expect": "G.lastFail.why === 'He reached you.' && G.lastFail.warnedFor >= 1", "label": "idle loses: he reached me, and the warning was up at least a second before" },
+  { "until": "G.failing && G.failing.phase === 'black'", "timeout": 3000 },
+  { "wait": 400 },
+  { "shot": "i01_black" },
+  { "until": "!G.failing", "timeout": 10000 },
+  { "expect": "G.scenes.beat === 'ready' && G.fails('ready') === 1 && G.stage.hoods.list.filter((h) => h.alive).length === 1", "label": "back at the beat, a fresh man, the fail counted" },
+  { "until": "G.fails('ready') === 2 && !G.failing", "timeout": 40000 },
+  { "wait": 400 },
+  { "expect": "G.hud.kit.shown.steady === 2", "label": "after two fails the steady card is shown once more" },
+  { "shot": "i02_again" },
+  { "drive": "tools/lib/kit_bot.mjs", "profile": "idle", "stop": "G.fails('ready') >= 3 && !G.failing", "timeout": 40000, "check": "D.done && D.lastFailWarnedFor >= 1", "label": "a third idle round loses the same way (never wins by itself)" }
+ ]
+}

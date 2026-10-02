@@ -303,6 +303,7 @@ export class KitUi {
     E.insertBefore(ground, E.firstChild);
     E.style.display = 'block';
     this.warnT = 0; this.warnOut = 0;
+    this.warnAt = this.game ? this.game.time : 0;
     this.snd('kit_warn');
     this.applyWarn();
   }
