@@ -17,7 +17,8 @@ the men in front of it, and someone comes round.
 ## 1. The player: the mode `gun`, the weapons
 
 ```js
-ctx.controller.setMode('gun', { crouch: false });   // in the beat's setup ({ crouch: true }: starts down)
+ctx.controller.setPose(x, z, yaw, pitch);           // (setPose puts the controller back in 'walk':
+ctx.controller.setMode('gun', { crouch: false });   //  the mode after it) ({ crouch: true }: starts down)
 ctx.player.weapons.equip('revolver');               // or 'tommy'
 ```
 - **C** toggles the crouch, **Ctrl** holds it: the eye 0.64 m above the floor
@@ -25,8 +26,11 @@ ctx.player.weapons.equip('revolver');               // or 'tommy'
   1.7 m/s.
 - **RMB crouched**: up over what is in front, only as high as the gun needs
   to clear it (0.15 s up, 0.15 s down on release; re-judged every 0.1 s as
-  the view turns); at the end of something too tall to rise over, a lean
-  out round its side. **RMB standing**: the gun's own steady (the revolver's).
+  the view turns); at the end of something too tall to rise over (a jamb, a
+  wall's end, anything over a standing eye), a lean out round its side,
+  0.46 m, where the view's own line is clear past the edge. Under about 1.4 m
+  is risen over, not leaned round. **RMB standing**: the gun's own steady
+  (the revolver's).
 - **LMB** fires, **R** reloads (the revolver's cylinder face / the Tommy gun's
   count on the HUD as before).
 - `controller.crouchK` (0..1), `riseK` (0..1), `leanK` (-1..1), `crouchOn`.
@@ -77,6 +81,10 @@ G.on('scene:exit', () => K.end());   // a scene that leaves ends its encounter
 - While an encounter runs the player's revolver and Tommy gun fire through
   the kit (`K.playerRound`): from the muzzle (a gun still behind the cover's
   edge puts its round into the cover), through what is thin.
+- **The fire tokens are room for the player who fights from cover**: at
+  most `maxFiring` pistol men shoot at once while I am down or risen over
+  something; a man standing up (crouch under half) is every man's to shoot -
+  stand and trade in the open and they all come out at once.
 
 ---------------------------------------------------------------------------
 ## 3. The place: cover as data
@@ -106,13 +114,22 @@ mesh.userData.cover = { kind: 'wood', hp: 8, name: 'crate' };
 - **A car's windows are glass**: a man behind a car can be seen through
   them, and shot through them.
 - **Doors**: a part exposes `doors: { NAME: door }` where a door has
-  `{ spec: { inside: {x,z}, outside: {x,z} }, centre: Vector3, open(by),
-  close(), set(a), shut, open01, moving, locked }` (the killhouse's
+  `{ spec: { inside: {x,z}, outside: {x,z}, swing }, centre: Vector3, open(by),
+  close(), set(a), rattle(), shut, open01, moving, locked, col, live, apply(),
+  openBox() }` (the killhouse's
   `stages/killhouse/door.js` is one: a hinged leaf, a collider along it, a
   frosted light that shows the men behind it, a leaf that stops against a
-  body). A door's collider must be zero while the stage is built (the nav
-  grid sees the doorway open). A man on his `way` opens a locked door (he
-  has the key); `locked` keeps the player out (a rattle) - lock a door you
+  body). A door's collider must be zero while the stage is built. **The men's
+  grid** (`Covers.rebuild`, at `begin`) has every door that may open **as it
+  stands fully open** (`openBox()`: the leaf into the room is a thing to go
+  round, the doorway a way through), the dead out of it, and a **locked**
+  door shut (nobody paths through it). Any man whose path crosses a shut
+  door reaches for it a step off, it swings (pushed or pulled - a leaf that
+  swings at him: a step back out of its sweep first), he goes through; a
+  locked one rattles and he goes another way; a way that will not open in
+  12 s is given up. A man on his `way` opens a locked door (he has the key:
+  the grid is built again through it); `locked` keeps the player out (a
+  rattle) - lock a door you
   do not want me to go through (the test bed's street locks the street door
   behind me).
 - **Bounds**: `stage.colliders.setBounds(...)` round the ground (the kit's
@@ -135,8 +152,8 @@ K.spawn({ kind: 'tommy', at: { x, z }, cover: true, wait: 2.4 });   // there alr
   | kind | hp | a round | a time out | his own |
   | --- | --- | --- | --- | --- |
   | **`pistol`** | 100 | 17 | 2 - 3 rounds, 0.4 - 0.52 s apart | 7 in the magazine, reloads behind cover (1.7 s); goes round; pushes |
-  | **`tommy`** | 120 | 8 | a burst of 10 - 14 at 10.5/s, climbing | pins: rakes where I went down, line or no line, through what is thin; after each burst he changes the drum where he stands, out loud (2.6 s): my moment |
-  | **`rusher`** | 300 | 10 | bursts of 5 - 8 at 9/s, every 1.2 s | the heavy: a head taller, broader; **walks at me with the gun up, aiming and firing on the move**; a hit stops him 0.35 s and halves his settle; he must be answered before he is at my cover |
+  | **`tommy`** | 120 | 8 | a burst of 10 - 14 at 10.5/s, wide (0.02 rad) and climbing (0.005 a round) | pins: rakes where I went down, line or no line, chewing what I hide behind and through what is thin; after each burst he changes the drum where he stands, out loud (2.6 s): my moment |
+  | **`rusher`** | 250 | 10 | bursts of 4 - 6 at 9/s, every 1.5 s | the heavy: a head taller, broader; **walks at me with the gun up, aiming and firing on the move**; a hit stops him 0.45 s and halves his settle; five revolver rounds; he must be answered before he is at my cover |
 
   The player's guns against them: the revolver 55 a round, the Tommy gun
   52 (body) / 34 (limbs) - two to three rounds a pistol man.
@@ -183,8 +200,9 @@ K.spawn({ kind: 'tommy', at: { x, z }, cover: true, wait: 2.4 });   // there alr
     scuff and quick heels) to a place that sees me, off the others' line;
     the last man alive goes round too (after 1.5 x `flankAfter`), Tommy gun
     or not.
-- **The director** (the kit): at most `maxFiring` pistol men shoot at once;
-  the Tommy gunner and the heavy fire whatever the count (they count
+- **The director** (the kit): at most `maxFiring` pistol men shoot at once
+  while I fight from cover (down, or risen over it); standing up, I am every
+  man's; the Tommy gunner and the heavy fire whatever the count (they count
   against the pistol men while they do).
 - **Deaths**: a dying man slumps where he is: down the wall at his back,
   over the low cover he rose from (at its height: a desk, a counter), onto
@@ -256,7 +274,26 @@ a new stage drops the old stage's bodies.
 | `street_rev` | the same, with the revolver | the same |
 
 Each beat's `spots` are its cover places for the plays; `open` (the
-street's) is where the play that stands in the open stands.
+street's) is where the play that stands in the open stands. Each contest
+teaches what it needs if it is played cold (`K.teach('crouch')` as it
+opens, `rise` the first time I am down: nothing after the ready beat, the
+cards are once per save) and gives the crouch card once more in a beat
+failed twice.
+
+**The plays** (`tools/plays/guns_*.json`, the driver
+`tools/lib/c2_guns.mjs`: copy them for a chapter's own proofs - a profile
+is a model of a player, its record says how each try ended, how fast a
+fall came, and where the rounds into me came from):
+
+| play | the player | must |
+| --- | --- | --- |
+| `guns_idle` | does nothing | lose every contest, each warned a second or more, each with its reason |
+| `guns_bad` | stands and trades shots in the open (the brief's) | lose most contests, each by a fall with its reason |
+| `guns_clumsy` | the first-timer of WAVE_C §7: slow, a wide hand, up too long now and then, reloads standing now and then, late to get down, a wrong key | fail some, get through every contest within three tries |
+| `guns_good` | cover, rise, one aimed round, down; reload down; moves on the warning and off a spent spot; watches a man going round; ducks when hit; shoots a shadow on frosted glass | win every contest on the first try, twice in a row |
+| `guns_teach` | the ready beat by real input | each card once, the bottles from over the desk, on to `door` |
+| `guns_doors` | (a man looking for a way to me, every door shut) | he opens his way through, never through a shut leaf; locked doors hold |
+| `guns_walk` | walks into the desk, a man, a body, a shut and a locked door, a wall; leans round a jamb | nothing passes through anything; the lean goes out and back |
 
 ---------------------------------------------------------------------------
 ## 8. What a chapter must not do
