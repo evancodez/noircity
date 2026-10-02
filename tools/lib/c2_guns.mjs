@@ -112,16 +112,18 @@ export default async function drive({ js, turn, keyDown, keyUp, mouse, shot, log
       const g0 = await js('N.game.time');
       let s0 = await js(ST);
       const fails0 = s0.nFails, shots0 = s0.shots, hits0 = s0.hits, wins0 = s0.wins;
-      const dbg = {}, noticed = new Map(), visAt = new Map(); let lastSeenAt = null, tellAt = 0, lastUp = Date.now(), upAt = 0, snapT = 0, target = null, seenAt = 0, onSpot = null, goTo = null, moveCool = 0, downUntil = 0, burstLeft = 0, lastShot = 0, warnedBefore = false, lowHp = 100, prevHp = 100, duckAt = 0, outThere = false, answerUntil = 0, answerId = null, traceT = 0;
+      const dbg = {}, noticed = new Map(), visAt = new Map(); let lastSeenAt = null, tellAt = 0, lastUp = Date.now(), upAt = 0, snapT = 0, target = null, seenAt = 0, onSpot = null, goTo = null, moveCool = 0, downUntil = 0, burstLeft = 0, lastShot = 0, warnedBefore = false, lowHp = 100, prevHp = 100, duckAt = 0, holdUpUntil = 0, hitTimes = [], outThere = false, answerUntil = 0, answerId = null, traceT = 0;
       let end = null;
       while (!end) {
         const s = await js(ST);
         if (!s || s.__exc) { await sleep(150); dbg['exc'] = (dbg['exc'] || 0) + 1; continue; }
         lowHp = Math.min(lowHp, s.hp);
         // (hit while up over the cover: a person's reflex is down - a reaction later)
-        if (P.duck && s.hp < prevHp - 0.5 && s.rk > 0.5 && answerId == null && !duckAt) duckAt = Date.now() + rr(P.duck[0], P.duck[1]);
+        if (s.hp < prevHp - 0.5) hitTimes.push(Date.now());
+        while (hitTimes.length && Date.now() - hitTimes[0] > 1500) hitTimes.shift();
+        if (P.duck && s.hp < prevHp - 0.5 && s.rk > 0.5 && (answerId == null || hitTimes.length >= 2) && !duckAt) duckAt = Date.now() + rr(P.duck[0], P.duck[1]);
         prevHp = s.hp;
-        if (duckAt && Date.now() >= duckAt) { duckAt = 0; await set('RMB', false); downUntil = Date.now() + rr(500, 900); tellAt = 0; }
+        if (duckAt && Date.now() >= duckAt) { duckAt = 0; holdUpUntil = 0; answerUntil = 0; answerId = null; await set('RMB', false); downUntil = Date.now() + rr(500, 900); tellAt = 0; }
         // (opts.snaps: a frame every so many seconds, to look at what the play did)
         if (opts.snaps && Date.now() - (snapT || 0) > opts.snaps * 1000) { snapT = Date.now(); await shot(`${rec.profile}_${beat}_${k}_${Math.round((Date.now() - t0) / 1000)}`); log(`snap ${JSON.stringify({ hp: Math.round(s.hp), ck: +s.ck.toFixed(2), rk: +s.rk.toFixed(2), on: s.on, x: +s.x.toFixed(2), z: +s.z.toFixed(2), ammo: s.ammo, men: s.men.map((m) => `${m.st}${m.line ? '!' : ''}${m.see ? '*' : ''}@${m.fx.toFixed(1)},${m.fz.toFixed(1)}`), dbg })}`); }
         if (s.warn) warnedBefore = true;
@@ -157,7 +159,8 @@ export default async function drive({ js, turn, keyDown, keyUp, mouse, shot, log
         if (P.cover) {
           // the men who have a line on me and whom I can see (a flanker in the open)
           // (a man who has me while I am DOWN: one who has my side - not one who sees me because I rose to shoot)
-          const threats = s.rk < 0.3 ? s.men.filter((m) => m.line && m.see && !m.entry) : [];
+          // (a man coming in through a door with a line on me is one too)
+          const threats = s.rk < 0.3 ? s.men.filter((m) => m.line && m.see) : [];
           const pressed = P.lateMove ? (threats.length >= 2 || (threats.length >= 1 && s.hp < 25)) : threats.length >= 2 || (threats.length >= 1 && s.hp < 40) || s.broke > 0 || (s.warn && /cover/.test(s.warn));
           if (!onSpot || (pressed && now > moveCool)) {
             // the spot hidden best from the men as they stand now, near
@@ -196,9 +199,10 @@ export default async function drive({ js, turn, keyDown, keyUp, mouse, shot, log
         if (answerId != null && s.men.some((m) => m.id === answerId && m.line)) answerUntil = Math.max(answerUntil, now + 500);
         else if (answerId != null && now > answerUntil) answerId = null;
         if (P.cover && threat) {
-          // (up to answer him: the gun under the eye must clear the cover too)
-          await set('RMB', true);
-          if (s.rk < 0.85) { await sleep(40); continue; }
+          // (a man who has me while I am down is on my side of what I hide
+          // behind: answered from where I am, down - rising would show me to
+          // the rest of them; only when I cannot see him from down, up)
+          if (!threat.see) { await set('RMB', true); if (s.rk < 0.85) { await sleep(40); continue; } }
           visible.length = 0; visible.push(threat);
         } else if (P.cover) {
           // down, listening: a man's tell (the gun coming up, the click) - a
@@ -209,7 +213,7 @@ export default async function drive({ js, turn, keyDown, keyUp, mouse, shot, log
           for (const m of tells) if (!noticed.has(m.id)) noticed.set(m.id, tellAt);
           if (!tells.length) tellAt = 0;
           const look = now - lastUp > 4200;
-          const wantUp = !tommyFiring && now > downUntil && ((tellAt && now >= tellAt) || heavy || look || s.rk > 0.5 || now < answerUntil);
+          const wantUp = (now < holdUpUntil && now > downUntil) || (!tommyFiring && now > downUntil && ((tellAt && now >= tellAt) || heavy || look || s.rk > 0.5 || now < answerUntil));
           await set('RMB', wantUp);
           if (wantUp && s.rk < 0.2) upAt = now;
           if (!wantUp || s.rk < 0.85) {
@@ -257,9 +261,9 @@ export default async function drive({ js, turn, keyDown, keyUp, mouse, shot, log
             burstLeft = (burstLeft || Math.round(rr(P.burst[0], P.burst[1]))) - 1;
             if (burstLeft <= 0) {
               burstLeft = 0; answerUntil = 0;
-              // (the clumsy hand stays up a second too long now and then, looking)
-              if (P.upLong && Math.random() < P.upLong) await sleep(rr(800, 1500));
-              downUntil = Date.now() + rr(P.down[0], P.down[1]); await set('RMB', false);
+              // (the clumsy hand stays up a second too long now and then, looking - a hit still sends it down)
+              if (P.upLong && Math.random() < P.upLong) holdUpUntil = Date.now() + rr(800, 1500);
+              else { downUntil = Date.now() + rr(P.down[0], P.down[1]); await set('RMB', false); }
             }
           }
         }

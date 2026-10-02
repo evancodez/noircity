@@ -41,7 +41,7 @@ export const GUNMAN = {
   wait: [0.5, 1.3],            // s: behind cover between his times out
   watch: 1.3,                  // s: he holds his aim on where I went down before going back
   walk: 1.5, run: 3.0,
-  pistol: { hp: 100, dmg: 20, mag: 7, burst: [2, 3], gap: [0.4, 0.52], reload: 1.7 },
+  pistol: { hp: 100, dmg: 17, mag: 7, burst: [2, 3], gap: [0.4, 0.52], reload: 1.7 },
   tommy: { hp: 120, dmg: 8, burst: [10, 14], rate: 10.5, climb: 0.0035, sigma0: 0.01, drum: 2.6 },
   rusher: { hp: 250, dmg: 10, burst: [4, 6], rate: 9, every: 1.5, close: 2.4, hitStop: 0.45, walk: 1.3 },
 };

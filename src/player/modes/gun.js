@@ -68,6 +68,7 @@ export default {
     ctl.crouchK = ctl.crouchOn ? 1 : 0;
     ctl.riseK = 0; ctl.leanK = 0;
     ctl._crouchC = ctl.keys.has('KeyC');
+    ctl._want = null;
     ctl._gy0 = null;
     ctl._rise = { up: G_.down, lean: 0 };
     ctl._riseWas = false;
@@ -83,12 +84,16 @@ export default {
     ctl._crouchC = c;
     const ctrl = ctl.keys.has('ControlLeft') || ctl.keys.has('ControlRight');
     const want = ctl.frozen ? 0 : (ctl.crouchOn || ctrl) ? 1 : 0;
+    // (the knees and the coat: down and up are heard, as the rise over the cover is)
+    const G0 = ctl.world && ctl.world.game;
+    if (want !== ctl._want && ctl._want != null && G0 && G0.sfx && !ctl.frozen) G0.sfx.play('crouch', null, {}, { send: false, gain: want ? 0.5 : 0.32 });
+    ctl._want = want;
     const k0 = ctl.crouchK || 0;
     ctl.crouchK = want > k0 ? Math.min(1, k0 + dt / G_.time) : Math.max(0, k0 - dt / (G_.time * 1.3));
     const e = ss(ctl.crouchK);
     // the rise: RMB while down
     const rising = !ctl.frozen && ctl.crouchK > 0.55 && heldRmb(ctl);
-    if (rising && !ctl._riseWas) { ctl._gy0 = ctl._gy0 ?? ctl.groundY; ctl._rise = plan(ctl); ctl._planT = 0.1; }
+    if (rising && !ctl._riseWas) { ctl._gy0 = ctl._gy0 ?? ctl.groundY; ctl._rise = plan(ctl); ctl._planT = 0.1; if (G0 && G0.sfx) G0.sfx.play('clothRustle', null, {}, { send: false, gain: 0.3 }); }
     // (up, it is planned again as the view turns: up further when the gun is
     // turned onto something taller, down a little only slowly)
     else if (rising && (ctl._planT -= dt) <= 0) {

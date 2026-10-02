@@ -305,6 +305,10 @@ export class KitUi {
     const want = this.sceneWarn || this.lowText || null;
     const E = this.warnEl;
     if (want === this.warnText) return;
+    // [C2] (a line that changes its words while a warning stays up is the same
+    // warning: its time is from when the first came up - Game.spareLast's
+    // second is not given again by every change of words)
+    const was = this.warnText;
     this.warnText = want;
     if (!want) {
       if (now) { E.style.display = 'none'; this.warnOut = 0; this.hud.root.classList.remove('kwarned'); }
@@ -324,7 +328,7 @@ export class KitUi {
     E.insertBefore(ground, E.firstChild);
     E.style.display = 'block';
     this.warnT = 0; this.warnOut = 0;
-    this.warnAt = this.game ? this.game.time : 0;
+    if (!was || this.warnAt == null) this.warnAt = this.game ? this.game.time : 0;
     this.snd('kit_warn');
     this.applyWarn();
   }
