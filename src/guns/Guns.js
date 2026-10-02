@@ -39,9 +39,9 @@ import { GUNMAN } from '../enemies/brains/gunman.js';
 export const COVER = {
   // what a round keeps going through it (its force) and how far it is
   // thrown off its line (rad)
-  thin: { pass: 0.62, dev: 0.035 },
-  glass: { pass: 0.85, dev: 0.012 },
-  wood: { pass: 0.7, dev: 0.025 },       // (through a section already broken: the riddled piece)
+  thin: { k: 0.62, dev: 0.035 },
+  glass: { k: 0.85, dev: 0.012 },
+  wood: { k: 0.7, dev: 0.025 },          // (through a section already broken: the riddled piece)
   // what a round of each takes off a wood section's hp
   chew: { revolver: 1.5, tommy: 1, pistol: 1, hoodTommy: 1 },
 };
@@ -82,7 +82,9 @@ export class Guns {
     this.tokens.clear();
     this.flank = null; this.flankCoolT = 0; this.lastKill = null;
     this.post = { x: G.eye.x, z: G.eye.z, t: 0 };
-    this.events.length = 0;
+    // (the record runs on across encounters, a marker at each: the plays read it)
+    if (this.events.length > 600) this.events.splice(0, this.events.length - 400);
+    this.events.push({ t: +G.time.toFixed(2), what: 'begin', name: cfg.to || '' });
     this.rng = G.stage.rng.fork(9292);
     if (!G.scripts.includes(this.stepFn)) G.scripts.push(this.stepFn);
     // the health's mending reads whether anyone has a line on me
@@ -109,13 +111,13 @@ export class Guns {
   // ---- the men -----------------------------------------------------------------------------------
   // a gunman: { kind: 'pistol' | 'tommy' | 'rusher', at: {x, z}, way: { door?, path: [{x, z}], run? },
   //             start?: fn(game, hood) -> bool, wait?: s, frame?: s (in the doorway), yaw?, hp?, variant? }
-  spawn({ kind = 'pistol', at = null, way = null, start = null, wait = 0, frame, yaw = null, hp = null, variant = null, name = null } = {}) {
+  spawn({ kind = 'pistol', at = null, way = null, start = null, wait = 0, frame, door = null, yaw = null, hp = null, variant = null, name = null } = {}) {
     const G = this.game, K = GUNMAN[kind];
     const p = at || (way && way.at);
     const n = (this.spawned = (this.spawned || 0) + 1);
     const v = variant || (kind === 'pistol' ? { coat: n % 3, brim: n % 2, tall: (n >> 1) % 2, cig: n % 4 === 1 }
       : kind === 'tommy' ? { coat: 1, brim: 1, tall: 1, heavy: true } : { coat: 0, brim: 1, tall: 1, heavy: true });
-    const h = G.spawnHood(p.x, p.z, { brain: 'gunman', kind, heavy: kind !== 'pistol', hp: hp ?? K.hp, variant: v, yaw, state: 'idle', way, start, wait, frame });
+    const h = G.spawnHood(p.x, p.z, { brain: 'gunman', kind, heavy: kind !== 'pistol', hp: hp ?? K.hp, variant: v, yaw, state: 'idle', way, start, wait, frame, door });
     h.surface = (x, z) => G.stage.surfaceY(x, z);
     h.gunKind = kind;
     if (name) h.c2name = name;
@@ -411,6 +413,7 @@ export class Guns {
       const ai = G.ais.get(h);
       if (ai && ai.brain && ai.brain.shotNear) ai.brain.shotNear(1);
     }
+    this.events.push({ t: +G.time.toFixed(2), what: 'shot', name: res.hood ? 'hood:' + res.hood.joint : res.wall ? (res.wall.mesh.name || res.wall.surf) : 'air', from: blockedGun ? 'gun-in-cover' : '', at: res.passed.map((p) => p.kind) });
     // the men the round passed near: their aim is spoiled (rattled)
     const end = res.hood ? res.hood.point : res.wall ? res.wall.point : origin.clone().addScaledVector(dir, 60);
     for (const [h, ai] of G.ais) {
@@ -444,7 +447,7 @@ export class Guns {
     const res = this.trace(muzzle.clone().addScaledVector(d, 0.05), d, { far: 90, by: 'hood', chew: tommy ? COVER.chew.hoodTommy : COVER.chew.pistol, player: live, skipHood: h });
     if (res.player) {
       const amount = Math.max(1, Math.round(dmg * res.k));
-      this.hurt(amount, res.dir, ai);
+      this.hurt(amount, res.dir, ai, res);
       return { hit: true, point: res.player.point };
     }
     if (res.hood && live) {
@@ -464,7 +467,7 @@ export class Guns {
 
   // I am hit: the damage, the side it came from at the frame's edge, the
   // grunt; the record (what kind of hit put me down: the fall's reason)
-  hurt(amount, dir, ai) {
+  hurt(amount, dir, ai, res = null) {
     const G = this.game, C = G.controller;
     const cam = G.camera;
     // where it came from, on the screen: the shot's way reversed, in the view's frame
@@ -475,7 +478,7 @@ export class Guns {
     const ang = Math.atan2(-sy, sx + (sf < 0 ? 0 : 0) * 1e-3);
     const B = this.playerBody();
     this.lastKill = {
-      t: G.time, ai, crouched: B.crouched, reloading: !!(G.player.weapons.active && G.player.weapons.active.reloading),
+      t: G.time, ai, crouched: B.crouched, risen: (C.riseK || 0) > 0.5, through: !!(res && res.passed && res.passed.length), reloading: !!(G.player.weapons.active && G.player.weapons.active.reloading),
       flank: !!(ai && ai.brain && ai.brain.flanking), rush: !!(ai && ai.brain && ai.brain.kind === 'rusher'), tommy: !!(ai && ai.brain && ai.brain.kind === 'tommy'),
       dist: ai ? Math.hypot(ai.h.pos.x - G.eye.x, ai.h.pos.z - G.eye.z) : 0, behind: sf < -0.3, moving: C.vel.length() > 1.2,
     };
@@ -503,8 +506,10 @@ export class Guns {
     if (L.rush && L.dist < 3.5) return W.rush || 'He walked right up to you.';
     if (L.reloading && !L.crouched) return W.reload || 'Reloading in the open.';
     if (L.flank || L.behind) return W.flank || 'Flanked.';
+    if (L.risen) return W.risen || 'Up over the cover too long.';
     if (L.tommy && L.crouched) return W.tommy || 'The Tommy gun chewed through.';
-    if (L.crouched) return W.cover || 'Your cover was shot away.';
+    if (L.crouched && L.through) return W.cover || 'Your cover was shot away.';
+    if (L.crouched) return W.angle || 'They had your angle.';
     if (L.moving) return W.moving || 'Shot in the open.';
     return W.open || 'Shot standing in the open.';
   }
@@ -561,7 +566,7 @@ export class Guns {
   }
   // a place a man can see my crouched head from, round the side of what I
   // hide behind: on rings round me, free, reached by a path, off the threat's line
-  flankSpot(ai, tb, B) {
+  flankSpot(ai, tb, B, minOff = 0.9) {
     const G = this.game, nav = G.nav, e = G.eye, h = ai.h;
     const head = B.head.clone();
     let best = null;
@@ -571,7 +576,7 @@ export class Guns {
         const x = e.x + Math.sin(a) * R, z = e.z + Math.cos(a) * R;
         if (!nav.free(x, z)) continue;
         let off = Math.abs(Math.atan2(Math.sin(a - tb), Math.cos(a - tb)));
-        if (off < 0.9) continue;
+        if (off < minOff) continue;
         if (!this.see(V(x, G.stage.surfaceY(x, z) + 1.45, z), head, 0.25)) continue;
         const path = nav.findPath(h.pos.x, h.pos.z, x, z, 4000);
         if (!path) continue;

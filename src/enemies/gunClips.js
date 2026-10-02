@@ -80,22 +80,25 @@ const WALL = chainKeys([
 
 // ---- deathSlumpOver: folded over the cover before him ---------------------------------------------
 // (its top 0.6 .. 1.1 m up, 0.3 .. 0.6 m in front of him)
-const OVER = chainKeys([
+// (two builds by the cover's height: hy the hips' rest height - the top
+// minus a hand: the chest comes to lie on the top, the arms flat along it)
+const overKeys = (hy) => chainKeys([
   k(0.0, {}),
   k(0.1, { hipsPos: [0, 0.95, -0.03], spine: [-6, 0, 0], chest: [-12, 6, 0], head: [-16, 0, 0], armR: [-0.5, -0.2, 0.6, 0], elbowR: [20] }),
   // forward onto it: the hips against its edge, the chest going over
-  k(0.36, { hipsPos: [0, 0.9, 0.06], hips: [24, 0, 0], spine: [20, 0, 0], chest: [16, 0, 0], neck: [6, 0, 0], head: [10, 0, 0],
+  k(0.36, { hipsPos: [0, Math.max(hy + 0.06, 0.9), 0.05], hips: [24, 0, 0], spine: [20, 0, 0], chest: [16, 0, 0], neck: [6, 0, 0], head: [10, 0, 0],
     footL: [0.12, ANKLE_Y, -0.08], footR: [-0.12, ANKLE_Y, -0.12],
-    armL: [0.3, -0.4, 0.9, 0], elbowL: [20], armR: [-0.3, -0.4, 0.9, 0], elbowR: [20] }),
-  // over it: the chest on its top, the arms hanging down its far side, the knees giving
-  k(0.7, { hipsPos: [0, 0.82, 0.08], hips: [52, 0, 2], spine: [26, 0, 0], chest: [16, 0, 4], neck: [10, 0, 0], head: [16, 30, 10], headLevel: [0],
+    armL: [0.3, -0.3, 0.9, 0], elbowL: [20], armR: [-0.3, -0.3, 0.9, 0], elbowR: [20] }),
+  // over it: the chest down on its top, the arms flung along it, the knees giving
+  k(0.7, { hipsPos: [0, hy + 0.03, 0.08], hips: [46, 0, 2], spine: [24, 0, 0], chest: [14, 0, 4], neck: [8, 0, 0], head: [14, 30, 10], headLevel: [0],
     footL: [0.13, ANKLE_Y, -0.2], kneeL: [0.1, -0.2, 1], footR: [-0.12, ANKLE_Y, -0.24], kneeR: [-0.1, -0.2, 1], footRotL: [-14, 8, 0], footRotR: [-14, 8, 0],
-    armL: [0.25, -0.6, 0.75, 0], elbowL: [12], armR: [-0.2, -0.7, 0.7, 0], elbowR: [16] }),
-  k(1.0, { hipsPos: [0, 0.78, 0.09], hips: [60, 0, 3], spine: [28, 0, 2], chest: [18, 0, 4], head: [20, 34, 12],
-    armL: [0.15, -0.95, 0.3, 0], elbowL: [8], armR: [-0.1, -0.95, 0.35, 0], elbowR: [10],
-    footL: [0.13, 0.1, -0.24], footRotL: [-35, 8, 0], kneeL: [0.1, -0.5, 1], footR: [-0.12, 0.1, -0.28], footRotR: [-35, 8, 0], kneeR: [-0.1, -0.5, 1] }),
-  k(1.2, { hipsPos: [0, 0.77, 0.09] }),
+    armL: [0.4, -0.15, 0.9, 0], elbowL: [30], armR: [-0.2, -0.2, 0.95, 0], elbowR: [25] }),
+  k(1.0, { hipsPos: [0, hy, 0.09], hips: [50, 0, 3], spine: [24, 0, 2], chest: [12, 0, 4], head: [16, 34, 12],
+    armL: [0.55, -0.12, 0.8, 0], elbowL: [40], armR: [-0.15, -0.18, 1, 0], elbowR: [18],
+    footL: [0.13, 0.1, -0.24], footRotL: [-30, 8, 0], kneeL: [0.1, -0.5, 1], footR: [-0.12, 0.1, -0.28], footRotR: [-30, 8, 0], kneeR: [-0.1, -0.5, 1] }),
+  k(1.2, { hipsPos: [0, hy - 0.01, 0.09] }),
 ]);
+export const OVER_HIPS = { lo: 0.72, hi: 0.95 };
 
 // the clips, into the Hood's bank (once)
 let done = false;
@@ -107,9 +110,10 @@ export function addGunClips() {
   const D = (name, keys, dur) => { const c = bake(name, dur, (t) => samplePoseKeys(keys, t), { armSpace: 'root' }); c.death = true; C[name] = c; return c; };
   D('deathSlump', SLUMP, 1.25);
   D('deathSlumpWall', WALL, 1.2);
-  D('deathSlumpOver', OVER, 1.2);
+  D('deathSlumpOver', overKeys(OVER_HIPS.lo), 1.2);
+  D('deathSlumpOverHi', overKeys(OVER_HIPS.hi), 1.2);
   // (when the hat leaves the head: late, as he goes down; over the cover it falls on the far side)
-  HAT_OFF.deathSlump = 0.75; HAT_OFF.deathSlumpWall = 0.7; HAT_OFF.deathSlumpOver = 0.55;
+  HAT_OFF.deathSlump = 0.75; HAT_OFF.deathSlumpWall = 0.7; HAT_OFF.deathSlumpOver = 0.55; HAT_OFF.deathSlumpOverHi = 0.55;
   return C;
 }
-export const SLUMPS = ['deathSlump', 'deathSlumpWall', 'deathSlumpOver'];
+export const SLUMPS = ['deathSlump', 'deathSlumpWall', 'deathSlumpOver', 'deathSlumpOverHi'];

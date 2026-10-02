@@ -84,7 +84,12 @@ export class Covers {
     const y = this.floor(x, z) + (crouched ? 0.98 : 1.62);
     return this.game.guns.see(eye, _a.set(x, y, z), 0.2);
   }
-  state(pt, eye) {
+  // (cover is judged against where I can shoot from: my place at a standing
+  // eye's height - down behind something I would see nothing, up I see him)
+  up(eye) { return this._up.set(eye.x, this.floor(eye.x, eye.z) + 1.62, eye.z); }
+  get _up() { return this.__up || (this.__up = V(0, 0, 0)); }
+  state(pt, eye0) {
+    const eye = this.up(eye0).clone();
     if (this.seen(pt.x, pt.z, eye, true)) return 'open';
     return this.seen(pt.x, pt.z, eye, false) ? 'low' : 'tall';
   }
@@ -92,9 +97,10 @@ export class Covers {
   // a place to shoot from: risen over a low cover; or a step out to the side
   // of a tall one, onto free ground, with a clear line from the gun to the
   // eye and room for the arm (a jamb, a wall: never a gun through it)
-  fire(pt, eye, st = null) {
+  fire(pt, eye0, st = null) {
     const G = this.game, nav = G.nav;
-    const s = st || this.state(pt, eye);
+    const eye = this.up(eye0).clone();
+    const s = st || this.state(pt, eye0);
     if (s === 'open') return { x: pt.x, z: pt.z, rise: false };
     if (s === 'low' && this.armRoom(pt.x, pt.z, eye)) return { x: pt.x, z: pt.z, rise: true };
     const dx = eye.x - pt.x, dz = eye.z - pt.z, d = Math.hypot(dx, dz) || 1;

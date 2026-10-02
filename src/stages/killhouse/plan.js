@@ -65,7 +65,7 @@ export const WIN_Y = [FLOOR + 0.95, FLOOR + 2.55];
 
 // ---- the furniture (every piece of it is cover of a kind) ----------------------------------
 // the desk in room A: its front (the side it tips toward) faces +x, the door A1
-export const DESK = { x: -5.0, z: -3.9, w: 1.7, d: 0.86, h: 0.78 };           // w along z, d along x
+export const DESK = { x: -5.0, z: -3.9, w: 1.7, d: 0.95, h: 0.78 };           // w along z, d along x
 export const CABINETS = [[-7.9, -7.45], [-7.3, -7.45], [-6.7, -7.45]];          // filing cabinets (x, z) on the north wall
 export const CABINET = { w: 0.48, d: 0.62, h: 1.36 };
 // by the door A1: a tall steel cabinet (the teach's bottles on its top), an armchair
@@ -97,6 +97,8 @@ export const STREET = { x0: -22, x1: 22, pave0: HOUSE.z1 + T, kerb: 8.4, farKerb
 export const CARS = [
   { x: -5.6, z: 9.35, yaw: 0.02, paint: 'paint' },
   { x: 5.2, z: 14.9, yaw: Math.PI + 0.04, paint: 'paintGrey' },
+  { x: -14.5, z: 15.0, yaw: Math.PI - 0.06, paint: 'paint' },
+  { x: 14.2, z: 9.35, yaw: 0.05, paint: 'paint' },
 ];
 export const STREET_CRATES = [[9.2, 7.25, 0.9, 0.9, 0.12], [10.05, 7.4, 0.85, 0.85, -0.1], [9.6, 7.3, 0.8, 0.8, 0.3, 0.9]];
 export const HYDRANT = { x: -1.9, z: 7.95 };

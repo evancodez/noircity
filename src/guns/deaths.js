@@ -89,11 +89,12 @@ export function chooseDeath(G, h, dir, head, kind0) {
       const tp = low.point.clone().addScaledVector(_d, 0.1); tp.y = y + 1.3;
       const down = R.raycast(tp, V(0, -1, 0), 1.0, { skip: (e) => !solid(e) });
       const top = down ? down.point.y - y : 0;
-      if (top < 0.55 || top > 1.18) continue;
+      if (top < 0.62 || top > 1.12) continue;
       const n = low.normal.clone().setY(0).normalize();
-      const sx = low.point.x + n.x * 0.3, sz = low.point.z + n.z * 0.3;
+      const sx = low.point.x + n.x * 0.34, sz = low.point.z + n.z * 0.34;
       const yaw = Math.atan2(-n.x, -n.z);
-      if (floorFree(S, sx, sz, 0.1)) return { kind: 'deathSlumpOver', yaw, slide: { x: sx, z: sz } };
+      // (over it, the hat stays on: it would fly through what he lies on)
+      if (floorFree(S, sx, sz, 0.1)) { h.hatFlies = false; return { kind: top > 0.92 ? 'deathSlumpOverHi' : 'deathSlumpOver', yaw, slide: { x: sx, z: sz } }; }
     }
   }
   // 3. the fall the round asked for, if it fits as he stands (or a little turned)

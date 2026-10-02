@@ -206,7 +206,9 @@ export default (game) => {
       if (G.guns && G.guns.active) {
         const hit = G.guns.playerRound(origin, dir.clone(), { name: 'revolver', chew: 1.5, steady: this.steady, range: REVOLVER.range,
           dmg: () => REVOLVER.dmgBody,
-          onHood: (h, hh, d) => { if (h.alive) { if (h.state !== 'stagger') h.stagger(); const ai = G.ais.get(h); if (ai && ai.onHit) ai.onHit(d.clone(), true); } } });
+          // (a gunman of the kit takes it in his brain - the flinch, knocked off his aim - not a
+          // 1.2 s stagger that wins every exchange; the heavy stops a moment at each)
+          onHood: (h, hh, d) => { if (!h.alive) return; const ai = G.ais.get(h); if (ai && ai.brain && ai.brain.kind) return; if (h.state !== 'stagger') h.stagger(); if (ai && ai.onHit) ai.onHit(d.clone(), true); } });
         G.emit('shot', { weapon: 'revolver', hit });
         this.syncProp();
         return true;

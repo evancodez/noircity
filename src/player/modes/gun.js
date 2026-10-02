@@ -33,12 +33,14 @@ function plan(ctl) {
   const R = G && G.rays;
   const floor = ctl._gy0 ?? ctl.groundY;
   const eye0 = floor + 1.63 - G_.down;
-  const dir = new THREE.Vector3(-Math.sin(ctl.yaw), 0, -Math.cos(ctl.yaw));
   const skip = (e) => !!e.mesh.userData.pane;
-  const clear = (x, y, z) => !R || !R.raycast(_o.set(x, y, z), dir, G_.look, { anyHit: true, skip });
+  // (along the view's heading and a little to either side of it: the gun
+  // must clear what it is turned to)
+  const dirs = [0, 0.22, -0.22].map((a) => new THREE.Vector3(-Math.sin(ctl.yaw + a), 0, -Math.cos(ctl.yaw + a)));
+  const clear = (x, y, z) => !R || dirs.every((dir) => !R.raycast(_o.set(x, y, z), dir, G_.look, { anyHit: true, skip }));
   const px = ctl.pos.x, pz = ctl.pos.z;
   for (let h = 0; h <= G_.down + 1e-6; h += 0.05) {
-    if (clear(px, eye0 + h, pz) && clear(px, eye0 + h - 0.1, pz)) return { up: Math.min(G_.down, h + 0.06), lean: 0 };
+    if (clear(px, eye0 + h, pz) && clear(px, eye0 + h - 0.16, pz)) return { up: Math.min(G_.down, h + 0.08), lean: 0 };
   }
   // too tall to rise over: lean round its side (the side that is clear)
   const rx = Math.cos(ctl.yaw), rz = -Math.sin(ctl.yaw);
@@ -84,7 +86,15 @@ export default {
     const e = ss(ctl.crouchK);
     // the rise: RMB while down
     const rising = !ctl.frozen && ctl.crouchK > 0.55 && heldRmb(ctl);
-    if (rising && !ctl._riseWas) { ctl._gy0 = ctl._gy0 ?? ctl.groundY; ctl._rise = plan(ctl); }
+    if (rising && !ctl._riseWas) { ctl._gy0 = ctl._gy0 ?? ctl.groundY; ctl._rise = plan(ctl); ctl._planT = 0.1; }
+    // (up, it is planned again as the view turns: up further when the gun is
+    // turned onto something taller, down a little only slowly)
+    else if (rising && (ctl._planT -= dt) <= 0) {
+      ctl._planT = 0.1;
+      const p = plan(ctl);
+      if (!ctl._rise.lean && !p.lean) ctl._rise.want = p.up;
+    }
+    if (rising && ctl._rise.want != null) { const w = ctl._rise.want, u = ctl._rise.up; ctl._rise.up = w > u ? Math.min(w, u + dt * 6) : Math.max(w, u - dt * 1.2); }
     ctl._riseWas = rising;
     const r0 = ctl.riseK || 0;
     ctl.riseK = rising ? Math.min(1, r0 + dt / G_.rise) : Math.max(0, r0 - dt / G_.rise);

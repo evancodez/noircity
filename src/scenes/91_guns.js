@@ -29,8 +29,8 @@ export const BEATS = {
     at: [DESK.x + 0.02, DESK.z + 0.1, EAST], gun: 'revolver', tipped: true, crouch: false, max: 2, flankAfter: 9,
     obj: 'They are coming. Hold the room.',
     men: [
-      { kind: 'pistol', at: { x: -0.4, z: -9.5 }, way: [{ door: 'BD' }, { x: -0.45, z: -6.2 }, { door: 'A1' }], wait: 1.4 },
-      { kind: 'pistol', at: { x: -0.4, z: -9.6 }, way: [{ door: 'BD' }, { x: -0.5, z: -5.6 }, { door: 'A1' }], wait: 2.6 },
+      { kind: 'pistol', at: { x: -0.4, z: -9.5 }, way: [{ door: 'BD' }, { x: -0.45, z: -6.2, run: true }, { door: 'A1' }], wait: 0.8, door: 'hold' },
+      { kind: 'pistol', at: { x: -0.4, z: -9.7 }, way: [{ door: 'BD' }, { x: -0.5, z: -5.6, run: true }, { door: 'A1' }], wait: 1.2, door: 'hold' },
     ],
     spots: [{ x: DESK.x + 0.02, z: DESK.z + 0.1, yaw: EAST }, { x: DESK.x + 0.02, z: DESK.z - 0.55, yaw: EAST }, { x: -7.25, z: -2.35, yaw: EAST + 0.4 }],
   },
@@ -38,9 +38,9 @@ export const BEATS = {
     at: [DESK.x + 0.02, DESK.z + 0.1, EAST], gun: 'revolver', tipped: true, crouch: false, max: 2, flankAfter: 7,
     obj: 'Three of them. Watch both doors.',
     men: [
-      { kind: 'pistol', at: { x: -0.4, z: -9.5 }, way: [{ door: 'BD' }, { x: -0.45, z: -6.2 }, { door: 'A1' }], wait: 1.2 },
-      { kind: 'pistol', at: { x: -0.4, z: -9.6 }, way: [{ door: 'BD' }, { x: -0.5, z: -5.5 }, { door: 'A1' }], wait: 3.0 },
-      { kind: 'pistol', at: { x: -0.5, z: 9.5 }, way: [{ door: 'SD' }, { x: -4.6, z: 4.6 }, { door: 'A2' }], wait: 4.5 },
+      { kind: 'pistol', at: { x: -0.4, z: -9.5 }, way: [{ door: 'BD' }, { x: -0.45, z: -6.2, run: true }, { door: 'A1' }], wait: 0.8, door: 'hold' },
+      { kind: 'pistol', at: { x: -0.4, z: -9.7 }, way: [{ door: 'BD' }, { x: -0.5, z: -5.5, run: true }, { door: 'A1' }], wait: 1.2, door: 'hold' },
+      { kind: 'pistol', at: { x: -0.5, z: 9.5 }, way: [{ door: 'SD' }, { x: -4.6, z: 4.6, run: true }, { door: 'A2' }], wait: 3.0 },
     ],
     spots: [{ x: DESK.x + 0.02, z: DESK.z + 0.1, yaw: EAST }, { x: -7.25, z: -2.35, yaw: EAST + 0.6 }, { x: -6.0, z: -6.6, yaw: EAST + 0.8 }],
   },
@@ -49,7 +49,7 @@ export const BEATS = {
     obj: 'A Tommy gun. Stay down while it fires.',
     men: [
       { kind: 'tommy', at: { x: 4.7, z: 4.6 }, way: [{ x: 4.7, z: 2.6 }, { door: 'B2' }], wait: 1.0 },
-      { kind: 'pistol', at: { x: -0.4, z: -9.5 }, way: [{ door: 'BD' }, { x: -0.45, z: -2.2 }, { door: 'B1' }], wait: 4.0 },
+      { kind: 'pistol', at: { x: -0.4, z: -9.5 }, way: [{ door: 'BD' }, { x: -0.45, z: -2.2, run: true }, { door: 'B1' }], wait: 3.0 },
     ],
     spots: [{ x: 4.6, z: -5.55, yaw: SOUTH }, { x: 6.6, z: -5.55, yaw: SOUTH }, { x: 2.9, z: -5.6, yaw: SOUTH + 0.3 }],
   },
@@ -57,18 +57,20 @@ export const BEATS = {
     at: [-3.5, 2.4, SOUTH], gun: 'revolver', crouch: false, max: 2, flankAfter: 0,
     obj: 'Something big at the street door.',
     men: [
-      { kind: 'rusher', at: { x: -0.5, z: 10.5 }, way: [{ x: -0.5, z: 7.6 }, { door: 'SD' }], wait: 1.5, hp: 220 },
+      { kind: 'rusher', at: { x: -0.5, z: 10.5 }, way: [{ x: -0.5, z: 7.6 }, { door: 'SD' }], wait: 1.5 },
+      { kind: 'pistol', at: { x: -7.4, z: -6.8 }, way: [{ door: 'A2' }], wait: 7.0, door: 'hold' },
     ],
     spots: [{ x: -3.5, z: 2.4, yaw: SOUTH }],
   },
   street: {
     at: [-0.5, 7.05, SOUTH], gun: 'tommy', crouch: false, max: 3, flankAfter: 8,
-    obj: 'Four of them in the street. Cover to cover.',
+    obj: 'Five of them in the street. Cover to cover.',
     men: [
-      { kind: 'pistol', at: { x: -20.5, z: 17.2 }, way: [{ x: -13, z: 16.8 }], wait: 0.6 },
-      { kind: 'pistol', at: { x: 20.5, z: 9.4 }, way: [{ x: 14, z: 9.6 }], wait: 1.4 },
-      { kind: 'tommy', at: { x: -0.5, z: 20.4 }, way: [{ x: -0.5, z: 17.3 }], wait: 2.4 },
-      { kind: 'pistol', at: { x: -20.5, z: 9.6 }, way: [{ x: -13.5, z: 9.8 }], wait: 6.0 },
+      { kind: 'pistol', at: { x: -21.0, z: 17.2 }, way: [{ x: -15, z: 16.9, run: true }], wait: 0.4 },
+      { kind: 'pistol', at: { x: 21.0, z: 9.4 }, way: [{ x: 15, z: 9.6, run: true }], wait: 1.0 },
+      { kind: 'tommy', at: { x: -0.5, z: 20.6 }, way: [{ x: -0.5, z: 17.6, run: true }], wait: 2.0 },
+      { kind: 'pistol', at: { x: -21.0, z: 9.6 }, way: [{ x: -15, z: 9.8, run: true }], wait: 5.0 },
+      { kind: 'pistol', at: { x: 0.5, z: 20.6 }, way: [{ x: 0.5, z: 17.6, run: true }], wait: 9.0 },
     ],
     spots: [{ x: -5.6, z: 8.05, yaw: SOUTH }, { x: -3.0, z: 9.35, yaw: EAST }, { x: 9.6, z: 6.6, yaw: SOUTH }, { x: -1.9, z: 7.4, yaw: SOUTH }],
   },
@@ -76,6 +78,41 @@ export const BEATS = {
 BEATS.street_rev = { ...BEATS.street, gun: 'revolver', obj: 'Again, with the revolver.' };
 const CONTESTS = ['door', 'two_ways', 'pin', 'rush', 'street', 'street_rev'];
 const NEXT = { ready: 'door', door: 'two_ways', two_ways: 'pin', pin: 'rush', rush: 'street', street: 'street_rev', street_rev: 'done', done: 'door' };
+
+// the lab (?scene=guns&beat=lab&lab=<case>): one man where a fall has
+// something beside him - a wall at his back, the low cover he rose over, a
+// doorway, open floor - and a round into him at 0.5 s from where I stand
+// (the deaths' strips, the entries' frames); the cases:
+export const LAB = {
+  wall: { man: [-5.9, 0.62, Math.PI], me: [-5.9, -2.2, 0] },
+  over: { man: [-3.5, 2.6, 0], me: [-3.5, 5.4, 0], state: 'aim' },
+  door: { man: [-1.2, -4.1, -Math.PI / 2], me: [-4.2, -3.6, -Math.PI / 2], open: 'A1' },
+  open: { man: [5.2, -2.6, 0], me: [5.2, 0.4, 0] },
+  kneel: { man: [-3.5, 2.5, 0], me: [-3.5, 5.6, 0], state: 'kneel', alive: true },
+};
+function lab(ctx) {
+  const G = ctx.game, q = new URLSearchParams(location.search), L = LAB[q.get('lab') || 'wall'] || LAB.wall;
+  room(ctx, 'ready');
+  for (const h of [...G.world.hoods.list]) G.removeHood(h);
+  const K = gunsOf(G);
+  const [mx, mz, my] = L.man, [ex, ez] = L.me;
+  ctx.controller.setPose(ex, ez, Math.atan2(-(mx - ex), -(mz - ez)), -0.12);
+  const h = K.spawn({ kind: 'pistol', at: { x: mx, z: mz }, yaw: my, start: () => false, wait: 1e9 });
+  if (L.open) ctx.stage.part('house').doors[L.open].set(-1.62);
+  if (L.state) h.setState(L.state, 0);
+  h.lookAt(G.eye.clone());
+  if (L.alive) return;
+  let done = false;
+  G.scripts.push(() => {
+    if (done || G.time - ctx.flags.c2.t0 < 0.5) return;
+    done = true;
+    const c = h.bones.chest.getWorldPosition(V(0, 0, 0));
+    const d = c.clone().sub(G.eye).normalize();
+    G.fx.bloodFx.hit(c, d, { strength: 1.1, rays: G.rays });
+    G.killHood(h, d, false, q.get('kind') || null);
+    ctx.flags.c2.lab = { kind: h.state, at: [h.pos.x, h.pos.z] };
+  });
+}
 
 // the room for a beat: everything mended, the men gone, me where I start
 function room(ctx, name) {
@@ -98,16 +135,16 @@ function room(ctx, name) {
   K.begin({ maxFiring: B.max ?? 2, flankAfter: B.flankAfter ?? 7, to: name });
   ctx.flags.c2 = { beat: name, men: [], won: false, t0: G.time, spots: B.spots || [] };
   for (const m of B.men || []) {
-    const h = K.spawn({ kind: m.kind, at: m.at, way: { steps: m.way }, wait: m.wait ?? 0, hp: m.hp });
+    const h = K.spawn({ kind: m.kind, at: m.at, way: { steps: m.way }, wait: m.wait ?? 0, hp: m.hp, door: m.door });
     ctx.flags.c2.men.push(h);
   }
 }
 
 export default defineScene({
   id: 'guns', stage: 'killhouse', title: '', name: 'The Killhouse',
-  beats: ['ready', 'door', 'two_ways', 'pin', 'rush', 'street', 'street_rev', 'done'],
+  beats: ['ready', 'door', 'two_ways', 'pin', 'rush', 'street', 'street_rev', 'done', 'lab'],
   save: [],
-  setup: Object.fromEntries(['ready', 'door', 'two_ways', 'pin', 'rush', 'street', 'street_rev', 'done'].map((b) => [b, (ctx) => room(ctx, b === 'done' ? 'ready' : b)])),
+  setup: { ...Object.fromEntries(['ready', 'door', 'two_ways', 'pin', 'rush', 'street', 'street_rev', 'done'].map((b) => [b, (ctx) => room(ctx, b === 'done' ? 'ready' : b)])), lab: (ctx) => lab(ctx) },
 
   *script(ctx) {
     const G = ctx.game, K = gunsOf(G), house = ctx.stage.part('house'), C = ctx.controller;
