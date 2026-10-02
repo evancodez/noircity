@@ -32,7 +32,7 @@ export default (kit) => {
         return 0.22;
       },
       kit_teach(ctx, out, t0, p, R) {
-        burst(ctx, out, R, t0, 'pink', ['bandpass', 1300, 0.9], 0.07, 0.004, 0.07);
+        burst(ctx, out, R, t0, 'pink', ['bandpass', 1300, 0.9], 0.13, 0.004, 0.07);
         thud(ctx, out, t0 + 0.005, 190, 120, 0.05, 0.06);
         burst(ctx, out, R, t0 + 0.05, 'white', ['bandpass', 3800, 2.5], 0.02, 0.002, 0.03);
         return 0.18;
@@ -49,8 +49,8 @@ export default (kit) => {
         return 0.7;
       },
       kit_paper(ctx, out, t0, p, R) {
-        burst(ctx, out, R, t0, 'pink', ['bandpass', 2200, 0.8], 0.06, 0.03, 0.16);
-        burst(ctx, out, R, t0 + 0.16, 'pink', ['lowpass', 900], 0.07, 0.002, 0.05);
+        burst(ctx, out, R, t0, 'pink', ['bandpass', 2200, 0.8], 0.16, 0.03, 0.16);
+        burst(ctx, out, R, t0 + 0.16, 'pink', ['lowpass', 900], 0.16, 0.002, 0.05);
         burst(ctx, out, R, t0 + 0.18, 'white', ['bandpass', 5200, 3], 0.015, 0.001, 0.03);
         return 0.3;
       },

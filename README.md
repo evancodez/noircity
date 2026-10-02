@@ -36,9 +36,9 @@ then black, a word on why, and back at the start of the beat or a checkpoint.
   on; ESC twice skips them), then chapter I.
 - **CONTINUE** is there when a checkpoint exists (saved in the browser at the
   start of each chapter and of its main beats).
-- **CHAPTERS** is the table of contents: a row starts that chapter, with
-  nothing carried from before. Starting a chapter replaces the saved
-  checkpoint.
+- **CHAPTERS** is the table of contents: a row starts that chapter, carrying
+  what the story has given by then (the matchbook, Ames's card, the check,
+  the revolver). Starting a chapter replaces the saved checkpoint.
 - **`?start=<chapter>[.<beat>]`** on the address starts BEGIN anywhere, for
   example `/?start=warehouse` or `/?start=warehouse.fight`. The chapters
   (wave C: The Body is cut): `diner` I, `fight` II, `office` III, `gunfight`

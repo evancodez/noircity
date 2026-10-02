@@ -10,7 +10,18 @@ one small contest that uses all of it; read it before you use the kit.
 
 Everything below is on the HUD, so it is hidden in shot mode unless `&hud=1`
 (the golden frames do not see it), hidden under the title, the pause card,
-a chapter card, the stills and a fail's black. All timers run on game time.
+a chapter card, the stills and a fail's black; a line or a card that comes
+while it is hidden waits, unseen, and comes when it can be read. All timers
+run on game time (a fail's timeline and the stills on real time: the game is
+held still under them).
+
+Look params (shot mode, with `&hud=1`): `obj=<text>`, `warn=<text>`,
+`teach=<text with [KEYS]>`, `fail=<words>` hold that line over a beat's
+frame; `still=<id>&panel=<n>` a stills page (no `hud=1` needed).
+
+A shim for a lane that starts before this is merged (C3's brief asks for
+one): call `hud.objective`, `hud.teach`, `hud.warn`, `game.fail` only when
+they exist (`if (game.fail) ...`), and drop the shim when it is merged.
 
 ---------------------------------------------------------------------------
 ## Z1. The objective line: `hud.objective(text | null, opts?)`

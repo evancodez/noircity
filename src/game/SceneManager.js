@@ -132,6 +132,9 @@ export class SceneManager {
     if (G.puzzles.active) G.puzzles.close();
     G.hud.clearPrompt();
     G.hud.dropLayers();
+    // [C1] (the kit's lines go with the scene)
+    const K = G.hud.kit;
+    if (K) { K.objective(null, { now: true }); K.warn(null, { now: true }); K.dismissTeach(); }
     this.current = null; this.beat = null; this.ctx = null; this.it = null; this.waitOn = null; this.hooks = []; this.trans = null;
     this.setFade(0);
   }

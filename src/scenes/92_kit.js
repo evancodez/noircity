@@ -69,10 +69,11 @@ export default defineScene({
       // (the director has an encounter on: the health shows, the lull is off)
       G.director.run(function* (d) { yield d.until(() => !F.man || !F.man.alive || F.arrived); });
       // the teach cards: once per save; once more after two fails here
-      const again = G.fails('ready') >= 2 && !F.againShown;
+      // (once more, and only once: the round after the second fail)
+      const again = G.fails('ready') === 2 && !G.kitAgain;
       hud.teach('fire', '[LMB] fire');
       hud.teach('steady', '[RMB] steady the aim', { until: 'Mouse2' });
-      if (again) { F.againShown = true; hud.teach.again('steady'); }
+      if (again) { G.kitAgain = true; hud.teach.again('steady'); }
       const man = F.man;
       yield until(() => {
         if (!man.alive) return true;

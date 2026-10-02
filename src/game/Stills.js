@@ -94,6 +94,8 @@ export class Stills {
     const h = handle(onDone);
     if (!def) { console.warn(`stills.play: no stills '${id}' (stills: ${this.ids.join(', ')})`); h.finish(); return h; }
     if (this.run) this.finish(true);
+    // (an ESC of an earlier run does not count toward this one's two)
+    this.esc = { last: -9, downAt: null };
     const G = this.game;
     this.run = { id, def, h, pages: paginate(def.panels), page: -1, panel: -1, t: 0, since: 0, landed: [], cover: 0, ending: -1, skipped: false };
     this.el.textContent = '';

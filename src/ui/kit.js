@@ -217,7 +217,7 @@ export class KitUi {
         if (code) codes.push(code);
       } else {
         const s = document.createElement('span'); s.className = 'w'; s.textContent = p.text; row.appendChild(s);
-        width += p.text.length * 15 * 0.92 + 12;
+        width += p.text.length * 16 * 0.92 + 12;
       }
     }
     const ground = makeTornStroke(Math.round(width + 130), 86, hashSeed('teach:' + item.text));
@@ -233,8 +233,8 @@ export class KitUi {
     E.style.display = 'flex';
     E.style.opacity = '0';
     item.h.shown = true;
-    this.snd('kit_teach');
-    if (o.hold && G) G.crawl = 0.12;
+    this.cardSounded = false;
+    void G;
   }
   // a key or the predicate the card waits for
   teachMet(cur) {
@@ -263,6 +263,9 @@ export class KitUi {
     // black is over the HUD: its time starts when it can be read)
     const R = this.hud.root.classList;
     if (R.contains('carded') || R.contains('stilled') || R.contains('failing')) { this.teachEl.style.opacity = '0'; return; }
+    // (it comes now: its sound, and a held card's crawl - never under a
+    // chapter card, which runs on the same clock)
+    if (!this.cardSounded) { this.cardSounded = true; this.snd('kit_teach'); if (cur.held && G && cur.out < 0) G.crawl = 0.12; }
     // (a held card: real time - the game crawls under it)
     const step = cur.held && G ? dt / Math.max(0.05, G.crawl || 1) : dt;
     cur.t += step;
