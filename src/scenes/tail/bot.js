@@ -196,7 +196,7 @@ export function makeBot(chase, name, { seed = 7, track = null, attempt = 0 } = {
       const pg = B.prog || (B.prog = { t: B.t, x: my.pos.x, z: my.pos.z });
       if (want <= 2) { pg.t = B.t; pg.x = my.pos.x; pg.z = my.pos.z; }
       else if (B.t - pg.t > 3) { if (Math.hypot(my.pos.x - pg.x, my.pos.z - pg.z) < 1.5) B.stuckT = 9; pg.t = B.t; pg.x = my.pos.x; pg.z = my.pos.z; }
-      if (B.stuckT > 1.5) { B.stuckT = 0; B.backT = 1.2; if (chase.phase === 'c') B.pathKey = ''; }
+      if (B.stuckT > 1.5) { B.stuckT = 0; B.backT = 1.6; if (chase.phase === 'c') B.pathKey = ''; }
       const e = want - sp;
       if (e > 0.4) K.W = 1;
       else if (e < -1.2) K.S = 1;

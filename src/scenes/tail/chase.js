@@ -104,7 +104,7 @@ export class Chase {
     // goes by; the pier's jumps down off the crates and runs along the shed
     // to the water's edge)
     if (this.phase === 'start') this.cats.push(new Cat(this, { x: PELL_CAT.x, z: PELL_CAT.z, y: PELL_CAT.y, yaw: -Math.PI / 2, near: 9.5, path: [[PELL_CAT.x + 1.6, PELL_CAT.z - 0.4]] }));
-    this.cats.push(new Cat(this, { x: PIER.gate.x - 3, z: PIER.gate.z - 6, y: 2.0, yaw: -Math.PI / 2, near: 12, path: [[140.2, 180], [139.4, 193]] }));
+    this.cats.push(new Cat(this, { x: PIER.gate.x - 2.4, z: PIER.gate.z - 15, y: 2.0, yaw: -Math.PI / 2, near: 12, path: [[139.6, 170], [140.2, 182], [139.4, 193]] }));
     // the damage I bring from the checkpoint shows
     this.showDamage(true);
     this.place = { my, his };
@@ -519,7 +519,10 @@ export class Chase {
     // [2nd owner] the spray off his tyres on the wet: a wake of mist that
     // hangs a moment where he went - round a corner the last of it, lit by
     // the lamps, shows which way he turned (a trace to read)
-    if (!his.frozen && his.speedAbs > 5 && G.fx.dust) {
+    // (not close by: within a dozen metres each puff is a ball as big as a
+    // head on the screen)
+    const gapNow = this.gapNow ?? this.gap();
+    if (!his.frozen && his.speedAbs > 5 && G.fx.dust && gapNow > 13 && gapNow < 60 && this.phase !== 'crash') {
       this.sprayAcc = (this.sprayAcc || 0) + dt * Math.min(30, his.speedAbs * 2);
       while (this.sprayAcc >= 1) {
         this.sprayAcc -= 1;

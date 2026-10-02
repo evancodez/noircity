@@ -101,6 +101,16 @@ export function makeTrack({ lots, columns, posts }) {
   rect(PIER.gate.x, PIER.shed.x1, PIER.gate.z + PIER.gate.w / 2, Y.z1, 'wall');
   rect(Y.x0, Y.x1, Y.z1, Y.z1 + 1, 'rail');
   rect(Y.x0 - 1, Y.x0, DEPOT_Z, Y.z1, 'wall');
+  // [2nd owner] what stands in the yard is solid too (a car went through
+  // them): the iron railing before the shed's wall north of the doors, the
+  // crates by it, the cable drum, the bollards along the water
+  {
+    const gx = PIER.shed.x0;
+    rect(gx - 0.6, gx, Y.z0, PIER.gate.z - 4.6, 'fence');
+    rect(gx - 4.15, gx - 1.85, PIER.gate.z - 15.85, PIER.gate.z - 14.45, 'wall');
+    rect(gx - 6.9, gx - 5.1, PIER.gate.z + 6.9, PIER.gate.z + 8.1, 'wall');
+    for (let x = Y.x0 + 4; x < Y.x1 - 2; x += 4) addCircle(x, Y.z1 - 0.6, 0.21, 'post');
+  }
   // the el's columns
   for (const c of columns) addCircle(c.x, c.z, c.r, 'column');
   // the lamp posts: they give to a hard blow

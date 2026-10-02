@@ -185,7 +185,9 @@ export default {
       for (let k = 0; k < 6; k++) ir.push(new THREE.TorusGeometry(0.645, 0.032, 5, 26).translate(dx, dy, dz - 0.45 + k * 0.18));
       ir.push(tube([V3(dx + 0.15, dy + 0.62, dz + 0.3), V3(dx + 0.7, dy + 0.45, dz + 0.4), V3(dx + 1.2, 0.06, dz + 0.5), V3(dx + 2.4, 0.04, dz + 0.1), V3(dx + 3.3, 0.04, dz - 0.6)], 0.032, 6, 24));
       for (let k = 0; k < 4; k++) {
-        const cx0 = gx - 3 - (k % 2) * 1.2, cy0 = 0.5 + Math.floor(k / 2) * 1.0, cz0 = PIER.gate.z - 6 - (k % 2) * 0.3;
+        // (by the fence, north of the doors: off the line from where I stop
+        // to the doors, which chapter VII opens at)
+        const cx0 = gx - 2.4 - (k % 2) * 1.2, cy0 = 0.5 + Math.floor(k / 2) * 1.0, cz0 = PIER.gate.z - 15 - (k % 2) * 0.3;
         yd.push(roundedBox(1.1, 1.0, 1.1, 0.04, 1).translate(cx0, cy0, cz0));
         for (const yy of [-0.38, 0.38]) yd.push(new THREE.BoxGeometry(1.15, 0.12, 1.15).translate(cx0, cy0 + yy, cz0));
         for (const [sx, sz] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) yd.push(new THREE.BoxGeometry(0.11, 0.98, 0.11).translate(cx0 + sx * 0.53, cy0, cz0 + sz * 0.53));
