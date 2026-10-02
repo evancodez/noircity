@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { allocInkId, markFigure } from '../../../render/layers.js';
 import { lathe, merge } from '../../../world/geom.js';
-import { crateGeo, fruitHeapGeo, CRATE, barrelGeo, BARREL, stallGeo, fenceGeo, FENCE, standGeo, hydrantGeo } from '../../riverroad/smashKinds.js';
+import { crateGeo, CRATE, BARREL, stallGeo, fenceGeo, FENCE, standGeo, hydrantGeo } from '../../riverroad/smashKinds.js';
 import { NS, EW, NS_LIST, EW_LIST, PAVE, RIVER, riverFrame, riverPoint, riverSAtZ, blockAt, ROADWORKS, WHARF_X, groundAt, PELL } from '../plan.js';
 
 // What a car goes through in the city (the river road's things: fruit
@@ -32,13 +32,7 @@ const KIND = {
   horse: { r: 0.9, drag: 0.97, sound: 'smash_fence' },
 };
 
-// a dustbin (the block's), a sawhorse (two A-legs, a rail, a white board)
-function binGeo() {
-  const prof = [[0, 0.02], [0.24, 0.02], [0.25, 0.05]];
-  for (let i = 0; i < 6; i++) { const y = 0.08 + i * 0.14; prof.push([0.26, y], [0.275, y + 0.035], [0.26, y + 0.07]); }
-  prof.push([0.265, 0.92], [0.28, 0.94], [0.275, 0.96]);
-  return merge([lathe(prof, 20), lathe([[0.3, 0.0], [0.29, 0.03], [0.22, 0.07], [0.08, 0.1], [0.05, 0.14], [0.0, 0.15]], 20).translate(0, 0.95, 0)]);
-}
+// a sawhorse (two A-legs, a rail, a white board); the dustbin is binLite below
 function horseGeo() {
   const P = [];
   for (const x of [-0.85, 0.85]) for (const z of [-0.22, 0.22]) P.push(new THREE.BoxGeometry(0.06, 1.05, 0.06).rotateX(z > 0 ? -0.22 : 0.22).translate(x, 0.5, z * 0.6));
@@ -46,6 +40,32 @@ function horseGeo() {
   return merge(P);
 }
 function boardGeo() { return new THREE.BoxGeometry(1.9, 0.22, 0.03).translate(0, 0.8, 0.07); }
+// [2nd owner] the city's lighter builds of what stands in hundreds (each
+// pool is one draw of every instance in three passes, never culled): the
+// fruit heaped in a crate (12 apples of 5 x 4 sides: 672 -> 360 triangles),
+// a barrel (16 sides, its hoops thinner: 1672 -> 760), a dustbin (14 sides:
+// 1120 -> 790)
+function fruitLite(rng) {
+  const parts = [];
+  for (let i = 0; i < 12; i++) {
+    const r = 0.055 + rng.next() * 0.015;
+    parts.push(new THREE.SphereGeometry(r, 5, 4).translate(-0.24 + (i % 4) * 0.16 + rng.gauss() * 0.015, 0.3 + (i % 3 === 1 ? 0.03 : 0), -0.12 + Math.floor(i / 4) * 0.12 + rng.gauss() * 0.015));
+  }
+  return merge(parts);
+}
+function barrelLite() {
+  const prof = [];
+  for (let i = 0; i <= 10; i++) { const u = i / 10; prof.push([0.25 + 0.045 * Math.sin(u * Math.PI), u * 0.86]); }
+  const body = lathe([[0, 0], ...prof, [0, 0.86]], 16);
+  const hoops = [0.08, 0.26, 0.6, 0.78].map((y) => new THREE.TorusGeometry(0.25 + 0.045 * Math.sin((y / 0.86) * Math.PI) + 0.006, 0.012, 3, 16).rotateX(Math.PI / 2).translate(0, y, 0));
+  return merge([body, ...hoops]);
+}
+function binLite() {
+  const prof = [[0, 0.02], [0.24, 0.02], [0.25, 0.05]];
+  for (let i = 0; i < 6; i++) { const y = 0.08 + i * 0.14; prof.push([0.26, y], [0.275, y + 0.035], [0.26, y + 0.07]); }
+  prof.push([0.265, 0.92], [0.28, 0.94], [0.275, 0.96]);
+  return merge([lathe(prof, 14), lathe([[0.3, 0.0], [0.29, 0.03], [0.22, 0.07], [0.08, 0.1], [0.05, 0.14], [0.0, 0.15]], 14).translate(0, 0.95, 0)]);
+}
 
 export default {
   name: 'smash', order: 85, tick: 85,
@@ -107,15 +127,15 @@ export default {
     const setM = (P, i, pos, q, scale) => { _m.compose(pos, q, scale); P.im.setMatrixAt(i, _m); P.im.instanceMatrix.needsUpdate = true; };
     const stallG = stallGeo(), standG = standGeo();
     pool('crate', crateGeo(), wood, 520);
-    pool('fruit', fruitHeapGeo(stage.rng.fork(853)), fruitM, 520);
-    pool('barrel', barrelGeo(), wood, 160);
+    pool('fruit', fruitLite(stage.rng.fork(853)), fruitM, 520);
+    pool('barrel', barrelLite(), wood, 160);
     pool('stallFrame', stallG.frame, wood, 70);
     pool('awning', stallG.awning, canvas, 70);
     pool('fence', fenceGeo(), wood, 90);
     pool('stand', standG.frame, wood, 8);
     pool('standPapers', standG.papers, paper, 8);
     pool('hydrant', hydrantGeo(), iron, 40, { figure: true });
-    pool('bin', binGeo(), M.paintedMetal, 90);
+    pool('bin', binLite(), M.paintedMetal, 90);
     pool('horse', horseGeo(), wood, 12);
     pool('board', boardGeo(), white, 12);
     pool('plank', new THREE.BoxGeometry(1, 1, 1), wood, 1100);

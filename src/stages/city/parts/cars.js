@@ -15,7 +15,12 @@ import { parkedOf } from '../layout.js';
 // slides a little on its locked wheels and stops), rocked and marked by a
 // blow. Nothing here ever blows up.
 //   cars.parked: [body]   body: { pos, yaw, vel, yawRate, spec, box(), ... }
-const NEAR = 42, FAR = 110;
+const NEAR = 34, FAR = 96;
+// [2nd owner] (the full and the light builds hold only the cars toward
+// which the eye looks - within the lens's half width and a margin for a
+// quick turn, or close by: the cars behind me were drawn whole in every
+// pass, a million triangles a frame; the far boxes stay all drawn)
+const MARGIN = 0.62, CLOSE = 9;
 const _m = new THREE.Matrix4(), _q = new THREE.Quaternion(), _p = new THREE.Vector3(), _s = new THREE.Vector3(1, 1, 1), _e = new THREE.Euler();
 
 export default {
@@ -94,12 +99,26 @@ export default {
     };
     // the instances: the near ones in the full build, the rest in the light
     // one; rewritten when a body moves or the split changes
+    const fwd = new THREE.Vector3();
+    let lastYaw = 0, lastX = 0, lastZ = 0;
     const relayout = (camera) => {
       const p = camera ? camera.position : null;
       const n3 = { hi: 0, lo: 0, far: 0 };
+      // the eye's heading on the ground and the lens's half width
+      let fx = 0, fz = -1, half = Math.PI;
+      if (camera) {
+        camera.getWorldDirection(fwd);
+        const l = Math.hypot(fwd.x, fwd.z) || 1;
+        fx = fwd.x / l; fz = fwd.z / l;
+        half = Math.atan(Math.tan((camera.fov * Math.PI) / 360) * (camera.aspect || 1.6)) + MARGIN;
+        lastYaw = Math.atan2(fx, fz); lastX = p.x; lastZ = p.z;
+      }
+      const cosHalf = Math.cos(Math.min(Math.PI, half));
       for (const b of bodies) {
-        const d = p ? Math.hypot(b.pos.x - p.x, b.pos.z - p.z) : 1e9;
-        const lod = d < NEAR ? 'hi' : d < FAR ? 'lo' : 'far';
+        const dx = p ? b.pos.x - p.x : 0, dz = p ? b.pos.z - p.z : 0;
+        const d = p ? Math.hypot(dx, dz) : 1e9;
+        let lod = d < NEAR ? 'hi' : d < FAR ? 'lo' : 'far';
+        if (lod !== 'far' && p && d > CLOSE && (dx * fx + dz * fz) / d < cosHalf) { b.lod = 'off'; continue; }
         b.lod = lod;
         const m = write(b);
         const I = inst[lod], k = n3[lod]++;
@@ -137,7 +156,15 @@ export default {
         }
       }
       dealT -= dt;
-      if (moving || dealT <= 0) { if (dealT <= 0) dealT = 0.3; relayout(camera); }
+      // (and when the eye has turned or gone on far enough that a car could
+      // come into the frame from outside the margin)
+      let turned = false;
+      if (camera) {
+        camera.getWorldDirection(fwd);
+        const yaw = Math.atan2(fwd.x, fwd.z), dy = Math.abs(Math.atan2(Math.sin(yaw - lastYaw), Math.cos(yaw - lastYaw)));
+        turned = dy > 0.12 || Math.hypot(camera.position.x - lastX, camera.position.z - lastZ) > 4;
+      }
+      if (moving || turned || dealT <= 0) { if (dealT <= 0) dealT = 0.3; relayout(camera); }
     };
     // (a retry: every parked car back where it stood)
     C.parkedReset = () => { for (const b of bodies) { b.pos.set(b.home.x, 0, b.home.z); b.yaw = b.home.yaw; b.vel.set(0, 0, 0); b.yawRate = 0; b.rockAmp = 0; b.dents = 0; } relayout(null); };

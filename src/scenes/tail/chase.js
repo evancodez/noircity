@@ -578,7 +578,7 @@ export class Chase {
       this.phase = 'parked';
       // (the head turns out of the side window to the shed's doors as the
       // door opens: chapter VII begins at them)
-      if (G.controller.drive) Object.assign(G.controller.drive, { focus: new THREE.Vector3(PIER.gate.x, 3.2, PIER.gate.z), focusMax: 1.2, focusPitch: 0.3, focusFov: -2, focusRate: 1.7 });
+      if (G.controller.drive) Object.assign(G.controller.drive, { focus: new THREE.Vector3(PIER.gate.x, 3.2, PIER.gate.z), focusMax: 1.2, focusPitch: 0.14, focusFov: -2, focusRate: 1.7 });
       G.emit('tail:parked', {});
     }
   }

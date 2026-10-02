@@ -25,6 +25,23 @@ export default {
     const L = Object.create(Lamps.prototype);
     Object.assign(L, { world: stage, lamps: [], rng: stage.rng.fork(501), _poolTimer: 0, _fwd: new THREE.Vector3() });
     L.geo = L.postGeometry();
+    // [2nd owner] the city's posts in a lighter build (116 of them, every
+    // one drawn in the id, the reflection and the scene passes and two
+    // shadow maps: 3.5 k triangles each was 400 k a pass). The same profile,
+    // fewer sides and fewer turns along the arm and the scroll.
+    {
+      const base = lathe([
+        [0, 0], [0.3, 0], [0.3, 0.1], [0.25, 0.16], [0.23, 0.5], [0.17, 0.6], [0.17, 0.88], [0.13, 0.96],
+        [0.1, 1.04], [0.085, 2.6], [0.105, 2.64], [0.105, 2.74], [0.08, 2.78], [0.068, 4.9], [0.09, 4.95],
+        [0.09, 5.05], [0.065, 5.1], [0.06, 5.6], [0.075, 5.66], [0.04, 5.8], [0, 5.86],
+      ], 16);
+      const arm = tube([V3(0, 5.0, 0), V3(0, 5.55, 0), V3(0.1, 6.02, 0), V3(0.42, 6.3, 0), V3(0.9, 6.34, 0), V3(1.26, 6.2, 0), V3(1.46, 5.98, 0)], 0.042, 7, 40);
+      const sc = [];
+      for (let i = 0; i <= 28; i++) { const t = i / 28, a = Math.PI + t * Math.PI * 2.6, r = 0.3 * (1 - t * 0.78); sc.push(V3(0.36 + Math.cos(a) * r, 5.72 + Math.sin(a) * r * 0.9, 0)); }
+      const scroll = tube(sc, 0.016, 5, 44);
+      const shade = lathe([[0.03, 0.12], [0.07, 0.08], [0.12, 0.0], [0.24, -0.12], [0.36, -0.24], [0.43, -0.3], [0.44, -0.33], [0.41, -0.33]], 24).translate(1.46, 5.96, 0);
+      L.geo = { ...L.geo, iron: merge([base, arm, scroll]), shade };
+    }
     L.posts = [];
     const { M, scene } = stage;
     const post = (x, z, yaw, real = true) => {
