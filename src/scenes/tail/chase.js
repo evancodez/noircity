@@ -369,7 +369,20 @@ export class Chase {
     const tyre = zone === 'tyre' ? (lp.x > 0 ? (lp.z > 0 ? 'fr' : 'fl') : (lp.z > 0 ? 'rr' : 'rl')) : null;
     if (tyre) {
       const pullDir = tyre[1] === 'r' ? -1 : 1;
-      if (his.grip[tyre] > 0.5) {
+      const nick = H.nick || (H.nick = {});
+      if (his.grip[tyre] > 0.5 && !nick[tyre]) {
+        // [4th owner] the first round in a tyre: it hisses and goes soft -
+        // the quarter dips half way, a small pull; the next one there blows
+        // it (the critic's sloppy hand, aiming at the quarters, had two
+        // tyres in four hits and won first try every time)
+        nick[tyre] = 1;
+        H.nicks = (H.nicks || 0) + 1;
+        his.grip[tyre] = 0.78;
+        his.flat = his.flat || {}; his.flat[tyre] = 0.45;
+        his.pull = (his.pull || 0) + pullDir * 0.012;
+        G.sfx.play('hiss', his.pos, { dur: 1.6 }, { ref: 4 });
+        cost(HIT.nick, pullDir);
+      } else if (his.grip[tyre] > 0.5) {
         // a tyre: it goes with a bang, the car sags on it, pulls and slows;
         // two gone and he cannot hold it
         his.grip[tyre] = 0.32;
@@ -660,7 +673,7 @@ export class Chase {
     // a rim on the road: sparks
     if (his.flat && his.speedAbs > 3 && !his.frozen) {
       for (const [k, x, z] of [['fl', 1.55, -0.78], ['fr', 1.55, 0.78], ['rl', -1.55, -0.76], ['rr', -1.55, 0.76]]) {
-        if (!his.flat[k]) continue;
+        if (!(his.flat[k] >= 0.9)) continue;
         if (r.next() > 0.6) continue;
         const p = his.seat(_v.set(x, 0.05, z), new THREE.Vector3());
         G.fx.sparks.spawn({ pos: p, vel: new THREE.Vector3(r.gauss(), r.range(0.5, 2), r.gauss()).addScaledVector(his.vel, -0.25), life: r.range(0.15, 0.4), size: [0.01, 0.016], stretch: 0.05, col: [6, 6, 6], cell: 4, gravity: 9.8, ground: 0.02, fadeOut: 0.3 });

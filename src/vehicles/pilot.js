@@ -88,7 +88,9 @@ export class Pilot {
         // (in the corridor the path takes: its lateral offset at that range)
         const pa = P.at(Math.min(P.len, this.s + ax), this._b);
         const pz = (pa.x - v.pos.x) * sn + (pa.z - v.pos.z) * c;
-        if (Math.abs(az - pz) > 2.0) continue;
+        // ([C3 4th] the corridor where I am going now: out in a pass, the
+        // other lane - an oncoming car there was never 'ahead')
+        if (Math.abs(az - pz - (this.offNow || 0)) > 2.0) continue;
         if (ax < best) { best = ax; this.ahead = o; }
       }
       // [C3 4th] (a car coming the other way in my corridor - a pass that met
@@ -105,7 +107,11 @@ export class Pilot {
       // (stuck behind a slower car with the other lane clear ahead: out and
       // past it - a man who wants to be gone does)
       if (O.overtake) {
-        const slow = this.ahead && Math.max(0, this.ahead.vel.x * c - this.ahead.vel.z * sn) < sp - 1.5 && best < 18;
+        // ([C3 4th] slower than I mean to go, not than I am going: held to
+        // its pace behind it - a pass called off for a car coming the other
+        // way - he matched its speed and never passed it again; the bench
+        // saw him 14 s behind a slow car with the road clear)
+        const slow = this.ahead && Math.max(0, this.ahead.vel.x * c - this.ahead.vel.z * sn) < Math.max(sp, want) - 1.5 && best < 18;
         this.passT = slow ? (this.passT || 0) + dt : Math.max(0, (this.passT || 0) - dt * 0.5);
         if (this.passT > 0.6 && !this.passing) {
           let clear = true;
@@ -113,9 +119,14 @@ export class Pilot {
             if (o === v || o === this.ahead || !o.solid) continue;
             const ox = o.pos.x - v.pos.x, oz = o.pos.z - v.pos.z;
             const ax = ox * c - oz * sn, az = ox * sn + oz * c;
-            if (ax > -4 && ax < 45 && az < -0.5 && az > -5.5) { clear = false; break; }
+            // ([C3 4th] a car coming the other way is looked for further: the
+            // pass takes 3.5 s and it closes at both our speeds)
+            const far = Math.cos((o.yaw || 0) - v.yaw) < -0.5 ? 45 + 3.5 * Math.hypot(o.vel.x, o.vel.z) : 45;
+            if (ax > -4 && ax < far && az < -0.5 && az > -5.5) { clear = false; break; }
           }
-          if (clear) { this.passing = -3.2; this.passUntil = this.t + 3.5; }
+          // ([C3 4th] 2.9 m over, not 3.2: under the el on the river road the
+          // columns stand 3.9 m either side of the middle)
+          if (clear) { this.passing = -2.9; this.passUntil = this.t + 3.5; }
         }
         if (this.passing && this.t > this.passUntil && (!this.ahead || best > 10)) this.passing = 0;
         if (this.passing) { this.ahead = null; }

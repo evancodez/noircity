@@ -17,6 +17,8 @@ import { RIVER_LEN, riverPoint, riverFrame, PIER } from '../../stages/city/plan.
 // The routes as junctions (plan.GRAPH). Each leg ends at a decision (or the
 // river road): `near` is taken when I am within NEAR m, `far` otherwise.
 const NEAR = 38;
+// (where the el's columns begin over the river road, z)
+const EL_Z0 = -14;
 export const LEGS = [
   // 0: off the kerb up Pell Lane, east on Harbor St (wide), north up Cooper
   { name: 'pell', ids: ['pell.fifth', 'pell.harbor', 'cooper.harbor', 'cooper.clock'] },
@@ -122,6 +124,12 @@ export class His {
     // [3rd owner] a round that lands: he jerks the wheel off the line it came
     // from and runs on a lane over for a moment (the next is harder to land)
     if (this.swerveT > 0) { this.swerveT -= dt; P.offset = this.swerveDir * 2.0 * Math.min(1, this.swerveT / 0.5); } else if (P.offset) P.offset = 0;
+    // [4th owner] (under the el on the river road its columns stand 3.9 m
+    // either side of the middle, inside the lanes: his weave and swerve there
+    // are kept between them - the bench found him pinned on a column, out of
+    // the chase for half a minute; he crashes into one only with his hands
+    // gone)
+    if (this.state === 'river' && v.pos.z > EL_Z0) { P.o.wander = Math.min(P.o.wander, 0.6); P.offset = Math.max(-0.9, Math.min(0.9, P.offset || 0)); }
     P.drive(v, dt);
     if (this.jerkT > 0) { this.jerkT -= dt; I.steer = Math.max(-1, Math.min(1, I.steer + this.swerveDir * 0.45 * (this.jerkT / 0.28))); }
     // (near a leg's end, before its corner: the next leg decided by where I

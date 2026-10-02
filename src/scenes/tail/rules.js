@@ -9,7 +9,9 @@ export const RULES = {
 // [4th owner] what my rounds cost him (chase.js hisHit), and the ends they
 // make: his hold on the car (control) goes 1 .. 0, and at HIT.lose or under
 // he has lost it. Each way off the road is a thing he shows first:
-//   two tyres (one a side: the first sags that quarter and sparks the rim),
+//   two tyres gone (one a side; a tyre takes two rounds: the first and it
+//     hisses and goes soft, the quarter dipping half way; the second blows
+//     it - the quarter down, the rim sparking),
 //   the man three times (he ducks after the first and a round while he is
 //     down goes over him: wait for him to come up),
 //   the tank four times (a leak, smoke at two, thick at three, fire at four:
@@ -18,7 +20,7 @@ export const RULES = {
 // The critic, 2nd look: three hits anywhere (tyre 0.4 + rim 0.25 + tank 0.22)
 // finished him, sloppy aim won first try in 8 to 12 s.
 export const HIT = {
-  tyre: 0.2, rim: 0.06, man: [0.1, 0.2], tank: 0.08, body: 0.04,
+  nick: 0.08, tyre: 0.2, rim: 0.06, man: [0.1, 0.2], tank: 0.08, body: 0.04,
   tankSmoke: 2, tankFire: 4, fireT: 2.5,
   lose: 0.15,
 };

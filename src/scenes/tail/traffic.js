@@ -281,7 +281,11 @@ export class Traffic {
       // after a moment it pulls over toward its kerb and slows (as for my
       // horn) - in the way, never a wall (the clumsy hands lost him twice
       // stuck behind two slow cars on Canal St)
-      const onTail = ax < -1.5 && ax > -15 && Math.abs(az) < 2.6 && (my.vel.x * Math.cos(v.yaw) - my.vel.z * Math.sin(v.yaw)) > 1.5;
+      // ([4th owner] mine, not his between us: with him on its tail it
+      // crawled at the kerb in front of him and held him up)
+      const hx = C.his ? (C.his.pos.x - v.pos.x) * c - (C.his.pos.z - v.pos.z) * sn : 99, hz = C.his ? (C.his.pos.x - v.pos.x) * sn + (C.his.pos.z - v.pos.z) * c : 99;
+      const hisBetween = hx < -1 && hx > ax && Math.abs(hz) < 2.6;
+      const onTail = ax < -1.5 && ax > -15 && Math.abs(az) < 2.6 && !hisBetween && (my.vel.x * Math.cos(v.yaw) - my.vel.z * Math.sin(v.yaw)) > 1.5;
       car.tailT = onTail ? (car.tailT || 0) + dt : Math.max(0, (car.tailT || 0) - dt * 2);
       if (car.tailT > 1.4 && !(car.aside > 0)) { car.aside = 3.5; car.tailT = 0; if (this.rng.next() < 0.4) this.honk(car, 0.5); }
       // [3rd owner] (the critic: one facing me stopped 9 m off and waited 7 s
