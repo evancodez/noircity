@@ -1,0 +1,231 @@
+{
+ "about": "Critic C4: the street door pushed open after the bar: the leaf and me, frame by frame.",
+ "url": "/?mute=1&start=fight.ko",
+ "size": [
+  960,
+  600
+ ],
+ "out": "shots/critic/c4_push",
+ "steps": [
+  {
+   "until": "G.state === 'title' && !document.getElementById('title').classList.contains('hidden')",
+   "timeout": 30000
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]",
+   "taken": "G.state !== 'title'",
+   "retries": 5,
+   "every": 4000
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id==='fight' && G.scenes.beat==='ko' && N.controller.mode==='walk'",
+   "timeout": 60000
+  },
+  {
+   "wait": 1000
+  },
+  {
+   "walk": [
+    [
+     -12.2,
+     1.0
+    ],
+    [
+     -11.7,
+     0.6
+    ]
+   ],
+   "timeout": 20000,
+   "stop": false
+  },
+  {
+   "look": "(() => { const yw = Math.atan2(-(-10.400000 - G.eye.x), -(0.600000 - G.eye.z)); const pt = Math.atan2(1.050000 - G.eye.y, Math.hypot(-10.400000 - G.eye.x, 0.600000 - G.eye.z)); const d = Math.atan2(Math.sin(yw - N.controller.yaw), Math.cos(yw - N.controller.yaw)); return [Math.round(-d / N.controller.sensitivity), Math.round(-(pt - N.controller.pitch) / N.controller.sensitivity)]; })()",
+   "steps": 8
+  },
+  {
+   "wait": 400
+  },
+  {
+   "key": "KeyE"
+  },
+  {
+   "wait": 2200
+  },
+  {
+   "look": "(() => { const yw = Math.atan2(-(-10.400000 - G.eye.x), -(0.600000 - G.eye.z)); const pt = Math.atan2(1.600000 - G.eye.y, Math.hypot(-10.400000 - G.eye.x, 0.600000 - G.eye.z)); const d = Math.atan2(Math.sin(yw - N.controller.yaw), Math.cos(yw - N.controller.yaw)); return [Math.round(-d / N.controller.sensitivity), Math.round(-(pt - N.controller.pitch) / N.controller.sensitivity)]; })()",
+   "steps": 6
+  },
+  {
+   "wait": 300
+  },
+  {
+   "eval": "JSON.stringify({t:+G.time.toFixed(1),beat:G.scenes.beat,p:[+G.eye.x.toFixed(2),+G.eye.z.toFixed(2)],mode:N.controller.mode,msg:+G.hud.el.msg.style.opacity>0?G.hud.el.msg.textContent:'',prompt:G.hud.promptShown,say:G.hud.sayShown,obj:G.hud.objectiveText,door:(()=>{const d=G.stage.part('dinerFront').door;return {a:+(d.angle||0).toFixed(2),barred:d.barred,shut:d.shut}})(),hp:Math.round(G.health.hp),b:G.brawl.active?G.brawl.him.state:'off',warn:G.hud.warnText,sc:G.scenes.current&&G.scenes.current.id,inv:G.save.inventory.join(','),stills:!!(G.stills&&G.stills.active),yaw:+N.controller.yaw.toFixed(2)})"
+  },
+  {
+   "shot": "p0"
+  },
+  {
+   "down": "KeyW"
+  },
+  {
+   "until": "(window.__dr=window.__dr||[], window.__dr.push([+G.time.toFixed(2), +G.eye.x.toFixed(3), +G.eye.z.toFixed(3), +(G.stage.part('dinerFront').door.angle||0).toFixed(3)]), false)",
+   "poll": 25,
+   "timeout": 120,
+   "stop": false
+  },
+  {
+   "shot": "p01"
+  },
+  {
+   "until": "(window.__dr=window.__dr||[], window.__dr.push([+G.time.toFixed(2), +G.eye.x.toFixed(3), +G.eye.z.toFixed(3), +(G.stage.part('dinerFront').door.angle||0).toFixed(3)]), false)",
+   "poll": 25,
+   "timeout": 120,
+   "stop": false
+  },
+  {
+   "shot": "p02"
+  },
+  {
+   "until": "(window.__dr=window.__dr||[], window.__dr.push([+G.time.toFixed(2), +G.eye.x.toFixed(3), +G.eye.z.toFixed(3), +(G.stage.part('dinerFront').door.angle||0).toFixed(3)]), false)",
+   "poll": 25,
+   "timeout": 120,
+   "stop": false
+  },
+  {
+   "shot": "p03"
+  },
+  {
+   "until": "(window.__dr=window.__dr||[], window.__dr.push([+G.time.toFixed(2), +G.eye.x.toFixed(3), +G.eye.z.toFixed(3), +(G.stage.part('dinerFront').door.angle||0).toFixed(3)]), false)",
+   "poll": 25,
+   "timeout": 120,
+   "stop": false
+  },
+  {
+   "shot": "p04"
+  },
+  {
+   "until": "(window.__dr=window.__dr||[], window.__dr.push([+G.time.toFixed(2), +G.eye.x.toFixed(3), +G.eye.z.toFixed(3), +(G.stage.part('dinerFront').door.angle||0).toFixed(3)]), false)",
+   "poll": 25,
+   "timeout": 120,
+   "stop": false
+  },
+  {
+   "shot": "p05"
+  },
+  {
+   "until": "(window.__dr=window.__dr||[], window.__dr.push([+G.time.toFixed(2), +G.eye.x.toFixed(3), +G.eye.z.toFixed(3), +(G.stage.part('dinerFront').door.angle||0).toFixed(3)]), false)",
+   "poll": 25,
+   "timeout": 120,
+   "stop": false
+  },
+  {
+   "shot": "p06"
+  },
+  {
+   "until": "(window.__dr=window.__dr||[], window.__dr.push([+G.time.toFixed(2), +G.eye.x.toFixed(3), +G.eye.z.toFixed(3), +(G.stage.part('dinerFront').door.angle||0).toFixed(3)]), false)",
+   "poll": 25,
+   "timeout": 120,
+   "stop": false
+  },
+  {
+   "shot": "p07"
+  },
+  {
+   "until": "(window.__dr=window.__dr||[], window.__dr.push([+G.time.toFixed(2), +G.eye.x.toFixed(3), +G.eye.z.toFixed(3), +(G.stage.part('dinerFront').door.angle||0).toFixed(3)]), false)",
+   "poll": 25,
+   "timeout": 120,
+   "stop": false
+  },
+  {
+   "shot": "p08"
+  },
+  {
+   "until": "(window.__dr=window.__dr||[], window.__dr.push([+G.time.toFixed(2), +G.eye.x.toFixed(3), +G.eye.z.toFixed(3), +(G.stage.part('dinerFront').door.angle||0).toFixed(3)]), false)",
+   "poll": 25,
+   "timeout": 120,
+   "stop": false
+  },
+  {
+   "shot": "p09"
+  },
+  {
+   "until": "(window.__dr=window.__dr||[], window.__dr.push([+G.time.toFixed(2), +G.eye.x.toFixed(3), +G.eye.z.toFixed(3), +(G.stage.part('dinerFront').door.angle||0).toFixed(3)]), false)",
+   "poll": 25,
+   "timeout": 120,
+   "stop": false
+  },
+  {
+   "shot": "p10"
+  },
+  {
+   "until": "(window.__dr=window.__dr||[], window.__dr.push([+G.time.toFixed(2), +G.eye.x.toFixed(3), +G.eye.z.toFixed(3), +(G.stage.part('dinerFront').door.angle||0).toFixed(3)]), false)",
+   "poll": 25,
+   "timeout": 120,
+   "stop": false
+  },
+  {
+   "shot": "p11"
+  },
+  {
+   "until": "(window.__dr=window.__dr||[], window.__dr.push([+G.time.toFixed(2), +G.eye.x.toFixed(3), +G.eye.z.toFixed(3), +(G.stage.part('dinerFront').door.angle||0).toFixed(3)]), false)",
+   "poll": 25,
+   "timeout": 120,
+   "stop": false
+  },
+  {
+   "shot": "p12"
+  },
+  {
+   "until": "(window.__dr=window.__dr||[], window.__dr.push([+G.time.toFixed(2), +G.eye.x.toFixed(3), +G.eye.z.toFixed(3), +(G.stage.part('dinerFront').door.angle||0).toFixed(3)]), false)",
+   "poll": 25,
+   "timeout": 120,
+   "stop": false
+  },
+  {
+   "shot": "p13"
+  },
+  {
+   "until": "(window.__dr=window.__dr||[], window.__dr.push([+G.time.toFixed(2), +G.eye.x.toFixed(3), +G.eye.z.toFixed(3), +(G.stage.part('dinerFront').door.angle||0).toFixed(3)]), false)",
+   "poll": 25,
+   "timeout": 120,
+   "stop": false
+  },
+  {
+   "shot": "p14"
+  },
+  {
+   "up": "KeyW"
+  },
+  {
+   "until": "(window.__dr=window.__dr||[], window.__dr.push([+G.time.toFixed(2), +G.eye.x.toFixed(3), +G.eye.z.toFixed(3), +(G.stage.part('dinerFront').door.angle||0).toFixed(3)]), false)",
+   "poll": 30,
+   "timeout": 1500,
+   "stop": false
+  },
+  {
+   "eval": "JSON.stringify(window.__dr)"
+  },
+  {
+   "eval": "JSON.stringify({t:+G.time.toFixed(1),beat:G.scenes.beat,p:[+G.eye.x.toFixed(2),+G.eye.z.toFixed(2)],mode:N.controller.mode,msg:+G.hud.el.msg.style.opacity>0?G.hud.el.msg.textContent:'',prompt:G.hud.promptShown,say:G.hud.sayShown,obj:G.hud.objectiveText,door:(()=>{const d=G.stage.part('dinerFront').door;return {a:+(d.angle||0).toFixed(2),barred:d.barred,shut:d.shut}})(),hp:Math.round(G.health.hp),b:G.brawl.active?G.brawl.him.state:'off',warn:G.hud.warnText,sc:G.scenes.current&&G.scenes.current.id,inv:G.save.inventory.join(','),stills:!!(G.stills&&G.stills.active),yaw:+N.controller.yaw.toFixed(2)})"
+  },
+  {
+   "look": [
+    1500,
+    0
+   ],
+   "steps": 10
+  },
+  {
+   "wait": 500
+  },
+  {
+   "shot": "p_behind"
+  },
+  {
+   "eval": "JSON.stringify({t:+G.time.toFixed(1),beat:G.scenes.beat,p:[+G.eye.x.toFixed(2),+G.eye.z.toFixed(2)],mode:N.controller.mode,msg:+G.hud.el.msg.style.opacity>0?G.hud.el.msg.textContent:'',prompt:G.hud.promptShown,say:G.hud.sayShown,obj:G.hud.objectiveText,door:(()=>{const d=G.stage.part('dinerFront').door;return {a:+(d.angle||0).toFixed(2),barred:d.barred,shut:d.shut}})(),hp:Math.round(G.health.hp),b:G.brawl.active?G.brawl.him.state:'off',warn:G.hud.warnText,sc:G.scenes.current&&G.scenes.current.id,inv:G.save.inventory.join(','),stills:!!(G.stills&&G.stills.active),yaw:+N.controller.yaw.toFixed(2)})"
+  }
+ ]
+}

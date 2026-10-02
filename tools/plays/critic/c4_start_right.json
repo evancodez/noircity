@@ -1,0 +1,350 @@
+{
+ "about": "Critic C4: the room clearing from my eye, look [500, 0]; positions every 40 ms.",
+ "url": "/?mute=1&start=fight",
+ "size": [
+  960,
+  600
+ ],
+ "out": "shots/critic/c4_start_right",
+ "steps": [
+  {
+   "until": "G.state === 'title' && !document.getElementById('title').classList.contains('hidden')",
+   "timeout": 30000
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]",
+   "taken": "G.state !== 'title'",
+   "retries": 5,
+   "every": 4000
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id==='fight'",
+   "timeout": 30000
+  },
+  {
+   "eval": "JSON.stringify({t:+G.time.toFixed(1),sc:G.scenes.current&&G.scenes.current.id,beat:G.scenes.beat,st:G.state,obj:G.hud.objectiveText,prompt:G.hud.promptShown,say:G.hud.sayShown,warn:G.hud.warnText,teach:G.hud.kit.teachCur&&G.hud.kit.teachCur.text,card:G.brawl&&G.brawl._cards&&G.brawl._cards.shownCard,flash:G.brawl&&G.brawl._cards&&G.brawl._cards.shownFlash,ts:+(G.timeScale||1).toFixed(2),b:G.brawl&&G.brawl.active?{r:G.brawl.round,me:G.brawl.me.act,his:G.brawl.him.state,clip:G.brawl.him.clip,cue:G.brawl.cue&&!G.brawl.cue.done?G.brawl.cue.side:null,les:G.brawl.lesson&&G.brawl.lesson.kind,downs:G.brawl.stats.downs,hp:Math.round(G.health.hp),hishp:Math.round(G.brawl.him.hp)}:null,p:[+N.controller.pos.x.toFixed(2),+N.controller.pos.z.toFixed(2)],mode:N.controller.mode,fails:G.fails&&G.fails(),inv:G.save.inventory.join(',')})"
+  },
+  {
+   "look": [
+    500,
+    0
+   ],
+   "steps": 10
+  },
+  {
+   "shot": "s00"
+  },
+  {
+   "until": "(window.__fr=window.__fr||[], window.__fr.push({t:+G.time.toFixed(2),me:[+G.eye.x.toFixed(2),+G.eye.z.toFixed(2)],yaw:+N.controller.yaw.toFixed(2),mode:N.controller.mode,cast:G.scenes.ctx.cast.list.map(c=>[c.name,+c.pos.x.toFixed(2),+c.pos.z.toFixed(2),c.state])}), false)",
+   "poll": 40,
+   "timeout": 300,
+   "stop": false
+  },
+  {
+   "shot": "s01"
+  },
+  {
+   "until": "(window.__fr=window.__fr||[], window.__fr.push({t:+G.time.toFixed(2),me:[+G.eye.x.toFixed(2),+G.eye.z.toFixed(2)],yaw:+N.controller.yaw.toFixed(2),mode:N.controller.mode,cast:G.scenes.ctx.cast.list.map(c=>[c.name,+c.pos.x.toFixed(2),+c.pos.z.toFixed(2),c.state])}), false)",
+   "poll": 40,
+   "timeout": 300,
+   "stop": false
+  },
+  {
+   "shot": "s02"
+  },
+  {
+   "until": "(window.__fr=window.__fr||[], window.__fr.push({t:+G.time.toFixed(2),me:[+G.eye.x.toFixed(2),+G.eye.z.toFixed(2)],yaw:+N.controller.yaw.toFixed(2),mode:N.controller.mode,cast:G.scenes.ctx.cast.list.map(c=>[c.name,+c.pos.x.toFixed(2),+c.pos.z.toFixed(2),c.state])}), false)",
+   "poll": 40,
+   "timeout": 300,
+   "stop": false
+  },
+  {
+   "shot": "s03"
+  },
+  {
+   "until": "(window.__fr=window.__fr||[], window.__fr.push({t:+G.time.toFixed(2),me:[+G.eye.x.toFixed(2),+G.eye.z.toFixed(2)],yaw:+N.controller.yaw.toFixed(2),mode:N.controller.mode,cast:G.scenes.ctx.cast.list.map(c=>[c.name,+c.pos.x.toFixed(2),+c.pos.z.toFixed(2),c.state])}), false)",
+   "poll": 40,
+   "timeout": 300,
+   "stop": false
+  },
+  {
+   "shot": "s04"
+  },
+  {
+   "until": "(window.__fr=window.__fr||[], window.__fr.push({t:+G.time.toFixed(2),me:[+G.eye.x.toFixed(2),+G.eye.z.toFixed(2)],yaw:+N.controller.yaw.toFixed(2),mode:N.controller.mode,cast:G.scenes.ctx.cast.list.map(c=>[c.name,+c.pos.x.toFixed(2),+c.pos.z.toFixed(2),c.state])}), false)",
+   "poll": 40,
+   "timeout": 300,
+   "stop": false
+  },
+  {
+   "shot": "s05"
+  },
+  {
+   "until": "(window.__fr=window.__fr||[], window.__fr.push({t:+G.time.toFixed(2),me:[+G.eye.x.toFixed(2),+G.eye.z.toFixed(2)],yaw:+N.controller.yaw.toFixed(2),mode:N.controller.mode,cast:G.scenes.ctx.cast.list.map(c=>[c.name,+c.pos.x.toFixed(2),+c.pos.z.toFixed(2),c.state])}), false)",
+   "poll": 40,
+   "timeout": 300,
+   "stop": false
+  },
+  {
+   "shot": "s06"
+  },
+  {
+   "until": "(window.__fr=window.__fr||[], window.__fr.push({t:+G.time.toFixed(2),me:[+G.eye.x.toFixed(2),+G.eye.z.toFixed(2)],yaw:+N.controller.yaw.toFixed(2),mode:N.controller.mode,cast:G.scenes.ctx.cast.list.map(c=>[c.name,+c.pos.x.toFixed(2),+c.pos.z.toFixed(2),c.state])}), false)",
+   "poll": 40,
+   "timeout": 300,
+   "stop": false
+  },
+  {
+   "shot": "s07"
+  },
+  {
+   "until": "(window.__fr=window.__fr||[], window.__fr.push({t:+G.time.toFixed(2),me:[+G.eye.x.toFixed(2),+G.eye.z.toFixed(2)],yaw:+N.controller.yaw.toFixed(2),mode:N.controller.mode,cast:G.scenes.ctx.cast.list.map(c=>[c.name,+c.pos.x.toFixed(2),+c.pos.z.toFixed(2),c.state])}), false)",
+   "poll": 40,
+   "timeout": 300,
+   "stop": false
+  },
+  {
+   "shot": "s08"
+  },
+  {
+   "until": "(window.__fr=window.__fr||[], window.__fr.push({t:+G.time.toFixed(2),me:[+G.eye.x.toFixed(2),+G.eye.z.toFixed(2)],yaw:+N.controller.yaw.toFixed(2),mode:N.controller.mode,cast:G.scenes.ctx.cast.list.map(c=>[c.name,+c.pos.x.toFixed(2),+c.pos.z.toFixed(2),c.state])}), false)",
+   "poll": 40,
+   "timeout": 300,
+   "stop": false
+  },
+  {
+   "shot": "s09"
+  },
+  {
+   "until": "(window.__fr=window.__fr||[], window.__fr.push({t:+G.time.toFixed(2),me:[+G.eye.x.toFixed(2),+G.eye.z.toFixed(2)],yaw:+N.controller.yaw.toFixed(2),mode:N.controller.mode,cast:G.scenes.ctx.cast.list.map(c=>[c.name,+c.pos.x.toFixed(2),+c.pos.z.toFixed(2),c.state])}), false)",
+   "poll": 40,
+   "timeout": 300,
+   "stop": false
+  },
+  {
+   "shot": "s10"
+  },
+  {
+   "until": "(window.__fr=window.__fr||[], window.__fr.push({t:+G.time.toFixed(2),me:[+G.eye.x.toFixed(2),+G.eye.z.toFixed(2)],yaw:+N.controller.yaw.toFixed(2),mode:N.controller.mode,cast:G.scenes.ctx.cast.list.map(c=>[c.name,+c.pos.x.toFixed(2),+c.pos.z.toFixed(2),c.state])}), false)",
+   "poll": 40,
+   "timeout": 300,
+   "stop": false
+  },
+  {
+   "shot": "s11"
+  },
+  {
+   "until": "(window.__fr=window.__fr||[], window.__fr.push({t:+G.time.toFixed(2),me:[+G.eye.x.toFixed(2),+G.eye.z.toFixed(2)],yaw:+N.controller.yaw.toFixed(2),mode:N.controller.mode,cast:G.scenes.ctx.cast.list.map(c=>[c.name,+c.pos.x.toFixed(2),+c.pos.z.toFixed(2),c.state])}), false)",
+   "poll": 40,
+   "timeout": 300,
+   "stop": false
+  },
+  {
+   "shot": "s12"
+  },
+  {
+   "until": "(window.__fr=window.__fr||[], window.__fr.push({t:+G.time.toFixed(2),me:[+G.eye.x.toFixed(2),+G.eye.z.toFixed(2)],yaw:+N.controller.yaw.toFixed(2),mode:N.controller.mode,cast:G.scenes.ctx.cast.list.map(c=>[c.name,+c.pos.x.toFixed(2),+c.pos.z.toFixed(2),c.state])}), false)",
+   "poll": 40,
+   "timeout": 300,
+   "stop": false
+  },
+  {
+   "shot": "s13"
+  },
+  {
+   "until": "(window.__fr=window.__fr||[], window.__fr.push({t:+G.time.toFixed(2),me:[+G.eye.x.toFixed(2),+G.eye.z.toFixed(2)],yaw:+N.controller.yaw.toFixed(2),mode:N.controller.mode,cast:G.scenes.ctx.cast.list.map(c=>[c.name,+c.pos.x.toFixed(2),+c.pos.z.toFixed(2),c.state])}), false)",
+   "poll": 40,
+   "timeout": 300,
+   "stop": false
+  },
+  {
+   "shot": "s14"
+  },
+  {
+   "until": "(window.__fr=window.__fr||[], window.__fr.push({t:+G.time.toFixed(2),me:[+G.eye.x.toFixed(2),+G.eye.z.toFixed(2)],yaw:+N.controller.yaw.toFixed(2),mode:N.controller.mode,cast:G.scenes.ctx.cast.list.map(c=>[c.name,+c.pos.x.toFixed(2),+c.pos.z.toFixed(2),c.state])}), false)",
+   "poll": 40,
+   "timeout": 300,
+   "stop": false
+  },
+  {
+   "shot": "s15"
+  },
+  {
+   "until": "(window.__fr=window.__fr||[], window.__fr.push({t:+G.time.toFixed(2),me:[+G.eye.x.toFixed(2),+G.eye.z.toFixed(2)],yaw:+N.controller.yaw.toFixed(2),mode:N.controller.mode,cast:G.scenes.ctx.cast.list.map(c=>[c.name,+c.pos.x.toFixed(2),+c.pos.z.toFixed(2),c.state])}), false)",
+   "poll": 40,
+   "timeout": 300,
+   "stop": false
+  },
+  {
+   "shot": "s16"
+  },
+  {
+   "until": "(window.__fr=window.__fr||[], window.__fr.push({t:+G.time.toFixed(2),me:[+G.eye.x.toFixed(2),+G.eye.z.toFixed(2)],yaw:+N.controller.yaw.toFixed(2),mode:N.controller.mode,cast:G.scenes.ctx.cast.list.map(c=>[c.name,+c.pos.x.toFixed(2),+c.pos.z.toFixed(2),c.state])}), false)",
+   "poll": 40,
+   "timeout": 300,
+   "stop": false
+  },
+  {
+   "shot": "s17"
+  },
+  {
+   "until": "(window.__fr=window.__fr||[], window.__fr.push({t:+G.time.toFixed(2),me:[+G.eye.x.toFixed(2),+G.eye.z.toFixed(2)],yaw:+N.controller.yaw.toFixed(2),mode:N.controller.mode,cast:G.scenes.ctx.cast.list.map(c=>[c.name,+c.pos.x.toFixed(2),+c.pos.z.toFixed(2),c.state])}), false)",
+   "poll": 40,
+   "timeout": 300,
+   "stop": false
+  },
+  {
+   "shot": "s18"
+  },
+  {
+   "until": "(window.__fr=window.__fr||[], window.__fr.push({t:+G.time.toFixed(2),me:[+G.eye.x.toFixed(2),+G.eye.z.toFixed(2)],yaw:+N.controller.yaw.toFixed(2),mode:N.controller.mode,cast:G.scenes.ctx.cast.list.map(c=>[c.name,+c.pos.x.toFixed(2),+c.pos.z.toFixed(2),c.state])}), false)",
+   "poll": 40,
+   "timeout": 300,
+   "stop": false
+  },
+  {
+   "shot": "s19"
+  },
+  {
+   "until": "(window.__fr=window.__fr||[], window.__fr.push({t:+G.time.toFixed(2),me:[+G.eye.x.toFixed(2),+G.eye.z.toFixed(2)],yaw:+N.controller.yaw.toFixed(2),mode:N.controller.mode,cast:G.scenes.ctx.cast.list.map(c=>[c.name,+c.pos.x.toFixed(2),+c.pos.z.toFixed(2),c.state])}), false)",
+   "poll": 40,
+   "timeout": 300,
+   "stop": false
+  },
+  {
+   "shot": "s20"
+  },
+  {
+   "until": "(window.__fr=window.__fr||[], window.__fr.push({t:+G.time.toFixed(2),me:[+G.eye.x.toFixed(2),+G.eye.z.toFixed(2)],yaw:+N.controller.yaw.toFixed(2),mode:N.controller.mode,cast:G.scenes.ctx.cast.list.map(c=>[c.name,+c.pos.x.toFixed(2),+c.pos.z.toFixed(2),c.state])}), false)",
+   "poll": 40,
+   "timeout": 300,
+   "stop": false
+  },
+  {
+   "shot": "s21"
+  },
+  {
+   "until": "(window.__fr=window.__fr||[], window.__fr.push({t:+G.time.toFixed(2),me:[+G.eye.x.toFixed(2),+G.eye.z.toFixed(2)],yaw:+N.controller.yaw.toFixed(2),mode:N.controller.mode,cast:G.scenes.ctx.cast.list.map(c=>[c.name,+c.pos.x.toFixed(2),+c.pos.z.toFixed(2),c.state])}), false)",
+   "poll": 40,
+   "timeout": 300,
+   "stop": false
+  },
+  {
+   "shot": "s22"
+  },
+  {
+   "until": "(window.__fr=window.__fr||[], window.__fr.push({t:+G.time.toFixed(2),me:[+G.eye.x.toFixed(2),+G.eye.z.toFixed(2)],yaw:+N.controller.yaw.toFixed(2),mode:N.controller.mode,cast:G.scenes.ctx.cast.list.map(c=>[c.name,+c.pos.x.toFixed(2),+c.pos.z.toFixed(2),c.state])}), false)",
+   "poll": 40,
+   "timeout": 300,
+   "stop": false
+  },
+  {
+   "shot": "s23"
+  },
+  {
+   "until": "(window.__fr=window.__fr||[], window.__fr.push({t:+G.time.toFixed(2),me:[+G.eye.x.toFixed(2),+G.eye.z.toFixed(2)],yaw:+N.controller.yaw.toFixed(2),mode:N.controller.mode,cast:G.scenes.ctx.cast.list.map(c=>[c.name,+c.pos.x.toFixed(2),+c.pos.z.toFixed(2),c.state])}), false)",
+   "poll": 40,
+   "timeout": 300,
+   "stop": false
+  },
+  {
+   "shot": "s24"
+  },
+  {
+   "until": "(window.__fr=window.__fr||[], window.__fr.push({t:+G.time.toFixed(2),me:[+G.eye.x.toFixed(2),+G.eye.z.toFixed(2)],yaw:+N.controller.yaw.toFixed(2),mode:N.controller.mode,cast:G.scenes.ctx.cast.list.map(c=>[c.name,+c.pos.x.toFixed(2),+c.pos.z.toFixed(2),c.state])}), false)",
+   "poll": 40,
+   "timeout": 300,
+   "stop": false
+  },
+  {
+   "shot": "s25"
+  },
+  {
+   "until": "(window.__fr=window.__fr||[], window.__fr.push({t:+G.time.toFixed(2),me:[+G.eye.x.toFixed(2),+G.eye.z.toFixed(2)],yaw:+N.controller.yaw.toFixed(2),mode:N.controller.mode,cast:G.scenes.ctx.cast.list.map(c=>[c.name,+c.pos.x.toFixed(2),+c.pos.z.toFixed(2),c.state])}), false)",
+   "poll": 40,
+   "timeout": 300,
+   "stop": false
+  },
+  {
+   "shot": "s26"
+  },
+  {
+   "until": "(window.__fr=window.__fr||[], window.__fr.push({t:+G.time.toFixed(2),me:[+G.eye.x.toFixed(2),+G.eye.z.toFixed(2)],yaw:+N.controller.yaw.toFixed(2),mode:N.controller.mode,cast:G.scenes.ctx.cast.list.map(c=>[c.name,+c.pos.x.toFixed(2),+c.pos.z.toFixed(2),c.state])}), false)",
+   "poll": 40,
+   "timeout": 300,
+   "stop": false
+  },
+  {
+   "shot": "s27"
+  },
+  {
+   "until": "(window.__fr=window.__fr||[], window.__fr.push({t:+G.time.toFixed(2),me:[+G.eye.x.toFixed(2),+G.eye.z.toFixed(2)],yaw:+N.controller.yaw.toFixed(2),mode:N.controller.mode,cast:G.scenes.ctx.cast.list.map(c=>[c.name,+c.pos.x.toFixed(2),+c.pos.z.toFixed(2),c.state])}), false)",
+   "poll": 40,
+   "timeout": 300,
+   "stop": false
+  },
+  {
+   "shot": "s28"
+  },
+  {
+   "until": "(window.__fr=window.__fr||[], window.__fr.push({t:+G.time.toFixed(2),me:[+G.eye.x.toFixed(2),+G.eye.z.toFixed(2)],yaw:+N.controller.yaw.toFixed(2),mode:N.controller.mode,cast:G.scenes.ctx.cast.list.map(c=>[c.name,+c.pos.x.toFixed(2),+c.pos.z.toFixed(2),c.state])}), false)",
+   "poll": 40,
+   "timeout": 300,
+   "stop": false
+  },
+  {
+   "shot": "s29"
+  },
+  {
+   "until": "(window.__fr=window.__fr||[], window.__fr.push({t:+G.time.toFixed(2),me:[+G.eye.x.toFixed(2),+G.eye.z.toFixed(2)],yaw:+N.controller.yaw.toFixed(2),mode:N.controller.mode,cast:G.scenes.ctx.cast.list.map(c=>[c.name,+c.pos.x.toFixed(2),+c.pos.z.toFixed(2),c.state])}), false)",
+   "poll": 40,
+   "timeout": 300,
+   "stop": false
+  },
+  {
+   "shot": "s30"
+  },
+  {
+   "until": "(window.__fr=window.__fr||[], window.__fr.push({t:+G.time.toFixed(2),me:[+G.eye.x.toFixed(2),+G.eye.z.toFixed(2)],yaw:+N.controller.yaw.toFixed(2),mode:N.controller.mode,cast:G.scenes.ctx.cast.list.map(c=>[c.name,+c.pos.x.toFixed(2),+c.pos.z.toFixed(2),c.state])}), false)",
+   "poll": 40,
+   "timeout": 300,
+   "stop": false
+  },
+  {
+   "shot": "s31"
+  },
+  {
+   "until": "(window.__fr=window.__fr||[], window.__fr.push({t:+G.time.toFixed(2),me:[+G.eye.x.toFixed(2),+G.eye.z.toFixed(2)],yaw:+N.controller.yaw.toFixed(2),mode:N.controller.mode,cast:G.scenes.ctx.cast.list.map(c=>[c.name,+c.pos.x.toFixed(2),+c.pos.z.toFixed(2),c.state])}), false)",
+   "poll": 40,
+   "timeout": 300,
+   "stop": false
+  },
+  {
+   "shot": "s32"
+  },
+  {
+   "until": "(window.__fr=window.__fr||[], window.__fr.push({t:+G.time.toFixed(2),me:[+G.eye.x.toFixed(2),+G.eye.z.toFixed(2)],yaw:+N.controller.yaw.toFixed(2),mode:N.controller.mode,cast:G.scenes.ctx.cast.list.map(c=>[c.name,+c.pos.x.toFixed(2),+c.pos.z.toFixed(2),c.state])}), false)",
+   "poll": 40,
+   "timeout": 300,
+   "stop": false
+  },
+  {
+   "shot": "s33"
+  },
+  {
+   "until": "(window.__fr=window.__fr||[], window.__fr.push({t:+G.time.toFixed(2),me:[+G.eye.x.toFixed(2),+G.eye.z.toFixed(2)],yaw:+N.controller.yaw.toFixed(2),mode:N.controller.mode,cast:G.scenes.ctx.cast.list.map(c=>[c.name,+c.pos.x.toFixed(2),+c.pos.z.toFixed(2),c.state])}), false)",
+   "poll": 40,
+   "timeout": 300,
+   "stop": false
+  },
+  {
+   "eval": "JSON.stringify({t:+G.time.toFixed(1),sc:G.scenes.current&&G.scenes.current.id,beat:G.scenes.beat,st:G.state,obj:G.hud.objectiveText,prompt:G.hud.promptShown,say:G.hud.sayShown,warn:G.hud.warnText,teach:G.hud.kit.teachCur&&G.hud.kit.teachCur.text,card:G.brawl&&G.brawl._cards&&G.brawl._cards.shownCard,flash:G.brawl&&G.brawl._cards&&G.brawl._cards.shownFlash,ts:+(G.timeScale||1).toFixed(2),b:G.brawl&&G.brawl.active?{r:G.brawl.round,me:G.brawl.me.act,his:G.brawl.him.state,clip:G.brawl.him.clip,cue:G.brawl.cue&&!G.brawl.cue.done?G.brawl.cue.side:null,les:G.brawl.lesson&&G.brawl.lesson.kind,downs:G.brawl.stats.downs,hp:Math.round(G.health.hp),hishp:Math.round(G.brawl.him.hp)}:null,p:[+N.controller.pos.x.toFixed(2),+N.controller.pos.z.toFixed(2)],mode:N.controller.mode,fails:G.fails&&G.fails(),inv:G.save.inventory.join(',')})"
+  },
+  {
+   "eval": "JSON.stringify(window.__fr)"
+  }
+ ]
+}

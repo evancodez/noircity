@@ -1,0 +1,143 @@
+{
+ "about": "Critic C4: a held punch from the first lesson card: the jab, the wind-up, the release.",
+ "url": "/?mute=1&start=fight",
+ "size": [
+  960,
+  600
+ ],
+ "out": "shots/critic/c4_heavy",
+ "steps": [
+  {
+   "until": "G.state === 'title' && !document.getElementById('title').classList.contains('hidden')",
+   "timeout": 30000
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]",
+   "taken": "G.state !== 'title'",
+   "retries": 5,
+   "every": 4000
+  },
+  {
+   "until": "G.scenes.current && G.brawl && G.brawl.active && !!G.brawl.lesson",
+   "timeout": 60000
+  },
+  {
+   "wait": 600
+  },
+  {
+   "until": "Math.hypot(G.brawl.c.pos.x-G.eye.x,G.brawl.c.pos.z-G.eye.z) < 1.5 || (document.dispatchEvent(new KeyboardEvent('keydown',{code:'KeyW'})), false)",
+   "timeout": 100,
+   "stop": false
+  },
+  {
+   "eval": "JSON.stringify({t:+G.time.toFixed(2),me:G.brawl.me.act,lv:G.brawl.me.lvShown,his:G.brawl.him.state,hp:Math.round(G.brawl.him.hp),d:+Math.hypot(G.brawl.c.pos.x-G.eye.x,G.brawl.c.pos.z-G.eye.z).toFixed(2)})"
+  },
+  {
+   "mouse": "down",
+   "button": "left"
+  },
+  {
+   "shot": "h00"
+  },
+  {
+   "eval": "JSON.stringify({t:+G.time.toFixed(2),me:G.brawl.me.act,lv:G.brawl.me.lvShown,his:G.brawl.him.state,hp:Math.round(G.brawl.him.hp),d:+Math.hypot(G.brawl.c.pos.x-G.eye.x,G.brawl.c.pos.z-G.eye.z).toFixed(2)})"
+  },
+  {
+   "shot": "h01"
+  },
+  {
+   "eval": "JSON.stringify({t:+G.time.toFixed(2),me:G.brawl.me.act,lv:G.brawl.me.lvShown,his:G.brawl.him.state,hp:Math.round(G.brawl.him.hp),d:+Math.hypot(G.brawl.c.pos.x-G.eye.x,G.brawl.c.pos.z-G.eye.z).toFixed(2)})"
+  },
+  {
+   "shot": "h02"
+  },
+  {
+   "eval": "JSON.stringify({t:+G.time.toFixed(2),me:G.brawl.me.act,lv:G.brawl.me.lvShown,his:G.brawl.him.state,hp:Math.round(G.brawl.him.hp),d:+Math.hypot(G.brawl.c.pos.x-G.eye.x,G.brawl.c.pos.z-G.eye.z).toFixed(2)})"
+  },
+  {
+   "shot": "h03"
+  },
+  {
+   "eval": "JSON.stringify({t:+G.time.toFixed(2),me:G.brawl.me.act,lv:G.brawl.me.lvShown,his:G.brawl.him.state,hp:Math.round(G.brawl.him.hp),d:+Math.hypot(G.brawl.c.pos.x-G.eye.x,G.brawl.c.pos.z-G.eye.z).toFixed(2)})"
+  },
+  {
+   "shot": "h04"
+  },
+  {
+   "eval": "JSON.stringify({t:+G.time.toFixed(2),me:G.brawl.me.act,lv:G.brawl.me.lvShown,his:G.brawl.him.state,hp:Math.round(G.brawl.him.hp),d:+Math.hypot(G.brawl.c.pos.x-G.eye.x,G.brawl.c.pos.z-G.eye.z).toFixed(2)})"
+  },
+  {
+   "shot": "h05"
+  },
+  {
+   "eval": "JSON.stringify({t:+G.time.toFixed(2),me:G.brawl.me.act,lv:G.brawl.me.lvShown,his:G.brawl.him.state,hp:Math.round(G.brawl.him.hp),d:+Math.hypot(G.brawl.c.pos.x-G.eye.x,G.brawl.c.pos.z-G.eye.z).toFixed(2)})"
+  },
+  {
+   "shot": "h06"
+  },
+  {
+   "eval": "JSON.stringify({t:+G.time.toFixed(2),me:G.brawl.me.act,lv:G.brawl.me.lvShown,his:G.brawl.him.state,hp:Math.round(G.brawl.him.hp),d:+Math.hypot(G.brawl.c.pos.x-G.eye.x,G.brawl.c.pos.z-G.eye.z).toFixed(2)})"
+  },
+  {
+   "shot": "h07"
+  },
+  {
+   "eval": "JSON.stringify({t:+G.time.toFixed(2),me:G.brawl.me.act,lv:G.brawl.me.lvShown,his:G.brawl.him.state,hp:Math.round(G.brawl.him.hp),d:+Math.hypot(G.brawl.c.pos.x-G.eye.x,G.brawl.c.pos.z-G.eye.z).toFixed(2)})"
+  },
+  {
+   "shot": "h08"
+  },
+  {
+   "eval": "JSON.stringify({t:+G.time.toFixed(2),me:G.brawl.me.act,lv:G.brawl.me.lvShown,his:G.brawl.him.state,hp:Math.round(G.brawl.him.hp),d:+Math.hypot(G.brawl.c.pos.x-G.eye.x,G.brawl.c.pos.z-G.eye.z).toFixed(2)})"
+  },
+  {
+   "shot": "h09"
+  },
+  {
+   "eval": "JSON.stringify({t:+G.time.toFixed(2),me:G.brawl.me.act,lv:G.brawl.me.lvShown,his:G.brawl.him.state,hp:Math.round(G.brawl.him.hp),d:+Math.hypot(G.brawl.c.pos.x-G.eye.x,G.brawl.c.pos.z-G.eye.z).toFixed(2)})"
+  },
+  {
+   "mouse": "up",
+   "button": "left"
+  },
+  {
+   "shot": "h10_rel"
+  },
+  {
+   "eval": "JSON.stringify({t:+G.time.toFixed(2),me:G.brawl.me.act,lv:G.brawl.me.lvShown,his:G.brawl.him.state,hp:Math.round(G.brawl.him.hp),d:+Math.hypot(G.brawl.c.pos.x-G.eye.x,G.brawl.c.pos.z-G.eye.z).toFixed(2)})"
+  },
+  {
+   "shot": "h11_rel"
+  },
+  {
+   "eval": "JSON.stringify({t:+G.time.toFixed(2),me:G.brawl.me.act,lv:G.brawl.me.lvShown,his:G.brawl.him.state,hp:Math.round(G.brawl.him.hp),d:+Math.hypot(G.brawl.c.pos.x-G.eye.x,G.brawl.c.pos.z-G.eye.z).toFixed(2)})"
+  },
+  {
+   "shot": "h12_rel"
+  },
+  {
+   "eval": "JSON.stringify({t:+G.time.toFixed(2),me:G.brawl.me.act,lv:G.brawl.me.lvShown,his:G.brawl.him.state,hp:Math.round(G.brawl.him.hp),d:+Math.hypot(G.brawl.c.pos.x-G.eye.x,G.brawl.c.pos.z-G.eye.z).toFixed(2)})"
+  },
+  {
+   "shot": "h13_rel"
+  },
+  {
+   "eval": "JSON.stringify({t:+G.time.toFixed(2),me:G.brawl.me.act,lv:G.brawl.me.lvShown,his:G.brawl.him.state,hp:Math.round(G.brawl.him.hp),d:+Math.hypot(G.brawl.c.pos.x-G.eye.x,G.brawl.c.pos.z-G.eye.z).toFixed(2)})"
+  },
+  {
+   "shot": "h14_rel"
+  },
+  {
+   "eval": "JSON.stringify({t:+G.time.toFixed(2),me:G.brawl.me.act,lv:G.brawl.me.lvShown,his:G.brawl.him.state,hp:Math.round(G.brawl.him.hp),d:+Math.hypot(G.brawl.c.pos.x-G.eye.x,G.brawl.c.pos.z-G.eye.z).toFixed(2)})"
+  },
+  {
+   "shot": "h15_rel"
+  },
+  {
+   "eval": "JSON.stringify({t:+G.time.toFixed(2),me:G.brawl.me.act,lv:G.brawl.me.lvShown,his:G.brawl.him.state,hp:Math.round(G.brawl.him.hp),d:+Math.hypot(G.brawl.c.pos.x-G.eye.x,G.brawl.c.pos.z-G.eye.z).toFixed(2)})"
+  }
+ ]
+}
