@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { defineScene, wait, until, beat } from '../game/script.js';
 import { Chase } from './tail/chase.js';
 import { resetCity } from './tail/reset.js';
+import { TEACH } from './tail/rules.js';
 import { START, EW, NS, riverPoint, riverFrame, riverSAtZ, PIER } from '../stages/city/plan.js';
 
 // Chapter VI, The Tail (lane C3; docs/story/briefs/C3_CITY.md). The city at
@@ -25,6 +26,7 @@ import { START, EW, NS, riverPoint, riverFrame, riverSAtZ, PIER } from '../stage
 //   pier   the wreck behind, the road to the pier (phase c's)
 // Music: the slot 'tail' from the kerb to the gate.
 const CHECK_DAMAGE = { start: 0, chase2: 0, river: 0, pier: 0 };
+
 
 function build(ctx, which) {
   const G = ctx.game;
@@ -83,6 +85,12 @@ export default defineScene({
   id: 'tail', stage: 'city',
   beats: ['start', 'chase2', 'river', 'wreck', 'pier'],
   save: ['chase2', 'river', 'pier'],
+  // [3rd owner] the beats' objective lines, declared (seams/Z.md §1): the
+  // manager writes the beat's line as it is entered (a retry, a CONTINUE, a
+  // chapter picked) and as the script's beat() begins it. The wreck has none
+  // of its own: "Stop him before the docks." stays up through his crash until
+  // chase.js strikes it for "Pier 9." as the look at the wreck ends.
+  objectives: { start: "Don't lose him.", chase2: "Don't lose him.", river: 'Stop him before the docks.', pier: 'Pier 9.' },
   setup: {
     start(ctx) { build(ctx, 'start'); },
     chase2(ctx) { build(ctx, 'chase2'); },
@@ -95,33 +103,32 @@ export default defineScene({
     const G = ctx.game;
     const C = ctx.flags.chase;
     const K = C.kit;
-    G.music.cue('tail', { fade: 2.5 });
+    // (the music: order.js declares the slot 'tail' for the chapter)
     // (came in by the cut from the foot chase - no card on black: the
     // chapter's card small over the windscreen as I pull out; never on a
     // retry)
     const smallCard = !G.hud.cardT && !G._tailRetry;
     G._tailRetry = false;
+    // [3rd owner] the keys taught once, each at its moment (C.teachStep): the
+    // driving keys at the kerb, held until W (or 6 s); the handbrake as his
+    // brake lamps flare for his first corner; the gun as he turns onto the
+    // river road. Failed twice at a beat: its card once more (hud.teach.again)
+    C.teachAgain = G.fails(ctx.from) === 2;
     if (ctx.at('start') && ctx.from === 'start') {
       yield beat('start');
-      K.objective("Don't lose him.");
       G.sfx.play('tail_start', null, {});
-      yield wait(2.2);
-      K.teach('tail_drive', [['W', 'drive'], ['A D', 'steer'], ['S', 'brake']], { secs: 5, until: 'KeyW' });
+      yield wait(1.0);
+      K.teach('tail_drive', TEACH.drive, { secs: 6, until: 'KeyW' });
       yield until(() => C.phase !== 'start');
       if (smallCard) { const D = G.scenes.current; K.smallCard(D.title, D.name); }
-      // the handbrake: taught as he takes his first corner
-      yield until(() => C.driver.legIndex >= 0 && C.driver.pilot && C.driver.pilot.s > 30);
-      K.teach('tail_handbrake', [['SPACE', 'handbrake: the tail round a tight corner']], { secs: 5, until: 'Space' });
     }
     if (ctx.at('chase2')) {
       if (ctx.from !== 'chase2') yield until(() => C.driver.legIndex >= 2 || C.phase !== 'a');
-      else K.objective("Don't lose him.");
       ctx.flags.check = 'chase2';
       yield beat('chase2');
       yield until(() => C.phase !== 'a');
     }
     if (ctx.at('river')) {
-      if (ctx.from === 'river') { K.objective('Stop him before the docks.'); K.teach('tail_gun', [['RMB', 'lean out and aim'], ['LMB', 'fire']], { secs: 6, until: 'Mouse0' }); }
       ctx.flags.check = 'river';
       yield beat('river');
       yield until(() => C.phase === 'wreck' || C.phase === 'c');
@@ -131,7 +138,6 @@ export default defineScene({
       yield until(() => C.phase === 'c');
     }
     if (ctx.at('pier')) {
-      if (ctx.from === 'pier' || ctx.from === 'wreck') K.objective('Pier 9.');
       ctx.flags.check = 'pier';
       yield beat('pier');
       yield until(() => C.phase === 'parked');

@@ -1,5 +1,5 @@
 {
- "about": "Critic (lane C3): the driving keys must be readable. BEGIN at the tail with a fresh save and touch nothing: the card 'W drive / A D steer / S brake' must stay up for at least 3 s (or until W), and the handbrake card must come at his first corner, not at the kerb. Today it FAILS: the drive card shows for 0.2 s and the handbrake card replaces it as he pulls away (07_tail.js: pilot.s > 30 is already true at the kerb). node tools/play.mjs tools/plays/critic/tail_teach.json (NOIR_PORT=5343)",
+ "about": "Critic (lane C3): the driving keys must be readable. BEGIN at the tail with a fresh save and touch nothing: the card 'W drive / A D steer / S brake' must stay up for at least 3 s (or until W), and the handbrake card must come at his first corner, not at the kerb. Today it FAILS: the drive card shows for 0.2 s and the handbrake card replaces it as he pulls away (07_tail.js: pilot.s > 30 is already true at the kerb). node tools/play.mjs tools/plays/critic/tail_teach.json (NOIR_PORT=5343) [C3 3rd owner: the card is the kit's now (G.hud.kit.teachCur), read while no chapter card covers it.]",
  "url": "/?mute=1&start=tail",
  "size": [
   1280,
@@ -25,7 +25,7 @@
    "timeout": 45000
   },
   {
-   "until": "/drive/.test((document.querySelector('.c3teach') && getComputedStyle(document.querySelector('.c3teach')).display !== 'none' ? document.querySelector('.c3teach').textContent : ''))",
+   "until": "/drive/.test((G.hud.kit.teachCur && !document.getElementById('hud').classList.contains('carded') ? G.hud.kit.teachCur.text : ''))",
    "timeout": 15000
   },
   {
@@ -35,11 +35,11 @@
    "shot": "t01_drive_card"
   },
   {
-   "until": "!/drive/.test((document.querySelector('.c3teach') && getComputedStyle(document.querySelector('.c3teach')).display !== 'none' ? document.querySelector('.c3teach').textContent : ''))",
+   "until": "!/drive/.test((G.hud.kit.teachCur && !document.getElementById('hud').classList.contains('carded') ? G.hud.kit.teachCur.text : ''))",
    "timeout": 15000
   },
   {
-   "eval": "(window.__c3d2 = N.time, 'drive card gone at ' + N.time.toFixed(2) + ' (' + (N.time - window.__c3d).toFixed(2) + ' s), now: ' + (document.querySelector('.c3teach') && getComputedStyle(document.querySelector('.c3teach')).display !== 'none' ? document.querySelector('.c3teach').textContent : ''))"
+   "eval": "(window.__c3d2 = N.time, 'drive card gone at ' + N.time.toFixed(2) + ' (' + (N.time - window.__c3d).toFixed(2) + ' s), now: ' + (G.hud.kit.teachCur && !document.getElementById('hud').classList.contains('carded') ? G.hud.kit.teachCur.text : ''))"
   },
   {
    "shot": "t02_after"
@@ -49,7 +49,7 @@
    "label": "the drive card stays up 3 s (W not pressed)"
   },
   {
-   "expect": "G.scenes.ctx.flags.chase.his.pos.distanceTo(G.scenes.ctx.flags.chase.my.pos) > 25 || !/handbrake/i.test((document.querySelector('.c3teach') && getComputedStyle(document.querySelector('.c3teach')).display !== 'none' ? document.querySelector('.c3teach').textContent : ''))",
+   "expect": "G.scenes.ctx.flags.chase.his.pos.distanceTo(G.scenes.ctx.flags.chase.my.pos) > 25 || !/handbrake/i.test((G.hud.kit.teachCur && !document.getElementById('hud').classList.contains('carded') ? G.hud.kit.teachCur.text : ''))",
    "label": "the handbrake card does not come at the kerb"
   }
  ]

@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { GRAPH, EW, NS } from '../../stages/city/plan.js';
+import { GRAPH, EW, NS, EW_LIST, riverProject, riverPoint } from '../../stages/city/plan.js';
 import { buildPath } from '../../stages/city/route.js';
 import { Pilot } from '../../vehicles/pilot.js';
 import { Tram } from './tram.js';
@@ -17,6 +17,12 @@ import { Tram } from './tram.js';
 //   traffic.cars [{ v, pilot, ... }]; traffic.tram
 const MAX = 4;
 const SPAWN_MIN = 70, SPAWN_MAX = 170, GONE = 210;
+// [3rd owner] (the critic: in two clean runs not one car was on my line)
+// most of the city's cars now come on out ahead of him on the streets he is
+// about to take, going his way and slower: he must pass them, and so must I.
+// On the river road (phase b) the road has its own: a slow car in his lane
+// ahead of him, one coming the other way, a second slow one further down.
+const AHEAD = 0.65;
 const _v = new THREE.Vector3();
 const clamp = (x, a, b) => Math.max(a, Math.min(b, x));
 
@@ -39,7 +45,7 @@ export class Traffic {
   }
 
   // a street the traffic may use (not the alleys, the square, Pell Lane)
-  ok(e) { return !e.alley && !e.square && e.street !== 'pell' && !(e.street === 'river' && this.chase.phase === 'a' && false); }
+  ok(e) { return !e.alley && !e.square && e.street !== 'pell' && e.a !== 'pier' && e.b !== 'pier'; }
 
   // a random walk through the junctions from node a (first step toward b)
   walk(a, b, n = 6) {
@@ -55,8 +61,92 @@ export class Traffic {
     return ids;
   }
 
+  // a car ahead of him on his way, going his way (out of my sight, or far)
+  spawnAhead() {
+    const C = this.chase, my = C.my, T = C.stage.track, D = C.driver;
+    if (!D || !D.path || !D.pilot || C.phase !== 'a') return null;
+    const e = this.game.camera.position;
+    const ids = D.ids || [];
+    const cands = [];
+    for (let k = 0; k + 1 < ids.length; k++) {
+      const N = GRAPH.nodes.get(ids[k]);
+      if (!N || N.id.startsWith('pell') || N.id.startsWith('alley') || N.id === 'pier') continue;
+      const sN = D.path.nodeS[N.id];
+      if (sN == null || sN < D.pilot.s + 30) continue;
+      const d = Math.hypot(N.x - my.pos.x, N.z - my.pos.z);
+      if (d < 55 || d > 175) continue;
+      if (Math.hypot(N.x - C.his.pos.x, N.z - C.his.pos.z) < 30) continue;
+      const hidden = T.blocked(e.x, e.z, N.x, N.z, ['wall', 'fence']) || d > 115;
+      if (!hidden) continue;
+      // (the street he takes from it, if the traffic may use it)
+      const nx = ids[k + 1];
+      const E = N.edges.find((x) => (x.a === N.id && x.b === nx) || (x.b === N.id && x.a === nx));
+      if (!E || !this.ok(E)) continue;
+      cands.push([N, nx]);
+    }
+    if (!cands.length) return null;
+    const [N, first] = cands[Math.floor(this.rng.next() * Math.min(2, cands.length))];
+    let path;
+    try { path = buildPath(this.walk(N.id, first, 4), { vmax: 9.5, aLat: 4.5, aBrake: 4 }); } catch (err) { return null; }
+    return this.addCar(path, 2, { pace: 0.62 + this.rng.next() * 0.14, vmax: 9.5 });
+  }
+  addCar(path, s0, { pace = 0.8, vmax = 11, speed = 6, river = false } = {}) {
+    const C = this.chase;
+    const p0 = path.at(s0, {});
+    // (nothing there already)
+    for (const o of C.bodies()) if (Math.hypot(o.pos.x - p0.x, o.pos.z - p0.z) < 8) return null;
+    const v = C.V.spawn('sedan', { at: new THREE.Vector3(p0.x, 0, p0.z), yaw: Math.atan2(-p0.fz, p0.fx), speed, lights: true, paint: this.rng.next() < 0.5 ? 'paintGrey' : 'paint' });
+    v.car.limit = 1e9;
+    const pilot = new Pilot(path, { pace, vmax, keep: 6, bodies: () => C.bodies() });
+    pilot.i = p0.i; pilot.s = s0;
+    v.driver = pilot;
+    const car = { v, pilot, path, id: ++this.n, hornT: 0, aside: 0, t: 0, river };
+    car.stops = (path.ids || []).slice(1).map((id) => ({ id, s: path.nodeS[id] })).filter((x) => x.s != null && x.s > s0 + 6);
+    v.on('bump', (ev) => { if (ev.by === C.my && ev.imp > 2) this.honk(car, 1); });
+    this.cars.push(car);
+    return car;
+  }
+  // phase b: the river road's own traffic (a slow car in his lane ahead of
+  // him, one coming the other way, a second slow one further down), placed
+  // as the river road begins, well ahead and in the mist
+  riverTraffic() {
+    if (this.riverDone) return;
+    this.riverDone = true;
+    const C = this.chase, his = C.his;
+    if (!his) return;
+    const hs = riverProject(his.pos.x, his.pos.z, {}).s;
+    const RN = EW_LIST.map((k) => GRAPH.nodes.get('river.' + k)).filter(Boolean);
+    // (the junctions along the river road from s, in the direction of travel,
+    // then on into the streets)
+    const along = (s, south) => {
+      const L = south ? RN : [...RN].reverse();
+      const i = L.findIndex((N) => (south ? N.s > s : N.s < s));
+      if (i <= 0) return null;
+      const ids = L.slice(i - 1).map((N) => N.id);
+      return ids.length >= 2 ? ids : null;
+    };
+    const place = (s, south, opts) => {
+      let ids = along(s, south);
+      if (!ids) return null;
+      // (off the river road at its far end: up a street, never into the yard)
+      if (south) { const k = ids.indexOf('river.fifth'); if (k > 0) ids = ids.slice(0, k + 1).concat(['water.fifth']); }
+      else ids = ids.concat(['water.canal']);
+      let path;
+      try { path = buildPath(ids, { vmax: opts.vmax, aLat: 4.5, aBrake: 4 }); } catch (err) { return null; }
+      const q = riverPoint(s, 0);
+      const i = path.nearestAll(q.x, q.z);
+      return this.addCar(path, path.pts[i].s, { ...opts, river: true });
+    };
+    // drop what the streets had (out of my sight by now): the road's own come instead
+    for (let i = this.cars.length - 1; i >= 0; i--) if (!this.cars[i].river && this.cars[i].v.pos.distanceTo(C.my.pos) > 60) { C.V.remove(this.cars[i].v); this.cars.splice(i, 1); }
+    place(hs + 58, true, { pace: 1, vmax: 7.2, speed: 7 });
+    place(hs + 175, false, { pace: 1, vmax: 10, speed: 9 });
+    place(hs + 255, true, { pace: 1, vmax: 8, speed: 8 });
+  }
+
   spawnOne() {
     const C = this.chase, my = C.my, T = C.stage.track;
+    if (C.phase === 'a' && this.rng.next() < AHEAD) { const a = this.spawnAhead(); if (a) return a; }
     const e = this.game.camera.position;
     // a junction out of my sight (or far), not where his car is
     const cands = [];
@@ -119,6 +209,7 @@ export class Traffic {
     this.t += dt;
     this.tram.step(dt);
     if (C.phase === 'start' || C.phase === 'parked' || !my) return;
+    if (C.phase === 'b') this.riverTraffic();
     // the population: a few near me
     this.nextT -= dt;
     if (this.nextT <= 0) {
@@ -155,17 +246,38 @@ export class Traffic {
       if (car.holdT > 5) hold = null;
       P.o.stopAt = hold ? hold.s - 9 : null;
       // aside for my horn: toward the kerb, slow
-      if (car.aside > 0) { car.aside -= dt; P.o.pace = 0.35; P.o.wander = 0; P.offset = 1.6; } else { P.offset = 0; P.o.pace = P.o.pace0 || (P.o.pace0 = P.o.pace); }
+      if (car.aside > 0) { car.aside -= dt; P.o.pace = 0.35; P.o.wander = 0; P.offset = 1.6; } else { if (!(car.roundT > 0)) P.offset = 0; P.o.pace = P.o.pace0 || (P.o.pace0 = P.o.pace); }
       // my car in its way close: it brakes (its pilot follows me) and honks
       const ox = my.pos.x - v.pos.x, oz = my.pos.z - v.pos.z;
       const c = Math.cos(v.yaw), sn = Math.sin(v.yaw);
       const ax = ox * c - oz * sn, az = ox * sn + oz * c;
       if (ax > 0 && ax < 9 && Math.abs(az) < 2.2 && (my.speedAbs > 2 || v.speedAbs > 3)) this.honk(car, 0.9);
+      // [3rd owner] (the critic: one facing me stopped 9 m off and waited 7 s
+      // and more) held up by my car in its way for 2 s, it backs off a little
+      // with the wheel over, sounds its horn and goes round me
+      const facing = Math.cos(my.yaw - v.yaw) < -0.5;
+      const inWay = ax > 0 && ax < 14 && Math.abs(az) < 2.6 && v.speedAbs < 1.2 && my.speedAbs < 2.5;
+      car.blockT = inWay ? (car.blockT || 0) + dt : Math.max(0, (car.blockT || 0) - dt);
+      if (car.blockT > 2 && !(car.roundT > 0)) {
+        car.blockT = 0; car.roundT = 5;
+        this.honk(car, 1);
+        const side = az > 0 ? 1 : -1;               // (round me on the side I am not)
+        P.backT = facing ? 1.0 : 0.6; P.backSteer = side;
+        car.roundSide = -side;
+      }
+      if (car.roundT > 0) {
+        car.roundT -= dt;
+        P.skip = my; P.offset = car.roundSide * 3.0 * Math.min(1, car.roundT / 1.2);
+        if (car.roundT <= 0) { P.skip = null; P.offset = 0; }
+      }
       // gone: far from me, out of sight, or at its walk's end
       const d = Math.hypot(v.pos.x - my.pos.x, v.pos.z - my.pos.z);
       const e = this.game.camera.position;
       const hidden = C.stage.track.blocked(e.x, e.z, v.pos.x, v.pos.z, ['wall', 'fence']);
-      if ((d > GONE) || (P.done && (hidden || d > 90)) || (d > 120 && hidden)) {
+      // (the river road's own: kept while they are ahead of me down the road)
+      const behind = ((v.pos.x - my.pos.x) * Math.cos(my.yaw) - (v.pos.z - my.pos.z) * Math.sin(my.yaw)) < -10;
+      const far = car.river ? (d > 330 || (behind && d > 70)) : d > GONE;
+      if (far || (P.done && (hidden || d > 90)) || (!car.river && d > 120 && hidden)) {
         C.V.remove(v);
         this.cars.splice(i, 1);
       }

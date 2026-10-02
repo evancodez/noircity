@@ -49,25 +49,23 @@ export class WindowGun {
   step(dt) {
     const G = this.game, C = G.controller, ch = this.chase;
     const held = G.held('Mouse2');
-    if (G.pressed('Mouse0')) { this.fireBuf = this.aimK < 0.9 ? 0.35 : 0.15; if (!held && this.aimK < 0.5) this.snapT = 0.9; }
+    // [3rd owner] no aim of the game's own: the critic's cheat was here - a
+    // bare LMB raised the gun and fired once it was up, and every raise swung
+    // the eye onto his tank (LMB alone, never aimed, landed 6 of 6). Now LMB
+    // with the gun down only brings it out of the window (held out a moment,
+    // as a tap of RMB would); a round goes only on a press while the arm is
+    // up, down the eye's line where the mouse put it.
+    if (G.pressed('Mouse0')) {
+      if (this.aimK >= 0.9) this.fireBuf = 0.15;
+      else if (held) this.fireBuf = 0.12;            // (RMB held, the arm still rising: that press counts once it is up)
+      else this.snapT = Math.max(this.snapT, 1.6);   // (the gun comes out; the press is not a shot)
+    }
     if (G.pressed('KeyR') && this.rounds < 6 && this.pocket > 0 && this.reloadT <= 0) this.startReload();
     this.fireBuf = Math.max(0, this.fireBuf - dt);
     this.snapT = Math.max(0, this.snapT - dt);
     const want = (held || this.snapT > 0) && ch.phase !== 'c' ? 1 : 0;
-    // (as the gun comes up the eye comes onto him; the mouse has the last word)
-    if (want && !this._want) this.aimSnap = 0.32;
-    this._want = !!want;
-    const his = ch.his;
-    if (this.aimSnap > 0 && C.drive && his) {
-      this.aimSnap -= dt;
-      const D = C.drive, e = G.camera.position, v = ch.my;
-      const p = his.seat(_d.set(-1.9, 0.75, 0), _v);
-      const wy = Math.atan2(-(p.x - e.x), -(p.z - e.z)) - (v.yaw - Math.PI / 2);
-      const wp = Math.atan2(p.y - e.y, Math.hypot(p.x - e.x, p.z - e.z)) - v.pitch * 0.9;
-      const k = 1 - Math.exp(-dt * 12);
-      D.look.yaw += (clamp(Math.atan2(Math.sin(wy), Math.cos(wy)), -0.7, 0.34) - D.look.yaw) * k;
-      D.look.pitch += (clamp(wp, -0.3, 0.2) - D.look.pitch) * k;
-    }
+    // (LMB again while it is out keeps it out)
+    if (this.fireBuf > 0 && !held) this.snapT = Math.max(this.snapT, 1.2);
     const rate = want ? 1 / 0.22 : 1 / 0.3;
     this.aimK = clamp(this.aimK + Math.sign(want - this.aimK) * rate * dt, 0, 1);
     DRIVE.aim = this.aimK;

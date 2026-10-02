@@ -119,7 +119,11 @@ export class His {
     P.o.wander = this.duck > 0 ? 1.4 : Math.max(this.control < 0.6 ? 0.7 : 0, 1.15 * this.weave);
     P.o.wanderRate = this.duck > 0 ? 0.9 : this.weave > 0 ? 2.3 : 0.9;
     this.duck = Math.max(0, this.duck - dt);
+    // [3rd owner] a round that lands: he jerks the wheel off the line it came
+    // from and runs on a lane over for a moment (the next is harder to land)
+    if (this.swerveT > 0) { this.swerveT -= dt; P.offset = this.swerveDir * 2.0 * Math.min(1, this.swerveT / 0.5); } else if (P.offset) P.offset = 0;
     P.drive(v, dt);
+    if (this.jerkT > 0) { this.jerkT -= dt; I.steer = Math.max(-1, Math.min(1, I.steer + this.swerveDir * 0.45 * (this.jerkT / 0.28))); }
     // (near a leg's end, before its corner: the next leg decided by where I
     // am now, its path from the junction before)
     const endS = this.path.nodeS[this.legEndId];
@@ -141,6 +145,12 @@ export class His {
     this.chase.onRiver && this.chase.onRiver();
   }
 
+  // (a hit: dir + right of his car, k how hard)
+  swerve(dir, k = 1) {
+    if (this.state !== 'river') return;
+    this.swerveDir = Math.sign(dir || 1) * Math.min(1, Math.abs(dir) * k);
+    this.swerveT = 0.9; this.jerkT = 0.28;
+  }
   // his hands gone (my rounds, my shunt): he holds the wheel hard over the
   // way he was pulled, the throttle on, and the car does what a car does
   lose(dir = 0) {

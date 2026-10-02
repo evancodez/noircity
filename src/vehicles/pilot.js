@@ -66,7 +66,8 @@ export class Pilot {
       let best = Infinity;
       let nudge = 0;
       for (const o of O.bodies()) {
-        if (o === v || !o.solid) continue;
+        // ([C3 3rd] skip: a car it is going round - not followed)
+        if (o === v || !o.solid || o === this.skip) continue;
         // (a parked car into the lane: steered round, not followed)
         if (o.parked) {
           const ox = o.pos.x - v.pos.x, oz = o.pos.z - v.pos.z;

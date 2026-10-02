@@ -23,6 +23,9 @@ function stretches() {
   ];
 }
 const _p = new THREE.Vector3();
+// (what a walker never goes into, and his body's radius)
+const WALLS = ['wall', 'fence', 'rail', 'gate', 'works', 'barrier'];
+const WALKER_R = 0.32;
 
 export class Walkers {
   constructor(chase, { n = 3 } = {}) {
@@ -48,6 +51,36 @@ export class Walkers {
       this.walk(w);
       this.list.push(w);
     }
+  }
+
+  // the walls near a point (a walker's radius R): pushed out of each
+  outOfWalls(p) {
+    const T = this.chase.stage.track, R = WALKER_R;
+    const near = this._near || (this._near = []);
+    for (let pass = 0; pass < 2; pass++) for (const k of T.statics(p.x, p.z, 2, near)) {
+      if (k.gone) continue;
+      if (k.r != null) {
+        const dx = p.x - k.x, dz = p.z - k.z, d = Math.hypot(dx, dz), m = k.r + R;
+        if (d < m && d > 1e-4) { p.x = k.x + (dx / d) * m; p.z = k.z + (dz / d) * m; }
+        continue;
+      }
+      if (!WALLS.includes(k.tag)) continue;
+      let lx = (p.x - k.cx) * k.c - (p.z - k.cz) * k.s, lz = (p.x - k.cx) * k.s + (p.z - k.cz) * k.c;
+      const px = k.hx + R - Math.abs(lx), pz = k.hz + R - Math.abs(lz);
+      if (px <= 0 || pz <= 0) continue;
+      if (px < pz) lx = Math.sign(lx || 1) * (k.hx + R); else lz = Math.sign(lz || 1) * (k.hz + R);
+      p.x = k.cx + lx * k.c + lz * k.s; p.z = k.cz - lx * k.s + lz * k.c;
+    }
+    return p;
+  }
+  inWall(x, z) {
+    const T = this.chase.stage.track, R = WALKER_R;
+    for (const k of T.statics(x, z, 1.5, this._near2 || (this._near2 = []))) {
+      if (k.r != null || !WALLS.includes(k.tag)) continue;
+      const lx = (x - k.cx) * k.c - (z - k.cz) * k.s, lz = (x - k.cx) * k.s + (z - k.cz) * k.c;
+      if (Math.abs(lx) < k.hx + R && Math.abs(lz) < k.hz + R) return true;
+    }
+    return false;
   }
 
   dispose() {
@@ -92,7 +125,17 @@ export class Walkers {
         // jump clear: away from the car's line, fast, to the wall's side
         const v = threat.v, c = Math.cos(v.yaw), s = Math.sin(v.yaw);
         const side = threat.lz >= 0 ? 1 : -1;
-        const rx = s * side, rz = c * side;    // (the car's right, toward me)
+        let rx = s * side, rz = c * side;    // (the car's right, toward me)
+        // [3rd owner] (never into brick: the critic saw a man jump 0.7 to 2.7
+        // m into Cooper St's facade) a wall that way within the jump: the
+        // other way, off the car's line on its far side - or on along the
+        // pavement, ahead of the car, if both are walled
+        const T = this.chase.stage.track, J = 2.6;
+        const walled = (dx, dz) => T.blocked(F.pos.x, F.pos.z, F.pos.x + dx * J, F.pos.z + dz * J, WALLS);
+        if (walled(rx, rz)) {
+          if (!walled(-rx, -rz)) { rx = -rx; rz = -rz; }
+          else { rx = Math.cos(v.yaw); rz = -Math.sin(v.yaw); }
+        }
         w.mode = 'jump'; w.jumpT = 0.55;
         F.yaw = Math.atan2(rx, rz);
         F.speed = 4.2;
@@ -119,7 +162,8 @@ export class Walkers {
         const px = x0 + ux * along, pz = z0 + uz * along;
         F.pos.x += (px - F.pos.x) * Math.min(1, dt * 1.5); F.pos.z += (pz - F.pos.z) * Math.min(1, dt * 1.5);
       }
-      // never under a car: out of any car's box, whatever happened
+      // never under a car: out of any car's box, whatever happened (out of
+      // its side; [3rd owner] out of its end when the side is a wall)
       for (const v of cars) {
         const c = Math.cos(v.yaw), s = Math.sin(v.yaw);
         const dx = F.pos.x - v.pos.x, dz = F.pos.z - v.pos.z;
@@ -127,9 +171,14 @@ export class Walkers {
         const hx = v.spec.halfL + 0.4, hz = v.spec.halfW + 0.4;
         if (Math.abs(lx) < hx && Math.abs(lz) < hz) {
           const nz = (lz >= 0 ? 1 : -1) * hz;
-          F.pos.x = v.pos.x + lx * c + nz * s; F.pos.z = v.pos.z - lx * s + nz * c;
+          let x = v.pos.x + lx * c + nz * s, z = v.pos.z - lx * s + nz * c;
+          if (this.inWall(x, z)) { const nx = (lx >= 0 ? 1 : -1) * hx; x = v.pos.x + nx * c + lz * s; z = v.pos.z - nx * s + lz * c; }
+          F.pos.x = x; F.pos.z = z;
         }
       }
+      // [3rd owner] and never in a wall, a fence, a column or a post: out of
+      // it the shortest way (the building line is the pavement's edge)
+      this.outOfWalls(F.pos);
       F.pos.y = this.chase.stage.surfaceY(F.pos.x, F.pos.z);
       w.umb.update(dt);
     }

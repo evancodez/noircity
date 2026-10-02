@@ -277,7 +277,16 @@ export class Car {
     // what bursts, what is kicked
     if (T.smash) {
       const hit = T.smash.collide(this, this.hitList);
-      for (const it of hit) { this.vel.multiplyScalar(it.drag); this.yawRate *= 0.97; this.shake = Math.min(1, this.shake + 0.3); this.emit('smash', { item: it }); }
+      // ([C3 3rd] what it costs: the speed (a stall about a third), a jolt,
+      // a little damage by the speed it was met at)
+      for (const it of hit) {
+        const sp0 = this.speedAbs;
+        this.vel.multiplyScalar(it.drag); this.yawRate *= 0.97;
+        this.shake = Math.min(1, this.shake + 0.3 + (1 - it.drag) * 1.5);
+        if (it.drag < 0.9) this.pitchV -= (1 - it.drag) * 3;
+        if (it.dmg) this.hurt(it.dmg * clamp(sp0 / 12, 0.3, 1.4), new THREE.Vector3(it.pos.x, 0.6, it.pos.z));
+        this.emit('smash', { item: it, k: 1 - it.drag });
+      }
       T.smash.kickPieces(this);
     }
     // the kerbs: a bump crossing one at speed

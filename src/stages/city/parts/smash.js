@@ -21,15 +21,20 @@ const G = 9.8;
 const CELL = 10;
 const _v = new THREE.Vector3(), _q = new THREE.Quaternion(), _e = new THREE.Euler(), _m = new THREE.Matrix4(), _s = new THREE.Vector3();
 
+// [3rd owner] (the critic: a row of eight stalls at 50 km/h cost nothing and
+// the speed rose) drag: the speed kept through one; dmg: the damage it costs
+// my car (Car.hurt; four is a wreck) - a stall takes about a third of the
+// speed and an eighth of a step, a row of them a lamp; a crate or a bin next
+// to nothing. The same for every car: he pays it too.
 const KIND = {
-  crate: { r: 0.42, drag: 0.985, sound: 'smash_crate' },
-  barrel: { r: 0.36, drag: 0.97, sound: 'smash_barrel' },
-  stall: { r: 1.35, drag: 0.93, sound: 'smash_stall' },
-  fence: { r: 1.1, drag: 0.95, sound: 'smash_fence' },
-  stand: { r: 0.95, drag: 0.9, sound: 'smash_stand' },
-  hydrant: { r: 0.22, drag: 0.94, sound: 'smash_hydrant' },
-  bin: { r: 0.33, drag: 0.975, sound: 'city_bin' },
-  horse: { r: 0.9, drag: 0.97, sound: 'smash_fence' },
+  crate: { r: 0.42, drag: 0.975, dmg: 0.01, sound: 'smash_crate' },
+  barrel: { r: 0.36, drag: 0.95, dmg: 0.03, sound: 'smash_barrel' },
+  stall: { r: 1.35, drag: 0.68, dmg: 0.14, sound: 'smash_stall' },
+  fence: { r: 1.1, drag: 0.86, dmg: 0.05, sound: 'smash_fence' },
+  stand: { r: 0.95, drag: 0.78, dmg: 0.1, sound: 'smash_stand' },
+  hydrant: { r: 0.22, drag: 0.88, dmg: 0.08, sound: 'smash_hydrant' },
+  bin: { r: 0.33, drag: 0.965, dmg: 0.01, sound: 'city_bin' },
+  horse: { r: 0.9, drag: 0.93, dmg: 0.02, sound: 'smash_fence' },
   // [2nd owner] a dairy's milk cans, a café's tables and chairs
   can: { r: 0.21, drag: 0.985, sound: 'city_bin' },
   table: { r: 0.4, drag: 0.975, sound: 'smash_crate' },
@@ -173,7 +178,7 @@ export default {
     const ck = (i, j) => i * 100003 + j;
     const place = (kind, x, z, yaw = 0, extra = {}) => {
       const pos = new THREE.Vector3(x, groundAt(x, z), z);
-      const it = { kind, pos, yaw, alive: true, q: new THREE.Quaternion().setFromAxisAngle(UP, yaw), r: KIND[kind].r, drag: KIND[kind].drag, inst: [], ...extra };
+      const it = { kind, pos, yaw, alive: true, q: new THREE.Quaternion().setFromAxisAngle(UP, yaw), r: KIND[kind].r, drag: KIND[kind].drag, dmg: KIND[kind].dmg || 0, inst: [], ...extra };
       items.push(it);
       const k = ck(Math.floor(x / CELL), Math.floor(z / CELL));
       if (!cells.has(k)) cells.set(k, []);
@@ -498,15 +503,33 @@ export default {
         }
         return hit;
       },
+      // [3rd owner] a piece the car meets is kicked out of its way, never up
+      // into it (the critic: thrown up at the car's own speed, a fruit fell
+      // back through the bonnet and sat between my hands): at the front, on
+      // ahead of the bumper, faster than the car and low; under or beside
+      // the body, out of its side
       kickPieces(v) {
         const sp = v.speedAbs;
         if (sp < 1.5) return 0;
         let n = 0;
+        const c = Math.cos(v.yaw), sn = Math.sin(v.yaw), S = v.spec;
         for (const p of pieces) {
           if (p.pos.y > 1.9 || Math.abs(p.pos.x - v.pos.x) > 3.5 || Math.abs(p.pos.z - v.pos.z) > 3.5) continue;
           if (!v.overlaps(p.pos, p.r + 0.05, -1, 1.6)) continue;
           const kv = v.vel3(_v);
-          p.vel.set(kv.x * rnd(0.8, 1.15) + gs() * 1.2, rnd(1.5, 3.8) * Math.min(1, sp / 12) + (p.paper ? 1.5 : 0), kv.z * rnd(0.8, 1.15) + gs() * 1.2);
+          const dx = p.pos.x - v.pos.x, dz = p.pos.z - v.pos.z;
+          const lx = dx * c - dz * sn, lz = dx * sn + dz * c;
+          // (the car's right, in the world: (sn, c))
+          const side = lz >= 0 ? 1 : -1;
+          if (lx > S.halfL - 0.7 && p.pos.y - (v.groundY || 0) < 0.9) {
+            const k = rnd(1.15, 1.4), out = gs() * 1.4 + side * rnd(0.5, 2.0);
+            p.vel.set(kv.x * k + sn * out, rnd(0.8, 2.2) * Math.min(1, sp / 12) + (p.paper ? 1.2 : 0), kv.z * k + c * out);
+          } else {
+            const out = rnd(2.5, 4.5) * side;
+            const nz = side * (S.halfW + p.r + 0.06);
+            p.pos.x = v.pos.x + lx * c + nz * sn; p.pos.z = v.pos.z - lx * sn + nz * c;
+            p.vel.set(kv.x * rnd(0.5, 0.8) + sn * out, rnd(0.6, 1.6) + (p.paper ? 1 : 0), kv.z * rnd(0.5, 0.8) + c * out);
+          }
           p.ang.copy(spin(0.6));
           p.rest = false; p.restT = 0;
           n++;
@@ -529,6 +552,53 @@ export default {
             p.vel.set(me.vel.x + (p.vel.x - me.vel.x) * -0.25, 2.5 + Math.random() * 3, me.vel.z + (p.vel.z - me.vel.z) * -0.25);
             p.ang.multiplyScalar(-0.6);
             if (!p.paper) G0.emit('screenHit', { pos: p.pos.clone(), k: Math.min(1, -rvx / 12), lz });
+          }
+          // [3rd owner] nothing inside my car's body (the bonnet, the cabin,
+          // the boot, up to the roof): a piece found in it is put on the
+          // surface over it - the bonnet, the roof, the boot lid - and thrown
+          // up and back off it, or out of its side if it is low by a door
+          const S = me.spec, gy = me.groundY ?? me.pos.y;
+          const inBody = (x, y, z, r) => {
+            const dx = x - me.pos.x, dz = z - me.pos.z;
+            const lx = dx * c - dz * sn, lz = dx * sn + dz * c, ly = y - gy;
+            if (Math.abs(lx) > S.halfL + r * 0.5 || Math.abs(lz) > S.halfW + r * 0.5) return null;
+            const top = lx > 0.85 ? 1.06 : lx < -1.05 ? 1.1 : 1.6;
+            // (under the floor - a plank flat on the stones, a fruit in the
+            // road - is under the car, not in it: kickPieces has those)
+            if (ly > top + r || ly < 0.28) return null;
+            return { lx, lz, ly, top };
+          };
+          for (const p of pieces) {
+            const half = p.name === 'plank' ? p.scale.x * 0.5 : 0;
+            if (Math.abs(p.pos.x - me.pos.x) > 3.2 + half || Math.abs(p.pos.z - me.pos.z) > 3.2 + half) continue;
+            const r = Math.min(p.r, 0.12);
+            let hit = inBody(p.pos.x, p.pos.y, p.pos.z, r), lift = hit ? hit.top + r - hit.ly : 0;
+            // (a long plank or a stall's pole: its two ends too - a pole whose
+            // middle is outside crossed the windscreen inside the glass)
+            if (half > 0.35) {
+              _v.set(half, 0, 0).applyQuaternion(p.q);
+              for (const k of [1, -1]) {
+                const e = inBody(p.pos.x + _v.x * k, p.pos.y + _v.y * k, p.pos.z + _v.z * k, 0.03);
+                if (e) { const l = e.top + 0.05 - e.ly; if (!hit || l > lift) { hit = hit || e; lift = Math.max(lift, l); } }
+              }
+              if (hit && lift > 0) { p.pos.y += lift + 0.02; const back = rnd(2, 4); p.vel.set(me.vel.x - c * back + gs() * 1.2, rnd(2.0, 3.4), me.vel.z + sn * back + gs() * 1.2); p.rest = false; p.restT = 0; }
+              continue;
+            }
+            if (!hit) continue;
+            const { lx, lz, ly, top } = hit;
+            const side = lz >= 0 ? 1 : -1;
+            const rx = me.vel.x, rz = me.vel.z;
+            if (ly < 0.75 && S.halfW + r - Math.abs(lz) < 0.35) {
+              const nz = side * (S.halfW + r + 0.04);
+              p.pos.x = me.pos.x + lx * c + nz * sn; p.pos.z = me.pos.z - lx * sn + nz * c;
+              const out = rnd(1.5, 3) * side;
+              p.vel.set(rx + sn * out, Math.max(0.5, p.vel.y), rz + c * out);
+            } else {
+              p.pos.y = gy + top + r + 0.02;
+              const back = rnd(2, 4.5), out = gs() * 1.6 + side * 0.8;
+              p.vel.set(rx - c * back + sn * out, rnd(2.2, 3.8), rz + sn * back + c * out);
+            }
+            p.rest = false; p.restT = 0;
           }
         }
         for (let j = pieces.length - 1; j >= 0; j--) {

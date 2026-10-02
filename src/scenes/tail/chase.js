@@ -9,7 +9,7 @@ import { Traffic } from './traffic.js';
 import { Walkers } from './walkers.js';
 import { Cat } from './cat.js';
 import { makeKit } from './kit.js';
-import { RULES } from './rules.js';
+import { RULES, TEACH } from './rules.js';
 import { makeBot } from './bot.js';
 import { FIRE } from '../../fx/fxTextures.js';
 import { FIRE_COL } from '../../fx/Explosion.js';
@@ -163,7 +163,7 @@ export class Chase {
     this.logT = (this.logT || 0) + dt;
     if (this.logT >= 0.5) { this.logT = 0; this.log.push([+this.t.toFixed(1), this.phase, +gap.toFixed(0), +my.speed.toFixed(1), +his.speed.toFixed(1), +this.unseen.toFixed(1), +my.damage.toFixed(2)]); if (this.log.length > 600) this.log.shift(); }
     if (this.phase === 'start' && (my.speed > 1.2 || this.t > 2.4)) this.go();
-    if (this.phase === 'a' || this.phase === 'b') this.rules(dt, gap);
+    if (this.phase === 'a' || this.phase === 'b') { this.rules(dt, gap); this.teachStep(); }
     // (his hands gone: the crash runs on its own physics)
     if (this.phase === 'b' && this.driver.state === 'lost') this.phase = 'crash';
     if (this.phase === 'b' || this.phase === 'crash') this.gun.step(dt);
@@ -187,11 +187,30 @@ export class Chase {
   onRiver() {
     if (this.phase !== 'a') return;
     this.phase = 'b';
-    this.unseen = 0; this.farT = 0;
+    this.unseen = 0;
     this.kit.warn(null);
-    this.kit.objective('Stop him before the docks.');
-    this.kit.teach('tail_gun', [['RMB', 'lean out and aim'], ['LMB', 'fire']], { secs: 6, until: 'Mouse0' });
+    // (the line is the beat's: 07_tail.js objectives.river; the gun's card
+    // comes in teachStep)
     this.ctx.game.emit('tail:river', {});
+  }
+
+  // [3rd owner] the cards, each at its moment (the drive card is the
+  // script's, at the kerb): the handbrake as his brake lamps flare for his
+  // first corner (he is braking at speed - it was taught at the kerb before,
+  // as he pulled away, and replaced the drive card before it could be read);
+  // the gun as phase b begins. Failed twice at this beat: the beat's card
+  // once more (07_tail.js sets teachAgain).
+  teachStep() {
+    const K = this.kit, his = this.his;
+    const show = (id, text, opts) => (this.teachAgain ? K.teachAgain(id, text, opts) : K.teach(id, text, opts));
+    if (this.phase === 'a' && !this._hbTaught && this.t > 2 && his.speedAbs > 5 && his.input.brake > 0.15) {
+      this._hbTaught = true;
+      show('tail_handbrake', TEACH.handbrake, { secs: 5, until: 'Space' });
+    }
+    if (this.phase === 'b' && !this._gunTaught) {
+      this._gunTaught = true;
+      show('tail_gun', TEACH.gun, { secs: 7, until: 'Mouse0' });
+    }
   }
 
   rules(dt, gap) {
@@ -215,11 +234,16 @@ export class Chase {
     // pier and he is seen all the way - the race is to stop him before its
     // gate)
     if (this.phase === 'a' && (this.unseen > R.unseenWarn || gap > R.farWarn)) warn = "He's getting away.";
+    // [3rd owner] (b: too far behind is too far behind there too - a player
+    // who comes onto the river road 110 m back is told so at once, not 23 s
+    // later at the pier's gate)
+    if (this.phase === 'b' && this.driver.state !== 'lost' && gap > R.farWarn) warn = "He's getting away.";
     if (gateNear) warn = "He's nearly at the pier.";
     K.warn(warn);
     if (this.failing) return;
     const to = this.checkpoint();
     if (this.phase === 'a' && (this.unseen > R.unseenLost || gap > R.farLost || this.farT > R.farT)) return this.fail('Lost him.', to);
+    if (this.phase === 'b' && this.driver.state !== 'lost' && (gap > R.farLost || this.farT > R.farT)) return this.fail('Lost him.', 'river');
     if (this.phase === 'b' && this.driver.state !== 'lost' && (hisZ > R.gateZ || this.driver.atPier)) return this.fail('He warned them.', 'river');
   }
   checkpoint() { return this.phase === 'b' ? 'river' : this.ctx.flags.check || 'start'; }
@@ -323,6 +347,13 @@ export class Chase {
     // every round that lands costs him some of his hold on the car (his
     // control, 1 .. 0); where it lands says how much and what it looks like
     const cost = (k, dir = side) => { D.control -= k; if (D.control <= 0.15) D.lose(dir); };
+    // [3rd owner] every hit shows where it lands, at 20 to 40 m (the critic:
+    // a tyre hit at 22 m showed nothing): a white ink burst at the point the
+    // size of a fist's on the screen, sparks big enough to see; and he
+    // swerves off the line it came from (the next round is harder)
+    const zone = this.hitZone(lp);
+    this.hitShow(hit, zone, lp);
+    D.swerve(zone === 'tyre' ? (lp.z > 0 ? -1 : 1) : (lp.z > 0 ? -0.6 : 0.6), zone === 'body' ? 0.5 : 1);
     // (a tyre: the wheel itself, or the round through the fender's skirt over
     // it - from behind, the low quarter of the car's back)
     const tyreAt = [[1.55, 0.78, 'fr'], [1.55, -0.78, 'fl'], [-1.55, 0.76, 'rr'], [-1.55, -0.76, 'rl']];
@@ -374,6 +405,48 @@ export class Chase {
     H.body++;
     if (H.body % 2 === 0) D.duck = 0.9;
     cost(0.12);
+  }
+  // where a round landed on his car (its frame: x ahead, y up, z right), as
+  // hisHit reads it
+  hitZone(lp) {
+    for (const [x, z] of [[1.55, 0.78], [1.55, -0.78], [-1.55, 0.76], [-1.55, -0.76]]) if (Math.abs(lp.x - x) < 0.65 && Math.abs(lp.z - z) < 0.45 && lp.y < 0.9) return 'tyre';
+    if (lp.x < -1.2 && lp.y < 0.72 && Math.abs(lp.z) > 0.42) return 'tyre';
+    if (lp.x < -0.9 && lp.y > 1.05 && Math.abs(lp.z) < 0.62) return 'window';
+    if (lp.x < -1.45 && lp.y < 1.05) return 'tank';
+    return 'body';
+  }
+  // [3rd owner] what a hit looks like from my seat, readable at range in the
+  // ink: the white burst (the fist's, sized on the screen), a spray of
+  // sparks; a tyre: a puff of white off the wet and black rubber flying, the
+  // quarter dropping (hisFx's sag); the tank: a dark spurt
+  hitShow(hit, zone, lp) {
+    const G = this.game, r = this.ctx.rng, his = this.his;
+    const p = hit.point.clone();
+    const n = hit.normal ? hit.normal.clone() : new THREE.Vector3(0, 1, 0);
+    const d = Math.max(4, G.camera.position.distanceTo(p));
+    if (G.fx.hit) G.fx.hit.punch(p.clone().addScaledVector(n, 0.05), n.clone().negate(), 0.4, { px: clamp(1300 / d, 34, 70), camera: G.camera });
+    const sz = clamp(d * 0.0016, 0.018, 0.05);
+    for (let i = 0; i < 16; i++) {
+      const v = n.clone().multiplyScalar(r.range(1.5, 4)).add(new THREE.Vector3(r.gauss() * 1.6, r.range(0.6, 2.6), r.gauss() * 1.6)).addScaledVector(his.vel, 0.7);
+      G.fx.sparks.spawn({ pos: p.clone(), vel: v, life: r.range(0.18, 0.45), size: [sz * 0.6, sz], stretch: 0.06, col: [6, 6, 6], cell: 4, gravity: 9.8, ground: 0.02, fadeOut: 0.3 });
+    }
+    if (zone === 'tyre') {
+      const w = his.seat(_v.set(lp.x < 0 ? -1.55 : 1.55, 0.3, lp.z > 0 ? 0.9 : -0.9), new THREE.Vector3());
+      for (let i = 0; i < 7; i++) {
+        const g = r.range(0.85, 1.2);
+        G.fx.dust.spawn({ pos: w.clone().add(new THREE.Vector3(r.gauss() * 0.2, r.range(0, 0.3), r.gauss() * 0.2)), vel: new THREE.Vector3(r.gauss() * 0.9, r.range(0.4, 1.4), r.gauss() * 0.9).addScaledVector(his.vel, 0.55),
+          life: r.range(0.7, 1.2), size: [0.7, 0.55], grow: 0.9, rot: r.next() * 6.28, col: [g, g, g], alpha: 0.42, drag: 2.0, fadeOut: 0.6 });
+      }
+      if (G.fx.debris) for (let i = 0; i < 12; i++) {
+        G.fx.debris.spawn({ pos: w.clone(), vel: new THREE.Vector3(r.gauss() * 3, r.range(1.5, 4.5), r.gauss() * 3).addScaledVector(his.vel, 0.6), life: r.range(0.6, 1.1),
+          size: [r.range(0.08, 0.16), r.range(0.03, 0.06)], rot: r.next() * 6.28, spin: r.gauss() * 10, col: [0.02, 0.02, 0.02], cell: FIRE.CHUNK, gravity: 9.8, ground: 0.03, fadeOut: 0.25 });
+      }
+    } else if (zone === 'tank') {
+      for (let i = 0; i < 10; i++) {
+        G.fx.splash.spawn({ pos: p.clone(), vel: n.clone().multiplyScalar(r.range(0.6, 1.6)).add(new THREE.Vector3(r.gauss() * 0.4, r.range(-0.2, 0.6), r.gauss() * 0.4)).addScaledVector(his.vel, 0.85),
+          life: r.range(0.35, 0.7), size: [0.02, 0.04], stretch: 0.05, col: [0.05, 0.05, 0.05], alpha: 0.95, cell: 1, gravity: 9.8, ground: 0.02, fadeOut: 0.2 });
+      }
+    }
   }
   // my car into his (the gun empty, or not): on a hurt car, a shunt on the
   // quarter puts him off the road; whole, he only wobbles
@@ -527,7 +600,15 @@ export class Chase {
     // the man ducks
     if (his.driverFig) { const want = D.duck > 0 || D.state === 'lost' || D.state === 'stopped' ? -0.3 : 0; his.driverFig.position.y += (want - his.driverFig.position.y) * (1 - Math.exp(-dt * 10)); }
     // the sag on a flat
-    if (his.flat) { his.sagRoll = ((his.flat.fr || 0) + (his.flat.rr || 0) - (his.flat.fl || 0) - (his.flat.rl || 0)) * 0.035; his.sagPitch = ((his.flat.rl || 0) + (his.flat.rr || 0) - (his.flat.fl || 0) - (his.flat.fr || 0)) * 0.02; }
+    // ([3rd owner] the quarter drops so it reads at 30 m: about 9 cm at the
+    // flat's corner, settling in with a bounce as the tyre goes)
+    if (his.flat) {
+      const want = ((his.flat.fr || 0) + (his.flat.rr || 0) - (his.flat.fl || 0) - (his.flat.rl || 0)) * 0.085;
+      const wp = ((his.flat.rl || 0) + (his.flat.rr || 0) - (his.flat.fl || 0) - (his.flat.fr || 0)) * 0.045;
+      this._sagV = (this._sagV || 0) + ((want - (his.sagRoll || 0)) * 120 - (this._sagV || 0) * 9) * dt;
+      his.sagRoll = (his.sagRoll || 0) + this._sagV * dt;
+      his.sagPitch = (his.sagPitch || 0) + (wp - (his.sagPitch || 0)) * (1 - Math.exp(-dt * 10));
+    }
     // [2nd owner] the spray off his tyres on the wet: a wake of mist that
     // hangs a moment where he went - round a corner the last of it, lit by
     // the lamps, shows which way he turned (a trace to read)
