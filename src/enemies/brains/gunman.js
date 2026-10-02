@@ -33,6 +33,7 @@ export const GUNMAN = {
   raise: 0.26,                 // s: the tell - the arm comes up, the glint, the click
   settle: [0.4, 0.9],          // s: his aim settling, at 3 m .. at 18 m
   settleMoving: 1.4,           // x while I move across his line
+  settleStill: 0.75,           // x while I stand up still in his line (a man standing in the open is an easy mark)
   settleRattled: 1.5,          // x for 1.5 s after a round came near him or hit him
   notice: 0.25,                // s: I come up (or out) into his line: he sees me, then settles
   lagT: 0.2,                   // s: his aim trails a moving target by this much
@@ -130,6 +131,7 @@ export default {
       const v = G.controller.vel, dx = G.eye.x - h.pos.x, dz = G.eye.z - h.pos.z, L = Math.hypot(dx, dz) || 1;
       const across = Math.abs(v.x * (-dz / L) + v.z * (dx / L));
       if (across > 1.0) s *= T.settleMoving;
+      else if ((G.controller.crouchK || 0) < 0.5 && Math.hypot(v.x, v.z) < 1.0) s *= T.settleStill;
       if (S.rattledT > 0) s *= T.settleRattled;
       const Kc = kit() && kit().cfg;
       return s * (Kc && Kc.settleK ? Kc.settleK : 1);
@@ -537,7 +539,9 @@ export default {
           if (kind === 'pistol' && S.mag <= 0) { S.state = 'reload'; S.t = 0; G.sfx.play('c2_magOut', h.pos.clone().setY(h.pos.y + 1.1), {}, { ref: 3 }); break; }
           if (S.t > 2.5 && !S.flank && S.t % 3 < dt && takeCover(true)) break;
           if (S.line && S.wait <= 0 && Kt.token(B)) { raise(); break; }
-          // (no line on me for a while: on to a place that has one)
+          // (no line on me for a while: on to a place that has one; long
+          // without one, straight in at me - nobody hides out the clock, nor waits it out)
+          if (!S.line && S.lostT > 9) S.seeks = Math.max(S.seeks || 0, 3);
           if (!S.line && S.lostT > 3 && (S.seekT = (S.seekT || 0) - dt) <= 0) {
             S.seekT = 2;
             const e = G.eye; let bx = 0, bz = 0;

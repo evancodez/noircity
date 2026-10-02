@@ -25,7 +25,7 @@ const PROFILES = {
   bad: { act: true, cover: false, react: [450, 800], errM: 0.3, settle: [120, 260], gap: [250, 450], renotice: 600 },
   good: { act: true, cover: true, react: [300, 550], errM: 0.29, settle: [60, 120], gap: [380, 620], burst: [1, 1], down: [450, 800], shadows: true, duck: [120, 260], watchFlank: true },
   clumsy: { act: true, cover: true, react: [550, 900], errM: 0.42, settle: [100, 220], gap: [420, 700], burst: [1, 2], down: [350, 700],
-    upLong: 0.35, standReload: 0.3, crouchLate: [500, 1400], wrongKey: 0.12, lateMove: true, duck: [300, 550] },
+    upLong: 0.35, standReload: 0.3, crouchLate: [500, 1400], wrongKey: 0.12, lateMove: true, duck: [300, 550], learns: true },
 };
 
 export default async function drive({ js, turn, keyDown, keyUp, mouse, shot, log, sleep, W, H, opts }) {
@@ -102,8 +102,11 @@ export default async function drive({ js, turn, keyDown, keyUp, mouse, shot, log
     return false;
   };
 
+  const P0 = { ...P };
   for (const beat of beats) {
     const B = rec.beats[beat] = { tries: [] };
+    // (a new contest: the hand as it was; what a fall taught it is for the retries of that contest)
+    Object.assign(P, P0);
     for (let k = 0; k < tries; k++) {
       await releaseAll();
       // to the beat, as a checkpoint puts me there
@@ -279,6 +282,18 @@ export default async function drive({ js, turn, keyDown, keyUp, mouse, shot, log
       const tr = { ...end, secs: +((Date.now() - t0) / 1000).toFixed(1), shots: sN.shots - shots0, hits: sN.hits - hits0, lowHp: Math.round(lowHp), took };
       B.tries.push(tr);
       log(`c2 ${rec.profile} ${beat} try ${k + 1}: ${JSON.stringify(tr)}`);
+      // (the first-timer reads the fall's words and does that one thing better on the retry:
+      // the retry says in a word what went wrong - WAVE_C §1 rule 2)
+      if (P.learns && !end.won && end.why) {
+        const w = end.why;
+        if (/angle|Flanked/.test(w)) P.lateMove = false;
+        if (/too long/.test(w)) P.upLong = (P.upLong || 0) * 0.4;
+        if (/chewed|shot away/.test(w)) P.lateMove = false;
+        if (/Reloading/.test(w)) P.standReload = 0;
+        if (/in the open/.test(w)) P.crouchLate = [200, 500];
+        if (/walked right up/.test(w)) P.react = [P.react[0] * 0.85, P.react[1] * 0.85];
+        log(`c2 ${rec.profile} learns from '${w}': ${JSON.stringify({ lateMove: P.lateMove, upLong: P.upLong, standReload: P.standReload, crouchLate: P.crouchLate, react: P.react })}`);
+      }
       if (end.won) break;
       if (opts.oneTry) break;
     }

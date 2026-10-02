@@ -1,5 +1,5 @@
 {
- "about": "[C2] The gun kit's proof 2 as WAVE_C \u00a77 has it: a clumsy first-timer who was taught the cover and uses it badly - slow hands (reactions 550 .. 900 ms), a wide aim, up over the cover a second too long now and then, reloads where he stands now and then, gets down late on a new spot, a wrong key now and then, moves only when it is bad - FAILS SOME and gets through every contest on a second or third try, never stuck (no stalemate), every fall warned. node tools/play.mjs tools/plays/guns_clumsy.json",
+ "about": "[C2] The gun kit's proof 2 as WAVE_C \u00a77 has it: a clumsy first-timer who was taught the cover and uses it badly - slow hands (reactions 550 .. 900 ms), a wide aim, up over the cover a second too long now and then, reloads where he stands now and then, gets down late on a new spot, a wrong key now and then, moves only when it is bad; after a fall it reads the fall's words and does that one thing better on the retry (the retry says what went wrong) - FAILS SOME and gets through every contest on a second or third try, never stuck (no stalemate), every fall warned. node tools/play.mjs tools/plays/guns_clumsy.json",
  "url": "/?mute=1&start=guns.door",
  "size": [
   1280,
