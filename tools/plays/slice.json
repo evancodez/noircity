@@ -462,7 +462,7 @@
    "key": "KeyE"
   },
   {
-   "until": "G.inspect.active && G.inspect.active.obj.userData.kind === 'amesCard'",
+   "until": "G.scenes.ctx && G.scenes.ctx.flags.cardUp && !G.scenes.ctx.flags.cardRead && G.player.hands.held.R && G.player.hands.held.R.userData.kind === 'amesCard'",
    "timeout": 6000
   },
   {

@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { DINER } from '../../stages/block/site.js';
 import { DOOR, SLAT } from '../../player/clips/watcher.js';
-import { buildProp } from '../../props/index.js';
+import { until } from '../../game/script.js';
 
 // [C4] The end of chapter II (the brief's §4, §5): the way out of the diner
 // and what I find on him.
@@ -190,31 +190,20 @@ function roomAnswers(ctx, free) {
 }
 
 // ---- Ames's card ---------------------------------------------------------------------------
-// it comes out of the matchbook and turns over in my fingers (the inspection's
-// pivot turned from its back to its face over 0.8 s), the mouse still turns it
+// [C4] after the critic (m2): out of the matchbook into my fingers - the
+// right hand brings it up with its back to me and turns it over under the
+// street lamp (player/clips/c4.js c4readCard: the card placed, the hand
+// solved onto it - it never hangs in the air); E puts it away
 export function* readCard(ctx) {
-  const G = ctx.game;
-  const card = buildProp('amesCard');
-  ctx.flags.card = card;
+  const G = ctx.game, H = ctx.hands;
   G.sfx.play('clothRustle');
-  // (its back to me first: turned over about its long edge, face up, by 1.0 s)
-  const FACE = 1.05;
-  const A = G.inspect.open({ prop: card, options: { spin: [FACE - Math.PI, 0.12], dist: 0.27, scale: 2.7 } });
-  let read = false;
-  A.onDone = () => { read = true; };
-  const p = A.pivot;
-  let t = 0, turned = 0;
-  while (!read) {
-    t += 1 / 60;
-    if (t < 1.05) {
-      // (the turn, eased; the mouse's own turn rides on it)
-      const u = Math.min(1, Math.max(0, (t - 0.3) / 0.7)), e = u * u * (3 - 2 * u);
-      const want = (FACE - Math.PI) + Math.PI * e;
-      p.rotation.x += want - (FACE - Math.PI) - turned;
-      turned = want - (FACE - Math.PI);
-      if (u > 0.5 && !ctx.flags.cardTurned) { ctx.flags.cardTurned = true; G.sfx.play('matchbook'); }
-    }
-    yield null;
-  }
+  const h = H.play('c4readCard', { onMark: { turned: () => { ctx.flags.cardTurned = true; G.sfx.play('matchbook'); } } });
+  yield null;
+  ctx.flags.card = H.held.R || null;
+  yield until(() => h.t >= 1.0 || h.done);
+  G.hud.prompt('E  put away', null, 'c4card');
+  ctx.flags.cardUp = true;
+  yield until(() => ctx.pressed('KeyE'));
+  G.hud.clearPrompt('c4card');
   ctx.flags.cardRead = true;
 }

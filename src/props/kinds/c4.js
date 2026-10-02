@@ -179,7 +179,9 @@ export const SPECS = {
     const W = 1024, H = 588;
     const c = document.createElement('canvas'); c.width = W; c.height = H;
     drawAmesCard(c.getContext('2d'), W, H);
-    const S = sheet(0.089, 0.0006, 0.051, c, 'amesCard');
+    // ([C4] after the critic: held in the fingers under the lamp a lit face
+    // printed its print grey - unlit, as the check's: the black and the red read)
+    const S = sheet(0.089, 0.0006, 0.051, c, 'amesCard', 'unlit');
     return {
       parts: [{ geo: S.body, mat: plainMat(), id: 0 }, { geo: S.face, mat: S.mat, id: 0, cast: false, name: 'face' }],
       grip: [0.03, 0.0003, 0.0], accent: 'crew',

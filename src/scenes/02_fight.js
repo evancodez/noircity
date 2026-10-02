@@ -524,8 +524,8 @@ export default defineScene({
       if (!G.save.inventory.includes('matchbook')) G.save.inventory.push('matchbook');
       // (the card out of it, turned over under the lamp: read)
       yield* readCard(ctx);
-      const pk = H.play('showMatchbook', { onMark: { pocketed: () => G.sfx.play('pocket') } });
-      pk.t = H.clip('showMatchbook').marks.pocketed - 0.1;
+      // ([C4] into the coat, from the fingers)
+      H.play('c4cardAway', { onMark: { pocketed: () => G.sfx.play('pocket') } });
       if (!G.save.inventory.includes('amesCard')) G.save.inventory.push('amesCard');
       ctx.flags.pocketed = true;
       G.save.write();
@@ -567,7 +567,7 @@ export default defineScene({
       C.yaw += Math.atan2(Math.sin(want - C.yaw), Math.cos(want - C.yaw)) * 0.15; C.pitch += (wp - C.pitch) * 0.15;
       if (Math.hypot(p.x - e.x, p.z - e.z) > 2.0) C.auto = { f: 1, s: 0 }; else C.auto = null;
     }
-    if (A.prompting() || G.inspect.active) A.pressAfter('KeyE', 1.0, 2.2);
+    if (A.prompting() || G.inspect.active || (ctx.flags.cardUp && !ctx.flags.cardRead)) A.pressAfter('KeyE', 1.0, 2.2);
   },
 });
 

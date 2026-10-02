@@ -35,7 +35,7 @@
   { "until": "G.scenes.beat === 'matchbook' && !!G.inspect.active", "timeout": 8000 },
   { "wait": 1200 },
   { "key": "KeyE" },
-  { "until": "G.inspect.active && G.inspect.active.obj.userData.kind === 'amesCard'", "timeout": 6000 },
+  { "until": "G.scenes.ctx && G.scenes.ctx.flags.cardUp && !G.scenes.ctx.flags.cardRead && G.player.hands.held.R && G.player.hands.held.R.userData.kind === 'amesCard'", "timeout": 6000 },
   { "wait": 1400 },
   { "shot": "o04_card" },
   { "key": "KeyE" },

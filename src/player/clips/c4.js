@@ -81,15 +81,51 @@ const READ_CHECK = {
   view: [[0, {}], [0.45, { pitch: -0.1 }], [1.0, {}]],
   brush: 'L',
 };
+// [C4] after the critic (m2): Ames's card, out of the matchbook, in my
+// fingers - not hung in the air. The right hand brings it up with its back
+// to me, turns it over (about its long edge, as the inspect view did) and
+// holds it close under the street lamp: J. AMES, PRIVATE INVESTIGATIONS,
+// HARBOR BLDG. RM 304, the red cross; E: into the coat (c4cardAway).
+const CD = (at, F = PINCH, e = [0.2, -0.42, -0.06]) => ({ o: 'amesCard', at, F, e, ef: 'cam' });
+const cardAt = (p, up, fwd) => ({ frame: 'cam', p, up, fwd });
+export const CARD_FACE = cardAt([-0.03, -0.022, -0.165], [0, 0.25, 1], [0, -1, 0.25]);
+const READ_CARD = {
+  duration: 1.25, marks: { turned: 0.85 }, hold: true, blocking: false,
+  keys: { R: [
+    [0, 'downR'],
+    [0.4, CD(cardAt([0.05, -0.12, -0.22], [0, 0, -1], [0, 1, 0]))],
+    [0.7, CD(cardAt([0.0, -0.06, -0.2], [0, 1, 0], [0, 0, 1]))],
+    [1.0, CD(CARD_FACE), 'out'],
+    [1.25, CD(cardAt([-0.029, -0.021, -0.165], [0, 0.25, 1], [0, -1, 0.25]))],
+  ] },
+  props: [[0, 'take', 'R', 'amesCard']],
+  brush: 'R',
+};
+const CARD_AWAY = {
+  duration: 0.8, marks: { pocketed: 0.55 },
+  keys: { R: [
+    [0, CD(CARD_FACE)],
+    [0.35, CD(cardAt([0.16, -0.3, -0.2], [0.3, 0.2, 1], [0, -1, 0.2]))],
+    [0.55, 'pocketAwayR'],
+    [0.8, 'downR'],
+  ] },
+  props: [[0.55, 'drop', 'R']],
+  brush: 'R',
+};
 // a flat paper pinched at its foot between the thumb and the side of the
 // index (as the bill), running out along the fingers, its face the palm's
 // way: held up, the fingers are behind it and the thumb on its face
 export const SOCKETS = {
   guestCheck: { bone: 'hand', p: [-0.018, -0.016, -0.082], r: [0, 0, Math.PI] },
+  // (the card by its right edge between the thumb and the first fingers, its
+  // length running on past the fingertips, its face the palm's way: the
+  // fingers wrap only its edge)
+  amesCard: { bone: 'hand', p: [-0.018, -0.016, -0.138], basis: [[0, 0, 1], [0, 1, 0], [-1, 0, 0]] },
 };
 
 export const CLIPS = {
   c4readCheck: READ_CHECK,
+  c4readCard: READ_CARD, c4cardAway: CARD_AWAY,
   c4letGo: { duration: 0.42, blend: 0.05, marks: {}, keys: { R: [[0, 'doorLiveR'], [0.42, 'downR', 'in']] } },
   c4windL: { duration: 1.1, marks: { full: 0.48 }, hold: true, blocking: false, blend: 0.06, keys: { L: windKeys('L'), R: [[0, gR]] }, view: windView(-1), brush: 'L' },
   c4windR: { duration: 1.1, marks: { full: 0.48 }, hold: true, blocking: false, blend: 0.06, keys: { R: windKeys('R'), L: [[0, gL]] }, view: windView(1), brush: 'R' },
