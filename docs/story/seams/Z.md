@@ -41,14 +41,24 @@ hud.objectiveText                                    // what it says (or is abou
 
 - The same text again does nothing (no second write-in).
 - **Declare it, do not call it, where you can.** A scene file may give
-  `objective: 'one line for the scene'` or `objectives: { beat: 'line' }` in
-  `defineScene`: the manager sets the beat's line when the scene is entered
+  `objective: 'one line for the scene'` or `objectives: { beat: 'line' | null }`
+  in `defineScene`: the manager sets the beat's line when the scene is entered
   at that beat (a cold `?scene=&beat=`, a CONTINUE, a retry) and when the
-  script's `yield beat(name)` begins it. Call `hud.objective` yourself only
-  for a change inside a beat (the goal moved: "Get to the car.").
-- A scene that declares nothing shows its chapter's stand-in from
-  `src/scenes/order.js` (`objective`, and `objectives` for the beats whose
-  goal changes: II's `ko`, `outside`), so no chapter starts without one.
+  script's `yield beat(name)` begins it (`null`: the line goes). Call
+  `hud.objective` yourself only for a change inside a beat (the goal moved:
+  "Get to the car."; the diner strikes `Light up.` and writes `Watch the
+  room.` when the cigarette is lit).
+- **Every beat has a line that is true for it.** A scene that declares
+  nothing shows its chapter's stand-ins from `src/scenes/order.js`: an
+  `objectives` map that names every beat of the wave B scene as it plays
+  today (VIII `arrive` 'Take the gun.', `cars` 'Hold the diner.'; III `safe`
+  'Open the safe.'; IV `quiet` null). A stand-in is **taken down** when a beat
+  begins that has none (better no line than a goal that is no longer the
+  goal), unless the scene has set a line of its own since. A scene file that
+  declares its own `objective` or `objectives` takes over its chapter's lines
+  whole: none of order.js's apply then, so a lane rebuilding a chapter
+  declares every beat's line itself (and may delete its chapter's map in
+  order.js when it merges).
 - Entering another scene drops it; a retry of the same scene keeps it (and
   its beat's line is set again: no flicker, no second write-in).
 - Must not: a wall of text (a few words, eight at most), a second line, a
@@ -67,8 +77,11 @@ export default defineScene({ id: 'diner', beats: ['settle', 'order', 'drink', 'p
 
 One line with the key drawn as a key cap, centre low, at the moment of
 need. `[X]` in the text is a key cap: `[SPACE]`, `[E]`, `[C]`, `[R]`, `[A]`,
-`[D]`, `[SHIFT]`, `[CTRL]`, `[ESC]`; `[LMB]` and `[RMB]` are little mice
-with that button inked. Use the rulebook's keys (WAVE_C §2) and its words.
+`[D]`, `[SHIFT]`, `[CTRL]`, `[ESC]`; `[LMB]` and `[RMB]` are little dark
+mice with that button lit white and lettered L or R. Use the rulebook's keys
+(WAVE_C §2) and its words; the same verb is the same card id everywhere
+(`fire`, `crouch`, `steady`, `vault`, `block`, `dodge`, `reload`), so it is
+taught once in a save wherever it comes first.
 
 ```
 const h = hud.teach('vault', '[SPACE] vault', { until: 'Space' });
@@ -98,14 +111,22 @@ hud.teach.dismiss();                // the one up and the queue, now
 - Must not: teach in the middle of danger (find the safe second, or hold);
   teach what was taught (the same verb is the same key everywhere); write
   the key as text ('Press SPACE'): the cap is drawn for you.
+- **Stand-ins until the lanes place their own** (lane C1, each a `[C1]`
+  line): IV gives `[LMB] fire` then `[C] get low` as the revolver comes out
+  in `shadows` (the safe second before the door), VIII `[LMB] fire` as the
+  Tommy gun is taken. A lane that rebuilds its chapter keeps or moves them.
+- **The rulebook's keys** are on the title and the pause card (two lines,
+  `KEYS` in Hud.js): a player who forgot a verb can look it up with ESC.
 
 ---------------------------------------------------------------------------
 ## Z3. The warning and the fail
 
 ### `hud.warn(text | null)`
 The line that must come before a loss ("He's getting away.", "They've seen
-something."). Centre low, italic, on a torn stroke; it pulses once as it
-comes, with a low thump; it stays until `hud.warn(null)` (fades in 0.4 s).
+something."). Low in the frame (71 % down: under what is aimed at, above the
+prompt; a teach card up at the same time lifts above it), italic, on a torn
+stroke; it pulses once as it comes, with a low thump; it stays until
+`hud.warn(null)` (fades in 0.4 s).
 The same text again does nothing, so a scene may set it every step from a
 condition (give the condition a little hysteresis - on at 22 m, off at 18 -
 or a warning that flickers across its line pulses and thumps each time):
@@ -133,6 +154,18 @@ fall to control, 2.4 s from a stop.
 - **Fail counts**: `game.fails(beat?)` is how often the player has failed in
   that beat of this scene (default the current beat; kept across retries,
   reset when another scene is entered). Mercy rules and `teach.again` read it.
+- **The warning before going down (the kit's own).** In the story, outside
+  a fist fight, health falling under 45 with a hit in the last second puts
+  up the scene's `lowWarn` (`defineScene({ lowWarn: 'text' | (ctx) => text })`)
+  or **'You’re hit. Get to cover.'**; it goes as health mends past 60, or with
+  the fail. It is a line under the scene's own: a scene's `hud.warn(text)`
+  shows over it while the scene has one, and a scene setting `hud.warn(null)`
+  every step never puts it out (`hud.kit.low`, `Game.lowStep`, `LOW` in
+  Game.js). **Nobody goes down unwarned:** a hit that would take the last of
+  health while no warning has been up a full second leaves one instead (the
+  warning comes with it: `Game.spareLast`, `health.spared` counts it). It
+  only ever delays a fall by about a second: an idle player still goes down
+  (IV hands off: warned 7 s before; VIII: 3.9 s; `tools/plays/kit_warned.json`).
 - **Health reaching zero** calls `game.fail({ fall: true, ... })` with, in
   order: the scene's `onDown` (`{ why, to }` or `(ctx) => ({ why, to })` in
   `defineScene`), else `game.setCheckpoint(beat, why)`'s, else `'Down.'` at
@@ -154,8 +187,9 @@ ctx.game.setCheckpoint('window', 'The window man got you.');   // later in the s
 
 - Must not: roll your own black, fall, retry card or lose text; call
   `scenes.go` yourself to retry; lose without a warning first (§1 rule 2:
-  the warning must be on screen at least a second before a fail that is not
-  a hit); fail on one miss where several are fair.
+  the warning must be on screen at least a second before every fail - a
+  fall from a hit too, which the kit's own warning above sees to); fail on
+  one miss where several are fair.
 
 ---------------------------------------------------------------------------
 ## Z4. Stills: `game.stills.play(id, opts?) -> handle`
@@ -164,11 +198,26 @@ Comic panels over black (WAVE_C §5). The game is paused under them (the sim
 does not step), the music plays on, the rain ducks; each panel lands with a
 paper sound. A click, E, SPACE or Enter moves on (0.4 s after a panel lands,
 so a mashed key never skips one unseen); a panel moves on by itself after
-its `secs`; ESC twice (or held) skips the run. Ending, the page goes to
-black: what comes next comes up out of the black itself.
+its `secs`; ESC twice (or held) skips the run (two key events are two
+presses however quick; a key event and the pointer lock's loss within
+160 ms are one press seen twice). The hint is at the page's foot, centre.
+Ending, the page goes to black: what comes next comes up out of the black
+itself. Played inside a scene, the scene goes black under the page, so a
+script that goes on to another scene (`ctx.next()`) carries the black into
+it, and one that goes on in the same scene comes up out of it by itself
+(`scenes.rise`, 0.7 s, cancelled by a `go`).
+
+Under a real pointer lock the browser takes the first ESC for itself and
+lets the mouse go: the page counts that as the first press, and a run that
+ends with the mouse let go does not show the pause card. The scene comes up
+as it would, a quiet line says `click to take the mouse`, and the click
+takes it; left alone for 8 s (or hit, or warned, or ESC again) the pause
+card comes and the game is held (main.js `mouseFree`;
+`tools/plays/kit_esc.json` stands in the browser's ESC by letting the lock
+go).
 
 ```js
-// the end of II (lane C4): the card, then on to III
+// the end of II (02_fight.js): the card, then on to III
 const h = ctx.game.stills.play('ames');
 yield until(() => h.done);     // (h.skipped: it was skipped)
 ctx.next();
@@ -179,7 +228,7 @@ The runs (`src/stills/<id>.js`), with placeholder pictures until lane C9's:
 | id | where | who plays it | panels |
 | --- | --- | --- | --- |
 | `opening` | before I, on BEGIN only (Game.start) | C1 (done) | 3: `A TIP. AMES.`, `HIS MEN. MY DINER.`, the neon (no words) |
-| `ames` | end of II | C4 | 1: `AMES. MARKED.` |
+| `ames` | end of II | C1's stand-in in `02_fight.js` (after the matchbook is put away), C4 to stage | 1: `AMES. MARKED.` |
 | `check` | III, the check assembled | C5 | 2: `DOT'S HAND.`, `SHE SENT HIM TO THEM.` |
 | `photo` | VII, the office | C7 | 1: `NOT HIS GIRL. HIS NEXT.` |
 | `diner` | VIII, before the diner | C8 | 1: `THE DINER.` |
@@ -291,7 +340,8 @@ chapter picked start with empty flags and inventory (then the chapter's
 
 `?start=kit` (`src/scenes/92_kit.js`, not in the order): a man runs up the
 avenue at me, side to side round the parked car (brain `kit_walker`: he
-never fires; after two fails here he walks: the mercy); the revolver is out.
+never fires; three body hits or one in the head stop him; after two fails
+here he walks: the mercy, which an idle player still loses); the revolver is out.
 The objective, two teach cards (`[LMB] fire`, `[RMB] steady the aim`; the
 second once more after two fails), the warning at 7 m, the fail ('He reached
 you.') back at `ready`; won, 'Done.' and the round again (`game.kitWins`).
@@ -299,7 +349,11 @@ The plays: `tools/plays/kit.json` (the stills, the objective, teach once,
 the fail from a debug hook), `kit_idle.json`, `kit_bad.json`,
 `kit_good.json` (the three proofs of WAVE_C §7 on the test bed's contest,
 by `tools/lib/kit_bot.mjs`: a model of each kind of player; copy it for a
-chapter's own proofs), `kit_downs.json` (going down in IV, VIII and the bed).
+chapter's own proofs), `kit_downs.json` (going down in IV, VIII and the bed:
+the spared hit, the warning, then the fall), `kit_lines.json` (every beat's
+line, flowing and cold, the stand-in taken down, IV's and VIII's cards),
+`kit_warned.json` (IV and VIII hands off: warned, then down, back in under
+ten seconds), `kit_esc.json` (ESC on the stills as a real browser has it).
 
 The counters (`#counters`, `tools/counters.sh`, a play's `K`) carry
 `objective`, `warn`, `teach` (the card up), `stills` (the run up), `failing`

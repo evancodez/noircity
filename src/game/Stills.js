@@ -104,6 +104,8 @@ export class Stills {
     this.el.style.opacity = '1';
     this.hint.textContent = 'click: next · esc esc: skip';
     this.hint.classList.remove('on');
+    // (the last run's ending faded it out)
+    this.hint.style.opacity = '1';
     this.el.appendChild(this.hint);
     G.hud.setStilled(true);
     G.hud.clearPrompt();

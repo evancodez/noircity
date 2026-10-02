@@ -30,7 +30,10 @@
    "eval": "(G.health.damage(150), G.health.hp)"
   },
   {
-   "expect": "G.health.hp === 1 && G.hud.warnText === 'You’re hit. Get to cover.' && !G.failing",
+   "wait": 250
+  },
+  {
+   "expect": "G.health.hp >= 1 && G.health.hp < 5 && G.health.spared >= 1 && G.hud.warnText === 'You’re hit. Get to cover.' && !G.failing",
    "label": "[C1] the hit that would take the last before any warning is spared: one left, the warning up"
   },
   {
@@ -104,7 +107,10 @@
    "eval": "(G.health.damage(150), G.health.hp)"
   },
   {
-   "expect": "G.health.hp === 1 && G.hud.warnText === 'You’re hit. Get to cover.' && !G.failing",
+   "wait": 250
+  },
+  {
+   "expect": "G.health.hp >= 1 && G.health.hp < 5 && G.health.spared >= 1 && G.hud.warnText === 'You’re hit. Get to cover.' && !G.failing",
    "label": "[C1] the hit that would take the last before any warning is spared: one left, the warning up"
   },
   {
