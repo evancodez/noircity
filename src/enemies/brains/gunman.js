@@ -36,6 +36,7 @@ export const GUNMAN = {
   settleStill: 0.75,           // x while I stand up still in his line (a man standing in the open is an easy mark)
   settleRattled: 1.5,          // x for 1.5 s after a round came near him or hit him
   notice: 0.25,                // s: I come up (or out) into his line: he sees me, then settles
+  behind: 0.45,                // s more, when he has me from outside my view (behind, the far side): in time to turn
   lagT: 0.2,                   // s: his aim trails a moving target by this much
   sigma: 0.0055,               // rad: a settled round's throw (a still man in the open is hit)
   lost: 0.6,                   // s: a full settle drains in this while I am out of his line
@@ -69,6 +70,7 @@ export default {
       get state() { return kind + ':' + S.state; },
       get hasLine() { return S.line && h.alive; },
       get flanking() { return !!S.flank; },
+      get behindMe() { return behindMe(); },
       // ---- the kit's director asks -------------------------------------------------------
       canFlank() { return (kind === 'pistol' || (kind === 'tommy' && alone())) && !S.flank && (S.state === 'hold' || S.state === 'back' || S.state === 'move' || S.state === 'open') && S.mag > 2 && !S.entry; },
       goFlank(spot) {
@@ -137,7 +139,10 @@ export default {
       return s * (Kc && Kc.settleK ? Kc.settleK : 1);
     };
     // (I come up over cover or out round it: he sees me a moment late; standing in the room I am seen at once)
-    const noticeOf = () => ((G.controller.crouchK || 0) > 0.5 ? T.notice : T.notice * 0.3);
+    // (and a man who has me from where I am not looking - a flank, a door at my back - a moment more:
+    // the time to turn, which the warning 'Behind you!' asks for)
+    const behindMe = () => { const C = G.controller, dx = h.pos.x - G.eye.x, dz = h.pos.z - G.eye.z, L = Math.hypot(dx, dz) || 1; return (-Math.sin(C.yaw) * dx - Math.cos(C.yaw) * dz) / L < 0.45; };   // (off the screen: past ~63 degrees)
+    const noticeOf = () => ((G.controller.crouchK || 0) > 0.5 ? T.notice : T.notice * 0.3) + (behindMe() ? T.behind : 0);
     const face = (dt, rate = 6) => { const p = S.target || G.eye; B.faceTo(p.x, p.z, dt, rate); };
 
     // ---- moving --------------------------------------------------------------------------------

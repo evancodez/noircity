@@ -32,6 +32,7 @@ export const BEATS = {
       { kind: 'pistol', at: { x: -0.4, z: -9.7 }, way: [{ door: 'BD' }, { x: -0.5, z: -5.6, run: true }, { door: 'A1' }], wait: 1.2, door: 'hold' },
     ],
     spots: [{ x: DESK.x + 0.02, z: DESK.z + 0.1, yaw: EAST }, { x: DESK.x + 0.02, z: DESK.z - 0.55, yaw: EAST }, { x: -7.25, z: -2.35, yaw: EAST + 0.4 }],
+    open: { x: -3.6, z: -2.4 },
   },
   two_ways: {
     at: [DESK.x + 0.02, DESK.z + 0.1, EAST], gun: 'revolver', tipped: true, crouch: false, max: 2, flankAfter: 7,
@@ -42,6 +43,7 @@ export const BEATS = {
       { kind: 'pistol', at: { x: -0.5, z: 9.5 }, way: [{ door: 'SD' }, { x: -4.6, z: 4.6, run: true }, { door: 'A2' }], wait: 3.0 },
     ],
     spots: [{ x: DESK.x + 0.02, z: DESK.z + 0.1, yaw: EAST }, { x: -7.25, z: -2.35, yaw: EAST + 0.6 }, { x: -6.0, z: -6.6, yaw: EAST + 0.8 }],
+    open: { x: -3.6, z: -2.4 },
   },
   pin: {
     at: [4.6, -5.55, SOUTH], gun: 'revolver', crouch: false, max: 2, flankAfter: 8,
@@ -51,6 +53,7 @@ export const BEATS = {
       { kind: 'pistol', at: { x: -0.4, z: -9.5 }, way: [{ door: 'BD' }, { x: -0.45, z: -2.2, run: true }, { door: 'B1' }], wait: 3.0 },
     ],
     spots: [{ x: 4.6, z: -5.55, yaw: SOUTH }, { x: 6.6, z: -5.55, yaw: SOUTH }, { x: 2.9, z: -5.6, yaw: SOUTH + 0.3 }],
+    open: { x: 4.4, z: -3.3 },
   },
   rush: {
     at: [-3.5, 2.4, SOUTH], gun: 'revolver', crouch: false, max: 2, flankAfter: 0,
@@ -60,6 +63,7 @@ export const BEATS = {
       { kind: 'pistol', at: { x: -7.4, z: -6.8 }, way: [{ door: 'A2' }], wait: 7.0, door: 'hold' },
     ],
     spots: [{ x: -3.5, z: 2.4, yaw: SOUTH }],
+    open: { x: -3.4, z: 4.3 },
   },
   // (the brief's street: four men and the cars - I start down behind the
   // near car, they come out of the warehouse's openings across the way;

@@ -558,6 +558,7 @@ export class Guns {
     for (const [h, ai] of G.ais) {
       if (!h.alive || !ai.brain) continue;
       if (ai.brain.kind === 'rusher' && !ai.brain.S.entry && Math.hypot(h.pos.x - e.x, h.pos.z - e.z) < 4.2) say(0, W.rush || 'Stop him!');
+      if (ai.brain.hasLine && ai.brain.behindMe) say(1, W.behind || 'Behind you!');
       if (down && ai.brain.hasLine) say(2, W.angle || 'They have your angle. Move!');
     }
     const L = this.lastKill;
