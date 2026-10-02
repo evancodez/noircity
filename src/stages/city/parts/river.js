@@ -160,6 +160,8 @@ export default {
           cand.push({ p: l.head, k: 3.2, w: 0.55 });
         }
         for (const f of far) cand.push(f);
+        const LM = stage.part('landmarks');
+        if (LM) for (const f of LM.lights) cand.push(f);
         res.y = pixelHeight || 900; res.x = res.y * camera.aspect;
         water.material.setLights(cand, camera, res);
       },

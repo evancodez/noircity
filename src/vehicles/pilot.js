@@ -43,6 +43,10 @@ export class Pilot {
     const Ld = clamp((4.5 + sp * 0.42) * O.look, 4.5, 16);
     const T = P.at(Math.min(P.len, this.s + Ld), this._a);
     let tx = T.x, tz = T.z;
+    // (a lane change: off the path to its right by `offset` m - pulling over,
+    // or out into the other lane to pass)
+    this.offNow = (this.offNow || 0) + ((this.offset || 0) + (this.passing || 0) - (this.offNow || 0)) * (1 - Math.exp(-dt * 2.2));
+    if (this.offNow) { tx += -T.fz * this.offNow; tz += T.fx * this.offNow; }
     if (O.wander) { const w = Math.sin(this.t * 0.9) * O.wander; tx += -T.fz * w; tz += T.fx * w; }
     const c = Math.cos(v.yaw), sn = Math.sin(v.yaw);
     const dx = tx - v.pos.x, dz = tz - v.pos.z;
@@ -86,6 +90,24 @@ export class Pilot {
         if (ax < best) { best = ax; this.ahead = o; }
       }
       if (nudge) { const nl = Math.atan(((-2 * (fz + nudge)) / Math.max(1, fx * fx + fz * fz)) * L) / Math.max(0.05, lock); I.steer = clamp(nl - v.yawRate * 0.06, -1, 1); }
+      // (stuck behind a slower car with the other lane clear ahead: out and
+      // past it - a man who wants to be gone does)
+      if (O.overtake) {
+        const slow = this.ahead && Math.max(0, this.ahead.vel.x * c - this.ahead.vel.z * sn) < sp - 1.5 && best < 18;
+        this.passT = slow ? (this.passT || 0) + dt : Math.max(0, (this.passT || 0) - dt * 0.5);
+        if (this.passT > 0.6 && !this.passing) {
+          let clear = true;
+          for (const o of O.bodies()) {
+            if (o === v || o === this.ahead || !o.solid) continue;
+            const ox = o.pos.x - v.pos.x, oz = o.pos.z - v.pos.z;
+            const ax = ox * c - oz * sn, az = ox * sn + oz * c;
+            if (ax > -4 && ax < 45 && az < -0.5 && az > -5.5) { clear = false; break; }
+          }
+          if (clear) { this.passing = -3.2; this.passUntil = this.t + 3.5; }
+        }
+        if (this.passing && this.t > this.passUntil && (!this.ahead || best > 10)) this.passing = 0;
+        if (this.passing) { this.ahead = null; }
+      }
       if (this.ahead) {
         const o = this.ahead;
         const ov = Math.max(0, (o.vel.x * c - o.vel.z * sn));

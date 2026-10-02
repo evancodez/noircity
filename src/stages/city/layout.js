@@ -190,8 +190,8 @@ export function elStations(line = elLine()) {
       // (on the river road a column stands only on its lines, 3.9 m either
       // side of the road's middle: where the el comes round onto it, none)
       if (inRiver(x, z, 1.0) && Math.abs(Math.abs(rp.d) - 3.9) > 0.7) return true;
-      if (Math.abs(f.fz) > 0.9) { if (inEW(x, z, 4.5)) return true; }
-      else if (Math.abs(f.fx) > 0.9) { if (inNS(x, z, 4.5)) return true; }
+      if (Math.abs(f.fz) > 0.9) { if (inEW(x, z, 6)) return true; }
+      else if (Math.abs(f.fx) > 0.9) { if (inNS(x, z, 6)) return true; }
       // (round a corner the girders span the crossing: no column stands in
       // any carriageway there)
       else if (inEW(x, z, 1.5) || inNS(x, z, 1.5) || inRiver(x, z, 1.0)) return true;

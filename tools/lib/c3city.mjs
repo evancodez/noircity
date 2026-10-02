@@ -82,7 +82,7 @@ export function runChase({ seed = 1937, bot = 'idle', beat = 'start', secs = 200
       ch.unseen = seen ? Math.max(0, ch.unseen - dt * 2) : ch.unseen + dt;
       ch.farT = gap > RULES.farWarn + 15 ? ch.farT + dt : Math.max(0, ch.farT - dt * 2);
       out.maxGap = Math.max(out.maxGap, gap); out.unseenMax = Math.max(out.unseenMax, ch.unseen);
-      if (ch.unseen > RULES.unseenLost || gap > RULES.farLost || ch.farT > RULES.farT) { out.result = 'Lost him.'; break; }
+      if (ch.phase === 'a' && (ch.unseen > RULES.unseenLost || gap > RULES.farLost || ch.farT > RULES.farT)) { out.result = 'Lost him.'; break; }
       if (my.damage >= 4) { out.result = 'Wrecked.'; break; }
       if (ch.phase === 'b' && D.state !== 'lost' && (his.pos.z > RULES.gateZ || D.atPier)) { out.result = 'He warned them.'; break; }
       if (ch.phase === 'b' && B.stopped && B.stopped()) { out.result = 'stopped'; break; }

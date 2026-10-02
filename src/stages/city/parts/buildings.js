@@ -23,7 +23,9 @@ export default {
     const group = new THREE.Group();
     group.name = 'buildings';
     scene.add(group);
-    const lit = M.windowLit, shop = M.windowLitDim;
+    // (lit windows: a dim paper grey, small and few - a bright pane printed as
+    // a white slab at this size)
+    const lit = new THREE.MeshBasicMaterial({ color: new THREE.Color().setScalar(0.085) }), shop = new THREE.MeshBasicMaterial({ color: new THREE.Color().setScalar(0.055) });
     const box = (x0, x1, y0, y1, z0, z1) => new THREE.BoxGeometry(x1 - x0, y1 - y0, z1 - z0).translate((x0 + x1) / 2, (y0 + y1) / 2, (z0 + z1) / 2);
     const byBlock = new Map();
     for (const l of lots) {

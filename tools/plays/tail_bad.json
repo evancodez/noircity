@@ -1,0 +1,24 @@
+{
+ "about": "Chapter VI, the tail (lane C3), a clumsy first-timer by real input (src/scenes/tail/bot.js 'bad': late on the brakes, slow hands, a wobble on the wheel, a wrong turn now and then, a wild aim at the rear window; a little better each try): fails some (lost him, a wreck, he warned them) and gets through on a later try, never stuck; chapter VII opens at the pier. node tools/play.mjs tools/plays/tail_bad.json (NOIR_PORT=5343)",
+ "url": "/?mute=1&start=tail",
+ "size": [1280, 800],
+ "out": "shots/c3/play_bad",
+ "steps": [
+  { "name": "the title, BEGIN at the tail" },
+  { "until": "G.state === 'title' && !document.getElementById('title').classList.contains('hidden') && !!document.querySelector('#title .opt[data-k=begin]')", "timeout": 40000 },
+  { "wait": 2000 },
+  { "clickOn": "#title .opt[data-k=begin]", "taken": "G.state === 'playing' && document.pointerLockElement === N.renderer.domElement", "retries": 4, "every": 4000 },
+  { "until": "G.scenes.current && G.scenes.current.id === 'tail' && G.controller.mode === 'drive'", "timeout": 45000 },
+  { "eval": "(window.__tailFails = [], window.__c3tries = 0, 'go')" },
+  { "drive": "tools/lib/c3_tail.mjs", "profile": "bad", "seed": 11, "timeout": 900000,
+    "stop": "G.scenes.current && G.scenes.current.id !== 'tail'",
+    "shots": {
+      "b01_first_fail": "(window.__tailFails || []).length >= 1 && G.scenes.fadeK > 0.6",
+      "b02_river": "!!G.scenes.ctx.flags.chase && G.scenes.ctx.flags.chase.phase === 'b' && G.scenes.ctx.flags.chase.gun.aimK > 0.9",
+      "b03_wreck": "!!G.scenes.ctx.flags.chase && G.scenes.ctx.flags.chase.phase === 'wreck'"
+    },
+    "check": "D.end === 'next:warehouse' && D.fails.length >= 1 && D.fails.length <= 8", "label": "the clumsy hands fail some, then get through: chapter VII opens" },
+  { "eval": "JSON.stringify({ fails: window.__tailFails || [], tries: window.__c3tries })" },
+  { "expect": "G.scenes.current && G.scenes.current.id === 'warehouse'", "label": "chapter VII (Pier Nine) begins" }
+ ]
+}

@@ -178,12 +178,15 @@ export class Chase {
     const hisZ = this.his.pos.z;
     const gateNear = this.phase === 'b' && this.driver.state !== 'lost' && hisZ > R.gateWarnZ;
     let warn = null;
-    if (this.unseen > R.unseenWarn || gap > R.farWarn) warn = "He's getting away.";
+    // (a: out of sight or far behind; b: the river road runs straight to the
+    // pier and he is seen all the way - the race is to stop him before its
+    // gate)
+    if (this.phase === 'a' && (this.unseen > R.unseenWarn || gap > R.farWarn)) warn = "He's getting away.";
     if (gateNear) warn = "He's nearly at the pier.";
     K.warn(warn);
     if (this.failing) return;
     const to = this.checkpoint();
-    if (this.unseen > R.unseenLost || gap > R.farLost || this.farT > R.farT) return this.fail('Lost him.', to);
+    if (this.phase === 'a' && (this.unseen > R.unseenLost || gap > R.farLost || this.farT > R.farT)) return this.fail('Lost him.', to);
     if (this.phase === 'b' && this.driver.state !== 'lost' && (hisZ > R.gateZ || this.driver.atPier)) return this.fail('He warned them.', 'river');
   }
   checkpoint() { return this.phase === 'b' ? 'river' : this.ctx.flags.check || 'start'; }

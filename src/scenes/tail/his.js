@@ -81,7 +81,7 @@ export class His {
     for (const id of legIds) if (this.allIds[this.allIds.length - 1] !== id) this.allIds.push(id);
     this.legEndId = this.idsOf(i)[this.idsOf(i).length - 1];
     const path = buildPath(ids, { vmax: 16.5, aLat: 6.2, aBrake: 5.2 });
-    if (!this.pilot) this.pilot = new Pilot(path, { keep: 5, bodies: () => this.chase.bodies() });
+    if (!this.pilot) this.pilot = new Pilot(path, { keep: 5, overtake: true, bodies: () => this.chase.bodies() });
     else this.pilot.setPath(path, this.car);
     this.path = path;
     this.legIndex = i;
