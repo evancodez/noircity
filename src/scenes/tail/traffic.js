@@ -22,7 +22,7 @@ const SPAWN_MIN = 70, SPAWN_MAX = 170, GONE = 210;
 // about to take, going his way and slower: he must pass them, and so must I.
 // On the river road (phase b) the road has its own: a slow car in his lane
 // ahead of him, one coming the other way, a second slow one further down.
-const AHEAD = 0.65;
+const AHEAD = 0.5;
 const _v = new THREE.Vector3();
 const clamp = (x, a, b) => Math.max(a, Math.min(b, x));
 
@@ -65,12 +65,16 @@ export class Traffic {
   spawnAhead() {
     const C = this.chase, my = C.my, T = C.stage.track, D = C.driver;
     if (!D || !D.path || !D.pilot || C.phase !== 'a') return null;
+    // (one at a time: the clumsy hands lost him three times running stuck
+    // behind two or three of them)
+    if (this.cars.some((c) => c.ahead)) return null;
     const e = this.game.camera.position;
     const ids = D.ids || [];
     const cands = [];
     for (let k = 0; k + 1 < ids.length; k++) {
       const N = GRAPH.nodes.get(ids[k]);
-      if (!N || N.id.startsWith('pell') || N.id.startsWith('alley') || N.id === 'pier') continue;
+      // (not on the river road: phase b brings its own)
+      if (!N || N.id.startsWith('pell') || N.id.startsWith('alley') || N.id.startsWith('river') || N.id === 'pier') continue;
       const sN = D.path.nodeS[N.id];
       if (sN == null || sN < D.pilot.s + 30) continue;
       const d = Math.hypot(N.x - my.pos.x, N.z - my.pos.z);
@@ -88,7 +92,9 @@ export class Traffic {
     const [N, first] = cands[Math.floor(this.rng.next() * Math.min(2, cands.length))];
     let path;
     try { path = buildPath(this.walk(N.id, first, 4), { vmax: 9.5, aLat: 4.5, aBrake: 4 }); } catch (err) { return null; }
-    return this.addCar(path, 2, { pace: 0.62 + this.rng.next() * 0.14, vmax: 9.5 });
+    const car = this.addCar(path, 2, { pace: 0.7 + this.rng.next() * 0.14, vmax: 10 });
+    if (car) car.ahead = true;
+    return car;
   }
   addCar(path, s0, { pace = 0.8, vmax = 11, speed = 6, river = false } = {}) {
     const C = this.chase;
@@ -252,6 +258,13 @@ export class Traffic {
       const c = Math.cos(v.yaw), sn = Math.sin(v.yaw);
       const ax = ox * c - oz * sn, az = ox * sn + oz * c;
       if (ax > 0 && ax < 9 && Math.abs(az) < 2.2 && (my.speedAbs > 2 || v.speedAbs > 3)) this.honk(car, 0.9);
+      // [3rd owner] a car going my way with me close on its tail, wanting by:
+      // after a moment it pulls over toward its kerb and slows (as for my
+      // horn) - in the way, never a wall (the clumsy hands lost him twice
+      // stuck behind two slow cars on Canal St)
+      const onTail = ax < -1.5 && ax > -15 && Math.abs(az) < 2.6 && (my.vel.x * Math.cos(v.yaw) - my.vel.z * Math.sin(v.yaw)) > 1.5;
+      car.tailT = onTail ? (car.tailT || 0) + dt : Math.max(0, (car.tailT || 0) - dt * 2);
+      if (car.tailT > 1.4 && !(car.aside > 0)) { car.aside = 3.5; car.tailT = 0; if (this.rng.next() < 0.4) this.honk(car, 0.5); }
       // [3rd owner] (the critic: one facing me stopped 9 m off and waited 7 s
       // and more) held up by my car in its way for 2 s, it backs off a little
       // with the wheel over, sounds its horn and goes round me
