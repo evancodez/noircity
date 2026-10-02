@@ -188,12 +188,14 @@ export default defineScene({
       // across to me; the bill goes down on it (props/kinds/c4.js guestCheck -
       // chapter III finds the same paper torn, in the same hand)
       if (!d.items.get('check')) {
+        // ([C4] begun here from the title: not under the chapter's card)
+        if (G.hud.cardT > 0) yield until(() => !(G.hud.cardT > 0));
         yield* slideCheck(ctx, d, dot());
-        // [C4] after the critic (M2): a look down at it as it comes to rest -
-        // DINER, her pencil - and back up (two seconds, no key): chapter III
-        // hangs on knowing this paper again
-        look.to({ at: () => CHECK_AT().add(V(0.03, 0, 0)), pitch: true, maxPitch: 0.62, max: 0.4, in: 0.45, hold: 1.25, out: 0.55 });
-        yield wait(1.7);
+        // [C4] after the critic (M2): picked up and read - DINER at its
+        // head, her pencil - and laid back down (under three seconds, no
+        // key): chapter III hangs on knowing this paper again
+        const rc = H.play('c4readCheck', { onMark: { taken: () => snd('clothRustle', CHECK_AT(), { k: 0.3 }), put: () => snd('clothRustle', CHECK_AT(), { k: 0.25 }) } });
+        yield until(() => rc.done);
       }
       // ([C4] the prompt beyond the check's head, not printed on it)
       yield* ctx.prompt({ text: 'pay', at: () => counterAt(4, 0.4, 0.02) });

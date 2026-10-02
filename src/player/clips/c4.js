@@ -1,4 +1,4 @@
-import { HAND_POSES as HP, mirror } from '../handPoses.js';
+import { HAND_POSES as HP, mirror, OPEN } from '../handPoses.js';
 
 // [C4] The end of chapter II: the right hand that took the diner door's bar
 // (the watcher's live grip on a bar, 'doorLiveR': player/clips/watcher.js
@@ -47,7 +47,49 @@ const hard = (side, lv) => {
     view: [[0, { yaw: -0.02 * s * k }], [0.08, { yaw: 0.035 * s * k, roll: 0.02 * s * k, fwd: [0.04, 0.075, 0.12][lv - 1] }, 'snap'], [0.18, { yaw: 0.02 * s * k, fwd: 0.04 * k }], [0.34, {}]], brush: side };
 };
 
+// [C4] after the critic (M2): the guest check read. Dot slides it across;
+// my left hand (the right has the cigarette) takes it off the counter by its
+// foot, lifts it before me - DINER at its head, her pencil, the right way up
+// - holds it a moment, and lays it back where it lay; then I pay. Object
+// first (Hands.js): the paper is placed, the hand solved onto it.
+const Cf = (mcp, pip = mcp * 1.15, dip = pip * 0.7, s = 0) => [mcp, pip, dip, s];
+const PINCH = { i: Cf(0.55, 0.7, 0.35), m: Cf(0.9, 1.1, 0.6), r: Cf(1.2, 1.3, 0.7), l: Cf(1.3, 1.3, 0.7), t: [0.75, 0.45, 0.45, 0.2, 0.15] };
+const PINCH_OPEN = { ...OPEN, t: [0.4, 0.2, 0.2, 0.05, 0.05] };
+const CK = (at, F = PINCH, e = [-0.24, -0.44, -0.14], extra = {}) => ({ o: 'guestCheck', at, F, e, ...extra });
+const lies = (d = null) => ({ here: true, d });
+// held up to be read (the eye's frame): a little left of the middle, a
+// hand's length off, its face to me, its head up and tipped back a little
+const READ = (dx = 0, dy = 0) => ({ frame: 'cam', p: [-0.05 + dx, -0.05 + dy, -0.27], up: [0.12, 0.2, 1], fwd: [0.02, -1, 0.18] });
+const READ_CHECK = {
+  duration: 3.7, marks: { taken: 0.58, up: 1.05, down: 3.0, put: 3.08 },
+  keys: { L: [
+    [0, '@rest'],
+    [0.4, CK(lies(), PINCH_OPEN, undefined, { off: [-0.04, 0.035, 0.03] })],
+    [0.52, CK(lies(), PINCH_OPEN, undefined, { off: [-0.006, 0.004, 0.004] }), 'out'],
+    [0.58, CK(lies())],
+    [0.75, CK(lies([0, 0.05, 0]))],
+    [1.08, CK(READ(), PINCH, [-0.2, -0.42, -0.05], { ef: 'cam' }), 'out'],
+    [2.55, CK(READ(0.004, 0.006), PINCH, [-0.2, -0.42, -0.05], { ef: 'cam' })],
+    [2.85, CK(lies([0, 0.05, 0]))],
+    [3.0, CK(lies())],
+    [3.12, CK(lies(), PINCH_OPEN)],
+    [3.3, CK(lies(), PINCH_OPEN, undefined, { off: [-0.04, 0.035, 0.03] }), 'in'],
+    [3.7, '@rest'],
+  ] },
+  props: [[0.58, 'take', 'L', 'check'], [3.08, 'put', 'L']],
+  // (the eyes go down to it on the counter, then follow it up)
+  view: [[0, {}], [0.45, { pitch: -0.1 }], [1.0, {}]],
+  brush: 'L',
+};
+// a flat paper pinched at its foot between the thumb and the side of the
+// index (as the bill), running out along the fingers, its face the palm's
+// way: held up, the fingers are behind it and the thumb on its face
+export const SOCKETS = {
+  guestCheck: { bone: 'hand', p: [-0.018, -0.016, -0.082], r: [0, 0, Math.PI] },
+};
+
 export const CLIPS = {
+  c4readCheck: READ_CHECK,
   c4letGo: { duration: 0.42, blend: 0.05, marks: {}, keys: { R: [[0, 'doorLiveR'], [0.42, 'downR', 'in']] } },
   c4windL: { duration: 1.1, marks: { full: 0.48 }, hold: true, blocking: false, blend: 0.06, keys: { L: windKeys('L'), R: [[0, gR]] }, view: windView(-1), brush: 'L' },
   c4windR: { duration: 1.1, marks: { full: 0.48 }, hold: true, blocking: false, blend: 0.06, keys: { R: windKeys('R'), L: [[0, gL]] }, view: windView(1), brush: 'R' },
