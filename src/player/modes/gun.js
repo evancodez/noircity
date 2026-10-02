@@ -15,7 +15,7 @@
 //   controller.crouchOn the toggle's state       controller.leanK  -1 .. 1 (left .. right)
 // (the mode 'office' of scene 5 stays as it was until lane C5 moves to this one)
 import * as THREE from 'three';
-export const GUN_MODE = { down: 1.0, time: 0.2, rise: 0.15, walk: 3.6, sprint: 5.6, creep: 1.7, risenWalk: 0.9, lean: 0.46, look: 2.4 };   // [C2] after the critic: look 1.3 -> 2.4 (down 1.4 m behind the tipped desk, RMB rose to nothing - its knee space let the plan's rays through - and the rounds went into its top, 2.2 m out)
+export const GUN_MODE = { down: 1.0, time: 0.2, rise: 0.15, walk: 3.6, sprint: 5.6, creep: 1.7, risenWalk: 0.9, lean: 0.46, look: 2.4, leanLook: 1.3 };   // [C2] after the critic: look 1.3 -> 2.4 (down 1.4 m behind the tipped desk, RMB rose to nothing - its knee space let the plan's rays through - and the rounds went into its top, 2.2 m out)
 const G_ = GUN_MODE;
 const ss = (k) => k * k * (3 - 2 * k);
 
@@ -45,7 +45,8 @@ function plan(ctl) {
   // too tall to rise over: lean round its side (the side that is clear
   // straight ahead - a jamb, a cabinet's end: the gun past its edge) // [C2] second owner: the view's own line only
   const rx = Math.cos(ctl.yaw), rz = -Math.sin(ctl.yaw);
-  const ahead = (x, y, z) => !R || !R.raycast(_o.set(x, y, z), dirs[0], G_.look, { anyHit: true, skip });
+  // (round a jamb the room beyond may be a corridor's far wall: the lean looks 1.3 m, as the rise once did)
+  const ahead = (x, y, z) => !R || !R.raycast(_o.set(x, y, z), dirs[0], G_.leanLook, { anyHit: true, skip });
   for (const s of [1, -1]) {
     const x = px + rx * s * G_.lean, z = pz + rz * s * G_.lean;
     if (S.colliders && blockedAt(S, x, z)) continue;

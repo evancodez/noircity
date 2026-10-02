@@ -59,8 +59,9 @@ export const BEATS = {
       // (the pistol man first, working B1 from the corridor; the Tommy gunner
       // at the glazed door as he does: two guns at once on a man standing up)
       { kind: 'pistol', at: { x: -0.4, z: -9.5 }, way: [{ door: 'BD' }, { x: -0.45, z: -2.2, run: true }, { door: 'B1' }], wait: 0.4, door: 'hold' },
-      // (he waits out of the bar's sight - the lobby's west end, behind the corridor's wall - and comes along the glass)
-      { kind: 'tommy', at: { x: -2.2, z: 4.4 }, way: [{ x: 2.6, z: 3.0 }, { door: 'B2' }], wait: 2.4, door: 'hold' },
+      // (he waits out of the bar's sight - the lobby's west end, behind the corridor's wall - and comes along the glass;
+      // a big man in a heavy coat: four rounds, not three - he is not dropped from standing before his burst)
+      { kind: 'tommy', at: { x: -2.2, z: 4.4 }, way: [{ x: 2.6, z: 3.0 }, { door: 'B2' }], wait: 2.4, door: 'hold', hp: 170 },
     ],
     spots: [{ x: 4.6, z: -5.55, yaw: SOUTH }, { x: 6.6, z: -5.55, yaw: SOUTH }, { x: 2.9, z: -5.6, yaw: SOUTH + 0.3 }],
     open: { x: 1.6, z: -5.45 },

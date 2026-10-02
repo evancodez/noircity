@@ -43,11 +43,11 @@ export const GUNMAN = {
   wait: [0.5, 1.3],            // s: behind cover between his times out
   watch: 1.3,                  // s: he holds his aim on where I went down before going back
   flinch: 0.18,                // s: a round into him: his settle halved, and this long before it grows again (he is not knocked out of the fight)
-  find: [6, 14],               // s without a line on me before he leaves his cover to find me: the last man, any man
+  find: 6,                     // s without a line on me before the last man leaves his cover to find me
   flash: 2.5,                  // s: a round into him from where he could not see me tells him where I am (a Tommy gunner rakes it, aimed)
   walk: 1.5, run: 3.0,
-  pistol: { hp: 100, dmg: 20, mag: 7, burst: [2, 3], gap: [0.4, 0.52], reload: 1.7 },
-  tommy: { hp: 170, dmg: 8, burst: [10, 14], rate: 10.5, climb: 0.005, sigma0: 0.02, drum: 2.6 },
+  pistol: { hp: 100, dmg: 17, mag: 7, burst: [2, 3], gap: [0.4, 0.52], reload: 1.7 },
+  tommy: { hp: 120, dmg: 8, burst: [10, 14], rate: 10.5, climb: 0.005, sigma0: 0.02, drum: 2.6 },
   rusher: { hp: 250, dmg: 10, burst: [4, 6], rate: 9, every: 1.5, close: 2.4, hitStop: 0.45, walk: 1.3 },
 };
 const T = GUNMAN;
@@ -381,6 +381,10 @@ export default {
       if (S.glintDue != null && (S.glintDue -= dt) <= 0) { S.glintDue = null; if (S.state === 'aim' || S.state === 'out' || S.state === 'fire') glintStar(); }
       if (G.health.dead && S.state !== 'watch') { brain.playerDown(); }
       look(dt);
+      // [C2] after the critic: an aim is settled on me, not kept in a pocket -
+      // without a line it drains whatever he is doing (it was kept through his
+      // time behind cover: out again, he fired with no settle at all)
+      if (!S.line && S.state !== 'aim' && S.state !== 'out' && S.state !== 'fire') S.settle = Math.max(0, S.settle - dt / T.lost);
       // [C2] after the critic: shot at on his way in (a round into him or past
       // him), he does not walk on into it as a target: he answers - the gun up
       // if he has me; a Tommy gunner rakes the flash he saw; else he takes the
@@ -500,7 +504,7 @@ export default {
           stand(S.coverLow);
           face(dt, 3);
           S.coverT += dt;
-          if (S.t > 0.35 && !coverHolds()) { if (!takeCover(true)) { S.state = 'open'; S.t = 0; } break; }
+          if (S.t > 0.35 && !coverHolds()) { Kt.events.push({ t: +G.time.toFixed(2), what: 'leave', kind, name: S.cover ? kit().covers.state(S.cover, G.eye) + (S.fire ? '+fire' : '-fire') : 'none', at: [+h.pos.x.toFixed(1), +h.pos.z.toFixed(1)] }); if (!takeCover(true)) { S.state = 'open'; S.t = 0; } break; }
           if (kind === 'pistol' && S.mag <= 0) { S.state = 'reload'; S.t = 0; G.sfx.play('c2_magOut', h.pos.clone().setY(h.pos.y + 1.1), {}, { ref: 3 }); break; }
           // (one of them going out: the others go with him - two guns at once on the man who stands to answer)
           const mate = [...G.ais.values()].some((a) => a !== B && a.brain && a.brain.S && (a.brain.S.state === 'out' || a.brain.S.state === 'aim') && a.h.alive);
@@ -509,9 +513,10 @@ export default {
           S.wait -= dt;
           if (S.wait > 0) break;
           // [C2] after the critic (the rush's last man held a pavement for 40 s
-          // with no line on me): long without a line - the last of them after
-          // 6 s, any after 14 - he leaves his cover and comes to find me
-          if (S.lostT > (alone() ? T.find[0] : T.find[1]) && !(Kt.flank && Kt.flank.ai === B)) {
+          // with no line on me): the last of them, 6 s without a line, leaves
+          // his cover and comes to find me (the others press by the push and
+          // the director's flank)
+          if (alone() && S.lostT > T.find && !(Kt.flank && Kt.flank.ai === B)) {
             if (S.cover) S.cover.taken = null;
             S.cover = null; S.fire = null; S.peeks = 0;
             S.state = 'open'; S.t = 0; S.seeks = 3; S.seekT = 0; S.wait = 0.3;

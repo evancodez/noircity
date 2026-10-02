@@ -130,6 +130,12 @@ export default async function ({ js, turn, keyDown, keyUp, mouse, shot, log, sle
           life.failed = true; prevFail = s.failing;
           R.falls.push(s.failing);
           log(`${b}: FELL (${s.failing}) try ${R.tries}`);
+          if (opts.recFalls) {
+            const rec = await js(`JSON.stringify((window.__c2rec || []).filter((r, i, A) => i > A.length - 900 && i % 15 === 0).map(r => r.join(' ')))`);
+            try { for (const r of JSON.parse(rec)) log('  rec ' + r); } catch (e) { log('rec ' + rec); }
+            const ev = await js(`JSON.stringify(G.guns.events.filter(e => e.t > G.guns.events.filter((x) => x.what === 'begin').pop().t - 0.01).filter(e => !['miss', 'shot', 'hit'].includes(e.what)).slice(-40).map(e => [+(+e.t).toFixed(2), e.what, e.kind || '', e.name || e.why || '', e.at || e.pose || '', e.dmg || '', e.flank ? 'FLANK' : '']))`);
+            log('  events ' + ev);
+          }
           await letGo();
           if (R.falls.length <= 2) await shot(`${b}_${style}_fall${R.falls.length}`);
           // (bad: the reason read; that one thing done better next time)
