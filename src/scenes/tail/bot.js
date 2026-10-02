@@ -31,8 +31,9 @@ export function makeBot(chase, name, { seed = 7, track = null, attempt = 0 } = {
   let P = PROFILES[name];
   if (!P) return { tick: () => ({}), name };
   // (a first-timer learns: each try after a failure a little more careful
-  // into the corners, a little steadier)
-  if (attempt > 0 && name === 'bad') P = { ...P, aLat: Math.max(7.2, P.aLat - 0.6 * attempt), brake: Math.min(6, P.brake + 0.5 * attempt), wobble: P.wobble * 0.6 };
+  // into the corners, a little steadier; and having lost him once by a
+  // wrong turn, he knows the way the next time but one)
+  if (attempt > 0 && name === 'bad') P = { ...P, aLat: Math.max(7.2, P.aLat - 0.6 * attempt), brake: Math.min(6, P.brake + 0.5 * attempt), wobble: P.wobble * 0.6, wrong: attempt >= 2 ? 0 : P.wrong * 0.5 };
   const rng = new RNG(seed);
   const B = {
     name, P, rng, path: null, pathKey: '', i: -1, t: 0, queue: [], keys: {}, wrongT: 0, wrongUsed: 0, detour: null, stuckT: 0, backT: 0,
