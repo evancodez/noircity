@@ -20,6 +20,7 @@ import { Exposure } from './Exposure.js';
 import { Save } from './Save.js';
 import { Music } from '../audio/Music.js';
 import { Vehicles } from '../vehicles/index.js';
+import { Bodies } from '../guns/Bodies.js';   // [C2]
 
 // The game: the player (Controller + Tommy gun + Health), the Hoods' AI,
 // the encounter director (game/Director.js), combat resolution (the
@@ -117,6 +118,7 @@ export class Game {
     this.rng = world.rng.fork(8080);
     this.time = 0;
     this.scripts = [];        // staged shots: (t, dt) => void, run each step
+    this.bodies = new Bodies(this);   // [C2] solid bodies for any figure (docs/story/seams/GUNS.md §6)
     this.lastHoodShot = new Map();   // hood -> time of his last shot (autopilot)
     // the viewmodel is drawn by the pipeline's viewmodel pass; every light
     // must also be visible to its camera (three filters lights by layer)
@@ -602,6 +604,7 @@ export class Game {
   // ---- per step ------------------------------------------------------------------
   pre(dt, t) {
     this.time = t;
+    this.bodies.update();   // [C2] (the circles follow their owners; none: nothing)
     for (const f of this.scripts) f(t, dt);
     const C = this.controller;
     if (this.autopilot && this.state !== 'dead') this.autopilot.update(dt);

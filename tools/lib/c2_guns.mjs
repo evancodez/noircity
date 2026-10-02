@@ -18,7 +18,7 @@
 const PROFILES = {
   idle: { act: false },
   bad: { act: true, cover: false, react: [450, 800], errM: 0.3, settle: [120, 260], gap: [250, 450], renotice: 600 },
-  good: { act: true, cover: true, react: [300, 550], errM: 0.17, settle: [60, 120], gap: [380, 620], burst: [1, 1], down: [450, 800] },
+  good: { act: true, cover: true, react: [300, 550], errM: 0.29, settle: [60, 120], gap: [380, 620], burst: [1, 1], down: [450, 800] },
 };
 
 export default async function drive({ js, turn, keyDown, keyUp, mouse, shot, log, sleep, W, H, opts }) {
@@ -97,7 +97,7 @@ export default async function drive({ js, turn, keyDown, keyUp, mouse, shot, log
       const t0 = Date.now();
       let s0 = await js(ST);
       const fails0 = (s0.fails && s0.fails[beat]) || 0, shots0 = s0.shots, hits0 = s0.hits, wins0 = s0.wins;
-      const dbg = {}, noticed = new Map(), visAt = new Map(); let lastSeenAt = null, tellAt = 0, lastUp = Date.now(), upAt = 0, snapT = 0, target = null, seenAt = 0, onSpot = null, goTo = null, moveCool = 0, downUntil = 0, burstLeft = 0, lastShot = 0, warnedBefore = false, lowHp = 100, outThere = false;
+      const dbg = {}, noticed = new Map(), visAt = new Map(); let lastSeenAt = null, tellAt = 0, lastUp = Date.now(), upAt = 0, snapT = 0, target = null, seenAt = 0, onSpot = null, goTo = null, moveCool = 0, downUntil = 0, burstLeft = 0, lastShot = 0, warnedBefore = false, lowHp = 100, outThere = false, answerUntil = 0, answerId = null, traceT = 0;
       let end = null;
       while (!end) {
         const s = await js(ST);
@@ -135,7 +135,8 @@ export default async function drive({ js, turn, keyDown, keyUp, mouse, shot, log
         let threat = null;
         if (P.cover) {
           // the men who have a line on me and whom I can see (a flanker in the open)
-          const threats = s.men.filter((m) => m.line && m.see && !m.entry);
+          // (a man who has me while I am DOWN: one who has my side - not one who sees me because I rose to shoot)
+          const threats = s.rk < 0.3 ? s.men.filter((m) => m.line && m.see && !m.entry) : [];
           const pressed = threats.length >= 2 || (threats.length >= 1 && s.hp < 40) || s.broke > 0 || (s.warn && /cover/.test(s.warn));
           if (!onSpot || (pressed && now > moveCool)) {
             // the spot hidden best from the men as they stand now, near
@@ -157,10 +158,17 @@ export default async function drive({ js, turn, keyDown, keyUp, mouse, shot, log
         const visible = men.filter((m) => m.see || m.seeH);
         // (bad: out of sight a moment and back: a new reaction before the shot)
         if (P.renotice) for (const m of visible) { if (now - (visAt.get(m.id) || 0) > P.renotice) noticed.set(m.id, now + rr(P.react[0], P.react[1])); visAt.set(m.id, now); }
+        // (the man I am answering, first: not the one across the street)
+        if (answerId != null) { const a = visible.find((q) => q.id === answerId); if (a) { visible.length = 0; visible.push(a); } }
         // (where each was last seen: the angle a player holds - the doorway he peeks from)
         for (const m of visible) lastSeenAt = { x: m.x, y: m.see ? m.y : m.hy - 0.05, z: m.z, t: now };
         const heavy = s.men.find((m) => m.kind === 'rusher' && m.d < 9);
+        if (opts.trace && now - (traceT || 0) > opts.trace) { traceT = now; log(`trace ${JSON.stringify({ t: Math.round((now - t0) / 100) / 10, hp: Math.round(s.hp), rk: +s.rk.toFixed(2), x: +s.x.toFixed(1), z: +s.z.toFixed(1), thr: threat && threat.id, ans: answerId, goTo: !!goTo, vis: visible.map((q) => q.id + q.kind[0]), men: s.men.map((q) => q.id + q.kind[0] + ":" + q.st + (q.line ? "!" : "") + (q.see ? "*" : "")) })}`); }
         const tommyFiring = s.men.some((m) => m.kind === 'tommy' && m.st === 'fire');
+        if (P.cover && threat) { answerUntil = now + 1400; answerId = threat.id; }
+        // (the man I am answering: while he lives and has me, I stay up on him)
+        if (answerId != null && s.men.some((m) => m.id === answerId && m.line)) answerUntil = Math.max(answerUntil, now + 500);
+        else if (answerId != null && now > answerUntil) answerId = null;
         if (P.cover && threat) {
           // (up to answer him: the gun under the eye must clear the cover too)
           await set('RMB', true);
@@ -175,7 +183,7 @@ export default async function drive({ js, turn, keyDown, keyUp, mouse, shot, log
           for (const m of tells) if (!noticed.has(m.id)) noticed.set(m.id, tellAt);
           if (!tells.length) tellAt = 0;
           const look = now - lastUp > 4200;
-          const wantUp = !tommyFiring && now > downUntil && ((tellAt && now >= tellAt) || heavy || look || s.rk > 0.5);
+          const wantUp = !tommyFiring && now > downUntil && ((tellAt && now >= tellAt) || heavy || look || s.rk > 0.5 || now < answerUntil);
           await set('RMB', wantUp);
           if (wantUp && s.rk < 0.2) upAt = now;
           if (!wantUp || s.rk < 0.85) {
@@ -202,9 +210,13 @@ export default async function drive({ js, turn, keyDown, keyUp, mouse, shot, log
         const errOf = () => { const e0 = P.errM / Math.max(2, m.d); return [(Math.random() - 0.5) * 2 * e0, (Math.random() - 0.5) * 2 * e0]; };
         if (!noticed.has(m.id)) noticed.set(m.id, now + rr(P.react[0], P.react[1]));
         if (!target || target.id !== m.id) target = { id: m.id, err: errOf() };
+        const yNow = yawTo(s, m.x, m.z);
+        if (target.py != null && now > target.pt) { const w = wrap(yNow - target.py) / ((now - target.pt) / 1000); target.w = target.w == null ? w : target.w * 0.5 + w * 0.5; }
+        target.py = yNow; target.pt = now;
+        const lead = Math.max(-0.12, Math.min(0.12, (target.w || 0) * 0.12));
         seenAt = noticed.get(m.id);
         const ty = m.see ? m.y : m.hy - 0.05;
-        const e = await aim(s, yawTo(s, m.x, m.z) + target.err[0], pitchTo(s, m.x, ty, m.z) + target.err[1], 0.65, 0.25);
+        const e = await aim(s, yNow + lead + target.err[0], pitchTo(s, m.x, ty, m.z) + target.err[1], 0.65, 0.25);
         if (now < seenAt) { await sleep(30); dbg['react'] = (dbg['react'] || 0) + 1; continue; }
         if (e < 0.012 + 0.08 / Math.max(2, m.d) && now - lastShot > rr(P.gap[0], P.gap[1])) {
           await sleep(rr(P.settle[0], P.settle[1]));
@@ -213,9 +225,9 @@ export default async function drive({ js, turn, keyDown, keyUp, mouse, shot, log
           else await click();
           lastShot = Date.now();
           target.err = errOf();
-          if (P.cover && !heavy) {
+          if (P.cover && !heavy && !(answerId != null && m.id === answerId)) {
             burstLeft = (burstLeft || Math.round(rr(P.burst[0], P.burst[1]))) - 1;
-            if (burstLeft <= 0) { burstLeft = 0; downUntil = Date.now() + rr(P.down[0], P.down[1]); await set('RMB', false); }
+            if (burstLeft <= 0) { burstLeft = 0; answerUntil = 0; downUntil = Date.now() + rr(P.down[0], P.down[1]); await set('RMB', false); }
           }
         }
         await sleep(30);

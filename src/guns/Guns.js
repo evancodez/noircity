@@ -572,7 +572,8 @@ export class Guns {
     // (the places that see me, by a first guess at their worth; the ways
     // there are searched for the best few only)
     const cands = [];
-    for (const R of [3.2, 4.5, 6, 7.5]) {
+    const tommy = ai.brain && ai.brain.kind === 'tommy', R0 = tommy ? 6.5 : 5;
+    for (const R of tommy ? [6, 7.5] : [3.2, 4.5, 6, 7.5]) {
       for (let k = 0; k < 20; k++) {
         const a = (k / 20) * Math.PI * 2;
         const x = e.x + Math.sin(a) * R, z = e.z + Math.cos(a) * R;
@@ -581,7 +582,7 @@ export class Guns {
         if (off < minOff) continue;
         const crow = Math.hypot(x - h.pos.x, z - h.pos.z);
         if (crow > 20 || crow < notNear) continue;
-        cands.push({ x, z, R, off, pre: crow * 0.6 + Math.abs(R - 5) * 0.8 - Math.min(off, 2.2) * 1.5 });
+        cands.push({ x, z, R, off, pre: crow * 0.6 + Math.abs(R - R0) * 0.8 - Math.min(off, 2.2) * 1.5 });
       }
     }
     cands.sort((p, q) => p.pre - q.pre);
@@ -596,7 +597,7 @@ export class Guns {
       for (const p of path) { L += Math.hypot(p.x - px, p.z - pz); px = p.x; pz = p.z; }
       if (L > 26) continue;
       // (a near flank on a short path; not one straight through my line of fire)
-      const score = L * 0.6 + Math.abs(c.R - 5) * 0.8 - Math.min(c.off, 2.2) * 1.5;
+      const score = L * 0.6 + Math.abs(c.R - R0) * 0.8 - Math.min(c.off, 2.2) * 1.5;
       if (!best || score < best.score) best = { x: c.x, z: c.z, score, path, R: c.R, off: c.off };
     }
     return best;

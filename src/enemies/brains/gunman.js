@@ -430,7 +430,7 @@ export default {
           else S.settle = Math.max(0, S.settle - dt / T.lost);
           if (S.settle >= 1 || (suppress && S.raiseT > T.raise + 0.3)) { S.state = 'fire'; S.t = 0; S.shots = burstOf(); S.shotT = 0; S.burstN = 0; break; }
           // (I stayed down: he watches the spot a moment, then goes back)
-          if (!S.line && S.lostT > T.watch && !suppress) { brain.drop(); S.state = 'back'; S.t = 0; }
+          if (!S.line && S.lostT > T.watch && !suppress) { brain.drop(); S.state = kind === 'rusher' ? 'rush' : 'back'; S.t = 0; }
           break;
         }
         case 'fire': {
@@ -491,8 +491,19 @@ export default {
             // (no place that sees me, or none but where he stands: in at me, by the way there is)
             S.seeks = (S.seeks || 0) + 1;
             if (!spot || S.seeks > 2) {
-              const path = G.nav.findPath(h.pos.x, h.pos.z, e.x, e.z, 16000);
-              if (path && path.length) { let k = path.length - 1; while (k > 0 && Math.hypot(path[k].x - e.x, path[k].z - e.z) < 2.2) k--; spot = { x: path[k].x, z: path[k].z }; S.seeks = 0; }
+              const a0 = Math.atan2(h.pos.x - e.x, h.pos.z - e.z);
+              let tries = 0, got = null;
+              for (const R of [2.2, 1.6, 3.0]) {
+                for (let k = 0; k < 9 && !got && tries < 6; k++) {
+                  const a = a0 + (k % 2 ? 1 : -1) * Math.ceil(k / 2) * 0.55;
+                  const x = e.x + Math.sin(a) * R, z = e.z + Math.cos(a) * R;
+                  if (!G.nav.free(x, z)) continue;
+                  tries++;
+                  if (G.nav.findPath(h.pos.x, h.pos.z, x, z, 16000)) got = { x, z };
+                }
+                if (got) break;
+              }
+              if (got) { spot = got; S.seeks = 0; }
             }
             if (spot) { moveTo(spot.x, spot.z, true); S.flank = spot; S.state = 'move'; S.t = 0; Kt.events.push({ t: +G.time.toFixed(2), what: 'seek', kind, at: [+spot.x.toFixed(1), +spot.z.toFixed(1)] }); }
           }
