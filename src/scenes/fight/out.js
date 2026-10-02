@@ -66,7 +66,7 @@ export function afterKO(ctx, w) {
   const L = ctx.flags.landing || { x: DINER.faceX + 1.4, z: DINER.bays[w] };
   const bayZ = DINER.bays[w];
   // (beside where he lies, not over him: the side of the bay away from his head)
-  const zc = Math.max(bayZ - 1.25, Math.min(bayZ + 1.25, L.z + (L.z >= bayZ ? -1.15 : 1.15)));
+  const zc = Math.max(bayZ - 1.25, Math.min(bayZ + 1.25, L.z + (L.z >= bayZ ? -1.3 : 1.3)));
   const sill = V(DINER.innerX - 0.05, DINER.window.sill + 0.04, zc);
   ctx.interact.add({ id: 'c4.sill', key: 'Space', at: sill, range: 1.7, cone: 0.7, prompt: 'climb out',
     when: () => !S.climbing && !S.lifting && C.mode === 'walk' && G.eye.x < DINER.innerX && front.panes[w] && front.panes[w].broken,

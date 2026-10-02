@@ -63,7 +63,7 @@ export const BRAWL = {
   // Let go before the first level and the fist just comes home.
   // [C4] version 5: every press is a jab at once (contact 0.06 s after it,
   // whatever the press's length: a click of 60 to 280 ms is a jab); a button
-  // still held when that jab is home (`start`, 0.3 s) cocks the same fist and
+  // still held when that jab is home (`start`, 0.34 s) cocks the same fist and
   // loads it - the three levels as the hold passes `levels` (the wind clip's
   // own snaps at 0.08, 0.28, 0.48 s after it begins); let go, it is thrown.
   // A press that arrives while I cannot act (hit, knocked down a moment)
@@ -318,7 +318,7 @@ export class Brawl {
   // normal click let go before its first level showed nothing landing). A
   // press that comes while a fist is still out sends that blow home first
   // (its contact is never lost) and jabs. Held on past the jab
-  // (BRAWL.hold.start, 0.3 s: the jab has landed and come home), the same
+  // (BRAWL.hold.start, 0.34 s: the jab has landed and come home), the same
   // fist cocks and loads; let go, the hard punch. A press that arrives while
   // I cannot act (hit, grabbing) waits up to BRAWL.hold.wait and then jabs.
   // What a hand holds is used by that hand's button: in reach a click swings
