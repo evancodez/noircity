@@ -40,6 +40,25 @@ export class Cabin {
     this.place();
   }
 
+  // the lamps' switch on the dash: a small knob by the dials, pulled out
+  // (lamps on) or pushed in; made the first time it is wanted
+  lampSwitch(on) {
+    const v = this.car;
+    if (!v || !v.model.group) return;
+    if (!this.knob || this.knob.parent !== v.model.group) {
+      const g = new THREE.Group();
+      const shaft = new THREE.Mesh(new THREE.CylinderGeometry(0.008, 0.008, 0.04, 8).rotateZ(Math.PI / 2), v.model.meshes && v.model.meshes.chrome ? v.model.meshes.chrome.material : this.stage.M.chrome);
+      const head = new THREE.Mesh(new THREE.CylinderGeometry(0.016, 0.016, 0.014, 14).rotateZ(Math.PI / 2).translate(-0.022, 0, 0), this.stage.M.rubber);
+      g.add(shaft, head);
+      g.position.copy(COUPE.dial).add(new THREE.Vector3(-0.02, -0.11, 0.2));
+      g.traverse((o) => { if (o.isMesh) { o.userData.inkId = v.model.group.children[0] ? v.model.group.children[0].userData.inkId : 0; o.userData.inkFigure = true; o.userData.noRay = true; } });
+      v.model.group.add(g);
+      this.knob = g;
+    }
+    this.knob.children[0].position.x = on ? -0.02 : 0;
+    this.knob.children[1].position.x = on ? -0.02 : 0;
+  }
+
   place() {
     if (!this.car) return;
     const e = this.car.seat(COUPE.eye, _v);

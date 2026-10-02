@@ -149,6 +149,7 @@ export class Chase {
     this.hisFx(dt);
     if (this.phase === 'c' || this.phase === 'wreck') this.toPier(dt);
     this.damageStep(dt);
+    this.toys(dt);
   }
 
   // he pulls away from the kerb (as I get in; or when I move)
@@ -402,6 +403,28 @@ export class Chase {
       this.kit.objective('Pier 9.');
       G.emit('tail:pier', {});
     }
+  }
+
+  // ---- the room toys: Q the horn (the traffic answers), E the dash's lamp
+  // switch, the handbrake's ratchet and the tyres on the wet
+  toys(dt) {
+    const G = this.game, my = this.my;
+    if (this.failing || this.parked || G.controller.mode !== 'drive') return;
+    if (G.pressed('KeyQ')) {
+      G.sfx.play('tail_horn', my.seat(_v.set(2, 1, 0), new THREE.Vector3()), { k: 1, dur: 0.55 }, { ref: 3 });
+      if (this.traffic) this.traffic.horn();
+      G.emit('tail:horn', {});
+    }
+    // (E at the pier's gate is the getting out: toPier has it)
+    if (G.pressed('KeyE') && !(this.phase === 'c' && Math.hypot(my.pos.x - PIER.park.x, my.pos.z - PIER.park.z) < 11)) {
+      const on = !(my.lamps && my.lamps.on);
+      if (my.lamps) my.lamps.setOn(on);
+      this.cabin.lampSwitch(on);
+      G.sfx.play('c3_switch', null, {});
+    }
+    const hb = !!my.input.handbrake;
+    if (hb && !this._hb && my.speedAbs > 4) G.sfx.play('c3_handbrake', my.pos, { k: Math.min(1, my.speedAbs / 14) }, { ref: 3 });
+    this._hb = hb;
   }
 
   // ---- his car as my rounds leave it: the state is on the car -----------------------------------
