@@ -345,13 +345,13 @@ The three proofs of WAVE_C §7, by real input (`tools/lib/fight_bot.mjs`):
 - `fight_bad.json`: a clumsy first-timer (mashes jabs at random sides, sees
   the cue late and goes the wrong way a third of the time, holds now and then
   at the wrong time, a wrong key now and then; after each down a little less
-  blind - the black told him why): down six times (five and eight in the
-  runs before), warned each time, and wins (155 s; 118 and 163 s the runs
-  before; the lesson included).
+  blind - the black told him why): 5.1 - down four times and six, warned each
+  time, and wins (104 s and 145 s, the lesson included; version 5: 155 s with
+  six downs).
 - `fight_good.json`: a player who uses what was taught (the cue read in 0.16
   .. 0.26 s, slips, punishes the opening with a loaded punch, blocks his jab,
-  finishes loaded): wins twice in a row without going down, 64 and 64 s each
-  (78 and 73 the run before; the lesson included), all but one cue answered.
+  finishes loaded): wins twice in a row without going down - 5.1, two runs:
+  57, 59, 60 and 66 s (the lesson included).
 - `fight_click.json`: 240 clicks (each button 30 times at 60, 120, 200 and 280
   ms, shuffled, 0.12 .. 0.55 s apart): 240 jabs, every contact 0.05 s after its
   press, no click wound up.
@@ -360,6 +360,14 @@ The three proofs of WAVE_C §7, by real input (`tools/lib/fight_bot.mjs`):
   out by it, in the lesson barred, rounds 1 to 3, the reel, after the last
   blow (barred; over the sill), out on the pavement (pulled, pushed, shut on
   its closer) - the leaf never in a body.
+
+5.1: the cold player's hands (`tools/plays/critic/c4_bot.mjs`), the yardstick
+of version 5.1 - medium hands won II in 181 s with five downs (21 downs and
+stuck in version 5) and Pier 9 in 164 s with five (18 downs, the foreman
+never hurt); the learner in 178 s with three; slow eyes who pound his guard
+in 463 s with sixteen; the masher and the W-masher go through the lesson and
+never win; the W-holder goes down ten times in six minutes (twice in version
+5). Report: `docs/story/reports/wave-c/C4.md`, After the critic.
 
 The in-page autoplay (`?shot=r2play&beat=lesson&seed=<n>&style=<s>&t=300`):
 the reader (`player`) wins 5 of 5 in 63 to 89 s (version 4: 73 to 104), the

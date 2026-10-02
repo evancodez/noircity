@@ -1,0 +1,92 @@
+{
+ "about": "[C4] after the critic (M1): low on health at his reel, the warning up; gone at the last blow and after",
+ "url": "/?mute=1&start=fight.reel",
+ "size": [
+  1440,
+  900
+ ],
+ "out": "shots/play/fight_warn_ko",
+ "steps": [
+  {
+   "until": "G.state === 'title' && !document.getElementById('title').classList.contains('hidden')",
+   "timeout": 30000
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]",
+   "taken": "G.state !== 'title'",
+   "retries": 5,
+   "every": 4000
+  },
+  {
+   "until": "G.brawl.active && G.brawl.him && G.brawl.him.state === 'reel'",
+   "timeout": 40000
+  },
+  {
+   "eval": "(G.health.hp = 22, 1)"
+  },
+  {
+   "wait": 500
+  },
+  {
+   "expect": "G.hud.warnText === 'One more and you\u2019re down.'",
+   "label": "warned, low, out on his feet"
+  },
+  {
+   "until": "G.brawl.him.atSpot",
+   "timeout": 12000
+  },
+  {
+   "down": "KeyW"
+  },
+  {
+   "until": "Math.hypot(G.brawl.c.pos.x - G.eye.x, G.brawl.c.pos.z - G.eye.z) < 1.45",
+   "timeout": 4000,
+   "stop": false
+  },
+  {
+   "up": "KeyW"
+  },
+  {
+   "mouse": "down",
+   "button": "left"
+  },
+  {
+   "wait": 900
+  },
+  {
+   "mouse": "up",
+   "button": "left"
+  },
+  {
+   "until": "G.brawl.finished",
+   "timeout": 5000
+  },
+  {
+   "wait": 600
+  },
+  {
+   "shot": "w1_ko"
+  },
+  {
+   "expect": "!G.hud.warnText",
+   "label": "the warning gone with his fall"
+  },
+  {
+   "until": "G.scenes.beat === 'ko' && N.controller.mode === 'walk'",
+   "timeout": 12000
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "shot": "w2_after"
+  },
+  {
+   "expect": "!G.hud.warnText && G.hud.objectiveText === 'See to him.'",
+   "label": "no warning after the fight"
+  }
+ ]
+}

@@ -1,0 +1,294 @@
+{
+ "about": "[C4] after the critic (B3): poking his guard: the black says what put me down; up again, the card it brings",
+ "url": "/?mute=1&start=fight.round1",
+ "size": [
+  1440,
+  900
+ ],
+ "out": "shots/play/fight_words",
+ "steps": [
+  {
+   "until": "G.state === 'title' && !document.getElementById('title').classList.contains('hidden')",
+   "timeout": 30000
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]",
+   "taken": "G.state !== 'title'",
+   "retries": 5,
+   "every": 4000
+  },
+  {
+   "until": "G.brawl.active && G.brawl.round === 1 && !G.brawl.lesson",
+   "timeout": 40000
+  },
+  {
+   "wait": 800
+  },
+  {
+   "mouse": "click",
+   "button": "left",
+   "hold": 90
+  },
+  {
+   "wait": 650
+  },
+  {
+   "mouse": "click",
+   "button": "right",
+   "hold": 90
+  },
+  {
+   "wait": 650
+  },
+  {
+   "mouse": "click",
+   "button": "left",
+   "hold": 90
+  },
+  {
+   "wait": 650
+  },
+  {
+   "mouse": "click",
+   "button": "right",
+   "hold": 90
+  },
+  {
+   "wait": 650
+  },
+  {
+   "mouse": "click",
+   "button": "left",
+   "hold": 90
+  },
+  {
+   "wait": 650
+  },
+  {
+   "mouse": "click",
+   "button": "right",
+   "hold": 90
+  },
+  {
+   "wait": 650
+  },
+  {
+   "mouse": "click",
+   "button": "left",
+   "hold": 90
+  },
+  {
+   "wait": 650
+  },
+  {
+   "mouse": "click",
+   "button": "right",
+   "hold": 90
+  },
+  {
+   "wait": 650
+  },
+  {
+   "mouse": "click",
+   "button": "left",
+   "hold": 90
+  },
+  {
+   "wait": 650
+  },
+  {
+   "mouse": "click",
+   "button": "right",
+   "hold": 90
+  },
+  {
+   "wait": 650
+  },
+  {
+   "mouse": "click",
+   "button": "left",
+   "hold": 90
+  },
+  {
+   "wait": 650
+  },
+  {
+   "mouse": "click",
+   "button": "right",
+   "hold": 90
+  },
+  {
+   "wait": 650
+  },
+  {
+   "mouse": "click",
+   "button": "left",
+   "hold": 90
+  },
+  {
+   "wait": 650
+  },
+  {
+   "mouse": "click",
+   "button": "right",
+   "hold": 90
+  },
+  {
+   "wait": 650
+  },
+  {
+   "mouse": "click",
+   "button": "left",
+   "hold": 90
+  },
+  {
+   "wait": 650
+  },
+  {
+   "mouse": "click",
+   "button": "right",
+   "hold": 90
+  },
+  {
+   "wait": 650
+  },
+  {
+   "mouse": "click",
+   "button": "left",
+   "hold": 90
+  },
+  {
+   "wait": 650
+  },
+  {
+   "mouse": "click",
+   "button": "right",
+   "hold": 90
+  },
+  {
+   "wait": 650
+  },
+  {
+   "mouse": "click",
+   "button": "left",
+   "hold": 90
+  },
+  {
+   "wait": 650
+  },
+  {
+   "mouse": "click",
+   "button": "right",
+   "hold": 90
+  },
+  {
+   "wait": 650
+  },
+  {
+   "mouse": "click",
+   "button": "left",
+   "hold": 90
+  },
+  {
+   "wait": 650
+  },
+  {
+   "mouse": "click",
+   "button": "right",
+   "hold": 90
+  },
+  {
+   "wait": 650
+  },
+  {
+   "mouse": "click",
+   "button": "left",
+   "hold": 90
+  },
+  {
+   "wait": 650
+  },
+  {
+   "mouse": "click",
+   "button": "right",
+   "hold": 90
+  },
+  {
+   "wait": 650
+  },
+  {
+   "mouse": "click",
+   "button": "left",
+   "hold": 90
+  },
+  {
+   "wait": 650
+  },
+  {
+   "mouse": "click",
+   "button": "right",
+   "hold": 90
+  },
+  {
+   "wait": 650
+  },
+  {
+   "mouse": "click",
+   "button": "left",
+   "hold": 90
+  },
+  {
+   "wait": 650
+  },
+  {
+   "mouse": "click",
+   "button": "right",
+   "hold": 90
+  },
+  {
+   "wait": 650
+  },
+  {
+   "mouse": "click",
+   "button": "left",
+   "hold": 90
+  },
+  {
+   "wait": 650
+  },
+  {
+   "mouse": "click",
+   "button": "right",
+   "hold": 90
+  },
+  {
+   "wait": 650
+  },
+  {
+   "until": "G.brawl.blackT > 0.5 && !!G.brawl.downWhy",
+   "timeout": 30000
+  },
+  {
+   "shot": "b1_black"
+  },
+  {
+   "eval": "G.brawl.downWhy"
+  },
+  {
+   "until": "!(G.brawl.blackT > 0) && !!G.hud.kit.teachCur",
+   "timeout": 6000
+  },
+  {
+   "wait": 400
+  },
+  {
+   "shot": "b2_card"
+  },
+  {
+   "eval": "G.hud.kit.teachCur && G.hud.kit.teachCur.text"
+  }
+ ]
+}

@@ -1,0 +1,87 @@
+{
+ "url": "/?mute=1&start=fight.matchbook",
+ "size": [
+  1440,
+  900
+ ],
+ "out": "shots/play/fight_card",
+ "steps": [
+  {
+   "until": "G.state === 'title' && !document.getElementById('title').classList.contains('hidden')",
+   "timeout": 30000
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]",
+   "taken": "G.state !== 'title'",
+   "retries": 5,
+   "every": 4000
+  },
+  {
+   "until": "G.scenes.beat === 'matchbook' && !!G.inspect.active",
+   "timeout": 30000
+  },
+  {
+   "wait": 1200
+  },
+  {
+   "shot": "m0"
+  },
+  {
+   "key": "KeyE"
+  },
+  {
+   "wait": 450
+  },
+  {
+   "shot": "c1"
+  },
+  {
+   "wait": 300
+  },
+  {
+   "shot": "c2"
+  },
+  {
+   "until": "G.scenes.ctx && G.scenes.ctx.flags.cardUp",
+   "timeout": 6000
+  },
+  {
+   "wait": 500
+  },
+  {
+   "shot": "c3"
+  },
+  {
+   "look": [
+    200,
+    80
+   ],
+   "steps": 6
+  },
+  {
+   "wait": 300
+  },
+  {
+   "shot": "c4_moved"
+  },
+  {
+   "key": "KeyE"
+  },
+  {
+   "wait": 300
+  },
+  {
+   "shot": "c5_away"
+  },
+  {
+   "wait": 500
+  },
+  {
+   "shot": "c6"
+  }
+ ],
+ "about": "[C4] after the critic (m2): the matchbook, then Ames's card in the right hand's fingers, turned over, E into the coat"
+}

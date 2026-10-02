@@ -1,0 +1,62 @@
+{
+ "about": "[C4] after the critic (m3): the door's word never over NOW FIGHT. (the door tried by a call, the lesson ended by its own clock)",
+ "url": "/?mute=1&start=fight.lesson&step=9",
+ "size": [
+  1440,
+  900
+ ],
+ "out": "shots/play/fight_door_word",
+ "steps": [
+  {
+   "until": "G.state === 'title' && !document.getElementById('title').classList.contains('hidden')",
+   "timeout": 30000
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]",
+   "taken": "G.state !== 'title'",
+   "retries": 5,
+   "every": 4000
+  },
+  {
+   "until": "G.brawl.active && G.brawl.lesson && G.brawl.lesson.kind === 'grab'",
+   "timeout": 40000
+  },
+  {
+   "eval": "(G.stage.part('dinerFront').door.rattleT = 0, G.stage.part('dinerFront').door.tried(), 1)"
+  },
+  {
+   "wait": 200
+  },
+  {
+   "expect": "(+G.hud.el.msg.style.opacity > 0 ? G.hud.el.msg.textContent : '') === 'Barred.'",
+   "label": "tried in the lesson: Barred."
+  },
+  {
+   "until": "!G.brawl.lesson",
+   "timeout": 8000
+  },
+  {
+   "wait": 150
+  },
+  {
+   "expect": "G.brawl._cards.shownFlash === 'NOW FIGHT.' && (+G.hud.el.msg.style.opacity > 0 ? G.hud.el.msg.textContent : '') === ''",
+   "label": "NOW FIGHT. alone in the middle: the door's word taken down"
+  },
+  {
+   "eval": "(G.stage.part('dinerFront').door.rattleT = 0, G.stage.part('dinerFront').door.tried(), 1)"
+  },
+  {
+   "wait": 200
+  },
+  {
+   "shot": "now_fight"
+  },
+  {
+   "expect": "(+G.hud.el.msg.style.opacity > 0 ? G.hud.el.msg.textContent : '') === ''",
+   "label": "tried under NOW FIGHT.: the rattle, no word over it"
+  }
+ ]
+}

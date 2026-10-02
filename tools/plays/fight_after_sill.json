@@ -1,0 +1,85 @@
+{
+ "about": "[C4] after the critic (B2): at the end of the last blow (B4), looking down at him: SPACE climb out, wherever the fight left me",
+ "url": "/?mute=1&start=fight.ko&win=B4",
+ "size": [
+  1440,
+  900
+ ],
+ "out": "shots/play/fight_after_sill",
+ "steps": [
+  {
+   "until": "G.state === 'title' && !document.getElementById('title').classList.contains('hidden')",
+   "timeout": 30000
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]",
+   "taken": "G.state !== 'title'",
+   "retries": 5,
+   "every": 4000
+  },
+  {
+   "until": "G.scenes.beat==='ko' && N.controller.mode==='walk'",
+   "timeout": 40000
+  },
+  {
+   "wait": 800
+  },
+  {
+   "eval": "JSON.stringify({beat:G.scenes.beat,p:[+G.eye.x.toFixed(2),+G.eye.z.toFixed(2)],mode:N.controller.mode,msg:+G.hud.el.msg.style.opacity>0?G.hud.el.msg.textContent:'',prompt:G.hud.promptShown,obj:G.hud.objectiveText,warn:G.hud.warnText,cur:G.interact.current&&G.interact.current.id,barred:G.stage.part('dinerFront').door.barred})"
+  },
+  {
+   "shot": "s1_at_window"
+  },
+  {
+   "expect": "(G.hud.promptShown||'').includes('climb out')"
+  },
+  {
+   "look": [
+    -300,
+    0
+   ],
+   "steps": 6
+  },
+  {
+   "wait": 400
+  },
+  {
+   "eval": "JSON.stringify({beat:G.scenes.beat,p:[+G.eye.x.toFixed(2),+G.eye.z.toFixed(2)],mode:N.controller.mode,msg:+G.hud.el.msg.style.opacity>0?G.hud.el.msg.textContent:'',prompt:G.hud.promptShown,obj:G.hud.objectiveText,warn:G.hud.warnText,cur:G.interact.current&&G.interact.current.id,barred:G.stage.part('dinerFront').door.barred})"
+  },
+  {
+   "shot": "s2_turned"
+  },
+  {
+   "look": [
+    300,
+    0
+   ],
+   "steps": 6
+  },
+  {
+   "wait": 300
+  },
+  {
+   "key": "Space"
+  },
+  {
+   "wait": 1600
+  },
+  {
+   "eval": "JSON.stringify({beat:G.scenes.beat,p:[+G.eye.x.toFixed(2),+G.eye.z.toFixed(2)],mode:N.controller.mode,msg:+G.hud.el.msg.style.opacity>0?G.hud.el.msg.textContent:'',prompt:G.hud.promptShown,obj:G.hud.objectiveText,warn:G.hud.warnText,cur:G.interact.current&&G.interact.current.id,barred:G.stage.part('dinerFront').door.barred})"
+  },
+  {
+   "shot": "s3_climbed"
+  },
+  {
+   "expect": "G.eye.x > -10.2"
+  },
+  {
+   "until": "G.scenes.beat==='outside'",
+   "timeout": 8000
+  }
+ ]
+}
