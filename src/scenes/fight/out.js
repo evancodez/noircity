@@ -28,7 +28,13 @@ export function hookDoor(ctx) {
   d.c4Hooked = true;
   d.on('rattle', () => {
     G.sfx.play('f_c4rattle', doorAt(), {}, { ref: 2 });
-    if (G.state === 'playing' && !G.shotMode) G.hud.message('Barred.', 1.5);
+    // ([C4] not over the fight's own word in the middle of the frame - NOW
+    // FIGHT. at the lesson's end was written on top of it: the rattle says it)
+    const fc = G.brawl && G.brawl.active && G.brawl._cards;
+    // ([C4] after the last blow, facing it: its prompt says what to do - E
+    // lift the bar - and the word would only sit on top of it)
+    const cur = G.interact && G.interact.current;
+    if (G.state === 'playing' && !G.shotMode && !(fc && fc.flT > 0) && !(cur && cur.id === 'c4.bar')) G.hud.message('Barred.', 1.5);
     (G.counters.rattles = (G.counters.rattles || 0) + 1);
     G.emit('door:rattle', {});
   });
@@ -50,12 +56,31 @@ function barGrip(d, out = V(0, 0, 0)) {
   return out.set(-0.035, 0, -0.42).applyMatrix4(b.pivot.matrixWorld);
 }
 
+// [C4] the point of the barred leaf my view crosses (or, looking away from
+// it, the nearest point of it to that line): where the bar's prompt sits
+const _o = new THREE.Vector3(), _dv = new THREE.Vector3();
+function onLeaf(G) {
+  const x0 = DINER.innerX - 0.1, z0 = DINER.door.hingeZ + 0.06, z1 = DINER.door.hingeZ + DINER.door.w - 0.06;
+  const y0 = DINER.floorY + 0.35, y1 = DINER.floorY + 1.85;
+  const cam = G.camera;
+  _o.copy(cam.position); _dv.set(0, 0, -1).transformDirection(cam.matrixWorld);
+  // (inside, facing the street: the ray meets the leaf's plane ahead)
+  let t = Math.abs(_dv.x) > 1e-3 ? (x0 - _o.x) / _dv.x : -1;
+  if (!(t > 0)) t = Math.max(0.3, Math.abs(x0 - _o.x));
+  const y = Math.max(y0, Math.min(y1, _o.y + _dv.y * t)), z = Math.max(z0, Math.min(z1, _o.z + _dv.z * t));
+  return V(x0, y, z);
+}
+
 export function afterKO(ctx, w) {
   const G = ctx.game, C = ctx.controller, H = ctx.hands;
   const front = ctx.stage.part('dinerFront'), d = front.door;
   const S = { lifting: false, liftT: 0, climbing: false, climbT: 0, out: false, how: null };
   // ---- the bar ------------------------------------------------------------------------------
-  ctx.interact.add({ id: 'c4.bar', at: () => barGrip(d), range: 1.8, cone: 0.6, prompt: 'lift the bar',
+  // ([C4] after the critic (B2): the prompt wherever I look at the door, from
+  // up against it to two and a half metres back - anchored on the point of
+  // the leaf my view crosses (clamped to it), not on the bar's middle at
+  // waist height, which a man pressed to the door could not find)
+  ctx.interact.add({ id: 'c4.bar', at: () => onLeaf(G), range: 2.5, cone: 0.75, prompt: 'lift the bar',
     when: () => d.barred && !S.lifting && !S.climbing && C.mode === 'walk',
     onUse: () => {
       S.lifting = true; S.liftT = 0;
@@ -65,13 +90,26 @@ export function afterKO(ctx, w) {
   // ---- over the sill of the broken bay (SPACE: the body's big move) ------------------------------
   const L = ctx.flags.landing || { x: DINER.faceX + 1.4, z: DINER.bays[w] };
   const bayZ = DINER.bays[w];
-  // (beside where he lies, not over him: the side of the bay away from his head)
-  const zc = Math.max(bayZ - 1.25, Math.min(bayZ + 1.25, L.z + (L.z >= bayZ ? -1.3 : 1.3)));
-  const sill = V(DINER.innerX - 0.05, DINER.window.sill + 0.04, zc);
-  ctx.interact.add({ id: 'c4.sill', key: 'Space', at: sill, range: 1.7, cone: 0.7, prompt: 'climb out',
+  // ([C4] after the critic (B2): over the sill wherever I stand at the broken
+  // bay - the point of the sill in front of me, along the whole of the hole
+  // (the glass gone, its jagged edges kept off by a hand's width), not one
+  // spot 1.25 m to the side of him; and not onto him: a body's width off
+  // where he lies, on my side of him)
+  const half = DINER.window.w / 2 - 0.3;
+  let zc = bayZ;
+  const climbZ = () => {
+    let z = Math.max(bayZ - half, Math.min(bayZ + half, G.eye.z));
+    if (Math.abs(z - L.z) < 0.85) z = L.z + (G.eye.z >= L.z ? 0.85 : -0.85);
+    return Math.max(bayZ - half, Math.min(bayZ + half, z));
+  };
+  // (the prompt in the hole itself, at chest height: found looking out at
+  // the street or down at him, not only looking down at the sill)
+  const sill = () => V(DINER.innerX + 0.05, DINER.window.sill + 0.5, climbZ());
+  ctx.interact.add({ id: 'c4.sill', key: 'Space', at: sill, range: 2.0, cone: 0.95, prompt: 'climb out',
     when: () => !S.climbing && !S.lifting && C.mode === 'walk' && G.eye.x < DINER.innerX && front.panes[w] && front.panes[w].broken,
     onUse: () => {
       S.climbing = true; S.climbT = 0;
+      zc = climbZ();
       const P = C.eyePose();
       const tx = DINER.faceX + 0.75, tz = zc, ty = DINER.floorY + 1.63;
       const yaw0 = P.yaw, yaw1 = Math.atan2(-(L.x - tx), -(L.z - tz));
@@ -87,8 +125,10 @@ export function afterKO(ctx, w) {
       } });
       S.climbDone = () => { C.setMode('walk', { pose: { x: tx, y: ty, z: tz, yaw: yaw1, pitch: -0.2 } }); G.sfx.play('f_bodyFloor', null, { k: 0.4 }); S.how = 'sill'; };
     } });
+  const answers = roomAnswers(ctx, () => !S.climbing && !S.lifting && C.mode === 'walk');
   return Object.assign(S, {
     step(dt) {
+      answers(dt);
       if (S.lifting) {
         S.liftT += dt;
         if (DOOR.at) DOOR.at = barGrip(d);
@@ -103,6 +143,50 @@ export function afterKO(ctx, w) {
       S.out = G.eye.x > DINER.faceX + 0.2;
     },
   });
+}
+
+// [C4] after the critic (M4, WAVE_C §1 rule 7): the room answers whatever
+// a curious man tries after the last blow - a word from the docker against
+// the far wall, from Dot down behind the counter (she gets up), from the
+// cook in his hatch (his bell); the jukebox plays its next record; a stool
+// walked into spins. Small, once or twice each, never in the way.
+function roomAnswers(ctx, free) {
+  const G = ctx.game, cast = ctx.cast, d = ctx.stage.part('diner');
+  const head = (c) => () => c && c.bones && c.bones.head ? c.bones.head.getWorldPosition(V(0, 0, 0)) : null;
+  const talk = (id, c, lines, prompt, then) => {
+    if (!c) return;
+    let n = 0;
+    ctx.interact.add({ id, at: head(c), range: 2.6, cone: 0.45, prompt, when: free,
+      onUse: () => { const line = lines[Math.min(n, lines.length - 1)]; n++; G.hud.say(line, 2.4); if (then) then(n); } });
+  };
+  const dk = cast.get('docker'), dot = cast.get('dot'), cook = cast.get('cook');
+  talk('c4.docker', dk, ['Not my fight, mister.', 'I didn’t see nothing.'], 'talk', (n) => {
+    if (n === 1 && dk.play) { try { dk.play('startle'); } catch (e) { /* */ } }
+  });
+  talk('c4.dot', dot, ['You’d better go. They’ll send more.', 'Go on. I’ll be all right.'], 'talk', (n) => {
+    // (up from behind the counter at the first word)
+    if (n === 1 && dot.setState) { try { dot.setState('idle', 0.4); } catch (e) { /* */ } }
+  });
+  talk('c4.cook', cook, ['Kitchen’s closed.', 'I said closed.'], 'talk', () => { if (d.bell) d.bell.ring(); });
+  if (d.jukebox) {
+    const J = DINER.jukebox;
+    ctx.interact.add({ id: 'c4.jukebox', at: V(J.x, DINER.floorY + 1.1, DINER.zMin + 0.45), range: 2.2, cone: 0.5, prompt: 'play', when: free,
+      onUse: () => { d.jukebox.next(); G.sfx.play('clothRustle', V(J.x, 1.0, DINER.zMin + 0.5), { k: 0.3 }); } });
+  }
+  // (a stool walked into turns on its post, with its squeak)
+  const cool = new Map();
+  return (dt) => {
+    if (!free()) return;
+    const e = G.eye;
+    for (let i = 1; i <= 9; i++) {
+      const st = d.stool(i);
+      if (!st || !st.object || st.handle && (st.handle.toppled || st.handle.broken)) continue;
+      const p = st.object.getWorldPosition(V(0, 0, 0));
+      const k = (cool.get(i) || 0) - dt;
+      cool.set(i, k);
+      if (k <= 0 && Math.hypot(p.x - e.x, p.z - e.z) < 0.5) { st.spin(0.9); G.sfx.play('stoolSqueak', V(p.x, 0.9, p.z)); cool.set(i, 2.5); }
+    }
+  };
 }
 
 // ---- Ames's card ---------------------------------------------------------------------------

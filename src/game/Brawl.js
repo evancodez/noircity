@@ -3,7 +3,7 @@ import { buildProp } from '../props/index.js';
 import { BR_ATTACKS, OPENS } from '../cast/brawl/clips.js';
 import { think, steer, mannerOf, MANNERS } from '../cast/brawl/brain.js';
 import { FightCards } from '../ui/fightCards.js';
-import { Lesson } from './BrawlLesson.js';
+import { Lesson, HEAVY_CARD } from './BrawlLesson.js';
 import { DodgeCue, CUE, cued } from './BrawlCue.js';
 // [C4] the line before going down, and the word on the black after
 const FIGHT_WARN = 'One more and you’re down.';
@@ -100,7 +100,7 @@ export const BRAWL = {
   tough: 1,
 };
 // [R2-H] the last blow's card (the lesson's words: HOLD TO LOAD, THEN LET GO)
-const FINISH_CARD = 'OUT ON HIS FEET.   HOLD ON AFTER THE JAB: IT LOADS.   LET GO';   // ([C4] version 5's words)
+const FINISH_CARD = 'OUT ON HIS FEET.   KEEP IT PRESSED, LET GO TO HIT';   // ([C4] the heavy's words, after the critic: they read as 'wait')
 // [R2-H] how white his thrown china prints in the air (the glass ticks' 1.6)
 const THROWN_LIFT = 0.45;
 // [B8] what a thing does in my hands (§5): its damage, how many blows it is
@@ -302,6 +302,9 @@ export class Brawl {
     if (this.me.act === 'down') { this.stepDown(dt); return; }
     this.stepMe(dt);
     this.stepHim(wdt);
+    // ([C4] the fight stopped in his step - the end of the knock-out: nothing
+    // more of it this step)
+    if (!this.active) return;
     this.stepFlying(wdt);
     this.drawFlying();
     if (this.cue) this.cue.draw(dt);
@@ -372,7 +375,7 @@ export class Brawl {
     const Bt = me.btns;
     for (const code of ['Mouse0', 'Mouse2']) {
       if (G.pressed(code)) {
-        { const st = this.stamps[code], now = typeof performance !== 'undefined' ? performance.now() : 0; Bt[code] = { age: 0, t: 0, down: G.held(code) && !G.released(code), used: false, at: this.RT, stamp: st && now - st.down < 400 ? st : null }; } this.stats.presses = (this.stats.presses || 0) + 1; this.lastInputT = this.RT;
+        { const st = this.stamps[code], now = typeof performance !== 'undefined' ? performance.now() : 0; Bt[code] = { age: 0, t: 0, down: G.held(code) && !G.released(code), used: false, at: this.RT, stamp: st && now - st.down < 400 ? st : null }; } this.stats.presses = (this.stats.presses || 0) + 1; this.lastInputT = this.RT; this.inputN = (this.inputN || 0) + 1;
         this.stats.input.length < 400 && this.stats.input.push([+this.T.toFixed(3), code, me.act]);
         continue;
       }
@@ -383,7 +386,7 @@ export class Brawl {
     }
     // the keys: the newest kept 0.15 s if it cannot act yet
     for (const code of ['KeyA', 'KeyD', 'KeyS', 'KeyE']) {
-      if (G.pressed(code)) { me.buf = { code, t: 0 }; this.lastInputT = this.RT; this.stats.input.length < 400 && this.stats.input.push([+this.T.toFixed(3), code, me.act]); }
+      if (G.pressed(code)) { me.buf = { code, t: 0 }; this.lastInputT = this.RT; this.inputN = (this.inputN || 0) + 1; this.stats.input.length < 400 && this.stats.input.push([+this.T.toFixed(3), code, me.act]); }
     }
     if (me.buf) { if (me.buf.t > BRAWL.buffer) me.buf = null; else me.buf.t += dt; }
     // ---- the wind-up: it loads while held; let go, the blow
@@ -531,7 +534,9 @@ export class Brawl {
     // after a blow counts from its new start)
     const bt = this.me.btns[code]; me.holdOff = bt ? bt.t - me.holdT : 0;
     const it = me.windThing ? me.holding : null;
-    const clip = it ? (THINGS_OF(it).big ? 'windBig' : 'windItem' + (it.hand === 'L' ? 'L' : '')) : arm === 'L' ? 'windL' : 'windR';
+    // ([C4] the fist cocked up by the jaw, in the frame under his face, not down
+    // in the corner: player/clips/c4.js)
+    const clip = it ? (THINGS_OF(it).big ? 'windBig' : 'windItem' + (it.hand === 'L' ? 'L' : '')) : arm === 'L' ? 'c4windL' : 'c4windR';
     me.h = H.play(clip);
     // (a hold already under way: the draw-back picks up where the hold is)
     me.h.t = Math.min(0.48, me.holdT - BRAWL.hold.min);
@@ -544,7 +549,7 @@ export class Brawl {
   hard(arm, lv) {
     const me = this.me;
     me.act = 'hard'; me.arm = arm; me.level = lv; me.power = lv / 3; me.t = 0; me.windThing = false;
-    me.h = this.hands.play((arm === 'L' ? 'hardL' : 'hardR') + lv, { onMark: { contact: () => this.myContact('hard', arm, lv) } });
+    me.h = this.hands.play((arm === 'L' ? 'c4hardL' : 'c4hardR') + lv, { onMark: { contact: () => this.myContact('hard', arm, lv) } });
     this.stats.hards++;
     const S = this.stats.levels || (this.stats.levels = [0, 0, 0]); S[lv - 1]++;
     this.sfx('whiff', null, { k: 0.35 + 0.2 * lv });
@@ -1853,6 +1858,10 @@ export class Brawl {
   lowWarn() {
     const G = this.game, K = G.hud && G.hud.kit;
     if (!K || this.lesson) return;
+    // ([C4] after the last blow there is nothing left to warn of: the line
+    // goes with his fall, and a fight stopped in this very step - stepKO's
+    // stop() - must not put it back up for good, as it did at both fights)
+    if (this.finished || !this.active) { if (this.warned) { this.warned = false; G.hud.warn(null); } return; }
     const hp = G.health.hp;
     const on = this.warned ? hp < 40 : hp < 30 && this.me.act !== 'down';
     if (on && !this.warned) { this.warned = true; this.warnedAt = this.T; G.hud.warn(FIGHT_WARN); }
@@ -2103,7 +2112,7 @@ export class Brawl {
     const p = this.hands.anchor(hand === 'L' ? 'palmL' : 'palmR', _c);
     const s = G.screenOf(p);
     // (the fist drawn back low may leave the frame: the marks stay on it)
-    if (s) { s.x = Math.max(90, Math.min(innerWidth - 90, s.x)); s.y = Math.min(innerHeight - 70, s.y); }
+    if (s) { s.x = Math.max(160, Math.min(innerWidth - 160, s.x)); s.y = Math.min(innerHeight - 120, s.y); }
     if (lv > (me.lvShown || 0)) {
       this.sfx(lv >= 3 ? 'b8full' : 'b8tick', null, { k: lv });
       this.stats.ticks3 = (this.stats.ticks3 || 0) + (lv >= 3 ? 1 : 0);

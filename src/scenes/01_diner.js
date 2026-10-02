@@ -187,8 +187,16 @@ export default defineScene({
       // [C4] the check: written on the diner's own pad in Dot's pencil, slid
       // across to me; the bill goes down on it (props/kinds/c4.js guestCheck -
       // chapter III finds the same paper torn, in the same hand)
-      if (!d.items.get('check')) yield* slideCheck(ctx, d, dot());
-      yield* ctx.prompt({ text: 'pay', at: () => counterAt(4, 0.3, -0.05) });
+      if (!d.items.get('check')) {
+        yield* slideCheck(ctx, d, dot());
+        // [C4] after the critic (M2): a look down at it as it comes to rest -
+        // DINER, her pencil - and back up (two seconds, no key): chapter III
+        // hangs on knowing this paper again
+        look.to({ at: () => CHECK_AT().add(V(0.03, 0, 0)), pitch: true, maxPitch: 0.62, max: 0.4, in: 0.45, hold: 1.25, out: 0.55 });
+        yield wait(1.7);
+      }
+      // ([C4] the prompt beyond the check's head, not printed on it)
+      yield* ctx.prompt({ text: 'pay', at: () => counterAt(4, 0.4, 0.02) });
       const m = mack();
       let noticed = false;
       const h = H.play('payWallet', { onMark: {

@@ -18,19 +18,28 @@ import * as THREE from 'three';
 // tell of his hooks: the dodge cue does it (game/BrawlCue.js) - its first
 // time held, with the kit's teach card ('dodge', once a save); a player hit
 // twice in the lesson's dodge steps gets the card again.
+// [C4] after the critic: the heavy's card says what to do with the button
+// (it read as 'wait'); the block's names what it is for
+export const HEAVY_CARD = 'KEEP IT PRESSED: IT LOADS.   LET GO TO HIT';
 export const LESSON = [
   null,
   { kind: 'jabL', card: 'HIS GUARD IS DOWN   LEFT CLICK', pic: 'mouseL', taunt: 'L', done: (B) => B.did.jabL },
   { kind: 'jabR', card: 'RIGHT CLICK', pic: 'mouseR', taunt: 'R', done: (B) => B.did.jabR },
   { kind: 'guard', card: 'GUARD UP: HE ANSWERS A PUNCH INTO IT.   WAIT FOR AN OPENING', pic: null, guard: true, done: (B, L) => L.landedOpen },
-  { kind: 'hold', card: 'HOLD ON AFTER THE JAB: IT LOADS.   LET GO', pic: 'mouseLR', taunt: 'LR', done: (B) => B.did.hard },
+  { kind: 'hold', card: HEAVY_CARD, pic: 'mouseLR', taunt: 'LR', done: (B) => B.did.hard, nudge: 'KEEP IT PRESSED' },
   { kind: 'hookR', card: '', pic: null, attack: 'br_hook', hand: 'R', dodge: true, done: (B, L) => L.missed },
   { kind: 'hookL', card: '', pic: null, attack: 'br_hookL', hand: 'L', done: (B, L) => L.missed },
   { kind: 'throw', card: '', pic: null, throw: true, attack: 'br_throw', done: (B, L) => L.missed },
-  { kind: 'block', card: 'BLOCK', pic: ['SPACE'], attack: 'br_jab', done: (B, L) => L.covered },
+  { kind: 'block', card: 'HOLD TO BLOCK HIS JAB', pic: ['SPACE'], attack: 'br_jab', done: (B, L) => L.covered },
   { kind: 'grab', card: 'GRAB WHAT IS IN REACH', pic: ['E'], back: true, done: (B, L) => L.t >= 3 || B.did.grab },
 ];
 const LAST = LESSON.length - 1;
+// [C4] after the critic (B1): no step waits on one right action. A step not
+// done in `PATIENCE.secs`, or after `PATIENCE.presses` inputs that did not do
+// it, lets me go to the next (the fight teaches the rest: the block's and the
+// heavy's cards come again there); a step that asks for a press nudges once,
+// half way, with what it wants. Hands off, the lesson is cut at 12 s as before.
+export const PATIENCE = { secs: 15, presses: 10, nudgeAt: 4 };
 
 export class Lesson {
   constructor(B, step = 1) {
@@ -54,6 +63,8 @@ export class Lesson {
     this.attackAt = LESSON[n] && LESSON[n].attack ? 1.5 : Infinity;
     this.openT = 0;
     this.pending = false;
+    // ([C4] what I have pressed since the step began: its patience)
+    this.inputs0 = B.inputN || 0; this.nudged = false;
     // ([C4] the dodge steps: the first cue is held for the kit's card)
     this.dodge = !!(LESSON[n] && LESSON[n].dodge);
     B.lessonHold = true;
@@ -119,6 +130,20 @@ export class Lesson {
     // waited long enough - the lesson is over and the fight is on. Nothing
     // waits for ever on a player who does nothing: he loses, as anywhere)
     if (this.t > 12 && (B.RT || 0) - (B.lastInputT ?? 0) > 12 && !B.cue) { B.stats.lessonCut = this.step; return this.finish(); }
+    // ([C4] B1: pressing, but not what the card asks - a nudge half way, then
+    // the step lets me go; a step that never came to its blow (he was kept
+    // busy, I stood on him) lets me go after its time)
+    const pressed = (B.inputN || 0) - this.inputs0;
+    if (S.nudge && !this.nudged && pressed >= PATIENCE.nudgeAt && !B.cue) { this.nudged = true; B.cards.flash(S.nudge, 1.6); }
+    if (!B.cue && !this.pending && ((this.t > PATIENCE.secs) || (pressed >= PATIENCE.presses && !S.attack && this.t > 4))) {
+      B.stats.lessonLetGo = (B.stats.lessonLetGo || 0) + 1;
+      (B.stats.lessonPassed || (B.stats.lessonPassed = [])).push(S.kind);
+      if (S.kind === 'hold') B.heavyUntaught = true;
+      if (S.kind === 'block') B.blockUntaught = true;
+      if (this.step >= LAST) return this.finish();
+      this.go(this.step + 1);
+      return;
+    }
     // step 3: the guard up until a punch has bounced off it (or 3 s); then a
     // hand comes down
     if (S.guard && !this.lowered && (this.bounced || this.t >= 3)) {
@@ -157,6 +182,8 @@ export class Lesson {
   finish() {
     const B = this.B;
     B.cards.card('');
+    // ([C4] the middle of the frame its own: a word of the door's goes)
+    if (B.game.hud.msgT > 0) B.game.hud.message('', 0.01);
     B.cards.flash('NOW FIGHT.', 1.0);
     B.lessonHold = false; B.lessonBack = false;
     B.him.taunt = null;
