@@ -41,7 +41,7 @@ export const GUNMAN = {
   wait: [0.5, 1.3],            // s: behind cover between his times out
   watch: 1.3,                  // s: he holds his aim on where I went down before going back
   walk: 1.5, run: 3.0,
-  pistol: { hp: 100, dmg: 24, mag: 7, burst: [2, 3], gap: [0.4, 0.52], reload: 1.7 },
+  pistol: { hp: 100, dmg: 20, mag: 7, burst: [2, 3], gap: [0.4, 0.52], reload: 1.7 },
   tommy: { hp: 120, dmg: 8, burst: [10, 14], rate: 10.5, climb: 0.0035, sigma0: 0.01, drum: 2.6 },
   rusher: { hp: 250, dmg: 10, burst: [4, 6], rate: 9, every: 1.5, close: 2.4, hitStop: 0.45, walk: 1.3 },
 };
@@ -379,7 +379,8 @@ export default {
           if (E.ph === 'open') {
             h.speed = 0;
             B.faceTo(D.centre.x, D.centre.z, dt, 6);
-            if (D.open01 < 0.7 && !D.moving && E.t > 0.25) { D.locked = false; D.open(h.pos); }
+            // (he has the key: a locked door unlocked is a way through for all of them now - the grid again)
+            if (D.open01 < 0.7 && !D.moving && E.t > 0.25) { if (D.locked) { D.locked = false; Kt.rebuild(); } D.open(h.pos); }
             if (D.open01 > 0.72 || E.t > 3) { E.ph = 'through'; E.t = 0; }
             break;
           }

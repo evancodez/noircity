@@ -42,12 +42,14 @@ function plan(ctl) {
   for (let h = 0; h <= G_.down + 1e-6; h += 0.05) {
     if (clear(px, eye0 + h, pz) && clear(px, eye0 + h - 0.16, pz)) return { up: Math.min(G_.down, h + 0.08), lean: 0 };
   }
-  // too tall to rise over: lean round its side (the side that is clear)
+  // too tall to rise over: lean round its side (the side that is clear
+  // straight ahead - a jamb, a cabinet's end: the gun past its edge) // [C2] second owner: the view's own line only
   const rx = Math.cos(ctl.yaw), rz = -Math.sin(ctl.yaw);
+  const ahead = (x, y, z) => !R || !R.raycast(_o.set(x, y, z), dirs[0], G_.look, { anyHit: true, skip });
   for (const s of [1, -1]) {
     const x = px + rx * s * G_.lean, z = pz + rz * s * G_.lean;
     if (S.colliders && blockedAt(S, x, z)) continue;
-    if (clear(x, eye0 + 0.25, z)) return { up: 0.25, lean: s };
+    if (ahead(x, eye0 + 0.25, z) && ahead(x, eye0 + 0.12, z)) return { up: 0.25, lean: s };
   }
   return { up: G_.down, lean: 0 };
 }
