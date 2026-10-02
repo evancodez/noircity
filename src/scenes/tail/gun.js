@@ -167,6 +167,7 @@ export class WindowGun {
         try { r = this.game.stage.cars.hit(carV.v.car, hit, dir); } catch (e) { r = null; }
         if (!r) this.sparks(hit.point, hit.normal);
         if (ch.traffic.shotAt) ch.traffic.shotAt(carV);
+        this.trafficHits = (this.trafficHits || 0) + 1;
         G.emit('tail:hitTraffic', { point: hit.point });
         if (this.rounds <= 0 && this.pocket > 0) this.startReload();
         return;

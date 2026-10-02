@@ -24,7 +24,7 @@ const clamp = (x, a, b) => Math.max(a, Math.min(b, x));
 
 const PROFILES = {
   idle: null,
-  good: { aLat: 7.2, brake: 6.5, lag: 0.08, wobble: 0, keep: 13, far: 26, hb: true, wrong: 0, look: 1.0, gunGap: 14, gunAt: 26, aimTol: 0.01, aimJit: 0.004 },
+  good: { aLat: 7.2, brake: 6.5, lag: 0.08, wobble: 0, keep: 13, far: 26, hb: true, wrong: 0, look: 1.0, gunGap: 14, gunAt: 32, aimTol: 0.01, aimJit: 0.004 },
   // ([4th owner] the bad hands aim like a sloppy hand - the eye drifting
   // round the mark, at whatever part of his car - and shunt him when dry)
   bad: { aLat: 8.6, brake: 4.8, lag: 0.15, wobble: 0.04, keep: 10, far: 22, hb: false, wrong: 0.5, look: 0.9, damp: 0.2, gunGap: 18, gunAt: 30, aimSd: 0.02, aimTol: 0.035, aimReact: 0.1, aimGain: 3.5, fireGap: 0.45, aimAt: 'any', pit: true },
@@ -50,7 +50,7 @@ export function makeBot(chase, name, { seed = 7, track = null, attempt = 0 } = {
   // wrong turn, he knows the way the next time but one)
   if (attempt > 0 && name === 'bad') P = { ...P, aLat: Math.max(7.2, P.aLat - 0.6 * attempt), brake: Math.min(6, P.brake + 0.5 * attempt), wobble: P.wobble * 0.6, wrong: attempt >= 2 ? 0 : P.wrong * 0.5,
     // ([4th owner] and a steadier hand on the gun)
-    aimSd: Math.max(0.009, P.aimSd * (1 - 0.22 * attempt)), aimTol: Math.max(0.018, P.aimTol * (1 - 0.15 * attempt)) };
+    aimSd: Math.max(0.009, P.aimSd * (1 - 0.22 * attempt)) };
   const rng = new RNG(seed);
   const B = {
     name, P, rng, path: null, pathKey: '', i: -1, t: 0, queue: [], keys: {}, wrongT: 0, wrongUsed: 0, detour: null, stuckT: 0, backT: 0,
@@ -172,6 +172,26 @@ export function makeBot(chase, name, { seed = 7, track = null, attempt = 0 } = {
       const Ld = clamp((4.5 + sp * 0.42) * P.look, 4.5, 15);
       const T = path.at(Math.min(path.len, s + Ld), {});
       const c = Math.cos(my.yaw), sn = Math.sin(my.yaw);
+      // [4th owner] (phase b: a slower car in my lane ahead and the other
+      // lane clear: out and past it, as he does - the good hands sat behind
+      // the river road's slow car and lost the shot)
+      if (chase.phase === 'b' && P.gunGap) {
+        let slow = false, oncoming = false;
+        for (const o of chase.bodies ? chase.bodies() : []) {
+          if (o === my || o === his || !o.solid || o.parked) continue;
+          const ox = o.pos.x - my.pos.x, oz = o.pos.z - my.pos.z;
+          if (Math.abs(ox) > 70 || Math.abs(oz) > 70) continue;
+          const ax = ox * c - oz * sn, az = ox * sn + oz * c;
+          const facing = Math.cos((o.yaw || 0) - my.yaw) < -0.5;
+          if (facing && ax > -2 && ax < 55 && az < 1 && az > -6) oncoming = true;
+          if (!facing && ax > 2 && ax < 24 && Math.abs(az) < 2.4 && Math.hypot(o.vel.x, o.vel.z) < sp + 1) slow = true;
+        }
+        if (slow && !oncoming && !(B.passT > 0)) B.passT = 3.2;
+        if (oncoming && B.passT > 0.8) B.passT = 0.8;
+        B.passT = Math.max(0, (B.passT || 0) - dt);
+        const k = B.passT > 0 ? Math.min(1, B.passT / 0.8) * 3.0 : 0;
+        if (k) { T.x += T.fz * k; T.z -= T.fx * k; }
+      }
       const dx = T.x - my.pos.x, dz = T.z - my.pos.z;
       let fx = dx * c - dz * sn, fz = dx * sn + dz * c;
       // [4th owner] the gun dry and he hurt (rules.js RAM): the shunt - up
@@ -258,6 +278,10 @@ export function makeBot(chase, name, { seed = 7, track = null, attempt = 0 } = {
       const pick = () => { const a = P.aimAt === 'any' ? ['quarter', 'quarter', 'window', 'tank'][Math.floor(rng.next() * 4)] : P.aimAt || 'quarter'; return a === 'window' ? [-1.6, 1.3, 0] : a === 'tank' ? [-2.3, 0.75, 0] : [-1.55, 0.42, 0.76]; };
       const tgt = B.target || (B.target = pick());
       const w = his.seat(new (cam.position.constructor)(tgt[0], tgt[1], tgt[2] * (B.side || 1)));
+      // ([4th owner] a hand leads a moving mark a little: where his car will
+      // be as the press lands - and less my own car's way)
+      const lead = P.aimLead ?? 0.08;
+      if (lead) { w.addScaledVector(his.vel, lead); w.addScaledVector(chase.my.vel, -lead); }
       w.applyMatrix4(cam.matrixWorldInverse);
       const ay = Math.atan2(w.x, -w.z), ap = Math.atan2(w.y, Math.hypot(w.x, w.z));
       const tol = P.aimTol ?? 0.012;

@@ -22,30 +22,42 @@ export default async function tail({ js, turn, keyDown, keyUp, mouse, shot, log,
   const done = new Set();
   const rec = { profile, tries: [], fails: [], phases: {}, shots: 0, hits: 0, end: null };
   let tries = 0, chaseId = null, lastPhase = null;
+  const last = {};
   const release = async () => { for (const c of [...held]) await set(c, false); if (rmb) { rmb = false; await mouse('mouseReleased', cx, cy, 'right'); } };
+  // ([4th owner] one call a loop: the stop, the shots due and the status
+  // together - five calls a loop made the hands ~13 Hz, and the good hands'
+  // aim at a weaving car lagged its mark)
+  const shotList = Object.entries(opts.shots || {});
+  const pre = `const __stop = (() => { try { return (${until}) === true; } catch (e) { return false; } })(); const __due = []; ${shotList.map(([n, e]) => `try { if ((${e}) === true) __due.push(${JSON.stringify(n)}); } catch (e) { }`).join(' ')}`;
   for (;;) {
-    if (await js(until) === true) { rec.end = 'until'; break; }
     if (Date.now() - T0 > timeout) { rec.end = 'timeout'; break; }
-    for (const [name, expr] of Object.entries(opts.shots || {})) if (!done.has(name) && await js(expr) === true) { done.add(name); await release(); await shot(name); }
-    const s = await js(`(() => { const sc = G.scenes, C = sc.ctx && sc.ctx.flags && sc.ctx.flags.chase;
+    const s = await js(`(() => { ${pre}; const sc = G.scenes, C = sc.ctx && sc.ctx.flags && sc.ctx.flags.chase;
+      const st = (() => {
       if (!sc.current) return { none: true };
       if (sc.current.id !== 'tail') return { scene: sc.current.id };
       if (!C || !C.my) return { none: true };
       if (!C.bot) { const a = (window.__c3tries = (window.__c3tries || 0)); C.useBot(${JSON.stringify(profile)}, { seed: ${opts.seed ?? 7} + a * 13, attempt: a }); window.__c3tries = a + 1; C._botId = Math.random(); }
       const k = C.botKeys || {}, a = C.botAim, gun = C.gun;
       return { id: C._botId, phase: C.phase, beat: sc.beat, fade: sc.fadeK || 0, failing: !!C.failing, k, a, prompt: G.hud.promptShown, sens: N.controller.sensitivity,
-        gap: +C.gap().toFixed(1), unseen: +C.unseen.toFixed(1), dmg: +C.my.damage.toFixed(2), shots: gun ? gun.shots : 0, hits: gun ? gun.hits : 0, warn: C.kit.warning, t: +C.t.toFixed(1) }; })()`);
+        gap: +C.gap().toFixed(1), unseen: +C.unseen.toFixed(1), dmg: +C.my.damage.toFixed(2), shots: gun ? gun.shots : 0, hits: gun ? gun.hits : 0, th: gun ? gun.trafficHits || 0 : 0, aimK: gun ? +gun.aimK.toFixed(2) : 0, hd: JSON.stringify(C.hisDmg || {}), warn: C.kit.warning, t: +C.t.toFixed(1) }; })();
+      return Object.assign(st || {}, { __stop, __due }); })()`);
     if (!s || s.__exc) { await sleep(60); continue; }
+    if (s.__stop) { rec.end = 'until'; break; }
+    let shotNow = false;
+    for (const name of s.__due || []) if (!done.has(name)) { done.add(name); await release(); await shot(name); shotNow = true; }
+    if (shotNow) continue;
     if (s.scene && s.scene !== 'tail') { rec.end = 'next:' + s.scene; break; }
     if (s.none || s.failing || s.fade > 0.5) { await release(); await sleep(80); continue; }
     if (s.id !== chaseId) {
       // a new try (the scene's start, or back at a checkpoint after a fail)
-      if (chaseId) rec.tries.push({ ended: lastPhase });
+      if (chaseId) { rec.tries.push({ ended: lastPhase, shots: last.shots, hits: last.hits, traffic: last.th, his: last.hd, t: last.t }); log(`  try ${tries} ended in ${lastPhase} at ${last.t}s: ${last.shots} shots, ${last.hits} on him, ${last.th} into traffic, his ${last.hd}; phase b: gap ${last.n ? (last.gapSum / last.n).toFixed(0) : '-'} m on average, the gun out ${last.n ? Math.round(100 * (last.out || 0) / last.n) : '-'} %`); last.n = 0; last.gapSum = 0; last.out = 0; }
       chaseId = s.id; tries++;
       log(`try ${tries}: beat ${s.beat} (${profile})`);
     }
     if (s.phase !== lastPhase) { rec.phases[`${tries}:${s.phase}`] = +((Date.now() - T0) / 1000).toFixed(1); log(`phase ${s.phase} at ${s.t}s (gap ${s.gap}, dmg ${s.dmg})`); lastPhase = s.phase; }
     rec.shots = Math.max(rec.shots, s.shots); rec.hits = Math.max(rec.hits, s.hits);
+    last.shots = s.shots; last.hits = s.hits; last.th = s.th; last.hd = s.hd; last.t = s.t;
+    if (s.phase === 'b') { last.n = (last.n || 0) + 1; last.gapSum = (last.gapSum || 0) + s.gap; if (s.aimK > 0.9) last.out = (last.out || 0) + 1; }
     const k = s.k || {};
     for (const code of ['W', 'S', 'A', 'D']) await set('Key' + code, !!k[code]);
     await set('Space', !!k.Space);
@@ -64,7 +76,7 @@ export default async function tail({ js, turn, keyDown, keyUp, mouse, shot, log,
     if (a && a.fire && Date.now() - lmbAt > 250) { lmbAt = Date.now(); await mouse('mousePressed', cx, cy, 'left'); await sleep(40); await mouse('mouseReleased', cx, cy, 'left'); }
     // the pier: E to get out
     if (/get out/.test(s.prompt || '') && Date.now() - lastE > 1500) { lastE = Date.now(); await release(); await sleep(350); await keyDown('KeyE'); await sleep(70); await keyUp('KeyE'); }
-    await sleep(30);
+    await sleep(16);
   }
   await release();
   rec.tries.push({ ended: lastPhase });
