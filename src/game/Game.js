@@ -655,9 +655,10 @@ export class Game {
     h.flinch(dir);
     this.sfx.grunt(h.pos.clone().setY(h.pos.y + 1.5));
     // a heavy torso hit can knock a standing man back a step
-    // [C2] (not a gun kit's gunman: his brain takes the hit - the flinch, his aim spoiled - a stagger in
-    // three hits would win the exchange for a man standing in the open; the rng is drawn as before)
-    const stag = !head && dmg >= WEAPON.dmgTorso && this.rng.chance(0.3) && (h.state === 'idle' || h.state === 'aim') && !(ai && ai.brain && ai.brain.kind);
+    // [C2] (not a gun kit's pistol man or Tommy gunner: his brain takes the hit - the flinch, his aim
+    // spoiled - a stagger in three hits would win the exchange for a man standing in the open; the
+    // heavy staggers as ever (the brief's); the rng is drawn as before)
+    const stag = !head && dmg >= WEAPON.dmgTorso && this.rng.chance(0.3) && (h.state === 'idle' || h.state === 'aim') && !(ai && ai.brain && ai.brain.kind && ai.brain.kind !== 'rusher');
     if (stag) h.stagger();
     if (ai) ai.onHit(dir, stag);
   }

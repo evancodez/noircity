@@ -473,7 +473,29 @@ export default {
             // (he works the doorway from his side of it: beside the jamb, a
             // step into the opening to shoot, back - he does not walk in to be
             // shot; with nothing beside it to work it from, he goes through)
-            if (takeCover(false, { near: E.from, side: E.from, door: D })) { E.i = steps.length; S.entry = null; S.workDoor = D; break; }
+            if ((E.retryT = (E.retryT || 0) - dt) <= 0) {
+              E.retryT = 0.5;
+              if (takeCover(false, { near: E.from, side: E.from, door: D })) { E.i = steps.length; S.entry = null; S.workDoor = D; break; }
+            }
+            // [C2] after the critic: (both sides of it taken by his mates: he
+            // waits his turn along the wall, out of the doorway's line, and
+            // takes a side as one comes free - three through one door take
+            // turns at it; he walked into the room before, and from its far
+            // side had the desk's flank)
+            const working = [...G.ais.values()].some((a) => a !== B && a.h && a.h.alive && a.brain && a.brain.S && a.brain.S.workDoor === D);
+            if (working && E.t < 14) {
+              if (!E.waitAt) {
+                const along = D.spec.axis === 'z';
+                for (const sg of [-1, 1]) {
+                  const q = along ? { x: E.from.x, z: E.from.z + sg * 1.7 } : { x: E.from.x + sg * 1.7, z: E.from.z };
+                  if (G.nav.free(q.x, q.z)) { E.waitAt = q; break; }
+                }
+                E.waitAt = E.waitAt || { x: E.from.x, z: E.from.z };
+              }
+              if (Math.hypot(h.pos.x - E.waitAt.x, h.pos.z - E.waitAt.z) > 0.35) { if (!B.path) moveTo(E.waitAt.x, E.waitAt.z, false); if (follow(dt)) B.path = null; }
+              else { B.path = null; stand(false); B.faceTo(D.centre.x, D.centre.z, dt, 3); }
+              break;
+            }
             E.noHold = true; S.state = 'entry';
           }
           if (E.ph === 'through') {
@@ -538,10 +560,11 @@ export default {
           // his cover and comes to find me (the others press by the push and
           // the director's flank)
           // (a Tommy gunner who can still rake where I went down is not hiding: he pins - his bursts say where he is)
-          if (kind !== 'tommy' && alone() && S.lostT > T.find && !(Kt.flank && Kt.flank.ai === B)) {
+          // (a lone Tommy gunner too, but only after three times as long, and only to a place at his own range)
+          if (alone() && S.lostT > (kind === 'tommy' ? T.find * 3 : T.find) && !(Kt.flank && Kt.flank.ai === B)) {
             if (S.cover) S.cover.taken = null;
             S.cover = null; S.fire = null; S.peeks = 0;
-            S.state = 'open'; S.t = 0; S.seeks = 3; S.seekT = 0; S.wait = 0.3;
+            S.state = 'open'; S.t = 0; S.seeks = 3; S.seekT = 0; S.wait = 0.3; S.finding = true;
             Kt.events.push({ t: +G.time.toFixed(2), what: 'find', kind, at: [+h.pos.x.toFixed(1), +h.pos.z.toFixed(1)] });
             break;
           }
@@ -653,7 +676,7 @@ export default {
           // without one, straight in at me - nobody hides out the clock, nor waits it out)
           if (!S.line && S.lostT > 9) S.seeks = Math.max(S.seeks || 0, 3);
           // (the Tommy gunner does not go looking: he pins - from the open he takes cover again, rakes, or waits for me to show)
-          if (!S.line && kind !== 'tommy' && S.lostT > 3 && (S.seekT = (S.seekT || 0) - dt) <= 0) {
+          if (!S.line && (kind !== 'tommy' || S.finding) && S.lostT > 3 && (S.seekT = (S.seekT || 0) - dt) <= 0) {
             S.seekT = 2;
             const e = G.eye; let bx = 0, bz = 0;
             for (const [o] of G.ais) if (o.alive) { bx += o.pos.x - e.x; bz += o.pos.z - e.z; }
