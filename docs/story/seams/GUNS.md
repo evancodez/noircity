@@ -177,12 +177,17 @@ K.spawn({ kind: 'tommy', at: { x, z }, cover: true, wait: 2.4 });   // there alr
   from it to shoot (a step out, or up over it), two or three rounds, back.
 - **The tell and the settle** (the fair rule, the brief's numbers): the gun
   comes up (0.26 s, a glint, a click); he must see me (0.25 s after I come up
-  or out into his line; 0.075 s when I am standing in it already); then the
-  settle (0.4 s at 3 m .. 0.9 s at 18 m; x1.4 while I move across his line;
-  x1.5 for 1.5 s after a round near him or into him); a settled round at a
-  man standing still in the open hits (0.0055 rad); his aim trails a moving
+  or out into his line; 0.075 s when I am standing in it already; **0.45 s
+  more when he has me from off my screen** - a flank, a door at my back: the
+  time to turn, with the warning `Behind you!`); then the settle (0.4 s at
+  3 m .. 0.9 s at 18 m; x1.4 while I move across his line; x0.6 while I
+  stand up still in it - a man standing in the open is an easy mark; x1.5
+  for 1.5 s after a round near him or into him); a settled round at a man
+  standing still in the open hits (0.0055 rad); his aim trails a moving
   target by 0.2 s. Out of his line, the settle drains (0.6 s). A hit knocks
-  a pistol man or a Tommy gunner off his aim and back behind his cover.
+  a pistol man or a Tommy gunner off his aim and back behind his cover. A
+  pistol man whose mark stands up in his line, with nothing coming near him,
+  does not go back: two more bursts, the gun still up.
 - **How they press** (nobody hides out the clock):
   - **together**: when one goes out, the others behind cover go with him
     (two guns on the man who rises to answer);
@@ -194,7 +199,8 @@ K.spawn({ kind: 'tommy', at: { x, z }, cover: true, wait: 2.4 });   // there alr
     goes on to cover nearer me; nothing nearer and no line for 6 s, he
     goes to find a place that sees me;
   - **the seek**: a man with no cover and no line goes to a place that sees
-    me, or in at me by the way there is;
+    me, or in at me by the way there is; nine seconds without a line, he
+    comes straight in (nobody waits the clock out either);
   - **the flank** (the director): when I hold one place down for
     `flankAfter` seconds, the man best placed goes round (a run you hear: a
     scuff and quick heels) to a place that sees me, off the others' line;
