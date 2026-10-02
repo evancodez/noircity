@@ -79,7 +79,17 @@ export default {
       E.s = L0 + (L1 - L0) * Math.min(1, ek);
       E.ladderK = ek;
       E.v = (L1 - L0) / E.ladderTime;
-      if (k >= 1) { E.s = E.len; E.onEvent('ladderStop', {}); }
+      // [C6] (a drop after the ladder: its stop, then the rest is a fall)
+      if (k >= 1) { E.s = L1 + 1e-4; E.onEvent('ladderStop', {}); if (E.s >= E.len - 1e-3) E.s = E.len; }
+    } else if (kind === 'drop' && E.s < E.len) {
+      // [C6] let go of the ladder at its stop: a metre's fall, the knees take it
+      E.dropT = (E.dropT || 0) + dt;
+      const L0 = E.rail[i].s, L1 = next.s;
+      const k = Math.min(1, (E.dropT / 0.38) ** 2);
+      E.s = L0 + (L1 - L0) * k;
+      E.ladderK = 1;
+      E.v = 0;
+      if (k >= 1) { E.s = E.len; E.onEvent('drop', {}); }
     } else if (E.s < E.len) {
       const want = f > 0 ? (next.duck ? next.duck.speed : kind === 'stair' ? 2.9 : 3.3) : 0;
       E.v += (want - E.v) * (1 - Math.exp(-dt * (want > E.v ? 7 : 12)));
@@ -112,18 +122,18 @@ export default {
     // the way ahead turns the body; the look is laid on it and eases back
     // to it once the mouse has rested 0.6 s (faster while moving)
     let h = headingAt(E, E.s);
-    if (E.endYaw != null && kind === 'ladder') h = E.heading + wrap(E.endYaw - E.heading) * sm(Math.min(1, E.ladderK / 0.3));
+    if (E.endYaw != null && (kind === 'ladder' || kind === 'drop')) h = E.heading + wrap(E.endYaw - E.heading) * sm(Math.min(1, E.ladderK / 0.3));
     const dh = wrap(h - E.heading);
     E.heading += Math.sign(dh) * Math.min(Math.abs(dh), dt * (kind === 'ladder' ? 6.5 : 4.2));
     E.idle += dt;
     if (E.idle > 0.6 && E.v > 0.5) { const k = Math.exp(-dt * 2.4); E.look.yaw *= k; E.look.pitch = E.look.pitch * k; }
     const onStair = kind === 'stair' && E.v > 0.3;
-    E.pitchBase += ((onStair ? -0.32 : kind === 'ladder' ? -0.2 + 0.17 * E.ladderK : -0.08 - (D ? D.pitch * duck : 0)) - E.pitchBase) * (1 - Math.exp(-dt * (D ? 9 : 4)));
+    E.pitchBase += ((onStair ? -0.32 : kind === 'ladder' || kind === 'drop' ? -0.2 + 0.17 * E.ladderK : -0.08 - (D ? D.pitch * duck : 0)) - E.pitchBase) * (1 - Math.exp(-dt * (D ? 9 : 4)));
     ctl.yaw = E.heading + E.look.yaw;
     ctl.pitch = Math.max(-1.45, Math.min(1.45, E.pitchBase + E.look.pitch));
     // the stride's bob, and the hands: one on the flight's handrail
     ctl.vel.set(0, 0, 0);
-    const moving = E.v > 0.3 && kind !== 'ladder' && !D;
+    const moving = E.v > 0.3 && kind !== 'ladder' && kind !== 'drop' && !D;
     ctl.bobAmp += ((moving ? 0.75 : 0) - ctl.bobAmp) * (1 - Math.exp(-dt * 8));
     ctl.bobPhase += dt * (moving ? 2.1 + E.v * 1.6 : 0);
     RUNHANDS.phase = ctl.bobPhase;

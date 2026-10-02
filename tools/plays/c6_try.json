@@ -1,0 +1,13 @@
+{
+ "about": "[C6] a working try of a stretch by a bot (development; not a proof). node tools/play.mjs tools/plays/c6_try.json",
+ "url": "/?mute=1&start=watcher.alley",
+ "size": [1280, 800],
+ "out": "shots/c6/play_try",
+ "steps": [
+  { "wait": 1500 },
+  { "clickOn": "#title .opt[data-k=begin]", "taken": "G.state !== 'title' && document.pointerLockElement === N.renderer.domElement", "retries": 5, "every": 4000 },
+  { "until": "G.scenes.current && G.scenes.current.id === 'watcher' && !(G.hud.cardT > 0.1)", "timeout": 20000 },
+  { "drive": "tools/lib/c6_chase.mjs", "profile": "good", "verbose": false, "over": "roofs", "stop": "G.scenes.beat === 'car'", "timeout": 120000, "check": "D.done", "label": "through the lane and the yard" },
+  { "eval": "JSON.stringify(G.scenes.ctx.flags.chase.met)" }
+ ]
+}

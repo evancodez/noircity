@@ -3,7 +3,10 @@ import { Cars, sedanTemplates } from '../../../world/Cars.js';
 import { accent } from '../../../render/accents.js';
 import { allocInkId, markFigure } from '../../../render/layers.js';
 import { buildCoupe, COUPE } from '../../../vehicles/models.js';
-import { HIS_CAR, MY_CAR } from '../plan.js';
+import { HIS_CAR, MY_CAR, MERCER, GARAGE } from '../plan.js';
+
+// [C6] where the car waits in the garage (it drives out north up Mercer Street)
+export const MERCER_CAR = { x: (GARAGE.door[0] + GARAGE.door[1]) / 2 + 1.2, z: GARAGE.z0 + 3.0 };
 
 // The cars on the back street beyond the loose board: his sedan at the kerb
 // (its headlamps dark until he is in it: the chase's car beat turns them on
@@ -24,6 +27,12 @@ export default {
     C.his = C.spawn({ pos: V3(HIS_CAR.x, 0, HIS_CAR.z), yaw: HIS_CAR.yaw, lights: true, paint: 'paint' });
     C.cars.push(C.his);
     C.cars.push(C.spawn({ pos: V3(-10.4, 0, -112.0), yaw: -Math.PI / 2 + 0.03, lights: false, paint: 'paintGrey' }));
+    // [C6] the car in the garage at Mercer Street's foot (it comes out across
+    // the chase's way: scenes/watcher/street.js drives it), its lamps lit;
+    // one parked up Mercer Street on its east kerb
+    C.mercer = C.spawn({ pos: V3(MERCER_CAR.x, 0, MERCER_CAR.z), yaw: Math.PI / 2, lights: true, paint: 'paintGrey' });
+    C.cars.push(C.mercer);
+    C.cars.push(C.spawn({ pos: V3(MERCER.road[1] - 1.05, 0, -128.5), yaw: Math.PI / 2 + 0.02, lights: false, paint: 'paint' }));
     // (his lamps are dark until he starts it)
     const h = C.his;
     h.spotI0 = h.spot.intensity;

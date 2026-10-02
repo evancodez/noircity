@@ -1,0 +1,17 @@
+{
+ "about": "[C6] The brief's watcher_w (WAVE_C §7 proof 1 in its W-held form): W held and the mouse steering, nothing else - no SPACE, no C, no E. Down the iron, up the alley: the bins he pulls down across it trip me (a second lost; the held SPACE card crawls six seconds and goes), and the first board fence in the lane stops me dead - pressed against it, W does nothing - he is away: \"He's getting away.\", then \"Lost him.\", back at the lane's start; and the same again (never a win by W alone). node tools/play.mjs tools/plays/watcher_w.json",
+ "url": "/?mute=1&start=watcher.escape",
+ "size": [1280, 800],
+ "out": "shots/c6/play_w",
+ "steps": [
+  { "until": "G.state === 'title' && !!document.querySelector('#title .opt[data-k=begin]')", "timeout": 40000 },
+  { "wait": 1200 },
+  { "clickOn": "#title .opt[data-k=begin]", "taken": "G.state !== 'title' && document.pointerLockElement === N.renderer.domElement", "retries": 5, "every": 4000 },
+  { "until": "G.scenes.current && G.scenes.current.id === 'watcher' && !(G.hud.cardT > 0.1)", "timeout": 20000 },
+  { "drive": "tools/lib/c6_chase.mjs", "profile": "w", "stop": "(G.counters.fails || 0) >= 2 && !G.failing", "timeout": 120000, "check": "D.done && D.fails >= 2", "label": "W alone loses him twice and never gets past the first fence",
+    "shots": { "w1_fence": "N.controller.run && N.controller.run.blocked && N.controller.run.blocked.T.id === 'fence1'", "w2_warn": "!!G.hud.kit.warnText && N.controller.run && !!N.controller.run.blocked" } },
+  { "expect": "G.lastFail.why === 'Lost him.' && G.lastFail.to === 'lane' && G.lastFail.warnedFor >= 1", "label": "the second loss: in the lane, warned first, back at its start" },
+  { "expect": "JSON.stringify(G._c6lost.map((r) => r.blocked)) === JSON.stringify(['fence1', 'fence1'])", "label": "both times stopped dead at the first fence" },
+  { "eval": "JSON.stringify(G._c6lost.map((r) => ({ stretch: r.stretch, gap: r.gap, me: r.me, blocked: r.blocked, met: r.met })))" }
+ ]
+}
