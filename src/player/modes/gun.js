@@ -15,7 +15,7 @@
 //   controller.crouchOn the toggle's state       controller.leanK  -1 .. 1 (left .. right)
 // (the mode 'office' of scene 5 stays as it was until lane C5 moves to this one)
 import * as THREE from 'three';
-export const GUN_MODE = { down: 1.0, time: 0.2, rise: 0.15, walk: 3.6, sprint: 5.6, creep: 1.7, risenWalk: 0.9, lean: 0.46, look: 1.8 };   // [C2] after the critic: look 1.3 -> 1.8 (down 1.4 m behind the tipped desk, RMB rose to nothing and the rounds went into it)
+export const GUN_MODE = { down: 1.0, time: 0.2, rise: 0.15, walk: 3.6, sprint: 5.6, creep: 1.7, risenWalk: 0.9, lean: 0.46, look: 2.4 };   // [C2] after the critic: look 1.3 -> 2.4 (down 1.4 m behind the tipped desk, RMB rose to nothing - its knee space let the plan's rays through - and the rounds went into its top, 2.2 m out)
 const G_ = GUN_MODE;
 const ss = (k) => k * k * (3 - 2 * k);
 
@@ -26,7 +26,7 @@ function heldRmb(ctl) {
 
 // how far up the eye must go from the crouch for the gun to clear what is
 // in front (a ray at the eye's height and one at the muzzle's, along the
-// view's heading, GUN_MODE.look: 1.8 m); or, when nothing short of standing clears it,
+// view's heading, GUN_MODE.look: 2.4 m); or, when nothing short of standing clears it,
 // the side to lean out to
 function plan(ctl) {
   const S = ctl.world, G = S.game;

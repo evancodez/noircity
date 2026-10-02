@@ -324,11 +324,16 @@ export default {
     // [C2] after the critic (the tell was a pale hand, no glint in any frame):
     // a star on the barrel as it comes up, big enough to read across a room
     // in the ink, held through the raise; the click or the bolt with it
+    // (the click as the gun starts up; the star when it is up, on the barrel where it points)
     const glint = () => {
+      const m = h.muzzleWorld(V(0, 0, 0));
+      G.sfx.play(kind === 'pistol' ? 'c2_cock' : 'c2_bolt', m, {}, { ref: 3, roll: 1.3 });
+      S.glintDue = T.raise * 0.75;
+    };
+    const glintStar = () => {
       const m = h.muzzleWorld(V(0, 0, 0));
       G.fx.sparks.spawn({ pos: m, life: 0.3, size: [0.2, 0.2], rot: r.next() * 6.28, spin: 3, col: [5, 5, 5], alpha: 1, cell: 7, fadeOut: 0.5 });
       G.fx.sparks.spawn({ pos: m, life: 0.22, size: [0.42, 0.05], rot: r.next() * 6.28, col: [3.5, 3.5, 3.5], alpha: 0.9, cell: 7, fadeOut: 0.6 });
-      G.sfx.play(kind === 'pistol' ? 'c2_cock' : 'c2_bolt', m, {}, { ref: 3, roll: 1.3 });
     };
     // (raised: how long the gun has been coming up already - a step out with it up)
     const raise = (raised = 0) => {
@@ -373,6 +378,7 @@ export default {
       S.t += dt;
       S.rattledT = Math.max(0, S.rattledT - dt);
       S.flinchT = Math.max(0, (S.flinchT || 0) - dt);
+      if (S.glintDue != null && (S.glintDue -= dt) <= 0) { S.glintDue = null; if (S.state === 'aim' || S.state === 'out' || S.state === 'fire') glintStar(); }
       if (G.health.dead && S.state !== 'watch') { brain.playerDown(); }
       look(dt);
       // [C2] after the critic: shot at on his way in (a round into him or past
@@ -541,7 +547,8 @@ export default {
           else if (S.raiseT >= T.raise && S.line && S.lineT >= noticeOf()) S.settle += dt / settleTime();
           else if (!S.line) S.settle = Math.max(0, S.settle - dt / T.lost);
           if (S.target) h.lookAt(S.aimP);
-          if (follow(dt) || S.t > 1.2) { B.path = null; h.speed = 0; raise(S.raiseT); }
+          // (there, or he has me and his aim is settled on the way: he stops and fires)
+          if (follow(dt) || S.t > 1.2 || (S.line && S.settle >= 1 && S.raiseT >= T.raise)) { B.path = null; h.speed = 0; raise(S.raiseT); }
           break;
         }
         // the tell, then the settle

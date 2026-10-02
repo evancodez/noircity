@@ -238,8 +238,8 @@ export default defineScene({
       } });
       yield until(() => !!desk.tip && desk.tip.done);
       // (behind it: on the side away from the door, near enough that it hides
-      // me - where the tip leaves me, 1.4 m back, counts: the rise looks 1.8 m
-      // ahead, so RMB from there clears it)
+      // me - where the tip leaves me, 1.4 m back, counts: the rise looks 2.4 m
+      // ahead, so RMB from there clears its top)
       const behind = () => { const b = desk.back(), ax = (G.eye.x - b.x) * desk.dir; return Math.abs(G.eye.z - b.z) < 1.1 && ax < 0.15 && ax > -1.7; };
       K.teach('crouch');
       // (down but not behind it: the line says where)
