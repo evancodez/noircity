@@ -4,6 +4,7 @@ import { ROOM, STREET_WIN, WATCH_AT, ESC, ESC_RAIL, L3Y, HIS_CAR, MY_CAR, STRETC
 import { Chase, RULES, STRETCH_ORDER, hisStart } from './watcher/chase.js';
 import { pathAt, project } from './watcher/course.js';
 import { mercerCar, CROSS_Z } from './watcher/street.js';
+import { seamWarm } from './watcher/seam.js';
 import { makeUmbrella } from './watcher/umbrella.js';
 import { makeBlind } from './watcher/blind.js';
 import { RUNHANDS } from '../player/clips/run.js';
@@ -443,14 +444,22 @@ function streetStep(ctx) {
   if (toCross > 0 && toCross / v < 5.4) S.arm(toCross / v + 0.15);
 }
 
-// ---- the city warmed through the last stretch (lane C3's seam) -----------------------------------
+// ---- the city warmed ahead (lane C3's seam) -------------------------------------------------------
+// From the chapter's first frames (under its card, at the window: frames that
+// stand still - a long step there is not felt, as it would be in the market at
+// a run), once a frame until it stands; then the seam's own (seam.js: what the
+// cut into the seat would otherwise compile at once). The city stays built
+// across a retry. (C3 asked for it from about two seconds before the door; it
+// is the same work, done where a hitch cannot be seen.)
 function warmStep(ctx) {
-  const G = ctx.game, C = ctx.flags.chase, F = ctx.flags;
-  if (F.warmed || !C || G.shotMode) return;
-  if (!(C.stretch === 'car' || (C.stretch === 'street' && C.myD < 30))) return;
-  if (!G.stages.warm) { F.warmed = true; return; }
-  // once a frame until it says it is done
-  F.warmed = G.stages.warm('city');
+  const G = ctx.game, F = ctx.flags;
+  if (F.warmed === 'done' || G.shotMode || !G.stages.warm) return;
+  if (!F.warmed) { if (G.stages.warm('city')) F.warmed = 'city'; return; }
+  if (F.warmed === 'city') {
+    const city = G.stages.built && G.stages.built.get('city');
+    const it = F.seamIt || (F.seamIt = seamWarm(G, city));
+    if (it.next().done) F.warmed = 'done';
+  }
 }
 
 // ---- the car beat ------------------------------------------------------------------------------
@@ -493,29 +502,54 @@ function* carBeat(ctx) {
   yield until(() => driven);
   G.hud.warn(null);
   G.interact.remove('drive');
-  // my hand on the handle (object first), the door, the eye ducking in: the
-  // cut into the seat inside the movement, on the door frame's black
-  DOOR.at = door.clone();
-  DOOR.out = doorOut.clone();
+  // my hand on the handle (object first), the door swung open, the eye in
+  // under the roof's rail: the cut into the seat inside that movement, on the
+  // black of the door frame crossing the lens (no fade, no card)
+  const mine = cars.mine;
   SLAT.cam = G.camera;
   if (G.controller.run) G.controller.setMode('walk');
   H.equip('empty');
   G.controller.frozen = true;
-  const ex = door.x + doorOut.x * 0.7 - doorOut.z * 0.1, ez = door.z + doorOut.z * 0.7 + doorOut.x * 0.1;
-  const gy = stage.surfaceY(ex, ez);
-  const dy = gy + 1.63 - door.y, dd = Math.hypot(door.x - ex, door.z - ez);
-  const P1 = { x: ex, y: gy + 1.63, z: ez, yaw: Math.atan2(-(door.x - ex), -(door.z - ez)) + 0.1, pitch: -Math.atan2(dy, dd) + 0.2 };
-  G.controller.ease(P1, 0.32);
+  const g = mine.group;
+  g.updateMatrixWorld(true);
+  const L = (x, y, z) => V(x, y, z).applyMatrix4(g.matrixWorld);
+  const lookAt = (from, to) => ({ yaw: Math.atan2(-(to.x - from.x), -(to.z - from.z)), pitch: Math.atan2(to.y - from.y, Math.hypot(to.x - from.x, to.z - from.z)) });
+  const stand = (lx, lz, at) => { const p = L(lx, 0, lz); p.y = stage.surfaceY(p.x, p.z) + 1.63; return { x: p.x, y: p.y, z: p.z, ...lookAt(p, at) }; };
+  // (the handle, live: the hand rides it as the door swings)
+  const live = () => { DOOR.at = mine.handleAt(DOOR.at || V(0, 0, 0)); DOOR.out = mine.handleOut(DOOR.out || V(0, 0, 0)); };
+  live();
+  ctx.onStep(live);
+  // 1. a step to it, the hand to the handle
+  G.controller.ease(stand(-1.05, 1.45, door), 0.3);
   H.play('carDoor', { onMark: { grip: () => G.sfx.play('w_carDoorOpen', door) } });
-  yield wait(0.42);
-  const P2 = { ...P1, x: P1.x - doorOut.x * 0.55, z: P1.z - doorOut.z * 0.55, y: P1.y - 0.5, pitch: P1.pitch + 0.25, yaw: P1.yaw - 0.35 };
-  G.controller.ease(P2, 0.38);
-  yield wait(0.3);
-  // (the door frame across the lens: two frames of its black, and the seat)
+  yield wait(0.4);
+  // 2. the door swung open toward me (a step back out of its way), the hand off it
+  G.controller.ease(stand(-1.75, 1.85, L(-0.35, 1.25, 0.7)), 0.42);
+  for (let k = 0; k <= 1.0001; k += 1 / 60 / 0.42) {
+    const u = Math.min(1, k), e = 1 - (1 - u) * (1 - u);
+    mine.setOpen(1.08 * e);
+    if (u > 0.35 && !ctx.flags.released) { ctx.flags.released = true; H.play('releaseDoor'); }
+    yield null;
+  }
+  // 3. in: the eye into the opening and down under the roof's rail; as the
+  // door frame passes over the lens, its black, and the seat
+  const inside = L(-0.55, 1.32, 0.42);
+  const P3 = { x: inside.x, y: inside.y, z: inside.z, ...lookAt(inside, L(-0.4, 1.2, -1.2)), pitch: -0.06 };
+  G.controller.ease(P3, 0.42);
+  const toLocal = new THREE.Matrix4().copy(g.matrixWorld).invert();
+  yield until(() => {
+    const c = G.camera.position.clone().applyMatrix4(toLocal);
+    return c.z < 0.78;
+  });
   G.hud.fade(1);
-  yield wait(0.04);
-  G.hud.fade(0);
+  yield wait(0.034);
   ctx.next({ fade: 'cut', card: false });
+  // (the black held over the city's first frames - whatever the cut still
+  // costs is inside it - then the seat)
+  G.hud.fade(1);
+  let n = 0;
+  const lift = () => { if (++n < 3) requestAnimationFrame(lift); else G.hud.fade(0); };
+  if (typeof requestAnimationFrame !== 'undefined' && !G.shotMode) requestAnimationFrame(lift); else G.hud.fade(0);
 }
 
 // ---- his car pulling away on its rail ----------------------------------------------------------

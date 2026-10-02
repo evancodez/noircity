@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { Cars, sedanTemplates } from '../../../world/Cars.js';
 import { accent } from '../../../render/accents.js';
 import { allocInkId, markFigure } from '../../../render/layers.js';
+import { roundedBox, merge } from '../../../world/geom.js';
 import { buildCoupe, COUPE } from '../../../vehicles/models.js';
 import { HIS_CAR, MY_CAR, MERCER, GARAGE } from '../plan.js';
 
@@ -74,23 +75,40 @@ export default {
       g.traverse((o) => { if (o.isMesh) { o.userData.inkId = o.userData.inkSub ? id + 1 : id; o.userData.inkFigure = true; } });
       markFigure(g);
       stage.scene.add(g);
-      const HX = -1.12, HY = 1.0, HZ = 0.745;
+      // [C6] its kerb side door a leaf of its own that opens: the door skin
+      // of that side cut out of the body's paint, a leaf in its place hinged
+      // at its front edge (its panel, its window frame), the handle on it
+      cutDoorSkin(model.meshes.paint.geometry);
+      const hinge = new THREE.Group();
+      hinge.position.set(0.68, 0, 0.705);
+      const leafParts = [roundedBox(1.98, 0.6, 0.05, 0.02, 2).translate(-0.99, 0.83, 0.0)];
+      const W = COUPE.window, fx0 = W.x0 - 0.68, fx1 = W.x1 - 0.68;
+      // (the window's frame on the leaf: sill, top rail, the posts)
+      leafParts.push(roundedBox(fx1 - fx0 + 0.06, 0.05, 0.04, 0.012, 1).translate((fx0 + fx1) / 2, W.y1 + 0.02, -0.03));
+      leafParts.push(roundedBox(0.05, W.y1 - W.y0 + 0.05, 0.04, 0.012, 1).translate(fx0 - 0.01, (W.y0 + W.y1) / 2, -0.03));
+      leafParts.push(roundedBox(0.05, W.y1 - W.y0 + 0.05, 0.04, 0.012, 1).translate(fx1 + 0.01, (W.y0 + W.y1) / 2, -0.03));
+      const leaf = new THREE.Mesh(merge(leafParts), model.meshes.paint.material);
+      // (its inside: dark trim, a pocket)
+      const inner = new THREE.Mesh(roundedBox(1.9, 0.56, 0.02, 0.01, 1).translate(-0.99, 0.84, -0.035), stage.M.rubber);
+      hinge.add(leaf, inner);
+      const HX = -1.12 - 0.68, HY = 1.0, HZ = 0.04;
       const bar = new THREE.CylinderGeometry(0.011, 0.011, 0.15, 10).rotateZ(Math.PI / 2);
       const stems = [-0.06, 0.06].map((x) => new THREE.CylinderGeometry(0.008, 0.008, 0.05, 6).rotateX(Math.PI / 2).translate(x, 0, -0.025));
-      for (const geo of [bar, ...stems]) {
-        const k = new THREE.Mesh(geo, stage.M.chrome);
-        k.position.set(HX, HY, HZ);
-        k.userData.inkId = id;
-        k.userData.inkFigure = true;
-        g.add(k);
-      }
+      const handle = new THREE.Group();
+      handle.position.set(HX, HY, HZ);
+      for (const geo of [bar, ...stems]) handle.add(new THREE.Mesh(geo, stage.M.chrome));
+      hinge.add(handle);
+      hinge.traverse((o) => { if (o.isMesh) { o.userData.inkId = id; o.userData.inkFigure = true; o.castShadow = true; } });
+      g.add(hinge);
       g.updateMatrixWorld(true);
       const col = stage.colliders.addBox(MY_CAR.x, MY_CAR.z, COUPE.halfL, COUPE.halfW - 0.06, MY_CAR.yaw, 'car');
       C.mine = {
-        group: g, model, collider: col,
-        // (the kerb side's: local +z, which the car's yaw turns east)
-        handleAt: (out = new THREE.Vector3()) => out.set(HX, HY, HZ).applyMatrix4(g.matrixWorld),
-        handleOut: (out = new THREE.Vector3()) => out.set(0, 0, 1).transformDirection(g.matrixWorld),
+        group: g, model, collider: col, hinge, open: 0,
+        // (the kerb side's: local +z, which the car's yaw turns east; on the leaf)
+        handleAt: (out = new THREE.Vector3()) => { hinge.updateMatrixWorld(true); return handle.getWorldPosition(out); },
+        handleOut: (out = new THREE.Vector3()) => out.set(0, 0, 1).transformDirection(hinge.matrixWorld),
+        // the door open by a (radians, 0 shut)
+        setOpen(a) { this.open = a; hinge.rotation.y = a; hinge.updateMatrixWorld(true); },
       };
     }
     stage.onShadowLod((on) => C.shadowLod(on));
@@ -98,3 +116,20 @@ export default {
   },
   update: (C, dt, t, camera) => C.lodUpdate(camera),
 };
+
+// [C6] the coupe's kerb side door skin (models.js: a rounded box 1.98 x 0.6 x
+// 0.06 at x -0.31, y 0.83, z 0.675) taken out of its merged paint, so the
+// leaf that opens in its place shows the cabin behind it, not a second door
+function cutDoorSkin(geo) {
+  const P = geo.getAttribute('position');
+  const inside = (i) => { const x = P.getX(i), y = P.getY(i), z = P.getZ(i); return x > -1.34 && x < 0.72 && y > 0.5 && y < 1.16 && z > 0.62 && z < 0.73; };
+  if (geo.index) {
+    const I = geo.index.array, keep = [];
+    for (let t = 0; t < I.length; t += 3) if (!(inside(I[t]) && inside(I[t + 1]) && inside(I[t + 2]))) keep.push(I[t], I[t + 1], I[t + 2]);
+    geo.setIndex(keep);
+  } else {
+    const keep = [];
+    for (let t = 0; t < P.count; t += 3) if (!(inside(t) && inside(t + 1) && inside(t + 2))) keep.push(t, t + 1, t + 2);
+    geo.setIndex(keep);
+  }
+}

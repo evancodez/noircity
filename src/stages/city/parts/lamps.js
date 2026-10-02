@@ -106,6 +106,8 @@ export default {
     // on the west facades further up
     wall(PELL.x + PELL.hw + PELL.pe - 0.15, 4.6, 26, -1, 0, { strength: 1.1 });
     wall(PELL.x - PELL.hw - PELL.pw + 0.1, 4.8, -2, 1, 0, { strength: 0.9 });
+    // [C6] the backlot's post behind my coupe on the pavement (its b4: backlot (-0.35, -87.6)): a glow and a cone here, not one of the pool's lights
+    post(-0.35 - 205.25, -87.6 + 121, Math.PI, false);
     {
       const xa = SPECIAL['3,2'].alleyNS;
       for (const z of [-82, -52]) wall(xa - ALLEY_W / 2 + 0.1, 4.4, z, 1, 0, { strength: 0.9 });
