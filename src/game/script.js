@@ -19,7 +19,7 @@ export function defineScene(def) {
   if (!def.id) throw new Error('defineScene: an id');
   const O = ORDER.find((o) => o.id === def.id);
   const kit = {};
-  if (O) for (const k of ['objective', 'music', 'beatMusic', 'carry', 'flags']) if (Object.prototype.hasOwnProperty.call(O, k)) kit[k] = O[k];
+  if (O) for (const k of ['objective', 'objectives', 'music', 'beatMusic', 'carry', 'flags']) if (Object.prototype.hasOwnProperty.call(O, k)) kit[k] = O[k];
   return { stage: 'block', title: O ? O.numeral : '', name: O ? O.title : '', beats: [], setup: {}, save: [], spawn: null, ...kit, ...def };
 }
 

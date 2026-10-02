@@ -266,10 +266,19 @@ function die(ctx) {
   G.vm.lowerTo(1);
   G.counters.deaths++;
   G.emit('player:down', {});
+  // [C1] the kit's fall (game.fail, seams/Z.md §3): the same fall, black, the
+  // words, back at the beat; the beat's setup keeps its own world (keepWorld:
+  // the dead of the beats before, the wrecks), as the retry here always did
+  if (G.fail) {
+    R.dying.kit = true;
+    RETRY = { beat: R.dying.beat };
+    G.fail({ why: 'They got you.', to: R.dying.beat, fall: true, keepWorld: true });
+  }
 }
 function dyingStep(ctx, dt) {
   const R = RIG, G = ctx.game;
   const D = R.dying;
+  if (D.kit) return;
   D.t += dt;
   // (he goes down: the eye sinks and tips)
   const k = Math.min(1, D.t / 0.8), e = k * k * (3 - 2 * k);

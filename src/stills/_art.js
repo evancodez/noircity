@@ -93,59 +93,78 @@ function drops(g, w, h, rng, n = 70, r = [2, 7]) {
 export const ART = {
   // A TIP. AMES. - a telephone receiver in a hand, a desk lamp's cone, rain on the glass
   tip(g, w, h, rng) {
-    // the window: dark grey with the rain on it
-    g.fillStyle = '#2a2a2a'; g.fillRect(w * 0.56, 0, w * 0.44, h * 0.72);
-    rain(g, w, h, rng, { x0: w * 0.56, x1: w, y1: h * 0.72, n: 220, a: 0.35 });
-    g.fillStyle = INK; g.fillRect(w * 0.555, 0, w * 0.018, h * 0.72); g.fillRect(w * 0.56, h * 0.36, w * 0.44, h * 0.016);
+    // the window behind: dark grey, the rain on it, its bars
+    g.fillStyle = '#262626'; g.fillRect(w * 0.5, 0, w * 0.5, h * 0.74);
+    rain(g, w, h, rng, { x0: w * 0.5, x1: w, y1: h * 0.74, n: 260, a: 0.34 });
+    drops(g, w, h * 0.74, rng, 26, [2, 4]);
+    g.fillStyle = INK; g.fillRect(w * 0.495, 0, w * 0.016, h * 0.74); g.fillRect(w * 0.5, h * 0.37, w * 0.5, h * 0.014); g.fillRect(w * 0.75, 0, w * 0.01, h * 0.74);
     // the lamp: a shade top left, its cone down onto the desk
-    cone(g, w * 0.27, h * 0.2, -0.12, 0.42, h * 0.85, 0.6);
+    cone(g, w * 0.2, h * 0.17, -0.1, 0.46, h * 0.9, 0.62);
     g.fillStyle = INK;
-    g.beginPath(); g.moveTo(w * 0.2, h * 0.21); g.lineTo(w * 0.34, h * 0.21); g.lineTo(w * 0.3, h * 0.1); g.lineTo(w * 0.24, h * 0.1); g.closePath(); g.fill();
-    g.fillStyle = PAPER; g.beginPath(); g.ellipse(w * 0.27, h * 0.215, w * 0.07, h * 0.012, 0, 0, Math.PI * 2); g.fill();
-    // the desk's edge
-    g.fillStyle = '#121212'; g.fillRect(0, h * 0.78, w, h * 0.22);
-    g.fillStyle = 'rgba(236,233,225,0.5)'; g.fillRect(0, h * 0.78, w * 0.6, 3);
-    // the hand and the receiver, black against the light, a rim on top
+    g.beginPath(); g.moveTo(w * 0.12, h * 0.18); g.lineTo(w * 0.28, h * 0.18); g.lineTo(w * 0.24, h * 0.06); g.lineTo(w * 0.16, h * 0.06); g.closePath(); g.fill();
+    g.fillStyle = PAPER; g.beginPath(); g.ellipse(w * 0.2, h * 0.183, w * 0.08, h * 0.013, 0, 0, Math.PI * 2); g.fill();
+    // the desk: the lamp's pool on it
+    g.fillStyle = '#101010'; g.fillRect(0, h * 0.74, w, h * 0.26);
+    const pool = g.createRadialGradient(w * 0.16, h * 0.84, 0, w * 0.16, h * 0.84, w * 0.3);
+    pool.addColorStop(0, 'rgba(236,233,225,0.55)'); pool.addColorStop(1, 'rgba(236,233,225,0)');
+    g.fillStyle = pool; g.fillRect(0, h * 0.74, w * 0.5, h * 0.26);
+    g.fillStyle = 'rgba(236,233,225,0.55)'; g.fillRect(0, h * 0.74, w * 0.5, 3);
+    // the handset, held up: a heavy bar, the earpiece's cup high, the
+    // mouthpiece's low, black against the window, the lamp's rim along its top
+    g.save();
+    g.translate(w * 0.64, h * 0.5); g.rotate(-0.62);
+    const L = w * 0.36, T = h * 0.075;
     g.fillStyle = INK;
+    g.beginPath(); g.moveTo(-L / 2, -T * 0.4); g.quadraticCurveTo(0, -T * 1.3, L / 2, -T * 0.4); g.lineTo(L / 2, T * 0.5); g.quadraticCurveTo(0, -T * 0.2, -L / 2, T * 0.5); g.closePath(); g.fill();
+    for (const sx of [-1, 1]) {
+      g.beginPath(); g.ellipse(sx * L / 2, T * 0.75, T * 1.15, T * 0.95, 0, 0, Math.PI * 2); g.fill();
+      g.fillRect(sx * L / 2 - T * 1.15, T * 0.2, T * 2.3, T * 0.6);
+    }
+    g.strokeStyle = 'rgba(236,233,225,0.9)'; g.lineWidth = 3.2; g.lineCap = 'round';
+    g.beginPath(); g.moveTo(-L / 2 - T * 0.9, T * 0.1); g.quadraticCurveTo(-L / 2, -T * 0.55, -L * 0.3, -T * 0.62); g.quadraticCurveTo(0, -T * 1.05, L * 0.3, -T * 0.62); g.stroke();
+    // the hand round its middle: four fingers over the top, the thumb under
+    g.fillStyle = '#0b0b0b';
+    for (let i = 0; i < 4; i++) { g.beginPath(); g.ellipse(-L * 0.14 + i * T * 0.95, -T * 0.55, T * 0.5, T * 0.75, 0.15, 0, Math.PI * 2); g.fill(); }
+    g.beginPath(); g.ellipse(L * 0.05, T * 0.45, T * 1.3, T * 0.55, -0.2, 0, Math.PI * 2); g.fill();
+    g.strokeStyle = 'rgba(236,233,225,0.55)'; g.lineWidth = 2;
+    for (let i = 0; i < 4; i++) { g.beginPath(); g.arc(-L * 0.14 + i * T * 0.95, -T * 0.55, T * 0.62, Math.PI * 1.1, Math.PI * 1.6); g.stroke(); }
+    g.restore();
+    // the wrist and the sleeve, down out of the frame
+    g.fillStyle = INK;
+    g.beginPath(); g.moveTo(w * 0.58, h * 0.58); g.lineTo(w * 0.7, h * 0.5); g.lineTo(w * 0.84, h * 1.02); g.lineTo(w * 0.6, h * 1.02); g.closePath(); g.fill();
+    g.strokeStyle = 'rgba(236,233,225,0.4)'; g.lineWidth = 2.5;
+    g.beginPath(); g.moveTo(w * 0.7, h * 0.5); g.lineTo(w * 0.84, h * 1.02); g.stroke();
+    // the cord, coiled down out of the frame from the mouthpiece
+    g.strokeStyle = 'rgba(236,233,225,0.5)'; g.lineWidth = 2;
     g.beginPath();
-    g.moveTo(w * 0.52, h * 1.02); g.quadraticCurveTo(w * 0.5, h * 0.7, w * 0.6, h * 0.56);
-    g.lineTo(w * 0.7, h * 0.52); g.quadraticCurveTo(w * 0.78, h * 0.58, w * 0.76, h * 0.7);
-    g.quadraticCurveTo(w * 0.72, h * 0.86, w * 0.74, h * 1.02); g.closePath(); g.fill();
-    g.beginPath();
-    g.moveTo(w * 0.47, h * 0.42); g.quadraticCurveTo(w * 0.5, h * 0.33, w * 0.58, h * 0.36);
-    g.lineTo(w * 0.83, h * 0.56); g.quadraticCurveTo(w * 0.9, h * 0.6, w * 0.86, h * 0.68);
-    g.lineTo(w * 0.8, h * 0.66); g.lineTo(w * 0.56, h * 0.47); g.lineTo(w * 0.5, h * 0.5); g.closePath(); g.fill();
-    g.strokeStyle = 'rgba(236,233,225,0.9)'; g.lineWidth = 3;
-    g.beginPath(); g.moveTo(w * 0.5, h * 0.35); g.quadraticCurveTo(w * 0.55, h * 0.33, w * 0.6, h * 0.37); g.lineTo(w * 0.82, h * 0.55); g.stroke();
-    // the cord, coiled down out of the frame
-    g.strokeStyle = 'rgba(236,233,225,0.45)'; g.lineWidth = 2;
-    g.beginPath();
-    for (let i = 0; i <= 40; i++) { const u = i / 40, x = w * (0.86 - 0.1 * u) + Math.sin(u * 40) * 8, y = h * (0.66 + 0.36 * u); if (i) g.lineTo(x, y); else g.moveTo(x, y); }
+    for (let i = 0; i <= 50; i++) { const u = i / 50, x = w * (0.47 - 0.08 * u) + Math.sin(u * 46) * 7, y = h * (0.72 + 0.32 * u); if (i) g.lineTo(x, y); else g.moveTo(x, y); }
     g.stroke();
   },
   // HIS MEN. MY DINER. - three hats in a doorway's light, a small white apron between them
   men(g, w, h, rng) {
-    // the doorway: a tall lit slot in the black, the light falling out on the floor
-    const dx = w * 0.3, dw = w * 0.4, dy = h * 0.06, dh = h * 0.8;
+    // the doorway: a tall lit slot in the black (the diner's door from the
+    // street), the light thrown out on the wet pavement
+    const dx = w * 0.37, dw = w * 0.26, dy = h * 0.05, dh = h * 0.78;
+    rain(g, w, h, rng, { n: 120, a: 0.16 });
     const gr = g.createLinearGradient(0, dy, 0, dy + dh);
-    gr.addColorStop(0, '#d9d6ce'); gr.addColorStop(1, '#f2efe8');
+    gr.addColorStop(0, '#cfccc4'); gr.addColorStop(1, '#f2efe8');
     g.fillStyle = gr; g.fillRect(dx, dy, dw, dh);
-    g.fillStyle = 'rgba(236,233,225,0.28)';
-    g.beginPath(); g.moveTo(dx, dy + dh); g.lineTo(dx + dw, dy + dh); g.lineTo(dx + dw * 1.45, h); g.lineTo(dx - dw * 0.45, h); g.closePath(); g.fill();
-    // her: small, between them, only the apron reads (white on white: a black line round it)
-    g.fillStyle = '#3a3a3a';
-    g.beginPath(); g.ellipse(w * 0.5, h * 0.5, w * 0.025, h * 0.04, 0, 0, Math.PI * 2); g.fill();
-    g.beginPath(); g.moveTo(w * 0.475, h * 0.55); g.lineTo(w * 0.525, h * 0.55); g.lineTo(w * 0.54, h * 0.86); g.lineTo(w * 0.46, h * 0.86); g.closePath(); g.fill();
-    g.fillStyle = PAPER; g.strokeStyle = INK; g.lineWidth = 2.5;
-    g.beginPath(); g.moveTo(w * 0.483, h * 0.62); g.lineTo(w * 0.517, h * 0.62); g.lineTo(w * 0.524, h * 0.77); g.lineTo(w * 0.476, h * 0.77); g.closePath(); g.fill(); g.stroke();
-    g.fillStyle = INK; g.fillRect(w * 0.47, h * 0.613, w * 0.06, h * 0.012);
-    // the three of them, black, the light round their edges
-    hatMan(g, w * 0.36, h * 0.96, h / 360, 1);
-    hatMan(g, w * 0.64, h * 0.96, h / 350, -1);
-    hatMan(g, w * 0.5, h * 1.08, h / 300, 0);
-    // the street's dark round the door
-    g.fillStyle = INK; g.fillRect(0, 0, dx, h); g.fillRect(dx + dw, 0, w - dx - dw, h);
-    rain(g, w, h, rng, { x1: dx, n: 60, a: 0.2 }); rain(g, w, h, rng, { x0: dx + dw, n: 60, a: 0.2 });
+    g.fillStyle = 'rgba(236,233,225,0.24)';
+    g.beginPath(); g.moveTo(dx, dy + dh); g.lineTo(dx + dw, dy + dh); g.lineTo(dx + dw * 1.9, h); g.lineTo(dx - dw * 0.9, h); g.closePath(); g.fill();
+    g.fillStyle = INK; g.fillRect(dx - w * 0.012, dy - h * 0.01, w * 0.012, dh + h * 0.01); g.fillRect(dx + dw, dy - h * 0.01, w * 0.012, dh + h * 0.01); g.fillRect(dx - w * 0.012, dy - h * 0.02, dw + w * 0.024, h * 0.02);
+    // the third man, inside, behind her: black in the light
+    hatMan(g, w * 0.5, dy + dh, h / 470, 0);
+    // her: small, between them, the white apron in front of his coat
+    g.fillStyle = '#1c1c1c';
+    g.beginPath(); g.ellipse(w * 0.5, h * 0.53, w * 0.017, h * 0.035, 0, 0, Math.PI * 2); g.fill();
+    g.beginPath(); g.moveTo(w * 0.478, h * 0.575); g.lineTo(w * 0.522, h * 0.575); g.lineTo(w * 0.535, h * 0.83); g.lineTo(w * 0.465, h * 0.83); g.closePath(); g.fill();
+    g.fillStyle = PAPER;
+    g.beginPath(); g.moveTo(w * 0.486, h * 0.64); g.lineTo(w * 0.514, h * 0.64); g.lineTo(w * 0.522, h * 0.77); g.lineTo(w * 0.478, h * 0.77); g.closePath(); g.fill();
+    g.fillRect(w * 0.474, h * 0.635, w * 0.052, h * 0.008);
+    g.fillRect(w * 0.488, h * 0.49, w * 0.024, h * 0.012);
+    // the two at the door, big and black, the light round their inside edges
+    hatMan(g, w * 0.33, h * 1.06, h / 300, 1);
+    hatMan(g, w * 0.67, h * 1.04, h / 310, -1);
   },
   // (no words) - the diner's neon through a wet windscreen
   neon(g, w, h, rng) {

@@ -277,6 +277,7 @@ if (stillName) game.stills.shot(stillName, parseInt(params.get('panel') ?? '0', 
 if (shotMode && params.get('obj')) hud.objective(params.get('obj'), { now: true });
 if (shotMode && params.get('warn')) { hud.warn(params.get('warn')); hud.kit.warnT = 1; hud.kit.applyWarn(); }
 if (shotMode && params.get('teach')) { hud.kit.teach('look', params.get('teach'), { secs: 1e6 }); hud.kit.tickTeach(0.5); }
+if (shotMode && params.get('fail')) { hud.fade(1); hud.setFailing(true); hud.kit.failLine(params.get('fail')); hud.kit.failK(1); }
 if (params.get('say')) hud.say(params.get('say'), 1e6);
 
 // gdbg=<n>: wet-street term debug (render/shaders/ground.js)

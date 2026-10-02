@@ -56,7 +56,7 @@ export class KitUi {
       #hud .kteach { position: absolute; left: 50%; bottom: 25%; transform: translateX(-50%); display: none; align-items: center; pointer-events: none; }
       #hud .kteach .g { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); opacity: 0.9; }
       #hud .kteach .row { position: relative; display: flex; align-items: center; gap: 12px; padding: 0 26px; }
-      #hud .kteach .w { font-family: ${TYPE}; font-size: 15px; letter-spacing: 0.3em; text-transform: uppercase; color: #f1efe9; white-space: nowrap;
+      #hud .kteach .w { font-family: ${TYPE}; font-size: 16px; letter-spacing: 0.3em; text-transform: uppercase; color: #f1efe9; white-space: nowrap;
         text-shadow: 0 0 5px #000, 0 0 2px #000; }
       #hud .kteach canvas.cap { display: block; filter: drop-shadow(0 0 3px rgba(0,0,0,0.9)); }
       #hud .kwarn { position: absolute; left: 50%; top: 64%; transform: translate(-50%, -50%); display: none; pointer-events: none; }
@@ -81,6 +81,7 @@ export class KitUi {
     this.objectiveText = null;
     this.obj = null;            // { text, phase: in | sit | strike | out, t }
     this.objNext = undefined;   // the line waiting for the old one to go
+    this.objectiveCalls = 0;    // (the manager reads it: did a setup set its own line)
     // the teach cards
     this.taughtLocal = {};      // (no save: shot mode, a test)
     this.teachTexts = {};
@@ -96,6 +97,7 @@ export class KitUi {
 
   // ---- the objective line ------------------------------------------------------------
   objective(text, { strike = true, now = false } = {}) {
+    this.objectiveCalls++;
     const want = text == null || text === '' ? null : String(text);
     if (now) {
       this.objectiveText = want; this.objNext = undefined;
@@ -118,9 +120,11 @@ export class KitUi {
     this.obj = { text, phase: 'in', t: 0 };
     this.objNext = undefined;
     this.drawObjective(text);
-    this.snd('kit_write');
     this.applyObjective();
   }
+  // (the HUD's lines are under a chapter card, the stills or a fail's black:
+  // they wait, so that the player sees them come)
+  get covered() { const R = this.hud.root.classList; return R.contains('carded') || R.contains('stilled') || R.contains('failing') || R.contains('titled'); }
   drawObjective(text) {
     const E = this.objEl;
     for (const c of [...E.querySelectorAll('canvas')]) c.remove();
@@ -153,6 +157,8 @@ export class KitUi {
   tickObjective(dt) {
     const O = this.obj;
     if (!O) return;
+    if (this.covered && O.phase !== 'out') return;
+    if (O.phase === 'in' && !O.sounded) { O.sounded = true; this.snd('kit_write'); }
     O.t += dt;
     if (O.phase === 'in' && O.t >= 0.45) { O.phase = 'sit'; O.t = 0; }
     else if (O.phase === 'strike' && O.t >= 0.75) { O.phase = 'out'; O.t = 0; O.struck = true; }
@@ -203,7 +209,7 @@ export class KitUi {
     for (const p of parts) {
       if (p.key) {
         const K = p.key.toUpperCase().replace(/\s+/g, '');
-        const c = K === 'LMB' ? mouseGlyph('L') : K === 'RMB' ? mouseGlyph('R') : keyCap(K);
+        const c = K === 'LMB' ? mouseGlyph('L', { h: 50 }) : K === 'RMB' ? mouseGlyph('R', { h: 50 }) : keyCap(K, { h: 44 });
         c.classList.add('cap');
         row.appendChild(c);
         width += parseFloat(c.style.width) + 12;
@@ -214,7 +220,7 @@ export class KitUi {
         width += p.text.length * 15 * 0.92 + 12;
       }
     }
-    const ground = makeTornStroke(Math.round(width + 120), 74, hashSeed('teach:' + item.text));
+    const ground = makeTornStroke(Math.round(width + 130), 86, hashSeed('teach:' + item.text));
     ground.className = 'g';
     E.insertBefore(ground, row);
     const o = item.opts;

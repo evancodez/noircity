@@ -507,7 +507,6 @@ has a `setup`, so each of these renders; the full list, scene by scene, is
 ```
 scene=diner&beat=settle|order|drink|pay
 scene=fight&beat=start|lesson|round1|round2|round3|reel|ko|outside|matchbook
-scene=body&beat=approach|body|strings|landing|halves|note|leave
 scene=office&beat=corridor|room|pad|safe|ledger         (&demo=1 on pad / safe)
 scene=gunfight&beat=shadows|door|window|quiet
 scene=watcher&beat=seen|escape|run|car
@@ -515,6 +514,8 @@ scene=tail&beat=start|chase|close|shot|crash|interrogate
 scene=warehouse&beat=arrive|floor|lamps|aisle|stairs|listen|out|fight|ko|after
 scene=shootout&beat=arrive|cars|doorways|el|driveby|cardinal|end
 scene=range&beat=ready|fight|done                       (the revolver's test bed)
+scene=kit&beat=ready|done                               ([C1] the kit's test bed)
+still=opening&panel=0|1|2                               ([C1] a page of comic panels; also ames, check, photo, diner, end)
 scene=diner&beat=settle&puzzle=demo                  (the demo puzzle on the counter)
 ```
 Each lane's own presets (`shot=b2_pad`, `shot=b8duel`, ...) live in
@@ -567,7 +568,14 @@ section says what is there; the sections above still say how the engine works.
 
 ### 10.1 The order, the title, the starts and the saves
 
-- **The order** is `src/scenes/order.js` (`ORDER`): diner I The Diner, fight
+- **The order** is `src/scenes/order.js` (`ORDER`). **Wave C** (lane C1,
+  `docs/story/seams/Z.md`): diner I The Diner, fight II The Fight, office III
+  Room 304, gunfight IV The Door, watcher V The Watcher, tail VI The Tail,
+  warehouse VII Pier Nine, shootout VIII The Block; The Body is cut (its file
+  parked as `src/scenes/_body_cut.js`: the manager skips `_` files), and each
+  entry carries the chapter's kit defaults (stand-in objective, music,
+  carry). The rest of this section is wave B's (nine chapters, III The Body)
+  until lane C10 rewrites it. Wave B's order was: diner I The Diner, fight
   II The Fight, body III The Body, office IV Room 304, gunfight V The Door,
   watcher VI The Watcher, tail VII The Tail, warehouse VIII Pier Nine,
   shootout IX The Block. A scene's chapter card takes its numeral and name
@@ -596,7 +604,7 @@ section says what is there; the sections above still say how the engine works.
     is reported and the scene starts at its first beat.
     `?start=warehouse.fight` and `?start=watcher.run` start mid-scene;
     `?start=range` is the revolver's test bed (`90_range.js`, not in ORDER).
-- **Saves** (`game.save`, `localStorage['noir.save']`, `{ v: 1, scene, beat,
+- **Saves** ([C1] wave C: `v: 2`, a v1 save dropped quietly; seams/Z.md §7) (`game.save`, `localStorage['noir.save']`, `{ v: 1, scene, beat,
   flags, inventory }`): written when a scene is entered (with the beat it was
   entered at, a retry included) and when a beat listed in the scene's `save`
   begins; never in shot mode. A save is a beat's start: a reload puts you at
@@ -648,7 +656,7 @@ and what the hands and the weapon are.
 | --- | --- | --- | --- | --- | --- |
 | I `diner` | `01_diner.js`, block | settle, order, drink, pay | order, drink, pay | the pay beat's line, then a cut into scene 2's `start` (`scenes.go('fight', { beat: 'start', fade: 'cut', card: false, keep: true })`) | none |
 | II `fight` | `02_fight.js` + `fight/start.js`, block | start, lesson, round1, round2, round3, reel, ko, outside, matchbook | lesson, round1, round2, round3, outside | the matchbook pocketed: `ctx.next()` | going down is black, and up again in the same manner with 60 hit points (100 from the third down in it; FIGHT.md §8) |
-| III `body` | `03_body.js` + `body/*`, block | approach, body, strings, landing, halves, note, leave | body, landing, note | walking out of the alley's mouth, or 24 s standing at the end: `ctx.next()` | none |
+| ~~III `body`~~ (cut in wave C) | `_body_cut.js` (parked) + `body/*`, block | approach, body, strings, landing, halves, note, leave | body, landing, note | walking out of the alley's mouth, or 24 s standing at the end: `ctx.next()` | none |
 | IV `office` | `04_office.js` + `office/*`, office | corridor, room, pad, safe, ledger | room, pad, safe, ledger | the ledger put away: `ctx.next({ fade: 'cut', keep: true, card: true })`, the same room, card V | none |
 | V `gunfight` | `05_gunfight.js` + `office/fight.js`, office | shadows, door, window, quiet | (shadows) | the quiet's 3.2 s: `ctx.next()` | down: 0.9 s fall, black, back at `shadows` with the door already shut, the desk over if I had tipped it, the door going in about 3 s after the black lifts |
 | VI `watcher` | `06_watcher.js` + `watcher/*`, office then backlot | seen, escape, run, car | escape, run, car | E at my coupe's door: `ctx.next()` | "Lost him." (30 m behind, or 6 s with no line to his head or chest): black 0.35 s, back at the start of that stretch, him 15 m ahead (10 m in the yard) |

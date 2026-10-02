@@ -10,6 +10,7 @@
 // defineScene (seams/Z.md §5, §6):
 //   objective   the stand-in objective line for a scene that sets none of its
 //               own (hud.objective), shown from its first second
+//   objectives  { beat: line } the stand-in for a beat whose goal changes
 //   music       its music slot: 'slot' | { slot, fade } | null (silence) |
 //               { stop: fade } | 'room' (the scene's own diegetic music: the
 //               manager leaves it alone); undefined: the manager leaves it
@@ -23,13 +24,14 @@ const ARMED = ['matchbook', 'amesCard', 'check', 'revolver'];
 const NOTE = { note: 'PIER 9' };
 export const ORDER = [
   { id: 'diner', numeral: 'I', title: 'The Diner', music: 'room', carry: [] },
-  { id: 'fight', numeral: 'II', title: 'The Fight', objective: 'Put the big man down.', music: 'room', carry: [] },
+  { id: 'fight', numeral: 'II', title: 'The Fight', objective: 'Put the big man down.', music: 'room', carry: [],
+    objectives: { ko: 'Go out to him.', outside: 'Search him.', matchbook: 'Search him.' } },
   { id: 'office', numeral: 'III', title: 'Room 304', objective: 'Find Ames. Room 304.', music: { slot: 'office', fade: 2.5 }, carry: ['matchbook', 'amesCard'] },
   { id: 'gunfight', numeral: 'IV', title: 'The Door', objective: 'Stay alive.', music: { stop: 2.5 }, carry: ARMED, flags: NOTE },
   { id: 'watcher', numeral: 'V', title: 'The Watcher', objective: 'Catch him before the pier.', music: null,
     beatMusic: { escape: { slot: 'chase', fade: 0.4 }, run: { slot: 'chase', fade: 0.4 }, car: { slot: 'chase', fade: 0.4 } }, carry: ARMED, flags: NOTE },
   { id: 'tail', numeral: 'VI', title: 'The Tail', objective: 'Stay on his tail lamps.', music: { slot: 'tail', fade: 2.5 }, carry: ARMED, flags: NOTE },
-  { id: 'warehouse', numeral: 'VII', title: 'Pier Nine', objective: 'Quietly. The lit office.', music: { slot: 'warehouse', fade: 1.5 },
+  { id: 'warehouse', numeral: 'VII', title: 'Pier Nine', objective: 'Reach the lit office. Quietly.', music: { slot: 'warehouse', fade: 1.5 },
     beatMusic: { fight: { slot: 'fight', fade: 2.5 }, ko: { slot: 'fight', fade: 2.5 }, after: { stop: 3 } }, carry: ARMED, flags: NOTE },
   { id: 'shootout', numeral: 'VIII', title: 'The Block', objective: 'Get to Dot.', music: null,
     beatMusic: { cars: { slot: 'shootout', fade: 2.5 }, doorways: { slot: 'shootout', fade: 2.5 }, el: { slot: 'shootout', fade: 2.5 }, driveby: { slot: 'shootout', fade: 2.5 } },

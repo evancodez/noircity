@@ -185,6 +185,7 @@ export class SceneManager {
     this.startT = G.time;
     this.gen = (this.gen || 0) + 1;
     if (!keep) stage.cast.clear();
+    const objCalls = K ? K.objectiveCalls : 0;
     if (keep) { /* the room as it stands */ }
     else if (from && def.setup[from]) def.setup[from](ctx);
     else if (def.spawn && def.spawn.anchor) {
@@ -193,10 +194,12 @@ export class SceneManager {
     }
     // [C1] the objective line as the beat has it (the setup may have set one
     // itself), and the music the scene and the beat declare
-    if (K) {
+    // (a retry comes back to the beat's own line, not one a script set later
+    // in it; a setup that set its own line keeps it)
+    if (K && K.objectiveCalls === objCalls) {
       const want = def.objectives && def.objectives[from];
       if (want !== undefined) K.objective(want, { strike: false });
-      else if (!K.objectiveText && def.objective) K.objective(def.objective, { strike: false });
+      else if (def.objective) K.objective(def.objective, { strike: false });
     }
     this.applyMusic(def, from, true);
     G.emit('scene:enter', { id: def.id });

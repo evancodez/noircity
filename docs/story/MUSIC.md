@@ -17,6 +17,41 @@ times marked "first-timer" are the lanes' estimates or their bots' runs
 (`docs/story/reports/wave-b/B*.md`): nobody has played the whole story by
 hand and heard it with sound (every headless run is muted).
 
+## The rule (wave C, lane C1; the code: `SceneManager.applyMusic`, seams/Z.md §6)
+
+A scene declares its slot, and a beat may override it: `music` and
+`beatMusic: { beat: spec }` in its `defineScene`, defaulting to its
+chapter's entry in `src/scenes/order.js`. A spec is a slot (`'office'` or
+`{ slot, fade }`), `null` (silence), `{ stop: fade }`, or `'room'` (the scene
+plays its own diegetic music, the diner's jukebox: the rule leaves it
+alone). **Entering a scene, or continuing into any beat of it - a chapter's
+start, a CONTINUE, a retry after a fail, a chapter picked, a jump - cues
+what that beat declares (its beatMusic's, else the scene's); a beat of
+beatMusic cues its own as it begins.** Leaving a scene stops its slot only
+through the next scene's declaration: another slot crossfades over the new
+cue's fade, the same slot plays on, `null` stops it. The title stops any
+music (`Game.toTitle`, BEGIN). A scene's own `music.cue` / `music.stop` at a
+moment inside a beat still works (the watcher's umbrella). This replaces the
+three patches the loose ends below asked for: `end` now stops when its card
+goes to the title; a CONTINUE in VIII at `doorways`, `el` or `driveby` cues
+`shootout`; a CONTINUE at V's `car` cues `chase`; and `fight` is cued, under
+VII's fist fight with the foreman (beats `fight`, `ko`; out over 3 s as
+`after` begins). Wave C's declarations:
+
+| chapter | music | beatMusic |
+| --- | --- | --- |
+| I diner, II fight | `'room'` (the jukebox) | |
+| III office (Room 304) | `office` (2.5 s) | |
+| IV gunfight (The Door) | `{ stop: 2.5 }` | |
+| V watcher | `null` (the umbrella cues `chase`) | escape, run, car: `chase` (0.4 s) |
+| VI tail | `tail` (2.5 s) | |
+| VII warehouse (Pier Nine) | `warehouse` (1.5 s) | fight, ko: `fight` (2.5 s); after: `{ stop: 3 }` |
+| VIII shootout (The Block) | `null` | cars, doorways, el, driveby: `shootout` (2.5 s) |
+
+The `body` slot is no longer cued (The Body is cut). The tables below are
+wave B's and keep its chapter numbers (III was The Body); lane C10 rewrites
+them at the end of wave C.
+
 ## How a slot plays
 
 - A scene cues a slot: `game.music.cue(slot, { fade, diegetic })`. A cue of
@@ -126,7 +161,7 @@ Checked against the code. "Black" is the 0.6 s fade a chapter change takes.
 16. **The last frame**: 2.6 s after the view has come down to the hat,
     `end` (3 s fade). Six seconds later the card, THE END.
 
-## Loose ends (not changed: this pass made no code changes)
+## Loose ends (wave B, round 3; the first four are answered by the rule above)
 
 - **`end` is not stopped when the card is clicked.** The click goes to the
   title (`game.toTitle()`), which does not touch the music, so a file longer

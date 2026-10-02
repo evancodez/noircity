@@ -22,25 +22,29 @@ lock); Esc gives it back and pauses (click to resume).
 
 ## How to play
 
-One rainy night in 1937: nine chapters, from a stool at a diner's counter to
+One rainy night in 1937: eight chapters, from a stool at a diner's counter to
 the Cardinal's hat in the wet street. You are only ever seen as hands and
 sleeves. Very little is said; what can be used shows itself in the light,
 and a prompt low in the frame names the key (E) when you are looking at it.
-Failing is soft: black, and back at the start of the beat or a checkpoint.
+A line top left says what you are doing now; a card with the key on it
+teaches a move the first time you need it. A loss is warned before it comes,
+then black, a word on why, and back at the start of the beat or a checkpoint.
 
 **The title.**
 
-- **BEGIN** starts the story at chapter I.
+- **BEGIN** starts the story: a few comic panels (a click, E or SPACE moves
+  on; ESC twice skips them), then chapter I.
 - **CONTINUE** is there when a checkpoint exists (saved in the browser at the
   start of each chapter and of its main beats).
 - **CHAPTERS** is the table of contents: a row starts that chapter, with
   nothing carried from before. Starting a chapter replaces the saved
   checkpoint.
 - **`?start=<chapter>[.<beat>]`** on the address starts BEGIN anywhere, for
-  example `/?start=warehouse` or `/?start=warehouse.fight`. The chapters:
-  `diner` I, `fight` II, `body` III, `office` IV, `gunfight` V, `watcher` VI,
-  `tail` VII, `warehouse` VIII, `shootout` IX (the beats of each:
-  `docs/story/ARCHITECTURE.md` section 10.3).
+  example `/?start=warehouse` or `/?start=warehouse.fight`. The chapters
+  (wave C: The Body is cut): `diner` I, `fight` II, `office` III, `gunfight`
+  IV, `watcher` V, `tail` VI, `warehouse` VII, `shootout` VIII (the beats of
+  each: `docs/story/ARCHITECTURE.md` section 10.3). `?start=kit` is the kit's
+  test bed (`docs/story/seams/Z.md`).
 - **M** turns the sound on and off (the browser holds sound back until the
   first click or key; `?mute=1` starts silent), **[** and **]** the volume.
   No music is composed: drop jazz into `public/music/` and
@@ -54,13 +58,12 @@ says, **M** sound, **Esc** pause.
 | walking (the street, the alley, the office, the pier) | **W A S D**, **Shift** sprints |
 | I The Diner (seated at the counter) | mouse looks round the room; **E** light up, scotch, drink, pay; **F** a drag on the cigarette; **LMB** taps the ash; **Q** spins the empty stool beside you |
 | II The Fight (and the foreman at Pier Nine) | **LMB** / **RMB** are your two arms: tap to jab, hold to load a harder punch (three ticks) and let go; **A / D** hop aside, **S** hop back, **W** step in; **SPACE** held blocks; **E** takes what is in reach (a bottle, a plate, a stool, at Pier Nine a hook, a lid, a chain, a lantern) and that hand's button uses it (a hold throws). Afterwards **WASD** out of the door, **E** search |
-| III The Body | **E** kneel, then **E** at what you look at; the mouse carries the string; **E** pull the ladder down, hold **W** to climb (**S** down); at the step: **LMB** slides a piece, the wheel or **RMB** turns it, **E** puts it away |
-| IV Room 304 | **WASD**; **E** push the door, the pad, the picture, the dial, take; the pad: hold **LMB** and rub; the dial: the mouse turns it, **E** the handle |
-| V The Door | **LMB** fires the revolver, hold **RMB** to steady, **R** reloads; **E** tips the desk; **C** ducks (a toggle; **Ctrl** ducks while held) |
-| VI The Watcher | **E** look out, **E** the fire escape; **W** takes you down the iron; the chase: **W** runs (no key held for speed), **A / D**, the mouse steers, **SPACE** vaults a fence and hops a crate; **E** drive |
-| VII The Tail | **W** throttle, **S** brake and reverse, **A / D** steer (the arrows too); close to him, hold **RMB** to put the revolver out of the window and **LMB** to fire; **E** get out, **E** take him, then look at the river with the mouse |
-| VIII Pier Nine | **WASD**, **Shift** runs, **C** crouches (you are heard walking within 3 m, running within 8, crouching never); **E** open a door, take a bottle, pull the switch or the cord, knock a man out from behind; with a bottle hold **LMB** for the arc and let go to throw; then the foreman's fist fight (as II) |
-| IX The Block | **E** take the Tommy gun, **E** the lights by the door, **E** the drums on the counter; **LMB** fires (hold), **R** reloads; at the end **WASD** out to the hat |
+| III Room 304 | **WASD**; **E** push the door, the pad, the picture, the dial, take; the pad: hold **LMB** and rub; the dial: the mouse turns it, **E** the handle |
+| IV The Door | **LMB** fires the revolver, hold **RMB** to steady, **R** reloads; **E** tips the desk; **C** ducks (a toggle; **Ctrl** ducks while held) |
+| V The Watcher | **E** look out, **E** the fire escape; **W** takes you down the iron; the chase: **W** runs (no key held for speed), **A / D**, the mouse steers, **SPACE** vaults a fence and hops a crate; **E** drive |
+| VI The Tail | **W** throttle, **S** brake and reverse, **A / D** steer (the arrows too); close to him, hold **RMB** to put the revolver out of the window and **LMB** to fire; **E** get out, **E** take him, then look at the river with the mouse |
+| VII Pier Nine | **WASD**, **Shift** runs, **C** crouches (you are heard walking within 3 m, running within 8, crouching never); **E** open a door, take a bottle, pull the switch or the cord, knock a man out from behind; with a bottle hold **LMB** for the arc and let go to throw; then the foreman's fist fight (as II) |
+| VIII The Block | **E** take the Tommy gun, **E** the lights by the door, **E** the drums on the counter; **LMB** fires (hold), **R** reloads; at the end **WASD** out to the hat |
 
 ## How the look works
 
@@ -90,8 +93,9 @@ frame-rate number from a busy GPU means nothing: read the ratio to
   `hoodstudy`, `hoods`, `viewmodel`, `battle&t=30` (autopilot combat),
   `wreck&t=8`, `train&t=6`, `title`, `end`; `t=` fast-forwards the
   simulation, `hud=1`, `debug=1`, `view=N` shows pipeline buffers).
-  `tools/shot.sh out.png "scene=body&beat=strings&t=3"` — a story beat's frame
-  (every beat of the nine scenes: `docs/story/ARCHITECTURE.md` §8 and §10.3).
+  `tools/shot.sh out.png "scene=office&beat=pad&t=3"` — a story beat's frame
+  (every beat of the eight scenes: `docs/story/ARCHITECTURE.md` §8 and §10.3);
+  `"still=opening&panel=2"` — a page of comic panels.
   A hung capture is killed after `SHOT_LIMIT` seconds (default 180).
 - `python3 tools/strip.py out.jpg "scene=...&t={t}" t0 t1 n` — a film strip of
   one motion.
@@ -103,7 +107,8 @@ frame-rate number from a busy GPU means nothing: read the ratio to
   `shots/golden/` (the renderer is pixel-deterministic).
 - `node tools/play.mjs tools/plays/<play>.json` — a scripted play of the real
   game by trusted input, one play per scene (`office`, `tail`, `warehouse`, ...),
-  plus `slice` (scenes 1 and 2), `chapters` and `continue`; the list is in
+  plus `slice` (scenes 1 and 2), `chapters`, `continue` and `kit` (the opening
+  panels, the objective line, a teach card, a fail); the list is in
   `docs/story/ARCHITECTURE.md` §10.5. `node tools/playtest.mjs` is the older
   Phase 3 play-through.
 

@@ -376,6 +376,9 @@ function fall(ctx) {
   (G._b2falls || (G._b2falls = [])).push(`${F.log || ''}| ks ${(F.ks || []).join(' ')}`);
   // (the next go starts where this one was fought from)
   G._b2retry = { tipped: !!office(ctx).desk.tip };
+  // [C1] the kit's fall (game.fail, seams/Z.md §3): the same 0.9 s fall this
+  // scene had, black, the words, back at the shadows (lane C5 rebuilds this)
+  if (G.fail) { G.fail({ why: 'They got you.', to: 'shadows', fall: true }); return; }
   const from = C.eyePose();
   C.setMode('cutscene', { track: (t) => {
     const u = Math.min(1, t / 0.9), e = u * u;

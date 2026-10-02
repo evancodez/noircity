@@ -36,7 +36,8 @@ hud.objectiveText                                    // what it says (or is abou
   script's `yield beat(name)` begins it. Call `hud.objective` yourself only
   for a change inside a beat (the goal moved: "Get to the car.").
 - A scene that declares nothing shows its chapter's stand-in from
-  `src/scenes/order.js` (`objective`), so no chapter starts without one.
+  `src/scenes/order.js` (`objective`, and `objectives` for the beats whose
+  goal changes: II's `ko`, `outside`), so no chapter starts without one.
 - Entering another scene drops it; a retry of the same scene keeps it (and
   its beat's line is set again: no flicker, no second write-in).
 - Must not: a wall of text (a few words, eight at most), a second line, a
@@ -121,8 +122,10 @@ fall to control, 2.4 s from a stop.
 - **Health reaching zero** calls `game.fail({ fall: true, ... })` with, in
   order: the scene's `onDown` (`{ why, to }` or `(ctx) => ({ why, to })` in
   `defineScene`), else `game.setCheckpoint(beat, why)`'s, else `'Down.'` at
-  the current beat. (A scene that sets `health.onDeath` itself, as V and
-  VIII's old code does, bypasses this until its lane moves to the kit.)
+  the current beat. (IV The Door and VIII The Block still set
+  `health.onDeath` themselves, but their falls now go through `game.fail`:
+  IV with 'They got you.' back to `shadows`, VIII with `keepWorld` back to the
+  beat, so all three share the one fall. Their lanes may move to `onDown`.)
 - Events: `fail` `{ why, to, from, scene }` when it starts, `fail:back`
   `{ scene, beat }` when control is back.
 
@@ -201,7 +204,7 @@ export default { panels: [
 ---------------------------------------------------------------------------
 ## Z5. The order and a chapter's defaults: `src/scenes/order.js`
 
-`ORDER = [{ id, numeral, title, objective?, music?, beatMusic?, carry?, flags? }]`:
+`ORDER = [{ id, numeral, title, objective?, objectives?, music?, beatMusic?, carry?, flags? }]`:
 I `diner` The Diner, II `fight` The Fight, III `office` Room 304, IV
 `gunfight` The Door, V `watcher` The Watcher, VI `tail` The Tail, VII
 `warehouse` Pier Nine, VIII `shootout` The Block. **The Body is cut**: its
@@ -210,7 +213,7 @@ that start with `_`), its alley and puzzles are still in the tree
 (`stages/block/parts/alley.js`, `scenes/body/*`); `?start=body` is reported
 in the errlog and BEGIN plays the diner.
 
-`defineScene` takes `objective`, `music`, `beatMusic`, `carry`, `flags` from
+`defineScene` takes `objective`, `objectives`, `music`, `beatMusic`, `carry`, `flags` from
 the chapter's entry unless the scene file gives its own (the file wins: a
 lane overrides the defaults in its own `defineScene`, never in order.js).
 
