@@ -278,13 +278,13 @@ The three proofs of WAVE_C §7, by real input (`tools/lib/fight_bot.mjs`):
 - `fight_bad.json`: a clumsy first-timer (mashes jabs at random sides, sees
   the cue late and goes the wrong way a third of the time, holds now and then
   at the wrong time, a wrong key now and then; after each down a little less
-  blind - the black told him why): down five times (eight in the run
-  before), mostly `Caught swinging.`, warned each time, and wins (118 s; 163 s
-  the run before; the lesson included).
+  blind - the black told him why): down six times (five and eight in the
+  runs before), warned each time, and wins (155 s; 118 and 163 s the runs
+  before; the lesson included).
 - `fight_good.json`: a player who uses what was taught (the cue read in 0.16
   .. 0.26 s, slips, punishes the opening with a loaded punch, blocks his jab,
-  finishes loaded): wins twice in a row without going down, 78 and 73 s each
-  (the lesson included), 22 cues of 23 answered.
+  finishes loaded): wins twice in a row without going down, 64 and 64 s each
+  (78 and 73 the run before; the lesson included), all but one cue answered.
 - `fight_click.json`: 240 clicks (each button 30 times at 60, 120, 200 and 280
   ms, shuffled, 0.12 .. 0.55 s apart): 240 jabs, every contact 0.05 s after its
   press, no click wound up.
