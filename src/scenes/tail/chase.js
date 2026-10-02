@@ -700,6 +700,23 @@ export class Chase {
         G.fx.sparks.spawn({ pos: p, vel: new THREE.Vector3(r.gauss(), r.range(0.5, 2), r.gauss()).addScaledVector(his.vel, -0.25), life: r.range(0.15, 0.4), size: [0.01, 0.016], stretch: 0.05, col: [6, 6, 6], cell: 4, gravity: 9.8, ground: 0.02, fadeOut: 0.3 });
       }
     }
+    // [4th owner] a soft tyre (one round in it): a thin white spray of air and
+    // wet off it behind the wheel, all the while - the round mattered, and
+    // one more there blows it (the quarter's half dip is a few pixels at 25 m)
+    if (his.flat && his.speedAbs > 2 && !his.frozen && G.fx.dust) {
+      for (const [k, x, z] of [['fl', 1.55, -0.86], ['fr', 1.55, 0.86], ['rl', -1.55, -0.86], ['rr', -1.55, 0.86]]) {
+        const f = his.flat[k];
+        if (!f || f >= 0.9) continue;
+        this['_soft' + k] = (this['_soft' + k] || 0) + dt * 14;
+        while (this['_soft' + k] >= 1) {
+          this['_soft' + k] -= 1;
+          const p = his.seat(_v.set(x - 0.25, 0.22, z), new THREE.Vector3());
+          const g = r.range(1.1, 1.4);
+          G.fx.dust.spawn({ pos: p, vel: new THREE.Vector3(r.gauss() * 0.35, r.range(0.3, 0.9), r.gauss() * 0.35).addScaledVector(his.vel, 0.45), life: r.range(0.5, 0.9), size: [0.32, 0.22], grow: 0.6, rot: r.next() * 6.28,
+            col: [g, g, g], alpha: 0.3, drag: 2.2, fadeOut: 0.6 });
+        }
+      }
+    }
     // the tank: smoke, then fire; the fire takes him
     if (this.hisSmoke || this.hisFire) {
       this.hisSmokeAcc = (this.hisSmokeAcc || 0) + dt * (this.hisFire ? 16 : this.hisSmoke >= 2 ? 11 : 6);
