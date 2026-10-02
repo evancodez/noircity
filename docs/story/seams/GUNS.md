@@ -234,15 +234,19 @@ ctx.onStep(() => ctx.hud.warn(K.active ? K.warning() : null));   // the warning,
   safe second - the test bed: `crouch` as a contest opens (the men are seconds
   away), `rise` the first time I am down, `reload` in the ready beat. A card
   goes when the thing is done; `hud.teach`'s opts pass through.
-- **The warning** (`K.warning()`, WAVE_C §1 rule 2): `Stop him!` (the heavy
-  within 4.2 m), `Your cover won't hold. Move!` (down, and a round just came
-  through what I hide behind), and, hurt (under 45, or the kit's low line up
-  and under 60): `They have your angle. Move!` (down, a man has me), `Get
-  down!` (standing, a man has me), `Stay down. Let it mend.` (down, nobody
-  has me). Words in `cfg.warn` by the same keys (`rush`, `cover`, `angle`,
-  `open`, `mend`). Over the kit's own low line (`You're hit. Get to cover.`);
-  with the kit's rule that no fall comes before a warning has been up a
-  second (`Game.spareLast`).
+- **The warning** (`K.warning()`, WAVE_C §1 rule 2), most urgent first:
+  `Stop him!` (the heavy within 4.2 m), `Behind you!` (a man has me from off
+  my screen), `Your cover won't hold. Move!` (down, a round just came through
+  what I hide behind), `They have your angle. Move!` (down, a man has me),
+  `One's going round on your left.` / `...right.` (a flanker on his way, the
+  side as I face), and, hurt (under 45, or the kit's low line up and under
+  60): `Get down!` (standing, a man has me), `Stay down. Let it mend.` (down,
+  nobody has me). A line stays a second unless a more urgent one comes.
+  Words in `cfg.warn` by key (`rush`, `behind`, `cover`, `angle`, `flankL`,
+  `flankR`, `open`, `mend`). Over the kit's own low line (`You're hit. Get to
+  cover.`); with the kit's rule that no fall comes before a warning has been
+  up a second (`Game.spareLast`; a warning that changes its words is one
+  warning).
 - **The fail needs no call**: health at zero in an encounter is the kit's
   `down()` -> `game.fail({ why: K.why(), to: cfg.to, fall: true })`: the fall,
   black, the reason, back at `to` with the world as its setup makes it
