@@ -59,23 +59,44 @@ export function makeBot(chase, name, { seed = 7, track = null, attempt = 0 } = {
           // columns and the posts)
           const T0 = chase.stage ? chase.stage.track : track;
           const hb = chase.his.box();
-          const clear = (d) => {
-            for (let s2 = wp.s - 12; s2 <= wp.s + 12; s2 += 2) {
+          // (the room at an offset d across the road, past his wreck: the
+          // nearest thing - the wreck's box, a column, a post, the rail, a
+          // wall - to a line at d over the wreck's stretch, m)
+          const near = [];
+          const room = (d) => {
+            let m = Infinity;
+            for (let s2 = wp.s - 12; s2 <= wp.s + 12; s2 += 1.5) {
               const q = riverPoint(s2, d);
               const lx = (q.x - hb.cx) * hb.c - (q.z - hb.cz) * hb.s, lz = (q.x - hb.cx) * hb.s + (q.z - hb.cz) * hb.c;
-              if (Math.abs(lx) < hb.hx + 1.4 && Math.abs(lz) < hb.hz + 1.4) return false;
-              if (T0) for (const k of T0.statics(q.x, q.z, 2, [])) { if (k.r != null && !k.gone && Math.hypot(k.x - q.x, k.z - q.z) < k.r + 1.5) return false; if (k.r == null && k.tag !== 'post' && Math.abs((q.x - k.cx) * k.c - (q.z - k.cz) * k.s) < k.hx + 1.2 && Math.abs((q.x - k.cx) * k.s + (q.z - k.cz) * k.c) < k.hz + 1.2) return false; }
+              m = Math.min(m, Math.hypot(Math.max(0, Math.abs(lx) - hb.hx), Math.max(0, Math.abs(lz) - hb.hz)));
+              if (T0) for (const k of T0.statics(q.x, q.z, 3, near)) {
+                if (k.gone) continue;
+                if (k.r != null) { m = Math.min(m, Math.hypot(k.x - q.x, k.z - q.z) - k.r); continue; }
+                const kx = (q.x - k.cx) * k.c - (q.z - k.cz) * k.s, kz = (q.x - k.cx) * k.s + (q.z - k.cz) * k.c;
+                m = Math.min(m, Math.hypot(Math.max(0, Math.abs(kx) - k.hx), Math.max(0, Math.abs(kz) - k.hz)));
+              }
+              near.length = 0;
             }
-            return true;
+            return m;
           };
-          const cands = (wp.d > 0 ? [-3, -1.5, -4.5, 4.2, 5.5] : [3, 1.5, 4.5, -4.2, -5.5]).concat([0, 6, -6]);
-          const side = cands.find(clear) ?? (wp.d > 0 ? -3.2 : 3.2);
+          // the offset with the most room (a car's half and a hand), the
+          // nearer the lane the better; after a try that wedged, another
+          let best = null;
+          for (let d = -8; d <= 8.01; d += 0.5) {
+            const r = room(d);
+            if (r < 1.3) continue;
+            const score = Math.min(r, 2.4) - Math.abs(d - 0.65) * 0.03 - (B.pierTried || []).filter((t) => Math.abs(t - d) < 1.6).length * 3;
+            if (!best || score > best.score) best = { d, score };
+          }
+          const side = best ? best.d : (wp.d > 0 ? -3.2 : 3.2);
           B.pierSide = side;
+          (B.pierTried || (B.pierTried = [])).push(side);
           const pts = [[my.pos.x, my.pos.z]];
-          for (let s2 = mp.s + 6; s2 < RIVER_LEN - 2; s2 += 3) {
-            const near = Math.abs(s2 - wp.s) < 14;
-            if (s2 < wp.s - 14 && s2 < mp.s + 10) continue;
-            const q = riverPoint(s2, near ? side : 1.45 * 0.45);
+          for (let s2 = mp.s + 4; s2 < RIVER_LEN - 2; s2 += 2) {
+            const ds = Math.abs(s2 - wp.s);
+            const k = ds < 10 ? 1 : ds < 22 ? 1 - (ds - 10) / 12 : 0;
+            if (s2 < wp.s - 22 && s2 < mp.s + 10) continue;
+            const q = riverPoint(s2, 0.65 + (side - 0.65) * k * k * (3 - 2 * k));
             pts.push([q.x, q.z]);
           }
           pts.push([PIER.park.x - 4, PIER.park.z - 3], [PIER.park.x, PIER.park.z]);
@@ -170,7 +191,12 @@ export function makeBot(chase, name, { seed = 7, track = null, attempt = 0 } = {
       // stuck: back off
       if (B.backT > 0) { B.backT -= dt; return { S: 1, A: K.D, D: K.A }; }
       B.stuckT = want > 2 && sp < 0.6 ? B.stuckT + dt : 0;
-      if (B.stuckT > 1.5) { B.stuckT = 0; B.backT = 1.2; }
+      // (or no way made in three seconds of wanting to go: a wedge that
+      // rocks - back off too)
+      const pg = B.prog || (B.prog = { t: B.t, x: my.pos.x, z: my.pos.z });
+      if (want <= 2) { pg.t = B.t; pg.x = my.pos.x; pg.z = my.pos.z; }
+      else if (B.t - pg.t > 3) { if (Math.hypot(my.pos.x - pg.x, my.pos.z - pg.z) < 1.5) B.stuckT = 9; pg.t = B.t; pg.x = my.pos.x; pg.z = my.pos.z; }
+      if (B.stuckT > 1.5) { B.stuckT = 0; B.backT = 1.2; if (chase.phase === 'c') B.pathKey = ''; }
       const e = want - sp;
       if (e > 0.4) K.W = 1;
       else if (e < -1.2) K.S = 1;

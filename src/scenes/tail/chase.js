@@ -56,6 +56,7 @@ export class Chase {
     if (this.traffic) this.traffic.dispose();
     if (this.walkers) this.walkers.dispose();
     if (this.cabin) this.cabin.dispose();
+    if (this.hat) { this.hat.removeFromParent(); this.hat = null; }
     this.kit.warn(null);
   }
 
@@ -228,19 +229,27 @@ export class Chase {
       const v = (e.n ? e.n.clone() : _v.set(0, 1, 0).clone()).multiplyScalar(r.range(1, 4)).add(new THREE.Vector3(r.gauss() * 1.5, r.range(0.5, 3), r.gauss() * 1.5)).addScaledVector(this.my.vel, r.range(0.3, 0.9));
       G.fx.sparks.spawn({ pos: e.point.clone().setY(r.range(0.3, 0.9)), vel: v, life: r.range(0.2, 0.55), size: [0.012, 0.02], stretch: 0.05, col: [6, 6, 6], cell: 4, gravity: 9.8, ground: 0.02, fadeOut: 0.3 });
     }
-    if (!this._scrapeT || this.t - this._scrapeT > 0.18) { this._scrapeT = this.t; G.sfx.play('tail_scrape', e.point, { k: e.k }, { ref: 4 }); }
+    if (!this._scrapeT || this.t - this._scrapeT > 0.18) {
+      this._scrapeT = this.t; G.sfx.play('tail_scrape', e.point, { k: e.k }, { ref: 4 });
+      // (a car's tin: it dents)
+      if (/^(parked|car|sedan|coupe|truck)$/.test(e.what) && e.k > 0.35) G.sfx.play('c3_dent', e.point, { k: 0.5 * e.k }, { ref: 4 });
+    }
     G.controller.shake(0.22 * e.k, 0);
   }
   crash(e) {
     const G = this.game;
     G.sfx.play('tail_crash', e.point, { k: e.k }, { ref: 4 });
+    if (/^(parked|car|sedan|coupe|truck)$/.test(e.what)) G.sfx.play('c3_dent', e.point, { k: e.k }, { ref: 4 });
     G.controller.shake(0.8 * e.k + 0.2, 0);
     G.controller.kick(3 * e.k, 3 * e.k, 0.16);
   }
   bentPost(e) {
     const k = e.thing, l = k && k.lamp;
     const G = this.game;
-    G.sfx.play('tail_crash', l ? l.head.clone().setY(1) : this.my.pos, { k: 0.8 }, { ref: 4 });
+    // (the blow at its foot, then the iron folding over and the glass)
+    const at = k && k.x != null ? new THREE.Vector3(k.x, 0.8, k.z) : this.my.pos;
+    G.sfx.play('tail_crash', at, { k: 0.55 }, { ref: 4 });
+    G.sfx.play('c3_post', at, { k: Math.max(0.5, e.k ?? 0.8) }, { ref: 5 });
     if (l && !l.bent) this.stage.city && this.stage.city.bendPost ? this.stage.city.bendPost(l, e) : bendPost(this.stage, l, e.by || this.my, G);
   }
 
@@ -388,8 +397,32 @@ export class Chase {
     his.frozen = true;
     his.vel.set(0, 0, 0); his.yawRate = 0;
     this.wreck = { t: 0, lamps: 0 };
+    this.hatOff();
     G.sfx.play('tail_hornStuck', his.pos, { dur: 4.2 }, { ref: 6 });
     G.emit('tail:crash', {});
+  }
+  // the look at the wreck: the man fallen forward onto his wheel, his hat
+  // gone out through the side window onto the wet by his door
+  hatOff() {
+    const his = this.his, f = his.driverFig;
+    if (!f || f.userData.hatOff) return;
+    f.userData.hatOff = true;
+    f.rotation.z = -0.36;
+    const hat = new THREE.Group(), inner = new THREE.Group();
+    // (the figure's crown, dome and brim: children 1..3)
+    for (const m of f.children.slice(1, 4)) inner.add(m);
+    inner.position.y = -1.459;
+    hat.add(inner);
+    // (out of the side away from the rail or the wall he went into)
+    const T = this.stage.track;
+    const side = (z) => his.seat(_v.set(-0.1, 0, z), new THREE.Vector3());
+    let p = side(-1.75);
+    if (T && T.blocked && T.blocked(his.pos.x, his.pos.z, p.x, p.z, ['wall', 'fence', 'rail', 'barrier', 'gate', 'works'])) p = side(1.75);
+    hat.position.set(p.x, (T && T.ground ? T.ground(p.x, p.z) : 0) + 0.02, p.z);
+    hat.rotation.set(0.22, his.yaw + 2.1, -0.12);
+    hat.name = 'his hat';
+    this.stage.scene.add(hat);
+    this.hat = hat;
   }
   wreckStep(dt) {
     const W = this.wreck, his = this.his, G = this.game, r = this.ctx.rng;
