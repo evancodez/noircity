@@ -201,6 +201,16 @@ export default (game) => {
       // hands' viewFx, never on the lens - controller.kick pins the fov for
       // its length, and the steady's zoom would drift off it)
       this.kickR = rng.range(-1, 1); this.kickY = rng.range(-1, 1);
+      // [C2] in a gun kit's encounter the round is the kit's: from the muzzle,
+      // through what is thin, into what is solid (src/guns/Guns.js)
+      if (G.guns && G.guns.active) {
+        const hit = G.guns.playerRound(origin, dir.clone(), { name: 'revolver', chew: 1.5, steady: this.steady, range: REVOLVER.range,
+          dmg: () => REVOLVER.dmgBody,
+          onHood: (h, hh, d) => { if (h.alive) { if (h.state !== 'stagger') h.stagger(); const ai = G.ais.get(h); if (ai && ai.onHit) ai.onHit(d.clone(), true); } } });
+        G.emit('shot', { weapon: 'revolver', hit });
+        this.syncProp();
+        return true;
+      }
       // the shot: the Tommy gun's path
       const hood = G.rays.raycastHoods(origin, dir, REVOLVER.range, G.world.hoods.list);
       const wall = G.rays.raycast(origin, dir, hood ? hood.t : REVOLVER.range);

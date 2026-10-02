@@ -944,7 +944,8 @@ export class Hood {
   }
   die(kind = 'deathBack') {
     if (!this.alive) return;
-    if (!DEATHS.includes(kind)) kind = 'deathBack';
+    // [C2] (or a death of the gun kit's: enemies/gunClips.js, the slumps)
+    if (!DEATHS.includes(kind) && !(this.anim.clips[kind] && this.anim.clips[kind].death)) kind = 'deathBack';
     this.alive = false;
     this.state = kind;
     this.speed = 0;

@@ -490,6 +490,11 @@ export class Game {
     const from = Math.atan2(-dir.x, -dir.z);
     let d = from - h.yaw; d = Math.atan2(Math.sin(d), Math.cos(d));
     h.yaw += Math.max(-0.25, Math.min(0.25, d * 0.3));
+    // [C2] a brain may pick the fall by what is beside him (the gun kit's:
+    // a slump down a wall, over his cover, in a doorway - src/guns/deaths.js)
+    const ai0 = this.ais.get(h);
+    const pick = ai0 && ai0.brain && ai0.brain.deathKind ? ai0.brain.deathKind(dir, head, kind) : null;
+    if (pick) { kind = pick.kind; if (pick.yaw != null) h.yaw = pick.yaw; }
     h.die(kind);
     // (a head shot drops him without a sound)
     if (!head) this.sfx.death(h.pos.clone().setY(h.pos.y + 1.5));
@@ -505,6 +510,7 @@ export class Game {
     if (i >= 0) cs.splice(i, 1);
     this.fx.bloodFx.pool(h, kind === 'deathKnees' ? 1.25 : 0.95);
     this.corpses.push(h);
+    if (pick) this.emit('hood:down', { hood: h, kind, dir, head, pick });   // [C2]
     while (this.corpses.length > GAME.corpseCap) this.removeHood(this.corpses.shift());
   }
 
