@@ -308,6 +308,8 @@ export default {
       lobby: pendant(-0.4, 3.5, { strength: 0.42, intensity: 30 }),
       lobby2: pendant(-5.6, 4.2, { strength: 0.3, intensity: 18, angle: 0.62 }),
       lobby3: pendant(5.8, 3.8, { strength: 0.3, intensity: 18, angle: 0.62 }),
+      // (a pool on the reception counter: a man behind it is a shape against its light)
+      desk2: pendant(-3.5, 3.3, { strength: 0.4, intensity: 24, angle: 0.6, half: 0.55 }),
     };
     // (an interior's lamps take the pool's lights before a street lamp while the eye is inside)
     const inside = (p) => p.x > HOUSE.x0 - 0.2 && p.x < HOUSE.x1 + 0.2 && p.z > HOUSE.z0 - 0.2 && p.z < HOUSE.z1 + 0.2;
