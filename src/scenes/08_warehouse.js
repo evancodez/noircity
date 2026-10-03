@@ -4,7 +4,7 @@ import { PIER, inShed } from '../stages/pier9/site.js';
 import { Crew } from './warehouse/crew.js';
 import { Stealth } from './warehouse/stealth.js';
 import { PierFight, bayRoom, quietCrew, crewOutOfSight, FM_MANNERS, FOREMAN, RING_START, EYE_Y } from './warehouse/fight.js';
-import { HUNTERS, HOODS_LOUD, relightLamps, onShot, goLoud, atBay } from './warehouse/loud.js';
+import { HUNTERS, HOODS_LOUD, relightLamps, onShot, goLoud, atBay, sendAnswerer } from './warehouse/loud.js';
 import { buildProp } from '../props/index.js';
 import { gunsOf } from '../guns/Guns.js';
 
@@ -124,6 +124,8 @@ function setupAt(ctx, b) {
   // with the shells in it until I take them
   const past = (x) => BEATS.indexOf(b) > BEATS.indexOf(x);
   mezz.officeDoor.set(past('office') ? 1 : 0);
+  // (the far stairs: open on the way in; chained from the order on)
+  mezz.gateE.set(past('listen') ? 1 : 0);
   mezz.backDoor.set(0);
   mezz.drawerAt.set(past('office') ? 1 : 0);
   mezz.shells.visible = !past('office');
@@ -189,7 +191,7 @@ function setupAt(ctx, b) {
     // (the men's grid and cover read with the level down: the posts under
     // the mezzanine are in their way, the catwalk's rails are not)
     mezz.setUp(false);
-    K.begin({ to: 'loud', maxFiring: 2, flankAfter: 9, settleK: 1.15, dmgK: 0.9, area: { x0: PIER.shed.x0, x1: PIER.shed.x1, z0: PIER.shed.z0, z1: PIER.shed.z1 },
+    K.begin({ to: 'loud', maxFiring: 2, flankAfter: 9, settleK: 1.15, dmgK: 0.8, area: { x0: PIER.shed.x0, x1: PIER.shed.x1, z0: PIER.shed.z0, z1: PIER.shed.z1 },
       why: { open: 'Shot standing in the light.', moving: 'Shot in the open.' } });
     mezz.setUp(true);
     stealth.loud = true;
@@ -558,6 +560,7 @@ function live(ctx) {
     }
     // [C7] the office's door swinging in, the drawer sliding out
     if (L.doorOpen) { L.doorOpen.t += dt; mezz.officeDoor.set(sstep(0, 0.7, L.doorOpen.t)); if (L.doorOpen.t > 0.7) L.doorOpen = null; }
+    if (L.doorClose) { L.doorClose.t += dt; mezz.officeDoor.set(1 - sstep(0, 0.6, L.doorClose.t)); if (L.doorClose.t > 0.6) L.doorClose = null; }
     if (L.drawerOpen) { L.drawerOpen.t += dt; L.drawerK = sstep(0, 0.35, L.drawerOpen.t); mezz.drawerAt.set(L.drawerK); }
     // the switch's fixer: the nearest free man walks over
     if (L.fixDue && G.time >= L.fixDue) {
@@ -677,8 +680,41 @@ function* listenBeat(ctx) {
   blinds(ctx.stage, 0);
   // [C7] "Let's go.": out by the back door to the outside stair and his car
   yield wait(0.6);
-  yield* ctx.say('Let’s go.', 1.6);
+  yield* ctx.say('Let’s go. Lock up.', 1.6);
   const mezz = ctx.stage.part('mezz');
+  // [C7] his man locks the far stairs: out by the front door, along the
+  // catwalk to their gate, the chain through it, and back in (a man in his
+  // way, or up on his feet near him, is seen: the shout, the cosh)
+  const man = L.office[2];
+  const spotted = () => {
+    const pl = L.crew.player, f = man.fig.pos;
+    const d = Math.hypot(pl.feet.x - f.x, pl.feet.z - f.z);
+    if (!mezz.up || L.crew.alarmT >= 0) return false;
+    const ahead = Math.cos(Math.atan2(pl.feet.x - f.x, pl.feet.z - f.z) - man.fig.yaw) > 0.3;
+    return d < 1.3 || (ahead && d < 3.2 && !pl.crouch) || (ahead && d < 2.0);
+  };
+  const caughtBy = function* () {
+    L.crew.alarm({ eye: () => man.fig.pos.clone().setY(PIER.mezz.y + 1.6), name: 'officeB' });
+    L.crew.known = L.crew.player.feet.clone();
+    yield wait(1.4);
+    if (L.crew.onCaught) L.crew.onCaught();
+    yield until(() => false);
+  };
+  yield* walkFig(man, 1.85, -42.85, 1.1);
+  L.doorOpen = { t: 0 };
+  G.sfx.play('creak', V(1.85, PIER.mezz.y + 1.2, -42.3), {}, { ref: 3 });
+  yield wait(0.75);
+  for (const [x, z] of [[1.85, -41.55], [6.6, -41.55], [7.35, -40.3]]) { if (yield* walkFig(man, x, z, 1.15, spotted)) { yield* caughtBy(); return; } }
+  man.fig.yaw = PI / 2;
+  yield wait(0.3);
+  G.sfx.play('b9chain', V(7.9, PIER.mezz.y + 0.6, -40.2), {}, { ref: 3 });
+  for (let t = 0; t < 0.8; t += 1 / 60) { mezz.gateE.set(sstep(0, 0.8, t)); yield null; }
+  G.sfx.play('b9clatter', V(7.9, PIER.mezz.y + 0.6, -40.2), {}, { ref: 3 });
+  yield wait(0.6);
+  for (const [x, z] of [[6.6, -41.55], [1.85, -41.55], [1.85, -42.85]]) { if (yield* walkFig(man, x, z, 1.15, spotted)) { yield* caughtBy(); return; } }
+  L.doorClose = { t: 0 };
+  G.sfx.play('creak', V(1.85, PIER.mezz.y + 1.2, -42.3), {}, { ref: 3, gain: 0.7 });
+  yield wait(0.8);
   const door = { x: -1.75, z: -44.5 };
   const order = [L.office[1], L.office[0], L.office[2]];
   // (one after another along the back of the desk to the door; it opens on
@@ -718,12 +754,14 @@ function blinds(stage, k) {
 }
 const sstep = (a, b, x) => { const t = Math.min(1, Math.max(0, (x - a) / (b - a))); return t * t * (3 - 2 * t); };
 
-// a figure walked to a point at his pace (the office's)
-function* walkFig(c, x, z, speed) {
+// a figure walked to a point at his pace (the office's); [C7] stop(): true
+// stops him (and the walk returns true)
+function* walkFig(c, x, z, speed, stop = null) {
   const F = c.fig;
   c.setState('walk', 0.25);
   for (let n = 0; n < 600; n++) {
     const dx = x - F.pos.x, dz = z - F.pos.z, d = Math.hypot(dx, dz);
+    if (stop && stop()) { F.speed = 0; c.setState('idle', 0.2); return true; }
     if (d < 0.08) break;
     const want = Math.atan2(dx, dz);
     let e = want - F.yaw; e = Math.atan2(Math.sin(e), Math.cos(e));
@@ -850,6 +888,7 @@ export default defineScene({
       G.director.stop(); G.director.begin();
       G.director.run(function* () { while (G.scenes.ctx === ctx && ctx.beat === 'loud') yield null; });
       gunsOf(G).teach('crouch');
+      const tL = G.time;
       // (a lamp shot out: taught once, the first time one hangs in my sight
       // while nobody has me)
       let lampCard = false;
@@ -863,6 +902,7 @@ export default defineScene({
             if (Math.hypot(o.x + d.x * t - l.head.x, o.y + d.y * t - l.head.y, o.z + d.z * t - l.head.z) < 0.9) { lampCard = true; hud.teach('lampout', '[LMB] shoot the lamp out: make it dark', { until: 'Mouse0', secs: 4 }); break; }
           }
         }
+        if (!L.answerer && G.time - tL > 6 && !L.loud) L.answerer = sendAnswerer(ctx, L) || true;
         return atBay(stage, C);
       });
     }
@@ -927,7 +967,7 @@ function enterLoud(ctx, L) {
   C.pos.x = P.x; C.pos.z = P.z; C.yaw = P.yaw; C.pitch = P.pitch;
   K.arm('revolver');
   mezz.setUp(false);
-  K.begin({ to: 'loud', maxFiring: 2, flankAfter: 9, settleK: 1.15, dmgK: 0.9, area: { x0: PIER.shed.x0, x1: PIER.shed.x1, z0: PIER.shed.z0, z1: PIER.shed.z1 },
+  K.begin({ to: 'loud', maxFiring: 2, flankAfter: 9, settleK: 1.15, dmgK: 0.8, area: { x0: PIER.shed.x0, x1: PIER.shed.x1, z0: PIER.shed.z0, z1: PIER.shed.z1 },
     why: { open: 'Shot standing in the light.', moving: 'Shot in the open.' } });
   mezz.setUp(true);
   wrapSteps(G, L);

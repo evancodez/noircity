@@ -238,6 +238,7 @@ export class Man {
   }
 
   go(x, z) {
+    if (this.upLvl) { this.path = [V(x, 0, z)]; this.pi = 0; return; }
     const N = this.crew.stage.nav;
     const p = N.findPath(this.pos.x, this.pos.z, x, z);
     this.path = p && p.length ? p : [V(x, 0, z)];
@@ -482,7 +483,8 @@ export class Man {
     const K = this.crew.known || this.crew.player.feet;
     const d = Math.hypot(K.x - this.pos.x, K.z - this.pos.z);
     this.repath = (this.repath || 0) - dt;
-    if (this.repath <= 0 || !this.path) { this.repath = 0.5; if (d > 1.0) this.go(K.x, K.z); }
+    // ([C7] a man up on the catwalk goes straight along it: the floor's grid is not his)
+    if (this.repath <= 0 || !this.path) { this.repath = 0.5; if (d > 1.0) { if (this.upLvl) { this.path = [V(K.x, 0, K.z)]; this.pi = 0; } else this.go(K.x, K.z); } }
     if (d > 1.0) {
       this.lookAtPoint(K);
       this.follow(dt, TUNE.run);
@@ -505,6 +507,17 @@ export class Man {
     else this.c.ko('deathKnees');
     this.c.down = true;
     if (this.lamp) this.lightOff = false;
+  }
+
+  // [C7] he may climb the stairs (the loud pass's man who goes up to answer
+  // the telephone): his feet on the stairs, then the mezzanine's level
+  canClimb(mezz) {
+    const Y = mezz.upSurface(-9.6, -41.5);
+    this.fig.surface = (x, z) => {
+      const st = mezz.stairsAt(x, z);
+      if (st !== undefined) { this.upLvl = st > 1.9; return st; }
+      return this.upLvl && mezz.onUp(x, z) ? Y : 0;
+    };
   }
 
   // [C7] shot (the loud pass, before they have me): he goes down where he

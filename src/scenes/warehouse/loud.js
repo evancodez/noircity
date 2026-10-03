@@ -18,22 +18,21 @@ const V = (x, y, z) => new THREE.Vector3(x, y, z);
 const PI = Math.PI;
 
 // the hunters: two of the Cardinal's Hoods that held the stairs (if they are
-// still on their feet), and three more with pistols, in at the big doors
+// still on their feet), and two more with pistols, in at the big doors
 export const HUNTERS = [
   // aisle B, the long lit way, from the doors to the cross aisle under the stairs
   { name: 'gun1', kind: 'hood', light: 'torch', hunter: true, at: [1.4, -2.2], yaw: PI, speed: 1.35, variant: { coat: 1, brim: 1, tall: 0 },
     route: [{ x: 0.4, z: -26.6, wait: 2.6, looks: [PI, -PI / 2, PI / 2] }, { x: 0.4, z: -13.0, wait: 2.0, looks: [-PI / 2, PI / 2] }] },
-  // the east side: up aisle C to the hoist's load and back
-  { name: 'gun2', kind: 'hood', light: 'torch', hunter: true, at: [5.4, -2.2], yaw: PI, speed: 1.35, variant: { coat: 2, brim: 0, tall: 1 },
-    route: [{ x: 11.2, z: -24.0, wait: 2.2, looks: [PI, PI / 2, -PI / 2] }, { x: 11.2, z: -9.0, wait: 2.0, looks: [-PI / 2, 0] }] },
   // the bay's man: the way out is his to watch (he walks its mouth and looks in)
   { name: 'gun3', kind: 'hood', light: 'torch', hunter: true, at: [8.6, -2.2], yaw: PI, speed: 1.4, variant: { coat: 0, brim: 1, tall: 1, cig: true },
     route: [{ x: 9.6, z: -29.2, wait: 3.0, looks: [PI, PI - 0.6, -PI / 2] }, { x: 6.2, z: -28.4, wait: 2.4, looks: [PI, -PI / 2 - 0.4] }] },
 ];
 // the two at the stairs' foot hunt too: one holds the west stairs, one walks the strip
+// (spread over the floor, none at the west stairs' foot: the man who goes
+// up to answer the telephone walks there from his round)
 export const HOODS_LOUD = {
-  hood1: { route: [{ x: -2.6, z: -37.2, wait: 3.0, looks: [PI / 2 + 0.3, -PI / 2, 0.2] }, { x: -6.0, z: -29.2, wait: 2.0, looks: [PI, 0] }] },
-  hood2: { route: [{ x: 6.8, z: -36.6, wait: 2.6, looks: [PI / 2, -0.4] }, { x: -0.6, z: -36.6, wait: 2.6, looks: [PI, -PI / 2] }] },
+  hood1: { route: [{ x: -11.0, z: -31.0, wait: 2.6, looks: [PI, PI / 2, 0] }, { x: -11.0, z: -16.5, wait: 2.4, looks: [PI / 2, PI] }] },
+  hood2: { route: [{ x: 8.4, z: -36.4, wait: 2.6, looks: [PI, -PI / 2, PI / 2] }, { x: 3.6, z: -36.4, wait: 2.6, looks: [PI, -PI / 2 - 0.4] }] },
 };
 
 // the hanging lamps a round can put out (the dead stay dead until the
@@ -65,11 +64,11 @@ export function onShot(ctx, L, ray) {
   }
   for (const m of crew.men) {
     if (m.down) continue;
-    const top = m.eye(_w).y + 0.15;
+    const top = m.eye(_w).y + 0.15, foot = top - 1.85;
     // (his body a column 0.3 m round from his knees to the top of his head)
     for (let t = 0.5; t < Math.min(far, 40); t += 0.12) {
       const x = o.x + d.x * t, y = o.y + d.y * t, z = o.z + d.z * t;
-      if (y < 0.4 || y > top) continue;
+      if (y < foot + 0.4 || y > top) continue;
       if (Math.hypot(x - m.pos.x, z - m.pos.z) < 0.3) { if (!best || t < best.t) best = { t, man: m, at: V(x, y, z) }; break; }
     }
   }
@@ -78,10 +77,14 @@ export function onShot(ctx, L, ray) {
     G.counters.c7lamps = (G.counters.c7lamps || 0) + 1;
     G.emit('c7:lamp', { name: best.lamp.name });
   } else if (best && best.man) {
-    best.man.shot();
+    // (a round in the head drops a man who did not know I was there; one in
+    // the body hurts him, and he knows: the shout, and it is the gunfight)
+    const m = best.man, head = best.at.y > m.eye(_w).y - 0.24;
     if (G.fx && G.fx.bloodFx) G.fx.bloodFx.hit(best.at, d.clone(), { strength: 1.1, rays: G.rays });
     G.sfx.play('grunt', best.at, { f0: 90, k: 0.6, dur: 0.25 }, { ref: 3 });
     G.counters.c7shot = (G.counters.c7shot || 0) + 1;
+    if (head) m.shot();
+    else { m.hurt = (m.hurt || 0) + 55; crew.alarm(m); }
   }
   // (a shot is heard: the nearest three come to where it was fired from;
   // the rest stop and look)
@@ -102,16 +105,43 @@ export function goLoud(ctx, L) {
   L.gunmen = L.gunmen || [];
   for (const m of [...crew.men]) {
     if (m.down) continue;
+    // (a man up on the catwalk keeps the crew's rule: he comes at me, the cosh)
+    if (m.upLvl) continue;
     const at = { x: m.pos.x, z: m.pos.z };
-    const h = K.spawn({ kind: 'pistol', at, yaw: m.fig.yaw, variant: m.spec.variant || null, name: m.name, wait: 0 });
+    // (the shout, then each draws: the first a half second on, the rest after
+    // him - the moment to get down or get out of their light)
+    const h = K.spawn({ kind: 'pistol', at, yaw: m.fig.yaw, variant: m.spec.variant || null, name: m.name, wait: 0.55 + 0.4 * L.gunmen.length, hp: m.hurt ? Math.max(20, 100 - m.hurt) : null });
     // (they stand on the shed's floor, never on the mezzanine's level over it)
     h.surface = () => 0;
     L.gunmen.push(h);
     m.remove(); ctx.cast.remove(m.c);
     crew.men.splice(crew.men.indexOf(m), 1);
   }
-  crew.onCaught = null;
+  if (!crew.men.some((m) => !m.down && m.upLvl)) crew.onCaught = null;
   G.emit('c7:loud', { men: L.gunmen.length, t: +G.time.toFixed(2) });
+}
+
+// the telephone rang behind me: one of them goes up to answer it - up the
+// west stairs, along the catwalk to the office's door, a look along the
+// catwalk with his torch, and back down (so a man who waits up there in the
+// dark is found: waiting is not a way out)
+export function sendAnswerer(ctx, L) {
+  const crew = L.crew, mezz = ctx.stage.part('mezz');
+  const pick = crew.get('hood1') && !crew.get('hood1').down ? crew.get('hood1')
+    : crew.men.filter((m) => !m.down && m.spec.hunter).sort((a, b) => Math.hypot(a.pos.x + 3, a.pos.z + 40) - Math.hypot(b.pos.x + 3, b.pos.z + 40))[0];
+  if (!pick || pick.mode === 'alarm') return null;
+  pick.canClimb(mezz);
+  const back = pick.route;
+  pick.route = [
+    { x: -2.9, z: -40.2, wait: 0 }, { x: -9.0, z: -40.2, wait: 0 }, { x: -9.7, z: -41.55, wait: 0 },
+    { x: 1.3, z: -41.55, wait: 4.5, looks: [Math.PI / 2, Math.PI / 2 - 0.25, Math.PI / 2 + 0.2] },
+    { x: -9.7, z: -41.55, wait: 0 }, { x: -9.0, z: -40.2, wait: 0 }, { x: -2.9, z: -40.2, wait: 0 },
+    ...back,
+  ];
+  pick.ri = 0; pick.wait = 0; pick.path = null;
+  pick.setMode('patrol');
+  pick.answering = true;
+  return pick;
 }
 
 // am I at the bay (the way out): its floor, or the far stairs' lower half

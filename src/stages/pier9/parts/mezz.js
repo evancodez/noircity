@@ -79,6 +79,21 @@ export default {
     railC(landE.x0, landE.z1, landE.x1, landE.z1);  // the east landing's front
     railC(landE.x0, Z.z1, landE.x0, landE.z1);      // the east landing's west side
     kit.addMerged(rail, M.iron, { cast: true });
+    // [C7] the catwalk's kickboards: planks along its edge to the height of
+    // a crouched man (the gun kit's wood: low cover, risen over with RMB,
+    // chewed by their rounds), in sections a few boards long
+    {
+      const x0 = landW.x1 + 0.05, x1 = landE.x0 - 0.05, n = 6;
+      for (let i = 0; i < n; i++) {
+        kit.piece();
+        const a0 = x0 + (x1 - x0) * i / n, a1 = x0 + (x1 - x0) * (i + 1) / n - 0.01;
+        const geos = [];
+        for (let k = 0; k < 4; k++) geos.push(kit.box(a0, a1, Y + 0.03 + k * 0.21, Y + 0.03 + k * 0.21 + 0.195, Z.z1 - 0.04, Z.z1 + 0.01));
+        const kb = kit.add(mergeGeos(geos), M.plankDoor, { cast: true });
+        kb.name = 'kickboard' + i;
+        kb.userData.cover = { kind: 'wood', hp: 14, section: false, name: 'kickboards' };
+      }
+    }
 
     // ---- the stairs: two stringers, open treads, a handrail each side
     const stairs = (x0, x1, zc, w) => {
@@ -282,6 +297,35 @@ export default {
       },
     };
     api.backDoor = { set(k) { backPivot.rotation.y = -1.35 * k; backPivot.updateMatrixWorld(true); } };
+    // [C7] the far stairs' gate at their top: an iron gate on the landing,
+    // folded back against its front rail (open), or across the stairs with a
+    // chain through it (shut: the Cardinal's man locks up as they leave)
+    kit.piece();
+    const gateP = new THREE.Group();
+    gateP.position.set(SE.top - 0.02, Y, SE.z + SE.w / 2 - 0.04);
+    g.add(gateP);
+    const gw = SE.w - 0.1, gb = [];
+    for (const yy of [0.12, 0.98]) gb.push(new THREE.BoxGeometry(0.04, 0.04, gw).translate(0, yy, -gw / 2));
+    for (let i = 0; i <= 7; i++) gb.push(new THREE.CylinderGeometry(0.014, 0.014, 0.98, 6).translate(0, 0.55, -gw * i / 7));
+    kit.add(mergeGeos(gb), M.iron, { cast: true, parent: gateP });
+    const chainG = [];
+    for (let i = 0; i < 7; i++) chainG.push(new THREE.TorusGeometry(0.03, 0.008, 4, 8).rotateY(i % 2 ? Math.PI / 2 : 0).translate(0.02, 0.6 - i * 0.05, -gw + 0.02));
+    chainG.push(new THREE.BoxGeometry(0.05, 0.07, 0.03).translate(0.03, 0.28, -gw + 0.02));
+    const chainM = kit.add(mergeGeos(chainG), M.iron, { cast: false, parent: gateP });
+    const gateBox = { cx: SE.top, cz: SE.z, hx: 0.07, hz: SE.w / 2 + 0.02, angle: 0, c: 1, s: 0, tag: 'gate' };
+    api.gateE = {
+      k: 0,
+      set(k) {
+        this.k = k;
+        gateP.rotation.y = (1 - k) * Math.PI / 2;
+        gateP.updateMatrixWorld(true);
+        chainM.visible = k > 0.98;
+        const i = C.boxes.indexOf(gateBox);
+        if (k > 0.5 && i < 0) C.boxes.push(gateBox);
+        if (k <= 0.5 && i >= 0) C.boxes.splice(i, 1);
+      },
+    };
+    api.gateE.set(0);
     api.drawerAt = { set(k) { drawer.position.z = 0.3 * k; drawer.updateMatrixWorld(true); } };
     // (the level's own back wall up there: the shed's is a wall at both levels)
     const downCircles = posts.map((x) => ({ x, z: Z.z1 - 0.15, r: 0.16, tag: 'post' }));
