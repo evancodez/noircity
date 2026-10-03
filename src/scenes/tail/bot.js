@@ -227,7 +227,7 @@ export function makeBot(chase, name, { seed = 7, track = null, attempt = 0 } = {
           const q = his.local(o.pos);
           // (a car on that side near him, or one coming the other way there)
           const coming = Math.cos((o.yaw || 0) - his.yaw) < -0.5;
-          if (q.x > -12 && q.x < (coming ? 40 : 14) && Math.sign(q.z || 1) === side && Math.abs(q.z) < 6) { clearSide = false; break; }
+          if (q.x > -12 && q.x < (coming ? (P.pitAlways ? 20 : 40) : 14) && Math.sign(q.z || 1) === side && Math.abs(q.z) < 6) { clearSide = false; break; }
         }
         // (that side shut a while: the other)
         B.pitShut = !clearSide && l.x > -14 ? (B.pitShut || 0) + dt : 0;
