@@ -1,7 +1,7 @@
 import { ART } from './_art.js';
 
 // The end (WAVE_C §5): his homburg in the wet street, the cigar's ember
-// beside it, the avenue and the el going off into the rain. No words. Lane
+// beside it, the street black, one light behind the brim. No words. Lane
 // C8 plays it before THE END. Lane C9's picture (public/stills/end_1.jpg).
 export default {
   panels: [

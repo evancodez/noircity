@@ -55,32 +55,34 @@ function mats() {
   return MATS;
 }
 
-// the rain on the glass: drops and their runs, drawn once on a canvas (an
-// effect over the pane, never inked: LAYER.FX)
+// the rain on the glass: its runs down the pane, a few beads, over a smoked
+// tint (the night outside reads dark through it): drawn once on a canvas (an
+// effect over the pane, never inked: LAYER.FX). [C9 after the critic: round
+// drops read as snow; the runs are what says rain on glass]
 function wetGlass(rng, W = 1024, H = 1024) {
   const c = document.createElement('canvas');
   c.width = W; c.height = H;
   const g = c.getContext('2d');
   g.clearRect(0, 0, W, H);
-  // the runs: thin wavering trails down the glass, a bead at their foot
-  for (let i = 0; i < 60; i++) {
-    let x = rng.range(0, W), y = rng.range(-H * 0.2, H * 0.7);
-    const len = rng.range(H * 0.05, H * 0.3), w = rng.range(1.0, 2.4);
-    g.strokeStyle = `rgba(235,235,230,${rng.range(0.12, 0.3).toFixed(3)})`;
+  g.fillStyle = 'rgba(4,4,4,0.78)';
+  g.fillRect(0, 0, W, H);
+  // the runs: thin wavering trails down the glass, long and short, a bead at their foot
+  for (let i = 0; i < 150; i++) {
+    let x = rng.range(0, W), y = rng.range(-H * 0.3, H * 0.8);
+    const len = rng.range(H * 0.06, H * 0.45), w = rng.range(0.8, 2.2);
+    g.strokeStyle = `rgba(235,235,230,${rng.range(0.18, 0.42).toFixed(3)})`;
     g.lineWidth = w; g.lineCap = 'round';
     g.beginPath(); g.moveTo(x, y);
-    for (let k = 0; k < 14; k++) { y += len / 14; x += rng.range(-1.6, 1.6); g.lineTo(x, y); }
+    for (let k = 0; k < 18; k++) { y += len / 18; x += rng.range(-1.4, 1.4); g.lineTo(x, y); }
     g.stroke();
-    g.fillStyle = 'rgba(240,240,236,0.55)';
-    g.beginPath(); g.ellipse(x, y + 2, w * 1.4, w * 1.9, 0, 0, Math.PI * 2); g.fill();
+    g.fillStyle = 'rgba(240,240,236,0.5)';
+    g.beginPath(); g.ellipse(x, y + 2, w * 1.2, w * 2.2, 0, 0, Math.PI * 2); g.fill();
   }
-  // the drops: small lenses, a fleck of light on each
-  for (let i = 0; i < 1600; i++) {
-    const x = rng.range(0, W), y = rng.range(0, H), r = rng.range(0.8, 3.0) * (rng.next() < 0.08 ? 1.8 : 1);
-    g.fillStyle = `rgba(225,225,220,${rng.range(0.08, 0.22).toFixed(3)})`;
-    g.beginPath(); g.ellipse(x, y, r, r * 1.15, 0, 0, Math.PI * 2); g.fill();
-    g.fillStyle = 'rgba(250,250,248,0.45)';
-    g.beginPath(); g.arc(x - r * 0.3, y - r * 0.35, Math.max(0.6, r * 0.28), 0, Math.PI * 2); g.fill();
+  // a few small beads, faint
+  for (let i = 0; i < 260; i++) {
+    const x = rng.range(0, W), y = rng.range(0, H), r = rng.range(0.6, 1.6);
+    g.fillStyle = `rgba(225,225,220,${rng.range(0.06, 0.16).toFixed(3)})`;
+    g.beginPath(); g.ellipse(x, y, r, r * 1.6, 0, 0, Math.PI * 2); g.fill();
   }
   const t = new THREE.CanvasTexture(c);
   t.colorSpace = THREE.SRGBColorSpace;

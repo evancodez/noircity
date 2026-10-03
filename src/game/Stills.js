@@ -298,6 +298,13 @@ export class Stills {
     R.t += dt;
     R.since += dt;
     R.cover = Math.min(1, R.cover + dt / 0.25);
+    // [C9] (after the critic: 'esc again skips' stayed up after the 1.2 s in
+    // which a second ESC skips - a player who read it and pressed got nothing:
+    // the hint goes back when the window shuts)
+    if (this.hint.classList.contains('on') && performance.now() - this.esc.last >= 1200) {
+      this.hint.textContent = 'click: next · esc esc: skip';
+      this.hint.classList.remove('on');
+    }
     for (const L of R.landed) {
       L.t += dt;
       this.pose(L, R.def);

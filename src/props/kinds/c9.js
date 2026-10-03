@@ -15,7 +15,7 @@ import { std, lathe, slab, tubeAlong, mergeGeos, V3 } from '../lib.js';
 //   deskPhone   a black bakelite desk telephone (the base and its cradle,
 //               the handset on it unless variant 'empty'): the opening
 //               still's (A TIP. AMES.)
-//   handset     the handset alone, as the hand holds it: along z, the ear
+//   handset     the handset alone (the opening still has it lying on its side on the desk): along z, the ear
 //               cup at -z, the cups' mouths down (-y); its grip the bar's middle
 const CREW_RED = '#c40f2c';
 
