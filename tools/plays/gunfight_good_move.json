@@ -10,7 +10,7 @@
   { "clickOn": "#title .opt[data-k=begin]", "taken": "G.scenes.current && G.scenes.current.id === 'gunfight'", "retries": 4 },
   { "until": "G.scenes.current && G.scenes.current.id === 'gunfight' && document.pointerLockElement === N.renderer.domElement", "timeout": 30000 },
   { "name": "every movement, played well (moved, at the door)" },
-  { "drive": "tools/lib/c5_door.mjs", "profile": "good", "choice": "move", "tries": 3, "beatTimeout": 150,
+  { "drive": "tools/lib/c5_door.mjs", "profile": "good", "choice": "move", "out": true, "tries": 3, "beatTimeout": 150,
     "beats": ["shadows", "flank", "corridor"],
     "check": "D.wonFirst === 3", "label": "the good player (moved) wins every movement on the first try" },
   { "eval": "(N.game.guns.events || []).filter((e) => e.what === 'down' || e.what === 'flank').map((e) => e.what + ' ' + (e.why || e.at))" }

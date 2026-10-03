@@ -75,7 +75,7 @@ export default {
       for (let i = 0; i < 7; i++) sp.push(new THREE.BoxGeometry(0.01, 0.05 + (i % 4) * 0.03, 0.012 + (i % 3) * 0.006).rotateZ((i - 3) * 0.12).translate(xw - 0.05 + (i % 2) * 0.012, 0.96 + i * 0.022, DOOR.z1 + 0.012 + (i % 3) * 0.004));
       kit.add(mergeGeos(sp), mats.deskTop, { cast: false, noRay: true });
     }
-    doors.GATE.locked = true;
+    doors.GATE.locked = true; doors.D306.locked = true;
 
     // ---- the lights -----------------------------------------------------------------------
     // the street's light through the blind: the hotel's floodlight up the
@@ -159,11 +159,12 @@ export default {
     hintLamp.priority = 8;
 
     // ---- the Looks, the dry volumes, the walls of the stage ----------------------------------
-    stage.dry.push(shell.roomBox, shell.outerBox, shell.r305Box, shell.corrBox, shell.wcBox, shell.landBox, shell.liftBox);
+    stage.dry.push(shell.roomBox, shell.outerBox, shell.r305Box, shell.r306Box, shell.corrBox, shell.wcBox, shell.landBox, shell.liftBox);
     const inside = { fogDensity: FOG.density * 0.3, rainOverlay: 0, haze: 0.65, reflect: 'none', ambient: 0.2 };
     stage.addLook(shell.roomBox, { ...inside, room: 'office' });
     stage.addLook(shell.outerBox, { ...inside, ambient: 0.17, room: 'office' });
     stage.addLook(shell.r305Box, { ...inside, ambient: 0.13, haze: 0.5, room: 'office' });
+    stage.addLook(shell.r306Box, { ...inside, ambient: 0.1, haze: 0.45, room: 'office' });
     stage.addLook(shell.corrBox, { ...inside, ambient: 0.18, haze: 0.45, room: 'corridor' });
     stage.addLook(shell.wcBox, { ...inside, ambient: 0.14, haze: 0.4, room: 'corridor' });
     stage.addLook(shell.landBox, { ...inside, ambient: 0.13, haze: 0.4, room: 'corridor' });
@@ -184,6 +185,8 @@ export default {
       { x: -3.3, z: DOORS.D305.z1 + 0.42, nx: 1, nz: 0 },
       { x: DOORS.CONN.x0 - 0.42, z: -0.55, nx: 0, nz: -1 }, { x: DOORS.CONN.x1 + 0.38, z: -0.55, nx: 0, nz: -1 },
       { x: DOORS.CONN.x0 - 0.42, z: 0.5, nx: 0, nz: 1 },
+      // 306's (the corridor's side)
+      { x: -4.5, z: DOORS.D306.z1 + 0.4, nx: -1, nz: 0 },
       // the stair door (the corridor's side), the washroom's, the lift's
       { x: -5.1, z: DOORS.STAIR.z0 - 0.4, nx: 1, nz: 0 }, { x: -5.1, z: DOORS.STAIR.z1 + 0.4, nx: 1, nz: 0 },
       { x: -6.3, z: DOORS.STAIR.z1 + 0.5, nx: -1, nz: 0 },
@@ -212,7 +215,7 @@ export default {
     addFrost(door.frost, door.pane.mesh, door);
     addFrost(open.side.frost, open.side.pane.mesh);
     addFrost(open.transom.frost, open.transom.mesh);
-    for (const n of ['D305', 'STAIR', 'WC']) if (doors[n].frost) addFrost(doors[n].frost, doors[n].pane.mesh, doors[n]);
+    for (const n of ['D305', 'D306', 'STAIR', 'WC']) if (doors[n].frost) addFrost(doors[n].frost, doors[n].pane.mesh, doors[n]);
     for (const o of open.others) { o.frost.userData.setLamp(o.east ? corrLamp.head : corrLamp.head, 0.4); }
     const api = {
       group: g, kit, mats, shell, open, furn, suite, esc, street, rng,
@@ -521,7 +524,7 @@ function resetRoom(api, stage) {
   if (B.clearPieces) B.clearPieces();
   for (const p of Gl.panes) Gl.restore(p);
   // the doors shut (the suite's on its closer; the gate locked)
-  for (const d of Object.values(api.doors)) { d.set(0); d.locked = d.name === 'GATE'; d.closer = false; d.jolt = 0; }
+  for (const d of Object.values(api.doors)) { d.set(0); d.locked = d.name === 'GATE' || d.name === 'D306'; d.closer = false; d.jolt = 0; }
   api.door.closer = true;
   // the wood made whole
   for (const m of api.sections) {

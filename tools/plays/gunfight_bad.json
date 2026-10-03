@@ -14,7 +14,7 @@
     "beats": ["shadows", "flank", "corridor"],
     "check": "D.lost >= 2 && D.falls.every((w) => w && w !== 'timeout')", "label": "standing and trading loses (most movements), each fall with its reason" },
   { "name": "the clumsy first-timer: up to three tries a movement" },
-  { "drive": "tools/lib/c5_door.mjs", "profile": "clumsy", "choice": "desk", "tries": 3, "beatTimeout": 150,
+  { "drive": "tools/lib/c5_door.mjs", "profile": "clumsy", "choice": "desk", "out": true, "tries": 3, "beatTimeout": 150,
     "beats": ["shadows", "flank", "corridor"],
     "check": "D.won === 3", "label": "the first-timer gets through every movement within three tries" },
   { "eval": "(N.game.guns.events || []).filter((e) => e.what === 'down').map((e) => e.why)" }

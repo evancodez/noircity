@@ -77,11 +77,12 @@ export function search(ctx, pad, safe) {
   ctx.onStep(() => { if (ctx.flags._amesFn) ctx.flags._amesFn(); });
 
   // ---- the desk's drawers ------------------------------------------------------------------------
+  const R1o = () => { const r = D.drawers.find((q) => q.id === 'R1'); return r.out > 0.5; };
   for (const d of D.drawers) {
     if (d.gone) continue;
     const at = () => d.group.parent.localToWorld(V(d.group.position.x + 0.03, d.y + 0.1, d.z));
-    // (R1 open with the pencil in it: the pencil is the thing to take, not the drawer)
-    const h = I.add({ id: 'drawer' + d.id, at, range: 1.8, cone: 0.4, prompt: 'open', when: () => here('ames')() && !D.tip && !(d.id === 'R1' && d.out > 0.5 && !st.pencil), onUse: () => {
+    // (R1 open with the pencil in it: the pencil is the thing to take, not that drawer nor the two under it)
+    const h = I.add({ id: 'drawer' + d.id, at, range: 1.8, cone: 0.4, prompt: 'open', when: () => here('ames')() && !D.tip && !(d.id[0] === 'R' && R1o() && !st.pencil), onUse: () => {
       if (d.locked) {
         if (st.key) { d.locked = false; G.sfx.play('c5_unlock', at()); on('unlocked'); O.drawer(d, true); return; }
         G.sfx.play('c5_locked', at()); st.tried[d.id] = true;

@@ -20,7 +20,7 @@
 //  z  0.0  |        +------------------+----------------------------+
 //          |        305d       ROOM 305 (dust sheets)               |
 //  z -4.8  |stair   +---------------------------------------------- +
-//          |        |306 (locked)
+//          |        |306 (locked; an importer's crates)
 //  z -7.2  +--lift--+
 //
 // x: the corridor -5.6 .. -3.96, the outer office -3.8 .. -0.16, Ames's
@@ -37,6 +37,8 @@ export const OUTER = { x0: -3.8, x1: -0.16, z0: 0, z1: 7.0 };
 export const OPEN = { z0: 2.5, z1: 4.3, h: 2.35 };
 // 305 next door: empty, dust sheets (its own corridor door, the connecting door into Ames's room)
 export const R305 = { x0: -3.8, x1: 5.6, z0: -4.8, z1: -0.16 };
+// 306 south of 305 (an importer's office, crates in the dark; its door locked - the men have the key)
+export const R306 = { x0: -3.8, x1: -0.9, z0: -7.2, z1: -4.96 };
 // the corridor: west of the suite, from the lift (south) to the washroom (north)
 export const CORR = { x0: -5.6, x1: -3.96, z0: -7.2, z1: 7.0, ceil: 2.95 };
 // the washroom at the corridor's north end
@@ -66,6 +68,8 @@ export const DOORS = {
   // the washroom (the corridor's north wall)
   // (it opens out into the corridor: a washroom's door, kept out of its own small room)
   WC: { axis: 'x', z: CORR.z1 + T / 2, x0: -5.25, x1: -4.35, swing: 1, inside: { x: -4.8, z: 6.2 }, outside: { x: -4.8, z: 7.85 }, glass: 'wc' },
+  // 306's door down the hall (locked: the man in there has the key)
+  D306: { axis: 'z', x: WX, z0: -6.575, z1: -5.625, swing: 1, inside: { x: -3.1, z: -6.1 }, outside: { x: -4.75, z: -6.1 }, glass: '306' },
   // the grille gate across the head of the flight down (locked: the men below have the key)
   GATE: { axis: 'z', x: -7.15, z0: -5.55, z1: -4.45, swing: 1, inside: { x: -6.5, z: -5.0 }, outside: { x: -7.8, z: -5.0 }, glass: null, grille: true },
 };
@@ -74,7 +78,6 @@ export const LOCKED = [
   ['301', 4.4, 'W', 'H. GRUBER', 'DENTAL SURGEON'],
   ['302', 1.1, 'W', 'R. KOVAC', 'NOTARY PUBLIC'],
   ['303', -2.0, 'W', 'ATLAS', 'INSURANCE CO.'],
-  ['306', -6.1, 'E', 'J. DUBOIS', 'IMPORTS'],
 ];
 // the corridor's two globes: one near the suite's door, one at the lift's end (a pool, a dark between)
 export const CORR_LAMP = { x: -4.78, z: 3.0 };

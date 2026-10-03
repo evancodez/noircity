@@ -123,9 +123,11 @@ function corridorMen(ctx, spawn) {
   F.liftOpen = false; F.liftCalled = null;
   spawn({ name: 'liftA', kind: 'pistol', at: { x: cx - 0.2, z: LIFT.z1 - 0.35 }, yaw: Math.PI, start: () => F.liftOpen, wait: 0.2, way: [{ x: cx, z: CORR.z0 + 1.6, run: true }] });
   spawn({ name: 'tommy', kind: 'tommy', at: { x: cx + 0.2, z: LIFT.z0 + 0.4 }, yaw: Math.PI, start: () => F.liftOpen, wait: 0.9, way: [{ x: cx + 0.3, z: CORR.z0 + 1.0 }] });
-  // (the washroom's door down the hall: once the lift's two are down - behind me, said as it opens)
+  // (a door down the hall, 306's: once the lift's two are down - the same end of the corridor as the lift and
+  // the stair: the first gunfight's corridor comes at me from one way, with one cover that answers it, the cart.
+  // [C5] after play: from the washroom, behind me, the good hand down at the cart was flanked 6 tries of 6)
   const liftLeft = () => (F.men || []).filter((h) => h.alive && (h.c5 === 'liftA' || h.c5 === 'tommy')).length;
-  spawn({ name: 'wc', kind: 'pistol', at: { x: -4.8, z: 7.75 }, yaw: Math.PI, start: () => F.liftOpen && G.time - F.liftOpen > 7 && (liftLeft() === 0 || G.time - F.liftOpen > 30), way: [{ door: 'WC' }], door: 'hold' });
+  spawn({ name: 'wc', kind: 'pistol', at: { x: -2.4, z: -5.5 }, yaw: Math.PI / 2, start: () => F.liftOpen && G.time - F.liftOpen > 7 && (liftLeft() === 0 || G.time - F.liftOpen > 30), way: [{ door: 'D306' }], door: 'hold' });
   // (the heavy last: up the stair once the others are down - never the three at once and him)
   const others = () => (F.men || []).filter((h) => h.alive && h.c5 !== 'heavy').length;
   // (his start said: the gate below clanks, the line names him - the tell before the heavy)

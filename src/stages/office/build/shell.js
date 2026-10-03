@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { wallGeos, wallColliders, strip, casing } from './walls.js';
-import { FLOOR, CEIL, T, ROOM, OUTER, OPEN, R305, CORR, WC, LANDING, LIFT, DOOR, SIDE, DOORS, LOCKED, WIN, WIN305, ESC, SAFE } from '../plan.js';
+import { FLOOR, CEIL, T, ROOM, OUTER, OPEN, R305, R306, CORR, WC, LANDING, LIFT, DOOR, SIDE, DOORS, LOCKED, WIN, WIN305, ESC, SAFE } from '../plan.js';
 import { mergeGeos } from '../../../props/lib.js';
 
 // The shell ([C5] wave C: the third floor made bigger and finished): the
@@ -22,7 +22,7 @@ export function buildShell(kit, mats, stage) {
   // ---- the walls -----------------------------------------------------------------------
   // the corridor's east wall: the suite's front (the door, its sidelight), 305's door, 306 (locked)
   const ew = { axis: 'z', a: [CORR.x1, OUTER.x0], s: [CORR.z0 - T, CORR.z1 + T], y: [FLOOR, CEIL], holes: [
-    [DOOR.z0, DOOR.z1, FLOOR, DOOR.transom[1], 'open'], [SIDE.z0, SIDE.z1, SIDE.y0, SIDE.y1], dz(D.D305), ...lockedHoles('E'),
+    [DOOR.z0, DOOR.z1, FLOOR, DOOR.transom[1], 'open'], [SIDE.z0, SIDE.z1, SIDE.y0, SIDE.y1], dz(D.D305), dz(D.D306), ...lockedHoles('E'),
   ] };
   // the corridor's west wall: 301 - 303 (locked), the stair door
   const ww = { axis: 'z', a: [CORR.x0 - T, CORR.x0], s: [CORR.z0 - T, CORR.z1 + T], y: [FLOOR, CEIL], holes: [...lockedHoles('W'), dz(D.STAIR)] };
@@ -40,6 +40,9 @@ export function buildShell(kit, mats, stage) {
   const fw = { axis: 'z', a: [ROOM.x1, ROOM.x1 + T], s: [R305.z0 - T, ROOM.z1], y: [FLOOR, CEIL], holes: [[WIN.z0, WIN.z1, WIN.y0, WIN.y1], [WIN305.z0, WIN305.z1, WIN305.y0, WIN305.y1]] };
   // 305's south wall
   const s5 = { axis: 'x', a: [R305.z0 - T, R305.z0], s: [OUTER.x0, ROOM.x1 + T], y: [FLOOR, CEIL], holes: [] };
+  // 306's walls (south, east; its north is 305's south wall)
+  const s6 = { axis: 'x', a: [R306.z0 - T, R306.z0], s: [OUTER.x0, R306.x1 + T], y: [FLOOR, CEIL], holes: [] };
+  const e6 = { axis: 'z', a: [R306.x1, R306.x1 + T], s: [R306.z0 - T, R306.z1], y: [FLOOR, CEIL], holes: [] };
   // the washroom's walls (west, north, east)
   const wcW = { axis: 'z', a: [WC.x0 - T, WC.x0], s: [WC.z0, WC.z1 + T], y: [FLOOR, CEIL], holes: [] };
   const wcN = { axis: 'x', a: [WC.z1, WC.z1 + T], s: [WC.x0 - T, WC.x1 + T], y: [FLOOR, CEIL], holes: [] };
@@ -53,17 +56,17 @@ export function buildShell(kit, mats, stage) {
   kit.piece();
   const cwMesh = kit.add(M([...wallGeos(ew)]), mats.plaster, { name: 'office_corridorWall' });
   kit.piece();
-  const corrWalls = kit.add(M([...wallGeos(ww), ...wallGeos(cs), ...wallGeos(s5), ...wallGeos(wcW), ...wallGeos(wcN), ...wallGeos(wcE), ...wallGeos(lN), ...wallGeos(lS), ...wallGeos(lW)]), mats.plasterDark, { name: 'corridor_walls' });
+  const corrWalls = kit.add(M([...wallGeos(ww), ...wallGeos(cs), ...wallGeos(s5), ...wallGeos(s6), ...wallGeos(e6), ...wallGeos(wcW), ...wallGeos(wcN), ...wallGeos(wcE), ...wallGeos(lN), ...wallGeos(lS), ...wallGeos(lW)]), mats.plasterDark, { name: 'corridor_walls' });
   // the transom bar over the suite's door, the header over the opening
   kit.add(kit.box(CORR.x1, OUTER.x0, DH, DOOR.transom[0], DOOR.z0, DOOR.z1), mats.plaster);
-  for (const w of [ew, ww, cs, nw, pw, sw, fw, s5, wcW, wcN, wcE, lN, lS, lW]) wallColliders(C, w, 'wall');
+  for (const w of [ew, ww, cs, nw, pw, sw, fw, s5, s6, e6, wcW, wcN, wcE, lN, lS, lW]) wallColliders(C, w, 'wall');
   out.walls = { roomWalls, cwMesh, corrWalls };
   // (the walls are stone to a round: they stop it)
   for (const m of [roomWalls, cwMesh, corrWalls]) m.userData.cover = { kind: 'stone' };
 
   // ---- floors and ceilings ------------------------------------------------------------
   kit.piece();
-  const boards = [ROOM, OUTER, R305].map((R) => kit.box(R.x0 - 0.01, R.x1 + 0.01, FLOOR - 0.06, FLOOR, R.z0 - 0.01, R.z1 + 0.01));
+  const boards = [ROOM, OUTER, R305, R306].map((R) => kit.box(R.x0 - 0.01, R.x1 + 0.01, FLOOR - 0.06, FLOOR, R.z0 - 0.01, R.z1 + 0.01));
   // (under the openings: the doorways' thresholds are boards too)
   boards.push(kit.box(OUTER.x1 - 0.01, ROOM.x0 + 0.01, FLOOR - 0.06, FLOOR, OPEN.z0, OPEN.z1));
   boards.push(kit.box(D.CONN.x0, D.CONN.x1, FLOOR - 0.06, FLOOR, R305.z1 - 0.01, ROOM.z0 + 0.01));
@@ -78,6 +81,7 @@ export function buildShell(kit, mats, stage) {
   const lino = [kit.box(CORR.x0, CORR.x1, FLOOR - 0.06, FLOOR, CORR.z0, CORR.z1)];
   lino.push(kit.box(CORR.x1 - 0.01, OUTER.x0 + 0.01, FLOOR - 0.06, FLOOR + 0.012, DOOR.z0, DOOR.z1));
   lino.push(kit.box(CORR.x1 - 0.01, OUTER.x0 + 0.01, FLOOR - 0.06, FLOOR + 0.012, D.D305.z0, D.D305.z1));
+  lino.push(kit.box(CORR.x1 - 0.01, OUTER.x0 + 0.01, FLOOR - 0.06, FLOOR + 0.012, D.D306.z0, D.D306.z1));
   lino.push(kit.box(CORR.x0 - T - 0.01, CORR.x0 + 0.01, FLOOR - 0.06, FLOOR + 0.012, D.STAIR.z0, D.STAIR.z1));
   lino.push(kit.box(D.WC.x0, D.WC.x1, FLOOR - 0.06, FLOOR + 0.012, CORR.z1 - 0.01, WC.z0 + 0.01));
   lino.push(kit.box(LIFT.x0, LIFT.x1, FLOOR - 0.06, FLOOR, CORR.z0 - T - 0.01, CORR.z0 + 0.01));
@@ -101,6 +105,7 @@ export function buildShell(kit, mats, stage) {
     kit.box(OUTER.x0 - T, ROOM.x1 + T, CEIL, CEIL + 0.1, R305.z0 - T, ROOM.z1 + T),
     kit.box(WC.x0 - T, WC.x1 + T, CEIL - 0.25, CEIL + 0.1, WC.z0 - T, WC.z1 + T),
     kit.box(LANDING.x0 - T, CORR.x0, CEIL, CEIL + 0.1, LANDING.z0 - T, LANDING.z1 + T),
+    kit.box(OUTER.x0 - T, R306.x1 + T, CEIL, CEIL + 0.1, R306.z0 - T, R306.z1),
   ]), mats.ceil, { name: 'office_ceiling' });
   kit.add(kit.box(CORR.x0 - T, CORR.x1, CORR.ceil, CORR.ceil + 0.1, CORR.z0 - T, CORR.z1 + T), mats.ceil, { name: 'corridor_ceiling' });
   kit.add(kit.box(CORR.x0 - T, CORR.x1, CORR.ceil + 0.1, CEIL + 0.1, CORR.z0 - T, CORR.z1 + T), mats.ceil);
@@ -132,7 +137,7 @@ export function buildShell(kit, mats, stage) {
   }
   // the corridor: the wainscot (dark boards to 0.95 m), its dado rail, a baseboard
   const lockedSkip = (side) => LOCKED.filter((l) => l[2] === side).map(([, z]) => sk(z - 0.475, z + 0.475));
-  const cSkipE = [sk(DOOR.z0, DOOR.z1), sk(SIDE.z0 - 0.02, SIDE.z1 + 0.02, 0), sk(D.D305.z0, D.D305.z1), ...lockedSkip('E')];
+  const cSkipE = [sk(DOOR.z0, DOOR.z1), sk(SIDE.z0 - 0.02, SIDE.z1 + 0.02, 0), sk(D.D305.z0, D.D305.z1), sk(D.D306.z0, D.D306.z1), ...lockedSkip('E')];
   const cSkipW = [...lockedSkip('W'), sk(D.STAIR.z0, D.STAIR.z1)];
   const wain = [];
   wain.push(...strip({ axis: 'z', f: CORR.x1, dir: -1, s: [CORR.z0, CORR.z1], y: FLOOR, d: 0.012, h: 0.95, skip: cSkipE }));
@@ -156,6 +161,7 @@ export function buildShell(kit, mats, stage) {
   cas({ axis: 'z', f: CORR.x1, dir: -1, s: [SIDE.z0, SIDE.z1], y: [SIDE.y0, SIDE.y1], w: 0.07, sill: true });
   cas({ axis: 'z', f: OUTER.x0, dir: 1, s: [SIDE.z0, SIDE.z1], y: [SIDE.y0, SIDE.y1], w: 0.07, sill: true });
   both('z', CORR.x1, OUTER.x0, [D.D305.z0, D.D305.z1], [FLOOR, DH]);
+  both('z', CORR.x1, OUTER.x0, [D.D306.z0, D.D306.z1], [FLOOR, DH]);
   both('z', CORR.x0 - T, CORR.x0, [D.STAIR.z0, D.STAIR.z1], [FLOOR, DH]);
   both('x', CORR.z1, CORR.z1 + T, [D.WC.x0, D.WC.x1], [FLOOR, DH]);
   both('x', R305.z1, ROOM.z0, [D.CONN.x0, D.CONN.x1], [FLOOR, DH]);
@@ -174,6 +180,7 @@ export function buildShell(kit, mats, stage) {
   out.roomBox = B3(ROOM.x0 - 0.02, ROOM.x1 + 0.1, ROOM.z0 - 0.02, ROOM.z1 + 0.02);
   out.outerBox = B3(OUTER.x0 - 0.02, OUTER.x1 + 0.02, OUTER.z0 - 0.02, OUTER.z1 + 0.02);
   out.r305Box = B3(R305.x0 - 0.02, R305.x1 + 0.1, R305.z0 - 0.02, R305.z1 + 0.02);
+  out.r306Box = B3(R306.x0 - 0.02, R306.x1 + 0.02, R306.z0 - 0.02, R306.z1 + 0.02);
   out.corrBox = B3(CORR.x0 - 0.02, CORR.x1 + 0.02, CORR.z0 - 0.02, CORR.z1 + 0.02);
   out.wcBox = B3(WC.x0 - 0.02, WC.x1 + 0.02, WC.z0 - 0.02, WC.z1 + 0.02);
   out.landBox = B3(LANDING.x0 - 0.02, CORR.x0 - T + 0.02, LANDING.z0 - 0.02, LANDING.z1 + 0.02, -3, CEIL + 0.3);

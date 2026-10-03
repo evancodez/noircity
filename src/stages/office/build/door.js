@@ -26,6 +26,7 @@ const OPEN = 1.62;        // fully open (rad)
 const GLASS = {
   ames: { text: ['J. AMES', 'INVESTIGATIONS'], glow: [0.14, 1.15] },
   305: { text: ['305', ''], glow: [0.05, 0.6] },
+  306: { text: ['306  J. DUBOIS', 'IMPORTS'], glow: [0.04, 0.5] },
   stair: { text: ['STAIRS'], glow: [0.06, 0.5] },
   wc: { text: ['WASHROOM'], glow: [0.05, 0.6] },
 };

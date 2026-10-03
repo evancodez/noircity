@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { mergeGeos, slab, lathe, tubeAlong } from '../../../props/lib.js';
-import { FLOOR, CEIL, T, OUTER, R305, CORR, WC, LANDING, LIFT, BENCH, SEC, DOORS, CORR_LAMP, CORR_LAMP2 } from '../plan.js';
+import { FLOOR, CEIL, T, OUTER, R305, R306, CORR, WC, LANDING, LIFT, BENCH, SEC, DOORS, CORR_LAMP, CORR_LAMP2 } from '../plan.js';
 
 // [C5] The rest of the third floor (wave C): the outer office's furniture
 // (the clients' bench, the secretary's desk with her typewriter and her
@@ -98,6 +98,23 @@ export function buildSuite(kit, mats, stage) {
     // the boxed chimney breast round the back of Ames's safe
     piece(kit.box(2.35, 3.15, FLOOR, CEIL, R305.z1 - 0.42, R305.z1), mats.plaster, { kind: 'stone' }, { name: 'breast' });
     C.addBox(2.75, R305.z1 - 0.21, 0.4, 0.21, 0, 'column');
+  }
+
+  // ---- 306: an importer's office in the dark - his crates stacked, a desk, a cabinet ----------------
+  {
+    const crate = (x, z, sz, h, yaw, y0 = 0) => {
+      const g = new THREE.BoxGeometry(sz, h, sz);
+      const bat = [];
+      for (const sx of [-1, 1]) for (const sz2 of [-1, 1]) bat.push(new THREE.BoxGeometry(0.05, h + 0.01, 0.05).translate(sx * (sz / 2 - 0.02), 0, sz2 * (sz / 2 - 0.02)));
+      const m = M([g, ...bat]).rotateY(yaw).translate(x, FLOOR + y0 + h / 2, z);
+      piece(m, mats.desk, { kind: 'wood', hp: 6, name: 'crate' }, { name: 'crate306' });
+      if (!y0) C.addBox(x, z, sz / 2, sz / 2, yaw, 'crates');
+    };
+    // (out of the door's sweep: it opens in, toward the crates)
+    crate(-2.2, -6.65, 0.8, 0.8, 0.1); crate(-1.4, -6.65, 0.75, 0.75, -0.08); crate(-1.8, -6.65, 0.7, 0.6, 0.25, 0.8);
+    piece(new THREE.BoxGeometry(0.7, 0.76, 0.8).translate(-1.55, FLOOR + 0.38, -5.45), mats.desk, { kind: 'wood', hp: 10, section: false, name: 'desk306' }, { name: 'desk306' });
+    C.addBox(-1.55, -5.45, 0.35, 0.4, 0, 'booth');
+    out.r306 = R306;
   }
 
   // ---- the corridor's things -------------------------------------------------------------------
