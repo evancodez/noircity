@@ -41,6 +41,11 @@ const KEYS = {
   amber: { rgb: [0.62, 0.26, 0.035], emit: false },
   // the DINER sign: cold electric blue, white-hot along the tube's centre
   neon: { rgb: [0.07, 0.4, 1.0], core: [0.55, 0.8, 1.0], hot: [0.8, 0.92, 1.0], emit: true, gain: 7, corePow: 6 },
+  // [C3c] the city's other neon tubes (stages/city/parts/neon.js): a green
+  // (kept by its own hue) and an amber (the fire family: printed bright
+  // orange); one colour a sign. (No red neon: red is the crew's.)
+  neonGreen: { rgb: [0.04, 1.0, 0.24], emit: true, gain: 3 },
+  neonAmber: { rgb: [1.0, 0.33, 0.03], emit: true, gain: 3 },
   // the Cardinal's red: the same red as blood, on an object
   crew: { rgb: [0.578, 0.0056, 0.0273], emit: false },
 };
