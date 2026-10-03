@@ -1,0 +1,29 @@
+{
+ "about": "C9 critic: the end of II as it plays: the card read in my fingers (E), then the AMES. MARKED. still; is the picture's card the card I just held; then on into III.",
+ "url": "/?mute=1&start=fight.matchbook",
+ "size": [1440, 900],
+ "out": "shots/critic9/ames",
+ "steps": [
+  { "wait": 2500 },
+  { "clickOn": "#title .opt[data-k=begin]", "taken": "G.state !== 'title'", "retries": 5, "every": 4000 },
+  { "until": "G.scenes.current && G.scenes.current.id === 'fight' && G.state === 'playing'", "timeout": 30000 },
+  { "eval": "G.scenes.beat + ' / ' + G.hud.promptShown" },
+  { "wait": 2500 },
+  { "eval": "G.scenes.beat + ' / ' + G.hud.promptShown" },
+  { "shot": "a1_matchbook" },
+  { "key": "KeyE" },
+  { "wait": 2500 },
+  { "eval": "G.scenes.beat + ' / ' + G.hud.promptShown" },
+  { "shot": "a2_card" },
+  { "key": "KeyE" },
+  { "until": "G.stills.active", "timeout": 12000 },
+  { "wait": 1200 },
+  { "shot": "a3_still" },
+  { "until": "!G.stills.active", "timeout": 8000 },
+  { "eval": "JSON.stringify(G.stills.last)" },
+  { "until": "G.scenes.current && G.scenes.current.id !== 'fight'", "timeout": 10000 },
+  { "wait": 2500 },
+  { "shot": "a4_next" },
+  { "eval": "G.scenes.current.id + ' ' + G.scenes.beat + ' ' + G.hud.objectiveText" }
+ ]
+}
