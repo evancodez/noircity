@@ -22,6 +22,55 @@ import { mergeGeos, lathe } from '../../../props/lib.js';
 //   pier9.office.desk / .window.in (inside), pier9.stairs.W.foot / .top, E ...
 const V = (x, y, z) => new THREE.Vector3(x, y, z);
 
+// [C11] the office's back wall as a picture of its light (the glow's map,
+// u across the wall from O.x0, v up from its floor): the shed's light
+// through the blinds in bars, where the window throws it - a little low (the
+// shed's lamps hang high) and wide, the slats' bars soft-edged, the mullion
+// and the frame black bands - fading at its edges into ink; the rest of the
+// wall near black, a faint warmth round the desk lamp's foot.
+function blindLightMap(O, W) {
+  const CW = 1024, CH = 512, w = O.x1 - O.x0, h = O.h;
+  const c = document.createElement('canvas'); c.width = CW; c.height = CH;
+  const g = c.getContext('2d');
+  const px = (x) => (x - O.x0) / w * CW, py = (y) => CH - y / h * CH;
+  g.fillStyle = 'rgb(4,4,4)'; g.fillRect(0, 0, CW, CH);
+  // (the desk lamp's spill on the wall behind it: low, soft, dim)
+  const lg = g.createRadialGradient(px(0.8), py(0.95), 0, px(0.8), py(0.95), 0.75 / w * CW);
+  lg.addColorStop(0, 'rgba(70,70,70,1)'); lg.addColorStop(1, 'rgba(70,70,70,0)');
+  g.fillStyle = lg; g.fillRect(0, 0, CW, CH);
+  // the window's light: x from W.x0 to W.x1 spread 12 %, its foot 0.15 m
+  // lower, its head 0.2 m higher (seen from the shed's floor, below, the
+  // window looks onto the wall above it: the window reads lit from there)
+  const drop = 0.15, sx = 0.12 * (W.x1 - W.x0) / 2;
+  const x0 = W.x0 - sx, x1 = W.x1 + sx, y0 = W.y0 - drop, y1 = W.y1 + 0.2;
+  const n = 15, pitch = (y1 - y0) / n;
+  for (let i = 0; i < n; i++) {
+    // (each slat's gap: a bright bar, its lower edge soft; the bars dim a
+    // little toward the floor, as the light travels further)
+    const ya = y1 - i * pitch, yb = ya - pitch * 0.62;
+    const v = Math.round(255 * (1 - 0.18 * i / n));
+    const bg = g.createLinearGradient(0, py(ya), 0, py(yb));
+    bg.addColorStop(0, `rgba(${v},${v},${v},0.55)`); bg.addColorStop(0.18, `rgb(${v},${v},${v})`); bg.addColorStop(0.8, `rgb(${v},${v},${v})`); bg.addColorStop(1, `rgba(${v},${v},${v},0)`);
+    g.fillStyle = bg;
+    // (a slight lean: the light comes in from the shed's lamps to the left)
+    const lean = (y1 - ya) * 0.08;
+    g.fillRect(px(x0 + lean), py(ya), px(x1 + lean) - px(x0 + lean), py(yb) - py(ya));
+  }
+  // the mullion and the frame's sides: black bands through the bars
+  g.fillStyle = 'rgb(4,4,4)';
+  const mx = (W.x0 + W.x1) / 2;
+  g.fillRect(px(mx - 0.05), py(y1 + 0.02), px(mx + 0.05) - px(mx - 0.05), py(y0 - 0.02) - py(y1 + 0.02));
+  // the edges fade into the wall (left, right, bottom): a feathered mask
+  const fade = (ax, ay, bx, by, x, y, ww, hh) => { const f = g.createLinearGradient(px(ax), py(ay), px(bx), py(by)); f.addColorStop(0, 'rgba(4,4,4,1)'); f.addColorStop(1, 'rgba(4,4,4,0)'); g.fillStyle = f; g.fillRect(x, y, ww, hh); };
+  fade(x0 - 0.02, 0, x0 + 0.35, 0, px(x0 - 0.1), 0, px(x0 + 0.35) - px(x0 - 0.1), CH);
+  fade(x1 + 0.15, 0, x1 - 0.3, 0, px(x1 - 0.3), 0, px(x1 + 0.25) - px(x1 - 0.3), CH);
+  fade(0, y0 - 0.05, 0, y0 + 0.4, 0, py(y0 + 0.4), CW, py(y0 - 0.1) - py(y0 + 0.4));
+  const t = new THREE.CanvasTexture(c);
+  t.colorSpace = THREE.SRGBColorSpace;
+  t.anisotropy = 4;
+  return t;
+}
+
 export default {
   name: 'mezz', order: 60, tick: 60,
   build(stage) {
@@ -156,17 +205,16 @@ export default {
     kit.piece();
     kit.add(kit.box(O.x0, O.x1, oy1 - 0.01, oy1, O.z0 + 0.25, fz - t), M.officeWall, { cast: false });
     kit.piece();
-    const backGlow = new THREE.PlaneGeometry(O.x1 - O.x0, O.h, 24, 12).translate((O.x0 + O.x1) / 2, oy0 + O.h / 2, O.z0 + 0.27);
-    // (a gradient: brightest behind the window's middle, at a standing
-    // man's head - the Cardinal at the window is a black shape on it -
-    // falling to the corners)
-    const col = new Float32Array(backGlow.getAttribute('position').count * 3);
-    const BP = backGlow.getAttribute('position');
-    for (let i = 0; i < BP.count; i++) { const dx = BP.getX(i) + 0.8, dy = BP.getY(i) - (oy0 + 1.5); const v = Math.max(0.05, 1 - Math.hypot(dx / 4.4, dy / 2.4)); col[i * 3] = col[i * 3 + 1] = col[i * 3 + 2] = Math.pow(v, 1.4); }
-    backGlow.setAttribute('color', new THREE.BufferAttribute(col, 3));
+    const backGlow = new THREE.PlaneGeometry(O.x1 - O.x0, O.h).translate((O.x0 + O.x1) / 2, oy0 + O.h / 2, O.z0 + 0.27);
+    // [C11] the shed's light through the blinds, laid on the back wall in
+    // bars (the window's shape, a little low and wide, its mullion a black
+    // band): the one bright thing behind the window - the Cardinal at it is
+    // a black shape on the bars - and the rest of the wall ink. (It was a
+    // gradient over the whole wall at 1.3: from inside, the room printed
+    // blown-out paper with no pool.)
+    const glowMat = M.glow('officeBack', 1.25, { map: blindLightMap(O, W), fog: false });
     // ([C7] not fogged: the one warm window, seen across the black shed
     // from the side door - the chapter's first frame is the goal)
-    const glowMat = M.glow('officeBack', 1.3, { vertexColors: true, fog: false });
     const back = kit.add(backGlow, glowMat, { cast: false, noRay: true });
     back.name = 'officeBack';
     // the desk, a chair, a cabinet, a coat stand, the desk lamp
@@ -186,8 +234,28 @@ export default {
     // behind whoever stands between it and the window
     const deskBulb = kit.add(new THREE.SphereGeometry(0.05, 12, 8).translate(0.8, oy0 + 1.14, -44.0), M.bulb, { cast: false, noRay: true });
     const oLamp = stage.lamps.addCustom({ head: V(0.2, oy1 - 0.3, -43.9), axis: V(0, -1, -0.3), height: 2.6, half: 0.7, real: true, bulb: deskBulb, fadeEnd: 0.8, edgeSoft: 0.6, strength: 0.5, tag: 'office' });
-    if (oLamp.light) { oLamp.light.intensity = 40; oLamp.light.distance = 7; }
+    // [C11] the light itself comes out of the desk lamp's shade: a hard
+    // pool on the blotter and her photograph, the desk's ends and the room
+    // beyond it in ink (it hung from the ceiling, 40 over 7 m: the desk a
+    // flat grey and the walls lit). The registry's entry (the stealth's
+    // exposure, the rain, the rim) is the lamp's as it was; its cone, a
+    // shaft from the ceiling with no lamp there, is put out.
+    if (oLamp.light) {
+      Object.assign(oLamp.light, { intensity: 9, distance: 2.4, angle: 1.0, penumbra: 0.14 });
+      oLamp.light.pos.set(0.8, oy0 + 1.12, -44.0);
+      oLamp.light.target.set(0.36, oy0 + 0.79, -43.84);
+    }
+    oLamp.coneBase = 0;
+    oLamp.cone.material.uniforms.uIntensity.value = 0;
+    oLamp.cone.visible = false;
     oLamp.entry.range = 3.0;
+    // [C11] the blotter under the lamp: a felt pad between leather ends,
+    // her photograph on it
+    kit.piece();
+    const by = oy0 + 0.7905;
+    kit.add(kit.box(-0.4, 0.6, oy0 + 0.79, by, -44.12, -43.56), M.std('blotter', 0x3c3c3c, 0.95, 'cloth'), { cast: false });
+    kit.piece();
+    kit.addMerged([kit.box(-0.46, -0.34, oy0 + 0.79, by + 0.0012, -44.13, -43.55), kit.box(0.54, 0.66, oy0 + 0.79, by + 0.0012, -44.13, -43.55)], M.std('blotterEnds', 0x080808, 0.6, 'cloth'), { cast: false });
 
     // the window: its frame, the blinds (slats tilted to show the room in
     // strips), the light through them on the catwalk's boards

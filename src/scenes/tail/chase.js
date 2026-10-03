@@ -967,7 +967,7 @@ export class Chase {
         // ([C3b] and brighter as he floors it: pulling away from me)
         his.tail.material.color.copy(base).multiplyScalar(1 + this._brk * 1.6 + (D.burstK || 0) * 0.9);
       }
-      for (const sp of his.tail.userData.glows || []) { const d = Math.hypot(his.pos.x - this.my.pos.x, his.pos.z - this.my.pos.z); sp.scale.setScalar(Math.min(0.62, 0.16 + d * 0.011) * (1 + this._brk * 0.5)); }
+      for (const sp of his.tail.userData.glows || []) { const d = Math.hypot(his.pos.x - this.my.pos.x, his.pos.z - this.my.pos.z); sp.userData.wish = Math.min(0.62, 0.16 + d * 0.011) * (1 + this._brk * 0.5); } // [C11] the wish: the glow itself caps it by the eye's distance (vehicles/models.js tailLamps)
     }
     // the man ducks
     if (his.driverFig) { const want = D.duck > 0 || D.state === 'lost' || D.state === 'stopped' ? -0.3 : 0; his.driverFig.position.y += (want - his.driverFig.position.y) * (1 - Math.exp(-dt * 10)); }
