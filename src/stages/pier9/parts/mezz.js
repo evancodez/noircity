@@ -190,12 +190,45 @@ export default {
     slatsG.push(kit.box(wx0, wx1, wy1 - 0.06, wy1, fz - 0.15, fz - 0.09));
     const slats = kit.add(mergeGeos(slatsG), M.blind, { cast: true, noRay: true });
     slats.name = 'blinds';
-    // the door: dark planks, a lit glass panel in its top half
+    // the door: dark planks, a lit glass panel in its top half ([C7] on its
+    // hinge at the west jamb: it opens into the office - api.officeDoor)
     kit.piece();
-    const dg = [kit.box(D.x0 + 0.02, D.x1 - 0.02, oy0, oy0 + 2.13, fz - 0.07, fz - 0.03)];
-    const doorM = kit.add(mergeGeos(dg), M.plankDoor, { cast: true });
+    const hx = D.x0 + 0.02, hz = fz - 0.05;
+    const doorPivot = new THREE.Group();
+    doorPivot.name = 'officeDoor';
+    doorPivot.position.set(hx, 0, hz);
+    g.add(doorPivot);
+    const dg = [kit.box(D.x0 + 0.02, D.x1 - 0.02, oy0, oy0 + 2.13, fz - 0.07, fz - 0.03).translate(-hx, 0, -hz),
+      // (a knob on each face)
+      new THREE.SphereGeometry(0.03, 8, 6).translate(D.x1 - 0.12 - hx, oy0 + 1.0, fz - 0.0 - hz), new THREE.SphereGeometry(0.03, 8, 6).translate(D.x1 - 0.12 - hx, oy0 + 1.0, fz - 0.1 - hz)];
+    const doorM = kit.add(mergeGeos(dg), M.plankDoor, { cast: true, parent: doorPivot });
     kit.piece();
-    const pane = kit.add(new THREE.PlaneGeometry(D.x1 - D.x0 - 0.24, 0.7).translate((D.x0 + D.x1) / 2, oy0 + 1.55, fz - 0.025), M.glow('officePane', 0.5), { cast: false, noRay: true });
+    const pane = kit.add(new THREE.PlaneGeometry(D.x1 - D.x0 - 0.24, 0.7).translate((D.x0 + D.x1) / 2 - hx, oy0 + 1.55, fz - 0.025 - hz), M.glow('officePane', 0.5), { cast: false, noRay: true, parent: doorPivot });
+
+    // [C7] the back door (the Cardinal's way out, down the outside stair to
+    // his car): a plank leaf in the back wall west of the desk, black
+    // behind it when it opens
+    kit.piece();
+    const BD = { x0: -2.15, x1: -1.35, h: 2.02 }, bz = O.z0 + 0.3;
+    kit.add(new THREE.PlaneGeometry(BD.x1 - BD.x0, BD.h).translate((BD.x0 + BD.x1) / 2, oy0 + BD.h / 2, bz - 0.015), new THREE.MeshBasicMaterial({ color: 0x000000 }), { cast: false, noRay: true });
+    const backPivot = new THREE.Group();
+    backPivot.position.set(BD.x0, 0, bz);
+    g.add(backPivot);
+    kit.add(mergeGeos([kit.box(0, BD.x1 - BD.x0, oy0, oy0 + BD.h, 0, 0.04), new THREE.SphereGeometry(0.03, 8, 6).translate(BD.x1 - BD.x0 - 0.1, oy0 + 1.0, 0.06)]), M.plankDoor, { cast: false, parent: backPivot });
+    kit.add(kit.box(BD.x0 - 0.06, BD.x1 + 0.06, oy0 + BD.h, oy0 + BD.h + 0.06, bz - 0.02, bz + 0.03), M.iron, { cast: false });
+
+    // [C7] the desk's drawer (its right pedestal, facing the room) and the
+    // box of shells in it
+    kit.piece();
+    const drawer = new THREE.Group();
+    drawer.name = 'deskDrawer';
+    g.add(drawer);
+    const dr = { x0: 0.97, x1: 1.23, y0: oy0 + 0.5, y1: oy0 + 0.68, z0: -44.15, z1: -43.43 };
+    kit.add(mergeGeos([kit.box(dr.x0, dr.x1, dr.y0, dr.y0 + 0.02, dr.z0, dr.z1), kit.box(dr.x0, dr.x0 + 0.02, dr.y0, dr.y1 - 0.02, dr.z0, dr.z1), kit.box(dr.x1 - 0.02, dr.x1, dr.y0, dr.y1 - 0.02, dr.z0, dr.z1),
+      kit.box(dr.x0 - 0.01, dr.x1 + 0.01, dr.y0, dr.y1, dr.z1 - 0.025, dr.z1 + 0.005), new THREE.SphereGeometry(0.018, 8, 6).translate((dr.x0 + dr.x1) / 2, (dr.y0 + dr.y1) / 2, dr.z1 + 0.02)]), M.crateDark, { cast: false, parent: drawer });
+    kit.piece();
+    const shells = kit.add(mergeGeos([kit.box(1.03, 1.17, dr.y0 + 0.02, dr.y0 + 0.075, -43.82, -43.66)]), M.letter, { cast: false, parent: drawer });
+    shells.name = 'shellsBox';
     // the light through the blinds on the catwalk: bars on the boards
     const barsMat = new THREE.ShaderMaterial({
       name: 'PierBlindLight', transparent: true, depthWrite: false, blending: THREE.AdditiveBlending,
@@ -217,7 +250,7 @@ export default {
     g.add(barsQ);
 
     // ---- the level: surfaces, and the walls that belong to it
-    const api = { group: g, up: false, stairsAt, landW, landE, posts, slats, door: doorM, pane, barsQ, back };
+    const api = { group: g, up: false, stairsAt, landW, landE, posts, slats, door: doorM, pane, barsQ, back, drawer, shells, backPivot };
     const onUp = (x, z) => (x > Z.x0 && x < Z.x1 && z > Z.z0 && z < Z.z1) || (x > landW.x0 && x < landW.x1 && z >= Z.z1 - 0.01 && z < landW.z1) || (x > landE.x0 && x < landE.x1 && z >= Z.z1 - 0.01 && z < landE.z1);
     api.onUp = onUp;
     api.upSurface = (x, z) => { const s = stairsAt(x, z); return s !== undefined ? s : onUp(x, z) ? Y : 0; };
@@ -229,9 +262,27 @@ export default {
     });
     // (up: the railings and the office's walls; down: the posts under it)
     const upBoxes = railsUp.map((r) => ({ cx: r.cx, cz: r.cz, hx: r.hx, hz: r.hz, angle: 0, c: 1, s: 0, tag: 'rail' }));
-    const ob = (x0, x1, z0, z1) => upBoxes.push({ cx: (x0 + x1) / 2, cz: (z0 + z1) / 2, hx: (x1 - x0) / 2, hz: (z1 - z0) / 2, angle: 0, c: 1, s: 0, tag: 'office' });
-    ob(O.x0 - 0.12, D.x0, fz - 0.14, fz + 0.02); ob(D.x1, O.x1 + 0.12, fz - 0.14, fz + 0.02); ob(D.x0, D.x1, fz - 0.14, fz + 0.02);
+    const ob = (x0, x1, z0, z1) => { const b = { cx: (x0 + x1) / 2, cz: (z0 + z1) / 2, hx: (x1 - x0) / 2, hz: (z1 - z0) / 2, angle: 0, c: 1, s: 0, tag: 'office' }; upBoxes.push(b); return b; };
+    ob(O.x0 - 0.12, D.x0, fz - 0.14, fz + 0.02); ob(D.x1, O.x1 + 0.12, fz - 0.14, fz + 0.02);
+    const doorBox = ob(D.x0, D.x1, fz - 0.14, fz + 0.02);
     ob(O.x0 - 0.14, O.x0, O.z0, fz); ob(O.x1, O.x1 + 0.14, O.z0, fz);
+    // [C7] the desk, the cabinet, the coat stand and the back wall inside
+    ob(-1.22, 1.32, -44.32, -43.38); ob(2.18, 2.92, -44.72, -44.08); ob(-2.85, -2.25, -43.95, -43.35); ob(O.x0, O.x1, O.z0, O.z0 + 0.3);
+    // [C7] the office door on its hinge (k 0 shut .. 1 open into the room):
+    // its leaf is a wall only while it is shut
+    api.officeDoor = {
+      k: 0,
+      set(k) {
+        this.k = k;
+        doorPivot.rotation.y = 1.45 * k;
+        doorPivot.updateMatrixWorld(true);
+        const i = upBoxes.indexOf(doorBox);
+        if (k > 0.3 && i >= 0) { upBoxes.splice(i, 1); const j = C.boxes.indexOf(doorBox); if (j >= 0) C.boxes.splice(j, 1); }
+        if (k <= 0.3 && i < 0) { upBoxes.push(doorBox); if (api.up && !C.boxes.includes(doorBox)) C.boxes.push(doorBox); }
+      },
+    };
+    api.backDoor = { set(k) { backPivot.rotation.y = -1.35 * k; backPivot.updateMatrixWorld(true); } };
+    api.drawerAt = { set(k) { drawer.position.z = 0.3 * k; drawer.updateMatrixWorld(true); } };
     // (the level's own back wall up there: the shed's is a wall at both levels)
     const downCircles = posts.map((x) => ({ x, z: Z.z1 - 0.15, r: 0.16, tag: 'post' }));
     // (and the stores stacked under it, parts/stacks.js)

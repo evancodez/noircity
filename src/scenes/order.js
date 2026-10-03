@@ -46,10 +46,10 @@ export const ORDER = [
   // [C3] VI: the scene file declares its own lines (07_tail.js: the city's
   // chase rebuilt; the wave B beats' stand-ins went with it)
   { id: 'tail', numeral: 'VI', title: 'The Tail', music: { slot: 'tail', fade: 2.5 }, carry: ARMED, flags: NOTE },
+  // [C7] VII: the scene file declares its own lines (08_warehouse.js: three
+  // passes of the shed, quiet, the office, loud, then the foreman)
   { id: 'warehouse', numeral: 'VII', title: 'Pier Nine', music: { slot: 'warehouse', fade: 1.5 },
-    beatMusic: { fight: { slot: 'fight', fade: 2.5 }, ko: { slot: 'fight', fade: 2.5 }, after: { stop: 3 } }, carry: ARMED, flags: NOTE,
-    objectives: { arrive: 'Get inside. Quietly.', ...each(['floor', 'lamps', 'aisle', 'stairs'], 'Reach the lit office. Quietly.'),
-      listen: 'Stay down. Listen.', out: 'Find another way out.', fight: 'Put him down.', ko: 'Put him down.', after: 'Get to the diner.' } },
+    beatMusic: { fight: { slot: 'fight', fade: 2.5 }, ko: { slot: 'fight', fade: 2.5 }, after: { stop: 3 } }, carry: ARMED, flags: NOTE },
   { id: 'shootout', numeral: 'VIII', title: 'The Block', music: null,
     beatMusic: { cars: { slot: 'shootout', fade: 2.5 }, doorways: { slot: 'shootout', fade: 2.5 }, el: { slot: 'shootout', fade: 2.5 }, driveby: { slot: 'shootout', fade: 2.5 } },
     carry: [...ARMED, 'shells'], flags: NOTE,

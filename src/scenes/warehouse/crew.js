@@ -27,11 +27,18 @@ export const TUNE = {
   walk: 1.25, search: 1.1, run: 3.1,
   turn: 3.2, lookRate: 2.6, lightRate: 2.0, lightLag: 0.3,
   beamHalf: 0.3,
-  viewHalf: 1.05, viewRange: 30, nearDark: 3.0,
+  // ([C7] the dark's margin is arm's length and a little: out of his beam
+  // and out of the lamps, a man does not see me further than this)
+  viewHalf: 1.05, viewRange: 30, nearDark: 1.9, nearAlarm: 3.2,
   certainDark: 2.5, certainLit: 1.0,
   hearRun: 8, hearWalk: 3,
   decay: 0.32, grace: 0.6, lost: 1.6,
-  searchLook: 4.2, alarmCosh: 1.7,
+  searchLook: 4.2,
+  // [C7] caught is a chase, not a sentence: the shout, then they run to where
+  // I was seen; out of every man's sight this long and they lose me (they
+  // search, then settle, more watchful); the cosh only from a man up close
+  // with a line on me, never sooner than coshMin after the shout
+  lostAlarm: 3.2, coshR: 1.45, coshMin: 1.1, watchK: 0.22,
 };
 const V = (x, y, z) => new THREE.Vector3(x, y, z);
 const wrap = (a) => Math.atan2(Math.sin(a), Math.cos(a));
@@ -148,7 +155,7 @@ export class Man {
   // how well he sees me this step (0..1) and why
   perceive(dt, t) {
     const C = this.crew, G = C.game, pl = C.player;
-    if (this.down) return 0;
+    if (this.down || pl.hidden) return 0;
     const eye = this.eye(_b);
     const P = pl.chest;
     const dx = P.x - eye.x, dz = P.z - eye.z, dy = P.y - eye.y;
@@ -174,7 +181,8 @@ export class Man {
     let s = 0;
     if (beam > 0) s = Math.max(s, 0.6 + 0.4 * beam);
     if (inView && lit > 0.2) s = Math.max(s, Math.min(1, (lit - 0.1) * 1.4));
-    if (inView && d < TUNE.nearDark) s = Math.max(s, (pl.crouch ? 0.55 : 0.8) * (1 - d / TUNE.nearDark) + 0.2);
+    const near = this.mode === 'alarm' ? TUNE.nearAlarm : TUNE.nearDark;
+    if (inView && d < near) s = Math.max(s, (pl.crouch ? 0.55 : 0.8) * (1 - d / near) + 0.2);
     if (s <= 0) return 0;
     // a clear line (looked for every 0.1 s)
     this.losT -= dt;
@@ -201,11 +209,12 @@ export class Man {
     // hears it has time to drop or step back into the black; the dark is
     // quicker near him, down to that second)
     const T = Math.max(TUNE.certainLit, (TUNE.certainDark + (TUNE.certainLit - TUNE.certainDark) * litK) * Math.max(0.55, Math.min(1, d / 7)));
-    return s / T;
+    // ([C7] after a scare they are quicker to be sure: more watchful)
+    return s / (T * (1 - TUNE.watchK * Math.min(2, C.watch || 0)));
   }
 
   hear(pos, r, kind) {
-    if (this.down || this.mode === 'alarm') return;
+    if (this.down) return;
     const d = Math.hypot(pos.x - this.pos.x, pos.z - this.pos.z);
     if (d > r) return;
     this.heard = { pos: pos.clone(), kind, d };
@@ -276,7 +285,13 @@ export class Man {
     this.heard = null;
     if (H) this.lastHeard = { kind: H.kind, d: +H.d.toFixed(2), at: [+H.pos.x.toFixed(2), +H.pos.z.toFixed(2)], t: +t.toFixed(2) };
     if (rate > 0) this.lastSeenWhy = this.saw;
-    if (this.mode === 'alarm') { this.alarmStep(dt); return; }
+    if (this.mode === 'alarm') {
+      // ([C7] in the hunt what he sees or hears is where they all run)
+      if (rate > 0) C.spot(pl.feet, t);
+      else if (H) C.spot(H.pos, t, true);
+      this.alarmStep(dt);
+      return;
+    }
     if (this.a >= 1) { C.alarm(this); return; }
 
     // a sound: a footstep turns his head (curious); a crash or a bottle
@@ -460,14 +475,22 @@ export class Man {
     if (this.fixT > F.dur + 0.8) { this.fixing = null; this.resume(); }
   }
 
+  // [C7] the hunt: he runs to where I was last seen or heard (the crew's
+  // `known`, not my feet: out of their sight I am out of their reach) and,
+  // there, sweeps his light round
   alarmStep(dt) {
-    const pl = this.crew.player;
-    this.lookAtPoint(pl.feet);
-    this.lightPitch += (-0.1 - this.lightPitch) * Math.min(1, dt * 4);
+    const K = this.crew.known || this.crew.player.feet;
+    const d = Math.hypot(K.x - this.pos.x, K.z - this.pos.z);
     this.repath = (this.repath || 0) - dt;
-    if (this.repath <= 0) { this.repath = 0.5; this.go(pl.feet.x, pl.feet.z); }
-    const d = Math.hypot(pl.feet.x - this.pos.x, pl.feet.z - this.pos.z);
-    if (d > 1.6) this.follow(dt, TUNE.run); else this.stand();
+    if (this.repath <= 0 || !this.path) { this.repath = 0.5; if (d > 1.0) this.go(K.x, K.z); }
+    if (d > 1.0) {
+      this.lookAtPoint(K);
+      this.follow(dt, TUNE.run);
+    } else {
+      this.stand();
+      this.lookWant = this.fig.yaw + 1.1 * Math.sin(this.modeT * 1.7);
+    }
+    this.lightPitch += (-0.12 - this.lightPitch) * Math.min(1, dt * 4);
     this.turnLook(dt);
   }
 
@@ -483,6 +506,10 @@ export class Man {
     this.c.down = true;
     if (this.lamp) this.lightOff = false;
   }
+
+  // [C7] shot (the loud pass, before they have me): he goes down where he
+  // stands; the shot is heard by the scene
+  shot() { if (this.down) return; this.knockDown(); this.shotDown = true; }
 
   remove() {
     if (this.lamp) this.crew.stage.lamps.release(this.lamp);
@@ -500,6 +527,9 @@ export class Crew {
     this.onAlarm = onAlarm;
     this.onCaught = onCaught;
     this.alarmT = -1;
+    this.known = null; this.knownT = -1;
+    this.watch = 0;
+    this.litAt = null;    // [C7] (the scene's: how lit a point is by the lamps, 0..1)
     this.player = { eye: V(0, 0, 0), head: V(0, 0, 0), chest: V(0, 0, 0), feet: V(0, 0, 0), crouch: false, exposure: 0, lampLit: 0, speed: 0 };
   }
 
@@ -518,15 +548,40 @@ export class Crew {
     return free.map((e) => e.m);
   }
 
+  // [C7] where they think I am: seen (or heard, in the hunt) at p
+  spot(p, t, heard = false) {
+    this.known = (this.known || V(0, 0, 0)).set(p.x, 0, p.z);
+    if (!heard || t - this.knownT > 0.2) this.knownT = t;
+  }
+
   alarm(by) {
     if (this.alarmT >= 0) return;
     this.alarmT = 0;
     this.alarmBy = by;
+    this.caught = false;
+    this.spot(this.player.feet, this.game.time);
     // (for the plays and the report: who, and what he saw)
     this.game.emit('b6:alarm', { by: by.name, saw: by.saw || null, me: this.player.feet.toArray().map((v) => +v.toFixed(2)), t: +this.game.time.toFixed(2) });
     this.sound('whistle', by.eye(V(0, 0, 0)));
-    for (const m of this.men) { if (!m.down) { m.setMode('alarm'); m.a = 1; } }
+    for (const m of this.men) { if (!m.down) { m.setMode('alarm'); m.a = 1; m.path = null; } }
     if (this.onAlarm) this.onAlarm(by);
+  }
+
+  // [C7] lost me: they go to where I was and look, then back to their rounds
+  // - more watchful than before (quicker to be sure)
+  settle() {
+    if (this.alarmT < 0) return;
+    this.alarmT = -1;
+    this.watch = Math.min(2, this.watch + 1);
+    this.game.emit('b6:settle', { t: +this.game.time.toFixed(2), watch: this.watch });
+    const K = this.known;
+    for (const m of this.men) {
+      if (m.down) continue;
+      m.a = 0.35;
+      m.mode = 'curious'; m.setMode('search');
+      if (K) { m.target = K.clone(); m.go(K.x, K.z); } else m.resume();
+    }
+    if (this.onSettle) this.onSettle();
   }
 
   // a thrown bottle broke on him: he turns to where it came from, near sure
@@ -553,7 +608,19 @@ export class Crew {
     if (this.findT <= 0 && this.alarmT < 0) { this.findT = 0.25; this.findDown(t); }
     if (this.alarmT >= 0) {
       this.alarmT += dt;
-      if (this.alarmT >= TUNE.alarmCosh && !this.caught) { this.caught = true; if (this.onCaught) this.onCaught(this.alarmBy); }
+      // (up close with a line on me: the cosh; out of all their sight a
+      // while: they have lost me)
+      if (!this.caught && this.alarmT >= TUNE.coshMin) {
+        const pl = this.player;
+        const G = this.game;
+        const m = this.men.find((q) => {
+          if (q.down || q.mode !== 'alarm' || Math.hypot(q.pos.x - pl.feet.x, q.pos.z - pl.feet.z) > TUNE.coshR) return false;
+          const e = q.eye(_b); _d.subVectors(pl.chest, e); const L = _d.length(); _d.divideScalar(L);
+          return !G.rays.raycast(_a.copy(e).addScaledVector(_d, 0.2), _d, Math.max(0.05, L - 0.4), { anyHit: true });
+        });
+        if (m) { this.caught = true; this.game.emit('b6:cosh', { by: m.name, t: +this.game.time.toFixed(2) }); if (this.onCaught) this.onCaught(m); }
+      }
+      if (!this.caught && this.game.time - this.knownT > TUNE.lostAlarm) this.settle();
     }
   }
 
@@ -562,15 +629,18 @@ export class Crew {
     for (const d of this.men) {
       if (!d.down || d.found) continue;
       const p = _c.set(d.pos.x, 0.35, d.pos.z);
+      const lit = this.litAt ? this.litAt(p.clone()) : 0;
       for (const m of this.men) {
         if (m.down || !(m.mode === 'patrol' || m.mode === 'hold' || m.mode === 'return' || m.mode === 'wait' || m.mode === 'curious')) continue;
         const eye = m.eye(_b);
         const dx = p.x - eye.x, dz = p.z - eye.z, L = Math.hypot(dx, dz);
-        if (L > 9) continue;
+        if (L > 18) continue;
         if (Math.abs(wrap(Math.atan2(dx, dz) - m.look)) > TUNE.viewHalf) continue;
         // (in his beam, or near enough to make out in the dark)
         const inBeam = m.lamp && m.lamp.on && m.lampPos && _d.subVectors(p, m.lampPos).normalize().dot(m.lamp.axis) > Math.cos(TUNE.beamHalf * 1.6);
-        if (!inBeam && L > 4.5) continue;
+        // ([C7] a body in a pool of lamp light is seen from across the floor;
+        // in the dark, only in his beam or at his feet)
+        if (!(inBeam && L <= 9) && !(lit > 0.25 && L <= 18) && L > 2.5) continue;
         _d.subVectors(p, eye); const Ld = _d.length(); _d.divideScalar(Ld);
         if (G.rays.raycast(_a.copy(eye).addScaledVector(_d, 0.25), _d, Math.max(0.05, Ld - 0.6), { anyHit: true })) continue;
         d.found = true;
