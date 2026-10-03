@@ -1,0 +1,65 @@
+{
+ "about": "[C5] Chapter III solved by real input in a second order (the brief's proof: any two orders of search; office_a.json is the first): the picture found first and the ashtray read, then the key on him, the drawer, the pencil, and only then the lamp's chain; the pad, the dial, the envelope, the check. node tools/play.mjs tools/plays/office_b.json",
+ "url": "/?mute=1&start=office",
+ "size": [
+  1280,
+  800
+ ],
+ "out": "shots/play/office_b",
+ "steps": [
+  {
+   "name": "the title, BEGIN at III"
+  },
+  {
+   "until": "G.state === 'title' && !!document.querySelector('#title .opt[data-k=begin]')",
+   "timeout": 60000
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]",
+   "taken": "G.scenes.current && G.scenes.current.id === 'office'",
+   "retries": 4
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'office' && document.pointerLockElement === N.renderer.domElement && G.scenes.fadeK < 0.2",
+   "timeout": 30000
+  },
+  {
+   "expect": "G.scenes.beat === 'corridor' && G.hud.objectiveText === 'Room 304. Ames.'",
+   "label": "the corridor, its line"
+  },
+  {
+   "name": "the chain, played"
+  },
+  {
+   "drive": "tools/lib/c5_office.mjs",
+   "order": [
+    "door",
+    "ames",
+    "picture",
+    "ash",
+    "search",
+    "drawer",
+    "pencil",
+    "lamp",
+    "pad",
+    "dial",
+    "envelope",
+    "check",
+    "stills",
+    "leave"
+   ],
+   "check": "D.fails.length === 0 && D.end.scene === 'gunfight'",
+   "label": "solved in order B, on into IV"
+  },
+  {
+   "expect": "G.save.inventory.includes('check') && G.save.flags.note === 'PIER 9'",
+   "label": "the check in my coat, PIER 9"
+  },
+  {
+   "shot": "a_end"
+  }
+ ]
+}

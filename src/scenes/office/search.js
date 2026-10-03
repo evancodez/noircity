@@ -81,7 +81,7 @@ export function search(ctx, pad, safe) {
     if (d.gone) continue;
     const at = () => d.group.parent.localToWorld(V(d.group.position.x + 0.03, d.y + 0.1, d.z));
     // (R1 open with the pencil in it: the pencil is the thing to take, not the drawer)
-    const h = I.add({ id: 'drawer' + d.id, at, range: 1.5, cone: 0.45, prompt: 'open', when: () => here('ames')() && !D.tip && !(d.id === 'R1' && d.out > 0.5 && !st.pencil), onUse: () => {
+    const h = I.add({ id: 'drawer' + d.id, at, range: 1.8, cone: 0.4, prompt: 'open', when: () => here('ames')() && !D.tip && !(d.id === 'R1' && d.out > 0.5 && !st.pencil), onUse: () => {
       if (d.locked) {
         if (st.key) { d.locked = false; G.sfx.play('c5_unlock', at()); on('unlocked'); O.drawer(d, true); return; }
         G.sfx.play('c5_locked', at()); st.tried[d.id] = true;
@@ -108,7 +108,7 @@ export function search(ctx, pad, safe) {
   O.cabinets.forEach((c, ci) => c.drawers.forEach((d) => {
     const at = () => c.group.localToWorld(V(0, d.y + 0.2, d.group.position.z - 0.02));
     const room = c.x > 0 ? 'ames' : 'outer';
-    const h = I.add({ id: 'cab' + d.id, at, range: 1.5, cone: 0.32, prompt: 'open', when: here(room), onUse: () => { O.drawer(d, d.target < 0.5); if (d.target > 0.5) touch(); } });
+    const h = I.add({ id: 'cab' + d.id, at, range: 1.8, cone: 0.3, prompt: 'open', when: here(room), onUse: () => { O.drawer(d, d.target < 0.5); if (d.target > 0.5) touch(); } });
     ctx.onStep(() => { h.prompt = d.target > 0.5 ? 'shut' : 'open'; });
     void ci;
   }));
