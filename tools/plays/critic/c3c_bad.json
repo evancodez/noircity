@@ -1,0 +1,18 @@
+{
+ "about": "Critic (C3c): from the title, BEGIN at the tail, the bad hands (src/scenes/tail/bot.js 'bad': slow, wrong keys now and then, learning a little each try) through tools/lib/c3_tail.mjs, to the pier or 8 minutes: the fails (each with its warning and its word), never stuck. NOIR_PORT=5343 node tools/play.mjs tools/plays/critic/c3c_bad.json --size 1440x900",
+ "url": "/?mute=1&start=tail",
+ "size": [1440, 900],
+ "out": "shots/c3c_critic/bad",
+ "steps": [
+  { "until": "G.state === 'title' && !document.getElementById('title').classList.contains('hidden') && !!document.querySelector('#title .opt[data-k=begin]')", "timeout": 40000 },
+  { "wait": 1500 },
+  { "clickOn": "#title .opt[data-k=begin]", "taken": "G.state === 'playing' && document.pointerLockElement === N.renderer.domElement", "retries": 4, "every": 4000 },
+  { "until": "G.scenes.current && G.scenes.current.id === 'tail' && G.controller.mode === 'drive'", "timeout": 45000 },
+  { "eval": "(() => { window.__warns = []; let last = null; setInterval(() => { const C = G.scenes.ctx && G.scenes.ctx.flags && G.scenes.ctx.flags.chase; const w = C && C.kit && C.kit.warning; if (w && w !== last) window.__warns.push(w + '@' + C.t.toFixed(1)); last = w; }, 100); return 'watching warnings'; })()" },
+  { "drive": "tools/lib/c3_tail.mjs", "profile": "bad", "seed": 9, "timeout": 480000,
+    "stop": "G.scenes.current && G.scenes.current.id !== 'tail'",
+    "shots": { "b01_first_fail": "(window.__tailFails || []).length >= 1" } },
+  { "eval": "JSON.stringify({ scene: G.scenes.current && G.scenes.current.id, fails: (window.__tailFails || []).map((f) => f.why + ' ' + f.phase + '@' + f.t), warns: window.__warns })" },
+  { "expect": "G.scenes.current && G.scenes.current.id === 'warehouse'", "label": "the bad hands get through to the pier in the end" }
+ ]
+}
