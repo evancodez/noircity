@@ -4,6 +4,7 @@ import { allocInkId, markFigure } from '../../../render/layers.js';
 import { lathe, mergeGeos } from '../../../props/lib.js';
 import { PIER, inShed } from '../site.js';
 import { pierMats } from '../kit.js';
+import { buildProp } from '../../../props/index.js';
 
 // Pier 9's light (lane B6). A Lamps (world/Lamps.js) without the block's
 // posts: the pooled real spot lights (the nearest seven lamps that are on;
@@ -251,6 +252,34 @@ export default {
       // planks printed one grey step, never the paper heart the aisles'
       // pools have - the fight is drawn on its white)
       L.hang(name, V(x, y, z), { half, row, strength: name === 'bay' ? 1.7 : 1, drop: name === 'B3' ? PIER.trussY - 0.1 - y - 0.2 : null });
+    }
+    // [C7] the lantern on the post (PIER.lantern): its lens tipped west and
+    // down at the crossing; a lamp of the shed's (seen by the men's rule: a
+    // man in its light is seen), its own glow on the lens while it burns
+    const LT = PIER.lantern;
+    if (LT) {
+      const o = buildProp('lantern', { variant: 'off' });
+      o.rotation.set(0.75, -Math.PI / 2, 0, 'YXZ');
+      o.position.set(LT.x, LT.y - 0.33, LT.z);
+      o.traverse((m) => { if (m.isMesh) { m.castShadow = false; m.userData.noRay = true; } });
+      stage.scene.add(o);
+      o.updateMatrixWorld(true);
+      const lens = (o.userData.lens || V(0, 0.1, 0.11)).clone().applyMatrix4(o.matrixWorld);
+      const beam = V(0, 0, 1).applyQuaternion(o.quaternion).normalize();
+      const M = pierMats();
+      const glowDisc = new THREE.Mesh(new THREE.CircleGeometry(0.05, 20), M.bulb);
+      glowDisc.position.copy(lens).addScaledVector(beam, 0.004);
+      glowDisc.quaternion.setFromUnitVectors(V(0, 0, 1), beam);
+      glowDisc.userData.noRay = true;
+      stage.scene.add(glowDisc);
+      const lamp = L.addCustom({ head: lens.clone(), axis: beam.clone(), height: 3.6, half: 0.62, real: true, bulb: glowDisc, fadeEnd: 0.85, edgeSoft: 0.5, strength: 0.85, tag: 'hang' });
+      if (lamp.light) { lamp.light.intensity = 70; lamp.light.angle = 0.68; lamp.light.penumbra = 0.5; lamp.light.distance = 6; }
+      lamp.entry.range = 3.8;
+      Object.assign(lamp, { name: 'lantern', row: 'L', prop: o, at: V(LT.x - 0.05, LT.y - 0.3, LT.z) });
+      lamp.base = { cone: lamp.coneBase, light: lamp.light ? lamp.light.intensity : 0 };
+      L.byName.set('lantern', lamp);
+      L.rows.set('L', [lamp]);
+      L.lantern = lamp;
     }
     return L;
   },

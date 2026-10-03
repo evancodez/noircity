@@ -17,6 +17,7 @@
 //   { "expect": "expr" }                 must be true (PASS / FAIL)
 //   { "eval": "expr" }                   run it, print the result
 //   { "walk": [[x, z], ...], "timeout": ms }   walk the points by real input: the
+//                                        ([C7] "into": true: meant to be stopped - a wall, a fence)
 //                                        mouse turns him toward the next, W held
 //   { "clickOn": "css selector" }        a click at the centre of that element
 //                                        ([R2-H] "taken": "expr", "retries": 4, "every": 3500: clicked again until expr is true)
@@ -463,6 +464,9 @@ try {
       if (S.check) { const ok = new Function('D', `return (${S.check});`)(r) === true; check(S.label || S.check, ok, ok ? '' : JSON.stringify(r)); }
     }
     // (a walk's points may be an expression: where the fight left him)
+    // ([C7] "into": true - a walk into a wall, a fence, a car: it is meant to
+    // be stopped short; the expect after it says where)
+    else if (S.walk && S.into) { const pts = typeof S.walk === 'string' ? await js(S.walk) : S.walk; const ok = await walk(pts, S.timeout ?? 30000); log(`walk into ${JSON.stringify(pts)}: ${ok ? 'reached (nothing stopped it)' : 'stopped'}`); }
     else if (S.walk) { const pts = typeof S.walk === 'string' ? await js(S.walk) : S.walk; const ok = await walk(pts, S.timeout ?? 30000); check(`walk ${JSON.stringify(pts)}`, ok); if (!ok && S.stop !== false) break; }
     else if (S.clickOn) {
       const r = await js(`(() => { const e = document.querySelector(${JSON.stringify(S.clickOn)}); if (!e) return null; const b = e.getBoundingClientRect(); return [b.left + b.width / 2, b.top + b.height / 2]; })()`);

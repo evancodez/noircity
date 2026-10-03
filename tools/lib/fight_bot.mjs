@@ -105,7 +105,8 @@ export default async function drive({ js, keyDown, keyUp, mouse, log, sleep, W, 
         if (fights.length >= nFights) break;
         // (begun again, as a chapter retry would: the lesson's beat)
         await sleep(1500);
-        await js(`(G.scenes.go('fight', { beat: 'lesson', fade: 'black', card: false }), 1)`);
+        // [C7] (another chapter's fight: opts.again, the expression that begins it again)
+        await js(opts.again || `(G.scenes.go('fight', { beat: 'lesson', fade: 'black', card: false }), 1)`);
         for (let k = 0; k < 100; k++) { await sleep(100); if ((await js('G.brawl.active && !G.scenes.trans')) === true) break; }
         plans = new Map(); downsSeen = 0;
         continue;

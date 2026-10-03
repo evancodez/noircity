@@ -1,0 +1,14 @@
+{
+ "about": "[C7] proof 3 of WAVE_C §7 for VII's fist fight (?start=warehouse.fight): a player who uses what II taught (reads the dodge cue on his hook and what he throws, slips toward the light, punishes the opening with a loaded punch, jabs the side he drops: tools/lib/fight_bot.mjs 'good') wins twice in a row (the second from the fight's beat again, as a retry), each in the length of a second fight. node tools/play.mjs tools/plays/pier_fight_good.json",
+ "url": "/?mute=1&start=warehouse.fight",
+ "size": [1280, 800],
+ "out": "shots/play/pier_fight_good",
+ "steps": [
+  { "until": "G.state === 'title' && !document.getElementById('title').classList.contains('hidden')", "timeout": 30000 },
+  { "wait": 1500 },
+  { "clickOn": "#title .opt[data-k=begin]", "taken": "G.state !== 'title'", "retries": 5, "every": 4000 },
+  { "until": "G.scenes.current && G.scenes.current.id === 'warehouse' && G.brawl.active", "timeout": 60000 },
+  { "drive": "tools/lib/fight_bot.mjs", "profile": "good", "fights": 2, "again": "(G.scenes.go('warehouse', { beat: 'fight', fade: 'black', card: false }), 1)", "timeout": 700000, "check": "D.fights.length === 2 && D.fights.every((f) => f.won && f.downs <= 1 && f.time >= 30 && f.time <= 200)", "label": "the taught player wins twice in a row" },
+  { "eval": "G.brawl.stats.cues && { shown: G.brawl.stats.cues.shown, right: G.brawl.stats.cues.right, wrong: G.brawl.stats.cues.wrong }" }
+ ]
+}

@@ -79,6 +79,21 @@ export default {
     railC(landE.x0, landE.z1, landE.x1, landE.z1);  // the east landing's front
     railC(landE.x0, Z.z1, landE.x0, landE.z1);      // the east landing's west side
     kit.addMerged(rail, M.iron, { cast: true });
+    // [C7] the catwalk's kickboards: planks along its edge to the height of
+    // a crouched man (the gun kit's wood: low cover, risen over with RMB,
+    // chewed by their rounds), in sections a few boards long
+    {
+      const x0 = landW.x1 + 0.05, x1 = landE.x0 - 0.05, n = 6;
+      for (let i = 0; i < n; i++) {
+        kit.piece();
+        const a0 = x0 + (x1 - x0) * i / n, a1 = x0 + (x1 - x0) * (i + 1) / n - 0.01;
+        const geos = [];
+        for (let k = 0; k < 4; k++) geos.push(kit.box(a0, a1, Y + 0.03 + k * 0.21, Y + 0.03 + k * 0.21 + 0.195, Z.z1 - 0.04, Z.z1 + 0.01));
+        const kb = kit.add(mergeGeos(geos), M.plankDoor, { cast: true });
+        kb.name = 'kickboard' + i;
+        kb.userData.cover = { kind: 'wood', hp: 14, section: false, name: 'kickboards' };
+      }
+    }
 
     // ---- the stairs: two stringers, open treads, a handrail each side
     const stairs = (x0, x1, zc, w) => {
@@ -149,7 +164,9 @@ export default {
     const BP = backGlow.getAttribute('position');
     for (let i = 0; i < BP.count; i++) { const dx = BP.getX(i) + 0.8, dy = BP.getY(i) - (oy0 + 1.5); const v = Math.max(0.05, 1 - Math.hypot(dx / 4.4, dy / 2.4)); col[i * 3] = col[i * 3 + 1] = col[i * 3 + 2] = Math.pow(v, 1.4); }
     backGlow.setAttribute('color', new THREE.BufferAttribute(col, 3));
-    const glowMat = M.glow('officeBack', 1.3, { vertexColors: true });
+    // ([C7] not fogged: the one warm window, seen across the black shed
+    // from the side door - the chapter's first frame is the goal)
+    const glowMat = M.glow('officeBack', 1.3, { vertexColors: true, fog: false });
     const back = kit.add(backGlow, glowMat, { cast: false, noRay: true });
     back.name = 'officeBack';
     // the desk, a chair, a cabinet, a coat stand, the desk lamp
@@ -190,12 +207,45 @@ export default {
     slatsG.push(kit.box(wx0, wx1, wy1 - 0.06, wy1, fz - 0.15, fz - 0.09));
     const slats = kit.add(mergeGeos(slatsG), M.blind, { cast: true, noRay: true });
     slats.name = 'blinds';
-    // the door: dark planks, a lit glass panel in its top half
+    // the door: dark planks, a lit glass panel in its top half ([C7] on its
+    // hinge at the west jamb: it opens into the office - api.officeDoor)
     kit.piece();
-    const dg = [kit.box(D.x0 + 0.02, D.x1 - 0.02, oy0, oy0 + 2.13, fz - 0.07, fz - 0.03)];
-    const doorM = kit.add(mergeGeos(dg), M.plankDoor, { cast: true });
+    const hx = D.x0 + 0.02, hz = fz - 0.05;
+    const doorPivot = new THREE.Group();
+    doorPivot.name = 'officeDoor';
+    doorPivot.position.set(hx, 0, hz);
+    g.add(doorPivot);
+    const dg = [kit.box(D.x0 + 0.02, D.x1 - 0.02, oy0, oy0 + 2.13, fz - 0.07, fz - 0.03).translate(-hx, 0, -hz),
+      // (a knob on each face)
+      new THREE.SphereGeometry(0.03, 8, 6).translate(D.x1 - 0.12 - hx, oy0 + 1.0, fz - 0.0 - hz), new THREE.SphereGeometry(0.03, 8, 6).translate(D.x1 - 0.12 - hx, oy0 + 1.0, fz - 0.1 - hz)];
+    const doorM = kit.add(mergeGeos(dg), M.plankDoor, { cast: true, parent: doorPivot });
     kit.piece();
-    const pane = kit.add(new THREE.PlaneGeometry(D.x1 - D.x0 - 0.24, 0.7).translate((D.x0 + D.x1) / 2, oy0 + 1.55, fz - 0.025), M.glow('officePane', 0.5), { cast: false, noRay: true });
+    const pane = kit.add(new THREE.PlaneGeometry(D.x1 - D.x0 - 0.24, 0.7).translate((D.x0 + D.x1) / 2 - hx, oy0 + 1.55, fz - 0.025 - hz), M.glow('officePane', 0.5), { cast: false, noRay: true, parent: doorPivot });
+
+    // [C7] the back door (the Cardinal's way out, down the outside stair to
+    // his car): a plank leaf in the back wall west of the desk, black
+    // behind it when it opens
+    kit.piece();
+    const BD = { x0: -2.15, x1: -1.35, h: 2.02 }, bz = O.z0 + 0.3;
+    kit.add(new THREE.PlaneGeometry(BD.x1 - BD.x0, BD.h).translate((BD.x0 + BD.x1) / 2, oy0 + BD.h / 2, bz - 0.015), new THREE.MeshBasicMaterial({ color: 0x000000 }), { cast: false, noRay: true });
+    const backPivot = new THREE.Group();
+    backPivot.position.set(BD.x0, 0, bz);
+    g.add(backPivot);
+    kit.add(mergeGeos([kit.box(0, BD.x1 - BD.x0, oy0, oy0 + BD.h, 0, 0.04), new THREE.SphereGeometry(0.03, 8, 6).translate(BD.x1 - BD.x0 - 0.1, oy0 + 1.0, 0.06)]), M.plankDoor, { cast: false, parent: backPivot });
+    kit.add(kit.box(BD.x0 - 0.06, BD.x1 + 0.06, oy0 + BD.h, oy0 + BD.h + 0.06, bz - 0.02, bz + 0.03), M.iron, { cast: false });
+
+    // [C7] the desk's drawer (its right pedestal, facing the room) and the
+    // box of shells in it
+    kit.piece();
+    const drawer = new THREE.Group();
+    drawer.name = 'deskDrawer';
+    g.add(drawer);
+    const dr = { x0: 0.97, x1: 1.23, y0: oy0 + 0.5, y1: oy0 + 0.68, z0: -44.15, z1: -43.43 };
+    kit.add(mergeGeos([kit.box(dr.x0, dr.x1, dr.y0, dr.y0 + 0.02, dr.z0, dr.z1), kit.box(dr.x0, dr.x0 + 0.02, dr.y0, dr.y1 - 0.02, dr.z0, dr.z1), kit.box(dr.x1 - 0.02, dr.x1, dr.y0, dr.y1 - 0.02, dr.z0, dr.z1),
+      kit.box(dr.x0 - 0.01, dr.x1 + 0.01, dr.y0, dr.y1, dr.z1 - 0.025, dr.z1 + 0.005), new THREE.SphereGeometry(0.018, 8, 6).translate((dr.x0 + dr.x1) / 2, (dr.y0 + dr.y1) / 2, dr.z1 + 0.02)]), M.crateDark, { cast: false, parent: drawer });
+    kit.piece();
+    const shells = kit.add(mergeGeos([kit.box(1.03, 1.17, dr.y0 + 0.02, dr.y0 + 0.075, -43.82, -43.66)]), M.letter, { cast: false, parent: drawer });
+    shells.name = 'shellsBox';
     // the light through the blinds on the catwalk: bars on the boards
     const barsMat = new THREE.ShaderMaterial({
       name: 'PierBlindLight', transparent: true, depthWrite: false, blending: THREE.AdditiveBlending,
@@ -217,7 +267,7 @@ export default {
     g.add(barsQ);
 
     // ---- the level: surfaces, and the walls that belong to it
-    const api = { group: g, up: false, stairsAt, landW, landE, posts, slats, door: doorM, pane, barsQ, back };
+    const api = { group: g, up: false, stairsAt, landW, landE, posts, slats, door: doorM, pane, barsQ, back, drawer, shells, backPivot };
     const onUp = (x, z) => (x > Z.x0 && x < Z.x1 && z > Z.z0 && z < Z.z1) || (x > landW.x0 && x < landW.x1 && z >= Z.z1 - 0.01 && z < landW.z1) || (x > landE.x0 && x < landE.x1 && z >= Z.z1 - 0.01 && z < landE.z1);
     api.onUp = onUp;
     api.upSurface = (x, z) => { const s = stairsAt(x, z); return s !== undefined ? s : onUp(x, z) ? Y : 0; };
@@ -229,9 +279,56 @@ export default {
     });
     // (up: the railings and the office's walls; down: the posts under it)
     const upBoxes = railsUp.map((r) => ({ cx: r.cx, cz: r.cz, hx: r.hx, hz: r.hz, angle: 0, c: 1, s: 0, tag: 'rail' }));
-    const ob = (x0, x1, z0, z1) => upBoxes.push({ cx: (x0 + x1) / 2, cz: (z0 + z1) / 2, hx: (x1 - x0) / 2, hz: (z1 - z0) / 2, angle: 0, c: 1, s: 0, tag: 'office' });
-    ob(O.x0 - 0.12, D.x0, fz - 0.14, fz + 0.02); ob(D.x1, O.x1 + 0.12, fz - 0.14, fz + 0.02); ob(D.x0, D.x1, fz - 0.14, fz + 0.02);
+    const ob = (x0, x1, z0, z1) => { const b = { cx: (x0 + x1) / 2, cz: (z0 + z1) / 2, hx: (x1 - x0) / 2, hz: (z1 - z0) / 2, angle: 0, c: 1, s: 0, tag: 'office' }; upBoxes.push(b); return b; };
+    ob(O.x0 - 0.12, D.x0, fz - 0.14, fz + 0.02); ob(D.x1, O.x1 + 0.12, fz - 0.14, fz + 0.02);
+    const doorBox = ob(D.x0, D.x1, fz - 0.14, fz + 0.02);
     ob(O.x0 - 0.14, O.x0, O.z0, fz); ob(O.x1, O.x1 + 0.14, O.z0, fz);
+    // [C7] the desk, the cabinet, the coat stand and the back wall inside
+    ob(-1.22, 1.32, -44.32, -43.38); ob(2.18, 2.92, -44.72, -44.08); ob(-2.85, -2.25, -43.95, -43.35); ob(O.x0, O.x1, O.z0, O.z0 + 0.3);
+    // [C7] the office door on its hinge (k 0 shut .. 1 open into the room):
+    // its leaf is a wall only while it is shut
+    api.officeDoor = {
+      k: 0,
+      set(k) {
+        this.k = k;
+        doorPivot.rotation.y = 1.45 * k;
+        doorPivot.updateMatrixWorld(true);
+        const i = upBoxes.indexOf(doorBox);
+        if (k > 0.3 && i >= 0) { upBoxes.splice(i, 1); const j = C.boxes.indexOf(doorBox); if (j >= 0) C.boxes.splice(j, 1); }
+        if (k <= 0.3 && i < 0) { upBoxes.push(doorBox); if (api.up && !C.boxes.includes(doorBox)) C.boxes.push(doorBox); }
+      },
+    };
+    api.backDoor = { set(k) { backPivot.rotation.y = -1.35 * k; backPivot.updateMatrixWorld(true); } };
+    // [C7] the far stairs' gate at their top: an iron gate on the landing,
+    // folded back against its front rail (open), or across the stairs with a
+    // chain through it (shut: the Cardinal's man locks up as they leave)
+    kit.piece();
+    const gateP = new THREE.Group();
+    gateP.position.set(SE.top - 0.02, Y, SE.z + SE.w / 2 - 0.04);
+    g.add(gateP);
+    const gw = SE.w - 0.1, gb = [];
+    for (const yy of [0.12, 0.98]) gb.push(new THREE.BoxGeometry(0.04, 0.04, gw).translate(0, yy, -gw / 2));
+    for (let i = 0; i <= 7; i++) gb.push(new THREE.CylinderGeometry(0.014, 0.014, 0.98, 6).translate(0, 0.55, -gw * i / 7));
+    kit.add(mergeGeos(gb), M.iron, { cast: true, parent: gateP });
+    const chainG = [];
+    for (let i = 0; i < 7; i++) chainG.push(new THREE.TorusGeometry(0.03, 0.008, 4, 8).rotateY(i % 2 ? Math.PI / 2 : 0).translate(0.02, 0.6 - i * 0.05, -gw + 0.02));
+    chainG.push(new THREE.BoxGeometry(0.05, 0.07, 0.03).translate(0.03, 0.28, -gw + 0.02));
+    const chainM = kit.add(mergeGeos(chainG), M.iron, { cast: false, parent: gateP });
+    const gateBox = { cx: SE.top, cz: SE.z, hx: 0.07, hz: SE.w / 2 + 0.02, angle: 0, c: 1, s: 0, tag: 'gate' };
+    api.gateE = {
+      k: 0,
+      set(k) {
+        this.k = k;
+        gateP.rotation.y = (1 - k) * Math.PI / 2;
+        gateP.updateMatrixWorld(true);
+        chainM.visible = k > 0.98;
+        const i = C.boxes.indexOf(gateBox);
+        if (k > 0.5 && i < 0) C.boxes.push(gateBox);
+        if (k <= 0.5 && i >= 0) C.boxes.splice(i, 1);
+      },
+    };
+    api.gateE.set(0);
+    api.drawerAt = { set(k) { drawer.position.z = 0.3 * k; drawer.updateMatrixWorld(true); } };
     // (the level's own back wall up there: the shed's is a wall at both levels)
     const downCircles = posts.map((x) => ({ x, z: Z.z1 - 0.15, r: 0.16, tag: 'post' }));
     // (and the stores stacked under it, parts/stacks.js)

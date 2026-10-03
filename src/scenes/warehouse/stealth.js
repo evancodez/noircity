@@ -99,8 +99,17 @@ export class Stealth {
   step(dt) {
     const G = this.G, C = G.controller, H = G.player.hands;
     const S = C.sneak;
-    // C: crouch (taught once, by the scene's prompt)
-    if (S && G.pressed('KeyC') && this.coshT < 0) { S.crouch = !S.crouch; G.sfx.play('crouch', null, {}, { send: false, gain: 0.5 }); if (S.crouch) this.taught.crouch = true; }
+    // C: crouch (taught once, by the scene's card); [C7] Ctrl held: low while
+    // it is held (the rulebook's two ways to get low, WAVE_C §2)
+    if (S && this.coshT < 0 && !C.frozen) {
+      const ctrl = G.held('ControlLeft') || G.held('ControlRight');
+      let flip = G.pressed('KeyC');
+      if (ctrl && !this.ctrlWas && !S.crouch) { flip = true; this.ctrlLow = true; }
+      if (!ctrl && this.ctrlWas && this.ctrlLow && S.crouch) { flip = true; }
+      if (!ctrl) this.ctrlLow = false;
+      this.ctrlWas = ctrl;
+      if (flip) { S.crouch = !S.crouch; G.sfx.play('crouch', null, {}, { send: false, gain: 0.5 }); if (S.crouch) this.taught.crouch = true; }
+    }
     // what the crew sees of me
     const eye = G.eye;
     const E = G.exposure.player.value;
@@ -110,7 +119,9 @@ export class Stealth {
     P.eye.copy(eye); P.head.copy(eye);
     P.chest.copy(eye).setY(eye.y - (S && S.crouch ? 0.25 : 0.42));
     P.feet.copy(this.feet);
-    P.crouch = !!(S && S.crouch); P.exposure = E; P.speed = S ? S.speed : 0;
+    // ([C7] the loud pass is the gun's mode: its crouch and its pace)
+    P.crouch = S ? !!S.crouch : (C.crouchK || 0) > 0.5; P.exposure = E; P.speed = S ? S.speed : Math.hypot(C.vel.x, C.vel.z);
+    if (!S) P.chest.copy(eye).setY(eye.y - (P.crouch ? 0.25 : 0.42));
     P.lampLit = this.lampLit(P.head, P.chest);
     // the hands: how lit they print (a quick ease: the light on them is
     // the light on me, 0.15 s behind as the exposure is)
@@ -141,10 +152,18 @@ export class Stealth {
         if (!G.held('Mouse0')) this.throw();
         else { this.aimQ = (this.aimQ || new THREE.Quaternion()).copy(G.camera.quaternion); this.aimP = (this.aimP || V(0, 0, 0)).copy(G.camera.position); this.drawArc(); }
       }
-    } else if (G.pressed('Mouse0') && !busy && this.G.time > this.coatT) {
+    } else if (S && G.pressed('Mouse0') && !busy && this.G.time > this.coatT && !G.player.weapons.active) {
+      // [C7] the revolver is empty (the last rounds went into his car on the
+      // river road): the hand to the coat, the hammer falls on nothing, the
+      // gun back under the arm - the reason for quiet, shown
       this.coatT = this.G.time + 1.2;
       H.play('sn_coat');
       G.sfx.play('pocket', null, {}, { send: false });
+      if (!this.gunGone) {
+        G.sfx.play('revDry', null, {}, { send: false, gain: 0.9, delay: 0.32 });
+        if (G.hud.say) G.hud.say('Empty.', 1.6);
+        G.counters.dry = (G.counters.dry || 0) + 1;
+      }
     }
     if (!this.aiming) this.arc.group.visible = false;
     // bottles in the air
@@ -379,13 +398,14 @@ export class Stealth {
     this.teachThrow = false;
     G.player.hands.play('sn_cosh');
   }
+  // [C7] the blow, then the kit's fail (game.fail: its black, its words, the
+  // checkpoint) - no black of our own
   coshStep(dt) {
     const G = this.G;
     const t0 = this.coshT;
     this.coshT += dt;
     if (t0 < 0.07 && this.coshT >= 0.07) { G.sfx.play('blow', null, {}, { send: false, gain: 1.2 }); G.controller.shake(0.8, 0); }
-    if (t0 < 0.3 && this.coshT >= 0.3) G.hud.fade(1);
-    if (t0 < 1.1 && this.coshT >= 1.1 && this.onCoshDone) { const f = this.onCoshDone; this.onCoshDone = null; f(); }
+    if (t0 < 0.22 && this.coshT >= 0.22 && this.onCoshDone) { const f = this.onCoshDone; this.onCoshDone = null; f(); }
   }
 }
 

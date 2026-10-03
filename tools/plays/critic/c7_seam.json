@@ -1,0 +1,27 @@
+{
+ "about": "[C7 critic] the seam from VI: ?start=tail.pier, my car put in the painted bay by the gate (an eval: the drive itself is lane C3's), stopped; E by real input; frames across the cut into VII: a jump? a black? the card small?",
+ "url": "/?mute=1&start=tail.pier",
+ "size": [1440, 900],
+ "out": "shots/critic/c7_seam",
+ "steps": [
+  { "until": "G.state === 'title' && !document.getElementById('title').classList.contains('hidden') && !!document.querySelector('#title .opt[data-k=begin]')", "timeout": 40000 },
+  { "wait": 1500 },
+  { "clickOn": "#title .opt[data-k=begin]", "taken": "G.state === 'playing'", "retries": 4, "every": 4000 },
+  { "until": "G.scenes.current && G.scenes.current.id === 'tail' && G.scenes.ctx.flags.chase && G.scenes.ctx.flags.chase.phase === 'c' && !G.scenes.fadeK", "timeout": 45000 },
+  { "wait": 1500 },
+  { "eval": "(G.scenes.ctx.flags.chase.my.place(new N.THREE.Vector3(133, 0, 182), Math.PI, 0), 1)" },
+  { "wait": 1200 },
+  { "until": "G.hud.promptShown.includes('get out')", "timeout": 6000 },
+  { "shot": "s00_parked" },
+  { "key": "KeyE" },
+  { "wait": 700 },
+  { "shot": "s01_door" },
+  { "until": "G.scenes.current && G.scenes.current.id === 'warehouse'", "timeout": 10000 },
+  { "shot": "s02_cut" },
+  { "eval": "JSON.stringify({ trans: !!G.scenes.trans, beat: G.scenes.beat, card: document.body.innerText.slice(0, 200) })" },
+  { "wait": 900 },
+  { "shot": "s03_cut_plus" },
+  { "wait": 2000 },
+  { "shot": "s04_cut_plus3" }
+ ]
+}

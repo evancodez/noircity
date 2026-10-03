@@ -81,7 +81,13 @@ export const FM_THINGS = {
 };
 // ([R2-E round 2] 136 -> 146: ten seeds of the human-paced autoplay won in 41
 // to 71 s, four of them under the brief's 50)
-export const FOREMAN = { name: 'THE FOREMAN', hp: 146 };
+// ([C7] after the critic: 146 -> 260. The second fist fight of the game is
+// asked to be harder than Mack's (116) and two to three minutes. Measured
+// (C7.md), one run each: the play tool's first-timer hands won in 85 s at
+// 146 (Mack: 88 s of fighting with the same hands), 113 s at 230, 84 s at
+// 220, 112 s at 260; fight_bot's 'good' 66 and 85 s at 260 (Mack 57 - 66);
+// C4's medium hands 304 s with 9 downs at 260 (Mack 181 s))
+export const FOREMAN = { name: 'THE FOREMAN', hp: 260 };
 
 // where the fight finds us (a retry, a jump): him toward the doors, me off
 // the stairs' foot
