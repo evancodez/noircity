@@ -94,7 +94,10 @@ export function drawGuestCheck(g, W, H, lines = [], { total = null, sign = 'than
   if (big && big.length) {
     // (a few large words across the ruled lines: legible from a metre)
     const n = big.length, h = Math.min(120 * K, (rows * step) / n * 0.82);
-    big.forEach((t, i) => pencil(g, t, W / 2, top + (rows * step) * (i + 0.72) / n, Math.round(h), { align: 'center', seed: seed + 10 + i, rise: -0.03 }));
+    // [C9] (a word wider than the slip - MIDNIGHT ran off both its edges - is
+    // written smaller to fit inside its margins)
+    const fit = (t) => { g.font = `bold ${Math.round(h)}px ${HAND}`; const w = g.measureText(t).width * 1.06; return w > W - 64 * K ? Math.round(h * (W - 64 * K) / w) : Math.round(h); };
+    big.forEach((t, i) => pencil(g, t, W / 2, top + (rows * step) * (i + 0.72) / n, fit(t), { align: 'center', seed: seed + 10 + i, rise: -0.03 }));
   } else {
     lines.forEach((ln, i) => {
       const [item, price] = String(ln).split('|');
