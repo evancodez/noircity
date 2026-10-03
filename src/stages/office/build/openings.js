@@ -3,12 +3,12 @@ import { LAYER } from '../../../render/layers.js';
 import { makeGlassMaterial } from '../../../render/glass.js';
 import { mergeGeos, slab, lathe } from '../../../props/lib.js';
 import { makeFrosted } from './frosted.js';
-import { FLOOR, CEIL, ROOM, CORR, DOOR, SIDE, DOORS, STAIRS, LIFT, WIN, ESC, T } from '../plan.js';
+import { FLOOR, CEIL, ROOM, OUTER, CORR, DOOR, SIDE, LOCKED, WIN, WIN305, ESC, T } from '../plan.js';
 
-// The openings: 304's door (hinged, its frosted pane a pane of the glass
-// system, AMES, BOOKKEEPING in gilt), the frosted sidelight beside it, the
-// transom, the corridor's other doors (their offices dark), the stairs'
-// door ajar, the lift's cage; the street window (two sashes of wet glass,
+// The openings ([C5] wave C: the suite's own doors are the gun kit's, in
+// build/door.js): the frosted sidelight beside the suite's door, the transom
+// over it, the corridor's locked doors (their offices dark), 305's street
+// window with its blind let down; the street window (two sashes of wet glass,
 // the venetian blind hung inside it: its slats one by one), the fire-escape
 // window (its lower sash half up, the curtain that moves in the air from it).
 const V = (x, y, z) => new THREE.Vector3(x, y, z);
@@ -72,127 +72,82 @@ export function buildOpenings(kit, mats, stage) {
   const G = stage.glass;
   const out = {};
 
-  // ---- 304's door --------------------------------------------------------------------------
+  // ---- [C5] the suite's sidelight and transom (the door itself is a kit door: build/door.js) ----
   kit.piece();
-  const W = DOOR.z1 - DOOR.z0 - 0.012;
-  const hinge = new THREE.Group();
-  hinge.position.set(-0.07, FLOOR, DOOR.z0 + 0.006);
-  kit.g.add(hinge);
-  const leaf = kit.add(M(leafGeos(W, DOOR.h - 0.01, DOOR.glass)), mats.door, { parent: hinge, name: 'door304' });
-  kit.add(M(knobGeos(W)), mats.brass, { parent: hinge, cast: false });
-  // the splintered lock: the strike torn out of the jamb (a jag of wood on the corridor side)
-  {
-    const sp = [];
-    for (let i = 0; i < 7; i++) sp.push(new THREE.BoxGeometry(0.012 + (i % 3) * 0.006, 0.05 + (i % 4) * 0.03, 0.01).rotateX((i - 3) * 0.12).translate(-0.02 + (i % 2) * 0.012, 0.96 + i * 0.022, DOOR.z1 + 0.012 + (i % 3) * 0.004));
-    kit.add(M(sp), mats.deskTop, { cast: false });
-  }
-  const frost = makeFrosted({ w: W - 0.24, h: DOOR.glass[1] - DOOR.glass[0], text: ['AMES', 'BOOKKEEPING'], seed: 3 });
-  frost.userData.glow(0.14, 1.15);
-  // (round 2: lit from the corridor's globe - white toward it, a grey away from it)
-  frost.userData.fall({ base: 0.012, peak: 1.3, sigma: 0.85 });
-  const pane = G.addPane({ centre: V(0, (DOOR.glass[0] + DOOR.glass[1]) / 2, W / 2), normal: V(1, 0, 0), w: W - 0.24, h: DOOR.glass[1] - DOOR.glass[0], material: frost, parent: hinge, tag: 'door304', thick: 0.005 });
-  pane.mesh.layers.set(LAYER.WORLD);
-  pane.mesh.userData.noRay = true;
-  pane.mesh.userData.inkId = kit.id;
-  pane.mesh.userData.inkSurface = 'lit';
-  out.door = { hinge, leaf, pane, frost, W, angle: DOOR.open0, target: DOOR.open0, vel: 0, colliderOn: true, local: frosted(pane.mesh) };
-  hinge.rotation.y = DOOR.open0;
-
-  // ---- the sidelight and the transom ----------------------------------------------------------
-  kit.piece();
+  const XW = (CORR.x1 + OUTER.x0) / 2;
   const sw = SIDE.z1 - SIDE.z0, sh = SIDE.y1 - SIDE.y0;
   const sideFrost = makeFrosted({ w: sw, h: sh, text: null, seed: 7 });
   sideFrost.userData.glow(0.14, 1.2);
   sideFrost.userData.fall({ base: 0.012, peak: 1.3, sigma: 0.75 });
-  const side = G.addPane({ centre: V(-0.07, (SIDE.y0 + SIDE.y1) / 2, (SIDE.z0 + SIDE.z1) / 2), normal: V(1, 0, 0), w: sw, h: sh, material: sideFrost, tag: 'sidelight', thick: 0.005 });
+  const side = G.addPane({ centre: V(XW, (SIDE.y0 + SIDE.y1) / 2, (SIDE.z0 + SIDE.z1) / 2), normal: V(1, 0, 0), w: sw, h: sh, material: sideFrost, tag: 'sidelight', thick: 0.005 });
   side.mesh.layers.set(LAYER.WORLD);
   side.mesh.userData.noRay = true;
   side.mesh.userData.inkId = kit.id;
   out.side = { pane: side, frost: sideFrost, local: frosted(side.mesh) };
   // a muntin across the sidelight (two lights, as the period had them)
-  kit.add(new THREE.BoxGeometry(0.05, 0.035, sw).translate(-0.07, SIDE.y0 + sh * 0.5, (SIDE.z0 + SIDE.z1) / 2), mats.trim, { cast: true });
+  kit.add(new THREE.BoxGeometry(0.05, 0.035, sw).translate(XW, SIDE.y0 + sh * 0.5, (SIDE.z0 + SIDE.z1) / 2), mats.trim, { cast: true });
   kit.piece();
   const tw = DOOR.z1 - DOOR.z0, th = DOOR.transom[1] - DOOR.transom[0];
   const trFrost = makeFrosted({ w: tw, h: th, text: ['304'], seed: 11 });
   trFrost.userData.glow(0.16, 1.1);
   trFrost.userData.fall({ base: 0.016, peak: 1.1, sigma: 0.6 });
   const tr = new THREE.Mesh(new THREE.PlaneGeometry(tw, th), trFrost);
-  tr.position.set(-0.07, (DOOR.transom[0] + DOOR.transom[1]) / 2, (DOOR.z0 + DOOR.z1) / 2);
+  tr.position.set(XW, (DOOR.transom[0] + DOOR.transom[1]) / 2, (DOOR.z0 + DOOR.z1) / 2);
   tr.rotation.y = Math.PI / 2;
   tr.userData.inkId = kit.id; tr.userData.noRay = true;
   kit.g.add(tr);
   out.transom = { mesh: tr, frost: trFrost, local: frosted(tr) };
 
-  // ---- the other doors of the corridor --------------------------------------------------------
+  // ---- the corridor's locked doors (a leaf in its frame: they rattle; nothing behind them shows) ----
   out.others = [];
-  for (const [num, z, sideW, name, trade] of DOORS) {
+  for (const [num, z, sideW, name, trade] of LOCKED) {
     kit.piece();
     const g = new THREE.Group();
     const east = sideW === 'E';
-    // (hinged on its south jamb; the leaf's +x face toward the corridor for a west door)
-    g.position.set(east ? -0.07 : CORR.x0 - T / 2, FLOOR, z - 0.475 + 0.006);
+    const x = east ? XW : CORR.x0 - T / 2;
+    g.position.set(x, FLOOR, z - 0.475 + 0.006);
     kit.g.add(g);
-    kit.add(M(leafGeos(0.938, DOOR.h - 0.01, DOOR.glass)), mats.door, { parent: g });
-    kit.add(M(knobGeos(0.938)), mats.brass, { parent: g, cast: false });
+    const leaf = kit.add(M(leafGeos(0.938, DOOR.h - 0.01, DOOR.glass)), mats.door, { parent: g, name: 'locked_' + num });
+    leaf.userData.cover = { kind: 'stone' };
+    kit.add(M(knobGeos(0.938)), mats.brass, { parent: g, cast: false, noRay: true });
     const fm = makeFrosted({ w: 0.7, h: DOOR.glass[1] - DOOR.glass[0], text: [num + '  ' + name, trade], seed: 20 + z });
     fm.userData.glow(0.035, 0.02);
     const m = new THREE.Mesh(new THREE.PlaneGeometry(0.7, DOOR.glass[1] - DOOR.glass[0]), fm);
     m.position.set(0, (DOOR.glass[0] + DOOR.glass[1]) / 2, 0.469);
     // (its front face toward the office behind it: the lettering reads from the corridor)
     m.rotation.y = Math.PI / 2;
-    m.userData.inkId = kit.id;
+    m.userData.inkId = kit.id; m.userData.noRay = true;
     g.add(m);
-    // (the west doors face the other way: turned about their hinge)
+    // (a west door faces the other way: turned about its hinge)
     if (!east) { g.position.z = z + 0.475 - 0.006; g.rotation.y = Math.PI; }
-    out.others.push({ num, group: g, frost: fm, mesh: m, local: frosted(m) });
-    stage.colliders.addBox(east ? -0.07 : CORR.x0 - T / 2, z, 0.06, 0.48, 0, 'wall');
-  }
-  // the stairs' door: ajar, black behind it (the stairwell)
-  {
-    kit.piece();
-    const g = new THREE.Group();
-    g.position.set(CORR.x0 - T / 2, FLOOR, STAIRS.z1 - 0.006);
-    g.rotation.y = Math.PI + 0.55;
-    kit.g.add(g);
-    kit.add(M(leafGeos(STAIRS.z1 - STAIRS.z0 - 0.012, DOOR.h - 0.01, [1.25, 1.75])), mats.door, { parent: g });
-    const gl = new THREE.Mesh(new THREE.PlaneGeometry(0.6, 0.5), mats.glassDark);
-    gl.position.set(0, 1.5, (STAIRS.z1 - STAIRS.z0) / 2); gl.rotation.y = Math.PI / 2;
-    gl.userData.inkId = kit.id; g.add(gl);
-    // the stairwell: a black box behind the wall, a few steps going up into it
-    kit.piece();
-    kit.add(kit.box(CORR.x0 - 2.6, CORR.x0 - T, FLOOR - 0.05, CEIL, STAIRS.z0 - 0.4, STAIRS.z1 + 1.2), mats.black, { cast: false });
-    const steps = [];
-    for (let i = 0; i < 6; i++) steps.push(new THREE.BoxGeometry(1.1, 0.18, 0.28).translate(CORR.x0 - 0.9, FLOOR + 0.09 + i * 0.18, STAIRS.z1 + 0.3 - i * 0.28));
-    kit.add(M(steps), mats.iron);
-    out.stairsDoor = g;
-    stage.colliders.addRegion(CORR.x0 - 2.4, CORR.x0 + 0.8, STAIRS.z0 - 0.3, STAIRS.z1 + 1.0, 'stairwell');
-  }
-  // the lift: a black shaft behind a scissor gate, the floor dial over it
-  {
-    kit.piece();
-    kit.add(kit.box(LIFT.x0 - 0.05, LIFT.x1 + 0.05, FLOOR - 0.5, CEIL + 0.5, CORR.z0 - T - 1.6, CORR.z0 - T), mats.black, { cast: false });
-    const bars = [];
-    const n = 9, w = LIFT.x1 - LIFT.x0, hh = 2.2;
-    for (let i = 0; i < n; i++) {
-      const x = LIFT.x0 + (i + 0.5) * w / n;
-      bars.push(new THREE.BoxGeometry(0.018, hh, 0.012).translate(x, FLOOR + hh / 2, CORR.z0 - 0.04));
-    }
-    // the lattice: the diagonals of the scissor
-    for (let i = 0; i < n - 1; i++) for (let k = 0; k < 4; k++) {
-      const x0 = LIFT.x0 + (i + 0.5) * w / n, x1 = LIFT.x0 + (i + 1.5) * w / n;
-      const y0 = 0.25 + k * 0.5, y1 = y0 + 0.5;
-      const len = Math.hypot(x1 - x0, 0.5);
-      for (const s of [1, -1]) bars.push(new THREE.BoxGeometry(len, 0.012, 0.008).rotateZ(s * Math.atan2(0.5, x1 - x0)).translate((x0 + x1) / 2, (y0 + y1) / 2, CORR.z0 - 0.045));
-    }
-    bars.push(new THREE.BoxGeometry(w + 0.1, 0.05, 0.05).translate((LIFT.x0 + LIFT.x1) / 2, FLOOR + 2.22, CORR.z0 - 0.04));
-    // the floor dial: a half disc, a needle on 3
-    const dial = new THREE.CylinderGeometry(0.2, 0.2, 0.02, 32, 1, false, -Math.PI / 2, Math.PI).rotateX(Math.PI / 2).translate((LIFT.x0 + LIFT.x1) / 2, 2.42, CORR.z0 + 0.01);
-    bars.push(dial);
-    kit.add(M(bars), mats.iron);
-    kit.add(new THREE.BoxGeometry(0.012, 0.16, 0.012).rotateZ(-0.35).translate((LIFT.x0 + LIFT.x1) / 2 + 0.028, 2.49, CORR.z0 + 0.025), mats.steelLight, { cast: false });
-    stage.colliders.addBox((LIFT.x0 + LIFT.x1) / 2, CORR.z0 - 0.04, w / 2 + 0.05, 0.05, 0, 'wall');
+    // (behind it: a dark office's black, a hand's depth past the leaf - a round never shows a void)
+    kit.add(kit.box(east ? OUTER.x0 : CORR.x0 - T - 0.6, east ? OUTER.x0 + 0.6 : CORR.x0 - T, FLOOR, DOOR.h + 0.02, z - 0.5, z + 0.5), mats.black, { cast: false, noRay: true });
+    out.others.push({ num, group: g, leaf, frost: fm, mesh: m, local: frosted(m), centre: V(east ? CORR.x1 : CORR.x0, FLOOR, z), z, east });
+    stage.colliders.addBox(x, z, 0.06, 0.48, 0, 'wall');
   }
 
+  // ---- 305's street window: two sashes, its blind let down and shut (the street's light in its gaps) ----
+  kit.piece();
+  {
+    const x = ROOM.x1 + T * 0.55, z0 = WIN305.z0, z1 = WIN305.z1, y0 = WIN305.y0, y1 = WIN305.y1, ym = (y0 + y1) / 2;
+    const fr = [];
+    for (const [a, b] of [[ym - 0.02, y1], [y0, ym + 0.02]]) {
+      fr.push(new THREE.BoxGeometry(0.045, b - a, 0.05).translate(x, (a + b) / 2, z0 + 0.025));
+      fr.push(new THREE.BoxGeometry(0.045, b - a, 0.05).translate(x, (a + b) / 2, z1 - 0.025));
+      fr.push(new THREE.BoxGeometry(0.045, 0.05, z1 - z0).translate(x, a + 0.025, (z0 + z1) / 2));
+    }
+    kit.add(M(fr), mats.trim, { name: 'window305_sashes' });
+    // (beyond the glass: the night street's glow, a pale card the slats cut into lines)
+    kit.add(new THREE.PlaneGeometry(z1 - z0, y1 - y0).rotateY(-Math.PI / 2).translate(ROOM.x1 + T + 0.05, (y0 + y1) / 2, (z0 + z1) / 2), mats.litDim, { cast: false, noRay: true, name: 'window305_glow' });
+    // the blind: slats nearly shut, a thin line of light between each
+    const sl = [];
+    const n = 34, step = (y1 - y0 - 0.1) / (n - 1);
+    for (let i = 0; i < n; i++) sl.push(new THREE.BoxGeometry(0.05, 0.002, z1 - z0 - 0.06).rotateZ(1.25).translate(ROOM.x1 - 0.075, y1 - 0.07 - i * step, (z0 + z1) / 2));
+    sl.push(new THREE.BoxGeometry(0.07, 0.055, z1 - z0 - 0.02).translate(ROOM.x1 - 0.075, y1 - 0.03, (z0 + z1) / 2));
+    const bm = kit.add(M(sl), mats.blind, { name: 'blind305' });
+    bm.userData.cover = { kind: 'thin' };
+    stage.colliders.addBox(ROOM.x1 + 0.03, (z0 + z1) / 2, 0.06, (z1 - z0) / 2, 0, 'wall');
+  }
   // ---- the street window ------------------------------------------------------------------
   kit.piece();
   {
@@ -294,7 +249,7 @@ function buildBlind(kit, mats, stage) {
   for (const dz of [-0.62, 0, 0.62]) for (const dx of [-0.026, 0.026]) R.push(new THREE.BoxGeometry(0.002, top - bottom + 0.06, 0.012).translate(B.x + dx, (top + bottom) / 2, zc + dz));
   R.push(new THREE.CylinderGeometry(0.0022, 0.0022, 1.3, 5).translate(B.x - 0.04, top - 0.62, WIN.z1 - 0.05));
   R.push(lathe([[0.0001, 0], [0.008, 0.004], [0.009, 0.03], [0.0001, 0.04]], 10).translate(B.x - 0.04, top - 1.3, WIN.z1 - 0.05));
-  kit.add(mergeGeos(R), mats.trim, { name: 'blind_rails' });
+  kit.add(mergeGeos(R), mats.underLit, { name: 'blind_rails' });
   const api = {
     mesh: im, slats, top, bottom, step,
     set(i, o) { const S = slats[i]; if (!S) return; Object.assign(S, o); write(S); im.instanceMatrix.needsUpdate = true; },

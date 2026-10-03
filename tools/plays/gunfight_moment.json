@@ -1,0 +1,28 @@
+{
+ "about": "[C5] after the critic: IV's moment shows its choices - the take gives the view back on his desk with 'E tip the desk over' on it (from where I stand, in front of it), the cards [LMB] fire and [C] get low; E steps me round to its end and heaves it over toward the opening; behind it, C. node tools/play.mjs tools/plays/gunfight_moment.json",
+ "url": "/?mute=1&start=gunfight",
+ "size": [1440, 900],
+ "out": "shots/play/gunfight_moment",
+ "steps": [
+  { "name": "the title, BEGIN at IV" },
+  { "until": "G.state === 'title' && !!document.querySelector('#title .opt[data-k=begin]')", "timeout": 60000 },
+  { "wait": 1500 },
+  { "clickOn": "#title .opt[data-k=begin]", "taken": "G.scenes.current && G.scenes.current.id === 'gunfight'", "retries": 4 },
+  { "until": "G.scenes.current && G.scenes.current.id === 'gunfight' && document.pointerLockElement === N.renderer.domElement", "timeout": 30000 },
+  { "name": "the take, then the moment" },
+  { "until": "G.scenes.ctx && G.scenes.ctx.flags.momentT != null", "timeout": 20000 },
+  { "wait": 600 },
+  { "eval": "JSON.stringify({ eye: [+G.eye.x.toFixed(2), +G.eye.z.toFixed(2)], yaw: +G.controller.yaw.toFixed(2), cur: G.interact.current && G.interact.current.id, card: G.hud.kit.teachCur && G.hud.kit.teachCur.id })" },
+  { "expect": "G.interact.current && G.interact.current.id === 'tip'", "label": "given back on the desk: E tip the desk over, from in front of it" },
+  { "shot": "moment_desk" },
+  { "key": "KeyE" },
+  { "wait": 1600 },
+  { "eval": "JSON.stringify({ eye: [+G.eye.x.toFixed(2), +G.eye.z.toFixed(2)], tip: !!G.stage.part('office').desk.tip, mode: G.controller.mode, frozen: G.controller.frozen })" },
+  { "expect": "!!G.stage.part('office').desk.tip && G.controller.mode === 'gun' && !G.controller.frozen && G.scenes.ctx.flags.go == null", "label": "stepped round, the desk over, before the door" },
+  { "shot": "moment_tipped" },
+  { "walk": [[3.9, 3.3]], "timeout": 4000 },
+  { "key": "KeyC" },
+  { "wait": 800 },
+  { "shot": "moment_low" }
+ ]
+}
