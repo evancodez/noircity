@@ -1,0 +1,10 @@
+{
+  "about": "C2 after the critic's second look: the critic's good hands (tools/plays/critic/c2/hands.mjs, unchanged) on some contests (opts.beats), from the title, four tries each.",
+  "url": "/?mute=1",
+  "size": [1440, 900],
+  "out": "shots/c2fix2/good_some",
+  "steps": [
+    { "wait": 1500 },
+    { "drive": "tools/plays/critic/c2/hands.mjs", "style": "good", "tries": 4, "timeout": 150000, "beats": ["street_rev", "pin", "street_rev"] }
+  ]
+}

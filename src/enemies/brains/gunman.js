@@ -168,17 +168,18 @@ export default {
     const headY = () => h.pos.y + (S.low && S.state !== 'aim' && S.state !== 'fire' ? 1.0 : 1.58) * h.scale;
     const eyeOf = (out = V(0, 0, 0)) => out.set(h.pos.x, headY(), h.pos.z);
     // the point of me he can see (my chest, my head, my belly), or null; and
-    // [C2] after the critic's second look: whether he sees me WHOLE (my chest
-    // or my belly - a man in the open, standing or down) or only my head (up
-    // over cover, round its end). His rules read what he sees, never my
-    // stance: a man low in the open is seen whole; a head over a desk is not
+    // [C2] after the critic's second look: whether he sees me WHOLE - down to
+    // my belly: nothing in front of me, standing or down in the open - or only
+    // the top of me (a head, a chest over a desk or a car's bonnet). His rules
+    // read what he sees, never my stance: low in the open I am seen whole; up
+    // over cover I am not
     const visiblePoint = () => {
       const Kt = kit(), Bd = Kt.playerBody(), e = eyeOf(_e);
-      S.wholeNow = false;
-      if (Kt.see(e, Bd.chest, 0.15)) { S.wholeNow = true; return Bd.chest; }
-      const hd = Kt.see(e, Bd.head, 0.15);
-      if (Kt.see(e, Bd.belly, 0.15)) { S.wholeNow = true; return hd ? Bd.head : Bd.belly; }
-      return hd ? Bd.head : null;
+      const belly = Kt.see(e, Bd.belly, 0.15);
+      S.wholeNow = belly;
+      if (Kt.see(e, Bd.chest, 0.15)) return Bd.chest;
+      if (Kt.see(e, Bd.head, 0.15)) return Bd.head;
+      return belly ? Bd.belly : null;
     };
     const _e = V(0, 0, 0);
     // (a look every 0.1 - 0.15 s: the line, where he last saw me, his aim's trail)

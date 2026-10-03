@@ -46,7 +46,9 @@ export const BEATS = {
   two_ways: {
     // ([C2] after the critic: flankAfter 7 -> 9 - with the men's way of fighting sharpened, the first-timer
     // was flanked behind the desk three tries running)
-    at: [DESK.x + 0.02, DESK.z + 0.1, EAST], gun: 'revolver', tipped: true, crouch: true, max: 2, flankAfter: 9,
+    // ([C2] after the critic's second look: the third man through A2 is the beat's way round - no other is
+    // sent round as well (flankAfter 0, was 9): three ways at once was a wall for the first-timer)
+    at: [DESK.x + 0.02, DESK.z + 0.1, EAST], gun: 'revolver', tipped: true, crouch: true, max: 2, flankAfter: 0,
     obj: 'Three of them. Watch both doors.',
     // ([C2] after the critic's second look: the third man's door, opening at my back, is said as it opens)
     warn: { door: 'The other door! Behind you!' },
@@ -57,7 +59,7 @@ export const BEATS = {
       // ([C2] after the critic's second look - the first-timer lost it 15 tries of 15: the third came in at my back at
       // ~10 s, straight into its frame, while the two at A1 worked their jambs - now he comes a little later, works
       // A2 from its jamb as the others work A1, and his door is said as it opens)
-      { kind: 'pistol', at: { x: -0.5, z: 9.5 }, way: [{ door: 'SD' }, { x: -4.6, z: 4.6, run: true }, { door: 'A2' }], wait: 5.0, door: 'hold' },
+      { kind: 'pistol', at: { x: -0.5, z: 9.5 }, way: [{ door: 'SD' }, { x: -4.6, z: 4.6, run: true }, { door: 'A2' }], wait: 7.0, door: 'hold' },
     ],
     spots: [{ x: DESK.x + 0.02, z: DESK.z + 0.1, yaw: EAST }, { x: -7.25, z: -2.35, yaw: EAST + 0.6 }, { x: -6.0, z: -6.6, yaw: EAST + 0.8 }],
     open: { x: -3.6, z: -2.4 },
