@@ -146,10 +146,23 @@ export default async function drive({ js, turn, keyDown, keyUp, mouse, log, slee
     // the man at the stairs' foot: from behind the stores, at his back
     { name: 'hood1', stage: async (s) => s.z < -38 ? [[3.2, -43.4], [-2.0, -43.4], [-2.0, -41.0]] : [...(await path(-3.2, -43.4)), [-2.0, -43.4], [-2.0, -41.0]],
       stalkIf: (T) => true },
-    // the bay's man: along the strip in the dark, at his back at the bay's mouth
-    // (to the west of the bay's mouth, off the line his torch walks along)
-    { name: 'cal', stage: async (s) => [...(await path(5.0, -38.6)), [7.6, -37.9]],
-      stalkIf: (T) => (T.ri === 2 && T.wait > 0) || (T.ri === 3 && T.mode === 'patrol') },
+    // the bay's man, last: the lantern on the post put out from its dark
+    // side (east of the post), a wait by the next stack's corner out of his
+    // way, then in behind him while he lights it again (his back to aisle B)
+    // (up the east side of aisle B between its lamp's pool and the stacks,
+    // while he walks south down his aisle - the stacks between us)
+    { name: 'cal', goWhen: (T) => T.mode === 'patrol' && T.ri === 0 && T.z > -25,
+      stage: async (s) => [...(s.z < -35 ? [[1.0, -37.6]] : (await path(1.0, -37.6))), [2.1, -34.6], [2.1, -30.2], [2.3, -29.0], [3.95, -28.65], [4.3, -27.75]],
+      lure: async (s) => {
+        const s1 = await read(); if (!s1) return 'again';
+        await face(s1, 3.13, 1.75, -27.8); await sleep(350);
+        const s2 = await read();
+        if (!s2 || !s2.prompt.includes('lantern')) { await walk([[4.15, -27.6]], { limit: 4000 }); const s3 = await read(); if (s3) await face(s3, 3.13, 1.75, -27.8); await sleep(300); const s4 = await read(); if (!s4 || !s4.prompt.includes('lantern')) return false; }
+        await tap('KeyE'); await sleep(1600);
+        const r = await walk([[4.0, -26.2], [2.9, -24.7]], { limit: 8000 });
+        return !(r && r.failing);
+      },
+      stalkIf: (T) => T.mode === 'fix' && T.fixT > 0.3 },
   ];
 
   for (;;) {
@@ -247,6 +260,7 @@ export default async function drive({ js, turn, keyDown, keyUp, mouse, log, slee
       }
       // (a man who turned while I came: wait in the dark again)
       if (Date.now() - out._stalkT > 45000) { out._phase = 2; out._stalkT = Date.now(); }
+      if (H.stalkWhile && !H.stalkWhile(T)) { await setW(false); out._phase = 0; continue; }
       if (/knock him out/.test(s.prompt) && !s.busy) { await setW(false); await sleep(rr(120, 260)); await tap('KeyE'); out.takedowns++; await sleep(1400); continue; }
       if (s.men.some((m) => !m.down && m.name !== H.name && (m.a > 0.18 || m.mode === 'curious')) || beamOnMe({ ...s, men: s.men.filter((m) => m.name !== H.name) })) { await setW(false); await sleep(120); continue; }
       if (T.mode === 'curious' || T.a > 0.15) { await setW(false); await sleep(120); continue; }
@@ -262,7 +276,8 @@ export default async function drive({ js, turn, keyDown, keyUp, mouse, log, slee
       const nxt = p.find(([x, z]) => Math.hypot(x - s.x, z - s.z) > 0.45) || [bx, bz];
       // (a step into a lamp's light while another man is on his feet: not
       // taken - wait for him to come out of it)
-      if (s.men.some((m) => !m.down && m.name !== H.name)) {
+      // (another man near it, or one I can see from here: a man who could see me in it)
+      if (s.men.some((m) => !m.down && m.name !== H.name && (Math.hypot(m.x - nxt[0], m.z - nxt[1]) < 14 || (m.seen && m.L < 25)))) {
         const lit = await js(`window.__c7lit ? window.__c7lit(${nxt[0]}, ${nxt[1]}) : 0`);
         if (lit > 0.15 && s.lit < 0.15) { await setW(false); await sleep(150); continue; }
       }

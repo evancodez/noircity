@@ -90,6 +90,10 @@
    "eval": "JSON.stringify({ disarms: G.brawl.stats.disarms || 0, downs: G.brawl.stats.downs, held: G.brawl.stats.held || [], window: G.brawl.stats.window, time: +G.brawl.stats.time.toFixed(1) })"
   },
   {
+   "expect": "G.brawl.stats.time > 88",
+   "label": "[C7] a longer fight than Mack's with the same hands (88 s of fighting: pier_fight_vs_mack)"
+  },
+  {
    "wait": 1200
   },
   {

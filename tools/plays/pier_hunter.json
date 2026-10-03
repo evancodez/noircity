@@ -9,7 +9,7 @@
   { "clickOn": "#title .opt[data-k=begin]", "taken": "G.state !== 'title'", "retries": 5, "every": 4000 },
   { "until": "G.scenes.current && G.scenes.current.id === 'warehouse' && !G.scenes.trans", "timeout": 30000 },
   { "eval": "(window.LOG = [], G.on('b6:alarm', (e) => LOG.push({ alarm: e.by, me: e.me, t: e.t })), G.on('b6:found', (e) => LOG.push({ found: e.down, by: e.by, t: e.t })), 1)" },
-  { "drive": "tools/lib/c7_pier.mjs", "profile": "hunt", "verbose": 10000, "stop": "G.scenes.beat === 'listen' || G.scenes.beat === 'office'", "timeout": 600000, "check": "D.done && G.scenes.ctx.flags.live.crew.men.every((m) => m.down)", "label": "every man of the quiet pass taken out from behind, at the office window" },
+  { "drive": "tools/lib/c7_pier.mjs", "profile": "hunt", "verbose": 10000, "stop": "G.scenes.beat === 'listen' || G.scenes.beat === 'office'", "timeout": 600000, "check": "D.done && D.takedowns >= 6", "label": "every man of the quiet pass taken out from behind, at the office window" },
   { "eval": "JSON.stringify({ caught: G.counters.caught || 0, takedowns: G.counters.takedowns, log: LOG })" },
   { "until": "G.scenes.beat === 'office'", "timeout": 40000 },
   { "expect": "G.scenes.ctx.flags.live.crew.men.every((m) => m.down)", "label": "the floor all down: at the office" },
