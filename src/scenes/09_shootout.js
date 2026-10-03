@@ -130,8 +130,9 @@ function stage(ctx, b) {
 }
 // each movement's difficulty (the gun kit's three numbers and its flank)
 const FIGHT = {
-  // (two firing at once as lane C2's street; the first fight a little slower to settle)
-  cars: { maxFiring: 2, flankAfter: 13, settleK: 1.2 },
+  // (the street's three firing at once in the first fight - five men; a man
+  // standing at the window holding the trigger was let through it with two)
+  cars: { maxFiring: 3, flankAfter: 13, settleK: 1.2 },
   flank: { maxFiring: 2, flankAfter: 12, settleK: 1.1 },
   el: { maxFiring: 2, flankAfter: 12, settleK: 1.1 },
   saloon: { maxFiring: 2, flankAfter: 0, settleK: 1.1 },

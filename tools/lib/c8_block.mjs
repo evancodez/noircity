@@ -345,6 +345,15 @@ export default async function drive({ js, turn, keyDown, keyUp, mouse, shot, log
         for (const m of visible) lastSeenAt = { x: m.x, y: m.see ? m.y : m.hy - 0.05, z: m.z, t: now };
         const heavy = s.men.find((m) => m.kind === 'rusher' && m.d < 9);
         if (opts.trace && now - (traceT || 0) > opts.trace) { traceT = now; log(`trace ${JSON.stringify({ t: Math.round((now - t0) / 100) / 10, hp: Math.round(s.hp), rk: +s.rk.toFixed(2), x: +s.x.toFixed(1), z: +s.z.toFixed(1), thr: threat && threat.id, ans: answerId, goTo: !!goTo, vis: visible.map((q) => q.id + q.kind[0]), men: s.men.map((q) => q.id + q.kind[0] + ":" + q.st + (q.line ? "!" : "") + (q.see ? "*" : "")) })}`); }
+        // [C8] Dot's cry: a man in at the door for her - every hand turns to him, up off the floor to get a line
+        const dm = s.men.find((m) => m.kind === 'dotman' && m.inside);
+        if (dm) {
+          if (s.on && !(dm.see || dm.seeH)) await tap('KeyC');
+          const e2 = await aim(s, yawTo(s, dm.x, dm.z), pitchTo(s, dm.x, dm.y, dm.z), 0.7, 0.35);
+          if (e2 < 0.04 && (dm.see || dm.seeH) && Date.now() > (seenAt || 0)) { await mouse('mousePressed', cx, cy, 'left'); await sleep(rr(220, 380)); await mouse('mouseReleased', cx, cy, 'left'); lastShot = Date.now(); }
+          else if (!seenAt || Date.now() - seenAt > 3000) seenAt = Date.now() + rr(P.react[0], P.react[1]);
+          await sleep(30); dbg['dot'] = (dbg['dot'] || 0) + 1; continue;
+        }
         const tommyFiring = s.men.some((m) => (m.kind === 'tommy' && m.st === 'fire') || (m.boss && m.st === 'draw' && m.line));
         // [C8] him: a round into him counts only when he is open - the good hand holds its fire on him otherwise
         if (P.cover) for (let i = visible.length - 1; i >= 0; i--) if (visible[i].boss && visible[i].st !== 'open') visible.splice(i, 1);

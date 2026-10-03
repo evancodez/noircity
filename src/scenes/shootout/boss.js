@@ -42,7 +42,7 @@ export const SALOON = {
   // stage 3: up, for the door and in
   last: [{ x: -9.4, z: 0.6 }, { x: -10.9, z: 0.6 }, { x: -12.6, z: 0.4 }],
   // the shot that does not miss a man in the open
-  dmg: 50, sigma: 0.0035,
+  dmg: 60, sigma: 0.0035,
   // how long he is open
   openAfterShot: 1.5, openShield: 2.6, openBlast: 3.0,
 };
