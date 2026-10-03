@@ -23,7 +23,7 @@
       "r08_cut_knee_pipe": "G.scenes.beat === 'cut' && N.controller.pos.x < 79.5 && N.controller.pos.z > -118.0",
       "r09_corner": "G.scenes.beat === 'street' && N.controller.pos.z < -131.0",
       "r10_arch": "G.scenes.beat === 'street' && N.controller.pos.z > -133.2 && N.controller.pos.x < 10.5",
-      "r11_market_heels": "G.scenes.beat === 'market' && N.controller.pos.z > -106.5",
+      "r11_market_heels": "G.scenes.beat === 'market' && N.controller.pos.z > -112 && G.scenes.ctx.flags.chase.gapNow < 7.5",
       "r12_car": "G.scenes.beat === 'car' && N.controller.pos.z > -100"
     } },
   { "eval": "JSON.stringify({ play: +(G.scenes.playTime || 0).toFixed(1), fails: G.counters.fails || 0, beat: G.scenes.beat })" }
