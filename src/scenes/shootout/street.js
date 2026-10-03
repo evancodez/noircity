@@ -58,15 +58,18 @@ export const CARS = [
   // (from far down the avenue, between the el's west columns - they cross
   // the road there - and the kerb; past the parked sedans; then across to
   // the far side and nose in)
-  { rail: [[-3.0, -86], [-2.0, -74], [0.4, -62], [0.6, -56], [-0.2, -44], [-0.9, -31], [-0.9, -24], [1.6, -14.5], [5.6, -8.2], [8.6, -4.2], [9.1, -1.4], [8.9, 0.7], [7.1, 1.3]], delay: 0 },
+  // (A broadside across the far lane, its right side to the diner: its men
+  // out of the far doors behind its body - a man climbing out is not a man
+  // in the open; B nose in, its lamps through the glass)
+  { rail: [[-3.0, -86], [-2.0, -74], [0.4, -62], [0.6, -56], [-0.2, -44], [-0.9, -31], [-0.9, -24], [1.4, -15.5], [4.2, -9.0], [5.4, -4.0], [5.6, 1.2]], delay: 0 },
   { rail: [[-3.2, -86], [-2.2, -74], [0.2, -62], [0.5, -56], [-0.4, -44], [-1.0, -31], [-1.0, -24], [1.4, -16.8], [4.6, -13.6], [7.2, -10.8], [8.2, -8.6], [6.8, -7.0]], delay: 5.5 },
 ];
 // their men: the car, the door, the kind, the first place (the lee of the
 // car or its door: then the kit's brain takes the cover it reads)
 export const CAR_MEN = [
-  { car: 0, door: 'rf', kind: 'pistol', delay: 0.4 },
-  { car: 0, door: 'rr', kind: 'pistol', delay: 0.8, run: { x: 12.6, z: 3.4 } },
-  { car: 0, door: 'lr', kind: 'pistol', delay: 1.3, run: { x: 13.4, z: -2.0 } },
+  { car: 0, door: 'lf', kind: 'pistol', delay: 0.4 },
+  { car: 0, door: 'lr', kind: 'pistol', delay: 0.8 },
+  { car: 0, door: 'lf', kind: 'pistol', delay: 2.2, run: { x: 12.6, z: 3.4 } },
   { car: 1, door: 'rf', kind: 'pistol', delay: 0.35 },
   // (the Tommy gunner: he pins the diner's front from behind his car)
   { car: 1, door: 'rr', kind: 'tommy', delay: 0.9 },

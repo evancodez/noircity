@@ -72,7 +72,7 @@ function stage(ctx, b) {
       R.rails.place(car, 0);
       car.c8beat = 'cars';
       R.cars['car' + i] = car;
-      for (const k of ['rf', 'rr', 'lr']) { const d = R.rails.openDoor(car, k); d.a = d.to * 0.94; d.hinge.rotation.y = -d.D.side * d.a; d.hole.visible = true; d.hinge.updateMatrixWorld(true); d.mesh.userData.cover = { kind: 'thin' }; R.rails.doorBox(car, d); }
+      for (const k of [...new Set(CAR_MEN.filter((m) => m.car === i).map((m) => m.door))]) { const d = R.rails.openDoor(car, k); d.a = d.to * 0.94; d.hinge.rotation.y = -d.D.side * d.a; d.hole.visible = true; d.hinge.updateMatrixWorld(true); d.mesh.userData.cover = { kind: 'thin' }; R.rails.doorBox(car, d); }
     });
   }
   // the room's light on; the drums as the checkpoint has them
