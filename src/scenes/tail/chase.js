@@ -21,12 +21,14 @@ import { RNG } from '../../util/rng.js';
 // one Chase per entry (a beat's setup), steps it (ctx.onStep) and waits on
 // its phase:
 //   start (at the kerb) -> a ("Don't lose him.") -> b ("Stop him before the
-//   docks.") -> crash (his hands gone) -> wreck (stopped) -> c ("Pier 9.")
-//   -> parked (by the gate) -> out
+//   docks.") -> crash (his hands gone) -> wreck (stopped; "See to the
+//   driver.") -> out ([C3b] on foot by his wreck: the line) -> c ("Pier 9.")
+//   -> parked (by the gate) -> chapter VII
 // Losing: a: out of sight too long, or too far behind ("He's getting away."
-// first, then "Lost him."); a wreck of my own ("Wrecked."); b: he reaches the
-// pier's gate ("He warned them.") or gets clean away. Back at the beat the
-// fail names (the checkpoints: start, chase2, river, pier).
+// first, then "Lost him."); a wreck of my own ("Wrecked."); b: [C3b] the
+// window (RIVER_B: "He's pulling away.", then "Lost him."), or he reaches
+// the pier's gate first ("He warned them."). Back at the beat the fail names
+// (the checkpoints: start, chase2, river, pier).
 const clamp = (x, a, b) => Math.max(a, Math.min(b, x));
 const _v = new THREE.Vector3(), _w = new THREE.Vector3();
 // (the cat's wall: Pell Lane's brick wall north of the board fence, its cap)

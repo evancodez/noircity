@@ -13,17 +13,25 @@ import { START, EW, NS, riverPoint, riverFrame, riverSAtZ, PIER } from '../stage
 //      square, goes down the alley, runs Water St ahead of the tram. Out of
 //      sight too long or too far behind: "He's getting away.", then "Lost
 //      him." (back at the last checkpoint). A wreck of my own: "Wrecked."
+//      ([C3b] close in on him and he floors it: I can graze his bumper, not
+//      put him off the road)
 //   b  "Stop him before the docks."  the river road: RMB leans out with the
-//      revolver, LMB fires. His car goes only by my rounds (or a shunt on a
-//      hurt car). He reaches the pier's gate: "He warned them." (back at the
-//      river road's start)
-//   c  "Pier 9."  the wreck behind me, I drive to the pier myself; by its
-//      gate, E: the lamps off, out of the car: chapter VII begins there.
+//      revolver, LMB fires. [C3b] My rounds hurt him (one takes a tyre: he
+//      is slower than me, weaving) but never end it; a shunt on his back
+//      corner of a hurt car spins him off (rules.js HIT, RAM). He has
+//      RIVER_B.t s: "He's pulling away.", then "Lost him." (back at the river
+//      road's start; "He warned them." only if he reaches the gate first)
+//   [C3b] "See to the driver."  his wreck: stopped near it, E: out of the
+//      car on foot; he is crouched by his wreck; walked up to (or passed):
+//      "Pier nine. Tonight."; E at my door: back in
+//   c  "Pier 9."  I drive to the pier myself; by its gate, E: the lamps off,
+//      the door, and chapter VII by a cut with its card small over the
+//      picture (no black)
 // Beats (each has a setup: ?scene=tail&beat=<beat>, ?start=tail.<beat>):
 //   start  at the kerb (the checkpoint of the chase's first half)
 //   chase2 on Canal St behind him (the second half's)
 //   river  on the river road behind him (phase b's)
-//   wreck  his car just stopped against what it hit
+//   wreck  his car just stopped against what it hit (and the walk to him)
 //   pier   the wreck behind, the road to the pier (phase c's)
 // Music: the slot 'tail' from the kerb to the gate.
 const CHECK_DAMAGE = { start: 0, chase2: 0, river: 0, pier: 0 };
