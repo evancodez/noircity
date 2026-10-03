@@ -73,7 +73,7 @@ export default {
     const K = T[kind];
     const kit = () => G.guns;
     const S = {
-      state: opts.way ? 'wait' : 'hold', t: 0, wait: opts.wait ?? 0,
+      state: opts.way ? 'wait' : 'hold', t: 0, wait: opts.wait ?? 0, born: game.time,
       cover: null, fire: null, settle: 0, raiseT: 0, lineT: 0, lostT: 0, losT: 0, line: false,
       aimP: V(0, 0, 0), aimOk: false, target: null, rattledT: 0, shots: 0, shotT: 0, mag: kind === 'pistol' ? K.mag : 999,
       entry: opts.way ? { ...opts.way, i: 0, opened: false, framed: 0 } : null,
@@ -138,7 +138,7 @@ export default {
         // saw whole - standing in the room, holding it: the doorway is held;
         // the kit sends one of the others round to another door of the room
         const Kt = kit();
-        if (Kt && Kt.active && kind !== 'rusher' && S.lastSeen && S.lastSeen.up && G.time - S.lastSeen.t < 1.2 && (G.controller.crouchK || 0) < 0.5) {
+        if (Kt && Kt.active && kind !== 'rusher' && S.lastSeen && S.lastSeen.up && G.time - S.lastSeen.t < 1.2) {
           let D = null;
           for (const d of doorsOf(G.stage)) if (d.centre && Math.hypot(h.pos.x - d.centre.x, h.pos.z - d.centre.z) < 1.3) { D = d; break; }
           if (D) Kt.doorHeld(D, B);
@@ -193,11 +193,10 @@ export default {
         S.losT = r.range(0.09, 0.15);
         const p = G.health.dead ? null : visiblePoint();
         S.line = !!p;
-        // (in the open: up on my feet with nothing low between us. Down - behind
-        // something or not - I am the small mark of a man in cover: a first-
-        // timer flanked down behind a car is not shot like a man standing in
-        // the street; down in the open is still the angle, and the fall says so)
-        S.whole = !!p && S.wholeNow && (G.controller.crouchK || 0) < 0.5;
+        // (in the open: nothing low between us, and I am up on my feet - or down
+        // with nothing near me at all. Down by cover that is not on his side -
+        // a first-timer flanked behind a car - is his angle, not the open)
+        S.whole = !!p && S.wholeNow && ((G.controller.crouchK || 0) < 0.5 || !!kit().lowInOpen);
         if (p) { S.target = p.clone(); S.lastSeen = { p: p.clone(), t: G.time, up: S.whole }; }
       }
       if (S.line && S.target) {
@@ -498,7 +497,7 @@ export default {
       if (suppress && !(S.lastSeen && G.time - S.lastSeen.t < (S.lastSeen.flash ? T.flash : 5))) sigma += 0.02;
       Kt.hoodRound(B, tgt, sigma, dmg, { tommy: kind !== 'pistol' });
       h.fire();
-      B.lastShot = G.time;
+      B.lastShot = G.time; S.lastFire = G.time;
       S.burstN = (S.burstN || 0) + 1;
       if (kind === 'pistol') S.mag--;
       return true;
@@ -705,7 +704,12 @@ export default {
           // the director's flank)
           // (a Tommy gunner who can still rake where I went down is not hiding: he pins - his bursts say where he is)
           // (a lone Tommy gunner too, but only after three times as long, and only to a place at his own range)
-          if (alone() && S.lostT > (kind === 'tommy' ? T.find * 3 : T.find) && !(Kt.flank && Kt.flank.ai === B)) {
+          // ([C2] after the critic's second look: or the last of them who has not
+          // got a round off at me in 10 s - a glimpse of me now and then, from
+          // places where his gun would not bear, kept him from ever counting
+          // 6 s without me: a stand-off of 90 s with a man who never turned)
+          const idle = G.time - Math.max(S.lastFire ?? -1e9, S.born ?? 0) > (kind === 'tommy' ? T.find * 3 : T.find + 4);
+          if (alone() && (S.lostT > (kind === 'tommy' ? T.find * 3 : T.find) || idle) && !(Kt.flank && Kt.flank.ai === B)) {
             if (S.cover) S.cover.taken = null;
             S.cover = null; S.fire = null; S.peeks = 0;
             S.state = 'open'; S.t = 0; S.seeks = 3; S.seekT = 0; S.wait = 0.3; S.finding = true;
@@ -841,7 +845,11 @@ export default {
           if (kind === 'pistol' && S.mag <= 0) { S.state = 'reload'; S.t = 0; G.sfx.play('c2_magOut', h.pos.clone().setY(h.pos.y + 1.1), {}, { ref: 3 }); break; }
           // (a trade on his way: I went down, or out of his sight - on his way in again)
           if (S.trade && ((!S.line && S.lostT > 0.3) || (S.line && !S.whole) || S.t > 6)) { S.trade = false; if (resume()) break; }
-          if (S.t > 2.5 && !S.flank && !S.trade && S.t % 3 < dt && takeCover(true)) break;
+          // (back into cover from the open - not while he has me and nothing comes back at him: a man
+          // who does not answer is his to finish. [C2] after the critic's second look: a lone gunman
+          // found me, fired, went back behind the crates, and I mended - a stand-off of 90 s)
+          const unanswered = S.line && S.rattledT <= 0 && G.time - (S.hitAt ?? -9) > 3;
+          if (S.t > 2.5 && !S.flank && !S.trade && !unanswered && S.t % 3 < dt && takeCover(true)) break;
           if (S.line && S.wait <= 0 && Kt.token(B)) { raise(); break; }
           // (the Tommy gunner in the open with no line: he rakes where he last saw me, as from cover)
           if (kind === 'tommy' && !S.line && S.lastSeen && G.time - S.lastSeen.t < T.rake && S.wait <= 0 && S.lostT > 1.5 && Kt.token(B, true)) { S.wait = r.range(2.5, 4); raise(); break; }

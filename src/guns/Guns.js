@@ -608,14 +608,9 @@ export class Guns {
     // the open lifts the eye 0.08 m over nothing: that is down in the open);
     // and down with nothing in front toward him is down in the open
     const risen = (C.riseK || 0) > 0.5 && !!C.riseOver;
-    // (bare: nothing toward him and nothing before me either - down with no
-    // cover at all; cover that is there but not on his side is his angle)
-    let bare = false;
-    if (B.crouched && !risen && ai) {
-      const q = V(ai.h.pos.x - B.chest.x, 0, ai.h.pos.z - B.chest.z), L = q.length();
-      const f = V(-Math.sin(C.yaw), 0, -Math.cos(C.yaw));
-      if (L > 0.5) bare = !G.rays.raycast(B.chest, q.divideScalar(L), Math.min(1.4, L - 0.3), { anyHit: true, skip: SEE_SKIP }) && !G.rays.raycast(B.chest, f, 1.2, { anyHit: true, skip: SEE_SKIP });
-    }
+    // (bare: down with no cover at all - nothing within a long step of me on
+    // any side; cover that is there but not on his side is his angle)
+    const bare = B.crouched && !risen && !!ai && this.bareAround();
     this.lastKill = {
       t: G.time, ai, crouched: B.crouched, risen, bare, through: !!(res && res.passed && res.passed.length), reloading: !!(G.player.weapons.active && G.player.weapons.active.reloading),
       flank: !!(ai && ai.brain && ai.brain.flanking), rush: !!(ai && ai.brain && ai.brain.kind === 'rusher'), tommy: !!(ai && ai.brain && ai.brain.kind === 'tommy'),
@@ -746,11 +741,21 @@ export class Guns {
     return text;
   }
 
+  // nothing solid within a long step of me on any side, at my chest's height
+  bareAround() {
+    const G = this.game, B = this.playerBody();
+    for (let k = 0; k < 8; k++) { const a = k * Math.PI / 4; if (G.rays.raycast(B.chest, _o.set(Math.sin(a), 0, Math.cos(a)), 1.2, { anyHit: true, skip: SEE_SKIP })) return false; }
+    return true;
+  }
+
   // ---- per step (game.scripts: before the controller and the men) -----------------------------------------
   update(dt) {
     const G = this.game;
     if (!this.active || G.state !== 'playing') return;
     this.stepBodies(dt);
+    // [C2] after the critic's second look: in the open - up on my feet, or down
+    // with nothing near me on any side (the brains read it with what each sees)
+    if ((this.openT = (this.openT || 0) - dt) <= 0) { this.openT = 0.2; this.lowInOpen = (G.controller.crouchK || 0) > 0.5 && this.bareAround(); }
     // who has a line on me (the brains say), for the mending and the plays
     let n = 0;
     for (const [h, ai] of G.ais) if (h.alive && ai.brain && ai.brain.hasLine) n++;

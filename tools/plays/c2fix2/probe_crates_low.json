@@ -1,0 +1,17 @@
+{
+  "about": "C2 probe (the stand-off in two_ways with the critic's low hands): me down with RMB held on the room's floor (-3.6, -2.4) facing the door, a man behind room A's crates (-8.48, -0.44): do his rounds land? what do they hit?",
+  "url": "/?mute=1&c2rec=1&start=guns.door",
+  "size": [1440, 900],
+  "out": "shots/c2fix2/probe_crates_low",
+  "steps": [
+    { "wait": 2500 },
+    { "clickOn": "#title .opt[data-k=begin]", "taken": "G.state === 'playing' && G.scenes.beat === 'door'", "retries": 3 },
+    { "wait": 800 },
+    { "eval": "(() => { const K = G.guns; for (const h of [...G.world.hoods.list]) G.removeHood(h); N.controller.setPose(-3.6, -2.4, -Math.PI / 2, -0.05); N.controller.setMode('gun', { crouch: true }); const h = K.spawn({ kind: 'pistol', at: { x: -8.48, z: -0.44 }, cover: true, wait: 0.5 }); G.scenes.ctx.flags.c2.men = [h]; return [h.pos.x, h.pos.z]; })()" },
+    { "mouse": "down", "button": "right" },
+    { "wait": 12000 },
+    { "eval": "G.guns.events.filter((e) => e.t > G.time - 12.5 && e.what !== 'shot').map((e) => JSON.stringify(e)).join(' | ')" },
+    { "eval": "({ hp: G.health.hp, lowInOpen: G.guns.lowInOpen, riseOver: N.controller.riseOver, riseK: N.controller.riseK, ck: N.controller.crouchK, eyeY: G.eye.y })" },
+    { "mouse": "up", "button": "right" }
+  ]
+}
