@@ -548,7 +548,9 @@ function stepMove(ctl, R, dt, cols) {
         rightOnRight();
         RUNHANDS.lift = 0;
         RUNHANDS.set('plant');
-        R.move = { kind: 'hang', T: M.T, t: 0, dur: 0.38, nx: M.nx, nz: M.nz, y: L.top - 1.6, colOff: true, pitch: 0.12 };
+        // ([C6 2nd] the hang and the haul quicker: a missed jump costs about
+        // what a missed vault does, not the stretch)
+        R.move = { kind: 'hang', T: M.T, t: 0, dur: 0.26, nx: M.nx, nz: M.nz, y: L.top - 1.6, colOff: true, pitch: 0.12 };
         R.feet = L.top - 1.6;
         ctl.shake(0.8);
         R.jolt = { t: 0, yaw: 0, pitch: 0.2, dur: 0.4 };
@@ -567,7 +569,7 @@ function stepMove(ctl, R, dt, cols) {
       ctl.vel.set(0, 0, 0);
       R.feet = M.y + 0.04 * Math.sin(M.t * 9) * Math.max(0, 1 - M.t / 0.3);
       if (u >= 1) {
-        R.move = { kind: 'haul', T: M.T, t: 0, dur: 0.95, nx: M.nx, nz: M.nz, y0: R.feet, colOff: true, pitch: 0 };
+        R.move = { kind: 'haul', T: M.T, t: 0, dur: 0.72, nx: M.nx, nz: M.nz, y0: R.feet, colOff: true, pitch: 0 };
         R.onEvent('haul', { T: M.T });
       }
       return;
@@ -580,7 +582,7 @@ function stepMove(ctl, R, dt, cols) {
       ctl.pos.x += M.nx * push * dt; ctl.pos.z += M.nz * push * dt;
       M.pitch = 0.12 * (1 - sm(u / 0.5)) - 0.18 * Math.sin(Math.PI * u);
       if (u > 0.6) RUNHANDS.lift = Math.min(1, (u - 0.6) / 0.3);
-      if (u >= 1) { R.feet = gy(); if (M.colOff && M.T) R.things.solid(M.T, true); R.move = null; R.v = 0; RUNHANDS.set('pump'); R.onEvent('land', { from: 'haul' }); }
+      if (u >= 1) { R.feet = gy(); if (M.colOff && M.T) R.things.solid(M.T, true); R.move = null; R.v = 2.6; RUNHANDS.set('pump'); R.onEvent('land', { from: 'haul' }); }
       return;
     }
     case 'land': {

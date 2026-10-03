@@ -31,7 +31,9 @@ export const RULES = {
   trick: 9.0,                // close enough for him to pull something down behind him
   warnOn: 24, warnOff: 19,   // the gap that warns (and lets go)
   lost: 36,                  // the gap that loses him
-  unseenWarn: 3.5, unseenLost: 7.0, unseenFrom: 18,   // out of sight (only past this gap)
+  // ([C6 2nd] out of sight counts from the warning's gap on: a man 20 m
+  // behind on the roofs loses sight of him over the shed's slope every try)
+  unseenWarn: 3.5, unseenLost: 7.0, unseenFrom: 24,   // out of sight (only past this gap)
   grace: 1.6,                // a stretch's first seconds (the black lifting): no warning yet
 };
 const V = (x, z, y = 0) => new THREE.Vector3(x, y, z);

@@ -250,7 +250,7 @@ export const STRETCHES = {
   // out of its dock door on the avenue; the alley's west end (the fork ahead)
   press: { at: [71.7, -97.6], yaw: -Math.PI / 2, ahead: 12 },
   el: { at: [95.2, -78.2], yaw: -0.35, ahead: 12 },
-  over: { at: [75.0, -103.0], yaw: Math.PI / 2, ahead: 12 },
+  over: { at: [75.0, -103.0], yaw: Math.PI / 2, ahead: 11 },
   street: { at: [28.6, -118.6], yaw: Math.PI / 2, ahead: 12 },
   car: { at: [4.2, -96.8], yaw: Math.PI / 2, ahead: 9 },
 };

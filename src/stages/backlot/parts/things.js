@@ -425,7 +425,9 @@ export default {
       // (its own chimney breast where it meets the north parapet)
       ink(g, false);
       stage.scene.add(g);
-      add({ id: 'party', kind: 'over', level: 'roof', y: r1y, top: P.h, a: { x: P.x, z: ROOFS.z0 + 0.25 }, b: { x: P.x, z: ROOFS.z1 - 0.25 }, depth: 0.3, stretch: 'over' });
+      // ([C6 2nd] waist high: run into, a man goes over it on his hands - a
+      // stumble, not a stop dead and a climb)
+      add({ id: 'party', kind: 'over', low: true, level: 'roof', y: r1y, top: P.h, a: { x: P.x, z: ROOFS.z0 + 0.25 }, b: { x: P.x, z: ROOFS.z1 - 0.25 }, depth: 0.3, stretch: 'over' });
       // the skylight: its ridge pale (vault it, or go round it)
       const S = ROOFS.skylight;
       const gs = new THREE.Group();

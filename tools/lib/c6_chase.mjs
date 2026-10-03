@@ -60,7 +60,7 @@ export default async function drive({ js, turn, keyDown, keyUp, log, sleep, opts
     }
     const nodes = {};
     for (const k of ${JSON.stringify(['foot', 'alleyEnd', 'laneIn', 'laneOut', 'wIn', 'wDoor', 'wIn2', 'wK', 'eIn', 'eDoor', 'eIn2', 'eK', 'kMid', 'rollOut', 'kDoor', 'pIn', 'pA', 'pB', 'pC', 'pD', 'dock', 'avS', 'avN', 'aIn', 'aMid', 'aOut', 'stairIn', 'passIn', 'passOut', 'dog', 'bay', 'truck', 'rowEnd', 'rowOut', 'stairFoot', 'stairTop', 'roofIn', 'party', 'edge', 'r2In', 'tank', 'shedTop', 'eave', 'dropped', 'cross', 'gateway', 'aisleN', 'aisleS', 'crossW', 'gate', 'pave'])}) {
-      const n = CH && CH.course && CH.course.nodes.get(k); if (n) nodes[k] = [n.x, n.z];
+      const n = CH && CH.course && CH.course.nodes.get(k); if (n) nodes[k] = [n.x, n.z, n.y];
     }
     const cars = N.stage.part && N.stage.part('cars');
     if (cars && cars.mine && cars.mine.handleAt) { const h = cars.mine.handleAt(); const o = cars.mine.handleOut(); nodes.myDoor = [h.x + o.x * 0.95, h.z + o.z * 0.95]; out.handle = [h.x, h.y, h.z]; }
@@ -100,7 +100,8 @@ export default async function drive({ js, turn, keyDown, keyUp, log, sleep, opts
       line = LINE(lane, over);
       // (from where I stand: the first point of the line still ahead of me)
       let best = 0, bd = Infinity;
-      for (let i = 0; i < line.length; i++) { const n = nodes[line[i]]; if (!n) continue; const d = Math.hypot(n[0] - s.x, n[1] - s.z); if (d < bd) { bd = d; best = i; } }
+      // (on my own level: from the row's end the shed's roof is near but not mine)
+      for (let i = 0; i < line.length; i++) { const n = nodes[line[i]]; if (!n || Math.abs((n[2] ?? 0) - (+s.feet || 0)) > 1.0) continue; const d = Math.hypot(n[0] - s.x, n[1] - s.z); if (d < bd) { bd = d; best = i; } }
       li = best;
       const n0 = nodes[line[li]], n1 = nodes[line[li + 1]];
       if (n0 && n1) { const ax = n1[0] - n0[0], az = n1[1] - n0[1]; if ((s.x - n0[0]) * ax + (s.z - n0[1]) * az > 0) li++; }
