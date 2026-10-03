@@ -1,22 +1,76 @@
 {
- "about": "[C7] proof (WAVE_C §7) of the loud pass: shooting my way out wins at a human pace, twice (?start=warehouse.loud): down the west stairs on my feet - seen, the shout, they are the gun kit's men - then the gunfight (a reaction, a turn onto the nearest man in sight a little off, LMB, a breath, R when empty, down while it goes), then across the floor to the bay: the foreman. Twice: the second from the loud beat again, as a chapter retry. node tools/play.mjs tools/plays/pier_loud.json",
+ "about": "[C7] proof (WAVE_C \u00a77) of the loud pass: shooting my way out wins at a human pace, twice (?start=warehouse.loud): down the west stairs on my feet - seen, the shout, they are the gun kit's men - then the gunfight (a reaction, a turn onto the nearest man in sight a little off, LMB, a breath, R when empty, down while it goes), then across the floor to the bay: the foreman. Twice: the second from the loud beat again, as a chapter retry. node tools/play.mjs tools/plays/pier_loud.json",
  "url": "/?mute=1&start=warehouse.loud",
- "size": [1280, 800],
+ "size": [
+  1280,
+  800
+ ],
  "out": "shots/play/pier_loud",
  "steps": [
-  { "until": "G.state === 'title' && !document.getElementById('title').classList.contains('hidden')", "timeout": 30000 },
-  { "wait": 1500 },
-  { "clickOn": "#title .opt[data-k=begin]", "taken": "G.state !== 'title'", "retries": 5, "every": 4000 },
-  { "until": "G.scenes.current && G.scenes.current.id === 'warehouse' && G.scenes.beat === 'loud' && !G.scenes.trans", "timeout": 30000 },
-  { "drive": "tools/lib/c7_pier.mjs", "profile": "loud", "verbose": true, "timeout": 300000, "check": "D.done && D.fails <= 2", "label": "the loud way out, won (1)" },
-  { "until": "G.scenes.beat === 'fight'", "timeout": 3000 },
-  { "shot": "x01_at_the_bay" },
-  { "eval": "JSON.stringify({ k: (G.guns.events || []).filter((e) => e.what === 'down').length, hp: G.health.hp })" },
-  { "wait": 2000 },
-  { "eval": "(G.counters.fails = 0, G.scenes.go('warehouse', { beat: 'loud', fade: 'black', card: false }), 1)" },
-  { "until": "G.scenes.beat === 'loud' && !G.scenes.trans && G.controller.mode === 'gun'", "timeout": 15000 },
-  { "drive": "tools/lib/c7_pier.mjs", "profile": "loud", "timeout": 300000, "check": "D.done && D.fails <= 2", "label": "the loud way out, won (2)" },
-  { "until": "G.scenes.beat === 'fight'", "timeout": 3000 },
-  { "shot": "x02_at_the_bay_again" }
+  {
+   "until": "G.state === 'title' && !document.getElementById('title').classList.contains('hidden')",
+   "timeout": 30000
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]",
+   "taken": "G.state !== 'title'",
+   "retries": 5,
+   "every": 4000
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'warehouse' && G.scenes.beat === 'loud' && !G.scenes.trans",
+   "timeout": 30000
+  },
+  {
+   "drive": "tools/lib/c7_pier.mjs",
+   "profile": "loud",
+   "verbose": true,
+   "timeout": 300000,
+   "check": "D.done && D.fails <= 2",
+   "label": "the loud way out, won (1)"
+  },
+  {
+   "until": "G.scenes.beat === 'fight'",
+   "timeout": 3000
+  },
+  {
+   "eval": "JSON.stringify({ gunmenDown: (G.scenes.ctx.flags.live.gunmen || []).filter((h) => !h.alive).length, gunmen: (G.scenes.ctx.flags.live.gunmen || []).length, loud: !!G.scenes.ctx.flags.live.loud })"
+  },
+  {
+   "shot": "x01_at_the_bay"
+  },
+  {
+   "eval": "JSON.stringify({ k: (G.guns.events || []).filter((e) => e.what === 'down').length, hp: G.health.hp })"
+  },
+  {
+   "wait": 2000
+  },
+  {
+   "eval": "(G.counters.fails = 0, G.scenes.go('warehouse', { beat: 'loud', fade: 'black', card: false }), 1)"
+  },
+  {
+   "until": "G.scenes.beat === 'loud' && !G.scenes.trans && G.controller.mode === 'gun'",
+   "timeout": 15000
+  },
+  {
+   "drive": "tools/lib/c7_pier.mjs",
+   "profile": "loud",
+   "timeout": 300000,
+   "check": "D.done && D.fails <= 2",
+   "label": "the loud way out, won (2)"
+  },
+  {
+   "until": "G.scenes.beat === 'fight'",
+   "timeout": 3000
+  },
+  {
+   "eval": "JSON.stringify({ gunmenDown: (G.scenes.ctx.flags.live.gunmen || []).filter((h) => !h.alive).length, gunmen: (G.scenes.ctx.flags.live.gunmen || []).length, loud: !!G.scenes.ctx.flags.live.loud })"
+  },
+  {
+   "shot": "x02_at_the_bay_again"
+  }
  ]
 }

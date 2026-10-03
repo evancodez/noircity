@@ -1,27 +1,126 @@
 {
- "about": "[C7] proof (WAVE_C §7) of the loud pass: the player who goes down into the light and stands there loses in seconds, warned first (?start=warehouse.loud): down the west stairs into the stairs lamp's pool, hands off: the shout, they are the gun kit's men now, the tell, 'Get down!', the fall, the reason, back on the catwalk with the revolver full. node tools/play.mjs tools/plays/pier_loud_idle.json",
+ "about": "[C7] proof 1 of WAVE_C \u00a77 for the loud pass (?start=warehouse.loud): (1) [after the critic] hands off on the catwalk - the man who climbs to answer the telephone finds me: his own warning ('Behind you! On the catwalk!' / 'One on the catwalk!') or the kit's, and the reason to match; (2) down the west stairs into the stairs lamp's pool and stand there: the shout, the gun kit's men, down in seconds, warned first, back on the catwalk with the revolver full. node tools/play.mjs tools/plays/pier_loud_idle.json",
  "url": "/?mute=1&start=warehouse.loud",
- "size": [1280, 800],
+ "size": [
+  1280,
+  800
+ ],
  "out": "shots/play/pier_loud_idle",
  "steps": [
-  { "until": "G.state === 'title' && !document.getElementById('title').classList.contains('hidden')", "timeout": 30000 },
-  { "wait": 1500 },
-  { "clickOn": "#title .opt[data-k=begin]", "taken": "G.state !== 'title'", "retries": 5, "every": 4000 },
-  { "until": "G.scenes.current && G.scenes.current.id === 'warehouse' && G.scenes.beat === 'loud' && !G.scenes.trans", "timeout": 30000 },
-  { "eval": "(window.W = () => G.scenes.ctx.flags.live, 1)" },
-  { "expect": "G.controller.mode === 'gun' && G.player.weapons.active && G.player.weapons.active.chambers.every((c) => c === 'live') && G.stage.part('mezz').gateE.k > 0.9", "label": "on the catwalk, the revolver full; the far stairs chained" },
-  { "key": "KeyC" },
-  { "walk": [[-9.5, -41.55], [-9.0, -40.25], [-3.0, -40.25], [-2.4, -37.4]], "timeout": 30000, "stop": false },
-  { "eval": "(window.T1 = G.time, 1)" },
-  { "shot": "l01_in_the_light" },
-  { "until": "!!W().loud || !!G.failing", "timeout": 20000 },
-  { "eval": "JSON.stringify({ loud: !!W().loud, secs: +(G.time - T1).toFixed(1), men: (W().gunmen || []).length })" },
-  { "until": "!!G.hud.kit.warnText", "timeout": 10000 },
-  { "shot": "l02_warned" },
-  { "until": "!!G.failing", "timeout": 25000 },
-  { "eval": "JSON.stringify({ lastFail: G.lastFail, secs: +(G.time - T1).toFixed(1) })" },
-  { "expect": "G.lastFail.to === 'loud' && G.lastFail.warnedFor >= 1.0 && G.time - T1 < 16", "label": "stood in the light: down within seconds, warned first, back at the catwalk" },
-  { "until": "!G.failing && G.scenes.beat === 'loud' && !G.scenes.trans", "timeout": 15000 },
-  { "expect": "G.player.weapons.active && G.player.weapons.active.chambers.every((c) => c === 'live') && G.stage.part('mezz').up", "label": "back on the catwalk, the revolver full" }
+  {
+   "until": "G.state === 'title' && !document.getElementById('title').classList.contains('hidden')",
+   "timeout": 30000
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]",
+   "taken": "G.state !== 'title'",
+   "retries": 5,
+   "every": 4000
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'warehouse' && G.scenes.beat === 'loud' && !G.scenes.trans",
+   "timeout": 30000
+  },
+  {
+   "eval": "(window.W = () => G.scenes.ctx.flags.live, 1)"
+  },
+  {
+   "expect": "G.controller.mode === 'gun' && G.player.weapons.active && G.player.weapons.active.chambers.every((c) => c === 'live') && G.stage.part('mezz').gateE.k > 0.9",
+   "label": "on the catwalk, the revolver full; the far stairs chained"
+  },
+  {
+   "name": "(1) hands off, low on the catwalk"
+  },
+  {
+   "eval": "(window.WL = [], setInterval(() => { const w = G.hud.kit.warnText; if (w && WL[WL.length - 1] !== w) WL.push(w); }, 100), window.T0 = G.time, 1)"
+  },
+  {
+   "until": "!!G.failing",
+   "timeout": 150000
+  },
+  {
+   "eval": "JSON.stringify({ secs: +(G.time - T0).toFixed(1), why: G.lastFail.why, warnedFor: G.lastFail.warnedFor, warnings: WL })"
+  },
+  {
+   "expect": "G.lastFail.to === 'loud' && G.lastFail.warnedFor >= 1.0 && (G.lastFail.why !== 'The one on the catwalk got you.' || WL.some((w) => /catwalk/.test(w)))",
+   "label": "[C7] waiting on the catwalk is found; the warning and the reason agree"
+  },
+  {
+   "until": "!G.failing && G.scenes.beat === 'loud' && !G.scenes.trans",
+   "timeout": 15000
+  },
+  {
+   "wait": 800
+  },
+  {
+   "name": "(2) down the west stairs into the stairs lamp's pool, and stand there"
+  },
+  {
+   "key": "KeyC"
+  },
+  {
+   "walk": [
+    [
+     -9.5,
+     -41.55
+    ],
+    [
+     -9.0,
+     -40.25
+    ],
+    [
+     -3.0,
+     -40.25
+    ],
+    [
+     -2.4,
+     -37.4
+    ]
+   ],
+   "timeout": 30000,
+   "stop": false
+  },
+  {
+   "eval": "(window.T1 = G.time, 1)"
+  },
+  {
+   "shot": "l01_in_the_light"
+  },
+  {
+   "until": "!!W().loud || !!G.failing",
+   "timeout": 20000
+  },
+  {
+   "eval": "JSON.stringify({ loud: !!W().loud, secs: +(G.time - T1).toFixed(1), men: (W().gunmen || []).length })"
+  },
+  {
+   "until": "!!G.hud.kit.warnText",
+   "timeout": 10000
+  },
+  {
+   "shot": "l02_warned"
+  },
+  {
+   "until": "!!G.failing",
+   "timeout": 25000
+  },
+  {
+   "eval": "JSON.stringify({ lastFail: G.lastFail, secs: +(G.time - T1).toFixed(1) })"
+  },
+  {
+   "expect": "G.lastFail.to === 'loud' && G.lastFail.warnedFor >= 1.0 && G.time - T1 < 16",
+   "label": "stood in the light: down within seconds, warned first, back at the catwalk"
+  },
+  {
+   "until": "!G.failing && G.scenes.beat === 'loud' && !G.scenes.trans",
+   "timeout": 15000
+  },
+  {
+   "expect": "G.player.weapons.active && G.player.weapons.active.chambers.every((c) => c === 'live') && G.stage.part('mezz').up",
+   "label": "back on the catwalk, the revolver full"
+  }
  ]
 }

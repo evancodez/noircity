@@ -36,14 +36,14 @@ export default async function drive({ js, turn, keyDown, keyUp, mouse, log, slee
     const s = { done: !!(${stop}), beat: G.scenes.beat, failing: !!G.failing || !!G.scenes.trans, x: C.pos.x, z: C.pos.z, ey: e.y, yaw: C.yaw, pitch: C.pitch, sens: C.sensitivity,
       mode: C.mode, crouch: C.sneak ? !!C.sneak.crouch : (C.crouchK || 0) > 0.5, up: !!(mz && mz.up), fails: G.counters.fails || 0, why: G.lastFail ? G.lastFail.why : null,
       loud: !!(L && L.loud), alarm: L ? L.crew.alarmT >= 0 : false, ammo: Wp ? Wp.ammo : 0, reloading: !!(Wp && Wp.reloading), busy: G.player.hands.busy || !!(L && L.approach) || C.frozen,
-      prompt: G.hud.promptShown || '', men: [], hoods: [],
+      prompt: G.hud.promptShown || '', men: [], hoods: [], lit: window.__c7lit ? window.__c7lit(C.pos.x, C.pos.z) : 0,
       ans: L && L.answerer && L.answerer.name ? { up: !!L.answerer.upLvl, x: L.answerer.pos.x, z: L.answerer.pos.z, ri: L.answerer.ri, down: L.answerer.down, mode: L.answerer.mode, answering: !!L.answerer.answering } : (L && L.answerer ? { none: true } : null) };
     const d = new N.THREE.Vector3();
     if (L) for (const m of L.crew.men) {
       const c = m.eye(new N.THREE.Vector3()); c.y -= 0.35;
       d.subVectors(c, e); const Ld = d.length(); d.divideScalar(Ld);
       const seen = !m.down && !G.rays.raycast(e, d, Ld - 0.3);
-      s.men.push({ name: m.name, x: m.pos.x, z: m.pos.z, down: m.down, mode: m.mode, a: m.a, yaw: m.fig.yaw, look: m.look, up: !!m.upLvl, hood: !!m.hood, hunter: !!m.spec.hunter, cx: c.x, cy: c.y, cz: c.z, L: Ld, seen });
+      s.men.push({ name: m.name, x: m.pos.x, z: m.pos.z, down: m.down, mode: m.mode, a: m.a, yaw: m.fig.yaw, look: m.look, up: !!m.upLvl, hood: !!m.hood, hunter: !!m.spec.hunter, cx: c.x, cy: c.y, cz: c.z, L: Ld, seen, ri: m.ri, wait: m.wait, fixT: m.fixT || 0 });
     }
     for (const h of G.stage.hoods.list) {
       if (!h.alive) continue;
@@ -111,6 +111,46 @@ export default async function drive({ js, turn, keyDown, keyUp, mouse, log, slee
   });
   // the way up to the office window: up the west stairs, along the catwalk
   const toWindow = [[-3.0, -40.25], [-9.0, -40.25], [-9.6, -41.55], [-1.0, -41.7]];
+  const wrapA = (a) => Math.atan2(Math.sin(a), Math.cos(a));
+  // [C7] 'hunt': the plan, man by man (see the profile below)
+  const BACK_W = [[-9.8, -27.6], [-9.4, -33.6], [-10.1, -36.4], [-10.1, -43.3], [-5.2, -43.4]];
+  const HUNT = [
+    // the first man, as he turns up aisle A from the door's pool: round by
+    // the wall's dark strip, in behind him before the aisle's lamp
+    { name: 'sully', goWhen: (T, s) => s.z > -5 ? (T.mode === 'patrol' && T.z < -6.8 && T.z > -11 && Math.abs(wrapA(T.yaw - Math.PI)) < 0.6) : true,
+      stage: (s) => s.z > -5 ? [[-13.4, -3.4], [-13.2, -7.6]] : [] },
+    // aisle B's man: the switch pulled, a wait in the pocket of the next
+    // stack, then in behind him while he puts it back (his back to the cross aisle)
+    { name: 'bert', stage: async (s) => [...(await path(-9.3, -13.1))],
+      lure: async (s) => {
+        const s1 = await read(); if (!s1) return 'again';
+        if (!s1.prompt.includes('switch')) { await face(s1, -8.95, 1.0, -12.1); await sleep(300); const s2 = await read(); if (!s2 || !s2.prompt.includes('switch')) { await walk([[-9.6, -13.6], [-9.2, -13.0]], { limit: 6000 }); return 'again'; } }
+        // (only when aisle A's man - if he is up - is not coming my way)
+        await tap('KeyE'); await sleep(1500);
+        const r = await walk([[-8.2, -15.6], [-7.5, -17.55]], { limit: 10000 });
+        return !(r && r.failing);
+      },
+      stalkIf: (T) => T.mode === 'fix' && T.fixT > 0.4 },
+    // the loop's man: from the cross aisle west of aisle B, in behind him as
+    // he walks east along it
+    { name: 'rusty', stage: async (s) => [...(await path(-3.2, -14.7))],
+      stalkIf: (T) => T.mode === 'patrol' && T.ri === 1 && T.x > 3.7 && T.x < 7.2 },
+    // the strip's man: the long way round in the dark - aisle A, the west
+    // wall, behind the stores - out between them, in behind him at his east stop
+    { name: 'hood2', goWhen: (T, s) => s.z < -38.5 || (T.ri === 1 && T.x > 2.5),
+      // (waiting behind the stores' line, not in the gap: a man coming back to
+      // his round from the floor walks north toward it)
+      stage: async (s) => s.z < -38.5 ? [[-2.0, -43.4], [3.2, -43.4]]
+        : [...(s.z > -27 ? await path(-12.6, -24.0) : []), ...(s.z < -30 && s.x > -9 ? [[-9.3, s.z]] : []), ...BACK_W.filter(([x, z]) => z < s.z + 0.2), [-2.0, -43.4], [3.2, -43.4]],
+      stalkIf: (T) => T.mode === 'patrol' && T.ri === 1 && T.wait > 0 && T.x > 6.3 },
+    // the man at the stairs' foot: from behind the stores, at his back
+    { name: 'hood1', stage: async (s) => s.z < -38 ? [[3.2, -43.4], [-2.0, -43.4], [-2.0, -41.0]] : [...(await path(-3.2, -43.4)), [-2.0, -43.4], [-2.0, -41.0]],
+      stalkIf: (T) => true },
+    // the bay's man: along the strip in the dark, at his back at the bay's mouth
+    // (to the west of the bay's mouth, off the line his torch walks along)
+    { name: 'cal', stage: async (s) => [...(await path(5.0, -38.6)), [7.6, -37.9]],
+      stalkIf: (T) => (T.ri === 2 && T.wait > 0) || (T.ri === 3 && T.mode === 'patrol') },
+  ];
 
   for (;;) {
     if (Date.now() - T0 > timeout) { log(`c7_pier ${prof}: timeout`); break; }
@@ -119,7 +159,7 @@ export default async function drive({ js, turn, keyDown, keyUp, mouse, log, slee
     noteFail(s);
     if (opts.verbose && Date.now() - (out._logT || 0) > (typeof opts.verbose === "number" ? opts.verbose : 6000)) { out._logT = Date.now(); log(`c7 ${s.beat} me ${s.x.toFixed(1)},${s.z.toFixed(1)} y${s.ey.toFixed(1)} c${+s.crouch} loud ${+s.loud} al ${+s.alarm} men ${s.men.map((m) => m.name + (m.down ? 'X' : '') + ':' + m.mode + '/' + m.a.toFixed(1) + '@' + m.x.toFixed(0) + ',' + m.z.toFixed(0) + (m.seen ? '*' : '')).join(' ')} hoods ${s.hoods.map((h) => h.x.toFixed(0) + ',' + h.z.toFixed(0) + (h.seen ? '*' : '')).join(' ')}`); }
     if (s.done) { out.done = true; break; }
-    if (s.failing) { await rmb(false); out._placed = false; out._stale = 0; s = await waitBack(); continue; }
+    if (s.failing) { await rmb(false); out._placed = false; out._stale = 0; out._for = null; s = await waitBack(); continue; }
 
     if (prof === 'hunter') {
       if (!['floor', 'lamps', 'aisle', 'stairs'].includes(s.beat)) { await sleep(200); continue; }
@@ -163,6 +203,69 @@ export default async function drive({ js, turn, keyDown, keyUp, mouse, log, slee
       }
       out._skip = 0;
       const nxt = p.find(([x, z]) => Math.hypot(x - s.x, z - s.z) > 0.5) || [bx, bz];
+      await stepTo(s, nxt[0], nxt[1]);
+      await sleep(40);
+      continue;
+    }
+
+    if (prof === 'hunt') {
+      // [C7] after the critic: every man of the quiet pass by a plan a player
+      // who watched the rounds would make - each man in turn, from a place in
+      // the dark where his round brings his back to me, the switch for aisle
+      // B's man, the dark behind the stores for the two at the stairs; the
+      // stalk itself is the hunter's (still while any man is curious or
+      // looks my way, E when the blow is offered)
+      if (!['floor', 'lamps', 'aisle', 'stairs'].includes(s.beat)) { await setW(false); await sleep(200); continue; }
+      await crouch(s, true);
+      const M = (n) => s.men.find((m) => m.name === n);
+      const left = HUNT.filter((h) => M(h.name) && !M(h.name).down);
+      if (!left.length) {
+        const r = await walk(s.up ? [[-1.0, -41.7]] : [...(await path(-3.0, -40.25)), ...toWindow], { halt: (q) => curious(q) });
+        if (r && r.failing) continue;
+        await sleep(400); continue;
+      }
+      if (s.alarm) { await setW(false); await sleep(150); continue; }
+      const H = left[0], T = M(H.name);
+      if (out._for !== H.name) { out._for = H.name; out._phase = 0; log(`c7 hunt: ${H.name} (${out.fails} fails so far, ${((Date.now() - T0) / 1000).toFixed(0)} s)`); }
+      // (1) the staging walk: in the dark to where his round will bring him
+      if (out._phase === 0) {
+        if (H.goWhen && !H.goWhen(T, s)) { await setW(false); await sleep(150); continue; }
+        const pts = typeof H.stage === 'function' ? await H.stage(s) : H.stage || [];
+        const r = await walk(pts, { halt: (q) => curious(q) || beamOnMe(q) || (H.haltIf && H.haltIf(q)), limit: 90000 });
+        if (r && r.failing) { out._for = null; continue; }
+        out._phase = 1; continue;
+      }
+      // (2) a lure (the switch for aisle B's man)
+      if (out._phase === 1) {
+        if (H.lure) { const ok = await H.lure(s); if (ok === 'again') continue; if (!ok) { out._for = null; continue; } }
+        out._phase = 2; continue;
+      }
+      // (3) wait for his back, then the stalk
+      if (out._phase === 2) {
+        if (H.stalkIf && !H.stalkIf(T, s)) { await setW(false); await sleep(120); continue; }
+        out._phase = 3; out._stalkT = Date.now();
+      }
+      // (a man who turned while I came: wait in the dark again)
+      if (Date.now() - out._stalkT > 45000) { out._phase = 2; out._stalkT = Date.now(); }
+      if (/knock him out/.test(s.prompt) && !s.busy) { await setW(false); await sleep(rr(120, 260)); await tap('KeyE'); out.takedowns++; await sleep(1400); continue; }
+      if (s.men.some((m) => !m.down && m.name !== H.name && (m.a > 0.18 || m.mode === 'curious')) || beamOnMe({ ...s, men: s.men.filter((m) => m.name !== H.name) })) { await setW(false); await sleep(120); continue; }
+      if (T.mode === 'curious' || T.a > 0.15) { await setW(false); await sleep(120); continue; }
+      // (off his round - gone to look at something - he is not followed out
+      // across the floor: wait in the dark for him to come back)
+      if (T.mode === 'investigate' || T.mode === 'search') { await setW(false); await sleep(150); continue; }
+      const bx = T.x - Math.sin(T.yaw) * 0.95, bz = T.z - Math.cos(T.yaw) * 0.95;
+      const d = Math.hypot(T.x - s.x, T.z - s.z);
+      const toMe = Math.atan2(s.x - T.x, s.z - T.z), off = Math.abs(Math.atan2(Math.sin(toMe - T.look), Math.cos(toMe - T.look)));
+      if (off < 1.35 && d < 10) { await setW(false); await sleep(120); continue; }
+      if (d < 1.9) { await face(s, T.x, s.ey - 0.3, T.z); await stepTo(s, bx, bz); await sleep(60); await setW(false); continue; }
+      const p = await path(bx, bz);
+      const nxt = p.find(([x, z]) => Math.hypot(x - s.x, z - s.z) > 0.45) || [bx, bz];
+      // (a step into a lamp's light while another man is on his feet: not
+      // taken - wait for him to come out of it)
+      if (s.men.some((m) => !m.down && m.name !== H.name)) {
+        const lit = await js(`window.__c7lit ? window.__c7lit(${nxt[0]}, ${nxt[1]}) : 0`);
+        if (lit > 0.15 && s.lit < 0.15) { await setW(false); await sleep(150); continue; }
+      }
       await stepTo(s, nxt[0], nxt[1]);
       await sleep(40);
       continue;
@@ -298,6 +401,6 @@ export default async function drive({ js, turn, keyDown, keyUp, mouse, log, slee
   out.secs = +((Date.now() - T0) / 1000).toFixed(1);
   out.takedowns = await js('G.counters.takedowns || 0');
   out.lamps = await js('G.counters.c7lamps || 0');
-  delete out._shotLamp; delete out._go; delete out._quietSince; delete out._pocket; delete out._waitT; delete out._placed; delete out._logT; delete out._miss; delete out._stale; delete out._hid; delete out._clear; delete out._hlog; delete out._skip; delete out._forced;
+  delete out._shotLamp; delete out._go; delete out._quietSince; delete out._pocket; delete out._waitT; delete out._placed; delete out._logT; delete out._miss; delete out._stale; delete out._hid; delete out._clear; delete out._hlog; delete out._skip; delete out._forced; delete out._for; delete out._phase; delete out._stalkT;
   return out;
 }

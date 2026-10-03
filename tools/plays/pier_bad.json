@@ -24,7 +24,7 @@
    "eval": "(() => { if (G.state !== 'title') return 'started'; document.querySelector('#title .opt[data-k=begin]').dispatchEvent(new MouseEvent('mousedown', { bubbles: true, button: 0 })); return '(a loaded machine: pressed again)'; })()"
   },
   {
-   "name": "arrive: by my car, the side door twenty metres off"
+   "name": "arrive: in at the side door, my coupe dark behind me; across the black shed the office's lit window"
   },
   {
    "until": "G.scenes.current && G.scenes.current.id === 'warehouse' && document.pointerLockElement === N.renderer.domElement",
@@ -68,31 +68,8 @@
    "label": "on the pier, sneaking, the hands' own set"
   },
   {
-   "walk": [
-    [
-     -8.2,
-     12
-    ],
-    [
-     -10.1,
-     2.0
-    ]
-   ],
-   "timeout": 20000
-  },
-  {
-   "until": "G.hud.promptShown.includes('open')",
-   "timeout": 4000
-  },
-  {
-   "key": "KeyE"
-  },
-  {
-   "wait": 900
-  },
-  {
-   "expect": "G.stage.part('shed').sideDoor.isOpen",
-   "label": "E opens the side door"
+   "expect": "(() => { const T = N.THREE, c = G.camera, w = new T.Vector3(-1.0, 5.35, -42.3), v = w.clone().project(c), o = c.getWorldPosition(new T.Vector3()), d = w.clone().sub(o), L = d.length(); d.divideScalar(L); const rc = new T.Raycaster(o, d, 0.1, L + 1); const h = rc.intersectObjects(G.stage.scene.children, true).find((q) => q.object.visible); return Math.abs(v.x) < 0.3 && Math.abs(v.y) < 0.3 && !!h && h.distance > L - 0.4; })()",
+   "label": "[C7] the first frame: the office's lit window across the shed, mid-view, nothing between"
   },
   {
    "name": "a first-timer: tries the gun (it is empty), a wrong key, in on his feet, into the door's pool of light, looking about"
@@ -115,8 +92,8 @@
   {
    "walk": [
     [
-     -10.4,
-     -0.9
+     -11.6,
+     -3.2
     ],
     [
      -10.9,
