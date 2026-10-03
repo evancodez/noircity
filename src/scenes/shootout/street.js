@@ -102,7 +102,8 @@ export const DRIVEBY = {
   // the stretch he fires along the diner's front (z)
   fire: [-13, 13.5],
 };
-// two more round the corner from the alley's mouth, up the pavement
+// (not used: with them the el was six at once from three sides - the clumsy
+// hand four tries and no way through) two more round the corner from the alley's mouth
 export const SOUTH = [
   { at: { x: -8.8, z: -29.0 }, steps: [{ x: -8.4, z: -20.0, run: true }, { x: -7.4, z: -13.0, run: true }], kind: 'pistol', wait: 0.3 },
   { at: { x: -8.4, z: -29.5 }, steps: [{ x: -6.0, z: -22.0, run: true }, { x: -5.0, z: -15.5, run: true }], kind: 'pistol', wait: 1.5 },

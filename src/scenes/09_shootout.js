@@ -5,7 +5,7 @@ import { SITE, DINER } from './shootout/site.js';
 import { rigFor, rig, setLights, everyStep, RESERVE, dropMan, knockOut, V } from './shootout/rig.js';
 import { freshRoom, placeDot, mackWindow } from './shootout/room.js';
 import { nick, placeNick, NICK } from './shootout/nick.js';
-import { AT, CARS, CAR_MEN, NORTH, SOUTH, UNDER_EL, SPOTS, OPEN as OPEN_SPOT, beginFight, rebuild, alive, carIn, outOfCar, manForDot, elGunman, driveBy, heavyForDoor, gunman, pressOn } from './shootout/street.js';
+import { AT, CARS, CAR_MEN, NORTH, UNDER_EL, SPOTS, OPEN as OPEN_SPOT, beginFight, rebuild, alive, carIn, outOfCar, manForDot, elGunman, driveBy, heavyForDoor, gunman, pressOn } from './shootout/street.js';
 import { saloonIn, saloonMen, glare, cardinalOut, blastNear, SALOON } from './shootout/boss.js';
 import { endHat } from './shootout/ending.js';
 import { DOT_CLIP, dotGunAt, dotDrumsAt, DOT_DRUMS, dotResupplyAt } from '../cast/kinds/cardinal.js';
@@ -623,7 +623,7 @@ function* elBeat(ctx) {
   let db = null;
   let heavy = null;
   R.ticks.push(((t0) => (dt) => { if ((t0 -= dt) > 0) return true; db = driveBy(ctx, {}); return false; })(9));
-  R.ticks.push(((t0) => (dt) => { if ((t0 -= dt) > 0) return true; heavy = heavyForDoor(ctx); for (const m of SOUTH) gunman(ctx, m); return false; })(17));
+  R.ticks.push(((t0) => (dt) => { if ((t0 -= dt) > 0) return true; heavy = heavyForDoor(ctx); return false; })(17));
   yield until(() => !!db);
   let elSaid = false;
   yield* fightTo(ctx, () => {
