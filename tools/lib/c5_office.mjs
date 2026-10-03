@@ -108,7 +108,7 @@ export default async function drive({ js, turn, keyDown, keyUp, mouse, shot, log
       for (let k = 0; k < 6; k++) { await turn(dir * 95, 0); await sleep(18); }
       dir = -dir;
       await turn(0, 24); await sleep(20);
-      if (n % 4 === 3) { s = await st(); if (s.pad.readable) break; if (half && s.pad.shown > 0.3) break; }
+      if (half || n % 4 === 3) { s = await st(); if (s.pad.readable) break; if (half && s.pad.shown > 0.2) break; }
       // (the bottom of the sheet: back up and over again)
       if (s.pad && s.pad.tip && s.pad.tip[0] > 3.92 + 0.15) await turn(0, -500);
     }

@@ -126,12 +126,12 @@ export function search(ctx, pad, safe) {
   ctx.onStep(() => { const h = I.list.find((q) => q.id === 'phone'); if (h) h.prompt = ph.hung ? 'lift it' : 'hang it up'; });
   // (off the hook, the receiver turns a little on its cord)
   ctx.onStep(() => { if (!ph.hung && !D.tip) ph.recv.rotation.y = 0.4 + Math.sin(G.time * 0.9) * 0.18; });
-  I.add({ id: 'ash', at: () => O.furn.ashtray, range: 1.5, cone: 0.3, prompt: 'the ashtray', when: () => here('ames')() && !D.tip, onUse: () => {
+  I.add({ id: 'ash', at: () => O.furn.ashtray, range: 1.5, cone: 0.45, prompt: 'the ashtray', when: () => here('ames')() && !D.tip, onUse: () => {
     G.sfx.play('office_paperRustle', O.furn.ashtray, { k: 0.4 });
     once('ash', 'He burned the top sheet.', 2.6);
     on('ash');
   } });
-  I.add({ id: 'pad', at: V(PAD.x, DESK.h + 0.02, PAD.z), range: 1.8, cone: 0.3, prompt: 'the pad', when: () => here('ames')() && !pad.done && !D.tip, onUse: () => {
+  I.add({ id: 'pad', at: V(PAD.x, DESK.h + 0.02, PAD.z), range: 1.8, cone: 0.5, prompt: 'the pad', when: () => here('ames')() && !pad.done && !D.tip, onUse: () => {
     if (!O.lampOn) { G.hud.say('Too dark.', 1.8); return; }
     if (!st.pencil) { G.hud.say('Dents in it. Written hard.', 2.4); on('dents'); return; }
     pad.open();
