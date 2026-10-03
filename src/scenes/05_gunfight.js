@@ -40,7 +40,7 @@ const NUM = { maxFiring: 2, settleK: 1.2, dmgK: 0.9 };
 // cart, who must win it, and the hand standing in the middle of the corridor trading, who must not: at 1.4 / 0.8
 // he won it); the heavy three of my rounds, not five: the first gunfight's heavy, met with a full cylinder)
 const NUM_CORR = { dmgK: 0.9, settleK: 1.25 };
-const HEAVY_DMGK = 0.7;
+const HEAVY_DMGK = 0.55;
 // (the flank: slower to settle - they come at my side, the time to turn; at 1.35 a good hand still lost one
 // first try in five to the man who came in and round the desk)
 const NUM_FLANK = { settleK: 1.5 };
@@ -78,12 +78,16 @@ const WHY = { default: 'Shot.' };
 // covered from both the door and the connecting door: the good hand's falls in the flank were nearly all that.
 const FLANK_WAIT = 10;
 const DOORNAMES = ['kicker', 'jamb', 'side', 'doorLeft'];
+// (and the second comes through once the first is down, or 8 s on: one at a time out of the doorway at my
+// side, as the corridor's are - the second walking in round the desk while the first held the jamb was the rest)
 function flankGo(F, G) {
   const t0 = G.time;
   let goT = null;
+  const up = (name) => (F.men || []).some((h) => h.alive && h.c5 === name);
   return (m) => () => {
     if (goT == null && ((F.men || []).every((h) => !h.alive || !DOORNAMES.includes(h.c5)) || G.time - t0 > FLANK_WAIT)) goT = G.time;
-    return goT != null && G.time - goT >= (m.late || 0);
+    if (goT == null || G.time - goT < (m.late || 0)) return false;
+    return m.name !== 'flankB' || !up('flankA') || G.time - goT > 8;
   };
 }
 
@@ -158,8 +162,9 @@ function corridorMen(ctx, spawn) {
   // (the heavy last: up the stair once the others are down - never the three at once and him)
   const others = () => (F.men || []).filter((h) => h.alive && h.c5 !== 'heavy').length;
   // (his start said: the gate below clanks, the line names him - the tell before the heavy)
-  // (and his rounds a little lighter than the kit's heavy's - bursts at nine a second: a good hand at the cart
-  // who missed him once was down 2.3 s after the first round; the first gunfight's heavy is met, not a wall)
+  // (and his rounds lighter than the kit's heavy's - bursts at nine a second: a good hand at the cart who
+  // missed him once was down 2.3 s after the first round, and at 0.7 the first-timer met him three tries of
+  // three; the first gunfight's heavy is three of my rounds walking at me, not a wall)
   const heavyGo = (f) => { if (F.heavyT) return true; if (!f()) return false; F.heavyT = G.time; ctx.hud.objective('One more. On the stair.'); gunsOf(G).cfg.dmgK = HEAVY_DMGK; return true; };
   // (a breath after the last of them falls - a reload's worth - the gate below clanks open; or, the
   // corridor held to a stand-off with one of them left, he comes up anyway: nobody waits the clock out)
