@@ -867,9 +867,10 @@ the `#errlog` contents (a non-empty log is a fail) and exits 1 on any fail.
 | `body_continue.json` | the title | CONTINUE from the body, landing and note saves after a reload | 4 of 4 |
 | `office.json` | `?start=office` | scene 4 to scene 5's card | 12 of 12, twice |
 | `gunfight.json` | `?start=gunfight` | scene 5 at a human pace (reaction 300 to 560 ms), behind the desk | 7 of 7, twice (one fall in the last overlap) |
-| `watcher_good.json` [C6] | `?start=watcher` | chapter V from the window to chapter VI's seat, twice (over the roofs, by Tanner's Row), never lost (`tools/lib/c6_chase.mjs` 'good') | 5 of 5 |
-| `watcher_bad.json` [C6] | `?start=watcher` | a clumsy first-timer: warned, lost, through on a later try | 4 of 4 |
-| `watcher_idle.json`, `watcher_w.json` [C6] | each stretch | hands off / W only: warned, then "Lost him.", back at the stretch | 9 of 9, 4 of 4 |
+| `watcher_good.json` [C6] | `?start=watcher` | chapter V from the window to chapter VI's seat, twice (over the roofs and the market's middle aisle, by Tanner's Row and its west aisle), never lost (`tools/lib/c6_chase.mjs` 'good') | see C6.md |
+| `watcher_bad.json` [C6] | `?start=watcher` | a clumsy first-timer: warned, lost, through on a later try | see C6.md |
+| `watcher_idle.json`, `watcher_w.json` [C6] | every beat | hands off / W only: warned, then "Lost him.", back at the beat | see C6.md |
+| `watcher_missall.json`, `watcher_miss1.json`, `watcher_firsttimer.json`, `watcher_window.json`, `watcher_moves.json` [C6 3rd] | each stretch | every thing missed (warned or lost); one thing missed (never lost); SPACE by reflex, the cards obeyed; the window's first frame and clock; small moves | see C6.md |
 | `watcher_seam.json`, `watcher_jank.json` [C6] | `?start=watcher.car`, `scene=watcher&beat=car` | the cut into the coupe's seat measured; walking into the chase's walls, fences, doors, cars | see C6.md |
 | `tail.json` | `?start=tail` | scene 7 to chapter VIII's start | 4 of 4, twice |
 | `warehouse.json` | `?start=warehouse` | scene 8 whole: the stealth by the men's rounds, the switch and a bottle, the order, the fight, out to IX | 34 of 34, twice |
