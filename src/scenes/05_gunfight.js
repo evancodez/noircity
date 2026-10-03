@@ -33,8 +33,12 @@ import { DESK, DOOR, DOORS, OUTER, CORR, ROOM, LIFT, WIN, OPEN } from '../stages
 // The numbers a chapter may turn (GUNS.md §2): maxFiring 2, settleK 1.2 (a
 // first gunfight), dmgK 0.9.
 const EAST = -Math.PI / 2, WEST = Math.PI / 2;
+const OPEN_Z0 = 2.5;
 const AREA = { x0: -9.6, x1: 5.6, z0: -7.3, z1: 9.4 };
 const NUM = { maxFiring: 2, settleK: 1.2, dmgK: 0.9 };
+// (the corridor: four, the heavy last - a little less to each round of theirs, a little slower to settle; the heavy
+// three of my rounds, not five: the first gunfight's heavy, met with a full cylinder)
+const NUM_CORR = { dmgK: 0.8, settleK: 1.3 };
 // the door's three: where they stand at the glass (corridor side), and their way in
 const DOORMEN = [
   // the kicker: through the door when it goes, into the outer office
@@ -50,6 +54,13 @@ const FLANKERS = [
   { name: 'flankA', at: { x: -4.75, z: -6.3 }, way: [{ door: 'D305' }, { x: 2.9, z: -2.5, run: true }, { door: 'CONN' }], door: 'hold' },
   { name: 'flankB', at: { x: -5.05, z: -6.75 }, way: [{ door: 'D305' }, { x: 3.6, z: -2.9, run: true }, { door: 'CONN' }], door: 'hold' },
 ];
+// (the plays: each beat's cover places for the good hand - behind it, facing the way they come - and the bad hand's open floor)
+const SPOTS = {
+  shadows: [{ x: DESK.x - 0.05, z: DESK.z - 0.4, yaw: WEST }, { x: DESK.x - 0.05, z: DESK.z + 0.45, yaw: WEST }, { x: -0.85, z: 5.3, yaw: WEST }, { x: 0.5, z: OPEN_Z0 - 0.45, yaw: WEST + 0.3 }],
+  flank: [{ x: DESK.x - 0.05, z: DESK.z + 0.45, yaw: WEST + 0.6 }, { x: 1.3, z: 5.75, yaw: EAST + 2.4 }, { x: 0.5, z: OPEN_Z0 - 0.45, yaw: EAST + 2.6 }],
+  corridor: [{ x: -0.85, z: 5.3, yaw: WEST }, { x: -0.85, z: 1.4, yaw: WEST }, { x: -4.35, z: -0.05, yaw: 0 }, { x: -3.25, z: -2.05, yaw: WEST }],
+};
+const OPENS = { shadows: { x: 1.8, z: 3.4 }, flank: { x: 2.4, z: 2.4 }, corridor: { x: -4.8, z: 1.8 } };
 // the warnings and the falls in this chapter's words (the kit's for the rest)
 const WARN = { door: 'Behind you! The door!' };
 const WHY = { default: 'Shot.' };
@@ -86,11 +97,13 @@ function prepare(ctx, name, { reset = true } = {}) {
   K.arm('revolver');
   K.end();
   if (name === 'quiet') return;
-  K.begin({ to: name, ...NUM, flankAfter: name === 'corridor' ? 12 : 0, area: AREA, warn: { ...WARN, ...(name === 'flank' ? { door: 'The other door! Behind you!' } : {}) }, why: WHY });
+  K.begin({ to: name, ...NUM, ...(name === 'corridor' ? NUM_CORR : {}), flankAfter: 0, area: AREA, warn: { ...WARN, ...(name === 'flank' ? { door: 'The other door! Behind you!' } : {}) }, why: WHY });
   const F = ctx.flags;
   F.men = [];
+  // (the plays' record of the beat, lane C2's driver's: its cover places, where the open is, won)
+  F.c2 = { beat: name, spots: SPOTS[name] || [], open: OPENS[name] || null, won: false };
   F.go = null;
-  const spawn = (m, extra = {}) => { const h = K.spawn({ kind: m.kind || 'pistol', at: m.at, yaw: m.yaw ?? null, way: m.way ? { steps: m.way } : null, door: m.door || null, cover: !!m.cover, wait: m.wait ?? 0, start: m.start || null, name: m.name, ...extra }); h.c5 = m.name; F.men.push(h); return h; };
+  const spawn = (m, extra = {}) => { const h = K.spawn({ kind: m.kind || 'pistol', at: m.at, yaw: m.yaw ?? null, way: m.way ? { steps: m.way } : null, door: m.door || null, cover: !!m.cover, wait: m.wait ?? 0, start: m.start || null, name: m.name, hp: m.hp ?? null, ...extra }); h.c5 = m.name; F.men.push(h); return h; };
   F.spawn = spawn;
   if (name === 'shadows') for (const m of DOORMEN) spawn({ ...m, start: () => F.go != null && G.time - F.go > (m.name === 'kicker' ? 0.05 : m.name === 'jamb' ? 0.5 : 0.35) });
   if (name === 'flank') {
@@ -109,8 +122,14 @@ function corridorMen(ctx, spawn) {
   F.liftOpen = false; F.liftCalled = null;
   spawn({ name: 'liftA', kind: 'pistol', at: { x: cx - 0.2, z: LIFT.z1 - 0.35 }, yaw: Math.PI, start: () => F.liftOpen, wait: 0.2, way: [{ x: cx, z: CORR.z0 + 1.6, run: true }] });
   spawn({ name: 'tommy', kind: 'tommy', at: { x: cx + 0.2, z: LIFT.z0 + 0.4 }, yaw: Math.PI, start: () => F.liftOpen, wait: 0.9, way: [{ x: cx + 0.3, z: CORR.z0 + 1.0 }] });
-  spawn({ name: 'wc', kind: 'pistol', at: { x: -4.8, z: 8.6 }, yaw: Math.PI, start: () => F.liftOpen && G.time - F.liftOpen > 6, way: [{ door: 'WC' }], door: 'hold' });
-  spawn({ name: 'heavy', kind: 'rusher', at: { x: O.suite.flightFoot.x, z: O.suite.flightFoot.z }, yaw: -Math.PI / 2, start: () => F.liftOpen && G.time - F.liftOpen > 13, way: [{ door: 'GATE' }, { x: -6.4, z: -5.0 }, { door: 'STAIR' }] });
+  // (the washroom's door down the hall: once the lift's two are down - behind me, said as it opens)
+  const liftLeft = () => (F.men || []).filter((h) => h.alive && (h.c5 === 'liftA' || h.c5 === 'tommy')).length;
+  spawn({ name: 'wc', kind: 'pistol', at: { x: -4.8, z: 7.75 }, yaw: Math.PI, start: () => F.liftOpen && G.time - F.liftOpen > 7 && (liftLeft() === 0 || G.time - F.liftOpen > 30), way: [{ door: 'WC' }], door: 'hold' });
+  // (the heavy last: up the stair once the others are down - never the three at once and him)
+  const others = () => (F.men || []).filter((h) => h.alive && h.c5 !== 'heavy').length;
+  // (a breath after the last of them falls - a reload's worth - the gate below clanks open; or, the
+  // corridor held to a stand-off with one of them left, he comes up anyway: nobody waits the clock out)
+  spawn({ name: 'heavy', kind: 'rusher', at: { x: O.suite.flightFoot.x, z: O.suite.flightFoot.z }, yaw: -Math.PI / 2, start: () => { if (!F.liftOpen || G.time - F.liftOpen < 12) return false; if (G.time - F.liftOpen > 40 && others() <= 1) return true; if (others() > 0) { F.othersT = null; return false; } F.othersT = F.othersT || G.time; return G.time - F.othersT > 5; }, hp: 165, way: [{ door: 'GATE' }, { x: -6.4, z: -5.0 }, { door: 'STAIR' }] });
   void G;
 }
 
@@ -195,6 +214,7 @@ export default defineScene({
       R.tipped = !!O.desk.tip;
       R.doorLeft = (F.men || []).filter((h) => h.alive && ['kicker', 'jamb', 'side'].includes(h.c5)).map((h) => ({ x: h.pos.x, z: h.pos.z }));
       // ---- 2. the flank: the handle of the connecting door turns ------------------------------------
+      (G._c2won || (G._c2won = [])).push('shadows');
       yield beat('flank');
       K.cfg.to = 'flank';
       K.cfg.warn = { ...WARN, door: 'The other door! Behind you!' };
@@ -203,10 +223,12 @@ export default defineScene({
     if (ctx.at('flank') && ctx.beat === 'flank') {
       yield until(() => alive() === 0);
       R.tipped = !!O.desk.tip;
+      (G._c2won || (G._c2won = [])).push('flank');
       yield beat('corridor');
       K.cfg.to = 'corridor';
       K.cfg.warn = { ...WARN };
-      K.cfg.flankAfter = 12;
+      K.cfg.flankAfter = 0;
+      Object.assign(K.cfg, NUM_CORR);
       corridorMen(ctx, F.spawn);
       O.lift.setY(-3.3); O.lift.setOpen(0); O.lift.dial(1);
     } else if (ctx.beat === 'corridor') yield beat('corridor');
@@ -220,7 +242,7 @@ export default defineScene({
     }
     // ---- 4. the quiet: see if more are coming ---------------------------------------------------------
     if (ctx.at('quiet')) {
-      if (ctx.beat !== 'quiet') yield beat('quiet');
+      if (ctx.beat !== 'quiet') { (G._c2won || (G._c2won = [])).push('corridor'); yield beat('quiet'); }
       won = true; ctx.hud.warn(null);
       K.end();
       D.stop();

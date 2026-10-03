@@ -110,8 +110,9 @@ export function buildSuite(kit, mats, stage) {
     piece(M(r), mats.iron, { kind: 'steel' }, { name: 'corr_radiator' });
     C.addBox(x + 0.02, (z0 + z1) / 2, 0.1, (z1 - z0) / 2, 0, 'stand');
     out.radiator = V(x, 0.7, (z0 + z1) / 2);
-    // the cleaner's cart by 306: a steel frame, a pail, a mop, a sack (steel: it stops a round)
-    const cx = CORR.x1 - 0.3, cz = -4.4;
+    // the cleaner's cart: a steel frame, a pail, a mop, a sack (steel: it stops a round)
+    // (north of 305's door, its long side along the wall: down behind it, the lift's end of the corridor is in front of me)
+    const cx = CORR.x1 - 0.32, cz = -0.85;
     const cart = [new THREE.BoxGeometry(0.5, 0.03, 0.8).translate(cx, 0.75, cz), new THREE.BoxGeometry(0.5, 0.03, 0.8).translate(cx, 0.2, cz)];
     for (const sx of [-1, 1]) for (const sz of [-1, 1]) cart.push(new THREE.CylinderGeometry(0.012, 0.012, 0.75, 6).translate(cx + sx * 0.23, 0.45, cz + sz * 0.38), new THREE.SphereGeometry(0.04, 8, 6).translate(cx + sx * 0.23, 0.04, cz + sz * 0.38));
     cart.push(lathe([[0.0001, 0], [0.13, 0], [0.16, 0.28], [0.17, 0.3], [0.0001, 0.3]], 18).translate(cx, 0.22, cz + 0.18));

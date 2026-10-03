@@ -63,8 +63,9 @@ export const DOORS = {
   CONN: { axis: 'x', z: -0.08, x0: 4.25, x1: 5.15, swing: 1, inside: { x: 4.7, z: -0.9 }, outside: { x: 4.7, z: 0.8 }, glass: null },
   // the stair door (the corridor's west wall): opens onto the landing
   STAIR: { axis: 'z', x: CORR.x0 - T / 2, z0: -5.45, z1: -4.5, swing: -1, inside: { x: -6.6, z: -5.0 }, outside: { x: -4.75, z: -5.0 }, glass: 'stair' },
-  // the washroom (the corridor's north wall): opens into it
-  WC: { axis: 'x', z: CORR.z1 + T / 2, x0: -5.25, x1: -4.35, swing: -1, inside: { x: -4.8, z: 7.9 }, outside: { x: -4.8, z: 6.3 }, glass: 'wc' },
+  // the washroom (the corridor's north wall)
+  // (it opens out into the corridor: a washroom's door, kept out of its own small room)
+  WC: { axis: 'x', z: CORR.z1 + T / 2, x0: -5.25, x1: -4.35, swing: 1, inside: { x: -4.8, z: 6.2 }, outside: { x: -4.8, z: 7.85 }, glass: 'wc' },
   // the grille gate across the head of the flight down (locked: the men below have the key)
   GATE: { axis: 'z', x: -7.15, z0: -5.55, z1: -4.45, swing: 1, inside: { x: -6.5, z: -5.0 }, outside: { x: -7.8, z: -5.0 }, glass: null, grille: true },
 };

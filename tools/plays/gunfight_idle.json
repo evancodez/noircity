@@ -1,0 +1,19 @@
+{
+ "about": "[C5] Chapter IV's proof 1 (WAVE_C §7): in every movement of the gunfight the player does nothing at all and LOSES - the warning first (a second or more), the reason said, back at the movement's checkpoint. At the door: standing still at the pause, down within seconds of the door going in. node tools/play.mjs tools/plays/gunfight_idle.json",
+ "url": "/?mute=1&start=gunfight",
+ "size": [1280, 800],
+ "out": "shots/play/gunfight_idle",
+ "steps": [
+  { "name": "the title, BEGIN at IV" },
+  { "until": "G.state === 'title' && !!document.querySelector('#title .opt[data-k=begin]')", "timeout": 60000 },
+  { "wait": 1500 },
+  { "clickOn": "#title .opt[data-k=begin]", "taken": "G.scenes.current && G.scenes.current.id === 'gunfight'", "retries": 4 },
+  { "until": "G.scenes.current && G.scenes.current.id === 'gunfight' && document.pointerLockElement === N.renderer.domElement", "timeout": 30000 },
+  { "name": "every movement, the controls let go" },
+  { "drive": "tools/lib/c5_door.mjs", "profile": "idle", "tries": 1, "beatTimeout": 70,
+    "beats": ["shadows", "flank", "corridor"],
+    "check": "D.lost === 3 && D.won === 0 && D.allWarned && D.falls.every((w) => w && w !== 'timeout')",
+    "label": "doing nothing loses every movement, each with a warning and a reason" },
+  { "eval": "(N.game.guns.events || []).filter((e) => e.what === 'down').map((e) => e.why)" }
+ ]
+}

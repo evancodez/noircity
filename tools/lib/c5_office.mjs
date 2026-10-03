@@ -82,7 +82,7 @@ export default async function drive({ js, turn, keyDown, keyUp, mouse, shot, log
       pad: [3.92, 0.8, 3.9], ash: O.furn.ashtray.toArray(), pic: [2.85, 1.5, 0.1], dial: O.safe.centre.toArray(), phone: w(O.phone.recv), hat: [0.25, 1.7, 5.75], photo: [1.02, 1.46, 6.65] }; })()`);
   // the routes on the floor (round the furniture)
   const R = {
-    toDoor: [[-4.95, -5.6], [-4.95, -3.6], [-4.75, 1.5], [-4.7, 3.35]],
+    toDoor: [[-4.95, -5.6], [-4.95, -2.0], [-4.95, -0.2], [-4.75, 1.5], [-4.7, 3.35]],
     intoOuter: [[-3.0, 3.35]],
     toOpening: [[-1.2, 3.4], [0.6, 3.4]],
     deskFront: [[2.2, 3.0], [2.9, 3.4]],
