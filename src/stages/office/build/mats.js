@@ -51,6 +51,8 @@ export function officeMats() {
     stone: std('stone', 0x383838, 0.95, 'plaster'),
     asphalt: std('asphalt', 0x0a0a0a, 0.3, 'plaster'),
     black: std('black', 0x040404, 1.0, 'cloth'),
+    // [C5] 305's dust sheets: pale cloth over the dark (they hold what light there is)
+    sheet: std('sheet', 0x8a8a86, 0.95, 'plaster'),
     glassDark: std('glassDark', 0x0a0a0a, 0.1, 'metal'),
     shade: std('shade', 0x0c0c0c, 0.35, 'enamel'),
     bulb: glow('bulb', 9),

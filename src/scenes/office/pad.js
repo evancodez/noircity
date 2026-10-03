@@ -37,8 +37,10 @@ export function padPuzzle(ctx) {
       // corners, not up its middle
       const pose = { x: PAD.x + 0.42, y: DESK.h + 0.47, z: PAD.z - 0.01, yaw: Math.PI / 2 - 0.06, pitch: -0.86 };
       C.setMode('table', { pose, fov: 44, ease: 0.45 });
-      // the pencil from the blotter into my hand (it goes where the hand takes it)
+      // [C5] the pencil out of my pocket into my hand (it goes where the hand takes it)
       const pc = O.pencil;
+      pc.visible = true;
+      if (!pc.parent) ctx.stage.scene.add(pc);
       H.equip('empty');
       H.hold(pc, 'R');
       // the left hand flat on the blotter beside the pad, holding it still
@@ -46,7 +48,8 @@ export function padPuzzle(ctx) {
       P.leftHand();
       P.place(0);
       G.sfx.play('office_pencilPick', O.pencilAt);
-      if (!P.taught) { P.taught = true; G.hud.prompt('LMB  hold and rub', null, 'pad'); P.teachT = 3.5; }
+      // [C5] the kit's card (once per save): LMB is the right hand's act - here, the rub
+      if (!P.taught) { P.taught = true; if (G.hud.teach) G.hud.teach('rub', '[LMB] hold and rub', { until: 'Mouse0' }); else { G.hud.prompt('LMB  hold and rub', null, 'pad'); P.teachT = 3.5; } }
     },
     // the left hand on the pad (palm down at its near left edge, fingers away and in: its arm off the sheet)
     leftHand() {
@@ -117,23 +120,23 @@ export function padPuzzle(ctx) {
       // (a player who has not found it: the prompt again after a while idle;
       // once, a line on how)
       P.inT = (P.inT || 0) + dt;
-      if (P.solvedT < 0 && P.idle > 6 && !(P.teachT > 0) && P.press === 0) { G.hud.prompt('LMB  hold and rub', null, 'pad'); P.teachT = 3; P.idle = 0; }
-      if (P.solvedT < 0 && P.inT > 16 && P.shown < 0.2 && !P.hinted) { P.hinted = true; G.hud.say('The side of the lead. The whole sheet.', 3); }
-      // what reads (measured four times a second)
+      if (!P.readable && P.idle > 7 && !(P.teachT > 0) && P.press === 0) { G.hud.prompt('LMB  hold and rub', null, 'pad'); P.teachT = 3; P.idle = 0; }
+      if (!P.readable && P.inT > 18 && P.shown < 0.2 && !P.hinted) { P.hinted = true; G.hud.say('The side of the lead. The whole sheet.', 3); }
+      // [C5] what reads (four times a second): each figure's ring shaded. No
+      // count ends it: once all three read (big, white, whole), E tears the
+      // sheet off - and the pencil may go on over the rest of it first
       P.checkT -= dt;
-      if (P.checkT <= 0 && P.solvedT < 0) {
+      if (P.checkT <= 0 && !P.tore) {
         P.checkT = 0.25;
-        P.shown = pad.shown();
-        if (P.shown > 0.42) { P.solvedT = 0; G.sfx.play('office_paperRustle', P.tip, { k: 0.3 }); }
+        P.rowK = pad.rows();
+        P.shown = Math.min(...P.rowK);
+        if (!P.readable && P.shown > 0.7) { P.readable = true; P.readT = G.time; G.sfx.play('office_paperRustle', P.tip, { k: 0.3 }); }
       }
-      if (P.solvedT >= 0) {
-        P.solvedT += dt;
-        // (the beat: the pencil lifts, the numbers are read; then the tear)
-        if (P.solvedT > 0.9 && !P.tore) P.tear();
-      }
+      if (P.readable && !P.tore) G.hud.prompt('E  tear it off', null, 'pad');
       if (P.tore && P.tearH && P.tearH.done) P.finish();
-      // E steps back from the desk (the rubbing kept)
-      if (!P.tore && P.solvedT < 0 && G.pressed('KeyE') && !P.demo) P.close();
+      // E: the sheet torn off (it reads), or a step back from the desk (the rubbing kept)
+      if (!P.tore && G.pressed('KeyE') && !P.demo) { if (P.readable) P.tear(); else P.close(); }
+      if (P.demo && P.readable && !P.tore && G.time - P.readT > 1.2) P.tear();
     },
     // the sheet off the pad into my left hand
     tear() {
@@ -148,10 +151,12 @@ export function padPuzzle(ctx) {
       sheet.updateMatrixWorld(true);
       holdAt(H, 'L', sheet, at.clone(), { i: [0.25, 0.3, 0.15, 0], m: [0.3, 0.35, 0.18, 0], r: [0.4, 0.45, 0.22, 0], l: [0.5, 0.5, 0.25, 0], t: [0.7, 0.3, 0.5, 0.15, 0.1] }, [-0.26, -0.5, -0.1]);
       H.hold(sheet, 'L');
-      // (the pencil down on the pad as the left hand takes the sheet)
+      // (the pencil into my pocket as the left hand takes the sheet)
       P.press = 1;
       P.place(0);
       H.hold(null, 'R');
+      O.pencil.visible = false;
+      G.hud.clearPrompt('pad');
       live(H, { R: null, L: null });
       P.tearH = H.play('b2_tear', { onMark: { tear: () => { G.sfx.play('office_sheetTear', V(PAD.x, TOP, PAD.z)); pad.reset(); } } });
     },
@@ -167,9 +172,9 @@ export function padPuzzle(ctx) {
       O.lampDimTo = 0;
       G.hud.clearPrompt('pad');
       if (!P.tore) {
-        // the pencil back down on the blotter
-        P.press = 1; P.place(0);
+        // [C5] the pencil back into my pocket
         H.hold(null, 'R');
+        O.pencil.visible = false;
         live(H, {});
       }
       const back = P.prevPose || C.eyePose();

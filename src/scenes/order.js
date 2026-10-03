@@ -35,11 +35,9 @@ export const ORDER = [
   { id: 'diner', numeral: 'I', title: 'The Diner', music: 'room', carry: [] },
   // [C4] II: the scene file declares its own lines (02_fight.js)
   { id: 'fight', numeral: 'II', title: 'The Fight', music: 'room', carry: [] },
-  { id: 'office', numeral: 'III', title: 'Room 304', music: { slot: 'office', fade: 2.5 }, carry: ['matchbook', 'amesCard'],
-    objectives: { corridor: 'Find Ames. Room 304.', room: 'Ames is dead. Search the room.', pad: 'Shade the pad. Read it.',
-      safe: 'Open the safe.', ledger: 'Take what he hid.' } },
-  { id: 'gunfight', numeral: 'IV', title: 'The Door', music: { stop: 2.5 }, carry: ARMED, flags: NOTE,
-    objectives: { shadows: 'Watch the door. Get ready.', door: 'Stay alive.', window: 'Stay alive.', quiet: null } },
+  // [C5] III and IV: the scene files declare their own lines (04_office.js, 05_gunfight.js)
+  { id: 'office', numeral: 'III', title: 'Room 304', music: { slot: 'office', fade: 2.5 }, carry: ['matchbook', 'amesCard'] },
+  { id: 'gunfight', numeral: 'IV', title: 'The Door', music: { stop: 2.5 }, carry: ARMED, flags: NOTE },
   { id: 'watcher', numeral: 'V', title: 'The Watcher', music: null,
     beatMusic: { escape: { slot: 'chase', fade: 0.4 }, run: { slot: 'chase', fade: 0.4 }, car: { slot: 'chase', fade: 0.4 } }, carry: ARMED, flags: NOTE,
     objectives: { seen: 'Check the street.', escape: 'After him. Down the fire escape.', run: 'Don’t lose him.', car: 'Get to your car.' } },

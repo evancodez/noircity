@@ -33,8 +33,9 @@ export function safePuzzle(ctx) {
       S.prevPose = C.eyePose();
       // the eye before the dial, a little above it, close
       const c = safe.centre;
-      const pose = { x: c.x - 0.03, y: c.y + 0.1, z: c.z + 0.6, yaw: 0.0, pitch: -0.15 };
-      C.setMode('table', { pose, fov: 42, ease: 0.45 });
+      // ([C5] closer, the lens narrower: the dial's figures read at a glance, the sheet held up beside it)
+      const pose = { x: c.x + 0.02, y: c.y + 0.07, z: c.z + 0.5, yaw: 0.04, pitch: -0.13 };
+      C.setMode('table', { pose, fov: 36, ease: 0.45 });
       live(H, { R: 'b2liveR', L: O.sheet ? 'b2liveL' : null });
       S.place();
       if (!S.taught) { S.taught = true; G.hud.prompt('MOUSE  turn the dial', null, 'safe'); S.teachT = 3.2; }

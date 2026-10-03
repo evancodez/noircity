@@ -1,203 +1,238 @@
 import * as THREE from 'three';
 import { defineScene, wait, until, beat } from '../game/script.js';
-import { roomAs, carry, office, stand, inkPrompt, V } from './office/room.js';
+import { gunsOf } from '../guns/Guns.js';
+import { roomAs, carry, office, inkPrompt, doorsUse, roomOf, V } from './office/room.js';
 import { live, palmOn } from './office/hands.js';
-import { MEN, send, coverFrom, glassMen, roomReacts, glassReward, fallHook, papers, note } from './office/fight.js';
-import { DESK, DOOR, SIDE, SAFE, FAN, PICTURE } from '../stages/office/plan.js';
+import { roomReacts, papers } from './office/fight.js';
+import { DESK, DOOR, DOORS, OUTER, CORR, ROOM, LIFT, WIN, OPEN } from '../stages/office/plan.js';
 
-// Scene 5, The Door (lane B2's brief; STORY.md). The same room, a minute
-// after the ledger went into my coat. Beats:
-//   shadows  a board creaks in the corridor; a shadow on the door's frosted
-//            glass, then one on the sidelight's; the music is gone; my hand
-//            into my coat and out with the revolver. E tips the desk over
-//            (the lamp falls and burns on from the floor; the desk is
-//            cover); C ducks behind it
-//   door     the door is kicked in: one man through it (behind the open
-//            leaf, then out to shoot), one firing through the frosted
-//            sidelight - shoot his outline and he comes through the glass -
-//            and one in the doorway after them
-//   window   up the fire escape: a Tommy gun at the side window (the
-//            curtain shreds, the wall behind me is stitched); then two more
-//            down the corridor, one of them a heavy. Six men in all
-//   quiet    the last one down: smoke in the lamp's light, paper coming
-//            down, the fan ticking round on a bent blade; three seconds,
-//            then on (scene 6 opens in this room)
-// Dying: the view goes down, black, and I am back at the shadows.
+// Chapter IV, The Door ([C5] wave C: the first gunfight, on lane C2's gun
+// kit - docs/story/seams/GUNS.md; the brief docs/story/briefs/C5_OFFICE.md).
+// The same room a minute after the check went into my coat. Beats, each a
+// checkpoint (a fall is the kit's: the reason, black, back at the beat):
+//   shadows   a board creaks in the corridor; the revolver comes out from
+//             under my arm. The camera is taken to their shadows on the
+//             frosted glass of the suite's door (three of them: their real
+//             joints), then given back: a moment, and a real choice - tip
+//             the desk and get low behind it (E, then C); shoot through the
+//             glass at the shadows (they are there: the rounds go through and
+//             hit - and they come in angry and sooner); or move (the outer
+//             office's corner, the files, 305's door). Do nothing in time and
+//             the door is kicked in. Movement 1, the door: the kicker comes
+//             through, one works the jamb, one smashes the sidelight and fires
+//             through it
+//   flank     the handle of the connecting door to 305 turns (heard, seen):
+//             two that way, at my side - where I was safe I am not
+//   corridor  quiet. "Check the corridor." The lift's dial sweeps up to 3, the
+//             cage folds open: two men (one a Tommy gun: the pin, the wait for
+//             his drum); the washroom's door: one more; the stair door: the
+//             heavy. Only the revolver
+//   quiet     the smoke, the rain. "See if more are coming." At the street
+//             window, E: chapter V (the watcher) begins on the frame through
+//             the blind (lane C6's)
+// The numbers a chapter may turn (GUNS.md §2): maxFiring 2, settleK 1.2 (a
+// first gunfight), dmgK 0.9.
+const EAST = -Math.PI / 2, WEST = Math.PI / 2;
+const AREA = { x0: -9.6, x1: 5.6, z0: -7.3, z1: 9.4 };
+const NUM = { maxFiring: 2, settleK: 1.2, dmgK: 0.9 };
+// the door's three: where they stand at the glass (corridor side), and their way in
+const DOORMEN = [
+  // the kicker: through the door when it goes, into the outer office
+  { name: 'kicker', at: { x: -4.42, z: 3.4 }, yaw: EAST, way: [{ door: 'AMES' }, { x: -2.7, z: 3.2, run: true }] },
+  // the jamb: he works the door from its south jamb
+  { name: 'jamb', at: { x: -4.55, z: 2.45 }, yaw: EAST, way: [{ door: 'AMES' }], door: 'hold' },
+  // the sidelight: its glass goes, he fires through the frame
+  // (a way of one step, where he stands: a man with no way fights from his first frame - `start` holds only an entry)
+  { name: 'side', at: { x: -4.5, z: 4.8 }, yaw: EAST, way: [{ x: -4.5, z: 4.75 }] },
+];
+// the flank's two: from the corridor's south end, through 305, at the connecting door (as a pair)
+const FLANKERS = [
+  { name: 'flankA', at: { x: -4.75, z: -6.3 }, way: [{ door: 'D305' }, { x: 2.9, z: -2.5, run: true }, { door: 'CONN' }], door: 'hold' },
+  { name: 'flankB', at: { x: -5.05, z: -6.75 }, way: [{ door: 'D305' }, { x: 3.6, z: -2.9, run: true }, { door: 'CONN' }], door: 'hold' },
+];
+// the warnings and the falls in this chapter's words (the kit's for the rest)
+const WARN = { door: 'Behind you! The door!' };
+const WHY = { default: 'Shot.' };
+
+// the room at a beat's start: the gun in hand and full, the kit's encounter
+function prepare(ctx, name, { reset = true } = {}) {
+  const G = ctx.game, C = ctx.controller, K = gunsOf(G), O = office(ctx);
+  const R = G._c5 || (G._c5 = {});
+  carry(ctx, { armed: true });
+  if (reset) roomAs(ctx, 'fight');
+  O.door.closer = false;
+  // (a retry: the room as this checkpoint had it - the door in, the sidelight gone, the desk as I left it)
+  if (reset && name !== 'shadows') {
+    O.door.set(1.62); O.door.locked = false;
+    if (O.side.pane.state !== 'gone') ctx.stage.glass.shatter(O.side.pane, { dir: V(1, 0, 0), power: 1, by: 'body' });
+    if (R.tipped) O.tipDesk({ now: true });
+  }
+  if (reset && name === 'corridor') { O.doors.CONN.set(1.62); O.lift.setY(-3.3); O.lift.dial(1); }
+  // where I stand
+  if (reset) {
+    if (name === 'shadows') { C.setPose(2.9, 2.2, WEST - 0.25, -0.05); C.setMode('gun', { crouch: false }); }
+    else if (name === 'flank') {
+      if (R.tipped) { C.setPose(DESK.x - 0.05, DESK.z + 0.05, WEST, -0.05); C.setMode('gun', { crouch: true }); }
+      else { C.setPose(2.6, 1.6, WEST - 0.3, -0.05); C.setMode('gun', { crouch: false }); }
+    } else if (name === 'corridor') { C.setPose(-3.2, 3.35, WEST, 0.0); C.setMode('gun', { crouch: false }); }
+    else if (name === 'quiet') { C.setPose(2.6, 3.0, EAST + 0.3, -0.05); C.setMode('gun', { crouch: false }); }
+    G.eye.copy(G.camera.position);
+  } else {
+    const P = C.eyePose();
+    C.setPose(P.x, P.z, P.yaw, P.pitch);
+    C.setMode('gun', { crouch: false });
+  }
+  G.health.reset();
+  K.arm('revolver');
+  K.end();
+  if (name === 'quiet') return;
+  K.begin({ to: name, ...NUM, flankAfter: name === 'corridor' ? 12 : 0, area: AREA, warn: { ...WARN, ...(name === 'flank' ? { door: 'The other door! Behind you!' } : {}) }, why: WHY });
+  const F = ctx.flags;
+  F.men = [];
+  F.go = null;
+  const spawn = (m, extra = {}) => { const h = K.spawn({ kind: m.kind || 'pistol', at: m.at, yaw: m.yaw ?? null, way: m.way ? { steps: m.way } : null, door: m.door || null, cover: !!m.cover, wait: m.wait ?? 0, start: m.start || null, name: m.name, ...extra }); h.c5 = m.name; F.men.push(h); return h; };
+  F.spawn = spawn;
+  if (name === 'shadows') for (const m of DOORMEN) spawn({ ...m, start: () => F.go != null && G.time - F.go > (m.name === 'kicker' ? 0.05 : m.name === 'jamb' ? 0.5 : 0.35) });
+  if (name === 'flank') {
+    // (a door man the first movement left: still at his cover in the outer office)
+    for (const p of (reset ? R.doorLeft || [] : [])) spawn({ name: 'doorLeft', at: p, cover: true, wait: 1.5 });
+    for (const m of FLANKERS) spawn({ ...m, wait: m.name === 'flankA' ? 0.6 : 0.9 });
+  }
+  if (name === 'corridor') corridorMen(ctx, spawn);
+}
+
+// the corridor's men: two in the lift (one a Tommy gun) once its cage is open,
+// one out of the washroom, the heavy up the stair
+function corridorMen(ctx, spawn) {
+  const G = ctx.game, O = office(ctx), F = ctx.flags;
+  const cx = (LIFT.x0 + LIFT.x1) / 2;
+  F.liftOpen = false; F.liftCalled = null;
+  spawn({ name: 'liftA', kind: 'pistol', at: { x: cx - 0.2, z: LIFT.z1 - 0.35 }, yaw: Math.PI, start: () => F.liftOpen, wait: 0.2, way: [{ x: cx, z: CORR.z0 + 1.6, run: true }] });
+  spawn({ name: 'tommy', kind: 'tommy', at: { x: cx + 0.2, z: LIFT.z0 + 0.4 }, yaw: Math.PI, start: () => F.liftOpen, wait: 0.9, way: [{ x: cx + 0.3, z: CORR.z0 + 1.0 }] });
+  spawn({ name: 'wc', kind: 'pistol', at: { x: -4.8, z: 8.6 }, yaw: Math.PI, start: () => F.liftOpen && G.time - F.liftOpen > 6, way: [{ door: 'WC' }], door: 'hold' });
+  spawn({ name: 'heavy', kind: 'rusher', at: { x: O.suite.flightFoot.x, z: O.suite.flightFoot.z }, yaw: -Math.PI / 2, start: () => F.liftOpen && G.time - F.liftOpen > 13, way: [{ door: 'GATE' }, { x: -6.4, z: -5.0 }, { door: 'STAIR' }] });
+  void G;
+}
+
 export default defineScene({
   id: 'gunfight', stage: 'office',
-  beats: ['shadows', 'door', 'window', 'quiet'],
-  save: ['shadows'],
-
+  beats: ['shadows', 'flank', 'corridor', 'quiet'],
+  save: ['flank', 'corridor', 'quiet'],
+  music: { stop: 2.5 },
+  objectives: { shadows: 'Someone at the door. Get ready.', flank: 'Hold the room.', corridor: 'Check the corridor.', quiet: 'See if more are coming.' },
   setup: {
-    shadows(ctx) { fightRoom(ctx); },
-    door(ctx) { fightRoom(ctx); ctx.flags.jump = 'door'; },
-    window(ctx) { fightRoom(ctx); ctx.flags.jump = 'window'; },
-    quiet(ctx) { fightRoom(ctx); ctx.flags.jump = 'quiet'; },
+    shadows(ctx) { prepare(ctx, 'shadows'); },
+    flank(ctx) { prepare(ctx, 'flank'); },
+    corridor(ctx) { prepare(ctx, 'corridor'); },
+    quiet(ctx) { prepare(ctx, 'quiet'); office(ctx).door.set(1.62); },
   },
 
   *script(ctx) {
-    const { game: G, controller: C } = ctx;
-    const O = office(ctx), F = ctx.flags;
+    const G = ctx.game, C = ctx.controller, K = gunsOf(G), O = office(ctx), F = ctx.flags;
+    const R = G._c5 || (G._c5 = {});
     inkPrompt(ctx);
-    const D = G.director;
-    const snd = (n, p = null, q = {}) => G.sfx.play(n, p, q);
-    // (continuing straight from scene 4: the room as it stands)
-    if (ctx.kept) { carry(ctx, { ledger: true }); keptRoom(ctx); }
-    F.men = [];
-    D.stop(); D.groups.clear();
-    D.begin();
-    // (an encounter on until the quiet: the HUD shows my health in a fight
-    // only while the director has one running - with no script of its own
-    // it stood down on its first step and the bar never showed. The lull
-    // breaker it steps asks the men's brain to press, and the office brain
-    // has no press: nothing else changes)
-    // (it ends with the scene: a scene left any other way never leaves the
-    // director running into the next one)
-    D.run(function* () { while (G.scenes.ctx === ctx) yield null; });
+    // (straight on from III: no setup ran - the room as it stands, the gun out now)
+    if (ctx.kept) prepare(ctx, ctx.beat, { reset: false });
     roomReacts(ctx);
-    const shotFn = () => { F.shotAt = true; F.lastShotT = G.time; };
-    const downFn = (e) => { const h = e && e.hood; void h; };
-    void downFn;
-    let lastK = G.counters.kills;
-    ctx.onStep(() => { if (G.counters.kills !== lastK) { lastK = G.counters.kills; const dead = (F.men || []).filter((h) => !h.alive && !h._b2noted); for (const h of dead) { h._b2noted = true; note(ctx, 'down ' + h.b2); } } if (G.health.hp < (F.hpLow ?? 101) - 20) { F.hpLow = G.health.hp; note(ctx, 'hp ' + Math.round(G.health.hp)); } if (G.health.hp > (F.hpLow ?? 101) + 30) F.hpLow = G.health.hp; });
-    G.on('shot', shotFn);
-    const offs = [glassReward(ctx), fallHook(ctx, () => fall(ctx)), () => G.off('shot', shotFn)];
-    const off = () => { for (const f of offs) f(); G.off('scene:exit', exitFn); };
-    const exitFn = () => off();
+    doorsUse(ctx, { allow: (n) => n !== 'GATE' || true });
+    const D = G.director;
+    // (an encounter on while the fight lasts: the HUD shows my health in a fight only while the director has one)
+    D.stop(); D.groups.clear(); D.begin();
+    D.run(function* () { while (G.scenes.ctx === ctx) yield null; });
+    const exitFn = () => { K.end(); ctx.hud.warn(null); G.off('scene:exit', exitFn); };
     G.on('scene:exit', exitFn);
-    // the corridor men's feet on the boards; the window man's on the iron
-    const hs = ctx.stage.hoods, step0 = hs._b2step0 || (hs._b2step0 = hs.onStep);
-    hs.onStep = (h, x, z, run) => {
-      if (z > 7.1) snd('office_ironStep', V(x, h.pos.y + 0.1, z), { k: run ? 1 : 0.7 });
-      else if (step0) step0(h, x, z, run);
-      if (x < -0.2 && !F.creaked && z > -2) { F.creaked = true; snd('office_boardCreak', V(x, 0.1, z), { k: 1 }); }
-    };
-    ctx.onStep((dt) => {
-      glassMen(ctx);
-      // the fan's bent blade ticks once a turn
-      const Fn = O.fan;
-      if (Fn.bent) { Fn.tickA = (Fn.tickA || 0) + (Fn.rpm / 60) * dt; if (Fn.tickA >= 1) { Fn.tickA -= 1; snd('office_fanTick', V(FAN.x, 2.7, FAN.z), { k: 0.8 }); } }
-      // the smoke hangs in the lamp's light (the room's own haze thickens with the shooting)
-      F.t = (F.t || 0) + dt;
+    // the warning before a fall: the kit's (none once the floor is won)
+    let won = false;
+    ctx.onStep(() => ctx.hud.warn(K.active && !won ? K.warning() : null));
+    const alive = (names = null) => (F.men || []).filter((h) => h.alive && (!names || names.includes(h.c5))).length;
+    // the shot that comes before they are in: the glass choice
+    const shotFn = () => { F.shotAt = G.time; };
+    G.on('shot', shotFn);
+    ctx.onStep(() => { if (!G.scenes.ctx || G.scenes.ctx !== ctx) G.off('shot', shotFn); });
+    // the teach at first need: rise the first time I am down; reload when the cylinder runs low in the fight
+    ctx.onStep(() => {
+      if (!F.roseT && (C.crouchK || 0) > 0.6 && F.go != null) { F.roseT = true; K.teach('rise'); }
+      const W = G.player.weapons.active;
+      if (!F.reloadT && W && Array.isArray(W.chambers) && W.chambers.filter((c) => c === 'live').length <= 2 && F.go != null) { F.reloadT = true; K.teach('reload'); }
     });
-
-    // ---- 1. the shadows ---------------------------------------------------------------
-    // (a second go after a fall: nothing waited through twice - the door
-    // already shut, both shapes already at its glass, the revolver out, the
-    // desk over and me down behind it if I had tipped it; the door goes in
-    // a breath after the black lifts)
-    const retry = G._b2retry;
-    G._b2retry = null;
-    if (ctx.at('shadows') && !F.jump && retry) {
+    tipPrompt(ctx);
+    // ---- 1. the shadows, the moment, the door --------------------------------------------------
+    if (ctx.at('shadows') && ctx.beat === 'shadows') {
       yield beat('shadows');
-      O.setDoor(0.035);
-      if (retry.tipped) {
-        O.tipDesk({ now: true });
-        F.tipped = true; F.ducked = true;
-        C.setPose(4.0, 3.7, 1.0, 0.0);
-        C.setMode('office', { crouch: true });
-      } else {
-        // (not tipped last time: at the desk's chair side, the door over it, the prompt under the eye)
-        C.setPose(4.75, DESK.z, Math.atan2(4.82, 2.72), -0.55);
-        C.setMode('office', {});
-      }
-      ctx.player.weapons.equip('revolver');
-      live(ctx.hands, {});
-      F.drawn = true;
-      const k = send(ctx, 'kicker', { at: { x: -0.4, z: 1.02 }, path: [] });
-      holdUntilKicked(ctx, k);
-      const g = send(ctx, 'glass', { at: { x: -0.42, z: 2.52 }, path: [] });
-      holdUntilKicked(ctx, g, 0.3);
-      if (!retry.tipped) tipPrompt(ctx);
-      yield wait(3.0);
-    } else if (ctx.at('shadows') && !F.jump) {
-      yield beat('shadows');
-      ctx.music.stop(2.5);
-      C.setMode('office', {});
-      // the draft from the fire escape: the curtain lifts, the door swings to
-      yield wait(0.4);
-      O.gust = 1.4;
-      if (O.door.angle > 0.2) { O.swingDoor(0.035, 0.9); snd('office_doorCreak', V(-0.07, 1.2, 1.0), { dur: 1.3, k: 0.6 }); }
-      yield until(() => !O.door.moving);
-      snd('office_doorBang', V(-0.07, 1.2, 1.0), { k: 0.25 });
-      yield wait(0.5);
-      snd('office_boardCreak', V(-1.1, 0.1, -2.2), { k: 0.9 });
-      // the first shape comes up the corridor to the door's glass
-      const kicker = send(ctx, 'kicker');
-      holdUntilKicked(ctx, kicker);
-      yield wait(0.7);
-      // the hand into the coat and out with the revolver
-      snd('office_draw', G.eye);
-      ctx.player.weapons.equip('revolver');
-      live(ctx.hands, {});
-      F.drawn = true;
-      // [C1] (the kit's stand-in teach cards, once per save: the revolver's
-      // first verbs in the safe second before the door; lane C5 places its own)
-      if (G.hud.teach) { G.hud.teach('fire', '[LMB] fire'); G.hud.teach('crouch', '[C] get low'); }
-      yield wait(0.6);
-      const glass = send(ctx, 'glass');
-      holdUntilKicked(ctx, glass, 0.3);
-      // one prompt: the desk (the player may ignore it)
-      tipPrompt(ctx);
-      // the door goes in when they are both at the glass, or when I go at it
-      let t = 0;
+      const first = ctx.kept || !R.seenTake;
+      R.tipped = false; R.doorLeft = null;
+      O.door.closer = false;
+      if (first) {
+        ctx.music.stop(2.5);
+        yield wait(0.6);
+        // a board in the corridor; the revolver out from under my arm
+        G.sfx.play('office_boardCreak', V(-4.6, 0.1, 1.2), { k: 1 });
+        yield wait(0.7);
+        G.sfx.play('office_draw', G.eye);
+        yield wait(0.9);
+        // the take: the camera to their shadows on the frosted glass, then given back
+        R.seenTake = true;
+        yield* take(ctx);
+      } else yield wait(1.0);
+      // the moment: a real choice. The kit's first card in the quiet second
+      F.momentT = G.time;
+      if (G.fails('shadows') === 2) K.teach('crouch', { again: true }); else K.teach('crouch');
+      const LEN = first ? 7.5 : 5.0;
       yield until(() => {
-        t += 1 / 60;
-        const atDoor = kicker.pos.distanceTo(V(-0.4, 0, 1.02)) < 0.45 && glass.pos.distanceTo(V(-0.42, 0, 2.52)) < 0.5;
-        const nearDoor = G.eye.x < 1.2 && Math.abs(G.eye.z - (DOOR.z0 + DOOR.z1) / 2) < 1.1;
-        return (atDoor && t > 5.5) || t > 11 || (atDoor && (nearDoor || F.shotAt));
+        const near = roomOf(G.eye.x, G.eye.z) === 'corr' || (G.eye.x < OUTER.x0 + 1.4 && Math.abs(G.eye.z - 3.4) < 2.2);
+        const shot = F.shotAt != null && F.shotAt > F.momentT;
+        return G.time - F.momentT > LEN || near || (shot && G.time - F.shotAt > 0.15);
       });
+      // they come in: the door kicked, the sidelight's glass knocked out
+      F.go = G.time;
+      ctx.hud.objective('Hold the room.');
+      O.door.kick();
+      G.controller.shake(0.4, Math.hypot(G.eye.x - DOORS.AMES.x, G.eye.z - 3.4));
+      yield wait(0.3);
+      if (O.side.pane.state !== 'gone') ctx.stage.glass.shatter(O.side.pane, { dir: V(1, 0, 0), power: 1.4, by: 'body' });
+      // movement 1 until the door is down to one (or it has gone on long enough)
+      yield until(() => (alive(['kicker', 'jamb', 'side']) <= 1 && G.time - F.go > 6) || G.time - F.go > 40);
+      R.tipped = !!O.desk.tip;
+      R.doorLeft = (F.men || []).filter((h) => h.alive && ['kicker', 'jamb', 'side'].includes(h.c5)).map((h) => ({ x: h.pos.x, z: h.pos.z }));
+      // ---- 2. the flank: the handle of the connecting door turns ------------------------------------
+      yield beat('flank');
+      K.cfg.to = 'flank';
+      K.cfg.warn = { ...WARN, door: 'The other door! Behind you!' };
+      for (const m of FLANKERS) F.spawn({ ...m, wait: m.name === 'flankA' ? 0.4 : 0.7 });
+    } else if (ctx.beat === 'flank') yield beat('flank');
+    if (ctx.at('flank') && ctx.beat === 'flank') {
+      yield until(() => alive() === 0);
+      R.tipped = !!O.desk.tip;
+      yield beat('corridor');
+      K.cfg.to = 'corridor';
+      K.cfg.warn = { ...WARN };
+      K.cfg.flankAfter = 12;
+      corridorMen(ctx, F.spawn);
+      O.lift.setY(-3.3); O.lift.setOpen(0); O.lift.dial(1);
+    } else if (ctx.beat === 'corridor') yield beat('corridor');
+    // ---- 3. the corridor: the lift comes up ---------------------------------------------------------
+    if (ctx.at('corridor') && ctx.beat === 'corridor') {
+      const t0 = G.time;
+      // (quiet: I go out to look - or they come anyway)
+      yield until(() => G.eye.x < OUTER.x0 + 0.5 || G.time - t0 > 16);
+      O.callLift(() => { F.liftOpen = G.time; K.rebuild(); }, { from: -3.3, secs: 5.0 });
+      yield until(() => F.liftOpen && alive() === 0);
     }
-
-    // ---- 2. the door --------------------------------------------------------------------
-    if (ctx.at('door') && F.jump !== 'window' && F.jump !== 'quiet') {
-      if (F.jump === 'door') jumpTo(ctx, 'door');
-      yield beat('door');
-      kick(ctx);
-      yield wait(3.5);
-      send(ctx, 'doorway');
-      // the window when the door is down to one, or when it has gone on long enough
-      let t = 0;
-      yield until(() => { t += 1 / 60; return (alive(ctx, ['kicker', 'glass', 'doorway']) <= 1 && t > 7) || t > 20; });
-    }
-
-    // ---- 3. the window ----------------------------------------------------------------------
-    if (ctx.at('window') && F.jump !== 'quiet') {
-      if (F.jump === 'window') jumpTo(ctx, 'window');
-      yield beat('window');
-      const w = send(ctx, 'window', { onFire: (h) => curtainShot(ctx, h) });
-      void w;
-      // (the last two are on the stairs while he is still on the iron: a
-      // crossfire if he lives long enough)
-      let t = 0;
-      yield until(() => { t += 1 / 60; return t > 4.5 || alive(ctx, ['window']) === 0; });
-      // (the second at the sidelight if its glass is gone - the men do not all fall on one spot)
-      const sideGone = O.side && O.side.pane && O.side.pane.state === 'gone';
-      send(ctx, 'second', sideGone ? { path: [{ x: -1.55, z: -5.75 }, { x: -1.15, z: -4.6 }, { x: -1.3, z: -0.6 }, { x: -1.0, z: 1.95 }], hide: { x: -1.0, z: 1.95 }, fire: { x: -0.5, z: 2.4 } } : {});
-      yield wait(1.5);
-      send(ctx, 'heavy');
-      yield until(() => alive(ctx) === 0);
-    }
-
-    // ---- 4. the quiet --------------------------------------------------------------------------
+    // ---- 4. the quiet: see if more are coming ---------------------------------------------------------
     if (ctx.at('quiet')) {
-      if (F.jump === 'quiet') jumpTo(ctx, 'quiet');
-      yield beat('quiet');
+      if (ctx.beat !== 'quiet') yield beat('quiet');
+      won = true; ctx.hud.warn(null);
+      K.end();
       D.stop();
-      // (up from behind the desk to see it: the smoke in the light, the paper coming down)
-      C.crouchOn = false;
-      // smoke in the light, paper coming down
+      C.setMode('gun', { crouch: false });
+      (G._c5won || (G._c5won = [])).push('gunfight');
+      // smoke in the light, paper coming down where I look
       const rng = ctx.stage.rng.fork(3071);
-      // (round 2: where I am looking, a couple of metres off, not over my head:
-      // over the desk they came down past the lens as a white card)
-      const fw = G.camera.getWorldDirection(V(0, 0, 0)).setY(0);
-      if (fw.lengthSq() < 1e-4) fw.set(-1, 0, 0);
-      fw.normalize();
-      const pAt = V(G.eye.x + fw.x * 1.9, 2.3, G.eye.z + fw.z * 1.9);
-      pAt.x = Math.max(0.5, Math.min(5.1, pAt.x)); pAt.z = Math.max(0.5, Math.min(6.5, pAt.z));
-      papers(ctx, pAt, V(0, -1, 0), rng, 5);
-      yield wait(3.2);
-      ctx.next();
+      const fw = G.camera.getWorldDirection(V(0, 0, 0)).setY(0).normalize();
+      papers(ctx, V(G.eye.x + fw.x * 1.9, 2.3, G.eye.z + fw.z * 1.9), V(0, -1, 0), rng, 4);
+      // at the street window: E, two fingers part the slats (chapter V's first frame)
+      yield* ctx.prompt({ text: 'look out', key: 'KeyE', at: () => (inWindowReach(G) ? V(ROOM.x1 - 0.1, 1.6, (WIN.z0 + WIN.z1) / 2) : null) });
+      ctx.next({ fade: 'cut', card: true, keep: true });
     }
   },
 
@@ -206,199 +241,70 @@ export default defineScene({
   },
 });
 
-// the room at the start of the fight (entered cold, or after a fall)
-function fightRoom(ctx) {
-  carry(ctx, { ledger: true });
-  const O = roomAs(ctx, 'taken');
-  O.setDoor(1.45);
-  const a = ctx.stage.anchor('office.safe');
-  stand(ctx, a.pos.x + 0.35, a.pos.z + 0.55, 0.35, -0.02);
-  ctx.controller.setMode('office', {});
-  ctx.player.weapons.equip(null);
-  ctx.game.health.reset();
-  void SAFE;
+// near the street window, looking at it
+function inWindowReach(G) {
+  const e = G.eye, cx = ROOM.x1 - 0.1, cz = (WIN.z0 + WIN.z1) / 2;
+  return Math.hypot(e.x - cx, e.z - cz) < 1.6;
 }
-// straight on from scene 4 (the room as it stands; the eye where it was)
-function keptRoom(ctx) {
-  const C = ctx.controller;
+
+// the take: the camera to their shadows on the door's frosted glass (the
+// lens narrowing on it across the outer office), held, and given back
+function* take(ctx) {
+  const G = ctx.game, C = ctx.controller, cam = G.camera;
   const P = C.eyePose();
+  const glass = V(DOORS.AMES.x, 1.5, 3.9);
+  const yaw1 = Math.atan2(-(glass.x - P.x), -(glass.z - P.z));
+  const pitch1 = Math.atan2(glass.y - P.y, Math.hypot(glass.x - P.x, glass.z - P.z));
+  const fov0 = cam.fov, fov1 = Math.max(16, Math.min(40, 2 * Math.atan(1.6 / Math.hypot(glass.x - P.x, glass.z - P.z)) * 180 / Math.PI));
+  const wrap = (a) => Math.atan2(Math.sin(a), Math.cos(a));
+  const dy = wrap(yaw1 - P.yaw);
+  const ease = (u) => u * u * (3 - 2 * u);
+  const T = 3.0;
+  C.setMode('cutscene', { track: (t) => {
+    const u = t < 0.7 ? ease(t / 0.7) : t < T - 0.6 ? 1 : ease(Math.max(0, (T - t) / 0.6));
+    cam.fov = fov0 + (fov1 - fov0) * u; cam.updateProjectionMatrix();
+    return { x: P.x, y: P.y, z: P.z, yaw: P.yaw + dy * u, pitch: P.pitch + (pitch1 - P.pitch) * u };
+  } });
+  yield wait(T);
+  cam.fov = fov0; cam.updateProjectionMatrix();
   C.setPose(P.x, P.z, P.yaw, P.pitch);
-  C.setMode('office', {});
-  ctx.game.health.reset();
+  C.setMode('gun', { crouch: false });
 }
 
-// a jump into a later beat (?scene=gunfight&beat=door): the men as they would stand
-function jumpTo(ctx, b) {
-  const G = ctx.game, O = office(ctx), F = ctx.flags;
-  ctx.controller.setMode('office', {});
-  ctx.player.weapons.equip('revolver');
-  F.drawn = true;
-  tipPrompt(ctx);
-  if (b === 'door') {
-    O.setDoor(0.035);
-    const k = send(ctx, 'kicker', { at: { x: -0.4, z: 1.02 }, path: [] });
-    holdUntilKicked(ctx, k);
-    const g = send(ctx, 'glass', { at: { x: -0.42, z: 2.52 }, path: [] });
-    holdUntilKicked(ctx, g, 0.9);
-  }
-  if (b === 'window') { O.kickDoor(); O.door.angle = 1.72; O.door.hinge.rotation.y = 1.72; O.doorCollider(); }
-  void G;
-}
-
-// the kicker and the glass man wait at the glass until the door goes in
-function holdUntilKicked(ctx, h, delay = 0) {
-  const G = ctx.game, F = ctx.flags;
-  const ai = G.ais.get(h);
-  if (!ai) return;
-  ai.hold = (state) => (state !== 'enter' && state !== 'settle' && (F.kicked == null || G.time - F.kicked < delay)) || !!F.down;
-}
-
-// E: the desk over on its front, the lamp thrown off it; then C to duck
+// E: the desk over on its front (the lamp thrown off it), the heave; then C to get low
 function tipPrompt(ctx) {
-  const G = ctx.game, O = office(ctx), F = ctx.flags;
-  // (round 2: a wide cone - the desk is 1.6 m of it and the prompt is the one thing
-  // in the room then: near its chair side and looking at any of it, the prompt shows)
-  ctx.interact.add({ id: 'tip', at: V(DESK.x + 0.1, DESK.h + 0.1, DESK.z), range: 1.9, cone: 0.85, prompt: 'tip the desk', when: () => !O.desk.tip, onUse: () => {
+  const G = ctx.game, O = office(ctx);
+  // (from its chair's side, behind it: it goes over away from me, toward the opening)
+  const behind = () => G.eye.x > DESK.x - 0.1 && G.eye.x < DESK.x + DESK.d / 2 + 1.0 && Math.abs(G.eye.z - DESK.z) < DESK.w / 2 + 0.5;
+  ctx.interact.add({ id: 'tip', at: V(DESK.x + 0.1, DESK.h + 0.1, DESK.z), range: 2.0, cone: 0.85, prompt: 'tip the desk over', when: () => !O.desk.tip && behind() && ctx.beat !== 'quiet', onUse: () => {
     if (!O.tipDesk()) return;
     G.sfx.play('office_deskTip', V(DESK.x, 0.6, DESK.z));
-    F.tipped = true;
     heave(ctx);
     ctx.interact.remove('tip');
-    // (then, once: how to get behind it)
-    F.duckT = 1.4;
   } });
-  ctx.onStep((dt) => {
-    if (F.duckT > 0) { F.duckT -= dt; if (F.duckT <= 0 && !F.ducked) { G.hud.prompt('C  duck', null, 'duck'); F.duckShown = G.time; } }
-    if (F.duckShown && !F.ducked && (ctx.controller.crouchK > 0.5 || G.time - F.duckShown > 4)) { F.ducked = true; G.hud.clearPrompt('duck'); }
-  });
 }
 
-// the heave: from the chair's side, both palms on the desk's near edge as it
-// goes up and over, off it as it falls away (object first: the edge's path
-// is the desk's; the palm rides it). The revolver stays in the right hand
-// (round 2: B3's .38); the left hand heaves, and lets go once the edge has
-// risen past a hand's push - it never follows the desk up out of reach.
+// the heave: the left palm on the desk's near edge as it goes up and over (object first)
 function heave(ctx) {
   const G = ctx.game, O = office(ctx), H = ctx.hands, e = G.eye;
   const d = O.desk;
-  // (only from behind it, within an arm: anywhere else it goes over on its own)
   const edgeX = DESK.x + DESK.d / 2;
-  if (e.x < edgeX - 0.05 || e.x - edgeX > 0.85 || Math.abs(e.z - DESK.z) > DESK.w / 2 + 0.2) return;
-  // (the two grips on the near top edge, a shoulder's width apart, in the desk's own frame)
   const zc = Math.max(DESK.z - DESK.w / 2 + 0.3, Math.min(DESK.z + DESK.w / 2 - 0.3, e.z));
   d.pivot.updateMatrixWorld(true);
-  const at = { R: d.pivot.worldToLocal(V(edgeX - 0.03, DESK.h + 0.005, zc - 0.22)), L: d.pivot.worldToLocal(V(edgeX - 0.03, DESK.h + 0.005, zc + 0.22)) };
-  const sides = ['L'];
+  const at = d.pivot.worldToLocal(V(edgeX - 0.03, DESK.h + 0.005, zc + 0.22));
   const pin = () => {
-    for (const s of sides) {
-      const p = d.pivot.localToWorld(at[s].clone());
-      // (palm down on the top, fingers over toward the far side; as it rises, into its underside)
-      const n = V(0, -1, 0).transformDirection(d.pivot.matrixWorld);
-      const f = V(-1, 0, s === 'R' ? 0.18 : -0.18).transformDirection(d.pivot.matrixWorld);
-      palmOn(H, s, p, n, f);
-    }
+    const p = d.pivot.localToWorld(at.clone());
+    palmOn(H, 'L', p, V(0, -1, 0).transformDirection(d.pivot.matrixWorld), V(-1, 0, -0.18).transformDirection(d.pivot.matrixWorld));
   };
   pin();
   live(H, { L: 'b2liveL' });
-  // (the view dips with the heave - the body bends to it - and comes back up:
-  // the hands on the edge are in the frame, not under it)
-  const C = ctx.controller;
-  let dipped = 0;
-  const dip = (want) => { const k = Math.max(-0.02, Math.min(0.02, want - dipped)); C.pitch += k; dipped += k; };
-  let t = 0, off = -1;
-  const stepFn = () => {
+  let t = 0, off = false;
+  const fn = () => {
+    if (off) return;
     t += 1 / 60;
-    dip(off < 0 ? -0.26 * Math.min(1, t / 0.14) : 0);
-    if (off < 0) {
-      // (the first 9 degrees: after that the edge goes up and away out of reach)
-      if (d.tipped < 0.08 && t < 0.24) { pin(); return; }
-      // (let go: the hands drop away)
-      off = t;
-      live(H, {});
-    }
+    if (d.tipped < 0.08 && t < 0.24) { pin(); return; }
+    off = true; live(H, {});
   };
-  ctx.onStep(stepFn);
+  ctx.onStep(fn);
 }
-
-// the door kicked in: the heel, the bang, its glass, the kicker through it
-function kick(ctx) {
-  const G = ctx.game, O = office(ctx), F = ctx.flags;
-  F.kicked = G.time;
-  G.sfx.play('office_doorKick', V(-0.1, 1.0, 1.2));
-  O.kickDoor();
-  G.controller.shake(0.45, Math.hypot(G.eye.x, G.eye.z - 1));
-  const p = O.door.pane;
-  if (p.state !== 'gone') ctx.stage.glass.shatter(p, { dir: V(1, 0, 0.2), power: 1.6, by: 'body' });
-  // splinters off the jamb where the lock was
-  const r = ctx.stage.rng.fork(3063);
-  for (let k = 0; k < 14; k++) G.fx.debris.spawn({ pos: V(-0.04, 1.0 + r.gauss() * 0.1, DOOR.z1 - 0.02), vel: V(r.range(0.8, 2.6), r.range(0, 1.6), r.gauss() * 0.8), life: r.range(0.6, 1.2), size: [0.02, 0.006], rot: r.next() * 6, spin: r.gauss() * 12, col: [0.12, 0.12, 0.12], cell: 12, gravity: 9.8, ground: 0.01, fadeOut: 0.2 });
-  // the kicker: in through the door and behind its open leaf, out from it to shoot
-  const k = (F.men || []).find((h) => h.b2 === 'kicker');
-  const ai = k && G.ais.get(k);
-  // (he comes in two steps and stands his ground: the first of them, in the open)
-  if (ai && ai.brain.send) ai.brain.send({ path: [{ x: 0.35, z: 1.02 }, { x: 0.95, z: 1.45 }], hide: null, fire: { x: 0.95, z: 1.45 }, wait: 0.35 });
-}
-
-// the Tommy gun through the curtain: holes where his rounds pass through it
-function curtainShot(ctx, h) {
-  const G = ctx.game, O = office(ctx), F = ctx.flags;
-  // (the muzzle: his hands' height, a step toward me - the bones' own muzzle can lag a frame)
-  const e = G.eye;
-  const m = h.pos.clone(); m.y += 1.3;
-  { const dx = e.x - m.x, dz = e.z - m.z, L = Math.hypot(dx, dz) || 1; m.x += dx / L * 0.45; m.z += dz / L * 0.45; }
-  O.curtain.flash(m);
-  const zc = O.curtain.mesh.position.z;
-  if ((m.z - zc) * (e.z - zc) >= 0) return;
-  const t = (zc - m.z) / (e.z - m.z);
-  const r = F.cr || (F.cr = ctx.stage.rng.fork(3067));
-  // (round 2: a Tommy gun's burst climbs and walks - each round of a burst a
-  // little higher and to his right of the last, and wide: the holes stitch
-  // a line across the cloth instead of one blot where he stood)
-  const G2 = ctx.game;
-  F.crN = G2.time - (F.crT ?? -9) < 0.45 ? (F.crN || 0) + 1 : 0;
-  F.crT = G2.time;
-  const n = Math.min(F.crN, 7), side = F.crSide ?? (F.crSide = r.chance(0.5) ? 1 : -1);
-  if (n === 0) F.crSide = r.chance(0.5) ? 1 : -1;
-  const p = V(m.x + (e.x - m.x) * t + r.gauss() * 0.22 + side * n * 0.07, m.y + (e.y - m.y) * t + r.gauss() * 0.2 + n * 0.09 - 0.12, zc);
-  O.curtain.tear(p, r);
-}
-
-// the living men (of the named ones, or all)
-function alive(ctx, names = null) {
-  let n = 0;
-  for (const h of ctx.flags.men || []) if (h.alive && (!names || names.includes(h.b2))) n++;
-  return n;
-}
-
-// the fall: the view goes down, black, back at the shadows (ten seconds at most)
-function fall(ctx) {
-  const G = ctx.game, C = ctx.controller, F = ctx.flags;
-  if (F.down) return;
-  F.down = true;
-  // (each fall's record kept on the game for the headless plays: the log, the cover per shot)
-  (G._b2falls || (G._b2falls = [])).push(`${F.log || ''}| ks ${(F.ks || []).join(' ')}`);
-  // (the next go starts where this one was fought from)
-  G._b2retry = { tipped: !!office(ctx).desk.tip };
-  // [C1] the kit's fall (game.fail, seams/Z.md §3): the same 0.9 s fall this
-  // scene had, black, the words, back at the shadows (lane C5 rebuilds this)
-  if (G.fail) { G.fail({ why: 'They got you.', to: 'shadows', fall: true }); return; }
-  const from = C.eyePose();
-  C.setMode('cutscene', { track: (t) => {
-    const u = Math.min(1, t / 0.9), e = u * u;
-    return { x: from.x, y: from.y + (0.35 - from.y) * e, z: from.z, yaw: from.yaw + 0.3 * e, pitch: from.pitch + (0.5 - from.pitch) * e };
-  } });
-  G.sfx.play('grunt', null, { f0: 80, k: 0.5, dur: 0.3 }, { send: false });
-  G.sfx.play('f_bodyFloor', G.eye);
-  ctx.hud.clearPrompt();
-  // (after a second on the floor: black, the room set again, up at the shadows)
-  let t = 0;
-  ctx.onStep((dt) => {
-    t += dt;
-    if (t > 1.1 && !F.goneBlack) {
-      F.goneBlack = true;
-      G.health.reset();
-      G.scenes.go('gunfight', { beat: 'shadows', fade: 'black', card: false, fadeIn: 0.8 });
-    }
-  });
-}
-void THREE; void SIDE; void PICTURE; void MEN; void coverFrom;
+void THREE; void DOOR; void OPEN; void CORR;
