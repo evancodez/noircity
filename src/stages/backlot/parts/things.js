@@ -245,27 +245,29 @@ export default {
       // hinged on its west jamb, opening into the kitchen (north, -z)
       g.position.set(d.x - d.w / 2 + 0.02, 0.02, KITCHEN.z1 - 0.15);
       stage.scene.add(g);
-      // ([C6 3rd] locked, it shows it: a hasp across the leaf and the jamb, a
-      // padlock hanging from it, a chain through the push plate to a staple in
-      // the wall - pale steel in the lamp over the door; sound or no sound,
-      // the door is plainly locked)
+      // ([C6 3rd] locked, it shows it: a hasp on the leaf, a padlock hanging
+      // from it, a chain across the doorway from jamb to jamb through it -
+      // pale steel in the bulb beside the door; sound or no sound, the door is
+      // plainly locked)
       const lockG = new THREE.Group();
       {
         const steel = new THREE.MeshStandardMaterial({ color: 0xc4c4c4, metalness: 0.75, roughness: 0.3, envMap: M.envSoft, envMapIntensity: 1.0 });
-        const zf = KITCHEN.z1 - 0.15 + 0.04;     // the yard's face of the leaf
-        const xh = d.x + d.w / 2 - 0.08;          // the latch side (east jamb)
+        // (all of it inside the doorway's reveal, on and before the leaf - the
+        // jambs' trim hid a lock set on the jamb)
+        const zf = KITCHEN.z1 - 0.15 + 0.035;    // the yard's face of the leaf
+        const xh = d.x + d.w / 2 - 0.24;          // near the latch side, on the leaf
         const parts = [
-          new THREE.BoxGeometry(0.34, 0.06, 0.02).translate(xh - 0.06, 1.12, zf + 0.01),       // the hasp
-          new THREE.BoxGeometry(0.05, 0.12, 0.05).translate(xh + 0.12, 1.12, zf + 0.03),       // the staple in the jamb
-          new THREE.BoxGeometry(0.11, 0.13, 0.05).translate(xh + 0.12, 0.98, zf + 0.06),       // the padlock's body
-          new THREE.TorusGeometry(0.035, 0.009, 5, 12, Math.PI).translate(xh + 0.12, 1.045, zf + 0.06),   // its shackle
+          new THREE.BoxGeometry(0.26, 0.06, 0.02).translate(xh, 1.12, zf + 0.01),            // the hasp
+          new THREE.BoxGeometry(0.05, 0.12, 0.05).translate(xh + 0.1, 1.12, zf + 0.03),       // the staple
+          new THREE.BoxGeometry(0.12, 0.14, 0.05).translate(xh + 0.1, 0.97, zf + 0.06),       // the padlock's body
+          new THREE.TorusGeometry(0.038, 0.01, 5, 12, Math.PI).translate(xh + 0.1, 1.04, zf + 0.06),   // its shackle
         ];
-        // the chain: links in a sag from the push plate to the staple
-        const n = 9;
+        // the chain across the doorway from jamb to jamb, sagging through the lock
+        const x0c = d.x - d.w / 2 + 0.05, x1c = d.x + d.w / 2 - 0.05, n = 16;
         for (let i = 0; i <= n; i++) {
-          const k = i / n, x = (d.x - d.w / 2 + d.w - 0.2) + (xh + 0.12 - (d.x - d.w / 2 + d.w - 0.2)) * k;
-          const y = 1.05 - 0.14 * Math.sin(Math.PI * k);
-          parts.push(new THREE.TorusGeometry(0.022, 0.006, 4, 8).rotateY(i % 2 ? Math.PI / 2 : 0).translate(x, y, zf + 0.05));
+          const k = i / n, x = x0c + (x1c - x0c) * k;
+          const y = 1.18 - 0.2 * Math.sin(Math.PI * k);
+          parts.push(new THREE.TorusGeometry(0.026, 0.007, 4, 8).rotateY(i % 2 ? Math.PI / 2 : 0).translate(x, y, zf + 0.07));
         }
         const m = new THREE.Mesh(merge(parts), steel);
         m.castShadow = true; m.userData.noRay = true;
