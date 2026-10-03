@@ -207,6 +207,8 @@ export default {
     api.lamps = {
       roofDoor: L.wall(66.0, y1 + 2.25, R.z0 + 2.6, 0, 1, { out: 0.5, strength: 0.8 }),
       landing: L.wall(S.x0 + 1.4, y1 + 2.3, R.z1, 0, 1, { out: 0.3, strength: 0.9 }),
+      // [C6 2nd] the stair's foot, where the alley behind the press hall comes out: lit
+      foot: L.wall(S.x1 - 0.6, 3.3, R.z1, 0, 1, { out: 0.35, strength: 0.95 }),
       bay: L.wall(44.4, 4.0, TANNER.z0, 0, 1, { out: 0.35 }),
       dog: L.wall(62.4, 3.6, TANNER.z0, 0, 1, { out: 0.2, strength: 0.85 }),
       rowEnd: L.wall(31.0, 3.8, TANNER.z1, 0, -1, { out: 0.3, strength: 0.9 }),

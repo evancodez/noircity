@@ -4,7 +4,7 @@ import { arch } from '../arch.js';
 import { lathe, tube, V3, roundedBox } from '../../../world/geom.js';
 import { accentMaterial } from '../../../render/accents.js';
 import { Steam } from '../../../fx/Steam.js';
-import { KITCHEN, LOADING, YARD, LANES, FLOOR } from '../plan.js';
+import { KITCHEN, LOADING, YARD, LANES, FLOOR, KDOOR } from '../plan.js';
 
 // The kitchen behind the washing yard (lane C6): the back of a restaurant on
 // the ground floor of a two-storey block. Two back doors in its south wall,
@@ -28,7 +28,8 @@ export default {
     holeyPanel(K, 'kitchen', MAT.brickDark, 'z', KI.z1 - T, KI.z1, KI.x0, KI.x1, 0, KI.h, [[dW.x - dW.w / 2, dW.x + dW.w / 2, 0, dW.h], [dE.x - dE.w / 2, dE.x + dE.w / 2, 0, dE.h]]);
     holeyPanel(K, 'kitchen', MAT.brickDark, 'z', KI.z0, KI.z0 + T, KI.x0, KI.x1, 0, KI.h, [[R.x - R.w / 2, R.x + R.w / 2, 0, R.h]]);
     K.box('kitchen', MAT.brickDark, KI.x0, KI.x0 + T, 0, KI.h, KI.z0 + T, KI.z1 - T);
-    K.box('kitchen', MAT.brickDark, KI.x1 - T, KI.x1, 0, KI.h, KI.z0 + T, KI.z1 - T);
+    // ([C6 2nd] the east wall: the iron door into the press hall's back in it)
+    holeyPanel(K, 'kitchen', MAT.brickDark, 'x', KI.x1 - T, KI.x1, KI.z0 + T, KI.z1 - T, 0, KI.h, [[KDOOR.z - KDOOR.w / 2, KDOOR.z + KDOOR.w / 2, 0, KDOOR.h]]);
     K.box('kitchen', MAT.brickDark, KI.x0, KI.x1, KI.h - 0.3, KI.h, KI.z0, KI.z1);
     // (the ceiling of the ground floor; the floor above is the block's)
     K.box('kitchenIn', MAT.plaster, KI.x0 + T, KI.x1 - T, CEIL, CEIL + 0.25, KI.z0 + T, KI.z1 - T);
@@ -40,7 +41,9 @@ export default {
     col(KI.x0, R.x - R.w / 2, KI.z0, KI.z0 + T);
     col(R.x + R.w / 2, KI.x1, KI.z0, KI.z0 + T);
     col(KI.x0, KI.x0 + T, KI.z0, KI.z1);
-    col(KI.x1 - T, KI.x1, KI.z0, KI.z1);
+    col(KI.x1 - T, KI.x1, KI.z0, KDOOR.z - KDOOR.w / 2);
+    col(KI.x1 - T, KI.x1, KDOOR.z + KDOOR.w / 2, KI.z1);
+    A.doorFrame('kitchen', face('x', KI.x1 - T, -1), KDOOR.z, KDOOR.w, KDOOR.h);
     // the outer faces: the south (on the yard), the north (on the loading yard)
     const Fs = face('z', KI.z1, 1), Fn = face('z', KI.z0, -1);
     facade('kitchen', Fs, KI.x0, KI.x1, KI.h, { bay: 2.9, from: 1, litP: 0.2, skip: [[57.5, 62.5]] });
@@ -80,7 +83,8 @@ export default {
       api.fire = m;
     }
     // the sinks along the east wall, a drainer, shelves of plates over them
-    for (const z of [-97.2, -93.4, -89.2]) {
+    // ([C6 2nd] clear of the iron door in the north-east corner)
+    for (const z of [-93.9, -90.2, -86.5]) {
       K.add('sinks', MAT.tile, roundedBox(0.8, 0.9, 2.6, 0.03, 2).translate(KI.x1 - T - 0.42, 0.45, z));
       stage.colliders.addBox(KI.x1 - T - 0.42, z, 0.42, 1.32, 0, 'sink');
       K.box('sinks', MAT.woodDark, KI.x1 - T - 0.36, KI.x1 - T, 1.7, 1.75, z - 1.2, z + 1.2);
@@ -108,7 +112,7 @@ export default {
       // south wall (the doors), north wall (the roller door, the hatch)
       band(xi0, dW.x - dW.w / 2 - 0.12, zi1 - t, zi1); band(dW.x + dW.w / 2 + 0.12, dE.x - dE.w / 2 - 0.12, zi1 - t, zi1); band(dE.x + dE.w / 2 + 0.12, xi1, zi1 - t, zi1);
       band(xi0, 51.3, zi0, zi0 + t); band(54.7, R.x - R.w / 2 - 0.1, zi0, zi0 + t); band(R.x + R.w / 2 + 0.1, xi1, zi0, zi0 + t);
-      band(xi0, xi0 + t, zi0, zi1); band(xi1 - t, xi1, zi0, zi1);
+      band(xi0, xi0 + t, zi0, zi1); band(xi1 - t, xi1, zi0, KDOOR.z - KDOOR.w / 2 - 0.12); band(xi1 - t, xi1, KDOOR.z + KDOOR.w / 2 + 0.12, zi1);
       // (the tiles' top course: a dark edge)
       K.box('kitchenTile', MAT.woodDark, xi0, xi1, y1, y1 + 0.04, zi1 - 0.03, zi1);
       K.box('kitchenTile', MAT.woodDark, xi0, xi1, y1, y1 + 0.04, zi0, zi0 + 0.03);

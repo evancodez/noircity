@@ -42,7 +42,7 @@ const INV = ['matchbook', 'amesCard', 'check', 'revolver'];
 const EYE = 1.63;
 const PEEK = 44;
 const SLIT_Z = 4.46;
-const RUN_BEATS = ['alley', 'lane', 'yard', 'kitchen', 'over', 'street', 'car'];
+const RUN_BEATS = ['alley', 'lane', 'yard', 'kitchen', 'press', 'el', 'over', 'street', 'car'];
 // the teach cards: one line each, the key drawn (seams/Z.md §2); the first
 // SPACE and the first C are held (time crawls until the key)
 export const TEACH = {
@@ -50,7 +50,7 @@ export const TEACH = {
   jump: '[SPACE] jump', slideDown: '[C] slide down',
 };
 // which card a stretch shows once more after two fails there
-const AGAIN = { alley: 'vault', lane: 'slide', yard: 'shoulder', kitchen: 'slide', over: 'jump', street: 'vault' };
+const AGAIN = { alley: 'vault', lane: 'slide', yard: 'shoulder', press: 'slide', el: 'slide', over: 'jump', street: 'vault' };
 const CHASE = { slot: 'chase', fade: 0.4 };
 
 // ---- the things every beat's setup does -------------------------------------------------------
@@ -82,7 +82,11 @@ function common(ctx, name) {
   if (stage.cast && stage.cast.has('c6_cook')) {
     ctx.flags.cooks = [
       { c: stage.cast.spawn('c6_cook', { at: { x: 51.86, z: -90.2 }, yaw: -Math.PI / 2 }), yaw1: Math.PI / 2 },
-      { c: stage.cast.spawn('c6_cook', { at: { x: 68.44, z: -95.4 }, yaw: Math.PI / 2 }), yaw1: -Math.PI / 2 },
+      { c: stage.cast.spawn('c6_cook', { at: { x: 68.44, z: -93.9 }, yaw: Math.PI / 2 }), yaw1: -Math.PI / 2 },
+      // [C6 2nd] the pressmen (paper caps, aprons: the same cut): at the
+      // north line's first unit, at its second from the middle aisle
+      { c: stage.cast.spawn('c6_cook', { at: { x: 76.0, z: -94.35 }, yaw: 0 }), yaw1: Math.PI },
+      { c: stage.cast.spawn('c6_cook', { at: { x: 84.0, z: -90.35 }, yaw: Math.PI }), yaw1: 0 },
     ];
   }
   ctx.flags.umb = stage._b4umb || (stage._b4umb = makeUmbrella(stage));
@@ -165,6 +169,8 @@ function runSetup(name) {
     G.stage.part('chase').ladder.set(1);
     // (the bins he pulled down in the alley lie across it behind me)
     if (RUN_BEATS.indexOf(name) > 0) { const b = G.stage.part('things').get('bins'); if (b && !b.state.go) { b.trigger(); b.update(2); } }
+    // ([C6 2nd] past the kitchen, its iron door stands open as he left it)
+    if (RUN_BEATS.indexOf(name) > RUN_BEATS.indexOf('kitchen')) { const d = G.stage.part('things').get('kdoor'); if (d) d.set('open'); }
     G.controller.setPose(at[0], at[1], yaw, 0.0);
     if (name === 'car') { C.active = false; G.hands.equip('empty'); return; }
     G.hands.equip('run');
@@ -181,10 +187,10 @@ export default defineScene({
   objectives: {
     seen: 'Check the street.', escape: 'After him. Down the fire escape.',
     alley: 'Don’t lose him.', lane: 'Don’t lose him.', yard: 'Don’t lose him.', kitchen: 'Don’t lose him.',
-    over: 'Don’t lose him.', street: 'Don’t lose him.', car: 'Get to your car.',
+    press: 'Don’t lose him.', el: 'Don’t lose him.', over: 'Don’t lose him.', street: 'Don’t lose him.', car: 'Get to your car.',
   },
   music: null,
-  beatMusic: { escape: CHASE, alley: CHASE, lane: CHASE, yard: CHASE, kitchen: CHASE, over: CHASE, street: CHASE, car: CHASE },
+  beatMusic: { escape: CHASE, alley: CHASE, lane: CHASE, yard: CHASE, kitchen: CHASE, press: CHASE, el: CHASE, over: CHASE, street: CHASE, car: CHASE },
   setup: {
     seen(ctx) {
       const C = common(ctx, 'seen');
@@ -205,7 +211,7 @@ export default defineScene({
       G.hands.equip('run');
     },
     alley: runSetup('alley'), lane: runSetup('lane'), yard: runSetup('yard'), kitchen: runSetup('kitchen'),
-    over: runSetup('over'), street: runSetup('street'), car: runSetup('car'),
+    press: runSetup('press'), el: runSetup('el'), over: runSetup('over'), street: runSetup('street'), car: runSetup('car'),
   },
 
   *script(ctx) {
@@ -227,6 +233,7 @@ export default defineScene({
       dogStep(ctx, dt);
       cookStep(ctx, dt);
       streetStep(ctx);
+      trainStep(ctx);
       warmStep(ctx);
       capStep(ctx);
     });
@@ -501,6 +508,24 @@ function streetStep(ctx) {
   const v = Math.max(5.5, R ? R.v : 6);
   // (it takes about 5 s to come down from the fog: started when I am that far off)
   if (toCross > 0 && toCross / v < 5.4) S.arm(toCross / v + 0.15);
+}
+
+// ---- [C6 2nd] the el's train: sent down the line toward me as I come out of
+// the press hall's dock, so it thunders over the avenue while I am under it
+// (once a try; its lamp is a white eye down the line before it)
+function trainStep(ctx) {
+  const G = ctx.game, C = ctx.flags.chase;
+  if (!C || !C.active || C.trainSent) return;
+  const i = STRETCH_ORDER.indexOf(C.stretch);
+  if (i < STRETCH_ORDER.indexOf('press') || i > STRETCH_ORDER.indexOf('el')) return;
+  const p = G.controller.pos;
+  // (sent when I reach the conveyor's side of the press hall, or come out on the avenue)
+  if (!(C.stretch === 'el' || p.x > 86.5)) return;
+  const train = G.stage.part('train'), av = G.stage.part('avenue');
+  if (!train || !train.run || !av) return;
+  C.trainSent = true;
+  // (it comes south down the line: over the alley's mouth about when I am there)
+  train.run(av.sAtZ(-168), -1);
 }
 
 // ---- the city warmed ahead (lane C3's seam) -------------------------------------------------------

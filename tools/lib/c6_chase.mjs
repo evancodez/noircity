@@ -38,8 +38,10 @@ export default async function drive({ js, turn, keyDown, keyUp, log, sleep, opts
   const shots = opts.shots || {};
   const shotDone = new Set();
   // the line: node names in order for my choices (lane is read when the yard comes)
-  const LINE = (lane, over) => ['foot', 'alleyEnd', 'laneIn', 'laneOut', lane === 'E' ? 'eIn' : 'wIn', lane === 'E' ? 'eDoor' : 'wDoor', lane === 'E' ? 'eIn2' : 'wIn2', lane === 'E' ? 'eK' : 'wK', 'kMid', 'rollOut',
-    ...(over === 'row' ? ['passIn', 'passOut', 'dog', 'bay', 'truck', 'rowEnd', 'rowOut'] : ['stairFoot', 'stairTop', 'roofIn', 'party', 'edge', 'r2In', 'tank', 'shedTop', 'eave', 'dropped']),
+  // ([C6 2nd] out of the kitchen by its east door: the press hall, the avenue, the alley behind)
+  const LINE = (lane, over) => ['foot', 'alleyEnd', 'laneIn', 'laneOut', lane === 'E' ? 'eIn' : 'wIn', lane === 'E' ? 'eDoor' : 'wDoor', lane === 'E' ? 'eIn2' : 'wIn2', lane === 'E' ? 'eK' : 'wK', ...(lane === 'E' ? [] : ['kMid']),
+    'kDoor', 'pIn', 'pA', 'pB', 'pC', 'pD', 'dock', 'avS', 'avN', 'aIn', 'aMid', 'aOut',
+    ...(over === 'row' ? ['passIn', 'passOut', 'dog', 'bay', 'truck', 'rowEnd', 'rowOut'] : ['stairIn', 'stairFoot', 'stairTop', 'roofIn', 'party', 'edge', 'r2In', 'tank', 'shedTop', 'eave', 'dropped']),
     'cross', 'gateway', 'aisleN', 'aisleS', 'crossW', 'gate', 'pave', 'myDoor'];
   let line = null, li = 0, lane = null, over = opts.over || 'roofs', laneTried = null;
   let plan = new Map();          // thing id -> { at: t to press, key, skip }
@@ -57,7 +59,7 @@ export default async function drive({ js, turn, keyDown, keyUp, log, sleep, opts
       if (q) out.q = { id: q.T.id, kind: q.T.kind, d: +q.d.toFixed(3), t: +q.t.toFixed(3), c: +q.c.toFixed(2) };
     }
     const nodes = {};
-    for (const k of ${JSON.stringify(['foot', 'alleyEnd', 'laneIn', 'laneOut', 'wIn', 'wDoor', 'wIn2', 'wK', 'eIn', 'eDoor', 'eIn2', 'eK', 'kMid', 'rollOut', 'passIn', 'passOut', 'dog', 'bay', 'truck', 'rowEnd', 'rowOut', 'stairFoot', 'stairTop', 'roofIn', 'party', 'edge', 'r2In', 'tank', 'shedTop', 'eave', 'dropped', 'cross', 'gateway', 'aisleN', 'aisleS', 'crossW', 'gate', 'pave'])}) {
+    for (const k of ${JSON.stringify(['foot', 'alleyEnd', 'laneIn', 'laneOut', 'wIn', 'wDoor', 'wIn2', 'wK', 'eIn', 'eDoor', 'eIn2', 'eK', 'kMid', 'rollOut', 'kDoor', 'pIn', 'pA', 'pB', 'pC', 'pD', 'dock', 'avS', 'avN', 'aIn', 'aMid', 'aOut', 'stairIn', 'passIn', 'passOut', 'dog', 'bay', 'truck', 'rowEnd', 'rowOut', 'stairFoot', 'stairTop', 'roofIn', 'party', 'edge', 'r2In', 'tank', 'shedTop', 'eave', 'dropped', 'cross', 'gateway', 'aisleN', 'aisleS', 'crossW', 'gate', 'pave'])}) {
       const n = CH && CH.course && CH.course.nodes.get(k); if (n) nodes[k] = [n.x, n.z];
     }
     const cars = N.stage.part && N.stage.part('cars');
@@ -73,6 +75,8 @@ export default async function drive({ js, turn, keyDown, keyUp, log, sleep, opts
     if (s.warn && s.warn !== lastWarn) warned++;
     lastWarn = s.warn;
     if (s.done) { for (const c of [...held]) await set(c, false); return result(true); }
+    // (opts.trace: where I am, his gap, my move, every half second of real time)
+    if (opts.trace && Date.now() - (drive._tr || 0) > 500) { drive._tr = Date.now(); log(`c6_chase trace: ${s.beat} me ${s.x.toFixed(1)},${s.z.toFixed(1)} y ${(+s.feet).toFixed(1)} v ${(+s.v).toFixed(1)} gap ${s.gap} his ${s.his} move ${s.move} q ${s.q ? s.q.id + ':' + s.q.t : '-'}`); }
     if (Date.now() - T0 > timeout) break;
     if (s.fails !== fails) {
       fails = s.fails;

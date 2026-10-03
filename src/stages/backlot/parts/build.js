@@ -8,7 +8,7 @@ import { tube } from '../../../world/geom.js';
 import { Steam } from '../../../fx/Steam.js';
 import {
   FLOOR, ESC, ROOM, STREET_WIN, WATCH_LAMP, HARBOR, BACKST, ALLEY, LANE, YARD, WASH, KITCHEN, LOADING, PASSAGE, ROOFS, TANNER,
-  MERCER, GARAGE, MARKET, FENCE, NORTHST,
+  MERCER, GARAGE, MARKET, FENCE, NORTHST, AVENUE, PRESS,
 } from '../plan.js';
 
 // The backlot's architecture (lane B4; the run behind the Harbor Building
@@ -30,7 +30,8 @@ export default {
     // ================= Harbor Street: its south row, the north side ===============
     {
       const g = 'southRow';
-      mass(g, MAT.brickDark, -80, 110, HARBOR.z1 + HARBOR.pave, 24, 13.2);
+      // ([C6 2nd] to the avenue's west side: the avenue crosses Harbor Street)
+      mass(g, MAT.brickDark, -80, AVENUE.x0, HARBOR.z1 + HARBOR.pave, 24, 13.2);
       const F = face('z', HARBOR.z1 + HARBOR.pave, -1);
       facade(g, F, -40, 60, 13.2, { bay: 3.4, litP: 0.12, pipes: [-12.2, 12.8, 44.6], skip: [[-6.6, -2.0], [6.6, 11]] });
       for (const u of [-30, -21, -12.5, 17, 25.5, 33, 41.5, 50]) {
@@ -46,7 +47,7 @@ export default {
       // and the one east of it, on the yard's south end
       const H = 12.6;
       block('east', MAT.brickDark, ALLEY.x1, 50, -47.5, HARBOR.z0 - HARBOR.pave, H, { s: { bay: 3.3, litP: 0.08 }, n: { bay: 3.3, litP: 0.07, pipes: [21.2, 38.6] } });
-      block('eastSt', MAT.brick, 50, 110, -47.5, HARBOR.z0 - HARBOR.pave, 10.4, { s: { bay: 3.3, litP: 0.1 }, n: { bay: 3.3, litP: 0.05, skip: [[70, 110]] } });
+      block('eastSt', MAT.brick, 50, AVENUE.x0, -47.5, HARBOR.z0 - HARBOR.pave, 10.4, { s: { bay: 3.3, litP: 0.1 }, n: { bay: 3.3, litP: 0.05, skip: [[70, 110]] }, e: { bay: 3.3, litP: 0.1 } });
     }
 
     // ================= the Harbor Building (room 304 cut out of its corner) ======
@@ -146,7 +147,9 @@ export default {
     {
       // the yard's west wall is the mid block's east end; its east, the far block
       facade('mid', face('x', YARD.x0, 1), LANE.z0, -80, 14, { bay: 3.3, litP: 0.1, pipes: [-70.6] });
-      block('far', MAT.brick, YARD.x1, 110, LOADING.z1, YARD.z1, 12.2, { w: { bay: 3.3, litP: 0.12, pipes: [-60.2, -75.4], skip: [[-100.5, -84]] } });
+      // ([C6 2nd] the block east of the yard south of the press hall - the
+      // press hall itself is press.js's - to the avenue)
+      block('far', MAT.brick, YARD.x1, AVENUE.x0, PRESS.z1, YARD.z1, 12.2, { w: { bay: 3.3, litP: 0.12, pipes: [-60.2] }, e: { bay: 3.3, litP: 0.1, pipes: [-66.0] } });
       facade('eastSt', face('z', YARD.z1, -1), YARD.x0, YARD.x1, 10.4, { bay: 3.2, litP: 0.05 });
       // the wash-house: a long low brick shed, a slate roof, a copper's
       // chimney; its doors on the lanes are shut
@@ -213,8 +216,12 @@ export default {
       fbox('garage', MAT.trim, Fg, GARAGE.x0, GARAGE.x1, 4.8, 5.2, 0, 0.25);
       // north of Tanner's Row, across Mercer Street, Pell Lane's west side
       block('nblk', MAT.brick, MERCER.x1, PASSAGE.x1, -133, TANNER.z0, 11.0, { s: { bay: 3.3, litP: 0.1, skip: [[41.6, 47.2]], pipes: [33.2, 55.0] }, w: { bay: 3.3, litP: 0.1 }, n: { bay: 3.3, litP: 0.12 } });
-      block('ne', MAT.brickDark, PASSAGE.x1, 110, -133, LOADING.z1, 12.0, { w: { bay: 3.2, litP: 0.08, pipes: [-109.0] }, n: { bay: 3.3, litP: 0.1 } });
-      facade('far', face('z', LOADING.z1, -1), PASSAGE.x0, PASSAGE.x1 + 0.6, 12.2, { bay: 2.6, litP: 0.0, from: 1 });
+      // ([C6 2nd] north of the alley behind the press hall, to the avenue)
+      block('ne', MAT.brickDark, PASSAGE.x1, AVENUE.x0, -133, LOADING.z0, 12.0, { w: { bay: 3.2, litP: 0.08, pipes: [-109.0] }, n: { bay: 3.3, litP: 0.1 }, s: { bay: 3.1, litP: 0.12, pipes: [79.4] }, e: { bay: 3.3, litP: 0.12 } });
+      // ([C6 2nd] the avenue's east side, Harbor Street to the works at its north end; south of Harbor Street)
+      block('aveE', MAT.brick, AVENUE.x1, AVENUE.x1 + 26, AVENUE.z0 - 8, HARBOR.z0 - HARBOR.pave, 13.0, { w: { bay: 3.3, litP: 0.14, pipes: [-41.0, -96.4] } });
+      block('aveSE', MAT.brickDark, AVENUE.x1, AVENUE.x1 + 26, HARBOR.z1 + HARBOR.pave, 40, 12.4, { w: { bay: 3.3, litP: 0.1 }, n: { bay: 3.3, litP: 0.1 } });
+      facade('southRow', face('x', AVENUE.x0, 1), HARBOR.z1 + HARBOR.pave, 24, 13.2, { bay: 3.3, litP: 0.1 });
       block('nwb', MAT.brickDark, FENCE.x, MERCER.x0, -133, MARKET.z0, 12.4, { e: { bay: 3.2, litP: 0.1 }, w: { bay: 3.2, litP: 0.12 }, n: { bay: 3.3, litP: 0.12 } });
       block('backW', MAT.brickDark, -40, BACKST.x0 - BACKST.pave, -133, BACKST.z1, 12.8, { e: { bay: 3.4, litP: 0.14, pipes: [-104.4, -121.6] }, n: { bay: 3.4, litP: 0.12 } });
       door('backW', face('x', BACKST.x0 - BACKST.pave, 1), -98.6, 1.2, 2.4);
@@ -234,8 +241,19 @@ export default {
         for (let z = z0 + 1.2; z < z1 - 0.5; z += 3.2) K.box(g, MAT.woodDark, x - 0.24, x - 0.03, 0, 2.5, z - 0.06, z + 0.06);
         K.collide(x - 0.1, x + 0.05, z0, z1, 'hoarding');
       };
+      // ([C6 2nd] the same across a street that runs north - south: the avenue's two ends)
+      const hoardZ = (z, x0, x1, n = 1) => {
+        const g = 'hoarding';
+        for (let x = x0 + 0.06; x < x1 - 0.06; x += 0.3) K.box(g, MAT.wood, x, x + 0.28, 0, 2.4 - ((x * 7.3) % 0.12), z - 0.03, z + 0.03);
+        for (const y of [0.5, 1.9]) K.box(g, MAT.woodDark, x0, x1, y - 0.06, y + 0.06, z + n * 0.03, z + n * 0.1);
+        for (let x = x0 + 1.2; x < x1 - 0.5; x += 3.2) K.box(g, MAT.woodDark, x - 0.06, x + 0.06, 0, 2.5, z + n * 0.03, z + n * 0.24);
+        K.collide(x0, x1, z - 0.05, z + 0.1, 'hoarding');
+      };
+      hoardZ(AVENUE.z0, AVENUE.x0, AVENUE.x1, 1);
+      hoardZ(AVENUE.z1, AVENUE.x0, AVENUE.x1, -1);
       hoard(-36.5, HARBOR.z0 - HARBOR.pave, HARBOR.z1 + HARBOR.pave);
-      hoard(100.5, HARBOR.z0 - HARBOR.pave, HARBOR.z1 + HARBOR.pave);
+      // ([C6 2nd] Harbor Street runs on across the avenue; the works are beyond it)
+      hoard(AVENUE.x1 + 1.6, HARBOR.z0 - HARBOR.pave, HARBOR.z1 + HARBOR.pave);
       hoard(-36.5, NORTHST.z0 - NORTHST.pave, BACKST.z0);
       hoard(92.5, NORTHST.z0 - NORTHST.pave, BACKST.z0);
       // Pell Lane's east side beyond the fence: a brick wall to the next block

@@ -6,7 +6,7 @@
 // board, the dog behind its gate, the crates, his car (the handle, the
 // door, the engine catching and pulling away), my car's door.
 export default (kit) => {
-  const { burst, thud, ping, osc, gain, env, filt, chain, noise, voice, splinter, rng, B } = kit;
+  const { burst, thud, ping, osc, gain, env, filt, chain, noise, voice, splinter, rng, B, loopN, lfo } = kit;
   // an iron ring: inharmonic partials (a grating, a stair, a landing)
   const iron = (ctx, out, t0, k, lo = 1) => {
     for (const [f, a, d] of [[rng(230, 280) * lo, 0.22, 0.5], [rng(610, 690) * lo, 0.16, 0.34], [rng(1320, 1480) * lo, 0.1, 0.22], [rng(2600, 2900) * lo, 0.05, 0.12]]) {
@@ -409,6 +409,46 @@ export default (kit) => {
         }
         return 1.2;
       },
+      // [C6 2nd] the kitchen's iron door flung open against its stop: the
+      // latch's clack, the slab's boom, the ring of the iron
+      w_ironDoor(ctx, out, t0, p, R) {
+        ping(ctx, out, t0, [[1800, 0.1, 0.04], [3100, 0.06, 0.03]]);
+        burst(ctx, out, R, t0, 'white', ['bandpass', 2600, 2], 0.12, 0.001, 0.03);
+        thud(ctx, out, t0 + 0.2, 72, 40, 0.9, 0.3);
+        burst(ctx, out, R, t0 + 0.2, 'brown', ['lowpass', 420], 0.5, 0.002, 0.25);
+        for (const [f, a, d] of [[rng(180, 210), 0.12, 0.7], [rng(470, 520), 0.08, 0.5], [rng(1100, 1250), 0.05, 0.3]]) {
+          const o = osc(ctx, 'sine', f, t0 + 0.2, d + 0.05); const g = gain(ctx); env(g, t0 + 0.2, a, 0.002, d); chain(o, g, out);
+        }
+        return 1.0;
+      },
+      // bundles of the edition going over: dull slabs of paper on the floor, the twine's slap
+      w_bundles(ctx, out, t0, p, R) {
+        for (let i = 0; i < 5; i++) {
+          const t = t0 + 0.12 + i * rng(0.06, 0.1);
+          thud(ctx, out, t, rng(150, 230), 70, 0.4, 0.09);
+          burst(ctx, out, R, t, 'white', ['bandpass', rng(1800, 2800), 1.2], 0.12, 0.001, 0.05);
+        }
+        burst(ctx, out, R, t0, 'pink', ['bandpass', 900, 0.8], 0.15, 0.02, 0.2);
+        return 0.9;
+      },
+    },
+    // [C6 2nd] the press hall: the night edition running - the units' heavy
+    // beat, the clatter of the folders, the web's hiss, the motors' hum
+    rooms: {
+      press: { wall: 520, wallGain: 0.12, bed: pressBed },
     },
   };
+  function pressBed(ctx, R, out) {
+    const master = gain(ctx, 0.0001); master.connect(out);
+    const srcs = [];
+    const beat = gain(ctx, 0.15); chain(loopN(ctx, R, 'brown', 0.9, srcs), filt(ctx, 'lowpass', 170), beat, master);
+    lfo(ctx, 5.4, 0.08, beat.gain, 'sine', srcs);
+    const clat = gain(ctx, 0.028); chain(loopN(ctx, R, 'pink', 1.2, srcs), filt(ctx, 'bandpass', 1900, 1.3), clat, master);
+    lfo(ctx, 10.8, 0.022, clat.gain, 'square', srcs);
+    const chop = gain(ctx, 0.03); chain(loopN(ctx, R, 'pink', 0.8, srcs), filt(ctx, 'bandpass', 420, 1.6), chop, master);
+    lfo(ctx, 2.7, 0.028, chop.gain, 'sawtooth', srcs);
+    chain(loopN(ctx, R, 'white', 1, srcs), filt(ctx, 'highpass', 3200), gain(ctx, 0.01), master);
+    for (const [f, a] of [[50, 0.012], [100, 0.008], [150, 0.004]]) { const o = ctx.createOscillator(); o.frequency.value = f; o.start(); srcs.push(o); chain(o, gain(ctx, a), master); }
+    return { gain: master, stop() { const t = ctx.currentTime; master.gain.setTargetAtTime(0, t, 0.15); setTimeout(() => { for (const x of srcs) { try { x.stop(); } catch (e) { /* */ } } try { master.disconnect(); } catch (e) { /* */ } }, 1500); } };
+  }
 };

@@ -39,8 +39,8 @@ const _t = new THREE.Vector3();
 const wrap = (a) => Math.atan2(Math.sin(a), Math.cos(a));
 const sm = (x) => (x <= 0 ? 0 : x >= 1 ? 1 : x * x * (3 - 2 * x));
 // the stretches in order, and the node each begins at (on the course)
-export const STRETCH_ORDER = ['alley', 'lane', 'yard', 'kitchen', 'over', 'street', 'car'];
-const STRETCH_NODE = { alley: 'foot', lane: 'laneIn', yard: 'laneOut', kitchen: null, over: 'rollOut', street: 'rowEnd', car: 'gate' };
+export const STRETCH_ORDER = ['alley', 'lane', 'yard', 'kitchen', 'press', 'el', 'over', 'street', 'car'];
+const STRETCH_NODE = { alley: 'foot', lane: 'laneIn', yard: 'laneOut', kitchen: null, press: 'kDoor', el: 'dock', over: 'aOut', street: 'rowEnd', car: 'gate' };
 
 export class Chase {
   constructor(ctx, { lane = null, over = null } = {}) {
@@ -86,9 +86,11 @@ export class Chase {
       return r.d < 1.6 ? r.s : null;
     };
     const add = (s, kind, data = {}) => { if (s != null) out.push({ s, kind, ...data }); };
-    for (const id of ['fence1', 'fence3', 'party', 'marketCrates']) { const T = things.get(id); add(on(T), 'vault', { id }); }
-    for (const id of ['fence2', 'roller', 'tank', 'plank']) { const T = things.get(id); add(on(T), 'slide', { id }); }
-    add(on(things.get('door' + this.lane)), 'door', { id: 'door' + this.lane });
+    for (const id of ['fence1', 'fence3', 'conveyor', 'party', 'marketCrates']) { const T = things.get(id); add(on(T), 'vault', { id }); }
+    for (const id of ['fence2', 'web', 'pipe', 'tank', 'plank']) { const T = things.get(id); add(on(T), 'slide', { id }); }
+    add(on(things.get('door' + this.lane)), 'door', { id: 'door' + this.lane, slam: true });
+    // ([C6 2nd] the kitchen's iron door into the press hall: flung open, left open)
+    add(on(things.get('kdoor')), 'door', { id: 'kdoor', slam: false });
     add(on(things.get('edge')), 'jump', { id: 'edge' });
     add(on(things.get('slope')), 'slope', { id: 'slope' });
     // his doings (the bins always; the rest when I am close)
@@ -96,10 +98,12 @@ export class Chase {
     add(on(things.get('alleyCrates')) != null ? project(P, 4.4, -41.2, 0, 1e9).s : null, 'trick', { id: 'alleyCrates' });
     add(project(P, 42.0, -50.0, 0, 1e9).s, 'trick', { id: 'laneBin' });
     add(project(P, this.lane === 'W' ? 54.25 : 65.75, -91.6, 0, 1e9).s, 'trick', { id: this.lane === 'W' ? 'rackW' : 'rackE' });
+    add(project(P, 84.6, -87.6, 0, 1e9).s + 0.4, 'trick', { id: 'pressBundles' });
+    add(project(P, 98.3, -95.6, 0, 1e9).s + 0.5, 'trick', { id: 'avBundles' });
     if (this.over === 'row') add(project(P, 51.6, -117.5, 0, 1e9).s, 'trick', { id: 'rowCrates' });
     add(project(P, 9.0, -101.6, 0, 1e9).s, 'trick', { id: 'barrow' });
     // the looks back over his shoulder
-    for (const [x, z] of [[2.5, -32], [30, -50], [54.25 + (this.lane === 'E' ? 11.5 : 0), -70], [47, -110.9], [9, -110]]) add(project(P, x, z, 0, 1e9).s, 'look');
+    for (const [x, z] of [[2.5, -32], [30, -50], [54.25 + (this.lane === 'E' ? 11.5 : 0), -70], [84.0, -87.6], [98.3, -88.0], [47, -110.9], [9, -110]]) add(project(P, x, z, 0, 1e9).s, 'look');
     // the slip on the wet at the alley's corner
     add(this.sOf('alleyEnd') - 1.0, 'skid');
     out.sort((a, b) => a.s - b.s);
@@ -297,9 +301,8 @@ export class Chase {
       const T = things.get(e.id);
       if (T) { T.set('open'); T.state.v = 10; }
       this.v = Math.min(this.v, 3.4);
-      G.sfx.play('w_doorBang', F.pos.clone().setY(1.2));
-      this.slamAt = this.s + 1.6;
-      this.slamId = e.id;
+      G.sfx.play(e.id === 'kdoor' ? 'w_ironDoor' : 'w_doorBang', F.pos.clone().setY(1.2));
+      if (e.slam) { this.slamAt = this.s + 1.6; this.slamId = e.id; }
     } else if (e.kind === 'jump') {
       // the leap over the light well, down onto R2
       const L = things.get('edge').land;
@@ -348,7 +351,7 @@ export class Chase {
     if (id === 'laneBin') things.trigger(id, { toward: G.controller.pos.z });
     else things.trigger(id);
     this.tricks.push(id);
-    G.sfx.play(id === 'bins' || id === 'laneBin' ? 'w_bins' : id === 'barrow' ? 'w_barrow' : id.startsWith('rack') ? 'w_pans' : 'w_crates', F.pos.clone().setY(0.6));
+    G.sfx.play(id === 'bins' || id === 'laneBin' ? 'w_bins' : id === 'barrow' ? 'w_barrow' : id.startsWith('rack') ? 'w_pans' : id.endsWith('Bundles') ? 'w_bundles' : 'w_crates', F.pos.clone().setY(0.6));
   }
 
   arcStep(dt) {
@@ -434,7 +437,9 @@ export class Chase {
   otherWay() {
     if (this.stretch !== 'over') return false;
     const C = this.G.controller;
-    const mine = (C.run ? C.run.feet : C.groundY) > 1.2 || (C.pos.z > ROOFS.z0 - 0.2 && C.pos.z < -104.0 && C.pos.x > 56 && C.pos.x < 70.5) ? 'roofs' : C.pos.z < ROOFS.z0 + 0.3 || C.pos.x > 70 ? 'row' : null;
+    // ([C6 2nd] the alley behind the press hall comes in from the east before
+    // the fork: the row's way begins in the passage north of it)
+    const mine = (C.run ? C.run.feet : C.groundY) > 1.2 || (C.pos.z > ROOFS.z0 - 0.2 && C.pos.z < -104.0 && C.pos.x > 56 && C.pos.x < 70.5) ? 'roofs' : C.pos.z < ROOFS.z0 + 0.3 || (C.pos.x > 70 && C.pos.x < 73.4 && C.pos.z < -104.6) ? 'row' : null;
     return mine != null && mine !== this.over;
   }
 

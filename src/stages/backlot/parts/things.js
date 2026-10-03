@@ -3,7 +3,7 @@ import { lathe, merge, tube, V3, roundedBox } from '../../../world/geom.js';
 import { allocInkId, markFigure, tagInk } from '../../../render/layers.js';
 import { materials } from '../arch.js';
 import {
-  LANE, KITCHEN, ROOFS, TANNER, TRUCK, MARKET, FENCE,
+  LANE, KITCHEN, ROOFS, TANNER, TRUCK, MARKET, FENCE, KDOOR, PRESS, BALLEY, AVENUE,
 } from '../plan.js';
 
 // What the chase meets in its way (lane C6): every thing a man must go
@@ -311,23 +311,106 @@ export default {
       };
     }
     {
-      // the roller door, down to 0.82 from the floor: its slats, the bottom
-      // bar's pale edge (what a man slides under)
+      // [C6 2nd] the roller door, down to the floor tonight and padlocked to
+      // its bolt in the sill: it rattles (the way out of the kitchen is its
+      // iron door, into the press hall)
       const R = KITCHEN.roll;
       const g = new THREE.Group();
       const slats = [];
-      for (let y = R.gap + 0.08; y < R.h; y += 0.11) slats.push(new THREE.BoxGeometry(R.w, 0.095, 0.035).translate(0, y, 0));
+      for (let y = 0.08; y < R.h; y += 0.11) slats.push(new THREE.BoxGeometry(R.w, 0.095, 0.035).translate(0, y, 0));
       g.add(new THREE.Mesh(merge(slats), MAT.metal));
-      g.add(new THREE.Mesh(new THREE.BoxGeometry(R.w + 0.02, 0.07, 0.06).translate(0, R.gap + 0.035, 0), MAT.iron));
-      const edge = new THREE.Mesh(new THREE.BoxGeometry(R.w, 0.022, 0.07).translate(0, R.gap + 0.006, 0), MAT.mark);
-      edge.userData.noRay = true;
-      g.add(edge);
+      g.add(new THREE.Mesh(new THREE.BoxGeometry(R.w + 0.02, 0.07, 0.06).translate(0, 0.035, 0), MAT.iron));
+      // (the padlock on its hasp at the bottom bar)
+      g.add(new THREE.Mesh(merge([new THREE.BoxGeometry(0.08, 0.1, 0.04).translate(0.4, 0.06, -0.06), new THREE.TorusGeometry(0.03, 0.007, 4, 10, Math.PI).translate(0.4, 0.11, -0.06)]), MAT.iron));
       ink(g, false);
       g.position.set(R.x, 0, KITCHEN.z0 + 0.12);
       stage.scene.add(g);
-      const T = add({ id: 'roller', kind: 'under', under: R.gap, a: { x: R.x - R.w / 2 - 0.05, z: KITCHEN.z0 + 0.12 }, b: { x: R.x + R.w / 2 + 0.05, z: KITCHEN.z0 + 0.12 }, depth: 0.32, stretch: 'kitchen' });
+      const T = add({ id: 'roller', kind: 'locked', top: R.h, a: { x: R.x - R.w / 2 - 0.05, z: KITCHEN.z0 + 0.12 }, b: { x: R.x + R.w / 2 + 0.05, z: KITCHEN.z0 + 0.12 }, depth: 0.32, stretch: 'kitchen' });
       T.mesh = g;
-      T.update = () => {};
+      T.state = { rattle: 0 };
+      T.bash = () => { T.state.rattle = 0.4; emit('rattle', T); return false; };
+      T.update = (dt) => { const S = T.state; S.rattle = Math.max(0, S.rattle - dt); g.position.z = KITCHEN.z0 + 0.12 + Math.sin(S.rattle * 70) * 0.012 * S.rattle; };
+    }
+    // [C6 2nd] the kitchen's iron door in its east wall, into the press hall:
+    // he flings it open on his way (it stays open); shut, a push of the
+    // shoulder opens it (SPACE / E)
+    {
+      const d = KDOOR, g = new THREE.Group();
+      const leaf = new THREE.Mesh(roundedBox(0.06, d.h - 0.04, d.w - 0.04, 0.01, 1).translate(0, (d.h - 0.04) / 2, (d.w - 0.04) / 2), MAT.iron);
+      g.add(leaf);
+      g.add(new THREE.Mesh(new THREE.BoxGeometry(0.03, 0.06, 0.6).translate(-0.05, 1.05, d.w / 2), MAT.metal));
+      ink(g);
+      // hinged on its north jamb, opening east into the hall
+      g.position.set(d.x, 0.02, d.z - d.w / 2 + 0.02);
+      stage.scene.add(g);
+      const T = add({ id: 'kdoor', kind: 'shoulder', a: { x: d.x, z: d.z - d.w / 2 }, b: { x: d.x, z: d.z + d.w / 2 }, depth: 0.3, top: d.h, stretch: 'kitchen' });
+      T.mesh = g;
+      T.state = { a: 0, v: 0 };
+      T.rest = 0;
+      T.update = (dt) => {
+        const S = T.state;
+        S.v += (-(S.a - T.rest) * 30 - S.v * 5) * dt;
+        S.a += S.v * dt;
+        if (S.a < 0) { S.a = 0; S.v = Math.abs(S.v) * 0.3; }
+        if (S.a > 1.9) { S.a = 1.9; S.v = -Math.abs(S.v) * 0.4; }
+        g.rotation.y = S.a;
+        const open = S.a > 0.9;
+        if (open && T.active) { T.active = false; solid(T, false); }
+        if (!open && !T.active && T.kind !== 'open') { T.active = true; solid(T, true); }
+      };
+      T.set = (state) => {
+        if (state === 'open') { T.kind = 'open'; T.rest = 1.6; T.state.a = 1.6; T.state.v = 0; T.active = false; solid(T, false); }
+        else { T.kind = 'shoulder'; T.rest = 0; T.state.a = 0; T.state.v = 0; T.active = true; solid(T, true); }
+      };
+      T.bash = (k = 1) => { T.kind = 'open'; T.rest = 1.6; T.state.v = 14 * k; T.active = false; solid(T, false); emit('bash', T, { k }); return true; };
+      T.reset = () => T.set('shut');
+    }
+
+    // ================= [C6 2nd] the press hall, the avenue, the alley ===============
+    // the web across the gap between the north line's two units: a man goes
+    // under it (the paper is the pale edge; press.js draws it running)
+    {
+      const W = PRESS.web, zm = (PRESS.lineN.z0 + PRESS.lineN.z1) / 2;
+      const g = new THREE.Group();
+      for (const z of [zm - W.w / 2, zm + W.w / 2]) markTop(g, PRESS.units[0][1], z, PRESS.units[1][0], z, W.y - 0.005, 0.03);
+      stage.scene.add(g);
+      add({ id: 'web', kind: 'under', under: W.y, a: { x: PRESS.units[0][1] + 0.02, z: zm }, b: { x: PRESS.units[1][0] - 0.02, z: zm }, depth: W.w, stretch: 'press' });
+    }
+    // the conveyor across the middle aisle: over it (its rails pale)
+    {
+      const C = PRESS.conveyor, za = PRESS.lineN.z1, zb = PRESS.lineS.z0;
+      const g = new THREE.Group();
+      for (const x of [C.x - C.w / 2 + 0.04, C.x + C.w / 2 - 0.04]) markTop(g, x, za + 0.05, x, zb - 0.05, C.y + 0.025, 0.05);
+      stage.scene.add(g);
+      add({ id: 'conveyor', kind: 'over', low: true, top: C.y + 0.18, a: { x: C.x, z: za + 0.02 }, b: { x: C.x, z: zb - 0.02 }, depth: C.w, stretch: 'press' });
+    }
+    // the bundles on their hand truck by the south line: he pulls them over
+    // across the middle aisle behind him (step round, or over)
+    bundleStack(add, stage, MAT, ink, { id: 'pressBundles', x: 84.6, z: PRESS.lineS.z0 - 0.45, toward: -1, stretch: 'press' });
+    // the bundles for the news-stand at the alley's corner: across the
+    // avenue's west lane behind him
+    bundleStack(add, stage, MAT, ink, { id: 'avBundles', x: AVENUE.x0 + 1.85, z: BALLEY.z1 + 4.4, toward: 1, axis: 'x', stretch: 'el' });
+    // the steam pipe across the alley behind the press hall, lagged white,
+    // out of the hall's north wall and into the next block: under it
+    {
+      const P = BALLEY.pipe, r = 0.2, y = P.y + r;
+      const g = new THREE.Group();
+      const z0 = BALLEY.z0 + 0.05, z1 = BALLEY.z1 - 0.05;
+      // (the lagging: canvas painted white, grimy - the pale thing across the way)
+      const lag = new THREE.MeshStandardMaterial({ color: 0xd4d4d4, roughness: 0.95, emissive: 0x1c1c1c });
+      g.add(new THREE.Mesh(new THREE.CylinderGeometry(r, r, z1 - z0, 16).rotateX(Math.PI / 2).translate(P.x, y, (z0 + z1) / 2), lag));
+      const bands = [];
+      for (let z = z0 + 0.4; z < z1; z += 0.9) bands.push(new THREE.TorusGeometry(r + 0.01, 0.012, 4, 18).translate(P.x, y, z));
+      for (const z of [z0 + 1.6, z1 - 1.4]) bands.push(new THREE.CylinderGeometry(r + 0.06, r + 0.06, 0.1, 16).rotateX(Math.PI / 2).translate(P.x, y, z));
+      // (a valve on it, its wheel)
+      bands.push(new THREE.CylinderGeometry(0.05, 0.05, 0.36, 8).translate(P.x, y + 0.36, z0 + 2.4), new THREE.TorusGeometry(0.16, 0.018, 5, 18).rotateX(Math.PI / 2).translate(P.x, y + 0.55, z0 + 2.4));
+      g.add(new THREE.Mesh(merge(bands), MAT.iron));
+      // its underside's pale edge, both sides
+      for (const dx of [-r + 0.02, r - 0.02]) markTop(g, P.x + dx, z0 + 0.1, P.x + dx, z1 - 0.1, P.y + 0.012, 0.03);
+      ink(g, false);
+      stage.scene.add(g);
+      api.pipe = { x: P.x, y, joint: new THREE.Vector3(P.x, y + 0.1, z0 + 1.6) };
+      add({ id: 'pipe', kind: 'under', under: P.y, a: { x: P.x, z: BALLEY.z0 + 0.02 }, b: { x: P.x, z: BALLEY.z1 - 0.02 }, depth: 2 * r + 0.08, stretch: 'el' });
     }
 
     // ================= the roofs ====================================================
@@ -459,7 +542,7 @@ export default {
     byId.get('car').reset = () => { const C = byId.get('car'); C.active = false; solid(C, false); C.vel = { x: 0, z: 0 }; };
 
     // ---- the whole list's resets -----------------------------------------------------------
-    const ORDER = ['alley', 'lane', 'yard', 'kitchen', 'over', 'street', 'car'];
+    const ORDER = ['alley', 'lane', 'yard', 'kitchen', 'press', 'el', 'over', 'street', 'car'];
     // a retry of stretch `name`: everything of it and after it as it was
     api.reset = (name) => {
       const i = Math.max(0, ORDER.indexOf(name));
@@ -547,5 +630,67 @@ function crateStack(add, stage, wood, MAT, ink, { id, at, fall, line, stretch })
     T.place(T.state.k);
     if (T.state.k > 0.35 && !T.active) { T.active = true; if (T.col && !T.colOn) { T.colOn = true; T.col.cx -= 1000; } }
   };
+  return T;
+}
+
+// [C6 2nd] a stack of the edition's bundles (tied with twine) on a hand
+// truck, that he pulls over as he passes when I am close: five bundles
+// toppling into a line across the way. `toward` +1 / -1: the side of the
+// stack the line falls to along `axis` ('z': the line runs along z from the
+// stack; 'x': along x)
+function bundleStack(add, stage, MAT, ink, { id, x, z, toward = 1, axis = 'z', stretch }) {
+  const paper = new THREE.MeshStandardMaterial({ color: 0xbdbdbd, roughness: 0.85 });
+  const geo = merge([roundedBox(0.6, 0.3, 0.42, 0.04, 2).translate(0, 0.15, 0), new THREE.BoxGeometry(0.62, 0.02, 0.03).translate(0, 0.31, 0), new THREE.BoxGeometry(0.03, 0.02, 0.44).translate(0, 0.31, 0)]);
+  // the hand truck: two wheels, the frame, its handles
+  const truck = new THREE.Group();
+  truck.add(new THREE.Mesh(merge([
+    new THREE.BoxGeometry(0.05, 1.3, 0.05).translate(-0.25, 0.75, 0.22), new THREE.BoxGeometry(0.05, 1.3, 0.05).translate(0.25, 0.75, 0.22),
+    new THREE.BoxGeometry(0.6, 0.04, 0.32).translate(0, 0.08, 0.05),
+    new THREE.TorusGeometry(0.14, 0.035, 6, 16).rotateY(Math.PI / 2).translate(-0.33, 0.14, 0.24), new THREE.TorusGeometry(0.14, 0.035, 6, 16).rotateY(Math.PI / 2).translate(0.33, 0.14, 0.24),
+  ]), MAT.iron));
+  truck.position.set(x, 0, z);
+  truck.rotation.y = axis === 'z' ? 0 : Math.PI / 2;
+  ink(truck);
+  stage.scene.add(truck);
+  const items = [];
+  for (let i = 0; i < 5; i++) {
+    const m = new THREE.Mesh(geo, paper);
+    m.castShadow = true; m.userData.noRay = true;
+    const g = new THREE.Group(); g.add(m);
+    ink(g);
+    stage.scene.add(g);
+    const d = toward * (0.55 + i * 0.62);
+    const p0 = { x, y: 0.12 + i * 0.31, z };
+    const p1 = axis === 'z' ? { x: x + (i % 2 ? 0.12 : -0.1), z: z + d, yaw: (i * 0.41) % 0.5 - 0.25 } : { x: x + d, z: z + (i % 2 ? 0.12 : -0.1), yaw: Math.PI / 2 + (i * 0.41) % 0.5 - 0.25 };
+    p1.y = stage.surfaceY(p1.x, p1.z);
+    items.push({ g, p0, p1, delay: (4 - i) * 0.06 });
+  }
+  const end = toward * (0.55 + 4 * 0.62 + 0.35);
+  const line = axis === 'z' ? [{ x, z: z + toward * 0.3 }, { x, z: z + end }] : [{ x: x + toward * 0.3, z }, { x: x + end, z }];
+  const T = add({ id, kind: 'over', low: true, top: 0.42, a: line[0], b: line[1], depth: 0.62, active: false, dynamic: true, stretch });
+  T.items = items;
+  const col = stage.colliders.addBox(x, z, 0.36, 0.3, axis === 'z' ? 0 : Math.PI / 2, 'bundles');
+  T.place = (k) => {
+    for (const it of items) {
+      const u = Math.min(1, Math.max(0, (k - it.delay) / 0.5)), e = u * u * (3 - 2 * u);
+      const px = it.p0.x + (it.p1.x - it.p0.x) * e, pz = it.p0.z + (it.p1.z - it.p0.z) * e;
+      const py = it.p0.y + (it.p1.y - it.p0.y) * e + 0.06 * Math.sin(Math.PI * Math.min(1, Math.max(0, (u - 0.75) / 0.25)));
+      it.g.position.set(px, py, pz);
+      it.g.rotation.set(axis === 'z' ? toward * e * 0.4 : 0, (it.p1.yaw || 0) * e, axis === 'x' ? -toward * e * 0.4 : 0);
+    }
+    truck.rotation.z = axis === 'z' ? 0 : -toward * Math.min(1, k * 2) * 1.2;
+    truck.rotation.x = axis === 'z' ? toward * Math.min(1, k * 2) * 1.2 : 0;
+  };
+  T.place(0);
+  T.state = { k: 0, go: false };
+  T.trigger = () => { T.state.go = true; };
+  T.reset = () => { T.state = { k: 0, go: false }; T.active = false; if (T.col && T.colOn) { T.colOn = false; T.col.cx += 1000; } T.place(0); };
+  T.update = (dt) => {
+    if (!T.state.go || T.state.k >= 1.0) return;
+    T.state.k = Math.min(1.0, T.state.k + dt);
+    T.place(T.state.k);
+    if (T.state.k > 0.3 && !T.active) { T.active = true; if (T.col && !T.colOn) { T.colOn = true; T.col.cx -= 1000; } }
+  };
+  void col;
   return T;
 }
