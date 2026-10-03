@@ -58,6 +58,10 @@ function stage(ctx, b) {
   if (R.hatReset) R.hatReset();
   if (R.hat) { S.scene.remove(R.hat.obj); if (R.hat.cigar) S.scene.remove(R.hat.cigar); R.hat = null; }
   freshRoom(ctx);
+  // [C8] Mack's window: out since II, its sill still there - over it is
+  // SPACE (nick.js), never a walk through it (II opens the bay's colliders)
+  { const front = S.part('dinerFront'); if (front.closeBay) front.closeBay(mackWindow(G)); }
+  R.paneRounds = null;
   // a later beat: the front's glass gone, the two cars where they stopped
   if (bi > BEATS.indexOf('cars')) {
     const front = S.part('dinerFront');
