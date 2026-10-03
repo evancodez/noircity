@@ -753,9 +753,19 @@ export class Guns {
     const G = this.game;
     if (!this.active || G.state !== 'playing') return;
     this.stepBodies(dt);
-    // [C2] after the critic's second look: in the open - up on my feet, or down
-    // with nothing near me on any side (the brains read it with what each sees)
-    if ((this.openT = (this.openT || 0) - dt) <= 0) { this.openT = 0.2; this.lowInOpen = (G.controller.crouchK || 0) > 0.5 && this.bareAround(); }
+    // [C2] after the critic's second look: down in the open - my body bare to
+    // at least half of them (behind a car, flanked by one of four, is that
+    // one's angle; down on a room's floor with two at the door is the open).
+    // The brains read it with what each sees (gunman.js look: whole)
+    if ((this.openT = (this.openT || 0) - dt) <= 0) {
+      this.openT = 0.2;
+      let n = 0, k = 0;
+      if ((G.controller.crouchK || 0) > 0.5) {
+        const seat = this.playerBody().seat;
+        for (const [h] of G.ais) { if (!h.alive) continue; n++; if (this.bare(_a.set(h.pos.x, h.pos.y + 1.58 * h.scale, h.pos.z), seat, 0.15)) k++; }
+      }
+      this.lowInOpen = n > 0 && k >= Math.max(1, Math.ceil(n / 2));
+    }
     // who has a line on me (the brains say), for the mending and the plays
     let n = 0;
     for (const [h, ai] of G.ais) if (h.alive && ai.brain && ai.brain.hasLine) n++;
