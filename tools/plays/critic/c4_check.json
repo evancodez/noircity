@@ -1,0 +1,87 @@
+{
+ "about": "Critic C4: chapter I's pay beat: the guest check slid across, read, the bill on it.",
+ "url": "/?mute=1&start=diner.pay",
+ "size": [
+  1440,
+  900
+ ],
+ "out": "shots/critic/c4_check",
+ "steps": [
+  {
+   "until": "G.state === 'title' && !document.getElementById('title').classList.contains('hidden')",
+   "timeout": 30000
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]",
+   "taken": "G.state !== 'title'",
+   "retries": 5,
+   "every": 4000
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id==='diner' && G.scenes.beat==='pay'",
+   "timeout": 30000
+  },
+  {
+   "wait": 500
+  },
+  {
+   "shot": "k0"
+  },
+  {
+   "until": "!!(()=>{let f=null; G.stage.scene.traverse(o=>{ if(!f && o.name==='check') f=o; }); return f;})()",
+   "timeout": 8000,
+   "stop": false
+  },
+  {
+   "wait": 1200
+  },
+  {
+   "shot": "k1_slid"
+  },
+  {
+   "eval": "JSON.stringify((()=>{const o=(()=>{let f=null; G.stage.scene.traverse(o=>{ if(!f && o.name==='check') f=o; }); return f;})(); if(!o) return null; const p=o.getWorldPosition(new N.THREE.Vector3()); return [p.x,p.y,p.z, G.eye.x, G.eye.y, G.eye.z];})())"
+  },
+  {
+   "look": "(() => { const o=(()=>{let f=null; G.stage.scene.traverse(o=>{ if(!f && o.name==='check') f=o; }); return f;})(); const a=o.getWorldPosition(new N.THREE.Vector3()); const yw = Math.atan2(-(a.x - G.eye.x), -(a.z - G.eye.z)); const pt = Math.atan2(a.y - G.eye.y, Math.hypot(a.x - G.eye.x, a.z - G.eye.z)); const d = Math.atan2(Math.sin(yw - N.controller.yaw), Math.cos(yw - N.controller.yaw)); return [Math.round(-d / N.controller.sensitivity), Math.round(-(pt - N.controller.pitch) / N.controller.sensitivity)]; })()",
+   "steps": 8
+  },
+  {
+   "wait": 500
+  },
+  {
+   "eval": "G.hud.promptShown"
+  },
+  {
+   "shot": "k2_check"
+  },
+  {
+   "until": "G.hud.promptShown.includes('pay')",
+   "timeout": 6000,
+   "stop": false
+  },
+  {
+   "key": "KeyE"
+  },
+  {
+   "wait": 900
+  },
+  {
+   "shot": "k3_pay"
+  },
+  {
+   "wait": 900
+  },
+  {
+   "shot": "k4_pay"
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "shot": "k5_pay"
+  }
+ ]
+}

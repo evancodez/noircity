@@ -1,0 +1,45 @@
+{
+ "about": "[C4] after the critic's second look (B1): the critic's lazy hands (W held, a click of either button every 2 .. 3 s, never A, D or SPACE) for 16 minutes - must not win",
+ "url": "/?mute=1&start=fight",
+ "size": [
+  1440,
+  900
+ ],
+ "out": "shots/play/fight_lazy_long",
+ "steps": [
+  {
+   "until": "G.state === 'title' && !document.getElementById('title').classList.contains('hidden')",
+   "timeout": 30000
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]",
+   "taken": "G.state !== 'title'",
+   "retries": 5,
+   "every": 4000
+  },
+  {
+   "until": "G.scenes.current && G.brawl && G.brawl.active",
+   "timeout": 90000
+  },
+  {
+   "drive": "tools/plays/critic/c4_bot.mjs",
+   "profile": "lazy",
+   "timeout": 960000,
+   "shots": 8,
+   "every": 60000,
+   "blackShots": 1
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "shot": "end"
+  },
+  {
+   "eval": "JSON.stringify({t:+G.time.toFixed(1),sc:G.scenes.current&&G.scenes.current.id,beat:G.scenes.beat,obj:G.hud.objectiveText,prompt:G.hud.promptShown,say:G.hud.sayShown,warn:G.hud.warnText,p:[+N.controller.pos.x.toFixed(2),+N.controller.pos.z.toFixed(2)],inv:G.save.inventory.join(',')})"
+  }
+ ]
+}

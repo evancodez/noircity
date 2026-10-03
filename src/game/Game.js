@@ -113,6 +113,12 @@ export class Game {
     this.hitStop = 0;
     this.timeScale = 1;
     this.slowT = 0;
+    // [C4] the world's own clock against mine: the fist fight's dodge cue
+    // drops the world (him, what he threw, the room, the rain) to about a
+    // third while my hands, my look and my input run at full speed (main.js
+    // simStep: pre(dt) is mine, the stage and post's world parts take
+    // dt * worldK). 1 everywhere else: nothing else changes.
+    this.worldK = 1;
     // input edges (see pressed / released / held / mouse); vin: the
     // autoplay's hands on the same keys (game/Autoplay.js)
     this.keysDown = new Set();
@@ -804,12 +810,13 @@ export class Game {
     for (const ai of this.ais.values()) ai.update(dt, t);
   }
 
-  post(dt, t) {
+  // ([C4] wdt: the world's step - dt but under the fight's dodge cue, worldK)
+  post(dt, t, wdt = dt) {
     for (let i = this.pending.length - 1; i >= 0; i--) {
       if (this.pending[i].t <= t) { const s = this.pending[i]; this.pending.splice(i, 1); this.resolveShot(s); }
     }
     this.react.update(dt, t);
-    this.fx.update(dt, t);
+    this.fx.update(wdt, t);
     // the train and the storm: in play (and the battle preset); a crossing
     // never starts in a fight's first seconds, and a train still out there
     // when a fight's last man falls hurries away
@@ -838,10 +845,10 @@ export class Game {
     this.counters.alive = alive;
     this.director.update(dt, t);
     if (this.slowT > 0) { this.slowT -= dt; if (this.slowT <= 0) this.timeScale = 1; }
-    this.brawl.update(dt);
+    this.brawl.update(dt, wdt);
     // the story: the scene's script, the prompts, the hands' inspection,
     // the puzzle; the sound of the room the eye is in
-    this.scenes.update(dt, t);
+    this.scenes.update(wdt, t);
     this.interact.update(dt);
     this.inspect.update(dt);
     this.puzzles.update(dt);

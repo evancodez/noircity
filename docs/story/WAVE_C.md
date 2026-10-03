@@ -272,6 +272,13 @@ better). Nothing else changes.
 - **[must]** When it comes to shooting his car, my shots cause the crash.
   It never crashes by itself.
 - **[must]** Then I drive to Pier 9, which is a place on this map.
+- After playing the first build (2026-10-03, lane C3b): he speeds up when
+  I catch up in the streets (a graze of the bumper and no more); the gun
+  hurts him but the finish is a shunt on his back corner that spins him
+  (physics, not a cutscene, and it looks like something); no
+  interrogation: he is crouched by the wreck and says "Pier 9"; no
+  cutscene at the pier, the next mission just starts; the fail is that he
+  gets away after enough time.
 
 ### VII Pier Nine (lane C7)
 - **[must]** Clear from the moment I enter what I am to do.

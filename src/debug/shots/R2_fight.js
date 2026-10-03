@@ -98,7 +98,8 @@ function stageRoom(stage, camera, controller) {
 // strips of the real fight's motion
 function stagePlay(stage, camera, controller, game) {
   const q = Q();
-  game.scenes.shot('fight', q.get('beat') || 'lesson');
+  // ([C4] &scene=warehouse&beat=fight: the Pier 9 foreman's fight)
+  game.scenes.shot(q.get('scene') || 'fight', q.get('beat') || 'lesson');
   game.autoplay = new Autoplay(game, { seed: parseInt(q.get('seed') || '1937', 10) });
 }
 

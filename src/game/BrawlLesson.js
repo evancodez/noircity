@@ -1,42 +1,53 @@
 import * as THREE from 'three';
 
-// The first exchange is the lesson (the arcade pass: docs/story/FIGHT.md v3
-// §6). He squares up and WAITS: he does not hurt me until step 5. One card
-// at a time, low in the frame. The game does not pause. The arrow and the
-// slow motion exist here only. A step already done is skipped.
+// The first exchange is the lesson (docs/story/FIGHT.md version 5 §7). He
+// squares up and WAITS: he does not hurt me until step 5. One card at a
+// time, low in the frame. A step already done is skipped.
 //   1  he lowers the hand on the left of the screen   HIS GUARD IS DOWN  LEFT CLICK   my left jab lands
 //   2  he lowers the other                            RIGHT CLICK                    my right jab lands
 //   3  guard up, both sides                           GUARD UP: ...WAIT FOR AN OPENING
 //                                                     one punch blocked (or 3 s); then he lowers a hand and I land one
-//   4  both hands down, taunting                      HOLD, THEN LET GO ...          a hard punch of 0.5 or more lands
-//   5  a slow right hook (0.4 x through the tell, the arrow to my safe side)   D   it misses; HE IS OPEN while he is
-//   6  the same from his left                         A                              it misses
-//   7  he jabs                                        SPACE  BLOCK                   I block one
-//   8  he backs off; Dot slides a bottle down the counter   E  GRAB WHAT IS IN REACH   3 s, or I grab something
+//   4  both hands down, taunting                      HOLD ON AFTER THE JAB ...      a hard punch of level 2 or 3 lands
+//   5  a right hook: the dodge cue, held              (the kit's card: [A] [D] dodge toward the light)   it misses
+//   6  the same from his left: the cue, its real window                               it misses
+//   7  he throws a plate: the cue on the plate                                        it misses me
+//   8  he jabs                                        SPACE  BLOCK                   I block one
+//   9  he backs off; Dot slides a bottle down the counter   E  GRAB WHAT IS IN REACH   3 s, or I grab something
 // Then NOW FIGHT. for a second; his health is full.
-// [B8] version 4: step 3 shows him answering a punch into his guard (once,
-// slowed); step 4 says what a button does (tap to jab, hold to load); a
-// new step 7: he throws a plate, the chevron shows the side to step to.
+// [C4] version 5: the arrow and the chevron are gone, and so is the slow
+// tell of his hooks: the dodge cue does it (game/BrawlCue.js) - its first
+// time held, with the kit's teach card ('dodge', once a save); a player hit
+// twice in the lesson's dodge steps gets the card again.
+// [C4] after the critic: the heavy's card says what to do with the button
+// (it read as 'wait'); the block's names what it is for
+export const HEAVY_CARD = 'KEEP IT PRESSED: IT LOADS.   LET GO TO HIT';
 export const LESSON = [
   null,
   { kind: 'jabL', card: 'HIS GUARD IS DOWN   LEFT CLICK', pic: 'mouseL', taunt: 'L', done: (B) => B.did.jabL },
   { kind: 'jabR', card: 'RIGHT CLICK', pic: 'mouseR', taunt: 'R', done: (B) => B.did.jabR },
   { kind: 'guard', card: 'GUARD UP: HE ANSWERS A PUNCH INTO IT.   WAIT FOR AN OPENING', pic: null, guard: true, done: (B, L) => L.landedOpen },
-  { kind: 'hold', card: 'TAP TO JAB.   HOLD TO LOAD, THEN LET GO', pic: 'mouseLR', taunt: 'LR', done: (B) => B.did.hard },
-  { kind: 'hookR', card: 'STEP AWAY FROM THE HAND THAT SWINGS', pic: ['D'], attack: 'br_hook', hand: 'R', done: (B, L) => L.missed },
-  { kind: 'hookL', card: 'STEP AWAY FROM THE HAND THAT SWINGS', pic: ['A'], attack: 'br_hookL', hand: 'L', done: (B, L) => L.missed },
-  { kind: 'throw', card: 'HE THROWS: STEP WHERE THE MARK POINTS', pic: ['A', 'D'], throw: true, attack: 'br_throw', done: (B, L) => L.missed },
-  { kind: 'block', card: 'BLOCK', pic: ['SPACE'], attack: 'br_jab', done: (B, L) => L.covered },
+  { kind: 'hold', card: HEAVY_CARD, pic: 'mouseLR', taunt: 'LR', done: (B) => B.did.hard, nudge: 'KEEP IT PRESSED' },
+  { kind: 'hookR', card: '', pic: null, attack: 'br_hook', hand: 'R', dodge: true, done: (B, L) => L.missed },
+  { kind: 'hookL', card: '', pic: null, attack: 'br_hookL', hand: 'L', done: (B, L) => L.missed },
+  { kind: 'throw', card: '', pic: null, throw: true, attack: 'br_throw', done: (B, L) => L.missed },
+  { kind: 'block', card: 'HOLD TO BLOCK HIS JAB', pic: ['SPACE'], attack: 'br_jab', done: (B, L) => L.covered },
   { kind: 'grab', card: 'GRAB WHAT IS IN REACH', pic: ['E'], back: true, done: (B, L) => L.t >= 3 || B.did.grab },
 ];
-export const LESSON_SLOW = 0.4;
 const LAST = LESSON.length - 1;
+// [C4] after the critic (B1): no step waits on one right action. A step not
+// done in `PATIENCE.secs`, or after `PATIENCE.presses` inputs that did not do
+// it (and at least `pressSecs` in it), lets me go to the next (the fight
+// teaches the rest: the block's and the heavy's cards come again there); a
+// step that asks for a press flashes what it wants at the fourth and the
+// tenth press. Hands off, the lesson is cut at 12 s as before.
+export const PATIENCE = { secs: 15, presses: 16, pressSecs: 8, nudgeAt: [4, 10] };
 
 export class Lesson {
   constructor(B, step = 1) {
     this.B = B;
     this.step = 0;
     this.total = 0;
+    this.hits = 0;
     this.go(Math.max(1, Math.min(LAST, step)));
   }
 
@@ -48,11 +59,15 @@ export class Lesson {
     this.step = n;
     this.t = 0;
     (B.stats.lessonSteps || (B.stats.lessonSteps = [])).push([n, +(this.total || 0).toFixed(1)]);
-    this.missed = false; this.covered = false; this.landedOpen = false;
+    this.missed = false; this.covered = false; this.landedOpen = false; this.stepHits = 0;
     this.bounced = false; this.lowered = null; this.answered = false; this.fetch = false;
     this.attackAt = LESSON[n] && LESSON[n].attack ? 1.5 : Infinity;
     this.openT = 0;
     this.pending = false;
+    // ([C4] what I have pressed since the step began: its patience)
+    this.inputs0 = B.inputN || 0; this.nudged = false;
+    // ([C4] the dodge steps: the first cue is held for the kit's card)
+    this.dodge = !!(LESSON[n] && LESSON[n].dodge);
     B.lessonHold = true;
     B.lessonBack = !!(LESSON[n] && (LESSON[n].back || LESSON[n].throw));
     const S = LESSON[n];
@@ -82,13 +97,23 @@ export class Lesson {
     const S = LESSON[this.step];
     if (!S || !S.attack || clip !== S.attack) return;
     this.pending = false;
-    this.B.cards.arrow(null);
     if (how === 'missed') {
       this.missed = true;
-      if (S.hand || S.throw) { this.B.cards.flash('HE IS OPEN', 0.9); this.openT = 0.9; }
+      // ([C4] 5.2: a hook that misses opens only the side it came from -
+      // the cue's dark side: the flash says so)
+      if (S.hand) { this.B.cards.flash('OPEN WHERE IT CAME FROM', 1.1); this.openT = 1.1; }
+      else if (S.throw) { this.B.cards.flash('HE IS OPEN', 0.9); this.openT = 0.9; }
     } else if (how === 'covered') this.covered = true;
-    // (it found me: he goes again in a moment)
-    if (!this.missed && !this.covered) this.attackAt = this.t + 1.5;
+    // (it found me: he goes again in a moment; [C4] hit twice in the dodge
+    // steps, the dodge card comes again at the next cue)
+    if (!this.missed && !this.covered) {
+      this.attackAt = this.t + 1.5;
+      if (S.hand || S.throw) { this.hits++; if (this.hits === 2) this.B.reteach = true; }
+      // ([C4] three times caught in one step - a dodge, the block: the step
+      // lets me go; the lesson is never a wall, the fight teaches the rest)
+      this.stepHits = (this.stepHits || 0) + 1;
+      if (this.stepHits >= 3) { if (S.attack === 'br_jab') this.covered = true; else this.missed = true; this.B.stats.lessonLetGo = (this.B.stats.lessonLetGo || 0) + 1; }
+    }
   }
 
   update(dt) {
@@ -105,6 +130,24 @@ export class Lesson {
       this.go(this.step + 1);
       return;
     }
+    // ([C4] hands off for twelve seconds at a card that waits on me: he has
+    // waited long enough - the lesson is over and the fight is on. Nothing
+    // waits for ever on a player who does nothing: he loses, as anywhere)
+    if (this.t > 12 && (B.RT || 0) - (B.lastInputT ?? 0) > 12 && !B.cue) { B.stats.lessonCut = this.step; return this.finish(); }
+    // ([C4] B1: pressing, but not what the card asks - a nudge half way, then
+    // the step lets me go; a step that never came to its blow (he was kept
+    // busy, I stood on him) lets me go after its time)
+    const pressed = (B.inputN || 0) - this.inputs0;
+    if (S.nudge && !B.cue && PATIENCE.nudgeAt.includes(pressed) && this.nudged !== pressed) { this.nudged = pressed; B.cards.flash(S.nudge, 1.6); }
+    if (!B.cue && !this.pending && ((this.t > PATIENCE.secs) || (pressed >= PATIENCE.presses && !S.attack && this.t > PATIENCE.pressSecs))) {
+      B.stats.lessonLetGo = (B.stats.lessonLetGo || 0) + 1;
+      (B.stats.lessonPassed || (B.stats.lessonPassed = [])).push(S.kind);
+      if (S.kind === 'hold') B.heavyUntaught = true;
+      if (S.kind === 'block') B.blockUntaught = true;
+      if (this.step >= LAST) return this.finish();
+      this.go(this.step + 1);
+      return;
+    }
     // step 3: the guard up until a punch has bounced off it (or 3 s); then a
     // hand comes down
     if (S.guard && !this.lowered && (this.bounced || this.t >= 3)) {
@@ -115,7 +158,9 @@ export class Lesson {
     // from where he has backed off to, with the thing in his hand)
     const dd = Math.hypot(B.c.pos.x - G.eye.x, B.c.pos.z - G.eye.z);
     if (S.throw && him.holding && him.state === 'move') this.holdT = (this.holdT || 0) + dt; else if (S.throw) this.holdT = 0;
-    const inReach = S.throw ? him.holding && (dd > 2.2 || (this.holdT > 2.5 && dd > 1.4)) : dd < 1.75;
+    // ([C4] pinned against the counter with me on top of him, he throws from
+    // where he is: the step never waits on my distance for good)
+    const inReach = S.throw ? him.holding && (dd > 2.2 || (this.holdT > 2.5 && dd > 1.4) || (this.holdT > 4 && dd > 0.95)) : dd < 1.75;
     // (the throw: struck off his errand, he goes for a thing again; with none
     // left to throw, the step is let go)
     if (S.throw && !him.holding && !him.task && him.state === 'move' && !this.pending && !(B.flying && B.flying.length) && !this.missed) {
@@ -123,9 +168,9 @@ export class Lesson {
       if (it && this.t < 20) { him.task = { kind: it.kind, item: it, t: 0 }; him.state = 'arm'; him.h = null; }
       else { this.go(this.step + 1); return; }
     }
-    if (S.attack && this.t >= this.attackAt && him.state === 'move' && inReach) {
+    if (S.attack && this.t >= this.attackAt && him.state === 'move' && inReach && !B.cue) {
       this.attackAt = Infinity;
-      B.hisAttack(S.attack, { slow: S.hand ? LESSON_SLOW : S.throw ? 0.55 : 0 });
+      B.hisAttack(S.attack);
       this.pending = true;
       if (S.attack === 'br_jab') this.attackAt = this.t + 1.6;
     }
@@ -134,32 +179,30 @@ export class Lesson {
     // thing is in the air)
     if (this.pending && !(him.state === 'attack' && him.clip === S.attack) && !(S.throw && B.flying && B.flying.length)) {
       this.pending = false;
-      B.cards.arrow(null);
       if (!this.missed && !this.covered && this.attackAt === Infinity) this.attackAt = this.t + 1.5;
-    }
-    // the arrow: from the swinging hand to my safe side, through the tell
-    if (S.hand && him.state === 'attack' && him.clip === S.attack) {
-      if (him.t < him.strikeAt + 0.05) {
-        const hand = B.c.bones[S.hand === 'R' ? 'handR' : 'handL'].getWorldPosition(new THREE.Vector3());
-        const a = G.screenOf(hand);
-        const W = innerWidth, H = innerHeight;
-        const b = { x: S.hand === 'R' ? W * 0.82 : W * 0.18, y: H * 0.46 };
-        if (a) B.cards.arrow(a, b);
-      } else B.cards.arrow(null);
     }
   }
 
   finish() {
     const B = this.B;
     B.cards.card('');
-    B.cards.arrow(null);
+    // ([C4] the middle of the frame its own: a word of the door's goes)
+    if (B.game.hud.msgT > 0) B.game.hud.message('', 0.01);
     B.cards.flash('NOW FIGHT.', 1.0);
     B.lessonHold = false; B.lessonBack = false;
     B.him.taunt = null;
     B.him.hp = B.max; B.c.hp = B.max; B.him.mannerT = B.T;
+    // ([C4] and I am whole for the fight itself)
+    B.game.health.reset();
     B.him.next = 1.2;
     B.lesson = null;
     B.stats.lesson = +this.total.toFixed(1);
+    // ([C4] the save remembers what the lesson taught: a later fist fight
+    // begun with no lesson - Pier 9 - teaches the punch and the heavy only
+    // if this save never had them; a HOLD step let go is taught in the fight)
+    const SF = B.game.save && B.game.save.flags;
+    if (SF) { SF.c4punch = true; if (B.did.hard) SF.c4heavy = true; }
     B.game.emit('brawl:lesson', { done: true, time: this.total });
   }
 }
+void THREE;

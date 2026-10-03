@@ -1,0 +1,135 @@
+{
+ "about": "Critic C4 second look: after the KO, Dot from the customer side, E twice; what in the room has a prompt.",
+ "url": "/?mute=1&start=fight.ko",
+ "size": [
+  1440,
+  900
+ ],
+ "out": "shots/critic/c4b_dot",
+ "steps": [
+  {
+   "until": "G.state === 'title' && !document.getElementById('title').classList.contains('hidden')",
+   "timeout": 30000
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]",
+   "taken": "G.state !== 'title'",
+   "retries": 5,
+   "every": 4000
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id==='fight' && G.scenes.beat==='ko' && N.controller.mode==='walk'",
+   "timeout": 60000
+  },
+  {
+   "wait": 800
+  },
+  {
+   "eval": "JSON.stringify({p:[+G.eye.x.toFixed(2),+G.eye.z.toFixed(2)],prompt:G.hud.promptShown,msg:+G.hud.el.msg.style.opacity>0?G.hud.el.msg.textContent:'',say:G.hud.sayShown,cast:G.cast&&G.cast.list?G.cast.list.map(c=>c.kind+'@'+c.pos.x.toFixed(1)+','+c.pos.z.toFixed(1)+(c.fig&&c.fig.object&&c.fig.object.visible===false?'(hidden)':'')).join(' '):''})"
+  },
+  {
+   "walk": [
+    [
+     -12.6,
+     3.0
+    ],
+    [
+     -13.4,
+     5.4
+    ]
+   ],
+   "timeout": 15000,
+   "stop": false
+  },
+  {
+   "look": "(() => { const yw = Math.atan2(-(-15.3 - G.eye.x), -(5.4 - G.eye.z)); const d = Math.atan2(Math.sin(yw - N.controller.yaw), Math.cos(yw - N.controller.yaw)); return [Math.round(-d / (N.controller.sensitivity || 0.0021)), 0]; })()",
+   "steps": 8
+  },
+  {
+   "look": "[0, Math.round((N.controller.pitch - (-0.12)) / 0.0021)]",
+   "steps": 4
+  },
+  {
+   "wait": 500
+  },
+  {
+   "eval": "JSON.stringify({p:[+G.eye.x.toFixed(2),+G.eye.z.toFixed(2)],prompt:G.hud.promptShown,msg:+G.hud.el.msg.style.opacity>0?G.hud.el.msg.textContent:'',say:G.hud.sayShown,cast:G.cast&&G.cast.list?G.cast.list.map(c=>c.kind+'@'+c.pos.x.toFixed(1)+','+c.pos.z.toFixed(1)+(c.fig&&c.fig.object&&c.fig.object.visible===false?'(hidden)':'')).join(' '):''})"
+  },
+  {
+   "shot": "e0_dot"
+  },
+  {
+   "key": "KeyE"
+  },
+  {
+   "wait": 600
+  },
+  {
+   "eval": "JSON.stringify({p:[+G.eye.x.toFixed(2),+G.eye.z.toFixed(2)],prompt:G.hud.promptShown,msg:+G.hud.el.msg.style.opacity>0?G.hud.el.msg.textContent:'',say:G.hud.sayShown,cast:G.cast&&G.cast.list?G.cast.list.map(c=>c.kind+'@'+c.pos.x.toFixed(1)+','+c.pos.z.toFixed(1)+(c.fig&&c.fig.object&&c.fig.object.visible===false?'(hidden)':'')).join(' '):''})"
+  },
+  {
+   "shot": "e1_dot_E"
+  },
+  {
+   "wait": 2500
+  },
+  {
+   "key": "KeyE"
+  },
+  {
+   "wait": 600
+  },
+  {
+   "eval": "JSON.stringify({p:[+G.eye.x.toFixed(2),+G.eye.z.toFixed(2)],prompt:G.hud.promptShown,msg:+G.hud.el.msg.style.opacity>0?G.hud.el.msg.textContent:'',say:G.hud.sayShown,cast:G.cast&&G.cast.list?G.cast.list.map(c=>c.kind+'@'+c.pos.x.toFixed(1)+','+c.pos.z.toFixed(1)+(c.fig&&c.fig.object&&c.fig.object.visible===false?'(hidden)':'')).join(' '):''})"
+  },
+  {
+   "shot": "e2_dot_E2"
+  },
+  {
+   "eval": "JSON.stringify(G.interact.list.filter(h => h.prompt).map(h => { const a = typeof h.at === 'function' ? h.at() : h.at; return h.id + ':' + h.prompt + '@' + (a ? a.x.toFixed(1) + ',' + a.z.toFixed(1) : '?'); }))"
+  },
+  {
+   "walk": [
+    [
+     -12.6,
+     -3.0
+    ],
+    [
+     -12.6,
+     -4.6
+    ]
+   ],
+   "timeout": 15000,
+   "stop": false
+  },
+  {
+   "look": "(() => { const yw = Math.atan2(-(-12.9 - G.eye.x), -(-5.5 - G.eye.z)); const d = Math.atan2(Math.sin(yw - N.controller.yaw), Math.cos(yw - N.controller.yaw)); return [Math.round(-d / (N.controller.sensitivity || 0.0021)), 0]; })()",
+   "steps": 8
+  },
+  {
+   "look": "[0, Math.round((N.controller.pitch - (-0.12)) / 0.0021)]",
+   "steps": 4
+  },
+  {
+   "wait": 500
+  },
+  {
+   "shot": "j0_jukebox"
+  },
+  {
+   "key": "KeyE"
+  },
+  {
+   "wait": 1200
+  },
+  {
+   "shot": "j1_jukebox_E"
+  },
+  {
+   "eval": "JSON.stringify({prompt:G.hud.promptShown,say:G.hud.sayShown,msg:+G.hud.el.msg.style.opacity>0?G.hud.el.msg.textContent:''})"
+  }
+ ]
+}

@@ -1,0 +1,292 @@
+{
+ "about": "Critic C4: after the last blow (a jump to ko): the diner walked end to end, into the docker, round and behind the counter, the walls; E everywhere.",
+ "url": "/?mute=1&start=fight.ko",
+ "size": [
+  960,
+  600
+ ],
+ "out": "shots/critic/c4_explore",
+ "steps": [
+  {
+   "until": "G.state === 'title' && !document.getElementById('title').classList.contains('hidden')",
+   "timeout": 30000
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]",
+   "taken": "G.state !== 'title'",
+   "retries": 5,
+   "every": 4000
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id==='fight' && G.scenes.beat==='ko' && N.controller.mode==='walk'",
+   "timeout": 60000
+  },
+  {
+   "wait": 1000
+  },
+  {
+   "eval": "JSON.stringify({p:[+G.eye.x.toFixed(2),+G.eye.z.toFixed(2)],prompt:G.hud.promptShown,msg:+G.hud.el.msg.style.opacity>0?G.hud.el.msg.textContent:'',say:G.hud.sayShown,beat:G.scenes.beat,cast:G.scenes.ctx.cast.list.map(c=>c.name+'@'+c.pos.x.toFixed(1)+','+c.pos.z.toFixed(1)).join(' ')})"
+  },
+  {
+   "walk": [
+    [
+     -12.4,
+     6.0
+    ],
+    [
+     -12.6,
+     10.4
+    ]
+   ],
+   "timeout": 12000,
+   "stop": false
+  },
+  {
+   "eval": "JSON.stringify({p:[+G.eye.x.toFixed(2),+G.eye.z.toFixed(2)],prompt:G.hud.promptShown,msg:+G.hud.el.msg.style.opacity>0?G.hud.el.msg.textContent:'',say:G.hud.sayShown,beat:G.scenes.beat,cast:G.scenes.ctx.cast.list.map(c=>c.name+'@'+c.pos.x.toFixed(1)+','+c.pos.z.toFixed(1)).join(' ')})"
+  },
+  {
+   "shot": "x_north_docker"
+  },
+  {
+   "key": "KeyE"
+  },
+  {
+   "wait": 500
+  },
+  {
+   "eval": "JSON.stringify({p:[+G.eye.x.toFixed(2),+G.eye.z.toFixed(2)],prompt:G.hud.promptShown,msg:+G.hud.el.msg.style.opacity>0?G.hud.el.msg.textContent:'',say:G.hud.sayShown,beat:G.scenes.beat,cast:G.scenes.ctx.cast.list.map(c=>c.name+'@'+c.pos.x.toFixed(1)+','+c.pos.z.toFixed(1)).join(' ')})"
+  },
+  {
+   "walk": [
+    [
+     -13.1,
+     10.9
+    ]
+   ],
+   "timeout": 12000,
+   "stop": false
+  },
+  {
+   "eval": "JSON.stringify({p:[+G.eye.x.toFixed(2),+G.eye.z.toFixed(2)],prompt:G.hud.promptShown,msg:+G.hud.el.msg.style.opacity>0?G.hud.el.msg.textContent:'',say:G.hud.sayShown,beat:G.scenes.beat,cast:G.scenes.ctx.cast.list.map(c=>c.name+'@'+c.pos.x.toFixed(1)+','+c.pos.z.toFixed(1)).join(' ')})"
+  },
+  {
+   "shot": "x_into_docker"
+  },
+  {
+   "key": "KeyE"
+  },
+  {
+   "wait": 500
+  },
+  {
+   "eval": "JSON.stringify({p:[+G.eye.x.toFixed(2),+G.eye.z.toFixed(2)],prompt:G.hud.promptShown,msg:+G.hud.el.msg.style.opacity>0?G.hud.el.msg.textContent:'',say:G.hud.sayShown,beat:G.scenes.beat,cast:G.scenes.ctx.cast.list.map(c=>c.name+'@'+c.pos.x.toFixed(1)+','+c.pos.z.toFixed(1)).join(' ')})"
+  },
+  {
+   "walk": [
+    [
+     -14.2,
+     10.6
+    ],
+    [
+     -15.4,
+     9.6
+    ]
+   ],
+   "timeout": 12000,
+   "stop": false
+  },
+  {
+   "eval": "JSON.stringify({p:[+G.eye.x.toFixed(2),+G.eye.z.toFixed(2)],prompt:G.hud.promptShown,msg:+G.hud.el.msg.style.opacity>0?G.hud.el.msg.textContent:'',say:G.hud.sayShown,beat:G.scenes.beat,cast:G.scenes.ctx.cast.list.map(c=>c.name+'@'+c.pos.x.toFixed(1)+','+c.pos.z.toFixed(1)).join(' ')})"
+  },
+  {
+   "shot": "x_counter_n_end"
+  },
+  {
+   "key": "KeyE"
+  },
+  {
+   "wait": 500
+  },
+  {
+   "eval": "JSON.stringify({p:[+G.eye.x.toFixed(2),+G.eye.z.toFixed(2)],prompt:G.hud.promptShown,msg:+G.hud.el.msg.style.opacity>0?G.hud.el.msg.textContent:'',say:G.hud.sayShown,beat:G.scenes.beat,cast:G.scenes.ctx.cast.list.map(c=>c.name+'@'+c.pos.x.toFixed(1)+','+c.pos.z.toFixed(1)).join(' ')})"
+  },
+  {
+   "walk": [
+    [
+     -15.6,
+     6.0
+    ]
+   ],
+   "timeout": 12000,
+   "stop": false
+  },
+  {
+   "eval": "JSON.stringify({p:[+G.eye.x.toFixed(2),+G.eye.z.toFixed(2)],prompt:G.hud.promptShown,msg:+G.hud.el.msg.style.opacity>0?G.hud.el.msg.textContent:'',say:G.hud.sayShown,beat:G.scenes.beat,cast:G.scenes.ctx.cast.list.map(c=>c.name+'@'+c.pos.x.toFixed(1)+','+c.pos.z.toFixed(1)).join(' ')})"
+  },
+  {
+   "shot": "x_behind_counter"
+  },
+  {
+   "key": "KeyE"
+  },
+  {
+   "wait": 500
+  },
+  {
+   "eval": "JSON.stringify({p:[+G.eye.x.toFixed(2),+G.eye.z.toFixed(2)],prompt:G.hud.promptShown,msg:+G.hud.el.msg.style.opacity>0?G.hud.el.msg.textContent:'',say:G.hud.sayShown,beat:G.scenes.beat,cast:G.scenes.ctx.cast.list.map(c=>c.name+'@'+c.pos.x.toFixed(1)+','+c.pos.z.toFixed(1)).join(' ')})"
+  },
+  {
+   "walk": [
+    [
+     -15.6,
+     3.0
+    ]
+   ],
+   "timeout": 12000,
+   "stop": false
+  },
+  {
+   "eval": "JSON.stringify({p:[+G.eye.x.toFixed(2),+G.eye.z.toFixed(2)],prompt:G.hud.promptShown,msg:+G.hud.el.msg.style.opacity>0?G.hud.el.msg.textContent:'',say:G.hud.sayShown,beat:G.scenes.beat,cast:G.scenes.ctx.cast.list.map(c=>c.name+'@'+c.pos.x.toFixed(1)+','+c.pos.z.toFixed(1)).join(' ')})"
+  },
+  {
+   "shot": "x_dot"
+  },
+  {
+   "key": "KeyE"
+  },
+  {
+   "wait": 500
+  },
+  {
+   "eval": "JSON.stringify({p:[+G.eye.x.toFixed(2),+G.eye.z.toFixed(2)],prompt:G.hud.promptShown,msg:+G.hud.el.msg.style.opacity>0?G.hud.el.msg.textContent:'',say:G.hud.sayShown,beat:G.scenes.beat,cast:G.scenes.ctx.cast.list.map(c=>c.name+'@'+c.pos.x.toFixed(1)+','+c.pos.z.toFixed(1)).join(' ')})"
+  },
+  {
+   "walk": [
+    [
+     -15.6,
+     -4.2
+    ]
+   ],
+   "timeout": 12000,
+   "stop": false
+  },
+  {
+   "eval": "JSON.stringify({p:[+G.eye.x.toFixed(2),+G.eye.z.toFixed(2)],prompt:G.hud.promptShown,msg:+G.hud.el.msg.style.opacity>0?G.hud.el.msg.textContent:'',say:G.hud.sayShown,beat:G.scenes.beat,cast:G.scenes.ctx.cast.list.map(c=>c.name+'@'+c.pos.x.toFixed(1)+','+c.pos.z.toFixed(1)).join(' ')})"
+  },
+  {
+   "shot": "x_counter_s"
+  },
+  {
+   "key": "KeyE"
+  },
+  {
+   "wait": 500
+  },
+  {
+   "eval": "JSON.stringify({p:[+G.eye.x.toFixed(2),+G.eye.z.toFixed(2)],prompt:G.hud.promptShown,msg:+G.hud.el.msg.style.opacity>0?G.hud.el.msg.textContent:'',say:G.hud.sayShown,beat:G.scenes.beat,cast:G.scenes.ctx.cast.list.map(c=>c.name+'@'+c.pos.x.toFixed(1)+','+c.pos.z.toFixed(1)).join(' ')})"
+  },
+  {
+   "walk": [
+    [
+     -12.0,
+     -5.4
+    ]
+   ],
+   "timeout": 12000,
+   "stop": false
+  },
+  {
+   "eval": "JSON.stringify({p:[+G.eye.x.toFixed(2),+G.eye.z.toFixed(2)],prompt:G.hud.promptShown,msg:+G.hud.el.msg.style.opacity>0?G.hud.el.msg.textContent:'',say:G.hud.sayShown,beat:G.scenes.beat,cast:G.scenes.ctx.cast.list.map(c=>c.name+'@'+c.pos.x.toFixed(1)+','+c.pos.z.toFixed(1)).join(' ')})"
+  },
+  {
+   "shot": "x_south_wall"
+  },
+  {
+   "key": "KeyE"
+  },
+  {
+   "wait": 500
+  },
+  {
+   "eval": "JSON.stringify({p:[+G.eye.x.toFixed(2),+G.eye.z.toFixed(2)],prompt:G.hud.promptShown,msg:+G.hud.el.msg.style.opacity>0?G.hud.el.msg.textContent:'',say:G.hud.sayShown,beat:G.scenes.beat,cast:G.scenes.ctx.cast.list.map(c=>c.name+'@'+c.pos.x.toFixed(1)+','+c.pos.z.toFixed(1)).join(' ')})"
+  },
+  {
+   "walk": [
+    [
+     -11.0,
+     9.8
+    ]
+   ],
+   "timeout": 12000,
+   "stop": false
+  },
+  {
+   "eval": "JSON.stringify({p:[+G.eye.x.toFixed(2),+G.eye.z.toFixed(2)],prompt:G.hud.promptShown,msg:+G.hud.el.msg.style.opacity>0?G.hud.el.msg.textContent:'',say:G.hud.sayShown,beat:G.scenes.beat,cast:G.scenes.ctx.cast.list.map(c=>c.name+'@'+c.pos.x.toFixed(1)+','+c.pos.z.toFixed(1)).join(' ')})"
+  },
+  {
+   "shot": "x_booth_n"
+  },
+  {
+   "key": "KeyE"
+  },
+  {
+   "wait": 500
+  },
+  {
+   "eval": "JSON.stringify({p:[+G.eye.x.toFixed(2),+G.eye.z.toFixed(2)],prompt:G.hud.promptShown,msg:+G.hud.el.msg.style.opacity>0?G.hud.el.msg.textContent:'',say:G.hud.sayShown,beat:G.scenes.beat,cast:G.scenes.ctx.cast.list.map(c=>c.name+'@'+c.pos.x.toFixed(1)+','+c.pos.z.toFixed(1)).join(' ')})"
+  },
+  {
+   "walk": [
+    [
+     -11.0,
+     2.5
+    ]
+   ],
+   "timeout": 12000,
+   "stop": false
+  },
+  {
+   "eval": "JSON.stringify({p:[+G.eye.x.toFixed(2),+G.eye.z.toFixed(2)],prompt:G.hud.promptShown,msg:+G.hud.el.msg.style.opacity>0?G.hud.el.msg.textContent:'',say:G.hud.sayShown,beat:G.scenes.beat,cast:G.scenes.ctx.cast.list.map(c=>c.name+'@'+c.pos.x.toFixed(1)+','+c.pos.z.toFixed(1)).join(' ')})"
+  },
+  {
+   "shot": "x_front_mid"
+  },
+  {
+   "key": "KeyE"
+  },
+  {
+   "wait": 500
+  },
+  {
+   "eval": "JSON.stringify({p:[+G.eye.x.toFixed(2),+G.eye.z.toFixed(2)],prompt:G.hud.promptShown,msg:+G.hud.el.msg.style.opacity>0?G.hud.el.msg.textContent:'',say:G.hud.sayShown,beat:G.scenes.beat,cast:G.scenes.ctx.cast.list.map(c=>c.name+'@'+c.pos.x.toFixed(1)+','+c.pos.z.toFixed(1)).join(' ')})"
+  },
+  {
+   "walk": [
+    [
+     -14.6,
+     2.0
+    ]
+   ],
+   "timeout": 12000,
+   "stop": false
+  },
+  {
+   "eval": "JSON.stringify({p:[+G.eye.x.toFixed(2),+G.eye.z.toFixed(2)],prompt:G.hud.promptShown,msg:+G.hud.el.msg.style.opacity>0?G.hud.el.msg.textContent:'',say:G.hud.sayShown,beat:G.scenes.beat,cast:G.scenes.ctx.cast.list.map(c=>c.name+'@'+c.pos.x.toFixed(1)+','+c.pos.z.toFixed(1)).join(' ')})"
+  },
+  {
+   "shot": "x_into_counter"
+  },
+  {
+   "key": "KeyE"
+  },
+  {
+   "wait": 500
+  },
+  {
+   "eval": "JSON.stringify({p:[+G.eye.x.toFixed(2),+G.eye.z.toFixed(2)],prompt:G.hud.promptShown,msg:+G.hud.el.msg.style.opacity>0?G.hud.el.msg.textContent:'',say:G.hud.sayShown,beat:G.scenes.beat,cast:G.scenes.ctx.cast.list.map(c=>c.name+'@'+c.pos.x.toFixed(1)+','+c.pos.z.toFixed(1)).join(' ')})"
+  }
+ ]
+}

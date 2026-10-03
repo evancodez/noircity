@@ -3,6 +3,8 @@ import { defineScene, wait, until, beat } from '../game/script.js';
 import { dinerRoom, seatPlayer, makeJobs, clip, counterAt, V, DINER, stoolZ, MACK_AT, EYE_AT, BRAWL_EYE } from './_diner_room.js';
 import { KO_OUT } from '../cast/brawl/clips.js';
 import { startSetup, startFight, layStool } from './fight/start.js';
+import { flee, ROUTES, DOCKER_AT } from './fight/flee.js';
+import { hookDoor, afterKO, readCard, readMatchbook, AMES_LINE } from './fight/out.js';
 
 // Scene 2, the fist fight (round 2: docs/story/FIGHT.md, the user's spec).
 // The rules are game/Brawl.js (with his brain, src/cast/brawl/); this file
@@ -58,28 +60,54 @@ function clearRoom(ctx, now) {
   const front = stage.part('dinerFront');
   const jobs = ctx.flags.jobs;
   const her = cast.get('couple_her'), him = cast.get('couple_him'), old = cast.get('oldman'), dot = cast.get('dot'), dk = cast.get('docker');
-  const hide = 'diner.booth.1.b';
+  // [C4] (the couple and the old man go out of the door, the docker backs
+  // to the far wall - scenes/fight/flee.js: each by a way planned round us,
+  // a circle round every body, the furniture kept out by its colliders)
   if (now) {
     for (const c of [her, him]) if (c) cast.remove(c);
-    if (old) { old.place(hide); old.setState('cower'); }
+    // (the old man is taken off after the man who fights is made: the
+    // figure slot he leaves would be the brawler's, and print him otherwise)
+    if (old) { old.place({ x: -8.3, z: -9.5 }); ctx.flags.oldGone = old; }
     if (dot) { dot.place('diner.serve.3'); dot.setState('duck'); }
-    if (dk) { dk.place({ x: -13.1, z: 10.9 }, Math.PI); dk.setState('idle'); }
+    if (dk) { dk.place(DOCKER_AT, Math.PI); dk.setState('idle'); }
+    ctx.flags.fleeing = 0;
     return;
   }
-  const flee = (c, delay) => jobs.add(c.name, (function* () {
-    yield wait(delay);
-    yield* clip(c, 'startle');
-    yield* c.walkTo('diner.door.in', { run: true });
-    front.door.open();
-    yield* c.walkTo('diner.door.out', { run: true });
-    yield* c.walkTo({ x: -8.4, z: 14 + delay * 3 }, { run: true });
-    cast.remove(c);
-  })());
-  if (her) flee(her, 0.9);
-  if (him) flee(him, 1.3);
-  if (old) jobs.add('oldman', (function* () { yield wait(1.6); yield* clip(old, 'startle'); yield* old.walkTo(hide); old.setState('cower'); })());
+  const log = ctx.flags.fleeLog = {};
+  ctx.flags.fleeing = 0;
+  const go = (c, delay, opts) => {
+    ctx.flags.fleeing++;
+    let out = false;
+    const onOut = () => { if (!out) { out = true; ctx.flags.fleeing--; } };
+    jobs.add(c.name, (function* () {
+      yield wait(delay);
+      yield* clip(c, 'startle');
+      yield* flee(ctx, c, ROUTES[c.name], { log, onOut, ...opts });
+      onOut();
+    })());
+  };
+  if (old) go(old, 1.0, { speed: 1.9, out: true });
+  if (her) go(her, 0.9, { speed: 2.9, out: true });
+  if (him) go(him, 1.35, { speed: 3.0, out: true });
   if (dot) jobs.add('dot', (function* () { yield wait(0.6); yield* clip(dot, 'startle'); dot.setState('duck'); })());
-  if (dk) jobs.add('docker', (function* () { yield wait(2.2); yield* dk.walkTo({ x: -13.1, z: 10.9 }); dk.face(Math.PI); dk.setState('idle'); })());
+  if (dk) jobs.add('docker', (function* () { yield wait(2.2); yield* flee(ctx, dk, ROUTES.docker, { speed: 1.3, run: false, log }); dk.face(Math.PI); dk.setState('idle'); })());
+  // [C4] the critic's second look (m8, the owner's Left 1): while the last
+  // of them went out the door swung back on its closer for a second, open
+  // onto the street, and the fight's wall held me in the doorway - an
+  // invisible wall. Now, the doorway clear of them and me coming at it, the
+  // last one out lets it go: it slams shut in my face (and the bar drops)
+  const D = front.door, mid = DINER.door.hingeZ + DINER.door.w / 2;
+  jobs.add('doorSlam', (function* () {
+    for (;;) {
+      yield null;
+      if (D.barred && D.angle < 0.01) return;
+      if (D.angle < 0.04 || D.target === 0 && D.fastT > 0) continue;
+      const e = ctx.game.eye, near = (p, r) => Math.hypot(p.x - (DINER.innerX - 0.05), p.z - mid) < r;
+      if (!near(e, 2.0)) continue;
+      if (cast.list.some((c) => c !== cast.get('mack') && c.pos && near(c.pos, 1.05))) continue;
+      D.slamShut(); ctx.flags.slammed = (ctx.flags.slammed || 0) + 1;
+    }
+  })());
 }
 
 // the weapon rack (FIGHT.md §4): two bottles and three plates on the
@@ -238,8 +266,17 @@ function brawlRoom(ctx) {
     // (and the street door stays shut: it opened inwards whenever the eye
     // came within 2 m of it, and its leaf swung into the ring between us - he
     // was fought through it, his legs under its blind)
-    enter() { if (!gate) gate = stage.colliders.addBox((DINER.backX + DINER.counter.frontX) / 2, DINER.counter.z0 - 0.12, (DINER.counter.frontX - DINER.backX) / 2, 0.12, 0, 'counter'); front.door.shut = true; },
-    leave() { if (gate) { const A = stage.colliders.boxes, k = A.indexOf(gate); if (k >= 0) A.splice(k, 1); gate = null; } front.door.shut = false; },
+    // ([C4] the street door is barred while we fight - the bar dropped
+    // across it when the last of the couple let it slam on the way in: a
+    // push rattles it, 'Barred.'; it stays barred until I lift the bar)
+    enter() {
+      if (!gate) gate = stage.colliders.addBox((DINER.backX + DINER.counter.frontX) / 2, DINER.counter.z0 - 0.12, (DINER.counter.frontX - DINER.backX) / 2, 0.12, 0, 'counter');
+      // (the bar drops with the slam of the last one out; with nobody still
+      // on his way out and the door to, it drops now)
+      front.door.barOnSlam = true;
+      if (!front.door.barred && !(ctx.flags.fleeing > 0) && front.door.angle < 0.01) front.door.dropBar();
+    },
+    leave() { if (gate) { const A = stage.colliders.boxes, k = A.indexOf(gate); if (k >= 0) A.splice(k, 1); gate = null; } },
     jukebox, pieCase,
     // Dot slides me a bottle down the counter (the lesson; his first bottle;
     // when he bleeds): it stops opposite me (the rules' room.gift)
@@ -281,10 +318,14 @@ function stageFight(ctx, part, { retry = false } = {}) {
   // [B8] (the stool I sent skidding lies where it stopped)
   layStool(stage);
   clearRoom(ctx, true);
+  // [C4] (the street door barred: the room as the fight left it)
+  hookDoor(ctx);
+  { const door = stage.part('dinerFront').door; door.barOnSlam = true; door.dropBar({ now: true }); }
   setRack(ctx);
   ctx.flags.room = null;
   const S = START[part] || START.round1;
   const mack = cast.spawn('brawler', { at: { x: S.him.x, z: S.him.z }, yaw: Math.atan2(S.me.x - S.him.x, S.me.z - S.him.z) });
+  if (ctx.flags.oldGone) { cast.remove(ctx.flags.oldGone); ctx.flags.oldGone = null; }   // [C4]
   if (part === 'round3') { if (mack.bleed) mack.bleed(1); mack.capLoose = true; }
   hands.hold(null, 'R'); hands.hold(null, 'L');
   hands.equip('fists');
@@ -314,8 +355,8 @@ function beginFight(ctx, mack, { manner = 'measured', hp = null, lesson = false,
       if (!w) return;
       const hip = mack.bones.chest.getWorldPosition(V(0, 0, 0));
       stage.glass.shatter(w.pane, { dir: V(1, 0.15, 0), power: 2, by: 'body', at: hip });
-      // (the hole he made is a way out: the wall opens there)
-      const fr = stage.part('dinerFront'); if (fr && fr.openBay) fr.openBay(w.name);
+      // [C4] (the hole he made is no walk-through: the sill and the riser
+      // stand - over it with SPACE, or out by the door: fight/out.js)
       G.sfx.play('break_glass_big', V(DINER.faceX, 1.8, DINER.bays[w.name]));
       // the street's rain and its sound come into the room
       G.sfx.roomOpen(0.5);
@@ -330,10 +371,21 @@ export default defineScene({
   id: 'fight', stage: 'block', title: 'II', name: 'The Fight',
   beats: ['start', 'lesson', 'round1', 'round2', 'round3', 'reel', 'ko', 'outside', 'matchbook'],
   save: ['lesson', 'round1', 'round2', 'round3', 'outside'],
+  // [C4] every beat's line (the kit: docs/story/seams/Z.md Z1): the fight,
+  // the last blow, the way out to him; once the card is read, where it sends
+  // me (written in by the script: AMES_LINE)
+  objectives: { start: 'Put him down.', lesson: 'Put him down.', round1: 'Put him down.', round2: 'Put him down.', round3: 'Put him down.', reel: 'Finish him.', ko: 'See to him.', outside: 'See to him.', matchbook: 'See to him.' },
 
   setup: {
     // [B8] his line said: he on his stool turned to me, I on mine (a cold entry)
-    start(ctx) { ctx.flags.jobs = makeJobs(); startSetup(ctx, dinerRoom, seatPlayer); },
+    start(ctx) {
+      ctx.flags.jobs = makeJobs(); startSetup(ctx, dinerRoom, seatPlayer);
+      // [C4] (the door as the evening had it: the bar up on its keeper)
+      hookDoor(ctx);
+      const door = ctx.stage.part('dinerFront').door;
+      door.barOnSlam = false;
+      if (door.bar || door.barred) door.liftBar({ now: true });
+    },
     lesson(ctx) {
       ctx.flags.jobs = makeJobs();
       stageFight(ctx, 'lesson');
@@ -374,7 +426,8 @@ export default defineScene({
       ctx.hands.equip('empty');
       const L = landing(w), sg = w === 'B2' ? -1 : 1;
       ctx.controller.setMode('walk', { pose: { x: L.x + 1.1, y: 0.15 + 1.05, z: L.z + sg * 1.3, yaw: w === 'B2' ? 2.64 : 0.5, pitch: -0.35 } });
-      openMatchbook(ctx, mack);
+      // ([C4] the script's matchbook beat brings it up in the hand)
+      void mack;
     },
   },
 
@@ -401,6 +454,10 @@ export default defineScene({
       yield beat('start');
       yield* underCard();
       const m = mack();
+      // [C4] (the room clears round us as he rises; the last one out lets the
+      // street door slam, and its bar drops across it)
+      hookDoor(ctx);
+      ctx.stage.part('dinerFront').door.barOnSlam = true;
       ctx.flags.onFall = () => clearRoom(ctx, false);
       const end = yield* startFight(ctx);
       setRack(ctx);
@@ -428,7 +485,11 @@ export default defineScene({
       yield until(() => B.finished);
     }
 
-    // ---- the last blow, and the walk out -----------------------------------------------------
+    // ---- the last blow, and the way out to him --------------------------------------------------
+    // [C4] the street door is barred (the bar dropped as the last of them let
+    // it slam): E lifts the bar and walking into the door pushes it open; or
+    // SPACE over the sill of the bay he went through (fight/out.js). The
+    // objective says where: 'See to him.'
     if (ctx.at('ko')) {
       yield beat('ko');
       yield until(() => !B.active);
@@ -436,20 +497,16 @@ export default defineScene({
       const P = G.controller.eyePose();
       G.controller.setMode('walk', { pose: { x: P.x, y: P.y, z: P.z, yaw: P.yaw, pitch: Math.max(-0.2, P.pitch) } });
       G.save.flags.won = true;
-      const L = landing(ctx.flags.window || B.stats.window || 'B4');
-      let idle = 0;
-      yield until(() => {
-        idle += 1 / 60;
-        // (polish, the bug hunt: only while the door is in the frame - its
-        // tick on the door; with the door behind me or off to the side the
-        // hint drew mid-screen, pointing at nothing)
-        const at = idle > 7 && G.eye.x < DINER.innerX ? G.screenOf(V(DINER.faceX, 1.3, 0.6)) : null;
-        const inFrame = at && at.x > innerWidth * 0.06 && at.x < innerWidth * 0.94 && at.y > innerHeight * 0.06 && at.y < innerHeight * 0.94;
-        if (inFrame) G.hud.prompt('WASD  the door', at, 'scene');
-        else G.hud.clearPrompt('scene');
-        return G.eye.x > DINER.faceX && Math.hypot(G.eye.x - L.x, G.eye.z - L.z) < 2.8;
-      });
-      G.hud.clearPrompt('scene');
+      // [C4] (the fight is over: no 'You're hit' from the kit on the way out)
+      G.health.reset();
+      const w = ctx.flags.window || B.stats.window || 'B4';
+      const L = landing(w);
+      ctx.flags.landing = L;
+      const way = afterKO(ctx, w);
+      ctx.flags.way = way;
+      ctx.onStep((dt) => way.step(dt));
+      yield until(() => G.eye.x > DINER.faceX + 0.2 && Math.hypot(G.eye.x - L.x, G.eye.z - L.z) < 2.8 && G.controller.mode === 'walk');
+      ctx.flags.outBy = way.how || (G.eye.z > DINER.door.hingeZ - 0.3 && G.eye.z < DINER.door.hingeZ + DINER.door.w + 0.3 ? 'door' : 'sill');
     }
 
     // ---- outside: the search ------------------------------------------------------------------
@@ -457,59 +514,74 @@ export default defineScene({
       yield beat('outside');
       if (ctx.from !== 'matchbook') {
         const m = mack();
-        yield* ctx.prompt({ text: 'search', at: () => m.bones.chest.getWorldPosition(V(0, 0, 0)) });
+        // [C4] (at him, looking at him: E from across the pavement or at the
+        // door searched him from five metres - and held the door's own E)
+        let searched = false;
+        ctx.interact.add({ id: 'c4.search', at: () => m.bones.chest.getWorldPosition(V(0, 0, 0)), range: 2.9, cone: 0.8, prompt: 'search', onUse: () => { searched = true; ctx.interact.remove('c4.search'); } });
+        yield until(() => searched);
         G.sfx.play('crouch');
         const s = H.play('searchBody', { onMark: { found: () => G.sfx.play('clothRustle') } });
         yield until(() => s.done);
       }
     }
 
-    // ---- the matchbook ---------------------------------------------------------------------------
+    // ---- the matchbook, and Ames's card folded in it -----------------------------------------------
+    // [C4] (the Body is cut: the hint is on him. The red matchbook, THE
+    // CARDINAL; folded in it, a business card - J. AMES, PRIVATE
+    // INVESTIGATIONS, HARBOR BLDG. RM 304 - crossed through in the crew's
+    // red. It turns over in my fingers under the street lamp. Then the
+    // still, AMES. MARKED., the line where it sends me, and chapter III)
     if (ctx.at('matchbook')) {
       yield beat('matchbook');
-      if (!G.inspect.active) openMatchbook(ctx, mack());
-      let pocketed = false;
-      G.inspect.active.onDone = () => { pocketed = true; };
-      yield until(() => pocketed);
-      const pk = H.play('showMatchbook', { onMark: { pocketed: () => G.sfx.play('pocket') } });
-      pk.t = H.clip('showMatchbook').marks.pocketed - 0.1;
-      const mb = mack() && mack().items.get('matchbook');
-      if (mb) mb.visible = false;
+      // ([C4] the critic's second look, M2: in my fingers until E, as the card)
+      yield* readMatchbook(ctx, mack() && mack().items.get('matchbook'));
       if (!G.save.inventory.includes('matchbook')) G.save.inventory.push('matchbook');
-      // [C1] (wave C: Ames's card, crossed through in red, is in his waistcoat too;
-      // lane C4 stages the find - for now it is pocketed with the matchbook)
+      // (the card out of it, turned over under the lamp: read)
+      yield* readCard(ctx);
+      // ([C4] into the coat, from the fingers)
+      H.play('c4cardAway', { onMark: { pocketed: () => G.sfx.play('pocket') } });
       if (!G.save.inventory.includes('amesCard')) G.save.inventory.push('amesCard');
       ctx.flags.pocketed = true;
       G.save.write();
-      yield wait(0.8);
-      const far = V(-9, 1.5, -27);
-      G.sfx.pistol(far, G.eye.distanceTo(far));
-      yield wait(0.7);
-      G.sfx.pistol(far, G.eye.distanceTo(far));
-      ctx.flags.shots = 2;
-      yield wait(1.4);
-      // [C1] (the card the search found, shown before III asks for Ames: the
-      // 'ames' still, WAVE_C §5; lane C4 stages the find itself. The run ends
-      // on black and III comes up out of it)
+      // (where it sends me, written in; a moment to read it; then the still:
+      // the old line's strike and the new one's writing take 1.5 s, so the
+      // line sits two seconds before the still covers it)
+      G.hud.objective(AMES_LINE);
+      yield wait(3.5);
       if (G.stills && G.stills.has('ames')) { const st = G.stills.play('ames'); yield until(() => st.done); }
-      // (on to the next scene of the story's order; with none yet, the
-      // "to be continued" card)
+      // (on to the next scene of the story's order: III Room 304)
       ctx.next();
     }
   },
-
   // the autoplay driver: the fight read by its marks, then out and search
   auto(ctx, A) {
     const G = ctx.game;
     if (G.brawl.active) { A.fight(G.brawl); return; }
     if (ctx.beat === 'ko') {
       const L = landing(ctx.flags.window || G.brawl.stats.window || 'B4');
-      const path = [[-12.6, 0.6], [DINER.innerX - 0.9, 0.6], [DINER.faceX + 0.9, 0.6], [L.x + 1.2, L.z + (L.z > 0.6 ? -1.6 : 1.6)]];
+      // [C4] (to the bar; E lifts it; then out through the door: it gives as I walk into it)
+      const door = ctx.stage.part('dinerFront').door;
+      if (door.barred) {
+        if (G.interact.current && G.interact.current.id === 'c4.bar') { A.stopWalk(); A.pressAfter('KeyE', 0.5, 1.0); return; }
+        A.walkPath([[-12.6, 0.6], [DINER.innerX - 0.85, 0.75]]);
+        const C = G.controller, bx = DINER.innerX - 0.1, bz = DINER.door.hingeZ + 0.5;
+        if (Math.hypot(C.pos.x - (DINER.innerX - 0.85), C.pos.z - 0.75) < 0.5) { C.auto = null; const want = Math.atan2(-(bx - C.pos.x), -(bz - C.pos.z)); C.yaw += Math.atan2(Math.sin(want - C.yaw), Math.cos(want - C.yaw)) * 0.15; C.pitch += (-0.25 - C.pitch) * 0.1; }
+        return;
+      }
+      if (ctx.flags.way && ctx.flags.way.lifting) { A.stopWalk(); return; }
+      const path = [[DINER.innerX - 0.8, 0.62], [DINER.faceX + 0.9, 0.62], [L.x + 1.2, L.z + (L.z > 0.6 ? -1.6 : 1.6)]];
       A.walkPath(path);
       return;
     }
     A.stopWalk();
-    if (A.prompting() || G.inspect.active) A.pressAfter('KeyE', 1.0, 2.2);
+    // ([C4] the search is at him: the eye onto him first)
+    if (ctx.beat === 'outside' && !G.interact.current && ctx.cast.get('mack')) {
+      const C = G.controller, p = ctx.cast.get('mack').bones.chest.getWorldPosition(V(0, 0, 0)), e = G.eye;
+      const want = Math.atan2(-(p.x - e.x), -(p.z - e.z)), wp = Math.atan2(p.y - e.y, Math.hypot(p.x - e.x, p.z - e.z));
+      C.yaw += Math.atan2(Math.sin(want - C.yaw), Math.cos(want - C.yaw)) * 0.15; C.pitch += (wp - C.pitch) * 0.15;
+      if (Math.hypot(p.x - e.x, p.z - e.z) > 2.0) C.auto = { f: 1, s: 0 }; else C.auto = null;
+    }
+    if (A.prompting() || G.inspect.active || (ctx.flags.cardUp && !ctx.flags.cardRead) || (ctx.flags.mbUp && !ctx.flags.mbRead)) A.pressAfter('KeyE', 1.0, 2.2);
   },
 });
 
@@ -529,9 +601,13 @@ function mackOutside(ctx, w = 'B4') {
   clearRoom(ctx, true);
   const pane = stage.part('dinerFront').panes[w];
   if (!pane.broken && stage.game) stage.glass.shatter(pane, { dir: V(1, 0.15, 0), power: 2, by: 'body', at: V(DINER.faceX - 0.1, 1.5, DINER.finish[w].z) });
-  { const fr = stage.part('dinerFront'); if (fr && fr.openBay && pane.broken) fr.openBay(w); }
+  // [C4] (I came out: the bar is up, the door on its closer; the bay's sill
+  // stands - no walking through the wall)
+  hookDoor(ctx);
+  { const door = stage.part('dinerFront').door; door.barOnSlam = false; door.liftBar({ now: true }); }
   const L = landing(w);
   const mack = cast.spawn('brawler', { at: { x: L.x, z: L.z }, yaw: -Math.PI / 2 });
+  if (ctx.flags.oldGone) { cast.remove(ctx.flags.oldGone); ctx.flags.oldGone = null; }   // [C4]
   mack.setState('br_down', 0);
   mack.down = true; mack.state = 'ko'; mack.base = 'ko';
   for (let i = 0; i < 30; i++) mack.fig.update(1 / 60, 0);
@@ -540,11 +616,3 @@ function mackOutside(ctx, w = 'B4') {
   return mack;
 }
 
-// the matchbook comes up in the hand: red, THE CARDINAL, a black bird
-function openMatchbook(ctx, mack) {
-  const { game: G, hands: H } = ctx;
-  const mb = mack.items.get('matchbook');
-  mb.visible = true;
-  H.play('showMatchbook', { onMark: { shown: () => G.sfx.play('matchbook') } });
-  G.inspect.open({ prop: mb, options: { spin: [0.95, 0.35], dist: 0.3 } });
-}

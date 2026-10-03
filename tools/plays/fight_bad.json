@@ -1,0 +1,16 @@
+{
+ "about": "[C4] Proof 2 of WAVE_C §7 for II The Fight: a clumsy first-timer (mashes jabs into his guard, sees the dodge cue late and goes the wrong way a third of the time - a little less after each time he goes down -, holds a punch at the wrong moment now and then, presses a wrong key now and then: tools/lib/fight_bot.mjs 'bad') goes down once or more and gets up again, and still wins: never stuck. node tools/play.mjs tools/plays/fight_bad.json",
+ "url": "/?mute=1&start=fight",
+ "size": [1280, 800],
+ "out": "shots/play/fight_bad",
+ "steps": [
+  { "until": "G.state === 'title' && !document.getElementById('title').classList.contains('hidden')", "timeout": 20000 },
+  { "wait": 1500 },
+  { "clickOn": "#title .opt[data-k=begin]", "taken": "G.state !== 'title'", "retries": 5, "every": 4000 },
+  { "until": "G.scenes.current && G.scenes.current.id === 'fight' && G.brawl.active", "timeout": 60000 },
+  { "drive": "tools/lib/fight_bot.mjs", "profile": "bad", "timeout": 720000,
+    "check": "D.fights.length === 1 && D.fights[0].won && D.fights[0].downs >= 1 && D.fights[0].warned.every((w) => w != null && w >= 1.0)",
+    "label": "[C4] the clumsy first-timer goes down (warned first, every time) and gets up, and wins" },
+  { "eval": "({ why: G.brawl.stats.downWhy, cues: G.brawl.stats.cues && [G.brawl.stats.cues.shown, G.brawl.stats.cues.right, G.brawl.stats.cues.wrong, G.brawl.stats.cues.late], time: G.brawl.stats.time })" }
+ ]
+}

@@ -1,0 +1,237 @@
+{
+ "about": "Critic C4: put the card away: the still, the line, chapter III.",
+ "url": "/?mute=1&start=fight.outside",
+ "size": [
+  1440,
+  900
+ ],
+ "out": "shots/critic/c4_card2",
+ "steps": [
+  {
+   "until": "G.state === 'title' && !document.getElementById('title').classList.contains('hidden')",
+   "timeout": 30000
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]",
+   "taken": "G.state !== 'title'",
+   "retries": 5,
+   "every": 4000
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id==='fight' && N.controller.mode==='walk'",
+   "timeout": 60000
+  },
+  {
+   "wait": 1200
+  },
+  {
+   "until": "G.hud.promptShown.includes('search')",
+   "timeout": 6000,
+   "stop": false
+  },
+  {
+   "key": "KeyE"
+  },
+  {
+   "wait": 2500
+  },
+  {
+   "until": "G.hud.promptShown.includes('put away')",
+   "timeout": 6000,
+   "stop": false
+  },
+  {
+   "key": "KeyE"
+  },
+  {
+   "wait": 3000
+  },
+  {
+   "until": "G.hud.promptShown.includes('put away')",
+   "timeout": 6000,
+   "stop": false
+  },
+  {
+   "eval": "JSON.stringify({t:+G.time.toFixed(1),beat:G.scenes.beat,p:[+G.eye.x.toFixed(2),+G.eye.z.toFixed(2)],mode:N.controller.mode,msg:+G.hud.el.msg.style.opacity>0?G.hud.el.msg.textContent:'',prompt:G.hud.promptShown,say:G.hud.sayShown,obj:G.hud.objectiveText,door:(()=>{const d=G.stage.part('dinerFront').door;return {a:+(d.angle||0).toFixed(2),barred:d.barred,shut:d.shut}})(),hp:Math.round(G.health.hp),b:G.brawl.active?G.brawl.him.state:'off',warn:G.hud.warnText,sc:G.scenes.current&&G.scenes.current.id,inv:G.save.inventory.join(','),stills:!!(G.stills&&G.stills.active),yaw:+N.controller.yaw.toFixed(2)})"
+  },
+  {
+   "key": "KeyE"
+  },
+  {
+   "wait": 600
+  },
+  {
+   "eval": "JSON.stringify({t:+G.time.toFixed(1),beat:G.scenes.beat,p:[+G.eye.x.toFixed(2),+G.eye.z.toFixed(2)],mode:N.controller.mode,msg:+G.hud.el.msg.style.opacity>0?G.hud.el.msg.textContent:'',prompt:G.hud.promptShown,say:G.hud.sayShown,obj:G.hud.objectiveText,door:(()=>{const d=G.stage.part('dinerFront').door;return {a:+(d.angle||0).toFixed(2),barred:d.barred,shut:d.shut}})(),hp:Math.round(G.health.hp),b:G.brawl.active?G.brawl.him.state:'off',warn:G.hud.warnText,sc:G.scenes.current&&G.scenes.current.id,inv:G.save.inventory.join(','),stills:!!(G.stills&&G.stills.active),yaw:+N.controller.yaw.toFixed(2)})"
+  },
+  {
+   "shot": "d00"
+  },
+  {
+   "wait": 600
+  },
+  {
+   "eval": "JSON.stringify({t:+G.time.toFixed(1),beat:G.scenes.beat,p:[+G.eye.x.toFixed(2),+G.eye.z.toFixed(2)],mode:N.controller.mode,msg:+G.hud.el.msg.style.opacity>0?G.hud.el.msg.textContent:'',prompt:G.hud.promptShown,say:G.hud.sayShown,obj:G.hud.objectiveText,door:(()=>{const d=G.stage.part('dinerFront').door;return {a:+(d.angle||0).toFixed(2),barred:d.barred,shut:d.shut}})(),hp:Math.round(G.health.hp),b:G.brawl.active?G.brawl.him.state:'off',warn:G.hud.warnText,sc:G.scenes.current&&G.scenes.current.id,inv:G.save.inventory.join(','),stills:!!(G.stills&&G.stills.active),yaw:+N.controller.yaw.toFixed(2)})"
+  },
+  {
+   "shot": "d01"
+  },
+  {
+   "wait": 600
+  },
+  {
+   "eval": "JSON.stringify({t:+G.time.toFixed(1),beat:G.scenes.beat,p:[+G.eye.x.toFixed(2),+G.eye.z.toFixed(2)],mode:N.controller.mode,msg:+G.hud.el.msg.style.opacity>0?G.hud.el.msg.textContent:'',prompt:G.hud.promptShown,say:G.hud.sayShown,obj:G.hud.objectiveText,door:(()=>{const d=G.stage.part('dinerFront').door;return {a:+(d.angle||0).toFixed(2),barred:d.barred,shut:d.shut}})(),hp:Math.round(G.health.hp),b:G.brawl.active?G.brawl.him.state:'off',warn:G.hud.warnText,sc:G.scenes.current&&G.scenes.current.id,inv:G.save.inventory.join(','),stills:!!(G.stills&&G.stills.active),yaw:+N.controller.yaw.toFixed(2)})"
+  },
+  {
+   "shot": "d02"
+  },
+  {
+   "wait": 600
+  },
+  {
+   "eval": "JSON.stringify({t:+G.time.toFixed(1),beat:G.scenes.beat,p:[+G.eye.x.toFixed(2),+G.eye.z.toFixed(2)],mode:N.controller.mode,msg:+G.hud.el.msg.style.opacity>0?G.hud.el.msg.textContent:'',prompt:G.hud.promptShown,say:G.hud.sayShown,obj:G.hud.objectiveText,door:(()=>{const d=G.stage.part('dinerFront').door;return {a:+(d.angle||0).toFixed(2),barred:d.barred,shut:d.shut}})(),hp:Math.round(G.health.hp),b:G.brawl.active?G.brawl.him.state:'off',warn:G.hud.warnText,sc:G.scenes.current&&G.scenes.current.id,inv:G.save.inventory.join(','),stills:!!(G.stills&&G.stills.active),yaw:+N.controller.yaw.toFixed(2)})"
+  },
+  {
+   "shot": "d03"
+  },
+  {
+   "wait": 600
+  },
+  {
+   "eval": "JSON.stringify({t:+G.time.toFixed(1),beat:G.scenes.beat,p:[+G.eye.x.toFixed(2),+G.eye.z.toFixed(2)],mode:N.controller.mode,msg:+G.hud.el.msg.style.opacity>0?G.hud.el.msg.textContent:'',prompt:G.hud.promptShown,say:G.hud.sayShown,obj:G.hud.objectiveText,door:(()=>{const d=G.stage.part('dinerFront').door;return {a:+(d.angle||0).toFixed(2),barred:d.barred,shut:d.shut}})(),hp:Math.round(G.health.hp),b:G.brawl.active?G.brawl.him.state:'off',warn:G.hud.warnText,sc:G.scenes.current&&G.scenes.current.id,inv:G.save.inventory.join(','),stills:!!(G.stills&&G.stills.active),yaw:+N.controller.yaw.toFixed(2)})"
+  },
+  {
+   "shot": "d04"
+  },
+  {
+   "wait": 600
+  },
+  {
+   "eval": "JSON.stringify({t:+G.time.toFixed(1),beat:G.scenes.beat,p:[+G.eye.x.toFixed(2),+G.eye.z.toFixed(2)],mode:N.controller.mode,msg:+G.hud.el.msg.style.opacity>0?G.hud.el.msg.textContent:'',prompt:G.hud.promptShown,say:G.hud.sayShown,obj:G.hud.objectiveText,door:(()=>{const d=G.stage.part('dinerFront').door;return {a:+(d.angle||0).toFixed(2),barred:d.barred,shut:d.shut}})(),hp:Math.round(G.health.hp),b:G.brawl.active?G.brawl.him.state:'off',warn:G.hud.warnText,sc:G.scenes.current&&G.scenes.current.id,inv:G.save.inventory.join(','),stills:!!(G.stills&&G.stills.active),yaw:+N.controller.yaw.toFixed(2)})"
+  },
+  {
+   "shot": "d05"
+  },
+  {
+   "wait": 600
+  },
+  {
+   "eval": "JSON.stringify({t:+G.time.toFixed(1),beat:G.scenes.beat,p:[+G.eye.x.toFixed(2),+G.eye.z.toFixed(2)],mode:N.controller.mode,msg:+G.hud.el.msg.style.opacity>0?G.hud.el.msg.textContent:'',prompt:G.hud.promptShown,say:G.hud.sayShown,obj:G.hud.objectiveText,door:(()=>{const d=G.stage.part('dinerFront').door;return {a:+(d.angle||0).toFixed(2),barred:d.barred,shut:d.shut}})(),hp:Math.round(G.health.hp),b:G.brawl.active?G.brawl.him.state:'off',warn:G.hud.warnText,sc:G.scenes.current&&G.scenes.current.id,inv:G.save.inventory.join(','),stills:!!(G.stills&&G.stills.active),yaw:+N.controller.yaw.toFixed(2)})"
+  },
+  {
+   "shot": "d06"
+  },
+  {
+   "wait": 600
+  },
+  {
+   "eval": "JSON.stringify({t:+G.time.toFixed(1),beat:G.scenes.beat,p:[+G.eye.x.toFixed(2),+G.eye.z.toFixed(2)],mode:N.controller.mode,msg:+G.hud.el.msg.style.opacity>0?G.hud.el.msg.textContent:'',prompt:G.hud.promptShown,say:G.hud.sayShown,obj:G.hud.objectiveText,door:(()=>{const d=G.stage.part('dinerFront').door;return {a:+(d.angle||0).toFixed(2),barred:d.barred,shut:d.shut}})(),hp:Math.round(G.health.hp),b:G.brawl.active?G.brawl.him.state:'off',warn:G.hud.warnText,sc:G.scenes.current&&G.scenes.current.id,inv:G.save.inventory.join(','),stills:!!(G.stills&&G.stills.active),yaw:+N.controller.yaw.toFixed(2)})"
+  },
+  {
+   "shot": "d07"
+  },
+  {
+   "wait": 600
+  },
+  {
+   "eval": "JSON.stringify({t:+G.time.toFixed(1),beat:G.scenes.beat,p:[+G.eye.x.toFixed(2),+G.eye.z.toFixed(2)],mode:N.controller.mode,msg:+G.hud.el.msg.style.opacity>0?G.hud.el.msg.textContent:'',prompt:G.hud.promptShown,say:G.hud.sayShown,obj:G.hud.objectiveText,door:(()=>{const d=G.stage.part('dinerFront').door;return {a:+(d.angle||0).toFixed(2),barred:d.barred,shut:d.shut}})(),hp:Math.round(G.health.hp),b:G.brawl.active?G.brawl.him.state:'off',warn:G.hud.warnText,sc:G.scenes.current&&G.scenes.current.id,inv:G.save.inventory.join(','),stills:!!(G.stills&&G.stills.active),yaw:+N.controller.yaw.toFixed(2)})"
+  },
+  {
+   "shot": "d08"
+  },
+  {
+   "wait": 600
+  },
+  {
+   "eval": "JSON.stringify({t:+G.time.toFixed(1),beat:G.scenes.beat,p:[+G.eye.x.toFixed(2),+G.eye.z.toFixed(2)],mode:N.controller.mode,msg:+G.hud.el.msg.style.opacity>0?G.hud.el.msg.textContent:'',prompt:G.hud.promptShown,say:G.hud.sayShown,obj:G.hud.objectiveText,door:(()=>{const d=G.stage.part('dinerFront').door;return {a:+(d.angle||0).toFixed(2),barred:d.barred,shut:d.shut}})(),hp:Math.round(G.health.hp),b:G.brawl.active?G.brawl.him.state:'off',warn:G.hud.warnText,sc:G.scenes.current&&G.scenes.current.id,inv:G.save.inventory.join(','),stills:!!(G.stills&&G.stills.active),yaw:+N.controller.yaw.toFixed(2)})"
+  },
+  {
+   "shot": "d09"
+  },
+  {
+   "wait": 600
+  },
+  {
+   "eval": "JSON.stringify({t:+G.time.toFixed(1),beat:G.scenes.beat,p:[+G.eye.x.toFixed(2),+G.eye.z.toFixed(2)],mode:N.controller.mode,msg:+G.hud.el.msg.style.opacity>0?G.hud.el.msg.textContent:'',prompt:G.hud.promptShown,say:G.hud.sayShown,obj:G.hud.objectiveText,door:(()=>{const d=G.stage.part('dinerFront').door;return {a:+(d.angle||0).toFixed(2),barred:d.barred,shut:d.shut}})(),hp:Math.round(G.health.hp),b:G.brawl.active?G.brawl.him.state:'off',warn:G.hud.warnText,sc:G.scenes.current&&G.scenes.current.id,inv:G.save.inventory.join(','),stills:!!(G.stills&&G.stills.active),yaw:+N.controller.yaw.toFixed(2)})"
+  },
+  {
+   "shot": "d10"
+  },
+  {
+   "wait": 600
+  },
+  {
+   "eval": "JSON.stringify({t:+G.time.toFixed(1),beat:G.scenes.beat,p:[+G.eye.x.toFixed(2),+G.eye.z.toFixed(2)],mode:N.controller.mode,msg:+G.hud.el.msg.style.opacity>0?G.hud.el.msg.textContent:'',prompt:G.hud.promptShown,say:G.hud.sayShown,obj:G.hud.objectiveText,door:(()=>{const d=G.stage.part('dinerFront').door;return {a:+(d.angle||0).toFixed(2),barred:d.barred,shut:d.shut}})(),hp:Math.round(G.health.hp),b:G.brawl.active?G.brawl.him.state:'off',warn:G.hud.warnText,sc:G.scenes.current&&G.scenes.current.id,inv:G.save.inventory.join(','),stills:!!(G.stills&&G.stills.active),yaw:+N.controller.yaw.toFixed(2)})"
+  },
+  {
+   "shot": "d11"
+  },
+  {
+   "wait": 600
+  },
+  {
+   "eval": "JSON.stringify({t:+G.time.toFixed(1),beat:G.scenes.beat,p:[+G.eye.x.toFixed(2),+G.eye.z.toFixed(2)],mode:N.controller.mode,msg:+G.hud.el.msg.style.opacity>0?G.hud.el.msg.textContent:'',prompt:G.hud.promptShown,say:G.hud.sayShown,obj:G.hud.objectiveText,door:(()=>{const d=G.stage.part('dinerFront').door;return {a:+(d.angle||0).toFixed(2),barred:d.barred,shut:d.shut}})(),hp:Math.round(G.health.hp),b:G.brawl.active?G.brawl.him.state:'off',warn:G.hud.warnText,sc:G.scenes.current&&G.scenes.current.id,inv:G.save.inventory.join(','),stills:!!(G.stills&&G.stills.active),yaw:+N.controller.yaw.toFixed(2)})"
+  },
+  {
+   "shot": "d12"
+  },
+  {
+   "wait": 600
+  },
+  {
+   "eval": "JSON.stringify({t:+G.time.toFixed(1),beat:G.scenes.beat,p:[+G.eye.x.toFixed(2),+G.eye.z.toFixed(2)],mode:N.controller.mode,msg:+G.hud.el.msg.style.opacity>0?G.hud.el.msg.textContent:'',prompt:G.hud.promptShown,say:G.hud.sayShown,obj:G.hud.objectiveText,door:(()=>{const d=G.stage.part('dinerFront').door;return {a:+(d.angle||0).toFixed(2),barred:d.barred,shut:d.shut}})(),hp:Math.round(G.health.hp),b:G.brawl.active?G.brawl.him.state:'off',warn:G.hud.warnText,sc:G.scenes.current&&G.scenes.current.id,inv:G.save.inventory.join(','),stills:!!(G.stills&&G.stills.active),yaw:+N.controller.yaw.toFixed(2)})"
+  },
+  {
+   "shot": "d13"
+  },
+  {
+   "wait": 600
+  },
+  {
+   "eval": "JSON.stringify({t:+G.time.toFixed(1),beat:G.scenes.beat,p:[+G.eye.x.toFixed(2),+G.eye.z.toFixed(2)],mode:N.controller.mode,msg:+G.hud.el.msg.style.opacity>0?G.hud.el.msg.textContent:'',prompt:G.hud.promptShown,say:G.hud.sayShown,obj:G.hud.objectiveText,door:(()=>{const d=G.stage.part('dinerFront').door;return {a:+(d.angle||0).toFixed(2),barred:d.barred,shut:d.shut}})(),hp:Math.round(G.health.hp),b:G.brawl.active?G.brawl.him.state:'off',warn:G.hud.warnText,sc:G.scenes.current&&G.scenes.current.id,inv:G.save.inventory.join(','),stills:!!(G.stills&&G.stills.active),yaw:+N.controller.yaw.toFixed(2)})"
+  },
+  {
+   "shot": "d14"
+  },
+  {
+   "wait": 600
+  },
+  {
+   "eval": "JSON.stringify({t:+G.time.toFixed(1),beat:G.scenes.beat,p:[+G.eye.x.toFixed(2),+G.eye.z.toFixed(2)],mode:N.controller.mode,msg:+G.hud.el.msg.style.opacity>0?G.hud.el.msg.textContent:'',prompt:G.hud.promptShown,say:G.hud.sayShown,obj:G.hud.objectiveText,door:(()=>{const d=G.stage.part('dinerFront').door;return {a:+(d.angle||0).toFixed(2),barred:d.barred,shut:d.shut}})(),hp:Math.round(G.health.hp),b:G.brawl.active?G.brawl.him.state:'off',warn:G.hud.warnText,sc:G.scenes.current&&G.scenes.current.id,inv:G.save.inventory.join(','),stills:!!(G.stills&&G.stills.active),yaw:+N.controller.yaw.toFixed(2)})"
+  },
+  {
+   "shot": "d15"
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id !== 'fight'",
+   "timeout": 30000,
+   "stop": false
+  },
+  {
+   "eval": "JSON.stringify({t:+G.time.toFixed(1),beat:G.scenes.beat,p:[+G.eye.x.toFixed(2),+G.eye.z.toFixed(2)],mode:N.controller.mode,msg:+G.hud.el.msg.style.opacity>0?G.hud.el.msg.textContent:'',prompt:G.hud.promptShown,say:G.hud.sayShown,obj:G.hud.objectiveText,door:(()=>{const d=G.stage.part('dinerFront').door;return {a:+(d.angle||0).toFixed(2),barred:d.barred,shut:d.shut}})(),hp:Math.round(G.health.hp),b:G.brawl.active?G.brawl.him.state:'off',warn:G.hud.warnText,sc:G.scenes.current&&G.scenes.current.id,inv:G.save.inventory.join(','),stills:!!(G.stills&&G.stills.active),yaw:+N.controller.yaw.toFixed(2)})"
+  },
+  {
+   "shot": "d20_next"
+  },
+  {
+   "wait": 2500
+  },
+  {
+   "eval": "JSON.stringify({t:+G.time.toFixed(1),beat:G.scenes.beat,p:[+G.eye.x.toFixed(2),+G.eye.z.toFixed(2)],mode:N.controller.mode,msg:+G.hud.el.msg.style.opacity>0?G.hud.el.msg.textContent:'',prompt:G.hud.promptShown,say:G.hud.sayShown,obj:G.hud.objectiveText,door:(()=>{const d=G.stage.part('dinerFront').door;return {a:+(d.angle||0).toFixed(2),barred:d.barred,shut:d.shut}})(),hp:Math.round(G.health.hp),b:G.brawl.active?G.brawl.him.state:'off',warn:G.hud.warnText,sc:G.scenes.current&&G.scenes.current.id,inv:G.save.inventory.join(','),stills:!!(G.stills&&G.stills.active),yaw:+N.controller.yaw.toFixed(2)})"
+  },
+  {
+   "shot": "d21_next"
+  },
+  {
+   "wait": 4000
+  },
+  {
+   "eval": "JSON.stringify({t:+G.time.toFixed(1),beat:G.scenes.beat,p:[+G.eye.x.toFixed(2),+G.eye.z.toFixed(2)],mode:N.controller.mode,msg:+G.hud.el.msg.style.opacity>0?G.hud.el.msg.textContent:'',prompt:G.hud.promptShown,say:G.hud.sayShown,obj:G.hud.objectiveText,door:(()=>{const d=G.stage.part('dinerFront').door;return {a:+(d.angle||0).toFixed(2),barred:d.barred,shut:d.shut}})(),hp:Math.round(G.health.hp),b:G.brawl.active?G.brawl.him.state:'off',warn:G.hud.warnText,sc:G.scenes.current&&G.scenes.current.id,inv:G.save.inventory.join(','),stills:!!(G.stills&&G.stills.active),yaw:+N.controller.yaw.toFixed(2)})"
+  },
+  {
+   "shot": "d22_next"
+  }
+ ]
+}

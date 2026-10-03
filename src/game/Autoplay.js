@@ -1,5 +1,6 @@
 import { RNG } from '../util/rng.js';
 import { BR_ATTACKS } from '../cast/brawl/clips.js';
+import { cued } from './BrawlCue.js';
 
 // ?autoplay=1: the game plays itself, as a player would (lane 7's brief
 // P0.5). From the title it begins after a moment; in each scene it asks the
@@ -95,9 +96,12 @@ export class Autoplay {
     if (Math.hypot(dx, dz) < 0.35) { P.i++; return; }
     // (turn toward it as a man does, not in one snap)
     const want = Math.atan2(-dx, -dz);
-    C.yaw += Math.atan2(Math.sin(want - C.yaw), Math.cos(want - C.yaw)) * 0.12;
+    const err = Math.atan2(Math.sin(want - C.yaw), Math.cos(want - C.yaw));
+    C.yaw += err * 0.12;
     C.pitch += (-0.12 - C.pitch) * 0.1;
-    C.auto = { f: 1, s: 0 };
+    // ([C4] turned well away from the point: turn first, then walk - at full
+    // pace it circled a point near it for good, in the diner's doorway)
+    C.auto = { f: Math.abs(err) < 0.7 ? 1 : 0, s: 0 };
   }
   stopWalk() { const C = this.game.controller; if (C.auto) C.auto = null; this.path = null; }
 
@@ -122,6 +126,31 @@ export class Autoplay {
     const d = Math.hypot(c.pos.x - eye.x, c.pos.z - eye.z);
     const arm = (s) => (s === 'L' ? 'Mouse0' : 'Mouse2');
     const busyHands = this.isHeld('Mouse0') || this.isHeld('Mouse2');
+    // ---- [C4] the critic's second look, in the page: 'lazy' - W held in to
+    // arm's length, a click of either button every 2 .. 3 s whatever he does,
+    // never A, D or SPACE, never a look at his guard (at the HOLD card with a
+    // side open, and out on his feet at the window, the button kept pressed);
+    // 'lazydodge' - the same, and the dodge cue answered toward the light
+    // 0.23 .. 0.30 s after it shows (a held card: read, then done)
+    if (style === 'lazy' || style === 'lazydodge') {
+      if (B.cue && !B.cue.done) {
+        const id = 'cue:' + B.stats.his + ':' + B.cue.clip + ':' + (B.cue.flying ? 'f' : 'b');
+        if (!this.cuePlan || this.cuePlan.id !== id) {
+          const safe = B.cue.side === 'R' ? 'KeyD' : 'KeyA', held = !!B.cue.held || !!B.lesson;
+          this.cuePlan = { id, act: style === 'lazydodge' || held ? safe : 'none', at: this.t + (held ? r.range(0.6, 1.2) : r.range(0.23, 0.3)), done: false };
+        }
+        const P = this.cuePlan;
+        if (!P.done && this.t >= P.at) { P.done = true; this.release('KeyW'); if (P.act !== 'none') this.tap(P.act); }
+        return;
+      }
+      if (d > 1.2 && !this.isHeld('KeyW')) this.hold('KeyW', 0.3);
+      if (busyHands) return;
+      const words = ((B._cards && B._cards.shownCard) || '') + ' ' + ((G.hud.kit && G.hud.kit.teachCur && G.hud.kit.teachCur.text) || '');
+      if (B.lesson && /KEEP IT PRESSED|HOLD ON/i.test(words) && B.openSides() && this.every('lzHold', 1.5, 1.5)) { this.hold('Mouse0', 0.95); return; }
+      if (him.state === 'reel' && him.atSpot) { if (this.every('lzPoke', 2, 3)) this.hold(r.chance(0.5) ? 'Mouse0' : 'Mouse2', r.range(0.8, 0.95)); return; }
+      if (this.every('lzPoke', 2, 3)) this.hold(r.chance(0.5) ? 'Mouse0' : 'Mouse2', r.range(0.08, 0.16));
+      return;
+    }
     // ---- the lesson: what the card asks, a human moment after it shows
     if (B.lesson) {
       const L = B.lesson, st = L.step, kind = L.kind;
@@ -130,7 +159,8 @@ export class Autoplay {
       this.walkTo(B, d, kind === 'throw' ? 3.0 : 1.4);
       const open = B.openSides();
       if (['jabL', 'jabR', 'guard', 'hold'].includes(kind) && this.t >= this.lessonAt && !busyHands && me.act === 'idle' && d < 1.75 && him.state === 'move') {
-        if (kind === 'hold') { if (open) { this.hold(r.chance(0.5) ? 'Mouse0' : 'Mouse2', r.range(0.5, 0.75)); this.lessonAt = this.t + 1.4; } return; }
+        // ([C4] 'clicker': a man who only ever clicks - the HOLD card lets him go)
+        if (kind === 'hold') { if (open) { if (style === 'clicker') { this.tap(r.chance(0.5) ? 'Mouse0' : 'Mouse2'); this.lessonAt = this.t + 0.45; } else { this.hold(r.chance(0.5) ? 'Mouse0' : 'Mouse2', r.range(0.66, 0.92)); this.lessonAt = this.t + 1.4; } } return; }
         if (open) { this.tap(arm(open[0])); this.lessonAt = this.t + r.range(0.7, 1.1); return; }
         // (the guard up: a punch into it, as a first-timer would)
         if (kind === 'guard' && !L.bounced) { this.tap(r.chance(0.5) ? 'Mouse0' : 'Mouse2'); this.lessonAt = this.t + 1.0; }
@@ -146,15 +176,104 @@ export class Autoplay {
     // few seconds of jabbing a man who only sways, holds once; 'mashload': one
     // who now and then - every 14 to 24 s - holds a button down: the loaded
     // punch among the mashing)
+    // ([C4] 'mashcue': the first-timer of fight_bad.json - mashes jabs (a side
+    // at random two times in three, the open one the third), now and then
+    // (one press in twenty) holds one to the second tick, and reads the dodge
+    // cue as 'rough' does)
+    if (style === 'mashcue' && !B.lesson && !(B.cue && !B.cue.done)) {
+      this.walkTo(B, d, 1.35);
+      if (busyHands) return;
+      if (him.state === 'reel' && him.atSpot && this.every('finish', 2, 4)) { this.hold(r.chance(0.5) ? 'Mouse0' : 'Mouse2', r.range(0.68, 0.9)); return; }
+      if (this.every('mash', 0.15, 0.42)) {
+        const open = B.openSides(), s = open && r.chance(0.35) ? open[0] : r.chance(0.5) ? 'L' : 'R';
+        if (r.chance(0.05)) this.hold(arm(s), r.range(0.66, 0.9)); else this.tap(arm(s));
+      }
+      return;
+    }
     if ((style === 'mash' || style === 'mashone' || style === 'mashload') && !B.lesson) {
       this.walkTo(B, d, 1.35);
       if (style === 'mashone') {
         if (him.state === 'reel' && him.atSpot) { if (this.reelSince == null) this.reelSince = this.t; } else this.reelSince = null;
-        if (this.reelSince != null && this.t - this.reelSince > r.range(2.5, 4) && !busyHands && d < 1.8 && this.every('finish', 3, 4.5)) { this.hold(r.chance(0.5) ? 'Mouse0' : 'Mouse2', r.range(0.5, 0.7)); return; }
+        if (this.reelSince != null && this.t - this.reelSince > r.range(2.5, 4) && !busyHands && d < 1.8 && this.every('finish', 3, 4.5)) { this.hold(r.chance(0.5) ? 'Mouse0' : 'Mouse2', r.range(0.66, 0.9)); return; }
       }
-      if (style === 'mashload' && !busyHands && me.act === 'idle' && d < 1.8 && this.every('load', 14, 24)) { this.hold(r.chance(0.5) ? 'Mouse0' : 'Mouse2', r.range(0.5, 0.7)); return; }
+      if (style === 'mashload' && !busyHands && me.act === 'idle' && d < 1.8 && this.every('load', 14, 24)) { this.hold(r.chance(0.5) ? 'Mouse0' : 'Mouse2', r.range(0.66, 0.9)); return; }
       if (style !== 'mash' && busyHands) return;
       if (this.every('mash', 0.1, 0.16)) this.tap(this.lastArm = this.lastArm === 'Mouse0' ? 'Mouse2' : 'Mouse0');
+      return;
+    }
+    // ---- [C4] after the critic: the cold player's clumsy hands, for seeded
+    // runs of the B3 mercy ('medium': the cue answered 0.24 .. 0.36 s after
+    // it shows, one in ten missed, one in seven the wrong way; an opening
+    // struck 0.30 .. 0.45 s late, the wrong fist one in seven, one press in
+    // five held; a jab into his guard every 1.5 .. 3 s; never SPACE.
+    // 'slow': the cue at 0.32 .. 0.5 s, one in four missed, one in five the
+    // wrong way; openings 0.45 .. 0.7 s late, the wrong fist one in three;
+    // a jab into the guard every 0.7 .. 1.5 s; a stray S or SPACE now and then.
+    // Neither learns: the critic's c4_bot.mjs profiles, in the page)
+    // ('slowlearn': the slow hands that read the word on the black and change
+    // that one thing - 'Into his guard' / 'Caught swinging': fewer punches
+    // thrown at his guard; 'Block his jab': SPACE on his straight blows, more
+    // each time; 'Wrong way': fewer wrong reads)
+    if ((style === 'medium' || style === 'slow' || style === 'slowlearn') && !B.lesson) {
+      const slow = style !== 'medium';
+      const L = this.learnt || (this.learnt = { poke: 1, block: 0, wrong: 1, n: 0 });
+      if (style === 'slowlearn' && B.stats.downs > L.n) {
+        L.n = B.stats.downs;
+        const why = (B.stats.downWhy || []).slice(-1)[0];
+        if (why === 'answer' || why === 'caught') L.poke *= 1.6;
+        else if (why === 'jab') L.block = Math.min(0.75, L.block + 0.25);
+        else if (why === 'wrong') L.wrong *= 0.5;
+      }
+      if (B.cue && !B.cue.done) {
+        const id = 'cue:' + B.stats.his + ':' + B.cue.clip + ':' + (B.cue.flying ? 'f' : 'b');
+        if (!this.cuePlan || this.cuePlan.id !== id) {
+          const safe = B.cue.side === 'R' ? 'KeyD' : 'KeyA', x = r.next();
+          const act = x < (slow ? 0.25 : 0.1) ? 'none' : x < (slow ? 0.25 + 0.2 * L.wrong : 0.25) ? (safe === 'KeyD' ? 'KeyA' : 'KeyD') : safe;
+          this.cuePlan = { id, act, at: this.t + (slow ? r.range(0.32, 0.5) : r.range(0.24, 0.36)), done: false };
+        }
+        const P = this.cuePlan;
+        if (!P.done && this.t >= P.at) { P.done = true; for (const k of moves) this.release(k); if (P.act !== 'none') this.tap(P.act); }
+        return;
+      }
+      // (a learner's block: his straight blow seen a beat late, SPACE held through it)
+      if (L.block > 0 && him.state === 'attack' && /^br_(jab|jabR|cross|answerL|answerR)$/.test(him.clip || '')) {
+        const id = 'blk:' + B.stats.his;
+        if (this.blkId !== id) { this.blkId = id; const cl = c.clip(him.clip); this.blkAt = r.chance(L.block) ? this.t - him.t + (cl.marks.tell ?? 0) + r.range(0.12, 0.22) : null; this.blkEnd = this.t - him.t + (cl.marks.contact ?? 0.4) + 0.12; }
+        if (this.blkAt != null && this.t >= this.blkAt) { this.blkAt = null; this.release('Mouse0'); this.release('Mouse2'); this.hold('Space', Math.max(0.1, this.blkEnd - this.t)); }
+      }
+      if (busyHands || me.act === 'down') return;
+      const out = him.state === 'reel';
+      this.walkTo(B, d, out ? (him.atSpot ? 1.3 : 2.6) : 1.45);
+      if (slow && this.every('stray', 3, 7)) { this.tap(r.chance(0.5) ? 'KeyS' : 'Space'); return; }
+      if (out) { if (him.atSpot && d < 1.75 && me.act === 'idle' && this.every('last', 0.6, 1.0)) { if (r.chance(slow ? 0.5 : 0.8)) this.hold(r.chance(0.5) ? 'Mouse0' : 'Mouse2', r.range(0.75, 0.9)); else this.tap(r.chance(0.5) ? 'Mouse0' : 'Mouse2'); } return; }
+      if (me.act !== 'idle' || d > 1.8) return;
+      const open = B.openSides();
+      const look = open + ':' + him.state + ':' + (him.missT > 0);
+      if (this.seen !== look) { this.seen = look; this.seenAt = this.t + (slow ? r.range(0.45, 0.7) : r.range(0.3, 0.45)); }
+      if (open && this.t >= this.seenAt && him.state !== 'attack') {
+        let side = open.length === 2 ? (r.chance(0.5) ? 'L' : 'R') : open[0];
+        if (r.chance(slow ? 0.33 : 0.15)) side = side === 'L' ? 'R' : 'L';
+        if (r.chance(0.2)) this.hold(arm(side), r.range(0.5, 0.9)); else this.tap(arm(side));
+        this.seenAt = this.t + (slow ? r.range(0.4, 0.7) : r.range(0.3, 0.5));
+        return;
+      }
+      if (!open && him.state === 'move' && this.every('poke', (slow ? 0.7 : 1.5) * L.poke, (slow ? 1.5 : 3.0) * L.poke)) this.tap(r.chance(0.5) ? 'Mouse0' : 'Mouse2');
+      return;
+    }
+    // ---- [C4] the dodge cue up: the key toward the light, a reaction time
+    // after it shows (on my clock: the world is slowed under it, I am not)
+    if (B.cue && !B.cue.done && (style !== 'nododge' || B.lesson)) {
+      const id = 'cue:' + B.stats.his + ':' + B.cue.clip + ':' + (B.cue.flying ? 'f' : 'b');
+      if (!this.cuePlan || this.cuePlan.id !== id) {
+        // (the reader sees it in 0.13 .. 0.24 s and nearly never goes the
+        // wrong way; 'rough' in 0.2 .. 0.42 s, the wrong way three times in ten)
+        const lv = B.lesson ? { rt: [0.16, 0.27], wrong: 0, miss: 0 } : style === 'rough' || style === 'mashcue' ? { rt: [0.2, 0.42], wrong: 0.3, miss: 0.12 } : { rt: [0.13, 0.24], wrong: 0.04, miss: 0.04 };
+        const safe = B.cue.side === 'R' ? 'KeyD' : 'KeyA';
+        const act = r.chance(lv.miss) ? 'none' : r.chance(lv.wrong) ? (safe === 'KeyD' ? 'KeyA' : 'KeyD') : safe;
+        this.cuePlan = { id, act, at: this.t + r.range(lv.rt[0], lv.rt[1]), done: false };
+      }
+      const P = this.cuePlan;
+      if (!P.done && this.t >= P.at) { P.done = true; for (const k of moves) this.release(k); this.release('Mouse0'); this.release('Mouse2'); if (P.act !== 'none') this.tap(P.act); }
       return;
     }
     // ---- defence: a plan per blow, made when the tell is seen
@@ -171,9 +290,13 @@ export class Autoplay {
           const hand = feint ? (him.clip === 'br_feint' ? 'R' : 'L') : A.hand;
           const away = hand === 'R' ? 'KeyD' : hand === 'L' ? 'KeyA' : (r.chance(0.5) ? 'KeyA' : 'KeyD');
           const kind = feint ? 'swing' : A.kind;
-          const chev = B._cards && B._cards.chev && B._cards.chev.side;
-          if (B.lesson) act = B.lesson.kind === 'block' ? 'block' : kind === 'throw' && chev ? (chev === 'L' ? 'KeyA' : 'KeyD') : away;
-          else if (kind === 'throw') act = chev ? (chev === 'L' ? 'KeyA' : 'KeyD') : away;
+          // ([C4] a blow the cue will tell: most players wait for the cue -
+          // the reader four in ten times reads the body's tell first and is
+          // gone before it commits; the lesson's are read off the cue)
+          const waitCue = !feint && cued(him.clip) && (B.lesson ? B.lesson.kind !== 'block' : r.chance(style === 'rough' ? 0.85 : 0.6));
+          if (waitCue) act = 'none';
+          else if (B.lesson) act = B.lesson.kind === 'block' ? 'block' : away;
+          else if (kind === 'throw') act = away;
           else if (kind === 'swing') act = away;
           else if (kind === 'straight') act = r.chance(0.55) ? (r.chance(0.5) ? 'KeyA' : 'KeyD') : r.chance(0.5) ? 'block' : 'KeyS';
           else if (kind === 'over') act = r.chance(0.7) ? away : 'KeyS';
@@ -185,8 +308,8 @@ export class Autoplay {
           // ([R2-E] a weapon's wind-up read in time: in, and a jab on the
           // arm that holds it - it goes out of his fist)
           if (!B.lesson && style !== 'nododge' && style !== 'rough' && A && A.drops && him.holding === A.drops && r.chance(0.3)) act = 'disarm';
-          // (now and then, read right, a counter into the side his swing opens)
-          if (!B.lesson && style !== 'nododge' && !feint && !A.answer && /^br_(jab|jabR|cross|hook|hookL|body|bodyL|shove)$/.test(him.clip) && r.chance(0.25)) act = 'counter:' + (hand === 'R' ? 'Mouse0' : 'Mouse2');
+          // ([C4] 5.2: no counter into his wind-up - his guard is up while he
+          // throws; the opening is the miss)
           // (a misread: nothing, or the wrong way)
           if (!read) act = r.chance(0.5) ? 'none' : act === 'KeyD' ? 'KeyA' : act === 'KeyA' ? 'KeyD' : 'none';
         }
@@ -219,7 +342,7 @@ export class Autoplay {
     if (out) {
       // (out of his way as he reels to the window)
       if (!him.atSpot && d < 1.5 && me.act === 'idle' && this.every('clear', 0.6, 1.0)) { this.tap('KeyS'); return; }
-      if (him.atSpot && d < 1.75 && me.act === 'idle' && this.every('last', 0.5, 0.9)) this.hold(r.chance(0.5) ? 'Mouse0' : 'Mouse2', r.range(0.45, 0.7));
+      if (him.atSpot && d < 1.75 && me.act === 'idle' && this.every('last', 0.5, 0.9)) this.hold(r.chance(0.5) ? 'Mouse0' : 'Mouse2', r.range(0.64, 0.9));
       return;
     }
     // (now and then a step round him)
@@ -241,7 +364,7 @@ export class Autoplay {
       const it = me.holding, big = it.hands === 2;
       if (big || open) {
         const code = big ? arm(r.chance(0.5) ? 'L' : 'R') : arm(it.hand);
-        if (!big && r.chance(0.3)) this.hold(code, r.range(0.5, 0.7)); else this.tap(code);
+        if (!big && r.chance(0.3)) this.hold(code, r.range(0.62, 0.85)); else this.tap(code);
         this.seenAt = this.t + 0.6;
         return;
       }
@@ -255,7 +378,7 @@ export class Autoplay {
       const big = him.state === 'stun' || him.missT > 0.35;
       // (in a hurry to punish a miss the hold is short; a stunned man waits
       // for the second or third tick)
-      if (big && r.chance(0.55) && this.every('hard', 0.6, 1.0)) this.hold(arm(s), him.state === 'stun' ? r.range(0.42, 0.66) : r.range(0.22, 0.42));
+      if (big && style !== 'clicker' && r.chance(0.55) && this.every('hard', 0.6, 1.0)) this.hold(arm(s), him.state === 'stun' ? r.range(0.62, 0.88) : r.range(0.42, 0.62));
       else this.tap(arm(s));
       this.seenAt = this.t + r.range(0.18, 0.3);
       return;

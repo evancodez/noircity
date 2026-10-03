@@ -123,11 +123,53 @@
    "eval": "G.cast.list.map((c) => c.name + '@' + c.pos.x.toFixed(2) + ',' + c.pos.z.toFixed(2) + ':' + c.state + (c.down ? ':down' : ''))"
   },
   {
-   "name": "out through the door"
+   "name": "[C4] out: the bar lifted off the street door, the door pushed open"
   },
   {
-   "walk": "(() => { const z = (G.brawl.stats.window || 'B4') === 'B2' ? 5.0 : -3.8; return [[-12.6, 0.6], [-11.2, 0.6], [-9.2, 0.6], [-8.3, z + (z > 0.6 ? -1.8 : 1.8)]]; })()",
+   "expect": "G.stage.part('dinerFront').door.barred === true && G.hud.objectiveText === 'See to him.'",
+   "label": "[C4] the street door barred, the objective says where: See to him."
+  },
+  {
+   "walk": [
+    [
+     -12.6,
+     0.6
+    ],
+    [
+     -11.3,
+     0.72
+    ]
+   ],
+   "timeout": 30000
+  },
+  {
+   "look": "(() => { const C = N.controller, d = G.stage.part('dinerFront').door; const b = d.makeBar().pivot; b.updateMatrixWorld(true); const p = new N.THREE.Vector3(-0.035, 0, -0.42).applyMatrix4(b.matrixWorld), e = G.eye; const yaw = Math.atan2(-(p.x - e.x), -(p.z - e.z)), pt = Math.atan2(p.y - e.y, Math.hypot(p.x - e.x, p.z - e.z)); const dy = Math.atan2(Math.sin(yaw - C.yaw), Math.cos(yaw - C.yaw)); return [Math.round(-dy / C.sensitivity), Math.round(-(pt - C.pitch) / C.sensitivity)]; })()",
+   "steps": 6
+  },
+  {
+   "until": "G.interact.current && G.interact.current.id === 'c4.bar'",
+   "timeout": 6000
+  },
+  {
+   "shot": "f12a_bar"
+  },
+  {
+   "key": "KeyE"
+  },
+  {
+   "until": "!G.stage.part('dinerFront').door.barred",
+   "timeout": 4000
+  },
+  {
+   "wait": 1600
+  },
+  {
+   "walk": "(() => { const z = (G.brawl.stats.window || 'B4') === 'B2' ? 5.0 : -3.8; return [[-11.0, 0.62], [-9.2, 0.62], [-8.3, z + (z > 0.6 ? -1.8 : 1.8)]]; })()",
    "timeout": 40000
+  },
+  {
+   "expect": "(G.counters.doorThrough || 0) === 0",
+   "label": "[C4] the door's leaf never passed through me"
   },
   {
    "until": "G.scenes.beat === 'outside'",
@@ -154,7 +196,7 @@
    "key": "KeyE"
   },
   {
-   "until": "G.scenes.beat === 'matchbook' && !!G.inspect.active",
+   "until": "G.scenes.beat === 'matchbook' && G.scenes.ctx && G.scenes.ctx.flags.mbUp && !G.scenes.ctx.flags.mbRead && G.player.hands.held.R && G.player.hands.held.R.userData.kind === 'c4matchbook'",
    "timeout": 8000
   },
   {
@@ -167,12 +209,29 @@
    "key": "KeyE"
   },
   {
-   "until": "G.scenes.ctx.flags.shots === 2",
+   "until": "G.scenes.ctx && G.scenes.ctx.flags.cardUp && !G.scenes.ctx.flags.cardRead && G.player.hands.held.R && G.player.hands.held.R.userData.kind === 'amesCard'",
    "timeout": 6000
   },
   {
-   "expect": "G.save.inventory.includes('matchbook')",
-   "label": "the matchbook pocketed"
+   "wait": 1500
+  },
+  {
+   "shot": "f13a_ames_card"
+  },
+  {
+   "expect": "G.scenes.ctx.flags.cardTurned === true",
+   "label": "[C4] Ames's card came out of the matchbook and turned over in the hand"
+  },
+  {
+   "key": "KeyE"
+  },
+  {
+   "until": "G.save.inventory.includes('amesCard') && G.hud.objectiveText === 'Harbor Building. Room 304.'",
+   "timeout": 6000
+  },
+  {
+   "expect": "G.save.inventory.includes('matchbook') && G.save.inventory.includes('amesCard')",
+   "label": "[C4] the matchbook and Ames's card pocketed; the line: Harbor Building. Room 304."
   },
   {
    "until": "G.state === 'end' || (G.scenes.current && G.scenes.current.id !== 'fight')",

@@ -33,9 +33,8 @@ const each = (beats, line) => Object.fromEntries(beats.map((b) => [b, line]));
 export const ORDER = [
   // I: the scene file declares its own lines (01_diner.js)
   { id: 'diner', numeral: 'I', title: 'The Diner', music: 'room', carry: [] },
-  { id: 'fight', numeral: 'II', title: 'The Fight', music: 'room', carry: [],
-    objectives: { ...each(['start', 'lesson', 'round1', 'round2', 'round3', 'reel'], 'Put the big man down.'),
-      ko: 'Go out to him.', outside: 'Search him.', matchbook: 'Pocket it.' } },
+  // [C4] II: the scene file declares its own lines (02_fight.js)
+  { id: 'fight', numeral: 'II', title: 'The Fight', music: 'room', carry: [] },
   { id: 'office', numeral: 'III', title: 'Room 304', music: { slot: 'office', fade: 2.5 }, carry: ['matchbook', 'amesCard'],
     objectives: { corridor: 'Find Ames. Room 304.', room: 'Ames is dead. Search the room.', pad: 'Shade the pad. Read it.',
       safe: 'Open the safe.', ledger: 'Take what he hid.' } },

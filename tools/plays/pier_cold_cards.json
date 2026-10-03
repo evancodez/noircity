@@ -1,0 +1,20 @@
+{
+ "about": "[C4] after the critic's second look (m6): Pier 9's fist fight begun on a save that never saw II's lesson (?start=warehouse.fight): the dodge card at the first cue (held), the punch and his guard at his first opening ([LMB] [RMB] hit only where his guard is down), the loaded punch at his first opening worth it (KEEP IT PRESSED: IT LOADS. LET GO TO HIT) - each once, by real input (the play tool's own first-timer hands)",
+ "url": "/?mute=1&start=warehouse.fight",
+ "size": [1440, 900],
+ "out": "shots/play/pier_cold_cards",
+ "steps": [
+  { "until": "G.state === 'title' && !document.getElementById('title').classList.contains('hidden')", "timeout": 30000 },
+  { "wait": 1500 },
+  { "clickOn": "#title .opt[data-k=begin]", "taken": "G.state !== 'title'", "retries": 5, "every": 4000 },
+  { "until": "G.brawl.active && G.controller.mode === 'brawl'", "timeout": 40000 },
+  { "expect": "!G.save.flags.c4punch && !G.save.flags.c4heavy && G.brawl.punchUntaught && G.brawl.heavyUntaught", "label": "a save with no lesson: the punch and the heavy untaught" },
+  { "fight": { "timeout": 240000, "shots": {
+     "c1_dodge_card": "G.hud.kit.teachCur && G.hud.kit.teachCur.id === 'dodge'",
+     "c2_punch_card": "G.hud.kit.teachCur && G.hud.kit.teachCur.id === 'opening'",
+     "c3_heavy_card": "G.brawl._cards && G.brawl._cards.shownCard.indexOf('KEEP IT PRESSED') === 0" } } },
+  { "eval": "JSON.stringify({ won: !!G.brawl.stats.won, punchCard: G.brawl.stats.punchCard || 0, heavyCard: G.brawl.stats.heavyCard || 0, taught: G.save.flags.taught, c4punch: G.save.flags.c4punch, c4heavy: G.save.flags.c4heavy, downs: G.brawl.stats.downs, time: +G.brawl.stats.time.toFixed(1) })" },
+  { "expect": "G.brawl.stats.punchCard === 1 && G.save.flags.c4punch", "label": "the punch and his guard taught once, at an opening" },
+  { "expect": "(G.brawl.stats.heavyCard === 1 && G.save.flags.c4heavy) || (G.brawl.stats.hards || 0) > 0", "label": "the heavy taught once at an opening worth it (or loaded before it came)" }
+ ]
+}
