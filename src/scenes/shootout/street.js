@@ -122,11 +122,11 @@ export function beginFight(ctx, beat, { maxFiring = 2, flankAfter = 13, settleK 
   const f = Math.min(3, G.fails(beat));
   settleK += 0.22 * f;
   dmgK *= 1 - 0.1 * f;
-  // (and from the second fall one fewer firing at once, and longer before one
-  // goes round: the clumsy first hand died in the street to the flank and to
-  // three guns at once, try after try)
+  // (and after one fall one goes round later, from the second fall nobody
+  // goes round and one fewer fires at once: the clumsy first hand died in
+  // the street to the flank and to three guns at once, try after try)
   if (f >= 2) maxFiring = Math.max(1, maxFiring - 1);
-  if (flankAfter > 0) flankAfter += 4 * f;
+  if (flankAfter > 0) flankAfter = f >= 2 ? 0 : flankAfter + 4 * f;
   widen(G, () => K.begin({ to: beat, maxFiring, flankAfter, settleK, dmgK, area: AREA, why: WHY, warn: WARN }));
   // [C8] the room dark: from the street they cannot find me in it until I
   // fire (the gun's flash: 2.5 s), or I stand in a car's lamps
