@@ -43,7 +43,16 @@ const NUM_CORR = { dmgK: 0.9, settleK: 1.25 };
 const HEAVY_DMGK = 0.55;
 // (the flank: slower to settle - they come at my side, the time to turn; at 1.35 a good hand still lost one
 // first try in five to the man who came in and round the desk)
-const NUM_FLANK = { settleK: 1.5 };
+const NUM_FLANK = { settleK: 1.5, flankAfter: 0 };
+// ([C5] after the critic) the first gunfight's grace - their aim settling slower (settleK above 1) - is for the man
+// who takes cover. On my feet in their line (or down with nothing round me: the kit's lowInOpen) they settle at the
+// kit's own pace (1.0, its test bed's), everywhere in this chapter: standing and trading in the open won the door and
+// the flank. Read every step (the kit reads cfg.settleK each time a man settles), so it is the stance that counts
+const OPEN_SETTLE = 1.0;
+// ([C5] after the critic) the door: a man held down behind one place for so long (the tipped desk: the three stood
+// bunched in the doorway and were shot over it one by one, untouched) has one of them go round - the kit's flank,
+// said ('One's going round'), to a place round the desk that sees me
+const DOOR_FLANK = 8;
 // the door's three: where they stand at the glass (corridor side), and their way in
 const DOORMEN = [
   // the kicker: through the door when it goes, into the outer office
@@ -79,12 +88,45 @@ const WHY = { default: 'Shot.' };
 // hangs back - and the second `late` s behind the first. With him alive in the doorway the room has no place
 // covered from both the door and the connecting door: the good hand's falls in the flank were nearly all that.
 const FLANK_WAIT = 10;
-// ([C5] after play) a retry is a little kinder: for each fall at this beat (up to two) they settle 15 % slower
-// and their rounds weigh 12 % less. The first try is as tuned; the first-timer of WAVE_C §7, who must get
-// through in three, lost the flank or the corridor three tries of three in half the runs without it
+// ([C5] after play) a retry is a little kinder - ([C5] after the critic) from the SECOND fall at this beat, and only
+// to a man in cover: from the second fall (up to two steps) they settle 15 % slower and their rounds weigh 12 % less
+// while I am down behind something; on my feet in the open the beat is as tuned. (After one fall it was enough for
+// the man who stood and traded to win the door: a mercy that decided it for the wrong player.) The first-timer of
+// WAVE_C §7, who must get through in three, lost the flank or the corridor three tries of three in half the runs
+// with none at all
 function retryEase(G, name) {
-  const n = Math.min(2, G.fails(name, 'gunfight'));
+  const n = Math.max(0, Math.min(2, G.fails(name, 'gunfight') - 1));
   return { n, settle: 1 + 0.15 * n, dmg: 1 - 0.12 * n };
+}
+// the beat's numbers into the kit by my stance (every step): down in cover - the beat's, eased on a retry; up or bare
+// - the kit's own settle, no ease
+function byStance(G, K, F) {
+  if (!K.active || !F.num) return;
+  const C = G.controller, low = (C.crouchK || 0) > 0.5 && !K.lowInOpen;
+  const E = low ? (F.ease || { settle: 1, dmg: 1 }) : { settle: 1, dmg: 1 };
+  K.cfg.settleK = low ? F.num.settleK * E.settle : Math.min(F.num.settleK, OPEN_SETTLE);
+  K.cfg.dmgK = (F.heavyOn ? HEAVY_DMGK : F.num.dmgK) * E.dmg;
+}
+// ([C5] after the critic) the corridor's men do not go round through 305 and the connecting door into Ames's room:
+// the suite is a place the corridor can be held from (its door, the opening's line), and the cart is the other. The
+// doorway's cells shut in their grid (the player walks through it as ever; a man after me in 305 comes in at 305's own
+// door) - again after every rebuild of the grid
+function shutToMen(G, D) {
+  const nav = G.nav, sp = D && D.spec;
+  if (!nav || !sp) return;
+  const s0 = sp.axis === 'z' ? [sp.z0, sp.z1] : [sp.x0, sp.x1];
+  for (let u = s0[0] - 0.2; u <= s0[1] + 0.2; u += nav.cell * 0.5) for (let w = -0.45; w <= 0.45; w += nav.cell * 0.5) {
+    const x = sp.axis === 'z' ? sp.x + w : u, z = sp.axis === 'z' ? u : sp.z + w;
+    const k = nav.idx(x, z);
+    if (k >= 0) nav.blocked[k] = 1;
+  }
+}
+function corridorGrid(G, K, O) {
+  if (K._c5wrap) return;
+  const base = K.onRebuild;
+  K._c5wrap = true;
+  K.onRebuild = () => { if (base) base(); if (G.scenes.ctx && G.scenes.ctx.beat === 'corridor') shutToMen(G, O.doors.CONN); };
+  shutToMen(G, O.doors.CONN);
 }
 const DOORNAMES = ['kicker', 'jamb', 'side', 'doorLeft'];
 // (not the second held back until the first is down: the first's body in the doorway kept the second in his
@@ -130,11 +172,14 @@ function prepare(ctx, name, { reset = true } = {}) {
   K.arm('revolver');
   K.end();
   if (name === 'quiet') return;
-  const base = { ...NUM, ...(name === 'corridor' ? NUM_CORR : name === 'flank' ? NUM_FLANK : {}) };
+  const base = { ...NUM, flankAfter: name === 'shadows' ? DOOR_FLANK : 0, ...(name === 'corridor' ? NUM_CORR : name === 'flank' ? NUM_FLANK : {}) };
   const E = retryEase(G, name);
-  K.begin({ to: name, ...base, settleK: base.settleK * E.settle, dmgK: base.dmgK * E.dmg, flankAfter: 0, area: AREA, warn: { ...WARN, ...(name === 'flank' ? { door: 'The other door! Behind you!' } : {}) }, why: WHY });
+  K.begin({ to: name, ...base, area: AREA, warn: { ...WARN, ...(name === 'flank' ? { door: 'The other door! Behind you!' } : {}) }, why: WHY });
   const F = ctx.flags;
-  F.ease = E;
+  F.ease = E; F.num = base; F.heavyOn = false;
+  // (a fresh grid: the corridor's wrap is for this encounter's)
+  K._c5wrap = false;
+  if (name === 'corridor') corridorGrid(G, K, O);
   F.men = [];
   // (the plays' record of the beat, lane C2's driver's: its cover places, where the open is, won)
   // (block: the desk's footprint as it stands or lies - a hand walks round it, not into it; standing, its east
@@ -175,7 +220,8 @@ function corridorMen(ctx, spawn) {
   // (and his rounds lighter than the kit's heavy's - bursts at nine a second: a good hand at the cart who
   // missed him once was down 2.3 s after the first round, and at 0.7 the first-timer met him three tries of
   // three; the first gunfight's heavy is three of my rounds walking at me, not a wall)
-  const heavyGo = (f) => { if (F.heavyT) return true; if (!f()) return false; F.heavyT = G.time; ctx.hud.objective('One more. On the stair.'); gunsOf(G).cfg.dmgK = HEAVY_DMGK * ((F.ease && F.ease.dmg) || 1); return true; };
+  // ([C5] after the critic: the line says what is left - 'One more' only when he is the last)
+  const heavyGo = (f) => { if (F.heavyT) return true; if (!f()) return false; F.heavyT = G.time; ctx.hud.objective(others() === 0 ? 'One more. On the stair.' : 'And the stair.'); F.heavyOn = true; return true; };
   // (a breath after the last of them falls - a reload's worth - the gate below clanks open; or, the
   // corridor held to a stand-off with one of them left, he comes up anyway: nobody waits the clock out)
   spawn({ name: 'heavy', kind: 'rusher', at: { x: O.suite.flightFoot.x, z: O.suite.flightFoot.z }, yaw: -Math.PI / 2, start: () => heavyGo(() => { if (!F.liftOpen || G.time - F.liftOpen < 12) return false; if (G.time - F.liftOpen > 40 && others() <= 1) return true; if (others() > 0) { F.othersT = null; return false; } F.othersT = F.othersT || G.time; return G.time - F.othersT > 5; }), hp: 165, way: [{ door: 'GATE' }, { x: -6.4, z: -5.0 }, { door: 'STAIR' }] });
@@ -212,6 +258,7 @@ export default defineScene({
     // the warning before a fall: the kit's (none once the floor is won)
     let won = false;
     ctx.onStep(() => ctx.hud.warn(K.active && !won ? K.warning() : null));
+    ctx.onStep(() => { if (!won) byStance(G, K, F); });
     const alive = (names = null) => (F.men || []).filter((h) => h.alive && (!names || names.includes(h.c5))).length;
     // the shot that comes before they are in: the glass choice
     const shotFn = () => { F.shotAt = G.time; };
@@ -272,6 +319,7 @@ export default defineScene({
       const go = flankGo(F, G);
       for (const m of FLANKERS) F.spawn({ ...m, wait: m.name === 'flankA' ? 0.4 : 0.7, start: go(m) });
       Object.assign(K.cfg, NUM_FLANK);
+      F.num = { ...NUM, ...NUM_FLANK }; F.ease = retryEase(G, 'flank');
     } else if (ctx.beat === 'flank') yield beat('flank');
     if (ctx.at('flank') && ctx.beat === 'flank') {
       yield until(() => alive() === 0);
@@ -282,6 +330,8 @@ export default defineScene({
       K.cfg.warn = { ...WARN };
       K.cfg.flankAfter = 0;
       Object.assign(K.cfg, NUM_CORR);
+      F.num = { ...NUM, ...NUM_CORR, flankAfter: 0 }; F.ease = retryEase(G, 'corridor'); F.heavyOn = false;
+      K._c5wrap = false; corridorGrid(G, K, O);
       corridorMen(ctx, F.spawn);
       O.lift.setY(-3.3); O.lift.setOpen(0); O.lift.dial(1);
     } else if (ctx.beat === 'corridor') yield beat('corridor');
@@ -291,20 +341,31 @@ export default defineScene({
       // (quiet: I go out to look - or they come anyway)
       yield until(() => G.eye.x < OUTER.x0 + 0.5 || G.time - t0 > 16);
       O.callLift(() => { F.liftOpen = G.time; K.rebuild(); }, { from: -3.3, secs: 5.0 });
-      // (a stand-off: the last of them with no line on me - the Tommy gunner pins and never comes looking, from
-      // the corridor or from the lift's car. 15 s of it and he comes round to a door by me to find me)
-      let lastLine = G.time, sent = -99;
+      // (a stand-off: one of them with no line on me - the Tommy gunner pins and never comes looking, from the
+      // corridor or from the lift's car. 15 s of it and he comes round to a door by me to find me.
+      // [C5] after the critic: any one of them, not only the last - the Tommy gunner stood 80 s in the lift's mouth
+      // while the 306 man and the heavy came and died; one man at a time, 20 s apart, his run heard)
+      const lastLine = new Map();
+      let sent = -99;
       ctx.onStep(() => {
-        const left = (F.men || []).filter((h) => h.alive);
-        if (left.length !== 1 || !F.liftOpen) { lastLine = G.time; return; }
-        const ai = G.ais.get(left[0]);
-        if (!ai || !ai.brain || (ai.brain.S && ai.brain.S.entry)) { lastLine = G.time; return; }
-        if (ai.brain.hasLine) lastLine = G.time;
-        if (G.time - lastLine > 15 && G.time - sent > 20 && ai.brain.goRound) {
-          sent = G.time; lastLine = G.time;
-          // (me in the suite: to its door; me out in the corridor - down behind the cart - to 305's door beside it)
-          if (roomOf(G.eye.x, G.eye.z) !== 'corr') ai.brain.goRound(O.doors.AMES, [{ x: -4.7, z: 1.2, run: true }]);
-          else ai.brain.goRound(O.doors.D305, []);
+        if (!F.liftOpen) return;
+        for (const h of (F.men || [])) {
+          if (!h.alive || h.c5 === 'heavy') continue;
+          const ai = G.ais.get(h);
+          if (!ai || !ai.brain || (ai.brain.S && ai.brain.S.entry) || ai.brain.hasLine || !lastLine.has(h)) { lastLine.set(h, G.time); continue; }
+          if (G.time - lastLine.get(h) > 15 && G.time - sent > 20 && ai.brain.goRound) {
+            sent = G.time; lastLine.set(h, G.time);
+            // (me in the suite: to its door; me out in the corridor - down behind the cart - to 305's door beside it)
+            if (roomOf(G.eye.x, G.eye.z) !== 'corr') ai.brain.goRound(O.doors.AMES, [{ x: -4.7, z: 1.2, run: true }]);
+            else ai.brain.goRound(O.doors.D305, []);
+            break;
+          }
+        }
+        // ([C5] after the critic) the line follows who is left: the heavy down and men still up - not 'On the stair.'
+        const heavy = (F.men || []).find((h) => h.c5 === 'heavy');
+        if (F.heavyT && heavy && !heavy.alive && !F.heavySaid) {
+          const left = (F.men || []).filter((h) => h.alive);
+          if (left.length) { F.heavySaid = true; ctx.hud.objective(left.length > 1 ? 'Check the corridor.' : left[0].c5 === 'tommy' ? 'One more. The Tommy gun.' : 'One more.'); }
         }
       });
       yield until(() => F.liftOpen && alive() === 0);
@@ -338,7 +399,11 @@ export default defineScene({
 });
 
 // the take: the camera to their shadows on the door's frosted glass (the
-// lens narrowing on it across the outer office), held, and given back
+// lens narrowing on it across the outer office), held, and given back -
+// ([C5] after the critic) given back turned onto his desk, the lamp's pool and
+// 'E tip the desk over' on it (from where I stand: the moment's first choice in
+// the frame, the cards the others): the desk was behind me and its prompt came
+// only from its chair side, and no first-timer found it in 7.5 s
 function* take(ctx) {
   const G = ctx.game, C = ctx.controller, cam = G.camera;
   const P = C.eyePose();
@@ -347,30 +412,70 @@ function* take(ctx) {
   const pitch1 = Math.atan2(glass.y - P.y, Math.hypot(glass.x - P.x, glass.z - P.z));
   const fov0 = cam.fov, fov1 = Math.max(16, Math.min(40, 2 * Math.atan(1.6 / Math.hypot(glass.x - P.x, glass.z - P.z)) * 180 / Math.PI));
   const wrap = (a) => Math.atan2(Math.sin(a), Math.cos(a));
-  const dy = wrap(yaw1 - P.yaw);
+  // (the end: the desk's top, if it stands and I am by it; else where I was looking)
+  const dk = V(DESK.x, DESK.h, DESK.z), dd = Math.hypot(dk.x - P.x, dk.z - P.z);
+  const toDesk = !office(ctx).desk.tip && dd < 3.2 && dd > 0.6;
+  const yaw2 = toDesk ? Math.atan2(-(dk.x - P.x), -(dk.z - P.z)) : P.yaw;
+  const pitch2 = toDesk ? Math.atan2(dk.y - P.y, dd) : P.pitch;
+  const dy1 = wrap(yaw1 - P.yaw), dy2 = wrap(yaw2 - yaw1);
   const ease = (u) => u * u * (3 - 2 * u);
-  const T = 3.0;
+  const T = 3.2;
   C.setMode('cutscene', { track: (t) => {
-    const u = t < 0.7 ? ease(t / 0.7) : t < T - 0.6 ? 1 : ease(Math.max(0, (T - t) / 0.6));
-    cam.fov = fov0 + (fov1 - fov0) * u; cam.updateProjectionMatrix();
-    return { x: P.x, y: P.y, z: P.z, yaw: P.yaw + dy * u, pitch: P.pitch + (pitch1 - P.pitch) * u };
+    const u = t < 0.7 ? ease(t / 0.7) : 1, v = t < T - 0.8 ? 0 : ease(Math.min(1, (t - (T - 0.8)) / 0.8));
+    const z = u * (1 - v);
+    cam.fov = fov0 + (fov1 - fov0) * z; cam.updateProjectionMatrix();
+    return { x: P.x, y: P.y, z: P.z, yaw: P.yaw + dy1 * u + dy2 * v, pitch: P.pitch + (pitch1 - P.pitch) * u + (pitch2 - pitch1) * v };
   } });
   yield wait(T);
   cam.fov = fov0; cam.updateProjectionMatrix();
-  C.setPose(P.x, P.z, P.yaw, P.pitch);
+  C.setPose(P.x, P.z, yaw2, pitch2);
   C.setMode('gun', { crouch: false });
 }
 
 // E: the desk over on its front (the lamp thrown off it), the heave; then C to get low
+// ([C5] after the critic) from any side within reach: from its chair's side at once, as before; from in front of it
+// or its ends, a quick step round to its end first (round its corner, 0.2 - 0.5 s, the view on the desk) - it goes
+// over away from that side, toward the opening, as it always did. The prompt is the moment's first choice
 function tipPrompt(ctx) {
-  const G = ctx.game, O = office(ctx);
-  // (from its chair's side, behind it: it goes over away from me, toward the opening)
+  const G = ctx.game, O = office(ctx), C = ctx.controller;
   const behind = () => G.eye.x > DESK.x - 0.1 && G.eye.x < DESK.x + DESK.d / 2 + 1.0 && Math.abs(G.eye.z - DESK.z) < DESK.w / 2 + 0.5;
-  ctx.interact.add({ id: 'tip', at: V(DESK.x + 0.1, DESK.h + 0.1, DESK.z), range: 2.0, cone: 0.85, prompt: 'tip the desk over', when: () => !O.desk.tip && behind() && ctx.beat !== 'quiet', onUse: () => {
+  const tip = () => {
     if (!O.tipDesk()) return;
     G.sfx.play('office_deskTip', V(DESK.x, 0.6, DESK.z));
     heave(ctx);
     ctx.interact.remove('tip');
+  };
+  ctx.interact.add({ id: 'tip', at: V(DESK.x + 0.1, DESK.h + 0.1, DESK.z), range: 2.7, cone: 0.85, prompt: 'tip the desk over', when: () => !O.desk.tip && !ctx.flags.tipStep && roomOf(G.eye.x, G.eye.z) === 'ames' && ctx.beat !== 'quiet', onUse: () => {
+    if (behind()) { tip(); return; }
+    // the step round: to the end of the desk nearer me, by its corner on my side
+    const e = G.eye, south = e.z < DESK.z;
+    const endZ = south ? DESK.z - DESK.w / 2 - 0.34 : DESK.z + DESK.w / 2 + 0.34;
+    const end = { x: DESK.x + 0.05, z: endZ };
+    const legs = [];
+    if (e.x < DESK.x - DESK.d / 2 - 0.05 && Math.abs(e.z - DESK.z) < DESK.w / 2 + 0.3) legs.push({ x: DESK.x - DESK.d / 2 - 0.36, z: endZ });
+    legs.push(end);
+    const look = (p) => ({ yaw: Math.atan2(-(DESK.x - p.x), -(DESK.z - p.z)), pitch: -0.42 });
+    const P0 = C.eyePose();
+    let from = { ...P0 }, i = 0, t = 0;
+    const segT = (a, b) => Math.max(0.16, Math.hypot(b.x - a.x, b.z - a.z) / 3.4);
+    ctx.flags.tipStep = true;
+    C.frozen = true;
+    ctx.onStep((dt) => {
+      if (i >= legs.length) return;
+      const to = legs[i], L = segT(from, to);
+      t = Math.min(L, t + dt);
+      const u = t / L, k = u * u * (3 - 2 * u), lk = look(to);
+      const wrap = (a) => Math.atan2(Math.sin(a), Math.cos(a));
+      C.ease({ x: from.x + (to.x - from.x) * k, y: P0.y, z: from.z + (to.z - from.z) * k, yaw: from.yaw + wrap(lk.yaw - from.yaw) * k, pitch: from.pitch + (lk.pitch - from.pitch) * k }, 1e-3);
+      if (t < L) return;
+      from = { x: to.x, y: P0.y, z: to.z, ...lk }; i++; t = 0;
+      if (i < legs.length) return;
+      C.frozen = false;
+      C.setPose(to.x, to.z, lk.yaw, lk.pitch);
+      C.setMode('gun', { crouch: false });
+      ctx.flags.tipStep = false;
+      tip();
+    });
   } });
 }
 
