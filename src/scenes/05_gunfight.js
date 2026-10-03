@@ -78,16 +78,14 @@ const WHY = { default: 'Shot.' };
 // covered from both the door and the connecting door: the good hand's falls in the flank were nearly all that.
 const FLANK_WAIT = 10;
 const DOORNAMES = ['kicker', 'jamb', 'side', 'doorLeft'];
-// (and the second comes through once the first is down, or 8 s on: one at a time out of the doorway at my
-// side, as the corridor's are - the second walking in round the desk while the first held the jamb was the rest)
+// (not the second held back until the first is down: the first's body in the doorway kept the second in his
+// way in for good - a stand-off of 150 s in play)
 function flankGo(F, G) {
   const t0 = G.time;
   let goT = null;
-  const up = (name) => (F.men || []).some((h) => h.alive && h.c5 === name);
   return (m) => () => {
     if (goT == null && ((F.men || []).every((h) => !h.alive || !DOORNAMES.includes(h.c5)) || G.time - t0 > FLANK_WAIT)) goT = G.time;
-    if (goT == null || G.time - goT < (m.late || 0)) return false;
-    return m.name !== 'flankB' || !up('flankA') || G.time - goT > 8;
+    return goT != null && G.time - goT >= (m.late || 0);
   };
 }
 
