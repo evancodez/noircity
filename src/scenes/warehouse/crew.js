@@ -38,7 +38,7 @@ export const TUNE = {
   // I was seen; out of every man's sight this long and they lose me (they
   // search, then settle, more watchful); the cosh only from a man up close
   // with a line on me, never sooner than coshMin after the shout
-  lostAlarm: 3.2, coshR: 1.45, coshMin: 1.1, watchK: 0.22,
+  lostAlarm: 3.2, coshR: 1.45, coshMin: 1.4, watchK: 0.22,
 };
 const V = (x, y, z) => new THREE.Vector3(x, y, z);
 const wrap = (a) => Math.atan2(Math.sin(a), Math.cos(a));
