@@ -1,0 +1,11 @@
+{
+ "about": "[C6] The jank run for chapter V (WAVE_C §7 item 5), by real input: the eye put down facing each wall, fence, door, table, parked car, stall, the stair's side, the truck, the hoardings at the streets' ends - W held into it at a run, then tapped at a walk - and the body checked: never through it, never floating. Played in the scene's frame mode with anim=1 (the game runs on, no fail), so the rules never cut in. node tools/play.mjs tools/plays/watcher_jank.json",
+ "url": "/?mute=1&scene=watcher&beat=car&anim=1&t=0.5",
+ "size": [1280, 800],
+ "out": "shots/c6/play_jank",
+ "steps": [
+  { "until": "G.scenes.current && G.scenes.current.id === 'watcher'", "timeout": 30000 },
+  { "wait": 1000 },
+  { "drive": "tools/lib/c6_jank.mjs", "check": "D.ok", "label": "nothing passes through anything; nothing floats" }
+ ]
+}

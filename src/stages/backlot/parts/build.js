@@ -224,6 +224,20 @@ export default {
       // seam's first frame looks up the lane at its far side), the block across it
       block('acrossN', MAT.brick, NORTHST.x0, NORTHST.x1, NORTHST.z0 - NORTHST.pave - 18, NORTHST.z0 - NORTHST.pave, 13.6, { s: { bay: 3.4, litP: 0.16, pipes: [-21.0, 12.6, 47.4] } });
       for (const u of [-30.5, -6.2, 33.5]) { fplane('acrossN', MAT.glass, face('z', NORTHST.z0 - NORTHST.pave, 1), u, 1.7, 3.6, 2.4, 0.02, { cast: false }); fbox('acrossN', MAT.trim, face('z', NORTHST.z0 - NORTHST.pave, 1), u - 1.95, u + 1.95, 2.9, 3.2, 0, 0.12); }
+      // [C6] where the streets run on into the fog, a builder's hoarding
+      // across them (the street up for works: tall boards, a lantern on it):
+      // a real end, never an invisible one
+      const hoard = (x, z0, z1) => {
+        const g = 'hoarding';
+        for (let z = z0 + 0.06; z < z1 - 0.06; z += 0.3) K.box(g, MAT.wood, x - 0.03, x + 0.03, 0, 2.4 - ((z * 7.3) % 0.12), z, z + 0.28);
+        for (const y of [0.5, 1.9]) K.box(g, MAT.woodDark, x - 0.1, x - 0.03, y - 0.06, y + 0.06, z0, z1);
+        for (let z = z0 + 1.2; z < z1 - 0.5; z += 3.2) K.box(g, MAT.woodDark, x - 0.24, x - 0.03, 0, 2.5, z - 0.06, z + 0.06);
+        K.collide(x - 0.1, x + 0.05, z0, z1, 'hoarding');
+      };
+      hoard(-36.5, HARBOR.z0 - HARBOR.pave, HARBOR.z1 + HARBOR.pave);
+      hoard(100.5, HARBOR.z0 - HARBOR.pave, HARBOR.z1 + HARBOR.pave);
+      hoard(-36.5, NORTHST.z0 - NORTHST.pave, BACKST.z0);
+      hoard(92.5, NORTHST.z0 - NORTHST.pave, BACKST.z0);
       // Pell Lane's east side beyond the fence: a brick wall to the next block
       mass('pellWall', MAT.brickDark, FENCE.x, FENCE.x + 0.4, MARKET.z0, FENCE.z0, 3.4);
       fbox('pellWall', MAT.trim, face('x', FENCE.x, -1), MARKET.z0, FENCE.z0, 3.3, 3.5, -0.05, 0.06);

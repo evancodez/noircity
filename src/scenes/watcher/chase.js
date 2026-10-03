@@ -221,10 +221,11 @@ export class Chase {
     // his pace: his own, by where he is
     let want = RULES.base;
     const here = pathAt(P, this.s);
-    // (the stair: a climber's pace)
+    // (the stair: two treads at a time, his own way up - the roofs are the
+    // short way and stay so: a runner by Tanner's Row comes out behind him)
     const y0 = this.stage.surfaceY(here.x, here.z), ahead = pathAt(P, this.s + 1.0);
     const rise = this.stage.surfaceY(ahead.x, ahead.z) - y0;
-    if (rise > 0.3) want = 3.9;
+    if (rise > 0.3) want = 5.0;
     // (into a corner: slower the sharper it is)
     for (const c of this.cornersOf()) {
       const d = c.s - this.s;
@@ -274,9 +275,13 @@ export class Chase {
       const p = pathAt(this.P, e.s - 0.95 * F.scale);
       F.pos.x = p.x; F.pos.z = p.z;
       F._prevPos.copy(F.pos); F._prevYaw = F.yaw;
-      this.w.play('watcher_vault', { fade: 0.08 });
+      // (a fence: the hand on its top rail, over; a waist-high wall or stack:
+      // the hand on its top, swung over it)
+      const T = things.get(e.id);
+      const low = T && T.top < 1.2;
+      this.w.play(low ? 'watcher_lowvault' : 'watcher_vault', { fade: 0.08 });
       // (a man who knows his fences: quicker over them than the clip's own pace)
-      F.anim.setTimeScale(1.25);
+      F.anim.setTimeScale(low ? 1.1 : 1.25);
       G.sfx.play('w_fenceHand', F.pos.clone().setY(F.pos.y + 1.6));
     } else if (e.kind === 'slide') {
       this.act = 'slide';
@@ -309,10 +314,12 @@ export class Chase {
       G.sfx.play('w_slideHim', F.pos.clone());
     } else if (e.kind === 'trick') {
       (this.evLog || (this.evLog = [])).push([e.id, +gap.toFixed(1), this.active]);
-      if (!e.always && !(this.active && gap < RULES.trick)) return;
+      // (only with me close behind him: not when I am ahead of him by the other way)
+      if (!e.always && !(this.active && gap < RULES.trick && gap > -1.5)) return;
       this.trick(e.id);
     } else if (e.kind === 'look') {
-      this.look = { t: 0 };
+      // (no one on the roofs behind him when I took the row: he runs on)
+      if (!this.otherWay()) this.look = { t: 0 };
     } else if (e.kind === 'skid') {
       const c = this.cornersOf().find((k) => k.s > e.s && k.s - e.s < 3);
       this.skid = { t: 0, side: c ? Math.sign(c.turn) : 1 };

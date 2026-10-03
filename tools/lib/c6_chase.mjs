@@ -21,6 +21,16 @@ export default async function drive({ js, turn, keyDown, keyUp, log, sleep, opts
   let seed = opts.seed ?? Math.floor(Math.random() * 1e6);
   const rnd = () => { seed = (seed * 1664525 + 1013904223) % 4294967296; return seed / 4294967296; };
   const rr = (a, b) => a + (b - a) * rnd();
+  // (the clumsy hands' fumbles are drawn per thing and per try from the seed,
+  // not from the order of the loop's draws, so a seed fumbles the same things
+  // each time it is played)
+  const seed0 = seed >>> 0;
+  const rndOf = (key) => {
+    let h = (seed0 ^ 0x9e3779b9) >>> 0;
+    for (let i = 0; i < key.length; i++) h = Math.imul(h ^ key.charCodeAt(i), 2654435761) >>> 0;
+    h ^= h >>> 15; h = Math.imul(h, 0x2c1b3c6d) >>> 0; h ^= h >>> 12; h = Math.imul(h, 0x297a2d39) >>> 0; h ^= h >>> 15;
+    return (h >>> 0) / 4294967296;
+  };
   const until = opts.stop || 'false';
   const held = new Set();
   const set = async (code, on) => { if (on && !held.has(code)) { held.add(code); await keyDown(code); } else if (!on && held.has(code)) { held.delete(code); await keyUp(code); } };
@@ -150,10 +160,11 @@ export default async function drive({ js, turn, keyDown, keyUp, log, sleep, opts
           // the plan for this thing: when to press (seconds before reaching it)
           if (prof === 'good') P = { at: q.kind === 'slope' ? 0.45 : q.kind === 'jump' ? 0.2 : 0.24 + rr(-0.04, 0.04), key };
           else {
-            const r = rnd();
-            P = r < 0.42 ? { at: 0.24 + rr(-0.13, 0.13), key } : r < 0.66 ? { at: rr(0.62, 1.0), key } : r < 0.84 ? { at: -0.08, key } : { at: null, key };
-            if (rnd() < 0.12 && key) P.key = key === 'Space' ? 'KeyC' : 'Space';
-            P.react = rr(0.25, 0.45);
+            const k = `${q.id}:${fails}:`, u = rndOf(k + 'u');
+            const r = rndOf(k + 'r');
+            P = r < 0.42 ? { at: 0.24 + (u - 0.5) * 0.26, key } : r < 0.66 ? { at: 0.62 + u * 0.38, key } : r < 0.84 ? { at: -0.08, key } : { at: null, key };
+            if (rndOf(k + 'w') < 0.12 && key) P.key = key === 'Space' ? 'KeyC' : 'Space';
+            P.react = 0.25 + rndOf(k + 't') * 0.2;
           }
           P.seenAt = Date.now();
           plan.set(q.id, P);

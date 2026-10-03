@@ -1,5 +1,5 @@
 {
- "about": "[C6] Proof 2 of WAVE_C §7 for chapter V: a clumsy first-timer (tools/lib/c6_chase.mjs 'bad': sees each thing late, presses its key half the time out of its window - too early, too late, not at all - or the wrong key, lets W go now and then, takes a lane of the yard at random and finds its door locked) is warned, loses him now and then, and gets through on a second or third try of a stretch, never stuck: from the window to the cut into chapter VI's seat. node tools/play.mjs tools/plays/watcher_bad.json",
+ "about": "[C6] Proof 2 of WAVE_C §7 for chapter V: a clumsy first-timer (tools/lib/c6_chase.mjs 'bad', seed 9 - its fumbles are drawn per thing and per try, so a seed fumbles the same things each time it is played; seed 9 fumbles all four of the lane's things on the first try and one on the second - sees each thing late, presses its key half the time out of its window - too early, too late, not at all - or the wrong key, lets W go now and then, takes a lane of the yard at random and finds its door locked) is warned, loses him now and then, and gets through on a second or third try of a stretch, never stuck: from the window to the cut into chapter VI's seat. node tools/play.mjs tools/plays/watcher_bad.json",
  "url": "/?mute=1&start=watcher",
  "size": [1280, 800],
  "out": "shots/c6/play_bad",
@@ -14,7 +14,7 @@
   { "wait": 1200 },
   { "key": "KeyE" },
   { "until": "N.controller.mode === 'escape'", "timeout": 10000 },
-  { "drive": "tools/lib/c6_chase.mjs", "profile": "bad", "seed": 11, "verbose": true, "over": "row", "stop": "G.scenes.current && G.scenes.current.id === 'tail'", "timeout": 540000, "check": "D.done && D.warned >= 1", "label": "the clumsy hands get through to chapter VI, warned on the way",
+  { "drive": "tools/lib/c6_chase.mjs", "profile": "bad", "seed": 9, "verbose": true, "over": "row", "stop": "G.scenes.current && G.scenes.current.id === 'tail'", "timeout": 540000, "check": "D.done && D.warned >= 1 && D.fails >= 1", "label": "the clumsy hands lose him at least once, warned first, and get through to chapter VI on a later try",
     "shots": { "b1_warn": "!!G.hud.kit.warnText", "b2_lost": "!!G.failing && G.failing.phase === 'black'" } },
   { "eval": "JSON.stringify({ play: +(G.scenes.playTime || 0).toFixed(1), fails: G.counters.fails || 0, byStretch: (G._c6lost || []).reduce((o, r) => (o[r.stretch] = (o[r.stretch] || 0) + 1, o), {}) })" },
   { "expect": "Object.values((G._c6lost || []).reduce((o, r) => (o[r.stretch] = (o[r.stretch] || 0) + 1, o), {})).every((n) => n <= 4)", "label": "never stuck: at most four losses in any one stretch" },
