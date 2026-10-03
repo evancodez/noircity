@@ -450,7 +450,7 @@ export default async function drive({ js, turn, keyDown, keyUp, mouse, shot, log
         const w = end.why;
         // [C8] the one who stood at the window holding the trigger learns the whole lesson: cover
         if (P.becomes) { const b = P.becomes; Object.assign(P, PROFILES[b]); P.becomes = null; log(`c8 ${rec.profile} learns from '${w}': plays as ${b} now`); }
-        if (/angle|Flanked/.test(w)) P.lateMove = false;
+        if (/angle|Flanked|came round/.test(w)) P.lateMove = false;
         if (/too long/.test(w)) P.upLong = (P.upLong || 0) * 0.4;
         if (/chewed|shot away/.test(w)) P.lateMove = false;
         if (/Reloading/.test(w)) P.standReload = 0;

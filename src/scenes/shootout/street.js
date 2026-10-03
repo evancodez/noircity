@@ -111,14 +111,19 @@ export const HEAVY = { at: { x: -8.4, z: -33.5 }, steps: [{ x: -8.6, z: -20.0 },
 export function beginFight(ctx, beat, { maxFiring = 2, flankAfter = 13, settleK = 1.1, dmgK = 1 } = {}) {
   const G = ctx.game, K = gunsOf(G), R = rig();
   K.end();
-  // [C8] fail softly: each fall in this beat gives its men a seventh more to
-  // settle and a little less in a round (three falls at most: the beat as
+  // [C8] fail softly: each fall in this beat gives its men a fifth more to
+  // settle and a tenth less in a round (three falls at most: the beat as
   // written is the first try's; a player who keeps going down in one place
   // gets through in a try or two more, never by standing still - they still
   // kill a man who stands in the open)
   const f = Math.min(3, G.fails(beat));
-  settleK += 0.15 * f;
-  dmgK *= 1 - 0.08 * f;
+  settleK += 0.22 * f;
+  dmgK *= 1 - 0.1 * f;
+  // (and from the second fall one fewer firing at once, and longer before one
+  // goes round: the clumsy first hand died in the street to the flank and to
+  // three guns at once, try after try)
+  if (f >= 2) maxFiring = Math.max(1, maxFiring - 1);
+  if (flankAfter > 0) flankAfter += 4 * f;
   widen(G, () => K.begin({ to: beat, maxFiring, flankAfter, settleK, dmgK, area: AREA, why: WHY, warn: WARN }));
   // [C8] the room dark: from the street they cannot find me in it until I
   // fire (the gun's flash: 2.5 s), or I stand in a car's lamps
