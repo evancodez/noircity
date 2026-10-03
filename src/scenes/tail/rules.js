@@ -37,14 +37,18 @@ export const RAM = { behind: -0.9, side: 0.3, yaw0: 0.2, yaw1: 1.15, imp: 1.0, l
 // he floors it for PULL.t s (his car briefly
 // faster than mine: PULL.vmax, PULL.accel), then falls back to his pace;
 // not again for PULL.cool s.
-export const PULL = { near: 10, react: 0.35, t: 2.8, cool: 2.0, vmax: 25.5, accel: 6.6, pathV: 25 };
+export const PULL = { near: 8, react: 0.35, t: 2.8, cool: 2.0, vmax: 25.5, accel: 6.6, pathV: 25 };
 // [C3b] phase b's window: he runs the river road at RIVER_B.cruise m/s
 // (less as he is hurt: x (0.55 + 0.45 control)); from RIVER_B.warn s
 // "He's pulling away." and he speeds up toward RIVER_B.away; at RIVER_B.t s
 // he is gone - "Lost him." once he is RIVER_B.lostGap m clear, or
 // RIVER_B.extra s later whatever the gap. (The pier's gate, if he reaches it
 // first: "He warned them.")
-export const RIVER_B = { cruise: 10, away: 21, awayHurt: 15, warn: 18.5, t: 28, lostGap: 45, extra: 3 };
+// (the brief asked about 45 s; the river road is 360 m from phase b's start
+// to the gate, and a car that speeds away covers it in under 30 s: the
+// window is set so he is gone before the gate - a good hand needs 10 to 15
+// s, a clumsy one most of the 26)
+export const RIVER_B = { cruise: 10, away: 21, awayHurt: 15, warn: 16, t: 24, lostGap: 45, extra: 2 };
 // [3rd owner] the teach cards (the kit draws [X] as a key cap, [LMB] / [RMB]
 // as a mouse; seams/Z.md §2)
 export const TEACH = {

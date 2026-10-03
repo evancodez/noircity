@@ -270,7 +270,9 @@ export class Chase {
     if (this.phase === 'b' && this.driver.state !== 'lost') {
       this.bT = (this.bT || 0) + dt;
       this.driver.getaway = clamp((this.bT - B.warn) / (B.t - B.warn), 0, 1);
-      if (this.bT > B.warn) warn = "He's pulling away.";
+      // (a far warning already up stays: it is the same news, and the fail
+      // needs its warning read a while)
+      if (this.bT > B.warn && !warn) warn = "He's pulling away.";
     }
     if (gateNear) warn = "He's nearly at the pier.";
     // [4th owner] (my car one knock from a wreck: said, for a few seconds
@@ -290,7 +292,9 @@ export class Chase {
     if (this.phase === 'b' && this.driver.state !== 'lost' && (gap > R.farLost || this.farT > R.farT)) return this.fail('Lost him.', 'river');
     if (this.phase === 'b' && this.driver.state !== 'lost' && (hisZ > R.gateZ || this.driver.atPier)) return this.fail('He warned them.', 'river');
     // ([C3b] the window gone: he is a pair of red lamps in the rain)
-    if (this.phase === 'b' && this.driver.state !== 'lost' && this.bT > B.t && (gap > B.lostGap || this.bT > B.t + B.extra)) return this.fail('Lost him.', 'river');
+    // (never "Lost him." with him in front of my bonnet - wedged on something
+    // he is mine to shunt - unless I leave him there a long while)
+    if (this.phase === 'b' && this.driver.state !== 'lost' && this.bT > B.t && (gap > B.lostGap || (this.bT > B.t + B.extra && gap > 25) || this.bT > B.t + B.extra + 8)) return this.fail('Lost him.', 'river');
   }
   checkpoint() { return this.phase === 'b' ? 'river' : this.ctx.flags.check || 'start'; }
   fail(why, to) {

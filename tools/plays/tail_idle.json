@@ -146,7 +146,7 @@
     "i04_pulling_away": "!!G.scenes.ctx.flags.chase && G.scenes.ctx.flags.chase.kit.warning === \"He's pulling away.\""
    },
    "check": "D.end === 'until'",
-   "label": "he is followed to the pier"
+   "label": "kept up with, never shot at: the window closes (he is gone)"
   },
   {
    "expect": "['Lost him.', 'He warned them.'].includes(window.__tailFails[3].why) && window.__tailFails[3].to === 'river'",
