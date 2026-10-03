@@ -5,6 +5,7 @@ import { Skyline, makeTowerMaterial } from '../../../world/Skyline.js';
 import { makeWaterMaterial } from '../../riverroad/water.js';
 import { RIVER, RIVER_LEN, riverFrame, riverPoint, WATER_Y, CANAL, PAVE, BRIDGE, NS, PIER, WHARF_X } from '../plan.js';
 import { FOG } from '../../../render/fog.js';
+import { glowTexture } from '../../../vehicles/models.js';
 
 // The water: the river east of the quay and the canal along the north, one
 // black plane that carries the lights in it as broken columns (the river
@@ -15,7 +16,13 @@ import { FOG } from '../../../render/fog.js';
 // API: { water, far, update(camera, pixelHeight) }
 const ROW_TONE = [0.30, 0.32, 0.33, 0.34], ROW_HAZE = [0.08, 0.12, 0.16, 0.2];
 // [3rd owner] the river road's Look: the fog's colour and the exposure, x the block's
-export const RIVER_LOOK = { fog: 0.6, exposure: 1.0 };
+// ([C11] fog 0.6 -> 0.28, exposure 1 -> 1.35, the wet road's streaks x 1.6
+// (refl: eased in as the eye comes onto the river road): the art
+// director's frames of phase b and of the wreck still read a flat grey band
+// of sky and far water over the rail and 0.5 to 1.4 % paper white; now the
+// sky and the water are night, and the lamps, their cones, their streaks
+// and the far bank's lights in the fog are the whites)
+export const RIVER_LOOK = { fog: 0.28, exposure: 1.35, refl: 1.6 };
 
 export default {
   name: 'river', order: 70,
@@ -127,6 +134,19 @@ export default {
     const lm = new THREE.Mesh(merge(lights), lit);
     lm.userData.inkId = bankMesh.userData.inkId; lm.userData.noRay = true;
     group.add(lm);
+    // [C11] each far light's halo in the fog: a soft white bloom some 7 m
+    // across (a dot of 2 px alone, it read as nothing over the river), not
+    // fogged - the night over the water is dark now, the halo is the light
+    {
+      const gm = new THREE.SpriteMaterial({ map: glowTexture(), color: new THREE.Color().setScalar(0.55), blending: THREE.AdditiveBlending, depthWrite: false, transparent: true, fog: false });
+      for (const f of far) {
+        const sp = new THREE.Sprite(gm);
+        sp.position.copy(f.p);
+        sp.scale.setScalar(6 + f.k * 2.5);
+        sp.layers.set(LAYER.FX_REFL); sp.renderOrder = 6; sp.userData.noRay = true;
+        group.add(sp);
+      }
+    }
     // ---- the city beyond: across the river, past the rail yard, past the
     // canal, past the depot (the block's towers, flat fogged silhouettes)
     const sk = Object.create(Skyline.prototype);
@@ -167,6 +187,11 @@ export default {
       group, water, far,
       update(camera, pixelHeight) {
         const p = camera.position;
+        // [C11] the road's streaks brighter on the river road (the street is
+        // one shape over the whole city: its strength follows the eye)
+        const road = stage.part('street') && stage.part('street').road;
+        const ru = road && road.material.uniforms && road.material.uniforms.uReflStrength;
+        if (ru) { const want = p.x > WHARF_X - 6 && p.z > -320 ? RIVER_LOOK.refl : 1.0; ru.value += (want - ru.value) * 0.08; if (Math.abs(want - ru.value) < 0.01) ru.value = want; }
         if (!water.material.setLights) return;
         cand.length = 0;
         const L = stage.lamps;
