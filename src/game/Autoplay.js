@@ -126,6 +126,31 @@ export class Autoplay {
     const d = Math.hypot(c.pos.x - eye.x, c.pos.z - eye.z);
     const arm = (s) => (s === 'L' ? 'Mouse0' : 'Mouse2');
     const busyHands = this.isHeld('Mouse0') || this.isHeld('Mouse2');
+    // ---- [C4] the critic's second look, in the page: 'lazy' - W held in to
+    // arm's length, a click of either button every 2 .. 3 s whatever he does,
+    // never A, D or SPACE, never a look at his guard (at the HOLD card with a
+    // side open, and out on his feet at the window, the button kept pressed);
+    // 'lazydodge' - the same, and the dodge cue answered toward the light
+    // 0.23 .. 0.30 s after it shows (a held card: read, then done)
+    if (style === 'lazy' || style === 'lazydodge') {
+      if (B.cue && !B.cue.done) {
+        const id = 'cue:' + B.stats.his + ':' + B.cue.clip + ':' + (B.cue.flying ? 'f' : 'b');
+        if (!this.cuePlan || this.cuePlan.id !== id) {
+          const safe = B.cue.side === 'R' ? 'KeyD' : 'KeyA', held = !!B.cue.held || !!B.lesson;
+          this.cuePlan = { id, act: style === 'lazydodge' || held ? safe : 'none', at: this.t + (held ? r.range(0.6, 1.2) : r.range(0.23, 0.3)), done: false };
+        }
+        const P = this.cuePlan;
+        if (!P.done && this.t >= P.at) { P.done = true; this.release('KeyW'); if (P.act !== 'none') this.tap(P.act); }
+        return;
+      }
+      if (d > 1.2 && !this.isHeld('KeyW')) this.hold('KeyW', 0.3);
+      if (busyHands) return;
+      const words = ((B._cards && B._cards.shownCard) || '') + ' ' + ((G.hud.kit && G.hud.kit.teachCur && G.hud.kit.teachCur.text) || '');
+      if (B.lesson && /KEEP IT PRESSED|HOLD ON/i.test(words) && B.openSides() && this.every('lzHold', 1.5, 1.5)) { this.hold('Mouse0', 0.95); return; }
+      if (him.state === 'reel' && him.atSpot) { if (this.every('lzPoke', 2, 3)) this.hold(r.chance(0.5) ? 'Mouse0' : 'Mouse2', r.range(0.8, 0.95)); return; }
+      if (this.every('lzPoke', 2, 3)) this.hold(r.chance(0.5) ? 'Mouse0' : 'Mouse2', r.range(0.08, 0.16));
+      return;
+    }
     // ---- the lesson: what the card asks, a human moment after it shows
     if (B.lesson) {
       const L = B.lesson, st = L.step, kind = L.kind;
@@ -283,8 +308,8 @@ export class Autoplay {
           // ([R2-E] a weapon's wind-up read in time: in, and a jab on the
           // arm that holds it - it goes out of his fist)
           if (!B.lesson && style !== 'nododge' && style !== 'rough' && A && A.drops && him.holding === A.drops && r.chance(0.3)) act = 'disarm';
-          // (now and then, read right, a counter into the side his swing opens)
-          if (!B.lesson && style !== 'nododge' && !feint && !A.answer && /^br_(jab|jabR|cross|hook|hookL|body|bodyL|shove)$/.test(him.clip) && r.chance(0.25)) act = 'counter:' + (hand === 'R' ? 'Mouse0' : 'Mouse2');
+          // ([C4] 5.2: no counter into his wind-up - his guard is up while he
+          // throws; the opening is the miss)
           // (a misread: nothing, or the wrong way)
           if (!read) act = r.chance(0.5) ? 'none' : act === 'KeyD' ? 'KeyA' : act === 'KeyA' ? 'KeyD' : 'none';
         }

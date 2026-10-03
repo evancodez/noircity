@@ -27,7 +27,10 @@ const OPENING_CARD = '[LMB] [RMB] hit only where his guard is down';
 // miss, and wait a little longer between his blows; the dodge cue's window
 // grows by 0.05 s after each 'Too slow.' (at most 0.2 s more). It wins nothing
 // by itself: every blow of his still lands as hard on a man who stands there.
-export const MERCY = { answer: 0.2, answerMin: 0.15, press: 0.3, open: 0.25, gap: 0.15, cue: 0.05, cueMax: 0.2, whole: 2 };
+// ([C4] the critic's second look: the mercy earned only by slipping a cue or
+// blocking a blow in that life (B1), and it no longer thins his answer to a
+// punch into his guard - it slows it, `answerLate` s a level (M1))
+export const MERCY = { answerLate: 0.07, press: 0.3, open: 0.25, gap: 0.15, cue: 0.05, cueMax: 0.2, whole: 2 };
 
 // The fist fight's rules, the arcade pass (docs/story/FIGHT.md version 3:
 // fast, light, readable, fair). A rules engine over clips and their marks:
@@ -96,7 +99,7 @@ export const BRAWL = {
   // while I am still coming back. A blocked fist: [when I may hop or block,
   // when I may punch again] - a blocked hard punch leaves me open longer.
   answer: 0.75,
-  bounce: { jab: [0.12, 0.4], hard: [0.3, 0.56], item: [0.2, 0.45] },
+  bounce: { jab: [0.12, 0.4], hard: [0.3, 0.56], item: [0.2, 0.45], jammed: [0.34, 0.5] },   // ([C4] jammed: into his wind-up)
   // a landed blow by its level (1..3; a jab is its own): the knock back (m),
   // the hit stop (steps), the burst (px at 1440 x 900), the view's kick
   // [deg, lens deg], the stun that opens him (s)
@@ -677,17 +680,29 @@ export class Brawl {
     if (him.taunt && him.state === 'move' && him.taunt.includes(s)) return true;
     if (him.state === 'attack') {
       if (him.clip === 'br_bottle') return true;
-      // [B8] (his answer comes straight from behind his guard: nothing opens,
-      // and a jab does not stop it - pounding his guard is paid for)
-      if (BR_ATTACKS[him.clip] && BR_ATTACKS[him.clip].answer) return false;
-      // (the hand that swings has left its guard - through the tell and the
-      // strike; a blow that FOUND me, he recovers behind his guard: trading
-      // blows with him is not how he is beaten; a blow that missed leaves
-      // him open by the miss table instead)
-      if (him.contactAt != null && him.t > him.contactAt + 0.04 && him.hit) return false;
-      return OPENS(BR_ATTACKS[him.clip]).includes(s);
+      // [C4] 5.2 (the critic's second look, M1): while he throws, his guard is
+      // UP - his chin tucked behind the shoulder that loads, the other hand
+      // at his jaw. A punch into his wind-up meets his shoulder and he hits
+      // me through it (caught swinging); he opens only when he has MISSED
+      // (the miss table, him.open above: slip, then hit) - or breathes, or
+      // is stunned. Version 5 left the swinging side open through the tell and
+      // the strike: a click every two or three seconds, at random, reached
+      // his head half the time, and reading his guard bought nothing.
+      // (the foreman's weapon arm, read in its wind-up, can still be hit: it
+      // knocks the weapon out of his fist - swingOpen)
+      return this.swingOpen(s);
     }
     return false;
+  }
+  // [C4] the side the swinging hand has left, through his tell and strike -
+  // open now only to a thing swung in my hand (it comes round the shoulder)
+  // and to a jab at the arm that holds his weapon (BR_ATTACKS' `drops`)
+  swingOpen(s, item = false) {
+    const him = this.him, A = him && BR_ATTACKS[him.clip];
+    if (!A || A.answer || him.state !== 'attack') return false;
+    if (him.contactAt != null && him.t > him.contactAt + 0.04 && him.hit) return false;
+    if (!OPENS(A).includes(s)) return false;
+    return item || !!(A.drops && him.holding === A.drops && him.t < him.strikeAt);
   }
   openSides() { return (this.sideOpen('L') ? 'L' : '') + (this.sideOpen('R') ? 'R' : ''); }
   // a side down for s seconds (the longer of what it had and s)
@@ -771,7 +786,7 @@ export class Brawl {
     }
     const side = arm, openBefore = this.openSides();
     const breaks = !!(item && T.breaksGuard);
-    const open = this.sideOpen(side) || breaks;
+    const open = this.sideOpen(side) || breaks || (item && this.swingOpen(side, true));
     if (!open) {
       // ---- a full-power punch into his raised guard breaks it on its own:
       // his arms knocked apart, open on both sides for a second
@@ -800,8 +815,14 @@ export class Brawl {
       this.sfx('blocked', at, { k: kind === 'jab' ? 0.7 : 1 });
       G.fx.hit.puff(at, dir);
       G.emit('brawl:hit', { by: 'me', kind, power: lv, zone: 'guard', arm });
+      // ([C4] 5.2: into his shoulder as he winds up - his blow not yet come -
+      // the fist is jammed: a moment longer before my feet or my block come
+      // back, and his blow catches me there. Punching into his wind-up is the
+      // mistake the black names: 'Caught swinging. Hit when he's open.')
+      const jammed = him.state === 'attack' && !him.hit && (him.contactAt == null || him.t < him.contactAt) && !(BR_ATTACKS[him.clip] && BR_ATTACKS[him.clip].answer);
       if (item) { this.spendHeld(head, dir); me.bounceKind = 'item'; }
-      else { me.act = 'bounce'; me.t = 0; me.bounceKind = kind === 'jab' ? 'jab' : 'hard'; me.h = this.hands.play(arm === 'L' ? 'bounceL' : 'bounceR'); }
+      else { me.act = 'bounce'; me.t = 0; me.bounceKind = jammed ? 'jammed' : kind === 'jab' ? 'jab' : 'hard'; me.h = this.hands.play(arm === 'L' ? 'bounceL' : 'bounceR'); }
+      if (jammed) this.stats.jammed = (this.stats.jammed || 0) + 1;
       // three hard ones in 4 s break it
       if (kind === 'hard') {
         him.blockedHards = him.blockedHards.filter((x) => this.T - x < BRAWL.guardBreak.within);
@@ -897,6 +918,16 @@ export class Brawl {
     return got < 0.45 * want;
   }
 
+  // (he can answer: in his guard, on his feet, no errand - [C4] 5.2: or
+  // coming back from a blow that missed me, the other hand still up: a punch
+  // into the side he did not leave is answered from it)
+  canAnswer() {
+    const him = this.him;
+    if (him.task) return false;
+    if (him.state === 'move') return true;
+    return him.state === 'attack' && !him.hit && him.contactAt != null && him.t > him.contactAt + 0.04 && !(BR_ATTACKS[him.clip] && BR_ATTACKS[him.clip].heavy);
+  }
+
   answer(side) {
     const him = this.him, L = this.lesson;
     const lessonOK = L && L.step === 3 && !L.answered;
@@ -904,16 +935,21 @@ export class Brawl {
     // (my left fist into his right side: his right hand answers; pounded
     // three times in a second and a half, he answers with a hook)
     him.pounded = (him.pounded || []).filter((x) => this.T - x < 1.5); him.pounded.push(this.T);
-    if (him.state !== 'move' || him.task || this.finished) return;
+    if (!this.canAnswer() || this.finished) return;
     // [C4] (pounded - three punches into it in a second and a half - he
     // answers every time, and with the fast straight, not a hook: a hook
     // now comes with the dodge cue, and a masher who slipped it was handed
     // the opening; the straight is told by his body alone)
     const pounded = !lessonOK && him.pounded.length >= 3;
-    if (!lessonOK && !pounded && !this.rng.chance(Math.max(MERCY.answerMin, BRAWL.answer - MERCY.answer * this.mercy()))) return;
+    // ([C4] the critic's second look, M1: a punch into his guard is answered
+    // as the lesson says, three times in four, whatever the mercy - which
+    // only slows the answer, a beat later for each level (MERCY.answerLate),
+    // so a man who has gone down to it has time to get out or cover: it cut
+    // the answer to 0.15, and random clicks into his guard went unpunished)
+    if (!lessonOK && !pounded && !this.rng.chance(BRAWL.answer)) return;
     const clip = side === 'L' ? 'br_answerR' : 'br_answerL';
-    this.later(0.03, () => {
-      if (!this.active || this.finished || this.him.state !== 'move' || this.me.act === 'down') return;
+    this.later(0.03 + (lessonOK ? 0 : MERCY.answerLate * this.mercy()), () => {
+      if (!this.active || this.finished || !this.canAnswer() || this.me.act === 'down') return;
       this.hisAttack(clip, { slow: lessonOK ? 0.5 : 0 });
       this.stats.answers = (this.stats.answers || 0) + 1;
       if (lessonOK) L.answered = true;
@@ -1531,11 +1567,17 @@ export class Brawl {
     // [B8] (caught punching - a fist out, or bounced off him, or winding -
     // it lands half again: trading blows with him is a losing game)
     const caught = !L && /^(jab|hard|bounce|wind|cock|strike)$/.test(me.act);
-    if (caught) { dmg *= 1.5; this.stats.caught = (this.stats.caught || 0) + 1; }
+    // ([C4] 5.2: his answer to a punch into his guard is its own price - it
+    // always finds my fist still coming back, and half again on top made it
+    // harder than his cross; now that it comes three times in four whatever
+    // the mercy, it is 8, as B8 meant)
+    if (caught && !A.answer) { dmg *= 1.5; this.stats.caught = (this.stats.caught || 0) + 1; }
     // [C4] (what put me down, said in a word on the black)
     if (!opts.thrown) {
       const lc = this.lastCue && this.lastCue.atk === him.atk && !this.lastCue.flying ? this.lastCue.answer : null;
-      this.lastHurt = { clip, answer: !!A.answer, caught, cue: lc, pinned, blocking: me.act === 'block' || me.act === 'stagger', at: this.T };
+      // ([C4] 5.2: my fist jammed on his shoulder in his wind-up: that is what put me there)
+      const jam = me.act === 'bounce' && me.bounceKind === 'jammed';
+      this.lastHurt = { clip, answer: !!A.answer, caught, jam, cue: lc, pinned, blocking: me.act === 'block' || me.act === 'stagger', at: this.T };
     } else this.lastHurt.caught = caught;
     this.hurtMe(dmg, from, { stun: A.stun + (res.into ? 0.08 : 0) });
     { const HB = this.stats.hurtBy || (this.stats.hurtBy = {}); HB[clip] = +((HB[clip] || 0) + dmg).toFixed(1); }
@@ -2262,7 +2304,7 @@ export class Brawl {
     const LH = this.lastHurt || {};
     const A = BR_ATTACKS[LH.clip] || {};
     const small = /^br_(jab|jabR|cross)$/.test(LH.clip || '');
-    const why = LH.pinned ? 'pinned' : LH.cue === 'late' ? 'late' : LH.cue === 'wrong' ? 'wrong' : LH.answer ? 'answer' : LH.caught ? 'caught' : small ? 'jab' : (LH.big || A.heavy || A.block === null || cued(LH.clip)) ? 'big' : 'down';
+    const why = LH.pinned ? 'pinned' : LH.jam ? 'caught' : LH.cue === 'late' ? 'late' : LH.cue === 'wrong' ? 'wrong' : LH.answer ? 'answer' : LH.caught ? 'caught' : small ? 'jab' : (LH.big || A.heavy || A.block === null || cued(LH.clip)) ? 'big' : 'down';
     this.downWhyKey = why;
     (this.stats.downWhy || (this.stats.downWhy = [])).push(why);
     if (why === 'late' || why === 'wrong') { this.cueDowns = (this.cueDowns || 0) + 1; if (this.cueDowns === 2) this.reteach = true; }
@@ -2300,10 +2342,14 @@ export class Brawl {
       const L0 = this.stats.life || { t: 0, b: 0 };
       const rate = (this.stats.myBlocked - L0.b) / Math.max(20, this.stats.time - L0.t) * 60;
       const pounding = rate > BRAWL.pound;
-      // ([C4] the mercy is for a man who is trying - who landed three, slipped
-      // a cue or blocked a blow in that life: a man who stands there or
-      // leans on W gets none of it, and goes down as often as ever)
-      const trying = !pounding && ((this.stats.landed - (L0.l ?? 0)) >= 3 || (((this.stats.cues && this.stats.cues.right) || 0) - (L0.c ?? 0)) >= 1 || (this.stats.blocked - (L0.k ?? 0)) >= 1);
+      // ([C4] the mercy is for a man who is trying - who used in that life
+      // what the fight teaches against his blows: slipped a cue toward the
+      // light, or blocked a blow. A man who stands there, leans on W, or
+      // clicks now and then whatever he does gets none of it - landed punches
+      // alone are not trying (the critic's second look, B1: three random
+      // clicks landed made a life 'trying', and a never-dodging slow clicker
+      // won by downs that cost him nothing))
+      const trying = !pounding && ((((this.stats.cues && this.stats.cues.right) || 0) - (L0.c ?? 0)) >= 1 || (this.stats.blocked - (L0.k ?? 0)) >= 1);
       const key = pounding ? 'pounding' : trying ? 'mannerDowns' : 'idleDowns';
       const MD = this.stats[key] || (this.stats[key] = {}); MD[m] = (MD[m] || 0) + 1;
       // ([C4] B3, the mercy: a man who keeps getting up without pounding his
