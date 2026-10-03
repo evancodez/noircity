@@ -36,9 +36,12 @@ const EAST = -Math.PI / 2, WEST = Math.PI / 2;
 const OPEN_Z0 = 2.5;
 const AREA = { x0: -9.6, x1: 5.6, z0: -7.3, z1: 9.4 };
 const NUM = { maxFiring: 2, settleK: 1.2, dmgK: 0.9 };
-// (the corridor: four, the heavy last - a little less to each round of theirs, a little slower to settle; the heavy
-// three of my rounds, not five: the first gunfight's heavy, met with a full cylinder)
-const NUM_CORR = { dmgK: 0.8, settleK: 1.4 };
+// (the corridor: four, the heavy last - a hair slower to settle than the room (tuned between the good hand at the
+// cart, who must win it, and the hand standing in the middle of the corridor trading, who must not: at 1.4 / 0.8
+// he won it); the heavy three of my rounds, not five: the first gunfight's heavy, met with a full cylinder)
+const NUM_CORR = { dmgK: 0.9, settleK: 1.25 };
+// (the flank: a little slower to settle - they come at my side, the time to turn)
+const NUM_FLANK = { settleK: 1.35 };
 // the door's three: where they stand at the glass (corridor side), and their way in
 const DOORMEN = [
   // the kicker: through the door when it goes, into the outer office
@@ -52,7 +55,9 @@ const DOORMEN = [
 // the flank's two: from the corridor's south end, through 305, at the connecting door (as a pair)
 const FLANKERS = [
   { name: 'flankA', at: { x: -4.75, z: -6.3 }, way: [{ door: 'D305' }, { x: 2.9, z: -2.5, run: true }, { door: 'CONN' }], door: 'hold' },
-  { name: 'flankB', at: { x: -5.05, z: -6.75 }, way: [{ door: 'D305' }, { x: 3.6, z: -2.9, run: true }, { door: 'CONN' }], door: 'hold' },
+  // ([C5] after play: the second a few seconds behind the first and in through the door, not a pair working its
+  // jambs - two guns at once out of a doorway at my side lost the good hand the flank three tries in four)
+  { name: 'flankB', at: { x: -5.05, z: -6.75 }, way: [{ door: 'D305' }, { x: 3.6, z: -2.9, run: true }, { door: 'CONN' }, { x: 4.2, z: 1.3, run: true }], late: 2.5 },
 ];
 // (the plays: each beat's cover places for the good hand - behind it, facing the way they come - and the bad hand's open floor)
 const SPOTS = {
@@ -99,7 +104,7 @@ function prepare(ctx, name, { reset = true } = {}) {
   K.arm('revolver');
   K.end();
   if (name === 'quiet') return;
-  K.begin({ to: name, ...NUM, ...(name === 'corridor' ? NUM_CORR : {}), flankAfter: 0, area: AREA, warn: { ...WARN, ...(name === 'flank' ? { door: 'The other door! Behind you!' } : {}) }, why: WHY });
+  K.begin({ to: name, ...NUM, ...(name === 'corridor' ? NUM_CORR : name === 'flank' ? NUM_FLANK : {}), flankAfter: 0, area: AREA, warn: { ...WARN, ...(name === 'flank' ? { door: 'The other door! Behind you!' } : {}) }, why: WHY });
   const F = ctx.flags;
   F.men = [];
   // (the plays' record of the beat, lane C2's driver's: its cover places, where the open is, won)
@@ -111,7 +116,7 @@ function prepare(ctx, name, { reset = true } = {}) {
   if (name === 'flank') {
     // (a door man the first movement left: still at his cover in the outer office)
     for (const p of (reset ? R.doorLeft || [] : [])) spawn({ name: 'doorLeft', at: p, cover: true, wait: 1.5 });
-    for (const m of FLANKERS) spawn({ ...m, wait: m.name === 'flankA' ? 0.6 : 0.9 });
+    for (const m of FLANKERS) spawn({ ...m, wait: (m.name === 'flankA' ? 0.6 : 0.9) + (m.late || 0) });
   }
   if (name === 'corridor') corridorMen(ctx, spawn);
 }
@@ -226,7 +231,8 @@ export default defineScene({
       yield beat('flank');
       K.cfg.to = 'flank';
       K.cfg.warn = { ...WARN, door: 'The other door! Behind you!' };
-      for (const m of FLANKERS) F.spawn({ ...m, wait: m.name === 'flankA' ? 0.4 : 0.7 });
+      for (const m of FLANKERS) F.spawn({ ...m, wait: (m.name === 'flankA' ? 0.4 : 0.7) + (m.late || 0) });
+      Object.assign(K.cfg, NUM_FLANK);
     } else if (ctx.beat === 'flank') yield beat('flank');
     if (ctx.at('flank') && ctx.beat === 'flank') {
       yield until(() => alive() === 0);
