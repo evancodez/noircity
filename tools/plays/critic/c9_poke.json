@@ -1,0 +1,32 @@
+{
+ "about": "C9 critic: a player who pokes at the opening: mashes the mouse as BEGIN lands, moves the mouse, presses W / number keys / Q / F / M, ESC once (does a pause come, is the run held?), then ESC again; and BEGIN again from the title with the run skipped at once: how fast is control back, what is up.",
+ "url": "/?mute=1",
+ "size": [1440, 900],
+ "out": "shots/critic9/poke",
+ "steps": [
+  { "wait": 1500 },
+  { "clickOn": "#title .opt[data-k=begin]", "taken": "G.state !== 'title'", "retries": 5, "every": 4000 },
+  { "until": "G.stills.active", "timeout": 6000 },
+  { "eval": "(window.__t0 = performance.now(), G.stills.run.panel)" },
+  { "mouse": "click" }, { "wait": 120 }, { "mouse": "click" }, { "wait": 120 }, { "mouse": "click" }, { "wait": 120 }, { "mouse": "click" },
+  { "eval": "'after 4 quick clicks: panel ' + G.stills.run.panel + ' at ' + ((performance.now()-window.__t0)/1000).toFixed(2)" },
+  { "look": [300, 80], "steps": 8 },
+  { "key": "KeyW", "hold": 600 },
+  { "key": "Digit1" }, { "key": "KeyQ" }, { "key": "KeyF" }, { "key": "KeyM" },
+  { "eval": "'after keys: active ' + G.stills.active + ' panel ' + (G.stills.run && G.stills.run.panel) + ' muted? ' + (G.audio && G.audio.muted)" },
+  { "key": "Escape" },
+  { "wait": 700 },
+  { "shot": "p1_esc_once" },
+  { "eval": "'ESC once: active ' + G.stills.active + ' state ' + G.state + ' panel ' + (G.stills.run && G.stills.run.panel) + ' hint ' + (document.querySelector('#stills') && document.querySelector('#stills').innerText.replace(/\\s+/g,' ').slice(0,120))" },
+  { "wait": 2500 },
+  { "eval": "'2.5 s later: active ' + G.stills.active + ' panel ' + (G.stills.run && G.stills.run.panel)" },
+  { "key": "Escape" },
+  { "until": "!G.stills.active", "timeout": 3000 },
+  { "eval": "JSON.stringify(G.stills.last) + ' at ' + ((performance.now()-window.__t0)/1000).toFixed(2)" },
+  { "wait": 900 },
+  { "shot": "p2_after_skip" },
+  { "eval": "'state ' + G.state + ' scene ' + (G.scenes.current && G.scenes.current.id) + ' obj ' + G.hud.objectiveText" },
+  { "key": "KeyW", "hold": 800 },
+  { "eval": "'W moved me? ' + JSON.stringify(G.controller && G.controller.pos)" }
+ ]
+}
