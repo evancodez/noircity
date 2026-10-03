@@ -1,0 +1,70 @@
+{
+ "about": "C3b proof tail_gun_only, by real input: on the river road hands that shoot at everything they can (the tyres, the window, the tank: 'gunOnly' in src/scenes/tail/bot.js, a deep pocket of rounds) and never shunt him. Rounds alone never end it: his tyres go, he ducks, the tank smokes and burns, his hold wears to the floor (rules.js HIT.floor) - slow, weaving, catchable - and he never leaves the road. Without the shunt the window closes: \"He's pulling away.\", then \"Lost him.\" (or, if he reaches it first, \"He warned them.\"). NOIR_PORT=5343 node tools/play.mjs tools/plays/tail_gun_only.json [C3b, after the critic] the fail checked against the gap: never 'Lost him.' with him near.",
+ "url": "/?mute=1&start=tail.river&tailSeed=9",
+ "size": [
+  1440,
+  900
+ ],
+ "out": "shots/c3b/gun_only",
+ "steps": [
+  {
+   "until": "G.state === 'title' && !document.getElementById('title').classList.contains('hidden') && !!document.querySelector('#title .opt[data-k=begin]')",
+   "timeout": 40000
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]",
+   "taken": "G.state === 'playing' && document.pointerLockElement === N.renderer.domElement",
+   "retries": 4,
+   "every": 4000
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'tail' && !!G.scenes.ctx.flags.chase && G.scenes.ctx.flags.chase.phase === 'b' && !G.scenes.fadeK",
+   "timeout": 45000
+  },
+  {
+   "eval": "(() => { window.__tailFails = []; window.__c3tries = 0; const C0 = G.scenes.ctx.flags.chase; C0.gun.pocket = 60; window.__gs = null; window.__warned = null; setInterval(() => { const C = G.scenes.ctx && G.scenes.ctx.flags.chase; if (!C || C !== C0 || C.failing) return; window.__gs = { t: +C.t.toFixed(1), hits: C.gun.hits, shots: C.gun.shots, ctl: +C.driver.control.toFixed(2), hd: C.hisDmg || null, state: C.driver.state, phase: C.phase, ramWin: !!C._ramWin, his: +C.his.speed.toFixed(1), gap: +C.gap().toFixed(0) }; if (C.kit.warning === \"He's pulling away.\" && !window.__warned) window.__warned = +C.t.toFixed(1); }, 150); return 'a deep pocket'; })()"
+  },
+  {
+   "drive": "tools/lib/c3_tail.mjs",
+   "profile": "gunOnly",
+   "seed": 9,
+   "timeout": 75000,
+   "maxTries": 1,
+   "stop": "(window.__tailFails || []).length > 0 || (!!G.scenes.ctx.flags.chase && G.scenes.ctx.flags.chase.phase !== 'b')",
+   "shots": {
+    "u01_limping": "!!window.__gs && window.__gs.ctl <= 0.4 && window.__gs.gap < 30",
+    "u02_pulling_away": "!!window.__warned && !!G.scenes.ctx.flags.chase && G.scenes.ctx.flags.chase.t > window.__warned + 6"
+   }
+  },
+  {
+   "eval": "JSON.stringify({ last: window.__gs, warnedAt: window.__warned, fails: (window.__tailFails || []).map((f) => f.why + '@' + f.t + ' gap ' + f.gap) })"
+  },
+  {
+   "expect": "!!window.__gs && window.__gs.hits >= 5",
+   "label": "many rounds landed on him"
+  },
+  {
+   "expect": "!!window.__gs && window.__gs.hd && window.__gs.hd.tyres >= 1 && window.__gs.ctl >= 0.349",
+   "label": "his tyres went and his hold wore to the floor, never under"
+  },
+  {
+   "expect": "!!window.__gs && !window.__gs.ramWin && window.__gs.state === 'river' && window.__gs.phase === 'b'",
+   "label": "rounds alone never ended it: he never left the road"
+  },
+  {
+   "expect": "(window.__tailFails || []).length === 1 && ['Lost him.', 'He warned them.'].includes(window.__tailFails[0].why) && window.__tailFails[0].to === 'river'",
+   "label": "without the shunt the window closes: he gets away, back at the river road"
+  },
+  {
+   "expect": "(window.__tailFails || []).length === 1 && (window.__tailFails[0].why !== 'Lost him.' || window.__tailFails[0].gap >= 40)",
+   "label": "'Lost him.' only when he is really gone: 40 m and more ahead"
+  },
+  {
+   "expect": "!!window.__warned && G.lastFail && G.lastFail.warnedFor >= 1",
+   "label": "\"He's pulling away.\" first, a second and more before the fail"
+  }
+ ]
+}

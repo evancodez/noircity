@@ -1,0 +1,62 @@
+{
+ "about": "C3b after the critic, tail_close: the critic's 'close' - in the streets (phase a) flat out at his car, onto his bumper and into it ('closer' in src/scenes/tail/bot.js). He answers by flooring it (his foot stays down while I am on him), my nose cannot hold his bumper, a graze never turns him, I never get past; and he is never left wedged on a column (vehicles/pilot.js: backs out and round it, the other side the next try). NOIR_PORT=5343 node tools/play.mjs tools/plays/tail_close.json",
+ "url": "/?mute=1&start=tail&tailSeed=5",
+ "size": [
+  1440,
+  900
+ ],
+ "out": "shots/c3b/close",
+ "steps": [
+  {
+   "until": "G.state === 'title' && !document.getElementById('title').classList.contains('hidden') && !!document.querySelector('#title .opt[data-k=begin]')",
+   "timeout": 40000
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]",
+   "taken": "G.state === 'playing' && document.pointerLockElement === N.renderer.domElement",
+   "retries": 4,
+   "every": 4000
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'tail' && !!G.scenes.ctx.flags.chase && !G.scenes.fadeK",
+   "timeout": 45000
+  },
+  {
+   "eval": "(() => { window.__tailFails = []; window.__c3tries = 0; const g = window.__g = { yawMax: 0, ahead: true, stuck: 0, stuckMax: 0, near: 0, nearMax: 0, minGap: 999 }; setInterval(() => { const C = G.scenes.ctx && G.scenes.ctx.flags.chase; if (!C || !C.his || C.phase !== 'a' || C.failing) return; const dt = 0.1; g.yawMax = Math.max(g.yawMax, Math.abs(C.his.yawRate)); const gap = C.gap(); g.minGap = Math.min(g.minGap, +gap.toFixed(1)); g.near = gap < 6.5 ? g.near + dt : 0; g.nearMax = Math.max(g.nearMax, +g.near.toFixed(1)); g.fast = gap < 6.5 && C.his.speed > 13 ? (g.fast || 0) + dt : 0; if ((g.fast || 0) > (g.fastMax || 0)) { g.fastMax = +g.fast.toFixed(1); g.fastAt = [+C.his.pos.x.toFixed(0), +C.his.pos.z.toFixed(0), +C.t.toFixed(1), +C.his.speed.toFixed(1)]; } g.stuck = C.driver.state === 'go' && C.his.speedAbs < 1 && C.t > 4 ? g.stuck + dt : 0; if (g.stuck > g.stuckMax) { g.stuckMax = +g.stuck.toFixed(1); g.stuckAt = [+C.his.pos.x.toFixed(0), +C.his.pos.z.toFixed(0), +C.t.toFixed(1)]; } const l = C.his.local(C.my.pos); g.past = l.x > 2.5 ? (g.past || 0) + dt : 0; if (g.past > 1.5) { g.ahead = false; g.pastAt = g.pastAt || [+C.his.pos.x.toFixed(0), +C.his.pos.z.toFixed(0), +C.t.toFixed(1), +C.his.speed.toFixed(1)]; } g.grazes = C.grazes || 0; g.bursts = C.driver.bursts || 0; }, 100); return 'watching'; })()"
+  },
+  {
+   "drive": "tools/lib/c3_tail.mjs",
+   "profile": "closer",
+   "seed": 5,
+   "timeout": 150000,
+   "maxTries": 1,
+   "stop": "(window.__tailFails || []).length > 0 || (!!G.scenes.ctx.flags.chase && G.scenes.ctx.flags.chase.phase !== 'a' && G.scenes.ctx.flags.chase.phase !== 'start')",
+   "shots": {
+    "c01_on_his_bumper": "!!window.__g && window.__g.near > 0.5",
+    "c02_he_pulls_away": "!!window.__g && window.__g.bursts >= 3 && G.scenes.ctx.flags.chase.gap() > 12"
+   }
+  },
+  {
+   "eval": "JSON.stringify({ g: window.__g, fails: (window.__tailFails || []).map((f) => f.why + '@' + f.t), phase: G.scenes.ctx.flags.chase.phase, dmg: +G.scenes.ctx.flags.chase.my.damage.toFixed(2) })"
+  },
+  {
+   "expect": "window.__g.grazes >= 1 && window.__g.bursts >= 1",
+   "label": "I got onto his bumper, and he floored it"
+  },
+  {
+   "expect": "(window.__g.fastMax || 0) < 3",
+   "label": "I cannot hold his bumper at speed: within 6.5 m with him above 47 km/h (the straights) never 3 s at a time (in the stalls and the corners, where the road makes him slow, a close tail gets the graze)"
+  },
+  {
+   "expect": "window.__g.stuckMax < 6",
+   "label": "he is never wedged: stopped against something, he backs out and round it within seconds"
+  },
+  {
+   "expect": "window.__g.ahead && window.__g.yawMax < 1.4 && !G.scenes.ctx.flags.chase._ramWin",
+   "label": "I never get past him (ahead of him in his own frame for 1.5 s and more) and never turn him round"
+  }
+ ]
+}

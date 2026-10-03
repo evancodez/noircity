@@ -24,7 +24,8 @@ const clamp = (x, a, b) => Math.max(a, Math.min(b, x));
 
 const PROFILES = {
   idle: null,
-  good: { aLat: 7.2, brake: 6.5, lag: 0.08, wobble: 0, keep: 13, far: 26, hb: true, wrong: 0, look: 1.0, gunGap: 14, gunAt: 32, aimTol: 0.01, aimJit: 0.004 },
+  // ([C3b] once he is hurt the gun goes in and the hands shunt his back corner)
+  good: { aLat: 7.2, brake: 6.5, lag: 0.08, wobble: 0, keep: 13, far: 26, hb: true, wrong: 0, look: 1.0, gunGap: 14, gunAt: 32, aimTol: 0.01, aimJit: 0.004, pit: true },
   // ([4th owner] the bad hands aim like a sloppy hand - the eye drifting
   // round the mark, at whatever part of his car - and shunt him when dry)
   bad: { aLat: 8.6, brake: 4.8, lag: 0.15, wobble: 0.04, keep: 10, far: 22, hb: false, wrong: 0.5, look: 0.9, damp: 0.2, gunGap: 18, gunAt: 30, aimSd: 0.02, aimTol: 0.035, aimReact: 0.1, aimGain: 3.5, fireGap: 0.45, aimAt: 'any', pit: true },
@@ -39,6 +40,19 @@ const PROFILES = {
   sloppy: { aLat: 7.2, brake: 6.5, lag: 0.08, wobble: 0, keep: 13, far: 26, hb: true, wrong: 0, look: 1.0, gunGap: 14, gunAt: 30, aimSd: 0.02, aimTol: 0.035, aimReact: 0.1, aimGain: 3.5, fireGap: 0.45, aimAt: 'any' },
   badsloppy: { aLat: 8.6, brake: 4.8, lag: 0.15, wobble: 0.04, keep: 10, far: 22, hb: false, wrong: 0.5, look: 0.9, damp: 0.2, gunGap: 18, gunAt: 30, aimSd: 0.02, aimTol: 0.035, aimReact: 0.1, aimGain: 3.5, fireGap: 0.45, aimAt: 'any' },
   // (the shunt alone: the sloppy hand, and the shunt once dry)
+  // [C3b] the proofs of the shunt and the gun: 'pitWhole' shunts a whole
+  // car's back corner and never draws (it must not spin him); 'gunOnly'
+  // shoots at everything and never shunts (rounds alone must not end it);
+  // 'grazer' (phase a) drives onto his bumper (a jolt, nothing more)
+  pitWhole: { aLat: 7.2, brake: 6.5, lag: 0.08, wobble: 0, keep: 13, far: 26, hb: true, wrong: 0, look: 1.0, gunGap: 14, noGun: true, pit: true, pitAlways: true },
+  gunOnly: { aLat: 7.2, brake: 6.5, lag: 0.08, wobble: 0, keep: 13, far: 26, hb: true, wrong: 0, look: 1.0, gunGap: 14, gunAt: 34, aimSd: 0.012, aimTol: 0.03, aimReact: 0.1, aimGain: 5, fireGap: 0.45, aimAt: 'any' },
+  grazer: { aLat: 7.5, brake: 6, lag: 0, wobble: 0, keep: 3, far: 22, hb: false, wrong: 0, look: 1.0 },
+  // [C3b, after the critic] the first-timer's push: square behind his back
+  // corner, my car straight on his line, W (no turn-in)
+  straight: { aLat: 7.2, brake: 6.5, lag: 0.08, wobble: 0, keep: 13, far: 26, hb: true, wrong: 0, look: 1.0, gunGap: 14, gunAt: 32, aimTol: 0.01, aimJit: 0.004, pit: true, pitStraight: true },
+  // [C3b, after the critic] the critic's 'close': flat out at his car in
+  // the streets, onto his bumper and into it (to ram him or pass him)
+  closer: { aLat: 8.0, brake: 6, lag: 0, wobble: 0, keep: 0, far: 90, hb: true, wrong: 0, look: 1.0 },
   pitter: { aLat: 7.2, brake: 6.5, lag: 0.08, wobble: 0, keep: 13, far: 26, hb: true, wrong: 0, look: 1.0, gunGap: 14, gunAt: 30, aimSd: 0.02, aimTol: 0.035, aimReact: 0.1, aimGain: 3.5, fireGap: 0.45, aimAt: 'any', pit: true },
 };
 
@@ -139,6 +153,7 @@ export function makeBot(chase, name, { seed = 7, track = null, attempt = 0 } = {
       const my = chase.my, his = chase.his, D = chase.driver;
       const K = { W: 0, S: 0, A: 0, D: 0, Space: 0 };
       if (chase.phase === 'start' || chase.failing) return K;
+      if (chase.phase === 'out') return B.walkKeys();
       if (chase.phase === 'wreck' || chase.phase === 'parked' || chase.phase === 'crash') return { S: my.speed > 0.5 ? 1 : 0 };
       const path = B.ensurePath();
       if (!path) return K;
@@ -198,9 +213,12 @@ export function makeBot(chase, name, { seed = 7, track = null, attempt = 0 } = {
       // beside his back quarter on the side with the road, then the wheel
       // into it (the dry gun's teach card says so)
       const g = chase.gun, Dh = chase.driver, H = chase.hisDmg || {};
-      const hurt = (H.tyres || 0) >= 1 || (H.man || 0) >= 2 || (H.tank || 0) >= 2 || (Dh && Dh.control <= 0.5);
+      // ([C3b] hurt as the game has it: a tyre gone, the tank smoking, the man hit)
+      const hurt = chase.hurt ? chase.hurt() : (H.tyres || 0) >= 1;
+      const dry0 = g && g.rounds <= 0 && g.pocket <= 0 && g.reloadT <= 0;
+      void H;
       let pitWant = null;
-      if (chase.phase === 'b' && P.pit && g && g.rounds <= 0 && g.pocket <= 0 && g.reloadT <= 0 && Dh && Dh.state !== 'lost') {
+      if (chase.phase === 'b' && P.pit && (hurt || dry0 || P.pitAlways) && Dh && Dh.state !== 'lost') {
         const side = B.pitSide || (B.pitSide = -1);           // (his left: the other lane)
         const l = his.local(my.pos);
         const lead = his.vel.clone().multiplyScalar(0.35);
@@ -215,13 +233,14 @@ export function makeBot(chase, name, { seed = 7, track = null, attempt = 0 } = {
           const q = his.local(o.pos);
           // (a car on that side near him, or one coming the other way there)
           const coming = Math.cos((o.yaw || 0) - his.yaw) < -0.5;
-          if (q.x > -12 && q.x < (coming ? 40 : 14) && Math.sign(q.z || 1) === side && Math.abs(q.z) < 6) { clearSide = false; break; }
+          if (q.x > -12 && q.x < (coming ? (P.pitAlways ? 20 : 40) : 14) && Math.sign(q.z || 1) === side && Math.abs(q.z) < 6) { clearSide = false; break; }
         }
         // (that side shut a while: the other)
         B.pitShut = !clearSide && l.x > -14 ? (B.pitShut || 0) + dt : 0;
         if (B.pitShut > 2.5) { B.pitShut = 0; B.pitSide = -side; }
-        if (l.x < -11 || !clearSide) { pitWant = l.x < -11 ? his.speed + clamp((-8 - l.x) * 0.5, 0, 6) : his.speed - 1; B.pitIn = 0; }
-        else if (hurt && (beside || B.pitIn > 0)) { set(his.world(-0.8, -side * 0.8)); pitWant = his.speed + 3; B.pitIn = (B.pitIn || 0) + dt; }
+        if (P.pitStraight && hurt) { set(his.world(9, side * 0.78)); pitWant = his.speed + (l.x < -9 ? 5 : 2.5); }
+        else if (l.x < -11 || !clearSide) { pitWant = l.x < -11 ? his.speed + clamp((-8 - l.x) * 0.5, 0, 6) : his.speed - 1; B.pitIn = 0; }
+        else if ((hurt || P.pitAlways) && (beside || B.pitIn > 0)) { set(his.world(-0.8, -side * 0.8)); pitWant = his.speed + 3; B.pitIn = (B.pitIn || 0) + dt; }
         else { set(his.world(-3.6, side * 3.0)); pitWant = his.speed + clamp((-3.6 - l.x) * 0.8, -4, 6); B.pitIn = 0; }
         // (a turn-in that met nothing in 2.5 s: out again and once more)
         if (B.pitIn > 2.5) { B.pitIn = 0; B.pitTries = (B.pitTries || 0) + 1; if (B.pitTries % 3 === 0) B.pitSide = -side; }
@@ -282,10 +301,13 @@ export function makeBot(chase, name, { seed = 7, track = null, attempt = 0 } = {
     // back - a tyre for the good hand, wherever for the bad - LMB when on).
     // { rmb, dyaw, dpitch (radians: the turn the mouse must make), fire }
     aim() {
+      if (chase.phase === 'out') return B.walkLook();
       if (chase.phase !== 'b' || !chase.his || !chase.game || P.noGun) return null;
       const G = chase.game, cam = G.camera, his = chase.his, gap = chase.gap();
       // ([4th owner] dry: the gun goes back in, the eyes on the road)
       const dry = chase.gun && chase.gun.rounds <= 0 && chase.gun.pocket <= 0 && chase.gun.reloadT <= 0;
+      // ([C3b] hurt and these hands shunt: the gun goes in, the eyes on his corner)
+      if (P.pit && chase.hurt && chase.hurt()) { B.onT = 0; return { rmb: false, fire: false, dyaw: 0, dpitch: 0 }; }
       const out = { rmb: gap < (P.gunAt ?? 28) && !dry, fire: false, dyaw: 0, dpitch: 0 };
       // ([4th owner] the dt of this step, for the hand's drift and its wait)
       const dtA = Math.max(0, Math.min(0.1, B.t - (B.aimT ?? B.t))); B.aimT = B.t;
@@ -343,6 +365,52 @@ export function makeBot(chase, name, { seed = 7, track = null, attempt = 0 } = {
       // (the detour is let go once I am back on his way)
       B.detourUntil = all;
     },
+  };
+  // [C3b] out of the car by his wreck: walk to him (the line), then back to
+  // my door (E: the driver presses it on the prompt). W when facing the
+  // mark; the mouse turns the eye onto it (aim() returns the turn as look)
+  B.walkMark = () => {
+    const m = chase.lineSaid ? chase.doorAt() : chase.manAt;
+    if (!m) return null;
+    const G = chase.game, e = G ? G.camera.position : chase.my.pos;
+    // (a car between me and the mark: round its nearer corner first)
+    const boxes = [chase.my, chase.his].map((v) => v.box());
+    const inBox = (x, z, b, r) => { const lx = (x - b.cx) * b.c - (z - b.cz) * b.s, lz = (x - b.cx) * b.s + (z - b.cz) * b.c; return Math.abs(lx) < b.hx + r && Math.abs(lz) < b.hz + r; };
+    const clear = (x0, z0, x1, z1) => { const n = Math.ceil(Math.hypot(x1 - x0, z1 - z0) / 0.25); for (let i = 1; i < n; i++) { const x = x0 + (x1 - x0) * i / n, z = z0 + (z1 - z0) * i / n; for (const b of boxes) if (inBox(x, z, b, 0.45)) return false; } return true; };
+    if (!clear(e.x, e.z, m.x, m.z)) {
+      let best = null;
+      for (const b of boxes) for (const [sx, sz] of [[1, 1], [1, -1], [-1, 1], [-1, -1]]) {
+        const lx = sx * (b.hx + 1.0), lz = sz * (b.hz + 1.0);
+        const x = b.cx + lx * b.c + lz * b.s, z = b.cz - lx * b.s + lz * b.c;
+        if (boxes.some((o) => inBox(x, z, o, 0.5)) || !clear(e.x, e.z, x, z)) continue;
+        const d = Math.hypot(x - e.x, z - e.z) + Math.hypot(m.x - x, m.z - z);
+        if (Math.hypot(x - e.x, z - e.z) > 0.6 && (!best || d < best.d)) best = { x, z, d };
+      }
+      if (best) return { x: best.x, z: best.z, stop: 0.3, via: true };
+    }
+    return { x: m.x, z: m.z, stop: chase.lineSaid ? 0.7 : 1.7 };
+  };
+  B.walkKeys = () => {
+    const G = chase.game, m = B.walkMark();
+    if (!G || !m) return {};
+    const e = G.camera.position;
+    const d = Math.hypot(m.x - e.x, m.z - e.z);
+    const w = new (e.constructor)(m.x, e.y - 0.5, m.z).applyMatrix4(G.camera.matrixWorldInverse);
+    const ay = Math.atan2(w.x, -w.z);
+    const go = d > m.stop && Math.abs(ay) < 0.7;
+    // (a car in the way: no nearer in a second and a half - a step to the side)
+    const W0 = B.walkP || (B.walkP = { t: B.t, d });
+    if (!go || d < W0.d - 0.3) { W0.t = B.t; W0.d = d; }
+    else if (B.t - W0.t > 1.5) { B.sideT = 0.9; B.sideK = (B.sideK || 1) * -1; W0.t = B.t; W0.d = d; }
+    if (B.sideT > 0) { B.sideT -= 1 / 60; return { W: 1, A: B.sideK > 0 ? 1 : 0, D: B.sideK < 0 ? 1 : 0 }; }
+    return { W: go ? 1 : 0 };
+  };
+  B.walkLook = () => {
+    const G = chase.game, m = B.walkMark();
+    if (!G || !m) return null;
+    const e = G.camera.position;
+    const w = new (e.constructor)(m.x, chase.lineSaid ? e.y - 0.25 : 1.05, m.z).applyMatrix4(G.camera.matrixWorldInverse);
+    return { rmb: false, look: true, fire: false, dyaw: Math.atan2(w.x, -w.z), dpitch: Math.atan2(w.y, Math.hypot(w.x, w.z)), gain: 6 };
   };
   // phase c: a stop by the pier's gate
   B.pierStop = (my) => { const k = chase.pierPark || { x: 133, z: 176 }; const d = Math.hypot(my.pos.x - k.x, my.pos.z - k.z); return Math.sqrt(Math.max(0, 2 * 3.5 * (d - 2))); };

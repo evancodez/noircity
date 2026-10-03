@@ -1,4 +1,7 @@
+import * as THREE from 'three';
 import { buildPath } from '../../stages/city/route.js';
+import { PULL, RIVER_B } from './rules.js';
+const _l = new THREE.Vector3();
 import { Pilot } from '../../vehicles/pilot.js';
 import { RIVER_LEN, riverPoint, riverFrame, PIER } from '../../stages/city/plan.js';
 
@@ -116,13 +119,19 @@ export class His {
     if (this.state === 'lost') { this.crashing(v, dt); return; }
     const P = this.pilot;
     P.o.pace = this.pace * (this.duck > 0 ? 0.72 : 1) * (this.control < 1 ? 0.85 + 0.15 * this.control : 1);
+    // ([C3b, after the critic] getting away he drives for it: his pace whole
+    // again, the weave gone - the limp is in his top speed's climb, not in a
+    // road he cannot hold)
+    const ga = this.state === 'river' ? (this.getaway || 0) : 0;
+    if (ga > 0) P.o.pace += (this.pace - P.o.pace) * ga;
+    this.pullStep(v, dt);
     // [2nd owner] (the river road: the revolver out of my window in his
     // mirror, he weaves across his lane - a moving mark, aimed at, not a
     // target that drives straight at the end of my sights)
     const G0 = this.chase.gun;
     const seesGun = this.state === 'river' && G0 && G0.aimK > 0.5 && this.chase.gap() < 45;
     this.weave = Math.max(0, Math.min(1, (this.weave || 0) + (seesGun ? dt * 1.5 : -dt * 0.5)));
-    P.o.wander = this.duck > 0 ? 1.4 : Math.max(this.control < 0.6 ? 0.7 : 0, 1.15 * this.weave);
+    P.o.wander = (this.duck > 0 ? 1.4 : Math.max(this.control < 0.6 ? 0.7 : 0, 1.15 * this.weave)) * (1 - 0.8 * ga);
     P.o.wanderRate = this.duck > 0 ? 0.9 : this.weave > 0 ? 2.3 : 0.9;
     this.duck = Math.max(0, this.duck - dt);
     // [3rd owner] a round that lands: he jerks the wheel off the line it came
@@ -146,12 +155,78 @@ export class His {
     if (this.state === 'go' && P.done) this.toRiver();
     if (this.state === 'river' && P.done) this.atPier = true;
   }
+  // [C3b] he pulls away when I close (rules.js PULL): within PULL.near m
+  // behind him (in the streets, or on the river road while his car is
+  // whole) he floors it - the engine let out, the straights faster than my
+  // coupe can go - for PULL.t s, then back to his pace. On the river road his
+  // pace is his hold on the car's (hurt, slower than me), and the window's
+  // getaway (chase.js: from RIVER_B.warn s he speeds up and away).
+  pullStep(v, dt) {
+    const ch = this.chase, my = ch.my, P = this.pilot;
+    this.coolT = Math.max(0, (this.coolT || 0) - dt);
+    const whole = !(ch.hurt && ch.hurt());
+    // (he sees me in his mirror a moment before his foot goes down: a
+    // fast close gets the graze)
+    let close = false;
+    if (my) { const l = v.local(my.pos, _l); close = l.x < 1 && Math.hypot(l.x, l.z) < PULL.near; }
+    const can = this.state === 'go' || (this.state === 'river' && whole);
+    this.seenT = close && can ? (this.seenT || 0) + dt : 0;
+    if (this.burstT > 0) {
+      this.burstT -= dt;
+      if (!whole && this.state === 'river') this.burstT = 0;
+      // ([C3b, after the critic] still on him as it runs out: his foot stays down)
+      else if (close && this.burstT < 0.5) this.burstT = 0.5;
+    } else if (can && (this.coolT <= 0 || close) && this.seenT > PULL.react) this.burst(true);
+    const on = this.burstT > 0;
+    this.burstK = (this.burstK || 0) + ((on ? 1 : 0) - (this.burstK || 0)) * (1 - Math.exp(-dt * 6));
+    // [C3b, after the critic] the window's getaway: hurt or whole, he finds
+    // more than my coupe has (RIVER_B.away) - the limp and the smoke still on him
+    const away = this.state === 'river' ? (this.getaway || 0) : 0;
+    const S = v.spec, S0 = this.spec0 || (this.spec0 = { vmax: S.vmax, accel: S.accel, mass: S.mass });
+    const vTop = Math.max(PULL.vmax, RIVER_B.away + 1);
+    S.vmax = on ? PULL.vmax : S0.vmax + (vTop - S0.vmax) * away;
+    S.accel = on ? PULL.accel : S0.accel + (PULL.accel - S0.accel) * away;
+    // (a whole car is heavy to my nose: a graze jolts him, it never turns him
+    // off his line; hurt, he is his own weight - the shunt can move him)
+    S.mass = whole ? PULL.mass : S0.mass;
+    // (the path's speeds: its straights let out, its corners as they were)
+    this.boostPath(this.path, on || away > 0);
+    if (this.state === 'river') {
+      let vm = RIVER_B.cruise * (0.55 + 0.45 * this.control) * (this.fire ? 0.85 : 1);
+      if (away > 0) vm += (RIVER_B.away - vm) * away;
+      if (on) vm = Math.max(vm, PULL.vmax);
+      P.o.vmax = vm;
+    } else P.o.vmax = 30;
+  }
+  burst(force = false) {
+    if (this.state !== 'go' && this.state !== 'river') return;
+    if (this.state === 'river' && this.chase.hurt && this.chase.hurt()) return;
+    if ((!force && this.coolT > 0) || this.burstT > 0.5) return;
+    this.burstT = PULL.t; this.coolT = PULL.t + PULL.cool;
+    this.bursts = (this.bursts || 0) + 1;
+    const G = this.chase.game;
+    // (the tyres chirp on the wet as he lets the clutch in)
+    if (G) { G.sfx.play('tail_screech', this.car.pos, { dur: 0.35, k: 0.5 }, { ref: 5 }); G.emit('tail:burst', {}); }
+  }
+  boostPath(path, on) {
+    if (!path || !path.pts || !!path._boosted === on) return;
+    const pts = path.pts;
+    if (!path._vB) {
+      path._v0 = pts.map((p) => p.v);
+      const vB = pts.map((p) => Math.min(PULL.pathV, Math.sqrt(PULL.aLat / Math.max(p.k ?? 1e-4, 1e-4))));
+      for (let i = pts.length - 2; i >= 0; i--) vB[i] = Math.min(vB[i], Math.sqrt(vB[i + 1] ** 2 + 2 * PULL.aBrake * Math.max(0.01, pts[i + 1].s - pts[i].s)));
+      path._vB = vB;
+    }
+    const src = on ? path._vB : path._v0;
+    for (let i = 0; i < pts.length; i++) pts[i].v = src[i];
+    path._boosted = on;
+  }
   toRiver() {
     if (this.state === 'river') return;
     const pts = this.makeRiver();
     const path = buildPathFromPoly(pts);
     this.pilot.setPath(path, this.car);
-    this.pilot.o.vmax = 17;
+    this.pilot.o.vmax = RIVER_B.cruise;
     this.path = path;
     this.state = 'river';
     this.chase.onRiver && this.chase.onRiver();
@@ -174,14 +249,23 @@ export class His {
   crashing(v, dt) {
     const I = v.input;
     this.lostT += dt;
+    // ([C3b] a stab of throttle as the tail goes, then his feet off: the car
+    // slides on round and across the road on what it carries, into whatever
+    // is there, before he finds the brake - his foot kept down drove his
+    // nose, once round, into my door)
     I.steer = this.lostDir * Math.min(1, this.lostT * 2.2);
-    I.throttle = this.lostT < 0.9 ? 0.7 : 0;
-    I.brake = this.lostT > 1.3 ? 0.5 : 0;
-    I.handbrake = this.lostT < 0.6 ? 1 : 0;
+    I.throttle = this.lostT < 0.25 ? 0.8 : 0;
+    // ([C3b, after the critic] and late on, both feet down: he comes to rest
+    // on his own brakes, never frozen mid-slide)
+    I.brake = this.lostT > 4.5 ? 1 : this.lostT > 2.4 ? 0.35 : 0;
+    // (the handbrake's model is the one that lets a car go round on its
+    // momentum - Car.js holds a driven car's slip under 40 degrees)
+    I.handbrake = this.lostT < 1.8 || this.lostT > 4.5 ? 1 : 0;
     I.hold = 1;
   }
 }
 
 // a path from raw points (the river run)
 import { samplePath } from '../../stages/city/route.js';
-function buildPathFromPoly(pts) { return samplePath(pts, { vmax: 17, aLat: 6.2, aBrake: 5.2 }); }
+// ([C3b] its straights at PULL.pathV: his pace is the pilot's vmax, set each step)
+function buildPathFromPoly(pts) { return samplePath(pts, { vmax: PULL.pathV, aLat: 6.2, aBrake: 5.2 }); }

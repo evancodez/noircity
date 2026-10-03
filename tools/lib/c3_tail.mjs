@@ -69,13 +69,13 @@ export default async function tail({ js, turn, keyDown, keyUp, mouse, shot, log,
     // real time since the last move; the old hands by 0.8 a poll)
     const nowA = Date.now(), dtA = Math.min(0.15, (nowA - (rec._aimT || nowA)) / 1000); rec._aimT = nowA;
     const fA = a && a.gain ? 1 - Math.exp(-a.gain * dtA) : 0.8;
-    if (a && a.rmb && (Math.abs(a.dyaw) > 0.002 || Math.abs(a.dpitch) > 0.002)) {
+    if (a && (a.rmb || a.look) && (Math.abs(a.dyaw) > 0.002 || Math.abs(a.dpitch) > 0.002)) {
       const px = Math.round(Math.max(-70, Math.min(70, a.dyaw * fA / s.sens))), py = Math.round(Math.max(-50, Math.min(50, -a.dpitch * fA / s.sens)));
       if (px || py) await turn(px, py);
     }
     if (a && a.fire && Date.now() - lmbAt > 250) { lmbAt = Date.now(); await mouse('mousePressed', cx, cy, 'left'); await sleep(40); await mouse('mouseReleased', cx, cy, 'left'); }
     // the pier: E to get out
-    if (/get out/.test(s.prompt || '') && Date.now() - lastE > 1500) { lastE = Date.now(); await release(); await sleep(350); await keyDown('KeyE'); await sleep(70); await keyUp('KeyE'); }
+    if (/get out|get in/.test(s.prompt || '') && Date.now() - lastE > 1500) { lastE = Date.now(); await release(); await sleep(350); await keyDown('KeyE'); await sleep(70); await keyUp('KeyE'); }
     await sleep(16);
   }
   await release();

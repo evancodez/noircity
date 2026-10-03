@@ -213,7 +213,10 @@ export class Car {
     const FyF = -latF * curve(slipF / S.peakF);
     const FyR = -latR * curve(slipR / S.peakR);
     // (a car standing still has no side force: its wheels roll it nowhere)
-    const kin = clamp((2.2 - v) / 1.6, 0, 1);
+    // ([C3b] a car out of a man's hands - freeSlide, the tail's spin - is at
+    // a crawl only when it is slow over the ground: sideways at 10 m/s its
+    // forward speed is ~0, and this rule stopped it dead in a tenth of a second)
+    const kin = clamp((2.2 - (this.freeSlide ? Math.hypot(u, w) : v)) / 1.6, 0, 1);
     let dw = FyF * Math.cos(delta) + FyR - u * r;
     let dr = (S.a * FyF * Math.cos(delta) - S.b * FyR) / (S.k * S.k);
     // the steadying hand: off the handbrake, the yaw is drawn back toward
