@@ -1,0 +1,17 @@
+{
+  "about": "C2 probe: the street, me down behind the near car where the beat starts me (and risen with RMB): which men see me, which see me whole (the belly bare)?",
+  "url": "/?mute=1&c2rec=1&start=guns.street",
+  "size": [1440, 900],
+  "out": "shots/c2fix2/probe_street_whole",
+  "steps": [
+    { "wait": 2500 },
+    { "clickOn": "#title .opt[data-k=begin]", "taken": "G.state === 'playing' && G.scenes.beat === 'street'", "retries": 3 },
+    { "wait": 300 },
+    { "eval": "(() => { const out = []; for (let k = 0; k < 1; k++) for (const [h, ai] of G.ais) { const S = ai.brain.S, K = G.guns, Bd = K.playerBody(), e = new N.THREE.Vector3(h.pos.x, h.pos.y + 1.58 * h.scale, h.pos.z); out.push([ai.brain.kind, +h.pos.x.toFixed(1), +h.pos.z.toFixed(1), 'line', S.line, 'whole', S.whole, 'see belly', K.see(e, Bd.belly, 0.15), 'bare belly', K.bare(e, Bd.belly, 0.15), 'chest', K.see(e, Bd.chest, 0.15), 'head', K.see(e, Bd.head, 0.15)]); } return { me: [N.controller.pos.x, N.controller.pos.z, G.eye.y, N.controller.crouchK], men: out }; })()" },
+    { "mouse": "down", "button": "right" },
+    { "wait": 600 },
+    { "eval": "(() => { const out = []; for (const [h, ai] of G.ais) { const S = ai.brain.S, K = G.guns, Bd = K.playerBody(), e = new N.THREE.Vector3(h.pos.x, h.pos.y + 1.58 * h.scale, h.pos.z); out.push([ai.brain.kind, +h.pos.x.toFixed(1), +h.pos.z.toFixed(1), 'line', S.line, 'whole', S.whole, 'bare belly', K.bare(e, Bd.belly, 0.15), 'chest', K.see(e, Bd.chest, 0.15), 'head', K.see(e, Bd.head, 0.15)]); } return { risen: N.controller.riseK, over: N.controller.riseOver, eyeY: G.eye.y, belly: G.guns.playerBody().belly.y, men: out }; })()" },
+    { "shot": "risen" },
+    { "mouse": "up", "button": "right" }
+  ]
+}

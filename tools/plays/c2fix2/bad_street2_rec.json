@@ -1,0 +1,28 @@
+{
+ "about": "C2: bad_street2 with the copy of the critic's hands that logs each try (the kit's mercy: spared).",
+ "url": "/?mute=1",
+ "size": [
+  1440,
+  900
+ ],
+ "out": "shots/c2fix2/bad_some",
+ "steps": [
+  {
+   "wait": 1500
+  },
+  {
+   "drive": "tools/plays/c2fix2/hands_rec.mjs",
+   "style": "bad",
+   "tries": 4,
+   "timeout": 200000,
+   "beats": [
+    "street",
+    "street_rev",
+    "street",
+    "street_rev"
+   ],
+   "recTries": true,
+   "misses": false
+  }
+ ]
+}

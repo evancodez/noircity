@@ -1,0 +1,10 @@
+{
+  "about": "C2 after the critic's second look, the blocker: the door stood up on the room's floor beside the desk and traded (the critic's own open hands, goto: -3.6, -2.4), four sessions of three tries, the men recorded (?c2rec=1). Standing must lose most sessions.",
+  "url": "/?mute=1&c2rec=1",
+  "size": [1440, 900],
+  "out": "shots/c2fix2/door_floor_rec",
+  "steps": [
+    { "wait": 1500 },
+    { "drive": "tools/plays/c2fix2/hands_rec.mjs", "recTries": true, "misses": true, "query": "&c2rec=1", "style": "open", "goto": true, "tries": 3, "timeout": 120000, "beats": ["door", "door"] }
+  ]
+}

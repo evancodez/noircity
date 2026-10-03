@@ -1,0 +1,11 @@
+{
+  "about": "C2 after the critic's second look: the door stood up on the room's floor (the critic's open hands, goto), two sessions, the men's states logged - how does standing win it?",
+  "url": "/?mute=1&c2rec=1",
+  "size": [1440, 900],
+  "out": "shots/c2fix2/door_floor_probe",
+  "steps": [
+    { "wait": 1500 },
+    { "drive": "tools/plays/critic/c2/hands.mjs", "style": "open", "goto": true, "tries": 2, "timeout": 90000, "beats": ["door", "door"], "debug": true, "query": "&c2rec=1" },
+    { "eval": "(N.game.guns.events || []).filter((e) => e.what !== 'shot' && e.what !== 'miss').slice(-80).map((e) => JSON.stringify(e)).join('\\n')" }
+  ]
+}

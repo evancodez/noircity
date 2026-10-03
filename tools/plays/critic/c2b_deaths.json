@@ -1,0 +1,31 @@
+{
+  "about": "C2 critic, second look (ask 6): the good hands with a frame as each man falls and one as he lies (deathShots), his body's place logged through the fall (deathFilm): door, pin, rush, street.",
+  "url": "/?mute=1",
+  "size": [
+    1440,
+    900
+  ],
+  "out": "shots/critic/c2b/deaths",
+  "steps": [
+    {
+      "wait": 1500
+    },
+    {
+      "drive": "tools/plays/critic/c2/hands.mjs",
+      "style": "good",
+      "tries": 4,
+      "timeout": 150000,
+      "beats": [
+        "door",
+        "pin",
+        "rush",
+        "street"
+      ],
+      "deathShots": true,
+      "deathFilm": [
+        4,
+        250
+      ]
+    }
+  ]
+}

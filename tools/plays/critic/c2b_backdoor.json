@@ -1,0 +1,64 @@
+{
+ "about": "C2 critic, second look: what is behind the back door (BD)? In a contest the men unlock it and leave it open; the player can walk out. (The probe unlocks it in the ready beat - not real input - then walks out by real input.)",
+ "url": "/?mute=1&start=guns",
+ "size": [
+  1440,
+  900
+ ],
+ "out": "shots/critic/c2b/backdoor",
+ "steps": [
+  {
+   "wait": 2500
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]",
+   "taken": "G.state === 'playing' && N.controller.mode === 'gun'",
+   "retries": 3
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "eval": "(G.stage.part('house').doors.BD.locked = false, 'BD unlocked, as the men leave it')"
+  },
+  {
+   "drive": "tools/plays/critic/c2/seq.mjs",
+   "seq": [
+    "pitch 0",
+    "go -7.0 -5.5",
+    "go -2.4 -6.6",
+    "go -2.4 -4.1",
+    "face -1.2 -4.1",
+    "k KeyE",
+    "w 1500",
+    "go -0.4 -4.1",
+    "go -0.4 -7.0",
+    "e ['at', N.controller.pos.x.toFixed(2), N.controller.pos.z.toFixed(2), 'prompt', G.hud.promptShown]",
+    "face -0.4 -8.5",
+    "k KeyE",
+    "w 1500",
+    "e ['at', N.controller.pos.x.toFixed(2), N.controller.pos.z.toFixed(2), 'prompt', G.hud.promptShown]",
+    "s x01_BD_open",
+    "go -0.4 -9.3",
+    "e ['at', N.controller.pos.x.toFixed(2), N.controller.pos.z.toFixed(2), 'prompt', G.hud.promptShown]",
+    "s x02_outside_back",
+    "l 900 0 12",
+    "w 300",
+    "s x03_left",
+    "l 900 0 12",
+    "w 300",
+    "s x04_back_to_house",
+    "l 900 0 12",
+    "w 300",
+    "s x05_right",
+    "l 900 0 12",
+    "go -6.0 -9.4",
+    "e ['at', N.controller.pos.x.toFixed(2), N.controller.pos.z.toFixed(2), 'prompt', G.hud.promptShown]",
+    "s x06_west_along",
+    "go 6.0 -9.4",
+    "e ['at', N.controller.pos.x.toFixed(2), N.controller.pos.z.toFixed(2), 'prompt', G.hud.promptShown]",
+    "s x07_east_along"
+   ]
+  }
+ ]
+}

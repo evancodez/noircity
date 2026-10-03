@@ -158,6 +158,14 @@ export class Weapon {
     this.lastGunFwd = fwd.clone();
     const ej = this.vm.reproject(EJECT, 0.45, cam);
     G.fx.casings.eject(ej, right, up, fwd);
+    // [C2] in a gun kit's encounter the round is the kit's: from the muzzle,
+    // through what is thin, into what is solid (src/guns/Guns.js)
+    if (G.guns && G.guns.active && !forceDir) {
+      const hit = G.guns.playerRound(origin, dir.clone(), { name: 'tommy', chew: 1, steady: 1, range: WEAPON.range,
+        dmg: (hh) => { let d = TORSO.has(hh.joint) ? WEAPON.dmgTorso : WEAPON.dmgLimb; if (hh.t > 30) d *= Math.max(0.7, 1 - (hh.t - 30) * 0.01); return d; } });
+      G.emit('shot', { weapon: 'tommy', hit });
+      return;
+    }
     // the shot
     const hood = G.rays.raycastHoods(origin, dir, WEAPON.range, G.world.hoods.list);
     const wall = G.rays.raycast(origin, dir, hood ? hood.t : WEAPON.range);

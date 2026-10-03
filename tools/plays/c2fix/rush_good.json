@@ -1,0 +1,6 @@
+{
+  "about": "C2 after the critic: the rush by the critic's good hands, three times - how long does it take once the heavy is down (the last man must come and find me), and what does the line say",
+  "url": "/?mute=1", "size": [1440, 900], "out": "shots/c2fix/rush_good",
+  "steps": [ { "wait": 1500 }, { "drive": "tools/plays/c2fix/hands_rec.mjs", "style": "good", "tries": 2, "beats": ["rush", "rush", "rush"], "timeout": 100000, "query": "&c2rec=1" },
+    { "eval": "G.guns.events.slice(-60).filter((e) => e.what !== 'shot' && e.what !== 'miss').map((e) => e.what + '@' + (+e.t).toFixed(1) + (e.kind ? ':' + e.kind : '') + (e.at ? ':' + e.at : '')).join(' ')" } ]
+}

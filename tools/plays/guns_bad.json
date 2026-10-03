@@ -1,0 +1,52 @@
+{
+ "about": "[C2] The gun kit's proof 2 (WAVE_C \u00a77, the brief's own: 'stand and trade shots in the open'): a player who stands and trades shots with the men - where the beat puts him, and in the street out on the pavement between the cars - sees a man 0.45 .. 0.8 s after he shows (again each time he shows again), turns onto him at a hand's pace with a wide error, fires, never gets down, reloads standing - LOSES most contests, each loss a fall with its reason, back at the beat (never a stalemate). node tools/play.mjs tools/plays/guns_bad.json",
+ "url": "/?mute=1&start=guns.door",
+ "size": [
+  1280,
+  800
+ ],
+ "out": "shots/play/guns_bad",
+ "steps": [
+  {
+   "name": "the title, BEGIN at the test bed"
+  },
+  {
+   "until": "G.state === 'title' && !!document.querySelector('#title .opt[data-k=begin]')",
+   "timeout": 60000
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]",
+   "taken": "G.scenes.current && G.scenes.current.id === 'guns'",
+   "retries": 4
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'guns' && document.pointerLockElement === N.renderer.domElement",
+   "timeout": 30000
+  },
+  {
+   "name": "every contest, played standing in the open"
+  },
+  {
+   "drive": "tools/lib/c2_guns.mjs",
+   "profile": "bad",
+   "tries": 1,
+   "beatTimeout": 120,
+   "beats": [
+    "door",
+    "two_ways",
+    "pin",
+    "rush",
+    "street",
+    "street_rev"
+   ],
+   "check": "D.lost >= 4 && D.falls.every((w) => w && w !== 'timeout')",
+   "label": "standing and trading shots in the open loses most contests, each by a fall with its reason"
+  },
+  {
+   "eval": "(N.game.guns.events || []).filter((e) => e.what === 'down' || e.what === 'flank').map((e) => e.what + ' ' + (e.why || e.at))"
+  }
+ ]
+}

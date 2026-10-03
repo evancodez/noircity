@@ -1,0 +1,11 @@
+{
+  "about": "C2 after the critic: the open hands on the door, debug (states every 1.5 s, frames every 3 s), then the kit's record",
+  "url": "/?mute=1",
+  "size": [1440, 900],
+  "out": "shots/c2fix/open_door_dbg",
+  "steps": [
+    { "wait": 1500 },
+    { "drive": "tools/plays/critic/c2/hands.mjs", "style": "open", "tries": 1, "timeout": 60000, "beats": ["door"], "debug": true },
+    { "eval": "JSON.stringify(G.guns.events.filter(e => e.what !== 'shot' || true).slice(-60).map(e => [e.t, e.what, e.kind || e.name || e.why || '', e.at || e.pose || '', e.from || e.dmg || '']))" }
+  ]
+}

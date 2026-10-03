@@ -1,0 +1,11 @@
+{
+  "about": "C2 after the critic: the door beat - the critic's open hands three sessions, then the critic's good hands twice",
+  "url": "/?mute=1",
+  "size": [1440, 900],
+  "out": "shots/c2fix/door_og",
+  "steps": [
+    { "wait": 1500 },
+    { "drive": "tools/plays/c2fix/hands_rec.mjs", "style": "open", "tries": 3, "timeout": 60000, "beats": ["door", "door", "door"], "query": "&c2rec=1" },
+    { "drive": "tools/plays/c2fix/hands_rec.mjs", "style": "good", "tries": 3, "timeout": 90000, "beats": ["door", "door"], "query": "&c2rec=1" }
+  ]
+}

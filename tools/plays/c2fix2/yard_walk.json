@@ -1,0 +1,47 @@
+{
+  "about": "C2 after the critic's second look: behind the back door (BD) - the yard, its wall, the neighbours either side; walked by real input (BD unlocked by eval, as the men leave it): out, south into the wall, west and east along the back (blocks), then the street's pavement west and east past the house's ends (blocks). Every 'go' that stops is logged with where.",
+  "url": "/?mute=1&start=guns",
+  "size": [1440, 900],
+  "out": "shots/c2fix2/yard_walk",
+  "steps": [
+    { "wait": 2500 },
+    { "clickOn": "#title .opt[data-k=begin]", "taken": "G.state === 'playing' && N.controller.mode === 'gun'", "retries": 3 },
+    { "wait": 1500 },
+    { "eval": "(G.stage.part('house').doors.BD.locked = false, 'BD unlocked, as the men leave it')" },
+    { "drive": "tools/plays/critic/c2/seq.mjs", "seq": [
+      "pitch 0",
+      "go -7.0 -5.5", "go -2.4 -6.6", "go -2.4 -4.1", "face -1.2 -4.1", "k KeyE", "w 1500",
+      "go -0.4 -4.1", "go -0.4 -7.0", "face -0.4 -8.5", "k KeyE", "w 1500",
+      "go -0.4 -9.6",
+      "e ['out', N.controller.pos.x.toFixed(2), N.controller.pos.z.toFixed(2)]",
+      "face -0.4 -14", "w 300", "s y01_south_wall",
+      "face -12 -10", "w 300", "s y02_west",
+      "face 12 -10", "w 300", "s y03_east",
+      "face -0.4 -6", "w 300", "s y04_back_to_house",
+      "go -0.4 -13.5 6000",
+      "e ['south stop', N.controller.pos.x.toFixed(2), N.controller.pos.z.toFixed(2)]",
+      "go -12 -10 8000",
+      "e ['west stop', N.controller.pos.x.toFixed(2), N.controller.pos.z.toFixed(2)]",
+      "s y05_west_end",
+      "go 12 -10 14000",
+      "e ['east stop', N.controller.pos.x.toFixed(2), N.controller.pos.z.toFixed(2)]",
+      "s y06_east_end"
+    ] },
+    { "eval": "(G.scenes.go('guns', { beat: 'street', fade: 'cut', card: false }), 'to the street')" },
+    { "wait": 2500 },
+    { "drive": "tools/plays/critic/c2/seq.mjs", "seq": [
+      "k KeyC", "w 400", "pitch 0",
+      "go -5.0 7.0", "go -16 7.0 12000",
+      "e ['pavement west', N.controller.pos.x.toFixed(2), N.controller.pos.z.toFixed(2)]",
+      "go -16 2 6000",
+      "e ['north stop (west)', N.controller.pos.x.toFixed(2), N.controller.pos.z.toFixed(2)]",
+      "face -10 6.3", "w 300", "s y07_street_west_block",
+      "go 16 7.0 20000",
+      "e ['pavement east', N.controller.pos.x.toFixed(2), N.controller.pos.z.toFixed(2)]",
+      "go 16 2 6000",
+      "e ['north stop (east)', N.controller.pos.x.toFixed(2), N.controller.pos.z.toFixed(2)]",
+      "face 2 12", "w 300", "s y08_street_from_east",
+      "face -3 3", "w 300", "s y09_house_and_blocks"
+    ] }
+  ]
+}

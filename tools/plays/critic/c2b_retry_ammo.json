@@ -1,0 +1,19 @@
+{
+  "about": "C2 critic, second look: the retry's gun - fire four rounds into the wall in two_ways, stand there until the fall, and read the cylinder when the beat comes back.",
+  "url": "/?mute=1&start=guns.two_ways",
+  "size": [1440, 900],
+  "out": "shots/critic/c2b/retry_ammo",
+  "steps": [
+    { "wait": 2500 },
+    { "clickOn": "#title .opt[data-k=begin]", "taken": "G.state === 'playing' && G.scenes.beat === 'two_ways'", "retries": 3 },
+    { "wait": 1500 },
+    { "drive": "tools/plays/critic/c2/seq.mjs", "seq": [
+      "st", "c left", "w 400", "c left", "w 400", "c left", "w 400", "c left", "w 500", "st",
+      "watch 14000"
+    ] },
+    { "until": "!G.failing && G.health.hp > 99 && G.fails() >= 1", "timeout": 20000 },
+    { "wait": 800 },
+    { "eval": "({ ammo: G.player.weapons.active.ammo, fails: G.fails(), beat: G.scenes.beat, hp: G.health.hp })" },
+    { "shot": "retry_cylinder" }
+  ]
+}

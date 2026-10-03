@@ -1,0 +1,40 @@
+{
+ "about": "C2 critic: why does E not open door A1 from a step in front of it, looking at it? The interacts the game holds there, their place, range and angle.",
+ "url": "/?mute=1&start=guns",
+ "size": [
+  1440,
+  900
+ ],
+ "out": "shots/critic/c2/door_probe",
+ "steps": [
+  {
+   "wait": 2500
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]",
+   "taken": "G.state === 'playing' && N.controller.mode === 'gun'",
+   "retries": 3
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "drive": "tools/plays/critic/c2/seq.mjs",
+   "seq": [
+    "pitch 0",
+    "go -5.9 -5.3",
+    "go -3.0 -5.3",
+    "go -2.2 -4.1",
+    "face -1.2 -4.1",
+    "pitch -0.15",
+    "w 400",
+    "e ({ eye: [G.eye.x, G.eye.y, G.eye.z].map((v) => +v.toFixed(2)), cam: [N.camera.position.x, N.camera.position.y, N.camera.position.z].map((v) => +v.toFixed(2)), prompt: G.hud.promptShown, scenePrompting: !!G.scenes.prompting, list: G.interact.list.map((h) => { const p = G.interact.where(h, new N.THREE.Vector3()); return { id: h.id, scope: h.scope, at: p && [p.x, p.y, p.z].map((v) => +v.toFixed(2)), range: h.range, cone: h.cone, when: h.when ? h.when() : null }; }) })",
+    "e ({ A1: (() => { const d = G.stage.part('house').doors.A1; return { centre: [d.centre.x, d.centre.y, d.centre.z].map((v) => +v.toFixed(2)), shut: d.shut }; })(), current: G.interact.current && G.interact.current.id, state: G.state, inspect: G.inspect.active, puzzles: G.puzzles.active })",
+    "e (() => { const cam = N.camera; const f = new N.THREE.Vector3(0, 0, -1).transformDirection(cam.matrixWorld); const p = new N.THREE.Vector3(-1.2, 1.1, -4.1).sub(cam.position); const dd = p.length(); return { f: [f.x, f.y, f.z].map((v) => +v.toFixed(3)), d: +dd.toFixed(2), ang: +Math.acos(p.dot(f) / dd).toFixed(3), yaw: N.controller.yaw.toFixed(3), pitch: N.controller.pitch.toFixed(3), camIsGame: N.camera === G.camera, gcam: [G.camera.position.x, G.camera.position.y, G.camera.position.z].map((v) => +v.toFixed(2)) }; })()",
+    "w 500",
+    "e ({ current: G.interact.current && G.interact.current.id, prompt: G.hud.promptShown, promptText: G.hud.promptText, el: G.hud.el.prompt.style.display })",
+    "s p01"
+   ]
+  }
+ ]
+}

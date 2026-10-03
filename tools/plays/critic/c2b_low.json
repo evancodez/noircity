@@ -1,0 +1,28 @@
+{
+  "about": "C2 critic, second look: down (C) and RMB held on open floor, nothing in front (the 'low' hands, goto) - does crouching win where standing loses, without cover?",
+  "url": "/?mute=1",
+  "size": [
+    1440,
+    900
+  ],
+  "out": "shots/critic/c2b/low",
+  "steps": [
+    {
+      "wait": 1500
+    },
+    {
+      "drive": "tools/plays/critic/c2/hands.mjs",
+      "style": "low",
+      "goto": true,
+      "tries": 3,
+      "timeout": 120000,
+      "beats": [
+        "door",
+        "two_ways",
+        "pin",
+        "rush",
+        "street"
+      ]
+    }
+  ]
+}

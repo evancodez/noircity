@@ -1,0 +1,15 @@
+{
+  "about": "C2 critic, second look: the first-timer from the title, hands off at first: what does the screen say to do?",
+  "url": "/?mute=1&start=guns",
+  "size": [1440, 900],
+  "out": "shots/critic/c2b/first",
+  "steps": [
+    { "wait": 2500 },
+    { "shot": "f00_title" },
+    { "clickOn": "#title .opt[data-k=begin]", "taken": "G.state === 'playing' || !!G.scenes.current", "retries": 3 },
+    { "drive": "tools/plays/critic/c2/seq.mjs", "seq": [
+      "watch 6000 1500 f01_",
+      "st"
+    ] }
+  ]
+}
