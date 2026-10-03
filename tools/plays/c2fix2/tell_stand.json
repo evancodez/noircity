@@ -1,0 +1,10 @@
+{
+  "about": "C2 after the critic's second look (minor 8): the door beat stood in, in slow time (speed 0.25, ?c2pose=stand: up behind the desk, hands off) - the men come with guns up; where is the tell's star drawn? (the critic's film driver)",
+  "url": "/?mute=1",
+  "size": [1440, 900],
+  "out": "shots/c2fix2/tell_stand",
+  "steps": [
+    { "wait": 1500 },
+    { "drive": "tools/plays/critic/c2/film.mjs", "url": "/?mute=1&speed=0.25&c2pose=stand&start=guns.door", "from": "[...G.ais.values()].some((a) => (a.brain.S.state === 'aim' || a.brain.S.state === 'out') && a.h.pos.z > -6)", "n": 10, "every": 120, "tag": "door", "timeout": 120000 }
+  ]
+}

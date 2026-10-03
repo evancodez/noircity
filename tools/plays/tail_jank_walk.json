@@ -1,0 +1,144 @@
+{
+ "about": "C3b the jank walk on foot by his wreck, by real input: out of the car (E), then walk into his car's middle, into the crouched man, into my own car's middle, out to the river's rail and along the road; every 100 ms the eye is checked against the two cars' boxes and the man (nothing passes through anything). Then back in by E at the door. NOIR_PORT=5343 node tools/play.mjs tools/plays/tail_jank_walk.json",
+ "url": "/?mute=1&start=tail.wreck",
+ "size": [
+  1280,
+  800
+ ],
+ "out": "shots/c3b/jank",
+ "steps": [
+  {
+   "until": "G.state === 'title' && !document.getElementById('title').classList.contains('hidden') && !!document.querySelector('#title .opt[data-k=begin]')",
+   "timeout": 40000
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]",
+   "taken": "G.state === 'playing' && document.pointerLockElement === N.renderer.domElement",
+   "retries": 4,
+   "every": 4000
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'tail' && !!G.scenes.ctx.flags.chase && !!G.scenes.ctx.flags.chase.man && G.hud.promptShown.includes('get out')",
+   "timeout": 45000
+  },
+  {
+   "key": "KeyE"
+  },
+  {
+   "wait": 900
+  },
+  {
+   "eval": "(() => { const C = G.scenes.ctx.flags.chase; window.__jw = { inside: [], n: 0, minMan: 9 }; setInterval(() => { const C2 = G.scenes.ctx && G.scenes.ctx.flags.chase; if (!C2 || C2.phase !== 'out') return; const e = G.controller.pos; window.__jw.n++; for (const v of [C2.my, C2.his]) { const l = v.local(e); if (Math.abs(l.x) < v.spec.halfL && Math.abs(l.z) < v.spec.halfW) window.__jw.inside.push(v.kind + ' ' + l.x.toFixed(2) + ',' + l.z.toFixed(2)); } if (C2.manAt) window.__jw.minMan = Math.min(window.__jw.minMan, Math.hypot(e.x - C2.manAt.x, e.z - C2.manAt.z)); }, 100); return JSON.stringify({ my: [C.my.pos.x, C.my.pos.z], his: [C.his.pos.x, C.his.pos.z], man: C.manAt, eye: [G.controller.pos.x, G.controller.pos.z] }); })()"
+  },
+  {
+   "look": "(() => { const C = G.scenes.ctx.flags.chase, K = G.controller, t = ([C.his.pos.x, C.his.pos.z]); const want = Math.atan2(-(t[0] - K.pos.x), -(t[1] - K.pos.z)); const dy = Math.atan2(Math.sin(want - K.yaw), Math.cos(want - K.yaw)); return [Math.round(-dy / K.sensitivity), 0]; })()",
+   "steps": 6
+  },
+  {
+   "wait": 300
+  },
+  {
+   "down": "KeyW"
+  },
+  {
+   "wait": 3500
+  },
+  {
+   "shot": "j01_into_his_car"
+  },
+  {
+   "up": "KeyW"
+  },
+  {
+   "look": "(() => { const C = G.scenes.ctx.flags.chase, K = G.controller, t = ([C.manAt.x, C.manAt.z]); const want = Math.atan2(-(t[0] - K.pos.x), -(t[1] - K.pos.z)); const dy = Math.atan2(Math.sin(want - K.yaw), Math.cos(want - K.yaw)); return [Math.round(-dy / K.sensitivity), 0]; })()",
+   "steps": 6
+  },
+  {
+   "wait": 300
+  },
+  {
+   "down": "KeyW"
+  },
+  {
+   "wait": 3500
+  },
+  {
+   "shot": "j02_into_him"
+  },
+  {
+   "up": "KeyW"
+  },
+  {
+   "look": "(() => { const C = G.scenes.ctx.flags.chase, K = G.controller, t = ([C.my.pos.x, C.my.pos.z]); const want = Math.atan2(-(t[0] - K.pos.x), -(t[1] - K.pos.z)); const dy = Math.atan2(Math.sin(want - K.yaw), Math.cos(want - K.yaw)); return [Math.round(-dy / K.sensitivity), 0]; })()",
+   "steps": 6
+  },
+  {
+   "wait": 300
+  },
+  {
+   "down": "KeyW"
+  },
+  {
+   "wait": 4500
+  },
+  {
+   "shot": "j03_into_my_car"
+  },
+  {
+   "up": "KeyW"
+  },
+  {
+   "look": "(() => { const C = G.scenes.ctx.flags.chase, K = G.controller, t = ((() => { const p = C.his.world(0, -14); return [p.x, p.z]; })()); const want = Math.atan2(-(t[0] - K.pos.x), -(t[1] - K.pos.z)); const dy = Math.atan2(Math.sin(want - K.yaw), Math.cos(want - K.yaw)); return [Math.round(-dy / K.sensitivity), 0]; })()",
+   "steps": 6
+  },
+  {
+   "wait": 300
+  },
+  {
+   "down": "KeyW"
+  },
+  {
+   "wait": 4500
+  },
+  {
+   "up": "KeyW"
+  },
+  {
+   "look": "(() => { const C = G.scenes.ctx.flags.chase, K = G.controller, t = ((() => { const p = C.his.world(0, 14); return [p.x, p.z]; })()); const want = Math.atan2(-(t[0] - K.pos.x), -(t[1] - K.pos.z)); const dy = Math.atan2(Math.sin(want - K.yaw), Math.cos(want - K.yaw)); return [Math.round(-dy / K.sensitivity), 0]; })()",
+   "steps": 6
+  },
+  {
+   "wait": 300
+  },
+  {
+   "down": "KeyW"
+  },
+  {
+   "wait": 6000
+  },
+  {
+   "shot": "j04_the_road"
+  },
+  {
+   "up": "KeyW"
+  },
+  {
+   "eval": "JSON.stringify({ jw: window.__jw, eye: [G.controller.pos.x, G.controller.pos.z], lineSaid: G.scenes.ctx.flags.chase.lineSaid })"
+  },
+  {
+   "expect": "window.__jw.n > 50 && window.__jw.inside.length === 0",
+   "label": "never inside either car"
+  },
+  {
+   "expect": "window.__jw.minMan > 0.6",
+   "label": "never through the man"
+  },
+  {
+   "expect": "G.scenes.ctx.flags.chase.lineSaid",
+   "label": "his line came (walked up to, or passed)"
+  }
+ ]
+}

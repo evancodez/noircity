@@ -1,0 +1,27 @@
+{
+  "about": "C2 after the critic: the street as it is arrived at from the rush (the scene's own go, from the lobby): no 'They have your angle' while nobody fires; then the same street cold",
+  "url": "/?mute=1&start=guns.rush",
+  "size": [1440, 900],
+  "out": "shots/c2fix/street_arrive",
+  "steps": [
+    { "wait": 2500 },
+    { "clickOn": "#title .opt[data-k=begin]", "taken": "G.state === 'playing' && G.scenes.beat === 'rush'", "retries": 3 },
+    { "wait": 1200 },
+    { "eval": "G.scenes.go('guns', { beat: 'street', fade: 'black', card: false }), 'go'" },
+    { "drive": "tools/plays/critic/c2/seq.mjs", "seq": [
+      "w 700", "s a00",
+      "e G.scenes.beat + ' t=' + G.time.toFixed(2) + ' warn=' + G.hud.kit.warnText + ' obj=' + G.hud.kit.objectiveText + ' | ' + [...G.ais.values()].map((a) => a.brain.kind + ':' + a.brain.S.state + (a.brain.S.line ? ':LINE' : '') + (a.brain.S.low ? ':low' : ':UP')).join(' ')",
+      "w 400", "s a01",
+      "e G.scenes.beat + ' t=' + G.time.toFixed(2) + ' warn=' + G.hud.kit.warnText + ' obj=' + G.hud.kit.objectiveText + ' | ' + [...G.ais.values()].map((a) => a.brain.kind + ':' + a.brain.S.state + (a.brain.S.line ? ':LINE' : '') + (a.brain.S.low ? ':low' : ':UP')).join(' ')",
+      "w 400",
+      "e G.scenes.beat + ' t=' + G.time.toFixed(2) + ' warn=' + G.hud.kit.warnText + ' obj=' + G.hud.kit.objectiveText + ' | ' + [...G.ais.values()].map((a) => a.brain.kind + ':' + a.brain.S.state + (a.brain.S.line ? ':LINE' : '') + (a.brain.S.low ? ':low' : ':UP')).join(' ')",
+      "w 400", "s a02",
+      "e G.scenes.beat + ' t=' + G.time.toFixed(2) + ' warn=' + G.hud.kit.warnText + ' obj=' + G.hud.kit.objectiveText",
+      "w 600",
+      "e G.scenes.beat + ' t=' + G.time.toFixed(2) + ' warn=' + G.hud.kit.warnText + ' obj=' + G.hud.kit.objectiveText",
+      "w 1000", "s a03",
+      "e G.scenes.beat + ' t=' + G.time.toFixed(2) + ' warn=' + G.hud.kit.warnText + ' obj=' + G.hud.kit.objectiveText",
+      "e G.guns.events.filter((e) => e.t > G.guns.events.filter((x) => x.what === 'begin').pop().t).map((e) => e.what + '@' + (+e.t).toFixed(2) + (e.kind ? ':' + e.kind : '')).join(' ')"
+    ] }
+  ]
+}

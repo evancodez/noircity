@@ -1,0 +1,10 @@
+{
+  "about": "C2 after the critic's second look: idle_stand with the men's brains recorded (one beat at a time, opts.beats).",
+  "url": "/?mute=1",
+  "size": [1440, 900],
+  "out": "shots/c2fix2/idle_stand_rec",
+  "steps": [
+    { "wait": 1500 },
+    { "drive": "tools/plays/c2fix2/idle_stand.mjs", "dur": 45000, "stand": true, "beats": ["door"], "query": "&c2rec=1", "rec": true }
+  ]
+}

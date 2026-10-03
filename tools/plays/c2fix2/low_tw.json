@@ -1,0 +1,28 @@
+{
+ "about": "C2 after the critic's second look: the critic's low hands (down with RMB on the room's open floor, tools/plays/critic/c2/hands.mjs unchanged) in two_ways and the door, the men recorded at a timeout (the copy with records) - the stand-off seen once in two_ways.",
+ "url": "/?mute=1&c2rec=1",
+ "size": [
+  1440,
+  900
+ ],
+ "out": "shots/c2fix2/low_tw",
+ "steps": [
+  {
+   "wait": 1500
+  },
+  {
+   "drive": "tools/plays/c2fix2/hands_rec.mjs",
+   "recTries": true,
+   "query": "&c2rec=1",
+   "style": "low",
+   "goto": true,
+   "tries": 3,
+   "timeout": 90000,
+   "beats": [
+    "two_ways",
+    "two_ways"
+   ],
+   "recRows": 12
+  }
+ ]
+}

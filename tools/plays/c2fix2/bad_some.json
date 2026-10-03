@@ -1,0 +1,10 @@
+{
+  "about": "C2 after the critic's second look: the critic's clumsy hands (tools/plays/critic/c2/hands.mjs, unchanged) on some contests (opts.beats), five tries each.",
+  "url": "/?mute=1",
+  "size": [1440, 900],
+  "out": "shots/c2fix2/bad_some",
+  "steps": [
+    { "wait": 1500 },
+    { "drive": "tools/plays/critic/c2/hands.mjs", "style": "bad", "tries": 5, "timeout": 200000, "beats": ["street", "street_rev"] }
+  ]
+}

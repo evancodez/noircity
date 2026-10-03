@@ -1,0 +1,10 @@
+{
+  "about": "C2 critic: the pin stood up and traded (the open hands), a frame each second: what does winning the pin standing look like?",
+  "url": "/?mute=1",
+  "size": [1440, 900],
+  "out": "shots/critic/c2/pin_stand",
+  "steps": [
+    { "wait": 1500 },
+    { "drive": "tools/plays/critic/c2/hands.mjs", "style": "open", "tries": 3, "timeout": 90000, "beats": ["pin", "pin"], "debug": true }
+  ]
+}

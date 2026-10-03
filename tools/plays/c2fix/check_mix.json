@@ -1,0 +1,7 @@
+{
+  "about": "C2 after the critic: the critic's open hands on the pin (three sessions), the critic's good hands on the revolver street (two sessions)",
+  "url": "/?mute=1", "size": [1440, 900], "out": "shots/c2fix/mix",
+  "steps": [ { "wait": 1500 },
+    { "drive": "tools/plays/c2fix/hands_rec.mjs", "style": "open", "tries": 3, "beats": ["pin", "door"], "timeout": 120000 },
+    { "drive": "tools/plays/c2fix/hands_rec.mjs", "style": "good", "tries": 3, "beats": ["street_rev", "street_rev", "street"], "timeout": 150000, "query": "&c2rec=1", "recFalls": true } ]
+}

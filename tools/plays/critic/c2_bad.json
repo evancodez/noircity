@@ -1,0 +1,10 @@
+{
+  "about": "C2 critic, proof (b) bad: every contest from the title, a clumsy first-timer (slow reactions, a wide hand, up too long, ducks when hit half the time, reads half the warnings, a wrong key now and then) who reads each fall's words and does that one thing better. Fails some, gets through on a second or third try, never stuck?",
+  "url": "/?mute=1",
+  "size": [1440, 900],
+  "out": "shots/critic/c2/bad",
+  "steps": [
+    { "wait": 1500 },
+    { "drive": "tools/plays/critic/c2/hands.mjs", "style": "bad", "tries": 5, "timeout": 200000 }
+  ]
+}

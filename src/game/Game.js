@@ -20,6 +20,7 @@ import { Exposure } from './Exposure.js';
 import { Save } from './Save.js';
 import { Music } from '../audio/Music.js';
 import { Vehicles } from '../vehicles/index.js';
+import { Bodies } from '../guns/Bodies.js';   // [C2]
 import { Stills } from './Stills.js';
 
 // The game: the player (Controller + Tommy gun + Health), the Hoods' AI,
@@ -138,6 +139,7 @@ export class Game {
     this.rng = world.rng.fork(8080);
     this.time = 0;
     this.scripts = [];        // staged shots: (t, dt) => void, run each step
+    this.bodies = new Bodies(this);   // [C2] solid bodies for any figure (docs/story/seams/GUNS.md §6)
     this.lastHoodShot = new Map();   // hood -> time of his last shot (autopilot)
     // the viewmodel is drawn by the pipeline's viewmodel pass; every light
     // must also be visible to its camera (three filters lights by layer)
@@ -663,7 +665,10 @@ export class Game {
     h.flinch(dir);
     this.sfx.grunt(h.pos.clone().setY(h.pos.y + 1.5));
     // a heavy torso hit can knock a standing man back a step
-    const stag = !head && dmg >= WEAPON.dmgTorso && this.rng.chance(0.3) && (h.state === 'idle' || h.state === 'aim');
+    // [C2] (not a gun kit's pistol man or Tommy gunner: his brain takes the hit - the flinch, his aim
+    // spoiled - a stagger in three hits would win the exchange for a man standing in the open; the
+    // heavy staggers as ever (the brief's); the rng is drawn as before)
+    const stag = !head && dmg >= WEAPON.dmgTorso && this.rng.chance(0.3) && (h.state === 'idle' || h.state === 'aim') && !(ai && ai.brain && ai.brain.kind && ai.brain.kind !== 'rusher');
     if (stag) h.stagger();
     if (ai) ai.onHit(dir, stag);
   }
@@ -682,6 +687,11 @@ export class Game {
     const from = Math.atan2(-dir.x, -dir.z);
     let d = from - h.yaw; d = Math.atan2(Math.sin(d), Math.cos(d));
     h.yaw += Math.max(-0.25, Math.min(0.25, d * 0.3));
+    // [C2] a brain may pick the fall by what is beside him (the gun kit's:
+    // a slump down a wall, over his cover, in a doorway - src/guns/deaths.js)
+    const ai0 = this.ais.get(h);
+    const pick = ai0 && ai0.brain && ai0.brain.deathKind ? ai0.brain.deathKind(dir, head, kind) : null;
+    if (pick) { kind = pick.kind; if (pick.yaw != null) h.yaw = pick.yaw; }
     h.die(kind);
     // (a head shot drops him without a sound)
     if (!head) this.sfx.death(h.pos.clone().setY(h.pos.y + 1.5));
@@ -697,6 +707,7 @@ export class Game {
     if (i >= 0) cs.splice(i, 1);
     this.fx.bloodFx.pool(h, kind === 'deathKnees' ? 1.25 : 0.95);
     this.corpses.push(h);
+    if (pick) this.emit('hood:down', { hood: h, kind, dir, head, pick });   // [C2]
     while (this.corpses.length > GAME.corpseCap) this.removeHood(this.corpses.shift());
   }
 
@@ -788,6 +799,7 @@ export class Game {
   // ---- per step ------------------------------------------------------------------
   pre(dt, t) {
     this.time = t;
+    this.bodies.update();   // [C2] (the circles follow their owners; none: nothing)
     for (const f of this.scripts) f(t, dt);
     const C = this.controller;
     if (this.autopilot && this.state !== 'dead') this.autopilot.update(dt);

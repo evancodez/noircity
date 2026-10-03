@@ -1,0 +1,217 @@
+{
+ "about": "[C2] The jank walk (WAVE_C \u00a77.5) on the test bed, by real input (W held into each thing): the desk on its side, a living man standing (held still), a dead man on the floor, a shut door, a locked door, a wall. Nothing passes through anything: after each walk the eye is outside what it walked into. And the lean: down beside a doorway with the wall before me (too tall to rise over), RMB leans the eye out round the jamb, and back. node tools/play.mjs tools/plays/guns_walk.json",
+ "url": "/?mute=1&start=guns.door",
+ "size": [
+  1280,
+  800
+ ],
+ "out": "shots/play/guns_walk",
+ "steps": [
+  {
+   "name": "the title, BEGIN at the test bed"
+  },
+  {
+   "until": "G.state === 'title' && !!document.querySelector('#title .opt[data-k=begin]')",
+   "timeout": 60000
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]",
+   "taken": "G.scenes.current && G.scenes.current.id === 'guns'",
+   "retries": 4
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'guns' && G.scenes.beat === 'door' && !G.scenes.trans && G.scenes.fadeK < 0.1",
+   "timeout": 30000
+  },
+  {
+   "name": "the room: the men gone; one standing held still, one dead on the floor; every door shut, the corridor's locked"
+  },
+  {
+   "eval": "(() => { for (const h of [...G.world.hoods.list]) G.removeHood(h); const house = G.stage.part('house'); for (const d of Object.values(house.doors)) { d.set(0); d.locked = false; } house.doors.BD.locked = true; G.guns.covers.rebuild(); const hold = (h) => { const ai = G.ais.get(h); ai.brain.S.state = 'watch'; }; window.MAN = G.guns.spawn({ kind: 'pistol', at: { x: -3.0, z: -1.6 }, wait: 1e9, yaw: 0 }); hold(window.MAN); window.DEAD = G.guns.spawn({ kind: 'pistol', at: { x: -3.2, z: -6.2 }, wait: 1e9 }); hold(window.DEAD); return 'ok'; })()"
+  },
+  {
+   "wait": 400
+  },
+  {
+   "eval": "(() => { const h = window.DEAD; G.killHood(h, new N.THREE.Vector3(0, 0, -1), false, 'deathKnees'); return 'ok'; })()"
+  },
+  {
+   "wait": 2200
+  },
+  {
+   "eval": "G.guns.corpses.length"
+  },
+  {
+   "name": "into the desk on its side (from behind it, toward the door)"
+  },
+  {
+   "eval": "(N.controller.setPose(-5.6, -3.9, -Math.PI / 2, -0.1), N.controller.setMode('gun', { crouch: false }), 'ok')"
+  },
+  {
+   "down": "KeyW"
+  },
+  {
+   "wait": 1600
+  },
+  {
+   "up": "KeyW"
+  },
+  {
+   "expect": "G.eye.x < -4.555 - 0.2",
+   "label": "the desk: not into it"
+  },
+  {
+   "name": "into a living man"
+  },
+  {
+   "eval": "(() => { const m = window.MAN; N.controller.setPose(m.pos.x, m.pos.z + 2.2, 0, -0.1); N.controller.setMode('gun', { crouch: false }); return 'ok'; })()"
+  },
+  {
+   "down": "KeyW"
+  },
+  {
+   "wait": 1800
+  },
+  {
+   "up": "KeyW"
+  },
+  {
+   "expect": "Math.hypot(G.eye.x - window.MAN.pos.x, G.eye.z - window.MAN.pos.z) > 0.55",
+   "label": "a living man: not through him"
+  },
+  {
+   "shot": "w01_against_a_man"
+  },
+  {
+   "name": "into the dead man on the floor"
+  },
+  {
+   "eval": "(() => { const c = G.guns.corpses[0]; N.controller.setPose(c.x + 2.0, c.z, -Math.PI / 2 * -1, -0.3); const yaw = Math.atan2(-(c.x - G.eye.x), -(c.z - G.eye.z)); N.controller.setPose(c.x + 2.0, c.z, yaw, -0.3); N.controller.setMode('gun', { crouch: false }); return [c.x, c.z]; })()"
+  },
+  {
+   "down": "KeyW"
+  },
+  {
+   "wait": 1800
+  },
+  {
+   "up": "KeyW"
+  },
+  {
+   "expect": "(() => { const c = G.guns.corpses[0]; return Math.hypot(G.eye.x - c.x, G.eye.z - c.z) > 0.4; })()",
+   "label": "a body on the floor: walked round, not through"
+  },
+  {
+   "name": "into the shut door to the corridor"
+  },
+  {
+   "eval": "(N.controller.setPose(-2.4, -4.1, -Math.PI / 2, -0.05), N.controller.setMode('gun', { crouch: false }), 'ok')"
+  },
+  {
+   "down": "KeyW"
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "up": "KeyW"
+  },
+  {
+   "expect": "G.eye.x < -1.2 - 0.2 && G.stage.part('house').doors.A1.shut",
+   "label": "a shut door: it stays shut, I stay this side"
+  },
+  {
+   "name": "the locked back door: E rattles it"
+  },
+  {
+   "eval": "(() => { const d = G.stage.part('house').doors.BD; d.locked = true; N.controller.setPose(-0.4, -6.8, 0, -0.05); N.controller.setMode('gun', { crouch: false }); return 'ok'; })()"
+  },
+  {
+   "wait": 300
+  },
+  {
+   "key": "KeyE"
+  },
+  {
+   "wait": 500
+  },
+  {
+   "down": "KeyW"
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "up": "KeyW"
+  },
+  {
+   "expect": "G.stage.part('house').doors.BD.shut && G.eye.z > -8 + 0.2",
+   "label": "a locked door: it rattles and holds"
+  },
+  {
+   "name": "into a wall"
+  },
+  {
+   "eval": "(N.controller.setPose(-4.0, -6.6, 0, -0.05), N.controller.setMode('gun', { crouch: false }), 'ok')"
+  },
+  {
+   "down": "KeyW"
+  },
+  {
+   "wait": 1600
+  },
+  {
+   "up": "KeyW"
+  },
+  {
+   "expect": "G.eye.z > -8 + 0.2",
+   "label": "a wall: not into it"
+  },
+  {
+   "name": "the lean: down beside the corridor's doorway, the wall before me (too tall to rise over), RMB: the eye out round the jamb"
+  },
+  {
+   "eval": "(G.stage.part('house').doors.A1.set(-1.62), N.controller.setPose(-1.62, -3.2, -Math.PI / 2, 0.0), N.controller.setMode('gun', { crouch: false }), 'ok')"
+  },
+  {
+   "key": "KeyC"
+  },
+  {
+   "wait": 500
+  },
+  {
+   "eval": "window.E0 = { x: G.eye.x, z: G.eye.z, y: G.eye.y }"
+  },
+  {
+   "mouse": "down",
+   "button": "right"
+  },
+  {
+   "wait": 500
+  },
+  {
+   "shot": "w02_lean"
+  },
+  {
+   "eval": "[N.controller.leanK, N.controller.riseK, +(G.eye.x - E0.x).toFixed(2), +(G.eye.y - E0.y).toFixed(2)]"
+  },
+  {
+   "expect": "Math.abs(N.controller.leanK) > 0.8 && Math.hypot(G.eye.x - E0.x, G.eye.z - E0.z) > 0.35 && G.eye.y - E0.y < 0.4",
+   "label": "too tall to rise over: the eye leans out round the jamb"
+  },
+  {
+   "mouse": "up",
+   "button": "right"
+  },
+  {
+   "wait": 400
+  },
+  {
+   "expect": "Math.abs(N.controller.leanK) < 0.05 && Math.hypot(G.eye.x - E0.x, G.eye.z - E0.z) < 0.05",
+   "label": "let go: back behind it"
+  }
+ ]
+}

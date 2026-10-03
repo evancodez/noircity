@@ -1,0 +1,10 @@
+{
+  "about": "C2 after the critic's second look: standing still in the open, hands off (up out of the crouch the door and two_ways start in), every contest from the title: the first round to the fall (brief: three to four seconds against two) and the first word's lead over the first round.",
+  "url": "/?mute=1",
+  "size": [1440, 900],
+  "out": "shots/c2fix2/idle_stand",
+  "steps": [
+    { "wait": 1500 },
+    { "drive": "tools/plays/c2fix2/idle_stand.mjs", "dur": 45000, "stand": true, "beats": ["door", "two_ways", "pin"] }
+  ]
+}

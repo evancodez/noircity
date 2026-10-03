@@ -1,0 +1,50 @@
+{
+ "about": "C2 after the critic: a probe - the owner good profile on both streets twice",
+ "url": "/?mute=1&start=guns.door",
+ "size": [
+  1280,
+  800
+ ],
+ "out": "shots/c2fix/g_probe",
+ "steps": [
+  {
+   "name": "the title, BEGIN at the test bed"
+  },
+  {
+   "until": "G.state === 'title' && !!document.querySelector('#title .opt[data-k=begin]')",
+   "timeout": 60000
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]",
+   "taken": "G.scenes.current && G.scenes.current.id === 'guns'",
+   "retries": 4
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'guns' && document.pointerLockElement === N.renderer.domElement",
+   "timeout": 30000
+  },
+  {
+   "name": "every contest, played well"
+  },
+  {
+   "drive": "tools/lib/c2_guns.mjs",
+   "profile": "good",
+   "tries": 3,
+   "beatTimeout": 150,
+   "beats": [
+    "street",
+    "street_rev",
+    "street",
+    "street_rev"
+   ],
+   "check": "true",
+   "label": "(a probe: the pin twice, the streets)"
+  },
+  {
+   "eval": "(N.game.guns.events || []).filter((e) => e.what === 'down' || e.what === 'flank').map((e) => e.what + ' ' + (e.why || e.at))"
+  }
+ ]
+}

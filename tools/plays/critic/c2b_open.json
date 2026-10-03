@@ -1,0 +1,20 @@
+{
+  "about": "C2 critic, second look: stand in the open and trade, every contest (never C).",
+  "url": "/?mute=1",
+  "size": [
+    1440,
+    900
+  ],
+  "out": "shots/critic/c2b/open",
+  "steps": [
+    {
+      "wait": 1500
+    },
+    {
+      "drive": "tools/plays/critic/c2/hands.mjs",
+      "style": "open",
+      "tries": 3,
+      "timeout": 120000
+    }
+  ]
+}

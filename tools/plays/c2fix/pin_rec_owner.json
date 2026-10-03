@@ -1,0 +1,53 @@
+{
+ "about": "C2 after the critic: a probe - the owner good profile on the pin, the brains recorded",
+ "url": "/?mute=1&c2rec=1&start=guns.door",
+ "size": [
+  1280,
+  800
+ ],
+ "out": "shots/c2fix/pin_rec",
+ "steps": [
+  {
+   "name": "the title, BEGIN at the test bed"
+  },
+  {
+   "until": "G.state === 'title' && !!document.querySelector('#title .opt[data-k=begin]')",
+   "timeout": 60000
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]",
+   "taken": "G.scenes.current && G.scenes.current.id === 'guns'",
+   "retries": 4
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'guns' && document.pointerLockElement === N.renderer.domElement",
+   "timeout": 30000
+  },
+  {
+   "name": "every contest, played well"
+  },
+  {
+   "drive": "tools/lib/c2_guns.mjs",
+   "profile": "good",
+   "tries": 1,
+   "beatTimeout": 150,
+   "beats": [
+    "pin"
+   ],
+   "check": "true",
+   "label": "(probe: the pin once, recorded)"
+  },
+  {
+   "eval": "(N.game.guns.events || []).filter((e) => e.what === 'down' || e.what === 'flank').map((e) => e.what + ' ' + (e.why || e.at))"
+  },
+  {
+   "eval": "JSON.stringify((window.__c2rec || []).filter((r, i) => i % 12 === 0).map(r => r.join(' ')))"
+  },
+  {
+   "eval": "JSON.stringify(G.guns.events.filter(e => !['shot','miss'].includes(e.what)).slice(-60).map(e => [+(+e.t).toFixed(2), e.what, e.kind || '', e.name || e.why || e.pose || '', e.at || '', e.dmg || '', e.flank ? 'F' : '', e.through ? 'T' : '']))"
+  }
+ ]
+}

@@ -1,0 +1,10 @@
+{
+  "about": "C2 after the critic's second look: the critic's clumsy hands (copy with each try's record) in two_ways, one session of five tries.",
+  "url": "/?mute=1&c2rec=1",
+  "size": [1440, 900],
+  "out": "shots/c2fix2/bad_tw_rec",
+  "steps": [
+    { "wait": 1500 },
+    { "drive": "tools/plays/c2fix2/hands_rec.mjs", "recTries": true, "misses": false, "query": "&c2rec=1", "style": "bad", "tries": 5, "timeout": 200000, "beats": ["two_ways"], "debug": true }
+  ]
+}

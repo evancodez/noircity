@@ -1,0 +1,29 @@
+{
+  "about": "C2 critic, second look: the door stood up on the room's floor (open hands, goto), four sessions, debug: the stand-off seen once (one man left, 100 s of nothing) - again?",
+  "url": "/?mute=1&c2rec=1",
+  "size": [
+    1440,
+    900
+  ],
+  "out": "shots/critic/c2b/door_standoff2",
+  "steps": [
+    {
+      "wait": 1500
+    },
+    {
+      "drive": "tools/plays/critic/c2/hands.mjs",
+      "style": "open",
+      "goto": true,
+      "tries": 3,
+      "timeout": 90000,
+      "beats": [
+        "door",
+        "door",
+        "door",
+        "door"
+      ],
+      "debug": true,
+      "query": "&c2rec=1"
+    }
+  ]
+}

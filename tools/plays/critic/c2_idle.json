@@ -1,0 +1,13 @@
+{
+  "about": "C2 critic: the test bed from the title, hands off for 75 s. Do I lose, warned first, the reason said?",
+  "url": "/?mute=1&start=guns",
+  "size": [1440, 900],
+  "out": "shots/critic/c2/idle",
+  "steps": [
+    { "wait": 2500 },
+    { "shot": "title" },
+    { "clickOn": "#title .opt[data-k=begin]", "taken": "G.state === 'playing' || !!G.scenes.current", "retries": 3 },
+    { "wait": 600 },
+    { "drive": "tools/plays/critic/c2/watch.mjs", "dur": 75000, "every": 3000, "tag": "i" }
+  ]
+}

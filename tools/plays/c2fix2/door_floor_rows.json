@@ -1,0 +1,10 @@
+{
+  "about": "C2 after the critic's second look: the door stood up on the room's floor (the critic's open hands, goto), two sessions of three tries, each try's record (misses too) and the men at a timeout.",
+  "url": "/?mute=1&c2rec=1",
+  "size": [1440, 900],
+  "out": "shots/c2fix2/door_floor_long",
+  "steps": [
+    { "wait": 1500 },
+    { "drive": "tools/plays/c2fix2/hands_rec.mjs", "recTries": true, "misses": true, "recRows": 30, "query": "&c2rec=1", "style": "open", "goto": true, "tries": 2, "timeout": 90000, "beats": ["door"], "debug": true }
+  ]
+}

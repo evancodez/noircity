@@ -1,0 +1,11 @@
+{
+  "about": "C2 after the critic: the tell in slow time (speed 0.25), hands off, standing behind the desk in the door beat and at the bar counter in the pin: from a man's gun starting up ('out' or 'aim'), a frame every 150 ms real (0.04 s of game)",
+  "url": "/?mute=1",
+  "size": [1440, 900],
+  "out": "shots/c2fix/tell2",
+  "steps": [
+    { "wait": 1500 },
+    { "drive": "tools/plays/critic/c2/film.mjs", "url": "/?mute=1&speed=0.25&start=guns.door", "from": "[...G.ais.values()].some((a) => a.brain.S.state === 'aim' || a.brain.S.state === 'out')", "n": 12, "every": 150, "tag": "door", "timeout": 120000 },
+    { "drive": "tools/plays/critic/c2/film.mjs", "url": "/?mute=1&speed=0.25&start=guns.pin", "from": "[...G.ais.values()].some((a) => a.brain.kind === 'tommy' && (a.brain.S.state === 'aim' || a.brain.S.state === 'out'))", "n": 10, "every": 180, "tag": "pin", "timeout": 120000 }
+  ]
+}

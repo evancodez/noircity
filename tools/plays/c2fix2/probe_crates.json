@@ -1,0 +1,53 @@
+{
+ "about": "C2 probe: a man behind room A's crates (-8.48, -0.44: where the man gone round settled), me standing still on the room's floor (-3.5, -2.3) with my back to him: does he hit me, and how soon? The men's brains recorded.",
+ "url": "/?mute=1&c2rec=1&start=guns.door",
+ "size": [
+  1440,
+  900
+ ],
+ "out": "shots/c2fix2/probe_crates",
+ "steps": [
+  {
+   "wait": 2500
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]",
+   "taken": "G.state === 'playing' && G.scenes.beat === 'door'",
+   "retries": 3
+  },
+  {
+   "wait": 800
+  },
+  {
+   "eval": "(() => { const K = G.guns; for (const h of [...G.world.hoods.list]) G.removeHood(h); N.controller.crouchOn = false; N.controller.setPose(-3.5, -2.3, -Math.PI / 2, -0.05); N.controller.setMode('gun', { crouch: false }); const h = K.spawn({ kind: 'pistol', at: { x: -8.48, z: -0.44 }, cover: true, wait: 0.5 }); G.scenes.ctx.flags.c2.men = [h]; return [h.pos.x, h.pos.z]; })()"
+  },
+  {
+   "eval": "(N.controller.yaw = Math.atan2(-(-8.5 - N.controller.pos.x), -(-0.3 - N.controller.pos.z)), N.controller.pitch = -0.05, 'facing him')"
+  },
+  {
+   "until": "[...G.ais.values()].some((a) => a.brain && a.brain.S && (a.brain.S.state === 'fire' || (a.brain.S.state === 'aim' && a.brain.S.raiseT > 0.3)))",
+   "timeout": 15000
+  },
+  {
+   "eval": "(() => { const out = []; for (let k = 0; k < 1; k++) { const [h, ai] = [...G.ais].find(([h, a]) => a.brain && a.brain.S && (a.brain.S.state === 'aim' || a.brain.S.state === 'fire')); const m = h.muzzleWorld(new N.THREE.Vector3()); const sh = new N.THREE.Vector3().setFromMatrixPosition(h.bones.upperArmR.matrixWorld); const sl = new N.THREE.Vector3().setFromMatrixPosition(h.bones.upperArmL.matrixWorld); const e = G.eye; const ang = (a, b) => Math.atan2(a.x, a.z) - Math.atan2(b.x, b.z); const toMe = { x: e.x - sh.x, z: e.z - sh.z }, gun = { x: m.x - sh.x, z: m.z - sh.z }; out.push({ state: ai.brain.S.state, yaw: +h.yaw.toFixed(2), bearingToMe: +Math.atan2(e.x - h.pos.x, e.z - h.pos.z).toFixed(2), gunVsMe: +ang(gun, toMe).toFixed(2), gunLen: +Math.hypot(gun.x, gun.z).toFixed(2), shR: [+sh.x.toFixed(2), +sh.z.toFixed(2)], shL: [+sl.x.toFixed(2), +sl.z.toFixed(2)], pos: [+h.pos.x.toFixed(2), +h.pos.z.toFixed(2)], muzzle: [+m.x.toFixed(2), +m.y.toFixed(2), +m.z.toFixed(2)] }); } return out; })()"
+  },
+  {
+   "shot": "man_aiming"
+  },
+  {
+   "eval": "(() => { const [h] = [...G.ais].find(([h, a]) => a.brain && a.brain.S); const V = N.THREE.Vector3, cam = N.camera; const px = (p) => { const q = p.clone().project(cam); return [Math.round((q.x + 1) / 2 * innerWidth), Math.round((1 - q.y) / 2 * innerHeight)]; }; h.object.updateMatrixWorld(true); const m = h.muzzleWorld(new V()); const hr = new V().setFromMatrixPosition(h.bones.handR.matrixWorld), hl = new V().setFromMatrixPosition(h.bones.handL.matrixWorld), hd = new V().setFromMatrixPosition(h.bones.head.matrixWorld); return { muzzle: px(m), handR: px(hr), handL: px(hl), head: px(hd), pos: px(h.pos.clone().setY(h.pos.y + 1)), W: innerWidth, H: innerHeight, muzzleW: [m.x, m.y, m.z].map((v) => +v.toFixed(2)) }; })()"
+  },
+  {
+   "wait": 7000
+  },
+  {
+   "eval": "(window.__c2rec || []).filter((r, i) => i % 6 === 0).slice(-60).map((r) => r.slice(0, 3).concat(r.slice(4)).join(' ')).join('\\n')"
+  },
+  {
+   "eval": "G.guns.events.filter((e) => e.t > G.time - 9.5).map((e) => JSON.stringify(e)).join('\\n')"
+  },
+  {
+   "eval": "({ hp: G.health.hp, failing: !!G.failing })"
+  }
+ ]
+}

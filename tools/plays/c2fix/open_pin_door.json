@@ -1,0 +1,10 @@
+{
+  "about": "C2 after the critic: the critic's open hands (stand and trade, never C) on the pin and the door, three sessions each of up to three tries",
+  "url": "/?mute=1",
+  "size": [1440, 900],
+  "out": "shots/c2fix/open_pd",
+  "steps": [
+    { "wait": 1500 },
+    { "drive": "tools/plays/critic/c2/hands.mjs", "style": "open", "tries": 3, "timeout": 120000, "beats": ["pin", "door", "pin", "door", "pin", "door"] }
+  ]
+}

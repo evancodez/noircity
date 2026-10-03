@@ -1,0 +1,19 @@
+{
+  "about": "C2 critic, second look, proof (a) idle with W held: every contest from the title.",
+  "url": "/?mute=1",
+  "size": [
+    1440,
+    900
+  ],
+  "out": "shots/critic/c2b/idle_w",
+  "steps": [
+    {
+      "wait": 1500
+    },
+    {
+      "drive": "tools/plays/critic/c2/idle_all.mjs",
+      "dur": 45000,
+      "hold": "KeyW"
+    }
+  ]
+}

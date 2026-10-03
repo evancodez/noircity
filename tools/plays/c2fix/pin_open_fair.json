@@ -1,0 +1,8 @@
+{
+  "about": "C2 after the critic: the pin stood up and traded by the critic's open hands that see a man through frosted glass only as his shadow, within a step of the glass (fairGlass) - three sessions; then the same hands as the critic had them (they see through frosted glass at any distance) three sessions",
+  "url": "/?mute=1", "size": [1440, 900], "out": "shots/c2fix/pin_fair",
+  "steps": [ { "wait": 1500 },
+    { "drive": "tools/plays/c2fix/hands_rec.mjs", "style": "open", "tries": 3, "beats": ["pin", "pin", "pin"], "timeout": 120000, "fairGlass": true },
+    { "drive": "tools/plays/c2fix/hands_rec.mjs", "style": "open", "tries": 3, "beats": ["pin", "pin", "pin"], "timeout": 120000 }
+  ]
+}

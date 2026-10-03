@@ -1,0 +1,55 @@
+{
+ "about": "C3b after the critic, tail_corner: on the river road, one round into a tyre, then the first-timer's push - my car straight on his line, square behind his back CORNER, W held, no turn-in ('straight' in src/scenes/tail/bot.js). It spins him (rules.js RAM.corner); the crash and the wreck as they look. NOIR_PORT=5343 node tools/play.mjs tools/plays/tail_corner.json",
+ "url": "/?mute=1&start=tail.river&tailSeed=11",
+ "size": [
+  1440,
+  900
+ ],
+ "out": "shots/c3b/corner",
+ "steps": [
+  {
+   "until": "G.state === 'title' && !document.getElementById('title').classList.contains('hidden') && !!document.querySelector('#title .opt[data-k=begin]')",
+   "timeout": 40000
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]",
+   "taken": "G.state === 'playing' && document.pointerLockElement === N.renderer.domElement",
+   "retries": 4,
+   "every": 4000
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'tail' && !!G.scenes.ctx.flags.chase && G.scenes.ctx.flags.chase.phase === 'b' && !G.scenes.fadeK",
+   "timeout": 45000
+  },
+  {
+   "eval": "(() => { window.__tailFails = []; const C0 = G.scenes.ctx.flags.chase; window.__gs = null; setInterval(() => { const C = G.scenes.ctx && G.scenes.ctx.flags.chase; if (!C || C !== C0) return; window.__gs = { t: +C.t.toFixed(1), hits: C.gun.hits, hurt: C.hurt(), phase: C.phase, ramWin: !!C._ramWin, win: C._ramWin ? (C.rams || []).filter((r) => r.go).slice(-1)[0] : null, rams: (C.rams || []).length, gap: +C.gap().toFixed(0), smashed: !!C._smashed, knocks: C.knocks || [] }; }, 100); return 'watching'; })()"
+  },
+  {
+   "drive": "tools/lib/c3_tail.mjs",
+   "profile": "straight",
+   "seed": 11,
+   "timeout": 70000,
+   "maxTries": 1,
+   "stop": "(window.__tailFails || []).length > 0 || (!!G.scenes.ctx.flags.chase && G.scenes.ctx.flags.chase.phase === 'wreck' && G.scenes.ctx.flags.chase.wreck.t > 4.5)",
+   "shots": {
+    "s01_hurt": "!!window.__gs && window.__gs.hurt && window.__gs.gap < 12",
+    "s02_spin": "!!G.scenes.ctx.flags.chase && G.scenes.ctx.flags.chase.phase === 'crash' && (G.scenes.ctx.flags.chase.crashT || 0) > 0.6",
+    "s03_wreck": "!!G.scenes.ctx.flags.chase && G.scenes.ctx.flags.chase.phase === 'wreck' && G.scenes.ctx.flags.chase.wreck.t > 4"
+   }
+  },
+  {
+   "eval": "JSON.stringify({ gs: window.__gs, fails: window.__tailFails, crash: (G.scenes.ctx.flags.chase.crashLog || []).filter((r, i) => i % 10 === 0) })"
+  },
+  {
+   "expect": "!!window.__gs && window.__gs.ramWin && !!window.__gs.win && window.__gs.win.ang < 0.2",
+   "label": "a straight push on his back corner (my heading within 0.2 rad of his) spins a hurt car"
+  },
+  {
+   "expect": "!!window.__gs && window.__gs.smashed",
+   "label": "the wreck shows what it hit (the corner, the glass)"
+  }
+ ]
+}

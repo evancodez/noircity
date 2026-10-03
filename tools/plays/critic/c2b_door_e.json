@@ -1,0 +1,86 @@
+{
+  "about": "C2 critic, second look (finding 2 re-checked): a first-timer opens a door the way people do - walks up to it until it stops him, looks at it, presses E. Then the same looking down at the knob, then from a step back. (the view levelled first: the harness first mouse move after BEGIN tips the view up)",
+  "url": "/?mute=1&start=guns",
+  "size": [
+    1440,
+    900
+  ],
+  "out": "shots/critic/c2b/door_e",
+  "steps": [
+    {
+      "wait": 2500
+    },
+    {
+      "clickOn": "#title .opt[data-k=begin]",
+      "taken": "G.state === 'playing' && N.controller.mode === 'gun'",
+      "retries": 3
+    },
+    {
+      "wait": 1500
+    },
+    {
+      "walk": [
+        [
+          -5.9,
+          -5.2
+        ],
+        [
+          -3.2,
+          -5.0
+        ],
+        [
+          -2.4,
+          -4.1
+        ]
+      ],
+      "timeout": 20000
+    },
+    {
+      "drive": "tools/plays/critic/c2/seq.mjs",
+      "seq": [
+        "face -1.2 -4.1",
+        "pitch 0",
+        "e ['pitch', N.controller.pitch.toFixed(2), 'eyeY', G.eye.y.toFixed(2)]",
+        "d KeyW",
+        "w 1500",
+        "u KeyW",
+        "w 300",
+        "e ['at', N.controller.pos.x.toFixed(2), N.controller.pos.z.toFixed(2), 'prompt', G.hud.promptShown, 'A1 shut', G.stage.part('house').doors.A1.shut]",
+        "s d01_against_door",
+        "k KeyE",
+        "w 1200",
+        "e ['after E (level): A1 shut', G.stage.part('house').doors.A1.shut, 'open01', G.stage.part('house').doors.A1.open01.toFixed(2)]",
+        "pitch -0.35",
+        "w 300",
+        "e ['looking down a little: prompt', G.hud.promptShown, 'pitch', N.controller.pitch.toFixed(2)]",
+        "s d02_down",
+        "k KeyE",
+        "w 1200",
+        "e ['after E (down): A1 shut', G.stage.part('house').doors.A1.shut, 'open01', G.stage.part('house').doors.A1.open01.toFixed(2)]",
+        "s d03_after",
+        "pitch 0",
+        "d KeyS",
+        "w 350",
+        "u KeyS",
+        "w 300",
+        "e ['a step back, level: at', N.controller.pos.x.toFixed(2), 'prompt', G.hud.promptShown]",
+        "s d04_stepback",
+        "pitch -0.8",
+        "w 300",
+        "e ['looking at the knob (pitch -0.8): prompt', G.hud.promptShown]",
+        "s d02b_knob",
+        "pitch 0",
+        "go -2.2 -4.1",
+        "face -1.2 -4.1",
+        "pitch -0.15",
+        "w 300",
+        "e ['from 1 m, looking at it: prompt', G.hud.promptShown, 'at', N.controller.pos.x.toFixed(2)]",
+        "s d05_onemetre",
+        "k KeyE",
+        "w 1300",
+        "e ['after E from 1 m: open01', G.stage.part('house').doors.A1.open01.toFixed(2), 'shut', G.stage.part('house').doors.A1.shut]",
+        "s d06_open"
+      ]
+    }
+  ]
+}

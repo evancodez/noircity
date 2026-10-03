@@ -1,0 +1,5 @@
+{
+  "url": "/?mute=1", "size": [1440, 900], "out": "shots/critic/c2/rush_dbg",
+  "steps": [ { "wait": 1500 }, { "drive": "tools/plays/critic/c2/hands.mjs", "style": "good", "tries": 2, "beats": ["rush"], "debug": true, "timeout": 100000 },
+    { "eval": "G.guns.events.slice(-60).map((e) => e.what + '@' + (+e.t).toFixed(1) + (e.kind ? ':' + e.kind : '') + (e.at ? ':' + e.at : '')).join(' ')" } ]
+}

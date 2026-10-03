@@ -1,0 +1,22 @@
+{
+  "about": "C2 after the critic: down where the tip leaves me (1.4 m back), RMB: does the rise clear the desk?",
+  "url": "/?mute=1&start=guns",
+  "size": [1440, 900],
+  "out": "shots/c2fix/ready_rise",
+  "steps": [
+    { "wait": 2500 },
+    { "clickOn": "#title .opt[data-k=begin]", "taken": "G.state === 'playing' && N.controller.mode === 'gun'", "retries": 3 },
+    { "wait": 1500 },
+    { "drive": "tools/plays/critic/c2/seq.mjs", "seq": [
+      "pitch 0", "k KeyE", "w 2500", "k KeyC", "w 800",
+      "e ['down', N.controller.crouchK.toFixed(2), 'eyeY', G.eye.y.toFixed(2), 'x', G.eye.x.toFixed(2), 'back', JSON.stringify(G.stage.part('house').desk.back())]",
+      "s q01_down",
+      "md right", "w 400",
+      "e ['risen', N.controller.riseK.toFixed(2), 'eyeY', G.eye.y.toFixed(2), 'plan', JSON.stringify(N.controller._rise), 'gy0', N.controller._gy0, 'gY', N.controller.groundY]",
+      "s q02_risen",
+      "c left", "w 500",
+      "e G.guns.events.filter(e => e.what === 'shot').slice(-1).map(e => e.name + ' ' + e.from + ' ' + e.at)",
+      "mu right", "w 400"
+    ] }
+  ]
+}

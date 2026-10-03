@@ -1,0 +1,28 @@
+{
+  "about": "C2 critic, second look: standing on open floor and trading (the 'open' hands, goto), against the 'low' run.",
+  "url": "/?mute=1",
+  "size": [
+    1440,
+    900
+  ],
+  "out": "shots/critic/c2b/open_floor",
+  "steps": [
+    {
+      "wait": 1500
+    },
+    {
+      "drive": "tools/plays/critic/c2/hands.mjs",
+      "style": "open",
+      "goto": true,
+      "tries": 3,
+      "timeout": 120000,
+      "beats": [
+        "door",
+        "two_ways",
+        "pin",
+        "rush",
+        "street"
+      ]
+    }
+  ]
+}

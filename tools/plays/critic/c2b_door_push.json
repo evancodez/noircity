@@ -1,0 +1,26 @@
+{
+  "about": "C2 critic, second look: up against door A1 from room A, E - where does the leaf put me as it swings toward me (logged each 100 ms, frames)?",
+  "url": "/?mute=1&start=guns",
+  "size": [1440, 900],
+  "out": "shots/critic/c2b/door_push",
+  "steps": [
+    { "wait": 2500 },
+    { "clickOn": "#title .opt[data-k=begin]", "taken": "G.state === 'playing' && N.controller.mode === 'gun'", "retries": 3 },
+    { "wait": 1500 },
+    { "walk": [[-5.9, -5.2], [-3.2, -5.0], [-2.4, -4.1]], "timeout": 20000 },
+    { "drive": "tools/plays/critic/c2/seq.mjs", "seq": [
+      "face -1.2 -4.1", "pitch 0", "d KeyW", "w 1500", "u KeyW", "w 300",
+      "e ['at', N.controller.pos.x.toFixed(2), N.controller.pos.z.toFixed(2), 'prompt', G.hud.promptShown]",
+      "s p00_against",
+      "k KeyE",
+      "e ['t0', G.time.toFixed(2), N.controller.pos.x.toFixed(2), N.controller.pos.z.toFixed(2), G.stage.part('house').doors.A1.open01.toFixed(2)]",
+      "w 100", "e [G.time.toFixed(2), N.controller.pos.x.toFixed(2), N.controller.pos.z.toFixed(2), G.stage.part('house').doors.A1.open01.toFixed(2)]", "s p01",
+      "w 100", "e [G.time.toFixed(2), N.controller.pos.x.toFixed(2), N.controller.pos.z.toFixed(2), G.stage.part('house').doors.A1.open01.toFixed(2)]", "s p02",
+      "w 100", "e [G.time.toFixed(2), N.controller.pos.x.toFixed(2), N.controller.pos.z.toFixed(2), G.stage.part('house').doors.A1.open01.toFixed(2)]", "s p03",
+      "w 100", "e [G.time.toFixed(2), N.controller.pos.x.toFixed(2), N.controller.pos.z.toFixed(2), G.stage.part('house').doors.A1.open01.toFixed(2)]", "s p04",
+      "w 200", "e [G.time.toFixed(2), N.controller.pos.x.toFixed(2), N.controller.pos.z.toFixed(2), G.stage.part('house').doors.A1.open01.toFixed(2)]", "s p05",
+      "w 400", "e [G.time.toFixed(2), N.controller.pos.x.toFixed(2), N.controller.pos.z.toFixed(2), G.stage.part('house').doors.A1.open01.toFixed(2)]", "s p06",
+      "w 800", "e [G.time.toFixed(2), N.controller.pos.x.toFixed(2), N.controller.pos.z.toFixed(2), G.stage.part('house').doors.A1.open01.toFixed(2)]", "s p07"
+    ] }
+  ]
+}

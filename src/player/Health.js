@@ -1,5 +1,6 @@
 import { RNG } from '../util/rng.js';
-import { drawScreenSplatter } from '../fx/fxTextures.js';
+import { drawScreenSplatter, droplets } from '../fx/fxTextures.js';
+import { drawSplatter } from '../render/textures.js';
 
 // Player health: 100, regenerates (18/s) after 6 s without damage.
 // Feedback (DOM, over the canvas, inside the HUD root so it hides with it):
@@ -75,13 +76,17 @@ export class Health {
     this.apply();
   }
 
-  damage(amount) {
+  // [C2] from: { angle, behind } - where the round came from on the screen
+  // (atan2 of its screen y down, x right): the splash at that edge of the
+  // frame, so every hit says where it came from (the gun kit's)
+  damage(amount, from = null) {
     if (this.dead) return;
     this.hp = Math.max(0, this.hp - amount);
     this.sinceHit = 0;
     // fresh blood on the lens; older splats fade under it
     if (this.splatA < 0.05) this.g.clearRect(0, 0, this.canvas.width, this.canvas.height);
-    drawScreenSplatter(this.g, this.canvas.width, this.canvas.height, this.rng, Math.min(1.5, amount / 10), this.hudRects());
+    if (from) drawEdgeSplash(this.g, this.canvas.width, this.canvas.height, this.rng, Math.min(1.5, amount / 10), from);
+    else drawScreenSplatter(this.g, this.canvas.width, this.canvas.height, this.rng, Math.min(1.5, amount / 10), this.hudRects());
     this.splatA = 1;
     this.hitA = 1;
     // [C1] the kit's rule (seams/Z.md §3): no fall before its warning has been
@@ -114,8 +119,11 @@ export class Health {
   update(dt) {
     this.sinceHit += dt;
     if (this.whiteN > 0 && dt > 0) { this.whiteN--; if (this.whiteN <= 0) this.white.style.opacity = '0'; }
-    if (!this.dead && this.sinceHit > HEALTH.regenDelay && this.hp < HEALTH.max) {
-      this.hp = Math.min(HEALTH.max, this.hp + HEALTH.regenRate * dt);
+    // [C2] while a gunman has a line on me (the gun kit sets `exposed`) the
+    // mending starts later and runs slower
+    const ex = this.exposed ? this.exposed() : 0;
+    if (!this.dead && this.sinceHit > HEALTH.regenDelay + 3 * ex && this.hp < HEALTH.max) {
+      this.hp = Math.min(HEALTH.max, this.hp + HEALTH.regenRate * (1 - 0.6 * ex) * dt);
     }
     this.splatA = Math.max(0, this.splatA - dt / 1.8);
     this.hitA = Math.max(0, this.hitA - dt / 0.35);
@@ -136,6 +144,41 @@ export class Health {
       this.heart.style.opacity = Math.min(1, vis * (0.62 + 0.38 * beat)).toFixed(3);
     } else this.heart.style.opacity = '0';
   }
+}
+
+// [C2] a hit's splash at the edge it came from: a blot on the frame's edge
+// toward `angle` (screen: 0 right, PI/2 down), its drops thrown inward; from
+// behind, at both near corners of that side
+// [C2] after the critic: or `at` [x, y] (fractions of the frame, on its edge:
+// the gun kit's compass of where he is - Guns.js splashAt), never a corner
+function drawEdgeSplash(g, W, H, rng, strength, { angle = 0, behind = false, at = null }) {
+  g.fillStyle = '#c8102e';
+  g.strokeStyle = '#c8102e';
+  const cx = W / 2, cy = H / 2;
+  const n = behind ? 2 : 1;
+  for (let i = 0; i < n; i++) {
+    let x, y, a;
+    if (at) {
+      // (behind: two, a little either side of the bottom edge's middle)
+      x = (at[0] + (behind ? (i ? 0.06 : -0.06) : rng.gauss() * 0.01)) * W; y = at[1] * H;
+      x = Math.min(W * 0.985, Math.max(W * 0.015, x)); y = Math.min(H * 0.985, Math.max(H * 0.015, y));
+      a = Math.atan2(y - cy, x - cx);
+    } else {
+      a = angle + (behind ? (i ? 0.45 : -0.45) : rng.gauss() * 0.08);
+      // the point where the ray from the centre at `a` meets the frame
+      const ddx = Math.cos(a), ddy = Math.sin(a);
+      const k = Math.min(Math.abs((W / 2) / (ddx || 1e-6)), Math.abs((H / 2) / (ddy || 1e-6)));
+      x = cx + ddx * k * 0.97; y = cy + ddy * k * 0.97;
+    }
+    const dx = Math.cos(a), dy = Math.sin(a);
+    const R = Math.min(W, H) * rng.range(0.05, 0.075) * (0.75 + 0.35 * strength);
+    g.globalAlpha = rng.range(0.75, 0.88);
+    drawSplatter(g, x, y, R * 1.3, rng, rng.int(18, 30));
+    g.globalAlpha = rng.range(0.9, 0.98);
+    drawSplatter(g, x - dx * R * 0.25, y - dy * R * 0.25, R * 0.8, rng, rng.int(14, 24));
+    droplets(g, x, y, R, rng, 18, 2.6, { a: a + Math.PI, share: 0.85, spread: 0.45 });
+  }
+  g.globalAlpha = 1;
 }
 
 // The low-health vignette: black ink closing in from the frame edges. A soft
