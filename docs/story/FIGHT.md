@@ -151,7 +151,9 @@ strike nothing of him is open to a fist (version 5 left the swinging side open,
 and a click every two or three seconds at random reached his head half the
 time). A punch into his wind-up meets his shoulder and the fist is **jammed**
 (`BRAWL.bounce.jammed`: 0.34 s before my feet or my block come back): his blow
-catches me there, and the black says `Caught swinging. Hit when he's open.`.
+catches me there, and the black says `Caught swinging. Hit when he's open.`;
+and if his blow goes by me, that punch into his guard is answered all the
+same, three times in four, as soon as he can (`him.answerDue`, within 1.2 s).
 Open to me: a breath (a hand lowered between his blows, drawn by his body and
 ticked at his jaw), **a blow that missed** (the miss table), a stun, a broken
 guard, his tired hand (wild). And a hook, the bottle's thrust, a throw that

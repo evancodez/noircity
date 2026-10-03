@@ -938,13 +938,17 @@ export class Brawl {
     return him.state === 'attack' && !him.hit && him.contactAt != null && him.t > him.contactAt + 0.04 && !(BR_ATTACKS[him.clip] && BR_ATTACKS[him.clip].heavy);
   }
 
-  answer(side) {
+  answer(side, due = false) {
     const him = this.him, L = this.lesson;
     const lessonOK = L && L.step === 3 && !L.answered;
     if (this.lessonHold && !lessonOK) return;
     // (my left fist into his right side: his right hand answers; pounded
     // three times in a second and a half, he answers with a hook)
-    him.pounded = (him.pounded || []).filter((x) => this.T - x < 1.5); him.pounded.push(this.T);
+    if (!due) { him.pounded = (him.pounded || []).filter((x) => this.T - x < 1.5); him.pounded.push(this.T); }
+    // ([C4] 5.2: a punch into his guard while he winds up is answered too -
+    // when his blow has gone by me (stepHim: answerDue); if it found me, the
+    // blow was the answer)
+    if (!due && him.state === 'attack' && !him.hit && (him.contactAt == null || him.t < him.contactAt + 0.04) && !(BR_ATTACKS[him.clip] && BR_ATTACKS[him.clip].answer)) { him.answerDue = { side, at: this.T }; return; }
     if (!this.canAnswer() || this.finished) return;
     // [C4] (pounded - three punches into it in a second and a half - he
     // answers every time, and with the fast straight, not a hook: a hook
@@ -1293,6 +1297,12 @@ export class Brawl {
     if (him.state === 'ko') { this.stepKO(dt); return; }
     // [C4] his big blow at its commit, coming at me: the dodge cue
     this.cueCheck();
+    // ([C4] 5.2: a punch I threw into his wind-up, answered once he can -
+    // his blow gone by me - within a second; his blow found me: forgotten)
+    if (him.answerDue) {
+      if (him.hit || this.T - him.answerDue.at > 1.2 || this.me.act === 'down') him.answerDue = null;
+      else if (this.canAnswer()) { const sd = him.answerDue.side; him.answerDue = null; this.stats.answersDue = (this.stats.answersDue || 0) + 1; this.answer(sd, true); }
+    }
     for (const s of ['L', 'R']) if (him.open[s] > 0) him.open[s] -= dt;
     if (him.missT > 0) him.missT -= dt;
     if (him.coverT > 0) him.coverT -= dt;
