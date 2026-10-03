@@ -30,10 +30,10 @@ function place(stage, kind, at, { yaw = 0, rx = 0, rz = 0, variant = null, scale
   return p;
 }
 // a hard light: a spot lamp of the stage's pool (its cone seen or not)
-function spot(stage, from, to, { half = 0.3, intensity = 60, cone = true, strength = 0.6, shadow = null, distance = null } = {}) {
+function spot(stage, from, to, { half = 0.3, intensity = 60, cone = true, strength = 0.6, shadow = null, distance = null, penumbra = 0.35 } = {}) {
   const ax = to.clone().sub(from).normalize();
   const L = stage.lamps.addCustom({ head: from.clone(), axis: ax, height: from.distanceTo(to) * 1.2, half, real: true, strength, tag: 'still' });
-  Object.assign(L.light, { intensity, angle: half, penumbra: 0.35, distance: distance ?? from.distanceTo(to) * 3 });
+  Object.assign(L.light, { intensity, angle: half, penumbra, distance: distance ?? from.distanceTo(to) * 3 });
   L.cone.visible = cone;
   L.priority = 10;
   if (shadow) L.shadow = shadow;
@@ -42,13 +42,13 @@ function spot(stage, from, to, { half = 0.3, intensity = 60, cone = true, streng
 
 // ---- 1. opening: A TIP. AMES. --------------------------------------------------------------
 // a desk lamp of the props, its light the pool's: from its bulb along its shade
-function deskLamp(S, at, yaw, { intensity = 30, half = 0.62, strength = 0.55, cone = true, reach = 1.2, target = null } = {}) {
+function deskLamp(S, at, yaw, { intensity = 30, half = 0.62, strength = 0.55, cone = true, reach = 1.2, target = null, penumbra = 0.35 } = {}) {
   if (target) yaw = Math.atan2(target.x - at.x, target.z - at.z);
   const p = place(S, 'deskLamp', at, { yaw });
   p.updateMatrixWorld(true);
   const head = p.userData.head.clone().applyMatrix4(p.matrixWorld);
   const ax = target ? target.clone().sub(head).normalize() : p.userData.axis.clone().transformDirection(p.matrixWorld);
-  const L = spot(S, head, head.clone().addScaledVector(ax, reach), { half, intensity, strength, cone, shadow: { radius: 2.5, near: 0.03 } });
+  const L = spot(S, head, head.clone().addScaledVector(ax, reach), { half, intensity, strength, cone, penumbra, shadow: { radius: 2.5, near: 0.03 } });
   return { prop: p, lamp: L };
 }
 // a coiled cord lying along a path (points on the desk): a helix round it
@@ -84,14 +84,20 @@ function tip(stage, camera, controller, game) {
   // the lamp on the left of the desk, its cone down onto the desk behind the
   // handset (the handset's shape black against the pool) and the phone
   const pool = V(N('px', -0.04), top, D.z + N('pz', 0.1));
-  deskLamp(S, V(N('lx', -0.42), top, D.z + N('lz', -0.12)), 0, { intensity: N('li', 6), half: N('lh', 0.3), reach: 0.6, strength: 0.8, target: pool });
+  // ([C11] a hard pool: 6 -> 26, its edge 0.35 -> 0.08 - the art director
+  // read the pool mid-grey; paper white now, ink round it)
+  deskLamp(S, V(N('lx', -0.42), top, D.z + N('lz', -0.12)), 0, { intensity: N('li', 26), half: N('lh', 0.3), reach: 0.6, strength: 0.8, target: pool, penumbra: N('lp', 0.08) });
   const base = place(S, 'deskPhone', V(N('bx', 0.17), top, D.z + N('bz', -0.07)), { yaw: N('by', 0.3), variant: 'empty' });
   // (the dome's gloss a little duller: the lamp's spot on it was the brightest thing in the panel)
   base.traverse((o) => { if (o.isMesh && o.material && o.material.roughness != null) { o.material = o.material.clone(); o.material.roughness = Math.max(o.material.roughness, N('br', 0.55)); } });
   // the handset across the desk on its side (its profile up to the eye:
   // the bar and the two cups), the ear cup to the left
   const yw = Math.PI / 2 + N('hy', 0.3);
-  place(S, 'handset', hs, { yaw: yw, rz: N('hr', Math.PI / 2) });
+  const hset = place(S, 'handset', hs, { yaw: yw, rz: N('hr', Math.PI / 2) });
+  // ([C11] matte: its bakelite's gloss printed as pale stripes along the
+  // bar and the cups, and the shape read crude - now an ink shape on the
+  // white pool, the lamp's one rim along its top)
+  hset.traverse((o) => { if (o.isMesh && o.material && o.material.roughness != null) { o.material = o.material.clone(); o.material.roughness = N('hm', 0.9); if (o.material.envMapIntensity != null) o.material.envMapIntensity = 0.05; o.material.color.multiplyScalar(0.6); } });
   // the cord from the mouth cup back to the base, coiled, lying on the desk
   const ax = V(Math.sin(yw), 0, Math.cos(yw));
   const m = hs.clone().addScaledVector(ax, 0.1); m.y = top;
@@ -323,14 +329,22 @@ function neon(stage, camera, controller, game) {
   darkStreet(S);
   neonSign(S, V(-95.3, N('ny', 2.75), N('nz', 19)), V(0, 0, 1), { H: N('nh', 0.9) });
   const cab = new Cabin(game);
-  cab.attach(car, { pitch: N('pp', -0.1), fov: N('fv', 32) });
+  // ([C11] lower and a little wider, -0.1 / 32 -> -0.2 / 41: my knuckles
+  // on the wheel in the frame's foot, the sign still at its head)
+  cab.attach(car, { pitch: N('pp', -0.2), fov: N('fv', 41) });
   // (the chrome inside dulled: the mirror's glass printed as a pale card)
   if (N('dc', 1) > 0) car.body.traverse((o) => {
     const m = o.isMesh && o.material;
     if (m && !Array.isArray(m) && m.metalness > 0.5) { o.material = m.clone(); o.material.envMapIntensity = 0.05; o.material.color.multiplyScalar(0.3); }
   });
-  game.scripts.push((t, dt) => { cab.step(dt); cab.screen.mat.uniforms.uRain.value = 1; cab.screen.mat.uniforms.uLit.value = N('ul', 0.45); });
-  game.pipeline.exposureOverride = N('xp', 0.6);
+  // ([C11] the art director: too dark - the neon lights the drops on the
+  // glass (their flecks white, the wiper's arc the clear sweep through
+  // them: uLit 0.45 -> 1.3) and a light from the sign falls through the
+  // glass on the bonnet, the wiper and my knuckles on the wheel (their rim);
+  // the exposure a step up, 0.6 -> 0.72)
+  spot(S, V(-95.4, N('sy', 2.4), 19.4), V(N('sx', -96.3), 1.0, 33.4), { half: N('sh', 0.16), intensity: N('si', 420), cone: false, strength: 0.9, distance: 30, penumbra: 0.5 });
+  game.scripts.push((t, dt) => { cab.step(dt); cab.screen.mat.uniforms.uRain.value = 1; cab.screen.mat.uniforms.uLit.value = N('ul', 1.3); });
+  game.pipeline.exposureOverride = N('xp', 0.72);
 }
 
 // ---- 5. diner: THE DINER. ------------------------------------------------------------------
