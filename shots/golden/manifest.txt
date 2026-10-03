@@ -30,3 +30,9 @@ diner_settle|scene=diner&beat=settle
 diner_order|scene=diner&beat=order
 fight_round1|scene=fight&beat=round1
 dinerfront|shot=dinerfront
+still_opening|still=opening&panel=2
+still_ames|still=ames&panel=0
+still_check|still=check&panel=1
+still_photo|still=photo&panel=0
+still_diner|still=diner&panel=0
+still_end|still=end&panel=0
