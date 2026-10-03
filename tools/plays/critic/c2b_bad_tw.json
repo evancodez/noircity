@@ -1,0 +1,25 @@
+{
+  "about": "C2 critic, second look: the clumsy first-timer in two_ways only, twice over, frames each 3 s (debug): why does he not get through?",
+  "url": "/?mute=1",
+  "size": [
+    1440,
+    900
+  ],
+  "out": "shots/critic/c2b/bad_tw",
+  "steps": [
+    {
+      "wait": 1500
+    },
+    {
+      "drive": "tools/plays/critic/c2/hands.mjs",
+      "style": "bad",
+      "tries": 5,
+      "timeout": 200000,
+      "beats": [
+        "two_ways",
+        "two_ways"
+      ],
+      "debug": true
+    }
+  ]
+}

@@ -1,0 +1,12 @@
+{
+  "about": "C2 after the critic: the open hands on one beat with the brains recorded (c2rec), the record dumped at the end",
+  "url": "/?mute=1",
+  "size": [1440, 900],
+  "out": "shots/c2fix/open_door_rec",
+  "steps": [
+    { "wait": 1500 },
+    { "drive": "tools/plays/critic/c2/hands.mjs", "style": "open", "tries": 1, "timeout": 60000, "beats": ["door"], "query": "&c2rec=1" },
+    { "eval": "JSON.stringify((window.__c2rec || []).filter((r, i) => i % 3 === 0).map(r => r.join(' ')))" },
+    { "eval": "JSON.stringify(G.guns.events.slice(-40).map(e => [e.t, e.what, e.kind || e.name || e.why || '', e.at || e.pose || '', e.from || e.dmg || '']))" }
+  ]
+}

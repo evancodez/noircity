@@ -1,0 +1,52 @@
+{
+ "about": "[C2] The gun kit's proof 2 as WAVE_C \u00a77 has it: a clumsy first-timer who was taught the cover and uses it badly - slow hands (reactions 550 .. 900 ms), a wide aim, up over the cover a second too long now and then, reloads where he stands now and then, gets down late on a new spot, a wrong key now and then, moves only when it is bad; after a fall it reads the fall's words and does that one thing better on the retry (the retry says what went wrong) - FAILS SOME and gets through every contest on a second or third try, never stuck (no stalemate), every fall warned. node tools/play.mjs tools/plays/guns_clumsy.json",
+ "url": "/?mute=1&start=guns.door",
+ "size": [
+  1280,
+  800
+ ],
+ "out": "shots/play/guns_clumsy",
+ "steps": [
+  {
+   "name": "the title, BEGIN at the test bed"
+  },
+  {
+   "until": "G.state === 'title' && !!document.querySelector('#title .opt[data-k=begin]')",
+   "timeout": 60000
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]",
+   "taken": "G.scenes.current && G.scenes.current.id === 'guns'",
+   "retries": 4
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'guns' && document.pointerLockElement === N.renderer.domElement",
+   "timeout": 30000
+  },
+  {
+   "name": "every contest, played clumsily"
+  },
+  {
+   "drive": "tools/lib/c2_guns.mjs",
+   "profile": "clumsy",
+   "tries": 3,
+   "beatTimeout": 150,
+   "beats": [
+    "door",
+    "two_ways",
+    "pin",
+    "rush",
+    "street",
+    "street_rev"
+   ],
+   "check": "D.lost === 0 && D.falls.length >= 1 && D.falls.every((w) => w && w !== 'timeout') && D.allWarned",
+   "label": "the clumsy first-timer fails some and gets through every contest within three tries, each fall warned"
+  },
+  {
+   "eval": "(N.game.guns.events || []).filter((e) => e.what === 'down' || e.what === 'flank').map((e) => e.what + ' ' + (e.why || e.at))"
+  }
+ ]
+}

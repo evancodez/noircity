@@ -1,0 +1,19 @@
+{
+  "about": "C2 critic: the ready beat done right: E, a step up to the desk, C, RMB up, the bottles, R. Then the door beat, hands off.",
+  "url": "/?mute=1&start=guns",
+  "size": [1440, 900],
+  "out": "shots/critic/c2/ready2",
+  "steps": [
+    { "wait": 2500 },
+    { "clickOn": "#title .opt[data-k=begin]", "taken": "G.state === 'playing' || !!G.scenes.current", "retries": 3 },
+    { "wait": 2000 },
+    { "drive": "tools/plays/critic/c2/seq.mjs", "seq": [
+      "k KeyE", "w 1500", "st", "k KeyW 450", "w 300", "st", "s a01_atdesk", "k KeyC", "w 900", "st", "s a02_low",
+      "w 1200", "st", "s a03_card",
+      "md right", "w 350", "st", "s a04_up", "aim -1.92,1.63,-6.93 0.004", "w 250", "s a05_onbottle", "c left", "w 450", "st", "s a06_shot",
+      "aim -1.92,1.63,-6.75 0.004", "w 250", "c left", "w 450", "aim -1.90,1.63,-6.57 0.004", "w 250", "c left", "w 500", "st", "mu right", "w 400", "st", "s a07_down",
+      "w 800", "st", "s a08_reloadcard", "k KeyR", "w 400", "st", "s a09_reloading", "w 3000", "st",
+      "watch 30000 2500 b"
+    ] }
+  ]
+}

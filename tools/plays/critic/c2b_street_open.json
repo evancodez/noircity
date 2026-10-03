@@ -1,0 +1,11 @@
+{
+  "about": "C2 critic, second look (findings 3 and 6): the rush won by the good hands, then the street's first seconds as they come (hands off): the lines over the fade, any 'Move!' with nobody firing, the stale 'Clear.'.",
+  "url": "/?mute=1",
+  "size": [1440, 900],
+  "out": "shots/critic/c2b/street_open",
+  "steps": [
+    { "wait": 1500 },
+    { "drive": "tools/plays/critic/c2/hands.mjs", "style": "good", "tries": 4, "timeout": 120000, "beats": ["rush"] },
+    { "drive": "tools/plays/critic/c2/seq.mjs", "seq": ["watch 9000 600 st_", "st"] }
+  ]
+}

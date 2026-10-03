@@ -1,0 +1,11 @@
+{
+  "about": "C2 after the critic: what a player at the bar counter sees of the pin's men in the lobby behind the frosted glass (hands off, frames each second)",
+  "url": "/?mute=1&start=guns.pin",
+  "size": [1440, 900],
+  "out": "shots/c2fix/pin_look",
+  "steps": [
+    { "wait": 2500 },
+    { "clickOn": "#title .opt[data-k=begin]", "taken": "G.state === 'playing' && N.controller.mode === 'gun'", "retries": 3 },
+    { "drive": "tools/plays/critic/c2/seq.mjs", "seq": [ "e G.time", "w 600", "s p00", "e [...G.ais.values()].map(a => a.brain.S.state + '@' + a.h.pos.x.toFixed(1) + ',' + a.h.pos.z.toFixed(1))", "w 1000", "s p01", "w 1000", "s p02", "w 1000", "s p03", "e [...G.ais.values()].map(a => a.brain.S.state + '@' + a.h.pos.x.toFixed(1) + ',' + a.h.pos.z.toFixed(1))", "w 1000", "s p04", "w 1000", "s p05", "e [...G.ais.values()].map(a => a.brain.S.state + '@' + a.h.pos.x.toFixed(1) + ',' + a.h.pos.z.toFixed(1))", "w 1000", "s p06", "w 1000", "s p07", "e [...G.ais.values()].map(a => a.brain.S.state + '@' + a.h.pos.x.toFixed(1) + ',' + a.h.pos.z.toFixed(1))" ] }
+  ]
+}

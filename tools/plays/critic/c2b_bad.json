@@ -1,0 +1,20 @@
+{
+  "about": "C2 critic, second look, proof (b) bad: the clumsy first-timer who reads each fall's words.",
+  "url": "/?mute=1",
+  "size": [
+    1440,
+    900
+  ],
+  "out": "shots/critic/c2b/bad",
+  "steps": [
+    {
+      "wait": 1500
+    },
+    {
+      "drive": "tools/plays/critic/c2/hands.mjs",
+      "style": "bad",
+      "tries": 5,
+      "timeout": 200000
+    }
+  ]
+}

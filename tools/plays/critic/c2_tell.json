@@ -1,0 +1,11 @@
+{
+  "about": "C2 critic: the tell in slow time (speed 0.25), hands off, standing in the open in the door beat: what does the first-timer see between a man showing in the doorway and his first round landing? Then the same in the pin beat (the Tommy gunner behind the frosted glass).",
+  "url": "/?mute=1",
+  "size": [1440, 900],
+  "out": "shots/critic/c2/tell",
+  "steps": [
+    { "wait": 1500 },
+    { "drive": "tools/plays/critic/c2/film.mjs", "url": "/?mute=1&speed=0.25&start=guns.door", "from": "[...G.ais.values()].some((a) => a.brain.S.state === 'aim' || a.brain.S.state === 'out' || (a.brain.S.entry && a.brain.S.entry.ph === 'frame'))", "n": 14, "every": 180, "tag": "door", "timeout": 90000 },
+    { "drive": "tools/plays/critic/c2/film.mjs", "url": "/?mute=1&speed=0.25&start=guns.pin", "from": "[...G.ais.values()].some((a) => a.brain.kind === 'tommy' && (a.brain.S.state === 'aim' || a.brain.S.state === 'out'))", "n": 12, "every": 200, "tag": "pin", "timeout": 90000 }
+  ]
+}

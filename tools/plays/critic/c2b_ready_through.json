@@ -1,0 +1,20 @@
+{
+  "about": "C2 critic, second look: the ready beat done as the cards say (E, C, RMB, the two bottles, R), then the door beat hands off: its start, the warning, the fall, the retry.",
+  "url": "/?mute=1&start=guns",
+  "size": [1440, 900],
+  "out": "shots/critic/c2b/ready2",
+  "steps": [
+    { "wait": 2500 },
+    { "clickOn": "#title .opt[data-k=begin]", "taken": "G.state === 'playing' || !!G.scenes.current", "retries": 3 },
+    { "wait": 5000 },
+    { "drive": "tools/plays/critic/c2/seq.mjs", "seq": [
+      "k KeyE", "w 2500", "k KeyC", "w 1200", "st",
+      "md right", "w 350",
+      "aim -1.94,1.63,-6.93 0.004", "w 200", "c left", "w 500", "s b01_shot1",
+      "aim -1.92,1.63,-6.75 0.004", "w 200", "c left", "w 500", "st", "s b02_shot2",
+      "mu right", "w 600", "st", "s b03_reloadcard",
+      "k KeyR", "w 400", "st", "s b04_reloading", "w 2500", "st",
+      "watch 16000 1000 d_"
+    ] }
+  ]
+}

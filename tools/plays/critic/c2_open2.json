@@ -1,0 +1,10 @@
+{
+  "about": "C2 critic: stand and trade, again, on the beats where the first run said least (the pin won standing; the street stood up this time)",
+  "url": "/?mute=1",
+  "size": [1440, 900],
+  "out": "shots/critic/c2/open2",
+  "steps": [
+    { "wait": 1500 },
+    { "drive": "tools/plays/critic/c2/hands.mjs", "style": "open", "tries": 3, "timeout": 120000, "beats": ["pin", "street", "street_rev", "pin", "door"] }
+  ]
+}

@@ -1,0 +1,10 @@
+{
+  "about": "C2 critic: stand in the open and trade (never C, never RMB-rise): does it lose most beats?",
+  "url": "/?mute=1",
+  "size": [1440, 900],
+  "out": "shots/critic/c2/open",
+  "steps": [
+    { "wait": 1500 },
+    { "drive": "tools/plays/critic/c2/hands.mjs", "style": "open", "tries": 3, "timeout": 120000 }
+  ]
+}

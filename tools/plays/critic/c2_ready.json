@@ -1,0 +1,20 @@
+{
+  "about": "C2 critic: the ready beat as a first-timer reads it: E, then whatever the screen says.",
+  "url": "/?mute=1&start=guns",
+  "size": [1440, 900],
+  "out": "shots/critic/c2/ready",
+  "steps": [
+    { "wait": 2500 },
+    { "clickOn": "#title .opt[data-k=begin]", "taken": "G.state === 'playing' || !!G.scenes.current", "retries": 3 },
+    { "wait": 2000 },
+    { "drive": "tools/plays/critic/c2/seq.mjs", "seq": [
+      "st", "k KeyE", "w 300", "s r01_tip", "w 700", "st", "s r02_after", "w 1500", "st", "s r03",
+      "watch 3000 1500 r04_",
+      "k KeyC", "w 400", "st", "s r05_crouched", "w 1500", "st", "s r06",
+      "md right", "w 300", "st", "s r07_rise", "c left", "w 400", "c left", "w 300", "st", "mu right", "w 300", "st", "s r08_down",
+      "watch 3000 1500 r09_",
+      "k KeyR", "w 300", "st", "s r10_reload", "w 2500", "st", "s r11",
+      "watch 8000 2000 r12_"
+    ] }
+  ]
+}

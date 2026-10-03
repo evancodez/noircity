@@ -1,0 +1,10 @@
+{
+  "about": "C2 after the critic's second look: the critic's good hands (copy with each try's record) in street_rev, two sessions of three tries.",
+  "url": "/?mute=1&c2rec=1",
+  "size": [1440, 900],
+  "out": "shots/c2fix2/good_street_rec",
+  "steps": [
+    { "wait": 1500 },
+    { "drive": "tools/plays/c2fix2/hands_rec.mjs", "recTries": true, "misses": false, "query": "&c2rec=1", "style": "good", "tries": 3, "timeout": 150000, "beats": ["street_rev", "street_rev"] }
+  ]
+}

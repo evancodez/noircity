@@ -1,0 +1,8 @@
+{
+  "about": "C2 after the critic: the pin - the critic's open hands three sessions, then the owner's good profile once (from the title)",
+  "url": "/?mute=1&start=guns.door", "size": [1440, 900], "out": "shots/c2fix/pin_oo",
+  "steps": [ { "wait": 1500 },
+    { "drive": "tools/plays/c2fix/hands_rec.mjs", "style": "open", "tries": 3, "beats": ["pin", "pin", "pin"], "timeout": 120000 },
+    { "drive": "tools/plays/c2fix/hands_rec.mjs", "style": "good", "tries": 3, "beats": ["pin"], "timeout": 120000 }
+  ]
+}
