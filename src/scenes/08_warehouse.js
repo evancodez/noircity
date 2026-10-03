@@ -483,7 +483,7 @@ function live(ctx) {
   I.add({ id: 'b6bay', at: V(PIER.shed.x1 - 0.2, 1.05, PIER.bayDoor.z - 0.4), range: 2.2, cone: 1.1, prompt: 'open', when: () => !shed.bayDoor.isOpen && ctx.beat === 'after',
     onUse: () => { shed.bayDoor.open(1); G.sfx.play('creak', V(PIER.shed.x1, 1.2, PIER.bayDoor.z), {}, { ref: 3 }); } });
   // [C7] my coupe: the way to the diner
-  I.add({ id: 'c7car', at: V(PIER.car.x, 1.0, PIER.car.z), range: 2.6, cone: 1.2, prompt: 'get in', when: () => ctx.beat === 'after' && L.won && !L.inCar,
+  I.add({ id: 'c7car', at: V(PIER.car.x, 1.0, PIER.car.z), range: 3.8, cone: 1.3, prompt: 'get in', when: () => ctx.beat === 'after' && L.won && !L.inCar,
     onUse: () => { L.inCar = true; G.controller.frozen = true; G.sfx.play('creak', V(PIER.car.x, 1, PIER.car.z), {}, { ref: 2 }); } });
 
   // [C7] my rounds: a lamp's head on the line goes out, a hunter who did not
@@ -648,7 +648,7 @@ function* listenBeat(ctx) {
   const win = ctx.stage.anchor('pier9.office.window.in');
   yield wait(0.8);
   // (back at the window after the cosh: the order is not heard twice)
-  for (let i = L.retry ? LINES.length - 1 : 0; i < LINES.length; i++) {
+  for (let i = L.retry && L.beat === 'listen' ? LINES.length - 1 : 0; i < LINES.length; i++) {
     L.said = i + 1;
     yield* ctx.say(LINES[i], 3.0);
     yield wait(i === LINES.length - 1 ? 0.6 : 1.0);
@@ -792,10 +792,15 @@ export default defineScene({
     const L = LIVE, crew = L.crew, C = G.controller, hud = ctx.hud, mezz = stage.part('mezz');
     const inside = () => inShed(C.pos.x, C.pos.z) && C.pos.z < -0.7;
     // a checkpoint: where a fail sends me back, with the men down as they lie
-    const cp = (b) => {
-      ctx.flags.cp = b; L.cp = b;
+    // (only while they are calm: a checkpoint is never taken with a man on
+    // to me - it waits for the calm)
+    const calm = () => crew.alarmT < 0 && !crew.men.some((m) => !m.down && (m.a > 0.3 || m.mode === 'search'));
+    const cpNow = (b) => {
+      ctx.flags.cp = b; L.cp = b; L.cpPending = null;
       SNAP = { cp: b, downs: crew.men.filter((m) => m.down).map((m) => ({ name: m.name, x: m.pos.x, z: m.pos.z, yaw: m.fig.yaw, found: !!m.found })) };
     };
+    const cp = (b) => { if (L.stealth.loud || L.fightOn || calm()) cpNow(b); else L.cpPending = b; };
+    ctx.onStep(() => { if (L.cpPending && calm()) cpNow(L.cpPending); });
     // the quiet pass's cards (once per save): low and quiet as he comes; the
     // blow from behind the first time one is in reach
     const teachQuiet = () => {

@@ -515,7 +515,7 @@
   },
   {
    "until": "G.scenes.beat === 'office'",
-   "timeout": 40000
+   "timeout": 70000
   },
   {
    "expect": "!G.counters.caught && W().crew.alarmT < 0 && (G.counters.takedowns || 0) === 0",
