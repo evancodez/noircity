@@ -762,7 +762,7 @@ export default {
         case 'aim': {
           if (kind === 'rusher') rushOn(dt);
           else { h.speed = 0; if (h.state !== 'aim') h.setState('aim', 0.15); }
-          face(dt, 7);
+          face(dt, 5.5);   // [C2b] 7 -> 5.5 rad/s: a man aiming turns slower than one on his feet (~315 degrees a second)
           if (S.target) h.lookAt(S.aimP);
           S.raiseT += dt;
           if (S.raiseT < T.raise) break;
@@ -778,7 +778,7 @@ export default {
         }
         case 'fire': {
           if (kind === 'rusher') rushOn(dt); else h.speed = 0;
-          face(dt, 7);
+          face(dt, 5.5);
           if (S.target) h.lookAt(S.aimP);
           if (kind === 'pistol' && !S.line) {
             // (lost me between rounds: the settle drains, he holds the aim)

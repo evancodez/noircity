@@ -1,0 +1,173 @@
+{
+ "about": "[C2b] The dead block nobody (the user: 'the bodies being physical objects means you can't walk over them as a player, so you can be blocked, and enemies get stuck on them'). On the test bed's lab room (no contest running): three men killed in the doorway A1 and down the corridor, where they fall. (1) I walk by real input (W held) straight through the doorway's body and along the corridor through the other two: no slowing (the speed over every 0.2 s within 90 % of the walk's), the eye goes over each one by the step (5 - 8 cm) and no more, and my path passes over each body. (2) A living man walks his way along the corridor through the two bodies lying on it: he does not slow, stop, wait or step round (his speed and his line traced). (3) A body in the doorway A1 and two men who must come through it, one after the other, on a way through that doorway: both come through at their walk, on their line. node tools/play.mjs tools/plays/guns_dead.json",
+ "url": "/?mute=1&start=guns.lab",
+ "size": [
+  1280,
+  800
+ ],
+ "out": "shots/play/guns_dead",
+ "steps": [
+  {
+   "name": "the title, BEGIN at the lab room"
+  },
+  {
+   "until": "G.state === 'title' && !!document.querySelector('#title .opt[data-k=begin]')",
+   "timeout": 60000
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]",
+   "taken": "G.scenes.current && G.scenes.current.id === 'guns'",
+   "retries": 4
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'guns' && G.scenes.beat === 'lab' && !G.scenes.trans && G.scenes.fadeK < 0.1",
+   "timeout": 30000
+  },
+  {
+   "wait": 1200
+  },
+  {
+   "name": "the room: nobody; the doors A1 open, B1 and the back door shut; the helpers (a man held still, killed; a trace of me; a trace of a man)"
+  },
+  {
+   "eval": "(() => { for (const h of [...G.world.hoods.list]) G.removeHood(h); const D = G.stage.part('house').doors; for (const d of Object.values(D)) { d.set(0); d.locked = false; } D.A1.set(-1.62); G.guns.covers.rebuild(); const V = N.THREE.Vector3; window.HOLD = (x, z, yaw) => { const h = G.guns.spawn({ kind: 'pistol', at: { x, z }, wait: 1e9, yaw }); const ai = G.ais.get(h); ai.brain.S.state = 'watch'; return h; }; window.KILL = (h, dx, dz, k) => G.killHood(h, new V(dx, 0, dz), false, k || 'deathBack'); window.TR = []; window.TRF = () => { const C = N.controller; TR.push([G.time, C.pos.x, C.pos.z, C._overBody || 0, G.eye.y]); }; window.MT = []; window.MTF = () => { for (const h of window.WALKERS || []) if (h.alive && window.PARK && h.pos.x < -3.2) { const ai = G.ais.get(h); if (ai.brain.S.state !== 'watch') { ai.brain.S.state = 'watch'; ai.path = null; h.speed = 0; h.setState('idle', 0.2); } } for (const h of window.WALKERS || []) if (h.alive) MT.push([h.slot, G.time, h.pos.x, h.pos.z, G.ais.get(h) && G.ais.get(h).brain.S.state, h.speed]); }; G.scripts.push(TRF, MTF); window.OVER = (c, rows, xi, zi) => Math.min(...rows.map((r) => { const dx = c.bx - c.ax, dz = c.bz - c.az, L2 = dx * dx + dz * dz || 1e-6; const u = Math.max(0, Math.min(1, ((r[xi] - c.ax) * dx + (r[zi] - c.az) * dz) / L2)); return Math.hypot(r[xi] - c.ax - dx * u, r[zi] - c.az - dz * u); })); window.SPEEDS = (rows, keep) => { const R = rows.filter(keep); const out = []; let j = 0; for (let i = 0; i < R.length; i++) { while (j < i && R[i][0] - R[j][0] > 0.2) j++; if (R[i][0] - R[j][0] > 0.15) out.push(Math.hypot(R[i][1] - R[j][1], R[i][2] - R[j][2]) / (R[i][0] - R[j][0])); } return out; }; return 'ok'; })()"
+  },
+  {
+   "name": "three men: one in the doorway A1, two down the corridor (shot from the room's side and from the back)"
+  },
+  {
+   "eval": "(() => { window.D1 = HOLD(-2.0, -4.1, -Math.PI / 2); window.D2 = HOLD(-0.4, -5.6, 0); window.D3 = HOLD(-0.4, -2.6, Math.PI); return 'ok'; })()"
+  },
+  {
+   "wait": 500
+  },
+  {
+   "eval": "(KILL(D1, 1, 0), KILL(D2, 0, -1), KILL(D3, 0, 1), 'ok')"
+  },
+  {
+   "wait": 3000
+  },
+  {
+   "eval": "G.guns.corpses.map((c) => [+c.x.toFixed(2), +c.z.toFixed(2), c.hood.state])"
+  },
+  {
+   "expect": "G.guns.corpses.length === 3 && !G.stage.colliders.circles.some((c) => c.tag === 'corpse')",
+   "label": "three bodies where they fell, none of them a collider"
+  },
+  {
+   "name": "(1a) through the doorway's body: from room A, W held, straight across it into the corridor"
+  },
+  {
+   "eval": "(() => { const c = G.guns.corpses.find((q) => q.hood === D1); N.controller.setPose(-3.6, -4.1, -Math.PI / 2, -0.25); N.controller.setMode('gun', { crouch: false }); window.Z1 = c.z; TR.length = 0; return [c.x, c.z]; })()"
+  },
+  {
+   "wait": 300
+  },
+  {
+   "down": "KeyW"
+  },
+  {
+   "wait": 300
+  },
+  {
+   "shot": "d01_over_the_doorway"
+  },
+  {
+   "wait": 650
+  },
+  {
+   "up": "KeyW"
+  },
+  {
+   "wait": 300
+  },
+  {
+   "eval": "(() => { const v = SPEEDS(TR, (r) => r[1] > -2.6 && r[1] < -0.5); const c = G.guns.corpses.find((q) => q.hood === D1); const pass = OVER(c, TR, 1, 2); window.R1 = { minV: +Math.min(...v).toFixed(2), maxV: +Math.max(...v).toFixed(2), n: v.length, step: +(Math.max(...TR.map((r) => r[3])) * 0.065).toFixed(3), pass: +pass.toFixed(2), endX: +N.controller.pos.x.toFixed(2) }; return R1; })()"
+  },
+  {
+   "expect": "R1.n > 2 && R1.minV > 0.9 * 3.6 && R1.pass < 0.25 && R1.step >= 0.05 && R1.step <= 0.08 && R1.endX > -0.6",
+   "label": "the doorway's body: walked over at the walk's speed, the eye stepped 5 - 8 cm"
+  },
+  {
+   "name": "(1b) along the corridor, through the two lying in it, W held"
+  },
+  {
+   "eval": "(() => { N.controller.setPose(-0.4, -7.3, Math.PI, -0.3); N.controller.setMode('gun', { crouch: false }); TR.length = 0; return 'ok'; })()"
+  },
+  {
+   "wait": 300
+  },
+  {
+   "down": "KeyW"
+  },
+  {
+   "wait": 900
+  },
+  {
+   "shot": "d02_down_the_corridor"
+  },
+  {
+   "wait": 1100
+  },
+  {
+   "up": "KeyW"
+  },
+  {
+   "wait": 300
+  },
+  {
+   "eval": "(() => { const v = SPEEDS(TR, (r) => r[2] > -6.6 && r[2] < -1.4); const pass = [D2, D3].map((h) => { const c = G.guns.corpses.find((q) => q.hood === h); return +OVER(c, TR, 1, 2).toFixed(2); }); window.R2 = { minV: +Math.min(...v).toFixed(2), maxV: +Math.max(...v).toFixed(2), n: v.length, step: +(Math.max(...TR.map((r) => r[3])) * 0.065).toFixed(3), pass, endZ: +N.controller.pos.z.toFixed(2) }; return R2; })()"
+  },
+  {
+   "expect": "R2.n > 4 && R2.minV > 0.9 * 3.6 && R2.pass.every((p) => p < 0.25) && R2.step >= 0.05 && R2.step <= 0.08 && R2.endZ > -1.0",
+   "label": "the corridor's two bodies: walked through at the walk's speed, the eye stepped 5 - 8 cm"
+  },
+  {
+   "name": "(2) a living man walks the corridor through the two lying on it (I am in room B, the door B1 shut: he has no line on me)"
+  },
+  {
+   "eval": "(() => { N.controller.setPose(6.5, -6.0, 0, -0.05); N.controller.setMode('gun', { crouch: false }); MT.length = 0; window.WALKERS = [G.guns.spawn({ kind: 'pistol', at: { x: -0.4, z: -7.4 }, way: { steps: [{ x: -0.4, z: 0.2 }] }, wait: 0, yaw: 0 })]; return 'ok'; })()"
+  },
+  {
+   "wait": 6500
+  },
+  {
+   "eval": "(() => { const rows = MT.map((r) => [r[1], r[2], r[3], r[4]]); const v = SPEEDS(rows, (r) => r[2] > -6.4 && r[2] < -1.4); const off = Math.max(...rows.filter((r) => r[2] > -6.4 && r[2] < -1.4).map((r) => Math.abs(r[1] + 0.4))); const pass = [D2, D3].map((h) => { const c = G.guns.corpses.find((q) => q.hood === h); return +OVER(c, rows, 1, 2).toFixed(2); }); const states = [...new Set(rows.map((r) => r[3]))]; window.R3 = { minV: +Math.min(...v).toFixed(2), maxV: +Math.max(...v).toFixed(2), n: v.length, off: +off.toFixed(2), pass, states, endZ: +rows[rows.length - 1][2].toFixed(2) }; return R3; })()"
+  },
+  {
+   "expect": "R3.n > 10 && R3.minV > 0.85 * 1.5 && R3.off < 0.12 && R3.pass.every((p) => p < 0.25) && R3.endZ > -1.0",
+   "label": "the man walked his line through both bodies: no slowing, no stop, no step round"
+  },
+  {
+   "name": "(3) a body in the doorway A1; two men come through it one after the other, on a way through that doorway (each stands where his way ends, out of the other's)"
+  },
+  {
+   "eval": "(() => { for (const h of window.WALKERS) G.removeHood(h); MT.length = 0; window.PARK = true; N.controller.setPose(6.5, -6.0, 0, -0.05); const st = [{ x: -0.4, z: -4.1 }, { x: -3.6, z: -4.1 }]; window.WALKERS = [G.guns.spawn({ kind: 'pistol', at: { x: -0.4, z: -7.0 }, way: { steps: st }, wait: 0, yaw: 0 }), G.guns.spawn({ kind: 'pistol', at: { x: -0.4, z: -7.6 }, way: { steps: st }, wait: 1.6, yaw: 0 })]; return 'ok'; })()"
+  },
+  {
+   "wait": 7000
+  },
+  {
+   "eval": "(() => { const out = {}; for (const h of window.WALKERS) { const rows = MT.filter((r) => r[0] === h.slot && r[4] === 'entry').map((r) => [r[1], r[2], r[3], r[4]]); const v = SPEEDS(rows, (r) => r[1] > -2.4 && r[1] < -1.0); const off = Math.max(0, ...rows.filter((r) => r[1] > -2.4 && r[1] < -1.0).map((r) => Math.abs(r[2] + 4.1))); const c = G.guns.corpses.find((q) => q.hood === D1); out[h.slot] = { minV: +Math.min(...v).toFixed(2), n: v.length, off: +off.toFixed(2), pass: +OVER(c, rows, 1, 2).toFixed(2), endX: +Math.min(...rows.map((r) => r[1])).toFixed(2) }; } window.R4 = out; return out; })()"
+  },
+  {
+   "expect": "Object.values(R4).length === 2 && Object.values(R4).every((q) => q.n > 3 && q.minV > 0.85 * 1.5 && q.off < 0.15 && q.pass < 0.25 && q.endX < -2.6)",
+   "label": "both men came through the doorway over the body at their walk, on their line"
+  },
+  {
+   "eval": "(N.controller.setPose(0.1, -4.1, Math.PI / 2, -0.22), N.controller.setMode('gun', { crouch: false }), 'ok')"
+  },
+  {
+   "wait": 600
+  },
+  {
+   "shot": "d03_the_doorway_after"
+  },
+  {
+   "eval": "(G.scripts.splice(G.scripts.indexOf(TRF), 1), G.scripts.splice(G.scripts.indexOf(MTF), 1), 'ok')"
+  }
+ ]
+}

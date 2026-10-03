@@ -159,12 +159,14 @@ export class Guns {
     return h;
   }
   // a living man is kept out of everything solid, other men and me - but
-  // not the dead (a body never blocks a doorway for the living)
+  // not the dead (a body never blocks a doorway for the living). [C2b] the
+  // dead are not in the colliders at all now (this.corpses, below): the old
+  // way here zeroed a corpse circle's radius, but the resolve still pushed a
+  // man to his own radius off its centre - every body was a post 0.32 m round
+  // that the living were shoved off and stuck on
   resolveMan(h) {
-    const G = this.game, C = G.stage.colliders, cs = this.corpses || [];
-    for (const c of cs) { c._r = c.r; c.r = 0; }
+    const G = this.game, C = G.stage.colliders;
     C.resolve(h.pos, 0.32 * h.scale, h.collider);
-    for (const c of cs) c.r = c._r;
     const p = G.eye, dx = h.pos.x - p.x, dz = h.pos.z - p.z, d = Math.hypot(dx, dz);
     if (d < 0.7 && d > 1e-4) { h.pos.x = p.x + dx / d * 0.7; h.pos.z = p.z + dz / d * 0.7; }
   }
@@ -186,6 +188,25 @@ export class Guns {
     for (const c of this.corpses || []) { const i = C.circles.indexOf(c); if (i >= 0) C.circles.splice(i, 1); }
     this.corpses = [];
   }
+  // [C2b] the dead block nobody (the user, after playing the test bed: "you
+  // can't walk over them as a player, so you can be blocked, and enemies get
+  // stuck on them"): a body is still where it fell - slumped down the wall,
+  // over the cover, in the doorway - and rounds stop in it or not as before
+  // (the Hood's hit volumes), but it is in nobody's colliders, nav grid or
+  // steering. The player steps over it: how high the foot is lifted at
+  // (x, z), 0 .. 1 of the step (the gun mode lifts the eye GUN_MODE.overBody)
+  overBody(x, z) {
+    let k = 0;
+    for (const c of this.corpses || []) {
+      // (the body's length as it lies, head to feet: a segment, not the torso's circle)
+      const dx = c.bx - c.ax, dz = c.bz - c.az, L2 = dx * dx + dz * dz || 1e-6;
+      const u = Math.max(0, Math.min(1, ((x - c.ax) * dx + (z - c.az) * dz) / L2));
+      const d = Math.hypot(x - c.ax - dx * u, z - c.az - dz * u);
+      const q = Math.max(0, Math.min(1, (0.5 - d) / 0.3));
+      k = Math.max(k, q * q * (3 - 2 * q));
+    }
+    return k;
+  }
   stepBodies(dt) {
     const G = this.game, C = G.stage.colliders;
     for (let i = this.slides.length - 1; i >= 0; i--) {
@@ -202,13 +223,53 @@ export class Guns {
       this.corpseQ.splice(i, 1);
       if (!q.h.object.parent) continue;
       // the body where it lies: the hips and the chest's middle, on the floor
-      const a = V(0, 0, 0).setFromMatrixPosition(q.h.bones.hips.matrixWorld), b = V(0, 0, 0).setFromMatrixPosition(q.h.bones.chest.matrixWorld);
-      const c = C.addCircle((a.x + b.x) / 2, (a.z + b.z) / 2, 0.27, 'corpse');
-      c.hood = q.h;
-      this.corpses.push(c);
+      // ([C2b] a record, not a collider: { x, z, r } at the torso as before,
+      // and its length, head to feet, for the step over it)
+      this.corpses.push({ x: 0, z: 0, r: 0.27, tag: 'corpse', hood: q.h });
     }
-    // (a body taken away - the corpse cap - takes its circle with it)
-    for (let i = this.corpses.length - 1; i >= 0; i--) if (!this.corpses[i].hood.object.parent) { const c = this.corpses[i]; const j = C.circles.indexOf(c); if (j >= 0) C.circles.splice(j, 1); this.corpses.splice(i, 1); }
+    // (a body taken away - the corpse cap - goes from the list; the others
+    // read where they lie as their fall settles)
+    for (let i = this.corpses.length - 1; i >= 0; i--) {
+      const c = this.corpses[i], Bn = c.hood.bones;
+      if (!c.hood.object.parent) { this.corpses.splice(i, 1); continue; }
+      const a = _a.setFromMatrixPosition(Bn.hips.matrixWorld), b = _b.setFromMatrixPosition(Bn.chest.matrixWorld);
+      c.x = (a.x + b.x) / 2; c.z = (a.z + b.z) / 2;
+      const hd = _p.setFromMatrixPosition(Bn.head.matrixWorld);
+      c.ax = hd.x; c.az = hd.z;
+      a.setFromMatrixPosition(Bn.footL.matrixWorld); b.setFromMatrixPosition(Bn.footR.matrixWorld);
+      c.bx = (a.x + b.x) / 2; c.bz = (a.z + b.z) / 2;
+    }
+    this.stepSpin();
+  }
+  // [C2b] how each living man turns (the user: "enemies, while alive, seem to
+  // do a lot of body / full 360s kind of randomly"): per man, his yaw's change
+  // each step; over the last second the sum of |dyaw| (sec) and the widest
+  // one-way sweep (rev), over the last 2.5 s the widest sweep (turn: a full
+  // circle is 2 pi). The worst of each, and who, in K.spin; a sweep over 300
+  // degrees is an event 'spin' (the plays read both)
+  stepSpin() {
+    const G = this.game, t = G.time;
+    const R = this.spin || (this.spin = { sec: 0, rev: 0, turn: 0, who: null, whoTurn: null, m: new Map() });
+    for (const [h, ai] of G.ais) {
+      if (!h.alive) { R.m.delete(h); continue; }
+      let m = R.m.get(h);
+      if (!m) { R.m.set(h, m = { y: h.yaw, cum: 0, abs: 0, s: [[t, 0, 0]] }); continue; }
+      const d = Math.atan2(Math.sin(h.yaw - m.y), Math.cos(h.yaw - m.y));
+      m.y = h.yaw; m.cum += d; m.abs += Math.abs(d);
+      m.s.push([t, m.cum, m.abs]);
+      while (m.s.length > 2 && t - m.s[0][0] > 2.5) m.s.shift();
+      let lo1 = m.cum, hi1 = m.cum, lo2 = m.cum, hi2 = m.cum, abs0 = m.abs;
+      for (const [ts, c, a] of m.s) {
+        lo2 = Math.min(lo2, c); hi2 = Math.max(hi2, c);
+        if (t - ts <= 1.0) { lo1 = Math.min(lo1, c); hi1 = Math.max(hi1, c); abs0 = Math.min(abs0, a); }
+      }
+      const sec = m.abs - abs0, rev = hi1 - lo1, turn = hi2 - lo2;
+      const st = ai && ai.brain && ai.brain.S ? ai.brain.S.state : ai && ai.state;
+      if (sec > R.sec) { R.sec = sec; R.who = { slot: h.slot, kind: h.gunKind, st, t: +t.toFixed(2) }; }
+      if (rev > R.rev) R.rev = rev;
+      if (turn > R.turn) { R.turn = turn; R.whoTurn = { slot: h.slot, kind: h.gunKind, st, t: +t.toFixed(2) }; }
+      if (turn > 5.24 && !(m.flagT > t - 2.5)) { m.flagT = t; this.events.push({ t: +t.toFixed(2), what: 'spin', kind: h.gunKind, st, deg: Math.round(turn * 57.3), at: [+h.pos.x.toFixed(2), +h.pos.z.toFixed(2)] }); }
+    }
   }
   end() {
     const G = this.game;

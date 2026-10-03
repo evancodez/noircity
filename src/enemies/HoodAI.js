@@ -260,14 +260,28 @@ export class HoodAI {
     if (d < 0.75 && d > 1e-4) { h.pos.x = p.x + dx / d * 0.75; h.pos.z = p.z + dz / d * 0.75; }
   }
 
+  // [C2b] (the user: men "do a lot of body / full 360s kind of randomly") the
+  // short way - and a turn of more than ~140 degrees goes back the way he
+  // came, never on round: a man who turned away to walk a step back to his
+  // cover and then turned to face me again went on round the same way (the
+  // shortest way from facing away is either), a full circle in two seconds.
+  // He remembers which way he has been turning (a decaying sum, ~1.5 s) and a
+  // big turn unwinds it; once picked, a big turn keeps its way to the end
   faceTo(x, z, dt, rate = 5) {
-    const h = this.h;
+    const h = this.h, t = this.game.time;
     const want = Math.atan2(x - h.pos.x, z - h.pos.z);
     let d = want - h.yaw;
     d = Math.atan2(Math.sin(d), Math.cos(d));
-    const step = rate * dt;
-    h.yaw += Math.max(-step, Math.min(step, d));
-    return Math.abs(d);
+    const err = Math.abs(d);
+    const acc = (h._turnAcc || 0) * Math.exp(-Math.max(0, t - (h._turnT ?? t)) / 1.5);
+    if (err > 2.4) {
+      if (!h._bigDir) h._bigDir = Math.abs(acc) > 0.6 ? -Math.sign(acc) : Math.sign(d) || 1;
+      if (Math.sign(d) !== h._bigDir) d -= Math.sign(d) * 2 * Math.PI;
+    } else h._bigDir = 0;
+    const step = rate * dt, s = Math.max(-step, Math.min(step, d));
+    h.yaw += s;
+    h._turnAcc = acc + s; h._turnT = t;
+    return err;
   }
 
   go(x, z, run) {
@@ -300,8 +314,11 @@ export class HoodAI {
     }
     const err = this.faceTo(wp.x, wp.z, dt, this.run ? 6 : 4);
     const speed = this.run ? 2.9 : 1.5;
-    // slow down to turn sharp corners
-    h.speed = speed * (err > 1.2 ? 0.3 : 1);
+    // slow down to turn sharp corners ([C2b] and near his path's end when it
+    // is off his line: at full pace his turn's circle (0.4 m) is wider than
+    // the 0.3 m he must come within - he went round the point, a loop)
+    const last = this.pathI === this.path.length - 1;
+    h.speed = speed * (err > 1.2 || (last && d < 1.2 && err > 0.5) ? 0.3 : 1);
     const want = this.run ? 'run' : 'walk';
     if (h.state !== want) h.setState(want, 0.25);
     // stuck: barely moved in 1.5 s
