@@ -1,0 +1,28 @@
+{
+ "about": "C9 critic: a cold player presses BEGIN and keeps hands off the opening stills; frames as they land; the run's length; the diner coming up out of the black.",
+ "url": "/?mute=1",
+ "size": [1440, 900],
+ "out": "shots/critic9/open",
+ "steps": [
+  { "wait": 1500 },
+  { "shot": "t00_title" },
+  { "clickOn": "#title .opt[data-k=begin]", "taken": "G.state !== 'title'", "retries": 5, "every": 4000 },
+  { "eval": "(window.__t0 = performance.now(), 'begin')" },
+  { "until": "G.stills.active", "timeout": 6000 },
+  { "eval": "((performance.now() - window.__t0)/1000).toFixed(2) + ' s to stills'" },
+  { "wait": 1500 },
+  { "shot": "t01" },
+  { "wait": 2500 },
+  { "shot": "t02" },
+  { "wait": 3000 },
+  { "shot": "t03" },
+  { "until": "!G.stills.active", "timeout": 15000 },
+  { "eval": "JSON.stringify(G.stills.last) + ' total ' + ((performance.now() - window.__t0)/1000).toFixed(2)" },
+  { "wait": 300 },
+  { "shot": "t04_after" },
+  { "wait": 2000 },
+  { "shot": "t05_diner" },
+  { "eval": "G.scenes.current && G.scenes.current.id" },
+  { "eval": "document.querySelector('#stills') && document.querySelector('#stills').innerText" }
+ ]
+}

@@ -265,7 +265,12 @@ export class Stills {
           const k = Math.max(cw / im.width, ch / im.height), dw = im.width * k, dh = im.height * k;
           g2.fillStyle = '#050505'; g2.fillRect(0, 0, cw, ch);
           g2.drawImage(im, (cw - dw) / 2, (ch - dh) / 2, dw, dh);
-          for (const L of this.run ? this.run.landed : []) if (L.i === i && this.run.id === def.id) L.redraw && L.redraw();
+          // [C9] (the panel's own canvas drawn again at once: a picture that
+          // loaded before the panel's first frame - a quick server, a cached
+          // file - left the placeholder up for the whole panel; and a mark the
+          // plays read: the picture is the file's)
+          src._loaded = true;
+          for (const L of this.run ? this.run.landed : []) if (L.i === i && this.run.id === def.id && L.el._pic && L.el._pic._redraw) L.el._pic._redraw();
           if (this.shotRun) for (const el of this.el.querySelectorAll('.panel')) if (el._pic && el._pic._redraw) el._pic._redraw();
         };
         im.onerror = () => { /* the placeholder stays */ };
@@ -293,6 +298,13 @@ export class Stills {
     R.t += dt;
     R.since += dt;
     R.cover = Math.min(1, R.cover + dt / 0.25);
+    // [C9] (after the critic: 'esc again skips' stayed up after the 1.2 s in
+    // which a second ESC skips - a player who read it and pressed got nothing:
+    // the hint goes back when the window shuts)
+    if (this.hint.classList.contains('on') && performance.now() - this.esc.last >= 1200) {
+      this.hint.textContent = 'click: next · esc esc: skip';
+      this.hint.classList.remove('on');
+    }
     for (const L of R.landed) {
       L.t += dt;
       this.pose(L, R.def);
