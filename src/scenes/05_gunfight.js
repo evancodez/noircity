@@ -68,11 +68,13 @@ const DOORMEN = [
 ];
 // the flank's two: from the corridor's south end, through 305, at the connecting door (as a pair)
 const FLANKERS = [
-  // ([C5] after the critic: the two come in together, through the door and into the room, each to his own side of it -
-  // not one working its jamb while the other waits behind him: one at a time out of one doorway, a man standing in
-  // the room facing it won the flank untouched. A man on his way in who sees me standing in the open stops and shoots)
-  { name: 'flankA', at: { x: -4.75, z: -6.3 }, way: [{ door: 'D305' }, { x: 2.9, z: -2.5, run: true }, { door: 'CONN' }, { x: 5.0, z: 1.2, run: true }] },
-  { name: 'flankB', at: { x: -5.05, z: -6.75 }, way: [{ door: 'D305' }, { x: 3.6, z: -2.9, run: true }, { door: 'CONN' }, { x: 3.9, z: 1.5, run: true }], late: 0.25 },
+  // ([C5] after the critic: the two come at the same time from two sides - one through 305 and the connecting door (its
+  // handle turns: heard, seen, 'The other door! Behind you!'), one up the corridor and in at the suite's door to the
+  // opening's jamb. Both through the connecting door, one at a time out of one doorway, a man standing in the room
+  // facing it won the flank; one held at its jamb, the other behind him, waited his turn. From two sides a man in
+  // the open cannot face both; behind the desk, the front one is the desk's and the door's one is mine to turn to)
+  { name: 'flankA', at: { x: -4.75, z: -6.3 }, way: [{ door: 'D305' }, { x: 2.9, z: -2.5, run: true }, { door: 'CONN' }, { x: 4.6, z: 1.3, run: true }] },
+  { name: 'flankB', at: { x: -5.05, z: -6.75 }, way: [{ x: -4.75, z: 1.2, run: true }, { door: 'AMES' }, { x: -1.0, z: 2.0, run: true }] },
 ];
 // (the plays: each beat's cover places for the good hand - behind it, facing the way they come - and the bad hand's open floor)
 const SPOTS = {
