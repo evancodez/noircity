@@ -1,5 +1,5 @@
 {
- "about": "Lane C9's stills (docs/story/briefs/C9_STILLS.md) by real input: BEGIN, the opening's three pictures stepped through by clicks (each loaded from public/stills/, not the placeholder); then, from the diner, every other run played as its chapter plays it (game.stills.play) and stepped through by clicks, E and SPACE; one left alone (it moves on by itself and ends in about its panels' seconds); one skipped by ESC twice; a frame of every page. node tools/play.mjs tools/plays/stills.json",
+ "about": "Lane C9's stills (docs/story/briefs/C9_STILLS.md) by real input: BEGIN, the opening's three pictures stepped through by clicks (each loaded from public/stills/, not the placeholder); then, from the diner, every other run played as its chapter plays it (game.stills.play) and stepped through by clicks, E and SPACE; one left alone (it moves on by itself and ends in about its panels' seconds); one skipped by ESC twice; one ESC and a late one (the hint goes back when the second ESC would no longer skip); a frame of every page. node tools/play.mjs tools/plays/stills.json",
  "url": "/?mute=1",
  "size": [1440, 900],
  "out": "shots/play/stills",
@@ -24,7 +24,6 @@
   { "expect": "G.stills.last.id === 'opening' && !G.stills.last.skipped && G.stills.last.panels === 3", "label": "a click after the last panel ends the run" },
   { "until": "G.scenes.current && G.scenes.current.id === 'diner'", "timeout": 5000 },
   { "wait": 1500 },
-
   { "name": "the end of II: Ames's card (a click)" },
   { "eval": "(window.__h = G.stills.play('ames'), 'ames')" },
   { "wait": 1100 },
@@ -34,7 +33,6 @@
   { "until": "window.__h.done", "timeout": 3000 },
   { "expect": "G.stills.last.id === 'ames' && G.stills.last.panels === 1 && !G.stills.last.skipped", "label": "one panel, a click ends it" },
   { "wait": 1200 },
-
   { "name": "III: the check (E, then SPACE)" },
   { "eval": "(window.__h = G.stills.play('check'), 'check')" },
   { "wait": 1000 },
@@ -47,7 +45,6 @@
   { "until": "window.__h.done", "timeout": 3000 },
   { "expect": "G.stills.last.id === 'check' && G.stills.last.panels === 2", "label": "SPACE ends it" },
   { "wait": 1200 },
-
   { "name": "VII: the photograph (a click)" },
   { "eval": "(window.__h = G.stills.play('photo'), 'photo')" },
   { "wait": 1100 },
@@ -56,7 +53,6 @@
   { "mouse": "click" },
   { "until": "window.__h.done", "timeout": 3000 },
   { "wait": 1200 },
-
   { "name": "VIII: THE DINER (skipped: ESC twice)" },
   { "eval": "(window.__h = G.stills.play('diner'), 'diner')" },
   { "wait": 1100 },
@@ -68,7 +64,20 @@
   { "until": "window.__h.done", "timeout": 2500 },
   { "expect": "G.stills.last.id === 'diner' && G.stills.last.skipped === true", "label": "ESC twice skips it" },
   { "wait": 1500 },
-
+  { "name": "[C9 after the critic] one ESC, then a late one: the hint says what is true" },
+  { "eval": "(window.__h = G.stills.play('check'), 'check again')" },
+  { "wait": 1000 },
+  { "key": "Escape" },
+  { "wait": 300 },
+  { "expect": "/esc again skips/i.test(document.querySelector('#stills .hint').textContent) && G.stills.active", "label": "one ESC: 'esc again skips' and the run held" },
+  { "wait": 1300 },
+  { "expect": "/esc esc: skip/i.test(document.querySelector('#stills .hint').textContent) && G.stills.active", "label": "1.6 s later, the window shut: the hint is back to 'esc esc: skip'" },
+  { "key": "Escape" },
+  { "wait": 300 },
+  { "key": "Escape" },
+  { "until": "window.__h.done", "timeout": 2500 },
+  { "expect": "G.stills.last.id === 'check' && G.stills.last.skipped === true", "label": "as the hint says: ESC twice skips" },
+  { "wait": 1500 },
   { "name": "the end: left alone, it moves on by itself" },
   { "eval": "(window.__h = G.stills.play('end'), 'end')" },
   { "wait": 1400 },
