@@ -1,0 +1,55 @@
+{
+ "about": "C2 critic, second look: out of the back door (the men leave it open), how far: south into the plain, round the house's east end toward the street? (BD unlocked by eval, as the men leave it; the walk by real input)",
+ "url": "/?mute=1&start=guns",
+ "size": [
+  1440,
+  900
+ ],
+ "out": "shots/critic/c2b/backdoor2",
+ "steps": [
+  {
+   "wait": 2500
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]",
+   "taken": "G.state === 'playing' && N.controller.mode === 'gun'",
+   "retries": 3
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "eval": "(G.stage.part('house').doors.BD.locked = false, 'BD unlocked, as the men leave it')"
+  },
+  {
+   "drive": "tools/plays/critic/c2/seq.mjs",
+   "seq": [
+    "pitch 0",
+    "go -7.0 -5.5",
+    "go -2.4 -6.6",
+    "go -2.4 -4.1",
+    "face -1.2 -4.1",
+    "k KeyE",
+    "w 1500",
+    "go -0.4 -4.1",
+    "go -0.4 -7.0",
+    "face -0.4 -8.5",
+    "k KeyE",
+    "w 1500",
+    "go -0.4 -9.3",
+    "go -0.4 -14 8000",
+    "e ['at', N.controller.pos.x.toFixed(2), N.controller.pos.z.toFixed(2)]",
+    "s y01_south_edge",
+    "go 10.5 -9.6 12000",
+    "e ['at', N.controller.pos.x.toFixed(2), N.controller.pos.z.toFixed(2)]",
+    "s y02_round_east",
+    "go 10.5 0 12000",
+    "e ['at', N.controller.pos.x.toFixed(2), N.controller.pos.z.toFixed(2)]",
+    "s y03_house_side",
+    "go 10.5 7.0 12000",
+    "e ['at', N.controller.pos.x.toFixed(2), N.controller.pos.z.toFixed(2)]",
+    "s y04_to_street"
+   ]
+  }
+ ]
+}
