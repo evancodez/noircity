@@ -1,0 +1,31 @@
+{
+ "about": "Critic (C3c): from the title, BEGIN at the tail; the good hands (src/scenes/tail/bot.js through tools/lib/c3_tail.mjs) drive it while the screen is shot every ~12 s of chase time for the neon (what colour is in each frame), the river road, the wreck. Stops when the prompt to get out is shown at the wreck. NOIR_PORT=5343 node tools/play.mjs tools/plays/critic/c3c_cold_drive.json --size 1440x900",
+ "url": "/?mute=1&start=tail",
+ "size": [1440, 900],
+ "out": "shots/c3c_critic/drive",
+ "steps": [
+  { "until": "G.state === 'title' && !document.getElementById('title').classList.contains('hidden') && !!document.querySelector('#title .opt[data-k=begin]')", "timeout": 40000 },
+  { "wait": 1500 },
+  { "clickOn": "#title .opt[data-k=begin]", "taken": "G.state === 'playing' && document.pointerLockElement === N.renderer.domElement", "retries": 4, "every": 4000 },
+  { "until": "G.scenes.current && G.scenes.current.id === 'tail' && G.controller.mode === 'drive'", "timeout": 45000 },
+  { "wait": 1200 },
+  { "shot": "d00_kerb" },
+  { "eval": "JSON.stringify({ obj: G.hud.kit && G.hud.kit.objectiveText, teach: G.hud.kit && G.hud.kit.teachCur && G.hud.kit.teachCur.id })" },
+  { "drive": "tools/lib/c3_tail.mjs", "profile": "good", "seed": 33, "timeout": 400000,
+    "stop": "G.hud.promptShown.includes('get out') && !!G.scenes.ctx.flags.chase && G.scenes.ctx.flags.chase.phase !== 'c' && G.scenes.ctx.flags.chase.phase !== 'a' && G.scenes.ctx.flags.chase.phase !== 'b'",
+    "shots": {
+      "d01_t12": "G.scenes.ctx.flags.chase.t > 12",
+      "d02_t24": "G.scenes.ctx.flags.chase.t > 24",
+      "d03_t36": "G.scenes.ctx.flags.chase.t > 36",
+      "d04_t48": "G.scenes.ctx.flags.chase.t > 48",
+      "d05_t60": "G.scenes.ctx.flags.chase.t > 60",
+      "d06_t75": "G.scenes.ctx.flags.chase.t > 75",
+      "d07_t90": "G.scenes.ctx.flags.chase.t > 90",
+      "d08_t105": "G.scenes.ctx.flags.chase.t > 105",
+      "d09_river": "G.scenes.ctx.flags.chase.phase === 'b'",
+      "d10_crash": "G.scenes.ctx.flags.chase.phase === 'crash'"
+    } },
+  { "eval": "JSON.stringify({ phase: G.scenes.ctx.flags.chase.phase, prompt: G.hud.promptShown, obj: G.hud.kit && G.hud.kit.objectiveText, fails: (window.__tailFails||[]).map(f=>f.why) })" },
+  { "shot": "d11_wreck_prompt" }
+ ]
+}

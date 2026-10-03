@@ -1,0 +1,158 @@
+{
+ "about": "Critic (C3c): A - out of the car at the wreck and straight back in by E (does he say it from 16 m away, through my shut door?). B - round to his window with a level eye: the man, the line. C - up the road ahead along his car's heading: what stops me (the walking net's bounds, 60 m round my car: chase.js walkNet / bounds.js walkAround). NOIR_PORT=5343 node tools/play.mjs tools/plays/critic/c3c_wreck_line.json --size 1440x900",
+ "url": "/?mute=1&start=tail.wreck",
+ "size": [
+  1440,
+  900
+ ],
+ "out": "shots/c3c_critic/line",
+ "steps": [
+  {
+   "until": "G.state === 'title' && !document.getElementById('title').classList.contains('hidden') && !!document.querySelector('#title .opt[data-k=begin]')",
+   "timeout": 40000
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]",
+   "taken": "G.state === 'playing' && document.pointerLockElement === N.renderer.domElement",
+   "retries": 4,
+   "every": 4000
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'tail' && !!G.scenes.ctx.flags.chase && !!G.scenes.ctx.flags.chase.atWheel && G.hud.promptShown.includes('get out')",
+   "timeout": 45000
+  },
+  {
+   "name": "A: out and straight back in (never went to him)"
+  },
+  {
+   "key": "KeyE"
+  },
+  {
+   "wait": 1200
+  },
+  {
+   "eval": "JSON.stringify({ mode: G.controller.mode, phase: G.scenes.ctx.flags.chase.phase, pitch: +G.controller.pitch.toFixed(2), eye: [+G.controller.pos.x.toFixed(2), +G.controller.pos.z.toFixed(2)], dMy: +Math.hypot(G.controller.pos.x - G.scenes.ctx.flags.chase.my.pos.x, G.controller.pos.z - G.scenes.ctx.flags.chase.my.pos.z).toFixed(1), bounds: G.stage.colliders.bounds, line: !!G.scenes.ctx.flags.chase.lineSaid, prompt: G.hud.promptShown, obj: G.hud.kit && G.hud.kit.objectiveText, sub: (document.getElementById('subtitle') || {}).textContent })"
+  },
+  {
+   "key": "KeyE"
+  },
+  {
+   "wait": 400
+  },
+  {
+   "eval": "JSON.stringify({ mode: G.controller.mode, phase: G.scenes.ctx.flags.chase.phase, pitch: +G.controller.pitch.toFixed(2), eye: [+G.controller.pos.x.toFixed(2), +G.controller.pos.z.toFixed(2)], dMy: +Math.hypot(G.controller.pos.x - G.scenes.ctx.flags.chase.my.pos.x, G.controller.pos.z - G.scenes.ctx.flags.chase.my.pos.z).toFixed(1), bounds: G.stage.colliders.bounds, line: !!G.scenes.ctx.flags.chase.lineSaid, prompt: G.hud.promptShown, obj: G.hud.kit && G.hud.kit.objectiveText, sub: (document.getElementById('subtitle') || {}).textContent })"
+  },
+  {
+   "shot": "a01_back_in_at_once"
+  },
+  {
+   "name": "B: out, round to his window, a level eye"
+  },
+  {
+   "reload": true
+  },
+  {
+   "until": "G.state === 'title' && !document.getElementById('title').classList.contains('hidden') && !!document.querySelector('#title .opt[data-k=begin]')",
+   "timeout": 40000
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]",
+   "taken": "G.state === 'playing' && document.pointerLockElement === N.renderer.domElement",
+   "retries": 4,
+   "every": 4000
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'tail' && !!G.scenes.ctx.flags.chase && !!G.scenes.ctx.flags.chase.atWheel && G.hud.promptShown.includes('get out')",
+   "timeout": 45000
+  },
+  {
+   "key": "KeyE"
+  },
+  {
+   "wait": 1200
+  },
+  {
+   "look": "(() => { const C = G.scenes.ctx.flags.chase, K = G.controller, t = ([C.his.pos.x, C.his.pos.z]); const want = Math.atan2(-(t[0] - K.pos.x), -(t[1] - K.pos.z)); const dy = Math.atan2(Math.sin(want - K.yaw), Math.cos(want - K.yaw)); return [Math.round(-dy / K.sensitivity), Math.round((K.pitch - (-0.05)) / K.sensitivity)]; })()",
+   "steps": 8
+  },
+  {
+   "walk": "(() => { const C = G.scenes.ctx.flags.chase; const s = Math.sign(C.his.local(C.winAt).z); const a = C.his.seat(C.his.pos.clone().set(-C.his.spec.halfL - 1.6, 0, s * (C.his.spec.halfW + 1.6)), C.his.pos.clone()); const b = C.his.seat(C.his.pos.clone().set(-1.2, 0, s * (C.his.spec.halfW + 1.3)), C.his.pos.clone()); return [[a.x, a.z], [b.x, b.z]]; })()",
+   "timeout": 30000
+  },
+  {
+   "look": "(() => { const C = G.scenes.ctx.flags.chase, K = G.controller, t = ([C.winP.x, C.winP.z]); const want = Math.atan2(-(t[0] - K.pos.x), -(t[1] - K.pos.z)); const dy = Math.atan2(Math.sin(want - K.yaw), Math.cos(want - K.yaw)); return [Math.round(-dy / K.sensitivity), Math.round((K.pitch - (-0.2)) / K.sensitivity)]; })()",
+   "steps": 8
+  },
+  {
+   "wait": 500
+  },
+  {
+   "eval": "JSON.stringify({ mode: G.controller.mode, phase: G.scenes.ctx.flags.chase.phase, pitch: +G.controller.pitch.toFixed(2), eye: [+G.controller.pos.x.toFixed(2), +G.controller.pos.z.toFixed(2)], dMy: +Math.hypot(G.controller.pos.x - G.scenes.ctx.flags.chase.my.pos.x, G.controller.pos.z - G.scenes.ctx.flags.chase.my.pos.z).toFixed(1), bounds: G.stage.colliders.bounds, line: !!G.scenes.ctx.flags.chase.lineSaid, prompt: G.hud.promptShown, obj: G.hud.kit && G.hud.kit.objectiveText, sub: (document.getElementById('subtitle') || {}).textContent })"
+  },
+  {
+   "shot": "b01_approach"
+  },
+  {
+   "walk": "(() => { const C = G.scenes.ctx.flags.chase; return [[C.winAt.x, C.winAt.z]]; })()",
+   "timeout": 15000
+  },
+  {
+   "look": "(() => { const C = G.scenes.ctx.flags.chase, K = G.controller, t = ([C.winP.x, C.winP.z]); const want = Math.atan2(-(t[0] - K.pos.x), -(t[1] - K.pos.z)); const dy = Math.atan2(Math.sin(want - K.yaw), Math.cos(want - K.yaw)); return [Math.round(-dy / K.sensitivity), Math.round((K.pitch - (-0.3)) / K.sensitivity)]; })()",
+   "steps": 8
+  },
+  {
+   "wait": 300
+  },
+  {
+   "eval": "JSON.stringify({ mode: G.controller.mode, phase: G.scenes.ctx.flags.chase.phase, pitch: +G.controller.pitch.toFixed(2), eye: [+G.controller.pos.x.toFixed(2), +G.controller.pos.z.toFixed(2)], dMy: +Math.hypot(G.controller.pos.x - G.scenes.ctx.flags.chase.my.pos.x, G.controller.pos.z - G.scenes.ctx.flags.chase.my.pos.z).toFixed(1), bounds: G.stage.colliders.bounds, line: !!G.scenes.ctx.flags.chase.lineSaid, prompt: G.hud.promptShown, obj: G.hud.kit && G.hud.kit.objectiveText, sub: (document.getElementById('subtitle') || {}).textContent })"
+  },
+  {
+   "shot": "b02_window_line"
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "shot": "b03_window_after"
+  },
+  {
+   "name": "C: up the road ahead until something stops me"
+  },
+  {
+   "look": "(() => { const C = G.scenes.ctx.flags.chase, K = G.controller, t = ((() => { const p = C.his.seat(C.his.pos.clone().set(40, 0, 0), C.his.pos.clone()); return [p.x, p.z]; })()); const want = Math.atan2(-(t[0] - K.pos.x), -(t[1] - K.pos.z)); const dy = Math.atan2(Math.sin(want - K.yaw), Math.cos(want - K.yaw)); return [Math.round(-dy / K.sensitivity), Math.round((K.pitch - (-0.02)) / K.sensitivity)]; })()",
+   "steps": 8
+  },
+  {
+   "walk": "(() => { const C = G.scenes.ctx.flags.chase; const B = G.stage.colliders.bounds; const pts = []; for (let i = 1; i <= 8; i++) { const p = C.his.seat(C.his.pos.clone().set(10 * i, 0, 0), C.his.pos.clone()); pts.push([p.x, p.z]); } return pts; })()",
+   "into": true,
+   "timeout": 30000
+  },
+  {
+   "wait": 300
+  },
+  {
+   "eval": "JSON.stringify({ mode: G.controller.mode, phase: G.scenes.ctx.flags.chase.phase, pitch: +G.controller.pitch.toFixed(2), eye: [+G.controller.pos.x.toFixed(2), +G.controller.pos.z.toFixed(2)], dMy: +Math.hypot(G.controller.pos.x - G.scenes.ctx.flags.chase.my.pos.x, G.controller.pos.z - G.scenes.ctx.flags.chase.my.pos.z).toFixed(1), bounds: G.stage.colliders.bounds, line: !!G.scenes.ctx.flags.chase.lineSaid, prompt: G.hud.promptShown, obj: G.hud.kit && G.hud.kit.objectiveText, sub: (document.getElementById('subtitle') || {}).textContent })"
+  },
+  {
+   "down": "KeyW"
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "up": "KeyW"
+  },
+  {
+   "eval": "JSON.stringify({ mode: G.controller.mode, phase: G.scenes.ctx.flags.chase.phase, pitch: +G.controller.pitch.toFixed(2), eye: [+G.controller.pos.x.toFixed(2), +G.controller.pos.z.toFixed(2)], dMy: +Math.hypot(G.controller.pos.x - G.scenes.ctx.flags.chase.my.pos.x, G.controller.pos.z - G.scenes.ctx.flags.chase.my.pos.z).toFixed(1), bounds: G.stage.colliders.bounds, line: !!G.scenes.ctx.flags.chase.lineSaid, prompt: G.hud.promptShown, obj: G.hud.kit && G.hud.kit.objectiveText, sub: (document.getElementById('subtitle') || {}).textContent })"
+  },
+  {
+   "shot": "c01_stopped_ahead"
+  }
+ ]
+}

@@ -82,6 +82,25 @@ const OVER_RAIL = (b = 0, w = 0) => ({ hipsPos: [0, 0.97, -0.05], hips: [-16, 5 
   handTL: [0.12, 1.08 + b * 0.012 + 0.015 * w, 0.02], handTR: [-0.11, 1.06 + b * 0.012 - 0.015 * w, 0.04], elbowPoleL: [1, -0.4, -0.2], elbowPoleR: [-1, -0.4, -0.2], handL: [0, 0, 60], handR: [0, 0, -60],
   footL: [0.13, A + 0.04, 0.3], footR: [-0.13, A + 0.06, 0.26], footRotL: [-24, 8, 0], footRotR: [-26, -6, 0] });
 
+// [C3c, after the critic] slumped at the wheel against the window on side sd
+// (+1 his left, -1 his right)
+function slumped(sd, up = false) {
+  const hT = sd > 0 ? 'handTL' : 'handTR', hO = sd > 0 ? 'handTR' : 'handTL';
+  const pT = sd > 0 ? 'elbowPoleL' : 'elbowPoleR', pO = sd > 0 ? 'elbowPoleR' : 'elbowPoleL';
+  const wT = sd > 0 ? 'handL' : 'handR';
+  return {
+    duration: 2.6, loop: true,
+    def: () => ({ duration: 2.6, loop: true, armSpace: 'root', pose: (t) => {
+      const b = S(TAU * t / 2.6);
+      return P({ hipsPos: [sd * 0.04, 0.7, 0.0], hips: [6, 0, -sd * 7], spine: [8 + b * 1.5, 0, -sd * 9], chest: [4 + b * 2, 0, -sd * 12], neck: up ? [-4, 0, -sd * 16] : [6, 0, -sd * 24], head: up ? [-26 + b, 0, -sd * 6] : [6 + b, sd * 30, -sd * 18],
+        headLevel: [0],
+        footL: [0.12, 0.25 + A, 0.5], footR: [-0.1, 0.25 + A, 0.46], footRotL: [0, 6, 0], footRotR: [0, 6, 0], kneeL: [0.04, 0.3, 1], kneeR: [-0.04, 0.3, 1],
+        [hT]: [sd * 0.44, 1.13 + b * 0.005, 0.3], [pT]: [sd, -0.2, -0.4], [wT]: [60, 0, sd * 30],
+        [hO]: [-sd * 0.06, 0.66, 0.34], [pO]: [-sd, -0.6, -0.2] });
+    } }),
+  };
+}
+
 export default {
   kind: 'tail_trucker', h: 1.8, name: 'trucker',
   costume: TRUCKER,
@@ -168,6 +187,17 @@ export default {
           handTR: [-0.4, 1.02 + b * 0.01, 0.74], elbowPoleR: [-1, -0.8, 0], handR: [0, 0, -10] });
       } }),
     },
+    // [C3c, after the critic] the watcher slumped in his wrecked sedan
+    // (chase.js manAtWheel): on the bench, thrown against the door, his head
+    // through the broken window's frame and his arm over the sill, the other
+    // hand in his lap, breathing hard (the sedan's body is 0.70 m to the
+    // door's skin, the glass 0.62, the sill 1.12 high: Cars.js). 'L': the window on his left (+x), 'R'
+    // on his right. The seat's top 0.47 m, the floor 0.25 (the sedan's)
+    tail_slumpedL: slumped(1),
+    tail_slumpedR: slumped(-1),
+    // (his head up off the frame, to me: the look-at turns it)
+    tail_slumpedUpL: slumped(1, true),
+    tail_slumpedUpR: slumped(-1, true),
     // the truck's driver in his cab
     tail_trucker_sit: {
       duration: 3, loop: true,
