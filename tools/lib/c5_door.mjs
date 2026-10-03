@@ -140,9 +140,10 @@ export default async function drive({ js, turn, keyDown, keyUp, mouse, shot, log
         await click(); await sleep(rr(350, 500));
         const q = await js(ST); if (q.go) break;
       }
-      // (then to cover: the opening's jamb, the wall between)
-      for (let i = 0; i < 120; i++) { const s = await js(ST); if (await walkTo(s, 0.5, 2.05, 0.25)) break; await sleep(40); }
+      // (then to cover: behind his desk, its chair side, the desk between me and the opening)
+      for (const [x, z] of [[3.0, 2.1], [4.8, 2.2], [4.85, 2.65]]) { for (let i = 0; i < 120; i++) { const s = await js(ST); if (await walkTo(s, x, z, 0.25)) break; await sleep(40); } }
       await set('KeyW', false);
+      await lookAt(0.0, 1.2, 3.4, 0.1);
       await press('KeyC');
     }
     log('c5 door: chose ' + c);

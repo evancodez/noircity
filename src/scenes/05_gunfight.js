@@ -56,9 +56,10 @@ const FLANKERS = [
 ];
 // (the plays: each beat's cover places for the good hand - behind it, facing the way they come - and the bad hand's open floor)
 const SPOTS = {
-  shadows: [{ x: DESK.x - 0.05, z: DESK.z - 0.4, yaw: WEST }, { x: DESK.x - 0.05, z: DESK.z + 0.45, yaw: WEST }, { x: -0.85, z: 5.3, yaw: WEST }, { x: 0.5, z: OPEN_Z0 - 0.45, yaw: WEST + 0.3 }],
+  // (tipped: true - only with the desk over; false - only with it standing: its footprint is not a place to stand)
+  shadows: [{ x: DESK.x - 0.05, z: DESK.z - 0.4, yaw: WEST, tipped: true }, { x: DESK.x - 0.05, z: DESK.z + 0.45, yaw: WEST, tipped: true }, { x: 4.85, z: 2.65, yaw: WEST, tipped: false }, { x: -0.85, z: 5.3, yaw: WEST }, { x: 0.5, z: OPEN_Z0 - 0.45, yaw: WEST + 0.3 }],
   // (the flank from the connecting door, south-east: the tipped desk's other side; north of the standing desk)
-  flank: [{ x: 2.35, z: 3.8, yaw: EAST }, { x: DESK.x, z: DESK.z + DESK.w / 2 + 0.45, yaw: 0.15 }, { x: 0.5, z: OPEN_Z0 - 0.45, yaw: EAST + 2.6 }],
+  flank: [{ x: 2.35, z: 3.8, yaw: EAST, tipped: true }, { x: DESK.x, z: DESK.z + DESK.w / 2 + 0.45, yaw: 0.15, tipped: false }, { x: 0.5, z: OPEN_Z0 - 0.45, yaw: EAST + 2.6 }],
   corridor: [{ x: -0.85, z: 5.3, yaw: WEST }, { x: -0.85, z: 1.4, yaw: WEST }, { x: -4.35, z: -0.05, yaw: 0 }, { x: -3.25, z: -2.05, yaw: WEST }],
 };
 const OPENS = { shadows: { x: 1.8, z: 3.4 }, flank: { x: 2.4, z: 2.4 }, corridor: { x: -4.8, z: 1.8 } };
@@ -102,7 +103,7 @@ function prepare(ctx, name, { reset = true } = {}) {
   const F = ctx.flags;
   F.men = [];
   // (the plays' record of the beat, lane C2's driver's: its cover places, where the open is, won)
-  F.c2 = { beat: name, spots: SPOTS[name] || [], open: OPENS[name] || null, won: false };
+  F.c2 = { beat: name, get spots() { const t = !!O.desk.tip; return (SPOTS[name] || []).filter((sp) => sp.tipped == null || sp.tipped === t); }, open: OPENS[name] || null, won: false };
   F.go = null;
   const spawn = (m, extra = {}) => { const h = K.spawn({ kind: m.kind || 'pistol', at: m.at, yaw: m.yaw ?? null, way: m.way ? { steps: m.way } : null, door: m.door || null, cover: !!m.cover, wait: m.wait ?? 0, start: m.start || null, name: m.name, hp: m.hp ?? null, ...extra }); h.c5 = m.name; F.men.push(h); return h; };
   F.spawn = spawn;
@@ -245,8 +246,8 @@ export default defineScene({
       // (quiet: I go out to look - or they come anyway)
       yield until(() => G.eye.x < OUTER.x0 + 0.5 || G.time - t0 > 16);
       O.callLift(() => { F.liftOpen = G.time; K.rebuild(); }, { from: -3.3, secs: 5.0 });
-      // (a stand-off: me holding the suite, the last of them out in the corridor with no line on me - the
-      // Tommy gunner pins and never comes looking. 15 s of it and he comes round to the suite's door to find me)
+      // (a stand-off: the last of them with no line on me - the Tommy gunner pins and never comes looking, from
+      // the corridor or from the lift's car. 15 s of it and he comes round to a door by me to find me)
       let lastLine = G.time, sent = -99;
       ctx.onStep(() => {
         const left = (F.men || []).filter((h) => h.alive);
@@ -254,9 +255,11 @@ export default defineScene({
         const ai = G.ais.get(left[0]);
         if (!ai || !ai.brain || (ai.brain.S && ai.brain.S.entry)) { lastLine = G.time; return; }
         if (ai.brain.hasLine) lastLine = G.time;
-        if (G.time - lastLine > 15 && G.time - sent > 20 && roomOf(G.eye.x, G.eye.z) !== 'corr' && ai.brain.goRound) {
+        if (G.time - lastLine > 15 && G.time - sent > 20 && ai.brain.goRound) {
           sent = G.time; lastLine = G.time;
-          ai.brain.goRound(O.doors.AMES, [{ x: -4.7, z: 1.2, run: true }]);
+          // (me in the suite: to its door; me out in the corridor - down behind the cart - to 305's door beside it)
+          if (roomOf(G.eye.x, G.eye.z) !== 'corr') ai.brain.goRound(O.doors.AMES, [{ x: -4.7, z: 1.2, run: true }]);
+          else ai.brain.goRound(O.doors.D305, []);
         }
       });
       yield until(() => F.liftOpen && alive() === 0);
