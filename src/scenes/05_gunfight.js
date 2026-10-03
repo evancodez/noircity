@@ -151,6 +151,10 @@ function prepare(ctx, name, { reset = true } = {}) {
   carry(ctx, { armed: true });
   if (reset) roomAs(ctx, 'fight');
   O.door.closer = false;
+  // ([C5] after the critic) 305's corridor door stands open from IV's start (they came up and tried it): a man sent
+  // round by the grid walks his way's points, and a shut door between two of them stopped him for good - the door's
+  // man the kit sent round stood behind it until the movement's 40 s ran out
+  if (O.doors.D305 && O.doors.D305.shut && !O.doors.D305.moving) O.doors.D305.set(1.62);
   // (a retry: the room as this checkpoint had it - the door in, the sidelight gone, the desk as I left it)
   if (reset && name !== 'shadows') {
     O.door.set(1.62); O.door.locked = false;
@@ -235,7 +239,8 @@ function corridorMen(ctx, spawn) {
     if (F.heavyT) return true; if (!f()) return false;
     F.heavyT = G.time; ctx.hud.objective(others() === 0 ? 'One more. On the stair.' : 'And the stair.'); F.heavyOn = true;
     const r = roomOf(G.eye.x, G.eye.z);
-    if (r === 'outer' || r === 'ames') heavyWay.push({ x: -4.75, z: 1.4 }, { x: -4.75, z: 2.9 }, { door: 'AMES' });
+    // (and met at three metres in at the door, not seven up the corridor: two of my rounds, not three)
+    if (r === 'outer' || r === 'ames') { heavyWay.push({ x: -4.75, z: 1.4 }, { x: -4.75, z: 2.9 }, { door: 'AMES' }); const hv = (F.men || []).find((q) => q.c5 === 'heavy'); if (hv) hv.hp = Math.min(hv.hp, 110); }
     return true;
   };
   // (a breath after the last of them falls - a reload's worth - the gate below clanks open; or, the
@@ -324,7 +329,11 @@ export default defineScene({
       yield wait(0.3);
       if (O.side.pane.state !== 'gone') ctx.stage.glass.shatter(O.side.pane, { dir: V(1, 0, 0), power: 1.4, by: 'body' });
       // movement 1 until the door is down to one (or it has gone on long enough)
-      yield until(() => (alive(['kicker', 'jamb', 'side']) <= 1 && G.time - F.go > 6) || G.time - F.go > 40);
+      // ([C5] after the critic: a man of the three gone round - the kit sends one round when the doorway is held by a man
+      // standing in the room - is still in it: the movement waits for him too. Counted as gone, he left the man who stood
+      // and traded one gun to beat, and the door won)
+      const roundUp = () => (F.men || []).some((h) => h.alive && ['kicker', 'jamb', 'side'].includes(h.c5) && G.ais.get(h) && G.ais.get(h).brain && G.ais.get(h).brain.S && G.ais.get(h).brain.S.goneRound);
+      yield until(() => (alive(['kicker', 'jamb', 'side']) <= 1 && !roundUp() && G.time - F.go > 6) || alive(['kicker', 'jamb', 'side']) === 0 || G.time - F.go > 40);
       R.tipped = !!O.desk.tip;
       R.doorLeft = (F.men || []).filter((h) => h.alive && ['kicker', 'jamb', 'side'].includes(h.c5)).map((h) => ({ x: h.pos.x, z: h.pos.z }));
       // ---- 2. the flank: the handle of the connecting door turns ------------------------------------
