@@ -1,0 +1,1 @@
+(() => { const d = new N.THREE.Vector3(); N.camera.getWorldDirection(d); return JSON.stringify({ cam: [+N.camera.position.x.toFixed(2), +N.camera.position.z.toFixed(2)], dir: Math.atan2(d.z, d.x).toFixed(3), prompt: G.hud.promptShown, obj: G.hud.kit && G.hud.kit.obj && G.hud.kit.obj.text, phase: G.scenes.ctx.flags.chase.phase }); })()
