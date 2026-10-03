@@ -1108,7 +1108,9 @@ function onToMe(G, L, C) {
     const ai = G.ais.get(h), br = ai && ai.brain, S = br && br.S;
     if (br && (br.hasLine || (S && S.lastSeen && G.time - S.lastSeen.t < 4))) return true;
   }
-  return L.crew.men.some((m) => !m.down && m.mode === 'alarm' && Math.hypot(m.pos.x - C.pos.x, m.pos.z - C.pos.z) < 14);
+  // (a man left up on the catwalk who cannot get down to me does not hold the
+  // bay: only one on the floor, or one at arm's reach)
+  return L.crew.men.some((m) => !m.down && m.mode === 'alarm' && Math.hypot(m.pos.x - C.pos.x, m.pos.z - C.pos.z) < (m.upLvl ? 4 : 14));
 }
 
 // the gun mode's footfalls to the crew's ears (a walk heard near, a run

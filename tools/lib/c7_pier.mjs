@@ -290,12 +290,17 @@ export default async function drive({ js, turn, keyDown, keyUp, mouse, log, slee
       if (s.beat !== 'loud') { await sleep(200); continue; }
       // the targets: the gun kit's men once they have me; before that the
       // hunters with their torches (a round drops a man who does not know)
-      const targets = s.loud ? s.hoods.map((h) => ({ ...h, kit: true })) : s.men.filter((m) => !m.down && m.hunter).map((m) => ({ x: m.cx, y: m.cy, z: m.cz, L: m.L, seen: m.seen }));
+      // ([C7] once loud, the man left up on the catwalk too: he still coshes)
+      const crewT = (q) => q.men.filter((m) => !m.down && (q.loud || m.hunter)).map((m) => ({ x: m.cx, y: m.cy, z: m.cz, L: m.L, seen: m.seen }));
+      const targets = s.loud ? [...s.hoods.map((h) => ({ ...h, kit: true })), ...crewT(s)] : crewT(s);
       if (!targets.length) {
         // all of them down: down the west stairs and across the floor to the bay
         await rmb(false);
         await crouch(s, false);
-        const r = await walk(s.up ? [[-9.6, -41.55], [-9.0, -40.25], [-3.0, -40.25], ...(await pathFrom(-3.0, -40.25, 10.6, -36.0))] : await path(10.6, -36.0), { limit: 60000 });
+        // ([C7] by the open strip, clear of the stores (and of a body lying by them))
+        const r = await walk(s.up ? [[-9.6, -41.55], [-9.0, -40.25], [-3.0, -40.25], [-0.5, -38.2], [6.0, -37.6], [10.6, -36.0]]
+          : s.z < -36 ? [...(s.z < -39.6 ? [[Math.max(s.x, -2.6), -40.2]] : []), [-0.5, -38.2], [6.0, -37.6], [10.6, -36.0]] : await path(10.6, -36.0), { limit: 60000 });
+        if (!r) { const s9 = await read(); if (s9 && !s9.done && Math.hypot(s9.x - 10.6, s9.z + 36) > 1) { await walk([[s9.x + 1.5, s9.z + 1.5], [10.6, -36.0]], { limit: 15000 }); } }
         if (r && r.failing) continue;
         await sleep(200); continue;
       }
@@ -304,7 +309,7 @@ export default async function drive({ js, turn, keyDown, keyUp, mouse, log, slee
         await rmb(false);
         if (s.up) { const r = await walk([[-9.6, -41.55], [-9.0, -40.25], [-3.4, -40.25]], { limit: 20000 }); if (r && r.failing) continue; }
         const s5 = await read(); if (!s5) continue;
-        const vis = (s5.loud ? s5.hoods : s5.men.filter((m) => !m.down && m.hunter).map((m) => ({ x: m.cx, y: m.cy, z: m.cz, L: m.L, seen: m.seen }))).filter((q) => q.seen && q.L < 30).sort((a, b) => a.L - b.L);
+        const vis = (s5.loud ? [...s5.hoods, ...crewT(s5)] : crewT(s5)).filter((q) => q.seen && q.L < 30).sort((a, b) => a.L - b.L);
         if (s5.ammo <= 0 && !s5.reloading) { await tap('KeyR'); await sleep(400); continue; }
         if (s5.reloading) { await sleep(150); continue; }
         if (vis.length) { await setW(false); await sleep(rr(220, 400)); const s6 = await read(); await face(s6 || s5, vis[0].x, vis[0].y, vis[0].z, 0.015); await sleep(rr(70, 140)); await click(); out.shots++; await sleep(rr(350, 550)); continue; }
@@ -325,7 +330,7 @@ export default async function drive({ js, turn, keyDown, keyUp, mouse, log, slee
       await sleep(rr(220, 320));
       const s2 = await read();
       if (!s2 || s2.failing) { await rmb(false); continue; }
-      const t2 = (s2.loud ? s2.hoods.map((h) => ({ ...h })) : s2.men.filter((m) => !m.down && m.hunter).map((m) => ({ x: m.cx, y: m.cy, z: m.cz, L: m.L, seen: m.seen }))).filter((h) => h.seen && h.L < 32);
+      const t2 = (s2.loud ? [...s2.hoods.map((h) => ({ ...h })), ...crewT(s2)] : crewT(s2)).filter((h) => h.seen && h.L < 32);
       let h = null;
       if (t2.length) { t2.sort((a, b) => a.L - b.L); h = t2[0]; out._stale = 0; }
       else {
@@ -337,7 +342,7 @@ export default async function drive({ js, turn, keyDown, keyUp, mouse, log, slee
         await crouch(s2, false);
         await sleep(rr(300, 450));
         const s4 = await read();
-        const t4 = s4 ? (s4.loud ? s4.hoods : s4.men.filter((m) => !m.down && m.hunter).map((m) => ({ x: m.cx, y: m.cy, z: m.cz, L: m.L, seen: m.seen }))).filter((q) => q.seen && q.L < 32) : [];
+        const t4 = s4 ? (s4.loud ? [...s4.hoods, ...crewT(s4)] : crewT(s4)).filter((q) => q.seen && q.L < 32) : [];
         if (!t4.length) {
           // (still nobody: along the catwalk to its other end)
           if (out._miss % 6 === 0) { const r = await walk([[s4 && s4.x < 0 ? 4.6 : -4.6, -41.5]], { limit: 15000 }); if (r && r.failing) continue; }
