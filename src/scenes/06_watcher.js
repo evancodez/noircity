@@ -308,8 +308,16 @@ export default defineScene({
     C.active = first !== 'car';
     if (C.stretch == null || STRETCH_ORDER.indexOf(C.stretch) < STRETCH_ORDER.indexOf(first)) C.stretch = first;
     C.grace = ctx.from === first ? RULES.grace : 0;
-    const again = AGAIN[first];
-    if (again && G.fails(first) === 2) ctx.hud.teach.again(again, TEACH[again]);
+    // (failed twice here: the card of the thing that cost me most, once more -
+    // the last thing I hit or came at wrong before he got away; else the
+    // stretch's own)
+    if (G.fails(first) === 2) {
+      const rec = (G._c6lost || []).slice(-1)[0];
+      const bad = rec && (rec.met || []).slice().reverse().find((m) => m[1] === 'hit' || m[1] === 'early' || m[1] === 'late');
+      const T = bad && ctx.stage.part('things').get(bad[0]);
+      const card = T ? (T.kind === 'under' ? 'slide' : T.kind === 'jump' ? 'jump' : T.kind === 'slope' ? 'slideDown' : T.kind === 'shoulder' ? 'shoulder' : 'vault') : AGAIN[first];
+      if (card) ctx.hud.teach.again(card, TEACH[card]);
+    }
     for (let i = RUN_BEATS.indexOf(first); i < RUN_BEATS.length; i++) {
       const name = RUN_BEATS[i];
       if (name !== first) yield until(() => STRETCH_ORDER.indexOf(C.stretch) >= STRETCH_ORDER.indexOf(name));
@@ -464,14 +472,24 @@ function dogStep(ctx, dt) {
     dog.lunge({ x: p.x + G.controller.vel.x * 0.3, z: p.z + G.controller.vel.z * 0.3 });
     G.sfx.play('w_dog', V(dog.x, 0.8, dog.z));
   }
-  // (its jaws: the end of its chain and a head's reach)
+  // ([C6 2nd] it goes for me, not for where I was: its aim follows me while
+  // it comes out - a man going by along the row's middle is in its reach; one
+  // hugging the far wall is not)
+  if (dog.t >= 0 && dog.t < 1.1 && R.feet < 1) dog.lunge0 = { x: p.x + G.controller.vel.x * 0.12, z: p.z + G.controller.vel.z * 0.12 };
+  // (its jaws: the end of its chain and a head's reach; a bite is its teeth
+  // in my coat - held a third of a second, the run gone out of me)
+  F.snagT = Math.max(0, (F.snagT || 0) - dt);
+  if (F.snagT > 0) R.v = Math.min(R.v, 0.4);
   if (dog.t >= 0 && dog.t < 1.6 && F.biteT <= 0 && Math.hypot(p.x - dog.x, p.z - dog.z) < 1.15 && !R.move) {
     F.biteT = 2.0;
-    R.flinch(0.18, -0.06);
-    R.v *= 0.35;
-    G.controller.shake(0.45);
+    F.snagT = 0.34;
+    R.flinch(0.2, -0.08);
+    R.v = Math.min(R.v, 0.4);
+    G.controller.shake(0.55);
     G.sfx.play('grunt', null, { f0: 95, k: 0.3, dur: 0.2 }, { send: false });
     G.sfx.play('w_duck', G.eye.clone().setY(0.9));
+    G.sfx.play('w_dog', V(dog.x, 0.8, dog.z), { k: 0.6 });
+    (ctx.flags.chase.met || (ctx.flags.chase.met = [])).push(['dog', 'bit', +(G.time || 0).toFixed(2)]);
   }
 }
 

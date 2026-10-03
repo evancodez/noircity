@@ -369,7 +369,9 @@ function hit(ctl, R, q) {
   ctl.pos.x -= nx * 0.16; ctl.pos.z -= nz * 0.16;
   R.v = 0; R.vs = 0;
   ctl.vel.set(0, 0, 0);
-  R.move = { kind: 'hit', T, t: 0, dur: T.kind === 'jump' ? 0.32 : 0.5 };
+  // ([C6 2nd] under a thing the knock is the head and shoulders against it:
+  // shorter than a body stopped dead against a fence)
+  R.move = { kind: 'hit', T, t: 0, dur: T.kind === 'jump' ? 0.32 : T.kind === 'under' ? 0.36 : 0.5 };
   if (T.kind === 'under') { RUNHANDS.set('catch'); R.jolt = { t: 0, yaw: 0.04, pitch: 0.22, dur: 0.5 }; }
   else { plant(at, T.y + Math.min(1.3, T.top), F, 0.22); R.jolt = { t: 0, yaw: 0.05, pitch: -0.14, dur: 0.45 }; }
   ctl.shake(0.7);
@@ -402,7 +404,9 @@ function blockedStep(ctl, R, io) {
   } else if (T.kind === 'under' && cp) {
     io.spend('C');
     R.blocked = null;
-    R.move = { kind: 'crawl', T, t: 0, nx: B.nx, nz: B.nz, cross: Math.max(0, gap) + T.depth + 2 * R0 + 0.25, speed: 1.5, colOff: true };
+    // ([C6 2nd] a scramble under it, bent double on the hands: quicker than a crawl,
+    // so a missed slide costs about what a missed vault does)
+    R.move = { kind: 'crawl', T, t: 0, nx: B.nx, nz: B.nz, cross: Math.max(0, gap) + T.depth + 2 * R0 + 0.25, speed: 2.5, colOff: true };
     R.lowWant = 1.15;
     R.things.solid(T, false);
     R.onEvent('crawl', { T });

@@ -19,7 +19,7 @@ const PLACES = [
   ['the yard\'s east wall', [66.0, -66, -Math.PI / 2], ['x', 70.0, -1]],
   ['the kitchen table', [60.0, -88.5, 0], ['z', -91.6, 1]],
   ['the kitchen\'s ranges (the middle stove)', [53.0, -92.6, Math.PI / 2], ['x', 51.4, 1]],
-  ['the kitchen hand by the sinks', [66.0, -95.4, -Math.PI / 2], ['x', 68.1, -1]],
+  ['the kitchen hand by the sinks', [66.0, -93.9, -Math.PI / 2], ['x', 68.1, -1]],
   ['the roller door without C', [60.0, -97.0, 0], ['z', -99.88, 1]],
   ['the loading yard into the stair\'s side', [63.0, -102.5, 0], ['z', -104.8, 1]],
   ['Tanner\'s Row into the truck', [44.0, -114.6, 0], ['z', -116.15, 1]],
@@ -30,7 +30,21 @@ const PLACES = [
   ['Pell Lane into my coupe', [-1.2, -91.0, Math.PI / 2], ['x', -3.16, 1]],
   ['Pell Lane\'s north end into the block across', [-7.0, -140.0, 0], ['z', -159.0, 1]],
   ['Harbor St\'s hoarding (west)', [-30.0, 0.0, Math.PI / 2], ['x', -36.5, 1]],
-  ['Harbor St\'s hoarding (east)', [94.0, 0.0, -Math.PI / 2], ['x', 100.5, -1]],
+  // ([C6 2nd] Harbor Street runs on across the avenue now: its hoarding is past it)
+  ['Harbor St\'s hoarding (east)', [110.0, 0.0, -Math.PI / 2], ['x', 117.25, -1]],
+  // [C6 2nd] the kitchen's iron door's wall, the press hall, the avenue, the alley behind
+  ['the kitchen\'s east wall beside its iron door', [66.0, -95.6, -Math.PI / 2], ['x', 69.7, -1]],
+  ['the press hall: the north line\'s first unit', [76.0, -97.2, Math.PI], ['z', -93.68, -1]],
+  ['the pressman at it', [76.0, -96.8, Math.PI], ['z', -94.69, -1]],
+  ['the web without C', [79.65, -96.4, Math.PI], ['z', -93.1, -1]],
+  ['the north line\'s folder from the middle aisle', [87.2, -88.0, 0], ['z', -90.95, 1]],
+  ['the press hall\'s east wall', [91.4, -90.0, -Math.PI / 2], ['x', 93.45, -1]],
+  ['the avenue: the van at the dock', [98.3, -82.0, Math.PI], ['z', -74.2, -1]],
+  ['the avenue: an el column', [96.6, -89.5, Math.PI], ['z', -86.22, -1]],
+  ['the avenue: the news-stand', [98.4, -93.4, Math.PI / 2], ['x', 95.5, 1]],
+  ['the avenue\'s hoarding (north)', [100.0, -123.0, 0], ['z', -127.9, 1]],
+  ['the alley: the steam pipe without C', [88.0, -103.0, Math.PI / 2], ['x', 82.64, 1]],
+  ['the alley: the next block\'s wall', [86.0, -102.6, 0], ['z', -106.0, 1]],
 ];
 export default async function drive({ js, keyDown, keyUp, sleep, log, opts }) {
   const rows = [];
