@@ -119,18 +119,42 @@ export default {
       const dogMat = std({ color: 0x0c0c0c, roughness: 0.7, envMap: M.envSoft, envMapIntensity: 0.25 });
       const dog = new THREE.Group();
       const dp = [];
-      // a big black dog standing: body, chest, head with the ears flat, legs, tail
-      dp.push(new THREE.CapsuleGeometry(0.17, 0.62, 6, 14).rotateZ(Math.PI / 2).translate(0, 0.62, 0));
-      dp.push(new THREE.SphereGeometry(0.2, 16, 12).scale(1.0, 1.1, 1.0).translate(0.36, 0.66, 0));
-      dp.push(new THREE.CapsuleGeometry(0.09, 0.22, 6, 12).rotateZ(-0.9).translate(0.56, 0.84, 0));
-      dp.push(new THREE.SphereGeometry(0.13, 16, 12).scale(1.15, 0.9, 1).translate(0.7, 0.96, 0));
-      dp.push(new THREE.CapsuleGeometry(0.055, 0.17, 6, 12).rotateZ(Math.PI / 2).translate(0.86, 0.92, 0));
-      for (const sz of [-1, 1]) dp.push(new THREE.ConeGeometry(0.045, 0.13, 10).rotateZ(1.1).translate(0.64, 1.06, sz * 0.07));
-      for (const [lx, lz] of [[0.32, 0.1], [0.32, -0.1], [-0.3, 0.1], [-0.3, -0.1]]) dp.push(new THREE.CapsuleGeometry(0.045, 0.42, 6, 10).translate(lx, 0.27, lz));
+      // a big black dog standing: body, a deep chest, the neck, the head with
+      // a long muzzle and its ears up, the tail; [C6] the legs on their own
+      // hips (they run when it lunges), the eyes' glints and a snarl's teeth
+      dp.push(new THREE.CapsuleGeometry(0.15, 0.6, 6, 14).rotateZ(Math.PI / 2).scale(1, 1.08, 1.12).translate(0, 0.62, 0));
+      dp.push(new THREE.SphereGeometry(0.17, 16, 12).scale(1.15, 1.2, 1.3).translate(0.34, 0.63, 0));
+      dp.push(new THREE.CapsuleGeometry(0.1, 0.2, 6, 12).rotateZ(-1.05).translate(0.55, 0.8, 0));
+      dp.push(new THREE.SphereGeometry(0.135, 16, 12).scale(1.1, 0.9, 1.05).translate(0.7, 0.9, 0));
+      // (the muzzle: long, tapering, the jaw a little open)
+      dp.push(new THREE.CylinderGeometry(0.05, 0.08, 0.24, 12).rotateZ(Math.PI / 2).translate(0.9, 0.88, 0));
+      dp.push(new THREE.CylinderGeometry(0.034, 0.055, 0.2, 10).rotateZ(Math.PI / 2 + 0.3).translate(0.88, 0.81, 0));
+      for (const sz of [-1, 1]) dp.push(new THREE.ConeGeometry(0.045, 0.14, 10).rotateZ(0.35).rotateX(-sz * 0.25).translate(0.65, 1.03, sz * 0.08));
       dp.push(new THREE.CapsuleGeometry(0.03, 0.34, 4, 8).rotateZ(-0.6).translate(-0.52, 0.78, 0));
       const dm = new THREE.Mesh(merge(dp), dogMat);
       dm.castShadow = true;
       dog.add(dm);
+      // (the legs: each from its hip, the thigh and the shin as one long capsule)
+      const legs = [];
+      for (const [lx, lz, ph] of [[0.33, 0.12, 0], [0.33, -0.12, Math.PI], [-0.3, 0.11, Math.PI * 0.5], [-0.3, -0.11, Math.PI * 1.5]]) {
+        const hip = new THREE.Group();
+        hip.position.set(lx, 0.52, lz);
+        const leg = new THREE.Mesh(new THREE.CapsuleGeometry(0.055, 0.42, 6, 10).translate(0, -0.265, 0), dogMat);
+        leg.castShadow = true;
+        hip.add(leg);
+        dog.add(hip);
+        legs.push({ hip, ph });
+      }
+      // (the eyes' glints and the teeth: pale, the only light on it)
+      const pale = new THREE.MeshBasicMaterial({ color: 0xcfcfcf });
+      for (const sz of [-1, 1]) {
+        const e = new THREE.Mesh(new THREE.SphereGeometry(0.014, 8, 6), pale);
+        e.position.set(0.8, 0.93, sz * 0.064);
+        dog.add(e);
+      }
+      const teeth = new THREE.Mesh(new THREE.BoxGeometry(0.13, 0.016, 0.085).translate(0.93, 0.845, 0), pale);
+      dog.add(teeth);
+      for (const m of [teeth]) m.userData.noRay = true;
       markFigure(dog);
       tagInk(dog);
       scene.add(dog);
@@ -159,14 +183,20 @@ export default {
             tz = home.z + (ring.z + dz / d * out - home.z) * k;
             if (this.t > 2.6) this.t = -1;
           }
+          const x0 = this.x, z0 = this.z;
           this.x += (tx - this.x) * (1 - Math.exp(-dt * 14));
           this.z += (tz - this.z) * (1 - Math.exp(-dt * 14));
+          // (its legs: a gallop while it moves, planted when it stands)
+          const sp = dt > 0 ? Math.hypot(this.x - x0, this.z - z0) / dt : 0;
+          this.gait = (this.gait || 0) + dt * (4 + sp * 3.2);
+          const amp = Math.min(0.75, sp * 0.22);
+          for (const L of legs) L.hip.rotation.z = Math.sin(this.gait + L.ph) * amp;
           const wantYaw = this.t >= 0 && this.lunge0 ? Math.atan2(-(this.lunge0.z - this.z), this.lunge0.x - this.x) : -Math.PI / 2;
           this.yaw += Math.atan2(Math.sin(wantYaw - this.yaw), Math.cos(wantYaw - this.yaw)) * (1 - Math.exp(-dt * 10));
           // (up on its hind legs at the chain's end, snapping)
           const rear = this.t >= 0 ? SS(0.15, 0.3, this.t) * (1 - SS(1.4, 1.9, this.t)) : 0;
           dog.position.set(this.x, 0, this.z);
-          dog.rotation.set(0, this.yaw, rear * 0.55 + Math.sin(t * 22) * 0.04 * rear);
+          dog.rotation.set(0, this.yaw, rear * 0.3 + Math.sin(t * 22) * 0.04 * rear);
           col.x = this.x; col.z = this.z;
           // the chain: a sagging line from the ring to the collar
           const collar = V3(this.x + Math.cos(this.yaw) * 0.5, 0.8 + rear * 0.3, this.z - Math.sin(this.yaw) * 0.5);
