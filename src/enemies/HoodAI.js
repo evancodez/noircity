@@ -266,13 +266,16 @@ export class HoodAI {
   // cover and then turned to face me again went on round the same way (the
   // shortest way from facing away is either), a full circle in two seconds.
   // He remembers which way he has been turning (a decaying sum, ~1.5 s) and a
-  // big turn unwinds it; once picked, a big turn keeps its way to the end
+  // big turn unwinds it; once picked, a big turn keeps its way to the end.
+  // (only for a man who asks for it: h.turnSafe, the gun kit's men - the
+  // wave game's and the battle's men turn as they did, their frames golden)
   faceTo(x, z, dt, rate = 5) {
     const h = this.h, t = this.game.time;
     const want = Math.atan2(x - h.pos.x, z - h.pos.z);
     let d = want - h.yaw;
     d = Math.atan2(Math.sin(d), Math.cos(d));
     const err = Math.abs(d);
+    if (!h.turnSafe) { const step = rate * dt; h.yaw += Math.max(-step, Math.min(step, d)); return err; }
     const acc = (h._turnAcc || 0) * Math.exp(-Math.max(0, t - (h._turnT ?? t)) / 1.5);
     if (err > 2.4) {
       if (!h._bigDir) h._bigDir = Math.abs(acc) > 0.6 ? -Math.sign(acc) : Math.sign(d) || 1;
@@ -318,7 +321,7 @@ export class HoodAI {
     // is off his line: at full pace his turn's circle (0.4 m) is wider than
     // the 0.3 m he must come within - he went round the point, a loop)
     const last = this.pathI === this.path.length - 1;
-    h.speed = speed * (err > 1.2 || (last && d < 1.2 && err > 0.5) ? 0.3 : 1);
+    h.speed = speed * (err > 1.2 || (h.turnSafe && last && d < 1.2 && err > 0.5) ? 0.3 : 1);
     const want = this.run ? 'run' : 'walk';
     if (h.state !== want) h.setState(want, 0.25);
     // stuck: barely moved in 1.5 s

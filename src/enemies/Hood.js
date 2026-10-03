@@ -1115,7 +1115,8 @@ export class Hood {
       // [C2b] a target behind him is not twisted to: the look fades out past
       // ~105 degrees (it went from 0.8 rad one way to 0.8 the other in one
       // frame as the target crossed his back - the body flicked round)
-      const fw = Math.max(0, Math.min(1, (2.6 - Math.abs(yawT)) / 0.75));
+      // (h.turnSafe only: the gun kit's men; the others as they were, their frames golden)
+      const fw = this.turnSafe ? Math.max(0, Math.min(1, (2.6 - Math.abs(yawT)) / 0.75)) : 1;
       const chestYaw = lim(yawT * lerp(0.35, 1, this._aimW), lerp(0.6, 0.8, this._aimW)) * this._lookW * fw;
       const headYaw = lim(yawT - chestYaw, 1.0) * this._lookW * (1 - 0.9 * this._aimW) * fw;
       const q = _pp.q;

@@ -150,6 +150,8 @@ export class Guns {
     const h = G.spawnHood(p.x, p.z, { brain: 'gunman', kind, heavy: kind !== 'pistol', hp: hp ?? K.hp, variant: v, yaw, state: 'idle', way, start, wait, frame, door, cover });
     h.surface = (x, z) => G.stage.surfaceY(x, z);
     h.gunKind = kind;
+    // [C2b] no man spins: big turns unwind, no loop at a path's end, no look twisted behind (HoodAI.faceTo, Hood)
+    h.turnSafe = true;
     if (name) h.c2name = name;
     // the heavy reads at a glance: a head taller and broader in the coat
     if (kind === 'rusher') { h.scale *= 1.1; h.object.scale.setScalar(h.scale); h.collider.r = 0.32 * h.scale; }
