@@ -1,30 +1,71 @@
 {
  "about": "C3b: phase b to chapter VII from the river road's checkpoint (?start=tail.river), by the proofs' good hands (src/scenes/tail/bot.js 'good' through tools/lib/c3_tail.mjs: real keys, the mouse onto his car, LMB): one round in a tyre, catch him, the shunt on his back corner, he spins and wrecks; stop, E out of the car, walk to him (the line), back to the door, E in, the drive to Pier 9, E out: chapter VII by a cut and the small card. NOIR_PORT=5343 node tools/play.mjs tools/plays/tail_b_good.json",
  "url": "/?mute=1&start=tail.river",
- "size": [1440, 900],
+ "size": [
+  1440,
+  900
+ ],
  "out": "shots/c3b/b_good",
  "steps": [
-  { "until": "G.state === 'title' && !document.getElementById('title').classList.contains('hidden') && !!document.querySelector('#title .opt[data-k=begin]')", "timeout": 40000 },
-  { "wait": 2000 },
-  { "clickOn": "#title .opt[data-k=begin]", "taken": "G.state === 'playing' && document.pointerLockElement === N.renderer.domElement", "retries": 4, "every": 4000 },
-  { "until": "G.scenes.current && G.scenes.current.id === 'tail' && G.scenes.ctx.flags.chase && G.scenes.ctx.flags.chase.phase === 'b' && !G.scenes.fadeK", "timeout": 45000 },
-  { "eval": "(window.__tailFails = [], window.__c3tries = 0, window.__b0 = N.time, window.__ph = {}, setInterval(() => { const C = G.scenes.ctx && G.scenes.ctx.flags.chase; if (C && !window.__ph[C.phase]) window.__ph[C.phase] = +(N.time - window.__b0).toFixed(1); }, 100), 1)" },
-  { "drive": "tools/lib/c3_tail.mjs", "profile": "good", "seed": 7, "timeout": 240000,
-    "stop": "G.scenes.current && G.scenes.current.id !== 'tail'",
-    "shots": {
-      "b01_tyre": "!!G.scenes.ctx.flags.chase && (() => { const C = G.scenes.ctx.flags.chase; if (C.hisDmg && C.hisDmg.tyres >= 1) { window.__goneT = window.__goneT || N.time; return N.time - window.__goneT > 0.6; } return false; })()",
-      "b02_corner": "!!G.scenes.ctx.flags.chase && G.scenes.ctx.flags.chase.phase === 'b' && !!G.scenes.ctx.flags.chase.lastRam && G.scenes.ctx.flags.chase.lastRam.pit",
-      "b03_spin": "!!G.scenes.ctx.flags.chase && G.scenes.ctx.flags.chase.phase === 'crash' && (G.scenes.ctx.flags.chase.crashT || 0) > 0.45",
-      "b04_wreck": "!!G.scenes.ctx.flags.chase && G.scenes.ctx.flags.chase.phase === 'wreck' && G.scenes.ctx.flags.chase.wreck.t > 1.8",
-      "b05_out": "!!G.scenes.ctx.flags.chase && G.scenes.ctx.flags.chase.phase === 'out' && G.scenes.ctx.flags.chase.outT > 0.9",
-      "b06_line": "!!G.scenes.ctx.flags.chase && G.scenes.ctx.flags.chase.lineSaid && G.scenes.ctx.flags.chase.phase === 'out' && (G.scenes.ctx.flags.chase.pointT || 0) < 2.4",
-      "b07_pier": "G.hud.promptShown.includes('get out') && G.scenes.ctx.flags.chase.phase === 'c'"
-    },
-    "check": "D.end === 'next:warehouse' || D.end === 'until'", "label": "the good hands: one tyre, the shunt, the line, the pier: chapter VII" },
-  { "eval": "JSON.stringify({ phases: window.__ph, fails: (window.__tailFails || []).map((f) => f.why + '@' + f.t) })" },
-  { "expect": "G.scenes.current && G.scenes.current.id === 'warehouse' && G.scenes.fadeK < 0.05", "label": "chapter VII begins by a cut, no black" },
-  { "expect": "!!G.smallCardShown && G.smallCardShown.name === G.scenes.current.name", "label": "the small chapter card over the picture" },
-  { "wait": 700 },
-  { "shot": "b08_pier_nine" }
+  {
+   "until": "G.state === 'title' && !document.getElementById('title').classList.contains('hidden') && !!document.querySelector('#title .opt[data-k=begin]')",
+   "timeout": 40000
+  },
+  {
+   "wait": 2000
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]",
+   "taken": "G.state === 'playing' && document.pointerLockElement === N.renderer.domElement",
+   "retries": 4,
+   "every": 4000
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'tail' && G.scenes.ctx.flags.chase && G.scenes.ctx.flags.chase.phase === 'b' && !G.scenes.fadeK",
+   "timeout": 45000
+  },
+  {
+   "eval": "(window.__tailFails = [], window.__c3tries = 0, window.__b0 = N.time, window.__ph = {}, setInterval(() => { const C = G.scenes.ctx && G.scenes.ctx.flags.chase; if (C && !window.__ph[C.phase]) window.__ph[C.phase] = +(N.time - window.__b0).toFixed(1); if (C && C.crashLog) { window.__crashLog = C.crashLog; window.__knocks = C.knocks; window.__lastRam = C.lastRam; } }, 100), 1)"
+  },
+  {
+   "drive": "tools/lib/c3_tail.mjs",
+   "profile": "good",
+   "seed": 7,
+   "timeout": 240000,
+   "stop": "G.scenes.current && G.scenes.current.id !== 'tail'",
+   "shots": {
+    "b01_tyre": "!!G.scenes.ctx.flags.chase && (() => { const C = G.scenes.ctx.flags.chase; if (C.hisDmg && C.hisDmg.tyres >= 1) { window.__goneT = window.__goneT || N.time; return N.time - window.__goneT > 0.6; } return false; })()",
+    "b02_corner": "!!G.scenes.ctx.flags.chase && G.scenes.ctx.flags.chase.phase === 'b' && !!G.scenes.ctx.flags.chase.lastRam && G.scenes.ctx.flags.chase.lastRam.pit",
+    "c0_crash_012": "!!G.scenes.ctx.flags.chase && G.scenes.ctx.flags.chase.phase === 'crash' && (G.scenes.ctx.flags.chase.crashT || 0) > 0.12",
+    "c1_crash_045": "!!G.scenes.ctx.flags.chase && G.scenes.ctx.flags.chase.phase === 'crash' && (G.scenes.ctx.flags.chase.crashT || 0) > 0.45",
+    "c2_crash_080": "!!G.scenes.ctx.flags.chase && G.scenes.ctx.flags.chase.phase === 'crash' && (G.scenes.ctx.flags.chase.crashT || 0) > 0.8",
+    "c3_crash_120": "!!G.scenes.ctx.flags.chase && G.scenes.ctx.flags.chase.phase === 'crash' && (G.scenes.ctx.flags.chase.crashT || 0) > 1.2",
+    "c4_crash_170": "!!G.scenes.ctx.flags.chase && G.scenes.ctx.flags.chase.phase === 'crash' && (G.scenes.ctx.flags.chase.crashT || 0) > 1.7",
+    "c5_crash_240": "!!G.scenes.ctx.flags.chase && G.scenes.ctx.flags.chase.phase === 'crash' && (G.scenes.ctx.flags.chase.crashT || 0) > 2.4",
+    "c9_wreck": "!!G.scenes.ctx.flags.chase && G.scenes.ctx.flags.chase.phase === 'wreck' && G.scenes.ctx.flags.chase.wreck.t > 1.0",
+    "b05_out": "!!G.scenes.ctx.flags.chase && G.scenes.ctx.flags.chase.phase === 'out' && G.scenes.ctx.flags.chase.outT > 0.9",
+    "b06_line": "!!G.scenes.ctx.flags.chase && G.scenes.ctx.flags.chase.lineSaid && G.scenes.ctx.flags.chase.phase === 'out' && (G.scenes.ctx.flags.chase.pointT || 0) < 2.4",
+    "b07_pier": "G.hud.promptShown.includes('get out') && G.scenes.ctx.flags.chase.phase === 'c'"
+   },
+   "check": "D.end === 'next:warehouse' || D.end === 'until'",
+   "label": "the good hands: one tyre, the shunt, the line, the pier: chapter VII"
+  },
+  {
+   "eval": "JSON.stringify({ phases: window.__ph, fails: (window.__tailFails || []).map((f) => f.why + '@' + f.t), ram: window.__lastRam, knocks: window.__knocks, crash: (window.__crashLog || []).filter((r, i) => i % 6 === 0).map((r) => r.join(' ')).join(' | ') })"
+  },
+  {
+   "expect": "G.scenes.current && G.scenes.current.id === 'warehouse' && G.scenes.fadeK < 0.05",
+   "label": "chapter VII begins by a cut, no black"
+  },
+  {
+   "expect": "!!G.smallCardShown && G.smallCardShown.name === G.scenes.current.name",
+   "label": "the small chapter card over the picture"
+  },
+  {
+   "wait": 700
+  },
+  {
+   "shot": "b08_pier_nine"
+  }
  ]
 }

@@ -27,22 +27,24 @@ export const HIT = {
 // axle is at -1.55, his tail at -2.45), on a side (|z| > RAM.side), my
 // heading RAM.yaw0 .. RAM.yaw1 rad off his and turned into him, closing at
 // RAM.imp m/s or more (or held into him RAM.lean s). Hurt: he spins
-// (RAM.spin rad/s on his yaw, his hands gone: the crash on the cars' own
+// (RAM.spin rad/s on his yaw and RAM.shove m/s across, his hands gone:
+// the crash on the cars' own
 // physics). Whole: a fishtail he catches (RAM.stagger) and he pulls away.
 // A straight bump from behind is only a shove.
-export const RAM = { behind: -0.9, side: 0.3, yaw0: 0.2, yaw1: 1.15, imp: 1.0, lean: 0.35, spin: 3.2, stagger: 0.7 };
+export const RAM = { behind: -0.9, side: 0.3, yaw0: 0.2, yaw1: 1.15, imp: 1.0, lean: 0.35, spin: 3.4, shove: 5.0, stagger: 0.7 };
 // [C3b] he pulls away when I close (phase a, and a whole car in phase b):
-// within PULL.near m behind him he floors it for PULL.t s (his car briefly
+// within PULL.near m behind him (PULL.react s: his eyes in the mirror)
+// he floors it for PULL.t s (his car briefly
 // faster than mine: PULL.vmax, PULL.accel), then falls back to his pace;
 // not again for PULL.cool s.
-export const PULL = { near: 10, t: 2.8, cool: 2.0, vmax: 25.5, accel: 6.6, pathV: 25 };
+export const PULL = { near: 10, react: 0.35, t: 2.8, cool: 2.0, vmax: 25.5, accel: 6.6, pathV: 25 };
 // [C3b] phase b's window: he runs the river road at RIVER_B.cruise m/s
 // (less as he is hurt: x (0.55 + 0.45 control)); from RIVER_B.warn s
 // "He's pulling away." and he speeds up toward RIVER_B.away; at RIVER_B.t s
 // he is gone - "Lost him." once he is RIVER_B.lostGap m clear, or
 // RIVER_B.extra s later whatever the gap. (The pier's gate, if he reaches it
 // first: "He warned them.")
-export const RIVER_B = { cruise: 11.5, away: 21, awayHurt: 16.5, warn: 20, t: 30, lostGap: 55, extra: 4 };
+export const RIVER_B = { cruise: 10, away: 21, awayHurt: 15, warn: 18.5, t: 28, lostGap: 45, extra: 3 };
 // [3rd owner] the teach cards (the kit draws [X] as a key cap, [LMB] / [RMB]
 // as a mouse; seams/Z.md §2)
 export const TEACH = {

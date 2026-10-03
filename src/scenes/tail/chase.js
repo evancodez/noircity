@@ -550,6 +550,9 @@ export class Chase {
     if (go && hurt) {
       this._ramWin = true;
       his.yawRate += spin * RAM.spin;
+      // (and the shove across: his back end goes out from my wing, the car
+      // off my bonnet and away across the road)
+      if (e.n) { const k = RAM.shove / Math.max(0.01, Math.hypot(e.n.x, e.n.z)); his.vel.x += e.n.x * k; his.vel.z += e.n.z * k; }
       D.lose(spin);
       this.game.sfx.play('tail_crash', e.point, { k: 0.6 }, { ref: 4 });
       return;
@@ -598,8 +601,11 @@ export class Chase {
       // (the grip of a car out of a man's hands, on the wet)
       // ([C3b] the back end lets go first: the spin, then the slide)
       this._grip0 = { ...his.grip };
-      for (const k of ['fl', 'fr']) his.grip[k] = Math.min(his.grip[k], 0.6);
-      for (const k of ['rl', 'rr']) his.grip[k] = Math.min(his.grip[k], 0.22);
+      his.freeSlide = true;
+      // (all four light on the wet - he keeps what he carries, sliding on
+      // ahead and round, not scrubbed to a stop beside my wing)
+      for (const k of ['fl', 'fr']) his.grip[k] = Math.min(his.grip[k], 0.3);
+      for (const k of ['rl', 'rr']) his.grip[k] = Math.min(his.grip[k], 0.18);
       G.sfx.play('tail_screech', his.pos, { dur: 1.8 }, { ref: 6 });
       // ([C3b] a short slowdown as he goes past the windscreen - never the
       // camera: the wheel and the eyes stay mine)
@@ -609,13 +615,16 @@ export class Chase {
       // own knocks, heard and seen)
       if (!this._hisKnocks) {
         this._hisKnocks = true;
-        const knock = (e, hard) => { if (this.phase !== 'crash') return; if (this.t - (this._knockT ?? -9) < 0.15) return; this._knockT = this.t; G.sfx.play(hard ? 'tail_crash' : 'tail_scrape', e.point, { k: Math.max(0.4, e.k || 0.5) }, { ref: 5 }); if (/^(parked|car|sedan|coupe|truck)$/.test(e.what) || hard) G.sfx.play('c3_dent', e.point, { k: e.k || 0.6 }, { ref: 5 }); this.sparksAt(e.point, e.n, (e.k || 0.5) * (hard ? 1.4 : 0.8)); };
+        const knock = (e, hard) => { if (this.phase !== 'crash') return; (this.knocks || (this.knocks = [])).push([+(this.crashT || 0).toFixed(2), e.what, +(e.k || 0).toFixed(2)]); if (this.t - (this._knockT ?? -9) < 0.15) return; this._knockT = this.t; G.sfx.play(hard ? 'tail_crash' : 'tail_scrape', e.point, { k: Math.max(0.4, e.k || 0.5) }, { ref: 5 }); if (/^(parked|car|sedan|coupe|truck)$/.test(e.what) || hard) G.sfx.play('c3_dent', e.point, { k: e.k || 0.6 }, { ref: 5 }); this.sparksAt(e.point, e.n, (e.k || 0.5) * (hard ? 1.4 : 0.8)); };
         this.his.on('crash', (e) => knock(e, true));
         this.his.on('scrape', (e) => knock(e, false));
       }
     }
-    if (this.crashT > 1.3 && this._grip0) { const his0 = this._grip0; for (const k of ['rl', 'rr']) his.grip[k] = Math.min(his0[k], 0.5); this._grip0 = null; }
+    if (this.crashT > 1.7 && this._grip0) { const his0 = this._grip0; for (const k of ['fl', 'fr', 'rl', 'rr']) his.grip[k] = Math.min(his0[k], 0.55); this._grip0 = null; }
     this.crashT += dt;
+    // (a record of the spin for the proofs: his place, heading, speed; mine)
+    const CL = this.crashLog || (this.crashLog = []);
+    if (CL.length < 120) CL.push([+this.crashT.toFixed(2), +his.pos.x.toFixed(1), +his.pos.z.toFixed(1), +his.yaw.toFixed(2), +his.speedAbs.toFixed(1), +this.my.pos.x.toFixed(1), +this.my.pos.z.toFixed(1), +this.my.speedAbs.toFixed(1)]);
     this.leanForCrash(dt);
     // the tyre smoke while he slides
     const r = this.ctx.rng;
@@ -703,9 +712,14 @@ export class Chase {
     const his = this.his, T = this.stage.track, G = this.game;
     if (this.man) return;
     // (the side of his car with the road, not the rail or the wall: where his hat went)
-    const at = (z) => his.seat(_v.set(0.9, 0, z), new THREE.Vector3());
-    let side = -1, p = at(-2.25);
-    if (T && T.blocked && T.blocked(his.pos.x, his.pos.z, p.x, p.z, ['wall', 'fence', 'rail', 'barrier', 'gate', 'works'])) { side = 1; p = at(2.25); }
+    // ([C3b] by his door, or the other, or at his car's tail or nose: the
+    // first with room - my car may be against his)
+    // (the nearest of them to my car: I walk up to him, not round his car)
+    const cands = [[0.9, -2.25], [0.9, 2.25], [-3.7, -0.6], [3.7, 0.6]].map((q) => ({ q, d: his.seat(_v.set(q[0], 0, q[1]), new THREE.Vector3()).distanceTo(this.my.pos) })).sort((a, b) => a.d - b.d).map((o) => o.q);
+    const cs = this.free(his, cands, 0.6) || [0.9, -2.25];
+    const p = his.seat(_v.set(cs[0], 0, cs[1]), new THREE.Vector3());
+    const side = Math.sign(cs[1]) || 1;
+    void T;
     // (he faces so his right arm, held out to his side and back, points down
     // the river road to the pier: tail_point's arm in his frame)
     const pd = { x: PIER.gate.x - p.x, z: PIER.gate.z - p.z };
@@ -744,11 +758,31 @@ export class Chase {
     }
   }
   // the driver's door: where I stand out of it, and where E gets me back in
+  // (where it is: the door side with room - not into the rail, a wall, or
+  // his car against mine; chosen once, as I get out)
   doorAt(out = new THREE.Vector3()) {
-    const T = this.stage.track, my = this.my;
-    const p = my.seat(_v.set(-0.15, 0, -1.75), out);
-    if (T && T.blocked && T.blocked(my.pos.x, my.pos.z, p.x, p.z, ['wall', 'fence', 'rail', 'barrier', 'gate', 'works'])) my.seat(_v.set(-0.15, 0, 1.75), out);
-    return out;
+    const my = this.my;
+    if (this._doorSide == null) this._doorSide = this.free(my, [[-0.15, -1.75], [-0.15, 1.75]], 0.45) || [-0.15, -1.75];
+    return my.seat(_v.set(this._doorSide[0], 0, this._doorSide[1]), out);
+  }
+  // the first of `cands` (in car's frame) clear of the walls, the rail and both cars
+  free(car, cands, r) {
+    const T = this.stage.track;
+    const p = new THREE.Vector3();
+    for (const c of cands) {
+      car.seat(_v.set(c[0], 0, c[1]), p);
+      if (T && T.blocked && T.blocked(car.pos.x, car.pos.z, p.x, p.z, ['wall', 'fence', 'rail', 'barrier', 'gate', 'works', 'column', 'post'])) continue;
+      let hit = false;
+      for (const v of [this.my, this.his]) { const l = v.local(p, _w); if (Math.abs(l.x) < v.spec.halfL + r && Math.abs(l.z) < v.spec.halfW + r) hit = true; }
+      if (T && T.statics) for (const k of T.statics(p.x, p.z, 1.5, [])) {
+        if (k.gone) continue;
+        if (k.r != null) { if (Math.hypot(k.x - p.x, k.z - p.z) < k.r + r) hit = true; continue; }
+        const kx = (p.x - k.cx) * k.c - (p.z - k.cz) * k.s, kz = (p.x - k.cx) * k.s + (p.z - k.cz) * k.c;
+        if (Math.abs(kx) < k.hx + r && Math.abs(kz) < k.hz + r) hit = true;
+      }
+      if (!hit) return c;
+    }
+    return null;
   }
   getOut() {
     const G = this.game, my = this.my, his = this.his;
@@ -758,6 +792,7 @@ export class Chase {
     my.input.throttle = 0; my.input.brake = 1; my.input.steer = 0;
     my.vel.set(0, 0, 0); my.yawRate = 0;
     G.sfx.play('tail_door', null, { open: true });
+    this._doorSide = null;
     this.walkNet(true);
     const d = this.doorAt();
     const tgt = this.manAt || his.pos;

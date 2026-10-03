@@ -46,7 +46,7 @@ const PROFILES = {
   // 'grazer' (phase a) drives onto his bumper (a jolt, nothing more)
   pitWhole: { aLat: 7.2, brake: 6.5, lag: 0.08, wobble: 0, keep: 13, far: 26, hb: true, wrong: 0, look: 1.0, gunGap: 14, noGun: true, pit: true, pitAlways: true },
   gunOnly: { aLat: 7.2, brake: 6.5, lag: 0.08, wobble: 0, keep: 13, far: 26, hb: true, wrong: 0, look: 1.0, gunGap: 14, gunAt: 34, aimSd: 0.012, aimTol: 0.03, aimReact: 0.1, aimGain: 5, fireGap: 0.45, aimAt: 'any' },
-  grazer: { aLat: 7.5, brake: 6, lag: 0, wobble: 0, keep: 0, far: 60, hb: true, wrong: 0, look: 1.0, graze: true },
+  grazer: { aLat: 7.5, brake: 6, lag: 0, wobble: 0, keep: 3, far: 22, hb: false, wrong: 0, look: 1.0 },
   pitter: { aLat: 7.2, brake: 6.5, lag: 0.08, wobble: 0, keep: 13, far: 26, hb: true, wrong: 0, look: 1.0, gunGap: 14, gunAt: 30, aimSd: 0.02, aimTol: 0.035, aimReact: 0.1, aimGain: 3.5, fireGap: 0.45, aimAt: 'any', pit: true },
 };
 
@@ -260,8 +260,7 @@ export function makeBot(chase, name, { seed = 7, track = null, attempt = 0 } = {
       if (chase.phase === 'a' || chase.phase === 'start') {
         const gap = chase.gap();
         const ahead = (his.pos.x - my.pos.x) * c - (his.pos.z - my.pos.z) * sn;
-        if (P.graze) want = Math.min(want + 4, his.speed + 5);
-        else if (ahead > 0 && gap < P.keep) want = Math.min(want, Math.max(0, his.speed - 1.5));
+        if (ahead > 0 && gap < P.keep) want = Math.min(want, Math.max(0, his.speed - 1.5));
         else if (gap < P.far) want = Math.min(want, his.speed + 2 + (gap - P.keep) * 0.4);
       }
       if (chase.phase === 'b' && P.gunGap) {
@@ -365,7 +364,24 @@ export function makeBot(chase, name, { seed = 7, track = null, attempt = 0 } = {
   // mark; the mouse turns the eye onto it (aim() returns the turn as look)
   B.walkMark = () => {
     const m = chase.lineSaid ? chase.doorAt() : chase.manAt;
-    return m ? { x: m.x, z: m.z, stop: chase.lineSaid ? 0.7 : 1.7 } : null;
+    if (!m) return null;
+    const G = chase.game, e = G ? G.camera.position : chase.my.pos;
+    // (a car between me and the mark: round its nearer corner first)
+    const boxes = [chase.my, chase.his].map((v) => v.box());
+    const inBox = (x, z, b, r) => { const lx = (x - b.cx) * b.c - (z - b.cz) * b.s, lz = (x - b.cx) * b.s + (z - b.cz) * b.c; return Math.abs(lx) < b.hx + r && Math.abs(lz) < b.hz + r; };
+    const clear = (x0, z0, x1, z1) => { const n = Math.ceil(Math.hypot(x1 - x0, z1 - z0) / 0.25); for (let i = 1; i < n; i++) { const x = x0 + (x1 - x0) * i / n, z = z0 + (z1 - z0) * i / n; for (const b of boxes) if (inBox(x, z, b, 0.45)) return false; } return true; };
+    if (!clear(e.x, e.z, m.x, m.z)) {
+      let best = null;
+      for (const b of boxes) for (const [sx, sz] of [[1, 1], [1, -1], [-1, 1], [-1, -1]]) {
+        const lx = sx * (b.hx + 1.0), lz = sz * (b.hz + 1.0);
+        const x = b.cx + lx * b.c + lz * b.s, z = b.cz - lx * b.s + lz * b.c;
+        if (boxes.some((o) => inBox(x, z, o, 0.5)) || !clear(e.x, e.z, x, z)) continue;
+        const d = Math.hypot(x - e.x, z - e.z) + Math.hypot(m.x - x, m.z - z);
+        if (Math.hypot(x - e.x, z - e.z) > 0.6 && (!best || d < best.d)) best = { x, z, d };
+      }
+      if (best) return { x: best.x, z: best.z, stop: 0.3, via: true };
+    }
+    return { x: m.x, z: m.z, stop: chase.lineSaid ? 0.7 : 1.7 };
   };
   B.walkKeys = () => {
     const G = chase.game, m = B.walkMark();
@@ -374,7 +390,13 @@ export function makeBot(chase, name, { seed = 7, track = null, attempt = 0 } = {
     const d = Math.hypot(m.x - e.x, m.z - e.z);
     const w = new (e.constructor)(m.x, e.y - 0.5, m.z).applyMatrix4(G.camera.matrixWorldInverse);
     const ay = Math.atan2(w.x, -w.z);
-    return { W: d > m.stop && Math.abs(ay) < 0.7 ? 1 : 0 };
+    const go = d > m.stop && Math.abs(ay) < 0.7;
+    // (a car in the way: no nearer in a second and a half - a step to the side)
+    const W0 = B.walkP || (B.walkP = { t: B.t, d });
+    if (!go || d < W0.d - 0.3) { W0.t = B.t; W0.d = d; }
+    else if (B.t - W0.t > 1.5) { B.sideT = 0.9; B.sideK = (B.sideK || 1) * -1; W0.t = B.t; W0.d = d; }
+    if (B.sideT > 0) { B.sideT -= 1 / 60; return { W: 1, A: B.sideK > 0 ? 1 : 0, D: B.sideK < 0 ? 1 : 0 }; }
+    return { W: go ? 1 : 0 };
   };
   B.walkLook = () => {
     const G = chase.game, m = B.walkMark();

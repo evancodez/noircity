@@ -162,8 +162,12 @@ export class His {
     const whole = !(ch.hurt && ch.hurt());
     if (this.burstT > 0) { this.burstT -= dt; if (!whole && this.state === 'river') this.burstT = 0; }
     else if (my && (this.state === 'go' || (this.state === 'river' && whole)) && this.coolT <= 0) {
+      // (he sees me in his mirror a moment before his foot goes down: a
+      // fast close gets the graze)
       const l = v.local(my.pos, _l);
-      if (l.x < 1 && Math.hypot(l.x, l.z) < PULL.near) this.burst();
+      const close = l.x < 1 && Math.hypot(l.x, l.z) < PULL.near;
+      this.seenT = close ? (this.seenT || 0) + dt : 0;
+      if (this.seenT > PULL.react) this.burst();
     }
     const on = this.burstT > 0;
     this.burstK = (this.burstK || 0) + ((on ? 1 : 0) - (this.burstK || 0)) * (1 - Math.exp(-dt * 6));
@@ -232,10 +236,16 @@ export class His {
   crashing(v, dt) {
     const I = v.input;
     this.lostT += dt;
+    // ([C3b] a stab of throttle as the tail goes, then his feet off: the car
+    // slides on round and across the road on what it carries, into whatever
+    // is there, before he finds the brake - his foot kept down drove his
+    // nose, once round, into my door)
     I.steer = this.lostDir * Math.min(1, this.lostT * 2.2);
-    I.throttle = this.lostT < 0.9 ? 0.7 : 0;
-    I.brake = this.lostT > 1.3 ? 0.5 : 0;
-    I.handbrake = this.lostT < 0.6 ? 1 : 0;
+    I.throttle = this.lostT < 0.25 ? 0.8 : 0;
+    I.brake = this.lostT > 2.4 ? 0.35 : 0;
+    // (the handbrake's model is the one that lets a car go round on its
+    // momentum - Car.js holds a driven car's slip under 40 degrees)
+    I.handbrake = this.lostT < 1.8 ? 1 : 0;
     I.hold = 1;
   }
 }

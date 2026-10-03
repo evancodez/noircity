@@ -1,37 +1,121 @@
 {
- "about": "Chapter VI, the tail (lane C3), by real input: a player who uses what was taught (src/scenes/tail/bot.js 'good': reads the corners, brakes before them, the handbrake at the tight ones, keeps 12 to 30 m off him; on the river road RMB, the mouse onto his rear tyre, LMB) WINS: the chase kept, his car stopped by my rounds, the drive to Pier 9, E by the gate, chapter VII opens. node tools/play.mjs tools/plays/tail_good.json (NOIR_PORT=5343)",
+ "about": "C3b: chapter VI by real input, a player who uses what was taught (src/scenes/tail/bot.js 'good': reads the corners, the handbrake at the tight ones, keeps two to five lengths off him; on the river road RMB, the mouse onto his rear tyre, LMB - one round takes the tyre - then the gun in and the shunt on his back corner) WINS, twice in a row (the page reloaded and the chapter played again on another draw): the chase kept, his tyre, the shunt, he spins and wrecks, out of the car, the line, back in, the drive to Pier 9, E by the gate, chapter VII by a cut. NOIR_PORT=5343 node tools/play.mjs tools/plays/tail_good.json",
  "url": "/?mute=1&start=tail",
- "size": [1280, 800],
- "out": "shots/c3/play_good",
+ "size": [
+  1280,
+  800
+ ],
+ "out": "shots/c3b/play_good",
  "steps": [
-  { "name": "the title, BEGIN at the tail" },
-  { "until": "G.state === 'title' && !document.getElementById('title').classList.contains('hidden') && !!document.querySelector('#title .opt[data-k=begin]')", "timeout": 40000 },
-  { "wait": 2000 },
-  { "clickOn": "#title .opt[data-k=begin]", "taken": "G.state === 'playing' && document.pointerLockElement === N.renderer.domElement", "retries": 4, "every": 4000 },
-  { "until": "G.scenes.current && G.scenes.current.id === 'tail' && G.controller.mode === 'drive'", "timeout": 45000 },
-  { "expect": "G.controller.mode === 'drive' && G.hands.set === 'drive' && !!G.vehicles.player && G.stage.name === 'city'", "label": "in my coupe at Pell Lane's kerb, the hands on the wheel, in the city" },
-  { "wait": 1500 },
-  { "shot": "g00_kerb" },
-  { "name": "the tail, the river road, the gun, the wreck, the pier" },
-  { "drive": "tools/lib/c3_tail.mjs", "profile": "good", "seed": 7, "timeout": 420000,
-    "stop": "G.scenes.current && G.scenes.current.id !== 'tail'",
-    "shots": {
-      "g01_off": "!!G.scenes.ctx.flags.chase && G.scenes.ctx.flags.chase.phase === 'a' && G.scenes.ctx.flags.chase.my.speed > 9",
-      "g02_square": "!!G.scenes.ctx.flags.chase && G.scenes.ctx.flags.chase.driver.legIndex === 1 && G.scenes.ctx.flags.chase.my.pos.z < -120 && G.scenes.ctx.flags.chase.my.pos.x > -160",
-      "g03_avenue": "!!G.scenes.ctx.flags.chase && G.scenes.ctx.flags.chase.my.pos.x > -104 && G.scenes.ctx.flags.chase.my.pos.x < -94 && G.scenes.ctx.flags.chase.my.pos.z < -200",
-      "g04_baxter": "!!G.scenes.ctx.flags.chase && G.scenes.ctx.flags.chase.driver.legIndex === 2 && G.scenes.ctx.flags.chase.my.pos.z > -200 && G.scenes.ctx.flags.chase.my.pos.z < -140",
-      "g05_alley": "!!G.scenes.ctx.flags.chase && Math.abs(G.scenes.ctx.flags.chase.my.pos.x - 12.5) < 3 && G.scenes.ctx.flags.chase.my.pos.z > -80 && G.scenes.ctx.flags.chase.my.pos.z < -50",
-      "g06_river": "!!G.scenes.ctx.flags.chase && G.scenes.ctx.flags.chase.phase === 'b' && G.scenes.ctx.flags.chase.my.pos.z > -200",
-      "g07_gun": "!!G.scenes.ctx.flags.chase && G.scenes.ctx.flags.chase.gun.aimK > 0.99",
-      "g08_hit": "!!G.scenes.ctx.flags.chase && G.scenes.ctx.flags.chase.gun.hits >= 1",
-      "g09_crash": "!!G.scenes.ctx.flags.chase && G.scenes.ctx.flags.chase.phase === 'crash' && (G.scenes.ctx.flags.chase.crashT || 0) > 0.5",
-      "g10_wreck": "!!G.scenes.ctx.flags.chase && G.scenes.ctx.flags.chase.phase === 'wreck'",
-      "g11_pier": "!!G.scenes.ctx.flags.chase && G.scenes.ctx.flags.chase.phase === 'c' && G.scenes.ctx.flags.chase.my.pos.z > 140",
-      "g12_gate": "G.hud.promptShown.includes('get out')"
-    },
-    "check": "D.end === 'next:warehouse' || D.end === 'until'", "label": "the good hands win: chapter VII opens at the pier" },
-  { "eval": "JSON.stringify({ fails: window.__tailFails || [], log: (window.__tail && window.__tail.log || []).slice(-6) })" },
-  { "expect": "G.scenes.current && G.scenes.current.id === 'warehouse'", "label": "chapter VII (Pier Nine) begins" },
-  { "shot": "g13_next" }
+  {
+   "name": "the title, BEGIN at the tail"
+  },
+  {
+   "until": "G.state === 'title' && !document.getElementById('title').classList.contains('hidden') && !!document.querySelector('#title .opt[data-k=begin]')",
+   "timeout": 40000
+  },
+  {
+   "wait": 2000
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]",
+   "taken": "G.state === 'playing' && document.pointerLockElement === N.renderer.domElement",
+   "retries": 4,
+   "every": 4000
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'tail' && G.controller.mode === 'drive'",
+   "timeout": 45000
+  },
+  {
+   "expect": "G.controller.mode === 'drive' && G.hands.set === 'drive' && !!G.vehicles.player && G.stage.name === 'city'",
+   "label": "in my coupe at Pell Lane's kerb, the hands on the wheel, in the city"
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "shot": "g00_kerb"
+  },
+  {
+   "name": "the tail, the river road, the gun, the wreck, the pier"
+  },
+  {
+   "drive": "tools/lib/c3_tail.mjs",
+   "profile": "good",
+   "seed": 7,
+   "timeout": 420000,
+   "stop": "G.scenes.current && G.scenes.current.id !== 'tail'",
+   "shots": {
+    "g06_river": "!!G.scenes.ctx.flags.chase && G.scenes.ctx.flags.chase.phase === 'b' && G.scenes.ctx.flags.chase.my.pos.z > -200",
+    "g08_hit": "!!G.scenes.ctx.flags.chase && G.scenes.ctx.flags.chase.gun.hits >= 1",
+    "g09_spin": "!!G.scenes.ctx.flags.chase && G.scenes.ctx.flags.chase.phase === 'crash' && (G.scenes.ctx.flags.chase.crashT || 0) > 0.5",
+    "g10_out": "!!G.scenes.ctx.flags.chase && G.scenes.ctx.flags.chase.phase === 'out' && G.scenes.ctx.flags.chase.outT > 0.9",
+    "g12_gate": "G.hud.promptShown.includes('get out') && !!G.scenes.ctx.flags.chase && G.scenes.ctx.flags.chase.phase === 'c'"
+   },
+   "check": "D.end === 'next:warehouse' || D.end === 'until'",
+   "label": "the good hands win: chapter VII opens at the pier"
+  },
+  {
+   "eval": "JSON.stringify({ fails: window.__tailFails || [], log: (window.__tail && window.__tail.log || []).slice(-6) })"
+  },
+  {
+   "expect": "G.scenes.current && G.scenes.current.id === 'warehouse'",
+   "label": "chapter VII (Pier Nine) begins"
+  },
+  {
+   "shot": "g13_next"
+  },
+  {
+   "name": "the second time: the page reloaded, the chapter again on another draw"
+  },
+  {
+   "eval": "(window.__win1 = { fails: (window.__tailFails || []).length }, localStorage.setItem('__c3b_win1', '1'), 'win 1')"
+  },
+  {
+   "reload": true
+  },
+  {
+   "until": "G.state === 'title' && !document.getElementById('title').classList.contains('hidden') && !!document.querySelector('#title .opt[data-k=begin]')",
+   "timeout": 40000
+  },
+  {
+   "wait": 2000
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]",
+   "taken": "G.state === 'playing' && document.pointerLockElement === N.renderer.domElement",
+   "retries": 4,
+   "every": 4000
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'tail' && G.controller.mode === 'drive'",
+   "timeout": 45000
+  },
+  {
+   "eval": "(window.__tailFails = [], window.__c3tries = 0, 'again')"
+  },
+  {
+   "drive": "tools/lib/c3_tail.mjs",
+   "profile": "good",
+   "seed": 21,
+   "timeout": 420000,
+   "stop": "G.scenes.current && G.scenes.current.id !== 'tail'",
+   "shots": {
+    "h12_gate": "G.hud.promptShown.includes('get out') && !!G.scenes.ctx.flags.chase && G.scenes.ctx.flags.chase.phase === 'c'"
+   },
+   "check": "D.end === 'next:warehouse' || D.end === 'until'",
+   "label": "the good hands win again: chapter VII opens at the pier"
+  },
+  {
+   "eval": "JSON.stringify({ fails: (window.__tailFails || []).map((f) => f.why + '@' + f.t + ' ' + f.phase) })"
+  },
+  {
+   "expect": "G.scenes.current && G.scenes.current.id === 'warehouse' && (window.__tailFails || []).length === 0",
+   "label": "the second win, with no fail on the way"
+  },
+  {
+   "shot": "h13_next"
+  }
  ]
 }

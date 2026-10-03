@@ -1,0 +1,71 @@
+{
+ "about": "C3b proof tail_graze, by real input: in the street chase (phase a, the chase2 checkpoint on Canal St) hands that drive onto his bumper again and again ('grazer' in src/scenes/tail/bot.js). A graze is a jolt and a sound and nothing more: he keeps his line and his way (no spin, never off the road), he answers by flooring it (the burst: he pulls away), and I cannot get past him. NOIR_PORT=5343 node tools/play.mjs tools/plays/tail_graze.json",
+ "url": "/?mute=1&start=tail.chase2&tailSeed=3",
+ "size": [
+  1440,
+  900
+ ],
+ "out": "shots/c3b/graze",
+ "steps": [
+  {
+   "until": "G.state === 'title' && !document.getElementById('title').classList.contains('hidden') && !!document.querySelector('#title .opt[data-k=begin]')",
+   "timeout": 40000
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]",
+   "taken": "G.state === 'playing' && document.pointerLockElement === N.renderer.domElement",
+   "retries": 4,
+   "every": 4000
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'tail' && !!G.scenes.ctx.flags.chase && G.scenes.ctx.flags.chase.phase === 'a' && !G.scenes.fadeK",
+   "timeout": 45000
+  },
+  {
+   "eval": "(() => { window.__tailFails = []; window.__c3tries = 0; window.__g = { yawMax: 0, after: [], ahead: true }; const id = setInterval(() => { const C = G.scenes.ctx && G.scenes.ctx.flags.chase; if (!C || !C.his || C.phase !== 'a') return; const g = window.__g; g.yawMax = Math.max(g.yawMax, Math.abs(C.his.yawRate)); g.minGap = Math.min(g.minGap || 999, C.gap()); if (C.failing && !g.log) g.log = C.log.slice(-50).map((r) => r.join(' ')).join(' | '); const l = C.his.local(C.my.pos); if (l.x > 2.5) g.ahead = false; if (C._grazeT != null && C.t - C._grazeT > 2.2 && C.t - C._grazeT < 2.4 && !g.after.includes(C._grazeT)) { g.after.push(C._grazeT); g.gapAfter = (g.gapAfter || []).concat([+C.gap().toFixed(1)]); } }, 100); return 'watching'; })()"
+  },
+  {
+   "drive": "tools/lib/c3_tail.mjs",
+   "profile": "grazer",
+   "seed": 3,
+   "timeout": 60000,
+   "maxTries": 1,
+   "stop": "!!G.scenes.ctx.flags.chase && ((G.scenes.ctx.flags.chase.grazes || 0) >= 2 || G.scenes.ctx.flags.chase.phase !== 'a' || (window.__tailFails || []).length > 0)",
+   "shots": {
+    "g01_on_his_bumper": "!!G.scenes.ctx.flags.chase && (G.scenes.ctx.flags.chase.grazes || 0) >= 1"
+   }
+  },
+  {
+   "wait": 2500
+  },
+  {
+   "shot": "g02_he_pulls_away"
+  },
+  {
+   "eval": "(() => { const C = G.scenes.ctx.flags.chase; return JSON.stringify({ grazes: C.grazes, bursts: C.driver.bursts, state: C.driver.state, phase: C.phase, gapNow: +C.gap().toFixed(1), g: window.__g, fails: (window.__tailFails || []).map((f) => f.why), dmg: +C.my.damage.toFixed(2), log: C.log.slice(-90).map((r) => r.slice(0, 5).join(' ')).join('|') }); })()"
+  },
+  {
+   "expect": "(G.scenes.ctx.flags.chase.grazes || 0) >= 1",
+   "label": "my bumper met his (a graze happened)"
+  },
+  {
+   "expect": "['go', 'river'].includes(G.scenes.ctx.flags.chase.driver.state) && !G.scenes.ctx.flags.chase._ramWin && ['a', 'b'].includes(G.scenes.ctx.flags.chase.phase) && !(window.__tailFails || []).length",
+   "label": "he keeps his way: no spin, no crash, the chase goes on (into the river road), no fail"
+  },
+  {
+   "expect": "(G.scenes.ctx.flags.chase.driver.bursts || 0) >= 1",
+   "label": "he answers the graze by flooring it (the burst)"
+  },
+  {
+   "expect": "window.__g.yawMax < 1.2",
+   "label": "the jolt never turns him round (his yaw rate stays a driver's)"
+  },
+  {
+   "expect": "window.__g.ahead",
+   "label": "I never get past him"
+  }
+ ]
+}

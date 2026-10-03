@@ -1,5 +1,5 @@
 {
- "about": "Chapter VI, the tail (lane C3), hands off, by real input: the player does nothing and LOSES, the warning first and the reason said. (a) BEGIN at the tail, nothing pressed: he pulls away, 'He's getting away.', then 'Lost him.' in under 20 s, back at the kerb. (b) W held and nothing else: up Pell Lane into the wall across Harbor St, he is gone: 'Lost him.'. (c) The river road's checkpoint, hands off: I fall behind: 'He's getting away.', then 'Lost him.', back at the river road (3rd owner). (d) The river road followed by good hands that never draw the gun: 'He's nearly at the pier.', then 'He warned them.', back at the river road. node tools/play.mjs tools/plays/tail_idle.json (NOIR_PORT=5343)",
+ "about": "Chapter VI, the tail (lane C3), hands off, by real input: the player does nothing and LOSES, the warning first and the reason said. (a) BEGIN at the tail, nothing pressed: he pulls away, 'He's getting away.', then 'Lost him.' in under 20 s, back at the kerb. (b) W held and nothing else: up Pell Lane into the wall across Harbor St, he is gone: 'Lost him.'. (c) The river road's checkpoint, hands off: I fall behind: 'He's getting away.', then 'Lost him.', back at the river road (3rd owner). (d) [C3b] The river road followed by good hands that never draw the gun: the window - \"He's pulling away.\", then 'Lost him.' (or 'He warned them.' at the gate), back at the river road. node tools/play.mjs tools/plays/tail_idle.json (NOIR_PORT=5343)",
  "url": "/?mute=1&start=tail",
  "size": [
   1280,
@@ -134,7 +134,7 @@
    "label": "back at the river road's start, in the seat"
   },
   {
-   "name": "(d) the river road, kept up with but never shot at (the good hands' driving, the gun never drawn): he reaches the pier's gate"
+   "name": "(d) [C3b] the river road, kept up with but never shot at or shunted (the good hands' driving, the gun never drawn): the window closes - he pulls away, he is gone"
   },
   {
    "drive": "tools/lib/c3_tail.mjs",
@@ -143,14 +143,14 @@
    "timeout": 90000,
    "stop": "(window.__tailFails || []).length >= 4",
    "shots": {
-    "i04_nearly_at_the_pier": "!!G.scenes.ctx.flags.chase && G.scenes.ctx.flags.chase.kit.warning === \"He's nearly at the pier.\""
+    "i04_pulling_away": "!!G.scenes.ctx.flags.chase && G.scenes.ctx.flags.chase.kit.warning === \"He's pulling away.\""
    },
    "check": "D.end === 'until'",
    "label": "he is followed to the pier"
   },
   {
-   "expect": "window.__tailFails[3].why === 'He warned them.' && window.__tailFails[3].to === 'river'",
-   "label": "kept up with, never stopped: 'He's nearly at the pier.', then 'He warned them.', back at the river road"
+   "expect": "['Lost him.', 'He warned them.'].includes(window.__tailFails[3].why) && window.__tailFails[3].to === 'river'",
+   "label": "kept up with, never stopped: \"He's pulling away.\", then he is gone ('Lost him.', or 'He warned them.' if he reaches the gate first), back at the river road"
   },
   {
    "expect": "G.lastFail && G.lastFail.warnedFor >= 1",

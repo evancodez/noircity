@@ -1,0 +1,63 @@
+{
+ "about": "C3b proof tail_ram_whole, by real input: on the river road (phase b's checkpoint) the gun never drawn and his car whole, hands that shunt his back corner the way that spins a hurt car ('pitWhole' in src/scenes/tail/bot.js: up beside his back quarter, the wheel into it). On a whole car the shunt is a fishtail he catches and he pulls away: he never spins out, the chase goes on. NOIR_PORT=5343 node tools/play.mjs tools/plays/tail_ram_whole.json",
+ "url": "/?mute=1&start=tail.river&tailSeed=5",
+ "size": [
+  1440,
+  900
+ ],
+ "out": "shots/c3b/ram_whole",
+ "steps": [
+  {
+   "until": "G.state === 'title' && !document.getElementById('title').classList.contains('hidden') && !!document.querySelector('#title .opt[data-k=begin]')",
+   "timeout": 40000
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]",
+   "taken": "G.state === 'playing' && document.pointerLockElement === N.renderer.domElement",
+   "retries": 4,
+   "every": 4000
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'tail' && !!G.scenes.ctx.flags.chase && G.scenes.ctx.flags.chase.phase === 'b' && !G.scenes.fadeK",
+   "timeout": 45000
+  },
+  {
+   "eval": "(window.__tailFails = [], window.__c3tries = 0, window.__rl = [], setInterval(() => { const C = G.scenes.ctx && G.scenes.ctx.flags.chase; if (!C || !C.his || C.phase !== 'b' || C.failing) return; const l = C.his.local(C.my.pos); window.__rl.push([+C.t.toFixed(1), +C.gap().toFixed(0), +C.my.speed.toFixed(1), +C.his.speed.toFixed(1), +l.x.toFixed(1), +l.z.toFixed(1), +C.his.pos.z.toFixed(0), JSON.stringify(C.botKeys || {})].join(' ')); }, 500), 'whole, the gun in')"
+  },
+  {
+   "drive": "tools/lib/c3_tail.mjs",
+   "profile": "pitWhole",
+   "seed": 5,
+   "timeout": 45000,
+   "maxTries": 1,
+   "stop": "!!G.scenes.ctx.flags.chase && ((G.scenes.ctx.flags.chase.staggers || 0) >= 2 || G.scenes.ctx.flags.chase.phase !== 'b' || (window.__tailFails || []).length > 0)",
+   "shots": {
+    "w01_on_his_corner": "!!G.scenes.ctx.flags.chase && (G.scenes.ctx.flags.chase.staggers || 0) >= 1"
+   }
+  },
+  {
+   "wait": 2500
+  },
+  {
+   "shot": "w02_he_catches_it"
+  },
+  {
+   "eval": "(() => { const C = G.scenes.ctx.flags.chase; return JSON.stringify({ phase: C.phase, state: C.driver.state, staggers: C.staggers, bursts: C.driver.bursts, rams: (C.rams || []).filter((r) => r.pit).slice(-6), ramWin: !!C._ramWin, hurt: C.hurt(), fails: (window.__tailFails || []).map((f) => f.why + '@' + f.t), rl: window.__rl.slice(0, 70).join(' | ') }); })()"
+  },
+  {
+   "expect": "(G.scenes.ctx.flags.chase.rams || []).some((r) => r.go && !r.hurt)",
+   "label": "a real shunt on his back corner (behind his axle, at an angle, into him, closing) landed on a whole car"
+  },
+  {
+   "expect": "!G.scenes.ctx.flags.chase._ramWin && G.scenes.ctx.flags.chase.driver.state === 'river'",
+   "label": "whole, it does not spin him: he catches it and drives on"
+  },
+  {
+   "expect": "(G.scenes.ctx.flags.chase.driver.bursts || 0) >= 1",
+   "label": "and he pulls away (the burst)"
+  }
+ ]
+}
