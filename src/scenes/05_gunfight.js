@@ -198,6 +198,8 @@ export default defineScene({
       } else yield wait(1.0);
       // the moment: a real choice. The kit's first card in the quiet second
       F.momentT = G.time;
+      // (the revolver's first time in the story: its act, then getting low - once per save, queued one behind the other)
+      if (ctx.hud.teach) ctx.hud.teach('fire', '[LMB] fire');
       if (G.fails('shadows') === 2) K.teach('crouch', { again: true }); else K.teach('crouch');
       const LEN = first ? 7.5 : 5.0;
       yield until(() => {
