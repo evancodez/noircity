@@ -48,7 +48,9 @@ export const BEATS = {
     // was flanked behind the desk three tries running)
     // ([C2] after the critic's second look: the third man through A2 is the beat's way round - no other is
     // sent round as well (flankAfter 0, was 9): three ways at once was a wall for the first-timer)
-    at: [DESK.x + 0.02, DESK.z + 0.1, EAST], gun: 'revolver', tipped: true, crouch: true, max: 2, flankAfter: 0,
+    // (and settleK 1.15: the critic's clumsy hands still took two_ways to a fourth try now and then - three times
+    // 'They had your angle.' - a tenth and a half more to settle on a man down behind the desk from the far door)
+    at: [DESK.x + 0.02, DESK.z + 0.1, EAST], gun: 'revolver', tipped: true, crouch: true, max: 2, flankAfter: 0, settleK: 1.15,
     obj: 'Three of them. Watch both doors.',
     // ([C2] after the critic's second look: the third man's door, opening at my back, is said as it opens)
     warn: { door: 'The other door! Behind you!' },
