@@ -584,6 +584,9 @@ export default {
     const ctx3 = { add, stage, MAT, M, wood, tin, ink, solid, placeCol, emit, markTop, groundC };
     // the side alley: the coal man's sacks dumped across it by a cellar's coal hole
     sackRow(ctx3, { id: 'alleySacks', a: { x: 0.04, z: -35.6 }, b: { x: 4.96, z: -35.6 }, hole: { x: 3.9, z: -34.4 }, stretch: 'alley' });
+    // the kitchen: flour sacks dumped in front of its iron door, off the
+    // morning's delivery (both corridors meet the door across them)
+    sackRow(ctx3, { id: 'kSacks', a: { x: 67.9, z: KITCHEN.z0 + 0.32 }, b: { x: 67.9, z: -96.05 }, stretch: 'kitchen', color: 0x9a9a9a });
     // the press hall's north aisle: the last edition's bundles stacked across it, waiting for the van
     bundleRow(ctx3, { id: 'pressRow', x: 76.7, z0: -98.33, z1: -93.68, stretch: 'press' });
     // the press hall's delivery yard: a hand truck of bundles by the south door
@@ -812,10 +815,10 @@ function seg(a, b) {
 
 // coal sacks dumped in a row across the way (over: low, a trip run into),
 // the coal hole's iron plate open in the flags beside them
-function sackRow(c, { id, a, b, hole = null, stretch }) {
+function sackRow(c, { id, a, b, hole = null, stretch, color = 0x2a2a2a }) {
   const { stage, MAT, ink, add } = c;
   const S = seg(a, b);
-  const sack = new THREE.MeshStandardMaterial({ color: 0x2a2a2a, roughness: 0.97, envMap: stage.M.envSoft, envMapIntensity: 0.05 });
+  const sack = new THREE.MeshStandardMaterial({ color, roughness: 0.97, envMap: stage.M.envSoft, envMapIntensity: 0.05 });
   const rng = stage.rng.fork(Math.round((a.x * 31 + a.z * 17) * 10));
   const parts = [];
   const n = Math.max(3, Math.round(S.L / 0.62));

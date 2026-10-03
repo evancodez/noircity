@@ -96,7 +96,7 @@ export class Chase {
     const add = (s, kind, data = {}) => { if (s != null) out.push({ s, kind, ...data }); };
     // ([C6 3rd] + the alley's sacks, the press's bundles, the cut's barrels and
     // sacks, the market's boxes; the cut's pipe; the market's back gate)
-    for (const id of ['alleySacks', 'fence1', 'fence3', 'pressRow', 'conveyor', 'dyBundles', 'dyReel', 'cutBarrels', 'cutSacks', 'party', 'archCart', 'stallBoxes', 'marketCrates']) { const T = things.get(id); if (T) add(on(T), 'vault', { id }); }
+    for (const id of ['alleySacks', 'fence1', 'fence3', 'kSacks', 'pressRow', 'conveyor', 'dyBundles', 'dyReel', 'cutBarrels', 'cutSacks', 'party', 'archCart', 'stallBoxes', 'marketCrates']) { const T = things.get(id); if (T) add(on(T), 'vault', { id }); }
     for (const id of ['fence2', 'web', 'pipe', 'pipe2', 'tank', 'plank']) { const T = things.get(id); if (T) add(on(T), 'slide', { id }); }
     add(on(things.get('door' + this.lane)), 'door', { id: 'door' + this.lane, slam: true });
     if (things.get('archGate')) add(on(things.get('archGate')), 'door', { id: 'archGate', slam: true });
@@ -465,8 +465,12 @@ export class Chase {
   }
   // he and I on different ways at the fork (roofs / row)
   otherWay() {
-    if (this.stretch !== 'over') return false;
     const C = this.G.controller;
+    // ([C6 3rd] the market's fork: he takes the middle aisle; me in the west
+    // aisle along the fence is the other way - not held to his pace through
+    // the stalls between us, not unseen behind them)
+    if (this.stretch === 'market') return C.pos.x < 4.6 && C.pos.z > -116.5 && C.pos.z < -98.5;
+    if (this.stretch !== 'over') return false;
     // ([C6 2nd] the alley behind the press hall comes in from the east before
     // the fork: the row's way begins in the passage north of it)
     const mine = (C.run ? C.run.feet : C.groundY) > 1.2 || (C.pos.z > ROOFS.z0 - 0.2 && C.pos.z < -104.0 && C.pos.x > 56 && C.pos.x < 70.5) ? 'roofs' : C.pos.z < ROOFS.z0 + 0.3 || (C.pos.x > 70 && C.pos.x < 73.4 && C.pos.z < -104.6) ? 'row' : null;

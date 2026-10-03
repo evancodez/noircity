@@ -34,7 +34,8 @@ const PLACES = [
   // ([C6 2nd] Harbor Street runs on across the avenue now: its hoarding is past it)
   ['Harbor St\'s hoarding (east)', [110.0, 0.0, -Math.PI / 2], ['x', 117.25, -1]],
   // [C6 2nd] the kitchen's iron door's wall, the press hall, the avenue, the alley behind
-  ['the kitchen\'s east wall beside its iron door', [66.0, -95.6, -Math.PI / 2], ['x', 69.7, -1]],
+  // ([C6 3rd] the kitchen's east wall beside its iron door: the flour sacks
+  // lie before the door now - run at it, a man trips over them; out of the list)
   ['the press hall: the north line\'s first unit', [76.0, -97.2, Math.PI], ['z', -93.68, -1]],
   ['the pressman at it', [76.0, -96.8, Math.PI], ['z', -94.69, -1]],
   ['the web without C', [79.65, -96.4, Math.PI], ['z', -93.1, -1]],
