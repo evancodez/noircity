@@ -42,7 +42,7 @@ export const SALOON = {
   // stage 3: up, for the door and in
   last: [{ x: -9.4, z: 0.6 }, { x: -10.9, z: 0.6 }, { x: -12.6, z: 0.4 }],
   // the shot that does not miss a man in the open
-  dmg: 60, sigma: 0.0035,
+  dmg: 75, sigma: 0.0035,
   // how long he is open
   openAfterShot: 1.5, openShield: 2.6, openBlast: 3.0,
 };
@@ -280,7 +280,7 @@ export function cardinalOut(ctx, car, { at = null, stage = 2, hatGone = false, o
       Sh.t = 0; Sh.n++;
       K.hoodRound(Sh.ai, body.chest.clone(), 0.03 + Sh.n * 0.005, 9, { tommy: true });
       s.fire();
-      if (Sh.n >= 5) { Sh.mode = 'walk'; Sh.t = -0.6; s.setAim(false); Sh.ai.brain.S.state = 'hold'; }
+      if (Sh.n >= 7) { Sh.mode = 'walk'; Sh.t = -0.6; s.setAim(false); Sh.ai.brain.S.state = 'hold'; }
     }
   }
   B.h = h;
