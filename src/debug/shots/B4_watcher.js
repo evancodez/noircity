@@ -11,7 +11,8 @@ import { pathAt, project } from '../../scenes/watcher/course.js';
 //   chase        a run beat (&st=<beat>, default alley) with W held (&w=0 no W;
 //                &jump=1 SPACE held; &slide=1 C held), &at=x,z (&ay= yaw,
 //                &ap= pitch, &ay2=: the look turned), &hs= his path distance
-//                ahead of where it puts him, &fov=
+//                ahead of where it puts him, &fov=, &taught=vault,slide,jump
+//                (those cards already shown), &press=Space@1.4 (main.js)
 //   watcher_study  the watcher in the straight, the eye `wd` m off (default
 //                6) at bearing `wb` degrees (0 his front, 90 his left, 180
 //                his back), playing clip `wc` (default watcher_run) in place;
@@ -60,6 +61,9 @@ function chase() {
       controller.auto = { f: P.get('w') === '0' ? 0 : 1, s: num('as', 0), jump: P.get('jump') === '1', slide: P.get('slide') === '1' };
       if (P.get('ay2')) controller.yaw += num('ay2', 0);
       if (P.get('fov')) { camera.fov = num('fov', 70); camera.updateProjectionMatrix(); if (controller.run) controller.run.fov0 = camera.fov; }
+      // (&taught=vault,jump: those teach cards already shown - a frame of the
+      // move itself, not of the card's crawl)
+      if (P.get('taught') && game.hud.kit) { const tg = game.hud.kit.taught(); for (const k of P.get('taught').split(',')) tg[k] = true; }
       void pathAt;
     },
   };
