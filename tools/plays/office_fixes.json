@@ -237,6 +237,58 @@
   },
   {
    "shot": "check_card_turn"
+  },
+  {
+   "name": "the desk's things from in front of it: the pencil in his open drawer; his drawer shut from behind his chair"
+  },
+  {
+   "key": "KeyE"
+  },
+  {
+   "eval": "(N.game.scenes.go('office', { beat: 'room', fade: 'cut', card: false }), 1)"
+  },
+  {
+   "until": "G.scenes.beat === 'room' && G.scenes.fadeK < 0.1",
+   "timeout": 20000
+  },
+  {
+   "wait": 800
+  },
+  {
+   "walk": [
+    [
+     2.0,
+     4.4
+    ],
+    [
+     3.16,
+     4.4
+    ]
+   ],
+   "timeout": 12000
+  },
+  {
+   "eval": "(() => { const O = G.stage.part('office'), s = G.scenes.ctx.flags.s; s.key = true; s.ames = true; const R1 = O.desk.drawers.find((d) => d.id === 'R1'); R1.locked = false; O.drawer(R1, true); return 1; })()"
+  },
+  {
+   "wait": 1200
+  },
+  {
+   "look": "(() => { const p = G.stage.part('office').pencil.getWorldPosition(new N.THREE.Vector3()); const e = G.eye, c = G.controller; const yaw = Math.atan2(-(p.x - e.x), -(p.z - e.z)), pitch = Math.atan2(p.y - e.y, Math.hypot(p.x - e.x, p.z - e.z)); const w = (a) => Math.atan2(Math.sin(a), Math.cos(a)); return [Math.round(-w(yaw - c.yaw) / c.sensitivity), Math.round(-(pitch - c.pitch) / c.sensitivity)]; })()",
+   "steps": 4
+  },
+  {
+   "wait": 400
+  },
+  {
+   "eval": "JSON.stringify({ eye: [+G.eye.x.toFixed(2), +G.eye.z.toFixed(2)], cur: G.interact.current && G.interact.current.id })"
+  },
+  {
+   "expect": "G.interact.current && G.interact.current.id === 'pencil'",
+   "label": "from the desk's front: take the pencil"
+  },
+  {
+   "shot": "pencil_front"
   }
  ]
 }
