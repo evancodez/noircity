@@ -1,20 +1,56 @@
 {
- "about": "C3b look development: the wreck's checkpoint, E out of the car by real input, a look at him; positions printed. NOIR_PORT=5343 node tools/play.mjs tools/plays/tail_out_look.json",
+ "about": "C3b look development (not a proof): the wreck's checkpoint, E out of the car by real input, the eye turned onto him, his line and his arm down the river road. NOIR_PORT=5343 node tools/play.mjs tools/plays/tail_out_look.json",
  "url": "/?mute=1&start=tail.wreck",
- "size": [1440, 900],
+ "size": [
+  1440,
+  900
+ ],
  "out": "shots/c3b/out_look",
  "steps": [
-  { "until": "G.state === 'title' && !document.getElementById('title').classList.contains('hidden') && !!document.querySelector('#title .opt[data-k=begin]')", "timeout": 40000 },
-  { "wait": 1500 },
-  { "clickOn": "#title .opt[data-k=begin]", "taken": "G.state === 'playing' && document.pointerLockElement === N.renderer.domElement", "retries": 4, "every": 4000 },
-  { "until": "G.scenes.current && G.scenes.current.id === 'tail' && !!G.scenes.ctx.flags.chase && !!G.scenes.ctx.flags.chase.man && G.hud.promptShown.includes('get out')", "timeout": 45000 },
-  { "shot": "o01_in_the_car" },
-  { "key": "KeyE" },
-  { "wait": 1200 },
-  { "eval": "(() => { const C = G.scenes.ctx.flags.chase, c = G.camera.position; return JSON.stringify({ phase: C.phase, mode: G.controller.mode, eye: [c.x, c.y, c.z].map((v) => +v.toFixed(2)), man: C.manAt, his: [C.his.pos.x, C.his.pos.z].map((v) => +v.toFixed(2)), my: [C.my.pos.x, C.my.pos.z].map((v) => +v.toFixed(2)), yaw: +G.controller.yaw.toFixed(2), pitch: +G.controller.pitch.toFixed(2), fov: G.camera.fov, gy: G.controller.groundY, manPos: C.man && C.man.fig ? [C.man.fig.pos.x, C.man.fig.pos.z] : null, vis: C.man && C.man.fig && C.man.fig.object ? C.man.fig.object.visible : null }); })()" },
-  { "shot": "o02_out" },
-  { "look": [0, 160], "steps": 8 },
-  { "wait": 500 },
-  { "shot": "o03_down" }
+  {
+   "until": "G.state === 'title' && !document.getElementById('title').classList.contains('hidden') && !!document.querySelector('#title .opt[data-k=begin]')",
+   "timeout": 40000
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]",
+   "taken": "G.state === 'playing' && document.pointerLockElement === N.renderer.domElement",
+   "retries": 4,
+   "every": 4000
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'tail' && !!G.scenes.ctx.flags.chase && !!G.scenes.ctx.flags.chase.man && G.hud.promptShown.includes('get out')",
+   "timeout": 45000
+  },
+  {
+   "key": "KeyE"
+  },
+  {
+   "wait": 1000
+  },
+  {
+   "eval": "(() => { const C = G.scenes.ctx.flags.chase, m = C.manAt, K = G.controller; const dx = K.pos.x - m.x, dz = K.pos.z - m.z, L = Math.hypot(dx, dz); K.pos.x = m.x + dx / L * 2.4; K.pos.z = m.z + dz / L * 2.4; K.yaw = Math.atan2(-(m.x - K.pos.x), -(m.z - K.pos.z)); K.pitch = -0.3; return JSON.stringify({ man: m, eye: [K.pos.x, K.pos.z] }); })()"
+  },
+  {
+   "wait": 600
+  },
+  {
+   "shot": "o02_crouched"
+  },
+  {
+   "eval": "(() => { const C = G.scenes.ctx.flags.chase, m = C.manAt, K = G.controller; const dx = K.pos.x - m.x, dz = K.pos.z - m.z, L = Math.hypot(dx, dz); K.pos.x = m.x + dx / L * 2.0; K.pos.z = m.z + dz / L * 2.0; return 'nearer'; })()"
+  },
+  {
+   "until": "G.scenes.ctx.flags.chase.lineSaid",
+   "timeout": 6000
+  },
+  {
+   "wait": 900
+  },
+  {
+   "shot": "o03_pier_nine_tonight"
+  }
  ]
 }

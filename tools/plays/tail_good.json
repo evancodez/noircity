@@ -51,7 +51,8 @@
     "g08_hit": "!!G.scenes.ctx.flags.chase && G.scenes.ctx.flags.chase.gun.hits >= 1",
     "g09_spin": "!!G.scenes.ctx.flags.chase && G.scenes.ctx.flags.chase.phase === 'crash' && (G.scenes.ctx.flags.chase.crashT || 0) > 0.5",
     "g10_out": "!!G.scenes.ctx.flags.chase && G.scenes.ctx.flags.chase.phase === 'out' && G.scenes.ctx.flags.chase.outT > 0.9",
-    "g12_gate": "G.hud.promptShown.includes('get out') && !!G.scenes.ctx.flags.chase && G.scenes.ctx.flags.chase.phase === 'c'"
+    "g12_gate": "G.hud.promptShown.includes('get out') && !!G.scenes.ctx.flags.chase && G.scenes.ctx.flags.chase.phase === 'c'",
+    "g08b_ram_card": "!!G.hud.kit && !!G.hud.kit.teachCur && G.hud.kit.teachCur.id === 'tail_ram' && G.hud.kit.teachCur.t > 0.5"
    },
    "check": "D.end === 'next:warehouse' || D.end === 'until'",
    "label": "the good hands win: chapter VII opens at the pier"

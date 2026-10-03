@@ -154,17 +154,18 @@ export default {
           handTR: [-0.06, 0.62, 0.3], elbowPoleR: [-1, -0.5, -0.2], handR: [0, 0, -60] });
       } }),
     },
-    // [C3b] "Pier nine. Tonight.": he lifts his head to me and his right arm
-    // goes out to his side and back, down the river road
+    // [C3b] "Pier nine. Tonight.": his right arm goes up and out ahead of
+    // him, down the river road (chase.js faces him there), his head turned
+    // back over his left shoulder, to me
     tail_point: {
       duration: 2.4, loop: true,
       def: () => ({ duration: 2.4, loop: true, armSpace: 'root', pose: (t) => {
         const b = S(TAU * t / 2.4);
-        return P({ hipsPos: [0.02, 0.5, 0.0], hips: [20, -8, -4], spine: [6 + b, -6, 2], chest: [2 + b * 2, -8, 0], neck: [0, -10, 0], head: [-6, -14, 0],
+        return P({ hipsPos: [0.02, 0.5, 0.0], hips: [20, 6, -4], spine: [6 + b, 6, 2], chest: [2 + b * 2, 8, 0], neck: [0, 10, 0], head: [-4, 34, 0],
           footL: [0.16, A, 0.34], footRotL: [0, 12, 0], kneeL: [0.12, 0.3, 1],
           footR: [-0.15, 0.1, -0.36], footRotR: [-72, 10, 0], kneeR: [-0.1, -1, 0.4],
           handTL: [0.24, 0.58, 0.36], elbowPoleL: [1, -0.4, 0], handL: [0, 0, 30],
-          handTR: [-0.74, 1.02 + b * 0.01, -0.3], elbowPoleR: [-0.2, -1, 0], handR: [0, 0, -10] });
+          handTR: [-0.3, 1.32 + b * 0.01, 0.62], elbowPoleR: [-1, -0.6, 0], handR: [0, 0, -10] });
       } }),
     },
     // the truck's driver in his cab

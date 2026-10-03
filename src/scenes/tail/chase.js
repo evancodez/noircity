@@ -720,17 +720,19 @@ export class Chase {
     const p = his.seat(_v.set(cs[0], 0, cs[1]), new THREE.Vector3());
     const side = Math.sign(cs[1]) || 1;
     void T;
-    // (he faces so his right arm, held out to his side and back, points down
-    // the river road to the pier: tail_point's arm in his frame)
+    // (he faces down the river road to the pier, so his right arm, held out
+    // ahead of him and up, points there: tail_point's arm in his frame)
     const pd = { x: PIER.gate.x - p.x, z: PIER.gate.z - p.z };
-    const arm = { x: -0.85, z: -0.45 };
+    const arm = { x: -0.25, z: 1 };
     const yaw = Math.atan2(pd.x, pd.z) - Math.atan2(arm.x, arm.z);
     const cast = this.stage.cast;
     const kind = cast.has('watcher') ? 'watcher' : 'couple_him';
     const c = cast.spawn(kind, { at: { x: p.x, z: p.z }, yaw, name: 'tailman' });
     c.noGlance = true;
     c.setState('tail_crouched', 0);
-    if (c.fig && c.fig.bones && c.fig.bones.hat) c.fig.bones.hat.visible = false;
+    // (the bowler's bone shrunk to nothing, as the block's ending does: it
+    // lies on the road by his car - hatOff)
+    if (c.fig && c.fig.bones && c.fig.bones.hat) c.fig.bones.hat.scale.setScalar(1e-4);
     this.man = c;
     this.manAt = { x: p.x, z: p.z, side };
     if (his.driverFig) his.driverFig.visible = false;
