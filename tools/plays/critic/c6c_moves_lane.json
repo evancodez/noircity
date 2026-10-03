@@ -1,0 +1,47 @@
+{
+ "about": "Critic C6: the lane played well, frames inside the vault over fence1 and the slide under fence2, and of him at his fences. NOIR_PORT=5346 node tools/play.mjs tools/plays/critic/c6c_moves_lane.json",
+ "url": "/?mute=1&start=watcher.lane",
+ "size": [
+  1440,
+  900
+ ],
+ "out": "shots/c6c/moves",
+ "steps": [
+  {
+   "until": "G.state === 'title' && !!document.querySelector('#title .opt[data-k=begin]')",
+   "timeout": 40000
+  },
+  {
+   "wait": 1200
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]",
+   "taken": "G.state !== 'title' && document.pointerLockElement === N.renderer.domElement",
+   "retries": 5,
+   "every": 4000
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'watcher' && !(G.hud.cardT > 0.1)",
+   "timeout": 30000
+  },
+  {
+   "drive": "tools/plays/critic/c6c_drive.mjs",
+   "profile": "good",
+   "seed": 9,
+   "miss": [],
+   "timeout": 40000,
+   "stop": "(G.counters.fails || 0) >= 1 || (!!G.scenes.ctx.flags.chase && [\"alley\", \"lane\", \"yard\", \"kitchen\", \"press\", \"el\", \"over\", \"street\", \"car\"].indexOf(G.scenes.ctx.flags.chase.stretch) > 1)",
+   "shots": {
+    "v1_a": "!!(N.controller.run && N.controller.run.move && N.controller.run.move.kind === 'vault' && (N.controller.run.move.dur ? N.controller.run.move.t / N.controller.run.move.dur : N.controller.run.move.t) > 0.05)",
+    "v1_b": "!!(N.controller.run && N.controller.run.move && N.controller.run.move.kind === 'vault' && (N.controller.run.move.dur ? N.controller.run.move.t / N.controller.run.move.dur : N.controller.run.move.t) > 0.3)",
+    "v1_c": "!!(N.controller.run && N.controller.run.move && N.controller.run.move.kind === 'vault' && (N.controller.run.move.dur ? N.controller.run.move.t / N.controller.run.move.dur : N.controller.run.move.t) > 0.55)",
+    "v1_d": "!!(N.controller.run && N.controller.run.move && N.controller.run.move.kind === 'vault' && (N.controller.run.move.dur ? N.controller.run.move.t / N.controller.run.move.dur : N.controller.run.move.t) > 0.8)",
+    "s1_a": "!!(N.controller.run && N.controller.run.move && N.controller.run.move.kind === 'slide' && (N.controller.run.move.dur ? N.controller.run.move.t / N.controller.run.move.dur : N.controller.run.move.t) > 0.05)",
+    "s1_b": "!!(N.controller.run && N.controller.run.move && N.controller.run.move.kind === 'slide' && (N.controller.run.move.dur ? N.controller.run.move.t / N.controller.run.move.dur : N.controller.run.move.t) > 0.3)",
+    "s1_c": "!!(N.controller.run && N.controller.run.move && N.controller.run.move.kind === 'slide' && (N.controller.run.move.dur ? N.controller.run.move.t / N.controller.run.move.dur : N.controller.run.move.t) > 0.6)",
+    "him_vault": "!!(G.scenes.ctx.flags.chase && G.scenes.ctx.flags.chase.act === 'vault' && G.scenes.ctx.flags.chase.seen)",
+    "him_slide": "!!(G.scenes.ctx.flags.chase && G.scenes.ctx.flags.chase.act === 'slide' && G.scenes.ctx.flags.chase.seen)"
+   }
+  }
+ ]
+}

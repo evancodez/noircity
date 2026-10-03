@@ -1,0 +1,154 @@
+{
+ "about": "Critic C6: the seam from chapter IV's quiet into V (on this branch, IV is wave B's). NOIR_PORT=5346 node tools/play.mjs tools/plays/critic/c6c_iv_seam.json",
+ "url": "/?mute=1&start=gunfight.quiet",
+ "size": [
+  1440,
+  900
+ ],
+ "out": "shots/c6c/ivseam",
+ "steps": [
+  {
+   "until": "G.state === 'title' && !!document.querySelector('#title .opt[data-k=begin]')",
+   "timeout": 40000
+  },
+  {
+   "wait": 1200
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]",
+   "taken": "G.state !== 'title' && document.pointerLockElement === N.renderer.domElement",
+   "retries": 5,
+   "every": 4000
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'gunfight'",
+   "timeout": 30000
+  },
+  {
+   "wait": 600
+  },
+  {
+   "shot": "iv_00"
+  },
+  {
+   "eval": "JSON.stringify({s: G.scenes.current && G.scenes.current.id, b: G.scenes.beat, card: +(G.hud.cardT||0).toFixed(2), obj: G.hud.kit && G.hud.kit.obj && G.hud.kit.obj.text, prompt: G.hud.promptShown})"
+  },
+  {
+   "wait": 600
+  },
+  {
+   "shot": "iv_01"
+  },
+  {
+   "eval": "JSON.stringify({s: G.scenes.current && G.scenes.current.id, b: G.scenes.beat, card: +(G.hud.cardT||0).toFixed(2), obj: G.hud.kit && G.hud.kit.obj && G.hud.kit.obj.text, prompt: G.hud.promptShown})"
+  },
+  {
+   "wait": 600
+  },
+  {
+   "shot": "iv_02"
+  },
+  {
+   "eval": "JSON.stringify({s: G.scenes.current && G.scenes.current.id, b: G.scenes.beat, card: +(G.hud.cardT||0).toFixed(2), obj: G.hud.kit && G.hud.kit.obj && G.hud.kit.obj.text, prompt: G.hud.promptShown})"
+  },
+  {
+   "wait": 600
+  },
+  {
+   "shot": "iv_03"
+  },
+  {
+   "eval": "JSON.stringify({s: G.scenes.current && G.scenes.current.id, b: G.scenes.beat, card: +(G.hud.cardT||0).toFixed(2), obj: G.hud.kit && G.hud.kit.obj && G.hud.kit.obj.text, prompt: G.hud.promptShown})"
+  },
+  {
+   "wait": 600
+  },
+  {
+   "shot": "iv_04"
+  },
+  {
+   "eval": "JSON.stringify({s: G.scenes.current && G.scenes.current.id, b: G.scenes.beat, card: +(G.hud.cardT||0).toFixed(2), obj: G.hud.kit && G.hud.kit.obj && G.hud.kit.obj.text, prompt: G.hud.promptShown})"
+  },
+  {
+   "wait": 600
+  },
+  {
+   "shot": "iv_05"
+  },
+  {
+   "eval": "JSON.stringify({s: G.scenes.current && G.scenes.current.id, b: G.scenes.beat, card: +(G.hud.cardT||0).toFixed(2), obj: G.hud.kit && G.hud.kit.obj && G.hud.kit.obj.text, prompt: G.hud.promptShown})"
+  },
+  {
+   "wait": 600
+  },
+  {
+   "shot": "iv_06"
+  },
+  {
+   "eval": "JSON.stringify({s: G.scenes.current && G.scenes.current.id, b: G.scenes.beat, card: +(G.hud.cardT||0).toFixed(2), obj: G.hud.kit && G.hud.kit.obj && G.hud.kit.obj.text, prompt: G.hud.promptShown})"
+  },
+  {
+   "wait": 600
+  },
+  {
+   "shot": "iv_07"
+  },
+  {
+   "eval": "JSON.stringify({s: G.scenes.current && G.scenes.current.id, b: G.scenes.beat, card: +(G.hud.cardT||0).toFixed(2), obj: G.hud.kit && G.hud.kit.obj && G.hud.kit.obj.text, prompt: G.hud.promptShown})"
+  },
+  {
+   "wait": 600
+  },
+  {
+   "shot": "iv_08"
+  },
+  {
+   "eval": "JSON.stringify({s: G.scenes.current && G.scenes.current.id, b: G.scenes.beat, card: +(G.hud.cardT||0).toFixed(2), obj: G.hud.kit && G.hud.kit.obj && G.hud.kit.obj.text, prompt: G.hud.promptShown})"
+  },
+  {
+   "wait": 600
+  },
+  {
+   "shot": "iv_09"
+  },
+  {
+   "eval": "JSON.stringify({s: G.scenes.current && G.scenes.current.id, b: G.scenes.beat, card: +(G.hud.cardT||0).toFixed(2), obj: G.hud.kit && G.hud.kit.obj && G.hud.kit.obj.text, prompt: G.hud.promptShown})"
+  },
+  {
+   "wait": 600
+  },
+  {
+   "shot": "iv_10"
+  },
+  {
+   "eval": "JSON.stringify({s: G.scenes.current && G.scenes.current.id, b: G.scenes.beat, card: +(G.hud.cardT||0).toFixed(2), obj: G.hud.kit && G.hud.kit.obj && G.hud.kit.obj.text, prompt: G.hud.promptShown})"
+  },
+  {
+   "wait": 600
+  },
+  {
+   "shot": "iv_11"
+  },
+  {
+   "eval": "JSON.stringify({s: G.scenes.current && G.scenes.current.id, b: G.scenes.beat, card: +(G.hud.cardT||0).toFixed(2), obj: G.hud.kit && G.hud.kit.obj && G.hud.kit.obj.text, prompt: G.hud.promptShown})"
+  },
+  {
+   "wait": 600
+  },
+  {
+   "shot": "iv_12"
+  },
+  {
+   "eval": "JSON.stringify({s: G.scenes.current && G.scenes.current.id, b: G.scenes.beat, card: +(G.hud.cardT||0).toFixed(2), obj: G.hud.kit && G.hud.kit.obj && G.hud.kit.obj.text, prompt: G.hud.promptShown})"
+  },
+  {
+   "wait": 600
+  },
+  {
+   "shot": "iv_13"
+  },
+  {
+   "eval": "JSON.stringify({s: G.scenes.current && G.scenes.current.id, b: G.scenes.beat, card: +(G.hud.cardT||0).toFixed(2), obj: G.hud.kit && G.hud.kit.obj && G.hud.kit.obj.text, prompt: G.hud.promptShown})"
+  }
+ ]
+}

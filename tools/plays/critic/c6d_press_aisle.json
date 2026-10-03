@@ -1,0 +1,119 @@
+{
+ "about": "Critic C6 2nd look: from the press retry, W straight on along the north aisle from the iron door (the bundles vaulted), stopped at its far end by the folder: what the rules make of it (the gap, the warning, the fail, where the retry puts me). NOIR_PORT=5346 node tools/play.mjs tools/plays/critic/c6d_press_aisle.json",
+ "url": "/?mute=1&start=watcher.press",
+ "size": [
+  1440,
+  900
+ ],
+ "out": "shots/c6d/proofs",
+ "steps": [
+  {
+   "until": "G.state === 'title' && !!document.querySelector('#title .opt[data-k=begin]')",
+   "timeout": 40000
+  },
+  {
+   "wait": 1200
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]",
+   "taken": "G.state !== 'title' && document.pointerLockElement === N.renderer.domElement",
+   "retries": 5,
+   "every": 4000
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'watcher' && !(G.hud.cardT > 0.1)",
+   "timeout": 30000
+  },
+  {
+   "eval": "(window.__t0 = N.time, 1)"
+  },
+  {
+   "eval": "(() => { const C = G.scenes.ctx.flags.chase; return JSON.stringify({ t: +N.time.toFixed(1), beat: G.scenes.beat, stretch: C.stretch, gap: +C.gapNow.toFixed(1), myD: +C.myD.toFixed(1), hisD: +C.hisD.toFixed(1), warn: G.hud.kit.warnText || null, fails: G.counters.fails || 0, me: [+N.controller.pos.x.toFixed(1), +N.controller.pos.z.toFixed(1)], him: [+C.fig.pos.x.toFixed(1), +C.fig.pos.z.toFixed(1)] }); })()"
+  },
+  {
+   "walk": [
+    [
+     75.4,
+     -97.9
+    ]
+   ],
+   "timeout": 8000
+  },
+  {
+   "down": "KeyW"
+  },
+  {
+   "key": "Space",
+   "hold": 80,
+   "name": "over the bundles across the north aisle"
+  },
+  {
+   "wait": 900
+  },
+  {
+   "walk": [
+    [
+     86.0,
+     -98.0
+    ]
+   ],
+   "timeout": 9000
+  },
+  {
+   "up": "KeyW"
+  },
+  {
+   "shot": "press_aisle_end"
+  },
+  {
+   "eval": "(() => { const C = G.scenes.ctx.flags.chase; return JSON.stringify({ t: +N.time.toFixed(1), beat: G.scenes.beat, stretch: C.stretch, gap: +C.gapNow.toFixed(1), myD: +C.myD.toFixed(1), hisD: +C.hisD.toFixed(1), warn: G.hud.kit.warnText || null, fails: G.counters.fails || 0, me: [+N.controller.pos.x.toFixed(1), +N.controller.pos.z.toFixed(1)], him: [+C.fig.pos.x.toFixed(1), +C.fig.pos.z.toFixed(1)] }); })()"
+  },
+  {
+   "wait": 2000
+  },
+  {
+   "eval": "(() => { const C = G.scenes.ctx.flags.chase; return JSON.stringify({ t: +N.time.toFixed(1), beat: G.scenes.beat, stretch: C.stretch, gap: +C.gapNow.toFixed(1), myD: +C.myD.toFixed(1), hisD: +C.hisD.toFixed(1), warn: G.hud.kit.warnText || null, fails: G.counters.fails || 0, me: [+N.controller.pos.x.toFixed(1), +N.controller.pos.z.toFixed(1)], him: [+C.fig.pos.x.toFixed(1), +C.fig.pos.z.toFixed(1)] }); })()"
+  },
+  {
+   "wait": 3000
+  },
+  {
+   "eval": "(() => { const C = G.scenes.ctx.flags.chase; return JSON.stringify({ t: +N.time.toFixed(1), beat: G.scenes.beat, stretch: C.stretch, gap: +C.gapNow.toFixed(1), myD: +C.myD.toFixed(1), hisD: +C.hisD.toFixed(1), warn: G.hud.kit.warnText || null, fails: G.counters.fails || 0, me: [+N.controller.pos.x.toFixed(1), +N.controller.pos.z.toFixed(1)], him: [+C.fig.pos.x.toFixed(1), +C.fig.pos.z.toFixed(1)] }); })()"
+  },
+  {
+   "shot": "press_aisle_5s"
+  },
+  {
+   "wait": 3000
+  },
+  {
+   "eval": "(() => { const C = G.scenes.ctx.flags.chase; return JSON.stringify({ t: +N.time.toFixed(1), beat: G.scenes.beat, stretch: C.stretch, gap: +C.gapNow.toFixed(1), myD: +C.myD.toFixed(1), hisD: +C.hisD.toFixed(1), warn: G.hud.kit.warnText || null, fails: G.counters.fails || 0, me: [+N.controller.pos.x.toFixed(1), +N.controller.pos.z.toFixed(1)], him: [+C.fig.pos.x.toFixed(1), +C.fig.pos.z.toFixed(1)] }); })()"
+  },
+  {
+   "wait": 3000
+  },
+  {
+   "eval": "(() => { const C = G.scenes.ctx.flags.chase; return JSON.stringify({ t: +N.time.toFixed(1), beat: G.scenes.beat, stretch: C.stretch, gap: +C.gapNow.toFixed(1), myD: +C.myD.toFixed(1), hisD: +C.hisD.toFixed(1), warn: G.hud.kit.warnText || null, fails: G.counters.fails || 0, me: [+N.controller.pos.x.toFixed(1), +N.controller.pos.z.toFixed(1)], him: [+C.fig.pos.x.toFixed(1), +C.fig.pos.z.toFixed(1)] }); })()"
+  },
+  {
+   "until": "(G.counters.fails || 0) >= 1",
+   "timeout": 30000
+  },
+  {
+   "eval": "JSON.stringify({beat: G.scenes.beat, scene: G.scenes.current && G.scenes.current.id, fails: G.counters.fails || 0, secs: +(N.time - window.__t0).toFixed(1), last: G.lastFail && G.lastFail.why, warnedFor: G.lastFail && G.lastFail.warnedFor, to: G.lastFail && G.lastFail.to, from: G.lastFail && G.lastFail.from, lost: (G._c6lost||[]).map(r=>[r.stretch,r.gap,r.unseen,r.me,r.blocked])})"
+  },
+  {
+   "wait": 3500
+  },
+  {
+   "eval": "(() => { const C = G.scenes.ctx.flags.chase; return JSON.stringify({ t: +N.time.toFixed(1), beat: G.scenes.beat, stretch: C.stretch, gap: +C.gapNow.toFixed(1), myD: +C.myD.toFixed(1), hisD: +C.hisD.toFixed(1), warn: G.hud.kit.warnText || null, fails: G.counters.fails || 0, me: [+N.controller.pos.x.toFixed(1), +N.controller.pos.z.toFixed(1)], him: [+C.fig.pos.x.toFixed(1), +C.fig.pos.z.toFixed(1)] }); })()"
+  },
+  {
+   "shot": "press_aisle_retry"
+  },
+  {
+   "expect": "G.lastFail.from === 'press' && G.lastFail.to === 'press'",
+   "label": "lost in the press hall, back at the press hall's start"
+  }
+ ]
+}

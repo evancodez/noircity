@@ -1,0 +1,31 @@
+{
+ "about": "[C6 3rd] The review frames of the third owner, by a good run (tools/lib/c6_chase.mjs 'good', over the roofs, the market's middle aisle): the chapter's first frame (the peek), the lane's fences, the yard's lit door, the press hall's way in, the delivery yard, the avenue, the cut (its gate, the pipe), the alley's barrier seen from the avenue, the corner and the car round it, the arch, the market on his heels. NOIR_PORT=5346 node tools/play.mjs tools/plays/watcher_review.json",
+ "url": "/?mute=1&start=watcher",
+ "size": [1440, 900],
+ "out": "shots/c6/review",
+ "steps": [
+  { "until": "G.state === 'title' && !!document.querySelector('#title .opt[data-k=begin]')", "timeout": 40000 },
+  { "wait": 1500 },
+  { "clickOn": "#title .opt[data-k=begin]", "taken": "G.state !== 'title' && document.pointerLockElement === N.renderer.domElement", "retries": 5, "every": 4000 },
+  { "until": "G.scenes.current && G.scenes.current.id === 'watcher' && !(G.hud.cardT > 0.02)", "timeout": 30000 },
+  { "shot": "r01_first_frame_peek" },
+  { "until": "G.hud.promptShown.includes('fire escape')", "timeout": 15000 },
+  { "key": "KeyE" },
+  { "until": "N.controller.mode === 'escape'", "timeout": 10000 },
+  { "drive": "tools/lib/c6_chase.mjs", "profile": "good", "over": "roofs", "stop": "G.scenes.current && G.scenes.current.id === 'tail'", "timeout": 220000, "check": "D.done && D.fails === 0", "label": "the review run: through to the tail, never lost",
+    "shots": {
+      "r02_alley_T_lid": "G.scenes.beat === 'alley' && N.controller.pos.z < -40.5",
+      "r03_yard_lit_door": "G.scenes.beat === 'yard' && N.controller.pos.z < -73.5",
+      "r04_press_way_in": "G.scenes.beat === 'press' && N.controller.pos.x > 71.2",
+      "r05_delivery_yard": "G.scenes.beat === 'el' && N.controller.pos.z > -71.5 && N.controller.pos.x < 92",
+      "r06_avenue_van": "G.scenes.beat === 'el' && N.controller.pos.x > 99.5 && N.controller.pos.z < -66",
+      "r07_cut_mouth": "G.scenes.beat === 'el' && N.controller.pos.z < -113.5",
+      "r08_cut_knee_pipe": "G.scenes.beat === 'cut' && N.controller.pos.x < 79.5 && N.controller.pos.z > -118.0",
+      "r09_corner": "G.scenes.beat === 'street' && N.controller.pos.z < -131.0",
+      "r10_arch": "G.scenes.beat === 'street' && N.controller.pos.z > -133.2 && N.controller.pos.x < 10.5",
+      "r11_market_heels": "G.scenes.beat === 'market' && N.controller.pos.z > -112 && G.scenes.ctx.flags.chase.gapNow < 7.5",
+      "r12_car": "G.scenes.beat === 'car' && N.controller.pos.z > -100"
+    } },
+  { "eval": "JSON.stringify({ play: +(G.scenes.playTime || 0).toFixed(1), fails: G.counters.fails || 0, beat: G.scenes.beat })" }
+ ]
+}

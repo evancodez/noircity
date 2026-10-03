@@ -1,0 +1,66 @@
+{
+ "about": "Critic C6 jank walk (street): the chase's rules switched off to look round; run into each point, say what stops me. NOIR_PORT=5346 node tools/play.mjs tools/plays/critic/c6c_jank_street.json",
+ "url": "/?mute=1&start=watcher.street",
+ "size": [
+  1440,
+  900
+ ],
+ "out": "shots/c6c/jank",
+ "steps": [
+  {
+   "until": "G.state === 'title' && !!document.querySelector('#title .opt[data-k=begin]')",
+   "timeout": 40000
+  },
+  {
+   "wait": 1200
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]",
+   "taken": "G.state !== 'title' && document.pointerLockElement === N.renderer.domElement",
+   "retries": 5,
+   "every": 4000
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'watcher' && !(G.hud.cardT > 0.1) && N.controller.mode === 'run'",
+   "timeout": 30000
+  },
+  {
+   "eval": "(G.scenes.ctx.flags.chase.active = false, G.hud.warn(null), 'rules off: looking round')"
+  },
+  {
+   "drive": "tools/plays/critic/c6c_poke.mjs",
+   "points": [
+    [
+     21,
+     -87,
+     "Mercer south to the garage",
+     6
+    ],
+    [
+     21,
+     -118,
+     "Mercer back north",
+     6
+    ],
+    [
+     21,
+     -135,
+     "Mercer north end",
+     4
+    ],
+    [
+     9,
+     -110,
+     "market aisle",
+     5
+    ],
+    [
+     2,
+     -96.8,
+     "the gate",
+     6
+    ]
+   ]
+  }
+ ]
+}

@@ -21,7 +21,7 @@ const MOMENTS = [
   ['IV office: the room, the lamp and the slats', 'scene=office&beat=room&t=2&anim=1'],
   ['V door: the kick, the glass man, the flashes', 'scene=gunfight&beat=door&t=1.8&anim=1'],
   ['VI watcher: the fire escape, the street below', 'shot=bl_escape&t=1&anim=1'],
-  ['VI watcher: the run, the yard', 'scene=watcher&beat=run&t=3&anim=1'],
+  ['VI watcher: the chase, the market and Mercer St', 'scene=watcher&beat=street&t=3&anim=1'], // [C6] the chase's beats are its stretches now
   ['VII tail: the market at 24 m/s', 'scene=tail&beat=chase&tailAt=520,2.2,24,30&tailCruise=1&t=1&anim=1'],
   ['VIII pier: the lamps beat', 'scene=warehouse&beat=lamps&t=3&anim=1'],
   ['VIII pier: the foreman, the oil burning', 'shot=b9duel&do=lantern&t=3.4&anim=1'],

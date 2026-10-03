@@ -1,0 +1,16 @@
+{
+ "about": "[C6 3rd] The critic's first-timer at the lane (finding 2): he knows only the cards; SPACE by reflex a couple of metres before every thing - at the broken fence too, where it is the wrong key and hops him into it. The [C] under card must come (in the hop or stopped against it), and pressing what it shows must take him under: through to the yard, never lost. Then the same with SPACE pressed at the moment he hits fence1 (finding 10: the press is kept for the stop's end). NOIR_PORT=5346 node tools/play.mjs tools/plays/watcher_firsttimer.json",
+ "url": "/?mute=1&start=watcher.lane",
+ "size": [1440, 900],
+ "out": "shots/c6/firsttimer",
+ "steps": [
+  { "until": "G.state === 'title' && !!document.querySelector('#title .opt[data-k=begin]')", "timeout": 40000 },
+  { "wait": 1200 },
+  { "clickOn": "#title .opt[data-k=begin]", "taken": "G.state !== 'title' && document.pointerLockElement === N.renderer.domElement", "retries": 5, "every": 4000 },
+  { "until": "G.scenes.current && G.scenes.current.id === 'watcher' && !(G.hud.cardT > 0.1)", "timeout": 30000 },
+  { "drive": "tools/lib/c6_chase.mjs", "profile": "firsttimer", "spaceT": 0.32, "stop": "G.scenes.beat === 'yard' || (G.counters.fails || 0) >= 1", "timeout": 60000, "verbose": true,
+    "shots": { "f_card_slide": "!!(G.hud.kit.teachCur && G.hud.kit.teachCur.id === 'slide')", "f_under": "!!(N.controller.run && N.controller.run.move && /duck|crawl|slide/.test(N.controller.run.move.kind) && N.controller.pos.x > 22 && N.controller.pos.x < 26)" } },
+  { "eval": "JSON.stringify({ beat: G.scenes.beat, fails: G.counters.fails || 0, taught: Object.keys(G.hud.kit.taught()), met: (G.scenes.ctx.flags.chase.met || []).map((m) => m[0] + ':' + m[1]) })" },
+  { "expect": "G.scenes.beat === 'yard' && !(G.counters.fails > 0) && G.hud.kit.taught().slide", "label": "SPACE early at the broken fence: the [C] card came, C took him under, through to the yard" }
+ ]
+}

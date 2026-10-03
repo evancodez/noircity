@@ -36,7 +36,9 @@ export default {
       const fx = PELL.x + PELL.hw + PELL.pe + 0.08;
       const parts = [];
       const fg = fenceGeo();
-      for (let z = 12 + FENCE.w / 2; z < 42; z += FENCE.w) parts.push(fg.clone().rotateY(Math.PI / 2).translate(fx, PAVE, z));
+      // [C6] (a gap where the backlot's market gate is - backlot z -97.6 .. -96, city 23.4 .. 25: the panel over it left out, the gate's leaf open inside)
+      for (let z = 12 + FENCE.w / 2; z < 42; z += FENCE.w) { if (Math.abs(z - 24.65) < 0.1) continue; parts.push(fg.clone().rotateY(Math.PI / 2).translate(fx, PAVE, z)); }
+      parts.push(new THREE.BoxGeometry(0.05, 2.0, 1.5).translate(fx + 0.85, PAVE + 1.0, 23.5 + 0.75).rotateY(0));
       // (the yard's south fence, back to the block)
       for (let x = fx + FENCE.w / 2; x < fx + 14; x += FENCE.w) parts.push(fg.clone().translate(x, PAVE, 41.85));
       add(merge(parts), wood);

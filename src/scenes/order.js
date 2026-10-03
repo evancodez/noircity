@@ -40,9 +40,10 @@ export const ORDER = [
       safe: 'Open the safe.', ledger: 'Take what he hid.' } },
   { id: 'gunfight', numeral: 'IV', title: 'The Door', music: { stop: 2.5 }, carry: ARMED, flags: NOTE,
     objectives: { shadows: 'Watch the door. Get ready.', door: 'Stay alive.', window: 'Stay alive.', quiet: null } },
-  { id: 'watcher', numeral: 'V', title: 'The Watcher', music: null,
-    beatMusic: { escape: { slot: 'chase', fade: 0.4 }, run: { slot: 'chase', fade: 0.4 }, car: { slot: 'chase', fade: 0.4 } }, carry: ARMED, flags: NOTE,
-    objectives: { seen: 'Check the street.', escape: 'After him. Down the fire escape.', run: 'Don’t lose him.', car: 'Get to your car.' } },
+  // [C6] V: the scene file declares its own lines and music (06_watcher.js:
+  // the chase rebuilt, its beats its stretches; the wave B beats' stand-ins
+  // went with it)
+  { id: 'watcher', numeral: 'V', title: 'The Watcher', music: null, carry: ARMED, flags: NOTE },
   // [C3] VI: the scene file declares its own lines (07_tail.js: the city's
   // chase rebuilt; the wave B beats' stand-ins went with it)
   { id: 'tail', numeral: 'VI', title: 'The Tail', music: { slot: 'tail', fade: 2.5 }, carry: ARMED, flags: NOTE },

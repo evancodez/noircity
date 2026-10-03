@@ -393,7 +393,8 @@ export class Vehicle {
 
 // the headlamps' pools (a ShaderMaterial on a flat plane in the car's own
 // frame: x ahead, z across): additive, never inked or mirrored
-function poolMaterial(points, reach, gain) {
+// [C6] exported: the foot chase compiles its program against the city's lights before the cut into the seat
+export function poolMaterial(points, reach, gain) {
   return new THREE.ShaderMaterial({
     name: 'HeadlampPool',
     uniforms: { uL: { value: points.map((p) => new THREE.Vector2(p.x, p.z)) }, uReach: { value: reach }, uGain: { value: gain },

@@ -1,0 +1,91 @@
+{
+ "about": "Critic C6 2nd look: from the kitchen retry by the west lane's door, a few steps to the kitchen's north-west corner by the ranges and stand there: what the rules make of it (the stretch, the gap, the warning, the fail, where the retry puts me). NOIR_PORT=5346 node tools/play.mjs tools/plays/critic/c6d_kitchen_corner.json",
+ "url": "/?mute=1&start=watcher.kitchen&c6Lane=W",
+ "size": [
+  1440,
+  900
+ ],
+ "out": "shots/c6d/proofs",
+ "steps": [
+  {
+   "until": "G.state === 'title' && !!document.querySelector('#title .opt[data-k=begin]')",
+   "timeout": 40000
+  },
+  {
+   "wait": 1200
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]",
+   "taken": "G.state !== 'title' && document.pointerLockElement === N.renderer.domElement",
+   "retries": 5,
+   "every": 4000
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'watcher' && !(G.hud.cardT > 0.1)",
+   "timeout": 30000
+  },
+  {
+   "eval": "(window.__t0 = N.time, 1)"
+  },
+  {
+   "eval": "(() => { const C = G.scenes.ctx.flags.chase; return JSON.stringify({ t: +N.time.toFixed(1), beat: G.scenes.beat, stretch: C.stretch, gap: +C.gapNow.toFixed(1), myD: +C.myD.toFixed(1), hisD: +C.hisD.toFixed(1), warn: G.hud.kit.warnText || null, fails: G.counters.fails || 0, me: [+N.controller.pos.x.toFixed(1), +N.controller.pos.z.toFixed(1)], him: [+C.fig.pos.x.toFixed(1), +C.fig.pos.z.toFixed(1)] }); })()"
+  },
+  {
+   "walk": [
+    [
+     54.2,
+     -95.5
+    ],
+    [
+     53.0,
+     -99.2
+    ]
+   ],
+   "timeout": 9000
+  },
+  {
+   "shot": "kitchen_corner"
+  },
+  {
+   "eval": "(() => { const C = G.scenes.ctx.flags.chase; return JSON.stringify({ t: +N.time.toFixed(1), beat: G.scenes.beat, stretch: C.stretch, gap: +C.gapNow.toFixed(1), myD: +C.myD.toFixed(1), hisD: +C.hisD.toFixed(1), warn: G.hud.kit.warnText || null, fails: G.counters.fails || 0, me: [+N.controller.pos.x.toFixed(1), +N.controller.pos.z.toFixed(1)], him: [+C.fig.pos.x.toFixed(1), +C.fig.pos.z.toFixed(1)] }); })()"
+  },
+  {
+   "wait": 3000
+  },
+  {
+   "eval": "(() => { const C = G.scenes.ctx.flags.chase; return JSON.stringify({ t: +N.time.toFixed(1), beat: G.scenes.beat, stretch: C.stretch, gap: +C.gapNow.toFixed(1), myD: +C.myD.toFixed(1), hisD: +C.hisD.toFixed(1), warn: G.hud.kit.warnText || null, fails: G.counters.fails || 0, me: [+N.controller.pos.x.toFixed(1), +N.controller.pos.z.toFixed(1)], him: [+C.fig.pos.x.toFixed(1), +C.fig.pos.z.toFixed(1)] }); })()"
+  },
+  {
+   "wait": 5000
+  },
+  {
+   "eval": "(() => { const C = G.scenes.ctx.flags.chase; return JSON.stringify({ t: +N.time.toFixed(1), beat: G.scenes.beat, stretch: C.stretch, gap: +C.gapNow.toFixed(1), myD: +C.myD.toFixed(1), hisD: +C.hisD.toFixed(1), warn: G.hud.kit.warnText || null, fails: G.counters.fails || 0, me: [+N.controller.pos.x.toFixed(1), +N.controller.pos.z.toFixed(1)], him: [+C.fig.pos.x.toFixed(1), +C.fig.pos.z.toFixed(1)] }); })()"
+  },
+  {
+   "wait": 5000
+  },
+  {
+   "eval": "(() => { const C = G.scenes.ctx.flags.chase; return JSON.stringify({ t: +N.time.toFixed(1), beat: G.scenes.beat, stretch: C.stretch, gap: +C.gapNow.toFixed(1), myD: +C.myD.toFixed(1), hisD: +C.hisD.toFixed(1), warn: G.hud.kit.warnText || null, fails: G.counters.fails || 0, me: [+N.controller.pos.x.toFixed(1), +N.controller.pos.z.toFixed(1)], him: [+C.fig.pos.x.toFixed(1), +C.fig.pos.z.toFixed(1)] }); })()"
+  },
+  {
+   "until": "(G.counters.fails || 0) >= 1",
+   "timeout": 45000
+  },
+  {
+   "eval": "JSON.stringify({beat: G.scenes.beat, scene: G.scenes.current && G.scenes.current.id, fails: G.counters.fails || 0, secs: +(N.time - window.__t0).toFixed(1), last: G.lastFail && G.lastFail.why, warnedFor: G.lastFail && G.lastFail.warnedFor, to: G.lastFail && G.lastFail.to, from: G.lastFail && G.lastFail.from, lost: (G._c6lost||[]).map(r=>[r.stretch,r.gap,r.unseen,r.me,r.blocked])})"
+  },
+  {
+   "wait": 3500
+  },
+  {
+   "eval": "(() => { const C = G.scenes.ctx.flags.chase; return JSON.stringify({ t: +N.time.toFixed(1), beat: G.scenes.beat, stretch: C.stretch, gap: +C.gapNow.toFixed(1), myD: +C.myD.toFixed(1), hisD: +C.hisD.toFixed(1), warn: G.hud.kit.warnText || null, fails: G.counters.fails || 0, me: [+N.controller.pos.x.toFixed(1), +N.controller.pos.z.toFixed(1)], him: [+C.fig.pos.x.toFixed(1), +C.fig.pos.z.toFixed(1)] }); })()"
+  },
+  {
+   "shot": "kitchen_corner_retry"
+  },
+  {
+   "expect": "G.lastFail.from === 'kitchen' && G.lastFail.to === 'kitchen'",
+   "label": "lost in the kitchen, back at the kitchen's start"
+  }
+ ]
+}

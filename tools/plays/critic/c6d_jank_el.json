@@ -1,0 +1,94 @@
+{
+ "about": "Critic C6 2nd look jank walk (the delivery yard, the avenue, the back alley): the chase's rules switched off to look round; run into each point, say what stops me, a frame at each stop. NOIR_PORT=5346 node tools/play.mjs tools/plays/critic/c6d_jank_el.json",
+ "url": "/?mute=1&start=watcher.el",
+ "size": [
+  1440,
+  900
+ ],
+ "out": "shots/c6d/jank",
+ "steps": [
+  {
+   "until": "G.state === 'title' && !!document.querySelector('#title .opt[data-k=begin]')",
+   "timeout": 40000
+  },
+  {
+   "wait": 1200
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]",
+   "taken": "G.state !== 'title' && document.pointerLockElement === N.renderer.domElement",
+   "retries": 5,
+   "every": 4000
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'watcher' && !(G.hud.cardT > 0.1) && N.controller.mode === 'run'",
+   "timeout": 30000
+  },
+  {
+   "eval": "(G.scenes.ctx.flags.chase.active = false, G.hud.warn(null), 'rules off: looking round')"
+  },
+  {
+   "drive": "tools/plays/critic/c6c_poke.mjs",
+   "points": [
+    [
+     74.5,
+     -66.0,
+     "delivery yard west end",
+     6
+    ],
+    [
+     80.0,
+     -74.5,
+     "delivery yard north wall",
+     5
+    ],
+    [
+     90.3,
+     -74.6,
+     "press south door from the yard",
+     4,
+     "KeyE"
+    ],
+    [
+     91.5,
+     -56.5,
+     "delivery yard gate post",
+     5
+    ],
+    [
+     98.3,
+     -40.0,
+     "avenue south hoarding",
+     9
+    ],
+    [
+     110.0,
+     -60.0,
+     "avenue east facades",
+     6,
+     "KeyE"
+    ],
+    [
+     95.6,
+     -78.2,
+     "the dock from the avenue",
+     8,
+     "Space"
+    ],
+    [
+     92.0,
+     -103.0,
+     "back alley mouth",
+     6
+    ],
+    [
+     81.5,
+     -103.0,
+     "the back alley's barrier",
+     6,
+     "Space"
+    ]
+   ]
+  }
+ ]
+}

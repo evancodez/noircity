@@ -1,0 +1,44 @@
+{
+ "about": "Critic C6: from the title at the press stretch, played well but run into web, conveyor, pressBundles (the right key a quarter second after): one miss must not lose him, all of a stretch's should. NOIR_PORT=5346 node tools/play.mjs tools/plays/critic/c6c_missall_press.json",
+ "url": "/?mute=1&start=watcher.press",
+ "size": [
+  1440,
+  900
+ ],
+ "out": "shots/c6c/c6c_missall_press",
+ "steps": [
+  {
+   "until": "G.state === 'title' && !!document.querySelector('#title .opt[data-k=begin]')",
+   "timeout": 40000
+  },
+  {
+   "wait": 1200
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]",
+   "taken": "G.state !== 'title' && document.pointerLockElement === N.renderer.domElement",
+   "retries": 5,
+   "every": 4000
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'watcher' && !(G.hud.cardT > 0.1)",
+   "timeout": 30000
+  },
+  {
+   "drive": "tools/plays/critic/c6c_drive.mjs",
+   "profile": "good",
+   "over": "roofs",
+   "seed": 5,
+   "miss": [
+    "web",
+    "conveyor",
+    "pressBundles"
+   ],
+   "timeout": 60000,
+   "stop": "(G.counters.fails || 0) >= 1 || (!!G.scenes.ctx.flags.chase && [\"alley\", \"lane\", \"yard\", \"kitchen\", \"press\", \"el\", \"over\", \"street\", \"car\"].indexOf(G.scenes.ctx.flags.chase.stretch) > 4)"
+  },
+  {
+   "eval": "JSON.stringify({fails: G.counters.fails || 0, stretch: G.scenes.ctx.flags.chase && G.scenes.ctx.flags.chase.stretch, last: G.lastFail && G.lastFail.why, warnedFor: G.lastFail && G.lastFail.warnedFor, lost: (G._c6lost||[]).map(r=>[r.stretch,r.gap,r.unseen])})"
+  }
+ ]
+}

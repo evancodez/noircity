@@ -1,0 +1,80 @@
+{
+ "about": "Critic C6 2nd look jank walk (the market): the chase's rules switched off to look round; run into each point, say what stops me, a frame at each stop. NOIR_PORT=5346 node tools/play.mjs tools/plays/critic/c6d_jank_market.json",
+ "url": "/?mute=1&start=watcher.market",
+ "size": [
+  1440,
+  900
+ ],
+ "out": "shots/c6d/jank",
+ "steps": [
+  {
+   "until": "G.state === 'title' && !!document.querySelector('#title .opt[data-k=begin]')",
+   "timeout": 40000
+  },
+  {
+   "wait": 1200
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]",
+   "taken": "G.state !== 'title' && document.pointerLockElement === N.renderer.domElement",
+   "retries": 5,
+   "every": 4000
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'watcher' && !(G.hud.cardT > 0.1) && N.controller.mode === 'run'",
+   "timeout": 30000
+  },
+  {
+   "eval": "(G.scenes.ctx.flags.chase.active = false, G.hud.warn(null), 'rules off: looking round')"
+  },
+  {
+   "drive": "tools/plays/critic/c6c_poke.mjs",
+   "points": [
+    [
+     3.0,
+     -118.0,
+     "the market's north-west corner",
+     5
+    ],
+    [
+     14.0,
+     -117.4,
+     "the chained gateway from inside",
+     6,
+     "Space"
+    ],
+    [
+     3.3,
+     -108.0,
+     "the west aisle",
+     6
+    ],
+    [
+     3.0,
+     -100.0,
+     "the fence's foot",
+     6,
+     "Space"
+    ],
+    [
+     12.4,
+     -105.0,
+     "between the stalls",
+     6
+    ],
+    [
+     15.2,
+     -92.0,
+     "the market's south-east",
+     6
+    ],
+    [
+     2.5,
+     -96.8,
+     "the gate",
+     6
+    ]
+   ]
+  }
+ ]
+}

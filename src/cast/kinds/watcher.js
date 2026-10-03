@@ -136,6 +136,63 @@ function rootedV(t) {
   return p;
 }
 
+// [C6] over a low thing at a run (a wall to the waist, a stack of crates):
+// the right hand on its top at 0.95, the body swung over sideways on it, the
+// legs tucked, down running. Root motion 2.3 m.
+const LOW_RM = (t) => [0.03 * S(Math.PI * Math.min(1, t / 0.55)), pw(t, [[0, 0], [0.12, 0.55], [0.28, 1.1], [0.44, 1.7], [0.6, 2.3]])];
+const LOW_K = chainKeys([
+  [0.0, { ...runPose(0.25) }],
+  [0.12, { hipsPos: [0.0, 0.88, 0.5], hips: [14, 0, 0], spine: [10, 0, 0], chest: [8, -6, 0], neck: [4, 0, 0], head: [-6, 0, 0],
+    handTR: [-0.06, 0.98, 0.92], elbowPoleR: [-1, -0.3, -0.4], handR: [70, 0, 0],
+    footL: [0.08, A, 0.62], footR: [-0.08, A + 0.14, 0.25], footRotR: [-25, 4, 0], kneeL: [0.1, 0, 1], kneeR: [-0.1, 0, 1] }],
+  [0.28, { hipsPos: [0.1, 1.18, 1.02], hips: [24, -30, 18], spine: [12, -6, 6], chest: [12, -8, 0], head: [-8, 8, 0],
+    handTR: [-0.06, 0.98, 0.92], handR: [60, 0, 0], elbowPoleR: [-1, 0.2, -0.3],
+    footL: [0.38, 0.9, 0.9], footR: [0.26, 0.86, 0.74], footRotL: [20, 30, 0], footRotR: [20, 30, 0], kneeL: [0.6, 0.6, 0.6], kneeR: [0.5, 0.6, 0.6] }],
+  [0.44, { hipsPos: [0.06, 0.86, 1.62], hips: [18, -8, 6], spine: [10, 0, 0], chest: [6, 0, 0], neck: [6, 0, 0], head: [-10, 0, 0],
+    handTR: [-0.3, 0.98, 1.75], elbowPoleR: [-1, 0, -0.3], handR: [0, 0, -20],
+    footL: [0.1, A, 1.86], footR: [-0.1, A + 0.06, 1.6], footRotR: [-10, 4, 0], kneeL: [0.1, 0, 1], kneeR: [-0.1, 0, 1] }],
+  [0.6, { ...runPose(0.75), hipsPos: [0, WRUN.hipsY, 2.3 + WRUN.hipsZ] }],
+]);
+function lowPose(t) {
+  const p = samplePoseKeys(LOW_K, t);
+  const hp = p.hipsPos;
+  p.handTL = [0.07 + (hp[0] || 0), hp[1] + 0.85, hp[2] + 0.22];
+  p.elbowPoleL = [1, 0.1, 0.35];
+  p.handL = [-70, -10, 40];
+  const [x, z] = LOW_RM(t);
+  for (const k of ['hipsPos', 'footL', 'footR', 'handTL', 'handTR']) if (p[k]) p[k] = [p[k][0] - x, p[k][1], p[k][2] - z, ...p[k].slice(3)];
+  return p;
+}
+
+// [C6] under a thing at a run (a fence broken at its foot, a half-shut
+// roller door, a tank's legs, a plank): down onto his hip on the wet, the
+// legs ahead, the body back, the left hand on the bowler, the right out
+// behind him on the ground; carried 3.4 m; up again running. Root motion.
+const SLIDE_RM = (t) => [0, pw(t, [[0, 0], [0.12, 0.85], [0.3, 1.95], [0.55, 3.0], [0.72, 3.4]])];
+const SLIDE_K = chainKeys([
+  [0.0, { ...runPose(0.25) }],
+  [0.12, { hipsPos: [0.0, 0.6, 0.95], hips: [-22, 0, 4], spine: [-8, 0, 0], chest: [-6, 0, 0], neck: [10, 0, 0], head: [12, 0, 0],
+    handTR: [-0.3, 0.55, 0.7], elbowPoleR: [-1, 0, -0.3], handR: [0, 0, -40],
+    footL: [0.1, A + 0.12, 1.7], footR: [-0.12, A + 0.04, 1.35], footRotL: [-30, 0, 0], footRotR: [-10, 0, 0], kneeL: [0.1, 1, 0.4], kneeR: [-0.1, 1, 0.4] }],
+  [0.3, { hipsPos: [0.02, 0.3, 1.95], hips: [-38, 0, 8], spine: [-14, 0, 2], chest: [-8, 0, 0], neck: [16, 0, 0], head: [20, 0, 0],
+    handTR: [-0.42, 0.1, 1.55], elbowPoleR: [-1, 0.3, -0.2], handR: [0, 0, -20],
+    footL: [0.12, A + 0.04, 2.95], footR: [-0.14, A + 0.1, 2.6], footRotL: [-45, 0, 0], footRotR: [-25, 0, 0], kneeL: [0.1, 1, 0.3], kneeR: [-0.1, 1, 0.5] }],
+  [0.55, { hipsPos: [0.02, 0.36, 3.0], hips: [-30, 0, 6], spine: [-10, 0, 2], chest: [-4, 0, 0], neck: [12, 0, 0], head: [14, 0, 0],
+    handTR: [-0.38, 0.12, 2.75], elbowPoleR: [-1, 0.3, -0.2], handR: [0, 0, -20],
+    footL: [0.12, A + 0.04, 3.85], footR: [-0.1, A, 3.3], footRotL: [-30, 0, 0], footRotR: [0, 0, 0], kneeL: [0.1, 1, 0.3], kneeR: [-0.1, 1, 0.8] }],
+  [0.72, { ...runPose(0.75), hipsPos: [0, WRUN.hipsY, 3.4 + WRUN.hipsZ] }],
+]);
+function slidePose(t) {
+  const p = samplePoseKeys(SLIDE_K, t);
+  const hp = p.hipsPos;
+  p.handTL = [0.07 + (hp[0] || 0), hp[1] + 0.85, hp[2] + 0.22 - Math.max(0, 0.95 - hp[1]) * 0.3];
+  p.elbowPoleL = [1, 0.1, 0.35];
+  p.handL = [-70, -10, 40];
+  const [x, z] = SLIDE_RM(t);
+  for (const k of ['hipsPos', 'footL', 'footR', 'handTL', 'handTR']) if (p[k]) p[k] = [p[k][0] - x, p[k][1], p[k][2] - z, ...p[k].slice(3)];
+  return p;
+}
+
 // at the car's door (it is on his left): he comes to it, the left hand to
 // the handle, pulls, ducks in
 const CARIN = chainKeys([
@@ -170,10 +227,18 @@ export function layOn(h, { v = 0, t = 0, lean = 0, look = null, pull = null } = 
   if (pull) {
     const w = sm(Math.min(1, pull.t / 0.18)) * (1 - sm(Math.min(1, Math.max(0, (pull.t - 0.3) / 0.4))));
     const sg = pull.side === 'R' ? -1 : 1;
-    // (out to the side and back: the upper arm swung out, the chest turned to it)
-    b['upperArm' + pull.side].quaternion.premultiply(_q.setFromAxisAngle(_Z, sg * 1.1 * w));
-    b['upperArm' + pull.side].quaternion.premultiply(_q.setFromAxisAngle(_X, 0.5 * w));
+    // (out to the side and back: the upper arm swung out, the chest turned to
+    // it; [C6 3rd] back at the shoulder's height, not flung up over his head:
+    // from his heels it filled half the frame like a wave)
+    // (the arm back and out at the shoulder's height to the stack beside and
+    // behind him, the yank; &wpk= tries others in the study preset)
+    const PK = (typeof location !== 'undefined' && new URLSearchParams(location.search).get('wpk')) || '';
+    const k3 = PK ? PK.split(',').map(Number) : [0.2, 0.9, 0, 0.25];
+    b['upperArm' + pull.side].quaternion.premultiply(_q.setFromAxisAngle(_Z, sg * k3[0] * w));
+    b['upperArm' + pull.side].quaternion.premultiply(_q.setFromAxisAngle(_X, k3[1] * w));
+    if (b['forearm' + pull.side]) b['forearm' + pull.side].quaternion.premultiply(_q.setFromAxisAngle(_X, k3[2] * w));
     b.chest.quaternion.multiply(_q.setFromAxisAngle(_Y, sg * 0.35 * w));
+    b.chest.quaternion.multiply(_q.setFromAxisAngle(_Z, sg * k3[3] * w));
     b.head.quaternion.multiply(_q.setFromAxisAngle(_Y, sg * 0.4 * w));
   }
 }
@@ -224,6 +289,10 @@ export default {
     watcher_notice: { duration: 0.95, hold: true, marks: { drop: 0.35 }, def: () => ({ pose: noticePose, armSpace: 'root' }) },
     watcher_run: { duration: WRUN.T, loop: true, def: () => ({ pose: (t) => runPose(t / WRUN.T) }) },
     watcher_vault: { duration: 0.8, marks: { plant: 0.14, over: 0.34, land: 0.66 }, def: () => ({ pose: rootedV, rootMotion: VAULT_RM, fps: 60 }) },
+    // [C6] over a waist-high thing, a hand on its top (root motion 2.3 m)
+    watcher_lowvault: { duration: 0.6, marks: { plant: 0.12, over: 0.28, land: 0.44 }, def: () => ({ pose: lowPose, rootMotion: LOW_RM, fps: 60 }) },
+    // [C6] under a thing on his hip (root motion 3.4 m)
+    watcher_slide: { duration: 0.72, marks: { down: 0.12, up: 0.55 }, def: () => ({ pose: slidePose, rootMotion: SLIDE_RM, fps: 60 }) },
     watcher_carIn: { duration: 1.0, hold: true, marks: { handle: 0.3, in: 0.9 }, def: () => ({ pose: (t) => samplePoseKeys(CARIN, t), armSpace: 'root' }) },
   },
   idle: 'watcher_stand',

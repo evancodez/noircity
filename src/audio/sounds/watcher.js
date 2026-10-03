@@ -6,7 +6,7 @@
 // board, the dog behind its gate, the crates, his car (the handle, the
 // door, the engine catching and pulling away), my car's door.
 export default (kit) => {
-  const { burst, thud, ping, osc, gain, env, filt, chain, noise, voice, splinter, rng, B } = kit;
+  const { burst, thud, ping, osc, gain, env, filt, chain, noise, voice, splinter, rng, B, loopN, lfo } = kit;
   // an iron ring: inharmonic partials (a grating, a stair, a landing)
   const iron = (ctx, out, t0, k, lo = 1) => {
     for (const [f, a, d] of [[rng(230, 280) * lo, 0.22, 0.5], [rng(610, 690) * lo, 0.16, 0.34], [rng(1320, 1480) * lo, 0.1, 0.22], [rng(2600, 2900) * lo, 0.05, 0.12]]) {
@@ -221,6 +221,234 @@ export default (kit) => {
       },
       // "Lost him.": nothing but a low sting of the street
       w_lost(ctx, out, t0, p, R) { burst(ctx, out, R, t0, 'brown', ['lowpass', 300], 0.25, 0.2, 1.2); return 1.5; },
+
+      // ---- [C6] the chase rebuilt: my moves ------------------------------------------------
+      // a slide on the wet: a long hiss of the coat on the flags, falling,
+      // and the knees' knock as it ends
+      w_slide(ctx, out, t0, p, R) {
+        const n = noise(ctx, R, 'white', t0, 0.7);
+        const bp = filt(ctx, 'bandpass', 2600, 0.9);
+        bp.frequency.setValueAtTime(3400, t0); bp.frequency.exponentialRampToValueAtTime(900, t0 + 0.65);
+        const g = gain(ctx); env(g, t0, 0.3, 0.015, 0.62);
+        chain(n, bp, g, out);
+        burst(ctx, out, R, t0, 'brown', ['lowpass', 500], 0.28, 0.01, 0.4);
+        thud(ctx, out, t0 + 0.02, 120, 60, 0.35, 0.1);
+        return 0.8;
+      },
+      // into a wall, a fence, a shut door: the body's thump, the boards shake
+      w_hitWall(ctx, out, t0, p, R) {
+        thud(ctx, out, t0, 85, 40, 0.85, 0.16);
+        burst(ctx, out, R, t0, 'brown', ['lowpass', 600], 0.5, 0.002, 0.2);
+        splinter(ctx, out, t0 + 0.02, R, 0.2, 3);
+        burst(ctx, out, R, t0 + 0.04, 'pink', ['bandpass', 900, 1.4], 0.12, 0.01, 0.25);
+        return 0.6;
+      },
+      // a locked door shaken: the latch knocks in its keep, twice
+      w_rattle(ctx, out, t0, p, R) {
+        for (const dt of [0, 0.11, 0.2]) {
+          thud(ctx, out, t0 + dt, 180, 110, 0.3, 0.05);
+          ping(ctx, out, t0 + dt + 0.005, [[1900, 0.07, 0.05], [3100, 0.04, 0.03]]);
+        }
+        return 0.45;
+      },
+      // ducking under a thing, the coat brushing it
+      w_duck(ctx, out, t0, p, R) {
+        burst(ctx, out, R, t0, 'pink', ['bandpass', 1100, 0.8], 0.18, 0.03, 0.3);
+        thud(ctx, out, t0 + 0.08, 160, 90, 0.15, 0.05);
+        return 0.45;
+      },
+      // a door flung open by a shoulder (or by him): the bang of the leaf on
+      // its stop, the hinges, a shake
+      w_doorBang(ctx, out, t0, p, R) {
+        const k = p.k ?? 1;
+        thud(ctx, out, t0, 110, 55, 0.8 * k, 0.14);
+        burst(ctx, out, R, t0, 'brown', ['bandpass', 500, 0.8], 0.45 * k, 0.002, 0.18);
+        thud(ctx, out, t0 + 0.16, 140, 80, 0.45 * k, 0.12);
+        splinter(ctx, out, t0 + 0.17, R, 0.18 * k, 3);
+        const o = osc(ctx, 'sawtooth', 420, t0 + 0.04, 0.25);
+        o.frequency.setValueAtTime(460, t0 + 0.04); o.frequency.exponentialRampToValueAtTime(260, t0 + 0.25);
+        const g = gain(ctx); env(g, t0 + 0.04, 0.02 * k, 0.03, 0.18);
+        chain(o, filt(ctx, 'bandpass', 1100, 6), g, out);
+        return 0.6;
+      },
+      // the door slammed shut behind him: hard, the frame rings
+      w_slam(ctx, out, t0, p, R) {
+        thud(ctx, out, t0, 75, 38, 1.0, 0.2);
+        burst(ctx, out, R, t0, 'brown', ['lowpass', 900], 0.6, 0.001, 0.22);
+        ping(ctx, out, t0 + 0.005, [[520, 0.1, 0.3], [1180, 0.05, 0.2]]);
+        return 0.6;
+      },
+      // the hands slapping onto the far parapet's coping, the body against the wall
+      w_catch(ctx, out, t0, p, R) {
+        thud(ctx, out, t0, 220, 130, 0.45, 0.05);
+        burst(ctx, out, R, t0, 'white', ['bandpass', 1800, 1.2], 0.2, 0.002, 0.05);
+        thud(ctx, out, t0 + 0.09, 95, 50, 0.6, 0.14);
+        burst(ctx, out, R, t0 + 0.12, 'pink', ['bandpass', 700, 1], 0.12, 0.02, 0.2);
+        return 0.5;
+      },
+      // the haul up: shoes scrabbling on brick, the coat over the coping
+      w_haul(ctx, out, t0, p, R) {
+        for (let i = 0; i < 4; i++) burst(ctx, out, R, t0 + 0.08 + i * 0.13, 'pink', ['bandpass', rng(900, 1700), 1.6], 0.12, 0.01, 0.08);
+        burst(ctx, out, R, t0 + 0.45, 'pink', ['bandpass', 1200, 0.7], 0.15, 0.06, 0.25);
+        thud(ctx, out, t0 + 0.85, 110, 60, 0.4, 0.1);
+        return 1.0;
+      },
+      // down the shed's slates on the seat of the coat: a long rasp
+      w_slideRoof(ctx, out, t0, p, R) {
+        const n = noise(ctx, R, 'pink', t0, 0.9);
+        const bp = filt(ctx, 'bandpass', 1300, 1.1);
+        bp.frequency.setValueAtTime(1600, t0); bp.frequency.linearRampToValueAtTime(900, t0 + 0.85);
+        const g = gain(ctx); env(g, t0, 0.34, 0.03, 0.82);
+        chain(n, bp, g, out);
+        for (let i = 0; i < 5; i++) burst(ctx, out, R, t0 + 0.1 + i * 0.15, 'white', ['bandpass', rng(2200, 3400), 3], 0.05, 0.002, 0.02);
+        return 1.0;
+      },
+      // ... or slithering down it on the hands, a slate cracking
+      w_slither(ctx, out, t0, p, R) {
+        for (let i = 0; i < 7; i++) burst(ctx, out, R, t0 + i * 0.11, 'pink', ['bandpass', rng(800, 1600), 1.2], 0.16, 0.01, 0.07);
+        splinter(ctx, out, t0 + 0.3, R, 0.22, 4);
+        return 0.9;
+      },
+      // a hard landing from a drop: the heels, the knees, the splash
+      w_landHard(ctx, out, t0, p, R) {
+        thud(ctx, out, t0, 80, 40, 0.8, 0.16);
+        burst(ctx, out, R, t0 + 0.004, 'white', ['bandpass', 2600, 0.8], 0.32, 0.002, 0.16);
+        burst(ctx, out, R, t0 + 0.02, 'brown', ['lowpass', 400], 0.3, 0.01, 0.2);
+        return 0.5;
+      },
+      // a foot on the tar of the roofs: dull, a little grit
+      w_roofStep(ctx, out, t0, p, R) {
+        thud(ctx, out, t0, 120, 70, 0.28, 0.06);
+        burst(ctx, out, R, t0, 'pink', ['bandpass', 1600, 1.1], 0.09, 0.002, 0.05);
+        return 0.15;
+      },
+      // ---- him, ahead: his slide, his leap and landing (heard to find him) ----------
+      w_slideHim(ctx, out, t0, p, R) {
+        const n = noise(ctx, R, 'white', t0, 0.55);
+        const bp = filt(ctx, 'bandpass', 2400, 1);
+        bp.frequency.setValueAtTime(3000, t0); bp.frequency.exponentialRampToValueAtTime(1000, t0 + 0.5);
+        const g = gain(ctx); env(g, t0, 0.24, 0.02, 0.5);
+        chain(n, bp, g, out);
+        return 0.6;
+      },
+      w_leapHim(ctx, out, t0, p, R) {
+        thud(ctx, out, t0, 150, 90, 0.35, 0.05);
+        burst(ctx, out, R, t0, 'pink', ['bandpass', 1500, 1.2], 0.12, 0.002, 0.05);
+        return 0.2;
+      },
+      w_landHim(ctx, out, t0, p, R) {
+        thud(ctx, out, t0, 90, 45, 0.6, 0.14);
+        burst(ctx, out, R, t0 + 0.004, 'pink', ['bandpass', 1300, 1], 0.2, 0.002, 0.12);
+        return 0.4;
+      },
+      // ---- his doings ---------------------------------------------------------------------
+      // the bins pulled over: tin on stone, the lids, rolling
+      w_bins(ctx, out, t0, p, R) {
+        for (const [dt, f] of [[0, 1], [0.12, 0.9], [0.22, 1.1], [0.35, 0.8]]) {
+          thud(ctx, out, t0 + dt, 160 * f, 90 * f, 0.4, 0.08);
+          ping(ctx, out, t0 + dt + 0.004, [[rng(700, 900) * f, 0.08, 0.25], [rng(1500, 1900) * f, 0.05, 0.18], [rng(2900, 3400), 0.03, 0.1]]);
+        }
+        // the lids spinning down
+        for (let i = 0; i < 6; i++) ping(ctx, out, t0 + 0.5 + i * (0.09 - i * 0.009), [[rng(1100, 1300), 0.04 * (1 - i / 7), 0.06]]);
+        const n = noise(ctx, R, 'white', t0 + 0.3, 0.9);
+        const g = gain(ctx); env(g, t0 + 0.3, 0.06, 0.05, 0.8);
+        chain(n, filt(ctx, 'bandpass', 900, 2), g, out);
+        return 1.3;
+      },
+      // a rack of pans over on the tiles
+      w_pans(ctx, out, t0, p, R) {
+        for (let i = 0; i < 9; i++) {
+          const dt = 0.05 + i * rng(0.03, 0.08);
+          ping(ctx, out, t0 + dt, [[rng(400, 700), 0.09, 0.4], [rng(1100, 1600), 0.06, 0.3], [rng(2400, 3600), 0.04, 0.2]]);
+          burst(ctx, out, R, t0 + dt, 'white', ['bandpass', rng(2500, 4500), 2], 0.06, 0.001, 0.03);
+        }
+        thud(ctx, out, t0 + 0.3, 120, 60, 0.5, 0.12);
+        return 1.4;
+      },
+      // the barrow dragged across the flags: iron tyres grinding, a thump
+      w_barrow(ctx, out, t0, p, R) {
+        const n = noise(ctx, R, 'brown', t0, 0.9);
+        const bp = filt(ctx, 'bandpass', 380, 1.4);
+        const g = gain(ctx); env(g, t0, 0.35, 0.05, 0.8);
+        chain(n, bp, g, out);
+        for (let i = 0; i < 6; i++) burst(ctx, out, R, t0 + i * 0.14, 'pink', ['bandpass', rng(600, 900), 2], 0.09, 0.005, 0.05);
+        thud(ctx, out, t0 + 0.9, 110, 55, 0.55, 0.14);
+        return 1.1;
+      },
+      // ---- the street -------------------------------------------------------------------------
+      // a car coming down the street: its engine nearing, the tyres' hiss
+      w_carComing(ctx, out, t0, p, R) {
+        const dur = 4.0;
+        const e = osc(ctx, 'sawtooth', 44, t0, dur);
+        e.frequency.setValueAtTime(42, t0); e.frequency.linearRampToValueAtTime(58, t0 + dur);
+        const g = gain(ctx); env(g, t0, 0.22, 1.6, dur - 1.8, 0.4);
+        chain(e, filt(ctx, 'lowpass', 300), g, out);
+        const n = noise(ctx, R, 'white', t0, dur);
+        const gn = gain(ctx); env(gn, t0, 0.1, 2.0, dur - 2.2, 0.3);
+        chain(n, filt(ctx, 'bandpass', 1700, 0.8), gn, out);
+        return dur + 0.2;
+      },
+      // his starter grinding (p.dur): the motor's whirr, the engine not catching
+      w_starter(ctx, out, t0, p, R) {
+        const dur = p.dur ?? 1.1;
+        const o = osc(ctx, 'sawtooth', 70, t0, dur);
+        o.frequency.setValueAtTime(62, t0);
+        for (let k = 0; k < dur; k += 0.16) o.frequency.linearRampToValueAtTime(k % 0.32 < 0.16 ? 82 : 64, t0 + k + 0.16);
+        const g = gain(ctx); env(g, t0, 0.2, 0.04, dur - 0.1, 0.06);
+        chain(o, filt(ctx, 'lowpass', 600), g, out);
+        for (let k = 0; k < dur; k += 0.16) burst(ctx, out, R, t0 + k, 'brown', ['lowpass', 300], 0.12, 0.005, 0.06);
+        return dur + 0.1;
+      },
+      // the dog at the end of its chain: the chain snapping taut, the barks
+      w_dog(ctx, out, t0, p, R) {
+        ping(ctx, out, t0 + 0.2, [[2100, 0.06, 0.1], [3300, 0.04, 0.06]]);
+        burst(ctx, out, R, t0 + 0.2, 'white', ['bandpass', 3000, 3], 0.08, 0.001, 0.05);
+        for (const [dt, f0] of [[0.05, 300], [0.3, 280], [0.55, 330], [0.8, 300]]) {
+          voice(ctx, out, t0 + dt, R, { f0, f1: f0 * 0.7, dur: 0.15, formants: [[700, 4], [1500, 6], [2600, 8]], breath: 0.7, level: 0.65, attack: 0.006 });
+          burst(ctx, out, R, t0 + dt, 'pink', ['bandpass', 900, 1], 0.22, 0.004, 0.12);
+        }
+        return 1.2;
+      },
+      // [C6 2nd] the kitchen's iron door flung open against its stop: the
+      // latch's clack, the slab's boom, the ring of the iron
+      w_ironDoor(ctx, out, t0, p, R) {
+        ping(ctx, out, t0, [[1800, 0.1, 0.04], [3100, 0.06, 0.03]]);
+        burst(ctx, out, R, t0, 'white', ['bandpass', 2600, 2], 0.12, 0.001, 0.03);
+        thud(ctx, out, t0 + 0.2, 72, 40, 0.9, 0.3);
+        burst(ctx, out, R, t0 + 0.2, 'brown', ['lowpass', 420], 0.5, 0.002, 0.25);
+        for (const [f, a, d] of [[rng(180, 210), 0.12, 0.7], [rng(470, 520), 0.08, 0.5], [rng(1100, 1250), 0.05, 0.3]]) {
+          const o = osc(ctx, 'sine', f, t0 + 0.2, d + 0.05); const g = gain(ctx); env(g, t0 + 0.2, a, 0.002, d); chain(o, g, out);
+        }
+        return 1.0;
+      },
+      // bundles of the edition going over: dull slabs of paper on the floor, the twine's slap
+      w_bundles(ctx, out, t0, p, R) {
+        for (let i = 0; i < 5; i++) {
+          const t = t0 + 0.12 + i * rng(0.06, 0.1);
+          thud(ctx, out, t, rng(150, 230), 70, 0.4, 0.09);
+          burst(ctx, out, R, t, 'white', ['bandpass', rng(1800, 2800), 1.2], 0.12, 0.001, 0.05);
+        }
+        burst(ctx, out, R, t0, 'pink', ['bandpass', 900, 0.8], 0.15, 0.02, 0.2);
+        return 0.9;
+      },
+    },
+    // [C6 2nd] the press hall: the night edition running - the units' heavy
+    // beat, the clatter of the folders, the web's hiss, the motors' hum
+    rooms: {
+      press: { wall: 520, wallGain: 0.12, bed: pressBed },
     },
   };
+  function pressBed(ctx, R, out) {
+    const master = gain(ctx, 0.0001); master.connect(out);
+    const srcs = [];
+    const beat = gain(ctx, 0.15); chain(loopN(ctx, R, 'brown', 0.9, srcs), filt(ctx, 'lowpass', 170), beat, master);
+    lfo(ctx, 5.4, 0.08, beat.gain, 'sine', srcs);
+    const clat = gain(ctx, 0.028); chain(loopN(ctx, R, 'pink', 1.2, srcs), filt(ctx, 'bandpass', 1900, 1.3), clat, master);
+    lfo(ctx, 10.8, 0.022, clat.gain, 'square', srcs);
+    const chop = gain(ctx, 0.03); chain(loopN(ctx, R, 'pink', 0.8, srcs), filt(ctx, 'bandpass', 420, 1.6), chop, master);
+    lfo(ctx, 2.7, 0.028, chop.gain, 'sawtooth', srcs);
+    chain(loopN(ctx, R, 'white', 1, srcs), filt(ctx, 'highpass', 3200), gain(ctx, 0.01), master);
+    for (const [f, a] of [[50, 0.012], [100, 0.008], [150, 0.004]]) { const o = ctx.createOscillator(); o.frequency.value = f; o.start(); srcs.push(o); chain(o, gain(ctx, a), master); }
+    return { gain: master, stop() { const t = ctx.currentTime; master.gain.setTargetAtTime(0, t, 0.15); setTimeout(() => { for (const x of srcs) { try { x.stop(); } catch (e) { /* */ } } try { master.disconnect(); } catch (e) { /* */ } }, 1500); } };
+  }
 };

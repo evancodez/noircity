@@ -1,0 +1,92 @@
+{
+ "about": "Critic C6 2nd look jank walk (the cut): the chase's rules switched off to look round; run into each point, say what stops me, a frame at each stop. NOIR_PORT=5346 node tools/play.mjs tools/plays/critic/c6d_jank_cut.json",
+ "url": "/?mute=1&start=watcher.cut",
+ "size": [
+  1440,
+  900
+ ],
+ "out": "shots/c6d/jank",
+ "steps": [
+  {
+   "until": "G.state === 'title' && !!document.querySelector('#title .opt[data-k=begin]')",
+   "timeout": 40000
+  },
+  {
+   "wait": 1200
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]",
+   "taken": "G.state !== 'title' && document.pointerLockElement === N.renderer.domElement",
+   "retries": 5,
+   "every": 4000
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'watcher' && !(G.hud.cardT > 0.1) && N.controller.mode === 'run'",
+   "timeout": 30000
+  },
+  {
+   "eval": "(G.scenes.ctx.flags.chase.active = false, G.hud.warn(null), 'rules off: looking round')"
+  },
+  {
+   "drive": "tools/plays/critic/c6c_poke.mjs",
+   "points": [
+    [
+     92.5,
+     -118.9,
+     "the cut's gate",
+     4,
+     "Space"
+    ],
+    [
+     104.0,
+     -119.0,
+     "back out across the avenue",
+     6
+    ],
+    [
+     98.3,
+     -130.0,
+     "avenue north hoarding",
+     6
+    ],
+    [
+     92.0,
+     -117.2,
+     "through the gate again",
+     6,
+     "Space"
+    ],
+    [
+     80.0,
+     -121.0,
+     "the cut's north wall at the knee",
+     6
+    ],
+    [
+     78.0,
+     -111.0,
+     "the pipe from the north",
+     5
+    ],
+    [
+     77.9,
+     -106.0,
+     "the alley's west end",
+     6
+    ],
+    [
+     85.0,
+     -103.0,
+     "east along the back alley",
+     6
+    ],
+    [
+     74.0,
+     -103.0,
+     "the loading yard",
+     6
+    ]
+   ]
+  }
+ ]
+}

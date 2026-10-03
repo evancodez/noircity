@@ -1,0 +1,140 @@
+{
+ "about": "Critic C6: the seam into chapter VI: at my coupe, E, frames every ~0.1 s through the door, the cut and the city's first frames (no fade, no card?). NOIR_PORT=5346 node tools/play.mjs tools/plays/critic/c6c_seam.json",
+ "url": "/?mute=1&start=watcher.car",
+ "size": [
+  1440,
+  900
+ ],
+ "out": "shots/c6c/seam",
+ "steps": [
+  {
+   "until": "G.state === 'title' && !!document.querySelector('#title .opt[data-k=begin]')",
+   "timeout": 40000
+  },
+  {
+   "wait": 1200
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]",
+   "taken": "G.state !== 'title' && document.pointerLockElement === N.renderer.domElement",
+   "retries": 5,
+   "every": 4000
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'watcher' && !(G.hud.cardT > 0.1)",
+   "timeout": 30000
+  },
+  {
+   "drive": "tools/plays/critic/c6c_drive.mjs",
+   "profile": "good",
+   "seed": 4,
+   "timeout": 30000,
+   "stop": "/drive/.test(G.hud.promptShown || '') && (G.scenes.ctx.flags.chase.act === 'gone' || G.scenes.ctx.flags.chase.act === 'carIn')"
+  },
+  {
+   "shot": "seam_00"
+  },
+  {
+   "key": "KeyE"
+  },
+  {
+   "wait": 90
+  },
+  {
+   "shot": "seam_01"
+  },
+  {
+   "wait": 90
+  },
+  {
+   "shot": "seam_02"
+  },
+  {
+   "wait": 90
+  },
+  {
+   "shot": "seam_03"
+  },
+  {
+   "wait": 90
+  },
+  {
+   "shot": "seam_04"
+  },
+  {
+   "wait": 90
+  },
+  {
+   "shot": "seam_05"
+  },
+  {
+   "wait": 90
+  },
+  {
+   "shot": "seam_06"
+  },
+  {
+   "wait": 90
+  },
+  {
+   "shot": "seam_07"
+  },
+  {
+   "wait": 90
+  },
+  {
+   "shot": "seam_08"
+  },
+  {
+   "wait": 90
+  },
+  {
+   "shot": "seam_09"
+  },
+  {
+   "wait": 90
+  },
+  {
+   "shot": "seam_10"
+  },
+  {
+   "wait": 90
+  },
+  {
+   "shot": "seam_11"
+  },
+  {
+   "wait": 90
+  },
+  {
+   "shot": "seam_12"
+  },
+  {
+   "wait": 90
+  },
+  {
+   "shot": "seam_13"
+  },
+  {
+   "wait": 90
+  },
+  {
+   "shot": "seam_14"
+  },
+  {
+   "wait": 90
+  },
+  {
+   "shot": "seam_15"
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "shot": "seam_tail"
+  },
+  {
+   "eval": "JSON.stringify({scene: G.scenes.current && G.scenes.current.id, beat: G.scenes.beat, card: G.hud.cardT})"
+  }
+ ]
+}

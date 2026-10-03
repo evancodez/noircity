@@ -1,0 +1,48 @@
+{
+ "about": "Critic C6 2nd look: from the title at the el beat, profile w (W held, the mouse steering, never SPACE / C / E): must lose him, the warning first. NOIR_PORT=5346 node tools/play.mjs tools/plays/critic/c6d_w_el.json",
+ "url": "/?mute=1&start=watcher.el",
+ "size": [
+  1440,
+  900
+ ],
+ "out": "shots/c6d/proofs",
+ "steps": [
+  {
+   "until": "G.state === 'title' && !!document.querySelector('#title .opt[data-k=begin]')",
+   "timeout": 40000
+  },
+  {
+   "wait": 1200
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]",
+   "taken": "G.state !== 'title' && document.pointerLockElement === N.renderer.domElement",
+   "retries": 5,
+   "every": 4000
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'watcher' && !(G.hud.cardT > 0.1)",
+   "timeout": 30000
+  },
+  {
+   "eval": "(window.__t0 = N.time, 1)"
+  },
+  {
+   "drive": "tools/plays/critic/c6c_drive.mjs",
+   "profile": "w",
+   "seed": 7,
+   "timeout": 60000,
+   "stop": "(G.counters.fails || 0) >= 1 || (G.scenes.current && G.scenes.current.id !== 'watcher')",
+   "shots": {
+    "w_el_warn": "!!(G.hud.kit && G.hud.kit.warnText)"
+   }
+  },
+  {
+   "eval": "JSON.stringify({beat: G.scenes.beat, scene: G.scenes.current && G.scenes.current.id, fails: G.counters.fails || 0, secs: +(N.time - window.__t0).toFixed(1), last: G.lastFail && G.lastFail.why, warnedFor: G.lastFail && G.lastFail.warnedFor, to: G.lastFail && G.lastFail.to, from: G.lastFail && G.lastFail.from, lost: (G._c6lost||[]).map(r=>[r.stretch,r.gap,r.unseen,r.me,r.blocked])})"
+  },
+  {
+   "expect": "(G.counters.fails || 0) >= 1 && G.lastFail.why === 'Lost him.' && G.lastFail.warnedFor >= 1",
+   "label": "w at el: lost, warned first"
+  }
+ ]
+}

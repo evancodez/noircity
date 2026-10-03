@@ -1,0 +1,18 @@
+{
+ "about": "[C6] The seam into chapter VI by real input, measured in real time: from the car beat (?start=watcher.car: the city warmed under the chapter's card, then the seam's own pieces, src/scenes/watcher/seam.js), the frame intervals while it warms, then to my coupe's door and E: the door, the eye in under the roof's rail, the cut into the seat; the frames around the cut and the programs and geometries the cut still made. Read the numbers, not one run (a shared GPU). node tools/play.mjs tools/plays/watcher_seam.json --size 1440x900",
+ "url": "/?mute=1&start=watcher.car",
+ "size": [1440, 900],
+ "out": "shots/c6/play_seam",
+ "steps": [
+  { "until": "G.state === 'title' && !!document.querySelector('#title .opt[data-k=begin]')", "timeout": 40000 },
+  { "eval": "(() => { const R = window.__seam = { gaps: [], cut: null, after: [], n: 0 }; let last = performance.now(); (function loop() { const now = performance.now(); R.gaps.push(+(now - last).toFixed(1)); last = now; if (R.cut == null && G.scenes.current && G.scenes.current.id === 'tail') { R.cut = R.gaps.length - 1; R.p1 = N.renderer.info.programs.length; } if (R.gaps.length < 4000) requestAnimationFrame(loop); })(); return 1; })()" },
+  { "wait": 1200 },
+  { "clickOn": "#title .opt[data-k=begin]", "taken": "G.state !== 'title' && document.pointerLockElement === N.renderer.domElement", "retries": 5, "every": 4000 },
+  { "until": "G.scenes.current && G.scenes.current.id === 'watcher' && G.scenes.ctx.flags.warmed === 'done'", "timeout": 40000 },
+  { "eval": "(() => { const R = window.__seam; R.warmGaps = R.gaps.slice(5); R.gaps = []; R.p0 = new Set(N.renderer.info.programs); R.g0 = N.renderer.info.memory.geometries; return JSON.stringify({ warmFrames: R.warmGaps.length, warmMax: Math.max(...R.warmGaps), over50: R.warmGaps.filter((x) => x > 50).length, log: (G.stages.warmLog || []).filter((w) => w[2] > 30) }); })()" },
+  { "drive": "tools/lib/c6_chase.mjs", "profile": "good", "stop": "G.scenes.current && G.scenes.current.id === 'tail'", "timeout": 40000, "check": "D.done", "label": "to the coupe's door, E, the cut into the seat" },
+  { "wait": 1500 },
+  { "eval": "(() => { const R = window.__seam, i = R.cut; const around = R.gaps.slice(Math.max(0, i - 6), i + 8); return JSON.stringify({ around, maxAround: Math.max(...around), newPrograms: N.renderer.info.programs.filter((p) => !R.p0.has(p)).map((p) => p.name), geometries: [R.g0, N.renderer.info.memory.geometries] }); })()" },
+  { "expect": "G.scenes.current.id === 'tail' && N.controller.mode === 'drive'", "label": "in the driver's seat after the cut" }
+ ]
+}

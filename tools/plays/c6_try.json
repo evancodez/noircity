@@ -1,0 +1,16 @@
+{
+ "about": "[C6] development probe (not a proof). node tools/play.mjs tools/plays/c6_try.json",
+ "url": "/?mute=1&start=watcher.car",
+ "size": [1280, 800],
+ "out": "shots/c6/play_try",
+ "steps": [
+  { "until": "G.state === 'title' && !!document.querySelector('#title .opt[data-k=begin]')", "timeout": 40000 },
+  { "wait": 1200 },
+  { "clickOn": "#title .opt[data-k=begin]", "taken": "G.state !== 'title' && document.pointerLockElement === N.renderer.domElement", "retries": 5, "every": 4000 },
+  { "until": "G.scenes.current && G.scenes.current.id === 'watcher' && G.scenes.ctx.flags.warmed === 'done'", "timeout": 40000 },
+  { "eval": "(() => { window.__p0 = N.renderer.info.programs.map((p) => p.name + '|' + p.cacheKey); return JSON.stringify(window.__p0.filter((k) => /HoodCloth|TailScreen|HeadlampPool|crew_glow/.test(k)).map((k) => k.slice(0, 400))); })()" },
+  { "eval": "(G.scenes.go('tail', { beat: 'start', fade: 'cut', card: false }), 1)" },
+  { "wait": 1500 },
+  { "eval": "JSON.stringify(N.renderer.info.programs.map((p) => p.name + '|' + p.cacheKey).filter((k) => !window.__p0.includes(k)).map((k) => k.slice(0, 400)))" }
+ ]
+}

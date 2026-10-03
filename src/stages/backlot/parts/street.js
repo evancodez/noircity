@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { LAYER, tagInk, allocInkId } from '../../../render/layers.js';
 import { makeGroundMaterial } from '../../../render/shaders/ground.js';
 import { merge } from '../../../world/geom.js';
-import { HARBOR, BACKST } from '../plan.js';
+import { HARBOR, BACKST, MERCER, MARKET, NORTHST, AVENUE, BALLEY } from '../plan.js';
 
 // The backlot's ground: one wet plane at y 0 under everything (the alleys,
 // the yards, the two streets' roads: the wet-street shader, its puddles,
@@ -15,12 +15,28 @@ const TOP = 0.15;
 const PAVES = [
   // Harbor Street: the north pavement, broken by the side alley's mouth (x 0 .. 5)
   [HARBOR.x0, 0, HARBOR.z0 - HARBOR.pave, HARBOR.z0],
-  [5, HARBOR.x1, HARBOR.z0 - HARBOR.pave, HARBOR.z0],
+  [5, AVENUE.road[0], HARBOR.z0 - HARBOR.pave, HARBOR.z0],
   // its south pavement
-  [HARBOR.x0, HARBOR.x1, HARBOR.z1, HARBOR.z1 + HARBOR.pave],
-  // the back street: the east pavement (the board fence's side) and the west
+  [HARBOR.x0, AVENUE.road[0], HARBOR.z1, HARBOR.z1 + HARBOR.pave],
+  // [C6 2nd] beyond the avenue (Harbor Street runs on to the works), and the
+  // avenue's own: west and east, north and south of Harbor Street (the west
+  // one broken by the alley's mouth behind the press hall; its kerbs on the road side)
+  [AVENUE.road[1], AVENUE.x1 + 1.6, HARBOR.z0 - HARBOR.pave, HARBOR.z0],
+  [AVENUE.road[1], AVENUE.x1 + 1.6, HARBOR.z1, HARBOR.z1 + HARBOR.pave],
+  [AVENUE.x0, AVENUE.road[0], AVENUE.z0, BALLEY.z0, 'x1'], [AVENUE.x0 - 0.3, AVENUE.road[0], BALLEY.z0, BALLEY.z1, 'x1'], [AVENUE.x0, AVENUE.road[0], BALLEY.z1, HARBOR.z0 - HARBOR.pave, 'x1'],
+  [AVENUE.road[1], AVENUE.x1, AVENUE.z0, HARBOR.z0 - HARBOR.pave, 'x0'],
+  [AVENUE.x0, AVENUE.road[0], HARBOR.z1 + HARBOR.pave, AVENUE.z1, 'x1'], [AVENUE.road[1], AVENUE.x1, HARBOR.z1 + HARBOR.pave, AVENUE.z1, 'x0'],
+  // the back street (Pell Lane): the east pavement (the board fence's side) and the west
   [BACKST.x1, 2.0, BACKST.z0, BACKST.z1],
-  [BACKST.x0 - BACKST.pave, BACKST.x0, BACKST.z0, BACKST.z1 - 8],
+  [BACKST.x0 - BACKST.pave, BACKST.x0, BACKST.z0, BACKST.z1],
+  // [C6] Mercer Street's pavements, and the market's flags (flush with them
+  // and with Pell Lane's through the gate)
+  [MERCER.x0, MERCER.road[0], MERCER.z0, MERCER.z1],
+  [MERCER.road[1], MERCER.x1, MERCER.z0, MERCER.z1],
+  [MARKET.x0, MARKET.x1, MARKET.z0, MARKET.z1],
+  // the cross street at the north end (its south pavement cut by Pell Lane's and Mercer Street's roads; the kerb on the road side: 5th)
+  [-40, BACKST.x0, NORTHST.z1, BACKST.z0, 'z0'], [BACKST.x1, MERCER.road[0], NORTHST.z1, BACKST.z0, 'z0'], [MERCER.road[1], NORTHST.x1, NORTHST.z1, BACKST.z0, 'z0'],
+  [NORTHST.x0, NORTHST.x1, NORTHST.z0 - NORTHST.pave, NORTHST.z0, 'z1'],
 ];
 
 export default {
@@ -28,7 +44,7 @@ export default {
   build(stage) {
     const { scene, U, M, colliders } = stage;
     const road = new THREE.Mesh(new THREE.PlaneGeometry(420, 420, 1, 1).rotateX(-Math.PI / 2), makeGroundMaterial(U, { paving: 0 }));
-    road.position.set(10, 0, -60);
+    road.position.set(30, 0, -70);
     road.receiveShadow = true;
     road.layers.set(LAYER.GROUND);
     road.userData.inkId = allocInkId();
@@ -36,7 +52,7 @@ export default {
     scene.add(road);
     const paveMat = makeGroundMaterial(U, { paving: 1 });
     const kerbs = [];
-    for (const [x0, x1, z0, z1] of PAVES) {
+    for (const [x0, x1, z0, z1, side] of PAVES) {
       const p = new THREE.Mesh(new THREE.PlaneGeometry(x1 - x0, z1 - z0).rotateX(-Math.PI / 2), paveMat);
       p.position.set((x0 + x1) / 2, TOP, (z0 + z1) / 2);
       p.receiveShadow = true;
@@ -45,10 +61,16 @@ export default {
       scene.add(p);
       // the kerb stones: a low box round the slab's road side(s)
       const k = (w, d, x, z) => kerbs.push(new THREE.BoxGeometry(w, TOP, d).translate(x, TOP / 2 - 0.002, z));
+      if (x0 === MARKET.x0 && x1 === MARKET.x1) continue;                              // (the market: walls, no kerb)
+      if (side === 'z0') { k(x1 - x0, 0.22, (x0 + x1) / 2, z0 + 0.11); continue; }
+      if (side === 'z1') { k(x1 - x0, 0.22, (x0 + x1) / 2, z1 - 0.11); continue; }
+      if (side === 'x1') { k(0.22, z1 - z0, x1 - 0.11, (z0 + z1) / 2); continue; }
+      if (side === 'x0') { k(0.22, z1 - z0, x0 + 0.11, (z0 + z1) / 2); continue; }
       if (z1 <= HARBOR.z0 + 0.01) k(x1 - x0, 0.22, (x0 + x1) / 2, z1 - 0.11);          // north pavement's kerb
       else if (z0 >= HARBOR.z1 - 0.01) k(x1 - x0, 0.22, (x0 + x1) / 2, z0 + 0.11);     // south
-      else if (x0 >= BACKST.x1 - 0.01) k(0.22, z1 - z0, x0 + 0.11, (z0 + z1) / 2);     // back street, east
-      else k(0.22, z1 - z0, x1 - 0.11, (z0 + z1) / 2);                                 // back street, west
+      else if (x0 >= BACKST.x1 - 0.01 && x0 < MERCER.x0) k(0.22, z1 - z0, x0 + 0.11, (z0 + z1) / 2);     // back street, east
+      else if (x0 === MERCER.road[1]) k(0.22, z1 - z0, x0 + 0.11, (z0 + z1) / 2);      // Mercer St, east
+      else k(0.22, z1 - z0, x1 - 0.11, (z0 + z1) / 2);                                 // back street, west; Mercer St, west
     }
     const kerb = new THREE.Mesh(merge(kerbs), M.kerb);
     kerb.receiveShadow = true;
@@ -56,7 +78,7 @@ export default {
     scene.add(kerb);
     // the stage's outer net (and the Hoods' nav grid, which must fit in
     // memory: the backlot's own ground, a little beyond its walls)
-    colliders.setBounds(-36, 62, -152, 22);
+    colliders.setBounds(-38, 146, -163, 44);   // [C6 2nd] to the avenue's far side
     stage.addSurface((x, z) => surfaceY(x, z));
     const api = {
       road, surfaceY,

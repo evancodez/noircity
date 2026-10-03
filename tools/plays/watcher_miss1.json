@@ -1,0 +1,557 @@
+{
+ "about": "[C6 3rd] The critic's 'one miss never loses him', on the third owner's course and rules: one thing in a stretch run into (the right key once stopped), the rest clean, each stretch cold (the cards marked taught: a held card would crawl time under the hands): never lost. NOIR_PORT=5346 node tools/play.mjs tools/plays/watcher_miss1.json",
+ "url": "/?mute=1&start=watcher.alley",
+ "size": [
+  1280,
+  800
+ ],
+ "out": "shots/c6/miss1",
+ "steps": [
+  {
+   "name": "alley: bins missed, the rest clean"
+  },
+  {
+   "until": "G.state === 'title' && !!document.querySelector('#title .opt[data-k=begin]')",
+   "timeout": 40000
+  },
+  {
+   "wait": 1200
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]",
+   "taken": "G.state !== 'title' && document.pointerLockElement === N.renderer.domElement",
+   "retries": 5,
+   "every": 4000
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'watcher' && G.scenes.beat === 'alley' && !(G.hud.cardT > 0.1)",
+   "timeout": 20000
+  },
+  {
+   "eval": "(['vault','slide','shoulder','jump','slideDown'].forEach((k) => (G.hud.kit.taught()[k] = true)), 1)"
+  },
+  {
+   "drive": "tools/lib/c6_chase.mjs",
+   "profile": "good",
+   "miss": [
+    "bins"
+   ],
+   "over": "roofs",
+   "stop": "G.scenes.beat === 'lane' || (G.counters.fails || 0) >= 1",
+   "timeout": 60000
+  },
+  {
+   "eval": "JSON.stringify({ reached: G.scenes.beat, fails: G.counters.fails || 0, met: (G.scenes.ctx.flags.chase.met || []).map((m) => m[0] + ':' + m[1]) })"
+  },
+  {
+   "expect": "!(G.counters.fails > 0)",
+   "label": "alley: bins missed once - not lost"
+  },
+  {
+   "name": "lane: fence1 missed, the rest clean"
+  },
+  {
+   "eval": "(localStorage.removeItem('noir.save'), location.search = '?mute=1&start=watcher.lane', 1)"
+  },
+  {
+   "wait": 2500
+  },
+  {
+   "until": "G.state === 'title' && !!document.querySelector('#title .opt[data-k=begin]')",
+   "timeout": 40000
+  },
+  {
+   "wait": 1200
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]",
+   "taken": "G.state !== 'title' && document.pointerLockElement === N.renderer.domElement",
+   "retries": 5,
+   "every": 4000
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'watcher' && G.scenes.beat === 'lane' && !(G.hud.cardT > 0.1)",
+   "timeout": 20000
+  },
+  {
+   "eval": "(['vault','slide','shoulder','jump','slideDown'].forEach((k) => (G.hud.kit.taught()[k] = true)), 1)"
+  },
+  {
+   "drive": "tools/lib/c6_chase.mjs",
+   "profile": "good",
+   "miss": [
+    "fence1"
+   ],
+   "over": "roofs",
+   "stop": "G.scenes.beat === 'yard' || (G.counters.fails || 0) >= 1",
+   "timeout": 60000
+  },
+  {
+   "eval": "JSON.stringify({ reached: G.scenes.beat, fails: G.counters.fails || 0, met: (G.scenes.ctx.flags.chase.met || []).map((m) => m[0] + ':' + m[1]) })"
+  },
+  {
+   "expect": "!(G.counters.fails > 0)",
+   "label": "lane: fence1 missed once - not lost"
+  },
+  {
+   "name": "lane: fence2 missed, the rest clean"
+  },
+  {
+   "eval": "(localStorage.removeItem('noir.save'), location.search = '?mute=1&start=watcher.lane', 1)"
+  },
+  {
+   "wait": 2500
+  },
+  {
+   "until": "G.state === 'title' && !!document.querySelector('#title .opt[data-k=begin]')",
+   "timeout": 40000
+  },
+  {
+   "wait": 1200
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]",
+   "taken": "G.state !== 'title' && document.pointerLockElement === N.renderer.domElement",
+   "retries": 5,
+   "every": 4000
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'watcher' && G.scenes.beat === 'lane' && !(G.hud.cardT > 0.1)",
+   "timeout": 20000
+  },
+  {
+   "eval": "(['vault','slide','shoulder','jump','slideDown'].forEach((k) => (G.hud.kit.taught()[k] = true)), 1)"
+  },
+  {
+   "drive": "tools/lib/c6_chase.mjs",
+   "profile": "good",
+   "miss": [
+    "fence2"
+   ],
+   "over": "roofs",
+   "stop": "G.scenes.beat === 'yard' || (G.counters.fails || 0) >= 1",
+   "timeout": 60000
+  },
+  {
+   "eval": "JSON.stringify({ reached: G.scenes.beat, fails: G.counters.fails || 0, met: (G.scenes.ctx.flags.chase.met || []).map((m) => m[0] + ':' + m[1]) })"
+  },
+  {
+   "expect": "!(G.counters.fails > 0)",
+   "label": "lane: fence2 missed once - not lost"
+  },
+  {
+   "name": "yard: doorW missed, the rest clean"
+  },
+  {
+   "eval": "(localStorage.removeItem('noir.save'), location.search = '?mute=1&start=watcher.yard&c6Lane=W', 1)"
+  },
+  {
+   "wait": 2500
+  },
+  {
+   "until": "G.state === 'title' && !!document.querySelector('#title .opt[data-k=begin]')",
+   "timeout": 40000
+  },
+  {
+   "wait": 1200
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]",
+   "taken": "G.state !== 'title' && document.pointerLockElement === N.renderer.domElement",
+   "retries": 5,
+   "every": 4000
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'watcher' && G.scenes.beat === 'yard' && !(G.hud.cardT > 0.1)",
+   "timeout": 20000
+  },
+  {
+   "eval": "(['vault','slide','shoulder','jump','slideDown'].forEach((k) => (G.hud.kit.taught()[k] = true)), 1)"
+  },
+  {
+   "drive": "tools/lib/c6_chase.mjs",
+   "profile": "good",
+   "miss": [
+    "doorW"
+   ],
+   "over": "roofs",
+   "stop": "G.scenes.beat === 'kitchen' || (G.counters.fails || 0) >= 1",
+   "timeout": 60000
+  },
+  {
+   "eval": "JSON.stringify({ reached: G.scenes.beat, fails: G.counters.fails || 0, met: (G.scenes.ctx.flags.chase.met || []).map((m) => m[0] + ':' + m[1]) })"
+  },
+  {
+   "expect": "!(G.counters.fails > 0)",
+   "label": "yard: doorW missed once - not lost"
+  },
+  {
+   "name": "press: web missed, the rest clean"
+  },
+  {
+   "eval": "(localStorage.removeItem('noir.save'), location.search = '?mute=1&start=watcher.press', 1)"
+  },
+  {
+   "wait": 2500
+  },
+  {
+   "until": "G.state === 'title' && !!document.querySelector('#title .opt[data-k=begin]')",
+   "timeout": 40000
+  },
+  {
+   "wait": 1200
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]",
+   "taken": "G.state !== 'title' && document.pointerLockElement === N.renderer.domElement",
+   "retries": 5,
+   "every": 4000
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'watcher' && G.scenes.beat === 'press' && !(G.hud.cardT > 0.1)",
+   "timeout": 20000
+  },
+  {
+   "eval": "(['vault','slide','shoulder','jump','slideDown'].forEach((k) => (G.hud.kit.taught()[k] = true)), 1)"
+  },
+  {
+   "drive": "tools/lib/c6_chase.mjs",
+   "profile": "good",
+   "miss": [
+    "web"
+   ],
+   "over": "roofs",
+   "stop": "G.scenes.beat === 'el' || (G.counters.fails || 0) >= 1",
+   "timeout": 60000
+  },
+  {
+   "eval": "JSON.stringify({ reached: G.scenes.beat, fails: G.counters.fails || 0, met: (G.scenes.ctx.flags.chase.met || []).map((m) => m[0] + ':' + m[1]) })"
+  },
+  {
+   "expect": "!(G.counters.fails > 0)",
+   "label": "press: web missed once - not lost"
+  },
+  {
+   "name": "el: dyReel missed, the rest clean"
+  },
+  {
+   "eval": "(localStorage.removeItem('noir.save'), location.search = '?mute=1&start=watcher.el', 1)"
+  },
+  {
+   "wait": 2500
+  },
+  {
+   "until": "G.state === 'title' && !!document.querySelector('#title .opt[data-k=begin]')",
+   "timeout": 40000
+  },
+  {
+   "wait": 1200
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]",
+   "taken": "G.state !== 'title' && document.pointerLockElement === N.renderer.domElement",
+   "retries": 5,
+   "every": 4000
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'watcher' && G.scenes.beat === 'el' && !(G.hud.cardT > 0.1)",
+   "timeout": 20000
+  },
+  {
+   "eval": "(['vault','slide','shoulder','jump','slideDown'].forEach((k) => (G.hud.kit.taught()[k] = true)), 1)"
+  },
+  {
+   "drive": "tools/lib/c6_chase.mjs",
+   "profile": "good",
+   "miss": [
+    "dyReel"
+   ],
+   "over": "roofs",
+   "stop": "G.scenes.beat === 'cut' || (G.counters.fails || 0) >= 1",
+   "timeout": 60000
+  },
+  {
+   "eval": "JSON.stringify({ reached: G.scenes.beat, fails: G.counters.fails || 0, met: (G.scenes.ctx.flags.chase.met || []).map((m) => m[0] + ':' + m[1]) })"
+  },
+  {
+   "expect": "!(G.counters.fails > 0)",
+   "label": "el: dyReel missed once - not lost"
+  },
+  {
+   "name": "cut: pipe2 missed, the rest clean"
+  },
+  {
+   "eval": "(localStorage.removeItem('noir.save'), location.search = '?mute=1&start=watcher.cut', 1)"
+  },
+  {
+   "wait": 2500
+  },
+  {
+   "until": "G.state === 'title' && !!document.querySelector('#title .opt[data-k=begin]')",
+   "timeout": 40000
+  },
+  {
+   "wait": 1200
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]",
+   "taken": "G.state !== 'title' && document.pointerLockElement === N.renderer.domElement",
+   "retries": 5,
+   "every": 4000
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'watcher' && G.scenes.beat === 'cut' && !(G.hud.cardT > 0.1)",
+   "timeout": 20000
+  },
+  {
+   "eval": "(['vault','slide','shoulder','jump','slideDown'].forEach((k) => (G.hud.kit.taught()[k] = true)), 1)"
+  },
+  {
+   "drive": "tools/lib/c6_chase.mjs",
+   "profile": "good",
+   "miss": [
+    "pipe2"
+   ],
+   "over": "roofs",
+   "stop": "G.scenes.beat === 'over' || (G.counters.fails || 0) >= 1",
+   "timeout": 60000
+  },
+  {
+   "eval": "JSON.stringify({ reached: G.scenes.beat, fails: G.counters.fails || 0, met: (G.scenes.ctx.flags.chase.met || []).map((m) => m[0] + ':' + m[1]) })"
+  },
+  {
+   "expect": "!(G.counters.fails > 0)",
+   "label": "cut: pipe2 missed once - not lost"
+  },
+  {
+   "name": "cut: cutGate missed, the rest clean"
+  },
+  {
+   "eval": "(localStorage.removeItem('noir.save'), location.search = '?mute=1&start=watcher.cut', 1)"
+  },
+  {
+   "wait": 2500
+  },
+  {
+   "until": "G.state === 'title' && !!document.querySelector('#title .opt[data-k=begin]')",
+   "timeout": 40000
+  },
+  {
+   "wait": 1200
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]",
+   "taken": "G.state !== 'title' && document.pointerLockElement === N.renderer.domElement",
+   "retries": 5,
+   "every": 4000
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'watcher' && G.scenes.beat === 'cut' && !(G.hud.cardT > 0.1)",
+   "timeout": 20000
+  },
+  {
+   "eval": "(['vault','slide','shoulder','jump','slideDown'].forEach((k) => (G.hud.kit.taught()[k] = true)), 1)"
+  },
+  {
+   "drive": "tools/lib/c6_chase.mjs",
+   "profile": "good",
+   "miss": [
+    "cutGate"
+   ],
+   "over": "roofs",
+   "stop": "G.scenes.beat === 'over' || (G.counters.fails || 0) >= 1",
+   "timeout": 60000
+  },
+  {
+   "eval": "JSON.stringify({ reached: G.scenes.beat, fails: G.counters.fails || 0, met: (G.scenes.ctx.flags.chase.met || []).map((m) => m[0] + ':' + m[1]) })"
+  },
+  {
+   "expect": "!(G.counters.fails > 0)",
+   "label": "cut: cutGate missed once - not lost"
+  },
+  {
+   "name": "over: edge missed, the rest clean"
+  },
+  {
+   "eval": "(localStorage.removeItem('noir.save'), location.search = '?mute=1&start=watcher.over', 1)"
+  },
+  {
+   "wait": 2500
+  },
+  {
+   "until": "G.state === 'title' && !!document.querySelector('#title .opt[data-k=begin]')",
+   "timeout": 40000
+  },
+  {
+   "wait": 1200
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]",
+   "taken": "G.state !== 'title' && document.pointerLockElement === N.renderer.domElement",
+   "retries": 5,
+   "every": 4000
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'watcher' && G.scenes.beat === 'over' && !(G.hud.cardT > 0.1)",
+   "timeout": 20000
+  },
+  {
+   "eval": "(['vault','slide','shoulder','jump','slideDown'].forEach((k) => (G.hud.kit.taught()[k] = true)), 1)"
+  },
+  {
+   "drive": "tools/lib/c6_chase.mjs",
+   "profile": "good",
+   "miss": [
+    "edge"
+   ],
+   "over": "roofs",
+   "stop": "G.scenes.beat === 'street' || (G.counters.fails || 0) >= 1",
+   "timeout": 60000
+  },
+  {
+   "eval": "JSON.stringify({ reached: G.scenes.beat, fails: G.counters.fails || 0, met: (G.scenes.ctx.flags.chase.met || []).map((m) => m[0] + ':' + m[1]) })"
+  },
+  {
+   "expect": "!(G.counters.fails > 0)",
+   "label": "over: edge missed once - not lost"
+  },
+  {
+   "name": "over: tank missed, the rest clean"
+  },
+  {
+   "eval": "(localStorage.removeItem('noir.save'), location.search = '?mute=1&start=watcher.over', 1)"
+  },
+  {
+   "wait": 2500
+  },
+  {
+   "until": "G.state === 'title' && !!document.querySelector('#title .opt[data-k=begin]')",
+   "timeout": 40000
+  },
+  {
+   "wait": 1200
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]",
+   "taken": "G.state !== 'title' && document.pointerLockElement === N.renderer.domElement",
+   "retries": 5,
+   "every": 4000
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'watcher' && G.scenes.beat === 'over' && !(G.hud.cardT > 0.1)",
+   "timeout": 20000
+  },
+  {
+   "eval": "(['vault','slide','shoulder','jump','slideDown'].forEach((k) => (G.hud.kit.taught()[k] = true)), 1)"
+  },
+  {
+   "drive": "tools/lib/c6_chase.mjs",
+   "profile": "good",
+   "miss": [
+    "tank"
+   ],
+   "over": "roofs",
+   "stop": "G.scenes.beat === 'street' || (G.counters.fails || 0) >= 1",
+   "timeout": 60000
+  },
+  {
+   "eval": "JSON.stringify({ reached: G.scenes.beat, fails: G.counters.fails || 0, met: (G.scenes.ctx.flags.chase.met || []).map((m) => m[0] + ':' + m[1]) })"
+  },
+  {
+   "expect": "!(G.counters.fails > 0)",
+   "label": "over: tank missed once - not lost"
+  },
+  {
+   "name": "street: archGate missed, the rest clean"
+  },
+  {
+   "eval": "(localStorage.removeItem('noir.save'), location.search = '?mute=1&start=watcher.street', 1)"
+  },
+  {
+   "wait": 2500
+  },
+  {
+   "until": "G.state === 'title' && !!document.querySelector('#title .opt[data-k=begin]')",
+   "timeout": 40000
+  },
+  {
+   "wait": 1200
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]",
+   "taken": "G.state !== 'title' && document.pointerLockElement === N.renderer.domElement",
+   "retries": 5,
+   "every": 4000
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'watcher' && G.scenes.beat === 'street' && !(G.hud.cardT > 0.1)",
+   "timeout": 20000
+  },
+  {
+   "eval": "(['vault','slide','shoulder','jump','slideDown'].forEach((k) => (G.hud.kit.taught()[k] = true)), 1)"
+  },
+  {
+   "drive": "tools/lib/c6_chase.mjs",
+   "profile": "good",
+   "miss": [
+    "archGate"
+   ],
+   "over": "roofs",
+   "stop": "G.scenes.beat === 'market' || (G.counters.fails || 0) >= 1",
+   "timeout": 60000
+  },
+  {
+   "eval": "JSON.stringify({ reached: G.scenes.beat, fails: G.counters.fails || 0, met: (G.scenes.ctx.flags.chase.met || []).map((m) => m[0] + ':' + m[1]) })"
+  },
+  {
+   "expect": "!(G.counters.fails > 0)",
+   "label": "street: archGate missed once - not lost"
+  },
+  {
+   "name": "market: marketCrates missed, the rest clean"
+  },
+  {
+   "eval": "(localStorage.removeItem('noir.save'), location.search = '?mute=1&start=watcher.market', 1)"
+  },
+  {
+   "wait": 2500
+  },
+  {
+   "until": "G.state === 'title' && !!document.querySelector('#title .opt[data-k=begin]')",
+   "timeout": 40000
+  },
+  {
+   "wait": 1200
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]",
+   "taken": "G.state !== 'title' && document.pointerLockElement === N.renderer.domElement",
+   "retries": 5,
+   "every": 4000
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'watcher' && G.scenes.beat === 'market' && !(G.hud.cardT > 0.1)",
+   "timeout": 20000
+  },
+  {
+   "eval": "(['vault','slide','shoulder','jump','slideDown'].forEach((k) => (G.hud.kit.taught()[k] = true)), 1)"
+  },
+  {
+   "drive": "tools/lib/c6_chase.mjs",
+   "profile": "good",
+   "miss": [
+    "marketCrates"
+   ],
+   "over": "roofs",
+   "stop": "G.scenes.beat === 'car' || (G.counters.fails || 0) >= 1",
+   "timeout": 60000
+  },
+  {
+   "eval": "JSON.stringify({ reached: G.scenes.beat, fails: G.counters.fails || 0, met: (G.scenes.ctx.flags.chase.met || []).map((m) => m[0] + ':' + m[1]) })"
+  },
+  {
+   "expect": "!(G.counters.fails > 0)",
+   "label": "market: marketCrates missed once - not lost"
+  }
+ ]
+}

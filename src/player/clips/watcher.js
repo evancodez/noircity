@@ -87,4 +87,6 @@ export const CLIPS = {
   carDoor: { duration: 0.6, hold: true, blend: 0.08, marks: { grip: 0.35, pull: 0.5 }, keys: { R: [[0, 'downR'], [0.35, 'doorLiveR', 'out'], [0.6, 'doorLiveR']] } },
   partSlats: { duration: 0.5, hold: true, blend: 0.1, marks: { touch: 0.3 }, keys: { R: [[0, 'downR'], [0.3, 'slatLiveR', 'out'], [0.5, 'slatLiveR']] } },
   releaseSlats: { duration: 0.4, blend: 0.05, marks: {}, keys: { R: [[0, 'slatLiveR'], [0.4, 'downR', 'in']] } },
+  // [C6] the hand comes off my car's door as it swings open (it rides the handle a moment)
+  releaseDoor: { duration: 0.35, blend: 0.05, marks: {}, keys: { R: [[0, 'doorLiveR'], [0.35, 'downR', 'in']] } },
 };
