@@ -1,0 +1,149 @@
+{
+ "about": "[C6 3rd] Small moves by real input for the critic's findings a whole run does not reach: SPACE at the moment of a hit (10), the yard's door met beside its frame (7), the light well from standing (9), a wall door answers (16). The cards are marked taught first (a held card would crawl time under the script). NOIR_PORT=5346 node tools/play.mjs tools/plays/watcher_moves.json",
+ "url": "/?mute=1&start=watcher.lane",
+ "size": [
+  1280,
+  800
+ ],
+ "out": "shots/c6/moves",
+ "steps": [
+  {
+   "name": "fenceImpact"
+  },
+  {
+   "until": "G.state === 'title' && !!document.querySelector('#title .opt[data-k=begin]')",
+   "timeout": 40000
+  },
+  {
+   "wait": 1200
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]",
+   "taken": "G.state !== 'title' && document.pointerLockElement === N.renderer.domElement",
+   "retries": 5,
+   "every": 4000
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'watcher' && !(G.hud.cardT > 0.1)",
+   "timeout": 30000
+  },
+  {
+   "eval": "(G.hud.kit.taught().vault = true, G.hud.kit.taught().slide = true, G.hud.kit.taught().shoulder = true, G.hud.kit.taught().jump = true, 1)"
+  },
+  {
+   "drive": "tools/lib/c6_moves.mjs",
+   "case": "fenceImpact",
+   "timeout": 40000,
+   "check": "D.ok",
+   "label": "SPACE pressed once as the body hits fence1 (in the stop) is kept: the climb comes (critic finding 10)"
+  },
+  {
+   "name": "doorBeside"
+  },
+  {
+   "eval": "(localStorage.removeItem('noir.save'), location.search = '?mute=1&start=watcher.yard&c6Lane=W', 1)"
+  },
+  {
+   "wait": 2500
+  },
+  {
+   "until": "G.state === 'title' && !!document.querySelector('#title .opt[data-k=begin]')",
+   "timeout": 40000
+  },
+  {
+   "wait": 1200
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]",
+   "taken": "G.state !== 'title' && document.pointerLockElement === N.renderer.domElement",
+   "retries": 5,
+   "every": 4000
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'watcher' && !(G.hud.cardT > 0.1)",
+   "timeout": 30000
+  },
+  {
+   "eval": "(G.hud.kit.taught().vault = true, G.hud.kit.taught().slide = true, G.hud.kit.taught().shoulder = true, G.hud.kit.taught().jump = true, 1)"
+  },
+  {
+   "drive": "tools/lib/c6_moves.mjs",
+   "case": "doorBeside",
+   "timeout": 40000,
+   "check": "D.ok",
+   "label": "against the wall a step beside the W door's frame, SPACE takes the doorway (critic finding 7)"
+  },
+  {
+   "name": "wellStand"
+  },
+  {
+   "eval": "(localStorage.removeItem('noir.save'), location.search = '?mute=1&start=watcher.over', 1)"
+  },
+  {
+   "wait": 2500
+  },
+  {
+   "until": "G.state === 'title' && !!document.querySelector('#title .opt[data-k=begin]')",
+   "timeout": 40000
+  },
+  {
+   "wait": 1200
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]",
+   "taken": "G.state !== 'title' && document.pointerLockElement === N.renderer.domElement",
+   "retries": 5,
+   "every": 4000
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'watcher' && !(G.hud.cardT > 0.1)",
+   "timeout": 30000
+  },
+  {
+   "eval": "(G.hud.kit.taught().vault = true, G.hud.kit.taught().slide = true, G.hud.kit.taught().shoulder = true, G.hud.kit.taught().jump = true, 1)"
+  },
+  {
+   "drive": "tools/lib/c6_moves.mjs",
+   "case": "wellStand",
+   "timeout": 40000,
+   "check": "D.ok",
+   "label": "no press at the light well: stopped at the parapet, SPACE is a standing leap onto R2 - no catch, no haul (critic finding 9)"
+  },
+  {
+   "name": "wallDoor"
+  },
+  {
+   "eval": "(localStorage.removeItem('noir.save'), location.search = '?mute=1&start=watcher.alley', 1)"
+  },
+  {
+   "wait": 2500
+  },
+  {
+   "until": "G.state === 'title' && !!document.querySelector('#title .opt[data-k=begin]')",
+   "timeout": 40000
+  },
+  {
+   "wait": 1200
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]",
+   "taken": "G.state !== 'title' && document.pointerLockElement === N.renderer.domElement",
+   "retries": 5,
+   "every": 4000
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'watcher' && !(G.hud.cardT > 0.1)",
+   "timeout": 30000
+  },
+  {
+   "eval": "(G.hud.kit.taught().vault = true, G.hud.kit.taught().slide = true, G.hud.kit.taught().shoulder = true, G.hud.kit.taught().jump = true, 1)"
+  },
+  {
+   "drive": "tools/lib/c6_moves.mjs",
+   "case": "wallDoor",
+   "timeout": 40000,
+   "check": "D.ok",
+   "label": "a door in the alley's wall: run into it, E - it rattles, 'Locked.' (critic finding 16)"
+  }
+ ]
+}

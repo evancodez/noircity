@@ -6,6 +6,7 @@
 // surface (not in the air, not under the ground), no fall unless the place
 // is an edge with a drop. Returns { ok, rows: [[name, ok, why]] }.
 // { "drive": "tools/lib/c6_jank.mjs", "check": "D.ok" }
+const CUT_GATE_X = 92.9;
 const PLACES = [
   // name, [x, z, yaw] (yaw 0 faces -z, PI/2 faces -x), the face: axis, value,
   // side (+1: must stay above the value, -1: below)
@@ -45,13 +46,32 @@ const PLACES = [
   ['the avenue\'s hoarding (north)', [100.0, -123.0, 0], ['z', -127.9, 1]],
   ['the alley: the steam pipe without C', [88.0, -103.0, Math.PI / 2], ['x', 82.64, 1]],
   ['the alley: the next block\'s wall', [86.0, -102.6, 0], ['z', -106.0, 1]],
+  // [C6 3rd] the new places: the delivery yard, the shut dock, the alley's
+  // barrier, the cut, the street's corner, the market's back arch, the
+  // market's west aisle, its chained gateway, a door in a wall
+  ['the delivery yard: the reels without SPACE', [89.3, -65.6, Math.PI], ['z', -63.2, -1]],
+  ['the delivery yard: the van\'s side', [88.6, -65.0, Math.PI / 2], ['x', 86.45, 1]],
+  ['the press hall: the dock\'s shutter from inside', [91.0, -78.2, -Math.PI / 2], ['x', 93.23, -1]],
+  ['the alley behind the press hall: its barrier', [77.9, -103.0, -Math.PI / 2], ['x', 80.4, -1]],
+  ['the cut: its gate pulled to', [96.4, -118.9, Math.PI / 2], ['x', CUT_GATE_X + 0.11, 1], "N.stage.part('things').get('cutGate').set('shut')"],
+  // (the low things - the barrels, the handcart, the sacks - trip a man over
+  // them by design: not in this list)
+  ['the cut: the N-S leg\'s west wall', [77.9, -112.0, Math.PI / 2], ['x', 76.2, 1]],
+  ['the cut: the pipe without C', [77.9, -115.0, Math.PI], ['z', -111.84, -1]],
+  ['Mercer St into the block at the corner', [23.6, -126.0, -Math.PI / 2], ['x', 26.0, -1]],
+  ['the market\'s gateway, chained', [19.0, -117.4, Math.PI / 2], ['x', 16.31, 1]],
+  ['the arch: its west wall', [8.5, -127.0, Math.PI / 2], ['x', 7.0, 1]],
+  ['the arch: its gate shut', [8.6, -125.0, Math.PI], ['z', -122.4, -1], "N.stage.part('things').get('archGate').set('shut')"],
+  ['the market\'s west aisle: the table without C', [3.3, -114.0, Math.PI], ['z', -110.55, -1]],
+  ['a door in the alley\'s wall', [2.6, -22.6, -Math.PI / 2], ['x', 4.85, -1]],
 ];
 export default async function drive({ js, keyDown, keyUp, sleep, log, opts }) {
   const rows = [];
-  for (const [name, [x, z, yaw], [axis, v, side]] of PLACES) {
+  for (const [name, [x, z, yaw], [axis, v, side], prep] of PLACES) {
     for (const pace of ['run', 'walk']) {
+      if (prep) await js(`(${prep}, 1)`);
       // (put down there in the run mode, facing it, still)
-      await js(`(() => { const C = N.controller; C.setPose(${x}, ${z}, ${yaw}, 0); const ctx = G.scenes.ctx; G.controller.setMode('run', { game: G, speed: 6.8, side: 2.6, things: N.stage.part('things'), onEvent: () => {} }); return 1; })()`);
+      await js(`(() => { const C = N.controller; C.setPose(${x}, ${z}, ${yaw}, 0); const ctx = G.scenes.ctx; G.controller.setMode('run', { game: G, speed: 6.75, side: 2.6, things: N.stage.part('things'), onEvent: () => {} }); return 1; })()`);
       await sleep(250);
       if (pace === 'run') { await keyDown('KeyW'); await sleep(1500); await keyUp('KeyW'); }
       else for (let i = 0; i < 6; i++) { await keyDown('KeyW'); await sleep(110); await keyUp('KeyW'); await sleep(160); }

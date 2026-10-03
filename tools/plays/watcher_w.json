@@ -1,17 +1,485 @@
 {
- "about": "[C6] The brief's watcher_w (WAVE_C §7 proof 1 in its W-held form): W held and the mouse steering, nothing else - no SPACE, no C, no E. Down the iron, up the alley: the bins he pulls down across it trip me (a second lost; the held SPACE card crawls six seconds and goes), and the first board fence in the lane stops me dead - pressed against it, W does nothing - he is away: \"He's getting away.\", then \"Lost him.\", back at the lane's start; and the same again (never a win by W alone). node tools/play.mjs tools/plays/watcher_w.json",
+ "about": "[C6] The W proof for chapter V (the brief: watcher_w): W held and the mouse steering, nothing else (never SPACE, C or E), each beat started cold (?start=watcher.<beat>): nothing goes over anything by itself, he is lost in every beat - warned first. ([C6 3rd] every beat; the critic's street hole - his car waiting at the kerb - is gone: his car's clock runs from when he is in.) NOIR_PORT=5346 node tools/play.mjs tools/plays/watcher_w.json",
  "url": "/?mute=1&start=watcher.escape",
- "size": [1280, 800],
+ "size": [
+  1280,
+  800
+ ],
  "out": "shots/c6/play_w",
  "steps": [
-  { "until": "G.state === 'title' && !!document.querySelector('#title .opt[data-k=begin]')", "timeout": 40000 },
-  { "wait": 1200 },
-  { "clickOn": "#title .opt[data-k=begin]", "taken": "G.state !== 'title' && document.pointerLockElement === N.renderer.domElement", "retries": 5, "every": 4000 },
-  { "until": "G.scenes.current && G.scenes.current.id === 'watcher' && !(G.hud.cardT > 0.1)", "timeout": 20000 },
-  { "drive": "tools/lib/c6_chase.mjs", "profile": "w", "stop": "(G.counters.fails || 0) >= 2 && !G.failing", "timeout": 120000, "check": "D.done && D.fails >= 2", "label": "W alone loses him twice and never gets past the first fence",
-    "shots": { "w1_fence": "N.controller.run && N.controller.run.blocked && N.controller.run.blocked.T.id === 'fence1'", "w2_warn": "!!G.hud.kit.warnText && N.controller.run && !!N.controller.run.blocked" } },
-  { "expect": "G.lastFail.why === 'Lost him.' && G.lastFail.to === 'lane' && G.lastFail.warnedFor >= 1", "label": "the second loss: in the lane, warned first, back at its start" },
-  { "expect": "JSON.stringify(G._c6lost.map((r) => r.blocked)) === JSON.stringify(['fence1', 'fence1'])", "label": "both times stopped dead at the first fence" },
-  { "eval": "JSON.stringify(G._c6lost.map((r) => ({ stretch: r.stretch, gap: r.gap, me: r.me, blocked: r.blocked, met: r.met })))" }
+  {
+   "name": "escape: W held, the mouse steering, nothing else"
+  },
+  {
+   "until": "G.state === 'title' && !!document.querySelector('#title .opt[data-k=begin]')",
+   "timeout": 40000
+  },
+  {
+   "wait": 1200
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]",
+   "taken": "G.state !== 'title' && document.pointerLockElement === N.renderer.domElement",
+   "retries": 5,
+   "every": 4000
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'watcher' && G.scenes.beat === 'escape' && !(G.hud.cardT > 0.1)",
+   "timeout": 20000
+  },
+  {
+   "drive": "tools/lib/c6_chase.mjs",
+   "profile": "w",
+   "over": "roofs",
+   "stop": "(G.counters.fails || 0) >= 1 || (G.scenes.current && G.scenes.current.id === 'tail')",
+   "timeout": 70000
+  },
+  {
+   "eval": "JSON.stringify({ beat: G.scenes.beat, fails: G.counters.fails || 0, why: G.lastFail && G.lastFail.why, to: G.lastFail && G.lastFail.to, warnedFor: G.lastFail && G.lastFail.warnedFor, lost: (G._c6lost || []).map((r) => [r.stretch, r.gap, r.blocked || r.act]) })"
+  },
+  {
+   "expect": "(G.counters.fails || 0) >= 1 && G.lastFail.why === 'Lost him.' && G.lastFail.warnedFor >= 1",
+   "label": "escape: W only - lost, warned first"
+  },
+  {
+   "name": "alley: W held, the mouse steering, nothing else"
+  },
+  {
+   "eval": "(localStorage.removeItem('noir.save'), location.search = '?mute=1&start=watcher.alley', 1)"
+  },
+  {
+   "wait": 2500
+  },
+  {
+   "until": "G.state === 'title' && !!document.querySelector('#title .opt[data-k=begin]')",
+   "timeout": 40000
+  },
+  {
+   "wait": 1200
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]",
+   "taken": "G.state !== 'title' && document.pointerLockElement === N.renderer.domElement",
+   "retries": 5,
+   "every": 4000
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'watcher' && G.scenes.beat === 'alley' && !(G.hud.cardT > 0.1)",
+   "timeout": 20000
+  },
+  {
+   "drive": "tools/lib/c6_chase.mjs",
+   "profile": "w",
+   "over": "roofs",
+   "stop": "(G.counters.fails || 0) >= 1 || (G.scenes.current && G.scenes.current.id === 'tail')",
+   "timeout": 70000
+  },
+  {
+   "eval": "JSON.stringify({ beat: G.scenes.beat, fails: G.counters.fails || 0, why: G.lastFail && G.lastFail.why, to: G.lastFail && G.lastFail.to, warnedFor: G.lastFail && G.lastFail.warnedFor, lost: (G._c6lost || []).map((r) => [r.stretch, r.gap, r.blocked || r.act]) })"
+  },
+  {
+   "expect": "(G.counters.fails || 0) >= 1 && G.lastFail.why === 'Lost him.' && G.lastFail.warnedFor >= 1",
+   "label": "alley: W only - lost, warned first"
+  },
+  {
+   "name": "lane: W held, the mouse steering, nothing else"
+  },
+  {
+   "eval": "(localStorage.removeItem('noir.save'), location.search = '?mute=1&start=watcher.lane', 1)"
+  },
+  {
+   "wait": 2500
+  },
+  {
+   "until": "G.state === 'title' && !!document.querySelector('#title .opt[data-k=begin]')",
+   "timeout": 40000
+  },
+  {
+   "wait": 1200
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]",
+   "taken": "G.state !== 'title' && document.pointerLockElement === N.renderer.domElement",
+   "retries": 5,
+   "every": 4000
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'watcher' && G.scenes.beat === 'lane' && !(G.hud.cardT > 0.1)",
+   "timeout": 20000
+  },
+  {
+   "drive": "tools/lib/c6_chase.mjs",
+   "profile": "w",
+   "over": "roofs",
+   "stop": "(G.counters.fails || 0) >= 1 || (G.scenes.current && G.scenes.current.id === 'tail')",
+   "timeout": 70000
+  },
+  {
+   "eval": "JSON.stringify({ beat: G.scenes.beat, fails: G.counters.fails || 0, why: G.lastFail && G.lastFail.why, to: G.lastFail && G.lastFail.to, warnedFor: G.lastFail && G.lastFail.warnedFor, lost: (G._c6lost || []).map((r) => [r.stretch, r.gap, r.blocked || r.act]) })"
+  },
+  {
+   "expect": "(G.counters.fails || 0) >= 1 && G.lastFail.why === 'Lost him.' && G.lastFail.warnedFor >= 1",
+   "label": "lane: W only - lost, warned first"
+  },
+  {
+   "name": "yard: W held, the mouse steering, nothing else"
+  },
+  {
+   "eval": "(localStorage.removeItem('noir.save'), location.search = '?mute=1&start=watcher.yard', 1)"
+  },
+  {
+   "wait": 2500
+  },
+  {
+   "until": "G.state === 'title' && !!document.querySelector('#title .opt[data-k=begin]')",
+   "timeout": 40000
+  },
+  {
+   "wait": 1200
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]",
+   "taken": "G.state !== 'title' && document.pointerLockElement === N.renderer.domElement",
+   "retries": 5,
+   "every": 4000
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'watcher' && G.scenes.beat === 'yard' && !(G.hud.cardT > 0.1)",
+   "timeout": 20000
+  },
+  {
+   "drive": "tools/lib/c6_chase.mjs",
+   "profile": "w",
+   "over": "roofs",
+   "stop": "(G.counters.fails || 0) >= 1 || (G.scenes.current && G.scenes.current.id === 'tail')",
+   "timeout": 70000
+  },
+  {
+   "eval": "JSON.stringify({ beat: G.scenes.beat, fails: G.counters.fails || 0, why: G.lastFail && G.lastFail.why, to: G.lastFail && G.lastFail.to, warnedFor: G.lastFail && G.lastFail.warnedFor, lost: (G._c6lost || []).map((r) => [r.stretch, r.gap, r.blocked || r.act]) })"
+  },
+  {
+   "expect": "(G.counters.fails || 0) >= 1 && G.lastFail.why === 'Lost him.' && G.lastFail.warnedFor >= 1",
+   "label": "yard: W only - lost, warned first"
+  },
+  {
+   "name": "kitchen: W held, the mouse steering, nothing else"
+  },
+  {
+   "eval": "(localStorage.removeItem('noir.save'), location.search = '?mute=1&start=watcher.kitchen', 1)"
+  },
+  {
+   "wait": 2500
+  },
+  {
+   "until": "G.state === 'title' && !!document.querySelector('#title .opt[data-k=begin]')",
+   "timeout": 40000
+  },
+  {
+   "wait": 1200
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]",
+   "taken": "G.state !== 'title' && document.pointerLockElement === N.renderer.domElement",
+   "retries": 5,
+   "every": 4000
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'watcher' && G.scenes.beat === 'kitchen' && !(G.hud.cardT > 0.1)",
+   "timeout": 20000
+  },
+  {
+   "drive": "tools/lib/c6_chase.mjs",
+   "profile": "w",
+   "over": "roofs",
+   "stop": "(G.counters.fails || 0) >= 1 || (G.scenes.current && G.scenes.current.id === 'tail')",
+   "timeout": 70000
+  },
+  {
+   "eval": "JSON.stringify({ beat: G.scenes.beat, fails: G.counters.fails || 0, why: G.lastFail && G.lastFail.why, to: G.lastFail && G.lastFail.to, warnedFor: G.lastFail && G.lastFail.warnedFor, lost: (G._c6lost || []).map((r) => [r.stretch, r.gap, r.blocked || r.act]) })"
+  },
+  {
+   "expect": "(G.counters.fails || 0) >= 1 && G.lastFail.why === 'Lost him.' && G.lastFail.warnedFor >= 1",
+   "label": "kitchen: W only - lost, warned first"
+  },
+  {
+   "name": "press: W held, the mouse steering, nothing else"
+  },
+  {
+   "eval": "(localStorage.removeItem('noir.save'), location.search = '?mute=1&start=watcher.press', 1)"
+  },
+  {
+   "wait": 2500
+  },
+  {
+   "until": "G.state === 'title' && !!document.querySelector('#title .opt[data-k=begin]')",
+   "timeout": 40000
+  },
+  {
+   "wait": 1200
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]",
+   "taken": "G.state !== 'title' && document.pointerLockElement === N.renderer.domElement",
+   "retries": 5,
+   "every": 4000
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'watcher' && G.scenes.beat === 'press' && !(G.hud.cardT > 0.1)",
+   "timeout": 20000
+  },
+  {
+   "drive": "tools/lib/c6_chase.mjs",
+   "profile": "w",
+   "over": "roofs",
+   "stop": "(G.counters.fails || 0) >= 1 || (G.scenes.current && G.scenes.current.id === 'tail')",
+   "timeout": 70000
+  },
+  {
+   "eval": "JSON.stringify({ beat: G.scenes.beat, fails: G.counters.fails || 0, why: G.lastFail && G.lastFail.why, to: G.lastFail && G.lastFail.to, warnedFor: G.lastFail && G.lastFail.warnedFor, lost: (G._c6lost || []).map((r) => [r.stretch, r.gap, r.blocked || r.act]) })"
+  },
+  {
+   "expect": "(G.counters.fails || 0) >= 1 && G.lastFail.why === 'Lost him.' && G.lastFail.warnedFor >= 1",
+   "label": "press: W only - lost, warned first"
+  },
+  {
+   "name": "el: W held, the mouse steering, nothing else"
+  },
+  {
+   "eval": "(localStorage.removeItem('noir.save'), location.search = '?mute=1&start=watcher.el', 1)"
+  },
+  {
+   "wait": 2500
+  },
+  {
+   "until": "G.state === 'title' && !!document.querySelector('#title .opt[data-k=begin]')",
+   "timeout": 40000
+  },
+  {
+   "wait": 1200
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]",
+   "taken": "G.state !== 'title' && document.pointerLockElement === N.renderer.domElement",
+   "retries": 5,
+   "every": 4000
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'watcher' && G.scenes.beat === 'el' && !(G.hud.cardT > 0.1)",
+   "timeout": 20000
+  },
+  {
+   "drive": "tools/lib/c6_chase.mjs",
+   "profile": "w",
+   "over": "roofs",
+   "stop": "(G.counters.fails || 0) >= 1 || (G.scenes.current && G.scenes.current.id === 'tail')",
+   "timeout": 70000
+  },
+  {
+   "eval": "JSON.stringify({ beat: G.scenes.beat, fails: G.counters.fails || 0, why: G.lastFail && G.lastFail.why, to: G.lastFail && G.lastFail.to, warnedFor: G.lastFail && G.lastFail.warnedFor, lost: (G._c6lost || []).map((r) => [r.stretch, r.gap, r.blocked || r.act]) })"
+  },
+  {
+   "expect": "(G.counters.fails || 0) >= 1 && G.lastFail.why === 'Lost him.' && G.lastFail.warnedFor >= 1",
+   "label": "el: W only - lost, warned first"
+  },
+  {
+   "name": "cut: W held, the mouse steering, nothing else"
+  },
+  {
+   "eval": "(localStorage.removeItem('noir.save'), location.search = '?mute=1&start=watcher.cut', 1)"
+  },
+  {
+   "wait": 2500
+  },
+  {
+   "until": "G.state === 'title' && !!document.querySelector('#title .opt[data-k=begin]')",
+   "timeout": 40000
+  },
+  {
+   "wait": 1200
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]",
+   "taken": "G.state !== 'title' && document.pointerLockElement === N.renderer.domElement",
+   "retries": 5,
+   "every": 4000
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'watcher' && G.scenes.beat === 'cut' && !(G.hud.cardT > 0.1)",
+   "timeout": 20000
+  },
+  {
+   "drive": "tools/lib/c6_chase.mjs",
+   "profile": "w",
+   "over": "roofs",
+   "stop": "(G.counters.fails || 0) >= 1 || (G.scenes.current && G.scenes.current.id === 'tail')",
+   "timeout": 70000
+  },
+  {
+   "eval": "JSON.stringify({ beat: G.scenes.beat, fails: G.counters.fails || 0, why: G.lastFail && G.lastFail.why, to: G.lastFail && G.lastFail.to, warnedFor: G.lastFail && G.lastFail.warnedFor, lost: (G._c6lost || []).map((r) => [r.stretch, r.gap, r.blocked || r.act]) })"
+  },
+  {
+   "expect": "(G.counters.fails || 0) >= 1 && G.lastFail.why === 'Lost him.' && G.lastFail.warnedFor >= 1",
+   "label": "cut: W only - lost, warned first"
+  },
+  {
+   "name": "over: W held, the mouse steering, nothing else"
+  },
+  {
+   "eval": "(localStorage.removeItem('noir.save'), location.search = '?mute=1&start=watcher.over', 1)"
+  },
+  {
+   "wait": 2500
+  },
+  {
+   "until": "G.state === 'title' && !!document.querySelector('#title .opt[data-k=begin]')",
+   "timeout": 40000
+  },
+  {
+   "wait": 1200
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]",
+   "taken": "G.state !== 'title' && document.pointerLockElement === N.renderer.domElement",
+   "retries": 5,
+   "every": 4000
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'watcher' && G.scenes.beat === 'over' && !(G.hud.cardT > 0.1)",
+   "timeout": 20000
+  },
+  {
+   "drive": "tools/lib/c6_chase.mjs",
+   "profile": "w",
+   "over": "roofs",
+   "stop": "(G.counters.fails || 0) >= 1 || (G.scenes.current && G.scenes.current.id === 'tail')",
+   "timeout": 70000
+  },
+  {
+   "eval": "JSON.stringify({ beat: G.scenes.beat, fails: G.counters.fails || 0, why: G.lastFail && G.lastFail.why, to: G.lastFail && G.lastFail.to, warnedFor: G.lastFail && G.lastFail.warnedFor, lost: (G._c6lost || []).map((r) => [r.stretch, r.gap, r.blocked || r.act]) })"
+  },
+  {
+   "expect": "(G.counters.fails || 0) >= 1 && G.lastFail.why === 'Lost him.' && G.lastFail.warnedFor >= 1",
+   "label": "over: W only - lost, warned first"
+  },
+  {
+   "name": "street: W held, the mouse steering, nothing else"
+  },
+  {
+   "eval": "(localStorage.removeItem('noir.save'), location.search = '?mute=1&start=watcher.street', 1)"
+  },
+  {
+   "wait": 2500
+  },
+  {
+   "until": "G.state === 'title' && !!document.querySelector('#title .opt[data-k=begin]')",
+   "timeout": 40000
+  },
+  {
+   "wait": 1200
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]",
+   "taken": "G.state !== 'title' && document.pointerLockElement === N.renderer.domElement",
+   "retries": 5,
+   "every": 4000
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'watcher' && G.scenes.beat === 'street' && !(G.hud.cardT > 0.1)",
+   "timeout": 20000
+  },
+  {
+   "drive": "tools/lib/c6_chase.mjs",
+   "profile": "w",
+   "over": "roofs",
+   "stop": "(G.counters.fails || 0) >= 1 || (G.scenes.current && G.scenes.current.id === 'tail')",
+   "timeout": 70000
+  },
+  {
+   "eval": "JSON.stringify({ beat: G.scenes.beat, fails: G.counters.fails || 0, why: G.lastFail && G.lastFail.why, to: G.lastFail && G.lastFail.to, warnedFor: G.lastFail && G.lastFail.warnedFor, lost: (G._c6lost || []).map((r) => [r.stretch, r.gap, r.blocked || r.act]) })"
+  },
+  {
+   "expect": "(G.counters.fails || 0) >= 1 && G.lastFail.why === 'Lost him.' && G.lastFail.warnedFor >= 1",
+   "label": "street: W only - lost, warned first"
+  },
+  {
+   "name": "market: W held, the mouse steering, nothing else"
+  },
+  {
+   "eval": "(localStorage.removeItem('noir.save'), location.search = '?mute=1&start=watcher.market', 1)"
+  },
+  {
+   "wait": 2500
+  },
+  {
+   "until": "G.state === 'title' && !!document.querySelector('#title .opt[data-k=begin]')",
+   "timeout": 40000
+  },
+  {
+   "wait": 1200
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]",
+   "taken": "G.state !== 'title' && document.pointerLockElement === N.renderer.domElement",
+   "retries": 5,
+   "every": 4000
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'watcher' && G.scenes.beat === 'market' && !(G.hud.cardT > 0.1)",
+   "timeout": 20000
+  },
+  {
+   "drive": "tools/lib/c6_chase.mjs",
+   "profile": "w",
+   "over": "roofs",
+   "stop": "(G.counters.fails || 0) >= 1 || (G.scenes.current && G.scenes.current.id === 'tail')",
+   "timeout": 70000
+  },
+  {
+   "eval": "JSON.stringify({ beat: G.scenes.beat, fails: G.counters.fails || 0, why: G.lastFail && G.lastFail.why, to: G.lastFail && G.lastFail.to, warnedFor: G.lastFail && G.lastFail.warnedFor, lost: (G._c6lost || []).map((r) => [r.stretch, r.gap, r.blocked || r.act]) })"
+  },
+  {
+   "expect": "(G.counters.fails || 0) >= 1 && G.lastFail.why === 'Lost him.' && G.lastFail.warnedFor >= 1",
+   "label": "market: W only - lost, warned first"
+  },
+  {
+   "name": "car: W held, the mouse steering, nothing else"
+  },
+  {
+   "eval": "(localStorage.removeItem('noir.save'), location.search = '?mute=1&start=watcher.car', 1)"
+  },
+  {
+   "wait": 2500
+  },
+  {
+   "until": "G.state === 'title' && !!document.querySelector('#title .opt[data-k=begin]')",
+   "timeout": 40000
+  },
+  {
+   "wait": 1200
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]",
+   "taken": "G.state !== 'title' && document.pointerLockElement === N.renderer.domElement",
+   "retries": 5,
+   "every": 4000
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'watcher' && G.scenes.beat === 'car' && !(G.hud.cardT > 0.1)",
+   "timeout": 20000
+  },
+  {
+   "drive": "tools/lib/c6_chase.mjs",
+   "profile": "w",
+   "over": "roofs",
+   "stop": "(G.counters.fails || 0) >= 1 || (G.scenes.current && G.scenes.current.id === 'tail')",
+   "timeout": 70000
+  },
+  {
+   "eval": "JSON.stringify({ beat: G.scenes.beat, fails: G.counters.fails || 0, why: G.lastFail && G.lastFail.why, to: G.lastFail && G.lastFail.to, warnedFor: G.lastFail && G.lastFail.warnedFor, lost: (G._c6lost || []).map((r) => [r.stretch, r.gap, r.blocked || r.act]) })"
+  },
+  {
+   "expect": "(G.counters.fails || 0) >= 1 && G.lastFail.why === 'Lost him.' && G.lastFail.warnedFor >= 1",
+   "label": "car: W only - lost, warned first"
+  }
  ]
 }
