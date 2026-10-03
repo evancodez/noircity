@@ -199,7 +199,12 @@ export function everyStep(ctx, dt) {
   const front = S.part('dinerFront'), D = DINER;
   for (const h of S.hoods.list) {
     if (!h.alive) continue;
-    if (Math.abs(h.pos.z - (D.door.hingeZ + D.door.w / 2)) < 1.2 && h.pos.x < -8.6 && h.pos.x > -12.5 && !front.door.barred) front.door.open();
+    if (Math.abs(h.pos.z - (D.door.hingeZ + D.door.w / 2)) < 1.2 && h.pos.x < -8.6 && h.pos.x > -12.5 && !front.door.barred) {
+      // [C8] (a man of theirs at the door, coming in: the bell, and the line
+      // that says it - the door is behind a man at the windows)
+      if (front.door.angle < 0.05 && h.pos.x > DINER.faceX - 0.2 && R.gunTaken) { R.doorIn = { h, t: G.time }; if (ctx.hud.say && !h.c8dot) ctx.hud.say('Dot: The door!', 1.4); }
+      front.door.open();
+    }
   }
   // [R2-F] a man who falls back with a car, a door or a wall at his back
   // goes down forward instead (never back through the car he stood by)

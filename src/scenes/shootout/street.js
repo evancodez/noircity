@@ -87,11 +87,10 @@ export const UNDER_EL = [
   { at: { x: 18.2, z: -16.5 }, steps: [{ x: 15.4, z: -14.6, run: true }, { x: 12.0, z: -12.6, run: true }], kind: 'pistol', wait: 1.6 },
   { at: { x: 18.1, z: 4.5 }, steps: [{ x: 15.6, z: 3.2, run: true }, { x: 14.0, z: 0.4, run: true }], kind: 'tommy', wait: 3.2 },
 ];
-// and from the other side: two down the north pavement, round the corner of
+// and from the other side: one down the north pavement, round the corner of
 // the block where the roadworks close it, for the door
 export const NORTH = [
   { at: { x: -8.2, z: 27.0 }, steps: [{ x: -8.4, z: 16.0, run: true }, { x: -8.6, z: 9.5, run: true }], kind: 'pistol', wait: 0.5 },
-  { at: { x: -7.6, z: 27.5 }, steps: [{ x: -7.4, z: 18.5, run: true }, { x: -6.6, z: 12.4, run: true }], kind: 'pistol', wait: 1.6 },
 ];
 // the man for Dot: out of the alley's mouth, round the corner, up the
 // pavement under the windows to the door, in, and on to her
@@ -122,11 +121,11 @@ export function beginFight(ctx, beat, { maxFiring = 2, flankAfter = 13, settleK 
   const f = Math.min(3, G.fails(beat));
   settleK += 0.22 * f;
   dmgK *= 1 - 0.1 * f;
-  // (and after one fall one goes round later, from the second fall nobody
-  // goes round and one fewer fires at once: the clumsy first hand died in
+  // (and after a fall nobody is sent round, from the second one fewer fires
+  // at once: the clumsy first hand died in
   // the street to the flank and to three guns at once, try after try)
   if (f >= 2) maxFiring = Math.max(1, maxFiring - 1);
-  if (flankAfter > 0) flankAfter = f >= 2 ? 0 : flankAfter + 4 * f;
+  if (f >= 1) flankAfter = 0;
   widen(G, () => K.begin({ to: beat, maxFiring, flankAfter, settleK, dmgK, area: AREA, why: WHY, warn: WARN }));
   // [C8] the room dark: from the street they cannot find me in it until I
   // fire (the gun's flash: 2.5 s), or I stand in a car's lamps

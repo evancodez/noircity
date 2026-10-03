@@ -172,6 +172,8 @@ export default defineScene({
     ctx.onStep(() => {
       const RR = rig();
       if (!RR || G.failing) return;
+      // (one of theirs in at the door behind me: the bell, and this)
+      if (!RR.warn && RR.doorIn && RR.doorIn.h.alive && G.time - RR.doorIn.t < 2.4) RR.warn = 'The door! Behind you!';
       if (RR.warn) ctx.hud.warn(RR.warn);
       else if (K.active && FIGHTS.includes(ctx.beat) && !RR.won) ctx.hud.warn(K.warning());
       RR.warn = null;
@@ -574,6 +576,8 @@ function* fightTo(ctx, done, { lines = true } = {}) {
 function* carsBeat(ctx) {
   const G = ctx.game, R = rig(), K = gunsOf(G);
   if (G.fails('cars') === 2) K.teach('crouch', { again: true }); else K.teach('crouch');
+  // (down once here: Dot says what the street gives - the car they hide behind)
+  if (G.fails('cars') >= 1) R.ticks.push(((t0) => (dt) => { if ((t0 -= dt) > 0) return true; ctx.hud.say('Dot: Their tank! The back of the car!', 2.6); return false; })(14));
   const dot = ctx.cast.get('dot');
   if (dot) dot.setState('duck', 0.2);
   let stopped = 0, rose = false;
