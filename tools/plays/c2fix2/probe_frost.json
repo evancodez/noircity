@@ -1,0 +1,13 @@
+{
+  "about": "C2 probe (minor 9): the pin - is the Tommy gunner at B2's jamb drawn on the partition's frosted panes? Each pane's frame, its figures, the shader's front/gap tests for each.",
+  "url": "/?mute=1&start=guns.pin",
+  "size": [1440, 900],
+  "out": "shots/c2fix2/probe_frost",
+  "steps": [
+    { "wait": 2500 },
+    { "clickOn": "#title .opt[data-k=begin]", "taken": "G.state === 'playing' && G.scenes.beat === 'pin'", "retries": 3 },
+    { "until": "[...G.ais.values()].some((a) => a.brain.kind === 'tommy' && (a.brain.S.state === 'aim' || a.brain.S.state === 'out' || a.brain.S.state === 'hold'))", "timeout": 20000 },
+    { "eval": "(() => { const H = G.stage.part('house'); const t = [...G.ais].find(([h, a]) => a.brain.kind === 'tommy')[0]; const ch = t.bones.chest.getWorldPosition(new N.THREE.Vector3()); return { tommy: [t.pos.x, t.pos.z].map((v) => +v.toFixed(2)), eye: [G.eye.x, G.eye.z].map((v) => +v.toFixed(2)), panes: H.frosted.map((f) => { const U = f.frost.userData.U; const n = U.uN.value, c = U.uC.value, src = U.uSrc.value; return { c: [c.x, c.z].map((v) => +v.toFixed(2)), n: [n.x, n.z].map((v) => +v.toFixed(2)), src: [src.x, src.z].map((v) => +v.toFixed(2)), nfig: f.frost.userData.figures.length, fk: Array.from(U.uFK.value).map((v) => +v.toFixed(2)), front: +((ch.x - src.x) * n.x + (ch.z - src.z) * n.z).toFixed(2), gap: +((c.x - ch.x) * n.x + (c.z - ch.z) * n.z).toFixed(2), door: !!f.door }; }) }; })()" },
+    { "shot": "pin_frost" }
+  ]
+}

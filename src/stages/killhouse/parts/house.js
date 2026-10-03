@@ -346,6 +346,7 @@ export default {
         fr.userData.setLamp(f.door ? (side > 0 ? api.lights.lobby.head : api.lights.corr.head) : lamp.head, 1);
         const L2 = fr.userData.figures;
         L2.length = 0;
+        let near = null, nearA = 0;
         for (const h of men) {
           if (L2.length >= 3) break;
           const d = (h.pos.x - c.x) * nn.x + (h.pos.z - c.z) * nn.z;
@@ -355,6 +356,19 @@ export default {
           if (Math.abs(along) > 2.2) continue;
           if (!h._c2j) h._c2j = hoodJoints(h);
           L2.push({ k: h.alive ? 1 : Math.max(0, 1 - (h._deathT ?? 0) / 0.7), joints: h._c2j });
+          if (!near || Math.abs(d) < near) { near = Math.abs(d); nearA = along; }
+        }
+        // [C2] after the critic's second look (the Tommy gunner at B2's jamb
+        // was a hand and a gun, the panes white): the light that throws his
+        // shadow is behind him, not behind the pane's middle - from there a man
+        // 0.6 m off the glass was thrown a metre sideways, off the pane into the
+        // doorway's gap. The source straight behind the nearest man, as far
+        // back as the lobby's lamps (2.4 m): his shape on the glass where he stands
+        if (near != null && fr.userData.U) {
+          const U2 = fr.userData.U;
+          U2.uSrcD.value = 2.4;
+          U2.uSrc.value.copy(c).addScaledVector(u, nearA).addScaledVector(nn, -side * 2.4);
+          U2.uSrc.value.y = 1.55;
         }
         fr.userData.update();
       }
