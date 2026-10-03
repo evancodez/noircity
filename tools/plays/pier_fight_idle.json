@@ -1,0 +1,15 @@
+{
+ "about": "[C7] proof 1 of WAVE_C §7 for VII's fist fight (?start=warehouse.fight): hands off. The foreman's hook takes the revolver, fists, and he puts me down, and down again - never a win; each time the warning up a second or more before. The brawl's own rule (FIGHT.md). tools/lib/fight_bot.mjs 'idle'. node tools/play.mjs tools/plays/pier_fight_idle.json",
+ "url": "/?mute=1&start=warehouse.fight",
+ "size": [1280, 800],
+ "out": "shots/play/pier_fight_idle",
+ "steps": [
+  { "until": "G.state === 'title' && !document.getElementById('title').classList.contains('hidden')", "timeout": 30000 },
+  { "wait": 1500 },
+  { "clickOn": "#title .opt[data-k=begin]", "taken": "G.state !== 'title'", "retries": 5, "every": 4000 },
+  { "until": "G.scenes.current && G.scenes.current.id === 'warehouse' && G.brawl.active", "timeout": 60000 },
+  { "until": "!!G.hud.kit.warnText", "timeout": 120000 },
+  { "shot": "fi00_warned" },
+  { "drive": "tools/lib/fight_bot.mjs", "profile": "idle", "stop": "G.brawl.stats.downs >= 3", "timeout": 240000, "check": "D.fights.length === 1 && !D.fights[0].won && D.fights[0].downs >= 3 && D.fights[0].warned.length >= 3 && D.fights[0].warned.every((w) => w != null && w >= 1.0)", "label": "hands off: down three times, never a win, warned a second or more each time" }
+ ]
+}

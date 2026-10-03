@@ -32,7 +32,8 @@ export const HUNTERS = [
 // up to answer the telephone walks there from his round)
 export const HOODS_LOUD = {
   hood1: { route: [{ x: -11.0, z: -31.0, wait: 2.6, looks: [PI, PI / 2, 0] }, { x: -11.0, z: -16.5, wait: 2.4, looks: [PI / 2, PI] }] },
-  hood2: { route: [{ x: 8.4, z: -36.4, wait: 2.6, looks: [PI, -PI / 2, PI / 2] }, { x: 3.6, z: -36.4, wait: 2.6, looks: [PI, -PI / 2 - 0.4] }] },
+  // (the strip before the bay: he watches the floor's north end and the bay's mouth)
+  hood2: { route: [{ x: 8.4, z: -36.4, wait: 2.6, looks: [PI / 2 + 0.4, 0, PI / 2] }, { x: 3.6, z: -36.4, wait: 2.6, looks: [0.3, -0.5] }] },
 };
 
 // the hanging lamps a round can put out (the dead stay dead until the
@@ -86,10 +87,10 @@ export function onShot(ctx, L, ray) {
     if (head) m.shot();
     else { m.hurt = (m.hurt || 0) + 55; crew.alarm(m); }
   }
-  // (a shot is heard: the nearest three come to where it was fired from;
+  // (a shot is heard: the nearest two come to where it was fired from;
   // the rest stop and look)
   const from = V(o.x, 0, o.z);
-  crew.sendNearest(from, 3, 'crash', 60);
+  crew.sendNearest(from, 2, 'crash', 60);
   crew.noise(from, 30, 'step');
 }
 const _w = V(0, 0, 0);
@@ -141,6 +142,8 @@ export function sendAnswerer(ctx, L) {
   pick.ri = 0; pick.wait = 0; pick.path = null;
   pick.setMode('patrol');
   pick.answering = true;
+  // (once: back at the stairs' foot he takes up his own round again)
+  pick.routeThen = back; pick.answerN = 7;
   return pick;
 }
 
@@ -148,6 +151,7 @@ export function sendAnswerer(ctx, L) {
 export function atBay(stage, C) {
   if (stage.part('mezz').up && !(C.pos.x > 11.2 && Math.abs(C.pos.z - PIER.stairs.E.z) < 0.7)) return false;
   const onStairs = C.pos.x > 11.2 && C.pos.x < PIER.stairs.E.foot + 0.1 && Math.abs(C.pos.z - PIER.stairs.E.z) < 0.7;
-  const inBay = C.pos.x > 9.9 && C.pos.z > -41.2 && C.pos.z < -29.4 && C.groundY < 0.5;
+  // (its floor, and the back corner under the mezzanine's east end)
+  const inBay = C.pos.x > PIER.bay.x0 + 0.3 && C.pos.z > PIER.bay.z0 && C.pos.z < -29.4 && C.groundY < 0.5;
   return onStairs || inBay;
 }

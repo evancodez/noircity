@@ -1,0 +1,16 @@
+{
+ "about": "[C7] proof (WAVE_C §7) of the loud pass taken quietly (?start=warehouse.loud): into the office while the man who answers the telephone comes up the west stairs and goes down again; along the catwalk, up over the kickboards, the stairs' lamp shot out (a round spent for a pool of black); a wait while they come to the shot and give it up; down the west stairs low and east in the black under the mezzanine to the bay - never seen, the gun kit's fight never begun. node tools/play.mjs tools/plays/pier_dark.json",
+ "url": "/?mute=1&start=warehouse.loud",
+ "size": [1280, 800],
+ "out": "shots/play/pier_dark",
+ "steps": [
+  { "until": "G.state === 'title' && !document.getElementById('title').classList.contains('hidden')", "timeout": 30000 },
+  { "wait": 1500 },
+  { "clickOn": "#title .opt[data-k=begin]", "taken": "G.state !== 'title'", "retries": 5, "every": 4000 },
+  { "until": "G.scenes.current && G.scenes.current.id === 'warehouse' && G.scenes.beat === 'loud' && !G.scenes.trans", "timeout": 30000 },
+  { "drive": "tools/lib/c7_pier.mjs", "profile": "dark", "verbose": true, "timeout": 300000, "check": "D.done && D.fails === 0 && D.lamps >= 1", "label": "the bay reached in the dark, a lamp shot out, never caught" },
+  { "until": "G.scenes.beat === 'fight'", "timeout": 3000 },
+  { "expect": "!G.scenes.ctx.flags.live.loud && (G.guns.events || []).filter((e) => e.what === 'hit').length === 0", "label": "never seen: the gun kit's fight never begun, no round into me" },
+  { "shot": "d01_at_the_bay" }
+ ]
+}

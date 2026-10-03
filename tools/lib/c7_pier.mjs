@@ -36,7 +36,8 @@ export default async function drive({ js, turn, keyDown, keyUp, mouse, log, slee
     const s = { done: !!(${stop}), beat: G.scenes.beat, failing: !!G.failing || !!G.scenes.trans, x: C.pos.x, z: C.pos.z, ey: e.y, yaw: C.yaw, pitch: C.pitch, sens: C.sensitivity,
       mode: C.mode, crouch: C.sneak ? !!C.sneak.crouch : (C.crouchK || 0) > 0.5, up: !!(mz && mz.up), fails: G.counters.fails || 0, why: G.lastFail ? G.lastFail.why : null,
       loud: !!(L && L.loud), alarm: L ? L.crew.alarmT >= 0 : false, ammo: Wp ? Wp.ammo : 0, reloading: !!(Wp && Wp.reloading), busy: G.player.hands.busy || !!(L && L.approach) || C.frozen,
-      prompt: G.hud.promptShown || '', men: [], hoods: [] };
+      prompt: G.hud.promptShown || '', men: [], hoods: [],
+      ans: L && L.answerer && L.answerer.name ? { up: !!L.answerer.upLvl, x: L.answerer.pos.x, z: L.answerer.pos.z, ri: L.answerer.ri, down: L.answerer.down, mode: L.answerer.mode, answering: !!L.answerer.answering } : (L && L.answerer ? { none: true } : null) };
     const d = new N.THREE.Vector3();
     if (L) for (const m of L.crew.men) {
       const c = m.eye(new N.THREE.Vector3()); c.y -= 0.35;
@@ -76,7 +77,11 @@ export default async function drive({ js, turn, keyDown, keyUp, mouse, log, slee
         if (!s) { await sleep(100); continue; }
         if (s.done || s.failing || Date.now() > T) { await setW(false); if (Date.now() > T) log(`c7 walk stuck at ${s.x.toFixed(2)},${s.z.toFixed(2)} y${s.ey.toFixed(1)} going to ${x},${z}`); return s; }
         if (Math.hypot(x - s.x, z - s.z) < 0.4) break;
-        if (halt && halt(s)) { await setW(false); await sleep(120); continue; }
+        if (halt && halt(s)) {
+          await setW(false);
+          if (opts.verbose && Date.now() - (out._hlog || 0) > 4000) { out._hlog = Date.now(); log(`c7 halt at ${s.x.toFixed(1)},${s.z.toFixed(1)} ${s.men.filter((m) => !m.down).map((m) => m.name + ':' + m.mode + '/' + m.a.toFixed(2) + '@' + m.x.toFixed(1) + ',' + m.z.toFixed(1) + ' look ' + m.look.toFixed(2)).join(' ')}`); }
+          await sleep(120); continue;
+        }
         await stepTo(s, x, z);
         await sleep(33);
       }
@@ -96,6 +101,14 @@ export default async function drive({ js, turn, keyDown, keyUp, mouse, log, slee
   const waitBack = async () => { await setW(false); for (let k = 0; k < 200; k++) { const s = await read(); if (s && !s.failing) return s; await sleep(100); } return null; };
   const noteFail = (s) => { if (s && s.fails > out.fails) { out.fails = s.fails; out.whys.push(s.why); log(`c7_pier ${prof}: fail ${s.fails} '${s.why}' at ${s.beat}`); } };
   const curious = (s) => s.men.some((m) => !m.down && (m.a > 0.18 || m.mode === 'curious'));
+  // (a man's light coming my way, near enough to reach me: hold still in the dark)
+  const beamOnMe = (s) => s.men.some((m) => {
+    if (m.down) return false;
+    const d = Math.hypot(s.x - m.x, s.z - m.z);
+    if (d > 13) return false;
+    const b = Math.atan2(s.x - m.x, s.z - m.z), off = Math.abs(Math.atan2(Math.sin(b - m.look), Math.cos(b - m.look)));
+    return off < 0.6 || (d < 6 && off < 1.2);
+  });
   // the way up to the office window: up the west stairs, along the catwalk
   const toWindow = [[-3.0, -40.25], [-9.0, -40.25], [-9.6, -41.55], [-1.0, -41.7]];
 
@@ -104,7 +117,7 @@ export default async function drive({ js, turn, keyDown, keyUp, mouse, log, slee
     let s = await read();
     if (!s) { await sleep(150); continue; }
     noteFail(s);
-    if (opts.verbose && Date.now() - (out._logT || 0) > 6000) { out._logT = Date.now(); log(`c7 ${s.beat} me ${s.x.toFixed(1)},${s.z.toFixed(1)} y${s.ey.toFixed(1)} c${+s.crouch} loud ${+s.loud} al ${+s.alarm} men ${s.men.map((m) => m.name + (m.down ? 'X' : '') + ':' + m.mode + '/' + m.a.toFixed(1) + '@' + m.x.toFixed(0) + ',' + m.z.toFixed(0) + (m.seen ? '*' : '')).join(' ')} hoods ${s.hoods.map((h) => h.x.toFixed(0) + ',' + h.z.toFixed(0) + (h.seen ? '*' : '')).join(' ')}`); }
+    if (opts.verbose && Date.now() - (out._logT || 0) > (typeof opts.verbose === "number" ? opts.verbose : 6000)) { out._logT = Date.now(); log(`c7 ${s.beat} me ${s.x.toFixed(1)},${s.z.toFixed(1)} y${s.ey.toFixed(1)} c${+s.crouch} loud ${+s.loud} al ${+s.alarm} men ${s.men.map((m) => m.name + (m.down ? 'X' : '') + ':' + m.mode + '/' + m.a.toFixed(1) + '@' + m.x.toFixed(0) + ',' + m.z.toFixed(0) + (m.seen ? '*' : '')).join(' ')} hoods ${s.hoods.map((h) => h.x.toFixed(0) + ',' + h.z.toFixed(0) + (h.seen ? '*' : '')).join(' ')}`); }
     if (s.done) { out.done = true; break; }
     if (s.failing) { await rmb(false); out._placed = false; out._stale = 0; s = await waitBack(); continue; }
 
@@ -216,32 +229,50 @@ export default async function drive({ js, turn, keyDown, keyUp, mouse, log, slee
     if (prof === 'dark') {
       if (s.beat !== 'loud') { await sleep(200); continue; }
       await crouch(s, true);
-      if (!out._shotLamp) {
-        // along the catwalk to its west end, the stairs' lamp shot out from there
-        const r = await walk([[-6.4, -41.6]], { limit: 20000 });
+      // (1) into the office while the man who answers the telephone comes up
+      // and goes down again (behind its blinds nobody sees me)
+      if (!out._hid) {
+        const r = await walk([[1.85, -41.7], [1.85, -42.95], [0.2, -43.0]], { limit: 20000 });
         if (r && r.failing) continue;
+        out._hid = true; continue;
+      }
+      if (!out._clear) {
+        const a = s.ans;
+        if (!a) { await sleep(250); continue; }
+        if (!a.none && !a.down && (a.up || a.answering)) { await sleep(300); continue; }
+        out._clear = true; await sleep(rr(600, 1200)); continue;
+      }
+      if (!out._shotLamp) {
+        // (2) along the catwalk to its west end, up over the boards, the stairs' lamp shot out
+        const r = await walk([[1.85, -42.95], [1.85, -41.7], [-6.4, -41.6]], { limit: 25000, halt: (q) => curious(q) });
+        if (r && r.failing) { out._hid = out._clear = false; continue; }
+        await rmb(true);
+        await sleep(rr(300, 450));
         const s2 = await read();
-        await sleep(rr(400, 700));
-        await face(s2, -2.4, 3.3, -37.1, 0.004);
+        await face(s2, -2.4, 3.3, -37.1, 0.003);
         await sleep(250);
         await click(); out.shots++;
-        await sleep(600);
+        await sleep(400);
+        await rmb(false);
         out.lamps = await js('G.counters.c7lamps || 0');
         out._shotLamp = true;
         out._quietSince = 0;
         continue;
       }
-      // wait while they come to the shot and give it up
+      // (3) a wait while they come to the shot and give it up
       if (!out._go) {
-        const busy = s.men.some((m) => !m.down && (m.mode === 'investigate' || m.mode === 'search' || m.mode === 'curious' || m.a > 0.1));
+        const busy = s.loud || s.men.some((m) => !m.down && (m.mode === 'investigate' || m.mode === 'search' || m.mode === 'curious' || m.a > 0.1));
         if (busy) { out._quietSince = 0; await sleep(250); continue; }
         if (!out._quietSince) out._quietSince = Date.now();
-        if (Date.now() - out._quietSince < 2500) { await sleep(250); continue; }
+        if (Date.now() - out._quietSince < 6000) { await sleep(250); continue; }
         out._go = true;
       }
+      // (4) down the west stairs, low, and east in the black under the mezzanine
+      // to the bay - when nobody is near the stairs' foot
+      if (s.up && s.men.some((m) => !m.down && (Math.hypot(m.x + 3.4, m.z + 40.2) < 11 || m.mode !== 'patrol'))) { await sleep(300); continue; }
       const r = await walk(s.up ? [[-9.6, -41.55], [-9.0, -40.25], [-3.2, -40.25], [-3.2, -43.6], [9.0, -43.6], [10.6, -41.0]] : [...(await path(-3.2, -43.6)), [9.0, -43.6], [10.6, -41.0]],
-        { halt: (q) => curious(q), limit: 90000 });
-      if (r && r.failing) { out._shotLamp = false; out._go = false; continue; }
+        { halt: (q) => curious(q) || beamOnMe(q), limit: 120000 });
+      if (r && r.failing) { out._shotLamp = false; out._go = false; out._hid = false; out._clear = false; continue; }
       await sleep(300); continue;
     }
     await sleep(200);
@@ -252,6 +283,6 @@ export default async function drive({ js, turn, keyDown, keyUp, mouse, log, slee
   out.secs = +((Date.now() - T0) / 1000).toFixed(1);
   out.takedowns = await js('G.counters.takedowns || 0');
   out.lamps = await js('G.counters.c7lamps || 0');
-  delete out._shotLamp; delete out._go; delete out._quietSince; delete out._pocket; delete out._waitT; delete out._placed; delete out._logT; delete out._miss; delete out._stale;
+  delete out._shotLamp; delete out._go; delete out._quietSince; delete out._pocket; delete out._waitT; delete out._placed; delete out._logT; delete out._miss; delete out._stale; delete out._hid; delete out._clear; delete out._hlog;
   return out;
 }

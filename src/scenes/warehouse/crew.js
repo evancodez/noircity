@@ -374,15 +374,20 @@ export class Man {
         const k = Math.min(L.length - 1, Math.floor((1 - this.wait / p.wait) * L.length));
         this.lookWant = L[k];
       } else this.sway(dt, t);
-      if (this.wait <= 0) { this.ri = (this.ri + 1) % R.length; this.path = null; }
+      if (this.wait <= 0) { this.ri = (this.ri + 1) % R.length; this.path = null; this.routeDone(); }
       return;
     }
     if (!this.path) { this.path = [V(p.x, 0, p.z)]; this.pi = 0; }
     this.sway(dt, t);
     if (this.follow(dt, this.spec.speed || TUNE.walk)) {
       this.path = null;
-      if (p.wait) this.wait = p.wait; else this.ri = (this.ri + 1) % R.length;
+      if (p.wait) this.wait = p.wait; else { this.ri = (this.ri + 1) % R.length; this.routeDone(); }
     }
+  }
+
+  // [C7] a one-off part of a round (the telephone's answerer): done, his own round again
+  routeDone() {
+    if (this.answerN && (this.ri >= this.answerN || this.ri === 0)) { this.route = this.routeThen; this.ri = 0; this.answerN = 0; this.answering = false; }
   }
 
   holdStep(dt, t) {

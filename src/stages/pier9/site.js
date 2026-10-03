@@ -44,6 +44,10 @@ export const PIER = {
     // a dark way along the back wall to the stairs' foot; 'full': every
     // cell its tiers, no gaps, under the floor's joists)
     [-8.9, -4.1, -42.4, -41.45, 2, 'full'],
+    // [C7] more of them under the office and the catwalk's east end: the
+    // back wall's dark lane runs from the west stairs to the bay (a way
+    // round in the shadow, with gaps to step out of)
+    [-1.4, 2.6, -42.4, -41.45, 2, 'full'], [3.8, 8.2, -42.4, -41.45, 2, 'full'],
   ],
   // dark pockets left in the blocks' edges (a crate not there): a place to
   // wait out of the aisles' sight lines. [x, z] of the missing crate

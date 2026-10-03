@@ -1,0 +1,14 @@
+{
+ "about": "[C7] proof 2 of WAVE_C §7 for VII's fist fight (?start=warehouse.fight): a clumsy first-timer (mashes jabs into his guard, sees the dodge cue late and goes the wrong way a third of the time, a wrong key now and then: tools/lib/fight_bot.mjs 'bad') is put down at least once, warned each time, and gets through. node tools/play.mjs tools/plays/pier_fight_bad.json",
+ "url": "/?mute=1&start=warehouse.fight",
+ "size": [1280, 800],
+ "out": "shots/play/pier_fight_bad",
+ "steps": [
+  { "until": "G.state === 'title' && !document.getElementById('title').classList.contains('hidden')", "timeout": 30000 },
+  { "wait": 1500 },
+  { "clickOn": "#title .opt[data-k=begin]", "taken": "G.state !== 'title'", "retries": 5, "every": 4000 },
+  { "until": "G.scenes.current && G.scenes.current.id === 'warehouse' && G.brawl.active", "timeout": 60000 },
+  { "drive": "tools/lib/fight_bot.mjs", "profile": "bad", "timeout": 720000, "check": "D.fights.length === 1 && D.fights[0].won && D.fights[0].downs >= 1 && D.fights[0].warned.every((w) => w != null && w >= 1.0)", "label": "the clumsy first-timer: down at least once (warned), and through" },
+  { "eval": "({ time: G.brawl.stats.time, downs: G.brawl.stats.downs, cues: G.brawl.stats.cues && [G.brawl.stats.cues.shown, G.brawl.stats.cues.right, G.brawl.stats.cues.wrong] })" }
+ ]
+}
