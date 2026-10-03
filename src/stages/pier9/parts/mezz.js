@@ -243,7 +243,7 @@ export default {
     if (oLamp.light) {
       Object.assign(oLamp.light, { intensity: 9, distance: 2.4, angle: 1.0, penumbra: 0.14 });
       oLamp.light.pos.set(0.8, oy0 + 1.12, -44.0);
-      oLamp.light.target.set(0.36, oy0 + 0.79, -43.84);
+      oLamp.light.target.set(0.16, oy0 + 0.79, -43.86);
     }
     oLamp.coneBase = 0;
     oLamp.cone.material.uniforms.uIntensity.value = 0;
