@@ -513,14 +513,18 @@ export class Chase {
 
 // where a stretch's retry puts him: `ahead` metres along his way past the
 // point of his way nearest my start
-// ([C6 3rd] the kit's mercy (seams/Z.md: game.fails(beat)): failed twice in
-// a stretch, its retry has him 2 m nearer, three times 4 m - never nearer than
-// 6 m, and he still runs his own race: an idle player loses as before)
+// ([C6 3rd] the kit's mercy (seams/Z.md: game.fails(beat)): every failure in
+// a stretch past the first brings him a fifth of its start nearer on the
+// retry - failed twice 0.8 of it, three times 0.6, four times 0.4 - down to
+// three metres, at my heels. He still runs his own race: an idle player loses
+// as before. (It stopped at 6 m after the third: the critic's clumsy hands,
+// slow off the mark after the black, were warned on the roofs' stair itself
+// and lost there six times running)
 export function hisStart(C, name, myAt, fails = 0) {
   const S = STRETCHES[name];
   const at = myAt || S.at;
   const s0 = project(C.P, at[0], at[1], 0, 1e9).s;
-  const mercy = Math.min(4, 2 * Math.max(0, fails - 1));
-  return s0 + Math.max(6, S.ahead - mercy);
+  const k = Math.max(0.25, 1 - 0.2 * Math.max(0, fails - 1));
+  return s0 + Math.max(3, S.ahead * k);
 }
 export { V, LANES, NODES, sm };
