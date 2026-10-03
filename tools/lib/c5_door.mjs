@@ -70,7 +70,7 @@ export default async function drive({ js, turn, keyDown, keyUp, mouse, shot, log
     const BEATS = ['shadows', 'flank', 'corridor'];
     return { scene: sc.current && sc.current.id, beat: sc.beat, trans: !!sc.trans, fade: sc.fadeK, failing: !!G.failing, dead: G.health.dead, hp: G.health.hp,
       x: C.pos.x, z: C.pos.z, ex: e.x, ey: e.y, ez: e.z, yaw: C.yaw, pitch: C.pitch, sens: C.sensitivity, mode: C.mode, ck: C.crouchK || 0, rk: C.riseK || 0, on: !!C.crouchOn,
-      ammo: W ? W.ammo : 0, reloading: !!(W && W.reloading), gun: G.player.weapons.current, men, spots: F ? F.spots : [], open: F ? F.open : null, won: !!(F && F.won),
+      ammo: W ? W.ammo : 0, reloading: !!(W && W.reloading), gun: G.player.weapons.current, men, spots: F ? F.spots : [], open: F ? F.open : null, won: !!(F && F.won), block: F ? F.block : null,
       flankId: K && K.flank && !K.flank.done && K.flank.ai.h.alive ? K.flank.ai.h.slot : null,
       broke: K ? K.events.filter((q) => q.what === 'break' && G.time - q.t < 1.2 && q.at && Math.hypot(q.at[0] - e.x, q.at[1] - e.z) < 2.2).length : 0, wins: (G._c2won || []).length, moment: !!(sc.ctx && sc.ctx.flags.momentT != null && sc.ctx.flags.go == null), go: !!(sc.ctx && sc.ctx.flags.go != null), fails: Object.fromEntries(BEATS.map((b) => [b, G.fails(b, 'gunfight')])), why: G.lastFail ? G.lastFail.why : null, warnedFor: G.lastFail ? G.lastFail.warnedFor : null, nFails: G.counters.fails || 0, shots: G.counters.shots, hits: G.counters.hits, warn: G.hud.warnText || null };
   })()`;
@@ -100,10 +100,37 @@ export default async function drive({ js, turn, keyDown, keyUp, mouse, shot, log
     if (mx || my) await turn(mx, my);
     return Math.hypot(ey, ep);
   };
+  // (the desk in the way - standing or on its side - is walked round, by the end nearer the goal: a
+  // person does not walk into it. s.block is its footprint; null: nothing in the way)
+  const crosses = (b, ax, az, bx, bz) => {
+    // (the segment against the box, grown by a body's width: slab test)
+    const m = 0.25, x0 = b.x0 - m, x1 = b.x1 + m, z0 = b.z0 - m, z1 = b.z1 + m;
+    // (a goal hard against it - the cover places behind it - is walked to straight)
+    if (bx > x0 && bx < x1 && bz > z0 && bz < z1) return false;
+    let t0 = 0, t1 = 1;
+    for (const [p, d, lo, hi] of [[ax, bx - ax, x0, x1], [az, bz - az, z0, z1]]) {
+      if (Math.abs(d) < 1e-9) { if (p < lo || p > hi) return false; continue; }
+      let u = (lo - p) / d, v = (hi - p) / d; if (u > v) [u, v] = [v, u];
+      t0 = Math.max(t0, u); t1 = Math.min(t1, v); if (t0 > t1) return false;
+    }
+    return true;
+  };
+  const roundBlock = (s, x, z) => {
+    const b = s.block;
+    if (!b || !crosses(b, s.x, s.z, x, z)) return null;
+    const m = 0.62, mid = (b.x0 + b.x1) / 2, past = s.z < b.z0 - 0.2 ? b.z0 - m : s.z > b.z1 + 0.2 ? b.z1 + m : null;
+    // (alongside it: first to the end nearer the goal, on my side; past an end: across that end to the goal's side)
+    const endZ = past ?? (Math.abs(z - (b.z1 + m)) + Math.abs(s.z - (b.z1 + m)) < Math.abs(z - (b.z0 - m)) + Math.abs(s.z - (b.z0 - m)) ? b.z1 + m : b.z0 - m);
+    const v = { x: (past == null ? s.x : x) < mid ? b.x0 - 0.45 : b.x1 + 0.45, z: endZ };
+    // (there already: straight on)
+    return Math.hypot(v.x - s.x, v.z - s.z) < 0.25 ? null : v;
+  };
   // walk toward (x, z) by W and the mouse; true once there
   const walkTo = async (s, x, z, tol = 0.3) => {
-    const dx = x - s.x, dz = z - s.z, d = Math.hypot(dx, dz);
-    if (d < tol) { await set('KeyW', false); return true; }
+    const dx0 = x - s.x, dz0 = z - s.z;
+    if (Math.hypot(dx0, dz0) < tol) { await set('KeyW', false); return true; }
+    const via = roundBlock(s, x, z);
+    const dx = via ? via.x - s.x : dx0, dz = via ? via.z - s.z : dz0;
     const err = await aim(s, Math.atan2(-dx, -dz), -0.05, 0.6, 0.3);
     await set('KeyW', err < 0.6);
     return false;
@@ -209,7 +236,9 @@ export default async function drive({ js, turn, keyDown, keyUp, mouse, shot, log
         if (!P.act || s.trans || s.fade > 0.5) { await sleep(120); dbg['idle'] = (dbg['idle'] || 0) + 1; continue; }
         const now = Date.now();
         // [C5] ---- the good hand tops up in a lull: low, nobody in sight, a second and a half since the last round
-        if (P.cover && !P.standReload && s.ammo > 0 && s.ammo < 5 && !s.reloading && !s.men.some((m) => m.see || m.line) && Date.now() - lastShot > 1500) {
+        // (and with nobody left on their feet - everyone down, the next not come yet - it fills the cylinder: one round gone is one)
+        const allQuiet = !s.men.some((m) => m.st !== 'wait');
+        if (P.cover && !P.standReload && s.ammo > 0 && (s.ammo < 5 || (allQuiet && s.ammo < 6)) && !s.reloading && !s.men.some((m) => m.see || m.line) && Date.now() - lastShot > 1500) {
           await set('RMB', false);
           if (s.ck < 0.5 && !s.on) await tap('KeyC');
           await tap('KeyR'); await sleep(rr(200, 350)); dbg['lullReload'] = (dbg['lullReload'] || 0) + 1; continue;

@@ -40,6 +40,7 @@ const NUM = { maxFiring: 2, settleK: 1.2, dmgK: 0.9 };
 // cart, who must win it, and the hand standing in the middle of the corridor trading, who must not: at 1.4 / 0.8
 // he won it); the heavy three of my rounds, not five: the first gunfight's heavy, met with a full cylinder)
 const NUM_CORR = { dmgK: 0.9, settleK: 1.25 };
+const HEAVY_DMGK = 0.7;
 // (the flank: a little slower to settle - they come at my side, the time to turn)
 const NUM_FLANK = { settleK: 1.35 };
 // the door's three: where they stand at the glass (corridor side), and their way in
@@ -108,7 +109,9 @@ function prepare(ctx, name, { reset = true } = {}) {
   const F = ctx.flags;
   F.men = [];
   // (the plays' record of the beat, lane C2's driver's: its cover places, where the open is, won)
-  F.c2 = { beat: name, get spots() { const t = !!O.desk.tip; return (SPOTS[name] || []).filter((sp) => sp.tipped == null || sp.tipped === t); }, open: OPENS[name] || null, won: false };
+  // (block: the desk's footprint as it stands or lies - a hand walks round it, not into it)
+  F.c2 = { beat: name, get spots() { const t = !!O.desk.tip; return (SPOTS[name] || []).filter((sp) => sp.tipped == null || sp.tipped === t); }, open: OPENS[name] || null, won: false,
+    get block() { const c = O.desk.collider; return c ? { x0: c.cx - c.hx, x1: c.cx + c.hx, z0: c.cz - c.hz, z1: c.cz + c.hz } : null; } };
   F.go = null;
   const spawn = (m, extra = {}) => { const h = K.spawn({ kind: m.kind || 'pistol', at: m.at, yaw: m.yaw ?? null, way: m.way ? { steps: m.way } : null, door: m.door || null, cover: !!m.cover, wait: m.wait ?? 0, start: m.start || null, name: m.name, hp: m.hp ?? null, ...extra }); h.c5 = m.name; F.men.push(h); return h; };
   F.spawn = spawn;
@@ -137,7 +140,9 @@ function corridorMen(ctx, spawn) {
   // (the heavy last: up the stair once the others are down - never the three at once and him)
   const others = () => (F.men || []).filter((h) => h.alive && h.c5 !== 'heavy').length;
   // (his start said: the gate below clanks, the line names him - the tell before the heavy)
-  const heavyGo = (f) => { if (F.heavyT) return true; if (!f()) return false; F.heavyT = G.time; ctx.hud.objective('One more. On the stair.'); return true; };
+  // (and his rounds a little lighter than the kit's heavy's - bursts at nine a second: a good hand at the cart
+  // who missed him once was down 2.3 s after the first round; the first gunfight's heavy is met, not a wall)
+  const heavyGo = (f) => { if (F.heavyT) return true; if (!f()) return false; F.heavyT = G.time; ctx.hud.objective('One more. On the stair.'); gunsOf(G).cfg.dmgK = HEAVY_DMGK; return true; };
   // (a breath after the last of them falls - a reload's worth - the gate below clanks open; or, the
   // corridor held to a stand-off with one of them left, he comes up anyway: nobody waits the clock out)
   spawn({ name: 'heavy', kind: 'rusher', at: { x: O.suite.flightFoot.x, z: O.suite.flightFoot.z }, yaw: -Math.PI / 2, start: () => heavyGo(() => { if (!F.liftOpen || G.time - F.liftOpen < 12) return false; if (G.time - F.liftOpen > 40 && others() <= 1) return true; if (others() > 0) { F.othersT = null; return false; } F.othersT = F.othersT || G.time; return G.time - F.othersT > 5; }), hp: 165, way: [{ door: 'GATE' }, { x: -6.4, z: -5.0 }, { door: 'STAIR' }] });
