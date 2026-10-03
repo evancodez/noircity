@@ -265,7 +265,12 @@ export class Stills {
           const k = Math.max(cw / im.width, ch / im.height), dw = im.width * k, dh = im.height * k;
           g2.fillStyle = '#050505'; g2.fillRect(0, 0, cw, ch);
           g2.drawImage(im, (cw - dw) / 2, (ch - dh) / 2, dw, dh);
-          for (const L of this.run ? this.run.landed : []) if (L.i === i && this.run.id === def.id) L.redraw && L.redraw();
+          // [C9] (the panel's own canvas drawn again at once: a picture that
+          // loaded before the panel's first frame - a quick server, a cached
+          // file - left the placeholder up for the whole panel; and a mark the
+          // plays read: the picture is the file's)
+          src._loaded = true;
+          for (const L of this.run ? this.run.landed : []) if (L.i === i && this.run.id === def.id && L.el._pic && L.el._pic._redraw) L.el._pic._redraw();
           if (this.shotRun) for (const el of this.el.querySelectorAll('.panel')) if (el._pic && el._pic._redraw) el._pic._redraw();
         };
         im.onerror = () => { /* the placeholder stays */ };
