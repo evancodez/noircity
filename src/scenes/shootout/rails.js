@@ -287,10 +287,23 @@ export class Rails {
       if (!R) continue;
       const burning = car.state === 'burning';
       if (!burning) {
-        if (R.crash && !R.crash.hit) this.stepCrash(car, dt);
-        else if (!R.done) {
+        if (R.crash && !R.crash.hit) {
+          // [C8] (into the post - but never through a car, a man or me on the way: it stops against it)
+          const gap = this.ahead(car);
+          if (gap < 0.35 && R.crash.t > 0.1) { R.crash.t = 1e9; R.crash.hit = true; R.done = true; R.stopped = true; R.v = 0; R.pitch = -0.08; R.pv = 1.6; if (R.onCrash) R.onCrash(car, car.pos.clone()); this.pose(car); }
+          else this.stepCrash(car, dt);
+        } else if (!R.done) {
           R.v = sampleV(R.plan, R.s);
-          R.s = Math.min(R.L, R.s + Math.max(0.25, R.v) * dt);
+          // [C8] cars are solid (WAVE_C §6 VIII, the user's own words: cars never
+          // pass through cars): whatever stands ahead on its way - a car, a
+          // wreck, an open door, a column, a lamp post, a man, me - it brakes for
+          // and stops short of; held up, the rail's onBlocked says so (the
+          // drive-by stops and they get out)
+          const gap = this.ahead(car);
+          const vmax = Math.sqrt(2 * 7 * Math.max(0, gap - 0.6));
+          if (vmax < R.v) { R.v = vmax; R.held = (R.held || 0) + dt; } else R.held = 0;
+          if (R.held > 1.2 && R.onBlocked && !R.blockedSaid) { R.blockedSaid = true; R.onBlocked(car); }
+          R.s = Math.min(R.L, R.s + (R.v < 0.05 ? 0 : Math.max(0.25, R.v)) * dt);
           if (R.s >= R.L - 0.02) {
             R.s = R.L; R.v = 0; R.done = true; R.stopped = true;
             if (R.onStop) R.onStop(car);
@@ -316,6 +329,34 @@ export class Rails {
       for (const f of R.riders) f(car, dt, t);
     }
     this.assignSpots();
+  }
+
+  // [C8] how far the way ahead of the car is clear (m from its nose, along
+  // its heading, the width of the car): the first thing solid - another car
+  // (its body, its open doors, a wreck), a column, a post, a hydrant, a man
+  // standing, me. Infinity when nothing within its stopping distance
+  ahead(car) {
+    const S = this.stage, G = this.game, R = car.rail, C = S.colliders;
+    const hx = Math.cos(car.yaw), hz = -Math.sin(car.yaw), px = -hz, pz = hx;
+    const look = Math.max(4, (R.v * R.v) / (2 * 7) + 3);
+    const nose = 2.5, mine = new Set([car.collider, ...(R.cols || [])]);
+    const near = (x, z, r) => Math.abs(x - car.pos.x) < look + nose + r + 3 && Math.abs(z - car.pos.z) < look + nose + r + 3;
+    const boxes = C.boxes.filter((b) => !mine.has(b) && b.tag !== 'door' && near(b.cx, b.cz, Math.max(b.hx, b.hz)));
+    const circles = C.circles.filter((c) => c.r > 0.05 && near(c.x, c.z, c.r));
+    const e = G && G.eye;
+    for (let s = 0; s <= look; s += 0.4) {
+      for (const w of [-0.92, 0, 0.92]) {
+        const x = car.pos.x + hx * (nose + s) + px * w, z = car.pos.z + hz * (nose + s) + pz * w;
+        for (const b of boxes) {
+          const dx = x - b.cx, dz = z - b.cz;
+          const lx = dx * b.c - dz * b.s, lz = dx * b.s + dz * b.c;
+          if (Math.abs(lx) < b.hx + 0.1 && Math.abs(lz) < b.hz + 0.1) { R.what = b.tag + '@' + b.cx.toFixed(1) + ',' + b.cz.toFixed(1); return s; }
+        }
+        for (const c of circles) if ((x - c.x) ** 2 + (z - c.z) ** 2 < (c.r + 0.15) ** 2) { R.what = c.tag + '@' + c.x.toFixed(1) + ',' + c.z.toFixed(1); return s; }
+        if (e && (x - e.x) ** 2 + (z - e.z) ** 2 < 0.45 * 0.45 && e.y < 3) { R.what = 'me'; return s; }
+      }
+    }
+    return Infinity;
   }
 
   // a knock on the car (a body on its roof): it bounces on its springs
