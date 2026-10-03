@@ -249,6 +249,15 @@ export default {
 
     api.update = (camera) => {
       const p = camera.position;
+      // (the el is seen only from the avenue, the alley behind the press
+      // hall and down it, the press hall (its dock door) and down Harbor
+      // Street: from the yard, the kitchen, the roofs, the row and the
+      // market, blocks of twelve metres stand in between - not drawn there)
+      // (the alley runs straight from the loading yard to the avenue: from
+      // anywhere along that line, the stair included, the el is at its end)
+      const show = (p.x > 50 && p.z < -98.5 && p.z > -107.5) || (p.x > 70 && p.z < -60 && p.z > -110) || p.x > 93 || p.z > -12;
+      if (group.visible !== show) group.visible = show;
+      if (!show) return;
       for (const s of stations) {
         const d = Math.hypot(s.mid.x - p.x, s.mid.z - p.z);
         const l = d > SHOW ? 2 : d > (s.lod ? FAR - 4 : FAR) ? 1 : 0;
