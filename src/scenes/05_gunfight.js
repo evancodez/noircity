@@ -65,8 +65,10 @@ const FLANKERS = [
 const SPOTS = {
   // (tipped: true - only with the desk over; false - only with it standing: its footprint is not a place to stand)
   shadows: [{ x: DESK.x - 0.05, z: DESK.z - 0.4, yaw: WEST, tipped: true }, { x: DESK.x - 0.05, z: DESK.z + 0.45, yaw: WEST, tipped: true }, { x: 4.85, z: 2.65, yaw: WEST, tipped: false }, { x: -0.85, z: 5.3, yaw: WEST }, { x: 0.5, z: OPEN_Z0 - 0.45, yaw: WEST + 0.3 }],
-  // (the flank from the connecting door, south-east: the tipped desk's other side; north of the standing desk)
-  flank: [{ x: 2.35, z: 3.8, yaw: EAST, tipped: true }, { x: DESK.x, z: DESK.z + DESK.w / 2 + 0.45, yaw: 0.15, tipped: false }, { x: 0.5, z: OPEN_Z0 - 0.45, yaw: EAST + 2.6 }],
+  // (the flank from the connecting door, south-east: the tipped desk's other side; north of the standing desk;
+  // and, the desk over, still behind it as at the door - while the door's last man is up, that is the place)
+  flank: [{ x: 2.35, z: 3.8, yaw: EAST, tipped: true }, { x: DESK.x - 0.05, z: DESK.z - 0.4, yaw: WEST, tipped: true }, { x: DESK.x - 0.05, z: DESK.z + 0.45, yaw: WEST, tipped: true },
+    { x: DESK.x, z: DESK.z + DESK.w / 2 + 0.45, yaw: 0.15, tipped: false }, { x: 0.5, z: OPEN_Z0 - 0.45, yaw: EAST + 2.6 }],
   corridor: [{ x: -0.85, z: 5.3, yaw: WEST }, { x: -0.85, z: 1.4, yaw: WEST }, { x: -4.35, z: -0.05, yaw: 0 }, { x: -3.25, z: -2.05, yaw: WEST }],
 };
 const OPENS = { shadows: { x: 1.8, z: 3.4 }, flank: { x: 2.4, z: 2.4 }, corridor: { x: -4.8, z: 1.8 } };
@@ -77,6 +79,13 @@ const WHY = { default: 'Shot.' };
 // hangs back - and the second `late` s behind the first. With him alive in the doorway the room has no place
 // covered from both the door and the connecting door: the good hand's falls in the flank were nearly all that.
 const FLANK_WAIT = 10;
+// ([C5] after play) a retry is a little kinder: for each fall at this beat (up to two) they settle 15 % slower
+// and their rounds weigh 12 % less. The first try is as tuned; the first-timer of WAVE_C §7, who must get
+// through in three, lost the flank or the corridor three tries of three in half the runs without it
+function retryEase(G, name) {
+  const n = Math.min(2, G.fails(name, 'gunfight'));
+  return { n, settle: 1 + 0.15 * n, dmg: 1 - 0.12 * n };
+}
 const DOORNAMES = ['kicker', 'jamb', 'side', 'doorLeft'];
 // (not the second held back until the first is down: the first's body in the doorway kept the second in his
 // way in for good - a stand-off of 150 s in play)
@@ -121,8 +130,11 @@ function prepare(ctx, name, { reset = true } = {}) {
   K.arm('revolver');
   K.end();
   if (name === 'quiet') return;
-  K.begin({ to: name, ...NUM, ...(name === 'corridor' ? NUM_CORR : name === 'flank' ? NUM_FLANK : {}), flankAfter: 0, area: AREA, warn: { ...WARN, ...(name === 'flank' ? { door: 'The other door! Behind you!' } : {}) }, why: WHY });
+  const base = { ...NUM, ...(name === 'corridor' ? NUM_CORR : name === 'flank' ? NUM_FLANK : {}) };
+  const E = retryEase(G, name);
+  K.begin({ to: name, ...base, settleK: base.settleK * E.settle, dmgK: base.dmgK * E.dmg, flankAfter: 0, area: AREA, warn: { ...WARN, ...(name === 'flank' ? { door: 'The other door! Behind you!' } : {}) }, why: WHY });
   const F = ctx.flags;
+  F.ease = E;
   F.men = [];
   // (the plays' record of the beat, lane C2's driver's: its cover places, where the open is, won)
   // (block: the desk's footprint as it stands or lies - a hand walks round it, not into it; standing, its east
@@ -163,7 +175,7 @@ function corridorMen(ctx, spawn) {
   // (and his rounds lighter than the kit's heavy's - bursts at nine a second: a good hand at the cart who
   // missed him once was down 2.3 s after the first round, and at 0.7 the first-timer met him three tries of
   // three; the first gunfight's heavy is three of my rounds walking at me, not a wall)
-  const heavyGo = (f) => { if (F.heavyT) return true; if (!f()) return false; F.heavyT = G.time; ctx.hud.objective('One more. On the stair.'); gunsOf(G).cfg.dmgK = HEAVY_DMGK; return true; };
+  const heavyGo = (f) => { if (F.heavyT) return true; if (!f()) return false; F.heavyT = G.time; ctx.hud.objective('One more. On the stair.'); gunsOf(G).cfg.dmgK = HEAVY_DMGK * ((F.ease && F.ease.dmg) || 1); return true; };
   // (a breath after the last of them falls - a reload's worth - the gate below clanks open; or, the
   // corridor held to a stand-off with one of them left, he comes up anyway: nobody waits the clock out)
   spawn({ name: 'heavy', kind: 'rusher', at: { x: O.suite.flightFoot.x, z: O.suite.flightFoot.z }, yaw: -Math.PI / 2, start: () => heavyGo(() => { if (!F.liftOpen || G.time - F.liftOpen < 12) return false; if (G.time - F.liftOpen > 40 && others() <= 1) return true; if (others() > 0) { F.othersT = null; return false; } F.othersT = F.othersT || G.time; return G.time - F.othersT > 5; }), hp: 165, way: [{ door: 'GATE' }, { x: -6.4, z: -5.0 }, { door: 'STAIR' }] });
