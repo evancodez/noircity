@@ -11,6 +11,8 @@
 //                parapet, SPACE - the standing leap onto R2, no catch, no haul
 //   wallDoor     the alley: W into the east block's door (x 5, z -22.6); stopped,
 //                E - it rattles, "Locked."
+//   canGlance    the lane: along its south wall square into the dustbin at its
+//                mouth - glanced off it, past it within a moment
 // Returns { case, ok, moves: [kinds seen], said, ... }.
 export default async function drive({ js, turn, keyDown, keyUp, log, sleep, opts }) {
   const T0 = Date.now(), timeout = opts.timeout ?? 40000;
@@ -87,6 +89,21 @@ export default async function drive({ js, turn, keyDown, keyUp, log, sleep, opts
       await sleep(25);
     }
     await setW(false);
+  } else if (C === 'canGlance') {
+    // the lane (start=watcher.lane): to its south wall, then east along it
+    // square into the dustbin at its mouth (9, -52) - glanced off, on past
+    let phase = 0, tAt = null;
+    while (Date.now() - T0 < timeout) {
+      const s = await js(ST); note(s);
+      if (phase === 0) { await steer(s, 6.2, -52.0); await setW(true); if (s.x > 5.6 && s.z < -51.6) phase = 1; }
+      else {
+        await steer(s, 20.0, -52.0, 0.9); await setW(true);
+        if (!tAt && s.x > 7.6) { tAt = Date.now(); log(`c6_moves: at the can, ${s.x.toFixed(2)}, ${s.z.toFixed(2)}, v ${s.v.toFixed(1)}`); }
+        if (s.x > 10.0) { out.ok = true; out.past = [+s.x.toFixed(2), +s.z.toFixed(2)]; out.secs = +((Date.now() - tAt) / 1000).toFixed(2); out.v = +s.v.toFixed(1); break; }
+        if (tAt && Date.now() - tAt > 3000) { out.stuckAt = [+s.x.toFixed(2), +s.z.toFixed(2)]; out.v = +s.v.toFixed(1); break; }
+      }
+      await sleep(25);
+    }
   }
   await setW(false);
   log(`c6_moves ${C}: ${JSON.stringify(out)}`);

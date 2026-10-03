@@ -1,5 +1,5 @@
 {
- "about": "[C6 3rd] Small moves by real input for the critic's findings a whole run does not reach: SPACE at the moment of a hit (10), the yard's door met beside its frame (7), the light well from standing (9), a wall door answers (16). The cards are marked taught first (a held card would crawl time under the script). NOIR_PORT=5346 node tools/play.mjs tools/plays/watcher_moves.json",
+ "about": "[C6 3rd] Small moves by real input for the critic's findings a whole run does not reach: SPACE at the moment of a hit (10), the yard's door met beside its frame (7), the light well from standing (9), a wall door answers (16); a dustbin met square glances me off (the good proof's one loss). The cards are marked taught first (a held card would crawl time under the script). NOIR_PORT=5346 node tools/play.mjs tools/plays/watcher_moves.json",
  "url": "/?mute=1&start=watcher.lane",
  "size": [
   1280,
@@ -144,6 +144,42 @@
    "timeout": 40000,
    "check": "D.ok",
    "label": "a door in the alley's wall: run into it, E - it rattles, 'Locked.' (critic finding 16)"
+  },
+  {
+   "name": "canGlance"
+  },
+  {
+   "eval": "(localStorage.removeItem('noir.save'), location.search = '?mute=1&start=watcher.lane', 1)"
+  },
+  {
+   "wait": 2500
+  },
+  {
+   "until": "G.state === 'title' && !!document.querySelector('#title .opt[data-k=begin]')",
+   "timeout": 40000
+  },
+  {
+   "wait": 1200
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]",
+   "taken": "G.state !== 'title' && document.pointerLockElement === N.renderer.domElement",
+   "retries": 5,
+   "every": 4000
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'watcher' && !(G.hud.cardT > 0.1)",
+   "timeout": 30000
+  },
+  {
+   "eval": "(G.hud.kit.taught().vault = true, G.hud.kit.taught().slide = true, G.hud.kit.taught().shoulder = true, G.hud.kit.taught().jump = true, 1)"
+  },
+  {
+   "drive": "tools/lib/c6_moves.mjs",
+   "case": "canGlance",
+   "timeout": 40000,
+   "check": "D.ok",
+   "label": "the dustbin at the lane's mouth met square along the south wall: the body glances off it and runs on, not pinned (the good proof stood nine seconds against it once)"
   }
  ]
 }

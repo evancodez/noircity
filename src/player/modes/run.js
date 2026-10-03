@@ -117,6 +117,7 @@ export default {
         const kx = ctl.pos.x, kz = ctl.pos.z;
         ctl.pos.addScaledVector(ctl.vel, dt);
         cols.resolve(ctl.pos, ctl.radius);
+        glance(ctl, cols, dt);
         ctl.keepOff(kx, kz);
         // (running into a wall is a stop, not a slide along it at full speed)
         const moved = Math.hypot(ctl.pos.x - kx, ctl.pos.z - kz) / Math.max(1e-4, dt);
@@ -174,6 +175,47 @@ function stairSlope(ctl, W) {
   const a = W.surfaceY(ctl.pos.x, ctl.pos.z), b = W.surfaceY(ctl.pos.x - sin * 0.5, ctl.pos.z - cos * 0.5);
   const d = (b - a) / 0.5;
   return Math.abs(d) > 2 ? 0 : d;
+}
+
+// ([C6 3rd] a can, a hydrant, a lamp post met square: the body glances off
+// it, round it on the side it is already off my line - not a wall to stand
+// pressed against at a crawl. The good hands came round the alley's T wide,
+// along the lane's south wall, into the dustbin at its mouth and stood
+// there nine seconds while he went: a man running would have turned his
+// shoulder and gone by)
+const GLANCE = new Set(['can', 'hydrant', 'lamp']);
+function glance(ctl, cols, dt) {
+  const vx = ctl.vel.x, vz = ctl.vel.z, sp = Math.hypot(vx, vz);
+  if (sp < 1 || !cols.circles) { ctl._glance = null; return; }
+  for (const c of cols.circles) {
+    if (!GLANCE.has(c.tag) || c.r > 0.45) continue;
+    const dx = ctl.pos.x - c.x, dz = ctl.pos.z - c.z, d = Math.hypot(dx, dz);
+    if (d > c.r + ctl.radius + 0.04 || d < 1e-4) continue;
+    // (square into it: my way runs at its middle)
+    if (-(vx * dx + vz * dz) / (sp * d) < 0.5) continue;
+    const lx = -vz / sp, lz = vx / sp;
+    const x0 = ctl.pos.x, z0 = ctl.pos.z;
+    // the side, chosen once for this can: the one with room (a can against a
+    // wall: the open side), else away from the side of my line its middle is
+    // on; kept while I am round it (choosing again each step, a man between
+    // a can and a wall was rocked from one side to the other and held there)
+    let G = ctl._glance;
+    if (!G || G.c !== c) {
+      const pref = (c.x - x0) * lx + (c.z - z0) * lz > 0 ? -1 : 1;
+      const room = (side) => {
+        ctl.pos.x = x0 + lx * 0.45 * side; ctl.pos.z = z0 + lz * 0.45 * side;
+        cols.resolve(ctl.pos, ctl.radius);
+        return ((ctl.pos.x - x0) * lx + (ctl.pos.z - z0) * lz) * side;
+      };
+      const a = room(pref), b = room(-pref);
+      G = ctl._glance = { c, side: b > a + 0.1 ? -pref : pref };
+    }
+    const k = Math.max(2.2, sp * 0.6) * dt * G.side;
+    ctl.pos.x = x0 + lx * k; ctl.pos.z = z0 + lz * k;
+    cols.resolve(ctl.pos, ctl.radius);
+    return;
+  }
+  ctl._glance = null;
 }
 
 // ---- what to do about the thing ahead ---------------------------------------------------------
