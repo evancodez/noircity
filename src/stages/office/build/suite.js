@@ -119,9 +119,12 @@ export function buildSuite(kit, mats, stage) {
 
   // ---- the corridor's things -------------------------------------------------------------------
   {
-    // a radiator on the west wall between 302 and 303 (steel: it stops a round)
+    // a radiator on the west wall between 301 and 302 (steel: it stops a round)
+    // ([C5] after the critic: it stood across the corridor from the cart, between 302 and 303, and the two closed the
+    // corridor in the men's grid - every man from the lift's end who came for me in the suite went round by 305 and
+    // the connecting door, at my back. Up by the suite's door, the corridor is a way through again)
     const r = [];
-    const x = CORR.x0 + 0.12, z0 = -0.6, z1 = 0.2;
+    const x = CORR.x0 + 0.12, z0 = 1.85, z1 = 2.65;
     for (let k = 0; k < 10; k++) r.push(new THREE.CapsuleGeometry(0.035, 0.52, 4, 10).translate(x, 0.44, z0 + 0.04 + k * (z1 - z0 - 0.08) / 9));
     r.push(new THREE.BoxGeometry(0.06, 0.05, z1 - z0).translate(x, 0.12, (z0 + z1) / 2), new THREE.BoxGeometry(0.06, 0.05, z1 - z0).translate(x, 0.76, (z0 + z1) / 2));
     piece(M(r), mats.iron, { kind: 'steel' }, { name: 'corr_radiator' });

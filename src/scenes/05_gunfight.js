@@ -45,14 +45,15 @@ const HEAVY_DMGK = 0.55;
 // first try in five to the man who came in and round the desk)
 const NUM_FLANK = { settleK: 1.5, flankAfter: 0 };
 // ([C5] after the critic) the first gunfight's grace - their aim settling slower (settleK above 1) - is for the man
-// who takes cover. On my feet in their line (or down with nothing round me: the kit's lowInOpen) they settle at the
-// kit's own pace (1.0, its test bed's), everywhere in this chapter: standing and trading in the open won the door and
-// the flank. Read every step (the kit reads cfg.settleK each time a man settles), so it is the stance that counts
-const OPEN_SETTLE = 1.0;
+// who takes cover. On my feet (or down with nothing round me: the kit's lowInOpen) they settle at the difficulty
+// table's floor (0.85) and their rounds weigh in full (1.0), everywhere in this chapter: standing and trading in the
+// open won the door and the flank (at the kit's own 1.0 it still won the flank and the corridor, a hand's breadth
+// from the fall). Read every step (the kit reads cfg.settleK and dmgK each time), so it is the stance that counts
+const STANDING = { settleK: 0.85, dmgK: 1.0 };
 // ([C5] after the critic) the door: a man held down behind one place for so long (the tipped desk: the three stood
 // bunched in the doorway and were shot over it one by one, untouched) has one of them go round - the kit's flank,
 // said ('One's going round'), to a place round the desk that sees me
-const DOOR_FLANK = 8;
+const DOOR_FLANK = 5;
 // the door's three: where they stand at the glass (corridor side), and their way in
 const DOORMEN = [
   // the kicker: through the door when it goes, into the outer office
@@ -65,10 +66,11 @@ const DOORMEN = [
 ];
 // the flank's two: from the corridor's south end, through 305, at the connecting door (as a pair)
 const FLANKERS = [
-  { name: 'flankA', at: { x: -4.75, z: -6.3 }, way: [{ door: 'D305' }, { x: 2.9, z: -2.5, run: true }, { door: 'CONN' }], door: 'hold' },
-  // ([C5] after play: the second a few seconds behind the first and in through the door, not a pair working its
-  // jambs - two guns at once out of a doorway at my side lost the good hand the flank three tries in four)
-  { name: 'flankB', at: { x: -5.05, z: -6.75 }, way: [{ door: 'D305' }, { x: 3.6, z: -2.9, run: true }, { door: 'CONN' }, { x: 4.2, z: 1.3, run: true }], late: 2.5 },
+  // ([C5] after the critic: the two come in together, through the door and into the room, each to his own side of it -
+  // not one working its jamb while the other waits behind him: one at a time out of one doorway, a man standing in
+  // the room facing it won the flank untouched. A man on his way in who sees me standing in the open stops and shoots)
+  { name: 'flankA', at: { x: -4.75, z: -6.3 }, way: [{ door: 'D305' }, { x: 2.9, z: -2.5, run: true }, { door: 'CONN' }, { x: 5.0, z: 1.2, run: true }] },
+  { name: 'flankB', at: { x: -5.05, z: -6.75 }, way: [{ door: 'D305' }, { x: 3.6, z: -2.9, run: true }, { door: 'CONN' }, { x: 3.9, z: 1.5, run: true }], late: 0.25 },
 ];
 // (the plays: each beat's cover places for the good hand - behind it, facing the way they come - and the bad hand's open floor)
 const SPOTS = {
@@ -104,8 +106,8 @@ function byStance(G, K, F) {
   if (!K.active || !F.num) return;
   const C = G.controller, low = (C.crouchK || 0) > 0.5 && !K.lowInOpen;
   const E = low ? (F.ease || { settle: 1, dmg: 1 }) : { settle: 1, dmg: 1 };
-  K.cfg.settleK = low ? F.num.settleK * E.settle : Math.min(F.num.settleK, OPEN_SETTLE);
-  K.cfg.dmgK = (F.heavyOn ? HEAVY_DMGK : F.num.dmgK) * E.dmg;
+  K.cfg.settleK = low ? F.num.settleK * E.settle : STANDING.settleK;
+  K.cfg.dmgK = F.heavyOn ? HEAVY_DMGK * E.dmg : low ? F.num.dmgK * E.dmg : STANDING.dmgK;
 }
 // ([C5] after the critic) the corridor's men do not go round through 305 and the connecting door into Ames's room:
 // the suite is a place the corridor can be held from (its door, the opening's line), and the cart is the other. The
@@ -207,7 +209,9 @@ function corridorMen(ctx, spawn) {
   const G = ctx.game, O = office(ctx), F = ctx.flags;
   const cx = (LIFT.x0 + LIFT.x1) / 2;
   F.liftOpen = false; F.liftCalled = null;
-  spawn({ name: 'liftA', kind: 'pistol', at: { x: cx - 0.2, z: LIFT.z1 - 0.35 }, yaw: Math.PI, start: () => F.liftOpen, wait: 0.2, way: [{ x: cx, z: CORR.z0 + 1.6, run: true }] });
+  // ([C5] after the critic: out to the corridor's west wall by the stair door, not in front of the Tommy gunner - in
+  // front he stood in his mate's line and the Tommy held his fire: a man standing in the corridor met one gun at a time)
+  spawn({ name: 'liftA', kind: 'pistol', at: { x: cx - 0.2, z: LIFT.z1 - 0.35 }, yaw: Math.PI, start: () => F.liftOpen, wait: 0.2, way: [{ x: CORR.x0 + 0.4, z: -4.2, run: true }] });
   spawn({ name: 'tommy', kind: 'tommy', at: { x: cx + 0.2, z: LIFT.z0 + 0.4 }, yaw: Math.PI, start: () => F.liftOpen, wait: 0.9, way: [{ x: cx + 0.3, z: CORR.z0 + 1.0 }] });
   // (a door down the hall, 306's: once the lift's two are down - the same end of the corridor as the lift and
   // the stair: the first gunfight's corridor comes at me from one way, with one cover that answers it, the cart.
@@ -221,10 +225,20 @@ function corridorMen(ctx, spawn) {
   // missed him once was down 2.3 s after the first round, and at 0.7 the first-timer met him three tries of
   // three; the first gunfight's heavy is three of my rounds walking at me, not a wall)
   // ([C5] after the critic: the line says what is left - 'One more' only when he is the last)
-  const heavyGo = (f) => { if (F.heavyT) return true; if (!f()) return false; F.heavyT = G.time; ctx.hud.objective(others() === 0 ? 'One more. On the stair.' : 'And the stair.'); F.heavyOn = true; return true; };
+  // ([C5] after the critic) me in the suite: his way goes on up the corridor and in at its door, as a way in (the
+  // door's frame, then at me) - by the grid he cut the doorway's corner from the corridor and stood against the jamb
+  // for good, broad as he is (two corridor runs of 120 s, no line either way)
+  const heavyWay = [{ door: 'GATE' }, { x: -6.4, z: -5.0 }, { door: 'STAIR' }];
+  const heavyGo = (f) => {
+    if (F.heavyT) return true; if (!f()) return false;
+    F.heavyT = G.time; ctx.hud.objective(others() === 0 ? 'One more. On the stair.' : 'And the stair.'); F.heavyOn = true;
+    const r = roomOf(G.eye.x, G.eye.z);
+    if (r === 'outer' || r === 'ames') heavyWay.push({ x: -4.75, z: 1.4 }, { x: -4.75, z: 2.9 }, { door: 'AMES' });
+    return true;
+  };
   // (a breath after the last of them falls - a reload's worth - the gate below clanks open; or, the
   // corridor held to a stand-off with one of them left, he comes up anyway: nobody waits the clock out)
-  spawn({ name: 'heavy', kind: 'rusher', at: { x: O.suite.flightFoot.x, z: O.suite.flightFoot.z }, yaw: -Math.PI / 2, start: () => heavyGo(() => { if (!F.liftOpen || G.time - F.liftOpen < 12) return false; if (G.time - F.liftOpen > 40 && others() <= 1) return true; if (others() > 0) { F.othersT = null; return false; } F.othersT = F.othersT || G.time; return G.time - F.othersT > 5; }), hp: 165, way: [{ door: 'GATE' }, { x: -6.4, z: -5.0 }, { door: 'STAIR' }] });
+  spawn({ name: 'heavy', kind: 'rusher', at: { x: O.suite.flightFoot.x, z: O.suite.flightFoot.z }, yaw: -Math.PI / 2, start: () => heavyGo(() => { if (!F.liftOpen || G.time - F.liftOpen < 12) return false; if (G.time - F.liftOpen > 40 && others() <= 1) return true; if (others() > 0) { F.othersT = null; return false; } F.othersT = F.othersT || G.time; return G.time - F.othersT > 5; }), hp: 165, way: heavyWay });
   void G;
 }
 
