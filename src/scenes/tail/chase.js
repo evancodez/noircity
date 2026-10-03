@@ -14,6 +14,7 @@ import { makeBot } from './bot.js';
 import { FIRE } from '../../fx/fxTextures.js';
 import { FIRE_COL } from '../../fx/Explosion.js';
 import { RNG } from '../../util/rng.js';
+import { allocInkId } from '../../render/layers.js';
 
 // Chapter VI's machinery (lane C3): my coupe and his sedan in the city, the
 // rules of the tail, the gun out of the window, his car coming apart under
@@ -31,6 +32,9 @@ import { RNG } from '../../util/rng.js';
 // (the checkpoints: start, chase2, river, pier).
 const clamp = (x, a, b) => Math.max(a, Math.min(b, x));
 const _v = new THREE.Vector3(), _w = new THREE.Vector3();
+// [C3c] his line at the wreck: within WIN_NEAR m of his door or window and
+// looking at it; or passing within WIN_PASS m of his car on the way off
+const WIN_NEAR = 1.5, WIN_PASS = 4;
 // (the cat's wall: Pell Lane's brick wall north of the board fence, its cap)
 const PELL_CAT = { x: -203.06, z: 8, y: 3.62 };
 
@@ -77,7 +81,7 @@ export class Chase {
     if (this.glassLitter) { this.glassLitter.removeFromParent(); this.glassLitter.geometry.dispose(); this.glassLitter = null; }
     // [C3b] the walking net and the man
     this.walkNet(false);
-    if (this.man) { try { this.stage.cast.remove(this.man); } catch (e) { /* the cast cleared already */ } this.man = null; }
+    this.atWheel = null; this.windows = null;
     this.game.hud.clearPrompt('tailin'); this.game.hud.clearPrompt('tailwreck');
     this.kit.warn(null);
   }
@@ -764,44 +768,102 @@ export class Chase {
           col: [g, g, g], alpha: 0.22, drag: 0.8, fadeOut: 0.7 });
       }
     }
-    // [C3b] his door, and he is out on the road by it, crouched over; the
-    // line says what to do: get out and see to him
-    if (W.t > 1.3 && !this.man) this.manOut();
+    // [C3c] he stays in his wreck, slumped at the wheel (no man gets out);
+    // the line says what to do: get out and see to him
+    if (W.t > 1.3 && !this.atWheel) this.manAtWheel();
+    if (this.atWheel) this.wheelStep(dt);
     if (W.t > 0.6 && this.phase === 'wreck' && !this._seeTo) { this._seeTo = true; this.kit.objective('See to the driver.'); }
   }
 
-  // [C3b] the man out of his wreck: crouched over on the road by his door,
-  // a hand on the wet, the bowler gone (it lies by the car: hatOff)
-  manOut() {
-    const his = this.his, T = this.stage.track, G = this.game;
-    if (this.man) return;
-    // (the side of his car with the road, not the rail or the wall: where his hat went)
-    // ([C3b] by his door, or the other, or at his car's tail or nose: the
-    // first with room - my car may be against his)
-    // (the nearest of them to my car: I walk up to him, not round his car)
-    const cands = [[0.9, -2.25], [0.9, 2.25], [-3.7, -0.6], [3.7, 0.6]].map((q) => ({ q, d: his.seat(_v.set(q[0], 0, q[1]), new THREE.Vector3()).distanceTo(this.my.pos) })).sort((a, b) => a.d - b.d).map((o) => o.q);
-    const cs = this.free(his, cands, 0.6) || [0.9, -2.25];
-    const p = his.seat(_v.set(cs[0], 0, cs[1]), new THREE.Vector3());
-    const side = Math.sign(cs[1]) || 1;
-    void T;
-    // (he faces down the river road to the pier, so his right arm, held out
-    // ahead of him and up, points there: tail_point's arm in his frame)
-    const pd = { x: PIER.gate.x - p.x, z: PIER.gate.z - p.z };
-    const arm = { x: -0.25, z: 1 };
-    const yaw = Math.atan2(pd.x, pd.z) - Math.atan2(arm.x, arm.z);
-    const cast = this.stage.cast;
-    const kind = cast.has('watcher') ? 'watcher' : 'couple_him';
-    const c = cast.spawn(kind, { at: { x: p.x, z: p.z }, yaw, name: 'tailman' });
-    c.noGlance = true;
-    c.setState('tail_crouched', 0);
-    // (the bowler's bone shrunk to nothing, as the block's ending does: it
-    // lies on the road by his car - hatOff)
-    if (c.fig && c.fig.bones && c.fig.bones.hat) c.fig.bones.hat.scale.setScalar(1e-4);
-    this.man = c;
-    this.manAt = { x: p.x, z: p.z, side };
-    if (his.driverFig) his.driverFig.visible = false;
-    G.sfx.play('tail_door', his.pos, { open: true }, { ref: 5 });
-    G.emit('tail:manOut', {});
+  // [C3c] the man at his wheel (the user, after C3b: "make the interrogation
+  // just going up to the car instead of him coming out"): nobody gets out.
+  // The sedan's cabin is a solid (world/Cars.js: panes on a closed shell),
+  // so the man is drawn where the eye can find him: slumped against his
+  // door's broken window, his head half out of the frame and resting on it,
+  // an arm over the sill; the bowler on the road by the door (hatOff). As I
+  // come near his head comes up off the frame and turns to me; at the
+  // window he says it. The window: the front pane on the side with room
+  // (his door, or the far one when his door is against the rail or a wall),
+  // its glass gone in the crash.
+  manAtWheel() {
+    const his = this.his, M = this.stage.M, f = his.driverFig;
+    if (this.atWheel) return;
+    const hw = his.spec.halfW;
+    this.atWheel = { k: 0, look: 0 };
+    // (the front pane's middle: x 0.15 in the car's frame; where I stand: a
+    // stride out from it)
+    this.windows = [[0.15, -hw], [0.15, hw]].map((q) => ({ q, out: this.free(his, [[q[0], Math.sign(q[1]) * (hw + 0.75)]], 0.3) }));
+    const open = this.windows.filter((w) => w.out);
+    const w0 = (open.length ? open : this.windows).map((w) => ({ w, d: his.seat(_v.set(w.q[0], 0, w.q[1]), new THREE.Vector3()).distanceTo(this.my.pos) })).sort((a, b) => a.d - b.d)[0].w;
+    this.winAt = his.seat(_v.set(w0.q[0], 0, Math.sign(w0.q[1]) * (hw + 0.7)), new THREE.Vector3());
+    this.winP = his.seat(_v.set(w0.q[0], 0, w0.q[1]), new THREE.Vector3());
+    const s = Math.sign(w0.q[1]) || -1;
+    // (that side's glass out - gone in the crash: no shards, no sound)
+    const CS = this.stage.cars, car = his.car;
+    if (CS && car && car.panes && CS.T && CS.rebuild) {
+      try {
+        for (const i of s > 0 ? [0, 1] : [2, 3]) if (car.panes[i]) car.panes[i].broken = true;
+        CS.rebuild(car, 'glass', CS.T.panes, car.panes.map((p) => !p.broken));
+      } catch (e) { this._paneErr = String(e); }
+    }
+    if (!f || !f.parent) return;
+    // (the figure in the seat is inside the solid cabin: it goes)
+    f.visible = false;
+    // his face and his hand, grey where the street's light catches them; his
+    // coat's arm black; the face inked: hair, the eyes' shadows, the mouth
+    // (a pale ball with a nose read as an eye looking back)
+    const pale = new THREE.MeshBasicMaterial({ color: new THREE.Color().setScalar(0.032) });
+    const g = new THREE.Group();
+    g.name = 'his man at the wheel';
+    const head = new THREE.Mesh(new THREE.SphereGeometry(0.095, 16, 12).scale(1, 1.15, 1), pale);
+    // (the hair: the crown and the back of the head black, a hairline across
+    // the brow; +x is his face)
+    const hair = new THREE.Mesh(new THREE.SphereGeometry(0.1, 16, 10, -Math.PI * 0.62, Math.PI * 1.24, 0, Math.PI * 0.6).scale(1, 1.15, 1), M.black);
+    const crown = new THREE.Mesh(new THREE.SphereGeometry(0.1, 16, 8, 0, Math.PI * 2, 0, Math.PI * 0.36).scale(1, 1.15, 1), M.black);
+    head.add(hair, crown);
+    for (const z of [-0.034, 0.034]) head.add(new THREE.Mesh(new THREE.SphereGeometry(0.019, 8, 6).scale(0.5, 0.8, 1.2).translate(0.088, 0.018, z), M.black));
+    head.add(new THREE.Mesh(new THREE.BoxGeometry(0.012, 0.009, 0.04).translate(0.088, -0.052, 0), M.black));
+    head.add(new THREE.Mesh(new THREE.BoxGeometry(0.03, 0.045, 0.018).translate(0.095, -0.012, 0), pale));
+    const shoulder = new THREE.Vector3(-0.02, 1.2, s * 0.55), hand = new THREE.Vector3(0.36, 1.19, s * 0.69);
+    const len = shoulder.distanceTo(hand);
+    const arm = new THREE.Mesh(new THREE.CylinderGeometry(0.045, 0.055, len, 8).translate(0, len / 2, 0), M.black);
+    arm.position.copy(shoulder);
+    arm.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), hand.clone().sub(shoulder).normalize());
+    const palm = new THREE.Mesh(new THREE.SphereGeometry(0.05, 10, 8).scale(1.4, 0.55, 1.1), pale);
+    palm.position.copy(hand);
+    // (his collar in the window's bottom corner, black against the paint)
+    const collar = new THREE.Mesh(new THREE.SphereGeometry(0.17, 12, 8).scale(1, 0.6, 0.7), M.black);
+    collar.position.set(-0.04, 1.17, s * 0.56);
+    g.add(head, arm, palm, collar);
+    const id = allocInkId();
+    g.traverse((o) => { if (o.isMesh) { o.userData.inkId = id; o.userData.inkFigure = true; o.userData.noRay = true; } });
+    f.parent.add(g);
+    Object.assign(this.atWheel, { g, head, s });
+    this.wheelStep(0);
+  }
+  // his head: resting on the window's frame, slumped (half out of it); up off
+  // it and turned to me as I come near (within 6 m on foot), and up for the
+  // line
+  wheelStep(dt) {
+    const A = this.atWheel, e = this.game.camera.position;
+    if (!A || !A.head) return;
+    const near = this.phase === 'out' ? Math.hypot(e.x - this.his.pos.x, e.z - this.his.pos.z) : 99;
+    const want = this.lineSaid ? 1 : near < 6 ? 0.7 : 0;
+    A.k += (want - A.k) * (1 - Math.exp(-dt * 2.2));
+    const s = A.s, k = A.k;
+    // (slumped: low on the frame, tipped against it, face down; up: upright,
+    // a little further out)
+    A.head.position.set(0.1 - 0.04 * k, 1.27 + 0.1 * k, s * (0.66 + 0.02 * k));
+    let yaw = 0;
+    if (this.phase === 'out') {
+      const l = this.his.local(e, _w);
+      const hx = A.head.position.x, hz = A.head.position.z;
+      yaw = Math.atan2(-(l.z - hz), l.x - hx);
+    } else yaw = -s * 0.9;
+    yaw *= Math.min(1, k * 1.6);
+    if (k < 0.05 && this.phase !== 'out') yaw = -s * 0.5;
+    A.look += (yaw - A.look) * (1 - Math.exp(-dt * 3));
+    A.head.rotation.set(s * 0.35 * (1 - k), A.look, -0.5 * (1 - k));
   }
 
   // ---- [C3b] out of the car by his wreck: walk up, the line, back in -----------------------------
@@ -814,7 +876,6 @@ export class Chase {
       const B = S.part && S.part('bounds');
       if (B && B.walkAround) B.walkAround(this.my.pos.x, this.my.pos.z, 60);
       for (const v of [this.my, this.his]) { const b = v.box(); const o = { cx: b.cx, cz: b.cz, hx: b.hx + 0.05, hz: b.hz + 0.05, c: b.c, s: b.s, angle: 0, tag: 'tailcar' }; C.boxes.push(o); this._net.boxes.push(o); }
-      if (this.manAt) this._net.circles.push(C.addCircle(this.manAt.x, this.manAt.z, 0.95, 'tailman'));  // ([C3b, after the critic] an arm's length off him: never the eye over his crown)
     } else if (!on && this._net) {
       const N = this._net;
       C.boxes = C.boxes.filter((b) => !N.boxes.includes(b));
@@ -861,7 +922,8 @@ export class Chase {
     this._doorSide = null;
     this.walkNet(true);
     const d = this.doorAt();
-    const tgt = this.manAt || his.pos;
+    const tgt = this.winAt || his.pos;
+    this._dbMin = null;
     const yaw = Math.atan2(-(tgt.x - d.x), -(tgt.z - d.z));
     G.player.hands.equip('empty');
     G.controller.setMode('walk', { pose: { x: d.x, z: d.z, yaw, pitch: -0.08 }, ease: 0.55 });
@@ -881,25 +943,24 @@ export class Chase {
     this.kit.objective('Pier 9.');
     G.emit('tail:pier', {});
   }
-  // his one line, subtitled; his arm out down the river road
+  // his one line, subtitled, from his seat ([C3c]: his head up and to me,
+  // the hand on the sill - wheelStep)
   sayLine() {
     if (this.lineSaid) return;
     this.lineSaid = true;
     this.game.hud.say('Pier nine. Tonight.', 3.0);
     // ([C3b, after the critic] where to go, at once: not when I am back in)
     this.kit.objective('Pier 9.');
-    this.game.sfx.play('grunt', this.man ? this.man.pos || this.his.pos : this.his.pos, { f0: 88, k: 0.35, dur: 0.3 }, { ref: 4 });
-    if (this.man) { this.man.setState('tail_point', 0.35); this.pointT = 3.2; }
+    this.game.sfx.play('grunt', this.his.seat(_v.set(-0.35, 1.3, -0.33), new THREE.Vector3()), { f0: 88, k: 0.35, dur: 0.3 }, { ref: 4 });
     this.game.emit('tail:line', {});
   }
   atWreck(dt) {
     const G = this.game, my = this.my, his = this.his;
     if (!his || this.parked) return;
-    if (this.pointT > 0) { this.pointT -= dt; if (this.pointT <= 0 && this.man) this.man.setState('tail_crouched', 0.5); }
     if (this.phase === 'wreck') {
       // stopped by his wreck: E, out of the car
       const d = Math.hypot(my.pos.x - his.pos.x, my.pos.z - his.pos.z);
-      const near = !!this.man && d < 32 && my.speedAbs < 1.5 && !this.failing;
+      const near = !!this.atWheel && d < 32 && my.speedAbs < 1.5 && !this.failing;
       if (near !== !!this.byWreck) { this.byWreck = near; if (near) G.hud.prompt('E  get out', null, 'tailwreck'); else G.hud.clearPrompt('tailwreck'); }
       if (near && G.pressed('KeyE')) this.getOut();
       return;
@@ -907,13 +968,25 @@ export class Chase {
     if (this.phase !== 'out') return;
     this.outT += dt;
     // the line: walked up to him and looking at him, or passing near him
-    const e = G.camera.position, m = this.manAt;
-    if (m && !this.lineSaid) {
-      const dm = Math.hypot(e.x - m.x, e.z - m.z);
-      const f = G.camera.getWorldDirection(_w);
-      const look = ((m.x - e.x) * f.x + (m.z - e.z) * f.z) / Math.max(0.01, dm * Math.hypot(f.x, f.z));
-      if ((dm < 3.4 && look > 0.75) || dm < 1.8 || (this.outT > 1.5 && dm < 6 && this._dm0 != null && dm > this._dm0 + 0.02 && this._dm0 < 6)) this.sayLine();
-      this._dm0 = dm;
+    // ([C3c] at his door or window: within WIN_NEAR of it on the car's side,
+    // looking at it; or, walking off without going to him, as I pass within
+    // WIN_PASS of his car - once I am a stride further off than I came)
+    const e = G.camera.position;
+    if (this.windows && !this.lineSaid) {
+      const f = G.camera.getWorldDirection(_w), fl = Math.max(1e-3, Math.hypot(f.x, f.z));
+      const fx = f.x / fl, fz = f.z / fl;
+      const P = new THREE.Vector3();
+      for (const w of this.windows) {
+        his.seat(_v.set(w.q[0], 0, w.q[1]), P);
+        const d = Math.hypot(P.x - e.x, P.z - e.z);
+        const look = ((P.x - e.x) * fx + (P.z - e.z) * fz) / Math.max(0.05, d);
+        if (d < WIN_NEAR && look > 0.6) { this.sayLine(); break; }
+      }
+      const l = his.local(e, _v);
+      const db = Math.hypot(Math.max(0, Math.abs(l.x) - his.spec.halfL), Math.max(0, Math.abs(l.z) - his.spec.halfW));
+      this._dbMin = Math.min(this._dbMin ?? 99, db);
+      if (!this.lineSaid && this.outT > 1.5 && db < WIN_PASS && db > this._dbMin + 0.8) this.sayLine();
+      this.dbNow = db;
     }
     // back in: E at my door
     const dd = this.doorAt(), dIn = Math.hypot(e.x - dd.x, e.z - dd.z);

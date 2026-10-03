@@ -38,7 +38,7 @@ export default async function tail({ js, turn, keyDown, keyUp, mouse, shot, log,
       if (!C || !C.my) return { none: true };
       if (!C.bot) { const a = (window.__c3tries = (window.__c3tries || 0)); C.useBot(${JSON.stringify(profile)}, { seed: ${opts.seed ?? 7} + a * 13, attempt: a }); window.__c3tries = a + 1; C._botId = Math.random(); }
       const k = C.botKeys || {}, a = C.botAim, gun = C.gun;
-      return { id: C._botId, phase: C.phase, beat: sc.beat, fade: sc.fadeK || 0, failing: !!C.failing, k, a, prompt: G.hud.promptShown, sens: N.controller.sensitivity,
+      return { id: C._botId, phase: C.phase, line: !!C.lineSaid, beat: sc.beat, fade: sc.fadeK || 0, failing: !!C.failing, k, a, prompt: G.hud.promptShown, sens: N.controller.sensitivity,
         gap: +C.gap().toFixed(1), unseen: +C.unseen.toFixed(1), dmg: +C.my.damage.toFixed(2), shots: gun ? gun.shots : 0, hits: gun ? gun.hits : 0, th: gun ? gun.trafficHits || 0 : 0, aimK: gun ? +gun.aimK.toFixed(2) : 0, hd: JSON.stringify(C.hisDmg || {}), warn: C.kit.warning, t: +C.t.toFixed(1) }; })();
       return Object.assign(st || {}, { __stop, __due }); })()`);
     if (!s || s.__exc) { await sleep(60); continue; }
@@ -75,7 +75,8 @@ export default async function tail({ js, turn, keyDown, keyUp, mouse, shot, log,
     }
     if (a && a.fire && Date.now() - lmbAt > 250) { lmbAt = Date.now(); await mouse('mousePressed', cx, cy, 'left'); await sleep(40); await mouse('mouseReleased', cx, cy, 'left'); }
     // the pier: E to get out
-    if (/get out|get in/.test(s.prompt || '') && Date.now() - lastE > 1500) { lastE = Date.now(); await release(); await sleep(350); await keyDown('KeyE'); await sleep(70); await keyUp('KeyE'); }
+    // ([C3c] back in only once he has said it: the hands walk to his window first)
+    if ((/get out/.test(s.prompt || '') || (/get in/.test(s.prompt || '') && s.line)) && Date.now() - lastE > 1500) { lastE = Date.now(); await release(); await sleep(350); await keyDown('KeyE'); await sleep(70); await keyUp('KeyE'); }
     await sleep(16);
   }
   await release();

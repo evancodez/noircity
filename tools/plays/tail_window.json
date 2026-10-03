@@ -1,0 +1,71 @@
+{
+ "about": "C3c: the line at his car, by real input (the good hands of src/scenes/tail/bot.js pressed by tools/lib/c3_tail.mjs): at the wreck, E out of the car; walk up to his driver's window (or the far one, if his door is against the rail); within 1.5 m of it, looking at it, he says it from his seat - no man gets out, nobody is spawned; then back to my door, E in, 'Pier 9.'. Every 100 ms the eye is checked against both cars' boxes. NOIR_PORT=5343 node tools/play.mjs tools/plays/tail_window.json",
+ "url": "/?mute=1&start=tail.wreck",
+ "size": [
+  1440,
+  900
+ ],
+ "out": "shots/c3c/window",
+ "steps": [
+  {
+   "until": "G.state === 'title' && !document.getElementById('title').classList.contains('hidden') && !!document.querySelector('#title .opt[data-k=begin]')",
+   "timeout": 40000
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]",
+   "taken": "G.state === 'playing' && document.pointerLockElement === N.renderer.domElement",
+   "retries": 4,
+   "every": 4000
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'tail' && !!G.scenes.ctx.flags.chase && !!G.scenes.ctx.flags.chase.atWheel && G.hud.promptShown.includes('get out')",
+   "timeout": 45000
+  },
+  {
+   "eval": "(() => { const nCast = () => (G.stage.cast && G.stage.cast.list ? G.stage.cast.list.length : (G.stage.cast && G.stage.cast.members ? G.stage.cast.members.length : -1)); window.__cw = { inside: [], n: 0, cast0: nCast(), line: null, sub: null }; setInterval(() => { const C = G.scenes.ctx && G.scenes.ctx.flags.chase; if (!C) return; const W = window.__cw; W.cast = nCast(); if (C.phase === 'out') { const e = G.controller.pos; W.n++; for (const v of [C.my, C.his]) { const l = v.local(e); if (Math.abs(l.x) < v.spec.halfL && Math.abs(l.z) < v.spec.halfW) W.inside.push(v.kind + ' ' + l.x.toFixed(2) + ',' + l.z.toFixed(2)); } if (C.lineSaid && !W.line) { const P = C.winP, c = G.camera.position; W.line = { phase: C.phase, outT: +C.outT.toFixed(2), dWin: +Math.hypot(P.x - c.x, P.z - c.z).toFixed(2), dCar: +(C.dbNow || 0).toFixed(2), sub: (document.getElementById('subtitle') || {}).textContent || null, obj: G.hud.kit && G.hud.kit.objectiveText }; } } if (C.lineSaid && !W.line && C.phase !== 'out') W.line = { phase: C.phase }; }, 100); return JSON.stringify({ my: [C0().my.pos.x, C0().my.pos.z], his: [C0().his.pos.x, C0().his.pos.z], win: C0().winAt, windows: C0().windows.map((w) => !!w.out) }); function C0() { return G.scenes.ctx.flags.chase; } })()"
+  },
+  {
+   "shot": "c01_wreck_from_seat"
+  },
+  {
+   "drive": "tools/lib/c3_tail.mjs",
+   "profile": "good",
+   "seed": 7,
+   "timeout": 60000,
+   "maxTries": 1,
+   "stop": "!!G.scenes.ctx.flags.chase && G.scenes.ctx.flags.chase.phase === 'c'",
+   "shots": {
+    "c02_out_by_my_door": "!!G.scenes.ctx.flags.chase && G.scenes.ctx.flags.chase.phase === 'out' && G.scenes.ctx.flags.chase.outT > 1.0",
+    "c03_at_his_window": "!!G.scenes.ctx.flags.chase && G.scenes.ctx.flags.chase.phase === 'out' && G.scenes.ctx.flags.chase.lineSaid"
+   }
+  },
+  {
+   "wait": 600
+  },
+  {
+   "shot": "c04_back_in"
+  },
+  {
+   "eval": "JSON.stringify({ cw: window.__cw, phase: G.scenes.ctx.flags.chase.phase, obj: G.hud.kit && G.hud.kit.objectiveText })"
+  },
+  {
+   "expect": "window.__cw.line && window.__cw.line.phase === 'out' && window.__cw.line.dWin < 1.5",
+   "label": "he said it as I stood at his window (within 1.5 m), on foot"
+  },
+  {
+   "expect": "!G.stage.cast.get('tailman') && !G.stage.cast.list.some((c) => c.kind === 'watcher')",
+   "label": "nobody got out: no figure spawned at the wreck"
+  },
+  {
+   "expect": "window.__cw.n > 20 && window.__cw.inside.length === 0",
+   "label": "never inside either car on foot"
+  },
+  {
+   "expect": "G.scenes.ctx.flags.chase.phase === 'c' && G.controller.mode === 'drive' && G.hud.kit.objectiveText === 'Pier 9.'",
+   "label": "back in my car by E at my door, 'Pier 9.'"
+  }
+ ]
+}
