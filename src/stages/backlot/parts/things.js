@@ -498,7 +498,7 @@ function fence(add, stage, wood, MAT, ink, { id, x, h, kind, gap = 0 }) {
   g.add(new THREE.Mesh(merge(P), MAT.woodDark));
   g.add(new THREE.Mesh(merge(B), wood));
   const mark = (y, w) => { const m = new THREE.Mesh(new THREE.BoxGeometry(w, 0.025, z1 - z0 - 0.2).translate(x, y, (z0 + z1) / 2), MAT.mark); m.userData.noRay = true; g.add(m); };
-  if (kind === 'over') mark(h + 0.02, 0.15);
+  if (kind === 'over') mark(h + 0.02, 0.07);
   else { mark(gap + 0.012, 0.1); }
   // (the under kind: a wire and a crossbar over its top - plainly no way over)
   if (kind === 'under') g.add(new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.05, z1 - z0).translate(x, h + 0.18, (z0 + z1) / 2), MAT.iron));

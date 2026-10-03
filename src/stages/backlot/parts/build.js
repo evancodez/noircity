@@ -8,7 +8,7 @@ import { tube } from '../../../world/geom.js';
 import { Steam } from '../../../fx/Steam.js';
 import {
   FLOOR, ESC, ROOM, STREET_WIN, WATCH_LAMP, HARBOR, BACKST, ALLEY, LANE, YARD, WASH, KITCHEN, LOADING, PASSAGE, ROOFS, TANNER,
-  MERCER, GARAGE, MARKET, FENCE,
+  MERCER, GARAGE, MARKET, FENCE, NORTHST,
 } from '../plan.js';
 
 // The backlot's architecture (lane B4; the run behind the Harbor Building
@@ -212,13 +212,18 @@ export default {
       fbox('garage', MAT.trim, Fg, GARAGE.door[0] - 0.25, GARAGE.door[1] + 0.25, 3.7, 4.05, 0, 0.2);
       fbox('garage', MAT.trim, Fg, GARAGE.x0, GARAGE.x1, 4.8, 5.2, 0, 0.25);
       // north of Tanner's Row, across Mercer Street, Pell Lane's west side
-      block('nblk', MAT.brick, MERCER.x1, PASSAGE.x1, -165, TANNER.z0, 11.0, { s: { bay: 3.3, litP: 0.1, skip: [[41.6, 47.2]], pipes: [33.2, 55.0] }, w: { bay: 3.3, litP: 0.1 } });
-      block('ne', MAT.brickDark, PASSAGE.x1, 110, -165, LOADING.z1, 12.0, { w: { bay: 3.2, litP: 0.08, pipes: [-109.0] } });
+      block('nblk', MAT.brick, MERCER.x1, PASSAGE.x1, -133, TANNER.z0, 11.0, { s: { bay: 3.3, litP: 0.1, skip: [[41.6, 47.2]], pipes: [33.2, 55.0] }, w: { bay: 3.3, litP: 0.1 }, n: { bay: 3.3, litP: 0.12 } });
+      block('ne', MAT.brickDark, PASSAGE.x1, 110, -133, LOADING.z1, 12.0, { w: { bay: 3.2, litP: 0.08, pipes: [-109.0] }, n: { bay: 3.3, litP: 0.1 } });
       facade('far', face('z', LOADING.z1, -1), PASSAGE.x0, PASSAGE.x1 + 0.6, 12.2, { bay: 2.6, litP: 0.0, from: 1 });
-      block('nwb', MAT.brickDark, FENCE.x, MERCER.x0, -165, MARKET.z0, 12.4, { e: { bay: 3.2, litP: 0.1 }, w: { bay: 3.2, litP: 0.12 } });
-      block('backW', MAT.brickDark, -40, BACKST.x0 - BACKST.pave, -165, BACKST.z1, 12.8, { e: { bay: 3.4, litP: 0.14, pipes: [-104.4, -121.6] } });
+      block('nwb', MAT.brickDark, FENCE.x, MERCER.x0, -133, MARKET.z0, 12.4, { e: { bay: 3.2, litP: 0.1 }, w: { bay: 3.2, litP: 0.12 }, n: { bay: 3.3, litP: 0.12 } });
+      block('backW', MAT.brickDark, -40, BACKST.x0 - BACKST.pave, -133, BACKST.z1, 12.8, { e: { bay: 3.4, litP: 0.14, pipes: [-104.4, -121.6] }, n: { bay: 3.4, litP: 0.12 } });
       door('backW', face('x', BACKST.x0 - BACKST.pave, 1), -98.6, 1.2, 2.4);
       door('backW', face('x', BACKST.x0 - BACKST.pave, 1), -112.4, 1.1, 2.3);
+      // [C6] the cross street at the north end of Pell Lane and Mercer
+      // Street (the city's Harbor Street, where its Pell Lane meets it: the
+      // seam's first frame looks up the lane at its far side), the block across it
+      block('acrossN', MAT.brick, NORTHST.x0, NORTHST.x1, NORTHST.z0 - NORTHST.pave - 18, NORTHST.z0 - NORTHST.pave, 13.6, { s: { bay: 3.4, litP: 0.16, pipes: [-21.0, 12.6, 47.4] } });
+      for (const u of [-30.5, -6.2, 33.5]) { fplane('acrossN', MAT.glass, face('z', NORTHST.z0 - NORTHST.pave, 1), u, 1.7, 3.6, 2.4, 0.02, { cast: false }); fbox('acrossN', MAT.trim, face('z', NORTHST.z0 - NORTHST.pave, 1), u - 1.95, u + 1.95, 2.9, 3.2, 0, 0.12); }
       // Pell Lane's east side beyond the fence: a brick wall to the next block
       mass('pellWall', MAT.brickDark, FENCE.x, FENCE.x + 0.4, MARKET.z0, FENCE.z0, 3.4);
       fbox('pellWall', MAT.trim, face('x', FENCE.x, -1), MARKET.z0, FENCE.z0, 3.3, 3.5, -0.05, 0.06);

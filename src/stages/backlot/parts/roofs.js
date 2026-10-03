@@ -53,7 +53,7 @@ export default {
       {
         const s = R.skylight, y = r.y;
         K.box(g, MAT.brickDark, s.x - s.w / 2, s.x + s.w / 2, y, y + 0.35, s.z - s.d / 2, s.z + s.d / 2);
-        const glass = new THREE.MeshBasicMaterial({ color: new THREE.Color(0.55, 0.55, 0.55) });
+        const glass = new THREE.MeshBasicMaterial({ color: new THREE.Color(1.1, 1.1, 1.1) });
         for (const sg of [-1, 1]) {
           const geo = new THREE.PlaneGeometry(s.d, s.w * 0.56).rotateY(Math.PI / 2).rotateZ(sg * 0.95).translate(s.x + sg * s.w * 0.24, y + 0.35 + 0.22, s.z);
           K.add(g + 'Sky', glass, geo, { cast: false, noRay: true });
@@ -211,7 +211,23 @@ export default {
       dog: L.wall(62.4, 3.6, TANNER.z0, 0, 1, { out: 0.2, strength: 0.85 }),
       rowEnd: L.wall(31.0, 3.8, TANNER.z1, 0, -1, { out: 0.3, strength: 0.9 }),
       passage: L.wall(PASSAGE.x0, 4.0, -110.0, 1, 0, { out: 0.3, strength: 0.85 }),
+      // the jump: lamps on the taller block's wall over the roofs' south side,
+      // one over the light well's near edge, one over the far roof's parapet
+      edge: L.wall(46.6, ROOFS.R1.y + 2.7, ROOFS.z1, 0, -1, { out: 0.45, strength: 1.0 }),
+      far: L.wall(38.6, ROOFS.R2.yE + 2.9, ROOFS.z1, 0, -1, { out: 0.6, strength: 0.95 }),
+      // the funnel on R2: a lamp over the motor house's door lights the tank's legs
+      motor: L.wall(35.6, r2Y(35.6) + 2.25, -109.4, 0, -1, { out: 0.55, strength: 0.95 }),
+      // the light well: a bare bulb down at its foot and a lit window there -
+      // from the roof's edge the gap is a slot of light far below
+      well: L.hang(42.7, 3.6, -111.0, { real: false }),
     };
+    {
+      const Fw = face('x', ROOFS.gap.x0, 1);
+      for (const z of [-113.4, -108.6]) {
+        fbox('well', MAT.lit, Fw, z - 0.45, z + 0.45, 0.9, 2.3, 0.01, 0.02);
+        fbox('well', MAT.trim, Fw, z - 0.55, z + 0.55, 0.82, 0.9, 0, 0.12);
+      }
+    }
     stage.addLook(new THREE.Box3(V3(28, 4.4, R.z0 - 0.5), V3(70.5, 30, R.z1 + 1.2)), { ambient: 0.2, exposure: 1.02, haze: 0.4 });
     void LOADING; void MERCER; void roundedBox;
     K.flush();

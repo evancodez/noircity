@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { LAYER, tagInk, allocInkId } from '../../../render/layers.js';
 import { makeGroundMaterial } from '../../../render/shaders/ground.js';
 import { merge } from '../../../world/geom.js';
-import { HARBOR, BACKST, MERCER, MARKET } from '../plan.js';
+import { HARBOR, BACKST, MERCER, MARKET, NORTHST } from '../plan.js';
 
 // The backlot's ground: one wet plane at y 0 under everything (the alleys,
 // the yards, the two streets' roads: the wet-street shader, its puddles,
@@ -26,6 +26,9 @@ const PAVES = [
   [MERCER.x0, MERCER.road[0], MERCER.z0, MERCER.z1],
   [MERCER.road[1], MERCER.x1, MERCER.z0, MERCER.z1],
   [MARKET.x0, MARKET.x1, MARKET.z0, MARKET.z1],
+  // the cross street at the north end (its south pavement cut by Pell Lane's and Mercer Street's roads; the kerb on the road side: 5th)
+  [-40, BACKST.x0, NORTHST.z1, BACKST.z0, 'z0'], [BACKST.x1, MERCER.road[0], NORTHST.z1, BACKST.z0, 'z0'], [MERCER.road[1], NORTHST.x1, NORTHST.z1, BACKST.z0, 'z0'],
+  [NORTHST.x0, NORTHST.x1, NORTHST.z0 - NORTHST.pave, NORTHST.z0, 'z1'],
 ];
 
 export default {
@@ -41,7 +44,7 @@ export default {
     scene.add(road);
     const paveMat = makeGroundMaterial(U, { paving: 1 });
     const kerbs = [];
-    for (const [x0, x1, z0, z1] of PAVES) {
+    for (const [x0, x1, z0, z1, side] of PAVES) {
       const p = new THREE.Mesh(new THREE.PlaneGeometry(x1 - x0, z1 - z0).rotateX(-Math.PI / 2), paveMat);
       p.position.set((x0 + x1) / 2, TOP, (z0 + z1) / 2);
       p.receiveShadow = true;
@@ -51,6 +54,8 @@ export default {
       // the kerb stones: a low box round the slab's road side(s)
       const k = (w, d, x, z) => kerbs.push(new THREE.BoxGeometry(w, TOP, d).translate(x, TOP / 2 - 0.002, z));
       if (x0 === MARKET.x0 && x1 === MARKET.x1) continue;                              // (the market: walls, no kerb)
+      if (side === 'z0') { k(x1 - x0, 0.22, (x0 + x1) / 2, z0 + 0.11); continue; }
+      if (side === 'z1') { k(x1 - x0, 0.22, (x0 + x1) / 2, z1 - 0.11); continue; }
       if (z1 <= HARBOR.z0 + 0.01) k(x1 - x0, 0.22, (x0 + x1) / 2, z1 - 0.11);          // north pavement's kerb
       else if (z0 >= HARBOR.z1 - 0.01) k(x1 - x0, 0.22, (x0 + x1) / 2, z0 + 0.11);     // south
       else if (x0 >= BACKST.x1 - 0.01 && x0 < MERCER.x0) k(0.22, z1 - z0, x0 + 0.11, (z0 + z1) / 2);     // back street, east

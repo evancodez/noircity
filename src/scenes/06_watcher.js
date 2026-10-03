@@ -77,6 +77,14 @@ function common(ctx, name) {
     things.get('door' + (C.lane === 'W' ? 'E' : 'W')).set('locked');
   }
   ctx.flags.street = mercerCar(stage);
+  // the kitchen's two hands, at the range and the sink (they flatten to the
+  // wall as he goes by: cookStep)
+  if (stage.cast && stage.cast.has('c6_cook')) {
+    ctx.flags.cooks = [
+      { c: stage.cast.spawn('c6_cook', { at: { x: 51.86, z: -90.2 }, yaw: -Math.PI / 2 }), yaw1: Math.PI / 2 },
+      { c: stage.cast.spawn('c6_cook', { at: { x: 68.44, z: -95.4 }, yaw: Math.PI / 2 }), yaw1: -Math.PI / 2 },
+    ];
+  }
   ctx.flags.umb = stage._b4umb || (stage._b4umb = makeUmbrella(stage));
   G.controller.frozen = false;
   G.player.weapons.equip(null);
@@ -216,6 +224,8 @@ export default defineScene({
       if (ctx.flags.street) ctx.flags.street.step(dt, G.controller.pos);
       if (ctx.flags.car) ctx.flags.car.step(dt);
       teachStep(ctx, dt);
+      dogStep(ctx, dt);
+      cookStep(ctx, dt);
       streetStep(ctx);
       warmStep(ctx);
       capStep(ctx);
@@ -429,6 +439,55 @@ function teachStep(ctx, dt) {
   else if (id.startsWith('door') && q.T.kind === 'shoulder' && t < 0.9) hud.teach('shoulder', TEACH.shoulder, { until: 'Space' });
   else if (id === 'edge' && t < 0.9) hud.teach('jump', TEACH.jump, { until: 'Space' });
   else if (id === 'slope' && t < 1.2) hud.teach('slideDown', TEACH.slideDown, { until: ['KeyC', 'ControlLeft'] });
+}
+
+// ---- the dog on its chain in Tanner's Row: up and at me as I come by; in its
+// reach, its teeth in my coat (a jolt, the run checked), never more
+function dogStep(ctx, dt) {
+  const G = ctx.game, R = G.controller.run, F = ctx.flags;
+  const chase = G.stage.part('chase');
+  const dog = chase && chase.dog;
+  if (!dog || !R) return;
+  F.dogT = Math.max(0, (F.dogT || 0) - dt);
+  F.biteT = Math.max(0, (F.biteT || 0) - dt);
+  const p = G.controller.pos, rch = dog.reach();
+  const d = Math.hypot(p.x - rch.x, p.z - rch.z);
+  if (d < 7.5 && F.dogT <= 0 && R.feet < 1) {
+    F.dogT = 2.8;
+    dog.lunge({ x: p.x + G.controller.vel.x * 0.3, z: p.z + G.controller.vel.z * 0.3 });
+    G.sfx.play('w_dog', V(dog.x, 0.8, dog.z));
+  }
+  // (its jaws: the end of its chain and a head's reach)
+  if (dog.t >= 0 && dog.t < 1.6 && F.biteT <= 0 && Math.hypot(p.x - dog.x, p.z - dog.z) < 1.15 && !R.move) {
+    F.biteT = 2.0;
+    R.flinch(0.18, -0.06);
+    R.v *= 0.35;
+    G.controller.shake(0.45);
+    G.sfx.play('grunt', null, { f0: 95, k: 0.3, dur: 0.2 }, { send: false });
+    G.sfx.play('w_duck', G.eye.clone().setY(0.9));
+  }
+}
+
+// ---- the kitchen's hands: a man running through, and they are back against
+// the range, the sink, the arms out flat, the head round after him
+function cookStep(ctx, dt) {
+  const G = ctx.game, C = ctx.flags.chase;
+  for (const k of ctx.flags.cooks || []) {
+    const F = k.c.fig;
+    if (!k.flat) {
+      const him = C.fig ? Math.hypot(C.fig.pos.x - F.pos.x, C.fig.pos.z - F.pos.z) : 99;
+      const me = Math.hypot(G.controller.pos.x - F.pos.x, G.controller.pos.z - F.pos.z);
+      if (him < 5.5 || me < 3.4) {
+        k.flat = { t: 0, yaw0: F.yaw };
+        k.c.play('c6cook_flatten', { fade: 0.08, hold: true });
+        G.sfx.play('w_sill', F.pos.clone().setY(1.3));
+      }
+    } else if (k.flat.t < 0.3) {
+      k.flat.t += dt;
+      const u = Math.min(1, k.flat.t / 0.25), e = u * u * (3 - 2 * u);
+      F.yaw = k.flat.yaw0 + Math.atan2(Math.sin(k.yaw1 - k.flat.yaw0), Math.cos(k.yaw1 - k.flat.yaw0)) * e;
+    }
+  }
 }
 
 // ---- Mercer Street's car: set coming so it is at the crossing as I am -------------------------------

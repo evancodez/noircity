@@ -99,13 +99,34 @@ export default {
     // dark opening with a shelf: the restaurant beyond, shut)
     K.box('kitchenIn', MAT.woodDark, 51.4, 54.6, 1.05, 1.1, KI.z0 + T, KI.z0 + T + 0.4);
     K.box('kitchenIn', MAT.black, 51.4, 54.6, 1.1, 2.0, KI.z0 + T - 0.02, KI.z0 + T);
+    // the walls: white tiles to the shoulder (they catch the one lamp), the
+    // plaster above gone grey with steam
+    {
+      const y1 = 1.55, t = 0.02;
+      const band = (x0, x1, z0, z1) => K.box('kitchenTile', MAT.tile, x0, x1, 0.02, y1, z0, z1);
+      const zi1 = KI.z1 - T, zi0 = KI.z0 + T, xi0 = KI.x0 + T, xi1 = KI.x1 - T;
+      // south wall (the doors), north wall (the roller door, the hatch)
+      band(xi0, dW.x - dW.w / 2 - 0.12, zi1 - t, zi1); band(dW.x + dW.w / 2 + 0.12, dE.x - dE.w / 2 - 0.12, zi1 - t, zi1); band(dE.x + dE.w / 2 + 0.12, xi1, zi1 - t, zi1);
+      band(xi0, 51.3, zi0, zi0 + t); band(54.7, R.x - R.w / 2 - 0.1, zi0, zi0 + t); band(R.x + R.w / 2 + 0.1, xi1, zi0, zi0 + t);
+      band(xi0, xi0 + t, zi0, zi1); band(xi1 - t, xi1, zi0, zi1);
+      // (the tiles' top course: a dark edge)
+      K.box('kitchenTile', MAT.woodDark, xi0, xi1, y1, y1 + 0.04, zi1 - 0.03, zi1);
+      K.box('kitchenTile', MAT.woodDark, xi0, xi1, y1, y1 + 0.04, zi0, zi0 + 0.03);
+      // pans hung from a rail over the table
+      for (let x = 56; x <= 64; x += 1.0) K.add('table', MAT.metal, lathe([[0, 0], [0.14, 0], [0.15, 0.09], [0, 0.09]], 14).rotateX(Math.PI / 2).translate(x, 2.25, -91.75));
+      K.add('table', MAT.iron, tube([V3(55.6, 2.42, -91.75), V3(64.4, 2.42, -91.75)], 0.02, 6, 2));
+    }
     // the lamp: a shade over the table (the one light), and the stove's glow
     const L = stage.part('lamps');
-    api.lamp = L.hang(60.0, CEIL - 0.1, -92.4, { real: true });
+    // (two shades over the long table: two pools on the steel and the tiles, the corners in ink)
+    api.lamp = L.hang(57.0, CEIL - 0.1, -92.4, { real: true });
+    api.lamp2 = L.hang(63.0, CEIL - 0.1, -92.4, { real: true });
+    if (api.lamp2.light) { api.lamp2.light.intensity = 150; api.lamp2.light.angle = 0.95; api.lamp2.light.penumbra = 0.8; }
+    if (api.lamp.light) { api.lamp.light.intensity = 170; api.lamp.light.angle = 0.95; api.lamp.light.penumbra = 0.8; }
     // steam off the pots
     api.steam = new Steam(stage, [V3(KI.x0 + T + 0.55, 1.25, -93.5), V3(KI.x0 + T + 0.55, 1.25, -89.1)], 10);
     // the kitchen's Look: dark round its one lamp
-    stage.addLook(new THREE.Box3(V3(KI.x0 + T, -1, KI.z0 + T), V3(KI.x1 - T, CEIL, KI.z1 - T)), { ambient: 0.16, exposure: 1.05, rainOverlay: 0.0, haze: 0.25, room: 'kitchen' });
+    stage.addLook(new THREE.Box3(V3(KI.x0 + T, -1, KI.z0 + T), V3(KI.x1 - T, CEIL, KI.z1 - T)), { ambient: 0.24, exposure: 1.1, rainOverlay: 0.0, haze: 0.3, room: 'kitchen' });
     stage.dry.push(new THREE.Box3(V3(KI.x0, 0, KI.z0), V3(KI.x1, KI.h, KI.z1)));
     // ---- outside: the floods over the back doors down the lanes, the bulb over the roller door
     // (low over each door, aimed down its lane through the washing: the

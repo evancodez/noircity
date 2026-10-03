@@ -87,10 +87,11 @@ export const HARBOR = { z0: -5, z1: 5, pave: 2.5, x0: -34, x1: 96 };
 // Pell Lane (lane C3's city copies it: plan.FROM_BACKLOT there): the road x
 // -12 .. -2.5, the east pavement to the market's board fence at x 2, the west
 // 2.5 m to the facades; it ends at z -84 against the backs of the lane's blocks
-export const BACKST = { x0: -12, x1: -2.5, pave: 2.5, z0: -150, z1: -84 };
+export const BACKST = { x0: -12, x1: -2.5, pave: 2.5, z0: -133, z1: -84 };   // [C6] its north end at a T with a cross street (the city's Harbor St: NORTHST)
+export const NORTHST = { z0: -155, z1: -137, pave: 4, x0: -60, x1: 90 };
 // Mercer Street: north-south, the garage across its south end (the car comes
 // out of it), its far end in the fog
-export const MERCER = { x0: 16, x1: 26, road: [17.5, 24.5], z0: -165, z1: -86 };
+export const MERCER = { x0: 16, x1: 26, road: [17.5, 24.5], z0: -133, z1: -86 };
 
 // ---- the places of the chase ---------------------------------------------------------------
 export const ALLEY = { x0: 0, x1: 5, z0: -47.5, z1: -7.5 };
