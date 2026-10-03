@@ -1,0 +1,26 @@
+{
+  "about": "C2 critic, second look: the door beat standing on open floor (open hands, goto), debug every 1.5 s: the stand-off with the last man.",
+  "url": "/?mute=1",
+  "size": [
+    1440,
+    900
+  ],
+  "out": "shots/critic/c2b/door_standoff",
+  "steps": [
+    {
+      "wait": 1500
+    },
+    {
+      "drive": "tools/plays/critic/c2/hands.mjs",
+      "style": "open",
+      "goto": true,
+      "tries": 3,
+      "timeout": 120000,
+      "beats": [
+        "door",
+        "door"
+      ],
+      "debug": true
+    }
+  ]
+}

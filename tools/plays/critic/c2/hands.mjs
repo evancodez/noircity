@@ -21,6 +21,13 @@
 //           SPACE for C, a click for R); after each fall he reads the reason
 //           and does that one thing better (as a person does)
 //   'open'  stands in the open and trades (never C): the brief's 'bad'
+//   'low'   (second look) the same, but down (C) and RMB held where it stands:
+//           low in the open, no cover in front - is crouching itself the
+//           answer, or the cover? opts.goto: first walk to the beat's open
+//           floor (OPEN below), as a man who leaves the cover would
+// opts.fairGlass (second look, after the owner's note): a man behind a pane
+//   is seen only within 1.2 m of it (a frosted pane shows nothing of a man
+//   further back: white panes, no shadow); without it a pane is seen through
 // opts.beats: which beats (each from the title, ?start=guns.<beat>);
 // opts.tries: lives per beat before giving up (a stuck beat is a finding)
 // Returns per beat: tries, won, the reasons of the falls, hits taken, time.
@@ -36,6 +43,9 @@ const SPOTS = {
   street: [{ x: -5.0, z: 7.85, yaw: Math.PI }, { x: -7.2, z: 7.9, yaw: Math.PI }, { x: -3.2, z: 7.9, yaw: Math.PI }],
 };
 SPOTS.street_rev = SPOTS.street;
+// (second look: open floor in each place, nothing in front toward the men)
+const OPEN = { door: { x: -3.6, z: -2.4 }, two_ways: { x: -3.6, z: -2.4 }, pin: { x: 1.6, z: -5.45 }, rush: { x: -5.3, z: 3.0 }, street: { x: -0.6, z: 7.7 } };
+OPEN.street_rev = OPEN.street;
 
 export default async function ({ js, turn, keyDown, keyUp, mouse, shot, log, sleep, send, opts, cursor }) {
   const PORT = process.env.NOIR_PORT || 5173;
@@ -54,7 +64,7 @@ export default async function ({ js, turn, keyDown, keyUp, mouse, shot, log, sle
   const fire = async () => { const [x, y] = cursor(); await mouse('mousePressed', x, y, 'left'); await sleep(40); await mouse('mouseReleased', x, y, 'left'); };
   const letGo = async () => { for (const c of [...held]) await ku(c); await rmbOn(false); };
 
-  const READ = `(() => { const C = N.controller, e = G.eye, H = G.health, W = G.player.weapons.active, K = G.guns, cam = N.camera;
+  const READ = `(() => { const FAIR = ${opts.fairGlass ? 'true' : 'false'}; const C = N.controller, e = G.eye, H = G.health, W = G.player.weapons.active, K = G.guns, cam = N.camera;
     const out = { t: G.time, beat: G.scenes.beat, yaw: C.yaw, pitch: C.pitch, sens: C.sensitivity, ck: C.crouchK || 0, rk: C.riseK || 0, on: !!C.crouchOn,
       x: C.pos.x, z: C.pos.z, ey: e.y, hp: H.hp, dead: H.dead, failing: G.failing ? G.failing.why : null, warn: G.hud.kit.warnText,
       ammo: W ? W.ammo : 0, reloading: !!(W && W.reloading), wpn: W ? W.name : '', mode: C.mode, men: [], hitBy: null, hitT: K && K.lastKill ? K.lastKill.t : -1 };
@@ -68,7 +78,7 @@ export default async function ({ js, turn, keyDown, keyUp, mouse, shot, log, sle
       const inView = p.z < 1 && Math.abs(p.x) < 0.92 && Math.abs(p.y) < 0.92;
       d.subVectors(c, e); const L = d.length(); d.divideScalar(L);
       let o = e.clone(), left = L, seen = true, glass = false;
-      for (let k = 0; k < 4 && seen; k++) { const hit = G.rays.raycast(o, d, left - 0.25); if (!hit) break; if (hit.mesh.userData.pane) { glass = true; o = hit.point.clone().addScaledVector(d, 0.02); left -= hit.t + 0.02; } else seen = false; }
+      for (let k = 0; k < 4 && seen; k++) { const hit = G.rays.raycast(o, d, left - 0.25); if (!hit) break; if (hit.mesh.userData.pane) { glass = true; o = hit.point.clone().addScaledVector(d, 0.02); left -= hit.t + 0.02; if (FAIR && left > 1.2) seen = false; } else seen = false; }
       const ai = G.ais.get(h), st = ai && ai.brain && ai.brain.S ? ai.brain.S.state : '';
       out.men.push({ st: st + (ai && ai.brain && ai.brain.S ? ':' + (ai.brain.S.line ? 'L' : '') + (ai.brain.S.cover ? 'c' : '') + Math.round(ai.brain.S.mag) : ''), id: h.slot, kind: ai && ai.brain ? ai.brain.kind : '', x: c.x, y: c.y, z: c.z, hy: hd.y, L, seen, glass, inView, up: inView && seen && (st === 'aim' || st === 'fire' || st === 'out') });
     }
@@ -156,7 +166,7 @@ export default async function ({ js, turn, keyDown, keyUp, mouse, shot, log, sle
         life.ids = ids;
         if (life.deathAt && t - life.deathAt > 1600) { await shot(`${b}_${style}_death${life.deathN}b`); life.deathAt = 0; } }
       if (opts.debug && t - (life.dbgS || 0) > 3000) { life.dbgS = t; await shot(`${b}_dbg_${String(Math.round((t - T0) / 1000)).padStart(3, '0')}_${life.phase}`); }
-      if (opts.debug && t - (life.dbg || 0) > 1500) { life.dbg = t; log(`  ${life.phase} hp${Math.round(s.hp)} ck${s.ck.toFixed(1)} rk${s.rk.toFixed(1)} ammo${s.ammo} yaw${s.yaw.toFixed(2)} warn=${s.warn} men=${s.men.map((m) => `${m.kind}[${m.st}]@${m.x.toFixed(1)},${m.z.toFixed(1)}${m.seen ? 'S' : ''}${m.inView ? 'V' : ''}${m.up ? 'U' : ''}`).join(' ')}`); }
+      if (opts.debug && t - (life.dbg || 0) > 1500) { life.dbg = t; log(`  ${life.phase} @${s.x.toFixed(1)},${s.z.toFixed(1)} hp${Math.round(s.hp)} ck${s.ck.toFixed(1)} rk${s.rk.toFixed(1)} ammo${s.ammo} yaw${s.yaw.toFixed(2)} warn=${s.warn} men=${s.men.map((m) => `${m.kind}[${m.st}]@${m.x.toFixed(1)},${m.z.toFixed(1)}${m.seen ? 'S' : ''}${m.inView ? 'V' : ''}${m.up ? 'U' : ''}`).join(' ')}`); }
       const k = style === 'bad' ? { duck: Math.min(1, P.duckHit + 0.25 * learnt.duck), warn: Math.min(1, P.readWarn + 0.25 * learnt.flank), react: P.react, burst: [Math.max(1, P.burst[0] - learnt.duck), Math.max(2, P.burst[1] - learnt.duck)], reloadDown: Math.min(1, 0.4 + 0.3 * learnt.reload), move: Math.min(1, 0.3 + 0.35 * learnt.move) }
         : { duck: P.duckHit, warn: P.readWarn, react: P.react, burst: P.burst, reloadDown: style === 'good' ? 1 : 0, move: style === 'good' ? 1 : 0 };
       // a hit: where from (the splash, the sound)
@@ -167,7 +177,7 @@ export default async function ({ js, turn, keyDown, keyUp, mouse, shot, log, sle
       if (s.warn && s.warn !== life.warnSeen) { life.warnSeen = s.warn; life.warnRead = Math.random() < k.warn; life.warnAt = t + rr(k.react[0], k.react[1]); }
       if (!s.warn) life.warnSeen = null;
       const warn = life.warnRead && t >= life.warnAt ? s.warn : null;
-      const good = style === 'good', open = style === 'open';
+      const good = style === 'good', open = style === 'open' || style === 'low', low = style === 'low';
       const down = async () => { await rmbOn(false); if (!s.on && !open) await tap('KeyC'); };
       const bearing = (x, z) => Math.atan2(-(x - s.x), -(z - s.z));
       const angTo = (m) => { const yw = bearing(m.x, m.z), pt = Math.atan2(m.y - s.ey, Math.hypot(m.x - s.x, m.z - s.z));
@@ -177,7 +187,9 @@ export default async function ({ js, turn, keyDown, keyUp, mouse, shot, log, sle
       if (life.phase === 'start') {
         if (!open && !s.on) { if (P.wrong && Math.random() < P.wrong) await tap(Math.random() < 0.5 ? 'KeyE' : 'Space'); await sleep(rr(k.react[0], k.react[1])); await tap('KeyC'); }
         // (the open style stands up where a beat starts him down - the street)
-        if (open && s.on) { await sleep(rr(300, 500)); await tap('KeyC'); }
+        if (open && !low && s.on) { await sleep(rr(300, 500)); await tap('KeyC'); }
+        if (low && !s.on) { await sleep(rr(300, 500)); await tap('KeyC'); }
+        if (opts.goto && OPEN[b]) life.moving = { ...OPEN[b], until: t + 6000 };
         life.phase = 'down'; life.downUntil = t + rr(400, 900);
         await sleep(100); continue;
       }
@@ -260,7 +272,7 @@ export default async function ({ js, turn, keyDown, keyUp, mouse, shot, log, sle
       }
       // ---- up: find a man, a reaction, the aim, fire; down after the burst or at his tell
       if (life.phase === 'up') {
-        if (!open && s.on && !rmb) await rmbOn(true);
+        if ((!open || low) && s.on && !rmb) await rmbOn(true);
         const upFor = t - life.upAt;
         if (!visible.length) {
           life.target = null;

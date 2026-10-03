@@ -1,0 +1,29 @@
+{
+  "about": "C2 critic, second look: the pin and the door standing on open floor and trading (open hands, goto), three sessions each.",
+  "url": "/?mute=1",
+  "size": [
+    1440,
+    900
+  ],
+  "out": "shots/critic/c2b/open_floor2",
+  "steps": [
+    {
+      "wait": 1500
+    },
+    {
+      "drive": "tools/plays/critic/c2/hands.mjs",
+      "style": "open",
+      "goto": true,
+      "tries": 3,
+      "timeout": 120000,
+      "beats": [
+        "pin",
+        "pin",
+        "pin",
+        "door",
+        "door"
+      ],
+      "debug": true
+    }
+  ]
+}

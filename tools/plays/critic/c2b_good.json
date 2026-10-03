@@ -1,0 +1,20 @@
+{
+  "about": "C2 critic, second look, proof (c) good: every contest from the title, the critic's own hands (cover, rise, reload down, turn on a flank's word). Run it twice.",
+  "url": "/?mute=1",
+  "size": [
+    1440,
+    900
+  ],
+  "out": "shots/critic/c2b/good",
+  "steps": [
+    {
+      "wait": 1500
+    },
+    {
+      "drive": "tools/plays/critic/c2/hands.mjs",
+      "style": "good",
+      "tries": 4,
+      "timeout": 150000
+    }
+  ]
+}

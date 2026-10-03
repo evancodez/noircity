@@ -1,0 +1,43 @@
+{
+  "about": "C2 critic, second look (finding 2 re-checked): door A1 opened with E from a step in front of it (where its prompt shows): does it swing into me and stop ajar? What does the prompt say then, can I get through?",
+  "url": "/?mute=1&start=guns",
+  "size": [
+    1440,
+    900
+  ],
+  "out": "shots/critic/c2b/door_swing",
+  "steps": [
+    {
+      "wait": 2500
+    },
+    {
+      "clickOn": "#title .opt[data-k=begin]",
+      "taken": "G.state === 'playing' && N.controller.mode === 'gun'",
+      "retries": 3
+    },
+    {
+      "wait": 1500
+    },
+    {
+      "drive": "tools/plays/critic/c2/seq.mjs",
+      "seq": [
+        "pitch 0",
+        "go -5.9 -5.3",
+        "go -3.0 -5.3",
+        "go -2.2 -4.1",
+        "face -1.2 -4.1",
+        "pitch -0.15",
+        "w 300",
+        "e ['before: prompt', G.hud.promptShown, 'at', N.controller.pos.x.toFixed(2), N.controller.pos.z.toFixed(2)]",
+        "k KeyE",
+        "w 2500",
+        "e ['2.5 s after E: open01', G.stage.part('house').doors.A1.open01.toFixed(2), 'moving', G.stage.part('house').doors.A1.moving, 'prompt now', G.hud.promptShown]",
+        "s s01_ajar",
+        "pitch 0",
+        "go -0.4 -4.1 5000",
+        "e ['after trying to walk through: at', N.controller.pos.x.toFixed(2), N.controller.pos.z.toFixed(2)]",
+        "s s02_tried"
+      ]
+    }
+  ]
+}
