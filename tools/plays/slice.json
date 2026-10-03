@@ -445,15 +445,15 @@
    "key": "KeyE"
   },
   {
-   "until": "G.scenes.beat === 'matchbook' && !!G.inspect.active",
+   "until": "G.scenes.beat === 'matchbook' && G.scenes.ctx && G.scenes.ctx.flags.mbUp && !G.scenes.ctx.flags.mbRead && G.player.hands.held.R && G.player.hands.held.R.userData.kind === 'c4matchbook'",
    "timeout": 8000
   },
   {
    "wait": 1200
   },
   {
-   "expect": "G.inspect.active && G.inspect.active.obj.userData.kind === 'matchbook'",
-   "label": "the matchbook was shown (inspect)"
+   "expect": "G.player.hands.held.R && G.player.hands.held.R.userData.kind === 'c4matchbook' && G.hud.promptShown.indexOf('put away') >= 0",
+   "label": "[C4] the matchbook in my fingers (not in the air), E put away"
   },
   {
    "shot": "s18_matchbook"

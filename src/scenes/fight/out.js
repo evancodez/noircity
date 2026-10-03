@@ -58,7 +58,7 @@ function barGrip(d, out = V(0, 0, 0)) {
 
 // [C4] the point of the barred leaf my view crosses (or, looking away from
 // it, the nearest point of it to that line): where the bar's prompt sits
-const _o = new THREE.Vector3(), _dv = new THREE.Vector3(), _q = new THREE.Vector3();
+const _o = new THREE.Vector3(), _dv = new THREE.Vector3();
 function onLeaf(G) {
   const x0 = DINER.innerX - 0.1, z0 = DINER.door.hingeZ + 0.06, z1 = DINER.door.hingeZ + DINER.door.w - 0.06;
   const y0 = DINER.floorY + 0.35, y1 = DINER.floorY + 1.85;
@@ -87,7 +87,7 @@ export function afterKO(ctx, w) {
       // ([C4] the critic's second look, m4: the eyes go down to the bar with
       // the hand - at eye level the hand dropped out of the frame to it and
       // only the prompt's going said it was lifted)
-      S.look0 = { yaw: C.yaw, pitch: C.pitch };
+      S.look0 = { yaw: C.yaw, pitch: C.pitch, at: barGrip(d, V(0, 0, 0)) };
       SLAT.cam = G.camera; DOOR.out = V(-1, 0, 0); DOOR.at = barGrip(d);
       H.play('carDoor', { onMark: { grip: () => { d.liftBar(); G.sfx.play('f_c4lift', doorAt(), {}, { ref: 2 }); d.barOnSlam = false; S.how = S.how || 'door'; G.emit('door:unbarred', {}); } } });
     } });
@@ -139,12 +139,15 @@ export function afterKO(ctx, w) {
         // ([C4] m4: the look onto the bar while the hand takes it and lifts
         // it up onto its keeper, then back up toward where I was looking)
         if (S.look0) {
-          const q = barGrip(d, _q), e = G.eye;
-          const wy = Math.atan2(-(q.x - e.x), -(q.z - e.z)), wp = Math.max(-1.05, Math.atan2(q.y + 0.12 - e.y, Math.hypot(q.x - e.x, q.z - e.z)));
-          const k = 1 - Math.exp(-dt * 9);
+          const q = S.look0.at, e = G.eye;
+          // (on where the bar lay while the hand takes it up out of there,
+          // then back to where I looked)
+          const on = S.liftT < 0.95;
+          const wy = Math.atan2(-(q.x - e.x), -(q.z - e.z)), wp = Math.max(-0.9, Math.min(0.3, Math.atan2(q.y + 0.1 - e.y, Math.hypot(q.x - e.x, q.z - e.z))));
+          const k = 1 - Math.exp(-dt * (on ? 9 : 5));
           const dyaw = Math.atan2(Math.sin(wy - S.look0.yaw), Math.cos(wy - S.look0.yaw));
-          const ty = S.liftT < 1.05 ? S.look0.yaw + Math.max(-0.5, Math.min(0.5, dyaw)) : C.yaw;
-          const tp = S.liftT < 1.05 ? wp : S.look0.pitch * 0.6 + wp * 0.4;
+          const ty = on ? S.look0.yaw + Math.max(-0.3, Math.min(0.3, dyaw * 0.5)) : S.look0.yaw;
+          const tp = on ? wp : S.look0.pitch;
           C.yaw += Math.atan2(Math.sin(ty - C.yaw), Math.cos(ty - C.yaw)) * k;
           C.pitch += (tp - C.pitch) * k;
         }

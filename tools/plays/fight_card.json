@@ -20,7 +20,7 @@
    "every": 4000
   },
   {
-   "until": "G.scenes.beat === 'matchbook' && !!G.inspect.active",
+   "until": "G.scenes.beat === 'matchbook' && G.scenes.ctx && G.scenes.ctx.flags.mbUp && !G.scenes.ctx.flags.mbRead && G.player.hands.held.R && G.player.hands.held.R.userData.kind === 'c4matchbook'",
    "timeout": 30000
   },
   {

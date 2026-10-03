@@ -32,7 +32,7 @@
   { "until": "G.hud.promptShown.includes('search')", "timeout": 8000 },
   { "shot": "o03_beside_him" },
   { "key": "KeyE" },
-  { "until": "G.scenes.beat === 'matchbook' && !!G.inspect.active", "timeout": 8000 },
+  { "until": "G.scenes.beat === 'matchbook' && G.scenes.ctx && G.scenes.ctx.flags.mbUp && !G.scenes.ctx.flags.mbRead && G.player.hands.held.R && G.player.hands.held.R.userData.kind === 'c4matchbook'", "timeout": 8000 },
   { "wait": 1200 },
   { "key": "KeyE" },
   { "until": "G.scenes.ctx && G.scenes.ctx.flags.cardUp && !G.scenes.ctx.flags.cardRead && G.player.hands.held.R && G.player.hands.held.R.userData.kind === 'amesCard'", "timeout": 6000 },

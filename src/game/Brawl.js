@@ -2024,8 +2024,9 @@ export class Brawl {
     this.punchCard();
     if (this._heavyT > 0) { this._heavyT -= dt; if (this._heavyT <= 0 && this._cards && this._cards.shownCard === HEAVY_CARD) this._cards.card(''); return; }
     if (!this.heavyUntaught || this._heavyShown || this.lesson || this.finished || (this.stats.hards || 0) > 0) return;
-    // ([C4] m6: not over the punch's card, nor with the cue up)
-    if (this.cue || this._punchT > this.T) return;
+    // ([C4] m6: one card at a time - after the punch's (taught first, where
+    // it is untaught), never with the cue up)
+    if (this.cue || this._punchT > this.T || (this.punchUntaught && !this._punchShown)) return;
     if (him.state === 'stun' || him.missT > 0.4) { this._heavyShown = true; this._heavyT = 3.0; this.cards.card(HEAVY_CARD, 'mouseLR'); this.stats.heavyCard = (this.stats.heavyCard || 0) + 1; if (G.save && G.save.flags) G.save.flags.c4heavy = true; }
   }
   // [C4] m6: the punch and his guard, for a fight begun with no lesson: the
@@ -2033,8 +2034,10 @@ export class Brawl {
   // second and a half in at the earliest, never over the cue
   punchCard() {
     const G = this.game, him = this.him, T = G.hud && G.hud.teach;
-    if (!this.punchUntaught || this._punchShown || this.lesson || this.finished || this.cue || !T || this.me.act === 'down' || this.blackT > 0) return;
-    if (this.stats.time < 1.5 || !this.openSides()) return;
+    if (!this.punchUntaught || this._punchShown || this.lesson || this.finished || this.cue || !T || this.me.act === 'down' || this.blackT > 0 || this._heavyT > 0) return;
+    // (an opening he gives in the fight - a breath, a miss - not his reel: out
+    // on his feet the finish card has the words)
+    if (this.stats.time < 1.5 || (this.him.state !== 'move' && this.him.state !== 'attack') || !this.openSides()) return;
     this._punchShown = true; this._punchT = this.T + 3.2;
     T('opening', OPENING_CARD, { secs: 3.2, until: false });
     if (G.save && G.save.flags) G.save.flags.c4punch = true;

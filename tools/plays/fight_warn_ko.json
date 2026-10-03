@@ -1,5 +1,5 @@
 {
- "about": "[C4] after the critic (M1): low on health at his reel, the warning up; gone at the last blow and after",
+ "about": "[C4] after the critic (M1), and its second look (m1): low on health at his reel - out on his feet he cannot hit me, so no warning; the loaded fist held at the window under the card, its ticks kept off it; nothing after the last blow",
  "url": "/?mute=1&start=fight.reel",
  "size": [
   1440,
@@ -31,8 +31,8 @@
    "wait": 500
   },
   {
-   "expect": "G.hud.warnText === 'One more and you\u2019re down.'",
-   "label": "warned, low, out on his feet"
+   "expect": "!G.hud.warnText",
+   "label": "low, but he is out on his feet: no warning (m1)"
   },
   {
    "until": "G.brawl.him.atSpot",
@@ -50,11 +50,26 @@
    "up": "KeyW"
   },
   {
+   "until": "G.brawl._cards && G.brawl._cards.shownCard.indexOf('OUT ON HIS FEET') === 0",
+   "timeout": 6000,
+   "stop": false
+  },
+  {
    "mouse": "down",
    "button": "left"
   },
   {
-   "wait": 900
+   "wait": 780
+  },
+  {
+   "shot": "w0_loading_under_the_card"
+  },
+  {
+   "expect": "!G.hud.warnText && G.brawl.me.act === 'wind' && G.brawl.levelOf(G.brawl.me.holdT) >= 2",
+   "label": "loading at the window, no warning across the fist"
+  },
+  {
+   "wait": 120
   },
   {
    "mouse": "up",
