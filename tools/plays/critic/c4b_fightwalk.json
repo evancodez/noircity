@@ -1,0 +1,229 @@
+{
+ "about": "Critic C4 second look: during the lesson and the fight, back off, walk into the door (E), the glass, the jukebox, the counter, to the north end.",
+ "url": "/?mute=1&start=fight",
+ "size": [
+  1440,
+  900
+ ],
+ "out": "shots/critic/c4b_fightwalk",
+ "steps": [
+  {
+   "until": "G.state === 'title' && !document.getElementById('title').classList.contains('hidden')",
+   "timeout": 30000
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]",
+   "taken": "G.state !== 'title'",
+   "retries": 5,
+   "every": 4000
+  },
+  {
+   "until": "G.scenes.current && G.brawl && G.brawl.active",
+   "timeout": 60000
+  },
+  {
+   "eval": "JSON.stringify({t:+G.time.toFixed(1),beat:G.scenes.beat,p:[+G.eye.x.toFixed(2),+G.eye.z.toFixed(2)],msg:+G.hud.el.msg.style.opacity>0?G.hud.el.msg.textContent:'',prompt:G.hud.promptShown,card:G.brawl._cards&&G.brawl._cards.shownCard,les:G.brawl.lesson&&G.brawl.lesson.kind,hp:Math.round(G.health.hp),downs:G.brawl.stats.downs,him:[+G.brawl.c.pos.x.toFixed(2),+G.brawl.c.pos.z.toFixed(2)]})"
+  },
+  {
+   "shot": "w00_start"
+  },
+  {
+   "down": "KeyS"
+  },
+  {
+   "wait": 700
+  },
+  {
+   "eval": "JSON.stringify({t:+G.time.toFixed(1),beat:G.scenes.beat,p:[+G.eye.x.toFixed(2),+G.eye.z.toFixed(2)],msg:+G.hud.el.msg.style.opacity>0?G.hud.el.msg.textContent:'',prompt:G.hud.promptShown,card:G.brawl._cards&&G.brawl._cards.shownCard,les:G.brawl.lesson&&G.brawl.lesson.kind,hp:Math.round(G.health.hp),downs:G.brawl.stats.downs,him:[+G.brawl.c.pos.x.toFixed(2),+G.brawl.c.pos.z.toFixed(2)]})"
+  },
+  {
+   "wait": 700
+  },
+  {
+   "eval": "JSON.stringify({t:+G.time.toFixed(1),beat:G.scenes.beat,p:[+G.eye.x.toFixed(2),+G.eye.z.toFixed(2)],msg:+G.hud.el.msg.style.opacity>0?G.hud.el.msg.textContent:'',prompt:G.hud.promptShown,card:G.brawl._cards&&G.brawl._cards.shownCard,les:G.brawl.lesson&&G.brawl.lesson.kind,hp:Math.round(G.health.hp),downs:G.brawl.stats.downs,him:[+G.brawl.c.pos.x.toFixed(2),+G.brawl.c.pos.z.toFixed(2)]})"
+  },
+  {
+   "wait": 700
+  },
+  {
+   "eval": "JSON.stringify({t:+G.time.toFixed(1),beat:G.scenes.beat,p:[+G.eye.x.toFixed(2),+G.eye.z.toFixed(2)],msg:+G.hud.el.msg.style.opacity>0?G.hud.el.msg.textContent:'',prompt:G.hud.promptShown,card:G.brawl._cards&&G.brawl._cards.shownCard,les:G.brawl.lesson&&G.brawl.lesson.kind,hp:Math.round(G.health.hp),downs:G.brawl.stats.downs,him:[+G.brawl.c.pos.x.toFixed(2),+G.brawl.c.pos.z.toFixed(2)]})"
+  },
+  {
+   "up": "KeyS"
+  },
+  {
+   "shot": "w01_backed"
+  },
+  {
+   "walk": [
+    [
+     -11.8,
+     0.6
+    ]
+   ],
+   "timeout": 12000,
+   "stop": false
+  },
+  {
+   "eval": "JSON.stringify({t:+G.time.toFixed(1),beat:G.scenes.beat,p:[+G.eye.x.toFixed(2),+G.eye.z.toFixed(2)],msg:+G.hud.el.msg.style.opacity>0?G.hud.el.msg.textContent:'',prompt:G.hud.promptShown,card:G.brawl._cards&&G.brawl._cards.shownCard,les:G.brawl.lesson&&G.brawl.lesson.kind,hp:Math.round(G.health.hp),downs:G.brawl.stats.downs,him:[+G.brawl.c.pos.x.toFixed(2),+G.brawl.c.pos.z.toFixed(2)]})"
+  },
+  {
+   "look": "(() => { const d = Math.atan2(Math.sin(-1.5708 - N.controller.yaw), Math.cos(-1.5708 - N.controller.yaw)); return [Math.round(-d / 0.0021), 0]; })()",
+   "steps": 6
+  },
+  {
+   "look": "[0, Math.round((N.controller.pitch - (-0.1)) / 0.0021)]",
+   "steps": 4
+  },
+  {
+   "down": "KeyW"
+  },
+  {
+   "wait": 800
+  },
+  {
+   "up": "KeyW"
+  },
+  {
+   "eval": "JSON.stringify({t:+G.time.toFixed(1),beat:G.scenes.beat,p:[+G.eye.x.toFixed(2),+G.eye.z.toFixed(2)],msg:+G.hud.el.msg.style.opacity>0?G.hud.el.msg.textContent:'',prompt:G.hud.promptShown,card:G.brawl._cards&&G.brawl._cards.shownCard,les:G.brawl.lesson&&G.brawl.lesson.kind,hp:Math.round(G.health.hp),downs:G.brawl.stats.downs,him:[+G.brawl.c.pos.x.toFixed(2),+G.brawl.c.pos.z.toFixed(2)]})"
+  },
+  {
+   "shot": "w02_into_door"
+  },
+  {
+   "key": "KeyE"
+  },
+  {
+   "wait": 300
+  },
+  {
+   "eval": "JSON.stringify({t:+G.time.toFixed(1),beat:G.scenes.beat,p:[+G.eye.x.toFixed(2),+G.eye.z.toFixed(2)],msg:+G.hud.el.msg.style.opacity>0?G.hud.el.msg.textContent:'',prompt:G.hud.promptShown,card:G.brawl._cards&&G.brawl._cards.shownCard,les:G.brawl.lesson&&G.brawl.lesson.kind,hp:Math.round(G.health.hp),downs:G.brawl.stats.downs,him:[+G.brawl.c.pos.x.toFixed(2),+G.brawl.c.pos.z.toFixed(2)]})"
+  },
+  {
+   "shot": "w03_door_E"
+  },
+  {
+   "walk": [
+    [
+     -11.6,
+     -2.0
+    ]
+   ],
+   "timeout": 10000,
+   "stop": false
+  },
+  {
+   "look": "(() => { const d = Math.atan2(Math.sin(-1.5708 - N.controller.yaw), Math.cos(-1.5708 - N.controller.yaw)); return [Math.round(-d / 0.0021), 0]; })()",
+   "steps": 6
+  },
+  {
+   "down": "KeyW"
+  },
+  {
+   "wait": 900
+  },
+  {
+   "up": "KeyW"
+  },
+  {
+   "eval": "JSON.stringify({t:+G.time.toFixed(1),beat:G.scenes.beat,p:[+G.eye.x.toFixed(2),+G.eye.z.toFixed(2)],msg:+G.hud.el.msg.style.opacity>0?G.hud.el.msg.textContent:'',prompt:G.hud.promptShown,card:G.brawl._cards&&G.brawl._cards.shownCard,les:G.brawl.lesson&&G.brawl.lesson.kind,hp:Math.round(G.health.hp),downs:G.brawl.stats.downs,him:[+G.brawl.c.pos.x.toFixed(2),+G.brawl.c.pos.z.toFixed(2)]})"
+  },
+  {
+   "shot": "w04_into_glass"
+  },
+  {
+   "walk": [
+    [
+     -12.6,
+     -4.6
+    ]
+   ],
+   "timeout": 10000,
+   "stop": false
+  },
+  {
+   "look": "(() => { const yw = Math.atan2(-(-12.9 - G.eye.x), -(-5.6 - G.eye.z)); const d = Math.atan2(Math.sin(yw - N.controller.yaw), Math.cos(yw - N.controller.yaw)); return [Math.round(-d / (N.controller.sensitivity || 0.0021)), 0]; })()",
+   "steps": 8
+  },
+  {
+   "down": "KeyW"
+  },
+  {
+   "wait": 900
+  },
+  {
+   "up": "KeyW"
+  },
+  {
+   "eval": "JSON.stringify({t:+G.time.toFixed(1),beat:G.scenes.beat,p:[+G.eye.x.toFixed(2),+G.eye.z.toFixed(2)],msg:+G.hud.el.msg.style.opacity>0?G.hud.el.msg.textContent:'',prompt:G.hud.promptShown,card:G.brawl._cards&&G.brawl._cards.shownCard,les:G.brawl.lesson&&G.brawl.lesson.kind,hp:Math.round(G.health.hp),downs:G.brawl.stats.downs,him:[+G.brawl.c.pos.x.toFixed(2),+G.brawl.c.pos.z.toFixed(2)]})"
+  },
+  {
+   "shot": "w05_into_jukebox"
+  },
+  {
+   "key": "KeyE"
+  },
+  {
+   "wait": 300
+  },
+  {
+   "eval": "JSON.stringify({t:+G.time.toFixed(1),beat:G.scenes.beat,p:[+G.eye.x.toFixed(2),+G.eye.z.toFixed(2)],msg:+G.hud.el.msg.style.opacity>0?G.hud.el.msg.textContent:'',prompt:G.hud.promptShown,card:G.brawl._cards&&G.brawl._cards.shownCard,les:G.brawl.lesson&&G.brawl.lesson.kind,hp:Math.round(G.health.hp),downs:G.brawl.stats.downs,him:[+G.brawl.c.pos.x.toFixed(2),+G.brawl.c.pos.z.toFixed(2)]})"
+  },
+  {
+   "walk": [
+    [
+     -13.6,
+     -3.0
+    ],
+    [
+     -14.6,
+     -1.0
+    ]
+   ],
+   "timeout": 10000,
+   "stop": false
+  },
+  {
+   "look": "(() => { const yw = Math.atan2(-(-16.0 - G.eye.x), -(-1.0 - G.eye.z)); const d = Math.atan2(Math.sin(yw - N.controller.yaw), Math.cos(yw - N.controller.yaw)); return [Math.round(-d / (N.controller.sensitivity || 0.0021)), 0]; })()",
+   "steps": 8
+  },
+  {
+   "down": "KeyW"
+  },
+  {
+   "wait": 900
+  },
+  {
+   "up": "KeyW"
+  },
+  {
+   "eval": "JSON.stringify({t:+G.time.toFixed(1),beat:G.scenes.beat,p:[+G.eye.x.toFixed(2),+G.eye.z.toFixed(2)],msg:+G.hud.el.msg.style.opacity>0?G.hud.el.msg.textContent:'',prompt:G.hud.promptShown,card:G.brawl._cards&&G.brawl._cards.shownCard,les:G.brawl.lesson&&G.brawl.lesson.kind,hp:Math.round(G.health.hp),downs:G.brawl.stats.downs,him:[+G.brawl.c.pos.x.toFixed(2),+G.brawl.c.pos.z.toFixed(2)]})"
+  },
+  {
+   "shot": "w06_into_counter"
+  },
+  {
+   "walk": [
+    [
+     -13.0,
+     3.0
+    ],
+    [
+     -12.8,
+     8.0
+    ]
+   ],
+   "timeout": 12000,
+   "stop": false
+  },
+  {
+   "eval": "JSON.stringify({t:+G.time.toFixed(1),beat:G.scenes.beat,p:[+G.eye.x.toFixed(2),+G.eye.z.toFixed(2)],msg:+G.hud.el.msg.style.opacity>0?G.hud.el.msg.textContent:'',prompt:G.hud.promptShown,card:G.brawl._cards&&G.brawl._cards.shownCard,les:G.brawl.lesson&&G.brawl.lesson.kind,hp:Math.round(G.health.hp),downs:G.brawl.stats.downs,him:[+G.brawl.c.pos.x.toFixed(2),+G.brawl.c.pos.z.toFixed(2)]})"
+  },
+  {
+   "shot": "w07_north"
+  }
+ ]
+}

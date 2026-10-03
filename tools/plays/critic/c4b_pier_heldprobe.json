@@ -1,0 +1,47 @@
+{
+ "about": "Critic C4 second look: warehouse.fight from the title, profile probe.",
+ "url": "/?mute=1&start=warehouse.fight",
+ "size": [
+  1440,
+  900
+ ],
+ "out": "shots/critic/c4b_pier_heldprobe",
+ "steps": [
+  {
+   "until": "G.state === 'title' && !document.getElementById('title').classList.contains('hidden')",
+   "timeout": 30000
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]",
+   "taken": "G.state !== 'title'",
+   "retries": 5,
+   "every": 4000
+  },
+  {
+   "until": "G.scenes.current && G.brawl && G.brawl.active",
+   "timeout": 90000
+  },
+  {
+   "drive": "tools/plays/critic/c4_bot.mjs",
+   "profile": "probe",
+   "timeout": 70000,
+   "shots": 6,
+   "delays": [
+    200
+   ],
+   "ignoreHeld": true
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "shot": "end"
+  },
+  {
+   "eval": "JSON.stringify({t:+G.time.toFixed(1),sc:G.scenes.current&&G.scenes.current.id,beat:G.scenes.beat,obj:G.hud.objectiveText,prompt:G.hud.promptShown,say:G.hud.sayShown,warn:G.hud.warnText,p:[+N.controller.pos.x.toFixed(2),+N.controller.pos.z.toFixed(2)],inv:G.save.inventory.join(',')})"
+  }
+ ]
+}

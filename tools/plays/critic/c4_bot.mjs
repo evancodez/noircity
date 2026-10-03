@@ -78,7 +78,9 @@ export default async function drive({ js, keyDown, keyUp, mouse, shot, log, slee
       else { L.block = Math.min(0.75, L.block + 0.25); L.open = [Math.max(220, L.open[0] - 30), Math.max(300, L.open[1] - 50)]; }
       log(`LEARN from '${why}': ${JSON.stringify(L)}`);
     }
-    if (s.downs > prevDowns) { prevDowns = s.downs; log(`DOWN #${s.downs} round ${s.round} his ${s.his}`); await snap('down' + s.downs); }
+    if (s.downs > prevDowns) { prevDowns = s.downs; log(`DOWN #${s.downs} round ${s.round} his ${s.his}`); await snap('down' + s.downs);
+      // (second look: the word on the black, read off the screen once it is up)
+      for (let i = 0; i < 40; i++) { const w = await js('G.brawl.downWhy || null'); if (w) { log(`BLACK #${s.downs}: ${w}`); out.blacks = (out.blacks || []).concat(w); if ((opts.blackShots ?? 3) > (out.blackN || 0)) { out.blackN = (out.blackN || 0) + 1; await sleep(250); await snap('black' + s.downs); } break; } await sleep(60); } }
     if (s.cue && s.cueT !== lastCue && shotN < 6) { await snap('cue_' + s.cue + '_' + s.clip); }
     await release();
     if (!s.act) {
@@ -95,14 +97,18 @@ export default async function drive({ js, keyDown, keyUp, mouse, shot, log, slee
     if (s.cue && s.cueT !== lastCue) {
       lastCue = s.cueT;
       let key = s.cue === 'R' ? 'KeyD' : 'KeyA', delay;
-      if (prof === 'masher' || prof === 'masher2' || prof === 'wmash') key = null;
+      if (prof === 'masher' || prof === 'masher2' || prof === 'wmash' || prof === 'lazy') key = null;
+      else if (prof === 'lazydodge') delay = rr(230, 300);
+      else if (prof === 'slow') { const r = Math.random(); delay = rr(300, 450); if (r < 0.1) key = null; else if (r < 0.25) key = key === 'KeyD' ? 'KeyA' : 'KeyD'; }
       else if (prof === 'bad') { const r = Math.random(); delay = rr(320, 500); if (r < 0.25) key = null; else if (r < 0.45) key = key === 'KeyD' ? 'KeyA' : 'KeyD'; }
       else if (prof === 'medium') { const r = Math.random(); delay = rr(240, 360); if (r < 0.1) key = null; else if (r < 0.25) key = key === 'KeyD' ? 'KeyA' : 'KeyD'; }
       else if (prof === 'learner') { const r = Math.random(); delay = rr(L.cue[0], L.cue[1]); if (r < L.miss) key = null; else if (r < L.miss + L.wrong) key = key === 'KeyD' ? 'KeyA' : 'KeyD'; }
       else if (prof === 'probe') { const L = opts.delays || [180, 220, 260, 300, 340]; delay = L[probeN++ % L.length]; }
       else if (prof === 'human') delay = rr(230, 300);
       else delay = rr(170, 240);
-      if (s.cueHeld || s.les) { if (key == null) key = s.cue === 'R' ? 'KeyD' : 'KeyA'; delay = rr(600, 1200); }   // a held card: read it, then do it
+      const heldRead = opts.ignoreHeld ? (s.cueHeld && !(out.heldSeen = (out.heldSeen || 0) + 1, out.heldSeen > 1)) : s.cueHeld;
+      if (s.cueHeld) { out.heldCues = (out.heldCues || []).concat([[+((Date.now() - T0) / 1000).toFixed(1), s.clip, s.wk]]); log(`HELD cue ${s.clip} worldK ${s.wk}`); }
+      if (heldRead || s.les) { if (key == null) key = s.cue === 'R' ? 'KeyD' : 'KeyA'; delay = rr(600, 1200); }   // a held card: read it, then do it
       if (key) plans.set('cue', { key, at: now + delay });
     }
     const P = plans.get('cue');
@@ -113,8 +119,16 @@ export default async function drive({ js, keyDown, keyUp, mouse, shot, log, slee
     if (s.d > want + 0.25 && !held.has('Space')) await down('KeyW', 140);
     // the masher: both buttons, fast
     if (prof === 'wmash' && !held.has('KeyW')) await down('KeyW', 1e9);
+    // (second look: a slow random clicker - W held, a click of either button every 2 .. 3 s whatever he does; lazydodge also answers the cue)
+    if (prof === 'lazy' || prof === 'lazydodge') {
+      if (!held.has('KeyW') && s.d > 1.2) await down('KeyW', 300);
+      if (s.les && /KEEP IT PRESSED|HOLD ON/.test((s.card + ' ' + s.teach).toUpperCase()) && s.open && now >= openAt) { await press('left', 950); openAt = now + 1500; await sleep(16); continue; }
+      if (s.st === 'reel' && s.atSpot && now >= pokeAt) { pokeAt = now + rr(2000, 3000); await press(Math.random() < 0.5 ? 'left' : 'right', rr(800, 950)); await sleep(16); continue; }
+      if (now >= pokeAt) { pokeAt = now + rr(2000, 3000); await press(Math.random() < 0.5 ? 'left' : 'right', rr(80, 160)); }
+      await sleep(16); continue;
+    }
     if (prof === 'masher' || prof === 'masher2' || prof === 'wmash') {
-      if ((prof === 'masher2' || prof === 'wmash') && s.les && /HOLD/.test((s.card + ' ' + s.teach).toUpperCase()) && s.open && now >= openAt) { await press('left', 950); openAt = now + 1500; await sleep(16); continue; }
+      if ((prof === 'masher2' || prof === 'wmash') && s.les && /KEEP IT PRESSED|HOLD ON/.test((s.card + ' ' + s.teach).toUpperCase()) && s.open && now >= openAt) { await press('left', 950); openAt = now + 1500; await sleep(16); continue; }
       if (now >= pokeAt) { pokeAt = now + rr(120, 220); await press(Math.random() < 0.5 ? 'left' : 'right', rr(80, 140)); }
       await sleep(16); continue;
     }
@@ -122,7 +136,7 @@ export default async function drive({ js, keyDown, keyUp, mouse, shot, log, slee
     const words = (s.card + ' ' + s.teach).toUpperCase();
     if (s.les && s.st !== 'attack') {
       if (now >= openAt) {
-        if (/HOLD/.test(words) && s.open) { await press(/RIGHT/.test(words) ? 'right' : 'left', rr(800, 1000)); openAt = now + 1600; }
+        if (/KEEP IT PRESSED|HOLD ON/.test(words) && s.open) { await press(/RIGHT/.test(words) ? 'right' : 'left', rr(800, 1000)); openAt = now + 1600; }
         else if (/LEFT CLICK/.test(words) && (s.open || !/GUARD IS DOWN/.test(words))) { await press('left', rr(70, 160)); openAt = now + rr(700, 1100); }
         else if (/RIGHT CLICK/.test(words) && (s.open || !/GUARD IS DOWN/.test(words))) { await press('right', rr(70, 160)); openAt = now + rr(700, 1100); }
         else if ((/CLICK|OPENING/.test(words)) && s.open) { await press(s.open[0] === 'L' ? 'left' : 'right', rr(70, 160)); openAt = now + rr(700, 1100); }
@@ -137,6 +151,7 @@ export default async function drive({ js, keyDown, keyUp, mouse, shot, log, slee
         plans.set('blk:' + s.clip + s.round, 1);
         if ((prof === 'good' || prof === 'human') && /jab|cross|answer|bottle/.test(s.clip) && Math.random() < 0.8) { const wait = Math.max(0, (s.tell || 0) + rr(0.18, 0.26) - s.t) * 1000; plans.set('block', { at: now + wait, until: Math.max(150, ((s.contact - s.t) + 0.2) * 1000) }); }
         else if (prof === 'learner' && /jab|cross|answer|bottle/.test(s.clip) && Math.random() < L.block) { const wait = Math.max(0, (s.tell || 0) + rr(0.24, 0.34) - s.t) * 1000; plans.set('block', { at: now + wait, until: Math.max(150, ((s.contact - s.t) + 0.2) * 1000) }); }
+        else if (prof === 'slow' && /jab|cross|answer|bottle/.test(s.clip) && Math.random() < 0.35) { const wait = Math.max(0, (s.tell || 0) + rr(0.3, 0.45) - s.t) * 1000; plans.set('block', { at: now + wait, until: Math.max(150, ((s.contact - s.t) + 0.2) * 1000) }); }
         else if (prof === 'bad' && Math.random() < 0.3) plans.set('block', { at: now + rr(250, 500), until: rr(200, 400) });
       }
       void key;
@@ -153,7 +168,7 @@ export default async function drive({ js, keyDown, keyUp, mouse, shot, log, slee
     if (look !== openSeen) { openSeen = look; openAt = now + (prof === 'good' || prof === 'human' || prof === 'probe' ? rr(200, 300) : prof === 'medium' ? rr(300, 450) : prof === 'learner' ? rr(L.open[0], L.open[1]) : rr(450, 700)); }
     if (s.open && now >= openAt && s.st !== 'attack') {
       let side = s.open.length === 2 ? (Math.random() < 0.5 ? 'L' : 'R') : s.open[0];
-      if ((prof === 'bad' && Math.random() < 0.33) || ((prof === 'medium' || prof === 'learner') && Math.random() < 0.15)) side = side === 'L' ? 'R' : 'L';
+      if ((prof === 'bad' && Math.random() < 0.33) || (prof === 'slow' && Math.random() < 0.25) || ((prof === 'medium' || prof === 'learner') && Math.random() < 0.15)) side = side === 'L' ? 'R' : 'L';
       const big = s.st === 'stun' || s.missT > 0.35;
       const goodish = prof === 'good' || prof === 'human' || prof === 'probe';
       const ms = goodish ? (big ? rr(650, 850) : rr(70, 150)) : (Math.random() < 0.2 ? rr(500, 900) : rr(90, 250));
@@ -161,10 +176,10 @@ export default async function drive({ js, keyDown, keyUp, mouse, shot, log, slee
       openAt = now + (goodish ? rr(200, 320) : prof === 'medium' ? rr(300, 500) : rr(400, 700));
     } else if (!s.open && s.st === 'move' && now >= pokeAt) {
       // a jab into his guard now and then (bad often, good seldom)
-      pokeAt = now + (prof === 'bad' ? rr(700, 1500) : prof === 'medium' ? rr(1500, 3000) : prof === 'learner' ? rr(L.poke[0], L.poke[1]) : rr(2500, 4500));
+      pokeAt = now + (prof === 'bad' ? rr(700, 1500) : prof === 'slow' ? rr(3000, 6000) : prof === 'medium' ? rr(1500, 3000) : prof === 'learner' ? rr(L.poke[0], L.poke[1]) : rr(2500, 4500));
       await press(Math.random() < 0.5 ? 'left' : 'right', rr(70, 200));
     }
-    if (prof === 'bad' && now >= strayAt) { strayAt = now + rr(3000, 7000); const k = Math.random() < 0.5 ? 'KeyS' : 'Space'; await tap(k); }
+    if ((prof === 'bad' || prof === 'slow') && now >= strayAt) { strayAt = now + rr(3000, 7000); const k = Math.random() < 0.5 ? 'KeyS' : 'Space'; await tap(k); }
     await sleep(16);
   }
   await release(true);

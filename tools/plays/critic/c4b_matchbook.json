@@ -1,0 +1,223 @@
+{
+ "about": "Critic C4 second look: the matchbook coming out, a frame every ~0.3 s from E (does the hand stay under it).",
+ "url": "/?mute=1&start=fight.ko",
+ "size": [
+  1440,
+  900
+ ],
+ "out": "shots/critic/c4b_matchbook",
+ "steps": [
+  {
+   "until": "G.state === 'title' && !document.getElementById('title').classList.contains('hidden')",
+   "timeout": 30000
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]",
+   "taken": "G.state !== 'title'",
+   "retries": 5,
+   "every": 4000
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id==='fight' && G.scenes.beat==='ko' && N.controller.mode==='walk'",
+   "timeout": 60000
+  },
+  {
+   "wait": 800
+  },
+  {
+   "walk": [
+    [
+     -12.6,
+     -3.0
+    ],
+    [
+     -11.5,
+     -3.0
+    ]
+   ],
+   "timeout": 15000,
+   "stop": false
+  },
+  {
+   "look": "(() => { const yw = Math.atan2(-(-8.8 - G.eye.x), -(-3.8 - G.eye.z)); const d = Math.atan2(Math.sin(yw - N.controller.yaw), Math.cos(yw - N.controller.yaw)); return [Math.round(-d / (N.controller.sensitivity || 0.0021)), 0]; })()",
+   "steps": 8
+  },
+  {
+   "wait": 400
+  },
+  {
+   "until": "G.hud.promptShown.includes('climb')",
+   "timeout": 5000
+  },
+  {
+   "key": "Space"
+  },
+  {
+   "wait": 1800
+  },
+  {
+   "look": [
+    0,
+    120
+   ],
+   "steps": 4
+  },
+  {
+   "wait": 300
+  },
+  {
+   "until": "G.hud.promptShown.includes('search')",
+   "timeout": 5000
+  },
+  {
+   "key": "KeyE"
+  },
+  {
+   "wait": 150
+  },
+  {
+   "eval": "JSON.stringify({beat:G.scenes.beat,t:+G.time.toFixed(2),clip:N.hands&&N.hands.clip?N.hands.clip:(G.hands&&G.hands.cur&&G.hands.cur.name)||null,prompt:G.hud.promptShown})"
+  },
+  {
+   "shot": "f00"
+  },
+  {
+   "wait": 150
+  },
+  {
+   "eval": "JSON.stringify({beat:G.scenes.beat,t:+G.time.toFixed(2),clip:N.hands&&N.hands.clip?N.hands.clip:(G.hands&&G.hands.cur&&G.hands.cur.name)||null,prompt:G.hud.promptShown})"
+  },
+  {
+   "shot": "f01"
+  },
+  {
+   "wait": 150
+  },
+  {
+   "eval": "JSON.stringify({beat:G.scenes.beat,t:+G.time.toFixed(2),clip:N.hands&&N.hands.clip?N.hands.clip:(G.hands&&G.hands.cur&&G.hands.cur.name)||null,prompt:G.hud.promptShown})"
+  },
+  {
+   "shot": "f02"
+  },
+  {
+   "wait": 150
+  },
+  {
+   "eval": "JSON.stringify({beat:G.scenes.beat,t:+G.time.toFixed(2),clip:N.hands&&N.hands.clip?N.hands.clip:(G.hands&&G.hands.cur&&G.hands.cur.name)||null,prompt:G.hud.promptShown})"
+  },
+  {
+   "shot": "f03"
+  },
+  {
+   "wait": 150
+  },
+  {
+   "eval": "JSON.stringify({beat:G.scenes.beat,t:+G.time.toFixed(2),clip:N.hands&&N.hands.clip?N.hands.clip:(G.hands&&G.hands.cur&&G.hands.cur.name)||null,prompt:G.hud.promptShown})"
+  },
+  {
+   "shot": "f04"
+  },
+  {
+   "wait": 150
+  },
+  {
+   "eval": "JSON.stringify({beat:G.scenes.beat,t:+G.time.toFixed(2),clip:N.hands&&N.hands.clip?N.hands.clip:(G.hands&&G.hands.cur&&G.hands.cur.name)||null,prompt:G.hud.promptShown})"
+  },
+  {
+   "shot": "f05"
+  },
+  {
+   "wait": 150
+  },
+  {
+   "eval": "JSON.stringify({beat:G.scenes.beat,t:+G.time.toFixed(2),clip:N.hands&&N.hands.clip?N.hands.clip:(G.hands&&G.hands.cur&&G.hands.cur.name)||null,prompt:G.hud.promptShown})"
+  },
+  {
+   "shot": "f06"
+  },
+  {
+   "wait": 150
+  },
+  {
+   "eval": "JSON.stringify({beat:G.scenes.beat,t:+G.time.toFixed(2),clip:N.hands&&N.hands.clip?N.hands.clip:(G.hands&&G.hands.cur&&G.hands.cur.name)||null,prompt:G.hud.promptShown})"
+  },
+  {
+   "shot": "f07"
+  },
+  {
+   "wait": 150
+  },
+  {
+   "eval": "JSON.stringify({beat:G.scenes.beat,t:+G.time.toFixed(2),clip:N.hands&&N.hands.clip?N.hands.clip:(G.hands&&G.hands.cur&&G.hands.cur.name)||null,prompt:G.hud.promptShown})"
+  },
+  {
+   "shot": "f08"
+  },
+  {
+   "wait": 150
+  },
+  {
+   "eval": "JSON.stringify({beat:G.scenes.beat,t:+G.time.toFixed(2),clip:N.hands&&N.hands.clip?N.hands.clip:(G.hands&&G.hands.cur&&G.hands.cur.name)||null,prompt:G.hud.promptShown})"
+  },
+  {
+   "shot": "f09"
+  },
+  {
+   "wait": 150
+  },
+  {
+   "eval": "JSON.stringify({beat:G.scenes.beat,t:+G.time.toFixed(2),clip:N.hands&&N.hands.clip?N.hands.clip:(G.hands&&G.hands.cur&&G.hands.cur.name)||null,prompt:G.hud.promptShown})"
+  },
+  {
+   "shot": "f10"
+  },
+  {
+   "wait": 150
+  },
+  {
+   "eval": "JSON.stringify({beat:G.scenes.beat,t:+G.time.toFixed(2),clip:N.hands&&N.hands.clip?N.hands.clip:(G.hands&&G.hands.cur&&G.hands.cur.name)||null,prompt:G.hud.promptShown})"
+  },
+  {
+   "shot": "f11"
+  },
+  {
+   "wait": 150
+  },
+  {
+   "eval": "JSON.stringify({beat:G.scenes.beat,t:+G.time.toFixed(2),clip:N.hands&&N.hands.clip?N.hands.clip:(G.hands&&G.hands.cur&&G.hands.cur.name)||null,prompt:G.hud.promptShown})"
+  },
+  {
+   "shot": "f12"
+  },
+  {
+   "wait": 150
+  },
+  {
+   "eval": "JSON.stringify({beat:G.scenes.beat,t:+G.time.toFixed(2),clip:N.hands&&N.hands.clip?N.hands.clip:(G.hands&&G.hands.cur&&G.hands.cur.name)||null,prompt:G.hud.promptShown})"
+  },
+  {
+   "shot": "f13"
+  },
+  {
+   "wait": 150
+  },
+  {
+   "eval": "JSON.stringify({beat:G.scenes.beat,t:+G.time.toFixed(2),clip:N.hands&&N.hands.clip?N.hands.clip:(G.hands&&G.hands.cur&&G.hands.cur.name)||null,prompt:G.hud.promptShown})"
+  },
+  {
+   "shot": "f14"
+  },
+  {
+   "wait": 150
+  },
+  {
+   "eval": "JSON.stringify({beat:G.scenes.beat,t:+G.time.toFixed(2),clip:N.hands&&N.hands.clip?N.hands.clip:(G.hands&&G.hands.cur&&G.hands.cur.name)||null,prompt:G.hud.promptShown})"
+  },
+  {
+   "shot": "f15"
+  }
+ ]
+}
