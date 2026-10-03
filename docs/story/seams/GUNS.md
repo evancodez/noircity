@@ -406,7 +406,7 @@ a new stage drops the old stage's bodies.
 | --- | --- | --- |
 | `ready` | the teach: tip the desk (E), low (C), rise (RMB), two bottles, reload (R) down | none |
 | `door` | the exposure of a doorway (starts down behind the desk) | three pistol men through one door: the first two stack on it as a pair, guns up, and work it from its jambs; a third (5 s behind) waits his turn along the wall. Standing in the room holding the doorway: a man down in it sends another round by the lobby to A2 |
-| `two_ways` | watch two ways (starts down behind the desk) | two through A1 as a pair, the third (7 s) through A2 at my back - working it from its jamb, his door said as it opens (`The other door! Behind you!`); no director's flank as well (flankAfter 0) |
+| `two_ways` | watch two ways (starts down behind the desk) | two through A1 as a pair, the third (7 s) through A2 at my back - working it from its jamb, his door said as it opens (`The other door! Behind you!`); no director's flank as well (flankAfter 0); settleK 1.15 |
 | `pin` | wait out the burst, rise on the drum | the Tommy gunner first at the glazed door B2 (the first thing met is the burst), then two pistol men working B1 while he changes his drum; the bar's front panels take two bursts at one place |
 | `rush` | answer the heavy at once | the heavy in at the street door, a pistol man at 14 s through A2 (the fight's `area` the house; "One more. Find him." when the heavy is down) |
 | `street` | cover to cover (Tommy gun) | three behind the far cars, one out of the loading door (flankAfter 14) |
