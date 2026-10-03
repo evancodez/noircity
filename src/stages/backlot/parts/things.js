@@ -116,6 +116,15 @@ export default {
         // (closing: my velocity less the thing's, toward its face)
         const c = -side * ((v.x - T.vel.x) * F.n.x + (v.z - T.vel.z) * F.n.z);
         if (c < 0.4 && d > 0.05) continue;
+        // ([C6 4th] a locked door in a wall met at a glance is the wall: I
+        // slide along it as along the bricks beside it. Only met squarely -
+        // more than about forty degrees into it - does it stop me and rattle.
+        // A run grazing the cut's wall stopped dead at its door five times
+        // running, and the door, nearest, hid the pipe and the sacks ahead)
+        if (T.kind === 'locked') {
+          const sp = Math.hypot(v.x - T.vel.x, v.z - T.vel.z);
+          if (sp > 1.0 && c < 0.64 * sp) continue;
+        }
         const t = d / Math.max(0.4, c);
         if (!best || d < best.d) best = { T, d, c, t, u: along / F.L, side, F };
       }

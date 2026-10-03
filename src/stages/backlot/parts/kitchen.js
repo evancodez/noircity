@@ -188,6 +188,16 @@ export default {
       api.doorLamps[side] = L.wall(d.x - d.w / 2 - 0.55, 2.62, KI.z1, 0, 1, { out: 0.2, strength: 0.85, half: 0.66 });
     }
     api.rollLamp = L.wall(R.x + 2.2, 3.9, KI.z0, 0, -1, { out: 0.4, strength: 1.0 });
+    // ([C6 4th] a lamp on the wash-house's gable end, facing the lane's mouth:
+    // from the back lane the yard was a black court with the lit sheets off
+    // the frame to the left - now the gable and the mouths of both lanes
+    // either side of it are lit in the lane's line of sight, from fence3 on)
+    api.washLamp = L.wall(60.0, 2.75, -58.0, 0, 1, { out: 0.9, strength: 1.1, half: 0.7 });
+    // (and one on the court's east wall at the end of the lane's line, its
+    // pool on the flags by the east lane's mouth: the light the eye runs at
+    // from the lane, and the lane opens off it)
+    // (its bracket swung toward the lanes: the pool and the beam lean into the east lane's mouth)
+    api.courtLamp = L.wall(YARD.x1, 3.1, -54.6, -0.6, -0.8, { out: 0.8, strength: 1.0, half: 0.6 });
     // the yard at night: the sky's grey off the walls, the washing the lit thing in it
     stage.addLook(new THREE.Box3(V3(YARD.x0 - 3.5, -1, KI.z1), V3(YARD.x1, 30, YARD.z1 + 1.5)), {
       // ([C6 3rd] less haze: looking up a lane into its flood the yard was a grey fog)
