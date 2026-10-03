@@ -1,0 +1,21 @@
+{
+ "about": "[C7 critic] a first-timer with no oracle: crouched (the card says C), straight up aisle A along the west wall, east along the back to the west stairs, up, to the office window; no waiting for rounds. Then the same on his feet. Does the plain crouch-walk win the quiet pass by itself? Where am I caught and is it clear why?",
+ "url": "/?mute=1&start=warehouse.floor",
+ "size": [1440, 900],
+ "out": "shots/critic/c7_naive",
+ "steps": [
+  { "until": "G.state === 'title' && !document.getElementById('title').classList.contains('hidden')", "timeout": 30000 },
+  { "wait": 1200 },
+  { "clickOn": "#title .opt[data-k=begin]", "taken": "G.state !== 'title'", "retries": 5, "every": 4000 },
+  { "until": "G.scenes.current && G.scenes.current.id === 'warehouse' && G.scenes.beat === 'floor' && !G.scenes.trans", "timeout": 30000 },
+  { "eval": "(window.W = () => G.scenes.ctx.flags.live, window.LOG = [], G.on('fail', (e) => LOG.push({ why: e.why, beat: G.scenes.beat, t: +G.time.toFixed(1), at: [+N.controller.pos.x.toFixed(1), +N.controller.pos.z.toFixed(1)], by: W().crew.alarmBy && W().crew.alarmBy.name })), window.CS = () => W().crew.men.map(m => m.name + ':' + m.mode + '/' + m.a.toFixed(2) + '@' + m.pos.x.toFixed(1) + ',' + m.pos.z.toFixed(1)).join(' '), 1)" },
+  { "eval": "CS()" },
+  { "key": "KeyC" },
+  { "wait": 300 },
+  { "name": "(1) crouched, straight along the west wall" },
+  { "walk": [[-12.4, -4.5], [-12.4, -14], [-12.4, -27], [-12.0, -36.5], [-4.0, -38.6], [-2.6, -40.2], [-9.6, -40.2], [-9.8, -41.6], [-1.0, -41.7]], "timeout": 120000, "stop": false },
+  { "eval": "JSON.stringify({ beat: G.scenes.beat, at: [N.controller.pos.x.toFixed(1), N.controller.pos.z.toFixed(1)], caught: G.counters.caught || 0, log: LOG, warn: G.hud.kit.warnText })" },
+  { "eval": "CS()" },
+  { "shot": "n01_after_crouch_walk" }
+ ]
+}

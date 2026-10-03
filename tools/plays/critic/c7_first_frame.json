@@ -1,0 +1,30 @@
+{
+ "about": "[C7 critic] the first frames, eye level: outside facing the shed as the chapter gives it, then just inside the side door looking north; can I see the lit office? the hands in the door's pool vs in the dark.",
+ "url": "/?mute=1&start=warehouse",
+ "size": [1440, 900],
+ "out": "shots/critic/c7_first",
+ "steps": [
+  { "until": "G.state === 'title' && !document.getElementById('title').classList.contains('hidden')", "timeout": 30000 },
+  { "wait": 1200 },
+  { "clickOn": "#title .opt[data-k=begin]", "taken": "G.state !== 'title'", "retries": 5, "every": 4000 },
+  { "until": "G.scenes.current && G.scenes.current.id === 'warehouse' && !G.scenes.trans && G.controller.mode === 'sneak'", "timeout": 40000 },
+  { "eval": "JSON.stringify({ pitch: N.controller.pitch, yaw: N.controller.yaw })" },
+  { "walk": [[-10.5, 2.2]], "timeout": 20000 },
+  { "eval": "JSON.stringify({ pitch: N.controller.pitch, yaw: N.controller.yaw })" },
+  { "look": "[Math.round(-(Math.atan2(Math.sin(0 - N.controller.yaw), Math.cos(0 - N.controller.yaw)))/N.controller.sensitivity), Math.round(N.controller.pitch/N.controller.sensitivity)]", "steps": 6 },
+  { "key": "KeyE" },
+  { "wait": 1200 },
+  { "walk": [[-10.5, -1.4]], "timeout": 10000 },
+  { "look": "[Math.round(-(Math.atan2(Math.sin(-0.08 - N.controller.yaw), Math.cos(-0.08 - N.controller.yaw)))/N.controller.sensitivity), Math.round((N.controller.pitch - 0.08)/N.controller.sensitivity)]", "steps": 6 },
+  { "wait": 300 },
+  { "eval": "JSON.stringify({ pitch: N.controller.pitch, yaw: N.controller.yaw })" },
+  { "shot": "c01_inside_level" },
+  { "key": "KeyC" },
+  { "wait": 800 },
+  { "shot": "c02_crouched_dark" },
+  { "walk": [[-10.9, -4.3]], "timeout": 8000 },
+  { "wait": 300 },
+  { "shot": "c03_in_pool" },
+  { "eval": "JSON.stringify({ crouch: N.controller.sneak && N.controller.sneak.crouch, warn: G.hud.kit.warnText })" }
+ ]
+}

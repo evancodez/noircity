@@ -1,0 +1,148 @@
+{
+ "about": "[C7 critic] the foreman fought with the play tool's first-timer hands (hop / block / punish at a reaction time, a wrong read now and then): win? how long? then out by the bay door, along the pier to the coupe: 'The diner.' and on. (The idle half was played first in c7_fight_idle.json: 9 downs in 124 s, the fight never ends.)",
+ "url": "/?mute=1&start=warehouse.fight",
+ "size": [
+  1440,
+  900
+ ],
+ "out": "shots/critic/c7_fight",
+ "steps": [
+  {
+   "until": "G.state === 'title' && !document.getElementById('title').classList.contains('hidden')",
+   "timeout": 30000
+  },
+  {
+   "wait": 1200
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]",
+   "taken": "G.state !== 'title'",
+   "retries": 5,
+   "every": 4000
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'warehouse' && G.scenes.beat === 'fight' && !G.scenes.trans",
+   "timeout": 30000
+  },
+  {
+   "eval": "(window.W = () => G.scenes.ctx.flags.live, window.LOG = [], G.on('fail', (e) => LOG.push({ why: e.why, t: +G.time.toFixed(1) })), window.T0 = G.time, 1)"
+  },
+  {
+   "until": "!!W().fm && W().fm.pos.z < -31.4",
+   "timeout": 10000
+  },
+  {
+   "shot": "f00_he_steps_out"
+  },
+  {
+   "until": "G.brawl.active && G.controller.mode === 'brawl'",
+   "timeout": 15000
+  },
+  {
+   "eval": "JSON.stringify({ intoFight: +(G.time - T0).toFixed(1), holding: G.brawl.him.holding, gun: G.player.weapons.active && G.player.weapons.active.id, obj: G.hud.kit.objText })"
+  },
+  {
+   "name": "(2) fought"
+  },
+  {
+   "eval": "(window.T2 = G.time, 1)"
+  },
+  {
+   "fight": {
+    "timeout": 360000,
+    "shots": {
+     "f03_hook_cue": "G.brawl.him.clip === 'fm_hookSwing' && G.brawl.him.t > 0.3 && G.brawl.him.t < 0.5"
+    }
+   }
+  },
+  {
+   "eval": "JSON.stringify({ secs: +(G.time - T2).toFixed(1), won: G.brawl.stats && G.brawl.stats.won, time: G.brawl.stats && +G.brawl.stats.time.toFixed(1), downs: G.brawl.stats && G.brawl.stats.downs, fails: LOG, beat: G.scenes.beat })"
+  },
+  {
+   "until": "G.scenes.beat === 'after'",
+   "timeout": 30000
+  },
+  {
+   "wait": 1200
+  },
+  {
+   "shot": "f04_after"
+  },
+  {
+   "eval": "JSON.stringify({ obj: G.hud.kit.objText, at: [N.controller.pos.x.toFixed(1), N.controller.pos.z.toFixed(1)] })"
+  },
+  {
+   "walk": [
+    [
+     13.6,
+     -31.4
+    ],
+    [
+     14.3,
+     -30.3
+    ]
+   ],
+   "timeout": 20000,
+   "stop": false
+  },
+  {
+   "until": "G.hud.promptShown.includes('open')",
+   "timeout": 5000
+  },
+  {
+   "key": "KeyE"
+  },
+  {
+   "wait": 1200
+  },
+  {
+   "walk": [
+    [
+     16.9,
+     -27.6
+    ],
+    [
+     17.0,
+     -3.0
+    ],
+    [
+     12.0,
+     4.0
+    ],
+    [
+     -3.4,
+     16.4
+    ]
+   ],
+   "timeout": 40000
+  },
+  {
+   "look": "[Math.round(-(Math.atan2(Math.sin(Math.atan2(-(-6.2 - N.controller.pos.x), -(18.2 - N.controller.pos.z)) - N.controller.yaw), Math.cos(Math.atan2(-(-6.2 - N.controller.pos.x), -(18.2 - N.controller.pos.z)) - N.controller.yaw)))/N.controller.sensitivity), 0]",
+   "steps": 4
+  },
+  {
+   "until": "G.hud.promptShown.includes('get in')",
+   "timeout": 5000
+  },
+  {
+   "shot": "f05_coupe"
+  },
+  {
+   "key": "KeyE"
+  },
+  {
+   "until": "!!document.body.innerText.match(/The diner/)",
+   "timeout": 8000
+  },
+  {
+   "shot": "f06_the_diner"
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id !== 'warehouse'",
+   "timeout": 12000
+  },
+  {
+   "eval": "G.scenes.current.id"
+  }
+ ]
+}
