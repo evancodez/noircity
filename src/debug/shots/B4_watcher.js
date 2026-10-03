@@ -17,6 +17,7 @@ import { pathAt, project } from '../../scenes/watcher/course.js';
 //                6) at bearing `wb` degrees (0 his front, 90 his left, 180
 //                his back), playing clip `wc` (default watcher_run) in place;
 //                &ws=<m/s> his speed (the clip's time scale); &wl=1 a look back;
+//                ([C6 3rd] &wp=L|R his pull - an arm to a stack - &wpt= its time)
 //                &wt= the clip's time (a held clip: a slide, a vault)
 //   watcher_pass   he runs past on the straight at `ws` m/s
 //   c6look       the backlot's places at night, no one there: &pose= as backlot
@@ -94,7 +95,8 @@ export const presets = {
       const yaw = Math.atan2(-(at.x - ex), -(at.z - ez));
       camera.fov = num('fov', 40); camera.updateProjectionMatrix();
       controller.setPose(ex, ez, yaw, Math.atan2(ty - 1.6, d), 0);
-      F.afterPose = (h) => layOn(h, { v: clip === 'watcher_run' ? ws : 0, t: game.time, look: P.get('wl') === '1' ? 0.4 : null });
+      // ([C6 3rd] &wp=L|R his pull at &wpt= seconds into it)
+      F.afterPose = (h) => layOn(h, { v: clip === 'watcher_run' ? ws : 0, t: game.time, look: P.get('wl') === '1' ? 0.4 : null, pull: P.get('wp') ? { t: num('wpt', 0.25), side: P.get('wp') } : null });
     },
   },
   watcher_pass: {

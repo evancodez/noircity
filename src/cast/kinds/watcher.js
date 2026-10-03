@@ -227,10 +227,18 @@ export function layOn(h, { v = 0, t = 0, lean = 0, look = null, pull = null } = 
   if (pull) {
     const w = sm(Math.min(1, pull.t / 0.18)) * (1 - sm(Math.min(1, Math.max(0, (pull.t - 0.3) / 0.4))));
     const sg = pull.side === 'R' ? -1 : 1;
-    // (out to the side and back: the upper arm swung out, the chest turned to it)
-    b['upperArm' + pull.side].quaternion.premultiply(_q.setFromAxisAngle(_Z, sg * 1.1 * w));
-    b['upperArm' + pull.side].quaternion.premultiply(_q.setFromAxisAngle(_X, 0.5 * w));
+    // (out to the side and back: the upper arm swung out, the chest turned to
+    // it; [C6 3rd] back at the shoulder's height, not flung up over his head:
+    // from his heels it filled half the frame like a wave)
+    // (the arm back and out at the shoulder's height to the stack beside and
+    // behind him, the yank; &wpk= tries others in the study preset)
+    const PK = (typeof location !== 'undefined' && new URLSearchParams(location.search).get('wpk')) || '';
+    const k3 = PK ? PK.split(',').map(Number) : [0.2, 0.9, 0, 0.25];
+    b['upperArm' + pull.side].quaternion.premultiply(_q.setFromAxisAngle(_Z, sg * k3[0] * w));
+    b['upperArm' + pull.side].quaternion.premultiply(_q.setFromAxisAngle(_X, k3[1] * w));
+    if (b['forearm' + pull.side]) b['forearm' + pull.side].quaternion.premultiply(_q.setFromAxisAngle(_X, k3[2] * w));
     b.chest.quaternion.multiply(_q.setFromAxisAngle(_Y, sg * 0.35 * w));
+    b.chest.quaternion.multiply(_q.setFromAxisAngle(_Z, sg * k3[3] * w));
     b.head.quaternion.multiply(_q.setFromAxisAngle(_Y, sg * 0.4 * w));
   }
 }
