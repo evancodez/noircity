@@ -43,9 +43,10 @@ const NUM_CORR = { dmgK: 0.9, settleK: 1.25 };
 const HEAVY_DMGK = 0.55;
 // (the flank: slower to settle - they come at my side, the time to turn; at 1.35 a good hand still lost one
 // first try in five to the man who came in and round the desk)
-// ([C5] after the critic: 1.7 and rounds at 0.8 for a man down in cover - the two now come into the room together, and
-// the first-timer down behind the desk took the flank to a fourth try at 1.5 / 0.9; on my feet it is STANDING's below)
-const NUM_FLANK = { settleK: 1.7, dmgK: 0.8, flankAfter: 0 };
+// ([C5] after the critic: 2.0 and rounds at 0.8 for a man down in cover - the two now come at once from two sides, and
+// the first-timer down behind the desk took the flank to a fourth try at 1.5 / 0.9, a good hand lost one first try in
+// six at 1.7; on my feet it is STANDING's below)
+const NUM_FLANK = { settleK: 2.0, dmgK: 0.8, flankAfter: 0 };
 // ([C5] after the critic) the first gunfight's grace - their aim settling slower (settleK above 1) - is for the man
 // who takes cover. On my feet (or down with nothing round me: the kit's lowInOpen) they settle at the difficulty
 // table's floor (0.85) and their rounds weigh in full (1.0), everywhere in this chapter: standing and trading in the
@@ -325,6 +326,9 @@ export default defineScene({
       });
       // they come in: the door kicked, the sidelight's glass knocked out
       F.go = G.time;
+      // (the kit's clock for the one who goes round starts at the kick, not while I waited down in the moment: the
+      // move's place behind the secretary's desk had one sent round the moment they were in)
+      if (K.post) K.post.t = 0;
       ctx.hud.objective('Hold the room.');
       O.door.kick();
       G.controller.shake(0.4, Math.hypot(G.eye.x - DOORS.AMES.x, G.eye.z - 3.4));
