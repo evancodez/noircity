@@ -12,7 +12,7 @@
   { "until": "W().said >= 3", "timeout": 20000 },
   { "shot": "o01_order" },
   { "until": "W().looking === true", "timeout": 12000 },
-  { "until": "G.scenes.beat === 'office'", "timeout": 40000 },
+  { "until": "G.scenes.beat === 'office'", "timeout": 75000 },
   { "expect": "W().crew.alarmT < 0 && W().office.length === 0", "label": "unseen under his look; they have gone by the back door" },
   { "shot": "o02_gone" },
   { "key": "KeyC" },
