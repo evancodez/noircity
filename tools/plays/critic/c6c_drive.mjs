@@ -12,7 +12,8 @@
 //           when its door is locked)
 //   spacer  good, but knows only SPACE (the first card): what a first-timer does before C is taught
 //           ("spaceT": how long before each thing he presses, default 0.2 s; 0.5 = a little early)
-//   (good with "miss": [ids]: those things not pressed for - run into - then the right key a quarter second after)
+//   (good with "miss": [ids]: those things not pressed for - run into - then the right key a quarter second after;
+//    [C6 critic 2nd] "missIn": [stretches]: every thing met in those stretches the same, "missN": n only the first n)
 // Eyes: the stage's own things.ahead (what lies on my way and how soon I reach it), his act and lane.
 // Steering: the mouse onto a point ~3 m ahead on the line of the course's nodes (plan.js NODES).
 import { NODES } from '../../../src/stages/backlot/plan.js';
@@ -193,7 +194,10 @@ export default async function drive({ js, turn, keyDown, keyUp, log, sleep, opts
       let p = plan.get(q.id);
       if (!p) {
         const right = q.kind === 'under' || q.kind === 'slope' ? 'KeyC' : q.kind === 'locked' ? null : 'Space';
-        if (prof === 'good' && (opts.miss || []).includes(q.id)) p = { t: -1, key: null, why: 'missed on purpose' };
+        // ([C6 critic 2nd] "missIn": [stretches] - every thing met in those stretches run into, the right key a quarter second after;
+        // "missN": n - only the first n things met there)
+        const missHere = (opts.missIn || []).includes(st.stretch) && (opts.missN == null || (rec.missed = (rec.missed || 0)) < opts.missN);
+        if (prof === 'good' && ((opts.miss || []).includes(q.id) || missHere)) { p = { t: -1, key: null, why: 'missed on purpose' }; if (missHere) { rec.missed = (rec.missed || 0) + 1; (rec.missedIds || (rec.missedIds = [])).push(q.id); } }
         else if (prof === 'good') p = { t: 0.2 + gauss() * 0.04, key: right };
         else if (prof === 'spacer') p = { t: (opts.spaceT ?? 0.2) + gauss() * 0.02, key: right === 'KeyC' ? 'Space' : right };
         else {

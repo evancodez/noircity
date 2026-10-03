@@ -1,0 +1,67 @@
+{
+ "about": "Critic C6 2nd look: from the title, the whole chase played well (SPACE / C ~0.2 s before each thing), over the roofs, the market by the middle aisle, to the car and the cut. NOIR_PORT=5346 node tools/play.mjs tools/plays/critic/c6d_good_roofs_mid.json",
+ "url": "/?mute=1&start=watcher",
+ "size": [
+  1440,
+  900
+ ],
+ "out": "shots/c6d/c6d_good_roofs_mid",
+ "steps": [
+  {
+   "until": "G.state === 'title' && !!document.querySelector('#title .opt[data-k=begin]')",
+   "timeout": 40000
+  },
+  {
+   "wait": 1200
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]",
+   "taken": "G.state !== 'title' && document.pointerLockElement === N.renderer.domElement",
+   "retries": 5,
+   "every": 4000
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'watcher'",
+   "timeout": 30000
+  },
+  {
+   "eval": "(window.__t0 = N.time, 1)"
+  },
+  {
+   "drive": "tools/plays/critic/c6c_drive.mjs",
+   "profile": "good",
+   "over": "roofs",
+   "market": "mid",
+   "seed": 1,
+   "timeout": 300000,
+   "stop": "false",
+   "shots": {
+    "good_alley": "G.scenes.beat === 'alley' && N.controller.mode === 'run'",
+    "good_yard": "G.scenes.beat === 'yard'",
+    "good_kitchen": "G.scenes.beat === 'kitchen'",
+    "good_press": "G.scenes.beat === 'press'",
+    "good_el": "G.scenes.beat === 'el'",
+    "good_cut": "G.scenes.beat === 'cut'",
+    "good_over": "G.scenes.beat === 'over'",
+    "good_jump": "N.controller.run && N.controller.run.move && N.controller.run.move.kind === 'jump'",
+    "good_street": "G.scenes.beat === 'street'",
+    "good_market": "G.scenes.beat === 'market'",
+    "good_car": "G.scenes.beat === 'car'",
+    "good_drive": "/drive/.test(G.hud.promptShown || '')"
+   }
+  },
+  {
+   "wait": 2500
+  },
+  {
+   "shot": "good_tail"
+  },
+  {
+   "eval": "JSON.stringify({beat: G.scenes.beat, scene: G.scenes.current && G.scenes.current.id, fails: G.counters.fails || 0, secs: +(N.time - window.__t0).toFixed(1), last: G.lastFail && G.lastFail.why, warnedFor: G.lastFail && G.lastFail.warnedFor, to: G.lastFail && G.lastFail.to, from: G.lastFail && G.lastFail.from, lost: (G._c6lost||[]).map(r=>[r.stretch,r.gap,r.unseen,r.me,r.blocked])})"
+  },
+  {
+   "expect": "G.scenes.current && G.scenes.current.id !== 'watcher'",
+   "label": "out of the chase into the next chapter"
+  }
+ ]
+}

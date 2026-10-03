@@ -1,0 +1,73 @@
+{
+ "about": "Critic C6 2nd look jank walk (Mercer Street, the corner, the arch): the chase's rules switched off to look round; run into each point, say what stops me, a frame at each stop. NOIR_PORT=5346 node tools/play.mjs tools/plays/critic/c6d_jank_street.json",
+ "url": "/?mute=1&start=watcher.street",
+ "size": [
+  1440,
+  900
+ ],
+ "out": "shots/c6d/jank",
+ "steps": [
+  {
+   "until": "G.state === 'title' && !!document.querySelector('#title .opt[data-k=begin]')",
+   "timeout": 40000
+  },
+  {
+   "wait": 1200
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]",
+   "taken": "G.state !== 'title' && document.pointerLockElement === N.renderer.domElement",
+   "retries": 5,
+   "every": 4000
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'watcher' && !(G.hud.cardT > 0.1) && N.controller.mode === 'run'",
+   "timeout": 30000
+  },
+  {
+   "eval": "(G.scenes.ctx.flags.chase.active = false, G.hud.warn(null), 'rules off: looking round')"
+  },
+  {
+   "drive": "tools/plays/critic/c6c_poke.mjs",
+   "points": [
+    [
+     24.0,
+     -100.0,
+     "Mercer south",
+     6
+    ],
+    [
+     21.6,
+     -134.0,
+     "Mercer north",
+     6
+    ],
+    [
+     30.0,
+     -138.0,
+     "the cross street east",
+     6
+    ],
+    [
+     12.0,
+     -138.0,
+     "the cross street west",
+     6
+    ],
+    [
+     8.5,
+     -128.0,
+     "under the arch",
+     6
+    ],
+    [
+     8.6,
+     -122.6,
+     "the arch's gate",
+     5,
+     "Space"
+    ]
+   ]
+  }
+ ]
+}

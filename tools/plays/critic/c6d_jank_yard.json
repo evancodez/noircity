@@ -1,0 +1,74 @@
+{
+ "about": "Critic C6 2nd look jank walk (the yard's lanes and doors): the chase's rules switched off to look round; run into each point, say what stops me, a frame at each stop. NOIR_PORT=5346 node tools/play.mjs tools/plays/critic/c6d_jank_yard.json",
+ "url": "/?mute=1&start=watcher.yard&c6Lane=E",
+ "size": [
+  1440,
+  900
+ ],
+ "out": "shots/c6d/jank",
+ "steps": [
+  {
+   "until": "G.state === 'title' && !!document.querySelector('#title .opt[data-k=begin]')",
+   "timeout": 40000
+  },
+  {
+   "wait": 1200
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]",
+   "taken": "G.state !== 'title' && document.pointerLockElement === N.renderer.domElement",
+   "retries": 5,
+   "every": 4000
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'watcher' && !(G.hud.cardT > 0.1) && N.controller.mode === 'run'",
+   "timeout": 30000
+  },
+  {
+   "eval": "(G.scenes.ctx.flags.chase.active = false, G.hud.warn(null), 'rules off: looking round')"
+  },
+  {
+   "drive": "tools/plays/critic/c6c_poke.mjs",
+   "points": [
+    [
+     54.25,
+     -78.0,
+     "down the west lane",
+     7
+    ],
+    [
+     54.25,
+     -83.2,
+     "the west door",
+     4,
+     "Space"
+    ],
+    [
+     54.25,
+     -83.2,
+     "the west door with E",
+     2,
+     "KeyE"
+    ],
+    [
+     58.0,
+     -70.0,
+     "the wash-house wall",
+     5
+    ],
+    [
+     65.75,
+     -60.0,
+     "back up and over to the east lane",
+     7
+    ],
+    [
+     69.5,
+     -70.0,
+     "the east lane's wall",
+     5
+    ]
+   ]
+  }
+ ]
+}
