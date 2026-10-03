@@ -5,7 +5,7 @@ import { SITE, DINER } from './shootout/site.js';
 import { rigFor, rig, setLights, everyStep, RESERVE, dropMan, knockOut, V } from './shootout/rig.js';
 import { freshRoom, placeDot, mackWindow } from './shootout/room.js';
 import { nick, placeNick, NICK } from './shootout/nick.js';
-import { AT, CARS, CAR_MEN, CARS_MORE, NORTH, SOUTH, UNDER_EL, SPOTS, OPEN as OPEN_SPOT, beginFight, rebuild, alive, carIn, outOfCar, manForDot, elGunman, driveBy, heavyForDoor, gunman, pressOn } from './shootout/street.js';
+import { AT, CARS, CAR_MEN, NORTH, SOUTH, UNDER_EL, SPOTS, OPEN as OPEN_SPOT, beginFight, rebuild, alive, carIn, outOfCar, manForDot, elGunman, driveBy, heavyForDoor, gunman, pressOn } from './shootout/street.js';
 import { saloonIn, saloonMen, glare, cardinalOut, blastNear, SALOON } from './shootout/boss.js';
 import { endHat } from './shootout/ending.js';
 import { DOT_CLIP, dotGunAt, dotDrumsAt, DOT_DRUMS, dotResupplyAt } from '../cast/kinds/cardinal.js';
@@ -104,7 +104,7 @@ function stage(ctx, b) {
   } else if (b === 'gun') {
     G.player.weapons.equip(null);
     G.hands.equip('empty', { skin: 'glove' });
-    C.setPose(SITE.take.x, SITE.take.z, Math.PI / 2, -0.05);
+    C.setPose(SITE.take.x, DOT_LAY.z - 0.15, Math.PI / 2, -0.12);
     C.setMode('walk');
     R.gunTaken = false;
     // (Sal where he went down, behind the counter)
@@ -130,9 +130,10 @@ function stage(ctx, b) {
 }
 // each movement's difficulty (the gun kit's three numbers and its flank)
 const FIGHT = {
-  cars: { maxFiring: 3, flankAfter: 12, settleK: 1.1 },
-  flank: { maxFiring: 3, flankAfter: 11, settleK: 1.05 },
-  el: { maxFiring: 3, flankAfter: 11, settleK: 1.05 },
+  // (two firing at once as lane C2's street; the first fight a little slower to settle)
+  cars: { maxFiring: 2, flankAfter: 13, settleK: 1.2 },
+  flank: { maxFiring: 2, flankAfter: 12, settleK: 1.1 },
+  el: { maxFiring: 2, flankAfter: 12, settleK: 1.1 },
   saloon: { maxFiring: 2, flankAfter: 0, settleK: 1.1 },
   cardinal: { maxFiring: 2, flankAfter: 0, settleK: 1.1 },
   last: { maxFiring: 2, flankAfter: 0, settleK: 1.1 },
@@ -583,12 +584,12 @@ function* carsBeat(ctx) {
       return false;
     });
   });
-  yield until(() => stopped >= 2);
+  yield until(() => stopped >= 1);
   yield wait(2.5);
   let more = false;
   yield* fightTo(ctx, () => {
     if (!rose && (G.controller.crouchK || 0) > 0.6) { rose = true; K.teach('rise'); }
-    if (!more && alive(ctx) <= 2) { more = true; for (const m of CARS_MORE) gunman(ctx, m); }
+    if (!more && stopped >= 2) more = true;
     return more && alive(ctx) === 0;
   });
   yield* clear(ctx);

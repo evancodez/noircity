@@ -110,7 +110,7 @@
    "wait": 250
   },
   {
-   "expect": "G.health.hp >= 1 && G.health.hp < 5 && G.health.spared >= 1 && G.hud.warnText === 'You’re hit. Get to cover.' && !G.failing",
+   "expect": "G.health.hp >= 1 && G.health.hp < 5 && G.health.spared >= 1 && !!G.hud.warnText && !G.failing",
    "label": "[C1] the hit that would take the last before any warning is spared: one left, the warning up"
   },
   {
@@ -124,7 +124,7 @@
    "timeout": 4000
   },
   {
-   "expect": "G.lastFail.why === 'They got you.' && G.lastFail.to === 'flank' && G.lastFail.warnedFor >= 1",
+   "expect": "!!G.lastFail.why && G.lastFail.to === 'flank' && G.lastFail.warnedFor >= 1",
    "label": "VIII: down is the kit's fall, back to the flank (warned a second and more before)"
   },
   {

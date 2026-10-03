@@ -59,7 +59,7 @@ export const CARS = [
   // the road there - and the kerb; past the parked sedans; then across to
   // the far side and nose in)
   { rail: [[-3.0, -86], [-2.0, -74], [0.4, -62], [0.6, -56], [-0.2, -44], [-0.9, -31], [-0.9, -24], [1.6, -14.5], [5.6, -8.2], [8.6, -4.2], [9.1, -1.4], [8.9, 0.7], [7.1, 1.3]], delay: 0 },
-  { rail: [[-3.2, -86], [-2.2, -74], [0.2, -62], [0.5, -56], [-0.4, -44], [-1.0, -31], [-1.0, -24], [1.4, -16.8], [4.6, -13.6], [7.2, -10.8], [8.2, -8.6], [6.8, -7.0]], delay: 1.6 },
+  { rail: [[-3.2, -86], [-2.2, -74], [0.2, -62], [0.5, -56], [-0.4, -44], [-1.0, -31], [-1.0, -24], [1.4, -16.8], [4.6, -13.6], [7.2, -10.8], [8.2, -8.6], [6.8, -7.0]], delay: 5.5 },
 ];
 // their men: the car, the door, the kind, the first place (the lee of the
 // car or its door: then the kit's brain takes the cover it reads)
@@ -70,9 +70,9 @@ export const CAR_MEN = [
   { car: 1, door: 'rf', kind: 'pistol', delay: 0.35 },
   // (the Tommy gunner: he pins the diner's front from behind his car)
   { car: 1, door: 'rr', kind: 'tommy', delay: 0.9 },
-  { car: 1, door: 'lr', kind: 'pistol', delay: 1.4, run: { x: 12.2, z: -12.4 } },
 ];
-// (when the cars' men are down to two, two more out of the dark under the el)
+// (not used: eight in the first fight were a wall for the first-timer's hand -
+// four tries and no way through; five is the first fight) two more out of the dark under the el
 export const CARS_MORE = [
   { at: { x: 18.2, z: 7.5 }, steps: [{ x: 15.0, z: 6.0, run: true }, { x: 13.6, z: 4.6, run: true }], kind: 'pistol', wait: 0.2 },
   { at: { x: 18.2, z: -5.5 }, steps: [{ x: 15.2, z: -6.5, run: true }, { x: 12.6, z: -8.8, run: true }], kind: 'pistol', wait: 1.4 },
@@ -92,7 +92,7 @@ export const NORTH = [
 ];
 // the man for Dot: out of the alley's mouth, round the corner, up the
 // pavement under the windows to the door, in, and on to her
-export const FOR_DOT = { at: { x: -9.6, z: -29.2 }, path: [{ x: -7.7, z: -28.7 }, { x: -7.8, z: -25.4 }, { x: -8.5, z: -20 }, { x: -8.4, z: -8.2 }, { x: -8.6, z: -4.0 }, { x: -9.5, z: -1.2 }, { x: -9.5, z: 0.6 }, { x: -11.3, z: 0.6 }, { x: -13.0, z: -1.6 }, { x: -14.2, z: -3.9 }, { x: -14.8, z: -4.25 }], aimFrom: 6 };
+export const FOR_DOT = { at: { x: -9.6, z: -29.2 }, path: [{ x: -7.7, z: -28.7 }, { x: -7.8, z: -25.4 }, { x: -8.5, z: -20 }, { x: -8.4, z: -8.2 }, { x: -8.6, z: -4.0 }, { x: -9.5, z: -1.2 }, { x: -9.5, z: 0.6 }, { x: -11.3, z: 0.6 }, { x: -13.0, z: -1.6 }, { x: -14.2, z: -3.9 }, { x: -14.8, z: -4.25 }], aimFrom: 8 };
 // ---- movement 3: high on the el; the drive-by; the heavy for the door
 export const EL = { x: 11.95, z: 0.3, y: 10.72 };
 export const DRIVEBY = {
@@ -111,14 +111,14 @@ export const HEAVY = { at: { x: -8.4, z: -33.5 }, steps: [{ x: -8.6, z: -20.0 },
 export function beginFight(ctx, beat, { maxFiring = 2, flankAfter = 13, settleK = 1.1, dmgK = 1 } = {}) {
   const G = ctx.game, K = gunsOf(G), R = rig();
   K.end();
-  // [C8] fail softly: each fall in this beat gives its men a tenth more to
+  // [C8] fail softly: each fall in this beat gives its men a seventh more to
   // settle and a little less in a round (three falls at most: the beat as
   // written is the first try's; a player who keeps going down in one place
   // gets through in a try or two more, never by standing still - they still
   // kill a man who stands in the open)
   const f = Math.min(3, G.fails(beat));
-  settleK += 0.12 * f;
-  dmgK *= 1 - 0.07 * f;
+  settleK += 0.15 * f;
+  dmgK *= 1 - 0.08 * f;
   widen(G, () => K.begin({ to: beat, maxFiring, flankAfter, settleK, dmgK, area: AREA, why: WHY, warn: WARN }));
   // [C8] the room dark: from the street they cannot find me in it until I
   // fire (the gun's flash: 2.5 s), or I stand in a car's lamps
@@ -158,6 +158,9 @@ export function carIn(ctx, spec, { onStop = null, key } = {}) {
   const G = ctx.game, S = ctx.stage, R = rig();
   const car = R.rails.spawn({ rail: spec.rail, lights: true, v0: 13, cruise: 13, decel: 8.5, lat: 6 });
   car.c8beat = ctx.beat;
+  // (it goes up when it is shot for - its tank, its engine - not from a spray
+  // along the street: about fifteen rounds into the tank, forty anywhere)
+  car.limit = 46;
   R.cars[key] = car;
   car.meshes.lens.material = S.M.headlamp;
   let skid = false;
@@ -276,7 +279,7 @@ export function manForDot(ctx, { onDot }) {
   const dot = ctx.cast.get('dot');
   const st = { h, inside: false, aiming: false, t: 0 };
   R.ticks.push((dt) => {
-    if (!h.alive) { if (st.inside && !st.saved) { st.saved = true; ctx.hud.warn(null); if (dot) ctx.hud.say('Dot: ...thanks.', 1.6); } return false; }
+    if (!h.alive) { if (st.inside && !st.saved) { st.saved = true; if (dot) ctx.hud.say('Dot: ...thanks.', 1.6); } return false; }
     if (G.failing) return true;
     st.t += dt;
     const p = F.path[i];
@@ -302,7 +305,7 @@ export function manForDot(ctx, { onDot }) {
     if (st.inside) {
       inT += dt;
       if (dot) h.lookAt(dot.pos.clone().setY(1.0));
-      ctx.hud.warn('He’s going for Dot!');
+      R.warn = 'He’s going for Dot!';
       if (!p || inT > F.aimFrom - 1.6) { if (!st.aiming) { st.aiming = true; h.speed = 0; h.setState('aim', 0.2); G.sfx.play('c2_cock', h.pos.clone().setY(1.4), {}, { ref: 3 }); } }
       if (inT > F.aimFrom) {
         aimT += dt;
