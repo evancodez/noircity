@@ -301,6 +301,8 @@ export default {
       blocks.push({ bi, meshes, mid, flick, _v: null });
     }
     const BU = stage.part('buildings');
+    // (?noneon=1: the city without its neon - the frame rate's before)
+    if (typeof location !== 'undefined' && /[?&]noneon=1/.test(location.search)) group.visible = false;
     const api = {
       group, signs, blocks, faceMat,
       update(dt, t, camera) {
