@@ -1,0 +1,96 @@
+{
+ "about": "Critic C6 jank walk (over: the roofs' edges): the chase's rules switched off to look round; run into each point, say what stops me. NOIR_PORT=5346 node tools/play.mjs tools/plays/critic/c6c_jank_over.json",
+ "url": "/?mute=1&start=watcher.over",
+ "size": [
+  1440,
+  900
+ ],
+ "out": "shots/c6c/jank",
+ "steps": [
+  {
+   "until": "G.state === 'title' && !!document.querySelector('#title .opt[data-k=begin]')",
+   "timeout": 40000
+  },
+  {
+   "wait": 1200
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]",
+   "taken": "G.state !== 'title' && document.pointerLockElement === N.renderer.domElement",
+   "retries": 5,
+   "every": 4000
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'watcher' && !(G.hud.cardT > 0.1) && N.controller.mode === 'run'",
+   "timeout": 30000
+  },
+  {
+   "eval": "(G.scenes.ctx.flags.chase.active = false, G.hud.warn(null), 'rules off: looking round')"
+  },
+  {
+   "drive": "tools/plays/critic/c6c_poke.mjs",
+   "points": [
+    [
+     71.8,
+     -104.6,
+     "stair in",
+     3
+    ],
+    [
+     70.6,
+     -105.3,
+     "stair foot2",
+     2
+    ],
+    [
+     57.6,
+     -105.3,
+     "up the stair",
+     6
+    ],
+    [
+     57,
+     -108,
+     "onto R1",
+     2
+    ],
+    [
+     57,
+     -117.5,
+     "R1 north edge",
+     4
+    ],
+    [
+     70.5,
+     -110,
+     "R1 east end",
+     4
+    ],
+    [
+     50,
+     -106.2,
+     "R1 south parapet",
+     4
+    ],
+    [
+     44.6,
+     -111,
+     "to the well edge",
+     4
+    ],
+    [
+     43,
+     -111,
+     "into the well",
+     3
+    ],
+    [
+     40,
+     -111,
+     "over the well walking",
+     3
+    ]
+   ]
+  }
+ ]
+}

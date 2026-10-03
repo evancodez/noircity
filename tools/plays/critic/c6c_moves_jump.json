@@ -1,0 +1,46 @@
+{
+ "about": "Critic C6: the roofs, run into the parapet at the light well, then SPACE from standing: frames of the short jump, the catch, the haul. NOIR_PORT=5346 node tools/play.mjs tools/plays/critic/c6c_moves_jump.json",
+ "url": "/?mute=1&start=watcher.over",
+ "size": [
+  1440,
+  900
+ ],
+ "out": "shots/c6c/moves",
+ "steps": [
+  {
+   "until": "G.state === 'title' && !!document.querySelector('#title .opt[data-k=begin]')",
+   "timeout": 40000
+  },
+  {
+   "wait": 1200
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]",
+   "taken": "G.state !== 'title' && document.pointerLockElement === N.renderer.domElement",
+   "retries": 5,
+   "every": 4000
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'watcher' && !(G.hud.cardT > 0.1)",
+   "timeout": 30000
+  },
+  {
+   "drive": "tools/plays/critic/c6c_drive.mjs",
+   "profile": "good",
+   "seed": 9,
+   "miss": [
+    "edge"
+   ],
+   "timeout": 40000,
+   "stop": "(G.counters.fails || 0) >= 1 || (!!G.scenes.ctx.flags.chase && [\"alley\", \"lane\", \"yard\", \"kitchen\", \"press\", \"el\", \"over\", \"street\", \"car\"].indexOf(G.scenes.ctx.flags.chase.stretch) > 6)",
+   "shots": {
+    "j_a": "!!(N.controller.run && N.controller.run.move && N.controller.run.move.kind === 'jump' && (N.controller.run.move.dur ? N.controller.run.move.t / N.controller.run.move.dur : N.controller.run.move.t) > 0.2)",
+    "j_b": "!!(N.controller.run && N.controller.run.move && N.controller.run.move.kind === 'jump' && (N.controller.run.move.dur ? N.controller.run.move.t / N.controller.run.move.dur : N.controller.run.move.t) > 0.6)",
+    "hang": "!!(N.controller.run && N.controller.run.move && N.controller.run.move.kind === 'hang' && (N.controller.run.move.dur ? N.controller.run.move.t / N.controller.run.move.dur : N.controller.run.move.t) > 0.1)",
+    "haul_a": "!!(N.controller.run && N.controller.run.move && N.controller.run.move.kind === 'haul' && (N.controller.run.move.dur ? N.controller.run.move.t / N.controller.run.move.dur : N.controller.run.move.t) > 0.2)",
+    "haul_b": "!!(N.controller.run && N.controller.run.move && N.controller.run.move.kind === 'haul' && (N.controller.run.move.dur ? N.controller.run.move.t / N.controller.run.move.dur : N.controller.run.move.t) > 0.7)",
+    "him_jump": "!!(G.scenes.ctx.flags.chase && G.scenes.ctx.flags.chase.act === 'arc' && G.scenes.ctx.flags.chase.seen)"
+   }
+  }
+ ]
+}

@@ -1,0 +1,67 @@
+{
+ "about": "Critic C6: at the office window he runs; I wait 30 s before E the fire escape, then W only: is he still to be lost (or has he run the course while I waited)? NOIR_PORT=5346 node tools/play.mjs tools/plays/critic/c6c_window_wait.json",
+ "url": "/?mute=1&start=watcher",
+ "size": [
+  1440,
+  900
+ ],
+ "out": "shots/c6c/wait",
+ "steps": [
+  {
+   "until": "G.state === 'title' && !!document.querySelector('#title .opt[data-k=begin]')",
+   "timeout": 40000
+  },
+  {
+   "wait": 1200
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]",
+   "taken": "G.state !== 'title' && document.pointerLockElement === N.renderer.domElement",
+   "retries": 5,
+   "every": 4000
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'watcher' && /look out/.test(G.hud.promptShown || '')",
+   "timeout": 30000
+  },
+  {
+   "key": "KeyE"
+  },
+  {
+   "until": "/fire escape/.test(G.hud.promptShown || '')",
+   "timeout": 20000
+  },
+  {
+   "eval": "JSON.stringify({act: G.scenes.ctx.flags.chase.act, s: +G.scenes.ctx.flags.chase.s.toFixed(1), his: [G.scenes.ctx.flags.chase.fig.pos.x.toFixed(1), G.scenes.ctx.flags.chase.fig.pos.z.toFixed(1)]})"
+  },
+  {
+   "wait": 30000
+  },
+  {
+   "eval": "JSON.stringify({act: G.scenes.ctx.flags.chase.act, s: +G.scenes.ctx.flags.chase.s.toFixed(1), his: [G.scenes.ctx.flags.chase.fig.pos.x.toFixed(1), G.scenes.ctx.flags.chase.fig.pos.z.toFixed(1)], obj: G.hud.kit.obj && G.hud.kit.obj.text})"
+  },
+  {
+   "shot": "window_wait"
+  },
+  {
+   "key": "KeyE"
+  },
+  {
+   "wait": 3000
+  },
+  {
+   "eval": "JSON.stringify({act: G.scenes.ctx.flags.chase.act, s: +G.scenes.ctx.flags.chase.s.toFixed(1), his: [G.scenes.ctx.flags.chase.fig.pos.x.toFixed(1), G.scenes.ctx.flags.chase.fig.pos.z.toFixed(1)], beat: G.scenes.beat})"
+  },
+  {
+   "drive": "tools/plays/critic/c6c_drive.mjs",
+   "profile": "w",
+   "seed": 3,
+   "timeout": 30000,
+   "stop": "(G.counters.fails || 0) >= 1"
+  },
+  {
+   "expect": "(G.counters.fails || 0) >= 1",
+   "label": "waited at the window: still lost when I then do not play"
+  }
+ ]
+}

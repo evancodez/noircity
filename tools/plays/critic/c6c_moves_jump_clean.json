@@ -1,0 +1,43 @@
+{
+ "about": "Critic C6: the roofs played well: frames of the clean jump, the slide under the tank, the slide down the shed. NOIR_PORT=5346 node tools/play.mjs tools/plays/critic/c6c_moves_jump_clean.json",
+ "url": "/?mute=1&start=watcher.over",
+ "size": [
+  1440,
+  900
+ ],
+ "out": "shots/c6c/moves",
+ "steps": [
+  {
+   "until": "G.state === 'title' && !!document.querySelector('#title .opt[data-k=begin]')",
+   "timeout": 40000
+  },
+  {
+   "wait": 1200
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]",
+   "taken": "G.state !== 'title' && document.pointerLockElement === N.renderer.domElement",
+   "retries": 5,
+   "every": 4000
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'watcher' && !(G.hud.cardT > 0.1)",
+   "timeout": 30000
+  },
+  {
+   "drive": "tools/plays/critic/c6c_drive.mjs",
+   "profile": "good",
+   "seed": 9,
+   "miss": [],
+   "timeout": 40000,
+   "stop": "(G.counters.fails || 0) >= 1 || (!!G.scenes.ctx.flags.chase && [\"alley\", \"lane\", \"yard\", \"kitchen\", \"press\", \"el\", \"over\", \"street\", \"car\"].indexOf(G.scenes.ctx.flags.chase.stretch) > 6)",
+   "shots": {
+    "jc_a": "!!(N.controller.run && N.controller.run.move && N.controller.run.move.kind === 'jump' && (N.controller.run.move.dur ? N.controller.run.move.t / N.controller.run.move.dur : N.controller.run.move.t) > 0.2)",
+    "jc_b": "!!(N.controller.run && N.controller.run.move && N.controller.run.move.kind === 'jump' && (N.controller.run.move.dur ? N.controller.run.move.t / N.controller.run.move.dur : N.controller.run.move.t) > 0.55)",
+    "jc_c": "!!(N.controller.run && N.controller.run.move && N.controller.run.move.kind === 'jump' && (N.controller.run.move.dur ? N.controller.run.move.t / N.controller.run.move.dur : N.controller.run.move.t) > 0.9)",
+    "sd_a": "!!(N.controller.run && N.controller.run.move && N.controller.run.move.kind === 'slideDown' && (N.controller.run.move.dur ? N.controller.run.move.t / N.controller.run.move.dur : N.controller.run.move.t) > 0.1)",
+    "tank_a": "!!(N.controller.run && N.controller.run.move && N.controller.run.move.kind === 'slide' && (N.controller.run.move.dur ? N.controller.run.move.t / N.controller.run.move.dur : N.controller.run.move.t) > 0.3)"
+   }
+  }
+ ]
+}

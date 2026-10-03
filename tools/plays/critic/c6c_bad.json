@@ -1,0 +1,40 @@
+{
+ "about": "Critic C6: from the title, a clumsy first-timer (late eyes, wide timing, a third of the things fumbled, W let go now and then, a random lane of the yard): fails some, through in the end? NOIR_PORT=5346 node tools/play.mjs tools/plays/critic/c6c_bad.json",
+ "url": "/?mute=1&start=watcher",
+ "size": [
+  1440,
+  900
+ ],
+ "out": "shots/c6c/c6c_bad",
+ "steps": [
+  {
+   "until": "G.state === 'title' && !!document.querySelector('#title .opt[data-k=begin]')",
+   "timeout": 40000
+  },
+  {
+   "wait": 1200
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]",
+   "taken": "G.state !== 'title' && document.pointerLockElement === N.renderer.domElement",
+   "retries": 5,
+   "every": 4000
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'watcher'",
+   "timeout": 30000
+  },
+  {
+   "drive": "tools/plays/critic/c6c_drive.mjs",
+   "profile": "bad",
+   "over": "roofs",
+   "seed": 3,
+   "timeout": 330000,
+   "stop": "false",
+   "shots": {}
+  },
+  {
+   "eval": "JSON.stringify({scene: G.scenes.current && G.scenes.current.id, beat: G.scenes.beat})"
+  }
+ ]
+}

@@ -1,0 +1,310 @@
+{
+ "about": "Critic C6: from the title (start=watcher), BEGIN, hands off for 45 s: what the screen says every 1.5 s at the office window (the chapter card, 'Check the street.', 'E look out'). Before E there is no contest: the expect records that nothing is lost while I never look (the window waits; finding 11). NOIR_PORT=5346 node tools/play.mjs tools/plays/critic/c6c_idle_title.json",
+ "url": "/?mute=1&start=watcher",
+ "size": [
+  1440,
+  900
+ ],
+ "out": "shots/c6c/idle",
+ "steps": [
+  {
+   "eval": "(window.__st = () => (() => {\n  // [C6 critic] what the screen says after each move: the kit's lines (objective, teach card,\n  // warning, prompt, the fail) and where I stand. Generic: nothing of the chase's own state.\n  const sc = G.scenes, K = G.hud.kit, C = N.controller;\n  const vis = (e) => !!e && getComputedStyle(e).display !== 'none' && getComputedStyle(e).visibility !== 'hidden' && +getComputedStyle(e).opacity > 0.05;\n  const p = C && (C.position || (C.body && C.body.position) || (N.camera && N.camera.position));\n  return { scene: sc.current && sc.current.id, beat: sc.beat, state: G.state, t: +N.time.toFixed(2), mode: C && C.mode,\n    obj: K && K.obj ? K.obj.text : null,\n    teach: K && K.teachCur ? (K.teachCur.text || K.teachCur.id) : null,\n    warn: K && vis(K.warnEl) ? K.warnEl.textContent.trim() : '',\n    prompt: G.hud.promptShown, say: G.hud.sayShown, failing: !!G.failing,\n    lastFail: G.lastFail ? G.lastFail.why + '@' + (+G.lastFail.t).toFixed(1) : null,\n    pos: N.camera ? [+N.camera.position.x.toFixed(1), +N.camera.position.y.toFixed(2), +N.camera.position.z.toFixed(1)] : null,\n    yaw: C ? +(+C.yaw).toFixed(2) : null };\n})(), 1)"
+  },
+  {
+   "name": "the title"
+  },
+  {
+   "until": "G.state === 'title' && !!document.querySelector('#title .opt[data-k=begin]')",
+   "timeout": 40000
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "shot": "i00_title"
+  },
+  {
+   "eval": "document.getElementById('title').innerText.slice(0,600)"
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]",
+   "taken": "G.state === 'playing' && document.pointerLockElement === N.renderer.domElement",
+   "retries": 4,
+   "every": 4000
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "eval": "JSON.stringify(window.__st())"
+  },
+  {
+   "shot": "i01"
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "eval": "JSON.stringify(window.__st())"
+  },
+  {
+   "shot": "i02"
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "eval": "JSON.stringify(window.__st())"
+  },
+  {
+   "shot": "i03"
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "eval": "JSON.stringify(window.__st())"
+  },
+  {
+   "shot": "i04"
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "eval": "JSON.stringify(window.__st())"
+  },
+  {
+   "shot": "i05"
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "eval": "JSON.stringify(window.__st())"
+  },
+  {
+   "shot": "i06"
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "eval": "JSON.stringify(window.__st())"
+  },
+  {
+   "shot": "i07"
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "eval": "JSON.stringify(window.__st())"
+  },
+  {
+   "shot": "i08"
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "eval": "JSON.stringify(window.__st())"
+  },
+  {
+   "shot": "i09"
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "eval": "JSON.stringify(window.__st())"
+  },
+  {
+   "shot": "i10"
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "eval": "JSON.stringify(window.__st())"
+  },
+  {
+   "shot": "i11"
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "eval": "JSON.stringify(window.__st())"
+  },
+  {
+   "shot": "i12"
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "eval": "JSON.stringify(window.__st())"
+  },
+  {
+   "shot": "i13"
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "eval": "JSON.stringify(window.__st())"
+  },
+  {
+   "shot": "i14"
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "eval": "JSON.stringify(window.__st())"
+  },
+  {
+   "shot": "i15"
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "eval": "JSON.stringify(window.__st())"
+  },
+  {
+   "shot": "i16"
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "eval": "JSON.stringify(window.__st())"
+  },
+  {
+   "shot": "i17"
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "eval": "JSON.stringify(window.__st())"
+  },
+  {
+   "shot": "i18"
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "eval": "JSON.stringify(window.__st())"
+  },
+  {
+   "shot": "i19"
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "eval": "JSON.stringify(window.__st())"
+  },
+  {
+   "shot": "i20"
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "eval": "JSON.stringify(window.__st())"
+  },
+  {
+   "shot": "i21"
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "eval": "JSON.stringify(window.__st())"
+  },
+  {
+   "shot": "i22"
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "eval": "JSON.stringify(window.__st())"
+  },
+  {
+   "shot": "i23"
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "eval": "JSON.stringify(window.__st())"
+  },
+  {
+   "shot": "i24"
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "eval": "JSON.stringify(window.__st())"
+  },
+  {
+   "shot": "i25"
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "eval": "JSON.stringify(window.__st())"
+  },
+  {
+   "shot": "i26"
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "eval": "JSON.stringify(window.__st())"
+  },
+  {
+   "shot": "i27"
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "eval": "JSON.stringify(window.__st())"
+  },
+  {
+   "shot": "i28"
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "eval": "JSON.stringify(window.__st())"
+  },
+  {
+   "shot": "i29"
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "eval": "JSON.stringify(window.__st())"
+  },
+  {
+   "shot": "i30"
+  },
+  {
+   "expect": "!G.lastFail && G.scenes.beat === 'seen'",
+   "label": "hands off at the window: still at the window, nothing lost (it waits)"
+  }
+ ]
+}

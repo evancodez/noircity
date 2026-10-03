@@ -1,0 +1,53 @@
+{
+ "about": "Critic C6: from the title, the whole chase played well (SPACE/C ~0.2 s before each thing), by Tanner's Row (the long way at the fork), to the car and the cut. NOIR_PORT=5346 node tools/play.mjs tools/plays/critic/c6c_good_row.json",
+ "url": "/?mute=1&start=watcher",
+ "size": [
+  1440,
+  900
+ ],
+ "out": "shots/c6c/c6c_good_row",
+ "steps": [
+  {
+   "until": "G.state === 'title' && !!document.querySelector('#title .opt[data-k=begin]')",
+   "timeout": 40000
+  },
+  {
+   "wait": 1200
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]",
+   "taken": "G.state !== 'title' && document.pointerLockElement === N.renderer.domElement",
+   "retries": 5,
+   "every": 4000
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'watcher'",
+   "timeout": 30000
+  },
+  {
+   "drive": "tools/plays/critic/c6c_drive.mjs",
+   "profile": "good",
+   "over": "row",
+   "seed": 2,
+   "timeout": 240000,
+   "stop": "false",
+   "shots": {
+    "r_pass": "G.scenes.beat === 'over' && N.controller.pos.z < -110 && N.controller.pos.x > 69",
+    "r_dog": "N.controller.pos.x < 62 && N.controller.pos.z < -116 && N.controller.pos.x > 56",
+    "r_truck": "N.controller.run && N.controller.run.move && N.controller.run.move.kind === 'slide' && N.controller.pos.x < 47 && N.controller.pos.z < -116",
+    "r_street": "G.scenes.beat === 'street'",
+    "r_barrow": "N.controller.run && N.controller.run.move && N.controller.pos.x < 12 && N.controller.pos.z > -110 && N.controller.pos.z < -95",
+    "g_drive": "/drive/.test(G.hud.promptShown || '')"
+   }
+  },
+  {
+   "wait": 2500
+  },
+  {
+   "shot": "g_tail"
+  },
+  {
+   "eval": "JSON.stringify({scene: G.scenes.current && G.scenes.current.id, beat: G.scenes.beat})"
+  }
+ ]
+}

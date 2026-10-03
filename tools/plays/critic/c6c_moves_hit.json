@@ -1,0 +1,48 @@
+{
+ "about": "Critic C6: the lane run into fence1 and fence2 (then SPACE, C): frames of the stop, the climb, the scramble under. NOIR_PORT=5346 node tools/play.mjs tools/plays/critic/c6c_moves_hit.json",
+ "url": "/?mute=1&start=watcher.lane",
+ "size": [
+  1440,
+  900
+ ],
+ "out": "shots/c6c/moves",
+ "steps": [
+  {
+   "until": "G.state === 'title' && !!document.querySelector('#title .opt[data-k=begin]')",
+   "timeout": 40000
+  },
+  {
+   "wait": 1200
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]",
+   "taken": "G.state !== 'title' && document.pointerLockElement === N.renderer.domElement",
+   "retries": 5,
+   "every": 4000
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'watcher' && !(G.hud.cardT > 0.1)",
+   "timeout": 30000
+  },
+  {
+   "drive": "tools/plays/critic/c6c_drive.mjs",
+   "profile": "good",
+   "seed": 9,
+   "miss": [
+    "fence1",
+    "fence2"
+   ],
+   "timeout": 40000,
+   "stop": "(G.counters.fails || 0) >= 1 || (!!G.scenes.ctx.flags.chase && [\"alley\", \"lane\", \"yard\", \"kitchen\", \"press\", \"el\", \"over\", \"street\", \"car\"].indexOf(G.scenes.ctx.flags.chase.stretch) > 1)",
+   "shots": {
+    "h_a": "!!(N.controller.run && N.controller.run.move && N.controller.run.move.kind === 'hit' && (N.controller.run.move.dur ? N.controller.run.move.t / N.controller.run.move.dur : N.controller.run.move.t) > 0.1)",
+    "h_b": "!!(N.controller.run && N.controller.run.move && N.controller.run.move.kind === 'hit' && (N.controller.run.move.dur ? N.controller.run.move.t / N.controller.run.move.dur : N.controller.run.move.t) > 0.6)",
+    "c_a": "!!(N.controller.run && N.controller.run.move && N.controller.run.move.kind === 'climb' && (N.controller.run.move.dur ? N.controller.run.move.t / N.controller.run.move.dur : N.controller.run.move.t) > 0.15)",
+    "c_b": "!!(N.controller.run && N.controller.run.move && N.controller.run.move.kind === 'climb' && (N.controller.run.move.dur ? N.controller.run.move.t / N.controller.run.move.dur : N.controller.run.move.t) > 0.5)",
+    "c_c": "!!(N.controller.run && N.controller.run.move && N.controller.run.move.kind === 'climb' && (N.controller.run.move.dur ? N.controller.run.move.t / N.controller.run.move.dur : N.controller.run.move.t) > 0.85)",
+    "cr_a": "!!(N.controller.run && N.controller.run.move && N.controller.run.move.kind === 'crawl' && (N.controller.run.move.dur ? N.controller.run.move.t / N.controller.run.move.dur : N.controller.run.move.t) > 0.2)",
+    "cr_b": "!!(N.controller.run && N.controller.run.move && N.controller.run.move.kind === 'crawl' && N.controller.run.move.t > 0.6)"
+   }
+  }
+ ]
+}

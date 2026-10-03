@@ -1,0 +1,61 @@
+{
+ "about": "Critic C6 jank walk (lane): the chase's rules switched off to look round; run into each point, say what stops me. NOIR_PORT=5346 node tools/play.mjs tools/plays/critic/c6c_jank_lane.json",
+ "url": "/?mute=1&start=watcher.lane",
+ "size": [
+  1440,
+  900
+ ],
+ "out": "shots/c6c/jank",
+ "steps": [
+  {
+   "until": "G.state === 'title' && !!document.querySelector('#title .opt[data-k=begin]')",
+   "timeout": 40000
+  },
+  {
+   "wait": 1200
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]",
+   "taken": "G.state !== 'title' && document.pointerLockElement === N.renderer.domElement",
+   "retries": 5,
+   "every": 4000
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'watcher' && !(G.hud.cardT > 0.1) && N.controller.mode === 'run'",
+   "timeout": 30000
+  },
+  {
+   "eval": "(G.scenes.ctx.flags.chase.active = false, G.hud.warn(null), 'rules off: looking round')"
+  },
+  {
+   "drive": "tools/plays/critic/c6c_poke.mjs",
+   "points": [
+    [
+     -6,
+     -50,
+     "lane west of the alley",
+     5
+    ],
+    [
+     20,
+     -58,
+     "lane north wall",
+     4
+    ],
+    [
+     12.6,
+     -47.9,
+     "fence1 south end",
+     4,
+     "Space"
+    ],
+    [
+     12.6,
+     -52.2,
+     "fence1 north end",
+     4
+    ]
+   ]
+  }
+ ]
+}

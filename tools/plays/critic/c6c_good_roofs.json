@@ -1,0 +1,56 @@
+{
+ "about": "Critic C6: from the title, the whole chase played well (SPACE/C ~0.2 s before each thing), over the roofs, to the car and the cut. NOIR_PORT=5346 node tools/play.mjs tools/plays/critic/c6c_good_roofs.json",
+ "url": "/?mute=1&start=watcher",
+ "size": [
+  1440,
+  900
+ ],
+ "out": "shots/c6c/c6c_good_roofs",
+ "steps": [
+  {
+   "until": "G.state === 'title' && !!document.querySelector('#title .opt[data-k=begin]')",
+   "timeout": 40000
+  },
+  {
+   "wait": 1200
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]",
+   "taken": "G.state !== 'title' && document.pointerLockElement === N.renderer.domElement",
+   "retries": 5,
+   "every": 4000
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'watcher'",
+   "timeout": 30000
+  },
+  {
+   "drive": "tools/plays/critic/c6c_drive.mjs",
+   "profile": "good",
+   "over": "roofs",
+   "seed": 1,
+   "timeout": 240000,
+   "stop": "false",
+   "shots": {
+    "g_alley": "G.scenes.beat === 'alley' && N.controller.mode === 'run'",
+    "g_press": "G.scenes.beat === 'press'",
+    "g_el": "G.scenes.beat === 'el'",
+    "g_over": "G.scenes.beat === 'over'",
+    "g_roof": "N.controller.run && N.controller.run.feet > 6",
+    "g_jump": "N.controller.run && N.controller.run.move && N.controller.run.move.kind === 'jump'",
+    "g_street": "G.scenes.beat === 'street'",
+    "g_car": "G.scenes.beat === 'car'",
+    "g_drive": "/drive/.test(G.hud.promptShown || '')"
+   }
+  },
+  {
+   "wait": 2500
+  },
+  {
+   "shot": "g_tail"
+  },
+  {
+   "eval": "JSON.stringify({scene: G.scenes.current && G.scenes.current.id, beat: G.scenes.beat})"
+  }
+ ]
+}
