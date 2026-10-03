@@ -1,0 +1,20 @@
+{
+ "about": "C3b look development: the wreck's checkpoint, E out of the car by real input, a look at him; positions printed. NOIR_PORT=5343 node tools/play.mjs tools/plays/tail_out_look.json",
+ "url": "/?mute=1&start=tail.wreck",
+ "size": [1440, 900],
+ "out": "shots/c3b/out_look",
+ "steps": [
+  { "until": "G.state === 'title' && !document.getElementById('title').classList.contains('hidden') && !!document.querySelector('#title .opt[data-k=begin]')", "timeout": 40000 },
+  { "wait": 1500 },
+  { "clickOn": "#title .opt[data-k=begin]", "taken": "G.state === 'playing' && document.pointerLockElement === N.renderer.domElement", "retries": 4, "every": 4000 },
+  { "until": "G.scenes.current && G.scenes.current.id === 'tail' && !!G.scenes.ctx.flags.chase && !!G.scenes.ctx.flags.chase.man && G.hud.promptShown.includes('get out')", "timeout": 45000 },
+  { "shot": "o01_in_the_car" },
+  { "key": "KeyE" },
+  { "wait": 1200 },
+  { "eval": "(() => { const C = G.scenes.ctx.flags.chase, c = G.camera.position; return JSON.stringify({ phase: C.phase, mode: G.controller.mode, eye: [c.x, c.y, c.z].map((v) => +v.toFixed(2)), man: C.manAt, his: [C.his.pos.x, C.his.pos.z].map((v) => +v.toFixed(2)), my: [C.my.pos.x, C.my.pos.z].map((v) => +v.toFixed(2)), yaw: +G.controller.yaw.toFixed(2), pitch: +G.controller.pitch.toFixed(2), fov: G.camera.fov, gy: G.controller.groundY, manPos: C.man && C.man.fig ? [C.man.fig.pos.x, C.man.fig.pos.z] : null, vis: C.man && C.man.fig && C.man.fig.object ? C.man.fig.object.visible : null }); })()" },
+  { "shot": "o02_out" },
+  { "look": [0, 160], "steps": 8 },
+  { "wait": 500 },
+  { "shot": "o03_down" }
+ ]
+}

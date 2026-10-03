@@ -9,7 +9,7 @@ import { Traffic } from './traffic.js';
 import { Walkers } from './walkers.js';
 import { Cat } from './cat.js';
 import { makeKit } from './kit.js';
-import { RULES, TEACH, HIT, RAM } from './rules.js';
+import { RULES, TEACH, HIT, RAM, RIVER_B } from './rules.js';
 import { makeBot } from './bot.js';
 import { FIRE } from '../../fx/fxTextures.js';
 import { FIRE_COL } from '../../fx/Explosion.js';
@@ -72,6 +72,10 @@ export class Chase {
     for (const c of this.cats || []) c.dispose();
     if (this.cabin) this.cabin.dispose();
     if (this.hat) { this.hat.removeFromParent(); this.hat = null; }
+    // [C3b] the walking net and the man
+    this.walkNet(false);
+    if (this.man) { try { this.stage.cast.remove(this.man); } catch (e) { /* the cast cleared already */ } this.man = null; }
+    this.game.hud.clearPrompt('tailin'); this.game.hud.clearPrompt('tailwreck');
     this.kit.warn(null);
   }
 
@@ -188,9 +192,12 @@ export class Chase {
     if (this.phase === 'crash') this.crashing(dt);
     if (this.wreck) this.wreckStep(dt);
     this.hisFx(dt);
-    if (this.phase === 'c' || this.phase === 'wreck') { this.toPier(dt); this.atWreck(dt); }
+    if (this.phase === 'c' || this.phase === 'wreck' || this.phase === 'out') { this.toPier(dt); this.atWreck(dt); }
     this.damageStep(dt);
     this.toys(dt);
+    // [C3b] chapter VII's stage built a slice a frame from the river road on:
+    // the cut at the pier is not felt
+    if (this.phase !== 'a' && this.phase !== 'start' && G.stages && G.stages.warm && !G.shotMode) { try { G.stages.warm('pier9', 4); } catch (e) { this._warmErr = String(e); } }
   }
 
   // he pulls away from the kerb (as I get in; or when I move)
@@ -205,6 +212,7 @@ export class Chase {
     if (this.phase !== 'a') return;
     this.phase = 'b';
     this.unseen = 0;
+    this.bT = 0;
     this.kit.warn(null);
     // (the line is the beat's: 07_tail.js objectives.river; the gun's card
     // comes in teachStep)
@@ -228,13 +236,7 @@ export class Chase {
       this._gunTaught = true;
       show('tail_gun', TEACH.gun, { secs: 7, until: 'Mouse0' });
     }
-    // [4th owner] the gun dry and he still going: the other way to stop him
-    // (the brief's shunt on the quarter of a hurt car), taught as it is needed
-    const g = this.gun;
-    if (this.phase === 'b' && !this._ramTaught && g && g.rounds <= 0 && g.pocket <= 0 && g.reloadT <= 0 && this.driver.state !== 'lost') {
-      this._ramTaught = true;
-      show('tail_ram', TEACH.ram, { secs: 6, until: () => false });
-    }
+    // ([C3b] the shunt's card: the first time he is hurt - hurtCheck)
   }
 
   rules(dt, gap) {
@@ -262,6 +264,14 @@ export class Chase {
     // who comes onto the river road 110 m back is told so at once, not 23 s
     // later at the pier's gate)
     if (this.phase === 'b' && this.driver.state !== 'lost' && gap > R.farWarn) warn = "He's getting away.";
+    // [C3b] phase b's window (rules.js RIVER_B): from RIVER_B.warn s he
+    // speeds up and away; the line says so
+    const B = RIVER_B;
+    if (this.phase === 'b' && this.driver.state !== 'lost') {
+      this.bT = (this.bT || 0) + dt;
+      this.driver.getaway = clamp((this.bT - B.warn) / (B.t - B.warn), 0, 1);
+      if (this.bT > B.warn) warn = "He's pulling away.";
+    }
     if (gateNear) warn = "He's nearly at the pier.";
     // [4th owner] (my car one knock from a wreck: said, for a few seconds
     // after each knock past RULES.wreckWarn - the crack and the steam were
@@ -279,6 +289,8 @@ export class Chase {
     if (this.phase === 'a' && (this.unseen > R.unseenLost || gap > R.farLost || this.farT > R.farT)) return this.fail('Lost him.', to);
     if (this.phase === 'b' && this.driver.state !== 'lost' && (gap > R.farLost || this.farT > R.farT)) return this.fail('Lost him.', 'river');
     if (this.phase === 'b' && this.driver.state !== 'lost' && (hisZ > R.gateZ || this.driver.atPier)) return this.fail('He warned them.', 'river');
+    // ([C3b] the window gone: he is a pair of red lamps in the rain)
+    if (this.phase === 'b' && this.driver.state !== 'lost' && this.bT > B.t && (gap > B.lostGap || this.bT > B.t + B.extra)) return this.fail('Lost him.', 'river');
   }
   checkpoint() { return this.phase === 'b' ? 'river' : this.ctx.flags.check || 'start'; }
   fail(why, to) {
@@ -296,7 +308,9 @@ export class Chase {
   sound(dt) {
     const S = this.game.sfx, his = this.his;
     if (!S || !S.live) return;
-    if (his && !his.frozen) S.loop('tail_his', his.pos, 0.25 + 0.2 * Math.min(1, Math.abs(his.speed) / 18), 'brown', 220 + Math.abs(his.speed) * 9, 0, true);
+    // ([C3b] the note rises as he floors it)
+    const bk = (this.driver && this.driver.burstK) || 0;
+    if (his && !his.frozen) S.loop('tail_his', his.pos, 0.25 + 0.2 * Math.min(1, Math.abs(his.speed) / 18) + 0.15 * bk, 'brown', 220 + Math.abs(his.speed) * 9 + 110 * bk, 0, true);
     else if (S.loops.has('tail_his')) S.stopLoop('tail_his');
   }
 
@@ -377,13 +391,13 @@ export class Chase {
     if (D.state === 'lost' || D.state === 'stopped') return;
     const G = this.game;
     const H = this.hisDmg || (this.hisDmg = { tyres: 0, man: 0, tank: 0, body: 0, rims: 0 });
-    const side = lp.z > 0 ? 1 : -1;
     // every round that lands costs him some of his hold on the car (his
     // control, 1 .. 0); where it lands says how much and what it looks like
     // ([4th owner] the costs are rules.js HIT: one round more for every way
     // off the road, and a mix of hits wears him down slowly - the critic's
     // sloppy aim won first try in 8 to 12 s on three hits anywhere)
-    const cost = (k, dir = side) => { D.control -= k; if (D.control <= HIT.lose) D.lose(dir); };
+    // ([C3b] down to HIT.floor and never under: rounds alone never end it)
+    const cost = (k) => { D.control = Math.max(HIT.floor, D.control - k); this.hurtCheck(); };
     // [3rd owner] every hit shows where it lands, at 20 to 40 m (the critic:
     // a tyre hit at 22 m showed nothing): a white ink burst at the point the
     // size of a fist's on the screen, sparks big enough to see; and he
@@ -396,36 +410,23 @@ export class Chase {
     const tyre = zone === 'tyre' ? (lp.x > 0 ? (lp.z > 0 ? 'fr' : 'fl') : (lp.z > 0 ? 'rr' : 'rl')) : null;
     if (tyre) {
       const pullDir = tyre[1] === 'r' ? -1 : 1;
-      const nick = H.nick || (H.nick = {});
-      if (his.grip[tyre] > 0.5 && !nick[tyre]) {
-        // [4th owner] the first round in a tyre: it hisses and goes soft -
-        // the quarter dips half way, a small pull; the next one there blows
-        // it (the critic's sloppy hand, aiming at the quarters, had two
-        // tyres in four hits and won first try every time)
-        nick[tyre] = 1;
-        H.nicks = (H.nicks || 0) + 1;
-        his.grip[tyre] = 0.78;
-        his.flat = his.flat || {}; his.flat[tyre] = 0.45;
-        his.pull = (his.pull || 0) + pullDir * 0.012;
-        G.sfx.play('hiss', his.pos, { dur: 1.6 }, { ref: 4 });
-        cost(HIT.nick, pullDir);
-      } else if (his.grip[tyre] > 0.5) {
-        // a tyre: it goes with a bang, the car sags on it, pulls and slows;
-        // two gone and he cannot hold it
-        his.grip[tyre] = 0.32;
+      if (his.grip[tyre] > 0.5) {
+        // [C3b] a tyre goes on one round: the bang, the hiss, the quarter
+        // down, the rim on the road; he is slower than me from now on and
+        // weaves (his.js: his speed by his hold on the car)
+        his.grip[tyre] = 0.46;
         H.tyres++;
         G.sfx.play('tail_burst', his.pos, {}, { ref: 5 });
-        D.pace *= 0.88;
-        his.pull = (his.pull || 0) + pullDir * 0.04;
+        G.sfx.play('hiss', his.pos, { dur: 1.2 }, { ref: 4 });
+        his.pull = (his.pull || 0) + pullDir * 0.03;
         his.flat = his.flat || {}; his.flat[tyre] = 1;
         G.emit('tail:tyre', { tyre });
-        if (H.tyres >= 2) D.lose(pullDir);
-        else cost(HIT.tyre, pullDir);
+        cost(HIT.tyre);
       } else {
         // the rim on the road: sparks, the pull harder
         H.rims++;
-        his.pull = (his.pull || 0) + pullDir * 0.015;
-        cost(HIT.rim, pullDir);
+        his.pull = (his.pull || 0) + pullDir * 0.01;
+        cost(HIT.rim);
       }
       return;
     }
@@ -439,8 +440,8 @@ export class Chase {
       H.man++;
       D.duck = 1.8;
       G.sfx.play('grunt', his.pos.clone().setY(1.3), { f0: 96, k: 0.5, dur: 0.18 }, { ref: 5 });
-      if (H.man >= 3) D.lose(side);
-      else cost(HIT.man[H.man - 1]);
+      // ([C3b] hit, he ducks lower and drives worse - never off the road)
+      cost(HIT.man[Math.min(H.man, HIT.man.length) - 1]);
       return;
     }
     if (zone === 'tank') {
@@ -449,7 +450,7 @@ export class Chase {
       H.tank++;
       this.leak = true;
       if (H.tank >= HIT.tankSmoke) this.hisSmoke = Math.max(this.hisSmoke || 0, H.tank >= HIT.tankFire - 1 ? 2 : 1);
-      if (H.tank >= HIT.tankFire && !this.hisFire) { this.hisFire = true; D.pace *= 0.75; this.fireT = 0; }
+      if (H.tank >= HIT.tankFire && !this.hisFire) { this.hisFire = true; D.fire = true; this.fireT = 0; }
       cost(HIT.tank);
       return;
     }
@@ -514,29 +515,79 @@ export class Chase {
   // he is really hurt (a tyre gone, the man hit twice, his tank smoking, his
   // hold at half or less). A shunt across a car that is not yet hurt jolts it
   // and costs him a little of his hold; a bump from behind costs nothing.
+  // [C3b] (the user, 2026-10-03: the shunt on his back corner "seems
+  // impossible" - the push had to be mostly sideways in his frame, which a
+  // car closing from behind at an angle almost never makes.) Now the rule is
+  // the PIT as a driver does it (rules.js RAM): the contact behind his rear
+  // axle's line, on a side, my heading 12 to 65 degrees off his and turned
+  // into him, closing at a walking pace or more (or held into him). Hurt
+  // (this.hurt()): he spins and goes. Whole: a fishtail he catches, and he
+  // pulls away (his.js). A straight bump from behind: a shove, nothing more.
   rammed(e) {
-    if (this.phase !== 'b' || !e.by || e.by !== this.my) return;
-    const D = this.driver, his = this.his;
+    if (!e.by || e.by !== this.my) return;
+    if (this.phase === 'a') return this.grazed(e);
+    if (this.phase !== 'b') return;
+    const D = this.driver, his = this.his, my = this.my;
     if (D.state === 'lost') return;
     const l = his.local(e.point, _w);
-    // (the push on him, in his frame: f along him, r across)
-    const n = e.n || _v.set(0, 0, 0), c = Math.cos(his.yaw), s = Math.sin(his.yaw);
-    const nf = n.x * c - n.z * s, nr = n.x * s + n.z * c;
-    const across = Math.abs(nr) > RAM.across && Math.abs(nr) > Math.abs(nf);
-    const quarter = across && l.x < RAM.behind && Math.abs(l.z) > RAM.flank;
-    const H = this.hisDmg || {};
-    const hurt = (H.tyres || 0) >= 1 || (H.man || 0) >= 2 || (H.tank || 0) >= HIT.tankSmoke || D.control <= RAM.hurtControl;
-    this.lastRam = { t: +this.t.toFixed(2), imp: +e.imp.toFixed(1), lx: +l.x.toFixed(2), lz: +l.z.toFixed(2), nf: +nf.toFixed(2), nr: +nr.toFixed(2), quarter, hurt };
-    if (e.imp > RAM.imp && quarter && hurt) { this._ramWin = true; D.lose(nr > 0 ? 1 : -1); return; }
-    // (or leaned on: my car held into his back quarter across him, the
-    // contact unbroken RAM.lean s - the same push, slower: his back end goes)
-    if (quarter) {
+    const dy = Math.atan2(Math.sin(my.yaw - his.yaw), Math.cos(my.yaw - his.yaw));
+    const ang = Math.abs(dy);
+    // (my nose turned into him: on his left (z < 0) my heading is to the right of his)
+    const into = Math.sign(dy) === Math.sign(l.z || 1);
+    const pit = l.x < RAM.behind && Math.abs(l.z) > RAM.side && ang > RAM.yaw0 && ang < RAM.yaw1 && into;
+    const hurt = this.hurt();
+    // (held into his corner: the contact unbroken RAM.lean s)
+    if (pit) {
       this.leanT = this.t - (this._leanAt ?? -9) < 0.15 ? (this.leanT || 0) + (this.t - this._leanAt) : 0;
       this._leanAt = this.t;
-      if (hurt && this.leanT > RAM.lean) { this._ramWin = true; D.lose(nr > 0 ? 1 : -1); return; }
     }
-    if (e.imp > RAM.imp && quarter) { D.control -= RAM.jolt; D.swerve(nr > 0 ? 1 : -1, 0.7); }
-    if (e.imp > 2) D.duck = Math.max(D.duck, 0.5);
+    const go = pit && (e.imp > RAM.imp || this.leanT > RAM.lean);
+    this.lastRam = { t: +this.t.toFixed(2), imp: +(e.imp || 0).toFixed(1), lx: +l.x.toFixed(2), lz: +l.z.toFixed(2), ang: +ang.toFixed(2), into, pit, hurt, go };
+    (this.rams || (this.rams = [])).push(this.lastRam);
+    if (this.rams.length > 40) this.rams.shift();
+    // (his back end pushed away from me: the car turns toward my side)
+    const spin = l.z < 0 ? 1 : -1;
+    if (go && hurt) {
+      this._ramWin = true;
+      his.yawRate += spin * RAM.spin;
+      D.lose(spin);
+      this.game.sfx.play('tail_crash', e.point, { k: 0.6 }, { ref: 4 });
+      return;
+    }
+    if (go && !(this._staggerT > this.t - 1.2)) {
+      // whole: the tail steps out a little, he catches it, and he goes
+      this._staggerT = this.t;
+      this.staggers = (this.staggers || 0) + 1;
+      his.yawRate += spin * RAM.stagger;
+      D.burst(true);
+      this.game.sfx.play('c3_dent', e.point, { k: 0.5 }, { ref: 4 });
+    }
+    if ((e.imp || 0) > 2) D.duck = Math.max(D.duck, 0.5);
+  }
+  // [C3b] hurt: a tyre gone, the tank smoking, or the man hit (the gun earns
+  // the shunt); the teach card for the shunt the first time
+  hurt() {
+    const H = this.hisDmg || {};
+    return (H.tyres || 0) >= 1 || (H.man || 0) >= 1 || (H.tank || 0) >= HIT.tankSmoke;
+  }
+  hurtCheck() {
+    if (this._hurtSeen || !this.hurt() || this.phase !== 'b') return;
+    this._hurtSeen = true;
+    const K = this.kit;
+    (this.teachAgain ? K.teachAgain : K.teach)('tail_ram', TEACH.ram, { secs: 6, until: () => this.driver.state === 'lost' });
+  }
+  // [C3b] phase a: my bumper on his - a jolt and a sound, nothing more: he
+  // keeps his line (the knock on his yaw taken back) and pulls away
+  grazed(e) {
+    const his = this.his, D = this.driver;
+    if (this.t - (this._grazeT ?? -9) < 0.4) return;
+    this._grazeT = this.t;
+    this.grazes = (this.grazes || 0) + 1;
+    his.yawRate *= 0.25;
+    his.shake = Math.min(1, (his.shake || 0) + 0.5);
+    this.game.sfx.play('c3_dent', e.point || his.pos, { k: 0.35 }, { ref: 4 });
+    this.game.controller.shake(0.25, 0);
+    D.burst(true);
   }
 
   // his hands gone: the car does what a car does (Car.js), until it stops
@@ -545,14 +596,25 @@ export class Chase {
     if (!this.crashT) {
       this.crashT = 0.0001;
       // (the grip of a car out of a man's hands, on the wet)
-      for (const k of ['fl', 'fr', 'rl', 'rr']) his.grip[k] = Math.min(his.grip[k], 0.55);
+      // ([C3b] the back end lets go first: the spin, then the slide)
+      this._grip0 = { ...his.grip };
+      for (const k of ['fl', 'fr']) his.grip[k] = Math.min(his.grip[k], 0.6);
+      for (const k of ['rl', 'rr']) his.grip[k] = Math.min(his.grip[k], 0.22);
       G.sfx.play('tail_screech', his.pos, { dur: 1.8 }, { ref: 6 });
-      G.slowmo(0.5, 0.8);
-      // (the eyes drawn to him - no further than the windscreen's edge: with
-      // him alongside, a turn of 0.75 looked into my own passenger door)
-      if (G.controller.drive) Object.assign(G.controller.drive, { focus: his, focusMax: 0.42 });
+      // ([C3b] a short slowdown as he goes past the windscreen - never the
+      // camera: the wheel and the eyes stay mine)
+      G.slowmo(0.55, 0.7);
       this.kit.warn(null);
+      // (what he hits on the way: the iron, the stalls, the rail - his car's
+      // own knocks, heard and seen)
+      if (!this._hisKnocks) {
+        this._hisKnocks = true;
+        const knock = (e, hard) => { if (this.phase !== 'crash') return; if (this.t - (this._knockT ?? -9) < 0.15) return; this._knockT = this.t; G.sfx.play(hard ? 'tail_crash' : 'tail_scrape', e.point, { k: Math.max(0.4, e.k || 0.5) }, { ref: 5 }); if (/^(parked|car|sedan|coupe|truck)$/.test(e.what) || hard) G.sfx.play('c3_dent', e.point, { k: e.k || 0.6 }, { ref: 5 }); this.sparksAt(e.point, e.n, (e.k || 0.5) * (hard ? 1.4 : 0.8)); };
+        this.his.on('crash', (e) => knock(e, true));
+        this.his.on('scrape', (e) => knock(e, false));
+      }
     }
+    if (this.crashT > 1.3 && this._grip0) { const his0 = this._grip0; for (const k of ['rl', 'rr']) his.grip[k] = Math.min(his0[k], 0.5); this._grip0 = null; }
     this.crashT += dt;
     this.leanForCrash(dt);
     // the tyre smoke while he slides
@@ -629,12 +691,140 @@ export class Chase {
           col: [gc, gc, gc], colEnd: [gc * 0.8, gc * 0.8, gc * 0.8], alpha: 0.4, drag: 0.6, fadeIn: 0.1, fadeOut: 0.7, cell: FIRE.SMOKE[r.int(0, 3)] });
       }
     }
-    // the short look: then the road is mine again, to the pier
-    if (W.t > 2.6 && this.phase === 'wreck') {
-      this.phase = 'c';
-      if (G.controller.drive) G.controller.drive.focus = null;
-      this.kit.objective('Pier 9.');
-      G.emit('tail:pier', {});
+    // [C3b] his door, and he is out on the road by it, crouched over; the
+    // line says what to do: get out and see to him
+    if (W.t > 1.3 && !this.man) this.manOut();
+    if (W.t > 0.6 && this.phase === 'wreck' && !this._seeTo) { this._seeTo = true; this.kit.objective('See to the driver.'); }
+  }
+
+  // [C3b] the man out of his wreck: crouched over on the road by his door,
+  // a hand on the wet, the bowler gone (it lies by the car: hatOff)
+  manOut() {
+    const his = this.his, T = this.stage.track, G = this.game;
+    if (this.man) return;
+    // (the side of his car with the road, not the rail or the wall: where his hat went)
+    const at = (z) => his.seat(_v.set(0.9, 0, z), new THREE.Vector3());
+    let side = -1, p = at(-2.25);
+    if (T && T.blocked && T.blocked(his.pos.x, his.pos.z, p.x, p.z, ['wall', 'fence', 'rail', 'barrier', 'gate', 'works'])) { side = 1; p = at(2.25); }
+    // (he faces so his right arm, held out to his side and back, points down
+    // the river road to the pier: tail_point's arm in his frame)
+    const pd = { x: PIER.gate.x - p.x, z: PIER.gate.z - p.z };
+    const arm = { x: -0.85, z: -0.45 };
+    const yaw = Math.atan2(pd.x, pd.z) - Math.atan2(arm.x, arm.z);
+    const cast = this.stage.cast;
+    const kind = cast.has('watcher') ? 'watcher' : 'couple_him';
+    const c = cast.spawn(kind, { at: { x: p.x, z: p.z }, yaw, name: 'tailman' });
+    c.noGlance = true;
+    c.setState('tail_crouched', 0);
+    if (c.fig && c.fig.bones && c.fig.bones.hat) c.fig.bones.hat.visible = false;
+    this.man = c;
+    this.manAt = { x: p.x, z: p.z, side };
+    if (his.driverFig) his.driverFig.visible = false;
+    G.sfx.play('tail_door', his.pos, { open: true }, { ref: 5 });
+    G.emit('tail:manOut', {});
+  }
+
+  // ---- [C3b] out of the car by his wreck: walk up, the line, back in -----------------------------
+  // (the walking net round the wreck: the stage's bounds round the eye, the
+  // two cars and the man solid; taken away when I get back in or leave)
+  walkNet(on) {
+    const S = this.stage, C = S.colliders;
+    if (on && !this._net) {
+      this._net = { bounds: { ...C.bounds }, boxes: [], circles: [] };
+      const B = S.part && S.part('bounds');
+      if (B && B.walkAround) B.walkAround(this.my.pos.x, this.my.pos.z, 60);
+      for (const v of [this.my, this.his]) { const b = v.box(); const o = { cx: b.cx, cz: b.cz, hx: b.hx + 0.05, hz: b.hz + 0.05, c: b.c, s: b.s, angle: 0, tag: 'tailcar' }; C.boxes.push(o); this._net.boxes.push(o); }
+      if (this.manAt) this._net.circles.push(C.addCircle(this.manAt.x, this.manAt.z, 0.42, 'tailman'));
+    } else if (!on && this._net) {
+      const N = this._net;
+      C.boxes = C.boxes.filter((b) => !N.boxes.includes(b));
+      C.circles = C.circles.filter((c) => !N.circles.includes(c));
+      C.bounds = N.bounds;
+      this._net = null;
+    }
+  }
+  // the driver's door: where I stand out of it, and where E gets me back in
+  doorAt(out = new THREE.Vector3()) {
+    const T = this.stage.track, my = this.my;
+    const p = my.seat(_v.set(-0.15, 0, -1.75), out);
+    if (T && T.blocked && T.blocked(my.pos.x, my.pos.z, p.x, p.z, ['wall', 'fence', 'rail', 'barrier', 'gate', 'works'])) my.seat(_v.set(-0.15, 0, 1.75), out);
+    return out;
+  }
+  getOut() {
+    const G = this.game, my = this.my, his = this.his;
+    this.phase = 'out';
+    G.hud.clearPrompt('tailwreck');
+    this.byWreck = false;
+    my.input.throttle = 0; my.input.brake = 1; my.input.steer = 0;
+    my.vel.set(0, 0, 0); my.yawRate = 0;
+    G.sfx.play('tail_door', null, { open: true });
+    this.walkNet(true);
+    const d = this.doorAt();
+    const tgt = this.manAt || his.pos;
+    const yaw = Math.atan2(-(tgt.x - d.x), -(tgt.z - d.z));
+    G.player.hands.equip('empty');
+    G.controller.setMode('walk', { pose: { x: d.x, z: d.z, yaw, pitch: -0.08 }, ease: 0.55 });
+    this.outT = 0;
+    G.emit('tail:out', {});
+  }
+  getIn() {
+    const G = this.game;
+    G.hud.clearPrompt('tailin');
+    this._eUsed = this.t;
+    this.walkNet(false);
+    G.sfx.play('tail_door', null, { open: false });
+    // (the same cut into the seat as the chase's)
+    this.cabin.attach(this.my);
+    if (!this.lineSaid) this.sayLine();
+    this.phase = 'c';
+    this.kit.objective('Pier 9.');
+    G.emit('tail:pier', {});
+  }
+  // his one line, subtitled; his arm out down the river road
+  sayLine() {
+    if (this.lineSaid) return;
+    this.lineSaid = true;
+    this.game.hud.say('Pier nine. Tonight.', 3.0);
+    this.game.sfx.play('grunt', this.man ? this.man.pos || this.his.pos : this.his.pos, { f0: 88, k: 0.35, dur: 0.3 }, { ref: 4 });
+    if (this.man) { this.man.setState('tail_point', 0.35); this.pointT = 3.2; }
+    this.game.emit('tail:line', {});
+  }
+  atWreck(dt) {
+    const G = this.game, my = this.my, his = this.his;
+    if (!his || this.parked) return;
+    if (this.pointT > 0) { this.pointT -= dt; if (this.pointT <= 0 && this.man) this.man.setState('tail_crouched', 0.5); }
+    if (this.phase === 'wreck') {
+      // stopped by his wreck: E, out of the car
+      const d = Math.hypot(my.pos.x - his.pos.x, my.pos.z - his.pos.z);
+      const near = !!this.man && d < 32 && my.speedAbs < 1.5 && !this.failing;
+      if (near !== !!this.byWreck) { this.byWreck = near; if (near) G.hud.prompt('E  get out', null, 'tailwreck'); else G.hud.clearPrompt('tailwreck'); }
+      if (near && G.pressed('KeyE')) this.getOut();
+      return;
+    }
+    if (this.phase !== 'out') return;
+    this.outT += dt;
+    // the line: walked up to him and looking at him, or passing near him
+    const e = G.camera.position, m = this.manAt;
+    if (m && !this.lineSaid) {
+      const dm = Math.hypot(e.x - m.x, e.z - m.z);
+      const f = G.camera.getWorldDirection(_w);
+      const look = ((m.x - e.x) * f.x + (m.z - e.z) * f.z) / Math.max(0.01, dm * Math.hypot(f.x, f.z));
+      if ((dm < 2.2 && look > 0.8) || dm < 1.4 || (this.outT > 1.5 && dm < 6 && this._dm0 != null && dm > this._dm0 + 0.02 && this._dm0 < 6)) this.sayLine();
+      this._dm0 = dm;
+    }
+    // back in: E at my door
+    const dd = this.doorAt(), dIn = Math.hypot(e.x - dd.x, e.z - dd.z);
+    const atDoor = dIn < 1.9 && this.outT > 0.8;
+    if (atDoor !== !!this._atDoor) { this._atDoor = atDoor; if (atDoor) G.hud.prompt('E  get in', null, 'tailin'); else G.hud.clearPrompt('tailin'); }
+    if (atDoor && G.pressed('KeyE')) this.getIn();
+  }
+  sparksAt(point, n, k = 1) {
+    const G = this.game, r = this.ctx.rng;
+    if (!point) return;
+    const N = Math.round(8 + 18 * Math.min(1.5, k));
+    for (let i = 0; i < N; i++) {
+      const v = (n ? n.clone() : new THREE.Vector3(0, 1, 0)).multiplyScalar(r.range(1, 4)).add(new THREE.Vector3(r.gauss() * 1.8, r.range(0.6, 3.2), r.gauss() * 1.8)).addScaledVector(this.his.vel, r.range(0.3, 0.8));
+      G.fx.sparks.spawn({ pos: point.clone().setY(r.range(0.3, 0.9)), vel: v, life: r.range(0.2, 0.55), size: [0.014, 0.022], stretch: 0.05, col: [6, 6, 6], cell: 4, gravity: 9.8, ground: 0.02, fadeOut: 0.3 });
     }
   }
 
@@ -649,7 +839,7 @@ export class Chase {
       G.emit('tail:horn', {});
     }
     // (E at the pier's gate is the getting out: toPier has it)
-    if (G.pressed('KeyE') && !(this.phase === 'c' && Math.hypot(my.pos.x - PIER.park.x, my.pos.z - PIER.park.z) < 14) && !this.byWreck) {
+    if (G.pressed('KeyE') && !(this.phase === 'c' && Math.hypot(my.pos.x - PIER.park.x, my.pos.z - PIER.park.z) < 14) && !this.byWreck && this._eUsed !== this.t) {
       const on = !(my.lamps && my.lamps.on);
       if (my.lamps) my.lamps.setOn(on);
       this.cabin.lampSwitch(on);
@@ -671,7 +861,8 @@ export class Chase {
       this._brk = (this._brk ?? 0) + (k - (this._brk ?? 0)) * (1 - Math.exp(-dt * 14));
       if (his.tail.material && his.tail.material.color) {
         const base = his.tail.userData.base || (his.tail.userData.base = his.tail.material.color.clone());
-        his.tail.material.color.copy(base).multiplyScalar(1 + this._brk * 1.6);
+        // ([C3b] and brighter as he floors it: pulling away from me)
+        his.tail.material.color.copy(base).multiplyScalar(1 + this._brk * 1.6 + (D.burstK || 0) * 0.9);
       }
       for (const sp of his.tail.userData.glows || []) { const d = Math.hypot(his.pos.x - this.my.pos.x, his.pos.z - this.my.pos.z); sp.scale.setScalar(Math.min(0.62, 0.16 + d * 0.011) * (1 + this._brk * 0.5)); }
     }
@@ -751,7 +942,6 @@ export class Chase {
         G.fx.fire.spawn({ pos: p, vel: new THREE.Vector3(r.gauss() * 0.2, r.range(0.8, 1.6), r.gauss() * 0.2).addScaledVector(his.vel, 0.7), life: r.range(0.2, 0.4), size: [s * 0.7, s], grow: 0.3, rot: r.gauss() * 0.2,
           col: r.chance(0.5) ? FIRE_COL.yellow : FIRE_COL.orange, colEnd: FIRE_COL.deep, colPow: 1.3, cell: FIRE.FLAME[r.int(0, 3)], fadeIn: 0.04, fadeOut: 0.3 });
       }
-      if (this.fireT > HIT.fireT && D.state !== 'lost' && D.state !== 'stopped') D.lose(this.ctx.rng.next() < 0.5 ? -1 : 1);
       if (!this._fireLight) { this._fireLight = true; if (G.sfx.hiss) G.sfx.hiss(his.pos); }
     }
   }
@@ -767,26 +957,6 @@ export class Chase {
     if (a && a.fire) V.down.add('Mouse0');
   }
 
-  // [4th owner] stopped by his wreck, E: a look at him (the head turns to
-  // his car a moment) and, the first time, a line - I do not get out: the
-  // critic, 2nd look, found E there answered nothing (WAVE_C 1.7)
-  atWreck(dt) {
-    const G = this.game, my = this.my, his = this.his;
-    if (!his || this.parked) return;
-    const d = Math.hypot(my.pos.x - his.pos.x, my.pos.z - his.pos.z);
-    const near = this.phase === 'c' && d < 11 && my.speedAbs < 1.5 && Math.hypot(my.pos.x - PIER.park.x, my.pos.z - PIER.park.z) > 20;
-    if (near !== !!this.byWreck) { this.byWreck = near; if (near) G.hud.prompt('E  look', null, 'tailwreck'); else G.hud.clearPrompt('tailwreck'); }
-    if (this.wreckLookT > 0) {
-      this.wreckLookT -= dt;
-      if (this.wreckLookT <= 0 && G.controller.drive && G.controller.drive.focus === his) G.controller.drive.focus = null;
-    }
-    if (near && G.pressed('KeyE')) {
-      if (G.controller.drive) Object.assign(G.controller.drive, { focus: his, focusMax: 0.75, focusPitch: null, focusFov: 6, focusRate: 2.4 });
-      this.wreckLookT = 1.8;
-      if (!this.wreckSaid) { this.wreckSaid = true; G.hud.say('No time. Pier 9.', 2.4); }
-      G.emit('tail:wreckLook', {});
-    }
-  }
 
   // ---- the drive to the pier, the stop by its gate ---------------------------------------------
   toPier(dt) {

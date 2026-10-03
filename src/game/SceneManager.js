@@ -73,6 +73,30 @@ const SCENE_MODS = import.meta.glob(['../scenes/*.js', '!../scenes/_*.js'], { ea
 
 const FADE = 0.6;
 
+// [C3b] the small chapter card (go's card: 'small'): the number and the name
+// in small spaced capitals high over the picture, in and out on its own
+// (3.4 s), as the tail's own card over the windscreen (scenes/tail/kit.js)
+function smallCard(G, num, name) {
+  if (typeof document === 'undefined' || !G.hud || !G.hud.layer) return;
+  if (!document.getElementById('smallcardcss')) {
+    const st = document.createElement('style'); st.id = 'smallcardcss';
+    st.textContent = `.smallcard { position: absolute; left: 50%; top: 21%; transform: translateX(-50%); text-align: center; color: #efede7; opacity: 0;
+      text-shadow: 0 0 8px #000, 0 0 2px #000; white-space: nowrap; pointer-events: none; animation: smallcard 3.4s linear forwards; }
+      .smallcard .n { display: block; font-size: 13px; letter-spacing: 0.5em; margin-bottom: 6px; }
+      .smallcard .t { display: block; font-size: 15px; letter-spacing: 0.42em; text-transform: uppercase; }
+      @keyframes smallcard { 0% { opacity: 0; } 18% { opacity: 1; } 74% { opacity: 1; } 100% { opacity: 0; } }
+      #hud.failing .smallcard { visibility: hidden; }`;
+    document.head.appendChild(st);
+  }
+  const el = G.hud.layer('smallcard');
+  el.innerHTML = '';
+  const c = document.createElement('div'); c.className = 'smallcard';
+  const n = document.createElement('span'); n.className = 'n'; n.textContent = num || '';
+  const t = document.createElement('span'); t.className = 't'; t.textContent = name || '';
+  c.append(n, t); el.appendChild(c);
+  G.smallCardShown = { num, name, t: G.time };
+}
+
 export class SceneManager {
   constructor(game) {
     this.game = game;
@@ -211,7 +235,11 @@ export class SceneManager {
     }
     this.applyMusic(def, from, true, !same);
     G.emit('scene:enter', { id: def.id });
-    if (card !== false && (card === true || typeof card === 'string') && !G.shotMode) G.hud.card(def.title, typeof card === 'string' ? card : def.name);
+    // [C3b] card: 'small' - the chapter's card lettered small over the
+    // picture, no black (a cut from one chapter straight into the next: the
+    // tail's arrival at Pier 9)
+    if (card === 'small' && !G.shotMode) smallCard(G, def.title, def.name);
+    else if (card !== false && (card === true || typeof card === 'string') && !G.shotMode) G.hud.card(def.title, typeof card === 'string' ? card : def.name);
     this.it = def.script ? def.script(ctx) : null;
     this.waitOn = null;
     if (!G.shotMode) G.save.write();

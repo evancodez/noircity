@@ -4,42 +4,51 @@
 export const RULES = {
   unseenWarn: 3.0, unseenLost: 7.0,     // s out of my sight
   farWarn: 85, farLost: 135, farT: 5,   // m behind (and for how long past farWarn + 15)
-  gateWarnZ: 70, gateZ: 150,            // his z on the river road: the warning, the pier's gate
+  gateWarnZ: 110, gateZ: 150,           // his z on the river road: the warning, the pier's gate ([C3b] 70: the window's line comes first)
   wreckWarn: 2.6,                       // [4th owner] my damage: "She won't take much more." (a wreck at 4)
 };
-// [4th owner] what my rounds cost him (chase.js hisHit), and the ends they
-// make: his hold on the car (control) goes 1 .. 0, and at HIT.lose or under
-// he has lost it. Each way off the road is a thing he shows first:
-//   two tyres gone (one a side; a tyre takes two rounds: the first and it
-//     hisses and goes soft, the quarter dipping half way; the second blows
-//     it - the quarter down, the rim sparking),
-//   the man three times (he ducks after the first and a round while he is
-//     down goes over him: wait for him to come up),
-//   the tank four times (a leak, smoke at two, thick at three, fire at four:
-//     the fire takes him FIRE_T s later),
-//   or his hold worn down by a mix.
-// The critic, 2nd look: three hits anywhere (tyre 0.4 + rim 0.25 + tank 0.22)
-// finished him, sloppy aim won first try in 8 to 12 s.
+// [C3b] what my rounds cost him (chase.js hisHit): his hold on the car
+// (control) goes 1 .. HIT.floor and never under - no number of rounds alone
+// ends it (the user, 2026-10-03: the gun hurts him, the ram finishes him).
+//   a tyre goes on ONE round (the bang, the quarter down, the rim sparking):
+//     -HIT.tyre; then he is slower than me and weaves;
+//   the man ducks (a round while he is down goes over him), -HIT.man each;
+//   the tank leaks, smokes at HIT.tankSmoke, burns at HIT.tankFire (slower);
+//   the body a little.
+// Hurt (chase.hurt(): a tyre gone, the tank smoking or the man hit), he can
+// no longer pull away from me, and a shunt on his back corner spins him.
 export const HIT = {
-  nick: 0.08, tyre: 0.2, rim: 0.06, man: [0.1, 0.2], tank: 0.08, body: 0.04,
-  tankSmoke: 2, tankFire: 4, fireT: 2.5,
-  lose: 0.15,
+  tyre: 0.4, rim: 0.05, man: [0.15, 0.12, 0.08], tank: 0.08, body: 0.04,
+  tankSmoke: 2, tankFire: 4,
+  floor: 0.35,
 };
-// [4th owner] the shunt (chase.js rammed): my car into his back quarter from
-// the side - pushed across, behind his middle - when he is really hurt (a
-// tyre gone, the man hit twice, his tank smoking, or his hold at HURT.control
-// or under) puts him off the road; anywhere else, or whole, it only jolts
-// him. A straight bump from behind never does (the critic's blocker: one
-// round anywhere and a touch from behind ended it).
-// (or leaned on - held into his quarter across him, the contact unbroken -
-// for RAM.lean s)
-export const RAM = { imp: 2.5, across: 0.6, behind: -0.6, flank: 0.55, hurtControl: 0.5, jolt: 0.06, lean: 0.6 };
+// [C3b] the shunt (chase.js rammed): my front wing into his back corner,
+// pushing across - the contact behind RAM.behind (m, his frame: his rear
+// axle is at -1.55, his tail at -2.45), on a side (|z| > RAM.side), my
+// heading RAM.yaw0 .. RAM.yaw1 rad off his and turned into him, closing at
+// RAM.imp m/s or more (or held into him RAM.lean s). Hurt: he spins
+// (RAM.spin rad/s on his yaw, his hands gone: the crash on the cars' own
+// physics). Whole: a fishtail he catches (RAM.stagger) and he pulls away.
+// A straight bump from behind is only a shove.
+export const RAM = { behind: -0.9, side: 0.3, yaw0: 0.2, yaw1: 1.15, imp: 1.0, lean: 0.35, spin: 3.2, stagger: 0.7 };
+// [C3b] he pulls away when I close (phase a, and a whole car in phase b):
+// within PULL.near m behind him he floors it for PULL.t s (his car briefly
+// faster than mine: PULL.vmax, PULL.accel), then falls back to his pace;
+// not again for PULL.cool s.
+export const PULL = { near: 10, t: 2.8, cool: 2.0, vmax: 25.5, accel: 6.6, pathV: 25 };
+// [C3b] phase b's window: he runs the river road at RIVER_B.cruise m/s
+// (less as he is hurt: x (0.55 + 0.45 control)); from RIVER_B.warn s
+// "He's pulling away." and he speeds up toward RIVER_B.away; at RIVER_B.t s
+// he is gone - "Lost him." once he is RIVER_B.lostGap m clear, or
+// RIVER_B.extra s later whatever the gap. (The pier's gate, if he reaches it
+// first: "He warned them.")
+export const RIVER_B = { cruise: 11.5, away: 21, awayHurt: 16.5, warn: 20, t: 30, lostGap: 55, extra: 4 };
 // [3rd owner] the teach cards (the kit draws [X] as a key cap, [LMB] / [RMB]
 // as a mouse; seams/Z.md §2)
 export const TEACH = {
   drive: '[W] drive  [A] [D] steer  [S] brake',
   handbrake: '[SPACE] handbrake: swing round a tight corner',
   gun: '[RMB] lean out and aim  [LMB] fire',
-  // [4th owner] (the gun dry and he still going, hurt: the shunt)
-  ram: '[A] [D] out of rounds: shunt his back corner from the side',
+  // [C3b] (the first time he is hurt: the shunt finishes him)
+  ram: '[A] [D] shunt his back corner',
 };

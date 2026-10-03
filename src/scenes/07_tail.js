@@ -68,7 +68,7 @@ function build(ctx, which) {
       C.phase = 'crash';
       C.crashT = 1; C.stillT = 1;
       C.wrecked2();
-      if (which === 'pier') { C.wreck.t = 3; C.wreck.lamps = 2; C.his.tail.visible = false; for (const sp of C.his.tail.userData.glows || []) sp.visible = false; if (C.his.lamps) C.his.lamps.setOn(false); C.phase = 'c'; }
+      if (which === 'pier') { C.lineSaid = true; C.wreck.t = 3; C.wreck.lamps = 2; C.his.tail.visible = false; for (const sp of C.his.tail.userData.glows || []) sp.visible = false; if (C.his.lamps) C.his.lamps.setOn(false); C.phase = 'c'; }
     }
   }
   C.my.damage = CHECK_DAMAGE[ctx.flags.check] || 0;
@@ -169,11 +169,13 @@ export default defineScene({
       yield until(() => C.phase === 'parked');
       // (the head turns to the shed's doors - chase.js - a beat on them,
       // the door, the cut)
-      yield wait(0.9);
+      // ([C3b] no black, no full card: the door, and I am standing at Pier 9
+      // with chapter VII's card small over the picture)
+      yield wait(0.6);
       G.sfx.play('tail_door', null, { open: true });
-      yield wait(0.7);
+      yield wait(0.35);
       G.music.stop(2);
-      ctx.next();
+      ctx.next({ fade: 'cut', card: 'small' });
     }
   },
 });

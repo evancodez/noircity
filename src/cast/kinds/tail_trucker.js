@@ -140,6 +140,33 @@ export default {
         [1.6, { hipsPos: [0, 0.27, 0.02], head: [30, 12, 0] }],
       ]) }),
     },
+    // [C3b] the watcher out of his wreck (chase.js manOut): down on his right
+    // knee on the wet by his door, bent over, his left hand on the road,
+    // the right at his ribs, his head hanging, breathing hard
+    tail_crouched: {
+      duration: 2.2, loop: true,
+      def: () => ({ duration: 2.2, loop: true, armSpace: 'root', pose: (t) => {
+        const b = S(TAU * t / 2.2);
+        return P({ hipsPos: [0.02, 0.46, 0.0], hips: [34, 0, -4], spine: [16 + b * 2, 0, 2], chest: [14 + b * 2.5, 0, 0], neck: [18, 0, 0], head: [22 + b * 2, 8, 4],
+          footL: [0.16, A, 0.34], footRotL: [0, 12, 0], kneeL: [0.12, 0.3, 1],
+          footR: [-0.15, 0.1, -0.36], footRotR: [-72, 10, 0], kneeR: [-0.1, -1, 0.4],
+          handTL: [0.3, 0.1 + b * 0.01, 0.52], elbowPoleL: [1, 0.2, -0.3], handL: [70, 0, 10],
+          handTR: [-0.06, 0.62, 0.3], elbowPoleR: [-1, -0.5, -0.2], handR: [0, 0, -60] });
+      } }),
+    },
+    // [C3b] "Pier nine. Tonight.": he lifts his head to me and his right arm
+    // goes out to his side and back, down the river road
+    tail_point: {
+      duration: 2.4, loop: true,
+      def: () => ({ duration: 2.4, loop: true, armSpace: 'root', pose: (t) => {
+        const b = S(TAU * t / 2.4);
+        return P({ hipsPos: [0.02, 0.5, 0.0], hips: [20, -8, -4], spine: [6 + b, -6, 2], chest: [2 + b * 2, -8, 0], neck: [0, -10, 0], head: [-6, -14, 0],
+          footL: [0.16, A, 0.34], footRotL: [0, 12, 0], kneeL: [0.12, 0.3, 1],
+          footR: [-0.15, 0.1, -0.36], footRotR: [-72, 10, 0], kneeR: [-0.1, -1, 0.4],
+          handTL: [0.24, 0.58, 0.36], elbowPoleL: [1, -0.4, 0], handL: [0, 0, 30],
+          handTR: [-0.74, 1.02 + b * 0.01, -0.3], elbowPoleR: [-0.2, -1, 0], handR: [0, 0, -10] });
+      } }),
+    },
     // the truck's driver in his cab
     tail_trucker_sit: {
       duration: 3, loop: true,

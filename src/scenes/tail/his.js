@@ -1,4 +1,7 @@
+import * as THREE from 'three';
 import { buildPath } from '../../stages/city/route.js';
+import { PULL, RIVER_B } from './rules.js';
+const _l = new THREE.Vector3();
 import { Pilot } from '../../vehicles/pilot.js';
 import { RIVER_LEN, riverPoint, riverFrame, PIER } from '../../stages/city/plan.js';
 
@@ -116,6 +119,7 @@ export class His {
     if (this.state === 'lost') { this.crashing(v, dt); return; }
     const P = this.pilot;
     P.o.pace = this.pace * (this.duck > 0 ? 0.72 : 1) * (this.control < 1 ? 0.85 + 0.15 * this.control : 1);
+    this.pullStep(v, dt);
     // [2nd owner] (the river road: the revolver out of my window in his
     // mirror, he weaves across his lane - a moving mark, aimed at, not a
     // target that drives straight at the end of my sights)
@@ -146,12 +150,66 @@ export class His {
     if (this.state === 'go' && P.done) this.toRiver();
     if (this.state === 'river' && P.done) this.atPier = true;
   }
+  // [C3b] he pulls away when I close (rules.js PULL): within PULL.near m
+  // behind him (in the streets, or on the river road while his car is
+  // whole) he floors it - the engine let out, the straights faster than my
+  // coupe can go - for PULL.t s, then back to his pace. On the river road his
+  // pace is his hold on the car's (hurt, slower than me), and the window's
+  // getaway (chase.js: from RIVER_B.warn s he speeds up and away).
+  pullStep(v, dt) {
+    const ch = this.chase, my = ch.my, P = this.pilot;
+    this.coolT = Math.max(0, (this.coolT || 0) - dt);
+    const whole = !(ch.hurt && ch.hurt());
+    if (this.burstT > 0) { this.burstT -= dt; if (!whole && this.state === 'river') this.burstT = 0; }
+    else if (my && (this.state === 'go' || (this.state === 'river' && whole)) && this.coolT <= 0) {
+      const l = v.local(my.pos, _l);
+      if (l.x < 1 && Math.hypot(l.x, l.z) < PULL.near) this.burst();
+    }
+    const on = this.burstT > 0;
+    this.burstK = (this.burstK || 0) + ((on ? 1 : 0) - (this.burstK || 0)) * (1 - Math.exp(-dt * 6));
+    const away = this.state === 'river' ? (this.getaway || 0) : 0;
+    const S = v.spec, S0 = this.spec0 || (this.spec0 = { vmax: S.vmax, accel: S.accel });
+    S.vmax = on ? PULL.vmax : S0.vmax + (PULL.vmax - S0.vmax) * away;
+    S.accel = on ? PULL.accel : S0.accel + (PULL.accel - S0.accel) * away * 0.6;
+    // (the path's speeds: its straights let out, its corners as they were)
+    this.boostPath(this.path, on || away > 0);
+    if (this.state === 'river') {
+      let vm = RIVER_B.cruise * (0.55 + 0.45 * this.control) * (this.fire ? 0.85 : 1);
+      if (away > 0) vm += ((whole ? RIVER_B.away : RIVER_B.awayHurt) - vm) * away;
+      if (on) vm = Math.max(vm, PULL.vmax);
+      P.o.vmax = vm;
+    } else P.o.vmax = 30;
+  }
+  burst(force = false) {
+    if (this.state !== 'go' && this.state !== 'river') return;
+    if (this.state === 'river' && this.chase.hurt && this.chase.hurt()) return;
+    if ((!force && this.coolT > 0) || this.burstT > 0.5) return;
+    this.burstT = PULL.t; this.coolT = PULL.t + PULL.cool;
+    this.bursts = (this.bursts || 0) + 1;
+    const G = this.chase.game;
+    // (the tyres chirp on the wet as he lets the clutch in)
+    G.sfx.play('tail_screech', this.car.pos, { dur: 0.35, k: 0.5 }, { ref: 5 });
+    G.emit('tail:burst', {});
+  }
+  boostPath(path, on) {
+    if (!path || !path.pts || !!path._boosted === on) return;
+    const pts = path.pts;
+    if (!path._vB) {
+      path._v0 = pts.map((p) => p.v);
+      const vB = pts.map((p) => Math.min(PULL.pathV, Math.sqrt(6.2 / Math.max(p.k ?? 1e-4, 1e-4))));
+      for (let i = pts.length - 2; i >= 0; i--) vB[i] = Math.min(vB[i], Math.sqrt(vB[i + 1] ** 2 + 2 * 5.2 * Math.max(0.01, pts[i + 1].s - pts[i].s)));
+      path._vB = vB;
+    }
+    const src = on ? path._vB : path._v0;
+    for (let i = 0; i < pts.length; i++) pts[i].v = src[i];
+    path._boosted = on;
+  }
   toRiver() {
     if (this.state === 'river') return;
     const pts = this.makeRiver();
     const path = buildPathFromPoly(pts);
     this.pilot.setPath(path, this.car);
-    this.pilot.o.vmax = 17;
+    this.pilot.o.vmax = RIVER_B.cruise;
     this.path = path;
     this.state = 'river';
     this.chase.onRiver && this.chase.onRiver();
@@ -184,4 +242,5 @@ export class His {
 
 // a path from raw points (the river run)
 import { samplePath } from '../../stages/city/route.js';
-function buildPathFromPoly(pts) { return samplePath(pts, { vmax: 17, aLat: 6.2, aBrake: 5.2 }); }
+// ([C3b] its straights at PULL.pathV: his pace is the pilot's vmax, set each step)
+function buildPathFromPoly(pts) { return samplePath(pts, { vmax: PULL.pathV, aLat: 6.2, aBrake: 5.2 }); }
