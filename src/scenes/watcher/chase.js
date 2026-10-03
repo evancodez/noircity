@@ -78,6 +78,9 @@ export class Chase {
     this.warned = false; this.warnAt = null;
     this.log = []; this.lostN = 0;
     this.myD = 0; this.hisD = 0; this.gapNow = 0;
+    // ([C6 3rd] his real pace along the course - over a fence, round a corner,
+    // in a clip that carries him - what my run is held to on his heels)
+    this.hisVel = 0; this.prevHisD = null;
     this.tricks = [];               // what he pulled down this try (the play's record)
     this.onStretch = null;          // fn(name): my progress reached a stretch's start
     this.stretch = null;
@@ -165,6 +168,7 @@ export class Chase {
     this.yOff = 0;
     this.w.setState('watcher_run', 0.15);
     this.v = v;
+    this.hisVel = v; this.prevHisD = null;
     this.ei = 0;
     while (this.ei < this.events.length && this.events[this.ei].s < s) this.ei++;
   }
@@ -192,6 +196,12 @@ export class Chase {
     if (!this.w || !this.fig) return;
     const F = this.fig;
     const gap = this.measure();
+    // (his pace along the course, smoothed; a step onto a spur's edge clipped)
+    if (this.prevHisD != null && dt > 0 && this.act !== 'gone' && this.act !== 'carIn') {
+      const u = Math.max(0, Math.min(8.5, (this.prevHisD - this.hisD) / dt));
+      this.hisVel += (u - this.hisVel) * (1 - Math.exp(-dt / 0.2));
+    }
+    this.prevHisD = this.hisD;
     // my progress into the next stretch (the scene's beat; not from the iron)
     if (this.active && !this.escape) {
       for (let i = STRETCH_ORDER.length - 1; i >= 0; i--) {

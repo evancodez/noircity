@@ -279,7 +279,7 @@ export const WAYS = [
   // the gap into the warning)
   { names: ['aOut', 'passIn', 'passOut', 'dog', 'bay', 'truck', 'rowEnd', 'rowOut', 'cross'], w: 0.9 },
   // [C6 3rd] the market's gateway chained: round by the corner and the arch
-  ['cross', 'merN', 'corner', 'archN', 'archS', 'mN', 'aisleN', 'aisleS', 'crossW', 'gate', 'pave'],
+  ['cross', 'merN', 'corner', 'archN', 'archS', 'mN', 'aisleN', 'aisleS', 'crossW', 'gate', 'pave', 'carDoor'],
   ['mN', 'westN', 'westS', 'gate'],
   // (the gateway, inside its chained gates: a dead end from the market)
   ['mN', 'gateway'],

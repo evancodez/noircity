@@ -448,12 +448,18 @@ function capStep(ctx) {
   if (!R) return;
   let cap = null;
   if (G.hud.cardT > 0.1) cap = 0;
-  else if (C && C.active && !C.otherWay() && (C.act === 'run' || C.act === 'vault' || C.act === 'slide' || C.act === 'arc')) {
+  else if (C && C.active && !C.escape && !C.otherWay() && (C.act === 'run' || C.act === 'vault' || C.act === 'slide' || C.act === 'arc')) {
     // ([C6 3rd] three metres back, not one and a half: on his heels he is a
     // whole man in the frame - his arm out to what he pulls down, the thing
     // itself - not a coat filling the lens)
+    // (held to his real pace along the way, not the pace he means: over a
+    // stack the clip carries him slower than that, and a runner held to the
+    // meant pace crept up through him and, past -2 m, ran on ahead of him to
+    // his car. Closer than three metres, a little under his pace - his back
+    // in my way - so the gap comes back to three; never past him)
     const g = C.gapNow;
-    if (g < 4.2 && g > -2) cap = Math.max(1.5, C.v + Math.max(0, g - 3.0) * 3.2);
+    const his = C.hisVel;
+    if (g < 4.2 && g > -2) cap = Math.max(1.2, g >= 3.0 ? his + (g - 3.0) * 3.2 : his + (g - 3.0) * 1.5);
   }
   R.speedCap = cap;
 }

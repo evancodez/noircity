@@ -67,7 +67,7 @@ export default async function drive({ js, turn, keyDown, keyUp, log, sleep, opts
     const out = { done: !!(${until}), mode: C.mode, beat: S.beat, scene: S.current && S.current.id, yaw: C.yaw, pitch: C.pitch, sens: C.sensitivity,
       x: C.pos.x, z: C.pos.z, feet: R ? R.feet : C.groundY, v: R ? R.v : 0, failing: !!G.failing, warn: G.hud.kit.warnText || null,
       fails: G.counters.fails || 0, crawl: G.crawl, prompt: G.hud.promptShown || '', move: R && R.move ? R.move.kind : null, blocked: R && R.blocked ? { id: R.blocked.T.id, kind: R.blocked.T.kind } : null,
-      lane: CH ? CH.lane : null, his: CH ? CH.act : null, gap: CH ? +CH.gapNow.toFixed(1) : null, stretch: CH ? CH.stretch : null, teach: G.hud.kit.teachCur ? G.hud.kit.teachCur.id : null, taught: Object.keys(G.hud.kit.taught ? G.hud.kit.taught() : {}), t: +N.time.toFixed(2) };
+      lane: CH ? CH.lane : null, his: CH ? CH.act : null, gap: CH ? +CH.gapNow.toFixed(1) : null, hv: CH ? +(CH.hisVel || 0).toFixed(1) : null, cap: R && R.speedCap != null ? +R.speedCap.toFixed(1) : null, stretch: CH ? CH.stretch : null, teach: G.hud.kit.teachCur ? G.hud.kit.teachCur.id : null, taught: Object.keys(G.hud.kit.taught ? G.hud.kit.taught() : {}), t: +N.time.toFixed(2) };
     if (R && C.mode === 'run') {
       const th = N.stage.part('things');
       const q = th.ahead(C.pos, C.vel, R.level, 0.36);
@@ -90,7 +90,7 @@ export default async function drive({ js, turn, keyDown, keyUp, log, sleep, opts
     lastWarn = s.warn;
     if (s.done) { for (const c of [...held]) await set(c, false); return result(true); }
     // (opts.trace: where I am, his gap, my move, every half second of real time)
-    if (opts.trace && Date.now() - (drive._tr || 0) > 500) { drive._tr = Date.now(); log(`c6_chase trace: ${s.beat} me ${s.x.toFixed(1)},${s.z.toFixed(1)} y ${(+s.feet).toFixed(1)} v ${(+s.v).toFixed(1)} gap ${s.gap} his ${s.his} move ${s.move} q ${s.q ? s.q.id + ':' + s.q.t : '-'}`); }
+    if (opts.trace && Date.now() - (drive._tr || 0) > 500) { drive._tr = Date.now(); log(`c6_chase trace: ${s.beat} me ${s.x.toFixed(1)},${s.z.toFixed(1)} y ${(+s.feet).toFixed(1)} v ${(+s.v).toFixed(1)} gap ${s.gap} hv ${s.hv} cap ${s.cap} his ${s.his} move ${s.move} q ${s.q ? s.q.id + ':' + s.q.t : '-'}`); }
     if (Date.now() - T0 > timeout) break;
     if (s.fails !== fails) {
       fails = s.fails;

@@ -12,6 +12,7 @@ import { NODES, WAYS, DOOR_WAYS, hisNames } from '../../stages/backlot/plan.js';
 //   C.path(names)        a polyline { pts, s, len } through the named nodes
 //   C.his(lane, over)    his way (to his car's door)
 const GOAL = 'gate';
+const BEYOND = ['pave', 'carDoor'];   // his way on past the gate, to his car's door
 const Y_W = 2.0;          // a metre up counts as two across (the roofs over the row)
 
 export class Course {
@@ -50,7 +51,17 @@ export class Course {
         if (nd < D.get(v)) D.set(v, nd);
       }
     }
-    // (past the gate, on Pell Lane: negative - beyond the goal)
+    // (past the gate, on Pell Lane: negative - beyond the goal. [C6 3rd] It
+    // was left as the search found it, the way back to the gate: a man
+    // through the gate and on to his car counted as coming back, his pace
+    // along the course nil - and a runner on his heels was held to that)
+    let prev = GOAL;
+    for (const k of BEYOND) {
+      const A = this.nodes.get(prev), B = this.nodes.get(k);
+      if (!B) break;
+      D.set(k, D.get(prev) - A.distanceTo(B));
+      prev = k;
+    }
     this.D = D;
   }
 
