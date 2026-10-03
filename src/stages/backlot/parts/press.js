@@ -114,6 +114,29 @@ export default {
       K.add('pressTruss', MAT.iron, merge(tr), { figure: true, cast: false });
     }
 
+    // the tall windows high in its walls, pale with the street's light outside
+    // (the avenue's lamps and the el's, the alley's): the hall's rhythm in the
+    // dark over the machines, the trusses across them
+    {
+      const pale = new THREE.MeshBasicMaterial({ color: new THREE.Color(0.5, 0.5, 0.5) });
+      const dim = new THREE.MeshBasicMaterial({ color: new THREE.Color(0.32, 0.32, 0.32) });
+      const fr = [];
+      const win = (mat, F, u, y0, w, h) => {
+        A.fplane('pressWin', mat, F, u, y0 + h / 2, w, h, 0.01, { cast: false, noRay: true });
+        fr.push([F, u, y0, w, h]);
+      };
+      for (let z = P.z0 + 2.6; z < P.z1 - 1.5; z += 3.2) if (Math.abs(z - (-87.6)) > 1.2) win(pale, face('x', xi1, -1), z, 5.0, 1.3, 2.6);
+      for (let x = P.x0 + 3.0; x < P.x1 - 1.5; x += 3.6) win(dim, face('z', zi0, 1), x, 5.2, 1.3, 2.4);
+      for (let x = P.x0 + 3.0; x < P.x1 - 1.5; x += 3.6) win(dim, face('z', zi1, -1), x, 5.2, 1.3, 2.4);
+      // (their glazing bars)
+      for (const [F, u, y0, w, h] of fr) {
+        fbox('pressWin', MAT.iron, F, u - w / 2 - 0.06, u + w / 2 + 0.06, y0 - 0.06, y0, 0, 0.06);
+        fbox('pressWin', MAT.iron, F, u - w / 2 - 0.06, u + w / 2 + 0.06, y0 + h, y0 + h + 0.06, 0, 0.06);
+        fbox('pressWin', MAT.iron, F, u - 0.02, u + 0.02, y0, y0 + h, 0, 0.04);
+        for (let y = y0 + h / 4; y < y0 + h - 0.1; y += h / 4) fbox('pressWin', MAT.iron, F, u - w / 2, u + w / 2, y - 0.02, y + 0.02, 0, 0.04);
+      }
+    }
+
     // ---- the presses ---------------------------------------------------------------------------
     const paperTex = makePrintTexture();
     // (paper reads pale even out of the lamps' pools: a little light of its own)

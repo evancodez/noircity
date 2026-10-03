@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { holeyPanel } from '../kit.js';
 import { arch } from '../arch.js';
-import { lathe, tube, V3, roundedBox } from '../../../world/geom.js';
+import { lathe, tube, V3, roundedBox, merge } from '../../../world/geom.js';
 import { accentMaterial } from '../../../render/accents.js';
 import { Steam } from '../../../fx/Steam.js';
 import { KITCHEN, LOADING, YARD, LANES, FLOOR, KDOOR } from '../plan.js';
@@ -73,7 +73,17 @@ export default {
       for (const dz of [-0.9, 0.7]) K.add(g, MAT.metal, lathe([[0, 0], [0.2, 0], [0.22, 0.02], [0.22, 0.3], [0.24, 0.32], [0, 0.32]], 18).translate(KI.x0 + T + 0.55, 0.93, z + dz));
       stage.colliders.addBox(KI.x0 + T + 0.56, z, 0.58, 1.72, 0, 'stove');
     }
-    K.add(g, MAT.metal, roundedBox(1.4, 0.5, 12.2, 0.05, 2).translate(KI.x0 + T + 0.7, 2.6, -92.6));
+    // ([C6 2nd] the hood over the ranges: a sloped sheet of tin from the wall
+    // out over the stoves, its lip a bright line, its flue up into the ceiling)
+    {
+      const sh = new THREE.Shape();
+      sh.moveTo(0, 3.25); sh.lineTo(0.5, 3.25); sh.lineTo(1.62, 2.38); sh.lineTo(1.62, 2.22); sh.lineTo(1.54, 2.22); sh.lineTo(0.46, 3.1); sh.lineTo(0, 3.1);
+      const hood = new THREE.ExtrudeGeometry(sh, { depth: 12.0, bevelEnabled: false }).translate(0, 0, -6.0).translate(KI.x0 + T, 0, -92.6);
+      K.add(g, MAT.metal, hood);
+      const lip = new THREE.BoxGeometry(0.06, 0.05, 12.0).translate(KI.x0 + T + 1.6, 2.24, -92.6);
+      K.add('rangesLip', new THREE.MeshStandardMaterial({ color: 0xb8b8b8, metalness: 0.6, roughness: 0.3, envMap: stage.M.envSoft, envMapIntensity: 1.0 }), lip);
+      for (const z of [-95.4, -89.8]) K.add(g, MAT.metal, new THREE.CylinderGeometry(0.22, 0.22, CEIL - 3.2, 14).translate(KI.x0 + T + 0.3, 3.2 + (CEIL - 3.2) / 2, z));
+    }
     // the fire door of the middle stove, open: the coals (fire, the only colour)
     {
       const fire = accentMaterial('fire', { gain: 1.4 });
@@ -107,7 +117,10 @@ export default {
     // plaster above gone grey with steam
     {
       const y1 = 1.55, t = 0.02;
-      const band = (x0, x1, z0, z1) => K.box('kitchenTile', MAT.tile, x0, x1, 0.02, y1, z0, z1);
+      // ([C6 2nd] the tiles as tiles: white squares, the grout dark between,
+      // glazed - each lamp a hard highlight on them)
+      const wallTile = new THREE.MeshStandardMaterial({ color: 0xd8d8d8, map: tileTexture(), roughness: 0.22, envMap: stage.M.envSoft, envMapIntensity: 0.7 });
+      const band = (x0, x1, z0, z1) => K.box('kitchenTile', wallTile, x0, x1, 0.02, y1, z0, z1, 1 / 1.2);
       const zi1 = KI.z1 - T, zi0 = KI.z0 + T, xi0 = KI.x0 + T, xi1 = KI.x1 - T;
       // south wall (the doors), north wall (the roller door, the hatch)
       band(xi0, dW.x - dW.w / 2 - 0.12, zi1 - t, zi1); band(dW.x + dW.w / 2 + 0.12, dE.x - dE.w / 2 - 0.12, zi1 - t, zi1); band(dE.x + dE.w / 2 + 0.12, xi1, zi1 - t, zi1);
@@ -119,6 +132,11 @@ export default {
       // pans hung from a rail over the table
       for (let x = 56; x <= 64; x += 1.0) K.add('table', MAT.metal, lathe([[0, 0], [0.14, 0], [0.15, 0.09], [0, 0.09]], 14).rotateX(Math.PI / 2).translate(x, 2.25, -91.75));
       K.add('table', MAT.iron, tube([V3(55.6, 2.42, -91.75), V3(64.4, 2.42, -91.75)], 0.02, 6, 2));
+      // ([C6 2nd] the plates on the shelves over the sinks: white, on edge, catching the light)
+      const china = new THREE.MeshStandardMaterial({ color: 0xe4e4e4, roughness: 0.28, emissive: 0x141414, envMap: stage.M.envSoft, envMapIntensity: 0.5 });
+      const plates = [];
+      for (const zc of [-93.9, -90.2, -86.5]) for (const y of [1.75, 2.25]) for (let z = zc - 1.05; z < zc + 1.1; z += 0.13) plates.push(new THREE.CylinderGeometry(0.115, 0.115, 0.018, 18).rotateX(Math.PI / 2).rotateY(Math.PI / 2).rotateZ(0.18).translate(xi1 - 0.16, y + 0.12, z));
+      K.add('china', china, merge(plates), { figure: true });
     }
     // the lamp: a shade over the table (the one light), and the stove's glow
     const L = stage.part('lamps');
@@ -127,10 +145,12 @@ export default {
     api.lamp2 = L.hang(63.0, CEIL - 0.1, -92.4, { real: true });
     if (api.lamp2.light) { api.lamp2.light.intensity = 150; api.lamp2.light.angle = 0.95; api.lamp2.light.penumbra = 0.8; }
     if (api.lamp.light) { api.lamp.light.intensity = 170; api.lamp.light.angle = 0.95; api.lamp.light.penumbra = 0.8; }
+    // ([C6 2nd] a bulb over the iron door: the way out of the kitchen lit)
+    api.doorLamp = L.wall(KI.x1 - T, 2.75, KDOOR.z + 0.95, -1, 0, { out: 0.45, strength: 0.9 });
     // steam off the pots
     api.steam = new Steam(stage, [V3(KI.x0 + T + 0.55, 1.25, -93.5), V3(KI.x0 + T + 0.55, 1.25, -89.1)], 10);
     // the kitchen's Look: dark round its one lamp
-    stage.addLook(new THREE.Box3(V3(KI.x0 + T, -1, KI.z0 + T), V3(KI.x1 - T, CEIL, KI.z1 - T)), { ambient: 0.24, exposure: 1.1, rainOverlay: 0.0, haze: 0.3, room: 'kitchen' });
+    stage.addLook(new THREE.Box3(V3(KI.x0 + T, -1, KI.z0 + T), V3(KI.x1 - T, CEIL, KI.z1 - T)), { ambient: 0.15, exposure: 1.1, rainOverlay: 0.0, haze: 0.3, room: 'kitchen' });
     stage.dry.push(new THREE.Box3(V3(KI.x0, 0, KI.z0), V3(KI.x1, KI.h, KI.z1)));
     // ---- outside: the floods over the back doors down the lanes, the bulb over the roller door
     // (low over each door, aimed down its lane through the washing: the
@@ -158,3 +178,25 @@ export default {
     return api;
   },
 };
+
+// [C6 2nd] the wall tiles: a grid of glazed squares, the grout dark (8 x 8 a repeat)
+function tileTexture() {
+  let c = null;
+  try { c = typeof document !== 'undefined' ? document.createElement('canvas') : null; } catch (e) { c = null; }
+  if (!c) { const t = new THREE.DataTexture(new Uint8Array([220, 220, 220, 255]), 1, 1); t.needsUpdate = true; return t; }
+  c.width = c.height = 256;
+  const g = c.getContext('2d');
+  g.fillStyle = '#5a5a5a'; g.fillRect(0, 0, 256, 256);
+  let r = 11;
+  const rnd = () => { r = (r * 16807) % 2147483647; return r / 2147483647; };
+  for (let i = 0; i < 8; i++) for (let j = 0; j < 8; j++) {
+    const v = 214 + Math.floor(rnd() * 26);
+    g.fillStyle = `rgb(${v},${v},${v})`;
+    g.fillRect(i * 32 + 1.5, j * 32 + 1.5, 29, 29);
+  }
+  const t = new THREE.CanvasTexture(c);
+  t.wrapS = t.wrapT = THREE.RepeatWrapping;
+  t.colorSpace = THREE.SRGBColorSpace;
+  t.anisotropy = 4;
+  return t;
+}

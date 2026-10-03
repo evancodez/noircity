@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { holeyPanel } from '../kit.js';
 import { arch } from '../arch.js';
-import { lathe, V3 } from '../../../world/geom.js';
+import { lathe, V3, merge } from '../../../world/geom.js';
 import { accentMaterial } from '../../../render/accents.js';
 import { markFigure, tagInk } from '../../../render/layers.js';
 import { tube } from '../../../world/geom.js';
@@ -259,6 +259,26 @@ export default {
       // Pell Lane's east side beyond the fence: a brick wall to the next block
       mass('pellWall', MAT.brickDark, FENCE.x, FENCE.x + 0.4, MARKET.z0, FENCE.z0, 3.4);
       fbox('pellWall', MAT.trim, face('x', FENCE.x, -1), MARKET.z0, FENCE.z0, 3.3, 3.5, -0.05, 0.06);
+    }
+
+    // ================= [C6 2nd] water tanks on the roofs round the chase =============
+    // (the wooden tanks on their iron legs, a conical cap: silhouettes on the
+    // sky over the roofs, from the yard, the roof row, the avenue)
+    {
+      const tank = (x, z, y, r = 1.6, h = 2.8) => {
+        const parts = [];
+        parts.push(new THREE.CylinderGeometry(r, r * 1.04, h, 22).translate(x, y + 2.4 + h / 2, z));
+        parts.push(new THREE.ConeGeometry(r * 1.08, 1.1, 22).translate(x, y + 2.4 + h + 0.55, z));
+        for (const [dx, dz] of [[-0.7, -0.7], [0.7, -0.7], [-0.7, 0.7], [0.7, 0.7]]) parts.push(new THREE.CylinderGeometry(0.06, 0.08, 2.45, 6).translate(x + dx * r, y + 1.2, z + dz * r));
+        parts.push(new THREE.BoxGeometry(r * 2, 0.12, 0.12).translate(x, y + 1.0, z), new THREE.BoxGeometry(0.12, 0.12, r * 2).translate(x, y + 1.0, z));
+        for (let k = 0.4; k < h; k += 0.7) parts.push(new THREE.TorusGeometry(r + 0.03, 0.025, 4, 24).rotateX(Math.PI / 2).translate(x, y + 2.4 + k, z));
+        K.add('waterTanks', MAT.woodDark, merge(parts), { figure: true });
+      };
+      tank(36.0, -96.0, 11.2);
+      tank(82.0, -122.0, 12.0, 1.8, 3.2);
+      tank(8.0, -128.0, 12.4, 1.4, 2.4);
+      tank(30.0, -70.0, 14.0, 1.7);
+      tank(122.0, -60.0, 13.0, 1.9, 3.0);
     }
 
     // ================= the lamps ====================================================
