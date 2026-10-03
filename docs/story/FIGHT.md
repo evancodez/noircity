@@ -160,7 +160,8 @@ guard, his tired hand (wild). And a hook, the bottle's thrust, a throw that
 misses leave open **only the side the swinging arm left - the side it came
 from, the cue's dark side**: hit back there; the other hand still guards, and
 from his recovery he answers a punch into it (the haymaker, the rush, the
-shove, a stool throw his weight past me and leave both). Still open in his
+shove, a stool, the foreman's chop throw his weight past me and leave both;
+the foreman's hook swing, a swing, leaves the side it came from). Still open in his
 wind-up: a thing swung in my hand (it comes round the shoulder) and the
 foreman's weapon arm (a jab on it knocks the hook out of his fist). A full
 loaded punch into his raised guard breaks it, in his wind-up too (it stops
