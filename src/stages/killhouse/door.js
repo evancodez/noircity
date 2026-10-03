@@ -164,6 +164,17 @@ export function makeDoor(stage, kit, mats, name, spec) {
       const t = Math.max(0, Math.min(w, (px - hx) * dx + (pz - hz) * dz));
       return Math.hypot(px - (hx + dx * t), pz - (hz + dz * t));
     },
+    // ([C2b] the leaf's distance at angle `a` from a body's length, head to feet: segment to segment)
+    segDist(a, c) {
+      const co = Math.cos(a), si = Math.sin(a);
+      const dx = along ? si : co, dz = along ? co : -si;
+      const px = hinge.position.x, pz = hinge.position.z, qx = px + dx * w, qz = pz + dz * w;
+      const cr = (ox, oz, ax, az, bx, bz) => (ax - ox) * (bz - oz) - (az - oz) * (bx - ox);
+      const d1 = cr(px, pz, qx, qz, c.ax, c.az), d2 = cr(px, pz, qx, qz, c.bx, c.bz), d3 = cr(c.ax, c.az, c.bx, c.bz, px, pz), d4 = cr(c.ax, c.az, c.bx, c.bz, qx, qz);
+      if (d1 * d2 < 0 && d3 * d4 < 0) return 0;
+      const ps = (x, z, ax, az, bx, bz) => { const ux = bx - ax, uz = bz - az, L2 = ux * ux + uz * uz || 1e-9; const t = Math.max(0, Math.min(1, ((x - ax) * ux + (z - az) * uz) / L2)); return Math.hypot(x - ax - ux * t, z - az - uz * t); };
+      return Math.min(ps(c.ax, c.az, px, pz, qx, qz), ps(c.bx, c.bz, px, pz, qx, qz), ps(px, pz, c.ax, c.az, c.bx, c.bz), ps(qx, qz, c.ax, c.az, c.bx, c.bz));
+    },
     // would the leaf, swinging to `a`, cut into the player or a living man?
     // (it stops against him as a real door does; it never passes through anyone)
     // -> 'man' | 'player' | false
@@ -179,7 +190,8 @@ export function makeDoor(stage, kit, mats, name, spec) {
       const K = G.guns;
       for (const c of (K && K.corpses) || []) {
         if (c.ax == null || !c.hood.object.parent) continue;
-        for (let u = 0; u <= 1.001; u += 0.2) if (test(c.ax + (c.bx - c.ax) * u, c.az + (c.bz - c.az) * u, 0.13)) return 'body';
+        const d1 = this.segDist(a, c), d0 = this.segDist(this.angle, c);
+        if (d1 < 0.12 && d1 < d0 - 1e-4) return 'body';
       }
       return false;
     },

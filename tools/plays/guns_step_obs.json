@@ -1,0 +1,152 @@
+{
+ "about": "C2b after the critic: two_ways hands off, the critic's observer camera above and behind the man at A1's jamb (render only); from his first step out, a frame every 0.2 s through out, aim, back and hold; his yaw and state traced",
+ "url": "/?mute=1&start=guns.two_ways",
+ "size": [
+  960,
+  600
+ ],
+ "out": "shots/c2b/step_obs",
+ "steps": [
+  {
+   "until": "G.state === 'title' && !!document.querySelector('#title .opt[data-k=begin]')",
+   "timeout": 60000
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]",
+   "taken": "G.scenes.current && G.scenes.current.id === 'guns'",
+   "retries": 4
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'guns' && G.scenes.beat === 'two_ways' && !G.scenes.trans && G.ais.size > 0",
+   "timeout": 30000
+  },
+  {
+   "eval": "(window.T0 = G.time, window.YT = [], window.YTF = () => { for (const [h, ai] of G.ais) if (h.alive) { const S = ai.brain && ai.brain.S; YT.push([+(G.time - T0).toFixed(3), h.slot, +h.yaw.toFixed(3), +h.pos.x.toFixed(2), +h.pos.z.toFixed(2), S && S.state]); } }, G.scripts.push(YTF), window.OBS = 0, window.R0 = N.pipeline.render.bind(N.pipeline), N.pipeline.render = (s, c, t) => { const h = [...G.ais.keys()].find((q) => q.slot === OBS && q.alive); if (!h) return R0(s, c, t); const p = c.position.clone(), q = c.quaternion.clone(); c.position.set(h.pos.x + 0.15, 2.55, h.pos.z - 1.5); c.lookAt(h.pos.x, 0.7, h.pos.z + 0.2); c.updateMatrixWorld(); R0(s, c, t); c.position.copy(p); c.quaternion.copy(q); c.updateMatrixWorld(); }, 1)"
+  },
+  {
+   "until": "(() => { const h = [...G.ais.keys()].find((q) => q.slot === 0 && q.alive); const S = h && G.ais.get(h).brain.S; return !!S && S.state === 'out'; })()",
+   "timeout": 40000
+  },
+  {
+   "eval": "(window.T1 = G.time, 1)"
+  },
+  {
+   "until": "G.time - T1 > 0.0",
+   "timeout": 30000
+  },
+  {
+   "shot": "s00"
+  },
+  {
+   "until": "G.time - T1 > 0.25",
+   "timeout": 30000
+  },
+  {
+   "shot": "s01"
+  },
+  {
+   "until": "G.time - T1 > 0.5",
+   "timeout": 30000
+  },
+  {
+   "shot": "s02"
+  },
+  {
+   "until": "G.time - T1 > 0.75",
+   "timeout": 30000
+  },
+  {
+   "shot": "s03"
+  },
+  {
+   "until": "G.time - T1 > 1.0",
+   "timeout": 30000
+  },
+  {
+   "shot": "s04"
+  },
+  {
+   "until": "G.time - T1 > 1.25",
+   "timeout": 30000
+  },
+  {
+   "shot": "s05"
+  },
+  {
+   "until": "G.time - T1 > 1.5",
+   "timeout": 30000
+  },
+  {
+   "shot": "s06"
+  },
+  {
+   "until": "G.time - T1 > 1.75",
+   "timeout": 30000
+  },
+  {
+   "shot": "s07"
+  },
+  {
+   "until": "G.time - T1 > 2.0",
+   "timeout": 30000
+  },
+  {
+   "shot": "s08"
+  },
+  {
+   "until": "G.time - T1 > 2.25",
+   "timeout": 30000
+  },
+  {
+   "shot": "s09"
+  },
+  {
+   "until": "G.time - T1 > 2.5",
+   "timeout": 30000
+  },
+  {
+   "shot": "s10"
+  },
+  {
+   "until": "G.time - T1 > 2.75",
+   "timeout": 30000
+  },
+  {
+   "shot": "s11"
+  },
+  {
+   "until": "G.time - T1 > 3.0",
+   "timeout": 30000
+  },
+  {
+   "shot": "s12"
+  },
+  {
+   "until": "G.time - T1 > 3.25",
+   "timeout": 30000
+  },
+  {
+   "shot": "s13"
+  },
+  {
+   "until": "G.time - T1 > 3.5",
+   "timeout": 30000
+  },
+  {
+   "shot": "s14"
+  },
+  {
+   "until": "G.time - T1 > 3.75",
+   "timeout": 30000
+  },
+  {
+   "shot": "s15"
+  },
+  {
+   "eval": "YT.filter((r) => r[1] === 0 && r[0] >= T1 - T0 - 0.05).filter((r, i) => i % 15 === 0).slice(0, 18).map((r) => [+(r[0] - (T1 - T0)).toFixed(2), Math.round(r[2] * 57.3), r[5]].join(' ')).join(' | ')"
+  }
+ ]
+}

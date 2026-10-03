@@ -295,6 +295,7 @@ export class Guns {
     // ([C2b] after the critic: the bodies stay where they lie after the fight -
     // the walk after it steps over them too, and a door stops on them; the
     // ones still falling join the list, read where they lie as they are asked)
+    this.corpses = this.corpses || [];
     for (const q of this.corpseQ || []) if (q.h.object.parent) this.corpses.push({ x: 0, z: 0, r: 0.27, tag: 'corpse', hood: q.h });
     this.corpseQ = [];
     for (const c of this.corpses) this.readBody(c);

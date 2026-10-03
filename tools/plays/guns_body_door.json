@@ -1,0 +1,55 @@
+{
+ "about": "C2b after the critic: a body across the doorway A1 (the lab's door case); E on the door: the leaf swings shut onto him and stops against him (it went through his legs); then the walk-mode step over him",
+ "url": "/?mute=1&start=guns.lab&lab=door",
+ "size": [
+  1440,
+  900
+ ],
+ "out": "shots/c2b/body_door",
+ "steps": [
+  {
+   "until": "G.state === 'title' && !!document.querySelector('#title .opt[data-k=begin]')",
+   "timeout": 60000
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]",
+   "taken": "G.scenes.current && G.scenes.current.id === 'guns'",
+   "retries": 4
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'guns' && G.scenes.beat === 'lab' && !G.scenes.trans && G.scenes.fadeK < 0.1",
+   "timeout": 30000
+  },
+  {
+   "wait": 3500
+  },
+  {
+   "eval": "({ active: G.guns.active, corpses: G.guns.corpses.map((c) => [c.x.toFixed(2), c.z.toFixed(2), c.ax && c.ax.toFixed(2), c.az && c.az.toFixed(2), c.bx && c.bx.toFixed(2), c.bz && c.bz.toFixed(2)]), door: G.stage.part('house').doors.A1.open01 })"
+  },
+  {
+   "drive": "tools/plays/critic/c2/seq.mjs",
+   "seq": [
+    "st",
+    "go -2.9 -3.9 8000",
+    "pitch -0.75",
+    "w 600",
+    "s b01_at_his_feet",
+    "pitch -0.1",
+    "k KeyE",
+    "w 1800",
+    "e G.stage.part('house').doors.A1.open01",
+    "pitch -0.85",
+    "w 500",
+    "s b02_door_shut_over_him",
+    "st"
+   ]
+  },
+  {
+   "expect": "G.stage.part('house').doors.A1.open01 > 0.3",
+   "label": "the door stops against the body (stays ajar), not shut through him"
+  }
+ ]
+}
