@@ -329,9 +329,9 @@ function neon(stage, camera, controller, game) {
   darkStreet(S);
   neonSign(S, V(-95.3, N('ny', 2.75), N('nz', 19)), V(0, 0, 1), { H: N('nh', 0.9) });
   const cab = new Cabin(game);
-  // ([C11] lower and a little wider, -0.1 / 32 -> -0.2 / 41: my knuckles
+  // ([C11] lower and a little wider, -0.1 / 32 -> -0.17 / 44: my knuckles
   // on the wheel in the frame's foot, the sign still at its head)
-  cab.attach(car, { pitch: N('pp', -0.2), fov: N('fv', 41) });
+  cab.attach(car, { pitch: N('pp', -0.17), fov: N('fv', 44) });
   // (the chrome inside dulled: the mirror's glass printed as a pale card)
   if (N('dc', 1) > 0) car.body.traverse((o) => {
     const m = o.isMesh && o.material;
