@@ -1,4 +1,4 @@
-# The fist fight — design, version 5.1
+# The fist fight — design, version 5.2
 
 The user played version 4 in the Wave B playtest (2026-10-02) and asked to
 keep the fight and tighten it (`docs/story/WAVE_C.md` §6 II, lane C4's brief
@@ -29,6 +29,19 @@ manners, so medium hands get through (§8); his small blows' tell is drawn at
 his fist (§4); a slip is judged by where my feet got to (§5); the warning
 goes with his fall; the way out after the last blow is shown wherever I stand
 (§9).
+
+**Version 5.2** (after the cold player's second look, same file): the mercy
+is earned only by what the fight teaches against his blows - a cue slipped or
+a blow blocked in that life - and never wins (§8); **his guard matters**: it
+is up while he throws (a punch into his wind-up is jammed on his shoulder and
+caught), a hook, the bottle's thrust or a throw that misses opens only the
+side it came from (the big ones both), and a punch into his guard is answered
+three times in four whatever the mercy, from his recovery after a miss too
+(§4); the matchbook is held in the fingers until E; a fight begun on a save
+with no lesson teaches the punch and the heavy (§7); the warning goes while he
+reels (§8); the street door slams in my face while the last of them go out,
+catches me in front of it when walked into at a slant, and the eyes go down to
+the bar as it is lifted (§9).
 
 When this document and an older one disagree, this one wins.
 
@@ -126,7 +139,30 @@ and either button swings it at once (held: a bigger swing).
 
 As version 4: two sides; a punch into a raised side is blocked and about
 three times in four answered at once from that side (a 0.2 s tell; contact
-0.28 s after my punch; less often after repeated downs: §8). His answer and
+0.28 s after my punch). 5.2: **three times in four whatever the mercy** (5.1
+cut it to 0.15 after repeated downs, and random clicks into his guard went
+unpunished); the mercy slows it instead, 0.07 s a level (`MERCY.answerLate`),
+time to get out or cover. Its damage is its own 8 - not half again for the
+fist still coming back (it always is).
+
+**5.2: his guard is up while he throws.** His chin is tucked behind the
+shoulder that loads, the other hand at his jaw: through his tell and his
+strike nothing of him is open to a fist (version 5 left the swinging side open,
+and a click every two or three seconds at random reached his head half the
+time). A punch into his wind-up meets his shoulder and the fist is **jammed**
+(`BRAWL.bounce.jammed`: 0.34 s before my feet or my block come back): his blow
+catches me there, and the black says `Caught swinging. Hit when he's open.`.
+Open to me: a breath (a hand lowered between his blows, drawn by his body and
+ticked at his jaw), **a blow that missed** (the miss table), a stun, a broken
+guard, his tired hand (wild). And a hook, the bottle's thrust, a throw that
+misses leave open **only the side the swinging arm left - the side it came
+from, the cue's dark side**: hit back there; the other hand still guards, and
+from his recovery he answers a punch into it (the haymaker, the rush, the
+shove, a stool throw his weight past me and leave both). Still open in his
+wind-up: a thing swung in my hand (it comes round the shoulder) and the
+foreman's weapon arm (a jab on it knocks the hook out of his fist). A full
+loaded punch into his raised guard breaks it, in his wind-up too (it stops
+the blow). His answer and
 his jab have **no dodge cue** (a cue on every jab made the fight a quick-time
 event), but (5.1) **their tell is drawn**: as the fist cocks, three short white
 strokes flick out round it for a fifth of a second (`FightCards.tellMark`) -
@@ -213,7 +249,7 @@ One card at a time, low in the frame. Blows in the lesson do half damage and
 | 2 | lowers the other | `RIGHT CLICK` | my right jab lands |
 | 3 | guard up; answers my first punch into it (slowed) | `GUARD UP: HE ANSWERS A PUNCH INTO IT.   WAIT FOR AN OPENING` | a hand drops and I land one |
 | 4 | both hands down | `KEEP IT PRESSED: IT LOADS.   LET GO TO HIT` (5.1) | a hard punch of level 2 or 3 lands |
-| 5 | a right hook: the dodge cue, **held** | the kit's `[A] [D] dodge toward the light` | it misses |
+| 5 | a right hook: the dodge cue, **held** | the kit's `[A] [D] dodge toward the light`; it misses: `OPEN WHERE IT CAME FROM` (5.2) | it misses |
 | 6 | the same from his left: the cue, its lesson window | - | it misses |
 | 7 | takes a plate, backs off, throws it: the cue on the plate | - | it misses me |
 | 8 | jabs | `SPACE   HOLD TO BLOCK HIS JAB` (5.1) | I block one |
@@ -231,6 +267,15 @@ seconds. The fight teaches what was let go: the heavy's card at his first
 opening worth it (stunned, or open after a miss) for a man who has never
 loaded a punch, the block's after his jab put me down. A clicker who never
 holds was walled in at the HOLD card for seven minutes in version 5.
+
+**5.2: a fight begun with no lesson** (a save that never saw II - Pier 9 from
+the chapter list): the dodge card at the first cue (held), as before; then
+the kit's `[LMB] [RMB] hit only where his guard is down` at his first opening
+in the fight (a breath or a miss, a second and a half in at the earliest,
+never over the cue nor at his reel), and the heavy's card at his first opening
+worth it, after the punch's - one card at a time, once a save. The lesson sets
+the save's flags `c4punch` and `c4heavy` (the heavy only if its step was done;
+let go, the fight teaches it).
 
 ## 8. The open fight
 
@@ -260,20 +305,28 @@ up whole, a life spent pounding his guard paid for as before). Version 5 adds:
   downs); after his answer or a blow that caught me punching, `[LMB] [RMB] hit
   only where his guard is down`. After two downs off a cued blow, the dodge
   card at the next cue (version 5).
-- **A written mercy** (5.1, `Brawl.js MERCY`), for a man who is **trying**:
-  a down counts toward it when in that life I landed three punches, slipped a
-  cue or blocked a blow, and was not pounding his guard (more than 30 punches
-  into it a minute). For each such down in his present manner (up to three,
-  and one for every three in his manners before) he answers a punch into his
-  guard less often (0.75 → 0.55 → 0.35 → 0.15 of the time), presses a blow
-  that found me less often, breathes and stays open after a miss a quarter
-  longer each, and waits 0.15 s more between his blows; he gets back half of
-  his 8 % at the first such down in a manner and none after (my work is
-  kept); I come up whole from the second such down in a manner (was the
-  third, for every down). It wins nothing by itself: a man who stands there or
-  leans on W gets none of it (up at 60, he gets his 8 % back, his pace as
-  ever: the W-holder went down twice in six minutes in version 5, ten times
-  now), and a man who pounds his guard is answered every time.
+- **A written mercy** (5.1, `Brawl.js MERCY`; 5.2 below), for a man who is
+  **trying**: 5.2, a down counts toward it only when in that life I **slipped
+  a cue toward the light or blocked a blow** - what the fight teaches against
+  his blows - and was not pounding his guard (more than 30 punches into it a
+  minute). Landed punches alone are not trying (5.1 counted three landed: a
+  never-dodging slow clicker, W held, qualified on random hits and won by
+  downs that cost him nothing - the critic's second look, B1). For each such
+  down in his present manner (up to three, and one for every three in his
+  manners before) his answer to a punch into his guard comes a beat later
+  (0.07 s a level - never rarer: §4), he presses a blow that found me less
+  often, breathes and stays open after a miss a quarter longer each, and waits
+  0.15 s more between his blows; he gets back half of his 8 % at the first
+  such down in a manner and none after (my work is kept); I come up whole from
+  the second such down in a manner. Any other down - by `Too slow.`, `Wrong
+  way.`, `Block his jab.`, `Into his guard.` with no slip and no block in that
+  life - gives him his 8 % back, up at 60, his pace as ever. It wins nothing by
+  itself: a man who stands there, leans on W or clicks now and then whatever
+  he does gets none of it, and a man who pounds his guard is answered every
+  time.
+- **5.2: the warning goes while he reels** (he cannot hit me out on his feet;
+  it lay across the loading fist) and comes back if he comes round; the
+  loaded fist's ticks are drawn under the card, as art under a caption box.
 
 ## 9. The finish, and after
 
@@ -297,12 +350,22 @@ once as I come against it, not again while I stay pinned to it. In a fist
 fight my body opens it not at all: in the lesson's first seconds, while the
 last of them still go out by it, the shut leaf stops my back as a door does
 (the fight's bounds hold the doorway, as in version 4), and it is never held
-open by me so that it cannot slam and the bar cannot drop.
+open by me so that it cannot slam and the bar cannot drop. 5.2: the doorway
+clear of them and me coming at it (2 m), the last one out lets it go - it
+slams shut in a quarter second (`door.slamShut()`) and the bar drops: no open
+doorway with the fight's wall in it (the owner's Left 1, the critic's m8). And
+from the room the splayed side lights make two shallow pockets beside the
+door: their mouths are held at the room's wall line and the door's posts stand
+a little proud of the leaf on the room side, so a man walking at the door at a
+slant is caught in front of it, with its prompt (he slid along the leaf onto
+the side glass: m3).
 
 **After the last blow** the objective says `See to him.` Two ways out:
 
 - **The door**: E at the bar (`lift the bar`: the right hand closes on it and
-  lifts it up onto its keeper), then walk into the door. 5.1: the prompt shows
+  lifts it up onto its keeper; 5.2: the eyes go down to it with the hand and
+  come back - at eye level the hand dropped out of the frame to a bar below
+  the view), then walk into the door. 5.1: the prompt shows
   wherever I look at the door, from up against it to 2.5 m back (it sits on
   the point of the leaf my view crosses); walked into after the last blow, the
   door shows the prompt, not `Barred.`.
@@ -316,12 +379,19 @@ open by me so that it cannot slam and the bar cannot drop.
   mister.`), Dot, who gets up from behind the counter (`You’d better go.
   They’ll send more.`), the cook in his hatch (`Kitchen’s closed.`, his bell)
   answer E; the jukebox plays its next record; a stool walked into turns.
+  (5.2: the cook only looked at - a narrow cone, 0.28 rad - his prompt came up
+  looking down the empty aisle behind the counter.)
 
 **On him** (`outside`, `matchbook`): E search; the red matchbook (THE
-CARDINAL, the black bird), E; folded in it **Ames's card** comes out and turns
+CARDINAL, the black bird) - 5.2: brought up out of his waistcoat in my right
+hand's fingers, turned over, held under the lamp until E (`c4readMatchbook`,
+the kind `c4matchbook`: the inspect view held it up in the air after the
+hand had gone), E: into the coat; folded in it **Ames's card** comes out and turns
 over in my fingers - `J. AMES`, `PRIVATE INVESTIGATIONS`, `HARBOR BLDG. RM
 304`, crossed through in the crew's red with a grease pencil, the print
-reading through the wax (prop `amesCard`, `props/kinds/c4.js`). 5.1: in the
+reading through the wax (prop `amesCard`, `props/kinds/c4.js`; 5.2: the name
+in the card's heavy print, pressed, the cross from under its corners - its
+Didot hairlines broke up in the hand). 5.1: in the
 right hand's fingers by its edge (`c4readCard`: brought up with its back to
 me and turned over), never hung in the air; its face unlit, so every word and
 the cross read under the lamp. E puts both away; the objective writes in `Harbor Building. Room 304.`; the still

@@ -99,7 +99,10 @@ export class Lesson {
     this.pending = false;
     if (how === 'missed') {
       this.missed = true;
-      if (S.hand || S.throw) { this.B.cards.flash('HE IS OPEN', 0.9); this.openT = 0.9; }
+      // ([C4] 5.2: a hook that misses opens only the side it came from -
+      // the cue's dark side: the flash says so)
+      if (S.hand) { this.B.cards.flash('OPEN WHERE IT CAME FROM', 1.1); this.openT = 1.1; }
+      else if (S.throw) { this.B.cards.flash('HE IS OPEN', 0.9); this.openT = 0.9; }
     } else if (how === 'covered') this.covered = true;
     // (it found me: he goes again in a moment; [C4] hit twice in the dodge
     // steps, the dodge card comes again at the next cue)
