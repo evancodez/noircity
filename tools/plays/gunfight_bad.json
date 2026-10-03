@@ -1,0 +1,22 @@
+{
+ "about": "[C5] Chapter IV's proof 2 (WAVE_C §7, the brief's gunfight_bad): first a player who stands where he is put and trades shots in the open - he dies in each movement, each fall with its reason; then the clumsy first-timer of WAVE_C §7 (slow hands, a wide aim, up over the desk too long now and then, reloads standing now and then, late to get down, a wrong key; he tips the desk at the door, late) - he fails some and gets through every movement within three tries, never stuck. node tools/play.mjs tools/plays/gunfight_bad.json",
+ "url": "/?mute=1&start=gunfight",
+ "size": [1280, 800],
+ "out": "shots/play/gunfight_bad",
+ "steps": [
+  { "name": "the title, BEGIN at IV" },
+  { "until": "G.state === 'title' && !!document.querySelector('#title .opt[data-k=begin]')", "timeout": 60000 },
+  { "wait": 1500 },
+  { "clickOn": "#title .opt[data-k=begin]", "taken": "G.scenes.current && G.scenes.current.id === 'gunfight'", "retries": 4 },
+  { "until": "G.scenes.current && G.scenes.current.id === 'gunfight' && document.pointerLockElement === N.renderer.domElement", "timeout": 30000 },
+  { "name": "standing and trading: one try a movement" },
+  { "drive": "tools/lib/c5_door.mjs", "profile": "bad", "tries": 1, "beatTimeout": 90,
+    "beats": ["shadows", "flank", "corridor"],
+    "check": "D.lost >= 2 && D.falls.every((w) => w && w !== 'timeout')", "label": "standing and trading loses (most movements), each fall with its reason" },
+  { "name": "the clumsy first-timer: up to three tries a movement" },
+  { "drive": "tools/lib/c5_door.mjs", "profile": "clumsy", "choice": "desk", "tries": 3, "beatTimeout": 150,
+    "beats": ["shadows", "flank", "corridor"],
+    "check": "D.won === 3", "label": "the first-timer gets through every movement within three tries" },
+  { "eval": "(N.game.guns.events || []).filter((e) => e.what === 'down').map((e) => e.why)" }
+ ]
+}

@@ -38,7 +38,7 @@ const AREA = { x0: -9.6, x1: 5.6, z0: -7.3, z1: 9.4 };
 const NUM = { maxFiring: 2, settleK: 1.2, dmgK: 0.9 };
 // (the corridor: four, the heavy last - a little less to each round of theirs, a little slower to settle; the heavy
 // three of my rounds, not five: the first gunfight's heavy, met with a full cylinder)
-const NUM_CORR = { dmgK: 0.8, settleK: 1.3 };
+const NUM_CORR = { dmgK: 0.8, settleK: 1.4 };
 // the door's three: where they stand at the glass (corridor side), and their way in
 const DOORMEN = [
   // the kicker: through the door when it goes, into the outer office
@@ -57,7 +57,8 @@ const FLANKERS = [
 // (the plays: each beat's cover places for the good hand - behind it, facing the way they come - and the bad hand's open floor)
 const SPOTS = {
   shadows: [{ x: DESK.x - 0.05, z: DESK.z - 0.4, yaw: WEST }, { x: DESK.x - 0.05, z: DESK.z + 0.45, yaw: WEST }, { x: -0.85, z: 5.3, yaw: WEST }, { x: 0.5, z: OPEN_Z0 - 0.45, yaw: WEST + 0.3 }],
-  flank: [{ x: DESK.x - 0.05, z: DESK.z + 0.45, yaw: WEST + 0.6 }, { x: 1.3, z: 5.75, yaw: EAST + 2.4 }, { x: 0.5, z: OPEN_Z0 - 0.45, yaw: EAST + 2.6 }],
+  // (the flank from the connecting door, south-east: the tipped desk's other side; north of the standing desk)
+  flank: [{ x: 2.35, z: 3.8, yaw: EAST }, { x: DESK.x, z: DESK.z + DESK.w / 2 + 0.45, yaw: 0.15 }, { x: 0.5, z: OPEN_Z0 - 0.45, yaw: EAST + 2.6 }],
   corridor: [{ x: -0.85, z: 5.3, yaw: WEST }, { x: -0.85, z: 1.4, yaw: WEST }, { x: -4.35, z: -0.05, yaw: 0 }, { x: -3.25, z: -2.05, yaw: WEST }],
 };
 const OPENS = { shadows: { x: 1.8, z: 3.4 }, flank: { x: 2.4, z: 2.4 }, corridor: { x: -4.8, z: 1.8 } };
@@ -84,7 +85,7 @@ function prepare(ctx, name, { reset = true } = {}) {
     if (name === 'shadows') { C.setPose(2.9, 2.2, WEST - 0.25, -0.05); C.setMode('gun', { crouch: false }); }
     else if (name === 'flank') {
       if (R.tipped) { C.setPose(DESK.x - 0.05, DESK.z + 0.05, WEST, -0.05); C.setMode('gun', { crouch: true }); }
-      else { C.setPose(2.6, 1.6, WEST - 0.3, -0.05); C.setMode('gun', { crouch: false }); }
+      else { C.setPose(2.0, 4.5, WEST + 0.2, -0.05); C.setMode('gun', { crouch: false }); }
     } else if (name === 'corridor') { C.setPose(-3.2, 3.35, WEST, 0.0); C.setMode('gun', { crouch: false }); }
     else if (name === 'quiet') { C.setPose(2.6, 3.0, EAST + 0.3, -0.05); C.setMode('gun', { crouch: false }); }
     G.eye.copy(G.camera.position);
@@ -127,9 +128,11 @@ function corridorMen(ctx, spawn) {
   spawn({ name: 'wc', kind: 'pistol', at: { x: -4.8, z: 7.75 }, yaw: Math.PI, start: () => F.liftOpen && G.time - F.liftOpen > 7 && (liftLeft() === 0 || G.time - F.liftOpen > 30), way: [{ door: 'WC' }], door: 'hold' });
   // (the heavy last: up the stair once the others are down - never the three at once and him)
   const others = () => (F.men || []).filter((h) => h.alive && h.c5 !== 'heavy').length;
+  // (his start said: the gate below clanks, the line names him - the tell before the heavy)
+  const heavyGo = (f) => { if (F.heavyT) return true; if (!f()) return false; F.heavyT = G.time; ctx.hud.objective('One more. On the stair.'); return true; };
   // (a breath after the last of them falls - a reload's worth - the gate below clanks open; or, the
   // corridor held to a stand-off with one of them left, he comes up anyway: nobody waits the clock out)
-  spawn({ name: 'heavy', kind: 'rusher', at: { x: O.suite.flightFoot.x, z: O.suite.flightFoot.z }, yaw: -Math.PI / 2, start: () => { if (!F.liftOpen || G.time - F.liftOpen < 12) return false; if (G.time - F.liftOpen > 40 && others() <= 1) return true; if (others() > 0) { F.othersT = null; return false; } F.othersT = F.othersT || G.time; return G.time - F.othersT > 5; }, hp: 165, way: [{ door: 'GATE' }, { x: -6.4, z: -5.0 }, { door: 'STAIR' }] });
+  spawn({ name: 'heavy', kind: 'rusher', at: { x: O.suite.flightFoot.x, z: O.suite.flightFoot.z }, yaw: -Math.PI / 2, start: () => heavyGo(() => { if (!F.liftOpen || G.time - F.liftOpen < 12) return false; if (G.time - F.liftOpen > 40 && others() <= 1) return true; if (others() > 0) { F.othersT = null; return false; } F.othersT = F.othersT || G.time; return G.time - F.othersT > 5; }), hp: 165, way: [{ door: 'GATE' }, { x: -6.4, z: -5.0 }, { door: 'STAIR' }] });
   void G;
 }
 
@@ -238,6 +241,20 @@ export default defineScene({
       // (quiet: I go out to look - or they come anyway)
       yield until(() => G.eye.x < OUTER.x0 + 0.5 || G.time - t0 > 16);
       O.callLift(() => { F.liftOpen = G.time; K.rebuild(); }, { from: -3.3, secs: 5.0 });
+      // (a stand-off: me holding the suite, the last of them out in the corridor with no line on me - the
+      // Tommy gunner pins and never comes looking. 15 s of it and he comes round to the suite's door to find me)
+      let lastLine = G.time, sent = -99;
+      ctx.onStep(() => {
+        const left = (F.men || []).filter((h) => h.alive);
+        if (left.length !== 1 || !F.liftOpen) { lastLine = G.time; return; }
+        const ai = G.ais.get(left[0]);
+        if (!ai || !ai.brain || (ai.brain.S && ai.brain.S.entry)) { lastLine = G.time; return; }
+        if (ai.brain.hasLine) lastLine = G.time;
+        if (G.time - lastLine > 15 && G.time - sent > 20 && roomOf(G.eye.x, G.eye.z) !== 'corr' && ai.brain.goRound) {
+          sent = G.time; lastLine = G.time;
+          ai.brain.goRound(O.doors.AMES, [{ x: -4.7, z: 1.2, run: true }]);
+        }
+      });
       yield until(() => F.liftOpen && alive() === 0);
     }
     // ---- 4. the quiet: see if more are coming ---------------------------------------------------------
