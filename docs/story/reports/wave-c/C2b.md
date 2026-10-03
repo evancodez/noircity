@@ -50,11 +50,20 @@ page is the short handover.
   walked through by real input; a man walking his way through two; two men
   through a doorway with a body in it.
 - `tools/plays/guns_spin.json`: every contest by the first-timer with the
-  counter. Before: worst 2.5 s sweep 389 degrees, 6+ `spin` events.
-  After: see C2.md.
+  counter. Before: worst 2.5 s sweep 389 degrees, 6 `spin` events.
+  After: 265 degrees, no `spin` event; worst second 269 degrees of turning.
+- The gate (C2.md has it in full): build clean; golden 38/38 identical;
+  errors clean on every beat; `guns_dead` 6/6, `guns_spin` 5/5,
+  `guns_walk` 9/9, `guns_idle` PASS. `guns_bad` and `guns_good` each failed
+  one run of two and passed the other (both were at the edge before this
+  lane).
 - `guns_walk` changed: "a body on the floor" is now stepped over, not walked
   round.
 
 ## Left
 
-See the "C2b" section of `C2.md`.
+See the "C2b" section of `C2.md`. In short:
+- the good / bad balance swings between runs, as before;
+- there is no strafe clip, so a man still turns his back for a step to his
+  cover (180 degrees out and back now, never on round);
+- the turn rule is opt-in (`h.turnSafe`): only the kit's men have it.
