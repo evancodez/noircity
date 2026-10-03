@@ -1,0 +1,83 @@
+{
+ "about": "C3c: walking off without going to his window, by real input: E out of the car at the wreck, walk toward his car but stop 2.6 m short of it (never at his window), then turn round and walk away; he says it as I go (within 4 m of his car, a stride further off than I came) - the line on foot, not only on getting back in. NOIR_PORT=5343 node tools/play.mjs tools/plays/tail_window_pass.json",
+ "url": "/?mute=1&start=tail.wreck",
+ "size": [
+  1440,
+  900
+ ],
+ "out": "shots/c3c/window_pass",
+ "steps": [
+  {
+   "until": "G.state === 'title' && !document.getElementById('title').classList.contains('hidden') && !!document.querySelector('#title .opt[data-k=begin]')",
+   "timeout": 40000
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]",
+   "taken": "G.state === 'playing' && document.pointerLockElement === N.renderer.domElement",
+   "retries": 4,
+   "every": 4000
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'tail' && !!G.scenes.ctx.flags.chase && !!G.scenes.ctx.flags.chase.atWheel && G.hud.promptShown.includes('get out')",
+   "timeout": 45000
+  },
+  {
+   "key": "KeyE"
+  },
+  {
+   "wait": 900
+  },
+  {
+   "eval": "(() => { window.__wp = null; setInterval(() => { const C = G.scenes.ctx && G.scenes.ctx.flags.chase; if (!C || !C.lineSaid || window.__wp) return; const P = C.winP, e = G.camera.position; window.__wp = { phase: C.phase, outT: +C.outT.toFixed(2), dWin: +Math.hypot(P.x - e.x, P.z - e.z).toFixed(2), dCar: +(C.dbNow || 0).toFixed(2) }; }, 50); return 'watching'; })()"
+  },
+  {
+   "look": "(() => { const K = G.controller, t = G.scenes.ctx.flags.chase.his.pos; const want = Math.atan2(-(t.x - K.pos.x), -(t.z - K.pos.z)); const dy = Math.atan2(Math.sin(want - K.yaw), Math.cos(want - K.yaw)); return [Math.round(-dy / K.sensitivity), 0]; })()",
+   "steps": 6
+  },
+  {
+   "wait": 300
+  },
+  {
+   "down": "KeyW"
+  },
+  {
+   "until": "(G.scenes.ctx.flags.chase.dbNow ?? 99) < 2.6 || G.scenes.ctx.flags.chase.lineSaid",
+   "timeout": 15000
+  },
+  {
+   "up": "KeyW"
+  },
+  {
+   "eval": "JSON.stringify({ wp: window.__wp, db: G.scenes.ctx.flags.chase.dbNow, line: G.scenes.ctx.flags.chase.lineSaid })"
+  },
+  {
+   "look": "(() => { const K = G.controller, t = (() => { const h = G.scenes.ctx.flags.chase.his.pos, e = G.controller.pos; return { x: e.x + (e.x - h.x) * 3, z: e.z + (e.z - h.z) * 3 }; })(); const want = Math.atan2(-(t.x - K.pos.x), -(t.z - K.pos.z)); const dy = Math.atan2(Math.sin(want - K.yaw), Math.cos(want - K.yaw)); return [Math.round(-dy / K.sensitivity), 0]; })()",
+   "steps": 6
+  },
+  {
+   "wait": 300
+  },
+  {
+   "down": "KeyW"
+  },
+  {
+   "wait": 3000
+  },
+  {
+   "up": "KeyW"
+  },
+  {
+   "shot": "p01_walked_off"
+  },
+  {
+   "eval": "JSON.stringify({ wp: window.__wp, phase: G.scenes.ctx.flags.chase.phase })"
+  },
+  {
+   "expect": "!!window.__wp && window.__wp.phase === 'out' && window.__wp.dWin >= 1.5 && window.__wp.dCar < 4",
+   "label": "walking off, he said it as I passed within 4 m of his car (not at his window, not at my door)"
+  }
+ ]
+}
