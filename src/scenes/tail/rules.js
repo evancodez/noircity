@@ -31,24 +31,30 @@ export const HIT = {
 // the crash on the cars' own
 // physics). Whole: a fishtail he catches (RAM.stagger) and he pulls away.
 // A straight bump from behind is only a shove.
-export const RAM = { behind: -0.9, side: 0.3, yaw0: 0.2, yaw1: 1.15, imp: 1.0, lean: 0.35, spin: 3.4, shove: 5.0, stagger: 0.7 };
+// [C3b, after the critic] the straight push counts too: my nose square on
+// his back CORNER (|z| > RAM.corner: off the middle of his bumper, on the
+// corner itself) is the same shunt as the angled one - a first-timer pushes
+// the corner straight; only a push on the middle of his bumper is a shove.
+export const RAM = { behind: -0.9, side: 0.3, corner: 0.5, yaw0: 0.2, yaw1: 1.15, imp: 1.0, lean: 0.35, spin: 4.2, shove: 5.5, stagger: 0.7 };
 // [C3b] he pulls away when I close (phase a, and a whole car in phase b):
 // within PULL.near m behind him (PULL.react s: his eyes in the mirror)
 // he floors it for PULL.t s (his car briefly
 // faster than mine: PULL.vmax, PULL.accel), then falls back to his pace;
-// not again for PULL.cool s.
-export const PULL = { near: 8, react: 0.35, t: 2.8, cool: 2.0, vmax: 25.5, accel: 6.6, pathV: 25 };
+// not again for PULL.cool s - unless I am still on him (within PULL.near):
+// then at once ([C3b, after the critic] the critic held his bumper 5 s
+// through a cool-down). A whole car is PULL.mass heavy to my nose (a graze
+// jolts it, never turns it off its line).
+export const PULL = { near: 10, react: 0.25, t: 3.2, cool: 2.0, vmax: 26, accel: 9.5, pathV: 25, aLat: 7.2, aBrake: 6.5, mass: 2.6 };
 // [C3b] phase b's window: he runs the river road at RIVER_B.cruise m/s
-// (less as he is hurt: x (0.55 + 0.45 control)); from RIVER_B.warn s
-// "He's pulling away." and he speeds up toward RIVER_B.away; at RIVER_B.t s
-// he is gone - "Lost him." once he is RIVER_B.lostGap m clear, or
-// RIVER_B.extra s later whatever the gap. (The pier's gate, if he reaches it
-// first: "He warned them.")
-// (the brief asked about 45 s; the river road is 360 m from phase b's start
-// to the gate, and a car that speeds away covers it in under 30 s: the
-// window is set so he is gone before the gate - a good hand needs 10 to 15
-// s, a clumsy one most of the 26)
-export const RIVER_B = { cruise: 10, away: 21, awayHurt: 15, warn: 16, t: 24, lostGap: 45, extra: 2 };
+// (less as he is hurt: x (0.55 + 0.45 control)); from RIVER_B.warn s he
+// finds speed - the limp and the smoke still on him - toward RIVER_B.away
+// (over my coupe's top, 22.5, hurt or whole), all of it by RIVER_B.t s; once
+// he is out-running me (or RIVER_B.pullGap m off) "He's pulling away.";
+// "Lost him." only when he is really gone: RIVER_B.lostGap m clear. (The
+// pier's gate, if he reaches it first: "He warned them.")
+// ([C3b, after the critic] the fail was a timer whatever the gap, and a hurt
+// car's getaway was slower than my coupe: "Lost him." with him 15 m ahead)
+export const RIVER_B = { cruise: 10, away: 26, warn: 16, t: 23, pullGap: 22, lostGap: 42 };
 // [3rd owner] the teach cards (the kit draws [X] as a key cap, [LMB] / [RMB]
 // as a mouse; seams/Z.md §2)
 export const TEACH = {
@@ -56,5 +62,5 @@ export const TEACH = {
   handbrake: '[SPACE] handbrake: swing round a tight corner',
   gun: '[RMB] lean out and aim  [LMB] fire',
   // [C3b] (the first time he is hurt: the shunt finishes him)
-  ram: '[A] [D] shunt his back corner',
+  ram: '[A] [D] ram his back corner',
 };

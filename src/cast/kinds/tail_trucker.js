@@ -165,7 +165,7 @@ export default {
           footL: [0.16, A, 0.34], footRotL: [0, 12, 0], kneeL: [0.12, 0.3, 1],
           footR: [-0.15, 0.1, -0.36], footRotR: [-72, 10, 0], kneeR: [-0.1, -1, 0.4],
           handTL: [0.24, 0.58, 0.36], elbowPoleL: [1, -0.4, 0], handL: [0, 0, 30],
-          handTR: [-0.3, 1.32 + b * 0.01, 0.62], elbowPoleR: [-1, -0.6, 0], handR: [0, 0, -10] });
+          handTR: [-0.4, 1.02 + b * 0.01, 0.74], elbowPoleR: [-1, -0.8, 0], handR: [0, 0, -10] });
       } }),
     },
     // the truck's driver in his cab

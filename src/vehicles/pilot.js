@@ -167,7 +167,17 @@ export class Pilot {
       return;
     }
     this.stuckT = want > 2 && sp < 0.8 ? (this.stuckT || 0) + dt : 0;
-    if (this.stuckT > 1.2) { this.stuckT = 0; this.backT = 1.1; this.backSteer = clamp(steer, -1, 1) || 1; }
+    // ([C3b] and out round it: the line a lane to one side for a moment, the
+    // other side on the next try - the critic saw the tail's sedan back off
+    // an el column and drive into it again for 26 s)
+    if (this.stuckT > 1.2) {
+      this.stuckT = 0;
+      this.stuckN = this.t - (this.stuckAt ?? -99) < 8 ? (this.stuckN || 0) + 1 : 1;
+      this.stuckAt = this.t;
+      this.backT = 1.1 + 0.4 * Math.min(2, this.stuckN - 1); this.backSteer = clamp(steer, -1, 1) || 1;
+      if (this.stuckN % 2 === 0) this.backSteer = -this.backSteer;
+      this.roundOf = null; this.roundT = 2.6 + this.backT; this.roundOff = (this.stuckN % 2 ? 1 : -1) * 2.6;
+    }
     const e = want - sp;
     I.throttle = e > 0.2 ? clamp(e / 3, 0.25, 1) : 0;
     I.brake = e < -0.8 ? clamp(-e / 4, 0.1, 1) : 0;

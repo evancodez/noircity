@@ -25,13 +25,19 @@
    "timeout": 45000
   },
   {
+   "wait": 3000
+  },
+  {
+   "shot": "o01_wreck_from_seat"
+  },
+  {
    "key": "KeyE"
   },
   {
    "wait": 1000
   },
   {
-   "eval": "(() => { const C = G.scenes.ctx.flags.chase, m = C.manAt, K = G.controller; const dx = K.pos.x - m.x, dz = K.pos.z - m.z, L = Math.hypot(dx, dz); K.pos.x = m.x + dx / L * 2.4; K.pos.z = m.z + dz / L * 2.4; K.yaw = Math.atan2(-(m.x - K.pos.x), -(m.z - K.pos.z)); K.pitch = -0.3; return JSON.stringify({ man: m, eye: [K.pos.x, K.pos.z] }); })()"
+   "eval": "(() => { const C = G.scenes.ctx.flags.chase, m = C.manAt, K = G.controller; const dx = K.pos.x - m.x, dz = K.pos.z - m.z, L = Math.hypot(dx, dz); K.pos.x = m.x + dx / L * 3.2; K.pos.z = m.z + dz / L * 3.2; K.yaw = Math.atan2(-(m.x - K.pos.x), -(m.z - K.pos.z)); K.pitch = -0.3; return JSON.stringify({ man: m, eye: [K.pos.x, K.pos.z] }); })()"
   },
   {
    "wait": 600
@@ -40,7 +46,7 @@
    "shot": "o02_crouched"
   },
   {
-   "eval": "(() => { const C = G.scenes.ctx.flags.chase, m = C.manAt, K = G.controller; const dx = K.pos.x - m.x, dz = K.pos.z - m.z, L = Math.hypot(dx, dz); K.pos.x = m.x + dx / L * 2.0; K.pos.z = m.z + dz / L * 2.0; return 'nearer'; })()"
+   "eval": "(() => { const C = G.scenes.ctx.flags.chase, m = C.manAt, K = G.controller; const dx = K.pos.x - m.x, dz = K.pos.z - m.z, L = Math.hypot(dx, dz); K.pos.x = m.x + dx / L * 2.6; K.pos.z = m.z + dz / L * 2.6; return 'nearer'; })()"
   },
   {
    "until": "G.scenes.ctx.flags.chase.lineSaid",

@@ -47,6 +47,12 @@ const PROFILES = {
   pitWhole: { aLat: 7.2, brake: 6.5, lag: 0.08, wobble: 0, keep: 13, far: 26, hb: true, wrong: 0, look: 1.0, gunGap: 14, noGun: true, pit: true, pitAlways: true },
   gunOnly: { aLat: 7.2, brake: 6.5, lag: 0.08, wobble: 0, keep: 13, far: 26, hb: true, wrong: 0, look: 1.0, gunGap: 14, gunAt: 34, aimSd: 0.012, aimTol: 0.03, aimReact: 0.1, aimGain: 5, fireGap: 0.45, aimAt: 'any' },
   grazer: { aLat: 7.5, brake: 6, lag: 0, wobble: 0, keep: 3, far: 22, hb: false, wrong: 0, look: 1.0 },
+  // [C3b, after the critic] the first-timer's push: square behind his back
+  // corner, my car straight on his line, W (no turn-in)
+  straight: { aLat: 7.2, brake: 6.5, lag: 0.08, wobble: 0, keep: 13, far: 26, hb: true, wrong: 0, look: 1.0, gunGap: 14, gunAt: 32, aimTol: 0.01, aimJit: 0.004, pit: true, pitStraight: true },
+  // [C3b, after the critic] the critic's 'close': flat out at his car in
+  // the streets, onto his bumper and into it (to ram him or pass him)
+  closer: { aLat: 8.0, brake: 6, lag: 0, wobble: 0, keep: 0, far: 90, hb: true, wrong: 0, look: 1.0 },
   pitter: { aLat: 7.2, brake: 6.5, lag: 0.08, wobble: 0, keep: 13, far: 26, hb: true, wrong: 0, look: 1.0, gunGap: 14, gunAt: 30, aimSd: 0.02, aimTol: 0.035, aimReact: 0.1, aimGain: 3.5, fireGap: 0.45, aimAt: 'any', pit: true },
 };
 
@@ -232,7 +238,8 @@ export function makeBot(chase, name, { seed = 7, track = null, attempt = 0 } = {
         // (that side shut a while: the other)
         B.pitShut = !clearSide && l.x > -14 ? (B.pitShut || 0) + dt : 0;
         if (B.pitShut > 2.5) { B.pitShut = 0; B.pitSide = -side; }
-        if (l.x < -11 || !clearSide) { pitWant = l.x < -11 ? his.speed + clamp((-8 - l.x) * 0.5, 0, 6) : his.speed - 1; B.pitIn = 0; }
+        if (P.pitStraight && hurt) { set(his.world(9, side * 0.78)); pitWant = his.speed + (l.x < -9 ? 5 : 2.5); }
+        else if (l.x < -11 || !clearSide) { pitWant = l.x < -11 ? his.speed + clamp((-8 - l.x) * 0.5, 0, 6) : his.speed - 1; B.pitIn = 0; }
         else if ((hurt || P.pitAlways) && (beside || B.pitIn > 0)) { set(his.world(-0.8, -side * 0.8)); pitWant = his.speed + 3; B.pitIn = (B.pitIn || 0) + dt; }
         else { set(his.world(-3.6, side * 3.0)); pitWant = his.speed + clamp((-3.6 - l.x) * 0.8, -4, 6); B.pitIn = 0; }
         // (a turn-in that met nothing in 2.5 s: out again and once more)

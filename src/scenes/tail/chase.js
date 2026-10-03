@@ -74,6 +74,7 @@ export class Chase {
     for (const c of this.cats || []) c.dispose();
     if (this.cabin) this.cabin.dispose();
     if (this.hat) { this.hat.removeFromParent(); this.hat = null; }
+    if (this.glassLitter) { this.glassLitter.removeFromParent(); this.glassLitter.geometry.dispose(); this.glassLitter = null; }
     // [C3b] the walking net and the man
     this.walkNet(false);
     if (this.man) { try { this.stage.cast.remove(this.man); } catch (e) { /* the cast cleared already */ } this.man = null; }
@@ -272,9 +273,14 @@ export class Chase {
     if (this.phase === 'b' && this.driver.state !== 'lost') {
       this.bT = (this.bT || 0) + dt;
       this.driver.getaway = clamp((this.bT - B.warn) / (B.t - B.warn), 0, 1);
-      // (a far warning already up stays: it is the same news, and the fail
-      // needs its warning read a while)
-      if (this.bT > B.warn && !warn) warn = "He's pulling away.";
+      // ([C3b, after the critic] said when it is true: he is finding speed
+      // and out-running me, or already well off; once said it stays - the
+      // fail needs its warning read a while)
+      // (a far warning already up stays: it is the same news)
+      const outRun = this.driver.getaway > 0.2 && this.his.speed > this.my.speed + 0.5;
+      this.pullT = outRun ? (this.pullT || 0) + dt : Math.max(0, (this.pullT || 0) - dt);
+      if (this.bT > B.warn && (this.pullT > 0.8 || gap > B.pullGap)) this.pullWarned = true;
+      if (this.pullWarned && !warn) warn = "He's pulling away.";
     }
     if (gateNear) warn = "He's nearly at the pier.";
     // [4th owner] (my car one knock from a wreck: said, for a few seconds
@@ -294,9 +300,9 @@ export class Chase {
     if (this.phase === 'b' && this.driver.state !== 'lost' && (gap > R.farLost || this.farT > R.farT)) return this.fail('Lost him.', 'river');
     if (this.phase === 'b' && this.driver.state !== 'lost' && (hisZ > R.gateZ || this.driver.atPier)) return this.fail('He warned them.', 'river');
     // ([C3b] the window gone: he is a pair of red lamps in the rain)
-    // (never "Lost him." with him in front of my bonnet - wedged on something
-    // he is mine to shunt - unless I leave him there a long while)
-    if (this.phase === 'b' && this.driver.state !== 'lost' && this.bT > B.t && (gap > B.lostGap || (this.bT > B.t + B.extra && gap > 25) || this.bT > B.t + B.extra + 8)) return this.fail('Lost him.', 'river');
+    // ([C3b, after the critic] only when he is really gone - RIVER_B.lostGap m
+    // clear and warned - never on a clock with him in front of my bonnet)
+    if (this.phase === 'b' && this.driver.state !== 'lost' && this.pullWarned && this.bT > B.warn && gap > B.lostGap) return this.fail('Lost him.', 'river');
   }
   checkpoint() { return this.phase === 'b' ? 'river' : this.ctx.flags.check || 'start'; }
   fail(why, to) {
@@ -540,7 +546,9 @@ export class Chase {
     const ang = Math.abs(dy);
     // (my nose turned into him: on his left (z < 0) my heading is to the right of his)
     const into = Math.sign(dy) === Math.sign(l.z || 1);
-    const pit = l.x < RAM.behind && Math.abs(l.z) > RAM.side && ang > RAM.yaw0 && ang < RAM.yaw1 && into;
+    // ([C3b, after the critic] or square on the corner itself, my car
+    // straight: a first-timer pushes it so, and it is the same push)
+    const pit = l.x < RAM.behind && ang < RAM.yaw1 && ((Math.abs(l.z) > RAM.side && ang > RAM.yaw0 && into) || (Math.abs(l.z) > RAM.corner && ang <= RAM.yaw0));
     const hurt = this.hurt();
     // (held into his corner: the contact unbroken RAM.lean s)
     if (pit) {
@@ -558,7 +566,11 @@ export class Chase {
       his.yawRate += spin * RAM.spin;
       // (and the shove across: his back end goes out from my wing, the car
       // off my bonnet and away across the road)
-      if (e.n) { const k = RAM.shove / Math.max(0.01, Math.hypot(e.n.x, e.n.z)); his.vel.x += e.n.x * k; his.vel.z += e.n.z * k; }
+      // ([C3b, after the critic] across him, away from my side, whatever the
+      // contact's normal says: a square push on the corner has its normal
+      // along his length)
+      const across = his.seat(_v.set(0, 0, l.z < 0 ? 1 : -1), new THREE.Vector3()).sub(his.pos).setY(0).normalize();
+      his.vel.x += across.x * RAM.shove; his.vel.z += across.z * RAM.shove;
       D.lose(spin);
       this.game.sfx.play('tail_crash', e.point, { k: 0.6 }, { ref: 4 });
       return;
@@ -621,7 +633,7 @@ export class Chase {
       // own knocks, heard and seen)
       if (!this._hisKnocks) {
         this._hisKnocks = true;
-        const knock = (e, hard) => { if (this.phase !== 'crash') return; (this.knocks || (this.knocks = [])).push([+(this.crashT || 0).toFixed(2), e.what, +(e.k || 0).toFixed(2)]); if (this.t - (this._knockT ?? -9) < 0.15) return; this._knockT = this.t; G.sfx.play(hard ? 'tail_crash' : 'tail_scrape', e.point, { k: Math.max(0.4, e.k || 0.5) }, { ref: 5 }); if (/^(parked|car|sedan|coupe|truck)$/.test(e.what) || hard) G.sfx.play('c3_dent', e.point, { k: e.k || 0.6 }, { ref: 5 }); this.sparksAt(e.point, e.n, (e.k || 0.5) * (hard ? 1.4 : 0.8)); };
+        const knock = (e, hard) => { if (this.phase !== 'crash') return; (this.knocks || (this.knocks = [])).push([+(this.crashT || 0).toFixed(2), e.what, +(e.k || 0).toFixed(2)]); if (this.t - (this._knockT ?? -9) < 0.15) return; this._knockT = this.t; G.sfx.play(hard ? 'tail_crash' : 'tail_scrape', e.point, { k: Math.max(0.4, e.k || 0.5) }, { ref: 5 }); if (/^(parked|car|sedan|coupe|truck)$/.test(e.what) || hard) G.sfx.play('c3_dent', e.point, { k: e.k || 0.6 }, { ref: 5 }); this.sparksAt(e.point, e.n, (e.k || 0.5) * (hard ? 1.4 : 0.8)); if (hard || (e.k || 0) > 0.35) this.smash(e.point); };
         this.his.on('crash', (e) => knock(e, true));
         this.his.on('scrape', (e) => knock(e, false));
       }
@@ -639,9 +651,50 @@ export class Chase {
       G.fx.smoke.spawn({ pos: p, vel: new THREE.Vector3(r.gauss() * 0.6, r.range(0.4, 1.0), r.gauss() * 0.6).addScaledVector(his.vel, 0.15), life: r.range(0.9, 1.6), size: [0.5, 0.5], grow: 0.7, rot: r.next() * 6.28, spin: r.gauss() * 0.4,
         col: [0.035, 0.035, 0.035], colEnd: [0.045, 0.045, 0.045], alpha: 0.5, drag: 1.2, fadeIn: 0.05, fadeOut: 0.5, cell: FIRE.SMOKE[r.int(0, 3)] });
     }
-    // stopped (or long enough): the wreck
+    // stopped: the wreck ([C3b, after the critic] never frozen mid-slide on a
+    // clock: his.js crashing stands on the brakes late on; the last guard
+    // only for a car already all but stopped)
     this.stillT = his.speedAbs < 0.8 ? (this.stillT || 0) + dt : 0;
-    if (this.stillT > 0.5 || this.crashT > 7) this.wrecked2();
+    if (this.stillT > 0.5 || (this.crashT > 10 && his.speedAbs < 2.5)) this.wrecked2();
+  }
+  // [C3b, after the critic] the wreck shows what it hit (the critic: "it
+  // looks like a car parked at the kerb"): the corner that struck crushed
+  // down, the glass on that side and the windscreen gone, a headlamp out,
+  // glass on the road under it; the bonnet's steam (wreckStep) white
+  smash(point) {
+    const his = this.his, C = this.stage.cars, car = his.car, G = this.game, r = this.ctx.rng;
+    if (this._smashed) return;
+    this._smashed = true;
+    const l = point ? his.local(point, new THREE.Vector3()) : _w.set(2, 0, this.driver.lostDir || 1);
+    const front = l.x >= 0, right = l.z >= 0;
+    const corner = (front ? 'f' : 'r') + (right ? 'r' : 'l');
+    // (the corner down on its broken spring, the body twisted onto it)
+    his.flat = his.flat || {}; his.flat[corner] = 1;
+    his.crushRoll = (right ? 1 : -1) * 0.05; his.crushPitch = (front ? -1 : 1) * 0.04;
+    if (C && car && car.panes) {
+      // (panes: the side windows 0..3 - +z first - the windscreen 4, 5, the rear 6)
+      const side = right ? [0, 1] : [2, 3];
+      try {
+        for (const i of [...side, front ? (right ? 4 : 5) : 6]) if (car.panes[i] && !car.panes[i].broken) C.shatter(car, i, 1.2);
+        if (front && car.lensBroken) { const s = right ? 0 : 1; if (!car.lensBroken[s]) C.breakLens(car, s); }
+      } catch (e) { this._smashErr = String(e); }
+    }
+    // (the glass on the wet under the corner: pale grains that stay)
+    const at = point ? point.clone() : his.seat(_v.set(front ? 2.2 : -2.2, 0, right ? 0.9 : -0.9), new THREE.Vector3());
+    const pos = [];
+    for (let i = 0; i < 46; i++) {
+      const a = r.next() * 6.28, d = Math.sqrt(r.next()) * 1.9, x = at.x + Math.cos(a) * d, z = at.z + Math.sin(a) * d, s = r.range(0.025, 0.07), q = r.next() * 6.28;
+      for (const k of [0, 2.1, 4.2]) pos.push(x + Math.cos(q + k) * s, 0.012, z + Math.sin(q + k) * s);
+    }
+    const geo = new THREE.BufferGeometry();
+    geo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+    geo.computeVertexNormals();
+    const m = new THREE.Mesh(geo, new THREE.MeshBasicMaterial({ color: new THREE.Color(1.6, 1.6, 1.6), side: THREE.DoubleSide }));
+    m.name = 'his glass';
+    m.userData.noRay = true;
+    this.stage.scene.add(m);
+    this.glassLitter = m;
+    G.sfx.glass && G.sfx.glass(at, 1);
   }
   // (his car behind the screen's left pillar as I watch him go: the head
   // leans out of the window to see past it, and back once he is clear of it)
@@ -661,6 +714,9 @@ export class Chase {
     his.frozen = true;
     his.vel.set(0, 0, 0); his.yawRate = 0;
     this.wreck = { t: 0, lamps: 0 };
+    // ([C3b, after the critic] nothing hard met on the way: the corner that
+    // led the slide took it - the rail, the kerb)
+    if (!this._smashed) this.smash(null);
     this.hatOff();
     G.sfx.play('tail_hornStuck', his.pos, { dur: 4.2 }, { ref: 6 });
     G.emit('tail:crash', {});
@@ -696,14 +752,16 @@ export class Chase {
     if (his.tail && W.t > 1.6 && W.lamps === 0) { W.lamps = 1; for (const sp of his.tail.userData.glows || []) if (sp.userData.side > 0) sp.visible = false; }
     if (his.tail && W.t > 3.4 && W.lamps === 1) { W.lamps = 2; his.tail.visible = false; for (const sp of his.tail.userData.glows || []) sp.visible = false; if (his.lamps) his.lamps.setOn(false); }
     // steam from under his hood
-    if (W.t < 30) {
-      W.acc = (W.acc || 0) + dt * (W.t < 5 ? 5 : 1.5);
+    // ([C3b, after the critic] white, as the spray off the wet is: the dark
+    // smoke was lost against the night - the bonnet sprung, the radiator gone)
+    if (W.t < 40 && G.fx.dust) {
+      W.acc = (W.acc || 0) + dt * (W.t < 6 ? 14 : 6);
       while (W.acc >= 1) {
         W.acc -= 1;
-        const p = his.seat(_v.set(r.range(1.3, 2.1), 1.05, r.range(-0.5, 0.5)), new THREE.Vector3());
-        const gc = r.range(0.03, 0.05);
-        G.fx.smoke.spawn({ pos: p, vel: new THREE.Vector3(r.gauss() * 0.15, r.range(0.5, 1.0), r.gauss() * 0.15), life: r.range(1.4, 2.2), size: [0.22, 0.22], grow: 0.55, rot: r.next() * 6.28, spin: r.gauss() * 0.3,
-          col: [gc, gc, gc], colEnd: [gc * 0.8, gc * 0.8, gc * 0.8], alpha: 0.4, drag: 0.6, fadeIn: 0.1, fadeOut: 0.7, cell: FIRE.SMOKE[r.int(0, 3)] });
+        const p = his.seat(_v.set(r.range(1.5, 2.2), r.range(0.9, 1.1), r.range(-0.55, 0.55)), new THREE.Vector3());
+        const g = r.range(1.0, 1.35);
+        G.fx.dust.spawn({ pos: p, vel: new THREE.Vector3(r.gauss() * 0.25, r.range(0.7, 1.4), r.gauss() * 0.25), life: r.range(1.2, 2.0), size: [0.45, 0.4], grow: 0.9, rot: r.next() * 6.28,
+          col: [g, g, g], alpha: 0.22, drag: 0.8, fadeOut: 0.7 });
       }
     }
     // [C3b] his door, and he is out on the road by it, crouched over; the
@@ -756,7 +814,7 @@ export class Chase {
       const B = S.part && S.part('bounds');
       if (B && B.walkAround) B.walkAround(this.my.pos.x, this.my.pos.z, 60);
       for (const v of [this.my, this.his]) { const b = v.box(); const o = { cx: b.cx, cz: b.cz, hx: b.hx + 0.05, hz: b.hz + 0.05, c: b.c, s: b.s, angle: 0, tag: 'tailcar' }; C.boxes.push(o); this._net.boxes.push(o); }
-      if (this.manAt) this._net.circles.push(C.addCircle(this.manAt.x, this.manAt.z, 0.42, 'tailman'));
+      if (this.manAt) this._net.circles.push(C.addCircle(this.manAt.x, this.manAt.z, 0.95, 'tailman'));  // ([C3b, after the critic] an arm's length off him: never the eye over his crown)
     } else if (!on && this._net) {
       const N = this._net;
       C.boxes = C.boxes.filter((b) => !N.boxes.includes(b));
@@ -828,6 +886,8 @@ export class Chase {
     if (this.lineSaid) return;
     this.lineSaid = true;
     this.game.hud.say('Pier nine. Tonight.', 3.0);
+    // ([C3b, after the critic] where to go, at once: not when I am back in)
+    this.kit.objective('Pier 9.');
     this.game.sfx.play('grunt', this.man ? this.man.pos || this.his.pos : this.his.pos, { f0: 88, k: 0.35, dur: 0.3 }, { ref: 4 });
     if (this.man) { this.man.setState('tail_point', 0.35); this.pointT = 3.2; }
     this.game.emit('tail:line', {});
@@ -852,12 +912,12 @@ export class Chase {
       const dm = Math.hypot(e.x - m.x, e.z - m.z);
       const f = G.camera.getWorldDirection(_w);
       const look = ((m.x - e.x) * f.x + (m.z - e.z) * f.z) / Math.max(0.01, dm * Math.hypot(f.x, f.z));
-      if ((dm < 2.2 && look > 0.8) || dm < 1.4 || (this.outT > 1.5 && dm < 6 && this._dm0 != null && dm > this._dm0 + 0.02 && this._dm0 < 6)) this.sayLine();
+      if ((dm < 3.4 && look > 0.75) || dm < 1.8 || (this.outT > 1.5 && dm < 6 && this._dm0 != null && dm > this._dm0 + 0.02 && this._dm0 < 6)) this.sayLine();
       this._dm0 = dm;
     }
     // back in: E at my door
     const dd = this.doorAt(), dIn = Math.hypot(e.x - dd.x, e.z - dd.z);
-    const atDoor = dIn < 1.9 && this.outT > 0.8;
+    const atDoor = dIn < 1.9 && this.outT > 0.1;  // ([C3b, after the critic] at once: the first E after the door was swallowed)
     if (atDoor !== !!this._atDoor) { this._atDoor = atDoor; if (atDoor) G.hud.prompt('E  get in', null, 'tailin'); else G.hud.clearPrompt('tailin'); }
     if (atDoor && G.pressed('KeyE')) this.getIn();
   }
@@ -915,8 +975,8 @@ export class Chase {
     // ([3rd owner] the quarter drops so it reads at 30 m: about 9 cm at the
     // flat's corner, settling in with a bounce as the tyre goes)
     if (his.flat) {
-      const want = ((his.flat.fr || 0) + (his.flat.rr || 0) - (his.flat.fl || 0) - (his.flat.rl || 0)) * 0.085;
-      const wp = ((his.flat.rl || 0) + (his.flat.rr || 0) - (his.flat.fl || 0) - (his.flat.fr || 0)) * 0.045;
+      const want = ((his.flat.fr || 0) + (his.flat.rr || 0) - (his.flat.fl || 0) - (his.flat.rl || 0)) * 0.085 + (his.crushRoll || 0);
+      const wp = ((his.flat.rl || 0) + (his.flat.rr || 0) - (his.flat.fl || 0) - (his.flat.fr || 0)) * 0.045 + (his.crushPitch || 0);
       this._sagV = (this._sagV || 0) + ((want - (his.sagRoll || 0)) * 120 - (this._sagV || 0) * 9) * dt;
       his.sagRoll = (his.sagRoll || 0) + this._sagV * dt;
       his.sagPitch = (his.sagPitch || 0) + (wp - (his.sagPitch || 0)) * (1 - Math.exp(-dt * 10));

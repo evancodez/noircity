@@ -18,12 +18,14 @@ import { START, EW, NS, riverPoint, riverFrame, riverSAtZ, PIER } from '../stage
 //   b  "Stop him before the docks."  the river road: RMB leans out with the
 //      revolver, LMB fires. [C3b] My rounds hurt him (one takes a tyre: he
 //      is slower than me, weaving) but never end it; a shunt on his back
-//      corner of a hurt car spins him off (rules.js HIT, RAM). He has
-//      RIVER_B.t s: "He's pulling away.", then "Lost him." (back at the river
-//      road's start; "He warned them." only if he reaches the gate first)
+//      corner of a hurt car spins him off (rules.js HIT, RAM: angled in, or
+//      square on the corner itself). From RIVER_B.warn s he finds speed my
+//      coupe has not: once he out-runs me "He's pulling away.", and "Lost
+//      him." only when he is RIVER_B.lostGap m clear (back at the river
+//      road's start; "He warned them." if he reaches the gate first)
 //   [C3b] "See to the driver."  his wreck: stopped near it, E: out of the
 //      car on foot; he is crouched by his wreck; walked up to (or passed):
-//      "Pier nine. Tonight."; E at my door: back in
+//      "Pier nine. Tonight." and "Pier 9." at once; E at my door: back in
 //   c  "Pier 9."  I drive to the pier myself; by its gate, E: the lamps off,
 //      the door, and chapter VII by a cut with its card small over the
 //      picture (no black)

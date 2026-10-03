@@ -1,0 +1,77 @@
+{
+ "about": "C3b after the critic, tail_wreck_look (look development, not a proof): the corner push on the river road, then the wreck from the seat, out of the car, his line and his arm; the objective after the line, E get in at once, the eye kept off him. NOIR_PORT=5343 node tools/play.mjs tools/plays/tail_wreck_look.json",
+ "url": "/?mute=1&start=tail.river&tailSeed=11",
+ "size": [
+  1440,
+  900
+ ],
+ "out": "shots/c3b/wreck_look",
+ "steps": [
+  {
+   "until": "G.state === 'title' && !document.getElementById('title').classList.contains('hidden') && !!document.querySelector('#title .opt[data-k=begin]')",
+   "timeout": 40000
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]",
+   "taken": "G.state === 'playing' && document.pointerLockElement === N.renderer.domElement",
+   "retries": 4,
+   "every": 4000
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'tail' && !!G.scenes.ctx.flags.chase && G.scenes.ctx.flags.chase.phase === 'b' && !G.scenes.fadeK",
+   "timeout": 45000
+  },
+  {
+   "eval": "(() => { window.__tailFails = []; window.__w = {}; setInterval(() => { const C = G.scenes.ctx && G.scenes.ctx.flags.chase; if (!C) return; const W = window.__w; if (C.phase === 'out' && W.inPrompt == null && (G.hud.promptShown || '').includes('get in')) W.inPrompt = +C.outT.toFixed(2); if (C.lineSaid && W.objAfter == null && C.phase === 'out') W.lineT = W.lineT ?? C.t; if (W.lineT != null && W.objAfter == null && C.t > W.lineT + 0.8) W.objAfter = G.hud.kit.objectiveText; if (C.man && C.phase === 'out') { const e = G.camera.position; const d = Math.hypot(e.x - C.manAt.x, e.z - C.manAt.z); W.minD = Math.min(W.minD ?? 99, +d.toFixed(2)); } }, 50); return 'watching'; })()"
+  },
+  {
+   "drive": "tools/lib/c3_tail.mjs",
+   "profile": "straight",
+   "seed": 11,
+   "timeout": 70000,
+   "maxTries": 1,
+   "stop": "(window.__tailFails || []).length > 0 || (!!G.scenes.ctx.flags.chase && G.scenes.ctx.flags.chase.phase === 'wreck' && G.scenes.ctx.flags.chase.wreck.t > 0.8)"
+  },
+  {
+   "wait": 3500
+  },
+  {
+   "shot": "w01_wreck_from_seat"
+  },
+  {
+   "drive": "tools/lib/c3_tail.mjs",
+   "profile": "straight",
+   "seed": 11,
+   "timeout": 40000,
+   "maxTries": 1,
+   "stop": "!!G.scenes.ctx.flags.chase && G.scenes.ctx.flags.chase.lineSaid && G.scenes.ctx.flags.chase.pointT < 2.4",
+   "shots": {
+    "w02_out": "!!G.scenes.ctx.flags.chase && G.scenes.ctx.flags.chase.phase === 'out' && G.scenes.ctx.flags.chase.outT > 1.2"
+   }
+  },
+  {
+   "shot": "w03_the_line"
+  },
+  {
+   "wait": 1000
+  },
+  {
+   "eval": "JSON.stringify(window.__w)"
+  },
+  {
+   "expect": "window.__w.objAfter === 'Pier 9.'",
+   "label": "the objective says Pier 9. at once after his line, on foot"
+  },
+  {
+   "expect": "window.__w.inPrompt != null && window.__w.inPrompt < 0.4",
+   "label": "E get in is offered at once after getting out"
+  },
+  {
+   "expect": "window.__w.minD >= 1.25",
+   "label": "the eye never closer than an arm's length to him"
+  }
+ ]
+}
