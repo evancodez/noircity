@@ -1,0 +1,30 @@
+{
+ "about": "[C7] proof (WAVE_C §7) of the quiet pass: the player who does nothing loses, warned first. (1) Hands off in the dark by the side door: the first man's round brings his lantern down the aisle to the door - the shout ('They've seen me.'), he runs at me, the cosh, 'They caught you.', back at the door. (2) Then stood in the door's pool of light: caught within seconds, warned first. node tools/play.mjs tools/plays/pier_idle.json",
+ "url": "/?mute=1&start=warehouse.floor",
+ "size": [1280, 800],
+ "out": "shots/play/pier_idle",
+ "steps": [
+  { "until": "G.state === 'title' && !document.getElementById('title').classList.contains('hidden')", "timeout": 30000 },
+  { "wait": 1500 },
+  { "clickOn": "#title .opt[data-k=begin]", "taken": "G.state !== 'title'", "retries": 5, "every": 4000 },
+  { "until": "G.scenes.current && G.scenes.current.id === 'warehouse' && G.scenes.beat === 'floor' && !G.scenes.trans", "timeout": 30000 },
+  { "eval": "(window.W = () => G.scenes.ctx.flags.live, window.T0 = G.time, window.WARN = [], G.on('fail', (e) => WARN.push({ why: e.why, warned: G.lastFail && G.lastFail.warnedFor, t: +(G.time - T0).toFixed(1) })), 1)" },
+  { "name": "(1) hands off, standing in the dark by the door" },
+  { "until": "G.hud.kit.warnText === 'They’ve seen me.'", "timeout": 90000 },
+  { "eval": "'warned at ' + (G.time - T0).toFixed(1) + ' s by ' + W().crew.alarmBy.name" },
+  { "shot": "i01_seen_in_the_dark" },
+  { "until": "!!G.failing", "timeout": 15000 },
+  { "expect": "G.lastFail.why === 'They caught you.' && G.lastFail.warnedFor >= 1.0 && G.lastFail.to === 'floor'", "label": "found in the dark by the round's lantern: warned a second or more, then caught" },
+  { "until": "!G.failing && G.scenes.beat === 'floor' && !G.scenes.trans", "timeout": 15000 },
+  { "eval": "JSON.stringify(WARN)" },
+  { "name": "(2) into the door's pool of light, and stand there" },
+  { "eval": "(window.T1 = G.time, 1)" },
+  { "walk": [[-10.9, -4.3]], "timeout": 8000 },
+  { "eval": "(window.T1 = G.time, 1)" },
+  { "until": "G.hud.kit.warnText === 'They’ve seen me.'", "timeout": 30000 },
+  { "shot": "i02_seen_in_the_pool" },
+  { "until": "(G.counters.fails || 0) >= 2", "timeout": 15000 },
+  { "eval": "JSON.stringify({ lastFail: G.lastFail, secs: +(G.time - T1).toFixed(1) })" },
+  { "expect": "G.lastFail.why === 'They caught you.' && G.lastFail.warnedFor >= 1.0 && G.time - T1 < 20", "label": "stood in the pool: caught within seconds, warned first" }
+ ]
+}

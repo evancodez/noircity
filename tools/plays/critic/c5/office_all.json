@@ -1,0 +1,72 @@
+{
+ "about": "Critic C5: III by the curious player, from the title (the owner driver tools/lib/c5_office.mjs, every flavour step, then the solve), 1440x900.",
+ "url": "/?mute=1&start=office",
+ "size": [
+  1440,
+  900
+ ],
+ "out": "shots/critic/c5/office_all",
+ "steps": [
+  {
+   "name": "the title, BEGIN at III"
+  },
+  {
+   "until": "G.state === 'title' && !!document.querySelector('#title .opt[data-k=begin]')",
+   "timeout": 60000
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]",
+   "taken": "G.scenes.current && G.scenes.current.id === 'office'",
+   "retries": 4
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'office' && document.pointerLockElement === N.renderer.domElement && G.scenes.fadeK < 0.2",
+   "timeout": 30000
+  },
+  {
+   "expect": "G.scenes.beat === 'corridor' && G.hud.objectiveText === 'Room 304. Ames.'",
+   "label": "the corridor, its line"
+  },
+  {
+   "name": "the chain, played"
+  },
+  {
+   "drive": "tools/lib/c5_office.mjs",
+   "order": [
+    "door",
+    "outer",
+    "ames",
+    "hat",
+    "photo",
+    "cabinets",
+    "phone",
+    "pad0",
+    "drawers",
+    "picture",
+    "dial0",
+    "lamp",
+    "search",
+    "drawer",
+    "pencil",
+    "pad",
+    "dial",
+    "envelope",
+    "check",
+    "stills",
+    "leave"
+   ],
+   "check": "D.fails.length === 0 && D.end.scene === 'gunfight'",
+   "label": "tried every thing, then solved it, on into IV"
+  },
+  {
+   "expect": "G.save.inventory.includes('check') && G.save.flags.note === 'PIER 9'",
+   "label": "the check in my coat, PIER 9"
+  },
+  {
+   "shot": "a_end"
+  }
+ ]
+}

@@ -1,0 +1,31 @@
+{
+ "about": "[C5] The jank walk through the whole third floor (WAVE_C §7.5), by real input: W held into every wall, shut door, locked door and piece of furniture (and Ames in his chair) - nothing passes through anything; every door tried with E (the ones that open open onto a finished room; the locked ones rattle); then in the gunfight, standing in the suite's doorway while the door is kicked in and they come through it, and again in the connecting door's while the flank comes: nobody passes through me, the leaf stops against me, and no living man stands inside another or inside the furniture. node tools/play.mjs tools/plays/office_jank.json",
+ "url": "/?mute=1&start=office.room",
+ "size": [1280, 800],
+ "out": "shots/play/office_jank",
+ "steps": [
+  { "until": "G.state === 'title' && !!document.querySelector('#title .opt[data-k=begin]')", "timeout": 60000 },
+  { "wait": 1500 },
+  { "clickOn": "#title .opt[data-k=begin]", "taken": "G.scenes.current && G.scenes.current.id === 'office'", "retries": 4 },
+  { "until": "G.scenes.current && G.scenes.current.id === 'office' && document.pointerLockElement === N.renderer.domElement && G.scenes.fadeK < 0.2", "timeout": 30000 },
+  { "name": "into everything on the floor; every door tried" },
+  { "drive": "tools/lib/c5_jank.mjs", "check": "D.ok && D.allDoors", "label": "nothing walked through; every door opens or rattles as it should" },
+  { "name": "IV: in the suite's doorway as they kick it in" },
+  { "eval": "(G.scenes.go('gunfight', { beat: 'shadows', fade: 'cut', card: false }), 1)" },
+  { "until": "G.scenes.current.id === 'gunfight' && G.scenes.ctx.flags.momentT != null", "timeout": 30000 },
+  { "eval": "(N.controller.setPose(-3.45, 3.38, Math.PI / 2, 0), N.controller.setMode('gun', { crouch: false }), window.__J = { minMe: 99, minMan: 99, inFurn: 0 }, G.scripts.push(() => { const J = window.__J, e = G.controller.pos, L = [...G.ais.keys()].filter((h) => h.alive); for (const h of L) { J.minMe = Math.min(J.minMe, Math.hypot(h.pos.x - e.x, h.pos.z - e.z)); for (const k of L) if (k !== h) J.minMan = Math.min(J.minMan, Math.hypot(h.pos.x - k.pos.x, h.pos.z - k.pos.z)); const q = { x: h.pos.x, z: h.pos.z }; G.stage.colliders.resolve(q, 0.2); if (Math.hypot(q.x - h.pos.x, q.z - h.pos.z) > 0.12) J.inFurn++; } G.health.hp = 100; }), 1)" },
+  { "until": "G.scenes.ctx.flags.go != null", "timeout": 15000 },
+  { "wait": 9000 },
+  { "shot": "j01_doorway" },
+  { "expect": "window.__J.minMe > 0.5 && window.__J.minMan > 0.3 && window.__J.inFurn < 4", "label": "in the doorway as they come: nobody through me, nobody inside another, nobody inside the furniture" },
+  { "eval": "JSON.stringify(window.__J)" },
+  { "name": "IV: in the connecting door as the flank comes" },
+  { "eval": "(G.scenes.go('gunfight', { beat: 'flank', fade: 'cut', card: false }), 1)" },
+  { "until": "G.scenes.current.id === 'gunfight' && G.scenes.beat === 'flank' && !G.scenes.trans", "timeout": 30000 },
+  { "eval": "(N.controller.setPose(4.7, 0.55, 0, 0), N.controller.setMode('gun', { crouch: false }), window.__J = { minMe: 99, minMan: 99, inFurn: 0 }, 1)" },
+  { "wait": 14000 },
+  { "shot": "j02_connecting" },
+  { "expect": "window.__J.minMe > 0.5 && window.__J.minMan > 0.3 && window.__J.inFurn < 4", "label": "in the connecting door as the flank comes: nobody through me or another" },
+  { "eval": "JSON.stringify(window.__J)" }
+ ]
+}

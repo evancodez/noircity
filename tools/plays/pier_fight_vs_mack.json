@@ -1,0 +1,15 @@
+{
+ "about": "[C7] 'harder than Mack', measured: II's fight played with the same hands as tools/plays/critic/c7_fight.json plays the foreman (the play tool's first-timer fist hands: a reaction time, a wrong read now and then), the lesson in it. node tools/play.mjs tools/plays/pier_fight_vs_mack.json; the foreman's number is c7_fight.json's",
+ "url": "/?mute=1&start=fight",
+ "size": [1280, 800],
+ "out": "shots/play/pier_fight_vs_mack",
+ "steps": [
+  { "until": "G.state === 'title' && !document.getElementById('title').classList.contains('hidden')", "timeout": 30000 },
+  { "wait": 1200 },
+  { "clickOn": "#title .opt[data-k=begin]", "taken": "G.state !== 'title'", "retries": 5, "every": 4000 },
+  { "until": "G.scenes.current && G.scenes.current.id === 'fight' && G.brawl.active", "timeout": 60000 },
+  { "eval": "(window.T2 = G.time, 1)" },
+  { "fight": { "timeout": 420000 } },
+  { "eval": "JSON.stringify({ secs: +(G.time - T2).toFixed(1), won: G.brawl.stats && G.brawl.stats.won, time: G.brawl.stats && +G.brawl.stats.time.toFixed(1), lesson: G.brawl.stats && G.brawl.stats.lesson, downs: G.brawl.stats && G.brawl.stats.downs, hp: G.brawl.max })" }
+ ]
+}

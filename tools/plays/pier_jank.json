@@ -1,0 +1,280 @@
+{
+ "about": "[C7] the jank walk after the critic (WAVE_C \u00a77.5), by real input: (1) from the first frame out through the open side door to the pier and back in (the doorway's jambs hold); into the lowered crates on the first frame's line (still a wall at eye level); into the lantern's post; (2) the pier's edges from the bay's side door (the after beat): west, south, east, the apron north, into my coupe. node tools/play.mjs tools/plays/pier_jank.json",
+ "url": "/?mute=1&start=warehouse",
+ "size": [
+  1440,
+  900
+ ],
+ "out": "shots/play/pier_jank",
+ "steps": [
+  {
+   "until": "G.state === 'title' && !document.getElementById('title').classList.contains('hidden')",
+   "timeout": 30000
+  },
+  {
+   "wait": 1200
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]",
+   "taken": "G.state !== 'title'",
+   "retries": 5,
+   "every": 4000
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'warehouse' && !G.scenes.trans && G.controller.mode === 'sneak'",
+   "timeout": 40000
+  },
+  {
+   "eval": "(window.P = () => [ +N.controller.pos.x.toFixed(2), +N.controller.pos.z.toFixed(2) ], window.W = () => G.scenes.ctx.flags.live, W().crew.men.forEach((m) => { m.c.place({ x: 14, z: -44 }, 0); m.knockDown(); m.found = true; }), JSON.stringify(P()))"
+  },
+  {
+   "name": "(1) out by the open side door, a step to the right of it into the wall, back in"
+  },
+  {
+   "walk": [
+    [
+     -10.5,
+     -0.8
+    ],
+    [
+     -10.5,
+     1.5
+    ]
+   ],
+   "timeout": 10000,
+   "stop": false
+  },
+  {
+   "eval": "'out of the door: ' + JSON.stringify(P())"
+  },
+  {
+   "expect": "N.controller.pos.z > 0.6",
+   "label": "through the open side door onto the pier"
+  },
+  {
+   "walk": [
+    [
+     -12.5,
+     1.2
+    ],
+    [
+     -12.5,
+     -2.0
+    ]
+   ],
+   "timeout": 8000,
+   "into": true
+  },
+  {
+   "eval": "'into the wall beside the door: ' + JSON.stringify(P())"
+  },
+  {
+   "expect": "N.controller.pos.z > 0.2",
+   "label": "the shed's wall beside the door holds"
+  },
+  {
+   "walk": [
+    [
+     -10.5,
+     1.2
+    ],
+    [
+     -10.5,
+     -1.5
+    ]
+   ],
+   "timeout": 8000,
+   "stop": false
+  },
+  {
+   "name": "into the lowered crates on the first frame's line (block 2, from aisle A)"
+  },
+  {
+   "walk": [
+    [
+     -11.0,
+     -14.5
+    ],
+    [
+     -11.0,
+     -20.0
+    ],
+    [
+     -4.0,
+     -20.0
+    ]
+   ],
+   "timeout": 20000,
+   "into": true
+  },
+  {
+   "eval": "'into the crates: ' + JSON.stringify(P())"
+  },
+  {
+   "expect": "N.controller.pos.x < -8.4",
+   "label": "the two-high crates are a wall"
+  },
+  {
+   "shot": "j01_lowered_crates"
+  },
+  {
+   "name": "into the lantern's post (round by the far cross aisle)"
+  },
+  {
+   "walk": [
+    [
+     -11.0,
+     -27.8
+    ],
+    [
+     0.0,
+     -27.8
+    ],
+    [
+     6.0,
+     -27.8
+    ]
+   ],
+   "timeout": 25000,
+   "into": true
+  },
+  {
+   "eval": "'into the post: ' + JSON.stringify(P())"
+  },
+  {
+   "expect": "N.controller.pos.x < 3.1",
+   "label": "the lantern's post holds (the lantern on it, nothing passes)"
+  },
+  {
+   "shot": "j02_lantern_post"
+  },
+  {
+   "name": "(2) the pier's edges from outside"
+  },
+  {
+   "eval": "(G.scenes.go('warehouse', { beat: 'after', fade: 'cut', card: false }), 1)"
+  },
+  {
+   "until": "G.scenes.beat === 'after' && !G.scenes.trans",
+   "timeout": 15000
+  },
+  {
+   "walk": [
+    [
+     13.6,
+     -31.4
+    ],
+    [
+     14.3,
+     -30.3
+    ]
+   ],
+   "timeout": 20000,
+   "stop": false
+  },
+  {
+   "until": "G.hud.promptShown.includes('open')",
+   "timeout": 5000
+  },
+  {
+   "key": "KeyE"
+  },
+  {
+   "wait": 1200
+  },
+  {
+   "walk": [
+    [
+     16.9,
+     -27.6
+    ],
+    [
+     17.0,
+     -3.0
+    ],
+    [
+     12.0,
+     4.0
+    ]
+   ],
+   "timeout": 30000,
+   "stop": false
+  },
+  {
+   "walk": [
+    [
+     -45,
+     24
+    ]
+   ],
+   "timeout": 15000,
+   "into": true
+  },
+  {
+   "eval": "'west: ' + JSON.stringify(P())"
+  },
+  {
+   "expect": "N.controller.pos.x > -25",
+   "label": "the pier stops me west (the fence)"
+  },
+  {
+   "walk": [
+    [
+     -20,
+     45
+    ]
+   ],
+   "timeout": 12000,
+   "into": true
+  },
+  {
+   "eval": "'south: ' + JSON.stringify(P())"
+  },
+  {
+   "expect": "N.controller.pos.z < 29",
+   "label": "the gate stops me south"
+  },
+  {
+   "walk": [
+    [
+     0,
+     24
+    ],
+    [
+     45,
+     20
+    ]
+   ],
+   "timeout": 20000,
+   "into": true
+  },
+  {
+   "eval": "'east: ' + JSON.stringify(P())"
+  },
+  {
+   "expect": "N.controller.pos.x < 25",
+   "label": "the fence stops me east"
+  },
+  {
+   "walk": [
+    [
+     5,
+     8
+    ],
+    [
+     -6.2,
+     18.2
+    ]
+   ],
+   "timeout": 20000,
+   "into": true
+  },
+  {
+   "eval": "'into coupe: ' + JSON.stringify(P())"
+  },
+  {
+   "expect": "Math.hypot(N.controller.pos.x + 6.2, N.controller.pos.z - 18.2) > 1.0",
+   "label": "my coupe is solid"
+  }
+ ]
+}

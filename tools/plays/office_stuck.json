@@ -1,0 +1,67 @@
+{
+ "about": "[C5] Chapter III's stuck test (the brief's proof): the pad half shaded and E out, the dial half turned (one number set) and E out, a walk out to the corridor and back through the suite's door (it shuts behind me each time on its closer) - then each taken up again where it was left and finished. Never stuck. node tools/play.mjs tools/plays/office_stuck.json",
+ "url": "/?mute=1&start=office",
+ "size": [
+  1280,
+  800
+ ],
+ "out": "shots/play/office_stuck",
+ "steps": [
+  {
+   "name": "the title, BEGIN at III"
+  },
+  {
+   "until": "G.state === 'title' && !!document.querySelector('#title .opt[data-k=begin]')",
+   "timeout": 60000
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]",
+   "taken": "G.scenes.current && G.scenes.current.id === 'office'",
+   "retries": 4
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'office' && document.pointerLockElement === N.renderer.domElement && G.scenes.fadeK < 0.2",
+   "timeout": 30000
+  },
+  {
+   "expect": "G.scenes.beat === 'corridor' && G.hud.objectiveText === 'Room 304. Ames.'",
+   "label": "the corridor, its line"
+  },
+  {
+   "name": "the chain, played"
+  },
+  {
+   "drive": "tools/lib/c5_office.mjs",
+   "order": [
+    "door",
+    "ames",
+    "lamp",
+    "search",
+    "drawer",
+    "pencil",
+    "padHalf",
+    "picture",
+    "dialHalf",
+    "corridor",
+    "pad",
+    "dial",
+    "envelope",
+    "check",
+    "stills",
+    "leave"
+   ],
+   "check": "D.fails.length === 0 && D.end.scene === 'gunfight'",
+   "label": "half done, left, come back to: solved, on into IV"
+  },
+  {
+   "expect": "G.save.inventory.includes('check') && G.save.flags.note === 'PIER 9'",
+   "label": "the check in my coat, PIER 9"
+  },
+  {
+   "shot": "a_end"
+  }
+ ]
+}

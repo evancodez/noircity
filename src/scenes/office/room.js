@@ -1,28 +1,31 @@
 import * as THREE from 'three';
 import { buildProp } from '../../props/index.js';
-import { ROOM, DOOR, DESK, PAD, SAFE, PICTURE, WIN, CABS, COOLER, STAND, ESC, CORR, PICTURE_ASIDE } from '../../stages/office/plan.js';
+import { DESK, SAFE, CHAIR, PICTURE_ASIDE, DOORS, OUTER, ROOM, CORR } from '../../stages/office/plan.js';
+import { doorPoint } from '../../stages/office/build/door.js';
 import { live } from './hands.js';
 
-// Room 304 as scenes 4 and 5 find it, and the small machinery both direct
-// it with (lane B2). Shared by scenes/04_office.js and 05_gunfight.js (no
-// default export: the scene manager passes this file over).
+// The Harbor Building's third floor as chapters III and IV find it, and the
+// small machinery both direct it with (lane B2; [C5] wave C). Shared by
+// scenes/04_office.js and 05_gunfight.js (no default export: the scene
+// manager passes this file over).
 export const V = (x, y, z) => new THREE.Vector3(x, y, z);
 export const office = (ctx) => ctx.stage.part('office');
 
-// what the detective carries by the start of each ([C1] WAVE_C §4: the red
-// matchbook and Ames's crossed card from II; after the safe the torn check,
-// PIER 9, and the ledger while lane C5 has not rebuilt the find)
-export function carry(ctx, { ledger = false } = {}) {
+// what the detective carries by the start of each (WAVE_C §4): III the red
+// matchbook and Ames's crossed card from II; IV also the torn check (PIER 9)
+// and the revolver that was always under his arm
+export function carry(ctx, { armed = false } = {}) {
   const inv = ctx.save.inventory || (ctx.save.inventory = []);
-  for (const k of ['matchbook', 'amesCard', ...(ledger ? ['ledger', 'check'] : [])]) if (!inv.includes(k)) inv.push(k);
-  if (ledger) ctx.save.flags.note = 'PIER 9';
+  for (const k of ['matchbook', 'amesCard', ...(armed ? ['check', 'revolver'] : [])]) if (!inv.includes(k)) inv.push(k);
+  if (armed) ctx.save.flags.note = 'PIER 9';
 }
 
-// the room as it stands at a point of the story:
-//   'found'   scene 4: turned over, the door ajar, the pad whole, the safe shut
-//   'rubbed'  the sheet torn off the pad (in my left hand)
-//   'open'    the picture aside, the safe open, the ledger in it
-//   'taken'   the ledger gone into my coat (scene 5's start)
+// the floor as it stands at a point of the story:
+//   'found'  III: the room turned over, the lamp off, Ames in his chair, the
+//            pencil in his locked drawer, the key on him, the picture shut on
+//            its hinge, the safe shut with the envelope in it
+//   'open'   the safe open (the envelope taken), the lamp on, the drawer open
+//   'fight'  IV: as 'open', the check in my coat
 export function roomAs(ctx, phase = 'found') {
   const O = office(ctx), G = ctx.game;
   ctx.cast.clear();
@@ -31,36 +34,60 @@ export function roomAs(ctx, phase = 'found') {
   G.pending.length = 0;
   G.fx.clear();
   O.reset();
-  const P = ['found', 'rubbed', 'open', 'taken'];
-  const at = P.indexOf(phase);
-  if (at >= 1) O.pad.api.reset();
-  if (at >= 2) {
-    O.picture.angle = O.picture.target = PICTURE_ASIDE; O.picture.hang.rotation.z = PICTURE_ASIDE;
+  const later = phase !== 'found';
+  // Ames, dead in his chair (the desk's chair side, facing the desk)
+  const ames = ctx.cast.spawn('ames', { at: { x: CHAIR.x + 0.04, z: CHAIR.z }, yaw: -Math.PI / 2 + 0.25, brain: 'none', name: 'ames' });
+  O.ames = ames;
+  // (he is solid: a circle where he sits - the chair's own is under him)
+  // the things of the room that the scenes move: the pencil in the locked drawer, his bottle and two glasses
+  const R1 = O.desk.drawers.find((d) => d.id === 'R1'), L2 = O.desk.drawers.find((d) => d.id === 'L2');
+  const pc = O.pencil || (O.pencil = buildProp('pencil'));
+  if (pc.parent) pc.parent.remove(pc);
+  pc.position.set(-0.2, 0.03, 0.06); pc.rotation.set(0, 0.3, 0); pc.visible = true;
+  R1.group.add(pc);
+  if (!O.bottle) {
+    O.bottle = new THREE.Group();
+    const b = buildProp('bottle', { variant: 'rye' }); b.rotation.z = Math.PI / 2; b.position.set(-0.25, 0.06, -0.04);
+    const t1 = buildProp('tumbler'); t1.position.set(-0.52, 0.012, 0.08);
+    const t2 = buildProp('tumbler'); t2.position.set(-0.6, 0.012, -0.08);
+    O.bottle.add(b, t1, t2);
+    O.bottle.traverse((m) => { if (m.isMesh) m.userData.noRay = true; });
+  }
+  L2.group.add(O.bottle);
+  // the envelope in the safe (until it is taken)
+  if (O.envelope && O.envelope.parent) O.envelope.parent.remove(O.envelope);
+  if (!later) {
+    const E = O.envelope || (O.envelope = envelope());
+    E.position.set(SAFE.x - 0.02, SAFE.y - SAFE.h / 2 + 0.03, -SAFE.depth / 2 - 0.02);
+    E.rotation.set(0, 0.1, 0);
+    ctx.stage.scene.add(E);
+  }
+  if (later) {
+    O.setLamp(true);
+    R1.locked = false; R1.out = R1.target = 1; R1.group.position.x = DESK.d / 2 + R1.max;
+    if (pc.parent) pc.parent.remove(pc);
+    O.picture.angle = O.picture.target = PICTURE_ASIDE; O.picture.hang.rotation.y = -PICTURE_ASIDE;
     O.safe.open = 1; O.safe.hinge.rotation.y = -1.9;
   }
-  // the ledger in the safe (until it is taken)
-  if (O.ledger && O.ledger.parent) O.ledger.parent.remove(O.ledger);
-  if (at <= 2) {
-    const L = O.ledger || (O.ledger = buildProp('ledger'));
-    L.position.set(SAFE.x, SAFE.y - SAFE.h / 2 + 0.02, -SAFE.depth / 2 - 0.01);
-    L.rotation.set(0, Math.PI / 2, 0);
-    L.userData.setOpen(0);
-    ctx.stage.scene.add(L);
-  }
-  // the pencil on the blotter
-  if (O.pencil && O.pencil.parent) O.pencil.parent.remove(O.pencil);
-  const pc = O.pencil || (O.pencil = buildProp('pencil'));
-  pc.position.copy(O.pencilAt);
-  pc.rotation.set(0, 2.6, 0);
-  O.desk.body.attach(pc);
   // the hands: nothing in them yet
   const H = ctx.hands;
   live(H, {});
   H.hold(null, 'R', { keep: true }); H.hold(null, 'L', { keep: true });
   H.equip('empty');
   ctx.player.weapons.current = null;
-  // the sheet in the left hand, from 'rubbed' until scene 4 ends
   return O;
+}
+
+// the envelope from the safe: brown paper, the flap tucked in, thick with torn paper
+export function envelope() {
+  const g = new THREE.Group();
+  const m = new THREE.MeshStandardMaterial({ color: 0x8a7e66, roughness: 0.95 });
+  m.name = 'office_envelope'; m.userData.inkSurface = 'paper';
+  const body = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.012, 0.11), m);
+  const flap = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.002, 0.05).translate(0, 0.007, -0.03), m);
+  g.add(body, flap);
+  g.traverse((o) => { if (o.isMesh) { o.userData.noRay = true; o.castShadow = true; } });
+  return g;
 }
 
 // the torn sheet: a copy of the pad's drawing as it was when it came off
@@ -77,52 +104,54 @@ export function sheetOf(O) {
   return s;
 }
 
-// (round 2) the prompt's words read over the lamp's pool and the slats: in
-// this room the thing a prompt names is often the brightest thing in the
-// frame (the desk in the banker's lamp, the dial in the blind's light, the
-// ledger's page), and the HUD's thin halo left "TIP THE DESK" white on white.
-// A heavier ink halo round the words, for these two scenes only: a style in
-// a scene layer of the HUD (the layers go when the scene exits, and it with them)
+// (round 2) the prompt's words read over the lamp's pool and the slats
 export function inkPrompt(ctx) {
   const L = ctx.hud.layer('b2ink');
   if (L.firstChild) return;
   const s = document.createElement('style');
-  // (a soft smudge of ink under the words, and the halo: over the dark it is not seen)
   s.textContent = '#hud .prompt .t { padding: 7px 18px; margin-left: -8px; background: radial-gradient(closest-side, rgba(0,0,0,0.62), rgba(0,0,0,0.42) 62%, rgba(0,0,0,0)); '
     + 'text-shadow: 0 0 9px #000, 0 0 5px #000, 0 0 3px #000, 0 0 2px #000, 0 0 1px #000; }';
   L.appendChild(s);
 }
 
-// the player standing at a place of the room (walk mode, or the office's own)
+// the player standing at a place of the floor
 export function stand(ctx, x, z, yaw, pitch = 0, mode = 'walk') {
   const C = ctx.controller;
   C.setPose(x, z, yaw, pitch);
   if (mode !== 'walk') C.setMode(mode, {});
 }
 
-// the room's things that answer E with a line or none (the room is a room)
-export function roomLines(ctx) {
-  const O = office(ctx), G = ctx.game, I = ctx.interact;
-  const said = ctx.flags.said || (ctx.flags.said = {});
-  const once = (k, text, secs = 2.4) => { if (said[k]) return; said[k] = true; G.hud.say(text, secs); };
-  // the filing cabinets: somebody was here first (a drawer run in and out)
-  O.cabinets.forEach((c, i) => {
-    I.add({ id: 'cab' + i, at: V(c.x, 1.0, c.z - 0.5), range: 1.9, cone: 0.6, prompt: 'the drawers', onUse: () => {
-      const d = c.drawers.find((q) => q.out > 0.1) || c.drawers[0];
-      d.group.position.z -= 0.08;
-      G.sfx.play('office_drawer', V(c.x, d.y + 0.2, c.z - 0.5));
-      G.sfx.play('office_paperRustle', V(c.x, d.y + 0.3, c.z - 0.6), { k: 0.8 });
-      once('drawers', 'Somebody was here first.');
-      I.remove('cab' + i);
+// which room a point is in (for the things that answer E: never through a wall)
+export function roomOf(x, z) {
+  if (x > ROOM.x0 - 0.05 && z > ROOM.z0 - 0.05 && z < ROOM.z1 && x < ROOM.x1) return 'ames';
+  if (x > OUTER.x0 - 0.05 && x < ROOM.x0 && z > -0.05 && z < OUTER.z1) return 'outer';
+  if (x > OUTER.x0 - 0.05 && z < -0.05 && z > -5) return '305';
+  if (x > CORR.x0 - 0.05 && x < OUTER.x0 && z > CORR.z0 - 0.1 && z < CORR.z1 + 0.05) return 'corr';
+  if (z > CORR.z1) return 'wc';
+  if (x < CORR.x0) return 'landing';
+  return 'corr';
+}
+export const inRoom = (G, r) => roomOf(G.eye.x, G.eye.z) === r;
+
+// every door answers E: open, shut, or locked (it rattles, and says so once tried);
+// the corridor's locked offices too. `allow(name)`: a door this beat lets me use
+export function doorsUse(ctx, { allow = () => true } = {}) {
+  const O = office(ctx), G = ctx.game;
+  const ajar = (d) => !d.shut && !d.moving && d.target !== 0 && d.open01 < 0.85;
+  const hs = [];
+  for (const [name, d] of Object.entries(O.doors)) {
+    const h = ctx.interact.add({ id: 'door' + name, at: doorPoint(G, d), range: 1.7, cone: 0.6, prompt: 'open', when: () => allow(name), onUse: () => {
+      if (d.locked) { d.tried = true; d.rattle(); return; }
+      if (d.shut || ajar(d)) d.open(G.eye); else d.close();
     } });
-  });
-  // the coat on the stand: his; the pockets turned out
-  I.add({ id: 'coat', at: V(STAND.x + 0.1, 1.3, STAND.z), range: 1.8, cone: 0.55, prompt: 'the coat', onUse: () => {
-    G.sfx.play('office_paperRustle', V(STAND.x, 1.3, STAND.z), { k: 0.6 });
-    once('coat', 'Pockets inside out. They were thorough.');
-    I.remove('coat');
-  } });
-  // the water cooler: a paper cup, a glug (no line)
-  I.add({ id: 'cooler', at: V(COOLER.x, 1.0, COOLER.z), range: 1.6, cone: 0.5, prompt: 'a drink', onUse: () => { G.sfx.play('office_coolerGlug', V(COOLER.x, 1.0, COOLER.z)); } });
-  void ROOM; void DOOR; void DESK; void PAD; void PICTURE; void WIN; void CABS; void ESC; void CORR;
+    hs.push({ d, h });
+  }
+  ctx.onStep(() => { for (const { d, h } of hs) h.prompt = d.locked && d.tried ? 'locked' : d.shut || ajar(d) ? 'open' : 'shut'; });
+  // the locked offices: a rattle, 'locked'
+  for (const o of O.others) {
+    const tried = { v: false };
+    const at = V(o.centre.x + (o.east ? -0.08 : 0.08), 1.0, o.z);
+    const h = ctx.interact.add({ id: 'locked' + o.num, at, range: 1.6, cone: 0.55, prompt: 'open', onUse: () => { tried.v = true; h.prompt = 'locked'; G.sfx.play('c2_doorRattle', at, {}, { ref: 3 }); } });
+  }
+  void DOORS;
 }

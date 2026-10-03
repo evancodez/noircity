@@ -1,0 +1,22 @@
+{
+ "about": "[C7 critic] good loud play (the owner's driver tools/lib/c7_pier.mjs 'loud', human pace) twice from the loud checkpoint: does it win, how long, how many falls, how much health.",
+ "url": "/?mute=1&start=warehouse.loud",
+ "size": [1440, 900],
+ "out": "shots/critic/c7_loud_good",
+ "steps": [
+  { "until": "G.state === 'title' && !document.getElementById('title').classList.contains('hidden')", "timeout": 30000 },
+  { "wait": 1200 },
+  { "clickOn": "#title .opt[data-k=begin]", "taken": "G.state !== 'title'", "retries": 5, "every": 4000 },
+  { "until": "G.scenes.current && G.scenes.current.id === 'warehouse' && G.scenes.beat === 'loud' && !G.scenes.trans", "timeout": 30000 },
+  { "eval": "(window.T0 = G.time, 1)" },
+  { "drive": "tools/lib/c7_pier.mjs", "profile": "loud", "timeout": 300000, "check": "D.done", "label": "loud (1)" },
+  { "eval": "JSON.stringify({ secs: +(G.time - T0).toFixed(0), downs: (G.guns.events || []).filter((e) => e.what === 'down').length, hp: Math.round(G.health.hp), beat: G.scenes.beat })" },
+  { "shot": "g01_bay" },
+  { "wait": 1500 },
+  { "eval": "(G.counters.fails = 0, G.scenes.go('warehouse', { beat: 'loud', fade: 'black', card: false }), 1)" },
+  { "until": "G.scenes.beat === 'loud' && !G.scenes.trans && G.controller.mode === 'gun'", "timeout": 15000 },
+  { "eval": "(window.T0 = G.time, 1)" },
+  { "drive": "tools/lib/c7_pier.mjs", "profile": "loud", "timeout": 300000, "check": "D.done", "label": "loud (2)" },
+  { "eval": "JSON.stringify({ secs: +(G.time - T0).toFixed(0), hp: Math.round(G.health.hp), beat: G.scenes.beat })" }
+ ]
+}

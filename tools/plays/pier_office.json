@@ -1,0 +1,201 @@
+{
+ "about": "[C7] VII's turn by real input (?start=warehouse.listen): the order through the window, his look, they leave by the back door; in by the front door, her photograph (the still), the drawer, the shells, the revolver full; out onto the catwalk, the phone: the loud pass. node tools/play.mjs tools/plays/pier_office.json",
+ "url": "/?mute=1&start=warehouse.listen",
+ "size": [
+  1440,
+  900
+ ],
+ "out": "shots/play/pier_office",
+ "steps": [
+  {
+   "until": "G.state === 'title' && !document.getElementById('title').classList.contains('hidden')",
+   "timeout": 30000
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]",
+   "taken": "G.state !== 'title'",
+   "retries": 5,
+   "every": 4000
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'warehouse' && G.scenes.beat === 'listen' && !G.scenes.trans",
+   "timeout": 30000
+  },
+  {
+   "eval": "(window.W = () => G.scenes.ctx.flags.live, window.FACE = (x, z, p) => { const c = N.controller, want = Math.atan2(-(x - c.pos.x), -(z - c.pos.z)), e = Math.atan2(Math.sin(want - c.yaw), Math.cos(want - c.yaw)), ep = p == null ? 0 : p - c.pitch; document.dispatchEvent(new MouseEvent('mousemove', { movementX: Math.round(-e / c.sensitivity), movementY: Math.round(-ep / c.sensitivity) })); return [+e.toFixed(2), +ep.toFixed(2)]; }, 1)"
+  },
+  {
+   "until": "W().said >= 3",
+   "timeout": 20000
+  },
+  {
+   "eval": "(window.T3 = G.time, 'the third line at ' + G.time.toFixed(1))"
+  },
+  {
+   "shot": "o01_order"
+  },
+  {
+   "until": "W().looking === true",
+   "timeout": 12000
+  },
+  {
+   "until": "G.scenes.beat === 'office'",
+   "timeout": 30000
+  },
+  {
+   "eval": "'the office ' + (G.time - window.T3).toFixed(1) + ' s after the third line (his look ' + (W().tLook - T3).toFixed(1) + ', the lock-up back ' + (W().tLock - T3).toFixed(1) + ', let us go ' + (W().tGo - T3).toFixed(1) + ', gone ' + (W().tGone - T3).toFixed(1) + '); objective then: ' + G.hud.objectiveText"
+  },
+  {
+   "expect": "G.time - window.T3 < 20",
+   "label": "[C7] under 20 s from the order's last line to the office"
+  },
+  {
+   "expect": "W().crew.alarmT < 0 && W().office.length === 0",
+   "label": "unseen under his look; they have gone by the back door"
+  },
+  {
+   "shot": "o02_gone"
+  },
+  {
+   "key": "KeyC"
+  },
+  {
+   "walk": [
+    [
+     2.6,
+     -41.6
+    ]
+   ],
+   "timeout": 8000
+  },
+  {
+   "eval": "FACE(1.85, -42.3, 0)"
+  },
+  {
+   "until": "G.hud.promptShown.includes('open')",
+   "timeout": 5000
+  },
+  {
+   "key": "KeyE"
+  },
+  {
+   "wait": 900
+  },
+  {
+   "expect": "G.stage.part('mezz').officeDoor.k > 0.9",
+   "label": "E opens the office door"
+  },
+  {
+   "walk": [
+    [
+     1.85,
+     -42.6
+    ],
+    [
+     0.6,
+     -42.95
+    ]
+   ],
+   "timeout": 10000
+  },
+  {
+   "eval": "FACE(0.25, -43.86, -0.75)"
+  },
+  {
+   "until": "G.hud.promptShown.includes('look')",
+   "timeout": 5000
+  },
+  {
+   "shot": "o03_desk"
+  },
+  {
+   "key": "KeyE"
+  },
+  {
+   "until": "G.stills.active",
+   "timeout": 6000
+  },
+  {
+   "wait": 1200
+  },
+  {
+   "shot": "o04_photo_still"
+  },
+  {
+   "key": "Space"
+  },
+  {
+   "until": "W().photoSeen",
+   "timeout": 12000
+  },
+  {
+   "expect": "G.save.inventory.includes('photo') && G.hud.objectiveText === 'Get to the diner.'",
+   "label": "the photograph pocketed; 'Get to the diner.'"
+  },
+  {
+   "eval": "FACE(1.1, -43.42, -0.7)"
+  },
+  {
+   "until": "G.hud.promptShown.includes('drawer')",
+   "timeout": 5000
+  },
+  {
+   "key": "KeyE"
+  },
+  {
+   "wait": 700
+  },
+  {
+   "until": "G.hud.promptShown.includes('shells')",
+   "timeout": 5000
+  },
+  {
+   "shot": "o05_shells"
+  },
+  {
+   "key": "KeyE"
+  },
+  {
+   "until": "!!W().shellsT",
+   "timeout": 4000
+  },
+  {
+   "until": "G.player.weapons.active && G.player.weapons.active.chambers.every((c) => c === 'live') && !G.player.weapons.active.reloading",
+   "timeout": 12000
+  },
+  {
+   "expect": "G.save.inventory.includes('shells')",
+   "label": "the shells: the revolver full, the rest in my pocket"
+  },
+  {
+   "walk": [
+    [
+     1.85,
+     -42.6
+    ],
+    [
+     2.6,
+     -41.6
+    ]
+   ],
+   "timeout": 10000
+  },
+  {
+   "until": "G.scenes.beat === 'loud'",
+   "timeout": 8000
+  },
+  {
+   "expect": "G.controller.mode === 'gun' && G.guns.active && W().crew.men.filter((m) => m.spec.hunter && !m.down).length >= 3",
+   "label": "the phone; the loud pass: the gun's mode, the hunters"
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "shot": "o06_loud"
+  }
+ ]
+}

@@ -67,6 +67,10 @@ foreman bars the way out at the loading bay: fists. Then to the car.
 - **Choice**: three ways across (the aisles; along the stacks' tops by a
   ladder; round by the loading bay's shadow) and two stairs. Take every
   man out, or touch no one: both must work, and feel different.
+  *[C7, after the critic: the ladder and the stacks' tops are cut - the
+  third way is the dark lane behind the stores under the mezzanine, from
+  the west wall to the bay; the lantern is built (on the post at aisle B's
+  far crossing, one comes to light it). See reports/wave-c/C7.md.]*
 - **Caught**: the shout is the warning ("They've seen me."): I have a
   moment to break the line and get into the dark (they search, then
   settle, more watchful); if they close on me, the cosh, black, the last
@@ -96,7 +100,8 @@ hooks keep back; the Hoods and two or three hands with pistols hunt).
 "Get out. The loading bay."
 - I may shoot my way out on the gun kit's rules (crates are wood and are
   chewed; steel drums and the hoist's block are not; a Tommy gunner on
-  the catwalk pins the aisle), or
+  the catwalk pins the aisle *[C7: not built - the gun kit's men walk the
+  floor's grid; see C7.md Left]*), or
 - I may still go quiet: the dark is still the dark, and **I can make
   more of it: lamps can be shot out** (a round spent for a pool of black:
   the two rule sets meeting: light is being seen). A shot is heard: they

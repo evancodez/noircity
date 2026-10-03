@@ -1,0 +1,18 @@
+{
+ "about": "[C5] Chapter IV's proof 3 (WAVE_C §7), the first choice the desk: a player who uses what was taught - in the moment after the take he tips the desk (E from its chair side) and gets low behind it (C); then cover, up over it (RMB) for one or two aimed rounds, down; reloads down; moves on the warning; watches a man going round - at a human pace WINS every movement (the door, the flank, the corridor) on the first try. Run it twice. node tools/play.mjs tools/plays/gunfight_good_desk.json",
+ "url": "/?mute=1&start=gunfight",
+ "size": [1280, 800],
+ "out": "shots/play/gunfight_good_desk",
+ "steps": [
+  { "name": "the title, BEGIN at IV" },
+  { "until": "G.state === 'title' && !!document.querySelector('#title .opt[data-k=begin]')", "timeout": 60000 },
+  { "wait": 1500 },
+  { "clickOn": "#title .opt[data-k=begin]", "taken": "G.scenes.current && G.scenes.current.id === 'gunfight'", "retries": 4 },
+  { "until": "G.scenes.current && G.scenes.current.id === 'gunfight' && document.pointerLockElement === N.renderer.domElement", "timeout": 30000 },
+  { "name": "every movement, played well (the desk at the door)" },
+  { "drive": "tools/lib/c5_door.mjs", "profile": "good", "choice": "desk", "out": true, "tries": 3, "beatTimeout": 150,
+    "beats": ["shadows", "flank", "corridor"],
+    "check": "D.wonFirst === 3", "label": "the good player (the desk) wins every movement on the first try" },
+  { "eval": "(N.game.guns.events || []).filter((e) => e.what === 'down' || e.what === 'flank').map((e) => e.what + ' ' + (e.why || e.at))" }
+ ]
+}

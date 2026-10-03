@@ -1,0 +1,55 @@
+{
+ "about": "Critic C5: IV, the bad profile (stands where put, trades in the open, never gets down): must lose.",
+ "url": "/?mute=1&start=gunfight",
+ "size": [
+  1440,
+  900
+ ],
+ "out": "shots/critic/c5/iv_bad",
+ "steps": [
+  {
+   "name": "the title, BEGIN at IV"
+  },
+  {
+   "until": "G.state === 'title' && !!document.querySelector('#title .opt[data-k=begin]')",
+   "timeout": 60000
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]",
+   "taken": "G.scenes.current && G.scenes.current.id === 'gunfight'",
+   "retries": 4
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'gunfight' && document.pointerLockElement === N.renderer.domElement",
+   "timeout": 30000
+  },
+  {
+   "name": "every movement, the controls let go"
+  },
+  {
+   "drive": "tools/lib/c5_door.mjs",
+   "profile": "bad",
+   "tries": 2,
+   "beatTimeout": 90,
+   "beats": [
+    "shadows",
+    "flank",
+    "corridor"
+   ],
+   "label": "doing nothing loses every movement, each with a warning and a reason",
+   "choice": "none"
+  },
+  {
+   "eval": "(N.game.guns.events || []).filter((e) => e.what === 'down').map((e) => e.why)"
+  },
+  {
+   "eval": "JSON.stringify((N.game.guns.events || []).filter((e) => e.what === 'down').map((e) => e.why))"
+  },
+  {
+   "shot": "end"
+  }
+ ]
+}

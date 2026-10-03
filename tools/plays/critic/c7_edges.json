@@ -1,0 +1,31 @@
+{
+ "about": "[C7 critic] the pier's edges as a poking player: from the start, walk west off the pier, south through the gate, east to the freighter, into my coupe, round the shed's west side; where do I stop and what stops me (a shot at each)?",
+ "url": "/?mute=1&start=warehouse",
+ "size": [1440, 900],
+ "out": "shots/critic/c7_edges",
+ "steps": [
+  { "until": "G.state === 'title' && !document.getElementById('title').classList.contains('hidden')", "timeout": 30000 },
+  { "wait": 1200 },
+  { "clickOn": "#title .opt[data-k=begin]", "taken": "G.state !== 'title'", "retries": 5, "every": 4000 },
+  { "until": "G.scenes.current && G.scenes.current.id === 'warehouse' && !G.scenes.trans && G.controller.mode === 'sneak'", "timeout": 40000 },
+  { "look": "[0, Math.round(N.controller.pitch/N.controller.sensitivity)]", "steps": 4 },
+  { "eval": "(window.P = () => [ +N.controller.pos.x.toFixed(1), +N.controller.pos.z.toFixed(1) ], JSON.stringify(P()))" },
+  { "walk": [[-45, 24]], "timeout": 12000, "stop": false },
+  { "eval": "'west: ' + JSON.stringify(P())" },
+  { "shot": "e01_west" },
+  { "walk": [[-20, 45]], "timeout": 12000, "stop": false },
+  { "eval": "'south: ' + JSON.stringify(P())" },
+  { "shot": "e02_south" },
+  { "walk": [[0, 24], [45, 20]], "timeout": 20000, "stop": false },
+  { "eval": "'east: ' + JSON.stringify(P())" },
+  { "shot": "e03_east" },
+  { "walk": [[20, 5], [20, -40]], "timeout": 20000, "stop": false },
+  { "eval": "'apron north: ' + JSON.stringify(P())" },
+  { "shot": "e04_apron_north" },
+  { "walk": [[5, 8], [-6.2, 18.2]], "timeout": 20000, "stop": false },
+  { "eval": "'into coupe: ' + JSON.stringify(P())" },
+  { "walk": [[-25, 4], [-25, -30]], "timeout": 20000, "stop": false },
+  { "eval": "'west side of the shed: ' + JSON.stringify(P())" },
+  { "shot": "e05_west_side" }
+ ]
+}

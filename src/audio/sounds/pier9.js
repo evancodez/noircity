@@ -216,6 +216,12 @@ export default (kit) => {
         chain(o, filt(ctx, 'bandpass', 1800, 4), g, out);
         return d + 0.1;
       },
+      // [C7] the office telephone: two rings of its bell (the clapper's
+      // trill between two gongs), 3.2 s
+      c7phone(ctx, out, t0) {
+        for (const r0 of [0, 1.7]) for (let i = 0; i < 22; i++) ping(ctx, out, t0 + r0 + i * 0.048, [[i % 2 ? 1480 : 1860, 0.07, 0.07], [i % 2 ? 2950 : 3720, 0.025, 0.04]]);
+        return 3.2;
+      },
     },
     rooms: {
       // the shed: the rain drumming on the roof far overhead (dull, big),

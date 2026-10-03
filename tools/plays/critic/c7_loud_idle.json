@@ -1,0 +1,30 @@
+{
+ "about": "[C7 critic] the loud pass, idle and holding W: (1) hands off where it begins (the catwalk by the office): does waiting win, or does the telephone's answerer find me, warned? (2) back there: down the west stairs and straight across the lit floor to the bay holding W, never shooting: down in seconds, warned, the reason said?",
+ "url": "/?mute=1&start=warehouse.loud",
+ "size": [1440, 900],
+ "out": "shots/critic/c7_loud_idle",
+ "steps": [
+  { "until": "G.state === 'title' && !document.getElementById('title').classList.contains('hidden')", "timeout": 30000 },
+  { "wait": 1200 },
+  { "clickOn": "#title .opt[data-k=begin]", "taken": "G.state !== 'title'", "retries": 5, "every": 4000 },
+  { "until": "G.scenes.current && G.scenes.current.id === 'warehouse' && G.scenes.beat === 'loud' && !G.scenes.trans", "timeout": 30000 },
+  { "eval": "(window.W = () => G.scenes.ctx.flags.live, window.LOG = [], G.on('fail', (e) => LOG.push({ why: e.why, t: +G.time.toFixed(1), at: [+N.controller.pos.x.toFixed(1), +N.controller.pos.z.toFixed(1)] })), window.T0 = G.time, 1)" },
+  { "eval": "JSON.stringify({ at: [N.controller.pos.x.toFixed(1), N.controller.pos.z.toFixed(1)], hp: G.health.hp, obj: G.hud.kit.objText, teach: G.hud.kit.teachCur && G.hud.kit.teachCur.text })" },
+  { "shot": "l00_start" },
+  { "name": "(1) hands off" },
+  { "until": "!!G.hud.kit.warnText || !!G.failing", "timeout": 120000 },
+  { "eval": "JSON.stringify({ secs: +(G.time - T0).toFixed(1), warn: G.hud.kit.warnText, loud: !!W().loud, ans: W().answerer && W().answerer.name })" },
+  { "shot": "l01_warned" },
+  { "until": "!!G.failing", "timeout": 30000 },
+  { "eval": "JSON.stringify({ secs: +(G.time - T0).toFixed(1), lastFail: G.lastFail })" },
+  { "until": "!G.failing && !G.scenes.trans && G.scenes.beat === 'loud'", "timeout": 20000 },
+  { "wait": 800 },
+  { "name": "(2) down the stairs and straight across the floor, W held, no shot" },
+  { "eval": "(window.T1 = G.time, window.HP = [], 1)" },
+  { "walk": [[-9.5, -41.55], [-9.0, -40.25], [-3.0, -40.25], [-1.5, -37.0], [1.5, -33.0], [9.0, -31.5], [11.5, -33.5]], "timeout": 60000, "stop": false },
+  { "eval": "JSON.stringify({ secs: +(G.time - T1).toFixed(1), beat: G.scenes.beat, hp: G.health.hp, fails: LOG, warn: G.hud.kit.warnText, at: [N.controller.pos.x.toFixed(1), N.controller.pos.z.toFixed(1)] })" },
+  { "shot": "l02_after_walk" },
+  { "until": "!!G.failing || G.scenes.beat === 'fight'", "timeout": 30000 },
+  { "eval": "JSON.stringify({ secs: +(G.time - T1).toFixed(1), beat: G.scenes.beat, hp: G.health.hp, fails: LOG })" }
+ ]
+}

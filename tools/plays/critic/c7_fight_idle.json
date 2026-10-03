@@ -1,0 +1,79 @@
+{
+ "about": "[C7 critic] the foreman, hands off: warned, downed, the reason said; does it ever end?",
+ "url": "/?mute=1&start=warehouse.fight",
+ "size": [
+  1440,
+  900
+ ],
+ "out": "shots/critic/c7_fight",
+ "steps": [
+  {
+   "until": "G.state === 'title' && !document.getElementById('title').classList.contains('hidden')",
+   "timeout": 30000
+  },
+  {
+   "wait": 1200
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]",
+   "taken": "G.state !== 'title'",
+   "retries": 5,
+   "every": 4000
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'warehouse' && G.scenes.beat === 'fight' && !G.scenes.trans",
+   "timeout": 30000
+  },
+  {
+   "eval": "(window.W = () => G.scenes.ctx.flags.live, window.LOG = [], G.on('fail', (e) => LOG.push({ why: e.why, t: +G.time.toFixed(1) })), window.T0 = G.time, 1)"
+  },
+  {
+   "until": "!!W().fm && W().fm.pos.z < -31.4",
+   "timeout": 10000
+  },
+  {
+   "shot": "f00_he_steps_out"
+  },
+  {
+   "until": "G.brawl.active && G.controller.mode === 'brawl'",
+   "timeout": 15000
+  },
+  {
+   "eval": "JSON.stringify({ intoFight: +(G.time - T0).toFixed(1), holding: G.brawl.him.holding, gun: G.player.weapons.active && G.player.weapons.active.id, obj: G.hud.kit.objText })"
+  },
+  {
+   "name": "(1) hands off"
+  },
+  {
+   "eval": "(window.T1 = G.time, 1)"
+  },
+  {
+   "until": "!!G.hud.kit.warnText || !!G.failing || !G.brawl.active",
+   "timeout": 180000
+  },
+  {
+   "eval": "JSON.stringify({ secs: +(G.time - T1).toFixed(1), warn: G.hud.kit.warnText, hp: G.brawl.me && G.brawl.me.hp, downs: G.brawl.stats && G.brawl.stats.downs })"
+  },
+  {
+   "shot": "f01_idle_warned"
+  },
+  {
+   "until": "!!G.failing || G.scenes.beat !== 'fight'",
+   "timeout": 120000
+  },
+  {
+   "until": "!!G.failing || G.scenes.beat !== 'fight' || G.brawl.stats.downs >= 3",
+   "timeout": 120000
+  },
+  {
+   "wait": 800
+  },
+  {
+   "shot": "f02_idle_lost"
+  },
+  {
+   "until": "!G.failing && !G.scenes.trans && G.brawl.active && G.controller.mode === 'brawl'",
+   "timeout": 40000
+  }
+ ]
+}

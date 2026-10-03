@@ -35,11 +35,9 @@ export const ORDER = [
   { id: 'diner', numeral: 'I', title: 'The Diner', music: 'room', carry: [] },
   // [C4] II: the scene file declares its own lines (02_fight.js)
   { id: 'fight', numeral: 'II', title: 'The Fight', music: 'room', carry: [] },
-  { id: 'office', numeral: 'III', title: 'Room 304', music: { slot: 'office', fade: 2.5 }, carry: ['matchbook', 'amesCard'],
-    objectives: { corridor: 'Find Ames. Room 304.', room: 'Ames is dead. Search the room.', pad: 'Shade the pad. Read it.',
-      safe: 'Open the safe.', ledger: 'Take what he hid.' } },
-  { id: 'gunfight', numeral: 'IV', title: 'The Door', music: { stop: 2.5 }, carry: ARMED, flags: NOTE,
-    objectives: { shadows: 'Watch the door. Get ready.', door: 'Stay alive.', window: 'Stay alive.', quiet: null } },
+  // [C5] III and IV: the scene files declare their own lines (04_office.js, 05_gunfight.js)
+  { id: 'office', numeral: 'III', title: 'Room 304', music: { slot: 'office', fade: 2.5 }, carry: ['matchbook', 'amesCard'] },
+  { id: 'gunfight', numeral: 'IV', title: 'The Door', music: { stop: 2.5 }, carry: ARMED, flags: NOTE },
   // [C6] V: the scene file declares its own lines and music (06_watcher.js:
   // the chase rebuilt, its beats its stretches; the wave B beats' stand-ins
   // went with it)
@@ -47,10 +45,10 @@ export const ORDER = [
   // [C3] VI: the scene file declares its own lines (07_tail.js: the city's
   // chase rebuilt; the wave B beats' stand-ins went with it)
   { id: 'tail', numeral: 'VI', title: 'The Tail', music: { slot: 'tail', fade: 2.5 }, carry: ARMED, flags: NOTE },
+  // [C7] VII: the scene file declares its own lines (08_warehouse.js: three
+  // passes of the shed, quiet, the office, loud, then the foreman)
   { id: 'warehouse', numeral: 'VII', title: 'Pier Nine', music: { slot: 'warehouse', fade: 1.5 },
-    beatMusic: { fight: { slot: 'fight', fade: 2.5 }, ko: { slot: 'fight', fade: 2.5 }, after: { stop: 3 } }, carry: ARMED, flags: NOTE,
-    objectives: { arrive: 'Get inside. Quietly.', ...each(['floor', 'lamps', 'aisle', 'stairs'], 'Reach the lit office. Quietly.'),
-      listen: 'Stay down. Listen.', out: 'Find another way out.', fight: 'Put him down.', ko: 'Put him down.', after: 'Get to the diner.' } },
+    beatMusic: { fight: { slot: 'fight', fade: 2.5 }, ko: { slot: 'fight', fade: 2.5 }, after: { stop: 3 } }, carry: ARMED, flags: NOTE },
   { id: 'shootout', numeral: 'VIII', title: 'The Block', music: null,
     beatMusic: { cars: { slot: 'shootout', fade: 2.5 }, doorways: { slot: 'shootout', fade: 2.5 }, el: { slot: 'shootout', fade: 2.5 }, driveby: { slot: 'shootout', fade: 2.5 } },
     carry: [...ARMED, 'shells'], flags: NOTE,
