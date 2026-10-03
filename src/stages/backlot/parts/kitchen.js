@@ -159,7 +159,9 @@ export default {
     api.floods = {};
     for (const side of ['W', 'E']) {
       const d = KI.doors[side];
-      const l = L.wall(d.x, 2.75, KI.z1, 0, 1, { out: 4.2, half: 0.36, strength: 0.9, height: 30 });
+      // ([C6 3rd] its visible beam fainter and shorter: looking up a lane into
+      // it the whole frame went to a grey fog; the light on the sheets is as it was)
+      const l = L.wall(d.x, 2.75, KI.z1, 0, 1, { out: 4.2, half: 0.36, strength: 0.5, height: 18 });
       l.light.intensity = 900;
       l.light.penumbra = 0.5;
       l.light.angle = 0.42;

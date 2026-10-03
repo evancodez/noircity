@@ -24,6 +24,9 @@ import { buildTruck, TRUCK as TRUCK_M } from '../../../vehicles/models.js';
 //   api.webSpeed              the paper's speed (m/s)
 const PAPER_SPEED = 5.5;
 
+// (a plain pale paper for the notices: the presses' own paper is made further down)
+const paperPlain0 = (std) => std({ color: 0xd4d4d4, roughness: 0.85, emissive: 0x202020 });
+
 export default {
   name: 'press', order: 65, tick: 65,
   build(stage) {
@@ -108,6 +111,40 @@ export default {
       for (const [x0, x1, z0, z1] of [[xi0, xi1, zi0, zi0 + 0.02], [xi0, xi1, zi1 - 0.02, zi1], [xi0, xi0 + 0.02, zi0, zi1], [xi1 - 0.02, xi1, zi0, D.z - D.w / 2], [xi1 - 0.02, xi1, D.z + D.w / 2, zi1]]) {
         K.box('pressDado', MAT.woodDark, x0, x1, 0.02, 1.6, z0, z1);
       }
+      // ([C6 3rd] above the dado the walls are grimed plaster, dark - not the
+      // brick's flat grey, which from the kitchen's door read as bare slabs -
+      // with the hall's iron on them: pipes down from the roof, a conduit along,
+      // a rack of fire buckets and a notice board by the kitchen's door)
+      const grime = std({ color: 0x2a2a2a, roughness: 0.96, envMap: M.envSoft, envMapIntensity: 0.06 });
+      const SD = P.southDoor;
+      const lineWall = (x0, x1, z0, z1, ya, yb) => K.box('pressInner', grime, x0, x1, ya, yb, z0, z1);
+      lineWall(xi0, xi1, zi0 + 0.02, zi0 + 0.045, 1.62, 7.1);
+      lineWall(xi0, SD.x - SD.w / 2 - 0.2, zi1 - 0.045, zi1 - 0.02, 1.62, 7.1);
+      lineWall(SD.x + SD.w / 2 + 0.2, xi1, zi1 - 0.045, zi1 - 0.02, 1.62, 7.1);
+      lineWall(SD.x - SD.w / 2 - 0.2, SD.x + SD.w / 2 + 0.2, zi1 - 0.045, zi1 - 0.02, SD.h + 0.3, 7.1);
+      lineWall(xi0 + 0.02, xi0 + 0.045, zi0, KDOOR.z - KDOOR.w / 2 - 0.25, 1.62, 7.1);
+      lineWall(xi0 + 0.02, xi0 + 0.045, KDOOR.z + KDOOR.w / 2 + 0.25, zi1, 1.62, 7.1);
+      lineWall(xi0 + 0.02, xi0 + 0.045, KDOOR.z - KDOOR.w / 2 - 0.25, KDOOR.z + KDOOR.w / 2 + 0.25, KDOOR.h + 0.35, 7.1);
+      lineWall(xi1 - 0.045, xi1 - 0.02, zi0, D.z - D.w / 2 - 0.25, 1.62, 7.1);
+      lineWall(xi1 - 0.045, xi1 - 0.02, D.z + D.w / 2 + 0.25, zi1, 1.62, 7.1);
+      lineWall(xi1 - 0.045, xi1 - 0.02, D.z - D.w / 2 - 0.25, D.z + D.w / 2 + 0.25, D.h + 0.3, 7.1);
+      const pipes = [];
+      for (const x of [74.9, 81.3, 87.9]) pipes.push(tube([V3(x, 0.05, zi0 + 0.12), V3(x, 7.2, zi0 + 0.12)], 0.07, 10, 2));
+      pipes.push(tube([V3(xi0 + 0.3, 3.7, zi0 + 0.1), V3(xi1 - 0.3, 3.7, zi0 + 0.1)], 0.05, 8, 2));
+      pipes.push(tube([V3(xi0 + 0.1, 3.7, zi0 + 0.3), V3(xi0 + 0.1, 3.7, zi1 - 0.3)], 0.05, 8, 2));
+      for (let x = 73.0; x < xi1; x += 2.4) pipes.push(new THREE.BoxGeometry(0.05, 0.16, 0.12).translate(x, 3.7, zi0 + 0.06));
+      K.add('pressPipes', M.iron, merge(pipes), { figure: true });
+      // the fire buckets on their rack by the kitchen's door (pale: the paint
+      // catches the bulb over the door), a notice board, its papers
+      const zb = KDOOR.z + 1.9, buckets = [], rack = [];
+      rack.push(new THREE.BoxGeometry(0.06, 0.08, 1.5).translate(xi0 + 0.08, 1.55, zb));
+      for (let i = 0; i < 4; i++) buckets.push(lathe([[0, 0], [0.12, 0], [0.15, 0.3], [0, 0.3]], 14).translate(xi0 + 0.2, 1.22, zb - 0.55 + i * 0.37));
+      K.add('pressBuckets', MAT.iron, merge(rack), { figure: true });
+      K.add('pressBuckets', std({ color: 0xb0b0b0, roughness: 0.5, envMap: M.envSoft, envMapIntensity: 0.4 }), merge(buckets), { figure: true });
+      K.add('pressBoard', MAT.woodDark, new THREE.BoxGeometry(0.04, 0.9, 1.3).translate(xi0 + 0.06, 1.9, KDOOR.z - 2.2));
+      const notes = [];
+      for (const [dz, dy, w, h] of [[-0.35, 0.15, 0.3, 0.4], [0.05, 0.2, 0.28, 0.32], [0.38, 0.05, 0.22, 0.3], [-0.1, -0.22, 0.42, 0.22]]) notes.push(new THREE.BoxGeometry(0.01, h, w).translate(xi0 + 0.085, 1.9 + dy, KDOOR.z - 2.2 + dz));
+      K.add('pressBoard', paperPlain0(std), merge(notes), { noRay: true });
       // the iron trusses across the hall, the purlins along it
       const tr = [];
       for (let x = 72.6; x < P.x1 - 1; x += 3.9) {

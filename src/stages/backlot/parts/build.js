@@ -281,6 +281,16 @@ export default {
         fbox('nwb', MAT.trim, Fn, AR.x0 - 0.35, AR.x1 + 0.35, AR.h, AR.h + 0.42, 0, 0.2);
         fbox('nwb', MAT.trim, Fn, (AR.x0 + AR.x1) / 2 - 0.2, (AR.x0 + AR.x1) / 2 + 0.2, AR.h - 0.1, AR.h + 0.55, 0, 0.26);
         K.box('nwbArch', MAT.plaster, AR.x0, AR.x1, AR.h - 0.04, AR.h, -133, MARKET.z0);
+        // (inside: the soffit's beams, a dark grimed lining, a drainpipe, a
+        // door on the east side - the arch is a way through a building, not
+        // a slot between two slabs)
+        for (let z = -132.4; z < MARKET.z0 - 0.3; z += 1.6) K.box('nwbArch', MAT.woodDark, AR.x0, AR.x1, AR.h - 0.26, AR.h - 0.04, z - 0.09, z + 0.09);
+        K.box('nwbArch', MAT.woodDark, AR.x0, AR.x0 + 0.03, 0, 1.1, -133, MARKET.z0, 1 / 6);
+        K.box('nwbArch', MAT.woodDark, AR.x1 - 0.03, AR.x1, 0, 1.1, -133, MARKET.z0, 1 / 6);
+        K.box('nwbArch', MAT.trim, AR.x0, AR.x0 + 0.05, 1.1, 1.16, -133, MARKET.z0, 1 / 6);
+        K.box('nwbArch', MAT.trim, AR.x1 - 0.05, AR.x1, 1.1, 1.16, -133, MARKET.z0, 1 / 6);
+        K.add('nwbArch', MAT.metal, tube([V3(AR.x0 + 0.1, 0.05, -129.6), V3(AR.x0 + 0.1, AR.h - 0.3, -129.6), V3(AR.x0 + 0.1, AR.h - 0.3, -133.2)], 0.05, 8, 6), { figure: true });
+        door('nwb', face('x', AR.x1, -1), -125.6, 1.0, 2.2);
         // (its cobbles' gutter down the middle, a wheel-guard stone at each pier)
         K.box('nwbArch', MAT.iron, (AR.x0 + AR.x1) / 2 - 0.09, (AR.x0 + AR.x1) / 2 + 0.09, 0.0, 0.012, -133, MARKET.z0, 1 / 6, { cast: false });
         for (const x of [AR.x0 + 0.18, AR.x1 - 0.18]) { K.add('nwbArch', MAT.trim, new THREE.CylinderGeometry(0.16, 0.22, 0.6, 10).translate(x, 0.3, -132.7), { figure: true }); stage.colliders.addCircle(x, -132.7, 0.2, 'guard'); }
