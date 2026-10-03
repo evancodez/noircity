@@ -949,6 +949,7 @@ export class Hood {
     this.alive = false;
     this.state = kind;
     this.speed = 0;
+    if (this._legOff) { this.yaw += this._legOff; this._legOff = 0; }   // [C2b] (he falls the way his legs were: no turn as he goes down)
     this.anim.play(kind, { fade: 0.08 });
     this._deathT = 0;
     this._deathKind = kind;
@@ -996,11 +997,30 @@ export class Hood {
       // lamp's cone re-renders its shadow map, render/Pipeline.js)
       this.mesh.castShadow = d < 16;
     }
+    // [C2b] after the critic: a short step taken facing his target (HoodAI.step
+    // sets stepYaw, the way he goes, each step): the legs turn toward it, up to
+    // ~70 degrees off his facing, and walk backwards when it is behind him; the
+    // spine turns the chest back (postPose), so the body and the gun stay on
+    // the target. (h.turnSafe only: the kit's men; the others as they were)
+    const moving = this.alive && (this.state === 'walk' || this.state === 'run') && this.speed > 0;
+    if (this.turnSafe) {
+      let want = 0, back = false;
+      if (moving && this.stepYaw != null) {
+        let rel = Math.atan2(Math.sin(this.stepYaw - this.yaw), Math.cos(this.stepYaw - this.yaw));
+        if (Math.abs(rel) > 1.75) { back = true; rel = Math.atan2(Math.sin(rel - Math.PI), Math.cos(rel - Math.PI)); }
+        want = Math.max(-1.2, Math.min(1.2, rel));
+      }
+      this._legBack = back;
+      this._legOff = (this._legOff || 0) + (want - (this._legOff || 0)) * (1 - Math.exp(-12 * dt));
+      this._moveYaw = moving && this.stepYaw != null ? this.stepYaw : null;
+      this.stepYaw = null;
+    }
     // locomotion: the root advances along its facing at `speed`
-    if (this.alive && (this.state === 'walk' || this.state === 'run') && this.speed > 0) {
-      this.pos.x += Math.sin(this.yaw) * this.speed * dt;
-      this.pos.z += Math.cos(this.yaw) * this.speed * dt;
-      this.anim.setTimeScale(this.gaitScale(this.state === 'walk' ? WALK.speed : RUN.speed));
+    if (moving) {
+      const my = this._moveYaw ?? this.yaw;
+      this.pos.x += Math.sin(my) * this.speed * dt;
+      this.pos.z += Math.cos(my) * this.speed * dt;
+      this.anim.setTimeScale(this.gaitScale(this.state === 'walk' ? WALK.speed : RUN.speed) * (this._legBack ? -1 : 1));
       // footfalls (Phase 3a: puddle ripples, footsteps): one per half gait
       // cycle, i.e. every stride = speed * T / 2 metres
       const run = this.state === 'run';
@@ -1051,7 +1071,7 @@ export class Hood {
     this.pos.y = this.surface ? this.surface(this.pos.x, this.pos.z) : groundY(this.pos.x);
     const obj = this.object;
     obj.position.copy(this.pos);
-    obj.rotation.y = this.yaw;
+    obj.rotation.y = this.yaw + (this._legOff || 0);
     if (this.collider) { this.collider.x = this.pos.x; this.collider.z = this.pos.z; }
 
     this.anim.update(dt);
@@ -1100,6 +1120,12 @@ export class Hood {
     b.coat.quaternion.setFromEuler(_pp.e.set(this._hem.x, 0, this._hem.z));
     driveSkirt(b);
 
+    // [C2b] the legs turned to a step's way: the spine and chest turn the body back to his facing
+    if (this._legOff) {
+      const q = _pp.q;
+      b.spine.quaternion.multiply(q.setFromAxisAngle(_pp.Y, -this._legOff * 0.55));
+      b.chest.quaternion.multiply(q.setFromAxisAngle(_pp.Y, -this._legOff * 0.45));
+    }
     // look-at: chest and head yaw toward the target within limits; when
     // aiming the whole upper body turns so the gun arm stays on target
     const aiming = this.alive && (this.aiming || this.state === 'aim');
@@ -1110,10 +1136,15 @@ export class Hood {
       // (scratch objects, not fresh ones: a dozen Hoods run this 60x a second)
       const inv = _pp.m.copy(this.object.matrixWorld).invert();
       const tl = _pp.tl.copy(this.lookTarget).applyMatrix4(inv);
-      const yawT = Math.atan2(tl.x, tl.z);
+      const yawT = Math.atan2(tl.x, tl.z) + (this._legOff || 0);   // ([C2b] in his facing's frame, not the legs')
       const lim = (x, l) => Math.max(-l, Math.min(l, x));
-      const chestYaw = lim(yawT * lerp(0.35, 1, this._aimW), lerp(0.6, 0.8, this._aimW)) * this._lookW;
-      const headYaw = lim(yawT - chestYaw, 1.0) * this._lookW * (1 - 0.9 * this._aimW);
+      // [C2b] a target behind him is not twisted to: the look fades out past
+      // ~105 degrees (it went from 0.8 rad one way to 0.8 the other in one
+      // frame as the target crossed his back - the body flicked round)
+      // (h.turnSafe only: the gun kit's men; the others as they were, their frames golden)
+      const fw = this.turnSafe ? Math.max(0, Math.min(1, (2.6 - Math.abs(yawT)) / 0.75)) : 1;
+      const chestYaw = lim(yawT * lerp(0.35, 1, this._aimW), lerp(0.6, 0.8, this._aimW)) * this._lookW * fw;
+      const headYaw = lim(yawT - chestYaw, 1.0) * this._lookW * (1 - 0.9 * this._aimW) * fw;
       const q = _pp.q;
       b.spine.quaternion.multiply(q.setFromAxisAngle(_pp.Y, chestYaw * 0.5));
       b.chest.quaternion.multiply(q.setFromAxisAngle(_pp.Y, chestYaw * 0.5));

@@ -239,6 +239,16 @@ export default {
       // (a man coming in at a door with his gun up keeps it up on his way through it, to its jamb)
       h.setAim(!!S.gunUp);
     };
+    // [C2b] after the critic: a step out to his spot or back to his cover (one
+    // node, under ~1.8 m, no door on it) is taken facing me - sideways or
+    // backwards (HoodAI.step) - never by turning his back to walk it
+    const stepOr = (dt) => {
+      if (B.path && B.path.length - B.pathI === 1 && !S.door) {
+        const w = B.path[B.path.length - 1];
+        if (Math.hypot(w.x - h.pos.x, w.z - h.pos.z) < 1.8 && !doorAhead()) { const p = S.target || G.eye; return B.step(dt, p.x, p.z, B.run, kind === 'tommy' ? 4 : 5); }
+      }
+      return follow(dt);
+    };
     // (the body's path walking: turns, 1.5 m/s walking, 2.9 running, a new
     // path when he is stuck; the colliders keep him out of everything) - and
     // a shut door on his way is opened as a man opens it: he stops at it, it
@@ -483,6 +493,8 @@ export default {
       const Kt = kit();
       const tgt = suppress ? (S.lastSeen ? S.lastSeen.p : G.eye) : S.aimP;
       if (!armClear(tgt)) return 'arm';
+      // [C2b] after the critic (his turn may wait a moment now: HoodAI.faceTo) - never a round off more than ~50 degrees from his facing
+      { const dy = Math.atan2(tgt.x - h.pos.x, tgt.z - h.pos.z) - h.yaw; if (Math.abs(Math.atan2(Math.sin(dy), Math.cos(dy))) > 0.9) return false; }
       // [C2] after the critic: a man does not fire through his mate - he holds it
       { const m = h.muzzleWorld(_v), L = m.distanceTo(tgt); if (L > 0.5) { const d = tgt.clone().sub(m).divideScalar(L); const o = G.rays.raycastHoods(m, d, L - 0.3, G.stage.hoods.list, { skipHood: h }); if (o && o.hood && o.hood !== h && o.hood.alive) return false; } }
       let sigma = T.sigma;
@@ -750,7 +762,7 @@ export default {
           // ([C2] after the critic's second look: on to the spot itself - the path's
           // end is reached 0.3 m short of it, and from there his gun hand was still
           // behind the crate's corner, the jamb: a shuffle the last of the way)
-          let there = follow(dt);
+          let there = stepOr(dt);
           if (there && S.stepTo) {
             const dx = S.stepTo.x - h.pos.x, dz = S.stepTo.z - h.pos.z, d = Math.hypot(dx, dz);
             if (d > 0.05 && S.t < 1.4) { const k = Math.min(d, 1.4 * dt) / d; h.speed = 0; h.pos.x += dx * k; h.pos.z += dz * k; Kt.resolveMan(h); there = false; }
@@ -762,7 +774,7 @@ export default {
         case 'aim': {
           if (kind === 'rusher') rushOn(dt);
           else { h.speed = 0; if (h.state !== 'aim') h.setState('aim', 0.15); }
-          face(dt, 7);
+          face(dt, 5.5);   // [C2b] 7 -> 5.5 rad/s: a man aiming turns slower than one on his feet (~315 degrees a second)
           if (S.target) h.lookAt(S.aimP);
           S.raiseT += dt;
           if (S.raiseT < T.raise) break;
@@ -778,7 +790,7 @@ export default {
         }
         case 'fire': {
           if (kind === 'rusher') rushOn(dt); else h.speed = 0;
-          face(dt, 7);
+          face(dt, 5.5);
           if (S.target) h.lookAt(S.aimP);
           if (kind === 'pistol' && !S.line) {
             // (lost me between rounds: the settle drains, he holds the aim)
@@ -822,7 +834,7 @@ export default {
           if (!S.cover) { if (!takeCover(S.rattledT > 0)) { S.state = 'open'; S.t = 0; S.wait = r.range(T.breath[0], T.breath[1]); h.setAim(false); } break; }
           if (Math.hypot(S.cover.x - h.pos.x, S.cover.z - h.pos.z) > 0.25) {
             if (!B.path) { B.path = [V(S.cover.x, 0, S.cover.z)]; B.pathI = 0; B.run = S.rattledT > 0; }
-            if (!follow(dt) && S.t < 1.6) break;
+            if (!stepOr(dt) && S.t < 1.6) break;
           }
           B.path = null; stand(S.coverLow);
           S.state = 'hold'; S.t = 0; S.wait = r.range(T.wait[0], T.wait[1]);
@@ -830,7 +842,7 @@ export default {
         }
         case 'reload': {
           // (back down behind his cover first)
-          if (B.path) { if (!follow(dt) && S.t < 1.2) break; B.path = null; }
+          if (B.path) { if (!stepOr(dt) && S.t < 1.2) break; B.path = null; }
           if (!S.exposedReload) stand(true);
           h.speed = 0;
           if (S.t > (kind === 'pistol' ? K.reload : K.drum)) { S.mag = kind === 'pistol' ? K.mag : 999; S.exposedReload = false; if (S.cover && Math.hypot(S.cover.x - h.pos.x, S.cover.z - h.pos.z) > 0.25) { S.state = 'back'; S.t = 0; } else { S.state = 'hold'; S.t = 0; S.wait = r.range(0.2, 0.5); } G.sfx.play('c2_magIn', h.pos.clone().setY(h.pos.y + 1.1), {}, { ref: 3 }); }

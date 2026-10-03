@@ -1,0 +1,21 @@
+{
+  "about": "C2b critic: the first-timer from the title at the test bed, the teach then the door beat by hand (what does the screen say, what do the men and the bodies do)",
+  "url": "/?mute=1&start=guns",
+  "size": [1440, 900],
+  "out": "shots/critic/c2b2/cold",
+  "steps": [
+    { "until": "G.state === 'title' && !!document.querySelector('#title .opt[data-k=begin]')", "timeout": 60000 },
+    { "wait": 1500 },
+    { "clickOn": "#title .opt[data-k=begin]", "taken": "G.scenes.current && G.scenes.current.id === 'guns'", "retries": 4 },
+    { "drive": "tools/plays/critic/c2/seq.mjs", "seq": [
+      "watch 5000 2500 r0_",
+      "k KeyE", "w 800", "st",
+      "k KeyC", "w 800", "st",
+      "d KeyW", "w 600", "u KeyW", "st",
+      "md right", "w 600", "s r1_rise", "c left", "w 500", "c left", "w 500", "c left", "w 500", "mu right", "st",
+      "watch 3000",
+      "k KeyR", "w 2500", "st",
+      "watch 8000 4000 r2_"
+    ] }
+  ]
+}

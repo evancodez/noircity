@@ -1,0 +1,56 @@
+{
+ "about": "C2b after the critic: hands off, door then two_ways; every living man's yaw each frame; the widest turn inside any one step out or back (it whipped +115 / -170 / +80), and the pace's flicker (changes of over 0.5 m/s in a frame) in out and back; K.spin over both beats and no 'spin' event",
+ "url": "/?mute=1&start=guns.door",
+ "size": [
+  1280,
+  800
+ ],
+ "out": "shots/c2b/step_trace",
+ "steps": [
+  {
+   "until": "G.state === 'title' && !!document.querySelector('#title .opt[data-k=begin]')",
+   "timeout": 60000
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]",
+   "taken": "G.scenes.current && G.scenes.current.id === 'guns'",
+   "retries": 4
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'guns' && document.pointerLockElement === N.renderer.domElement",
+   "timeout": 30000
+  },
+  {
+   "eval": "(window.YT = [], window.YTF = () => { for (const [h, ai] of G.ais) if (h.alive) { const S = ai.brain && ai.brain.S; YT.push([+G.time.toFixed(3), h.slot, +h.yaw.toFixed(3), +h.pos.x.toFixed(2), +h.pos.z.toFixed(2), S && S.state, h.state, ai.path ? ai.pathI + '/' + ai.path.length : '-', +(h.speed || 0).toFixed(2), G.scenes.beat]); } if (YT.length > 200000) YT.splice(0, 50000); }, G.scripts.push(YTF), 1)"
+  },
+  {
+   "drive": "tools/lib/c2_guns.mjs",
+   "profile": "idle",
+   "tries": 1,
+   "beatTimeout": 60,
+   "beats": [
+    "door",
+    "two_ways"
+   ],
+   "check": "true",
+   "label": "played"
+  },
+  {
+   "eval": "G.guns.events.filter((e) => e.what === 'spin')"
+  },
+  {
+   "eval": "(() => { const by = new Map(); for (const r of YT) { if (!by.has(r[1])) by.set(r[1], []); by.get(r[1]).push(r); } let worst = 0, wWho = null, n = 0, flick = 0, steps = 0; for (const [s, R] of by) { let cur = null, cum = 0, lo = 0, hi = 0; for (let i = 1; i < R.length; i++) { const a = R[i - 1], b = R[i]; const st = b[5]; if (st === 'out' || st === 'back') { if (cur !== st) { cur = st; cum = 0; lo = 0; hi = 0; n++; } let d = b[2] - a[2]; d = Math.atan2(Math.sin(d), Math.cos(d)); cum += d; lo = Math.min(lo, cum); hi = Math.max(hi, cum); if (hi - lo > worst) { worst = hi - lo; wWho = [s, st, b[0], b[9]]; } if (a[5] === st) { steps++; if (Math.abs(b[8] - a[8]) > 0.5) flick++; } } else cur = null; } } return { stepsOutBack: n, worstTurnInOneStepDeg: Math.round(worst * 57.3), who: wWho, paceJumps: flick, frames: steps, spin: { sec: Math.round(G.guns.spin.sec * 57.3), rev: Math.round(G.guns.spin.rev * 57.3), turn: Math.round(G.guns.spin.turn * 57.3), whoTurn: G.guns.spin.whoTurn } }; })()"
+  },
+  {
+   "expect": "G.guns.events.filter((e) => e.what === 'spin').length === 0 && G.guns.spin.turn < 5.76",
+   "label": "no man turns a full circle (330 degrees in 2.5 s), no spin event"
+  },
+  {
+   "expect": "(() => { const by = new Map(); for (const r of YT) { if (!by.has(r[1])) by.set(r[1], []); by.get(r[1]).push(r); } let worst = 0; for (const [s, R] of by) { let cur = null, cum = 0, lo = 0, hi = 0; for (let i = 1; i < R.length; i++) { const a = R[i - 1], b = R[i]; if (b[5] === 'out' || b[5] === 'back') { if (cur !== b[5]) { cur = b[5]; cum = 0; lo = 0; hi = 0; } let d = b[2] - a[2]; d = Math.atan2(Math.sin(d), Math.cos(d)); cum += d; lo = Math.min(lo, cum); hi = Math.max(hi, cum); worst = Math.max(worst, hi - lo); } else cur = null; } } return worst < 1.05; })()",
+   "label": "no step out or back turns him more than 60 degrees (it was +115 / -170)"
+  }
+ ]
+}

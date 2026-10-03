@@ -139,7 +139,8 @@ export function makeDoor(stage, kit, mats, name, spec) {
       let next = this.angle + step;
       let b = this.blocked(next);
       if (b === 'player') { next = this.angle + step * 0.45; b = this.blocked(next); if (b === 'player' && this.shove(next)) b = false; }
-      if (b) { this.moving = false; return; }
+      if (b) { if (b === 'body' && !this._bodyKnock) { this._bodyKnock = true; this.jolt = 0.12; const G = stage.game; if (G && G.sfx) G.sfx.play('c2_doorShut', this.centre.clone().setY(FLOOR + 0.4), {}, { ref: 3, gain: 0.35 }); } this.moving = false; return; }
+      this._bodyKnock = false;
       this.angle = next;
       if (Math.abs(this.target - this.angle) < 1e-3) {
         this.angle = this.target; this.moving = false;
@@ -163,6 +164,17 @@ export function makeDoor(stage, kit, mats, name, spec) {
       const t = Math.max(0, Math.min(w, (px - hx) * dx + (pz - hz) * dz));
       return Math.hypot(px - (hx + dx * t), pz - (hz + dz * t));
     },
+    // ([C2b] the leaf's distance at angle `a` from a body's length, head to feet: segment to segment)
+    segDist(a, c) {
+      const co = Math.cos(a), si = Math.sin(a);
+      const dx = along ? si : co, dz = along ? co : -si;
+      const px = hinge.position.x, pz = hinge.position.z, qx = px + dx * w, qz = pz + dz * w;
+      const cr = (ox, oz, ax, az, bx, bz) => (ax - ox) * (bz - oz) - (az - oz) * (bx - ox);
+      const d1 = cr(px, pz, qx, qz, c.ax, c.az), d2 = cr(px, pz, qx, qz, c.bx, c.bz), d3 = cr(c.ax, c.az, c.bx, c.bz, px, pz), d4 = cr(c.ax, c.az, c.bx, c.bz, qx, qz);
+      if (d1 * d2 < 0 && d3 * d4 < 0) return 0;
+      const ps = (x, z, ax, az, bx, bz) => { const ux = bx - ax, uz = bz - az, L2 = ux * ux + uz * uz || 1e-9; const t = Math.max(0, Math.min(1, ((x - ax) * ux + (z - az) * uz) / L2)); return Math.hypot(x - ax - ux * t, z - az - uz * t); };
+      return Math.min(ps(c.ax, c.az, px, pz, qx, qz), ps(c.bx, c.bz, px, pz, qx, qz), ps(px, pz, c.ax, c.az, c.bx, c.bz), ps(qx, qz, c.ax, c.az, c.bx, c.bz));
+    },
     // would the leaf, swinging to `a`, cut into the player or a living man?
     // (it stops against him as a real door does; it never passes through anyone)
     // -> 'man' | 'player' | false
@@ -172,6 +184,15 @@ export function makeDoor(stage, kit, mats, name, spec) {
       const test = (x, z, r) => { const d1 = this.dist(a, x, z); return d1 < r && d1 < this.dist(this.angle, x, z) - 1e-4; };
       for (const h of stage.hoods.list) if (h.alive && test(h.pos.x, h.pos.z, 0.3)) return 'man';
       if (test(G.controller.pos.x, G.controller.pos.z, 0.36)) return 'player';
+      // [C2b] after the critic: and a body lying in its sweep (the user: the
+      // dead block nobody, "but other things do"): the leaf stops on him -
+      // along his length, head to feet (Guns.corpses), not through his legs
+      const K = G.guns;
+      for (const c of (K && K.corpses) || []) {
+        if (c.ax == null || !c.hood.object.parent) continue;
+        const d1 = this.segDist(a, c), d0 = this.segDist(this.angle, c);
+        if (d1 < 0.12 && d1 < d0 - 1e-4) return 'body';
+      }
       return false;
     },
     // the player out of the leaf's way at angle `a`: straight back from the
