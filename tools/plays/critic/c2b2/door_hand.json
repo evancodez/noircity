@@ -1,0 +1,22 @@
+{
+  "about": "C2b critic: the door beat by a player's hands (down behind the desk, rise, shoot), then over the bodies in the room while the third man comes through the doorway over them",
+  "url": "/?mute=1&start=guns.door",
+  "size": [1440, 900],
+  "out": "shots/critic/c2b2/door",
+  "steps": [
+    { "until": "G.state === 'title' && !!document.querySelector('#title .opt[data-k=begin]')", "timeout": 60000 },
+    { "wait": 1500 },
+    { "clickOn": "#title .opt[data-k=begin]", "taken": "G.scenes.current && G.scenes.current.id === 'guns'", "retries": 4 },
+    { "until": "G.scenes.current && G.scenes.current.id === 'guns' && document.pointerLockElement === N.renderer.domElement && G.scenes.beat === 'door' && !G.scenes.trans", "timeout": 30000 },
+    { "drive": "tools/plays/critic/c2b2/hand.mjs", "seq": [
+      "st", "s h00_start",
+      "kill 30000 0.02", "bodies", "s h01_first_down",
+      "kill 25000 0.02", "bodies", "st",
+      "over 0 6000", "s h02_over", "bodies",
+      "trace 2500",
+      "kill 25000 0.02", "bodies", "st",
+      "watch 3000"
+    ] },
+    { "eval": "({ spin: G.guns.spin && { sec: Math.round(G.guns.spin.sec * 57.3), rev: Math.round(G.guns.spin.rev * 57.3), turn: Math.round(G.guns.spin.turn * 57.3) }, ev: G.guns.events.filter((e) => e.what === 'spin' || e.what === 'down').slice(-6) })" }
+  ]
+}

@@ -1,0 +1,20 @@
+{
+  "about": "C2b critic: the rush beat by a player's hands: the heavy shot as he comes, then over his body (W held) while the last man comes through A2; then the last man shot and the walk back over the body",
+  "url": "/?mute=1&start=guns.rush",
+  "size": [1440, 900],
+  "out": "shots/critic/c2b2/rush",
+  "steps": [
+    { "until": "G.state === 'title' && !!document.querySelector('#title .opt[data-k=begin]')", "timeout": 60000 },
+    { "wait": 1500 },
+    { "clickOn": "#title .opt[data-k=begin]", "taken": "G.scenes.current && G.scenes.current.id === 'guns'", "retries": 4 },
+    { "until": "G.scenes.current && G.scenes.current.id === 'guns' && document.pointerLockElement === N.renderer.domElement && G.scenes.beat === 'rush' && !G.scenes.trans", "timeout": 30000 },
+    { "drive": "tools/plays/critic/c2b2/hand.mjs", "seq": [
+      "st",
+      "standkill 30000 0.012 150", "bodies", "st", "w 1600", "bodies",
+      "over 0 6000", "s r01_past_the_heavy", "bodies", "st",
+      "over 0 6000", "s r02_back_over", "st",
+      "standkill 25000 0.012 250", "bodies", "st",
+      "w 800", "over 0 5000", "over 1 6000", "st"
+    ] }
+  ]
+}

@@ -1,0 +1,201 @@
+{
+ "about": "C2b critic: two_ways hands off, an observer's camera above and behind him in the corridor from the man at A1 (render only: the game's eye is put back after each frame), frames every 0.3 s through his step out, back and hold; his yaw traced",
+ "url": "/?mute=1&start=guns.two_ways",
+ "size": [
+  960,
+  600
+ ],
+ "out": "shots/critic/c2b2/spin_obs",
+ "steps": [
+  {
+   "until": "G.state === 'title' && !!document.querySelector('#title .opt[data-k=begin]')",
+   "timeout": 60000
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]",
+   "taken": "G.scenes.current && G.scenes.current.id === 'guns'",
+   "retries": 4
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'guns' && G.scenes.beat === 'two_ways' && !G.scenes.trans && G.ais.size > 0",
+   "timeout": 30000
+  },
+  {
+   "eval": "(window.T0 = G.time, window.YT = [], window.YTF = () => { for (const [h, ai] of G.ais) if (h.alive) { const S = ai.brain && ai.brain.S; YT.push([+(G.time - T0).toFixed(3), h.slot, +h.yaw.toFixed(3), +h.pos.x.toFixed(2), +h.pos.z.toFixed(2), S && S.state]); } }, G.scripts.push(YTF), window.OBS = 0, window.R0 = N.pipeline.render.bind(N.pipeline), N.pipeline.render = (s, c, t) => { const h = [...G.ais.keys()].find((q) => q.slot === OBS && q.alive); if (!h) return R0(s, c, t); const p = c.position.clone(), q = c.quaternion.clone(); c.position.set(h.pos.x + 0.15, 2.55, h.pos.z - 1.5); c.lookAt(h.pos.x, 0.7, h.pos.z + 0.2); c.updateMatrixWorld(); R0(s, c, t); c.position.copy(p); c.quaternion.copy(q); c.updateMatrixWorld(); }, 1)"
+  },
+  {
+   "until": "G.time - T0 > 7.6",
+   "timeout": 30000
+  },
+  {
+   "shot": "o00_7.6"
+  },
+  {
+   "until": "G.time - T0 > 7.8",
+   "timeout": 30000
+  },
+  {
+   "shot": "o01_7.8"
+  },
+  {
+   "until": "G.time - T0 > 8.0",
+   "timeout": 30000
+  },
+  {
+   "shot": "o02_8.0"
+  },
+  {
+   "until": "G.time - T0 > 8.2",
+   "timeout": 30000
+  },
+  {
+   "shot": "o03_8.2"
+  },
+  {
+   "until": "G.time - T0 > 8.4",
+   "timeout": 30000
+  },
+  {
+   "shot": "o04_8.4"
+  },
+  {
+   "until": "G.time - T0 > 8.6",
+   "timeout": 30000
+  },
+  {
+   "shot": "o05_8.6"
+  },
+  {
+   "until": "G.time - T0 > 8.8",
+   "timeout": 30000
+  },
+  {
+   "shot": "o06_8.8"
+  },
+  {
+   "until": "G.time - T0 > 9.0",
+   "timeout": 30000
+  },
+  {
+   "shot": "o07_9.0"
+  },
+  {
+   "until": "G.time - T0 > 9.2",
+   "timeout": 30000
+  },
+  {
+   "shot": "o08_9.2"
+  },
+  {
+   "until": "G.time - T0 > 9.4",
+   "timeout": 30000
+  },
+  {
+   "shot": "o09_9.4"
+  },
+  {
+   "until": "G.time - T0 > 9.6",
+   "timeout": 30000
+  },
+  {
+   "shot": "o10_9.6"
+  },
+  {
+   "until": "G.time - T0 > 9.8",
+   "timeout": 30000
+  },
+  {
+   "shot": "o11_9.8"
+  },
+  {
+   "until": "G.time - T0 > 10.0",
+   "timeout": 30000
+  },
+  {
+   "shot": "o12_10.0"
+  },
+  {
+   "until": "G.time - T0 > 10.2",
+   "timeout": 30000
+  },
+  {
+   "shot": "o13_10.2"
+  },
+  {
+   "until": "G.time - T0 > 10.4",
+   "timeout": 30000
+  },
+  {
+   "shot": "o14_10.4"
+  },
+  {
+   "until": "G.time - T0 > 10.6",
+   "timeout": 30000
+  },
+  {
+   "shot": "o15_10.6"
+  },
+  {
+   "until": "G.time - T0 > 10.8",
+   "timeout": 30000
+  },
+  {
+   "shot": "o16_10.8"
+  },
+  {
+   "until": "G.time - T0 > 11.0",
+   "timeout": 30000
+  },
+  {
+   "shot": "o17_11.0"
+  },
+  {
+   "until": "G.time - T0 > 11.2",
+   "timeout": 30000
+  },
+  {
+   "shot": "o18_11.2"
+  },
+  {
+   "until": "G.time - T0 > 11.4",
+   "timeout": 30000
+  },
+  {
+   "shot": "o19_11.4"
+  },
+  {
+   "until": "G.time - T0 > 11.6",
+   "timeout": 30000
+  },
+  {
+   "shot": "o20_11.6"
+  },
+  {
+   "until": "G.time - T0 > 11.8",
+   "timeout": 30000
+  },
+  {
+   "shot": "o21_11.8"
+  },
+  {
+   "until": "G.time - T0 > 12.0",
+   "timeout": 30000
+  },
+  {
+   "shot": "o22_12.0"
+  },
+  {
+   "until": "G.time - T0 > 12.2",
+   "timeout": 30000
+  },
+  {
+   "shot": "o23_12.2"
+  },
+  {
+   "eval": "YT.filter((r) => r[1] === 0 && r[0] > 7.4 && r[0] < 12.6).filter((r, i) => i % 6 === 0).map((r) => r.slice(0, 6).join(' ')).join(' | ')"
+  }
+ ]
+}
