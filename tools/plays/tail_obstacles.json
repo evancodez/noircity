@@ -1,0 +1,131 @@
+{
+ "about": "C3 3rd owner: the critic's major 9 by real input, in phase c (no pressure). (1) A row of the wharf market's stalls at 50 km/h, W held: it must take real speed and cost the car (it cost nothing and the speed rose 47 to 59). (2) A traffic car with my car stopped 10 m before it, facing it: it must not wait for ever (it waited 7 s and more) - it backs off, sounds its horn and goes round. node tools/play.mjs tools/plays/tail_obstacles.json --size 1440x900 (NOIR_PORT=5343)",
+ "url": "/?mute=1&start=tail.pier",
+ "size": [
+  1440,
+  900
+ ],
+ "out": "shots/c3/play_obstacles",
+ "steps": [
+  {
+   "until": "G.state === 'title' && !document.getElementById('title').classList.contains('hidden') && !!document.querySelector('#title .opt[data-k=begin]')",
+   "timeout": 40000
+  },
+  {
+   "wait": 2000
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]",
+   "taken": "G.state === 'playing' && document.pointerLockElement === N.renderer.domElement",
+   "retries": 4,
+   "every": 4000
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'tail' && G.scenes.ctx.flags.chase && G.scenes.ctx.flags.chase.phase === 'c' && !G.scenes.fadeK",
+   "timeout": 45000
+  },
+  {
+   "wait": 500
+  },
+  {
+   "name": "the critic's stall row: W held from z -140 at 50 km/h, south along the wharf market's stalls"
+  },
+  {
+   "eval": "(G.scenes.ctx.flags.chase.my.place(new N.THREE.Vector3(112.8, 0, -145), -Math.PI / 2, 50 / 3.6), 1)"
+  },
+  {
+   "eval": "(() => { const C = G.scenes.ctx.flags.chase; window.__st = { min: 99, max: 0, dmg0: C.my.damage, n: 0 }; C.my.on('smash', (e) => { if (e.item.kind === 'stall') window.__st.n++; }); (function loop() { const s = C.my.speedAbs * 3.6; if (C.my.pos.z > -138 && C.my.pos.z < -95) { window.__st.min = Math.min(window.__st.min, s); window.__st.max = Math.max(window.__st.max, s); } if (!window.__stStop) requestAnimationFrame(loop); })(); return 1; })()"
+  },
+  {
+   "down": "KeyW"
+  },
+  {
+   "wait": 2600
+  },
+  {
+   "shot": "j01_stalls"
+  },
+  {
+   "wait": 1400
+  },
+  {
+   "up": "KeyW"
+  },
+  {
+   "eval": "(window.__stStop = true, JSON.stringify({ stalls: window.__st.n, minKmh: +window.__st.min.toFixed(0), maxKmh: +window.__st.max.toFixed(0), damage: +(G.scenes.ctx.flags.chase.my.damage - window.__st.dmg0).toFixed(2), z: +G.scenes.ctx.flags.chase.my.pos.z.toFixed(0) }))"
+  },
+  {
+   "expect": "window.__st.n >= 4 && window.__st.min < 32",
+   "label": "a row of stalls takes real speed (under 32 km/h from 50 with W held)"
+  },
+  {
+   "expect": "G.scenes.ctx.flags.chase.my.damage - window.__st.dmg0 > 0.4",
+   "label": "and costs my car (more than 0.4 of a damage step)"
+  },
+  {
+   "name": "a traffic car facing me, my car stopped in its way: it backs off and goes round"
+  },
+  {
+   "until": "G.scenes.ctx.flags.chase.traffic.cars.some((c) => c.v.speedAbs > 3 && !c.river)",
+   "timeout": 30000
+  },
+  {
+   "eval": "(() => { const C = G.scenes.ctx.flags.chase, car = C.traffic.cars.find((c) => c.v.speedAbs > 3 && !c.river); window.__tc = car; const v = car.v, f = new N.THREE.Vector3(Math.cos(v.yaw), 0, -Math.sin(v.yaw)); C.my.place(v.pos.clone().addScaledVector(f, 10), v.yaw + Math.PI, 0); C.my.damage = 0; window.__tc0 = { s: car.pilot.s, x: v.pos.x, z: v.pos.z }; return JSON.stringify({ at: [v.pos.x.toFixed(0), v.pos.z.toFixed(0)], s: car.pilot.s.toFixed(1) }); })()"
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "shot": "j02_headon"
+  },
+  {
+   "wait": 7500
+  },
+  {
+   "shot": "j03_round"
+  },
+  {
+   "eval": "(() => { const car = window.__tc, C = G.scenes.ctx.flags.chase; return JSON.stringify({ alive: C.traffic.cars.includes(car), s0: +window.__tc0.s.toFixed(1), s: +car.pilot.s.toFixed(1), d: +Math.hypot(car.v.pos.x - C.my.pos.x, car.v.pos.z - C.my.pos.z).toFixed(1), myDmg: +C.my.damage.toFixed(2) }); })()"
+  },
+  {
+   "expect": "!G.scenes.ctx.flags.chase.traffic.cars.includes(window.__tc) || window.__tc.pilot.s > window.__tc0.s + 8",
+   "label": "within 9 s it has gone on past me (or out of the street)"
+  },
+  {
+   "name": "a lamp post at 50 km/h (the critic: still lit 1.5 s after the blow, its head riding before my bonnet)"
+  },
+  {
+   "eval": "(() => { const C = G.scenes.ctx.flags.chase, l = G.stage.part('lamps').near(-168.8, -34.7, 3); window.__lp = l; C.my.damage = 0; C.my.place(new N.THREE.Vector3(l.post.x, 0, l.post.z - 16), -Math.PI / 2, 50 / 3.6); return [l.post.x, l.post.z, l.on].join(' '); })()"
+  },
+  {
+   "down": "KeyW"
+  },
+  {
+   "until": "window.__lp.bent",
+   "timeout": 5000
+  },
+  {
+   "eval": "(window.__lpT = N.time, 'bent at ' + N.time.toFixed(2))"
+  },
+  {
+   "up": "KeyW"
+  },
+  {
+   "until": "!window.__lp.on",
+   "timeout": 3000
+  },
+  {
+   "eval": "'out ' + (N.time - window.__lpT).toFixed(2) + ' s after the blow'"
+  },
+  {
+   "expect": "N.time - window.__lpT < 0.6",
+   "label": "a bent post goes out within about half a second"
+  },
+  {
+   "wait": 600
+  },
+  {
+   "shot": "j04_post_out"
+  }
+ ]
+}

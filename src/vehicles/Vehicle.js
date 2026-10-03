@@ -490,7 +490,8 @@ export class Headlamps {
     const m = car.body.matrixWorld;
     // (the pool lies flat on the road, turned with the car)
     const T = car.track;
-    this.pool.position.set(car.pos.x, (T ? T.ground(car.d) : 0) + 0.025, car.pos.z);
+    // [C3] (on the city's plane the car knows the ground under it)
+    this.pool.position.set(car.pos.x, (T ? (T.plane ? (car.groundY ?? 0) : T.ground(car.d)) : 0) + 0.025, car.pos.z);
     this.pool.rotation.set(0, car.yaw, 0);
     // [R2] the cars ahead in the beams: into this car's frame (x ahead, z
     // across), nearest first

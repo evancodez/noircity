@@ -43,9 +43,9 @@ export const ORDER = [
   { id: 'watcher', numeral: 'V', title: 'The Watcher', music: null,
     beatMusic: { escape: { slot: 'chase', fade: 0.4 }, run: { slot: 'chase', fade: 0.4 }, car: { slot: 'chase', fade: 0.4 } }, carry: ARMED, flags: NOTE,
     objectives: { seen: 'Check the street.', escape: 'After him. Down the fire escape.', run: 'Don’t lose him.', car: 'Get to your car.' } },
-  { id: 'tail', numeral: 'VI', title: 'The Tail', music: { slot: 'tail', fade: 2.5 }, carry: ARMED, flags: NOTE,
-    objectives: { start: 'Stay on his tail lamps.', chase: 'Stay on his tail lamps.', close: 'Put him off the road.', shot: 'Put him off the road.',
-      crash: 'Get out. Take him.', interrogate: 'Make him talk.' } },
+  // [C3] VI: the scene file declares its own lines (07_tail.js: the city's
+  // chase rebuilt; the wave B beats' stand-ins went with it)
+  { id: 'tail', numeral: 'VI', title: 'The Tail', music: { slot: 'tail', fade: 2.5 }, carry: ARMED, flags: NOTE },
   { id: 'warehouse', numeral: 'VII', title: 'Pier Nine', music: { slot: 'warehouse', fade: 1.5 },
     beatMusic: { fight: { slot: 'fight', fade: 2.5 }, ko: { slot: 'fight', fade: 2.5 }, after: { stop: 3 } }, carry: ARMED, flags: NOTE,
     objectives: { arrive: 'Get inside. Quietly.', ...each(['floor', 'lamps', 'aisle', 'stairs'], 'Reach the lit office. Quietly.'),
