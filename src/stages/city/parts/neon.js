@@ -7,9 +7,9 @@ import { BLOCKS, PAVE } from '../plan.js';
 
 // [C3c] The city's neon (the user, after playing the tail: "add some neon
 // signs, not an overload, but in general to the city, to add some colour").
-// Twenty-five signs ([C3c, after the critic] eighteen, then seven more where a
-// timed drive had none) where a sign would be and where the drive passes: a lit
-// tube on a black enamel board (the tube's rim its colour, its centre line
+// Twenty-six signs ([C3c, after the critic] eighteen, then eight more where
+// a timed drive had none) where a sign would be and where the drive passes:
+// a lit tube on a black enamel board (the tube's rim its colour, its centre line
 // white-hot, as the DINER's), the bloom's glow round it, a grey wash of its
 // light on the wall and the wet pavement under it, and its streak in the
 // road (the pipeline's mirror takes any bright emitter in the world layer:
@@ -70,16 +70,19 @@ const SIGNS = [
   // [C3c, after the critic] where a timed drive went without colour (frames
   // every 10 s of the good hands, seed 33: t10, t20, t30, t50; the river road
   // after OYSTERS): the T where Pell Lane meets Harbor St (straight ahead as
-  // I pull off the kerb), Cooper St north before the square (the left
-  // kerb, high), the square's far corner across the avenue (seen all the way
-  // over the square), Baxter St south (the right kerb, past the clock's
-  // street), and the river road: a lodging house's tall sign high over the
+  // I pull off the kerb), Cooper St north past the square (far ahead and
+  // high: the near left kerb is behind the pillar), the square's far corner
+  // across the avenue (seen all the way over the square), Baxter St south
+  // (the right kerb, past the clock's street), Canal St's end at the river (a
+  // seamen's mission, as I turn onto the river road), and the river road: a
+  // lodging house's tall sign high over the
   // wharf (in view from the canal's corner all the way down), a pool hall,
   // and a seamen's hotel at the far end by the docks
-  { x: -209, z: -38, n: [0, 1], kind: 'flat', text: 'BILLIARDS', col: 'green', y: 4.8, w: 6.2, h: 1.25 },
-  { x: -183.5, z: -121, n: [1, 0], kind: 'blade', text: 'CIGARS', vert: true, col: 'blue', y: 5.4 },
+  { x: -209, z: -38, n: [0, 1], kind: 'flat', text: 'BILLIARDS', col: 'green', y: 5.4, w: 3.8, h: 0.85 },
+  { x: -183.5, z: -192, n: [1, 0], kind: 'blade', text: 'CIGARS', vert: true, col: 'blue', y: 6.4, big: true },
   { x: -87, z: -199, n: [-1, 0], kind: 'flat', text: 'RADIO', col: 'blue', y: 4.6, w: 4.6, h: 1.3 },
   { x: -33.5, z: -124, n: [1, 0], kind: 'blade', text: 'GRILL', vert: true, col: 'green', y: 4.7 },
+  { x: 86, z: -241.5, n: [0, -1], kind: 'blade', text: 'MISSION', vert: true, col: 'blue', y: 5.4 },
   { x: 95, z: -138, n: [1, 0], kind: 'blade', text: 'LODGING', vert: true, col: 'amber', y: 7.2, big: true },
   { x: 95, z: 14, n: [1, 0], kind: 'blade', text: 'POOL', vert: true, col: 'green', y: 4.6 },
   { x: 95, z: 110, n: [1, 0], kind: 'blade', text: 'HOTEL', vert: true, col: 'blue', y: 6.4, big: true },
@@ -95,19 +98,20 @@ const GAIN = 3.2;          // the faces' level (the canvas' tube x this)
 const SHOW = 260;          // beyond this the signs go (their blocks go at 330)
 const PX = 112;            // atlas pixels a metre
 const ATLAS = 2048;
+const ATLAS_H = 2560;      // ([C3c, after the critic] taller: the eight signs added)
 
 // ---- the atlas -------------------------------------------------------------------------------------
 function atlas() {
-  const c = document.createElement('canvas'); c.width = ATLAS; c.height = ATLAS;
+  const c = document.createElement('canvas'); c.width = ATLAS; c.height = ATLAS_H;
   const g = c.getContext('2d');
-  g.fillStyle = '#000'; g.fillRect(0, 0, ATLAS, ATLAS);
+  g.fillStyle = '#000'; g.fillRect(0, 0, ATLAS, ATLAS_H);
   let x = 4, y = 4, row = 0;
   const cells = [];
   const alloc = (wPx, hPx) => {
     if (x + wPx + 4 > ATLAS) { x = 4; y += row + 8; row = 0; }
     const cell = { x, y, w: wPx, h: hPx };
     x += wPx + 8; row = Math.max(row, hPx);
-    if (y + hPx > ATLAS) throw new Error('neon atlas full');
+    if (y + hPx > ATLAS_H) throw new Error('neon atlas full');
     cells.push(cell);
     return cell;
   };
@@ -180,7 +184,7 @@ function drawFace(A, s, wM, hM, { flipArrow = false } = {}) {
   g.strokeStyle = C.core; g.lineWidth = Math.max(1, tube * 0.32);
   for (const p of paths) p();
   g.restore();
-  return { u0: cell.x / ATLAS, v0: 1 - (cell.y + cell.h) / ATLAS, u1: (cell.x + cell.w) / ATLAS, v1: 1 - cell.y / ATLAS };
+  return { u0: cell.x / ATLAS, v0: 1 - (cell.y + cell.h) / ATLAS_H, u1: (cell.x + cell.w) / ATLAS, v1: 1 - cell.y / ATLAS_H };
 }
 
 // a quad (w x h) facing (fx, fz) at p, its texture the cell's

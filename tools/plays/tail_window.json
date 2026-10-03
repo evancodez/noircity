@@ -56,8 +56,8 @@
    "label": "he said it as I stood at his window (within 1.5 m), on foot"
   },
   {
-   "expect": "!G.stage.cast.get('tailman') && !G.stage.cast.list.some((c) => c.kind === 'watcher')",
-   "label": "nobody got out: no figure spawned at the wreck"
+   "expect": "(() => { const C = G.scenes.ctx.flags.chase; const L = G.stage.cast.list.filter((c) => c.name === 'tailman' || c.kind === 'watcher'); return L.length === 1 && L.every((c) => { const l = C.his.local(c.fig.pos, C.his.pos.clone()); return Math.abs(l.x) < C.his.spec.halfL && Math.abs(l.z) < 0.62; }); })()",
+   "label": "nobody got out of his car (the one man is in his seat, inside the cabin)"
   },
   {
    "expect": "window.__cw.n > 20 && window.__cw.inside.length === 0",

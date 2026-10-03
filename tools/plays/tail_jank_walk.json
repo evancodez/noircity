@@ -1,5 +1,5 @@
 {
- "about": "C3b/C3c the jank walk on foot by his wreck, by real input: out of the car (E), then walk into his car's middle, into his window (he stays in his seat: C3c), into my own car's middle, out to the river's rail and along the road; every 100 ms the eye is checked against the two cars' boxes and the man (nothing passes through anything). Then back in by E at the door. NOIR_PORT=5343 node tools/play.mjs tools/plays/tail_jank_walk.json",
+ "about": "C3b/C3c the jank walk on foot by his wreck, by real input: out of the car (E), then walk into his car's middle, into his window (he stays in his seat: C3c), into my own car's middle, out to the river's rail and along the road; [C3c, after the critic] then straight into the river's rail (24 m out) and into the west facades (40 m): the rail and the warehouses' fronts stop me, never over the water or inside a building; every 100 ms the eye is checked against the two cars' boxes and the man (nothing passes through anything). Then back in by E at the door. NOIR_PORT=5343 node tools/play.mjs tools/plays/tail_jank_walk.json",
  "url": "/?mute=1&start=tail.wreck",
  "size": [
   1280,
@@ -126,6 +126,42 @@
    "up": "KeyW"
   },
   {
+   "name": "[C3c, after the critic] into the river's rail: across the quay, 24 m out"
+  },
+  {
+   "walk": "(async () => { const P = await import('/src/stages/city/plan.js'); const e = G.controller.pos; const s = P.riverSAtZ(e.z); const out = []; for (const k of [0.25, 0.5, 0.75, 1]) { const p = P.riverPoint(s, -24 * k); out.push([p.x, p.z]); } return out; })()",
+   "into": true,
+   "timeout": 20000
+  },
+  {
+   "eval": "(async () => { const P = await import('/src/stages/city/plan.js'); const e = G.controller.pos; const s = P.riverSAtZ(e.z); const F = P.riverFrame(s, {}); const d = (e.x - F.x) * F.rx + (e.z - F.z) * F.rz; const T = G.stage.track; const inWall = T.boxes.filter((b) => b.tag === 'wall' || b.tag === 'fence').some((b) => { const lx = (e.x - b.cx) * b.c - (e.z - b.cz) * b.s, lz = (e.x - b.cx) * b.s + (e.z - b.cz) * b.c; return Math.abs(lx) < b.hx && Math.abs(lz) < b.hz; }); window.__jd = { d: +d.toFixed(2), inWall, eye: [+e.x.toFixed(2), +e.z.toFixed(2)] }; return JSON.stringify(window.__jd); })()"
+  },
+  {
+   "expect": "window.__jd.d > -9.6 && !window.__jd.inWall",
+   "label": "the rail stops me (d > -9.6: the rail's line), never over the water"
+  },
+  {
+   "shot": "j05_at_the_rail"
+  },
+  {
+   "name": "[C3c, after the critic] into the west facades: across the road and the wharf, 40 m"
+  },
+  {
+   "walk": "(async () => { const P = await import('/src/stages/city/plan.js'); const e = G.controller.pos; const s = P.riverSAtZ(e.z); const out = []; for (const k of [0.25, 0.5, 0.75, 1]) { const p = P.riverPoint(s, 40 * k); out.push([p.x, p.z]); } return out; })()",
+   "into": true,
+   "timeout": 25000
+  },
+  {
+   "eval": "(async () => { const P = await import('/src/stages/city/plan.js'); const e = G.controller.pos; const s = P.riverSAtZ(e.z); const F = P.riverFrame(s, {}); const d = (e.x - F.x) * F.rx + (e.z - F.z) * F.rz; const T = G.stage.track; const inWall = T.boxes.filter((b) => b.tag === 'wall' || b.tag === 'fence').some((b) => { const lx = (e.x - b.cx) * b.c - (e.z - b.cz) * b.s, lz = (e.x - b.cx) * b.s + (e.z - b.cz) * b.c; return Math.abs(lx) < b.hx && Math.abs(lz) < b.hz; }); window.__jd = { d: +d.toFixed(2), inWall, eye: [+e.x.toFixed(2), +e.z.toFixed(2)] }; return JSON.stringify(window.__jd); })()"
+  },
+  {
+   "expect": "!window.__jd.inWall",
+   "label": "a facade stops me (or I am in a street's mouth), never inside a building"
+  },
+  {
+   "shot": "j06_at_the_facade"
+  },
+  {
    "eval": "JSON.stringify({ jw: window.__jw, eye: [G.controller.pos.x, G.controller.pos.z], lineSaid: G.scenes.ctx.flags.chase.lineSaid })"
   },
   {
@@ -133,8 +169,8 @@
    "label": "never inside either car"
   },
   {
-   "expect": "!G.stage.cast.get('tailman') && !G.stage.cast.list.some((c) => c.kind === 'watcher')",
-   "label": "nobody got out of his car"
+   "expect": "(() => { const C = G.scenes.ctx.flags.chase; const L = G.stage.cast.list.filter((c) => c.name === 'tailman' || c.kind === 'watcher'); return L.length === 1 && L.every((c) => { const l = C.his.local(c.fig.pos, C.his.pos.clone()); return Math.abs(l.x) < C.his.spec.halfL && Math.abs(l.z) < 0.62; }); })()",
+   "label": "nobody got out of his car (the one man is in his seat, inside the cabin)"
   },
   {
    "expect": "G.scenes.ctx.flags.chase.lineSaid",
