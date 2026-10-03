@@ -275,7 +275,7 @@ export default {
       const lamp = L.addCustom({ head: lens.clone(), axis: beam.clone(), height: 3.6, half: 0.62, real: true, bulb: glowDisc, fadeEnd: 0.85, edgeSoft: 0.5, strength: 0.85, tag: 'hang' });
       if (lamp.light) { lamp.light.intensity = 70; lamp.light.angle = 0.68; lamp.light.penumbra = 0.5; lamp.light.distance = 6; }
       lamp.entry.range = 3.8;
-      Object.assign(lamp, { name: 'lantern', row: 'L', prop: o, at: V(LT.x, LT.y, LT.z) });
+      Object.assign(lamp, { name: 'lantern', row: 'L', prop: o, at: V(LT.x - 0.05, LT.y - 0.3, LT.z) });
       lamp.base = { cone: lamp.coneBase, light: lamp.light ? lamp.light.intensity : 0 };
       L.byName.set('lantern', lamp);
       L.rows.set('L', [lamp]);

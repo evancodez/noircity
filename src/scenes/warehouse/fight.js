@@ -81,7 +81,10 @@ export const FM_THINGS = {
 };
 // ([R2-E round 2] 136 -> 146: ten seeds of the human-paced autoplay won in 41
 // to 71 s, four of them under the brief's 50)
-export const FOREMAN = { name: 'THE FOREMAN', hp: 146 };
+// ([C7] after the critic: 146 -> 260. The second fist fight of the game is
+// asked to be harder than Mack's (116) and two to three minutes: at 146 the
+// play tool's first-timer hands won in 85 s; measured again in C7.md)
+export const FOREMAN = { name: 'THE FOREMAN', hp: 260 };
 
 // where the fight finds us (a retry, a jump): him toward the doors, me off
 // the stairs' foot

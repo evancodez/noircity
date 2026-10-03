@@ -480,7 +480,7 @@ function live(ctx) {
   // the nearest dock hand comes to light it again, his back to aisle B
   const LT = stage.lamps.lantern;
   if (LT) {
-    I.add({ id: 'c7lantern', at: () => LT.at, range: 1.8, cone: 1.1, prompt: 'put out the lantern',
+    I.add({ id: 'c7lantern', at: () => LT.at, range: 2.3, cone: 1.1, prompt: 'put out the lantern',
       when: () => sneaking() && LT.on && !LT.dying && !L.relighter && !L.relightDue && !busy() && !stealth.aiming && !L.stealth.loud,
       onUse: () => approach(LT.at, 0.6, () => {
         aimPath(cordPath(LT.at.clone().add(V(-0.05, 0.12, 0))));
