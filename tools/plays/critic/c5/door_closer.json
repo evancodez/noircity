@@ -1,0 +1,91 @@
+{
+ "about": "Critic C5: III, does the suite door close behind me (ask 1).",
+ "url": "/?mute=1&start=office",
+ "size": [
+  1440,
+  900
+ ],
+ "out": "shots/critic/c5/door_closer",
+ "steps": [
+  {
+   "name": "the title, BEGIN at III"
+  },
+  {
+   "until": "G.state === 'title' && !!document.querySelector('#title .opt[data-k=begin]')",
+   "timeout": 60000
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]",
+   "taken": "G.scenes.current && G.scenes.current.id === 'office'",
+   "retries": 4
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'office' && document.pointerLockElement === N.renderer.domElement && G.scenes.fadeK < 0.2",
+   "timeout": 30000
+  },
+  {
+   "expect": "G.scenes.beat === 'corridor' && G.hud.objectiveText === 'Room 304. Ames.'",
+   "label": "the corridor, its line"
+  },
+  {
+   "walk": [
+    [
+     -4.6,
+     3.0
+    ],
+    [
+     -4.6,
+     3.7
+    ]
+   ],
+   "timeout": 20000
+  },
+  {
+   "look": [
+    -700,
+    0
+   ],
+   "steps": 8
+  },
+  {
+   "key": "KeyE"
+  },
+  {
+   "wait": 800
+  },
+  {
+   "walk": [
+    [
+     -2.6,
+     3.7
+    ]
+   ],
+   "timeout": 8000
+  },
+  {
+   "eval": "JSON.stringify({open:N.game.stage.part('office').door.open01, closer:N.game.stage.part('office').door.closer})"
+  },
+  {
+   "wait": 3000
+  },
+  {
+   "eval": "JSON.stringify({open:N.game.stage.part('office').door.open01, t:N.game.time})"
+  },
+  {
+   "look": [
+    700,
+    0
+   ],
+   "steps": 8
+  },
+  {
+   "wait": 500
+  },
+  {
+   "shot": "door_behind"
+  }
+ ]
+}

@@ -903,8 +903,27 @@ export default {
           if (S.repathT <= 0 || !B.path) {
             S.repathT = 0.7;
             const e = G.eye, dx = h.pos.x - e.x, dz = h.pos.z - e.z, L = Math.hypot(dx, dz) || 1;
-            const k = Math.min(1, 1.6 / L);
-            moveTo(e.x + dx * k, e.z + dz * k, false);
+            // [C5] (no line on me - a jamb between us, I am down in a doorway: in round it at me - the
+            // grid's way to my own place - not to the cell nearest a point 1.6 m off on his own side of
+            // the wall, where he stood and waited for good)
+            const k = S.line ? Math.min(1, 1.6 / L) : 0;
+            // [C5] (and long without a line - a desk or a jamb between us at arm's length, where
+            // he stood: round it to a place near me that sees me, as the seek does)
+            S.rushLost = S.line ? 0 : (S.rushLost || 0) + 0.7;
+            let to = null;
+            if (S.rushLost > 2.5) {
+              const a0 = Math.atan2(h.pos.x - e.x, h.pos.z - e.z), head = Kt.playerBody().head;
+              for (const R of [1.6, 2.4, 3.2]) {
+                for (let j = 0; j < 9 && !to; j++) {
+                  const a = a0 + (j % 2 ? 1 : -1) * Math.ceil(j / 2) * 0.6;
+                  const x = e.x + Math.sin(a) * R, z = e.z + Math.cos(a) * R;
+                  if (!G.nav.free(x, z) || !Kt.see(V(x, G.stage.surfaceY(x, z) + 1.45, z), head, 0.25)) continue;
+                  if (G.nav.findPath(h.pos.x, h.pos.z, x, z, 12000)) to = { x, z };
+                }
+                if (to) break;
+              }
+            }
+            if (to) moveTo(to.x, to.z, false); else moveTo(e.x + dx * k, e.z + dz * k, false);
           }
           follow(dt);
           h.speed = K.walk;
@@ -925,7 +944,7 @@ export default {
       if (S.repathT <= 0 || !B.path) {
         S.repathT = 0.7;
         const e = G.eye, dx = h.pos.x - e.x, dz = h.pos.z - e.z, L = Math.hypot(dx, dz) || 1;
-        const k = Math.min(1, 1.6 / L);
+        const k = S.line ? Math.min(1, 1.6 / L) : 0;   // [C5] (as in 'rush': round a jamb, not stopped at it)
         moveTo(e.x + dx * k, e.z + dz * k, false);
       }
       follow(dt);
