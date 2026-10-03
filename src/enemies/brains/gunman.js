@@ -38,13 +38,13 @@ export const GUNMAN = {
   raise: 0.26,                 // s: the tell - the arm comes up, the glint, the click
   settle: [0.4, 0.9],          // s: his aim settling, at 3 m .. at 18 m
   settleMoving: 1.4,           // x while I move across his line
-  settleStill: 0.6,            // x while he sees me whole, standing (the whole height of me), and I am still: an easy mark
+  settleStill: 0.6,            // x while I stand still on my feet in his line (the height of me: a big mark, written in GUNS.md)
   breath: [1.0, 1.4],          // s: after a burst with no cover to go back to, the gun down a breath before it comes up again (the brief's out, two or three, back)
-  lookOut: [0.8, 1.3],         // s: behind his cover, how soon he looks out again at a man he last saw whole (2.5 - 4 for a head over cover)
+  lookOut: [0.8, 1.3],         // s: behind his cover, how soon he looks out again at a man he last saw in the open (2.5 - 4 for a man in cover)
   snapShots: [1, 2],           // rounds: shots on his way (in at a door, to a jamb) - one or two, then on
   holdUp: 0.4,                 // s: after them, his aim held on a man in the open - shot back at, it is a duel (no breath); else the breath
   settleRattled: 1.5,          // x for 1.5 s after a round came near him or hit him
-  notice: 0.25,                // s: I come into his line: he sees me, then settles (x0.3 for a man standing whole in his line: the whole height of him)
+  notice: 0.25,                // s: I come into his line: he sees me, then settles (x0.3 for a man on his feet in his line: the height of him)
   behind: 0.45,                // s more, when he has me from outside my view (behind, the far side): in time to turn
   lagT: 0.2,                   // s: his aim trails a moving target by this much
   sigma: 0.0055,               // rad: a settled round's throw (a still man in the open is hit)
@@ -56,7 +56,7 @@ export const GUNMAN = {
   rake: 12,                    // s: the Tommy gunner rakes where he last saw me (or the flash of my gun) this long after; he pins, he never comes looking (one who went round, or came in to find me, was one burst and down)
   flash: 2.5,                  // s: a round into him from where he could not see me tells him where I am (a Tommy gunner rakes it, aimed)
   walk: 1.5, run: 3.0,
-  pistol: { hp: 100, dmg: 17, mag: 7, burst: [2, 3], gap: [0.4, 0.52], gapStill: [0.3, 0.36], reload: 1.7 },   // (gapStill: between rounds at a man he sees whole and still)
+  pistol: { hp: 100, dmg: 17, mag: 7, burst: [2, 3], gap: [0.4, 0.52], gapStill: [0.3, 0.36], reload: 1.7 },   // (gapStill: between rounds at a man standing still in the open)
   tommy: { hp: 120, dmg: 8, burst: [10, 14], rate: 10.5, climb: 0.007, sigma0: 0.02, drum: 2.6 },   // ([C2] after the critic's second look: climb 0.005 -> 0.007 - standing still in his burst I was down 1.5 s after its first round)
   rusher: { hp: 250, dmg: 10, burst: [4, 6], rate: 9, every: 1.5, close: 2.4, hitStop: 0.45, walk: 1.3 },
 };
