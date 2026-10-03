@@ -7,7 +7,8 @@ import { BLOCKS, PAVE } from '../plan.js';
 
 // [C3c] The city's neon (the user, after playing the tail: "add some neon
 // signs, not an overload, but in general to the city, to add some colour").
-// Eighteen signs where a sign would be and where the drive passes: a lit
+// Twenty-five signs ([C3c, after the critic] eighteen, then seven more where a
+// timed drive had none) where a sign would be and where the drive passes: a lit
 // tube on a black enamel board (the tube's rim its colour, its centre line
 // white-hot, as the DINER's), the bloom's glow round it, a grey wash of its
 // light on the wall and the wet pavement under it, and its streak in the
@@ -66,6 +67,22 @@ const SIGNS = [
   { x: 95, z: -204, n: [1, 0], kind: 'blade', text: 'OYSTERS', vert: true, col: 'green', y: 5.0 },
   { x: 95, z: -72, n: [1, 0], kind: 'blade', text: 'BAR', vert: true, col: 'blue', y: 4.4 },
   { x: 95, z: 86, n: [1, 0], kind: 'flat', text: 'COLD STORE', col: 'amber', y: 6.6, w: 9.5, h: 1.3 },
+  // [C3c, after the critic] where a timed drive went without colour (frames
+  // every 10 s of the good hands, seed 33: t10, t20, t30, t50; the river road
+  // after OYSTERS): the T where Pell Lane meets Harbor St (straight ahead as
+  // I pull off the kerb), Cooper St north before the square (the left
+  // kerb, high), the square's far corner across the avenue (seen all the way
+  // over the square), Baxter St south (the right kerb, past the clock's
+  // street), and the river road: a lodging house's tall sign high over the
+  // wharf (in view from the canal's corner all the way down), a pool hall,
+  // and a seamen's hotel at the far end by the docks
+  { x: -209, z: -38, n: [0, 1], kind: 'flat', text: 'BILLIARDS', col: 'green', y: 4.8, w: 6.2, h: 1.25 },
+  { x: -183.5, z: -121, n: [1, 0], kind: 'blade', text: 'CIGARS', vert: true, col: 'blue', y: 5.4 },
+  { x: -87, z: -199, n: [-1, 0], kind: 'flat', text: 'RADIO', col: 'blue', y: 4.6, w: 4.6, h: 1.3 },
+  { x: -33.5, z: -124, n: [1, 0], kind: 'blade', text: 'GRILL', vert: true, col: 'green', y: 4.7 },
+  { x: 95, z: -138, n: [1, 0], kind: 'blade', text: 'LODGING', vert: true, col: 'amber', y: 7.2, big: true },
+  { x: 95, z: 14, n: [1, 0], kind: 'blade', text: 'POOL', vert: true, col: 'green', y: 4.6 },
+  { x: 95, z: 110, n: [1, 0], kind: 'blade', text: 'HOTEL', vert: true, col: 'blue', y: 6.4, big: true },
 ];
 
 // the colours, as the canvas draws them (sRGB) and as the halo is lit (linear)
@@ -251,12 +268,16 @@ export default {
         B.boards.push(box(s.x + nx * reach / 2, cy + hM / 2 + 0.08, s.z + nz * reach / 2, reach, 0.05, 0.05, yawN));
         B.boards.push(box(s.x + nx * 0.18, cy, s.z + nz * 0.18, 0.36, Math.min(hM, 1.4), 0.08, yawN));
         // a face each side; the arrow (to the wall) drawn for each side
+        // ([C3c, after the critic] the two faces share one cell unless the
+        // arrow must point each way: the atlas holds the added signs)
+        let uv0 = null;
         for (const sd of [1, -1]) {
           const fx = tx * sd, fz = tz * sd;
           // (the viewer's right on this face is (fz, -fx): the wall is to his
           // right when (fz, -fx) . n < 0)
           const wallRight = fz * nx - fx * nz < 0;
-          const uv = drawFace(A, s, bw - 0.06, hM - 0.06, { flipArrow: !wallRight });
+          const uv = s.sym === 'arrow' || !uv0 ? drawFace(A, s, bw - 0.06, hM - 0.06, { flipArrow: !wallRight }) : uv0;
+          uv0 = uv;
           into.faces.push(faceGeo(bw - 0.06, hM - 0.06, fx, fz, cx + fx * (th / 2 + 0.004), cy, cz + fz * (th / 2 + 0.004), uv));
         }
         hw = bw; hh = hM;

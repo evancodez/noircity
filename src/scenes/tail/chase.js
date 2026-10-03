@@ -35,6 +35,8 @@ const _v = new THREE.Vector3(), _w = new THREE.Vector3();
 // [C3c] his line at the wreck: within WIN_NEAR m of his door or window and
 // looking at it; or passing within WIN_PASS m of his car on the way off
 const WIN_NEAR = 1.5, WIN_PASS = 4;
+// [C3c, after the critic] E at his car: within TALK_NEAR m of its box, looking at it
+const TALK_NEAR = 2.5;
 // (the cat's wall: Pell Lane's brick wall north of the board fence, its cap)
 const PELL_CAT = { x: -203.06, z: 8, y: 3.62 };
 
@@ -81,8 +83,9 @@ export class Chase {
     if (this.glassLitter) { this.glassLitter.removeFromParent(); this.glassLitter.geometry.dispose(); this.glassLitter = null; }
     // [C3b] the walking net and the man
     this.walkNet(false);
+    if (this.man) { try { this.stage.cast.remove(this.man); } catch (e) { /* the cast cleared already */ } this.man = null; }
     this.atWheel = null; this.windows = null;
-    this.game.hud.clearPrompt('tailin'); this.game.hud.clearPrompt('tailwreck');
+    this.game.hud.clearPrompt('tailin'); this.game.hud.clearPrompt('tailwreck'); this.game.hud.clearPrompt('tailtalk');
     this.kit.warn(null);
   }
 
@@ -809,6 +812,13 @@ export class Chase {
     if (!f || !f.parent) return;
     // (the figure in the seat is inside the solid cabin: it goes)
     f.visible = false;
+    // ([C3c, after the critic] a man of the cast, not a drawn mask: the
+    // watcher's own figure, slumped on the bench against that door, his head
+    // through the window's frame and his arm over the sill (tail_slumped),
+    // printed by the ink as every figure is; his bowler is on the road
+    // (hatOff). His head comes up and turns to me with the figure's look-at.
+    // The drawn head below stays only as the fallback.)
+    try { if (this.slumpedMan(w0, s)) { this.wheelStep(0); return; } } catch (e) { this._manErr = String(e); }
     // his face and his hand, grey where the street's light catches them; his
     // coat's arm black; the face inked: hair, the eyes' shadows, the mouth
     // (a pale ball with a nose read as an eye looking back)
@@ -841,14 +851,57 @@ export class Chase {
     Object.assign(this.atWheel, { g, head, s });
     this.wheelStep(0);
   }
+  // [C3c, after the critic] the figure at his wheel: the watcher's kind (or
+  // the stand-in), placed in the sedan's frame so that his window is half a
+  // metre to the side he leans to: his own seat when it is his door, thrown
+  // across the bench to the far one
+  slumpedMan(w0, s) {
+    const his = this.his, cast = this.stage.cast;
+    if (!cast || !cast.spawn) return false;
+    const kind = cast.has && cast.has('watcher') ? 'watcher' : 'couple_him';
+    const hw = his.spec.halfW;
+    // (the glass's plane is 0.62 m out, the door's skin 0.70, inside the
+    // body.s 0.95 (Cars.js): his root 0.33 m to that side, his head out over
+    // the sill into the street's light, his body inside the door)
+    void hw;
+    const R = his.seat(_v.set(-0.22, 0, s * 0.33), new THREE.Vector3());
+    const F = his.seat(_v.set(0.78, 0, s * 0.33), new THREE.Vector3()).sub(R);
+    const yaw = Math.atan2(F.x, F.z);
+    // (the root's +x, the figure's left, in the world: which way is his window)
+    const W = his.seat(_v.set(w0.q[0], 0, w0.q[1]), new THREE.Vector3()).sub(R);
+    const side = W.x * Math.cos(yaw) - W.z * Math.sin(yaw) > 0 ? 'L' : 'R';
+    const c = cast.spawn(kind, { at: { x: R.x, z: R.z }, yaw, name: 'tailman' });
+    c.noGlance = true;
+    try { c.setState('tail_slumped' + side, 0); } catch (e) { cast.remove(c); throw e; }
+    if (c.fig && c.fig.bones && c.fig.bones.hat) c.fig.bones.hat.scale.setScalar(1e-4);
+    this.man = c;
+    Object.assign(this.atWheel, { c, s, side, R });
+    return true;
+  }
   // his head: resting on the window's frame, slumped (half out of it); up off
   // it and turned to me as I come near (within 6 m on foot), and up for the
   // line
   wheelStep(dt) {
     const A = this.atWheel, e = this.game.camera.position;
-    if (!A || !A.head) return;
+    if (!A || (!A.head && !A.c)) return;
     const near = this.phase === 'out' ? Math.hypot(e.x - this.his.pos.x, e.z - this.his.pos.z) : 99;
     const want = this.lineSaid ? 1 : near < 6 ? 0.7 : 0;
+    // ([C3c, after the critic] as his head comes up: a groan from his window,
+    // so a player not looking at it knows he is alive and there)
+    if (near < 6 && !A.groaned) { A.groaned = true; this.game.sfx.play('grunt', this.his.seat(_v.set(0.15, 1.25, A.s * 0.7), new THREE.Vector3()), { f0: 72, k: 0.5, dur: 0.55 }, { ref: 4 }); }
+    if (A.c) {
+      // (the figure: his head up and to my eye as I come near, and kept on me
+      // once he has said it; slumped on the frame otherwise)
+      A.k += (want - A.k) * (1 - Math.exp(-dt * 2.2));
+      const look = this.phase === 'out' && (near < 6 || this.lineSaid);
+      if (look !== !!A.looking) {
+        A.looking = look;
+        try { A.c.setState((look ? 'tail_slumpedUp' : 'tail_slumped') + A.side, 0.6); } catch (err) { this._manErr = String(err); }
+        A.c.lookAt(look ? (A.eye || (A.eye = new THREE.Vector3())).copy(e) : null);
+      }
+      if (look) { A.eye.copy(e); if (A.c.fig && A.c.fig.lookTarget) A.c.fig.lookTarget.copy(e); }
+      return;
+    }
     A.k += (want - A.k) * (1 - Math.exp(-dt * 2.2));
     const s = A.s, k = A.k;
     // (slumped: low on the frame, tipped against it, face down; up: upright,
@@ -873,8 +926,21 @@ export class Chase {
     const S = this.stage, C = S.colliders;
     if (on && !this._net) {
       this._net = { bounds: { ...C.bounds }, boxes: [], circles: [] };
-      const B = S.part && S.part('bounds');
-      if (B && B.walkAround) B.walkAround(this.my.pos.x, this.my.pos.z, 60);
+      // ([C3c, after the critic] the city is closed for a man on foot by what
+      // closes it for the cars - the facades, the river's rail, the canal's,
+      // the yard's fence, the depot's sheds, the pier's yard - so the net is
+      // the whole city and every one of them is solid: no invisible square
+      // round my car. A walk off up the road ends at a wall, never at
+      // nothing. The cars' statics are the same box objects (same frame:
+      // cx, cz, hx, hz, c, s); the posts and columns as circles; what a car
+      // burst (gone) is not; the parked cars as their boxes)
+      C.setBounds(-300, 260, -320, 220);
+      const T = S.track;
+      if (T && T.boxes) {
+        for (const k of T.boxes) if (!k.gone) { C.boxes.push(k); this._net.boxes.push(k); }
+        for (const k of T.circles) if (!k.gone) { C.circles.push(k); this._net.circles.push(k); }
+        for (const v of T.parked || []) if (v && v.box) { const b = v.box(); const o = { cx: b.cx, cz: b.cz, hx: b.hx + 0.05, hz: b.hz + 0.05, c: b.c, s: b.s, angle: 0, tag: 'parked' }; C.boxes.push(o); this._net.boxes.push(o); }
+      }
       for (const v of [this.my, this.his]) { const b = v.box(); const o = { cx: b.cx, cz: b.cz, hx: b.hx + 0.05, hz: b.hz + 0.05, c: b.c, s: b.s, angle: 0, tag: 'tailcar' }; C.boxes.push(o); this._net.boxes.push(o); }
     } else if (!on && this._net) {
       const N = this._net;
@@ -987,12 +1053,43 @@ export class Chase {
       this._dbMin = Math.min(this._dbMin ?? 99, db);
       if (!this.lineSaid && this.outT > 1.5 && db < WIN_PASS && db > this._dbMin + 0.8) this.sayLine();
       this.dbNow = db;
+      // ([C3c, after the critic] E at his car: within TALK_NEAR of it and
+      // looking at it - its boot, its side, its nose - "E  talk", and E has
+      // him say it: E is "use what I am looking at" everywhere; a first-timer
+      // walks to his boot, not round to the window)
+      let talk = false;
+      if (!this.lineSaid && db < TALK_NEAR) {
+        const toX = his.pos.x - e.x, toZ = his.pos.z - e.z, tl = Math.max(0.05, Math.hypot(toX, toZ));
+        talk = (toX * fx + toZ * fz) / tl > 0.55 || this.lookingAtCar(his, e, fx, fz);
+      }
+      if (talk !== !!this._talk) { this._talk = talk; if (talk) G.hud.prompt('E  talk', null, 'tailtalk'); else G.hud.clearPrompt('tailtalk'); }
+      if (talk && G.pressed('KeyE')) { this._eUsed = this.t; this.sayLine(); }
     }
+    if (this.lineSaid && this._talk) { this._talk = false; G.hud.clearPrompt('tailtalk'); }
     // back in: E at my door
+    // ([C3c, after the critic] only once he has said it: straight back in,
+    // he said it from 16 m through my shut door. Until then "See to the
+    // driver." stays up and my door does not take E; he is always within
+    // reach - his window, his car's side, or walking past)
     const dd = this.doorAt(), dIn = Math.hypot(e.x - dd.x, e.z - dd.z);
-    const atDoor = dIn < 1.9 && this.outT > 0.1;  // ([C3b, after the critic] at once: the first E after the door was swallowed)
+    const atDoor = this.lineSaid && dIn < 1.9 && this.outT > 0.1 && !this._talk && this._eUsed !== this.t;  // ([C3b, after the critic] at once: the first E after the door was swallowed)
     if (atDoor !== !!this._atDoor) { this._atDoor = atDoor; if (atDoor) G.hud.prompt('E  get in', null, 'tailin'); else G.hud.clearPrompt('tailin'); }
     if (atDoor && G.pressed('KeyE')) this.getIn();
+  }
+  // a ray from the eye along the look, flat, into his car's box (within TALK_NEAR + its length)
+  lookingAtCar(his, e, fx, fz) {
+    const l0 = his.local(e, new THREE.Vector3());
+    const p1 = his.local(_w.set(e.x + fx * 6, e.y, e.z + fz * 6), new THREE.Vector3());
+    const dx = p1.x - l0.x, dz = p1.z - l0.z;
+    let t0 = 0, t1 = 1;
+    for (const [p, d, h] of [[l0.x, dx, his.spec.halfL], [l0.z, dz, his.spec.halfW]]) {
+      if (Math.abs(d) < 1e-9) { if (p < -h || p > h) return false; continue; }
+      let a = (-h - p) / d, c = (h - p) / d;
+      if (a > c) { const q = a; a = c; c = q; }
+      t0 = Math.max(t0, a); t1 = Math.min(t1, c);
+      if (t0 > t1) return false;
+    }
+    return true;
   }
   sparksAt(point, n, k = 1) {
     const G = this.game, r = this.ctx.rng;
