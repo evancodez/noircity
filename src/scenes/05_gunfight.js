@@ -43,7 +43,9 @@ const NUM_CORR = { dmgK: 0.9, settleK: 1.25 };
 const HEAVY_DMGK = 0.55;
 // (the flank: slower to settle - they come at my side, the time to turn; at 1.35 a good hand still lost one
 // first try in five to the man who came in and round the desk)
-const NUM_FLANK = { settleK: 1.5, flankAfter: 0 };
+// ([C5] after the critic: 1.7 and rounds at 0.8 for a man down in cover - the two now come into the room together, and
+// the first-timer down behind the desk took the flank to a fourth try at 1.5 / 0.9; on my feet it is STANDING's below)
+const NUM_FLANK = { settleK: 1.7, dmgK: 0.8, flankAfter: 0 };
 // ([C5] after the critic) the first gunfight's grace - their aim settling slower (settleK above 1) - is for the man
 // who takes cover. On my feet (or down with nothing round me: the kit's lowInOpen) they settle at the difficulty
 // table's floor (0.85) and their rounds weigh in full (1.0), everywhere in this chapter: standing and trading in the
@@ -372,6 +374,8 @@ export default defineScene({
             // (me in the suite: to its door; me out in the corridor - down behind the cart - to 305's door beside it)
             if (roomOf(G.eye.x, G.eye.z) !== 'corr') ai.brain.goRound(O.doors.AMES, [{ x: -4.7, z: 1.2, run: true }]);
             else ai.brain.goRound(O.doors.D305, []);
+            // (he comes to find me at a door I can see: not a flank - a fall to him is not 'Flanked.')
+            Object.defineProperty(ai.brain, 'flanking', { get: () => !!ai.brain.S.flank, configurable: true });
             break;
           }
         }
