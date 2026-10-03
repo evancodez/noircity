@@ -1,0 +1,242 @@
+{
+ "about": "[C5] after the critic: III's fixes by real input - the pad (the hand drawn back off the figures with LMB up; tear-off as soon as the figures read: 0.55 of each ring), the dial (the index stopped ON 36 from above sets the gate), the check (the line names the desk; the two cards, drag then turn, as the pieces go down), and no rain indoors (the corridor's first frame). node tools/play.mjs tools/plays/office_fixes.json",
+ "url": "/?mute=1&start=office",
+ "size": [
+  1440,
+  900
+ ],
+ "out": "shots/play/office_fixes",
+ "steps": [
+  {
+   "name": "the title, BEGIN at III"
+  },
+  {
+   "until": "G.state === 'title' && !!document.querySelector('#title .opt[data-k=begin]')",
+   "timeout": 60000
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]",
+   "taken": "G.scenes.current && G.scenes.current.id === 'office'",
+   "retries": 4
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'office' && document.pointerLockElement === N.renderer.domElement && G.scenes.fadeK < 0.1",
+   "timeout": 30000
+  },
+  {
+   "name": "no rain indoors: the corridor's first frame"
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "eval": "JSON.stringify(G.stage.dry.map((b) => [b.min.toArray().map((v) => +v.toFixed(2)), b.max.toArray().map((v) => +v.toFixed(2))]))"
+  },
+  {
+   "shot": "corridor_dry"
+  },
+  {
+   "eval": "(N.game.scenes.go('office', { beat: 'pad', fade: 'cut', card: false }), 1)"
+  },
+  {
+   "until": "G.scenes.ctx && G.scenes.beat === 'pad' && G.scenes.ctx.flags.pad && G.scenes.ctx.flags.pad.active",
+   "timeout": 20000
+  },
+  {
+   "wait": 1200
+  },
+  {
+   "name": "the pad: rub, then LMB up - the hand draws back"
+  },
+  {
+   "mouse": "down",
+   "button": "left"
+  },
+  {
+   "look": [
+    260,
+    0
+   ],
+   "steps": 10
+  },
+  {
+   "look": [
+    -260,
+    14
+   ],
+   "steps": 10
+  },
+  {
+   "look": [
+    260,
+    14
+   ],
+   "steps": 10
+  },
+  {
+   "look": [
+    -260,
+    14
+   ],
+   "steps": 10
+  },
+  {
+   "mouse": "up",
+   "button": "left"
+  },
+  {
+   "wait": 900
+  },
+  {
+   "expect": "G.scenes.ctx.flags.pad.away > 0.95",
+   "label": "LMB up: the hand off the sheet"
+  },
+  {
+   "shot": "pad_hand_up"
+  },
+  {
+   "name": "the pad's tear-off: readable at 0.55 of each figure's ring (a demo hand scrubs)"
+  },
+  {
+   "eval": "(G.scenes.ctx.flags.pad.demo = true, 1)"
+  },
+  {
+   "until": "G.scenes.ctx.flags.pad.readable",
+   "timeout": 60000
+  },
+  {
+   "eval": "JSON.stringify(G.scenes.ctx.flags.pad.rowK.map((k) => +k.toFixed(2)))"
+  },
+  {
+   "eval": "(G.scenes.ctx.flags.pad.demo = false, 1)"
+  },
+  {
+   "wait": 500
+  },
+  {
+   "expect": "G.scenes.ctx.flags.pad.readable && !G.scenes.ctx.flags.pad.tore",
+   "label": "readable: E tear it off"
+  },
+  {
+   "shot": "pad_readable"
+  },
+  {
+   "name": "the dial: the index stopped on 36 from above"
+  },
+  {
+   "eval": "(N.game.scenes.go('office', { beat: 'safe', fade: 'cut', card: false }), 1)"
+  },
+  {
+   "until": "G.scenes.ctx && G.scenes.ctx.flags.safe && G.scenes.ctx.flags.safe.active && G.scenes.beat === 'safe'",
+   "timeout": 20000
+  },
+  {
+   "wait": 1200
+  },
+  {
+   "eval": "G.scenes.ctx.flags.safe.reading"
+  },
+  {
+   "look": "(() => { const r = G.scenes.ctx.flags.safe.reading; let d = r - 36.22; if (d < 3) d += 100; return [Math.round(d / 0.075), 0]; })()",
+   "steps": 1
+  },
+  {
+   "wait": 500
+  },
+  {
+   "eval": "JSON.stringify({ reading: +G.scenes.ctx.flags.safe.reading.toFixed(2), gate: G.scenes.ctx.flags.safe.gate, stage: G.scenes.ctx.flags.safe.stage, dir: G.scenes.ctx.flags.safe.dir })"
+  },
+  {
+   "expect": "G.scenes.ctx.flags.safe.gate === 0 && G.scenes.ctx.flags.safe.reading > 36",
+   "label": "on 36 (not past it): the gate"
+  },
+  {
+   "shot": "dial_on36"
+  },
+  {
+   "look": [
+    -14,
+    0
+   ],
+   "steps": 1
+  },
+  {
+   "wait": 300
+  },
+  {
+   "expect": "G.scenes.ctx.flags.safe.stage === 1",
+   "label": "turned back: 36 set"
+  },
+  {
+   "name": "the check: the line names his desk; the cards as the pieces go down"
+  },
+  {
+   "eval": "(N.game.scenes.go('office', { beat: 'check', fade: 'cut', card: false }), 1)"
+  },
+  {
+   "until": "G.scenes.beat === 'check' && G.scenes.fadeK < 0.2",
+   "timeout": 20000
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "expect": "G.hud.objectiveText === 'Lay it out on his desk.'",
+   "label": "the line names the desk"
+  },
+  {
+   "walk": [
+    [
+     3.0,
+     3.8
+    ]
+   ],
+   "timeout": 8000
+  },
+  {
+   "look": "(() => { const e = G.eye, c = G.controller; const yaw = Math.atan2(-(3.92 - e.x), -(3.9 - e.z)), pitch = Math.atan2(0.8 - e.y, Math.hypot(3.92 - e.x, 3.9 - e.z)); const w = (a) => Math.atan2(Math.sin(a), Math.cos(a)); return [Math.round(-w(yaw - c.yaw) / c.sensitivity), Math.round(-(pitch - c.pitch) / c.sensitivity)]; })()",
+   "steps": 4
+  },
+  {
+   "wait": 400
+  },
+  {
+   "expect": "G.interact.current && G.interact.current.id === 'lay'",
+   "label": "E lay them out"
+  },
+  {
+   "key": "KeyE"
+  },
+  {
+   "until": "!!G.puzzles.active",
+   "timeout": 5000
+  },
+  {
+   "wait": 1200
+  },
+  {
+   "expect": "G.hud.kit.teachCur && G.hud.kit.teachCur.id === 'piece' && G.hud.objectiveText === 'Piece it together.'",
+   "label": "the card: [LMB] drag a piece"
+  },
+  {
+   "shot": "check_card_drag"
+  },
+  {
+   "mouse": "click",
+   "button": "left"
+  },
+  {
+   "wait": 1200
+  },
+  {
+   "expect": "G.hud.kit.teachCur && G.hud.kit.teachCur.id === 'turnPiece'",
+   "label": "then: [RMB] hold to turn it"
+  },
+  {
+   "shot": "check_card_turn"
+  }
+ ]
+}

@@ -44,7 +44,7 @@ export function search(ctx, pad, safe) {
 
   // ---- Ames ----------------------------------------------------------------------------------
   const amesChest = () => { const f = O.ames && O.ames.fig; if (!f) return V(4.6, 1.0, 3.7); const p = f.bones.chest.getWorldPosition(V(0, 0, 0)); return p; };
-  I.add({ id: 'ames', at: () => amesChest().add(V(-0.12, -0.05, 0)), range: 1.6, cone: 0.55, prompt: 'search him', when: () => here('ames')() && !st.ames, onUse: () => searchAmes() });
+  I.add({ id: 'ames', at: () => amesChest().add(V(-0.12, -0.05, 0)), range: 1.8, cone: 0.7, prompt: 'search him', when: () => here('ames')() && !st.ames, onUse: () => searchAmes() });
   function searchAmes() {
     st.handsBusy = true;
     const c = amesChest();
@@ -98,7 +98,7 @@ export function search(ctx, pad, safe) {
   }
   // the pencil in the drawer they did not open
   const R1 = D.drawers.find((d) => d.id === 'R1');
-  I.add({ id: 'pencil', at: () => (O.pencil && O.pencil.parent ? O.pencil.getWorldPosition(V(0, 0, 0)) : V(0, -9, 0)), range: 1.5, cone: 0.5, prompt: 'take the pencil', when: () => here('ames')() && !st.pencil && R1.out > 0.9, onUse: () => {
+  I.add({ id: 'pencil', at: () => (O.pencil && O.pencil.parent ? O.pencil.getWorldPosition(V(0, 0, 0)) : V(0, -9, 0)), range: 2.3, cone: 0.5, prompt: 'take the pencil', when: () => here('ames')() && !st.pencil && R1.out > 0.9, onUse: () => {
     if (O.pencil.parent) O.pencil.parent.remove(O.pencil);
     O.pencil.visible = false;
     G.sfx.play('office_pencilPick', R1.group.getWorldPosition(V(0, 0, 0)));
@@ -126,12 +126,12 @@ export function search(ctx, pad, safe) {
   ctx.onStep(() => { const h = I.list.find((q) => q.id === 'phone'); if (h) h.prompt = ph.hung ? 'lift it' : 'hang it up'; });
   // (off the hook, the receiver turns a little on its cord)
   ctx.onStep(() => { if (!ph.hung && !D.tip) ph.recv.rotation.y = 0.4 + Math.sin(G.time * 0.9) * 0.18; });
-  I.add({ id: 'ash', at: () => O.furn.ashtray, range: 1.5, cone: 0.45, prompt: 'the ashtray', when: () => here('ames')() && !D.tip, onUse: () => {
+  I.add({ id: 'ash', at: () => O.furn.ashtray, range: 1.5, cone: 0.3, prompt: 'the ashtray', when: () => here('ames')() && !D.tip, onUse: () => {
     G.sfx.play('office_paperRustle', O.furn.ashtray, { k: 0.4 });
     once('ash', 'He burned the top sheet.', 2.6);
     on('ash');
   } });
-  I.add({ id: 'pad', at: V(PAD.x, DESK.h + 0.02, PAD.z), range: 1.8, cone: 0.5, prompt: 'the pad', when: () => here('ames')() && !pad.done && !D.tip, onUse: () => {
+  I.add({ id: 'pad', at: V(PAD.x, DESK.h + 0.02, PAD.z), range: 1.8, cone: 0.3, prompt: 'the pad', when: () => here('ames')() && !pad.done && !D.tip, onUse: () => {
     if (!O.lampOn) { G.hud.say('Too dark.', 1.8); return; }
     if (!st.pencil) { G.hud.say('Dents in it. Written hard.', 2.4); on('dents'); return; }
     pad.open();

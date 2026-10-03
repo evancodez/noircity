@@ -212,7 +212,7 @@ export const CHECK_PUZZLE = {
     }
   },
   solved(st) { return st.whole && st.wholeT > 1.8; },
-  hint(st, level) { return ['Her writing runs across the tears.', 'Drag a piece; the wheel turns it.', 'Lay torn edges together: they join.'][level - 1]; },
+  hint(st, level) { return ['Her writing runs across the tears.', 'Drag a piece; RMB or the wheel turns it.', 'Lay torn edges together: they join.'][level - 1]; },
   exit() {},
 };
 

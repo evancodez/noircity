@@ -115,7 +115,10 @@ export function safePuzzle(ctx) {
       S.grip += d * (Math.PI * 2 / 100);
       // every number the index passes: a tick; the right one, the right way: the gate
       // (a quick turn passes several in a step: each is counted)
-      const u0 = r0, u1 = r0 + d;
+      // ([C5] after the critic: a number is reached when the reading comes to it - rounds to it - not once it has
+      // passed it: the index stopped on 36, reading 36.03 from above, set nothing. So the crossings counted are
+      // each number's half a step before it, the way the dial turns)
+      const u0 = r0 + 0.5 * sgn, u1 = r0 + d + 0.5 * sgn;
       const lo = Math.ceil(Math.min(u0, u1)), hi = Math.floor(Math.max(u0, u1));
       let ticked = false;
       for (let m = lo; m <= hi; m++) {

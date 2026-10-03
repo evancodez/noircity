@@ -35,7 +35,7 @@ export default defineScene({
   save: ['room', 'check'],
   objectives: {
     corridor: 'Room 304. Ames.', room: 'Find what Ames had.', pad: 'Find what Ames had.', safe: 'Open the safe.',
-    check: 'Piece it together.', done: 'Pier 9.',
+    check: 'Lay it out on his desk.', done: 'Pier 9.',
   },
 
   setup: {
@@ -163,7 +163,14 @@ export default defineScene({
       // (and the lamp eased down for the close look, as at the pad: a hand's length from the bulb its pool printed the blotter white)
       const padAside = (on) => { O.pad.block.visible = !on; O.pad.mesh.visible = !on; O.lampDimTo = on ? 1 : 0; };
       ctx.onStep(() => { if (!G.puzzles.active && O.lampDimTo > 0 && !(F.pad && F.pad.active)) O.lampDimTo = 0; else if (G.puzzles.active) O.lampDimTo = 1; });
-      const lay = () => { if (!G.puzzles.active) { padAside(true); G.puzzles.open('office.check', { onSolved: () => { solved = true; } }); } };
+      // ([C5] after the critic: the pieces go down with the kit's cards - the drag, then the turn: a join needs a piece
+      // turned to within 14 degrees, and nothing said how until the second idle hint)
+      const lay = () => {
+        if (G.puzzles.active) return;
+        padAside(true); G.puzzles.open('office.check', { onSolved: () => { solved = true; } });
+        ctx.hud.objective('Piece it together.');
+        if (G.hud.teach) { G.hud.teach('piece', '[LMB] drag a piece', { until: 'Mouse0' }); G.hud.teach('turnPiece', '[RMB] hold to turn it', { until: 'Mouse2', secs: 4 }); }
+      };
       // (opened a step after the E that asked for it: the puzzle reads E as "step back")
       let layNext = false;
       ctx.onStep(() => { if (layNext && !G.pressed('KeyE')) { layNext = false; lay(); } });

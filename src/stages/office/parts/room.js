@@ -159,7 +159,13 @@ export default {
     hintLamp.priority = 8;
 
     // ---- the Looks, the dry volumes, the walls of the stage ----------------------------------
-    stage.dry.push(shell.roomBox, shell.outerBox, shell.r305Box, shell.r306Box, shell.corrBox, shell.wcBox, shell.landBox, shell.liftBox);
+    // ([C5] after the critic: the shaders read four dry volumes, and eight were pushed - the corridor, the washroom,
+    // the landing and the lift fell off the end and it rained in them. Three now: the floor's rooms and corridor as
+    // one box (x from the corridor to the street window, z from 306 and the lift's mouth to the fire escape's wall:
+    // nothing out of doors lies inside it), the washroom, the stair's landing with the lift's shaft)
+    const floorBox = shell.roomBox.clone().union(shell.outerBox).union(shell.r305Box).union(shell.r306Box).union(shell.corrBox);
+    const stairBox = shell.landBox.clone().union(shell.liftBox);
+    stage.dry.push(floorBox, shell.wcBox, stairBox);
     const inside = { fogDensity: FOG.density * 0.3, rainOverlay: 0, haze: 0.65, reflect: 'none', ambient: 0.2 };
     stage.addLook(shell.roomBox, { ...inside, room: 'office' });
     stage.addLook(shell.outerBox, { ...inside, ambient: 0.17, room: 'office' });

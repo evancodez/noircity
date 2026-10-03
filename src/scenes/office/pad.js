@@ -72,7 +72,10 @@ export function padPuzzle(ctx) {
     // its length laid low, the point away and a little left; the hand on it
     place(dt) {
       const pc = O.pencil;
-      const lift = P.lift * (1 - P.press);
+      // ([C5] after the critic: the hand and its forearm lay over what it had just shaded - with LMB up a moment the
+      // hand lifts and draws back toward me and to the right, off the figures; pressed again, it is back on the tip at once)
+      const aw = P.away || 0;
+      const lift = P.lift * (1 - P.press) + 0.03 * aw;
       // (a scrubbing hand rolls the pencil a little with the stroke)
       const roll = Math.sin(P.ph) * 0.05 * P.press;
       const axis = V(-0.86, -0.26, 0.42).normalize();
@@ -80,7 +83,7 @@ export function padPuzzle(ctx) {
       // the lead's flank (local (0, 0.0006, 0.073)) on the tip
       const M = place(V(0, 0, 0), up, axis);
       const off = V(0, 0.0006, 0.073).applyMatrix4(new THREE.Matrix4().extractRotation(M));
-      M.setPosition(_w.copy(P.tip).setY(TOP + lift).sub(off));
+      M.setPosition(_w.copy(P.tip).add(_u.set(0.075 * aw, 0, -0.085 * aw)).setY(TOP + lift).sub(off));
       holdAt(H, 'R', pc, M, { i: [0.35, 0.45, 0.25, -0.03], m: [0.55, 0.7, 0.4, 0], r: [0.8, 0.95, 0.5, 0], l: [0.9, 1.0, 0.5, 0.05], t: [0.55, 0.35, 0.55, 0.25, 0.3] }, [0.36, -0.5, 0.08]);
       void dt;
     },
@@ -102,6 +105,9 @@ export function padPuzzle(ctx) {
       }
       // pressing: down in 0.06 s, up in 0.1
       P.press = down && P.solvedT < 0 ? Math.min(1, P.press + dt / 0.06) : Math.max(0, P.press - dt / 0.1);
+      // (the hand drawn back off the sheet: after 0.35 s with LMB up, in 0.25 s; back on the tip in 0.06 s)
+      P.upT = down ? 0 : (P.upT || 0) + dt;
+      P.away = down ? Math.max(0, (P.away || 0) - dt / 0.06) : P.upT > 0.35 ? Math.min(1, (P.away || 0) + dt / 0.25) : (P.away || 0);
       const moved = _d.subVectors(P.tip, P.prev).length();
       if (P.press > 0.6 && moved > 1e-5) {
         const [u0, v0] = P.uv(P.prev), [u1, v1] = P.uv(P.tip);
@@ -130,7 +136,8 @@ export function padPuzzle(ctx) {
         P.checkT = 0.25;
         P.rowK = pad.rows();
         P.shown = Math.min(...P.rowK);
-        if (!P.readable && P.shown > 0.7) { P.readable = true; P.readT = G.time; G.sfx.play('office_paperRustle', P.tip, { k: 0.3 }); }
+        // ([C5] after the critic: 0.55, not 0.7 - each figure read plainly to the eye at 0.56 - 0.67 of its ring)
+        if (!P.readable && P.shown > 0.55) { P.readable = true; P.readT = G.time; G.sfx.play('office_paperRustle', P.tip, { k: 0.3 }); }
       }
       if (P.readable && !P.tore) G.hud.prompt('E  tear it off', null, 'pad');
       if (P.tore && P.tearH && P.tearH.done) P.finish();
