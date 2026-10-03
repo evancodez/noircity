@@ -1,0 +1,14 @@
+{
+ "about": "[C8] proof (WAVE_C §7) for VIII The Block: the clumsy first-timer fails some and gets through, never stuck. The nick of time: straight up the pavement and pulls the door with the man there (seen), then takes him down but walks in (the bell: too slow), then the window. The street and him (the brief's block_bad): stands at a window and holds the trigger - dies - learns, and plays as the clumsy hand (cover, slow, up too long now and then, a wrong key) on the retries. node tools/play.mjs tools/plays/block_bad.json",
+ "url": "/?mute=1&start=shootout.dot",
+ "size": [1280, 800],
+ "out": "shots/play/block_bad",
+ "steps": [
+  { "until": "G.state === 'title' && !document.getElementById('title').classList.contains('hidden')", "timeout": 30000 },
+  { "wait": 1200 },
+  { "clickOn": "#title .opt[data-k=begin]", "taken": "G.state !== 'title'", "retries": 5, "every": 4000 },
+  { "until": "G.scenes.current && G.scenes.current.id === 'shootout' && G.scenes.beat === 'dot' && !G.scenes.trans && !(G.stills && G.stills.active) && !G.hud._carded", "timeout": 40000 },
+  { "drive": "tools/lib/c8_nick.mjs", "profile": "bad", "tries": 3, "check": "D.won && !D.wonFirst && D.allWarned", "label": "the nick of time: fails, is told why, gets through by the third try" },
+  { "drive": "tools/lib/c8_block.mjs", "profile": "bad", "beats": ["cars", "flank", "el", "saloon", "cardinal", "last"], "tries": 4, "beatTimeout": 170, "check": "D.won === 6 && D.allWarned && ['cars', 'flank', 'el'].every((b) => !D.beats[b].wonFirst)", "label": "standing at the window holding the trigger dies in each movement; learns; every contest got through within four tries, every fall warned" }
+ ]
+}

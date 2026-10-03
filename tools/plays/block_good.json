@@ -1,0 +1,18 @@
+{
+ "about": "[C8] proof (WAVE_C §7) for VIII The Block: a player who uses what was taught wins, twice in a row. Each run: the nick of time (by the window), then the street and him by the good hand of the gun kit's driver (moves, cover under the sills and behind the counter, rises on a tell, short bursts, reloads down, the drums from Dot; him: down through his draw, up when he is open, his shield man first). Each run must win every contest within two tries (down once or twice at most). node tools/play.mjs tools/plays/block_good.json",
+ "url": "/?mute=1&start=shootout.dot",
+ "size": [1280, 800],
+ "out": "shots/play/block_good",
+ "steps": [
+  { "until": "G.state === 'title' && !document.getElementById('title').classList.contains('hidden')", "timeout": 30000 },
+  { "wait": 1200 },
+  { "clickOn": "#title .opt[data-k=begin]", "taken": "G.state !== 'title'", "retries": 5, "every": 4000 },
+  { "until": "G.scenes.current && G.scenes.current.id === 'shootout' && G.scenes.beat === 'dot' && !G.scenes.trans && !(G.stills && G.stills.active) && !G.hud._carded", "timeout": 40000 },
+  { "name": "run 1" },
+  { "drive": "tools/lib/c8_nick.mjs", "profile": "good", "way": "window", "tries": 2, "check": "D.wonFirst", "label": "run 1: the nick of time, by the window, first try" },
+  { "drive": "tools/lib/c8_block.mjs", "profile": "good", "beats": ["cars", "flank", "el", "saloon", "cardinal", "last"], "tries": 2, "beatTimeout": 170, "check": "D.won === 6 && D.falls.length <= 2", "label": "run 1: every movement and him won, down twice at most" },
+  { "name": "run 2" },
+  { "drive": "tools/lib/c8_nick.mjs", "profile": "good", "way": "window", "tries": 2, "check": "D.wonFirst", "label": "run 2: the nick of time, first try" },
+  { "drive": "tools/lib/c8_block.mjs", "profile": "good", "beats": ["cars", "flank", "el", "saloon", "cardinal", "last"], "tries": 2, "beatTimeout": 170, "check": "D.won === 6 && D.falls.length <= 2", "label": "run 2: every movement and him won, down twice at most" }
+ ]
+}

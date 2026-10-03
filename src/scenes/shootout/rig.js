@@ -7,7 +7,8 @@ import { WEAPON } from '../../player/Weapon.js';
 import { ShardField } from '../../destruct/Glass.js';
 import { wreckMaterials } from '../../destruct/Wreck.js';
 import { cabMaterial } from './rails.js';
-import { LAYER } from '../../render/layers.js';
+import { LAYER, allocInkId } from '../../render/layers.js';
+import { merge } from '../../world/geom.js';
 
 // The scene's machinery (VIII The Block; B7, rebuilt on the gun kit by lane
 // C8): what lives across the beats and the retries - the cars on their
@@ -46,6 +47,9 @@ export function rigFor(ctx) {
   for (const d of R.gun.drums) { d.visible = false; S.scene.add(d); }
   R.sw = makeSwitch(S);
   S.scene.add(R.sw);
+  // [second pass, B7] a signal lamp on the el's west rail over where its
+  // gunman stands: his shape black in its cone against the rain
+  R.elLamp = elLamp(S);
   // the drums I carry: a reload takes one, none left and it does nothing
   const W = G.weapon;
   R.reload0 = W.reload;
@@ -80,6 +84,7 @@ export function teardown(R) {
   if (R.crate) { R.crate.remove(); R.crate = null; }
   R.rails.dispose();
   S.scene.remove(R.gun.group, R.sw, ...R.gun.drums);
+  if (R.elLamp) removeElLamp(S, R.elLamp);
   if (R.hat) { S.scene.remove(R.hat.obj); if (R.hat.cigar) S.scene.remove(R.hat.cigar); }
   restoreRoomLights(S);
   clearBottles(S);
@@ -101,6 +106,38 @@ export function teardown(R) {
 export function dropMan(G, S, h) {
   if (h.b7char) { const c = h.b7char; h.b7char = null; if (S.cast.list.includes(c)) { S.cast.remove(c); return; } }
   G.removeHood(h);
+}
+
+// the el's signal lamp: an iron post up from the rail, an arm out over the
+// deck's edge, a dish shade; its cone down over the gunman's place (a glow
+// in the rain only: no light of its own, the seven are spoken for)
+function elLamp(S) {
+  const E = SITE.el, M = S.M;
+  const base = V(E.x - 0.25, 12.0, E.z - 1.05);
+  const tip = V(E.x - 0.55, 13.35, E.z - 0.45);
+  const g = new THREE.Group();
+  const iron = new THREE.Mesh(merge([
+    new THREE.CylinderGeometry(0.035, 0.045, 1.4, 8).translate(base.x, base.y + 0.7, base.z),
+    new THREE.CylinderGeometry(0.03, 0.03, 0.78, 8).rotateX(Math.PI / 2).rotateY(0.45).translate((base.x + tip.x) / 2, 13.38, (base.z + tip.z) / 2 - 0.05),
+  ]), M.lampIron);
+  const shade = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.24, 0.16, 20, 1, true).translate(tip.x, tip.y - 0.06, tip.z), M.lampShade);
+  const bulb = new THREE.Mesh(new THREE.CircleGeometry(0.19, 24).rotateX(Math.PI / 2).translate(tip.x, tip.y - 0.13, tip.z), M.bulb);
+  g.add(iron, shade, bulb);
+  const id = allocInkId();
+  for (const m of [iron, shade, bulb]) { m.userData.inkId = id; m.userData.noRay = true; }
+  S.scene.add(g);
+  const head = V(tip.x, tip.y - 0.14, tip.z);
+  const axis = V(E.x + 0.1, 11.0, E.z + 0.15).sub(head).normalize();
+  const lamp = S.lamps.addCustom({ head, axis, height: 4.2, half: 0.4, real: false, bulb, fadeEnd: 0.8, edgeSoft: 0.35, strength: 2.4, tag: 'b7el' });
+  return { g, lamp };
+}
+function removeElLamp(S, L) {
+  S.scene.remove(L.g);
+  const l = L.lamp;
+  if (l.cone) { S.scene.remove(l.cone); l.cone.geometry.dispose(); l.cone.material.dispose(); }
+  if (l.entry) S.lights.remove(l.entry);
+  const i = S.lamps.lamps.indexOf(l);
+  if (i >= 0) S.lamps.lamps.splice(i, 1);
 }
 
 // a man knocked out (not shot): he folds where he is, no blood

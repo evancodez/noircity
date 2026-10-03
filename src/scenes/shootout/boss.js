@@ -70,7 +70,7 @@ export function saloonIn(ctx, { retry = false } = {}) {
   return car;
 }
 export function saloonMen(ctx, car) {
-  return SALOON.heavies.map((m) => { const h = gunman(ctx, { kind: 'tommy', at: m.at, steps: m.steps.map((p) => ({ ...p, run: false })), wait: 0.2, start: () => !car || car.pos.z > m.at.z + 2 }); h.c8beat = 'saloon'; return h; });
+  return SALOON.heavies.map((m) => { const h = gunman(ctx, { kind: 'tommy', at: m.at, steps: m.steps.map((p) => ({ ...p, run: false })), wait: 0.2, hp: 220, start: () => !car || car.pos.z > m.at.z + 2 }); h.c8beat = 'saloon'; return h; });
 }
 
 // the glare: his lamps in my eyes (a white bloom over the frame where they
@@ -155,13 +155,14 @@ export function cardinalOut(ctx, car, { at = null, stage = 2, hatGone = false, o
       // the iron under his coat: a thud, no blood - not now
       G.sfx.play('c2_woodHit', h.pos.clone().setY(1.3), { k: 0.5 }, { ref: 2 });
       G.counters.c8iron = (G.counters.c8iron || 0) + 1;
-      if (!B.said.iron && G.counters.c8iron >= 3) { B.said.iron = true; ctx.hud.say('Iron under the coat. Wait for him to open up.', 3.2); }
+      if (!B.said.iron && G.counters.c8iron >= 3) { B.said.iron = true; ctx.hud.say('Iron under his coat. Wait for it.', 3.0); }
       return;
     }
     B.wounds++;
     B.open = 0;
     G.counters.c8wounds = B.wounds;
-    if (B.stage === 3 && B.wounds >= 3) { fall(); return; }
+    if (B.stage === 3 && B.wounds >= 5) { fall(); return; }
+    if (B.stage === 3) { stagger(0.45); return; }
     // each shows on him: the hat goes; the gun arm; a knee
     if (B.wounds === 1) { if (h.launchHat) try { h.hatFlies = true; h.launchHat(); } catch { /* */ } B.hatGone = true; stagger(0.9); }
     else if (B.wounds === 2) { stagger(1.1); B.slow = true; }
@@ -203,13 +204,15 @@ export function cardinalOut(ctx, car, { at = null, stage = 2, hatGone = false, o
     const body = K.playerBody();
     const eyeH = V(h.pos.x, h.pos.y + 1.7, h.pos.z);
     const line = K.see(eyeH, body.chest, 0.15) || K.see(eyeH, body.head, 0.15);
+    B.noLine = line ? 0 : (B.noLine || 0) + dt;
     if (B.stage === 3) {
       B.lastT = (B.lastT || 0) + dt;
       B.open = 9;
       if (B.lastT > 10 || (B.i >= B.path.length)) { if (onDoor) onDoor(); return false; }
     }
     // the tell, the shot, the opening after it
-    if (B.mode === 'walk' && B.t >= B.fireAt && line && Math.hypot(h.pos.x - e.x, h.pos.z - e.z) < 30) { B.mode = 'draw'; B.mt = 0; h.speed = 0; if (ember) ember.material = FLARE.on; G.sfx.play('b7_hiss', h.pos.clone().setY(1.8), { k: 0.4 }, { ref: 3 }); }
+    // (with no line on me a while he fires anyway, into what I hide behind: that opens him too)
+    if (B.mode === 'walk' && B.t >= B.fireAt && (line || B.noLine > 4.5) && Math.hypot(h.pos.x - e.x, h.pos.z - e.z) < 30) { B.mode = 'draw'; B.mt = 0; h.speed = 0; if (ember) ember.material = FLARE.on; G.sfx.play('b7_hiss', h.pos.clone().setY(1.8), { k: 0.4 }, { ref: 3 }); }
     if (B.mode === 'draw') {
       B.mt += dt;
       faceTo(e.x, e.z, dt, 4);

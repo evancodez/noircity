@@ -68,6 +68,19 @@ export default async function drive({ js, turn, keyDown, keyUp, mouse, shot, log
       broke: K ? K.events.filter((q) => q.what === 'break' && G.time - q.t < 1.2 && q.at && Math.hypot(q.at[0] - e.x, q.at[1] - e.z) < 2.2).length : 0, wins: (G._c2won || []).length, moment: !!(sc.ctx && sc.ctx.flags.momentT != null && sc.ctx.flags.go == null), go: !!(sc.ctx && sc.ctx.flags.go != null), fails: Object.fromEntries(BEATS.map((b) => [b, G.fails(b, 'shootout')])), why: G.lastFail ? G.lastFail.why : null, warnedFor: G.lastFail ? G.lastFail.warnedFor : null, nFails: G.counters.fails || 0, shots: G.counters.shots, hits: G.counters.hits, warn: G.hud.warnText || null };
   })()`;
   // the beat's cover spot hidden from the most men as they stand now (then the nearest)
+  // [C8] (nobody seen for a while, they are still up: the spot that sees most of them, standing)
+  const HUNT = `(() => { const G = N.game, K = G.guns, F = G.scenes.ctx && G.scenes.ctx.flags.c2, V = N.THREE.Vector3;
+    if (!F || !F.spots.length) return null;
+    const men = G.stage.hoods.list.filter((h) => h.alive && (h.c8beat === G.scenes.beat || h.c8boss));
+    let best = null;
+    for (const sp of F.spots) {
+      const eye = new V(sp.x, G.stage.surfaceY(sp.x, sp.z) + 1.6, sp.z);
+      let n = 0;
+      for (const h of men) if (K.see(eye, new V().setFromMatrixPosition(h.bones.chest.matrixWorld), 0.3)) n++;
+      const sc = -n * 10 + Math.hypot(sp.x - G.eye.x, sp.z - G.eye.z) * 0.3;
+      if (n > 0 && (!best || sc < best.sc)) best = { x: sp.x, z: sp.z, yaw: sp.yaw, sc, n, via: sp.via ? sp.via.map((q) => ({ ...q })) : null };
+    }
+    return best; })()`;
   const BEST = `(() => { const G = N.game, K = G.guns, F = G.scenes.ctx && G.scenes.ctx.flags.c2, V = N.THREE.Vector3;
     if (!F || !F.spots.length) return null;
     const men = G.stage.hoods.list.filter((h) => h.alive && (h.c8beat === G.scenes.beat || h.c8boss));
@@ -204,7 +217,7 @@ export default async function drive({ js, turn, keyDown, keyUp, mouse, shot, log
       let s0 = await js(ST);
       const fails0 = s0.nFails, shots0 = s0.shots, hits0 = s0.hits, wins0 = s0.wins;
       const dbg = {}, noticed = new Map(), visAt = new Map(); let lastSeenAt = null, tellAt = 0, lastUp = Date.now(), upAt = 0, snapT = 0, target = null, seenAt = 0, onSpot = null, goTo = null, moveCool = 0, downUntil = 0, burstLeft = 0, lastShot = 0, warnedBefore = false, lowHp = 100, prevHp = 100, duckAt = 0, holdUpUntil = 0, hitTimes = [], outThere = false, answerUntil = 0, answerId = null, traceT = 0;
-      let end = null;
+      let end = null, anySeenAt = Date.now();
       // [C5] the moment before the door: the choice (once the take has given the view back)
       if (beat === 'shadows' && P.act && opts.choice && opts.choice !== 'none') {
         for (let w = 0; w < 80; w++) { const q = await js(ST); if (q && (q.moment || q.go)) break; await sleep(100); }
@@ -263,6 +276,8 @@ export default async function drive({ js, turn, keyDown, keyUp, mouse, shot, log
           await set('RMB', false); if (s.on) await tap('KeyC');
           const tz = Math.max(-3.0, Math.min(8.0, s.z));
           let got = false;
+          // (behind the counter: out round its end first - she slides it across from her side)
+          if (s.x < -14.9) for (const [x, z] of [[-15.35, -4.6], [-13.3, -4.75]]) for (let i = 0; i < 120; i++) { const q = await js(ST); if (q.failing || q.dead || await walkTo(q, x, z, 0.35)) break; await sleep(40); }
           for (let i = 0; i < 160 && !got; i++) {
             const q = await js(ST);
             if (q.failing || q.dead) break;
@@ -301,7 +316,9 @@ export default async function drive({ js, turn, keyDown, keyUp, mouse, shot, log
               else { onSpot = null; await set('RMB', false); }
             }
             // [C8] (a spot behind the counter is reached round its end: its way's points first)
-            if (goTo && goTo.via && goTo.via.length && (s.x > -14.9) !== (goTo.x > -14.9)) { const v = goTo.via[0]; if (await walkTo(s, v.x, v.z, 0.35)) goTo.via.shift(); await sleep(40); dbg['walking'] = (dbg['walking'] || 0) + 1; continue; }
+            // (in or out from behind the counter: round its south end, the points in the order the side asks)
+            if (goTo && !goTo.route && (s.x > -14.9) !== (goTo.x > -14.9)) goTo.route = s.x > -14.9 ? [{ x: -13.3, z: -4.75 }, { x: -15.35, z: -4.6 }] : [{ x: -15.35, z: -4.6 }, { x: -13.3, z: -4.75 }];
+            if (goTo && goTo.route && goTo.route.length) { const v = goTo.route[0]; if (await walkTo(s, v.x, v.z, 0.35)) goTo.route.shift(); await sleep(40); dbg['walking'] = (dbg['walking'] || 0) + 1; continue; }
             if (goTo && !(await walkTo(s, goTo.x, goTo.z, 0.35))) { await sleep(40); dbg['walking'] = (dbg['walking'] || 0) + 1; continue; }
             onSpot = goTo || onSpot || { x: s.x, z: s.z }; goTo = null;
             await set('KeyW', false);
@@ -317,6 +334,9 @@ export default async function drive({ js, turn, keyDown, keyUp, mouse, shot, log
         // ---- the target: the nearest that shows (from risen, for the good player: what he would see over it)
         // (a shadow on frosted glass is a target for a hand that was shown it: profile.shadows)
         const visible = men.filter((m) => m.see || m.seeH || (P.shadows && m.shade));
+        // [C8] (the good hand goes looking when nobody has shown for a while: up to the spot that sees them)
+        if (visible.length || s.men.some((m) => m.line)) anySeenAt = now;
+        else if (P.cover && s.men.length && now - anySeenAt > 8000 && !goTo) { const hg = await js(HUNT); if (hg) { goTo = hg; onSpot = null; anySeenAt = now; dbg['hunt'] = (dbg['hunt'] || 0) + 1; await set('RMB', false); continue; } }
         // (bad: out of sight a moment and back: a new reaction before the shot)
         if (P.renotice) for (const m of visible) { if (now - (visAt.get(m.id) || 0) > P.renotice) noticed.set(m.id, now + rr(P.react[0], P.react[1])); visAt.set(m.id, now); }
         // (the man I am answering, first: not the one across the street)

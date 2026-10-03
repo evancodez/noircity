@@ -1,0 +1,14 @@
+{
+ "about": "[C8] proof (WAVE_C §7) for VIII The Block: the player who does nothing loses every contest, the warning up a second and more before, the reason said. The nick of time at the kerb (Sal's clock: 'Last time, sister.', then Too late.), each movement of the street (cars, flank, el), each stage of the Cardinal (the saloon, him, the last ten seconds). node tools/play.mjs tools/plays/block_idle.json (drivers: tools/lib/c8_nick.mjs, tools/lib/c8_block.mjs)",
+ "url": "/?mute=1&start=shootout.dot",
+ "size": [1280, 800],
+ "out": "shots/play/block_idle",
+ "steps": [
+  { "until": "G.state === 'title' && !document.getElementById('title').classList.contains('hidden')", "timeout": 30000 },
+  { "wait": 1200 },
+  { "clickOn": "#title .opt[data-k=begin]", "taken": "G.state !== 'title'", "retries": 5, "every": 4000 },
+  { "until": "G.scenes.current && G.scenes.current.id === 'shootout' && G.scenes.beat === 'dot' && !G.scenes.trans && !(G.stills && G.stills.active) && !G.hud._carded", "timeout": 40000 },
+  { "drive": "tools/lib/c8_nick.mjs", "profile": "idle", "tries": 1, "check": "!D.won && D.falls[0] === 'Too late.' && D.allWarned", "label": "the nick of time, hands off: warned ('He's going to shoot her!'), then Too late." },
+  { "drive": "tools/lib/c8_block.mjs", "profile": "idle", "beats": ["cars", "flank", "el", "saloon", "cardinal", "last"], "tries": 1, "beatTimeout": 150, "check": "D.lost === 6 && D.allWarned && !D.falls.includes('timeout')", "label": "every movement and every stage of him, hands off: lost, each warned a second and more, each with its reason" }
+ ]
+}

@@ -5,7 +5,7 @@ import { SITE, DINER } from './shootout/site.js';
 import { rigFor, rig, setLights, everyStep, RESERVE, dropMan, knockOut, V } from './shootout/rig.js';
 import { freshRoom, placeDot, mackWindow } from './shootout/room.js';
 import { nick, placeNick, NICK } from './shootout/nick.js';
-import { AT, CARS, CAR_MEN, CARS_MORE, NORTH, SOUTH, UNDER_EL, SPOTS, OPEN as OPEN_SPOT, beginFight, rebuild, alive, carIn, outOfCar, manForDot, elGunman, driveBy, heavyForDoor, gunman } from './shootout/street.js';
+import { AT, CARS, CAR_MEN, CARS_MORE, NORTH, SOUTH, UNDER_EL, SPOTS, OPEN as OPEN_SPOT, beginFight, rebuild, alive, carIn, outOfCar, manForDot, elGunman, driveBy, heavyForDoor, gunman, pressOn } from './shootout/street.js';
 import { saloonIn, saloonMen, glare, cardinalOut, blastNear, SALOON } from './shootout/boss.js';
 import { endHat } from './shootout/ending.js';
 import { DOT_CLIP, dotGunAt, dotDrumsAt, DOT_DRUMS, dotResupplyAt } from '../cast/kinds/cardinal.js';
@@ -126,9 +126,9 @@ function stage(ctx, b) {
 }
 // each movement's difficulty (the gun kit's three numbers and its flank)
 const FIGHT = {
-  cars: { maxFiring: 2, flankAfter: 14, settleK: 1.15 },
-  flank: { maxFiring: 2, flankAfter: 12, settleK: 1.1 },
-  el: { maxFiring: 3, flankAfter: 12, settleK: 1.1 },
+  cars: { maxFiring: 3, flankAfter: 12, settleK: 1.1 },
+  flank: { maxFiring: 3, flankAfter: 11, settleK: 1.05 },
+  el: { maxFiring: 3, flankAfter: 11, settleK: 1.05 },
   saloon: { maxFiring: 2, flankAfter: 0, settleK: 1.1 },
   cardinal: { maxFiring: 2, flankAfter: 0, settleK: 1.1 },
   last: { maxFiring: 2, flankAfter: 0, settleK: 1.1 },
@@ -254,7 +254,8 @@ function registerProps(ctx) {
   ctx.interact.add({
     id: 'b7.drums', at: () => (R.gun.stack.visible ? R.gun.stack.position.clone().setY(DINER.counter.topY + 0.08) : V(SITE.resupply.x, DINER.counter.topY + 0.1, SITE.resupply.z)),
     range: 2.3, cone: 0.9,
-    prompt: 'a drum', when: () => R.gunTaken && !G.failing && R.reserve < RESERVE.max && !R.slide && (R.stackReady || !R.gun.stack.visible),
+    // (from the customer's side of the counter: she is behind it)
+    prompt: 'a drum', when: () => R.gunTaken && !G.failing && G.eye.x > DINER.counter.frontX - 0.1 && R.reserve < RESERVE.max && !R.slide && (R.stackReady || !R.gun.stack.visible),
     onUse: () => (R.gun.stack.visible ? takeDrums(ctx) : dotResupply(ctx)),
   });
 }
@@ -273,6 +274,7 @@ function runGen(G, gen, onAbort = null) {
 function fight(ctx, b) {
   const G = ctx.game, K = gunsOf(G);
   if (!K.active || (K.cfg && K.cfg.to) !== b) beginFight(ctx, b, FIGHT[b] || {});
+  if (['cars', 'flank', 'el'].includes(b)) pressOn(ctx);
   if (!G.director.active) { G.director.stop(); G.director.begin(); G.director.run(function* () { while (G.scenes.ctx === ctx && !(rig() && rig().calm)) yield null; }); }
 }
 
@@ -613,7 +615,9 @@ function* elBeat(ctx) {
   R.ticks.push(((t0) => (dt) => { if ((t0 -= dt) > 0) return true; db = driveBy(ctx, {}); return false; })(9));
   R.ticks.push(((t0) => (dt) => { if ((t0 -= dt) > 0) return true; heavy = heavyForDoor(ctx); for (const m of SOUTH) gunman(ctx, m); return false; })(17));
   yield until(() => !!db);
+  let elSaid = false;
   yield* fightTo(ctx, () => {
+    if (!elSaid && el.h.alive && alive(ctx) === 1 && heavy) { elSaid = true; ctx.hud.objective('One on the el. Find him.'); }
     // (the drive-by gone down the avenue: its men are out of it)
     if (db && db.car.rail && db.car.rail.done && !db.out && !db.crashed && db.car.state !== 'burning') {
       for (const h of [db.driver, db.gunner]) if (h.alive) { h.c8gone = true; G.removeHood(h); }

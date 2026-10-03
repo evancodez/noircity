@@ -1,0 +1,19 @@
+{
+ "about": "[C8] the nick of time by each of its ways, by real input (the brief: 'The nick of time by each of its ways'): the door (Nicky down from behind, the door pulled, in at a run, a blow over the counter), a bottle (from the crate, thrown into the road: Nicky goes to look, Sal's head turns; in at the door, a blow), Mack's window (over the sill, low round the counter's end, E from behind). node tools/play.mjs tools/plays/block_nick.json",
+ "url": "/?mute=1&start=shootout.dot",
+ "size": [1280, 800],
+ "out": "shots/play/block_nick",
+ "steps": [
+  { "until": "G.state === 'title' && !document.getElementById('title').classList.contains('hidden')", "timeout": 30000 },
+  { "wait": 1200 },
+  { "clickOn": "#title .opt[data-k=begin]", "taken": "G.state !== 'title'", "retries": 5, "every": 4000 },
+  { "until": "G.scenes.current && G.scenes.current.id === 'shootout' && G.scenes.beat === 'dot' && !G.scenes.trans && !(G.stills && G.stills.active) && !G.hud._carded", "timeout": 40000 },
+  { "drive": "tools/lib/c8_nick.mjs", "profile": "good", "way": "door", "tries": 1, "check": "D.wonFirst && D.tries[0].how === 'blow'", "label": "the door: the man at it down from behind, in at a run, the blow" },
+  { "drive": "tools/lib/c8_nick.mjs", "profile": "good", "way": "bottle", "tries": 1, "check": "D.wonFirst && D.tries[0].how === 'blow'", "label": "a bottle into the road: in while they look, the blow" },
+  { "drive": "tools/lib/c8_nick.mjs", "profile": "good", "way": "window", "tries": 1, "check": "D.wonFirst && D.tries[0].how === 'behind'", "label": "Mack's window: over the sill, low, behind him, E" },
+  { "until": "G.scenes.beat === 'gun' && G.hud.promptShown.includes('take it')", "timeout": 20000, "label": "she lays the gun on the counter: E take it" },
+  { "shot": "n04_the_gun_on_the_counter" },
+  { "key": "KeyE" },
+  { "until": "G.scenes.beat === 'cars' && G.player.weapons.current === 'tommy'", "timeout": 20000, "label": "taken: the Tommy gun in my hands, on to the cars" }
+ ]
+}

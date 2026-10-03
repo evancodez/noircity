@@ -49,8 +49,10 @@ export const ORDER = [
   // passes of the shed, quiet, the office, loud, then the foreman)
   { id: 'warehouse', numeral: 'VII', title: 'Pier Nine', music: { slot: 'warehouse', fade: 1.5 },
     beatMusic: { fight: { slot: 'fight', fade: 2.5 }, ko: { slot: 'fight', fade: 2.5 }, after: { stop: 3 } }, carry: ARMED, flags: NOTE },
+  // [C8] VIII: the scene file declares its own lines, music and carry
+  // (09_shootout.js: the nick of time, the gun, the street, the Cardinal;
+  // the wave B beats' stand-ins went with them; no revolver: the hook put it
+  // in the river in VII)
   { id: 'shootout', numeral: 'VIII', title: 'The Block', music: null,
-    beatMusic: { cars: { slot: 'shootout', fade: 2.5 }, doorways: { slot: 'shootout', fade: 2.5 }, el: { slot: 'shootout', fade: 2.5 }, driveby: { slot: 'shootout', fade: 2.5 } },
-    carry: [...ARMED, 'shells'], flags: NOTE,
-    objectives: { arrive: 'Take the gun.', ...each(['cars', 'doorways', 'el', 'driveby'], 'Hold the diner.'), cardinal: 'Here he comes. Stop him.', end: null } },
+    carry: ['matchbook', 'amesCard', 'check', 'photo', 'shells'], flags: NOTE },
 ];

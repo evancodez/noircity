@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { gunsOf, Guns } from '../../guns/Guns.js';
 import { DINER, SITE } from './site.js';
+import { dinerOpenings } from '../../stages/block/site.js';
 import { rig, roundAt } from './rig.js';
 import { climbOut, doorOut, CLIMB } from './carOut.js';
 
@@ -22,7 +23,7 @@ const _v = V(0, 0, 0);
 export const AREA = { x0: -10.0, x1: 19.5, z0: -46, z1: 27 };
 // the reasons a fall is given, in this chapter's words
 export const WHY = {
-  rush: 'He walked right up to the door.', reload: 'Reloading in the open.', flank: 'They came round on you.',
+  default: 'They got you.', rush: 'He walked right up to the door.', reload: 'Reloading in the open.', flank: 'They came round on you.',
   risen: 'Up over your cover too long.', tommy: 'The Tommy gun chewed through.', cover: 'Your cover was shot away.',
   bare: 'Down, but in the open.', angle: 'They had your angle.', moving: 'Shot in the open.', open: 'Shot standing in their sights.',
 };
@@ -91,7 +92,7 @@ export const NORTH = [
 ];
 // the man for Dot: out of the alley's mouth, round the corner, up the
 // pavement under the windows to the door, in, and on to her
-export const FOR_DOT = { at: { x: -9.0, z: -28.5 }, path: [{ x: -8.6, z: -22 }, { x: -8.4, z: -8.2 }, { x: -8.6, z: -4.0 }, { x: -9.5, z: -1.2 }, { x: -9.5, z: 0.6 }, { x: -11.3, z: 0.6 }, { x: -13.0, z: -1.6 }, { x: -14.2, z: -3.9 }, { x: -14.8, z: -4.25 }], aimFrom: 6 };
+export const FOR_DOT = { at: { x: -9.6, z: -29.2 }, path: [{ x: -7.7, z: -28.7 }, { x: -7.8, z: -25.4 }, { x: -8.5, z: -20 }, { x: -8.4, z: -8.2 }, { x: -8.6, z: -4.0 }, { x: -9.5, z: -1.2 }, { x: -9.5, z: 0.6 }, { x: -11.3, z: 0.6 }, { x: -13.0, z: -1.6 }, { x: -14.2, z: -3.9 }, { x: -14.8, z: -4.25 }], aimFrom: 6 };
 // ---- movement 3: high on the el; the drive-by; the heavy for the door
 export const EL = { x: 11.95, z: 0.3, y: 10.72 };
 export const DRIVEBY = {
@@ -229,6 +230,39 @@ export function suppress(ctx, h, n, delay) {
   });
 }
 
+// ---- [C8] nobody hides out the clock: no round from any of them for 12 s
+// (a man pinned behind a column, me down deep in the room), the one of the
+// kit's men nearest me comes in to the kerb before the diner, where he has me
+export function pressOn(ctx) {
+  const G = ctx.game, R = rig(), K = gunsOf(G);
+  let shots = G.counters.hoodShots, quiet = 0;
+  R.ticks.push((dt) => {
+    if (G.failing || !K.active || R.won) { quiet = 0; return true; }
+    if (G.counters.hoodShots !== shots) { shots = G.counters.hoodShots; quiet = 0; return true; }
+    quiet += dt;
+    if (quiet < 12) return true;
+    quiet = 0;
+    const e = G.eye;
+    let best = null, bd = Infinity;
+    for (const [h, ai] of G.ais) {
+      const S = ai.brain && ai.brain.S;
+      if (!h.alive || !S || S.state === 'entry' || S.state === 'wait' || ai.brain.kind === 'rusher') continue;
+      const d = Math.hypot(h.pos.x - e.x, h.pos.z - e.z);
+      if (d < bd) { bd = d; best = ai; }
+    }
+    if (!best) return true;
+    const S = best.brain.S, tz = Math.max(-6, Math.min(9, e.z + (best.h.pos.z > e.z ? 2.5 : -2.5)));
+    if (S.cover) { S.cover.taken = null; S.cover = null; S.fire = null; }
+    if (best.brain.drop) best.brain.drop();
+    best.path = null;
+    S.entry = { steps: [{ x: -4.6, z: tz, run: true }, { x: -7.0, z: tz, run: true }], i: 0, opened: false, framed: 0 };
+    S.state = 'entry'; S.t = 0;
+    K.events.push({ t: +G.time.toFixed(2), what: 'pressOn', name: best.brain.kind });
+    G.counters.c8pressOn = (G.counters.c8pressOn || 0) + 1;
+    return true;
+  });
+}
+
 // ---- the man for Dot (scripted, not the kit's: he walks for her, not for
 // me): her cry as he comes in, a few seconds, then her
 export function manForDot(ctx, { onDot }) {
@@ -297,13 +331,25 @@ export function elGunman(ctx) {
   h.gunKind = 'tommy';
   const ai = { h, heavy: true, brain: { kind: 'tommy', S: { state: 'hold' } } };
   const st = { mode: 'in', t: 0, n: 0, h, ai };
+  // (from up there into the room only through the front's openings: the
+  // building's face above them is brick ten metres high - the rays through
+  // the room's ceiling are not to be trusted from above, so the line is
+  // checked against the front itself)
+  const OPS = dinerOpenings();
+  const sees = (a, b) => {
+    if (b.x < DINER.faceX && a.x > DINER.faceX) {
+      const t = (DINER.faceX - a.x) / (b.x - a.x), y = a.y + (b.y - a.y) * t, z = a.z + (b.z - a.z) * t;
+      if (!OPS.some((o) => z > o.z0 + 0.05 && z < o.z1 - 0.05 && y > o.y0 && y < o.y1)) return false;
+    }
+    return K.see(a, b, 0.15);
+  };
   R.ticks.push((dt) => {
     if (!h.alive) { if (!st.fell) { st.fell = true; overTheRail(ctx, h); } return false; }
     if (G.failing || !K.active) return true;
     st.t += dt;
     const body = K.playerBody();
     const eye = V(h.pos.x, EL.y + 1.55, h.pos.z);
-    const line = K.see(eye, body.chest, 0.15) || K.see(eye, body.head, 0.15);
+    const line = sees(eye, body.chest) || sees(eye, body.head);
     st.line = line;
     if (st.mode === 'in') {
       // (up to the rail from the deck's middle)
@@ -315,8 +361,25 @@ export function elGunman(ctx) {
       return true;
     }
     h.lookAt(G.eye.clone());
-    h.yaw += Math.atan2(Math.sin(Math.atan2(G.eye.x - h.pos.x, G.eye.z - h.pos.z) - h.yaw), Math.cos(Math.atan2(G.eye.x - h.pos.x, G.eye.z - h.pos.z) - h.yaw)) * Math.min(1, dt * 4);
-    if (st.mode === 'watch') { if (line && st.t > 1.2) { st.mode = 'raise'; st.t = 0; h.setAim(true); ai.brain.S.state = 'aim'; G.sfx.play('c2_cock', eye, {}, { ref: 4 }); } return true; }
+    if (st.to == null) h.yaw += Math.atan2(Math.sin(Math.atan2(G.eye.x - h.pos.x, G.eye.z - h.pos.z) - h.yaw), Math.cos(Math.atan2(G.eye.x - h.pos.x, G.eye.z - h.pos.z) - h.yaw)) * Math.min(1, dt * 4);
+    else h.yaw = st.to > h.pos.z ? 0 : Math.PI;
+    if (st.mode === 'watch') {
+      if (line && st.t > 1.2 && st.to == null) { st.mode = 'raise'; st.t = 0; h.setAim(true); ai.brain.S.state = 'aim'; G.sfx.play('c2_cock', eye, {}, { ref: 4 }); return true; }
+      // (no line for a while: along the rail for one - he walks the deck's edge)
+      st.noLine = line ? 0 : (st.noLine || 0) + dt;
+      if (st.noLine > 6 && st.to == null) {
+        st.noLine = 0;
+        const zs = [0.3, -3.5, 4.2, -7.2, 7.8, -10.5];
+        const pick = zs.find((z) => Math.abs(z - h.pos.z) > 0.5 && (sees(V(EL.x, EL.y + 1.55, z), body.chest) || sees(V(EL.x, EL.y + 1.55, z), body.head)));
+        if (pick != null) st.to = pick;
+      }
+      if (st.to != null) {
+        const dz = st.to - h.pos.z;
+        if (Math.abs(dz) < 0.06) { st.to = null; h.speed = 0; h.setState('idle', 0.2); }
+        else { h.speed = 1.6; if (h.state !== 'walk') h.setState('walk', 0.2); h.pos.z += Math.sign(dz) * Math.min(Math.abs(dz), 1.6 * dt); }
+      }
+      return true;
+    }
     if (st.mode === 'raise') { if (st.t > 0.75) { st.mode = 'fire'; st.t = 0; st.n = 0; ai.brain.S.state = 'fire'; } return true; }
     if (st.mode === 'fire') {
       if (st.t > 0.095) {
