@@ -40,7 +40,7 @@ export const NICK = {
   crate: { x: -9.78, z: -7.15 },
   clock: { lines: [[5, 'Where is it, sister?'], [14, 'Nobody’s coming for you.'], [25, 'I’m done asking.']], cock: 36, shot: 43.5 },
   // Sal's turn on me: from the bell (or hearing me) to his round
-  turn: 1.5, turnSlow: 2.7,
+  turn: 2.0, turnSlow: 3.2,
   // the reach of a blow over the counter (m, from my eye to his chest, flat)
   reach: 1.75,
 };
@@ -153,7 +153,7 @@ export function* nick(ctx, N) {
     const name = 'c8.bottle.' + (N.bottleN = (N.bottleN || 0) + 1);
     return d.place('bottle', V(NICK.crate.x, 0.7, NICK.crate.z), { name, variant: 'beer' });
   };
-  ctx.interact.add({ id: 'c8.crate', at: V(NICK.crate.x, 0.62, NICK.crate.z), range: 1.9, cone: 0.8, prompt: 'take a bottle',
+  ctx.interact.add({ id: 'c8.crate', at: V(NICK.crate.x, 0.62, NICK.crate.z), range: 2.4, cone: 0.85, prompt: 'take a bottle',
     when: () => !hands.bottle && !H.busy && !st.done && crate.necks.some((q) => q.visible), onUse: () => hands.take(bottleProp()) });
   const canKo = (h, look) => {
     if (!h.alive || h.c8down || H.busy || st.done) return false;

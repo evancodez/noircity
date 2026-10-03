@@ -31,11 +31,11 @@ export const SALOON = {
   // up the near side of the road at a walk, to stop south of the door, its
   // lamps along the front (cars never pass through cars: the parked sedan
   // at (-4.3, -25) is left on the left)
-  rail: [[-3.0, -84], [-2.4, -70], [-1.2, -52], [-1.0, -40], [-1.2, -31], [-1.3, -24], [-1.9, -16], [-2.4, -9.5]],
+  rail: [[-3.0, -84], [-2.0, -74], [0.3, -62], [0.5, -56], [-0.3, -44], [-1.1, -31], [-1.1, -24], [-0.9, -17], [-1.6, -13], [-2.4, -9.5]],
   // (they wait by the road, out of the light, and walk up behind it once it is by)
   heavies: [
-    { at: { x: 0.6, z: -50 }, steps: [{ x: 0.4, z: -31 }, { x: 0.2, z: -22 }, { x: -0.6, z: -13.4 }] },
-    { at: { x: -3.6, z: -48.5 }, steps: [{ x: -3.0, z: -31 }, { x: -3.2, z: -22 }, { x: -4.1, z: -14.6 }] },
+    { at: { x: 4.4, z: -49.5 }, steps: [{ x: 1.9, z: -36 }, { x: 0.6, z: -24 }, { x: -0.5, z: -13.4 }] },
+    { at: { x: -5.2, z: -47.5 }, steps: [{ x: -3.2, z: -36 }, { x: -3.0, z: -24 }, { x: -4.1, z: -14.6 }] },
   ],
   // his walk: from the saloon's rear door to the pavement before the door
   path: [{ x: -4.2, z: -8.6 }, { x: -6.4, z: -5.6 }, { x: -7.9, z: -2.4 }, { x: -8.5, z: -0.6 }],
@@ -132,9 +132,9 @@ export function cardinalOut(ctx, car, { at = null, stage = 2, hatGone = false, o
     path: stage === 3 ? SALOON.last : SALOON.path,
   };
   if (hatGone && h.launchHat) { try { h.hatFlies = true; h.launchHat(); } catch { /* */ } }
-  const ai = { h, heavy: false, brain: { kind: 'cardinal', S: { state: 'walk' } }, update() {}, release() {},
-    onHit: () => hit() };
-  G.ais.set(h, ai);
+  // (his own: not in the Game's table of brains - the director's pacing reads those)
+  const ai = { h, heavy: false, brain: { kind: 'cardinal', S: { state: 'walk' } } };
+  h.c8onHit = () => hit();
   // out of the car first
   if (!at && own('cardinal_carOut')) { h.anim.play('cardinal_carOut', { fade: 0 }); h._c8clip = 'cardinal_carOut'; B.t = -CARDINAL_OUT; }
   else B.mode = 'walk';
@@ -197,6 +197,7 @@ export function cardinalOut(ctx, car, { at = null, stage = 2, hatGone = false, o
     ai.brain.S.state = B.open > 0 ? 'open' : B.mode;
     stepShield(dt);
     if (B.t < 0) return true;
+    if (B.mode === 'out') { B.mode = 'walk'; h._c8clip = null; }
     if (B.hold > 0) { B.hold -= dt; h.speed = 0; if (B.hold <= 0) { h._c8clip = null; if (B.toLast && B.stage === 2) { B.stage = 3; B.toLast = false; B.path = SALOON.last.map((q) => q); B.i = 0; B.lastT = 0; ctx.flags.c8last = true; } } return true; }
     const e = G.eye;
     const body = K.playerBody();
@@ -237,7 +238,8 @@ export function cardinalOut(ctx, car, { at = null, stage = 2, hatGone = false, o
     const d = Math.hypot(wp.x - h.pos.x, wp.z - h.pos.z);
     if (d < 0.35) { B.i++; return true; }
     faceTo(wp.x, wp.z, dt, 2.2);
-    const pace = B.stage === 3 ? 0.85 : B.slow ? 0.62 : 0.85;
+    const far = Math.hypot(h.pos.x - DINER.faceX, h.pos.z) > 22;
+    const pace = far ? 1.25 : B.stage === 3 ? 0.9 : B.slow ? 0.62 : 0.85;
     h.speed = pace;
     clip('cardinal_walk', 0.35);
     h.pos.x += Math.sin(h.yaw) * pace * dt; h.pos.z += Math.cos(h.yaw) * pace * dt;

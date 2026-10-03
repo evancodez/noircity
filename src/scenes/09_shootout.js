@@ -5,7 +5,7 @@ import { SITE, DINER } from './shootout/site.js';
 import { rigFor, rig, setLights, everyStep, RESERVE, dropMan, knockOut, V } from './shootout/rig.js';
 import { freshRoom, placeDot, mackWindow } from './shootout/room.js';
 import { nick, placeNick, NICK } from './shootout/nick.js';
-import { AT, CARS, CAR_MEN, UNDER_EL, beginFight, rebuild, alive, carIn, outOfCar, manForDot, elGunman, driveBy, heavyForDoor, gunman } from './shootout/street.js';
+import { AT, CARS, CAR_MEN, CARS_MORE, NORTH, SOUTH, UNDER_EL, SPOTS, OPEN as OPEN_SPOT, beginFight, rebuild, alive, carIn, outOfCar, manForDot, elGunman, driveBy, heavyForDoor, gunman } from './shootout/street.js';
 import { saloonIn, saloonMen, glare, cardinalOut, blastNear, SALOON } from './shootout/boss.js';
 import { endHat } from './shootout/ending.js';
 import { DOT_CLIP, dotGunAt, dotDrumsAt, DOT_DRUMS, dotResupplyAt } from '../cast/kinds/cardinal.js';
@@ -120,6 +120,8 @@ function stage(ctx, b) {
     if (FIGHTS.includes(b)) beginFight(ctx, b, FIGHT[b] || {});
   }
   ctx.flags.c8 = { beat: b, t0: G.time };
+  // (the plays read where a player may hold: lane C2's record's shape)
+  ctx.flags.c2 = { beat: b, spots: SPOTS, open: OPEN_SPOT, won: false };
   return R;
 }
 // each movement's difficulty (the gun kit's three numbers and its flank)
@@ -172,11 +174,13 @@ export default defineScene({
     ctx.onStep(() => glareStep());
     // (a car going up near him: the street's own weapon - he is down and open,
     // not dead: the blast does not end the fight for me)
-    const kill0 = G.killHood;
+    const kill0 = G.killHood, dmg0 = G.damageHood;
     G.killHood = function c8kill(h, ...a) { if (h && h.c8boss && R && R.boss && !R.boss.down) { blastNear(R.boss, h.pos); return; } return kill0.call(this, h, ...a); };
+    // (his hits are his: the wound counts only when he is open - boss.js)
+    G.damageHood = function c8damage(h, dmg, dir, o) { if (h && h.c8onHit && h.alive) { h.hp -= dmg; if (h.flinch) h.flinch(dir); h.c8onHit(); return; } return dmg0.call(this, h, dmg, dir, o); };
     const onBlast = ({ at }) => { if (R.boss) blastNear(R.boss, at); };
     G.on('car:exploded', onBlast);
-    const exit = () => { G.killHood = kill0; G.off('car:exploded', onBlast); G.off('scene:exit', exit); G.hud.layer('c8glare').innerHTML = ''; };
+    const exit = () => { G.killHood = kill0; G.damageHood = dmg0; G.off('car:exploded', onBlast); G.off('scene:exit', exit); G.hud.layer('c8glare').innerHTML = ''; };
     G.on('scene:exit', exit);
 
     // ---- the nick of time ---------------------------------------------------------------
@@ -575,9 +579,11 @@ function* carsBeat(ctx) {
   });
   yield until(() => stopped >= 2);
   yield wait(2.5);
+  let more = false;
   yield* fightTo(ctx, () => {
     if (!rose && (G.controller.crouchK || 0) > 0.6) { rose = true; K.teach('rise'); }
-    return alive(ctx) === 0;
+    if (!more && alive(ctx) <= 2) { more = true; for (const m of CARS_MORE) gunman(ctx, m); }
+    return more && alive(ctx) === 0;
   });
   yield* clear(ctx);
 }
@@ -586,10 +592,12 @@ function* flankBeat(ctx) {
   const G = ctx.game, R = rig(), K = gunsOf(G);
   if (G.fails('flank') === 2) K.teach('crouch', { again: true });
   for (const m of UNDER_EL) gunman(ctx, { kind: m.kind, at: m.at, steps: m.steps, wait: m.wait });
+  let north = false;
+  R.ticks.push(((t0) => (dt) => { if ((t0 -= dt) > 0) return true; north = true; for (const m of NORTH) gunman(ctx, m); return false; })(20));
   // round the corner for Dot, some seconds in
   let forDot = null;
   R.ticks.push(((t0) => (dt) => { if ((t0 -= dt) > 0) return true; forDot = manForDot(ctx, { onDot: () => G.fail({ why: 'They got Dot.', to: 'flank' }) }); return false; })(11));
-  yield until(() => !!forDot);
+  yield until(() => !!forDot && north);
   yield* fightTo(ctx, () => alive(ctx) === 0);
   yield* clear(ctx);
 }
@@ -603,7 +611,7 @@ function* elBeat(ctx) {
   let db = null;
   let heavy = null;
   R.ticks.push(((t0) => (dt) => { if ((t0 -= dt) > 0) return true; db = driveBy(ctx, {}); return false; })(9));
-  R.ticks.push(((t0) => (dt) => { if ((t0 -= dt) > 0) return true; heavy = heavyForDoor(ctx); return false; })(17));
+  R.ticks.push(((t0) => (dt) => { if ((t0 -= dt) > 0) return true; heavy = heavyForDoor(ctx); for (const m of SOUTH) gunman(ctx, m); return false; })(17));
   yield until(() => !!db);
   yield* fightTo(ctx, () => {
     // (the drive-by gone down the avenue: its men are out of it)
@@ -613,12 +621,24 @@ function* elBeat(ctx) {
     }
     return alive(ctx) === 0 && !!heavy;
   });
+  // (a drive-by that stopped and let its men out stands in the road: it is
+  // taken away once out of sight - his saloon comes up that lane)
+  if (db && db.car.state !== 'burning' && db.out) R.ticks.push(() => { const c = db.car; if (!R.rails.list.includes(c)) return false; if (inView(G, c.pos)) return true; R.rails.remove(c); delete R.cars.driveby; rebuild(G); return false; });
   yield* clear(ctx);
+}
+const _fr = new THREE.Frustum(), _pm = new THREE.Matrix4();
+function inView(G, p) {
+  const cam = G.camera;
+  _pm.multiplyMatrices(cam.projectionMatrix, cam.matrixWorldInverse);
+  _fr.setFromProjectionMatrix(_pm);
+  return _fr.intersectsSphere(new THREE.Sphere(new THREE.Vector3(p.x, 0.8, p.z), 3));
 }
 // the room won: no warning, a breath
 function* clear(ctx) {
-  const R = rig();
+  const R = rig(), G = ctx.game;
   R.won = true;
+  (G._c2won || (G._c2won = [])).push(ctx.beat);
+  if (ctx.flags.c2) ctx.flags.c2.won = true;
   ctx.hud.warn(null);
   ctx.hud.objective('Clear.');
   yield wait(2.2);
@@ -638,6 +658,7 @@ function* saloonBeat(ctx) {
   yield* fightTo(ctx, () => alive(ctx) === 0, { lines: false });
   yield until(() => stopped || car.c8flat || (car.rail.held || 0) > 2);
   if (!car.rail.done) { car.rail.plan.v.fill(0); car.rail.done = true; }
+  (G._c2won || (G._c2won = [])).push('saloon');
   yield wait(1.0);
 }
 
@@ -659,6 +680,7 @@ function* cardinalBeat(ctx) {
   // his tell, said: the ember, the gun coming up
   R.ticks.push(() => { const B = R.boss; if (!B || B.down) return false; if (B.mode === 'draw') R.warn = 'His gun! Get down!'; return true; });
   yield until(() => R.boss.stage === 3 || R.boss.down);
+  (G._c2won || (G._c2won = [])).push('cardinal');
 }
 
 function* lastBeat(ctx) {
@@ -680,6 +702,7 @@ function* lastBeat(ctx) {
   R.ticks.push(() => { if (B2.down) return false; R.warn = 'He’s going for Dot! Finish it!'; if ((B2.lastT || 0) > 10 || (B2.h && B2.h.pos.x < DINER.innerX - 0.4)) lost = true; return true; });
   yield until(() => B2.down || lost);
   if (!B2.down) { G.fail({ why: 'He got to Dot.', to: 'last' }); yield until(() => false); }
+  (G._c2won || (G._c2won = [])).push('last');
   ctx.hud.warn(null);
   yield wait(1.4);
 }

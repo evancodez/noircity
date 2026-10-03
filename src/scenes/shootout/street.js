@@ -23,7 +23,7 @@ export const AREA = { x0: -10.0, x1: 19.5, z0: -46, z1: 27 };
 // the reasons a fall is given, in this chapter's words
 export const WHY = {
   rush: 'He walked right up to the door.', reload: 'Reloading in the open.', flank: 'They came round on you.',
-  risen: 'Up over the counter too long.', tommy: 'The Tommy gun chewed through.', cover: 'Your cover was shot away.',
+  risen: 'Up over your cover too long.', tommy: 'The Tommy gun chewed through.', cover: 'Your cover was shot away.',
   bare: 'Down, but in the open.', angle: 'They had your angle.', moving: 'Shot in the open.', open: 'Shot standing in their sights.',
 };
 export const WARN = { rush: 'The big one’s at the door!', door: 'The door! Behind you!' };
@@ -39,14 +39,26 @@ export const AT = {
   last: { x: -12.2, z: -0.4, yaw: -Math.PI / 2 - 0.5 },
 };
 
+// the places a player holds in the diner (the plays' good hand chooses among
+// them; the bad one stands at the window): under the sills of the windows
+// (the wall below them stops a round), behind the counter (round its end)
+const E0 = -Math.PI / 2;
+const BEHIND = [{ x: -13.3, z: -4.75 }, { x: -15.35, z: -4.6 }];
+export const SPOTS = [
+  { x: -10.8, z: -3.0, yaw: E0 }, { x: -10.8, z: -4.7, yaw: E0 + 0.3 }, { x: -10.8, z: -0.6, yaw: E0 }, { x: -10.8, z: 1.6, yaw: E0 },
+  { x: -10.8, z: 4.2, yaw: E0 }, { x: -10.8, z: 5.9, yaw: E0 - 0.3 },
+  { x: -15.35, z: -2.4, yaw: E0, via: BEHIND }, { x: -15.35, z: 3.6, yaw: E0, via: BEHIND },
+];
+export const OPEN = { x: -11.0, z: -3.8 };
+
 // ---- the cars: up the avenue, round what is in the road (the parked
 // sedans at (2.6, -27), (-4.3, -25), (6.5, -19)), nose in at the far side
 export const CARS = [
   // (from far down the avenue, between the el's west columns - they cross
   // the road there - and the kerb; past the parked sedans; then across to
   // the far side and nose in)
-  { rail: [[-3.2, -86], [-2.6, -70], [-1.2, -52], [-0.8, -40], [-0.9, -31], [-0.9, -24], [1.6, -14.5], [5.6, -8.2], [8.6, -4.2], [9.1, -1.4], [8.9, 0.7], [7.1, 1.3]], delay: 0 },
-  { rail: [[-3.4, -86], [-2.8, -70], [-1.4, -52], [-1.0, -40], [-1.0, -31], [-1.0, -24], [1.4, -16.8], [4.6, -13.6], [7.2, -10.8], [8.2, -8.6], [6.8, -7.0]], delay: 1.6 },
+  { rail: [[-3.0, -86], [-2.0, -74], [0.4, -62], [0.6, -56], [-0.2, -44], [-0.9, -31], [-0.9, -24], [1.6, -14.5], [5.6, -8.2], [8.6, -4.2], [9.1, -1.4], [8.9, 0.7], [7.1, 1.3]], delay: 0 },
+  { rail: [[-3.2, -86], [-2.2, -74], [0.2, -62], [0.5, -56], [-0.4, -44], [-1.0, -31], [-1.0, -24], [1.4, -16.8], [4.6, -13.6], [7.2, -10.8], [8.2, -8.6], [6.8, -7.0]], delay: 1.6 },
 ];
 // their men: the car, the door, the kind, the first place (the lee of the
 // car or its door: then the kit's brain takes the cover it reads)
@@ -59,6 +71,11 @@ export const CAR_MEN = [
   { car: 1, door: 'rr', kind: 'tommy', delay: 0.9 },
   { car: 1, door: 'lr', kind: 'pistol', delay: 1.4, run: { x: 12.2, z: -12.4 } },
 ];
+// (when the cars' men are down to two, two more out of the dark under the el)
+export const CARS_MORE = [
+  { at: { x: 18.2, z: 7.5 }, steps: [{ x: 15.0, z: 6.0, run: true }, { x: 13.6, z: 4.6, run: true }], kind: 'pistol', wait: 0.2 },
+  { at: { x: 18.2, z: -5.5 }, steps: [{ x: 15.2, z: -6.5, run: true }, { x: 12.6, z: -8.8, run: true }], kind: 'pistol', wait: 1.4 },
+];
 // ---- movement 2: out of the dark under the el's far side, between the
 // columns to cover; and round the corner along the pavement to the door
 export const UNDER_EL = [
@@ -66,22 +83,41 @@ export const UNDER_EL = [
   { at: { x: 18.2, z: -16.5 }, steps: [{ x: 15.4, z: -14.6, run: true }, { x: 12.0, z: -12.6, run: true }], kind: 'pistol', wait: 1.6 },
   { at: { x: 18.1, z: 4.5 }, steps: [{ x: 15.6, z: 3.2, run: true }, { x: 14.0, z: 0.4, run: true }], kind: 'tommy', wait: 3.2 },
 ];
+// and from the other side: two down the north pavement, round the corner of
+// the block where the roadworks close it, for the door
+export const NORTH = [
+  { at: { x: -8.2, z: 27.0 }, steps: [{ x: -8.4, z: 16.0, run: true }, { x: -8.6, z: 9.5, run: true }], kind: 'pistol', wait: 0.5 },
+  { at: { x: -7.6, z: 27.5 }, steps: [{ x: -7.4, z: 18.5, run: true }, { x: -6.6, z: 12.4, run: true }], kind: 'pistol', wait: 1.6 },
+];
 // the man for Dot: out of the alley's mouth, round the corner, up the
 // pavement under the windows to the door, in, and on to her
 export const FOR_DOT = { at: { x: -9.0, z: -28.5 }, path: [{ x: -8.6, z: -22 }, { x: -8.4, z: -8.2 }, { x: -8.6, z: -4.0 }, { x: -9.5, z: -1.2 }, { x: -9.5, z: 0.6 }, { x: -11.3, z: 0.6 }, { x: -13.0, z: -1.6 }, { x: -14.2, z: -3.9 }, { x: -14.8, z: -4.25 }], aimFrom: 6 };
 // ---- movement 3: high on the el; the drive-by; the heavy for the door
 export const EL = { x: 11.95, z: 0.3, y: 10.72 };
 export const DRIVEBY = {
-  rail: [[-3.8, -86], [-3.2, -70], [-1.8, -52], [-1.2, -40], [-1.0, -31], [-0.9, -24], [-1.9, -16], [-2.2, -4], [-2.2, 6], [-1.4, 17.5], [0.6, 23.8], [3.2, 24.8], [4.6, 22.0], [3.2, 13.0], [3.0, 5.0], [3.0, -4.0], [3.0, -12.0], [1.2, -20.0], [-1.0, -27.0], [-1.2, -40], [-1.8, -52], [-2.6, -70], [-3.2, -86]],
+  rail: [[-3.4, -86], [-2.2, -74], [0.3, -62], [0.5, -56], [-0.4, -44], [-1.0, -31], [-0.9, -24], [-1.9, -16], [-2.2, -4], [-2.2, 6], [-1.4, 17.5], [0.6, 23.8], [3.2, 24.8], [4.6, 22.0], [3.2, 13.0], [3.0, 5.0], [3.0, -4.0], [3.0, -12.0], [1.2, -20.0], [-0.9, -27.0], [-0.6, -40], [0.4, -50], [0.6, -58], [0.2, -64], [-2.0, -74], [-3.0, -86]],
   // the stretch he fires along the diner's front (z)
   fire: [-13, 13.5],
 };
+// two more round the corner from the alley's mouth, up the pavement
+export const SOUTH = [
+  { at: { x: -8.8, z: -29.0 }, steps: [{ x: -8.4, z: -20.0, run: true }, { x: -7.4, z: -13.0, run: true }], kind: 'pistol', wait: 0.3 },
+  { at: { x: -8.4, z: -29.5 }, steps: [{ x: -6.0, z: -22.0, run: true }, { x: -5.0, z: -15.5, run: true }], kind: 'pistol', wait: 1.5 },
+];
 export const HEAVY = { at: { x: -8.4, z: -33.5 }, steps: [{ x: -8.6, z: -20.0 }, { x: -8.5, z: -8.4 }, { x: -8.7, z: -3.6 }, { x: -9.4, z: -1.2 }] };
 
 // ---- the kit, begun for a beat (its setup: every retry) -------------------------------------
 export function beginFight(ctx, beat, { maxFiring = 2, flankAfter = 13, settleK = 1.1, dmgK = 1 } = {}) {
   const G = ctx.game, K = gunsOf(G), R = rig();
   K.end();
+  // [C8] fail softly: each fall in this beat gives its men a tenth more to
+  // settle and a little less in a round (three falls at most: the beat as
+  // written is the first try's; a player who keeps going down in one place
+  // gets through in a try or two more, never by standing still - they still
+  // kill a man who stands in the open)
+  const f = Math.min(3, G.fails(beat));
+  settleK += 0.12 * f;
+  dmgK *= 1 - 0.07 * f;
   widen(G, () => K.begin({ to: beat, maxFiring, flankAfter, settleK, dmgK, area: AREA, why: WHY, warn: WARN }));
   // [C8] the room dark: from the street they cannot find me in it until I
   // fire (the gun's flash: 2.5 s), or I stand in a car's lamps
