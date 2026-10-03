@@ -38,9 +38,13 @@ export const GUNMAN = {
   raise: 0.26,                 // s: the tell - the arm comes up, the glint, the click
   settle: [0.4, 0.9],          // s: his aim settling, at 3 m .. at 18 m
   settleMoving: 1.4,           // x while I move across his line
-  settleStill: 0.6,            // x while I stand up still in his line (a man standing in the open is an easy mark)
+  settleStill: 0.6,            // x while he sees me whole (chest or belly: in the open, standing or down) and I am still: an easy mark
+  breath: [1.0, 1.4],          // s: after a burst with no cover to go back to, the gun down a breath before it comes up again (the brief's out, two or three, back)
+  lookOut: [0.8, 1.3],         // s: behind his cover, how soon he looks out again at a man he last saw whole (2.5 - 4 for a head over cover)
+  snapShots: [1, 2],           // rounds: shots on his way (in at a door, to a jamb) - one or two, then on
+  holdUp: 0.4,                 // s: after them, his aim held on a man in the open - shot back at, it is a duel (no breath); else the breath
   settleRattled: 1.5,          // x for 1.5 s after a round came near him or hit him
-  notice: 0.25,                // s: I come up (or out) into his line: he sees me, then settles
+  notice: 0.25,                // s: he sees only my head (up over cover, round its end): he sees me, then settles (seen whole, x0.3)
   behind: 0.45,                // s more, when he has me from outside my view (behind, the far side): in time to turn
   lagT: 0.2,                   // s: his aim trails a moving target by this much
   sigma: 0.0055,               // rad: a settled round's throw (a still man in the open is hit)
@@ -52,12 +56,13 @@ export const GUNMAN = {
   rake: 12,                    // s: the Tommy gunner rakes where he last saw me (or the flash of my gun) this long after; he pins, he never comes looking (one who went round, or came in to find me, was one burst and down)
   flash: 2.5,                  // s: a round into him from where he could not see me tells him where I am (a Tommy gunner rakes it, aimed)
   walk: 1.5, run: 3.0,
-  pistol: { hp: 100, dmg: 17, mag: 7, burst: [2, 3], gap: [0.4, 0.52], reload: 1.7 },
-  tommy: { hp: 120, dmg: 8, burst: [10, 14], rate: 10.5, climb: 0.005, sigma0: 0.02, drum: 2.6 },
+  pistol: { hp: 100, dmg: 17, mag: 7, burst: [2, 3], gap: [0.4, 0.52], gapStill: [0.3, 0.36], reload: 1.7 },   // (gapStill: between rounds at a man he sees whole and still)
+  tommy: { hp: 120, dmg: 8, burst: [10, 14], rate: 10.5, climb: 0.007, sigma0: 0.02, drum: 2.6 },   // ([C2] after the critic's second look: climb 0.005 -> 0.007 - standing still in his burst I was down 1.5 s after its first round)
   rusher: { hp: 250, dmg: 10, burst: [4, 6], rate: 9, every: 1.5, close: 2.4, hitStop: 0.45, walk: 1.3 },
 };
 const T = GUNMAN;
 const V = (x, y, z) => new THREE.Vector3(x, y, z);
+const PANE = (e) => !!e.mesh.userData.pane;
 const _v = V(0, 0, 0);
 
 export default {
@@ -78,7 +83,7 @@ export default {
       kind, S,
       get state() { return kind + ':' + S.state; },
       get hasLine() { return S.line && h.alive; },
-      get flanking() { return !!S.flank; },
+      get flanking() { return !!S.flank || !!S.goneRound; },
       get behindMe() { return behindMe(); },
       // ---- the kit's director asks -------------------------------------------------------
       // (the pistol men go round; the Tommy gunner only when he is the last - from his own range, 6 - 7.5 m,
@@ -110,10 +115,13 @@ export default {
         if (kind === 'rusher') { S.stopT = K.hitStop; S.settle = Math.max(0, S.settle * 0.5); return; }
         // (a round into the Tommy gunner throws his burst up and off: it climbs as if it were twice as long)
         if (S.state === 'fire' && kind === 'tommy') S.burstN = (S.burstN || 0) + 8;
-        // (shot by a man fighting from cover - down behind it, or risen over it -
-        // he is the one out-shot: he ducks back behind his own, his aim gone; shot
-        // by a man standing in the open, he stands and trades - that one is his)
-        if ((S.state === 'aim' || S.state === 'fire' || S.state === 'out') && (G.controller.crouchK || 0) > 0.5) { S.settle = 0; brain.drop(); B.path = null; S.state = 'back'; S.t = 0; S.wait = r.range(0.8, 1.4); }
+        // (shot by a man he sees only as a head over cover - or by one he cannot
+        // see at all - he is the one out-shot: he ducks back behind his own, his
+        // aim gone; shot by a man he sees whole, in the open, he stands and
+        // trades - that one is his. [C2] after the critic's second look: by what
+        // he sees, not by my stance - down in the open I am seen whole. A Tommy
+        // gunner raking the flash he saw goes on raking it)
+        if ((S.state === 'aim' || S.state === 'fire' || S.state === 'out') && (S.line ? !S.whole : kind !== 'tommy')) { S.settle = 0; brain.drop(); B.path = null; S.state = 'back'; S.t = 0; S.wait = r.range(0.8, 1.4); }
         // (a round into him from where he could not see me: the flash says where I am)
         if (!S.line) S.flashAt = { p: kit().playerBody().chest.clone(), t: G.time };
         // (shot before he has started in: he does not stand and wait for the next one)
@@ -124,7 +132,34 @@ export default {
       },
       release() { brain.drop(); if (S.cover) S.cover.taken = null; },
       // (Game.killHood asks: the fall by what is beside him)
-      deathKind(dir, head, kind0) { return chooseDeath(G, h, dir, head, kind0); },
+      deathKind(dir, head, kind0) {
+        // [C2] after the critic's second look: down in a doorway by a man he
+        // saw whole - standing in the room, holding it: the doorway is held;
+        // the kit sends one of the others round to another door of the room
+        const Kt = kit();
+        if (Kt && Kt.active && kind !== 'rusher' && S.lastSeen && S.lastSeen.up && G.time - S.lastSeen.t < 1.2) {
+          let D = S.workDoor || null;
+          if (!D) for (const d of doorsOf(G.stage)) if (d.centre && Math.hypot(h.pos.x - d.centre.x, h.pos.z - d.centre.z) < 1.8) { D = d; break; }
+          if (D) Kt.doorHeld(D, B);
+        }
+        return chooseDeath(G, h, dir, head, kind0);
+      },
+      // (the kit's: a doorway on his way is held - round to this one instead, the way there by the grid)
+      goRound(D2, way = []) {
+        brain.drop();
+        if (S.cover) { S.cover.taken = null; S.cover = null; S.fire = null; }
+        S.workDoor = null; S.resume = null; S.trade = false; S.flank = null;
+        S.entry = { steps: [...way, { door: D2.name }], i: 0, opened: false, framed: 0, hold: true };
+        S.goneRound = true; S.gunUp = false; B.path = null; S.door = null;
+        S.state = 'entry'; S.t = 0;
+        G.sfx.play('c2_flank', h.pos.clone().setY(h.pos.y + 1.0), {}, { ref: 3 });
+      },
+      // (his way in goes through door D, or he works it now)
+      usesDoor(D) {
+        if (S.workDoor === D) return true;
+        const E = S.entry;
+        return !!(E && E.steps && E.steps.slice(E.i || 0).some((q) => q.door === D.name));
+      },
       pickCover: (pref) => pickCover(pref),   // (for the plays and the probes: where he would go now)
       update(dt, t) { if (!h.alive) return; step(dt, t); },
     };
@@ -132,11 +167,18 @@ export default {
     // ---- what he sees -----------------------------------------------------------------------
     const headY = () => h.pos.y + (S.low && S.state !== 'aim' && S.state !== 'fire' ? 1.0 : 1.58) * h.scale;
     const eyeOf = (out = V(0, 0, 0)) => out.set(h.pos.x, headY(), h.pos.z);
-    // the point of me he can see (my chest, my head, my belly), or null
+    // the point of me he can see (my chest, my head, my belly), or null; and
+    // [C2] after the critic's second look: whether he sees me WHOLE (my chest
+    // or my belly - a man in the open, standing or down) or only my head (up
+    // over cover, round its end). His rules read what he sees, never my
+    // stance: a man low in the open is seen whole; a head over a desk is not
     const visiblePoint = () => {
       const Kt = kit(), Bd = Kt.playerBody(), e = eyeOf(_e);
-      for (const p of [Bd.chest, Bd.head, Bd.belly]) if (Kt.see(e, p, 0.15)) return p;
-      return null;
+      S.wholeNow = false;
+      if (Kt.see(e, Bd.chest, 0.15)) { S.wholeNow = true; return Bd.chest; }
+      const hd = Kt.see(e, Bd.head, 0.15);
+      if (Kt.see(e, Bd.belly, 0.15)) { S.wholeNow = true; return hd ? Bd.head : Bd.belly; }
+      return hd ? Bd.head : null;
     };
     const _e = V(0, 0, 0);
     // (a look every 0.1 - 0.15 s: the line, where he last saw me, his aim's trail)
@@ -146,7 +188,8 @@ export default {
         S.losT = r.range(0.09, 0.15);
         const p = G.health.dead ? null : visiblePoint();
         S.line = !!p;
-        if (p) { S.target = p.clone(); S.lastSeen = { p: p.clone(), t: G.time, up: (G.controller.crouchK || 0) < 0.5 }; }
+        S.whole = !!p && S.wholeNow;
+        if (p) { S.target = p.clone(); S.lastSeen = { p: p.clone(), t: G.time, up: S.whole }; }
       }
       if (S.line && S.target) {
         // the trailing aim: snapped on when he first has me, then following
@@ -164,7 +207,7 @@ export default {
       const v = G.controller.vel, dx = G.eye.x - h.pos.x, dz = G.eye.z - h.pos.z, L = Math.hypot(dx, dz) || 1;
       const across = Math.abs(v.x * (-dz / L) + v.z * (dx / L));
       if (across > 1.0) s *= T.settleMoving;
-      else if ((G.controller.crouchK || 0) < 0.5 && Math.hypot(v.x, v.z) < 1.0) s *= T.settleStill;
+      else if (S.whole && Math.hypot(v.x, v.z) < 1.0) s *= T.settleStill;
       if (S.rattledT > 0) s *= T.settleRattled;
       const Kc = kit() && kit().cfg;
       return s * (Kc && Kc.settleK ? Kc.settleK : 1);
@@ -173,14 +216,16 @@ export default {
     // (and a man who has me from where I am not looking - a flank, a door at my back - a moment more:
     // the time to turn, which the warning 'Behind you!' asks for)
     const behindMe = () => { const C = G.controller, dx = h.pos.x - G.eye.x, dz = h.pos.z - G.eye.z, L = Math.hypot(dx, dz) || 1; return (-Math.sin(C.yaw) * dx - Math.cos(C.yaw) * dz) / L < 0.45; };   // (off the screen: past ~63 degrees)
-    const noticeOf = () => ((G.controller.crouchK || 0) > 0.5 ? T.notice : T.notice * 0.3) + (behindMe() ? T.behind : 0);
+    // ([C2] after the critic's second look: by what he sees - a head over cover is seen late, a man seen whole at once)
+    const noticeOf = () => (S.whole ? T.notice * 0.3 : T.notice) + (behindMe() ? T.behind : 0);
     const face = (dt, rate = 6) => { const p = S.target || G.eye; B.faceTo(p.x, p.z, dt, rate); };
 
     // ---- moving --------------------------------------------------------------------------------
     const moveTo = (x, z, run) => {
       if (!B.go(x, z, run)) { B.path = [V(x, 0, z)]; B.pathI = 0; B.run = run; }
       B.stuckT = 0; B.lastPos.copy(h.pos);
-      h.setAim(false);
+      // (a man coming in at a door with his gun up keeps it up on his way through it, to its jamb)
+      h.setAim(!!S.gunUp);
     };
     // (the body's path walking: turns, 1.5 m/s walking, 2.9 running, a new
     // path when he is stuck; the colliders keep him out of everything) - and
@@ -263,6 +308,7 @@ export default {
       const A = Kt.cfg && Kt.cfg.area;
       for (const p of C.points) {
         if (p.taken && p.taken !== B) continue;
+        if (S.badCover && (S.badCover.get(p) || 0) > G.time) continue;
         if (A && (p.x < A.x0 || p.x > A.x1 || p.z < A.z0 || p.z > A.z1)) continue;
         if (pref && pref.advance && p === S.cover) continue;
         const d = Math.hypot(p.x - e.x, p.z - e.z);
@@ -328,11 +374,27 @@ export default {
     // (on his way, in the open, with me standing in his line near enough: he
     // stops and shoots - the gun up, the settle, as ever - then goes on)
     const snap = (dt) => {
-      if (kind === 'rusher' || S.flank || (G.controller.crouchK || 0) > 0.5) return false;
+      if (kind === 'rusher' || S.flank || !S.whole) return false;
       if (!S.line || S.lineT < 0.3 || dist() > 9 || G.time - (S.snapT || -9) < 3) return false;
       if (!kit().token(B)) return false;
       S.snapT = G.time; B.path = null; S.resume = S.state === 'entry' ? 'entry' : 'move';
       raise();
+      return true;
+    };
+    // [C2] after the critic's second look (the door was won standing on the
+    // room's floor, each man shot as he stepped into the lit doorway with his
+    // gun down): a man coming in at a door to a room I hold comes with his gun
+    // up from the moment it opens; seeing me whole through it - standing in
+    // the room, in the open - he stops and brings it onto me (the click, the
+    // star), settles, fires, then goes on to work the doorway. A head over the
+    // desk he does not stop for: he goes to his jamb (the doorway worked)
+    const snapUp = (resume) => {
+      if (!S.gunUp || kind === 'rusher' || !S.line || !S.whole || S.lineT < noticeOf() || G.time - (S.snapT || -9) < 1.2) return false;
+      // (his gun must bear from where he is - not his eyes alone past a jamb: else on to where it does)
+      if (!armClear(S.target || G.eye)) return false;
+      if (!kit().token(B)) return false;
+      S.snapT = G.time; B.path = null; h.speed = 0; S.resume = resume;
+      raise(T.raise); glint();
       return true;
     };
     // ---- his gun ------------------------------------------------------------------------------------
@@ -343,12 +405,55 @@ export default {
     const glint = () => {
       const m = h.muzzleWorld(V(0, 0, 0));
       G.sfx.play(kind === 'pistol' ? 'c2_cock' : 'c2_bolt', m, {}, { ref: 3, roll: 1.3 });
-      S.glintDue = T.raise * 0.75;
+      S.glintDue = T.raise * 0.75; S.starWait = 0; S.starAt = null;
     };
+    // [C2] after the critic's second look (the star was drawn on the face of
+    // a door's leaf, his gun behind it): the star is where I can see his gun -
+    // with the gun still behind a jamb or a leaf it waits (half a second at
+    // most) for the gun to clear it, and his first round waits for the star
     const glintStar = () => {
       const m = h.muzzleWorld(V(0, 0, 0));
+      if (!kit().see(G.eye, m, 0.06)) return false;
       G.fx.sparks.spawn({ pos: m, life: 0.3, size: [0.2, 0.2], rot: r.next() * 6.28, spin: 3, col: [5, 5, 5], alpha: 1, cell: 7, fadeOut: 0.5 });
       G.fx.sparks.spawn({ pos: m, life: 0.22, size: [0.42, 0.05], rot: r.next() * 6.28, col: [3.5, 3.5, 3.5], alpha: 0.9, cell: 7, fadeOut: 0.6 });
+      S.starAt = G.time;
+      return true;
+    };
+    // (his arm and gun as they stand: the shoulder to the muzzle and a hand
+    // past it toward me clear of what is solid - never a gun through a jamb,
+    // a door's leaf, a wall; a pane he shoots through)
+    const _sh = V(0, 0, 0), _ad = V(0, 0, 0);
+    const armWhy = (part, q) => { const Kt = kit(); if (Kt && Kt.rec) Kt.events.push({ t: +G.time.toFixed(2), what: 'armBlocked', name: part + ':' + (q.mesh && q.mesh.name || '?') + '@' + q.t.toFixed(2), at: [+h.pos.x.toFixed(2), +h.pos.z.toFixed(2)] }); };
+    const armClear = (tgt) => {
+      const m = h.muzzleWorld(_v);
+      _sh.setFromMatrixPosition(h.bones.upperArmR.matrixWorld);
+      _ad.subVectors(m, _sh); const La = _ad.length();
+      if (La > 0.05) { _ad.divideScalar(La); const q = G.rays.raycast(_sh, _ad, La, { anyHit: true, skip: PANE }); if (q) { armWhy('arm', q); return false; } }
+      _ad.subVectors(tgt, m); const L = _ad.length();
+      if (L < 0.3) return true;
+      _ad.divideScalar(L);
+      const q2 = G.rays.raycast(m, _ad, Math.min(0.7, L - 0.2), { anyHit: true, skip: PANE });
+      if (q2) armWhy('gun', q2);
+      return !q2;
+    };
+    // (out further: a step to the side, onto free ground, from where a gun
+    // held at his side has the line to me - then up again, the aim kept)
+    const stepClear = () => {
+      const Kt = kit(), e = G.eye, dx = e.x - h.pos.x, dz = e.z - h.pos.z, d = Math.hypot(dx, dz) || 1;
+      // (his right, facing me: the gun hand's side)
+      const px = -dz / d, pz = dx / d, chest = Kt.playerBody().chest;
+      for (const k of [0.45, -0.45, 0.65, -0.65, 0.9, -0.9]) {
+        const x = h.pos.x + px * k, z = h.pos.z + pz * k;
+        if (!G.nav.free(x, z) || !G.nav.lineFree(h.pos.x, h.pos.z, x, z)) continue;
+        // (from there, the gun at his right hand has the line to me)
+        const o = _sh.set(x + px * 0.22, G.stage.surfaceY(x, z) + 1.35, z + pz * 0.22);
+        _ad.subVectors(chest, o); const L = _ad.length(); _ad.divideScalar(L);
+        if (G.rays.raycast(o, _ad, Math.max(0.05, L - 0.3), { anyHit: true, skip: PANE })) continue;
+        B.path = [V(x, 0, z)]; B.pathI = 0; B.run = false; S.state = 'out'; S.t = 0; S.mustReach = true; S.stepTo = { x, z };
+        h.setAim(true);
+        return true;
+      }
+      return false;
     };
     // (raised: how long the gun has been coming up already - a step out with it up)
     const raise = (raised = 0) => {
@@ -361,10 +466,11 @@ export default {
       const Kt = kit();
       if (Kt) Kt.events.push({ t: +G.time.toFixed(2), what: 'raise', kind, from, at: [+h.pos.x.toFixed(2), +h.pos.z.toFixed(2)], line: S.line });
     };
-    // (false: he held the round - one of his own in the line)
+    // (false: he held the round - one of his own in the line; 'arm': his gun is behind something)
     const shoot = (suppress = false) => {
       const Kt = kit();
       const tgt = suppress ? (S.lastSeen ? S.lastSeen.p : G.eye) : S.aimP;
+      if (!armClear(tgt)) return 'arm';
       // [C2] after the critic: a man does not fire through his mate - he holds it
       { const m = h.muzzleWorld(_v), L = m.distanceTo(tgt); if (L > 0.5) { const d = tgt.clone().sub(m).divideScalar(L); const o = G.rays.raycastHoods(m, d, L - 0.3, G.stage.hoods.list, { skipHood: h }); if (o && o.hood && o.hood !== h && o.hood.alive) return false; } }
       let sigma = T.sigma;
@@ -396,7 +502,10 @@ export default {
       S.t += dt;
       S.rattledT = Math.max(0, S.rattledT - dt);
       S.flinchT = Math.max(0, (S.flinchT || 0) - dt);
-      if (S.glintDue != null && (S.glintDue -= dt) <= 0) { S.glintDue = null; if (S.state === 'aim' || S.state === 'out' || S.state === 'fire') glintStar(); }
+      if (S.glintDue != null && (S.glintDue -= dt) <= 0) {
+        if (!(S.state === 'aim' || S.state === 'out' || S.state === 'fire')) S.glintDue = null;
+        else if (glintStar() || (S.starWait += dt) > 0.5) S.glintDue = null;
+      }
       if (G.health.dead && S.state !== 'watch') { brain.playerDown(); }
       look(dt);
       // [C2] after the critic: an aim is settled on me, not kept in a pocket -
@@ -452,10 +561,27 @@ export default {
           const last = !steps.slice(E.i + 1).some((q) => q.door);
           if (!E.ph) {
             const a = D.spec.inside, b = D.spec.outside;
-            const ab = Math.hypot(h.pos.x - a.x, h.pos.z - a.z) < Math.hypot(h.pos.x - b.x, h.pos.z - b.z);
+            let ab = Math.hypot(h.pos.x - a.x, h.pos.z - a.z) < Math.hypot(h.pos.x - b.x, h.pos.z - b.z);
+            // (round to another door of my room: from its side away from me)
+            if (S.goneRound) ab = Math.hypot(G.eye.x - a.x, G.eye.z - a.z) > Math.hypot(G.eye.x - b.x, G.eye.z - b.z);
             E.from = ab ? a : b; E.to = ab ? b : a; E.ph = 'up'; E.t = 0; B.path = null;
+            // [C2] after the critic's second look: the second of two working a
+            // door stacks beside the first, not behind him (behind, his line
+            // was his mate's back): along the wall, on the side he came from
+            if (last && (opts.door === 'hold' || E.hold)) {
+              const ahead = [...G.ais.values()].some((a2) => a2 !== B && a2.h && a2.h.alive && a2.brain && a2.brain.S && a2.brain.S.state === 'entry' && a2.brain.S.entry && a2.brain.S.entry.from === E.from);
+              if (ahead) {
+                const along = D.spec.axis === 'z', sg = Math.sign(along ? h.pos.z - E.from.z : h.pos.x - E.from.x) || 1;
+                const q = along ? { x: E.from.x, z: E.from.z + sg * 0.7 } : { x: E.from.x + sg * 0.7, z: E.from.z };
+                if (G.nav.free(q.x, q.z)) E.from = q;
+              }
+            }
           }
           E.t += dt;
+          if (last && (opts.door === 'hold' || E.hold)) {
+            if (!S.gunUp && (E.ph !== 'up' || D.open01 > 0.3)) { S.gunUp = true; h.setAim(true); }
+            if (snapUp('entry')) break;
+          }
           if (E.ph === 'up') {
             if (!B.path) moveTo(E.from.x, E.from.z, false);
             if (follow(dt) || near(E.from, 0.4)) { B.path = null; E.ph = 'open'; E.t = 0; stand(false); }
@@ -464,8 +590,12 @@ export default {
           if (E.ph === 'open') {
             h.speed = 0;
             B.faceTo(D.centre.x, D.centre.z, dt, 6);
+            // [C2] after the critic's second look: two working a door together
+            // stack on it - the first waits at it (3 s at most) for his mate on
+            // the same way to be at his back, then it opens and they come as a pair
+            if (last && (opts.door === 'hold' || E.hold) && D.open01 < 0.3 && E.t < 3 && [...G.ais.values()].some((a) => a !== B && a.h && a.h.alive && a.brain && a.brain.S && a.brain.S.state === 'entry' && a.brain.S.entry && a.brain.S.entry.steps && a.brain.S.entry.steps.some((q) => q.door === st.door) && Math.hypot(a.h.pos.x - h.pos.x, a.h.pos.z - h.pos.z) > 1.7 && Math.hypot(a.h.pos.x - h.pos.x, a.h.pos.z - h.pos.z) < 6)) break;
             // (he has the key: a locked door unlocked is a way through for all of them now - the grid again)
-            if (D.open01 < 0.7 && !D.moving && E.t > 0.25) { if (D.locked) { D.locked = false; Kt.rebuild(); } D.open(h.pos); }
+            if (D.open01 < 0.7 && !D.moving && E.t > 0.25) { if (D.locked) { D.locked = false; Kt.rebuild(); } if (D.open(h.pos) && last) Kt.doorOpened(D, B); }
             if (D.open01 > 0.72 || E.t > 3) { E.ph = 'through'; E.t = 0; }
             break;
           }
@@ -539,7 +669,8 @@ export default {
           }
           // (a man going to work a doorway goes to its jamb first: he does not stop in the corridor to shoot alone)
           if (S.cover && !S.workDoor && snap(dt)) break;
-          if (follow(dt)) { B.path = null; stand(S.coverLow); S.state = 'hold'; S.t = 0; S.wait = r.range(0.25, 0.6); break; }
+          if (S.workDoor && snapUp('move')) break;
+          if (follow(dt)) { B.path = null; S.gunUp = false; h.setAim(false); stand(S.coverLow); S.state = 'hold'; S.t = 0; S.wait = r.range(0.25, 0.6); break; }
           break;
         }
         // behind his cover: down, the wait, then out to shoot
@@ -552,7 +683,7 @@ export default {
           // (one of them going out: the others go with him - two guns at once on the man who stands to answer)
           const mate = [...G.ais.values()].some((a) => a !== B && a.brain && a.brain.S && (a.brain.S.state === 'out' || a.brain.S.state === 'aim') && a.h.alive);
           if (mate && kind === 'pistol' && S.wait > 0.3) S.wait = 0.3;
-          if (S.line && (G.controller.crouchK || 0) < 0.5 && S.wait > 0.3) S.wait = 0.3;
+          if (S.line && S.whole && S.wait > 0.3) S.wait = 0.3;
           S.wait -= dt;
           if (S.wait > 0) break;
           // [C2] after the critic (the rush's last man held a pavement for 40 s
@@ -580,13 +711,13 @@ export default {
           // jamb waits for his mate on his way to it, then they go out together)
           if (S.workDoor && S.t < 4 && [...G.ais.values()].some((a) => a !== B && a.h && a.h.alive && a.brain && a.brain.S && (a.brain.S.state === 'entry' || (a.brain.S.state === 'move' && a.brain.S.workDoor === S.workDoor)) && Math.hypot(a.h.pos.x - h.pos.x, a.h.pos.z - h.pos.z) < 7)) { S.wait = 0.2; break; }
           // (no line: a look out every few seconds - sooner when the last he saw of me I was standing in the open)
-          if (!S.line && !suppress && !mate && S.t < (S.peekT || (S.peekT = S.lastSeen && S.lastSeen.up && G.time - S.lastSeen.t < 6 ? r.range(0.6, 1.1) : r.range(2.5, 4)))) { S.wait = r.range(0.25, 0.5); break; }
+          if (!S.line && !suppress && !mate && S.t < (S.peekT || (S.peekT = S.lastSeen && S.lastSeen.up && G.time - S.lastSeen.t < 6 ? r.range(T.lookOut[0], T.lookOut[1]) : r.range(2.5, 4)))) { S.wait = r.range(0.25, 0.5); break; }
           S.peekT = 0;
           if (!Kt.token(B, kind === 'tommy')) { S.wait = r.range(0.3, 0.6); break; }
           // (the Tommy gunner with no line rakes where I went down from where he stands: through frosted glass, a door, a crate)
           if (S.fire && !S.fire.rise && !suppress && Math.hypot(S.fire.x - h.pos.x, S.fire.z - h.pos.z) > 0.2) {
             // (the gun comes up as he steps out: the tell shows as he appears)
-            B.path = [V(S.fire.x, 0, S.fire.z)]; B.pathI = 0; B.run = false; S.state = 'out'; S.t = 0; S.raiseT = 0;
+            B.path = [V(S.fire.x, 0, S.fire.z)]; B.pathI = 0; B.run = false; S.state = 'out'; S.t = 0; S.raiseT = 0; S.stepTo = { x: S.fire.x, z: S.fire.z };
             h.setAim(true); glint();
           } else raise();
           break;
@@ -598,7 +729,15 @@ export default {
           else if (!S.line) S.settle = Math.max(0, S.settle - dt / T.lost);
           if (S.target) h.lookAt(S.aimP);
           // (there, or he has me and his aim is settled on the way: he stops and fires)
-          if (follow(dt) || S.t > 1.2 || (S.line && S.settle >= 1 && S.raiseT >= T.raise)) { B.path = null; h.speed = 0; raise(S.raiseT); }
+          // ([C2] after the critic's second look: on to the spot itself - the path's
+          // end is reached 0.3 m short of it, and from there his gun hand was still
+          // behind the crate's corner, the jamb: a shuffle the last of the way)
+          let there = follow(dt);
+          if (there && S.stepTo) {
+            const dx = S.stepTo.x - h.pos.x, dz = S.stepTo.z - h.pos.z, d = Math.hypot(dx, dz);
+            if (d > 0.05 && S.t < 1.4) { const k = Math.min(d, 1.4 * dt) / d; h.speed = 0; h.pos.x += dx * k; h.pos.z += dz * k; Kt.resolveMan(h); there = false; }
+          }
+          if (there || S.t > 1.4 || (!S.mustReach && S.line && S.settle >= 1 && S.raiseT >= T.raise)) { B.path = null; h.speed = 0; S.mustReach = false; S.stepTo = null; raise(S.raiseT); }
           break;
         }
         // the tell, then the settle
@@ -614,9 +753,9 @@ export default {
           if (S.flinchT > 0) { /* (the flinch: a breath) */ }
           else if (S.line && S.lineT >= noticeOf()) S.settle += dt / settleTime();
           else S.settle = Math.max(0, S.settle - dt / T.lost);
-          if (S.settle >= 1 || (suppress && S.raiseT > T.raise + 0.3)) { S.state = 'fire'; S.t = 0; S.shots = burstOf(); S.shotT = 0; S.burstN = 0; break; }
+          if (S.settle >= 1 || (suppress && S.raiseT > T.raise + 0.3)) { S.state = 'fire'; S.t = 0; S.shots = S.resume && kind === 'pistol' ? r.int(T.snapShots[0], T.snapShots[1]) : burstOf(); S.shotT = 0; S.burstN = 0; break; }
           // (I stayed down: he watches the spot a moment, then goes back)
-          if (!S.line && S.lostT > T.watch && !suppress) { brain.drop(); S.state = kind === 'rusher' ? 'rush' : 'back'; S.t = 0; }
+          if (!S.line && S.lostT > T.watch && !suppress) { brain.drop(); if (!resume()) { S.state = kind === 'rusher' ? 'rush' : 'back'; S.t = 0; } }
           break;
         }
         case 'fire': {
@@ -626,7 +765,7 @@ export default {
           if (kind === 'pistol' && !S.line) {
             // (lost me between rounds: the settle drains, he holds the aim)
             S.settle = Math.max(0, S.settle - dt / T.lost);
-            if (S.lostT > T.watch) { brain.drop(); S.state = 'back'; S.t = 0; break; }
+            if (S.lostT > T.watch) { brain.drop(); if (!resume()) { S.state = 'back'; S.t = 0; } break; }
             if (S.settle < 1) break;
           }
           // (he lost me between rounds and has me again: settle again first)
@@ -636,15 +775,33 @@ export default {
           if (S.shots <= 0 || (kind === 'pistol' && S.mag <= 0) || (S.heldN || 0) > 8) { S.heldN = 0; brain.drop(); afterBurst(); break; }
           const suppress = kind !== 'pistol' && !S.line;
           // (one of his own in the line: he holds it a moment; long held, the burst is over)
-          if (!shoot(suppress)) { S.heldN = (S.heldN || 0) + 1; S.shotT = 0.15; break; }
-          S.heldN = 0;
+          // (the star not yet seen - his gun was behind something - it shows, and the round a moment after it)
+          if (!suppress && S.glintDue != null && S.burstN === 0) { if (glintStar()) { S.glintDue = null; S.shotT = 0.18; } else S.shotT = 0.06; S.heldN = (S.heldN || 0) + 1; break; }
+          const shot = shoot(suppress);
+          if (shot === 'arm') {
+            // (his gun behind the jamb, the leaf: out a step further, or back if there is no further)
+            S.heldN = (S.heldN || 0) + 1; S.armN = (S.armN || 0) + 1;
+            if (kind === 'rusher') { S.shotT = 0.1; break; }   // (the heavy walks on: a step and it is clear)
+            if (S.armN > 3 || !stepClear()) {
+              // (no step from here gives his gun the line: this cover is no good against me where I am - another)
+              S.armN = 0; brain.drop();
+              if (S.cover) { (S.badCover || (S.badCover = new Map())).set(S.cover, G.time + 8); }
+              if (!resume()) { if (S.cover) { S.cover.taken = null; S.cover = null; S.fire = null; } S.state = 'back'; S.t = 0; }
+            }
+            break;
+          }
+          if (!shot) { S.heldN = (S.heldN || 0) + 1; S.shotT = 0.15; break; }
+          S.heldN = 0; S.armN = 0;
           S.shots--;
-          S.shotT = kind === 'pistol' ? r.range(K.gap[0], K.gap[1]) : 1 / K.rate;
+          // (a man he sees whole and still: the aim holds between rounds - the pair comes quicker)
+          const still = S.whole && Math.hypot(G.controller.vel.x, G.controller.vel.z) < 1.0;
+          S.shotT = kind === 'pistol' ? (still ? r.range(K.gapStill[0], K.gapStill[1]) : r.range(K.gap[0], K.gap[1])) : 1 / K.rate;
           break;
         }
         case 'back': {
+          S.resume = null;
           if (S.flank) { S.flank = null; if (Kt.flank && Kt.flank.ai === B) Kt.flank.done = true; }
-          if (!S.cover) { if (!takeCover(S.rattledT > 0)) { S.state = 'open'; S.t = 0; S.wait = r.range(0.5, 1.0); } break; }
+          if (!S.cover) { if (!takeCover(S.rattledT > 0)) { S.state = 'open'; S.t = 0; S.wait = r.range(T.breath[0], T.breath[1]); h.setAim(false); } break; }
           if (Math.hypot(S.cover.x - h.pos.x, S.cover.z - h.pos.z) > 0.25) {
             if (!B.path) { B.path = [V(S.cover.x, 0, S.cover.z)]; B.pathI = 0; B.run = S.rattledT > 0; }
             if (!follow(dt) && S.t < 1.6) break;
@@ -668,7 +825,9 @@ export default {
           if (h.state !== 'idle' && h.state !== 'aim') h.setState('idle', 0.2);
           S.wait -= dt;
           if (kind === 'pistol' && S.mag <= 0) { S.state = 'reload'; S.t = 0; G.sfx.play('c2_magOut', h.pos.clone().setY(h.pos.y + 1.1), {}, { ref: 3 }); break; }
-          if (S.t > 2.5 && !S.flank && S.t % 3 < dt && takeCover(true)) break;
+          // (a trade on his way: I went down, or out of his sight - on his way in again)
+          if (S.trade && ((!S.line && S.lostT > 0.3) || (S.line && !S.whole) || S.t > 6)) { S.trade = false; if (resume()) break; }
+          if (S.t > 2.5 && !S.flank && !S.trade && S.t % 3 < dt && takeCover(true)) break;
           if (S.line && S.wait <= 0 && Kt.token(B)) { raise(); break; }
           // (the Tommy gunner in the open with no line: he rakes where he last saw me, as from cover)
           if (kind === 'tommy' && !S.line && S.lastSeen && G.time - S.lastSeen.t < T.rake && S.wait <= 0 && S.lostT > 1.5 && Kt.token(B, true)) { S.wait = r.range(2.5, 4); raise(); break; }
@@ -751,6 +910,13 @@ export default {
       h.speed = K.walk * 0.85;
       h.setAim(true);
     }
+    // (a stop on his way - a shot at me from it - over: on his way again)
+    function resume() {
+      const R = S.resume; S.resume = null; S.trade = false;
+      if (R === 'entry' && S.entry) { S.state = 'entry'; S.t = 0; return true; }
+      if (R === 'move' && S.cover) { moveTo(S.cover.x, S.cover.z, true); S.state = 'move'; S.t = 0; return true; }
+      return false;
+    }
     const burstOf = () => (kind === 'pistol' ? r.int(K.burst[0], K.burst[1]) : r.int(K.burst[0], K.burst[1]));
     function afterBurst() {
       S.burstN = 0;
@@ -763,17 +929,25 @@ export default {
         return;
       }
       if (kind === 'rusher') { S.state = 'rush'; S.t = 0; h.setState('walk', 0.2); return; }
-      // (I am standing up in his line: he has no reason to go back - another
-      // two or three, the gun still up; [C2] after the critic: rounds coming
-      // back at him no longer send him in - the stand-up trade is his)
-      if (kind === 'pistol' && (G.controller.crouchK || 0) < 0.5 && S.line && S.mag > 0 && (S.stay = (S.stay || 0) + 1) <= 2) {
-        S.state = 'fire'; S.t = 0; S.shots = burstOf(); S.shotT = 0; S.burstN = 0; kit().token(B); return;
-      }
-      S.stay = 0;
-      if (S.resume === 'entry' && S.entry) { S.resume = null; S.state = 'entry'; S.t = 0; return; }
-      if (S.resume === 'move' && S.cover) { S.resume = null; moveTo(S.cover.x, S.cover.z, true); S.state = 'move'; S.t = 0; return; }
-      S.resume = null;
-      if (S.flank) { S.flank = null; const F = kit().flank; if (F && F.ai === B) F.done = true; S.state = 'open'; S.t = 0; S.wait = r.range(0.4, 0.9); return; }
+      // [C2] after the critic's second look: out, two or three, back - as the
+      // brief has it, whoever he shoots at (the second pass kept a man up for
+      // two more bursts at a man standing in his line: standing still, I was
+      // down 1.3 - 1.9 s after the first round, too quick to read the line).
+      // Back behind his cover, he looks out again soon at a man he saw whole
+      // (hold); with no cover, a breath with the gun down, then up again (open)
+      // (shot at - a round of mine into him or past him a moment ago - by a man he
+      // sees whole: a duel; he does not lower his gun in it, he fires again)
+      if (kind === 'pistol' && S.line && S.whole && S.mag > 0 && (S.rattledT > 0 || G.time - (S.hitAt ?? -9) < 1.5)) { S.heldUp = false; S.state = 'fire'; S.t = 0; S.shots = burstOf(); S.shotT = 0; kit().token(B); return; }   // (the gap since his last round is already gone: on at once; burstN kept - the aim does not settle again)
+      // (a stop on his way at a man he sees whole - in the open, in the room he
+      // is coming into - is a trade: he stays where he stopped, the gun down a
+      // breath, then up again - the click and the star - and again, while I
+      // stand there; once I am down, or out of his sight, on his way again)
+      // (first his aim held on me a moment - shot back at in it, it is a duel, above - then the breath)
+      if (kind === 'pistol' && S.resume && S.line && S.whole && S.mag > 0 && !S.heldUp) { S.heldUp = true; S.state = 'fire'; S.shots = 0; S.shotT = T.holdUp; return; }
+      S.heldUp = false;
+      if (kind === 'pistol' && S.resume && S.line && S.whole && S.mag > 0) { S.state = 'open'; S.t = 0; S.wait = r.range(T.breath[0], T.breath[1]); S.trade = true; return; }
+      if (resume()) return;
+      if (S.flank) { S.flank = null; const F = kit().flank; if (F && F.ai === B) F.done = true; S.state = 'open'; S.t = 0; S.wait = r.range(T.breath[0], T.breath[1]); h.setAim(false); return; }
       S.state = 'back'; S.t = 0;
     }
     // (opts.cover: he is there already when it starts - down behind the

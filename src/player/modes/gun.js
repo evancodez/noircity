@@ -67,7 +67,7 @@ export default {
   enter(ctl, opts) {
     ctl.crouchOn = !!opts.crouch;
     ctl.crouchK = ctl.crouchOn ? 1 : 0;
-    ctl.riseK = 0; ctl.leanK = 0;
+    ctl.riseK = 0; ctl.leanK = 0; ctl.riseOver = false;
     ctl._crouchC = ctl.keys.has('KeyC');
     ctl._want = null;
     ctl._gy0 = null;
@@ -107,6 +107,9 @@ export default {
     const r0 = ctl.riseK || 0;
     ctl.riseK = rising ? Math.min(1, r0 + dt / G_.rise) : Math.max(0, r0 - dt / G_.rise);
     const rk = ss(ctl.riseK);
+    // ([C2] after the critic's second look: up over something - a rise over
+    // nothing, in the open, lifts the eye 0.08 m and is still down in the open)
+    ctl.riseOver = ctl.riseK > 0.5 && (!!ctl._rise.lean || ctl._rise.up > 0.15);
     const speed = ctl.riseK > 0.3 ? G_.risenWalk : G_.walk - (G_.walk - G_.creep) * e;
     ctl.walkStep(dt, { speed, sprint: G_.sprint - 3.9 * e, canSprint: e < 0.5 && ctl.riseK < 0.1 });
     ctl._gy0 = ctl.groundY;
@@ -125,7 +128,7 @@ export default {
     if (ctl._gy0 != null) ctl.groundY = ctl._gy0;
     if (ctl._leanOff) { ctl.pos.x -= ctl._leanOff.x; ctl.pos.z -= ctl._leanOff.z; ctl._leanOff.x = ctl._leanOff.z = 0; }
     ctl._gy0 = null;
-    ctl.crouchK = 0; ctl.riseK = 0; ctl.leanK = 0;
+    ctl.crouchK = 0; ctl.riseK = 0; ctl.leanK = 0; ctl.riseOver = false;
     ctl.crouchOn = false;
   },
 };

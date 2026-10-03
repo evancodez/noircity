@@ -109,4 +109,9 @@ export const POSTS = [{ x: -10.5, z: 7.95, yaw: 0 }, { x: 11.5, z: 16.45, yaw: M
 export const OPENINGS = [{ x0: -2.5, x1: 1.5, h: 3.3, name: 'bay' }, { x0: -13.8, x1: -11.9, h: 3.0, name: 'alleyW' }, { x0: 10.9, x1: 12.8, h: 3.0, name: 'alleyE' }];
 export const LOADING = OPENINGS[0];
 export const RECESS = { depth: 3.2, side: 2.4 };
-export const BOUNDS = { minX: -22, maxX: 22, minZ: -10, maxZ: 21.6 };
+export const BOUNDS = { minX: -22, maxX: 22, minZ: -12.6, maxZ: 21.6 };
+// [C2] after the critic's second look (behind the back door: an empty plain,
+// an invisible wall, a way round the house's ends into the street): the house
+// in a terrace - a brick block either side (x to +-22.5, 5.6 m), from the
+// street back to the yard's wall (z0) - and a walled yard behind it (parts/yard.js)
+export const YARD = { z0: -12.3, wallH: 2.8, blockX0: -22.5, blockX1: 22.5, blockH: 5.6, bins: [[1.15, -8.75], [1.75, -8.8]] };

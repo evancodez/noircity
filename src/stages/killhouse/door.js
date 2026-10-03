@@ -174,23 +174,30 @@ export function makeDoor(stage, kit, mats, name, spec) {
       if (test(G.controller.pos.x, G.controller.pos.z, 0.36)) return 'player';
       return false;
     },
-    // the player out of the leaf's way at angle `a`: on, along the line from
-    // the leaf to him, to just clear of it (true), or nowhere to go (false)
+    // the player out of the leaf's way at angle `a`: straight back from the
+    // doorway, on his own side of it, just clear of the leaf (true), or
+    // nowhere to go - a wall at his back (false: the door stops). [C2] after
+    // the critic's second look: the push followed the leaf's own normal,
+    // which turns with it, and swept him round the hinge to behind the leaf
     shove(a) {
-      const G = stage.game, C = G.controller, R = 0.385;
-      const c = Math.cos(a), s = Math.sin(a);
-      const dx = along ? s : c, dz = along ? c : -s;
-      const hx = hinge.position.x, hz = hinge.position.z;
-      const t = Math.max(0, Math.min(w, (C.pos.x - hx) * dx + (C.pos.z - hz) * dz));
-      const qx = hx + dx * t, qz = hz + dz * t;
-      let nx = C.pos.x - qx, nz = C.pos.z - qz, d = Math.hypot(nx, nz);
-      // (on the leaf's line: out the way it swings)
-      if (d < 1e-3) { const sg = Math.sign(a - this.angle) || 1; nx = (along ? c : -s) * sg; nz = (along ? -s : -c) * sg; d = 1; }
-      const p = { x: qx + (nx / d) * R, z: qz + (nz / d) * R };
-      stage.colliders.resolve(p, C.radius);
-      if (this.dist(a, p.x, p.z) < 0.36 - 0.005 || Math.hypot(p.x - C.pos.x, p.z - C.pos.z) > 0.25) return false;
-      C.pos.x = p.x; C.pos.z = p.z;
-      return true;
+      const G = stage.game, C = G.controller;
+      const plane = along ? spec.x : spec.z;
+      const off = (along ? C.pos.x : C.pos.z) - plane;
+      // (the side the leaf swings into; in the doorway itself, out of its way: the other side)
+      const sw = Math.sign(along ? Math.sin(a) : -Math.sin(a)) || (spec.swing || 1);
+      const side = Math.abs(off) < 0.05 ? -sw : Math.sign(off);
+      for (let k = 0.02; k <= 0.25 + 1e-6; k += 0.02) {
+        const p = { x: C.pos.x + (along ? side * k : 0), z: C.pos.z + (along ? 0 : side * k) };
+        // (clear of the leaf's collider as well as its line: his radius and its half thickness)
+        if (this.dist(a, p.x, p.z) < 0.41) continue;
+        const q = { x: p.x, z: p.z };
+        stage.colliders.resolve(q, C.radius);
+        // (a wall behind him: he cannot give way - the door stops ajar)
+        if (Math.hypot(q.x - p.x, q.z - p.z) > 0.03) return false;
+        C.pos.x = p.x; C.pos.z = p.z;
+        return true;
+      }
+      return false;
     },
   };
   // the doorway's frame (both faces): the casings are the shell's

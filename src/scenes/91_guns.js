@@ -25,16 +25,20 @@ const EAST = -Math.PI / 2, SOUTH = Math.PI;
 export const BEATS = {
   ready: { at: [DESK.x - 0.95, DESK.z, EAST], gun: 'revolver', obj: 'Tip the desk over. Get behind it.' },
   door: {
-    at: [DESK.x + 0.02, DESK.z + 0.1, EAST], gun: 'revolver', tipped: true, crouch: false, max: 2, flankAfter: 9,
+    // ([C2] after the critic's second look: down behind the desk, as the ready beat left me - it reset the crouch at the cut)
+    at: [DESK.x + 0.02, DESK.z + 0.1, EAST], gun: 'revolver', tipped: true, crouch: true, max: 2, flankAfter: 9,
     obj: 'They are coming. Hold the room.',
     // [C2] after the critic: three through the one door - two who work it
     // together from its jambs, and a third some seconds behind them (two were
     // a fair duel for a man standing up and shooting fast: he won it)
     area: { x0: HOUSE.x0, x1: HOUSE.x1, z0: HOUSE.z0, z1: HOUSE.z1 - 0.2 },
     men: [
+      // ([C2] after the critic's second look - won standing on the room's floor 9 sessions of 10, each man shot as he
+      // stepped into the lit doorway with his gun down: the two stack on A1 and come in as a pair, guns up; the third
+      // 5 s behind them, was 8)
       { kind: 'pistol', at: { x: -0.4, z: -9.5 }, way: [{ door: 'BD' }, { x: -0.45, z: -6.2, run: true }, { door: 'A1' }], wait: 0.8, door: 'hold' },
       { kind: 'pistol', at: { x: -0.4, z: -9.7 }, way: [{ door: 'BD' }, { x: -0.5, z: -5.6, run: true }, { door: 'A1' }], wait: 1.2, door: 'hold' },
-      { kind: 'pistol', at: { x: -0.2, z: -9.9 }, way: [{ door: 'BD' }, { x: -0.4, z: -6.0, run: true }, { door: 'A1' }], wait: 8.0, door: 'hold' },
+      { kind: 'pistol', at: { x: -0.2, z: -9.9 }, way: [{ door: 'BD' }, { x: -0.4, z: -6.0, run: true }, { door: 'A1' }], wait: 5.0, door: 'hold' },
     ],
     spots: [{ x: DESK.x + 0.02, z: DESK.z + 0.1, yaw: EAST }, { x: DESK.x + 0.02, z: DESK.z - 0.55, yaw: EAST }, { x: -7.25, z: -2.35, yaw: EAST + 0.4 }],
     open: { x: -3.6, z: -2.4 },
@@ -42,13 +46,18 @@ export const BEATS = {
   two_ways: {
     // ([C2] after the critic: flankAfter 7 -> 9 - with the men's way of fighting sharpened, the first-timer
     // was flanked behind the desk three tries running)
-    at: [DESK.x + 0.02, DESK.z + 0.1, EAST], gun: 'revolver', tipped: true, crouch: false, max: 2, flankAfter: 9,
+    at: [DESK.x + 0.02, DESK.z + 0.1, EAST], gun: 'revolver', tipped: true, crouch: true, max: 2, flankAfter: 9,
     obj: 'Three of them. Watch both doors.',
+    // ([C2] after the critic's second look: the third man's door, opening at my back, is said as it opens)
+    warn: { door: 'The other door! Behind you!' },
     area: { x0: HOUSE.x0, x1: HOUSE.x1, z0: HOUSE.z0, z1: HOUSE.z1 - 0.2 },
     men: [
       { kind: 'pistol', at: { x: -0.4, z: -9.5 }, way: [{ door: 'BD' }, { x: -0.45, z: -6.2, run: true }, { door: 'A1' }], wait: 0.8, door: 'hold' },
       { kind: 'pistol', at: { x: -0.4, z: -9.7 }, way: [{ door: 'BD' }, { x: -0.5, z: -5.5, run: true }, { door: 'A1' }], wait: 1.2, door: 'hold' },
-      { kind: 'pistol', at: { x: -0.5, z: 9.5 }, way: [{ door: 'SD' }, { x: -4.6, z: 4.6, run: true }, { door: 'A2' }], wait: 3.0 },
+      // ([C2] after the critic's second look - the first-timer lost it 15 tries of 15: the third came in at my back at
+      // ~10 s, straight into its frame, while the two at A1 worked their jambs - now he comes a little later, works
+      // A2 from its jamb as the others work A1, and his door is said as it opens)
+      { kind: 'pistol', at: { x: -0.5, z: 9.5 }, way: [{ door: 'SD' }, { x: -4.6, z: 4.6, run: true }, { door: 'A2' }], wait: 5.0, door: 'hold' },
     ],
     spots: [{ x: DESK.x + 0.02, z: DESK.z + 0.1, yaw: EAST }, { x: -7.25, z: -2.35, yaw: EAST + 0.6 }, { x: -6.0, z: -6.6, yaw: EAST + 0.8 }],
     open: { x: -3.6, z: -2.4 },
@@ -188,11 +197,12 @@ function room(ctx, name) {
   // are placed: against the lobby's eye they stood up in their first frames,
   // in my line - the false "They have your angle")
   G.eye.copy(G.camera.position);
-  ctx.player.weapons.equip(B.gun || 'revolver');
-  if (B.gun === 'tommy') G.weapon.reset();
+  // [C2] after the critic's second look: the gun as it was at the checkpoint
+  // - full - on every retry (the revolver came back with what was left in it)
   const K = gunsOf(G);
+  K.arm(B.gun || 'revolver');
   K.end();
-  K.begin({ maxFiring: B.max ?? 2, flankAfter: B.flankAfter ?? 7, to: name, area: B.area || null, settleK: B.settleK || 1 });
+  K.begin({ maxFiring: B.max ?? 2, flankAfter: B.flankAfter ?? 7, to: name, area: B.area || null, settleK: B.settleK || 1, dmgK: B.dmgK || 1, warn: B.warn || null });
   ctx.flags.c2 = { beat: name, men: [], won: false, t0: G.time, spots: B.spots || [], open: B.open || null };
   for (const m of B.men || []) {
     const h = K.spawn({ kind: m.kind, at: m.at, way: m.way ? { steps: m.way } : null, wait: m.wait ?? 0, hp: m.hp, door: m.door, cover: !!m.cover, yaw: m.yaw ?? null });
@@ -225,8 +235,9 @@ export default defineScene({
     // it, at its knob, at its panel: the prompt is there); a door stopped ajar
     // (against a man) is opened on, not shut
     const ajar = (d) => !d.shut && !d.moving && d.target !== 0 && d.open01 < 0.85;
-    const doorH = Object.entries(house.doors).map(([name, d]) => ({ d, h: ctx.interact.add({ id: 'door' + name, at: doorPoint(G, d), range: 1.7, cone: 0.6, prompt: 'open', onUse: () => { if (d.shut || ajar(d)) d.open(G.eye); else d.close(); } }) }));
-    ctx.onStep(() => { for (const { d, h } of doorH) h.prompt = d.shut || ajar(d) ? 'open' : 'shut'; });
+    const doorH = Object.entries(house.doors).map(([name, d]) => ({ d, h: ctx.interact.add({ id: 'door' + name, at: doorPoint(G, d), range: 1.7, cone: 0.6, prompt: 'open', onUse: () => { if (d.locked) d.tried = true; if (d.shut || ajar(d)) d.open(G.eye); else d.close(); } }) }));
+    // ([C2] after the critic's second look: a locked door, once tried, says so)
+    ctx.onStep(() => { for (const { d, h } of doorH) h.prompt = d.locked && d.tried ? 'locked' : d.shut || ajar(d) ? 'open' : 'shut'; });
     // the warning before a fall: the kit's, for the moment (the heavy close,
     // my cover shot through, hurt with a man on me, hurt and safe) - none once
     // the room is won
@@ -267,6 +278,8 @@ export default defineScene({
       yield until(() => !!(ctx.player.weapons.active && ctx.player.weapons.active.reloading) || G.time - F.c2.t0 > 75);
       yield until(() => !(ctx.player.weapons.active && ctx.player.weapons.active.reloading));
       yield wait(0.8);
+      // ([C2] after the critic's second look: the ready's last line goes as the picture does - it showed dimmed over the door's fade-in)
+      ctx.hud.objective(null);
       G.scenes.go('guns', { beat: 'door', fade: 'black', card: false });
       return;
     }
