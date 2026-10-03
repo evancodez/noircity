@@ -249,7 +249,7 @@ function buildBlind(kit, mats, stage) {
   for (const dz of [-0.62, 0, 0.62]) for (const dx of [-0.026, 0.026]) R.push(new THREE.BoxGeometry(0.002, top - bottom + 0.06, 0.012).translate(B.x + dx, (top + bottom) / 2, zc + dz));
   R.push(new THREE.CylinderGeometry(0.0022, 0.0022, 1.3, 5).translate(B.x - 0.04, top - 0.62, WIN.z1 - 0.05));
   R.push(lathe([[0.0001, 0], [0.008, 0.004], [0.009, 0.03], [0.0001, 0.04]], 10).translate(B.x - 0.04, top - 1.3, WIN.z1 - 0.05));
-  kit.add(mergeGeos(R), mats.trim, { name: 'blind_rails' });
+  kit.add(mergeGeos(R), mats.underLit, { name: 'blind_rails' });
   const api = {
     mesh: im, slats, top, bottom, step,
     set(i, o) { const S = slats[i]; if (!S) return; Object.assign(S, o); write(S); im.instanceMatrix.needsUpdate = true; },

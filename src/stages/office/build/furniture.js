@@ -390,7 +390,7 @@ export function buildFurniture(kit, mats, stage) {
       const b = new THREE.Group();
       b.rotation.y = k * Math.PI / 2;
       rotor.add(b);
-      const bm = kit.add(slab(0.56, 0.008, 0.13, { bevel: 0.003, corner: 0.04 }).translate(0.4, -0.09, 0).rotateX(0.2), mats.desk, { parent: b, name: 'fan_blade' });
+      const bm = kit.add(slab(0.56, 0.008, 0.13, { bevel: 0.003, corner: 0.04 }).translate(0.4, -0.09, 0).rotateX(0.2), mats.underLit, { parent: b, name: 'fan_blade' });
       blades.push({ group: b, mesh: bm, bent: 0 });
     }
     out.fan = { group: g, rotor, blades, rpm: 38, bent: false };

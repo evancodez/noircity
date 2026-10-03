@@ -51,6 +51,10 @@ export function officeMats() {
     stone: std('stone', 0x383838, 0.95, 'plaster'),
     asphalt: std('asphalt', 0x0a0a0a, 0.3, 'plaster'),
     black: std('black', 0x040404, 1.0, 'cloth'),
+    // [C5] what hangs in the street's light up through the blind (the fan's blades, the blind's head rail):
+    // near black, so that light - made strong to reach the ceiling from three floors down - draws an edge on
+    // them, not a glowing blot (it printed the blades and the rail as white ovals in every look up)
+    underLit: std('underLit', 0x050505, 0.95, 'wood'),
     // [C5] 305's dust sheets: pale cloth over the dark (they hold what light there is)
     sheet: std('sheet', 0x8a8a86, 0.95, 'plaster'),
     glassDark: std('glassDark', 0x0a0a0a, 0.1, 'metal'),

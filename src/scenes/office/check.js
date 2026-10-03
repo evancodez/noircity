@@ -108,7 +108,7 @@ const SCATTER = [[0.02, 0.01, 2.6], [-0.15, -0.06, -0.8], [0.06, -0.085, 0.5], [
 export const CHECK_PUZZLE = {
   id: 'office.check',
   // (close over the desk's top beside the blotter: the slip a quarter of the frame)
-  table: { anchor: 'office.blotter', size: [0.46, 0.28], fov: 36 },
+  table: { anchor: 'office.blotter', size: [0.46, 0.28], fov: 31 },
   build(ctx, a) {
     const S = ctx.stage, G = ctx.game;
     const top = a.pos.y + 0.0006;

@@ -161,8 +161,8 @@ export default defineScene({
       let solved = false;
       // (the pad pushed aside off the blotter: the pieces go down in the lamp's pool)
       // (and the lamp eased down for the close look, as at the pad: a hand's length from the bulb its pool printed the blotter white)
-      const padAside = (on) => { O.pad.block.visible = !on; O.pad.mesh.visible = !on; O.lampDimTo = on ? 0.6 : 0; };
-      ctx.onStep(() => { if (!G.puzzles.active && O.lampDimTo > 0 && !(F.pad && F.pad.active)) O.lampDimTo = 0; else if (G.puzzles.active) O.lampDimTo = 0.6; });
+      const padAside = (on) => { O.pad.block.visible = !on; O.pad.mesh.visible = !on; O.lampDimTo = on ? 1 : 0; };
+      ctx.onStep(() => { if (!G.puzzles.active && O.lampDimTo > 0 && !(F.pad && F.pad.active)) O.lampDimTo = 0; else if (G.puzzles.active) O.lampDimTo = 1; });
       const lay = () => { if (!G.puzzles.active) { padAside(true); G.puzzles.open('office.check', { onSolved: () => { solved = true; } }); } };
       // (opened a step after the E that asked for it: the puzzle reads E as "step back")
       let layNext = false;

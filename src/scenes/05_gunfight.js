@@ -272,8 +272,13 @@ export default defineScene({
       const fw = G.camera.getWorldDirection(V(0, 0, 0)).setY(0).normalize();
       papers(ctx, V(G.eye.x + fw.x * 1.9, 2.3, G.eye.z + fw.z * 1.9), V(0, -1, 0), rng, 4);
       // at the street window: E, two fingers part the slats (chapter V's first frame)
-      yield* ctx.prompt({ text: 'look out', key: 'KeyE', at: () => (inWindowReach(G) ? V(ROOM.x1 - 0.1, 1.6, (WIN.z0 + WIN.z1) / 2) : null) });
-      ctx.next({ fade: 'cut', card: true, keep: true });
+      // (at the street window, facing its blind: V takes it from there - its own E parts the slats - so the
+      // window is one press, not two)
+      const fv = V(0, 0, 0), wc = V(ROOM.x1 - 0.12, 1.6, (WIN.z0 + WIN.z1) / 2);
+      yield until(() => { G.camera.getWorldDirection(fv); const dx = wc.x - G.eye.x, dz = wc.z - G.eye.z, d = Math.hypot(dx, dz); return d < 1.7 && (fv.x * dx + fv.z * dz) / d > 0.75; });
+      // (a cut, no black, card V small over it - not `keep`: V's first beat sets itself up at this window, the
+      // blind's slats and the man under the lamp (lane C6's scenes/watcher/office.js); kept, its setup never ran)
+      ctx.next({ fade: 'cut', card: true });
     }
   },
 
@@ -281,12 +286,6 @@ export default defineScene({
     if (A.prompting()) A.pressAfter('KeyE', 1.0, 2.0);
   },
 });
-
-// near the street window, looking at it
-function inWindowReach(G) {
-  const e = G.eye, cx = ROOM.x1 - 0.1, cz = (WIN.z0 + WIN.z1) / 2;
-  return Math.hypot(e.x - cx, e.z - cz) < 1.6;
-}
 
 // the take: the camera to their shadows on the door's frosted glass (the
 // lens narrowing on it across the outer office), held, and given back
