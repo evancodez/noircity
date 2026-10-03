@@ -347,7 +347,8 @@ export class Chase {
     } else if (e.kind === 'lid') {
       // ([C6 3rd] the alley's T: which way he went - the lid clatters off his way)
       const lid = things.lid;
-      if (lid) { const a = pathAt(this.P, this.s + 3), b = pathAt(this.P, this.s); lid.trigger(a.x - b.x + 0.6, a.z - b.z); }
+      // (into the lane and along it his way: off the bin's rim, down onto the flags of the T, rolling east)
+      if (lid) lid.trigger(0.9, -1.0);
     } else if (e.kind === 'look') {
       // (no one on the roofs behind him when I took the row: he runs on)
       if (!this.otherWay()) this.look = { t: 0 };

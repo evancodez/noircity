@@ -1108,6 +1108,7 @@ function lidBin(c, { x, z }) {
   const rest = () => { lid.position.set(x, 0.8, z); lid.rotation.set(0, 0, 0); };
   rest();
   return {
+    state: S, mesh: lid,
     // knocked off toward (dx, dz) - his way
     trigger(dx, dz) {
       if (S.go) return;
@@ -1121,6 +1122,9 @@ function lidBin(c, { x, z }) {
       S.t += dt;
       S.vy -= 9.8 * dt;
       S.x += S.vx * dt; S.z += S.vz * dt; S.y += S.vy * dt;
+      // (off the walls: the alley's, then the lane's)
+      if (S.z > LANE.z1 - 0.3) { if (S.x > 4.65) { S.x = 4.65; S.vx = -Math.abs(S.vx) * 0.4; } if (S.x < 0.35) { S.x = 0.35; S.vx = Math.abs(S.vx) * 0.4; } }
+      if (S.x > 5.0 || S.z < LANE.z1) { if (S.z > LANE.z1 - 0.35 && S.x > 4.6) { S.z = LANE.z1 - 0.35; S.vz = -Math.abs(S.vz) * 0.4; } if (S.z < LANE.z0 + 0.35) { S.z = LANE.z0 + 0.35; S.vz = Math.abs(S.vz) * 0.4; } }
       if (S.y < 0.02) { S.y = 0.02; if (S.vy < -1) emit('lidHit', null, { x: S.x, z: S.z }); S.vy = Math.abs(S.vy) * 0.25; S.vx *= 0.7; S.vz *= 0.7; }
       const f = Math.exp(-dt * 0.9); S.vx *= f; S.vz *= f;
       S.spin *= Math.exp(-dt * 1.2);
