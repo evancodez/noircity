@@ -3,7 +3,7 @@ import { arch } from '../arch.js';
 import { lathe, tube, V3, roundedBox, merge } from '../../../world/geom.js';
 import { buildTruck, TRUCK as TRUCK_M } from '../../../vehicles/models.js';
 import { allocInkId, markFigure } from '../../../render/layers.js';
-import { MERCER, GARAGE, MARKET, GATE, FENCE, TANNER, TRUCK, DOG, PASSAGE, ROOFS, BACKST } from '../plan.js';
+import { MERCER, GARAGE, MARKET, GATE, FENCE, TANNER, TRUCK, DOG, PASSAGE, ROOFS, BACKST, ARCH } from '../plan.js';
 
 // The streets of the chase's last stretches (lane C6): Mercer Street (its
 // lamps, the garage across its foot with its doors folded back), Tanner's
@@ -40,7 +40,7 @@ export default {
       api.lamps = {
         m1: L.post(MERCER.road[1] + 0.7, -96.0, -Math.PI / 2, { y: 0.15 }),
         m2: L.post(MERCER.road[0] - 0.7, -112.0, Math.PI / 2, { y: 0.15 }),
-        m3: L.post(MERCER.road[1] + 0.7, -134.0, -Math.PI / 2, { y: 0.15, real: false }),
+        m3: L.post(MERCER.road[1] + 0.7, -134.0, -Math.PI / 2, { y: 0.15, real: true }),
         garage: L.wall((GARAGE.door[0] + GARAGE.door[1]) / 2, 4.4, GARAGE.z0, 0, -1, { out: 0.5, strength: 0.9 }),
       };
       // a hydrant, a pillar box on the far pavement
@@ -107,6 +107,29 @@ export default {
       K.box('marketWall', MAT.brick, M0.x1 - 0.6, M0.x1 + 0.2, 4.4, 5.1, gw.z0 - 0.35, gw.z1 + 0.35);
       // the lettering board over the gateway (blank in the ink: a pale board)
       fbox('marketWall', MAT.plaster, face('x', M0.x1 + 0.2, 1), gw.z0 + 0.4, gw.z1 - 0.4, 4.5, 5.0, 0, 0.04);
+      // ([C6 3rd] tonight its iron gates are shut across it and chained: a
+      // padlock on the chain where the leaves meet, pale in the street's lamp;
+      // the market's way in is round by the corner and its back arch)
+      {
+        const steel = new THREE.MeshStandardMaterial({ color: 0xc4c4c4, metalness: 0.75, roughness: 0.3, envMap: stage.M.envSoft, envMapIntensity: 1.0 });
+        const leaves = new THREE.Group();
+        const bars = [], chain = [];
+        const xg = M0.x1 - 0.05, zm = (gw.z0 + gw.z1) / 2, H = 3.1;
+        for (let z = gw.z0 + 0.42; z < gw.z1 - 0.38; z += 0.14) bars.push(new THREE.BoxGeometry(0.03, H, 0.03).translate(xg, H / 2, z), new THREE.ConeGeometry(0.035, 0.14, 4).translate(xg, H + 0.06, z));
+        for (const y of [0.2, 1.2, H - 0.12]) bars.push(new THREE.BoxGeometry(0.05, 0.06, gw.z1 - gw.z0 - 0.75).translate(xg, y, zm));
+        bars.push(new THREE.BoxGeometry(0.07, H + 0.05, 0.07).translate(xg, (H + 0.05) / 2, zm - 0.04), new THREE.BoxGeometry(0.07, H + 0.05, 0.07).translate(xg, (H + 0.05) / 2, zm + 0.04));
+        const lm = new THREE.Mesh(merge(bars), MAT.iron); lm.castShadow = true; leaves.add(lm);
+        // the chain round both meeting stiles, the padlock
+        for (let i = 0; i < 14; i++) { const a = (i / 14) * Math.PI * 2; chain.push(new THREE.TorusGeometry(0.03, 0.007, 4, 8).rotateY(i % 2 ? Math.PI / 2 : 0).translate(xg + Math.cos(a) * 0.09, 1.25 + Math.sin(a) * 0.05 - 0.04 * (i > 4 && i < 10 ? 1 : 0), zm + Math.sin(a) * 0.13)); }
+        chain.push(new THREE.BoxGeometry(0.06, 0.14, 0.11).translate(xg + 0.12, 1.08, zm), new THREE.TorusGeometry(0.038, 0.009, 5, 12, Math.PI).rotateY(Math.PI / 2).translate(xg + 0.12, 1.15, zm));
+        const cm = new THREE.Mesh(merge(chain), steel); cm.castShadow = true; cm.userData.noRay = true; leaves.add(cm);
+        leaves.userData.inkId = allocInkId();
+        leaves.traverse((o) => { if (o.isMesh) o.userData.inkId = leaves.userData.inkId; });
+        markFigure(leaves);
+        stage.scene.add(leaves);
+        stage._gatewayLeaves = leaves;
+        K.collide(M0.x1 - 0.12, M0.x1 + 0.02, gw.z0, gw.z1, 'gate');
+      }
       // the north end: the next block's wall; the south: the low building's
       // stalls: two rows of booths, shutters down, awnings rolled, the cross way to the gate
       const booth = (x0, x1, z0, z1, side) => {
@@ -168,6 +191,13 @@ export default {
       K.collide(fx - 0.08, fx + 0.08, FENCE.z0, GATE.z0, 'fence');
       K.collide(fx - 0.08, fx + 0.08, GATE.z1, FENCE.z1, 'fence');
       api.gateLamp = L.wall(fx, 3.0, GATE.z1 + 0.6, -1, 0, { out: 0.25, strength: 0.85 });
+      // ([C6 3rd] the west aisle along the fence: one bracket lamp on the wall
+      // over its porter's table - dark between, the thing in the way lit)
+      api.westLamp = L.wall(fx + 0.4, 3.0, -111.4, 1, 0, { out: 0.35, strength: 0.75 });
+      // (the market's back way: a lamp over the arch on the cross street, a
+      // bulb inside it; Mercer Street's far lamp lit for the run up it)
+      api.archLamp = L.wall(ARCH.x0 + 1.5, ARCH.h + 0.9, -133, 0, -1, { out: 0.4, strength: 0.9 });
+      api.archBulb = L.hang((ARCH.x0 + ARCH.x1) / 2, ARCH.h - 0.15, -126.4, { real: true });
       // the south end's low building faces into the market: a shut door
       door('midN', face('z', M0.z1, -1), 9.0, 1.6, 2.4);
     }

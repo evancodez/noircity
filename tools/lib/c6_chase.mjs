@@ -10,7 +10,9 @@
 //         go for a moment; picks a lane of the yard at random (and, in the
 //         wrong one, finds its door locked and goes back round)
 //   good  uses what was taught: SPACE / C a quarter second before each thing,
-//         reads which lane he took, takes `over` at the fork
+//         reads which lane he took, takes `over` at the fork; ([C6 3rd])
+//         `missAll: true` or `miss: [ids]`: those things run into (never
+//         pressed for), the right key pressed once stopped against them
 //   firsttimer  ([C6 3rd]) knows only what the cards have taught him: SPACE
 //         for every thing (the reflex the first card taught) `spaceT` s before
 //         it (default 0.3: a couple of metres), the right key only for a verb
@@ -48,10 +50,12 @@ export default async function drive({ js, turn, keyDown, keyUp, log, sleep, opts
   // and a way over (plan.js hisNames, read from the page: the debug hook
   // window.__c6), and my coupe's door - so the hands follow the course as it is)
   const lineCache = new Map();
+  // (opts.market: 'mid' | 'west' - the market's middle aisle, his, or the west one)
+  const market = opts.market || 'mid';
   const LINE = (lane, over) => lineCache.get(lane + over) || [];
   const fetchLine = async (lane, over) => {
     const k = lane + over;
-    if (!lineCache.has(k)) { const L = await js(`window.__c6 ? window.__c6.hisNames(${JSON.stringify(lane)}, ${JSON.stringify(over)}) : null`); if (Array.isArray(L)) lineCache.set(k, [...L.filter((n) => n !== 'carRear' && n !== 'carDoor' && n !== 'lamp' && n !== 'kerb' && n !== 'mouth'), 'myDoor']); }
+    if (!lineCache.has(k)) { const L = await js(`window.__c6 ? window.__c6.hisNames(${JSON.stringify(lane)}, ${JSON.stringify(over)}, ${JSON.stringify(market)}) : null`); if (Array.isArray(L)) lineCache.set(k, [...L.filter((n) => n !== 'carRear' && n !== 'carDoor' && n !== 'lamp' && n !== 'kerb' && n !== 'mouth'), 'myDoor']); }
     return LINE(lane, over);
   };
   let line = null, li = 0, lane = null, over = opts.over || 'roofs', laneTried = null;
@@ -63,7 +67,7 @@ export default async function drive({ js, turn, keyDown, keyUp, log, sleep, opts
     const out = { done: !!(${until}), mode: C.mode, beat: S.beat, scene: S.current && S.current.id, yaw: C.yaw, pitch: C.pitch, sens: C.sensitivity,
       x: C.pos.x, z: C.pos.z, feet: R ? R.feet : C.groundY, v: R ? R.v : 0, failing: !!G.failing, warn: G.hud.kit.warnText || null,
       fails: G.counters.fails || 0, crawl: G.crawl, prompt: G.hud.promptShown || '', move: R && R.move ? R.move.kind : null, blocked: R && R.blocked ? { id: R.blocked.T.id, kind: R.blocked.T.kind } : null,
-      lane: CH ? CH.lane : null, his: CH ? CH.act : null, gap: CH ? +CH.gapNow.toFixed(1) : null, stretch: CH ? CH.stretch : null, teach: G.hud.kit.teachCur ? G.hud.kit.teachCur.id : null, taught: Object.keys(G.hud.kit.taught ? G.hud.kit.taught() : {}) };
+      lane: CH ? CH.lane : null, his: CH ? CH.act : null, gap: CH ? +CH.gapNow.toFixed(1) : null, stretch: CH ? CH.stretch : null, teach: G.hud.kit.teachCur ? G.hud.kit.teachCur.id : null, taught: Object.keys(G.hud.kit.taught ? G.hud.kit.taught() : {}), t: +N.time.toFixed(2) };
     if (R && C.mode === 'run') {
       const th = N.stage.part('things');
       const q = th.ahead(C.pos, C.vel, R.level, 0.36);
@@ -76,7 +80,8 @@ export default async function drive({ js, turn, keyDown, keyUp, log, sleep, opts
     out.nodes = nodes;
     return out; })()`;
   let excLogged = false, nodes = null;
-  const result = (done) => ({ profile: prof, over, fails, warned, lane, secs: +((Date.now() - T0) / 1000).toFixed(1), done });
+  const stretches = [];
+  const result = (done) => ({ profile: prof, over, market: opts.market || 'mid', fails, warned, lane, secs: +((Date.now() - T0) / 1000).toFixed(1), done, stretches });
   for (;;) {
     const s = await js(ST);
     if (!s || s.__exc) { if (s && s.__exc && !excLogged) { excLogged = true; log(`c6_chase: ${String(s.__exc).slice(0, 300)}`); } await sleep(120); if (Date.now() - T0 > timeout) break; continue; }
@@ -94,6 +99,7 @@ export default async function drive({ js, turn, keyDown, keyUp, log, sleep, opts
       line = null; plan.clear(); laneTried = null; if (prof === 'bad') lane = null;
     }
     if (s.beat !== lastBeat) {
+      stretches.push([s.beat, s.t]);
       const met = await js(`JSON.stringify(((G.scenes.ctx && G.scenes.ctx.flags.chase && G.scenes.ctx.flags.chase.met) || []).slice(-5).map((m) => m[0] + '=' + m[1]))`);
       log(`c6_chase ${prof}: beat ${s.beat} (gap ${s.gap}, his ${s.his}, lane ${s.lane}) met ${met} tricks ${await js("JSON.stringify((G.scenes.ctx && G.scenes.ctx.flags.chase && G.scenes.ctx.flags.chase.evLog) || [])")}`);
       lastBeat = s.beat;
@@ -172,7 +178,8 @@ export default async function drive({ js, turn, keyDown, keyUp, log, sleep, opts
       if (!P || P.used) {
         if (!P) {
           // the plan for this thing: when to press (seconds before reaching it)
-          if (prof === 'good') P = { at: q.kind === 'slope' ? 0.45 : q.kind === 'jump' ? 0.2 : 0.24 + rr(-0.04, 0.04), key };
+          if (prof === 'good' && (opts.missAll || (opts.miss || []).includes(q.id))) P = { at: null, key };
+          else if (prof === 'good') P = { at: q.kind === 'slope' ? 0.45 : q.kind === 'jump' ? 0.2 : 0.24 + rr(-0.04, 0.04), key };
           else if (prof === 'firsttimer') { const verb = { under: 'slide', slope: 'slideDown', over: 'vault', shoulder: 'shoulder', jump: 'jump' }[q.kind]; P = { at: opts.spaceT ?? 0.3, key: verb && (s.taught || []).includes(verb) ? key : (key ? 'Space' : null) }; }
           else {
             const k = `${q.id}:${fails}:`, u = rndOf(k + 'u');

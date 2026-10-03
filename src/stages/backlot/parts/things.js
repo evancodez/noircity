@@ -3,7 +3,7 @@ import { lathe, merge, tube, V3, roundedBox } from '../../../world/geom.js';
 import { allocInkId, markFigure, tagInk } from '../../../render/layers.js';
 import { materials } from '../arch.js';
 import {
-  LANE, KITCHEN, ROOFS, TANNER, TRUCK, MARKET, FENCE, KDOOR, PRESS, BALLEY, AVENUE,
+  LANE, KITCHEN, ROOFS, TANNER, TRUCK, MARKET, FENCE, KDOOR, PRESS, BALLEY, AVENUE, CUT, ARCH,
 } from '../plan.js';
 
 // What the chase meets in its way (lane C6): every thing a man must go
@@ -234,7 +234,9 @@ export default {
     for (const side of ['W', 'E']) {
       const d = KITCHEN.doors[side];
       const g = new THREE.Group();
-      const leaf = new THREE.Mesh(roundedBox(d.w - 0.04, d.h - 0.04, 0.06, 0.01, 1).translate((d.w - 0.04) / 2, (d.h - 0.04) / 2, 0), M.wood);
+      // ([C6 3rd] painted: a pale leaf at the head of the lane, the thing to run at)
+      const paint = new THREE.MeshStandardMaterial({ color: 0x8c8c8c, roughness: 0.6, envMap: M.envSoft, envMapIntensity: 0.3 });
+      const leaf = new THREE.Mesh(roundedBox(d.w - 0.04, d.h - 0.04, 0.06, 0.01, 1).translate((d.w - 0.04) / 2, (d.h - 0.04) / 2, 0), paint);
       g.add(leaf);
       // (its panels, a push plate, a bolt)
       for (const y of [0.55, 1.45]) g.add(new THREE.Mesh(new THREE.BoxGeometry(d.w - 0.3, 0.6, 0.02).translate(d.w / 2, y, 0.035), MAT.woodDark));
@@ -578,8 +580,56 @@ export default {
     add({ id: 'car', kind: 'over', low: false, top: 1.08, a: { x: 0, z: 0 }, b: { x: 0, z: 1 }, depth: 1.9, active: false, dynamic: true, moving: true, collide: true, stretch: 'street' });
     byId.get('car').reset = () => { const C = byId.get('car'); C.active = false; solid(C, false); C.vel = { x: 0, z: 0 }; };
 
+    // ================= [C6 3rd] more in the way: every stretch can be lost on misses ==========
+    const ctx3 = { add, stage, MAT, M, wood, tin, ink, solid, placeCol, emit, markTop, groundC };
+    // the side alley: the coal man's sacks dumped across it by a cellar's coal hole
+    sackRow(ctx3, { id: 'alleySacks', a: { x: 0.04, z: -35.6 }, b: { x: 4.96, z: -35.6 }, hole: { x: 3.9, z: -34.4 }, stretch: 'alley' });
+    // the press hall's north aisle: the last edition's bundles stacked across it, waiting for the van
+    bundleRow(ctx3, { id: 'pressRow', x: 76.7, z0: -98.33, z1: -93.68, stretch: 'press' });
+    // the cut: its iron gate at the mouth (he swings it shut on me when I am
+    // close), the pub's barrels, crates by the knee (pulled down when I am
+    // close), the main's pipe across the N-S leg, coal sacks by a coal hole
+    swingGate(ctx3, { id: 'cutGate', x: CUT.gate.x, z0: CUT.ew.z0, z1: CUT.ew.z1, stretch: 'el' });
+    barrelRow(ctx3, { id: 'cutBarrels', a: { x: 87.0, z: CUT.ew.z0 + 0.04 }, b: { x: 87.0, z: CUT.ew.z1 - 0.04 }, stretch: 'el' });
+    crateStack(add, stage, wood, MAT, ink, { id: 'cutCrates', at: [{ x: 82.0, z: CUT.ew.z0 + 0.4 }, { x: 82.66, z: CUT.ew.z0 + 0.42 }, { x: 82.33, z: CUT.ew.z0 + 0.4, y: 0.62 }], fall: [{ x: 81.6, z: -119.9, yaw: 0.3 }, { x: 81.7, z: -118.8, yaw: -0.25 }, { x: 81.5, z: -117.6, yaw: 0.45 }], line: [{ x: 81.6, z: CUT.ew.z0 + 0.1 }, { x: 81.6, z: CUT.ew.z1 - 0.1 }], stretch: 'el' });
+    pipeAcross(ctx3, { id: 'pipe2', axis: 'x', at: CUT.pipe.z, from: CUT.ns.x0, to: CUT.ns.x1, y: CUT.pipe.y, stretch: 'el' });
+    sackRow(ctx3, { id: 'cutSacks', a: { x: CUT.ns.x0 + 0.04, z: -108.3 }, b: { x: CUT.ns.x1 - 0.04, z: -108.3 }, hole: { x: CUT.ns.x1 - 0.5, z: -107.4 }, stretch: 'el' });
+    // the market's back arch: crates against its wall (pulled down when I am
+    // close); its wicket gate at the market's end (he lets it swing shut)
+    crateStack(add, stage, wood, MAT, ink, { id: 'archCrates', at: [{ x: ARCH.x0 + 0.38, z: -127.9 }, { x: ARCH.x0 + 0.38, z: -127.24 }, { x: ARCH.x0 + 0.38, z: -127.55, y: 0.62 }], fall: [{ x: 7.9, z: -128.3, yaw: 0.35 }, { x: 8.75, z: -128.4, yaw: -0.3 }, { x: 9.55, z: -128.2, yaw: 0.5 }], line: [{ x: ARCH.x0 + 0.05, z: -128.3 }, { x: ARCH.x1 - 0.05, z: -128.3 }], stretch: 'street' });
+    wicketGate(ctx3, { id: 'archGate', z: ARCH.gateZ, x0: ARCH.x0, x1: ARCH.x1, door: [8.05, 9.15], h: ARCH.h, stretch: 'street' });
+    // a costermonger's handcart left across the arch, its shafts on the cobbles
+    handcart(ctx3, { id: 'archCart', a: { x: ARCH.x0 + 0.05, z: -130.6 }, b: { x: ARCH.x1 - 0.05, z: -130.6 }, stretch: 'street' });
+    // the market: a greengrocer's boxes across the middle aisle's north end;
+    // the dark west aisle along the fence: a porter's table across it
+    // (under), boxes (over)
+    boxRow(ctx3, { id: 'stallBoxes', a: { x: MARKET.rows[0][1] + 0.05, z: -111.6 }, b: { x: MARKET.rows[1][0] - 0.05, z: -111.6 }, stretch: 'market' });
+    trestleTable(ctx3, { id: 'trestle', a: { x: FENCE.x + 0.1, z: -110.3 }, b: { x: MARKET.rows[0][0] - 0.03, z: -110.3 }, under: 0.96, stretch: 'market' });
+    boxRow(ctx3, { id: 'westBoxes', a: { x: FENCE.x + 0.1, z: -104.4 }, b: { x: MARKET.rows[0][0] - 0.05, z: -104.4 }, stretch: 'market' });
+    // the market's gateway on Mercer Street, chained tonight (streets.js its
+    // gates and their collider): run into it, it rattles
+    {
+      const gw = MARKET.gateway;
+      const T = add({ id: 'gateway', kind: 'locked', collide: false, a: { x: MARKET.x1 + 0.25, z: gw.z0 + 0.35 }, b: { x: MARKET.x1 + 0.25, z: gw.z1 - 0.35 }, depth: 0.12, top: 2.8, catch: 0.3 });
+      T.state = { rattle: 0 };
+      T.bash = () => { T.state.rattle = 0.4; emit('rattle', T); return false; };
+      T.update = (dt) => { T.state.rattle = Math.max(0, T.state.rattle - dt); const L = stage._gatewayLeaves; if (L) L.position.x = Math.sin(T.state.rattle * 70) * 0.012 * T.state.rattle; };
+    }
+    // every door in a wall along the ways (arch.js writes them down): locked -
+    // run into one or press E against it, it rattles
+    (stage._blDoors || []).forEach((D, i) => {
+      const off = 0.1;
+      const a = D.F.axis === 'x' ? { x: D.F.at + D.F.n * off, z: D.u - D.w / 2 } : { x: D.u - D.w / 2, z: D.F.at + D.F.n * off };
+      const b = D.F.axis === 'x' ? { x: D.F.at + D.F.n * off, z: D.u + D.w / 2 } : { x: D.u + D.w / 2, z: D.F.at + D.F.n * off };
+      const T = add({ id: 'wdoor' + i, kind: 'locked', collide: false, a, b, depth: 0.1, top: D.h, catch: 0.15 });
+      T.bash = () => { emit('rattle', T); return false; };
+    });
+    // the alley's T: a bin by the corner, its lid knocked off as he goes by -
+    // it clatters off into the lane his way and rocks on the flags
+    api.lid = lidBin(ctx3, { x: 4.42, z: -45.4 });
+
     // ---- the whole list's resets -----------------------------------------------------------
-    const ORDER = ['alley', 'lane', 'yard', 'kitchen', 'press', 'el', 'over', 'street', 'car'];
+    const ORDER = ['alley', 'lane', 'yard', 'kitchen', 'press', 'el', 'over', 'street', 'market', 'car'];
     // a retry of stretch `name`: everything of it and after it as it was
     api.reset = (name) => {
       const i = Math.max(0, ORDER.indexOf(name));
@@ -587,9 +637,10 @@ export default {
         const j = ORDER.indexOf(T.stretch);
         if (j >= i || j < 0) { if (T.reset) T.reset(); else if (T.dynamic) { T.active = false; solid(T, false); } }
       }
+      if (api.lid && i <= 0) api.lid.reset();
     };
     api.trigger = (id, opts = {}) => { const T = byId.get(id); if (T && T.trigger) { T.trigger(opts); emit('trigger', T, opts); } return T; };
-    api.update = (dt, t) => { for (const T of list) if (T.update) T.update(dt, t); };
+    api.update = (dt, t) => { for (const T of list) if (T.update) T.update(dt, t); if (api.lid) api.lid.update(dt); };
     api.ORDER = ORDER;
     void _p; void _q; void FENCE; void V3; void tube; void allocInkId;
     return api;
@@ -734,5 +785,366 @@ function bundleStack(add, stage, MAT, ink, { id, x, z, toward = 1, axis = 'z', s
     if (T.state.k > 0.3 && !T.active) { T.active = true; if (T.col && !T.colOn) { T.colOn = true; T.col.cx -= 1000; } }
   };
   void col;
+  return T;
+}
+
+// ================= [C6 3rd] the new things' builders ====================================
+// (c: { add, stage, MAT, M, wood, tin, ink, solid, placeCol, emit, markTop, groundC })
+
+// a slab's frame from a to b (as add's): along t, across n, length L
+function seg(a, b) {
+  const tx = b.x - a.x, tz = b.z - a.z, L = Math.hypot(tx, tz) || 1e-3;
+  return { L, t: { x: tx / L, z: tz / L }, n: { x: -tz / L, z: tx / L }, cx: (a.x + b.x) / 2, cz: (a.z + b.z) / 2, yaw: -Math.atan2(tz, tx) };
+}
+
+// coal sacks dumped in a row across the way (over: low, a trip run into),
+// the coal hole's iron plate open in the flags beside them
+function sackRow(c, { id, a, b, hole = null, stretch }) {
+  const { stage, MAT, ink, add } = c;
+  const S = seg(a, b);
+  const sack = new THREE.MeshStandardMaterial({ color: 0x2a2a2a, roughness: 0.97, envMap: stage.M.envSoft, envMapIntensity: 0.05 });
+  const rng = stage.rng.fork(Math.round((a.x * 31 + a.z * 17) * 10));
+  const parts = [];
+  const n = Math.max(3, Math.round(S.L / 0.62));
+  for (let i = 0; i < n; i++) {
+    const k = (i + 0.5) / n, x = a.x + (b.x - a.x) * k, z = a.z + (b.z - a.z) * k;
+    const w = 0.62 + rng.range(-0.05, 0.08), h = 0.34 + rng.range(-0.04, 0.05);
+    parts.push(roundedBox(w, h, 0.52, 0.14, 2).rotateY(S.yaw + rng.range(-0.3, 0.3)).translate(x + rng.range(-0.06, 0.06), h / 2, z + rng.range(-0.08, 0.08)));
+    // (some on top of the others)
+    if (i % 2 === 1 && i < n - 1) parts.push(roundedBox(0.6, 0.3, 0.5, 0.13, 2).rotateY(S.yaw + rng.range(-0.5, 0.5)).rotateX(rng.range(-0.2, 0.2)).translate(x + (b.x - a.x) / n * 0.5, 0.42, z + (b.z - a.z) / n * 0.5));
+  }
+  const g = new THREE.Group();
+  g.add(new THREE.Mesh(merge(parts), sack));
+  // (their tops: the pale edge of what is gone over - the burlap's ridge caught in the light)
+  c.markTop(g, a.x, a.z, b.x, b.z, 0.56, 0.035);
+  if (hole) {
+    const plate = new THREE.Mesh(new THREE.CylinderGeometry(0.34, 0.34, 0.02, 18).translate(hole.x, 0.01, hole.z), MAT.iron);
+    plate.receiveShadow = true; g.add(plate);
+    const lid = new THREE.Mesh(new THREE.CylinderGeometry(0.34, 0.34, 0.03, 18).rotateZ(1.2).translate(hole.x + 0.32, 0.3, hole.z), MAT.iron);
+    lid.castShadow = true; g.add(lid);
+  }
+  ink(g);
+  stage.scene.add(g);
+  const T = add({ id, kind: 'over', low: true, top: 0.56, a, b, depth: 0.62, stretch });
+  T.mesh = g;
+  return T;
+}
+
+// the edition's bundles stacked in a low wall across the press hall's aisle
+function bundleRow(c, { id, x, z0, z1, stretch }) {
+  const { stage, ink, add } = c;
+  const paper = new THREE.MeshStandardMaterial({ color: 0xbdbdbd, roughness: 0.85, emissive: 0x161616 });
+  const twine = new THREE.MeshStandardMaterial({ color: 0x3a3a3a, roughness: 0.9 });
+  const pb = [], tw = [];
+  const n = Math.round((z1 - z0) / 0.44);
+  for (let row = 0; row < 2; row++) {
+    for (let i = 0; i < n - row; i++) {
+      const z = z0 + (z1 - z0) * (i + 0.5 + row * 0.5) / n, y = 0.15 + row * 0.31, dx = ((i * 7 + row * 3) % 5 - 2) * 0.025;
+      pb.push(roundedBox(0.6, 0.3, 0.42, 0.04, 2).rotateY(((i * 13) % 7 - 3) * 0.03).translate(x + dx, y, z));
+      tw.push(new THREE.BoxGeometry(0.62, 0.02, 0.03).translate(x + dx, y + 0.155, z), new THREE.BoxGeometry(0.03, 0.02, 0.44).translate(x + dx, y + 0.155, z));
+    }
+  }
+  const g = new THREE.Group();
+  g.add(new THREE.Mesh(merge(pb), paper), new THREE.Mesh(merge(tw), twine));
+  ink(g);
+  stage.scene.add(g);
+  const T = add({ id, kind: 'over', low: true, top: 0.62, a: { x, z: z0 }, b: { x, z: z1 }, depth: 0.62, stretch });
+  T.mesh = g;
+  return T;
+}
+
+// a row of barrels on their sides across the way (a pub's empties, rolled out)
+function barrelRow(c, { id, a, b, stretch }) {
+  const { stage, MAT, ink, add, wood } = c;
+  const S = seg(a, b);
+  const staves = [], hoops = [];
+  const r = 0.33, L = 0.86;
+  const n = Math.max(2, Math.floor(S.L / (2 * r + 0.06)));
+  const prof = [[0, -L / 2], [r * 0.86, -L / 2], [r, -L * 0.25], [r * 1.04, 0], [r, L * 0.25], [r * 0.86, L / 2], [0, L / 2]].map(([x, y]) => [x, y]);
+  for (let i = 0; i < n; i++) {
+    const k = (i + 0.5) / n, x = a.x + (b.x - a.x) * k, z = a.z + (b.z - a.z) * k;
+    // (on its side, its axis across the row - along the way - a little askew)
+    const yaw = Math.atan2(S.n.x, S.n.z) + ((i * 37) % 5 - 2) * 0.08;
+    staves.push(lathe(prof, 18).translate(0, 0, 0).rotateX(Math.PI / 2).rotateY(yaw).translate(x, r * 1.02, z));
+    for (const y of [-L * 0.36, L * 0.36, -L * 0.1, L * 0.1]) hoops.push(new THREE.TorusGeometry(r * (Math.abs(y) > 0.2 ? 0.94 : 1.03), 0.012, 4, 22).rotateY(yaw).translate(x + Math.sin(yaw) * y, r * 1.02, z + Math.cos(yaw) * y));
+  }
+  const g = new THREE.Group();
+  g.add(new THREE.Mesh(merge(staves), wood), new THREE.Mesh(merge(hoops), MAT.iron));
+  c.markTop(g, a.x, a.z, b.x, b.z, 2 * r * 1.02 + 0.03, 0.04);
+  ink(g);
+  stage.scene.add(g);
+  const T = add({ id, kind: 'over', low: true, top: 0.68, a, b, depth: L, stretch });
+  T.mesh = g;
+  return T;
+}
+
+// a lagged steam pipe across the way at the height of a man's waist, its
+// underside's pale edge (under); axis 'x': it runs along x at z = at
+function pipeAcross(c, { id, axis, at, from, to, y: yu, stretch }) {
+  const { stage, MAT, add } = c;
+  const r = 0.2, y = yu + r;
+  const lag = new THREE.MeshStandardMaterial({ color: 0xd4d4d4, roughness: 0.95, emissive: 0x1c1c1c });
+  const g = new THREE.Group();
+  const L = to - from, m = (from + to) / 2;
+  const cyl = new THREE.CylinderGeometry(r, r, L, 16);
+  if (axis === 'x') cyl.rotateZ(Math.PI / 2).translate(m, y, at); else cyl.rotateX(Math.PI / 2).translate(at, y, m);
+  g.add(new THREE.Mesh(cyl, lag));
+  const bands = [];
+  for (let u = from + 0.4; u < to; u += 0.9) { const t = new THREE.TorusGeometry(r + 0.01, 0.012, 4, 18); if (axis === 'x') t.rotateY(Math.PI / 2).translate(u, y, at); else t.translate(at, y, u); bands.push(t); }
+  // a flange at each wall
+  for (const u of [from + 0.12, to - 0.12]) { const f = new THREE.CylinderGeometry(r + 0.07, r + 0.07, 0.1, 16); if (axis === 'x') f.rotateZ(Math.PI / 2).translate(u, y, at); else f.rotateX(Math.PI / 2).translate(at, y, u); bands.push(f); }
+  g.add(new THREE.Mesh(merge(bands), MAT.iron));
+  for (const d of [-r + 0.02, r - 0.02]) {
+    if (axis === 'x') c.markTop(g, from + 0.1, at + d, to - 0.1, at + d, yu + 0.012, 0.03);
+    else c.markTop(g, at + d, from + 0.1, at + d, to - 0.1, yu + 0.012, 0.03);
+  }
+  g.traverse((o) => { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; o.userData.noRay = true; } });
+  tagInk(g);
+  stage.scene.add(g);
+  const a = axis === 'x' ? { x: from + 0.02, z: at } : { x: at, z: from + 0.02 };
+  const b = axis === 'x' ? { x: to - 0.02, z: at } : { x: at, z: to - 0.02 };
+  const T = add({ id, kind: 'under', under: yu, a, b, depth: 2 * r + 0.08, stretch });
+  T.mesh = g;
+  T.joint = axis === 'x' ? new THREE.Vector3(from + 0.6, y + 0.1, at) : new THREE.Vector3(at, y + 0.1, from + 0.6);
+  return T;
+}
+
+// an iron gate across a way running along x (two leaves hinged at its
+// walls, z0 and z1): open, folded back flat against the walls; swung shut
+// (his doing, when I am close behind him) it is a door to shoulder through
+function swingGate(c, { id, x, z0, z1, stretch }) {
+  const { stage, MAT, add, solid, emit } = c;
+  const W = (z1 - z0) / 2, H = 2.1;
+  const leafGeo = (() => {
+    const p = [];
+    p.push(new THREE.BoxGeometry(0.05, 0.05, W - 0.04).translate(0, 0.12, W / 2), new THREE.BoxGeometry(0.05, 0.05, W - 0.04).translate(0, H - 0.05, W / 2), new THREE.BoxGeometry(0.05, 0.05, W - 0.04).translate(0, H * 0.55, W / 2));
+    for (let z = 0.06; z < W - 0.02; z += 0.13) p.push(new THREE.BoxGeometry(0.022, H - 0.05, 0.022).translate(0, H / 2, z), new THREE.ConeGeometry(0.03, 0.12, 4).translate(0, H + 0.04, z));
+    p.push(new THREE.BoxGeometry(0.06, H + 0.1, 0.06).translate(0, (H + 0.1) / 2, 0.02));
+    return merge(p);
+  })();
+  const leaves = [];
+  for (const s of [1, -1]) {
+    const g = new THREE.Group();
+    const m = new THREE.Mesh(leafGeo, MAT.iron);
+    m.castShadow = true;
+    g.add(m);
+    if (s < 0) g.scale.z = -1;
+    g.position.set(x, 0, s > 0 ? z0 + 0.04 : z1 - 0.04);
+    tagInk(g); markFigure(g);
+    stage.scene.add(g);
+    leaves.push({ g, s });
+  }
+  // (the posts on the walls)
+  const T = add({ id, kind: 'open', a: { x, z: z0 + 0.03 }, b: { x, z: z1 - 0.03 }, depth: 0.22, top: H, active: false, dynamic: true, stretch, catch: 0.2 });
+  T.state = { a: Math.PI / 2, v: 0 };
+  T.rest = Math.PI / 2;
+  // (a: 0 shut across the way .. PI/2 folded back west flat against its wall)
+  const pose = () => { for (const L of leaves) L.g.rotation.y = -L.s * T.state.a; };
+  T.update = (dt) => {
+    const S = T.state;
+    S.v += (-(S.a - T.rest) * 30 - S.v * 6) * dt;
+    S.a += S.v * dt;
+    if (S.a < 0) { S.a = 0; S.v = Math.abs(S.v) * 0.25; }
+    if (S.a > Math.PI / 2 + 0.05) { S.a = Math.PI / 2 + 0.05; S.v = -Math.abs(S.v) * 0.3; }
+    pose();
+    const open = S.a > 1.0;
+    if (open && T.active) { T.active = false; solid(T, false); }
+    if (!open && !T.active && T.kind === 'shoulder') { T.active = true; solid(T, true); }
+  };
+  // his doing: swung shut across the way behind him (a clang)
+  T.trigger = () => { T.kind = 'shoulder'; T.rest = 0; T.state.v = -9; emit('slam', T); };
+  T.set = (st) => { if (st === 'slammed') T.trigger(); };
+  T.bash = (k = 1) => { T.kind = 'open'; T.rest = Math.PI / 2; T.state.v = 12 * k; T.active = false; solid(T, false); emit('bash', T, { k }); return true; };
+  T.reset = () => { T.kind = 'open'; T.rest = Math.PI / 2; T.state.a = Math.PI / 2; T.state.v = 0; T.active = false; solid(T, false); pose(); };
+  T.state.go = false;
+  T.reset();
+  return T;
+}
+
+// a boarded screen across a way running along z (from x0 to x1 at z) with a
+// wicket door in it (door [xa, xb]): the door is the thing - shut, a door to
+// shoulder through (he lets it swing shut behind him)
+function wicketGate(c, { id, z, x0, x1, door, h, stretch }) {
+  const { stage, MAT, M, add, solid, emit, groundC } = c;
+  const g = new THREE.Group();
+  const boards = [];
+  for (let x = x0 + 0.02; x < x1 - 0.02; x += 0.16) {
+    if (x + 0.14 > door[0] && x < door[1]) continue;
+    boards.push(new THREE.BoxGeometry(0.15, h - 0.12, 0.05).translate(x + 0.075, (h - 0.12) / 2, z));
+  }
+  boards.push(new THREE.BoxGeometry(x1 - x0, 0.1, 0.07).translate((x0 + x1) / 2, 0.55, z + 0.05), new THREE.BoxGeometry(x1 - x0, 0.1, 0.07).translate((x0 + x1) / 2, 2.3, z + 0.05));
+  boards.push(new THREE.BoxGeometry(x1 - x0, 0.14, 0.12).translate((x0 + x1) / 2, h - 0.07, z));
+  g.add(new THREE.Mesh(merge(boards), MAT.woodDark));
+  g.traverse((o) => { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; } });
+  tagInk(g);
+  stage.scene.add(g);
+  groundC.addBox((x0 + door[0]) / 2, z, (door[0] - x0) / 2, 0.06, 0, 'screen');
+  groundC.addBox((door[1] + x1) / 2, z, (x1 - door[1]) / 2, 0.06, 0, 'screen');
+  // the wicket: hinged on its west post, swinging south into the market
+  const w = door[1] - door[0], dh = 2.1;
+  const leaf = new THREE.Group();
+  const lp = [];
+  for (let x = 0.02; x < w - 0.02; x += 0.16) lp.push(new THREE.BoxGeometry(0.15, dh, 0.045).translate(x + 0.075, dh / 2 + 0.04, 0));
+  lp.push(new THREE.BoxGeometry(w - 0.04, 0.1, 0.06).translate(w / 2, 0.5, -0.05), new THREE.BoxGeometry(w - 0.04, 0.1, 0.06).translate(w / 2, dh - 0.3, -0.05));
+  const lm = new THREE.Mesh(merge(lp), M.wood);
+  lm.castShadow = true;
+  leaf.add(lm);
+  leaf.position.set(door[0], 0, z);
+  tagInk(leaf); markFigure(leaf);
+  stage.scene.add(leaf);
+  const T = add({ id, kind: 'shoulder', a: { x: door[0], z }, b: { x: door[1], z }, depth: 0.2, top: dh, stretch, catch: 0.35 });
+  T.mesh = leaf;
+  T.state = { a: 0, v: 0 };
+  T.rest = 0;
+  T.update = (dt) => {
+    const S = T.state;
+    S.v += (-(S.a - T.rest) * 30 - S.v * 5) * dt;
+    S.a += S.v * dt;
+    if (S.a < 0) { S.a = 0; S.v = Math.abs(S.v) * 0.3; }
+    if (S.a > 1.9) { S.a = 1.9; S.v = -Math.abs(S.v) * 0.4; }
+    leaf.rotation.y = -S.a;
+    const open = S.a > 0.9;
+    if (open && T.active) { T.active = false; solid(T, false); }
+    if (!open && !T.active && T.kind !== 'open') { T.active = true; solid(T, true); }
+  };
+  T.set = (st) => {
+    if (st === 'slammed') { T.kind = 'shoulder'; T.rest = 0; T.state.a = 0.6; T.state.v = -8; T.active = true; solid(T, true); emit('slam', T); }
+    else if (st === 'open') { T.kind = 'open'; T.rest = 1.5; T.state.a = 1.5; T.state.v = 0; T.active = false; solid(T, false); }
+    else { T.kind = 'shoulder'; T.rest = 0; T.state.a = 0; T.state.v = 0; T.active = true; solid(T, true); }
+  };
+  T.bash = (k = 1) => { T.kind = 'open'; T.rest = 1.4; T.state.v = 13 * k; T.active = false; solid(T, false); emit('bash', T, { k }); return true; };
+  T.reset = () => T.set('shut');
+  return T;
+}
+
+// a greengrocer's boxes stacked across a way (over: low)
+function boxRow(c, { id, a, b, stretch }) {
+  const { stage, ink, add, wood } = c;
+  const S = seg(a, b);
+  const parts = [], fruit = [];
+  const n = Math.max(2, Math.round(S.L / 0.56));
+  for (let i = 0; i < n; i++) {
+    const k = (i + 0.5) / n, x = a.x + (b.x - a.x) * k, z = a.z + (b.z - a.z) * k;
+    const yaw = S.yaw + ((i * 29) % 7 - 3) * 0.05;
+    // an open slatted box, its fruit (dark rounds) in it; some two high
+    const box = (y) => {
+      parts.push(new THREE.BoxGeometry(0.52, 0.03, 0.36).rotateY(yaw).translate(x, y + 0.015, z));
+      for (const s of [-1, 1]) { parts.push(new THREE.BoxGeometry(0.52, 0.26, 0.02).translate(0, 0, s * 0.17).rotateY(yaw).translate(x, y + 0.13, z)); parts.push(new THREE.BoxGeometry(0.02, 0.26, 0.36).translate(s * 0.25, 0, 0).rotateY(yaw).translate(x, y + 0.13, z)); }
+      for (let f = 0; f < 6; f++) fruit.push(new THREE.SphereGeometry(0.06, 8, 6).translate(((f % 3) - 1) * 0.15, 0, (Math.floor(f / 3) - 0.5) * 0.15).rotateY(yaw).translate(x, y + 0.24, z));
+    };
+    box(0);
+    if (i % 3 !== 1) box(0.27);
+  }
+  const g = new THREE.Group();
+  g.add(new THREE.Mesh(merge(parts), wood), new THREE.Mesh(merge(fruit), new THREE.MeshStandardMaterial({ color: 0x252525, roughness: 0.5, envMap: stage.M.envSoft, envMapIntensity: 0.4 })));
+  c.markTop(g, a.x, a.z, b.x, b.z, 0.555, 0.035);
+  ink(g);
+  stage.scene.add(g);
+  const T = add({ id, kind: 'over', low: true, top: 0.56, a, b, depth: 0.4, stretch });
+  T.mesh = g;
+  return T;
+}
+
+// a porter's table across a way: planks on two trestles at a man's waist,
+// a crate left on it; under it clear to the flags (under: its planks'
+// underside the pale edge)
+function trestleTable(c, { id, a, b, under, stretch }) {
+  const { stage, MAT, add, wood } = c;
+  const S = seg(a, b);
+  const g = new THREE.Group();
+  const top = under + 0.05;
+  const parts = [];
+  for (const o of [-0.16, 0.0, 0.16]) parts.push(new THREE.BoxGeometry(S.L - 0.04, 0.04, 0.15).translate(0, 0, o).rotateY(S.yaw).translate(S.cx, top - 0.02, S.cz));
+  // the trestles: an A of two legs each end, a bar across
+  for (const k of [0.09, 0.91]) {
+    const x = a.x + (b.x - a.x) * k, z = a.z + (b.z - a.z) * k;
+    for (const s of [-1, 1]) parts.push(new THREE.BoxGeometry(0.05, top + 0.05, 0.05).rotateX(s * 0.28).rotateY(S.yaw).translate(x, top / 2, z));
+    parts.push(new THREE.BoxGeometry(0.05, 0.05, 0.5).rotateY(S.yaw).translate(x, top - 0.12, z));
+  }
+  g.add(new THREE.Mesh(merge(parts), wood));
+  // a crate on it, a sack beside it
+  g.add(new THREE.Mesh(merge([new THREE.BoxGeometry(0.5, 0.36, 0.38).rotateY(S.yaw + 0.2).translate(a.x + (b.x - a.x) * 0.35, top + 0.18, a.z + (b.z - a.z) * 0.35)]), MAT.woodDark));
+  g.add(new THREE.Mesh(roundedBox(0.5, 0.28, 0.38, 0.12, 2).rotateY(S.yaw - 0.3).translate(a.x + (b.x - a.x) * 0.7, top + 0.14, a.z + (b.z - a.z) * 0.7), MAT.canvas));
+  for (const o of [-0.22, 0.22]) c.markTop(g, a.x + S.n.x * o, a.z + S.n.z * o, b.x + S.n.x * o, b.z + S.n.z * o, under + 0.005, 0.03);
+  g.traverse((o) => { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; } });
+  tagInk(g); markFigure(g);
+  stage.scene.add(g);
+  const T = add({ id, kind: 'under', under, a, b, depth: 0.5, stretch });
+  T.mesh = g;
+  return T;
+}
+
+// the bin by the alley's T and its lid: knocked off as he goes by, the lid
+// clatters off along the flags his way and rocks to rest
+function lidBin(c, { x, z }) {
+  const { stage, MAT, tin, groundC, emit } = c;
+  const g = new THREE.Group();
+  g.add(new THREE.Mesh(lathe([[0, 0], [0.26, 0], [0.28, 0.05], [0.27, 0.72], [0.3, 0.76], [0.3, 0.8], [0, 0.8]], 22), tin));
+  g.position.set(x, 0, z);
+  tagInk(g); markFigure(g);
+  g.traverse((o) => { if (o.isMesh) o.castShadow = true; });
+  stage.scene.add(g);
+  groundC.addCircle(x, z, 0.32, 'can');
+  const lid = new THREE.Group();
+  lid.add(new THREE.Mesh(lathe([[0, 0.06], [0.2, 0.05], [0.31, 0.01], [0.32, 0.0]], 22), tin));
+  lid.add(new THREE.Mesh(new THREE.TorusGeometry(0.305, 0.014, 5, 24).rotateX(Math.PI / 2), MAT.mark));
+  tagInk(lid); markFigure(lid);
+  lid.traverse((o) => { if (o.isMesh) { o.castShadow = true; o.userData.noRay = true; } });
+  stage.scene.add(lid);
+  const S = { go: false, t: 0, x, z, y: 0.8, vx: 0, vz: 0, vy: 0, spin: 0, tilt: 0, wob: 0 };
+  const rest = () => { lid.position.set(x, 0.8, z); lid.rotation.set(0, 0, 0); };
+  rest();
+  return {
+    // knocked off toward (dx, dz) - his way
+    trigger(dx, dz) {
+      if (S.go) return;
+      const L = Math.hypot(dx, dz) || 1;
+      Object.assign(S, { go: true, t: 0, x, z, y: 0.82, vx: dx / L * 3.4, vz: dz / L * 3.4, vy: 1.2, spin: 9, tilt: 0.9, wob: 1 });
+      emit('lid', null, { x, z });
+    },
+    reset() { S.go = false; rest(); },
+    update(dt) {
+      if (!S.go) return;
+      S.t += dt;
+      S.vy -= 9.8 * dt;
+      S.x += S.vx * dt; S.z += S.vz * dt; S.y += S.vy * dt;
+      if (S.y < 0.02) { S.y = 0.02; if (S.vy < -1) emit('lidHit', null, { x: S.x, z: S.z }); S.vy = Math.abs(S.vy) * 0.25; S.vx *= 0.7; S.vz *= 0.7; }
+      const f = Math.exp(-dt * 0.9); S.vx *= f; S.vz *= f;
+      S.spin *= Math.exp(-dt * 1.2);
+      S.wob = Math.max(0, S.wob - dt * 0.15);
+      lid.position.set(S.x, S.y, S.z);
+      // (on its rim: it rolls, then rocks round and round as it settles)
+      const rolling = Math.hypot(S.vx, S.vz) > 0.4;
+      lid.rotation.set(rolling ? S.tilt : Math.PI * 0.98 + Math.sin(S.t * 14) * 0.18 * S.wob, S.t * S.spin, rolling ? 0 : Math.cos(S.t * 14) * 0.18 * S.wob);
+    },
+  };
+}
+
+// a costermonger's handcart across a way: its bed on two big wheels, the
+// shafts down on the ground (over: low)
+function handcart(c, { id, a, b, stretch }) {
+  const { stage, MAT, ink, add, wood } = c;
+  const S = seg(a, b);
+  const g = new THREE.Group();
+  const bedL = Math.min(1.7, S.L * 0.58), bedW = 0.95, yb = 0.7;
+  const parts = [], wheels = [];
+  // (local: x along the way across it, z across the bed; then turned and put)
+  const put = (geo) => geo.rotateY(S.yaw).translate(S.cx, 0, S.cz);
+  const xb = -S.L / 2 + bedL / 2 + 0.05;
+  parts.push(put(new THREE.BoxGeometry(bedL, 0.05, bedW).translate(xb, yb, 0)));
+  for (const s of [-1, 1]) parts.push(put(new THREE.BoxGeometry(bedL, 0.22, 0.04).translate(xb, yb + 0.12, s * bedW / 2)));
+  parts.push(put(new THREE.BoxGeometry(0.04, 0.22, bedW).translate(xb - bedL / 2, yb + 0.12, 0)));
+  // the shafts: from the bed's front down to the ground at the way's far side
+  const x0 = xb + bedL / 2, x1 = S.L / 2 - 0.05, dy = yb - 0.06;
+  for (const s of [-1, 1]) parts.push(put(new THREE.BoxGeometry(Math.hypot(x1 - x0, dy), 0.06, 0.06).rotateZ(-Math.atan2(dy, x1 - x0)).translate((x0 + x1) / 2, yb - dy / 2, s * 0.32)));
+  for (const s of [-1, 1]) { wheels.push(put(new THREE.TorusGeometry(0.42, 0.035, 6, 24).translate(xb, 0.43, s * (bedW / 2 + 0.06)))); for (let i = 0; i < 5; i++) wheels.push(put(new THREE.BoxGeometry(0.8, 0.025, 0.025).rotateZ(i * Math.PI / 5).translate(xb, 0.43, s * (bedW / 2 + 0.06)))); }
+  // a couple of empty boxes on it
+  parts.push(put(new THREE.BoxGeometry(0.5, 0.26, 0.38).rotateY(0.2).translate(xb - 0.3, yb + 0.16, 0.1)));
+  g.add(new THREE.Mesh(merge(parts), wood), new THREE.Mesh(merge(wheels), MAT.woodDark));
+  c.markTop(g, a.x, a.z, b.x, b.z, yb + 0.25, 0.035);
+  ink(g);
+  stage.scene.add(g);
+  const T = add({ id, kind: 'over', low: true, top: 0.94, a, b, depth: bedW + 0.15, stretch });
+  T.mesh = g;
   return T;
 }

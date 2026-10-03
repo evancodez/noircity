@@ -30,15 +30,21 @@
 //            bundles to the mailroom (SPACE over), the pressmen; out by the
 //            loading dock onto the avenue
 //   el       [C6 2nd] the avenue under the el (x 93.75 .. 115.75), north
-//            past the newspaper van, then west into the alley behind the
-//            press hall (z -106 .. -100) under its steam pipe (C under), to
-//            the loading yard's east end
+//            past the newspaper van; ([C6 3rd] past the alley behind the
+//            press hall - fenced off, the main burst - on up the avenue to
+//            the cut, its gate, in along it, round its knee, down it under
+//            the main's pipe (C under) into the alley's west end) to the
+//            loading yard's east end
 //   over     the loading yard and the fork: up the iron stair onto the roofs
 //            (a party wall, the jump across the light well, a tank to slide
 //            under, the shed roof to slide down) or round by the passage and
 //            Tanner's Row under them (a dog on a chain, a truck to slide under)
-//   street   Mercer Street (a car out of the garage at its foot), the shut
-//            market, its gate onto Pell Lane
+//   street   ([C6 3rd]) up Mercer Street to its corner (a car coming round
+//            it), along the cross street, in under the market's back arch
+//            (the market's gateway on Mercer Street is chained tonight)
+//   market   ([C6 3rd]) the shut market from its north end: the middle aisle
+//            (the crates, the barrow) or the dark west aisle along the
+//            fence (the awning down, the boxes); its gate onto Pell Lane
 //   car      Pell Lane: his sedan at the kerb, my coupe behind it under its
 //            lamp (lane C3's city begins here: city (x, z) = (x - 205.25, z + 121))
 
@@ -145,7 +151,18 @@ export const PRESS = {
 export const AVENUE = { x0: 93.75, x1: 115.75, road: [96.75, 112.75], z0: -128, z1: 36, elX: 100.5 };
 // the alley behind the press hall: from the avenue west to the passage and
 // the loading yard's east end; the steam pipe across it (the way under)
-export const BALLEY = { x0: 73, x1: 93.75, z0: -106, z1: -100, pipe: { x: 82.4, y: 0.98 } };
+// ([C6 3rd] the main has burst further down it tonight: fenced off by a
+// barrier at `shut` - the way from the avenue is round by the cut)
+export const BALLEY = { x0: 73, x1: 93.75, z0: -106, z1: -100, pipe: { x: 82.4, y: 0.98 }, shut: 80.6 };
+// [C6 3rd] the cut through the block north of it: in off the avenue under the
+// el (the E-W leg), round its knee and south down its N-S leg into the
+// alley's west end; the main's pipe across the N-S leg (the way under)
+export const CUT = {
+  ew: { x0: 79.6, x1: 93.75, z0: -121.2, z1: -116.6 },
+  ns: { x0: 76.2, x1: 79.6, z0: -121.2, z1: -106 },
+  pipe: { z: -111.6, y: 0.98 },
+  gate: { x: 92.9 },                 // the iron gate at its mouth (folded back; he swings it shut on me)
+};
 // the passage north from the loading yard to Tanner's Row (the way round)
 export const PASSAGE = { x0: 70, x1: 73, z0: -116, z1: -100 };
 // the roof row along the loading yard's north side: R1 (two storeys), the
@@ -174,6 +191,11 @@ export const GARAGE = { x0: 16, x1: 26, z0: -86, z1: -80, door: [17.6, 24.4] };
 // the market, shut for the night: between Pell Lane's board fence and
 // Mercer Street; its gateway on Mercer Street, its gate onto Pell Lane
 export const MARKET = { x0: 2, x1: 16, z0: -122, z1: -84, gateway: { z0: -120.4, z1: -114.4 }, rows: [[4.6, 6.6], [11.4, 13.4]], cross: [-101.2, -97.6] };
+// [C6 3rd] the market's back way: a carriage arch through the block north of
+// it (nwb), from the cross street into the market's north end; its gate at
+// the market's end (he lets it swing shut behind him). Tonight the gateway on
+// Mercer Street is chained: the way in is round by the corner.
+export const ARCH = { x0: 7.0, x1: 10.0, z0: -133, z1: -122, h: 3.4, gateZ: -122.3 };
 // the gate in Pell Lane's board fence (the fence runs x 2, z -84 .. -109)
 export const GATE = { x: 2.0, z0: -97.6, z1: -96.0 };
 export const FENCE = { x: 2.0, z0: -109.0, z1: -84.0, h: 2.3 };
@@ -198,8 +220,12 @@ export const NODES = {
   wIn2: [54.25, 0, -85.6], eIn2: [65.75, 0, -85.6], wK: [54.2, 0, -94.4], eK: [65.8, 0, -94.4], kMid: [61.0, 0, -96.6], rollOut: [60.0, 0, -101.6],
   // [C6 2nd] the kitchen's east door, the press hall, the avenue, the alley behind
   kDoor: [69.0, 0, -97.6], pIn: [71.6, 0, -97.6], pA: [79.65, 0, -96.4], pB: [79.65, 0, -87.6], pC: [91.6, 0, -87.6], pD: [91.6, 0, -78.2],
-  dock: [95.4, 0.15, -78.2], avS: [98.3, 0, -83.0], avN: [98.3, 0, -100.4], aIn: [92.4, 0, -103.0], aMid: [83.0, 0, -103.0], aOut: [73.8, 0, -103.0],
-  // (dead ends off the way: up and down the avenue, the loading yard's west end - the way on from them is back)
+  dock: [95.4, 0.15, -78.2], avS: [98.3, 0, -83.0], avN: [98.3, 0, -100.4], aIn: [92.4, 0, -103.0], aMid: [81.6, 0, -103.0], aOut: [73.8, 0, -103.0],
+  // [C6 3rd] on up the avenue to the cut, in, round its knee, down into the alley's west end
+  avCut: [97.4, 0, -118.9], cutE: [92.4, 0, -118.9], cutK: [77.9, 0, -118.9], cutS: [77.9, 0, -105.2],
+  // (dead ends off the way: up and down the avenue, the loading yard's west end,
+  // [C6 3rd] the alley behind the press hall from the avenue to the barrier -
+  // the way on from them is back)
   avSouth: [98.3, 0, -60.0], avNorth: [98.3, 0, -124.0], loadW: [53.0, 0, -102.8],
   // (the stair's foot is met from the alley: lined up on it first)
   stairIn: [71.8, 0, -105.0],
@@ -207,8 +233,14 @@ export const NODES = {
   party: [51.0, ROOFS.R1.y, -110.9], edge: [44.3, ROOFS.R1.y, -110.9], r2In: [40.2, 5.55, -110.9],
   tank: [35.6, 5.27, -111.0], shedTop: [30.1, 5.0, -111.0], eave: [26.6, 2.15, -111.0], dropped: [25.2, 0.15, -111.6],
   passIn: [71.5, 0, -103.0], passOut: [71.5, 0, -118.5], dog: [59.0, 0, -117.5], bay: [49.4, 0, -119.45], truck: [43.8, 0, -119.5], rowEnd: [27.6, 0, -118.6], rowOut: [25.2, 0.15, -118.6],
-  cross: [17.0, 0.15, -117.2], gateway: [14.4, 0, -117.4], aisleN: [9.0, 0, -115.2], aisleS: [9.0, 0, -99.4], crossW: [4.4, 0, -96.8],
+  cross: [21.6, 0, -117.2], gateway: [14.4, 0, -117.4], aisleN: [9.0, 0, -113.6], aisleS: [9.0, 0, -99.4], crossW: [4.4, 0, -96.8],
   gate: [2.0, 0, -96.8], pave: [-1.4, 0.15, -97.4],
+  // [C6 3rd] up Mercer Street to the corner, along the cross street, in under
+  // the market's back arch; the market's two ways: the middle aisle (his: the
+  // crates, his barrow) or the dark west aisle along the fence (the awning
+  // down across it, the boxes)
+  merN: [21.6, 0, -133.8], corner: [18.2, 0.15, -137.6], archN: [8.5, 0.15, -137.6], archS: [8.5, 0.15, -121.0], mN: [8.6, 0.15, -118.4],
+  westN: [3.3, 0.15, -115.0], westS: [3.3, 0.15, -99.6],
 };
 // the ways (both directions): [from, to] or a chain of names
 export const WAYS = [
@@ -217,23 +249,36 @@ export const WAYS = [
   ['wDoor', 'wIn2'], ['eDoor', 'eIn2'],
   ['wIn2', 'wK', 'kMid'], ['eIn2', 'eK', 'kDoor'], ['eK', 'kMid'], ['wIn2', 'eIn2'],
   // [C6 2nd] the roller door is down: out of the kitchen by its east door,
-  // through the press hall, up the avenue, back along the alley behind it
-  ['kMid', 'kDoor', 'pIn', 'pA', 'pB', 'pC', 'pD', 'dock', 'avS', 'avN', 'aIn', 'aMid', 'aOut'],
-  ['avS', 'avSouth'], ['avN', 'avNorth'], ['stairFoot', 'loadW'],
+  // through the press hall, up the avenue, ([C6 3rd] on up it to the cut,
+  // round the cut into the alley's west end: the alley from the avenue is
+  // fenced off where the main has burst)
+  ['kMid', 'kDoor', 'pIn', 'pA', 'pB', 'pC', 'pD', 'dock', 'avS', 'avN', 'avCut', 'cutE', 'cutK', 'cutS', 'aOut'],
+  ['avN', 'aIn', 'aMid'],
+  ['avS', 'avSouth'], ['avCut', 'avNorth'], ['stairFoot', 'loadW'],
   ['aOut', 'stairIn', 'stairFoot', 'stairTop', 'roofIn', 'party', 'edge', 'r2In', 'tank', 'shedTop', 'eave', 'dropped', 'cross'],
   ['aOut', 'passIn', 'passOut', 'dog', 'bay', 'truck', 'rowEnd', 'rowOut', 'cross'],
-  ['cross', 'gateway', 'aisleN', 'aisleS', 'crossW', 'gate', 'pave'],
+  // [C6 3rd] the market's gateway chained: round by the corner and the arch
+  ['cross', 'merN', 'corner', 'archN', 'archS', 'mN', 'aisleN', 'aisleS', 'crossW', 'gate', 'pave'],
+  ['mN', 'westN', 'westS', 'gate'],
+  // (the gateway, inside its chained gates: a dead end from the market)
+  ['mN', 'gateway'],
 ];
 // the two doors out of the yard (one of them is locked: his choice of lane)
 export const DOOR_WAYS = { W: ['wDoor', 'wIn2'], E: ['eDoor', 'eIn2'] };
 // where each way of the fork begins (the stretch's choice) and where they meet
 export const FORK = { roofs: ['aOut', 'stairIn'], row: ['aOut', 'passIn'], join: 'cross' };
-// his way, by his choices (lane: 'W' | 'E', over: 'roofs' | 'row')
-export const PRESS_WAY = ['kDoor', 'pIn', 'pA', 'pB', 'pC', 'pD', 'dock', 'avS', 'avN', 'aIn', 'aMid', 'aOut'];
-export function hisNames(lane, over) {
+// [C6 3rd] the market's: the middle aisle or the west one, met at the gate
+export const FORK2 = { mid: ['mN', 'aisleN'], west: ['mN', 'westN'], join: 'gate' };
+// his way, by his choices (lane: 'W' | 'E', over: 'roofs' | 'row'; [C6 3rd]
+// market: 'mid' | 'west' - his is the middle aisle; the west is a way of
+// mine, for the hands)
+export const PRESS_WAY = ['kDoor', 'pIn', 'pA', 'pB', 'pC', 'pD', 'dock', 'avS', 'avN', 'avCut', 'cutE', 'cutK', 'cutS', 'aOut'];
+export const STREET_WAY = ['cross', 'merN', 'corner', 'archN', 'archS', 'mN'];
+export function hisNames(lane, over, market = 'mid') {
   const L = lane === 'E' ? ['eIn', 'eDoor', 'eIn2', 'eK'] : ['wIn', 'wDoor', 'wIn2', 'wK', 'kMid'];
   const O = over === 'row' ? ['passIn', 'passOut', 'dog', 'bay', 'truck', 'rowEnd', 'rowOut'] : ['stairIn', 'stairFoot', 'stairTop', 'roofIn', 'party', 'edge', 'r2In', 'tank', 'shedTop', 'eave', 'dropped'];
-  return ['lamp', 'kerb', 'mouth', 'foot', 'alleyEnd', 'laneIn', 'laneOut', ...L, ...PRESS_WAY, ...O, 'cross', 'gateway', 'aisleN', 'aisleS', 'crossW', 'gate', 'pave', 'carDoor'];
+  const M = market === 'west' ? ['westN', 'westS'] : ['aisleN', 'aisleS', 'crossW'];
+  return ['lamp', 'kerb', 'mouth', 'foot', 'alleyEnd', 'laneIn', 'laneOut', ...L, ...PRESS_WAY, ...O, ...STREET_WAY, ...M, 'gate', 'pave', 'carDoor'];
 }
 // his car's door (the street side: he goes round its tail) and the last of his way
 NODES.carRear = [-3.0, 0, -98.4];
@@ -250,7 +295,12 @@ export const STRETCHES = {
   // out of its dock door on the avenue; the alley's west end (the fork ahead)
   press: { at: [71.7, -97.6], yaw: -Math.PI / 2, ahead: 12 },
   el: { at: [95.2, -78.2], yaw: -0.35, ahead: 12 },
-  over: { at: [75.0, -103.0], yaw: Math.PI / 2, ahead: 11 },
-  street: { at: [28.6, -118.6], yaw: Math.PI / 2, ahead: 12 },
+  // ([C6 3rd] 9 m, was 11: from a retry the row's longer way put a clumsy
+  // runner who took it straight into the warning)
+  over: { at: [75.0, -103.0], yaw: Math.PI / 2, ahead: 9 },
+  // [C6 3rd] Mercer Street at the foot of the shed, facing up it to the
+  // corner; the market's north end, inside its back arch, facing down it
+  street: { at: [24.2, -116.0], yaw: 0.12, ahead: 12 },
+  market: { at: [8.6, -120.2], yaw: Math.PI, ahead: 11 },
   car: { at: [4.2, -96.8], yaw: Math.PI / 2, ahead: 9 },
 };

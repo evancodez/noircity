@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { NODES, STRETCHES, YARD, ROOFS, KITCHEN, LANES } from '../../stages/backlot/plan.js';
+import { NODES, STRETCHES, YARD, ROOFS, KITCHEN, LANES, CUT } from '../../stages/backlot/plan.js';
 import { WRUN, layOn } from '../../cast/kinds/watcher.js';
 import { Course, pathAt, pathHeading, project, corners } from './course.js';
 
@@ -28,20 +28,25 @@ export const RULES = {
   // ([C6 3rd] the fear's burst when I was close - +0.8 m/s for 3 s - is gone:
   // a boost, which the brief forbids; close, he pulls things down instead)
   trick: 9.0,                // close enough for him to pull something down behind him
-  warnOn: 24, warnOff: 19,   // the gap that warns (and lets go)
-  lost: 36,                  // the gap that loses him
+  // ([C6 3rd] 22 / 17 / 33, were 24 / 19 / 36: every thing in the press hall,
+  // the cut, the market missed did not even warn - now two or three misses
+  // in a stretch warn, four or five lose; one never does)
+  warnOn: 22, warnOff: 17,   // the gap that warns (and lets go)
+  lost: 33,                  // the gap that loses him
   // ([C6 2nd] out of sight counts from the warning's gap on: a man 20 m
   // behind on the roofs loses sight of him over the shed's slope every try)
-  unseenWarn: 3.5, unseenLost: 7.0, unseenFrom: 24,   // out of sight (only past this gap)
-  grace: 1.6,                // a stretch's first seconds (the black lifting): no warning yet
+  unseenWarn: 3.5, unseenLost: 7.0, unseenFrom: 22,   // out of sight (only past this gap)
+  grace: 2.0,                // a stretch's first seconds (the black lifting): no warning yet ([C6 3rd] was 1.6)
 };
 const V = (x, z, y = 0) => new THREE.Vector3(x, y, z);
 const _t = new THREE.Vector3();
 const wrap = (a) => Math.atan2(Math.sin(a), Math.cos(a));
 const sm = (x) => (x <= 0 ? 0 : x >= 1 ? 1 : x * x * (3 - 2 * x));
 // the stretches in order, and the node each begins at (on the course)
-export const STRETCH_ORDER = ['alley', 'lane', 'yard', 'kitchen', 'press', 'el', 'over', 'street', 'car'];
-const STRETCH_NODE = { alley: 'foot', lane: 'laneIn', yard: 'laneOut', kitchen: null, press: 'kDoor', el: 'dock', over: 'aOut', street: 'rowEnd', car: 'gate' };
+// ([C6 3rd] + market: the street is now up Mercer Street, round the corner
+// and in under the market's back arch; the market from its north end)
+export const STRETCH_ORDER = ['alley', 'lane', 'yard', 'kitchen', 'press', 'el', 'over', 'street', 'market', 'car'];
+const STRETCH_NODE = { alley: 'foot', lane: 'laneIn', yard: 'laneOut', kitchen: null, press: 'kDoor', el: 'dock', over: 'aOut', street: 'rowEnd', market: 'mN', car: 'gate' };
 
 export class Chase {
   constructor(ctx, { lane = null, over = null } = {}) {
@@ -86,9 +91,12 @@ export class Chase {
       return r.d < 1.6 ? r.s : null;
     };
     const add = (s, kind, data = {}) => { if (s != null) out.push({ s, kind, ...data }); };
-    for (const id of ['fence1', 'fence3', 'conveyor', 'party', 'marketCrates']) { const T = things.get(id); add(on(T), 'vault', { id }); }
-    for (const id of ['fence2', 'web', 'pipe', 'tank', 'plank']) { const T = things.get(id); add(on(T), 'slide', { id }); }
+    // ([C6 3rd] + the alley's sacks, the press's bundles, the cut's barrels and
+    // sacks, the market's boxes; the cut's pipe; the market's back gate)
+    for (const id of ['alleySacks', 'fence1', 'fence3', 'pressRow', 'conveyor', 'cutBarrels', 'cutSacks', 'party', 'archCart', 'stallBoxes', 'marketCrates']) { const T = things.get(id); if (T) add(on(T), 'vault', { id }); }
+    for (const id of ['fence2', 'web', 'pipe', 'pipe2', 'tank', 'plank']) { const T = things.get(id); if (T) add(on(T), 'slide', { id }); }
     add(on(things.get('door' + this.lane)), 'door', { id: 'door' + this.lane, slam: true });
+    if (things.get('archGate')) add(on(things.get('archGate')), 'door', { id: 'archGate', slam: true });
     // ([C6 2nd] the kitchen's iron door into the press hall: flung open, left open)
     add(on(things.get('kdoor')), 'door', { id: 'kdoor', slam: false });
     add(on(things.get('edge')), 'jump', { id: 'edge' });
@@ -100,10 +108,16 @@ export class Chase {
     add(project(P, this.lane === 'W' ? 54.25 : 65.75, -91.6, 0, 1e9).s, 'trick', { id: this.lane === 'W' ? 'rackW' : 'rackE' });
     add(project(P, 84.6, -87.6, 0, 1e9).s + 0.4, 'trick', { id: 'pressBundles' });
     add(project(P, 98.3, -95.6, 0, 1e9).s + 0.5, 'trick', { id: 'avBundles' });
+    // ([C6 3rd] the cut's gate swung shut behind him at its mouth; the crates by its knee; the arch's crates)
+    add(project(P, CUT.gate.x - 1.0, -118.9, 0, 1e9).s, 'trick', { id: 'cutGate' });
+    add(project(P, 81.0, -118.9, 0, 1e9).s, 'trick', { id: 'cutCrates' });
+    add(project(P, 8.5, -128.9, 0, 1e9).s, 'trick', { id: 'archCrates' });
+    // (the lid off the bin at the alley's T as he goes round the corner: it clatters off his way)
+    add(this.sOf('alleyEnd') + 0.3, 'lid');
     if (this.over === 'row') add(project(P, 51.6, -117.5, 0, 1e9).s, 'trick', { id: 'rowCrates' });
     add(project(P, 9.0, -101.6, 0, 1e9).s, 'trick', { id: 'barrow' });
     // the looks back over his shoulder
-    for (const [x, z] of [[2.5, -32], [30, -50], [54.25 + (this.lane === 'E' ? 11.5 : 0), -70], [84.0, -87.6], [98.3, -88.0], [47, -110.9], [9, -110]]) add(project(P, x, z, 0, 1e9).s, 'look');
+    for (const [x, z] of [[2.5, -32], [30, -50], [54.25 + (this.lane === 'E' ? 11.5 : 0), -70], [84.0, -87.6], [98.3, -88.0], [98.3, -112.0], [77.9, -113.0], [47, -110.9], [21.6, -126.0], [9, -110]]) add(project(P, x, z, 0, 1e9).s, 'look');
     // the slip on the wet at the alley's corner
     add(this.sOf('alleyEnd') - 1.0, 'skid');
     out.sort((a, b) => a.s - b.s);
@@ -186,13 +200,15 @@ export class Chase {
     else if (this.act === 'vault' || this.act === 'slide') {
       // (a clip that carries him: when it is done, on along his way from where it left him)
       const h = this.w.clipH;
-      this.v = this.act === 'vault' ? 3.4 : 4.6;
+      // ([C6 3rd] over a low thing - a stack, a row of sacks - a hand on it and
+      // on, hardly checked: he knows his way; a tall fence checks anyone)
+      this.v = this.act === 'vault' ? (this.lowVault ? 4.8 : 3.4) : 4.6;
       if (!h || h.done || h.t >= h.duration - 1e-3) {
         const was = this.act;
         this.act = 'run';
         this.s = project(this.P, F.pos.x, F.pos.z, this.s, 8).s;
         this.w.setState('watcher_run', 0.12);
-        this.v = was === 'slide' ? 4.8 : 4.2;
+        this.v = was === 'slide' ? 4.8 : this.lowVault ? 5.4 : 4.2;
       }
     } else if (this.act === 'arc') this.arcStep(dt);
     else if (this.act === 'carIn') {
@@ -282,9 +298,10 @@ export class Chase {
       // the hand on its top, swung over it)
       const T = things.get(e.id);
       const low = T && T.top < 1.2;
+      this.lowVault = !!low;
       this.w.play(low ? 'watcher_lowvault' : 'watcher_vault', { fade: 0.08 });
       // (a man who knows his fences: quicker over them than the clip's own pace)
-      F.anim.setTimeScale(low ? 1.1 : 1.25);
+      F.anim.setTimeScale(low ? 1.45 : 1.25);
       G.sfx.play('w_fenceHand', F.pos.clone().setY(F.pos.y + 1.6));
     } else if (e.kind === 'slide') {
       this.act = 'slide';
@@ -299,7 +316,8 @@ export class Chase {
       // through his door (it bangs open), and shut behind him a moment after
       const T = things.get(e.id);
       if (T) { T.set('open'); T.state.v = 10; }
-      this.v = Math.min(this.v, 3.4);
+      // ([C6 3rd] through a door he knows at 4.4 m/s, was 3.4)
+      this.v = Math.min(this.v, 4.4);
       G.sfx.play(e.id === 'kdoor' ? 'w_ironDoor' : 'w_doorBang', F.pos.clone().setY(1.2));
       if (e.slam) { this.slamAt = this.s + 1.6; this.slamId = e.id; }
     } else if (e.kind === 'jump') {
@@ -319,6 +337,10 @@ export class Chase {
       // (only with me close behind him: not when I am ahead of him by the other way)
       if (!e.always && !(this.active && gap < RULES.trick && gap > -1.5)) return;
       this.trick(e.id);
+    } else if (e.kind === 'lid') {
+      // ([C6 3rd] the alley's T: which way he went - the lid clatters off his way)
+      const lid = things.lid;
+      if (lid) { const a = pathAt(this.P, this.s + 3), b = pathAt(this.P, this.s); lid.trigger(a.x - b.x + 0.6, a.z - b.z); }
     } else if (e.kind === 'look') {
       // (no one on the roofs behind him when I took the row: he runs on)
       if (!this.otherWay()) this.look = { t: 0 };
@@ -350,7 +372,7 @@ export class Chase {
     if (id === 'laneBin') things.trigger(id, { toward: G.controller.pos.z });
     else things.trigger(id);
     this.tricks.push(id);
-    G.sfx.play(id === 'bins' || id === 'laneBin' ? 'w_bins' : id === 'barrow' ? 'w_barrow' : id.startsWith('rack') ? 'w_pans' : id.endsWith('Bundles') ? 'w_bundles' : 'w_crates', F.pos.clone().setY(0.6));
+    G.sfx.play(id === 'bins' || id === 'laneBin' ? 'w_bins' : id === 'barrow' ? 'w_barrow' : id.startsWith('rack') ? 'w_pans' : id.endsWith('Bundles') ? 'w_bundles' : id === 'cutGate' ? 'w_ironDoor' : 'w_crates', F.pos.clone().setY(0.6));
   }
 
   arcStep(dt) {

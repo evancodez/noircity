@@ -8,7 +8,7 @@ import { tube } from '../../../world/geom.js';
 import { Steam } from '../../../fx/Steam.js';
 import {
   FLOOR, ESC, ROOM, STREET_WIN, WATCH_LAMP, HARBOR, BACKST, ALLEY, LANE, YARD, WASH, KITCHEN, LOADING, PASSAGE, ROOFS, TANNER,
-  MERCER, GARAGE, MARKET, FENCE, NORTHST, AVENUE, PRESS,
+  MERCER, GARAGE, MARKET, FENCE, NORTHST, AVENUE, PRESS, CUT, ARCH,
 } from '../plan.js';
 
 // The backlot's architecture (lane B4; the run behind the Harbor Building
@@ -217,12 +217,60 @@ export default {
       // north of Tanner's Row, across Mercer Street, Pell Lane's west side
       block('nblk', MAT.brick, MERCER.x1, PASSAGE.x1, -133, TANNER.z0, 11.0, { s: { bay: 3.3, litP: 0.1, skip: [[41.6, 47.2]], pipes: [33.2, 55.0] }, w: { bay: 3.3, litP: 0.1 }, n: { bay: 3.3, litP: 0.12 } });
       // ([C6 2nd] north of the alley behind the press hall, to the avenue)
-      block('ne', MAT.brickDark, PASSAGE.x1, AVENUE.x0, -133, LOADING.z0, 12.0, { w: { bay: 3.2, litP: 0.08, pipes: [-109.0] }, n: { bay: 3.3, litP: 0.1 }, s: { bay: 3.1, litP: 0.12, pipes: [79.4] }, e: { bay: 3.3, litP: 0.12 } });
+      // ([C6 3rd] the cut through it: three masses round an L of alley - in
+      // off the avenue (the E-W leg), round the knee, down the N-S leg into
+      // the alley behind the press hall's west end)
+      {
+        const E = CUT.ew, N = CUT.ns, H = 12.0;
+        // the west strip: the passage's east wall, the N-S leg's west wall
+        mass('ne', MAT.brickDark, PASSAGE.x1, N.x0, -133, LOADING.z0, H);
+        facade('ne', face('x', PASSAGE.x1, -1), -133, LOADING.z0, H, { bay: 3.2, litP: 0.08, pipes: [-109.0] });
+        facade('ne', face('x', N.x0, 1), N.z0, N.z1, H, { bay: 3.0, litP: 0.14, pipes: [-107.4] });
+        facade('ne', face('z', LOADING.z0, 1), PASSAGE.x1, N.x0, H, { bay: 3.0, litP: 0.1 });
+        // the north block: on the cross street, the avenue, the E-W leg
+        block('ne', MAT.brickDark, N.x0, AVENUE.x0, -133, E.z0, H, { n: { bay: 3.3, litP: 0.1 }, e: { bay: 3.3, litP: 0.12 }, s: { bay: 3.1, litP: 0.16, pipes: [85.6] } });
+        // the south-east block: on the E-W leg, the avenue, the alley, the N-S leg
+        block('ne', MAT.brick, E.x0, AVENUE.x0, E.z1, LOADING.z0, 10.8, { n: { bay: 3.2, litP: 0.1, pipes: [90.2] }, e: { bay: 3.3, litP: 0.12 }, s: { bay: 3.1, litP: 0.12, pipes: [90.4] }, w: { bay: 3.0, litP: 0.12 } });
+        // their doors on the cut: a pub's back door and its cellar flap, a
+        // workshop's on the N-S leg
+        door('ne', face('z', E.z0, 1), 88.2, 1.15, 2.3);
+        door('ne', face('z', E.z1, -1), 83.6, 1.1, 2.2);
+        door('ne', face('x', N.x0, 1), -114.6, 1.1, 2.3);
+        // a fire escape over the N-S leg (its landings, a flight)
+        landing('ne', face('x', N.x1, -1), -115.2, -108.8, 2 * FLOOR, 1.0);
+        landing('ne', face('x', N.x1, -1), -115.2, -108.8, 3 * FLOOR, 1.0);
+        flight('ne', face('x', N.x1, -1), -109.4, 3 * FLOOR, -113.0, 2 * FLOOR, 0.62, 0.56);
+        wire(V3(N.x0, 7.4, -118.2), V3(N.x1, 7.0, -119.4), 0.35);
+        wire(V3(84.0, 6.8, E.z0), V3(85.4, 7.2, E.z1), 0.4);
+      }
       // ([C6 2nd] the avenue's east side, Harbor Street to the works at its north end; south of Harbor Street)
       block('aveE', MAT.brick, AVENUE.x1, AVENUE.x1 + 26, AVENUE.z0 - 8, HARBOR.z0 - HARBOR.pave, 13.0, { w: { bay: 3.3, litP: 0.14, pipes: [-41.0, -96.4] } });
       block('aveSE', MAT.brickDark, AVENUE.x1, AVENUE.x1 + 26, HARBOR.z1 + HARBOR.pave, 40, 12.4, { w: { bay: 3.3, litP: 0.1 }, n: { bay: 3.3, litP: 0.1 } });
       facade('southRow', face('x', AVENUE.x0, 1), HARBOR.z1 + HARBOR.pave, 24, 13.2, { bay: 3.3, litP: 0.1 });
-      block('nwb', MAT.brickDark, FENCE.x, MERCER.x0, -133, MARKET.z0, 12.4, { e: { bay: 3.2, litP: 0.1 }, w: { bay: 3.2, litP: 0.12 }, n: { bay: 3.3, litP: 0.12 } });
+      // ([C6 3rd] the carriage arch through it: the market's back way in
+      // from the cross street; the block goes on over it)
+      {
+        const AR = ARCH, H = 12.4;
+        mass('nwb', MAT.brickDark, FENCE.x, AR.x0, -133, MARKET.z0, H);
+        mass('nwb', MAT.brickDark, AR.x1, MERCER.x0, -133, MARKET.z0, H);
+        mass('nwb', MAT.brickDark, AR.x0, AR.x1, -133, MARKET.z0, H - AR.h, AR.h, false);
+        facade('nwb', face('x', MERCER.x0, 1), -133, MARKET.z0, H, { bay: 3.2, litP: 0.1 });
+        facade('nwb', face('x', FENCE.x, -1), -133, MARKET.z0, H, { bay: 3.2, litP: 0.12 });
+        facade('nwb', face('z', -133, -1), FENCE.x, MERCER.x0, H, { bay: 3.3, litP: 0.12 });
+        // the arch's frame on the street: piers, the head, a keystone; its
+        // soffit and walls inside (the market's end of it: the gate, things.js)
+        const Fn = face('z', -133, -1);
+        fbox('nwb', MAT.trim, Fn, AR.x0 - 0.35, AR.x0, 0, AR.h + 0.2, 0, 0.18);
+        fbox('nwb', MAT.trim, Fn, AR.x1, AR.x1 + 0.35, 0, AR.h + 0.2, 0, 0.18);
+        fbox('nwb', MAT.trim, Fn, AR.x0 - 0.35, AR.x1 + 0.35, AR.h, AR.h + 0.42, 0, 0.2);
+        fbox('nwb', MAT.trim, Fn, (AR.x0 + AR.x1) / 2 - 0.2, (AR.x0 + AR.x1) / 2 + 0.2, AR.h - 0.1, AR.h + 0.55, 0, 0.26);
+        K.box('nwbArch', MAT.plaster, AR.x0, AR.x1, AR.h - 0.04, AR.h, -133, MARKET.z0);
+        // (its cobbles' gutter down the middle, a wheel-guard stone at each pier)
+        K.box('nwbArch', MAT.iron, (AR.x0 + AR.x1) / 2 - 0.09, (AR.x0 + AR.x1) / 2 + 0.09, 0.0, 0.012, -133, MARKET.z0, 1 / 6, { cast: false });
+        for (const x of [AR.x0 + 0.18, AR.x1 - 0.18]) { K.add('nwbArch', MAT.trim, new THREE.CylinderGeometry(0.16, 0.22, 0.6, 10).translate(x, 0.3, -132.7), { figure: true }); stage.colliders.addCircle(x, -132.7, 0.2, 'guard'); }
+        stage.addLook(new THREE.Box3(V3(AR.x0, -1, -133), V3(AR.x1, AR.h, MARKET.z0)), { ambient: 0.08, exposure: 1.0, rainOverlay: 0.0 });
+        stage.dry.push(new THREE.Box3(V3(AR.x0, 0, -133), V3(AR.x1, AR.h, MARKET.z0)));
+      }
       block('backW', MAT.brickDark, -40, BACKST.x0 - BACKST.pave, -133, BACKST.z1, 12.8, { e: { bay: 3.4, litP: 0.14, pipes: [-104.4, -121.6] }, n: { bay: 3.4, litP: 0.12 } });
       door('backW', face('x', BACKST.x0 - BACKST.pave, 1), -98.6, 1.2, 2.4);
       door('backW', face('x', BACKST.x0 - BACKST.pave, 1), -112.4, 1.1, 2.3);

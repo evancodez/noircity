@@ -16,7 +16,10 @@ import { MERCER, GARAGE, NORTHST } from '../../stages/backlot/plan.js';
 //   S.step(dt, me)    me: the controller's position
 //   S.reset()         round the corner, out of sight, still
 const LANE_X = (MERCER.road[0] + MERCER.road[1]) / 2 - 1.75;   // the southbound lane's middle
-export const CROSS_Z = -117.4;
+// ([C6 3rd] where my way crosses its lane: at the corner, as I come up
+// Mercer Street and round onto the cross street - it comes round the corner
+// at me, its lamps swinging across)
+export const CROSS_Z = -136.4;
 const V = (x, y, z) => new THREE.Vector3(x, y, z);
 const VMAX = 9.0;
 

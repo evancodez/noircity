@@ -1,6 +1,6 @@
 {
- "about": "[C6] Proof 1 of WAVE_C §7 for chapter V: the player does nothing and LOSES, in every stretch of the chase - the escape down the iron, the alley, the lane, the yard, the kitchen, the press hall, the avenue under the el, over (the fork), the street, the car - each started cold (?start=watcher.<beat>): \"He's getting away.\" first (at least a second), then \"Lost him.\", back at the start of that stretch. node tools/play.mjs tools/plays/watcher_idle.json",
- "url": "/?mute=1&start=watcher.escape",
+ "about": "[C6] Proof 1 of WAVE_C \u00a77 for chapter V: the player does nothing and LOSES, in every beat with a contest - the window after he runs ([C6 3rd]), the escape down the iron, the alley, the lane, the yard, the kitchen, the press hall, the avenue and the cut (el), over (the fork), the street (Mercer Street, the corner, the arch), the market ([C6 3rd]), the car (his car's clock runs from when he is in) - each started cold (?start=watcher.<beat>): 'He's getting away.' at least a second before 'Lost him.', back at that beat's start. NOIR_PORT=5346 node tools/play.mjs tools/plays/watcher_idle.json",
+ "url": "/?mute=1&start=watcher",
  "size": [
   1280,
   800
@@ -8,7 +8,58 @@
  "out": "shots/c6/play_idle",
  "steps": [
   {
+   "name": "seen: hands off"
+  },
+  {
+   "until": "G.state === 'title' && !!document.querySelector('#title .opt[data-k=begin]')",
+   "timeout": 40000
+  },
+  {
+   "wait": 1200
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]",
+   "taken": "G.state !== 'title'",
+   "retries": 5,
+   "every": 4000
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'watcher' && G.scenes.beat === 'seen' && !(G.hud.cardT > 0.1)",
+   "timeout": 20000
+  },
+  {
+   "eval": "(window.__t0 = N.time, 1)"
+  },
+  {
+   "until": "!!G.hud.kit.warnText",
+   "timeout": 30000
+  },
+  {
+   "eval": "({ warnAfter: +(N.time - window.__t0).toFixed(1), gap: G.scenes.ctx.flags.chase ? +G.scenes.ctx.flags.chase.gapNow.toFixed(1) : null })"
+  },
+  {
+   "until": "!!G.failing",
+   "timeout": 20000
+  },
+  {
+   "expect": "G.lastFail.why === 'Lost him.' && G.lastFail.to === 'escape' && G.lastFail.warnedFor >= 1",
+   "label": "seen: idle loses him ('Lost him.'), warned at least a second before, back at the iron"
+  },
+  {
+   "eval": "({ lostAfter: +(N.time - window.__t0).toFixed(1), warnedFor: G.lastFail.warnedFor })"
+  },
+  {
+   "until": "!G.failing && G.scenes.beat === 'escape'",
+   "timeout": 12000
+  },
+  {
    "name": "escape: hands off"
+  },
+  {
+   "eval": "(localStorage.removeItem('noir.save'), location.search = '?mute=1&start=watcher.escape', 1)"
+  },
+  {
+   "wait": 2500
   },
   {
    "until": "G.state === 'title' && !!document.querySelector('#title .opt[data-k=begin]')",
@@ -50,7 +101,7 @@
   },
   {
    "until": "!G.failing && G.scenes.beat === 'escape'",
-   "timeout": 10000
+   "timeout": 12000
   },
   {
    "name": "alley: hands off"
@@ -101,7 +152,7 @@
   },
   {
    "until": "!G.failing && G.scenes.beat === 'alley'",
-   "timeout": 10000
+   "timeout": 12000
   },
   {
    "name": "lane: hands off"
@@ -152,7 +203,7 @@
   },
   {
    "until": "!G.failing && G.scenes.beat === 'lane'",
-   "timeout": 10000
+   "timeout": 12000
   },
   {
    "name": "yard: hands off"
@@ -191,9 +242,6 @@
    "eval": "({ warnAfter: +(N.time - window.__t0).toFixed(1), gap: G.scenes.ctx.flags.chase ? +G.scenes.ctx.flags.chase.gapNow.toFixed(1) : null })"
   },
   {
-   "shot": "i_yard_warn"
-  },
-  {
    "until": "!!G.failing",
    "timeout": 20000
   },
@@ -206,7 +254,7 @@
   },
   {
    "until": "!G.failing && G.scenes.beat === 'yard'",
-   "timeout": 10000
+   "timeout": 12000
   },
   {
    "name": "kitchen: hands off"
@@ -257,7 +305,7 @@
   },
   {
    "until": "!G.failing && G.scenes.beat === 'kitchen'",
-   "timeout": 10000
+   "timeout": 12000
   },
   {
    "name": "press: hands off"
@@ -308,7 +356,7 @@
   },
   {
    "until": "!G.failing && G.scenes.beat === 'press'",
-   "timeout": 10000
+   "timeout": 12000
   },
   {
    "name": "el: hands off"
@@ -359,7 +407,7 @@
   },
   {
    "until": "!G.failing && G.scenes.beat === 'el'",
-   "timeout": 10000
+   "timeout": 12000
   },
   {
    "name": "over: hands off"
@@ -410,7 +458,7 @@
   },
   {
    "until": "!G.failing && G.scenes.beat === 'over'",
-   "timeout": 10000
+   "timeout": 12000
   },
   {
    "name": "street: hands off"
@@ -461,7 +509,58 @@
   },
   {
    "until": "!G.failing && G.scenes.beat === 'street'",
-   "timeout": 10000
+   "timeout": 12000
+  },
+  {
+   "name": "market: hands off"
+  },
+  {
+   "eval": "(localStorage.removeItem('noir.save'), location.search = '?mute=1&start=watcher.market', 1)"
+  },
+  {
+   "wait": 2500
+  },
+  {
+   "until": "G.state === 'title' && !!document.querySelector('#title .opt[data-k=begin]')",
+   "timeout": 40000
+  },
+  {
+   "wait": 1200
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]",
+   "taken": "G.state !== 'title'",
+   "retries": 5,
+   "every": 4000
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'watcher' && G.scenes.beat === 'market' && !(G.hud.cardT > 0.1)",
+   "timeout": 20000
+  },
+  {
+   "eval": "(window.__t0 = N.time, 1)"
+  },
+  {
+   "until": "!!G.hud.kit.warnText",
+   "timeout": 30000
+  },
+  {
+   "eval": "({ warnAfter: +(N.time - window.__t0).toFixed(1), gap: G.scenes.ctx.flags.chase ? +G.scenes.ctx.flags.chase.gapNow.toFixed(1) : null })"
+  },
+  {
+   "until": "!!G.failing",
+   "timeout": 20000
+  },
+  {
+   "expect": "G.lastFail.why === 'Lost him.' && G.lastFail.to === 'market' && G.lastFail.warnedFor >= 1",
+   "label": "market: idle loses him ('Lost him.'), warned at least a second before, back at the start of the stretch"
+  },
+  {
+   "eval": "({ lostAfter: +(N.time - window.__t0).toFixed(1), warnedFor: G.lastFail.warnedFor })"
+  },
+  {
+   "until": "!G.failing && G.scenes.beat === 'market'",
+   "timeout": 12000
   },
   {
    "name": "car: hands off"
@@ -512,7 +611,7 @@
   },
   {
    "until": "!G.failing && G.scenes.beat === 'car'",
-   "timeout": 10000
+   "timeout": 12000
   }
  ]
 }

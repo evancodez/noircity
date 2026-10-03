@@ -175,12 +175,13 @@ export default {
     api.doorLamps = {};
     for (const side of ['W', 'E']) {
       const d = KI.doors[side];
-      api.doorLamps[side] = L.wall(d.x + d.w / 2 + 0.45, 2.5, KI.z1, 0, 1, { out: 0.12, strength: 0.8, half: 0.62 });
+      api.doorLamps[side] = L.wall(d.x - d.w / 2 - 0.55, 2.62, KI.z1, 0, 1, { out: 0.2, strength: 0.85, half: 0.66 });
     }
     api.rollLamp = L.wall(R.x + 2.2, 3.9, KI.z0, 0, -1, { out: 0.4, strength: 1.0 });
     // the yard at night: the sky's grey off the walls, the washing the lit thing in it
     stage.addLook(new THREE.Box3(V3(YARD.x0 - 3.5, -1, KI.z1), V3(YARD.x1, 30, YARD.z1 + 1.5)), {
-      ambient: 0.12, exposure: 1.05, fogDensity: 0.0026, fogColor: new THREE.Color(0.04, 0.04, 0.04), haze: 0.35,
+      // ([C6 3rd] less haze: looking up a lane into its flood the yard was a grey fog)
+      ambient: 0.12, exposure: 1.05, fogDensity: 0.0026, fogColor: new THREE.Color(0.04, 0.04, 0.04), haze: 0.18,
     });
     void mass; void tube; void LOADING;
     K.flush();

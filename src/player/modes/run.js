@@ -376,7 +376,9 @@ function hit(ctl, R, q) {
   if (T.kind === 'over' && T.low) {
     // tripped over it: carried over it by the run, the hands thrown out
     const cross = Math.max(0.2, q.d) + T.depth + 2 * R0 + 0.3;
-    R.move = { kind: 'trip', T, t: 0, dur: 0.85, nx, nz, cross, colOff: true, pitch: 0 };
+    // ([C6 3rd] a trip costs a little more - longer down, slower up: four
+    // trips in a stretch lose him, two or three warn)
+    R.move = { kind: 'trip', T, t: 0, dur: 1.0, nx, nz, cross, colOff: true, pitch: 0 };
     R.things.solid(T, false);
     RUNHANDS.set('catch');
     R.jolt = { t: 0, yaw: 0.05 * (Math.random() < 0.5 ? -1 : 1), pitch: -0.3, dur: 0.6 };
@@ -393,7 +395,7 @@ function hit(ctl, R, q) {
   ctl.vel.set(0, 0, 0);
   // ([C6 2nd] under a thing the knock is the head and shoulders against it:
   // shorter than a body stopped dead against a fence)
-  R.move = { kind: 'hit', T, t: 0, dur: T.kind === 'jump' ? 0.32 : T.kind === 'under' ? 0.36 : 0.5 };
+  R.move = { kind: 'hit', T, t: 0, dur: T.kind === 'jump' ? 0.32 : T.kind === 'under' ? 0.44 : 0.6 };
   if (T.kind === 'under') { RUNHANDS.set('catch'); R.jolt = { t: 0, yaw: 0.04, pitch: 0.22, dur: 0.5 }; }
   else { plant(at, T.y + Math.min(1.3, T.top), F, 0.22); R.jolt = { t: 0, yaw: 0.05, pitch: -0.14, dur: 0.45 }; }
   ctl.shake(0.7);
@@ -429,7 +431,7 @@ function blockedStep(ctl, R, io) {
     R.blocked = null;
     // ([C6 2nd] a scramble under it, bent double on the hands: quicker than a crawl,
     // so a missed slide costs about what a missed vault does)
-    R.move = { kind: 'crawl', T, t: 0, nx: B.nx, nz: B.nz, cross: Math.max(0, gap) + T.depth + 2 * R0 + 0.25, speed: 2.5, colOff: true };
+    R.move = { kind: 'crawl', T, t: 0, nx: B.nx, nz: B.nz, cross: Math.max(0, gap) + T.depth + 2 * R0 + 0.25, speed: 2.2, colOff: true };
     R.lowWant = 1.15;
     R.things.solid(T, false);
     R.onEvent('crawl', { T });
@@ -504,7 +506,7 @@ function stepMove(ctl, R, dt, cols) {
       M.pitch = -0.38 * Math.sin(Math.PI * Math.min(1, u / 0.8));
       ctl.vel.set(M.nx * v, 0, M.nz * v);
       R.feet = gy() + lift;
-      if (u >= 1) { R.feet = gy(); end(2.2, 'land', { hard: true }); }
+      if (u >= 1) { R.feet = gy(); end(1.6, 'land', { hard: true }); }
       return;
     }
     case 'hit': {

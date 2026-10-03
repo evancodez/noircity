@@ -213,6 +213,10 @@ export default {
       dog: L.wall(62.4, 3.6, TANNER.z0, 0, 1, { out: 0.2, strength: 0.85 }),
       rowEnd: L.wall(31.0, 3.8, TANNER.z1, 0, -1, { out: 0.3, strength: 0.9 }),
       passage: L.wall(PASSAGE.x0, 4.0, -110.0, 1, 0, { out: 0.3, strength: 0.85 }),
+      // ([C6 3rd] its mouth by the stair's foot lit too: the other way over is
+      // plain to see from where the alley comes out - a man who keeps failing
+      // the jump sees there is a way round under the roofs)
+      passMouth: L.wall(PASSAGE.x1, 3.5, -102.2, -1, 0, { out: 0.4, strength: 0.95 }),
       // the jump: lamps on the taller block's wall over the roofs' south side,
       // one over the light well's near edge, one over the far roof's parapet
       edge: L.wall(46.6, ROOFS.R1.y + 2.7, ROOFS.z1, 0, -1, { out: 0.45, strength: 1.0 }),

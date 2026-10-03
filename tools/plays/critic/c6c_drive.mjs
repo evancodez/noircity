@@ -38,7 +38,9 @@ export default async function drive({ js, turn, keyDown, keyUp, log, sleep, opts
     'cross', 'gateway', 'aisleN', 'aisleS', 'crossW', 'gate', 'pave', 'myDoor'];
   const over = opts.over || 'roofs';
   let lane = null, line = null, li = 0;
-  const pts = () => line.map((n) => N_[n]);
+  const pts = () => line.map((n) => N_[n] || (window_nodes && window_nodes[n]));
+  let window_nodes = null;
+  { const W = await js(`(() => { const C = G.scenes.ctx && G.scenes.ctx.flags && G.scenes.ctx.flags.chase; const o = {}; if (C && C.course) for (const [k, n] of C.course.nodes) o[k] = [n.x, n.y, n.z]; return o; })()`); if (W && !W.__exc) { window_nodes = W; Object.assign(N_, W); } }
   const ST = `(() => {
     const C = N.controller, R = C.run, S = G.scenes, ctx = S.ctx, CH = ctx && ctx.flags && ctx.flags.chase && ctx.flags.chase.course ? ctx.flags.chase : null;
     const K = G.hud.kit;
@@ -94,7 +96,10 @@ export default async function drive({ js, turn, keyDown, keyUp, log, sleep, opts
       laneChosen = prof === 'bad' ? (rnd() < 0.5 ? 'W' : 'E') : st.lane;
       rec.laneTried.push(laneChosen);
     }
-    if (!line) { line = LINE(laneChosen || st.lane || 'W', over); li = 0; }
+    // ([C6 3rd owner] the course's own line when the page gives it - the
+    // course changed (the cut, the street round the corner, the market) and
+    // the line above was written for the old one)
+    if (!line) { const L2 = await js(`window.__c6 ? window.__c6.hisNames(${JSON.stringify(laneChosen || st.lane || 'W')}, ${JSON.stringify(over)}, ${JSON.stringify(opts.market || 'mid')}) : null`); line = Array.isArray(L2) ? [...L2.filter((n) => !['lamp', 'kerb', 'mouth', 'carRear', 'carDoor'].includes(n)), 'myDoor'] : LINE(laneChosen || st.lane || 'W', over); li = 0; }
     // the nearest segment ahead of where I was on the line
     const P = pts();
     let best = li, bd = 1e9;
@@ -166,7 +171,9 @@ export default async function drive({ js, turn, keyDown, keyUp, log, sleep, opts
         log(`bad: ${laneChosen} lane's door locked: round to ${other}`);
         laneChosen = other; rec.laneTried.push(other);
         const back = other === 'E' ? ['wDoor', 'wIn', 'eIn', 'eDoor', 'eIn2', 'eK'] : ['eDoor', 'eIn', 'wIn', 'wDoor', 'wIn2', 'wK', 'kMid'];
-        line = [...back, ...LINE(other, over).slice(LINE(other, over).indexOf('kDoor'))]; li = 0;
+        const L3 = await js(`window.__c6 ? window.__c6.hisNames(${JSON.stringify(other)}, ${JSON.stringify(over)}, ${JSON.stringify(opts.market || 'mid')}) : null`);
+        const full = Array.isArray(L3) ? [...L3.filter((n) => !['lamp', 'kerb', 'mouth', 'carRear', 'carDoor'].includes(n)), 'myDoor'] : LINE(other, over);
+        line = [...back, ...full.slice(full.indexOf('kDoor'))]; li = 0;
         await turn(Math.round(Math.PI / 0.0021 / 2), 0); await sleep(120); await turn(Math.round(Math.PI / 0.0021 / 2), 0);
         blockT = null; blockPlan = null;
         await sleep(60); continue;

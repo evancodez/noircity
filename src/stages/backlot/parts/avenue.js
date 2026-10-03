@@ -5,7 +5,7 @@ import { Overpass, OVERPASS } from '../../../world/Overpass.js';
 import { buildTruck, TRUCK as TRUCK_M } from '../../../vehicles/models.js';
 import { Steam } from '../../../fx/Steam.js';
 import { arch } from '../arch.js';
-import { AVENUE, BALLEY, PRESS, HARBOR, FLOOR } from '../plan.js';
+import { AVENUE, BALLEY, PRESS, HARBOR, FLOOR, CUT } from '../plan.js';
 
 // [C6 2nd] The avenue under the el (chapter V, the stretch `el`): north -
 // south east of the press hall, across Harbor Street's east end, up for
@@ -176,14 +176,14 @@ export default {
       el2: L.hang(AVENUE.elX - 1.6, O.deckY - 0.2, -92.0, { real: true }),
       el3: L.hang(AVENUE.elX - 1.6, O.deckY - 0.2, -103.4, { real: true }),
       el4: L.hang(AVENUE.elX - 1.6, O.deckY - 0.2, -60.0, { real: false }),
-      el5: L.hang(AVENUE.elX - 1.6, O.deckY - 0.2, -116.0, { real: false }),
+      el5: L.hang(AVENUE.elX - 1.6, O.deckY - 0.2, -116.0, { real: true }),
       e1: L.post(AVENUE.road[1] + 0.7, -86.0, -Math.PI / 2, { y: 0.15, real: false }),
       e2: L.post(AVENUE.road[1] + 0.7, -110.0, -Math.PI / 2, { y: 0.15, real: false }),
       e3: L.post(AVENUE.road[1] + 0.7, -40.0, -Math.PI / 2, { y: 0.15, real: false }),
       e4: L.post(AVENUE.road[1] + 0.7, 3.0, -Math.PI / 2, { y: 0.15, real: false }),
       h1: L.post(AVENUE.road[0] - 0.7, HARBOR.z0 - 1.0, Math.PI / 2, { y: 0.15, real: false }),
     };
-    for (const k of ['el1', 'el2', 'el3']) { const l = api.lamps[k]; if (l.light) { l.light.intensity = 110; l.light.angle = 0.7; } }
+    for (const k of ['el1', 'el2', 'el3', 'el5']) { const l = api.lamps[k]; if (l.light) { l.light.intensity = 110; l.light.angle = 0.7; } }
 
     // ---- the press hall's dock: the newspaper van backed up to it ---------------------------------
     {
@@ -241,9 +241,36 @@ export default {
       // the alley's Look: darker than the avenue, the steam lit
       stage.addLook(new THREE.Box3(V3(BALLEY.x0, -1, BALLEY.z0), V3(BALLEY.x1, 30, BALLEY.z1)), { ambient: 0.1, exposure: 1.0, haze: 0.5 });
     }
-    // the steam off the alley pipe's leaking joint (things.js's pipe), and up
-    // out of a manhole under the el
-    api.steam = new Steam(stage, [V3(BALLEY.pipe.x, BALLEY.pipe.y + 0.3, BALLEY.z0 + 1.65), V3(AVENUE.elX + 2.4, 0.05, -90.5)], 16);
+    // ([C6 3rd] the main has burst in the alley tonight: a barrier across it
+    // west of the pipe - trestles, boards, a lantern on it, the steam
+    // pouring off the pipe's joint behind - the way from the avenue is not
+    // through here but round by the cut further up)
+    {
+      const xb = BALLEY.shut, g = 'balleyBarrier';
+      const z0 = BALLEY.z0 + 0.05, z1 = BALLEY.z1 - 0.05;
+      for (const y of [0.55, 1.05]) K.box(g, MAT.wood, xb - 0.04, xb + 0.04, y - 0.08, y + 0.08, z0, z1);
+      for (let z = z0 + 0.4; z < z1; z += 1.6) for (const s of [-1, 1]) K.add(g, MAT.woodDark, new THREE.BoxGeometry(0.06, 1.25, 0.06).rotateX(s * 0.3).translate(xb + 0.15 * s, 0.6, z));
+      // (the boards striped: dark and pale bands, the pale the paint)
+      for (let z = z0 + 0.3; z < z1; z += 0.9) for (const y of [0.55, 1.05]) K.box(g, MAT.plaster, xb - 0.045, xb + 0.045, y - 0.075, y + 0.075, z, z + 0.42);
+      // a board hung on it, a lantern on its post
+      K.box(g, MAT.plaster, xb - 0.06, xb - 0.03, 1.2, 1.7, (z0 + z1) / 2 - 0.5, (z0 + z1) / 2 + 0.5);
+      K.add(g, MAT.iron, new THREE.CylinderGeometry(0.05, 0.05, 1.6, 8).translate(xb, 0.8, z1 - 0.3), { figure: true });
+      K.add(g, MAT.iron, new THREE.CylinderGeometry(0.09, 0.11, 0.24, 10).translate(xb, 1.72, z1 - 0.3), { figure: true });
+      K.collide(xb - 0.2, xb + 0.2, BALLEY.z0, BALLEY.z1, 'barrier');
+      api.barrierLamp = L.hang(xb, 1.95, z1 - 0.3, { real: false });
+    }
+    // the steam off the alley pipe's burst joint (things.js's pipe), pouring;
+    // off the cut's pipe's leaking joint; and up out of a manhole under the el
+    api.steam = new Steam(stage, [V3(BALLEY.pipe.x, BALLEY.pipe.y + 0.3, BALLEY.z0 + 1.65), V3(BALLEY.pipe.x, BALLEY.pipe.y + 0.25, BALLEY.z0 + 3.2), V3(AVENUE.elX + 2.4, 0.05, -90.5), V3(CUT.ns.x0 + 0.6, CUT.pipe.y + 0.35, CUT.pipe.z)], 22);
+    // ([C6 3rd] the cut: a lamp over its mouth on the avenue, one at its
+    // knee, one half way down its N-S leg; its Look: darker than the avenue)
+    api.cutLamps = {
+      mouth: L.wall(CUT.ew.x1 - 1.6, 3.8, CUT.ew.z0, 0, 1, { out: 0.35, strength: 0.9 }),
+      knee: L.wall(CUT.ns.x0, 3.6, CUT.ew.z0 + 2.3, 1, 0, { out: 0.35, strength: 0.85 }),
+      leg: L.wall(CUT.ns.x1, 3.4, -110.0, -1, 0, { out: 0.35, strength: 0.8 }),
+    };
+    stage.addLook(new THREE.Box3(V3(CUT.ns.x0, -1, CUT.ew.z0), V3(CUT.ew.x1, 30, CUT.ew.z1)), { ambient: 0.1, exposure: 1.0, haze: 0.4 });
+    stage.addLook(new THREE.Box3(V3(CUT.ns.x0, -1, CUT.ew.z1), V3(CUT.ns.x1, 30, CUT.ns.z1)), { ambient: 0.1, exposure: 1.0, haze: 0.45 });
     // a manhole's lid in the road under the el (the steam's)
     K.add('avenueRoad', MAT.iron, new THREE.CylinderGeometry(0.42, 0.42, 0.02, 20).translate(AVENUE.elX + 2.4, 0.01, -90.5), { cast: false });
 
@@ -255,7 +282,8 @@ export default {
       // market, blocks of twelve metres stand in between - not drawn there)
       // (the alley runs straight from the loading yard to the avenue: from
       // anywhere along that line, the stair included, the el is at its end)
-      const show = (p.x > 50 && p.z < -98.5 && p.z > -107.5) || (p.x > 70 && p.z < -60 && p.z > -110) || p.x > 93 || p.z > -12;
+      // ([C6 3rd] and from the cut's E-W leg: the avenue at its mouth)
+      const show = (p.x > 50 && p.z < -98.5 && p.z > -107.5) || (p.x > 70 && p.z < -60 && p.z > -110) || p.x > 93 || p.z > -12 || (p.x > CUT.ns.x0 && p.z < CUT.ew.z1 + 1.5 && p.z > CUT.ew.z0 - 0.5);
       if (group.visible !== show) group.visible = show;
       if (!show) return;
       for (const s of stations) {

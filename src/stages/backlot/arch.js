@@ -70,7 +70,10 @@ export function arch(stage, seed = 6060) {
     fbox(g, MAT.woodDark, F, u - 0.02, u + 0.02, sill, sill + h, 0, 0.03);
   };
   // a door: its leaf proud of the wall in a heavy frame, a step
+  // ([C6 3rd] each is written down, stage._blDoors: things.js makes every one
+  // a locked door - run into it or press E against it, it rattles: "Locked.")
   const door = (g, F, u, w = 1.05, h = 2.2) => {
+    (stage._blDoors || (stage._blDoors = [])).push({ F, u, w, h });
     fbox(g, MAT.woodDark, F, u - w / 2, u + w / 2, 0.12, h, 0, 0.05);
     fbox(g, MAT.trim, F, u - w / 2 - 0.12, u - w / 2, 0, h + 0.12, 0, 0.12);
     fbox(g, MAT.trim, F, u + w / 2, u + w / 2 + 0.12, 0, h + 0.12, 0, 0.12);

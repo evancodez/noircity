@@ -1,36 +1,112 @@
 {
- "about": "[C6] Proof 3 of WAVE_C §7 for chapter V: a player who uses what was taught (W, SPACE over, C under, SPACE through his door, the jump, the slide down; reads which lane of the yard he took) WINS, twice in a row, by both ways over the fork: from the window (?start=watcher) to the cut into chapter VI's driver's seat, no fail, once over the roofs and once by Tanner's Row under them. tools/lib/c6_chase.mjs 'good'. node tools/play.mjs tools/plays/watcher_good.json",
+ "about": "[C6] Proof 3 of WAVE_C \u00a77 for chapter V: a player who uses what was taught (W, SPACE over, C under, SPACE through a door, the jump, the slide down; reads which lane of the yard he took) WINS, twice in a row, by both ways at both forks: from the window (?start=watcher) to the cut into chapter VI's driver's seat, no fail - once over the roofs and down the market's middle aisle, once by Tanner's Row and the market's west aisle. tools/lib/c6_chase.mjs 'good'. NOIR_PORT=5346 node tools/play.mjs tools/plays/watcher_good.json",
  "url": "/?mute=1&start=watcher",
- "size": [1280, 800],
+ "size": [
+  1280,
+  800
+ ],
  "out": "shots/c6/play_good",
  "steps": [
-  { "until": "G.state === 'title' && !!document.querySelector('#title .opt[data-k=begin]')", "timeout": 40000 },
-  { "wait": 1500 },
-  { "clickOn": "#title .opt[data-k=begin]", "taken": "G.state !== 'title' && document.pointerLockElement === N.renderer.domElement", "retries": 5, "every": 4000 },
-  { "name": "run 1: the window, the iron, over the roofs" },
-  { "until": "G.scenes.current && G.scenes.current.id === 'watcher' && G.hud.promptShown.includes('look out')", "timeout": 25000 },
-  { "key": "KeyE" },
-  { "until": "G.hud.promptShown.includes('fire escape')", "timeout": 15000 },
-  { "key": "KeyE" },
-  { "until": "N.controller.mode === 'escape'", "timeout": 10000 },
-  { "drive": "tools/lib/c6_chase.mjs", "profile": "good", "over": "roofs", "stop": "G.scenes.current && G.scenes.current.id === 'tail'", "timeout": 200000, "check": "D.done && D.fails === 0", "label": "run 1 (over the roofs): through to the tail, never lost",
-    "shots": { "g1_jump": "G.scenes.beat === 'over' && N.controller.run && N.controller.run.move && N.controller.run.move.kind === 'jump'", "g1_car": "G.scenes.beat === 'car'" } },
-  { "eval": "JSON.stringify({ play: +(G.scenes.playTime || 0).toFixed(1), fails: G.counters.fails || 0, beat: G.scenes.beat })" },
-  { "expect": "G.scenes.current.id === 'tail' && N.controller.mode === 'drive'", "label": "run 1: in the coupe's seat, chapter VI" },
-  { "name": "run 2: from the window again, by Tanner's Row" },
-  { "eval": "(localStorage.removeItem('noir.save'), location.search = '?mute=1&start=watcher', 1)" },
-  { "wait": 3000 },
-  { "until": "G.state === 'title' && !!document.querySelector('#title .opt[data-k=begin]')", "timeout": 40000 },
-  { "wait": 1500 },
-  { "clickOn": "#title .opt[data-k=begin]", "taken": "G.state !== 'title' && document.pointerLockElement === N.renderer.domElement", "retries": 5, "every": 4000 },
-  { "until": "G.scenes.current && G.scenes.current.id === 'watcher' && G.hud.promptShown.includes('look out')", "timeout": 25000 },
-  { "key": "KeyE" },
-  { "until": "G.hud.promptShown.includes('fire escape')", "timeout": 15000 },
-  { "key": "KeyE" },
-  { "until": "N.controller.mode === 'escape'", "timeout": 10000 },
-  { "drive": "tools/lib/c6_chase.mjs", "profile": "good", "over": "row", "stop": "G.scenes.current && G.scenes.current.id === 'tail'", "timeout": 200000, "check": "D.done && D.fails === 0", "label": "run 2 (by Tanner's Row): through to the tail, never lost",
-    "shots": { "g2_plank": "G.scenes.beat === 'over' && N.controller.run && N.controller.run.move && N.controller.run.move.kind === 'slide' && N.controller.pos.x < 46", "g2_car": "G.scenes.beat === 'car'" } },
-  { "eval": "JSON.stringify({ play: +(G.scenes.playTime || 0).toFixed(1), fails: G.counters.fails || 0 })" },
-  { "expect": "G.scenes.current.id === 'tail' && N.controller.mode === 'drive'", "label": "run 2: in the coupe's seat, chapter VI" }
+  {
+   "until": "G.state === 'title' && !!document.querySelector('#title .opt[data-k=begin]')",
+   "timeout": 40000
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]",
+   "taken": "G.state !== 'title' && document.pointerLockElement === N.renderer.domElement",
+   "retries": 5,
+   "every": 4000
+  },
+  {
+   "name": "run 1: the window, the iron, over the roofs"
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'watcher' && G.hud.promptShown.includes('fire escape')",
+   "timeout": 30000
+  },
+  {
+   "key": "KeyE"
+  },
+  {
+   "until": "N.controller.mode === 'escape'",
+   "timeout": 10000
+  },
+  {
+   "drive": "tools/lib/c6_chase.mjs",
+   "profile": "good",
+   "over": "roofs",
+   "stop": "G.scenes.current && G.scenes.current.id === 'tail'",
+   "timeout": 260000,
+   "check": "D.done && D.fails === 0",
+   "label": "run 1 (over the roofs and the market's middle aisle): through to the tail, never lost",
+   "shots": {
+    "g1_jump": "G.scenes.beat === 'over' && N.controller.run && N.controller.run.move && N.controller.run.move.kind === 'jump'",
+    "g1_car": "G.scenes.beat === 'car'"
+   }
+  },
+  {
+   "eval": "JSON.stringify({ play: +(G.scenes.playTime || 0).toFixed(1), fails: G.counters.fails || 0, beat: G.scenes.beat })"
+  },
+  {
+   "expect": "G.scenes.current.id === 'tail' && N.controller.mode === 'drive'",
+   "label": "run 1: in the coupe's seat, chapter VI"
+  },
+  {
+   "name": "run 2: from the window again, by Tanner's Row"
+  },
+  {
+   "eval": "(localStorage.removeItem('noir.save'), location.search = '?mute=1&start=watcher', 1)"
+  },
+  {
+   "wait": 3000
+  },
+  {
+   "until": "G.state === 'title' && !!document.querySelector('#title .opt[data-k=begin]')",
+   "timeout": 40000
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]",
+   "taken": "G.state !== 'title' && document.pointerLockElement === N.renderer.domElement",
+   "retries": 5,
+   "every": 4000
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'watcher' && G.hud.promptShown.includes('fire escape')",
+   "timeout": 30000
+  },
+  {
+   "key": "KeyE"
+  },
+  {
+   "until": "N.controller.mode === 'escape'",
+   "timeout": 10000
+  },
+  {
+   "drive": "tools/lib/c6_chase.mjs",
+   "profile": "good",
+   "over": "row",
+   "stop": "G.scenes.current && G.scenes.current.id === 'tail'",
+   "timeout": 260000,
+   "check": "D.done && D.fails === 0",
+   "label": "run 2 (by Tanner's Row and the market's west aisle): through to the tail, never lost",
+   "shots": {
+    "g2_plank": "G.scenes.beat === 'over' && N.controller.run && N.controller.run.move && N.controller.run.move.kind === 'slide' && N.controller.pos.x < 46",
+    "g2_car": "G.scenes.beat === 'car'"
+   },
+   "market": "west"
+  },
+  {
+   "eval": "JSON.stringify({ play: +(G.scenes.playTime || 0).toFixed(1), fails: G.counters.fails || 0 })"
+  },
+  {
+   "expect": "G.scenes.current.id === 'tail' && N.controller.mode === 'drive'",
+   "label": "run 2: in the coupe's seat, chapter VI"
+  }
  ]
 }
