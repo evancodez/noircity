@@ -20,6 +20,10 @@ const PLACES = [
   ['the yard\'s east wall', [66.0, -66, -Math.PI / 2], ['x', 70.0, -1]],
   ['the kitchen table', [60.0, -88.5, 0], ['z', -91.6, 1]],
   ['the kitchen\'s ranges (the middle stove)', [53.0, -92.6, Math.PI / 2], ['x', 51.4, 1]],
+  // ([C6 4th] the racks stand against the table's ends now: one from the W
+  // corridor, the table's south face where the pocket was)
+  ['the kitchen: the rack at the table\'s west end', [52.6, -92.4, -Math.PI / 2], ['x', 54.47, -1]],
+  ['the kitchen: the table where the pocket was', [63.8, -88.8, 0], ['z', -91.57, 1]],
   ['the kitchen hand by the sinks', [66.0, -93.9, -Math.PI / 2], ['x', 68.1, -1]],
   ['the roller door without C', [60.0, -97.0, 0], ['z', -99.88, 1]],
   ['the loading yard into the stair\'s side', [63.0, -102.5, 0], ['z', -104.8, 1]],

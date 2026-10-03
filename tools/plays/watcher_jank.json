@@ -1,11 +1,31 @@
 {
- "about": "[C6] The jank run for chapter V (WAVE_C §7 item 5), by real input: the eye put down facing each wall, fence, door, table, parked car, stall, the stair's side, the truck, the hoardings at the streets' ends - W held into it at a run, then tapped at a walk - and the body checked: never through it, never floating. Played in the scene's frame mode with anim=1 (the game runs on, no fail), so the rules never cut in. node tools/play.mjs tools/plays/watcher_jank.json",
+ "about": "[C6] The jank run for chapter V (WAVE_C \u00a77 item 5), by real input: the eye put down facing each wall, fence, door, table, parked car, stall, the stair's side, the truck, the hoardings at the streets' ends - W held into it at a run, then tapped at a walk - and the body checked: never through it, never floating. Played in the scene's frame mode with anim=1 (the game runs on, no fail), so the rules never cut in. node tools/play.mjs tools/plays/watcher_jank.json [C6 4th] And rays through every doorway and opening on the way (the yard doors, the iron door, the press hall's south door, the delivery yard's gate, the cut's mouth, the arch, Pell Lane's gate, the yard's mouth, the cut's leg into the alley): nothing across any of them - the critic found the press hall's dado across two.",
  "url": "/?mute=1&scene=watcher&beat=car&anim=1&t=0.5",
- "size": [1280, 800],
+ "size": [
+  1280,
+  800
+ ],
  "out": "shots/c6/play_jank",
  "steps": [
-  { "until": "G.scenes.current && G.scenes.current.id === 'watcher'", "timeout": 30000 },
-  { "wait": 1000 },
-  { "drive": "tools/lib/c6_jank.mjs", "check": "D.ok", "label": "nothing passes through anything; nothing floats" }
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'watcher'",
+   "timeout": 30000
+  },
+  {
+   "wait": 1000
+  },
+  {
+   "drive": "tools/lib/c6_jank.mjs",
+   "check": "D.ok",
+   "label": "nothing passes through anything; nothing floats"
+  },
+  {
+   "eval": "(() => { const R = G.rays, Vc = G.eye.constructor; const D = [\n  ['the kitchen W yard door', 'z', 54.25, -84.15, 1.1, 2.15], ['the kitchen E yard door', 'z', 65.75, -84.15, 1.1, 2.15],\n  ['the iron door (kitchen - press hall)', 'x', 70.0, -97.6, 1.1, 2.2], ['the press hall south door', 'z', 90.3, -74.15, 1.4, 2.6],\n  ['the delivery yard gate', 'x', 92.9, -57.8, 4.0, 3.7], ['the cut mouth', 'x', 92.9, -118.9, 4.6, 2.1],\n  ['the arch from the cross street', 'z', 8.5, -133.0, 2.3, 2.7], ['Pell Lane gate', 'x', 2.0, -96.8, 1.6, 2.0],\n  ['the yard mouth from the lane', 'x', 50.0, -50.0, 5.0, 3.5], ['the cut N-S leg into the alley', 'z', 77.9, -106.0, 3.4, 2.5] ];\n  const out = []; for (const [name, axis, a, b, w, h] of D) { const hits = [];\n    for (const u of [-w / 2 + 0.12, 0, w / 2 - 0.12]) for (const y of [0.25, 0.6, 1.0, 1.4, 1.8, h - 0.2]) { if (y > h - 0.1) continue;\n      const o = axis === 'x' ? new Vc(a - 1.0, y, b + u) : new Vc(a + u, y, b - 1.0); o.y += G.stage.surfaceY(o.x, o.z);\n      const hit = R.raycast(o, axis === 'x' ? new Vc(1, 0, 0) : new Vc(0, 0, 1), 2.0); if (hit) hits.push([+u.toFixed(2), +y.toFixed(2), hit.mesh && hit.mesh.name]); }\n    out.push({ door: name, clear: !hits.length, hits: hits.slice(0, 3) }); }\n  window.__dw = out; return JSON.stringify(out.map((r) => [r.door, r.clear, r.hits])); })()",
+   "name": "[C6 4th] rays through every doorway on the way, at six heights and three places across: nothing stands across an opening (the press hall's dado stood across two)"
+  },
+  {
+   "expect": "window.__dw.every((r) => r.clear)",
+   "label": "nothing stands across a doorway on the way"
+  }
  ]
 }

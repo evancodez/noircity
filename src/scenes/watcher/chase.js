@@ -99,7 +99,7 @@ export class Chase {
     const add = (s, kind, data = {}) => { if (s != null) out.push({ s, kind, ...data }); };
     // ([C6 3rd] + the alley's sacks, the press's bundles, the cut's barrels and
     // sacks, the market's boxes; the cut's pipe; the market's back gate)
-    for (const id of ['alleySacks', 'fence1', 'fence3', 'kSacks', 'pressRow', 'conveyor', 'dyBundles', 'dyReel', 'cutBarrels', 'cutSacks', 'party', 'archCart', 'stallBoxes', 'marketCrates']) { const T = things.get(id); if (T) add(on(T), 'vault', { id }); }
+    for (const id of ['alleySacks', 'fence1', 'fence3', 'kSacks', 'pressRow', 'conveyor', 'dyBundles', 'dyReel', 'cutBarrels', 'cutSacks', 'party', 'merBarrels', 'archCart', 'stallBoxes', 'marketCrates']) { const T = things.get(id); if (T) add(on(T), 'vault', { id }); }
     for (const id of ['fence2', 'web', 'pipe', 'pipe2', 'tank', 'plank']) { const T = things.get(id); if (T) add(on(T), 'slide', { id }); }
     add(on(things.get('door' + this.lane)), 'door', { id: 'door' + this.lane, slam: true });
     if (things.get('archGate')) add(on(things.get('archGate')), 'door', { id: 'archGate', slam: true });

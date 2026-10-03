@@ -311,7 +311,10 @@ NODES.carDoor = [-5.25, 0, -100.6];
 export const STRETCHES = {
   alley: { at: [0.95, -9.8], yaw: 0, ahead: 13 },
   lane: { at: [3.2, -49.6], yaw: -Math.PI / 2, ahead: 13 },
-  yard: { at: [44.0, -50.0], yaw: -Math.PI / 2, ahead: 14 },
+  // ([C6 4th] at the lane's mouth, the court before me, him 10 m on into it:
+  // from 4 m further back he was behind the lane's wall and an idle retry was
+  // lost in 3.1 s, the briskest of all)
+  yard: { at: [48.8, -50.6], yaw: -Math.PI / 2, ahead: 10 },
   kitchen: { at: null, yaw: 0, ahead: 12 },          // just inside his door (the scene places it)
   // [C6 2nd] just inside the press hall (the kitchen's door open behind me);
   // out of its dock door on the avenue; the alley's west end (the fork ahead)

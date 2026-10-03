@@ -3,7 +3,7 @@ import { lathe, merge, tube, V3, roundedBox } from '../../../world/geom.js';
 import { allocInkId, markFigure, tagInk } from '../../../render/layers.js';
 import { materials } from '../arch.js';
 import {
-  LANE, KITCHEN, ROOFS, TANNER, TRUCK, MARKET, FENCE, KDOOR, PRESS, BALLEY, AVENUE, CUT, ARCH, DELIVERY,
+  LANE, KITCHEN, ROOFS, TANNER, TRUCK, MARKET, FENCE, KDOOR, PRESS, BALLEY, AVENUE, CUT, ARCH, DELIVERY, MERCER,
 } from '../plan.js';
 
 // What the chase meets in its way (lane C6): every thing a man must go
@@ -625,6 +625,21 @@ export default {
     wicketGate(ctx3, { id: 'archGate', z: ARCH.gateZ, x0: ARCH.x0, x1: ARCH.x1, door: [8.05, 9.15], h: ARCH.h, stretch: 'street' });
     // a costermonger's handcart left across the arch, its shafts on the cobbles
     handcart(ctx3, { id: 'archCart', a: { x: ARCH.x0 + 0.05, z: -130.6 }, b: { x: ARCH.x1 - 0.05, z: -130.6 }, stretch: 'street' });
+    // ([C6 4th] Mercer Street: a brewer's barrels rolled off at the kerb across
+    // the east half of the road and its pavement, by a pub's cellar flap -
+    // over them, or round them into the lane the car comes down. The street's
+    // first thing: its three were all in the arch at its end)
+    barrelRow(ctx3, { id: 'merBarrels', a: { x: 20.75, z: -125.4 }, b: { x: MERCER.x1 - 0.05, z: -125.4 }, stretch: 'street' });
+    {
+      // (the cellar flap open beside them: two iron leaves in the pavement, one up against the wall)
+      const fl = new THREE.Group();
+      const sy = stage.surfaceY(25.3, -127.0);
+      fl.add(new THREE.Mesh(new THREE.BoxGeometry(0.62, 0.04, 1.1).translate(25.0, sy + 0.02, -127.0), MAT.iron));
+      fl.add(new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.62, 1.1).translate(MERCER.x1 - 0.06, sy + 0.31, -127.0), MAT.iron));
+      fl.add(new THREE.Mesh(new THREE.BoxGeometry(0.58, 0.012, 1.06).translate(25.62, sy + 0.006, -127.0), MAT.black || MAT.iron));
+      ink(fl);
+      stage.scene.add(fl);
+    }
     // the market: a greengrocer's boxes across the middle aisle's north end;
     // the dark west aisle along the fence: a porter's table across it
     // (under), boxes (over)
@@ -1180,7 +1195,10 @@ function handcart(c, { id, a, b, stretch }) {
   c.markTop(g, a.x, a.z, b.x, b.z, yb + 0.25, 0.035);
   ink(g);
   stage.scene.add(g);
-  const T = add({ id, kind: 'over', low: true, top: 0.94, a, b, depth: bedW + 0.15, stretch });
+  // ([C6 4th] waist high, its bed and its wheels: run into, it stops a man
+  // dead - his hands on its rail - and he climbs it; it was a trip, and three
+  // misses in the street, all in the arch, did not even bring the warning)
+  const T = add({ id, kind: 'over', low: false, top: 0.94, a, b, depth: bedW + 0.15, stretch });
   T.mesh = g;
   return T;
 }
