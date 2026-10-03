@@ -41,8 +41,9 @@ const NUM = { maxFiring: 2, settleK: 1.2, dmgK: 0.9 };
 // he won it); the heavy three of my rounds, not five: the first gunfight's heavy, met with a full cylinder)
 const NUM_CORR = { dmgK: 0.9, settleK: 1.25 };
 const HEAVY_DMGK = 0.7;
-// (the flank: a little slower to settle - they come at my side, the time to turn)
-const NUM_FLANK = { settleK: 1.35 };
+// (the flank: slower to settle - they come at my side, the time to turn; at 1.35 a good hand still lost one
+// first try in five to the man who came in and round the desk)
+const NUM_FLANK = { settleK: 1.5 };
 // the door's three: where they stand at the glass (corridor side), and their way in
 const DOORMEN = [
   // the kicker: through the door when it goes, into the outer office
