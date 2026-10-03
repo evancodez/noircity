@@ -39,6 +39,7 @@ export default {
     for (const [x0, x1, z0, z1, tiers, full] of PIER.blocks) {
       kit.piece();
       const geos = [], battens = [];
+      let lowered = false;
       const nx = Math.max(1, Math.round((x1 - x0) / CRATE)), nz = Math.max(1, Math.round((z1 - z0) / CRATE));
       const cw = (x1 - x0) / nx, cd = (z1 - z0) / nz;
       for (let i = 0; i < nx; i++) {
@@ -50,9 +51,20 @@ export default {
           if (edge && nx > 1 && nz > 2 && (rng.next() < 0.1 || notched)) continue;
           const n = full ? tiers : Math.max(1, Math.min(tiers, Math.round(tiers * (0.55 + 0.6 * rng.next()))));
           const cx = x0 + (i + 0.5) * cw, cz = z0 + (j + 0.5) * cd;
+          // [C7] the first frame's line (PIER.sight): crates on it no higher
+          // than its tiers, so the office window is seen over them from the
+          // side door (the random draws as before: the rest of the stacks
+          // unchanged)
+          const SL = PIER.sight;
+          let cap = n;
+          if (SL) {
+            const [ax, az] = SL.from, [bx, bz] = SL.to, u = (cz - az) / (bz - az);
+            if (u > 0 && u < 1 && Math.abs(cx - (ax + (bx - ax) * u)) < SL.half) { cap = Math.min(n, SL.tiers); lowered = true; }
+          }
           let y = 0;
           for (let k = 0; k < n; k++) {
             const w = cw - 0.08 - rng.next() * 0.12, d = cd - 0.08 - rng.next() * 0.12, h = 1.0 + rng.next() * 0.3;
+            if (k >= cap) { for (let q = 0; q < 4; q++) rng.next(); if (k < 2) rng.next(); continue; }
             const cr = crateGeo(w, h, d);
             cr.rotateY((rng.next() - 0.5) * (k === n - 1 ? 0.14 : 0.05));
             cr.translate(cx + (rng.next() - 0.5) * 0.08, y, cz + (rng.next() - 0.5) * 0.08);
@@ -73,7 +85,8 @@ export default {
       kit.addMerged(geos, M.crate, { cast: true });
       if (battens.length) kit.addMerged(battens, M.crateDark, { cast: false });
       // a tarpaulin thrown over one block in three
-      if (b % 3 === 1) {
+      // ([C7] not over the first frame's line: the window is seen there)
+      if (b % 3 === 1 && !lowered) {
         kit.piece();
         const tw = (x1 - x0) * 0.6, td = Math.min(4, (z1 - z0) * 0.5), tx = x0 + (x1 - x0) * 0.35, tz = z0 + (z1 - z0) * 0.6;
         const top = Math.max(...stacks.filter((s) => s.x0 < tx + tw / 2 && s.x1 > tx - tw / 2 && s.z0 < tz + td / 2 && s.z1 > tz - td / 2).map((s) => s.h), 1);

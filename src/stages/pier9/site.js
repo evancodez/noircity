@@ -49,6 +49,10 @@ export const PIER = {
     // round in the shadow, with gaps to step out of)
     [-1.4, 2.6, -42.4, -41.45, 2, 'full'], [3.8, 8.2, -42.4, -41.45, 2, 'full'],
   ],
+  // [C7] the first frame's line: from just inside the side door to the
+  // office's window, the crates along it two high at most (the stacks'
+  // part), so the lit window is seen over them across the black shed
+  sight: { from: [-12.4, -1.8], to: [-1.0, -42.3], half: 1.9, tiers: 2 },
   // dark pockets left in the blocks' edges (a crate not there): a place to
   // wait out of the aisles' sight lines. [x, z] of the missing crate
   notches: [[-6.65, -10.9], [-7.95, -17.05], [-4.05, -17.05], [-7.95, -33.1], [7.95, -17.05]],
@@ -85,6 +89,11 @@ export const PIER = {
   // back to the floor); the hoist over aisle C: its
   // cord comes down at X1, its load hangs at the far end of the aisle
   panel: { x: -8.95, y: 1.35, z: -12.1, yaw: Math.PI / 2 },
+  // [C7] a bull's-eye lantern hung on the post at the corner of aisle B and
+  // the far cross aisle, tipped down at the crossing (its beam lights where
+  // the cross aisle meets aisle B): E puts it out, and the nearest dock hand
+  // comes to light it again, standing at the post with his back to aisle B
+  lantern: { x: 3.18, y: 2.05, z: -27.8, stand: { x: 2.55, z: -27.55 }, face: Math.PI / 2 + 0.35 },
   hoist: { cleat: { x: 10.2, z: -13.2 }, x: 11, z0: -12.6, z1: -27.4, load: { x: 11, z: -27.4, y: 4.3 } },
   // the truck: half loaded, parked by the big doors; at the end it backs
   // against the side door

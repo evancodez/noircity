@@ -84,7 +84,9 @@ export function onShot(ctx, L, ray) {
     if (G.fx && G.fx.bloodFx) G.fx.bloodFx.hit(best.at, d.clone(), { strength: 1.1, rays: G.rays });
     G.sfx.play('grunt', best.at, { f0: 90, k: 0.6, dur: 0.25 }, { ref: 3 });
     G.counters.c7shot = (G.counters.c7shot || 0) + 1;
-    if (head) m.shot();
+    // ([C7] once they are loud the only crew left is the man up on the
+    // catwalk: two in the body put him down, as a gunman)
+    if (head || (L.loud && (m.hurt || 0) + 55 >= 100)) { m.hurt = (m.hurt || 0) + 55; m.shot(); }
     else { m.hurt = (m.hurt || 0) + 55; crew.alarm(m); }
   }
   // (a shot is heard: the nearest two come to where it was fired from;

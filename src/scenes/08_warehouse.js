@@ -48,6 +48,13 @@ const QUIET = new Set(['arrive', 'floor', 'lamps', 'aisle', 'stairs', 'listen'])
 const BAY_BEATS = new Set(['fight', 'ko', 'after']);
 const LINES = ['The waitress talked.', 'The diner. Tonight.', 'No one walks out.'];
 const QUIET_LINE = 'Get to the office. Stay out of the light.';
+// [C7] what each of the shed's things does to the men: a card the first
+// time it is in reach (once per save)
+const TOOL_CARDS = {
+  b6switch: ['switch', '[E] the middle aisle dark: its man comes to fix it'],
+  b6hoist: ['hoist', '[E] drop the load: the crash draws them'],
+  c7lantern: ['lantern', '[E] put it out: one comes to light it'],
+};
 
 // ---- the crew's rounds (designed: there is always a readable way through
 // for a player who watches ten seconds) -----------------------------------------
@@ -79,16 +86,21 @@ const CREW = [
 ];
 // where each checkpoint puts me (in the dark)
 const START = {
-  arrive: { x: PIER.start.x, z: PIER.start.z, yaw: PIER.start.yaw, pitch: 0.02 },
-  floor: { x: -10.4, z: -1.2, yaw: 0.05, pitch: -0.02 },
+  // [C7] in at the side door (my coupe dark behind me): the first frame is
+  // the goal - across the black shed, over the stacks, the office's lit
+  // window on the mezzanine (PIER.sight keeps the crates on that line low)
+  arrive: { x: PIER.sight.from[0], z: PIER.sight.from[1], yaw: -0.274, pitch: 0.09 },
+  floor: { x: PIER.sight.from[0], z: PIER.sight.from[1], yaw: -0.274, pitch: 0.09 },
   lamps: { x: -6.65, z: -11.1, yaw: 0.4, pitch: -0.05, crouch: true },
   aisle: { x: -7.65, z: -17.3, yaw: 2.1, pitch: -0.02, crouch: true },
   stairs: { x: -7.95, z: -33.1, yaw: 0.9, pitch: 0.05, crouch: true },
   listen: { x: -1.0, z: -41.7, yaw: 0.0, pitch: 0.2, crouch: true, up: true },
   // in the office's door, the desk and its lamp before me
   office: { x: 3.1, z: -41.45, yaw: 0.95, pitch: -0.1, up: true },
-  // out of the office onto the catwalk, the shed below
-  loud: { x: 3.2, z: -41.6, yaw: PI - 0.55, pitch: -0.3, crouch: true, up: true },
+  // out of the office onto the catwalk, low behind its kickboards: [C7]
+  // facing west along it to the west stairs (the way down), the stairs'
+  // lamp and the floor below to the left (a retry no longer faces the boards)
+  loud: { x: 3.2, z: -41.6, yaw: PI / 2 + 0.45, pitch: -0.16, crouch: true, up: true },
   fight: { x: 14.15, z: -39.85, yaw: 2.85, pitch: -0.08 },
   ko: { x: 12.9, z: -33.9, yaw: -PI / 2, pitch: -0.1 },
   after: { x: 12.6, z: -34.2, yaw: -PI / 2 - 0.3, pitch: -0.12 },
@@ -117,7 +129,7 @@ function setupAt(ctx, b) {
   W.hoist.reset();
   W.truck.reset();
   const bayB = BAY_BEATS.has(b), loudB = b === 'loud';
-  shed.sideDoor.snap(b === 'arrive' || bayB || loudB ? 0 : 1);
+  shed.sideDoor.snap(bayB || loudB ? 0 : 1);
   shed.bayDoor.snap(0);
   blinds(stage, 0);
   // the office: shut until I open it; the back door shut; the drawer shut
@@ -371,14 +383,17 @@ function live(ctx) {
   if (L.stealth.loud) wrapSteps(G, L);
   // [C7] caught: the blow from behind, then the kit's fail (its black, its
   // words), back at the last checkpoint - the men I put down stay down
-  crew.onCaught = () => {
+  crew.onCaught = (by) => {
+    // ([C7] in the loud pass only a man up on the catwalk still coshes: his
+    // warning is his own ('Behind you! On the catwalk!'), and so is the reason)
+    const why = L.stealth.loud && by && by.upLvl ? 'The one on the catwalk got you.' : 'They caught you.';
     stealth.cosh(() => {
       const cp = ctx.flags.cp || 'floor';
       RETRY = cp;
       // (the men I put down stay down, even those since the checkpoint)
       SNAP = { cp, downs: crew.men.filter((m) => m.down).map((m) => ({ name: m.name, x: m.pos.x, z: m.pos.z, yaw: m.fig.yaw, found: !!m.found })) };
       G.counters.caught = (G.counters.caught || 0) + 1;
-      G.fail({ why: 'They caught you.', to: cp });
+      G.fail({ why, to: cp });
     });
   };
   // the shout is the warning; [C7] in the loud pass it is the gunfight
@@ -461,6 +476,21 @@ function live(ctx) {
       aimPath(cordPath(HO.cleat.clone().add(V(0.02, 0.02, 0))));
       G.player.hands.play(stealth.bottle ? 'sn_pullL' : 'sn_pull', { onMark: { pulled: () => { HO.drop(); G.sfx.play('hoist', HO.cleat, {}, { ref: 5 }); } } });
     }, 0.6) });
+  // [C7] the lantern on the post: E puts it out (the hand to its shutter);
+  // the nearest dock hand comes to light it again, his back to aisle B
+  const LT = stage.lamps.lantern;
+  if (LT) {
+    I.add({ id: 'c7lantern', at: () => LT.at, range: 1.8, cone: 1.1, prompt: 'put out the lantern',
+      when: () => sneaking() && LT.on && !LT.dying && !L.relighter && !L.relightDue && !busy() && !stealth.aiming && !L.stealth.loud,
+      onUse: () => approach(LT.at, 0.6, () => {
+        aimPath(cordPath(LT.at.clone().add(V(-0.05, 0.12, 0))));
+        G.player.hands.play(stealth.bottle ? 'sn_pullL' : 'sn_pull', { onMark: { pulled: () => {
+          stage.lamps.dim(LT, false, { flicker: 0.12 });
+          G.sfx.play('switch', LT.at, {}, { ref: 2, gain: 0.5 });
+          L.relightDue = G.time + 1.6;
+        } } });
+      }, 0.6) });
+  }
   // a man from behind (only one who has not noticed me)
   for (const m of crew.men) {
     I.add({ id: 'b6ko_' + m.name, at: () => m.eye(new THREE.Vector3()).add(V(0, -0.35, 0)), range: 1.75, cone: 0.55, prompt: 'knock him out',
@@ -530,7 +560,21 @@ function live(ctx) {
     crew.step(dt, G.time);
     // the warning before the cosh: the shout, and its line while they hunt me
     if (!L.stealth.loud && !L.fightOn) ctx.hud.warn(crew.alarmT >= 0 ? 'They’ve seen me.' : null);
-    else if (L.stealth.loud && !L.fightOn) ctx.hud.warn(L.loud && L.K.active ? L.K.warning() : crew.alarmT >= 0 ? 'They’ve seen me.' : null);
+    else if (L.stealth.loud && !L.fightOn) {
+      // [C7] a man up on the catwalk who has me (he still coshes): his own
+      // warning, ahead of the kit's when he is near; at the bay with them
+      // still on me: lose them first (the bay is not reached under fire)
+      let w = null;
+      const up = crew.men.find((m) => !m.down && m.upLvl && m.mode === 'alarm');
+      if (up) {
+        const C1 = G.controller, d = Math.hypot(up.pos.x - C1.pos.x, up.pos.z - C1.pos.z);
+        const off = Math.atan2(up.pos.x - C1.pos.x, up.pos.z - C1.pos.z) - Math.atan2(-Math.sin(C1.yaw), -Math.cos(C1.yaw));
+        if (d < 8) w = Math.abs(Math.atan2(Math.sin(off), Math.cos(off))) > 1.4 ? 'Behind you! On the catwalk!' : 'One on the catwalk!';
+      }
+      if (!w && L.loud && L.K.active) w = L.K.warning() || (L.bayHot ? 'Lose them first.' : null);
+      if (!w && crew.alarmT >= 0) w = 'They’ve seen me.';
+      ctx.hud.warn(w);
+    }
     // the step in to a thing E took (approach): glide, square up, then the hand
     const A = L.approach;
     if (A && stealth.coshT >= 0) L.approach = null;
@@ -585,7 +629,28 @@ function live(ctx) {
         m.go(P.stand.x, P.stand.z);
       }
     }
-    if (L.fixer && (L.fixer.down || L.fixer.mode === 'alarm')) { L.fixer = null; if (!P.on) L.fixDue = G.time + 2; }
+    // ([C7] a fixer turned from the job - down, the shout, or a glimpse that
+    // sent him searching - is let go, and another comes)
+    if (L.fixer && (L.fixer.down || (L.fixer.mode !== 'fix' && L.fixer.mode !== 'curious'))) { L.fixer = null; if (!P.on) L.fixDue = G.time + 2; }
+    // [C7] the lantern put out: the nearest dock hand free comes to light it
+    if (LT && L.relightDue && G.time >= L.relightDue) {
+      L.relightDue = 0;
+      const S0 = PIER.lantern.stand;
+      const free = crew.men.filter((m) => !m.down && !m.hood && m !== L.fixer && (m.mode === 'patrol' || m.mode === 'hold' || m.mode === 'return' || m.mode === 'wait'))
+        .sort((a, b) => Math.hypot(a.pos.x - S0.x, a.pos.z - S0.z) - Math.hypot(b.pos.x - S0.x, b.pos.z - S0.z));
+      const m = free[0];
+      if (m) {
+        L.relighter = m;
+        m.fixing = { face: PIER.lantern.face, dur: 6.0, onDone: () => {
+          stage.lamps.dim(LT, true);
+          G.sfx.play('switch', LT.at, {}, { ref: 2, gain: 0.5 });
+          L.relighter = null;
+        } };
+        m.setMode('fix');
+        m.go(S0.x, S0.z);
+      } else L.relightDue = G.time + 3;
+    }
+    if (L.relighter && (L.relighter.down || (L.relighter.mode !== 'fix' && L.relighter.mode !== 'curious'))) { L.relighter = null; if (LT && !LT.on) L.relightDue = G.time + 2; }
   });
 }
 
@@ -650,45 +715,12 @@ function* listenBeat(ctx) {
   const G = ctx.game, L = LIVE;
   const card = L.card;
   const win = ctx.stage.anchor('pier9.office.window.in');
-  yield wait(0.8);
-  // (back at the window after the cosh: the order is not heard twice)
-  for (let i = L.retry && L.beat === 'listen' ? LINES.length - 1 : 0; i < LINES.length; i++) {
-    L.said = i + 1;
-    yield* ctx.say(LINES[i], 3.0);
-    yield wait(i === LINES.length - 1 ? 0.6 : 1.0);
-  }
-  G.sfx.play('step', win.pos.clone().setY(PIER.mezz.y), { run: false, k: 0.5 }, { ref: 2 });
-  yield* walkFig(card, win.pos.x, win.pos.z + 0.1, 0.9);
-  card.fig.yaw = 0;
-  L.looking = true;
-  G.sfx.play('newspaper', win.pos.clone().setY(PIER.mezz.y + 1.6), {}, { ref: 2 });
-  const LOOK = 3.2;
-  for (let t = 0; t < LOOK; t += 1 / 60) {
-    blinds(ctx.stage, sstep(0, 0.35, t));
-    const pl = L.crew.player;
-    const near = Math.hypot(pl.feet.x - win.pos.x, pl.feet.z - (win.pos.z + 1)) < 5.5 && ctx.stage.part('mezz').up;
-    if (near && t > 1.0 && (!pl.crouch || pl.speed > 0.45)) {
-      L.crew.alarm({ eye: () => win.pos.clone().setY(PIER.mezz.y + 1.6), name: 'cardinal' });
-      // (the office's men come out at me: the cosh, the window again)
-      L.crew.known = pl.feet.clone();
-      yield wait(1.2);
-      L.crew.onCaught && L.crew.onCaught();
-      break;
-    }
-    yield null;
-  }
-  L.looking = false;
-  if (L.crew.alarmT >= 0) { yield until(() => false); return; }
-  G.sfx.play('newspaper', win.pos.clone().setY(PIER.mezz.y + 1.6), {}, { ref: 2, gain: 0.6 });
-  for (let t = 0; t < 0.4; t += 1 / 60) { blinds(ctx.stage, 1 - sstep(0, 0.4, t)); yield null; }
-  blinds(ctx.stage, 0);
-  // [C7] "Let's go.": out by the back door to the outside stair and his car
-  yield wait(0.6);
-  yield* ctx.say('Let’s go. Lock up.', 1.6);
   const mezz = ctx.stage.part('mezz');
-  // [C7] his man locks the far stairs: out by the front door, along the
-  // catwalk to their gate, the chain through it, and back in (a man in his
-  // way, or up on his feet near him, is seen: the shout, the cosh)
+  // [C7] his man locks the far stairs while he speaks (after the critic: the
+  // lock-up walked after the order kept me crouched 53 s): out by the front
+  // door, along the catwalk to their gate, the chain through it, and back in
+  // - a man in his way, or up on his feet near him, is seen (the shout, the
+  // cosh). A job of the beat's, run beside the order
   const man = L.office[2];
   const spotted = () => {
     const pl = L.crew.player, f = man.fig.pos;
@@ -697,48 +729,106 @@ function* listenBeat(ctx) {
     const ahead = Math.cos(Math.atan2(pl.feet.x - f.x, pl.feet.z - f.z) - man.fig.yaw) > 0.3;
     return d < 1.3 || (ahead && d < 3.2 && !pl.crouch) || (ahead && d < 2.0);
   };
-  const caughtBy = function* () {
+  const pause = function* (s) { const t = G.time + s; while (G.time < t) yield null; };
+  let lockDone = false, lockCaught = false;
+  // (seen by him: the shout at once, the cosh 1.4 s on - the main beat waits)
+  const jobCaught = function* () {
+    lockCaught = true;
     L.crew.alarm({ eye: () => man.fig.pos.clone().setY(PIER.mezz.y + 1.6), name: 'officeB' });
     L.crew.known = L.crew.player.feet.clone();
-    yield wait(1.4);
+    yield* pause(1.4);
     if (L.crew.onCaught) L.crew.onCaught();
-    yield until(() => false);
   };
-  yield* walkFig(man, 1.85, -42.85, 1.1);
-  L.doorOpen = { t: 0 };
-  G.sfx.play('creak', V(1.85, PIER.mezz.y + 1.2, -42.3), {}, { ref: 3 });
-  yield wait(0.75);
-  for (const [x, z] of [[1.85, -41.55], [6.6, -41.55], [7.35, -40.3]]) { if (yield* walkFig(man, x, z, 1.15, spotted)) { yield* caughtBy(); return; } }
-  man.fig.yaw = PI / 2;
-  yield wait(0.3);
-  G.sfx.play('b9chain', V(7.9, PIER.mezz.y + 0.6, -40.2), {}, { ref: 3 });
-  for (let t = 0; t < 0.8; t += 1 / 60) { mezz.gateE.set(sstep(0, 0.8, t)); yield null; }
-  G.sfx.play('b9clatter', V(7.9, PIER.mezz.y + 0.6, -40.2), {}, { ref: 3 });
-  yield wait(0.6);
-  for (const [x, z] of [[6.6, -41.55], [1.85, -41.55], [1.85, -42.85]]) { if (yield* walkFig(man, x, z, 1.15, spotted)) { yield* caughtBy(); return; } }
-  L.doorClose = { t: 0 };
-  G.sfx.play('creak', V(1.85, PIER.mezz.y + 1.2, -42.3), {}, { ref: 3, gain: 0.7 });
+  const lockUp = (function* () {
+    yield* pause(0.4);
+    yield* walkFig(man, 1.85, -42.85, 1.3);
+    L.doorOpen = { t: 0 };
+    G.sfx.play('creak', V(1.85, PIER.mezz.y + 1.2, -42.3), {}, { ref: 3 });
+    yield* pause(0.75);
+    const out = [[1.85, -41.55], [6.6, -41.55], [7.35, -40.3]], back = [[6.6, -41.55], [1.85, -41.55], [1.85, -42.85]];
+    for (const [x, z] of out) if (yield* walkFig(man, x, z, 1.25, spotted)) { yield* jobCaught(); return; }
+    man.fig.yaw = PI / 2;
+    yield* pause(0.3);
+    G.sfx.play('b9chain', V(7.9, PIER.mezz.y + 0.6, -40.2), {}, { ref: 3 });
+    for (let t = 0; t < 0.8; t += 1 / 60) { mezz.gateE.set(sstep(0, 0.8, t)); yield null; }
+    G.sfx.play('b9clatter', V(7.9, PIER.mezz.y + 0.6, -40.2), {}, { ref: 3 });
+    yield* pause(0.4);
+    for (const [x, z] of back) if (yield* walkFig(man, x, z, 1.25, spotted)) { yield* jobCaught(); return; }
+    L.doorClose = { t: 0 };
+    G.sfx.play('creak', V(1.85, PIER.mezz.y + 1.2, -42.3), {}, { ref: 3, gain: 0.7 });
+    lockDone = true;
+    L.tLock = G.time;
+  })();
+  // (back at the window after the cosh: the order is not heard twice, and
+  // the far stairs are chained already)
+  const retry = L.retry && L.beat === 'listen';
+  if (retry) { mezz.gateE.set(1); lockDone = true; man.fig.object.visible = true; }
+  else (L.jobs || (L.jobs = [])).push(lockUp);
+  const caughtBy = function* () { yield until(() => false); };
   yield wait(0.8);
+  for (let i = retry ? LINES.length - 1 : 0; i < LINES.length; i++) {
+    L.said = i + 1;
+    yield* ctx.say(LINES[i], 3.0);
+    if (lockCaught) { yield* caughtBy(); return; }
+    yield wait(i === LINES.length - 1 ? 0.4 : 0.8);
+  }
+  // [C7] the order heard: the goal now is only to stay unseen till they go
+  ctx.hud.objective('Wait for them to go.');
+  G.sfx.play('step', win.pos.clone().setY(PIER.mezz.y), { run: false, k: 0.5 }, { ref: 2 });
+  yield* walkFig(card, win.pos.x, win.pos.z + 0.1, 0.9);
+  card.fig.yaw = 0;
+  L.looking = true;
+  G.sfx.play('newspaper', win.pos.clone().setY(PIER.mezz.y + 1.6), {}, { ref: 2 });
+  const LOOK = 2.6;
+  L.tLook = G.time;
+  for (let t = 0; t < LOOK; t += 1 / 60) {
+    blinds(ctx.stage, sstep(0, 0.35, t));
+    const pl = L.crew.player;
+    const near = Math.hypot(pl.feet.x - win.pos.x, pl.feet.z - (win.pos.z + 1)) < 5.5 && mezz.up;
+    if (near && t > 1.0 && (!pl.crouch || pl.speed > 0.45)) {
+      L.crew.alarm({ eye: () => win.pos.clone().setY(PIER.mezz.y + 1.6), name: 'cardinal' });
+      // (the office's men come out at me: the cosh, the window again)
+      L.crew.known = pl.feet.clone();
+      yield wait(1.2);
+      L.crew.onCaught && L.crew.onCaught();
+      break;
+    }
+    if (lockCaught) break;
+    yield null;
+  }
+  L.looking = false;
+  if (lockCaught) { yield* caughtBy(); return; }
+  if (L.crew.alarmT >= 0) { yield until(() => false); return; }
+  G.sfx.play('newspaper', win.pos.clone().setY(PIER.mezz.y + 1.6), {}, { ref: 2, gain: 0.6 });
+  for (let t = 0; t < 0.4; t += 1 / 60) { blinds(ctx.stage, 1 - sstep(0, 0.4, t)); yield null; }
+  blinds(ctx.stage, 0);
+  // (his man back in from the far stairs before they go)
+  yield until(() => lockDone || lockCaught);
+  if (lockCaught) { yield* caughtBy(); return; }
+  L.tGo = G.time;
+  yield* ctx.say('Let’s go.', 1.2);
+  // [C7] out by the back door to the outside stair and his car, the three
+  // together (one behind the other through the door)
   const door = { x: -1.75, z: -44.5 };
-  const order = [L.office[1], L.office[0], L.office[2]];
-  // (one after another along the back of the desk to the door; it opens on
-  // the first, each steps through into the black and is gone)
   for (const c of L.office) c.setState('idle', 0.2);
   G.sfx.play('creak', V(door.x, PIER.mezz.y + 1.2, -44.8), {}, { ref: 3 });
-  for (let t = 0; t < 0.5; t += 1 / 60) { mezz.backDoor.set(sstep(0, 0.5, t)); yield null; }
-  for (const c of order) {
-    yield* walkFig(c, c.fig.pos.x, -44.5, 1.1);
-    yield* walkFig(c, door.x, door.z, 1.1);
-    yield* walkFig(c, door.x, -44.95, 0.9);
+  for (let t = 0; t < 0.4; t += 1 / 60) { mezz.backDoor.set(sstep(0, 0.4, t)); yield null; }
+  const order = [L.office[1], L.office[0], L.office[2]];
+  const walks = order.map((c, i) => (function* () {
+    yield* pause(i * 0.45);
+    yield* walkFig(c, c.fig.pos.x, -44.5, 1.45);
+    yield* walkFig(c, door.x, door.z, 1.45);
+    yield* walkFig(c, door.x, -44.95, 1.2);
     c.fig.object.visible = false;
     G.sfx.play('step', V(door.x, PIER.mezz.y - 0.5, -45.3), { run: false, k: 0.6 }, { ref: 3 });
-  }
-  for (let t = 0; t < 0.5; t += 1 / 60) { mezz.backDoor.set(1 - sstep(0, 0.5, t)); yield null; }
+  })());
+  for (;;) { let live = 0; for (const w of walks) if (!w.next().done) live++; if (!live) break; yield null; }
+  for (let t = 0; t < 0.4; t += 1 / 60) { mezz.backDoor.set(1 - sstep(0, 0.4, t)); yield null; }
   G.sfx.play('b9thunk', V(door.x, PIER.mezz.y + 1.2, -44.8), {}, { ref: 3 });
   for (const c of L.office) ctx.cast.remove(c);
   L.office = [];
   // (down the outside stair; a car door, the engine, away along the pier)
-  yield wait(1.6);
+  L.tGone = G.time;
   G.sfx.play('engine', V(-6, 1, -52), { dur: 6 }, { ref: 12 });
 }
 
@@ -769,8 +859,10 @@ function* walkFig(c, x, z, speed, stop = null) {
     if (d < 0.08) break;
     const want = Math.atan2(dx, dz);
     let e = want - F.yaw; e = Math.atan2(Math.sin(e), Math.cos(e));
-    F.yaw += Math.sign(e) * Math.min(Math.abs(e), 4 / 60);
-    F.speed = Math.min(speed, d * 60);
+    F.yaw += Math.sign(e) * Math.min(Math.abs(e), 5 / 60);
+    // ([C7] a sharp turn is made on the spot first: a short walk behind him
+    // was an orbit round the point for seconds)
+    F.speed = Math.abs(e) > 0.7 ? 0 : Math.min(speed, d * 60);
     yield null;
   }
   F.speed = 0;
@@ -803,14 +895,26 @@ export default defineScene({
       ctx.flags.cp = b; L.cp = b; L.cpPending = null;
       SNAP = { cp: b, downs: crew.men.filter((m) => m.down).map((m) => ({ name: m.name, x: m.pos.x, z: m.pos.z, yaw: m.fig.yaw, found: !!m.found })) };
     };
-    const cp = (b) => { if (L.stealth.loud || L.fightOn || calm()) cpNow(b); else L.cpPending = b; };
-    ctx.onStep(() => { if (L.cpPending && calm()) cpNow(L.cpPending); });
+    const cp = (b) => { if (L.stealth.loud || L.fightOn || calm()) cpNow(b); else { L.cpPending = b; L.cpPendT = G.time; } };
+    // ([C7] a checkpoint waiting more than 5 s is taken at the first moment
+    // nobody is on to me - a man searching somewhere else no longer holds it)
+    const quietNow = () => crew.alarmT < 0 && !crew.men.some((m) => !m.down && m.a > 0.3);
+    ctx.onStep(() => { if (L.cpPending && (calm() || (G.time - L.cpPendT > 5 && quietNow()))) cpNow(L.cpPending); });
     // the quiet pass's cards (once per save): low and quiet as he comes; the
     // blow from behind the first time one is in reach
     const teachQuiet = () => {
       if (L.stealth.loud || L.fightOn) return;
       if (!L.taughtKo && G.interact.current && /^b6ko_/.test(G.interact.current.id || '')) { L.taughtKo = true; hud.teach('takedown', '[E] from behind: put him down', { until: 'KeyE', secs: 4 }); }
+      // [C7] what each thing does to them, the first time it is in reach
+      const cards = L.cards || (L.cards = {});
+      const cur = (G.interact.current && G.interact.current.id) || '';
+      const card = TOOL_CARDS[cur];
+      if (card && !cards[card[0]] && crew.alarmT < 0) { cards[card[0]] = true; hud.teach(card[0], card[1], { until: 'KeyE', secs: 5 }); }
+      if (!cards.bottle && L.stealth.bottle && crew.alarmT < 0) { cards.bottle = true; hud.teach('bottle', '[LMB] hold, aim, let go: they go to look', { until: 'Mouse0', secs: 5 }); }
     };
+    // ([C7] caught twice at the same place: the bottle's card again - the
+    // tool for turning a man who stands in the way)
+    const again = (b) => { if (G.fails(b) === 2) hud.teach.again('bottle', '[E] a bottle, [LMB] thrown past them: they go to look', { until: false, secs: 5 }); };
     ctx.onStep(teachQuiet);
 
     if (ctx.at('arrive')) {
@@ -828,7 +932,8 @@ export default defineScene({
       let taught = false;
       while (!(C.pos.z < -12.3 || (C.pos.x > -2.5 && C.pos.z < -6.5) || mezz.up)) {
         const near = sully && Math.hypot(sully.pos.x - C.pos.x, sully.pos.z - C.pos.z) < 11;
-        if (!taught && near && C.sneak && !C.sneak.crouch && L.stealth.coshT < 0 && crew.alarmT < 0) {
+        // ([C7] after the first look at the goal: the window first, then the card)
+        if (!taught && near && ctx.sceneTime > 3 && C.sneak && !C.sneak.crouch && L.stealth.coshT < 0 && crew.alarmT < 0) {
           taught = true;
           hud.teach('creep', '[C] creep: quiet, low', { until: ['KeyC', 'ControlLeft'], secs: 5 });
         }
@@ -839,16 +944,19 @@ export default defineScene({
     if (ctx.at('lamps')) {
       yield beat('lamps');
       cp('lamps');
+      again('lamps');
       yield until(() => (L.switchBack && C.pos.z < -16.3) || C.pos.z < -25 || mezz.up);
     }
     if (ctx.at('aisle')) {
       yield beat('aisle');
       cp('aisle');
+      again('aisle');
       yield until(() => C.pos.z < -33.2 || mezz.up);
     }
     if (ctx.at('stairs')) {
       yield beat('stairs');
       cp('stairs');
+      again('stairs');
       const win = stage.anchor('pier9.office.window');
       yield until(() => mezz.up && Math.hypot(C.pos.x - win.pos.x, C.pos.z - win.pos.z) < 1.4);
     }
@@ -912,7 +1020,13 @@ export default defineScene({
           }
         }
         if (!L.answerer && G.time - tL > 6 && !L.loud) L.answerer = sendAnswerer(ctx, L) || true;
-        return atBay(stage, C);
+        // [C7] the bay is reached only when nobody is on to me: a gunman who
+        // has had me in the last 4 s, or a man of the crew hunting me near,
+        // keeps the fight on (they follow; 'Lose them first.') - the way out
+        // is won by losing them or putting them down, never by arriving
+        const bay = atBay(stage, C);
+        L.bayHot = bay && onToMe(G, L, C);
+        return bay && !L.bayHot;
       });
     }
     if (ctx.at('fight')) {
@@ -983,6 +1097,17 @@ function enterLoud(ctx, L) {
   G.counters.c7loudAt = G.time;
 }
 
+// [C7] is anyone of the loud pass on to me: a gunman with a line on me now or
+// in the last 4 s, or a crew man hunting me within 14 m
+function onToMe(G, L, C) {
+  for (const h of L.gunmen || []) {
+    if (!h.alive) continue;
+    const ai = G.ais.get(h), br = ai && ai.brain, S = br && br.S;
+    if (br && (br.hasLine || (S && S.lastSeen && G.time - S.lastSeen.t < 4))) return true;
+  }
+  return L.crew.men.some((m) => !m.down && m.mode === 'alarm' && Math.hypot(m.pos.x - C.pos.x, m.pos.z - C.pos.z) < 14);
+}
+
 // the gun mode's footfalls to the crew's ears (a walk heard near, a run
 // far, a crouch not at all); undone when the scene goes
 function wrapSteps(G, L) {
@@ -1005,7 +1130,8 @@ function* pierFight(ctx) {
   const B = G.brawl;
   L.fightOn = true;
   ctx.hud.warn(null);
-  // [C7] the loud pass ends at the bay: the kit's encounter over, its men gone
+  // [C7] the loud pass ends at the bay once nobody is on to me (onToMe): the
+  // kit's encounter over; the men who lost me are out of the fight
   const K = gunsOf(G);
   if (K.active) K.end();
   for (const h of [...G.world.hoods.list]) G.removeHood(h);

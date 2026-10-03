@@ -164,7 +164,9 @@ export default {
     const BP = backGlow.getAttribute('position');
     for (let i = 0; i < BP.count; i++) { const dx = BP.getX(i) + 0.8, dy = BP.getY(i) - (oy0 + 1.5); const v = Math.max(0.05, 1 - Math.hypot(dx / 4.4, dy / 2.4)); col[i * 3] = col[i * 3 + 1] = col[i * 3 + 2] = Math.pow(v, 1.4); }
     backGlow.setAttribute('color', new THREE.BufferAttribute(col, 3));
-    const glowMat = M.glow('officeBack', 1.3, { vertexColors: true });
+    // ([C7] not fogged: the one warm window, seen across the black shed
+    // from the side door - the chapter's first frame is the goal)
+    const glowMat = M.glow('officeBack', 1.3, { vertexColors: true, fog: false });
     const back = kit.add(backGlow, glowMat, { cast: false, noRay: true });
     back.name = 'officeBack';
     // the desk, a chair, a cabinet, a coat stand, the desk lamp
