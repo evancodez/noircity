@@ -1,0 +1,141 @@
+{
+ "about": "Critic (C3, 2nd look): from the title, BEGIN at the tail, W held and nothing else for 25 s: must lose, with a warning first and the reason said (WAVE_C 1.1, 1.2). NOIR_PORT=5343 node tools/play.mjs tools/plays/critic/tail_wonly.json --size 1440x900",
+ "url": "/?mute=1&start=tail",
+ "size": [
+  1440,
+  900
+ ],
+ "out": "shots/c3c2/wonly",
+ "steps": [
+  {
+   "eval": "(window.__st = (() => {\n  // [C3 critic, 2nd look] the status a stepplay session prints after each move: what the screen says\n  // (the kit's objective, teach card, warning, the prompt, the fail) and where the cars are.\n  const sc = G.scenes, C = sc.ctx && sc.ctx.flags && sc.ctx.flags.chase, K = G.hud.kit;\n  const vis = (e) => !!e && getComputedStyle(e).display !== 'none' && getComputedStyle(e).visibility !== 'hidden';\n  const o = { scene: sc.current && sc.current.id, beat: sc.beat, state: G.state, t: +N.time.toFixed(2), mode: G.controller.mode,\n    obj: K && K.obj ? K.obj.text + ':' + K.obj.phase : null,\n    teach: K && K.teachCur ? K.teachCur.text || K.teachCur.id : null,\n    warnTxt: K && vis(K.warnEl) ? K.warnEl.textContent.trim() : '',\n    prompt: G.hud.promptShown, say: G.hud.sayShown, failing: !!G.failing,\n    lastFail: G.lastFail ? G.lastFail.why + '@' + (+G.lastFail.t).toFixed(1) : null };\n  if (C && C.my) {\n    const g = C.gun;\n    Object.assign(o, { phase: C.phase, my: [+C.my.pos.x.toFixed(1), +C.my.pos.z.toFixed(1), +C.my.yaw.toFixed(3)], kmh: +(C.my.speed * 3.6).toFixed(0),\n      his: [+C.his.pos.x.toFixed(1), +C.his.pos.z.toFixed(1), +C.his.yaw.toFixed(3)], hkmh: +((C.his.speed || 0) * 3.6).toFixed(0),\n      gap: +C.gap().toFixed(1), seen: C.seen, unseen: +(C.unseen || 0).toFixed(1), dmg: +C.my.damage.toFixed(2),\n      cfail: !!C.failing, warn: C.kit && C.kit.warning, wrecked: !!C.wrecked,\n      hisDmg: C.hisDmg ? JSON.parse(JSON.stringify(C.hisDmg)) : null,\n      gun: g ? { r: g.rounds, p: g.pocket, s: g.shots, h: g.hits, aim: +(g.aimK || 0).toFixed(2), up: +(g.upK || g.raiseK || 0).toFixed(2) } : null,\n      fails: (globalThis.__tailFails || []).map((f) => f.why).join('|'), bot: !!C.bot });\n  }\n  // (every pair of cars on wheels: the deepest overlap of their boxes, metres - the bodies are\n  // a little smaller than the boxes, so a few cm is a touch; 0.2 m and more is one car inside another)\n  const L = (G.vehicles && G.vehicles.list) || [];\n  let ov = 0, ovp = null;\n  for (let i = 0; i < L.length; i++) for (let j = i + 1; j < L.length; j++) {\n    const a = L[i], b = L[j]; if (!a.spec || !b.spec) continue;\n    const dx = b.pos.x - a.pos.x, dz = b.pos.z - a.pos.z; if (dx * dx + dz * dz > 49) continue;\n    const ax = [[Math.cos(a.yaw), -Math.sin(a.yaw)], [Math.sin(a.yaw), Math.cos(a.yaw)], [Math.cos(b.yaw), -Math.sin(b.yaw)], [Math.sin(b.yaw), Math.cos(b.yaw)]];\n    const ext = (v, n) => { const f = [Math.cos(v.yaw), -Math.sin(v.yaw)], r = [Math.sin(v.yaw), Math.cos(v.yaw)]; return v.spec.halfL * Math.abs(f[0] * n[0] + f[1] * n[1]) + v.spec.halfW * Math.abs(r[0] * n[0] + r[1] * n[1]); };\n    let pen = Infinity;\n    for (const n of ax) { const d = ext(a, n) + ext(b, n) - Math.abs(dx * n[0] + dz * n[1]); pen = Math.min(pen, d); }\n    if (pen > ov) { ov = pen; ovp = [a === (C && C.my) ? 'me' : a === (C && C.his) ? 'his' : 'car', b === (C && C.my) ? 'me' : b === (C && C.his) ? 'his' : 'car']; }\n  }\n  o.ov = +ov.toFixed(2); o.ovp = ovp;\n  return o; }), 1)"
+  },
+  {
+   "until": "G.state === 'title' && !document.getElementById('title').classList.contains('hidden') && !!document.querySelector('#title .opt[data-k=begin]')",
+   "timeout": 40000
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]",
+   "taken": "G.state === 'playing' && document.pointerLockElement === N.renderer.domElement",
+   "retries": 4,
+   "every": 4000
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'tail' && !!G.scenes.ctx.flags.chase && !!G.scenes.ctx.flags.chase.my && !G.scenes.fadeK",
+   "timeout": 45000
+  },
+  {
+   "eval": "(() => { window.__log = []; let lw = null, lf = null, lo = null; (function loop() { const s = window.__st(); const w = s.warnTxt || ''; if (w !== lw) { window.__log.push(s.t + ' warn ' + JSON.stringify(w)); lw = w; } if (s.lastFail !== lf) { window.__log.push(s.t + ' FAIL ' + s.lastFail + ' dmg ' + s.dmg); lf = s.lastFail; } if (s.obj !== lo) { window.__log.push(s.t + ' obj ' + s.obj); lo = s.obj; } requestAnimationFrame(loop); })(); return 1; })()"
+  },
+  {
+   "down": "KeyW"
+  },
+  {
+   "wait": 2500
+  },
+  {
+   "shot": "w00"
+  },
+  {
+   "eval": "JSON.stringify(window.__st()).slice(0, 330)"
+  },
+  {
+   "wait": 2500
+  },
+  {
+   "shot": "w01"
+  },
+  {
+   "eval": "JSON.stringify(window.__st()).slice(0, 330)"
+  },
+  {
+   "wait": 2500
+  },
+  {
+   "shot": "w02"
+  },
+  {
+   "eval": "JSON.stringify(window.__st()).slice(0, 330)"
+  },
+  {
+   "wait": 2500
+  },
+  {
+   "shot": "w03"
+  },
+  {
+   "eval": "JSON.stringify(window.__st()).slice(0, 330)"
+  },
+  {
+   "wait": 2500
+  },
+  {
+   "shot": "w04"
+  },
+  {
+   "eval": "JSON.stringify(window.__st()).slice(0, 330)"
+  },
+  {
+   "wait": 2500
+  },
+  {
+   "shot": "w05"
+  },
+  {
+   "eval": "JSON.stringify(window.__st()).slice(0, 330)"
+  },
+  {
+   "wait": 2500
+  },
+  {
+   "shot": "w06"
+  },
+  {
+   "eval": "JSON.stringify(window.__st()).slice(0, 330)"
+  },
+  {
+   "wait": 2500
+  },
+  {
+   "shot": "w07"
+  },
+  {
+   "eval": "JSON.stringify(window.__st()).slice(0, 330)"
+  },
+  {
+   "wait": 2500
+  },
+  {
+   "shot": "w08"
+  },
+  {
+   "eval": "JSON.stringify(window.__st()).slice(0, 330)"
+  },
+  {
+   "wait": 2500
+  },
+  {
+   "shot": "w09"
+  },
+  {
+   "eval": "JSON.stringify(window.__st()).slice(0, 330)"
+  },
+  {
+   "up": "KeyW"
+  },
+  {
+   "eval": "JSON.stringify(window.__log)"
+  },
+  {
+   "expect": "!!G.lastFail",
+   "label": "W held: the chapter is lost (Wrecked. or Lost him.)"
+  },
+  {
+   "expect": "!!G.lastFail && G.lastFail.warnedFor > 1",
+   "label": "W held: a warning was up before the fail"
+  }
+ ]
+}

@@ -1,0 +1,259 @@
+{
+ "about": "Critic (C3, 2nd look), phase b: W held (no steering), RMB held, LMB twice a second, the mouse never moves. Lazy hands must not win (WAVE_C 1.1). Today a body hit makes him 'hurt' (D.control < 1) and any shunt with imp > 2.5 off his middle puts him off the road (chase.js rammed). NOIR_PORT=5343 node tools/play.mjs tools/plays/critic/tail_b_wram.json --size 1440x900",
+ "url": "/?mute=1&start=tail.river",
+ "size": [
+  1440,
+  900
+ ],
+ "out": "shots/c3c2/wram",
+ "steps": [
+  {
+   "eval": "(window.__st = (() => {\n  // [C3 critic, 2nd look] the status a stepplay session prints after each move: what the screen says\n  // (the kit's objective, teach card, warning, the prompt, the fail) and where the cars are.\n  const sc = G.scenes, C = sc.ctx && sc.ctx.flags && sc.ctx.flags.chase, K = G.hud.kit;\n  const vis = (e) => !!e && getComputedStyle(e).display !== 'none' && getComputedStyle(e).visibility !== 'hidden';\n  const o = { scene: sc.current && sc.current.id, beat: sc.beat, state: G.state, t: +N.time.toFixed(2), mode: G.controller.mode,\n    obj: K && K.obj ? K.obj.text + ':' + K.obj.phase : null,\n    teach: K && K.teachCur ? K.teachCur.text || K.teachCur.id : null,\n    warnTxt: K && vis(K.warnEl) ? K.warnEl.textContent.trim() : '',\n    prompt: G.hud.promptShown, say: G.hud.sayShown, failing: !!G.failing,\n    lastFail: G.lastFail ? G.lastFail.why + '@' + (+G.lastFail.t).toFixed(1) : null };\n  if (C && C.my) {\n    const g = C.gun;\n    Object.assign(o, { phase: C.phase, my: [+C.my.pos.x.toFixed(1), +C.my.pos.z.toFixed(1), +C.my.yaw.toFixed(3)], kmh: +(C.my.speed * 3.6).toFixed(0),\n      his: [+C.his.pos.x.toFixed(1), +C.his.pos.z.toFixed(1), +C.his.yaw.toFixed(3)], hkmh: +((C.his.speed || 0) * 3.6).toFixed(0),\n      gap: +C.gap().toFixed(1), seen: C.seen, unseen: +(C.unseen || 0).toFixed(1), dmg: +C.my.damage.toFixed(2),\n      cfail: !!C.failing, warn: C.kit && C.kit.warning, wrecked: !!C.wrecked,\n      hisDmg: C.hisDmg ? JSON.parse(JSON.stringify(C.hisDmg)) : null,\n      gun: g ? { r: g.rounds, p: g.pocket, s: g.shots, h: g.hits, aim: +(g.aimK || 0).toFixed(2), up: +(g.upK || g.raiseK || 0).toFixed(2) } : null,\n      fails: (globalThis.__tailFails || []).map((f) => f.why).join('|'), bot: !!C.bot });\n  }\n  return o; }), 1)"
+  },
+  {
+   "name": "the title, BEGIN at the river road"
+  },
+  {
+   "until": "G.state === 'title' && !document.getElementById('title').classList.contains('hidden') && !!document.querySelector('#title .opt[data-k=begin]')",
+   "timeout": 40000
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]",
+   "taken": "G.state === 'playing' && document.pointerLockElement === N.renderer.domElement",
+   "retries": 4,
+   "every": 4000
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'tail' && !!G.scenes.ctx.flags.chase && G.scenes.ctx.flags.chase.phase === 'b' && !G.scenes.fadeK",
+   "timeout": 45000
+  },
+  {
+   "wait": 300
+  },
+  {
+   "eval": "(window.__c3c0 = N.time, JSON.stringify(window.__st()))"
+  },
+  {
+   "down": "KeyW"
+  },
+  {
+   "mouse": "down",
+   "button": "right"
+  },
+  {
+   "wait": 450
+  },
+  {
+   "mouse": "click",
+   "button": "left"
+  },
+  {
+   "wait": 450
+  },
+  {
+   "mouse": "click",
+   "button": "left"
+  },
+  {
+   "wait": 450
+  },
+  {
+   "mouse": "click",
+   "button": "left"
+  },
+  {
+   "wait": 450
+  },
+  {
+   "mouse": "click",
+   "button": "left"
+  },
+  {
+   "eval": "JSON.stringify(window.__st())"
+  },
+  {
+   "wait": 450
+  },
+  {
+   "mouse": "click",
+   "button": "left"
+  },
+  {
+   "wait": 450
+  },
+  {
+   "mouse": "click",
+   "button": "left"
+  },
+  {
+   "shot": "w05"
+  },
+  {
+   "wait": 450
+  },
+  {
+   "mouse": "click",
+   "button": "left"
+  },
+  {
+   "wait": 450
+  },
+  {
+   "mouse": "click",
+   "button": "left"
+  },
+  {
+   "eval": "JSON.stringify(window.__st())"
+  },
+  {
+   "wait": 450
+  },
+  {
+   "mouse": "click",
+   "button": "left"
+  },
+  {
+   "wait": 450
+  },
+  {
+   "mouse": "click",
+   "button": "left"
+  },
+  {
+   "wait": 450
+  },
+  {
+   "mouse": "click",
+   "button": "left"
+  },
+  {
+   "wait": 450
+  },
+  {
+   "mouse": "click",
+   "button": "left"
+  },
+  {
+   "eval": "JSON.stringify(window.__st())"
+  },
+  {
+   "shot": "w11"
+  },
+  {
+   "wait": 450
+  },
+  {
+   "mouse": "click",
+   "button": "left"
+  },
+  {
+   "wait": 450
+  },
+  {
+   "mouse": "click",
+   "button": "left"
+  },
+  {
+   "wait": 450
+  },
+  {
+   "mouse": "click",
+   "button": "left"
+  },
+  {
+   "wait": 450
+  },
+  {
+   "mouse": "click",
+   "button": "left"
+  },
+  {
+   "eval": "JSON.stringify(window.__st())"
+  },
+  {
+   "wait": 450
+  },
+  {
+   "mouse": "click",
+   "button": "left"
+  },
+  {
+   "wait": 450
+  },
+  {
+   "mouse": "click",
+   "button": "left"
+  },
+  {
+   "shot": "w17"
+  },
+  {
+   "wait": 450
+  },
+  {
+   "mouse": "click",
+   "button": "left"
+  },
+  {
+   "wait": 450
+  },
+  {
+   "mouse": "click",
+   "button": "left"
+  },
+  {
+   "eval": "JSON.stringify(window.__st())"
+  },
+  {
+   "wait": 450
+  },
+  {
+   "mouse": "click",
+   "button": "left"
+  },
+  {
+   "wait": 450
+  },
+  {
+   "mouse": "click",
+   "button": "left"
+  },
+  {
+   "wait": 450
+  },
+  {
+   "mouse": "click",
+   "button": "left"
+  },
+  {
+   "wait": 450
+  },
+  {
+   "mouse": "click",
+   "button": "left"
+  },
+  {
+   "eval": "JSON.stringify(window.__st())"
+  },
+  {
+   "shot": "w23"
+  },
+  {
+   "up": "KeyW"
+  },
+  {
+   "mouse": "up",
+   "button": "right"
+  },
+  {
+   "eval": "JSON.stringify(Object.assign(window.__st(), { secs: +(N.time - window.__c3c0).toFixed(1) }))"
+  },
+  {
+   "expect": "G.scenes.ctx.flags.chase.phase === 'b' || /Lost|warned|Wrecked/.test((G.lastFail||{}).why||'')",
+   "label": "W held into him with RMB + LMB spammed, the mouse never moved, does not put him off the road"
+  }
+ ]
+}

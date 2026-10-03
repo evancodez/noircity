@@ -1,0 +1,50 @@
+{
+ "about": "C3 3rd owner: phase b alone, from the river road's checkpoint (?start=tail.river), by the proofs' good hands (src/scenes/tail/bot.js through tools/lib/c3_tail.mjs: real keys, the mouse onto his car, LMB): how long he lasts, the rounds, the hits, the fails. Ends when phase c begins (he is stopped) or after 3 minutes. node tools/play.mjs tools/plays/tail_b_good.json (NOIR_PORT=5343)",
+ "url": "/?mute=1&start=tail.river",
+ "size": [
+  1440,
+  900
+ ],
+ "out": "shots/c3/play_b_good",
+ "steps": [
+  {
+   "until": "G.state === 'title' && !document.getElementById('title').classList.contains('hidden') && !!document.querySelector('#title .opt[data-k=begin]')",
+   "timeout": 40000
+  },
+  {
+   "wait": 2000
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]",
+   "taken": "G.state === 'playing' && document.pointerLockElement === N.renderer.domElement",
+   "retries": 4,
+   "every": 4000
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'tail' && G.scenes.ctx.flags.chase && G.scenes.ctx.flags.chase.phase === 'b' && !G.scenes.fadeK",
+   "timeout": 45000
+  },
+  {
+   "eval": "(window.__tailFails = [], window.__b0 = N.time, 1)"
+  },
+  {
+   "drive": "tools/lib/c3_tail.mjs",
+   "profile": "good",
+   "seed": 7,
+   "timeout": 180000,
+   "stop": "!!G.scenes.ctx.flags.chase && (G.scenes.ctx.flags.chase.phase === 'c' || G.scenes.ctx.flags.chase.phase === 'wreck')",
+   "shots": {
+    "b01_gun": "!!G.scenes.ctx.flags.chase && G.scenes.ctx.flags.chase.gun.aimK > 0.99",
+    "b02_hit": "!!G.scenes.ctx.flags.chase && G.scenes.ctx.flags.chase.gun.hits >= 1",
+    "b03_crash": "!!G.scenes.ctx.flags.chase && G.scenes.ctx.flags.chase.phase === 'crash' && (G.scenes.ctx.flags.chase.crashT || 0) > 0.4",
+    "b02_soft_tyre": "!!G.scenes.ctx.flags.chase && (() => { const C = G.scenes.ctx.flags.chase; if (C.hisDmg && C.hisDmg.nicks >= 1) { window.__nickT = window.__nickT || N.time; return N.time - window.__nickT > 0.7; } return false; })()",
+    "b02_tyre_gone": "!!G.scenes.ctx.flags.chase && (() => { const C = G.scenes.ctx.flags.chase; if (C.hisDmg && C.hisDmg.tyres >= 1) { window.__goneT = window.__goneT || N.time; return N.time - window.__goneT > 0.6; } return false; })()"
+   },
+   "check": "D.end === 'until'",
+   "label": "the good hands stop him on the river road"
+  },
+  {
+   "eval": "JSON.stringify({ secs: +(N.time - window.__b0).toFixed(1), shots: G.scenes.ctx.flags.chase.gun.shots, hits: G.scenes.ctx.flags.chase.gun.hits, his: G.scenes.ctx.flags.chase.hisDmg, fails: (window.__tailFails || []).map((f) => f.why + '@' + f.t), dmg: +G.scenes.ctx.flags.chase.my.damage.toFixed(2) })"
+  }
+ ]
+}

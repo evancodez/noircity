@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { Vehicle, Headlamps } from './Vehicle.js';
-import { buildCoupe, buildTruck, tailLamps, figureInk, contactShadow, COUPE, TRUCK } from './models.js';
+import { Car } from './Car.js';
+import { buildCoupe, buildCoupeSteps, buildTruck, tailLamps, figureInk, contactShadow, COUPE, TRUCK } from './models.js';
 import { releaseHoodSlot, LAYER } from '../render/layers.js';
 
 // Vehicles (docs/story/CONTRACTS.md §11; wave B, lane B5): game.vehicles.
@@ -15,7 +16,8 @@ import { releaseHoodSlot, LAYER } from '../render/layers.js';
 //   vehicles.list, vehicles.player (the one driven by the player), remove(v),
 //   clear(), update(dt) (steps every car but the player's: the drive mode
 //   steps that one, before the eye is placed)
-// A stage that has cars has a track (stage.track: the river road's).
+// A stage that has cars has a track (stage.track: the river road's; [C3] the
+// city's is a plane: its cars are vehicles/Car.js, free on it).
 // Models: src/vehicles/models.js; physics: src/vehicles/Vehicle.js.
 export class Vehicles {
   constructor(game) {
@@ -24,13 +26,16 @@ export class Vehicles {
     this.player = null;
   }
 
-  spawn(kind, { at, yaw = 0, speed = 0, lights = true, tail = null, paint = 'paint' } = {}) {
+  spawn(kind, { at, yaw = 0, speed = 0, lights = true, tail = null, paint = 'paint', spec = null } = {}) {
     const G = this.game, stage = G.stage;
     const pos = at && at.isVector3 ? at.clone() : new THREE.Vector3(at?.x ?? 0, 0, at?.z ?? 0);
     const T = stage.track;
     let model, lampPts, tailPts;
     if (kind === 'coupe') {
-      model = buildCoupe(stage.M);
+      // ([C3 3rd] a coupe's model is ~40 ms to build: one let go in this stage
+      // is used again, and a stage being warmed may build one ahead -
+      // vehicles.prebuild - so the cut into the driver's seat does not)
+      model = (stage._coupeFree && stage._coupeFree.pop()) || buildCoupe(stage.M);
       stage.scene.add(model.group);
       lampPts = COUPE.lamps; tailPts = COUPE.tail;
     } else if (kind === 'sedan') {
@@ -61,7 +66,8 @@ export class Vehicles {
       stage.scene.add(model.group);
       lampPts = TRUCK.lamps;
     } else throw new Error(`vehicles.spawn: no kind '${kind}' (coupe, sedan, truck)`);
-    const v = new Vehicle(this, kind, model, { pos, yaw, s: T ? T.project(pos.x, pos.z, null, {}).s : null });
+    // [C3] a stage whose track is a plane (the city): the car free on it
+    const v = T && T.plane ? new Car(this, kind, model, { pos, yaw, spec }) : new Vehicle(this, kind, model, { pos, yaw, s: T ? T.project(pos.x, pos.z, null, {}).s : null });
     v.car = model.car || null;
     if (tail === 'crew' && tailPts) v.tail = tailLamps(model.group, tailPts);
     v.inkSlot = figureInk(model.group);
@@ -84,6 +90,11 @@ export class Vehicles {
       const d = Math.hypot(v.pos.x - eye.x, v.pos.z - eye.z);
       if (d < bd) { bd = d; best = v; }
     }
+    // [C3 2nd] (a car the scene names - his, in the tail - keeps the light
+    // while it is near: his beams sweep the far wall as he takes a corner I
+    // cannot see round, a trace to follow)
+    const pf = this.prefer;
+    if (pf && pf !== P && pf.lamps && pf.lamps.on && this.list.includes(pf) && Math.hypot(pf.pos.x - eye.x, pf.pos.z - eye.z) < 110) best = pf;
     for (const v of this.list) {
       if (!v.lamps) continue;
       const want = v === P ? T.spots[0] : v === best ? T.spots[1] : null;
@@ -107,9 +118,25 @@ export class Vehicles {
     }
     if (v.body.parent) v.body.parent.remove(v.body);
     if (this.player === v) this.player = null;
+    // ([C3 3rd] my coupe's model kept for the next spawn, as it was built)
+    if (v.kind === 'coupe' && v.model && v.model.group) {
+      const m = v.model;
+      if (m.meshes && m.meshes.hood) m.meshes.hood.rotation.set(0, 0, 0);
+      m.group.position.set(0, 0, 0); m.group.quaternion.identity();
+      (stage._coupeFree || (stage._coupeFree = [])).push(m);
+    }
+  }
+  // [C3 3rd] a coupe's model built ahead in a stage, a few steps at a time
+  // (a stage's warm: yield* vehicles.prebuild(stage))
+  *prebuild(stage, kind = 'coupe') {
+    if (kind !== 'coupe' || (stage._coupeFree && stage._coupeFree.length)) return;
+    const it = buildCoupeSteps(stage.M);
+    let r;
+    while (!(r = it.next()).done) yield 'coupe';
+    (stage._coupeFree || (stage._coupeFree = [])).push(r.value);
   }
 
-  clear() { for (const v of [...this.list]) this.remove(v); }
+  clear() { for (const v of [...this.list]) this.remove(v); this.prefer = null; }
 
   update(dt) {
     this.dealT = (this.dealT || 0) - dt;

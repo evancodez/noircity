@@ -1,0 +1,68 @@
+{
+ "about": "Critic (lane C3): a walker who jumps clear of my car must not go into a building. BEGIN at the tail, the pier beat (no pressure), my car on Cooper St's west pavement 22 m north of the first walker, 40 km/h south at him, W held; the least x he reaches is read every frame. Cooper's west building line is x -183.5 (plan.js: -175 - 5.5 - 3). Today it FAILS: he jumps to x -184.7 .. -186.2, into the facade (walkers.js step(): the jump has no wall test; the 'never under a car' push neither). node tools/play.mjs tools/plays/critic/tail_walker_wall.json --size 1440x900 (NOIR_PORT=5343)",
+ "url": "/?mute=1&start=tail",
+ "size": [
+  1440,
+  900
+ ],
+ "out": "shots/c3critic/walker",
+ "steps": [
+  {
+   "until": "G.state === 'title' && !document.getElementById('title').classList.contains('hidden') && !!document.querySelector('#title .opt[data-k=begin]')",
+   "timeout": 40000
+  },
+  {
+   "wait": 2000
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]",
+   "taken": "G.state === 'playing' && document.pointerLockElement === N.renderer.domElement",
+   "retries": 4,
+   "every": 4000
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'tail' && G.controller.mode === 'drive'",
+   "timeout": 45000
+  },
+  {
+   "eval": "(G.scenes.go('tail', { beat: 'pier', fade: 'cut', card: false }), 1)"
+  },
+  {
+   "wait": 2500
+  },
+  {
+   "eval": "JSON.stringify({ walker: [G.scenes.ctx.flags.chase.walkers.list[0].c.fig.pos.x, G.scenes.ctx.flags.chase.walkers.list[0].c.fig.pos.z] })"
+  },
+  {
+   "eval": "(() => { const w = G.scenes.ctx.flags.chase.walkers.list[0].c.fig.pos; G.scenes.ctx.flags.chase.my.place(new N.THREE.Vector3(-181.9, 0, w.z - 22), -Math.PI / 2, 40 / 3.6); window.__wx = w.x; (function loop() { const p = G.scenes.ctx.flags.chase.walkers.list[0].c.fig.pos; window.__wx = Math.min(window.__wx, p.x); if (!window.__wxStop) requestAnimationFrame(loop); })(); return 1; })()"
+  },
+  {
+   "down": "KeyW"
+  },
+  {
+   "wait": 2000
+  },
+  {
+   "up": "KeyW"
+  },
+  {
+   "down": "KeyS"
+  },
+  {
+   "wait": 1200
+  },
+  {
+   "up": "KeyS"
+  },
+  {
+   "eval": "(window.__wxStop = true, 'the walker reached x ' + window.__wx.toFixed(2))"
+  },
+  {
+   "shot": "w01_after"
+  },
+  {
+   "expect": "window.__wx >= -183.6",
+   "label": "the walker stays out of Cooper's west facade (x >= -183.5)"
+  }
+ ]
+}

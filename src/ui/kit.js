@@ -133,18 +133,31 @@ export class KitUi {
     for (const c of [...E.querySelectorAll('canvas')]) c.remove();
     if (!text) { E.style.display = 'none'; return; }
     E.querySelector('.t').textContent = text;
+    const { ground, s } = this.objArt(text);
+    E.insertBefore(ground, E.firstChild);
+    E.appendChild(s);
+    this.objStrike = s;
+    E.style.display = 'block';
+  }
+  // [C3] a line's torn stroke and its strike, drawn once per text and kept
+  // (the drawing reads its canvas back - a stall behind the GPU's frame: at
+  // a cut it was most of the cut's time); prepareObjective draws ahead
+  objArt(text) {
+    const C = this._objArt || (this._objArt = new Map());
+    let a = C.get(text);
+    if (a) return a;
     const g = this._mctx || (this._mctx = document.createElement('canvas').getContext('2d'));
     g.font = `13px ${TYPE}`;
     const w = Math.ceil(g.measureText(text.toUpperCase()).width + text.length * 13 * 0.3) + 10;
     const ground = makeTornStroke(w + 90, 34, hashSeed('obj:' + text));
     ground.className = 'g';
-    E.insertBefore(ground, E.firstChild);
     const s = strikeStroke(w + 12, 12, hashSeed('strike:' + text));
     s.className = 's';
-    E.appendChild(s);
-    this.objStrike = s;
-    E.style.display = 'block';
+    a = { ground, s };
+    C.set(text, a);
+    return a;
   }
+  prepareObjective(text) { if (text) this.objArt(String(text)); }
   applyObjective() {
     const O = this.obj, E = this.objEl;
     if (!O) { E.style.display = 'none'; return; }
@@ -304,7 +317,8 @@ export class KitUi {
   showWarn({ now = false } = {}) {
     const want = this.sceneWarn || this.lowText || null;
     const E = this.warnEl;
-    if (want === this.warnText) return;
+    // ([C3] gone at once, even while it is still fading out)
+    if (want === this.warnText && !(now && !want && E.style.display !== 'none')) return;
     // [C2] (a line that changes its words while a warning stays up is the same
     // warning: its time is from when the first came up - Game.spareLast's
     // second is not given again by every change of words)

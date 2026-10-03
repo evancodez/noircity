@@ -583,6 +583,10 @@ export class Game {
         F.phase = 'black'; F.t = 0;
         this.crawl = 0;
         this.hud.setFailing(true);
+        // [C3] (the warning of the try that failed goes with the black, at
+        // once: its 0.4 s fade ran on game time, held under the black, and
+        // lettered it again over the checkpoint as the scene came up)
+        K.clearWarn({ now: true });
         K.failLine(F.why);
         const def = S.current;
         if (!F.keepWorld) {
