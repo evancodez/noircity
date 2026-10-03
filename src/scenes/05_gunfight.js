@@ -73,6 +73,19 @@ const OPENS = { shadows: { x: 1.8, z: 3.4 }, flank: { x: 2.4, z: 2.4 }, corridor
 // the warnings and the falls in this chapter's words (the kit's for the rest)
 const WARN = { door: 'Behind you! The door!' };
 const WHY = { default: 'Shot.' };
+// ([C5] after play) the flank's two set off once the door's last man is down - or FLANK_WAIT s on, if he
+// hangs back - and the second `late` s behind the first. With him alive in the doorway the room has no place
+// covered from both the door and the connecting door: the good hand's falls in the flank were nearly all that.
+const FLANK_WAIT = 10;
+const DOORNAMES = ['kicker', 'jamb', 'side', 'doorLeft'];
+function flankGo(F, G) {
+  const t0 = G.time;
+  let goT = null;
+  return (m) => () => {
+    if (goT == null && ((F.men || []).every((h) => !h.alive || !DOORNAMES.includes(h.c5)) || G.time - t0 > FLANK_WAIT)) goT = G.time;
+    return goT != null && G.time - goT >= (m.late || 0);
+  };
+}
 
 // the room at a beat's start: the gun in hand and full, the kit's encounter
 function prepare(ctx, name, { reset = true } = {}) {
@@ -121,7 +134,8 @@ function prepare(ctx, name, { reset = true } = {}) {
   if (name === 'flank') {
     // (a door man the first movement left: still at his cover in the outer office)
     for (const p of (reset ? R.doorLeft || [] : [])) spawn({ name: 'doorLeft', at: p, cover: true, wait: 1.5 });
-    for (const m of FLANKERS) spawn({ ...m, wait: (m.name === 'flankA' ? 0.6 : 0.9) + (m.late || 0) });
+    const go = flankGo(F, G);
+    for (const m of FLANKERS) spawn({ ...m, wait: m.name === 'flankA' ? 0.6 : 0.9, start: go(m) });
   }
   if (name === 'corridor') corridorMen(ctx, spawn);
 }
@@ -238,7 +252,8 @@ export default defineScene({
       yield beat('flank');
       K.cfg.to = 'flank';
       K.cfg.warn = { ...WARN, door: 'The other door! Behind you!' };
-      for (const m of FLANKERS) F.spawn({ ...m, wait: (m.name === 'flankA' ? 0.4 : 0.7) + (m.late || 0) });
+      const go = flankGo(F, G);
+      for (const m of FLANKERS) F.spawn({ ...m, wait: m.name === 'flankA' ? 0.4 : 0.7, start: go(m) });
       Object.assign(K.cfg, NUM_FLANK);
     } else if (ctx.beat === 'flank') yield beat('flank');
     if (ctx.at('flank') && ctx.beat === 'flank') {
