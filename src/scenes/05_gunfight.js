@@ -132,8 +132,10 @@ function prepare(ctx, name, { reset = true } = {}) {
   F.spawn = spawn;
   if (name === 'shadows') for (const m of DOORMEN) spawn({ ...m, start: () => F.go != null && G.time - F.go > (m.name === 'kicker' ? 0.05 : m.name === 'jamb' ? 0.5 : 0.35) });
   if (name === 'flank') {
-    // (a door man the first movement left: still at his cover in the outer office)
-    for (const p of (reset ? R.doorLeft || [] : [])) spawn({ name: 'doorLeft', at: p, cover: true, wait: 1.5 });
+    // (a door man the first movement left: back at the door, working it from its jamb as the jamb man did -
+    // [C5] after play: put back where he stood, he could be three metres off by the opening with a line on
+    // me as the retry began, and no first-timer got past that)
+    for (let i = 0; i < (reset ? (R.doorLeft || []).length : 0); i++) spawn({ ...DOORMEN[1], name: 'doorLeft', wait: 1.5 });
     const go = flankGo(F, G);
     for (const m of FLANKERS) spawn({ ...m, wait: m.name === 'flankA' ? 0.6 : 0.9, start: go(m) });
   }
