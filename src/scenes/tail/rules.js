@@ -54,7 +54,9 @@ export const PULL = { near: 10, react: 0.25, t: 3.2, cool: 2.0, vmax: 26, accel:
 // pier's gate, if he reaches it first: "He warned them.")
 // ([C3b, after the critic] the fail was a timer whatever the gap, and a hurt
 // car's getaway was slower than my coupe: "Lost him." with him 15 m ahead)
-export const RIVER_B = { cruise: 10, away: 26, warn: 16, t: 23, pullGap: 22, lostGap: 42 };
+// (and the warning up RIVER_B.warnRead s at least before the fail: held up
+// behind a slow car he can go from near to gone in a second)
+export const RIVER_B = { cruise: 10, away: 26, warn: 16, t: 23, pullGap: 20, lostGap: 42, warnRead: 2.5 };
 // [3rd owner] the teach cards (the kit draws [X] as a key cap, [LMB] / [RMB]
 // as a mouse; seams/Z.md §2)
 export const TEACH = {

@@ -92,3 +92,77 @@ Look development (not proofs): `tail_out_look` (the man crouched, the line).
 5. The man's point: the arm goes up and ahead (it reads as pointing down the road from behind him); from in front it reads less. His head does not follow me.
 6. `tail_shunt.json` (the 4th owner's) still drives the old "dry gun then shunt" set-up; it is superseded by `tail_b_good` and `tail_ram_whole` and was not re-run.
 7. The headless `c3city.mjs` bench reads only `RULES`; it does not know the window or the burst.
+
+---------------------------------------------------------------------------
+## After the critic (2026-10-03, `C3b_CRITIC.md`)
+
+The critic played the lane cold and found two blockers, four majors, three
+minors and three cheats. What plays now, in the order a player feels it
+(the numbers above in "The rules, in numbers" are superseded by these):
+
+| finding | what plays now | where |
+| --- | --- | --- |
+| **blocker 2**: held his bumper 5 s at speed in the streets; he then stuck on an el column for 26 s | The burst no longer waits out a cool-down while I am on him: within `PULL.near` 10 m (0.25 s in his mirror) his foot goes down and **stays down while I am still within 10 m**; his burst takes the corners harder too (its path at `aLat` 7.2, `aBrake` 6.5 against his 6.2 / 5.2 - he still never crashes on his own: headless `good` runs his damage 0). A whole car is `PULL.mass` 2.6 to my nose (a graze jolts him, it cannot turn him off his line); hurt, his own weight again. The stuck answer is the Pilot's (shared, `[C3b]`): stopped against a thing, he backs off longer each try and then runs a lane to one side for a moment, the other side on the next try. | `his.js pullStep / burst / boostPath`, `rules.js PULL`, `vehicles/pilot.js` |
+| **blocker 1** and **cheats 1, 2**: "Lost him." on a clock with him 15 m ahead; a hurt car's getaway slower than my coupe | The timer that lost the contest whatever the gap is gone. From `RIVER_B.warn` 16 s he finds speed, **hurt or whole**, toward `RIVER_B.away` 26 m/s (my coupe tops at 22.5), all of it by 23 s; getting away he drives for it (his pace whole again, the weave gone - the limp and the smoke stay on him, and a car on three rims still cannot find it all). "He's pulling away." comes only when it is true: he has out-run me for 0.8 s, or he is 20 m off. "Lost him." only when he is really gone: `RIVER_B.lostGap` 42 m clear, with the warning up `warnRead` 2.5 s at least. A good follower usually sees "He's nearly at the pier." and "He warned them." at the gate instead (he got there). | `chase.js rules`, `his.js drive / pullStep`, `rules.js RIVER_B` |
+| **major 3**: a straight push on his back corner did nothing | The shunt counts square on the corner too: contact behind `RAM.behind`, `|z| > RAM.corner` 0.5 (the corner, not the middle of his bumper), my heading within 0.2 rad of his - the same spin as the angled PIT. A push on the middle of his bumper is still only a shove. The shove now goes across him (his frame), whatever the contact's normal (a square push has its normal along his length). The card reads `[A] [D] ram his back corner` (the user's word). | `chase.js rammed`, `rules.js RAM` |
+| **major 4** and **cheat 3**: the crash ended as a parked car; frozen mid-slide at 7 s | The spin is harder (`RAM.spin` 4.2, `shove` 5.5). His first hard knock in the crash (or, if nothing hard was met, the wreck's first second) smashes the car: that corner down on its broken spring and the body twisted onto it, the side glass on that side and the windscreen (or the rear window) shattered, the headlamp on that side broken, glass grains left on the road; the bonnet's steam is now white and thick (it was dark smoke, lost on the night). He comes to rest on his own brakes (both feet down from 4.5 s); the wreck is called only when he is still (a last guard at 10 s only for a car under 2.5 m/s). In the final run he went round and into the market stalls, skewed, steaming (frame 03). | `chase.js smash / crashing / wreckStep / hisFx`, `his.js crashing` |
+| **major 5**: "See to the driver." after his line | "Pier 9." the moment he says it. | `chase.js sayLine` |
+| **major 6**: the arm a white slab, the eye over his crown | The walking net keeps the eye 0.95 m + my own radius off him (measured: never under 1.3 m, the bots 2.4 m); his line comes at 3.4 m when I look at him, so it is said and seen from a man's distance. The point is lower and further out (hand at shoulder height). From behind him it still reads as an arm raised more than a point down the road (frame 04). | `chase.js walkNet / atWreck`, `cast/kinds/tail_trucker.js tail_point` |
+| minor: the first E after getting out swallowed | `E  get in` at once (0.1 s after the door; measured 0.12 to 0.15 s). | `chase.js atWreck` |
+
+**Not done (minors)**: the cut at Pier 9 still jumps from the river road's
+lit night to chapter VII's own first frame (lane C7 owns it: "For other
+lanes"); the market stalls still hold a car that swerves into them (the
+player's own swerve; their debris is the city's, lane C3); the aim mark when
+leaning out is the game's shared crosshair, not changed here.
+
+### The proofs after the critic, each run once on the final code (by real input)
+
+| play | what it shows | result |
+| --- | --- | --- |
+| `tail_close` (new: the critic's `close`) | phase a from the kerb, flat out at his car and into it (`closer` hands) | run 1: 4/5 - the "never past him" check (l.x > 2.5 once) failed on a moment where I came level with him stopped in traffic, then lost him; the check made honest (ahead in his frame 1.5 s and more) and run 2: **5/5** - 8 grazes, 10 bursts, at speed never within 6.5 m more than 0.8 s, never stuck (0 s), never past him, his yaw rate never past 1.27 |
+| `tail_corner` (new) | river road, one tyre, then the first-timer's push: straight on his line, square on his back corner | **3/3**: spins at once (heading within 0.2 rad), the wreck smashed, on through the line to chapter VII |
+| `tail_wreck_look` (new, look and checks) | the corner push, the wreck, out, the line | **4/4**: "Pier 9." 0.8 s after the line, `E get in` at 0.15 s, the eye never under 2.4 m from him |
+| `tail_idle` | hands off / W only in the streets; hands off on the river road; kept up with, never shot | **12/12** (after the last change): the last one ended "He warned them." at the gate, 33 m behind him, "He's nearly at the pier." up 1.8 s |
+| `tail_bad` | clumsy hands from the kerb | **3/3**: lost him once in the streets, through on try 2 to chapter VII |
+| `tail_good` | good hands, twice in a row | **6/6**: both wins with no fail |
+| `tail_gun_only` | rounds at everything, never a shunt | **7/7** (after the last change): 14 hits, 3 tyres, hold at the floor 0.35, never off the road; "He's pulling away." at 20.7 s, then "He warned them." at the gate 30 m ahead (on three rims he cannot find the whole getaway); the run before: "Lost him." at 42 m, his car 22.7 m/s |
+| `tail_ram_whole` | the shunt on a whole car does not spin him | run 1: 2/4 - he floored it every time the hands closed, no shunt landed, and the checks read the retry's new chase; the play now keeps the first chase's numbers and accepts a shunt that never lands (he pulls away). Run 2: **3/3** (3 bursts, never spun) |
+| `tail_graze` | phase a bumper grazes | **6/6** |
+| `tail_jank_walk` | on foot by the wreck | **4/4**: never inside a car, nearest the man 1.31 m |
+
+Headless (`tools/lib/c3city.mjs`, no traffic, tuning only): `closer` at
+speed within 6.5 m at most 1 to 1.5 s (was 2.5); `good` reaches the river
+road on every seed with his car undamaged; `idle` lost in 16 s.
+
+### The gate after the critic
+
+1. `npx vite build`: built (the usual chunk-size notice).
+2. `python3 tools/golden.py check`: 32 of 32 identical (no tail frame in the set).
+3. `tools/errors.sh` on `scene=tail&beat=start|chase2|river|wreck|pier` and `warehouse&beat=arrive`: clean.
+4. The proofs: above.
+5. The jank walk: `tail_jank_walk` 4/4.
+6. Frame rate, one session, GPU busy with another process (67 to 91 %) so the
+   ratio only: `shot=perf` 48 fps (2.82 M triangles); the river road with the
+   gun out (`scene=tail&beat=river&t=1&anim=1&tailGun=1`) 65.5 fps (3.69 M):
+   **1.36x perf**. (The wreck's glass and white steam are a few dozen
+   particles and one small mesh; not measured in shot mode.)
+
+Review frames: `docs/story/review/wave-c/C3b/after/` - 01 on his bumper he
+floors it, 02 the square push spins him, 03 the wreck in the stalls,
+steaming, 04 his line with "Pier 9." up.
+
+### Left after the critic (most felt first)
+
+1. A hurt car on two or three rims cannot reach the whole getaway: with the
+   gun used hard, the window often ends at the gate ("He warned them.")
+   rather than "Lost him." - honest (he got there), but the far end of the
+   river road decides more than the window does.
+2. In the streets a close tail can still sit on him through the stalls and
+   tight corners (the road makes him slow there: 4.6 s within 6.5 m round
+   the canal corner in one run). On the straights he gets away.
+3. The man's point reads as a raised arm from behind him; a clean "down the
+   road" point would need him turned side-on to my approach.
+4. `tail_close` and `tail_ram_whole` each needed their checks corrected once
+   (above); both are traffic-dependent and may vary run to run.
+5. The minors above (the pier's cut, the stalls, the aim mark).

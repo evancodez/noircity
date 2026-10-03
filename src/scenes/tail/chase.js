@@ -279,7 +279,7 @@ export class Chase {
       // (a far warning already up stays: it is the same news)
       const outRun = this.driver.getaway > 0.2 && this.his.speed > this.my.speed + 0.5;
       this.pullT = outRun ? (this.pullT || 0) + dt : Math.max(0, (this.pullT || 0) - dt);
-      if (this.bT > B.warn && (this.pullT > 0.8 || gap > B.pullGap)) this.pullWarned = true;
+      if (this.bT > B.warn && !this.pullWarned && (this.pullT > 0.8 || gap > B.pullGap)) { this.pullWarned = true; this.pullWarnAt = this.bT; }
       if (this.pullWarned && !warn) warn = "He's pulling away.";
     }
     if (gateNear) warn = "He's nearly at the pier.";
@@ -302,7 +302,7 @@ export class Chase {
     // ([C3b] the window gone: he is a pair of red lamps in the rain)
     // ([C3b, after the critic] only when he is really gone - RIVER_B.lostGap m
     // clear and warned - never on a clock with him in front of my bonnet)
-    if (this.phase === 'b' && this.driver.state !== 'lost' && this.pullWarned && this.bT > B.warn && gap > B.lostGap) return this.fail('Lost him.', 'river');
+    if (this.phase === 'b' && this.driver.state !== 'lost' && this.pullWarned && this.bT - this.pullWarnAt > B.warnRead && gap > B.lostGap) return this.fail('Lost him.', 'river');
   }
   checkpoint() { return this.phase === 'b' ? 'river' : this.ctx.flags.check || 'start'; }
   fail(why, to) {
