@@ -1,0 +1,165 @@
+{
+ "about": "[C4] after the critic (M1) at Pier 9: the foreman's fight by real input with my health set low at his reel; no warning over 'Get to the diner.'",
+ "url": "/?mute=1&start=warehouse.fight",
+ "size": [
+  1440,
+  900
+ ],
+ "out": "shots/play/pier_warn_win",
+ "steps": [
+  {
+   "until": "G.state === 'title' && !document.getElementById('title').classList.contains('hidden')",
+   "timeout": 30000
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]"
+  },
+  {
+   "wait": 3000
+  },
+  {
+   "eval": "(() => { if (G.state !== 'title') return 'started'; document.querySelector('#title .opt[data-k=begin]').dispatchEvent(new MouseEvent('mousedown', { bubbles: true, button: 0 })); return '(a loaded machine: pressed again)'; })()"
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'warehouse' && G.scenes.beat === 'fight'",
+   "timeout": 25000
+  },
+  {
+   "until": "!G.scenes.trans",
+   "timeout": 8000
+  },
+  {
+   "eval": "(window.W = () => G.scenes.ctx.flags.live, 1)"
+  },
+  {
+   "name": "he steps out of the dark by the door, the hook turning in his hand"
+  },
+  {
+   "until": "!!W().fm && W().fm.pos.z < -31.4",
+   "timeout": 8000
+  },
+  {
+   "shot": "p00_he_steps_out"
+  },
+  {
+   "until": "G.controller.mode === 'brawlIn' || G.brawl.active",
+   "timeout": 8000
+  },
+  {
+   "shot": "p01_hand_to_the_coat"
+  },
+  {
+   "until": "G.brawl.active && G.controller.mode === 'brawl'",
+   "timeout": 12000
+  },
+  {
+   "expect": "G.brawl.him.holding === 'hook' && G.hands.set === 'fists' && G.brawl.who.name === 'THE FOREMAN' && G.brawl.lesson === null",
+   "label": "fists up, no lesson; the hook in his fist"
+  },
+  {
+   "expect": "(() => { const f = W(); return f.fightT - G.scenes.startT < 7.5; })()",
+   "label": "from the stairs' foot into the fight in under 7.5 s of game time"
+  },
+  {
+   "fight": {
+    "timeout": 300000,
+    "shots": {
+     "p05_reel_low": "G.brawl.him && G.brawl.him.state === 'reel' && (G.health.hp = Math.min(G.health.hp, 22), true)"
+    },
+    "expect": "F.time >= 25 && F.time <= 200",
+    "label": "the foreman's fight by real input, won"
+   }
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "shot": "after_win"
+  },
+  {
+   "eval": "JSON.stringify({warn: G.hud.warnText, obj: G.hud.objectiveText, hp: G.health.hp, beat: G.scenes.beat})"
+  },
+  {
+   "expect": "!G.hud.warnText",
+   "label": "[C4] M1 at Pier 9: no warning after the win"
+  },
+  {
+   "until": "G.scenes.beat === 'after'",
+   "timeout": 15000
+  },
+  {
+   "expect": "G.brawl.stats.won === true && G.stage.part('shed').loading.some((d) => d.burst) && !G.brawl.me.holding && !G.hands.held.L && !G.hands.held.R",
+   "label": "through a loading door's planks into the river; nothing left in a hand"
+  },
+  {
+   "eval": "JSON.stringify({ disarms: G.brawl.stats.disarms || 0, downs: G.brawl.stats.downs, held: G.brawl.stats.held || [], window: G.brawl.stats.window, time: +G.brawl.stats.time.toFixed(1) })"
+  },
+  {
+   "wait": 1200
+  },
+  {
+   "shot": "p08_the_hole"
+  },
+  {
+   "name": "out by the bay's side door"
+  },
+  {
+   "walk": [
+    [
+     13.6,
+     -31.4
+    ],
+    [
+     14.3,
+     -30.3
+    ]
+   ],
+   "timeout": 20000,
+   "stop": false
+  },
+  {
+   "until": "G.hud.promptShown.includes('open')",
+   "timeout": 4000
+  },
+  {
+   "key": "KeyE"
+  },
+  {
+   "wait": 1200
+  },
+  {
+   "expect": "G.stage.part('shed').bayDoor.isOpen",
+   "label": "E opens the bay's side door"
+  },
+  {
+   "walk": [
+    [
+     16.8,
+     -29.4
+    ],
+    [
+     16.9,
+     -27.6
+    ]
+   ],
+   "timeout": 15000
+  },
+  {
+   "down": "KeyW"
+  },
+  {
+   "until": "G.scenes.current === null || G.scenes.current.id !== 'warehouse' || G.state === 'end'",
+   "timeout": 8000
+  },
+  {
+   "up": "KeyW"
+  },
+  {
+   "expect": "G.scenes.current && G.scenes.current.id === 'shootout'",
+   "label": "on into the next chapter (IX The Block)"
+  }
+ ]
+}

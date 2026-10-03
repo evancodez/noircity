@@ -1,0 +1,197 @@
+{
+ "about": "[C4] The diner's street door tried at the end of II (?start=fight.outside), by real input: from the pavement it is pulled (E) - it swings toward me and stops at me, never through me; in through it; inside it is pushed by walking into it and swings back behind me on its closer; out again; E push from inside too. The leaf never passes through me (G.counters.doorThroughMe). node tools/play.mjs tools/plays/fight_door.json",
+ "url": "/?mute=1&start=fight.outside",
+ "size": [
+  1280,
+  800
+ ],
+ "out": "shots/play/fight_door",
+ "steps": [
+  {
+   "until": "G.state === 'title' && !document.getElementById('title').classList.contains('hidden')",
+   "timeout": 20000
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]",
+   "taken": "G.state !== 'title'",
+   "retries": 5,
+   "every": 4000
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'fight' && G.scenes.beat === 'outside' && G.controller.mode === 'walk' && !G.hud._carded",
+   "timeout": 30000
+  },
+  {
+   "wait": 600
+  },
+  {
+   "expect": "!G.stage.part('dinerFront').door.barred",
+   "label": "[C4] out on the pavement: the bar is up (I came out)"
+  },
+  {
+   "walk": [
+    [
+     -9.0,
+     0.85
+    ],
+    [
+     -9.35,
+     0.85
+    ]
+   ],
+   "timeout": 20000
+  },
+  {
+   "look": "(() => { const C = N.controller; const want = Math.atan2(-(-10.44 - G.eye.x), -(0.82 - G.eye.z)); const dy = Math.atan2(Math.sin(want - C.yaw), Math.cos(want - C.yaw)); return [Math.round(-dy / C.sensitivity), Math.round(-(-0.25 - C.pitch) / C.sensitivity)]; })()",
+   "steps": 6
+  },
+  {
+   "until": "G.interact.current && G.interact.current.id === 'diner.door.pull'",
+   "timeout": 6000
+  },
+  {
+   "shot": "d00_pull"
+  },
+  {
+   "key": "KeyE"
+  },
+  {
+   "wait": 700
+  },
+  {
+   "shot": "d01_pulled"
+  },
+  {
+   "expect": "G.stage.part('dinerFront').door.angle > 0.15 && (G.counters.doorThroughMe || 0) === 0",
+   "label": "[C4] pulled from the street: it swings toward me, as far as I let it"
+  },
+  {
+   "walk": [
+    [
+     -9.6,
+     0.6
+    ],
+    [
+     -11.2,
+     0.6
+    ],
+    [
+     -12.0,
+     0.6
+    ]
+   ],
+   "timeout": 20000
+  },
+  {
+   "wait": 2500
+  },
+  {
+   "expect": "G.stage.part('dinerFront').door.angle < 0.02 && G.eye.x < -11.5",
+   "label": "[C4] in: the door shut behind me on its closer"
+  },
+  {
+   "walk": [
+    [
+     -11.0,
+     0.6
+    ],
+    [
+     -9.3,
+     0.6
+    ],
+    [
+     -8.8,
+     0.6
+    ]
+   ],
+   "timeout": 20000
+  },
+  {
+   "expect": "G.eye.x > -9.6 && (G.counters.doorThroughMe || 0) === 0",
+   "label": "[C4] out again: walked into it, it gave ahead of me"
+  },
+  {
+   "wait": 2500
+  },
+  {
+   "walk": [
+    [
+     -9.5,
+     0.62
+    ],
+    [
+     -10.2,
+     0.62
+    ]
+   ],
+   "timeout": 8000,
+   "stop": false
+  },
+  {
+   "expect": "G.eye.x > -10.25 && G.stage.part('dinerFront').door.angle < 0.05",
+   "label": "[C4] from the street, walked into: the shut door holds (it is pulled, not pushed)"
+  },
+  {
+   "eval": "({ x: G.eye.x, a: G.stage.part('dinerFront').door.angle, thr: G.counters.doorThrough || 0, me: G.counters.doorThroughMe || 0 })"
+  },
+  {
+   "look": "(() => { const C = N.controller; const want = Math.atan2(-(-10.44 - G.eye.x), -(0.82 - G.eye.z)); const dy = Math.atan2(Math.sin(want - C.yaw), Math.cos(want - C.yaw)); return [Math.round(-dy / C.sensitivity), Math.round(-(-0.25 - C.pitch) / C.sensitivity)]; })()",
+   "steps": 6
+  },
+  {
+   "until": "G.interact.current && G.interact.current.id === 'diner.door.pull'",
+   "timeout": 6000
+  },
+  {
+   "key": "KeyE"
+  },
+  {
+   "wait": 900
+  },
+  {
+   "walk": [
+    [
+     -9.2,
+     0.62
+    ],
+    [
+     -9.2,
+     0.7
+    ],
+    [
+     -11.4,
+     0.62
+    ],
+    [
+     -11.6,
+     0.62
+    ]
+   ],
+   "timeout": 20000
+  },
+  {
+   "look": "(() => { const C = N.controller; const want = Math.atan2(-(-10.6 - G.eye.x), -(0.9 - G.eye.z)); const dy = Math.atan2(Math.sin(want - C.yaw), Math.cos(want - C.yaw)); return [Math.round(-dy / C.sensitivity), Math.round(-(-0.15 - C.pitch) / C.sensitivity)]; })()",
+   "steps": 6
+  },
+  {
+   "until": "G.interact.current && G.interact.current.id === 'diner.door.push'",
+   "timeout": 6000
+  },
+  {
+   "key": "KeyE"
+  },
+  {
+   "wait": 600
+  },
+  {
+   "shot": "d02_pushed"
+  },
+  {
+   "expect": "G.stage.part('dinerFront').door.angle > 0.3 && (G.counters.doorThrough || 0) === 0",
+   "label": "[C4] E pushes it from inside; the leaf never in a body"
+  }
+ ]
+}

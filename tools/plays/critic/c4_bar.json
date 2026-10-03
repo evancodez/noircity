@@ -1,0 +1,201 @@
+{
+ "about": "Critic C4: after the last blow (a jump to the ko beat): the bar on the street door, from 1 m and close up; lift; push out.",
+ "url": "/?mute=1&start=fight.ko",
+ "size": [
+  1440,
+  900
+ ],
+ "out": "shots/critic/c4_bar",
+ "steps": [
+  {
+   "until": "G.state === 'title' && !document.getElementById('title').classList.contains('hidden')",
+   "timeout": 30000
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]",
+   "taken": "G.state !== 'title'",
+   "retries": 5,
+   "every": 4000
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id==='fight' && G.scenes.beat==='ko' && N.controller.mode==='walk'",
+   "timeout": 60000
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "eval": "JSON.stringify({t:+G.time.toFixed(1),beat:G.scenes.beat,p:[+G.eye.x.toFixed(2),+G.eye.z.toFixed(2)],mode:N.controller.mode,msg:+G.hud.el.msg.style.opacity>0?G.hud.el.msg.textContent:'',prompt:G.hud.promptShown,say:G.hud.sayShown,obj:G.hud.objectiveText,door:(()=>{const d=G.stage.part('dinerFront').door;return {a:+(d.angle||0).toFixed(2),barred:d.barred,shut:d.shut}})(),hp:Math.round(G.health.hp),b:G.brawl.active?G.brawl.him.state:'off',warn:G.hud.warnText,sc:G.scenes.current&&G.scenes.current.id,inv:G.save.inventory.join(','),stills:!!(G.stills&&G.stills.active),yaw:+N.controller.yaw.toFixed(2)})"
+  },
+  {
+   "shot": "k0"
+  },
+  {
+   "walk": [
+    [
+     -12.2,
+     1.0
+    ],
+    [
+     -11.7,
+     0.6
+    ]
+   ],
+   "timeout": 20000,
+   "stop": false
+  },
+  {
+   "look": "(() => { const yw = Math.atan2(-(-10.400000 - G.eye.x), -(0.600000 - G.eye.z)); const pt = Math.atan2(1.600000 - G.eye.y, Math.hypot(-10.400000 - G.eye.x, 0.600000 - G.eye.z)); const d = Math.atan2(Math.sin(yw - N.controller.yaw), Math.cos(yw - N.controller.yaw)); return [Math.round(-d / N.controller.sensitivity), Math.round(-(pt - N.controller.pitch) / N.controller.sensitivity)]; })()",
+   "steps": 8
+  },
+  {
+   "wait": 400
+  },
+  {
+   "eval": "JSON.stringify({t:+G.time.toFixed(1),beat:G.scenes.beat,p:[+G.eye.x.toFixed(2),+G.eye.z.toFixed(2)],mode:N.controller.mode,msg:+G.hud.el.msg.style.opacity>0?G.hud.el.msg.textContent:'',prompt:G.hud.promptShown,say:G.hud.sayShown,obj:G.hud.objectiveText,door:(()=>{const d=G.stage.part('dinerFront').door;return {a:+(d.angle||0).toFixed(2),barred:d.barred,shut:d.shut}})(),hp:Math.round(G.health.hp),b:G.brawl.active?G.brawl.him.state:'off',warn:G.hud.warnText,sc:G.scenes.current&&G.scenes.current.id,inv:G.save.inventory.join(','),stills:!!(G.stills&&G.stills.active),yaw:+N.controller.yaw.toFixed(2)})"
+  },
+  {
+   "shot": "k1_door_1m_eye"
+  },
+  {
+   "look": "(() => { const yw = Math.atan2(-(-10.400000 - G.eye.x), -(0.600000 - G.eye.z)); const pt = Math.atan2(1.050000 - G.eye.y, Math.hypot(-10.400000 - G.eye.x, 0.600000 - G.eye.z)); const d = Math.atan2(Math.sin(yw - N.controller.yaw), Math.cos(yw - N.controller.yaw)); return [Math.round(-d / N.controller.sensitivity), Math.round(-(pt - N.controller.pitch) / N.controller.sensitivity)]; })()",
+   "steps": 8
+  },
+  {
+   "wait": 400
+  },
+  {
+   "eval": "JSON.stringify({t:+G.time.toFixed(1),beat:G.scenes.beat,p:[+G.eye.x.toFixed(2),+G.eye.z.toFixed(2)],mode:N.controller.mode,msg:+G.hud.el.msg.style.opacity>0?G.hud.el.msg.textContent:'',prompt:G.hud.promptShown,say:G.hud.sayShown,obj:G.hud.objectiveText,door:(()=>{const d=G.stage.part('dinerFront').door;return {a:+(d.angle||0).toFixed(2),barred:d.barred,shut:d.shut}})(),hp:Math.round(G.health.hp),b:G.brawl.active?G.brawl.him.state:'off',warn:G.hud.warnText,sc:G.scenes.current&&G.scenes.current.id,inv:G.save.inventory.join(','),stills:!!(G.stills&&G.stills.active),yaw:+N.controller.yaw.toFixed(2)})"
+  },
+  {
+   "shot": "k2_door_1m_bar"
+  },
+  {
+   "down": "KeyW"
+  },
+  {
+   "wait": 400
+  },
+  {
+   "up": "KeyW"
+  },
+  {
+   "look": "(() => { const yw = Math.atan2(-(-10.400000 - G.eye.x), -(0.600000 - G.eye.z)); const pt = Math.atan2(1.600000 - G.eye.y, Math.hypot(-10.400000 - G.eye.x, 0.600000 - G.eye.z)); const d = Math.atan2(Math.sin(yw - N.controller.yaw), Math.cos(yw - N.controller.yaw)); return [Math.round(-d / N.controller.sensitivity), Math.round(-(pt - N.controller.pitch) / N.controller.sensitivity)]; })()",
+   "steps": 6
+  },
+  {
+   "wait": 400
+  },
+  {
+   "eval": "JSON.stringify({t:+G.time.toFixed(1),beat:G.scenes.beat,p:[+G.eye.x.toFixed(2),+G.eye.z.toFixed(2)],mode:N.controller.mode,msg:+G.hud.el.msg.style.opacity>0?G.hud.el.msg.textContent:'',prompt:G.hud.promptShown,say:G.hud.sayShown,obj:G.hud.objectiveText,door:(()=>{const d=G.stage.part('dinerFront').door;return {a:+(d.angle||0).toFixed(2),barred:d.barred,shut:d.shut}})(),hp:Math.round(G.health.hp),b:G.brawl.active?G.brawl.him.state:'off',warn:G.hud.warnText,sc:G.scenes.current&&G.scenes.current.id,inv:G.save.inventory.join(','),stills:!!(G.stills&&G.stills.active),yaw:+N.controller.yaw.toFixed(2)})"
+  },
+  {
+   "shot": "k3_close_eye"
+  },
+  {
+   "look": "(() => { const yw = Math.atan2(-(-10.400000 - G.eye.x), -(0.600000 - G.eye.z)); const pt = Math.atan2(1.050000 - G.eye.y, Math.hypot(-10.400000 - G.eye.x, 0.600000 - G.eye.z)); const d = Math.atan2(Math.sin(yw - N.controller.yaw), Math.cos(yw - N.controller.yaw)); return [Math.round(-d / N.controller.sensitivity), Math.round(-(pt - N.controller.pitch) / N.controller.sensitivity)]; })()",
+   "steps": 6
+  },
+  {
+   "wait": 400
+  },
+  {
+   "eval": "JSON.stringify({t:+G.time.toFixed(1),beat:G.scenes.beat,p:[+G.eye.x.toFixed(2),+G.eye.z.toFixed(2)],mode:N.controller.mode,msg:+G.hud.el.msg.style.opacity>0?G.hud.el.msg.textContent:'',prompt:G.hud.promptShown,say:G.hud.sayShown,obj:G.hud.objectiveText,door:(()=>{const d=G.stage.part('dinerFront').door;return {a:+(d.angle||0).toFixed(2),barred:d.barred,shut:d.shut}})(),hp:Math.round(G.health.hp),b:G.brawl.active?G.brawl.him.state:'off',warn:G.hud.warnText,sc:G.scenes.current&&G.scenes.current.id,inv:G.save.inventory.join(','),stills:!!(G.stills&&G.stills.active),yaw:+N.controller.yaw.toFixed(2)})"
+  },
+  {
+   "shot": "k4_close_bar"
+  },
+  {
+   "key": "KeyE"
+  },
+  {
+   "wait": 300
+  },
+  {
+   "shot": "k5_lift1"
+  },
+  {
+   "wait": 500
+  },
+  {
+   "shot": "k6_lift2"
+  },
+  {
+   "wait": 900
+  },
+  {
+   "eval": "JSON.stringify({t:+G.time.toFixed(1),beat:G.scenes.beat,p:[+G.eye.x.toFixed(2),+G.eye.z.toFixed(2)],mode:N.controller.mode,msg:+G.hud.el.msg.style.opacity>0?G.hud.el.msg.textContent:'',prompt:G.hud.promptShown,say:G.hud.sayShown,obj:G.hud.objectiveText,door:(()=>{const d=G.stage.part('dinerFront').door;return {a:+(d.angle||0).toFixed(2),barred:d.barred,shut:d.shut}})(),hp:Math.round(G.health.hp),b:G.brawl.active?G.brawl.him.state:'off',warn:G.hud.warnText,sc:G.scenes.current&&G.scenes.current.id,inv:G.save.inventory.join(','),stills:!!(G.stills&&G.stills.active),yaw:+N.controller.yaw.toFixed(2)})"
+  },
+  {
+   "shot": "k7_lifted"
+  },
+  {
+   "look": "(() => { const yw = Math.atan2(-(-10.400000 - G.eye.x), -(0.600000 - G.eye.z)); const pt = Math.atan2(1.500000 - G.eye.y, Math.hypot(-10.400000 - G.eye.x, 0.600000 - G.eye.z)); const d = Math.atan2(Math.sin(yw - N.controller.yaw), Math.cos(yw - N.controller.yaw)); return [Math.round(-d / N.controller.sensitivity), Math.round(-(pt - N.controller.pitch) / N.controller.sensitivity)]; })()",
+   "steps": 6
+  },
+  {
+   "down": "KeyW"
+  },
+  {
+   "wait": 300
+  },
+  {
+   "shot": "k8_push"
+  },
+  {
+   "wait": 300
+  },
+  {
+   "shot": "k9_push"
+  },
+  {
+   "wait": 300
+  },
+  {
+   "eval": "JSON.stringify({t:+G.time.toFixed(1),beat:G.scenes.beat,p:[+G.eye.x.toFixed(2),+G.eye.z.toFixed(2)],mode:N.controller.mode,msg:+G.hud.el.msg.style.opacity>0?G.hud.el.msg.textContent:'',prompt:G.hud.promptShown,say:G.hud.sayShown,obj:G.hud.objectiveText,door:(()=>{const d=G.stage.part('dinerFront').door;return {a:+(d.angle||0).toFixed(2),barred:d.barred,shut:d.shut}})(),hp:Math.round(G.health.hp),b:G.brawl.active?G.brawl.him.state:'off',warn:G.hud.warnText,sc:G.scenes.current&&G.scenes.current.id,inv:G.save.inventory.join(','),stills:!!(G.stills&&G.stills.active),yaw:+N.controller.yaw.toFixed(2)})"
+  },
+  {
+   "shot": "k10_push"
+  },
+  {
+   "wait": 600
+  },
+  {
+   "up": "KeyW"
+  },
+  {
+   "eval": "JSON.stringify({t:+G.time.toFixed(1),beat:G.scenes.beat,p:[+G.eye.x.toFixed(2),+G.eye.z.toFixed(2)],mode:N.controller.mode,msg:+G.hud.el.msg.style.opacity>0?G.hud.el.msg.textContent:'',prompt:G.hud.promptShown,say:G.hud.sayShown,obj:G.hud.objectiveText,door:(()=>{const d=G.stage.part('dinerFront').door;return {a:+(d.angle||0).toFixed(2),barred:d.barred,shut:d.shut}})(),hp:Math.round(G.health.hp),b:G.brawl.active?G.brawl.him.state:'off',warn:G.hud.warnText,sc:G.scenes.current&&G.scenes.current.id,inv:G.save.inventory.join(','),stills:!!(G.stills&&G.stills.active),yaw:+N.controller.yaw.toFixed(2)})"
+  },
+  {
+   "shot": "k11"
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "eval": "JSON.stringify({t:+G.time.toFixed(1),beat:G.scenes.beat,p:[+G.eye.x.toFixed(2),+G.eye.z.toFixed(2)],mode:N.controller.mode,msg:+G.hud.el.msg.style.opacity>0?G.hud.el.msg.textContent:'',prompt:G.hud.promptShown,say:G.hud.sayShown,obj:G.hud.objectiveText,door:(()=>{const d=G.stage.part('dinerFront').door;return {a:+(d.angle||0).toFixed(2),barred:d.barred,shut:d.shut}})(),hp:Math.round(G.health.hp),b:G.brawl.active?G.brawl.him.state:'off',warn:G.hud.warnText,sc:G.scenes.current&&G.scenes.current.id,inv:G.save.inventory.join(','),stills:!!(G.stills&&G.stills.active),yaw:+N.controller.yaw.toFixed(2)})"
+  },
+  {
+   "shot": "k12"
+  },
+  {
+   "look": [
+    1500,
+    0
+   ],
+   "steps": 10
+  },
+  {
+   "wait": 1000
+  },
+  {
+   "eval": "JSON.stringify({t:+G.time.toFixed(1),beat:G.scenes.beat,p:[+G.eye.x.toFixed(2),+G.eye.z.toFixed(2)],mode:N.controller.mode,msg:+G.hud.el.msg.style.opacity>0?G.hud.el.msg.textContent:'',prompt:G.hud.promptShown,say:G.hud.sayShown,obj:G.hud.objectiveText,door:(()=>{const d=G.stage.part('dinerFront').door;return {a:+(d.angle||0).toFixed(2),barred:d.barred,shut:d.shut}})(),hp:Math.round(G.health.hp),b:G.brawl.active?G.brawl.him.state:'off',warn:G.hud.warnText,sc:G.scenes.current&&G.scenes.current.id,inv:G.save.inventory.join(','),stills:!!(G.stills&&G.stills.active),yaw:+N.controller.yaw.toFixed(2)})"
+  },
+  {
+   "shot": "k13_behind"
+  }
+ ]
+}

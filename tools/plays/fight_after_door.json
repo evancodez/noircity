@@ -1,0 +1,161 @@
+{
+ "about": "[C4] after the critic (B2): after the last blow, walked into the barred door close up: E lift the bar (looking at it, down, up); E lifts it; out",
+ "url": "/?mute=1&start=fight.ko&win=B2",
+ "size": [
+  1440,
+  900
+ ],
+ "out": "shots/play/fight_after_door",
+ "steps": [
+  {
+   "until": "G.state === 'title' && !document.getElementById('title').classList.contains('hidden')",
+   "timeout": 30000
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]",
+   "taken": "G.state !== 'title'",
+   "retries": 5,
+   "every": 4000
+  },
+  {
+   "until": "G.scenes.beat==='ko' && N.controller.mode==='walk'",
+   "timeout": 40000
+  },
+  {
+   "wait": 800
+  },
+  {
+   "eval": "JSON.stringify({beat:G.scenes.beat,p:[+G.eye.x.toFixed(2),+G.eye.z.toFixed(2)],mode:N.controller.mode,msg:+G.hud.el.msg.style.opacity>0?G.hud.el.msg.textContent:'',prompt:G.hud.promptShown,obj:G.hud.objectiveText,warn:G.hud.warnText,cur:G.interact.current&&G.interact.current.id,barred:G.stage.part('dinerFront').door.barred})"
+  },
+  {
+   "shot": "d0_ko"
+  },
+  {
+   "walk": [
+    [
+     -12.3,
+     0.9
+    ],
+    [
+     -11.7,
+     0.6
+    ],
+    [
+     -11.45,
+     0.6
+    ]
+   ],
+   "timeout": 25000,
+   "stop": false
+  },
+  {
+   "eval": "JSON.stringify([G.eye.x,G.eye.z,N.controller.yaw])"
+  },
+  {
+   "look": "(() => { const yw = Math.atan2(-(-10.4 - G.eye.x), -(0.6 - G.eye.z)); const d = Math.atan2(Math.sin(yw - N.controller.yaw), Math.cos(yw - N.controller.yaw)); return [Math.round(-d / N.controller.sensitivity), Math.round(-(-0.05 - N.controller.pitch) / N.controller.sensitivity)]; })()",
+   "steps": 6
+  },
+  {
+   "wait": 300
+  },
+  {
+   "eval": "JSON.stringify({x:G.eye.x,z:G.eye.z,yaw:N.controller.yaw,want:Math.atan2(-(-10.4 - G.eye.x), -(0.6 - G.eye.z)),pitch:N.controller.pitch,sens:N.controller.sensitivity})"
+  },
+  {
+   "down": "KeyW"
+  },
+  {
+   "wait": 450
+  },
+  {
+   "up": "KeyW"
+  },
+  {
+   "wait": 200
+  },
+  {
+   "eval": "JSON.stringify({beat:G.scenes.beat,p:[+G.eye.x.toFixed(2),+G.eye.z.toFixed(2)],mode:N.controller.mode,msg:+G.hud.el.msg.style.opacity>0?G.hud.el.msg.textContent:'',prompt:G.hud.promptShown,obj:G.hud.objectiveText,warn:G.hud.warnText,cur:G.interact.current&&G.interact.current.id,barred:G.stage.part('dinerFront').door.barred})"
+  },
+  {
+   "shot": "d1_walked_into"
+  },
+  {
+   "expect": "(G.hud.promptShown||'').includes('lift the bar')"
+  },
+  {
+   "look": [
+    0,
+    250
+   ],
+   "steps": 6
+  },
+  {
+   "wait": 300
+  },
+  {
+   "eval": "JSON.stringify({beat:G.scenes.beat,p:[+G.eye.x.toFixed(2),+G.eye.z.toFixed(2)],mode:N.controller.mode,msg:+G.hud.el.msg.style.opacity>0?G.hud.el.msg.textContent:'',prompt:G.hud.promptShown,obj:G.hud.objectiveText,warn:G.hud.warnText,cur:G.interact.current&&G.interact.current.id,barred:G.stage.part('dinerFront').door.barred})"
+  },
+  {
+   "shot": "d2_looking_down"
+  },
+  {
+   "look": [
+    0,
+    -500
+   ],
+   "steps": 6
+  },
+  {
+   "wait": 300
+  },
+  {
+   "eval": "JSON.stringify({beat:G.scenes.beat,p:[+G.eye.x.toFixed(2),+G.eye.z.toFixed(2)],mode:N.controller.mode,msg:+G.hud.el.msg.style.opacity>0?G.hud.el.msg.textContent:'',prompt:G.hud.promptShown,obj:G.hud.objectiveText,warn:G.hud.warnText,cur:G.interact.current&&G.interact.current.id,barred:G.stage.part('dinerFront').door.barred})"
+  },
+  {
+   "shot": "d3_looking_up"
+  },
+  {
+   "look": [
+    0,
+    250
+   ],
+   "steps": 6
+  },
+  {
+   "wait": 300
+  },
+  {
+   "key": "KeyE"
+  },
+  {
+   "wait": 1600
+  },
+  {
+   "eval": "JSON.stringify({beat:G.scenes.beat,p:[+G.eye.x.toFixed(2),+G.eye.z.toFixed(2)],mode:N.controller.mode,msg:+G.hud.el.msg.style.opacity>0?G.hud.el.msg.textContent:'',prompt:G.hud.promptShown,obj:G.hud.objectiveText,warn:G.hud.warnText,cur:G.interact.current&&G.interact.current.id,barred:G.stage.part('dinerFront').door.barred})"
+  },
+  {
+   "shot": "d4_lifted"
+  },
+  {
+   "expect": "!G.stage.part('dinerFront').door.barred"
+  },
+  {
+   "down": "KeyW"
+  },
+  {
+   "wait": 2500
+  },
+  {
+   "up": "KeyW"
+  },
+  {
+   "eval": "JSON.stringify({beat:G.scenes.beat,p:[+G.eye.x.toFixed(2),+G.eye.z.toFixed(2)],mode:N.controller.mode,msg:+G.hud.el.msg.style.opacity>0?G.hud.el.msg.textContent:'',prompt:G.hud.promptShown,obj:G.hud.objectiveText,warn:G.hud.warnText,cur:G.interact.current&&G.interact.current.id,barred:G.stage.part('dinerFront').door.barred})"
+  },
+  {
+   "shot": "d5_out"
+  }
+ ]
+}

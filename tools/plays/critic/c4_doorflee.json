@@ -1,0 +1,37 @@
+{
+ "about": "Critic C4: the runners through the street door: their place and the leaf's angle every 20 ms.",
+ "url": "/?mute=1&start=fight",
+ "size": [
+  960,
+  600
+ ],
+ "out": "shots/critic/c4_doorflee",
+ "steps": [
+  {
+   "until": "G.state === 'title' && !document.getElementById('title').classList.contains('hidden')",
+   "timeout": 30000
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]",
+   "taken": "G.state !== 'title'",
+   "retries": 5,
+   "every": 4000
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id==='fight'",
+   "timeout": 30000
+  },
+  {
+   "until": "(window.__fr=window.__fr||[], window.__fr.push({t:+G.time.toFixed(2),a:+(G.stage.part('dinerFront').door.angle||0).toFixed(3),cast:G.scenes.ctx.cast.list.filter(c=>/couple|oldman/.test(c.name)).map(c=>[c.name,+c.pos.x.toFixed(2),+c.pos.z.toFixed(2)])}), G.time > 22)",
+   "poll": 20,
+   "timeout": 40000,
+   "stop": false
+  },
+  {
+   "eval": "JSON.stringify(window.__fr)"
+  }
+ ]
+}

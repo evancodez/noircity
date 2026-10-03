@@ -1,0 +1,190 @@
+{
+ "about": "Critic C4 second look: the pay beat as it comes, hands off: the check slid, read, laid down, the prompt.",
+ "url": "/?mute=1&start=diner.pay",
+ "size": [
+  1440,
+  900
+ ],
+ "out": "shots/critic/c4b_check2",
+ "steps": [
+  {
+   "until": "G.state === 'title' && !document.getElementById('title').classList.contains('hidden')",
+   "timeout": 30000
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]",
+   "taken": "G.state !== 'title'",
+   "retries": 5,
+   "every": 4000
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id==='diner' && G.scenes.beat==='pay'",
+   "timeout": 30000
+  },
+  {
+   "wait": 350
+  },
+  {
+   "eval": "JSON.stringify({t:+G.time.toFixed(2),prompt:G.hud.promptShown,obj:G.hud.objectiveText})"
+  },
+  {
+   "shot": "c00"
+  },
+  {
+   "wait": 350
+  },
+  {
+   "eval": "JSON.stringify({t:+G.time.toFixed(2),prompt:G.hud.promptShown,obj:G.hud.objectiveText})"
+  },
+  {
+   "shot": "c01"
+  },
+  {
+   "wait": 350
+  },
+  {
+   "eval": "JSON.stringify({t:+G.time.toFixed(2),prompt:G.hud.promptShown,obj:G.hud.objectiveText})"
+  },
+  {
+   "shot": "c02"
+  },
+  {
+   "wait": 350
+  },
+  {
+   "eval": "JSON.stringify({t:+G.time.toFixed(2),prompt:G.hud.promptShown,obj:G.hud.objectiveText})"
+  },
+  {
+   "shot": "c03"
+  },
+  {
+   "wait": 350
+  },
+  {
+   "eval": "JSON.stringify({t:+G.time.toFixed(2),prompt:G.hud.promptShown,obj:G.hud.objectiveText})"
+  },
+  {
+   "shot": "c04"
+  },
+  {
+   "wait": 350
+  },
+  {
+   "eval": "JSON.stringify({t:+G.time.toFixed(2),prompt:G.hud.promptShown,obj:G.hud.objectiveText})"
+  },
+  {
+   "shot": "c05"
+  },
+  {
+   "wait": 350
+  },
+  {
+   "eval": "JSON.stringify({t:+G.time.toFixed(2),prompt:G.hud.promptShown,obj:G.hud.objectiveText})"
+  },
+  {
+   "shot": "c06"
+  },
+  {
+   "wait": 350
+  },
+  {
+   "eval": "JSON.stringify({t:+G.time.toFixed(2),prompt:G.hud.promptShown,obj:G.hud.objectiveText})"
+  },
+  {
+   "shot": "c07"
+  },
+  {
+   "wait": 350
+  },
+  {
+   "eval": "JSON.stringify({t:+G.time.toFixed(2),prompt:G.hud.promptShown,obj:G.hud.objectiveText})"
+  },
+  {
+   "shot": "c08"
+  },
+  {
+   "wait": 350
+  },
+  {
+   "eval": "JSON.stringify({t:+G.time.toFixed(2),prompt:G.hud.promptShown,obj:G.hud.objectiveText})"
+  },
+  {
+   "shot": "c09"
+  },
+  {
+   "wait": 350
+  },
+  {
+   "eval": "JSON.stringify({t:+G.time.toFixed(2),prompt:G.hud.promptShown,obj:G.hud.objectiveText})"
+  },
+  {
+   "shot": "c10"
+  },
+  {
+   "wait": 350
+  },
+  {
+   "eval": "JSON.stringify({t:+G.time.toFixed(2),prompt:G.hud.promptShown,obj:G.hud.objectiveText})"
+  },
+  {
+   "shot": "c11"
+  },
+  {
+   "wait": 350
+  },
+  {
+   "eval": "JSON.stringify({t:+G.time.toFixed(2),prompt:G.hud.promptShown,obj:G.hud.objectiveText})"
+  },
+  {
+   "shot": "c12"
+  },
+  {
+   "wait": 350
+  },
+  {
+   "eval": "JSON.stringify({t:+G.time.toFixed(2),prompt:G.hud.promptShown,obj:G.hud.objectiveText})"
+  },
+  {
+   "shot": "c13"
+  },
+  {
+   "wait": 350
+  },
+  {
+   "eval": "JSON.stringify({t:+G.time.toFixed(2),prompt:G.hud.promptShown,obj:G.hud.objectiveText})"
+  },
+  {
+   "shot": "c14"
+  },
+  {
+   "wait": 350
+  },
+  {
+   "eval": "JSON.stringify({t:+G.time.toFixed(2),prompt:G.hud.promptShown,obj:G.hud.objectiveText})"
+  },
+  {
+   "shot": "c15"
+  },
+  {
+   "wait": 350
+  },
+  {
+   "eval": "JSON.stringify({t:+G.time.toFixed(2),prompt:G.hud.promptShown,obj:G.hud.objectiveText})"
+  },
+  {
+   "shot": "c16"
+  },
+  {
+   "wait": 350
+  },
+  {
+   "eval": "JSON.stringify({t:+G.time.toFixed(2),prompt:G.hud.promptShown,obj:G.hud.objectiveText})"
+  },
+  {
+   "shot": "c17"
+  }
+ ]
+}

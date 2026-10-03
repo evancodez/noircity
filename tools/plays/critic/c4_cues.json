@@ -1,0 +1,364 @@
+{
+ "about": "Critic C4: the dodge cue on the frame, hands off: a frame in each cue and one just after.",
+ "url": "/?mute=1&start=fight",
+ "size": [
+  1440,
+  900
+ ],
+ "out": "shots/critic/c4_cues",
+ "steps": [
+  {
+   "until": "G.state === 'title' && !document.getElementById('title').classList.contains('hidden')",
+   "timeout": 30000
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]",
+   "taken": "G.state !== 'title'",
+   "retries": 5,
+   "every": 4000
+  },
+  {
+   "until": "G.scenes.current && G.brawl && G.brawl.active && G.scenes.beat==='round1'",
+   "timeout": 60000
+  },
+  {
+   "until": "!!(G.brawl.cue && !G.brawl.cue.done && !G.brawl.cue.held)",
+   "timeout": 30000,
+   "poll": 15,
+   "stop": false
+  },
+  {
+   "shot": "q00"
+  },
+  {
+   "eval": "JSON.stringify({t:+G.time.toFixed(2),cue:G.brawl.cue?{side:G.brawl.cue.side,t:+G.brawl.cue.t.toFixed(3),vis:+G.brawl.cue.vis.toFixed(2),clip:G.brawl.cue.clip,held:G.brawl.cue.held}:null,me:G.brawl.me.act,hp:Math.round(G.health.hp),d:+Math.hypot(G.brawl.c.pos.x-G.eye.x,G.brawl.c.pos.z-G.eye.z).toFixed(2)})"
+  },
+  {
+   "until": "!G.brawl.cue",
+   "timeout": 3000,
+   "poll": 30,
+   "stop": false
+  },
+  {
+   "shot": "q00_after"
+  },
+  {
+   "eval": "JSON.stringify({t:+G.time.toFixed(2),cue:G.brawl.cue?{side:G.brawl.cue.side,t:+G.brawl.cue.t.toFixed(3),vis:+G.brawl.cue.vis.toFixed(2),clip:G.brawl.cue.clip,held:G.brawl.cue.held}:null,me:G.brawl.me.act,hp:Math.round(G.health.hp),d:+Math.hypot(G.brawl.c.pos.x-G.eye.x,G.brawl.c.pos.z-G.eye.z).toFixed(2)})"
+  },
+  {
+   "until": "!!(G.brawl.cue && !G.brawl.cue.done && !G.brawl.cue.held)",
+   "timeout": 30000,
+   "poll": 15,
+   "stop": false
+  },
+  {
+   "shot": "q01"
+  },
+  {
+   "eval": "JSON.stringify({t:+G.time.toFixed(2),cue:G.brawl.cue?{side:G.brawl.cue.side,t:+G.brawl.cue.t.toFixed(3),vis:+G.brawl.cue.vis.toFixed(2),clip:G.brawl.cue.clip,held:G.brawl.cue.held}:null,me:G.brawl.me.act,hp:Math.round(G.health.hp),d:+Math.hypot(G.brawl.c.pos.x-G.eye.x,G.brawl.c.pos.z-G.eye.z).toFixed(2)})"
+  },
+  {
+   "until": "!G.brawl.cue",
+   "timeout": 3000,
+   "poll": 30,
+   "stop": false
+  },
+  {
+   "shot": "q01_after"
+  },
+  {
+   "eval": "JSON.stringify({t:+G.time.toFixed(2),cue:G.brawl.cue?{side:G.brawl.cue.side,t:+G.brawl.cue.t.toFixed(3),vis:+G.brawl.cue.vis.toFixed(2),clip:G.brawl.cue.clip,held:G.brawl.cue.held}:null,me:G.brawl.me.act,hp:Math.round(G.health.hp),d:+Math.hypot(G.brawl.c.pos.x-G.eye.x,G.brawl.c.pos.z-G.eye.z).toFixed(2)})"
+  },
+  {
+   "until": "!!(G.brawl.cue && !G.brawl.cue.done && !G.brawl.cue.held)",
+   "timeout": 30000,
+   "poll": 15,
+   "stop": false
+  },
+  {
+   "shot": "q02"
+  },
+  {
+   "eval": "JSON.stringify({t:+G.time.toFixed(2),cue:G.brawl.cue?{side:G.brawl.cue.side,t:+G.brawl.cue.t.toFixed(3),vis:+G.brawl.cue.vis.toFixed(2),clip:G.brawl.cue.clip,held:G.brawl.cue.held}:null,me:G.brawl.me.act,hp:Math.round(G.health.hp),d:+Math.hypot(G.brawl.c.pos.x-G.eye.x,G.brawl.c.pos.z-G.eye.z).toFixed(2)})"
+  },
+  {
+   "until": "!G.brawl.cue",
+   "timeout": 3000,
+   "poll": 30,
+   "stop": false
+  },
+  {
+   "shot": "q02_after"
+  },
+  {
+   "eval": "JSON.stringify({t:+G.time.toFixed(2),cue:G.brawl.cue?{side:G.brawl.cue.side,t:+G.brawl.cue.t.toFixed(3),vis:+G.brawl.cue.vis.toFixed(2),clip:G.brawl.cue.clip,held:G.brawl.cue.held}:null,me:G.brawl.me.act,hp:Math.round(G.health.hp),d:+Math.hypot(G.brawl.c.pos.x-G.eye.x,G.brawl.c.pos.z-G.eye.z).toFixed(2)})"
+  },
+  {
+   "until": "!!(G.brawl.cue && !G.brawl.cue.done && !G.brawl.cue.held)",
+   "timeout": 30000,
+   "poll": 15,
+   "stop": false
+  },
+  {
+   "shot": "q03"
+  },
+  {
+   "eval": "JSON.stringify({t:+G.time.toFixed(2),cue:G.brawl.cue?{side:G.brawl.cue.side,t:+G.brawl.cue.t.toFixed(3),vis:+G.brawl.cue.vis.toFixed(2),clip:G.brawl.cue.clip,held:G.brawl.cue.held}:null,me:G.brawl.me.act,hp:Math.round(G.health.hp),d:+Math.hypot(G.brawl.c.pos.x-G.eye.x,G.brawl.c.pos.z-G.eye.z).toFixed(2)})"
+  },
+  {
+   "until": "!G.brawl.cue",
+   "timeout": 3000,
+   "poll": 30,
+   "stop": false
+  },
+  {
+   "shot": "q03_after"
+  },
+  {
+   "eval": "JSON.stringify({t:+G.time.toFixed(2),cue:G.brawl.cue?{side:G.brawl.cue.side,t:+G.brawl.cue.t.toFixed(3),vis:+G.brawl.cue.vis.toFixed(2),clip:G.brawl.cue.clip,held:G.brawl.cue.held}:null,me:G.brawl.me.act,hp:Math.round(G.health.hp),d:+Math.hypot(G.brawl.c.pos.x-G.eye.x,G.brawl.c.pos.z-G.eye.z).toFixed(2)})"
+  },
+  {
+   "until": "!!(G.brawl.cue && !G.brawl.cue.done && !G.brawl.cue.held)",
+   "timeout": 30000,
+   "poll": 15,
+   "stop": false
+  },
+  {
+   "shot": "q04"
+  },
+  {
+   "eval": "JSON.stringify({t:+G.time.toFixed(2),cue:G.brawl.cue?{side:G.brawl.cue.side,t:+G.brawl.cue.t.toFixed(3),vis:+G.brawl.cue.vis.toFixed(2),clip:G.brawl.cue.clip,held:G.brawl.cue.held}:null,me:G.brawl.me.act,hp:Math.round(G.health.hp),d:+Math.hypot(G.brawl.c.pos.x-G.eye.x,G.brawl.c.pos.z-G.eye.z).toFixed(2)})"
+  },
+  {
+   "until": "!G.brawl.cue",
+   "timeout": 3000,
+   "poll": 30,
+   "stop": false
+  },
+  {
+   "shot": "q04_after"
+  },
+  {
+   "eval": "JSON.stringify({t:+G.time.toFixed(2),cue:G.brawl.cue?{side:G.brawl.cue.side,t:+G.brawl.cue.t.toFixed(3),vis:+G.brawl.cue.vis.toFixed(2),clip:G.brawl.cue.clip,held:G.brawl.cue.held}:null,me:G.brawl.me.act,hp:Math.round(G.health.hp),d:+Math.hypot(G.brawl.c.pos.x-G.eye.x,G.brawl.c.pos.z-G.eye.z).toFixed(2)})"
+  },
+  {
+   "until": "!!(G.brawl.cue && !G.brawl.cue.done && !G.brawl.cue.held)",
+   "timeout": 30000,
+   "poll": 15,
+   "stop": false
+  },
+  {
+   "shot": "q05"
+  },
+  {
+   "eval": "JSON.stringify({t:+G.time.toFixed(2),cue:G.brawl.cue?{side:G.brawl.cue.side,t:+G.brawl.cue.t.toFixed(3),vis:+G.brawl.cue.vis.toFixed(2),clip:G.brawl.cue.clip,held:G.brawl.cue.held}:null,me:G.brawl.me.act,hp:Math.round(G.health.hp),d:+Math.hypot(G.brawl.c.pos.x-G.eye.x,G.brawl.c.pos.z-G.eye.z).toFixed(2)})"
+  },
+  {
+   "until": "!G.brawl.cue",
+   "timeout": 3000,
+   "poll": 30,
+   "stop": false
+  },
+  {
+   "shot": "q05_after"
+  },
+  {
+   "eval": "JSON.stringify({t:+G.time.toFixed(2),cue:G.brawl.cue?{side:G.brawl.cue.side,t:+G.brawl.cue.t.toFixed(3),vis:+G.brawl.cue.vis.toFixed(2),clip:G.brawl.cue.clip,held:G.brawl.cue.held}:null,me:G.brawl.me.act,hp:Math.round(G.health.hp),d:+Math.hypot(G.brawl.c.pos.x-G.eye.x,G.brawl.c.pos.z-G.eye.z).toFixed(2)})"
+  },
+  {
+   "until": "!!(G.brawl.cue && !G.brawl.cue.done && !G.brawl.cue.held)",
+   "timeout": 30000,
+   "poll": 15,
+   "stop": false
+  },
+  {
+   "shot": "q06"
+  },
+  {
+   "eval": "JSON.stringify({t:+G.time.toFixed(2),cue:G.brawl.cue?{side:G.brawl.cue.side,t:+G.brawl.cue.t.toFixed(3),vis:+G.brawl.cue.vis.toFixed(2),clip:G.brawl.cue.clip,held:G.brawl.cue.held}:null,me:G.brawl.me.act,hp:Math.round(G.health.hp),d:+Math.hypot(G.brawl.c.pos.x-G.eye.x,G.brawl.c.pos.z-G.eye.z).toFixed(2)})"
+  },
+  {
+   "until": "!G.brawl.cue",
+   "timeout": 3000,
+   "poll": 30,
+   "stop": false
+  },
+  {
+   "shot": "q06_after"
+  },
+  {
+   "eval": "JSON.stringify({t:+G.time.toFixed(2),cue:G.brawl.cue?{side:G.brawl.cue.side,t:+G.brawl.cue.t.toFixed(3),vis:+G.brawl.cue.vis.toFixed(2),clip:G.brawl.cue.clip,held:G.brawl.cue.held}:null,me:G.brawl.me.act,hp:Math.round(G.health.hp),d:+Math.hypot(G.brawl.c.pos.x-G.eye.x,G.brawl.c.pos.z-G.eye.z).toFixed(2)})"
+  },
+  {
+   "until": "!!(G.brawl.cue && !G.brawl.cue.done && !G.brawl.cue.held)",
+   "timeout": 30000,
+   "poll": 15,
+   "stop": false
+  },
+  {
+   "shot": "q07"
+  },
+  {
+   "eval": "JSON.stringify({t:+G.time.toFixed(2),cue:G.brawl.cue?{side:G.brawl.cue.side,t:+G.brawl.cue.t.toFixed(3),vis:+G.brawl.cue.vis.toFixed(2),clip:G.brawl.cue.clip,held:G.brawl.cue.held}:null,me:G.brawl.me.act,hp:Math.round(G.health.hp),d:+Math.hypot(G.brawl.c.pos.x-G.eye.x,G.brawl.c.pos.z-G.eye.z).toFixed(2)})"
+  },
+  {
+   "until": "!G.brawl.cue",
+   "timeout": 3000,
+   "poll": 30,
+   "stop": false
+  },
+  {
+   "shot": "q07_after"
+  },
+  {
+   "eval": "JSON.stringify({t:+G.time.toFixed(2),cue:G.brawl.cue?{side:G.brawl.cue.side,t:+G.brawl.cue.t.toFixed(3),vis:+G.brawl.cue.vis.toFixed(2),clip:G.brawl.cue.clip,held:G.brawl.cue.held}:null,me:G.brawl.me.act,hp:Math.round(G.health.hp),d:+Math.hypot(G.brawl.c.pos.x-G.eye.x,G.brawl.c.pos.z-G.eye.z).toFixed(2)})"
+  },
+  {
+   "until": "!!(G.brawl.cue && !G.brawl.cue.done && !G.brawl.cue.held)",
+   "timeout": 30000,
+   "poll": 15,
+   "stop": false
+  },
+  {
+   "shot": "q08"
+  },
+  {
+   "eval": "JSON.stringify({t:+G.time.toFixed(2),cue:G.brawl.cue?{side:G.brawl.cue.side,t:+G.brawl.cue.t.toFixed(3),vis:+G.brawl.cue.vis.toFixed(2),clip:G.brawl.cue.clip,held:G.brawl.cue.held}:null,me:G.brawl.me.act,hp:Math.round(G.health.hp),d:+Math.hypot(G.brawl.c.pos.x-G.eye.x,G.brawl.c.pos.z-G.eye.z).toFixed(2)})"
+  },
+  {
+   "until": "!G.brawl.cue",
+   "timeout": 3000,
+   "poll": 30,
+   "stop": false
+  },
+  {
+   "shot": "q08_after"
+  },
+  {
+   "eval": "JSON.stringify({t:+G.time.toFixed(2),cue:G.brawl.cue?{side:G.brawl.cue.side,t:+G.brawl.cue.t.toFixed(3),vis:+G.brawl.cue.vis.toFixed(2),clip:G.brawl.cue.clip,held:G.brawl.cue.held}:null,me:G.brawl.me.act,hp:Math.round(G.health.hp),d:+Math.hypot(G.brawl.c.pos.x-G.eye.x,G.brawl.c.pos.z-G.eye.z).toFixed(2)})"
+  },
+  {
+   "until": "!!(G.brawl.cue && !G.brawl.cue.done && !G.brawl.cue.held)",
+   "timeout": 30000,
+   "poll": 15,
+   "stop": false
+  },
+  {
+   "shot": "q09"
+  },
+  {
+   "eval": "JSON.stringify({t:+G.time.toFixed(2),cue:G.brawl.cue?{side:G.brawl.cue.side,t:+G.brawl.cue.t.toFixed(3),vis:+G.brawl.cue.vis.toFixed(2),clip:G.brawl.cue.clip,held:G.brawl.cue.held}:null,me:G.brawl.me.act,hp:Math.round(G.health.hp),d:+Math.hypot(G.brawl.c.pos.x-G.eye.x,G.brawl.c.pos.z-G.eye.z).toFixed(2)})"
+  },
+  {
+   "until": "!G.brawl.cue",
+   "timeout": 3000,
+   "poll": 30,
+   "stop": false
+  },
+  {
+   "shot": "q09_after"
+  },
+  {
+   "eval": "JSON.stringify({t:+G.time.toFixed(2),cue:G.brawl.cue?{side:G.brawl.cue.side,t:+G.brawl.cue.t.toFixed(3),vis:+G.brawl.cue.vis.toFixed(2),clip:G.brawl.cue.clip,held:G.brawl.cue.held}:null,me:G.brawl.me.act,hp:Math.round(G.health.hp),d:+Math.hypot(G.brawl.c.pos.x-G.eye.x,G.brawl.c.pos.z-G.eye.z).toFixed(2)})"
+  },
+  {
+   "until": "!!(G.brawl.cue && !G.brawl.cue.done && !G.brawl.cue.held)",
+   "timeout": 30000,
+   "poll": 15,
+   "stop": false
+  },
+  {
+   "shot": "q10"
+  },
+  {
+   "eval": "JSON.stringify({t:+G.time.toFixed(2),cue:G.brawl.cue?{side:G.brawl.cue.side,t:+G.brawl.cue.t.toFixed(3),vis:+G.brawl.cue.vis.toFixed(2),clip:G.brawl.cue.clip,held:G.brawl.cue.held}:null,me:G.brawl.me.act,hp:Math.round(G.health.hp),d:+Math.hypot(G.brawl.c.pos.x-G.eye.x,G.brawl.c.pos.z-G.eye.z).toFixed(2)})"
+  },
+  {
+   "until": "!G.brawl.cue",
+   "timeout": 3000,
+   "poll": 30,
+   "stop": false
+  },
+  {
+   "shot": "q10_after"
+  },
+  {
+   "eval": "JSON.stringify({t:+G.time.toFixed(2),cue:G.brawl.cue?{side:G.brawl.cue.side,t:+G.brawl.cue.t.toFixed(3),vis:+G.brawl.cue.vis.toFixed(2),clip:G.brawl.cue.clip,held:G.brawl.cue.held}:null,me:G.brawl.me.act,hp:Math.round(G.health.hp),d:+Math.hypot(G.brawl.c.pos.x-G.eye.x,G.brawl.c.pos.z-G.eye.z).toFixed(2)})"
+  },
+  {
+   "until": "!!(G.brawl.cue && !G.brawl.cue.done && !G.brawl.cue.held)",
+   "timeout": 30000,
+   "poll": 15,
+   "stop": false
+  },
+  {
+   "shot": "q11"
+  },
+  {
+   "eval": "JSON.stringify({t:+G.time.toFixed(2),cue:G.brawl.cue?{side:G.brawl.cue.side,t:+G.brawl.cue.t.toFixed(3),vis:+G.brawl.cue.vis.toFixed(2),clip:G.brawl.cue.clip,held:G.brawl.cue.held}:null,me:G.brawl.me.act,hp:Math.round(G.health.hp),d:+Math.hypot(G.brawl.c.pos.x-G.eye.x,G.brawl.c.pos.z-G.eye.z).toFixed(2)})"
+  },
+  {
+   "until": "!G.brawl.cue",
+   "timeout": 3000,
+   "poll": 30,
+   "stop": false
+  },
+  {
+   "shot": "q11_after"
+  },
+  {
+   "eval": "JSON.stringify({t:+G.time.toFixed(2),cue:G.brawl.cue?{side:G.brawl.cue.side,t:+G.brawl.cue.t.toFixed(3),vis:+G.brawl.cue.vis.toFixed(2),clip:G.brawl.cue.clip,held:G.brawl.cue.held}:null,me:G.brawl.me.act,hp:Math.round(G.health.hp),d:+Math.hypot(G.brawl.c.pos.x-G.eye.x,G.brawl.c.pos.z-G.eye.z).toFixed(2)})"
+  },
+  {
+   "until": "!!(G.brawl.cue && !G.brawl.cue.done && !G.brawl.cue.held)",
+   "timeout": 30000,
+   "poll": 15,
+   "stop": false
+  },
+  {
+   "shot": "q12"
+  },
+  {
+   "eval": "JSON.stringify({t:+G.time.toFixed(2),cue:G.brawl.cue?{side:G.brawl.cue.side,t:+G.brawl.cue.t.toFixed(3),vis:+G.brawl.cue.vis.toFixed(2),clip:G.brawl.cue.clip,held:G.brawl.cue.held}:null,me:G.brawl.me.act,hp:Math.round(G.health.hp),d:+Math.hypot(G.brawl.c.pos.x-G.eye.x,G.brawl.c.pos.z-G.eye.z).toFixed(2)})"
+  },
+  {
+   "until": "!G.brawl.cue",
+   "timeout": 3000,
+   "poll": 30,
+   "stop": false
+  },
+  {
+   "shot": "q12_after"
+  },
+  {
+   "eval": "JSON.stringify({t:+G.time.toFixed(2),cue:G.brawl.cue?{side:G.brawl.cue.side,t:+G.brawl.cue.t.toFixed(3),vis:+G.brawl.cue.vis.toFixed(2),clip:G.brawl.cue.clip,held:G.brawl.cue.held}:null,me:G.brawl.me.act,hp:Math.round(G.health.hp),d:+Math.hypot(G.brawl.c.pos.x-G.eye.x,G.brawl.c.pos.z-G.eye.z).toFixed(2)})"
+  },
+  {
+   "until": "!!(G.brawl.cue && !G.brawl.cue.done && !G.brawl.cue.held)",
+   "timeout": 30000,
+   "poll": 15,
+   "stop": false
+  },
+  {
+   "shot": "q13"
+  },
+  {
+   "eval": "JSON.stringify({t:+G.time.toFixed(2),cue:G.brawl.cue?{side:G.brawl.cue.side,t:+G.brawl.cue.t.toFixed(3),vis:+G.brawl.cue.vis.toFixed(2),clip:G.brawl.cue.clip,held:G.brawl.cue.held}:null,me:G.brawl.me.act,hp:Math.round(G.health.hp),d:+Math.hypot(G.brawl.c.pos.x-G.eye.x,G.brawl.c.pos.z-G.eye.z).toFixed(2)})"
+  },
+  {
+   "until": "!G.brawl.cue",
+   "timeout": 3000,
+   "poll": 30,
+   "stop": false
+  },
+  {
+   "shot": "q13_after"
+  },
+  {
+   "eval": "JSON.stringify({t:+G.time.toFixed(2),cue:G.brawl.cue?{side:G.brawl.cue.side,t:+G.brawl.cue.t.toFixed(3),vis:+G.brawl.cue.vis.toFixed(2),clip:G.brawl.cue.clip,held:G.brawl.cue.held}:null,me:G.brawl.me.act,hp:Math.round(G.health.hp),d:+Math.hypot(G.brawl.c.pos.x-G.eye.x,G.brawl.c.pos.z-G.eye.z).toFixed(2)})"
+  }
+ ]
+}

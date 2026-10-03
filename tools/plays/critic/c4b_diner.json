@@ -1,0 +1,40 @@
+{
+ "about": "Critic C4 second look: chapter I from the title as a first-timer who does what the prompts say.",
+ "url": "/?mute=1&start=diner",
+ "size": [
+  1440,
+  900
+ ],
+ "out": "shots/critic/c4b_diner",
+ "steps": [
+  {
+   "until": "G.state === 'title' && !document.getElementById('title').classList.contains('hidden')",
+   "timeout": 30000
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]",
+   "taken": "G.state !== 'title'",
+   "retries": 5,
+   "every": 4000
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id==='diner'",
+   "timeout": 60000
+  },
+  {
+   "drive": "tools/plays/critic/c4_prompter.mjs",
+   "done": "G.scenes.current && G.scenes.current.id === 'fight'",
+   "timeout": 300000,
+   "shots": 40
+  },
+  {
+   "wait": 2000
+  },
+  {
+   "shot": "z_fight"
+  }
+ ]
+}

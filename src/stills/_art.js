@@ -211,10 +211,10 @@ export const ART = {
     g.fillStyle = 'rgba(0,0,0,0.12)'; for (let i = 0; i < 9; i++) blob(g, rng.range(-cw / 2, cw / 2), rng.range(-ch / 2, ch / 2), rng.range(6, 18), rng, 0.3);
     g.fillStyle = '#1a1a1a'; g.textAlign = 'center';
     g.font = `700 ${Math.round(ch * 0.15)}px "American Typewriter", "Courier New", monospace`;
-    g.fillText('R. AMES', 0, -ch * 0.12);
+    g.fillText('J. AMES', 0, -ch * 0.12);   // [C4] the card in the hand reads J. AMES (props/kinds/c4.js amesCard)
     g.font = `${Math.round(ch * 0.075)}px "American Typewriter", "Courier New", monospace`;
     g.fillText('PRIVATE INVESTIGATIONS', 0, ch * 0.04);
-    g.fillText('HARBOR BLDG.  ROOM 304', 0, ch * 0.2);
+    g.fillText('HARBOR BLDG.  RM 304', 0, ch * 0.2);   // [C4] as the card
     redCross(g, 0, 0, ch * 0.42, rng, 10);
     g.restore();
     // the fingers on its corners: black, wet

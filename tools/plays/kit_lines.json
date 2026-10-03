@@ -116,6 +116,6 @@
   { "clickOn": "#title .opt[data-k=begin]", "taken": "G.state !== 'title'", "retries": 5, "every": 4000 },
   { "until": "G.scenes.current && G.scenes.current.id === 'fight' && !G.hud._carded", "timeout": 20000 },
   { "wait": 1500 },
-  { "expect": "G.hud.objectiveText === 'Pocket it.' && G.hud.promptShown.includes('put away')", "label": "II matchbook: 'Pocket it.' with E put away (not 'Search him.')" }
+  { "expect": "G.hud.objectiveText === 'See to him.' && G.hud.promptShown.includes('put away')", "label": "II matchbook: [C4] 'See to him.' with E put away (II's own lines, 02_fight.js)" }
  ]
 }

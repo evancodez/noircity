@@ -1,0 +1,189 @@
+{
+ "about": "Critic C4: what going down looks like, hands off.",
+ "url": "/?mute=1&start=fight",
+ "size": [
+  960,
+  600
+ ],
+ "out": "shots/critic/c4_down",
+ "steps": [
+  {
+   "until": "G.state === 'title' && !document.getElementById('title').classList.contains('hidden')",
+   "timeout": 30000
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]",
+   "taken": "G.state !== 'title'",
+   "retries": 5,
+   "every": 4000
+  },
+  {
+   "until": "G.scenes.current && G.brawl && G.brawl.active && G.scenes.beat==='round1'",
+   "timeout": 60000
+  },
+  {
+   "until": "!!G.hud.warnText",
+   "timeout": 120000
+  },
+  {
+   "eval": "JSON.stringify({t:+G.time.toFixed(1),sc:G.scenes.current&&G.scenes.current.id,beat:G.scenes.beat,st:G.state,obj:G.hud.objectiveText,prompt:G.hud.promptShown,say:G.hud.sayShown,warn:G.hud.warnText,teach:G.hud.kit.teachCur&&G.hud.kit.teachCur.text,card:G.brawl&&G.brawl._cards&&G.brawl._cards.shownCard,flash:G.brawl&&G.brawl._cards&&G.brawl._cards.shownFlash,ts:+(G.timeScale||1).toFixed(2),b:G.brawl&&G.brawl.active?{r:G.brawl.round,me:G.brawl.me.act,his:G.brawl.him.state,clip:G.brawl.him.clip,cue:G.brawl.cue&&!G.brawl.cue.done?G.brawl.cue.side:null,les:G.brawl.lesson&&G.brawl.lesson.kind,downs:G.brawl.stats.downs,hp:Math.round(G.health.hp),hishp:Math.round(G.brawl.him.hp)}:null,p:[+N.controller.pos.x.toFixed(2),+N.controller.pos.z.toFixed(2)],mode:N.controller.mode,fails:G.fails&&G.fails(),inv:G.save.inventory.join(',')})"
+  },
+  {
+   "shot": "w0"
+  },
+  {
+   "until": "G.brawl.me.act==='down'",
+   "timeout": 60000
+  },
+  {
+   "eval": "JSON.stringify({t:+G.time.toFixed(1),sc:G.scenes.current&&G.scenes.current.id,beat:G.scenes.beat,st:G.state,obj:G.hud.objectiveText,prompt:G.hud.promptShown,say:G.hud.sayShown,warn:G.hud.warnText,teach:G.hud.kit.teachCur&&G.hud.kit.teachCur.text,card:G.brawl&&G.brawl._cards&&G.brawl._cards.shownCard,flash:G.brawl&&G.brawl._cards&&G.brawl._cards.shownFlash,ts:+(G.timeScale||1).toFixed(2),b:G.brawl&&G.brawl.active?{r:G.brawl.round,me:G.brawl.me.act,his:G.brawl.him.state,clip:G.brawl.him.clip,cue:G.brawl.cue&&!G.brawl.cue.done?G.brawl.cue.side:null,les:G.brawl.lesson&&G.brawl.lesson.kind,downs:G.brawl.stats.downs,hp:Math.round(G.health.hp),hishp:Math.round(G.brawl.him.hp)}:null,p:[+N.controller.pos.x.toFixed(2),+N.controller.pos.z.toFixed(2)],mode:N.controller.mode,fails:G.fails&&G.fails(),inv:G.save.inventory.join(',')})"
+  },
+  {
+   "shot": "d00"
+  },
+  {
+   "eval": "JSON.stringify({t:+G.time.toFixed(1),sc:G.scenes.current&&G.scenes.current.id,beat:G.scenes.beat,st:G.state,obj:G.hud.objectiveText,prompt:G.hud.promptShown,say:G.hud.sayShown,warn:G.hud.warnText,teach:G.hud.kit.teachCur&&G.hud.kit.teachCur.text,card:G.brawl&&G.brawl._cards&&G.brawl._cards.shownCard,flash:G.brawl&&G.brawl._cards&&G.brawl._cards.shownFlash,ts:+(G.timeScale||1).toFixed(2),b:G.brawl&&G.brawl.active?{r:G.brawl.round,me:G.brawl.me.act,his:G.brawl.him.state,clip:G.brawl.him.clip,cue:G.brawl.cue&&!G.brawl.cue.done?G.brawl.cue.side:null,les:G.brawl.lesson&&G.brawl.lesson.kind,downs:G.brawl.stats.downs,hp:Math.round(G.health.hp),hishp:Math.round(G.brawl.him.hp)}:null,p:[+N.controller.pos.x.toFixed(2),+N.controller.pos.z.toFixed(2)],mode:N.controller.mode,fails:G.fails&&G.fails(),inv:G.save.inventory.join(',')})"
+  },
+  {
+   "shot": "d01"
+  },
+  {
+   "eval": "JSON.stringify({t:+G.time.toFixed(1),sc:G.scenes.current&&G.scenes.current.id,beat:G.scenes.beat,st:G.state,obj:G.hud.objectiveText,prompt:G.hud.promptShown,say:G.hud.sayShown,warn:G.hud.warnText,teach:G.hud.kit.teachCur&&G.hud.kit.teachCur.text,card:G.brawl&&G.brawl._cards&&G.brawl._cards.shownCard,flash:G.brawl&&G.brawl._cards&&G.brawl._cards.shownFlash,ts:+(G.timeScale||1).toFixed(2),b:G.brawl&&G.brawl.active?{r:G.brawl.round,me:G.brawl.me.act,his:G.brawl.him.state,clip:G.brawl.him.clip,cue:G.brawl.cue&&!G.brawl.cue.done?G.brawl.cue.side:null,les:G.brawl.lesson&&G.brawl.lesson.kind,downs:G.brawl.stats.downs,hp:Math.round(G.health.hp),hishp:Math.round(G.brawl.him.hp)}:null,p:[+N.controller.pos.x.toFixed(2),+N.controller.pos.z.toFixed(2)],mode:N.controller.mode,fails:G.fails&&G.fails(),inv:G.save.inventory.join(',')})"
+  },
+  {
+   "shot": "d02"
+  },
+  {
+   "eval": "JSON.stringify({t:+G.time.toFixed(1),sc:G.scenes.current&&G.scenes.current.id,beat:G.scenes.beat,st:G.state,obj:G.hud.objectiveText,prompt:G.hud.promptShown,say:G.hud.sayShown,warn:G.hud.warnText,teach:G.hud.kit.teachCur&&G.hud.kit.teachCur.text,card:G.brawl&&G.brawl._cards&&G.brawl._cards.shownCard,flash:G.brawl&&G.brawl._cards&&G.brawl._cards.shownFlash,ts:+(G.timeScale||1).toFixed(2),b:G.brawl&&G.brawl.active?{r:G.brawl.round,me:G.brawl.me.act,his:G.brawl.him.state,clip:G.brawl.him.clip,cue:G.brawl.cue&&!G.brawl.cue.done?G.brawl.cue.side:null,les:G.brawl.lesson&&G.brawl.lesson.kind,downs:G.brawl.stats.downs,hp:Math.round(G.health.hp),hishp:Math.round(G.brawl.him.hp)}:null,p:[+N.controller.pos.x.toFixed(2),+N.controller.pos.z.toFixed(2)],mode:N.controller.mode,fails:G.fails&&G.fails(),inv:G.save.inventory.join(',')})"
+  },
+  {
+   "shot": "d03"
+  },
+  {
+   "eval": "JSON.stringify({t:+G.time.toFixed(1),sc:G.scenes.current&&G.scenes.current.id,beat:G.scenes.beat,st:G.state,obj:G.hud.objectiveText,prompt:G.hud.promptShown,say:G.hud.sayShown,warn:G.hud.warnText,teach:G.hud.kit.teachCur&&G.hud.kit.teachCur.text,card:G.brawl&&G.brawl._cards&&G.brawl._cards.shownCard,flash:G.brawl&&G.brawl._cards&&G.brawl._cards.shownFlash,ts:+(G.timeScale||1).toFixed(2),b:G.brawl&&G.brawl.active?{r:G.brawl.round,me:G.brawl.me.act,his:G.brawl.him.state,clip:G.brawl.him.clip,cue:G.brawl.cue&&!G.brawl.cue.done?G.brawl.cue.side:null,les:G.brawl.lesson&&G.brawl.lesson.kind,downs:G.brawl.stats.downs,hp:Math.round(G.health.hp),hishp:Math.round(G.brawl.him.hp)}:null,p:[+N.controller.pos.x.toFixed(2),+N.controller.pos.z.toFixed(2)],mode:N.controller.mode,fails:G.fails&&G.fails(),inv:G.save.inventory.join(',')})"
+  },
+  {
+   "shot": "d04"
+  },
+  {
+   "eval": "JSON.stringify({t:+G.time.toFixed(1),sc:G.scenes.current&&G.scenes.current.id,beat:G.scenes.beat,st:G.state,obj:G.hud.objectiveText,prompt:G.hud.promptShown,say:G.hud.sayShown,warn:G.hud.warnText,teach:G.hud.kit.teachCur&&G.hud.kit.teachCur.text,card:G.brawl&&G.brawl._cards&&G.brawl._cards.shownCard,flash:G.brawl&&G.brawl._cards&&G.brawl._cards.shownFlash,ts:+(G.timeScale||1).toFixed(2),b:G.brawl&&G.brawl.active?{r:G.brawl.round,me:G.brawl.me.act,his:G.brawl.him.state,clip:G.brawl.him.clip,cue:G.brawl.cue&&!G.brawl.cue.done?G.brawl.cue.side:null,les:G.brawl.lesson&&G.brawl.lesson.kind,downs:G.brawl.stats.downs,hp:Math.round(G.health.hp),hishp:Math.round(G.brawl.him.hp)}:null,p:[+N.controller.pos.x.toFixed(2),+N.controller.pos.z.toFixed(2)],mode:N.controller.mode,fails:G.fails&&G.fails(),inv:G.save.inventory.join(',')})"
+  },
+  {
+   "shot": "d05"
+  },
+  {
+   "eval": "JSON.stringify({t:+G.time.toFixed(1),sc:G.scenes.current&&G.scenes.current.id,beat:G.scenes.beat,st:G.state,obj:G.hud.objectiveText,prompt:G.hud.promptShown,say:G.hud.sayShown,warn:G.hud.warnText,teach:G.hud.kit.teachCur&&G.hud.kit.teachCur.text,card:G.brawl&&G.brawl._cards&&G.brawl._cards.shownCard,flash:G.brawl&&G.brawl._cards&&G.brawl._cards.shownFlash,ts:+(G.timeScale||1).toFixed(2),b:G.brawl&&G.brawl.active?{r:G.brawl.round,me:G.brawl.me.act,his:G.brawl.him.state,clip:G.brawl.him.clip,cue:G.brawl.cue&&!G.brawl.cue.done?G.brawl.cue.side:null,les:G.brawl.lesson&&G.brawl.lesson.kind,downs:G.brawl.stats.downs,hp:Math.round(G.health.hp),hishp:Math.round(G.brawl.him.hp)}:null,p:[+N.controller.pos.x.toFixed(2),+N.controller.pos.z.toFixed(2)],mode:N.controller.mode,fails:G.fails&&G.fails(),inv:G.save.inventory.join(',')})"
+  },
+  {
+   "shot": "d06"
+  },
+  {
+   "eval": "JSON.stringify({t:+G.time.toFixed(1),sc:G.scenes.current&&G.scenes.current.id,beat:G.scenes.beat,st:G.state,obj:G.hud.objectiveText,prompt:G.hud.promptShown,say:G.hud.sayShown,warn:G.hud.warnText,teach:G.hud.kit.teachCur&&G.hud.kit.teachCur.text,card:G.brawl&&G.brawl._cards&&G.brawl._cards.shownCard,flash:G.brawl&&G.brawl._cards&&G.brawl._cards.shownFlash,ts:+(G.timeScale||1).toFixed(2),b:G.brawl&&G.brawl.active?{r:G.brawl.round,me:G.brawl.me.act,his:G.brawl.him.state,clip:G.brawl.him.clip,cue:G.brawl.cue&&!G.brawl.cue.done?G.brawl.cue.side:null,les:G.brawl.lesson&&G.brawl.lesson.kind,downs:G.brawl.stats.downs,hp:Math.round(G.health.hp),hishp:Math.round(G.brawl.him.hp)}:null,p:[+N.controller.pos.x.toFixed(2),+N.controller.pos.z.toFixed(2)],mode:N.controller.mode,fails:G.fails&&G.fails(),inv:G.save.inventory.join(',')})"
+  },
+  {
+   "shot": "d07"
+  },
+  {
+   "eval": "JSON.stringify({t:+G.time.toFixed(1),sc:G.scenes.current&&G.scenes.current.id,beat:G.scenes.beat,st:G.state,obj:G.hud.objectiveText,prompt:G.hud.promptShown,say:G.hud.sayShown,warn:G.hud.warnText,teach:G.hud.kit.teachCur&&G.hud.kit.teachCur.text,card:G.brawl&&G.brawl._cards&&G.brawl._cards.shownCard,flash:G.brawl&&G.brawl._cards&&G.brawl._cards.shownFlash,ts:+(G.timeScale||1).toFixed(2),b:G.brawl&&G.brawl.active?{r:G.brawl.round,me:G.brawl.me.act,his:G.brawl.him.state,clip:G.brawl.him.clip,cue:G.brawl.cue&&!G.brawl.cue.done?G.brawl.cue.side:null,les:G.brawl.lesson&&G.brawl.lesson.kind,downs:G.brawl.stats.downs,hp:Math.round(G.health.hp),hishp:Math.round(G.brawl.him.hp)}:null,p:[+N.controller.pos.x.toFixed(2),+N.controller.pos.z.toFixed(2)],mode:N.controller.mode,fails:G.fails&&G.fails(),inv:G.save.inventory.join(',')})"
+  },
+  {
+   "shot": "d08"
+  },
+  {
+   "eval": "JSON.stringify({t:+G.time.toFixed(1),sc:G.scenes.current&&G.scenes.current.id,beat:G.scenes.beat,st:G.state,obj:G.hud.objectiveText,prompt:G.hud.promptShown,say:G.hud.sayShown,warn:G.hud.warnText,teach:G.hud.kit.teachCur&&G.hud.kit.teachCur.text,card:G.brawl&&G.brawl._cards&&G.brawl._cards.shownCard,flash:G.brawl&&G.brawl._cards&&G.brawl._cards.shownFlash,ts:+(G.timeScale||1).toFixed(2),b:G.brawl&&G.brawl.active?{r:G.brawl.round,me:G.brawl.me.act,his:G.brawl.him.state,clip:G.brawl.him.clip,cue:G.brawl.cue&&!G.brawl.cue.done?G.brawl.cue.side:null,les:G.brawl.lesson&&G.brawl.lesson.kind,downs:G.brawl.stats.downs,hp:Math.round(G.health.hp),hishp:Math.round(G.brawl.him.hp)}:null,p:[+N.controller.pos.x.toFixed(2),+N.controller.pos.z.toFixed(2)],mode:N.controller.mode,fails:G.fails&&G.fails(),inv:G.save.inventory.join(',')})"
+  },
+  {
+   "shot": "d09"
+  },
+  {
+   "eval": "JSON.stringify({t:+G.time.toFixed(1),sc:G.scenes.current&&G.scenes.current.id,beat:G.scenes.beat,st:G.state,obj:G.hud.objectiveText,prompt:G.hud.promptShown,say:G.hud.sayShown,warn:G.hud.warnText,teach:G.hud.kit.teachCur&&G.hud.kit.teachCur.text,card:G.brawl&&G.brawl._cards&&G.brawl._cards.shownCard,flash:G.brawl&&G.brawl._cards&&G.brawl._cards.shownFlash,ts:+(G.timeScale||1).toFixed(2),b:G.brawl&&G.brawl.active?{r:G.brawl.round,me:G.brawl.me.act,his:G.brawl.him.state,clip:G.brawl.him.clip,cue:G.brawl.cue&&!G.brawl.cue.done?G.brawl.cue.side:null,les:G.brawl.lesson&&G.brawl.lesson.kind,downs:G.brawl.stats.downs,hp:Math.round(G.health.hp),hishp:Math.round(G.brawl.him.hp)}:null,p:[+N.controller.pos.x.toFixed(2),+N.controller.pos.z.toFixed(2)],mode:N.controller.mode,fails:G.fails&&G.fails(),inv:G.save.inventory.join(',')})"
+  },
+  {
+   "shot": "d10"
+  },
+  {
+   "eval": "JSON.stringify({t:+G.time.toFixed(1),sc:G.scenes.current&&G.scenes.current.id,beat:G.scenes.beat,st:G.state,obj:G.hud.objectiveText,prompt:G.hud.promptShown,say:G.hud.sayShown,warn:G.hud.warnText,teach:G.hud.kit.teachCur&&G.hud.kit.teachCur.text,card:G.brawl&&G.brawl._cards&&G.brawl._cards.shownCard,flash:G.brawl&&G.brawl._cards&&G.brawl._cards.shownFlash,ts:+(G.timeScale||1).toFixed(2),b:G.brawl&&G.brawl.active?{r:G.brawl.round,me:G.brawl.me.act,his:G.brawl.him.state,clip:G.brawl.him.clip,cue:G.brawl.cue&&!G.brawl.cue.done?G.brawl.cue.side:null,les:G.brawl.lesson&&G.brawl.lesson.kind,downs:G.brawl.stats.downs,hp:Math.round(G.health.hp),hishp:Math.round(G.brawl.him.hp)}:null,p:[+N.controller.pos.x.toFixed(2),+N.controller.pos.z.toFixed(2)],mode:N.controller.mode,fails:G.fails&&G.fails(),inv:G.save.inventory.join(',')})"
+  },
+  {
+   "shot": "d11"
+  },
+  {
+   "eval": "JSON.stringify({t:+G.time.toFixed(1),sc:G.scenes.current&&G.scenes.current.id,beat:G.scenes.beat,st:G.state,obj:G.hud.objectiveText,prompt:G.hud.promptShown,say:G.hud.sayShown,warn:G.hud.warnText,teach:G.hud.kit.teachCur&&G.hud.kit.teachCur.text,card:G.brawl&&G.brawl._cards&&G.brawl._cards.shownCard,flash:G.brawl&&G.brawl._cards&&G.brawl._cards.shownFlash,ts:+(G.timeScale||1).toFixed(2),b:G.brawl&&G.brawl.active?{r:G.brawl.round,me:G.brawl.me.act,his:G.brawl.him.state,clip:G.brawl.him.clip,cue:G.brawl.cue&&!G.brawl.cue.done?G.brawl.cue.side:null,les:G.brawl.lesson&&G.brawl.lesson.kind,downs:G.brawl.stats.downs,hp:Math.round(G.health.hp),hishp:Math.round(G.brawl.him.hp)}:null,p:[+N.controller.pos.x.toFixed(2),+N.controller.pos.z.toFixed(2)],mode:N.controller.mode,fails:G.fails&&G.fails(),inv:G.save.inventory.join(',')})"
+  },
+  {
+   "shot": "d12"
+  },
+  {
+   "eval": "JSON.stringify({t:+G.time.toFixed(1),sc:G.scenes.current&&G.scenes.current.id,beat:G.scenes.beat,st:G.state,obj:G.hud.objectiveText,prompt:G.hud.promptShown,say:G.hud.sayShown,warn:G.hud.warnText,teach:G.hud.kit.teachCur&&G.hud.kit.teachCur.text,card:G.brawl&&G.brawl._cards&&G.brawl._cards.shownCard,flash:G.brawl&&G.brawl._cards&&G.brawl._cards.shownFlash,ts:+(G.timeScale||1).toFixed(2),b:G.brawl&&G.brawl.active?{r:G.brawl.round,me:G.brawl.me.act,his:G.brawl.him.state,clip:G.brawl.him.clip,cue:G.brawl.cue&&!G.brawl.cue.done?G.brawl.cue.side:null,les:G.brawl.lesson&&G.brawl.lesson.kind,downs:G.brawl.stats.downs,hp:Math.round(G.health.hp),hishp:Math.round(G.brawl.him.hp)}:null,p:[+N.controller.pos.x.toFixed(2),+N.controller.pos.z.toFixed(2)],mode:N.controller.mode,fails:G.fails&&G.fails(),inv:G.save.inventory.join(',')})"
+  },
+  {
+   "shot": "d13"
+  },
+  {
+   "eval": "JSON.stringify({t:+G.time.toFixed(1),sc:G.scenes.current&&G.scenes.current.id,beat:G.scenes.beat,st:G.state,obj:G.hud.objectiveText,prompt:G.hud.promptShown,say:G.hud.sayShown,warn:G.hud.warnText,teach:G.hud.kit.teachCur&&G.hud.kit.teachCur.text,card:G.brawl&&G.brawl._cards&&G.brawl._cards.shownCard,flash:G.brawl&&G.brawl._cards&&G.brawl._cards.shownFlash,ts:+(G.timeScale||1).toFixed(2),b:G.brawl&&G.brawl.active?{r:G.brawl.round,me:G.brawl.me.act,his:G.brawl.him.state,clip:G.brawl.him.clip,cue:G.brawl.cue&&!G.brawl.cue.done?G.brawl.cue.side:null,les:G.brawl.lesson&&G.brawl.lesson.kind,downs:G.brawl.stats.downs,hp:Math.round(G.health.hp),hishp:Math.round(G.brawl.him.hp)}:null,p:[+N.controller.pos.x.toFixed(2),+N.controller.pos.z.toFixed(2)],mode:N.controller.mode,fails:G.fails&&G.fails(),inv:G.save.inventory.join(',')})"
+  },
+  {
+   "shot": "d14"
+  },
+  {
+   "eval": "JSON.stringify({t:+G.time.toFixed(1),sc:G.scenes.current&&G.scenes.current.id,beat:G.scenes.beat,st:G.state,obj:G.hud.objectiveText,prompt:G.hud.promptShown,say:G.hud.sayShown,warn:G.hud.warnText,teach:G.hud.kit.teachCur&&G.hud.kit.teachCur.text,card:G.brawl&&G.brawl._cards&&G.brawl._cards.shownCard,flash:G.brawl&&G.brawl._cards&&G.brawl._cards.shownFlash,ts:+(G.timeScale||1).toFixed(2),b:G.brawl&&G.brawl.active?{r:G.brawl.round,me:G.brawl.me.act,his:G.brawl.him.state,clip:G.brawl.him.clip,cue:G.brawl.cue&&!G.brawl.cue.done?G.brawl.cue.side:null,les:G.brawl.lesson&&G.brawl.lesson.kind,downs:G.brawl.stats.downs,hp:Math.round(G.health.hp),hishp:Math.round(G.brawl.him.hp)}:null,p:[+N.controller.pos.x.toFixed(2),+N.controller.pos.z.toFixed(2)],mode:N.controller.mode,fails:G.fails&&G.fails(),inv:G.save.inventory.join(',')})"
+  },
+  {
+   "shot": "d15"
+  },
+  {
+   "eval": "JSON.stringify({t:+G.time.toFixed(1),sc:G.scenes.current&&G.scenes.current.id,beat:G.scenes.beat,st:G.state,obj:G.hud.objectiveText,prompt:G.hud.promptShown,say:G.hud.sayShown,warn:G.hud.warnText,teach:G.hud.kit.teachCur&&G.hud.kit.teachCur.text,card:G.brawl&&G.brawl._cards&&G.brawl._cards.shownCard,flash:G.brawl&&G.brawl._cards&&G.brawl._cards.shownFlash,ts:+(G.timeScale||1).toFixed(2),b:G.brawl&&G.brawl.active?{r:G.brawl.round,me:G.brawl.me.act,his:G.brawl.him.state,clip:G.brawl.him.clip,cue:G.brawl.cue&&!G.brawl.cue.done?G.brawl.cue.side:null,les:G.brawl.lesson&&G.brawl.lesson.kind,downs:G.brawl.stats.downs,hp:Math.round(G.health.hp),hishp:Math.round(G.brawl.him.hp)}:null,p:[+N.controller.pos.x.toFixed(2),+N.controller.pos.z.toFixed(2)],mode:N.controller.mode,fails:G.fails&&G.fails(),inv:G.save.inventory.join(',')})"
+  },
+  {
+   "shot": "d16"
+  },
+  {
+   "eval": "JSON.stringify({t:+G.time.toFixed(1),sc:G.scenes.current&&G.scenes.current.id,beat:G.scenes.beat,st:G.state,obj:G.hud.objectiveText,prompt:G.hud.promptShown,say:G.hud.sayShown,warn:G.hud.warnText,teach:G.hud.kit.teachCur&&G.hud.kit.teachCur.text,card:G.brawl&&G.brawl._cards&&G.brawl._cards.shownCard,flash:G.brawl&&G.brawl._cards&&G.brawl._cards.shownFlash,ts:+(G.timeScale||1).toFixed(2),b:G.brawl&&G.brawl.active?{r:G.brawl.round,me:G.brawl.me.act,his:G.brawl.him.state,clip:G.brawl.him.clip,cue:G.brawl.cue&&!G.brawl.cue.done?G.brawl.cue.side:null,les:G.brawl.lesson&&G.brawl.lesson.kind,downs:G.brawl.stats.downs,hp:Math.round(G.health.hp),hishp:Math.round(G.brawl.him.hp)}:null,p:[+N.controller.pos.x.toFixed(2),+N.controller.pos.z.toFixed(2)],mode:N.controller.mode,fails:G.fails&&G.fails(),inv:G.save.inventory.join(',')})"
+  },
+  {
+   "shot": "d17"
+  },
+  {
+   "eval": "JSON.stringify({t:+G.time.toFixed(1),sc:G.scenes.current&&G.scenes.current.id,beat:G.scenes.beat,st:G.state,obj:G.hud.objectiveText,prompt:G.hud.promptShown,say:G.hud.sayShown,warn:G.hud.warnText,teach:G.hud.kit.teachCur&&G.hud.kit.teachCur.text,card:G.brawl&&G.brawl._cards&&G.brawl._cards.shownCard,flash:G.brawl&&G.brawl._cards&&G.brawl._cards.shownFlash,ts:+(G.timeScale||1).toFixed(2),b:G.brawl&&G.brawl.active?{r:G.brawl.round,me:G.brawl.me.act,his:G.brawl.him.state,clip:G.brawl.him.clip,cue:G.brawl.cue&&!G.brawl.cue.done?G.brawl.cue.side:null,les:G.brawl.lesson&&G.brawl.lesson.kind,downs:G.brawl.stats.downs,hp:Math.round(G.health.hp),hishp:Math.round(G.brawl.him.hp)}:null,p:[+N.controller.pos.x.toFixed(2),+N.controller.pos.z.toFixed(2)],mode:N.controller.mode,fails:G.fails&&G.fails(),inv:G.save.inventory.join(',')})"
+  },
+  {
+   "shot": "d18"
+  },
+  {
+   "eval": "JSON.stringify({t:+G.time.toFixed(1),sc:G.scenes.current&&G.scenes.current.id,beat:G.scenes.beat,st:G.state,obj:G.hud.objectiveText,prompt:G.hud.promptShown,say:G.hud.sayShown,warn:G.hud.warnText,teach:G.hud.kit.teachCur&&G.hud.kit.teachCur.text,card:G.brawl&&G.brawl._cards&&G.brawl._cards.shownCard,flash:G.brawl&&G.brawl._cards&&G.brawl._cards.shownFlash,ts:+(G.timeScale||1).toFixed(2),b:G.brawl&&G.brawl.active?{r:G.brawl.round,me:G.brawl.me.act,his:G.brawl.him.state,clip:G.brawl.him.clip,cue:G.brawl.cue&&!G.brawl.cue.done?G.brawl.cue.side:null,les:G.brawl.lesson&&G.brawl.lesson.kind,downs:G.brawl.stats.downs,hp:Math.round(G.health.hp),hishp:Math.round(G.brawl.him.hp)}:null,p:[+N.controller.pos.x.toFixed(2),+N.controller.pos.z.toFixed(2)],mode:N.controller.mode,fails:G.fails&&G.fails(),inv:G.save.inventory.join(',')})"
+  },
+  {
+   "shot": "d19"
+  },
+  {
+   "eval": "JSON.stringify({t:+G.time.toFixed(1),sc:G.scenes.current&&G.scenes.current.id,beat:G.scenes.beat,st:G.state,obj:G.hud.objectiveText,prompt:G.hud.promptShown,say:G.hud.sayShown,warn:G.hud.warnText,teach:G.hud.kit.teachCur&&G.hud.kit.teachCur.text,card:G.brawl&&G.brawl._cards&&G.brawl._cards.shownCard,flash:G.brawl&&G.brawl._cards&&G.brawl._cards.shownFlash,ts:+(G.timeScale||1).toFixed(2),b:G.brawl&&G.brawl.active?{r:G.brawl.round,me:G.brawl.me.act,his:G.brawl.him.state,clip:G.brawl.him.clip,cue:G.brawl.cue&&!G.brawl.cue.done?G.brawl.cue.side:null,les:G.brawl.lesson&&G.brawl.lesson.kind,downs:G.brawl.stats.downs,hp:Math.round(G.health.hp),hishp:Math.round(G.brawl.him.hp)}:null,p:[+N.controller.pos.x.toFixed(2),+N.controller.pos.z.toFixed(2)],mode:N.controller.mode,fails:G.fails&&G.fails(),inv:G.save.inventory.join(',')})"
+  },
+  {
+   "shot": "d20"
+  },
+  {
+   "eval": "JSON.stringify({t:+G.time.toFixed(1),sc:G.scenes.current&&G.scenes.current.id,beat:G.scenes.beat,st:G.state,obj:G.hud.objectiveText,prompt:G.hud.promptShown,say:G.hud.sayShown,warn:G.hud.warnText,teach:G.hud.kit.teachCur&&G.hud.kit.teachCur.text,card:G.brawl&&G.brawl._cards&&G.brawl._cards.shownCard,flash:G.brawl&&G.brawl._cards&&G.brawl._cards.shownFlash,ts:+(G.timeScale||1).toFixed(2),b:G.brawl&&G.brawl.active?{r:G.brawl.round,me:G.brawl.me.act,his:G.brawl.him.state,clip:G.brawl.him.clip,cue:G.brawl.cue&&!G.brawl.cue.done?G.brawl.cue.side:null,les:G.brawl.lesson&&G.brawl.lesson.kind,downs:G.brawl.stats.downs,hp:Math.round(G.health.hp),hishp:Math.round(G.brawl.him.hp)}:null,p:[+N.controller.pos.x.toFixed(2),+N.controller.pos.z.toFixed(2)],mode:N.controller.mode,fails:G.fails&&G.fails(),inv:G.save.inventory.join(',')})"
+  },
+  {
+   "shot": "d21"
+  },
+  {
+   "eval": "JSON.stringify({t:+G.time.toFixed(1),sc:G.scenes.current&&G.scenes.current.id,beat:G.scenes.beat,st:G.state,obj:G.hud.objectiveText,prompt:G.hud.promptShown,say:G.hud.sayShown,warn:G.hud.warnText,teach:G.hud.kit.teachCur&&G.hud.kit.teachCur.text,card:G.brawl&&G.brawl._cards&&G.brawl._cards.shownCard,flash:G.brawl&&G.brawl._cards&&G.brawl._cards.shownFlash,ts:+(G.timeScale||1).toFixed(2),b:G.brawl&&G.brawl.active?{r:G.brawl.round,me:G.brawl.me.act,his:G.brawl.him.state,clip:G.brawl.him.clip,cue:G.brawl.cue&&!G.brawl.cue.done?G.brawl.cue.side:null,les:G.brawl.lesson&&G.brawl.lesson.kind,downs:G.brawl.stats.downs,hp:Math.round(G.health.hp),hishp:Math.round(G.brawl.him.hp)}:null,p:[+N.controller.pos.x.toFixed(2),+N.controller.pos.z.toFixed(2)],mode:N.controller.mode,fails:G.fails&&G.fails(),inv:G.save.inventory.join(',')})"
+  },
+  {
+   "shot": "d22"
+  },
+  {
+   "eval": "JSON.stringify({t:+G.time.toFixed(1),sc:G.scenes.current&&G.scenes.current.id,beat:G.scenes.beat,st:G.state,obj:G.hud.objectiveText,prompt:G.hud.promptShown,say:G.hud.sayShown,warn:G.hud.warnText,teach:G.hud.kit.teachCur&&G.hud.kit.teachCur.text,card:G.brawl&&G.brawl._cards&&G.brawl._cards.shownCard,flash:G.brawl&&G.brawl._cards&&G.brawl._cards.shownFlash,ts:+(G.timeScale||1).toFixed(2),b:G.brawl&&G.brawl.active?{r:G.brawl.round,me:G.brawl.me.act,his:G.brawl.him.state,clip:G.brawl.him.clip,cue:G.brawl.cue&&!G.brawl.cue.done?G.brawl.cue.side:null,les:G.brawl.lesson&&G.brawl.lesson.kind,downs:G.brawl.stats.downs,hp:Math.round(G.health.hp),hishp:Math.round(G.brawl.him.hp)}:null,p:[+N.controller.pos.x.toFixed(2),+N.controller.pos.z.toFixed(2)],mode:N.controller.mode,fails:G.fails&&G.fails(),inv:G.save.inventory.join(',')})"
+  },
+  {
+   "shot": "d23"
+  },
+  {
+   "eval": "JSON.stringify({t:+G.time.toFixed(1),sc:G.scenes.current&&G.scenes.current.id,beat:G.scenes.beat,st:G.state,obj:G.hud.objectiveText,prompt:G.hud.promptShown,say:G.hud.sayShown,warn:G.hud.warnText,teach:G.hud.kit.teachCur&&G.hud.kit.teachCur.text,card:G.brawl&&G.brawl._cards&&G.brawl._cards.shownCard,flash:G.brawl&&G.brawl._cards&&G.brawl._cards.shownFlash,ts:+(G.timeScale||1).toFixed(2),b:G.brawl&&G.brawl.active?{r:G.brawl.round,me:G.brawl.me.act,his:G.brawl.him.state,clip:G.brawl.him.clip,cue:G.brawl.cue&&!G.brawl.cue.done?G.brawl.cue.side:null,les:G.brawl.lesson&&G.brawl.lesson.kind,downs:G.brawl.stats.downs,hp:Math.round(G.health.hp),hishp:Math.round(G.brawl.him.hp)}:null,p:[+N.controller.pos.x.toFixed(2),+N.controller.pos.z.toFixed(2)],mode:N.controller.mode,fails:G.fails&&G.fails(),inv:G.save.inventory.join(',')})"
+  }
+ ]
+}

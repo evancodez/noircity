@@ -1,0 +1,228 @@
+{
+ "about": "[C4] after the critic (M4): after the fight the room answers - the docker, the jukebox, Dot, the cook, a stool walked into",
+ "url": "/?mute=1&start=fight.ko&win=B4",
+ "size": [
+  1440,
+  900
+ ],
+ "out": "shots/play/fight_explore",
+ "steps": [
+  {
+   "until": "G.state === 'title' && !document.getElementById('title').classList.contains('hidden')",
+   "timeout": 30000
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]",
+   "taken": "G.state !== 'title'",
+   "retries": 5,
+   "every": 4000
+  },
+  {
+   "until": "G.scenes.beat==='ko' && N.controller.mode==='walk'",
+   "timeout": 40000
+  },
+  {
+   "wait": 600
+  },
+  {
+   "name": "the docker"
+  },
+  {
+   "walk": [
+    [
+     -12.4,
+     0.6
+    ],
+    [
+     -12.6,
+     8.6
+    ]
+   ],
+   "timeout": 25000,
+   "stop": false
+  },
+  {
+   "look": "(() => { const a = (G.scenes.ctx.cast.get('docker').bones.head.getWorldPosition(new N.THREE.Vector3())); const yw = Math.atan2(-(a.x - G.eye.x), -(a.z - G.eye.z)); const pt = Math.atan2(a.y - G.eye.y, Math.hypot(a.x - G.eye.x, a.z - G.eye.z)); const d = Math.atan2(Math.sin(yw - N.controller.yaw), Math.cos(yw - N.controller.yaw)); return [Math.round(-d / N.controller.sensitivity), Math.round(-(pt - N.controller.pitch) / N.controller.sensitivity)]; })()",
+   "steps": 6
+  },
+  {
+   "wait": 400
+  },
+  {
+   "eval": "JSON.stringify({p:[+G.eye.x.toFixed(2),+G.eye.z.toFixed(2)],prompt:G.hud.promptShown,say:G.hud.sayShown,cur:G.interact.current&&G.interact.current.id})"
+  },
+  {
+   "eval": "JSON.stringify((()=>{const h=G.interact.list.find(h=>h.id==='c4.docker'); const a=h.at(); const c=G.camera.position; const f=new N.THREE.Vector3(0,0,-1).transformDirection(G.camera.matrixWorld); const p=a.clone().sub(c); const d=p.length(); return {a:[a.x,a.y,a.z], d, ang: Math.acos(p.dot(f)/d), when: h.when(), range: h.range, cone: h.cone, mode: N.controller.mode, list: G.interact.list.length, prompting: !!G.scenes.prompting, insp: !!G.inspect.active, state: G.state};})())"
+  },
+  {
+   "shot": "x1_docker"
+  },
+  {
+   "key": "KeyE"
+  },
+  {
+   "wait": 500
+  },
+  {
+   "eval": "JSON.stringify({p:[+G.eye.x.toFixed(2),+G.eye.z.toFixed(2)],prompt:G.hud.promptShown,say:G.hud.sayShown,cur:G.interact.current&&G.interact.current.id})"
+  },
+  {
+   "shot": "x2_docker_said"
+  },
+  {
+   "expect": "(G.hud.sayShown||'').length > 0",
+   "label": "the docker answers"
+  },
+  {
+   "name": "the jukebox"
+  },
+  {
+   "walk": [
+    [
+     -12.6,
+     2.0
+    ],
+    [
+     -12.6,
+     -4.6
+    ]
+   ],
+   "timeout": 25000,
+   "stop": false
+  },
+  {
+   "look": "(() => { const a = (new N.THREE.Vector3(-12.9, 1.15, -5.45)); const yw = Math.atan2(-(a.x - G.eye.x), -(a.z - G.eye.z)); const pt = Math.atan2(a.y - G.eye.y, Math.hypot(a.x - G.eye.x, a.z - G.eye.z)); const d = Math.atan2(Math.sin(yw - N.controller.yaw), Math.cos(yw - N.controller.yaw)); return [Math.round(-d / N.controller.sensitivity), Math.round(-(pt - N.controller.pitch) / N.controller.sensitivity)]; })()",
+   "steps": 6
+  },
+  {
+   "eval": "JSON.stringify({ids: G.interact.list.map(h=>h.id), j: (()=>{const h=G.interact.list.find(h=>h.id==='c4.jukebox'); if(!h) return null; const a = typeof h.at==='function'?h.at():h.at; return {at:[a.x,a.y,a.z], when: h.when ? h.when() : null, cam:[G.camera.position.x,G.camera.position.y,G.camera.position.z]};})()})"
+  },
+  {
+   "wait": 400
+  },
+  {
+   "eval": "JSON.stringify({p:[+G.eye.x.toFixed(2),+G.eye.z.toFixed(2)],prompt:G.hud.promptShown,say:G.hud.sayShown,cur:G.interact.current&&G.interact.current.id})"
+  },
+  {
+   "shot": "x3_jukebox"
+  },
+  {
+   "eval": "(window.__slot = G.stage.part('diner').jukebox.slot, 1)"
+  },
+  {
+   "key": "KeyE"
+  },
+  {
+   "wait": 2400
+  },
+  {
+   "eval": "JSON.stringify({slot0: window.__slot, slot: G.stage.part('diner').jukebox.slot})"
+  },
+  {
+   "expect": "G.stage.part('diner').jukebox.slot !== window.__slot",
+   "label": "the jukebox plays its next record"
+  },
+  {
+   "name": "Dot, down behind the counter"
+  },
+  {
+   "walk": "(() => { const d = G.scenes.ctx.cast.get('dot').pos; return [[-13.0, d.z]]; })()",
+   "timeout": 25000,
+   "stop": false
+  },
+  {
+   "look": "(() => { const a = (G.scenes.ctx.cast.get('dot').bones.head.getWorldPosition(new N.THREE.Vector3())); const yw = Math.atan2(-(a.x - G.eye.x), -(a.z - G.eye.z)); const pt = Math.atan2(a.y - G.eye.y, Math.hypot(a.x - G.eye.x, a.z - G.eye.z)); const d = Math.atan2(Math.sin(yw - N.controller.yaw), Math.cos(yw - N.controller.yaw)); return [Math.round(-d / N.controller.sensitivity), Math.round(-(pt - N.controller.pitch) / N.controller.sensitivity)]; })()",
+   "steps": 6
+  },
+  {
+   "wait": 400
+  },
+  {
+   "eval": "JSON.stringify({p:[+G.eye.x.toFixed(2),+G.eye.z.toFixed(2)],prompt:G.hud.promptShown,say:G.hud.sayShown,cur:G.interact.current&&G.interact.current.id})"
+  },
+  {
+   "shot": "x4_dot"
+  },
+  {
+   "key": "KeyE"
+  },
+  {
+   "wait": 900
+  },
+  {
+   "eval": "JSON.stringify({p:[+G.eye.x.toFixed(2),+G.eye.z.toFixed(2)],prompt:G.hud.promptShown,say:G.hud.sayShown,cur:G.interact.current&&G.interact.current.id})"
+  },
+  {
+   "shot": "x5_dot_said"
+  },
+  {
+   "expect": "(G.hud.sayShown||'').length > 0",
+   "label": "Dot answers"
+  },
+  {
+   "name": "the cook in his hatch"
+  },
+  {
+   "walk": [
+    [
+     -13.0,
+     2.2
+    ]
+   ],
+   "timeout": 20000,
+   "stop": false
+  },
+  {
+   "look": "(() => { const a = (G.scenes.ctx.cast.get('cook').bones.head.getWorldPosition(new N.THREE.Vector3())); const yw = Math.atan2(-(a.x - G.eye.x), -(a.z - G.eye.z)); const pt = Math.atan2(a.y - G.eye.y, Math.hypot(a.x - G.eye.x, a.z - G.eye.z)); const d = Math.atan2(Math.sin(yw - N.controller.yaw), Math.cos(yw - N.controller.yaw)); return [Math.round(-d / N.controller.sensitivity), Math.round(-(pt - N.controller.pitch) / N.controller.sensitivity)]; })()",
+   "steps": 6
+  },
+  {
+   "wait": 400
+  },
+  {
+   "eval": "JSON.stringify({p:[+G.eye.x.toFixed(2),+G.eye.z.toFixed(2)],prompt:G.hud.promptShown,say:G.hud.sayShown,cur:G.interact.current&&G.interact.current.id})"
+  },
+  {
+   "shot": "x6_cook"
+  },
+  {
+   "key": "KeyE"
+  },
+  {
+   "wait": 500
+  },
+  {
+   "eval": "JSON.stringify({p:[+G.eye.x.toFixed(2),+G.eye.z.toFixed(2)],prompt:G.hud.promptShown,say:G.hud.sayShown,cur:G.interact.current&&G.interact.current.id})"
+  },
+  {
+   "expect": "(G.hud.sayShown||'').length > 0",
+   "label": "the cook answers"
+  },
+  {
+   "name": "a stool walked into"
+  },
+  {
+   "eval": "(window.__sp = G.stage.part('diner').stool(6).spinV, 1)"
+  },
+  {
+   "walk": "(() => { const s = G.stage.part('diner').stool(6).object.getWorldPosition(new N.THREE.Vector3()); return [[s.x + 0.9, s.z], [s.x + 0.2, s.z]]; })()",
+   "timeout": 15000,
+   "stop": false
+  },
+  {
+   "wait": 300
+  },
+  {
+   "eval": "JSON.stringify({spin: G.stage.part('diner').stool(6).spinV})"
+  },
+  {
+   "shot": "x7_stool"
+  },
+  {
+   "eval": "JSON.stringify({spun: G.scenes.ctx.flags.spun||0, st: (()=>{const s=G.stage.part('diner').stool(6).object.getWorldPosition(new N.THREE.Vector3()); return [s.x,s.z,G.eye.x,G.eye.z];})()})"
+  }
+ ]
+}

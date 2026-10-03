@@ -1,0 +1,73 @@
+{
+ "about": "Critic C4 second look: over the sill at z -3.0: where I land against where he lies; looking down.",
+ "url": "/?mute=1&start=fight.ko",
+ "size": [
+  1440,
+  900
+ ],
+ "out": "shots/critic/c4b_landing3",
+ "steps": [
+  {
+   "until": "G.state === 'title' && !document.getElementById('title').classList.contains('hidden')",
+   "timeout": 30000
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]",
+   "taken": "G.state !== 'title'",
+   "retries": 5,
+   "every": 4000
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id==='fight' && G.scenes.beat==='ko' && N.controller.mode==='walk'",
+   "timeout": 60000
+  },
+  {
+   "wait": 800
+  },
+  {
+   "eval": "JSON.stringify((() => { const c = G.brawl.c; const o = c.root || c.obj || c.group || c.mesh; const T = window.__THREE__; const b = o && o.isObject3D ? (() => { o.updateMatrixWorld(true); const bb = new (o.position.constructor === Object ? Object : Object)(); return null; })() : null; return { pos: [+c.pos.x.toFixed(2), +(c.pos.y||0).toFixed(2), +c.pos.z.toFixed(2)], eye: [+G.eye.x.toFixed(2), +G.eye.z.toFixed(2)], keys: Object.keys(c).slice(0, 40) }; })())"
+  },
+  {
+   "walk": [
+    [
+     -12.6,
+     -3.0
+    ],
+    [
+     -11.5,
+     -3.0
+    ]
+   ],
+   "timeout": 15000,
+   "stop": false
+  },
+  {
+   "look": "(() => { const yw = Math.atan2(-(-8.8 - G.eye.x), -(-3.8 - G.eye.z)); const d = Math.atan2(Math.sin(yw - N.controller.yaw), Math.cos(yw - N.controller.yaw)); return [Math.round(-d / (N.controller.sensitivity || 0.0021)), 0]; })()",
+   "steps": 8
+  },
+  {
+   "wait": 400
+  },
+  {
+   "key": "Space"
+  },
+  {
+   "wait": 1800
+  },
+  {
+   "eval": "JSON.stringify((() => { const c = G.brawl.c; const o = c.root || c.obj || c.group || c.mesh; const T = window.__THREE__; const b = o && o.isObject3D ? (() => { o.updateMatrixWorld(true); const bb = new (o.position.constructor === Object ? Object : Object)(); return null; })() : null; return { pos: [+c.pos.x.toFixed(2), +(c.pos.y||0).toFixed(2), +c.pos.z.toFixed(2)], eye: [+G.eye.x.toFixed(2), +G.eye.z.toFixed(2)], keys: Object.keys(c).slice(0, 40) }; })())"
+  },
+  {
+   "eval": "JSON.stringify({t:+G.time.toFixed(1),beat:G.scenes.beat,p:[+G.eye.x.toFixed(2),+G.eye.y.toFixed(2),+G.eye.z.toFixed(2)],yaw:+N.controller.yaw.toFixed(2),mode:N.controller.mode,msg:+G.hud.el.msg.style.opacity>0?G.hud.el.msg.textContent:'',prompt:G.hud.promptShown,obj:G.hud.objectiveText,say:G.hud.sayShown,warn:G.hud.warnText,win:G.brawl&&G.brawl.stats&&G.brawl.stats.window,inv:G.save.inventory.join(',')})"
+  },
+  {
+   "shot": "l0_landed"
+  },
+  {
+   "eval": "JSON.stringify((() => { const f = G.brawl.c.fig; const root = f.object; root.updateMatrixWorld(true); const out = {}; const B = f.bones; for (const [k, o] of Object.entries(B)) { if (!o || !o.isObject3D) continue; const v = o.getWorldPosition(o.position.clone()); out[k] = [+v.x.toFixed(2), +v.y.toFixed(2), +v.z.toFixed(2)]; } return { eye: [+G.eye.x.toFixed(2), +G.eye.z.toFixed(2)], bones: out }; })())"
+  }
+ ]
+}

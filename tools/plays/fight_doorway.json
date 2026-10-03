@@ -1,0 +1,23 @@
+{
+ "about": "[C4] after the critic's second look (m8): the way in, and at my first step of the fight straight for the street door while the last of them go out by it - the door slams shut in my face (no open doorway held by the fight's wall), the bar drops, nobody through anybody. Logged every 50 ms: the leaf's angle, my place, who is still going out.",
+ "url": "/?mute=1&start=fight",
+ "size": [1440, 900],
+ "out": "shots/play/fight_doorway",
+ "steps": [
+  { "until": "G.state === 'title' && !document.getElementById('title').classList.contains('hidden')", "timeout": 30000 },
+  { "wait": 1200 },
+  { "clickOn": "#title .opt[data-k=begin]", "taken": "G.state !== 'title'", "retries": 5, "every": 4000 },
+  { "until": "G.scenes.current && G.scenes.current.id === 'fight' && N.controller.mode === 'brawl'", "timeout": 40000 },
+  { "eval": "JSON.stringify({t: +G.time.toFixed(2), p: [+G.eye.x.toFixed(2), +G.eye.z.toFixed(2)], a: +G.stage.part('dinerFront').door.angle.toFixed(3), fleeing: G.scenes.ctx.flags.fleeing, lesson: G.brawl.lesson && G.brawl.lesson.kind})" },
+  { "look": "(() => { const yw = Math.atan2(-(-10.6 - G.eye.x), -(0.6 - G.eye.z)); const d = Math.atan2(Math.sin(yw - N.controller.yaw), Math.cos(yw - N.controller.yaw)); return [Math.round(-d / (N.controller.sensitivity || 0.0021)), 0]; })()", "steps": 6 },
+  { "down": "KeyW" },
+  { "until": "(window.__dw = window.__dw || [], window.__dw.push([+G.time.toFixed(2), +G.eye.x.toFixed(2), +G.eye.z.toFixed(2), +G.stage.part('dinerFront').door.angle.toFixed(3), G.scenes.ctx.flags.fleeing, !!G.stage.part('dinerFront').door.barred, G.scenes.ctx.flags.slammed || 0]), window.__dw.length > 160)", "timeout": 20000 },
+  { "up": "KeyW" },
+  { "shot": "d1_at_the_door" },
+  { "eval": "JSON.stringify(window.__dw.filter((r, i) => i % 4 === 0))" },
+  { "eval": "JSON.stringify({ openNearMe: window.__dw.filter((r) => r[3] > 0.05 && Math.hypot(r[1] + 10.5, r[2] - 0.6) < 1.0).length, minDist: Math.min(...window.__dw.map((r) => Math.hypot(r[1] + 10.5, r[2] - 0.6))).toFixed(2), barred: G.stage.part('dinerFront').door.barred, slammed: G.scenes.ctx.flags.slammed || 0, through: G.counters.doorThrough || 0, flee: G.scenes.ctx.flags.fleeLog })" },
+  { "expect": "(G.counters.doorThrough || 0) === 0", "label": "the leaf never through a body" },
+  { "expect": "G.stage.part('dinerFront').door.barred", "label": "the bar is down" },
+  { "expect": "window.__dw.filter((r) => r[3] > 0.3 && Math.hypot(r[1] + 10.5, r[2] - 0.6) < 0.9).length === 0", "label": "no open doorway within reach of me (the door slammed, or a body in it)" }
+ ]
+}

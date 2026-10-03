@@ -1,0 +1,37 @@
+{
+ "about": "Critic C4: the fight by my own hands, profile idle.",
+ "url": "/?mute=1&start=warehouse.fight",
+ "size": [
+  1440,
+  900
+ ],
+ "out": "shots/critic/c4_pier_idle",
+ "steps": [
+  {
+   "until": "G.state === 'title' && !document.getElementById('title').classList.contains('hidden')",
+   "timeout": 30000
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]",
+   "taken": "G.state !== 'title'",
+   "retries": 5,
+   "every": 4000
+  },
+  {
+   "until": "G.scenes.current && G.brawl && G.brawl.active",
+   "timeout": 60000
+  },
+  {
+   "drive": "tools/plays/critic/c4_bot.mjs",
+   "profile": "idle",
+   "timeout": 150000,
+   "shots": 12
+  },
+  {
+   "eval": "JSON.stringify({t:+G.time.toFixed(1),sc:G.scenes.current&&G.scenes.current.id,beat:G.scenes.beat,st:G.state,obj:G.hud.objectiveText,prompt:G.hud.promptShown,say:G.hud.sayShown,warn:G.hud.warnText,teach:G.hud.kit.teachCur&&G.hud.kit.teachCur.text,card:G.brawl&&G.brawl._cards&&G.brawl._cards.shownCard,flash:G.brawl&&G.brawl._cards&&G.brawl._cards.shownFlash,ts:+(G.timeScale||1).toFixed(2),b:G.brawl&&G.brawl.active?{r:G.brawl.round,me:G.brawl.me.act,his:G.brawl.him.state,clip:G.brawl.him.clip,cue:G.brawl.cue&&!G.brawl.cue.done?G.brawl.cue.side:null,les:G.brawl.lesson&&G.brawl.lesson.kind,downs:G.brawl.stats.downs,hp:Math.round(G.health.hp),hishp:Math.round(G.brawl.him.hp)}:null,p:[+N.controller.pos.x.toFixed(2),+N.controller.pos.z.toFixed(2)],mode:N.controller.mode,fails:G.fails&&G.fails(),inv:G.save.inventory.join(',')})"
+  }
+ ]
+}

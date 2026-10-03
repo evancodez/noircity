@@ -184,7 +184,21 @@ export default defineScene({
     // ---- 5. pay ---------------------------------------------------------------------------
     if (ctx.at('pay')) {
       yield beat('pay');
-      yield* ctx.prompt({ text: 'pay', at: () => counterAt(4, 0.3, -0.05) });
+      // [C4] the check: written on the diner's own pad in Dot's pencil, slid
+      // across to me; the bill goes down on it (props/kinds/c4.js guestCheck -
+      // chapter III finds the same paper torn, in the same hand)
+      if (!d.items.get('check')) {
+        // ([C4] begun here from the title: not under the chapter's card)
+        if (G.hud.cardT > 0) yield until(() => !(G.hud.cardT > 0));
+        yield* slideCheck(ctx, d, dot());
+        // [C4] after the critic (M2): picked up and read - DINER at its
+        // head, her pencil - and laid back down (under three seconds, no
+        // key): chapter III hangs on knowing this paper again
+        const rc = H.play('c4readCheck', { onMark: { taken: () => snd('clothRustle', CHECK_AT(), { k: 0.3 }), put: () => snd('clothRustle', CHECK_AT(), { k: 0.25 }) } });
+        yield until(() => rc.done);
+      }
+      // ([C4] the prompt beyond the check's head, not printed on it)
+      yield* ctx.prompt({ text: 'pay', at: () => counterAt(4, 0.4, 0.02) });
       const m = mack();
       let noticed = false;
       const h = H.play('payWallet', { onMark: {
@@ -226,6 +240,27 @@ export default defineScene({
 // cork, the bottle back, the glass slid 0.5 m to my left hand
 // (object first: every thing she handles has its path in cast/diner/dot.js,
 // her hands solved onto it every step)
+// [C4] where the check lies: before me, a little left of my hands, under the
+// place the bill goes down (the pay clip's BILL_DOWN), its head away from me
+export const CHECK_AT = () => V(DINER.counter.frontX - 0.11, DINER.counter.topY, stoolZ(DINER.playerStool) + 0.02);
+// the check across the counter from her hand to before me (her slide: the
+// bottle's in the fight), 0.5 s; it lies there, read the right way up
+function* slideCheck(ctx, d, dot) {
+  const G = ctx.game, dest = CHECK_AT();
+  if (!dot) { d.place('guestCheck', dest, { name: 'check', yaw: Math.PI / 2 }); return; }
+  dot.place('diner.serve.' + DINER.playerStool);
+  const x0 = DINER.serveX + 0.55;
+  const c = d.place('guestCheck', V(x0, DINER.counter.topY, dest.z), { name: 'check', yaw: Math.PI / 2 });
+  let go = -1;
+  const h = dot.play('slideBottle', { onMark: { release: () => { go = 0; G.sfx.play('clothRustle', dest, { k: 0.4 }); } } });
+  while ((!h.done && h.t < h.duration) || (go >= 0 && go < 0.5)) {
+    if (go >= 0) { go += 1 / 60; const u = Math.min(1, go / 0.5), e = 1 - Math.pow(1 - u, 2); c.position.x = x0 + (dest.x - x0) * e; c.updateMatrixWorld(true); }
+    yield null;
+  }
+  c.position.copy(dest); c.updateMatrixWorld(true);
+  dot.setState('lean');
+}
+
 function* pourScotch(ctx, d, dot) {
   const { game: G } = ctx;
   const snd = (name, pos = null, p = {}) => G.sfx.play(name, pos, p);

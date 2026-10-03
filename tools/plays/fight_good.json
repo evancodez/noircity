@@ -1,0 +1,16 @@
+{
+ "about": "[C4] Proof 3 of WAVE_C §7 for II The Fight: a player who uses what was taught (reads the dodge cue and slips toward the light, punishes the opening with a loaded punch, jabs the side he drops, blocks his jab, takes what is slid to him, finishes with a loaded punch: tools/lib/fight_bot.mjs 'good') wins, and wins again (the fight begun again from its lesson beat, as a chapter retry), each in two to three minutes. node tools/play.mjs tools/plays/fight_good.json",
+ "url": "/?mute=1&start=fight",
+ "size": [1280, 800],
+ "out": "shots/play/fight_good",
+ "steps": [
+  { "until": "G.state === 'title' && !document.getElementById('title').classList.contains('hidden')", "timeout": 20000 },
+  { "wait": 1500 },
+  { "clickOn": "#title .opt[data-k=begin]", "taken": "G.state !== 'title'", "retries": 5, "every": 4000 },
+  { "until": "G.scenes.current && G.scenes.current.id === 'fight' && G.brawl.active", "timeout": 60000 },
+  { "drive": "tools/lib/fight_bot.mjs", "profile": "good", "fights": 2, "timeout": 600000,
+    "check": "D.fights.length === 2 && D.fights.every((f) => f.won && f.downs <= 1 && f.time >= 40 && f.time <= 200)",
+    "label": "[C4] the taught player wins twice in a row, each fight (the lesson in it) under three minutes and a bit, down once at most" },
+  { "eval": "G.brawl.stats.cues && { shown: G.brawl.stats.cues.shown, right: G.brawl.stats.cues.right, wrong: G.brawl.stats.cues.wrong, late: G.brawl.stats.cues.late }" }
+ ]
+}

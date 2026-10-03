@@ -1,0 +1,103 @@
+{
+ "about": "Critic C4 second look: after the KO, back off and aside, then SPACE where the prompt is.",
+ "url": "/?mute=1&start=fight.ko",
+ "size": [
+  1440,
+  900
+ ],
+ "out": "shots/critic/c4b_after_sill",
+ "steps": [
+  {
+   "until": "G.state === 'title' && !document.getElementById('title').classList.contains('hidden')",
+   "timeout": 30000
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]",
+   "taken": "G.state !== 'title'",
+   "retries": 5,
+   "every": 4000
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id==='fight' && G.scenes.beat==='ko' && N.controller.mode==='walk'",
+   "timeout": 60000
+  },
+  {
+   "wait": 800
+  },
+  {
+   "eval": "JSON.stringify({t:+G.time.toFixed(1),beat:G.scenes.beat,p:[+G.eye.x.toFixed(2),+G.eye.y.toFixed(2),+G.eye.z.toFixed(2)],yaw:+N.controller.yaw.toFixed(2),mode:N.controller.mode,msg:+G.hud.el.msg.style.opacity>0?G.hud.el.msg.textContent:'',prompt:G.hud.promptShown,obj:G.hud.objectiveText,say:G.hud.sayShown,warn:G.hud.warnText,win:G.brawl&&G.brawl.stats&&G.brawl.stats.window,inv:G.save.inventory.join(',')})"
+  },
+  {
+   "shot": "s00_ko"
+  },
+  {
+   "down": "KeyS"
+  },
+  {
+   "wait": 1200
+  },
+  {
+   "up": "KeyS"
+  },
+  {
+   "wait": 300
+  },
+  {
+   "eval": "JSON.stringify({t:+G.time.toFixed(1),beat:G.scenes.beat,p:[+G.eye.x.toFixed(2),+G.eye.y.toFixed(2),+G.eye.z.toFixed(2)],yaw:+N.controller.yaw.toFixed(2),mode:N.controller.mode,msg:+G.hud.el.msg.style.opacity>0?G.hud.el.msg.textContent:'',prompt:G.hud.promptShown,obj:G.hud.objectiveText,say:G.hud.sayShown,warn:G.hud.warnText,win:G.brawl&&G.brawl.stats&&G.brawl.stats.window,inv:G.save.inventory.join(',')})"
+  },
+  {
+   "shot": "s01_backed_off"
+  },
+  {
+   "down": "KeyA"
+  },
+  {
+   "wait": 900
+  },
+  {
+   "up": "KeyA"
+  },
+  {
+   "wait": 300
+  },
+  {
+   "eval": "JSON.stringify({t:+G.time.toFixed(1),beat:G.scenes.beat,p:[+G.eye.x.toFixed(2),+G.eye.y.toFixed(2),+G.eye.z.toFixed(2)],yaw:+N.controller.yaw.toFixed(2),mode:N.controller.mode,msg:+G.hud.el.msg.style.opacity>0?G.hud.el.msg.textContent:'',prompt:G.hud.promptShown,obj:G.hud.objectiveText,say:G.hud.sayShown,warn:G.hud.warnText,win:G.brawl&&G.brawl.stats&&G.brawl.stats.window,inv:G.save.inventory.join(',')})"
+  },
+  {
+   "shot": "s02_aside"
+  },
+  {
+   "key": "Space"
+  },
+  {
+   "wait": 300
+  },
+  {
+   "eval": "JSON.stringify({t:+G.time.toFixed(1),beat:G.scenes.beat,p:[+G.eye.x.toFixed(2),+G.eye.y.toFixed(2),+G.eye.z.toFixed(2)],yaw:+N.controller.yaw.toFixed(2),mode:N.controller.mode,msg:+G.hud.el.msg.style.opacity>0?G.hud.el.msg.textContent:'',prompt:G.hud.promptShown,obj:G.hud.objectiveText,say:G.hud.sayShown,warn:G.hud.warnText,win:G.brawl&&G.brawl.stats&&G.brawl.stats.window,inv:G.save.inventory.join(',')})"
+  },
+  {
+   "shot": "s03_space"
+  },
+  {
+   "wait": 500
+  },
+  {
+   "eval": "JSON.stringify({t:+G.time.toFixed(1),beat:G.scenes.beat,p:[+G.eye.x.toFixed(2),+G.eye.y.toFixed(2),+G.eye.z.toFixed(2)],yaw:+N.controller.yaw.toFixed(2),mode:N.controller.mode,msg:+G.hud.el.msg.style.opacity>0?G.hud.el.msg.textContent:'',prompt:G.hud.promptShown,obj:G.hud.objectiveText,say:G.hud.sayShown,warn:G.hud.warnText,win:G.brawl&&G.brawl.stats&&G.brawl.stats.window,inv:G.save.inventory.join(',')})"
+  },
+  {
+   "shot": "s04_space2"
+  },
+  {
+   "wait": 900
+  },
+  {
+   "eval": "JSON.stringify({t:+G.time.toFixed(1),beat:G.scenes.beat,p:[+G.eye.x.toFixed(2),+G.eye.y.toFixed(2),+G.eye.z.toFixed(2)],yaw:+N.controller.yaw.toFixed(2),mode:N.controller.mode,msg:+G.hud.el.msg.style.opacity>0?G.hud.el.msg.textContent:'',prompt:G.hud.promptShown,obj:G.hud.objectiveText,say:G.hud.sayShown,warn:G.hud.warnText,win:G.brawl&&G.brawl.stats&&G.brawl.stats.window,inv:G.save.inventory.join(',')})"
+  },
+  {
+   "shot": "s05_after"
+  }
+ ]
+}

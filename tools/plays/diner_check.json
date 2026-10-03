@@ -1,0 +1,72 @@
+{
+ "about": "[C4] after the critic (M2): I's pay beat - the check slid across, picked up and read, laid back; E pay",
+ "url": "/?mute=1&start=diner.pay",
+ "size": [
+  1440,
+  900
+ ],
+ "out": "shots/play/diner_check",
+ "steps": [
+  {
+   "until": "G.state === 'title' && !document.getElementById('title').classList.contains('hidden')",
+   "timeout": 30000
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]",
+   "taken": "G.state !== 'title'",
+   "retries": 5,
+   "every": 4000
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id==='diner' && G.scenes.beat==='pay'",
+   "timeout": 30000
+  },
+  {
+   "until": "!!G.stage.part('diner').items.get('check')",
+   "timeout": 12000
+  },
+  {
+   "wait": 300
+  },
+  {
+   "shot": "k1"
+  },
+  {
+   "wait": 900
+  },
+  {
+   "shot": "k2"
+  },
+  {
+   "wait": 700
+  },
+  {
+   "shot": "k3"
+  },
+  {
+   "until": "(G.hud.promptShown||'').includes('pay')",
+   "timeout": 8000
+  },
+  {
+   "wait": 300
+  },
+  {
+   "shot": "k4_prompt"
+  },
+  {
+   "eval": "JSON.stringify({prompt:G.hud.promptShown, sc: G.screenOf(G.interact.current ? new N.THREE.Vector3() : new N.THREE.Vector3())})"
+  },
+  {
+   "key": "KeyE"
+  },
+  {
+   "wait": 2600
+  },
+  {
+   "shot": "k5_paid"
+  }
+ ]
+}

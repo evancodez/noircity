@@ -607,6 +607,11 @@ export const BR_CLIPS = {
 //   push     his knock on me (m)
 //   miss     { open: the sides of MY SCREEN he leaves open ('L' his right
 //            side, 'R' his left, 'LR' both), t: for how long } when it misses
+//            ([C4] 5.2: a hook, the bottle's thrust, a throw leave open only
+//            the side the swinging arm left - the side the blow came from, the
+//            cue's dark side: hit back there; the other hand still guards and
+//            answers. The big ones - a haymaker, the rush, the shove, a stool -
+//            throw his weight past me and leave both)
 //   path     where the blow goes, in the frame of his aim (fixed when the
 //            tell starts: see Brawl.hisAttack): lateral lo..hi (m, + to my
 //            right) round the aim line, as far as min(reach, the aim's
@@ -629,8 +634,8 @@ export const BR_ATTACKS = {
   br_answerL: { hand: 'L', kind: 'straight', dmg: 8, block: 0, push: 0.05, stun: 0.24, miss: { open: 'R', t: 0.55 }, path: PATH.straight, answer: true },
   br_answerR: { hand: 'R', kind: 'straight', dmg: 8, block: 0, push: 0.05, stun: 0.24, miss: { open: 'L', t: 0.55 }, path: PATH.straight, answer: true },
   br_cross: { hand: 'R', kind: 'straight', dmg: 9, block: 0, push: 0.1, stun: 0.24, miss: { open: 'L', t: 0.5 }, path: PATH.straight },
-  br_hook: { hand: 'R', kind: 'swing', dmg: 13, block: 0.25, push: 0.1, stun: 0.3, miss: { open: 'LR', t: 0.8 }, path: PATH.swingR },
-  br_hookL: { hand: 'L', kind: 'swing', dmg: 13, block: 0.25, push: 0.1, stun: 0.3, miss: { open: 'LR', t: 0.8 }, path: PATH.swingL },
+  br_hook: { hand: 'R', kind: 'swing', dmg: 13, block: 0.25, push: 0.1, stun: 0.3, miss: { open: 'L', t: 0.8 }, path: PATH.swingR },
+  br_hookL: { hand: 'L', kind: 'swing', dmg: 13, block: 0.25, push: 0.1, stun: 0.3, miss: { open: 'R', t: 0.8 }, path: PATH.swingL },
   br_body: { hand: 'R', kind: 'swing', dmg: 10, block: 0.25, push: 0.05, stun: 0.28, miss: { open: 'L', t: 0.6 }, path: PATH.swingR },
   br_bodyL: { hand: 'L', kind: 'swing', dmg: 10, block: 0.25, push: 0.05, stun: 0.28, miss: { open: 'R', t: 0.6 }, path: PATH.swingL },
   br_haymaker: { hand: 'R', kind: 'over', dmg: 22, block: null, push: 0.4, stun: 0.45, miss: { open: 'LR', t: 1.1 }, path: PATH.over, heavy: true },
@@ -638,8 +643,8 @@ export const BR_ATTACKS = {
   br_rush: { hand: 'R', kind: 'rush', dmg: 22, block: null, push: 0.5, stun: 0.45, miss: { open: 'LR', t: 1.0 }, path: PATH.rush, heavy: true },
   br_shove: { hand: 'both', kind: 'shove', dmg: 3, block: null, push: 1.2, stun: 0.45, miss: { open: 'LR', t: 0.5 }, path: PATH.shove },
   br_bottle: { hand: 'R', kind: 'straight', dmg: 16, block: 0, push: 0.1, stun: 0.3, miss: { open: 'LR', t: 0.8 }, path: PATH.straight, heavy: true },
-  br_bottle_thrust: { hand: 'R', kind: 'straight', dmg: 16, block: 0, push: 0.1, stun: 0.3, miss: { open: 'LR', t: 0.8 }, path: PATH.straight },
-  br_throw: { hand: 'R', kind: 'throw', dmg: 10, block: 0, push: 0, stun: 0.25, miss: { open: 'LR', t: 0.8 }, path: PATH.straight },
+  br_bottle_thrust: { hand: 'R', kind: 'straight', dmg: 16, block: 0, push: 0.1, stun: 0.3, miss: { open: 'L', t: 0.8 }, path: PATH.straight },
+  br_throw: { hand: 'R', kind: 'throw', dmg: 10, block: 0, push: 0, stun: 0.25, miss: { open: 'L', t: 0.8 }, path: PATH.straight },
   br_stoolSwing: { hand: 'R', kind: 'swing', dmg: 24, block: null, push: 0.6, stun: 0.5, miss: { open: 'LR', t: 0.8 }, path: PATH.stool, heavy: true },
 };
 // the side of MY SCREEN a blow of his opens while he throws it (the hand

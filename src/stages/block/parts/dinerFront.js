@@ -482,6 +482,15 @@ export default {
     for (const s of splay) colliders.addBox(s.mid.x, s.mid.z, 0.06, s.len / 2, s.ang, 'wall');
     for (const pz of D.pilasters) colliders.addBox(X + 0.18, pz, 0.26, D.pilasterW / 2, 0, 'wall');
     const col = colliders.addBox(XD - 0.03, (dz0 + dz1) / 2, 0.04, dz.w / 2, 0, 'door');
+    // [C4] the critic's second look (m3): from the room the splayed side
+    // lights make two shallow pockets beside the door (0 .. 0.35 m deep); a
+    // man walking at the door at a slant slid along the leaf into one and on
+    // along the splay's riser, away from the door, onto the glass. The
+    // pockets' mouths are held at the room's wall line, and the door's posts
+    // stand a little proud of the leaf on the room side: walked into at a
+    // slant, the door catches me in front of it
+    for (const [za, zb] of [[bz0 + 0.26, dz0 - 0.07], [dz1 + 0.07, bz1 - 0.26]]) colliders.addBox(Xi - 0.01, (za + zb) / 2, 0.03, (zb - za) / 2, 0, 'wall');
+    for (const zp of [dz0 - 0.035, dz1 + 0.035]) colliders.addBox(XD - 0.1, zp, 0.08, 0.035, 0, 'wall');
     colliders.addRegion(XD - 0.05, X + 1.2, bz0 + 0.26, bz1 - 0.26, 'diner.vestibule');
     colliders.addRegion(Xi - 1.2, X + 1.2, dz0, dz1, 'diner.door');
     colliders.addRegion(D.backX, Xi, D.zMin, D.zMax, 'diner');
@@ -496,13 +505,75 @@ export default {
     stage.addAnchor('diner.door.in', { pos: { x: Xi - 0.9, y: F, z: dz0 + dz.w / 2 }, yaw: Math.PI / 2, r: 1.0 });
     stage.addAnchor('diner.pavement.ko', { pos: { x: -8.9, y: 0.15, z: D.bays.B4 + 0.2 }, yaw: Math.PI / 2, r: 1.6 });
 
-    const listeners = { open: [], close: [] };
+    const listeners = { open: [], close: [], slam: [], rattle: [] };
+    // [C4] a push door (WAVE_C §6 II, the brief's §4): it opens OUTWARD, onto
+    // the pavement, on its closer. From inside it is pushed: walking into it
+    // (or E) swings it open as far and as fast as I push, and it never passes
+    // through me or anyone (the leaf is kept clear of every body near it);
+    // from the street it is pulled (E, door.pull()). Let go, the closer
+    // swings it back - never through a body - and it shuts with a knock (a
+    // hard shut: 'slam'). door.barred: shut and barred (the fight): a push
+    // gives it a centimetre, the bar knocks in its brackets, the bell
+    // shivers ('rattle'). The bar itself (door.makeBar(), built on demand so
+    // no other scene's frame changes): an iron flat bar on a pivot at the
+    // latch jamb, inside; stowed upright, it swings down across the door into
+    // a bracket on the hinge jamb (door.dropBar(), door.liftBar()).
+    // door.angle 0..1 as before (1: open as far as it goes, OPEN_MAX).
     const door = {
       object: hinge, leaf, collider: col, angle: 0, target: 0, isOpen: false, holdT: 0,
       bell: { pivot: bellPivot, a: 0, v: 0 },
+      barred: false, shut: false, push: 0, block: 1, rattleT: 0, jig: 0, bar: null, slamV: 0,
       on(ev, fn) { (listeners[ev] || (listeners[ev] = [])).push(fn); return door; },
-      open() { if (door.target !== 1) { door.target = 1; door.bell.v += 5; for (const f of listeners.open) f(door); } door.holdT = 1.5; },
-      close() { if (door.target !== 0) { door.target = 0; door.bell.v -= 3; for (const f of listeners.close) f(door); } },
+      emit(ev) { for (const f of listeners[ev] || []) f(door); },
+      open() { if (door.barred) { door.tried(); return; } if (door.target !== 1) { door.target = 1; door.bell.v += 5; } door.holdT = 1.5; },
+      close() { if (door.target !== 0) { door.target = 0; door.bell.v -= 3; door.emit('close'); } },
+      // [C4] let go to slam: back on the jamb in a quarter second (it stops
+      // at a body in its way all the same)
+      slamShut() { door.holdT = 0; door.close(); door.fastT = 0.6; },
+      // from the street: E pulls it open toward me (it stops at whoever stands in its way)
+      pull() { door.open(); door.holdT = 2.5; },
+      // tried while barred: a centimetre, the knock, the bell's shiver
+      tried() {
+        if (door.rattleT > 0) return;
+        door.rattleT = 0.8; door.jig = 1; door.bell.v += 2;
+        door.emit('rattle');
+      },
+      makeBar() {
+        if (door.bar) return door.bar;
+        // (the pivot on the latch jamb's inside face at the push bar's height)
+        const piv = new THREE.Group();
+        piv.position.set(XD - 0.075, F + 1.05, dz1 + 0.035);
+        g.add(piv);
+        const L = dz.w + 0.02;
+        const barGeo = merge([
+          roundedBox(0.02, 0.065, L, 0.006, 2).translate(0, 0, -L / 2 + 0.03),
+          new THREE.CylinderGeometry(0.022, 0.022, 0.04, 14).rotateZ(Math.PI / 2),
+        ]);
+        const barM = mesh(barGeo, MM.steel, { parent: piv, id: idDoor, cast: false });
+        // the brackets: the pivot's plate on the latch jamb, the open hook
+        // on the hinge jamb the bar drops into; the keeper that holds it up
+        const brk = merge([
+          roundedBox(0.03, 0.14, 0.05, 0.006, 2).translate(XD - 0.07, F + 1.05, dz1 + 0.04),
+          roundedBox(0.05, 0.02, 0.07, 0.004, 2).translate(XD - 0.085, F + 1.0, dz0 - 0.01),
+          roundedBox(0.014, 0.08, 0.07, 0.004, 2).translate(XD - 0.11, F + 1.05, dz0 - 0.01),
+          roundedBox(0.03, 0.05, 0.05, 0.006, 2).translate(XD - 0.07, F + 2.05, dz1 + 0.04),
+        ]);
+        const brkM = mesh(brk, MM.steel, { id: idDoor, cast: false });
+        door.bar = { pivot: piv, mesh: barM, brackets: brkM, a: Math.PI / 2, target: Math.PI / 2, v: 0, down: false };
+        piv.rotation.x = door.bar.a;
+        return door.bar;
+      },
+      // the bar falls across the door (the slam knocks it off its keeper)
+      dropBar({ now = false } = {}) {
+        const b = door.makeBar();
+        door.barred = true; b.target = 0; b.down = true;
+        if (now) { b.a = 0; b.v = 0; b.pivot.rotation.x = 0; }
+      },
+      liftBar({ now = false } = {}) {
+        const b = door.makeBar();
+        door.barred = false; b.target = Math.PI / 2; b.down = false;
+        if (now) { b.a = b.target; b.v = 0; b.pivot.rotation.x = b.a; }
+      },
     };
     const sign = {
       letters,
@@ -550,27 +621,11 @@ export default {
     api.near = dinerSightFrom(camera, !!api.near);
     DINER_SIGHT.state = api.near;
 
-    // the door: opens when the eye comes within 2 m of it, closes 1.5 s
-    // after it has gone
+    // [C4] the door: pushed open from inside by whoever walks into it,
+    // pulled from the street (door.pull / open), swung back by its closer;
+    // the leaf never passes through a body (stepDoor)
     const d = api.door, D = DINER;
-    const e = camera.position;
-    // ([B8] not while a fight is on: d.shut - the leaf swung into the ring and they fought through it)
-    if (!d.shut && Math.hypot(e.x - (XD + 0.3), e.z - (D.door.hingeZ + D.door.w / 2)) < 2.0) d.open();
-    else if (d.target === 1 && (d.holdT -= dt) <= 0) d.close();
-    const prev = d.angle;
-    d.angle += Math.sign(d.target - d.angle) * Math.min(Math.abs(d.target - d.angle), dt * 2.2);
-    if (d.angle !== prev) {
-      const a = -Math.PI / 2 * d.angle * (2 - d.angle);
-      d.object.rotation.y = a;
-      d.isOpen = d.angle > 0.95;
-      // the collider follows the leaf (a box along it, turned with it); a
-      // leaf on the swing does not shove a man out of the doorway
-      const c = d.collider, w = D.door.w;
-      const rest = d.angle === 0 || d.angle === 1;
-      c.angle = a; c.c = Math.cos(a); c.s = Math.sin(a);
-      c.cx = XD - 0.03 * Math.cos(a) + (w / 2) * Math.sin(a);
-      c.cz = rest ? D.door.hingeZ + 0.03 * Math.sin(a) + (w / 2) * Math.cos(a) : 1e6;
-    }
+    stepDoor(api, d, dt, camera);
     // the bell on its spring: a damped swing, kicked by the door
     const b = d.bell;
     if (Math.abs(b.v) > 1e-4 || Math.abs(b.a) > 1e-4) {
@@ -612,3 +667,153 @@ export default {
   },
 };
 const _m = new THREE.Matrix4();
+
+// ---- [C4] the push door's step ------------------------------------------------------------
+// The leaf turns about its hinge (XD, hingeZ), outward (+x: onto the pavement)
+// by d.angle * OPEN_MAX rad. Every step:
+//   need   the least angle that clears every body in the doorway or behind
+//          the open leaf (a body pushing out - me walking into it, the
+//          couple running out - drives the leaf ahead of it, as fast as it
+//          comes: never through it)
+//   block  the most the leaf may open before it meets a body outside, in its
+//          sweep (it stops at a man standing on the pavement before it)
+//   want   need, or OPEN_MAX while held open (open / pull / push by E),
+//          else 0: the closer brings it back at its own pace, the last
+//          centimetres with a knock ('slam' when it comes hard)
+// Barred (or shut), it does not open: a body pushing on it rattles it.
+const OPEN_MAX = 1.42;
+const _bodies = [];
+function leafClear(a, px, pz, R) {
+  const w = DINER.door.w, hz = DINER.door.hingeZ;
+  const ux = Math.sin(a), uz = Math.cos(a);
+  const ox = XD - 0.03 * Math.cos(a), oz = hz + 0.03 * Math.sin(a);
+  const t = Math.max(0, Math.min(w, (px - ox) * ux + (pz - oz) * uz));
+  return Math.hypot(px - (ox + ux * t), pz - (oz + uz * t)) >= R;
+}
+// the angles at which the leaf touches the circle: [lo, hi] or null
+function leafSpan(px, pz, R) {
+  let lo = null, hi = null;
+  for (let a = 0; a <= OPEN_MAX + 1e-6; a += 0.025) if (!leafClear(a, px, pz, R)) { if (lo == null) lo = a; hi = a; }
+  return lo == null ? null : [lo, hi];
+}
+function stepDoor(api, d, dt, camera) {
+  const D = DINER, w = D.door.w, hz = D.door.hingeZ, midZ = hz + w / 2;
+  const S = api.stage, G = S.game;
+  const e = camera.position;
+  const pe = d._pe || (d._pe = { x: e.x, z: e.z });
+  const vx = dt > 0 ? (e.x - pe.x) / dt : 0;
+  pe.x = e.x; pe.z = e.z;
+  // the bodies near the doorway: me, the cast, the hoods
+  _bodies.length = 0;
+  const near = (x, z) => Math.abs(z - midZ) < w + 0.5 && x > XD - 1.1 && x < XD + 1.6;
+  if (near(e.x, e.z)) _bodies.push({ x: e.x, z: e.z, r: 0.36, me: true });
+  if (S.cast) for (const c of S.cast.list) if (c.fig && !c.down && near(c.pos.x, c.pos.z)) _bodies.push({ x: c.pos.x, z: c.pos.z, r: 0.3 });
+  if (S.hoods) for (const h of S.hoods.list) if (h.alive && near(h.pos.x, h.pos.z)) _bodies.push({ x: h.pos.x, z: h.pos.z, r: 0.3 });
+  const cur = d.angle * OPEN_MAX;
+  // (in a fist fight the room holds me - the bounds, the door's gap: my back
+  // in the doorway opened it ahead of me onto a wall of nothing while the
+  // last of them were still going out by it, and held it so that it never
+  // slammed and the bar never dropped. There my body opens nothing: the
+  // shut leaf stops me as a door does; open for a runner, it is only kept
+  // off me. Barred, walking into it rattles it as ever)
+  const fist = !!(G && G.brawl && G.brawl.active) && !d.barred;
+  let need = 0, block = OPEN_MAX;
+  for (const b of _bodies) {
+    if (b.me && fist && cur < 0.03) continue;
+    // (a man of the cast comes on at a run: the leaf gives a hand's breadth
+    // before him; me, only when I touch it - or push: below)
+    const sp = leafSpan(b.x, b.z, b.r + (b.me ? 0.05 : 0.16));
+    if (!sp) continue;
+    // (in the room or the doorway, or already behind the open leaf: it is
+    // pushed ahead of the body; out on the pavement before it: it stops)
+    // (behind it means the leaf is open past him already: a man on the
+    // pavement walking into the shut leaf does not push a pull door in)
+    if (b.x < XD + 0.08 || (cur > 0.03 && cur >= sp[0] - 0.02)) need = Math.max(need, sp[1] + 0.05);
+    else block = Math.min(block, Math.max(0, sp[0] - 0.05));
+  }
+  // (one of them in the doorway from inside is on his way out: it gives a
+  // stride ahead of him, as it does ahead of me when I push)
+  // (a man running out shoves it wide: it swings as far as it goes, then
+  // comes back on its closer once he is clear of it)
+  for (const b of _bodies) {
+    if (b.me || b.x < XD - 0.75 || b.x > XD + 0.05 || Math.abs(b.z - midZ) > w / 2 + 0.1) continue;
+    const sp = leafSpan(b.x + 0.42, b.z, b.r + 0.12);
+    if (sp) need = Math.max(need, Math.min(OPEN_MAX, Math.max(sp[1] + 0.05, 1.3)));
+  }
+  // me walking into it from inside: it gives ahead of me (a step's lookahead)
+  const inDoor = Math.abs(e.z - midZ) < w / 2 - 0.05 && e.x > XD - 0.85 && e.x < XD + 0.05;
+  const pushing = inDoor && vx > 0.25 && !fist;
+  if (pushing) { const sp = leafSpan(e.x + 0.32, e.z, 0.41); if (sp) need = Math.max(need, sp[1] + 0.05); }
+  // (leaning on the barred door - pinned to it in the fight - it rattles as I
+  // come against it, not again every moment I stay there)
+  const touch = need > 0.02, touched = d._touch;
+  d._touch = touch;
+  d.push = need;
+  if (d.rattleT > 0) d.rattleT -= dt;
+  let want;
+  if (d.barred || d.shut) {
+    if (d.barred && (pushing || (touch && !touched))) d.tried();
+    want = 0;
+    d.holdT = 0; d.target = 0;
+  } else {
+    // (held open while I am at it on the street side: pulled, a man steps
+    // back out of its swing and then walks round it; it does not swing shut
+    // in his face while he does)
+    if (d.target === 1 && e.x > XD && Math.hypot(e.x - XD, e.z - midZ) < 1.7) d.holdT = Math.max(d.holdT, 0.9);
+    if (d.target === 1 && (d.holdT -= dt) <= 0) d.close();
+    want = Math.max(need, d.target === 1 ? Math.min(OPEN_MAX, block) : 0);
+  }
+  // the motion: pushed, at once to what the body needs; opened by a hand,
+  // 2.2 rad/s; the closer, easing back at 1.5 rad/s (slower the last 0.3)
+  let a = cur;
+  if (want > a) a = need >= want - 1e-4 ? want : Math.min(want, a + dt * 2.2);
+  else if (want < a) {
+    // ([C4] slammed - door.slamShut(): the last one out lets it go in my
+    // face - it comes back at once, not easing)
+    const sp = d.fastT > 0 ? 5.5 : a < 0.3 ? 0.9 : 1.5;
+    a = Math.max(want, a - dt * sp);
+    if (a <= 1e-4 && cur > 1e-4) { a = 0; d.bell.v -= 2.5; d.emit('slam'); }
+  }
+  if (d.fastT > 0) d.fastT -= dt;
+  // (the leaf off its jamb, whatever opened it: the bell, the room's heads - 'open')
+  if (cur <= 0.03 && a > 0.03) { if (!(d.target === 1)) d.bell.v += 4; d.emit('open'); }
+  // (barred, tried: the leaf gives a centimetre and comes back)
+  let jig = 0;
+  if (d.jig > 0) { d.jig = Math.max(0, d.jig - dt * 4); jig = 0.012 * Math.abs(Math.sin((1 - d.jig) * Math.PI * 3)) * d.jig; }
+  d.angle = a / OPEN_MAX;
+  const A = a + jig;
+  // (the jank watch: the leaf inside a body by more than 6 cm - never)
+  if (G && G.counters) for (const b of _bodies) if (!leafClear(A, b.x, b.z, b.r - 0.06)) { G.counters.doorThrough = (G.counters.doorThrough || 0) + 1; if (b.me) G.counters.doorThroughMe = (G.counters.doorThroughMe || 0) + 1; }
+  if (A !== d._A) {
+    d._A = A;
+    d.object.rotation.y = A;
+    d.isOpen = d.angle > 0.95;
+    // the collider follows the leaf at every angle (a box along it, turned
+    // with it): nobody walks through the open leaf either
+    const c = d.collider;
+    c.angle = A; c.c = Math.cos(A); c.s = Math.sin(A);
+    c.cx = XD - 0.03 * Math.cos(A) + (w / 2) * Math.sin(A);
+    c.cz = hz + 0.03 * Math.sin(A) + (w / 2) * Math.cos(A);
+  }
+  // the bar: swung down across the door under its own weight (a knock as it
+  // lands, a little bounce), lifted back up by a hand
+  const B = d.bar;
+  if (B && (Math.abs(B.a - B.target) > 1e-4 || Math.abs(B.v) > 1e-4)) {
+    if (B.target < B.a || B.v > 0) {
+      B.v -= dt * 22; B.a += B.v * dt;
+      if (B.a <= B.target) { B.a = B.target; const v = B.v; B.v = Math.abs(v) > 1.5 ? -v * 0.18 : 0; if (!B.knocked) { B.knocked = true; d.emit('barDown'); } }
+    } else { B.knocked = false; B.v = 0; B.a = Math.min(B.target, B.a + dt * 5); }
+    B.pivot.rotation.x = B.a;
+  }
+  // E at the door: inside it is pushed (or tried), from the street pulled
+  if (G && G.interact && !api.doorUse) {
+    const at = (out) => () => new THREE.Vector3(XD + (out ? 0.06 : -0.08), D.floorY + 1.3, hz + w / 2 + 0.1);
+    const ok = () => G.stage === S && !(G.brawl && G.brawl.active) && G.state === 'playing';
+    api.doorUse = [
+      G.interact.add({ id: 'diner.door.push', scope: 'stage', at: at(false), range: 1.6, cone: 0.85, prompt: 'push', when: () => ok() && !d.barred && G.eye.x < XD && d.angle < 0.3,
+        onUse: () => { if (d.barred || d.shut) d.tried(); else { d.open(); d.holdT = 1.6; } } }),
+      G.interact.add({ id: 'diner.door.pull', scope: 'stage', at: at(true), range: 1.7, cone: 0.85, prompt: 'pull', when: () => ok() && G.eye.x > XD + 0.1 && d.angle < 0.3,
+        onUse: () => { if (d.barred || d.shut) d.tried(); else d.pull(); } }),
+    ];
+  }
+}

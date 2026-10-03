@@ -1,0 +1,55 @@
+{
+ "about": "[C4] after the critic's second look (M1): the lesson's hook slipped toward the light (the held cue, D) - 'OPEN WHERE IT CAME FROM', the tick on that side of his jaw; a punch on the other side is blocked, on that side it lands",
+ "url": "/?mute=1&start=fight.lesson&step=5",
+ "size": [
+  1440,
+  900
+ ],
+ "out": "shots/play/fight_open_side",
+ "steps": [
+  {
+   "until": "G.state === 'title' && !document.getElementById('title').classList.contains('hidden')",
+   "timeout": 30000
+  },
+  {
+   "wait": 1200
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]",
+   "taken": "G.state !== 'title'",
+   "retries": 5,
+   "every": 4000
+  },
+  {
+   "until": "G.brawl.active && G.brawl.lesson && G.brawl.lesson.kind === 'hookR'",
+   "timeout": 40000
+  },
+  {
+   "until": "G.brawl.cue && G.brawl.cue.held",
+   "timeout": 15000
+  },
+  {
+   "wait": 700
+  },
+  {
+   "key": "KeyD"
+  },
+  {
+   "until": "G.brawl._cards && G.brawl._cards.shownFlash === 'OPEN WHERE IT CAME FROM' && (window.__os = G.brawl.openSides(), true)",
+   "timeout": 4000
+  },
+  {
+   "wait": 150
+  },
+  {
+   "shot": "o1_open_where_it_came_from"
+  },
+  {
+   "expect": "window.__os === 'L'",
+   "label": "his right hook slipped: open on the side it came from only (my left)"
+  },
+  {
+   "eval": "JSON.stringify({ open: G.brawl.openSides(), why: G.brawl.him.why, missT: +G.brawl.him.missT.toFixed(2), state: G.brawl.him.state })"
+  }
+ ]
+}

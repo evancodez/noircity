@@ -1,0 +1,141 @@
+{
+ "about": "Critic C4: can I move about in the fight, how does the view behave.",
+ "url": "/?mute=1&start=fight",
+ "size": [
+  960,
+  600
+ ],
+ "out": "shots/critic/c4_move",
+ "steps": [
+  {
+   "until": "G.state === 'title' && !document.getElementById('title').classList.contains('hidden')",
+   "timeout": 30000
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]",
+   "taken": "G.state !== 'title'",
+   "retries": 5,
+   "every": 4000
+  },
+  {
+   "until": "G.scenes.current && G.brawl && G.brawl.active",
+   "timeout": 60000
+  },
+  {
+   "eval": "JSON.stringify({t:+G.time.toFixed(1),beat:G.scenes.beat,p:[+G.eye.x.toFixed(2),+G.eye.z.toFixed(2)],yaw:+N.controller.yaw.toFixed(2),mode:N.controller.mode,him:G.brawl.active?[+G.brawl.c.pos.x.toFixed(2),+G.brawl.c.pos.z.toFixed(2),G.brawl.him.state]:null,prompt:G.hud.promptShown,say:G.hud.sayShown,card:G.brawl._cards&&G.brawl._cards.shownCard,flash:G.brawl._cards&&G.brawl._cards.shownFlash,hp:Math.round(G.health.hp),door:(()=>{const d=N.stage&&N.stage.dinerDoor;return d?JSON.stringify({a:d.angle,bar:d.barred,open:d.open}):null})()})"
+  },
+  {
+   "shot": "m0"
+  },
+  {
+   "down": "KeyS"
+  },
+  {
+   "wait": 2500
+  },
+  {
+   "up": "KeyS"
+  },
+  {
+   "eval": "JSON.stringify({t:+G.time.toFixed(1),beat:G.scenes.beat,p:[+G.eye.x.toFixed(2),+G.eye.z.toFixed(2)],yaw:+N.controller.yaw.toFixed(2),mode:N.controller.mode,him:G.brawl.active?[+G.brawl.c.pos.x.toFixed(2),+G.brawl.c.pos.z.toFixed(2),G.brawl.him.state]:null,prompt:G.hud.promptShown,say:G.hud.sayShown,card:G.brawl._cards&&G.brawl._cards.shownCard,flash:G.brawl._cards&&G.brawl._cards.shownFlash,hp:Math.round(G.health.hp),door:(()=>{const d=N.stage&&N.stage.dinerDoor;return d?JSON.stringify({a:d.angle,bar:d.barred,open:d.open}):null})()})"
+  },
+  {
+   "shot": "m1_back"
+  },
+  {
+   "look": [
+    500,
+    0
+   ],
+   "steps": 10
+  },
+  {
+   "wait": 300
+  },
+  {
+   "eval": "JSON.stringify({t:+G.time.toFixed(1),beat:G.scenes.beat,p:[+G.eye.x.toFixed(2),+G.eye.z.toFixed(2)],yaw:+N.controller.yaw.toFixed(2),mode:N.controller.mode,him:G.brawl.active?[+G.brawl.c.pos.x.toFixed(2),+G.brawl.c.pos.z.toFixed(2),G.brawl.him.state]:null,prompt:G.hud.promptShown,say:G.hud.sayShown,card:G.brawl._cards&&G.brawl._cards.shownCard,flash:G.brawl._cards&&G.brawl._cards.shownFlash,hp:Math.round(G.health.hp),door:(()=>{const d=N.stage&&N.stage.dinerDoor;return d?JSON.stringify({a:d.angle,bar:d.barred,open:d.open}):null})()})"
+  },
+  {
+   "shot": "m2_turned"
+  },
+  {
+   "down": "KeyW"
+  },
+  {
+   "wait": 2000
+  },
+  {
+   "up": "KeyW"
+  },
+  {
+   "eval": "JSON.stringify({t:+G.time.toFixed(1),beat:G.scenes.beat,p:[+G.eye.x.toFixed(2),+G.eye.z.toFixed(2)],yaw:+N.controller.yaw.toFixed(2),mode:N.controller.mode,him:G.brawl.active?[+G.brawl.c.pos.x.toFixed(2),+G.brawl.c.pos.z.toFixed(2),G.brawl.him.state]:null,prompt:G.hud.promptShown,say:G.hud.sayShown,card:G.brawl._cards&&G.brawl._cards.shownCard,flash:G.brawl._cards&&G.brawl._cards.shownFlash,hp:Math.round(G.health.hp),door:(()=>{const d=N.stage&&N.stage.dinerDoor;return d?JSON.stringify({a:d.angle,bar:d.barred,open:d.open}):null})()})"
+  },
+  {
+   "shot": "m3_fwd"
+  },
+  {
+   "down": "KeyA"
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "up": "KeyA"
+  },
+  {
+   "eval": "JSON.stringify({t:+G.time.toFixed(1),beat:G.scenes.beat,p:[+G.eye.x.toFixed(2),+G.eye.z.toFixed(2)],yaw:+N.controller.yaw.toFixed(2),mode:N.controller.mode,him:G.brawl.active?[+G.brawl.c.pos.x.toFixed(2),+G.brawl.c.pos.z.toFixed(2),G.brawl.him.state]:null,prompt:G.hud.promptShown,say:G.hud.sayShown,card:G.brawl._cards&&G.brawl._cards.shownCard,flash:G.brawl._cards&&G.brawl._cards.shownFlash,hp:Math.round(G.health.hp),door:(()=>{const d=N.stage&&N.stage.dinerDoor;return d?JSON.stringify({a:d.angle,bar:d.barred,open:d.open}):null})()})"
+  },
+  {
+   "shot": "m4_left"
+  },
+  {
+   "down": "KeyD"
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "up": "KeyD"
+  },
+  {
+   "eval": "JSON.stringify({t:+G.time.toFixed(1),beat:G.scenes.beat,p:[+G.eye.x.toFixed(2),+G.eye.z.toFixed(2)],yaw:+N.controller.yaw.toFixed(2),mode:N.controller.mode,him:G.brawl.active?[+G.brawl.c.pos.x.toFixed(2),+G.brawl.c.pos.z.toFixed(2),G.brawl.him.state]:null,prompt:G.hud.promptShown,say:G.hud.sayShown,card:G.brawl._cards&&G.brawl._cards.shownCard,flash:G.brawl._cards&&G.brawl._cards.shownFlash,hp:Math.round(G.health.hp),door:(()=>{const d=N.stage&&N.stage.dinerDoor;return d?JSON.stringify({a:d.angle,bar:d.barred,open:d.open}):null})()})"
+  },
+  {
+   "shot": "m5_right"
+  },
+  {
+   "look": [
+    -900,
+    0
+   ],
+   "steps": 12
+  },
+  {
+   "wait": 300
+  },
+  {
+   "eval": "JSON.stringify({t:+G.time.toFixed(1),beat:G.scenes.beat,p:[+G.eye.x.toFixed(2),+G.eye.z.toFixed(2)],yaw:+N.controller.yaw.toFixed(2),mode:N.controller.mode,him:G.brawl.active?[+G.brawl.c.pos.x.toFixed(2),+G.brawl.c.pos.z.toFixed(2),G.brawl.him.state]:null,prompt:G.hud.promptShown,say:G.hud.sayShown,card:G.brawl._cards&&G.brawl._cards.shownCard,flash:G.brawl._cards&&G.brawl._cards.shownFlash,hp:Math.round(G.health.hp),door:(()=>{const d=N.stage&&N.stage.dinerDoor;return d?JSON.stringify({a:d.angle,bar:d.barred,open:d.open}):null})()})"
+  },
+  {
+   "shot": "m6_turned"
+  },
+  {
+   "down": "KeyW"
+  },
+  {
+   "wait": 2500
+  },
+  {
+   "up": "KeyW"
+  },
+  {
+   "eval": "JSON.stringify({t:+G.time.toFixed(1),beat:G.scenes.beat,p:[+G.eye.x.toFixed(2),+G.eye.z.toFixed(2)],yaw:+N.controller.yaw.toFixed(2),mode:N.controller.mode,him:G.brawl.active?[+G.brawl.c.pos.x.toFixed(2),+G.brawl.c.pos.z.toFixed(2),G.brawl.him.state]:null,prompt:G.hud.promptShown,say:G.hud.sayShown,card:G.brawl._cards&&G.brawl._cards.shownCard,flash:G.brawl._cards&&G.brawl._cards.shownFlash,hp:Math.round(G.health.hp),door:(()=>{const d=N.stage&&N.stage.dinerDoor;return d?JSON.stringify({a:d.angle,bar:d.barred,open:d.open}):null})()})"
+  },
+  {
+   "shot": "m7_fwd"
+  }
+ ]
+}

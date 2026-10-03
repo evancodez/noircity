@@ -1,0 +1,77 @@
+{
+ "about": "[C4] after the critic (M3): the loaded punch held (each button): the fist cocked up by the jaw, its ticks",
+ "url": "/?mute=1&start=fight.round1",
+ "size": [
+  1440,
+  900
+ ],
+ "out": "shots/play/fight_wind",
+ "steps": [
+  {
+   "until": "G.state === 'title' && !document.getElementById('title').classList.contains('hidden')",
+   "timeout": 30000
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]",
+   "taken": "G.state !== 'title'",
+   "retries": 5,
+   "every": 4000
+  },
+  {
+   "until": "G.scenes.current && G.brawl && G.brawl.active",
+   "timeout": 60000
+  },
+  {
+   "wait": 2500
+  },
+  {
+   "eval": "(G.brawl.him.next = 99, G.brawl.lessonHold = true, 1)"
+  },
+  {
+   "mouse": "down",
+   "button": "left"
+  },
+  {
+   "wait": 450
+  },
+  {
+   "shot": "w1_lv1"
+  },
+  {
+   "wait": 300
+  },
+  {
+   "shot": "w2_lv2"
+  },
+  {
+   "wait": 400
+  },
+  {
+   "shot": "w3_full"
+  },
+  {
+   "mouse": "up",
+   "button": "left"
+  },
+  {
+   "wait": 300
+  },
+  {
+   "mouse": "down",
+   "button": "right"
+  },
+  {
+   "wait": 1200
+  },
+  {
+   "shot": "w4_fullR"
+  },
+  {
+   "mouse": "up",
+   "button": "right"
+  }
+ ]
+}

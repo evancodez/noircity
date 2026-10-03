@@ -1,0 +1,787 @@
+{
+ "about": "[C4] after the critic (B3), and its second look: poking his guard and clicking blind - every black says what put me down (never just 'Down.'); up again after his answer or his jab, the card it brings",
+ "url": "/?mute=1&start=fight.round1",
+ "size": [
+  1440,
+  900
+ ],
+ "out": "shots/play/fight_words",
+ "steps": [
+  {
+   "until": "G.state === 'title' && !document.getElementById('title').classList.contains('hidden')",
+   "timeout": 30000
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]",
+   "taken": "G.state !== 'title'",
+   "retries": 5,
+   "every": 4000
+  },
+  {
+   "until": "G.brawl.active && G.brawl.round === 1 && !G.brawl.lesson",
+   "timeout": 40000
+  },
+  {
+   "eval": "(window.__tc = [], setInterval(() => { const t = G.hud.kit.teachCur; if (t && window.__tc[window.__tc.length - 1] !== t.text) window.__tc.push(t.text); }, 50), 1)"
+  },
+  {
+   "wait": 800
+  },
+  {
+   "wait": 800
+  },
+  {
+   "mouse": "click",
+   "button": "left",
+   "hold": 90
+  },
+  {
+   "wait": 650
+  },
+  {
+   "mouse": "click",
+   "button": "right",
+   "hold": 90
+  },
+  {
+   "wait": 650
+  },
+  {
+   "mouse": "click",
+   "button": "left",
+   "hold": 90
+  },
+  {
+   "wait": 650
+  },
+  {
+   "mouse": "click",
+   "button": "right",
+   "hold": 90
+  },
+  {
+   "wait": 650
+  },
+  {
+   "mouse": "click",
+   "button": "left",
+   "hold": 90
+  },
+  {
+   "wait": 650
+  },
+  {
+   "mouse": "click",
+   "button": "right",
+   "hold": 90
+  },
+  {
+   "wait": 650
+  },
+  {
+   "mouse": "click",
+   "button": "left",
+   "hold": 90
+  },
+  {
+   "wait": 650
+  },
+  {
+   "mouse": "click",
+   "button": "right",
+   "hold": 90
+  },
+  {
+   "wait": 650
+  },
+  {
+   "mouse": "click",
+   "button": "left",
+   "hold": 90
+  },
+  {
+   "wait": 650
+  },
+  {
+   "mouse": "click",
+   "button": "right",
+   "hold": 90
+  },
+  {
+   "wait": 650
+  },
+  {
+   "mouse": "click",
+   "button": "left",
+   "hold": 90
+  },
+  {
+   "wait": 650
+  },
+  {
+   "mouse": "click",
+   "button": "right",
+   "hold": 90
+  },
+  {
+   "wait": 650
+  },
+  {
+   "mouse": "click",
+   "button": "left",
+   "hold": 90
+  },
+  {
+   "wait": 650
+  },
+  {
+   "mouse": "click",
+   "button": "right",
+   "hold": 90
+  },
+  {
+   "wait": 650
+  },
+  {
+   "mouse": "click",
+   "button": "left",
+   "hold": 90
+  },
+  {
+   "wait": 650
+  },
+  {
+   "mouse": "click",
+   "button": "right",
+   "hold": 90
+  },
+  {
+   "wait": 650
+  },
+  {
+   "mouse": "click",
+   "button": "left",
+   "hold": 90
+  },
+  {
+   "wait": 650
+  },
+  {
+   "mouse": "click",
+   "button": "right",
+   "hold": 90
+  },
+  {
+   "wait": 650
+  },
+  {
+   "mouse": "click",
+   "button": "left",
+   "hold": 90
+  },
+  {
+   "wait": 650
+  },
+  {
+   "mouse": "click",
+   "button": "right",
+   "hold": 90
+  },
+  {
+   "wait": 650
+  },
+  {
+   "mouse": "click",
+   "button": "left",
+   "hold": 90
+  },
+  {
+   "wait": 650
+  },
+  {
+   "mouse": "click",
+   "button": "right",
+   "hold": 90
+  },
+  {
+   "wait": 650
+  },
+  {
+   "mouse": "click",
+   "button": "left",
+   "hold": 90
+  },
+  {
+   "wait": 650
+  },
+  {
+   "mouse": "click",
+   "button": "right",
+   "hold": 90
+  },
+  {
+   "wait": 650
+  },
+  {
+   "mouse": "click",
+   "button": "left",
+   "hold": 90
+  },
+  {
+   "wait": 650
+  },
+  {
+   "mouse": "click",
+   "button": "right",
+   "hold": 90
+  },
+  {
+   "wait": 650
+  },
+  {
+   "mouse": "click",
+   "button": "left",
+   "hold": 90
+  },
+  {
+   "wait": 650
+  },
+  {
+   "mouse": "click",
+   "button": "right",
+   "hold": 90
+  },
+  {
+   "wait": 650
+  },
+  {
+   "mouse": "click",
+   "button": "left",
+   "hold": 90
+  },
+  {
+   "wait": 650
+  },
+  {
+   "mouse": "click",
+   "button": "right",
+   "hold": 90
+  },
+  {
+   "wait": 650
+  },
+  {
+   "wait": 800
+  },
+  {
+   "mouse": "click",
+   "button": "left",
+   "hold": 90
+  },
+  {
+   "wait": 650
+  },
+  {
+   "mouse": "click",
+   "button": "right",
+   "hold": 90
+  },
+  {
+   "wait": 650
+  },
+  {
+   "mouse": "click",
+   "button": "left",
+   "hold": 90
+  },
+  {
+   "wait": 650
+  },
+  {
+   "mouse": "click",
+   "button": "right",
+   "hold": 90
+  },
+  {
+   "wait": 650
+  },
+  {
+   "mouse": "click",
+   "button": "left",
+   "hold": 90
+  },
+  {
+   "wait": 650
+  },
+  {
+   "mouse": "click",
+   "button": "right",
+   "hold": 90
+  },
+  {
+   "wait": 650
+  },
+  {
+   "mouse": "click",
+   "button": "left",
+   "hold": 90
+  },
+  {
+   "wait": 650
+  },
+  {
+   "mouse": "click",
+   "button": "right",
+   "hold": 90
+  },
+  {
+   "wait": 650
+  },
+  {
+   "mouse": "click",
+   "button": "left",
+   "hold": 90
+  },
+  {
+   "wait": 650
+  },
+  {
+   "mouse": "click",
+   "button": "right",
+   "hold": 90
+  },
+  {
+   "wait": 650
+  },
+  {
+   "mouse": "click",
+   "button": "left",
+   "hold": 90
+  },
+  {
+   "wait": 650
+  },
+  {
+   "mouse": "click",
+   "button": "right",
+   "hold": 90
+  },
+  {
+   "wait": 650
+  },
+  {
+   "mouse": "click",
+   "button": "left",
+   "hold": 90
+  },
+  {
+   "wait": 650
+  },
+  {
+   "mouse": "click",
+   "button": "right",
+   "hold": 90
+  },
+  {
+   "wait": 650
+  },
+  {
+   "mouse": "click",
+   "button": "left",
+   "hold": 90
+  },
+  {
+   "wait": 650
+  },
+  {
+   "mouse": "click",
+   "button": "right",
+   "hold": 90
+  },
+  {
+   "wait": 650
+  },
+  {
+   "mouse": "click",
+   "button": "left",
+   "hold": 90
+  },
+  {
+   "wait": 650
+  },
+  {
+   "mouse": "click",
+   "button": "right",
+   "hold": 90
+  },
+  {
+   "wait": 650
+  },
+  {
+   "mouse": "click",
+   "button": "left",
+   "hold": 90
+  },
+  {
+   "wait": 650
+  },
+  {
+   "mouse": "click",
+   "button": "right",
+   "hold": 90
+  },
+  {
+   "wait": 650
+  },
+  {
+   "mouse": "click",
+   "button": "left",
+   "hold": 90
+  },
+  {
+   "wait": 650
+  },
+  {
+   "mouse": "click",
+   "button": "right",
+   "hold": 90
+  },
+  {
+   "wait": 650
+  },
+  {
+   "mouse": "click",
+   "button": "left",
+   "hold": 90
+  },
+  {
+   "wait": 650
+  },
+  {
+   "mouse": "click",
+   "button": "right",
+   "hold": 90
+  },
+  {
+   "wait": 650
+  },
+  {
+   "mouse": "click",
+   "button": "left",
+   "hold": 90
+  },
+  {
+   "wait": 650
+  },
+  {
+   "mouse": "click",
+   "button": "right",
+   "hold": 90
+  },
+  {
+   "wait": 650
+  },
+  {
+   "mouse": "click",
+   "button": "left",
+   "hold": 90
+  },
+  {
+   "wait": 650
+  },
+  {
+   "mouse": "click",
+   "button": "right",
+   "hold": 90
+  },
+  {
+   "wait": 650
+  },
+  {
+   "mouse": "click",
+   "button": "left",
+   "hold": 90
+  },
+  {
+   "wait": 650
+  },
+  {
+   "mouse": "click",
+   "button": "right",
+   "hold": 90
+  },
+  {
+   "wait": 650
+  },
+  {
+   "wait": 800
+  },
+  {
+   "mouse": "click",
+   "button": "left",
+   "hold": 90
+  },
+  {
+   "wait": 650
+  },
+  {
+   "mouse": "click",
+   "button": "right",
+   "hold": 90
+  },
+  {
+   "wait": 650
+  },
+  {
+   "mouse": "click",
+   "button": "left",
+   "hold": 90
+  },
+  {
+   "wait": 650
+  },
+  {
+   "mouse": "click",
+   "button": "right",
+   "hold": 90
+  },
+  {
+   "wait": 650
+  },
+  {
+   "mouse": "click",
+   "button": "left",
+   "hold": 90
+  },
+  {
+   "wait": 650
+  },
+  {
+   "mouse": "click",
+   "button": "right",
+   "hold": 90
+  },
+  {
+   "wait": 650
+  },
+  {
+   "mouse": "click",
+   "button": "left",
+   "hold": 90
+  },
+  {
+   "wait": 650
+  },
+  {
+   "mouse": "click",
+   "button": "right",
+   "hold": 90
+  },
+  {
+   "wait": 650
+  },
+  {
+   "mouse": "click",
+   "button": "left",
+   "hold": 90
+  },
+  {
+   "wait": 650
+  },
+  {
+   "mouse": "click",
+   "button": "right",
+   "hold": 90
+  },
+  {
+   "wait": 650
+  },
+  {
+   "mouse": "click",
+   "button": "left",
+   "hold": 90
+  },
+  {
+   "wait": 650
+  },
+  {
+   "mouse": "click",
+   "button": "right",
+   "hold": 90
+  },
+  {
+   "wait": 650
+  },
+  {
+   "mouse": "click",
+   "button": "left",
+   "hold": 90
+  },
+  {
+   "wait": 650
+  },
+  {
+   "mouse": "click",
+   "button": "right",
+   "hold": 90
+  },
+  {
+   "wait": 650
+  },
+  {
+   "mouse": "click",
+   "button": "left",
+   "hold": 90
+  },
+  {
+   "wait": 650
+  },
+  {
+   "mouse": "click",
+   "button": "right",
+   "hold": 90
+  },
+  {
+   "wait": 650
+  },
+  {
+   "mouse": "click",
+   "button": "left",
+   "hold": 90
+  },
+  {
+   "wait": 650
+  },
+  {
+   "mouse": "click",
+   "button": "right",
+   "hold": 90
+  },
+  {
+   "wait": 650
+  },
+  {
+   "mouse": "click",
+   "button": "left",
+   "hold": 90
+  },
+  {
+   "wait": 650
+  },
+  {
+   "mouse": "click",
+   "button": "right",
+   "hold": 90
+  },
+  {
+   "wait": 650
+  },
+  {
+   "mouse": "click",
+   "button": "left",
+   "hold": 90
+  },
+  {
+   "wait": 650
+  },
+  {
+   "mouse": "click",
+   "button": "right",
+   "hold": 90
+  },
+  {
+   "wait": 650
+  },
+  {
+   "mouse": "click",
+   "button": "left",
+   "hold": 90
+  },
+  {
+   "wait": 650
+  },
+  {
+   "mouse": "click",
+   "button": "right",
+   "hold": 90
+  },
+  {
+   "wait": 650
+  },
+  {
+   "mouse": "click",
+   "button": "left",
+   "hold": 90
+  },
+  {
+   "wait": 650
+  },
+  {
+   "mouse": "click",
+   "button": "right",
+   "hold": 90
+  },
+  {
+   "wait": 650
+  },
+  {
+   "mouse": "click",
+   "button": "left",
+   "hold": 90
+  },
+  {
+   "wait": 650
+  },
+  {
+   "mouse": "click",
+   "button": "right",
+   "hold": 90
+  },
+  {
+   "wait": 650
+  },
+  {
+   "mouse": "click",
+   "button": "left",
+   "hold": 90
+  },
+  {
+   "wait": 650
+  },
+  {
+   "mouse": "click",
+   "button": "right",
+   "hold": 90
+  },
+  {
+   "wait": 650
+  },
+  {
+   "eval": "'(clicked)'"
+  },
+  {
+   "wait": 400
+  },
+  {
+   "shot": "b2_card"
+  },
+  {
+   "eval": "JSON.stringify({ why: G.brawl.stats.downWhy, cardsBack: G.brawl.stats.cardsBack, cards: window.__tc })"
+  },
+  {
+   "until": "!!G.hud.kit.teachCur || true",
+   "timeout": 1000
+  },
+  {
+   "expect": "(G.brawl.stats.downWhy || []).length >= 1 && G.brawl.stats.downWhy.every((w) => w !== 'down')",
+   "label": "every down named by its cause"
+  },
+  {
+   "expect": "window.__tc.some((t) => /hold to block his jab|hit only where his guard is down/.test(t))",
+   "label": "up again after his answer or his jab: the card it brings"
+  }
+ ]
+}
