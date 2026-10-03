@@ -99,7 +99,9 @@ export const BEATS = {
   // near car, they come out of the warehouse's openings across the way;
   // the street door is locked behind me: the fight is out here)
   street: {
-    at: [-5.0, 7.85, SOUTH], gun: 'tommy', crouch: true, max: 2, flankAfter: 11, lock: ['SD'],
+    // ([C2] after the critic's second look: flankAfter 11 -> 14 - the first-timer, down behind the near car, was flanked
+    // before he had learnt the street's lines; the way round is still the street's lesson)
+    at: [-5.0, 7.85, SOUTH], gun: 'tommy', crouch: true, max: 2, flankAfter: 14, lock: ['SD'],
     obj: 'Four of them across the street. Cover to cover.',
     // (three there already, down behind the far cars; the fourth out of the loading door later)
     men: [
@@ -114,7 +116,7 @@ export const BEATS = {
 };
 // ([C2] after the critic: the street with six rounds against four - their aim a tenth slower to settle, the
 // difficulty table's settleK; good hands lost it to flanks while reloading)
-BEATS.street_rev = { ...BEATS.street, gun: 'revolver', obj: 'Again, with the revolver.', settleK: 1.1 };
+BEATS.street_rev = { ...BEATS.street, gun: 'revolver', obj: 'Again, with the revolver.', settleK: 1.2 };   // ([C2] after the critic's second look: 1.1 -> 1.2)
 const CONTESTS = ['door', 'two_ways', 'pin', 'rush', 'street', 'street_rev'];
 const NEXT = { ready: 'door', door: 'two_ways', two_ways: 'pin', pin: 'rush', rush: 'street', street: 'street_rev', street_rev: 'done', done: 'door' };
 

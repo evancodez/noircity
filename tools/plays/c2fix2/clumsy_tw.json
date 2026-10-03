@@ -1,0 +1,48 @@
+{
+ "about": "C2 after the critic's second look: the owner's clumsy first-timer (tools/lib/c2_guns.mjs) in two_ways, twice.",
+ "url": "/?mute=1&start=guns.door",
+ "size": [
+  1280,
+  800
+ ],
+ "out": "shots/c2fix2/clumsy_tw",
+ "steps": [
+  {
+   "name": "the title, BEGIN at the test bed"
+  },
+  {
+   "until": "G.state === 'title' && !!document.querySelector('#title .opt[data-k=begin]')",
+   "timeout": 60000
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]",
+   "taken": "G.scenes.current && G.scenes.current.id === 'guns'",
+   "retries": 4
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'guns' && document.pointerLockElement === N.renderer.domElement",
+   "timeout": 30000
+  },
+  {
+   "name": "every contest, played clumsily"
+  },
+  {
+   "drive": "tools/lib/c2_guns.mjs",
+   "profile": "clumsy",
+   "tries": 3,
+   "beatTimeout": 150,
+   "beats": [
+    "two_ways",
+    "two_ways"
+   ],
+   "check": "D.lost === 0 && D.falls.length >= 1 && D.falls.every((w) => w && w !== 'timeout') && D.allWarned",
+   "label": "the clumsy first-timer fails some and gets through every contest within three tries, each fall warned"
+  },
+  {
+   "eval": "(N.game.guns.events || []).filter((e) => e.what === 'down' || e.what === 'flank').map((e) => e.what + ' ' + (e.why || e.at))"
+  }
+ ]
+}

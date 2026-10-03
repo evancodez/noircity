@@ -1,0 +1,26 @@
+{
+ "about": "C2 after the critic's second look: the critic's clumsy hands (unchanged) on the street and street_rev twice each, four tries each - the street's first-timer, measured against the code before this pass (git stash, e616460's src).",
+ "url": "/?mute=1",
+ "size": [
+  1440,
+  900
+ ],
+ "out": "shots/c2fix2/bad_some",
+ "steps": [
+  {
+   "wait": 1500
+  },
+  {
+   "drive": "tools/plays/critic/c2/hands.mjs",
+   "style": "bad",
+   "tries": 4,
+   "timeout": 200000,
+   "beats": [
+    "street",
+    "street_rev",
+    "street",
+    "street_rev"
+   ]
+  }
+ ]
+}

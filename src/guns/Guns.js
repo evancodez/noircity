@@ -3,6 +3,8 @@ import { ATLAS } from '../fx/fxTextures.js';
 import { FIRE } from '../fx/fxTextures.js';
 import { Covers, doorsOf } from './Covers.js';
 import { GUNMAN } from '../enemies/brains/gunman.js';
+import { GUN_MODE } from '../player/modes/gun.js';
+const GUN_DOWN = GUN_MODE.down;
 
 // The gun kit (lane C2): one way of fighting with a gun, used by IV The
 // Door, VII Pier Nine's loud pass and VIII The Block. game.guns (gunsOf(game)).
@@ -296,15 +298,15 @@ export class Guns {
   }
 
   // the fire tokens: at most cfg.maxFiring men shoot at once; force always.
-  // The limit is room for the player who fights from cover: a man he sees
-  // whole (in the open - standing, or down with nothing in front) is every
-  // man's to shoot - stand and trade in the open and they all come out at
-  // once. ([C2] after the critic's second look: by what he sees, not my stance)
+  // The limit is room for the player who fights from cover: a man standing
+  // in the open, seen whole, is every man's to shoot - stand and trade in the
+  // open and they all come out at once. ([C2] after the critic's second look:
+  // whole by what he sees - nothing low between us - and standing, the size)
   token(ai, force = false) {
     const T = this.tokens;
     if (T.has(ai)) return true;
     for (const [a] of T) if (!a.h.alive) T.delete(a);
-    if (!force && ai && ai.brain && ai.brain.S && ai.brain.S.line && ai.brain.S.whole) force = true;
+    if (!force && ai && ai.brain && ai.brain.S && ai.brain.S.whole && ai.brain.bigMark) force = true;
     if (T.size >= this.cfg.maxFiring && !force) return false;
     T.set(ai, this.game.time);
     return true;
@@ -314,7 +316,7 @@ export class Guns {
 
   // ---- the player's body ----------------------------------------------------------------------
   // { eye, foot, r, head, chest, belly, crouched }
-  playerBody(out = this._body || (this._body = { eye: V(0, 0, 0), foot: V(0, 0, 0), head: V(0, 0, 0), chest: V(0, 0, 0), belly: V(0, 0, 0) })) {
+  playerBody(out = this._body || (this._body = { eye: V(0, 0, 0), foot: V(0, 0, 0), head: V(0, 0, 0), chest: V(0, 0, 0), belly: V(0, 0, 0), seat: V(0, 0, 0) })) {
     const G = this.game, C = G.controller, e = G.eye;
     const floor = G.stage.surfaceY(e.x, e.z);
     const ck = C.crouchK || 0;
@@ -325,6 +327,10 @@ export class Guns {
     out.head.set(e.x, e.y - 0.02, e.z);
     out.chest.set(e.x, Math.max(floor + 0.35, e.y - BODY.chest * (1 - 0.45 * ck)), e.z);
     out.belly.set(e.x, Math.max(floor + 0.25, e.y - BODY.belly * (1 - 0.55 * ck)), e.z);
+    // ([C2] after the critic's second look: the belly where it is under a rise -
+    // up over cover the eye goes up, the body stays down behind it: a man who
+    // sees this point bare sees me in the open)
+    out.seat.set(e.x, Math.max(floor + 0.25, floor + 1.63 - GUN_DOWN * ck - BODY.belly * (1 - 0.55 * ck)), e.z);
     out.top = e.y + BODY.head;
     return out;
   }
@@ -357,6 +363,15 @@ export class Guns {
     _d.divideScalar(L);
     const hit = G.rays.raycast(a, _d, Math.max(0.01, L - pad), { anyHit: true, skip: SEE_SKIP });
     return !hit;
+  }
+
+  // nothing at all from a to b, glass included (a man seen whole is in the open)
+  bare(a, b, pad = 0.3) {
+    _d.subVectors(b, a);
+    const L = _d.length();
+    if (L < 1e-3) return true;
+    _d.divideScalar(L);
+    return !this.game.rays.raycast(a, _d, Math.max(0.01, L - pad), { anyHit: true });
   }
 
   // ---- a round ------------------------------------------------------------------------------------------

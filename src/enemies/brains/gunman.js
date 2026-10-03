@@ -38,13 +38,13 @@ export const GUNMAN = {
   raise: 0.26,                 // s: the tell - the arm comes up, the glint, the click
   settle: [0.4, 0.9],          // s: his aim settling, at 3 m .. at 18 m
   settleMoving: 1.4,           // x while I move across his line
-  settleStill: 0.6,            // x while he sees me whole (chest or belly: in the open, standing or down) and I am still: an easy mark
+  settleStill: 0.6,            // x while he sees me whole, standing (the whole height of me), and I am still: an easy mark
   breath: [1.0, 1.4],          // s: after a burst with no cover to go back to, the gun down a breath before it comes up again (the brief's out, two or three, back)
   lookOut: [0.8, 1.3],         // s: behind his cover, how soon he looks out again at a man he last saw whole (2.5 - 4 for a head over cover)
   snapShots: [1, 2],           // rounds: shots on his way (in at a door, to a jamb) - one or two, then on
   holdUp: 0.4,                 // s: after them, his aim held on a man in the open - shot back at, it is a duel (no breath); else the breath
   settleRattled: 1.5,          // x for 1.5 s after a round came near him or hit him
-  notice: 0.25,                // s: he sees only my head (up over cover, round its end): he sees me, then settles (seen whole, x0.3)
+  notice: 0.25,                // s: I come into his line: he sees me, then settles (x0.3 for a man standing whole in his line: the whole height of him)
   behind: 0.45,                // s more, when he has me from outside my view (behind, the far side): in time to turn
   lagT: 0.2,                   // s: his aim trails a moving target by this much
   sigma: 0.0055,               // rad: a settled round's throw (a still man in the open is hit)
@@ -84,6 +84,7 @@ export default {
       get state() { return kind + ':' + S.state; },
       get hasLine() { return S.line && h.alive; },
       get flanking() { return !!S.flank || !!S.goneRound; },
+      get bigMark() { return bigMark(); },
       get behindMe() { return behindMe(); },
       // ---- the kit's director asks -------------------------------------------------------
       // (the pistol men go round; the Tommy gunner only when he is the last - from his own range, 6 - 7.5 m,
@@ -137,9 +138,9 @@ export default {
         // saw whole - standing in the room, holding it: the doorway is held;
         // the kit sends one of the others round to another door of the room
         const Kt = kit();
-        if (Kt && Kt.active && kind !== 'rusher' && S.lastSeen && S.lastSeen.up && G.time - S.lastSeen.t < 1.2) {
-          let D = S.workDoor || null;
-          if (!D) for (const d of doorsOf(G.stage)) if (d.centre && Math.hypot(h.pos.x - d.centre.x, h.pos.z - d.centre.z) < 1.8) { D = d; break; }
+        if (Kt && Kt.active && kind !== 'rusher' && S.lastSeen && S.lastSeen.up && G.time - S.lastSeen.t < 1.2 && (G.controller.crouchK || 0) < 0.5) {
+          let D = null;
+          for (const d of doorsOf(G.stage)) if (d.centre && Math.hypot(h.pos.x - d.centre.x, h.pos.z - d.centre.z) < 1.3) { D = d; break; }
           if (D) Kt.doorHeld(D, B);
         }
         return chooseDeath(G, h, dir, head, kind0);
@@ -173,10 +174,13 @@ export default {
     // the top of me (a head, a chest over a desk or a car's bonnet). His rules
     // read what he sees, never my stance: low in the open I am seen whole; up
     // over cover I am not
+    // (whole: nothing at all between him and my belly where it is - under a
+    // rise the body stays down: a car's windows and a pane are seen through,
+    // but a man behind them is not in the open)
     const visiblePoint = () => {
       const Kt = kit(), Bd = Kt.playerBody(), e = eyeOf(_e);
       const belly = Kt.see(e, Bd.belly, 0.15);
-      S.wholeNow = belly;
+      S.wholeNow = Kt.bare(e, Bd.seat, 0.15);
       if (Kt.see(e, Bd.chest, 0.15)) return Bd.chest;
       if (Kt.see(e, Bd.head, 0.15)) return Bd.head;
       return belly ? Bd.belly : null;
@@ -189,7 +193,11 @@ export default {
         S.losT = r.range(0.09, 0.15);
         const p = G.health.dead ? null : visiblePoint();
         S.line = !!p;
-        S.whole = !!p && S.wholeNow;
+        // (in the open: up on my feet with nothing low between us. Down - behind
+        // something or not - I am the small mark of a man in cover: a first-
+        // timer flanked down behind a car is not shot like a man standing in
+        // the street; down in the open is still the angle, and the fall says so)
+        S.whole = !!p && S.wholeNow && (G.controller.crouchK || 0) < 0.5;
         if (p) { S.target = p.clone(); S.lastSeen = { p: p.clone(), t: G.time, up: S.whole }; }
       }
       if (S.line && S.target) {
@@ -208,7 +216,8 @@ export default {
       const v = G.controller.vel, dx = G.eye.x - h.pos.x, dz = G.eye.z - h.pos.z, L = Math.hypot(dx, dz) || 1;
       const across = Math.abs(v.x * (-dz / L) + v.z * (dx / L));
       if (across > 1.0) s *= T.settleMoving;
-      else if (S.whole && Math.hypot(v.x, v.z) < 1.0) s *= T.settleStill;
+      // (a man standing still is a big, easy mark: the whole height of him; down, he is half of it)
+      else if (bigMark() && Math.hypot(v.x, v.z) < 1.0) s *= T.settleStill;
       if (S.rattledT > 0) s *= T.settleRattled;
       const Kc = kit() && kit().cfg;
       return s * (Kc && Kc.settleK ? Kc.settleK : 1);
@@ -217,8 +226,11 @@ export default {
     // (and a man who has me from where I am not looking - a flank, a door at my back - a moment more:
     // the time to turn, which the warning 'Behind you!' asks for)
     const behindMe = () => { const C = G.controller, dx = h.pos.x - G.eye.x, dz = h.pos.z - G.eye.z, L = Math.hypot(dx, dz) || 1; return (-Math.sin(C.yaw) * dx - Math.cos(C.yaw) * dz) / L < 0.45; };   // (off the screen: past ~63 degrees)
-    // ([C2] after the critic's second look: by what he sees - a head over cover is seen late, a man seen whole at once)
-    const noticeOf = () => (S.whole ? T.notice * 0.3 : T.notice) + (behindMe() ? T.behind : 0);
+    // ([C2] after the critic's second look: by how much of me there is to see - a man standing in his
+    // line, the height of him, is seen at once; a man down - in the open or up over cover - is half of
+    // that, or a head: seen a moment later. Written in GUNS.md: getting low makes me a smaller mark)
+    const bigMark = () => S.line && (G.controller.crouchK || 0) < 0.5;
+    const noticeOf = () => (bigMark() ? T.notice * 0.3 : T.notice) + (behindMe() ? T.behind : 0);
     const face = (dt, rate = 6) => { const p = S.target || G.eye; B.faceTo(p.x, p.z, dt, rate); };
 
     // ---- moving --------------------------------------------------------------------------------
@@ -725,9 +737,10 @@ export default {
         }
         case 'out': {
           S.raiseT += dt;
-          if (S.flinchT > 0) { /* (the flinch: a breath) */ }
-          else if (S.raiseT >= T.raise && S.line && S.lineT >= noticeOf()) S.settle += dt / settleTime();
-          else if (!S.line) S.settle = Math.max(0, S.settle - dt / T.lost);
+          // ([C2] after the critic's second look: no settling on the move - his
+          // aim settles once he stands at the spot, after he has me: the brief's
+          // time from the tell to the round, whatever his walk out was)
+          if (!S.line) S.settle = Math.max(0, S.settle - dt / T.lost);
           if (S.target) h.lookAt(S.aimP);
           // (there, or he has me and his aim is settled on the way: he stops and fires)
           // ([C2] after the critic's second look: on to the spot itself - the path's
@@ -795,7 +808,7 @@ export default {
           S.heldN = 0; S.armN = 0;
           S.shots--;
           // (a man he sees whole and still: the aim holds between rounds - the pair comes quicker)
-          const still = S.whole && Math.hypot(G.controller.vel.x, G.controller.vel.z) < 1.0;
+          const still = S.whole && bigMark() && Math.hypot(G.controller.vel.x, G.controller.vel.z) < 1.0;
           S.shotT = kind === 'pistol' ? (still ? r.range(K.gapStill[0], K.gapStill[1]) : r.range(K.gap[0], K.gap[1])) : 1 / K.rate;
           break;
         }
