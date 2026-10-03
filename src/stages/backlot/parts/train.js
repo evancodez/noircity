@@ -63,6 +63,8 @@ export default {
     scene.add(beam);
     const _a = new THREE.Vector3(), _x = new THREE.Vector3(), _up = new THREE.Vector3(0, -1, 0), F = {};
     const deckTop = OVERPASS.deckY + OVERPASS.girderH - 0.1;
+    const rng = stage.rng.fork(6812);
+    const spill = stage.lights.add({ position: new THREE.Vector3(0, -50, 0), direction: new THREE.Vector3(0, -1, 0), halfAngle: 1.1, range: 12, intensity: 0 });
     const api = {
       group, active: false, s: 0, dir: 1, onRumble: null, onSqueal: null, beam, halo, line,
       light: stage.lights.add({ position: new THREE.Vector3(0, -50, 0), direction: new THREE.Vector3(0, -1, 0), halfAngle: Math.PI, range: 14, intensity: 0 }),
@@ -71,7 +73,7 @@ export default {
         const lead = cars[0];
         if (lens.parent !== lead) lead.add(lens);
       },
-      stop() { this.active = false; group.visible = false; beam.visible = false; halo.visible = false; this.light.intensity = 0; if (this.onRumble) this.onRumble(0, null); },
+      stop() { this.active = false; group.visible = false; beam.visible = false; halo.visible = false; this.light.intensity = 0; spill.intensity = 0; if (this.onRumble) this.onRumble(0, null); },
       stage() {},
       update(dt, t, { camera = null } = {}) {
         if (!this.active) return;
@@ -102,6 +104,36 @@ export default {
           halo.scale.setScalar(Math.min(6, 2.2 + d * 0.015));
           halo.material.opacity = 1 - 0.55 * Math.min(1, Math.max(0, (d - 140) / 220));
         }
+        // (from under the el the train itself is hidden by its deck: what the
+        // street sees is the light strobing down past the girder and the
+        // sparks the wheels throw off the rail, spilling over the bottom
+        // flange on the side of the eye - the block's train's way, world/Train.js)
+        const FX = stage.fxRef || stage.fx;
+        if (camera && FX && dt > 0) {
+          const cam = camera.position;
+          for (let i = 0; i < CARS; i++) {
+            const g = cars[i], d = g.position.distanceTo(cam);
+            if (d > 60 || !rng.chance(dt * 9)) continue;
+            const side = Math.sign(cam.x - av.line.at(0, F).x) || 1;
+            const along = (rng.chance(0.5) ? 1 : -1) * (LEN / 2 - 2.3);
+            const wheel = new THREE.Vector3(F.x + side * (OVERPASS.halfW + 0.2), OVERPASS.deckY - 0.03, g.position.z + along);
+            const sw = Math.max(0.006, 0.45 * rng.range(5, 6) * (2 * Math.tan(THREE.MathUtils.degToRad(camera.fov) / 2) * wheel.distanceTo(cam)) / Math.max(1, stage.U.uRes.value.y));
+            const nS = rng.int(6, 10);
+            for (let n = 0; n < nS; n++) {
+              // (thrown back along the rail - the train runs toward -dir in z - out over the girder, and down)
+              const v = new THREE.Vector3(side * rng.range(0.6, 1.2) * 1.4, -rng.range(0.5, 1.5) * 1.4, this.dir * rng.range(1.2, 3.0) * 1.4);
+              (FX.railSparks || FX.sparks).spawn({ pos: wheel.clone().add(new THREE.Vector3(rng.gauss() * 0.14, rng.gauss() * 0.04, rng.gauss() * 0.14)), vel: v, life: rng.range(0.25, 0.45), size: [sw, sw], stretch: 0.12, col: [1.6, 1.6, 1.6], cell: 4, gravity: 3, ground: 0.02, fadeOut: 0 });
+            }
+            if (this.onSqueal && rng.chance(0.3)) this.onSqueal(0.4, wheel);
+          }
+        }
+        // the light down past the girder: under the deck's edge by the lead
+        // cars, strobing with the windows passing the railing's posts
+        if (nearest) {
+          const k = Math.max(0, 1 - nd / 50);
+          spill.position.set(nearest.x, OVERPASS.deckY - 0.4, nearest.z);
+          spill.intensity = k * (0.55 + 0.45 * Math.abs(Math.sin(this.s / 1.7 * Math.PI)));
+        } else spill.intensity = 0;
         if (this.onRumble) this.onRumble(nearest ? Math.max(0, 1 - nd / 140) : 0, nearest);
         if (nearest) { this.light.position.copy(nearest).setY(nearest.y + 1.5); this.light.intensity = 0.9; }
         const L = stage.lamps;
