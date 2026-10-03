@@ -175,7 +175,7 @@ export default {
       el1: L.hang(AVENUE.elX - 1.6, O.deckY - 0.2, -80.0, { real: true }),
       el2: L.hang(AVENUE.elX - 1.6, O.deckY - 0.2, -92.0, { real: true }),
       el3: L.hang(AVENUE.elX - 1.6, O.deckY - 0.2, -103.4, { real: true }),
-      el4: L.hang(AVENUE.elX - 1.6, O.deckY - 0.2, -60.0, { real: false }),
+      el4: L.hang(AVENUE.elX - 1.6, O.deckY - 0.2, -60.0, { real: true }),
       el5: L.hang(AVENUE.elX - 1.6, O.deckY - 0.2, -116.0, { real: true }),
       e1: L.post(AVENUE.road[1] + 0.7, -86.0, -Math.PI / 2, { y: 0.15, real: false }),
       e2: L.post(AVENUE.road[1] + 0.7, -110.0, -Math.PI / 2, { y: 0.15, real: false }),
@@ -183,7 +183,7 @@ export default {
       e4: L.post(AVENUE.road[1] + 0.7, 3.0, -Math.PI / 2, { y: 0.15, real: false }),
       h1: L.post(AVENUE.road[0] - 0.7, HARBOR.z0 - 1.0, Math.PI / 2, { y: 0.15, real: false }),
     };
-    for (const k of ['el1', 'el2', 'el3', 'el5']) { const l = api.lamps[k]; if (l.light) { l.light.intensity = 110; l.light.angle = 0.7; } }
+    for (const k of ['el1', 'el2', 'el3', 'el4', 'el5']) { const l = api.lamps[k]; if (l.light) { l.light.intensity = 110; l.light.angle = 0.7; } }
 
     // ---- the press hall's dock: the newspaper van backed up to it ---------------------------------
     {
@@ -283,7 +283,7 @@ export default {
       // (the alley runs straight from the loading yard to the avenue: from
       // anywhere along that line, the stair included, the el is at its end)
       // ([C6 3rd] and from the cut's E-W leg: the avenue at its mouth)
-      const show = (p.x > 50 && p.z < -98.5 && p.z > -107.5) || (p.x > 70 && p.z < -60 && p.z > -110) || p.x > 93 || p.z > -12 || (p.x > CUT.ns.x0 && p.z < CUT.ew.z1 + 1.5 && p.z > CUT.ew.z0 - 0.5);
+      const show = (p.x > 50 && p.z < -98.5 && p.z > -107.5) || (p.x > 70 && p.z < -55 && p.z > -110) || p.x > 93 || p.z > -12 || (p.x > CUT.ns.x0 && p.z < CUT.ew.z1 + 1.5 && p.z > CUT.ew.z0 - 0.5);
       if (group.visible !== show) group.visible = show;
       if (!show) return;
       for (const s of stations) {

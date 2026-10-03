@@ -30,11 +30,15 @@
 //            bundles to the mailroom (SPACE over), the pressmen; out by the
 //            loading dock onto the avenue
 //   el       [C6 2nd] the avenue under the el (x 93.75 .. 115.75), north
-//            past the newspaper van; ([C6 3rd] past the alley behind the
-//            press hall - fenced off, the main burst - on up the avenue to
-//            the cut, its gate, in along it, round its knee, down it under
-//            the main's pipe (C under) into the alley's west end) to the
-//            loading yard's east end
+//            past the newspaper van; ([C6 3rd] in by the press hall's
+//            delivery yard - its dock's shutter down tonight: out of the
+//            hall's south door, down the yard between the vans, a reel off
+//            a van, bundles, out of its gate onto the avenue - and up it,
+//            past the alley behind the press hall - fenced off, the main
+//            burst - to the cut)
+//   cut      ([C6 3rd]) in along the cut (its gate, the barrels), round its
+//            knee, down it under the main's pipe (C under), the coal sacks,
+//            into the alley's west end, to the loading yard's east end
 //   over     the loading yard and the fork: up the iron stair onto the roofs
 //            (a party wall, the jump across the light well, a tank to slide
 //            under, the shed roof to slide down) or round by the passage and
@@ -143,7 +147,14 @@ export const PRESS = {
   web: { x: 79.65, y: 0.98, w: 1.6 },           // the web across the north line's gap: under it is 0.98 to its lower edge
   conveyor: { x: 89.6, y: 0.82, w: 0.9 },      // across the middle aisle, north - south, from the north line's folder to the mailroom
   dock: { z: -78.2, w: 3.2, h: 3.2 },          // the loading dock's doorway in the east wall
+  // [C6 3rd] the door in its south wall into its delivery yard (the dock's
+  // shutter is down tonight: the way out is through the yard)
+  southDoor: { x: 90.3, w: 1.4, h: 2.6 },
 };
+// [C6 3rd] the Evening Star's delivery yard, south of the press hall in the
+// block between the washing yard and the avenue: vans, bundles, a spare reel
+// rolled off a van; its gate onto the avenue at its south-east corner
+export const DELIVERY = { x0: 73.0, x1: 92.0, z0: -74.0, z1: -55.5, gate: { z0: -59.8, z1: -55.8 } };
 // the avenue under the el (north - south, east of the press hall, across
 // Harbor Street's east end): its facades, pavements, road; the el's centre
 // line over its west lane; it is up for works at both ends (hoardings across
@@ -220,13 +231,15 @@ export const NODES = {
   wIn2: [54.25, 0, -85.6], eIn2: [65.75, 0, -85.6], wK: [54.2, 0, -94.4], eK: [65.8, 0, -94.4], kMid: [61.0, 0, -96.6], rollOut: [60.0, 0, -101.6],
   // [C6 2nd] the kitchen's east door, the press hall, the avenue, the alley behind
   kDoor: [69.0, 0, -97.6], pIn: [71.6, 0, -97.6], pA: [79.65, 0, -96.4], pB: [79.65, 0, -87.6], pC: [91.6, 0, -87.6], pD: [91.6, 0, -78.2],
-  dock: [95.4, 0.15, -78.2], avS: [98.3, 0, -83.0], avN: [98.3, 0, -100.4], aIn: [92.4, 0, -103.0], aMid: [81.6, 0, -103.0], aOut: [73.8, 0, -103.0],
+  dock: [95.4, 0.15, -78.2], avS: [100.6, 0, -80.0], avN: [98.3, 0, -100.4],
+  // [C6 3rd] out by the press hall's south door, down its yard, out of its gate onto the avenue
+  pS: [90.3, 0, -75.2], dyN: [89.9, 0, -72.0], dyS: [89.4, 0, -58.0], dyGate: [92.9, 0, -57.8], avY: [98.3, 0, -57.8], avV: [101.3, 0, -66.0], aIn: [92.4, 0, -103.0], aMid: [81.6, 0, -103.0], aOut: [73.8, 0, -103.0],
   // [C6 3rd] on up the avenue to the cut, in, round its knee, down into the alley's west end
   avCut: [97.4, 0, -118.9], cutE: [92.4, 0, -118.9], cutK: [77.9, 0, -118.9], cutS: [77.9, 0, -105.2],
   // (dead ends off the way: up and down the avenue, the loading yard's west end,
   // [C6 3rd] the alley behind the press hall from the avenue to the barrier -
   // the way on from them is back)
-  avSouth: [98.3, 0, -60.0], avNorth: [98.3, 0, -124.0], loadW: [53.0, 0, -102.8],
+  avSouth: [98.3, 0, -36.0], avNorth: [98.3, 0, -124.0], loadW: [53.0, 0, -102.8],
   // (the stair's foot is met from the alley: lined up on it first)
   stairIn: [71.8, 0, -105.0],
   stairFoot: [70.4, 0, -105.2], stairTop: [57.4, ROOFS.R1.y, -105.25], roofIn: [57.0, ROOFS.R1.y, -108.0],
@@ -252,11 +265,19 @@ export const WAYS = [
   // through the press hall, up the avenue, ([C6 3rd] on up it to the cut,
   // round the cut into the alley's west end: the alley from the avenue is
   // fenced off where the main has burst)
-  ['kMid', 'kDoor', 'pIn', 'pA', 'pB', 'pC', 'pD', 'dock', 'avS', 'avN', 'avCut', 'cutE', 'cutK', 'cutS', 'aOut'],
-  ['avN', 'aIn', 'aMid'],
-  ['avS', 'avSouth'], ['avCut', 'avNorth'], ['stairFoot', 'loadW'],
+  // ([C6 3rd] the dock's shutter down: out through the south door and the
+  // delivery yard instead, onto the avenue further down; the dock a dead end)
+  // (up the avenue round the newspaper van's off side: it stands backed up to the shut dock)
+  ['kMid', 'kDoor', 'pIn', 'pA', 'pB', 'pC', 'pD', 'pS', 'dyN', 'dyS', 'dyGate', 'avY', 'avV', 'avS', 'avN', 'avCut', 'cutE', 'cutK', 'cutS', 'aOut'],
+  ['pD', 'dock'], ['avN', 'aIn', 'aMid'],
+  ['avY', 'avSouth'], ['avCut', 'avNorth'], ['stairFoot', 'loadW'],
   ['aOut', 'stairIn', 'stairFoot', 'stairTop', 'roofIn', 'party', 'edge', 'r2In', 'tank', 'shedTop', 'eave', 'dropped', 'cross'],
-  ['aOut', 'passIn', 'passOut', 'dog', 'bay', 'truck', 'rowEnd', 'rowOut', 'cross'],
+  // ([C6 3rd] the row is 6.6 m longer than the roofs on the ground, and as
+  // quick for a good runner - the roofs have the stair, the jump, the slides:
+  // its metres are weighed at 0.9, so the gap says how far behind I am in
+  // time whichever way I took, and taking the plain way is not a jump of
+  // the gap into the warning)
+  { names: ['aOut', 'passIn', 'passOut', 'dog', 'bay', 'truck', 'rowEnd', 'rowOut', 'cross'], w: 0.9 },
   // [C6 3rd] the market's gateway chained: round by the corner and the arch
   ['cross', 'merN', 'corner', 'archN', 'archS', 'mN', 'aisleN', 'aisleS', 'crossW', 'gate', 'pave'],
   ['mN', 'westN', 'westS', 'gate'],
@@ -272,7 +293,7 @@ export const FORK2 = { mid: ['mN', 'aisleN'], west: ['mN', 'westN'], join: 'gate
 // his way, by his choices (lane: 'W' | 'E', over: 'roofs' | 'row'; [C6 3rd]
 // market: 'mid' | 'west' - his is the middle aisle; the west is a way of
 // mine, for the hands)
-export const PRESS_WAY = ['kDoor', 'pIn', 'pA', 'pB', 'pC', 'pD', 'dock', 'avS', 'avN', 'avCut', 'cutE', 'cutK', 'cutS', 'aOut'];
+export const PRESS_WAY = ['kDoor', 'pIn', 'pA', 'pB', 'pC', 'pD', 'pS', 'dyN', 'dyS', 'dyGate', 'avY', 'avV', 'avS', 'avN', 'avCut', 'cutE', 'cutK', 'cutS', 'aOut'];
 export const STREET_WAY = ['cross', 'merN', 'corner', 'archN', 'archS', 'mN'];
 export function hisNames(lane, over, market = 'mid') {
   const L = lane === 'E' ? ['eIn', 'eDoor', 'eIn2', 'eK'] : ['wIn', 'wDoor', 'wIn2', 'wK', 'kMid'];
@@ -294,7 +315,10 @@ export const STRETCHES = {
   // [C6 2nd] just inside the press hall (the kitchen's door open behind me);
   // out of its dock door on the avenue; the alley's west end (the fork ahead)
   press: { at: [71.7, -97.6], yaw: -Math.PI / 2, ahead: 12 },
-  el: { at: [95.2, -78.2], yaw: -0.35, ahead: 12 },
+  // ([C6 3rd] the el's stretch begins in the delivery yard, just out of the
+  // press hall's south door; the cut's at its mouth on the avenue)
+  el: { at: [90.2, -72.6], yaw: Math.PI, ahead: 12 },
+  cut: { at: [96.4, -117.2], yaw: Math.PI / 2 + 0.25, ahead: 11 },
   // ([C6 3rd] 9 m, was 11: from a retry the row's longer way put a clumsy
   // runner who took it straight into the warning)
   over: { at: [75.0, -103.0], yaw: Math.PI / 2, ahead: 9 },

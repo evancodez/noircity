@@ -3,7 +3,8 @@ import { holeyPanel } from '../kit.js';
 import { arch } from '../arch.js';
 import { lathe, tube, V3, roundedBox, merge } from '../../../world/geom.js';
 import { allocInkId, markFigure, tagInk } from '../../../render/layers.js';
-import { PRESS, KDOOR, KITCHEN, AVENUE, BALLEY, YARD } from '../plan.js';
+import { PRESS, KDOOR, KITCHEN, AVENUE, BALLEY, YARD, DELIVERY } from '../plan.js';
+import { buildTruck, TRUCK as TRUCK_M } from '../../../vehicles/models.js';
 
 // [C6 2nd] The Evening Star's press hall (chapter V, the stretch `press`):
 // the night edition running. A tall brick hall behind the kitchen, its
@@ -38,7 +39,9 @@ export default {
     // ---- the shell -------------------------------------------------------------------------
     // north wall (on the alley behind), south wall (against the next block)
     K.box('pressShell', MAT.brickDark, P.x0, P.x1, 0, P.h, P.z0, zi0);
-    K.box('pressShell', MAT.brickDark, xi0, P.x1, 0, P.h, zi1, P.z1);
+    // ([C6 3rd] the south wall: the door into the delivery yard in it)
+    const SD = P.southDoor;
+    holeyPanel(K, 'pressShell', MAT.brickDark, 'z', zi1, P.z1, xi0, P.x1, 0, P.h, [[SD.x - SD.w / 2, SD.x + SD.w / 2, 0, SD.h]]);
     // the west wall: the kitchen's east wall is it to the kitchen's height
     // (its door is the kitchen's); over the kitchen's roof and south of it, the hall's own
     K.box('pressShell', MAT.brickDark, P.x0, xi0, KITCHEN.h, P.h, P.z0, KITCHEN.z1);
@@ -48,7 +51,7 @@ export default {
     holeyPanel(K, 'pressShell', MAT.brickDark, 'x', xi1, P.x1, P.z0, P.z1, 0, P.h, [[D.z - D.w / 2, D.z + D.w / 2, 0, D.h]]);
     K.box('pressShell', MAT.tar, P.x0, P.x1, P.h - 0.3, P.h, P.z0, P.z1);
     const col = (x0, x1, z0, z1, tag = 'wall') => K.collide(x0, x1, z0, z1, tag);
-    col(P.x0, P.x1, P.z0, zi0); col(P.x0, P.x1, zi1, P.z1);
+    col(P.x0, P.x1, P.z0, zi0); col(P.x0, SD.x - SD.w / 2, zi1, P.z1); col(SD.x + SD.w / 2, P.x1, zi1, P.z1);
     col(P.x0, xi0, KITCHEN.z1, P.z1);
     col(P.x0, xi0, P.z0, KDOOR.z - KDOOR.w / 2); col(P.x0, xi0, KDOOR.z + KDOOR.w / 2, KITCHEN.z1);
     // (the door's frame on this side)
@@ -71,8 +74,17 @@ export default {
       fbox('pressShell', MAT.trim, Fe, D.z - D.w / 2 - 0.2, D.z - D.w / 2, 0, D.h + 0.2, 0, 0.16);
       fbox('pressShell', MAT.trim, Fe, D.z + D.w / 2, D.z + D.w / 2 + 0.2, 0, D.h + 0.2, 0, 0.16);
       fbox('pressShell', MAT.trim, Fe, D.z - D.w / 2 - 0.2, D.z + D.w / 2 + 0.2, D.h, D.h + 0.22, 0, 0.18);
-      // the shutter rolled up in its box over the doorway
+      // the shutter's box over the doorway; ([C6 3rd] the shutter itself down
+      // tonight, padlocked to its floor bolt: the way out is the south door)
       fbox('pressShell', MAT.metal, Fe, D.z - D.w / 2, D.z + D.w / 2, D.h - 0.42, D.h, -0.36, -0.02);
+      {
+        const sl = [];
+        for (let y = 0.06; y < D.h - 0.4; y += 0.12) sl.push(new THREE.BoxGeometry(0.035, 0.105, D.w).translate(P.x1 - 0.2, y + 0.05, D.z));
+        sl.push(new THREE.BoxGeometry(0.07, 0.08, D.w + 0.02).translate(P.x1 - 0.2, 0.04, D.z));
+        K.add('dockShutter', MAT.metal, merge(sl), { figure: true });
+        K.add('dockShutter', MAT.iron, merge([new THREE.BoxGeometry(0.05, 0.1, 0.08).translate(P.x1 - 0.12, 0.06, D.z + 0.6), new THREE.TorusGeometry(0.03, 0.007, 4, 10, Math.PI).rotateY(Math.PI / 2).translate(P.x1 - 0.12, 0.11, D.z + 0.6)]), { figure: true, noRay: true });
+        K.collide(P.x1 - 0.3, P.x1 - 0.1, D.z - D.w / 2, D.z + D.w / 2, 'shutter');
+      }
       // the canopy over the dock: a steel awning on two rods
       fbox('pressCanopy', MAT.iron, Fe, D.z - D.w / 2 - 0.6, D.z + D.w / 2 + 0.6, D.h + 0.5, D.h + 0.6, 0, 1.6);
       for (const s of [-1, 1]) K.add('pressCanopy', MAT.iron, tube([V3(P.x1 + 1.55, D.h + 0.52, D.z + s * (D.w / 2 + 0.4)), V3(P.x1, D.h + 1.6, D.z + s * (D.w / 2 + 0.4))], 0.025, 6, 2));
@@ -375,8 +387,9 @@ export default {
         for (let i = 0; i < 5; i++) bun.push(roundedBox(0.6, 0.3, 0.42, 0.04, 2).translate(x0 + 0.6 + i * 0.7, 1.1 + (i % 2) * 0.3, zi1 - 0.75));
         col(x0, x0 + 4.0, zi1 - 1.4, zi1, 'table');
       }
-      for (let i = 0; i < 9; i++) bun.push(roundedBox(0.6, 0.3, 0.42, 0.04, 2).translate(91.0 + (i % 3) * 0.66, 0.15 + Math.floor(i / 3) * 0.31, zi1 - 0.4));
-      col(90.6, 93.0, zi1 - 0.65, zi1, 'bundles');
+      // ([C6 3rd] the stack moved into the corner, clear of the south door)
+      for (let i = 0; i < 6; i++) bun.push(roundedBox(0.6, 0.3, 0.42, 0.04, 2).translate(92.05 + (i % 2) * 0.66, 0.15 + Math.floor(i / 2) * 0.31, zi1 - 0.4));
+      col(91.7, 93.45, zi1 - 0.65, zi1, 'bundles');
       K.add('pressMail', MAT.woodDark, merge(parts), { figure: true });
       K.add('pressMail', paperPlain, merge(bun), { figure: true });
     }
@@ -431,6 +444,52 @@ export default {
       });
     };
     api.update(0);
+    // ---- [C6 3rd] the delivery yard: the dock's shutter is down tonight, the
+    // way out is the south door and the yard - a van along it (the lane
+    // between its side and the yard's east wall the way to the gate), the
+    // loading platform along the hall's wall, bundles stacked, the gate onto
+    // the avenue at the far corner. Its things (bundles, a reel) are things.js's.
+    {
+      const D = DELIVERY, SD = P.southDoor;
+      const Fs = face('z', P.z1, 1);
+      facade('pressShell', Fs, D.x0, D.x1, P.h, { bay: 3.0, from: 1, litP: 0.35, pipes: [74.2, 86.4] });
+      A.doorFrame('pressShell', Fs, SD.x, SD.w, SD.h);
+      // the platform along the wall (a man jumps off it, the vans back to it)
+      K.box('dyPlatform', MAT.brickDark, D.x0, SD.x - SD.w / 2 - 0.6, 0, 0.95, P.z1, P.z1 + 1.5);
+      K.box('dyPlatform', MAT.trim, D.x0, SD.x - SD.w / 2 - 0.6, 0.95, 1.02, P.z1, P.z1 + 1.6);
+      col(D.x0, SD.x - SD.w / 2 - 0.6, P.z1, P.z1 + 1.55, 'platform');
+      // the van along the lane's west side, nose to the gate, its back doors open
+      const T = buildTruck(M);
+      const g = T.group;
+      const vx = 85.25, vz = -65.0;
+      g.position.set(vx, 0, vz);
+      g.rotation.y = -Math.PI / 2;             // its +x (nose) to +z: south
+      const id = allocInkId(2);
+      g.traverse((o) => { if (o.isMesh) { o.userData.inkId = id; o.userData.inkFigure = true; o.castShadow = true; } });
+      markFigure(g);
+      T.meshes.lens.material = M.glass;
+      stage.scene.add(g);
+      stage.colliders.addBox(vx, vz, TRUCK_M.halfW, TRUCK_M.halfL, 0, 'van');
+      api.dyVan = T;
+      // paper stacked on pallets along the yard's west side, reels on end
+      const pal = [], reels = [];
+      for (let z = -71.6; z < -57.0; z += 1.25) {
+        if (z > -69.5 && z < -60.0) continue;
+        pal.push(roundedBox(1.1, 1.3, 1.05, 0.04, 2).translate(D.x0 + 1.2, 0.8, z), new THREE.BoxGeometry(1.15, 0.14, 1.1).translate(D.x0 + 1.2, 0.07, z));
+      }
+      for (const [x, z] of [[78.6, -70.6], [80.0, -70.4], [79.3, -69.0], [78.0, -60.4], [79.4, -60.2]]) reels.push(new THREE.CylinderGeometry(0.55, 0.55, 1.25, 20).translate(x, 0.625, z));
+      K.add('dyStacks', paperPlain, merge(pal), { figure: true });
+      K.add('dyStacks', paperPlain, merge(reels), { figure: true });
+      for (const [x, z] of [[78.6, -70.6], [80.0, -70.4], [79.3, -69.0], [78.0, -60.4], [79.4, -60.2]]) stage.colliders.addCircle(x, z, 0.56, 'reel');
+      stage.colliders.addBox(D.x0 + 1.2, -70.35, 0.6, 1.9, 0, 'stacks');
+      stage.colliders.addBox(D.x0 + 1.2, -58.25, 0.6, 1.9, 0, 'stacks');
+      // the lamps: over the south door, down the lane from the east wall, over the gate
+      const L = stage.part('lamps');
+      api.lamps.yardDoor = L.wall(SD.x - 1.2, 3.2, P.z1, 0, 1, { out: 0.4, strength: 0.95 });
+      api.lamps.yardLane = L.wall(D.x1, 3.6, -64.6, -1, 0, { out: 0.45, strength: 0.9 });
+      api.lamps.yardGate = L.wall(D.x1, 3.4, D.gate.z0 - 0.7, -1, 0, { out: 0.35, strength: 0.85 });
+      stage.addLook(new THREE.Box3(V3(D.x0, -1, D.z0), V3(D.x1, 30, D.z1)), { ambient: 0.12, exposure: 1.0, haze: 0.4 });
+    }
     void YARD; void AVENUE; void BALLEY; void lathe;
     K.flush();
     return api;

@@ -28,11 +28,12 @@ export const RULES = {
   // ([C6 3rd] the fear's burst when I was close - +0.8 m/s for 3 s - is gone:
   // a boost, which the brief forbids; close, he pulls things down instead)
   trick: 9.0,                // close enough for him to pull something down behind him
-  // ([C6 3rd] 22 / 17 / 33, were 24 / 19 / 36: every thing in the press hall,
+  // ([C6 3rd] 22 / 17 / 36, were 24 / 19 / 36: every thing in the press hall,
   // the cut, the market missed did not even warn - now two or three misses
-  // in a stretch warn, four or five lose; one never does)
+  // in a stretch warn, four or five lose; one never does. The warning comes
+  // sooner, the loss no sooner: clumsy hands live in the warning a while)
   warnOn: 22, warnOff: 17,   // the gap that warns (and lets go)
-  lost: 33,                  // the gap that loses him
+  lost: 36,                  // the gap that loses him
   // ([C6 2nd] out of sight counts from the warning's gap on: a man 20 m
   // behind on the roofs loses sight of him over the shed's slope every try)
   unseenWarn: 3.5, unseenLost: 7.0, unseenFrom: 22,   // out of sight (only past this gap)
@@ -45,8 +46,10 @@ const sm = (x) => (x <= 0 ? 0 : x >= 1 ? 1 : x * x * (3 - 2 * x));
 // the stretches in order, and the node each begins at (on the course)
 // ([C6 3rd] + market: the street is now up Mercer Street, round the corner
 // and in under the market's back arch; the market from its north end)
-export const STRETCH_ORDER = ['alley', 'lane', 'yard', 'kitchen', 'press', 'el', 'over', 'street', 'market', 'car'];
-const STRETCH_NODE = { alley: 'foot', lane: 'laneIn', yard: 'laneOut', kitchen: null, press: 'kDoor', el: 'dock', over: 'aOut', street: 'rowEnd', market: 'mN', car: 'gate' };
+// (and + cut: the el's stretch now from the press hall's south door down its
+// delivery yard and up the avenue to the cut's mouth; the cut its own)
+export const STRETCH_ORDER = ['alley', 'lane', 'yard', 'kitchen', 'press', 'el', 'cut', 'over', 'street', 'market', 'car'];
+const STRETCH_NODE = { alley: 'foot', lane: 'laneIn', yard: 'laneOut', kitchen: null, press: 'kDoor', el: 'pS', cut: 'cutE', over: 'aOut', street: 'rowEnd', market: 'mN', car: 'gate' };
 
 export class Chase {
   constructor(ctx, { lane = null, over = null } = {}) {
@@ -93,7 +96,7 @@ export class Chase {
     const add = (s, kind, data = {}) => { if (s != null) out.push({ s, kind, ...data }); };
     // ([C6 3rd] + the alley's sacks, the press's bundles, the cut's barrels and
     // sacks, the market's boxes; the cut's pipe; the market's back gate)
-    for (const id of ['alleySacks', 'fence1', 'fence3', 'pressRow', 'conveyor', 'cutBarrels', 'cutSacks', 'party', 'archCart', 'stallBoxes', 'marketCrates']) { const T = things.get(id); if (T) add(on(T), 'vault', { id }); }
+    for (const id of ['alleySacks', 'fence1', 'fence3', 'pressRow', 'conveyor', 'dyBundles', 'dyReel', 'cutBarrels', 'cutSacks', 'party', 'archCart', 'stallBoxes', 'marketCrates']) { const T = things.get(id); if (T) add(on(T), 'vault', { id }); }
     for (const id of ['fence2', 'web', 'pipe', 'pipe2', 'tank', 'plank']) { const T = things.get(id); if (T) add(on(T), 'slide', { id }); }
     add(on(things.get('door' + this.lane)), 'door', { id: 'door' + this.lane, slam: true });
     if (things.get('archGate')) add(on(things.get('archGate')), 'door', { id: 'archGate', slam: true });
@@ -103,13 +106,17 @@ export class Chase {
     add(on(things.get('slope')), 'slope', { id: 'slope' });
     // his doings (the bins always; the rest when I am close)
     add(on(things.get('bins')) + 0.6, 'trick', { id: 'bins', always: true });
-    add(on(things.get('alleyCrates')) != null ? project(P, 4.4, -41.2, 0, 1e9).s : null, 'trick', { id: 'alleyCrates' });
+    // ([C6 3rd] the alley's crates always too: the alley is lost on misses like the rest)
+    add(on(things.get('alleyCrates')) != null ? project(P, 4.4, -41.2, 0, 1e9).s : null, 'trick', { id: 'alleyCrates', always: true });
     add(project(P, 42.0, -50.0, 0, 1e9).s, 'trick', { id: 'laneBin' });
     add(project(P, this.lane === 'W' ? 54.25 : 65.75, -91.6, 0, 1e9).s, 'trick', { id: this.lane === 'W' ? 'rackW' : 'rackE' });
     add(project(P, 84.6, -87.6, 0, 1e9).s + 0.4, 'trick', { id: 'pressBundles' });
+    // ([C6 3rd] the hand truck of bundles by the press hall's south door)
+    add(project(P, 89.9, -71.4, 0, 1e9).s, 'trick', { id: 'dyTruck' });
     add(project(P, 98.3, -95.6, 0, 1e9).s + 0.5, 'trick', { id: 'avBundles' });
     // ([C6 3rd] the cut's gate swung shut behind him at its mouth; the crates by its knee; the arch's crates)
-    add(project(P, CUT.gate.x - 1.0, -118.9, 0, 1e9).s, 'trick', { id: 'cutGate' });
+    // (the gate he pulls to behind him always: the cut is lost on misses like the rest)
+    add(project(P, CUT.gate.x - 1.0, -118.9, 0, 1e9).s, 'trick', { id: 'cutGate', always: true });
     add(project(P, 81.0, -118.9, 0, 1e9).s, 'trick', { id: 'cutCrates' });
     add(project(P, 8.5, -128.9, 0, 1e9).s, 'trick', { id: 'archCrates' });
     // (the lid off the bin at the alley's T as he goes round the corner: it clatters off his way)
@@ -117,7 +124,7 @@ export class Chase {
     if (this.over === 'row') add(project(P, 51.6, -117.5, 0, 1e9).s, 'trick', { id: 'rowCrates' });
     add(project(P, 9.0, -101.6, 0, 1e9).s, 'trick', { id: 'barrow' });
     // the looks back over his shoulder
-    for (const [x, z] of [[2.5, -32], [30, -50], [54.25 + (this.lane === 'E' ? 11.5 : 0), -70], [84.0, -87.6], [98.3, -88.0], [98.3, -112.0], [77.9, -113.0], [47, -110.9], [21.6, -126.0], [9, -110]]) add(project(P, x, z, 0, 1e9).s, 'look');
+    for (const [x, z] of [[2.5, -32], [30, -50], [54.25 + (this.lane === 'E' ? 11.5 : 0), -70], [84.0, -87.6], [89.6, -60.5], [98.3, -88.0], [98.3, -112.0], [77.9, -113.0], [47, -110.9], [21.6, -126.0], [9, -110]]) add(project(P, x, z, 0, 1e9).s, 'look');
     // the slip on the wet at the alley's corner
     add(this.sOf('alleyEnd') - 1.0, 'skid');
     out.sort((a, b) => a.s - b.s);
@@ -452,7 +459,8 @@ export class Chase {
     if (!warnNow && this.warned) { this.warned = false; this.warnAt = null; }
     hud.warn(this.warned ? 'He’s getting away.' : null);
     const lost = gap > RULES.lost || (this.unseen > RULES.unseenLost && !this.escape);
-    if (lost && this.warned && G.time - this.warnAt >= 1.0) this.lose(gap);
+    // ([C6 3rd] the warning up a second and a half first, was one: time to turn back)
+    if (lost && this.warned && G.time - this.warnAt >= 1.5) this.lose(gap);
   }
   // he and I on different ways at the fork (roofs / row)
   otherWay() {
@@ -490,10 +498,14 @@ export class Chase {
 
 // where a stretch's retry puts him: `ahead` metres along his way past the
 // point of his way nearest my start
-export function hisStart(C, name, myAt) {
+// ([C6 3rd] the kit's mercy (seams/Z.md: game.fails(beat)): failed twice in
+// a stretch, its retry has him 2 m nearer, three times 4 m - never nearer than
+// 6 m, and he still runs his own race: an idle player loses as before)
+export function hisStart(C, name, myAt, fails = 0) {
   const S = STRETCHES[name];
   const at = myAt || S.at;
   const s0 = project(C.P, at[0], at[1], 0, 1e9).s;
-  return s0 + S.ahead;
+  const mercy = Math.min(4, 2 * Math.max(0, fails - 1));
+  return s0 + Math.max(6, S.ahead - mercy);
 }
 export { V, LANES, NODES, sm };

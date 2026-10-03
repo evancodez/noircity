@@ -42,7 +42,7 @@ const INV = ['matchbook', 'amesCard', 'check', 'revolver'];
 const EYE = 1.63;
 const PEEK = 44;
 const SLIT_Z = 4.46;
-const RUN_BEATS = ['alley', 'lane', 'yard', 'kitchen', 'press', 'el', 'over', 'street', 'market', 'car'];
+const RUN_BEATS = ['alley', 'lane', 'yard', 'kitchen', 'press', 'el', 'cut', 'over', 'street', 'market', 'car'];
 // the teach cards: one line each, the key drawn (seams/Z.md §2); the first
 // SPACE and the first C are held (time crawls until the key)
 export const TEACH = {
@@ -50,7 +50,7 @@ export const TEACH = {
   jump: '[SPACE] jump', slideDown: '[C] slide down',
 };
 // which card a stretch shows once more after two fails there
-const AGAIN = { alley: 'vault', lane: 'slide', yard: 'shoulder', press: 'slide', el: 'slide', over: 'jump', street: 'shoulder', market: 'vault' };
+const AGAIN = { alley: 'vault', lane: 'slide', yard: 'shoulder', press: 'slide', el: 'vault', cut: 'slide', over: 'jump', street: 'shoulder', market: 'vault' };
 const CHASE = { slot: 'chase', fade: 0.4 };
 // ([C6 3rd] for the plays' hands: his way by the course's own names, so the
 // tools follow the course as it is built - tools/lib/c6_chase.mjs)
@@ -167,13 +167,15 @@ function runSetup(name) {
       G.stage.part('things').get('door' + C.lane).set('open');
     }
     C.spawn({ x: at[0], z: at[1] - 10 }, 0, 'watcher_run');
-    C.place(hisStart(C, name, at));
+    C.place(hisStart(C, name, at, G.fails ? G.fails(name) : 0));
     umbrellaDown(ctx);
     G.stage.part('chase').ladder.set(1);
     // (the bins he pulled down in the alley lie across it behind me)
     if (RUN_BEATS.indexOf(name) > 0) { const b = G.stage.part('things').get('bins'); if (b && !b.state.go) { b.trigger(); b.update(2); } }
     // ([C6 2nd] past the kitchen, its iron door stands open as he left it)
     if (RUN_BEATS.indexOf(name) > RUN_BEATS.indexOf('kitchen')) { const d = G.stage.part('things').get('kdoor'); if (d) d.set('open'); }
+    // ([C6 3rd] the cut's retry: he has just gone through its gate and pulled it to)
+    if (name === 'cut') { const g = G.stage.part('things').get('cutGate'); if (g) g.set('shut'); }
     // ([C6 3rd] the eye on him if he is anywhere near the way ahead: at the
     // lane's and the yard's retries he was off the frame's edge or behind
     // the fence, and a man who looked round for him was warned at once)
@@ -199,10 +201,10 @@ export default defineScene({
   objectives: {
     seen: 'Check the street.', escape: 'After him. Down the fire escape.',
     alley: 'Don’t lose him.', lane: 'Don’t lose him.', yard: 'Don’t lose him.', kitchen: 'Don’t lose him.',
-    press: 'Don’t lose him.', el: 'Don’t lose him.', over: 'Don’t lose him.', street: 'Don’t lose him.', market: 'Don’t lose him.', car: 'Get to your car.',
+    press: 'Don’t lose him.', el: 'Don’t lose him.', cut: 'Don’t lose him.', over: 'Don’t lose him.', street: 'Don’t lose him.', market: 'Don’t lose him.', car: 'Get to your car.',
   },
   music: null,
-  beatMusic: { escape: CHASE, alley: CHASE, lane: CHASE, yard: CHASE, kitchen: CHASE, press: CHASE, el: CHASE, over: CHASE, street: CHASE, market: CHASE, car: CHASE },
+  beatMusic: { escape: CHASE, alley: CHASE, lane: CHASE, yard: CHASE, kitchen: CHASE, press: CHASE, el: CHASE, cut: CHASE, over: CHASE, street: CHASE, market: CHASE, car: CHASE },
   setup: {
     seen(ctx) {
       const C = common(ctx, 'seen');
@@ -223,7 +225,7 @@ export default defineScene({
       G.hands.equip('run');
     },
     alley: runSetup('alley'), lane: runSetup('lane'), yard: runSetup('yard'), kitchen: runSetup('kitchen'),
-    press: runSetup('press'), el: runSetup('el'), over: runSetup('over'), street: runSetup('street'), market: runSetup('market'), car: runSetup('car'),
+    press: runSetup('press'), el: runSetup('el'), cut: runSetup('cut'), over: runSetup('over'), street: runSetup('street'), market: runSetup('market'), car: runSetup('car'),
   },
 
   *script(ctx) {
@@ -372,9 +374,9 @@ export function startRun(ctx, { v = null } = {}) {
   const stage = G.stage;
   G.hands.equip('run');
   G.controller.setMode('run', {
-    // ([C6 3rd] 6.65 m/s, was 6.8: a little quicker than his 6.5, not so much
+    // ([C6 3rd] 6.75 m/s, was 6.8: a little quicker than his 6.5, not so much
     // that a miss is made up before the stretch is out)
-    game: G, speed: 6.65, side: 2.6, things: stage.part('things'), v: v ?? undefined,
+    game: G, speed: 6.75, side: 2.6, things: stage.part('things'), v: v ?? undefined,
     onEvent: (name, d) => runEvent(ctx, name, d),
     ease: 0.25,
   });
@@ -587,10 +589,11 @@ function trainStep(ctx) {
   const G = ctx.game, C = ctx.flags.chase;
   if (!C || !C.active || C.trainSent) return;
   const i = STRETCH_ORDER.indexOf(C.stretch);
-  if (i < STRETCH_ORDER.indexOf('press') || i > STRETCH_ORDER.indexOf('el')) return;
+  if (i < STRETCH_ORDER.indexOf('el') || i > STRETCH_ORDER.indexOf('cut')) return;
   const p = G.controller.pos;
-  // (sent when I reach the conveyor's side of the press hall, or come out on the avenue)
-  if (!(C.stretch === 'el' || p.x > 86.5)) return;
+  // ([C6 3rd] sent as I come out of the delivery yard's gate onto the avenue:
+  // it is over me as I run up under the el)
+  if (!(p.x > 92.4 || C.stretch === 'cut')) return;
   const train = G.stage.part('train'), av = G.stage.part('avenue');
   if (!train || !train.run || !av) return;
   C.trainSent = true;
@@ -640,15 +643,15 @@ function carClock(ctx, dt) {
   K.t += dt;
   // (quicker than it was: a man four misses behind in the market reached
   // his coupe before the old clock ran out every time - now the starter
-  // grinds, catches at 2.0 s, the warning; he pulls away at 3.4, gone at
-  // 4.6: on his heels I am at my door a second after he is in, three or so
-  // misses back I am warned and make it, four or five and he is gone)
-  if (K.phase === 0 && K.t > 0.25) { K.phase = 1; G.sfx.play('w_starter', car.pos(), { dur: 0.7 }); }
-  if (K.phase === 1 && K.t > 1.05) { K.phase = 2; G.sfx.play('w_starter', car.pos(), { dur: 0.8 }); }
-  if (K.phase === 2 && K.t > 2.0) { K.phase = 3; car.start(); G.sfx.play('w_engine', car.pos()); }
-  if (K.phase === 3 && K.t > 2.2) { K.phase = 4; F.carWarn = true; G.hud.warn('He’s getting away.'); }
-  if (K.phase === 4 && K.t > 3.4) { K.phase = 5; car.go(); }
-  if (K.phase === 5 && K.t > 4.6) {
+  // grinds, catches at 2.2 s, the warning at 2.4; he pulls away at 3.6,
+  // gone at 5.0: on his heels I am at my door a second after he is in, two
+  // or three misses back I am warned and make it, four or five and he is gone)
+  if (K.phase === 0 && K.t > 0.25) { K.phase = 1; G.sfx.play('w_starter', car.pos(), { dur: 0.75 }); }
+  if (K.phase === 1 && K.t > 1.15) { K.phase = 2; G.sfx.play('w_starter', car.pos(), { dur: 0.9 }); }
+  if (K.phase === 2 && K.t > 2.2) { K.phase = 3; car.start(); G.sfx.play('w_engine', car.pos()); }
+  if (K.phase === 3 && K.t > 2.4) { K.phase = 4; F.carWarn = true; G.hud.warn('He’s getting away.'); }
+  if (K.phase === 4 && K.t > 3.6) { K.phase = 5; car.go(); }
+  if (K.phase === 5 && K.t > 5.0) {
     K.phase = 6;
     const rec = { stretch: C.stretch, gap: +C.gapNow.toFixed(1), unseen: 0, me: [+G.controller.pos.x.toFixed(1), +G.controller.pos.z.toFixed(1), null], act: 'car', why: 'drove off', met: (C.met || []).slice(-6) };
     (G._c6lost || (G._c6lost = [])).push(rec);

@@ -207,11 +207,54 @@
    "profile": "good",
    "missAll": true,
    "over": "roofs",
-   "stop": "G.scenes.beat === 'over' || (G.counters.fails || 0) >= 1",
+   "stop": "G.scenes.beat === 'cut' || (G.counters.fails || 0) >= 1",
    "timeout": 60000
   },
   {
    "eval": "JSON.stringify({ beat: 'el', reached: G.scenes.beat, fails: G.counters.fails || 0, warnedSecs: +window.__w.toFixed(1), lost: (G._c6lost || []).map((r) => [r.stretch, r.gap, r.unseen]), met: (G.scenes.ctx.flags.chase.met || []).map((m) => m[0] + ':' + m[1]) })"
+  },
+  {
+   "eval": "(clearInterval(window.__wi), 1)"
+  },
+  {
+   "name": "cut: every thing missed"
+  },
+  {
+   "eval": "(localStorage.removeItem('noir.save'), location.search = '?mute=1&start=watcher.cut', 1)"
+  },
+  {
+   "wait": 2500
+  },
+  {
+   "until": "G.state === 'title' && !!document.querySelector('#title .opt[data-k=begin]')",
+   "timeout": 40000
+  },
+  {
+   "wait": 1200
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]",
+   "taken": "G.state !== 'title' && document.pointerLockElement === N.renderer.domElement",
+   "retries": 5,
+   "every": 4000
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'watcher' && G.scenes.beat === 'cut' && !(G.hud.cardT > 0.1)",
+   "timeout": 20000
+  },
+  {
+   "eval": "(window.__w = 0, window.__wi = setInterval(() => { if (G.hud.kit.warnText) window.__w += 0.1; }, 100), 1)"
+  },
+  {
+   "drive": "tools/lib/c6_chase.mjs",
+   "profile": "good",
+   "missAll": true,
+   "over": "roofs",
+   "stop": "G.scenes.beat === 'over' || (G.counters.fails || 0) >= 1",
+   "timeout": 60000
+  },
+  {
+   "eval": "JSON.stringify({ beat: 'cut', reached: G.scenes.beat, fails: G.counters.fails || 0, warnedSecs: +window.__w.toFixed(1), lost: (G._c6lost || []).map((r) => [r.stretch, r.gap, r.unseen]), met: (G.scenes.ctx.flags.chase.met || []).map((m) => m[0] + ':' + m[1]) })"
   },
   {
    "eval": "(clearInterval(window.__wi), 1)"

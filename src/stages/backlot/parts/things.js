@@ -3,7 +3,7 @@ import { lathe, merge, tube, V3, roundedBox } from '../../../world/geom.js';
 import { allocInkId, markFigure, tagInk } from '../../../render/layers.js';
 import { materials } from '../arch.js';
 import {
-  LANE, KITCHEN, ROOFS, TANNER, TRUCK, MARKET, FENCE, KDOOR, PRESS, BALLEY, AVENUE, CUT, ARCH,
+  LANE, KITCHEN, ROOFS, TANNER, TRUCK, MARKET, FENCE, KDOOR, PRESS, BALLEY, AVENUE, CUT, ARCH, DELIVERY,
 } from '../plan.js';
 
 // What the chase meets in its way (lane C6): every thing a man must go
@@ -586,14 +586,20 @@ export default {
     sackRow(ctx3, { id: 'alleySacks', a: { x: 0.04, z: -35.6 }, b: { x: 4.96, z: -35.6 }, hole: { x: 3.9, z: -34.4 }, stretch: 'alley' });
     // the press hall's north aisle: the last edition's bundles stacked across it, waiting for the van
     bundleRow(ctx3, { id: 'pressRow', x: 76.7, z0: -98.33, z1: -93.68, stretch: 'press' });
+    // the press hall's delivery yard: a hand truck of bundles by the south door
+    // (pulled over when I am close), bundles stacked across the lane by the
+    // van, two reels rolled off it across the lane
+    bundleStack(add, stage, MAT, ink, { id: 'dyTruck', x: 88.25, z: -70.7, toward: 1, axis: 'x', stretch: 'el' });
+    bundleRowX(ctx3, { id: 'dyBundles', z: -66.3, x0: DELIVERY.x1 - 5.42, x1: DELIVERY.x1 - 0.06, stretch: 'el' });
+    reelRow(ctx3, { id: 'dyReel', z: -62.7, x0: DELIVERY.x1 - 5.42, x1: DELIVERY.x1 - 0.06, stretch: 'el' });
     // the cut: its iron gate at the mouth (he swings it shut on me when I am
     // close), the pub's barrels, crates by the knee (pulled down when I am
     // close), the main's pipe across the N-S leg, coal sacks by a coal hole
-    swingGate(ctx3, { id: 'cutGate', x: CUT.gate.x, z0: CUT.ew.z0, z1: CUT.ew.z1, stretch: 'el' });
-    barrelRow(ctx3, { id: 'cutBarrels', a: { x: 87.0, z: CUT.ew.z0 + 0.04 }, b: { x: 87.0, z: CUT.ew.z1 - 0.04 }, stretch: 'el' });
-    crateStack(add, stage, wood, MAT, ink, { id: 'cutCrates', at: [{ x: 82.0, z: CUT.ew.z0 + 0.4 }, { x: 82.66, z: CUT.ew.z0 + 0.42 }, { x: 82.33, z: CUT.ew.z0 + 0.4, y: 0.62 }], fall: [{ x: 81.6, z: -119.9, yaw: 0.3 }, { x: 81.7, z: -118.8, yaw: -0.25 }, { x: 81.5, z: -117.6, yaw: 0.45 }], line: [{ x: 81.6, z: CUT.ew.z0 + 0.1 }, { x: 81.6, z: CUT.ew.z1 - 0.1 }], stretch: 'el' });
-    pipeAcross(ctx3, { id: 'pipe2', axis: 'x', at: CUT.pipe.z, from: CUT.ns.x0, to: CUT.ns.x1, y: CUT.pipe.y, stretch: 'el' });
-    sackRow(ctx3, { id: 'cutSacks', a: { x: CUT.ns.x0 + 0.04, z: -108.3 }, b: { x: CUT.ns.x1 - 0.04, z: -108.3 }, hole: { x: CUT.ns.x1 - 0.5, z: -107.4 }, stretch: 'el' });
+    swingGate(ctx3, { id: 'cutGate', x: CUT.gate.x, z0: CUT.ew.z0, z1: CUT.ew.z1, stretch: 'cut' });
+    barrelRow(ctx3, { id: 'cutBarrels', a: { x: 87.0, z: CUT.ew.z0 + 0.04 }, b: { x: 87.0, z: CUT.ew.z1 - 0.04 }, stretch: 'cut' });
+    crateStack(add, stage, wood, MAT, ink, { id: 'cutCrates', at: [{ x: 82.0, z: CUT.ew.z0 + 0.4 }, { x: 82.66, z: CUT.ew.z0 + 0.42 }, { x: 82.33, z: CUT.ew.z0 + 0.4, y: 0.62 }], fall: [{ x: 81.6, z: -119.9, yaw: 0.3 }, { x: 81.7, z: -118.8, yaw: -0.25 }, { x: 81.5, z: -117.6, yaw: 0.45 }], line: [{ x: 81.6, z: CUT.ew.z0 + 0.1 }, { x: 81.6, z: CUT.ew.z1 - 0.1 }], stretch: 'cut' });
+    pipeAcross(ctx3, { id: 'pipe2', axis: 'x', at: CUT.pipe.z, from: CUT.ns.x0, to: CUT.ns.x1, y: CUT.pipe.y, stretch: 'cut' });
+    sackRow(ctx3, { id: 'cutSacks', a: { x: CUT.ns.x0 + 0.04, z: -108.3 }, b: { x: CUT.ns.x1 - 0.04, z: -108.3 }, hole: { x: CUT.ns.x1 - 0.5, z: -107.4 }, stretch: 'cut' });
     // the market's back arch: crates against its wall (pulled down when I am
     // close); its wicket gate at the market's end (he lets it swing shut)
     crateStack(add, stage, wood, MAT, ink, { id: 'archCrates', at: [{ x: ARCH.x0 + 0.38, z: -127.9 }, { x: ARCH.x0 + 0.38, z: -127.24 }, { x: ARCH.x0 + 0.38, z: -127.55, y: 0.62 }], fall: [{ x: 7.9, z: -128.3, yaw: 0.35 }, { x: 8.75, z: -128.4, yaw: -0.3 }, { x: 9.55, z: -128.2, yaw: 0.5 }], line: [{ x: ARCH.x0 + 0.05, z: -128.3 }, { x: ARCH.x1 - 0.05, z: -128.3 }], stretch: 'street' });
@@ -606,6 +612,13 @@ export default {
     boxRow(ctx3, { id: 'stallBoxes', a: { x: MARKET.rows[0][1] + 0.05, z: -111.6 }, b: { x: MARKET.rows[1][0] - 0.05, z: -111.6 }, stretch: 'market' });
     trestleTable(ctx3, { id: 'trestle', a: { x: FENCE.x + 0.1, z: -110.3 }, b: { x: MARKET.rows[0][0] - 0.03, z: -110.3 }, under: 0.96, stretch: 'market' });
     boxRow(ctx3, { id: 'westBoxes', a: { x: FENCE.x + 0.1, z: -104.4 }, b: { x: MARKET.rows[0][0] - 0.05, z: -104.4 }, stretch: 'market' });
+    // the press hall's dock, its shutter down tonight (press.js its slats and
+    // collider): run into it from inside, it rattles
+    {
+      const D = PRESS.dock;
+      const T = add({ id: 'dockShut', kind: 'locked', collide: false, a: { x: PRESS.x1 - 0.42, z: D.z - D.w / 2 }, b: { x: PRESS.x1 - 0.42, z: D.z + D.w / 2 }, depth: 0.2, top: D.h, catch: 0.2 });
+      T.bash = () => { emit('rattle', T); return false; };
+    }
     // the market's gateway on Mercer Street, chained tonight (streets.js its
     // gates and their collider): run into it, it rattles
     {
@@ -629,7 +642,7 @@ export default {
     api.lid = lidBin(ctx3, { x: 4.42, z: -45.4 });
 
     // ---- the whole list's resets -----------------------------------------------------------
-    const ORDER = ['alley', 'lane', 'yard', 'kitchen', 'press', 'el', 'over', 'street', 'market', 'car'];
+    const ORDER = ['alley', 'lane', 'yard', 'kitchen', 'press', 'el', 'cut', 'over', 'street', 'market', 'car'];
     // a retry of stretch `name`: everything of it and after it as it was
     api.reset = (name) => {
       const i = Math.max(0, ORDER.indexOf(name));
@@ -953,7 +966,7 @@ function swingGate(c, { id, x, z0, z1, stretch }) {
   };
   // his doing: swung shut across the way behind him (a clang)
   T.trigger = () => { T.kind = 'shoulder'; T.rest = 0; T.state.v = -9; emit('slam', T); };
-  T.set = (st) => { if (st === 'slammed') T.trigger(); };
+  T.set = (st) => { if (st === 'slammed') T.trigger(); else if (st === 'shut') { T.kind = 'shoulder'; T.rest = 0; T.state.a = 0; T.state.v = 0; T.active = true; solid(T, true); pose(); } };
   T.bash = (k = 1) => { T.kind = 'open'; T.rest = Math.PI / 2; T.state.v = 12 * k; T.active = false; solid(T, false); emit('bash', T, { k }); return true; };
   T.reset = () => { T.kind = 'open'; T.rest = Math.PI / 2; T.state.a = Math.PI / 2; T.state.v = 0; T.active = false; solid(T, false); pose(); };
   T.state.go = false;
@@ -1145,6 +1158,53 @@ function handcart(c, { id, a, b, stretch }) {
   ink(g);
   stage.scene.add(g);
   const T = add({ id, kind: 'over', low: true, top: 0.94, a, b, depth: bedW + 0.15, stretch });
+  T.mesh = g;
+  return T;
+}
+
+// the edition's bundles stacked in a low wall across a way running along z
+// (from x0 to x1 at z)
+function bundleRowX(c, { id, z, x0, x1, stretch }) {
+  const { stage, ink, add } = c;
+  const paper = new THREE.MeshStandardMaterial({ color: 0xbdbdbd, roughness: 0.85, emissive: 0x161616 });
+  const twine = new THREE.MeshStandardMaterial({ color: 0x3a3a3a, roughness: 0.9 });
+  const pb = [], tw = [];
+  const n = Math.round((x1 - x0) / 0.62);
+  for (let row = 0; row < 2; row++) {
+    for (let i = 0; i < n - row; i++) {
+      const x = x0 + (x1 - x0) * (i + 0.5 + row * 0.5) / n, y = 0.15 + row * 0.31, dz = ((i * 7 + row * 3) % 5 - 2) * 0.025;
+      pb.push(roundedBox(0.6, 0.3, 0.42, 0.04, 2).rotateY(((i * 13) % 7 - 3) * 0.03).translate(x, y, z + dz));
+      tw.push(new THREE.BoxGeometry(0.62, 0.02, 0.03).translate(x, y + 0.155, z + dz), new THREE.BoxGeometry(0.03, 0.02, 0.44).translate(x, y + 0.155, z + dz));
+    }
+  }
+  const g = new THREE.Group();
+  g.add(new THREE.Mesh(merge(pb), paper), new THREE.Mesh(merge(tw), twine));
+  ink(g);
+  stage.scene.add(g);
+  const T = add({ id, kind: 'over', low: true, top: 0.62, a: { x: x0, z }, b: { x: x1, z }, depth: 0.5, stretch });
+  T.mesh = g;
+  return T;
+}
+
+// paper reels rolled off a van, lying on their sides across a way running
+// along z (from x0 to x1 at z): waist high - a hard stop run into; over
+function reelRow(c, { id, z, x0, x1, stretch }) {
+  const { stage, MAT, ink, add } = c;
+  const paper = new THREE.MeshStandardMaterial({ color: 0xdcdcdc, roughness: 0.85, emissive: 0x262626 });
+  const r = 0.5, n = Math.max(2, Math.round((x1 - x0) / 1.42));
+  const L = (x1 - x0) / n - 0.06;
+  const rolls = [], cores = [];
+  for (let i = 0; i < n; i++) {
+    const x = x0 + (x1 - x0) * (i + 0.5) / n, dz = (i % 2 ? 0.08 : -0.06);
+    rolls.push(new THREE.CylinderGeometry(r, r, L, 22).rotateZ(Math.PI / 2).translate(x, r, z + dz));
+    for (const s2 of [-1, 1]) cores.push(new THREE.CylinderGeometry(0.12, 0.12, 0.02, 14).rotateZ(Math.PI / 2).translate(x + s2 * (L / 2 + 0.005), r, z + dz));
+  }
+  const g = new THREE.Group();
+  g.add(new THREE.Mesh(merge(rolls), paper), new THREE.Mesh(merge(cores), MAT.woodDark));
+  c.markTop(g, x0, z, x1, z, 2 * r + 0.012, 0.05);
+  ink(g);
+  stage.scene.add(g);
+  const T = add({ id, kind: 'over', top: 2 * r, a: { x: x0, z }, b: { x: x1, z }, depth: 2 * r, stretch });
   T.mesh = g;
   return T;
 }

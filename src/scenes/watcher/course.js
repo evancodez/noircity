@@ -21,7 +21,9 @@ export class Course {
     const shut = locked ? DOOR_WAYS[locked] : null;
     const key = (a, b) => (a < b ? a + '|' + b : b + '|' + a);
     const seen = new Set();
-    for (const way of WAYS) {
+    for (const W of WAYS) {
+      // ([C6 3rd] a way may be { names, w }: its metres weighed by w)
+      const way = Array.isArray(W) ? W : W.names, wgt = Array.isArray(W) ? 1 : (W.w ?? 1);
       for (let i = 0; i < way.length - 1; i++) {
         const a = way[i], b = way[i + 1];
         if (shut && ((a === shut[0] && b === shut[1]) || (a === shut[1] && b === shut[0]))) continue;
@@ -29,7 +31,7 @@ export class Course {
         if (seen.has(k)) continue;
         seen.add(k);
         const A = this.nodes.get(a), B = this.nodes.get(b);
-        this.edges.push({ a, b, A, B, L: A.distanceTo(B) });
+        this.edges.push({ a, b, A, B, L: A.distanceTo(B) * wgt });
       }
     }
     // the way on from every node (Dijkstra from the gate)

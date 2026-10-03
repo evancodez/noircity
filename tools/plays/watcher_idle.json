@@ -1,5 +1,5 @@
 {
- "about": "[C6] Proof 1 of WAVE_C \u00a77 for chapter V: the player does nothing and LOSES, in every beat with a contest - the window after he runs ([C6 3rd]), the escape down the iron, the alley, the lane, the yard, the kitchen, the press hall, the avenue and the cut (el), over (the fork), the street (Mercer Street, the corner, the arch), the market ([C6 3rd]), the car (his car's clock runs from when he is in) - each started cold (?start=watcher.<beat>): 'He's getting away.' at least a second before 'Lost him.', back at that beat's start. NOIR_PORT=5346 node tools/play.mjs tools/plays/watcher_idle.json",
+ "about": "[C6] Proof 1 of WAVE_C \u00a77 for chapter V: the player does nothing and LOSES, in every beat with a contest - the window after he runs ([C6 3rd]), the escape down the iron, the alley, the lane, the yard, the kitchen, the press hall, the delivery yard and the avenue (el), the cut ([C6 3rd]), over (the fork), the street (Mercer Street, the corner, the arch), the market ([C6 3rd]), the car (his car's clock runs from when he is in) - each started cold (?start=watcher.<beat>): 'He's getting away.' at least a second before 'Lost him.', back at that beat's start. NOIR_PORT=5346 node tools/play.mjs tools/plays/watcher_idle.json",
  "url": "/?mute=1&start=watcher",
  "size": [
   1280,
@@ -407,6 +407,57 @@
   },
   {
    "until": "!G.failing && G.scenes.beat === 'el'",
+   "timeout": 12000
+  },
+  {
+   "name": "cut: hands off"
+  },
+  {
+   "eval": "(localStorage.removeItem('noir.save'), location.search = '?mute=1&start=watcher.cut', 1)"
+  },
+  {
+   "wait": 2500
+  },
+  {
+   "until": "G.state === 'title' && !!document.querySelector('#title .opt[data-k=begin]')",
+   "timeout": 40000
+  },
+  {
+   "wait": 1200
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]",
+   "taken": "G.state !== 'title'",
+   "retries": 5,
+   "every": 4000
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'watcher' && G.scenes.beat === 'cut' && !(G.hud.cardT > 0.1)",
+   "timeout": 20000
+  },
+  {
+   "eval": "(window.__t0 = N.time, 1)"
+  },
+  {
+   "until": "!!G.hud.kit.warnText",
+   "timeout": 30000
+  },
+  {
+   "eval": "({ warnAfter: +(N.time - window.__t0).toFixed(1), gap: G.scenes.ctx.flags.chase ? +G.scenes.ctx.flags.chase.gapNow.toFixed(1) : null })"
+  },
+  {
+   "until": "!!G.failing",
+   "timeout": 20000
+  },
+  {
+   "expect": "G.lastFail.why === 'Lost him.' && G.lastFail.to === 'cut' && G.lastFail.warnedFor >= 1",
+   "label": "cut: idle loses him ('Lost him.'), warned at least a second before, back at the start of the stretch"
+  },
+  {
+   "eval": "({ lostAfter: +(N.time - window.__t0).toFixed(1), warnedFor: G.lastFail.warnedFor })"
+  },
+  {
+   "until": "!G.failing && G.scenes.beat === 'cut'",
    "timeout": 12000
   },
   {

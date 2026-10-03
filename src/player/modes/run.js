@@ -288,7 +288,12 @@ function start(ctl, R, q, how) {
       R.onEvent('bruise', { T });
     }
   } else if (T.kind === 'jump') {
-    startJump(ctl, R, T, q.d, how === 'clean', nx, nz, v);
+    // ([C6 3rd] late - pressed at the parapet itself - a foot on its coping
+    // and over, slower, onto the far roof; too early, short: the hands catch
+    // the far parapet and haul. A late press cost the catch and the haul: on
+    // the roofs clumsy hands lost four and five times running)
+    if (how === 'late') startJump(ctl, R, T, q.d, true, nx, nz, v, { standing: true, hs: Math.max(4.6, v * 0.78) });
+    else startJump(ctl, R, T, q.d, how === 'clean', nx, nz, v);
   }
 }
 
@@ -347,14 +352,14 @@ function startSlide(ctl, R, how, T = null, q = null) {
 
 // the jump over the light well: from the parapet, over the gap, down onto the
 // far roof (clean); or short, onto the hands at the far parapet (caught)
-function startJump(ctl, R, T, d0, clean, nx, nz, v, { standing = false } = {}) {
+function startJump(ctl, R, T, d0, clean, nx, nz, v, { standing = false, hs: hsIn = null } = {}) {
   const L = T.land;
   // (how far: to past the far parapet clean; to its outer face short)
   const xOuter = L.x - nx * 0.125;            // the far parapet's face toward me
   const toOuter = (ctl.pos.x - xOuter) * -nx + (0) * nz;
   const D = clean ? toOuter + 1.1 : Math.max(0.6, toOuter - R0 - 0.06);
   // ([C6 3rd] from standing at the parapet: up on its coping and over, slower)
-  const hs = standing ? 4.3 : clean ? Math.max(5.6, v) : Math.max(3.4, v * 0.72);
+  const hs = standing ? (hsIn ?? 4.3) : clean ? Math.max(5.6, v) : Math.max(3.4, v * 0.72);
   const ka = standing ? 0.34 : Math.min(0.5, Math.max(0.12, (Math.max(0, d0) + R0 + 0.3) / Math.max(0.5, D)));
   const yA = T.y + T.top + (standing ? 0.42 : clean ? 0.32 : 0.16);
   R.move = { kind: 'jump', T, t: 0, dur: D / hs, nx, nz, hs, y0: R.feet, yA, ka, yEnd: clean ? L.y : L.top - 1.6, clean, standing, colOff: true, pitch: 0 };
@@ -364,7 +369,8 @@ function startJump(ctl, R, T, d0, clean, nx, nz, v, { standing = false } = {}) {
 }
 
 function startSlideDown(ctl, R, T, clean) {
-  R.move = { kind: clean ? 'slideDown' : 'slither', T, t: 0, v: clean ? Math.max(4.5, R.v) : 2.6, pitch: 0 };
+  // ([C6 3rd] a slither down it on the hands a little quicker: 3.0 to 3.8 m/s, was 2.6 to 3.4)
+  R.move = { kind: clean ? 'slideDown' : 'slither', T, t: 0, v: clean ? Math.max(4.5, R.v) : 3.0, pitch: 0 };
   R.lowWant = clean ? 0.95 : 0.5;
   R.onEvent(clean ? 'slideDown' : 'slither', { T });
 }
@@ -631,7 +637,7 @@ function stepMove(ctl, R, dt, cols) {
     case 'slither': {
       // down the steep roof on the seat of the coat (or slithering on the
       // hands), then off its eave: a drop to the pavement
-      M.v = Math.min(M.kind === 'slideDown' ? 6.0 : 3.4, M.v + dt * 4);
+      M.v = Math.min(M.kind === 'slideDown' ? 6.0 : 3.8, M.v + dt * 4);
       ctl.pos.x -= M.v * dt;
       cols.resolve(ctl.pos, ctl.radius);
       ctl.vel.set(-M.v, 0, 0);

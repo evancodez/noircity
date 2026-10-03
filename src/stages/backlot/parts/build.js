@@ -8,7 +8,7 @@ import { tube } from '../../../world/geom.js';
 import { Steam } from '../../../fx/Steam.js';
 import {
   FLOOR, ESC, ROOM, STREET_WIN, WATCH_LAMP, HARBOR, BACKST, ALLEY, LANE, YARD, WASH, KITCHEN, LOADING, PASSAGE, ROOFS, TANNER,
-  MERCER, GARAGE, MARKET, FENCE, NORTHST, AVENUE, PRESS, CUT, ARCH,
+  MERCER, GARAGE, MARKET, FENCE, NORTHST, AVENUE, PRESS, CUT, ARCH, DELIVERY,
 } from '../plan.js';
 
 // The backlot's architecture (lane B4; the run behind the Harbor Building
@@ -149,7 +149,23 @@ export default {
       facade('mid', face('x', YARD.x0, 1), LANE.z0, -80, 14, { bay: 3.3, litP: 0.1, pipes: [-70.6] });
       // ([C6 2nd] the block east of the yard south of the press hall - the
       // press hall itself is press.js's - to the avenue)
-      block('far', MAT.brick, YARD.x1, AVENUE.x0, PRESS.z1, YARD.z1, 12.2, { w: { bay: 3.3, litP: 0.12, pipes: [-60.2] }, e: { bay: 3.3, litP: 0.1, pipes: [-66.0] } });
+      // ([C6 3rd] round the press hall's delivery yard: the west strip on the
+      // washing yard, the south block, the east strip on the avenue with the
+      // yard's gate in it)
+      {
+        const D = DELIVERY, H = 12.2, gz0 = D.gate.z0, gz1 = D.gate.z1;
+        block('far', MAT.brick, YARD.x1, D.x0, PRESS.z1, YARD.z1, H, { w: { bay: 3.3, litP: 0.12, pipes: [-60.2] }, e: { bay: 3.2, litP: 0.12, pipes: [-63.0] } });
+        block('far', MAT.brick, D.x0, AVENUE.x0, D.z1, YARD.z1, H, { n: { bay: 3.2, litP: 0.14, pipes: [80.6] }, e: { bay: 3.3, litP: 0.1 } });
+        block('far', MAT.brick, D.x1, AVENUE.x0, PRESS.z1, gz0, H, { e: { bay: 3.3, litP: 0.1, pipes: [-66.0] }, w: { bay: 3.0, litP: 0.12 } });
+        block('far', MAT.brick, D.x1, AVENUE.x0, gz1, D.z1, H, {});
+        // the gate's piers and the arch's beam over it, a lamp on the avenue's side
+        const Fe = face('x', AVENUE.x0, 1);
+        fbox('far', MAT.trim, Fe, gz0 - 0.3, gz0, 0, 4.2, 0, 0.2);
+        fbox('far', MAT.trim, Fe, gz1, gz1 + 0.3, 0, 4.2, 0, 0.2);
+        fbox('far', MAT.trim, Fe, gz0 - 0.3, gz1 + 0.3, 3.8, 4.4, 0, 0.22);
+        fbox('far', MAT.plaster, Fe, gz0 + 0.3, gz1 - 0.3, 4.55, 5.25, 0, 0.05);
+        K.box('far', MAT.brick, D.x1, AVENUE.x0, 4.4, H, gz0, gz1);
+      }
       facade('eastSt', face('z', YARD.z1, -1), YARD.x0, YARD.x1, 10.4, { bay: 3.2, litP: 0.05 });
       // the wash-house: a long low brick shed, a slate roof, a copper's
       // chimney; its doors on the lanes are shut
