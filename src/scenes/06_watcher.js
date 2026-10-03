@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { defineScene, wait, until, beat } from '../game/script.js';
-import { ROOM, STREET_WIN, WATCH_AT, ESC, ESC_RAIL, L3Y, HIS_CAR, MY_CAR, STRETCHES, KITCHEN, GATE } from '../stages/backlot/plan.js';
+import { ROOM, STREET_WIN, WATCH_AT, ESC, ESC_RAIL, L3Y, HIS_CAR, MY_CAR, STRETCHES, KITCHEN, GATE, hisNames } from '../stages/backlot/plan.js';
 import { Chase, RULES, STRETCH_ORDER, hisStart } from './watcher/chase.js';
 import { pathAt, project } from './watcher/course.js';
 import { mercerCar, CROSS_Z } from './watcher/street.js';
@@ -52,6 +52,9 @@ export const TEACH = {
 // which card a stretch shows once more after two fails there
 const AGAIN = { alley: 'vault', lane: 'slide', yard: 'shoulder', press: 'slide', el: 'slide', over: 'jump', street: 'vault' };
 const CHASE = { slot: 'chase', fade: 0.4 };
+// ([C6 3rd] for the plays' hands: his way by the course's own names, so the
+// tools follow the course as it is built - tools/lib/c6_chase.mjs)
+if (typeof window !== 'undefined') window.__c6 = { hisNames };
 
 // ---- the things every beat's setup does -------------------------------------------------------
 function common(ctx, name) {
@@ -229,6 +232,7 @@ export default defineScene({
       if (ctx.flags.umbO) ctx.flags.umbO.update(dt);
       if (ctx.flags.street) ctx.flags.street.step(dt, G.controller.pos);
       if (ctx.flags.car) ctx.flags.car.step(dt);
+      carClock(ctx, dt);
       teachStep(ctx, dt);
       dogStep(ctx, dt);
       cookStep(ctx, dt);
@@ -243,6 +247,7 @@ export default defineScene({
     if (ctx.at('seen')) {
       yield beat('seen');
       yield* seenAtWindow(ctx);
+      ctx.flags.leftWindow = true;
       if (ctx.flags.office) yield* outOfOffice(ctx);
       else {
         const e = ESC_RAIL[0];
@@ -375,7 +380,8 @@ function runEvent(ctx, name, d) {
     case 'climb': S('w_fenceHit'); break;
     case 'trip': S('w_stumble', 0.4); S('w_fenceHit', 0.6); break;
     case 'hit': S('w_hitWall', 1.2); G.sfx.play('grunt', null, { f0: 95, k: 0.35, dur: 0.22 }, { send: false }); break;
-    case 'rattle': S('w_rattle', 1.2); break;
+    // ([C6 3rd] a locked door says so, sound or no sound)
+    case 'rattle': S('w_rattle', 1.2); if (d && d.T && (!ctx.flags.saidLocked || G.time - ctx.flags.saidLocked > 2.5)) { ctx.flags.saidLocked = G.time; G.hud.say('Locked.', 1.4); } break;
     case 'slide': S('w_slide', 0.2); break;
     case 'duck': case 'crawl': S('w_duck', 0.5); break;
     case 'bash': S('w_doorBang', 1.2); break;
@@ -427,8 +433,11 @@ function capStep(ctx) {
   let cap = null;
   if (G.hud.cardT > 0.1) cap = 0;
   else if (C && C.active && !C.otherWay() && (C.act === 'run' || C.act === 'vault' || C.act === 'slide' || C.act === 'arc')) {
+    // ([C6 3rd] three metres back, not one and a half: on his heels he is a
+    // whole man in the frame - his arm out to what he pulls down, the thing
+    // itself - not a coat filling the lens)
     const g = C.gapNow;
-    if (g < 2.6 && g > -2) cap = Math.max(1.5, C.v + Math.max(0, g - 1.5) * 3.2);
+    if (g < 4.2 && g > -2) cap = Math.max(1.5, C.v + Math.max(0, g - 3.0) * 3.2);
   }
   R.speedCap = cap;
 }
@@ -444,16 +453,42 @@ function teachStep(ctx, dt) {
     if (R.v > 1) F.wTaught = true;
     else if (F.wT > 1.4) { F.wTaught = true; hud.teach('run', TEACH.run, { until: 'KeyW' }); }
   }
+  // ([C6 3rd] each verb's card at the first thing that asks for it - the bins
+  // in a run from the window, fence1 in a cold start at the lane - and at the
+  // latest when I am stopped against it: a SPACE pressed early at the broken
+  // fence hopped me into it and its window passed inside the hop, so the
+  // [C] card never came and I stood there untaught. Now: in a hop the card
+  // comes for what the hop is carrying me into (and a key pressed under it
+  // is kept for the hop's end: run.js), and stopped against a thing whose
+  // verb is not yet taught, its card comes then, held for the first SPACE
+  // and the first C)
+  const taught = hud.kit && hud.kit.taught ? hud.kit.taught() : {};
+  const show = (id) => { if (!taught[id]) hud.teach(id, TEACH[id], { hold: !!CARD_HELD[id], until: CARD_KEY[id] }); };
+  if (R.blocked) { const id = CARD_OF[R.blocked.T.kind]; if (id) show(id); return; }
+  if (R.move && R.move.kind !== 'hop') return;
   const things = G.stage.part('things');
   const q = things.ahead(G.controller.pos, G.controller.vel, R.level, 0.36);
-  if (!q || R.move || R.blocked) return;
-  const id = q.T.id, t = q.t;
-  // the first SPACE and the first C: held, in the window (time crawls till the key)
-  if (id === 'bins' && t < 0.3 && q.d > 0.25) hud.teach('vault', TEACH.vault, { hold: true, until: 'Space' });
-  else if (id === 'fence2' && t < 0.3 && q.d > 0.25) hud.teach('slide', TEACH.slide, { hold: true, until: ['KeyC', 'ControlLeft'] });
-  else if (id.startsWith('door') && q.T.kind === 'shoulder' && t < 0.9) hud.teach('shoulder', TEACH.shoulder, { until: 'Space' });
-  else if (id === 'edge' && t < 0.9) hud.teach('jump', TEACH.jump, { until: 'Space' });
-  else if (id === 'slope' && t < 1.2) hud.teach('slideDown', TEACH.slideDown, { until: ['KeyC', 'ControlLeft'] });
+  if (!q) return;
+  const id = CARD_OF[q.T.kind], t = q.t;
+  if (!id || taught[id]) return;
+  // (the first SPACE and the first C: held, in the window - time crawls till
+  // the key; in a hop, a little sooner, the hop carrying me in)
+  if (CARD_HELD[id]) { if (R.move ? t < 0.55 : t < 0.3 && q.d > 0.25) show(id); return; }
+  // (a door: when it is in front of me, not off to one side in the dark)
+  if (id === 'shoulder') { if (t < 1.0 && facingThing(G, q) > 0.88) show(id); return; }
+  if (id === 'jump') { if (t < 0.9) show(id); return; }
+  if (id === 'slideDown') { if (t < 1.2) show(id); }
+}
+const CARD_OF = { over: 'vault', under: 'slide', shoulder: 'shoulder', jump: 'jump', slope: 'slideDown' };
+const CARD_HELD = { vault: true, slide: true };
+const CARD_KEY = { vault: 'Space', slide: ['KeyC', 'ControlLeft'], shoulder: ['Space', 'KeyE'], jump: 'Space', slideDown: ['KeyC', 'ControlLeft'] };
+// how squarely the eye looks at the nearest point of a thing ahead (cos)
+function facingThing(G, q) {
+  const F = q.F, T = q.T, p = G.controller.pos;
+  const along = Math.max(0, Math.min(F.L, q.u * F.L));
+  const tx = T.a.x + F.t.x * along - p.x, tz = T.a.z + F.t.z * along - p.z;
+  const L = Math.hypot(tx, tz) || 1;
+  return (-Math.sin(G.controller.yaw) * tx - Math.cos(G.controller.yaw) * tz) / L;
 }
 
 // ---- the dog on its chain in Tanner's Row: up and at me as I come by; in its
@@ -564,44 +599,58 @@ function warmStep(ctx) {
   }
 }
 
+// ---- [C6 3rd] his car's clock: it starts when HE is in, wherever I am -----------------------------
+// (it started when I reached the gate: his car waited at the kerb for me
+// however late I was, and once he was in nothing could lose me - a man
+// stopped at the market's crates stood there forever.) The door shut (in my
+// face if I am at his heels), the starter grinds, catches on the second try;
+// the warning as it catches; he pulls away; and if I am not in my car by
+// then he is gone: "Lost him." back to the stretch I am in.
+function carClock(ctx, dt) {
+  const G = ctx.game, C = ctx.flags.chase, F = ctx.flags;
+  if (!C || !C.inCar || F.driven || G.failing) return;
+  if (C.held && C.held()) return;
+  const stage = G.stage, cars = stage.part('cars');
+  if (!cars || !cars.his) return;
+  if (!F.clock) {
+    F.car = makeDrive(stage, cars, cars.his);
+    F.clock = { t: 0, phase: 0 };
+    const e = G.eye, d = Math.hypot(e.x - (HIS_CAR.x - 0.95), e.z - (HIS_CAR.z + 0.6));
+    G.sfx.play('w_door', V(HIS_CAR.x - 0.95, 1, HIS_CAR.z + 0.6));
+    if (d < 3.6 && G.controller.run) { G.controller.run.flinch(-0.12, -0.08); G.controller.shake(0.5); }
+  }
+  const K = F.clock, car = F.car;
+  K.t += dt;
+  if (K.phase === 0 && K.t > 0.4) { K.phase = 1; G.sfx.play('w_starter', car.pos(), { dur: 1.1 }); }
+  if (K.phase === 1 && K.t > 1.9) { K.phase = 2; G.sfx.play('w_starter', car.pos(), { dur: 1.3 }); }
+  if (K.phase === 2 && K.t > 3.4) { K.phase = 3; car.start(); G.sfx.play('w_engine', car.pos()); }
+  if (K.phase === 3 && K.t > 3.9) { K.phase = 4; F.carWarn = true; G.hud.warn('He’s getting away.'); }
+  if (K.phase === 4 && K.t > 6.4) { K.phase = 5; car.go(); }
+  if (K.phase === 5 && K.t > 7.9) {
+    K.phase = 6;
+    const rec = { stretch: C.stretch, gap: +C.gapNow.toFixed(1), unseen: 0, me: [+G.controller.pos.x.toFixed(1), +G.controller.pos.z.toFixed(1), null], act: 'car', why: 'drove off', met: (C.met || []).slice(-6) };
+    (G._c6lost || (G._c6lost = [])).push(rec);
+    G.fail({ why: 'Lost him.', to: C.stretch && C.stretch !== 'car' ? C.stretch : 'car' });
+  }
+}
+
 // ---- the car beat ------------------------------------------------------------------------------
 function* carBeat(ctx) {
   const G = ctx.game, C = ctx.flags.chase, H = G.hands;
   const stage = G.stage;
   const cars = stage.part('cars');
   C.active = false;
-  G.hud.warn(null);
+  // (his car's warning, if it is up, stays: carClock's)
+  if (!ctx.flags.carWarn) G.hud.warn(null);
   // (from the car's save: the chase's music)
   if (ctx.from === 'car') G.music.cue('chase', { fade: 0.4 });
   // my car's door (the kerb side), and E there
   const door = cars.mine && cars.mine.handleAt ? cars.mine.handleAt() : V(MY_CAR.x + 0.76, 0.99, MY_CAR.z + 0.2);
   const doorOut = cars.mine && cars.mine.handleOut ? cars.mine.handleOut() : V(1, 0, 0);
-  let driven = false;
-  G.interact.add({ id: 'drive', at: door, range: 2.6, cone: 1.1, prompt: 'drive', onUse: () => { driven = true; } });
-  // he gets into his sedan: the door shut on me if I am at his heels
-  yield until(() => C.act === 'gone' || driven);
-  const car = makeDrive(stage, cars, cars.his);
-  ctx.flags.car = car;
-  if (!driven) {
-    const e = G.eye, d = Math.hypot(e.x - (HIS_CAR.x - 0.95), e.z - (HIS_CAR.z + 0.6));
-    G.sfx.play('w_door', V(HIS_CAR.x - 0.95, 1, HIS_CAR.z + 0.6));
-    if (d < 2.4 && G.controller.run) { G.controller.run.flinch(-0.12, -0.08); G.controller.shake(0.5); }
-  }
-  // the starter grinds, catches on the second try; then he goes. If I am not
-  // in my car by then: the warning as it catches, and he is gone
-  let t = 0, phase = 0;
-  ctx.onStep((dt) => {
-    if (driven || G.failing) return;
-    t += dt;
-    if (phase === 0 && t > 0.4) { phase = 1; G.sfx.play('w_starter', car.pos(), { dur: 1.1 }); }
-    if (phase === 1 && t > 1.9) { phase = 2; G.sfx.play('w_starter', car.pos(), { dur: 1.3 }); }
-    if (phase === 2 && t > 3.4) { phase = 3; car.start(); G.sfx.play('w_engine', car.pos()); }
-    if (phase === 3 && t > 3.9) { phase = 4; G.hud.warn('He’s getting away.'); }
-    if (phase === 4 && t > 6.4) { phase = 5; car.go(); }
-    if (phase === 5 && t > 7.9) { phase = 6; G.fail({ why: 'Lost him.', to: 'car' }); }
-  });
-  // (his car pulls away: the run mode goes on; at my car's door, a walk)
-  yield until(() => driven);
+  G.interact.add({ id: 'drive', at: door, range: 2.6, cone: 1.1, prompt: 'drive', onUse: () => { ctx.flags.driven = true; } });
+  // (his car pulls away on its own clock - carClock; the run mode goes on;
+  // at my car's door, a walk)
+  yield until(() => ctx.flags.driven);
   G.hud.warn(null);
   G.interact.remove('drive');
   // my hand on the handle (object first), the door swung open, the eye in
@@ -738,39 +787,52 @@ function atOfficeWindow(ctx, C, O) {
 }
 
 // the slats parted, him seen, his run; the slats let go (either blind)
+// ([C6 3rd] the chapter begins ON the peek - chapter IV ends looking out of
+// this window at the man under the lamp (lane C5), and V's first frame after
+// its card is that frame: two fingers holding the slats apart, the slit, him
+// under his lamp and his umbrella looking up. It opened on a near-black
+// blind with no man in it until E parted the slats. `PEEK_AT` below is the
+// frame, for IV's end to meet.)
 function* seenAtWindow(ctx) {
   const G = ctx.game, C = ctx.flags.chase, H = G.hands;
   const blind = ctx.flags.blind;
   const umb = ctx.flags.umbO || ctx.flags.umb;
-  yield wait(1.0);
-  yield until(() => !(G.hud.cardT > 0.15));
-  yield* ctx.prompt({ text: 'look out', at: () => blind.gapAt(V(0, 0, 0)) });
+  // (under the chapter card, at once: the hand on the slats, the slit open,
+  // the eye at it, the lens drawn in)
   SLAT.blind = blind; SLAT.cam = G.camera;
   H.play('partSlats');
   blind.part(1);
   const gap = blind.gapAt(V(0, 0, 0), -0.1);
-  blind.part(0);
+  C.fig.object.updateMatrixWorld(true);
   const him = C.fig.bones.chest.getWorldPosition(V(0, 0, 0));
   const dir = gap.clone().sub(him).normalize();
   const O = !!ctx.flags.office, peek = O ? 38 : PEEK;
   const eye = gap.clone().addScaledVector(dir, O ? 0.32 : 0.4);
-  G.controller.ease({ x: eye.x, y: eye.y, z: eye.z, yaw: Math.atan2(dir.x, dir.z), pitch: Math.asin(-dir.y) }, 0.55);
-  const fov0 = ctx.flags.fov0 = G.camera.fov;
-  let t = 0;
-  yield until(() => {
-    t += 1 / 60;
-    if (t > 0.26) blind.part(Math.min(1, (t - 0.26) / 0.3));
-    if (Math.abs(t - 0.3) < 0.01) G.sfx.play('w_slats', gap);
-    lens(G, fov0 + (peek - fov0) * Math.min(1, t / 0.6) ** 2 * (3 - 2 * Math.min(1, t / 0.6)));
-    return t >= 0.6;
-  });
-  yield wait(1.5);
+  const pose = { x: eye.x, y: eye.y, z: eye.z, yaw: Math.atan2(dir.x, dir.z), pitch: Math.asin(-dir.y) };
+  G.controller.ease(pose, 0.001);
+  ctx.flags.fov0 = G.camera.fov;
+  lens(G, peek);
+  PEEK_AT.pose = pose; PEEK_AT.fov = peek; PEEK_AT.office = O;
+  yield null;
+  G.sfx.play('w_slats', gap);
+  yield wait(1.0);
+  yield until(() => !(G.hud.cardT > 0.15));
+  // (a moment on him under the lamp, looking up at this window; then he
+  // knows he has been seen)
+  yield wait(1.4);
   C.w.play('watcher_notice', { fade: 0.1, hold: true });
   yield wait(0.35);
   const hv = V(Math.sin(C.fig.yaw) * -0.4, -0.2, Math.cos(C.fig.yaw) * -0.4);
   umb.drop(hv, { wind: ctx.flags.office ? V(-0.25, 0, 0.9) : V(0.9, 0, -0.3) });
   G.sfx.play('w_umbrella', C.fig.pos.clone().setY(C.fig.pos.y + 1));
   G.music.cue('chase', { fade: 0.4 });
+  // ([C6 3rd] he runs, and the clock is his: the line says so at once, and
+  // the window does not wait - "He's getting away." if I stand at it, and
+  // then he is gone; however long I take, he is that far on when I am out
+  // on the iron (outOfOffice))
+  ctx.flags.ranAt = G.time;
+  G.hud.objective('After him. Down the fire escape.');
+  ctx.onStep(() => windowClock(ctx));
   yield wait(0.55);
   if (ctx.flags.office) {
     const R = officeRun(C);
@@ -785,6 +847,22 @@ function* seenAtWindow(ctx) {
   lens(G, ctx.flags.fov0);
   G.sfx.play('w_slats', gap);
   yield* ctx.prompt({ text: 'the fire escape' });
+}
+
+// [C6 3rd] the window after he runs: standing at it, the warning, then lost
+// (back on the iron, him where the escape's retry has him)
+export const PEEK_AT = { pose: null, fov: null, office: false };
+const WINDOW = { warn: 6.5, lost: 9.5, pace: 3.8, nominal: 3.4 };
+function windowClock(ctx) {
+  const G = ctx.game, F = ctx.flags;
+  if (F.leftWindow || G.failing || F.ranAt == null) return;
+  const t = G.time - F.ranAt;
+  if (t > WINDOW.warn && !F.windowWarned) { F.windowWarned = true; G.hud.warn('He’s getting away.'); }
+  if (t > WINDOW.lost && !F.windowLost) {
+    F.windowLost = true;
+    (G._c6lost || (G._c6lost = [])).push({ stretch: 'seen', gap: null, unseen: null, me: null, act: 'window', why: 'stood at the window' });
+    G.fail({ why: 'Lost him.', to: 'escape' });
+  }
 }
 
 // out of the office: across the room to the fire-escape window, both palms
@@ -820,7 +898,12 @@ function* outOfOffice(ctx) {
   const C = ctx.flags.chase;
   C.stage = G.stage;
   C.spawn({ x: WATCH_AT.x, z: WATCH_AT.z }, 0, 'watcher_run');
-  C.place(4.5);
+  // ([C6 3rd] where his clock has him: 4.5 m along for a man who went for
+  // the fire escape at once; for every second more at the window, his
+  // trot's worth further - he was put back by his lamp however long I took)
+  const late = ctx.flags.ranAt != null ? Math.max(0, (G.time - ctx.flags.ranAt) - WINDOW.nominal) : 0;
+  C.place(4.5 + late * WINDOW.pace);
+  ctx.flags.lateAtWindow = +late.toFixed(2);
   umbrellaDown(ctx);
   const s = railS(1) * 0.5;
   const r0 = ESC_RAIL[0], r1 = ESC_RAIL[1];

@@ -11,6 +11,11 @@
 //         wrong one, finds its door locked and goes back round)
 //   good  uses what was taught: SPACE / C a quarter second before each thing,
 //         reads which lane he took, takes `over` at the fork
+//   firsttimer  ([C6 3rd]) knows only what the cards have taught him: SPACE
+//         for every thing (the reflex the first card taught) `spaceT` s before
+//         it (default 0.3: a couple of metres), the right key only for a verb
+//         whose card he has seen; a card up, he presses its key after 0.4 s;
+//         stopped against a thing, its taught key, else SPACE
 // Steering: the mouse turns him onto the next point of his line (the course's
 // nodes for his choices, scenes/watcher/course.js), W held.
 // Ends when `stop` is true or on the timeout. Returns { profile, fails,
@@ -39,10 +44,16 @@ export default async function drive({ js, turn, keyDown, keyUp, log, sleep, opts
   const shotDone = new Set();
   // the line: node names in order for my choices (lane is read when the yard comes)
   // ([C6 2nd] out of the kitchen by its east door: the press hall, the avenue, the alley behind)
-  const LINE = (lane, over) => ['foot', 'alleyEnd', 'laneIn', 'laneOut', lane === 'E' ? 'eIn' : 'wIn', lane === 'E' ? 'eDoor' : 'wDoor', lane === 'E' ? 'eIn2' : 'wIn2', lane === 'E' ? 'eK' : 'wK', ...(lane === 'E' ? [] : ['kMid']),
-    'kDoor', 'pIn', 'pA', 'pB', 'pC', 'pD', 'dock', 'avS', 'avN', 'aIn', 'aMid', 'aOut',
-    ...(over === 'row' ? ['passIn', 'passOut', 'dog', 'bay', 'truck', 'rowEnd', 'rowOut'] : ['stairIn', 'stairFoot', 'stairTop', 'roofIn', 'party', 'edge', 'r2In', 'tank', 'shedTop', 'eave', 'dropped']),
-    'cross', 'gateway', 'aisleN', 'aisleS', 'crossW', 'gate', 'pave', 'myDoor'];
+  // ([C6 3rd] the line is the course's own: his way for a lane of the yard
+  // and a way over (plan.js hisNames, read from the page: the debug hook
+  // window.__c6), and my coupe's door - so the hands follow the course as it is)
+  const lineCache = new Map();
+  const LINE = (lane, over) => lineCache.get(lane + over) || [];
+  const fetchLine = async (lane, over) => {
+    const k = lane + over;
+    if (!lineCache.has(k)) { const L = await js(`window.__c6 ? window.__c6.hisNames(${JSON.stringify(lane)}, ${JSON.stringify(over)}) : null`); if (Array.isArray(L)) lineCache.set(k, [...L.filter((n) => n !== 'carRear' && n !== 'carDoor' && n !== 'lamp' && n !== 'kerb' && n !== 'mouth'), 'myDoor']); }
+    return LINE(lane, over);
+  };
   let line = null, li = 0, lane = null, over = opts.over || 'roofs', laneTried = null;
   let plan = new Map();          // thing id -> { at: t to press, key, skip }
   let wrongAt = Date.now() + rr(3000, 6000), wOffUntil = 0;
@@ -52,16 +63,14 @@ export default async function drive({ js, turn, keyDown, keyUp, log, sleep, opts
     const out = { done: !!(${until}), mode: C.mode, beat: S.beat, scene: S.current && S.current.id, yaw: C.yaw, pitch: C.pitch, sens: C.sensitivity,
       x: C.pos.x, z: C.pos.z, feet: R ? R.feet : C.groundY, v: R ? R.v : 0, failing: !!G.failing, warn: G.hud.kit.warnText || null,
       fails: G.counters.fails || 0, crawl: G.crawl, prompt: G.hud.promptShown || '', move: R && R.move ? R.move.kind : null, blocked: R && R.blocked ? { id: R.blocked.T.id, kind: R.blocked.T.kind } : null,
-      lane: CH ? CH.lane : null, his: CH ? CH.act : null, gap: CH ? +CH.gapNow.toFixed(1) : null, stretch: CH ? CH.stretch : null, teach: G.hud.kit.teachCur ? G.hud.kit.teachCur.id : null };
+      lane: CH ? CH.lane : null, his: CH ? CH.act : null, gap: CH ? +CH.gapNow.toFixed(1) : null, stretch: CH ? CH.stretch : null, teach: G.hud.kit.teachCur ? G.hud.kit.teachCur.id : null, taught: Object.keys(G.hud.kit.taught ? G.hud.kit.taught() : {}) };
     if (R && C.mode === 'run') {
       const th = N.stage.part('things');
       const q = th.ahead(C.pos, C.vel, R.level, 0.36);
       if (q) out.q = { id: q.T.id, kind: q.T.kind, d: +q.d.toFixed(3), t: +q.t.toFixed(3), c: +q.c.toFixed(2) };
     }
     const nodes = {};
-    for (const k of ${JSON.stringify(['foot', 'alleyEnd', 'laneIn', 'laneOut', 'wIn', 'wDoor', 'wIn2', 'wK', 'eIn', 'eDoor', 'eIn2', 'eK', 'kMid', 'rollOut', 'kDoor', 'pIn', 'pA', 'pB', 'pC', 'pD', 'dock', 'avS', 'avN', 'aIn', 'aMid', 'aOut', 'stairIn', 'passIn', 'passOut', 'dog', 'bay', 'truck', 'rowEnd', 'rowOut', 'stairFoot', 'stairTop', 'roofIn', 'party', 'edge', 'r2In', 'tank', 'shedTop', 'eave', 'dropped', 'cross', 'gateway', 'aisleN', 'aisleS', 'crossW', 'gate', 'pave'])}) {
-      const n = CH && CH.course && CH.course.nodes.get(k); if (n) nodes[k] = [n.x, n.z, n.y];
-    }
+    if (CH && CH.course) for (const [k, n] of CH.course.nodes) nodes[k] = [n.x, n.z, n.y];
     const cars = N.stage.part && N.stage.part('cars');
     if (cars && cars.mine && cars.mine.handleAt) { const h = cars.mine.handleAt(); const o = cars.mine.handleOut(); nodes.myDoor = [h.x + o.x * 0.95, h.z + o.z * 0.95]; out.handle = [h.x, h.y, h.z]; }
     out.nodes = nodes;
@@ -97,7 +106,7 @@ export default async function drive({ js, turn, keyDown, keyUp, log, sleep, opts
     if (!line || (s.lane && lane !== s.lane && !laneTried)) {
       if (prof === 'good' || prof === 'w') lane = s.lane || 'W';
       else if (!lane || !laneTried) lane = laneTried || (rnd() < 0.5 ? 'W' : 'E');
-      line = LINE(lane, over);
+      line = await fetchLine(lane, over);
       // (from where I stand: the first point of the line still ahead of me)
       let best = 0, bd = Infinity;
       // (on my own level: from the row's end the shed's roof is near but not mine)
@@ -110,7 +119,7 @@ export default async function drive({ js, turn, keyDown, keyUp, log, sleep, opts
     if (s.blocked && s.blocked.kind === 'locked') {
       laneTried = lane === 'W' ? 'E' : 'W';
       lane = laneTried;
-      line = LINE(lane, over);
+      line = await fetchLine(lane, over);
       const back = ['laneOut', lane === 'E' ? 'eIn' : 'wIn'];
       line = [...back, ...line.slice(line.indexOf(lane === 'E' ? 'eIn' : 'wIn') + 1)];
       li = 0;
@@ -164,6 +173,7 @@ export default async function drive({ js, turn, keyDown, keyUp, log, sleep, opts
         if (!P) {
           // the plan for this thing: when to press (seconds before reaching it)
           if (prof === 'good') P = { at: q.kind === 'slope' ? 0.45 : q.kind === 'jump' ? 0.2 : 0.24 + rr(-0.04, 0.04), key };
+          else if (prof === 'firsttimer') { const verb = { under: 'slide', slope: 'slideDown', over: 'vault', shoulder: 'shoulder', jump: 'jump' }[q.kind]; P = { at: opts.spaceT ?? 0.3, key: verb && (s.taught || []).includes(verb) ? key : (key ? 'Space' : null) }; }
           else {
             const k = `${q.id}:${fails}:`, u = rndOf(k + 'u');
             const r = rndOf(k + 'r');
@@ -183,8 +193,14 @@ export default async function drive({ js, turn, keyDown, keyUp, log, sleep, opts
       }
     }
     // pressed against a thing after a hit: the key that gets me over / under / through it
+    // (a card up: the first-timer presses what it shows)
+    if (prof === 'firsttimer' && s.teach) {
+      const ck = { vault: 'Space', slide: 'KeyC', shoulder: 'Space', jump: 'Space', slideDown: 'KeyC', run: 'KeyW' }[s.teach];
+      if (ck && ck !== 'KeyW' && drive._card !== s.teach + fails) { drive._card = s.teach + fails; await sleep(400); await tap(ck); log(`c6_chase firsttimer: the card '${s.teach}' up: pressed ${ck}`); }
+    }
     if (prof !== 'w' && s.blocked && s.blocked.kind !== 'locked') {
-      const k = s.blocked.kind === 'under' ? 'KeyC' : 'Space';
+      let k = s.blocked.kind === 'under' ? 'KeyC' : 'Space';
+      if (prof === 'firsttimer' && k === 'KeyC' && !(s.taught || []).includes('slide')) k = 'Space';
       await sleep(prof === 'good' ? rr(80, 160) : rr(250, 600));
       await tap(k);
       plan.delete(s.blocked.id);

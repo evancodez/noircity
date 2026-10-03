@@ -63,12 +63,20 @@ export default {
     // step: a tap shorter than a step - or one under a teach card's crawl,
     // when a step is long in real time - is never lost)
     const edge = (code) => !!(G && G.pressed && G.pressed(code));
+    // ([C6 3rd] a press made while a move has the body - a hit's stop, a hop,
+    // a landing, a trip - is kept for the move's end: a SPACE pressed as I hit
+    // the fence climbs it when the stop is over, a C pressed in a hop goes
+    // under what the hop meets. Only the last press, and only one made in the
+    // move's last 0.6 s: the press was meant for what comes next.)
+    const busy = !!R.move;
     for (const code of ['Space', 'KeyC', 'ControlLeft', 'KeyE']) {
       const K = R.keys[code];
       const h = !ctl.frozen && (held(code) || (code === 'Space' && !!(ctl.auto && ctl.auto.jump)) || (code === 'KeyC' && !!(ctl.auto && ctl.auto.slide)) || (code === 'ControlLeft' && held('ControlRight')));
       const e = !ctl.frozen && (edge(code) || (code === 'ControlLeft' && edge('ControlRight')));
-      if ((h && !K.held) || (e && K.t > dt * 0.5)) K.t = 0; else K.t += dt;
+      const pressedNow = (h && !K.held) || (e && K.t > dt * 0.5);
+      if (pressedNow) { K.t = 0; if (busy) K.qt = R.t; } else K.t += dt;
       K.held = h;
+      if (!busy && K.qt != null) { if (R.t - K.qt < 0.6 && K.t >= TIMING.BUF) K.t = 0; K.qt = null; }
     }
     const io = {
       press: (k) => (k === 'C' ? Math.min(R.keys.KeyC.t, R.keys.ControlLeft.t) : R.keys[k].t),
@@ -259,18 +267,22 @@ function start(ctl, R, q, how) {
       R.onEvent('duck', { T });
     }
   } else if (T.kind === 'shoulder') {
+    // ([C6 3rd] a door is met within a step of its frame too: the body goes
+    // into the doorway, not into the wall beside it)
+    const lat = doorLat(T, F, q.u * F.L);
+    const atD = { x: T.a.x + F.t.x * lat.to, z: T.a.z + F.t.z * lat.to };
     if (how === 'clean') {
       T.bash(1);
       const vb = Math.max(3.8, v * 0.85);
-      R.move = { kind: 'bash', T, t: 0, dur: 0.22, vx: nx * vb, vz: nz * vb };
-      plantDoor(at, F, q.side);
+      R.move = { kind: 'bash', T, t: 0, dur: 0.22, vx: nx * vb + F.t.x * lat.d / 0.22, vz: nz * vb + F.t.z * lat.d / 0.22 };
+      plantDoor(atD, F, q.side);
       R.jolt = { t: 0, yaw: 0.06, pitch: -0.05, dur: 0.3 };
       R.onEvent('bash', { T });
     } else {
       // late: the shoulder into it at the last moment, a bruise
       T.bash(0.6);
-      R.move = { kind: 'bruise', T, t: 0, dur: 0.48, vx: nx * 1.6, vz: nz * 1.6 };
-      plantDoor(at, F, q.side);
+      R.move = { kind: 'bruise', T, t: 0, dur: 0.48, vx: nx * 1.6 + F.t.x * lat.d / 0.48, vz: nz * 1.6 + F.t.z * lat.d / 0.48 };
+      plantDoor(atD, F, q.side);
       R.jolt = { t: 0, yaw: -0.1, pitch: -0.12, dur: 0.45 };
       ctl.shake(0.5);
       R.onEvent('bruise', { T });
@@ -278,6 +290,14 @@ function start(ctl, R, q, how) {
   } else if (T.kind === 'jump') {
     startJump(ctl, R, T, q.d, how === 'clean', nx, nz, v);
   }
+}
+
+// ([C6 3rd] a door's doorway from where along it I am: the point inside its
+// frame nearest me, and how far aside that is)
+function doorLat(T, F, along) {
+  const m = Math.min(0.42, F.L / 2);
+  const to = Math.max(m, Math.min(F.L - m, along));
+  return { to, d: to - along };
 }
 
 function plant(at, y, F, w) {
@@ -327,18 +347,20 @@ function startSlide(ctl, R, how, T = null, q = null) {
 
 // the jump over the light well: from the parapet, over the gap, down onto the
 // far roof (clean); or short, onto the hands at the far parapet (caught)
-function startJump(ctl, R, T, d0, clean, nx, nz, v) {
+function startJump(ctl, R, T, d0, clean, nx, nz, v, { standing = false } = {}) {
   const L = T.land;
   // (how far: to past the far parapet clean; to its outer face short)
   const xOuter = L.x - nx * 0.125;            // the far parapet's face toward me
   const toOuter = (ctl.pos.x - xOuter) * -nx + (0) * nz;
   const D = clean ? toOuter + 1.1 : Math.max(0.6, toOuter - R0 - 0.06);
-  const hs = clean ? Math.max(5.6, v) : Math.max(3.4, v * 0.72);
-  const ka = Math.min(0.5, Math.max(0.12, (Math.max(0, d0) + R0 + 0.3) / Math.max(0.5, D)));
-  const yA = T.y + T.top + (clean ? 0.32 : 0.16);
-  R.move = { kind: 'jump', T, t: 0, dur: D / hs, nx, nz, hs, y0: R.feet, yA, ka, yEnd: clean ? L.y : L.top - 1.6, clean, colOff: true, pitch: 0 };
+  // ([C6 3rd] from standing at the parapet: up on its coping and over, slower)
+  const hs = standing ? 4.3 : clean ? Math.max(5.6, v) : Math.max(3.4, v * 0.72);
+  const ka = standing ? 0.34 : Math.min(0.5, Math.max(0.12, (Math.max(0, d0) + R0 + 0.3) / Math.max(0.5, D)));
+  const yA = T.y + T.top + (standing ? 0.42 : clean ? 0.32 : 0.16);
+  R.move = { kind: 'jump', T, t: 0, dur: D / hs, nx, nz, hs, y0: R.feet, yA, ka, yEnd: clean ? L.y : L.top - 1.6, clean, standing, colOff: true, pitch: 0 };
+  if (standing) { plant({ x: ctl.pos.x + nx * (Math.max(0, d0) + R0), z: ctl.pos.z }, T.y + T.top, T.frame(), 0.22); }
   R.things.solid(T, false);
-  R.onEvent('jump', { T, clean });
+  R.onEvent('jump', { T, clean, standing });
 }
 
 function startSlideDown(ctl, R, T, clean) {
@@ -390,7 +412,8 @@ function blockedStep(ctl, R, io) {
   const gap = Math.abs(s) - T.depth / 2 - R0;
   const fwd = { x: -Math.sin(ctl.yaw), z: -Math.cos(ctl.yaw) };
   const facing = fwd.x * B.nx + fwd.z * B.nz;
-  if (!T.active || facing < 0.25 || gap > 0.3 || along < -R0 || along > F.L + R0 || Math.abs(R.vs) > 1.2) { R.blocked = null; RUNHANDS.set('pump'); return; }
+  const cx = T.catch || 0;
+  if (!T.active || facing < 0.25 || gap > 0.3 || along < -R0 - cx || along > F.L + R0 + cx || Math.abs(R.vs) > 1.2) { R.blocked = null; RUNHANDS.set('pump'); return; }
   // (pressed against it: W does not move me through it)
   if (R.v > 0) { R.v = 0; ctl.vel.set(0, 0, 0); }
   const sp = io.press('Space') < TIMING.BUF, cp = io.press('C') < TIMING.BUF, ep = io.press('KeyE') < TIMING.BUF;
@@ -414,8 +437,10 @@ function blockedStep(ctl, R, io) {
     io.spend('Space'); io.spend('KeyE');
     R.blocked = null;
     T.bash(0.7);
-    R.move = { kind: 'push', T, t: 0, dur: 0.35, vx: B.nx * 1.8, vz: B.nz * 1.8 };
-    plantDoor(B.at, F, B.side);
+    // ([C6 3rd] against the wall a step beside its frame: into the doorway)
+    const lat = doorLat(T, F, along);
+    R.move = { kind: 'push', T, t: 0, dur: 0.35, vx: B.nx * 1.8 + F.t.x * lat.d / 0.35, vz: B.nz * 1.8 + F.t.z * lat.d / 0.35 };
+    plantDoor({ x: T.a.x + F.t.x * lat.to, z: T.a.z + F.t.z * lat.to }, F, B.side);
     R.onEvent('push', { T });
   } else if (T.kind === 'locked' && (sp || ep)) {
     io.spend('Space'); io.spend('KeyE');
@@ -425,8 +450,11 @@ function blockedStep(ctl, R, io) {
   } else if (T.kind === 'jump' && sp) {
     io.spend('Space');
     R.blocked = null;
-    // a standing jump from the parapet: short, the hands on the far one
-    startJump(ctl, R, T, Math.max(0, gap), false, B.nx, B.nz, 2.6);
+    // a standing jump from the parapet: ([C6 3rd] a foot up on its coping
+    // and over, slower than a running leap, onto the far roof - a fumble at
+    // the well costs about what a fumble elsewhere costs, not the catch and
+    // the haul on top of the stop: clumsy hands lost five times running here)
+    startJump(ctl, R, T, Math.max(0, gap), true, B.nx, B.nz, 0, { standing: true });
   }
 }
 
@@ -539,7 +567,10 @@ function stepMove(ctl, R, dt, cols) {
       ctl.vel.set(M.nx * M.hs, 0, M.nz * M.hs);
       R.feet = u < M.ka ? M.y0 + (M.yA - M.y0) * Math.sin(Math.PI / 2 * u / M.ka) : M.yA + (M.yEnd - M.yA) * ((u - M.ka) / (1 - M.ka)) ** 2;
       M.pitch = M.clean ? -0.12 * Math.sin(Math.PI * u) : -0.3 * u;
+      // ([C6 3rd] from standing: the hands push off the coping and come away)
+      if (M.standing && u > 0.3) RUNHANDS.lift = Math.min(1, (u - 0.3) / 0.3);
       if (u < 1) return;
+      if (M.standing) RUNHANDS.set('pump');
       const L = M.T.land;
       if (!M.clean) {
         // (the hands on the coping, the body against the wall below it)

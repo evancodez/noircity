@@ -9,9 +9,8 @@ import { Course, pathAt, pathHeading, project, corners } from './course.js';
 //   chosen each try) at his own pace - 6.3 m/s on the flat, slower into his
 //   corners, up the stair, through his doors - with his own costs: his
 //   fences (a vault, 0.8 s), his slides, his jump, the look back over his
-//   shoulder, the one slip on the wet. Close behind him (under 7 m) he finds
-//   a burst from fear while it lasts. Nothing in his pace looks at how far
-//   behind I am: no rubber band.
+//   shoulder, the one slip on the wet. Nothing in his pace looks at how far
+//   behind I am: no rubber band, no burst when I am close ([C6 3rd]).
 //   His doings: he pulls the alley's bins down across it (always: the first
 //   SPACE); with me close behind he pulls more down - the crates at the
 //   alley's head, a bin kicked rolling down the lane at me, the kitchen's
@@ -26,8 +25,8 @@ import { Course, pathAt, pathHeading, project, corners } from './course.js';
 //   with. The thresholds are RULES.
 export const RULES = {
   base: 6.5,                 // his pace on the flat (mine is 6.8)
-  burst: 0.8, stamina: 3.0,  // his fear's burst when I am close, and how long it lasts
-  close: 7.0,                // close: his burst
+  // ([C6 3rd] the fear's burst when I was close - +0.8 m/s for 3 s - is gone:
+  // a boost, which the brief forbids; close, he pulls things down instead)
   trick: 9.0,                // close enough for him to pull something down behind him
   warnOn: 24, warnOff: 19,   // the gap that warns (and lets go)
   lost: 36,                  // the gap that loses him
@@ -64,7 +63,6 @@ export class Chase {
     this.yOff = 0;
     this.active = false;            // the rules on (the run beats)
     this.grace = 0;
-    this.stamina = RULES.stamina;
     this.events = this.plan();
     this.ei = 0;
     this.look = null; this.lean = 0; this.pull = null; this.skid = null;
@@ -199,7 +197,7 @@ export class Chase {
     } else if (this.act === 'arc') this.arcStep(dt);
     else if (this.act === 'carIn') {
       const h = this.w.clipH;
-      if (!h || h.t >= h.duration - 1e-3) { this.act = 'gone'; F.object.visible = false; if (F.collider) F.collider.r = 0; if (this.onCarIn) this.onCarIn(); }
+      if (!h || h.t >= h.duration - 1e-3) { this.act = 'gone'; this.inCar = true; F.object.visible = false; if (F.collider) F.collider.r = 0; if (this.onCarIn) this.onCarIn(); }
     }
     if (this.look) { this.look.t += dt; if (this.look.t > 1.0) this.look = null; }
     if (this.pull) { this.pull.t += dt; if (this.pull.t > 0.7) this.pull = null; }
@@ -239,9 +237,8 @@ export class Chase {
       const k = Math.min(1, Math.abs(c.turn) / 1.6);
       want = Math.min(want, RULES.base - 2.3 * k);
     }
-    // (close behind him, the fear's burst while his breath lasts)
-    if (gap < RULES.close && this.stamina > 0 && this.active) { want += RULES.burst; this.stamina -= dt; }
-    else if (gap > 9) this.stamina = Math.min(RULES.stamina, this.stamina + dt * 0.5);
+    // ([C6 3rd] no burst when I am close: his pace is his own whatever I do -
+    // what he does about me on his heels is a thing pulled down in my way)
     // (down the iron: he does not yet know I am coming down after him - a
     // run, not his sprint, a look back up at the fire escape - until the
     // ladder comes down: the scene's paceCap)

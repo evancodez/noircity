@@ -168,6 +168,15 @@ export default {
       l.keen = (c) => c.x > ln.x0 - 2 && c.x < ln.x1 + 2 && c.z > KI.z1 && c.z < YARD.z1 + 4;
       api.floods[side] = l;
     }
+    // ([C6 3rd] a bulb on a bracket beside each back door, down on its leaf
+    // and its step: the door at the head of the lane is the lit thing there,
+    // not a dark corner under the flood - the slammed one plain to run at, the
+    // locked one's padlock and chain catching it)
+    api.doorLamps = {};
+    for (const side of ['W', 'E']) {
+      const d = KI.doors[side];
+      api.doorLamps[side] = L.wall(d.x + d.w / 2 + 0.45, 2.5, KI.z1, 0, 1, { out: 0.12, strength: 0.8, half: 0.62 });
+    }
     api.rollLamp = L.wall(R.x + 2.2, 3.9, KI.z0, 0, -1, { out: 0.4, strength: 1.0 });
     // the yard at night: the sky's grey off the walls, the washing the lit thing in it
     stage.addLook(new THREE.Box3(V3(YARD.x0 - 3.5, -1, KI.z1), V3(YARD.x1, 30, YARD.z1 + 1.5)), {

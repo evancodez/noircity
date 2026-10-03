@@ -52,6 +52,9 @@ export default {
         top: spec.top ?? 1.0, under: spec.under ?? 0.8, low: !!spec.low, level: spec.level || 'ground', active: spec.active ?? true,
         stretch: spec.stretch || null, group: spec.group || null, moving: !!spec.moving, vel: { x: 0, z: 0 }, state: {}, col: null, colOn: false,
         a0: { ...spec.a }, b0: { ...spec.b }, pass: spec.pass || null, dynamic: !!spec.dynamic, his: spec.his || null,
+        // ([C6 3rd] met within this far beyond its ends too: a door is met
+        // by a body against the wall a step beside its frame)
+        catch: spec.catch || 0,
       };
       T.frame = () => frame(T);
       if (spec.collide !== false) {
@@ -104,7 +107,8 @@ export default {
         const F = frame(T);
         const ux = p.x - T.a.x, uz = p.z - T.a.z;
         const along = ux * F.t.x + uz * F.t.z;
-        if (along < -r - 0.15 || along > F.L + r + 0.15) continue;
+        const cx = (T.kind === 'shoulder' || T.kind === 'locked') ? T.catch : 0;
+        if (along < -r - 0.15 - cx || along > F.L + r + 0.15 + cx) continue;
         const s = ux * F.n.x + uz * F.n.z;
         const side = s >= 0 ? 1 : -1;
         const d = Math.abs(s) - T.depth / 2 - r;
@@ -239,8 +243,38 @@ export default {
       // hinged on its west jamb, opening into the kitchen (north, -z)
       g.position.set(d.x - d.w / 2 + 0.02, 0.02, KITCHEN.z1 - 0.15);
       stage.scene.add(g);
-      const T = add({ id: 'door' + side, kind: 'locked', a: { x: d.x - d.w / 2, z: KITCHEN.z1 - 0.15 }, b: { x: d.x + d.w / 2, z: KITCHEN.z1 - 0.15 }, depth: 0.3, top: d.h, stretch: 'yard' });
+      // ([C6 3rd] locked, it shows it: a hasp across the leaf and the jamb, a
+      // padlock hanging from it, a chain through the push plate to a staple in
+      // the wall - pale steel in the lamp over the door; sound or no sound,
+      // the door is plainly locked)
+      const lockG = new THREE.Group();
+      {
+        const steel = new THREE.MeshStandardMaterial({ color: 0xc4c4c4, metalness: 0.75, roughness: 0.3, envMap: M.envSoft, envMapIntensity: 1.0 });
+        const zf = KITCHEN.z1 - 0.15 + 0.04;     // the yard's face of the leaf
+        const xh = d.x + d.w / 2 - 0.08;          // the latch side (east jamb)
+        const parts = [
+          new THREE.BoxGeometry(0.34, 0.06, 0.02).translate(xh - 0.06, 1.12, zf + 0.01),       // the hasp
+          new THREE.BoxGeometry(0.05, 0.12, 0.05).translate(xh + 0.12, 1.12, zf + 0.03),       // the staple in the jamb
+          new THREE.BoxGeometry(0.11, 0.13, 0.05).translate(xh + 0.12, 0.98, zf + 0.06),       // the padlock's body
+          new THREE.TorusGeometry(0.035, 0.009, 5, 12, Math.PI).translate(xh + 0.12, 1.045, zf + 0.06),   // its shackle
+        ];
+        // the chain: links in a sag from the push plate to the staple
+        const n = 9;
+        for (let i = 0; i <= n; i++) {
+          const k = i / n, x = (d.x - d.w / 2 + d.w - 0.2) + (xh + 0.12 - (d.x - d.w / 2 + d.w - 0.2)) * k;
+          const y = 1.05 - 0.14 * Math.sin(Math.PI * k);
+          parts.push(new THREE.TorusGeometry(0.022, 0.006, 4, 8).rotateY(i % 2 ? Math.PI / 2 : 0).translate(x, y, zf + 0.05));
+        }
+        const m = new THREE.Mesh(merge(parts), steel);
+        m.castShadow = true; m.userData.noRay = true;
+        lockG.add(m);
+        tagInk(lockG); markFigure(lockG);
+        lockG.visible = false;
+        stage.scene.add(lockG);
+      }
+      const T = add({ id: 'door' + side, kind: 'locked', a: { x: d.x - d.w / 2, z: KITCHEN.z1 - 0.15 }, b: { x: d.x + d.w / 2, z: KITCHEN.z1 - 0.15 }, depth: 0.3, top: d.h, stretch: 'yard', catch: 0.6 });
       T.mesh = g;
+      T.lock = lockG;
       T.side = side;
       T.state = { a: 0, v: 0, rattle: 0 };
       // (its swing: 0 shut .. 1.75 open, a damped spring to its rest)
@@ -260,6 +294,7 @@ export default {
       };
       // he went through: shut behind him (slammed); or locked; or open
       T.set = (state) => {
+        lockG.visible = state === 'locked';
         if (state === 'slammed') { T.kind = 'shoulder'; T.rest = 0; T.state.a = 0.5; T.state.v = -9; T.active = true; solid(T, true); emit('slam', T); }
         else if (state === 'locked') { T.kind = 'locked'; T.rest = 0; T.state.a = 0; T.state.v = 0; T.active = true; solid(T, true); }
         else if (state === 'shut') { T.kind = 'shoulder'; T.rest = 0; T.state.a = 0; T.state.v = 0; T.active = true; solid(T, true); }
@@ -578,7 +613,12 @@ function fence(add, stage, wood, MAT, ink, { id, x, h, kind, gap = 0 }) {
     // (the under kind: the boards broken off at their feet, ragged)
     const bot = kind === 'under' ? gap + rng.range(0, 0.07) : 0.04;
     B.push(new THREE.BoxGeometry(0.06, top - bot, 0.135).translate(x, (top + bot) / 2, z + 0.0675));
-    if (kind === 'under' && rng.next() < 0.5) B.push(new THREE.BoxGeometry(0.05, rng.range(0.05, 0.2), 0.12).translate(x + 0.02, rng.range(0.02, 0.08), z + 0.0675));
+    // ([C6 3rd] the boards' broken-off feet that stood on the ground under
+    // the gap are gone: seen side on at the slide's height they read as a
+    // row of black cubes the body passed through - the gap is clear, its
+    // ragged edge above is the boards' own broken ends; the draws kept, so
+    // the boards' tops stay as they were)
+    if (kind === 'under' && rng.next() < 0.5) { rng.range(0.05, 0.2); rng.range(0.02, 0.08); }
   }
   g.add(new THREE.Mesh(merge(P), MAT.woodDark));
   g.add(new THREE.Mesh(merge(B), wood));
