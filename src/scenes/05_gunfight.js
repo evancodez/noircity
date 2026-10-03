@@ -109,9 +109,10 @@ function prepare(ctx, name, { reset = true } = {}) {
   const F = ctx.flags;
   F.men = [];
   // (the plays' record of the beat, lane C2's driver's: its cover places, where the open is, won)
-  // (block: the desk's footprint as it stands or lies - a hand walks round it, not into it)
+  // (block: the desk's footprint as it stands or lies - a hand walks round it, not into it; standing, its east
+  // side is shut: Ames's chair closes the gap to the radiator)
   F.c2 = { beat: name, get spots() { const t = !!O.desk.tip; return (SPOTS[name] || []).filter((sp) => sp.tipped == null || sp.tipped === t); }, open: OPENS[name] || null, won: false,
-    get block() { const c = O.desk.collider; return c ? { x0: c.cx - c.hx, x1: c.cx + c.hx, z0: c.cz - c.hz, z1: c.cz + c.hz } : null; } };
+    get block() { const c = O.desk.collider; return c ? { x0: c.cx - c.hx, x1: c.cx + c.hx, z0: c.cz - c.hz, z1: c.cz + c.hz, shut: O.desk.tip ? [] : ['E'] } : null; } };
   F.go = null;
   const spawn = (m, extra = {}) => { const h = K.spawn({ kind: m.kind || 'pistol', at: m.at, yaw: m.yaw ?? null, way: m.way ? { steps: m.way } : null, door: m.door || null, cover: !!m.cover, wait: m.wait ?? 0, start: m.start || null, name: m.name, hp: m.hp ?? null, ...extra }); h.c5 = m.name; F.men.push(h); return h; };
   F.spawn = spawn;

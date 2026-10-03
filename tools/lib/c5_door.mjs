@@ -115,15 +115,35 @@ export default async function drive({ js, turn, keyDown, keyUp, mouse, shot, log
     }
     return true;
   };
+  // (the shortest way round by its four corners - a side the block says is shut, the standing desk's east
+  // where Ames's chair closes the gap, has none; the first corner on that way is where to walk now)
   const roundBlock = (s, x, z) => {
     const b = s.block;
     if (!b || !crosses(b, s.x, s.z, x, z)) return null;
-    const m = 0.62, mid = (b.x0 + b.x1) / 2, past = s.z < b.z0 - 0.2 ? b.z0 - m : s.z > b.z1 + 0.2 ? b.z1 + m : null;
-    // (alongside it: first to the end nearer the goal, on my side; past an end: across that end to the goal's side)
-    const endZ = past ?? (Math.abs(z - (b.z1 + m)) + Math.abs(s.z - (b.z1 + m)) < Math.abs(z - (b.z0 - m)) + Math.abs(s.z - (b.z0 - m)) ? b.z1 + m : b.z0 - m);
-    const v = { x: (past == null ? s.x : x) < mid ? b.x0 - 0.45 : b.x1 + 0.45, z: endZ };
-    // (there already: straight on)
-    return Math.hypot(v.x - s.x, v.z - s.z) < 0.25 ? null : v;
+    const nodes = [{ x: s.x, z: s.z }];
+    for (const sx of ['W', 'E']) for (const sz of ['S', 'N']) {
+      if ((b.shut || []).includes(sx)) continue;
+      const c = { x: sx === 'W' ? b.x0 - 0.45 : b.x1 + 0.45, z: sz === 'S' ? b.z0 - 0.62 : b.z1 + 0.62 };
+      if (Math.hypot(c.x - s.x, c.z - s.z) > 0.3) nodes.push(c);
+    }
+    nodes.push({ x, z });
+    const n = nodes.length, goal = n - 1, dist = Array(n).fill(Infinity), prev = Array(n).fill(-1), done = Array(n).fill(false);
+    dist[0] = 0;
+    for (;;) {
+      let u = -1;
+      for (let i = 0; i < n; i++) if (!done[i] && dist[i] < Infinity && (u < 0 || dist[i] < dist[u])) u = i;
+      if (u < 0 || u === goal) break;
+      done[u] = true;
+      for (let v = 1; v < n; v++) {
+        if (done[v] || crosses(b, nodes[u].x, nodes[u].z, nodes[v].x, nodes[v].z)) continue;
+        const d = dist[u] + Math.hypot(nodes[v].x - nodes[u].x, nodes[v].z - nodes[u].z);
+        if (d < dist[v]) { dist[v] = d; prev[v] = u; }
+      }
+    }
+    if (dist[goal] === Infinity) return null;
+    let v = goal;
+    while (prev[v] > 0) v = prev[v];
+    return v === goal ? null : nodes[v];
   };
   // walk toward (x, z) by W and the mouse; true once there
   const walkTo = async (s, x, z, tol = 0.3) => {
