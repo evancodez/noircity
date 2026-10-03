@@ -108,9 +108,20 @@ export default {
       const g = new THREE.PlaneGeometry(xi1 - xi0, zi1 - zi0).rotateX(-Math.PI / 2).translate((xi0 + xi1) / 2, 0.005, (zi0 + zi1) / 2);
       K.add('pressFloor', floor, g, { cast: false });
       // the walls inside: a dado of dark paint to the shoulder, a pale line on it
-      for (const [x0, x1, z0, z1] of [[xi0, xi1, zi0, zi0 + 0.02], [xi0, xi1, zi1 - 0.02, zi1], [xi0, xi0 + 0.02, zi0, zi1], [xi1 - 0.02, xi1, zi0, D.z - D.w / 2], [xi1 - 0.02, xi1, D.z + D.w / 2, zi1]]) {
+      // ([C6 4th] cut round every doorway - the south door into the delivery
+      // yard and the kitchen's iron door: it ran across both, a chest-high dark
+      // slab every run went through)
+      const SD0 = P.southDoor;
+      for (const [x0, x1, z0, z1] of [
+        [xi0, xi1, zi0, zi0 + 0.02],
+        [xi0, SD0.x - SD0.w / 2, zi1 - 0.02, zi1], [SD0.x + SD0.w / 2, xi1, zi1 - 0.02, zi1],
+        [xi0, xi0 + 0.02, zi0, KDOOR.z - KDOOR.w / 2], [xi0, xi0 + 0.02, KDOOR.z + KDOOR.w / 2, zi1],
+        [xi1 - 0.02, xi1, zi0, D.z - D.w / 2], [xi1 - 0.02, xi1, D.z + D.w / 2, zi1],
+      ]) {
         K.box('pressDado', MAT.woodDark, x0, x1, 0.02, 1.6, z0, z1);
       }
+      // (the south door's frame on the hall's side, as the iron door has)
+      A.doorFrame('pressShell', face('z', zi1, -1), SD0.x, SD0.w, SD0.h);
       // ([C6 3rd] above the dado the walls are grimed plaster, dark - not the
       // brick's flat grey, which from the kitchen's door read as bare slabs -
       // with the hall's iron on them: pipes down from the roof, a conduit along,

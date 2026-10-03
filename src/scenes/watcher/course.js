@@ -66,29 +66,58 @@ export class Course {
   }
 
   // the way p is on: the edge nearest it (a metre up weighs two across)
-  near(p) {
-    let best = null;
+  // ([C6 4th] `clear(ax, az, bx, bz)`, when given: the way must be one I can
+  // see from p - nothing standing between (Walls below). The nearest edge on
+  // the ground plan was taken through walls: in the kitchen's north-west
+  // corner I was on the loading yard's way behind its wall (the stretch
+  // jumped to the cut, no warning for half a minute, and the loss sent me on
+  // to the cut); in the delivery yard's west end I was on the washing yard's
+  // lane behind its wall (warned and lost in a second and a half, him 25 m
+  // off). Now an edge whose nearest point is behind a wall is met where I can
+  // see it (its ends, its quarters), or not at all; and if no way within
+  // `reach` is in sight, null: the caller holds the last place it believed.)
+  near(p, clear = null, reach = 45) {
+    const cand = [];
     for (const e of this.edges) {
       const ax = e.A.x, ay = e.A.y, az = e.A.z;
       const tx = e.B.x - ax, ty = e.B.y - ay, tz = e.B.z - az;
-      const L2 = tx * tx + ty * ty + tz * tz || 1e-6;
       // (the fraction along it, by the ground plan; the height compared after)
       const Lxz2 = tx * tx + tz * tz || 1e-6;
       const f = Math.max(0, Math.min(1, ((p.x - ax) * tx + (p.z - az) * tz) / Lxz2));
       const qx = ax + tx * f, qy = ay + ty * f, qz = az + tz * f;
       const lat = Math.hypot(p.x - qx, p.z - qz, (p.y - qy) * Y_W);
-      if (!best || lat < best.lateral) best = { edge: e, f, lateral: lat };
-      void L2;
+      cand.push({ edge: e, f, lateral: lat, qx, qz });
+    }
+    cand.sort((a, b) => a.lateral - b.lateral);
+    if (!clear) return cand[0] || null;
+    let best = null;
+    for (const c of cand) {
+      if (c.lateral > reach || (best && c.lateral >= best.lateral)) break;
+      if (clear(p.x, p.z, c.qx, c.qz)) { best = c; break; }
+      // (its nearest point is behind something: the nearest of its ends and
+      // quarters that is in sight, if any)
+      const e = c.edge;
+      for (const f of [0, 0.25, 0.5, 0.75, 1]) {
+        const qx = e.A.x + (e.B.x - e.A.x) * f, qy = e.A.y + (e.B.y - e.A.y) * f, qz = e.A.z + (e.B.z - e.A.z) * f;
+        const lat = Math.hypot(p.x - qx, p.z - qz, (p.y - qy) * Y_W);
+        if (lat > reach || (best && lat >= best.lateral)) continue;
+        if (clear(p.x, p.z, qx, qz)) best = { edge: e, f, lateral: lat, qx, qz, seen: 'part' };
+      }
     }
     return best;
   }
 
-  // the way on to the gate from p
-  dist(p) {
-    const n = this.near(p);
-    if (!n) return 0;
+  // the way on to the gate along the edge's place n ({ edge, f })
+  along(n) {
     const e = n.edge, Da = this.D.get(e.a), Db = this.D.get(e.b);
     return Math.min(n.f * e.L + Da, (1 - n.f) * e.L + Db);
+  }
+
+  // the way on to the gate from p
+  dist(p, clear = null) {
+    const n = this.near(p, clear);
+    if (!n) return null;
+    return this.along(n);
   }
 
   path(names) {
@@ -99,6 +128,59 @@ export class Course {
   }
 
   his(lane, over) { return this.path(hisNames(lane, over)); }
+}
+
+// [C6 4th] What stands between two points on the ground, for the course's
+// `near`: the backlot's partitions - walls and building masses, fences,
+// gates, hoardings, screens, the alley's barrier, the dock's shutter - and a
+// thing that is a locked door (the roller door, the yard's locked door). Not
+// the furniture (tables, stalls, crates, vans, the presses): a man sees his
+// way past those. A box I stand in (pressed into it a hair) does not count.
+//   const W = walls(stage); W.clear(ax, az, bx, bz) -> true when nothing stands between
+const PARTITION = new Set(['wall', 'fence', 'gate', 'gdoor', 'hoarding', 'screen', 'barrier', 'shutter', 'pier']);
+export function walls(stage) {
+  const boxes = (stage.colliders && stage.colliders.boxes || []).filter((b) => PARTITION.has(b.tag));
+  const things = stage.part ? stage.part('things') : null;
+  const hit = (b, ax, az, bx, bz) => {
+    // (the segment in the box's frame: lx = dx c - dz s, lz = dx s + dz c)
+    const hx = b.hx - 0.02, hz = b.hz - 0.02;
+    if (hx <= 0 || hz <= 0) return false;
+    const dax = ax - b.cx, daz = az - b.cz, dbx = bx - b.cx, dbz = bz - b.cz;
+    const x0 = dax * b.c - daz * b.s, z0 = dax * b.s + daz * b.c;
+    const x1 = dbx * b.c - dbz * b.s, z1 = dbx * b.s + dbz * b.c;
+    if (Math.abs(x0) < hx && Math.abs(z0) < hz) return false;
+    let t0 = 0, t1 = 1;
+    const dx = x1 - x0, dz = z1 - z0;
+    if (Math.abs(dx) < 1e-9) { if (x0 < -hx || x0 > hx) return false; } else {
+      let ta = (-hx - x0) / dx, tb = (hx - x0) / dx;
+      if (ta > tb) { const k = ta; ta = tb; tb = k; }
+      t0 = Math.max(t0, ta); t1 = Math.min(t1, tb);
+      if (t0 > t1) return false;
+    }
+    if (Math.abs(dz) < 1e-9) { if (z0 < -hz || z0 > hz) return false; } else {
+      let ta = (-hz - z0) / dz, tb = (hz - z0) / dz;
+      if (ta > tb) { const k = ta; ta = tb; tb = k; }
+      t0 = Math.max(t0, ta); t1 = Math.min(t1, tb);
+      if (t0 > t1) return false;
+    }
+    return true;
+  };
+  return {
+    boxes,
+    clear(ax, az, bx, bz) {
+      const mx = Math.min(ax, bx), Mx = Math.max(ax, bx), mz = Math.min(az, bz), Mz = Math.max(az, bz);
+      for (const b of boxes) {
+        const r = b.hx + b.hz;
+        if (b.cx + r < mx || b.cx - r > Mx || b.cz + r < mz || b.cz - r > Mz) continue;
+        if (hit(b, ax, az, bx, bz)) return false;
+      }
+      if (things) for (const T of things.list) {
+        if (T.kind !== 'locked' || !T.col || !T.colOn) continue;
+        if (hit(T.col, ax, az, bx, bz)) return false;
+      }
+      return true;
+    },
+  };
 }
 
 // a point along a path at distance s (by the ground plan; y interpolated)

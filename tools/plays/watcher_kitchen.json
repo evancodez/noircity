@@ -1,0 +1,187 @@
+{
+ "about": "[C6 4th] The kitchen's racks (the critic's second look, finding 3): from the W door's retry W straight on (the eye on him across the room - it was held in the U of the table and its rack at (56.2, -91.2)), then straight at the iron door; from the E door the diagonal to the iron door; from the E door into the old pocket (63.8, -91.2) and on. Never held. NOIR_PORT=5346 node tools/play.mjs tools/plays/watcher_kitchen.json (The cards are marked taught: a cold start at the kitchen would hold the [SPACE] card at the flour sacks.)",
+ "url": "/?mute=1&start=watcher.kitchen&c6Lane=W",
+ "size": [
+  1440,
+  900
+ ],
+ "out": "shots/c6/kitchen",
+ "steps": [
+  {
+   "eval": "(location.href !== location.origin + \"/?mute=1&start=watcher.kitchen&c6Lane=W\" ? (location.href = \"/?mute=1&start=watcher.kitchen&c6Lane=W\", 1) : 1)"
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "until": "G.state === 'title' && !!document.querySelector('#title .opt[data-k=begin]')",
+   "timeout": 40000
+  },
+  {
+   "wait": 1200
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]",
+   "taken": "G.state !== 'title' && document.pointerLockElement === N.renderer.domElement",
+   "retries": 5,
+   "every": 4000
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'watcher' && !(G.hud.cardT > 0.1)",
+   "timeout": 30000
+  },
+  {
+   "eval": "(() => { const tg = G.hud.kit.taught(); tg.vault = tg.slide = tg.shoulder = true; return 1; })()",
+   "name": "(the cards taught already: this is about the room, not the cards)"
+  },
+  {
+   "eval": "(window.__k0 = [N.controller.pos.x, N.controller.pos.z], window.__t0 = N.time, 1)"
+  },
+  {
+   "eval": "(() => { const C = G.scenes.ctx.flags.chase, R = N.controller.run; return JSON.stringify({ t: +N.time.toFixed(1), beat: G.scenes.beat, stretch: C.stretch, gap: +C.gapNow.toFixed(1), warn: G.hud.kit.warnText || null, fails: G.counters.fails || 0, me: [+N.controller.pos.x.toFixed(2), +N.controller.pos.z.toFixed(2)], v: R ? +R.v.toFixed(1) : null, blocked: R && R.blocked ? R.blocked.T.id : null, move: R && R.move ? R.move.kind : null }); })()",
+   "name": "W lane: at the retry"
+  },
+  {
+   "down": "KeyW"
+  },
+  {
+   "wait": 2500
+  },
+  {
+   "eval": "(() => { const C = G.scenes.ctx.flags.chase, R = N.controller.run; return JSON.stringify({ t: +N.time.toFixed(1), beat: G.scenes.beat, stretch: C.stretch, gap: +C.gapNow.toFixed(1), warn: G.hud.kit.warnText || null, fails: G.counters.fails || 0, me: [+N.controller.pos.x.toFixed(2), +N.controller.pos.z.toFixed(2)], v: R ? +R.v.toFixed(1) : null, blocked: R && R.blocked ? R.blocked.T.id : null, move: R && R.move ? R.move.kind : null }); })()",
+   "name": "W lane: 2.5 s of W straight on"
+  },
+  {
+   "shot": "kitchen_w_straight"
+  },
+  {
+   "up": "KeyW"
+  },
+  {
+   "expect": "Math.hypot(N.controller.pos.x - window.__k0[0], N.controller.pos.z - window.__k0[1]) > 6",
+   "label": "W straight on from the W door's retry: not held (more than 6 m in 2.5 s)"
+  },
+  {
+   "walk": [
+    [
+     69.0,
+     -97.6
+    ]
+   ],
+   "timeout": 6000,
+   "name": "W lane: on to the iron door, straight at it"
+  },
+  {
+   "eval": "(() => { const C = G.scenes.ctx.flags.chase, R = N.controller.run; return JSON.stringify({ t: +N.time.toFixed(1), beat: G.scenes.beat, stretch: C.stretch, gap: +C.gapNow.toFixed(1), warn: G.hud.kit.warnText || null, fails: G.counters.fails || 0, me: [+N.controller.pos.x.toFixed(2), +N.controller.pos.z.toFixed(2)], v: R ? +R.v.toFixed(1) : null, blocked: R && R.blocked ? R.blocked.T.id : null, move: R && R.move ? R.move.kind : null }); })()"
+  },
+  {
+   "expect": "N.controller.pos.x > 67.5 && N.time - window.__t0 < 8.5",
+   "label": "W lane: at the iron door within 8.5 s of the retry"
+  },
+  {
+   "eval": "(location.href !== location.origin + \"/?mute=1&start=watcher.kitchen&c6Lane=E\" ? (location.href = \"/?mute=1&start=watcher.kitchen&c6Lane=E\", 1) : 1)"
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "until": "G.state === 'title' && !!document.querySelector('#title .opt[data-k=begin]')",
+   "timeout": 40000
+  },
+  {
+   "wait": 1200
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]",
+   "taken": "G.state !== 'title' && document.pointerLockElement === N.renderer.domElement",
+   "retries": 5,
+   "every": 4000
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'watcher' && !(G.hud.cardT > 0.1)",
+   "timeout": 30000
+  },
+  {
+   "eval": "(() => { const tg = G.hud.kit.taught(); tg.vault = tg.slide = tg.shoulder = true; return 1; })()",
+   "name": "(the cards taught already: this is about the room, not the cards)"
+  },
+  {
+   "eval": "(window.__k0 = [N.controller.pos.x, N.controller.pos.z], window.__t0 = N.time, 1)"
+  },
+  {
+   "eval": "(() => { const C = G.scenes.ctx.flags.chase, R = N.controller.run; return JSON.stringify({ t: +N.time.toFixed(1), beat: G.scenes.beat, stretch: C.stretch, gap: +C.gapNow.toFixed(1), warn: G.hud.kit.warnText || null, fails: G.counters.fails || 0, me: [+N.controller.pos.x.toFixed(2), +N.controller.pos.z.toFixed(2)], v: R ? +R.v.toFixed(1) : null, blocked: R && R.blocked ? R.blocked.T.id : null, move: R && R.move ? R.move.kind : null }); })()",
+   "name": "E lane: at the retry"
+  },
+  {
+   "walk": [
+    [
+     69.0,
+     -97.6
+    ]
+   ],
+   "timeout": 5000,
+   "name": "E lane: the diagonal from the E door to the iron door"
+  },
+  {
+   "eval": "(() => { const C = G.scenes.ctx.flags.chase, R = N.controller.run; return JSON.stringify({ t: +N.time.toFixed(1), beat: G.scenes.beat, stretch: C.stretch, gap: +C.gapNow.toFixed(1), warn: G.hud.kit.warnText || null, fails: G.counters.fails || 0, me: [+N.controller.pos.x.toFixed(2), +N.controller.pos.z.toFixed(2)], v: R ? +R.v.toFixed(1) : null, blocked: R && R.blocked ? R.blocked.T.id : null, move: R && R.move ? R.move.kind : null }); })()"
+  },
+  {
+   "expect": "N.controller.pos.x > 67.5 && N.time - window.__t0 < 5.0",
+   "label": "E lane: the diagonal to the iron door, not held (within 5 s, a trip over the flour sacks in it: the walk presses nothing)"
+  },
+  {
+   "reload": true
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "until": "G.state === 'title' && !!document.querySelector('#title .opt[data-k=begin]')",
+   "timeout": 40000
+  },
+  {
+   "wait": 1200
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]",
+   "taken": "G.state !== 'title' && document.pointerLockElement === N.renderer.domElement",
+   "retries": 5,
+   "every": 4000
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'watcher' && !(G.hud.cardT > 0.1)",
+   "timeout": 30000
+  },
+  {
+   "eval": "(() => { const tg = G.hud.kit.taught(); tg.vault = tg.slide = tg.shoulder = true; return 1; })()",
+   "name": "(the cards taught already: this is about the room, not the cards)"
+  },
+  {
+   "eval": "(window.__t0 = N.time, 1)"
+  },
+  {
+   "walk": [
+    [
+     63.8,
+     -91.0
+    ],
+    [
+     69.0,
+     -97.6
+    ]
+   ],
+   "timeout": 7000,
+   "name": "E lane: into the old pocket (63.8, -91.2), then on to the iron door"
+  },
+  {
+   "eval": "(() => { const C = G.scenes.ctx.flags.chase, R = N.controller.run; return JSON.stringify({ t: +N.time.toFixed(1), beat: G.scenes.beat, stretch: C.stretch, gap: +C.gapNow.toFixed(1), warn: G.hud.kit.warnText || null, fails: G.counters.fails || 0, me: [+N.controller.pos.x.toFixed(2), +N.controller.pos.z.toFixed(2)], v: R ? +R.v.toFixed(1) : null, blocked: R && R.blocked ? R.blocked.T.id : null, move: R && R.move ? R.move.kind : null }); })()"
+  },
+  {
+   "shot": "kitchen_e_pocket"
+  },
+  {
+   "expect": "N.controller.pos.x > 67.5 && N.time - window.__t0 < 6.5",
+   "label": "E lane: by the old pocket and on, never held"
+  }
+ ]
+}

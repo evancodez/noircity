@@ -126,9 +126,12 @@ export default {
       band(xi0, dW.x - dW.w / 2 - 0.12, zi1 - t, zi1); band(dW.x + dW.w / 2 + 0.12, dE.x - dE.w / 2 - 0.12, zi1 - t, zi1); band(dE.x + dE.w / 2 + 0.12, xi1, zi1 - t, zi1);
       band(xi0, 51.3, zi0, zi0 + t); band(54.7, R.x - R.w / 2 - 0.1, zi0, zi0 + t); band(R.x + R.w / 2 + 0.1, xi1, zi0, zi0 + t);
       band(xi0, xi0 + t, zi0, zi1); band(xi1 - t, xi1, zi0, KDOOR.z - KDOOR.w / 2 - 0.12); band(xi1 - t, xi1, KDOOR.z + KDOOR.w / 2 + 0.12, zi1);
-      // (the tiles' top course: a dark edge)
-      K.box('kitchenTile', MAT.woodDark, xi0, xi1, y1, y1 + 0.04, zi1 - 0.03, zi1);
-      K.box('kitchenTile', MAT.woodDark, xi0, xi1, y1, y1 + 0.04, zi0, zi0 + 0.03);
+      // (the tiles' top course: a dark edge - [C6 4th] cut round the doors and
+      // the hatch, as the tiles are: it ran across both yard doors and the
+      // roller door, a dark bar at chest height through every doorway)
+      const course = (x0, x1, z0, z1) => K.box('kitchenTile', MAT.woodDark, x0, x1, y1, y1 + 0.04, z0, z1);
+      course(xi0, dW.x - dW.w / 2 - 0.12, zi1 - 0.03, zi1); course(dW.x + dW.w / 2 + 0.12, dE.x - dE.w / 2 - 0.12, zi1 - 0.03, zi1); course(dE.x + dE.w / 2 + 0.12, xi1, zi1 - 0.03, zi1);
+      course(xi0, 51.3, zi0, zi0 + 0.03); course(54.7, R.x - R.w / 2 - 0.1, zi0, zi0 + 0.03); course(R.x + R.w / 2 + 0.1, xi1, zi0, zi0 + 0.03);
       // pans hung from a rail over the table
       for (let x = 56; x <= 64; x += 1.0) K.add('table', MAT.metal, lathe([[0, 0], [0.14, 0], [0.15, 0.09], [0, 0.09]], 14).rotateX(Math.PI / 2).translate(x, 2.25, -91.75));
       K.add('table', MAT.iron, tube([V3(55.6, 2.42, -91.75), V3(64.4, 2.42, -91.75)], 0.02, 6, 2));
@@ -146,7 +149,12 @@ export default {
     if (api.lamp2.light) { api.lamp2.light.intensity = 150; api.lamp2.light.angle = 0.95; api.lamp2.light.penumbra = 0.8; }
     if (api.lamp.light) { api.lamp.light.intensity = 170; api.lamp.light.angle = 0.95; api.lamp.light.penumbra = 0.8; }
     // ([C6 2nd] a bulb over the iron door: the way out of the kitchen lit)
-    api.doorLamp = L.wall(KI.x1 - T, 2.75, KDOOR.z + 0.95, -1, 0, { out: 0.45, strength: 0.9 });
+    // ([C6 4th] brighter: the brightest thing in the room, the way out)
+    api.doorLamp = L.wall(KI.x1 - T, 2.75, KDOOR.z + 0.95, -1, 0, { out: 0.45, strength: 1.5 });
+    // ([C6 4th] a lamp under the hood over the ranges: the west half was flat
+    // dark grey - now the stove tops and the pots catch it, the corridor
+    // beside them a pool, the rest ink)
+    api.hoodLamp = L.wall(KI.x0 + T, 2.05, -91.0, 1, 0, { out: 0.25, strength: 0.8, half: 0.6 });
     // steam off the pots
     api.steam = new Steam(stage, [V3(KI.x0 + T + 0.55, 1.25, -93.5), V3(KI.x0 + T + 0.55, 1.25, -89.1)], 10);
     // the kitchen's Look: dark round its one lamp

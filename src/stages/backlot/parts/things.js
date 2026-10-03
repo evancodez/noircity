@@ -313,7 +313,12 @@ export default {
     // a rack of pans at the south end of each corridor beside the table: he
     // pulls it over across his corridor as he passes (it lies across most of
     // it: step round its end, or over it)
-    for (const [id, x, dir] of [['rackW', 55.55, -1], ['rackE', 64.45, 1]]) {
+    // ([C6 4th] each stands against the table's end, in line with it - the
+    // table and its racks one straight bar across the room. They stood off
+    // the ends toward the yard doors, a U with the table: a runner from his
+    // door toward the lit iron door was held in its corner, W and the mouse
+    // doing nothing, and lost him there)
+    for (const [id, x, dir] of [['rackW', KITCHEN.table.x0 - 0.27, -1], ['rackE', KITCHEN.table.x1 + 0.27, 1]]) {
       const g = new THREE.Group();
       const parts = [];
       for (const [dx, dz] of [[-0.8, -0.24], [0.8, -0.24], [-0.8, 0.24], [0.8, 0.24]]) parts.push(new THREE.CylinderGeometry(0.02, 0.02, 1.9, 6).translate(dx, 0.95, dz));
@@ -325,7 +330,7 @@ export default {
       const e = new THREE.Mesh(new THREE.BoxGeometry(1.66, 0.022, 0.03).translate(0, 1.9, -0.25 * dir), MAT.mark); e.userData.noRay = true; g.add(e);
       ink(g);
       // standing end on to the corridor (its length along z), at the table's end
-      const home = { x, z: -90.75 };
+      const home = { x, z: (KITCHEN.table.z0 + KITCHEN.table.z1) / 2 };
       stage.scene.add(g);
       // (fallen across the corridor: its height now along x from its base outward)
       const xf0 = Math.min(x, x + dir * 1.95), xf1 = Math.max(x, x + dir * 1.95);

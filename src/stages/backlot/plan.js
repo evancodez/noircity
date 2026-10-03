@@ -228,7 +228,8 @@ export const NODES = {
   lamp: [2.3, 0.15, 5.9], kerb: [2.5, 0, 0.0], mouth: [2.5, 0, -8.0], foot: [1.6, 0, -10.2],
   alleyEnd: [2.5, 0, -46.6], laneIn: [4.8, 0, -50.0], laneOut: [48.0, 0, -50.0],
   wIn: [54.25, 0, -55.5], wDoor: [54.25, 0, -82.7], eIn: [65.75, 0, -56.5], eDoor: [65.75, 0, -82.7],
-  wIn2: [54.25, 0, -85.6], eIn2: [65.75, 0, -85.6], wK: [54.2, 0, -94.4], eK: [65.8, 0, -94.4], kMid: [61.0, 0, -96.6], rollOut: [60.0, 0, -101.6],
+  wIn2: [54.25, 0, -85.6], eIn2: [65.75, 0, -85.6], wK: [53.6, 0, -94.4], eK: [66.4, 0, -94.4], kMid: [61.0, 0, -96.6], rollOut: [60.0, 0, -101.6],
+  // ([C6 4th] wK, eK a little out from the table's ends: the racks stand against them now)
   // [C6 2nd] the kitchen's east door, the press hall, the avenue, the alley behind
   kDoor: [69.0, 0, -97.6], pIn: [71.6, 0, -97.6], pA: [79.65, 0, -96.4], pB: [79.65, 0, -87.6], pC: [91.6, 0, -87.6], pD: [91.6, 0, -78.2],
   dock: [95.4, 0.15, -78.2], avS: [100.6, 0, -80.0], avN: [98.3, 0, -100.4],
@@ -326,5 +327,9 @@ export const STRETCHES = {
   // corner; the market's north end, inside its back arch, facing down it
   street: { at: [24.2, -116.0], yaw: 0.12, ahead: 12 },
   market: { at: [8.6, -120.2], yaw: Math.PI, ahead: 11 },
-  car: { at: [4.2, -96.8], yaw: Math.PI / 2, ahead: 9 },
+  // ([C6 4th] in the market's gate, Pell Lane before me: my coupe to the left
+  // under its lamp, his sedan to the right - the retry said 'Get to your car.'
+  // turned onto him behind the fence, no car in sight. He is where he was:
+  // a step short of his door)
+  car: { at: [1.6, -96.8], yaw: 1.75, ahead: 7 },
 };

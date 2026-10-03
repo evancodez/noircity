@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { NODES, STRETCHES, YARD, ROOFS, KITCHEN, LANES, CUT } from '../../stages/backlot/plan.js';
 import { WRUN, layOn } from '../../cast/kinds/watcher.js';
-import { Course, pathAt, pathHeading, project, corners } from './course.js';
+import { Course, pathAt, pathHeading, project, corners, walls } from './course.js';
 
 // The chase on foot (lane C6, wave C): the watcher running his own race on
 // the course, and the rules that lose him.
@@ -112,7 +112,9 @@ export class Chase {
     // ([C6 3rd] the alley's crates always too: the alley is lost on misses like the rest)
     add(on(things.get('alleyCrates')) != null ? project(P, 4.4, -41.2, 0, 1e9).s : null, 'trick', { id: 'alleyCrates', always: true });
     add(project(P, 42.0, -50.0, 0, 1e9).s, 'trick', { id: 'laneBin' });
-    add(project(P, this.lane === 'W' ? 54.25 : 65.75, -91.6, 0, 1e9).s, 'trick', { id: this.lane === 'W' ? 'rackW' : 'rackE' });
+    // ([C6 4th] the racks stand against the table's ends now: pulled as he is by
+    // the table's far edge, so it falls across his corridor behind him)
+    add(project(P, this.lane === 'W' ? 53.6 : 66.4, -93.7, 0, 1e9).s, 'trick', { id: this.lane === 'W' ? 'rackW' : 'rackE' });
     add(project(P, 84.6, -87.6, 0, 1e9).s + 0.4, 'trick', { id: 'pressBundles' });
     // ([C6 3rd] the hand truck of bundles by the press hall's south door)
     add(project(P, 89.9, -71.4, 0, 1e9).s, 'trick', { id: 'dyTruck' });
@@ -178,7 +180,15 @@ export class Chase {
   measure() {
     const C = this.G.controller;
     const me = _t.set(C.pos.x, C.run ? C.run.feet : C.groundY, C.pos.z);
-    this.myD = this.course.dist(me);
+    // ([C6 4th] my place on the course is a way I can see from where I stand
+    // (course.js near, walls): on the ground the walls count; up on the roofs
+    // and the iron the ground's walls are under me. Nothing in sight - a
+    // pocket off the way - and the last place I was believed on holds, so he
+    // runs on away from it and the gap grows)
+    if (!this.walls || this.walls.stage !== this.stage) { this.walls = walls(this.stage); this.walls.stage = this.stage; }
+    const n = this.course.near(me, me.y > 1.2 ? null : this.walls.clear);
+    this.prevMyD = this.myD;
+    if (n) { this.myNear = n; this.myD = this.course.along(n); }
     const F = this.fig;
     this.hisD = this.act === 'gone' || this.act === 'carIn' ? -5 : this.course.dist(_t.set(F.pos.x, F.pos.y - this.yOff, F.pos.z));
     this.gapNow = this.myD - this.hisD;
@@ -203,11 +213,13 @@ export class Chase {
     }
     this.prevHisD = this.hisD;
     // my progress into the next stretch (the scene's beat; not from the iron)
-    if (this.active && !this.escape) {
-      for (let i = STRETCH_ORDER.length - 1; i >= 0; i--) {
-        const n = STRETCH_ORDER[i];
-        if (this.myD <= this.stretchD(n) + 0.5) { if (STRETCH_ORDER.indexOf(this.stretch) < i) { this.stretch = n; if (this.onStretch) this.onStretch(n); } break; }
-      }
+    // ([C6 4th] one stretch at a time, and never on a step where my place
+    // jumped: a stretch is reached by running into it - it was advanced by
+    // wherever the measure put me, and a place through a wall skipped the
+    // press hall and the avenue at once)
+    if (this.active && !this.escape && Math.abs(this.myD - (this.prevMyD ?? this.myD)) < 3.0) {
+      const nx = STRETCH_ORDER[STRETCH_ORDER.indexOf(this.stretch) + 1];
+      if (nx && this.myD <= this.stretchD(nx) + 0.5) { this.stretch = nx; if (this.onStretch) this.onStretch(nx); }
     }
     // (held where the stretch has him while the player cannot yet act: under
     // the chapter card, the fail's black coming up)

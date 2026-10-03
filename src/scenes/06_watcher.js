@@ -159,13 +159,20 @@ function runSetup(name) {
     const G = ctx.game;
     const S = STRETCHES[name];
     let at = S.at, yaw = S.yaw;
+    let turnToHim = true;
     if (name === 'kitchen') {
       // (just inside his door, facing into the kitchen; his door open behind me)
       const d = KITCHEN.doors[C.lane];
       at = [d.x, KITCHEN.z1 - 1.25];
-      yaw = 0;
+      // ([C6 4th] up the corridor beside the table, his way: turned onto him
+      // across the room, W straight on ran into the table's end)
+      const k = C.course.nodes.get(C.lane === 'W' ? 'wK' : 'eK');
+      yaw = Math.atan2(-(k.x - at[0]), -(k.z - at[1]));
+      turnToHim = false;
       G.stage.part('things').get('door' + C.lane).set('open');
     }
+    // ([C6 4th] the car's retry looks at the cars, not at him)
+    if (name === 'car') turnToHim = false;
     C.spawn({ x: at[0], z: at[1] - 10 }, 0, 'watcher_run');
     C.place(hisStart(C, name, at, G.fails ? G.fails(name) : 0));
     umbrellaDown(ctx);
@@ -179,7 +186,7 @@ function runSetup(name) {
     // ([C6 3rd] the eye on him if he is anywhere near the way ahead: at the
     // lane's and the yard's retries he was off the frame's edge or behind
     // the fence, and a man who looked round for him was warned at once)
-    {
+    if (turnToHim) {
       const wr = (a) => Math.atan2(Math.sin(a), Math.cos(a));
       const b = Math.atan2(-(C.fig.pos.x - at[0]), -(C.fig.pos.z - at[1]));
       const d = wr(b - yaw);
