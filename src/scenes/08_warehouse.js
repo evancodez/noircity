@@ -151,6 +151,8 @@ function setupAt(ctx, b) {
     }
   }
   crew.litAt = (p) => litAt(G, p);
+  // (for the plays: how lit a place is by the shed's lamps)
+  if (typeof window !== 'undefined') window.__c7lit = (x, z, y = 1.1) => litAt(G, V(x, y, z));
   // the office: the Cardinal and his two men (gone by the office's beat)
   const office = [];
   let card = null;
@@ -373,6 +375,8 @@ function live(ctx) {
     stealth.cosh(() => {
       const cp = ctx.flags.cp || 'floor';
       RETRY = cp;
+      // (the men I put down stay down, even those since the checkpoint)
+      SNAP = { cp, downs: crew.men.filter((m) => m.down).map((m) => ({ name: m.name, x: m.pos.x, z: m.pos.z, yaw: m.fig.yaw, found: !!m.found })) };
       G.counters.caught = (G.counters.caught || 0) + 1;
       G.fail({ why: 'They caught you.', to: cp });
     });
@@ -904,7 +908,7 @@ export default defineScene({
             if (l.torch || l.dead || !l.on || !l.name) continue;
             const t = (l.head.x - o.x) * d.x + (l.head.y - o.y) * d.y + (l.head.z - o.z) * d.z;
             if (t < 2 || t > 26) continue;
-            if (Math.hypot(o.x + d.x * t - l.head.x, o.y + d.y * t - l.head.y, o.z + d.z * t - l.head.z) < 0.9) { lampCard = true; hud.teach('lampout', '[LMB] shoot the lamp out: make it dark', { until: 'Mouse0', secs: 4 }); break; }
+            if (Math.hypot(o.x + d.x * t - l.head.x, o.y + d.y * t - l.head.y, o.z + d.z * t - l.head.z) < 0.9) { lampCard = true; hud.teach('lampout', '[LMB] shoot out a lamp: dark', { until: 'Mouse0', secs: 4 }); break; }
           }
         }
         if (!L.answerer && G.time - tL > 6 && !L.loud) L.answerer = sendAnswerer(ctx, L) || true;
@@ -1129,5 +1133,6 @@ function backToFeet(ctx) {
 export function leaveWarehouse() {
   if (HOOKED) { const C = HOOKED.controller; C.onFootfall = null; if (LIVE && LIVE.stepWrap && C.onStep === LIVE.stepWrap) C.onStep = LIVE.origOnStep; gunsOf(HOOKED).end(); }
   if (LIVE) { LIVE.crew.clear(); LIVE.stealth.undress(); for (const o of LIVE.props) if (o.parent) o.parent.remove(o); if (LIVE.fight) LIVE.fight.clear(); if (LIVE.fightOn && HOOKED && HOOKED.brawl.active) HOOKED.brawl.stop(); LIVE = null; }
-  SNAP = null;
+  // (a retry keeps what the checkpoint keeps; leaving the chapter forgets it)
+  if (!(HOOKED && HOOKED.failing)) SNAP = null;
 }

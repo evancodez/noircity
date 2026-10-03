@@ -146,7 +146,22 @@ export default async function drive({ js, turn, keyDown, keyUp, mouse, log, slee
       // (he is looking my way, near: wait for his back)
       const toMe = Math.atan2(s.x - T.x, s.z - T.z), off = Math.abs(Math.atan2(Math.sin(toMe - T.look), Math.cos(toMe - T.look)));
       if (off < 1.25 && d < 10) { await setW(false); await sleep(150); continue; }
+      // (the way to him must keep to the dark: a man whose way crosses a pool
+      // of light is left for later)
       const p = await path(bx, bz);
+      const lit = await js(`(() => { const p = ${JSON.stringify(p)}; let m = 0; for (let i = 0; i < p.length; i++) m = Math.max(m, window.__c7lit ? window.__c7lit(p[i][0], p[i][1]) : 0); return m; })()`);
+      if (lit > 0.3 && up.length > 1 && !out._forced) {
+        out._skip = (out._skip || 0) + 1;
+        const alt = up.slice(1).sort((a, b) => Math.hypot(a.x - s.x, a.z - s.z) - Math.hypot(b.x - s.x, b.z - s.z))[0];
+        const pa = await path(alt.x - Math.sin(alt.yaw) * 1.05, alt.z - Math.cos(alt.yaw) * 1.05);
+        const la = await js(`(() => { const p = ${JSON.stringify(pa)}; let m = 0; for (let i = 0; i < p.length; i++) m = Math.max(m, window.__c7lit ? window.__c7lit(p[i][0], p[i][1]) : 0); return m; })()`);
+        if (la <= 0.3) { const n2 = pa.find(([x, z]) => Math.hypot(x - s.x, z - s.z) > 0.5) || pa[0]; await stepTo(s, n2[0], n2[1]); await sleep(40); continue; }
+        // (both lit: wait in the dark for one of them to come out of it)
+        await setW(false); await sleep(300);
+        if (out._skip > 120) out._forced = true;
+        continue;
+      }
+      out._skip = 0;
       const nxt = p.find(([x, z]) => Math.hypot(x - s.x, z - s.z) > 0.5) || [bx, bz];
       await stepTo(s, nxt[0], nxt[1]);
       await sleep(40);
@@ -283,6 +298,6 @@ export default async function drive({ js, turn, keyDown, keyUp, mouse, log, slee
   out.secs = +((Date.now() - T0) / 1000).toFixed(1);
   out.takedowns = await js('G.counters.takedowns || 0');
   out.lamps = await js('G.counters.c7lamps || 0');
-  delete out._shotLamp; delete out._go; delete out._quietSince; delete out._pocket; delete out._waitT; delete out._placed; delete out._logT; delete out._miss; delete out._stale; delete out._hid; delete out._clear; delete out._hlog;
+  delete out._shotLamp; delete out._go; delete out._quietSince; delete out._pocket; delete out._waitT; delete out._placed; delete out._logT; delete out._miss; delete out._stale; delete out._hid; delete out._clear; delete out._hlog; delete out._skip; delete out._forced;
   return out;
 }
