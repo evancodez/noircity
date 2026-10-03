@@ -4,7 +4,7 @@ import { dinerRoom, seatPlayer, makeJobs, clip, counterAt, V, DINER, stoolZ, MAC
 import { KO_OUT } from '../cast/brawl/clips.js';
 import { startSetup, startFight, layStool } from './fight/start.js';
 import { flee, ROUTES, DOCKER_AT } from './fight/flee.js';
-import { hookDoor, afterKO, readCard, AMES_LINE } from './fight/out.js';
+import { hookDoor, afterKO, readCard, readMatchbook, AMES_LINE } from './fight/out.js';
 
 // Scene 2, the fist fight (round 2: docs/story/FIGHT.md, the user's spec).
 // The rules are game/Brawl.js (with his brain, src/cast/brawl/); this file
@@ -91,6 +91,23 @@ function clearRoom(ctx, now) {
   if (him) go(him, 1.35, { speed: 3.0, out: true });
   if (dot) jobs.add('dot', (function* () { yield wait(0.6); yield* clip(dot, 'startle'); dot.setState('duck'); })());
   if (dk) jobs.add('docker', (function* () { yield wait(2.2); yield* flee(ctx, dk, ROUTES.docker, { speed: 1.3, run: false, log }); dk.face(Math.PI); dk.setState('idle'); })());
+  // [C4] the critic's second look (m8, the owner's Left 1): while the last
+  // of them went out the door swung back on its closer for a second, open
+  // onto the street, and the fight's wall held me in the doorway - an
+  // invisible wall. Now, the doorway clear of them and me coming at it, the
+  // last one out lets it go: it slams shut in my face (and the bar drops)
+  const D = front.door, mid = DINER.door.hingeZ + DINER.door.w / 2;
+  jobs.add('doorSlam', (function* () {
+    for (;;) {
+      yield null;
+      if (D.barred && D.angle < 0.01) return;
+      if (D.angle < 0.04 || D.target === 0 && D.fastT > 0) continue;
+      const e = ctx.game.eye, near = (p, r) => Math.hypot(p.x - (DINER.innerX - 0.05), p.z - mid) < r;
+      if (!near(e, 2.0)) continue;
+      if (cast.list.some((c) => c !== cast.get('mack') && c.pos && near(c.pos, 1.05))) continue;
+      D.slamShut(); ctx.flags.slammed = (ctx.flags.slammed || 0) + 1;
+    }
+  })());
 }
 
 // the weapon rack (FIGHT.md §4): two bottles and three plates on the
@@ -409,7 +426,8 @@ export default defineScene({
       ctx.hands.equip('empty');
       const L = landing(w), sg = w === 'B2' ? -1 : 1;
       ctx.controller.setMode('walk', { pose: { x: L.x + 1.1, y: 0.15 + 1.05, z: L.z + sg * 1.3, yaw: w === 'B2' ? 2.64 : 0.5, pitch: -0.35 } });
-      openMatchbook(ctx, mack);
+      // ([C4] the script's matchbook beat brings it up in the hand)
+      void mack;
     },
   },
 
@@ -515,12 +533,8 @@ export default defineScene({
     // still, AMES. MARKED., the line where it sends me, and chapter III)
     if (ctx.at('matchbook')) {
       yield beat('matchbook');
-      if (!G.inspect.active) openMatchbook(ctx, mack());
-      let pocketed = false;
-      G.inspect.active.onDone = () => { pocketed = true; };
-      yield until(() => pocketed);
-      const mb = mack() && mack().items.get('matchbook');
-      if (mb) mb.visible = false;
+      // ([C4] the critic's second look, M2: in my fingers until E, as the card)
+      yield* readMatchbook(ctx, mack() && mack().items.get('matchbook'));
       if (!G.save.inventory.includes('matchbook')) G.save.inventory.push('matchbook');
       // (the card out of it, turned over under the lamp: read)
       yield* readCard(ctx);
@@ -567,7 +581,7 @@ export default defineScene({
       C.yaw += Math.atan2(Math.sin(want - C.yaw), Math.cos(want - C.yaw)) * 0.15; C.pitch += (wp - C.pitch) * 0.15;
       if (Math.hypot(p.x - e.x, p.z - e.z) > 2.0) C.auto = { f: 1, s: 0 }; else C.auto = null;
     }
-    if (A.prompting() || G.inspect.active || (ctx.flags.cardUp && !ctx.flags.cardRead)) A.pressAfter('KeyE', 1.0, 2.2);
+    if (A.prompting() || G.inspect.active || (ctx.flags.cardUp && !ctx.flags.cardRead) || (ctx.flags.mbUp && !ctx.flags.mbRead)) A.pressAfter('KeyE', 1.0, 2.2);
   },
 });
 
@@ -602,11 +616,3 @@ function mackOutside(ctx, w = 'B4') {
   return mack;
 }
 
-// the matchbook comes up in the hand: red, THE CARDINAL, a black bird
-function openMatchbook(ctx, mack) {
-  const { game: G, hands: H } = ctx;
-  const mb = mack.items.get('matchbook');
-  mb.visible = true;
-  H.play('showMatchbook', { onMark: { shown: () => G.sfx.play('matchbook') } });
-  G.inspect.open({ prop: mb, options: { spin: [0.95, 0.35], dist: 0.3 } });
-}

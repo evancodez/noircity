@@ -194,6 +194,11 @@ export class Lesson {
     B.him.next = 1.2;
     B.lesson = null;
     B.stats.lesson = +this.total.toFixed(1);
+    // ([C4] the save remembers what the lesson taught: a later fist fight
+    // begun with no lesson - Pier 9 - teaches the punch and the heavy only
+    // if this save never had them; a HOLD step let go is taught in the fight)
+    const SF = B.game.save && B.game.save.flags;
+    if (SF) { SF.c4punch = true; if (B.did.hard) SF.c4heavy = true; }
     B.game.emit('brawl:lesson', { done: true, time: this.total });
   }
 }

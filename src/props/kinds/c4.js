@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { slab } from '../lib.js';
+import { SPECS as BUILT_IN } from '../kinds.js';
 
 // [C4] Two pieces of paper of chapters I and II (docs/story/briefs/C4_FIGHT.md
 // §5, §6), each a canvas drawn by a function of what is written on it:
@@ -112,7 +113,12 @@ export function drawAmesCard(g, W, H, { crossed = true, seed = 304 } = {}) {
   const ink = 'rgba(14,14,16,0.97)';
   g.fillStyle = ink; g.textAlign = 'center'; g.textBaseline = 'alphabetic';
   // (an engraved card: the name large, the trade spaced, the address)
-  g.font = `bold ${Math.round(150 * K)}px ${SERIF}`;
+  // ([C4] the critic's second look, m2: the name in the card's heavy print
+  // and pressed - its Didot's hairlines broke up in the hand at 1440 x 900
+  // and it was the weakest line on the card; now it reads first)
+  g.font = `bold ${Math.round(140 * K)}px ${PRINT}`;
+  g.strokeStyle = ink; g.lineWidth = 4 * K; g.lineJoin = 'round';
+  g.strokeText('J. AMES', W / 2, 205 * K);
   g.fillText('J. AMES', W / 2, 205 * K);
   g.fillRect(W / 2 - 300 * K, 238 * K, 600 * K, 5 * K);
   g.font = `bold ${Math.round(52 * K)}px ${PRINT}`;
@@ -147,8 +153,10 @@ export function drawAmesCard(g, W, H, { crossed = true, seed = 304 } = {}) {
     }
     g.globalAlpha = 1;
   };
-  stroke(70 * K, 60 * K, W - 80 * K, H - 70 * K, 34 * K);
-  stroke(W - 60 * K, 75 * K, 90 * K, H - 50 * K, 32 * K);
+  // ([C4] m2: from just under the name's corners, so its arms cross the card
+  // and leave the name clear)
+  stroke(70 * K, 125 * K, W - 80 * K, H - 46 * K, 34 * K);
+  stroke(W - 60 * K, 135 * K, 90 * K, H - 32 * K, 32 * K);
   g.globalCompositeOperation = 'source-over';
 }
 
@@ -175,6 +183,11 @@ function sheet(w, t, d, canvas, name, surface = 'paper') {
 }
 
 export const SPECS = {
+  // ([C4] the critic's second look, M2: the Cardinal's matchbook as it comes
+  // up in my fingers at the end of II - the shared matchbook's own build,
+  // under a kind of its own so the hand holds it by a socket of its own
+  // (player/clips/c4.js c4readMatchbook): the shared one rides a finger bone)
+  c4matchbook(v, lod) { return BUILT_IN.matchbook(v, lod); },
   amesCard() {
     const W = 1024, H = 588;
     const c = document.createElement('canvas'); c.width = W; c.height = H;

@@ -482,6 +482,15 @@ export default {
     for (const s of splay) colliders.addBox(s.mid.x, s.mid.z, 0.06, s.len / 2, s.ang, 'wall');
     for (const pz of D.pilasters) colliders.addBox(X + 0.18, pz, 0.26, D.pilasterW / 2, 0, 'wall');
     const col = colliders.addBox(XD - 0.03, (dz0 + dz1) / 2, 0.04, dz.w / 2, 0, 'door');
+    // [C4] the critic's second look (m3): from the room the splayed side
+    // lights make two shallow pockets beside the door (0 .. 0.35 m deep); a
+    // man walking at the door at a slant slid along the leaf into one and on
+    // along the splay's riser, away from the door, onto the glass. The
+    // pockets' mouths are held at the room's wall line, and the door's posts
+    // stand a little proud of the leaf on the room side: walked into at a
+    // slant, the door catches me in front of it
+    for (const [za, zb] of [[bz0 + 0.26, dz0 - 0.07], [dz1 + 0.07, bz1 - 0.26]]) colliders.addBox(Xi - 0.01, (za + zb) / 2, 0.03, (zb - za) / 2, 0, 'wall');
+    for (const zp of [dz0 - 0.035, dz1 + 0.035]) colliders.addBox(XD - 0.1, zp, 0.08, 0.035, 0, 'wall');
     colliders.addRegion(XD - 0.05, X + 1.2, bz0 + 0.26, bz1 - 0.26, 'diner.vestibule');
     colliders.addRegion(Xi - 1.2, X + 1.2, dz0, dz1, 'diner.door');
     colliders.addRegion(D.backX, Xi, D.zMin, D.zMax, 'diner');
@@ -518,6 +527,9 @@ export default {
       emit(ev) { for (const f of listeners[ev] || []) f(door); },
       open() { if (door.barred) { door.tried(); return; } if (door.target !== 1) { door.target = 1; door.bell.v += 5; } door.holdT = 1.5; },
       close() { if (door.target !== 0) { door.target = 0; door.bell.v -= 3; door.emit('close'); } },
+      // [C4] let go to slam: back on the jamb in a quarter second (it stops
+      // at a body in its way all the same)
+      slamShut() { door.holdT = 0; door.close(); door.fastT = 0.6; },
       // from the street: E pulls it open toward me (it stops at whoever stands in its way)
       pull() { door.open(); door.holdT = 2.5; },
       // tried while barred: a centimetre, the knock, the bell's shiver
@@ -756,10 +768,13 @@ function stepDoor(api, d, dt, camera) {
   let a = cur;
   if (want > a) a = need >= want - 1e-4 ? want : Math.min(want, a + dt * 2.2);
   else if (want < a) {
-    const sp = a < 0.3 ? 0.9 : 1.5;
+    // ([C4] slammed - door.slamShut(): the last one out lets it go in my
+    // face - it comes back at once, not easing)
+    const sp = d.fastT > 0 ? 5.5 : a < 0.3 ? 0.9 : 1.5;
     a = Math.max(want, a - dt * sp);
     if (a <= 1e-4 && cur > 1e-4) { a = 0; d.bell.v -= 2.5; d.emit('slam'); }
   }
+  if (d.fastT > 0) d.fastT -= dt;
   // (the leaf off its jamb, whatever opened it: the bell, the room's heads - 'open')
   if (cur <= 0.03 && a > 0.03) { if (!(d.target === 1)) d.bell.v += 4; d.emit('open'); }
   // (barred, tried: the leaf gives a centimetre and comes back)

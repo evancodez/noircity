@@ -58,7 +58,7 @@ function barGrip(d, out = V(0, 0, 0)) {
 
 // [C4] the point of the barred leaf my view crosses (or, looking away from
 // it, the nearest point of it to that line): where the bar's prompt sits
-const _o = new THREE.Vector3(), _dv = new THREE.Vector3();
+const _o = new THREE.Vector3(), _dv = new THREE.Vector3(), _q = new THREE.Vector3();
 function onLeaf(G) {
   const x0 = DINER.innerX - 0.1, z0 = DINER.door.hingeZ + 0.06, z1 = DINER.door.hingeZ + DINER.door.w - 0.06;
   const y0 = DINER.floorY + 0.35, y1 = DINER.floorY + 1.85;
@@ -84,6 +84,10 @@ export function afterKO(ctx, w) {
     when: () => d.barred && !S.lifting && !S.climbing && C.mode === 'walk',
     onUse: () => {
       S.lifting = true; S.liftT = 0;
+      // ([C4] the critic's second look, m4: the eyes go down to the bar with
+      // the hand - at eye level the hand dropped out of the frame to it and
+      // only the prompt's going said it was lifted)
+      S.look0 = { yaw: C.yaw, pitch: C.pitch };
       SLAT.cam = G.camera; DOOR.out = V(-1, 0, 0); DOOR.at = barGrip(d);
       H.play('carDoor', { onMark: { grip: () => { d.liftBar(); G.sfx.play('f_c4lift', doorAt(), {}, { ref: 2 }); d.barOnSlam = false; S.how = S.how || 'door'; G.emit('door:unbarred', {}); } } });
     } });
@@ -132,8 +136,20 @@ export function afterKO(ctx, w) {
       if (S.lifting) {
         S.liftT += dt;
         if (DOOR.at) DOOR.at = barGrip(d);
+        // ([C4] m4: the look onto the bar while the hand takes it and lifts
+        // it up onto its keeper, then back up toward where I was looking)
+        if (S.look0) {
+          const q = barGrip(d, _q), e = G.eye;
+          const wy = Math.atan2(-(q.x - e.x), -(q.z - e.z)), wp = Math.max(-1.05, Math.atan2(q.y + 0.12 - e.y, Math.hypot(q.x - e.x, q.z - e.z)));
+          const k = 1 - Math.exp(-dt * 9);
+          const dyaw = Math.atan2(Math.sin(wy - S.look0.yaw), Math.cos(wy - S.look0.yaw));
+          const ty = S.liftT < 1.05 ? S.look0.yaw + Math.max(-0.5, Math.min(0.5, dyaw)) : C.yaw;
+          const tp = S.liftT < 1.05 ? wp : S.look0.pitch * 0.6 + wp * 0.4;
+          C.yaw += Math.atan2(Math.sin(ty - C.yaw), Math.cos(ty - C.yaw)) * k;
+          C.pitch += (tp - C.pitch) * k;
+        }
         if (S.liftT > 0.95 && !S.letGo) { S.letGo = true; H.play('c4letGo'); }
-        if (S.liftT > 1.4) { S.lifting = false; S.letGo = false; DOOR.at = null; }
+        if (S.liftT > 1.4) { S.lifting = false; S.letGo = false; DOOR.at = null; S.look0 = null; }
       }
       if (S.climbing) {
         S.climbT += dt;
@@ -153,10 +169,10 @@ export function afterKO(ctx, w) {
 function roomAnswers(ctx, free) {
   const G = ctx.game, cast = ctx.cast, d = ctx.stage.part('diner');
   const head = (c) => () => c && c.bones && c.bones.head ? c.bones.head.getWorldPosition(V(0, 0, 0)) : null;
-  const talk = (id, c, lines, prompt, then, range = 3.2) => {
+  const talk = (id, c, lines, prompt, then, range = 3.2, cone = 0.6) => {
     if (!c) return;
     let n = 0;
-    ctx.interact.add({ id, at: head(c), range, cone: 0.6, prompt, when: free,
+    ctx.interact.add({ id, at: head(c), range, cone, prompt, when: free,
       onUse: () => { const line = lines[Math.min(n, lines.length - 1)]; n++; G.hud.say(line, 2.4); if (then) then(n); } });
   };
   const dk = cast.get('docker'), dot = cast.get('dot'), cook = cast.get('cook');
@@ -167,8 +183,11 @@ function roomAnswers(ctx, free) {
     // (up from behind the counter at the first word)
     if (n === 1 && dot.setState) { try { dot.setState('idle', 0.4); } catch (e) { /* */ } }
   });
-  // (the cook is across the counter and the back bar, in his hatch)
-  talk('c4.cook', cook, ['Kitchen’s closed.', 'I said closed.'], 'talk', () => { if (d.bell) d.bell.ring(); }, 4.2);
+  // (the cook is across the counter and the back bar, in his hatch: [C4]
+  // the critic's second look, m5 - looked at, not from the side of the eye:
+  // his 'E talk' came up looking down the empty aisle behind the counter,
+  // him at the frame's edge. A narrow cone: he is where I look)
+  talk('c4.cook', cook, ['Kitchen’s closed.', 'I said closed.'], 'talk', () => { if (d.bell) d.bell.ring(); }, 4.2, 0.28);
   if (d.jukebox) {
     const J = DINER.jukebox;
     // (its lit face, at the end wall: the prompt on it from anywhere in front)
@@ -191,6 +210,28 @@ function roomAnswers(ctx, free) {
       if (k <= 0 && Math.hypot(p.x - e.x, p.z - e.z) < 0.68) { st.spin(0.9); G.sfx.play('stoolSqueak', V(p.x, 0.9, p.z)); cool.set(i, 2.5); ctx.flags.spun = (ctx.flags.spun || 0) + 1; }
     }
   };
+}
+
+// ---- the matchbook ---------------------------------------------------------------------------
+// [C4] the critic's second look (M2): the red matchbook out of his waistcoat
+// into my fingers and held there under the lamp - red, the black bird, THE
+// CARDINAL - until E; never in the air with no hand (the inspect view held
+// it up while showMatchbook's hand went away). E: into the coat.
+export function* readMatchbook(ctx, item = null) {
+  const G = ctx.game, H = ctx.hands;
+  G.sfx.play('clothRustle');
+  const h = H.play('c4readMatchbook', { onMark: { shown: () => G.sfx.play('matchbook') } });
+  // (the one in his waistcoat is the one in my hand now)
+  if (item) item.visible = false;
+  yield null;
+  yield until(() => h.t >= 0.95 || h.done);
+  G.hud.prompt('E  put away', null, 'c4mb');
+  ctx.flags.mbUp = true;
+  yield until(() => ctx.pressed('KeyE'));
+  G.hud.clearPrompt('c4mb');
+  ctx.flags.mbRead = true;
+  const a = H.play('c4matchbookAway', { onMark: { pocketed: () => G.sfx.play('pocket') } });
+  yield until(() => a.done || a.t >= 0.75);
 }
 
 // ---- Ames's card ---------------------------------------------------------------------------

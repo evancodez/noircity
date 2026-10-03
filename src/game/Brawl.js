@@ -248,6 +248,16 @@ export class Brawl {
     this.timers = [];
     this.lessonHold = false; this.lessonBack = false; this.holdStill = false;
     this.lesson = lesson && !retry ? new Lesson(this, typeof lesson === 'number' ? lesson : 1) : null;
+    // ([C4] the critic's second look, m6: a fight begun on a save that never
+    // had the lesson - Pier 9 from the chapter list - taught only the dodge.
+    // Now the punch and his guard at his first opening, and the loaded punch
+    // at his first opening worth it, once a save: the lesson sets the save's
+    // flags c4punch and c4heavy)
+    if (!retry && !this.lesson && !G.shotMode) {
+      const SF = (G.save && G.save.flags) || {};
+      this.punchUntaught = !SF.c4punch; this._punchShown = false;
+      if (!SF.c4heavy) this.heavyUntaught = true;
+    }
     opponent.setState('br_guard', 0.3);
     opponent.noGlance = true;
     opponent._look = null;
@@ -2010,10 +2020,25 @@ export class Brawl {
   // its card at the first opening worth it (he is stunned, or open after a
   // miss), once, for three seconds
   heavyCard(dt) {
-    const him = this.him;
+    const him = this.him, G = this.game;
+    this.punchCard();
     if (this._heavyT > 0) { this._heavyT -= dt; if (this._heavyT <= 0 && this._cards && this._cards.shownCard === HEAVY_CARD) this._cards.card(''); return; }
     if (!this.heavyUntaught || this._heavyShown || this.lesson || this.finished || (this.stats.hards || 0) > 0) return;
-    if (him.state === 'stun' || him.missT > 0.4) { this._heavyShown = true; this._heavyT = 3.0; this.cards.card(HEAVY_CARD, 'mouseLR'); this.stats.heavyCard = (this.stats.heavyCard || 0) + 1; }
+    // ([C4] m6: not over the punch's card, nor with the cue up)
+    if (this.cue || this._punchT > this.T) return;
+    if (him.state === 'stun' || him.missT > 0.4) { this._heavyShown = true; this._heavyT = 3.0; this.cards.card(HEAVY_CARD, 'mouseLR'); this.stats.heavyCard = (this.stats.heavyCard || 0) + 1; if (G.save && G.save.flags) G.save.flags.c4heavy = true; }
+  }
+  // [C4] m6: the punch and his guard, for a fight begun with no lesson: the
+  // kit's card at his first opening (a side dropped where I can see it), a
+  // second and a half in at the earliest, never over the cue
+  punchCard() {
+    const G = this.game, him = this.him, T = G.hud && G.hud.teach;
+    if (!this.punchUntaught || this._punchShown || this.lesson || this.finished || this.cue || !T || this.me.act === 'down' || this.blackT > 0) return;
+    if (this.stats.time < 1.5 || !this.openSides()) return;
+    this._punchShown = true; this._punchT = this.T + 3.2;
+    T('opening', OPENING_CARD, { secs: 3.2, until: false });
+    if (G.save && G.save.flags) G.save.flags.c4punch = true;
+    this.stats.punchCard = (this.stats.punchCard || 0) + 1;
   }
 
   // [C4] the warning before I go down (WAVE_C §1 rule 2): one line low in
@@ -2026,7 +2051,11 @@ export class Brawl {
     // stop() - must not put it back up for good, as it did at both fights)
     if (this.finished || !this.active) { if (this.warned) { this.warned = false; G.hud.warn(null, { now: true }); } return; }
     const hp = G.health.hp;
-    const on = this.warned ? hp < 40 : hp < 30 && this.me.act !== 'down';
+    // ([C4] the critic's second look, m1: out on his feet he cannot hit me -
+    // the line goes as he starts to reel, and lies no more across my loading
+    // fist; if he comes round it is back)
+    const reel = this.him && this.him.state === 'reel';
+    const on = !reel && (this.warned ? hp < 40 : hp < 30 && this.me.act !== 'down');
     if (on && !this.warned) { this.warned = true; this.warnedAt = this.T; G.hud.warn(FIGHT_WARN); }
     else if (!on && this.warned) { this.warned = false; G.hud.warn(null); }
   }

@@ -112,10 +112,46 @@ const CARD_AWAY = {
   props: [[0.55, 'drop', 'R']],
   brush: 'R',
 };
+// [C4] the critic's second look (M2): the matchbook before it - it hung in
+// the air with no hand (the inspect view held it up after showMatchbook's
+// hand had gone). Now it is in the fingers as the card is: the right hand
+// brings it up out of his waistcoat with its back to me, turns it over -
+// red, the black bird, THE CARDINAL - and holds it under the lamp until E;
+// E: into the coat (c4matchbookAway), and the card comes out after it.
+// (its own kind, c4matchbook - the matchbook's build - for a socket of its
+// own: the shared matchbook's rides a finger bone)
+const MB = (at, F = PINCH, e = [0.2, -0.42, -0.06]) => ({ o: 'c4matchbook', at, F, e, ef: 'cam' });
+export const MB_FACE = cardAt([-0.03, -0.013, -0.15], [0, 0.25, 1], [0, -1, 0.25]);
+const READ_MATCHBOOK = {
+  duration: 1.35, marks: { shown: 0.95 }, hold: true, blocking: false,
+  keys: { R: [
+    [0, 'downR'],
+    [0.42, MB(cardAt([0.05, -0.12, -0.21], [0, 0, -1], [0, 1, 0]))],
+    [0.72, MB(cardAt([0.0, -0.06, -0.19], [0, 1, 0], [0, 0, 1]))],
+    [1.05, MB(MB_FACE), 'out'],
+    [1.35, MB(cardAt([-0.029, -0.012, -0.15], [0, 0.25, 1], [0, -1, 0.25]))],
+  ] },
+  props: [[0, 'take', 'R', 'c4matchbook']],
+  brush: 'R',
+};
+const MATCHBOOK_AWAY = {
+  duration: 0.75, marks: { pocketed: 0.5 },
+  keys: { R: [
+    [0, MB(MB_FACE)],
+    [0.32, MB(cardAt([0.15, -0.28, -0.2], [0.3, 0.2, 1], [0, -1, 0.2]))],
+    [0.5, 'pocketAwayR'],
+    [0.75, 'downR'],
+  ] },
+  props: [[0.5, 'drop', 'R']],
+  brush: 'R',
+};
 // a flat paper pinched at its foot between the thumb and the side of the
 // index (as the bill), running out along the fingers, its face the palm's
 // way: held up, the fingers are behind it and the thumb on its face
 export const SOCKETS = {
+  // ([C4] the matchbook as the card, by its right edge: it is 3.8 cm wide, the
+  // card 8.9, so the grip sits that much nearer its middle)
+  c4matchbook: { bone: 'hand', p: [-0.018, -0.016, -0.13], basis: [[0, 0, 1], [0, 1, 0], [-1, 0, 0]] },
   guestCheck: { bone: 'hand', p: [-0.018, -0.016, -0.082], r: [0, 0, Math.PI] },
   // (the card by its right edge between the thumb and the first fingers, its
   // length running on past the fingertips, its face the palm's way: the
@@ -126,6 +162,7 @@ export const SOCKETS = {
 export const CLIPS = {
   c4readCheck: READ_CHECK,
   c4readCard: READ_CARD, c4cardAway: CARD_AWAY,
+  c4readMatchbook: READ_MATCHBOOK, c4matchbookAway: MATCHBOOK_AWAY,
   c4letGo: { duration: 0.42, blend: 0.05, marks: {}, keys: { R: [[0, 'doorLiveR'], [0.42, 'downR', 'in']] } },
   c4windL: { duration: 1.1, marks: { full: 0.48 }, hold: true, blocking: false, blend: 0.06, keys: { L: windKeys('L'), R: [[0, gR]] }, view: windView(-1), brush: 'L' },
   c4windR: { duration: 1.1, marks: { full: 0.48 }, hold: true, blocking: false, blend: 0.06, keys: { R: windKeys('R'), L: [[0, gL]] }, view: windView(1), brush: 'R' },

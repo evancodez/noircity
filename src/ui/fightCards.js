@@ -204,12 +204,21 @@ export class FightCards {
     this.drawTicks();
   }
   drawTicks() {
-    const c = this.tickC || (this.tickC = (() => { const e = document.createElement('canvas'); e.className = 'ticks'; e.style.cssText = 'position:absolute;left:0;top:0'; this.root.appendChild(e); return e; })());
+    // ([C4] under the card, as a comic's caption box lies over the drawing:
+    // the critic's second look, m1 - the loaded fist's ticks crossed 'LET GO
+    // TO HIT' at his reel)
+    const c = this.tickC || (this.tickC = (() => { const e = document.createElement('canvas'); e.className = 'ticks'; e.style.cssText = 'position:absolute;left:0;top:0'; this.root.insertBefore(e, this.fc); return e; })());
     const W = innerWidth, H = innerHeight;
     if (c.width !== W || c.height !== H) { c.width = W; c.height = H; }
     const g = c.getContext('2d');
     g.clearRect(0, 0, W, H);
     g.lineCap = 'round';
+    // (and nothing of them drawn where the card's backing is)
+    g.save();
+    if (this.shownCard) {
+      const r = this.fc.getBoundingClientRect(), bw = (this.fc.querySelector('.bg') || {}).width || r.width, cy = (r.top + r.bottom) / 2;
+      g.beginPath(); g.rect(0, 0, W, H); g.rect((r.left + r.right) / 2 - bw / 2 - 6, cy - 52, bw + 12, 104); g.clip('evenodd');
+    }
     const stroke = (x0, y0, x1, y1, w) => {
       g.strokeStyle = 'rgba(5,5,5,0.85)'; g.lineWidth = w + 3;
       g.beginPath(); g.moveTo(x0, y0); g.lineTo(x1, y1); g.stroke();
@@ -269,6 +278,7 @@ export class FightCards {
         g.beginPath(); g.moveTo(x0, y0); g.lineTo(x0 + dx * len, y0 + dy * len); g.stroke();
       }
     }
+    g.restore();
   }
 
   // ---- his health (FIGHT.md v3 §5.7): a thin ink bar at the top of the
