@@ -43,10 +43,15 @@ export default {
       par(r.x0, r.x1, R.z0, R.z0 + PW);                  // north
       par(r.x1 - PW, r.x1, R.z0, R.z1);                  // east
       // chimney stacks: brick, a coping, pots
+      // ([C11] a stack 2.7 m over the roof, its coping and pots on top: mass()
+      // takes a height, and r.y + 1.7 made each a 8.9 m black column with
+      // its coping and pots buried in it - now over a man's head, the stacks
+      // and pots stand against the sky's fog; their colliders are the same)
+      const CH = 2.7;
       for (const [x, z] of R.chimneys) {
-        mass(g, MAT.brickDark, x - 0.55, x + 0.55, z - 0.4, z + 0.4, r.y + 1.7, r.y, false);
-        K.box(g, MAT.trim, x - 0.62, x + 0.62, r.y + 1.7, r.y + 1.82, z - 0.47, z + 0.47);
-        for (const dx of [-0.25, 0.25]) K.add(g, MAT.metal, lathe([[0, 0], [0.13, 0], [0.11, 0.35], [0.14, 0.42], [0, 0.42]], 14).translate(x + dx, r.y + 1.82, z));
+        mass(g, MAT.brickDark, x - 0.55, x + 0.55, z - 0.4, z + 0.4, CH, r.y, false);
+        K.box(g, MAT.trim, x - 0.62, x + 0.62, r.y + CH, r.y + CH + 0.12, z - 0.47, z + 0.47);
+        for (const dx of [-0.25, 0.25]) K.add(g, MAT.metal, lathe([[0, 0], [0.13, 0], [0.11, 0.35], [0.14, 0.42], [0, 0.42]], 14).translate(x + dx, r.y + CH + 0.12, z));
         rbox(x - 0.55, x + 0.55, z - 0.4, z + 0.4, 'chimney');
       }
       // the skylight over the stairwell (glass in iron frames, lit from below)
@@ -62,7 +67,9 @@ export default {
         // (its collider is the thing's: things.js, so a vault over it can clear it)
       }
       // a roof door's little house by the north parapet (a bulb over its door)
-      mass(g, MAT.brickDark, 64.6, 67.4, R.z0 + PW, R.z0 + 2.6, r.y + 2.4, r.y, false);
+      // ([C11] 2.4 m high, as its door and its bulb are: r.y + 2.4 was a 9.6 m tower)
+      mass(g, MAT.brickDark, 64.6, 67.4, R.z0 + PW, R.z0 + 2.6, 2.4, r.y, false);
+      K.box(g, MAT.trim, 64.55, 67.45, r.y + 2.4, r.y + 2.48, R.z0 + PW - 0.05, R.z0 + 2.65);
       fbox(g, MAT.woodDark, face('z', R.z0 + 2.6, 1), 65.4, 66.6, r.y + 0.05, r.y + 2.0, 0, 0.04);
       rbox(64.6, 67.4, R.z0 + PW, R.z0 + 2.6, 'roofhouse');
     }
@@ -116,6 +123,19 @@ export default {
         mass(g, MAT.brick, x - w / 2, x + w / 2, z - d / 2, z + d / 2, h, y - 0.2, false);
         K.box(g, MAT.trim, x - w / 2 - 0.05, x + w / 2 + 0.05, y - 0.2 + h, y + h - 0.1, z - d / 2 - 0.05, z + d / 2 + 0.05);
         rbox(x - w / 2, x + w / 2, z - d / 2, z + d / 2, 'roofbox');
+      }
+      // [C11] the big skylight's glass on its box, lit from the workshop
+      // under it: a pale ridge of panes across R2 seen from R1's roof (a lit
+      // skylight or two among the black roofs)
+      {
+        const [x, z, w, d, h] = R.boxes[1];
+        const yt = r2Y(x) - 0.2 + h - 0.1;
+        const glass = new THREE.MeshBasicMaterial({ color: new THREE.Color(0.95, 0.95, 0.95) });
+        for (const sg of [-1, 1]) {
+          const geo = new THREE.PlaneGeometry(d - 0.2, w * 0.56).rotateY(Math.PI / 2).rotateZ(sg * 0.8).translate(x + sg * w * 0.2, yt + 0.24, z);
+          K.add(g + 'Sky', glass, geo, { cast: false, noRay: true });
+        }
+        for (let zz = z - d / 2 + 0.1; zz <= z + d / 2 - 0.09; zz += (d - 0.2) / 4) K.add(g, MAT.iron, tube([V3(x - w / 2 + 0.05, yt + 0.02, zz), V3(x, yt + 0.5, zz), V3(x + w / 2 - 0.05, yt + 0.02, zz)], 0.018, 5, 4));
       }
       // the shed's walls below the lean-to, its side walls up to the slope
       const s = R.shed, sz0 = -113.4, sz1 = -108.6;

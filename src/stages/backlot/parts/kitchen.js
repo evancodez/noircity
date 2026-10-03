@@ -146,19 +146,28 @@ export default {
     // (two shades over the long table: two pools on the steel and the tiles, the corners in ink)
     api.lamp = L.hang(57.0, CEIL - 0.1, -92.4, { real: true });
     api.lamp2 = L.hang(63.0, CEIL - 0.1, -92.4, { real: true });
-    if (api.lamp2.light) { api.lamp2.light.intensity = 150; api.lamp2.light.angle = 0.95; api.lamp2.light.penumbra = 0.8; }
-    if (api.lamp.light) { api.lamp.light.intensity = 170; api.lamp.light.angle = 0.95; api.lamp.light.penumbra = 0.8; }
+    // ([C11] the table's two a step down, 170 / 150 -> 110 / 95: the lamp
+    // under the hood is the room's one light now, these the way along)
+    if (api.lamp2.light) { api.lamp2.light.intensity = 95; api.lamp2.light.angle = 0.95; api.lamp2.light.penumbra = 0.8; }
+    if (api.lamp.light) { api.lamp.light.intensity = 110; api.lamp.light.angle = 0.95; api.lamp.light.penumbra = 0.8; }
     // ([C6 2nd] a bulb over the iron door: the way out of the kitchen lit)
     // ([C6 4th] brighter: the brightest thing in the room, the way out)
     api.doorLamp = L.wall(KI.x1 - T, 2.75, KDOOR.z + 0.95, -1, 0, { out: 0.45, strength: 1.5 });
     // ([C6 4th] a lamp under the hood over the ranges: the west half was flat
     // dark grey - now the stove tops and the pots catch it, the corridor
     // beside them a pool, the rest ink)
-    api.hoodLamp = L.wall(KI.x0 + T, 2.05, -91.0, 1, 0, { out: 0.25, strength: 0.8, half: 0.6 });
-    // steam off the pots
-    api.steam = new Steam(stage, [V3(KI.x0 + T + 0.55, 1.25, -93.5), V3(KI.x0 + T + 0.55, 1.25, -89.1)], 10);
+    // ([C11] the room's one light: over the middle range, brighter and
+    // wider - the stove tops, the pots' rims, the tiles behind and the steam
+    // rising through it white, the hood's lip a line - and the room's fill
+    // down, 0.15 -> 0.07, so the walls away from a lamp fall into ink: the
+    // art director's frame read bare grey walls)
+    api.hoodLamp = L.wall(KI.x0 + T, 2.08, -92.6, 1, 0, { out: 0.12, strength: 1.5, half: 0.75 });
+    if (api.hoodLamp.light) Object.assign(api.hoodLamp.light, { intensity: 170, angle: 0.9, penumbra: 0.45, distance: 8 });
+    // steam off the pots ([C11] thicker, so it shows where it crosses the light)
+    api.steam = new Steam(stage, [V3(KI.x0 + T + 0.55, 1.25, -93.5), V3(KI.x0 + T + 0.55, 1.25, -91.9), V3(KI.x0 + T + 0.55, 1.25, -89.1)], 12);
+    api.steam.material.uniforms.uStrength.value = 1.35;
     // the kitchen's Look: dark round its one lamp
-    stage.addLook(new THREE.Box3(V3(KI.x0 + T, -1, KI.z0 + T), V3(KI.x1 - T, CEIL, KI.z1 - T)), { ambient: 0.15, exposure: 1.1, rainOverlay: 0.0, haze: 0.3, room: 'kitchen' });
+    stage.addLook(new THREE.Box3(V3(KI.x0 + T, -1, KI.z0 + T), V3(KI.x1 - T, CEIL, KI.z1 - T)), { ambient: 0.07, exposure: 1.1, rainOverlay: 0.0, haze: 0.3, room: 'kitchen' });
     stage.dry.push(new THREE.Box3(V3(KI.x0, 0, KI.z0), V3(KI.x1, KI.h, KI.z1)));
     // ---- outside: the floods over the back doors down the lanes, the bulb over the roller door
     // (low over each door, aimed down its lane through the washing: the
