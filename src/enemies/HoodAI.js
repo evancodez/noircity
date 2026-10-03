@@ -269,6 +269,13 @@ export class HoodAI {
   // big turn unwinds it; once picked, a big turn keeps its way to the end.
   // (only for a man who asks for it: h.turnSafe, the gun kit's men - the
   // wave game's and the battle's men turn as they did, their frames golden)
+  // [C2b] after the critic: the unwind caught one big turn, not a chain of
+  // mid-sized short-way turns that all went the same way (out +115, back
+  // +170, hold +80: once round in 1.8 s). Now he keeps the last 2.5 s of his
+  // turning (his yaw, unwrapped) and never sweeps more than ~264 degrees one
+  // way inside it: a turn that would take him past that waits (he holds his
+  // facing a moment) or, if the other way round stays inside it, goes that
+  // way. (The steps out and back no longer turn him at all: step() below.)
   faceTo(x, z, dt, rate = 5) {
     const h = this.h, t = this.game.time;
     const want = Math.atan2(x - h.pos.x, z - h.pos.z);
@@ -281,10 +288,44 @@ export class HoodAI {
       if (!h._bigDir) h._bigDir = Math.abs(acc) > 0.6 ? -Math.sign(acc) : Math.sign(d) || 1;
       if (Math.sign(d) !== h._bigDir) d -= Math.sign(d) * 2 * Math.PI;
     } else h._bigDir = 0;
-    const step = rate * dt, s = Math.max(-step, Math.min(step, d));
+    // (the window: [t, unwrapped yaw] for the last 2.5 s)
+    const W = h._yawWin || (h._yawWin = { cum: 0, s: [] });
+    while (W.s.length && t - W.s[0][0] > 2.5) W.s.shift();
+    let lo = W.cum, hi = W.cum;
+    for (const q of W.s) { if (q[1] < lo) lo = q[1]; if (q[1] > hi) hi = q[1]; }
+    const LIM = 4.6;   // (264 degrees: under the counter's 300, and a reversal inside a second under 270)
+    const fits = (dd) => (dd > 0 ? W.cum + dd - lo : hi - (W.cum + dd)) <= LIM;
+    const step = rate * dt;
+    let s = Math.max(-step, Math.min(step, d));
+    if (s && !fits(s)) {
+      const other = d - Math.sign(d) * 2 * Math.PI;
+      if (fits(Math.max(-step, Math.min(step, other))) && (other > 0 ? W.cum + other - lo : hi - (W.cum + other)) <= LIM) { d = other; h._bigDir = Math.sign(other); s = Math.max(-step, Math.min(step, d)); }
+      else s = Math.sign(s) * Math.max(0, d > 0 ? lo + LIM - W.cum : W.cum - (hi - LIM));
+    }
     h.yaw += s;
+    W.cum += s; W.s.push([t, W.cum]);
     h._turnAcc = acc + s; h._turnT = t;
     return err;
+  }
+
+  // [C2b] after the critic: a short step - out from his cover or his jamb to
+  // his spot, back to it - is taken facing (fx, fz): sideways or backwards,
+  // the legs turned toward the way he goes (Hood: stepYaw), the body never
+  // turned to the path (it whipped +115 / -170 / +80 degrees every few
+  // seconds at every jamb). The pace eases in and out (no flicker).
+  // Returns true on arrival.
+  step(dt, fx, fz, run = false, rate = 5) {
+    const h = this.h;
+    if (!this.path) return true;
+    const wp = this.path[this.path.length - 1];
+    const dx = wp.x - h.pos.x, dz = wp.z - h.pos.z, d = Math.hypot(dx, dz);
+    if (d < 0.06) { this.path = null; this.pathI = 0; this.stop(); return true; }
+    this.faceTo(fx, fz, dt, rate);
+    h.stepYaw = Math.atan2(dx, dz);
+    const want = Math.min(run ? 2.0 : 1.3, 0.25 + d * 2.5);
+    h.speed += (want - h.speed) * (1 - Math.exp(-10 * dt));
+    if (h.state !== 'walk') h.setState('walk', 0.2);
+    return false;
   }
 
   go(x, z, run) {
@@ -321,7 +362,13 @@ export class HoodAI {
     // is off his line: at full pace his turn's circle (0.4 m) is wider than
     // the 0.3 m he must come within - he went round the point, a loop)
     const last = this.pathI === this.path.length - 1;
-    h.speed = speed * (err > 1.2 || (h.turnSafe && last && d < 1.2 && err > 0.5) ? 0.3 : 1);
+    if (!h.turnSafe) h.speed = speed * (err > 1.2 ? 0.3 : 1);
+    else {
+      // ([C2b] after the critic: eased toward its pace, not switched - it
+      // flickered 0.45 / 1.5 m/s as the error crossed 0.5 at a path's end)
+      const want = speed * (err > 1.2 || (last && d < 1.2 && err > 0.5) ? 0.3 : 1);
+      h.speed += (want - h.speed) * (1 - Math.exp(-8 * dt));
+    }
     const want = this.run ? 'run' : 'walk';
     if (h.state !== want) h.setState(want, 0.25);
     // stuck: barely moved in 1.5 s

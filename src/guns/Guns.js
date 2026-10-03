@@ -118,7 +118,9 @@ export class Guns {
     if (!this._downFn) { this._downFn = (e) => this.onDown(e); G.on('hood:down', this._downFn); }
     this.slides = [];
     this.corpseQ = [];
-    this.clearCorpses();
+    // ([C2b] after the critic: the bodies of an encounter before this one in the
+    // same place are still lying there - kept, for the step over them and the doors)
+    this.corpses = (this.corpses || []).filter((c) => c.hood.object.parent && G.stage.hoods.list.includes(c.hood));
     return this;
   }
 
@@ -200,6 +202,8 @@ export class Guns {
   overBody(x, z) {
     let k = 0;
     for (const c of this.corpses || []) {
+      if (!c.hood.object.parent) continue;
+      if (!this.active || c.ax == null) this.readBody(c);
       // (the body's length as it lies, head to feet: a segment, not the torso's circle)
       const dx = c.bx - c.ax, dz = c.bz - c.az, L2 = dx * dx + dz * dz || 1e-6;
       const u = Math.max(0, Math.min(1, ((x - c.ax) * dx + (z - c.az) * dz) / L2));
@@ -208,6 +212,16 @@ export class Guns {
       k = Math.max(k, q * q * (3 - 2 * q));
     }
     return k;
+  }
+  // (a body's record from its bones: the torso's middle, head to feet)
+  readBody(c) {
+    const Bn = c.hood.bones;
+    const a = _a.setFromMatrixPosition(Bn.hips.matrixWorld), b = _b.setFromMatrixPosition(Bn.chest.matrixWorld);
+    c.x = (a.x + b.x) / 2; c.z = (a.z + b.z) / 2;
+    const hd = _p.setFromMatrixPosition(Bn.head.matrixWorld);
+    c.ax = hd.x; c.az = hd.z;
+    a.setFromMatrixPosition(Bn.footL.matrixWorld); b.setFromMatrixPosition(Bn.footR.matrixWorld);
+    c.bx = (a.x + b.x) / 2; c.bz = (a.z + b.z) / 2;
   }
   stepBodies(dt) {
     const G = this.game, C = G.stage.colliders;
@@ -232,14 +246,9 @@ export class Guns {
     // (a body taken away - the corpse cap - goes from the list; the others
     // read where they lie as their fall settles)
     for (let i = this.corpses.length - 1; i >= 0; i--) {
-      const c = this.corpses[i], Bn = c.hood.bones;
+      const c = this.corpses[i];
       if (!c.hood.object.parent) { this.corpses.splice(i, 1); continue; }
-      const a = _a.setFromMatrixPosition(Bn.hips.matrixWorld), b = _b.setFromMatrixPosition(Bn.chest.matrixWorld);
-      c.x = (a.x + b.x) / 2; c.z = (a.z + b.z) / 2;
-      const hd = _p.setFromMatrixPosition(Bn.head.matrixWorld);
-      c.ax = hd.x; c.az = hd.z;
-      a.setFromMatrixPosition(Bn.footL.matrixWorld); b.setFromMatrixPosition(Bn.footR.matrixWorld);
-      c.bx = (a.x + b.x) / 2; c.bz = (a.z + b.z) / 2;
+      this.readBody(c);
     }
     this.stepSpin();
   }
@@ -283,7 +292,12 @@ export class Guns {
     G.health.exposed = null;
     if (this._death0) { G.health.onDeath = this._death0; this._death0 = null; }
     if (this._downFn) { G.off('hood:down', this._downFn); this._downFn = null; }
-    this.clearCorpses();
+    // ([C2b] after the critic: the bodies stay where they lie after the fight -
+    // the walk after it steps over them too, and a door stops on them; the
+    // ones still falling join the list, read where they lie as they are asked)
+    for (const q of this.corpseQ || []) if (q.h.object.parent) this.corpses.push({ x: 0, z: 0, r: 0.27, tag: 'corpse', hood: q.h });
+    this.corpseQ = [];
+    for (const c of this.corpses) this.readBody(c);
   }
   down() {
     const G = this.game;

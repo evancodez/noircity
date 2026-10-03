@@ -139,7 +139,8 @@ export function makeDoor(stage, kit, mats, name, spec) {
       let next = this.angle + step;
       let b = this.blocked(next);
       if (b === 'player') { next = this.angle + step * 0.45; b = this.blocked(next); if (b === 'player' && this.shove(next)) b = false; }
-      if (b) { this.moving = false; return; }
+      if (b) { if (b === 'body' && !this._bodyKnock) { this._bodyKnock = true; this.jolt = 0.12; const G = stage.game; if (G && G.sfx) G.sfx.play('c2_doorShut', this.centre.clone().setY(FLOOR + 0.4), {}, { ref: 3, gain: 0.35 }); } this.moving = false; return; }
+      this._bodyKnock = false;
       this.angle = next;
       if (Math.abs(this.target - this.angle) < 1e-3) {
         this.angle = this.target; this.moving = false;
@@ -172,6 +173,14 @@ export function makeDoor(stage, kit, mats, name, spec) {
       const test = (x, z, r) => { const d1 = this.dist(a, x, z); return d1 < r && d1 < this.dist(this.angle, x, z) - 1e-4; };
       for (const h of stage.hoods.list) if (h.alive && test(h.pos.x, h.pos.z, 0.3)) return 'man';
       if (test(G.controller.pos.x, G.controller.pos.z, 0.36)) return 'player';
+      // [C2b] after the critic: and a body lying in its sweep (the user: the
+      // dead block nobody, "but other things do"): the leaf stops on him -
+      // along his length, head to feet (Guns.corpses), not through his legs
+      const K = G.guns;
+      for (const c of (K && K.corpses) || []) {
+        if (c.ax == null || !c.hood.object.parent) continue;
+        for (let u = 0; u <= 1.001; u += 0.2) if (test(c.ax + (c.bx - c.ax) * u, c.az + (c.bz - c.az) * u, 0.13)) return 'body';
+      }
       return false;
     },
     // the player out of the leaf's way at angle `a`: straight back from the

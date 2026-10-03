@@ -118,7 +118,7 @@ export default {
     // [C2b] over a body: the dead are in nobody's way (Guns.overBody); the
     // foot goes over, the eye with it a few centimetres, felt and not solid
     const K = G0 && G0.guns;
-    const ob = K && K.active && K.corpses && K.corpses.length ? K.overBody(ctl.pos.x, ctl.pos.z) : 0;
+    const ob = K && K.corpses && K.corpses.length ? K.overBody(ctl.pos.x, ctl.pos.z) : 0;   // ([C2b] after the critic: the fight over too)
     const ob0 = ctl._overBody || 0;
     ctl._overBody = ob0 + (ob - ob0) * (1 - Math.exp(-(ob > ob0 ? 14 : 9) * dt));
     if (ob > 0.5 && ob0 <= 0.5 && G0 && G0.sfx && !ctl.frozen) G0.sfx.play('clothRustle', null, {}, { send: false, gain: 0.22 });

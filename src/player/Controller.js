@@ -328,8 +328,18 @@ export class Controller {
   }
 
   update(dt) {
-    if (this.mode !== 'walk' || this._ease) { this.apply(dt); return; }
+    if (this.mode !== 'walk' || this._ease) { this._obY = 0; this.apply(dt); return; }
+    // [C2b] after the critic: over a body of the gun kit's in the walk too (the
+    // gun mode has it: modes/gun.js) - the eye a few centimetres up as the foot goes over
+    this.groundY -= this._obY || 0;
     this.walkStep(dt);
+    const K = this.world && this.world.game && this.world.game.guns;
+    const ob = K && K.corpses && K.corpses.length ? K.overBody(this.pos.x, this.pos.z) : 0;
+    const ob0 = this._overBody || 0;
+    this._overBody = ob0 + (ob - ob0) * (1 - Math.exp(-(ob > ob0 ? 14 : 9) * dt));
+    if (ob > 0.5 && ob0 <= 0.5 && !this.frozen && this.world.game.sfx) this.world.game.sfx.play('clothRustle', null, {}, { send: false, gain: 0.22 });
+    this._obY = 0.065 * this._overBody;
+    this.groundY += this._obY;
     this.apply(dt);
   }
 
