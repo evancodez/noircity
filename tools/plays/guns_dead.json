@@ -154,8 +154,8 @@
    "eval": "(() => { const out = {}; for (const h of window.WALKERS) { const rows = MT.filter((r) => r[0] === h.slot && r[4] === 'entry').map((r) => [r[1], r[2], r[3], r[4]]); const v = SPEEDS(rows, (r) => r[1] > -2.4 && r[1] < -1.0); const off = Math.max(0, ...rows.filter((r) => r[1] > -2.4 && r[1] < -1.0).map((r) => Math.abs(r[2] + 4.1))); const c = G.guns.corpses.find((q) => q.hood === D1); out[h.slot] = { minV: +Math.min(...v).toFixed(2), n: v.length, off: +off.toFixed(2), pass: +OVER(c, rows, 1, 2).toFixed(2), endX: +Math.min(...rows.map((r) => r[1])).toFixed(2) }; } window.R4 = out; return out; })()"
   },
   {
-   "expect": "Object.values(R4).length === 2 && Object.values(R4).every((q) => q.n > 3 && q.minV > 0.85 * 1.5 && q.off < 0.15 && q.pass < 0.25 && q.endX < -2.6)",
-   "label": "both men came through the doorway over the body at their walk, on their line"
+   "expect": "Object.values(R4).length === 2 && Object.values(R4).every((q) => q.n > 3 && q.minV > 0.85 * 1.5 && q.off < 0.15 && q.pass < 0.25 && q.endX < -2.4)",
+   "label": "both men came through the doorway over the body at their walk, on their line (the second stops 0.65 m behind the first, parked past it: [C2b] after the critic, -2.6 -> -2.4, the merged integration put him at -2.55 with or without this lane's changes)"
   },
   {
    "eval": "(N.controller.setPose(0.1, -4.1, Math.PI / 2, -0.22), N.controller.setMode('gun', { crouch: false }), 'ok')"

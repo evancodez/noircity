@@ -1,19 +1,73 @@
 {
- "about": "[C2] The gun kit's proof 3 (WAVE_C §7): a player who uses what was taught - behind the beat's cover, down (C), up over it (RMB) to fire one or two aimed rounds and down again, reloads down, moves when a man has his angle, stays down through a Tommy gun's burst, answers the heavy - at a human pace (reactions 300 .. 550 ms, the aim tuned for 60 - 70 % of rounds landing) WINS every contest of the test bed on the first try. Run it twice. node tools/play.mjs tools/plays/guns_good.json",
- "url": "/?mute=1&start=guns.door",
- "size": [1280, 800],
- "out": "shots/play/guns_good",
- "steps": [
-  { "name": "the title, BEGIN at the test bed" },
-  { "until": "G.state === 'title' && !!document.querySelector('#title .opt[data-k=begin]')", "timeout": 60000 },
-  { "wait": 1500 },
-  { "clickOn": "#title .opt[data-k=begin]", "taken": "G.scenes.current && G.scenes.current.id === 'guns'", "retries": 4 },
-  { "until": "G.scenes.current && G.scenes.current.id === 'guns' && document.pointerLockElement === N.renderer.domElement", "timeout": 30000 },
-  { "name": "every contest, played well" },
-  { "drive": "tools/lib/c2_guns.mjs", "profile": "good", "tries": 3, "beatTimeout": 150,
-    "beats": ["door", "two_ways", "pin", "rush", "street", "street_rev"],
-    "check": "D.wonFirst === 6",
-    "label": "the good player wins every contest on the first try" },
-  { "eval": "(N.game.guns.events || []).filter((e) => e.what === 'down' || e.what === 'flank').map((e) => e.what + ' ' + (e.why || e.at))" }
- ]
+  "about": "[C2] The gun kit's proof 3 (WAVE_C \u00a77): a player who uses what was taught - behind the beat's cover, down (C), up over it (RMB) to fire one or two aimed rounds and down again, reloads down, moves when a man has his angle, stays down through a Tommy gun's burst, answers the heavy - at a human pace (reactions 300 .. 550 ms, the aim tuned for 60 - 70 % of rounds landing) WINS every contest of the test bed on the first try. Run it twice. node tools/play.mjs tools/plays/guns_good.json [C2b] after the critic: and the turn counter on this profile too - no man turns a full circle",
+  "url": "/?mute=1&start=guns.door",
+  "size": [
+    1280,
+    800
+  ],
+  "out": "shots/play/guns_good",
+  "steps": [
+    {
+      "name": "the title, BEGIN at the test bed"
+    },
+    {
+      "until": "G.state === 'title' && !!document.querySelector('#title .opt[data-k=begin]')",
+      "timeout": 60000
+    },
+    {
+      "wait": 1500
+    },
+    {
+      "clickOn": "#title .opt[data-k=begin]",
+      "taken": "G.scenes.current && G.scenes.current.id === 'guns'",
+      "retries": 4
+    },
+    {
+      "until": "G.scenes.current && G.scenes.current.id === 'guns' && document.pointerLockElement === N.renderer.domElement",
+      "timeout": 30000
+    },
+    {
+      "name": "every contest, played well"
+    },
+    {
+      "drive": "tools/lib/c2_guns.mjs",
+      "profile": "good",
+      "tries": 3,
+      "beatTimeout": 150,
+      "beats": [
+        "door",
+        "two_ways",
+        "pin",
+        "rush",
+        "street",
+        "street_rev"
+      ],
+      "check": "D.wonFirst === 6",
+      "label": "the good player wins every contest on the first try"
+    },
+    {
+      "eval": "(N.game.guns.events || []).filter((e) => e.what === 'down' || e.what === 'flank').map((e) => e.what + ' ' + (e.why || e.at))"
+    },
+    {
+      "name": "how the men turned"
+    },
+    {
+      "eval": "(() => { const S = G.guns.spin; return { secDeg: Math.round(S.sec * 57.3), revDeg: Math.round(S.rev * 57.3), turnDeg: Math.round(S.turn * 57.3), who: S.who, whoTurn: S.whoTurn }; })()"
+    },
+    {
+      "eval": "G.guns.events.filter((e) => e.what === 'spin')"
+    },
+    {
+      "expect": "G.guns.spin.sec <= 2 * Math.PI",
+      "label": "no man turns more than a full circle's worth in any second"
+    },
+    {
+      "expect": "G.guns.spin.rev <= 270 / 57.3",
+      "label": "no one-way sweep over 270 degrees in a second"
+    },
+    {
+      "expect": "G.guns.spin.turn < 330 / 57.3 && !G.guns.events.some((e) => e.what === 'spin')",
+      "label": "no man turns a full circle (330 degrees in 2.5 s)"
+    }
+  ]
 }

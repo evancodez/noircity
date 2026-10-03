@@ -1,19 +1,73 @@
 {
- "about": "[C2] The gun kit's proof 1 (WAVE_C §7): in every contest of the test bed (src/scenes/91_guns.js) the player does nothing at all and LOSES - the warning first, the reason said, back at the beat. node tools/play.mjs tools/plays/guns_idle.json",
- "url": "/?mute=1&start=guns.door",
- "size": [1280, 800],
- "out": "shots/play/guns_idle",
- "steps": [
-  { "name": "the title, BEGIN at the test bed" },
-  { "until": "G.state === 'title' && !!document.querySelector('#title .opt[data-k=begin]')", "timeout": 60000 },
-  { "wait": 1500 },
-  { "clickOn": "#title .opt[data-k=begin]", "taken": "G.scenes.current && G.scenes.current.id === 'guns'", "retries": 4 },
-  { "until": "G.scenes.current && G.scenes.current.id === 'guns' && document.pointerLockElement === N.renderer.domElement", "timeout": 30000 },
-  { "name": "every contest, the controls let go" },
-  { "drive": "tools/lib/c2_guns.mjs", "profile": "idle", "tries": 1, "beatTimeout": 60,
-    "beats": ["door", "two_ways", "pin", "rush", "street", "street_rev"],
-    "check": "D.lost === 6 && D.won === 0 && D.allWarned && D.falls.every((w) => w && w !== 'timeout')",
-    "label": "doing nothing loses every contest, each with a warning and a reason" },
-  { "eval": "(N.game.guns.events || []).filter((e) => e.what === 'down').map((e) => e.why)" }
- ]
+  "about": "[C2] The gun kit's proof 1 (WAVE_C \u00a77): in every contest of the test bed (src/scenes/91_guns.js) the player does nothing at all and LOSES - the warning first, the reason said, back at the beat. node tools/play.mjs tools/plays/guns_idle.json [C2b] after the critic: and the turn counter on this profile too - no man turns a full circle",
+  "url": "/?mute=1&start=guns.door",
+  "size": [
+    1280,
+    800
+  ],
+  "out": "shots/play/guns_idle",
+  "steps": [
+    {
+      "name": "the title, BEGIN at the test bed"
+    },
+    {
+      "until": "G.state === 'title' && !!document.querySelector('#title .opt[data-k=begin]')",
+      "timeout": 60000
+    },
+    {
+      "wait": 1500
+    },
+    {
+      "clickOn": "#title .opt[data-k=begin]",
+      "taken": "G.scenes.current && G.scenes.current.id === 'guns'",
+      "retries": 4
+    },
+    {
+      "until": "G.scenes.current && G.scenes.current.id === 'guns' && document.pointerLockElement === N.renderer.domElement",
+      "timeout": 30000
+    },
+    {
+      "name": "every contest, the controls let go"
+    },
+    {
+      "drive": "tools/lib/c2_guns.mjs",
+      "profile": "idle",
+      "tries": 1,
+      "beatTimeout": 60,
+      "beats": [
+        "door",
+        "two_ways",
+        "pin",
+        "rush",
+        "street",
+        "street_rev"
+      ],
+      "check": "D.lost === 6 && D.won === 0 && D.allWarned && D.falls.every((w) => w && w !== 'timeout')",
+      "label": "doing nothing loses every contest, each with a warning and a reason"
+    },
+    {
+      "eval": "(N.game.guns.events || []).filter((e) => e.what === 'down').map((e) => e.why)"
+    },
+    {
+      "name": "how the men turned"
+    },
+    {
+      "eval": "(() => { const S = G.guns.spin; return { secDeg: Math.round(S.sec * 57.3), revDeg: Math.round(S.rev * 57.3), turnDeg: Math.round(S.turn * 57.3), who: S.who, whoTurn: S.whoTurn }; })()"
+    },
+    {
+      "eval": "G.guns.events.filter((e) => e.what === 'spin')"
+    },
+    {
+      "expect": "G.guns.spin.sec <= 2 * Math.PI",
+      "label": "no man turns more than a full circle's worth in any second"
+    },
+    {
+      "expect": "G.guns.spin.rev <= 270 / 57.3",
+      "label": "no one-way sweep over 270 degrees in a second"
+    },
+    {
+      "expect": "G.guns.spin.turn < 330 / 57.3 && !G.guns.events.some((e) => e.what === 'spin')",
+      "label": "no man turns a full circle (330 degrees in 2.5 s)"
+    }
+  ]
 }

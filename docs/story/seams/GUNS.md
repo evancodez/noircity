@@ -336,11 +336,24 @@ K.spawn({ kind: 'tommy', at: { x, z }, cover: true, wait: 2.4 });   // there alr
   `K.overBody(x, z)` 0..1 along the body's length, head to feet), and a
   living man walks his path straight through it. `K.corpses` is a list of
   records `{ x, z, r, hood, ax, az, bx, bz }` (torso, head, feet), from 1.35 s
-  after the fall; nothing is added to `stage.colliders`.
+  after the fall; nothing is added to `stage.colliders`. ([C2b] after the
+  critic) Other things do collide with the dead: a door's leaf stops
+  against a body's length (`killhouse/door.js` `blocked()` -> `'body'`;
+  a stage with its own doors should do the same with `K.corpses`). The
+  records outlive the encounter (`end()` keeps them, the next `begin()`
+  keeps the ones still lying in the stage), and the step over a body works
+  in the walk mode too (`Controller.update`), not only in the gun mode.
 - **No man spins** ([C2b]): a man turns the short way, and a turn of more
   than ~140 degrees goes back the way he came (`HoodAI.faceTo` unwinds),
   never on round; aiming he turns at 5.5 rad/s; his look (chest and head)
-  fades out for a target behind him. `K.spin` is the turn counter the plays
+  fades out for a target behind him. ([C2b] after the critic) `faceTo`
+  keeps the last 2.5 s of his turning and never sweeps more than ~264
+  degrees one way inside it (the turn waits a moment, or goes the other way
+  if that fits); a step out to his spot, back to his cover or to his cover
+  to reload (one node, under 1.8 m: `HoodAI.step`) is taken facing the
+  target, sideways or backwards, the legs turned toward the step
+  (`h.stepYaw`, the spine turns the chest back); and no round leaves more
+  than ~50 degrees off his facing. `K.spin` is the turn counter the plays
   read (`{ sec, rev, turn }` in rad: the worst second's sum of |dyaw|, the
   worst one-way sweep in a second, in 2.5 s), an event `spin` for a sweep
   over 300 degrees.
@@ -449,6 +462,9 @@ fall came, and where the rounds into me came from):
 | `guns_walk` | walks into the desk, a man, a body, a shut and a locked door, a wall; leans round a jamb | nothing passes through anything but a body (stepped over); the lean goes out and back |
 | `guns_dead` | [C2b] walks through three bodies (a doorway, a corridor); a man walks his path through two; two men come through a doorway with a body in it | no slowing beyond the step (5 - 8 cm), no stop, no step round |
 | `guns_spin` | [C2b] every contest as the first-timer, the turn counter on | no second over 2 pi of turning, no one-way sweep over 270 degrees in a second, no full turn in 2.5 s |
+| `guns_steps` | [C2b] after the critic: door and two_ways hands off, every man's yaw traced | no step out or back turns him more than 60 degrees; no full turn in 2.5 s |
+| `guns_body_door`, `guns_body_walk` | [C2b] after the critic: E on a door with a body across its doorway; the walk mode over a body | the leaf stops against him; the eye steps up in the walk mode |
+| `guns_idle`, `guns_bad`, `guns_good` | [C2b] after the critic: the turn counter's three checks at their ends too | as `guns_spin` |
 
 ---------------------------------------------------------------------------
 ## 8. What a chapter must not do
