@@ -127,11 +127,16 @@ export function beginFight(ctx, beat, { maxFiring = 2, flankAfter = 13, settleK 
   // kill a man who stands in the open)
   const f = Math.min(3, G.fails(beat));
   settleK += 0.22 * f;
-  dmgK *= 1 - 0.1 * f;
-  // (and after a fall nobody is sent round, from the second one fewer fires
-  // at once: the clumsy first hand died in
-  // the street to the flank and to three guns at once, try after try)
-  if (f >= 2) maxFiring = Math.max(1, maxFiring - 1);
+  // ([C8] after the critic: the street has more in it now - the kitchen, drums
+  // that run out, his car that must be stopped - and the clumsy hand's retries
+  // went four deep: a fall eases a round by 14 % (was 10 %), and from the
+  // first fall one fewer fires at once (was the second). The first try is as
+  // written: the stander still dies in each)
+  dmgK *= 1 - 0.14 * f;
+  // (and after a fall nobody is sent round, and one fewer fires at once: the
+  // clumsy first hand died in the street to the flank and to three guns at
+  // once, try after try)
+  if (f >= 1) maxFiring = Math.max(1, maxFiring - 1);
   if (f >= 1) flankAfter = 0;
   // ([C8] after the critic: drums are few - a man who emptied them all and
   // fell is told so, whatever the round that did it)
