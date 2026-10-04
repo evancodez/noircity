@@ -1,0 +1,25 @@
+{
+  "about": "[C13] after the critic: IV as the user meets it, in flow - a movement after the first begins with what the last one left (no checkpoint go), a retry is the game's own fall. The good hand (the desk, the cart) twice in a row, then the clumsy first-timer once. The box of rounds on the secretary's desk is taken with E in the corridor's quiet. The 'c13 flow:' lines give the counts each movement begins with. NOIR_PORT=5353 node tools/play.mjs tools/plays/c13_iv_flow.json",
+  "url": "/?mute=1&start=gunfight",
+  "size": [1280, 800],
+  "out": "shots/c13/iv_flow",
+  "steps": [
+    { "until": "G.state === 'title' && !!document.querySelector('#title .opt[data-k=begin]')", "timeout": 60000 },
+    { "wait": 1500 },
+    { "clickOn": "#title .opt[data-k=begin]", "taken": "G.scenes.current && G.scenes.current.id === 'gunfight'", "retries": 4 },
+    { "until": "G.scenes.current && G.scenes.current.id === 'gunfight' && document.pointerLockElement === N.renderer.domElement", "timeout": 30000 },
+    { "name": "the good hand in flow, first run" },
+    { "drive": "tools/lib/c5_door.mjs", "profile": "good", "choice": "desk", "out": true, "flow": true, "tries": 3, "beatTimeout": 150,
+      "beats": ["shadows", "flank", "corridor"], "check": "D.wonFirst === 3", "label": "the good hand, in flow, wins every movement first try (1)" },
+    { "eval": "JSON.stringify({ box: N.game.counters.c13box || 0, guard: N.game.counters.c13guard || 0, left: [N.game.player.weapons.impls.revolver.ammo, N.game.player.weapons.impls.revolver.pocket] })" },
+    { "name": "the good hand in flow, second run" },
+    { "drive": "tools/lib/c5_door.mjs", "profile": "good", "choice": "desk", "out": true, "flow": true, "tries": 3, "beatTimeout": 150,
+      "beats": ["shadows", "flank", "corridor"], "check": "D.wonFirst === 3", "label": "the good hand, in flow, wins every movement first try (2)" },
+    { "eval": "JSON.stringify({ box: N.game.counters.c13box || 0, guard: N.game.counters.c13guard || 0, left: [N.game.player.weapons.impls.revolver.ammo, N.game.player.weapons.impls.revolver.pocket] })" },
+    { "name": "the clumsy first-timer in flow" },
+    { "drive": "tools/lib/c5_door.mjs", "profile": "clumsy", "choice": "desk", "out": true, "flow": true, "tries": 3, "beatTimeout": 150,
+      "beats": ["shadows", "flank", "corridor"], "check": "D.won === 3", "label": "the clumsy first-timer, in flow, gets through every movement within three tries" },
+    { "eval": "JSON.stringify({ box: N.game.counters.c13box || 0, guard: N.game.counters.c13guard || 0, empty: N.game.counters.dry || 0 })" },
+    { "eval": "(N.game.guns.events || []).filter((e) => e.what === 'down').map((e) => e.why)" }
+  ]
+}

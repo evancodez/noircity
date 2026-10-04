@@ -40,17 +40,21 @@ export const REVOLVER = {
 // chapter gives the revolver, read through gunsOf(G).arm('revolver') (in a
 // beat's setup) and by the tail's window gun:
 //   pocket  the rounds in reserve when the chapter is begun (the cylinder full)
-//   floor   at a checkpoint the cylinder and the pocket are as they were when
-//           the checkpoint was reached (save.flags.ammo), never as at the
-//           fall - but never less than `floor` rounds in all, so that a retry
-//           can always be won
+//           - at a checkpoint the cylinder and the pocket are as they were when
+//           the checkpoint was reached (save.flags.ammo), never as at the fall,
+//           and never more: a fall gives nothing back
+//   box     ([C13] after the critic) IV: a box of rounds on the secretary's
+//           desk, taken with E (05_gunfight.js), once; `guard` - a retry at a
+//           checkpoint reached with less than this in all, the box already
+//           taken, finds the box on the desk again (seen, fetched: no checkpoint
+//           is a dead end, and nothing goes into the pocket by itself)
 //   empty   the gun comes empty (VII: the tail's last rounds); `shells` the
 //           pocket the box in the Cardinal's drawer gives, with the cylinder
 // A scene not in the table (the test beds) keeps an endless pocket.
 export const POCKET = {
-  gunfight: { pocket: 24, floor: 18 },        // IV The Door: enough if I aim, not to spray (18: the good hand used all 24)
-  tail: { pocket: 6 },                        // VI's gun phase: the cylinder and the last six
-  warehouse: { pocket: 0, empty: true, shells: 18, floor: 18 }, // VII: empty; the shells 6 + 18
+  gunfight: { pocket: 24, box: 12, guard: 18 }, // IV The Door: enough if I aim, not to spray; the box for the corridor
+  tail: { pocket: 6 },                          // VI's gun phase: the cylinder and the last six
+  warehouse: { pocket: 0, empty: true, shells: 18 }, // VII: empty; the shells 6 + 18
 };
 const HEAD = new Set(['head', 'hat']);
 const V = (x, y, z) => new THREE.Vector3(x, y, z);
@@ -173,7 +177,8 @@ export default (game) => {
     // gunsOf(G).arm('revolver', opts): the checkpoint's gun. opts.pocket
     // given: the cylinder full and that pocket; opts.keep: the counts as they
     // are. Else this checkpoint's counts (save.flags.ammo.at), or the
-    // chapter's row of POCKET when it is begun; never under its floor
+    // chapter's row of POCKET when it is begun ([C13] after the critic: no
+    // floor - a fall gives back what there was, never more)
     armCounts(opts = {}) {
       if (opts.keep) { this.keep(); return; }
       const M = G.scenes, id = M && M.current ? M.current.id : null, key = id && M.beat ? id + '.' + M.beat : null;
@@ -184,7 +189,6 @@ export default (game) => {
       const snap = A && A.at && key && Array.isArray(A.at[key]) ? A.at[key] : null;
       // (an empty chapter arms the gun only once it is loaded: VII's shells)
       let total = snap ? snap[0] + snap[1] : REVOLVER.rounds + (row.empty ? row.shells || 0 : row.pocket);
-      if (row.floor != null) total = Math.max(total, REVOLVER.rounds + row.floor);
       const rounds = Math.min(REVOLVER.rounds, total);
       this.setCounts({ rounds, pocket: total - rounds });
       this.mark(key);
@@ -337,7 +341,7 @@ export default (game) => {
     sayEmpty() {
       if (this.saidEmpty) return;
       this.saidEmpty = true;
-      if (G.hud && G.hud.say) G.hud.say('Empty.', 1.6);
+      if (G.hud && G.hud.say) G.hud.say('Empty.', 1.6, { always: true });
       G.counters.dry = (G.counters.dry || 0) + 1;
     },
     // a press during the reload: shut on what is in and fire (once a pair is in)

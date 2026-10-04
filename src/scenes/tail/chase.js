@@ -37,6 +37,9 @@ const _v = new THREE.Vector3(), _w = new THREE.Vector3();
 const WIN_NEAR = 1.5, WIN_PASS = 4;
 // [C13] how long "He's nearly at the pier." is up, at least, before "He warned them."
 const GATE_READ = 1.5;
+// ([C13] after the critic) and it comes while it can still be answered: when he is GATE_ETA s from the gate at
+// the speed he is doing, if that is before his line (gateWarnZ) - flat out he was 41 m off and 1.8 s from it
+const GATE_ETA = 4;
 // [C3c, after the critic] E at his car: within TALK_NEAR m of its box, looking at it
 const TALK_NEAR = 2.5;
 // (the cat's wall: Pell Lane's brick wall north of the board fence, its cap)
@@ -278,7 +281,7 @@ export class Chase {
     if (seen) this.honked = false;
     this.farT = gap > R.farWarn + 15 ? this.farT + dt : Math.max(0, this.farT - dt * 2);
     const hisZ = this.his.pos.z;
-    const gateNear = this.phase === 'b' && this.driver.state !== 'lost' && hisZ > R.gateWarnZ;
+    const gateNear = this.phase === 'b' && this.driver.state !== 'lost' && (hisZ > R.gateWarnZ || (R.gateZ - hisZ) < GATE_ETA * Math.max(1, this.his.speedAbs || 0));
     let warn = null;
     // (a: out of sight or far behind; b: the river road runs straight to the
     // pier and he is seen all the way - the race is to stop him before its

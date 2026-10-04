@@ -56,8 +56,10 @@ function drawPocket(el, pocket) {
       if (live) out += `<rect x="${x.toFixed(1)}" y="${(y + 6).toFixed(1)}" width="${SH.w}" height="${SH.h - 6}" fill="#e9e7e1" stroke="#0b0b0b" stroke-width="0.8"/>`
         + `<path d="${nose}" fill="#bdbab2" stroke="#0b0b0b" stroke-width="0.8"/>`
         + `<rect x="${(x - 0.6).toFixed(1)}" y="${(y + SH.h - 1.6).toFixed(1)}" width="${SH.w + 1.2}" height="1.8" fill="#e9e7e1"/>`;
-      else out += `<rect x="${x.toFixed(1)}" y="${(y + 6).toFixed(1)}" width="${SH.w}" height="${SH.h - 6}" fill="#111" stroke="#5c5a56" stroke-width="1"/>`
-        + `<path d="${nose}" fill="#111" stroke="#5c5a56" stroke-width="1"/>`;
+      // ([C13] after the critic: a gone round is a hollow drawn in the paper's grey, not a dark one on the dark
+      // floor - the empty pocket, one row of hollows, is the state a player most needs to read)
+      else out += `<rect x="${x.toFixed(1)}" y="${(y + 6).toFixed(1)}" width="${SH.w}" height="${SH.h - 6}" fill="#0b0b0b" stroke="#a9a69e" stroke-width="1.3"/>`
+        + `<path d="${nose}" fill="#0b0b0b" stroke="#a9a69e" stroke-width="1.3"/>`;
     }
   }
   svg.innerHTML = out;

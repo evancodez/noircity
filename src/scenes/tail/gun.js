@@ -141,7 +141,7 @@ export class WindowGun {
       if (!this.startReload()) {
         G.emit('tail:dry', {});
         // [C13] the hammer on nothing and nothing in the pocket: said once
-        if (!this.saidEmpty && G.hud.say) { this.saidEmpty = true; G.hud.say('Empty.', 1.6); }
+        if (!this.saidEmpty && G.hud.say) { this.saidEmpty = true; G.hud.say('Empty.', 1.6, { always: true }); }
       }
       return;
     }
