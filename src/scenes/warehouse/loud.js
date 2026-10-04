@@ -102,14 +102,30 @@ function _dist(o, d, t, p) { return Math.hypot(o.x + d.x * t - p.x, o.y + d.y * 
 // the shout: every hunter still on his feet becomes a gunman of the gun
 // kit where he stands (his torch dropped), the crew's own rules end
 export function goLoud(ctx, L) {
-  const G = ctx.game, K = gunsOf(G), crew = L.crew;
+  const G = ctx.game;
   if (L.loud) return;
   L.loud = true;
   L.gunmen = L.gunmen || [];
+  // ([C10a] after the critic: loud before the telephone's man had set off (a
+  // round fired in the pass's first seconds) left nobody who could climb - the
+  // gunmen stand on the floor - so a man crouched behind the catwalk's boards
+  // was never reached: nothing came, nothing was lost, for minutes. Now the
+  // answerer still goes up (the crew's rule, his torch, his cosh, his own
+  // warning); back at the stairs' foot he draws like the rest (drawGuns))
+  if (!L.answerer) L.answerer = sendAnswerer(ctx, L) || true;
+  drawGuns(ctx, L);
+  G.emit('c7:loud', { men: L.gunmen.length, t: +G.time.toFixed(2) });
+}
+
+// every man of the crew on the floor who is not on his way up to answer the
+// telephone becomes a gunman where he stands (the shout; [C10a] and the
+// answerer when he is down again - called each step while loud)
+export function drawGuns(ctx, L) {
+  const G = ctx.game, K = gunsOf(G), crew = L.crew;
   for (const m of [...crew.men]) {
     if (m.down) continue;
     // (a man up on the catwalk keeps the crew's rule: he comes at me, the cosh)
-    if (m.upLvl) continue;
+    if (m.upLvl || m.answering) continue;
     const at = { x: m.pos.x, z: m.pos.z };
     // (the shout, then each draws: the first a half second on, the rest after
     // him - the moment to get down or get out of their light)
@@ -120,8 +136,7 @@ export function goLoud(ctx, L) {
     m.remove(); ctx.cast.remove(m.c);
     crew.men.splice(crew.men.indexOf(m), 1);
   }
-  if (!crew.men.some((m) => !m.down && m.upLvl)) crew.onCaught = null;
-  G.emit('c7:loud', { men: L.gunmen.length, t: +G.time.toFixed(2) });
+  if (!crew.men.some((m) => !m.down && (m.upLvl || m.answering))) crew.onCaught = null;
 }
 
 // the telephone rang behind me: one of them goes up to answer it - up the

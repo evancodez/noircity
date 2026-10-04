@@ -4,7 +4,7 @@ import { PIER, inShed } from '../stages/pier9/site.js';
 import { Crew } from './warehouse/crew.js';
 import { Stealth } from './warehouse/stealth.js';
 import { PierFight, bayRoom, quietCrew, crewOutOfSight, FM_MANNERS, FOREMAN, RING_START, EYE_Y } from './warehouse/fight.js';
-import { HUNTERS, HOODS_LOUD, relightLamps, onShot, goLoud, atBay, sendAnswerer } from './warehouse/loud.js';
+import { HUNTERS, HOODS_LOUD, relightLamps, onShot, goLoud, drawGuns, atBay, sendAnswerer } from './warehouse/loud.js';
 import { buildProp } from '../props/index.js';
 import { gunsOf } from '../guns/Guns.js';
 
@@ -561,6 +561,8 @@ function live(ctx) {
     const C0 = G.controller;
     crew.player.hidden = mezz.up && C0.pos.x > PIER.office.x0 && C0.pos.x < PIER.office.x1 && C0.pos.z < PIER.office.z1 - 0.1;
     crew.step(dt, G.time);
+    // [C10a] the telephone's man, down from the catwalk again after the shout, draws like the rest
+    if (L.loud && L.answerer && L.answerer.name && !L.answerer.answering && !L.answerer.down && !L.answerer.upLvl && crew.men.includes(L.answerer)) drawGuns(ctx, L);
     // the warning before the cosh: the shout, and its line while they hunt me
     if (!L.stealth.loud && !L.fightOn) ctx.hud.warn(crew.alarmT >= 0 ? 'They’ve seen me.' : null);
     else if (L.stealth.loud && !L.fightOn) {
@@ -881,7 +883,7 @@ export default defineScene({
   objectives: {
     arrive: QUIET_LINE, floor: QUIET_LINE, lamps: QUIET_LINE, aisle: QUIET_LINE, stairs: QUIET_LINE,
     listen: 'Stay down. Listen.', office: 'Search his office.', loud: 'Get out. The loading bay.',
-    fight: 'Put him down.', ko: 'Put him down.', after: 'Get to the car.',
+    fight: 'Put him down.', ko: null /* [C10a] he is down: no stale line over the knock-down */, after: 'Get to the car.',
   },
   setup: Object.fromEntries(BEATS.map((b) => [b, (ctx) => setupAt(ctx, b)])),
   *script(ctx) {

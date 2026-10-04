@@ -419,7 +419,9 @@ export default defineScene({
       // (at the street window, facing its blind: V takes it from there - its own E parts the slats - so the
       // window is one press, not two)
       const fv = V(0, 0, 0), wc = V(ROOM.x1 - 0.12, 1.6, (WIN.z0 + WIN.z1) / 2);
-      yield until(() => { G.camera.getWorldDirection(fv); const dx = wc.x - G.eye.x, dz = wc.z - G.eye.z, d = Math.hypot(dx, dz); return d < 1.7 && (fv.x * dx + fv.z * dz) / d > 0.75; });
+      // ([C10a] after the critic: 2.6 m, was 1.7 - Ames's desk stands between the room and the blind, and a
+      // player walking straight at it stopped at 2.3 m with the blind filling the view and nothing happened)
+      yield until(() => { G.camera.getWorldDirection(fv); const dx = wc.x - G.eye.x, dz = wc.z - G.eye.z, d = Math.hypot(dx, dz); return d < 2.6 && (fv.x * dx + fv.z * dz) / d > 0.75; });
       // (a cut, no black, card V small over it - not `keep`: V's first beat sets itself up at this window, the
       // blind's slats and the man under the lamp (lane C6's scenes/watcher/office.js); kept, its setup never ran)
       ctx.next({ fade: 'cut', card: true });
