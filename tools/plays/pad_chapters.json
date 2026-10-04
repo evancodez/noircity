@@ -1,0 +1,532 @@
+{
+ "about": "[C12] The gate's errors sweep with the fake pad: every chapter's first beat begun by X on the title (?start=<id>&padfake=1), a moment of the sticks and square in it, the errlog clean in each. node tools/play.mjs tools/plays/pad_chapters.json",
+ "url": "/?mute=1&padfake=1",
+ "input": "pad",
+ "size": [
+  1280,
+  800
+ ],
+ "out": "shots/play/pad_chapters",
+ "steps": [
+  {
+   "name": "chapter diner by the pad"
+  },
+  {
+   "eval": "(localStorage.removeItem('noir.save'), location.search = '?mute=1&padfake=1&start=diner', 1)"
+  },
+  {
+   "wait": 2500
+  },
+  {
+   "until": "!!N && G.state === 'title' && N.hud.titleShown",
+   "timeout": 60000
+  },
+  {
+   "wait": 1200
+  },
+  {
+   "pad": {
+    "b": [
+     "x"
+    ],
+    "secs": 0.12
+   }
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'diner' && !G.stills.active && G.scenes.fadeK < 0.3",
+   "timeout": 40000
+  },
+  {
+   "pad": {
+    "a": [
+     0.3,
+     -0.8,
+     0.5,
+     0.1
+    ],
+    "secs": 1.2
+   }
+  },
+  {
+   "pad": {
+    "b": [
+     "sq"
+    ],
+    "secs": 0.1
+   }
+  },
+  {
+   "pad": {
+    "a": [
+     -0.4,
+     0.6,
+     -0.5,
+     -0.1
+    ],
+    "secs": 0.8
+   }
+  },
+  {
+   "wait": 800
+  },
+  {
+   "expect": "!(document.getElementById('errlog').textContent || '').trim() && N.pad.holds && G.state === 'playing'",
+   "label": "diner: its first beat by the pad, the errlog clean"
+  },
+  {
+   "name": "chapter fight by the pad"
+  },
+  {
+   "eval": "(localStorage.removeItem('noir.save'), location.search = '?mute=1&padfake=1&start=fight', 1)"
+  },
+  {
+   "wait": 2500
+  },
+  {
+   "until": "!!N && G.state === 'title' && N.hud.titleShown",
+   "timeout": 60000
+  },
+  {
+   "wait": 1200
+  },
+  {
+   "pad": {
+    "b": [
+     "x"
+    ],
+    "secs": 0.12
+   }
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'fight' && !G.stills.active && G.scenes.fadeK < 0.3",
+   "timeout": 40000
+  },
+  {
+   "pad": {
+    "a": [
+     0.3,
+     -0.8,
+     0.5,
+     0.1
+    ],
+    "secs": 1.2
+   }
+  },
+  {
+   "pad": {
+    "b": [
+     "sq"
+    ],
+    "secs": 0.1
+   }
+  },
+  {
+   "pad": {
+    "a": [
+     -0.4,
+     0.6,
+     -0.5,
+     -0.1
+    ],
+    "secs": 0.8
+   }
+  },
+  {
+   "wait": 800
+  },
+  {
+   "expect": "!(document.getElementById('errlog').textContent || '').trim() && N.pad.holds && G.state === 'playing'",
+   "label": "fight: its first beat by the pad, the errlog clean"
+  },
+  {
+   "name": "chapter office by the pad"
+  },
+  {
+   "eval": "(localStorage.removeItem('noir.save'), location.search = '?mute=1&padfake=1&start=office', 1)"
+  },
+  {
+   "wait": 2500
+  },
+  {
+   "until": "!!N && G.state === 'title' && N.hud.titleShown",
+   "timeout": 60000
+  },
+  {
+   "wait": 1200
+  },
+  {
+   "pad": {
+    "b": [
+     "x"
+    ],
+    "secs": 0.12
+   }
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'office' && !G.stills.active && G.scenes.fadeK < 0.3",
+   "timeout": 40000
+  },
+  {
+   "pad": {
+    "a": [
+     0.3,
+     -0.8,
+     0.5,
+     0.1
+    ],
+    "secs": 1.2
+   }
+  },
+  {
+   "pad": {
+    "b": [
+     "sq"
+    ],
+    "secs": 0.1
+   }
+  },
+  {
+   "pad": {
+    "a": [
+     -0.4,
+     0.6,
+     -0.5,
+     -0.1
+    ],
+    "secs": 0.8
+   }
+  },
+  {
+   "wait": 800
+  },
+  {
+   "expect": "!(document.getElementById('errlog').textContent || '').trim() && N.pad.holds && G.state === 'playing'",
+   "label": "office: its first beat by the pad, the errlog clean"
+  },
+  {
+   "name": "chapter gunfight by the pad"
+  },
+  {
+   "eval": "(localStorage.removeItem('noir.save'), location.search = '?mute=1&padfake=1&start=gunfight', 1)"
+  },
+  {
+   "wait": 2500
+  },
+  {
+   "until": "!!N && G.state === 'title' && N.hud.titleShown",
+   "timeout": 60000
+  },
+  {
+   "wait": 1200
+  },
+  {
+   "pad": {
+    "b": [
+     "x"
+    ],
+    "secs": 0.12
+   }
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'gunfight' && !G.stills.active && G.scenes.fadeK < 0.3",
+   "timeout": 40000
+  },
+  {
+   "pad": {
+    "a": [
+     0.3,
+     -0.8,
+     0.5,
+     0.1
+    ],
+    "secs": 1.2
+   }
+  },
+  {
+   "pad": {
+    "b": [
+     "sq"
+    ],
+    "secs": 0.1
+   }
+  },
+  {
+   "pad": {
+    "a": [
+     -0.4,
+     0.6,
+     -0.5,
+     -0.1
+    ],
+    "secs": 0.8
+   }
+  },
+  {
+   "wait": 800
+  },
+  {
+   "expect": "!(document.getElementById('errlog').textContent || '').trim() && N.pad.holds && G.state === 'playing'",
+   "label": "gunfight: its first beat by the pad, the errlog clean"
+  },
+  {
+   "name": "chapter watcher by the pad"
+  },
+  {
+   "eval": "(localStorage.removeItem('noir.save'), location.search = '?mute=1&padfake=1&start=watcher', 1)"
+  },
+  {
+   "wait": 2500
+  },
+  {
+   "until": "!!N && G.state === 'title' && N.hud.titleShown",
+   "timeout": 60000
+  },
+  {
+   "wait": 1200
+  },
+  {
+   "pad": {
+    "b": [
+     "x"
+    ],
+    "secs": 0.12
+   }
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'watcher' && !G.stills.active && G.scenes.fadeK < 0.3",
+   "timeout": 40000
+  },
+  {
+   "pad": {
+    "a": [
+     0.3,
+     -0.8,
+     0.5,
+     0.1
+    ],
+    "secs": 1.2
+   }
+  },
+  {
+   "pad": {
+    "b": [
+     "sq"
+    ],
+    "secs": 0.1
+   }
+  },
+  {
+   "pad": {
+    "a": [
+     -0.4,
+     0.6,
+     -0.5,
+     -0.1
+    ],
+    "secs": 0.8
+   }
+  },
+  {
+   "wait": 800
+  },
+  {
+   "expect": "!(document.getElementById('errlog').textContent || '').trim() && N.pad.holds && G.state === 'playing'",
+   "label": "watcher: its first beat by the pad, the errlog clean"
+  },
+  {
+   "name": "chapter tail by the pad"
+  },
+  {
+   "eval": "(localStorage.removeItem('noir.save'), location.search = '?mute=1&padfake=1&start=tail', 1)"
+  },
+  {
+   "wait": 2500
+  },
+  {
+   "until": "!!N && G.state === 'title' && N.hud.titleShown",
+   "timeout": 60000
+  },
+  {
+   "wait": 1200
+  },
+  {
+   "pad": {
+    "b": [
+     "x"
+    ],
+    "secs": 0.12
+   }
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'tail' && !G.stills.active && G.scenes.fadeK < 0.3",
+   "timeout": 40000
+  },
+  {
+   "pad": {
+    "a": [
+     0.3,
+     -0.8,
+     0.5,
+     0.1
+    ],
+    "secs": 1.2
+   }
+  },
+  {
+   "pad": {
+    "b": [
+     "sq"
+    ],
+    "secs": 0.1
+   }
+  },
+  {
+   "pad": {
+    "a": [
+     -0.4,
+     0.6,
+     -0.5,
+     -0.1
+    ],
+    "secs": 0.8
+   }
+  },
+  {
+   "wait": 800
+  },
+  {
+   "expect": "!(document.getElementById('errlog').textContent || '').trim() && N.pad.holds && G.state === 'playing'",
+   "label": "tail: its first beat by the pad, the errlog clean"
+  },
+  {
+   "name": "chapter warehouse by the pad"
+  },
+  {
+   "eval": "(localStorage.removeItem('noir.save'), location.search = '?mute=1&padfake=1&start=warehouse', 1)"
+  },
+  {
+   "wait": 2500
+  },
+  {
+   "until": "!!N && G.state === 'title' && N.hud.titleShown",
+   "timeout": 60000
+  },
+  {
+   "wait": 1200
+  },
+  {
+   "pad": {
+    "b": [
+     "x"
+    ],
+    "secs": 0.12
+   }
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'warehouse' && !G.stills.active && G.scenes.fadeK < 0.3",
+   "timeout": 40000
+  },
+  {
+   "pad": {
+    "a": [
+     0.3,
+     -0.8,
+     0.5,
+     0.1
+    ],
+    "secs": 1.2
+   }
+  },
+  {
+   "pad": {
+    "b": [
+     "sq"
+    ],
+    "secs": 0.1
+   }
+  },
+  {
+   "pad": {
+    "a": [
+     -0.4,
+     0.6,
+     -0.5,
+     -0.1
+    ],
+    "secs": 0.8
+   }
+  },
+  {
+   "wait": 800
+  },
+  {
+   "expect": "!(document.getElementById('errlog').textContent || '').trim() && N.pad.holds && G.state === 'playing'",
+   "label": "warehouse: its first beat by the pad, the errlog clean"
+  },
+  {
+   "name": "chapter shootout by the pad"
+  },
+  {
+   "eval": "(localStorage.removeItem('noir.save'), location.search = '?mute=1&padfake=1&start=shootout', 1)"
+  },
+  {
+   "wait": 2500
+  },
+  {
+   "until": "!!N && G.state === 'title' && N.hud.titleShown",
+   "timeout": 60000
+  },
+  {
+   "wait": 1200
+  },
+  {
+   "pad": {
+    "b": [
+     "x"
+    ],
+    "secs": 0.12
+   }
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'shootout' && !G.stills.active && G.scenes.fadeK < 0.3",
+   "timeout": 40000
+  },
+  {
+   "pad": {
+    "a": [
+     0.3,
+     -0.8,
+     0.5,
+     0.1
+    ],
+    "secs": 1.2
+   }
+  },
+  {
+   "pad": {
+    "b": [
+     "sq"
+    ],
+    "secs": 0.1
+   }
+  },
+  {
+   "pad": {
+    "a": [
+     -0.4,
+     0.6,
+     -0.5,
+     -0.1
+    ],
+    "secs": 0.8
+   }
+  },
+  {
+   "wait": 800
+  },
+  {
+   "expect": "!(document.getElementById('errlog').textContent || '').trim() && N.pad.holds && G.state === 'playing'",
+   "label": "shootout: its first beat by the pad, the errlog clean"
+  }
+ ]
+}
