@@ -85,6 +85,10 @@ export class Chase {
     this.walkNet(false);
     if (this.man) { try { this.stage.cast.remove(this.man); } catch (e) { /* the cast cleared already */ } this.man = null; }
     this.atWheel = null; this.windows = null;
+    // [C10a] (the try's cars go with it: my coupe and his sedan stayed in game.vehicles through VII and VIII,
+    // holding two of the figures' ink slots and the city's colliders; this runs on scene:exit, while the city
+    // is still the stage. A retry spawns them again: Chase.spawn clears the list anyway)
+    if (this.V) this.V.clear();
     this.game.hud.clearPrompt('tailin'); this.game.hud.clearPrompt('tailwreck'); this.game.hud.clearPrompt('tailtalk');
     this.kit.warn(null);
   }
