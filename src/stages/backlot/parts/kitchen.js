@@ -157,6 +157,10 @@ export default {
     // ([C6 2nd] a bulb over the iron door: the way out of the kitchen lit)
     // ([C6 4th] brighter: the brightest thing in the room, the way out)
     api.doorLamp = L.wall(KI.x1 - T, 2.75, KDOOR.z + 0.95, -1, 0, { out: 0.45, strength: 1.5 });
+    // ([C11, after the critic] its pool a hard white on the floor by the
+    // door: running east the room's far half printed 0 % white - the way out
+    // is now the one white thing there)
+    if (api.doorLamp.light) { api.doorLamp.light.intensity *= 1.8; api.doorLamp.light.penumbra = 0.4; }
     // ([C6 4th] a lamp under the hood over the ranges: the west half was flat
     // dark grey - now the stove tops and the pots catch it, the corridor
     // beside them a pool, the rest ink)
