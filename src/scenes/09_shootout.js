@@ -139,7 +139,9 @@ function stage(ctx, b) {
 const FIGHT = {
   // (the street's three firing at once in the first fight - five men; a man
   // standing at the window holding the trigger was let through it with two)
-  cars: { maxFiring: 3, flankAfter: 13, settleK: 1.2 },
+  // ([C8] after the critic: settle 1.1 as the others (was 1.2) - the stander at
+  // the window got through the first fight in two runs of seven)
+  cars: { maxFiring: 3, flankAfter: 13, settleK: 1.1 },
   flank: { maxFiring: 2, flankAfter: 12, settleK: 1.1 },
   el: { maxFiring: 2, flankAfter: 12, settleK: 1.1 },
   saloon: { maxFiring: 2, flankAfter: 0, settleK: 1.1 },
