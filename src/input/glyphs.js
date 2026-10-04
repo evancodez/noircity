@@ -35,9 +35,10 @@ export function glyphOf(token, ctx = 'play') {
   const C = BY_CTX[ctx];
   return (C && C[T]) || BASE[T] || null;
 }
-// (the card words that name a mouse button: said as the pad's)
+// (the card words that name a mouse button: said as the pad's - the glyph
+// beside them names the trigger, the words name the fist)
 export function wordsFor(text, ctx = 'play') {
-  const L = ctx === 'brawl' ? 'L2' : 'R2', R = ctx === 'brawl' ? 'R2' : 'L2';
+  const L = ctx === 'brawl' ? 'LEFT FIST' : 'R2', R = ctx === 'brawl' ? 'RIGHT FIST' : 'L2';
   return String(text).replace(/LEFT CLICK/g, L).replace(/RIGHT CLICK/g, R).replace(/\bclick to\b/gi, 'press to');
 }
 

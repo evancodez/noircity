@@ -18,7 +18,7 @@
     "check": "D.fights.length === 2 && D.fights.every((f) => f.won)",
     "label": "[C12] the taught player wins twice in a row by the pad" },
   { "eval": "window.__cards" },
-  { "expect": "window.__cards.some((c) => c.id === 'dodge' && c.glyphs.join() === 'Lleft,Lright') && window.__cards.some((c) => /L2/.test(c.text || '') && c.glyphs.includes('L2'))", "label": "the dodge card ([A] [D]: the stick's left and right) and the lesson's (LEFT CLICK: L2) in the pad's glyphs" },
+  { "expect": "window.__cards.some((c) => c.id === 'dodge' && c.glyphs.join() === 'Lleft,Lright') && window.__cards.some((c) => /LEFT FIST/.test(c.text || '') && c.glyphs.includes('L2'))", "label": "the dodge card ([A] [D]: the stick's left and right) and the lesson's (LEFT CLICK: L2, the left fist) in the pad's glyphs" },
   { "eval": "({ rumbles: N.pad.rumbleN, last: N.pad.rumbles.slice(-4), cues: G.brawl.stats.cues && { shown: G.brawl.stats.cues.shown, right: G.brawl.stats.cues.right } })" },
   { "expect": "N.pad.rumbleN >= 10", "label": "the rumble: a thud on blows landed and taken, a pulse on the dodge cue" }
  ]
