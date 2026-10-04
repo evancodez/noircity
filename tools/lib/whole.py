@@ -264,7 +264,7 @@ def build(first, frm=None):
         {'name': '==== the end: his hat in the wet street'},
         {'until': "G.scenes.beat === 'end' && !G.scenes.trans && !G.failing", 'timeout': 20000},
         {'wait': 2500},
-        {'walk': "(() => { const h = G.b7.hat.rest, e = G.eye, d = Math.hypot(h.x - e.x, h.z - e.z); const k = Math.max(0, (d - 1.6) / d); return [[e.x + (h.x - e.x) * k, e.z + (h.z - e.z) * k]]; })()", 'timeout': 30000, 'stop': False},
+        {'walk': "(() => { const h = G.b7.hat.rest, e = G.eye, d = Math.hypot(h.x - e.x, h.z - e.z); const k = Math.max(0, (d - 1.6) / d); return [[e.x + (h.x - e.x) * k, e.z + (h.z - e.z) * k]]; })()", 'timeout': 30000, 'into': True},
         {'until': "G.stills.active && G.stills.run.id === 'end'", 'timeout': 60000},
         {'until': "G.state === 'end' && G.hud.endShown", 'timeout': 20000},
         {'expect': "document.querySelector('#endcard h1').textContent === 'THE END'", 'label': 'THE END'},

@@ -1505,7 +1505,7 @@
   {
    "walk": "(() => { const h = G.b7.hat.rest, e = G.eye, d = Math.hypot(h.x - e.x, h.z - e.z); const k = Math.max(0, (d - 1.6) / d); return [[e.x + (h.x - e.x) * k, e.z + (h.z - e.z) * k]]; })()",
    "timeout": 30000,
-   "stop": false
+   "into": true
   },
   {
    "until": "G.stills.active && G.stills.run.id === 'end'",
