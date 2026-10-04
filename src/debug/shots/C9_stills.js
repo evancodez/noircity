@@ -4,6 +4,8 @@ import { homburgGeometry, makeCigar } from '../../cast/kinds/cardinal.js';
 import { allocInkId, LAYER } from '../../render/layers.js';
 import { accentMaterial } from '../../render/accents.js';
 import { Cabin } from '../../vehicles/cabin.js';
+import { HAND_CLIPS } from '../../player/Hands.js';
+import { wrap } from '../../player/handPoses.js';
 
 // Lane C9: the stills' pictures (docs/story/briefs/C9_STILLS.md). One preset
 // per panel, shot=still_<id>_<n>: a small tableau staged for the purpose and
@@ -30,10 +32,10 @@ function place(stage, kind, at, { yaw = 0, rx = 0, rz = 0, variant = null, scale
   return p;
 }
 // a hard light: a spot lamp of the stage's pool (its cone seen or not)
-function spot(stage, from, to, { half = 0.3, intensity = 60, cone = true, strength = 0.6, shadow = null, distance = null } = {}) {
+function spot(stage, from, to, { half = 0.3, intensity = 60, cone = true, strength = 0.6, shadow = null, distance = null, penumbra = 0.35 } = {}) {
   const ax = to.clone().sub(from).normalize();
   const L = stage.lamps.addCustom({ head: from.clone(), axis: ax, height: from.distanceTo(to) * 1.2, half, real: true, strength, tag: 'still' });
-  Object.assign(L.light, { intensity, angle: half, penumbra: 0.35, distance: distance ?? from.distanceTo(to) * 3 });
+  Object.assign(L.light, { intensity, angle: half, penumbra, distance: distance ?? from.distanceTo(to) * 3 });
   L.cone.visible = cone;
   L.priority = 10;
   if (shadow) L.shadow = shadow;
@@ -42,13 +44,13 @@ function spot(stage, from, to, { half = 0.3, intensity = 60, cone = true, streng
 
 // ---- 1. opening: A TIP. AMES. --------------------------------------------------------------
 // a desk lamp of the props, its light the pool's: from its bulb along its shade
-function deskLamp(S, at, yaw, { intensity = 30, half = 0.62, strength = 0.55, cone = true, reach = 1.2, target = null } = {}) {
+function deskLamp(S, at, yaw, { intensity = 30, half = 0.62, strength = 0.55, cone = true, reach = 1.2, target = null, penumbra = 0.35 } = {}) {
   if (target) yaw = Math.atan2(target.x - at.x, target.z - at.z);
   const p = place(S, 'deskLamp', at, { yaw });
   p.updateMatrixWorld(true);
   const head = p.userData.head.clone().applyMatrix4(p.matrixWorld);
   const ax = target ? target.clone().sub(head).normalize() : p.userData.axis.clone().transformDirection(p.matrixWorld);
-  const L = spot(S, head, head.clone().addScaledVector(ax, reach), { half, intensity, strength, cone, shadow: { radius: 2.5, near: 0.03 } });
+  const L = spot(S, head, head.clone().addScaledVector(ax, reach), { half, intensity, strength, cone, penumbra, shadow: { radius: 2.5, near: 0.03 } });
   return { prop: p, lamp: L };
 }
 // a coiled cord lying along a path (points on the desk): a helix round it
@@ -75,6 +77,10 @@ function coiledCord(S, pts, { r = 0.0075, wire = 0.0026, turns = 70 } = {}) {
 // the panel; held upright the handset read as a torch). Seen from above:
 // only from there does its profile read (low, it was a black bar); the
 // window and its rain are out of this frame (they are in the next two).
+// ([C11, after the critic] now the receiver is in my hand, up off the
+// cradle over the pool, and the window's rain runs across the top: WAVE_C
+// 5's picture - a receiver in a hand, the lamp, rain on the glass. ?hand=0
+// gives the old frame, the handset on the desk.)
 function tip(stage, camera, controller, game) {
   game.enterStage('studio');
   const S = game.stage, D = S.studio.SET.desk;
@@ -84,21 +90,66 @@ function tip(stage, camera, controller, game) {
   // the lamp on the left of the desk, its cone down onto the desk behind the
   // handset (the handset's shape black against the pool) and the phone
   const pool = V(N('px', -0.04), top, D.z + N('pz', 0.1));
-  deskLamp(S, V(N('lx', -0.42), top, D.z + N('lz', -0.12)), 0, { intensity: N('li', 6), half: N('lh', 0.3), reach: 0.6, strength: 0.8, target: pool });
+  // ([C11] a hard pool: 6 -> 26, its edge 0.35 -> 0.08 - the art director
+  // read the pool mid-grey; paper white now, ink round it)
+  deskLamp(S, V(N('lx', -0.42), top, D.z + N('lz', -0.12)), 0, { intensity: N('li', 26), half: N('lh', 0.3), reach: 0.6, strength: 0.8, target: pool, penumbra: N('lp', 0.08) });
   const base = place(S, 'deskPhone', V(N('bx', 0.17), top, D.z + N('bz', -0.07)), { yaw: N('by', 0.3), variant: 'empty' });
   // (the dome's gloss a little duller: the lamp's spot on it was the brightest thing in the panel)
   base.traverse((o) => { if (o.isMesh && o.material && o.material.roughness != null) { o.material = o.material.clone(); o.material.roughness = Math.max(o.material.roughness, N('br', 0.55)); } });
-  // the handset across the desk on its side (its profile up to the eye:
-  // the bar and the two cups), the ear cup to the left
-  const yw = Math.PI / 2 + N('hy', 0.3);
-  place(S, 'handset', hs, { yaw: yw, rz: N('hr', Math.PI / 2) });
-  // the cord from the mouth cup back to the base, coiled, lying on the desk
-  const ax = V(Math.sin(yw), 0, Math.cos(yw));
-  const m = hs.clone().addScaledVector(ax, 0.1); m.y = top;
-  const b = base.position.clone().add(V(0.07, 0, 0.06)); b.y = top;
-  coiledCord(S, [m, m.clone().add(V(0.05, 0, -0.03)), V(0.12, top, D.z + 0.12), V(0.27, top, D.z + 0.1), b]);
-  look(controller, camera, [N('ex', 0.02), top + N('ey', 0.5), D.z + N('ez', 0.44)], [0.0, top + N('ty', 0.0), D.z + N('tz', 0.04)], N('fv', 42));
-  game.setViewmodelVisible(false);
+  // [C11, after the critic] the receiver in my hand (WAVE_C 5: a telephone
+  // receiver in a hand, the lamp's cone): the right hand has it up off the
+  // empty cradle, over the white pool - the hand and the handset one ink
+  // shape on the white, the lamp's rim along the knuckles and the bar, its
+  // cord falling away out of the frame. (It lay on the desk: a first-timer
+  // read "the phone off the hook", not "a call".) The hand is the player's
+  // own rig, as in play (the Ames card's still): a hold of the handset, its
+  // bar across the palm, the cups away from it.
+  if (N('hand', 1) > 0) {
+    const H = game.player.hands;
+    H.equip('empty');
+    const hset = buildProp('handset');
+    hset.traverse((o) => { if (o.isMesh && o.material && o.material.roughness != null) { o.material = o.material.clone(); o.material.roughness = 0.8; if (o.material.envMapIntensity != null) o.material.envMapIntensity = 0.05; } });
+    // (the cord: a coil from the mouth cup, falling away beyond it)
+    {
+      const pts = [];
+      const n = 900, turns = 30;
+      for (let i = 0; i <= n; i++) {
+        const u = i / n, a = u * turns * Math.PI * 2;
+        const c = V(0, -0.015 - 0.25 * u * u, 0.1 + 0.32 * u);
+        pts.push(c.add(V(Math.cos(a) * 0.0075, Math.sin(a) * 0.0075, 0)));
+      }
+      const cord = new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts), n, 0.0026, 5, false), hset.children.find((o) => o.isMesh)?.material || S.studio.mats.bakelite);
+      hset.add(cord);
+    }
+    // the hold: the bar across the palm (the handset's z along the hand's x,
+    // its back, +y, in the palm), the bar's middle where the fingers close
+    // (the hand's default socket undone: Hands.poseForProp)
+    const Bm = new THREE.Matrix4().makeBasis(V(0, 0, -1), V(0, 1, 0), V(1, 0, 0));
+    const T = new THREE.Matrix4().makeTranslation(N('gx', 0.0), N('gy', -0.03), N('gz', -0.068)).multiply(Bm).multiply(new THREE.Matrix4().makeTranslation(0, -0.008, 0));
+    const Sk = new THREE.Matrix4().makeRotationFromEuler(new THREE.Euler(0, 0, Math.PI / 2)).setPosition(0, -0.035, -0.055);
+    hset.userData.grip = T.clone().invert().multiply(Sk);
+    H.hold(hset, 'R');
+    const key = { o: 'handset', at: { frame: 'cam', p: [N('hpx', 0.06), N('hpy', -0.075), N('hpz', -0.5)], up: [N('hux', 0.1), N('huy', 0.25), N('huz', 1)], fwd: [N('hfx', 1), N('hfy', -0.2), N('hfz', 0.15)] }, F: { ...wrap(0.017), t: [N('t0', 0.9), N('t1', 0.4), N('t2', 0.6), N('t3', 0.3), N('t4', 0.3)] }, e: [N('hex', 0.3), N('hey', -0.35), N('hez', 0.05)], ef: 'cam' };
+    HAND_CLIPS.c11phoneR = { duration: 0.4, hold: true, blocking: false, marks: {}, keys: { R: [[0, key], [0.4, key]] }, brush: 'R' };
+    H.play('c11phoneR');
+    game.setViewmodelVisible(true);
+  } else {
+    // the handset across the desk on its side (its profile up to the eye:
+    // the bar and the two cups), the ear cup to the left
+    const yw = Math.PI / 2 + N('hy', 0.3);
+    const hset = place(S, 'handset', hs, { yaw: yw, rz: N('hr', Math.PI / 2) });
+    hset.traverse((o) => { if (o.isMesh && o.material && o.material.roughness != null) { o.material = o.material.clone(); o.material.roughness = N('hm', 0.9); if (o.material.envMapIntensity != null) o.material.envMapIntensity = 0.05; o.material.color.multiplyScalar(0.6); } });
+    const ax = V(Math.sin(yw), 0, Math.cos(yw));
+    const m = hs.clone().addScaledVector(ax, 0.1); m.y = top;
+    const b = base.position.clone().add(V(0.07, 0, 0.06)); b.y = top;
+    coiledCord(S, [m, m.clone().add(V(0.05, 0, -0.03)), V(0.12, top, D.z + 0.12), V(0.27, top, D.z + 0.1), b]);
+  }
+  // ([C11, after the critic] with the hand the eye lifts a little: the
+  // window's foot and its rain runs across the top of the frame, the lamp's
+  // shade in its corner)
+  const hand = N('hand', 1) > 0;
+  look(controller, camera, [N('ex', 0.02), top + N('ey', hand ? 0.45 : 0.5), D.z + N('ez', hand ? 0.55 : 0.44)], [0.0, top + N('ty', hand ? 0.06 : 0.0), D.z + N('tz', hand ? -0.17 : 0.04)], N('fv', 42));
+  if (!hand) game.setViewmodelVisible(false);
 }
 
 // a man of the crew, a still figure (no brain): x, z, facing yaw (0 = +z)
@@ -219,7 +270,17 @@ function photo(stage, camera, controller, game) {
   // round it and the desk black past it (it was a quarter of the width on a
   // flat grey pool: "a crossed-out photo", slowly "of the waitress")
   const Q = q(), N = (k, d) => (Q.get(k) != null ? Number(Q.get(k)) : d);
-  deskLamp(S, V(-0.3, top, D.z - 0.3), 0, { intensity: N('li', 3.5), half: N('lh', 0.19), reach: 0.8, strength: 0.6, target: V(0, top, D.z + 0.08) });
+  // ([C11, after the critic] as the room has it now (pier9 mezz.js): her
+  // photograph on a felt blotter in a hard white pool, ink round it - the
+  // still had a soft mid-grey pool and the light changed at the cut)
+  deskLamp(S, V(-0.3, top, D.z - 0.3), 0, { intensity: N('li', 9), half: N('lh', 0.21), reach: 0.8, strength: 0.6, target: V(0, top, D.z + 0.08), penumbra: N('lp', 0.12) });
+  {
+    const felt = new THREE.MeshStandardMaterial({ color: 0x3c3c3c, roughness: 0.95, metalness: 0 });
+    felt.userData.inkSurface = 'cloth';
+    const bl = new THREE.Mesh(new THREE.BoxGeometry(0.62, 0.003, 0.42).translate(0.02, top + 0.0015, D.z + 0.06), felt);
+    bl.userData.inkId = S.studio.kit.piece(); bl.receiveShadow = true;
+    S.scene.add(bl);
+  }
   place(S, 'dotPhoto', V(0.0, top + 0.004, D.z + 0.08), { yaw: -0.14 });
   look(controller, camera, [N('ex', 0.03), top + N('ey', 0.2), D.z + N('ez', 0.215)], [-0.005, top, D.z + N('tz', 0.08)], N('fv', 36));
   game.setViewmodelVisible(false);
@@ -323,14 +384,26 @@ function neon(stage, camera, controller, game) {
   darkStreet(S);
   neonSign(S, V(-95.3, N('ny', 2.75), N('nz', 19)), V(0, 0, 1), { H: N('nh', 0.9) });
   const cab = new Cabin(game);
-  cab.attach(car, { pitch: N('pp', -0.1), fov: N('fv', 32) });
+  // ([C11] lower and a little wider, -0.1 / 32 -> -0.17 / 44: my knuckles
+  // on the wheel in the frame's foot, the sign still at its head)
+  cab.attach(car, { pitch: N('pp', -0.17), fov: N('fv', 44) });
   // (the chrome inside dulled: the mirror's glass printed as a pale card)
   if (N('dc', 1) > 0) car.body.traverse((o) => {
     const m = o.isMesh && o.material;
     if (m && !Array.isArray(m) && m.metalness > 0.5) { o.material = m.clone(); o.material.envMapIntensity = 0.05; o.material.color.multiplyScalar(0.3); }
   });
-  game.scripts.push((t, dt) => { cab.step(dt); cab.screen.mat.uniforms.uRain.value = 1; cab.screen.mat.uniforms.uLit.value = N('ul', 0.45); });
-  game.pipeline.exposureOverride = N('xp', 0.6);
+  // ([C11] the art director: too dark - the neon lights the drops on the
+  // glass (their flecks white, the wiper's arc the clear sweep through
+  // them: uLit 0.45 -> 1.3) and a light from the sign falls through the
+  // glass on the bonnet, the wiper and my knuckles on the wheel (their rim);
+  // the exposure a step up, 0.6 -> 0.72)
+  // ([C11, after the critic] the sign's light 420 -> 260 and the drops'
+  // lift 1.3 -> 0.8: the glass under DINER printed a hard pale rectangle
+  // between the pillars and the drops a static of white specks; now the
+  // glow fades off the sign and the drops are fewer, the brighter ones lit)
+  spot(S, V(-95.4, N('sy', 2.4), 19.4), V(N('sx', -96.3), 1.0, 33.4), { half: N('sh', 0.16), intensity: N('si', 260), cone: false, strength: 0.9, distance: 30, penumbra: 0.5 });
+  game.scripts.push((t, dt) => { cab.step(dt); cab.screen.mat.uniforms.uRain.value = 1; cab.screen.mat.uniforms.uLit.value = N('ul', 0.8); });
+  game.pipeline.exposureOverride = N('xp', 0.72);
 }
 
 // ---- 5. diner: THE DINER. ------------------------------------------------------------------

@@ -28,7 +28,10 @@ export function materials(stage) {
     room: std({ color: 0x2e2e2e, roughness: 0.95, envMap: M.envSoft, envMapIntensity: 0.05 }),
     black: M.black,
     // [C6] the roofs' tar: wet, it gives back the grey of the sky (a roof that took no light at all was a black floor under half the frame)
-    tar: std({ color: 0x3c3c3c, roughness: 0.42, envMap: M.envSoft, envMapIntensity: 0.9 }),
+    // ([C11] glossier, 0.42 -> 0.26: under the one lamp the wet tar gives
+    // back a sheen - the art director's roofs were black masses with only
+    // their lamps)
+    tar: std({ color: 0x3c3c3c, roughness: 0.26, envMap: M.envSoft, envMapIntensity: 0.75 }),
     tile: std({ color: 0x8a8a8a, roughness: 0.4, envMap: M.envSoft, envMapIntensity: 0.4 }),
     plaster: std({ color: 0x7c7c7c, roughness: 0.95, envMap: M.envSoft, envMapIntensity: 0.1 }),
     canvas: std({ color: 0x5a5a5a, roughness: 0.97, side: THREE.DoubleSide, envMap: M.envSoft, envMapIntensity: 0.05 }),

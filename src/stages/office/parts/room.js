@@ -105,12 +105,14 @@ export default {
     const globe = (L, i, I) => {
       const head = V(L.x, CORR.ceil - 0.36, L.z);
       const lamp = lamps.addCustom({ head, axis: V(0, -1, 0), height: CORR.ceil - 0.36, half: 0.8, real: true, bulb: suite.globes[i], fadeEnd: 0.85, edgeSoft: 0.5, strength: 0.45, tag: 'corridor' });
-      Object.assign(lamp.light, { intensity: I, angle: 1.0, penumbra: 0.95, distance: 7 });
+      // ([C11] harder pools, penumbra 0.95 -> 0.6 (the far one 20 -> 22): the
+      // chapter's first frame read an even grey corridor)
+      Object.assign(lamp.light, { intensity: I, angle: 1.0, penumbra: 0.6, distance: 7 });
       lamp.priority = (eye) => (eye.x < OUTER.x0 + 0.5 ? 6 : 2.5);
       suite.globes[i].userData.lamp = lamp;
       return lamp;
     };
-    const corrLamp = globe(CORR_LAMP, 0, 20), corrLamp2 = globe(CORR_LAMP2, 1, 15);
+    const corrLamp = globe(CORR_LAMP, 0, 22), corrLamp2 = globe(CORR_LAMP2, 1, 15);
     // the outer office's one bulb: a pendant over the middle of it (dim: the frosted door glows brighter)
     kit.piece();
     const OX = (OUTER.x0 + OUTER.x1) / 2 - 0.2, OZ = 3.6;
@@ -171,7 +173,10 @@ export default {
     stage.addLook(shell.outerBox, { ...inside, ambient: 0.17, room: 'office' });
     stage.addLook(shell.r305Box, { ...inside, ambient: 0.13, haze: 0.5, room: 'office' });
     stage.addLook(shell.r306Box, { ...inside, ambient: 0.1, haze: 0.45, room: 'office' });
-    stage.addLook(shell.corrBox, { ...inside, ambient: 0.18, haze: 0.45, room: 'corridor' });
+    // ([C11] ambient 0.18 -> 0.07, haze 0.45 -> 0.2: the walls between the
+    // globes fall toward ink, the ceiling dark - III's first frame was the
+    // most even grey of the chapters' first beats)
+    stage.addLook(shell.corrBox, { ...inside, ambient: 0.07, haze: 0.2, room: 'corridor' });
     stage.addLook(shell.wcBox, { ...inside, ambient: 0.14, haze: 0.4, room: 'corridor' });
     stage.addLook(shell.landBox, { ...inside, ambient: 0.13, haze: 0.4, room: 'corridor' });
     stage.addLook(shell.liftBox, { ...inside, ambient: 0.15, haze: 0.4, room: 'corridor' });

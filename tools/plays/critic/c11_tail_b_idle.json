@@ -1,0 +1,63 @@
+{
+ "about": "[C11 critic] VI phase b from the river road's checkpoint, hands off: do I lose, warned first, the reason said? Frames of the river road from my seat.",
+ "url": "/?mute=1&start=tail.river",
+ "size": [
+  1440,
+  900
+ ],
+ "out": "shots/c11c/tail_idle",
+ "steps": [
+  {
+   "until": "G.state === 'title' && !document.getElementById('title').classList.contains('hidden') && !!document.querySelector('#title .opt[data-k=begin]')",
+   "timeout": 40000
+  },
+  {
+   "wait": 2000
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]",
+   "taken": "G.state === 'playing' && document.pointerLockElement === N.renderer.domElement",
+   "retries": 4,
+   "every": 4000
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'tail' && G.scenes.ctx.flags.chase && G.scenes.ctx.flags.chase.phase === 'b' && !G.scenes.fadeK",
+   "timeout": 45000
+  },
+  {
+   "eval": "(window.__b0=N.time, window.__L=[], (function loop(){ const w=G.hud.kit.warnText||''; if(w!==window.__lw){window.__L.push((N.time-window.__b0).toFixed(1)+' warn '+w); window.__lw=w;} if(G.lastFail!==window.__lf){window.__lf=G.lastFail; window.__L.push((N.time-window.__b0).toFixed(1)+' FAIL '+(G.lastFail&&G.lastFail.why));} requestAnimationFrame(loop); })(), 1)"
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "shot": "r00_river_seat"
+  },
+  {
+   "wait": 4000
+  },
+  {
+   "shot": "r01_river_seat"
+  },
+  {
+   "until": "!!G.lastFail",
+   "timeout": 60000
+  },
+  {
+   "eval": "JSON.stringify({L: window.__L, fail: G.lastFail && {why:G.lastFail.why, warnedFor:G.lastFail.warnedFor}})"
+  },
+  {
+   "wait": 4000
+  },
+  {
+   "shot": "r02_back"
+  },
+  {
+   "eval": "JSON.stringify({beat:G.scenes.beat, phase: G.scenes.ctx.flags.chase && G.scenes.ctx.flags.chase.phase, L: window.__L})"
+  },
+  {
+   "expect": "!!G.lastFail && G.lastFail.warnedFor > 0",
+   "label": "hands off on the river road: lost, warned first"
+  }
+ ]
+}

@@ -1,0 +1,46 @@
+{
+ "about": "[C11 after the critic] VI phase b from the river road's checkpoint, hands off: the river road from my seat at 1.5, 5 and 9 s (before the warning). For the tone counts.",
+ "url": "/?mute=1&start=tail.river",
+ "size": [
+  1440,
+  900
+ ],
+ "out": "shots/c11/seat",
+ "steps": [
+  {
+   "until": "G.state === 'title' && !document.getElementById('title').classList.contains('hidden') && !!document.querySelector('#title .opt[data-k=begin]')",
+   "timeout": 40000
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]",
+   "taken": "G.state === 'playing' && document.pointerLockElement === N.renderer.domElement",
+   "retries": 4,
+   "every": 4000
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'tail' && G.scenes.ctx.flags.chase && G.scenes.ctx.flags.chase.phase === 'b' && !G.scenes.fadeK",
+   "timeout": 45000
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "shot": "s1_seat"
+  },
+  {
+   "wait": 3500
+  },
+  {
+   "shot": "s2_seat"
+  },
+  {
+   "wait": 4000
+  },
+  {
+   "shot": "s3_seat"
+  }
+ ]
+}

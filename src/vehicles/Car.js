@@ -172,7 +172,14 @@ export class Car {
     if (th > 0 && fwdGo) drive = Math.min(th * S.accel * Math.max(0, 1 - Math.pow(Math.max(0, u) / S.vmax, 2)), tract + 0.6 * th);
     // (the tail out past the tyres' peak: the throttle bites less - it steps
     // out, it does not spin round on a held throttle)
-    drive *= 1 - clamp((Math.abs(this.slipR || 0) / S.peakR - 1.2) * 0.35, 0, 0.75);
+    // ([Fable, after the user's play] at a crawl the slip angles below are
+    // fakes: uu is floored at 1.5 m/s, so a car turning at full lock from a
+    // standstill read as sliding at 2.5x the rear's peak, the throttle was
+    // cut by half and the front's cornering drag ate the rest: W with A or D
+    // held sat at 1.5 m/s for ever. lowK fades the whole slip model in from
+    // 1 to 4 m/s; under it the car rolls where its wheels point (kin below).)
+    const lowK = clamp((v - 1.0) / 3.0, 0, 1);
+    drive *= 1 - clamp((Math.abs(this.slipR || 0) / S.peakR - 1.2) * 0.35, 0, 0.75) * lowK;
     ax += drive;
     if (th > 0 && u < -0.4) ax += th * S.brake;                 // (W while rolling back: a brake)
     let braking = 0;
@@ -206,8 +213,8 @@ export class Car {
     // the slip angles (the wheel's heading against its path)
     const uu = Math.max(Math.abs(u), 1.5);
     const sgn = u >= 0 ? 1 : -1;
-    const slipF = Math.atan2(w + S.a * r, uu) - delta * sgn;
-    const slipR = Math.atan2(w - S.b * r, uu);
+    const slipF = (Math.atan2(w + S.a * r, uu) - delta * sgn) * lowK;
+    const slipR = Math.atan2(w - S.b * r, uu) * lowK;
     // the curve: up to the peak, then a slide that keeps most of it
     const curve = (x) => { const a = Math.abs(x); const f = a <= 1 ? (2 * a) / (1 + a * a) : Math.max(0.78, (2 * a) / (1 + a * a)); return Math.sign(x) * f; };
     const FyF = -latF * curve(slipF / S.peakF);
@@ -216,7 +223,7 @@ export class Car {
     // ([C3b] a car out of a man's hands - freeSlide, the tail's spin - is at
     // a crawl only when it is slow over the ground: sideways at 10 m/s its
     // forward speed is ~0, and this rule stopped it dead in a tenth of a second)
-    const kin = clamp((2.2 - (this.freeSlide ? Math.hypot(u, w) : v)) / 1.6, 0, 1);
+    const kin = clamp((4.0 - (this.freeSlide ? Math.hypot(u, w) : v)) / 3.0, 0, 1);
     let dw = FyF * Math.cos(delta) + FyR - u * r;
     let dr = (S.a * FyF * Math.cos(delta) - S.b * FyR) / (S.k * S.k);
     // the steadying hand: off the handbrake, the yaw is drawn back toward

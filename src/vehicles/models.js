@@ -446,11 +446,23 @@ export function tailLamps(g, at, gain = 7) {
     sp.renderOrder = 6;
     sp.userData.noRay = true;
     sp.userData.side = Math.sign(p.z);
+    // [C11] sized by the eye's distance as it is drawn: up close the halo is
+    // never more than about half as wide again as the lamp's housing (0.14
+    // m): at a bumper's graze and on foot by his wreck it swelled into a red
+    // disc half a metre wide; far off it carries as before. A scene's own
+    // wish (userData.wish: the brake's flare, the chase's distance) is the
+    // most it grows to.
+    sp.onBeforeRender = (renderer, scene, cam) => {
+      const d = sp.getWorldPosition(_glowAt).distanceTo(cam.position);
+      const k = Math.min(sp.userData.wish ?? 0.62, Math.max(0.2, 0.2 + (d - 3) * 0.014));
+      if (Math.abs(k - sp.scale.x) > 0.004) { sp.scale.setScalar(k); sp.updateMatrixWorld(); }
+    };
     g.add(sp);
     return sp;
   });
   return m;
 }
+const _glowAt = new THREE.Vector3();
 let GLOW = null;
 export function glowTexture() {
   if (GLOW) return GLOW;

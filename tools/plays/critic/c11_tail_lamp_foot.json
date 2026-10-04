@@ -1,0 +1,103 @@
+{
+ "about": "[C11 critic] VI on foot at the wreck: round to his back and up to his tail lamp (3 m, 1 m, at the bumper): does the red glow stay near its housing's size?",
+ "url": "/?mute=1&start=tail.river",
+ "size": [
+  1440,
+  900
+ ],
+ "out": "shots/c11c/tail_lamp",
+ "steps": [
+  {
+   "until": "G.state === 'title' && !document.getElementById('title').classList.contains('hidden') && !!document.querySelector('#title .opt[data-k=begin]')",
+   "timeout": 40000
+  },
+  {
+   "wait": 2000
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]",
+   "taken": "G.state === 'playing' && document.pointerLockElement === N.renderer.domElement",
+   "retries": 4,
+   "every": 4000
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'tail' && G.scenes.ctx.flags.chase && G.scenes.ctx.flags.chase.phase === 'b' && !G.scenes.fadeK",
+   "timeout": 45000
+  },
+  {
+   "eval": "(window.__tailFails = [], window.__c3tries = 0, window.__b0 = N.time, window.__ph = {}, setInterval(() => { const C = G.scenes.ctx && G.scenes.ctx.flags.chase; if (C && !window.__ph[C.phase]) window.__ph[C.phase] = +(N.time - window.__b0).toFixed(1); if (C && C.crashLog) { window.__crashLog = C.crashLog; window.__knocks = C.knocks; window.__lastRam = C.lastRam; } }, 100), 1)"
+  },
+  {
+   "drive": "tools/lib/c3_tail.mjs",
+   "profile": "good",
+   "seed": 7,
+   "timeout": 120000,
+   "stop": "!!G.scenes.ctx.flags.chase && G.scenes.ctx.flags.chase.phase==='out' && G.scenes.ctx.flags.chase.outT > 2.5"
+  },
+  {
+   "wait": 3000
+  },
+  {
+   "eval": "JSON.stringify({phase:G.scenes.ctx.flags.chase.phase, mode:G.controller.mode})"
+  },
+  {
+   "walk": "(() => { const C=G.scenes.ctx.flags.chase; const g=C.his.tail.userData.glows[0]; const p=g.getWorldPosition(new (G.camera.position.constructor)()); const dx=p.x-C.his.pos.x, dz=p.z-C.his.pos.z, d=Math.hypot(dx,dz), ux=dx/d, uz=dz/d; return [[C.his.pos.x+ux*(d+4.0)-uz*3.5, C.his.pos.z+uz*(d+4.0)+ux*3.5]]; })()",
+   "timeout": 15000,
+   "stop": false
+  },
+  {
+   "walk": "(() => { const C=G.scenes.ctx.flags.chase; const g=C.his.tail.userData.glows[0]; const p=g.getWorldPosition(new (G.camera.position.constructor)()); const dx=p.x-C.his.pos.x, dz=p.z-C.his.pos.z, d=Math.hypot(dx,dz), ux=dx/d, uz=dz/d; return [[C.his.pos.x+ux*(d+3.0)-uz*0, C.his.pos.z+uz*(d+3.0)+ux*0]]; })()",
+   "timeout": 10000,
+   "stop": false
+  },
+  {
+   "look": "(() => { const C=G.scenes.ctx.flags.chase; const g=C.his.tail.userData.glows[0]; const p=g.getWorldPosition(new (G.camera.position.constructor)()); const e=G.camera.getWorldPosition(new (G.camera.position.constructor)()); const want=Math.atan2(-(p.x-e.x), -(p.z-e.z)); const pw=Math.atan2(p.y-e.y, Math.hypot(p.x-e.x,p.z-e.z)); const dy=Math.atan2(Math.sin(want-N.controller.yaw),Math.cos(want-N.controller.yaw)); return [Math.round(-dy/N.controller.sensitivity), Math.round((N.controller.pitch-pw)/N.controller.sensitivity)]; })()",
+   "steps": 8
+  },
+  {
+   "wait": 500
+  },
+  {
+   "eval": "(() => { const C=G.scenes.ctx.flags.chase; const gs=C.his.tail.userData.glows; const e=G.camera.getWorldPosition(new (G.camera.position.constructor)()); return JSON.stringify(gs.map(g=>{const p=g.getWorldPosition(new (G.camera.position.constructor)()); return {d:+p.distanceTo(e).toFixed(2), scale:+g.scale.x.toFixed(3), wish:g.userData.wish};})); })()"
+  },
+  {
+   "shot": "t1_lamp_3m"
+  },
+  {
+   "walk": "(() => { const C=G.scenes.ctx.flags.chase; const g=C.his.tail.userData.glows[0]; const p=g.getWorldPosition(new (G.camera.position.constructor)()); const dx=p.x-C.his.pos.x, dz=p.z-C.his.pos.z, d=Math.hypot(dx,dz), ux=dx/d, uz=dz/d; return [[C.his.pos.x+ux*(d+1.3)-uz*0.3, C.his.pos.z+uz*(d+1.3)+ux*0.3]]; })()",
+   "timeout": 8000,
+   "stop": false
+  },
+  {
+   "look": "(() => { const C=G.scenes.ctx.flags.chase; const g=C.his.tail.userData.glows[0]; const p=g.getWorldPosition(new (G.camera.position.constructor)()); const e=G.camera.getWorldPosition(new (G.camera.position.constructor)()); const want=Math.atan2(-(p.x-e.x), -(p.z-e.z)); const pw=Math.atan2(p.y-e.y, Math.hypot(p.x-e.x,p.z-e.z)); const dy=Math.atan2(Math.sin(want-N.controller.yaw),Math.cos(want-N.controller.yaw)); return [Math.round(-dy/N.controller.sensitivity), Math.round((N.controller.pitch-pw)/N.controller.sensitivity)]; })()",
+   "steps": 8
+  },
+  {
+   "wait": 500
+  },
+  {
+   "eval": "(() => { const C=G.scenes.ctx.flags.chase; const gs=C.his.tail.userData.glows; const e=G.camera.getWorldPosition(new (G.camera.position.constructor)()); return JSON.stringify(gs.map(g=>{const p=g.getWorldPosition(new (G.camera.position.constructor)()); return {d:+p.distanceTo(e).toFixed(2), scale:+g.scale.x.toFixed(3), wish:g.userData.wish};})); })()"
+  },
+  {
+   "shot": "t2_lamp_1m"
+  },
+  {
+   "walk": "(() => { const C=G.scenes.ctx.flags.chase; const g=C.his.tail.userData.glows[0]; const p=g.getWorldPosition(new (G.camera.position.constructor)()); const dx=p.x-C.his.pos.x, dz=p.z-C.his.pos.z, d=Math.hypot(dx,dz), ux=dx/d, uz=dz/d; return [[C.his.pos.x+ux*(d+0.5)-uz*0.2, C.his.pos.z+uz*(d+0.5)+ux*0.2]]; })()",
+   "timeout": 6000,
+   "stop": false
+  },
+  {
+   "look": "(() => { const C=G.scenes.ctx.flags.chase; const g=C.his.tail.userData.glows[0]; const p=g.getWorldPosition(new (G.camera.position.constructor)()); const e=G.camera.getWorldPosition(new (G.camera.position.constructor)()); const want=Math.atan2(-(p.x-e.x), -(p.z-e.z)); const pw=Math.atan2(p.y-e.y, Math.hypot(p.x-e.x,p.z-e.z)); const dy=Math.atan2(Math.sin(want-N.controller.yaw),Math.cos(want-N.controller.yaw)); return [Math.round(-dy/N.controller.sensitivity), Math.round((N.controller.pitch-pw)/N.controller.sensitivity)]; })()",
+   "steps": 8
+  },
+  {
+   "wait": 500
+  },
+  {
+   "eval": "(() => { const C=G.scenes.ctx.flags.chase; const gs=C.his.tail.userData.glows; const e=G.camera.getWorldPosition(new (G.camera.position.constructor)()); return JSON.stringify(gs.map(g=>{const p=g.getWorldPosition(new (G.camera.position.constructor)()); return {d:+p.distanceTo(e).toFixed(2), scale:+g.scale.x.toFixed(3), wish:g.userData.wish};})); })()"
+  },
+  {
+   "shot": "t3_lamp_close"
+  }
+ ]
+}

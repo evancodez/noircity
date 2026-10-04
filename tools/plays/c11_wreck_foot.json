@@ -1,0 +1,95 @@
+{
+ "about": "[C11 after the critic] the river road on foot by the wreck, the views a player gets on stepping out: from the seat, just out (facing his window), turned to the nearest quay lamp, at his back looking at his car, and back along the road. For the tone counts (white / mid).",
+ "url": "/?mute=1&start=tail.wreck",
+ "size": [
+  1440,
+  900
+ ],
+ "out": "shots/c11/wreck",
+ "steps": [
+  {
+   "until": "G.state === 'title' && !document.getElementById('title').classList.contains('hidden') && !!document.querySelector('#title .opt[data-k=begin]')",
+   "timeout": 40000
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]",
+   "taken": "G.state === 'playing' && document.pointerLockElement === N.renderer.domElement",
+   "retries": 4,
+   "every": 4000
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'tail' && !!G.scenes.ctx.flags.chase && !!G.scenes.ctx.flags.chase.atWheel && G.hud.promptShown.includes('get out')",
+   "timeout": 45000
+  },
+  {
+   "wait": 800
+  },
+  {
+   "shot": "w0_seat"
+  },
+  {
+   "key": "KeyE"
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "eval": "JSON.stringify({ mode: G.controller.mode, p: [+G.controller.pos.x.toFixed(2), +G.controller.pos.z.toFixed(2), +G.controller.yaw.toFixed(2), +G.controller.pitch.toFixed(2)], phase: G.scenes.ctx.flags.chase && G.scenes.ctx.flags.chase.phase })"
+  },
+  {
+   "shot": "w1_out"
+  },
+  {
+   "wait": 2500
+  },
+  {
+   "shot": "w2_out_late"
+  },
+  {
+   "look": "(() => { const K = G.controller; const tx = (() => { const e = G.camera.position; let b = null, bd = 1e9; for (const l of G.stage.lamps.posts) { if (!l.overWater) continue; const d = Math.hypot(l.post.x - e.x, l.post.z - e.z); if (d < bd) { bd = d; b = l; } } return b; })().post.x, tz = (() => { const e = G.camera.position; let b = null, bd = 1e9; for (const l of G.stage.lamps.posts) { if (!l.overWater) continue; const d = Math.hypot(l.post.x - e.x, l.post.z - e.z); if (d < bd) { bd = d; b = l; } } return b; })().post.z, ty = 1.6; const want = Math.atan2(-(tx - K.pos.x), -(tz - K.pos.z)); const dy = Math.atan2(Math.sin(want - K.yaw), Math.cos(want - K.yaw)); const d = Math.hypot(tx - K.pos.x, tz - K.pos.z); const pit = Math.atan2(ty - G.camera.position.y, d); return [Math.round(-dy / K.sensitivity), Math.round((K.pitch - pit) / K.sensitivity)]; })()",
+   "steps": 6
+  },
+  {
+   "wait": 500
+  },
+  {
+   "eval": "JSON.stringify({ mode: G.controller.mode, p: [+G.controller.pos.x.toFixed(2), +G.controller.pos.z.toFixed(2), +G.controller.yaw.toFixed(2), +G.controller.pitch.toFixed(2)], phase: G.scenes.ctx.flags.chase && G.scenes.ctx.flags.chase.phase })"
+  },
+  {
+   "shot": "w3_quay_lamp"
+  },
+  {
+   "walk": "(() => { const H = G.scenes.ctx.flags.chase.his; const a = H.seat(H.pos.clone().set(-(H.spec.halfL + 3.5), 0, 0.6), H.pos.clone()); return [[a.x, a.z]]; })()",
+   "timeout": 20000
+  },
+  {
+   "look": "(() => { const K = G.controller; const tx = G.scenes.ctx.flags.chase.his.pos.x, tz = G.scenes.ctx.flags.chase.his.pos.z, ty = 0.9; const want = Math.atan2(-(tx - K.pos.x), -(tz - K.pos.z)); const dy = Math.atan2(Math.sin(want - K.yaw), Math.cos(want - K.yaw)); const d = Math.hypot(tx - K.pos.x, tz - K.pos.z); const pit = Math.atan2(ty - G.camera.position.y, d); return [Math.round(-dy / K.sensitivity), Math.round((K.pitch - pit) / K.sensitivity)]; })()",
+   "steps": 6
+  },
+  {
+   "wait": 500
+  },
+  {
+   "eval": "JSON.stringify({ mode: G.controller.mode, p: [+G.controller.pos.x.toFixed(2), +G.controller.pos.z.toFixed(2), +G.controller.yaw.toFixed(2), +G.controller.pitch.toFixed(2)], phase: G.scenes.ctx.flags.chase && G.scenes.ctx.flags.chase.phase })"
+  },
+  {
+   "shot": "w4_his_back"
+  },
+  {
+   "look": "(() => { const K = G.controller; const tx = G.controller.pos.x - (G.scenes.ctx.flags.chase.his.pos.x - G.controller.pos.x) * 10, tz = G.controller.pos.z - (G.scenes.ctx.flags.chase.his.pos.z - G.controller.pos.z) * 10, ty = 1.6; const want = Math.atan2(-(tx - K.pos.x), -(tz - K.pos.z)); const dy = Math.atan2(Math.sin(want - K.yaw), Math.cos(want - K.yaw)); const d = Math.hypot(tx - K.pos.x, tz - K.pos.z); const pit = Math.atan2(ty - G.camera.position.y, d); return [Math.round(-dy / K.sensitivity), Math.round((K.pitch - pit) / K.sensitivity)]; })()",
+   "steps": 6
+  },
+  {
+   "wait": 500
+  },
+  {
+   "eval": "JSON.stringify({ mode: G.controller.mode, p: [+G.controller.pos.x.toFixed(2), +G.controller.pos.z.toFixed(2), +G.controller.yaw.toFixed(2), +G.controller.pitch.toFixed(2)], phase: G.scenes.ctx.flags.chase && G.scenes.ctx.flags.chase.phase })"
+  },
+  {
+   "shot": "w5_road_back"
+  }
+ ]
+}
