@@ -83,9 +83,9 @@ function frostedPaneMap() {
   const CW = 128, CH = 128;
   const c = document.createElement('canvas'); c.width = CW; c.height = CH;
   const g = c.getContext('2d');
-  g.fillStyle = 'rgb(34,34,34)'; g.fillRect(0, 0, CW, CH);
+  g.fillStyle = 'rgb(24,24,24)'; g.fillRect(0, 0, CW, CH);
   const lg = g.createRadialGradient(CW * 0.08, CH * 0.98, 0, CW * 0.08, CH * 0.98, CW * 0.95);
-  lg.addColorStop(0, 'rgba(170,170,170,1)'); lg.addColorStop(0.35, 'rgba(110,110,110,0.75)'); lg.addColorStop(1, 'rgba(34,34,34,0)');
+  lg.addColorStop(0, 'rgba(150,150,150,1)'); lg.addColorStop(0.35, 'rgba(90,90,90,0.75)'); lg.addColorStop(1, 'rgba(24,24,24,0)');
   g.fillStyle = lg; g.fillRect(0, 0, CW, CH);
   g.strokeStyle = 'rgb(10,10,10)'; g.lineWidth = 6; g.strokeRect(0, 0, CW, CH);
   const t = new THREE.CanvasTexture(c);
@@ -299,15 +299,20 @@ export default {
     slats.name = 'blinds';
     // the door: dark planks, a lit glass panel in its top half ([C7] on its
     // hinge at the west jamb: it opens into the office - api.officeDoor)
+    // ([C11, after the critic] hinged at the EAST jamb now, its knob at the
+    // west edge: open, the leaf stands along the room's east side, away from
+    // the desk - hinged west it stood between the doorway and the desk, the
+    // first look into the room a door half a metre from the eye. Its shut
+    // place and its collider are as they were.)
     kit.piece();
-    const hx = D.x0 + 0.02, hz = fz - 0.05;
+    const hx = D.x1 - 0.02, hz = fz - 0.05;
     const doorPivot = new THREE.Group();
     doorPivot.name = 'officeDoor';
     doorPivot.position.set(hx, 0, hz);
     g.add(doorPivot);
     const dg = [kit.box(D.x0 + 0.02, D.x1 - 0.02, oy0, oy0 + 2.13, fz - 0.07, fz - 0.03).translate(-hx, 0, -hz),
       // (a knob on each face)
-      new THREE.SphereGeometry(0.03, 8, 6).translate(D.x1 - 0.12 - hx, oy0 + 1.0, fz - 0.0 - hz), new THREE.SphereGeometry(0.03, 8, 6).translate(D.x1 - 0.12 - hx, oy0 + 1.0, fz - 0.1 - hz)];
+      new THREE.SphereGeometry(0.03, 8, 6).translate(D.x0 + 0.12 - hx, oy0 + 1.0, fz - 0.0 - hz), new THREE.SphereGeometry(0.03, 8, 6).translate(D.x0 + 0.12 - hx, oy0 + 1.0, fz - 0.1 - hz)];
     const doorM = kit.add(mergeGeos(dg), M.plankDoor, { cast: true, parent: doorPivot });
     kit.piece();
     // ([C11, after the critic] the pane frosted and dim: frostedPaneMap)
@@ -383,7 +388,7 @@ export default {
       k: 0,
       set(k) {
         this.k = k;
-        doorPivot.rotation.y = 1.45 * k;
+        doorPivot.rotation.y = -1.45 * k;
         doorPivot.updateMatrixWorld(true);
         // ([C11, after the critic] open, the pane turns from the lamp to the
         // doorway: it dims to a dark glass)
@@ -391,8 +396,17 @@ export default {
         const i = upBoxes.indexOf(doorBox);
         if (k > 0.3 && i >= 0) { upBoxes.splice(i, 1); const j = C.boxes.indexOf(doorBox); if (j >= 0) C.boxes.splice(j, 1); }
         if (k <= 0.3 && i < 0) { upBoxes.push(doorBox); if (api.up && !C.boxes.includes(doorBox)) C.boxes.push(doorBox); }
+        // ([C11, after the critic] the open leaf is solid too: a thin box
+        // along it, from the hinge, while the shut doorway's box is out - it
+        // was nothing open, and a player walked through the door)
+        const th = -1.45 * k, dx = -Math.cos(th), dz = Math.sin(th), L = (D.x1 - D.x0 - 0.04) / 2;
+        Object.assign(leafBox, { cx: hx + dx * L, cz: hz + dz * L, c: dx, s: -dz, angle: Math.atan2(-dz, dx) });
+        const li = upBoxes.indexOf(leafBox);
+        if (k > 0.3 && li < 0) { upBoxes.push(leafBox); if (api.up && !C.boxes.includes(leafBox)) C.boxes.push(leafBox); }
+        if (k <= 0.3 && li >= 0) { upBoxes.splice(li, 1); const j = C.boxes.indexOf(leafBox); if (j >= 0) C.boxes.splice(j, 1); }
       },
     };
+    const leafBox = { cx: hx, cz: hz, hx: (D.x1 - D.x0 - 0.04) / 2, hz: 0.035, angle: 0, c: 1, s: 0, tag: 'office' };
     api.backDoor = { set(k) { backPivot.rotation.y = -1.35 * k; backPivot.updateMatrixWorld(true); } };
     // [C7] the far stairs' gate at their top: an iron gate on the landing,
     // folded back against its front rail (open), or across the stairs with a
