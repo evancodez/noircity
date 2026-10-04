@@ -4,3 +4,4 @@ shots/*
 !shots/golden/
 .DS_Store
 .claude/worktrees/
+tools/plays/whole*_from_*.json

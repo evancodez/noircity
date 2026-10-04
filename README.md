@@ -47,20 +47,27 @@ then black, a word on why, and back at the start of the beat or a checkpoint.
   start of each chapter and of its main beats).
 - **CHAPTERS** is the table of contents: a row starts that chapter, carrying
   what the story has given by then (the matchbook, Ames's card, the check,
-  the revolver). Starting a chapter replaces the saved checkpoint.
+  the revolver) and teaching the keys it needs that the save has not seen.
+  Starting a chapter replaces the saved checkpoint.
 - **`?start=<chapter>[.<beat>]`** on the address starts BEGIN anywhere, for
   example `/?start=warehouse` or `/?start=warehouse.fight`. The chapters
   (wave C: The Body is cut): `diner` I, `fight` II, `office` III, `gunfight`
   IV, `watcher` V, `tail` VI, `warehouse` VII, `shootout` VIII (the beats of
-  each: `docs/story/ARCHITECTURE.md` section 10.3). `?start=kit` is the kit's
-  test bed (`docs/story/seams/Z.md`).
+  each: `docs/story/ARCHITECTURE.md` section 11.1). `?start=kit` is the kit's
+  test bed (`docs/story/seams/Z.md`), `?start=guns` the gun kit's.
 - **M** turns the sound on and off (the browser holds sound back until the
   first click or key; `?mute=1` starts silent), **[** and **]** the volume.
   No music is composed: drop jazz into `public/music/` and
   `docs/story/MUSIC.md` says what goes where.
 
-**The keys, by mode.** Everywhere: mouse looks, **E** does what the prompt
-says, **M** sound, **Esc** pause. On a pad: the right stick looks, **□** does
+**The keys, by mode.** One key means one thing all through the game (the
+rulebook: `docs/story/WAVE_C.md` §2): **E** use / take / open what you look
+at, **LMB** the right hand's act (jab, fire, rub, throw), **RMB** the other
+fist or, with a gun, steady the aim (crouched behind cover: rise over it),
+**SPACE** the body's big move (block, vault, jump; in the car the handbrake),
+**C** (toggle) or **Ctrl** (held) get low, **A / D** in a fist fight the
+dodge, **R** reload, **Shift** run. Everywhere: mouse looks, **M** sound,
+**Esc** pause (the pause card lists the keys). On a pad: the right stick looks, **□** does
 what the prompt says, **options** pauses, the d-pad's down is sound.
 
 | Where | Keys | PS5 pad |
@@ -68,12 +75,12 @@ what the prompt says, **options** pauses, the d-pad's down is sound.
 | walking (the street, the alley, the office, the pier) | **W A S D**, **Shift** sprints | left stick (as fast as it is pushed), **L1** (or **L3**) sprints |
 | I The Diner (seated at the counter) | mouse looks round the room; **E** light up, scotch, drink, pay; **F** a drag on the cigarette; **LMB** taps the ash; **Q** spins the empty stool beside you | right stick looks; **□** light up, scotch, drink, pay; **R1** a drag; **R2** taps the ash; the d-pad spins the stool |
 | II The Fight (and the foreman at Pier Nine) | **LMB** / **RMB** are your two arms: tap to jab, hold to load a harder punch (three ticks) and let go; **A / D** hop aside, **S** hop back, **W** step in; **SPACE** held blocks; **E** takes what is in reach (a bottle, a plate, a stool, at Pier Nine a hook, a lid, a chain, a lantern) and that hand's button uses it (a hold throws). Afterwards **WASD** out of the door, **E** search | **L2** / **R2** are your left and right fists (each trigger the fist of its side); a flick of the left stick left / right hops aside, back hops back, forward steps in; **✕** held blocks; **□** takes |
-| III Room 304 | **WASD**; **E** push the door, the pad, the picture, the dial, take; the pad: hold **LMB** and rub; the dial: the mouse turns it, **E** the handle | left stick; **□**; the pad: hold **R2**, the right stick rubs; the dial: the right stick turns it; the torn check: the right stick moves the fingertip, **R2** held drags a piece, **L2** held turns it (as the card says; **L1** / **R1** turn it too) |
-| IV The Door | **LMB** fires the revolver, hold **RMB** to steady, **R** reloads; **E** tips the desk; **C** ducks (a toggle; **Ctrl** ducks while held) | **R2** fires, **L2** held steadies (crouched: rises over the cover), **△** reloads; **□** tips the desk; **○** ducks (a tap toggles; held, you stand when you let go) |
-| V The Watcher | **E** look out, **E** the fire escape; **W** takes you down the iron; the chase: **W** runs (no key held for speed), **A / D**, the mouse steers, **SPACE** vaults a fence and hops a crate; **E** drive | **□**; the left stick forward; the chase: the left stick, the right stick steers, **✕** vaults and jumps, **○** slides under |
-| VI The Tail | **W** throttle, **S** brake and reverse, **A / D** steer (the arrows too); close to him, hold **RMB** to put the revolver out of the window and **LMB** to fire; **E** get out, **E** take him, then look at the river with the mouse | **R2** throttle and **L2** brake / reverse (as far as they are pressed), the left stick steers (as far as it is pushed), **✕** handbrake; hold **L1** to lean out of the window and **R1** fires (**R2** stays on the throttle); the right stick aims; **□** get out, take him; the d-pad is the horn |
-| VII Pier Nine | **WASD**, **Shift** runs, **C** crouches (you are heard walking within 3 m, running within 8, crouching never); **E** open a door, take a bottle, pull the switch or the cord, knock a man out from behind; with a bottle hold **LMB** for the arc and let go to throw; then the foreman's fist fight (as II) | left stick, **L1** runs, **○** crouches; **□**; with a bottle hold **R2** and let go; then the fist fight (as II) |
-| VIII The Block | **E** take the Tommy gun, **E** the lights by the door, **E** the drums on the counter; **LMB** fires (hold), **R** reloads; at the end **WASD** out to the hat | **□**; **R2** fires (hold), **△** reloads; the left stick |
+| III Room 304 | **WASD**; **E** open the door, the pad, the picture, the dial, take; the pad: hold **LMB** and rub with the pencil until the three numbers show; the dial: the mouse turns it, **E** the handle; the torn check: **LMB** held drags a piece, **RMB** held turns it | left stick; **□**; the pad: hold **R2**, the right stick rubs; the dial: the right stick turns it; the torn check: the right stick moves the fingertip, **R2** held drags a piece, **L2** held turns it (as the card says; **L1** / **R1** turn it too) |
+| IV The Door | **LMB** fires the revolver, hold **RMB** to steady (crouched: rise over the cover), **R** reloads (from the pocket: the rounds are counted); **E** tips the desk; **C** ducks (a toggle; **Ctrl** ducks while held); at the end, walk to the street window | **R2** fires, **L2** held steadies (crouched: rises over the cover), **△** reloads; **□** tips the desk; **○** ducks (a tap toggles; held, you stand when you let go) |
+| V The Watcher | **E** the fire escape; **W** takes you down the iron; the chase: **W** runs, **A / D**, the mouse steers; nothing goes over anything by itself: **SPACE** over a fence or a crate (and through a door), **C** under a bar, **SPACE** the jump, **C** the slide down the roof | **□**; the left stick forward; the chase: the left stick, the right stick steers, **✕** vaults and jumps, **○** slides under |
+| VI The Tail | **W** throttle, **S** brake and reverse, **A / D** steer (the arrows too), **SPACE** the handbrake, **Q** the horn, **E** with nothing to use the headlamps; when he makes for the docks hold **RMB** to put the revolver out of the window and **LMB** to fire; **E** get out, walk to his window (he talks), **E** get in, drive to Pier 9's gate | **R2** throttle and **L2** brake / reverse (as far as they are pressed), the left stick steers (as far as it is pushed), **✕** handbrake; hold **L1** to lean out of the window and **R1** fires (**R2** stays on the throttle); the right stick aims; **□** get out, take him; the d-pad is the horn |
+| VII Pier Nine | **WASD**, **Shift** runs, **C** crouches (in the light you are seen; you are heard walking within 3 m, running within 8, crouching never); **E** open a door, take a bottle, pull the switch, put out the lantern, drop a load, knock a man out from behind; with a bottle hold **LMB** for the arc and let go to throw; after the shells the gun as IV (**LMB**, **RMB**, **R**, **C**; a lamp can be shot out); then the foreman's fist fight (as II) | left stick, **L1** runs, **○** crouches; **□**; with a bottle hold **R2** and let go; then the fist fight (as II) |
+| VIII The Block | the nick of time: **C** low, **E** a man from behind, **E** a bottle and **LMB** held to throw it, **SPACE** over the broken window's sill, **LMB** a blow over the counter; **E** take the Tommy gun, **E** the lights by the door, **E** a drum from Dot at the counter (few: count them); **LMB** fires (hold), **RMB** steadies, **R** reloads, **C** low; at the end **WASD** out to the hat | **□**; **R2** fires (hold), **△** reloads; the left stick |
 | the comic panels | a click, **E** or **SPACE** moves on, **ESC** twice skips | **✕** moves on, **options** twice (or held) skips |
 
 ## How the look works
@@ -114,22 +121,26 @@ frame-rate number from a busy GPU means nothing: read the ratio to
   (with `audiotest=1`) the offline audio render table.
 - `node tools/fps.mjs "shot=perf&t=1&anim=1" 1440 900` (`UNCAPPED=1` for
   headroom) — frame-time measurement.
-- `python3 tools/golden.py check` — every golden frame (32) against
+- `python3 tools/golden.py check` — every golden frame (38) against
   `shots/golden/` (the renderer is pixel-deterministic).
 - `node tools/play.mjs tools/plays/<play>.json` — a scripted play of the real
-  game by trusted input, one play per scene (`office`, `tail`, `warehouse`, ...),
-  plus `slice` (scenes 1 and 2), `chapters`, `continue` and `kit` (the opening
-  panels, the objective line, a teach card, a fail); the list is in
-  `docs/story/ARCHITECTURE.md` §10.5. `node tools/playtest.mjs` is the older
-  Phase 3 play-through.
+  game by trusted input: every contest's three proofs (`<id>_idle`, `_bad`,
+  `_good`), `slice` (the title to III), `chapters`, `continue`, `saves`, the
+  kit's and the pad's plays, and the whole game in one session:
+  `whole.json` (the taught hands) and `whole_first.json` (the clumsy ones),
+  written by `python3 tools/lib/whole.py`; the list is in
+  `docs/story/ARCHITECTURE.md` §11.8. `tools/fpstable.mjs` reads every
+  chapter's heaviest moment against `shot=perf`.
 
 ## Design documents
 
 `DESIGN.md` is the art direction and technical plan. The story pass:
 `docs/story/STORY.md` (the story, with what was built where it differs),
 `docs/story/CONTRACTS.md` (the binding APIs, file ownership, the site plan),
-`docs/story/ARCHITECTURE.md` (the engine as built; section 10 is wave B: the
-stages, the scenes and their save points, the systems, the plays, the tools),
+`docs/story/ARCHITECTURE.md` (the engine as built; section 10 is wave B,
+section 11 wave C: the chapters and their save points, the kit, the gun kit,
+the places, the pad, the plays), `docs/story/WAVE_C.md` (the plan for making
+it a game: the rulebook, the kit, the story),
 `docs/story/FIGHT.md` (the fist fight), `docs/story/MUSIC.md` (the music slots,
 for the jazz), `docs/story/WAVE_B.md` (the plan for scenes 3 to 9),
 `docs/story/seams/` (how to add a mode, a clip, a weapon, a cast kind, a prop, a
