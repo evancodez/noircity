@@ -1,5 +1,5 @@
 {
- "about": "[C13] the tail's gun phase reads the table (6 + 6), and \"He warned them.\" never comes without its warning: the river road kept up with by the good hands' driving, never shot or shunted (C3b: a good follower usually ends at the gate), until he reaches the gate - every 'He warned them.' had \"He's nearly at the pier.\" up 1.5 s and more before it (it used to be hidden under the knock's line, or up for under a second when he came flat out). node tools/play.mjs tools/plays/c13_tail_gate.json",
+ "about": "[C13] the tail's gun phase reads the table (6 + 6), and \"He warned them.\" never comes without its warning: the river road kept up with by the good hands' driving, never shot or shunted (C3b: a good follower usually ends at the gate), until he reaches the gate - every 'He warned them.' had \"He's nearly at the pier.\" up 3 s and more before it (after the critic: it comes 4 s from the gate at his speed; it was 1.8 s with him 41 m off) (it used to be hidden under the knock's line, or up for under a second when he came flat out). node tools/play.mjs tools/plays/c13_tail_gate.json",
  "url": "/?mute=1&start=tail.river&tailSeed=7",
  "size": [
   1440,
@@ -52,8 +52,11 @@
    "label": "he reached the gate at least once"
   },
   {
-   "expect": "(window.__tries || []).filter((r) => r.why === 'He warned them.').every((r) => r.gateAt != null && r.t - r.gateAt >= 1.4)",
-   "label": "every 'He warned them.' came after \"He's nearly at the pier.\" up 1.5 s"
+   "eval": "JSON.stringify((window.__tries || []).map((r) => [r.why, r.t, r.gateAt]))"
+  },
+  {
+   "expect": "(window.__tries || []).filter((r) => r.why === 'He warned them.').every((r) => r.gateAt != null && r.t - r.gateAt >= 3)",
+   "label": "every 'He warned them.' came after \"He's nearly at the pier.\" up 3 s and more (after the critic: 4 s from the gate at his speed)"
   }
  ]
 }

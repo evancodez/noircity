@@ -38,7 +38,9 @@ const WIN_NEAR = 1.5, WIN_PASS = 4;
 // [C13] how long "He's nearly at the pier." is up, at least, before "He warned them."
 const GATE_READ = 1.5;
 // ([C13] after the critic) and it comes while it can still be answered: when he is GATE_ETA s from the gate at
-// the speed he is doing, if that is before his line (gateWarnZ) - flat out he was 41 m off and 1.8 s from it
+// the speed he is doing, if that is before his line (gateWarnZ) - flat out he was 41 m off and 1.8 s from it. Once
+// it is up, losing him is his reaching the gate: the river road's "Lost him." waits (he is at the pier in 4 s at
+// most at that speed), so a fall always comes under its own words
 const GATE_ETA = 4;
 // [C3c, after the critic] E at his car: within TALK_NEAR m of its box, looking at it
 const TALK_NEAR = 2.5;
@@ -328,12 +330,14 @@ export class Chase {
     if (this.failing) return;
     const to = this.checkpoint();
     if (this.phase === 'a' && (this.unseen > R.unseenLost || gap > R.farLost || this.farT > R.farT)) return this.fail('Lost him.', to);
-    if (this.phase === 'b' && this.driver.state !== 'lost' && (gap > R.farLost || this.farT > R.farT)) return this.fail('Lost him.', 'river');
+    // ([C13] not while the gate's line is up: then he is lost at the gate, "He warned them.")
+    const gateLine = gateNear || atGate;
+    if (this.phase === 'b' && this.driver.state !== 'lost' && !gateLine && (gap > R.farLost || this.farT > R.farT)) return this.fail('Lost him.', 'river');
     if (atGate && this.gateWarnT >= GATE_READ) return this.fail('He warned them.', 'river');
     // ([C3b] the window gone: he is a pair of red lamps in the rain)
     // ([C3b, after the critic] only when he is really gone - RIVER_B.lostGap m
     // clear and warned - never on a clock with him in front of my bonnet)
-    if (this.phase === 'b' && this.driver.state !== 'lost' && this.pullWarned && this.bT - this.pullWarnAt > B.warnRead && gap > B.lostGap) return this.fail('Lost him.', 'river');
+    if (this.phase === 'b' && this.driver.state !== 'lost' && !gateLine && this.pullWarned && this.bT - this.pullWarnAt > B.warnRead && gap > B.lostGap) return this.fail('Lost him.', 'river');
   }
   checkpoint() { return this.phase === 'b' ? 'river' : this.ctx.flags.check || 'start'; }
   fail(why, to) {
