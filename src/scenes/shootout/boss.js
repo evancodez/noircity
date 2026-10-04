@@ -131,6 +131,7 @@ export function cardinalOut(ctx, car, { at = null, stage = 2, hatGone = false, o
   h.b7char = c;
   h.c8beat = ctx.beat;
   h.c8boss = true;
+  h.c8why = 'He doesn’t miss a man in the open.';
   h.surface = (x, z) => S.surfaceY(x, z);
   R.cardinal = h;
   const cig = h.b7cigar, ember = cig && cig.userData.ember;
