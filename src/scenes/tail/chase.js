@@ -1020,13 +1020,13 @@ export class Chase {
       u.value = P.userData.gain0 * kk;
     };
     set(this.my, k);
-    // (and my beams in the rain from the seat, as much again on the river
-    // road: white fans ahead through the glass)
+    // (and my beams in the rain from the seat on the river road, x 1.7 at
+    // most: white fans ahead through the glass - at x 2.4 they were a blob)
     for (const c of (this.my && this.my.lamps && this.my.lamps.cones) || []) {
       const cu = c.material.uniforms && c.material.uniforms.uIntensity;
       if (!cu) continue;
       if (c.userData.k0 == null) c.userData.k0 = cu.value;
-      cu.value = c.userData.k0 * Math.max(1, k);
+      cu.value = c.userData.k0 * Math.max(1, Math.min(k, 1.7));
     }
     for (const v of (this.V && this.V.list) || []) if (v !== this.my) set(v, others);
   }
