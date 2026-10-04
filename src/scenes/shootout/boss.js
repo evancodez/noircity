@@ -62,7 +62,11 @@ export const SALOON = {
 // ---- stage 1: the saloon --------------------------------------------------------------------
 export function saloonIn(ctx, { retry = false } = {}) {
   const G = ctx.game, S = ctx.stage, R = rig();
-  const car = R.rails.spawn({ rail: SALOON.rail, lights: true, v0: 2.4, cruise: 2.4, decel: 1.6, lat: 3, armored: true });
+  // ([C8] after the critic: the stage's own mercy, as the street's - a fall in
+  // it brings the car on slower; from the second fall one tyre stops it)
+  const f = Math.min(3, G.fails('saloon'));
+  const cruise = f >= 1 ? 1.9 : 2.4, need = f >= 2 ? 1 : 2;
+  const car = R.rails.spawn({ rail: SALOON.rail, lights: true, v0: cruise, cruise, decel: 1.6, lat: 3, armored: true });
   car.c8beat = 'saloon';
   car.c8saloon = true;
   R.cars.saloon = car;
@@ -74,8 +78,8 @@ export function saloonIn(ctx, { retry = false } = {}) {
     const flat = (c.tyres || []).filter(Boolean).length;
     // ([C8] after the critic: one tyre gone, it limps on at a third of its walk -
     // the first is seen to tell, and buys the time for the second, which stops it)
-    if (flat === 1 && !c.c8limp) { c.c8limp = true; const v = c.rail.plan.v; for (let i = 0; i < v.length; i++) v[i] *= 0.35; G.sfx.play('b7_brake', c.pos.clone().setY(0.4), { k: 0.5 }); }
-    if (flat >= 2 && !c.c8flat) {
+    if (flat === 1 && need > 1 && !c.c8limp) { c.c8limp = true; const v = c.rail.plan.v; for (let i = 0; i < v.length; i++) v[i] *= 0.35; G.sfx.play('b7_brake', c.pos.clone().setY(0.4), { k: 0.5 }); }
+    if (flat >= need && !c.c8flat) {
       c.c8flat = true;
       c.rail.plan.v.fill(0); c.rail.done = true; c.rail.stopped = true;
       G.sfx.play('b7_brake', c.pos.clone().setY(0.4));
@@ -302,7 +306,7 @@ export function cardinalOut(ctx, car, { at = null, stage = 2, hatGone = false, o
     else if (Sh.mode === 'raise' && Sh.t > 0.7) { Sh.mode = 'fire'; Sh.t = 0; Sh.n = 0; Sh.ai.brain.S.state = 'fire'; }
     else if (Sh.mode === 'fire' && Sh.t > 0.11) {
       Sh.t = 0; Sh.n++;
-      K.hoodRound(Sh.ai, body.chest.clone(), 0.03 + Sh.n * 0.005, 9, { tommy: true });
+      K.hoodRound(Sh.ai, body.chest.clone(), 0.03 + Sh.n * 0.005, 9 * ((K.cfg && K.cfg.dmgK) || 1), { tommy: true });
       s.fire();
       if (Sh.n >= 7) { Sh.mode = 'walk'; Sh.t = -0.6; s.setAim(false); Sh.ai.brain.S.state = 'hold'; }
     }

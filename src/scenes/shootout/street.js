@@ -501,7 +501,8 @@ export function elGunman(ctx) {
         st.t = 0; st.n++;
         const at = line ? body.chest.clone() : (st.lastAt || body.chest.clone());
         if (line) st.lastAt = at.clone();
-        K.hoodRound(ai, at, 0.024 + st.n * 0.004, 8, { tommy: true });
+        // ([C8] after the critic: the fall's mercy is his too)
+        K.hoodRound(ai, at, 0.024 + st.n * 0.004, 8 * ((K.cfg && K.cfg.dmgK) || 1), { tommy: true });
         h.fire();
         if (st.n >= 9) { st.mode = 'watch'; st.t = -1.6; h.setAim(false); ai.brain.S.state = 'hold'; }
       }
@@ -618,7 +619,7 @@ export function driveBy(ctx, { onOut, stopNear = null } = {}) {
     st.fireT = 0.1;
     st.rounds++;
     if (st.rounds < 6) roundAt(G, gunner, V(DINER.faceX + 0.05, 1.0 + ctx.rng.next() * 2.2, c.pos.z + ctx.rng.range(-2.5, 2.5)), { heavy: true, shatter: true });
-    else { K.hoodRound(ai, K.playerBody().chest.clone(), 0.035, 8, { tommy: true }); gunner.fire(); }
+    else { K.hoodRound(ai, K.playerBody().chest.clone(), 0.035, 8 * ((K.cfg && K.cfg.dmgK) || 1), { tommy: true }); gunner.fire(); }
   });
   return st;
 }

@@ -689,14 +689,20 @@ function* elBeat(ctx) {
   yield* fightTo(ctx, () => {
     if (!elSaid && el.h.alive && alive(ctx) === 1 && heavy) { elSaid = true; ctx.hud.objective('One on the el. Find him.'); }
     // [C8] after the critic (a drive-by gone down the avenue took its men with
-    // it: two fewer for nothing): far down the avenue in the dark it turns,
-    // and it comes round again ('coming round again!') - this time it pulls
-    // up by the diner and they get out. Nothing leaves the fight unanswered.
+    // it after one pass, unsaid): far down the avenue in the dark it turns and
+    // comes round again ('coming round again!'), its Tommy gun along the front
+    // a second time; only after that second run is it gone for good, said
+    // ('They're gone.'). Surviving its two runs, or stopping it (its driver,
+    // its engine, something in its way: it stops and they get out), is the
+    // contest for it.
     if (db && db.car.rail && db.car.rail.done && !db.out && !db.crashed && db.car.state !== 'burning') {
       for (const h of [db.driver, db.gunner]) if (h.alive) { h.c8gone = true; G.removeHood(h); }
       R.rails.remove(db.car); delete R.cars.driveby;
-      db = null; again = 1;
-      R.ticks.push(((t0) => (dt) => { if ((t0 -= dt) > 0) return true; ctx.hud.say('Dot: They’re coming round again!', 2.0); db = driveBy(ctx, { stopNear: 0.5 }); again = 2; return false; })(5));
+      db = null;
+      if (again === 0) {
+        again = 1;
+        R.ticks.push(((t0) => (dt) => { if ((t0 -= dt) > 0) return true; ctx.hud.say('Dot: They’re coming round again!', 2.0); db = driveBy(ctx, {}); again = 2; return false; })(5));
+      } else { again = 3; ctx.hud.say('Dot: They’re gone.', 1.8); }
     }
     return alive(ctx) === 0 && !!heavy && again !== 1;
   });
