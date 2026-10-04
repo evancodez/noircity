@@ -36,7 +36,9 @@ export function makeHydrant(ctx) {
   const cap = new THREE.Mesh(new THREE.SphereGeometry(0.105, 14, 8, 0, Math.PI * 2, 0, Math.PI / 2), mat);
   cap.userData.inkId = mesh.userData.inkId; cap.userData.noRay = true;
   S.scene.add(cap);
-  const col = S.colliders.addCircle(HYDRANT.x, HYDRANT.z, HYDRANT.r, 'hydrant');
+  // (solid, but not a place the gun kit's men hold: tagged 'hydrant' it drew a
+  // man to stand behind a 20 cm post four metres from the window - the stander's gift)
+  const col = S.colliders.addCircle(HYDRANT.x, HYDRANT.z, HYDRANT.r, 'post');
   const st = { mesh, cap, col, hits: 0, burst: false, t: 0, acc: 0, capV: null, said: false };
   const at = V(HYDRANT.x, y0, HYDRANT.z);
   const reset = () => {
