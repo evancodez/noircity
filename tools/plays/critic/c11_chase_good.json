@@ -1,0 +1,54 @@
+{
+ "about": "[C11 critic] V from the title, played well over the roofs (the C6 critic bot, good): win? and frames in the kitchen (its one lamp over the ranges) and on the roofs (stacks, skylight, tar).",
+ "url": "/?mute=1&start=watcher",
+ "size": [
+  1440,
+  900
+ ],
+ "out": "shots/c11c/chase_good",
+ "steps": [
+  {
+   "until": "G.state === 'title' && !!document.querySelector('#title .opt[data-k=begin]')",
+   "timeout": 40000
+  },
+  {
+   "wait": 1200
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]",
+   "taken": "G.state !== 'title' && document.pointerLockElement === N.renderer.domElement",
+   "retries": 5,
+   "every": 4000
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'watcher'",
+   "timeout": 30000
+  },
+  {
+   "drive": "tools/plays/critic/c6c_drive.mjs",
+   "profile": "good",
+   "over": "roofs",
+   "seed": 1,
+   "timeout": 240000,
+   "stop": "false",
+   "shots": {
+    "k1_kitchen_in": "N.controller.pos.z < -88.5 && N.controller.pos.z > -96 && N.controller.pos.x < 56 && N.controller.pos.x > 50",
+    "k2_kitchen_hood": "N.controller.pos.z < -93 && N.controller.pos.x < 55 && N.controller.pos.x > 50",
+    "k3_kitchen_east": "N.controller.pos.z < -95.5 && N.controller.pos.x > 60 && N.controller.pos.x < 68.5",
+    "r1_roof_top": "N.controller.pos.y > 3 && N.controller.pos.x < 57.5 && N.controller.pos.x > 52",
+    "r2_roof_party": "N.controller.pos.y > 3 && N.controller.pos.x < 50 && N.controller.pos.x > 45",
+    "r3_roof_r2": "N.controller.pos.y > 3 && N.controller.pos.x < 40 && N.controller.pos.x > 37",
+    "g_car": "G.scenes.beat === 'car'"
+   }
+  },
+  {
+   "wait": 2500
+  },
+  {
+   "shot": "g_tail"
+  },
+  {
+   "eval": "JSON.stringify({scene: G.scenes.current && G.scenes.current.id, beat: G.scenes.beat})"
+  }
+ ]
+}

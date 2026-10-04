@@ -1,0 +1,28 @@
+{
+ "about": "[C11 critic] III cold from the title: the corridor's first frame (darker between its globes now), a slow look round, then up the corridor: can I still see the doors and the way to 304?",
+ "url": "/?mute=1&start=office",
+ "size": [1440, 900],
+ "out": "shots/c11c/office",
+ "steps": [
+  { "until": "G.state === 'title' && !document.getElementById('title').classList.contains('hidden')", "timeout": 30000 },
+  { "wait": 1200 },
+  { "clickOn": "#title .opt[data-k=begin]", "taken": "G.state !== 'title'", "retries": 5, "every": 4000 },
+  { "until": "G.scenes.current && G.scenes.current.id === 'office' && !G.scenes.trans && G.controller.mode !== 'cutscene'", "timeout": 40000 },
+  { "wait": 1500 },
+  { "eval": "JSON.stringify({ beat: G.scenes.beat, p: [N.controller.pos.x.toFixed(2), N.controller.pos.z.toFixed(2), N.controller.yaw.toFixed(2), N.controller.pitch.toFixed(2)], text: document.body.innerText.slice(0,200) })" },
+  { "shot": "c00_first" },
+  { "look": [-700, 0], "steps": 8 },
+  { "wait": 500 },
+  { "shot": "c01_left" },
+  { "look": [1400, 0], "steps": 12 },
+  { "wait": 500 },
+  { "shot": "c02_right" },
+  { "look": [-700, 0], "steps": 8 },
+  { "down": "KeyW" },
+  { "wait": 2500 },
+  { "up": "KeyW" },
+  { "wait": 400 },
+  { "eval": "JSON.stringify({ p: [N.controller.pos.x.toFixed(2), N.controller.pos.z.toFixed(2)], prompt: G.interact.current && G.interact.current.id })" },
+  { "shot": "c03_walked" }
+ ]
+}
