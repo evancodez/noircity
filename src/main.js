@@ -18,6 +18,8 @@ import { Game } from './game/Game.js';
 import { Sfx, audioTest } from './audio/Sfx.js';
 import { Autoplay } from './game/Autoplay.js';
 import { ORDER } from './scenes/order.js';
+import { pad, input } from './input/Pad.js';   // [C12]
+import { PadUi } from './input/padUi.js';   // [C12]
 
 // ---- URL params (DESIGN.md §9) -------------------------------------------
 const params = new URLSearchParams(location.search);
@@ -123,17 +125,35 @@ const settings = {
       const m = parseFloat(localStorage.getItem('noir.mouse'));
       if (Number.isFinite(m)) controller.sensitivity = 0.0021 * Math.min(3, Math.max(0.2, m / 5));
       hud.subtitles = localStorage.getItem('noir.subs') !== '0';
+      // [C12] the pad's stick and rumble
+      const st = parseFloat(localStorage.getItem('noir.stick'));
+      if (Number.isFinite(st)) pad.sens = Math.min(3, Math.max(0.2, st / 5));
+      pad.rumbleOn = localStorage.getItem('noir.rumble') !== '0';
     } catch (e) { /* storage blocked: defaults */ }
   },
-  get() { return { mouse: Math.round(controller.sensitivity / 0.0021 * 5), volume: Math.round(sfx.volume * 10), subtitles: hud.subtitles }; },
+  get() { return { mouse: Math.round(controller.sensitivity / 0.0021 * 5), volume: Math.round(sfx.volume * 10), subtitles: hud.subtitles,
+    ...(pad.seen ? { stick: Math.round(pad.sens * 5), rumble: pad.rumbleOn } : {}) }; },   // [C12]
   change(k, d) {
     if (k === 'mouse') { const m = Math.min(15, Math.max(1, this.get().mouse + d)); controller.sensitivity = 0.0021 * m / 5; try { localStorage.setItem('noir.mouse', String(m)); } catch (e) { /* */ } }
     if (k === 'volume') sfx.setVolume(sfx.volume + d * 0.1);
     if (k === 'subtitles') { hud.subtitles = !hud.subtitles; try { localStorage.setItem('noir.subs', hud.subtitles ? '1' : '0'); } catch (e) { /* */ } }
+    // [C12]
+    if (k === 'stick') { const m = Math.min(15, Math.max(1, Math.round(pad.sens * 5) + d)); pad.sens = m / 5; try { localStorage.setItem('noir.stick', String(m)); } catch (e) { /* */ } }
+    if (k === 'rumble') { pad.rumbleOn = !pad.rumbleOn; try { localStorage.setItem('noir.rumble', pad.rumbleOn ? '1' : '0'); } catch (e) { /* */ } if (pad.rumbleOn) pad.rumble(0.4, 0.4, 120); }
   },
 };
 settings.load();
 hud.settings = () => settings.get();
+// [C12] the pad (src/input/Pad.js): every mode by the pad, the cards' glyphs,
+// the menus (input/padUi.js); ?padfake=1 reads window.__pad (tools/play.mjs).
+// A choice on the title by the pad starts the game without the pointer lock
+// (a pad cannot ask for it): the pad holds the game, as the lock would.
+function padStart() { if (game.state !== 'title') return; hud.hideTitle(); game.start(startFrom); chosen = null; }
+if (!shotMode && !autoplay) {
+  pad.attach({ game, controller, hud, dom: renderer.domElement, sfx, fake: params.get('padfake') === '1', start: padStart,
+    resume: () => { hud.hidePause(); sfx.pauseMix(false); controller.lock(); } });
+  new PadUi(pad);
+}
 // the title offers CONTINUE when a checkpoint exists
 if (!shotMode) hud.showTitle('', { canContinue: game.save.exists });
 hud.setChapters(ORDER.map((c) => ({ ...c, ready: !!game.scenes.get(c.id) })));
@@ -143,6 +163,7 @@ else if (startAt && startAt.beat && !game.scenes.get(startAt.scene).beats.includ
 if (!shotMode || shot.prewarm) game.prewarm(renderer);
 document.addEventListener('pointerlockerror', () => {
   if (shotMode) return;
+  if (pad.holds) return;   // [C12] (the pad holds the game: the mouse's refusal is not a pause)
   if (game.state === 'title') hud.showTitle('click again to take the mouse');
   // [C1] (under the stills, or the scene coming up after them with the mouse
   // let go: no pause card, the next click tries again - Chrome refuses the
@@ -159,6 +180,8 @@ document.addEventListener('pointerlockerror', () => {
 let mouseFree = null;
 const FREE_MAX = 8;
 addEventListener('mousedown', (e) => {
+  // [C12] (the pad holding the game, a click on the frame takes the mouse back)
+  if (pad.holds && e.isTrusted && e.button === 0 && e.target === renderer.domElement && !game.stills.active && document.pointerLockElement !== renderer.domElement) { controller.lock(); return; }
   if (!mouseFree || shotMode || e.button !== 0 || game.stills.active) return;
   if (document.pointerLockElement !== renderer.domElement) controller.lock();
 }, true);
@@ -195,7 +218,7 @@ document.addEventListener('pointerlockchange', () => {
 // [C1] a stills run ended with the mouse let go: the scene comes up anyway
 // (mouseFree above), a click takes the mouse
 game.on('stills:end', () => {
-  if (!shotMode && !autoplay && game.state === 'playing' && document.pointerLockElement !== renderer.domElement) mouseFree = { t: 0, text: 'click to take the mouse' };
+  if (!shotMode && !autoplay && game.state === 'playing' && document.pointerLockElement !== renderer.domElement && !pad.holds) mouseFree = { t: 0, text: 'click to take the mouse' };   // [C12] (not while the pad holds it)
 });
 // the viewmodel: in play; in shot mode for the combat presets or vm=1
 // vmpos=x,y,z / vmrot=pitch,yaw,roll: viewmodel composition (look development)
@@ -339,8 +362,9 @@ function frame(now) {
   const tA = performance.now();
   // in play, the fight pauses behind the "click to resume" card
   // [C1] (the scene coming up after the stills with the mouse let go runs: mouseFree)
+  pad.update(dt);   // [C12] (the pad's presses before the steps that read them)
   freeStep(dt);
-  const unlocked = !shotMode && !autoplay && game.state === 'playing' && document.pointerLockElement !== renderer.domElement && !mouseFree;
+  const unlocked = !shotMode && !autoplay && game.state === 'playing' && document.pointerLockElement !== renderer.domElement && !mouseFree && !pad.holds;   // [C12]
   // [C1] the stills' page: the game is held under it (its own clock is real time)
   const stilled = game.stills.active;
   const paused = unlocked || stilled;
@@ -454,6 +478,7 @@ window.__noir = {
   deathReport: DEATH_REPORT,
   get time() { return simTime; },
   sfx,
+  pad, input,   // [C12]
   // render every procedural sound offline: [{ name, peak, rms, seconds }]
   audioTest,
 };

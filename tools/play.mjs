@@ -26,6 +26,14 @@
 //                                        input with this tool's primitives;
 //                                        D = what it returns
 //   { "reload": true }                   reload the page (a save survives it)
+//   { "pad": { "b": ["x"], "v": { "r2": 0.5 }, "a": [lx, ly, rx, ry], "secs": 0.12, "hold": false, "release": ["x"] } }
+//                                        [C12] the fake pad (?padfake=1, src/input/Pad.js): those buttons
+//                                        (x o sq tri l1 r1 l2 r2 share opt l3 r3 up down left right ps tp)
+//                                        and axes for secs, then let go (hold: kept; release: let go now)
+// [C12] "input": "pad" (the play's own key): every key, mouse button, turn and wheel the steps and the
+// drivers ask for is played on the fake pad instead (the rulebook's mapping, by what is on screen: the
+// fist fight's triggers, the car's pedals, a puzzle's cursor), and the keyboard and the mouse are never
+// used (a FAIL if they are).
 //   { "shoot": { "until": "expr", "cover": true, "timeout": ms, "shots": { name: expr }, "expect": "expr over F" } }
 //                                        [B2] a gunfight by real input at a human pace (shoot() below)
 //   { "fight": { "timeout": ms, "shots": { "name": "expr", ... }, "expect": "expr over F" } }
@@ -64,7 +72,8 @@ let ws, id = 0, sid;
 const pending = new Map();
 const send = (method, params = {}) => new Promise((res) => { const i = ++id; pending.set(i, res); ws.send(JSON.stringify({ id: i, method, params, sessionId: sid })); });
 const js = async (expr) => {
-  const r = await send('Runtime.evaluate', { expression: `(async () => { const N = window.__noir; const G = N && N.game; return (${expr}); })()`, awaitPromise: true, returnByValue: true, userGesture: true });
+  // ([C12] a pad play gives the page no user gesture at all: a pad's press is none)
+  const r = await send('Runtime.evaluate', { expression: `(async () => { const N = window.__noir; const G = N && N.game; return (${expr}); })()`, awaitPromise: true, returnByValue: true, userGesture: play.input !== 'pad' });
   if (r.result?.exceptionDetails) return { __exc: r.result.exceptionDetails.exception?.description || r.result.exceptionDetails.text };
   return r.result?.result?.value;
 };
@@ -77,14 +86,17 @@ const check = (name, ok, info = '') => { if (ok) passes++; else fails++; log(`${
 // keys: the code, the key's name, its virtual key code
 const KEYNAME = (code) => code === 'Space' ? ' ' : code.startsWith('Key') ? code.slice(3).toLowerCase() : code.startsWith('Digit') ? code.slice(5) : code;
 const VK = (code) => code === 'Space' ? 32 : code.startsWith('Key') || code.startsWith('Digit') ? KEYNAME(code).toUpperCase().charCodeAt(0) : 0;
-const keyDown = (code) => send('Input.dispatchKeyEvent', { type: 'keyDown', code, key: KEYNAME(code), windowsVirtualKeyCode: VK(code) });
-const keyUp = (code) => send('Input.dispatchKeyEvent', { type: 'keyUp', code, key: KEYNAME(code), windowsVirtualKeyCode: VK(code) });
-const mouse = (type, x, y, button = 'left', extra = {}) => send('Input.dispatchMouseEvent', { type, x, y, button, buttons: type === 'mousePressed' ? (button === 'right' ? 2 : 1) : 0, clickCount: 1, ...extra });
+let rawUses = 0;   // [C12] (a pad play: the keyboard and the mouse never used)
+const rawKeyDown = (code) => { rawUses++; return send('Input.dispatchKeyEvent', { type: 'keyDown', code, key: KEYNAME(code), windowsVirtualKeyCode: VK(code) }); };
+const rawKeyUp = (code) => { rawUses++; return send('Input.dispatchKeyEvent', { type: 'keyUp', code, key: KEYNAME(code), windowsVirtualKeyCode: VK(code) }); };
+const rawMouse = (type, x, y, button = 'left', extra = {}) => { rawUses++; return send('Input.dispatchMouseEvent', { type, x, y, button, buttons: type === 'mousePressed' ? (button === 'right' ? 2 : 1) : 0, clickCount: 1, ...extra }); };
+let keyDown = rawKeyDown, keyUp = rawKeyUp, mouse = rawMouse;
 // a turn of the view: a trusted mouse move (under pointer lock the page
 // reads the move between two positions); the cursor is walked back to the
 // centre in steps too small to matter when it nears an edge
 let mx = null, my = null, lookVia = null;
-async function turn(dx, dy = 0) {
+let turn = rawTurn;   // [C12]
+async function rawTurn(dx, dy = 0) {
   if (mx == null) { mx = W / 2; my = H / 2; await send('Input.dispatchMouseEvent', { type: 'mouseMoved', x: mx, y: my, button: 'none' }); }
   // (the cursor has no room left on that side: a trusted move could not
   // turn further, so this one goes to the same handler as a page event)
@@ -100,6 +112,101 @@ async function turn(dx, dy = 0) {
     if (lookVia === 'event') await js(`(document.dispatchEvent(new MouseEvent('mousemove', { movementX: ${dx}, movementY: ${dy} })), 1)`);
   }
 }
+// ---- [C12] the fake pad (?padfake=1): window.__pad = { buttons, axes, rs? } ----------------
+const PADB = { x: 0, o: 1, sq: 2, tri: 3, l1: 4, r1: 5, l2: 6, r2: 7, share: 8, opt: 9, l3: 10, r3: 11, up: 12, down: 13, left: 14, right: 15, ps: 16, tp: 17 };
+const PS = { buttons: Array(18).fill(0), axes: [0, 0, 0, 0] };
+// (no user gesture: a real pad's press is not one either)
+const jsNG = async (expr) => { const r = await send('Runtime.evaluate', { expression: expr, returnByValue: true, userGesture: false }); return r.result?.result?.value; };
+const pushPad = (rs = null) => jsNG(`(window.__pad = ${JSON.stringify({ buttons: PS.buttons, axes: PS.axes, ...(rs ? { rs } : {}) })}, 1)`);
+async function padStep(P) {
+  const names = P.b || [];
+  for (const n of names) PS.buttons[PADB[n]] = 1;
+  for (const [n, v] of Object.entries(P.v || {})) PS.buttons[PADB[n]] = v;
+  if (P.a) P.a.forEach((v, i) => { if (v != null) PS.axes[i] = v; });
+  for (const n of P.release || []) PS.buttons[PADB[n]] = 0;
+  await pushPad();
+  if (P.secs != null && !P.hold) {
+    await sleep(P.secs * 1000);
+    for (const n of names) PS.buttons[PADB[n]] = 0;
+    for (const n of Object.keys(P.v || {})) PS.buttons[PADB[n]] = 0;
+    if (P.a) P.a.forEach((v, i) => { if (v != null) PS.axes[i] = 0; });
+    await pushPad();
+  }
+}
+// the bots' hands on the pad: what they hold (KeyW, Mouse0 ...) as buttons and
+// axes, by what the pad means on screen now (src/input/Pad.js context())
+const VKH = new Set();
+let padCtx = 'play', padCtxAt = 0, leanWas = false;
+const padCtxNow = async () => { if (Date.now() - padCtxAt > 120) { padCtx = (await js('N.pad.context()')) || 'play'; padCtxAt = Date.now(); } return padCtx; };
+async function padSync() {
+  const ctx = await padCtxNow();
+  const h = (c) => VKH.has(c);
+  const B = PS.buttons, A = PS.axes;
+  B.fill(0); A[0] = 0; A[1] = 0;
+  A[0] = (h('KeyD') ? 1 : 0) - (h('KeyA') ? 1 : 0);
+  B[PADB.sq] = h('KeyE') ? 1 : 0; B[PADB.tri] = h('KeyR') ? 1 : 0; B[PADB.left] = h('KeyQ') ? 1 : 0; B[PADB.opt] = h('Escape') ? 1 : 0;
+  if (ctx === 'drive') {
+    // (the car: R2 the throttle, L2 the brake; L1 leans out, R2 fires while leaning - the
+    // throttle kept from the moment L1 went down, so L1 goes down with R2 still at the throttle)
+    const lean = h('Mouse2');
+    B[PADB.l2] = h('KeyS') ? 1 : 0; B[PADB.x] = h('Space') ? 1 : 0;
+    if (lean && !leanWas) { B[PADB.l1] = 1; B[PADB.r2] = h('KeyW') ? 1 : 0; await pushPad(); await sleep(50); }
+    leanWas = lean;
+    B[PADB.l1] = lean ? 1 : 0;
+    B[PADB.r2] = lean ? (h('Mouse0') ? 1 : 0) : (h('KeyW') ? 1 : 0);
+  } else {
+    leanWas = false;
+    A[1] = (h('KeyS') ? 1 : 0) - (h('KeyW') ? 1 : 0);
+    B[PADB.x] = h('Space') || (ctx === 'stills' && h('Mouse0')) ? 1 : 0;
+    B[PADB.o] = h('KeyC') || h('ControlLeft') ? 1 : 0;
+    B[PADB.l1] = h('ShiftLeft') ? 1 : 0; B[PADB.r1] = h('KeyF') ? 1 : 0;
+    if (ctx === 'brawl') { B[PADB.l2] = h('Mouse0') ? 1 : 0; B[PADB.r2] = h('Mouse2') ? 1 : 0; }
+    else if (ctx !== 'stills') { B[PADB.r2] = h('Mouse0') ? 1 : 0; B[PADB.l2] = h('Mouse2') ? 1 : 0; }
+  }
+  await pushPad();
+}
+const padKeyDown = async (code) => { VKH.add(code); await padSync(); };
+const padKeyUp = async (code) => { VKH.delete(code); await padSync(); };
+async function padMouse(type, x, y, button = 'left', extra = {}) {
+  if (type === 'mouseMoved') return;
+  if (type === 'mouseWheel') {
+    // (a puzzle's wheel: R1 / L1 held as long as the wheel's units take at the pad's rate)
+    const units = extra.deltaY || 0, rate = (await js('N.pad.cfg.wheel')) || 900;
+    const b = units > 0 ? PADB.r1 : PADB.l1;
+    PS.buttons[b] = 1; await pushPad(); await sleep(Math.max(20, Math.abs(units) / rate * 1000)); PS.buttons[b] = 0; await pushPad();
+    return;
+  }
+  const code = button === 'right' ? 'Mouse2' : 'Mouse0';
+  if (type === 'mousePressed') VKH.add(code); else VKH.delete(code);
+  await padSync();
+}
+// a turn: the right stick tilted and held as long as the turn takes at that tilt
+// (the page's own curve and deadzone, read from it: N.pad.cfg)
+const curveOf = (u, C) => C.lin * u + (1 - C.lin) * Math.pow(u, C.pow);
+async function padTurn(dx, dy = 0) {
+  if (!dx && !dy) return;
+  const q = await js(`({ ctx: N.pad.context(), s: N.controller.sensitivity, ps: N.pad.sens, P: N.pad.cfg })`);
+  const P = q.P, table = q.ctx === 'table', C = table ? P.cursor : P.look;
+  const rmax = (axis) => table ? P.cursor.rate * q.ps : (axis === 'x' ? P.look.yaw : P.look.pitch) * q.ps / q.s;
+  const inv = (r) => { let a = 0, b = 1; for (let i = 0; i < 24; i++) { const m = (a + b) / 2; if (curveOf(m, C) < r) a = m; else b = m; } return (a + b) / 2; };
+  let T = 0.1;
+  for (let k = 0; k < 6; k++) {
+    const ux = inv(Math.min(1, Math.abs(dx) / (rmax('x') * T))), uy = inv(Math.min(1, Math.abs(dy) / (rmax('y') * T)));
+    const full = Math.abs(dx) > rmax('x') * T * 0.999 || Math.abs(dy) > rmax('y') * T * 0.999;
+    const m = Math.hypot(ux, uy);
+    if (!full && m <= 1) {
+      const raw = P.dz + m * (1 - P.dz), k2 = m > 0 ? raw / m : 0;
+      await pushPad({ x: Math.sign(dx) * ux * k2, y: Math.sign(dy) * uy * k2, secs: T });
+      await sleep(T * 1000 + 24);
+      return;
+    }
+    T *= Math.max(1.3, m * 1.1);
+  }
+  await pushPad({ x: Math.sign(dx) * 0.7, y: Math.sign(dy) * 0.7, secs: T });
+  await sleep(T * 1000 + 24);
+}
+const padMode = play.input === 'pad';
+if (padMode) { keyDown = padKeyDown; keyUp = padKeyUp; mouse = padMouse; turn = padTurn; }
 const shot = async (name) => {
   const r = await send('Page.captureScreenshot', { format: 'png' });
   if (r.result?.data) { writeFileSync(`${OUT}/${name}.png`, Buffer.from(r.result.data, 'base64')); log(`shot  ${name}.png`); }
@@ -438,7 +545,8 @@ try {
       if (!ok) check(`until ${S.until}`, false, `timeout ${S.timeout ?? 20000} ms ${v && v.__exc ? v.__exc : ''}`);
       else if (S.log) log(`ok    ${S.until}`);
       if (!ok && S.stop !== false) break;
-    } else if (S.shot) await shot(S.shot);
+    } else if (S.pad) await padStep(S.pad);   // [C12]
+    else if (S.shot) await shot(S.shot);
     else if (S.expect) { const v = await js(S.expect); check(S.label || S.expect, v === true, v === true ? '' : JSON.stringify(v)); }
     else if (S.eval) log(`eval  ${S.eval} -> ${JSON.stringify(await js(S.eval))}`);
     else if (S.fight) {
@@ -468,6 +576,7 @@ try {
     // be stopped short; the expect after it says where)
     else if (S.walk && S.into) { const pts = typeof S.walk === 'string' ? await js(S.walk) : S.walk; const ok = await walk(pts, S.timeout ?? 30000); log(`walk into ${JSON.stringify(pts)}: ${ok ? 'reached (nothing stopped it)' : 'stopped'}`); }
     else if (S.walk) { const pts = typeof S.walk === 'string' ? await js(S.walk) : S.walk; const ok = await walk(pts, S.timeout ?? 30000); check(`walk ${JSON.stringify(pts)}`, ok); if (!ok && S.stop !== false) break; }
+    else if (S.clickOn && padMode) check(`clickOn ${S.clickOn} in a pad play`, false, 'the mouse is not used in a pad play');   // [C12]
     else if (S.clickOn) {
       const r = await js(`(() => { const e = document.querySelector(${JSON.stringify(S.clickOn)}); if (!e) return null; const b = e.getBoundingClientRect(); return [b.left + b.width / 2, b.top + b.height / 2]; })()`);
       if (!r) check(`clickOn ${S.clickOn}`, false, 'no element');
@@ -504,6 +613,7 @@ try {
       log('reloaded');
     }
   }
+  if (padMode) check('[C12] the keyboard and the mouse never used (the pad alone)', rawUses === 0, `${rawUses} key or mouse events`);
   const err = await js(`document.getElementById('errlog') ? document.getElementById('errlog').textContent.trim() : '(no errlog)'`);
   check('no errors in #errlog', !err, err ? String(err).slice(0, 800) : '');
   const K = await js(`JSON.parse(document.getElementById('counters').dataset.json || '{}')`);
