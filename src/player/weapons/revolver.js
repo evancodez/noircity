@@ -48,7 +48,7 @@ export const REVOLVER = {
 //           pocket the box in the Cardinal's drawer gives, with the cylinder
 // A scene not in the table (the test beds) keeps an endless pocket.
 export const POCKET = {
-  gunfight: { pocket: 18, floor: 12 },        // IV The Door: enough if I aim, not to spray
+  gunfight: { pocket: 24, floor: 18 },        // IV The Door: enough if I aim, not to spray (18: the good hand used all 24)
   tail: { pocket: 6 },                        // VI's gun phase: the cylinder and the last six
   warehouse: { pocket: 0, empty: true, shells: 18, floor: 18 }, // VII: empty; the shells 6 + 18
 };

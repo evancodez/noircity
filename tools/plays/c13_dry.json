@@ -1,5 +1,5 @@
 {
- "about": "[C13] IV runs dry by real input: the cylinder full and 18 in the pocket; a partial reload costs what it fills; the pocket greys row by row beside the cylinder; the last reload fills four; then the hammer falls on nothing and 'Empty.' is said once, R loads nothing. node tools/play.mjs tools/plays/c13_dry.json",
+ "about": "[C13] IV runs dry by real input: the cylinder full and 24 in the pocket; a partial reload costs what it fills; the pocket greys row by row beside the cylinder; the last reload fills four; then the hammer falls on nothing and 'Empty.' is said once, R loads nothing. node tools/play.mjs tools/plays/c13_dry.json",
  "url": "/?mute=1&start=gunfight.quiet",
  "size": [
   1440,
@@ -28,8 +28,8 @@
    "wait": 1500
   },
   {
-   "expect": "G.player.weapons.impls.revolver.ammo === 6 && G.player.weapons.impls.revolver.pocket === 18",
-   "label": "IV: the cylinder full and 18 in the pocket"
+   "expect": "G.player.weapons.impls.revolver.ammo === 6 && G.player.weapons.impls.revolver.pocket === 24",
+   "label": "IV: the cylinder full and 24 in the pocket"
   },
   {
    "look": [
@@ -72,7 +72,7 @@
    "wait": 300
   },
   {
-   "expect": "G.player.weapons.impls.revolver.ammo === 6 && G.player.weapons.impls.revolver.pocket === 16",
+   "expect": "G.player.weapons.impls.revolver.ammo === 6 && G.player.weapons.impls.revolver.pocket === 22",
    "label": "a partial reload (two spent) costs two"
   },
   {
@@ -189,8 +189,63 @@
    "wait": 300
   },
   {
+   "mouse": "click",
+   "button": "left"
+  },
+  {
+   "wait": 420
+  },
+  {
+   "mouse": "click",
+   "button": "left"
+  },
+  {
+   "wait": 420
+  },
+  {
+   "mouse": "click",
+   "button": "left"
+  },
+  {
+   "wait": 420
+  },
+  {
+   "mouse": "click",
+   "button": "left"
+  },
+  {
+   "wait": 420
+  },
+  {
+   "mouse": "click",
+   "button": "left"
+  },
+  {
+   "wait": 420
+  },
+  {
+   "mouse": "click",
+   "button": "left"
+  },
+  {
+   "wait": 420
+  },
+  {
+   "key": "KeyR"
+  },
+  {
+   "wait": 300
+  },
+  {
+   "until": "!G.player.weapons.impls.revolver.reloading",
+   "timeout": 4000
+  },
+  {
+   "wait": 300
+  },
+  {
    "expect": "G.player.weapons.impls.revolver.ammo === 6 && G.player.weapons.impls.revolver.pocket === 4",
-   "label": "after two full reloads: four left in the pocket"
+   "label": "after three full reloads: four left in the pocket"
   },
   {
    "shot": "d02_four_left"
