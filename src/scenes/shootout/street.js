@@ -239,9 +239,22 @@ export function suppress(ctx, h, n, delay) {
   const G = ctx.game, S = ctx.stage, R = rig();
   const front = S.part('dinerFront');
   let t = delay, left = n;
+  const K = gunsOf(G);
   R.ticks.push((dt) => {
     if (!h.alive || left <= 0) return false;
     if ((t -= dt) > 0) return true;
+    // ([C8] after the critic: the windows they shoot are the ones I stand at -
+    // a man up at the glass, in his line, takes those rounds himself: the
+    // stander at the window got through the first fight in three runs of eight)
+    const ai = G.ais.get(h);
+    const body = K.playerBody();
+    if (ai && K.active && (G.controller.crouchK || 0) < 0.5 && G.eye.x > DINER.innerX - 1.5 && K.see(V(h.pos.x, h.pos.y + 1.5, h.pos.z), body.chest, 0.15)) {
+      K.hoodRound(ai, body.chest.clone(), h.gunKind === 'tommy' ? 0.03 : 0.02, (h.gunKind === 'tommy' ? 8 : 17) * ((K.cfg && K.cfg.dmgK) || 1), { tommy: h.gunKind === 'tommy' });
+      h.fire && h.fire();
+      left--;
+      t = h.gunKind === 'tommy' ? ctx.rng.range(0.08, 0.11) : ctx.rng.range(0.35, 0.6);
+      return true;
+    }
     const panes = Object.values(front.panes).filter((p) => p.state !== 'gone' && !p.parent);
     if (!panes.length) return false;
     const r = ctx.rng;
