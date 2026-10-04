@@ -72,9 +72,9 @@ export function saloonIn(ctx, { retry = false } = {}) {
   car.rail.riders.push((c) => {
     if (c.rail.done) return;
     const flat = (c.tyres || []).filter(Boolean).length;
-    // ([C8] after the critic: one tyre gone, it limps on at half its walk - the
-    // first is seen to tell; the second stops it)
-    if (flat === 1 && !c.c8limp) { c.c8limp = true; const v = c.rail.plan.v; for (let i = 0; i < v.length; i++) v[i] *= 0.5; G.sfx.play('b7_brake', c.pos.clone().setY(0.4), { k: 0.5 }); }
+    // ([C8] after the critic: one tyre gone, it limps on at a third of its walk -
+    // the first is seen to tell, and buys the time for the second, which stops it)
+    if (flat === 1 && !c.c8limp) { c.c8limp = true; const v = c.rail.plan.v; for (let i = 0; i < v.length; i++) v[i] *= 0.35; G.sfx.play('b7_brake', c.pos.clone().setY(0.4), { k: 0.5 }); }
     if (flat >= 2 && !c.c8flat) {
       c.c8flat = true;
       c.rail.plan.v.fill(0); c.rail.done = true; c.rail.stopped = true;
