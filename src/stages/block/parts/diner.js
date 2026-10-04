@@ -162,7 +162,8 @@ export default {
       if (stage.rays) o.traverse((m) => { if (m.isMesh && !m.userData.noRay) stage.addSolid(m); });
       o.userData.base = { p: o.position.clone(), r: o.rotation.clone() };
       const nm = name || kind;
-      if (items.has(nm)) take(nm);
+      // [C10b] (a thing set again in its place goes off the GPU: VIII's every retry set its bottles and paper again, +38 geometries a time)
+      if (items.has(nm)) { const old = take(nm); if (old) old.traverse((m) => { if (m.geometry) m.geometry.dispose(); }); }
       items.set(nm, o);
       return o;
     };
