@@ -1,54 +1,333 @@
 {
- "about": "[C8] the jank walk (WAVE_C §7.5) over the block in VIII, by real input: into the crate of empties, into Mack's broken window from the pavement without SPACE (the sill stops me), into the shut door from the street (a pull door: it does not give), out into the road in the cars' way as they come (a car stops short of me, never through me), into a stopped car, into the counter; standing in the doorway as the man for Dot comes in at it (nobody through anybody: the nearest any man came, the door's leaf never in a body). node tools/play.mjs tools/plays/block_jank.json",
+ "about": "[C8] the jank walk (WAVE_C \u00a77.5) over the block in VIII, by real input: into the crate of empties, into Mack's broken window from the pavement without SPACE (the sill stops me), into the shut door from the street (a pull door: it does not give), out into the road in the cars' way as they come (a car stops short of me, never through me), into a stopped car, into the counter; (after the critic) into the hydrant, into the cabinets under the kitchen's hatch with its man up behind them; standing in the doorway as the man for Dot comes in at it (nobody through anybody: the nearest any man came, the door's leaf never in a body). node tools/play.mjs tools/plays/block_jank.json",
  "url": "/?mute=1&start=shootout.dot",
- "size": [1280, 800],
+ "size": [
+  1280,
+  800
+ ],
  "out": "shots/play/block_jank",
  "steps": [
-  { "until": "G.state === 'title' && !document.getElementById('title').classList.contains('hidden')", "timeout": 30000 },
-  { "wait": 1200 },
-  { "clickOn": "#title .opt[data-k=begin]", "taken": "G.state !== 'title'", "retries": 5, "every": 4000 },
-  { "until": "G.scenes.current && G.scenes.current.id === 'shootout' && G.scenes.beat === 'dot' && !G.scenes.trans && !(G.stills && G.stills.active) && !G.hud._carded", "timeout": 40000 },
-  { "eval": "(window.MIND = 9, window.__jank = setInterval(() => { const e = N.game.eye; for (const h of N.game.stage.hoods.list) if (h.alive) { const d = Math.hypot(h.pos.x - e.x, h.pos.z - e.z); if (d < window.MIND) window.MIND = d; } }, 50), 1)" },
-  { "name": "the crate of empties by the bins" },
-  { "walk": [[-8.6, -8.4]], "timeout": 10000 },
-  { "walk": [[-9.78, -7.15]], "into": true, "timeout": 4000 },
-  { "expect": "Math.hypot(N.controller.pos.x + 9.78, N.controller.pos.z + 7.15) > 0.45", "label": "the crate stops me" },
-  { "name": "Mack's window from the pavement, no SPACE" },
-  { "walk": [[-8.8, -3.8]], "timeout": 8000 },
-  { "walk": [[-12.2, -3.8]], "into": true, "timeout": 4000 },
-  { "expect": "N.controller.pos.x > -10.35", "label": "the sill of the broken window stops me (over it is SPACE)" },
-  { "shot": "j01_at_the_sill" },
-  { "name": "the shut door from the street (a pull door) - Nicky taken off first: this is the door's test, not his" },
-  { "eval": "(() => { const k = G.b7.nick.nicky; k.c8down = true; G.removeHood(k); return 1; })()" },
-  { "walk": [[-9.0, -0.4]], "timeout": 8000 },
-  { "walk": [[-9.1, 0.6], [-11.6, 0.6]], "into": true, "timeout": 5000 },
-  { "expect": "N.controller.pos.x > -10.55", "label": "the shut door does not give to a man walking into it from the street" },
-  { "name": "the street: out into the cars' way" },
-  { "eval": "(G.scenes.go('shootout', { beat: 'cars', fade: 'cut', card: false }), G.health.damage = () => {}, 1)" },
-  { "until": "G.scenes.beat === 'cars' && !G.scenes.trans", "timeout": 10000 },
-  { "down": "ShiftLeft" },
-  { "walk": [[-11.2, 0.62], [-9.4, 0.62], [-6.0, -6.0], [-0.9, -21.5]], "timeout": 12000, "stop": false },
-  { "up": "ShiftLeft" },
-  { "until": "Object.values(G.b7.cars).some((c) => c.rail && c.rail.held > 0.6)", "timeout": 15000, "label": "a car comes up the road at me and stops short" },
-  { "expect": "Object.values(G.b7.cars).every((c) => Math.hypot(c.pos.x - G.eye.x, c.pos.z - G.eye.z) > 2.6)", "label": "no car's body through me" },
-  { "shot": "j02_a_car_stopped_short" },
-  { "walk": [[-7.5, -4.0]], "timeout": 8000, "stop": false },
-  { "until": "Object.values(G.b7.cars).filter((c) => c.rail && c.rail.done).length >= 2", "timeout": 25000 },
-  { "expect": "(() => { const c = Object.values(G.b7.cars); for (let i = 0; i < c.length; i++) for (let j = i + 1; j < c.length; j++) if (Math.hypot(c[i].pos.x - c[j].pos.x, c[i].pos.z - c[j].pos.z) < 2.2) return false; return true; })()", "label": "the two cars stand apart where they stopped (never one in the other)" },
-  { "walk": "[[G.b7.cars.car0.pos.x, G.b7.cars.car0.pos.z]]", "into": true, "timeout": 8000 },
-  { "expect": "Math.hypot(G.b7.cars.car0.pos.x - G.eye.x, G.b7.cars.car0.pos.z - G.eye.z) > 1.0", "label": "a stopped car stops me" },
-  { "name": "the flank: in the doorway as the man for Dot comes in at it" },
-  { "eval": "(G.scenes.go('shootout', { beat: 'flank', fade: 'cut', card: false }), G.health.damage = () => {}, window.MIND = 9, 1)" },
-  { "until": "G.scenes.beat === 'flank' && !G.scenes.trans", "timeout": 10000 },
-  { "walk": [[-13.0, 0.62], [-11.15, 0.62]], "timeout": 8000 },
-  { "until": "G.stage.hoods.list.some((h) => h.c8dot && h.alive && h.pos.z > -3)", "timeout": 30000 },
-  { "until": "G.stage.hoods.list.some((h) => h.c8dot && h.alive && Math.hypot(h.pos.x - G.eye.x, h.pos.z - G.eye.z) < 1.4) || !!G.failing", "timeout": 15000 },
-  { "wait": 1500 },
-  { "shot": "j03_in_the_doorway" },
-  { "expect": "window.MIND > 0.5", "label": "nobody walked through me (the nearest a man came)" },
-  { "expect": "!(G.counters.doorThroughMe > 0)", "label": "the door's leaf never through me" },
-  { "eval": "({ mind: +window.MIND.toFixed(2), doorThrough: G.counters.doorThrough || 0 })" },
-  { "walk": [[-14.2, 0.62]], "into": true, "timeout": 4000, "stop": false },
-  { "expect": "N.controller.pos.x > -14.15", "label": "the counter stops me" }
+  {
+   "until": "G.state === 'title' && !document.getElementById('title').classList.contains('hidden')",
+   "timeout": 30000
+  },
+  {
+   "wait": 1200
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]",
+   "taken": "G.state !== 'title'",
+   "retries": 5,
+   "every": 4000
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'shootout' && G.scenes.beat === 'dot' && !G.scenes.trans && !(G.stills && G.stills.active) && !G.hud._carded",
+   "timeout": 40000
+  },
+  {
+   "eval": "(window.MIND = 9, window.__jank = setInterval(() => { const e = N.game.eye; for (const h of N.game.stage.hoods.list) if (h.alive) { const d = Math.hypot(h.pos.x - e.x, h.pos.z - e.z); if (d < window.MIND) window.MIND = d; } }, 50), 1)"
+  },
+  {
+   "name": "the crate of empties by the bins"
+  },
+  {
+   "walk": [
+    [
+     -8.6,
+     -8.4
+    ]
+   ],
+   "timeout": 10000
+  },
+  {
+   "walk": [
+    [
+     -9.78,
+     -7.15
+    ]
+   ],
+   "into": true,
+   "timeout": 4000
+  },
+  {
+   "expect": "Math.hypot(N.controller.pos.x + 9.78, N.controller.pos.z + 7.15) > 0.45",
+   "label": "the crate stops me"
+  },
+  {
+   "name": "Mack's window from the pavement, no SPACE"
+  },
+  {
+   "walk": [
+    [
+     -8.8,
+     -3.8
+    ]
+   ],
+   "timeout": 8000
+  },
+  {
+   "walk": [
+    [
+     -12.2,
+     -3.8
+    ]
+   ],
+   "into": true,
+   "timeout": 4000
+  },
+  {
+   "expect": "N.controller.pos.x > -10.35",
+   "label": "the sill of the broken window stops me (over it is SPACE)"
+  },
+  {
+   "shot": "j01_at_the_sill"
+  },
+  {
+   "name": "the shut door from the street (a pull door) - Nicky taken off first: this is the door's test, not his"
+  },
+  {
+   "eval": "(() => { const k = G.b7.nick.nicky; k.c8down = true; G.removeHood(k); return 1; })()"
+  },
+  {
+   "walk": [
+    [
+     -9.0,
+     -0.4
+    ]
+   ],
+   "timeout": 8000
+  },
+  {
+   "walk": [
+    [
+     -9.1,
+     0.6
+    ],
+    [
+     -11.6,
+     0.6
+    ]
+   ],
+   "into": true,
+   "timeout": 5000
+  },
+  {
+   "expect": "N.controller.pos.x > -10.55",
+   "label": "the shut door does not give to a man walking into it from the street"
+  },
+  {
+   "name": "the street: out into the cars' way"
+  },
+  {
+   "eval": "(G.scenes.go('shootout', { beat: 'cars', fade: 'cut', card: false }), G.health.damage = () => {}, 1)"
+  },
+  {
+   "until": "G.scenes.beat === 'cars' && !G.scenes.trans",
+   "timeout": 10000
+  },
+  {
+   "down": "ShiftLeft"
+  },
+  {
+   "walk": [
+    [
+     -11.2,
+     0.62
+    ],
+    [
+     -9.4,
+     0.62
+    ],
+    [
+     -6.0,
+     -6.0
+    ],
+    [
+     -0.9,
+     -21.5
+    ]
+   ],
+   "timeout": 12000,
+   "stop": false
+  },
+  {
+   "up": "ShiftLeft"
+  },
+  {
+   "until": "Object.values(G.b7.cars).some((c) => c.rail && c.rail.held > 0.6)",
+   "timeout": 15000,
+   "label": "a car comes up the road at me and stops short"
+  },
+  {
+   "expect": "Object.values(G.b7.cars).every((c) => Math.hypot(c.pos.x - G.eye.x, c.pos.z - G.eye.z) > 2.6)",
+   "label": "no car's body through me"
+  },
+  {
+   "shot": "j02_a_car_stopped_short"
+  },
+  {
+   "walk": [
+    [
+     -7.5,
+     -4.0
+    ]
+   ],
+   "timeout": 8000,
+   "stop": false
+  },
+  {
+   "until": "Object.values(G.b7.cars).filter((c) => c.rail && c.rail.done).length >= 2",
+   "timeout": 25000
+  },
+  {
+   "expect": "(() => { const c = Object.values(G.b7.cars); for (let i = 0; i < c.length; i++) for (let j = i + 1; j < c.length; j++) if (Math.hypot(c[i].pos.x - c[j].pos.x, c[i].pos.z - c[j].pos.z) < 2.2) return false; return true; })()",
+   "label": "the two cars stand apart where they stopped (never one in the other)"
+  },
+  {
+   "walk": "[[G.b7.cars.car0.pos.x, G.b7.cars.car0.pos.z]]",
+   "into": true,
+   "timeout": 8000
+  },
+  {
+   "expect": "Math.hypot(G.b7.cars.car0.pos.x - G.eye.x, G.b7.cars.car0.pos.z - G.eye.z) > 1.0",
+   "label": "a stopped car stops me"
+  },
+  {
+   "name": "[C8] after the critic: the hydrant on the kerb"
+  },
+  {
+   "walk": [
+    [
+     -7.4,
+     -6.2
+    ]
+   ],
+   "timeout": 8000
+  },
+  {
+   "walk": [
+    [
+     -6.62,
+     -4.35
+    ]
+   ],
+   "into": true,
+   "timeout": 4000
+  },
+  {
+   "expect": "Math.hypot(N.controller.pos.x + 6.62, N.controller.pos.z + 4.35) > 0.35",
+   "label": "the hydrant stops me"
+  },
+  {
+   "name": "the flank: in the doorway as the man for Dot comes in at it"
+  },
+  {
+   "eval": "(G.scenes.go('shootout', { beat: 'flank', fade: 'cut', card: false }), G.health.damage = () => {}, window.MIND = 9, 1)"
+  },
+  {
+   "until": "G.scenes.beat === 'flank' && !G.scenes.trans",
+   "timeout": 10000
+  },
+  {
+   "walk": [
+    [
+     -13.0,
+     0.62
+    ],
+    [
+     -11.15,
+     0.62
+    ]
+   ],
+   "timeout": 8000
+  },
+  {
+   "until": "G.stage.hoods.list.some((h) => h.c8dot && h.alive && h.pos.z > -3)",
+   "timeout": 30000
+  },
+  {
+   "until": "G.stage.hoods.list.some((h) => h.c8dot && h.alive && Math.hypot(h.pos.x - G.eye.x, h.pos.z - G.eye.z) < 1.4) || !!G.failing",
+   "timeout": 15000
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "shot": "j03_in_the_doorway"
+  },
+  {
+   "expect": "window.MIND > 0.5",
+   "label": "nobody walked through me (the nearest a man came)"
+  },
+  {
+   "expect": "!(G.counters.doorThroughMe > 0)",
+   "label": "the door's leaf never through me"
+  },
+  {
+   "eval": "({ mind: +window.MIND.toFixed(2), doorThrough: G.counters.doorThrough || 0 })"
+  },
+  {
+   "walk": [
+    [
+     -14.2,
+     0.62
+    ]
+   ],
+   "into": true,
+   "timeout": 4000,
+   "stop": false
+  },
+  {
+   "expect": "N.controller.pos.x > -14.15",
+   "label": "the counter stops me"
+  },
+  {
+   "name": "[C8] after the critic: behind the counter to the kitchen's hatch (the partition below it is solid)"
+  },
+  {
+   "walk": [
+    [
+     -13.3,
+     -4.75
+    ],
+    [
+     -15.35,
+     -4.6
+    ],
+    [
+     -15.6,
+     2.25
+    ]
+   ],
+   "timeout": 15000
+  },
+  {
+   "walk": [
+    [
+     -17.2,
+     2.25
+    ]
+   ],
+   "into": true,
+   "timeout": 4000
+  },
+  {
+   "expect": "N.controller.pos.x > -16.5",
+   "label": "the cabinets under the hatch stop me (no way into the kitchen box)"
+  },
+  {
+   "until": "G.b7.kitchen && G.b7.kitchen.mode !== 'in'",
+   "timeout": 30000
+  },
+  {
+   "wait": 2500
+  },
+  {
+   "shot": "j04_the_man_at_the_hatch"
+  },
+  {
+   "expect": "G.b7.kitchen.h.pos.x < -16.5",
+   "label": "the kitchen's man stays behind the partition"
+  }
  ]
 }

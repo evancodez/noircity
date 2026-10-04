@@ -55,6 +55,8 @@ export const SALOON = {
   dmgLast: 100,
   // how long he is open
   openAfterShot: 1.5, openShield: 2.6, openBlast: 3.0,
+  // (the last ten seconds: he stands after his shot, open, a little longer - two openings in them)
+  openLast: 2.2,
 };
 
 // ---- stage 1: the saloon --------------------------------------------------------------------
@@ -244,14 +246,14 @@ export function cardinalOut(ctx, car, { at = null, stage = 2, hatGone = false, o
         const tgt = body.chest.clone();
         K.hoodRound(ai, tgt, SALOON.sigma, B.stage === 3 ? SALOON.dmgLast : SALOON.dmg, { tommy: false });
         h.fire && h.fire();
-        B.mode = 'after'; B.mt = 0; B.open = SALOON.openAfterShot; B.openWhy = 'shot';
+        B.mode = 'after'; B.mt = 0; B.open = B.stage === 3 ? SALOON.openLast : SALOON.openAfterShot; B.openWhy = 'shot';
         G.counters.c8bossShots = (G.counters.c8bossShots || 0) + 1;
       }
       return true;
     }
     if (B.mode === 'after') {
       B.mt += dt;
-      if (B.mt > SALOON.openAfterShot) { B.mode = 'walk'; h.aiming = false; B.fireAt = B.t + (B.stage === 3 ? 2.4 : 3.6 + ctx.rng.next() * 1.2); }
+      if (B.mt > (B.stage === 3 ? SALOON.openLast : SALOON.openAfterShot)) { B.mode = 'walk'; h.aiming = false; B.fireAt = B.t + (B.stage === 3 ? 2.4 : 3.6 + ctx.rng.next() * 1.2); }
       return true;
     }
     // walk at the diner; nothing hurries him

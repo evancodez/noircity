@@ -651,15 +651,19 @@ function* flankBeat(ctx) {
   const G = ctx.game, R = rig(), K = gunsOf(G);
   if (G.fails('flank') === 2) K.teach('crouch', { again: true });
   for (const m of UNDER_EL) gunman(ctx, { kind: m.kind, at: m.at, steps: m.steps, wait: m.wait });
+  // ([C8] after the critic: the kitchen is the flank's other side now - the man
+  // down the north pavement comes only on the first try; after a fall the
+  // street is the three under the el, the man for Dot and the kitchen)
   let north = false;
-  R.ticks.push(((t0) => (dt) => { if ((t0 -= dt) > 0) return true; north = true; for (const m of NORTH) gunman(ctx, m); return false; })(20));
+  R.ticks.push(((t0) => (dt) => { if ((t0 -= dt) > 0) return true; north = true; if (!G.fails('flank')) for (const m of NORTH) gunman(ctx, m); return false; })(20));
   // round the corner for Dot, some seconds in
   let forDot = null;
   R.ticks.push(((t0) => (dt) => { if ((t0 -= dt) > 0) return true; forDot = manForDot(ctx, { onDot: () => G.fail({ why: 'They got Dot.', to: 'flank' }) }); return false; })(11));
   // [C8] after the critic: the flank through the kitchen - from behind the
   // room, while the street has me at the front (the crash, 'Kitchen!')
   let kitchen = null;
-  R.ticks.push(((t0) => (dt) => { if ((t0 -= dt) > 0) return true; kitchen = R.kitchen = kitchenMan(ctx); return false; })(16));
+  // (from the second fall in the flank he comes later, when the street has thinned)
+  R.ticks.push(((t0) => (dt) => { if ((t0 -= dt) > 0) return true; kitchen = R.kitchen = kitchenMan(ctx); return false; })(G.fails('flank') >= 2 ? 26 : 16));
   yield until(() => !!forDot && north && !!kitchen);
   yield* fightTo(ctx, () => alive(ctx) === 0);
   yield* clear(ctx);

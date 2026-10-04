@@ -99,10 +99,12 @@ export default async function drive({ js, turn, keyDown, keyUp, mouse, shot, log
     let best = null;
     // [C5] (where I stand counts only when it is one of the beat's cover places: the open floor is no cover)
     const atSpot = F.spots.some((q) => Math.hypot(q.x - G.controller.pos.x, q.z - G.controller.pos.z) < 0.6);
+    // [C8] after the critic: the man on the el and the man at the kitchen's hatch see by their own rules
+    const EL = G.b7 && G.b7.el && G.b7.el.h.alive ? G.b7.el : null, KI = G.b7 && G.b7.kitchen && G.b7.kitchen.h.alive ? G.b7.kitchen : null;
     for (const sp of [...F.spots, ...(atSpot ? [{ x: G.controller.pos.x, z: G.controller.pos.z, here: true }] : [])]) {
       const eye = new V(sp.x, G.stage.surfaceY(sp.x, sp.z) + 0.66, sp.z);
       let n = 0;
-      for (const h of men) if (K.see(new V(h.pos.x, h.pos.y + 1.55, h.pos.z), eye, 0.3)) n++;
+      for (const h of men) if (EL && h === EL.h ? EL.can(eye) || EL.can(eye.clone().setY(eye.y + 0.35)) : KI && h === KI.h ? KI.can(eye) : K.see(new V(h.pos.x, h.pos.y + 1.55, h.pos.z), eye, 0.3)) n++;
       // (where I am is worse once it is spent: hit down there, or its cover shot through - window.C2SPENT)
       const sc = n * 10 + Math.hypot(sp.x - G.eye.x, sp.z - G.eye.z) + (sp.here ? -1 + (window.C2SPENT ? 12 : 0) : 0);
       if (!best || sc < best.sc) best = { x: sp.x, z: sp.z, yaw: sp.yaw, sc, n, here: !!sp.here, via: sp.via ? sp.via.map((q) => ({ ...q })) : null };
@@ -385,7 +387,7 @@ export default async function drive({ js, turn, keyDown, keyUp, mouse, shot, log
         // (where each was last seen: the angle a player holds - the doorway he peeks from)
         for (const m of visible) lastSeenAt = { x: m.x, y: m.see ? m.y : m.hy - 0.05, z: m.z, t: now };
         const heavy = s.men.find((m) => m.kind === 'rusher' && m.d < 9);
-        if (opts.trace && now - (traceT || 0) > opts.trace) { traceT = now; log(`trace ${JSON.stringify({ t: Math.round((now - t0) / 100) / 10, hp: Math.round(s.hp), rk: +s.rk.toFixed(2), x: +s.x.toFixed(1), z: +s.z.toFixed(1), thr: threat && threat.id, ans: answerId, goTo: !!goTo, vis: visible.map((q) => q.id + q.kind[0]), men: s.men.map((q) => q.id + q.kind[0] + ":" + q.st + (q.line ? "!" : "") + (q.see ? "*" : "")) })}`); }
+        if (opts.trace && now - (traceT || 0) > opts.trace) { traceT = now; log(`trace ${JSON.stringify({ t: Math.round((now - t0) / 100) / 10, hp: Math.round(s.hp), ammo: s.ammo, res: s.reserve, rl: s.reloading, dbg, rk: +s.rk.toFixed(2), x: +s.x.toFixed(1), z: +s.z.toFixed(1), thr: threat && threat.id, ans: answerId, goTo: !!goTo, vis: visible.map((q) => q.id + q.kind[0]), men: s.men.map((q) => q.id + q.kind[0] + ":" + q.st + (q.line ? "!" : "") + (q.see ? "*" : "")) })}`); }
         // [C8] Dot's cry: a man in at the door for her - every hand turns to him, up off the floor to get a line
         const dm = s.men.find((m) => m.kind === 'dotman' && m.inside);
         if (dm) {
@@ -420,7 +422,9 @@ export default async function drive({ js, turn, keyDown, keyUp, mouse, shot, log
           for (const m of tells) if (!noticed.has(m.id)) noticed.set(m.id, tellAt);
           if (!tells.length) tellAt = 0;
           const look = now - lastUp > 4200;
-          const wantUp = (now < holdUpUntil && now > downUntil) || (!tommyFiring && now > downUntil && ((tellAt && now >= tellAt) || heavy || look || s.rk > 0.5 || now < answerUntil));
+          // ([C8] after the critic: he is open only after his shot - a hand that knows it comes up at the bang)
+          const bossOpen = s.men.some((m) => m.boss && m.st === 'open');
+          const wantUp = (now < holdUpUntil && now > downUntil) || (bossOpen && !s.men.some((m) => m.kind === 'tommy' && m.st === 'fire' && m.line)) || (!tommyFiring && now > downUntil && ((tellAt && now >= tellAt) || heavy || look || s.rk > 0.5 || now < answerUntil));
           await set('RMB', wantUp);
           if (wantUp && s.rk < 0.2) upAt = now;
           if (!wantUp || s.rk < 0.85) {

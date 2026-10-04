@@ -51,7 +51,9 @@ const BEHIND = [{ x: -13.3, z: -4.75 }, { x: -15.35, z: -4.6 }];
 export const SPOTS = [
   { x: -10.8, z: -3.0, yaw: E0 }, { x: -10.8, z: -4.7, yaw: E0 + 0.3 }, { x: -10.8, z: -0.6, yaw: E0 }, { x: -10.8, z: 1.6, yaw: E0 },
   { x: -10.8, z: 4.2, yaw: E0 }, { x: -10.8, z: 5.9, yaw: E0 - 0.3 },
-  { x: -15.35, z: -2.4, yaw: E0, via: BEHIND }, { x: -15.35, z: 3.6, yaw: E0, via: BEHIND },
+  // ([C8] after the critic: the second place behind the counter is south of Dot - she is down in
+  // the aisle at z 0.6, and the way in is round the counter's south end)
+  { x: -15.35, z: -2.4, yaw: E0, via: BEHIND }, { x: -15.35, z: -0.95, yaw: E0, via: BEHIND },
 ];
 export const OPEN = { x: -11.0, z: -3.8 };
 
@@ -344,7 +346,7 @@ export function manForDot(ctx, { onDot }) {
 // counter, which hides me from the street, does not hide me from him. His
 // tell is his rise into the hatch and the click; down below the pass he is
 // behind the partition (it stops my rounds, as it stops his), up in the
-// hatch he has the room, three rounds, then down again. The kit's pistol
+// hatch he has the room, two rounds, then down again two seconds. The kit's pistol
 // man's numbers. (His own small brain, as the el's: he does not walk the grid)
 export const KITCHEN = { x: -16.74, z: 2.25, eyeY: 1.78, hatchX: DINER.backX + 0.55 };
 export function kitchenMan(ctx) {
@@ -370,6 +372,8 @@ export function kitchenMan(ctx) {
     return K.see(a, b, 0.1);
   };
   const st = { h, mode: 'in', t: 0, n: 0, line: false };
+  // (for the plays: can he see this point from the hatch)
+  st.can = (p) => sees(p);
   R.ticks.push((dt) => {
     if (!h.alive) return false;
     if (G.failing || !K.active) return true;
@@ -405,13 +409,13 @@ export function kitchenMan(ctx) {
         else if (st.lastAt) K.hoodRound(ai, st.lastAt, 0.05, 17 * dmgK, { tommy: false });
         if (line) st.lastAt = body.chest.clone();
         h.fire();
-        if (st.n >= 3) { st.mode = 'down'; st.t = 0; h.setAim(false); ai.brain.S.state = 'hold'; h.setState('kneel', 0.3); }
+        if (st.n >= 2) { st.mode = 'down'; st.t = 0; h.setAim(false); ai.brain.S.state = 'hold'; h.setState('kneel', 0.3); }
       }
       return true;
     }
     if (st.mode === 'down') {
       // (down below the pass a breath; up again)
-      if (st.t > 1.6) { st.mode = 'rise'; st.t = 0; h.setState('idle', 0.35); }
+      if (st.t > 2.0) { st.mode = 'rise'; st.t = 0; h.setState('idle', 0.35); }
       return true;
     }
     return true;
@@ -433,6 +437,8 @@ export function elGunman(ctx) {
   h.c8why = 'The man on the el had you.';
   const ai = { h, heavy: true, brain: { kind: 'tommy', S: { state: 'hold' } } };
   const st = { mode: 'in', t: 0, n: 0, h, ai };
+  // (for the plays: could he see this point from somewhere on his rail)
+  st.can = (p) => [0.3, -3.5, 4.2, -7.2, 7.8, -10.5, h.pos.z].some((z) => sees(V(EL.x, EL.y + 1.55, z), p));
   // (from up there into the room only through the front's openings: the
   // building's face above them is brick ten metres high - the rays through
   // the room's ceiling are not to be trusted from above, so the line is
