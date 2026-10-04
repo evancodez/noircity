@@ -1,0 +1,59 @@
+{
+ "about": "[C13] the tail's gun phase reads the table (6 + 6), and \"He warned them.\" never comes without its warning: the river road kept up with by the good hands' driving, never shot or shunted (C3b: a good follower usually ends at the gate), until he reaches the gate - every 'He warned them.' had \"He's nearly at the pier.\" up 1.5 s and more before it (it used to be hidden under the knock's line, or up for under a second when he came flat out). node tools/play.mjs tools/plays/c13_tail_gate.json",
+ "url": "/?mute=1&start=tail.river&tailSeed=7",
+ "size": [
+  1440,
+  900
+ ],
+ "out": "shots/play/c13_tail_gate",
+ "steps": [
+  {
+   "until": "G.state === 'title' && !document.getElementById('title').classList.contains('hidden') && !!document.querySelector('#title .opt[data-k=begin]')",
+   "timeout": 40000
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]",
+   "taken": "G.state === 'playing' && document.pointerLockElement === N.renderer.domElement",
+   "retries": 4,
+   "every": 4000
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'tail' && !!G.scenes.ctx.flags.chase && G.scenes.ctx.flags.chase.phase === 'b' && !G.scenes.fadeK",
+   "timeout": 45000
+  },
+  {
+   "eval": "(() => { window.__tailFails = []; window.__tries = []; let cur = null, rec = null; window.__pk = (() => { const C = G.scenes.ctx.flags.chase; return [C.gun.rounds, C.gun.pocket]; })(); setInterval(() => { const C = G.scenes.ctx && G.scenes.ctx.flags.chase; if (!C) return; if (C !== cur) { cur = C; rec = { gateAt: null, why: null, t: null, pk: [C.gun.rounds, C.gun.pocket] }; window.__tries.push(rec); } if (C.failing) { if (!rec.why) { const f = (C.log || []).filter((e) => e[1] === 'FAIL').pop(); if (f) { rec.why = f[2]; rec.t = f[0]; } } return; } if (C.kit.warning === \"He's nearly at the pier.\" && rec.gateAt == null) rec.gateAt = +C.t.toFixed(1); }, 50); return JSON.stringify(window.__pk); })()"
+  },
+  {
+   "expect": "JSON.stringify(window.__pk) === '[6,6]'",
+   "label": "the gun phase: the cylinder and six in the pocket (POCKET.tail)"
+  },
+  {
+   "drive": "tools/lib/c3_tail.mjs",
+   "profile": "follow",
+   "seed": 7,
+   "timeout": 240000,
+   "maxTries": 4,
+   "stop": "(window.__tries || []).some((r) => r.why === 'He warned them.') || (window.__tailFails || []).length >= 4",
+   "shots": {
+    "t01_nearly_at_the_pier": "!!G.scenes.ctx.flags.chase && G.scenes.ctx.flags.chase.kit.warning === \"He's nearly at the pier.\""
+   },
+   "check": "true",
+   "label": "followed, never stopped"
+  },
+  {
+   "eval": "JSON.stringify({ tries: window.__tries, fails: (window.__tailFails || []).map((f) => f.why + '@' + f.t) })"
+  },
+  {
+   "expect": "(window.__tries || []).some((r) => r.why === 'He warned them.')",
+   "label": "he reached the gate at least once"
+  },
+  {
+   "expect": "(window.__tries || []).filter((r) => r.why === 'He warned them.').every((r) => r.gateAt != null && r.t - r.gateAt >= 1.4)",
+   "label": "every 'He warned them.' came after \"He's nearly at the pier.\" up 1.5 s"
+  }
+ ]
+}
