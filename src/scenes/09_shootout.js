@@ -889,18 +889,19 @@ function* theFrame(ctx) {
   // front beyond with Mack's broken window and Dot in it, the el down the
   // avenue on the left and the train going away along it
   const win = V(-11.15, 1.4, DINER.bays[mackWindow(G)] + 0.35);
-  const toWin = V(win.x - at.x, 0, win.z - at.z);
-  // (the eye: south-east of the hat on the line that keeps the window up and to the right of it)
+  // (the eye on the far side of the hat from her window, out toward the road:
+  // looking past the hat along the avenue at her - down it, the reference's
+  // view, when the window is south of him)
+  const sz = Math.sign(at.z - win.z) || 1;
   let eye = null;
-  for (const [ox, oz] of [[1.15, -2.1], [1.4, -1.7], [0.8, -2.4], [1.7, -2.4], [0.5, -1.9]]) {
-    const e = at.clone().add(V(ox, 0, oz));
+  for (const [ox, oz] of [[1.3, 2.0], [1.6, 1.6], [1.0, 2.4], [1.9, 2.2], [0.7, 1.9]]) {
+    const e = at.clone().add(V(ox, 0, sz * oz));
     if (standClear(G.stage, e, 0.35)) { eye = e; break; }
   }
-  if (!eye) eye = at.clone().add(V(1.15, 0, -2.1));
+  if (!eye) eye = at.clone().add(V(1.3, 0, sz * 2.0));
   eye.y = G.stage.surfaceY(eye.x, eye.z) + 0.95;
-  // (the look: up the pavement, a little west, so the hat sits low left of
-  // the middle, the window right of it, the el's deck at the left edge)
-  const lookAt = V(at.x - 0.35 + toWin.x * 0.12, 0.62, at.z + 5.5);
+  // (the hat low left of the middle, her window beyond it, the el on the far side, the avenue's vanishing point)
+  const lookAt = V(at.x - 1.2, 0.8, at.z - sz * 6);
   const yaw = Math.atan2(-(lookAt.x - eye.x), -(lookAt.z - eye.z));
   const pitch = Math.atan2(lookAt.y - eye.y, Math.hypot(lookAt.x - eye.x, lookAt.z - eye.z));
   const to = { x: eye.x, y: eye.y, z: eye.z, yaw, pitch };
@@ -917,12 +918,13 @@ function* theFrame(ctx) {
   const dot = ctx.cast.get('dot');
   if (dot && !R.dotOut) runGen(G, dotToWindow(ctx));
   // (the train up the avenue, going away north: its tail lamps in the frame as the eye settles)
-  G.director.cue('train', { z: at.z + 8, ahead: 6, dir: TRAIN_AWAY });
+  // (dir 1 runs it down the avenue, -z: away from an eye looking down it; it
+  // comes from behind me and passes overhead as the eye settles, then goes)
+  G.director.cue('train', { z: eye.z, ahead: -38, dir: sz > 0 ? 1 : -1 });
   yield wait(dur);
   G.music.cue('end', { fade: 3 });
   yield wait(6);
 }
-const TRAIN_AWAY = 1;
 
 // sparks off the iron under his coat (a shut hit): white, brief, no blood
 function ironSparks(G, p, dir) {
