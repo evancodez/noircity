@@ -704,6 +704,8 @@ export class ShardField {
       }
     }
     for (let i = this.live.length - 1; i >= 0; i--) {
+      // [C10a] (a split below can shift the list - spawn() drops the oldest past SHARD_CAP - so i may have run off its end)
+      if (i >= this.live.length) continue;
       const s = this.live[i], m = s.mesh;
       s.t += dt;
       if (cam) this.glint(s, cam);
@@ -719,7 +721,13 @@ export class ShardField {
         const hh = s.rad * Math.sqrt(Math.max(0, 1 - n.y * n.y));
         if (m.position.y - hh <= gy && s.vel.y < 0 && this.groundAt(s, true) + 0.004 >= gy - 0.02) {
           // a hard landing breaks a big shard again (into 2 or 3)
-          if (!s.broke && s.area > 0.012 && s.vel.y < -2.2) { this.split(s); this.live.splice(i, 1); this.kill(s); continue; }
+          if (!s.broke && s.area > 0.012 && s.vel.y < -2.2) {
+            // [C10a] (split() spawns its halves, and spawn() past SHARD_CAP shifts the oldest off the front of
+            // the list: s is no longer at i. Splicing i took a neighbour out of the list unkilled - a shard
+            // frozen in the air for good, never cleared by a retry (IV's flank: 105 more such each retry) -
+            // and left s, killed, in it)
+            this.split(s); const j = this.live.indexOf(s); if (j >= 0) this.live.splice(j, 1); this.kill(s); continue;
+          }
           s.slide = true;
           s.vel.y = 0;
           s.vel.x *= 0.45; s.vel.z *= 0.45;

@@ -117,7 +117,7 @@ let SNAP = null;   // [C7] the men down when the last checkpoint was reached: th
 function setupAt(ctx, b) {
   const G = ctx.game, stage = ctx.stage;
   if (HOOKED !== G) { HOOKED = G; G.on('scene:exit', (e) => { if (e && e.id === 'warehouse') leaveWarehouse(); }); }
-  if (LIVE) { if (LIVE.stepWrap && G.controller.onStep === LIVE.stepWrap) G.controller.onStep = LIVE.origOnStep; LIVE.crew.clear(); LIVE.stealth.undress(); for (const o of LIVE.props) if (o.parent) o.parent.remove(o); if (LIVE.fight) LIVE.fight.clear(); LIVE = null; }
+  if (LIVE) { if (LIVE.stepWrap && G.controller.onStep === LIVE.stepWrap) G.controller.onStep = LIVE.origOnStep; LIVE.crew.clear(); LIVE.stealth.undress(); for (const o of LIVE.props) { if (o.parent) o.parent.remove(o); o.traverse((m) => { if (m.geometry) m.geometry.dispose(); }); /* [C10a] built anew each try: off the GPU with it */ } if (LIVE.fight) LIVE.fight.clear(); LIVE = null; }
   if (G.brawl.active) G.brawl.stop();
   const K = gunsOf(G);
   K.end();
@@ -1263,7 +1263,7 @@ function backToFeet(ctx) {
 // (the scene leaving: the hands and their light back as they were)
 export function leaveWarehouse() {
   if (HOOKED) { const C = HOOKED.controller; C.onFootfall = null; if (LIVE && LIVE.stepWrap && C.onStep === LIVE.stepWrap) C.onStep = LIVE.origOnStep; gunsOf(HOOKED).end(); }
-  if (LIVE) { LIVE.crew.clear(); LIVE.stealth.undress(); for (const o of LIVE.props) if (o.parent) o.parent.remove(o); if (LIVE.fight) LIVE.fight.clear(); if (LIVE.fightOn && HOOKED && HOOKED.brawl.active) HOOKED.brawl.stop(); LIVE = null; }
+  if (LIVE) { LIVE.crew.clear(); LIVE.stealth.undress(); for (const o of LIVE.props) { if (o.parent) o.parent.remove(o); o.traverse((m) => { if (m.geometry) m.geometry.dispose(); }); /* [C10a] built anew each try: off the GPU with it */ } if (LIVE.fight) LIVE.fight.clear(); if (LIVE.fightOn && HOOKED && HOOKED.brawl.active) HOOKED.brawl.stop(); LIVE = null; }
   // (a retry keeps what the checkpoint keeps; leaving the chapter forgets it)
   if (!(HOOKED && HOOKED.failing)) SNAP = null;
 }

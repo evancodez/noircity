@@ -539,8 +539,9 @@ export class Headlamps {
     }
   }
   dispose() {
-    for (const c of this.cones) this.stage.scene.remove(c);
+    for (const c of this.cones) { this.stage.scene.remove(c); c.geometry.dispose(); }
     this.stage.scene.remove(this.pool);
+    this.pool.geometry.dispose();   // [C10a] (each car's own: a retry made them again and kept the old on the GPU)
     this.stage.lights.remove(this.entry);
     this.release();
   }
