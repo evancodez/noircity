@@ -1,0 +1,21 @@
+{
+ "about": "[C13 critic] VII's loud pass with the pocket counted, twice, as pier_loud plays it (lane C7's loud hands), with the cylinder, the pocket, the men standing and the warning logged every 5 s: does a player run dry with men left, and what then? node tools/play.mjs tools/plays/critic/c13/pier_loud_count.json",
+ "url": "/?mute=1&start=warehouse.loud",
+ "size": [1280, 800],
+ "out": "shots/critic13/pier_loud_count",
+ "steps": [
+  { "until": "G.state === 'title' && !document.getElementById('title').classList.contains('hidden')", "timeout": 30000 },
+  { "wait": 1500 },
+  { "clickOn": "#title .opt[data-k=begin]", "taken": "G.state !== 'title'", "retries": 5, "every": 4000 },
+  { "until": "G.scenes.current && G.scenes.current.id === 'warehouse' && G.scenes.beat === 'loud' && !G.scenes.trans", "timeout": 30000 },
+  { "eval": "(window.__L = [], setInterval(() => { const r = G.player.weapons.impls.revolver, L = G.scenes.ctx && G.scenes.ctx.flags.live; window.__L.push([Math.round(G.time), G.scenes.beat, r.ammo, r.pocket, [...G.ais.keys()].filter((h) => h.alive).length, G.hud.warnText || '', G.hud.sayShown || '', Math.round(G.health.hp)]); }, 5000), 1)" },
+  { "drive": "tools/lib/c7_pier.mjs", "profile": "loud", "timeout": 200000, "check": "D.done", "label": "the loud way out (1)" },
+  { "eval": "JSON.stringify(window.__L)" },
+  { "eval": "(window.__L = [], G.counters.fails = 0, G.scenes.go('warehouse', { beat: 'loud', fade: 'black', card: false }), 1)" },
+  { "until": "G.scenes.beat === 'loud' && !G.scenes.trans && G.controller.mode === 'gun'", "timeout": 15000 },
+  { "eval": "JSON.stringify([G.player.weapons.impls.revolver.ammo, G.player.weapons.impls.revolver.pocket, G.save.flags.ammo])" },
+  { "drive": "tools/lib/c7_pier.mjs", "profile": "loud", "timeout": 200000, "check": "D.done", "label": "the loud way out (2)" },
+  { "shot": "p01_end" },
+  { "eval": "JSON.stringify(window.__L)" }
+ ]
+}

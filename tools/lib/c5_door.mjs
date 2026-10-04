@@ -214,7 +214,14 @@ export default async function drive({ js, turn, keyDown, keyUp, mouse, shot, log
     for (let k = 0; k < tries; k++) {
       await releaseAll();
       // to the beat, as a checkpoint puts me there
-      await js(`(N.game.scenes.go('gunfight', { beat: '${beat}', fade: 'cut', card: false }), 1)`);
+      // [C13] opts.flow: the first try of every movement after the first is the one the game runs into by
+      // itself (the counts carried, no checkpoint's go - lane C13's critic's driver); a retry is the game's own
+      if (opts.flow && (k > 0 || beat !== beats[0])) {
+        for (let w = 0; w < 900; w++) { const b = await js(`(N.game.scenes.beat === '${beat}' && N.game.state === 'playing' && !N.game.scenes.trans && !N.game.failing) ? 1 : 0`); if (b) break; await sleep(100); }
+        const c = await js(`(() => { const r = N.game.player.weapons.impls.revolver; return [r.ammo, r.pocket]; })()`);
+        log('c13 flow: ' + beat + ' try ' + (k + 1) + ' begins with ' + JSON.stringify(c));
+        (rec.flow || (rec.flow = [])).push([beat, k + 1, c]);
+      } else await js(`(N.game.scenes.go('gunfight', { beat: '${beat}', fade: 'cut', card: false }), 1)`);
       await sleep(400);
       const t0 = Date.now();
       const g0 = await js('N.game.time');
@@ -231,7 +238,23 @@ export default async function drive({ js, turn, keyDown, keyUp, mouse, shot, log
       // holds the outer office from behind the secretary's desk - they must come in at the door (opts.out: the cart instead)
       if (beat === 'corridor' && P.act && P.cover) {
         const route = opts.out ? [[-4.6, 3.3], [-4.6, 0.6], [-4.35, -0.05]] : [[-4.5, 3.35], [-2.6, 3.6], [-0.85, 5.3]];
-        for (const [x, z] of route) { for (let i = 0; i < 160; i++) { const q = await js(ST); if (await walkTo(q, x, z, 0.25)) break; await sleep(40); } }
+        // [C13] (in flow the corridor begins where the flank left me - in Ames's room, often down behind his desk:
+        // up, and out through the opening first)
+        const q0 = await js(ST);
+        if (q0.ck > 0.5) await press('KeyC');
+        if (q0.x > -0.1) route.unshift(...(q0.x > 2.6 && Math.abs(q0.z - 3.72) < 1.2 ? [[q0.x, q0.z < 3.72 ? 2.0 : 5.4]] : []), [1.2, 3.4], [-0.7, 3.4]);
+        // [C13] the box of rounds on the secretary's desk: a good hand takes it (E) first, from the desk's front
+        if (!opts.noBox) {
+          const pre = route.splice(0, route.length - 3);
+          route.unshift([-3.2, 3.4]);
+          for (const [x, z] of [...pre, [-2.5, 3.9], [-2.55, 4.85]]) { for (let i = 0; i < 200; i++) { const q = await js(ST); if (await walkTo(q, x, z, 0.25)) break; await sleep(40); } }
+          await stopWalk();
+          await lookAt(-1.87, 0.79, 5.47, 0.06); await sleep(200);
+          const cur = await js('N.game.interact.current && N.game.interact.current.id');
+          if (cur === 'c13box') { await press('KeyE'); await sleep(300); log('c5 door: took the box of rounds ' + JSON.stringify(await js('(() => { const r = N.game.player.weapons.impls.revolver; return [r.ammo, r.pocket]; })()'))); }
+          else log('c5 door: no box prompt (' + cur + ')');
+        }
+        for (const [x, z] of route) { for (let i = 0; i < 200; i++) { const q = await js(ST); if (await walkTo(q, x, z, 0.25)) break; await sleep(40); } }
         await stopWalk();
         if (opts.out) await lookAt(-4.78, 1.2, -7.0, 0.1); else await lookAt(-3.88, 1.2, 3.4, 0.1);
         await press('KeyC');

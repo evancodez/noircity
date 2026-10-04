@@ -435,10 +435,11 @@ export class Hud {
   get promptShown() { return this.el.prompt.style.display !== 'none' ? (this.promptText || '') : ''; }
   // a one-line subtitle (42 characters at most), `secs` of game time, on
   // its own torn stroke (seeded by the line: the same line, the same stroke)
-  say(text, secs = 2.2) {
+  // ([C13] opts.always: a game's message, not speech - shown with subtitles off: the gun's 'Empty.')
+  say(text, secs = 2.2, opts = null) {
     if (text.length > 42) console.warn(`hud.say: '${text}' is longer than 42 characters`);
     this.lastSay = text;
-    if (!this.subtitles) return;
+    if (!this.subtitles && !(opts && opts.always)) return;
     const E = this.el;
     E.sayText.textContent = text;
     if (this.sayCanvas) this.sayCanvas.remove();

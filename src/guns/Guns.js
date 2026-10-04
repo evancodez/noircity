@@ -129,13 +129,18 @@ export class Guns {
   // critic's second look: a retry gave the revolver back with what was left
   // in it (two rounds as the men came in); a chapter calls this in its
   // beat's setup (docs/story/seams/GUNS.md)
-  arm(name) {
+  // [C13] the revolver's pocket is counted: arm('revolver', { pocket }) the
+  // cylinder full and that pocket; arm('revolver', { keep: true }) the counts
+  // as they are; arm('revolver') the checkpoint's counts (as they were when
+  // it was reached) or the chapter's row of POCKET (player/weapons/revolver.js)
+  arm(name, opts = {}) {
     const G = this.game, Ws = G.player.weapons;
     // (in the middle of a reload at the fall: put away and drawn again, the reload abandoned)
     if (Ws.current === name && Ws.active && Ws.active.reloading) Ws.equip(null);
     Ws.equip(name);
     const W = Ws.active;
     if (name === 'tommy') G.weapon.reset();
+    else if (W && W.armCounts) W.armCounts(opts);
     else if (W && Array.isArray(W.chambers)) { W.chambers = W.chambers.map(() => 'live'); W.top = 0; W.reloadAfter = 0; W.buffered = -1; }
     return W;
   }

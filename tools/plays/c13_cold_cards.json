@@ -1,0 +1,253 @@
+{
+ "about": "[C13] VII picked from CHAPTERS on a fresh save: the revolver's cards come at the shells (the gun loaded, nobody onto me), not as the telephone rings; the box gives six in the cylinder and eighteen in the pocket. The office walked as lane C11's critic walked it. node tools/play.mjs tools/plays/c13_cold_cards.json",
+ "url": "/?mute=1&start=warehouse.office",
+ "size": [
+  1440,
+  900
+ ],
+ "out": "shots/play/c13_cold_cards",
+ "steps": [
+  {
+   "until": "G.state === 'title' && !document.getElementById('title').classList.contains('hidden')",
+   "timeout": 30000
+  },
+  {
+   "wait": 1200
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]",
+   "taken": "G.state !== 'title'",
+   "retries": 5,
+   "every": 4000
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'warehouse' && G.scenes.beat === 'office' && !G.scenes.trans",
+   "timeout": 40000
+  },
+  {
+   "expect": "!(G.save.flags.taught && G.save.flags.taught.fire)",
+   "label": "VII picked cold: a fresh save, fire never taught"
+  },
+  {
+   "eval": "(window.__cards = [], setInterval(() => { const c = G.hud.kit.teachCur; if (c && !window.__cards.some((x) => x.id === c.id)) window.__cards.push({ id: c.id, t: +G.time.toFixed(1), shells: G.scenes.ctx.flags.live && G.scenes.ctx.flags.live.shellsT || null, loud: G.counters.c7loudAt || null, pocket: G.player.weapons.impls.revolver.pocket, ammo: G.player.weapons.impls.revolver.ammo }); }, 50), 1)"
+  },
+  {
+   "eval": "(window.P = () => [ +N.controller.pos.x.toFixed(2), +N.controller.pos.z.toFixed(2), +N.controller.yaw.toFixed(2), +N.controller.pitch.toFixed(2) ], window.LOG=[], G.on('fail', (e) => LOG.push(e.why + '@' + G.scenes.beat)), JSON.stringify({ p: P(), mode: G.controller.mode, obj: G.hud.kit.objText, teach: G.hud.kit.teachCur }))"
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "walk": [
+    [
+     1.85,
+     -41.75
+    ]
+   ],
+   "timeout": 15000
+  },
+  {
+   "look": "[Math.round(-(Math.atan2(Math.sin(0 - N.controller.yaw), Math.cos(0 - N.controller.yaw)))/N.controller.sensitivity), Math.round((N.controller.pitch + 0.1)/N.controller.sensitivity)]",
+   "steps": 6
+  },
+  {
+   "wait": 400
+  },
+  {
+   "eval": "JSON.stringify({ p: P(), prompt: G.interact.current && G.interact.current.id })"
+  },
+  {
+   "key": "KeyE"
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "walk": [
+    [
+     1.85,
+     -42.7
+    ]
+   ],
+   "timeout": 15000
+  },
+  {
+   "walk": [
+    [
+     1.85,
+     -41.75
+    ],
+    [
+     1.85,
+     -42.7
+    ]
+   ],
+   "timeout": 15000
+  },
+  {
+   "look": "[Math.round(-(Math.atan2(Math.sin(Math.atan2(-(0.2-N.controller.pos.x), -(-43.9-N.controller.pos.z)) - N.controller.yaw), Math.cos(Math.atan2(-(0.2-N.controller.pos.x), -(-43.9-N.controller.pos.z)) - N.controller.yaw)))/N.controller.sensitivity), Math.round((N.controller.pitch + 0.1)/N.controller.sensitivity)]",
+   "steps": 8
+  },
+  {
+   "wait": 600
+  },
+  {
+   "eval": "(()=>{const d=new (G.camera.position.constructor)(); G.camera.getWorldDirection(d); return JSON.stringify({p:P(), dir:[+d.x.toFixed(2),+d.y.toFixed(2),+d.z.toFixed(2)], prompt: G.interact.current && G.interact.current.id})})()"
+  },
+  {
+   "look": "[Math.round(-(Math.atan2(Math.sin(Math.atan2(-(0.2-N.controller.pos.x), -(-43.86-N.controller.pos.z)) - N.controller.yaw), Math.cos(Math.atan2(-(0.2-N.controller.pos.x), -(-43.86-N.controller.pos.z)) - N.controller.yaw)))/N.controller.sensitivity), Math.round((N.controller.pitch - (0))/N.controller.sensitivity)]",
+   "steps": 8
+  },
+  {
+   "wait": 500
+  },
+  {
+   "eval": "(()=>{const d=new (G.camera.position.constructor)(); G.camera.getWorldDirection(d); return JSON.stringify({p:P(), dir:[+d.x.toFixed(2),+d.y.toFixed(2),+d.z.toFixed(2)], prompt: G.interact.current && G.interact.current.id})})()"
+  },
+  {
+   "look": "[Math.round(-(Math.atan2(Math.sin(Math.atan2(-(-2.5-N.controller.pos.x), -(-44.5-N.controller.pos.z)) - N.controller.yaw), Math.cos(Math.atan2(-(-2.5-N.controller.pos.x), -(-44.5-N.controller.pos.z)) - N.controller.yaw)))/N.controller.sensitivity), Math.round((N.controller.pitch - (0))/N.controller.sensitivity)]",
+   "steps": 8
+  },
+  {
+   "wait": 500
+  },
+  {
+   "eval": "(()=>{const d=new (G.camera.position.constructor)(); G.camera.getWorldDirection(d); return JSON.stringify({p:P(), dir:[+d.x.toFixed(2),+d.y.toFixed(2),+d.z.toFixed(2)], prompt: G.interact.current && G.interact.current.id})})()"
+  },
+  {
+   "walk": [
+    [
+     0.9,
+     -43.25
+    ]
+   ],
+   "timeout": 8000
+  },
+  {
+   "look": "[Math.round(-(Math.atan2(Math.sin(Math.atan2(-(0.16-N.controller.pos.x), -(-43.86-N.controller.pos.z)) - N.controller.yaw), Math.cos(Math.atan2(-(0.16-N.controller.pos.x), -(-43.86-N.controller.pos.z)) - N.controller.yaw)))/N.controller.sensitivity), Math.round((N.controller.pitch - (-0.75))/N.controller.sensitivity)]",
+   "steps": 8
+  },
+  {
+   "wait": 600
+  },
+  {
+   "eval": "(()=>{const d=new (G.camera.position.constructor)(); G.camera.getWorldDirection(d); return JSON.stringify({p:P(), dir:[+d.x.toFixed(2),+d.y.toFixed(2),+d.z.toFixed(2)], prompt: G.interact.current && G.interact.current.id})})()"
+  },
+  {
+   "key": "KeyE"
+  },
+  {
+   "wait": 1200
+  },
+  {
+   "until": "G.stills.active",
+   "timeout": 8000
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "until": "!G.stills.active",
+   "timeout": 15000
+  },
+  {
+   "wait": 800
+  },
+  {
+   "eval": "JSON.stringify({ p: P(), obj: (document.body.innerText||'').slice(0,200) })"
+  },
+  {
+   "look": "[Math.round(-(Math.atan2(Math.sin(Math.atan2(-(1.1-N.controller.pos.x), -(-43.12-N.controller.pos.z)) - N.controller.yaw), Math.cos(Math.atan2(-(1.1-N.controller.pos.x), -(-43.12-N.controller.pos.z)) - N.controller.yaw)))/N.controller.sensitivity), Math.round((N.controller.pitch - (-0.6))/N.controller.sensitivity)]",
+   "steps": 8
+  },
+  {
+   "wait": 500
+  },
+  {
+   "eval": "(()=>{const d=new (G.camera.position.constructor)(); G.camera.getWorldDirection(d); return JSON.stringify({p:P(), dir:[+d.x.toFixed(2),+d.y.toFixed(2),+d.z.toFixed(2)], prompt: G.interact.current && G.interact.current.id})})()"
+  },
+  {
+   "key": "KeyE"
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "eval": "(()=>{const d=new (G.camera.position.constructor)(); G.camera.getWorldDirection(d); return JSON.stringify({p:P(), dir:[+d.x.toFixed(2),+d.y.toFixed(2),+d.z.toFixed(2)], prompt: G.interact.current && G.interact.current.id})})()"
+  },
+  {
+   "key": "KeyE"
+  },
+  {
+   "wait": 2500
+  },
+  {
+   "until": "G.player.weapons.current === 'revolver' && !G.player.weapons.impls.revolver.reloading && G.player.weapons.impls.revolver.ammo === 6",
+   "timeout": 8000
+  },
+  {
+   "expect": "G.player.weapons.impls.revolver.ammo === 6 && G.player.weapons.impls.revolver.pocket === 18",
+   "label": "the box: six in the cylinder, eighteen in the pocket"
+  },
+  {
+   "until": "G.hud.kit.teachCur && G.hud.kit.teachCur.id === 'fire'",
+   "timeout": 6000
+  },
+  {
+   "wait": 300
+  },
+  {
+   "shot": "c01_fire_card_at_the_shells"
+  },
+  {
+   "expect": "!G.counters.c7loudAt && G.scenes.beat === 'office'",
+   "label": "the fire card at the shells, before the telephone"
+  },
+  {
+   "wait": 4500
+  },
+  {
+   "eval": "JSON.stringify(window.__cards)"
+  },
+  {
+   "expect": "window.__cards.some((c) => c.id === 'fire' && c.shells && !c.loud)",
+   "label": "fire taught at the shells, in the quiet"
+  },
+  {
+   "walk": [
+    [
+     1.5,
+     -43.0
+    ],
+    [
+     1.85,
+     -42.6
+    ],
+    [
+     1.85,
+     -40.6
+    ]
+   ],
+   "into": true,
+   "timeout": 12000
+  },
+  {
+   "until": "G.scenes.beat === 'loud'",
+   "timeout": 12000
+  },
+  {
+   "wait": 2500
+  },
+  {
+   "eval": "JSON.stringify(window.__cards)"
+  },
+  {
+   "expect": "window.__cards.filter((c) => c.id === 'fire').length === 1 && !window.__cards.some((c) => c.id === 'fire' && c.loud)",
+   "label": "nothing taught again as the telephone rings"
+  },
+  {
+   "expect": "G.player.weapons.impls.revolver.pocket === 18",
+   "label": "the loud pass begins with the box's count"
+  }
+ ]
+}

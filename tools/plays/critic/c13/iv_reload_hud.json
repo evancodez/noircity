@@ -1,0 +1,180 @@
+{
+"about": "[C13 critic] the HUD through a reload: does the pocket's row grey and the cylinder fill as each pair goes in, or lag? A click on the empty cylinder (the old auto reload) with 24 in the pocket. node tools/play.mjs tools/plays/critic/c13/iv_reload_hud.json",
+"url": "/?mute=1&start=gunfight.quiet",
+"size": [
+1440,
+900
+],
+"out": "shots/critic13/iv_reload_hud",
+"steps": [
+{
+"until": "G.state === 'title' && !document.getElementById('title').classList.contains('hidden')",
+"timeout": 30000
+},
+{
+"wait": 1200
+},
+{
+"clickOn": "#title .opt[data-k=begin]",
+"taken": "G.state !== 'title'",
+"retries": 5,
+"every": 4000
+},
+{
+"until": "G.scenes.current && G.scenes.current.id === 'gunfight' && G.scenes.beat === 'quiet' && !G.scenes.trans && G.player.weapons.current === 'revolver' && document.pointerLockElement === N.renderer.domElement",
+"timeout": 40000
+},
+{
+"wait": 1500
+},
+{
+"look": [
+0,
+260
+],
+"steps": 6
+},
+{
+"wait": 300
+},
+{
+"eval": "(()=>{const r=G.player.weapons.impls.revolver; const svg=document.querySelector('svg.rvp'); const live=svg?[...svg.querySelectorAll('rect[fill=\"#e9e7e1\"][stroke]')].length:-1; return JSON.stringify({a:r.ammo,p:r.pocket,ph:r.phase,hudLive:live,ch:r.chambers.join('')})})()"
+},
+{
+"mouse": "click",
+"button": "left"
+},
+{
+"wait": 420
+},
+{
+"mouse": "click",
+"button": "left"
+},
+{
+"wait": 420
+},
+{
+"mouse": "click",
+"button": "left"
+},
+{
+"wait": 420
+},
+{
+"mouse": "click",
+"button": "left"
+},
+{
+"wait": 420
+},
+{
+"mouse": "click",
+"button": "left"
+},
+{
+"wait": 420
+},
+{
+"mouse": "click",
+"button": "left"
+},
+{
+"wait": 420
+},
+{
+"eval": "(()=>{const r=G.player.weapons.impls.revolver; const svg=document.querySelector('svg.rvp'); const live=svg?[...svg.querySelectorAll('rect[fill=\"#e9e7e1\"][stroke]')].length:-1; return JSON.stringify({a:r.ammo,p:r.pocket,ph:r.phase,hudLive:live,ch:r.chambers.join('')})})()"
+},
+{
+"mouse": "click",
+"button": "left"
+},
+{
+"wait": 150
+},
+{
+"eval": "(()=>{const r=G.player.weapons.impls.revolver; const svg=document.querySelector('svg.rvp'); const live=svg?[...svg.querySelectorAll('rect[fill=\"#e9e7e1\"][stroke]')].length:-1; return JSON.stringify({a:r.ammo,p:r.pocket,ph:r.phase,hudLive:live,ch:r.chambers.join('')})})()"
+},
+{
+"wait": 250
+},
+{
+"shot": "r00"
+},
+{
+"eval": "(()=>{const r=G.player.weapons.impls.revolver; const svg=document.querySelector('svg.rvp'); const live=svg?[...svg.querySelectorAll('rect[fill=\"#e9e7e1\"][stroke]')].length:-1; return JSON.stringify({a:r.ammo,p:r.pocket,ph:r.phase,hudLive:live,ch:r.chambers.join('')})})()"
+},
+{
+"wait": 250
+},
+{
+"shot": "r01"
+},
+{
+"eval": "(()=>{const r=G.player.weapons.impls.revolver; const svg=document.querySelector('svg.rvp'); const live=svg?[...svg.querySelectorAll('rect[fill=\"#e9e7e1\"][stroke]')].length:-1; return JSON.stringify({a:r.ammo,p:r.pocket,ph:r.phase,hudLive:live,ch:r.chambers.join('')})})()"
+},
+{
+"wait": 250
+},
+{
+"shot": "r02"
+},
+{
+"eval": "(()=>{const r=G.player.weapons.impls.revolver; const svg=document.querySelector('svg.rvp'); const live=svg?[...svg.querySelectorAll('rect[fill=\"#e9e7e1\"][stroke]')].length:-1; return JSON.stringify({a:r.ammo,p:r.pocket,ph:r.phase,hudLive:live,ch:r.chambers.join('')})})()"
+},
+{
+"wait": 250
+},
+{
+"shot": "r03"
+},
+{
+"eval": "(()=>{const r=G.player.weapons.impls.revolver; const svg=document.querySelector('svg.rvp'); const live=svg?[...svg.querySelectorAll('rect[fill=\"#e9e7e1\"][stroke]')].length:-1; return JSON.stringify({a:r.ammo,p:r.pocket,ph:r.phase,hudLive:live,ch:r.chambers.join('')})})()"
+},
+{
+"wait": 250
+},
+{
+"shot": "r04"
+},
+{
+"eval": "(()=>{const r=G.player.weapons.impls.revolver; const svg=document.querySelector('svg.rvp'); const live=svg?[...svg.querySelectorAll('rect[fill=\"#e9e7e1\"][stroke]')].length:-1; return JSON.stringify({a:r.ammo,p:r.pocket,ph:r.phase,hudLive:live,ch:r.chambers.join('')})})()"
+},
+{
+"wait": 250
+},
+{
+"shot": "r05"
+},
+{
+"eval": "(()=>{const r=G.player.weapons.impls.revolver; const svg=document.querySelector('svg.rvp'); const live=svg?[...svg.querySelectorAll('rect[fill=\"#e9e7e1\"][stroke]')].length:-1; return JSON.stringify({a:r.ammo,p:r.pocket,ph:r.phase,hudLive:live,ch:r.chambers.join('')})})()"
+},
+{
+"wait": 250
+},
+{
+"shot": "r06"
+},
+{
+"eval": "(()=>{const r=G.player.weapons.impls.revolver; const svg=document.querySelector('svg.rvp'); const live=svg?[...svg.querySelectorAll('rect[fill=\"#e9e7e1\"][stroke]')].length:-1; return JSON.stringify({a:r.ammo,p:r.pocket,ph:r.phase,hudLive:live,ch:r.chambers.join('')})})()"
+},
+{
+"wait": 250
+},
+{
+"shot": "r07"
+},
+{
+"eval": "(()=>{const r=G.player.weapons.impls.revolver; const svg=document.querySelector('svg.rvp'); const live=svg?[...svg.querySelectorAll('rect[fill=\"#e9e7e1\"][stroke]')].length:-1; return JSON.stringify({a:r.ammo,p:r.pocket,ph:r.phase,hudLive:live,ch:r.chambers.join('')})})()"
+},
+{
+"wait": 1000
+},
+{
+"eval": "(()=>{const r=G.player.weapons.impls.revolver; const svg=document.querySelector('svg.rvp'); const live=svg?[...svg.querySelectorAll('rect[fill=\"#e9e7e1\"][stroke]')].length:-1; return JSON.stringify({a:r.ammo,p:r.pocket,ph:r.phase,hudLive:live,ch:r.chambers.join('')})})()"
+},
+{
+"shot": "r_end"
+}
+]
+}
