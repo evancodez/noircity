@@ -1,0 +1,196 @@
+{
+ "about": "Critic (C3c): the wreck as a first-timer who pokes: sit, E out, walk into his car's middle, E and LMB at it, then the edges of the place (70 m back, 90 m ahead, both sides), then his window, then E at my door. The state printed after each. NOIR_PORT=5343 node tools/play.mjs tools/plays/critic/c3c_wreck_poke.json --size 1440x900",
+ "url": "/?mute=1&start=tail.wreck",
+ "size": [
+  1440,
+  900
+ ],
+ "out": "shots/c3c_critic/poke",
+ "steps": [
+  {
+   "until": "G.state === 'title' && !document.getElementById('title').classList.contains('hidden') && !!document.querySelector('#title .opt[data-k=begin]')",
+   "timeout": 40000
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]",
+   "taken": "G.state === 'playing' && document.pointerLockElement === N.renderer.domElement",
+   "retries": 4,
+   "every": 4000
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'tail' && !!G.scenes.ctx.flags.chase && !!G.scenes.ctx.flags.chase.atWheel && G.hud.promptShown.includes('get out')",
+   "timeout": 45000
+  },
+  {
+   "name": "a first-timer at the wreck: sit 4 s, then E"
+  },
+  {
+   "wait": 4000
+  },
+  {
+   "eval": "JSON.stringify({ mode: G.controller.mode, phase: G.scenes.ctx.flags.chase.phase, eye: [+G.controller.pos.x.toFixed(1), +G.controller.pos.z.toFixed(1)], dHis: +Math.hypot(G.controller.pos.x - G.scenes.ctx.flags.chase.his.pos.x, G.controller.pos.z - G.scenes.ctx.flags.chase.his.pos.z).toFixed(2), dMy: +Math.hypot(G.controller.pos.x - G.scenes.ctx.flags.chase.my.pos.x, G.controller.pos.z - G.scenes.ctx.flags.chase.my.pos.z).toFixed(2), line: !!G.scenes.ctx.flags.chase.lineSaid, prompt: G.hud.promptShown, obj: G.hud.kit && G.hud.kit.objectiveText, sub: (document.getElementById('subtitle') || {}).textContent, teach: G.hud.kit && G.hud.kit.teachCur && G.hud.kit.teachCur.id })"
+  },
+  {
+   "shot": "w01_seat"
+  },
+  {
+   "key": "KeyE"
+  },
+  {
+   "wait": 1200
+  },
+  {
+   "eval": "JSON.stringify({ mode: G.controller.mode, phase: G.scenes.ctx.flags.chase.phase, eye: [+G.controller.pos.x.toFixed(1), +G.controller.pos.z.toFixed(1)], dHis: +Math.hypot(G.controller.pos.x - G.scenes.ctx.flags.chase.his.pos.x, G.controller.pos.z - G.scenes.ctx.flags.chase.his.pos.z).toFixed(2), dMy: +Math.hypot(G.controller.pos.x - G.scenes.ctx.flags.chase.my.pos.x, G.controller.pos.z - G.scenes.ctx.flags.chase.my.pos.z).toFixed(2), line: !!G.scenes.ctx.flags.chase.lineSaid, prompt: G.hud.promptShown, obj: G.hud.kit && G.hud.kit.objectiveText, sub: (document.getElementById('subtitle') || {}).textContent, teach: G.hud.kit && G.hud.kit.teachCur && G.hud.kit.teachCur.id })"
+  },
+  {
+   "shot": "w02_out"
+  },
+  {
+   "name": "straight at his car's middle"
+  },
+  {
+   "look": "(() => { const C = G.scenes.ctx.flags.chase, K = G.controller, t = ([C.his.pos.x, C.his.pos.z]); const want = Math.atan2(-(t[0] - K.pos.x), -(t[1] - K.pos.z)); const dy = Math.atan2(Math.sin(want - K.yaw), Math.cos(want - K.yaw)); return [Math.round(-dy / K.sensitivity), 0]; })()",
+   "steps": 8
+  },
+  {
+   "down": "KeyW"
+  },
+  {
+   "wait": 4000
+  },
+  {
+   "up": "KeyW"
+  },
+  {
+   "eval": "JSON.stringify({ mode: G.controller.mode, phase: G.scenes.ctx.flags.chase.phase, eye: [+G.controller.pos.x.toFixed(1), +G.controller.pos.z.toFixed(1)], dHis: +Math.hypot(G.controller.pos.x - G.scenes.ctx.flags.chase.his.pos.x, G.controller.pos.z - G.scenes.ctx.flags.chase.his.pos.z).toFixed(2), dMy: +Math.hypot(G.controller.pos.x - G.scenes.ctx.flags.chase.my.pos.x, G.controller.pos.z - G.scenes.ctx.flags.chase.my.pos.z).toFixed(2), line: !!G.scenes.ctx.flags.chase.lineSaid, prompt: G.hud.promptShown, obj: G.hud.kit && G.hud.kit.objectiveText, sub: (document.getElementById('subtitle') || {}).textContent, teach: G.hud.kit && G.hud.kit.teachCur && G.hud.kit.teachCur.id })"
+  },
+  {
+   "shot": "w03_into_his_car"
+  },
+  {
+   "name": "E and LMB against his car"
+  },
+  {
+   "key": "KeyE"
+  },
+  {
+   "wait": 500
+  },
+  {
+   "eval": "JSON.stringify({ mode: G.controller.mode, phase: G.scenes.ctx.flags.chase.phase, eye: [+G.controller.pos.x.toFixed(1), +G.controller.pos.z.toFixed(1)], dHis: +Math.hypot(G.controller.pos.x - G.scenes.ctx.flags.chase.his.pos.x, G.controller.pos.z - G.scenes.ctx.flags.chase.his.pos.z).toFixed(2), dMy: +Math.hypot(G.controller.pos.x - G.scenes.ctx.flags.chase.my.pos.x, G.controller.pos.z - G.scenes.ctx.flags.chase.my.pos.z).toFixed(2), line: !!G.scenes.ctx.flags.chase.lineSaid, prompt: G.hud.promptShown, obj: G.hud.kit && G.hud.kit.objectiveText, sub: (document.getElementById('subtitle') || {}).textContent, teach: G.hud.kit && G.hud.kit.teachCur && G.hud.kit.teachCur.id })"
+  },
+  {
+   "mouse": "click",
+   "button": "left",
+   "x": 720,
+   "y": 450
+  },
+  {
+   "wait": 600
+  },
+  {
+   "eval": "JSON.stringify({ mode: G.controller.mode, phase: G.scenes.ctx.flags.chase.phase, eye: [+G.controller.pos.x.toFixed(1), +G.controller.pos.z.toFixed(1)], dHis: +Math.hypot(G.controller.pos.x - G.scenes.ctx.flags.chase.his.pos.x, G.controller.pos.z - G.scenes.ctx.flags.chase.his.pos.z).toFixed(2), dMy: +Math.hypot(G.controller.pos.x - G.scenes.ctx.flags.chase.my.pos.x, G.controller.pos.z - G.scenes.ctx.flags.chase.my.pos.z).toFixed(2), line: !!G.scenes.ctx.flags.chase.lineSaid, prompt: G.hud.promptShown, obj: G.hud.kit && G.hud.kit.objectiveText, sub: (document.getElementById('subtitle') || {}).textContent, teach: G.hud.kit && G.hud.kit.teachCur && G.hud.kit.teachCur.id })"
+  },
+  {
+   "name": "the edges: 70 m back up the road behind my car"
+  },
+  {
+   "walk": "(() => { const C = G.scenes.ctx.flags.chase; const p = C.my.seat(C.my.pos.clone().set(-70, 0, 0), C.my.pos.clone()); return [[p.x, p.z]]; })()",
+   "into": true,
+   "timeout": 25000
+  },
+  {
+   "eval": "JSON.stringify({ mode: G.controller.mode, phase: G.scenes.ctx.flags.chase.phase, eye: [+G.controller.pos.x.toFixed(1), +G.controller.pos.z.toFixed(1)], dHis: +Math.hypot(G.controller.pos.x - G.scenes.ctx.flags.chase.his.pos.x, G.controller.pos.z - G.scenes.ctx.flags.chase.his.pos.z).toFixed(2), dMy: +Math.hypot(G.controller.pos.x - G.scenes.ctx.flags.chase.my.pos.x, G.controller.pos.z - G.scenes.ctx.flags.chase.my.pos.z).toFixed(2), line: !!G.scenes.ctx.flags.chase.lineSaid, prompt: G.hud.promptShown, obj: G.hud.kit && G.hud.kit.objectiveText, sub: (document.getElementById('subtitle') || {}).textContent, teach: G.hud.kit && G.hud.kit.teachCur && G.hud.kit.teachCur.id })"
+  },
+  {
+   "shot": "w04_back_edge"
+  },
+  {
+   "name": "70 m ahead past his car"
+  },
+  {
+   "walk": "(() => { const C = G.scenes.ctx.flags.chase; const p = C.my.seat(C.my.pos.clone().set(90, 0, 0), C.my.pos.clone()); return [[p.x, p.z]]; })()",
+   "into": true,
+   "timeout": 40000
+  },
+  {
+   "eval": "JSON.stringify({ mode: G.controller.mode, phase: G.scenes.ctx.flags.chase.phase, eye: [+G.controller.pos.x.toFixed(1), +G.controller.pos.z.toFixed(1)], dHis: +Math.hypot(G.controller.pos.x - G.scenes.ctx.flags.chase.his.pos.x, G.controller.pos.z - G.scenes.ctx.flags.chase.his.pos.z).toFixed(2), dMy: +Math.hypot(G.controller.pos.x - G.scenes.ctx.flags.chase.my.pos.x, G.controller.pos.z - G.scenes.ctx.flags.chase.my.pos.z).toFixed(2), line: !!G.scenes.ctx.flags.chase.lineSaid, prompt: G.hud.promptShown, obj: G.hud.kit && G.hud.kit.objectiveText, sub: (document.getElementById('subtitle') || {}).textContent, teach: G.hud.kit && G.hud.kit.teachCur && G.hud.kit.teachCur.id })"
+  },
+  {
+   "shot": "w05_front_edge"
+  },
+  {
+   "name": "off to each side"
+  },
+  {
+   "walk": "(() => { const C = G.scenes.ctx.flags.chase; const p = C.his.seat(C.his.pos.clone().set(0, 0, 25), C.his.pos.clone()); return [[p.x, p.z]]; })()",
+   "into": true,
+   "timeout": 20000
+  },
+  {
+   "eval": "JSON.stringify({ mode: G.controller.mode, phase: G.scenes.ctx.flags.chase.phase, eye: [+G.controller.pos.x.toFixed(1), +G.controller.pos.z.toFixed(1)], dHis: +Math.hypot(G.controller.pos.x - G.scenes.ctx.flags.chase.his.pos.x, G.controller.pos.z - G.scenes.ctx.flags.chase.his.pos.z).toFixed(2), dMy: +Math.hypot(G.controller.pos.x - G.scenes.ctx.flags.chase.my.pos.x, G.controller.pos.z - G.scenes.ctx.flags.chase.my.pos.z).toFixed(2), line: !!G.scenes.ctx.flags.chase.lineSaid, prompt: G.hud.promptShown, obj: G.hud.kit && G.hud.kit.objectiveText, sub: (document.getElementById('subtitle') || {}).textContent, teach: G.hud.kit && G.hud.kit.teachCur && G.hud.kit.teachCur.id })"
+  },
+  {
+   "shot": "w06_side_a"
+  },
+  {
+   "walk": "(() => { const C = G.scenes.ctx.flags.chase; const p = C.his.seat(C.his.pos.clone().set(0, 0, -25), C.his.pos.clone()); return [[p.x, p.z]]; })()",
+   "into": true,
+   "timeout": 25000
+  },
+  {
+   "eval": "JSON.stringify({ mode: G.controller.mode, phase: G.scenes.ctx.flags.chase.phase, eye: [+G.controller.pos.x.toFixed(1), +G.controller.pos.z.toFixed(1)], dHis: +Math.hypot(G.controller.pos.x - G.scenes.ctx.flags.chase.his.pos.x, G.controller.pos.z - G.scenes.ctx.flags.chase.his.pos.z).toFixed(2), dMy: +Math.hypot(G.controller.pos.x - G.scenes.ctx.flags.chase.my.pos.x, G.controller.pos.z - G.scenes.ctx.flags.chase.my.pos.z).toFixed(2), line: !!G.scenes.ctx.flags.chase.lineSaid, prompt: G.hud.promptShown, obj: G.hud.kit && G.hud.kit.objectiveText, sub: (document.getElementById('subtitle') || {}).textContent, teach: G.hud.kit && G.hud.kit.teachCur && G.hud.kit.teachCur.id })"
+  },
+  {
+   "shot": "w07_side_b"
+  },
+  {
+   "name": "to his window"
+  },
+  {
+   "walk": "(() => { const C = G.scenes.ctx.flags.chase; return [[C.winAt.x, C.winAt.z]]; })()",
+   "timeout": 30000
+  },
+  {
+   "look": "(() => { const C = G.scenes.ctx.flags.chase, K = G.controller, t = ([C.winP.x, C.winP.z]); const want = Math.atan2(-(t[0] - K.pos.x), -(t[1] - K.pos.z)); const dy = Math.atan2(Math.sin(want - K.yaw), Math.cos(want - K.yaw)); return [Math.round(-dy / K.sensitivity), 0]; })()",
+   "steps": 8
+  },
+  {
+   "wait": 800
+  },
+  {
+   "eval": "JSON.stringify({ mode: G.controller.mode, phase: G.scenes.ctx.flags.chase.phase, eye: [+G.controller.pos.x.toFixed(1), +G.controller.pos.z.toFixed(1)], dHis: +Math.hypot(G.controller.pos.x - G.scenes.ctx.flags.chase.his.pos.x, G.controller.pos.z - G.scenes.ctx.flags.chase.his.pos.z).toFixed(2), dMy: +Math.hypot(G.controller.pos.x - G.scenes.ctx.flags.chase.my.pos.x, G.controller.pos.z - G.scenes.ctx.flags.chase.my.pos.z).toFixed(2), line: !!G.scenes.ctx.flags.chase.lineSaid, prompt: G.hud.promptShown, obj: G.hud.kit && G.hud.kit.objectiveText, sub: (document.getElementById('subtitle') || {}).textContent, teach: G.hud.kit && G.hud.kit.teachCur && G.hud.kit.teachCur.id })"
+  },
+  {
+   "shot": "w08_window"
+  },
+  {
+   "name": "back to my door, E"
+  },
+  {
+   "walk": "(() => { const C = G.scenes.ctx.flags.chase; const d = C.doorAt(); return [[d.x, d.z]]; })()",
+   "timeout": 30000
+  },
+  {
+   "wait": 300
+  },
+  {
+   "eval": "JSON.stringify({ mode: G.controller.mode, phase: G.scenes.ctx.flags.chase.phase, eye: [+G.controller.pos.x.toFixed(1), +G.controller.pos.z.toFixed(1)], dHis: +Math.hypot(G.controller.pos.x - G.scenes.ctx.flags.chase.his.pos.x, G.controller.pos.z - G.scenes.ctx.flags.chase.his.pos.z).toFixed(2), dMy: +Math.hypot(G.controller.pos.x - G.scenes.ctx.flags.chase.my.pos.x, G.controller.pos.z - G.scenes.ctx.flags.chase.my.pos.z).toFixed(2), line: !!G.scenes.ctx.flags.chase.lineSaid, prompt: G.hud.promptShown, obj: G.hud.kit && G.hud.kit.objectiveText, sub: (document.getElementById('subtitle') || {}).textContent, teach: G.hud.kit && G.hud.kit.teachCur && G.hud.kit.teachCur.id })"
+  },
+  {
+   "key": "KeyE"
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "eval": "JSON.stringify({ mode: G.controller.mode, phase: G.scenes.ctx.flags.chase.phase, eye: [+G.controller.pos.x.toFixed(1), +G.controller.pos.z.toFixed(1)], dHis: +Math.hypot(G.controller.pos.x - G.scenes.ctx.flags.chase.his.pos.x, G.controller.pos.z - G.scenes.ctx.flags.chase.his.pos.z).toFixed(2), dMy: +Math.hypot(G.controller.pos.x - G.scenes.ctx.flags.chase.my.pos.x, G.controller.pos.z - G.scenes.ctx.flags.chase.my.pos.z).toFixed(2), line: !!G.scenes.ctx.flags.chase.lineSaid, prompt: G.hud.promptShown, obj: G.hud.kit && G.hud.kit.objectiveText, sub: (document.getElementById('subtitle') || {}).textContent, teach: G.hud.kit && G.hud.kit.teachCur && G.hud.kit.teachCur.id })"
+  },
+  {
+   "shot": "w09_in"
+  }
+ ]
+}

@@ -1,11 +1,11 @@
 {
- "about": "C3b: chapter VI by real input, a player who uses what was taught (src/scenes/tail/bot.js 'good': reads the corners, the handbrake at the tight ones, keeps two to five lengths off him; on the river road RMB, the mouse onto his rear tyre, LMB - one round takes the tyre - then the gun in and the shunt on his back corner) WINS, twice in a row (the page reloaded and the chapter played again on another draw): the chase kept, his tyre, the shunt, he spins and wrecks, out of the car, the line, back in, the drive to Pier 9, E by the gate, chapter VII by a cut. NOIR_PORT=5343 node tools/play.mjs tools/plays/tail_good.json",
+ "about": "C3b: chapter VI by real input, a player who uses what was taught (src/scenes/tail/bot.js 'good': reads the corners, the handbrake at the tight ones, keeps two to five lengths off him; on the river road RMB, the mouse onto his rear tyre, LMB - one round takes the tyre - then the gun in and the shunt on his back corner) WINS, twice in a row (the page reloaded and the chapter played again on another draw): the chase kept, his tyre, the shunt, he spins and wrecks, out of the car, up to his window (he stays in his seat: C3c), the line, back in, the drive to Pier 9, E by the gate, chapter VII by a cut. NOIR_PORT=5343 node tools/play.mjs tools/plays/tail_good.json",
  "url": "/?mute=1&start=tail",
  "size": [
   1280,
   800
  ],
- "out": "shots/c3b/play_good",
+ "out": "shots/c3c/play_good",
  "steps": [
   {
    "name": "the title, BEGIN at the tail"
@@ -38,6 +38,9 @@
    "shot": "g00_kerb"
   },
   {
+   "eval": "(() => { window.__lineAt = null; setInterval(() => { const C = G.scenes.ctx && G.scenes.ctx.flags && G.scenes.ctx.flags.chase; if (!C || !C.lineSaid || window.__lineAt) return; const P = C.winP, e = G.camera.position; window.__lineAt = { phase: C.phase, dWin: P ? +Math.hypot(P.x - e.x, P.z - e.z).toFixed(2) : null }; }, 100); return '[C3c] watching for his line'; })()"
+  },
+  {
    "name": "the tail, the river road, the gun, the wreck, the pier"
   },
   {
@@ -52,7 +55,8 @@
     "g09_spin": "!!G.scenes.ctx.flags.chase && G.scenes.ctx.flags.chase.phase === 'crash' && (G.scenes.ctx.flags.chase.crashT || 0) > 0.5",
     "g10_out": "!!G.scenes.ctx.flags.chase && G.scenes.ctx.flags.chase.phase === 'out' && G.scenes.ctx.flags.chase.outT > 0.9",
     "g12_gate": "G.hud.promptShown.includes('get out') && !!G.scenes.ctx.flags.chase && G.scenes.ctx.flags.chase.phase === 'c'",
-    "g08b_ram_card": "!!G.hud.kit && !!G.hud.kit.teachCur && G.hud.kit.teachCur.id === 'tail_ram' && G.hud.kit.teachCur.t > 0.5"
+    "g08b_ram_card": "!!G.hud.kit && !!G.hud.kit.teachCur && G.hud.kit.teachCur.id === 'tail_ram' && G.hud.kit.teachCur.t > 0.5",
+    "g11_his_window": "!!G.scenes.ctx.flags.chase && G.scenes.ctx.flags.chase.phase === 'out' && G.scenes.ctx.flags.chase.lineSaid"
    },
    "check": "D.end === 'next:warehouse' || D.end === 'until'",
    "label": "the good hands win: chapter VII opens at the pier"
@@ -63,6 +67,10 @@
   {
    "expect": "G.scenes.current && G.scenes.current.id === 'warehouse'",
    "label": "chapter VII (Pier Nine) begins"
+  },
+  {
+   "expect": "!!window.__lineAt && window.__lineAt.phase === 'out' && window.__lineAt.dWin < 1.5",
+   "label": "[C3c] his line from his seat as I stood at his window, on foot (nobody got out)"
   },
   {
    "shot": "g13_next"

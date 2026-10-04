@@ -24,8 +24,10 @@ import { START, EW, NS, riverPoint, riverFrame, riverSAtZ, PIER } from '../stage
 //      him." only when he is RIVER_B.lostGap m clear (back at the river
 //      road's start; "He warned them." if he reaches the gate first)
 //   [C3b] "See to the driver."  his wreck: stopped near it, E: out of the
-//      car on foot; he is crouched by his wreck; walked up to (or passed):
-//      "Pier nine. Tonight." and "Pier 9." at once; E at my door: back in
+//      car on foot; [C3c] he stays in his wreck, slumped against his door's
+//      broken window; at his window (within 1.5 m, looking at it), or
+//      passed within 4 m on the way off: "Pier nine. Tonight." from his
+//      seat, and "Pier 9." at once; E at my door: back in
 //   c  "Pier 9."  I drive to the pier myself; by its gate, E: the lamps off,
 //      the door, and chapter VII by a cut with its card small over the
 //      picture (no black)
