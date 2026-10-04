@@ -107,6 +107,9 @@ FPS = r"""(async () => { const ts = []; let last = performance.now(); const t0 =
   return { fps: +(1000 / a).toFixed(1), p95: +ts[Math.floor(ts.length * 0.95)].toFixed(1), calls: N.renderer.info.render.calls }; })()"""
 
 
+MARKS = {}
+
+
 def chapter(n, scene, checks=(), wait_cond=None):
     """a chapter's start: it comes in, the card goes, the measure, the checks"""
     steps = [
@@ -125,7 +128,7 @@ HAS = lambda *k: ' && '.join("G.save.inventory.includes('%s')" % x for x in k)
 NO_STALE = "(G.hud.objectiveText || '') !== ''"
 
 
-def build(first):
+def build(first, frm=None):
     rec = RECORDER.replace('(MEASURE)', MEASURE).replace('(FPS)', FPS)
     steps = [{'name': 'the recorder'}, {'until': 'N.perf.steps > 60', 'timeout': 40000},
              {'eval': "(localStorage.removeItem('noir.save'), 'no save')"}, {'eval': rec}, {'heap': 'title'}]
@@ -146,6 +149,7 @@ def build(first):
     steps.append({'expect': "G.stills.last && G.stills.last.id === 'ames' && !G.stills.last.skipped", 'label': '[seam II-III] the ames still was shown'})
 
     # ---- III Room 304 ----
+    MARKS['office'] = len(steps)
     steps += chapter(3, 'office', checks=[
         ('the matchbook and Ames\'s card carried', HAS('matchbook', 'amesCard')),
         ('walking, nothing in the hands, no fist fight running', "G.controller.mode === 'walk' && !G.brawl.active"),
@@ -156,6 +160,7 @@ def build(first):
     steps.append({'drive': 'tools/lib/c5_office.mjs', 'order': order, 'check': "D.fails.length === 0 && D.end.scene === 'gunfight'", 'label': '[office] the safe opened, the check read, on into IV'})
 
     # ---- IV The Door (the same room) ----
+    MARKS['gunfight'] = len(steps)
     steps += chapter(4, 'gunfight', checks=[
         ('the check carried, PIER 9', HAS('check') + " && G.save.flags.note === 'PIER 9'"),
     ])
@@ -166,14 +171,16 @@ def build(first):
         {'until': "G.scenes.beat === 'quiet' && !G.failing", 'timeout': 20000},
         {'expect': "G.hud.objectiveText === 'See if more are coming.'", 'label': '[gunfight] the quiet, its line'},
         # (from wherever the corridor left me - the cart in the corridor, or the outer office - to the street window)
-        {'walk': "(() => { const e = G.eye; const p = []; if (e.x < -3.9) p.push([-4.6, Math.max(0.6, Math.min(3.0, e.z))], [-4.75, 3.4]); if (e.x < -0.2) p.push([-3.1, 3.4], [-0.8, 3.4]); p.push([1.0, 3.4], [2.4, 4.95]); return p; })()", 'timeout': 40000},
-        {'eval': '(N.controller.yaw = -Math.PI / 2 + 0.25, 1)'},
+        # (already in Ames's room within reach of the window - behind the desk - no walk)
+        {'walk': "(() => { const e = G.eye; const p = []; if (e.x > 2.2) return [[e.x, e.z]]; if (e.x < -3.9) p.push([-4.6, Math.max(0.6, Math.min(3.0, e.z))], [-4.75, 3.4]); if (e.x < -0.2) p.push([-3.1, 3.4], [-0.8, 3.4]); p.push([1.0, 3.4], [2.4, 4.95]); return p; })()", 'timeout': 40000},
+        {'eval': '(N.controller.yaw = Math.atan2(-(5.6 - G.eye.x), -(4.15 - G.eye.z)), 1)'},
         {'down': 'KeyW'},
         {'until': "G.scenes.current && G.scenes.current.id === 'watcher'", 'timeout': 8000},
         {'up': 'KeyW'},
     ]
 
     # ---- V The Watcher (the window's frame is both) ----
+    MARKS['watcher'] = len(steps)
     steps += chapter(5, 'watcher', checks=[
         ('no gunfight left running', 'G.ais.size === 0'),
         ('the same room, at the window', "G.stage.name === 'office' && G.scenes.beat === 'seen'"),
@@ -192,6 +199,7 @@ def build(first):
                       'check': 'D.done && D.fails === 0', 'label': '[watcher] through to the car, never lost'})
 
     # ---- VI The Tail (no fade: straight into the car) ----
+    MARKS['tail'] = len(steps)
     steps += chapter(6, 'tail', checks=[
         ('in the driver\'s seat, the hands on the wheel', "G.controller.mode === 'drive' && G.hands.set === 'drive'"),
         ('no black on the way in', 'G.scenes.fadeK < 0.05'),
@@ -202,6 +210,7 @@ def build(first):
     steps.append({'expect': "G.scenes.current && G.scenes.current.id === 'warehouse'", 'label': '[tail] on into VII'})
 
     # ---- VII Pier Nine ----
+    MARKS['warehouse'] = len(steps)
     steps += chapter(7, 'warehouse', checks=[
         ('sneaking, the hands\' own set', "G.controller.mode === 'sneak' && G.hands.set === 'sneak'"),
         ('the revolver empty after VI', '!G.player.weapons.active || G.player.weapons.active.ammo === 0'),
@@ -230,6 +239,7 @@ def build(first):
     steps += strip(rest)
 
     # ---- VIII The Block ----
+    MARKS['shootout'] = len(steps)
     steps += chapter(8, 'shootout', checks=[
         ('the photograph and the shells carried, no revolver in hand', HAS('photo', 'shells')),
         ('no fist fight left running', '!G.brawl.active'),
@@ -281,11 +291,18 @@ def build(first):
         {'expect': "G.hud.objectiveText === 'Light up.'", 'label': 'a second evening: the first line again'},
     ]
     name = 'whole_first' if first else 'whole'
+    url = '/?mute=1'
+    if frm:
+        # (from a chapter on: BEGIN at ?start=<chapter>, the recorder, then the steps from its start)
+        steps = steps[:5] + [{'until': "G.state === 'title' && !document.getElementById('title').classList.contains('hidden')", 'timeout': 30000}, {'wait': 1500},
+                             {'clickOn': '#title .opt[data-k=begin]', 'taken': "G.state !== 'title'", 'retries': 5, 'every': 4000}] + steps[MARKS[frm]:]
+        name += '_from_' + frm
+        url = '/?mute=1&start=' + frm
     play = {
         'about': '[C10b] The whole game in one page session by real input, the %s hands: BEGIN, the opening stills, I to VIII, THE END, the title and BEGIN again. '
                  'Built by tools/lib/whole.py from the lanes\' plays and drivers (the gun drivers with flow: true - each beat comes by the story, a retry by the game\'s own fail). '
                  'NOIR_PORT=5350 node tools/play.mjs tools/plays/%s.json' % ('clumsy (each lane\'s first-timer)' if first else 'good (each lane\'s taught player)', name),
-        'url': '/?mute=1',
+        'url': url,
         'size': [1280, 800],
         'out': 'shots/play/' + name,
         'steps': steps,
@@ -296,5 +313,10 @@ def build(first):
 
 
 if __name__ == '__main__':
-    build(False)
-    build(True)
+    import sys
+    if '--from' in sys.argv:
+        ch = sys.argv[sys.argv.index('--from') + 1]
+        build('--first' in sys.argv, ch)      # writes whole[_first]_from_<chapter>.json (scratch: not committed)
+    else:
+        build(False)
+        build(True)
