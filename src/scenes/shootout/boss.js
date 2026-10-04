@@ -31,7 +31,14 @@ export const SALOON = {
   // up the near side of the road at a walk, to stop south of the door, its
   // lamps along the front (cars never pass through cars: the parked sedan
   // at (-4.3, -25) is left on the left)
-  rail: [[-3.0, -84], [-2.0, -74], [0.3, -62], [0.5, -56], [-0.3, -44], [-1.1, -31], [-1.1, -24], [-0.9, -17], [-1.6, -13], [-2.4, -9.5]],
+  // ([C8] after the critic: it stopped by itself at the end of its rail, so the
+  // tyres never mattered. Now the rail runs on to the diner's door, and a car
+  // that gets there has lost me the stage: it must be stopped - two tyres)
+  rail: [[-3.0, -84], [-2.0, -74], [0.3, -62], [0.5, -56], [-0.3, -44], [-1.1, -31], [-1.1, -24], [-0.9, -17], [-1.6, -13], [-2.4, -9.5], [-3.7, -5.6], [-4.7, -1.6]],
+  // where it stands for a checkpoint after it (where the old rail ended), m before the end
+  parkBack: 8.2,
+  // where a retry of the stage starts it, m before the end (about 17 s at its walk)
+  retryBack: 44,
   // (they wait by the road, out of the light, and walk up behind it once it is by)
   heavies: [
     { at: { x: 4.4, z: -49.5 }, steps: [{ x: 1.9, z: -36 }, { x: 0.6, z: -24 }, { x: -0.5, z: -13.4 }] },
@@ -55,7 +62,7 @@ export function saloonIn(ctx, { retry = false } = {}) {
   car.c8saloon = true;
   R.cars.saloon = car;
   car.meshes.lens.material = S.M.headlamp;
-  if (retry) { car.rail.s = Math.max(0, car.rail.L - 30); R.rails.place(car, 0); }
+  if (retry) { car.rail.s = Math.max(0, car.rail.L - SALOON.retryBack); R.rails.place(car, 0); }
   // (it stops where I stop it: two tyres gone)
   car.rail.riders.push((c) => {
     if (c.rail.done) return;
@@ -129,7 +136,8 @@ export function cardinalOut(ctx, car, { at = null, stage = 2, hatGone = false, o
   const clip = (name, fade = 0.3) => { if (h._c8clip === name) return; h._c8clip = name; if (own(name)) h.anim.play(name, { fade }); };
   const B = {
     stage, wounds: hatGone ? 1 : 0, mode: at ? 'walk' : 'out', t: 0, i: 0, open: 0, openWhy: '', fireAt: 3.2, shield: null, aim: false, said: {}, hatGone,
-    path: stage === 3 ? SALOON.last : SALOON.path,
+    // ([C8] the car may stop anywhere now: his walk is the part of it ahead of him)
+    path: stage === 3 ? SALOON.last : (() => { const q = SALOON.path.filter((w) => w.z > p.z + 0.5); return q.length ? q : [SALOON.path[SALOON.path.length - 1]]; })(),
   };
   if (hatGone && h.launchHat) { try { h.hatFlies = true; h.launchHat(); } catch { /* */ } }
   // (his own: not in the Game's table of brains - the director's pacing reads those)
@@ -151,7 +159,9 @@ export function cardinalOut(ctx, car, { at = null, stage = 2, hatGone = false, o
   function hit() {
     const lost = hp0 - h.hp; hp0 = h.hp;
     if (lost <= 0 || B.down) return;
-    if (B.open <= 0 && B.stage < 3) {
+    // ([C8] after the critic: the last ten seconds too - he is open only
+    // after his shot there as well, no longer the whole time)
+    if (B.open <= 0) {
       // the iron under his coat: a thud, no blood - not now
       G.sfx.play('c2_woodHit', h.pos.clone().setY(1.3), { k: 0.5 }, { ref: 2 });
       G.counters.c8iron = (G.counters.c8iron || 0) + 1;
@@ -159,7 +169,9 @@ export function cardinalOut(ctx, car, { at = null, stage = 2, hatGone = false, o
       return;
     }
     B.wounds++;
-    B.open = 0;
+    // (one wound an opening while he walks at the diner; in the last ten
+    // seconds the opening after his shot is the time to finish it)
+    if (B.stage < 3) B.open = 0;
     G.counters.c8wounds = B.wounds;
     if (B.stage === 3 && B.wounds >= 5) { fall(); return; }
     if (B.stage === 3) { stagger(0.45); return; }
@@ -199,7 +211,7 @@ export function cardinalOut(ctx, car, { at = null, stage = 2, hatGone = false, o
     stepShield(dt);
     if (B.t < 0) return true;
     if (B.mode === 'out') { B.mode = 'walk'; h._c8clip = null; }
-    if (B.hold > 0) { B.hold -= dt; h.speed = 0; if (B.hold <= 0) { h._c8clip = null; if (B.toLast && B.stage === 2) { B.stage = 3; B.toLast = false; B.path = SALOON.last.map((q) => q); B.i = 0; B.lastT = 0; ctx.flags.c8last = true; } } return true; }
+    if (B.hold > 0) { B.hold -= dt; h.speed = 0; if (B.hold <= 0) { h._c8clip = null; if (B.toLast && B.stage === 2) { B.stage = 3; B.toLast = false; B.path = SALOON.last.map((q) => q); B.i = 0; B.lastT = 0; B.fireAt = B.t + 1.0; ctx.flags.c8last = true; } } return true; }
     const e = G.eye;
     const body = K.playerBody();
     const eyeH = V(h.pos.x, h.pos.y + 1.7, h.pos.z);
@@ -207,12 +219,15 @@ export function cardinalOut(ctx, car, { at = null, stage = 2, hatGone = false, o
     B.noLine = line ? 0 : (B.noLine || 0) + dt;
     if (B.stage === 3) {
       B.lastT = (B.lastT || 0) + dt;
-      B.open = 9;
       if (B.lastT > 10 || (B.i >= B.path.length)) { if (onDoor) onDoor(); return false; }
     }
     // the tell, the shot, the opening after it
     // (with no line on me a while he fires anyway, into what I hide behind: that opens him too)
-    if (B.mode === 'walk' && B.t >= B.fireAt && (line || B.noLine > 4.5) && Math.hypot(h.pos.x - e.x, h.pos.z - e.z) < 30) { B.mode = 'draw'; B.mt = 0; h.speed = 0; if (ember) ember.material = FLARE.on; G.sfx.play('b7_hiss', h.pos.clone().setY(1.8), { k: 0.4 }, { ref: 3 }); }
+    // ([C8] after the critic: the rule said once - he fires into what I hide behind, and after it he is open)
+    if (B.mode === 'walk' && B.t >= B.fireAt && (line || B.noLine > 4.5 || B.stage === 3) && Math.hypot(h.pos.x - e.x, h.pos.z - e.z) < 30) {
+      B.mode = 'draw'; B.mt = 0; h.speed = 0; if (ember) ember.material = FLARE.on; G.sfx.play('b7_hiss', h.pos.clone().setY(1.8), { k: 0.4 }, { ref: 3 });
+      if (!line && !B.said.blind && B.stage === 2) { B.said.blind = true; ctx.hud.say('He fires at the wood. After it, he’s open.', 3.0); }
+    }
     if (B.mode === 'draw') {
       B.mt += dt;
       faceTo(e.x, e.z, dt, 4);
@@ -232,7 +247,7 @@ export function cardinalOut(ctx, car, { at = null, stage = 2, hatGone = false, o
     }
     if (B.mode === 'after') {
       B.mt += dt;
-      if (B.mt > SALOON.openAfterShot) { B.mode = 'walk'; h.aiming = false; B.fireAt = B.t + (B.stage === 3 ? 3.4 : 3.6 + ctx.rng.next() * 1.2); }
+      if (B.mt > SALOON.openAfterShot) { B.mode = 'walk'; h.aiming = false; B.fireAt = B.t + (B.stage === 3 ? 2.4 : 3.6 + ctx.rng.next() * 1.2); }
       return true;
     }
     // walk at the diner; nothing hurries him

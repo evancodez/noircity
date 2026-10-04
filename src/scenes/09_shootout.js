@@ -5,9 +5,10 @@ import { SITE, DINER } from './shootout/site.js';
 import { rigFor, rig, setLights, everyStep, RESERVE, dropMan, knockOut, V } from './shootout/rig.js';
 import { freshRoom, placeDot, mackWindow } from './shootout/room.js';
 import { nick, placeNick, NICK } from './shootout/nick.js';
-import { AT, CARS, CAR_MEN, NORTH, UNDER_EL, SPOTS, OPEN as OPEN_SPOT, beginFight, rebuild, alive, carIn, outOfCar, manForDot, elGunman, driveBy, heavyForDoor, gunman, pressOn } from './shootout/street.js';
+import { AT, CARS, CAR_MEN, NORTH, UNDER_EL, SPOTS, OPEN as OPEN_SPOT, beginFight, rebuild, alive, carIn, outOfCar, manForDot, elGunman, driveBy, heavyForDoor, gunman, pressOn, kitchenMan } from './shootout/street.js';
 import { saloonIn, saloonMen, glare, cardinalOut, blastNear, SALOON } from './shootout/boss.js';
 import { endHat } from './shootout/ending.js';
+import { makeHydrant } from './shootout/hydrant.js';
 import { DOT_CLIP, dotGunAt, dotDrumsAt, DOT_DRUMS, dotResupplyAt } from '../cast/kinds/cardinal.js';
 import { palm, wrap, OPEN } from '../player/handPoses.js';
 
@@ -62,6 +63,9 @@ function stage(ctx, b) {
   // SPACE (nick.js), never a walk through it (II opens the bay's colliders)
   { const front = S.part('dinerFront'); if (front.closeBay) front.closeBay(mackWindow(G)); }
   R.paneRounds = null;
+  // [C8] after the critic: the hydrant on the kerb, whole again at every checkpoint
+  if (!R.hydrant) { R.hydrant = makeHydrant(ctx); (R.onTeardown || (R.onTeardown = [])).push(() => { if (R.hydrant) R.hydrant.remove(); R.hydrant = null; }); }
+  R.hydrant.reset();
   // a later beat: the front's glass gone, the two cars where they stopped
   if (bi > BEATS.indexOf('cars')) {
     const front = S.part('dinerFront');
@@ -78,7 +82,10 @@ function stage(ctx, b) {
   // the room's light on; the drums as the checkpoint has them
   R.lightsOn = true;
   setLights(ctx, true, { sound: false });
-  R.reserve = bi >= BEATS.indexOf('cars') ? RESERVE.start : 0;
+  // ([C8] after the critic: the two she laid for the first fight; one in my
+  // coat at every later checkpoint; Dot's one under the counter for this movement)
+  R.reserve = bi >= BEATS.indexOf('cars') ? (b === 'cars' ? RESERVE.gun : RESERVE.start) : 0;
+  R.dotLeft = RESERVE.dot;
   R.stackReady = false; R.slide = null;
   R.gun.group.visible = false;
   for (const d of R.gun.drums) d.visible = false;
@@ -116,7 +123,7 @@ function stage(ctx, b) {
   } else {
     const P = AT[b] || AT.cars;
     C.setPose(P.x, P.z, P.yaw, 0);
-    C.setMode('gun', { crouch: false });
+    C.setMode('gun', { crouch: !!P.crouch });
     G.eye.copy(G.camera.position);
     K.arm('tommy');
     R.gunTaken = true;
@@ -166,6 +173,7 @@ export default defineScene({
   *script(ctx) {
     const G = ctx.game, R = rig(), K = gunsOf(G);
     ctx.onStep((dt) => everyStep(ctx, dt));
+    ctx.onStep((dt) => { const RR = rig(); if (RR && RR.hydrant) RR.hydrant.step(dt); });
     registerProps(ctx);
     // the warning before a fall: the scene's own first (Dot, the el, him),
     // else the kit's
@@ -186,9 +194,18 @@ export default defineScene({
     G.killHood = function c8kill(h, ...a) { if (h && h.c8boss && R && R.boss && !R.boss.down) { blastNear(R.boss, h.pos); return; } return kill0.call(this, h, ...a); };
     // (his hits are his: the wound counts only when he is open - boss.js)
     G.damageHood = function c8damage(h, dmg, dir, o) { if (h && h.c8onHit && h.alive) { h.hp -= dmg; if (h.flinch) h.flinch(dir); h.c8onHit(); return; } return dmg0.call(this, h, dmg, dir, o); };
+    // [C8] after the critic (a round into him when he is shut drew the kit's
+    // blood: the picture said 'hit' when the rule said 'not now'): shut, a
+    // round on his coat is sparks off the iron under it; blood only when he is open
+    const BF = G.fx.bloodFx, blood0 = BF.hit;
+    BF.hit = function c8blood(point, dir, o) {
+      const B = R && R.boss, h = B && B.h;
+      if (h && !B.down && B.open <= 0 && Math.hypot(point.x - h.pos.x, point.z - h.pos.z) < 0.85 && point.y < h.pos.y + 2.2) { ironSparks(G, point, dir); return; }
+      return blood0.call(this, point, dir, o);
+    };
     const onBlast = ({ at }) => { if (R.boss) blastNear(R.boss, at); };
     G.on('car:exploded', onBlast);
-    const exit = () => { G.killHood = kill0; G.damageHood = dmg0; G.off('car:exploded', onBlast); G.off('scene:exit', exit); G.hud.layer('c8glare').innerHTML = ''; };
+    const exit = () => { G.killHood = kill0; G.damageHood = dmg0; BF.hit = blood0; G.off('car:exploded', onBlast); G.off('scene:exit', exit); G.hud.layer('c8glare').innerHTML = ''; };
     G.on('scene:exit', exit);
 
     // ---- the nick of time ---------------------------------------------------------------
@@ -263,7 +280,8 @@ function registerProps(ctx) {
     id: 'b7.drums', at: () => (R.gun.stack.visible ? R.gun.stack.position.clone().setY(DINER.counter.topY + 0.08) : V(SITE.resupply.x, DINER.counter.topY + 0.1, SITE.resupply.z)),
     range: 2.3, cone: 0.9,
     // (from the customer's side of the counter: she is behind it)
-    prompt: 'a drum', when: () => R.gunTaken && !G.failing && G.eye.x > DINER.counter.frontX - 0.1 && R.reserve < RESERVE.max && !R.slide && (R.stackReady || !R.gun.stack.visible),
+    // ([C8] after the critic: only when my coat is empty, and only while she has one left for this movement)
+    prompt: 'a drum', when: () => R.gunTaken && !G.failing && G.eye.x > DINER.counter.frontX - 0.1 && !R.slide && (R.gun.stack.visible ? R.stackReady : (R.reserve <= 0 && (R.dotLeft || 0) > 0)),
     onUse: () => (R.gun.stack.visible ? takeDrums(ctx) : dotResupply(ctx)),
   });
 }
@@ -280,8 +298,17 @@ function runGen(G, gen, onAbort = null) {
 // retry; flowing into the beat, here), and the director's run so the HUD
 // shows the health while I am shot at
 function fight(ctx, b) {
-  const G = ctx.game, K = gunsOf(G);
-  if (!K.active || (K.cfg && K.cfg.to) !== b) beginFight(ctx, b, FIGHT[b] || {});
+  const G = ctx.game, K = gunsOf(G), R = rig();
+  if (!K.active || (K.cfg && K.cfg.to) !== b) {
+    beginFight(ctx, b, FIGHT[b] || {});
+    // ([C8] after the critic: a new movement as its checkpoint has it - at
+    // least one drum in my coat (she fills one in the quiet), her one under
+    // the counter for it)
+    if (R && b !== 'cars') {
+      if (R.reserve < RESERVE.start) { R.reserve = RESERVE.start; ctx.hud.say('Dot: Here. Filled you one.', 1.8); G.sfx.play('b7_drumTake', null); }
+      R.dotLeft = RESERVE.dot;
+    }
+  }
   if (['cars', 'flank', 'el'].includes(b)) pressOn(ctx);
   if (!G.director.active) { G.director.stop(); G.director.begin(); G.director.run(function* () { while (G.scenes.ctx === ctx && !(rig() && rig().calm)) yield null; }); }
 }
@@ -315,12 +342,17 @@ function* theGun(ctx) {
   if (C.mode !== 'walk') C.setMode('walk');
   G.player.weapons.equip(null);
   G.hands.equip('empty', { skin: 'glove' });
+  // [C8] after the critic (the window's way: I am behind the counter with
+  // her, and she laid it 3.5 m up the aisle): her place is a step up the
+  // aisle from me, clear of Sal where he went down - the gun before me
+  const behind = G.eye.x < DINER.counter.frontX - DINER.counter.depth;
+  const LAY = behind ? { x: DOT_LAY.x, z: Math.max(1.35, Math.min(DOT_LAY.z, G.eye.z + 2.0)) } : DOT_LAY;
   // she comes to her place opposite me, says it, and lays it down
-  if (dot && Math.hypot(dot.pos.x - DOT_LAY.x, dot.pos.z - DOT_LAY.z) > 0.2) {
+  if (dot && Math.hypot(dot.pos.x - LAY.x, dot.pos.z - LAY.z) > 0.2) {
     dot.setState('idle', 0.3);
-    yield* dot.walkTo({ x: DOT_LAY.x, z: DOT_LAY.z }, { speed: 1.3 });
+    yield* dot.walkTo({ x: LAY.x, z: LAY.z }, { speed: 1.3 });
   }
-  placeDotAt(dot, DOT_LAY);
+  placeDotAt(dot, LAY);
   ctx.hud.say('Dot: Ames said you’d come.', 2.6);
   yield wait(0.6);
   const gun = R.gun;
@@ -350,7 +382,7 @@ function* theGun(ctx) {
   // the drums she laid with it go into my coat with the gun
   yield until(() => R.stackReady);
   gun.stack.visible = false;
-  R.reserve = RESERVE.start;
+  R.reserve = RESERVE.gun;
   G.sfx.play('b7_drumTake', null);
   C.setMode('gun', { crouch: false });
   G.eye.copy(G.camera.position);
@@ -377,7 +409,8 @@ function* stepIn(C, at) {
   // its aisle - the step is along the aisle to beside it, on my side: never
   // through the counter)
   const behind = P.x < DINER.counter.frontX - DINER.counter.depth;
-  const T = behind ? { x: -15.5, z: at.z - 0.55 } : { x: SITE.take.x, z: Math.max(DINER.counter.z0 + 0.4, Math.min(DINER.counter.z1 - 0.4, gz)) };
+  // ([C8] after the critic: nearer the back bar, beside the gun's south end - never on Sal where he lies, nor on Dot)
+  const T = behind ? { x: -15.85, z: at.z - 0.35 } : { x: SITE.take.x, z: Math.max(DINER.counter.z0 + 0.4, Math.min(DINER.counter.z1 - 0.4, gz)) };
   const d = Math.hypot(T.x - P.x, T.z - P.z);
   const yaw = Math.atan2(-(at.x - T.x), -(at.z - T.z));
   const dur = Math.min(0.75, 0.14 + 0.2 * d);
@@ -525,8 +558,20 @@ function* drumsGen(ctx, restore) {
   R.reserve = Math.min(RESERVE.max, R.reserve + RESERVE.slide);
   restore();
   if (lean > 0.02) C.ease({ ...P0, pitch: Math.max(-0.15, Math.min(0.05, P0.pitch)) }, 0.3);
-  for (let t = 0; t < 0.28; t += 1 / 60) { const u = t / 0.28; vm.lowerTo(DOWN * (1 - u * u * (3 - 2 * u)), true); yield null; }
+  for (let t = 0; t < 0.32; t += 1 / 60) { const u = Math.min(1, t / 0.28); vm.lowerTo(DOWN * (1 - u * u * (3 - 2 * u)), true); yield null; }
   vm.lowerTo(0, true);
+  // [C8] after the critic (a drum take froze me where I stood until I was
+  // shot): an ease holds the eye in any mode but 'walk' - let it go, on my
+  // feet where the reach left me, the gun's mode again
+  releaseEye(G);
+}
+function releaseEye(G) {
+  const C = G.controller, E = C._ease;
+  const p = E ? E.to : C.eyePose();
+  C._ease = null;
+  C.setMode('gun', { crouch: false, ease: 0.05 });
+  C.placeEye({ x: p.x, z: p.z, yaw: p.yaw, pitch: p.pitch });
+  G.eye.copy(G.camera.position);
 }
 function mixF(a, b, k) {
   const o = {};
@@ -546,7 +591,9 @@ function dotResupply(ctx) {
     drumsUp: () => { st.visible = true; G.sfx.play('b7_drumTake', st.position.clone()); },
     drumsDown: () => { G.sfx.play('b7_drumDown', st.position.clone()); },
   } });
-  ctx.hud.say('Dot: Last ones.', 1.2);
+  // ([C8] her one for this movement: said, so I know there is no other)
+  R.dotLeft = Math.max(0, (R.dotLeft || 0) - 1);
+  ctx.hud.say('Dot: That’s my last one.', 1.6);
   R.ticks.push(() => {
     const t = h.t;
     if (t >= DOT_DRUMS.drumsUp - 1e-3) dotToWorld(dot, dotResupplyAt(Math.min(t, DOT_DRUMS.drumsDown)).p, st.position);
@@ -609,7 +656,11 @@ function* flankBeat(ctx) {
   // round the corner for Dot, some seconds in
   let forDot = null;
   R.ticks.push(((t0) => (dt) => { if ((t0 -= dt) > 0) return true; forDot = manForDot(ctx, { onDot: () => G.fail({ why: 'They got Dot.', to: 'flank' }) }); return false; })(11));
-  yield until(() => !!forDot && north);
+  // [C8] after the critic: the flank through the kitchen - from behind the
+  // room, while the street has me at the front (the crash, 'Kitchen!')
+  let kitchen = null;
+  R.ticks.push(((t0) => (dt) => { if ((t0 -= dt) > 0) return true; kitchen = R.kitchen = kitchenMan(ctx); return false; })(16));
+  yield until(() => !!forDot && north && !!kitchen);
   yield* fightTo(ctx, () => alive(ctx) === 0);
   yield* clear(ctx);
 }
@@ -617,23 +668,32 @@ function* flankBeat(ctx) {
 function* elBeat(ctx) {
   const G = ctx.game, R = rig(), K = gunsOf(G);
   const el = elGunman(ctx);
+  R.el = el;
   // his warning: the gun over the rail
-  R.ticks.push(() => { if (!el.h.alive) return false; if ((el.mode === 'raise' || el.mode === 'fire') && el.line) R.warn = 'Up on the el! Get under something!'; return true; });
+  // ([C8] after the critic: from the moment he has me, not only once his gun
+  // is up - down behind the counter's front he still has me, and the kit's
+  // 'Stay down. Let it mend.' must not say otherwise: this line is first)
+  R.ticks.push(() => { if (!el.h.alive) return false; if (el.mode !== 'in' && el.line) R.warn = 'Up on the el! Get under something!'; return true; });
   ctx.hud.say('Dot: On the el!', 1.6);
   let db = null;
   let heavy = null;
   R.ticks.push(((t0) => (dt) => { if ((t0 -= dt) > 0) return true; db = driveBy(ctx, {}); return false; })(9));
   R.ticks.push(((t0) => (dt) => { if ((t0 -= dt) > 0) return true; heavy = heavyForDoor(ctx); return false; })(17));
   yield until(() => !!db);
-  let elSaid = false;
+  let elSaid = false, again = 0;
   yield* fightTo(ctx, () => {
     if (!elSaid && el.h.alive && alive(ctx) === 1 && heavy) { elSaid = true; ctx.hud.objective('One on the el. Find him.'); }
-    // (the drive-by gone down the avenue: its men are out of it)
+    // [C8] after the critic (a drive-by gone down the avenue took its men with
+    // it: two fewer for nothing): far down the avenue in the dark it turns,
+    // and it comes round again ('coming round again!') - this time it pulls
+    // up by the diner and they get out. Nothing leaves the fight unanswered.
     if (db && db.car.rail && db.car.rail.done && !db.out && !db.crashed && db.car.state !== 'burning') {
       for (const h of [db.driver, db.gunner]) if (h.alive) { h.c8gone = true; G.removeHood(h); }
       R.rails.remove(db.car); delete R.cars.driveby;
+      db = null; again = 1;
+      R.ticks.push(((t0) => (dt) => { if ((t0 -= dt) > 0) return true; ctx.hud.say('Dot: They’re coming round again!', 2.0); db = driveBy(ctx, { stopNear: 0.5 }); again = 2; return false; })(5));
     }
-    return alive(ctx) === 0 && !!heavy;
+    return alive(ctx) === 0 && !!heavy && again !== 1;
   });
   // (a drive-by that stopped and let its men out stands in the road: it is
   // taken away once out of sight - his saloon comes up that lane)
@@ -660,31 +720,49 @@ function* clear(ctx) {
 }
 
 // ---- him -------------------------------------------------------------------------------------
+// [C8] after the critic (it stopped by itself at the end of its rail: the
+// stage was two heavies and a spray): it comes on to the diner's door unless
+// it is stopped - two tyres (the lamps first, or the glare hides them); a car
+// at the door loses the stage, said before it ('nearly at the door'). Won
+// when it is stopped and his two men are down. (Held up by a wreck in its
+// lane for three seconds it stands where it is: a real cause, the player's.)
 function* saloonBeat(ctx) {
   const G = ctx.game, R = rig();
   const retry = G.fails('saloon') > 0;
   yield wait(retry ? 0.5 : 3.5);
-  ctx.hud.say('Dot: That’s his car.', 2.0);
+  ctx.hud.say(retry ? 'Dot: The tyres! Stop it!' : 'Dot: That’s his car.', 2.0);
   const car = saloonIn(ctx, { retry });
-  let stopped = false;
-  car.rail.onStop = () => { stopped = true; G.sfx.play('b7_handbrake', car.pos.clone().setY(0.6)); rebuild(G); };
+  let atDoor = false, stopped = false;
+  car.rail.onStop = () => {
+    if (car.c8flat) { stopped = true; R.saloonS = car.rail.s; G.sfx.play('b7_handbrake', car.pos.clone().setY(0.6)); rebuild(G); ctx.hud.say('Dot: It’s stopped!', 1.6); }
+    else atDoor = true;
+  };
   saloonMen(ctx, car);
-  yield* fightTo(ctx, () => alive(ctx) === 0, { lines: false });
-  yield until(() => stopped || car.c8flat || (car.rail.held || 0) > 2);
-  if (!car.rail.done) { car.rail.plan.v.fill(0); car.rail.done = true; }
-  (G._c2won || (G._c2won = [])).push('saloon');
-  yield wait(1.0);
+  R.ticks.push(() => {
+    if (stopped || atDoor || !R.rails.list.includes(car)) return false;
+    if ((car.rail.held || 0) > 3) { stopped = true; R.saloonS = car.rail.s; car.rail.plan.v.fill(0); car.rail.done = true; car.rail.stopped = true; rebuild(G); return false; }
+    if (car.rail.L - car.rail.s < 15) R.warn = 'His car’s nearly at the door! The tyres!';
+    return true;
+  });
+  yield until(() => atDoor || (stopped && alive(ctx) === 0));
+  if (atDoor && !stopped) { G.fail({ why: 'His car made the door.', to: 'saloon' }); yield until(() => false); }
+  yield* clear(ctx);
+}
+// the saloon where it stopped (a checkpoint after the saloon, a jump)
+function parkedSaloon(ctx) {
+  const G = ctx.game, R = rig();
+  const car = saloonIn(ctx, {});
+  car.rail.s = R.saloonS != null ? R.saloonS : Math.max(0, car.rail.L - SALOON.parkBack);
+  car.rail.done = true; car.rail.stopped = true; car.rail.plan.v.fill(0); R.rails.place(car, 0);
+  rebuild(G);
+  return car;
 }
 
 function* cardinalBeat(ctx) {
   const G = ctx.game, R = rig();
   let car = R.cars.saloon;
-  if (!car) {
-    // (a retry, a jump: the saloon stands where it stopped)
-    car = saloonIn(ctx, {});
-    car.rail.s = car.rail.L; car.rail.done = true; car.rail.stopped = true; R.rails.place(car, 0);
-    rebuild(G);
-  }
+  // (a retry, a jump: the saloon stands where it stopped)
+  if (!car) car = parkedSaloon(ctx);
   const door = R.rails.openDoor(car, 'rr', { speed: 2.2 });
   door.mesh.userData.cover = { kind: 'thin' };
   G.sfx.play('b7_carDoor', car.pos.clone().setY(1));
@@ -704,7 +782,7 @@ function* lastBeat(ctx) {
   if (!B || B.down || B.stage !== 3) {
     // (a retry: up off his knee by his car, hurt, the hat gone)
     let car = R.cars.saloon;
-    if (!car) { car = saloonIn(ctx, {}); car.rail.s = car.rail.L; car.rail.done = true; car.rail.stopped = true; R.rails.place(car, 0); rebuild(G); }
+    if (!car) car = parkedSaloon(ctx);
     B = R.boss = cardinalOut(ctx, car, { at: { x: -7.4, z: -3.8 }, stage: 3, hatGone: true });
     B.wounds = 3;
   } else {
@@ -726,8 +804,7 @@ function endSetup(ctx) {
   const G = ctx.game, R = rig(), K = gunsOf(G);
   K.end();
   // (a jump: him down where the story has him fall, the saloon by the kerb)
-  const car = saloonIn(ctx, {});
-  car.rail.s = car.rail.L; car.rail.done = true; car.rail.stopped = true; R.rails.place(car, 0);
+  parkedSaloon(ctx);
   R.ctxEnd = ctx;
 }
 function* ending(ctx) {
@@ -786,7 +863,7 @@ function* dotToWindow(ctx) {
   pts.push(w);
   dot.setState('idle', 0.35);
   for (let t = 0; t < 0.5; t += 1 / 60) yield null;
-  for (const p of pts) yield* dot.walkTo(p, { speed: 1.35 });
+  for (const p of pts) yield* dot.walkTo(p, { speed: 1.7 });
   const y0 = dot.yaw, dy = Math.atan2(Math.sin(Math.PI / 2 - y0), Math.cos(Math.PI / 2 - y0));
   for (let t = 0; t < 0.45; t += 1 / 60) { const u = t / 0.45; dot.yaw = y0 + dy * u * u * (3 - 2 * u); yield null; }
   dot.yaw = Math.PI / 2;
@@ -805,20 +882,25 @@ function* theFrame(ctx) {
   const G = ctx.game, R = rig(), C = G.controller;
   const hat = R.hat;
   const from = C.eyePose();
-  const at = hat ? hat.rest.clone() : V(-5.6, 0, -11);
-  const fwd0 = hat ? (hat.view || hat.fwd) : V(-0.4, 0, 0.92);
-  let fwd = fwd0, eye = null;
-  const BACK = 1.2, ON = 1.25;
-  for (const a of [0, 0.35, -0.35, 0.7, -0.7, 1.1, -1.1, 1.6, -1.6]) {
-    const f = fwd0.clone().applyAxisAngle(V(0, 1, 0), a), sd = V(f.z, 0, -f.x);
-    const e = at.clone().addScaledVector(f, BACK).addScaledVector(sd, 0.28);
-    if (standClear(G.stage, e)) { fwd = f; eye = e; break; }
+  const at = hat ? hat.rest.clone() : V(-7.9, 0, -2.4);
+  // [C8] after the critic (the frame looked down the avenue away from the
+  // diner: no Dot, no window, no train): low behind the hat, looking up the
+  // pavement past it - the hat and the ember in the foreground, the diner's
+  // front beyond with Mack's broken window and Dot in it, the el down the
+  // avenue on the left and the train going away along it
+  const win = V(-11.15, 1.4, DINER.bays[mackWindow(G)] + 0.35);
+  const toWin = V(win.x - at.x, 0, win.z - at.z);
+  // (the eye: south-east of the hat on the line that keeps the window up and to the right of it)
+  let eye = null;
+  for (const [ox, oz] of [[1.15, -2.1], [1.4, -1.7], [0.8, -2.4], [1.7, -2.4], [0.5, -1.9]]) {
+    const e = at.clone().add(V(ox, 0, oz));
+    if (standClear(G.stage, e, 0.35)) { eye = e; break; }
   }
-  const side = V(fwd.z, 0, -fwd.x);
-  if (!eye) eye = at.clone().addScaledVector(fwd, BACK).addScaledVector(side, 0.28);
-  eye.y = G.stage.surfaceY(eye.x, eye.z) + 1.08;
-  const lookAt = at.clone().addScaledVector(fwd, -ON).addScaledVector(side, -0.1);
-  lookAt.y = 0.1;
+  if (!eye) eye = at.clone().add(V(1.15, 0, -2.1));
+  eye.y = G.stage.surfaceY(eye.x, eye.z) + 0.95;
+  // (the look: up the pavement, a little west, so the hat sits low left of
+  // the middle, the window right of it, the el's deck at the left edge)
+  const lookAt = V(at.x - 0.35 + toWin.x * 0.12, 0.62, at.z + 5.5);
   const yaw = Math.atan2(-(lookAt.x - eye.x), -(lookAt.z - eye.z));
   const pitch = Math.atan2(lookAt.y - eye.y, Math.hypot(lookAt.x - eye.x, lookAt.z - eye.z));
   const to = { x: eye.x, y: eye.y, z: eye.z, yaw, pitch };
@@ -827,14 +909,30 @@ function* theFrame(ctx) {
     const u = Math.min(1, t / dur), k = u * u * (3 - 2 * u);
     const L = (a, b) => a + (b - a) * k;
     const dy = Math.atan2(Math.sin(to.yaw - from.yaw), Math.cos(to.yaw - from.yaw));
-    const w = Math.min(1, Math.max(0, (t - dur - 0.4) / 5)), lift = 0.15 * w * w * (3 - 2 * w);
-    return { x: L(from.x, to.x), y: L(from.y, to.y), z: L(from.z, to.z), yaw: from.yaw + dy * k, pitch: L(from.pitch, to.pitch) - 0.02 * Math.sin(Math.min(1, t / 9) * Math.PI) + lift };
+    const w = Math.min(1, Math.max(0, (t - dur - 0.4) / 5)), lift = 0.06 * w * w * (3 - 2 * w);
+    return { x: L(from.x, to.x), y: L(from.y, to.y), z: L(from.z, to.z), yaw: from.yaw + dy * k, pitch: L(from.pitch, to.pitch) - 0.015 * Math.sin(Math.min(1, t / 9) * Math.PI) + lift };
   } });
   G.vm.lowerTo(1);
-  G.director.cue('train', { z: at.z, ahead: -22, dir: 1 });
+  // (Dot at her window by the time the eye settles)
+  const dot = ctx.cast.get('dot');
+  if (dot && !R.dotOut) runGen(G, dotToWindow(ctx));
+  // (the train up the avenue, going away north: its tail lamps in the frame as the eye settles)
+  G.director.cue('train', { z: at.z + 8, ahead: 6, dir: TRAIN_AWAY });
   yield wait(dur);
   G.music.cue('end', { fade: 3 });
   yield wait(6);
+}
+const TRAIN_AWAY = 1;
+
+// sparks off the iron under his coat (a shut hit): white, brief, no blood
+function ironSparks(G, p, dir) {
+  const F = G.fx, r = G.rng;
+  const n = V(-dir.x, 0, -dir.z).normalize();
+  for (let i = 0; i < 9; i++) {
+    const v = n.clone().multiplyScalar(r.range(2, 6)).add(V(r.gauss() * 2, r.range(0.5, 3), r.gauss() * 2));
+    F.sparks.spawn({ pos: p.clone().addScaledVector(n, 0.03), vel: v, life: r.range(0.06, 0.18), size: [0.008, 0.012], stretch: 0.035, col: [5, 5, 5], alpha: 1, cell: 4, gravity: 9.8, ground: 0.15, fadeOut: 0.3 });
+  }
+  G.sfx.play('c2_woodHit', p, { k: 0.4 }, { ref: 2 });
 }
 
 export { EAST, saloonMen, SALOON };

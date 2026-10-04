@@ -32,7 +32,11 @@ const _v = V(0, 0, 0), _w = V(0, 0, 0);
 const wrap = (a) => Math.atan2(Math.sin(a), Math.cos(a));
 
 export const NICK = {
-  start: { x: -7.0, z: -14.6, yaw: Math.PI - 0.08 },
+  // ([C8] after the critic: from 15 m off the first frame showed nothing of
+  // it. Now the kerb by the crate of empties: through Mack's broken window
+  // the lit room, Sal's gun on Dot at the back bar; Nicky under the awning
+  // beyond, looking out at the road - not at me, not yet)
+  start: { x: -7.0, z: -6.6, yaw: 2.25 },
   sal: { x: -15.3, z: 0.3 },
   dot: { x: -16.45, z: 1.45 },
   nicky: { x: -9.2, z: 2.05, yaw: Math.PI / 2 },

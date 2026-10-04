@@ -20,10 +20,14 @@ import { merge } from '../../world/geom.js';
 // (no default export: not a scene)
 const V = (x, y, z) => new THREE.Vector3(x, y, z);
 const _v = new THREE.Vector3(), _w = new THREE.Vector3();
-// [C8] the drums: two come with the gun; Dot slides one up the counter
-// when I call for it there (E) - few, so going back to the counter is a
-// decision (the brief's "ammunition is a decision")
-export const RESERVE = { start: 2, max: 3, slide: 1 };
+// [C8] the drums: two come with the gun (the two she laid); every later
+// movement begins with at least one in my coat (a checkpoint the same);
+// Dot keeps ONE under the counter for each movement and slides it only when
+// my coat is empty and I call for it there (E): "That's my last." - few, so
+// a held trigger runs me dry, and going back to the counter is a decision
+// (the brief's "ammunition is a decision"; after the critic: they were
+// endless and offered from the first second)
+export const RESERVE = { start: 1, gun: 2, max: 2, slide: 1, dot: 1 };
 
 let RIG = null;
 export const rig = () => RIG;
@@ -57,7 +61,8 @@ export function rigFor(ctx) {
     if (!RIG || this.reloading || this.ammo === WEAPON.drum) return false;
     if (RIG.reserve <= 0) { RIG.outT = 2.5; return false; }
     const ok = R.reload0.call(this);
-    if (ok) RIG.reserve--;
+    // ([C8] the last drum in: the hint says where the next one is, a moment)
+    if (ok) { RIG.reserve--; if (RIG.reserve === 0) RIG.outT = 3.5; }
     return ok;
   };
   // (the room dark: they find me by my gun's flash - the moment I fire)
@@ -227,7 +232,7 @@ export function everyStep(ctx, dt) {
   // (the trigger on an empty gun: the hammer's click, and the hint)
   R.clickT = Math.max(0, (R.clickT || 0) - dt);
   if (out && G.weapon.trigger && G.hands.set === 'tommy' && R.clickT <= 0) { R.clickT = 0.35; R.outT = 2.5; G.sfx.play('b7_dry', null); }
-  L.set(R.reserve, G.hands.set === 'tommy', out || R.outT > 0 ? 'drums: Dot, at the counter' : '');
+  L.set(R.reserve, G.hands.set === 'tommy', out || R.outT > 0 ? ((R.dotLeft || 0) > 0 ? 'drums: Dot, at the counter' : 'no drums left') : '');
 }
 
 // [R2-F] the street behind a man (as he faces) clear of cars, doors, walls

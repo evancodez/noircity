@@ -34,7 +34,10 @@ export const WARN = { rush: 'The big one’s at the door!', door: 'The door! Beh
 export const AT = {
   cars: { x: -13.15, z: 0.62, yaw: -Math.PI / 2 },
   flank: { x: -13.15, z: 2.2, yaw: -Math.PI / 2 + 0.25 },
-  el: { x: -13.15, z: -1.1, yaw: -Math.PI / 2 - 0.2 },
+  // ([C8] after the critic: AT.el was open to the man on the el even crouched;
+  // now down under the front wall by the pilaster between B4 and the door -
+  // the wall's head hides me from every place on his rail (probed: 6 of 6))
+  el: { x: -10.85, z: -1.6, yaw: -Math.PI / 2 - 0.2, crouch: true },
   saloon: { x: -13.15, z: -1.4, yaw: -Math.PI / 2 - 0.45 },
   cardinal: { x: -13.15, z: -1.4, yaw: -Math.PI / 2 - 0.45 },
   last: { x: -12.2, z: -0.4, yaw: -Math.PI / 2 - 0.5 },
@@ -127,7 +130,13 @@ export function beginFight(ctx, beat, { maxFiring = 2, flankAfter = 13, settleK 
   // the street to the flank and to three guns at once, try after try)
   if (f >= 2) maxFiring = Math.max(1, maxFiring - 1);
   if (f >= 1) flankAfter = 0;
-  widen(G, () => K.begin({ to: beat, maxFiring, flankAfter, settleK, dmgK, area: AREA, why: WHY, warn: WARN }));
+  // ([C8] after the critic: drums are few - a man who emptied them all and
+  // fell is told so, whatever the round that did it)
+  const dry = () => { const RR = rig(); return !!RR && G.weapon.ammo <= 0 && RR.reserve <= 0 && (RR.dotLeft || 0) <= 0; };
+  // (and a man of the scene's own - the kitchen, the el - says who it was)
+  const own = () => { const L = K.lastKill; return L && L.ai && L.ai.h && L.ai.h.c8why; };
+  const why = new Proxy(WHY, { get: (t, k) => (typeof k !== 'string' ? t[k] : dry() ? 'Out of drums.' : own() || t[k]) });
+  widen(G, () => K.begin({ to: beat, maxFiring, flankAfter, settleK, dmgK, area: AREA, why, warn: WARN }));
   // [C8] the room dark: from the street they cannot find me in it until I
   // fire (the gun's flash: 2.5 s), or I stand in a car's lamps
   K.see = function c8see(a, b, pad) {
@@ -329,6 +338,87 @@ export function manForDot(ctx, { onDot }) {
   return st;
 }
 
+// ---- [C8] after the critic: the flank through the kitchen. Round by the
+// alley to the kitchen's back door: its crash, Dot's one word ("Kitchen!"),
+// and he is up at the hatch behind the counter (the cook's place in I) - the
+// counter, which hides me from the street, does not hide me from him. His
+// tell is his rise into the hatch and the click; down below the pass he is
+// behind the partition (it stops my rounds, as it stops his), up in the
+// hatch he has the room, three rounds, then down again. The kit's pistol
+// man's numbers. (His own small brain, as the el's: he does not walk the grid)
+export const KITCHEN = { x: -16.74, z: 2.25, eyeY: 1.78, hatchX: DINER.backX + 0.55 };
+export function kitchenMan(ctx) {
+  const G = ctx.game, S = ctx.stage, K = gunsOf(G), R = rig(), H = DINER.hatch;
+  G.sfx.play('office_doorKick', V(DINER.backX - 2.5, 1.2, KITCHEN.z));
+  ctx.hud.say('Dot: Kitchen!', 1.8);
+  const h = G.spawnHood(KITCHEN.x, KITCHEN.z, { ai: false, variant: { coat: 0, brim: 1, tall: 1 }, yaw: 0.1, state: 'kneel', hp: 100 });
+  h.surface = (x, z) => S.surfaceY(x, z);
+  h.c8beat = ctx.beat;
+  h.c8kitchen = true;
+  h.c8why = 'The kitchen. He was behind you.';
+  h.gunKind = 'pistol';
+  h.visible = false;
+  if (h.object) h.object.visible = false;
+  const ai = { h, heavy: false, brain: { kind: 'pistol', S: { state: 'hold' } } };
+  // (from the hatch only through its opening: the partition is solid)
+  const sees = (b) => {
+    const a = V(h.pos.x, KITCHEN.eyeY, h.pos.z);
+    const t = (KITCHEN.hatchX - a.x) / (b.x - a.x);
+    if (!(t > 0 && t < 1)) return false;
+    const y = a.y + (b.y - a.y) * t, z = a.z + (b.z - a.z) * t;
+    if (!(z > H.z0 + 0.05 && z < H.z1 - 0.05 && y > H.y0 + 0.02 && y < H.y1 - 0.02)) return false;
+    return K.see(a, b, 0.1);
+  };
+  const st = { h, mode: 'in', t: 0, n: 0, line: false };
+  R.ticks.push((dt) => {
+    if (!h.alive) return false;
+    if (G.failing || !K.active) return true;
+    st.t += dt;
+    const body = K.playerBody();
+    const line = st.mode !== 'in' && st.mode !== 'down' && (sees(body.chest) || sees(body.head));
+    st.line = line;
+    // the warning: from the crash until he is down below the pass again
+    if (st.mode === 'in' || st.mode === 'rise' || st.mode === 'aim' || st.mode === 'fire') R.warn = 'The kitchen! Behind you!';
+    // (low below the pass he is turned along it, his gun with him - never through the panel; up, at me)
+    const low = st.mode === 'in' || st.mode === 'down';
+    if (low) { h.lookAt(null); h.yaw += Math.atan2(Math.sin(0.1 - h.yaw), Math.cos(0.1 - h.yaw)) * Math.min(1, dt * 8); }
+    else { h.lookAt(G.eye.clone().setY(G.eye.y - 0.25)); const f = Math.atan2(G.eye.x - h.pos.x, G.eye.z - h.pos.z); h.yaw += Math.atan2(Math.sin(f - h.yaw), Math.cos(f - h.yaw)) * Math.min(1, dt * 8); }
+    if (st.mode === 'in') {
+      // (through the kitchen, low below the pass: his hat shows over it a moment before he rises)
+      if (st.t > 0.7 && !(h.object && h.object.visible)) { h.visible = true; if (h.object) h.object.visible = true; }
+      if (st.t > 1.5) { st.mode = 'rise'; st.t = 0; h.setState('idle', 0.35); }
+      return true;
+    }
+    if (st.mode === 'rise') {
+      if (st.t > 0.4) { st.mode = 'aim'; st.t = 0; h.setAim(true); ai.brain.S.state = 'aim'; G.sfx.play('c2_cock', V(h.pos.x, 1.7, h.pos.z), {}, { ref: 3 }); }
+      return true;
+    }
+    if (st.mode === 'aim') {
+      if (st.t > 0.75) { st.mode = 'fire'; st.t = 0; st.n = 0; ai.brain.S.state = 'fire'; }
+      return true;
+    }
+    if (st.mode === 'fire') {
+      if (st.t > 0.45) {
+        st.t = 0; st.n++;
+        const dmgK = (K.cfg && K.cfg.dmgK) || 1;
+        if (line) K.hoodRound(ai, body.chest.clone(), 0.022, 17 * dmgK, { tommy: false });
+        else if (st.lastAt) K.hoodRound(ai, st.lastAt, 0.05, 17 * dmgK, { tommy: false });
+        if (line) st.lastAt = body.chest.clone();
+        h.fire();
+        if (st.n >= 3) { st.mode = 'down'; st.t = 0; h.setAim(false); ai.brain.S.state = 'hold'; h.setState('kneel', 0.3); }
+      }
+      return true;
+    }
+    if (st.mode === 'down') {
+      // (down below the pass a breath; up again)
+      if (st.t > 1.6) { st.mode = 'rise'; st.t = 0; h.setState('idle', 0.35); }
+      return true;
+    }
+    return true;
+  });
+  return st;
+}
+
 // ---- high on the el: a Tommy gunner at the rail (his own brain: he does not
 // walk the street's grid). His tell: the gun comes up over the rail, a click,
 // half a second; then a burst down at me if he has a line. The counter does
@@ -340,6 +430,7 @@ export function elGunman(ctx) {
   h.pos.y = EL.y;
   h.c8beat = ctx.beat;
   h.gunKind = 'tommy';
+  h.c8why = 'The man on the el had you.';
   const ai = { h, heavy: true, brain: { kind: 'tommy', S: { state: 'hold' } } };
   const st = { mode: 'in', t: 0, n: 0, h, ai };
   // (from up there into the room only through the front's openings: the
@@ -444,7 +535,7 @@ function overTheRail(ctx, h) {
 // steers round what is in the road on its rail; held up (a car, a man, a
 // wreck) it stops and they get out. The driver hit, or the engine: it goes
 // off its line into a post and burns
-export function driveBy(ctx, { onOut } = {}) {
+export function driveBy(ctx, { onOut, stopNear = null } = {}) {
   const G = ctx.game, S = ctx.stage, K = gunsOf(G), R = rig(), D = DRIVEBY;
   const car = R.rails.spawn({ rail: D.rail, lights: true, v0: 12, cruise: 12.5, stop: false, lat: 6.5, decel: 7, accel: 4 });
   car.c8beat = ctx.beat;
@@ -487,6 +578,8 @@ export function driveBy(ctx, { onOut } = {}) {
       if (h === gunner && h.alive) h.lookAt(G.eye.clone().setY(G.eye.y - 0.3));
     }
     if (c.state === 'burning' || st.crashed || st.out) return;
+    // ([C8] the second time round: it pulls up by the diner and they get out)
+    if (stopNear != null && c.pos.x < 1 && c.pos.z > stopNear && driver.alive) { G.sfx.play('b7_brake', c.pos.clone().setY(0.4)); getOut(); return; }
     // crippled: the driver hit, or the engine: off the rail into a post
     if (!driver.alive || c.pts >= 6) {
       st.crashed = true;
