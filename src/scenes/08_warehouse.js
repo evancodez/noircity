@@ -1007,7 +1007,15 @@ export default defineScene({
       // (the director's encounter while the pass lasts: the HUD's health)
       G.director.stop(); G.director.begin();
       G.director.run(function* () { while (G.scenes.ctx === ctx && ctx.beat === 'loud') yield null; });
+      // [C10a] (VII picked from CHAPTERS starts a fresh save that never saw IV: the revolver's own cards, the
+      // same ids and words as IV's - once a save, so a played-through save sees none of them again here)
+      if (hud.teach) hud.teach('fire', '[LMB] fire');
       gunsOf(G).teach('crouch');
+      let reloadT = false;
+      ctx.onStep(() => {
+        const W = G.player.weapons.active;
+        if (!reloadT && ctx.beat === 'loud' && W && Array.isArray(W.chambers) && W.chambers.filter((c) => c === 'live').length <= 2) { reloadT = true; gunsOf(G).teach('reload'); }
+      });
       const tL = G.time;
       // (a lamp shot out: taught once, the first time one hangs in my sight
       // while nobody has me)

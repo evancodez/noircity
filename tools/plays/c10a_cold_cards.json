@@ -1,0 +1,27 @@
+{
+ "about": "[C10a] VII picked from CHAPTERS on a fresh save: the loud pass teaches the revolver's own cards (fire, crouch; reload when the cylinder runs low) as IV does; a played-through save (fire already taught) does not see the fire card again. node tools/play.mjs tools/plays/c10a_cold_cards.json",
+ "url": "/?mute=1&start=warehouse.loud",
+ "size": [1280, 800],
+ "out": "shots/play/c10a_cold_cards",
+ "steps": [
+  { "until": "G.state === 'title'", "timeout": 30000 },
+  { "wait": 1200 },
+  { "clickOn": "#title .opt[data-k=begin]", "taken": "G.state === 'playing' && document.pointerLockElement === N.renderer.domElement", "retries": 4, "every": 4000 },
+  { "until": "G.scenes.current && G.scenes.current.id === 'warehouse' && G.scenes.beat === 'loud' && !G.scenes.trans", "timeout": 30000 },
+  { "until": "G.hud.kit.teachCur && G.hud.kit.teachCur.id === 'fire'", "timeout": 8000 },
+  { "shot": "fire_card" },
+  { "mouse": "click", "button": "left" },
+  { "wait": 400 },
+  { "mouse": "click", "button": "left" },
+  { "wait": 400 },
+  { "mouse": "click", "button": "left" },
+  { "wait": 400 },
+  { "mouse": "click", "button": "left" },
+  { "until": "!!(G.save.flags.taught && G.save.flags.taught.reload)", "timeout": 8000 },
+  { "expect": "!!(G.save.flags.taught.fire && G.save.flags.taught.crouch && G.save.flags.taught.reload)", "label": "VII cold: fire, crouch and reload taught in the loud pass" },
+  { "eval": "(G.fail({ why: 'Hunt.' }), 1)" },
+  { "until": "!G.failing && G.scenes.beat === 'loud'", "timeout": 10000 },
+  { "wait": 1500 },
+  { "expect": "!(G.hud.kit.teachCur && G.hud.kit.teachCur.id === 'fire')", "label": "the retry does not teach fire again" }
+ ]
+}

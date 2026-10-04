@@ -20,7 +20,9 @@ export default async function (h) {
     // (the scene may have moved on: only the mode walk is meaningful)
     await h.wait(300);
     const m = (await S())[3];
-    if (m !== 'walk') { h.log(`heading ${k}: mode is ${m}, skipped`); continue; }
+    // [C10a] (the modes a player walks in: on foot, the gun out, sneaking)
+    const MODES = (process.env.HUNT_MODES || 'walk,gun,sneak').split(',');
+    if (!MODES.includes(m)) { h.log(`heading ${k}: mode is ${m}, skipped`); continue; }
     let prev = await S(), maxD = 0, pops = 0, ymin = 9, ymax = -9, steps = 0;
     await h.down('KeyW');
     const T = Date.now() + secs * 1000;
@@ -33,7 +35,7 @@ export default async function (h) {
       maxD = Math.max(maxD, Math.hypot(s[0] - s0[0], s[2] - s0[2]));
       ymin = Math.min(ymin, s[1]); ymax = Math.max(ymax, s[1]);
       prev = s; steps++;
-      if (s[3] !== 'walk') { h.log(`  the mode went to ${s[3]} (beat ${s[4]})`); break; }
+      if (s[3] !== m) { h.log(`  the mode went to ${s[3]} (beat ${s[4]})`); break; }
     }
     await h.up('KeyW');
     h.log(`heading ${k}: reach ${maxD.toFixed(1)} m, eye y ${ymin.toFixed(2)}..${ymax.toFixed(2)}, ends at ${prev[0].toFixed(1)},${prev[2].toFixed(1)}, ${pops} pops`);
