@@ -1,0 +1,25 @@
+{
+ "about": "[C12] IV The Door's good play by the pad alone (the fake pad; the keyboard and the mouse never used): X on BEGIN at IV, then tools/lib/c5_door.mjs 'good' (the desk) with its hands on the pad (input: pad - square tips the desk, circle gets low behind it, L2 held rises over it, the right stick onto a man, R2 fires, triangle reloads down, the left stick to the next cover): every movement won on the first try; the gun's cards drawn in the pad's glyphs; the rumble on my shots and on a hit taken. node tools/play.mjs tools/plays/pad_gunfight.json",
+ "url": "/?mute=1&padfake=1&start=gunfight",
+ "input": "pad",
+ "size": [1280, 800],
+ "out": "shots/play/pad_gunfight",
+ "steps": [
+  { "until": "G.state === 'title' && N.hud.titleShown", "timeout": 60000 },
+  { "wait": 1500 },
+  { "pad": { "b": ["x"], "secs": 0.12 }, "label": "the first press wakes the pad: the bracket only" },
+  { "wait": 400 },
+  { "pad": { "b": ["x"], "secs": 0.12 } },
+  { "until": "G.scenes.current && G.scenes.current.id === 'gunfight' && G.scenes.fadeK < 0.2", "timeout": 30000 },
+  { "expect": "N.pad.holds", "label": "the pad holds the game" },
+  { "eval": "(window.__cards = [], setInterval(() => { const T = G.hud.kit.teachCur; if (T && !window.__cards.some((c) => c.id === T.id)) window.__cards.push({ id: T.id, glyphs: [...G.hud.kit.teachEl.querySelectorAll('canvas[data-glyph]')].map((c) => c.dataset.glyph) }); }, 100), 1)" },
+  { "until": "G.hud.kit.teachCur && G.hud.kit.teachCur.id === 'fire' && getComputedStyle(G.hud.kit.teachEl).opacity > 0.9", "timeout": 20000, "stop": false },
+  { "shot": "g01_fire_card" },
+  { "drive": "tools/lib/c5_door.mjs", "profile": "good", "choice": "desk", "out": true, "tries": 3, "beatTimeout": 150, "beats": ["shadows", "flank", "corridor"],
+    "check": "D.wonFirst === 3", "label": "[C12] the good player (the desk) wins every movement on the first try by the pad" },
+  { "eval": "window.__cards" },
+  { "expect": "window.__cards.some((c) => c.id === 'fire' && c.glyphs[0] === 'R2') && window.__cards.some((c) => c.id === 'crouch' && c.glyphs[0] === 'circle')", "label": "the gun's cards in the pad's glyphs (fire: R2, get low: circle)" },
+  { "eval": "({ rumbles: N.pad.rumbleN, shots: G.counters.shots })" },
+  { "expect": "N.pad.rumbleN >= 5", "label": "the rumble: a kick on each of my shots" }
+ ]
+}

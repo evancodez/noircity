@@ -1,0 +1,169 @@
+{
+ "about": "[C12 critic] II after the KO by the pad: the window, the search, reading the card (does the pad put it away), the stills, on to III",
+ "url": "/?mute=1&padfake=1&start=fight.ko",
+ "size": [
+  1440,
+  900
+ ],
+ "out": "shots/critic12/fight_ko",
+ "steps": [
+  {
+   "until": "G.state === 'title' && N.hud.titleShown",
+   "timeout": 60000
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "pad": {
+    "b": [
+     "x"
+    ],
+    "secs": 0.12
+   }
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id==='fight' && G.scenes.beat==='ko' && N.controller.mode==='walk'",
+   "timeout": 60000
+  },
+  {
+   "wait": 800
+  },
+  {
+   "walk": [
+    [
+     -12.6,
+     -3.0
+    ],
+    [
+     -11.5,
+     -3.0
+    ]
+   ],
+   "timeout": 15000,
+   "stop": false
+  },
+  {
+   "look": "(() => { const yw = Math.atan2(-(-8.8 - G.eye.x), -(-3.8 - G.eye.z)); const d = Math.atan2(Math.sin(yw - N.controller.yaw), Math.cos(yw - N.controller.yaw)); return [Math.round(-d / (N.controller.sensitivity || 0.0021)), 0]; })()",
+   "steps": 8
+  },
+  {
+   "wait": 400
+  },
+  {
+   "until": "G.hud.promptShown.includes('climb')",
+   "timeout": 5000
+  },
+  {
+   "pad": {
+    "b": [
+     "x"
+    ],
+    "secs": 0.1
+   }
+  },
+  {
+   "wait": 1800
+  },
+  {
+   "look": [
+    0,
+    120
+   ],
+   "steps": 4
+  },
+  {
+   "wait": 300
+  },
+  {
+   "until": "G.hud.promptShown.includes('search')",
+   "timeout": 5000
+  },
+  {
+   "wait": 2500
+  },
+  {
+   "eval": "({ beat: G.scenes.beat, prompt: G.hud.promptShown, ctx: N.pad.context(), inspect: G.inspect.active, teach: G.hud.kit.teachCur && G.hud.kit.teachCur.id })"
+  },
+  {
+   "shot": "k1_after_search"
+  },
+  {
+   "wait": 3000
+  },
+  {
+   "eval": "({ beat: G.scenes.beat, prompt: G.hud.promptShown, ctx: N.pad.context(), inspect: G.inspect.active })"
+  },
+  {
+   "shot": "k2_reading"
+  },
+  {
+   "pad": {
+    "b": [
+     "sq"
+    ],
+    "secs": 0.1
+   }
+  },
+  {
+   "wait": 2500
+  },
+  {
+   "eval": "({ beat: G.scenes.beat, prompt: G.hud.promptShown, ctx: N.pad.context(), inspect: G.inspect.active, stills: G.stills.active })"
+  },
+  {
+   "shot": "k3_after_sq"
+  },
+  {
+   "pad": {
+    "b": [
+     "sq"
+    ],
+    "secs": 0.1
+   }
+  },
+  {
+   "wait": 2500
+  },
+  {
+   "eval": "({ beat: G.scenes.beat, prompt: G.hud.promptShown, ctx: N.pad.context(), inspect: G.inspect.active, stills: G.stills.active })"
+  },
+  {
+   "shot": "k4_after_sq2"
+  },
+  {
+   "pad": {
+    "b": [
+     "x"
+    ],
+    "secs": 0.1
+   }
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "pad": {
+    "b": [
+     "x"
+    ],
+    "secs": 0.1
+   }
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'office'",
+   "timeout": 30000,
+   "stop": false
+  },
+  {
+   "eval": "({ scene: G.scenes.current && G.scenes.current.id, beat: G.scenes.beat, prompt: G.hud.promptShown, stills: G.stills.active })"
+  },
+  {
+   "shot": "k5_end"
+  }
+ ],
+ "input": "pad"
+}

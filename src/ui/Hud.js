@@ -1,6 +1,8 @@
 import { RNG } from '../util/rng.js';
 import { setBrush, frayEdges, drawInkSplat, makeTornStroke, makeKeyDab, makeTick, hashSeed } from './inkArt.js';
 import { KitUi } from './kit.js';
+import { padGlyphs, glyphCtx } from '../input/Pad.js';   // [C12]
+import { keyNodes } from '../input/glyphs.js';   // [C12]
 
 // DOM overlay: the in-game HUD and the ink cards (Phase 3b presentation,
 // the story pass). Monochrome and ink-styled (DESIGN.md §8); the only colour
@@ -143,6 +145,11 @@ export class Hud {
         letter-spacing: 0.08em; font-size: 16px; color: #f4f2ec; text-shadow: none; padding: 0 9px; box-sizing: border-box; }
       #hud .prompt .k canvas { position: absolute; left: -4px; top: 0; width: calc(100% + 8px); height: 100%; }
       #hud .prompt .k span { position: relative; }
+      #hud .prompt .k .pk { display: none; }
+      #hud .prompt .k.padk > canvas, #hud .prompt .k.padk > span:not(.pk) { display: none; }
+      #hud .prompt .k.padk .pk { display: inline-flex; align-items: center; gap: 4px; vertical-align: middle; }
+      #hud .prompt .k .pk canvas { position: static; }
+      #hud .prompt .k.padk { min-width: 0; height: auto; line-height: 1; padding: 0; }
       #hud .tick { position: absolute; width: 26px; height: 26px; margin: -24px 0 0 -2px; display: none; }
       #hud.carded .prompt, #hud.carded .tick { visibility: hidden; }
       #hud .say { position: absolute; left: 50%; bottom: 7.5%; transform: translateX(-50%); display: none; }
@@ -234,6 +241,7 @@ export class Hud {
     this.title.appendChild(opts);
     this.titlePrompt = document.createElement('p'); this.titlePrompt.className = 'go'; this.title.appendChild(this.titlePrompt);
     const keys = document.createElement('p'); keys.className = 'keys'; keys.textContent = KEYS; this.title.appendChild(keys);
+    this.titleKeys = keys; this.keysText = KEYS;   // [C12] (the pad's line in their place: input/padUi.js)
     this.soundLine = document.createElement('p');
     this.soundLine.className = 'keys';
     this.soundLine.textContent = 'any key: sound';
@@ -319,6 +327,13 @@ export class Hud {
   // how to have it back)
   soundHint(on, muted = false) {
     this.soundLine.textContent = muted ? 'sound off · M sound' : 'any key: sound';
+    // [C12] the pad the last device: M is the d-pad's down in play (on the
+    // title it moves the bracket), and the browser's sound wants a key - a
+    // pad's press is no gesture, and a click on the title starts the story
+    if (padGlyphs()) {
+      if (muted) { this.soundLine.textContent = ''; const s = document.createElement('span'); s.className = 'padline'; s.append(...keyNodes('sound off · M in play', 'play', 20)); this.soundLine.appendChild(s); }
+      else this.soundLine.textContent = 'any keyboard key: sound';
+    }
     this.soundLine.style.display = on || muted ? '' : 'none';
   }
 
@@ -353,7 +368,10 @@ export class Hud {
     if (!s) { this.settingsEl.innerHTML = ''; return; }
     this.settingsEl.innerHTML = `<span>mouse <i data-k="mouse" data-d="-1">−</i><b>${s.mouse}</b><i data-k="mouse" data-d="1">+</i></span>`
       + `<span>volume <i data-k="volume" data-d="-1">−</i><b>${s.volume}</b><i data-k="volume" data-d="1">+</i></span>`
-      + `<span>subtitles <i data-k="subtitles" data-d="0">${s.subtitles ? 'on' : 'off'}</i></span>`;
+      + `<span>subtitles <i data-k="subtitles" data-d="0">${s.subtitles ? 'on' : 'off'}</i></span>`
+      // [C12] the pad's: the stick's speed, the rumble (once a pad has been used)
+      + (s.stick != null ? `<span>stick <i data-k="stick" data-d="-1">−</i><b>${s.stick}</b><i data-k="stick" data-d="1">+</i></span>` : '')
+      + (s.rumble != null ? `<span>rumble <i data-k="rumble" data-d="0">${s.rumble ? 'on' : 'off'}</i></span>` : '');
   }
 
   // the end cards: kind 'end' (THE END and an epitaph: the old battle's
@@ -386,14 +404,24 @@ export class Hud {
     const E = this.el;
     if (this.promptOwner && owner && this.promptOwner !== owner && E.prompt.style.display !== 'none' && owner !== 'scene') return;
     this.promptOwner = owner;
-    if (this.promptText !== text) {
+    // [C12] (the last device the pad: the key drawn as the pad's glyph)
+    const dev = padGlyphs() ? 'pad:' + glyphCtx() : 'keys';
+    if (this.promptText !== text || this.promptDev !== dev) {
       this.promptText = text;
+      this.promptDev = dev;
       // 'E  light up': the key on its dab, the words after it
       // (the key is what comes before the double space: 'A D  slip')
       const m = /^(.+?)\s{2,}(.*)$/.exec(text) || /^(\S+)\s+(.*)$/.exec(text);
       E.key.textContent = m ? m[1] : '';
       E.key.parentNode.style.display = m ? '' : 'none';
       E.ptext.textContent = m ? m[2] : text;
+      // [C12]
+      const K = E.key.parentNode;
+      if (!this.padKey) { this.padKey = document.createElement('span'); this.padKey.className = 'pk'; K.appendChild(this.padKey); }
+      this.padKey.textContent = '';
+      const pk = m && dev !== 'keys' ? keyNodes(m[1], glyphCtx(), 38) : null;
+      K.classList.toggle('padk', !!pk);
+      if (pk) for (const n of pk) this.padKey.appendChild(n);
     }
     E.prompt.style.display = 'flex';
     if (at) { E.tick.style.display = 'block'; E.tick.style.left = at.x.toFixed(1) + 'px'; E.tick.style.top = at.y.toFixed(1) + 'px'; } else E.tick.style.display = 'none';
@@ -504,10 +532,10 @@ export class Hud {
     const gun = s.gun ?? true, fight = s.fight ?? true;
     if (L.gun !== gun) { this.root.classList.toggle('nogun', !gun); L.gun = gun; }
     if (L.fight !== fight) { this.root.classList.toggle('nofight', !fight); L.fight = fight; }
-    const ammoKey = s.ammo + '/' + s.reloading;
+    const ammoKey = s.ammo + '/' + s.reloading + (padGlyphs() ? '/pad' : '');   // [C12]
     if (L.ammo !== ammoKey) {
       E.ammo.innerHTML = `${s.reloading ? '--' : String(s.ammo).padStart(2, '0')}<small> / ${s.drum}</small>`;
-      E.note.textContent = s.reloading ? 'reloading' : s.ammo === 0 ? 'press r' : s.ammo <= 10 ? 'low' : '';
+      E.note.textContent = s.reloading ? 'reloading' : s.ammo === 0 ? (padGlyphs() ? 'press triangle' : 'press r') : s.ammo <= 10 ? 'low' : '';   // [C12] (the pad's triangle)
       L.ammo = ammoKey;
     }
     const hp = Math.round(s.hp);

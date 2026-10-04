@@ -1,0 +1,29 @@
+{
+ "about": "[C12 critic] keys and pad mixed: BEGIN by a click at IV; the first teach card in keys; the pad touched while it is up (glyphs?); a key pressed (keys again?); the prompt the same way",
+ "url": "/?mute=1&padfake=1&start=gunfight",
+ "size": [1440, 900],
+ "out": "shots/critic12/device_switch",
+ "steps": [
+  { "until": "G.state === 'title' && N.hud.titleShown", "timeout": 60000 },
+  { "wait": 1500 },
+  { "clickOn": "#title .opt[data-k=begin]", "taken": "G.state !== 'title'", "retries": 5, "every": 4000 },
+  { "until": "G.scenes.current && G.scenes.current.id === 'gunfight' && G.scenes.fadeK < 0.2", "timeout": 30000 },
+  { "until": "G.hud.kit.teachCur && getComputedStyle(G.hud.kit.teachEl).opacity > 0.9", "timeout": 30000, "stop": false },
+  { "eval": "({ last: N.input.last, id: G.hud.kit.teachCur && G.hud.kit.teachCur.id, glyphs: G.hud.kit.teachEl.querySelectorAll('canvas[data-glyph]').length, text: G.hud.kit.teachEl.textContent })" },
+  { "shot": "d0_keys_card" },
+  { "pad": { "a": [0, 0, 0.5, 0], "secs": 0.1 } },
+  { "wait": 300 },
+  { "eval": "({ last: N.input.last, id: G.hud.kit.teachCur && G.hud.kit.teachCur.id, glyphs: [...G.hud.kit.teachEl.querySelectorAll('canvas[data-glyph]')].map((c) => c.dataset.glyph), text: G.hud.kit.teachEl.textContent })" },
+  { "shot": "d1_pad_card" },
+  { "key": "KeyR", "hold": 60 },
+  { "wait": 300 },
+  { "eval": "({ last: N.input.last, glyphs: G.hud.kit.teachEl.querySelectorAll('canvas[data-glyph]').length, text: G.hud.kit.teachEl.textContent, prompt: G.hud.promptShown, padk: !!document.querySelector('#hud .prompt .k.padk') })" },
+  { "shot": "d2_keys_again" },
+  { "wait": 12000 },
+  { "eval": "({ beat: G.scenes.beat, prompt: G.hud.promptShown, padk: !!document.querySelector('#hud .prompt .k.padk'), obj: G.hud.objectiveText, teach: G.hud.kit.teachCur && G.hud.kit.teachCur.id })" },
+  { "pad": { "b": ["o"], "secs": 0.1 } },
+  { "wait": 400 },
+  { "eval": "({ last: N.input.last, prompt: G.hud.promptShown, padk: !!document.querySelector('#hud .prompt .k.padk'), low: N.controller.crouchOn, teach: G.hud.kit.teachCur && G.hud.kit.teachCur.id, glyphs: [...G.hud.kit.teachEl.querySelectorAll('canvas[data-glyph]')].map((c) => c.dataset.glyph) })" },
+  { "shot": "d3_pad_prompt" }
+ ]
+}

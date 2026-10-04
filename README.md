@@ -20,6 +20,15 @@ npm run dev          # NOIR_PORT=<port> npm run dev for another port (default 51
 Open http://127.0.0.1:5173 and click. The game takes the mouse (pointer
 lock); Esc gives it back and pauses (click to resume).
 
+**A PS5 controller** (any standard gamepad) plays it all, the title and the
+pause card too: press a button on it (the browser shows a pad only after one;
+that first press only brings up the ink bracket) and the cards draw its
+buttons instead of the keys. The d-pad or the left stick moves the bracket on
+a menu, **✕** chooses, **○** or **options** goes back; a pad needs no click
+(it holds the game without the mouse), but the browser lets the sound in only
+after a key (a click on the title starts the story): press any key on the
+keyboard once. The pause card has the stick's speed and the rumble.
+
 ## How to play
 
 One rainy night in 1937: eight chapters, from a stool at a diner's counter to
@@ -51,19 +60,21 @@ then black, a word on why, and back at the start of the beat or a checkpoint.
   `docs/story/MUSIC.md` says what goes where.
 
 **The keys, by mode.** Everywhere: mouse looks, **E** does what the prompt
-says, **M** sound, **Esc** pause.
+says, **M** sound, **Esc** pause. On a pad: the right stick looks, **□** does
+what the prompt says, **options** pauses, the d-pad's down is sound.
 
-| Where | Keys |
-| --- | --- |
-| walking (the street, the alley, the office, the pier) | **W A S D**, **Shift** sprints |
-| I The Diner (seated at the counter) | mouse looks round the room; **E** light up, scotch, drink, pay; **F** a drag on the cigarette; **LMB** taps the ash; **Q** spins the empty stool beside you |
-| II The Fight (and the foreman at Pier Nine) | **LMB** / **RMB** are your two arms: tap to jab, hold to load a harder punch (three ticks) and let go; **A / D** hop aside, **S** hop back, **W** step in; **SPACE** held blocks; **E** takes what is in reach (a bottle, a plate, a stool, at Pier Nine a hook, a lid, a chain, a lantern) and that hand's button uses it (a hold throws). Afterwards **WASD** out of the door, **E** search |
-| III Room 304 | **WASD**; **E** push the door, the pad, the picture, the dial, take; the pad: hold **LMB** and rub; the dial: the mouse turns it, **E** the handle |
-| IV The Door | **LMB** fires the revolver, hold **RMB** to steady, **R** reloads; **E** tips the desk; **C** ducks (a toggle; **Ctrl** ducks while held) |
-| V The Watcher | **E** look out, **E** the fire escape; **W** takes you down the iron; the chase: **W** runs (no key held for speed), **A / D**, the mouse steers, **SPACE** vaults a fence and hops a crate; **E** drive |
-| VI The Tail | **W** throttle, **S** brake and reverse, **A / D** steer (the arrows too); close to him, hold **RMB** to put the revolver out of the window and **LMB** to fire; **E** get out, **E** take him, then look at the river with the mouse |
-| VII Pier Nine | **WASD**, **Shift** runs, **C** crouches (you are heard walking within 3 m, running within 8, crouching never); **E** open a door, take a bottle, pull the switch or the cord, knock a man out from behind; with a bottle hold **LMB** for the arc and let go to throw; then the foreman's fist fight (as II) |
-| VIII The Block | **E** take the Tommy gun, **E** the lights by the door, **E** the drums on the counter; **LMB** fires (hold), **R** reloads; at the end **WASD** out to the hat |
+| Where | Keys | PS5 pad |
+| --- | --- | --- |
+| walking (the street, the alley, the office, the pier) | **W A S D**, **Shift** sprints | left stick (as fast as it is pushed), **L1** (or **L3**) sprints |
+| I The Diner (seated at the counter) | mouse looks round the room; **E** light up, scotch, drink, pay; **F** a drag on the cigarette; **LMB** taps the ash; **Q** spins the empty stool beside you | right stick looks; **□** light up, scotch, drink, pay; **R1** a drag; **R2** taps the ash; the d-pad spins the stool |
+| II The Fight (and the foreman at Pier Nine) | **LMB** / **RMB** are your two arms: tap to jab, hold to load a harder punch (three ticks) and let go; **A / D** hop aside, **S** hop back, **W** step in; **SPACE** held blocks; **E** takes what is in reach (a bottle, a plate, a stool, at Pier Nine a hook, a lid, a chain, a lantern) and that hand's button uses it (a hold throws). Afterwards **WASD** out of the door, **E** search | **L2** / **R2** are your left and right fists (each trigger the fist of its side); a flick of the left stick left / right hops aside, back hops back, forward steps in; **✕** held blocks; **□** takes |
+| III Room 304 | **WASD**; **E** push the door, the pad, the picture, the dial, take; the pad: hold **LMB** and rub; the dial: the mouse turns it, **E** the handle | left stick; **□**; the pad: hold **R2**, the right stick rubs; the dial: the right stick turns it; the torn check: the right stick moves the fingertip, **R2** held drags a piece, **L2** held turns it (as the card says; **L1** / **R1** turn it too) |
+| IV The Door | **LMB** fires the revolver, hold **RMB** to steady, **R** reloads; **E** tips the desk; **C** ducks (a toggle; **Ctrl** ducks while held) | **R2** fires, **L2** held steadies (crouched: rises over the cover), **△** reloads; **□** tips the desk; **○** ducks (a tap toggles; held, you stand when you let go) |
+| V The Watcher | **E** look out, **E** the fire escape; **W** takes you down the iron; the chase: **W** runs (no key held for speed), **A / D**, the mouse steers, **SPACE** vaults a fence and hops a crate; **E** drive | **□**; the left stick forward; the chase: the left stick, the right stick steers, **✕** vaults and jumps, **○** slides under |
+| VI The Tail | **W** throttle, **S** brake and reverse, **A / D** steer (the arrows too); close to him, hold **RMB** to put the revolver out of the window and **LMB** to fire; **E** get out, **E** take him, then look at the river with the mouse | **R2** throttle and **L2** brake / reverse (as far as they are pressed), the left stick steers (as far as it is pushed), **✕** handbrake; hold **L1** to lean out of the window and **R1** fires (**R2** stays on the throttle); the right stick aims; **□** get out, take him; the d-pad is the horn |
+| VII Pier Nine | **WASD**, **Shift** runs, **C** crouches (you are heard walking within 3 m, running within 8, crouching never); **E** open a door, take a bottle, pull the switch or the cord, knock a man out from behind; with a bottle hold **LMB** for the arc and let go to throw; then the foreman's fist fight (as II) | left stick, **L1** runs, **○** crouches; **□**; with a bottle hold **R2** and let go; then the fist fight (as II) |
+| VIII The Block | **E** take the Tommy gun, **E** the lights by the door, **E** the drums on the counter; **LMB** fires (hold), **R** reloads; at the end **WASD** out to the hat | **□**; **R2** fires (hold), **△** reloads; the left stick |
+| the comic panels | a click, **E** or **SPACE** moves on, **ESC** twice skips | **✕** moves on, **options** twice (or held) skips |
 
 ## How the look works
 

@@ -1,0 +1,49 @@
+{
+ "about": "[C12 critic] the same office order by the keyboard and the mouse (control for c12_office_pad)",
+ "url": "/?mute=1&start=office",
+ "size": [
+  1280,
+  800
+ ],
+ "out": "shots/critic12/office_keys",
+ "steps": [
+  {
+   "until": "G.state === 'title' && N.hud.titleShown",
+   "timeout": 60000
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]",
+   "taken": "G.state !== 'title'",
+   "retries": 5,
+   "every": 4000
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'office' && G.scenes.fadeK < 0.2",
+   "timeout": 60000
+  },
+  {
+   "drive": "tools/lib/c5_office.mjs",
+   "order": [
+    "door",
+    "lamp",
+    "ames",
+    "search",
+    "picture",
+    "drawer",
+    "pencil",
+    "pad",
+    "dial",
+    "envelope",
+    "check",
+    "stills",
+    "leave"
+   ],
+   "snaps": false,
+   "check": "D.fails.length === 0 && D.end.scene === 'gunfight'",
+   "label": "III by the pad, another order"
+  }
+ ]
+}

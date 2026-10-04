@@ -918,8 +918,9 @@ export class Game {
 
   // input (pointer-locked play)
   bindInput(dom) {
-    const locked = () => document.pointerLockElement === dom;
     const C = this.controller;
+    // [C12] (or the pad holds the game without the lock: src/input/Pad.js)
+    const locked = () => document.pointerLockElement === dom || !!(C.pad && C.pad.holds);
     dom.addEventListener('mousedown', (e) => {
       if (!locked()) return;
       this.keysDown.add('Mouse' + e.button); C.keys.add('Mouse' + e.button);
