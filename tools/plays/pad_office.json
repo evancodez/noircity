@@ -1,0 +1,20 @@
+{
+ "about": "[C12] III Room 304 solved by the pad alone (the fake pad; the keyboard and the mouse never used): X on BEGIN at III, then tools/lib/c5_office.mjs (order A) with its hands on the pad (input: pad - the left stick walks, the right stick looks, square uses; at the desk's pad the right stick moves the pencil and R2 held rubs, square tears the sheet; at the safe the right stick turns the dial; the torn check: the right stick moves the fingertip, R2 held drags a piece, L1 / R1 turn it as the wheel did); the teach cards drawn in the pad's glyphs; on into IV. node tools/play.mjs tools/plays/pad_office.json",
+ "url": "/?mute=1&padfake=1&start=office",
+ "input": "pad",
+ "size": [1280, 800],
+ "out": "shots/play/pad_office",
+ "steps": [
+  { "until": "G.state === 'title' && N.hud.titleShown", "timeout": 60000 },
+  { "wait": 1500 },
+  { "pad": { "b": ["x"], "secs": 0.12 } },
+  { "until": "G.scenes.current && G.scenes.current.id === 'office' && G.scenes.fadeK < 0.2", "timeout": 30000 },
+  { "expect": "G.scenes.beat === 'corridor' && G.hud.objectiveText === 'Room 304. Ames.' && N.pad.holds", "label": "the corridor, its line; the pad holds the game" },
+  { "eval": "(window.__cards = [], setInterval(() => { const T = G.hud.kit.teachCur; if (T && !window.__cards.some((c) => c.id === T.id)) window.__cards.push({ id: T.id, glyphs: [...G.hud.kit.teachEl.querySelectorAll('canvas[data-glyph]')].map((c) => c.dataset.glyph) }); }, 100), 1)" },
+  { "drive": "tools/lib/c5_office.mjs", "order": ["door", "ames", "lamp", "search", "drawer", "pencil", "pad", "picture", "dial", "envelope", "check", "stills", "leave"], "snaps": false,
+    "check": "D.fails.length === 0 && D.end.scene === 'gunfight'", "label": "[C12] solved by the pad (the rub, the dial, the check), on into IV" },
+  { "expect": "G.save.inventory.includes('check') && G.save.flags.note === 'PIER 9'", "label": "the check in my coat, PIER 9" },
+  { "eval": "window.__cards" },
+  { "expect": "['rub', 'piece', 'turnPiece'].every((id) => window.__cards.some((c) => c.id === id && c.glyphs.length > 0)) && window.__cards.find((c) => c.id === 'rub').glyphs[0] === 'R2' && window.__cards.find((c) => c.id === 'turnPiece').glyphs[0] === 'L2'", "label": "the puzzles' cards in the pad's glyphs (rub: R2; drag a piece: R2; turn it: L2)" }
+ ]
+}

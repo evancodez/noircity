@@ -1,0 +1,22 @@
+{
+ "about": "[C12] II The Fight's good play by the pad alone (the fake pad; the keyboard and the mouse never used): X on BEGIN at the fight, then tools/lib/fight_bot.mjs 'good' with its hands on the pad (input: pad - the left stick's flick toward the light for the dodge, L2 the left fist and R2 the right, X held to block, square to take what is slid over): wins, twice in a row; the dodge card and the lesson's cards drawn in the pad's glyphs; the rumble on the blows. node tools/play.mjs tools/plays/pad_fight_good.json",
+ "url": "/?mute=1&padfake=1&start=fight",
+ "input": "pad",
+ "size": [1280, 800],
+ "out": "shots/play/pad_fight_good",
+ "steps": [
+  { "until": "G.state === 'title' && N.hud.titleShown", "timeout": 30000 },
+  { "wait": 1500 },
+  { "pad": { "b": ["x"], "secs": 0.12 } },
+  { "until": "G.scenes.current && G.scenes.current.id === 'fight' && G.brawl.active", "timeout": 60000 },
+  { "expect": "N.pad.holds && N.pad.context() === 'brawl'", "label": "the fight by the pad (it holds the game; the fist fight's mapping)" },
+  { "eval": "(window.__cards = [], setInterval(() => { const T = G.hud.kit.teachCur; if (T && !window.__cards.some((c) => c.id === T.id)) window.__cards.push({ id: T.id, glyphs: [...G.hud.kit.teachEl.querySelectorAll('canvas[data-glyph]')].map((c) => c.dataset.glyph) }); const F = G.brawl._cards; if (F && F.shownCard && !window.__cards.some((c) => c.id === F.shownCard)) window.__cards.push({ id: F.shownCard, text: F.text.textContent, glyphs: [...F.pic.querySelectorAll('canvas[data-glyph]')].map((c) => c.dataset.glyph) }); }, 100), 1)" },
+  { "drive": "tools/lib/fight_bot.mjs", "profile": "good", "fights": 2, "timeout": 600000,
+    "check": "D.fights.length === 2 && D.fights.every((f) => f.won)",
+    "label": "[C12] the taught player wins twice in a row by the pad" },
+  { "eval": "window.__cards" },
+  { "expect": "window.__cards.some((c) => c.id === 'dodge' && c.glyphs.join() === 'Lleft,Lright') && window.__cards.some((c) => /L2/.test(c.text || '') && c.glyphs.includes('L2'))", "label": "the dodge card ([A] [D]: the stick's left and right) and the lesson's (LEFT CLICK: L2) in the pad's glyphs" },
+  { "eval": "({ rumbles: N.pad.rumbleN, last: N.pad.rumbles.slice(-4), cues: G.brawl.stats.cues && { shown: G.brawl.stats.cues.shown, right: G.brawl.stats.cues.right } })" },
+  { "expect": "N.pad.rumbleN >= 10", "label": "the rumble: a thud on blows landed and taken, a pulse on the dodge cue" }
+ ]
+}

@@ -118,6 +118,16 @@
   { "pad": { "b": ["opt"], "secs": 0.1 } },
   { "until": "!G.stills.active", "timeout": 3000 },
   { "expect": "G.stills.last.skipped === true && !N.hud.paused", "label": "options twice skips the run (no pause card)" },
-  { "until": "G.scenes.current && G.scenes.current.id === 'diner'", "timeout": 6000 }
+  { "until": "G.scenes.current && G.scenes.current.id === 'diner'", "timeout": 6000 },
+
+  { "name": "THE END's card by the pad (the slice's end, as VIII's last beat calls it)" },
+  { "wait": 1500 },
+  { "eval": "(G.endSlice(), 1)" },
+  { "wait": 500 },
+  { "expect": "N.hud.endShown && N.pad.context() === 'end' && !!N.hud.endCard.go.querySelector('canvas[data-glyph=cross]')", "label": "the end card: its line in the pad's glyphs (X the title)" },
+  { "shot": "p05_end" },
+  { "pad": { "b": ["x"], "secs": 0.12 } },
+  { "until": "G.state === 'title' && N.hud.titleShown", "timeout": 6000, "label": "X on the end card: back to the title" },
+  { "expect": "N.pad.menu.selShown && N.pad.menu.selShown.dataset.k === 'continue'", "label": "the title again, CONTINUE highlighted" }
  ]
 }

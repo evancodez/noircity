@@ -10,7 +10,7 @@ import { hashSeed } from '../ui/inkArt.js';
 // as a cross with one arm inked. One table maps a key token of the kit's
 // ('[SPACE]', '[LMB]', 'E') to the glyph that stands for it on the pad,
 // by context (a fist fight: each trigger the fist on its side; the car: the
-// triggers are the pedals and L1 leans out to aim).
+// triggers are the pedals, L1 leans out to aim and R1 fires).
 //   padGlyph(id, { h })          -> canvas (CSS size set), drawn once per id and size
 //   glyphOf(token, ctx)          -> glyph id | null (null: no pad equivalent)
 //   wordsFor(text, ctx)          the few card words that name a mouse button
@@ -27,8 +27,8 @@ const BASE = {
 const BY_CTX = {
   // (the fist fight: LMB is the left fist, RMB the right - each trigger the fist on its side)
   brawl: { LMB: 'L2', RMB: 'R2' },
-  // (the car: R2 the throttle, L2 the brake, L1 leans out to aim, R2 fires while leaning)
-  drive: { W: 'R2', S: 'L2', RMB: 'L1', LMB: 'R2' },
+  // (the car: R2 the throttle, L2 the brake, L1 leans out to aim, R1 fires)
+  drive: { W: 'R2', S: 'L2', RMB: 'L1', LMB: 'R1' },
 };
 export function glyphOf(token, ctx = 'play') {
   const T = String(token).toUpperCase().replace(/\s+/g, '');

@@ -136,7 +136,7 @@ async function padStep(P) {
 // the bots' hands on the pad: what they hold (KeyW, Mouse0 ...) as buttons and
 // axes, by what the pad means on screen now (src/input/Pad.js context())
 const VKH = new Set();
-let padCtx = 'play', padCtxAt = 0, leanWas = false;
+let padCtx = 'play', padCtxAt = 0, padQ = null, padQAt = 0;
 const padCtxNow = async () => { if (Date.now() - padCtxAt > 120) { padCtx = (await js('N.pad.context()')) || 'play'; padCtxAt = Date.now(); } return padCtx; };
 async function padSync() {
   const ctx = await padCtxNow();
@@ -146,16 +146,10 @@ async function padSync() {
   A[0] = (h('KeyD') ? 1 : 0) - (h('KeyA') ? 1 : 0);
   B[PADB.sq] = h('KeyE') ? 1 : 0; B[PADB.tri] = h('KeyR') ? 1 : 0; B[PADB.left] = h('KeyQ') ? 1 : 0; B[PADB.opt] = h('Escape') ? 1 : 0;
   if (ctx === 'drive') {
-    // (the car: R2 the throttle, L2 the brake; L1 leans out, R2 fires while leaning - the
-    // throttle kept from the moment L1 went down, so L1 goes down with R2 still at the throttle)
-    const lean = h('Mouse2');
-    B[PADB.l2] = h('KeyS') ? 1 : 0; B[PADB.x] = h('Space') ? 1 : 0;
-    if (lean && !leanWas) { B[PADB.l1] = 1; B[PADB.r2] = h('KeyW') ? 1 : 0; await pushPad(); await sleep(50); }
-    leanWas = lean;
-    B[PADB.l1] = lean ? 1 : 0;
-    B[PADB.r2] = lean ? (h('Mouse0') ? 1 : 0) : (h('KeyW') ? 1 : 0);
+    // (the car: R2 the throttle, L2 the brake, X the handbrake; L1 leans out, R1 fires)
+    B[PADB.r2] = h('KeyW') ? 1 : 0; B[PADB.l2] = h('KeyS') ? 1 : 0; B[PADB.x] = h('Space') ? 1 : 0;
+    B[PADB.l1] = h('Mouse2') ? 1 : 0; B[PADB.r1] = h('Mouse0') ? 1 : 0;
   } else {
-    leanWas = false;
     A[1] = (h('KeyS') ? 1 : 0) - (h('KeyW') ? 1 : 0);
     B[PADB.x] = h('Space') || (ctx === 'stills' && h('Mouse0')) ? 1 : 0;
     B[PADB.o] = h('KeyC') || h('ControlLeft') ? 1 : 0;
@@ -185,12 +179,14 @@ async function padMouse(type, x, y, button = 'left', extra = {}) {
 const curveOf = (u, C) => C.lin * u + (1 - C.lin) * Math.pow(u, C.pow);
 async function padTurn(dx, dy = 0) {
   if (!dx && !dy) return;
-  const q = await js(`({ ctx: N.pad.context(), s: N.controller.sensitivity, ps: N.pad.sens, P: N.pad.cfg })`);
+  // (the page's curve, sensitivities and context: read again every 300 ms)
+  if (!padQ || Date.now() - padQAt > 300) { padQ = await js(`({ ctx: N.pad.context(), s: N.controller.sensitivity, ps: N.pad.sens, P: N.pad.cfg })`); padQAt = Date.now(); }
+  const q = padQ;
   const P = q.P, table = q.ctx === 'table', C = table ? P.cursor : P.look;
   const rmax = (axis) => table ? P.cursor.rate * q.ps : (axis === 'x' ? P.look.yaw : P.look.pitch) * q.ps / q.s;
   const inv = (r) => { let a = 0, b = 1; for (let i = 0; i < 24; i++) { const m = (a + b) / 2; if (curveOf(m, C) < r) a = m; else b = m; } return (a + b) / 2; };
-  let T = 0.1;
-  for (let k = 0; k < 6; k++) {
+  let T = 0.05;
+  for (let k = 0; k < 8; k++) {
     const ux = inv(Math.min(1, Math.abs(dx) / (rmax('x') * T))), uy = inv(Math.min(1, Math.abs(dy) / (rmax('y') * T)));
     const full = Math.abs(dx) > rmax('x') * T * 0.999 || Math.abs(dy) > rmax('y') * T * 0.999;
     const m = Math.hypot(ux, uy);

@@ -38,6 +38,7 @@ export const PAD = {
   holdLow: 0.3,                    // circle held past this: a hold (let go, he stands)
   active: 0.3,                     // a control past this makes the pad the last device
   minPress: 0.05,                  // every emitted press lasts at least this (a step sees it)
+  friction: 0.5,                   // a gun out, the look over a man runs at this share (never a pull)
   repeat: [0.4, 0.15],             // a menu's held direction: the first repeat, then each
 };
 export const BTN = { cross: 0, circle: 1, square: 2, triangle: 3, L1: 4, R1: 5, L2: 6, R2: 7, share: 8, options: 9, L3: 10, R3: 11, up: 12, down: 13, left: 14, right: 15, ps: 16, touch: 17 };
@@ -71,7 +72,6 @@ class Pad {
     this.trigger = { l: 0, r: 0 };
     this.t = 0;
     this.low = null;            // circle: { at, was }
-    this.latch = null;          // the car: the throttle kept while leaning out
     this.nav = { dir: null, at: 0, next: 0 };
     this.shake0 = 0;
     this.listeners = [];
@@ -89,6 +89,8 @@ class Pad {
     addEventListener('mousedown', keys, true);
     addEventListener('mousemove', (e) => { if (e.isTrusted && Math.abs(e.movementX || 0) + Math.abs(e.movementY || 0) > 4) this.setLast('keys'); }, true);
     addEventListener('gamepadconnected', () => { this.connected = true; });
+    // (the pad lost while it holds the game without the lock: the pause card, not a man left standing)
+    addEventListener('gamepaddisconnected', () => { this.connected = false; if (this.holds && document.pointerLockElement !== this.dom) this.pauseGame(); });
     // (the pad holding the game without the lock: a real ESC has no lock to let go - it pauses)
     addEventListener('keydown', (e) => { if (e.isTrusted && e.code === 'Escape' && this.holds && document.pointerLockElement !== this.dom) this.pauseGame(); });
     // rumble (small, honest: never continuous)
@@ -165,7 +167,7 @@ class Pad {
     // on a page - the browser shows a pad only after one - is not 'held
     // across a change' of a context that changed before it)
     const ctx0 = this.context();
-    if (ctx0 !== this.ctx && !this.b.some((v) => v > 0.3)) { this.releaseAll(); this.ctx = ctx0; this.latch = null; this.low = null; this.nav.dir = null; if (this.onContext) this.onContext(ctx0); }
+    if (ctx0 !== this.ctx && !this.b.some((v) => v > 0.3)) { this.releaseAll(); this.ctx = ctx0; this.low = null; this.nav.dir = null; if (this.onContext) this.onContext(ctx0); }
     const raw = this.read();
     if (!raw) { if (this.held.size) this.releaseAll(); this.move = null; this.car = null; this.b.fill(0); this.pb.fill(0); return; }
     const B = this.b;
@@ -193,7 +195,7 @@ class Pad {
     if (ctx !== this.ctx) {
       for (let i = 0; i < 18; i++) if (B[i] > 0.3) this.stale.add(i);
       this.releaseAll();
-      this.ctx = ctx; this.latch = null; this.low = null; this.trigOn[0] = this.trigOn[1] = false;
+      this.ctx = ctx; this.low = null; this.trigOn[0] = this.trigOn[1] = false;
       this.nav.dir = null;
       if (this.onContext) this.onContext(ctx);
     }
@@ -239,15 +241,15 @@ class Pad {
     const L2 = !this.stale.has(BTN.L2) && trig(0, this.trigger.l), R2 = !this.stale.has(BTN.R2) && trig(1, this.trigger.r);
     if (ctx === 'drive') {
       // the car: R2 the throttle, L2 the brake (and reverse), the stick the
-      // wheel; L1 held leans out of the window to aim (RMB) and R2 fires
-      // (LMB) - the foot stays where it was while I lean (the throttle kept)
+      // wheel; L1 held leans out of the window to aim (RMB), R1 fires (LMB),
+      // and the foot stays on R2 (the keyboard's W + RMB + LMB: drive and
+      // shoot at once - the brief's R2-fires-while-leaning let him get away
+      // every time the good hands leaned out on the river road)
       if (M.A) want.add('KeyA');
       if (M.D) want.add('KeyD');
-      const lean = on(BTN.L1);
-      if (lean && !this.latch) this.latch = { throttle: this.trigger.r };
-      if (!lean) this.latch = null;
-      const throttle = lean ? this.latch.throttle : this.trigger.r;
-      if (lean) { want.add('Mouse2'); if (R2) want.add('Mouse0'); }
+      const throttle = this.stale.has(BTN.R2) ? 0 : this.trigger.r;
+      if (on(BTN.L1)) want.add('Mouse2');
+      if (on(BTN.R1)) want.add('Mouse0');
       if (throttle > 0.25) want.add('KeyW');
       if (this.trigger.l > 0.25 && !this.stale.has(BTN.L2)) want.add('KeyS');
       if (on(BTN.cross)) want.add('Space');
@@ -298,12 +300,34 @@ class Pad {
       if (w && locked) G._mouseAcc.wheel += w * PAD.wheel * rdt;
     } else {
       const s = C.sensitivity || 0.0021;
-      cx = Math.sign(rx) * curve(Math.abs(rx), PAD.look) * PAD.look.yaw * this.sens * dt / s;
-      cy = Math.sign(ry) * curve(Math.abs(ry), PAD.look) * PAD.look.pitch * this.sens * dt / s;
+      const fr = ctx === 'play' && (rx || ry) ? this.friction() : 1;
+      cx = Math.sign(rx) * curve(Math.abs(rx), PAD.look) * PAD.look.yaw * this.sens * fr * dt / s;
+      cy = Math.sign(ry) * curve(Math.abs(ry), PAD.look) * PAD.look.pitch * this.sens * fr * dt / s;
     }
     if (!cx && !cy) return;
     C._onMouse({ movementX: cx, movementY: cy, pad: true });
     if (locked) { G._mouseAcc.dx += cx; G._mouseAcc.dy += cy; }
+  }
+  // a gun out and the sight over a man (his chest within about two of his
+  // widths of the middle of the view): the stick turns slower there - a
+  // stick's hand settles on him as a mouse's does; it never moves the aim
+  friction() {
+    const G = this.game, W = G.player && G.player.weapons && G.player.weapons.active;
+    if (!W && G.hands.set !== 'tommy') return 1;
+    this.fr = 1;
+    const m = G.camera.matrixWorld.elements, ex = m[12], ey = m[13], ez = m[14], fx = -m[8], fy = -m[9], fz = -m[10];
+    let best = 1;
+    for (const h of G.stage.hoods.list) {
+      if (!h.alive || !h.bones || !h.bones.chest) continue;
+      const c = h.bones.chest.matrixWorld.elements;
+      const dx = c[12] - ex, dy = c[13] - ey, dz = c[14] - ez, L = Math.hypot(dx, dy, dz);
+      if (L < 0.5 || L > 45) continue;
+      const cos = (dx * fx + dy * fy + dz * fz) / L;
+      const ang = Math.acos(Math.max(-1, Math.min(1, cos))), near = 2.2 * Math.atan2(0.3, L);
+      if (ang < near) { const u = ang / near; best = Math.min(best, PAD.friction + (1 - PAD.friction) * u * u); }
+    }
+    this.fr = best;
+    return best;
   }
   // (the tools' inverse: mouse counts a second at tilt u on an axis, now)
   countsPerSec(u, axis = 'x') {
