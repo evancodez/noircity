@@ -1,0 +1,22 @@
+{
+ "about": "[C13 critic] VII picked cold from CHAPTERS on a fresh save, as the user would: what comes up under and after the chapter card, what the empty gun says in the dark (LMB, R), and the HUD. node tools/play.mjs tools/plays/critic/c13/vii_cold.json",
+ "url": "/?mute=1",
+ "size": [1440, 900],
+ "out": "shots/critic13/vii_cold",
+ "steps": [
+  { "until": "G.state === 'title' && !!document.querySelector('#title .opt[data-k=chapters]')", "timeout": 60000 },
+  { "wait": 1500 },
+  { "clickOn": "#title .opt[data-k=chapters]" },
+  { "wait": 400 },
+  { "clickOn": "#title .toc .row[data-id=warehouse]" },
+  { "until": "G.scenes.current && G.scenes.current.id === 'warehouse'", "timeout": 20000 },
+  { "eval": "(window.__ev = [], setInterval(() => { const c = G.hud.kit && G.hud.kit.teachCur; const el = G.hud.kit && G.hud.kit.teachEl; const k = 'teach:' + (c ? c.id : '-') + ':' + (el ? el.style.opacity : '') + ' card:' + ((G.hud.cardT||0) > 0) + ' say:' + (G.hud.sayShown||''); if (window.__ev.at(-1)?.[1] !== k) window.__ev.push([+G.time.toFixed(2), k]); }, 50), 1)" },
+  { "wait": 1200 }, { "shot": "v01_card" },
+  { "wait": 1500 }, { "shot": "v02_card_late" },
+  { "wait": 1500 }, { "shot": "v03_after_card" },
+  { "eval": "JSON.stringify({beat:G.scenes.beat, w:G.player.weapons.current, r:(()=>{const r=G.player.weapons.impls.revolver; return [r.ammo, r.pocket]})(), obj:G.hud.objectiveText, taught:G.save.flags.taught, ammo:G.save.flags.ammo})" },
+  { "mouse": "click", "button": "left" }, { "wait": 700 }, { "shot": "v04_lmb_dark" },
+  { "key": "KeyR" }, { "wait": 700 },
+  { "eval": "JSON.stringify({w:G.player.weapons.current, say:G.hud.sayShown, dry:G.counters.dry, ev:window.__ev})" }
+ ]
+}

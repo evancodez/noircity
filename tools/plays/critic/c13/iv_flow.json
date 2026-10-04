@@ -1,0 +1,19 @@
+{
+ "about": "[C13 critic] IV in flow: the good hand wins the door, then the game itself runs into the flank (no scenes.go): what is in the cylinder and the pocket at the win, and as the flank begins? Is the pocket topped up between movements? node tools/play.mjs tools/plays/critic/c13/iv_flow.json",
+ "url": "/?mute=1&start=gunfight",
+ "size": [1280, 800],
+ "out": "shots/critic13/iv_flow",
+ "steps": [
+  { "until": "G.state === 'title' && !!document.querySelector('#title .opt[data-k=begin]')", "timeout": 60000 },
+  { "wait": 1500 },
+  { "clickOn": "#title .opt[data-k=begin]", "taken": "G.scenes.current && G.scenes.current.id === 'gunfight'", "retries": 4 },
+  { "until": "G.scenes.current && G.scenes.current.id === 'gunfight' && document.pointerLockElement === N.renderer.domElement", "timeout": 30000 },
+  { "eval": "(window.__log = [], N.game.on('scene:beat', (e) => { const r = N.game.player.weapons.impls.revolver; window.__log.push([e.beat, r.ammo, r.pocket, +N.game.time.toFixed(1)]); setTimeout(() => window.__log.push([e.beat + '+0.5s', r.ammo, r.pocket]), 500); }), 1)" },
+  { "drive": "tools/lib/c5_door.mjs", "profile": "good", "choice": "desk", "tries": 3, "beatTimeout": 150, "beats": ["shadows"], "check": "D.wonFirst >= 0", "label": "the door played" },
+  { "eval": "JSON.stringify({beat:G.scenes.beat, r:[G.player.weapons.impls.revolver.ammo,G.player.weapons.impls.revolver.pocket], save:G.save.flags.ammo})" },
+  { "until": "G.scenes.beat === 'flank'", "timeout": 30000 },
+  { "wait": 1500 },
+  { "eval": "JSON.stringify({beat:G.scenes.beat, r:[G.player.weapons.impls.revolver.ammo,G.player.weapons.impls.revolver.pocket], save:G.save.flags.ammo, log:window.__log})" },
+  { "shot": "f01_flank_begin" }
+ ]
+}

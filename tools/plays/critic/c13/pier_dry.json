@@ -1,0 +1,431 @@
+{
+"about": "[C13 critic] VII's loud pass run dry by a player who sprays (the 6 + 18 gone at the roof), then sits crouched where the pass began: is there an answer (they come and put me down, with its warning and reason), or nothing? node tools/play.mjs tools/plays/critic/c13/pier_dry.json",
+"url": "/?mute=1&start=warehouse.loud",
+"size": [
+1280,
+800
+],
+"out": "shots/critic13/pier_dry",
+"steps": [
+{
+"until": "G.state === 'title' && !document.getElementById('title').classList.contains('hidden')",
+"timeout": 30000
+},
+{
+"wait": 1500
+},
+{
+"clickOn": "#title .opt[data-k=begin]",
+"taken": "G.state !== 'title'",
+"retries": 5,
+"every": 4000
+},
+{
+"until": "G.scenes.current && G.scenes.current.id === 'warehouse' && G.scenes.beat === 'loud' && !G.scenes.trans && document.pointerLockElement === N.renderer.domElement",
+"timeout": 30000
+},
+{
+"wait": 1500
+},
+{
+"eval": "(()=>{const r=G.player.weapons.impls.revolver; return JSON.stringify({t:Math.round(G.time),b:G.scenes.beat,a:r.ammo,p:r.pocket,men:[...G.ais.keys()].filter((h)=>h.alive).length,say:G.hud.sayShown,warn:G.hud.warnText||null,obj:G.hud.objectiveText,fail:G.lastFail&&G.lastFail.why,hp:Math.round(G.health.hp),pos:[+N.controller.pos.x.toFixed(1),+N.controller.pos.z.toFixed(1)]})})()"
+},
+{
+"look": [
+0,
+-250
+],
+"steps": 5
+},
+{
+"mouse": "click",
+"button": "left"
+},
+{
+"wait": 380
+},
+{
+"mouse": "click",
+"button": "left"
+},
+{
+"wait": 380
+},
+{
+"mouse": "click",
+"button": "left"
+},
+{
+"wait": 380
+},
+{
+"mouse": "click",
+"button": "left"
+},
+{
+"wait": 380
+},
+{
+"mouse": "click",
+"button": "left"
+},
+{
+"wait": 380
+},
+{
+"mouse": "click",
+"button": "left"
+},
+{
+"wait": 380
+},
+{
+"key": "KeyR"
+},
+{
+"wait": 300
+},
+{
+"until": "!G.player.weapons.impls.revolver.reloading",
+"timeout": 5000
+},
+{
+"eval": "(()=>{const r=G.player.weapons.impls.revolver; return JSON.stringify({t:Math.round(G.time),b:G.scenes.beat,a:r.ammo,p:r.pocket,men:[...G.ais.keys()].filter((h)=>h.alive).length,say:G.hud.sayShown,warn:G.hud.warnText||null,obj:G.hud.objectiveText,fail:G.lastFail&&G.lastFail.why,hp:Math.round(G.health.hp),pos:[+N.controller.pos.x.toFixed(1),+N.controller.pos.z.toFixed(1)]})})()"
+},
+{
+"mouse": "click",
+"button": "left"
+},
+{
+"wait": 380
+},
+{
+"mouse": "click",
+"button": "left"
+},
+{
+"wait": 380
+},
+{
+"mouse": "click",
+"button": "left"
+},
+{
+"wait": 380
+},
+{
+"mouse": "click",
+"button": "left"
+},
+{
+"wait": 380
+},
+{
+"mouse": "click",
+"button": "left"
+},
+{
+"wait": 380
+},
+{
+"mouse": "click",
+"button": "left"
+},
+{
+"wait": 380
+},
+{
+"key": "KeyR"
+},
+{
+"wait": 300
+},
+{
+"until": "!G.player.weapons.impls.revolver.reloading",
+"timeout": 5000
+},
+{
+"eval": "(()=>{const r=G.player.weapons.impls.revolver; return JSON.stringify({t:Math.round(G.time),b:G.scenes.beat,a:r.ammo,p:r.pocket,men:[...G.ais.keys()].filter((h)=>h.alive).length,say:G.hud.sayShown,warn:G.hud.warnText||null,obj:G.hud.objectiveText,fail:G.lastFail&&G.lastFail.why,hp:Math.round(G.health.hp),pos:[+N.controller.pos.x.toFixed(1),+N.controller.pos.z.toFixed(1)]})})()"
+},
+{
+"mouse": "click",
+"button": "left"
+},
+{
+"wait": 380
+},
+{
+"mouse": "click",
+"button": "left"
+},
+{
+"wait": 380
+},
+{
+"mouse": "click",
+"button": "left"
+},
+{
+"wait": 380
+},
+{
+"mouse": "click",
+"button": "left"
+},
+{
+"wait": 380
+},
+{
+"mouse": "click",
+"button": "left"
+},
+{
+"wait": 380
+},
+{
+"mouse": "click",
+"button": "left"
+},
+{
+"wait": 380
+},
+{
+"key": "KeyR"
+},
+{
+"wait": 300
+},
+{
+"until": "!G.player.weapons.impls.revolver.reloading",
+"timeout": 5000
+},
+{
+"eval": "(()=>{const r=G.player.weapons.impls.revolver; return JSON.stringify({t:Math.round(G.time),b:G.scenes.beat,a:r.ammo,p:r.pocket,men:[...G.ais.keys()].filter((h)=>h.alive).length,say:G.hud.sayShown,warn:G.hud.warnText||null,obj:G.hud.objectiveText,fail:G.lastFail&&G.lastFail.why,hp:Math.round(G.health.hp),pos:[+N.controller.pos.x.toFixed(1),+N.controller.pos.z.toFixed(1)]})})()"
+},
+{
+"mouse": "click",
+"button": "left"
+},
+{
+"wait": 380
+},
+{
+"mouse": "click",
+"button": "left"
+},
+{
+"wait": 380
+},
+{
+"mouse": "click",
+"button": "left"
+},
+{
+"wait": 380
+},
+{
+"mouse": "click",
+"button": "left"
+},
+{
+"wait": 380
+},
+{
+"mouse": "click",
+"button": "left"
+},
+{
+"wait": 380
+},
+{
+"mouse": "click",
+"button": "left"
+},
+{
+"wait": 380
+},
+{
+"key": "KeyR"
+},
+{
+"wait": 300
+},
+{
+"until": "!G.player.weapons.impls.revolver.reloading",
+"timeout": 5000
+},
+{
+"eval": "(()=>{const r=G.player.weapons.impls.revolver; return JSON.stringify({t:Math.round(G.time),b:G.scenes.beat,a:r.ammo,p:r.pocket,men:[...G.ais.keys()].filter((h)=>h.alive).length,say:G.hud.sayShown,warn:G.hud.warnText||null,obj:G.hud.objectiveText,fail:G.lastFail&&G.lastFail.why,hp:Math.round(G.health.hp),pos:[+N.controller.pos.x.toFixed(1),+N.controller.pos.z.toFixed(1)]})})()"
+},
+{
+"mouse": "click",
+"button": "left"
+},
+{
+"wait": 380
+},
+{
+"mouse": "click",
+"button": "left"
+},
+{
+"wait": 380
+},
+{
+"mouse": "click",
+"button": "left"
+},
+{
+"wait": 380
+},
+{
+"mouse": "click",
+"button": "left"
+},
+{
+"wait": 380
+},
+{
+"mouse": "click",
+"button": "left"
+},
+{
+"wait": 380
+},
+{
+"mouse": "click",
+"button": "left"
+},
+{
+"wait": 380
+},
+{
+"mouse": "click",
+"button": "left"
+},
+{
+"wait": 300
+},
+{
+"eval": "(()=>{const r=G.player.weapons.impls.revolver; return JSON.stringify({t:Math.round(G.time),b:G.scenes.beat,a:r.ammo,p:r.pocket,men:[...G.ais.keys()].filter((h)=>h.alive).length,say:G.hud.sayShown,warn:G.hud.warnText||null,obj:G.hud.objectiveText,fail:G.lastFail&&G.lastFail.why,hp:Math.round(G.health.hp),pos:[+N.controller.pos.x.toFixed(1),+N.controller.pos.z.toFixed(1)]})})()"
+},
+{
+"shot": "q01_dry"
+},
+{
+"key": "KeyR"
+},
+{
+"wait": 500
+},
+{
+"eval": "(()=>{const r=G.player.weapons.impls.revolver; return JSON.stringify({t:Math.round(G.time),b:G.scenes.beat,a:r.ammo,p:r.pocket,men:[...G.ais.keys()].filter((h)=>h.alive).length,say:G.hud.sayShown,warn:G.hud.warnText||null,obj:G.hud.objectiveText,fail:G.lastFail&&G.lastFail.why,hp:Math.round(G.health.hp),pos:[+N.controller.pos.x.toFixed(1),+N.controller.pos.z.toFixed(1)]})})()"
+},
+{
+"look": [
+0,
+250
+],
+"steps": 5
+},
+{
+"wait": 5000
+},
+{
+"eval": "(()=>{const r=G.player.weapons.impls.revolver; return JSON.stringify({t:Math.round(G.time),b:G.scenes.beat,a:r.ammo,p:r.pocket,men:[...G.ais.keys()].filter((h)=>h.alive).length,say:G.hud.sayShown,warn:G.hud.warnText||null,obj:G.hud.objectiveText,fail:G.lastFail&&G.lastFail.why,hp:Math.round(G.health.hp),pos:[+N.controller.pos.x.toFixed(1),+N.controller.pos.z.toFixed(1)]})})()"
+},
+{
+"wait": 5000
+},
+{
+"eval": "(()=>{const r=G.player.weapons.impls.revolver; return JSON.stringify({t:Math.round(G.time),b:G.scenes.beat,a:r.ammo,p:r.pocket,men:[...G.ais.keys()].filter((h)=>h.alive).length,say:G.hud.sayShown,warn:G.hud.warnText||null,obj:G.hud.objectiveText,fail:G.lastFail&&G.lastFail.why,hp:Math.round(G.health.hp),pos:[+N.controller.pos.x.toFixed(1),+N.controller.pos.z.toFixed(1)]})})()"
+},
+{
+"wait": 5000
+},
+{
+"eval": "(()=>{const r=G.player.weapons.impls.revolver; return JSON.stringify({t:Math.round(G.time),b:G.scenes.beat,a:r.ammo,p:r.pocket,men:[...G.ais.keys()].filter((h)=>h.alive).length,say:G.hud.sayShown,warn:G.hud.warnText||null,obj:G.hud.objectiveText,fail:G.lastFail&&G.lastFail.why,hp:Math.round(G.health.hp),pos:[+N.controller.pos.x.toFixed(1),+N.controller.pos.z.toFixed(1)]})})()"
+},
+{
+"wait": 5000
+},
+{
+"eval": "(()=>{const r=G.player.weapons.impls.revolver; return JSON.stringify({t:Math.round(G.time),b:G.scenes.beat,a:r.ammo,p:r.pocket,men:[...G.ais.keys()].filter((h)=>h.alive).length,say:G.hud.sayShown,warn:G.hud.warnText||null,obj:G.hud.objectiveText,fail:G.lastFail&&G.lastFail.why,hp:Math.round(G.health.hp),pos:[+N.controller.pos.x.toFixed(1),+N.controller.pos.z.toFixed(1)]})})()"
+},
+{
+"wait": 5000
+},
+{
+"eval": "(()=>{const r=G.player.weapons.impls.revolver; return JSON.stringify({t:Math.round(G.time),b:G.scenes.beat,a:r.ammo,p:r.pocket,men:[...G.ais.keys()].filter((h)=>h.alive).length,say:G.hud.sayShown,warn:G.hud.warnText||null,obj:G.hud.objectiveText,fail:G.lastFail&&G.lastFail.why,hp:Math.round(G.health.hp),pos:[+N.controller.pos.x.toFixed(1),+N.controller.pos.z.toFixed(1)]})})()"
+},
+{
+"wait": 5000
+},
+{
+"eval": "(()=>{const r=G.player.weapons.impls.revolver; return JSON.stringify({t:Math.round(G.time),b:G.scenes.beat,a:r.ammo,p:r.pocket,men:[...G.ais.keys()].filter((h)=>h.alive).length,say:G.hud.sayShown,warn:G.hud.warnText||null,obj:G.hud.objectiveText,fail:G.lastFail&&G.lastFail.why,hp:Math.round(G.health.hp),pos:[+N.controller.pos.x.toFixed(1),+N.controller.pos.z.toFixed(1)]})})()"
+},
+{
+"wait": 5000
+},
+{
+"eval": "(()=>{const r=G.player.weapons.impls.revolver; return JSON.stringify({t:Math.round(G.time),b:G.scenes.beat,a:r.ammo,p:r.pocket,men:[...G.ais.keys()].filter((h)=>h.alive).length,say:G.hud.sayShown,warn:G.hud.warnText||null,obj:G.hud.objectiveText,fail:G.lastFail&&G.lastFail.why,hp:Math.round(G.health.hp),pos:[+N.controller.pos.x.toFixed(1),+N.controller.pos.z.toFixed(1)]})})()"
+},
+{
+"wait": 5000
+},
+{
+"eval": "(()=>{const r=G.player.weapons.impls.revolver; return JSON.stringify({t:Math.round(G.time),b:G.scenes.beat,a:r.ammo,p:r.pocket,men:[...G.ais.keys()].filter((h)=>h.alive).length,say:G.hud.sayShown,warn:G.hud.warnText||null,obj:G.hud.objectiveText,fail:G.lastFail&&G.lastFail.why,hp:Math.round(G.health.hp),pos:[+N.controller.pos.x.toFixed(1),+N.controller.pos.z.toFixed(1)]})})()"
+},
+{
+"wait": 5000
+},
+{
+"eval": "(()=>{const r=G.player.weapons.impls.revolver; return JSON.stringify({t:Math.round(G.time),b:G.scenes.beat,a:r.ammo,p:r.pocket,men:[...G.ais.keys()].filter((h)=>h.alive).length,say:G.hud.sayShown,warn:G.hud.warnText||null,obj:G.hud.objectiveText,fail:G.lastFail&&G.lastFail.why,hp:Math.round(G.health.hp),pos:[+N.controller.pos.x.toFixed(1),+N.controller.pos.z.toFixed(1)]})})()"
+},
+{
+"wait": 5000
+},
+{
+"eval": "(()=>{const r=G.player.weapons.impls.revolver; return JSON.stringify({t:Math.round(G.time),b:G.scenes.beat,a:r.ammo,p:r.pocket,men:[...G.ais.keys()].filter((h)=>h.alive).length,say:G.hud.sayShown,warn:G.hud.warnText||null,obj:G.hud.objectiveText,fail:G.lastFail&&G.lastFail.why,hp:Math.round(G.health.hp),pos:[+N.controller.pos.x.toFixed(1),+N.controller.pos.z.toFixed(1)]})})()"
+},
+{
+"wait": 5000
+},
+{
+"eval": "(()=>{const r=G.player.weapons.impls.revolver; return JSON.stringify({t:Math.round(G.time),b:G.scenes.beat,a:r.ammo,p:r.pocket,men:[...G.ais.keys()].filter((h)=>h.alive).length,say:G.hud.sayShown,warn:G.hud.warnText||null,obj:G.hud.objectiveText,fail:G.lastFail&&G.lastFail.why,hp:Math.round(G.health.hp),pos:[+N.controller.pos.x.toFixed(1),+N.controller.pos.z.toFixed(1)]})})()"
+},
+{
+"wait": 5000
+},
+{
+"eval": "(()=>{const r=G.player.weapons.impls.revolver; return JSON.stringify({t:Math.round(G.time),b:G.scenes.beat,a:r.ammo,p:r.pocket,men:[...G.ais.keys()].filter((h)=>h.alive).length,say:G.hud.sayShown,warn:G.hud.warnText||null,obj:G.hud.objectiveText,fail:G.lastFail&&G.lastFail.why,hp:Math.round(G.health.hp),pos:[+N.controller.pos.x.toFixed(1),+N.controller.pos.z.toFixed(1)]})})()"
+},
+{
+"wait": 5000
+},
+{
+"eval": "(()=>{const r=G.player.weapons.impls.revolver; return JSON.stringify({t:Math.round(G.time),b:G.scenes.beat,a:r.ammo,p:r.pocket,men:[...G.ais.keys()].filter((h)=>h.alive).length,say:G.hud.sayShown,warn:G.hud.warnText||null,obj:G.hud.objectiveText,fail:G.lastFail&&G.lastFail.why,hp:Math.round(G.health.hp),pos:[+N.controller.pos.x.toFixed(1),+N.controller.pos.z.toFixed(1)]})})()"
+},
+{
+"wait": 5000
+},
+{
+"eval": "(()=>{const r=G.player.weapons.impls.revolver; return JSON.stringify({t:Math.round(G.time),b:G.scenes.beat,a:r.ammo,p:r.pocket,men:[...G.ais.keys()].filter((h)=>h.alive).length,say:G.hud.sayShown,warn:G.hud.warnText||null,obj:G.hud.objectiveText,fail:G.lastFail&&G.lastFail.why,hp:Math.round(G.health.hp),pos:[+N.controller.pos.x.toFixed(1),+N.controller.pos.z.toFixed(1)]})})()"
+},
+{
+"wait": 5000
+},
+{
+"eval": "(()=>{const r=G.player.weapons.impls.revolver; return JSON.stringify({t:Math.round(G.time),b:G.scenes.beat,a:r.ammo,p:r.pocket,men:[...G.ais.keys()].filter((h)=>h.alive).length,say:G.hud.sayShown,warn:G.hud.warnText||null,obj:G.hud.objectiveText,fail:G.lastFail&&G.lastFail.why,hp:Math.round(G.health.hp),pos:[+N.controller.pos.x.toFixed(1),+N.controller.pos.z.toFixed(1)]})})()"
+},
+{
+"wait": 5000
+},
+{
+"eval": "(()=>{const r=G.player.weapons.impls.revolver; return JSON.stringify({t:Math.round(G.time),b:G.scenes.beat,a:r.ammo,p:r.pocket,men:[...G.ais.keys()].filter((h)=>h.alive).length,say:G.hud.sayShown,warn:G.hud.warnText||null,obj:G.hud.objectiveText,fail:G.lastFail&&G.lastFail.why,hp:Math.round(G.health.hp),pos:[+N.controller.pos.x.toFixed(1),+N.controller.pos.z.toFixed(1)]})})()"
+},
+{
+"shot": "q02_after80s"
+}
+]
+}

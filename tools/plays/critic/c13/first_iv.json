@@ -1,0 +1,33 @@
+{
+ "about": "[C13 critic] IV from the title as a first-timer: watch what the screen says, then spray at the door, reload, spray until dry, and see what the pocket and the HUD say. node tools/play.mjs tools/plays/critic/c13/first_iv.json",
+ "url": "/?mute=1&start=gunfight",
+ "size": [1440, 900],
+ "out": "shots/critic13/first_iv",
+ "steps": [
+  { "until": "G.state === 'title' && !!document.querySelector('#title .opt[data-k=begin]')", "timeout": 60000 },
+  { "wait": 1500 },
+  { "clickOn": "#title .opt[data-k=begin]", "taken": "G.scenes.current && G.scenes.current.id === 'gunfight'", "retries": 4 },
+  { "until": "G.scenes.current && G.scenes.current.id === 'gunfight' && document.pointerLockElement === N.renderer.domElement", "timeout": 30000 },
+  { "wait": 800 }, { "shot": "a01_enter" },
+  { "eval": "JSON.stringify({beat:G.scenes.beat, w:G.player.weapons.current, imp: (()=>{const r=G.player.weapons.impls.revolver; return r && {ammo:r.ammo,pocket:r.pocket}})(), obj:G.hud.objectiveText||null, say:G.hud.sayShown, teach:[...document.querySelectorAll('.teach,.kit-teach')].map(e=>e.textContent).join('|')})" },
+  { "wait": 2500 }, { "shot": "a02_3s" },
+  { "eval": "JSON.stringify({beat:G.scenes.beat, w:G.player.weapons.current, imp:(()=>{const r=G.player.weapons.impls.revolver; return r && {ammo:r.ammo,pocket:r.pocket}})(), say:G.hud.sayShown})" },
+  { "wait": 3000 }, { "shot": "a03_6s" },
+  { "mouse": "click", "button": "left" }, { "wait": 350 },
+  { "mouse": "click", "button": "left" }, { "wait": 350 },
+  { "mouse": "click", "button": "left" }, { "wait": 350 },
+  { "mouse": "click", "button": "left" }, { "wait": 350 },
+  { "mouse": "click", "button": "left" }, { "wait": 350 },
+  { "mouse": "click", "button": "left" }, { "wait": 350 },
+  { "mouse": "click", "button": "left" }, { "wait": 400 },
+  { "shot": "a04_cyl_empty" },
+  { "eval": "JSON.stringify({beat:G.scenes.beat, imp:(()=>{const r=G.player.weapons.impls.revolver; return r && {ammo:r.ammo,pocket:r.pocket}})(), say:G.hud.sayShown, dry:G.counters.dry, hp:G.player.health&&G.player.health.hp})" },
+  { "key": "KeyR" }, { "wait": 600 }, { "shot": "a05_reloading" },
+  { "until": "!G.player.weapons.impls.revolver.reloading", "timeout": 5000 },
+  { "eval": "JSON.stringify({beat:G.scenes.beat, imp:(()=>{const r=G.player.weapons.impls.revolver; return r && {ammo:r.ammo,pocket:r.pocket}})(), say:G.hud.sayShown, flags:G.save.flags.ammo})" },
+  { "wait": 4000 }, { "shot": "a06_later" },
+  { "eval": "JSON.stringify({beat:G.scenes.beat, state:G.state, imp:(()=>{const r=G.player.weapons.impls.revolver; return r && {ammo:r.ammo,pocket:r.pocket}})(), say:G.hud.sayShown, ev:(G.guns&&G.guns.events||[]).slice(-4)})" },
+  { "wait": 8000 }, { "shot": "a07_after" },
+  { "eval": "JSON.stringify({beat:G.scenes.beat, state:G.state, imp:(()=>{const r=G.player.weapons.impls.revolver; return r && {ammo:r.ammo,pocket:r.pocket}})(), say:G.hud.sayShown, ev:(G.guns&&G.guns.events||[]).slice(-4)})" }
+ ]
+}

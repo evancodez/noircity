@@ -1,0 +1,18 @@
+{
+ "about": "[C13 critic] IV as the user plays it, in flow: the clumsy first-timer of lane C5's driver, but a movement after the first begins as the game runs into it (the cylinder and the pocket carried, no checkpoint go) and a retry is the game's own. Does he run dry, is it told, does he get through? node tools/play.mjs tools/plays/critic/c13/iv_flow_clumsy.json",
+ "url": "/?mute=1&start=gunfight",
+ "size": [1280, 800],
+ "out": "shots/critic13/iv_flow_clumsy",
+ "steps": [
+  { "until": "G.state === 'title' && !!document.querySelector('#title .opt[data-k=begin]')", "timeout": 60000 },
+  { "wait": 1500 },
+  { "clickOn": "#title .opt[data-k=begin]", "taken": "G.scenes.current && G.scenes.current.id === 'gunfight'", "retries": 4 },
+  { "until": "G.scenes.current && G.scenes.current.id === 'gunfight' && document.pointerLockElement === N.renderer.domElement", "timeout": 30000 },
+  { "eval": "(window.__says = [], setInterval(() => { const s = N.game.hud.sayShown, w = N.game.hud.warnText; const k = (s || '') + ' | ' + (w || ''); if (window.__says.at(-1)?.[1] !== k) { const r = N.game.player.weapons.impls.revolver; window.__says.push([+N.game.time.toFixed(1), k, N.game.scenes.beat, r.ammo, r.pocket]); } }, 100), 1)" },
+  { "drive": "tools/plays/critic/c13/c5_door_flow.mjs", "profile": "clumsy", "choice": "desk", "out": true, "flow": true, "tries": 3, "beatTimeout": 150,
+    "beats": ["shadows", "flank", "corridor"],
+    "check": "D.won === 3", "label": "the clumsy first-timer, in flow, gets through every movement within three tries" },
+  { "eval": "JSON.stringify(window.__says.filter((x) => /Empty|Shot|Flank|down|out/i.test(x[1])))" },
+  { "eval": "(N.game.guns.events || []).filter((e) => e.what === 'down').map((e) => e.why)" }
+ ]
+}
