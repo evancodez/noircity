@@ -561,8 +561,9 @@ function live(ctx) {
     const C0 = G.controller;
     crew.player.hidden = mezz.up && C0.pos.x > PIER.office.x0 && C0.pos.x < PIER.office.x1 && C0.pos.z < PIER.office.z1 - 0.1;
     crew.step(dt, G.time);
-    // [C10a] the telephone's man, down from the catwalk again after the shout, draws like the rest
-    if (L.loud && L.answerer && L.answerer.name && !L.answerer.answering && !L.answerer.down && !L.answerer.upLvl && crew.men.includes(L.answerer)) drawGuns(ctx, L);
+    // [C10a] the telephone's man after the shout draws like the rest once I am down on the floor or he is
+    // back at the stairs' foot (drawGuns keeps him to the crew's rule only while he climbs to me up there)
+    if (L.loud && L.answerer && L.answerer.name && !L.answerer.down && !L.answerer.upLvl && crew.men.includes(L.answerer) && (!L.answerer.answering || !mezz.up)) drawGuns(ctx, L);
     // the warning before the cosh: the shout, and its line while they hunt me
     if (!L.stealth.loud && !L.fightOn) ctx.hud.warn(crew.alarmT >= 0 ? 'They’ve seen me.' : null);
     else if (L.stealth.loud && !L.fightOn) {

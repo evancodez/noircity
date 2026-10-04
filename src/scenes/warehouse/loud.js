@@ -109,9 +109,10 @@ export function goLoud(ctx, L) {
   // ([C10a] after the critic: loud before the telephone's man had set off (a
   // round fired in the pass's first seconds) left nobody who could climb - the
   // gunmen stand on the floor - so a man crouched behind the catwalk's boards
-  // was never reached: nothing came, nothing was lost, for minutes. Now the
-  // answerer still goes up (the crew's rule, his torch, his cosh, his own
-  // warning); back at the stairs' foot he draws like the rest (drawGuns))
+  // was never reached: nothing came, nothing was lost, for minutes. Now, while
+  // I am up there, the answerer still goes up (the crew's rule, his torch,
+  // his cosh, his own warning); once I am down on the floor, or he is back at
+  // the stairs' foot, he draws like the rest (drawGuns, each step while loud))
   if (!L.answerer) L.answerer = sendAnswerer(ctx, L) || true;
   drawGuns(ctx, L);
   G.emit('c7:loud', { men: L.gunmen.length, t: +G.time.toFixed(2) });
@@ -121,11 +122,12 @@ export function goLoud(ctx, L) {
 // telephone becomes a gunman where he stands (the shout; [C10a] and the
 // answerer when he is down again - called each step while loud)
 export function drawGuns(ctx, L) {
-  const G = ctx.game, K = gunsOf(G), crew = L.crew;
+  const G = ctx.game, K = gunsOf(G), crew = L.crew, meUp = !!ctx.stage.part('mezz').up;
   for (const m of [...crew.men]) {
     if (m.down) continue;
-    // (a man up on the catwalk keeps the crew's rule: he comes at me, the cosh)
-    if (m.upLvl || m.answering) continue;
+    // (a man up on the catwalk keeps the crew's rule: he comes at me, the cosh;
+    // [C10a] so does the answerer on his way up while I am up there)
+    if (m.upLvl || (m.answering && meUp)) continue;
     const at = { x: m.pos.x, z: m.pos.z };
     // (the shout, then each draws: the first a half second on, the rest after
     // him - the moment to get down or get out of their light)
@@ -136,7 +138,7 @@ export function drawGuns(ctx, L) {
     m.remove(); ctx.cast.remove(m.c);
     crew.men.splice(crew.men.indexOf(m), 1);
   }
-  if (!crew.men.some((m) => !m.down && (m.upLvl || m.answering))) crew.onCaught = null;
+  if (!crew.men.some((m) => !m.down && (m.upLvl || (m.answering && meUp)))) crew.onCaught = null;
 }
 
 // the telephone rang behind me: one of them goes up to answer it - up the
