@@ -61,7 +61,7 @@ export default async function drive({ js, turn, keyDown, keyUp, log, sleep, opts
   let line = null, li = 0, lane = null, over = opts.over || 'roofs', laneTried = null;
   let plan = new Map();          // thing id -> { at: t to press, key, skip }
   let wrongAt = Date.now() + rr(3000, 6000), wOffUntil = 0;
-  let lastBeat = null, fails = 0, warned = 0, lastWarn = null;
+  let lastBeat = null, fails = 0, warned = 0, lastWarn = null, fails0 = null;
   const ST = `(() => {
     const C = N.controller, R = C.run, S = G.scenes, ctx = S.ctx, CH0 = ctx && ctx.flags.chase, CH = CH0 && CH0.course ? CH0 : null;
     const out = { done: !!(${until}), mode: C.mode, beat: S.beat, scene: S.current && S.current.id, yaw: C.yaw, pitch: C.pitch, sens: C.sensitivity,
@@ -85,6 +85,9 @@ export default async function drive({ js, turn, keyDown, keyUp, log, sleep, opts
   for (;;) {
     const s = await js(ST);
     if (!s || s.__exc) { if (s && s.__exc && !excLogged) { excLogged = true; log(`c6_chase: ${String(s.__exc).slice(0, 300)}`); } await sleep(120); if (Date.now() - T0 > timeout) break; continue; }
+    // ([C10b] the fails before this drive - an earlier chapter's, in the whole play - are not this chase's)
+    if (fails0 == null) fails0 = s.fails;
+    s.fails -= fails0;
     for (const [name, expr] of Object.entries(shots)) if (!shotDone.has(name) && await js(expr) === true) { shotDone.add(name); await shot(name); }
     if (s.warn && s.warn !== lastWarn) warned++;
     lastWarn = s.warn;

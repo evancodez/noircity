@@ -641,9 +641,11 @@ function* carsBeat(ctx) {
   });
   yield until(() => stopped >= 1);
   yield wait(2.5);
-  let more = false;
+  let more = false, reloadT = false;
   yield* fightTo(ctx, () => {
     if (!rose && (G.controller.crouchK || 0) > 0.6) { rose = true; K.teach('rise'); }
+    // [C10b] VIII picked cold never taught R (IV teaches it): once a save, down behind cover with the drum under half
+    { const W = G.player.weapons.active; if (rose && !reloadT && W && W.ammo != null && W.ammo < 25 && (G.controller.crouchK || 0) > 0.6) { reloadT = true; K.teach('reload'); } }
     if (!more && stopped >= 2) more = true;
     return more && alive(ctx) === 0;
   });

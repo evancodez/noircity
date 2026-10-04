@@ -1303,16 +1303,12 @@
    "name": "he steps out of the dark by the door, the hook turning in his hand"
   },
   {
-   "until": "!!W().fm && W().fm.pos.z < -31.4",
-   "timeout": 8000
-  },
-  {
    "until": "G.controller.mode === 'brawlIn' || G.brawl.active",
-   "timeout": 8000
+   "timeout": 30000
   },
   {
    "until": "G.brawl.active && G.controller.mode === 'brawl'",
-   "timeout": 12000
+   "timeout": 30000
   },
   {
    "expect": "G.brawl.him.holding === 'hook' && G.hands.set === 'fists' && G.brawl.who.name === 'THE FOREMAN' && G.brawl.lesson === null",

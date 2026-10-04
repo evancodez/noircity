@@ -68,7 +68,7 @@
 import { wait, keyLabel, ORDER } from './script.js';
 export { wait, until, beat, defineScene, keyLabel } from './script.js';
 // [C1] (a file whose name starts with `_` is a helper or a parked scene, never
-// a scene: _diner_room.js, _body_cut.js)
+// a scene: _diner_room.js)
 const SCENE_MODS = import.meta.glob(['../scenes/*.js', '!../scenes/_*.js'], { eager: true });
 
 const FADE = 0.6;

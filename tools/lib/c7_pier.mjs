@@ -30,11 +30,13 @@ export default async function drive({ js, turn, keyDown, keyUp, mouse, log, slee
   const rmb = async (on) => { if (on !== rmbOn) { rmbOn = on; const [x, y] = at(); await mouse(on ? 'mousePressed' : 'mouseReleased', x, y, 'right'); } };
   const click = async () => { const [x, y] = at(); await mouse('mousePressed', x, y, 'left'); await sleep(45); await mouse('mouseReleased', x, y, 'left'); };
   const out = { profile: prof, fails: 0, whys: [], takedowns: 0, lamps: 0, shots: 0, secs: 0, done: false };
+  // ([C10b] the fails before this drive - an earlier chapter's, in the whole play - are not counted)
+  const BASE = (await js('(G.counters.fails || 0)')) || 0;
   const ST = `(() => {
     const C = N.controller, L = G.scenes.ctx && G.scenes.ctx.flags.live, e = G.eye, Wp = G.player.weapons.active;
     const mz = G.stage.part && G.stage.part('mezz');
     const s = { done: !!(${stop}), beat: G.scenes.beat, failing: !!G.failing || !!G.scenes.trans, x: C.pos.x, z: C.pos.z, ey: e.y, yaw: C.yaw, pitch: C.pitch, sens: C.sensitivity,
-      mode: C.mode, crouch: C.sneak ? !!C.sneak.crouch : (C.crouchK || 0) > 0.5, up: !!(mz && mz.up), fails: G.counters.fails || 0, why: G.lastFail ? G.lastFail.why : null,
+      mode: C.mode, crouch: C.sneak ? !!C.sneak.crouch : (C.crouchK || 0) > 0.5, up: !!(mz && mz.up), fails: (G.counters.fails || 0) - ${BASE}, why: G.lastFail ? G.lastFail.why : null,
       loud: !!(L && L.loud), alarm: L ? L.crew.alarmT >= 0 : false, ammo: Wp ? Wp.ammo : 0, reloading: !!(Wp && Wp.reloading), busy: G.player.hands.busy || !!(L && L.approach) || C.frozen,
       prompt: G.hud.promptShown || '', men: [], hoods: [], lit: window.__c7lit ? window.__c7lit(C.pos.x, C.pos.z) : 0,
       ans: L && L.answerer && L.answerer.name ? { up: !!L.answerer.upLvl, x: L.answerer.pos.x, z: L.answerer.pos.z, ri: L.answerer.ri, down: L.answerer.down, mode: L.answerer.mode, answering: !!L.answerer.answering } : (L && L.answerer ? { none: true } : null) };

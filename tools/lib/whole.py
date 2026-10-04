@@ -232,7 +232,12 @@ def build(first, frm=None):
     fi = load('pier_fight')
     f0 = idx(fi, lambda s: s.get('name', '').startswith('he steps out'), 'the foreman steps out')
     ff = idx(fi, lambda s: 'fight' in s, 'the pier fight')
-    steps += strip([s for s in fi[f0:ff] if not ('fightT - G.scenes.startT' in s.get('expect', ''))])
+    # (from the loud pass the revolver is in my hand: his hook takes it on a cut first - his walk out is not the checkpoint's)
+    seg = [s for s in fi[f0:ff] if 'fightT - G.scenes.startT' not in s.get('expect', '') and 'W().fm.pos.z' not in s.get('until', '')]
+    for s in seg:
+        if 'until' in s:
+            s['timeout'] = max(s.get('timeout', 0), 30000)
+    steps += strip(seg)
     steps.append({'drive': 'tools/lib/fight_bot.mjs', 'profile': 'bad' if first else 'good', 'timeout': 900000,
                   'check': 'D.fights.length === 1 && D.fights[0].won', 'label': '[warehouse] the foreman put down'})
     rest = [s for s in fi[ff + 1:] if 'G.brawl.stats.time > 88' not in s.get('expect', '')]

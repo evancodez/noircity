@@ -3,8 +3,8 @@
 // scenes.next() / ctx.next() go to the next id here that has a scene file;
 // past the last one, the "to be continued" card. A scene's chapter card takes
 // its numeral and title from here unless the scene gives its own
-// (defineScene title / name). The Body (`body`) is cut: its file is parked as
-// src/scenes/_body_cut.js (the manager skips files that start with `_`).
+// (defineScene title / name). The Body (`body`) is cut ([C10b] its parked
+// scene and src/scenes/body/ removed; its alley stays in the block, hidden).
 //
 // Each chapter also carries the defaults a scene file may override in its own
 // defineScene (seams/Z.md §5, §6):
