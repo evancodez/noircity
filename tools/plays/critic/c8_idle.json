@@ -1,0 +1,13 @@
+{
+ "about": "[C8 critic] idle (hands off) at every movement of the street and every stage of him, one try each: lost, warned, reason said?",
+ "url": "/?mute=1&start=shootout.cars",
+ "size": [1440, 900],
+ "out": "shots/critic/c8_idle",
+ "steps": [
+  { "until": "G.state === 'title' && !document.getElementById('title').classList.contains('hidden')", "timeout": 30000 },
+  { "wait": 1200 },
+  { "clickOn": "#title .opt[data-k=begin]", "taken": "G.state !== 'title'", "retries": 5, "every": 4000 },
+  { "until": "G.scenes.current && G.scenes.current.id === 'shootout' && !G.scenes.trans && !(G.stills && G.stills.active) && !G.hud._carded", "timeout": 40000 },
+  { "drive": "tools/lib/c8_block.mjs", "profile": "idle", "beats": ["cars", "flank", "el", "saloon", "cardinal", "last"], "tries": 1, "beatTimeout": 120, "check": "D.lost === 6", "label": "idle loses every movement" }
+ ]
+}
