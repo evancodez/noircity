@@ -31,8 +31,10 @@ gunsOf(ctx.game).arm('revolver');                   // or 'tommy': in hand AND F
 [C13] The revolver's pocket is counted: `arm('revolver')` gives the
 checkpoint's counts (the cylinder and the pocket as they were when the beat
 was reached, `save.flags.ammo`), or the chapter's row of `POCKET`
-(`src/player/weapons/revolver.js`) when it is begun, never under the row's
-floor; `arm('revolver', { pocket: n })` the cylinder full and n;
+(`src/player/weapons/revolver.js`) when it is begun - never more: a fall gives
+no rounds back (C13 after the critic; IV's box of rounds on the secretary's
+desk is the scene's, taken with E); `arm('revolver', { pocket: n })` the
+cylinder full and n;
 `arm('revolver', { keep: true })` the counts as they are. A chapter that gives
 the revolver adds its row to `POCKET`; a scene with no row keeps an endless
 pocket.
