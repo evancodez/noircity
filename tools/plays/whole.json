@@ -586,7 +586,7 @@
    "stop": false
   },
   {
-   "eval": "(N.controller.yaw = Math.atan2(-(5.6 - G.eye.x), -(4.15 - G.eye.z)), 1)"
+   "eval": "(N.controller.yaw = Math.atan2(-(5.6 - G.eye.x), -(4.15 - G.eye.z)), N.controller.pitch = -0.05, 1)"
   },
   {
    "down": "KeyW"

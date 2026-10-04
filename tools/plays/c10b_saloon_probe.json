@@ -1,0 +1,71 @@
+{
+ "about": "[C10b] probe: VIII's saloon by lane C8's clumsy hand after the el in the same session (flow), with a log of his car and the warning line every half second",
+ "url": "/?mute=1&start=shootout.el",
+ "size": [
+  1280,
+  800
+ ],
+ "out": "shots/play/c10b_saloon_probe",
+ "steps": [
+  {
+   "until": "G.state === 'title' && !document.getElementById('title').classList.contains('hidden')",
+   "timeout": 30000
+  },
+  {
+   "wait": 1200
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]",
+   "taken": "G.state !== 'title'",
+   "retries": 5,
+   "every": 4000
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'shootout' && G.scenes.beat === 'el' && !G.scenes.trans",
+   "timeout": 40000
+  },
+  {
+   "drive": "tools/lib/c8_block.mjs",
+   "profile": "good",
+   "flow": true,
+   "beats": [
+    "el"
+   ],
+   "tries": 3,
+   "beatTimeout": 200,
+   "check": "D.won === 1",
+   "label": "the el won (good)"
+  },
+  {
+   "until": "G.scenes.beat === 'saloon' && !G.scenes.trans",
+   "timeout": 30000
+  },
+  {
+   "eval": "(window.LG = [], setInterval(() => { const c = G.b7 && G.b7.cars && G.b7.cars.saloon; LG.push([+G.time.toFixed(1), G.scenes.beat, c && c.rail ? [+c.rail.s.toFixed(1), +c.rail.L.toFixed(1), +(c.rail.v || 0).toFixed(2), +(c.rail.held || 0).toFixed(1), c.rail.what || '', (c.tyres || []).filter(Boolean).length, !!c.c8flat, !!c.rail.done, G.b7.rails.list.includes(c)] : null, G.hud.kit.warnText || '', !!G.failing]); }, 500), 1)"
+  },
+  {
+   "wait": 6000
+  },
+  {
+   "shot": "s1_saloon_6s"
+  },
+  {
+   "eval": "JSON.stringify({ cars: G.b7.rails.list.map((c) => [c.id, c.c8beat, +c.pos.x.toFixed(1), +c.pos.z.toFixed(1), c.state, !!(c.rail && c.rail.done)]), reserve: G.b7.reserve, dotLeft: G.b7.dotLeft, ammo: G.player.weapons.active && G.player.weapons.active.ammo })"
+  },
+  {
+   "drive": "tools/lib/c8_block.mjs",
+   "profile": "bad",
+   "flow": true,
+   "beats": [
+    "saloon"
+   ],
+   "tries": 4,
+   "beatTimeout": 150,
+   "check": "true",
+   "label": "four tries"
+  },
+  {
+   "eval": "JSON.stringify(LG.filter((r, i) => i % 2 === 0 || r[4] || r[5]))"
+  }
+ ]
+}

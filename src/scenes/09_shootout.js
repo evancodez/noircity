@@ -754,7 +754,10 @@ function* saloonBeat(ctx) {
   };
   saloonMen(ctx, car);
   R.ticks.push(() => {
-    if (stopped || G.failing || !R.rails.list.includes(car)) return false;
+    // [C10b] (a retry's car comes 0.5 s into the beat, still under the fail's black: the tick waits it out -
+    // it used to drop out there, and on every retry his car made the door with no warning up)
+    if (G.failing) return true;
+    if (stopped || !R.rails.list.includes(car)) return false;
     // (held up by a wreck or a car in its lane, not by one of its own men crossing it, nor by me)
     if ((car.rail.held || 0) > 3 && !/^(hood|me)/.test(car.rail.what || '')) { stopped = true; R.saloonS = car.rail.s; car.rail.plan.v.fill(0); car.rail.done = true; car.rail.stopped = true; rebuild(G); return false; }
     // (the warning stays up through the fail: it was said first)
