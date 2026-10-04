@@ -217,7 +217,7 @@ export default async function drive({ js, turn, keyDown, keyUp, mouse, shot, log
       // [C13] opts.flow: the first try of every movement after the first is the one the game runs into by
       // itself (the counts carried, no checkpoint's go - lane C13's critic's driver); a retry is the game's own
       if (opts.flow && (k > 0 || beat !== beats[0])) {
-        for (let w = 0; w < 900; w++) { const b = await js(`(N.game.scenes.beat === '${beat}' && N.game.state === 'playing' && !N.game.scenes.trans && !(N.game.fail && N.game.fail.active)) ? 1 : 0`); if (b) break; await sleep(100); }
+        for (let w = 0; w < 900; w++) { const b = await js(`(N.game.scenes.beat === '${beat}' && N.game.state === 'playing' && !N.game.scenes.trans && !N.game.failing) ? 1 : 0`); if (b) break; await sleep(100); }
         const c = await js(`(() => { const r = N.game.player.weapons.impls.revolver; return [r.ammo, r.pocket]; })()`);
         log('c13 flow: ' + beat + ' try ' + (k + 1) + ' begins with ' + JSON.stringify(c));
         (rec.flow || (rec.flow = [])).push([beat, k + 1, c]);

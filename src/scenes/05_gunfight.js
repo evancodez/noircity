@@ -198,8 +198,7 @@ function prepare(ctx, name, { reset = true } = {}) {
   // (the plays' record of the beat, lane C2's driver's: its cover places, where the open is, won)
   // (block: the desk's footprint as it stands or lies - a hand walks round it, not into it; standing, its east
   // side is shut: Ames's chair closes the gap to the radiator)
-  F.c2 = { beat: name, get spots() { const t = !!O.desk.tip; return (SPOTS[name] || []).filter((sp) => sp.tipped == null || sp.tipped === t); }, open: OPENS[name] || null, won: false,
-    get block() { const c = O.desk.collider; return c ? { x0: c.cx - c.hx, x1: c.cx + c.hx, z0: c.cz - c.hz, z1: c.cz + c.hz, shut: O.desk.tip ? [] : ['E'] } : null; } };
+  F.c2 = c2rec(O, name);
   F.go = null;
   const spawn = (m, extra = {}) => { const h = K.spawn({ kind: m.kind || 'pistol', at: m.at, yaw: m.yaw ?? null, way: m.way ? { steps: m.way } : null, door: m.door || null, cover: !!m.cover, wait: m.wait ?? 0, start: m.start || null, name: m.name, hp: m.hp ?? null, ...extra }); h.c5 = m.name; F.men.push(h); return h; };
   F.spawn = spawn;
@@ -215,6 +214,13 @@ function prepare(ctx, name, { reset = true } = {}) {
   if (name === 'corridor') corridorMen(ctx, spawn);
 }
 
+// (the plays' record, for a beat - [C13] after the critic: again when the chapter runs on into the next movement by
+// itself; it kept the first movement's cover places, and a hand played in flow went to the door's places in the flank
+// and to Ames's room from the cart in the corridor)
+function c2rec(O, name) {
+  return { beat: name, get spots() { const t = !!O.desk.tip; return (SPOTS[name] || []).filter((sp) => sp.tipped == null || sp.tipped === t); }, open: OPENS[name] || null, won: false,
+    get block() { const c = O.desk.collider; return c ? { x0: c.cx - c.hx, x1: c.cx + c.hx, z0: c.cz - c.hz, z1: c.cz + c.hz, shut: O.desk.tip ? [] : ['E'] } : null; } };
+}
 // the corridor's men: two in the lift (one a Tommy gun) once its cage is open,
 // one out of the washroom, the heavy up the stair
 function corridorMen(ctx, spawn) {
@@ -349,6 +355,7 @@ export default defineScene({
       // ---- 2. the flank: the handle of the connecting door turns ------------------------------------
       (G._c2won || (G._c2won = [])).push('shadows');
       yield beat('flank');
+      F.c2 = c2rec(O, 'flank');
       K.cfg.to = 'flank';
       K.cfg.warn = { ...WARN, door: 'The other door! Behind you!' };
       const go = flankGo(F, G);
@@ -361,6 +368,7 @@ export default defineScene({
       R.tipped = !!O.desk.tip;
       (G._c2won || (G._c2won = [])).push('flank');
       yield beat('corridor');
+      F.c2 = c2rec(O, 'corridor');
       K.cfg.to = 'corridor';
       K.cfg.warn = { ...WARN };
       K.cfg.flankAfter = 0;
@@ -541,9 +549,9 @@ function boxMesh(ctx) {
     card.name = 'c13_box'; card.userData.inkSurface = 'paper';
     const band = new THREE.MeshStandardMaterial({ color: 0x2a2724, roughness: 0.8 });
     band.name = 'c13_box_band';
-    g.add(new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.048, 0.085).translate(0, 0.024, 0), card));
-    // the lid's edge and a dark band round it (the maker's label)
-    g.add(new THREE.Mesh(new THREE.BoxGeometry(0.122, 0.014, 0.087).translate(0, 0.03, 0), band));
+    g.add(new THREE.Mesh(new THREE.BoxGeometry(0.14, 0.05, 0.1).translate(0, 0.025, 0), card));
+    // a thin dark band round it (the maker's label)
+    g.add(new THREE.Mesh(new THREE.BoxGeometry(0.142, 0.007, 0.102).translate(0, 0.016, 0), band));
     g.traverse((m) => { if (m.isMesh) { m.userData.noRay = true; m.castShadow = true; } });
     g.position.set(BOX.x, BOX.y, BOX.z); g.rotation.y = BOX.yaw;
     O.c13box = g;
