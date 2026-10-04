@@ -233,6 +233,8 @@ export function everyStep(ctx, dt) {
   R.clickT = Math.max(0, (R.clickT || 0) - dt);
   if (out && G.weapon.trigger && G.hands.set === 'tommy' && R.clickT <= 0) { R.clickT = 0.35; R.outT = 2.5; G.sfx.play('b7_dry', null); }
   L.set(R.reserve, G.hands.set === 'tommy', out || R.outT > 0 ? ((R.dotLeft || 0) > 0 ? 'drums: Dot, at the counter' : 'no drums left') : '');
+  // ([C8] after the critic: dry, the HUD's own 'press r' would lie - R does nothing with no drum)
+  if (out && G.hud.el && G.hud.el.note && G.hud.el.note.textContent === 'press r') G.hud.el.note.textContent = '';
 }
 
 // [R2-F] the street behind a man (as he faces) clear of cars, doors, walls
