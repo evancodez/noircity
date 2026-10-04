@@ -1,0 +1,92 @@
+{
+ "about": "Critic (C3c): on foot at the wreck, straight across the river road both ways by real input: east to the river (the rail at d -9.6, plan.js RIVER.rail) and west into the facades; where the eye stops (d in the road's frame). FAILS today if the eye ends past the rail, over the water. NOIR_PORT=5343 node tools/play.mjs tools/plays/critic/c3c_wreck_rail.json --size 1440x900",
+ "url": "/?mute=1&start=tail.wreck",
+ "size": [
+  1440,
+  900
+ ],
+ "out": "shots/c3c_critic/rail",
+ "steps": [
+  {
+   "until": "G.state === 'title' && !document.getElementById('title').classList.contains('hidden') && !!document.querySelector('#title .opt[data-k=begin]')",
+   "timeout": 40000
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]",
+   "taken": "G.state === 'playing' && document.pointerLockElement === N.renderer.domElement",
+   "retries": 4,
+   "every": 4000
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'tail' && !!G.scenes.ctx.flags.chase && !!G.scenes.ctx.flags.chase.atWheel && G.hud.promptShown.includes('get out')",
+   "timeout": 45000
+  },
+  {
+   "key": "KeyE"
+  },
+  {
+   "wait": 1200
+  },
+  {
+   "eval": "(async () => { const P = await import('/src/stages/city/plan.js'); const e = G.controller.pos; const s = P.riverSAtZ(e.z); const F = P.riverFrame(s, {}); const d = (e.x - F.x) * F.rx + (e.z - F.z) * F.rz; return JSON.stringify({ eye: [+e.x.toFixed(2), +e.y.toFixed(2), +e.z.toFixed(2)], s: +s.toFixed(1), d: +d.toFixed(2), rail: P.RIVER.rail, quay: P.RIVER.quay, hw: P.RIVER.hw, pe: P.RIVER.pe, pw: P.RIVER.pw, pitch: +G.controller.pitch.toFixed(2) }); })()"
+  },
+  {
+   "name": "east, to the river: across the rail?"
+  },
+  {
+   "walk": "(async () => { const P = await import('/src/stages/city/plan.js'); const e = G.controller.pos; const s = P.riverSAtZ(e.z) - 4; const out = []; for (const k of [0.25, 0.5, 0.75, 1]) { const p = P.riverPoint(s, -24 * k); out.push([p.x, p.z]); } return out; })()",
+   "into": true,
+   "timeout": 20000
+  },
+  {
+   "look": "[0, Math.round((G.controller.pitch + 0.05) / G.controller.sensitivity)]",
+   "steps": 4
+  },
+  {
+   "wait": 400
+  },
+  {
+   "eval": "(async () => { const P = await import('/src/stages/city/plan.js'); const e = G.controller.pos; const s = P.riverSAtZ(e.z); const F = P.riverFrame(s, {}); const d = (e.x - F.x) * F.rx + (e.z - F.z) * F.rz; return JSON.stringify({ eye: [+e.x.toFixed(2), +e.y.toFixed(2), +e.z.toFixed(2)], s: +s.toFixed(1), d: +d.toFixed(2), rail: P.RIVER.rail, quay: P.RIVER.quay, hw: P.RIVER.hw, pe: P.RIVER.pe, pw: P.RIVER.pw, pitch: +G.controller.pitch.toFixed(2) }); })()"
+  },
+  {
+   "shot": "r01_east_stop"
+  },
+  {
+   "look": [
+    -1500,
+    0
+   ],
+   "steps": 10
+  },
+  {
+   "wait": 400
+  },
+  {
+   "shot": "r02_looking_back"
+  },
+  {
+   "name": "west, into the buildings"
+  },
+  {
+   "walk": "(async () => { const P = await import('/src/stages/city/plan.js'); const e = G.controller.pos; const s = P.riverSAtZ(e.z) - 4; const out = []; for (const k of [0.25, 0.5, 0.75, 1]) { const p = P.riverPoint(s, 24 * k); out.push([p.x, p.z]); } return out; })()",
+   "into": true,
+   "timeout": 25000
+  },
+  {
+   "look": "[0, Math.round((G.controller.pitch + 0.05) / G.controller.sensitivity)]",
+   "steps": 4
+  },
+  {
+   "wait": 400
+  },
+  {
+   "eval": "(async () => { const P = await import('/src/stages/city/plan.js'); const e = G.controller.pos; const s = P.riverSAtZ(e.z); const F = P.riverFrame(s, {}); const d = (e.x - F.x) * F.rx + (e.z - F.z) * F.rz; return JSON.stringify({ eye: [+e.x.toFixed(2), +e.y.toFixed(2), +e.z.toFixed(2)], s: +s.toFixed(1), d: +d.toFixed(2), rail: P.RIVER.rail, quay: P.RIVER.quay, hw: P.RIVER.hw, pe: P.RIVER.pe, pw: P.RIVER.pw, pitch: +G.controller.pitch.toFixed(2) }); })()"
+  },
+  {
+   "shot": "r03_west_stop"
+  }
+ ]
+}

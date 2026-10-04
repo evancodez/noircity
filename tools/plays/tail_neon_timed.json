@@ -1,0 +1,74 @@
+{
+ "about": "C3c after the critic: the critic's timed drive (seed 33, the good hands), a frame every 10 s of chase time and on the river road every 6 s; each frame records my car's place (window.__P) for the neon's coverage. NOIR_PORT=5343 node tools/play.mjs tools/plays/tail_neon_timed.json --size 1440x900",
+ "url": "/?mute=1&start=tail",
+ "size": [
+  1440,
+  900
+ ],
+ "out": "shots/c3c/timed",
+ "steps": [
+  {
+   "until": "G.state === 'title' && !document.getElementById('title').classList.contains('hidden') && !!document.querySelector('#title .opt[data-k=begin]')",
+   "timeout": 40000
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]",
+   "taken": "G.state === 'playing' && document.pointerLockElement === N.renderer.domElement",
+   "retries": 4,
+   "every": 4000
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'tail' && G.controller.mode === 'drive'",
+   "timeout": 45000
+  },
+  {
+   "wait": 1200
+  },
+  {
+   "shot": "d00_kerb"
+  },
+  {
+   "eval": "JSON.stringify({ obj: G.hud.kit && G.hud.kit.objectiveText, teach: G.hud.kit && G.hud.kit.teachCur && G.hud.kit.teachCur.id })"
+  },
+  {
+   "drive": "tools/lib/c3_tail.mjs",
+   "profile": "good",
+   "seed": 33,
+   "timeout": 400000,
+   "stop": "G.hud.promptShown.includes('get out') && !!G.scenes.ctx.flags.chase && G.scenes.ctx.flags.chase.phase !== 'c' && G.scenes.ctx.flags.chase.phase !== 'a' && G.scenes.ctx.flags.chase.phase !== 'b'",
+   "shots": {
+    "t010": "(C=>C.t > 10 && C.phase !== 'b' && C.phase !== 'crash' && (window.__P=window.__P||[]).push(['t010', +C.t.toFixed(0), +C.my.pos.x.toFixed(0), +C.my.pos.z.toFixed(0), +C.my.yaw.toFixed(2), C.phase]) > 0)(G.scenes.ctx.flags.chase)",
+    "t020": "(C=>C.t > 20 && C.phase !== 'b' && C.phase !== 'crash' && (window.__P=window.__P||[]).push(['t020', +C.t.toFixed(0), +C.my.pos.x.toFixed(0), +C.my.pos.z.toFixed(0), +C.my.yaw.toFixed(2), C.phase]) > 0)(G.scenes.ctx.flags.chase)",
+    "t030": "(C=>C.t > 30 && C.phase !== 'b' && C.phase !== 'crash' && (window.__P=window.__P||[]).push(['t030', +C.t.toFixed(0), +C.my.pos.x.toFixed(0), +C.my.pos.z.toFixed(0), +C.my.yaw.toFixed(2), C.phase]) > 0)(G.scenes.ctx.flags.chase)",
+    "t040": "(C=>C.t > 40 && C.phase !== 'b' && C.phase !== 'crash' && (window.__P=window.__P||[]).push(['t040', +C.t.toFixed(0), +C.my.pos.x.toFixed(0), +C.my.pos.z.toFixed(0), +C.my.yaw.toFixed(2), C.phase]) > 0)(G.scenes.ctx.flags.chase)",
+    "t050": "(C=>C.t > 50 && C.phase !== 'b' && C.phase !== 'crash' && (window.__P=window.__P||[]).push(['t050', +C.t.toFixed(0), +C.my.pos.x.toFixed(0), +C.my.pos.z.toFixed(0), +C.my.yaw.toFixed(2), C.phase]) > 0)(G.scenes.ctx.flags.chase)",
+    "t060": "(C=>C.t > 60 && C.phase !== 'b' && C.phase !== 'crash' && (window.__P=window.__P||[]).push(['t060', +C.t.toFixed(0), +C.my.pos.x.toFixed(0), +C.my.pos.z.toFixed(0), +C.my.yaw.toFixed(2), C.phase]) > 0)(G.scenes.ctx.flags.chase)",
+    "t070": "(C=>C.t > 70 && C.phase !== 'b' && C.phase !== 'crash' && (window.__P=window.__P||[]).push(['t070', +C.t.toFixed(0), +C.my.pos.x.toFixed(0), +C.my.pos.z.toFixed(0), +C.my.yaw.toFixed(2), C.phase]) > 0)(G.scenes.ctx.flags.chase)",
+    "t080": "(C=>C.t > 80 && C.phase !== 'b' && C.phase !== 'crash' && (window.__P=window.__P||[]).push(['t080', +C.t.toFixed(0), +C.my.pos.x.toFixed(0), +C.my.pos.z.toFixed(0), +C.my.yaw.toFixed(2), C.phase]) > 0)(G.scenes.ctx.flags.chase)",
+    "t090": "(C=>C.t > 90 && C.phase !== 'b' && C.phase !== 'crash' && (window.__P=window.__P||[]).push(['t090', +C.t.toFixed(0), +C.my.pos.x.toFixed(0), +C.my.pos.z.toFixed(0), +C.my.yaw.toFixed(2), C.phase]) > 0)(G.scenes.ctx.flags.chase)",
+    "t100": "(C=>C.t > 100 && C.phase !== 'b' && C.phase !== 'crash' && (window.__P=window.__P||[]).push(['t100', +C.t.toFixed(0), +C.my.pos.x.toFixed(0), +C.my.pos.z.toFixed(0), +C.my.yaw.toFixed(2), C.phase]) > 0)(G.scenes.ctx.flags.chase)",
+    "t110": "(C=>C.t > 110 && C.phase !== 'b' && C.phase !== 'crash' && (window.__P=window.__P||[]).push(['t110', +C.t.toFixed(0), +C.my.pos.x.toFixed(0), +C.my.pos.z.toFixed(0), +C.my.yaw.toFixed(2), C.phase]) > 0)(G.scenes.ctx.flags.chase)",
+    "t120": "(C=>C.t > 120 && C.phase !== 'b' && C.phase !== 'crash' && (window.__P=window.__P||[]).push(['t120', +C.t.toFixed(0), +C.my.pos.x.toFixed(0), +C.my.pos.z.toFixed(0), +C.my.yaw.toFixed(2), C.phase]) > 0)(G.scenes.ctx.flags.chase)",
+    "t130": "(C=>C.t > 130 && C.phase !== 'b' && C.phase !== 'crash' && (window.__P=window.__P||[]).push(['t130', +C.t.toFixed(0), +C.my.pos.x.toFixed(0), +C.my.pos.z.toFixed(0), +C.my.yaw.toFixed(2), C.phase]) > 0)(G.scenes.ctx.flags.chase)",
+    "r0": "(C=>C.phase === 'b' && C.t > (window.__rb = window.__rb || C.t) + 0 && (window.__P=window.__P||[]).push(['r0', +C.t.toFixed(0), +C.my.pos.x.toFixed(0), +C.my.pos.z.toFixed(0), +C.my.yaw.toFixed(2), C.phase]) > 0)(G.scenes.ctx.flags.chase)",
+    "r1": "(C=>C.phase === 'b' && C.t > (window.__rb = window.__rb || C.t) + 6 && (window.__P=window.__P||[]).push(['r1', +C.t.toFixed(0), +C.my.pos.x.toFixed(0), +C.my.pos.z.toFixed(0), +C.my.yaw.toFixed(2), C.phase]) > 0)(G.scenes.ctx.flags.chase)",
+    "r2": "(C=>C.phase === 'b' && C.t > (window.__rb = window.__rb || C.t) + 12 && (window.__P=window.__P||[]).push(['r2', +C.t.toFixed(0), +C.my.pos.x.toFixed(0), +C.my.pos.z.toFixed(0), +C.my.yaw.toFixed(2), C.phase]) > 0)(G.scenes.ctx.flags.chase)",
+    "r3": "(C=>C.phase === 'b' && C.t > (window.__rb = window.__rb || C.t) + 18 && (window.__P=window.__P||[]).push(['r3', +C.t.toFixed(0), +C.my.pos.x.toFixed(0), +C.my.pos.z.toFixed(0), +C.my.yaw.toFixed(2), C.phase]) > 0)(G.scenes.ctx.flags.chase)",
+    "r4": "(C=>C.phase === 'b' && C.t > (window.__rb = window.__rb || C.t) + 24 && (window.__P=window.__P||[]).push(['r4', +C.t.toFixed(0), +C.my.pos.x.toFixed(0), +C.my.pos.z.toFixed(0), +C.my.yaw.toFixed(2), C.phase]) > 0)(G.scenes.ctx.flags.chase)",
+    "crash": "(C=>C.phase === 'crash' && (window.__P=window.__P||[]).push(['crash', +C.t.toFixed(0), +C.my.pos.x.toFixed(0), +C.my.pos.z.toFixed(0), +C.my.yaw.toFixed(2), C.phase]) > 0)(G.scenes.ctx.flags.chase)"
+   }
+  },
+  {
+   "eval": "JSON.stringify(window.__P)"
+  },
+  {
+   "eval": "JSON.stringify({ phase: G.scenes.ctx.flags.chase.phase, prompt: G.hud.promptShown, obj: G.hud.kit && G.hud.kit.objectiveText, fails: (window.__tailFails||[]).map(f=>f.why) })"
+  },
+  {
+   "shot": "d11_wreck_prompt"
+  }
+ ]
+}

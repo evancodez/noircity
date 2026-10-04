@@ -1,5 +1,5 @@
 {
- "about": "[C2] The jank walk (WAVE_C \u00a77.5) on the test bed, by real input (W held into each thing): the desk on its side, a living man standing (held still), a dead man on the floor, a shut door, a locked door, a wall. Nothing passes through anything: after each walk the eye is outside what it walked into. And the lean: down beside a doorway with the wall before me (too tall to rise over), RMB leans the eye out round the jamb, and back. node tools/play.mjs tools/plays/guns_walk.json",
+ "about": "[C2] The jank walk (WAVE_C §7.5) on the test bed, by real input (W held into each thing): the desk on its side, a living man standing (held still), a dead man on the floor (stepped over: [C2b] the dead block nobody), a shut door, a locked door, a wall. Nothing passes through anything: after each walk the eye is outside what it walked into. And the lean: down beside a doorway with the wall before me (too tall to rise over), RMB leans the eye out round the jamb, and back. node tools/play.mjs tools/plays/guns_walk.json",
  "url": "/?mute=1&start=guns.door",
  "size": [
   1280,
@@ -101,8 +101,8 @@
    "up": "KeyW"
   },
   {
-   "expect": "(() => { const c = G.guns.corpses[0]; return Math.hypot(G.eye.x - c.x, G.eye.z - c.z) > 0.4; })()",
-   "label": "a body on the floor: walked round, not through"
+   "expect": "(() => { const c = G.guns.corpses[0]; return G.eye.x < c.x - 0.5; })()",
+   "label": "[C2b] a body on the floor: stepped over, walked on past it (the dead block nobody)"
   },
   {
    "name": "into the shut door to the corridor"

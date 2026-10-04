@@ -370,7 +370,7 @@ export function makeBot(chase, name, { seed = 7, track = null, attempt = 0 } = {
   // my door (E: the driver presses it on the prompt). W when facing the
   // mark; the mouse turns the eye onto it (aim() returns the turn as look)
   B.walkMark = () => {
-    const m = chase.lineSaid ? chase.doorAt() : chase.manAt;
+    const m = chase.lineSaid ? chase.doorAt() : chase.winAt;  // ([C3c] his window: he stays in his seat)
     if (!m) return null;
     const G = chase.game, e = G ? G.camera.position : chase.my.pos;
     // (a car between me and the mark: round its nearer corner first)
@@ -388,7 +388,7 @@ export function makeBot(chase, name, { seed = 7, track = null, attempt = 0 } = {
       }
       if (best) return { x: best.x, z: best.z, stop: 0.3, via: true };
     }
-    return { x: m.x, z: m.z, stop: chase.lineSaid ? 0.7 : 1.7 };
+    return { x: m.x, z: m.z, stop: chase.lineSaid ? 0.7 : 0.45 };
   };
   B.walkKeys = () => {
     const G = chase.game, m = B.walkMark();
@@ -406,10 +406,13 @@ export function makeBot(chase, name, { seed = 7, track = null, attempt = 0 } = {
     return { W: go ? 1 : 0 };
   };
   B.walkLook = () => {
-    const G = chase.game, m = B.walkMark();
+    const G = chase.game;
+    let m = B.walkMark();
     if (!G || !m) return null;
     const e = G.camera.position;
-    const w = new (e.constructor)(m.x, chase.lineSaid ? e.y - 0.25 : 1.05, m.z).applyMatrix4(G.camera.matrixWorldInverse);
+    // ([C3c] at the end of the walk, the eyes on his window, not the road by it)
+    if (!chase.lineSaid && !m.via && chase.winP && Math.hypot(chase.winAt.x - e.x, chase.winAt.z - e.z) < 2.5) m = chase.winP;
+    const w = new (e.constructor)(m.x, chase.lineSaid ? e.y - 0.25 : 1.15, m.z).applyMatrix4(G.camera.matrixWorldInverse);
     return { rmb: false, look: true, fire: false, dyaw: Math.atan2(w.x, -w.z), dpitch: Math.atan2(w.y, Math.hypot(w.x, w.z)), gain: 6 };
   };
   // phase c: a stop by the pier's gate

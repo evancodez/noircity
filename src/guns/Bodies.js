@@ -19,8 +19,9 @@ import * as THREE from 'three';
 //   bodies.update()                           (the Game calls it: circles follow their owners)
 // A man is a circle; he never enters furniture, walls, door jambs, cars, the
 // player or another man: he steers round, and waits where the way is taken.
-// The dead are bodies too (the gun kit adds them, tag 'corpse'): solid for
-// the player to walk round, never in the living men's way (Guns.resolveMan).
+// [C2b] The dead block nobody: a body lies where it fell (the gun kit's
+// K.corpses, tag 'corpse') but it is not a collider - the player steps over
+// it (Guns.overBody) and the living walk through it.
 const _v = new THREE.Vector3();
 
 export class Bodies {

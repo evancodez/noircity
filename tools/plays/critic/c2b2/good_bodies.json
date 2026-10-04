@@ -1,0 +1,58 @@
+{
+ "about": "C2b critic: guns_good with a recorder of every living man near a body (within 0.5 m of its length): his state, speed, whether he has a path; frames where a moving man stands still or crawls by a body, and the bodies' lowest bone above the floor",
+ "url": "/?mute=1&start=guns.door",
+ "size": [
+  1280,
+  800
+ ],
+ "out": "shots/critic/c2b2/good_bodies",
+ "steps": [
+  {
+   "name": "the title, BEGIN at the test bed"
+  },
+  {
+   "until": "G.state === 'title' && !!document.querySelector('#title .opt[data-k=begin]')",
+   "timeout": 60000
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]",
+   "taken": "G.scenes.current && G.scenes.current.id === 'guns'",
+   "retries": 4
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'guns' && document.pointerLockElement === N.renderer.domElement",
+   "timeout": 30000
+  },
+  {
+   "name": "every contest, played well"
+  },
+  {
+   "eval": "(window.NB = { frames: 0, slow: [], near: {} }, window.NBF = () => { const K = G.guns; if (!K || !K.corpses || !K.corpses.length) return; for (const [h, ai] of G.ais) { if (!h.alive) continue; let dmin = 9; for (const c of K.corpses) { if (c.hood === h || c.ax === undefined) continue; const dx = c.bx - c.ax, dz = c.bz - c.az, L2 = dx * dx + dz * dz || 1e-6; const u = Math.max(0, Math.min(1, ((h.pos.x - c.ax) * dx + (h.pos.z - c.az) * dz) / L2)); dmin = Math.min(dmin, Math.hypot(h.pos.x - c.ax - dx * u, h.pos.z - c.az - dz * u)); } if (dmin > 0.5) continue; const S = ai.brain && ai.brain.S, st = S && S.state; NB.frames++; const k = st + (ai.path ? ':path' : ''); NB.near[k] = (NB.near[k] || 0) + 1; if (ai.path && (h.speed || 0) < 0.3) NB.slow.push([+G.time.toFixed(2), h.slot, st, +h.pos.x.toFixed(2), +h.pos.z.toFixed(2), +(h.speed || 0).toFixed(2), +dmin.toFixed(2)]); } }, G.scripts.push(NBF), 1)"
+  },
+  {
+   "drive": "tools/lib/c2_guns.mjs",
+   "profile": "good",
+   "tries": 3,
+   "beatTimeout": 150,
+   "beats": [
+    "door",
+    "two_ways",
+    "pin",
+    "rush",
+    "street",
+    "street_rev"
+   ],
+   "check": "D.wonFirst === 6",
+   "label": "the good player wins every contest on the first try"
+  },
+  {
+   "eval": "(N.game.guns.events || []).filter((e) => e.what === 'down' || e.what === 'flank').map((e) => e.what + ' ' + (e.why || e.at))"
+  },
+  {
+   "eval": "({ frames: NB.frames, near: NB.near, slowN: NB.slow.length, slow: NB.slow.filter((r, i) => i % 10 === 0).slice(0, 30) })"
+  }
+ ]
+}

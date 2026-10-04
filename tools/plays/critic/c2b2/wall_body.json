@@ -1,0 +1,44 @@
+{
+ "about": "C2b critic poke: a body slumped against the wall (the lab's wall case); I walk into him, up to the wall, and look down at where I stand",
+ "url": "/?mute=1&start=guns.lab&lab=wall",
+ "size": [
+  1440,
+  900
+ ],
+ "out": "shots/critic/c2b2/wall_body",
+ "steps": [
+  {
+   "until": "G.state === 'title' && !!document.querySelector('#title .opt[data-k=begin]')",
+   "timeout": 60000
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]",
+   "taken": "G.scenes.current && G.scenes.current.id === 'guns'",
+   "retries": 4
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'guns' && G.scenes.beat === 'lab' && !G.scenes.trans && G.scenes.fadeK < 0.1",
+   "timeout": 30000
+  },
+  {
+   "wait": 3500
+  },
+  {
+   "drive": "tools/plays/critic/c2/seq.mjs",
+   "seq": [
+    "st",
+    "s w00_him",
+    "go -5.9 0.25 8000",
+    "st",
+    "w 400",
+    "pitch -1.1",
+    "w 500",
+    "s w01_standing_in_him",
+    "e [N.controller.pos.x, N.controller.pos.z, G.eye.y, N.controller._overBody, G.guns.corpses.map((c) => [c.ax, c.az, c.bx, c.bz].map((v) => +v.toFixed(2)))]"
+   ]
+  }
+ ]
+}

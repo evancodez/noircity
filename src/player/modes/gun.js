@@ -15,7 +15,7 @@
 //   controller.crouchOn the toggle's state       controller.leanK  -1 .. 1 (left .. right)
 // (the mode 'office' of scene 5 stays as it was until lane C5 moves to this one)
 import * as THREE from 'three';
-export const GUN_MODE = { down: 1.0, time: 0.2, rise: 0.15, walk: 3.6, sprint: 5.6, creep: 1.7, risenWalk: 0.9, lean: 0.46, look: 2.4, leanLook: 1.3 };   // [C2] after the critic: look 1.3 -> 2.4 (down 1.4 m behind the tipped desk, RMB rose to nothing - its knee space let the plan's rays through - and the rounds went into its top, 2.2 m out)
+export const GUN_MODE = { down: 1.0, time: 0.2, rise: 0.15, walk: 3.6, sprint: 5.6, creep: 1.7, risenWalk: 0.9, lean: 0.46, look: 2.4, leanLook: 1.3, overBody: 0.065 };   // ([C2b] overBody: the eye's step over a body, m) // [C2] after the critic: look 1.3 -> 2.4 (down 1.4 m behind the tipped desk, RMB rose to nothing - its knee space let the plan's rays through - and the rounds went into its top, 2.2 m out)
 const G_ = GUN_MODE;
 const ss = (k) => k * k * (3 - 2 * k);
 
@@ -115,6 +115,14 @@ export default {
     ctl._gy0 = ctl.groundY;
     const up = ctl._rise.lean ? ctl._rise.up : ctl._rise.up;
     ctl.groundY -= G_.down * e - up * rk * e;
+    // [C2b] over a body: the dead are in nobody's way (Guns.overBody); the
+    // foot goes over, the eye with it a few centimetres, felt and not solid
+    const K = G0 && G0.guns;
+    const ob = K && K.corpses && K.corpses.length ? K.overBody(ctl.pos.x, ctl.pos.z) : 0;   // ([C2b] after the critic: the fight over too)
+    const ob0 = ctl._overBody || 0;
+    ctl._overBody = ob0 + (ob - ob0) * (1 - Math.exp(-(ob > ob0 ? 14 : 9) * dt));
+    if (ob > 0.5 && ob0 <= 0.5 && G0 && G0.sfx && !ctl.frozen) G0.sfx.play('clothRustle', null, {}, { send: false, gain: 0.22 });
+    ctl.groundY += G_.overBody * ctl._overBody;
     // the lean: the eye out round the side
     const lean = ctl._rise.lean * rk * e;
     ctl.leanK = lean;
