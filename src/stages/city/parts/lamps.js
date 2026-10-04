@@ -66,7 +66,7 @@ export default {
       // ([3rd owner] the quay's lamps over the river road: their cones the
       // brightest thing in phase b's frame, white under the head - the
       // critic measured 3 to 5 % white there against the reference's 8)
-      if (P.overWater) { l.overWater = true; l.coneBase *= QUAY_CONE * RIVER_CONE; if (l.light) l.light.intensity *= RIVER_LIGHT; }
+      if (P.overWater) { l.overWater = true; l.coneBase *= QUAY_CONE * RIVER_CONE; l.coneFar = l.coneBase; if (l.light) l.light.intensity *= RIVER_LIGHT; }
     }
     // ... and under the el (avenue, Harbor St, the river road's south half):
     // hung from the deck's middle every other span

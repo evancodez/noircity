@@ -148,8 +148,12 @@ export default {
     api.lamp2 = L.hang(63.0, CEIL - 0.1, -92.4, { real: true });
     // ([C11] the table's two a step down, 170 / 150 -> 110 / 95: the lamp
     // under the hood is the room's one light now, these the way along)
-    if (api.lamp2.light) { api.lamp2.light.intensity = 95; api.lamp2.light.angle = 0.95; api.lamp2.light.penumbra = 0.8; }
-    if (api.lamp.light) { api.lamp.light.intensity = 110; api.lamp.light.angle = 0.95; api.lamp.light.penumbra = 0.8; }
+    // ([C11, after the critic] up again a little, 110 / 95 -> 150 / 135, the
+    // penumbra harder: running east from the hood the room read one black
+    // room, 0 % white; now the steel under each is a hard white pool, the
+    // way along the table to the iron door's bulb)
+    if (api.lamp2.light) { api.lamp2.light.intensity = 135; api.lamp2.light.angle = 0.95; api.lamp2.light.penumbra = 0.55; }
+    if (api.lamp.light) { api.lamp.light.intensity = 150; api.lamp.light.angle = 0.95; api.lamp.light.penumbra = 0.55; }
     // ([C6 2nd] a bulb over the iron door: the way out of the kitchen lit)
     // ([C6 4th] brighter: the brightest thing in the room, the way out)
     api.doorLamp = L.wall(KI.x1 - T, 2.75, KDOOR.z + 0.95, -1, 0, { out: 0.45, strength: 1.5 });

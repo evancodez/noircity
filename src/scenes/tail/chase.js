@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { COUPE } from '../../vehicles/models.js';
 import { Cabin } from '../../vehicles/cabin.js';
 import { DAMAGE } from '../../vehicles/Car.js';
-import { PIER, START, EW, riverPoint, riverFrame, riverSAtZ, RIVER } from '../../stages/city/plan.js';
+import { PIER, START, EW, riverPoint, riverFrame, riverSAtZ, RIVER, WHARF_X } from '../../stages/city/plan.js';
 import { His, LEGS } from './his.js';
 import { WindowGun } from './gun.js';
 import { Traffic } from './traffic.js';
@@ -184,6 +184,14 @@ export class Chase {
     if (this.gone) return;
     this.V.update(dt);
     this.cabin.step(dt);
+    // [C11, after the critic] my headlamps' pool on the road: on the river
+    // road, from the seat, a wet white glare ahead (x 2.4: the river road
+    // printed 1.5 to 1.9 % paper white from the seat); on foot a fifth (its
+    // wash greyed the whole road by the wreck); eased (the river road's Look
+    // box: river.js)
+    { const want = G.controller.mode === 'walk' ? 0.2 : my.pos.x > WHARF_X - 6 && my.pos.z > -320 ? 2.4 : 1;
+      this._poolK = this._poolK == null ? want : this._poolK + (want - this._poolK) * Math.min(1, dt * 2.5);
+      this.poolGain(this._poolK, G.controller.mode === 'walk' ? 0.2 : 1); }
     if (this.traffic) this.traffic.step(dt);
     if (this.walkers) this.walkers.step(dt);
     for (const c of this.cats || []) c.step(dt);
@@ -992,13 +1000,32 @@ export class Chase {
     this._dbMin = null;
     const yaw = Math.atan2(-(tgt.x - d.x), -(tgt.z - d.z));
     G.player.hands.equip('empty');
+    // [C11, after the critic] my headlamps' wash on the road (the pool laid
+    // on the ground for the seat's view ahead) greyed the whole road on foot
+    // - 39 to 59 % mid-grey - so on foot it is a fifth of itself: the beams,
+    // the light on his car and its shadow stay; back in, it is whole again
+    this.poolGain(0.2, 0.2); this._poolK = 0.2;
     G.controller.setMode('walk', { pose: { x: d.x, z: d.z, yaw, pitch: -0.08 }, ease: 0.55 });
     this.outT = 0;
     G.emit('tail:out', {});
   }
+  // [C11] the headlamps' pools on the road, x k of their own gain: mine
+  // (k), and on foot every car's (others: the traffic's pools greyed the
+  // road by the wreck as much as mine)
+  poolGain(k, others = 1) {
+    const set = (v, kk) => {
+      const P = v && v.lamps && v.lamps.pool, u = P && P.material.uniforms && P.material.uniforms.uGain;
+      if (!u) return;
+      if (P.userData.gain0 == null) P.userData.gain0 = u.value;
+      u.value = P.userData.gain0 * kk;
+    };
+    set(this.my, k);
+    for (const v of (this.V && this.V.list) || []) if (v !== this.my) set(v, others);
+  }
   getIn() {
     const G = this.game;
     G.hud.clearPrompt('tailin');
+    this.poolGain(1, 1); this._poolK = null;
     this._eUsed = this.t;
     this.walkNet(false);
     G.sfx.play('tail_door', null, { open: false });

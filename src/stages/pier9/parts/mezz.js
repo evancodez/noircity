@@ -71,6 +71,28 @@ function blindLightMap(O, W) {
   return t;
 }
 
+// [C11, after the critic] the office door's frosted pane as a picture of
+// the dark room behind it: the glass a dim grey (the room is ink now), a
+// soft glow low in the corner toward the desk lamp (u 0 is the pane's west
+// edge: the lamp is west of the door and below the pane), a darker rim where
+// the putty holds it. It was a flat glow at 0.5: from the catwalk at eye
+// level the pane filled 74 % of the frame with paper white (the E prompt
+// white on white), and open into the room it stood half a metre from the
+// eye, a white sheet between the doorway and the desk.
+function frostedPaneMap() {
+  const CW = 128, CH = 128;
+  const c = document.createElement('canvas'); c.width = CW; c.height = CH;
+  const g = c.getContext('2d');
+  g.fillStyle = 'rgb(34,34,34)'; g.fillRect(0, 0, CW, CH);
+  const lg = g.createRadialGradient(CW * 0.08, CH * 0.98, 0, CW * 0.08, CH * 0.98, CW * 0.95);
+  lg.addColorStop(0, 'rgba(170,170,170,1)'); lg.addColorStop(0.35, 'rgba(110,110,110,0.75)'); lg.addColorStop(1, 'rgba(34,34,34,0)');
+  g.fillStyle = lg; g.fillRect(0, 0, CW, CH);
+  g.strokeStyle = 'rgb(10,10,10)'; g.lineWidth = 6; g.strokeRect(0, 0, CW, CH);
+  const t = new THREE.CanvasTexture(c);
+  t.colorSpace = THREE.SRGBColorSpace;
+  return t;
+}
+
 export default {
   name: 'mezz', order: 60, tick: 60,
   build(stage) {
@@ -288,7 +310,9 @@ export default {
       new THREE.SphereGeometry(0.03, 8, 6).translate(D.x1 - 0.12 - hx, oy0 + 1.0, fz - 0.0 - hz), new THREE.SphereGeometry(0.03, 8, 6).translate(D.x1 - 0.12 - hx, oy0 + 1.0, fz - 0.1 - hz)];
     const doorM = kit.add(mergeGeos(dg), M.plankDoor, { cast: true, parent: doorPivot });
     kit.piece();
-    const pane = kit.add(new THREE.PlaneGeometry(D.x1 - D.x0 - 0.24, 0.7).translate((D.x0 + D.x1) / 2 - hx, oy0 + 1.55, fz - 0.025 - hz), M.glow('officePane', 0.5), { cast: false, noRay: true, parent: doorPivot });
+    // ([C11, after the critic] the pane frosted and dim: frostedPaneMap)
+    const paneMat = M.glow('officePane', 1.0, { map: frostedPaneMap() });
+    const pane = kit.add(new THREE.PlaneGeometry(D.x1 - D.x0 - 0.24, 0.7).translate((D.x0 + D.x1) / 2 - hx, oy0 + 1.55, fz - 0.025 - hz), paneMat, { cast: false, noRay: true, parent: doorPivot });
 
     // [C7] the back door (the Cardinal's way out, down the outside stair to
     // his car): a plank leaf in the back wall west of the desk, black
@@ -361,6 +385,9 @@ export default {
         this.k = k;
         doorPivot.rotation.y = 1.45 * k;
         doorPivot.updateMatrixWorld(true);
+        // ([C11, after the critic] open, the pane turns from the lamp to the
+        // doorway: it dims to a dark glass)
+        paneMat.color.setScalar(1 - 0.6 * k);
         const i = upBoxes.indexOf(doorBox);
         if (k > 0.3 && i >= 0) { upBoxes.splice(i, 1); const j = C.boxes.indexOf(doorBox); if (j >= 0) C.boxes.splice(j, 1); }
         if (k <= 0.3 && i < 0) { upBoxes.push(doorBox); if (api.up && !C.boxes.includes(doorBox)) C.boxes.push(doorBox); }

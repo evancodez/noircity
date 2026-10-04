@@ -17,6 +17,29 @@ import { ROOFS, LOADING, TANNER, PASSAGE, MERCER } from '../plan.js';
 //                         would hold it out of the row's footprint)
 //   stage.surfaceY        the roofs', the stair's and the shed's heights
 //   api.roofY(x, z)       the roof surface there, or undefined
+// [C11, after the critic] wired glass lit from the workshop below, one bay
+// (u across the bay, v eave -> ridge): a glow in the bay's middle low down,
+// dimmer toward its bars and up toward the ridge, the wire mesh faint over it
+function skylightMap() {
+  const CW = 128, CH = 128;
+  const c = document.createElement('canvas'); c.width = CW; c.height = CH;
+  const g = c.getContext('2d');
+  g.fillStyle = 'rgb(70,70,70)'; g.fillRect(0, 0, CW, CH);
+  const lg = g.createRadialGradient(CW * 0.5, CH * 0.62, 0, CW * 0.5, CH * 0.62, CW * 0.62);
+  lg.addColorStop(0, 'rgba(250,250,250,1)'); lg.addColorStop(0.45, 'rgba(200,200,200,0.85)'); lg.addColorStop(1, 'rgba(70,70,70,0)');
+  g.fillStyle = lg; g.fillRect(0, 0, CW, CH);
+  // (toward the ridge the glass looks at the sky, not down into the room)
+  const vg = g.createLinearGradient(0, 0, 0, CH * 0.35);
+  vg.addColorStop(0, 'rgba(40,40,40,0.8)'); vg.addColorStop(1, 'rgba(40,40,40,0)');
+  g.fillStyle = vg; g.fillRect(0, 0, CW, CH * 0.35);
+  g.strokeStyle = 'rgba(30,30,30,0.35)'; g.lineWidth = 1;
+  for (let i = 8; i < CW; i += 16) { g.beginPath(); g.moveTo(i, 0); g.lineTo(i, CH); g.stroke(); g.beginPath(); g.moveTo(0, i); g.lineTo(CW, i); g.stroke(); }
+  const t = new THREE.CanvasTexture(c);
+  t.colorSpace = THREE.SRGBColorSpace;
+  t.wrapS = THREE.RepeatWrapping;
+  return t;
+}
+
 export default {
   name: 'roofs', order: 63,
   build(stage) {
@@ -126,16 +149,37 @@ export default {
       }
       // [C11] the big skylight's glass on its box, lit from the workshop
       // under it: a pale ridge of panes across R2 seen from R1's roof (a lit
-      // skylight or two among the black roofs)
+      // skylight or two among the black roofs). ([C11, after the critic] the
+      // panes lie on the iron's own pitch - eave to ridge, the glazing bars
+      // on them, a ridge bar and the eave bars - where they were a steep tent
+      // the shallow ribs cut across; and the glass is wired glass lit from
+      // below - a glow in each bay, darker toward its bars and the ridge -
+      // not a flat white card)
       {
         const [x, z, w, d, h] = R.boxes[1];
         const yt = r2Y(x) - 0.2 + h - 0.1;
-        const glass = new THREE.MeshBasicMaterial({ color: new THREE.Color(0.95, 0.95, 0.95) });
+        const ex = w / 2 - 0.05, eY = yt + 0.02, rY = yt + 0.5, za = z - d / 2 + 0.1, zb = z + d / 2 - 0.1, bays = 4;
+        const glass = new THREE.MeshBasicMaterial({ color: 0xffffff, map: skylightMap(), side: THREE.DoubleSide });
+        glass.map.repeat.set(bays, 1);
         for (const sg of [-1, 1]) {
-          const geo = new THREE.PlaneGeometry(d - 0.2, w * 0.56).rotateY(Math.PI / 2).rotateZ(sg * 0.8).translate(x + sg * w * 0.2, yt + 0.24, z);
+          // (u along the ridge, v from the eave up to it)
+          const geo = new THREE.BufferGeometry();
+          const xe = x + sg * ex;
+          geo.setAttribute('position', new THREE.Float32BufferAttribute([xe, eY, za, xe, eY, zb, x, rY, zb, x, rY, za], 3));
+          geo.setAttribute('uv', new THREE.Float32BufferAttribute([0, 0, 1, 0, 1, 1, 0, 1], 2));
+          geo.setIndex(sg < 0 ? [0, 1, 2, 0, 2, 3] : [0, 2, 1, 0, 3, 2]);
+          geo.computeVertexNormals();
           K.add(g + 'Sky', glass, geo, { cast: false, noRay: true });
         }
-        for (let zz = z - d / 2 + 0.1; zz <= z + d / 2 - 0.09; zz += (d - 0.2) / 4) K.add(g, MAT.iron, tube([V3(x - w / 2 + 0.05, yt + 0.02, zz), V3(x, yt + 0.5, zz), V3(x + w / 2 - 0.05, yt + 0.02, zz)], 0.018, 5, 4));
+        // the bars: rafters at each bay's edge (a hair over the glass), the
+        // ridge and the two eaves
+        const lift = 0.012;
+        for (let i = 0; i <= bays; i++) {
+          const zz = za + (zb - za) * i / bays;
+          K.add(g, MAT.iron, tube([V3(x - ex, eY + lift, zz), V3(x, rY + lift, zz), V3(x + ex, eY + lift, zz)], 0.02, 5, 2));
+        }
+        K.add(g, MAT.iron, tube([V3(x, rY + lift, za - 0.04), V3(x, rY + lift, zb + 0.04)], 0.028, 6, 2));
+        for (const sg of [-1, 1]) K.add(g, MAT.iron, tube([V3(x + sg * ex, eY + lift, za - 0.04), V3(x + sg * ex, eY + lift, zb + 0.04)], 0.024, 5, 2));
       }
       // the shed's walls below the lean-to, its side walls up to the slope
       const s = R.shed, sz0 = -113.4, sz1 = -108.6;
