@@ -540,6 +540,10 @@ try {
   const { result: { targetId } } = await send('Target.createTarget', { url: 'about:blank' });
   ({ result: { sessionId: sid } } = await send('Target.attachToTarget', { targetId, flatten: true }));
   await send('Page.enable');
+  // [C12] a real pad in the room never reaches a play: headless Chrome sees a
+  // DualSense paired to this machine (the user's hands on it moved a keyboard
+  // play's view and drew the pad's glyphs); a pad play reads the fake (?padfake=1)
+  await send('Page.addScriptToEvaluateOnNewDocument', { source: 'try { Object.defineProperty(Navigator.prototype, "getGamepads", { value: function () { return []; }, configurable: true }); } catch (e) {}' });
   await send('Emulation.setDeviceMetricsOverride', { width: W, height: H, deviceScaleFactor: 1, mobile: false });
   await send('Page.navigate', { url: `http://127.0.0.1:${process.env.NOIR_PORT || 5173}${play.url || '/'}` });
   for (let k = 0; k < 200; k++) { if (await js('!!window.__noirReady') === true) break; await sleep(200); }
