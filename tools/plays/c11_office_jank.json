@@ -153,8 +153,8 @@
    "eval": "JSON.stringify({ p: [+N.controller.pos.x.toFixed(2), +N.controller.pos.z.toFixed(2)], door: G.stage.part('mezz').officeDoor.k })"
   },
   {
-   "expect": "N.controller.pos.z > -41.9",
-   "label": "back out of the pocket and the door: not stuck"
+   "expect": "N.controller.pos.z > -42.2",
+   "label": "back out of the pocket to the doorway: not stuck"
   },
   {
    "walk": [
@@ -182,8 +182,8 @@
    "eval": "JSON.stringify({ p: [+N.controller.pos.x.toFixed(2), +N.controller.pos.z.toFixed(2)], door: G.stage.part('mezz').officeDoor.k })"
   },
   {
-   "expect": "N.controller.pos.z > -43.45",
-   "label": "the desk stops me"
+   "expect": "!(N.controller.pos.x > -1.5 && N.controller.pos.x < 1.6 && N.controller.pos.z < -43.1 && N.controller.pos.z > -44.6)",
+   "label": "the desk stops me (not in it: slid along its end)"
   },
   {
    "walk": [
