@@ -282,30 +282,30 @@
    "label": "the counter stops me"
   },
   {
-   "name": "[C8] after the critic: behind the counter to the kitchen's hatch (the partition below it is solid)"
+   "name": "[C8] after the critic: round the counter's north end (Dot is down in the aisle at z 0.6) to the kitchen's hatch (the partition below it is solid)"
   },
   {
    "walk": [
     [
      -13.3,
-     -4.75
-    ],
-    [
-     -15.35,
-     -4.6
+     9.3
     ],
     [
      -15.6,
-     2.25
+     9.2
+    ],
+    [
+     -15.6,
+     2.3
     ]
    ],
-   "timeout": 15000
+   "timeout": 20000
   },
   {
    "walk": [
     [
      -17.2,
-     2.25
+     2.3
     ]
    ],
    "into": true,
