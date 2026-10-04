@@ -1,0 +1,337 @@
+{
+ "about": "[C13] IV runs dry by real input: the cylinder full and 18 in the pocket; a partial reload costs what it fills; the pocket greys row by row beside the cylinder; the last reload fills four; then the hammer falls on nothing and 'Empty.' is said once, R loads nothing. node tools/play.mjs tools/plays/c13_dry.json",
+ "url": "/?mute=1&start=gunfight.quiet",
+ "size": [
+  1440,
+  900
+ ],
+ "out": "shots/play/c13_dry",
+ "steps": [
+  {
+   "until": "G.state === 'title' && !document.getElementById('title').classList.contains('hidden')",
+   "timeout": 30000
+  },
+  {
+   "wait": 1200
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]",
+   "taken": "G.state !== 'title'",
+   "retries": 5,
+   "every": 4000
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'gunfight' && G.scenes.beat === 'quiet' && !G.scenes.trans && G.player.weapons.current === 'revolver' && document.pointerLockElement === N.renderer.domElement",
+   "timeout": 40000
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "expect": "G.player.weapons.impls.revolver.ammo === 6 && G.player.weapons.impls.revolver.pocket === 18",
+   "label": "IV: the cylinder full and 18 in the pocket"
+  },
+  {
+   "look": [
+    0,
+    260
+   ],
+   "steps": 6
+  },
+  {
+   "wait": 400
+  },
+  {
+   "shot": "d01_full"
+  },
+  {
+   "mouse": "click",
+   "button": "left"
+  },
+  {
+   "wait": 420
+  },
+  {
+   "mouse": "click",
+   "button": "left"
+  },
+  {
+   "wait": 420
+  },
+  {
+   "key": "KeyR"
+  },
+  {
+   "wait": 300
+  },
+  {
+   "until": "!G.player.weapons.impls.revolver.reloading",
+   "timeout": 4000
+  },
+  {
+   "wait": 300
+  },
+  {
+   "expect": "G.player.weapons.impls.revolver.ammo === 6 && G.player.weapons.impls.revolver.pocket === 16",
+   "label": "a partial reload (two spent) costs two"
+  },
+  {
+   "eval": "JSON.stringify({ammo:G.player.weapons.impls.revolver.ammo,pocket:G.player.weapons.impls.revolver.pocket,save:G.save.flags.ammo})"
+  },
+  {
+   "mouse": "click",
+   "button": "left"
+  },
+  {
+   "wait": 420
+  },
+  {
+   "mouse": "click",
+   "button": "left"
+  },
+  {
+   "wait": 420
+  },
+  {
+   "mouse": "click",
+   "button": "left"
+  },
+  {
+   "wait": 420
+  },
+  {
+   "mouse": "click",
+   "button": "left"
+  },
+  {
+   "wait": 420
+  },
+  {
+   "mouse": "click",
+   "button": "left"
+  },
+  {
+   "wait": 420
+  },
+  {
+   "mouse": "click",
+   "button": "left"
+  },
+  {
+   "wait": 420
+  },
+  {
+   "key": "KeyR"
+  },
+  {
+   "wait": 300
+  },
+  {
+   "until": "!G.player.weapons.impls.revolver.reloading",
+   "timeout": 4000
+  },
+  {
+   "wait": 300
+  },
+  {
+   "mouse": "click",
+   "button": "left"
+  },
+  {
+   "wait": 420
+  },
+  {
+   "mouse": "click",
+   "button": "left"
+  },
+  {
+   "wait": 420
+  },
+  {
+   "mouse": "click",
+   "button": "left"
+  },
+  {
+   "wait": 420
+  },
+  {
+   "mouse": "click",
+   "button": "left"
+  },
+  {
+   "wait": 420
+  },
+  {
+   "mouse": "click",
+   "button": "left"
+  },
+  {
+   "wait": 420
+  },
+  {
+   "mouse": "click",
+   "button": "left"
+  },
+  {
+   "wait": 420
+  },
+  {
+   "key": "KeyR"
+  },
+  {
+   "wait": 300
+  },
+  {
+   "until": "!G.player.weapons.impls.revolver.reloading",
+   "timeout": 4000
+  },
+  {
+   "wait": 300
+  },
+  {
+   "expect": "G.player.weapons.impls.revolver.ammo === 6 && G.player.weapons.impls.revolver.pocket === 4",
+   "label": "after two full reloads: four left in the pocket"
+  },
+  {
+   "shot": "d02_four_left"
+  },
+  {
+   "mouse": "click",
+   "button": "left"
+  },
+  {
+   "wait": 420
+  },
+  {
+   "mouse": "click",
+   "button": "left"
+  },
+  {
+   "wait": 420
+  },
+  {
+   "mouse": "click",
+   "button": "left"
+  },
+  {
+   "wait": 420
+  },
+  {
+   "mouse": "click",
+   "button": "left"
+  },
+  {
+   "wait": 420
+  },
+  {
+   "mouse": "click",
+   "button": "left"
+  },
+  {
+   "wait": 420
+  },
+  {
+   "mouse": "click",
+   "button": "left"
+  },
+  {
+   "wait": 420
+  },
+  {
+   "key": "KeyR"
+  },
+  {
+   "wait": 200
+  },
+  {
+   "expect": "G.player.weapons.impls.revolver.reloading && G.player.weapons.impls.revolver.toLoad === 4",
+   "label": "the last four: a reload that fills four chambers"
+  },
+  {
+   "until": "!G.player.weapons.impls.revolver.reloading",
+   "timeout": 4000
+  },
+  {
+   "wait": 300
+  },
+  {
+   "expect": "G.player.weapons.impls.revolver.ammo === 4 && G.player.weapons.impls.revolver.pocket === 0",
+   "label": "four in the cylinder, nothing in the pocket"
+  },
+  {
+   "shot": "d03_pocket_empty"
+  },
+  {
+   "mouse": "click",
+   "button": "left"
+  },
+  {
+   "wait": 420
+  },
+  {
+   "mouse": "click",
+   "button": "left"
+  },
+  {
+   "wait": 420
+  },
+  {
+   "mouse": "click",
+   "button": "left"
+  },
+  {
+   "wait": 420
+  },
+  {
+   "mouse": "click",
+   "button": "left"
+  },
+  {
+   "wait": 420
+  },
+  {
+   "expect": "G.player.weapons.impls.revolver.ammo === 0 && G.player.weapons.impls.revolver.pocket === 0",
+   "label": "dry"
+  },
+  {
+   "eval": "(window.__dry0 = G.counters.dry || 0, 1)"
+  },
+  {
+   "mouse": "click",
+   "button": "left"
+  },
+  {
+   "wait": 250
+  },
+  {
+   "shot": "d04_empty_line"
+  },
+  {
+   "expect": "G.hud.sayShown === 'Empty.' && (G.counters.dry || 0) === window.__dry0 + 1",
+   "label": "the hammer on nothing: Empty. said"
+  },
+  {
+   "wait": 2000
+  },
+  {
+   "mouse": "click",
+   "button": "left"
+  },
+  {
+   "wait": 300
+  },
+  {
+   "key": "KeyR"
+  },
+  {
+   "wait": 400
+  },
+  {
+   "expect": "(G.counters.dry || 0) === window.__dry0 + 1 && !G.player.weapons.impls.revolver.reloading && G.player.weapons.impls.revolver.ammo === 0",
+   "label": "said once; R with nothing in the pocket loads nothing"
+  },
+  {
+   "eval": "JSON.stringify({shots:G.counters.shots, ammo:G.player.weapons.impls.revolver.ammo,pocket:G.player.weapons.impls.revolver.pocket,save:G.save.flags.ammo})"
+  }
+ ]
+}

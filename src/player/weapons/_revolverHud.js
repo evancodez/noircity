@@ -23,7 +23,47 @@ function outline() {
 }
 const OUTLINE = outline();
 
-export function drawCount(el, { chambers, top, turn, fading }) {
+// [C13] the pocket beside the cylinder: the rounds in the coat as rows of six
+// little inked cartridges (a row is a reload's worth), the top row the one
+// being spent - its gone rounds greyed hollow; nothing in the pocket, one row
+// all hollow. An endless pocket (a test bed) draws nothing.
+const SH = { w: 7.5, h: 18, gap: 4, row: 22 };
+function drawPocket(el, pocket) {
+  let svg = el.querySelector('svg.rvp');
+  if (!Number.isFinite(pocket)) { if (svg) svg.remove(); return; }
+  if (!svg) {
+    svg = document.createElementNS(NS, 'svg');
+    svg.setAttribute('class', 'rvp');
+    svg.style.cssText = 'position:absolute; right:128px; bottom:34px; overflow:visible; filter: drop-shadow(0 0 1.5px #000) drop-shadow(0 0 3px rgba(0,0,0,0.7)); transition: opacity 0.3s;';
+    el.appendChild(svg);
+  }
+  const p = Math.max(0, Math.floor(pocket));
+  const rows = Math.min(4, Math.max(1, Math.ceil(p / 6)));
+  const top = p === 0 ? 0 : p - 6 * (rows - 1);   // rounds in the top row (1..6; more than 24: all full)
+  const W = 6 * SH.w + 5 * SH.gap, H = rows * SH.row;
+  svg.setAttribute('viewBox', `-2 -2 ${W + 4} ${H + 2}`);
+  svg.setAttribute('width', String(W + 4)); svg.setAttribute('height', String(H + 2));
+  let out = '';
+  for (let r = 0; r < rows; r++) {
+    // (r 0 the top row on the screen)
+    const n = r === 0 ? Math.min(6, top) : 6;
+    const y = r * SH.row;
+    for (let i = 0; i < 6; i++) {
+      const x = i * (SH.w + SH.gap) + (i % 2 ? 0.3 : -0.2);
+      const live = i < n;
+      // the case and its rim, the bullet's round nose (a brush's slight lean)
+      const nose = `M ${x.toFixed(1)} ${(y + 6).toFixed(1)} Q ${(x + SH.w / 2).toFixed(1)} ${(y - 2).toFixed(1)} ${(x + SH.w).toFixed(1)} ${(y + 6).toFixed(1)} Z`;
+      if (live) out += `<rect x="${x.toFixed(1)}" y="${(y + 6).toFixed(1)}" width="${SH.w}" height="${SH.h - 6}" fill="#e9e7e1" stroke="#0b0b0b" stroke-width="0.8"/>`
+        + `<path d="${nose}" fill="#bdbab2" stroke="#0b0b0b" stroke-width="0.8"/>`
+        + `<rect x="${(x - 0.6).toFixed(1)}" y="${(y + SH.h - 1.6).toFixed(1)}" width="${SH.w + 1.2}" height="1.8" fill="#e9e7e1"/>`;
+      else out += `<rect x="${x.toFixed(1)}" y="${(y + 6).toFixed(1)}" width="${SH.w}" height="${SH.h - 6}" fill="#111" stroke="#5c5a56" stroke-width="1"/>`
+        + `<path d="${nose}" fill="#111" stroke="#5c5a56" stroke-width="1"/>`;
+    }
+  }
+  svg.innerHTML = out;
+}
+
+export function drawCount(el, { chambers, top, turn, fading, pocket = Infinity }) {
   let svg = el.querySelector('svg.rv');
   if (!svg) {
     el.innerHTML = '';
@@ -72,5 +112,8 @@ export function drawCount(el, { chambers, top, turn, fading }) {
     }
   });
   svg.style.opacity = fading ? '0' : '1';
+  drawPocket(el, pocket);
+  const ps = el.querySelector('svg.rvp');
+  if (ps) ps.style.opacity = fading ? '0' : '1';
   void top;
 }

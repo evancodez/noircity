@@ -35,6 +35,8 @@ const _v = new THREE.Vector3(), _w = new THREE.Vector3();
 // [C3c] his line at the wreck: within WIN_NEAR m of his door or window and
 // looking at it; or passing within WIN_PASS m of his car on the way off
 const WIN_NEAR = 1.5, WIN_PASS = 4;
+// [C13] how long "He's nearly at the pier." is up, at least, before "He warned them."
+const GATE_READ = 1.5;
 // [C3c, after the critic] E at his car: within TALK_NEAR m of its box, looking at it
 const TALK_NEAR = 2.5;
 // (the cat's wall: Pell Lane's brick wall north of the board fence, its cap)
@@ -312,12 +314,19 @@ export class Chase {
     this.dmgWarnT = Math.max(0, (this.dmgWarnT || 0) - dt);
     // (first, for two seconds after the knock; then under the chase's own)
     if (this.dmgWarnT > 0 && (!warn || this.dmgWarnT > 2.5)) warn = "She won't take much more.";
+    // [C13] his reaching the gate is the fail "He warned them.": its warning first, in every case - it
+    // wins over the knock's line (which used to hide it for 2 s after a knock), it is up as soon as he is
+    // at the pier's end of the river road however he got there, and the fail waits until it has been read
+    // (GATE_READ s: flat out he crossed the 40 m from the line to the gate in a second and a half)
+    const atGate = this.phase === 'b' && this.driver.state !== 'lost' && (hisZ > R.gateZ || this.driver.atPier);
+    if (gateNear || atGate) warn = "He's nearly at the pier.";
+    this.gateWarnT = warn === "He's nearly at the pier." && K.warning === warn ? (this.gateWarnT || 0) + dt : 0;
     K.warn(warn);
     if (this.failing) return;
     const to = this.checkpoint();
     if (this.phase === 'a' && (this.unseen > R.unseenLost || gap > R.farLost || this.farT > R.farT)) return this.fail('Lost him.', to);
     if (this.phase === 'b' && this.driver.state !== 'lost' && (gap > R.farLost || this.farT > R.farT)) return this.fail('Lost him.', 'river');
-    if (this.phase === 'b' && this.driver.state !== 'lost' && (hisZ > R.gateZ || this.driver.atPier)) return this.fail('He warned them.', 'river');
+    if (atGate && this.gateWarnT >= GATE_READ) return this.fail('He warned them.', 'river');
     // ([C3b] the window gone: he is a pair of red lamps in the rain)
     // ([C3b, after the critic] only when he is really gone - RIVER_B.lostGap m
     // clear and warned - never on a clock with him in front of my bonnet)

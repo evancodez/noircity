@@ -36,6 +36,22 @@ export const REVOLVER = {
   spreadHip: 0.011, spreadSteady: 0.0012, spreadMove: 0.008,
   steadyFov: 7,
 };
+// [C13] the pocket is counted (WAVE_C §1: no endless pocket). What each
+// chapter gives the revolver, read through gunsOf(G).arm('revolver') (in a
+// beat's setup) and by the tail's window gun:
+//   pocket  the rounds in reserve when the chapter is begun (the cylinder full)
+//   floor   at a checkpoint the cylinder and the pocket are as they were when
+//           the checkpoint was reached (save.flags.ammo), never as at the
+//           fall - but never less than `floor` rounds in all, so that a retry
+//           can always be won
+//   empty   the gun comes empty (VII: the tail's last rounds); `shells` the
+//           pocket the box in the Cardinal's drawer gives, with the cylinder
+// A scene not in the table (the test beds) keeps an endless pocket.
+export const POCKET = {
+  gunfight: { pocket: 18, floor: 12 },        // IV The Door: enough if I aim, not to spray
+  tail: { pocket: 6 },                        // VI's gun phase: the cylinder and the last six
+  warehouse: { pocket: 0, empty: true, shells: 18, floor: 18 }, // VII: empty; the shells 6 + 18
+};
 const HEAD = new Set(['head', 'hat']);
 const V = (x, y, z) => new THREE.Vector3(x, y, z);
 const clamp01 = (x) => Math.min(1, Math.max(0, x));
@@ -105,6 +121,8 @@ export default (game) => {
   const G = game;
   const rng = G.world.rng.fork(3303);
   const dir = V(0, 0, 0);
+  // [C13] a beat begun is a checkpoint reached: the counts it gives back on a retry
+  G.on('scene:beat', (e) => { if (e && e.id && e.beat && POCKET[e.id]) W.mark(e.id + '.' + e.beat); });
   const W = {
     name: 'revolver', set: 'revolver', mag: REVOLVER.rounds,
     // the six chambers ('live' | 'spent' | 'empty'); `top` the one under
@@ -119,7 +137,58 @@ export default (game) => {
     turnVis: 0, hammerVis: 1, fovBase: null, zoom: 0,
     // (the poses, for fitting in the page)
     POSE, EL, LH,
+    // [C13] the rounds in the coat pocket (Infinity: a test bed's endless one)
+    pocket: Infinity,
     get ammo() { return this.chambers.filter((c) => c === 'live').length; },
+    // [C13] the counts as a chapter's table gives them, or as given:
+    // { rounds, pocket } - the cylinder holds `rounds` (a run from the top),
+    // the pocket the rest
+    setCounts({ rounds = REVOLVER.rounds, pocket = this.pocket } = {}) {
+      const n = Math.max(0, Math.min(REVOLVER.rounds, rounds));
+      this.chambers = this.chambers.map((_, i) => (i < n ? 'live' : 'spent'));
+      this.top = 0; this.reloadAfter = 0; this.buffered = -1; this.saidEmpty = false;
+      this.pocket = pocket;
+      this.keep();
+    },
+    // [C13] the counts into the save as they change (save.flags.ammo: r, p and,
+    // by checkpoint, what there was when it was reached)
+    keep() {
+      const S = G.save;
+      if (!S || !S.flags || this.pocket === Infinity) return;
+      const A = S.flags.ammo || (S.flags.ammo = {});
+      A.r = this.ammo; A.p = this.pocket;
+    },
+    // a checkpoint reached (a beat begun): what I have now is what a retry here gives back
+    mark(key) {
+      const S = G.save;
+      if (!S || !S.flags || this.pocket === Infinity || !key) return;
+      const A = S.flags.ammo || (S.flags.ammo = {});
+      const at = A.at && typeof A.at === 'object' ? A.at : (A.at = {});
+      // (only this chapter's checkpoints are kept)
+      const scene = key.split('.')[0];
+      for (const k of Object.keys(at)) if (k.split('.')[0] !== scene) delete at[k];
+      at[key] = [this.ammo, this.pocket];
+      A.r = this.ammo; A.p = this.pocket;
+    },
+    // gunsOf(G).arm('revolver', opts): the checkpoint's gun. opts.pocket
+    // given: the cylinder full and that pocket; opts.keep: the counts as they
+    // are. Else this checkpoint's counts (save.flags.ammo.at), or the
+    // chapter's row of POCKET when it is begun; never under its floor
+    armCounts(opts = {}) {
+      if (opts.keep) { this.keep(); return; }
+      const M = G.scenes, id = M && M.current ? M.current.id : null, key = id && M.beat ? id + '.' + M.beat : null;
+      const row = id ? POCKET[id] : null;
+      if (opts.pocket != null) { this.setCounts({ rounds: opts.rounds ?? REVOLVER.rounds, pocket: opts.pocket }); this.mark(key); return; }
+      if (!row) { this.setCounts({ rounds: REVOLVER.rounds, pocket: this.pocket }); return; }
+      const A = G.save && G.save.flags && G.save.flags.ammo;
+      const snap = A && A.at && key && Array.isArray(A.at[key]) ? A.at[key] : null;
+      // (an empty chapter arms the gun only once it is loaded: VII's shells)
+      let total = snap ? snap[0] + snap[1] : REVOLVER.rounds + (row.empty ? row.shells || 0 : row.pocket);
+      if (row.floor != null) total = Math.max(total, REVOLVER.rounds + row.floor);
+      const rounds = Math.min(REVOLVER.rounds, total);
+      this.setCounts({ rounds, pocket: total - rounds });
+      this.mark(key);
+    },
     get reloading() { return this.phase === 'reload'; },
     get drawn() { return this.phase !== 'away'; },
 
@@ -175,11 +244,14 @@ export default (game) => {
         // the hammer falls on nothing: a click, and the gun is reloaded
         G.sfx.play('revDry', null, {}, { send: false, gain: 0.9 });
         this.dry = true;
+        // [C13] the pocket empty too: the hammer on nothing, said once
+        if (this.ammo === 0 && this.pocket <= 0) { this.cool = 0.25; this.sayEmpty(); return false; }
         if (this.ammo === 0) { this.cool = 0.12; this.reloadAfter = 0.12; }
         return false;
       }
       this.dry = false;
       this.chambers[this.top] = 'spent';
+      this.keep();
       const cam = G.camera, time = G.time;
       cam.updateMatrixWorld();
       G.counters.shots++;
@@ -245,13 +317,28 @@ export default (game) => {
     reload() {
       if (this.phase !== 'ready' && this.phase !== 'draw') return false;
       if (this.ammo === REVOLVER.rounds) return false;
+      // [C13] nothing in the pocket: no reload (an empty gun says so)
+      if (this.pocket <= 0) { if (this.ammo === 0) this.sayEmpty(); return false; }
       this.from = this.curPose();
       this.phase = 'reload'; this.t = 0; this.cut = null; this.cutL = null; this.buffered = -1;
       this.loaded = 0; this.dropped = false; this.fed = 0; this.snapped = false;
-      // (what is spent or live goes out: a dump, as a man does in a fight)
+      // [C13] the spent cases go out and the live rounds stay; the empty
+      // chambers are filled from the pocket, as many as it has (a partial
+      // reload costs what it fills), the first after the live ones first -
+      // the feed starts there; once the hand has no more the rest is quick
       this.feedTurn0 = this.top;
+      for (let i = 0; i < 6; i++) { const j = (this.top + i) % 6; if (this.chambers[j] !== 'live') { this.feedTurn0 = j; break; } }
+      this.toLoad = Math.min(REVOLVER.rounds - this.ammo, this.pocket);
+      this.rush = false;
       this.heard = {};
       return true;
+    },
+    // [C13] the hammer on nothing and the pocket empty: the line, once until the gun is loaded again
+    sayEmpty() {
+      if (this.saidEmpty) return;
+      this.saidEmpty = true;
+      if (G.hud && G.hud.say) G.hud.say('Empty.', 1.6);
+      G.counters.dry = (G.counters.dry || 0) + 1;
     },
     // a press during the reload: shut on what is in and fire (once a pair is in)
     cutReload() {
@@ -281,7 +368,8 @@ export default (game) => {
       if (this.turnFrom != null && st0 < 0.13 && this.sinceShot >= 0.13) G.sfx.play('revCock', null, {}, { send: false, gain: 0.8 });
       if (this.reloadAfter > 0) { this.reloadAfter -= dt; if (this.reloadAfter <= 0) { this.reloadAfter = 0; this.reload(); } }
       if (this.phase === 'away') return;
-      this.t += dt;
+      // ([C13] a partial reload: once the hand is empty the rest of the feed goes by at three times)
+      this.t += this.phase === 'reload' && this.rush && !this.cut && this.t < RL.close[0] ? dt * 3 : dt;
       // the look drags the gun a little behind it (springs, as the Tommy gun)
       const S = this.sway;
       if (this.lastYaw !== null && dt > 0) {
@@ -356,15 +444,16 @@ export default (game) => {
       }
       // the rounds come up out of the coat in the left hand
       if (t >= RL.lRounds[0] && !this.rounds) this.rounds = buildProp('roundsHand');
-      if (t >= RL.lRounds[0] && t < RL.close[0] && this.rounds && H.held.L !== this.rounds) { H.hold(this.rounds, 'L', { keep: true }); this.rounds.userData.setCount(6); }
+      if (t >= RL.lRounds[0] && t < RL.close[0] && this.rounds && H.held.L !== this.rounds) { H.hold(this.rounds, 'L', { keep: true }); this.rounds.userData.setCount(Math.max(0, this.toLoad - this.loaded)); }
       for (let k = 0; k < 3; k++) {
         if (this.fed <= k && t >= RL.pairs[k][1]) {
           this.fed = k + 1;
-          const [a, b] = this.feedPair(k);
-          this.chambers[a] = 'live'; this.chambers[b] = 'live';
-          this.loaded += 2;
-          this.rounds.userData.setCount(6 - 2 * (k + 1));
-          G.sfx.play('revRound', null, {}, { send: false, gain: 0.8 });
+          // [C13] the pair at the feed spot, if those chambers are empty and the hand still has rounds
+          let n = 0;
+          for (const c of this.feedPair(k)) if (this.loaded < this.toLoad && this.chambers[c] !== 'live') { this.chambers[c] = 'live'; this.loaded++; this.pocket--; n++; }
+          if (this.rounds) this.rounds.userData.setCount(Math.max(0, this.toLoad - this.loaded));
+          if (n) { G.sfx.play('revRound', null, {}, { send: false, gain: 0.8 }); this.keep(); }
+          if (this.loaded >= this.toLoad && k < 2) this.rush = true;
         }
       }
       if (t >= RL.close[0] && this.rounds && H.held.L === this.rounds) H.hold(null, 'L', { keep: true });
@@ -375,8 +464,12 @@ export default (game) => {
     // cylinder stands then)
     feedPair(k) { const a = (this.feedTurn0 + 2 * k) % 6; return [a, (a + 1) % 6]; },
     // shut: the first live chamber under the hammer
+    // ([C13] the first of the run of live chambers: the old rounds and the new
+    // ones go round one after another, no empty chamber between)
     closeOn() {
-      for (let i = 0; i < 6; i++) { const j = (this.feedTurn0 + i) % 6; if (this.chambers[j] === 'live') { this.top = j; break; } }
+      const live = (j) => this.chambers[(j + 6) % 6] === 'live';
+      for (let i = 0; i < 6; i++) { const j = (this.feedTurn0 + i) % 6; if (live(j) && !live(j - 1)) { this.top = j; return; } }
+      for (let i = 0; i < 6; i++) { const j = (this.feedTurn0 + i) % 6; if (live(j)) { this.top = j; break; } }
     },
     endReload() {
       const H = G.hands;
@@ -387,17 +480,20 @@ export default (game) => {
       this.phase = 'ready'; this.t = 0; this.cut = null;
       this.hammerVis = 1;
       this.cool = 0;
+      if (this.ammo > 0) this.saidEmpty = false;
+      this.keep();
     },
     // the spent cases and any rounds fall out (the world's casings: they
     // bounce and ring on the floor)
     dropCases() {
       const fx = G.fx, cam = G.camera;
-      if (!fx || !fx.casings) { this.chambers = this.chambers.map(() => 'empty'); return; }
+      if (!fx || !fx.casings) { this.chambers = this.chambers.map((c) => (c === 'live' ? c : 'empty')); return; }
       const right = V(1, 0, 0).transformDirection(cam.matrixWorld).multiplyScalar(0.12);
       const up = V(0, -1, 0).multiplyScalar(0.18);
       const fwd = V(0, 0, -1).transformDirection(cam.matrixWorld).multiplyScalar(0.25);
       for (let i = 0; i < 6; i++) {
-        if (this.chambers[i] === 'empty') continue;
+        // [C13] only the spent cases: the live rounds stay in
+        if (this.chambers[i] !== 'spent') continue;
         const p = this.chamberCam(i, V(0, 0, 0));
         fx.casings.eject(this.toWorld(p, 0.42), right, up, fwd);
         this.chambers[i] = 'empty';
@@ -707,10 +803,10 @@ export default (game) => {
       const hud = G.hud;
       if (!hud || !hud.visible) return;
       if (!this.hud || !this.hud.isConnected) { this.hud = hud.layer('revolver'); this.hudKey = null; }
-      const key = this.chambers.join() + '|' + this.top + '|' + (this.phase === 'reload' ? Math.round((this.prop.userData.turn || 0) * 100) : '') + '|' + (this.phase === 'holster' ? 'h' : '');
+      const key = this.chambers.join() + '|' + this.top + '|' + (this.phase === 'reload' ? Math.round((this.prop.userData.turn || 0) * 100) : '') + '|' + (this.phase === 'holster' ? 'h' : '') + '|' + this.pocket;
       if (key === this.hudKey) return;
       this.hudKey = key;
-      drawCount(this.hud, { chambers: this.chambers, top: this.top, turn: this.phase === 'reload' ? this.prop.userData.turn : this.top * Math.PI / 3, fading: this.phase === 'holster' });
+      drawCount(this.hud, { chambers: this.chambers, top: this.top, turn: this.phase === 'reload' ? this.prop.userData.turn : this.top * Math.PI / 3, fading: this.phase === 'holster', pocket: this.pocket });
     },
   };
   return W;
