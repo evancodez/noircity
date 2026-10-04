@@ -1,6 +1,8 @@
 import { RNG } from '../util/rng.js';
 import { hashSeed } from '../ui/inkArt.js';
 import { captionBox } from '../ui/lettering.js';
+import { padGlyphs } from '../input/Pad.js';   // [C12]
+import { padGlyph } from '../input/glyphs.js';   // [C12]
 
 // Stills: comic panels over black (WAVE_C §5; the contract is
 // docs/story/seams/Z.md §4). Lane C1 builds the player; lane C9 makes the
@@ -102,7 +104,7 @@ export class Stills {
     this.el.textContent = '';
     this.el.style.display = 'block';
     this.el.style.opacity = '1';
-    this.hint.textContent = 'click: next · esc esc: skip';
+    this.setHint('next');   // [C12]
     this.hint.classList.remove('on');
     // (the last run's ending faded it out)
     this.hint.style.opacity = '1';
@@ -153,10 +155,22 @@ export class Stills {
     if (now - this.esc.last < 1200) { this.skip(); return; }
     this.esc.last = now;
     this.esc.src = src;
-    this.hint.textContent = 'esc again skips · click goes on';
+    this.setHint('again');   // [C12]
     this.hint.classList.add('on');
   }
   lockLost() { if (this.run) this.escPress('lock'); }
+  // [C12] the hint for the last device: the keys' words, or the pad's glyphs
+  setHint(kind) {
+    this.hintKind = kind;
+    const H = this.hint;
+    if (!padGlyphs()) { H.textContent = kind === 'again' ? 'esc again skips · click goes on' : 'click: next · esc esc: skip'; return; }
+    H.textContent = '';
+    const g = (id) => { const c = padGlyph(id, { h: 20 }); c.style.verticalAlign = 'middle'; H.appendChild(c); };
+    const t = (s) => H.appendChild(document.createTextNode(s));
+    if (kind === 'again') { g('options'); t(' again skips · '); g('cross'); t(' goes on'); }
+    else { g('cross'); t(' next · '); g('options'); g('options'); t(' skip'); }
+  }
+  refreshHint() { if (this.run && this.hintKind) this.setHint(this.hintKind); }
 
   advance() {
     const R = this.run;
@@ -302,7 +316,7 @@ export class Stills {
     // which a second ESC skips - a player who read it and pressed got nothing:
     // the hint goes back when the window shuts)
     if (this.hint.classList.contains('on') && performance.now() - this.esc.last >= 1200) {
-      this.hint.textContent = 'click: next · esc esc: skip';
+      this.setHint('next');   // [C12]
       this.hint.classList.remove('on');
     }
     for (const L of R.landed) {

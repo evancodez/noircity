@@ -1,0 +1,100 @@
+{
+ "about": "[C12 critic] II by the pad: walking in on the stick a little off straight (33 deg, then 24 deg, then pulled back half): does the stick hop me aside / back when I only meant to walk?",
+ "url": "/?mute=1&padfake=1&start=fight",
+ "input": "pad",
+ "size": [
+  1280,
+  800
+ ],
+ "out": "shots/critic12/fight_diag",
+ "steps": [
+  {
+   "until": "G.state === 'title' && N.hud.titleShown",
+   "timeout": 60000
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "pad": {
+    "b": [
+     "x"
+    ],
+    "secs": 0.12
+   },
+   "label": "the first press wakes the pad: the bracket only"
+  },
+  {
+   "wait": 400
+  },
+  {
+   "pad": {
+    "b": [
+     "x"
+    ],
+    "secs": 0.12
+   }
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'fight' && G.brawl.active",
+   "timeout": 60000
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "eval": "(window.__hops = [], window.__ha = 0, setInterval(() => { const m = G.brawl.me; if (m && m.lastHop !== window.__ha) { window.__ha = m.lastHop; window.__hops.push([+N.time.toFixed(1), m.lastHopKey]); } }, 30), 1)"
+  },
+  {
+   "pad": {
+    "a": [
+     0.55,
+     -0.83,
+     0,
+     0
+    ],
+    "secs": 2.5
+   }
+  },
+  {
+   "eval": "({ hops33: window.__hops.slice(), d: +Math.hypot(G.brawl.c.pos.x - G.eye.x, G.brawl.c.pos.z - G.eye.z).toFixed(2) })"
+  },
+  {
+   "eval": "(window.__hops = [], 1)"
+  },
+  {
+   "pad": {
+    "a": [
+     0.4,
+     -0.92,
+     0,
+     0
+    ],
+    "secs": 2.5
+   }
+  },
+  {
+   "eval": "({ hops24: window.__hops.slice() })"
+  },
+  {
+   "eval": "(window.__hops = [], 1)"
+  },
+  {
+   "pad": {
+    "a": [
+     0,
+     0.55,
+     0,
+     0
+    ],
+    "secs": 1.0
+   }
+  },
+  {
+   "eval": "({ hopsBackHalf: window.__hops.slice() })"
+  },
+  {
+   "shot": "after"
+  }
+ ]
+}

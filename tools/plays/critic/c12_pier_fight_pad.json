@@ -1,0 +1,39 @@
+{
+ "about": "[C12 critic] VII's boss fist fight by the pad: good",
+ "url": "/?mute=1&padfake=1&start=warehouse.fight",
+ "input": "pad",
+ "size": [
+  1280,
+  800
+ ],
+ "out": "shots/critic12/c12_pier_fight_pad",
+ "steps": [
+  {
+   "until": "G.state === 'title' && N.hud.titleShown",
+   "timeout": 60000
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "pad": {
+    "b": [
+     "x"
+    ],
+    "secs": 0.12
+   }
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'warehouse' && G.brawl.active",
+   "timeout": 60000
+  },
+  {
+   "drive": "tools/lib/fight_bot.mjs",
+   "profile": "good",
+   "fights": 1,
+   "timeout": 500000,
+   "check": "D.fights.length === 1 && D.fights[0].won",
+   "label": "VII's boss by the pad"
+  }
+ ]
+}

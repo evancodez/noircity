@@ -1,5 +1,7 @@
 import { makeTornStroke, makeKeyDab, blob, hashSeed } from './inkArt.js';
 import { RNG } from '../util/rng.js';
+import { padGlyphs } from '../input/Pad.js';   // [C12]
+import { padGlyph, glyphOf, wordsFor } from '../input/glyphs.js';   // [C12]
 
 // The fight's cards (round 2, docs/story/FIGHT.md §1, §3), drawn into the
 // HUD's own layer (so hud=0 and the title hide them as the HUD's lines):
@@ -53,11 +55,12 @@ export class FightCards {
   }
 
   card(text, pic = null) {
-    const key = text + '|' + JSON.stringify(pic);
+    const key = text + '|' + JSON.stringify(pic) + (padGlyphs() ? '|pad' : '');   // [C12] (drawn again for the pad)
     if (this.cur === key) return;
     this.cur = key;
+    this.last = [text, pic];   // [C12]
     if (!text) { this.fc.style.display = 'none'; this.shownCard = ''; return; }
-    this.text.textContent = text;
+    this.text.textContent = padGlyphs() ? wordsFor(text, 'brawl') : text;   // [C12] ('LEFT CLICK' said as the pad's)
     this.pic.innerHTML = '';
     for (const el of picture(pic)) this.pic.appendChild(el);
     const old = this.fc.querySelector('.bg'); if (old) old.remove();
@@ -74,6 +77,9 @@ export class FightCards {
     this.fc.style.display = 'flex';
     this.shownCard = text;
   }
+
+  // [C12] the card up drawn again for the device now
+  redraw() { if (this.last && this.shownCard) { const [t, p] = this.last; this.card(t, p); } }
 
   flash(text, secs = 1) {
     this.fl.textContent = text;
@@ -691,6 +697,17 @@ export class FightCards {
 // the small inked pictures: the mouse, one button inked in; keys as dabs
 function picture(pic) {
   if (!pic) return [];
+  // [C12] the last device the pad: its glyphs (the fist fight's: each trigger the fist of its side)
+  if (padGlyphs()) {
+    const ks = typeof pic === 'string' ? (pic.startsWith('mouse') ? [...pic.slice(5)].map((c) => (c === 'L' ? 'LMB' : 'RMB')) : [pic]) : pic;
+    const out = [];
+    ks.forEach((k, i) => {
+      if (i && ks.length < 4) { const p = document.createElement('span'); p.className = 'plus'; p.textContent = '+'; out.push(p); }
+      const id = glyphOf(k, 'brawl');
+      if (id) out.push(padGlyph(id, { h: 46 })); else { const s = document.createElement('span'); s.textContent = k; out.push(s); }
+    });
+    return out;
+  }
   if (typeof pic === 'string' && pic.startsWith('mouse')) return [mouse(pic.slice(5))];
   const out = [];
   const list = Array.isArray(pic) ? pic : [pic];

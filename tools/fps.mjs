@@ -76,6 +76,8 @@ try {
   const { result: { targetId } } = await send('Target.createTarget', { url: 'about:blank' });
   const { result: { sessionId } } = await send('Target.attachToTarget', { targetId, flatten: true });
   await send('Page.enable', {}, sessionId);
+  // [C12] a real pad in the room never reaches a reading (headless Chrome sees a paired DualSense)
+  await send('Page.addScriptToEvaluateOnNewDocument', { source: 'try { Object.defineProperty(Navigator.prototype, "getGamepads", { value: function () { return []; }, configurable: true }); } catch (e) {}' }, sessionId);
   await send('Emulation.setDeviceMetricsOverride', { width: W, height: H, deviceScaleFactor: 1, mobile: false }, sessionId);
   await send('Page.navigate', { url: `http://127.0.0.1:${process.env.NOIR_PORT || 5173}/?${QS}` }, sessionId);
   const evalJS = async (expr) => (await send('Runtime.evaluate', { expression: expr, awaitPromise: true, returnByValue: true }, sessionId)).result?.result?.value;

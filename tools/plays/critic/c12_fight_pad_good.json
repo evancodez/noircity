@@ -1,0 +1,42 @@
+{
+ "about": "[C12 critic] II by the pad: fight_bot good, twice in a row",
+ "url": "/?mute=1&padfake=1&start=fight",
+ "input": "pad",
+ "size": [
+  1280,
+  800
+ ],
+ "out": "shots/critic12/c12_fight_pad_good",
+ "steps": [
+  {
+   "until": "G.state === 'title' && N.hud.titleShown",
+   "timeout": 60000
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "pad": {
+    "b": [
+     "x"
+    ],
+    "secs": 0.12
+   }
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'fight' && G.brawl.active",
+   "timeout": 60000
+  },
+  {
+   "drive": "tools/lib/fight_bot.mjs",
+   "profile": "good",
+   "fights": 2,
+   "timeout": 600000,
+   "check": "D.fights.length === 2 && D.fights.every((f) => f.won)",
+   "label": "good twice by the pad"
+  },
+  {
+   "eval": "({ rumbleN: N.pad.rumbleN, last: N.pad.rumbles.slice(-6) })"
+  }
+ ]
+}

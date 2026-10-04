@@ -59,7 +59,8 @@ export class Controller {
     this.yaw = 0;
     this.pitch = 0;
     this.radius = 0.36;
-    this.enabled = false;       // input enabled (pointer locked)
+    this._enabled = false;      // input enabled (pointer locked; [C12] or the pad holds the game: the getter)
+    this.pad = null;            // [C12] the pad (src/input/Pad.js attaches itself)
     this.keys = new Set();
     this.bobPhase = 0;
     this.bobAmp = 0;
@@ -108,6 +109,10 @@ export class Controller {
       if (!this.enabled) this.keys.clear();
     });
   }
+
+  // [C12] input enabled: the pointer lock, or the pad holding the game without it
+  get enabled() { return this._enabled || !!(this.pad && this.pad.holds); }
+  set enabled(v) { this._enabled = v; }
 
   lock() {
     try {
@@ -356,6 +361,7 @@ export class Controller {
     // the battle autopilot (game/Autopilot.js) drives the same inputs
     if (input) { f = input.f || 0; s = input.s || 0; sprint = !!input.sprint; }
     else if (this.auto) { f = this.auto.f; s = this.auto.s; sprint = !!this.auto.sprint; }
+    else if (this.pad && this.pad.move) { f = this.pad.move.f; s = this.pad.move.s; }   // [C12] the stick: the walk as fast as it is pushed
     if (this.frozen) { f = 0; s = 0; }
     const speed = sprint && canSprint ? run : walk;
     const sin = Math.sin(this.yaw), cos = Math.cos(this.yaw);

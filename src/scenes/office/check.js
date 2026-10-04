@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { allocInkId } from '../../render/layers.js';
 import { drawGuestCheck } from '../../props/kinds/c4.js';
+import { padGlyphs } from '../../input/Pad.js';   // [C12]
 
 // [C5] The torn check (chapter III, the brief's step 6): what Ames kept in
 // his safe - a guest check from my diner (the printed slip of chapter I's
@@ -212,7 +213,8 @@ export const CHECK_PUZZLE = {
     }
   },
   solved(st) { return st.whole && st.wholeT > 1.8; },
-  hint(st, level) { return ['Her writing runs across the tears.', 'Drag a piece; RMB or the wheel turns it.', 'Lay torn edges together: they join.'][level - 1]; },
+  // ([C12] the pad the last device: its hands, as the turn card draws them - L2 held turns it)
+  hint(st, level) { return ['Her writing runs across the tears.', padGlyphs() ? 'Drag a piece with R2; hold L2 to turn it.' : 'Drag a piece; RMB or the wheel turns it.', 'Lay torn edges together: they join.'][level - 1]; },
   exit() {},
 };
 

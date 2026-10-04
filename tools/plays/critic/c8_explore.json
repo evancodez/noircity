@@ -1,0 +1,30 @@
+{
+ "about": "[C8 critic] the poke: in the beat 'gun' (nobody shooting; it waits for E) walk into the room's walls, the counter, the booths, behind the counter, the back of the room; out of the door; down the pavement to the alley, up to the roadworks, across to the el, its stair, under its far side. What stops me, what answers, what is unfinished.",
+ "url": "/?mute=1&start=shootout.gun",
+ "size": [1440, 900],
+ "out": "shots/critic/c8_explore",
+ "steps": [
+  { "until": "G.state === 'title' && !document.getElementById('title').classList.contains('hidden')", "timeout": 30000 },
+  { "wait": 1200 },
+  { "clickOn": "#title .opt[data-k=begin]", "taken": "G.state !== 'title'", "retries": 5, "every": 4000 },
+  { "until": "G.scenes.current && G.scenes.current.id === 'shootout' && G.scenes.beat === 'gun' && !G.scenes.trans && !(G.stills && G.stills.active) && !G.hud._carded", "timeout": 40000 },
+  { "wait": 6000 },
+  { "shot": "e00_gun_laid" },
+  { "eval": "JSON.stringify({ p: [+N.controller.pos.x.toFixed(2), +N.controller.pos.z.toFixed(2)], cur: G.interact.current && G.interact.current.id, prompt: G.hud.promptShown || null, beat: G.scenes.beat })" },
+  { "walk": [[-12.0, -5.7]], "into": true, "timeout": 8000 }, { "eval": "JSON.stringify({ p: [+N.controller.pos.x.toFixed(2), +N.controller.pos.z.toFixed(2)], cur: G.interact.current && G.interact.current.id, prompt: G.hud.promptShown || null, beat: G.scenes.beat })" }, { "shot": "e01_south_wall" },
+  { "walk": [[-13.3, -4.7], [-15.5, -4.5], [-15.6, 6.0]], "into": true, "timeout": 15000 }, { "eval": "JSON.stringify({ p: [+N.controller.pos.x.toFixed(2), +N.controller.pos.z.toFixed(2)], cur: G.interact.current && G.interact.current.id, prompt: G.hud.promptShown || null, beat: G.scenes.beat })" }, { "shot": "e02_behind_counter" },
+  { "walk": [[-16.9, 6.0]], "into": true, "timeout": 5000 }, { "eval": "JSON.stringify({ p: [+N.controller.pos.x.toFixed(2), +N.controller.pos.z.toFixed(2)], cur: G.interact.current && G.interact.current.id, prompt: G.hud.promptShown || null, beat: G.scenes.beat })" }, { "shot": "e03_back_bar" },
+  { "walk": [[-15.6, 10.5]], "into": true, "timeout": 8000 }, { "eval": "JSON.stringify({ p: [+N.controller.pos.x.toFixed(2), +N.controller.pos.z.toFixed(2)], cur: G.interact.current && G.interact.current.id, prompt: G.hud.promptShown || null, beat: G.scenes.beat })" }, { "shot": "e04_north_end_behind" },
+  { "walk": [[-13.0, 10.8], [-11.0, 11.3]], "into": true, "timeout": 10000 }, { "eval": "JSON.stringify({ p: [+N.controller.pos.x.toFixed(2), +N.controller.pos.z.toFixed(2)], cur: G.interact.current && G.interact.current.id, prompt: G.hud.promptShown || null, beat: G.scenes.beat })" }, { "shot": "e05_booths" },
+  { "walk": [[-12.5, 4.0], [-11.4, 0.6], [-9.0, 0.6]], "into": true, "timeout": 12000 }, { "eval": "JSON.stringify({ p: [+N.controller.pos.x.toFixed(2), +N.controller.pos.z.toFixed(2)], cur: G.interact.current && G.interact.current.id, prompt: G.hud.promptShown || null, beat: G.scenes.beat })" }, { "shot": "e06_door" },
+  { "key": "KeyE" }, { "wait": 800 },
+  { "walk": [[-11.4, 0.6], [-9.0, 0.6]], "into": true, "timeout": 8000 }, { "eval": "JSON.stringify({ p: [+N.controller.pos.x.toFixed(2), +N.controller.pos.z.toFixed(2)], cur: G.interact.current && G.interact.current.id, prompt: G.hud.promptShown || null, beat: G.scenes.beat })" }, { "shot": "e07_out_door" },
+  { "walk": [[-8.6, -12.0], [-8.8, -26.0], [-9.5, -32.0]], "into": true, "timeout": 25000 }, { "eval": "JSON.stringify({ p: [+N.controller.pos.x.toFixed(2), +N.controller.pos.z.toFixed(2)], cur: G.interact.current && G.interact.current.id, prompt: G.hud.promptShown || null, beat: G.scenes.beat })" }, { "shot": "e08_alley" },
+  { "walk": [[-12.0, -29.0]], "into": true, "timeout": 8000 }, { "eval": "JSON.stringify({ p: [+N.controller.pos.x.toFixed(2), +N.controller.pos.z.toFixed(2)], cur: G.interact.current && G.interact.current.id, prompt: G.hud.promptShown || null, beat: G.scenes.beat })" }, { "shot": "e09_alley_in" },
+  { "walk": [[-7.0, -20.0], [-7.0, -50.0]], "into": true, "timeout": 25000 }, { "eval": "JSON.stringify({ p: [+N.controller.pos.x.toFixed(2), +N.controller.pos.z.toFixed(2)], cur: G.interact.current && G.interact.current.id, prompt: G.hud.promptShown || null, beat: G.scenes.beat })" }, { "shot": "e10_south_end" },
+  { "walk": [[-7.5, -10.0], [-8.0, 15.0], [-8.0, 30.0]], "into": true, "timeout": 30000 }, { "eval": "JSON.stringify({ p: [+N.controller.pos.x.toFixed(2), +N.controller.pos.z.toFixed(2)], cur: G.interact.current && G.interact.current.id, prompt: G.hud.promptShown || null, beat: G.scenes.beat })" }, { "shot": "e11_north_roadworks" },
+  { "walk": [[0.0, 20.0], [11.0, 6.0], [20.0, 6.0]], "into": true, "timeout": 30000 }, { "eval": "JSON.stringify({ p: [+N.controller.pos.x.toFixed(2), +N.controller.pos.z.toFixed(2)], cur: G.interact.current && G.interact.current.id, prompt: G.hud.promptShown || null, beat: G.scenes.beat })" }, { "shot": "e12_under_el_far" },
+  { "walk": [[25.0, 0.0]], "into": true, "timeout": 10000 }, { "eval": "JSON.stringify({ p: [+N.controller.pos.x.toFixed(2), +N.controller.pos.z.toFixed(2)], cur: G.interact.current && G.interact.current.id, prompt: G.hud.promptShown || null, beat: G.scenes.beat })" }, { "shot": "e13_far_side" },
+  { "walk": [[13.0, -14.0], [13.0, -30.0]], "into": true, "timeout": 20000 }, { "eval": "JSON.stringify({ p: [+N.controller.pos.x.toFixed(2), +N.controller.pos.z.toFixed(2)], cur: G.interact.current && G.interact.current.id, prompt: G.hud.promptShown || null, beat: G.scenes.beat })" }, { "shot": "e14_under_el_south" }
+ ]
+}
