@@ -118,6 +118,17 @@ export class Vehicles {
     }
     if (v.body.parent) v.body.parent.remove(v.body);
     if (this.player === v) this.player = null;
+    // [C10a] a car not kept for another spawn: its own geometries (its glass and lenses, its contact shadows,
+    // its tail lamps: made per car) off the GPU; those it shares with a car still in the stage (the sedan's
+    // templates) stay. A retry in VI made every car of the try again and kept the last try's: +70 a retry.
+    if (!(v.kind === 'coupe' && v.model && v.model.group)) {
+      const mine = new Set();
+      v.body.traverse((o) => { if (o.geometry) mine.add(o.geometry); });
+      if (mine.size) {
+        stage.scene.traverse((o) => { if (o.geometry) mine.delete(o.geometry); });
+        for (const g of mine) g.dispose();
+      }
+    }
     // ([C3 3rd] my coupe's model kept for the next spawn, as it was built)
     if (v.kind === 'coupe' && v.model && v.model.group) {
       const m = v.model;

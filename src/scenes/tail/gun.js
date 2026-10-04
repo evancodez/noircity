@@ -99,7 +99,8 @@ export class WindowGun {
   show(on) {
     const G = this.game, vm = G.vm;
     if (!this.prop) {
-      if (DRIVE.gun && DRIVE.gun.prop && DRIVE.gun.prop.parent) DRIVE.gun.prop.parent.remove(DRIVE.gun.prop);
+      // [C10a] (the last try's revolver: off the viewmodel and off the GPU - each retry built another, +16 geometries)
+      if (DRIVE.gun && DRIVE.gun.prop) { if (DRIVE.gun.prop.parent) DRIVE.gun.prop.parent.remove(DRIVE.gun.prop); DRIVE.gun.prop.traverse((o) => { if (o.geometry) o.geometry.dispose(); }); }
       const kind = PROP_KINDS.includes('revolver') ? 'revolver' : 'tailRevolver';
       const p = buildProp(kind);
       const id = allocVmId();

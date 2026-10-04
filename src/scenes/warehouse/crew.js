@@ -532,6 +532,8 @@ export class Man {
   remove() {
     if (this.lamp) this.crew.stage.lamps.release(this.lamp);
     if (this.prop && this.prop.parent) this.prop.parent.remove(this.prop);
+    // [C10a] (his torch or lantern is built anew each try: off the GPU with him)
+    if (this.prop) this.prop.traverse((o) => { if (o.geometry) o.geometry.dispose(); });
   }
 }
 

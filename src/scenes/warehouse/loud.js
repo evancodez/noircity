@@ -102,14 +102,32 @@ function _dist(o, d, t, p) { return Math.hypot(o.x + d.x * t - p.x, o.y + d.y * 
 // the shout: every hunter still on his feet becomes a gunman of the gun
 // kit where he stands (his torch dropped), the crew's own rules end
 export function goLoud(ctx, L) {
-  const G = ctx.game, K = gunsOf(G), crew = L.crew;
+  const G = ctx.game;
   if (L.loud) return;
   L.loud = true;
   L.gunmen = L.gunmen || [];
+  // ([C10a] after the critic: loud before the telephone's man had set off (a
+  // round fired in the pass's first seconds) left nobody who could climb - the
+  // gunmen stand on the floor - so a man crouched behind the catwalk's boards
+  // was never reached: nothing came, nothing was lost, for minutes. Now, while
+  // I am up there, the answerer still goes up (the crew's rule, his torch,
+  // his cosh, his own warning); once I am down on the floor, or he is back at
+  // the stairs' foot, he draws like the rest (drawGuns, each step while loud))
+  if (!L.answerer) L.answerer = sendAnswerer(ctx, L, { force: true }) || true;
+  drawGuns(ctx, L);
+  G.emit('c7:loud', { men: L.gunmen.length, t: +G.time.toFixed(2) });
+}
+
+// every man of the crew on the floor who is not on his way up to answer the
+// telephone becomes a gunman where he stands (the shout; [C10a] and the
+// answerer when he is down again - called each step while loud)
+export function drawGuns(ctx, L) {
+  const G = ctx.game, K = gunsOf(G), crew = L.crew, meUp = !!ctx.stage.part('mezz').up;
   for (const m of [...crew.men]) {
     if (m.down) continue;
-    // (a man up on the catwalk keeps the crew's rule: he comes at me, the cosh)
-    if (m.upLvl) continue;
+    // (a man up on the catwalk keeps the crew's rule: he comes at me, the cosh;
+    // [C10a] so does the answerer on his way up while I am up there)
+    if (m.upLvl || (m.answering && meUp)) continue;
     const at = { x: m.pos.x, z: m.pos.z };
     // (the shout, then each draws: the first a half second on, the rest after
     // him - the moment to get down or get out of their light)
@@ -120,19 +138,19 @@ export function goLoud(ctx, L) {
     m.remove(); ctx.cast.remove(m.c);
     crew.men.splice(crew.men.indexOf(m), 1);
   }
-  if (!crew.men.some((m) => !m.down && m.upLvl)) crew.onCaught = null;
-  G.emit('c7:loud', { men: L.gunmen.length, t: +G.time.toFixed(2) });
+  if (!crew.men.some((m) => !m.down && (m.upLvl || (m.answering && meUp)))) crew.onCaught = null;
 }
 
 // the telephone rang behind me: one of them goes up to answer it - up the
 // west stairs, along the catwalk to the office's door, a look along the
 // catwalk with his torch, and back down (so a man who waits up there in the
 // dark is found: waiting is not a way out)
-export function sendAnswerer(ctx, L) {
+// ([C10a] force: at the shout - every man is in 'alarm' by then, and he goes all the same)
+export function sendAnswerer(ctx, L, { force = false } = {}) {
   const crew = L.crew, mezz = ctx.stage.part('mezz');
   const pick = crew.get('hood1') && !crew.get('hood1').down ? crew.get('hood1')
     : crew.men.filter((m) => !m.down && m.spec.hunter).sort((a, b) => Math.hypot(a.pos.x + 3, a.pos.z + 40) - Math.hypot(b.pos.x + 3, b.pos.z + 40))[0];
-  if (!pick || pick.mode === 'alarm') return null;
+  if (!pick || (pick.mode === 'alarm' && !force)) return null;
   pick.canClimb(mezz);
   const back = pick.route;
   pick.route = [

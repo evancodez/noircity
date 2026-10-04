@@ -20,7 +20,7 @@
   { "shot": "office_start" },
   { "expect": "G.state === 'playing' && G.scenes.beat === 'corridor'", "label": "playing, at the chapter's first beat" },
   { "expect": "G.save.inventory.includes('matchbook') && G.save.inventory.includes('amesCard') && !G.save.inventory.includes('matchbookHalf')", "label": "carrying what II gave: the matchbook and Ames's card" },
-  { "expect": "G.hud.objectiveText === 'Find Ames. Room 304.'", "label": "the chapter's objective line from its first second" },
+  { "expect": "G.hud.objectiveText === 'Room 304. Ames.'", "label": "the chapter's objective line from its first second ([C10a] III's line as lane C5 wrote it)" },
   { "expect": "(() => { const s = JSON.parse(localStorage.getItem('noir.save')); return s && s.v === 2 && s.scene === 'office'; })()", "label": "a v2 save written at the chapter's start" }
  ]
 }

@@ -84,7 +84,7 @@ export class Walkers {
   }
 
   dispose() {
-    for (const w of this.list) { if (w.umb.group.parent) w.umb.group.parent.remove(w.umb.group); }
+    for (const w of this.list) { if (w.umb.group.parent) w.umb.group.parent.remove(w.umb.group); w.umb.group.traverse((o) => { if (o.geometry) o.geometry.dispose(); }); }   // [C10a] (built anew each try: off the GPU)
     this.list = [];
   }
 

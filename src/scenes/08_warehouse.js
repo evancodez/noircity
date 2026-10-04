@@ -4,7 +4,7 @@ import { PIER, inShed } from '../stages/pier9/site.js';
 import { Crew } from './warehouse/crew.js';
 import { Stealth } from './warehouse/stealth.js';
 import { PierFight, bayRoom, quietCrew, crewOutOfSight, FM_MANNERS, FOREMAN, RING_START, EYE_Y } from './warehouse/fight.js';
-import { HUNTERS, HOODS_LOUD, relightLamps, onShot, goLoud, atBay, sendAnswerer } from './warehouse/loud.js';
+import { HUNTERS, HOODS_LOUD, relightLamps, onShot, goLoud, drawGuns, atBay, sendAnswerer } from './warehouse/loud.js';
 import { buildProp } from '../props/index.js';
 import { gunsOf } from '../guns/Guns.js';
 
@@ -117,7 +117,7 @@ let SNAP = null;   // [C7] the men down when the last checkpoint was reached: th
 function setupAt(ctx, b) {
   const G = ctx.game, stage = ctx.stage;
   if (HOOKED !== G) { HOOKED = G; G.on('scene:exit', (e) => { if (e && e.id === 'warehouse') leaveWarehouse(); }); }
-  if (LIVE) { if (LIVE.stepWrap && G.controller.onStep === LIVE.stepWrap) G.controller.onStep = LIVE.origOnStep; LIVE.crew.clear(); LIVE.stealth.undress(); for (const o of LIVE.props) if (o.parent) o.parent.remove(o); if (LIVE.fight) LIVE.fight.clear(); LIVE = null; }
+  if (LIVE) { if (LIVE.stepWrap && G.controller.onStep === LIVE.stepWrap) G.controller.onStep = LIVE.origOnStep; LIVE.crew.clear(); LIVE.stealth.undress(); for (const o of LIVE.props) { if (o.parent) o.parent.remove(o); o.traverse((m) => { if (m.geometry) m.geometry.dispose(); }); /* [C10a] built anew each try: off the GPU with it */ } if (LIVE.fight) LIVE.fight.clear(); LIVE = null; }
   if (G.brawl.active) G.brawl.stop();
   const K = gunsOf(G);
   K.end();
@@ -561,6 +561,9 @@ function live(ctx) {
     const C0 = G.controller;
     crew.player.hidden = mezz.up && C0.pos.x > PIER.office.x0 && C0.pos.x < PIER.office.x1 && C0.pos.z < PIER.office.z1 - 0.1;
     crew.step(dt, G.time);
+    // [C10a] the telephone's man after the shout draws like the rest once I am down on the floor or he is
+    // back at the stairs' foot (drawGuns keeps him to the crew's rule only while he climbs to me up there)
+    if (L.loud && L.answerer && L.answerer.name && !L.answerer.down && !L.answerer.upLvl && crew.men.includes(L.answerer) && (!L.answerer.answering || !mezz.up)) drawGuns(ctx, L);
     // the warning before the cosh: the shout, and its line while they hunt me
     if (!L.stealth.loud && !L.fightOn) ctx.hud.warn(crew.alarmT >= 0 ? 'They’ve seen me.' : null);
     else if (L.stealth.loud && !L.fightOn) {
@@ -881,7 +884,7 @@ export default defineScene({
   objectives: {
     arrive: QUIET_LINE, floor: QUIET_LINE, lamps: QUIET_LINE, aisle: QUIET_LINE, stairs: QUIET_LINE,
     listen: 'Stay down. Listen.', office: 'Search his office.', loud: 'Get out. The loading bay.',
-    fight: 'Put him down.', ko: 'Put him down.', after: 'Get to the car.',
+    fight: 'Put him down.', ko: null /* [C10a] he is down: no stale line over the knock-down */, after: 'Get to the car.',
   },
   setup: Object.fromEntries(BEATS.map((b) => [b, (ctx) => setupAt(ctx, b)])),
   *script(ctx) {
@@ -1007,7 +1010,15 @@ export default defineScene({
       // (the director's encounter while the pass lasts: the HUD's health)
       G.director.stop(); G.director.begin();
       G.director.run(function* () { while (G.scenes.ctx === ctx && ctx.beat === 'loud') yield null; });
+      // [C10a] (VII picked from CHAPTERS starts a fresh save that never saw IV: the revolver's own cards, the
+      // same ids and words as IV's - once a save, so a played-through save sees none of them again here)
+      if (hud.teach) hud.teach('fire', '[LMB] fire');
       gunsOf(G).teach('crouch');
+      let reloadT = false;
+      ctx.onStep(() => {
+        const W = G.player.weapons.active;
+        if (!reloadT && ctx.beat === 'loud' && W && Array.isArray(W.chambers) && W.chambers.filter((c) => c === 'live').length <= 2) { reloadT = true; gunsOf(G).teach('reload'); }
+      });
       const tL = G.time;
       // (a lamp shot out: taught once, the first time one hangs in my sight
       // while nobody has me)
@@ -1263,7 +1274,7 @@ function backToFeet(ctx) {
 // (the scene leaving: the hands and their light back as they were)
 export function leaveWarehouse() {
   if (HOOKED) { const C = HOOKED.controller; C.onFootfall = null; if (LIVE && LIVE.stepWrap && C.onStep === LIVE.stepWrap) C.onStep = LIVE.origOnStep; gunsOf(HOOKED).end(); }
-  if (LIVE) { LIVE.crew.clear(); LIVE.stealth.undress(); for (const o of LIVE.props) if (o.parent) o.parent.remove(o); if (LIVE.fight) LIVE.fight.clear(); if (LIVE.fightOn && HOOKED && HOOKED.brawl.active) HOOKED.brawl.stop(); LIVE = null; }
+  if (LIVE) { LIVE.crew.clear(); LIVE.stealth.undress(); for (const o of LIVE.props) { if (o.parent) o.parent.remove(o); o.traverse((m) => { if (m.geometry) m.geometry.dispose(); }); /* [C10a] built anew each try: off the GPU with it */ } if (LIVE.fight) LIVE.fight.clear(); if (LIVE.fightOn && HOOKED && HOOKED.brawl.active) HOOKED.brawl.stop(); LIVE = null; }
   // (a retry keeps what the checkpoint keeps; leaving the chapter forgets it)
   if (!(HOOKED && HOOKED.failing)) SNAP = null;
 }

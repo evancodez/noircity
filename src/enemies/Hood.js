@@ -1259,6 +1259,16 @@ export class Hood {
     for (const m of this.hitMeshes) { const j = w.solids.indexOf(m); if (j >= 0) w.solids.splice(j, 1); }
     releaseHoodSlot(this.slot);
     if (this.slot >= 0) FIG_ANCHOR[this.slot].set(0, 0, 0, 0);
+    // [C10a] (each man's skeleton has its own bone texture on the GPU: a retry that makes the beat's men again
+    // left the last try's behind - a texture a man, ten retries at one checkpoint and forty more. His
+    // geometries are the shared cached ones and stay)
+    // And what he carries that was made for him (a torch, a hook, a lantern, his cigarette, a cane: each built
+    // anew per man) goes off the GPU with him; the body's LODs and the hit shapes are shared caches and stay.
+    const hits = new Set(this.hitMeshes);
+    this.object.traverse((o) => {
+      if (o.isSkinnedMesh) { if (o.skeleton) o.skeleton.dispose(); return; }
+      if ((o.isMesh || o.isLine || o.isPoints) && o.geometry && !hits.has(o) && !this.lods.includes(o.geometry)) o.geometry.dispose();
+    });
   }
 }
 

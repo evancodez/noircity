@@ -243,7 +243,23 @@ export default defineScene({
     // (he waits where the stretch has him while I cannot act: the chapter
     // card, the black of a fail lifting)
     // (and I with him while the chapter card is up: a cold start at a stretch)
-    C.held = () => (!!G.failing && G.failing.phase !== 'up') || G.hud.cardT > 0.1 || !!(G.scenes.trans && G.scenes.trans.phase === 'out');
+    // ([C10a] after the critic: the restart after a fail or a CONTINUE was the
+    // tightest of I - VII - he ran on through the black's 0.7 s lifting and a
+    // hands-off player was warned 2.1 s after the screen cleared. Now he waits
+    // through the lifting too, and then until I first move (W A S D, the
+    // arrows, Shift, SPACE) or a second has gone: a player who is there loses
+    // nothing to his reaction; hands off still loses, a second or two later)
+    const MOVE = ['KeyW', 'KeyA', 'KeyS', 'KeyD', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'ShiftLeft', 'ShiftRight', 'Space'];
+    // (only just after the black or the card: never mid-run)
+    let clearAt = -1;
+    C.held = () => {
+      if (!!G.failing || G.hud.cardT > 0.1 || !!(G.scenes.trans && G.scenes.trans.phase === 'out')) { clearAt = null; return true; }
+      if (clearAt === -1) return false;
+      if (!C.active) { clearAt = -1; return false; }
+      if (clearAt == null) clearAt = G.time;
+      if (G.time - clearAt >= 1.0 || MOVE.some((k) => G.controller.keys.has(k))) { clearAt = -1; return false; }
+      return true;
+    };
     ctx.onStep((dt) => {
       C.step(dt);
       if (ctx.flags.umb) ctx.flags.umb.update(dt);

@@ -1,22 +1,66 @@
 {
- "about": "[C5] The end of IV and the handover to V by real input: the quiet ('See if more are coming.'), a walk to the street window, facing the blind - and chapter V (lane C6's) begins on that frame (its own E parts the slats: the man under the lamp across the street). node tools/play.mjs tools/plays/gunfight_end.json",
+ "about": "[C5] The end of IV and the handover to V by real input: the quiet ('See if more are coming.'), a walk to the street window, facing the blind - and chapter V (lane C6's) begins on that frame (its own E parts the slats: the man under the lamp across the street). node tools/play.mjs tools/plays/gunfight_end.json [C10a] the window now answers from 2.6 m (the desk stood between): the walk stops north of the desk (3.2 m off) and W carries on to the window.",
  "url": "/?mute=1&start=gunfight.quiet",
- "size": [1280, 800],
+ "size": [
+  1280,
+  800
+ ],
  "out": "shots/play/gunfight_end",
  "steps": [
-  { "until": "G.state === 'title' && !!document.querySelector('#title .opt[data-k=begin]')", "timeout": 60000 },
-  { "wait": 1500 },
-  { "clickOn": "#title .opt[data-k=begin]", "taken": "G.scenes.current && G.scenes.current.id === 'gunfight'", "retries": 4 },
-  { "until": "G.scenes.current && G.scenes.current.id === 'gunfight' && document.pointerLockElement === N.renderer.domElement && G.scenes.fadeK < 0.1", "timeout": 30000 },
-  { "expect": "G.scenes.beat === 'quiet' && G.hud.objectiveText === 'See if more are coming.'", "label": "the quiet, its line" },
-  { "walk": [[2.4, 4.95], [3.7, 4.95]], "timeout": 20000 },
-  { "name": "on to the window, facing it (W held): V takes over there" },
-  { "eval": "(N.controller.yaw = -Math.PI / 2 + 0.25, 1)" },
-  { "down": "KeyW" },
-  { "until": "G.scenes.current && G.scenes.current.id === 'watcher'", "timeout": 8000 },
-  { "up": "KeyW" },
-  { "expect": "G.stage.name === 'office' && G.scenes.beat === 'seen'", "label": "V begins in the same room at the window (lane C6's first frame)" },
-  { "wait": 4000 },
-  { "shot": "e01_watcher" }
+  {
+   "until": "G.state === 'title' && !!document.querySelector('#title .opt[data-k=begin]')",
+   "timeout": 60000
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]",
+   "taken": "G.scenes.current && G.scenes.current.id === 'gunfight'",
+   "retries": 4
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'gunfight' && document.pointerLockElement === N.renderer.domElement && G.scenes.fadeK < 0.1",
+   "timeout": 30000
+  },
+  {
+   "expect": "G.scenes.beat === 'quiet' && G.hud.objectiveText === 'See if more are coming.'",
+   "label": "the quiet, its line"
+  },
+  {
+   "walk": [
+    [
+     2.4,
+     4.95
+    ]
+   ],
+   "timeout": 20000
+  },
+  {
+   "name": "on to the window, facing it (W held): V takes over there"
+  },
+  {
+   "eval": "(N.controller.yaw = -Math.PI / 2 + 0.25, 1)"
+  },
+  {
+   "down": "KeyW"
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'watcher'",
+   "timeout": 8000
+  },
+  {
+   "up": "KeyW"
+  },
+  {
+   "expect": "G.stage.name === 'office' && G.scenes.beat === 'seen'",
+   "label": "V begins in the same room at the window (lane C6's first frame)"
+  },
+  {
+   "wait": 4000
+  },
+  {
+   "shot": "e01_watcher"
+  }
  ]
 }
