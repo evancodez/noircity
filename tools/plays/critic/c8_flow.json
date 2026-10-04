@@ -1,0 +1,161 @@
+{
+ "about": "[C8 critic] the chapter as it flows (no jumps): the nick by the window, Dot lays the gun (E to take it), the headlamps, the first cars and their men - frames at each moment; then hands off.",
+ "url": "/?mute=1&start=shootout.dot",
+ "size": [
+  1440,
+  900
+ ],
+ "out": "shots/critic/c8_flow",
+ "steps": [
+  {
+   "until": "G.state === 'title' && !document.getElementById('title').classList.contains('hidden')",
+   "timeout": 30000
+  },
+  {
+   "wait": 1200
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]",
+   "taken": "G.state !== 'title'",
+   "retries": 5,
+   "every": 4000
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'shootout' && G.scenes.beat === 'dot' && !G.scenes.trans && !(G.stills && G.stills.active) && !G.hud._carded",
+   "timeout": 40000
+  },
+  {
+   "walk": [
+    [
+     -8.4,
+     -8.6
+    ],
+    [
+     -9.3,
+     -3.8
+    ]
+   ],
+   "timeout": 15000
+  },
+  {
+   "look": "(() => { const C = N.controller, e = G.eye, p = {x:-10.2,z:-3.8}; const wy = Math.atan2(-(p.x - e.x), -(p.z - e.z)); const wp = Math.atan2(1.3 - e.y, Math.hypot(p.x - e.x, p.z - e.z)); const dy = Math.atan2(Math.sin(wy - C.yaw), Math.cos(wy - C.yaw)); return [Math.round(-dy / C.sensitivity), Math.round(-(wp - C.pitch) / C.sensitivity)]; })()",
+   "steps": 6
+  },
+  {
+   "wait": 400
+  },
+  {
+   "shot": "f00_mack_window"
+  },
+  {
+   "eval": "JSON.stringify({ cur: G.interact.current && G.interact.current.id, prompt: G.hud.promptShown || null, warn: G.hud.kit.warnText || null })"
+  },
+  {
+   "drive": "tools/lib/c8_nick.mjs",
+   "profile": "good",
+   "way": "window",
+   "tries": 1,
+   "check": "D.wonFirst",
+   "label": "nick"
+  },
+  {
+   "until": "G.scenes.beat === 'gun'",
+   "timeout": 10000
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "shot": "f01_dot_comes"
+  },
+  {
+   "eval": "(window.TG=G.time,1)"
+  },
+  {
+   "until": "G.b7.gun.group.visible && G.b7.stackReady",
+   "timeout": 25000
+  },
+  {
+   "eval": "JSON.stringify({ gunAfter: +(G.time-TG).toFixed(1), dot: [G.scenes.ctx.cast.get('dot').pos.x.toFixed(2), G.scenes.ctx.cast.get('dot').pos.z.toFixed(2)], gun: [G.b7.gun.group.position.x.toFixed(2), G.b7.gun.group.position.z.toFixed(2)] })"
+  },
+  {
+   "walk": [
+    [
+     -15.5,
+     1.4
+    ]
+   ],
+   "into": true,
+   "timeout": 8000
+  },
+  {
+   "eval": "JSON.stringify({ pos: [N.controller.pos.x.toFixed(2), N.controller.pos.z.toFixed(2)], crouch: !!(N.controller.sneak && N.controller.sneak.crouch), mode: N.controller.mode })"
+  },
+  {
+   "look": "(() => { const C = N.controller, e = G.eye, p = G.b7.gun.group.position; const wy = Math.atan2(-(p.x - e.x), -(p.z - e.z)); const wp = Math.atan2(1.25 - e.y, Math.hypot(p.x - e.x, p.z - e.z)); const dy = Math.atan2(Math.sin(wy - C.yaw), Math.cos(wy - C.yaw)); return [Math.round(-dy / C.sensitivity), Math.round(-(wp - C.pitch) / C.sensitivity)]; })()",
+   "steps": 8
+  },
+  {
+   "wait": 500
+  },
+  {
+   "shot": "f02_gun_laid"
+  },
+  {
+   "eval": "JSON.stringify({ cur: G.interact.current && G.interact.current.id, prompt: G.hud.promptShown || null, obj: G.hud.objectiveText, pos: [N.controller.pos.x.toFixed(2), N.controller.pos.z.toFixed(2)] })"
+  },
+  {
+   "key": "KeyE"
+  },
+  {
+   "wait": 900
+  },
+  {
+   "shot": "f03_taking"
+  },
+  {
+   "until": "G.scenes.beat === 'cars'",
+   "timeout": 15000
+  },
+  {
+   "look": "(() => { const C = N.controller; const wy = -Math.PI/2 + 0.15; const dy = Math.atan2(Math.sin(wy - C.yaw), Math.cos(wy - C.yaw)); return [Math.round(-dy / C.sensitivity), Math.round(-(0.02 - C.pitch) / C.sensitivity)]; })()",
+   "steps": 8
+  },
+  {
+   "eval": "JSON.stringify({ obj: G.hud.objectiveText, teach: G.hud.kit.teachCur && G.hud.kit.teachCur.text, music: G.music && (G.music.slot || G.music.current || null) })"
+  },
+  {
+   "wait": 2500
+  },
+  {
+   "shot": "f04_cars_1"
+  },
+  {
+   "wait": 2500
+  },
+  {
+   "shot": "f05_cars_2"
+  },
+  {
+   "wait": 2500
+  },
+  {
+   "shot": "f06_cars_3"
+  },
+  {
+   "wait": 2500
+  },
+  {
+   "shot": "f07_cars_4"
+  },
+  {
+   "eval": "JSON.stringify({ hp: G.health.hp, warn: G.hud.kit.warnText || null, obj: G.hud.objectiveText })"
+  },
+  {
+   "wait": 2500
+  },
+  {
+   "shot": "f08_cars_5"
+  }
+ ]
+}

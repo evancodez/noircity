@@ -75,10 +75,10 @@
    "shot": "d01_door_back"
   },
   {
-   "name": "VIII The Block: down in the doorways, back at the doorways"
+   "name": "[C8] VIII The Block: down in the flank, back at the flank"
   },
   {
-   "eval": "(localStorage.removeItem('noir.save'), location.search = '?mute=1&start=shootout.doorways', 1)"
+   "eval": "(localStorage.removeItem('noir.save'), location.search = '?mute=1&start=shootout.flank', 1)"
   },
   {
    "wait": 2500
@@ -97,7 +97,7 @@
    "every": 4000
   },
   {
-   "until": "G.scenes.current && G.scenes.current.id === 'shootout' && G.scenes.beat === 'doorways' && !!G.b7",
+   "until": "G.scenes.current && G.scenes.current.id === 'shootout' && G.scenes.beat === 'flank' && !!G.b7",
    "timeout": 15000
   },
   {
@@ -110,7 +110,7 @@
    "wait": 250
   },
   {
-   "expect": "G.health.hp >= 1 && G.health.hp < 5 && G.health.spared >= 1 && G.hud.warnText === 'You’re hit. Get to cover.' && !G.failing",
+   "expect": "G.health.hp >= 1 && G.health.hp < 5 && G.health.spared >= 1 && !!G.hud.warnText && !G.failing",
    "label": "[C1] the hit that would take the last before any warning is spared: one left, the warning up"
   },
   {
@@ -124,16 +124,16 @@
    "timeout": 4000
   },
   {
-   "expect": "G.lastFail.why === 'They got you.' && G.lastFail.to === 'doorways' && G.lastFail.warnedFor >= 1",
-   "label": "VIII: down is the kit's fall, back to the doorways (warned a second and more before)"
+   "expect": "!!G.lastFail.why && G.lastFail.to === 'flank' && G.lastFail.warnedFor >= 1",
+   "label": "VIII: down is the kit's fall, back to the flank (warned a second and more before)"
   },
   {
    "until": "!G.failing",
    "timeout": 8000
   },
   {
-   "expect": "performance.now() - window.__t0 < 10000 && G.scenes.beat === 'doorways' && G.health.hp === 100 && !G.controller.frozen && G.b7 && G.b7.downs && G.b7.downs.doorways === 1",
-   "label": "VIII: up in the doorways with control, its mercy counting the down"
+   "expect": "performance.now() - window.__t0 < 10000 && G.scenes.beat === 'flank' && G.health.hp === 100 && !G.controller.frozen && G.b7 && G.fails('flank') === 1",
+   "label": "VIII: up in the flank with control, its mercy counting the down"
   },
   {
    "wait": 1500

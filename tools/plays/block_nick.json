@@ -1,0 +1,81 @@
+{
+ "about": "[C8] the nick of time by each of its ways, by real input (the brief: 'The nick of time by each of its ways'): the door (Nicky down from behind, the door pulled, in at a run, a blow over the counter), a bottle (from the crate, thrown into the road: Nicky goes to look, Sal's head turns; in at the door, a blow), Mack's window (over the sill, low round the counter's end, E from behind). node tools/play.mjs tools/plays/block_nick.json (After the critic: the kerb is by Mack's window; after the window's way she lays the gun before me in the aisle - E without a step.)",
+ "url": "/?mute=1&start=shootout.dot",
+ "size": [
+  1280,
+  800
+ ],
+ "out": "shots/play/block_nick",
+ "steps": [
+  {
+   "until": "G.state === 'title' && !document.getElementById('title').classList.contains('hidden')",
+   "timeout": 30000
+  },
+  {
+   "wait": 1200
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]",
+   "taken": "G.state !== 'title'",
+   "retries": 5,
+   "every": 4000
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'shootout' && G.scenes.beat === 'dot' && !G.scenes.trans && !(G.stills && G.stills.active) && !G.hud._carded",
+   "timeout": 40000
+  },
+  {
+   "drive": "tools/lib/c8_nick.mjs",
+   "profile": "good",
+   "way": "door",
+   "tries": 1,
+   "check": "D.wonFirst && D.tries[0].how === 'blow'",
+   "label": "the door: the man at it down from behind, in at a run, the blow"
+  },
+  {
+   "drive": "tools/lib/c8_nick.mjs",
+   "profile": "good",
+   "way": "bottle",
+   "tries": 1,
+   "check": "D.wonFirst && D.tries[0].how === 'blow'",
+   "label": "a bottle into the road: in while they look, the blow"
+  },
+  {
+   "drive": "tools/lib/c8_nick.mjs",
+   "profile": "good",
+   "way": "window",
+   "tries": 1,
+   "check": "D.wonFirst && D.tries[0].how === 'behind'",
+   "label": "Mack's window: over the sill, low, behind him, E"
+  },
+  {
+   "until": "G.scenes.beat === 'gun' && G.b7 && G.b7.gun.group.visible",
+   "timeout": 20000,
+   "label": "she lays the gun on the counter"
+  },
+  {
+   "expect": "Math.hypot(G.b7.gun.group.position.x - G.eye.x, G.b7.gun.group.position.z - G.eye.z) < 2.2",
+   "label": "(after the critic) she lays it before me where I stand in the aisle, not 3.5 m up it"
+  },
+  {
+   "look": "(() => { const C = N.controller, e = G.eye, g = G.b7.gun.group.position, d = Math.atan2(-(g.x - e.x), -(g.z - e.z)); const dy = Math.atan2(Math.sin(d - C.yaw), Math.cos(d - C.yaw)); const wp = Math.atan2(g.y - e.y, Math.hypot(g.x - e.x, g.z - e.z)); return [Math.round(-dy / C.sensitivity), Math.round(-(wp - C.pitch) / C.sensitivity)]; })()",
+   "steps": 8
+  },
+  {
+   "until": "G.hud.promptShown.includes('take it')",
+   "timeout": 8000,
+   "label": "the gun before me: E take it (no walk past Sal)"
+  },
+  {
+   "shot": "n04_the_gun_on_the_counter"
+  },
+  {
+   "key": "KeyE"
+  },
+  {
+   "until": "G.scenes.beat === 'cars' && G.player.weapons.current === 'tommy'",
+   "timeout": 20000,
+   "label": "taken: the Tommy gun in my hands, on to the cars"
+  }
+ ]
+}

@@ -1,0 +1,25 @@
+{
+ "about": "[C8 critic] the nick of time, every way, by the owner's driver (real input): idle, the clumsy first-timer (3 tries), then door, bottle, window, each by a good hand, each from a fresh kerb.",
+ "url": "/?mute=1&start=shootout.dot",
+ "size": [1440, 900],
+ "out": "shots/critic/c8_nick",
+ "steps": [
+  { "until": "G.state === 'title' && !document.getElementById('title').classList.contains('hidden')", "timeout": 30000 },
+  { "wait": 1200 },
+  { "clickOn": "#title .opt[data-k=begin]", "taken": "G.state !== 'title'", "retries": 5, "every": 4000 },
+  { "until": "G.scenes.current && G.scenes.current.id === 'shootout' && G.scenes.beat === 'dot' && !G.scenes.trans && !(G.stills && G.stills.active) && !G.hud._carded", "timeout": 40000 },
+  { "drive": "tools/lib/c8_nick.mjs", "profile": "idle", "tries": 1, "check": "!D.won && D.allWarned", "label": "idle loses, warned" },
+  { "drive": "tools/lib/c8_nick.mjs", "profile": "bad", "tries": 3, "check": "D.won", "label": "bad gets through in 3" },
+  { "drive": "tools/lib/c8_nick.mjs", "profile": "good", "way": "door", "tries": 2, "check": "D.wonFirst", "label": "door first try" },
+  { "shot": "door_won" },
+  { "drive": "tools/lib/c8_nick.mjs", "profile": "good", "way": "bottle", "tries": 2, "check": "D.wonFirst", "label": "bottle first try" },
+  { "shot": "bottle_won" },
+  { "drive": "tools/lib/c8_nick.mjs", "profile": "good", "way": "window", "tries": 2, "check": "D.wonFirst", "label": "window first try" },
+  { "wait": 2500 },
+  { "shot": "window_won" },
+  { "eval": "JSON.stringify({ beat: G.scenes.beat, obj: G.hud.objectiveText, cur: G.interact.current && G.interact.current.id, say: document.body.innerText.slice(0,300) })" },
+  { "wait": 3000 },
+  { "shot": "gun_on_counter" },
+  { "eval": "JSON.stringify({ beat: G.scenes.beat, obj: G.hud.objectiveText, cur: G.interact.current && G.interact.current.id, say: document.body.innerText.slice(0,300) })" }
+ ]
+}

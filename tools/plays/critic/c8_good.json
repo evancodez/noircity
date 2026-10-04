@@ -1,0 +1,20 @@
+{
+ "about": "[C8 critic] the good hand twice in a row: run 1 the nick by the window, run 2 by the bottle; each then every movement and every stage of him (the owner's drivers, real input). The bar: each run wins with at most two falls in all, in six to nine minutes of play.",
+ "url": "/?mute=1&start=shootout.dot",
+ "size": [1440, 900],
+ "out": "shots/critic/c8_good",
+ "steps": [
+  { "until": "G.state === 'title' && !document.getElementById('title').classList.contains('hidden')", "timeout": 30000 },
+  { "wait": 1200 },
+  { "clickOn": "#title .opt[data-k=begin]", "taken": "G.state !== 'title'", "retries": 5, "every": 4000 },
+  { "until": "G.scenes.current && G.scenes.current.id === 'shootout' && G.scenes.beat === 'dot' && !G.scenes.trans && !(G.stills && G.stills.active) && !G.hud._carded", "timeout": 40000 },
+  { "eval": "(window.RUN0 = G.time, 1)" },
+  { "drive": "tools/lib/c8_nick.mjs", "profile": "good", "way": "window", "tries": 2, "check": "D.wonFirst", "label": "run 1 nick first try" },
+  { "drive": "tools/lib/c8_block.mjs", "profile": "good", "beats": ["cars", "flank", "el", "saloon", "cardinal", "last"], "tries": 3, "beatTimeout": 170, "check": "D.won === 6 && D.falls.length <= 2", "label": "run 1: all six won, at most two falls" },
+  { "eval": "JSON.stringify({ run1_game_secs: +(G.time - RUN0).toFixed(1), beat: G.scenes.beat })" },
+  { "eval": "(window.RUN0 = G.time, 1)" },
+  { "drive": "tools/lib/c8_nick.mjs", "profile": "good", "way": "bottle", "tries": 2, "check": "D.wonFirst", "label": "run 2 nick first try" },
+  { "drive": "tools/lib/c8_block.mjs", "profile": "good", "beats": ["cars", "flank", "el", "saloon", "cardinal", "last"], "tries": 3, "beatTimeout": 170, "check": "D.won === 6 && D.falls.length <= 2", "label": "run 2: all six won, at most two falls" },
+  { "eval": "JSON.stringify({ run2_game_secs: +(G.time - RUN0).toFixed(1), beat: G.scenes.beat })" }
+ ]
+}

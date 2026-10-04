@@ -1,0 +1,146 @@
+{
+ "about": "[C8 critic] the drums and the switch by hand, in the first fight: is a drum from Dot there at once (two carried, three the most)? again after one is spent? The light switch by the door: does it go dark?",
+ "url": "/?mute=1&start=shootout.cars",
+ "size": [
+  1440,
+  900
+ ],
+ "out": "shots/critic/c8_drums",
+ "steps": [
+  {
+   "until": "G.state === 'title' && !document.getElementById('title').classList.contains('hidden')",
+   "timeout": 30000
+  },
+  {
+   "wait": 1200
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]",
+   "taken": "G.state !== 'title'",
+   "retries": 5,
+   "every": 4000
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'shootout' && G.scenes.beat === 'cars' && !G.scenes.trans && !(G.stills && G.stills.active) && !G.hud._carded",
+   "timeout": 40000
+  },
+  {
+   "eval": "JSON.stringify({ t: +G.time.toFixed(1), reserve: G.b7.reserve, ammo: G.weapon.ammo, cur: G.interact.current && G.interact.current.id, prompt: G.hud.promptShown || null, lights: G.b7.lightsOn, hp: G.health.hp, beat: G.scenes.beat, fails: G.counters.fails || 0 })"
+  },
+  {
+   "look": "(() => { const C = N.controller, e = G.eye, p = {x:-14.55,y:1.3,z:0.9}; const wy = Math.atan2(-(p.x - e.x), -(p.z - e.z)); const wp = Math.atan2(p.y - e.y, Math.hypot(p.x - e.x, p.z - e.z)); const dy = Math.atan2(Math.sin(wy - C.yaw), Math.cos(wy - C.yaw)); return [Math.round(-dy / C.sensitivity), Math.round(-(wp - C.pitch) / C.sensitivity)]; })()",
+   "steps": 6
+  },
+  {
+   "wait": 400
+  },
+  {
+   "eval": "JSON.stringify({ t: +G.time.toFixed(1), reserve: G.b7.reserve, ammo: G.weapon.ammo, cur: G.interact.current && G.interact.current.id, prompt: G.hud.promptShown || null, lights: G.b7.lightsOn, hp: G.health.hp, beat: G.scenes.beat, fails: G.counters.fails || 0 })"
+  },
+  {
+   "shot": "r01_drum_prompt"
+  },
+  {
+   "key": "KeyE"
+  },
+  {
+   "wait": 2200
+  },
+  {
+   "eval": "JSON.stringify({ t: +G.time.toFixed(1), reserve: G.b7.reserve, ammo: G.weapon.ammo, cur: G.interact.current && G.interact.current.id, prompt: G.hud.promptShown || null, lights: G.b7.lightsOn, hp: G.health.hp, beat: G.scenes.beat, fails: G.counters.fails || 0 })"
+  },
+  {
+   "look": [
+    -700,
+    120
+   ],
+   "steps": 6
+  },
+  {
+   "mouse": "down",
+   "button": "left",
+   "x": 720,
+   "y": 450
+  },
+  {
+   "wait": 5500
+  },
+  {
+   "mouse": "up",
+   "button": "left",
+   "x": 720,
+   "y": 450
+  },
+  {
+   "eval": "JSON.stringify({ t: +G.time.toFixed(1), reserve: G.b7.reserve, ammo: G.weapon.ammo, cur: G.interact.current && G.interact.current.id, prompt: G.hud.promptShown || null, lights: G.b7.lightsOn, hp: G.health.hp, beat: G.scenes.beat, fails: G.counters.fails || 0 })"
+  },
+  {
+   "key": "KeyR"
+  },
+  {
+   "wait": 2500
+  },
+  {
+   "eval": "JSON.stringify({ t: +G.time.toFixed(1), reserve: G.b7.reserve, ammo: G.weapon.ammo, cur: G.interact.current && G.interact.current.id, prompt: G.hud.promptShown || null, lights: G.b7.lightsOn, hp: G.health.hp, beat: G.scenes.beat, fails: G.counters.fails || 0 })"
+  },
+  {
+   "look": "(() => { const C = N.controller, e = G.eye, p = {x:-14.55,y:1.3,z:0.9}; const wy = Math.atan2(-(p.x - e.x), -(p.z - e.z)); const wp = Math.atan2(p.y - e.y, Math.hypot(p.x - e.x, p.z - e.z)); const dy = Math.atan2(Math.sin(wy - C.yaw), Math.cos(wy - C.yaw)); return [Math.round(-dy / C.sensitivity), Math.round(-(wp - C.pitch) / C.sensitivity)]; })()",
+   "steps": 6
+  },
+  {
+   "wait": 400
+  },
+  {
+   "eval": "JSON.stringify({ t: +G.time.toFixed(1), reserve: G.b7.reserve, ammo: G.weapon.ammo, cur: G.interact.current && G.interact.current.id, prompt: G.hud.promptShown || null, lights: G.b7.lightsOn, hp: G.health.hp, beat: G.scenes.beat, fails: G.counters.fails || 0 })"
+  },
+  {
+   "key": "KeyE"
+  },
+  {
+   "wait": 2200
+  },
+  {
+   "eval": "JSON.stringify({ t: +G.time.toFixed(1), reserve: G.b7.reserve, ammo: G.weapon.ammo, cur: G.interact.current && G.interact.current.id, prompt: G.hud.promptShown || null, lights: G.b7.lightsOn, hp: G.health.hp, beat: G.scenes.beat, fails: G.counters.fails || 0 })"
+  },
+  {
+   "eval": "JSON.stringify({ p: [+N.controller.pos.x.toFixed(2), +N.controller.pos.z.toFixed(2)], mode: N.controller.mode, frozen: !!N.controller.frozen, ease: !!N.controller._ease || !!N.controller.easing, slide: !!G.b7.slide, crouch: N.controller.crouchK, hp: G.health.hp })"
+  },
+  {
+   "key": "KeyW",
+   "hold": 1500
+  },
+  {
+   "eval": "JSON.stringify({ p: [+N.controller.pos.x.toFixed(2), +N.controller.pos.z.toFixed(2)], mode: N.controller.mode, frozen: !!N.controller.frozen, ease: !!N.controller._ease || !!N.controller.easing, slide: !!G.b7.slide, crouch: N.controller.crouchK, hp: G.health.hp })"
+  },
+  {
+   "key": "KeyD",
+   "hold": 1000
+  },
+  {
+   "eval": "JSON.stringify({ p: [+N.controller.pos.x.toFixed(2), +N.controller.pos.z.toFixed(2)], mode: N.controller.mode, frozen: !!N.controller.frozen, ease: !!N.controller._ease || !!N.controller.easing, slide: !!G.b7.slide, crouch: N.controller.crouchK, hp: G.health.hp })"
+  },
+  {
+   "key": "KeyS",
+   "hold": 1000
+  },
+  {
+   "eval": "JSON.stringify({ p: [+N.controller.pos.x.toFixed(2), +N.controller.pos.z.toFixed(2)], mode: N.controller.mode, frozen: !!N.controller.frozen, ease: !!N.controller._ease || !!N.controller.easing, slide: !!G.b7.slide, crouch: N.controller.crouchK, hp: G.health.hp })"
+  },
+  {
+   "key": "KeyC"
+  },
+  {
+   "wait": 300
+  },
+  {
+   "key": "KeyW",
+   "hold": 1500
+  },
+  {
+   "eval": "JSON.stringify({ p: [+N.controller.pos.x.toFixed(2), +N.controller.pos.z.toFixed(2)], mode: N.controller.mode, frozen: !!N.controller.frozen, ease: !!N.controller._ease || !!N.controller.easing, slide: !!G.b7.slide, crouch: N.controller.crouchK, hp: G.health.hp })"
+  },
+  {
+   "shot": "r04_after"
+  }
+ ]
+}
