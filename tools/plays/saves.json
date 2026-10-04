@@ -1,5 +1,5 @@
 {
- "about": "[C10a] CONTINUE from every checkpoint of chapters I to VII after a reload, and a v1 save dropped quietly. node tools/hunts/mksaves.mjs writes it.",
+ "about": "[C10a] CONTINUE from every checkpoint of chapters I to VIII after a reload, and a v1 save dropped quietly. node tools/hunts/mksaves.mjs writes it.",
  "url": "/?mute=1",
  "size": [
   1280,
@@ -1438,6 +1438,270 @@
   {
    "expect": "G.scenes.current.id === 'warehouse' && (G.scenes.beat === 'fight' || G.scenes.ctx.from === 'fight') && G.state === 'playing' && !G.failing && G.scenes.fadeK < 0.05 && !G.stills.active && !N.controller.frozen",
    "label": "CONTINUE warehouse.fight: back at it, playing, out of the black, the controls free"
+  },
+  {
+   "eval": "JSON.stringify({ at: G.scenes.current.id + '.' + G.scenes.beat, from: G.scenes.ctx.from, mode: N.controller.mode, obj: G.hud.kit.objectiveText, music: G.music.current, inv: G.save.inventory, hands: G.hands.set, rev: G.player.weapons.get('revolver') && G.player.weapons.get('revolver').ammo })"
+  },
+  {
+   "eval": "(localStorage.setItem('noir.save', JSON.stringify({ v: 2, scene: 'shootout', beat: 'dot', flags: { taught: { look: true } }, inventory: [] })), true)"
+  },
+  {
+   "reload": true
+  },
+  {
+   "until": "G.state === 'title'",
+   "timeout": 30000
+  },
+  {
+   "wait": 900
+  },
+  {
+   "clickOn": "#title .opt[data-k=continue]",
+   "taken": "G.state !== 'title'",
+   "retries": 5,
+   "every": 3000
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'shootout' && !G.scenes.trans",
+   "timeout": 20000
+  },
+  {
+   "wait": 2500
+  },
+  {
+   "expect": "G.scenes.current.id === 'shootout' && (G.scenes.beat === 'dot' || G.scenes.ctx.from === 'dot') && G.state === 'playing' && !G.failing && G.scenes.fadeK < 0.05 && !G.stills.active && !N.controller.frozen",
+   "label": "CONTINUE shootout.dot: back at it, playing, out of the black, the controls free"
+  },
+  {
+   "eval": "JSON.stringify({ at: G.scenes.current.id + '.' + G.scenes.beat, from: G.scenes.ctx.from, mode: N.controller.mode, obj: G.hud.kit.objectiveText, music: G.music.current, inv: G.save.inventory, hands: G.hands.set, rev: G.player.weapons.get('revolver') && G.player.weapons.get('revolver').ammo })"
+  },
+  {
+   "eval": "(localStorage.setItem('noir.save', JSON.stringify({ v: 2, scene: 'shootout', beat: 'gun', flags: { taught: { look: true } }, inventory: [] })), true)"
+  },
+  {
+   "reload": true
+  },
+  {
+   "until": "G.state === 'title'",
+   "timeout": 30000
+  },
+  {
+   "wait": 900
+  },
+  {
+   "clickOn": "#title .opt[data-k=continue]",
+   "taken": "G.state !== 'title'",
+   "retries": 5,
+   "every": 3000
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'shootout' && !G.scenes.trans",
+   "timeout": 20000
+  },
+  {
+   "wait": 2500
+  },
+  {
+   "expect": "G.scenes.current.id === 'shootout' && (G.scenes.beat === 'gun' || G.scenes.ctx.from === 'gun') && G.state === 'playing' && !G.failing && G.scenes.fadeK < 0.05 && !G.stills.active && !N.controller.frozen",
+   "label": "CONTINUE shootout.gun: back at it, playing, out of the black, the controls free"
+  },
+  {
+   "eval": "JSON.stringify({ at: G.scenes.current.id + '.' + G.scenes.beat, from: G.scenes.ctx.from, mode: N.controller.mode, obj: G.hud.kit.objectiveText, music: G.music.current, inv: G.save.inventory, hands: G.hands.set, rev: G.player.weapons.get('revolver') && G.player.weapons.get('revolver').ammo })"
+  },
+  {
+   "eval": "(localStorage.setItem('noir.save', JSON.stringify({ v: 2, scene: 'shootout', beat: 'cars', flags: { taught: { look: true } }, inventory: [] })), true)"
+  },
+  {
+   "reload": true
+  },
+  {
+   "until": "G.state === 'title'",
+   "timeout": 30000
+  },
+  {
+   "wait": 900
+  },
+  {
+   "clickOn": "#title .opt[data-k=continue]",
+   "taken": "G.state !== 'title'",
+   "retries": 5,
+   "every": 3000
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'shootout' && !G.scenes.trans",
+   "timeout": 20000
+  },
+  {
+   "wait": 2500
+  },
+  {
+   "expect": "G.scenes.current.id === 'shootout' && (G.scenes.beat === 'cars' || G.scenes.ctx.from === 'cars') && G.state === 'playing' && !G.failing && G.scenes.fadeK < 0.05 && !G.stills.active && !N.controller.frozen",
+   "label": "CONTINUE shootout.cars: back at it, playing, out of the black, the controls free"
+  },
+  {
+   "eval": "JSON.stringify({ at: G.scenes.current.id + '.' + G.scenes.beat, from: G.scenes.ctx.from, mode: N.controller.mode, obj: G.hud.kit.objectiveText, music: G.music.current, inv: G.save.inventory, hands: G.hands.set, rev: G.player.weapons.get('revolver') && G.player.weapons.get('revolver').ammo })"
+  },
+  {
+   "eval": "(localStorage.setItem('noir.save', JSON.stringify({ v: 2, scene: 'shootout', beat: 'flank', flags: { taught: { look: true } }, inventory: [] })), true)"
+  },
+  {
+   "reload": true
+  },
+  {
+   "until": "G.state === 'title'",
+   "timeout": 30000
+  },
+  {
+   "wait": 900
+  },
+  {
+   "clickOn": "#title .opt[data-k=continue]",
+   "taken": "G.state !== 'title'",
+   "retries": 5,
+   "every": 3000
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'shootout' && !G.scenes.trans",
+   "timeout": 20000
+  },
+  {
+   "wait": 2500
+  },
+  {
+   "expect": "G.scenes.current.id === 'shootout' && (G.scenes.beat === 'flank' || G.scenes.ctx.from === 'flank') && G.state === 'playing' && !G.failing && G.scenes.fadeK < 0.05 && !G.stills.active && !N.controller.frozen",
+   "label": "CONTINUE shootout.flank: back at it, playing, out of the black, the controls free"
+  },
+  {
+   "eval": "JSON.stringify({ at: G.scenes.current.id + '.' + G.scenes.beat, from: G.scenes.ctx.from, mode: N.controller.mode, obj: G.hud.kit.objectiveText, music: G.music.current, inv: G.save.inventory, hands: G.hands.set, rev: G.player.weapons.get('revolver') && G.player.weapons.get('revolver').ammo })"
+  },
+  {
+   "eval": "(localStorage.setItem('noir.save', JSON.stringify({ v: 2, scene: 'shootout', beat: 'el', flags: { taught: { look: true } }, inventory: [] })), true)"
+  },
+  {
+   "reload": true
+  },
+  {
+   "until": "G.state === 'title'",
+   "timeout": 30000
+  },
+  {
+   "wait": 900
+  },
+  {
+   "clickOn": "#title .opt[data-k=continue]",
+   "taken": "G.state !== 'title'",
+   "retries": 5,
+   "every": 3000
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'shootout' && !G.scenes.trans",
+   "timeout": 20000
+  },
+  {
+   "wait": 2500
+  },
+  {
+   "expect": "G.scenes.current.id === 'shootout' && (G.scenes.beat === 'el' || G.scenes.ctx.from === 'el') && G.state === 'playing' && !G.failing && G.scenes.fadeK < 0.05 && !G.stills.active && !N.controller.frozen",
+   "label": "CONTINUE shootout.el: back at it, playing, out of the black, the controls free"
+  },
+  {
+   "eval": "JSON.stringify({ at: G.scenes.current.id + '.' + G.scenes.beat, from: G.scenes.ctx.from, mode: N.controller.mode, obj: G.hud.kit.objectiveText, music: G.music.current, inv: G.save.inventory, hands: G.hands.set, rev: G.player.weapons.get('revolver') && G.player.weapons.get('revolver').ammo })"
+  },
+  {
+   "eval": "(localStorage.setItem('noir.save', JSON.stringify({ v: 2, scene: 'shootout', beat: 'saloon', flags: { taught: { look: true } }, inventory: [] })), true)"
+  },
+  {
+   "reload": true
+  },
+  {
+   "until": "G.state === 'title'",
+   "timeout": 30000
+  },
+  {
+   "wait": 900
+  },
+  {
+   "clickOn": "#title .opt[data-k=continue]",
+   "taken": "G.state !== 'title'",
+   "retries": 5,
+   "every": 3000
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'shootout' && !G.scenes.trans",
+   "timeout": 20000
+  },
+  {
+   "wait": 2500
+  },
+  {
+   "expect": "G.scenes.current.id === 'shootout' && (G.scenes.beat === 'saloon' || G.scenes.ctx.from === 'saloon') && G.state === 'playing' && !G.failing && G.scenes.fadeK < 0.05 && !G.stills.active && !N.controller.frozen",
+   "label": "CONTINUE shootout.saloon: back at it, playing, out of the black, the controls free"
+  },
+  {
+   "eval": "JSON.stringify({ at: G.scenes.current.id + '.' + G.scenes.beat, from: G.scenes.ctx.from, mode: N.controller.mode, obj: G.hud.kit.objectiveText, music: G.music.current, inv: G.save.inventory, hands: G.hands.set, rev: G.player.weapons.get('revolver') && G.player.weapons.get('revolver').ammo })"
+  },
+  {
+   "eval": "(localStorage.setItem('noir.save', JSON.stringify({ v: 2, scene: 'shootout', beat: 'cardinal', flags: { taught: { look: true } }, inventory: [] })), true)"
+  },
+  {
+   "reload": true
+  },
+  {
+   "until": "G.state === 'title'",
+   "timeout": 30000
+  },
+  {
+   "wait": 900
+  },
+  {
+   "clickOn": "#title .opt[data-k=continue]",
+   "taken": "G.state !== 'title'",
+   "retries": 5,
+   "every": 3000
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'shootout' && !G.scenes.trans",
+   "timeout": 20000
+  },
+  {
+   "wait": 2500
+  },
+  {
+   "expect": "G.scenes.current.id === 'shootout' && (G.scenes.beat === 'cardinal' || G.scenes.ctx.from === 'cardinal') && G.state === 'playing' && !G.failing && G.scenes.fadeK < 0.05 && !G.stills.active && !N.controller.frozen",
+   "label": "CONTINUE shootout.cardinal: back at it, playing, out of the black, the controls free"
+  },
+  {
+   "eval": "JSON.stringify({ at: G.scenes.current.id + '.' + G.scenes.beat, from: G.scenes.ctx.from, mode: N.controller.mode, obj: G.hud.kit.objectiveText, music: G.music.current, inv: G.save.inventory, hands: G.hands.set, rev: G.player.weapons.get('revolver') && G.player.weapons.get('revolver').ammo })"
+  },
+  {
+   "eval": "(localStorage.setItem('noir.save', JSON.stringify({ v: 2, scene: 'shootout', beat: 'last', flags: { taught: { look: true } }, inventory: [] })), true)"
+  },
+  {
+   "reload": true
+  },
+  {
+   "until": "G.state === 'title'",
+   "timeout": 30000
+  },
+  {
+   "wait": 900
+  },
+  {
+   "clickOn": "#title .opt[data-k=continue]",
+   "taken": "G.state !== 'title'",
+   "retries": 5,
+   "every": 3000
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'shootout' && !G.scenes.trans",
+   "timeout": 20000
+  },
+  {
+   "wait": 2500
+  },
+  {
+   "expect": "G.scenes.current.id === 'shootout' && (G.scenes.beat === 'last' || G.scenes.ctx.from === 'last') && G.state === 'playing' && !G.failing && G.scenes.fadeK < 0.05 && !G.stills.active && !N.controller.frozen",
+   "label": "CONTINUE shootout.last: back at it, playing, out of the black, the controls free"
   },
   {
    "eval": "JSON.stringify({ at: G.scenes.current.id + '.' + G.scenes.beat, from: G.scenes.ctx.from, mode: N.controller.mode, obj: G.hud.kit.objectiveText, music: G.music.current, inv: G.save.inventory, hands: G.hands.set, rev: G.player.weapons.get('revolver') && G.player.weapons.get('revolver').ammo })"

@@ -1,0 +1,227 @@
+{
+ "about": "[C10b] the seam VII -> VIII after the loud pass, by real input (?start=warehouse.loud: lane C7's loud driver, the foreman by the fight bot, out along the pier, the coupe, VIII): the C key's state at the kerb, then the nick of time by the window first try. Before the fix VII's gun-mode footfall wrapper outlived the chapter and Sal heard the sill's climb every try ('He heard you coming.'). node tools/play.mjs tools/plays/c10b_seam_loud_nick.json",
+ "url": "/?mute=1&start=warehouse.loud",
+ "size": [
+  1280,
+  800
+ ],
+ "out": "shots/play/c10b_seam_loud_nick",
+ "steps": [
+  {
+   "name": "the recorder"
+  },
+  {
+   "until": "N.perf.steps > 60",
+   "timeout": 40000
+  },
+  {
+   "eval": "(localStorage.removeItem('noir.save'), 'no save')"
+  },
+  {
+   "eval": "(() => {\n  const R = window.__rec = { cards: [], small: [], cues: [], beats: [], saves: [], marks: {}, taught: [], fails: [], stills: [], hitch: [], over: [] };\n  const S = G.scenes, now = () => +N.time.toFixed(2), at = () => [now(), S.current ? S.current.id : null, S.beat];\n  const card = G.hud.card.bind(G.hud);\n  G.hud.card = (n, name, secs) => { R.cards.push([now(), n, name]); return card(n, name, secs); };\n  G.on('music:cue', (e) => R.cues.push([...at(), 'cue', e.slot]));\n  const stop = G.music.stop.bind(G.music);\n  G.music.stop = (f) => { if (G.music.current) R.cues.push([...at(), 'stop', G.music.current]); return stop(f); };\n  G.on('scene:beat', (e) => R.beats.push([now(), e.id, e.beat]));\n  G.on('scene:enter', (e) => { if (!R.marks[e.id]) R.marks[e.id] = { t: now(), real: Date.now() }; });\n  G.on('fail', (e) => R.fails.push([now(), e.scene, e.from, e.to, e.why]));\n  G.on('stills:end', (e) => R.stills.push([now(), e.id, !!e.skipped]));\n  const write = G.save.write.bind(G.save);\n  G.save.write = () => { const d = write(); if (d) R.saves.push([d.scene, d.beat]); return d; };\n  // the teach cards in the order they are first taught (save.flags.taught grows), with where\n  let known = new Set(Object.keys((G.save.flags && G.save.flags.taught) || {}));\n  let lastSmall = null;\n  G.scripts.push(() => {\n    const t = (G.save.flags && G.save.flags.taught) || {};\n    for (const k of Object.keys(t)) if (!known.has(k)) { known.add(k); R.taught.push([...at(), k]); }\n    if (G.save.flags && !G.save.flags.taught) known = new Set();\n    const sc = G.smallCardShown; if (sc && sc !== lastSmall) { lastSmall = sc; R.small.push([...at(), sc.name || '']); }\n  });\n  let lastF = performance.now();\n  const hf = (n) => { const d = n - lastF; lastF = n; if (d > 150 && G.state === 'playing' && !document.hidden) R.hitch.push([...at(), Math.round(d), +S.fadeK.toFixed(2)]); requestAnimationFrame(hf); };\n  requestAnimationFrame(hf);\n  window.__measure = () => (() => {\n  const T = (f) => { try { return f(); } catch (e) { return 'ERR'; } };\n  const I = N.renderer.info, S = G.stage;\n  let objs = 0, lights = 0;\n  T(() => S.scene.traverse((o) => { objs++; if (o.isLight && !o.isAmbientLight && !o.isHemisphereLight && o.visible && o.intensity > 0) lights++; }));\n  return { ch: T(() => G.scenes.current.id), beat: G.scenes.beat, stage: T(() => S.name), built: T(() => [...N.stages.built.keys()].join(',')),\n    calls: I.render.calls, tris: I.render.triangles, programs: T(() => I.programs.length), geos: I.memory.geometries, tex: I.memory.textures, objs, lights,\n    listeners: T(() => [...G._events.values()].reduce((a, v) => a + v.length, 0)), scripts: T(() => G.scripts.length), hooks: T(() => G.scenes.hooks.length),\n    ais: T(() => G.ais.size), hoods: T(() => S.hoods.list.length), veh: T(() => G.vehicles.list ? G.vehicles.list.length : (G.vehicles.cars || []).length),\n    mode: T(() => G.controller.mode), hands: T(() => G.hands.set), weapon: T(() => G.player.weapons.current), ammo: T(() => G.player.weapons.active ? G.player.weapons.active.ammo : null),\n    inv: T(() => G.save.inventory.join(',')), note: T(() => G.save.flags.note), obj: T(() => G.hud.objectiveText), music: T(() => G.music.current), hp: T(() => G.health.hp),\n    loops: T(() => N.sfx.loops ? [...N.sfx.loops.keys()].join(',') : null), brawl: T(() => !!G.brawl.active), layers: T(() => [...document.querySelectorAll('#hud .layer')].map((l) => l.dataset.layer).join(',')) };\n})();\n  window.__fps = () => (async () => { const ts = []; let last = performance.now(); const t0 = last;\n  await new Promise((res) => { const f = (n) => { ts.push(n - last); last = n; if (n - t0 < 2000) requestAnimationFrame(f); else res(); }; requestAnimationFrame(f); });\n  ts.shift(); const a = ts.reduce((x, y) => x + y, 0) / ts.length; ts.sort((x, y) => x - y);\n  return { fps: +(1000 / a).toFixed(1), p95: +ts[Math.floor(ts.length * 0.95)].toFixed(1), calls: N.renderer.info.render.calls }; })();\n  return 'recording';\n})()"
+  },
+  {
+   "heap": "title"
+  },
+  {
+   "until": "G.state === 'title'",
+   "timeout": 30000
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]",
+   "taken": "G.state !== 'title'",
+   "retries": 5,
+   "every": 4000
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'warehouse' && G.scenes.beat === 'loud' && !G.scenes.trans",
+   "timeout": 30000
+  },
+  {
+   "eval": "(window.W = () => G.scenes.ctx.flags.live, 1)"
+  },
+  {
+   "drive": "tools/lib/c7_pier.mjs",
+   "profile": "loud",
+   "timeout": 400000,
+   "check": "D.done",
+   "label": "[warehouse] the loud pass won"
+  },
+  {
+   "name": "he steps out of the dark by the door, the hook turning in his hand"
+  },
+  {
+   "until": "G.controller.mode === 'brawlIn' || G.brawl.active",
+   "timeout": 30000
+  },
+  {
+   "until": "G.brawl.active && G.controller.mode === 'brawl'",
+   "timeout": 30000
+  },
+  {
+   "expect": "G.brawl.him.holding === 'hook' && G.hands.set === 'fists' && G.brawl.who.name === 'THE FOREMAN' && G.brawl.lesson === null",
+   "label": "fists up, no lesson; the hook in his fist"
+  },
+  {
+   "drive": "tools/lib/fight_bot.mjs",
+   "profile": "good",
+   "timeout": 900000,
+   "check": "D.fights.length === 1 && D.fights[0].won",
+   "label": "[warehouse] the foreman put down"
+  },
+  {
+   "until": "G.scenes.beat === 'after'",
+   "timeout": 15000
+  },
+  {
+   "expect": "G.brawl.stats.won === true && G.stage.part('shed').loading.some((d) => d.burst) && !G.brawl.me.holding && !G.hands.held.L && !G.hands.held.R",
+   "label": "through a loading door's planks into the river; nothing left in a hand"
+  },
+  {
+   "eval": "JSON.stringify({ disarms: G.brawl.stats.disarms || 0, downs: G.brawl.stats.downs, held: G.brawl.stats.held || [], window: G.brawl.stats.window, time: +G.brawl.stats.time.toFixed(1) })"
+  },
+  {
+   "wait": 1200
+  },
+  {
+   "name": "out by the bay's side door"
+  },
+  {
+   "walk": [
+    [
+     13.6,
+     -31.4
+    ],
+    [
+     14.3,
+     -30.3
+    ]
+   ],
+   "timeout": 20000,
+   "stop": false
+  },
+  {
+   "until": "G.hud.promptShown.includes('open')",
+   "timeout": 4000
+  },
+  {
+   "key": "KeyE"
+  },
+  {
+   "wait": 1200
+  },
+  {
+   "expect": "G.stage.part('shed').bayDoor.isOpen",
+   "label": "E opens the bay's side door"
+  },
+  {
+   "name": "along the pier in the rain to my coupe"
+  },
+  {
+   "walk": [
+    [
+     16.9,
+     -27.6
+    ],
+    [
+     17.0,
+     -3.0
+    ],
+    [
+     12.0,
+     4.0
+    ],
+    [
+     -3.4,
+     16.4
+    ]
+   ],
+   "timeout": 40000
+  },
+  {
+   "eval": "(() => { const c = N.controller, want = Math.atan2(-(-6.2 - c.pos.x), -(18.2 - c.pos.z)), e = Math.atan2(Math.sin(want - c.yaw), Math.cos(want - c.yaw)); document.dispatchEvent(new MouseEvent('mousemove', { movementX: Math.round(-e / c.sensitivity), movementY: 0 })); return e; })()"
+  },
+  {
+   "until": "G.hud.promptShown.includes('get in')",
+   "timeout": 5000
+  },
+  {
+   "key": "KeyE"
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id !== 'warehouse'",
+   "timeout": 10000
+  },
+  {
+   "expect": "G.scenes.current && G.scenes.current.id === 'shootout'",
+   "label": "my coupe, 'The diner.', on into VIII The Block"
+  },
+  {
+   "name": "==== chapter 8: shootout"
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'shootout' && G.scenes.beat === 'dot' && !G.scenes.trans && !(G.stills && G.stills.active) && !G.hud._carded",
+   "timeout": 120000
+  },
+  {
+   "wait": 900
+  },
+  {
+   "shot": "c8_shootout_in"
+  },
+  {
+   "expect": "G.save.inventory.includes('photo') && G.save.inventory.includes('shells')",
+   "label": "[shootout] the photograph and the shells carried, no revolver in hand"
+  },
+  {
+   "expect": "!G.brawl.active",
+   "label": "[shootout] no fist fight left running"
+  },
+  {
+   "eval": "__measure()"
+  },
+  {
+   "eval": "__fps()"
+  },
+  {
+   "heap": "shootout"
+  },
+  {
+   "expect": "G.stills.last && G.stills.last.id === 'diner'",
+   "label": "[seam VII-VIII] the diner still was shown"
+  },
+  {
+   "eval": "({ busy: G.player.hands.busy, clips: G.player.hands.clips.map((h) => h.name + ':' + h.t.toFixed(2) + '/' + h.duration.toFixed(2) + (h.blocking ? 'B' : '') + (h.done ? 'D' : '') + (h.hold ? 'H' : '')).join(' '), set: G.hands.set, mode: N.controller.mode, crouch: N.controller.sneak && N.controller.sneak.crouch, crouchK: N.controller.crouchK, onStep: String(N.controller.onStep).slice(0, 160), scripts: G.scripts.length, hooks: G.scenes.hooks.length, keyL: G._events && [...G._events.entries()].map(([k, v]) => k + ':' + v.length).join(' ') })"
+  },
+  {
+   "key": "KeyC"
+  },
+  {
+   "wait": 400
+  },
+  {
+   "eval": "({ busy: G.player.hands.busy, clips: G.player.hands.clips.map((h) => h.name + ':' + h.t.toFixed(2) + '/' + h.duration.toFixed(2) + (h.blocking ? 'B' : '') + (h.done ? 'D' : '') + (h.hold ? 'H' : '')).join(' '), set: G.hands.set, mode: N.controller.mode, crouch: N.controller.sneak && N.controller.sneak.crouch, crouchK: N.controller.crouchK, onStep: String(N.controller.onStep).slice(0, 160), scripts: G.scripts.length, hooks: G.scenes.hooks.length, keyL: G._events && [...G._events.entries()].map(([k, v]) => k + ':' + v.length).join(' ') })"
+  },
+  {
+   "key": "KeyC"
+  },
+  {
+   "wait": 400
+  },
+  {
+   "eval": "({ busy: G.player.hands.busy, clips: G.player.hands.clips.map((h) => h.name + ':' + h.t.toFixed(2) + '/' + h.duration.toFixed(2) + (h.blocking ? 'B' : '') + (h.done ? 'D' : '') + (h.hold ? 'H' : '')).join(' '), set: G.hands.set, mode: N.controller.mode, crouch: N.controller.sneak && N.controller.sneak.crouch, crouchK: N.controller.crouchK, onStep: String(N.controller.onStep).slice(0, 160), scripts: G.scripts.length, hooks: G.scenes.hooks.length, keyL: G._events && [...G._events.entries()].map(([k, v]) => k + ':' + v.length).join(' ') })"
+  },
+  {
+   "drive": "tools/lib/c8_nick.mjs",
+   "profile": "good",
+   "way": "window",
+   "tries": 3,
+   "flow": true,
+   "check": "D.won",
+   "label": "[shootout] the nick of time, by the window"
+  }
+ ]
+}
