@@ -361,6 +361,12 @@ export default async function drive({ js, turn, keyDown, keyUp, mouse, shot, log
             // [C8] (a spot behind the counter is reached round its end: its way's points first)
             // (in or out from behind the counter: round its south end, the points in the order the side asks)
             if (goTo && !goTo.route && (s.x > -14.9) !== (goTo.x > -14.9)) goTo.route = s.x > -14.9 ? [{ x: -13.3, z: -4.75 }, { x: -15.35, z: -4.6 }] : [{ x: -15.35, z: -4.6 }, { x: -13.3, z: -4.75 }];
+            // [C8] after the critic: a hand that walks into a chair or a man and gets no further does not go on
+            // pressing W into it - after a second and a half it fights from where it stands
+            if (goTo) {
+              if (!goTo.prog || Math.hypot(s.x - goTo.prog.x, s.z - goTo.prog.z) > 0.25) goTo.prog = { x: s.x, z: s.z, t: now };
+              else if (now - goTo.prog.t > 1500) { await set('KeyW', false); goTo = null; onSpot = { x: s.x, z: s.z }; moveCool = now + 6000; dbg['stuck'] = (dbg['stuck'] || 0) + 1; continue; }
+            }
             if (goTo && goTo.route && goTo.route.length) { const v = goTo.route[0]; if (await walkTo(s, v.x, v.z, 0.35)) goTo.route.shift(); await sleep(40); dbg['walking'] = (dbg['walking'] || 0) + 1; continue; }
             if (goTo && !(await walkTo(s, goTo.x, goTo.z, 0.35))) { await sleep(40); dbg['walking'] = (dbg['walking'] || 0) + 1; continue; }
             onSpot = goTo || onSpot || { x: s.x, z: s.z }; goTo = null;

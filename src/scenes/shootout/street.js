@@ -38,7 +38,8 @@ export const AT = {
   // now down under the front wall by the pilaster between B4 and the door -
   // the wall's head hides me from every place on his rail (probed: 6 of 6))
   el: { x: -10.85, z: -1.6, yaw: -Math.PI / 2 - 0.2, crouch: true },
-  saloon: { x: -13.15, z: -1.4, yaw: -Math.PI / 2 - 0.45 },
+  // ([C8] after the critic: at the north end of B4, where the avenue his car comes up is in sight)
+  saloon: { x: -10.85, z: -2.45, yaw: -Math.PI / 2 - 0.42 },
   cardinal: { x: -13.15, z: -1.4, yaw: -Math.PI / 2 - 0.45 },
   last: { x: -12.2, z: -0.4, yaw: -Math.PI / 2 - 0.5 },
 };
@@ -382,7 +383,8 @@ export function kitchenMan(ctx) {
     const line = st.mode !== 'in' && st.mode !== 'down' && (sees(body.chest) || sees(body.head));
     st.line = line;
     // the warning: from the crash until he is down below the pass again
-    if (st.mode === 'in' || st.mode === 'rise' || st.mode === 'aim' || st.mode === 'fire') R.warn = 'The kitchen! Behind you!';
+    // (Dot's cry is the one that says her life: it is not covered by this)
+    if ((st.mode === 'in' || st.mode === 'rise' || st.mode === 'aim' || st.mode === 'fire') && !R.warn) R.warn = 'The kitchen! Behind you!';
     // (low below the pass he is turned along it, his gun with him - never through the panel; up, at me)
     const low = st.mode === 'in' || st.mode === 'down';
     if (low) { h.lookAt(null); h.yaw += Math.atan2(Math.sin(0.1 - h.yaw), Math.cos(0.1 - h.yaw)) * Math.min(1, dt * 8); }

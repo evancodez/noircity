@@ -37,8 +37,8 @@ export const SALOON = {
   rail: [[-3.0, -84], [-2.0, -74], [0.3, -62], [0.5, -56], [-0.3, -44], [-1.1, -31], [-1.1, -24], [-0.9, -17], [-1.6, -13], [-2.4, -9.5], [-3.7, -5.6], [-4.7, -1.6]],
   // where it stands for a checkpoint after it (where the old rail ended), m before the end
   parkBack: 8.2,
-  // where a retry of the stage starts it, m before the end (about 17 s at its walk)
-  retryBack: 44,
+  // where a retry of the stage starts it, m before the end (about 23 s at its walk)
+  retryBack: 56,
   // (they wait by the road, out of the light, and walk up behind it once it is by)
   heavies: [
     { at: { x: 4.4, z: -49.5 }, steps: [{ x: 1.9, z: -36 }, { x: 0.6, z: -24 }, { x: -0.5, z: -13.4 }] },
@@ -62,7 +62,7 @@ export const SALOON = {
 // ---- stage 1: the saloon --------------------------------------------------------------------
 export function saloonIn(ctx, { retry = false } = {}) {
   const G = ctx.game, S = ctx.stage, R = rig();
-  const car = R.rails.spawn({ rail: SALOON.rail, lights: true, v0: 2.6, cruise: 2.6, decel: 1.6, lat: 3, armored: true });
+  const car = R.rails.spawn({ rail: SALOON.rail, lights: true, v0: 2.4, cruise: 2.4, decel: 1.6, lat: 3, armored: true });
   car.c8beat = 'saloon';
   car.c8saloon = true;
   R.cars.saloon = car;
@@ -72,6 +72,9 @@ export function saloonIn(ctx, { retry = false } = {}) {
   car.rail.riders.push((c) => {
     if (c.rail.done) return;
     const flat = (c.tyres || []).filter(Boolean).length;
+    // ([C8] after the critic: one tyre gone, it limps on at half its walk - the
+    // first is seen to tell; the second stops it)
+    if (flat === 1 && !c.c8limp) { c.c8limp = true; const v = c.rail.plan.v; for (let i = 0; i < v.length; i++) v[i] *= 0.5; G.sfx.play('b7_brake', c.pos.clone().setY(0.4), { k: 0.5 }); }
     if (flat >= 2 && !c.c8flat) {
       c.c8flat = true;
       c.rail.plan.v.fill(0); c.rail.done = true; c.rail.stopped = true;
