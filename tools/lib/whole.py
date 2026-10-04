@@ -172,7 +172,7 @@ def build(first, frm=None):
         {'expect': "G.hud.objectiveText === 'See if more are coming.'", 'label': '[gunfight] the quiet, its line'},
         # (from wherever the corridor left me - the cart in the corridor, or the outer office - to the street window)
         # (already in Ames's room within reach of the window - behind the desk - no walk)
-        {'walk': "(() => { const e = G.eye; const p = []; if (e.x > 2.2) return [[e.x, e.z]]; if (e.x < -3.9) p.push([-4.6, Math.max(0.6, Math.min(3.0, e.z))], [-4.75, 3.4]); if (e.x < -0.2) p.push([-3.1, 3.4], [-0.8, 3.4]); p.push([1.0, 3.4], [2.4, 4.95]); return p; })()", 'timeout': 40000},
+        {'walk': "(() => { const e = G.eye; const p = []; if (e.x > 2.2) return [[e.x, e.z]]; if (e.x < -3.9) p.push([-4.6, Math.max(0.6, Math.min(3.0, e.z))], [-4.75, 3.4]); if (e.x < -0.2) p.push([-3.1, 3.4], [-0.8, 3.4]); p.push([1.0, 3.4], [2.4, 4.95], [4.4, 5.15]); return p; })()", 'timeout': 40000, 'stop': False},
         {'eval': '(N.controller.yaw = Math.atan2(-(5.6 - G.eye.x), -(4.15 - G.eye.z)), 1)'},
         {'down': 'KeyW'},
         {'until': "G.scenes.current && G.scenes.current.id === 'watcher'", 'timeout': 8000},
