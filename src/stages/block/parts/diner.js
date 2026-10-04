@@ -207,7 +207,8 @@ export default {
       ['coffeePot', V(B + 0.3, BAR.cabTop, 5.55), { name: 'coffeePot' }],
     ];
     const setTable = () => {
-      for (const k of [...items.keys()]) take(k);
+      // [C10a] (what stood on the counter goes off the GPU: a retry in II set the table again, +24 geometries a time)
+      for (const k of [...items.keys()]) { const o = take(k); if (o) o.traverse((m) => { if (m.geometry) m.geometry.dispose(); }); }
       for (const [k, at, o] of DEFAULTS) place(k, at, o || {});
     };
     setTable();
