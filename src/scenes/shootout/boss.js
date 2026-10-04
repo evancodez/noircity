@@ -85,7 +85,7 @@ export function saloonIn(ctx, { retry = false } = {}) {
   return car;
 }
 export function saloonMen(ctx, car) {
-  return SALOON.heavies.map((m) => { const h = gunman(ctx, { kind: 'tommy', at: m.at, steps: m.steps.map((p) => ({ ...p, run: false })), wait: 0.2, hp: 220, start: () => !car || car.pos.z > m.at.z + 2 }); h.c8beat = 'saloon'; return h; });
+  return SALOON.heavies.map((m) => { const h = gunman(ctx, { kind: 'tommy', at: m.at, steps: m.steps.map((p) => ({ ...p, run: false })), wait: 0.2, hp: 150, start: () => !car || car.pos.z > m.at.z + 2 }); h.c8beat = 'saloon'; return h; });
 }
 
 // the glare: his lamps in my eyes (a white bloom over the frame where they

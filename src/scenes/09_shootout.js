@@ -309,7 +309,8 @@ function fight(ctx, b) {
       R.dotLeft = RESERVE.dot;
     }
   }
-  if (['cars', 'flank', 'el'].includes(b)) pressOn(ctx);
+  // ([C8] after the critic: his car's two men too - one stood off 40 m down the avenue and held the stage)
+  if (['cars', 'flank', 'el', 'saloon'].includes(b)) pressOn(ctx);
   if (!G.director.active) { G.director.stop(); G.director.begin(); G.director.run(function* () { while (G.scenes.ctx === ctx && !(rig() && rig().calm)) yield null; }); }
 }
 
