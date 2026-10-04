@@ -307,6 +307,35 @@ export default async function drive({ js, turn, keyDown, keyUp, mouse, shot, log
         if (!P.cover && s.on) { await tap('KeyC'); await sleep(60); continue; }
         // (the bad player out into the open first, where the beat has one: the street's pavement)
         if (!P.cover && s.open && !outThere) { if (await walkTo(s, s.open.x, s.open.z, 0.4)) outThere = true; else { await sleep(40); continue; } }
+        // [C8] after the critic: his car must be stopped - a hand that has learned the street (good, clumsy) shoots its
+        // lamps when they glare, then its tyres, up over the sill; down through a Tommy gun's burst
+        if (P.cover && beat === 'saloon' && s.saloon && s.saloon.pts.length && !(s.men.some((m) => m.kind === 'tommy' && m.st === 'fire' && m.line) && s.saloon.left > 18) && now > downUntil) {
+          const S2 = s.saloon;
+          const angle = (q) => Math.hypot(wrap(yawTo(s, q.x, q.z) - s.yaw), pitchTo(s, q.x, q.y, q.z) - s.pitch);
+          const lamps = S2.pts.filter((q) => q.kind === 'lamp' && q.vis), tyres = S2.pts.filter((q) => q.kind === 'tyre' && q.vis && q.d < 34);
+          const pick = (S2.glare > 0.2 && lamps.length ? lamps : tyres).sort((a, b) => angle(a) - angle(b))[0];
+          // (nothing of it in sight from here - the bins and the pilaster hide the avenue from the south window's
+          // end: the hand goes to the window's north end, which sees down it)
+          if (!pick && Math.hypot(s.x + 10.85, s.z + 2.45) > 0.45) {
+            await set('RMB', false); onSpot = { x: -10.85, z: -2.45 }; goTo = null;
+            // (from behind the counter: round its south end first)
+            if (s.x < -14.9) { const v = s.z > -4.2 ? { x: -15.35, z: -4.6 } : { x: -13.3, z: -4.75 }; await walkTo(s, v.x, v.z, 0.35); }
+            else await walkTo(s, -10.85, -2.45, 0.35);
+            await sleep(40); dbg['salWalk'] = (dbg['salWalk'] || 0) + 1; continue;
+          }
+          await set('KeyW', false);
+          if (s.on && s.rk < 0.85) { await set('RMB', true); await sleep(40); dbg['salRise'] = (dbg['salRise'] || 0) + 1; continue; }
+          if (pick) {
+            if (!target || target.id !== 'sal:' + pick.kind) target = { id: 'sal:' + pick.kind, err: [(Math.random() - 0.5) * 2 * P.errM / Math.max(2, pick.d) * 0.5, (Math.random() - 0.5) * 2 * P.errM / Math.max(2, pick.d) * 0.5] };
+            const e2 = await aim(s, yawTo(s, pick.x, pick.z) + target.err[0], pitchTo(s, pick.x, pick.y, pick.z) + target.err[1], 0.65, 0.25);
+            if (e2 < 0.006 + 0.05 / Math.max(2, pick.d) && now - lastShot > rr(P.gap[0], P.gap[1])) {
+              await sleep(rr(P.settle[0], P.settle[1]));
+              await mouse('mousePressed', cx, cy, 'left'); await sleep(rr(150, 260)); await mouse('mouseReleased', cx, cy, 'left');
+              lastShot = Date.now(); target = null; dbg['salShot'] = (dbg['salShot'] || 0) + 1;
+            }
+            await sleep(30); continue;
+          }
+        }
         const men = s.men.filter((m) => !m.entry || m.see);
         // ---- the good player: cover first
         let threat = null;
@@ -367,25 +396,6 @@ export default async function drive({ js, turn, keyDown, keyUp, mouse, shot, log
           await sleep(30); dbg['dot'] = (dbg['dot'] || 0) + 1; continue;
         }
         const tommyFiring = s.men.some((m) => (m.kind === 'tommy' && m.st === 'fire') || (m.boss && m.st === 'draw' && m.line));
-        // [C8] after the critic: his car must be stopped - a hand that has learned the street (good, clumsy) shoots its
-        // lamps when they glare, then its tyres, up over the sill; down through a Tommy gun's burst
-        if (P.cover && beat === 'saloon' && s.saloon && s.saloon.pts.length && !(tommyFiring && s.saloon.left > 18) && now > downUntil) {
-          const S2 = s.saloon;
-          const angle = (q) => Math.hypot(wrap(yawTo(s, q.x, q.z) - s.yaw), pitchTo(s, q.x, q.y, q.z) - s.pitch);
-          const lamps = S2.pts.filter((q) => q.kind === 'lamp' && q.vis), tyres = S2.pts.filter((q) => q.kind === 'tyre' && q.vis && q.d < 34);
-          const pick = (S2.glare > 0.2 && lamps.length ? lamps : tyres).sort((a, b) => angle(a) - angle(b))[0];
-          if (s.on && s.rk < 0.85) { await set('RMB', true); await sleep(40); dbg['salRise'] = (dbg['salRise'] || 0) + 1; continue; }
-          if (pick) {
-            if (!target || target.id !== 'sal:' + pick.kind) target = { id: 'sal:' + pick.kind, err: [(Math.random() - 0.5) * 2 * P.errM / Math.max(2, pick.d) * 0.5, (Math.random() - 0.5) * 2 * P.errM / Math.max(2, pick.d) * 0.5] };
-            const e2 = await aim(s, yawTo(s, pick.x, pick.z) + target.err[0], pitchTo(s, pick.x, pick.y, pick.z) + target.err[1], 0.65, 0.25);
-            if (e2 < 0.006 + 0.05 / Math.max(2, pick.d) && now - lastShot > rr(P.gap[0], P.gap[1])) {
-              await sleep(rr(P.settle[0], P.settle[1]));
-              await mouse('mousePressed', cx, cy, 'left'); await sleep(rr(150, 260)); await mouse('mouseReleased', cx, cy, 'left');
-              lastShot = Date.now(); target = null; dbg['salShot'] = (dbg['salShot'] || 0) + 1;
-            }
-            await sleep(30); continue;
-          }
-        }
         // [C8] him: a round into him counts only when he is open - the good hand holds its fire on him otherwise
         if (P.cover) for (let i = visible.length - 1; i >= 0; i--) if (visible[i].boss && visible[i].st !== 'open') visible.splice(i, 1);
         const dotMan = s.men.find((m) => m.kind === 'dotman' && m.inside && (m.see || m.seeH));
@@ -471,6 +481,8 @@ export default async function drive({ js, turn, keyDown, keyUp, mouse, shot, log
       // (where the rounds into me came from: my pose, the man's kind, a flanker's, through my cover)
       const took = await js(`(() => { const o = {}; for (const e of N.game.guns.events) if (e.what === 'hit' && e.t >= ${g0}) { const k = e.pose + ':' + e.by + (e.flank ? ':flank' : '') + (e.through ? ':through' : ''); o[k] = (o[k] || 0) + e.dmg; } return o; })()`);
       const tr = { ...end, secs: +((Date.now() - t0) / 1000).toFixed(1), shots: sN.shots - shots0, hits: sN.hits - hits0, lowHp: Math.round(lowHp), took };
+      if (opts.dbg) tr.dbg = dbg;
+      if (beat === 'saloon') tr.saloon = await js('(() => { const c = N.game.b7 && N.game.b7.cars.saloon; return c ? { flat: (c.tyres || []).filter(Boolean).length, lamps: c.lensBroken.filter(Boolean).length, stopped: !!c.c8flat } : null; })()');
       // (the flank: where the door's last man stood when the door went quiet - the checkpoint puts him back at the door's jamb)
       if (beat === 'flank') tr.doorLeft = await js('((N.game._c5 && N.game._c5.doorLeft) || []).map((p) => [+p.x.toFixed(1), +p.z.toFixed(1)])');
       B.tries.push(tr);

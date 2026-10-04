@@ -50,6 +50,9 @@ export const SALOON = {
   last: [{ x: -9.4, z: 0.6 }, { x: -10.9, z: 0.6 }, { x: -12.6, z: 0.4 }],
   // the shot that does not miss a man in the open
   dmg: 75, sigma: 0.0035,
+  // ([C8] after the critic: in the last ten seconds his shot is the end of a man
+  // standing in the open - the stander does not trade one for his two hits)
+  dmgLast: 100,
   // how long he is open
   openAfterShot: 1.5, openShield: 2.6, openBlast: 3.0,
 };
@@ -135,7 +138,7 @@ export function cardinalOut(ctx, car, { at = null, stage = 2, hatGone = false, o
   const own = (n) => h.anim && h.anim.bank && h.anim.bank.has(n);
   const clip = (name, fade = 0.3) => { if (h._c8clip === name) return; h._c8clip = name; if (own(name)) h.anim.play(name, { fade }); };
   const B = {
-    stage, wounds: hatGone ? 1 : 0, mode: at ? 'walk' : 'out', t: 0, i: 0, open: 0, openWhy: '', fireAt: 3.2, shield: null, aim: false, said: {}, hatGone,
+    stage, wounds: hatGone ? 1 : 0, mode: at ? 'walk' : 'out', t: 0, i: 0, open: 0, openWhy: '', fireAt: stage === 3 ? 1.0 : 3.2, shield: null, aim: false, said: {}, hatGone,
     // ([C8] the car may stop anywhere now: his walk is the part of it ahead of him)
     path: stage === 3 ? SALOON.last : (() => { const q = SALOON.path.filter((w) => w.z > p.z + 0.5); return q.length ? q : [SALOON.path[SALOON.path.length - 1]]; })(),
   };
@@ -238,7 +241,7 @@ export function cardinalOut(ctx, car, { at = null, stage = 2, hatGone = false, o
       if (B.mt > 1.05) {
         // the round: from his pistol at my chest - a man in the open is hit
         const tgt = body.chest.clone();
-        K.hoodRound(ai, tgt, SALOON.sigma, SALOON.dmg, { tommy: false });
+        K.hoodRound(ai, tgt, SALOON.sigma, B.stage === 3 ? SALOON.dmgLast : SALOON.dmg, { tommy: false });
         h.fire && h.fire();
         B.mode = 'after'; B.mt = 0; B.open = SALOON.openAfterShot; B.openWhy = 'shot';
         G.counters.c8bossShots = (G.counters.c8bossShots || 0) + 1;

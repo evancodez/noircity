@@ -1,0 +1,15 @@
+{
+ "about": "[C8] after the critic: the street's own things by real input (the player's damage off for these checks: they prove the mechanics answer the hand, not the contest). Drums: a held trigger runs the gun and both drums dry; at the counter Dot slides her one ('That's my last one.'), and the hands are mine again after (it froze me until I was shot); dry again, nothing more. The switch: the room dark, the men have no line on me until I fire. A stopped car's tank held on: it burns and goes, and the men behind it. The kitchen: the crash, the warning, the man up at the hatch, shot there. The hydrant: two rounds as the Cardinal comes by it, he is down and open. A round into him shut: the iron (sparks, the thud), no blood. node tools/play.mjs tools/plays/block_street.json",
+ "url": "/?mute=1&start=shootout.cars",
+ "size": [1440, 900],
+ "out": "shots/play/block_street",
+ "steps": [
+  { "until": "G.state === 'title' && !document.getElementById('title').classList.contains('hidden')", "timeout": 30000 },
+  { "wait": 1200 },
+  { "clickOn": "#title .opt[data-k=begin]", "taken": "G.state !== 'title'", "retries": 5, "every": 4000 },
+  { "until": "G.scenes.current && G.scenes.current.id === 'shootout' && G.scenes.beat === 'cars' && !G.scenes.trans && !G.hud._carded", "timeout": 40000 },
+  { "drive": "tools/lib/c8_street.mjs", "what": ["drums", "switch", "tank", "kitchen", "hydrant", "iron"],
+    "check": "D.drums.atStart.offered === false && D.drums.dry.reserve === 0 && D.drums.offered === 'b7.drums' && D.drums.taken.reserve === 1 && D.drums.taken.dotLeft === 0 && !D.drums.taken.ease && D.drums.walked > 0.4 && D.drums.crouched > 0.6 && D.drums.again.offered === false && /no drums/.test(D.drums.again.hint) && D.switch.dark && D.switch.lineDarkStill === 0 && D.switch.lineAfterFire > 0 && D.switch.lineLit > 0 && (D.tank.state === 'burning' || D.tank.state === 'dead') && D.kitchen.down && D.hydrant.burst > 0 && D.hydrant.boss && D.hydrant.boss.knocked && D.hydrant.boss.open > 0 && D.iron.iron > 0 && D.iron.blood <= 0 && D.iron.wounds === 0",
+    "label": "drums few and the take lets go; the dark room; the tank; the kitchen; the hydrant; the iron without blood" }
+ ]
+}

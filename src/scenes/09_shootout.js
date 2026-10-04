@@ -739,9 +739,10 @@ function* saloonBeat(ctx) {
   };
   saloonMen(ctx, car);
   R.ticks.push(() => {
-    if (stopped || atDoor || !R.rails.list.includes(car)) return false;
+    if (stopped || G.failing || !R.rails.list.includes(car)) return false;
     if ((car.rail.held || 0) > 3) { stopped = true; R.saloonS = car.rail.s; car.rail.plan.v.fill(0); car.rail.done = true; car.rail.stopped = true; rebuild(G); return false; }
-    if (car.rail.L - car.rail.s < 15) R.warn = 'His car’s nearly at the door! The tyres!';
+    // (the warning stays up through the fail: it was said first)
+    if (atDoor || car.rail.L - car.rail.s < 15) R.warn = 'His car’s nearly at the door! The tyres!';
     return true;
   });
   yield until(() => atDoor || (stopped && alive(ctx) === 0));

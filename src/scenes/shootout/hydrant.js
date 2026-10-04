@@ -66,7 +66,7 @@ export function makeHydrant(ctx) {
       const dir = V(h.pos.x - at.x, 0.3, h.pos.z - at.z).normalize();
       if (h.c8boss) {
         const B = R && R.boss;
-        if (B && !B.down) { B.hold = 1.8; B.open = Math.max(B.open, SALOON.openBlast); B.openWhy = 'hydrant'; if (h.stagger) h.stagger(); ctx.hud.say('He’s down. He’s open.', 2.0); }
+        if (B && !B.down) { B.c8hydrant = true; B.hold = 1.8; B.open = Math.max(B.open, SALOON.openBlast); B.openWhy = 'hydrant'; if (h.stagger) h.stagger(); ctx.hud.say('He’s down. He’s open.', 2.0); }
         continue;
       }
       G.killHood(h, dir, false, 'deathBack');
