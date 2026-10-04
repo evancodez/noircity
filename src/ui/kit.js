@@ -1,5 +1,7 @@
 import { makeTornStroke, hashSeed } from './inkArt.js';
 import { letterCanvas, keyCap, mouseGlyph, strikeStroke } from './lettering.js';
+import { padGlyphs, glyphCtx } from '../input/Pad.js';   // [C12]
+import { padGlyph, glyphOf } from '../input/glyphs.js';   // [C12]
 
 // The kit's lines on the HUD (lane C1; the contract is docs/story/seams/Z.md):
 //   objective(text | null, { strike = true, now = false })
@@ -214,18 +216,20 @@ export class KitUi {
     const flags = G && G.save && G.save.enabled ? G.save.flags : this.taughtLocal;
     return flags.taught || (flags.taught = {});
   }
-  showTeach(item) {
-    const G = this.game;
+  // the card's row: the key caps (or, [C12] the last device the pad, its glyphs) and the words
+  buildTeach(item) {
     const E = this.teachEl, row = E.querySelector('.row');
     row.textContent = '';
     for (const c of [...E.querySelectorAll('canvas.g')]) c.remove();
     const parts = parseTeach(item.text);
     const codes = [];
     let width = 0;
+    const pad = padGlyphs(), ctx = glyphCtx();   // [C12]
     for (const p of parts) {
       if (p.key) {
         const K = p.key.toUpperCase().replace(/\s+/g, '');
-        const c = K === 'LMB' ? mouseGlyph('L', { h: 50 }) : K === 'RMB' ? mouseGlyph('R', { h: 50 }) : keyCap(K, { h: 44 });
+        const gid = pad ? glyphOf(K, ctx) : null;   // [C12]
+        const c = gid ? padGlyph(gid, { h: 46 }) : K === 'LMB' ? mouseGlyph('L', { h: 50 }) : K === 'RMB' ? mouseGlyph('R', { h: 50 }) : keyCap(K, { h: 44 });
         c.classList.add('cap');
         row.appendChild(c);
         width += parseFloat(c.style.width) + 12;
@@ -239,6 +243,15 @@ export class KitUi {
     const ground = makeTornStroke(Math.round(width + 130), 86, hashSeed('teach:' + item.text));
     ground.className = 'g';
     E.insertBefore(ground, row);
+    E.dataset.dev = pad ? 'pad' : 'keys';
+    return codes;
+  }
+  // [C12] a card up when the device changes: drawn again for it (its time runs on)
+  redrawTeach() { if (this.teachCur && this.teachEl.dataset.dev !== (padGlyphs() ? 'pad' : 'keys')) this.buildTeach(this.teachCur); }
+  showTeach(item) {
+    const G = this.game;
+    const E = this.teachEl;
+    const codes = this.buildTeach(item);
     const o = item.opts;
     let until = o.until;
     if (until === undefined) until = codes.length ? codes : null;

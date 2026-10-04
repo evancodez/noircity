@@ -1,0 +1,56 @@
+{
+ "about": "[C12 critic] II by the pad: hold the left stick forward only (the pad's hold W) for 150 s",
+ "url": "/?mute=1&padfake=1&start=fight",
+ "input": "pad",
+ "size": [
+  1280,
+  800
+ ],
+ "out": "shots/critic12/c12_fight_pad_stick",
+ "steps": [
+  {
+   "until": "G.state === 'title' && N.hud.titleShown",
+   "timeout": 60000
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "pad": {
+    "b": [
+     "x"
+    ],
+    "secs": 0.12
+   }
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'fight' && G.brawl.active",
+   "timeout": 60000
+  },
+  {
+   "eval": "(window.__w = [], window.__f = [], setInterval(() => { const k = G.hud.kit || {}; const w = (k.warnText || (k.warnEl && k.warnEl.textContent) || ''); if (w && window.__w[window.__w.length-1] !== w) window.__w.push(Math.round(N.time) + ':' + w); }, 150), (() => { const f0 = G.fail.bind(G); G.fail = (o) => { window.__f.push(Math.round(N.time) + ':' + (o && o.why)); return f0(o); }; })(), 1)"
+  },
+  {
+   "pad": {
+    "a": [
+     0,
+     -1,
+     0,
+     0
+    ],
+    "hold": true
+   }
+  },
+  {
+   "until": "window.__f.length > 0",
+   "timeout": 150000,
+   "stop": false
+  },
+  {
+   "shot": "after"
+  },
+  {
+   "eval": "({ w: window.__w, f: window.__f, hp: G.health && G.health.hp })"
+  }
+ ]
+}

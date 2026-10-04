@@ -1,0 +1,27 @@
+{
+ "about": "[C12 after the critic] VI by the pad: R2 (the throttle) held from the start, into the wall, 'He's getting away.', 'Lost him.', the black and the retry - R2 never let go: the car drives at once after the retry (the critic's blocker: it sat at 0 km/h, pad.stale [7]). Then the first press on an untouched title only wakes the bracket. node tools/play.mjs tools/plays/pad_retry.json",
+ "url": "/?mute=1&padfake=1&start=tail",
+ "input": "pad",
+ "size": [1440, 900],
+ "out": "shots/play/pad_retry",
+ "steps": [
+  { "until": "G.state === 'title' && N.hud.titleShown", "timeout": 60000 },
+  { "wait": 1500 },
+  { "expect": "N.input.last === 'keys' && getComputedStyle(document.getElementById('padsel')).display === 'none'", "label": "the title untouched: no bracket" },
+  { "pad": { "b": ["x"], "secs": 0.12 } },
+  { "wait": 500 },
+  { "expect": "G.state === 'title' && N.hud.titleShown && !G.stills.active && getComputedStyle(document.getElementById('padsel')).display === 'block'", "label": "the first X on the untouched title: the bracket shows, nothing is chosen" },
+  { "expect": "!!N.hud.soundLine.querySelector('canvas[data-glyph=ddown]') && /play$/.test(N.hud.soundLine.textContent) && !/M/.test(N.hud.soundLine.textContent)", "label": "the sound line in the pad's words (muted: the d-pad's down, in play)" },
+  { "shot": "r00_title_woken" },
+  { "pad": { "b": ["x"], "secs": 0.12 } },
+  { "until": "G.scenes.current && G.scenes.current.id === 'tail' && G.controller.mode === 'drive' && !G.scenes.fadeK", "timeout": 60000, "label": "the second X: the tail" },
+  { "eval": "(window.__w = [], window.__f = [], setInterval(() => { const k = G.hud.kit || {}; const w = (k.warnText || (k.warnEl && k.warnEl.textContent) || ''); if (w && window.__w[window.__w.length-1] !== w) window.__w.push(Math.round(N.time) + ':' + w); }, 150), (() => { const f0 = G.fail.bind(G); G.fail = (o) => { window.__f.push(Math.round(N.time) + ':' + (o && o.why)); return f0(o); }; })(), 1)" },
+  { "pad": { "v": { "r2": 1 }, "hold": true } },
+  { "until": "window.__f.length > 0", "timeout": 150000, "label": "R2 held, no wheel: he gets away" },
+  { "until": "!G.failing && G.controller.mode === 'drive' && !G.scenes.fadeK", "timeout": 30000 },
+  { "wait": 5000 },
+  { "eval": "({ speed: +G.vehicles.player.speedAbs.toFixed(1), throttle: G.vehicles.player.input.throttle, stale: [...N.pad.stale], f: window.__f, warned: window.__w[0] })" },
+  { "expect": "N.pad.trigger.r > 0.9 && G.vehicles.player.input.throttle > 0.9 && G.vehicles.player.speedAbs > 4 && !N.pad.stale.has(7)", "label": "the retry with R2 still held: the car drives at once (throttle on, moving)" },
+  { "shot": "r01_retry_R2_held_drives" }
+ ]
+}

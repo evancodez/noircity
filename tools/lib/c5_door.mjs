@@ -145,12 +145,23 @@ export default async function drive({ js, turn, keyDown, keyUp, mouse, shot, log
     while (prev[v] > 0) v = prev[v];
     return v === goal ? null : nodes[v];
   };
+  // [C12] opts.strafe: the walk of a hand on a stick (or on W A S D) - toward the
+  // goal from where I face, in eight ways, with no turn: a pad player backs and
+  // sidesteps to cover with his eyes on the door (turning round to face where
+  // he walks costs a stick about a second; the mouse's turn is all but free)
+  const stopWalk = async () => { for (const c of ['KeyW', 'KeyS', 'KeyA', 'KeyD']) await set(c, false); };
   // walk toward (x, z) by W and the mouse; true once there
   const walkTo = async (s, x, z, tol = 0.3) => {
     const dx0 = x - s.x, dz0 = z - s.z;
-    if (Math.hypot(dx0, dz0) < tol) { await set('KeyW', false); return true; }
+    if (Math.hypot(dx0, dz0) < tol) { await stopWalk(); return true; }
     const via = roundBlock(s, x, z);
     const dx = via ? via.x - s.x : dx0, dz = via ? via.z - s.z : dz0;
+    if (opts.strafe) {
+      const L = Math.hypot(dx, dz), sy = Math.sin(s.yaw), cy = Math.cos(s.yaw), k = 0.38;
+      const f = (-dx * sy - dz * cy) / L, r = (dx * cy - dz * sy) / L;
+      await set('KeyW', f > k); await set('KeyS', f < -k); await set('KeyD', r > k); await set('KeyA', r < -k);
+      return false;
+    }
     const err = await aim(s, Math.atan2(-dx, -dz), -0.05, 0.6, 0.3);
     await set('KeyW', err < 0.6);
     return false;
@@ -162,18 +173,18 @@ export default async function drive({ js, turn, keyDown, keyUp, mouse, shot, log
   const choose = async (c) => {
     if (c === 'desk') {
       for (const [x, z] of [[4.0, 2.25], [4.85, 2.45]]) { for (let i = 0; i < 120; i++) { const s = await js(ST); if (await walkTo(s, x, z, 0.25)) break; await sleep(40); } }
-      await set('KeyW', false);
+      await stopWalk();
       await lookAt(3.9, 0.85, 3.72, 0.05); await sleep(150);
       const cur = await js('N.game.interact.current && N.game.interact.current.id');
       if (cur === 'tip') await press('KeyE'); else log('c5 door: no tip prompt (' + cur + ')');
       await sleep(1300);
       for (let i = 0; i < 120; i++) { const s = await js(ST); if (await walkTo(s, 3.9, 3.25, 0.22)) break; await sleep(40); }
-      await set('KeyW', false);
+      await stopWalk();
       await lookAt(-3.9, 1.2, 3.4, 0.1);
       await press('KeyC'); await sleep(300);
     } else if (c === 'move') {
       for (const [x, z] of [[1.0, 3.4], [-0.6, 3.6], [-0.85, 5.25]]) { for (let i = 0; i < 150; i++) { const s = await js(ST); if (await walkTo(s, x, z, 0.25)) break; await sleep(40); } }
-      await set('KeyW', false);
+      await stopWalk();
       await lookAt(-3.9, 1.2, 3.4, 0.1);
       await press('KeyC'); await sleep(300);
     } else if (c === 'glass') {
@@ -189,7 +200,7 @@ export default async function drive({ js, turn, keyDown, keyUp, mouse, shot, log
       }
       // (then to cover: behind his desk, its chair side, the desk between me and the opening)
       for (const [x, z] of [[3.0, 2.1], [4.8, 2.2], [4.85, 2.65]]) { for (let i = 0; i < 120; i++) { const s = await js(ST); if (await walkTo(s, x, z, 0.25)) break; await sleep(40); } }
-      await set('KeyW', false);
+      await stopWalk();
       await lookAt(0.0, 1.2, 3.4, 0.1);
       await press('KeyC');
     }
@@ -221,7 +232,7 @@ export default async function drive({ js, turn, keyDown, keyUp, mouse, shot, log
       if (beat === 'corridor' && P.act && P.cover) {
         const route = opts.out ? [[-4.6, 3.3], [-4.6, 0.6], [-4.35, -0.05]] : [[-4.5, 3.35], [-2.6, 3.6], [-0.85, 5.3]];
         for (const [x, z] of route) { for (let i = 0; i < 160; i++) { const q = await js(ST); if (await walkTo(q, x, z, 0.25)) break; await sleep(40); } }
-        await set('KeyW', false);
+        await stopWalk();
         if (opts.out) await lookAt(-4.78, 1.2, -7.0, 0.1); else await lookAt(-3.88, 1.2, 3.4, 0.1);
         await press('KeyC');
         log('c5 door: ' + (opts.out ? 'out to the cart' : 'behind the secretary\'s desk'));
@@ -295,7 +306,7 @@ export default async function drive({ js, turn, keyDown, keyUp, mouse, shot, log
             }
             if (goTo && !(await walkTo(s, goTo.x, goTo.z, 0.35))) { await sleep(40); dbg['walking'] = (dbg['walking'] || 0) + 1; continue; }
             onSpot = goTo || onSpot || { x: s.x, z: s.z }; goTo = null;
-            await set('KeyW', false);
+            await stopWalk();
           }
           if (!s.on) {
             if (P.crouchLate) { if (!onSpot.lateT) onSpot.lateT = now + rr(P.crouchLate[0], P.crouchLate[1]); if (now < onSpot.lateT) { await sleep(60); continue; } }

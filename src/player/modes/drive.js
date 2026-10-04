@@ -60,6 +60,9 @@ export default {
       // [C3] SPACE: the handbrake (the body's big move: the tail round for a
       // right-angle corner)
       I.handbrake = !fz && held('Space') ? 1 : 0;
+      // [C12] the pad: the triggers and the stick, as far as they are pressed (src/input/Pad.js)
+      const P = ctl.pad && ctl.pad.car;
+      if (P && !fz) { I.throttle = P.throttle; I.brake = P.brake; I.steer = Math.max(-1, Math.min(1, P.steer)); }
     }
     if (dt > 0 && v.driver === 'player') v.step(dt);
     // the look: back to the road ahead once the mouse rests (never while aiming)
