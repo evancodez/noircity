@@ -113,7 +113,7 @@ export function goLoud(ctx, L) {
   // I am up there, the answerer still goes up (the crew's rule, his torch,
   // his cosh, his own warning); once I am down on the floor, or he is back at
   // the stairs' foot, he draws like the rest (drawGuns, each step while loud))
-  if (!L.answerer) L.answerer = sendAnswerer(ctx, L) || true;
+  if (!L.answerer) L.answerer = sendAnswerer(ctx, L, { force: true }) || true;
   drawGuns(ctx, L);
   G.emit('c7:loud', { men: L.gunmen.length, t: +G.time.toFixed(2) });
 }
@@ -145,11 +145,12 @@ export function drawGuns(ctx, L) {
 // west stairs, along the catwalk to the office's door, a look along the
 // catwalk with his torch, and back down (so a man who waits up there in the
 // dark is found: waiting is not a way out)
-export function sendAnswerer(ctx, L) {
+// ([C10a] force: at the shout - every man is in 'alarm' by then, and he goes all the same)
+export function sendAnswerer(ctx, L, { force = false } = {}) {
   const crew = L.crew, mezz = ctx.stage.part('mezz');
   const pick = crew.get('hood1') && !crew.get('hood1').down ? crew.get('hood1')
     : crew.men.filter((m) => !m.down && m.spec.hunter).sort((a, b) => Math.hypot(a.pos.x + 3, a.pos.z + 40) - Math.hypot(b.pos.x + 3, b.pos.z + 40))[0];
-  if (!pick || pick.mode === 'alarm') return null;
+  if (!pick || (pick.mode === 'alarm' && !force)) return null;
   pick.canClimb(mezz);
   const back = pick.route;
   pick.route = [
