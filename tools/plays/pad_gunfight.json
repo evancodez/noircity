@@ -11,6 +11,8 @@
   { "until": "G.scenes.current && G.scenes.current.id === 'gunfight' && G.scenes.fadeK < 0.2", "timeout": 30000 },
   { "expect": "N.pad.holds", "label": "the pad holds the game" },
   { "eval": "(window.__cards = [], setInterval(() => { const T = G.hud.kit.teachCur; if (T && !window.__cards.some((c) => c.id === T.id)) window.__cards.push({ id: T.id, glyphs: [...G.hud.kit.teachEl.querySelectorAll('canvas[data-glyph]')].map((c) => c.dataset.glyph) }); }, 100), 1)" },
+  { "until": "G.hud.kit.teachCur && G.hud.kit.teachCur.id === 'fire' && getComputedStyle(G.hud.kit.teachEl).opacity > 0.9", "timeout": 20000, "stop": false },
+  { "shot": "g01_fire_card" },
   { "drive": "tools/lib/c5_door.mjs", "profile": "good", "choice": "desk", "out": true, "tries": 3, "beatTimeout": 150, "beats": ["shadows", "flank", "corridor"],
     "check": "D.wonFirst === 3", "label": "[C12] the good player (the desk) wins every movement on the first try by the pad" },
   { "eval": "window.__cards" },

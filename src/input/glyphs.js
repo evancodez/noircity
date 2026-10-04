@@ -65,6 +65,8 @@ export function padGlyph(id, { h = 44, scale = 2 } = {}) {
   c.width = src.width; c.height = src.height;
   c.getContext('2d').drawImage(src, 0, 0);
   c.style.width = src.style.width; c.style.height = src.style.height;
+  // (in a line of words: index.html makes every canvas a block)
+  c.style.display = 'inline-block'; c.style.verticalAlign = 'middle';
   c.dataset.glyph = id;
   return c;
 }

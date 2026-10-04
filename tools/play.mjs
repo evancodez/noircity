@@ -30,7 +30,7 @@
 //                                        [C12] the fake pad (?padfake=1, src/input/Pad.js): those buttons
 //                                        (x o sq tri l1 r1 l2 r2 share opt l3 r3 up down left right ps tp)
 //                                        and axes for secs, then let go (hold: kept; release: let go now)
-// [C12] "input": "pad" (the play's own key): every key, mouse button, turn and wheel the steps and the
+// [C12] "input": "pad" (the play's own key; "padFlow": true lets a turn run on under the next move): every key, mouse button, turn and wheel the steps and the
 // drivers ask for is played on the fake pad instead (the rulebook's mapping, by what is on screen: the
 // fist fight's triggers, the car's pedals, a puzzle's cursor), and the keyboard and the mouse are never
 // used (a FAIL if they are).
@@ -117,7 +117,14 @@ const PADB = { x: 0, o: 1, sq: 2, tri: 3, l1: 4, r1: 5, l2: 6, r2: 7, share: 8, 
 const PS = { buttons: Array(18).fill(0), axes: [0, 0, 0, 0] };
 // (no user gesture: a real pad's press is not one either)
 const jsNG = async (expr) => { const r = await send('Runtime.evaluate', { expression: expr, returnByValue: true, userGesture: false }); return r.result?.result?.value; };
-const pushPad = (rs = null) => jsNG(`(window.__pad = ${JSON.stringify({ buttons: PS.buttons, axes: PS.axes, ...(rs ? { rs } : {}) })}, 1)`);
+// (a turn in flight - the right stick held for its seconds - goes on through the pushes
+// that change a button; a new turn replaces it, as a hand's next move does)
+let rsLive = null;
+const pushPad = (rs = null) => {
+  if (rs) rsLive = { x: rs.x, y: rs.y, until: Date.now() + rs.secs * 1000 };
+  else if (rsLive && Date.now() < rsLive.until) rs = { x: rsLive.x, y: rsLive.y, secs: (rsLive.until - Date.now()) / 1000 };
+  return jsNG(`(window.__pad = ${JSON.stringify({ buttons: PS.buttons, axes: PS.axes, ...(rs ? { rs } : {}) })}, 1)`);
+};
 async function padStep(P) {
   const names = P.b || [];
   for (const n of names) PS.buttons[PADB[n]] = 1;
@@ -193,7 +200,9 @@ async function padTurn(dx, dy = 0) {
     if (!full && m <= 1) {
       const raw = P.dz + m * (1 - P.dz), k2 = m > 0 ? raw / m : 0;
       await pushPad({ x: Math.sign(dx) * ux * k2, y: Math.sign(dy) * uy * k2, secs: T });
-      await sleep(T * 1000 + 24);
+      // (the stick held its time before the next move; "padFlow": true - a driver that steers
+      // closed-loop at a run's pace - goes on after a frame, the next turn replacing what is left)
+      await sleep(play.padFlow ? Math.min(T * 1000 + 24, 34) : T * 1000 + 24);
       return;
     }
     T *= Math.max(1.3, m * 1.1);

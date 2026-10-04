@@ -1,0 +1,22 @@
+{
+ "about": "[C12] V The Watcher by the pad alone (beyond the brief's list: the run's own modes): X on BEGIN at V, square for the fire escape, then tools/lib/c6_chase.mjs 'good' over the roofs with its hands on the pad (input: pad - the left stick forward runs, the right stick steers, X over, circle under, X through a door, the jump, circle the slide down): through to the tail, never lost; the run's cards in the pad's glyphs. node tools/play.mjs tools/plays/pad_watcher.json",
+ "url": "/?mute=1&padfake=1&start=watcher",
+ "input": "pad",
+ "padFlow": true,
+ "size": [1280, 800],
+ "out": "shots/play/pad_watcher",
+ "steps": [
+  { "until": "G.state === 'title' && N.hud.titleShown", "timeout": 40000 },
+  { "wait": 1500 },
+  { "pad": { "b": ["x"], "secs": 0.12 } },
+  { "eval": "(window.__cards = [], setInterval(() => { const T = G.hud.kit.teachCur; if (T && !window.__cards.some((c) => c.id === T.id)) window.__cards.push({ id: T.id, glyphs: [...G.hud.kit.teachEl.querySelectorAll('canvas[data-glyph]')].map((c) => c.dataset.glyph) }); }, 100), 1)" },
+  { "until": "G.scenes.current && G.scenes.current.id === 'watcher' && G.hud.promptShown.includes('fire escape')", "timeout": 30000 },
+  { "pad": { "b": ["sq"], "secs": 0.1 } },
+  { "until": "N.controller.mode === 'escape'", "timeout": 10000 },
+  { "drive": "tools/lib/c6_chase.mjs", "profile": "good", "over": "roofs", "stop": "G.scenes.current && G.scenes.current.id === 'tail'", "timeout": 260000,
+    "check": "D.done && D.fails === 0", "label": "[C12] the run by the pad (over the roofs): through to the tail, never lost" },
+  { "expect": "G.scenes.current.id === 'tail' && N.controller.mode === 'drive'", "label": "in the coupe's seat, chapter VI" },
+  { "eval": "window.__cards" },
+  { "expect": "window.__cards.some((c) => c.id === 'vault' && c.glyphs[0] === 'cross') && window.__cards.some((c) => c.id === 'slide' && c.glyphs[0] === 'circle')", "label": "the run's cards in the pad's glyphs (over: X, under: circle)" }
+ ]
+}
