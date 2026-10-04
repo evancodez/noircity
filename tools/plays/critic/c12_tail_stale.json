@@ -1,0 +1,90 @@
+{
+ "about": "[C12 critic] VI by the pad: R2 held through a fail and the retry (as a hand does): does the car go again after the black while R2 is still down?",
+ "url": "/?mute=1&padfake=1&start=tail",
+ "input": "pad",
+ "size": [
+  1280,
+  800
+ ],
+ "out": "shots/critic12/tail_stale",
+ "steps": [
+  {
+   "until": "G.state === 'title' && N.hud.titleShown",
+   "timeout": 60000
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "pad": {
+    "b": [
+     "x"
+    ],
+    "secs": 0.12
+   }
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'tail' && G.controller.mode === 'drive' && !G.scenes.fadeK",
+   "timeout": 60000
+  },
+  {
+   "eval": "(window.__w = [], window.__f = [], setInterval(() => { const k = G.hud.kit || {}; const w = (k.warnText || (k.warnEl && k.warnEl.textContent) || ''); if (w && window.__w[window.__w.length-1] !== w) window.__w.push(Math.round(N.time) + ':' + w); }, 150), (() => { const f0 = G.fail.bind(G); G.fail = (o) => { window.__f.push(Math.round(N.time) + ':' + (o && o.why)); return f0(o); }; })(), 1)"
+  },
+  {
+   "pad": {
+    "v": {
+     "r2": 1
+    },
+    "hold": true
+   }
+  },
+  {
+   "until": "window.__f.length > 0",
+   "timeout": 150000,
+   "stop": false
+  },
+  {
+   "until": "G.failing",
+   "timeout": 5000,
+   "stop": false
+  },
+  {
+   "until": "!G.failing && G.controller.mode === 'drive' && !G.scenes.fadeK",
+   "timeout": 30000
+  },
+  {
+   "wait": 5000
+  },
+  {
+   "eval": "({ speed: +G.vehicles.player.speedAbs.toFixed(1), input: G.vehicles.player.input, stale: [...N.pad.stale], f: window.__f })"
+  },
+  {
+   "shot": "after_retry_r2_held"
+  },
+  {
+   "pad": {
+    "v": {
+     "r2": 0
+    },
+    "hold": true
+   }
+  },
+  {
+   "wait": 300
+  },
+  {
+   "pad": {
+    "v": {
+     "r2": 1
+    },
+    "hold": true
+   }
+  },
+  {
+   "wait": 3000
+  },
+  {
+   "eval": "({ input: G.vehicles.player.input, stale: [...N.pad.stale] })"
+  }
+ ]
+}

@@ -1,0 +1,44 @@
+{
+ "about": "[C12 critic] the same glass play by the keyboard and the mouse (the control for c12_door_pad_glass)",
+ "url": "/?mute=1&start=gunfight",
+ "size": [
+  1280,
+  800
+ ],
+ "out": "shots/critic12/door_keys_glass",
+ "steps": [
+  {
+   "until": "G.state === 'title' && N.hud.titleShown",
+   "timeout": 60000
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]",
+   "taken": "G.state !== 'title'",
+   "retries": 5,
+   "every": 4000
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'gunfight' && G.scenes.fadeK < 0.2",
+   "timeout": 60000
+  },
+  {
+   "drive": "tools/lib/c5_door.mjs",
+   "profile": "good",
+   "choice": "glass",
+   "out": true,
+   "tries": 3,
+   "beatTimeout": 150,
+   "beats": [
+    "shadows"
+   ],
+   "check": "D.wonFirst >= 2",
+   "label": "good (glass) by the pad"
+  },
+  {
+   "eval": "1"
+  }
+ ]
+}
