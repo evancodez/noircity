@@ -1,0 +1,227 @@
+{
+ "about": "[C11 after the critic] the jank walk in the Cardinal's office with its door hinged east: in at the door (E), into the open leaf from inside (it is solid now), round it into the pocket behind it and out, into the desk, into the back wall, into the west wall; and the door from the catwalk side (shut: a wall).",
+ "url": "/?mute=1&start=warehouse.office",
+ "size": [
+  1440,
+  900
+ ],
+ "out": "shots/c11/jank",
+ "steps": [
+  {
+   "until": "G.state === 'title' && !document.getElementById('title').classList.contains('hidden')",
+   "timeout": 30000
+  },
+  {
+   "wait": 1200
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]",
+   "taken": "G.state !== 'title'",
+   "retries": 5,
+   "every": 4000
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'warehouse' && G.scenes.beat === 'office' && !G.scenes.trans",
+   "timeout": 40000
+  },
+  {
+   "wait": 1000
+  },
+  {
+   "walk": [
+    [
+     1.85,
+     -41.75
+    ]
+   ],
+   "timeout": 15000
+  },
+  {
+   "name": "the shut door from the catwalk: a wall"
+  },
+  {
+   "walk": [
+    [
+     1.85,
+     -42.9
+    ]
+   ],
+   "into": true,
+   "timeout": 3000
+  },
+  {
+   "eval": "JSON.stringify({ p: [+N.controller.pos.x.toFixed(2), +N.controller.pos.z.toFixed(2)], door: G.stage.part('mezz').officeDoor.k })"
+  },
+  {
+   "expect": "N.controller.pos.z > -42.3",
+   "label": "the shut door stops me"
+  },
+  {
+   "look": "[Math.round(-(Math.atan2(Math.sin(Math.PI*0 - N.controller.yaw), Math.cos(Math.PI*0 - N.controller.yaw)))/N.controller.sensitivity), Math.round((N.controller.pitch + 0.05)/N.controller.sensitivity)]",
+   "steps": 4
+  },
+  {
+   "key": "KeyE"
+  },
+  {
+   "wait": 1300
+  },
+  {
+   "walk": [
+    [
+     1.85,
+     -42.9
+    ]
+   ],
+   "timeout": 8000
+  },
+  {
+   "eval": "JSON.stringify({ p: [+N.controller.pos.x.toFixed(2), +N.controller.pos.z.toFixed(2)], door: G.stage.part('mezz').officeDoor.k })"
+  },
+  {
+   "name": "into the open leaf from inside, walking east"
+  },
+  {
+   "walk": [
+    [
+     3.0,
+     -42.85
+    ]
+   ],
+   "into": true,
+   "timeout": 3000
+  },
+  {
+   "eval": "JSON.stringify({ p: [+N.controller.pos.x.toFixed(2), +N.controller.pos.z.toFixed(2)], door: G.stage.part('mezz').officeDoor.k })"
+  },
+  {
+   "expect": "N.controller.pos.x < 2.3",
+   "label": "the open leaf stops me (it was nothing)"
+  },
+  {
+   "shot": "j1_into_leaf"
+  },
+  {
+   "name": "round its free end into the pocket behind it, and out again"
+  },
+  {
+   "walk": [
+    [
+     2.0,
+     -43.6
+    ],
+    [
+     2.75,
+     -43.6
+    ],
+    [
+     2.75,
+     -42.8
+    ]
+   ],
+   "timeout": 10000
+  },
+  {
+   "eval": "JSON.stringify({ p: [+N.controller.pos.x.toFixed(2), +N.controller.pos.z.toFixed(2)], door: G.stage.part('mezz').officeDoor.k })"
+  },
+  {
+   "expect": "N.controller.pos.x > 2.4",
+   "label": "behind the door: in the pocket by the east wall"
+  },
+  {
+   "walk": [
+    [
+     2.75,
+     -43.6
+    ],
+    [
+     1.85,
+     -43.4
+    ],
+    [
+     1.85,
+     -42.0
+    ],
+    [
+     1.85,
+     -41.6
+    ]
+   ],
+   "timeout": 12000
+  },
+  {
+   "eval": "JSON.stringify({ p: [+N.controller.pos.x.toFixed(2), +N.controller.pos.z.toFixed(2)], door: G.stage.part('mezz').officeDoor.k })"
+  },
+  {
+   "expect": "N.controller.pos.z > -42.2",
+   "label": "back out of the pocket to the doorway: not stuck"
+  },
+  {
+   "walk": [
+    [
+     1.85,
+     -42.9
+    ]
+   ],
+   "timeout": 8000
+  },
+  {
+   "name": "into the desk, the back wall, the west wall"
+  },
+  {
+   "walk": [
+    [
+     0.2,
+     -44.6
+    ]
+   ],
+   "into": true,
+   "timeout": 3000
+  },
+  {
+   "eval": "JSON.stringify({ p: [+N.controller.pos.x.toFixed(2), +N.controller.pos.z.toFixed(2)], door: G.stage.part('mezz').officeDoor.k })"
+  },
+  {
+   "expect": "!(N.controller.pos.x > -1.5 && N.controller.pos.x < 1.6 && N.controller.pos.z < -43.1 && N.controller.pos.z > -44.6)",
+   "label": "the desk stops me (not in it: slid along its end)"
+  },
+  {
+   "walk": [
+    [
+     -1.8,
+     -43.1
+    ],
+    [
+     -1.8,
+     -45.5
+    ]
+   ],
+   "into": true,
+   "timeout": 4000
+  },
+  {
+   "eval": "JSON.stringify({ p: [+N.controller.pos.x.toFixed(2), +N.controller.pos.z.toFixed(2)], door: G.stage.part('mezz').officeDoor.k })"
+  },
+  {
+   "expect": "N.controller.pos.z > -44.75",
+   "label": "the back wall stops me"
+  },
+  {
+   "walk": [
+    [
+     -3.8,
+     -43.1
+    ]
+   ],
+   "into": true,
+   "timeout": 3000
+  },
+  {
+   "eval": "JSON.stringify({ p: [+N.controller.pos.x.toFixed(2), +N.controller.pos.z.toFixed(2)], door: G.stage.part('mezz').officeDoor.k })"
+  },
+  {
+   "expect": "N.controller.pos.x > -3.2",
+   "label": "the west wall stops me"
+  }
+ ]
+}

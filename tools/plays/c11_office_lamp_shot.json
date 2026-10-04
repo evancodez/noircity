@@ -1,0 +1,120 @@
+{
+ "about": "[C11 after the critic] the critic's finding 8 (from the code): is the office's desk lamp put out by a round into it, or by one into the bare ceiling above the desk? In the loud pass, by real input: into the office, a round at the desk lamp's bulb, then one at the ceiling point the lamp's registry still names as its head.",
+ "url": "/?mute=1&start=warehouse.loud",
+ "size": [
+  1440,
+  900
+ ],
+ "out": "shots/c11/olamp",
+ "steps": [
+  {
+   "until": "G.state === 'title' && !!document.querySelector('#title .opt[data-k=begin]')",
+   "timeout": 40000
+  },
+  {
+   "wait": 1200
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]",
+   "taken": "G.state !== 'title' && document.pointerLockElement === N.renderer.domElement",
+   "retries": 5,
+   "every": 4000
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'warehouse' && G.scenes.beat === 'loud' && !G.scenes.trans",
+   "timeout": 40000
+  },
+  {
+   "wait": 800
+  },
+  {
+   "wait": 400
+  },
+  {
+   "walk": [
+    [
+     2.2,
+     -41.6
+    ],
+    [
+     1.85,
+     -41.75
+    ],
+    [
+     1.85,
+     -42.6
+    ],
+    [
+     1.3,
+     -43.0
+    ]
+   ],
+   "timeout": 20000
+  },
+  {
+   "eval": "JSON.stringify({ p: [+N.controller.pos.x.toFixed(2), +N.controller.pos.z.toFixed(2)], door: G.stage.part('mezz').officeDoor.k, crouch: !!N.controller.crouched })"
+  },
+  {
+   "look": "(() => { const K = G.controller, e = G.camera.position; const tx = G.stage.lamps.lamps.find((l) => l.tag === 'office').light.pos.x, ty = G.stage.lamps.lamps.find((l) => l.tag === 'office').light.pos.y, tz = G.stage.lamps.lamps.find((l) => l.tag === 'office').light.pos.z; const want = Math.atan2(-(tx - e.x), -(tz - e.z)); const dy = Math.atan2(Math.sin(want - K.yaw), Math.cos(want - K.yaw)); const pit = Math.atan2(ty - e.y, Math.hypot(tx - e.x, tz - e.z)); return [Math.round(-dy / K.sensitivity), Math.round((K.pitch - pit) / K.sensitivity)]; })()",
+   "steps": 8
+  },
+  {
+   "wait": 500
+  },
+  {
+   "eval": "JSON.stringify({ dead: !!G.stage.lamps.lamps.find((l) => l.tag === 'office').dead, on: G.stage.lamps.lamps.find((l) => l.tag === 'office').on, ammo: G.player && G.player.weapons && G.player.weapons.current && G.player.weapons.current.ammo, lamps: G.counters.c7lamps || 0 })"
+  },
+  {
+   "wait": 600
+  },
+  {
+   "look": "(() => { const K = G.controller, e = G.camera.position; const tx = G.stage.lamps.lamps.find((l) => l.tag === 'office').light.pos.x, ty = G.stage.lamps.lamps.find((l) => l.tag === 'office').light.pos.y, tz = G.stage.lamps.lamps.find((l) => l.tag === 'office').light.pos.z; const want = Math.atan2(-(tx - e.x), -(tz - e.z)); const dy = Math.atan2(Math.sin(want - K.yaw), Math.cos(want - K.yaw)); const pit = Math.atan2(ty - e.y, Math.hypot(tx - e.x, tz - e.z)); return [Math.round(-dy / K.sensitivity), Math.round((K.pitch - pit) / K.sensitivity)]; })()",
+   "steps": 8
+  },
+  {
+   "wait": 600
+  },
+  {
+   "eval": "(() => { const L = G.stage.lamps.lamps.find((l) => l.tag === 'office'); const b = L.light.pos; const d = new (G.camera.position.constructor)(); G.camera.getWorldDirection(d); const to = b.clone().sub(G.camera.position); const dist = to.length(); return JSON.stringify({ dist: +dist.toFixed(2), err: +to.normalize().angleTo(d).toFixed(3), eye: [+G.camera.position.x.toFixed(2), +G.camera.position.y.toFixed(2), +G.camera.position.z.toFixed(2)] }); })()"
+  },
+  {
+   "shot": "l0_aim_desk_lamp"
+  },
+  {
+   "mouse": "click",
+   "button": "left"
+  },
+  {
+   "wait": 900
+  },
+  {
+   "eval": "JSON.stringify({ dead: !!G.stage.lamps.lamps.find((l) => l.tag === 'office').dead, on: G.stage.lamps.lamps.find((l) => l.tag === 'office').on, ammo: G.player && G.player.weapons && G.player.weapons.current && G.player.weapons.current.ammo, lamps: G.counters.c7lamps || 0 })"
+  },
+  {
+   "shot": "l1_after_desk_lamp_shot"
+  },
+  {
+   "look": "(() => { const K = G.controller, e = G.camera.position; const tx = G.stage.lamps.lamps.find((l) => l.tag === 'office').head.x, ty = G.stage.lamps.lamps.find((l) => l.tag === 'office').head.y, tz = G.stage.lamps.lamps.find((l) => l.tag === 'office').head.z; const want = Math.atan2(-(tx - e.x), -(tz - e.z)); const dy = Math.atan2(Math.sin(want - K.yaw), Math.cos(want - K.yaw)); const pit = Math.atan2(ty - e.y, Math.hypot(tx - e.x, tz - e.z)); return [Math.round(-dy / K.sensitivity), Math.round((K.pitch - pit) / K.sensitivity)]; })()",
+   "steps": 8
+  },
+  {
+   "wait": 500
+  },
+  {
+   "shot": "l2_aim_ceiling"
+  },
+  {
+   "mouse": "click",
+   "button": "left"
+  },
+  {
+   "wait": 900
+  },
+  {
+   "eval": "JSON.stringify({ dead: !!G.stage.lamps.lamps.find((l) => l.tag === 'office').dead, on: G.stage.lamps.lamps.find((l) => l.tag === 'office').on, ammo: G.player && G.player.weapons && G.player.weapons.current && G.player.weapons.current.ammo, lamps: G.counters.c7lamps || 0 })"
+  },
+  {
+   "shot": "l3_after_ceiling_shot"
+  }
+ ]
+}

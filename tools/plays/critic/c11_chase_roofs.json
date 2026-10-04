@@ -1,0 +1,48 @@
+{
+ "about": "[C11 critic] V from the over checkpoint, played well over the roofs: frames on the roofs (stacks, skylight, tar under the lamp).",
+ "url": "/?mute=1&start=watcher.over",
+ "size": [
+  1440,
+  900
+ ],
+ "out": "shots/c11c/chase_roofs",
+ "steps": [
+  {
+   "until": "G.state === 'title' && !!document.querySelector('#title .opt[data-k=begin]')",
+   "timeout": 40000
+  },
+  {
+   "wait": 1200
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]",
+   "taken": "G.state !== 'title' && document.pointerLockElement === N.renderer.domElement",
+   "retries": 5,
+   "every": 4000
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'watcher'",
+   "timeout": 30000
+  },
+  {
+   "drive": "tools/plays/critic/c6c_drive.mjs",
+   "profile": "good",
+   "over": "roofs",
+   "seed": 1,
+   "timeout": 120000,
+   "stop": "G.scenes.beat === 'street' || G.scenes.beat === 'market'",
+   "shots": {
+    "r1_roof_top": "(N.controller.run && N.controller.run.feet) > 3 && G.camera.position.x < 57.2 && G.camera.position.x > 54",
+    "r2_roof_party": "(N.controller.run && N.controller.run.feet) > 3 && G.camera.position.x < 49 && G.camera.position.x > 45.5",
+    "r3_roof_r2": "(N.controller.run && N.controller.run.feet) > 3 && G.camera.position.x < 39.5 && G.camera.position.x > 37",
+    "r4_shed": "(N.controller.run && N.controller.run.feet) > 3 && G.camera.position.x < 32 && G.camera.position.x > 28"
+   }
+  },
+  {
+   "wait": 2500
+  },
+  {
+   "eval": "JSON.stringify({scene: G.scenes.current && G.scenes.current.id, beat: G.scenes.beat})"
+  }
+ ]
+}

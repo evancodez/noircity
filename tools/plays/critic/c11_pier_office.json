@@ -1,0 +1,224 @@
+{
+ "about": "[C11 critic] VII from the listen checkpoint, hands off through the order at the window; then into his office as a player: the room, the desk lamp's pool, her photograph, E on it, the drawer, the shells, out to the loud pass.",
+ "url": "/?mute=1&start=warehouse.office",
+ "size": [
+  1440,
+  900
+ ],
+ "out": "shots/c11c/pier",
+ "steps": [
+  {
+   "until": "G.state === 'title' && !document.getElementById('title').classList.contains('hidden')",
+   "timeout": 30000
+  },
+  {
+   "wait": 1200
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]",
+   "taken": "G.state !== 'title'",
+   "retries": 5,
+   "every": 4000
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'warehouse' && G.scenes.beat === 'office' && !G.scenes.trans",
+   "timeout": 40000
+  },
+  {
+   "eval": "(window.P = () => [ +N.controller.pos.x.toFixed(2), +N.controller.pos.z.toFixed(2), +N.controller.yaw.toFixed(2), +N.controller.pitch.toFixed(2) ], window.LOG=[], G.on('fail', (e) => LOG.push(e.why + '@' + G.scenes.beat)), JSON.stringify({ p: P(), mode: G.controller.mode, obj: G.hud.kit.objText, teach: G.hud.kit.teachCur }))"
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "shot": "o00_office_beat"
+  },
+  {
+   "walk": [
+    [
+     1.85,
+     -41.75
+    ]
+   ],
+   "timeout": 15000
+  },
+  {
+   "look": "[Math.round(-(Math.atan2(Math.sin(0 - N.controller.yaw), Math.cos(0 - N.controller.yaw)))/N.controller.sensitivity), Math.round((N.controller.pitch + 0.1)/N.controller.sensitivity)]",
+   "steps": 6
+  },
+  {
+   "wait": 400
+  },
+  {
+   "eval": "JSON.stringify({ p: P(), prompt: G.interact.current && G.interact.current.id })"
+  },
+  {
+   "shot": "o00b_at_door"
+  },
+  {
+   "key": "KeyE"
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "walk": [
+    [
+     1.85,
+     -42.7
+    ]
+   ],
+   "timeout": 15000
+  },
+  {
+   "walk": [
+    [
+     1.85,
+     -41.75
+    ],
+    [
+     1.85,
+     -42.7
+    ]
+   ],
+   "timeout": 15000
+  },
+  {
+   "look": "[Math.round(-(Math.atan2(Math.sin(Math.atan2(-(0.2-N.controller.pos.x), -(-43.9-N.controller.pos.z)) - N.controller.yaw), Math.cos(Math.atan2(-(0.2-N.controller.pos.x), -(-43.9-N.controller.pos.z)) - N.controller.yaw)))/N.controller.sensitivity), Math.round((N.controller.pitch + 0.1)/N.controller.sensitivity)]",
+   "steps": 8
+  },
+  {
+   "wait": 600
+  },
+  {
+   "eval": "(()=>{const d=new (G.camera.position.constructor)(); G.camera.getWorldDirection(d); return JSON.stringify({p:P(), dir:[+d.x.toFixed(2),+d.y.toFixed(2),+d.z.toFixed(2)], prompt: G.interact.current && G.interact.current.id})})()"
+  },
+  {
+   "shot": "o01_door_in"
+  },
+  {
+   "look": "[Math.round(-(Math.atan2(Math.sin(Math.atan2(-(0.2-N.controller.pos.x), -(-43.86-N.controller.pos.z)) - N.controller.yaw), Math.cos(Math.atan2(-(0.2-N.controller.pos.x), -(-43.86-N.controller.pos.z)) - N.controller.yaw)))/N.controller.sensitivity), Math.round((N.controller.pitch - (0))/N.controller.sensitivity)]",
+   "steps": 8
+  },
+  {
+   "wait": 500
+  },
+  {
+   "eval": "(()=>{const d=new (G.camera.position.constructor)(); G.camera.getWorldDirection(d); return JSON.stringify({p:P(), dir:[+d.x.toFixed(2),+d.y.toFixed(2),+d.z.toFixed(2)], prompt: G.interact.current && G.interact.current.id})})()"
+  },
+  {
+   "shot": "o01b_face_desk"
+  },
+  {
+   "look": "[Math.round(-(Math.atan2(Math.sin(Math.atan2(-(-2.5-N.controller.pos.x), -(-44.5-N.controller.pos.z)) - N.controller.yaw), Math.cos(Math.atan2(-(-2.5-N.controller.pos.x), -(-44.5-N.controller.pos.z)) - N.controller.yaw)))/N.controller.sensitivity), Math.round((N.controller.pitch - (0))/N.controller.sensitivity)]",
+   "steps": 8
+  },
+  {
+   "wait": 500
+  },
+  {
+   "eval": "(()=>{const d=new (G.camera.position.constructor)(); G.camera.getWorldDirection(d); return JSON.stringify({p:P(), dir:[+d.x.toFixed(2),+d.y.toFixed(2),+d.z.toFixed(2)], prompt: G.interact.current && G.interact.current.id})})()"
+  },
+  {
+   "shot": "o01c_face_west"
+  },
+  {
+   "walk": [
+    [
+     0.9,
+     -43.25
+    ]
+   ],
+   "timeout": 8000
+  },
+  {
+   "look": "[Math.round(-(Math.atan2(Math.sin(Math.atan2(-(0.16-N.controller.pos.x), -(-43.86-N.controller.pos.z)) - N.controller.yaw), Math.cos(Math.atan2(-(0.16-N.controller.pos.x), -(-43.86-N.controller.pos.z)) - N.controller.yaw)))/N.controller.sensitivity), Math.round((N.controller.pitch - (-0.75))/N.controller.sensitivity)]",
+   "steps": 8
+  },
+  {
+   "wait": 600
+  },
+  {
+   "eval": "(()=>{const d=new (G.camera.position.constructor)(); G.camera.getWorldDirection(d); return JSON.stringify({p:P(), dir:[+d.x.toFixed(2),+d.y.toFixed(2),+d.z.toFixed(2)], prompt: G.interact.current && G.interact.current.id})})()"
+  },
+  {
+   "shot": "o02_desk"
+  },
+  {
+   "key": "KeyE"
+  },
+  {
+   "wait": 1200
+  },
+  {
+   "shot": "o03_after_E"
+  },
+  {
+   "until": "G.stills.active",
+   "timeout": 8000
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "shot": "o04_photo_still"
+  },
+  {
+   "until": "!G.stills.active",
+   "timeout": 15000
+  },
+  {
+   "wait": 800
+  },
+  {
+   "shot": "o05_back"
+  },
+  {
+   "eval": "JSON.stringify({ p: P(), obj: (document.body.innerText||'').slice(0,200) })"
+  },
+  {
+   "look": "[Math.round(-(Math.atan2(Math.sin(Math.atan2(-(1.1-N.controller.pos.x), -(-43.12-N.controller.pos.z)) - N.controller.yaw), Math.cos(Math.atan2(-(1.1-N.controller.pos.x), -(-43.12-N.controller.pos.z)) - N.controller.yaw)))/N.controller.sensitivity), Math.round((N.controller.pitch - (-0.6))/N.controller.sensitivity)]",
+   "steps": 8
+  },
+  {
+   "wait": 500
+  },
+  {
+   "eval": "(()=>{const d=new (G.camera.position.constructor)(); G.camera.getWorldDirection(d); return JSON.stringify({p:P(), dir:[+d.x.toFixed(2),+d.y.toFixed(2),+d.z.toFixed(2)], prompt: G.interact.current && G.interact.current.id})})()"
+  },
+  {
+   "shot": "o06_drawer"
+  },
+  {
+   "key": "KeyE"
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "eval": "(()=>{const d=new (G.camera.position.constructor)(); G.camera.getWorldDirection(d); return JSON.stringify({p:P(), dir:[+d.x.toFixed(2),+d.y.toFixed(2),+d.z.toFixed(2)], prompt: G.interact.current && G.interact.current.id})})()"
+  },
+  {
+   "key": "KeyE"
+  },
+  {
+   "wait": 2500
+  },
+  {
+   "shot": "o07_shells"
+  },
+  {
+   "look": "[Math.round(-(Math.atan2(Math.sin(Math.atan2(-(1.85-N.controller.pos.x), -(-41.0-N.controller.pos.z)) - N.controller.yaw), Math.cos(Math.atan2(-(1.85-N.controller.pos.x), -(-41.0-N.controller.pos.z)) - N.controller.yaw)))/N.controller.sensitivity), Math.round((N.controller.pitch - (0))/N.controller.sensitivity)]",
+   "steps": 8
+  },
+  {
+   "wait": 500
+  },
+  {
+   "eval": "(()=>{const d=new (G.camera.position.constructor)(); G.camera.getWorldDirection(d); return JSON.stringify({p:P(), dir:[+d.x.toFixed(2),+d.y.toFixed(2),+d.z.toFixed(2)], prompt: G.interact.current && G.interact.current.id})})()"
+  },
+  {
+   "shot": "o08_face_door"
+  }
+ ]
+}

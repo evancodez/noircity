@@ -5,6 +5,7 @@ import { Skyline, makeTowerMaterial } from '../../../world/Skyline.js';
 import { makeWaterMaterial } from '../../riverroad/water.js';
 import { RIVER, RIVER_LEN, riverFrame, riverPoint, WATER_Y, CANAL, PAVE, BRIDGE, NS, PIER, WHARF_X } from '../plan.js';
 import { FOG } from '../../../render/fog.js';
+import { glowTexture } from '../../../vehicles/models.js';
 
 // The water: the river east of the quay and the canal along the north, one
 // black plane that carries the lights in it as broken columns (the river
@@ -15,7 +16,18 @@ import { FOG } from '../../../render/fog.js';
 // API: { water, far, update(camera, pixelHeight) }
 const ROW_TONE = [0.30, 0.32, 0.33, 0.34], ROW_HAZE = [0.08, 0.12, 0.16, 0.2];
 // [3rd owner] the river road's Look: the fog's colour and the exposure, x the block's
-export const RIVER_LOOK = { fog: 0.6, exposure: 1.0 };
+// ([C11] fog 0.6 -> 0.28, exposure 1 -> 1.35, the wet road's streaks x 1.6
+// (refl: eased in as the eye comes onto the river road): the art
+// director's frames of phase b and of the wreck still read a flat grey band
+// of sky and far water over the rail and 0.5 to 1.4 % paper white; now the
+// sky and the water are night, and the lamps, their cones, their streaks
+// and the far bank's lights in the fog are the whites)
+// ([C11, after the critic] on foot by the wreck the exposure lift greyed the
+// whole frame - 39 to 59 % mid-grey - so it is the seat's only: on foot the
+// river road takes the block's exposure (footExposure), eased as the Look
+// is; and a quay cone near the eye on foot is dimmed (nearCone: x 0.4 at
+// 5 m, whole by 20 m) so it is a cone and not a white wall)
+export const RIVER_LOOK = { fog: 0.28, exposure: 1.35, footExposure: 1.0, refl: 2.8, nearCone: [5, 20, 0.4] };
 
 export default {
   name: 'river', order: 70,
@@ -34,9 +46,10 @@ export default {
     // toward black, so the towers stand as masses against it and the lamps,
     // their cones and their streaks are what is light (eased in over a
     // quarter second as the eye crosses onto the river road)
-    stage.addLook(new THREE.Box3(new THREE.Vector3(WHARF_X - 6, -60, -320), new THREE.Vector3(1400, 600, 900)), {
+    const riverVol = stage.addLook(new THREE.Box3(new THREE.Vector3(WHARF_X - 6, -60, -320), new THREE.Vector3(1400, 600, 900)), {
       fogColor: FOG.color.clone().multiplyScalar(RIVER_LOOK.fog), exposure: stage.look.exposure * RIVER_LOOK.exposure,
     });
+    const seatExp = stage.look.exposure * RIVER_LOOK.exposure, footExp = stage.look.exposure * RIVER_LOOK.footExposure;
     const water = new THREE.Mesh(new THREE.PlaneGeometry(3000, 3000).rotateX(-Math.PI / 2), makeWaterMaterial(U, WATER_Y));
     water.position.set(300, WATER_Y, -100);
     water.layers.set(LAYER.GROUND);
@@ -118,7 +131,9 @@ export default {
         const ly = WATER_Y + 1.4 + rng.range(4, 7);
         const lz = z + rng.range(-8, 8);
         lights.push(new THREE.SphereGeometry(0.55, 8, 6).translate(FARX - 2, ly, lz));
-        far.push({ p: V3(FARX - 2, ly, lz), k: rng.range(0.7, 1.6), w: 0.8 });
+        // ([C11, after the critic] their columns in the water a step
+        // brighter and wider: the whites of the seat's view over the river)
+        far.push({ p: V3(FARX - 2, ly, lz), k: rng.range(0.7, 1.6) * 1.6, w: 1.3 });
       }
     }
     const bankMesh = new THREE.Mesh(merge(bank), M.brickFar);
@@ -127,6 +142,19 @@ export default {
     const lm = new THREE.Mesh(merge(lights), lit);
     lm.userData.inkId = bankMesh.userData.inkId; lm.userData.noRay = true;
     group.add(lm);
+    // [C11] each far light's halo in the fog: a soft white bloom some 7 m
+    // across (a dot of 2 px alone, it read as nothing over the river), not
+    // fogged - the night over the water is dark now, the halo is the light
+    {
+      const gm = new THREE.SpriteMaterial({ map: glowTexture(), color: new THREE.Color().setScalar(0.8), blending: THREE.AdditiveBlending, depthWrite: false, transparent: true, fog: false });
+      for (const f of far) {
+        const sp = new THREE.Sprite(gm);
+        sp.position.copy(f.p);
+        sp.scale.setScalar(7 + f.k * 2.2);
+        sp.layers.set(LAYER.FX_REFL); sp.renderOrder = 6; sp.userData.noRay = true;
+        group.add(sp);
+      }
+    }
     // ---- the city beyond: across the river, past the rail yard, past the
     // canal, past the depot (the block's towers, flat fogged silhouettes)
     const sk = Object.create(Skyline.prototype);
@@ -167,15 +195,32 @@ export default {
       group, water, far,
       update(camera, pixelHeight) {
         const p = camera.position;
+        // [C11] the road's streaks brighter on the river road (the street is
+        // one shape over the whole city: its strength follows the eye)
+        const road = stage.part('street') && stage.part('street').road;
+        const ru = road && road.material.uniforms && road.material.uniforms.uReflStrength;
+        if (ru) { const want = p.x > WHARF_X - 6 && p.z > -320 ? RIVER_LOOK.refl : 1.0; ru.value += (want - ru.value) * 0.08; if (Math.abs(want - ru.value) < 0.01) ru.value = want; }
+        // [C11, after the critic] on foot: the block's exposure, the near
+        // quay cones dimmed (the seat keeps the lift and the full cones)
+        const G = globalThis.__noir && globalThis.__noir.game;
+        const foot = !!(G && G.controller && G.controller.mode === 'walk');
+        riverVol.look.exposure = foot ? footExp : seatExp;
+        const [n0, n1, nk] = RIVER_LOOK.nearCone;
+        const L = stage.lamps;
+        if (L && L.posts) for (const l of L.posts) {
+          if (!l.overWater || l.coneFar == null) continue;
+          const d = Math.hypot(l.head.x - p.x, l.head.z - p.z);
+          l.coneBase = l.coneFar * (foot ? nk + (1 - nk) * Math.min(1, Math.max(0, (d - n0) / (n1 - n0))) : 1);
+        }
         if (!water.material.setLights) return;
         cand.length = 0;
-        const L = stage.lamps;
         if (L && L.posts) for (const l of L.posts) {
           if (l.dead || !l.on || l.bent) continue;
           if (Math.abs(l.head.x - p.x) + Math.abs(l.head.z - p.z) > 260) continue;
           // (only the quay's and the canal's lamps stand over water)
           if (!l.overWater) continue;
-          cand.push({ p: l.head, k: 3.2, w: 0.55 });
+          // ([C11, after the critic] their columns wider and brighter: 3.2 / 0.55)
+          cand.push({ p: l.head, k: 4.2, w: 0.95 });
         }
         for (const f of far) cand.push(f);
         const LM = stage.part('landmarks');

@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { Lamps } from '../../../world/Lamps.js';
 import { tagInk, markFigure } from '../../../render/layers.js';
 import { lathe, merge, tube, V3 } from '../../../world/geom.js';
-import { PAVE, EL, PELL, SPECIAL, ALLEY_W, PIER } from '../plan.js';
+import { PAVE, EL, PELL, SPECIAL, ALLEY_W, PIER, WHARF_X } from '../plan.js';
 import { postsOf } from '../layout.js';
 
 // The city's lamps: the block's lamp system (world/Lamps.js: the cones, the
@@ -19,6 +19,14 @@ import { postsOf } from '../layout.js';
 //   can bend: the track's round things), near(x, z, r)
 const SHOW = 170;
 const QUAY_CONE = 1.6;
+// [C11] the river road's lamps (the quay's posts, the el's hung lamps over
+// its south half) a step brighter again: the art director's frames of phase
+// b and the wreck read 0.5 to 1.4 % paper white against the reference's 5;
+// their cones' cores, their pools and so their streaks in the wet road are
+// the whites of that night (the sky and the water went dark with them:
+// river.js RIVER_LOOK)
+const RIVER_CONE = 1.5, RIVER_HUNG_CONE = 2.6, RIVER_LIGHT = 1.35;
+const onRiver = (x) => x > WHARF_X - 6;
 
 export default {
   name: 'lamps', order: 50, tick: 40,
@@ -58,7 +66,7 @@ export default {
       // ([3rd owner] the quay's lamps over the river road: their cones the
       // brightest thing in phase b's frame, white under the head - the
       // critic measured 3 to 5 % white there against the reference's 8)
-      if (P.overWater) { l.overWater = true; l.coneBase *= QUAY_CONE; }
+      if (P.overWater) { l.overWater = true; l.coneBase *= QUAY_CONE * RIVER_CONE; l.coneFar = l.coneBase; if (l.light) l.light.intensity *= RIVER_LIGHT; }
     }
     // ... and under the el (avenue, Harbor St, the river road's south half):
     // hung from the deck's middle every other span
@@ -71,7 +79,8 @@ export default {
         acc = 0; k++;
         const [x, z] = pts[i];
         if (z < -262) continue;
-        L.addHanging(V3(x, EL.deckY, z), { real: true });
+        const h = L.addHanging(V3(x, EL.deckY, z), { real: true });
+        if (onRiver(x)) { h.coneBase *= RIVER_HUNG_CONE; if (h.light) h.light.intensity *= RIVER_LIGHT; }
       }
     }
     // wall brackets: Pell Lane (the backlot's lamp over the cars: the east
