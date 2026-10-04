@@ -7,6 +7,8 @@
  "steps": [
   { "until": "G.state === 'title' && N.hud.titleShown", "timeout": 60000 },
   { "wait": 1500 },
+  { "pad": { "b": ["x"], "secs": 0.12 }, "label": "the first press wakes the pad: the bracket only" },
+  { "wait": 400 },
   { "pad": { "b": ["x"], "secs": 0.12 } },
   { "until": "G.scenes.current && G.scenes.current.id === 'office' && G.scenes.fadeK < 0.2", "timeout": 30000 },
   { "expect": "G.scenes.beat === 'corridor' && G.hud.objectiveText === 'Room 304. Ames.' && N.pad.holds", "label": "the corridor, its line; the pad holds the game" },

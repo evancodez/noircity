@@ -158,6 +158,8 @@ async function padSync() {
     B[PADB.l1] = h('Mouse2') ? 1 : 0; B[PADB.r1] = h('Mouse0') ? 1 : 0;
   } else {
     A[1] = (h('KeyS') ? 1 : 0) - (h('KeyW') ? 1 : 0);
+    // (a fist fight's hop is a flick square to its axis: the thumb leaves the walk for it)
+    if (ctx === 'brawl' && A[0]) A[1] = 0;
     B[PADB.x] = h('Space') || (ctx === 'stills' && h('Mouse0')) ? 1 : 0;
     B[PADB.o] = h('KeyC') || h('ControlLeft') ? 1 : 0;
     B[PADB.l1] = h('ShiftLeft') ? 1 : 0; B[PADB.r1] = h('KeyF') ? 1 : 0;

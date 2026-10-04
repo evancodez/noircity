@@ -8,6 +8,8 @@
  "steps": [
   { "until": "G.state === 'title' && N.hud.titleShown", "timeout": 40000 },
   { "wait": 1500 },
+  { "pad": { "b": ["x"], "secs": 0.12 }, "label": "the first press wakes the pad: the bracket only" },
+  { "wait": 400 },
   { "pad": { "b": ["x"], "secs": 0.12 } },
   { "eval": "(window.__cards = [], setInterval(() => { const T = G.hud.kit.teachCur; if (T && !window.__cards.some((c) => c.id === T.id)) window.__cards.push({ id: T.id, glyphs: [...G.hud.kit.teachEl.querySelectorAll('canvas[data-glyph]')].map((c) => c.dataset.glyph) }); }, 100), 1)" },
   { "until": "G.scenes.current && G.scenes.current.id === 'watcher' && G.hud.promptShown.includes('fire escape')", "timeout": 30000 },

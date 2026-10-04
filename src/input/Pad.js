@@ -17,7 +17,8 @@
 // the fist of its side; the car makes the triggers the pedals and L1 the
 // lean out of the window; a puzzle's table makes the sticks the cursor and
 // L1 / R1 the wheel. A button held across a change of context is ignored
-// until it is let go (an X that chose BEGIN never reaches the stills).
+// until it is let go (an X that chose BEGIN never reaches the stills) - never
+// through a fail's black and back, and never the car's pedals (enter()).
 // The pad is active once any of its controls moves; input.last is the last
 // device used ('pad' | 'keys'), and the kit draws its cards for it.
 // Keyboard and mouse keep working at the same time.
@@ -28,6 +29,8 @@
 // Proof without a pad: ?padfake=1 reads window.__pad = { buttons: [18 values],
 // axes: [4], rs?: { x, y, secs } (the right stick held for exactly secs) }
 // instead of navigator.getGamepads() (tools/play.mjs's pad step).
+import { Vector3 } from 'three';
+const _sa = new Vector3(), _sb = new Vector3(), _sd = new Vector3();
 export const PAD = {
   dz: 0.12, tdz: 0.05,            // the deadzones: the sticks (radial), the triggers
   look: { yaw: 3.2, pitch: 2.0, lin: 0.28, pow: 2.4 },   // rad/s at full tilt; u -> lin*u + (1-lin)*u^pow
@@ -38,7 +41,9 @@ export const PAD = {
   holdLow: 0.3,                    // circle held past this: a hold (let go, he stands)
   active: 0.3,                     // a control past this makes the pad the last device
   minPress: 0.05,                  // every emitted press lasts at least this (a step sees it)
-  friction: 0.5,                   // a gun out, the look over a man runs at this share (never a pull)
+  friction: 0.5,                   // a gun out, the look over a man I can see runs at this share (never a pull)
+  flick: { from: 0.3, to: 0.65, secs: 0.16, square: 1.6 },   // a fist fight's hop on the stick: 0.3 -> 0.65 this fast, this square to its axis
+  tommyEvery: 3,                   // the Tommy gun's rumble: the burst's first round, then every third
   repeat: [0.4, 0.15],             // a menu's held direction: the first repeat, then each
 };
 export const BTN = { cross: 0, circle: 1, square: 2, triangle: 3, L1: 4, R1: 5, L2: 6, R2: 7, share: 8, options: 9, L3: 10, R3: 11, up: 12, down: 13, left: 14, right: 15, ps: 16, touch: 17 };
@@ -73,6 +78,9 @@ class Pad {
     this.t = 0;
     this.low = null;            // circle: { at, was }
     this.nav = { dir: null, at: 0, next: 0 };
+    this.fl = { x: { s: 0, low: 0, on: 0 }, y: { s: 0, low: 0, on: 0 } };   // the fist fight's flicks
+    this.idleFail = false; this.idleHeld = [];
+    this.tommy = { at: -9, n: 0 };
     this.shake0 = 0;
     this.listeners = [];
   }
@@ -95,7 +103,16 @@ class Pad {
     addEventListener('keydown', (e) => { if (e.isTrusted && e.code === 'Escape' && this.holds && document.pointerLockElement !== this.dom) this.pauseGame(); });
     // rumble (small, honest: never continuous)
     const G = o.game;
-    G.on('shot', () => this.rumble(0.25, 0.55, 70));
+    // (the Tommy gun's eleven rounds a second: a kick on the burst's first and
+    // then every third - a 70 ms kick on each kept the motors on 3/4 of the time)
+    G.on('shot', (e) => {
+      if (e && e.weapon === 'tommy') {
+        const T = this.tommy;
+        T.n = this.t - T.at < 0.2 ? T.n + 1 : 0; T.at = this.t;
+        if (T.n % PAD.tommyEvery) return;
+      }
+      this.rumble(0.25, 0.55, 70);
+    });
     G.on('player:hit', (e) => this.rumble(0.75, 0.5, 170 + Math.min(80, (e && e.dmg) || 0)));
     G.on('brawl:hit', (e) => {
       if (!e) return;
@@ -167,7 +184,8 @@ class Pad {
     // on a page - the browser shows a pad only after one - is not 'held
     // across a change' of a context that changed before it)
     const ctx0 = this.context();
-    if (ctx0 !== this.ctx && !this.b.some((v) => v > 0.3)) { this.releaseAll(); this.ctx = ctx0; this.low = null; this.nav.dir = null; if (this.onContext) this.onContext(ctx0); }
+    if (ctx0 !== this.ctx && !this.b.some((v) => v > 0.3)) { this.releaseAll(); this.enter(ctx0, null); this.low = null; this.nav.dir = null; if (this.onContext) this.onContext(ctx0); }
+    if (this.ctx === 'idle' && this.game.failing) this.idleFail = true;
     const raw = this.read();
     if (!raw) { if (this.held.size) this.releaseAll(); this.move = null; this.car = null; this.b.fill(0); this.pb.fill(0); return; }
     const B = this.b;
@@ -193,9 +211,9 @@ class Pad {
     this.trigger.l = tg(B[BTN.L2]); this.trigger.r = tg(B[BTN.R2]);
     const ctx = this.context();
     if (ctx !== this.ctx) {
-      for (let i = 0; i < 18; i++) if (B[i] > 0.3) this.stale.add(i);
       this.releaseAll();
-      this.ctx = ctx; this.low = null; this.trigOn[0] = this.trigOn[1] = false;
+      this.enter(ctx, B);
+      this.low = null; this.trigOn[0] = this.trigOn[1] = false;
       this.nav.dir = null;
       if (this.onContext) this.onContext(ctx);
     }
@@ -232,6 +250,24 @@ class Pad {
     if (typeof document !== 'undefined') document.body.classList.toggle('padheld', this.holds && document.pointerLockElement !== this.dom);
   }
 
+  // a change of what is on screen. A button held across it is ignored until it
+  // is let go (the X that chose BEGIN never reaches the stills, the square that
+  // got into the car does not get out again) - but never through a fail's
+  // black and back: the hand that held the throttle into "Lost him." holds it
+  // into the retry, and the retry hears it ([C12] after the critic: the car sat
+  // at 0 km/h after the retry under a trigger pressed to the floor)
+  enter(ctx, B) {
+    const from = this.ctx, held = (i) => !!B && B[i] > 0.3;
+    if (ctx === 'idle') {
+      this.idleFail = !!(this.game && this.game.failing);
+      this.idleHeld = [];
+      for (let i = 0; i < 18; i++) if (held(i)) this.idleHeld.push(i);
+    } else if (from === 'idle') {
+      if (!this.idleFail) for (const i of this.idleHeld || []) if (held(i)) this.stale.add(i);
+    } else for (let i = 0; i < 18; i++) if (held(i)) this.stale.add(i);
+    this.ctx = ctx;
+  }
+
   // the rulebook on the pad (WAVE_C §2), by context
   playMap(ctx, on, edge, want, mx, my, usePad) {
     const M = this.mir, C = this.controller;
@@ -245,21 +281,35 @@ class Pad {
       // and the foot stays on R2 (the keyboard's W + RMB + LMB: drive and
       // shoot at once - the brief's R2-fires-while-leaning let him get away
       // every time the good hands leaned out on the river road)
+      // (the pedals are pedals: never stale - a foot held down drives at once)
       if (M.A) want.add('KeyA');
       if (M.D) want.add('KeyD');
-      const throttle = this.stale.has(BTN.R2) ? 0 : this.trigger.r;
+      const throttle = this.trigger.r, brake = this.trigger.l;
       if (on(BTN.L1)) want.add('Mouse2');
       if (on(BTN.R1)) want.add('Mouse0');
       if (throttle > 0.25) want.add('KeyW');
-      if (this.trigger.l > 0.25 && !this.stale.has(BTN.L2)) want.add('KeyS');
+      if (brake > 0.25) want.add('KeyS');
       if (on(BTN.cross)) want.add('Space');
-      if (usePad) this.car = { throttle, brake: this.stale.has(BTN.L2) ? 0 : this.trigger.l, steer: -Math.sign(mx) * Math.pow(Math.abs(mx), 1.3) };
+      if (usePad) this.car = { throttle, brake, steer: -Math.sign(mx) * Math.pow(Math.abs(mx), 1.3) };
     } else {
-      if (ctx !== 'table') {
+      if (ctx === 'brawl') {
+        // a fist fight: A / D / S are hops (Brawl.js: any press is one), so
+        // the stick gives them only on a flick - past 0.65 within 0.16 s of
+        // leaving 0.3, and square to its axis (|x| > 1.6 |y|) - then held while
+        // the stick stays over (circling, backing away); a walk in a little off
+        // straight, or a slow drift, never hops ([C12] after the critic)
+        const fx = this.flick(this.fl.x, mx, my), fy = this.flick(this.fl.y, my, mx);
+        if (M.W) want.add('KeyW');
+        if (fy > 0) want.add('KeyS');
+        if (fx < 0) want.add('KeyA');
+        if (fx > 0) want.add('KeyD');
+      } else if (ctx !== 'table') {
         if (M.W) want.add('KeyW');
         if (M.S) want.add('KeyS');
         if (M.A) want.add('KeyA');
         if (M.D) want.add('KeyD');
+      }
+      if (ctx !== 'table') {
         if (on(BTN.cross)) want.add('Space');
         if (on(BTN.L1) || on(BTN.L3)) want.add('ShiftLeft');
         if (on(BTN.R1)) want.add('KeyF');
@@ -286,6 +336,16 @@ class Pad {
     void C;
   }
   isLow() { const C = this.controller; return !!(C.crouchOn || (C.sneak && C.sneak.crouch)); }
+  // one axis of the stick as a flick: the side it was flicked to (-1 / 1) while
+  // it stays over, else 0 (st: { s: the side last frame, low: when it left the middle, on })
+  flick(st, v, o) {
+    const a = Math.abs(v), s = a < PAD.flick.from ? 0 : Math.sign(v);
+    if (!s || s !== st.s) { st.low = this.t; if (s !== st.on) st.on = 0; }
+    st.s = s;
+    if (st.on && a < PAD.moveOff) st.on = 0;
+    if (!st.on && s && a > PAD.flick.to && a > PAD.flick.square * Math.abs(o) && this.t - st.low <= PAD.flick.secs) st.on = s;
+    return st.on;
+  }
 
   // the right stick: the look (a puzzle's table: the cursor, both sticks; L1 / R1 the wheel)
   look(ctx, rx, ry, mx, my, dt, on, rdt) {
@@ -308,9 +368,12 @@ class Pad {
     C._onMouse({ movementX: cx, movementY: cy, pad: true });
     if (locked) { G._mouseAcc.dx += cx; G._mouseAcc.dy += cy; }
   }
-  // a gun out and the sight over a man (his chest within about two of his
-  // widths of the middle of the view): the stick turns slower there - a
-  // stick's hand settles on him as a mouse's does; it never moves the aim
+  // a gun out and the sight over a man I can see (his chest within about two
+  // of his widths of the middle of the view, and a clear line from my eye to
+  // it - the gun kit's own sight: clear glass is seen through, frosted glass,
+  // wood and walls are not): the stick turns slower there - a stick's hand
+  // settles on him as a mouse's does; it never moves the aim, and it never
+  // finds a man behind a wall or a door's glass ([C12] after the critic)
   friction() {
     const G = this.game, W = G.player && G.player.weapons && G.player.weapons.active;
     if (!W && G.hands.set !== 'tommy') return 1;
@@ -324,10 +387,21 @@ class Pad {
       if (L < 0.5 || L > 45) continue;
       const cos = (dx * fx + dy * fy + dz * fz) / L;
       const ang = Math.acos(Math.max(-1, Math.min(1, cos))), near = 2.2 * Math.atan2(0.3, L);
-      if (ang < near) { const u = ang / near; best = Math.min(best, PAD.friction + (1 - PAD.friction) * u * u); }
+      if (ang >= near) continue;
+      const u = ang / near, f = PAD.friction + (1 - PAD.friction) * u * u;
+      if (f >= best || !this.sees(ex, ey, ez, c[12], c[13], c[14])) continue;
+      best = f;
     }
     this.fr = best;
     return best;
+  }
+  // a clear line for the eyes from (ax, ay, az) to (bx, by, bz)
+  sees(ax, ay, az, bx, by, bz) {
+    const G = this.game;
+    _sa.set(ax, ay, az); _sb.set(bx, by, bz);
+    if (G.guns && G.guns.see) return G.guns.see(_sa, _sb, 0.3);
+    _sd.subVectors(_sb, _sa); const L = _sd.length();
+    return L < 0.31 || !G.rays.raycast(_sa, _sd.divideScalar(L), L - 0.3, { anyHit: true });
   }
   // (the tools' inverse: mouse counts a second at tilt u on an axis, now)
   countsPerSec(u, axis = 'x') {

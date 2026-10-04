@@ -7,6 +7,8 @@
  "steps": [
   { "until": "G.state === 'title' && N.hud.titleShown", "timeout": 40000 },
   { "wait": 2000 },
+  { "pad": { "b": ["x"], "secs": 0.12 }, "label": "the first press wakes the pad: the bracket only" },
+  { "wait": 400 },
   { "pad": { "b": ["x"], "secs": 0.12 } },
   { "until": "G.scenes.current && G.scenes.current.id === 'tail' && G.controller.mode === 'drive' && !G.scenes.fadeK", "timeout": 45000 },
   { "wait": 1200 },

@@ -30,6 +30,18 @@
      "x"
     ],
     "secs": 0.12
+   },
+   "label": "the first press wakes the pad: the bracket only"
+  },
+  {
+   "wait": 400
+  },
+  {
+   "pad": {
+    "b": [
+     "x"
+    ],
+    "secs": 0.12
    }
   },
   {
@@ -88,6 +100,18 @@
   },
   {
    "wait": 1200
+  },
+  {
+   "pad": {
+    "b": [
+     "x"
+    ],
+    "secs": 0.12
+   },
+   "label": "the first press wakes the pad: the bracket only"
+  },
+  {
+   "wait": 400
   },
   {
    "pad": {
@@ -160,6 +184,18 @@
      "x"
     ],
     "secs": 0.12
+   },
+   "label": "the first press wakes the pad: the bracket only"
+  },
+  {
+   "wait": 400
+  },
+  {
+   "pad": {
+    "b": [
+     "x"
+    ],
+    "secs": 0.12
    }
   },
   {
@@ -218,6 +254,18 @@
   },
   {
    "wait": 1200
+  },
+  {
+   "pad": {
+    "b": [
+     "x"
+    ],
+    "secs": 0.12
+   },
+   "label": "the first press wakes the pad: the bracket only"
+  },
+  {
+   "wait": 400
   },
   {
    "pad": {
@@ -290,6 +338,18 @@
      "x"
     ],
     "secs": 0.12
+   },
+   "label": "the first press wakes the pad: the bracket only"
+  },
+  {
+   "wait": 400
+  },
+  {
+   "pad": {
+    "b": [
+     "x"
+    ],
+    "secs": 0.12
    }
   },
   {
@@ -348,6 +408,18 @@
   },
   {
    "wait": 1200
+  },
+  {
+   "pad": {
+    "b": [
+     "x"
+    ],
+    "secs": 0.12
+   },
+   "label": "the first press wakes the pad: the bracket only"
+  },
+  {
+   "wait": 400
   },
   {
    "pad": {
@@ -420,6 +492,18 @@
      "x"
     ],
     "secs": 0.12
+   },
+   "label": "the first press wakes the pad: the bracket only"
+  },
+  {
+   "wait": 400
+  },
+  {
+   "pad": {
+    "b": [
+     "x"
+    ],
+    "secs": 0.12
    }
   },
   {
@@ -478,6 +562,18 @@
   },
   {
    "wait": 1200
+  },
+  {
+   "pad": {
+    "b": [
+     "x"
+    ],
+    "secs": 0.12
+   },
+   "label": "the first press wakes the pad: the bracket only"
+  },
+  {
+   "wait": 400
   },
   {
    "pad": {

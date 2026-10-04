@@ -327,6 +327,13 @@ export class Hud {
   // how to have it back)
   soundHint(on, muted = false) {
     this.soundLine.textContent = muted ? 'sound off · M sound' : 'any key: sound';
+    // [C12] the pad the last device: M is the d-pad's down in play (on the
+    // title it moves the bracket), and the browser's sound wants a key - a
+    // pad's press is no gesture, and a click on the title starts the story
+    if (padGlyphs()) {
+      if (muted) { this.soundLine.textContent = ''; const s = document.createElement('span'); s.className = 'padline'; s.append(...keyNodes('sound off · M in play', 'play', 20)); this.soundLine.appendChild(s); }
+      else this.soundLine.textContent = 'any keyboard key: sound';
+    }
     this.soundLine.style.display = on || muted ? '' : 'none';
   }
 
@@ -525,10 +532,10 @@ export class Hud {
     const gun = s.gun ?? true, fight = s.fight ?? true;
     if (L.gun !== gun) { this.root.classList.toggle('nogun', !gun); L.gun = gun; }
     if (L.fight !== fight) { this.root.classList.toggle('nofight', !fight); L.fight = fight; }
-    const ammoKey = s.ammo + '/' + s.reloading;
+    const ammoKey = s.ammo + '/' + s.reloading + (padGlyphs() ? '/pad' : '');   // [C12]
     if (L.ammo !== ammoKey) {
       E.ammo.innerHTML = `${s.reloading ? '--' : String(s.ammo).padStart(2, '0')}<small> / ${s.drum}</small>`;
-      E.note.textContent = s.reloading ? 'reloading' : s.ammo === 0 ? 'press r' : s.ammo <= 10 ? 'low' : '';
+      E.note.textContent = s.reloading ? 'reloading' : s.ammo === 0 ? (padGlyphs() ? 'press triangle' : 'press r') : s.ammo <= 10 ? 'low' : '';   // [C12] (the pad's triangle)
       L.ammo = ammoKey;
     }
     const hp = Math.round(s.hp);

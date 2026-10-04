@@ -53,6 +53,11 @@ export class PadUi {
   title(nav) {
     const H = this.hud, T = H.title;
     const toc = T.classList.contains('toc-open');
+    // ([C12] after the critic: a choice by the pad needs the bracket already
+    // up - the first press on a title the pad has not touched, the one that
+    // wakes it in Chrome, only shows where the bracket stands)
+    const awake = this.sel.style.display === 'block';
+    if (!awake && (nav.ok || nav.back)) nav = { go: null, ok: false, back: false, opt: false };
     const opts = [...T.querySelectorAll('.opts .opt')].filter((o) => !o.classList.contains('hidden'));
     if (this.titleIx == null) { const c = opts.findIndex((o) => o.dataset.k === 'continue'); this.titleIx = c >= 0 ? c : 0; }
     for (const r of T.querySelectorAll('.toc .row.padsel')) r.classList.remove('padsel');
@@ -139,10 +144,7 @@ export class PadUi {
     };
     if (H.paused && /click to resume|resume/.test(H.pauseCard.go.textContent)) line(H.pauseCard.go, 'cross', 'resume', 'click to resume');
     if (H.endShown) line(H.endCard.go, 'cross', H.endKind === 'cont' ? 'the title' : 'try again', H.endKind === 'cont' ? 'click for the title' : 'click to try again');
-    if (H.soundLine && G.sfx) {
-      if (P && !G.sfx.live && !G.sfx.muted) H.soundLine.textContent = 'click once: sound';
-      else H.soundHint(!G.sfx.live, G.sfx.muted);
-    }
+    if (H.soundLine && G.sfx) H.soundHint(!G.sfx.live, G.sfx.muted);
     // the prompt (redrawn on its next call), the teach card, the fight's card, the stills' hint
     if (H.kit && H.kit.redrawTeach) H.kit.redrawTeach();
     if (G.brawl && G.brawl._cards && G.brawl._cards.redraw) G.brawl._cards.redraw();
