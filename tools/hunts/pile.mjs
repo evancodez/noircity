@@ -26,6 +26,8 @@ export default async function (h) {
     await h.js(`(G.fail({ why: 'Hunt.', fall: ${fall} }), 1)`);
     await h.until(`!G.failing && G.state === 'playing' && !G.scenes.trans`, 12000);
     await h.wait(1500);
+    // (HUNT_PLAY: W and a click between, as wavec.mjs's die phase)
+    if (process.env.HUNT_PLAY) { await h.down('KeyW'); await h.click('left'); await h.wait(500); await h.up('KeyW'); }
   }
   const b = await h.js(COUNT);
   if (process.env.HUNT_GEO) { const r = await h.js(`(() => { const c = {}; for (const g of window.__geos) if (g._listeners && g._listeners.dispose && g._listeners.dispose.length) c[g.__st] = (c[g.__st] || 0) + 1; return Object.entries(c).sort((x, y) => y[1] - x[1]).slice(0, 16); })()`); for (const [k, n] of r) h.log(`  GEO ${n}  ${k}`); }
