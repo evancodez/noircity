@@ -28,6 +28,14 @@ ctx.controller.setMode('gun', { crouch: false });   //  the mode after it) ({ cr
 gunsOf(ctx.game).arm('revolver');                   // or 'tommy': in hand AND FULL - in the beat's setup,
                                                     // so every retry gives the gun as it was at the checkpoint
 ```
+[C13] The revolver's pocket is counted: `arm('revolver')` gives the
+checkpoint's counts (the cylinder and the pocket as they were when the beat
+was reached, `save.flags.ammo`), or the chapter's row of `POCKET`
+(`src/player/weapons/revolver.js`) when it is begun, never under the row's
+floor; `arm('revolver', { pocket: n })` the cylinder full and n;
+`arm('revolver', { keep: true })` the counts as they are. A chapter that gives
+the revolver adds its row to `POCKET`; a scene with no row keeps an endless
+pocket.
 (`weapons.equip` alone keeps what was left in the gun at the fall: the
 critic's second look found a retry starting with two rounds as the men came
 in. A beat that starts a man down behind cover starts him down: the test
