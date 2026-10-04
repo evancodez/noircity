@@ -62,6 +62,19 @@ function stage(ctx, b) {
   // [C8] Mack's window: out since II, its sill still there - over it is
   // SPACE (nick.js), never a walk through it (II opens the bay's colliders)
   { const front = S.part('dinerFront'); if (front.closeBay) front.closeBay(mackWindow(G)); }
+  // [C10b] the nick of time's way in by the window is B4's (the kerb and the crate south of it, the counter's south
+  // end, the aisle behind Sal clear of Dot). Mack goes out by B2 in about half the plays from the title, and then the
+  // kerb stood by a whole window: no sill, no window way (and B2's is past the man at the door). B4 is out too then -
+  // broken before I came, its glass on the pavement - and over its sill is SPACE as over Mack's.
+  if (mackWindow(G) === 'B2' && bi <= BEATS.indexOf('cars')) {
+    const front = S.part('dinerFront'), p = front.panes.B4;
+    if (p && p.state !== 'gone') {
+      const SF = G.sfx, own = !!SF && Object.prototype.hasOwnProperty.call(SF, 'glass'), glass0 = SF && SF.glass;
+      if (SF) SF.glass = () => {};
+      try { S.glass.shatter(p, { dir: V(1, 0.15, 0), power: 1.4, at: V(DINER.faceX - 0.1, 1.5, DINER.bays.B4) }); } finally { if (SF) { if (own) SF.glass = glass0; else delete SF.glass; } }
+    }
+    if (front.closeBay) front.closeBay('B4');
+  }
   R.paneRounds = null;
   // [C8] after the critic: the hydrant on the kerb, whole again at every checkpoint
   if (!R.hydrant) { R.hydrant = makeHydrant(ctx); (R.onTeardown || (R.onTeardown = [])).push(() => { if (R.hydrant) R.hydrant.remove(); R.hydrant = null; }); }
