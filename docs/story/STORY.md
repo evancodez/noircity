@@ -61,9 +61,10 @@ it, and find on him the red matchbook and **Ames's card, crossed through in
 red**. Still: `AMES. MARKED.`
 
 **III Room 304** (`office`). The Harbor Building's third floor; Ames is dead
-at his desk: too late. A real puzzle: the pad by the telephone holds the
-impression of what he wrote last - shade it with the pencil and the safe's
-three numbers come up big and white; the dial turns by the mouse. In the safe,
+at his desk: too late. A real puzzle: the pad on his blotter holds the
+impression of what he wrote last - find a pencil, shade the pad and the
+safe's three numbers come up big and white; the safe is behind a picture,
+its dial turned by the mouse. In the safe,
 a torn guest check from my diner, pieced together on the desk (drag a piece,
 turn it): `PIER 9 · MIDNIGHT · — DOT`, in a woman's hand. Stills: `DOT'S
 HAND.` / `SHE SENT HIM TO THEM.` I come to think she is with the Cardinal.

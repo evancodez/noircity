@@ -284,6 +284,12 @@ export class KitUi {
     if (now) { this.teachEl.style.display = 'none'; this.teachCur = null; cur.h.finish(); return; }
     if (cur.out < 0) cur.out = 0;
   }
+  // [C13] a chapter card still on the frame (fading included), or the small one (3.4 s, SceneManager.smallCard)
+  chapterCardUp(G) {
+    if ((this.hud.cardT || 0) > 0) return true;
+    const S = G && G.smallCardShown;
+    return !!(S && G.time - S.t < 3.4 && G.time >= S.t);
+  }
   tickTeach(dt) {
     const cur = this.teachCur;
     if (!cur) return;
@@ -291,7 +297,10 @@ export class KitUi {
     // (a card waits, unseen, while a chapter card, the stills or a fail's
     // black is over the HUD: its time starts when it can be read)
     const R = this.hud.root.classList;
-    if (R.contains('carded') || R.contains('stilled') || R.contains('failing')) { this.teachEl.style.opacity = '0'; return; }
+    // ([C13] and through the chapter card's last 0.7 s too - the HUD lets the prompt come as the card goes,
+    // 'carded' is off by then, and a card came in faintly under VII PIER NINE - and under the small card a
+    // cut from one chapter into the next letters over the picture: held until the card has gone)
+    if (R.contains('carded') || R.contains('stilled') || R.contains('failing') || this.chapterCardUp(G)) { this.teachEl.style.opacity = '0'; return; }
     // (it comes now: its sound, and a held card's crawl - never under a
     // chapter card, which runs on the same clock)
     if (!this.cardSounded) { this.cardSounded = true; this.snd('kit_teach'); if (cur.held && G && cur.out < 0) G.crawl = 0.12; }

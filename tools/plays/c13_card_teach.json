@@ -1,0 +1,20 @@
+{
+ "about": "[C13] a teach card never shows under a chapter card (lane C10a's frame a05: [LMB] fire faint under VII PIER NINE, VII's loud pass begun cold): the card's own 0.7 s fade included, the kit holds the teach unseen until the chapter card has gone, then it comes. Sampled every 30 ms. node tools/play.mjs tools/plays/c13_card_teach.json",
+ "url": "/?mute=1&start=warehouse.loud",
+ "size": [1440, 900],
+ "out": "shots/play/c13_card_teach",
+ "steps": [
+  { "until": "G.state === 'title' && !document.getElementById('title').classList.contains('hidden')", "timeout": 30000 },
+  { "wait": 1200 },
+  { "eval": "(window.__over = [], window.__cardSeen = 0, setInterval(() => { const H = G.hud, ch = H.el.chapter, te = H.kit.teachEl; const cardOn = ch.style.display !== 'none' && parseFloat(ch.style.opacity || '0') > 0.01; const teachOn = te.style.display !== 'none' && parseFloat(te.style.opacity || '0') > 0.01 && getComputedStyle(te).visibility !== 'hidden'; if (cardOn) window.__cardSeen++; if (cardOn && teachOn) window.__over.push({ t: +G.time.toFixed(2), card: +parseFloat(ch.style.opacity).toFixed(2), teach: +parseFloat(te.style.opacity).toFixed(2), id: H.kit.teachCur && H.kit.teachCur.id }); }, 30), 1)" },
+  { "clickOn": "#title .opt[data-k=begin]", "taken": "G.state === 'playing' && document.pointerLockElement === N.renderer.domElement", "retries": 4, "every": 4000 },
+  { "until": "G.scenes.current && G.scenes.current.id === 'warehouse' && G.scenes.beat === 'loud'", "timeout": 30000 },
+  { "until": "(G.hud.cardT || 0) > 1.0", "timeout": 8000 },
+  { "until": "(G.hud.cardT || 0) < 0.45 && (G.hud.cardT || 0) > 0", "timeout": 8000 },
+  { "shot": "k01_card_going" },
+  { "until": "G.hud.kit.teachCur && G.hud.kit.teachCur.id === 'fire' && parseFloat(G.hud.kit.teachEl.style.opacity || '0') > 0.9", "timeout": 8000 },
+  { "shot": "k02_card_gone_then_the_teach" },
+  { "eval": "JSON.stringify({ over: window.__over.slice(0, 5), n: window.__over.length, cardSamples: window.__cardSeen })" },
+  { "expect": "window.__cardSeen > 20 && window.__over.length === 0", "label": "the chapter card was up and no teach card showed under it" }
+ ]
+}

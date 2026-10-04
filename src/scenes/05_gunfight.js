@@ -4,7 +4,8 @@ import { gunsOf } from '../guns/Guns.js';
 import { roomAs, carry, office, inkPrompt, doorsUse, roomOf, V } from './office/room.js';
 import { live, palmOn } from './office/hands.js';
 import { roomReacts, papers } from './office/fight.js';
-import { DESK, DOOR, DOORS, OUTER, CORR, ROOM, LIFT, WIN, OPEN } from '../stages/office/plan.js';
+import { DESK, DOOR, DOORS, OUTER, CORR, ROOM, LIFT, WIN, OPEN, SEC } from '../stages/office/plan.js';
+import { POCKET } from '../player/weapons/revolver.js';
 
 // Chapter IV, The Door ([C5] wave C: the first gunfight, on lane C2's gun
 // kit - docs/story/seams/GUNS.md; the brief docs/story/briefs/C5_OFFICE.md).
@@ -181,6 +182,8 @@ function prepare(ctx, name, { reset = true } = {}) {
   }
   G.health.reset();
   K.arm('revolver');
+  // [C13] after the critic: the box of rounds on the secretary's desk, as it was when this checkpoint was reached
+  boxAt(ctx, name, reset);
   K.end();
   if (name === 'quiet') return;
   const base = { ...NUM, flankAfter: name === 'shadows' ? DOOR_FLANK : 0, ...(name === 'corridor' ? NUM_CORR : name === 'flank' ? NUM_FLANK : {}) };
@@ -195,8 +198,7 @@ function prepare(ctx, name, { reset = true } = {}) {
   // (the plays' record of the beat, lane C2's driver's: its cover places, where the open is, won)
   // (block: the desk's footprint as it stands or lies - a hand walks round it, not into it; standing, its east
   // side is shut: Ames's chair closes the gap to the radiator)
-  F.c2 = { beat: name, get spots() { const t = !!O.desk.tip; return (SPOTS[name] || []).filter((sp) => sp.tipped == null || sp.tipped === t); }, open: OPENS[name] || null, won: false,
-    get block() { const c = O.desk.collider; return c ? { x0: c.cx - c.hx, x1: c.cx + c.hx, z0: c.cz - c.hz, z1: c.cz + c.hz, shut: O.desk.tip ? [] : ['E'] } : null; } };
+  F.c2 = c2rec(O, name);
   F.go = null;
   const spawn = (m, extra = {}) => { const h = K.spawn({ kind: m.kind || 'pistol', at: m.at, yaw: m.yaw ?? null, way: m.way ? { steps: m.way } : null, door: m.door || null, cover: !!m.cover, wait: m.wait ?? 0, start: m.start || null, name: m.name, hp: m.hp ?? null, ...extra }); h.c5 = m.name; F.men.push(h); return h; };
   F.spawn = spawn;
@@ -212,6 +214,13 @@ function prepare(ctx, name, { reset = true } = {}) {
   if (name === 'corridor') corridorMen(ctx, spawn);
 }
 
+// (the plays' record, for a beat - [C13] after the critic: again when the chapter runs on into the next movement by
+// itself; it kept the first movement's cover places, and a hand played in flow went to the door's places in the flank
+// and to Ames's room from the cart in the corridor)
+function c2rec(O, name) {
+  return { beat: name, get spots() { const t = !!O.desk.tip; return (SPOTS[name] || []).filter((sp) => sp.tipped == null || sp.tipped === t); }, open: OPENS[name] || null, won: false,
+    get block() { const c = O.desk.collider; return c ? { x0: c.cx - c.hx, x1: c.cx + c.hx, z0: c.cz - c.hz, z1: c.cz + c.hz, shut: O.desk.tip ? [] : ['E'] } : null; } };
+}
 // the corridor's men: two in the lift (one a Tommy gun) once its cage is open,
 // one out of the washroom, the heavy up the stair
 function corridorMen(ctx, spawn) {
@@ -295,6 +304,7 @@ export default defineScene({
       if (!F.reloadT && W && Array.isArray(W.chambers) && W.chambers.filter((c) => c === 'live').length <= 2 && F.go != null) { F.reloadT = true; K.teach('reload'); }
     });
     tipPrompt(ctx);
+    boxPrompt(ctx);
     // ---- 1. the shadows, the moment, the door --------------------------------------------------
     if (ctx.at('shadows') && ctx.beat === 'shadows') {
       yield beat('shadows');
@@ -345,6 +355,7 @@ export default defineScene({
       // ---- 2. the flank: the handle of the connecting door turns ------------------------------------
       (G._c2won || (G._c2won = [])).push('shadows');
       yield beat('flank');
+      F.c2 = c2rec(O, 'flank');
       K.cfg.to = 'flank';
       K.cfg.warn = { ...WARN, door: 'The other door! Behind you!' };
       const go = flankGo(F, G);
@@ -357,6 +368,7 @@ export default defineScene({
       R.tipped = !!O.desk.tip;
       (G._c2won || (G._c2won = [])).push('flank');
       yield beat('corridor');
+      F.c2 = c2rec(O, 'corridor');
       K.cfg.to = 'corridor';
       K.cfg.warn = { ...WARN };
       K.cfg.flankAfter = 0;
@@ -512,6 +524,70 @@ function tipPrompt(ctx) {
       tip();
     });
   } });
+}
+
+// [C13] after the critic: a box of .38s on the secretary's desk (POCKET.gunfight.box rounds), taken with E - the
+// counted pocket's one way to more rounds in IV (it was a fall: a retry was never under 6 + 18). A player in flow
+// came to the corridor with 13 - 16 rounds for a movement that takes a good hand 12 - 14. It is there from the
+// first second (on the desk's front edge, pale on the dark top, seen from the suite's door and the opening); taken,
+// it is gone for the chapter. A checkpoint gives it back as it was when reached - and, the guard, a retry whose
+// rounds are under POCKET.gunfight.guard in all finds it on the desk again (fetched with E: no checkpoint is a
+// dead end, and nothing goes into the pocket by itself)
+const BOX = { x: SEC.x - SEC.d / 2 + 0.12, y: SEC.h, z: SEC.z + 0.22, yaw: 0.35 };
+function boxState(G) {
+  const f = G.save && G.save.flags;
+  if (!f) return { taken: false, cp: {} };
+  const B = f.ivBox && typeof f.ivBox === 'object' ? f.ivBox : (f.ivBox = { taken: false, cp: {} });
+  if (!B.cp || typeof B.cp !== 'object') B.cp = {};
+  return B;
+}
+function boxMesh(ctx) {
+  const G = ctx.game, O = office(ctx);
+  if (!O.c13box) {
+    const g = new THREE.Group();
+    const card = new THREE.MeshStandardMaterial({ color: 0xd9d3c2, roughness: 0.9 });
+    card.name = 'c13_box'; card.userData.inkSurface = 'paper';
+    const band = new THREE.MeshStandardMaterial({ color: 0x2a2724, roughness: 0.8 });
+    band.name = 'c13_box_band';
+    g.add(new THREE.Mesh(new THREE.BoxGeometry(0.14, 0.05, 0.1).translate(0, 0.025, 0), card));
+    // a thin dark band round it (the maker's label)
+    g.add(new THREE.Mesh(new THREE.BoxGeometry(0.142, 0.007, 0.102).translate(0, 0.016, 0), band));
+    g.traverse((m) => { if (m.isMesh) { m.userData.noRay = true; m.castShadow = true; } });
+    g.position.set(BOX.x, BOX.y, BOX.z); g.rotation.y = BOX.yaw;
+    O.c13box = g;
+    // (the stage is III's too: the box is IV's only)
+    if (!G._c13boxHook) { G._c13boxHook = true; G.on('scene:enter', (e) => { if (e && e.id !== 'gunfight' && O.c13box) O.c13box.visible = false; }); }
+    // (a beat begun is a checkpoint reached: the box as it is then is what a retry there gives back)
+    G.on('scene:beat', (e) => { if (e && e.id === 'gunfight' && e.beat) { const B = boxState(G); B.cp[e.beat] = !!B.taken; } });
+  }
+  if (O.c13box.parent !== ctx.stage.scene) ctx.stage.scene.add(O.c13box);
+  return O.c13box;
+}
+function boxAt(ctx, name, reset) {
+  const G = ctx.game, B = boxState(G), m = boxMesh(ctx), row = POCKET.gunfight;
+  if (reset) {
+    if (name === 'shadows') { B.taken = false; B.cp = {}; }
+    else B.taken = !!B.cp[name];
+    const rv = G.player.weapons.impls.revolver;
+    // (the guard: a checkpoint reached short, the box gone - it is on the desk again, to be fetched)
+    if (B.taken && rv && Number.isFinite(rv.pocket) && rv.ammo + rv.pocket < row.guard) { B.taken = false; G.counters.c13guard = (G.counters.c13guard || 0) + 1; }
+  }
+  m.visible = !B.taken;
+}
+function boxPrompt(ctx) {
+  const G = ctx.game, B = boxState(G), m = boxMesh(ctx);
+  m.visible = !B.taken;
+  ctx.interact.add({ id: 'c13box', at: V(BOX.x, BOX.y + 0.04, BOX.z), range: 1.7, cone: 0.7, prompt: 'take the rounds',
+    when: () => m.visible && !B.taken && ctx.beat !== 'quiet',
+    onUse: () => {
+      const rv = G.player.weapons.impls.revolver;
+      if (!rv || !Number.isFinite(rv.pocket)) return;
+      B.taken = true; m.visible = false;
+      rv.pocket += POCKET.gunfight.box; rv.saidEmpty = false; rv.keep();
+      G.sfx.play('pocket', null, {}, { send: false });
+      G.counters.c13box = (G.counters.c13box || 0) + 1;
+      ctx.interact.remove('c13box');
+    } });
 }
 
 // the heave: the left palm on the desk's near edge as it goes up and over (object first)

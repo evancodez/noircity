@@ -1,0 +1,52 @@
+{
+ "about": "[C13 critic] IV as the user plays it, in flow, by the good hand (lane C5's 'good', the desk): a movement after the first begins with what the last one left (no checkpoint go). Does the counted pocket (6 + 24 for the whole chapter, a fall's retry floored at 6 + 18) let good play win every movement first try? Run twice. node tools/play.mjs tools/plays/critic/c13/iv_flow_good.json",
+ "url": "/?mute=1&start=gunfight",
+ "size": [
+  1280,
+  800
+ ],
+ "out": "shots/critic13/iv_flow_good",
+ "steps": [
+  {
+   "until": "G.state === 'title' && !!document.querySelector('#title .opt[data-k=begin]')",
+   "timeout": 60000
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]",
+   "taken": "G.scenes.current && G.scenes.current.id === 'gunfight'",
+   "retries": 4
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'gunfight' && document.pointerLockElement === N.renderer.domElement",
+   "timeout": 30000
+  },
+  {
+   "eval": "(window.__says = [], setInterval(() => { const s = N.game.hud.sayShown, w = N.game.hud.warnText; const k = (s || '') + ' | ' + (w || ''); if (window.__says.at(-1)?.[1] !== k) { const r = N.game.player.weapons.impls.revolver; window.__says.push([+N.game.time.toFixed(1), k, N.game.scenes.beat, r.ammo, r.pocket]); } }, 100), 1)"
+  },
+  {
+   "drive": "tools/plays/critic/c13/c5_door_flow.mjs",
+   "profile": "good",
+   "choice": "desk",
+   "flow": true,
+   "tries": 3,
+   "beatTimeout": 150,
+   "beats": [
+    "shadows",
+    "flank",
+    "corridor"
+   ],
+   "check": "D.wonFirst === 3",
+   "label": "the good hand, in flow, wins every movement on the first try",
+   "out": true
+  },
+  {
+   "eval": "JSON.stringify(window.__says.filter((x) => /Empty|Shot|Flank|down|out/i.test(x[1])))"
+  },
+  {
+   "eval": "(N.game.guns.events || []).filter((e) => e.what === 'down').map((e) => e.why)"
+  }
+ ]
+}

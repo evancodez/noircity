@@ -3,6 +3,8 @@ import { DRIVE } from '../../player/clips/drive.js';
 import { PROP_KINDS, buildProp } from '../../props/index.js';
 import { LAYER, allocVmId } from '../../render/layers.js';
 import { FLASH } from '../../fx/fxTextures.js';
+import { POCKET } from '../../player/weapons/revolver.js';
+import { drawCount } from '../../player/weapons/_revolverHud.js';
 
 // The revolver out of the window (lane B5's, for the city: lane C3). RMB:
 // my left hand leaves the wheel, down to the holster and up out of the
@@ -23,7 +25,8 @@ export class WindowGun {
     this.chase = chase;
     this.game = chase.game;
     this.aimK = 0; this.fireBuf = 0; this.snapT = 0; this.cool = 0; this.reloadT = 0;
-    this.rounds = 6; this.pocket = 6;
+    // [C13] the cylinder and the pocket as the chapters' table gives the tail's gun phase (the last rounds)
+    this.rounds = 6; this.pocket = POCKET.tail.pocket;
     this.shots = 0; this.hits = 0;
     this.prop = null;
     this.ray = new THREE.Raycaster();
@@ -41,6 +44,7 @@ export class WindowGun {
 
   dispose() {
     this.chase.kit.aimMark(0);
+    this.hud(false);
     if (DRIVE.gun && DRIVE.gun.prop) DRIVE.gun.prop.visible = false;
     if (this.key) this.key.intensity = 0;
     DRIVE.aim = 0;
@@ -78,9 +82,25 @@ export class WindowGun {
     if (DRIVE.gun) DRIVE.gun.kick = Math.max(0, (DRIVE.gun.kick || 0) - dt / 0.16);
     if (this.reloadT > 0) { this.reloadT -= dt; if (this.reloadT <= 0) { const n = Math.min(6 - this.rounds, this.pocket); this.rounds += n; this.pocket -= n; } }
     if (this.fireBuf > 0 && this.aimK > 0.9 && this.cool <= 0 && this.reloadT <= 0) { this.fireBuf = 0; this.fire(); }
+    this.hud(this.aimK > 0.25 || this.reloadT > 0);
+  }
+  // [C13] the count while the gun is out of the window: the inked cylinder
+  // face and the pocket's cartridges beside it (the on-foot revolver's)
+  hud(on) {
+    const G = this.game;
+    if (G.shotMode && !/hud=1/.test(location.search)) on = false;
+    if (!on) { if (this.hudKey) { G.hud.dropLayer('revolver'); this.hudKey = null; } return; }
+    const fired = 6 - this.rounds, reload = this.reloadT > 0;
+    const key = this.rounds + '|' + this.pocket + '|' + reload;
+    const el = G.hud.layer('revolver');
+    if (key === this.hudKey && el.firstChild) return;
+    this.hudKey = key;
+    const chambers = [0, 1, 2, 3, 4, 5].map((i) => (i < fired ? (reload ? 'empty' : 'spent') : 'live'));
+    drawCount(el, { chambers, top: fired % 6, turn: (fired % 6) * Math.PI / 3, fading: false, pocket: this.pocket });
   }
   holster(dt) {
     const C = this.game.controller, cl = this.chase.crashLean || 0;
+    this.hud(false);
     if (this.aimK <= 0) { if (C.drive && (cl > 0.001 || C.drive.lean > 0.001)) C.drive.lean = cl; return; }
     this.aimK = Math.max(0, this.aimK - dt / 0.3);
     DRIVE.aim = this.aimK;
@@ -118,7 +138,11 @@ export class WindowGun {
     const G = this.game, cam = G.camera, ch = this.chase, his = ch.his;
     if (this.rounds <= 0) {
       G.sfx.play('tail_click', null, {});
-      if (!this.startReload()) G.emit('tail:dry', {});
+      if (!this.startReload()) {
+        G.emit('tail:dry', {});
+        // [C13] the hammer on nothing and nothing in the pocket: said once
+        if (!this.saidEmpty && G.hud.say) { this.saidEmpty = true; G.hud.say('Empty.', 1.6, { always: true }); }
+      }
       return;
     }
     this.rounds--;

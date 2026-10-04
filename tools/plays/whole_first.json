@@ -565,6 +565,7 @@
    "choice": "desk",
    "out": true,
    "flow": true,
+   "flowFirst": true,
    "tries": 6,
    "beatTimeout": 170,
    "beats": [

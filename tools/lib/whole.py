@@ -165,7 +165,7 @@ def build(first, frm=None):
         ('the check carried, PIER 9', HAS('check') + " && G.save.flags.note === 'PIER 9'"),
     ])
     prof = 'clumsy' if first else 'good'
-    steps.append({'drive': 'tools/lib/c5_door.mjs', 'profile': prof, 'choice': 'desk', 'out': True, 'flow': True, 'tries': 6 if first else 3, 'beatTimeout': 170,
+    steps.append({'drive': 'tools/lib/c5_door.mjs', 'profile': prof, 'choice': 'desk', 'out': True, 'flow': True, 'flowFirst': True, 'tries': 6 if first else 3, 'beatTimeout': 170,
                   'beats': ['shadows', 'flank', 'corridor'], 'check': 'D.won === 3', 'label': '[gunfight] every movement won (%s)' % prof})
     steps += [
         {'until': "G.scenes.beat === 'quiet' && !G.failing", 'timeout': 20000},

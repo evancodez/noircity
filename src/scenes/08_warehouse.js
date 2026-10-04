@@ -7,6 +7,7 @@ import { PierFight, bayRoom, quietCrew, crewOutOfSight, FM_MANNERS, FOREMAN, RIN
 import { HUNTERS, HOODS_LOUD, relightLamps, onShot, goLoud, drawGuns, atBay, sendAnswerer } from './warehouse/loud.js';
 import { buildProp } from '../props/index.js';
 import { gunsOf } from '../guns/Guns.js';
+import { POCKET } from '../player/weapons/revolver.js';
 
 // Chapter VII, Pier Nine (lane B6, rebuilt by lane C7: docs/story/briefs/
 // C7_PIER.md). Three passes of the same shed, each with one goal:
@@ -235,9 +236,11 @@ function setupAt(ctx, b) {
 }
 
 // the revolver's chambers all spent (the tail's last rounds), the gun away
+// ([C13] and nothing in the pocket: the counts, player/weapons/revolver.js POCKET)
 function emptyGun(G) {
   const rv = G.player.weapons.impls.revolver;
-  if (rv && Array.isArray(rv.chambers)) { rv.chambers = rv.chambers.map(() => 'spent'); rv.top = 0; }
+  if (rv && rv.setCounts) rv.setCounts({ rounds: 0, pocket: 0 });
+  else if (rv && Array.isArray(rv.chambers)) { rv.chambers = rv.chambers.map(() => 'spent'); rv.top = 0; }
 }
 
 // how lit a point is by the shed's lamps (not the men's own lights), 0..1
@@ -707,6 +710,9 @@ function takeShells(ctx) {
   L.stealth.undress();
   const Ws = G.player.weapons;
   emptyGun(G);
+  // [C13] the box: a cylinder's worth and the pocket (POCKET.warehouse.shells)
+  const rv = Ws.impls.revolver;
+  if (rv && rv.setCounts) rv.setCounts({ rounds: 0, pocket: 6 + POCKET.warehouse.shells });
   Ws.equip('revolver');
   const W = Ws.active;
   // (drawn, then the cylinder out and six rounds in, by the hands: the gun's own reload)
@@ -994,7 +1000,13 @@ export default defineScene({
       if (W && W.reload) W.reload();
       yield wait(0.4);
       yield until(() => !(G.player.weapons.active && G.player.weapons.active.reloading));
-      gunsOf(G).arm('revolver');
+      // ([C13] the gun as the box's reload left it: the six in, the rest in the pocket)
+      gunsOf(G).arm('revolver', { keep: true });
+      // [C13] (VII picked from CHAPTERS: a fresh save that never saw IV) the revolver's cards here, the first
+      // moment the gun is loaded and nobody is onto me - not as the telephone rings and the hunters set off.
+      // Once a save: a played-through save sees none of them (IV taught them)
+      if (hud.teach) hud.teach('fire', '[LMB] fire');
+      gunsOf(G).teach('crouch');
       // out of his office: behind me, his telephone (or a shot of mine)
       yield until(() => C.pos.z > PIER.office.z1 + 0.25 || (G.counters.shots || 0) > (L.shots0 ?? (L.shots0 = G.counters.shots || 0)));
       G.sfx.play('c7phone', V(0.6, PIER.mezz.y + 0.9, -44.0), {}, { ref: 3 });
@@ -1012,6 +1024,7 @@ export default defineScene({
       G.director.run(function* () { while (G.scenes.ctx === ctx && ctx.beat === 'loud') yield null; });
       // [C10a] (VII picked from CHAPTERS starts a fresh save that never saw IV: the revolver's own cards, the
       // same ids and words as IV's - once a save, so a played-through save sees none of them again here)
+      // ([C13] given at the shells now; here only for a loud pass begun at its own checkpoint)
       if (hud.teach) hud.teach('fire', '[LMB] fire');
       gunsOf(G).teach('crouch');
       let reloadT = false;
@@ -1102,7 +1115,8 @@ function enterLoud(ctx, L) {
   L.stealth.loud = true;
   C.setMode('gun', { crouch: true });
   C.pos.x = P.x; C.pos.z = P.z; C.yaw = P.yaw; C.pitch = P.pitch;
-  K.arm('revolver');
+  // ([C13] as it stands: a round fired in the office is gone; a retry here gives the checkpoint's counts)
+  K.arm('revolver', { keep: true });
   mezz.setUp(false);
   K.begin({ to: 'loud', maxFiring: 2, flankAfter: 9, settleK: 1.15, dmgK: 0.8, area: { x0: PIER.shed.x0, x1: PIER.shed.x1, z0: PIER.shed.z0, z1: PIER.shed.z1 },
     why: { open: 'Shot standing in the light.', moving: 'Shot in the open.' } });
