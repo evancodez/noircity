@@ -1,0 +1,69 @@
+{
+ "about": "[C12 after the critic] IV's other way by the pad: tools/lib/c5_door.mjs 'good' with the choice 'glass' (shoot the shadows through the frosted door glass before they burst in) on the fake pad, walking to the desk as a stick walks (\"strafe\": the left stick pushed toward it with the eyes kept on the door - the driver's keyboard walk turned round to face the desk first, a second and more on a stick, and the men in at the door shot him on his way); the aim friction acts only on a man in sight, never on a shadow behind the frosted glass or a man behind a wall (a sampler logs, every 0.25 s while a gun is out, each living man in the friction's ring and whether the eye sees him, and the friction then). node tools/play.mjs tools/plays/pad_gunfight_glass.json",
+ "url": "/?mute=1&padfake=1&start=gunfight",
+ "input": "pad",
+ "size": [
+  1280,
+  800
+ ],
+ "out": "shots/play/pad_gunfight_glass",
+ "steps": [
+  {
+   "until": "G.state === 'title' && N.hud.titleShown",
+   "timeout": 60000
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "pad": {
+    "b": [
+     "x"
+    ],
+    "secs": 0.12
+   },
+   "label": "the first press wakes the pad: the bracket only"
+  },
+  {
+   "wait": 400
+  },
+  {
+   "pad": {
+    "b": [
+     "x"
+    ],
+    "secs": 0.12
+   }
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'gunfight' && G.scenes.fadeK < 0.2",
+   "timeout": 60000
+  },
+  {
+   "eval": "(window.__fr = { ringHidden: 0, ringSeen: 0, frHidden: [], frSeen: [] }, setInterval(() => { const W = G.player.weapons && G.player.weapons.active; if (!W || G.state !== 'playing') return; const m = G.camera.matrixWorld.elements, ex = m[12], ey = m[13], ez = m[14], fx = -m[8], fy = -m[9], fz = -m[10]; let seenIn = false, hidIn = false; for (const h of G.stage.hoods.list) { if (!h.alive || !h.bones || !h.bones.chest) continue; const c = h.bones.chest.matrixWorld.elements, dx = c[12] - ex, dy = c[13] - ey, dz = c[14] - ez, L = Math.hypot(dx, dy, dz); if (L < 0.5 || L > 45) continue; const ang = Math.acos(Math.max(-1, Math.min(1, (dx * fx + dy * fy + dz * fz) / L))); if (ang >= 2.2 * Math.atan2(0.3, L)) continue; if (N.pad.sees(ex, ey, ez, c[12], c[13], c[14])) seenIn = true; else hidIn = true; } const f = N.pad.friction(); if (hidIn && !seenIn) { window.__fr.ringHidden++; window.__fr.frHidden.push(+f.toFixed(2)); } if (seenIn) { window.__fr.ringSeen++; if (window.__fr.frSeen.length < 30) window.__fr.frSeen.push(+f.toFixed(2)); } }, 250), 1)"
+  },
+  {
+   "drive": "tools/lib/c5_door.mjs",
+   "profile": "good",
+   "choice": "glass",
+   "out": true,
+   "tries": 3,
+   "beatTimeout": 150,
+   "beats": [
+    "shadows",
+    "flank",
+    "corridor"
+   ],
+   "check": "D.won === 3",
+   "label": "good (glass) by the pad, walking to cover as a stick walks (strafe: no turn round): every movement won",
+   "strafe": true
+  },
+  {
+   "eval": "({ ringHidden: window.__fr.ringHidden, hiddenFrictionMax: Math.min(1, ...window.__fr.frHidden.concat([1])), frHiddenAllOne: window.__fr.frHidden.every((f) => f === 1), ringSeen: window.__fr.ringSeen, frSeen: window.__fr.frSeen.slice(0, 12), rumbleN: N.pad.rumbleN })"
+  },
+  {
+   "expect": "window.__fr.frHidden.every((f) => f === 1) && window.__fr.frSeen.some((f) => f < 1)",
+   "label": "the friction: none on a man out of sight (a shadow behind the frosted glass, a man behind a wall), some on a man in sight"
+  }
+ ]
+}

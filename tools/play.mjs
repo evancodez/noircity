@@ -168,6 +168,12 @@ async function padSync() {
   }
   await pushPad();
 }
+// [C12] the walk's left stick: the way (dx, dz) as a push from where I face (yaw), or none (0, 0)
+async function padWalkStick(dx, dz, yaw) {
+  const fw = -dx * Math.sin(yaw) - dz * Math.cos(yaw), rt = dx * Math.cos(yaw) - dz * Math.sin(yaw);
+  PS.axes[0] = +rt.toFixed(3); PS.axes[1] = +(-fw).toFixed(3);
+  await pushPad();
+}
 const padKeyDown = async (code) => { VKH.add(code); await padSync(); };
 const padKeyUp = async (code) => { VKH.delete(code); await padSync(); };
 async function padMouse(type, x, y, button = 'left', extra = {}) {
@@ -341,11 +347,12 @@ async function walk(points, timeout) {
   let wDown = false;
   const setW = async (on) => { if (on !== wDown) { wDown = on; await (on ? keyDown('KeyW') : keyUp('KeyW')); } };
   let prev = null;   // [B4]
+  let lastWant = null;   // [C12]
   for (const [x, z] of points) {
     let from = prev;   // [B4]
     for (;;) {
       const s = await js(`({ x: N.controller.pos.x, z: N.controller.pos.z, yaw: N.controller.yaw, sens: N.controller.sensitivity, mode: N.controller.mode })`);
-      if (Date.now() > T) { await setW(false); log(`walk stuck at ${JSON.stringify(s)} going to ${[x, z]}`); return false; }
+      if (Date.now() > T) { if (padMode) await padWalkStick(0, 0, 0); await setW(false); log(`walk stuck at ${JSON.stringify(s)} going to ${[x, z]}`); return false; }
       if (!from) from = [s.x, s.z];   // [B4]
       const dx = x - s.x, dz = z - s.z, d = Math.hypot(dx, dz);
       if (d < 0.4) break;
@@ -355,11 +362,25 @@ async function walk(points, timeout) {
       if (s.mode === 'run' && dx * (x - from[0]) + dz * (z - from[1]) < 0 && d < 2.5) break;
       const want = Math.atan2(-dx, -dz);
       const err = Math.atan2(Math.sin(want - s.yaw), Math.cos(want - s.yaw));
+      // [C12] a pad play: the left stick points the way (a hand on a stick walks
+      // where it pushes, with no arc while the view comes round); the view is
+      // brought round as the mouse brings it
+      if (padMode && typeof padWalkStick === 'function') { await padWalkStick(dx / d, dz / d, s.yaw); lastWant = want; }
       if (Math.abs(err) > 0.03) await turn(Math.round(Math.max(-40, Math.min(40, -err * 0.6 / s.sens))), 0);
-      await setW(Math.abs(err) < 0.6);
+      if (!padMode) await setW(Math.abs(err) < 0.6);
       await sleep(33);
     }
     prev = [x, z];   // [B4]
+  }
+  if (padMode) {
+    // [C12] (and the view brought round to the last leg's way, as the keyboard's walk ends facing it)
+    await padWalkStick(0, 0, 0);
+    for (let i = 0; i < 30 && lastWant != null; i++) {
+      const s = await js(`({ yaw: N.controller.yaw, sens: N.controller.sensitivity })`);
+      const err = Math.atan2(Math.sin(lastWant - s.yaw), Math.cos(lastWant - s.yaw));
+      if (Math.abs(err) < 0.06) break;
+      await turn(Math.round(Math.max(-60, Math.min(60, -err * 0.7 / s.sens))), 0);
+    }
   }
   await setW(false);
   return true;
