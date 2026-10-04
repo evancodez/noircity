@@ -35,9 +35,11 @@ export const AT = {
   cars: { x: -13.15, z: 0.62, yaw: -Math.PI / 2 },
   flank: { x: -13.15, z: 2.2, yaw: -Math.PI / 2 + 0.25 },
   // ([C8] after the critic: AT.el was open to the man on the el even crouched;
-  // now down under the front wall by the pilaster between B4 and the door -
-  // the wall's head hides me from every place on his rail (probed: 6 of 6))
-  el: { x: -10.85, z: -1.6, yaw: -Math.PI / 2 - 0.2, crouch: true },
+  // now by the front wall at the pilaster between B4 and the door - down
+  // there, the wall's head hides me from every place on his rail (probed: 6
+  // of 6). On my feet, as every checkpoint: started down it was a place to
+  // sit out the clock - hands off, nobody could reach me)
+  el: { x: -10.85, z: -1.6, yaw: -Math.PI / 2 - 0.2 },
   // ([C8] after the critic: at the north end of B4, where the avenue his car comes up is in sight)
   saloon: { x: -10.85, z: -2.45, yaw: -Math.PI / 2 - 0.42 },
   cardinal: { x: -13.15, z: -1.4, yaw: -Math.PI / 2 - 0.45 },
