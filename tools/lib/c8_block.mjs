@@ -75,7 +75,7 @@ export default async function drive({ js, turn, keyDown, keyUp, mouse, shot, log
     }
     return { scene: sc.current && sc.current.id, beat: sc.beat, trans: !!sc.trans, fade: sc.fadeK, failing: !!G.failing, dead: G.health.dead, hp: G.health.hp,
       x: C.pos.x, z: C.pos.z, ex: e.x, ey: e.y, ez: e.z, yaw: C.yaw, pitch: C.pitch, sens: C.sensitivity, mode: C.mode, ck: C.crouchK || 0, rk: C.riseK || 0, on: !!C.crouchOn,
-      reserve: RIG ? RIG.reserve : 0, drumsUp: !!(N.game.interact.current && N.game.interact.current.id === 'b7.drums'), ammo: W ? W.ammo : 0, reloading: !!(W && W.reloading), gun: G.player.weapons.current, men, spots: F ? F.spots : [], open: F ? F.open : null, won: !!(F && F.won), block: F ? F.block : null,
+      reserve: RIG ? RIG.reserve : 0, dotLeft: RIG ? (RIG.dotLeft || 0) : 0, drumsUp: !!(N.game.interact.current && N.game.interact.current.id === 'b7.drums'), ammo: W ? W.ammo : 0, reloading: !!(W && W.reloading), gun: G.player.weapons.current, men, spots: F ? F.spots : [], open: F ? F.open : null, won: !!(F && F.won), block: F ? F.block : null,
       flankId: K && K.flank && !K.flank.done && K.flank.ai.h.alive ? K.flank.ai.h.slot : null,
       broke: K ? K.events.filter((q) => q.what === 'break' && G.time - q.t < 1.2 && q.at && Math.hypot(q.at[0] - e.x, q.at[1] - e.z) < 2.2).length : 0, wins: (G._c2won || []).length, moment: !!(sc.ctx && sc.ctx.flags.momentT != null && sc.ctx.flags.go == null), go: !!(sc.ctx && sc.ctx.flags.go != null), fails: Object.fromEntries(BEATS.map((b) => [b, G.fails(b, 'shootout')])), why: G.lastFail ? G.lastFail.why : null, warnedFor: G.lastFail ? G.lastFail.warnedFor : null, nFails: G.counters.fails || 0, shots: G.counters.shots, hits: G.counters.hits, warn: G.hud.warnText || null, saloon };
   })()`;
@@ -286,7 +286,8 @@ export default async function drive({ js, turn, keyDown, keyUp, mouse, shot, log
         }
         // ---- reload: empty -> down (good) and R
         // [C8] out of drums: back to the counter, E - Dot slides one up (a good hand goes before it is dry)
-        if (P.act && s.reserve <= 0 && s.ammo < (P.cover ? 12 : 1) && !s.reloading && !s.men.some((m) => m.line && m.see)) {
+        // ([C8] after the critic: only while she has one for this movement - none left, the hand fights with what is in the gun)
+        if (P.act && s.reserve <= 0 && s.dotLeft > 0 && s.ammo < (P.cover ? 12 : 1) && !s.reloading && !s.men.some((m) => m.line && m.see)) {
           await set('RMB', false); if (s.on) await tap('KeyC');
           const tz = Math.max(-3.0, Math.min(8.0, s.z));
           let got = false;
