@@ -162,15 +162,24 @@ export default async function drive({ js, turn, keyDown, keyUp, mouse, shot, log
         const q = await js(ST); if (q.ammo <= 0) { await tap('KeyR'); await sleep(3000); }
       }
       for (let i = 0; i < 160; i++) { if (await js('(() => { const B = N.game.b7.boss; return !!(B && B.h && B.mode === "walk" && B.open <= 0 && !(B.hold > 0) && (!B.shield || !B.shield.h.alive)); })()')) break; await sleep(100); }
-      const b0 = await js('N.game.fx.blood ? N.game.fx.blood.list.length : -1');
       const i0 = await js('N.game.counters.c8iron || 0');
-      const ch = await js('(() => { const h = N.game.b7.boss.h; const p = new N.THREE.Vector3().setFromMatrixPosition(h.bones.chest.matrixWorld); return [p.x, p.y, p.z]; })()');
-      await lookAt(ch[0], ch[1], ch[2], 0.006);
-      await hold(250);
-      await sleep(120);
+      const w0 = await js('N.game.b7.boss.wounds');
+      r.blood = 0;
+      // (a short burst at his chest while he is shut, again until one lands)
+      for (let k = 0; k < 6; k++) {
+        for (let i = 0; i < 80; i++) { if (await js('(() => { const B = N.game.b7.boss; return !!(B && B.open <= 0 && !(B.hold > 0)); })()')) break; await sleep(100); }
+        const ch = await js('(() => { const h = N.game.b7.boss.h; const p = new N.THREE.Vector3().setFromMatrixPosition(h.bones.chest.matrixWorld); return [p.x, p.y, p.z]; })()');
+        await lookAt(ch[0], ch[1], ch[2], 0.005);
+        const b0 = await js('N.game.fx.blood ? N.game.fx.blood.list.length : -1');
+        const open0 = await js('N.game.b7.boss.open');
+        await hold(200);
+        await sleep(100);
+        const db = (await js('N.game.fx.blood ? N.game.fx.blood.list.length : -1')) - b0;
+        if (open0 <= 0) r.blood += Math.max(0, db);
+        if ((await js('N.game.counters.c8iron || 0')) > i0) break;
+      }
       r.iron = (await js('N.game.counters.c8iron || 0')) - i0;
-      r.blood = (await js('N.game.fx.blood ? N.game.fx.blood.list.length : -1')) - b0;
-      r.wounds = await js('N.game.b7.boss.wounds');
+      r.wounds = (await js('N.game.b7.boss.wounds')) - w0;
     }
     log(`c8 street ${what}: ${JSON.stringify(r)}`);
   }
