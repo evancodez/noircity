@@ -273,6 +273,8 @@ export default async function drive({ js, turn, keyDown, keyUp, mouse, shot, log
         }
         // (won: the scene's own record of it; a page that went back to the title is no win)
         if (s.wins > wins0) { end = { won: true }; break; }
+        // ([C8] the scene gone on to a later beat: this one was won - its record was missed)
+        { const B8 = ['cars', 'flank', 'el', 'saloon', 'cardinal', 'last', 'end']; if (B8.indexOf(s.beat) > B8.indexOf(beat)) { end = { won: true, flowedOn: s.beat }; break; } }
         if (s.scene !== 'shootout') { end = { won: false, why: 'left the scene (page reloaded?)' }; break; }
         if (!P.act || s.trans || s.fade > 0.5) { await sleep(120); dbg['idle'] = (dbg['idle'] || 0) + 1; continue; }
         const now = Date.now();
