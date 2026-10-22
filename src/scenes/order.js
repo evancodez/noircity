@@ -1,5 +1,5 @@
-// The order of the story (wave C, docs/story/WAVE_C.md §4; the kit's
-// contract is docs/story/seams/Z.md). No default export: not a scene.
+// The order of the story (game two, docs/story/GAME_TWO.md §2, on wave C's
+// docs/story/WAVE_C.md §4; the kit's contract is docs/story/seams/Z.md). No default export: not a scene.
 // scenes.next() / ctx.next() go to the next id here that has a scene file;
 // past the last one, the "to be continued" card. A scene's chapter card takes
 // its numeral and title from here unless the scene gives its own
@@ -35,16 +35,22 @@ export const ORDER = [
   { id: 'diner', numeral: 'I', title: 'The Diner', music: 'room', carry: [] },
   // [C4] II: the scene file declares its own lines (02_fight.js)
   { id: 'fight', numeral: 'II', title: 'The Fight', music: 'room', carry: [] },
-  // [C5] III and IV: the scene files declare their own lines (04_office.js, 05_gunfight.js)
-  { id: 'office', numeral: 'III', title: 'Room 304', music: { slot: 'office', fade: 2.5 }, carry: ['matchbook', 'amesCard'] },
-  { id: 'gunfight', numeral: 'IV', title: 'The Door', music: { stop: 2.5 }, carry: ARMED, flags: NOTE },
+  // [G2] Game two: Room 304 (`office`, 04_office.js, the puzzle) is parked:
+  // not in the order, still a scene (`?start=office`). III The Door begins
+  // in the corridor and the room (Ames dead, the safe open, the check) and
+  // runs on into the gunfight (05_gunfight.js declares its own lines).
+  { id: 'gunfight', numeral: 'III', title: 'The Door', music: { stop: 2.5 }, carry: ARMED, flags: NOTE },
   // [C6] V: the scene file declares its own lines and music (06_watcher.js:
   // the chase rebuilt, its beats its stretches; the wave B beats' stand-ins
   // went with it)
-  { id: 'watcher', numeral: 'V', title: 'The Watcher', music: null, carry: ARMED, flags: NOTE },
+  { id: 'watcher', numeral: 'IV', title: 'The Watcher', music: null, carry: ARMED, flags: NOTE },
   // [C3] VI: the scene file declares its own lines (07_tail.js: the city's
   // chase rebuilt; the wave B beats' stand-ins went with it)
-  { id: 'tail', numeral: 'VI', title: 'The Tail', music: { slot: 'tail', fade: 2.5 }, carry: ARMED, flags: NOTE },
+  { id: 'tail', numeral: 'V', title: 'The Tail', music: { slot: 'tail', fade: 2.5 }, carry: ARMED, flags: NOTE },
+  // [G4] VI The Run (game two, new): the pursuit from the wreck to the
+  // pier's gate (07b_run.js declares its own lines). Until its scene file
+  // exists, next() skips it (V goes on to VII).
+  { id: 'run', numeral: 'VI', title: 'The Run', music: { slot: 'tail', fade: 2.5 }, carry: ARMED, flags: NOTE },
   // [C7] VII: the scene file declares its own lines (08_warehouse.js: three
   // passes of the shed, quiet, the office, loud, then the foreman)
   { id: 'warehouse', numeral: 'VII', title: 'Pier Nine', music: { slot: 'warehouse', fade: 1.5 },
