@@ -20,6 +20,17 @@ export function compileAll(stage, game) {
   stage.scene.traverseVisible((o) => { if (o.isLight) { const c = o.clone(false); c.layers.mask = o.layers.mask; LS.add(c); } });
   const prev = r.getRenderTarget();
   const seen = new Set(), kinds = new Set();
+  // (the near chunks' materials too, though no chunk round the start uses
+  // them yet - the washing's, the street names': a stand-in mesh each, its
+  // uv and its colours there, so the Tenements' first chunk compiles nothing)
+  const S = stage.part('stream');
+  const stand = [];
+  if (S && S.mats) for (const m of Object.values(S.mats)) {
+    const g = new THREE.BoxGeometry(0.01, 0.01, 0.01);
+    const o = new THREE.Mesh(g, m);
+    o.position.set(0, -60, 0); o.receiveShadow = true; o.userData.noRay = true;
+    stage.scene.add(o); stand.push(o);
+  }
   const idMat = P && P.idMat;
   stage.scene.traverse((o) => {
     if (!(o.isMesh || o.isPoints || o.isLine || o.isSprite) || !o.material) return;
@@ -49,5 +60,6 @@ export function compileAll(stage, game) {
   for (const o of culled) o.frustumCulled = true;
   r.setRenderTarget(prev);
   rt.dispose();
+  for (const o of stand) { stage.scene.remove(o); o.geometry.dispose(); }
   return performance.now() - t0;
 }

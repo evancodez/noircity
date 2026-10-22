@@ -139,7 +139,7 @@ export default {
     const REFL_OUT = new Set(['dark', 'trim', 'iron', 'tree', 'kerb']);
     stage.onReflLod((on) => { for (const ch of loaded.values()) for (const m of ch.meshes) if (REFL_OUT.has(m.userData.bucket)) m.visible = !on; });
     const api = {
-      group, loaded, index, stats,
+      group, loaded, index, stats, mats: MATS,
       // the door nearest a point in the loaded chunks (within r): { x, z, nx, nz, lot, place, d }
       doorNear(x, z, r = 2) {
         let best = null, bd = r;

@@ -101,8 +101,9 @@ Grand Ave's middle (`edge.tram`).
 | `far` | 30 | the far city (always drawn): every lot's mass and its lights in 240 m tiles |
 | `el` | 35 | the loop: `line.at(s)`, `line.len`, `columns`, `stations`, `stops` (the stations' stairs) |
 | `landmarks` | 40 | the clock tower, the gasworks, the fences, the park, the rail yard, the fish market, the market hall's roof, the cranes, the pier sheds |
+| `places` | 45 | the named places' fronts and the neon (marquees, blades, boards, globe lamps), the warehouses' painted names: `signs`, `doors` (each place's street door: `{ x, z, nx, nz, place, lot }`) |
 | `lamps` | 50 | the lamps' budget (below): `stage.lamps` |
-| `stream` | 60 | the near chunks: `warmAround(x, z)`, `loaded`, `stats` |
+| `stream` | 60 | the near chunks: `warmAround(x, z)`, `loaded`, `stats`, `doorNear(x, z, r)` (every street door of the loaded chunks) |
 | `props` | 80 | (empty: what breaks is O6's) |
 | `cars` | 90 | the block's `Cars`, empty (`cars.parked`: O2) |
 | `mist`, `rain` | 100, 110 | the block's |
@@ -123,8 +124,13 @@ are solids while loaded; the relief (windows, trim) is not.
 
 ## 5. The budget each lane may spend (measured at Grand Ave by the el, in the car)
 
-The frame there: ~580 draws and ~2.6 M triangles over all passes (the old
-city's chapter VI: 543 and 3.4 M; `shot=perf`: 692 and 2.8 M).
+The frame there: ~614 draws and ~2.1 M triangles over all passes (the old
+city's chapter VI: 543 and 3.4 M; `shot=perf`: 692 and 2.8 M). The near
+chunks are 96 m, built within 180 m of the eye (4 ms a step, nearest
+first), dropped past 250 m; six meshes a chunk (dark panes, trim, iron,
+trees and awnings, kerbs and furniture, the pavement), plus the street names
+and the washing where there are any; the relief is left out of the wet
+street's mirror (the far masses stand in for it there).
 - **Lights**: 7 real lights in all (the lamps' 5 with 2 shadows, the
   headlamps' 2) - never add one; use `stage.lights.add` entries (the rain,
   the rim) and the fx's pre-allocated flash / fire lights.
@@ -155,7 +161,10 @@ city's chapter VI: 543 and 3.4 M; `shot=perf`: 692 and 2.8 M).
 ## 7. The free roam (`src/scenes/city.js`)
 
 `?start=city[&at=<id>]`. `game.city`: `{ car, cabin, inCar, map, stream }`.
-Events: `city:in`, `city:out` (`{ car }`). The river: `game.fail({ why, to:
+Events: `city:in`, `city:out` (`{ car }`); `city:door` (`{ door, handled }`:
+a street door tried with E - **O5 sets `e.handled = true` for a door it
+opens**, else it rattles and `city:locked` follows). The warning before the
+river (`The river.`) is the scene's own (a slipway, a pier's open end). The river: `game.fail({ why, to:
 'ashore' })`, the `ashore` beat puts me on the quay at the nearest steps with a
 car at the kerb by them (`stepsNear(x, z)`). M is the map (`mapKey: true` on
 the scene leaves the sound alone; O7 moves the map to the pause card). Look

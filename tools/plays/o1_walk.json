@@ -14,7 +14,7 @@
     { "name": "kerb up (road to pavement)", "from": [-114, 105], "to": [-108.5, 105], "expect": "up", "ms": 3500 },
     { "name": "tenements dead end (Eldridge Ln)", "from": [255, -60], "to": [275, -60], "expect": "stop", "ms": 9000, "run": true },
     { "name": "tenements street door", "from": "(() => { const S = G.stage.part('stream'); S.warmAround(240, -25); const d = S.doorNear(240, -25, 25); window.__door = d; return [d.x + d.nx * 3, d.z + d.nz * 3]; })()", "to": "[window.__door.x, window.__door.z]", "expect": "locked", "tryE": true, "ms": 2500 },
-    { "name": "docks quay railing", "from": [100, 445], "to": [100, 456], "expect": "stop", "ms": 4000 },
+    { "name": "docks quay railing", "from": [150, 445], "to": [150, 456], "expect": "stop", "ms": 4000 },
     { "name": "rail yard gate (open)", "from": [-500, -120], "to": [-525, -120], "expect": "pass", "ms": 12000, "run": true },
     { "name": "rail yard fence", "from": [-520, -40], "to": [-500, -40], "expect": "stop", "ms": 6000 },
     { "name": "gasworks holder", "from": [-385, -236], "to": [-415, -255], "expect": "stop", "ms": 9000, "run": true },
