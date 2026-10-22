@@ -15,17 +15,16 @@ const W = 1440, H = 900;
 const PERF = 'shot=perf&t=1&anim=1';
 // each chapter's heaviest moment (the lanes' own, where they named one)
 const MOMENTS = [
+  // [C10b] wave C's chapters (The Body cut; IV, VI, VIII rebuilt): each chapter's heaviest moment
   ['I diner: the room alive, Dot pouring', 'scene=diner&beat=order&t=14&anim=1'],
   ['II fight: round 3, his haymakers', 'scene=fight&beat=round3&t=3&anim=1'],
-  ['III body: the approach, the car and the train', 'scene=body&beat=approach&t=5.5&anim=1'],
-  ['IV office: the room, the lamp and the slats', 'scene=office&beat=room&t=2&anim=1'],
-  ['V door: the kick, the glass man, the flashes', 'scene=gunfight&beat=door&t=1.8&anim=1'],
-  ['VI watcher: the fire escape, the street below', 'shot=bl_escape&t=1&anim=1'],
-  ['VI watcher: the chase, the market and Mercer St', 'scene=watcher&beat=street&t=3&anim=1'], // [C6] the chase's beats are its stretches now
-  ['VII tail: the market at 24 m/s', 'scene=tail&beat=chase&tailAt=520,2.2,24,30&tailCruise=1&t=1&anim=1'],
-  ['VIII pier: the lamps beat', 'scene=warehouse&beat=lamps&t=3&anim=1'],
-  ['VIII pier: the foreman, the oil burning', 'shot=b9duel&do=lantern&t=3.4&anim=1'],
-  ['IX block: the cars beat', 'scene=shootout&beat=cars&t=10&anim=1'],
+  ['III office: the room, the lamp, the slats', 'scene=office&beat=room&t=2&anim=1'],
+  ['IV door: they come in, the glass, the flashes', 'scene=gunfight&beat=flank&t=10&anim=1'],
+  ['V watcher: the market and the avenue', 'scene=watcher&beat=market&t=3&anim=1'],
+  ['VI tail: the city, the traffic, his car', 'scene=tail&beat=chase2&t=6&anim=1'],
+  ['VII pier: the loud pass, the lamps on', 'scene=warehouse&beat=loud&t=8&anim=1'],
+  ['VIII block: the flank, the kitchen up', 'scene=shootout&beat=flank&t=20&anim=1'],
+  ['VIII block: the cars, five men, the glass', 'scene=shootout&beat=cars&t=15&anim=1'],
 ].filter(([l]) => !ONLY || ONLY.some((o) => l.startsWith(o)));
 
 function gpuUtil() {

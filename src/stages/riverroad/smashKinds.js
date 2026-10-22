@@ -4,8 +4,9 @@ import { merge, lathe, roundedBox, V3 } from '../../world/geom.js';
 // The river road's things that a car goes through, as geometry (origin the
 // middle of the base, +x along the road, +z toward the river, metres):
 // whole things (drawn instanced while they stand and while they fly whole)
-// and the pieces they come apart into. src/stages/riverroad/parts/smash.js
-// places, draws and throws them.
+// and the pieces they come apart into. src/stages/city/parts/smash.js
+// places, draws and throws them ([C10b] the river road stage itself is gone:
+// this file, water.js and parts/sky, mist, rain are what the city still uses).
 
 const box = (w, h, d, x = 0, y = 0, z = 0) => new THREE.BoxGeometry(w, h, d).translate(x, y, z);
 

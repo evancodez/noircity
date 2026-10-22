@@ -492,6 +492,10 @@ export class Rails {
     if (G && G.fx) for (let p = 0; p < car.panes.length; p++) G.fx.decals.hideOwner('car' + car.id + ':' + p);
     car.group.traverse((o) => { if (o.isMesh) S.removeSolid(o); });
     if (R && R.wheels) for (const w of R.wheels) w.mesh.geometry.dispose();
+    // [C10b] the car's own body, glass and doors (Cars.spawn's merges, openDoor's leaves) off the GPU with it:
+    // every retry of VIII spawns its cars again (+~25 geometries a retry before); a geometry shared with
+    // another car is only uploaded again on its next draw
+    car.group.traverse((o) => { if (o.geometry) o.geometry.dispose(); });
     S.scene.remove(car.group);
     if (car.shadow && car.shadow.parent) car.shadow.parent.remove(car.shadow);
     car.state = 'dead';

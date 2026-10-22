@@ -10,6 +10,8 @@ const CP = {
   watcher: ['seen', 'escape', 'alley', 'lane', 'yard', 'kitchen', 'press', 'el', 'cut', 'over', 'street', 'market', 'car'],
   tail: ['start', 'chase2', 'river', 'pier'],
   warehouse: ['arrive', 'floor', 'lamps', 'aisle', 'stairs', 'listen', 'office', 'loud', 'fight'],
+  // [C10b] VIII (lane C8): every beat in its save list
+  shootout: ['dot', 'gun', 'cars', 'flank', 'el', 'saloon', 'cardinal', 'last'],
 };
 const steps = [
   { wait: 1500 },
@@ -30,6 +32,6 @@ for (const [sc, beats] of Object.entries(CP)) for (const bt of beats) {
     { eval: `JSON.stringify({ at: G.scenes.current.id + '.' + G.scenes.beat, from: G.scenes.ctx.from, mode: N.controller.mode, obj: G.hud.kit.objectiveText, music: G.music.current, inv: G.save.inventory, hands: G.hands.set, rev: G.player.weapons.get('revolver') && G.player.weapons.get('revolver').ammo })` },
   );
 }
-const play = { about: '[C10a] CONTINUE from every checkpoint of chapters I to VII after a reload, and a v1 save dropped quietly. node tools/hunts/mksaves.mjs writes it.', url: '/?mute=1', size: [1280, 800], out: 'shots/play/saves', steps };
+const play = { about: '[C10a] CONTINUE from every checkpoint of chapters I to VIII after a reload, and a v1 save dropped quietly. node tools/hunts/mksaves.mjs writes it.', url: '/?mute=1', size: [1280, 800], out: 'shots/play/saves', steps };
 writeFileSync('tools/plays/saves.json', JSON.stringify(play, null, 1));
 console.log('tools/plays/saves.json:', steps.length, 'steps');

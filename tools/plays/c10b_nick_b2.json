@@ -1,0 +1,57 @@
+{
+ "about": "[C10b] VIII's nick of time when Mack went out by B2 in II (about half the plays from the title): CONTINUE at shootout.dot with the save's window B2; the kerb by a broken B4 (its glass on the pavement), the window way over its sill first try; Mack's B2 still out. node tools/play.mjs tools/plays/c10b_nick_b2.json",
+ "url": "/?mute=1",
+ "size": [
+  1280,
+  800
+ ],
+ "out": "shots/play/c10b_nick_b2",
+ "steps": [
+  {
+   "until": "G.state === 'title'",
+   "timeout": 30000
+  },
+  {
+   "eval": "(localStorage.setItem('noir.save', JSON.stringify({ v: 2, scene: 'shootout', beat: 'dot', flags: { window: 'B2', note: 'PIER 9', taught: { crouch: true, fire: true, takedown: true } }, inventory: ['matchbook', 'amesCard', 'check', 'photo', 'shells'] })), 1)"
+  },
+  {
+   "reload": true
+  },
+  {
+   "until": "G.state === 'title'",
+   "timeout": 30000
+  },
+  {
+   "wait": 1200
+  },
+  {
+   "clickOn": "#title .opt[data-k=continue]",
+   "taken": "G.state !== 'title'",
+   "retries": 5,
+   "every": 3000
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'shootout' && G.scenes.beat === 'dot' && !G.scenes.trans && !G.hud._carded",
+   "timeout": 40000
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "shot": "b2_kerb"
+  },
+  {
+   "expect": "G.stage.part('dinerFront').panes.B2.state === 'gone' && G.stage.part('dinerFront').panes.B4.state === 'gone'",
+   "label": "Mack's B2 out, and B4 out too: the nick's window way is there"
+  },
+  {
+   "drive": "tools/lib/c8_nick.mjs",
+   "profile": "good",
+   "way": "window",
+   "tries": 2,
+   "flow": true,
+   "check": "D.wonFirst",
+   "label": "the window way, over B4's sill, first try"
+  }
+ ]
+}

@@ -1146,6 +1146,10 @@ function wrapSteps(G, L) {
   const prev = L.origOnStep = C.onStep;
   L.stepWrap = (x, z, v) => {
     if (prev) prev(x, z, v);
+    // [C10b] once the scene is gone the wrapper is the street's footfall only: a mode entered later
+    // (the brawl, then the sneak at backToFeet) kept it as its `prevStep`, and VIII's nick of time
+    // heard every step of the sill's climb as a man on his feet ('He heard you coming.' every try)
+    if (LIVE !== L) return;
     const crouch = (C.crouchK || 0) > 0.5, sp = Math.hypot(C.vel.x, C.vel.z);
     if (!crouch && C.onFootfall) C.onFootfall(x, z, { run: sp > 3.6, crouch, speed: sp });
   };
@@ -1287,7 +1291,7 @@ function backToFeet(ctx) {
 
 // (the scene leaving: the hands and their light back as they were)
 export function leaveWarehouse() {
-  if (HOOKED) { const C = HOOKED.controller; C.onFootfall = null; if (LIVE && LIVE.stepWrap && C.onStep === LIVE.stepWrap) C.onStep = LIVE.origOnStep; gunsOf(HOOKED).end(); }
+  if (HOOKED) { const C = HOOKED.controller; C.onFootfall = null; if (LIVE && LIVE.stepWrap && C.onStep === LIVE.stepWrap) C.onStep = LIVE.origOnStep; if (LIVE && LIVE.stepWrap && C.sneak && C.sneak.prevStep === LIVE.stepWrap) C.sneak.prevStep = LIVE.origOnStep; /* [C10b] */ gunsOf(HOOKED).end(); }
   if (LIVE) { LIVE.crew.clear(); LIVE.stealth.undress(); for (const o of LIVE.props) { if (o.parent) o.parent.remove(o); o.traverse((m) => { if (m.geometry) m.geometry.dispose(); }); /* [C10a] built anew each try: off the GPU with it */ } if (LIVE.fight) LIVE.fight.clear(); if (LIVE.fightOn && HOOKED && HOOKED.brawl.active) HOOKED.brawl.stop(); LIVE = null; }
   // (a retry keeps what the checkpoint keeps; leaving the chapter forgets it)
   if (!(HOOKED && HOOKED.failing)) SNAP = null;

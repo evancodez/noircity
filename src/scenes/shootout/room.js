@@ -80,7 +80,8 @@ export function backBarBottles(ctx, d) {
 }
 export function clearBottles(stage) {
   const d = stage.part('diner');
-  for (const b of BOTTLES) { d.take(b.name); stage.breakables.remove(b.h); }
+  // [C10b] (off the GPU with them: every retry of VIII stood twelve new ones on the back bar, +36 geometries a time)
+  for (const b of BOTTLES) { const o = d.take(b.name); if (o) o.traverse((m) => { if (m.geometry) m.geometry.dispose(); }); stage.breakables.remove(b.h); }
   BOTTLES.length = 0;
 }
 

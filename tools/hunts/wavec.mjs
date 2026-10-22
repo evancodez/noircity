@@ -12,11 +12,15 @@ export const CHECKPOINTS = {
   watcher: ['seen', 'escape', 'alley', 'lane', 'yard', 'kitchen', 'press', 'el', 'cut', 'over', 'street', 'market', 'car'],
   tail: ['start', 'chase2', 'river', 'pier'],
   warehouse: ['arrive', 'floor', 'lamps', 'aisle', 'stairs', 'listen', 'office', 'loud', 'fight', 'after'],
+  // [C10b] VIII (lane C8): every beat a checkpoint but the end
+  shootout: ['dot', 'gun', 'cars', 'flank', 'el', 'saloon', 'cardinal', 'last', 'end'],
 };
 // one checkpoint per contest for the ten fails (fall: a man shot; else a stop)
 const DIE = [
   ['fight.round1', false], ['gunfight.flank', true], ['gunfight.corridor', true], ['watcher.alley', false], ['watcher.market', false],
   ['tail.start', false], ['tail.river', false], ['warehouse.floor', false], ['warehouse.loud', true], ['warehouse.fight', false],
+  // [C10b] VIII: the nick (a stop), the street's first fight and the flank (a fall), him (a fall)
+  ['shootout.dot', false], ['shootout.cars', true], ['shootout.flank', true], ['shootout.cardinal', true],
 ];
 // what piles up: objects in the stage's scene, lights, programs, geometries, textures, the men, the sounds
 const PILE = `(() => { let n = 0, l = 0; N.scene.traverse((o) => { n++; if (o.isLight) l++; }); const I = N.renderer.info;

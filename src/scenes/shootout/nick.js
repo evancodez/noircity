@@ -172,7 +172,8 @@ export function* nick(ctx, N) {
   }
   // (the card for it, the first time a man can be put down: the pier's)
   // over the sill of Mack's window (SPACE), from the pavement into the room
-  const w = mackWindow(G), bayZ = DINER.bays[w], half = DINER.window.w / 2 - 0.3;
+  // [C10b] the window way is always B4's (09_shootout.js breaks it when Mack went out by B2)
+  const w = 'B4', bayZ = DINER.bays[w], half = DINER.window.w / 2 - 0.3;
   const sillZ = () => Math.max(bayZ - half, Math.min(bayZ + half, G.eye.z));
   let climbing = null;
   ctx.interact.add({ id: 'c8.sill', key: 'Space', at: () => V(DINER.faceX + 0.05, DINER.window.sill + 0.45, sillZ()), range: 1.9, cone: 0.9, prompt: 'climb in',

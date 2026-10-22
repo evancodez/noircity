@@ -62,6 +62,19 @@ function stage(ctx, b) {
   // [C8] Mack's window: out since II, its sill still there - over it is
   // SPACE (nick.js), never a walk through it (II opens the bay's colliders)
   { const front = S.part('dinerFront'); if (front.closeBay) front.closeBay(mackWindow(G)); }
+  // [C10b] the nick of time's way in by the window is B4's (the kerb and the crate south of it, the counter's south
+  // end, the aisle behind Sal clear of Dot). Mack goes out by B2 in about half the plays from the title, and then the
+  // kerb stood by a whole window: no sill, no window way (and B2's is past the man at the door). B4 is out too then -
+  // broken before I came, its glass on the pavement - and over its sill is SPACE as over Mack's.
+  if (mackWindow(G) === 'B2' && bi <= BEATS.indexOf('cars')) {
+    const front = S.part('dinerFront'), p = front.panes.B4;
+    if (p && p.state !== 'gone') {
+      const SF = G.sfx, own = !!SF && Object.prototype.hasOwnProperty.call(SF, 'glass'), glass0 = SF && SF.glass;
+      if (SF) SF.glass = () => {};
+      try { S.glass.shatter(p, { dir: V(1, 0.15, 0), power: 1.4, at: V(DINER.faceX - 0.1, 1.5, DINER.bays.B4) }); } finally { if (SF) { if (own) SF.glass = glass0; else delete SF.glass; } }
+    }
+    if (front.closeBay) front.closeBay('B4');
+  }
   R.paneRounds = null;
   // [C8] after the critic: the hydrant on the kerb, whole again at every checkpoint
   if (!R.hydrant) { R.hydrant = makeHydrant(ctx); (R.onTeardown || (R.onTeardown = [])).push(() => { if (R.hydrant) R.hydrant.remove(); R.hydrant = null; }); }
@@ -641,9 +654,11 @@ function* carsBeat(ctx) {
   });
   yield until(() => stopped >= 1);
   yield wait(2.5);
-  let more = false;
+  let more = false, reloadT = false;
   yield* fightTo(ctx, () => {
     if (!rose && (G.controller.crouchK || 0) > 0.6) { rose = true; K.teach('rise'); }
+    // [C10b] VIII picked cold never taught R (IV teaches it): once a save, down behind cover with the drum under half
+    { const W = G.player.weapons.active; if (rose && !reloadT && W && W.ammo != null && W.ammo < 25 && (G.controller.crouchK || 0) > 0.6) { reloadT = true; K.teach('reload'); } }
     if (!more && stopped >= 2) more = true;
     return more && alive(ctx) === 0;
   });
@@ -752,7 +767,10 @@ function* saloonBeat(ctx) {
   };
   saloonMen(ctx, car);
   R.ticks.push(() => {
-    if (stopped || G.failing || !R.rails.list.includes(car)) return false;
+    // [C10b] (a retry's car comes 0.5 s into the beat, still under the fail's black: the tick waits it out -
+    // it used to drop out there, and on every retry his car made the door with no warning up)
+    if (G.failing) return true;
+    if (stopped || !R.rails.list.includes(car)) return false;
     // (held up by a wreck or a car in its lane, not by one of its own men crossing it, nor by me)
     if ((car.rail.held || 0) > 3 && !/^(hood|me)/.test(car.rail.what || '')) { stopped = true; R.saloonS = car.rail.s; car.rail.plan.v.fill(0); car.rail.done = true; car.rail.stopped = true; rebuild(G); return false; }
     // (the warning stays up through the fail: it was said first)

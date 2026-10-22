@@ -224,7 +224,9 @@ export default async function drive({ js, turn, keyDown, keyUp, mouse, shot, log
     for (let k = 0; k < tries; k++) {
       await releaseAll();
       // to the beat, as a checkpoint puts me there
-      await js(`(N.game.scenes.go('shootout', { beat: '${beat}', fade: 'cut', card: false }), 1)`);
+      // ([C10b] opts.flow: the whole play - the beat comes by the story, a retry by the game's own fail; never sent)
+      if (!opts.flow) await js(`(N.game.scenes.go('shootout', { beat: '${beat}', fade: 'cut', card: false }), 1)`);
+      else for (let w = 0; w < 1200; w++) { const q = await js(`(() => { const sc = N.game.scenes; return sc.current && sc.current.id === 'shootout' && sc.beat === '${beat}' && !sc.trans && !N.game.failing && sc.fadeK < 0.5; })()`); if (q === true) break; await sleep(100); }
       await sleep(400);
       const t0 = Date.now();
       const g0 = await js('N.game.time');

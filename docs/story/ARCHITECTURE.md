@@ -1,4 +1,4 @@
-# NOIR EXTREME: the story engine as built (foundation, passes A and B; wave B in §10)
+# NOIR EXTREME: the story engine as built (foundation, passes A and B; wave B in §10; wave C in §11)
 
 This is the map a lane reads before touching code. `CONTRACTS.md` says what
 must exist; this says where it is, what it does today, and how to add to it.
@@ -14,7 +14,9 @@ been replaced (wave A: lanes 1 to 7; wave B: the vehicles, the revolver, the
 hands' sets, the controller's modes). §7 is kept as the record of who
 replaced what. **§10 is wave B: the five stages, the nine scenes and their
 save points, the systems the lanes added, the plays, the chapter select,
-the tools' hygiene and the seams folders.** The story plays from the title to
+the tools' hygiene and the seams folders.** **§11 is wave C** (the kit, the gun
+kit, the city, the rebuilt places and chapters, the pad, the plays); where §10
+and §11 differ, §11 is the game as it is. The story plays from the title to
 THE END (the README's "How to play" says how).
 
 ---------------------------------------------------------------------------
@@ -1022,3 +1024,167 @@ every shop and room of the block is drawn.
 - Sound: `end` is not stopped when the end card is clicked, a CONTINUE in
   scene 9 after `cars` has no `shootout`, `fight` is never cued
   (`docs/story/MUSIC.md`).
+
+---------------------------------------------------------------------------
+## 11. Wave C: make it a game (as built, from the code and the lanes' reports)
+
+Wave C (`docs/story/WAVE_C.md`) rebuilt the play of every chapter around three
+questions: can I lose, can I win, do I know how. The look did not change
+(the golden frames are wave B's, plus the stills' pages). §10 still says how
+the wave B systems work; this section says what wave C added or replaced and
+where; where they differ, §11 is the game as it is. Each lane's report
+(`docs/story/reports/wave-c/C<n>.md`, with its critic's `C<n>_CRITIC.md`) is
+the detail; the review frames are `docs/story/review/wave-c/C<n>/`. Lanes: C1
+the kit, C2 / C2b the gun kit, C3 / C3b / C3c the city and VI, C4 II, C5 III
+and IV, C6 V, C7 VII, C8 VIII, C9 the stills' pictures, C10a / C10b the whole
+game, C11 the look pass, C12 the PS5 pad, C13 the revolver's pocket.
+
+### 11.1 The order and the chapters
+
+`src/scenes/order.js`: I `diner` The Diner, II `fight` The Fight, III
+`office` Room 304, IV `gunfight` The Door, V `watcher` The Watcher, VI `tail`
+The Tail, VII `warehouse` Pier Nine, VIII `shootout` The Block. **The Body is
+cut** (its parked scene and `src/scenes/body/` were removed by C10b; its alley
+stays in the block stage, hidden). Each scene file declares its own
+`objectives` for every beat, its `music` / `beatMusic`, and its `save` list.
+
+| chapter | beats (checkpoints in **bold**) | stage | lane |
+| --- | --- | --- | --- |
+| I diner | **settle** **order** **drink** **pay** | block (the diner) | wave A; C1 the line, C4 the check |
+| II fight | **start** **lesson** **round1** **round2** **round3** reel ko **outside** matchbook | block | C4 |
+| III office | **corridor** **room** pad safe **check** done | office (the Harbor Building's third floor) | C5 |
+| IV gunfight | **shadows** **flank** **corridor** **quiet** | office | C5 on C2's kit |
+| V watcher | **seen** **escape** **alley** **lane** **yard** **kitchen** **press** **el** **cut** **over** **street** **market** **car** | office, backlot, city | C6 |
+| VI tail | **start** **chase2** **river** wreck **pier** | city | C3 / C3b / C3c |
+| VII warehouse | **arrive** **floor** **lamps** **aisle** **stairs** **listen** **office** **loud** **fight** ko after | pier9 | C7 |
+| VIII shootout | **dot** **gun** **cars** **flank** **el** **saloon** **cardinal** **last** end | block | C8 |
+
+(A checkpoint here is a beat CONTINUE comes back to: the scene's first beat
+and every beat in its `save` list; `tools/plays/saves.json` proves each.)
+
+Seams: I -> II no cut (the room kept); II -> III the `ames` still, the chapter
+card; III -> IV the same room, no black; IV -> V the window's frame is both
+chapters (V begins on the peek through room 304's blind); V -> VI no fade
+(`scenes/watcher/seam.js`: the city warmed a slice a frame under the chase,
+`Stages.warm`, then straight into the coupe's seat, a small chapter card over
+the windscreen); VI -> VII a cut to the shed under VII's small card; VII ->
+VIII the card, then (first time only) the `diner` still, then the kerb; VIII
+-> the `end` still -> THE END -> a click to the title.
+
+### 11.2 The kit (C1): `docs/story/seams/Z.md`
+
+`hud.objective` (the line top left), `hud.teach(id, text)` (one card with a
+drawn key cap, once per save, `again` after two fails, `hold` for the very
+first dodge / vault / crouch), `hud.warn` (the warning that must come before a
+loss), `game.fail({ why, to, fall })` (the one way a chapter loses: the fall
+or the stop, black, the words, back at the checkpoint under the black in
+about three seconds), `game.stills.play(id)` (the comic panels; the six runs
+in `src/stills/`, the pictures C9 staged in `public/stills/`). The kit's own
+warning before a fall from a hit (`Game.lowStep`, `spareLast`: nobody goes
+down unwarned). The music rule (`SceneManager.applyMusic`, MUSIC.md). Saves
+v2 (`src/game/Save.js`), a v1 save dropped quietly. Code: `src/ui/kit.js`,
+`src/ui/lettering.js`, `src/ui/Hud.js`, `src/game/Game.js`,
+`src/game/Stills.js`, `src/game/SceneManager.js`. Test bed `?start=kit`
+(`src/scenes/92_kit.js`).
+
+### 11.3 The gun kit (C2, C2b): `docs/story/seams/GUNS.md`
+
+`src/guns/Guns.js` (the encounter: rounds as rays through cover kinds, thin
+wood chewed away, glass broken; the men's tell before every round; fire
+tokens and the flank; the fall's reason), `Covers.js` (the nav grid and cover
+points from the stage, its doors), `deaths.js` (a man slumps by what is
+beside him), `Bodies.js` (solid bodies, `game.bodies`). The men:
+`src/enemies/brains/gunman.js` (pistol, tommy, rusher; numbers in `GUNMAN`).
+The mode `gun` (`src/player/modes/gun.js`: C / Ctrl low, RMB rise over the
+cover). Each chapter's difficulty is its own (`maxFiring`, the settle, the
+damage, the fall's mercy), named in its lane's report. Test bed `?start=guns`
+(`src/scenes/91_guns.js`, stage `killhouse`). Used by IV, VII's loud pass and
+VIII's street.
+
+### 11.4 The places wave C built or rebuilt
+
+- **The office** (`src/stages/office/`, C5): the third floor bigger and
+  finished: the corridor, the outer office, Ames's room, 305 next door, the
+  washroom, the stair's landing; real doors (`plan.js` `DOORS`).
+- **The backlot** (`src/stages/backlot/`, C6): the foot chase's course: the
+  fire escape, the alleys, the yard's fork, the press hall, the kitchens, the
+  roofs (`scenes/watcher/course.js`); the avenue and the market are the city's.
+- **The city** (`src/stages/city/`, C3): streets with the el, a market
+  square, a river road along the quay and Pier 9's yard at its end; traffic,
+  a tram, walkers, a cat, what gives in the road (`smash.js`), neon (C3c).
+  It replaced the wave B river road; the river road stage
+  (`src/stages/riverroad/`) was removed by C10b except the files the city and
+  VIII still import (`smashKinds.js`, `water.js`, `parts/sky.js`, `mist.js`,
+  `rain.js`).
+- **Pier 9** (`src/stages/pier9/`, C7): the shed with stacks kept two high on
+  the line to the office (`PIER.sight`), the lamps by aisle, the switch, the
+  lantern, the mezzanine office, the catwalk, the loading bay.
+- **The block** (wave A) keeps the diner; VIII adds its own rig
+  (`scenes/shootout/rig.js`, `rails.js`, `hydrant.js`).
+
+### 11.5 The scenes as rebuilt (one line each; the reports have the rest)
+
+- II (`02_fight.js`, `scenes/fight/*`, `game/Brawl.js`, `BrawlLesson.js`,
+  `BrawlCue.js`, C4): a click jabs at once, a hold loads a heavier punch;
+  the dodge cue and a short slow-down for every big swing and throw; the
+  fleeing customers go round me; the street door barred until he is out.
+  The same brawl for VII's foreman (`scenes/warehouse/fight.js`). FIGHT.md.
+- III (`04_office.js`, `scenes/office/search.js`, `pad.js`, `safe.js`,
+  `check.js`): the pad shaded to three big numbers, the dial by the mouse,
+  the torn check pieced (drag, turn).
+- IV (`05_gunfight.js`): the door shuts; the moment (tip the desk or shoot
+  through the glass); the flank and the corridor; the heavy.
+- V (`06_watcher.js`, `scenes/watcher/*`, `player/modes/run.js`, `climb.js`,
+  `escape.js`): no automatic vault (SPACE over, C under, SPACE through a
+  door, the jump, the slide), losable on several misses or the gap.
+- VI (`07_tail.js`, `scenes/tail/*`, `src/vehicles/Car.js`): the car's
+  physics, the tail's rules (`tail/rules.js`: `PULL`, `RIVER_B`, `HIT`,
+  `RAM`), his car crashed only by my rounds and a shunt; the line at his
+  window; the drive to the pier's gate.
+- VII (`08_warehouse.js`, `scenes/warehouse/crew.js`, `stealth.js`,
+  `loud.js`, `fight.js`): readable stealth (lit is seen, heard by my pace),
+  tools to draw men off, blows from behind; the office; the loud pass on the
+  gun kit; the foreman.
+- VIII (`09_shootout.js`, `scenes/shootout/nick.js`, `street.js`, `boss.js`,
+  `hydrant.js`, `rig.js`, `rails.js`): the nick of time three ways; Dot's
+  Tommy gun; the street's movements on the gun kit with cars solid to cars
+  (`rails.ahead`); drums counted; the saloon; the Cardinal open only at his
+  openings; the end.
+
+### 11.6 Input: one layer, keyboard and mouse or a PS5 pad (C12)
+
+The rulebook (WAVE_C §2) is the keyboard's; C12 put one input layer under it
+so a standard gamepad plays every mode (menus by stick, the analogue car, the
+puzzle cursor, pad glyphs on every card and prompt, light rumble). The
+README's key table has both columns. Plays by a fake pad: `tools/plays/pad_*`
+(`docs/story/reports/wave-c/C12.md`).
+
+### 11.7 The revolver's pocket (C13)
+
+The revolver's reserve is counted (`docs/story/briefs/C13_AMMO.md`; lane C13's
+report says how it was built and merged): IV gives its rounds, VI the last,
+VII arrives empty and the shells refill it, the hook takes it.
+
+### 11.8 The plays and proofs
+
+Every contest has the three proofs of WAVE_C §7 by real input in
+`tools/plays/`: `<id>_idle` (hands off loses, warned, the reason said),
+`<id>_bad` (a clumsy first-timer fails some and gets through), `<id>_good`
+(the taught player wins twice). The drivers are in `tools/lib/`:
+`kit_bot.mjs`, `c2_guns.mjs`, `fight_bot.mjs` (II and VII's fist fights),
+`c5_office.mjs`, `c5_door.mjs` (IV), `c6_chase.mjs` (V), `c3_tail.mjs` (VI),
+`c7_pier.mjs` (VII), `c8_nick.mjs`, `c8_block.mjs`, `c8_street.mjs` (VIII).
+The whole game: `tools/plays/whole.json` (the good hands) and
+`whole_first.json` (the clumsy ones), written by `tools/lib/whole.py` from the
+lanes' plays and drivers (`--from <chapter>` writes a play from that chapter
+on); the gun drivers take `flow: true` there (each beat comes by the story, a
+retry by the game's own fail). `saves.json` (CONTINUE from every checkpoint of
+I to VIII after a reload, written by `tools/hunts/mksaves.mjs`). The hunts
+(`tools/hunts/`): `wavec.mjs` (`HUNT_PHASE=abuse|die`: wrong keys, ESC, the
+lock lost, a resize, standing, reload and CONTINUE at every checkpoint; ten
+fails in a row at one checkpoint of every contest), `pile.mjs`, `edges.mjs`,
+`brawl.mjs`, `walkabout.mjs`, `allerrors.sh` (the errors sweep over every
+beat), `chain.sh` (plays one after another, each to its own log). Frame rate
+by chapter: `tools/fpstable.mjs` (each chapter's heaviest moment between two
+runs of `shot=perf`). Wave B's plays of chapters that were rebuilt are parked
+in `tools/plays/_wave_b/`.
