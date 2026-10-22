@@ -939,7 +939,8 @@ export class Game {
       if (e.code === 'Tab') e.preventDefault();
       if (!e.repeat) this.keysDown.add(e.code);
       if (e.code === 'KeyR' && this.hands.set === 'tommy') this.weapon.reload();
-      if (e.code === 'KeyM') { this.muted = this.sfx.toggleMute(); this.hud.message(this.muted ? 'sound off' : 'sound on'); }
+      // [O1] (in the open world M is the map: a scene that says mapKey reads it; the sound is the settings')
+      if (e.code === 'KeyM' && !(this.scenes.current && this.scenes.current.mapKey)) { this.muted = this.sfx.toggleMute(); this.hud.message(this.muted ? 'sound off' : 'sound on'); }
       if (e.code === 'BracketLeft' || e.code === 'Minus') this.hud.message('volume ' + Math.round(this.sfx.setVolume(this.sfx.volume - 0.1) * 10));
       if (e.code === 'BracketRight' || e.code === 'Equal') this.hud.message('volume ' + Math.round(this.sfx.setVolume(this.sfx.volume + 0.1) * 10));
     });
