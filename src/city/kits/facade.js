@@ -23,6 +23,8 @@ const box = (x0, x1, y0, y1, z0, z1) => new THREE.BoxGeometry(Math.max(0.01, x1 
 // a quad on a face: centre (x, y, z), normal (nx, nz), width w along the face, height h
 const quad = (x, y, z, nx, nz, w, h) => new THREE.PlaneGeometry(w, h).rotateY(Math.atan2(nx, nz)).translate(x, y, z);
 const push = (out, k, g) => { (out[k] || (out[k] = [])).push(g); };
+// a box whose top corners f moves (a gable's ridge, a sawtooth's slope)
+const wedge = (sx, sy, sz, f) => { const g = new THREE.BoxGeometry(sx, sy, sz), p = g.getAttribute('position'); for (let i = 0; i < p.count; i++) if (p.getY(i) > 0) f(p, i, sy); g.computeVertexNormals(); return g; };
 const sill = (w) => {
   const top = new THREE.PlaneGeometry(w, 0.22).rotateX(-Math.PI / 2).translate(0, 0.06, 0.11);
   const face = new THREE.PlaneGeometry(w, 0.12).translate(0, 0, 0.22);
@@ -39,8 +41,8 @@ const sill = (w) => {
 export const KITS = {
   downtown: { ground: 4.4, step: [2.8, 3.4], win: [1.2, 1.9], lit: 0.07, shop: 0.7, litShop: 0.18, stone: true, cornice: 0.5, parapet: 0.9 },
   tenement: { ground: 3.4, step: [2.4, 2.9], win: [1.0, 1.6], lit: 0.11, shop: 0.75, litShop: 0.14, cornice: 0.35, parapet: 0.6, escape: 0.55, tank: 0.18 },
-  docks: { ground: 4.6, step: [6.5, 9], win: [1.6, 1.2], lit: 0.04, shop: 0, litShop: 0, loading: true, parapet: 0.5 },
-  yards: { ground: 4.4, step: [5, 7], win: [1.4, 1.2], lit: 0.03, shop: 0, litShop: 0, loading: true, parapet: 0.3, clerestory: true },
+  docks: { ground: 4.6, step: [6.5, 9], win: [1.6, 1.2], lit: 0.04, shop: 0, litShop: 0, loading: true, parapet: 0.5, gable: true },
+  yards: { ground: 4.4, step: [5, 7], win: [1.4, 1.2], lit: 0.03, shop: 0, litShop: 0, loading: true, parapet: 0.3, clerestory: true, sawtooth: true, stack: 0.16 },
   hill: { ground: 3.8, step: [2.8, 3.4], win: [1.1, 1.9], lit: 0.16, shop: 0, litShop: 0, roof: true },
 };
 const kitOf = (lot) => KITS[lot.district === 'hill' ? 'hill' : lot.district === 'docks' ? 'docks' : lot.district === 'yards' ? 'yards' : lot.district === 'tenements' ? 'tenement' : 'downtown'];
@@ -144,8 +146,12 @@ export function farLot(lot, out, g = 0) {
   }
   const top = lotTiers(lot).at(-1);
   const rng = new RNG((lot.seed || 1) ^ 0xFA4);
+  // (the Docks' warehouses gabled, the Yards' sheds sawtoothed: each its own
+  // roofline on the sky, read from a car - the critic's B3; not the back
+  // masses, not a place)
+  const roofed = (K.gable || K.sawtooth) && top.x0 != null && !lot.back && !lot.place && !lot.hall;
   // the parapet on the top (a lip round the roof)
-  if (K.parapet && top.x0 != null && !lot.house) {
+  if (K.parapet && top.x0 != null && !lot.house && !roofed) {
     const p = K.parapet, y = top.y1, t = 0.35;
     push(out, massK, box(top.x0, top.x1, y, y + p, top.z0, top.z0 + t));
     push(out, massK, box(top.x0, top.x1, y, y + p, top.z1 - t, top.z1));
@@ -164,6 +170,29 @@ export function farLot(lot, out, g = 0) {
     const cx = (top.x0 + top.x1) / 2, cz = (top.z0 + top.z1) / 2, y = top.y1, w = Math.min(top.x1 - top.x0, top.z1 - top.z0);
     push(out, massK, box(cx - w * 0.22, cx + w * 0.22, y, y + 5, cz - w * 0.22, cz + w * 0.22));
     push(out, 'roof', new THREE.ConeGeometry(w * 0.12, 9 + rng.range(0, 8), 8).translate(cx, y + 5 + 5, cz));
+  }
+  if (roofed) {
+    const w = top.x1 - top.x0, d = top.z1 - top.z0, y = top.y1, cx = (top.x0 + top.x1) / 2, cz = (top.z0 + top.z1) / 2;
+    const alongX = w >= d, L = alongX ? w : d, S = alongX ? d : w;
+    if (K.gable) {
+      // the ridge down the long way
+      const rh = Math.min(6, S * 0.26);
+      push(out, massK, wedge(alongX ? L : S, rh, alongX ? S : L, (p, i) => (alongX ? p.setZ(i, 0) : p.setX(i, 0))).translate(cx, y + rh / 2, cz));
+    } else {
+      // the teeth along the long way, their glass faces all one way
+      const n = Math.max(2, Math.round(L / 6)), P = L / n, H = Math.min(3.4, P * 0.55);
+      for (let k = 0; k < n; k++) {
+        const u = (alongX ? top.x0 : top.z0) + (k + 0.5) * P;
+        if (alongX) push(out, massK, wedge(P, H, S, (p, i, sy) => { if (p.getX(i) < 0) p.setY(i, -sy / 2); }).translate(u, y + H / 2, cz));
+        else push(out, massK, wedge(S, H, P, (p, i, sy) => { if (p.getZ(i) < 0) p.setY(i, -sy / 2); }).translate(cx, y + H / 2, u));
+      }
+      // a works' chimney now and then, over the roofs
+      if (K.stack && rng.chance(K.stack)) {
+        const sh = rng.range(14, 24), sx = top.x0 + w * rng.range(0.2, 0.8), sz = top.z0 + d * rng.range(0.2, 0.8);
+        push(out, massK, new THREE.CylinderGeometry(0.9, 1.3, sh, 10).translate(sx, y + sh / 2, sz));
+        push(out, massK, new THREE.CylinderGeometry(1.15, 1.15, 0.8, 10).translate(sx, y + sh - 0.4, sz));
+      }
+    }
   }
   // the lights: lit windows and lit shop fronts (a hair in front of the face)
   for (const w of lotWindows(lot)) {
@@ -190,7 +219,17 @@ export function nearLot(lot, out) {
       for (const f of [-1 / 6, 1 / 6]) push(out, 'dark', box(-0.05, 0.05, -w.h / 2, w.h / 2, 0, 0.03).rotateY(ang).translate(w.x + w.nx * 0.08 + Math.cos(ang) * f * w.w * 2, w.y, w.z + w.nz * 0.08 - Math.sin(ang) * f * w.w * 2));
       push(out, 'dark', box(-w.w / 2, w.w / 2, -0.05, 0.05, 0, 0.03).rotateY(ang).translate(w.x + w.nx * 0.08, w.y + w.h * 0.28, w.z + w.nz * 0.08));
     }
-    if (w.kind === 'door') push(out, 'trim', box(-0.75, 0.75, 0, 0.15, 0, 0.45).rotateY(ang).translate(w.x, 0.15, w.z));
+    if (w.kind === 'door') {
+      push(out, 'trim', box(-0.75, 0.75, 0, 0.15, 0, 0.45).rotateY(ang).translate(w.x, 0.15, w.z));
+      // its stone frame - the jambs, the lintel, a transom's sill - so a door
+      // reads as a door at arm's length, where 'try the door' is up (the
+      // critic's m4: up close the face was a field of brush)
+      const hw = w.w / 2, top = w.h / 2;
+      for (const sx of [-1, 1]) push(out, 'trim', box(sx * hw - (sx > 0 ? 0 : 0.2), sx * hw + (sx > 0 ? 0.2 : 0), -w.h / 2, top + 0.75, 0, 0.1).rotateY(ang).translate(w.x, w.y, w.z));
+      push(out, 'trim', box(-hw - 0.32, hw + 0.32, top + 0.75, top + 1.0, 0, 0.16).rotateY(ang).translate(w.x, w.y, w.z));
+      push(out, 'trim', box(-hw, hw, top, top + 0.1, 0, 0.08).rotateY(ang).translate(w.x, w.y, w.z));
+      push(out, 'glass', quad(w.x + w.nx * 0.03, w.y + top + 0.4, w.z + w.nz * 0.03, w.nx, w.nz, w.w - 0.08, 0.55));
+    }
     if (w.lit && w.kind !== 'door') continue;
     const k = w.kind === 'shop' ? 'glass' : 'dark';
     push(out, k, quad(w.x + w.nx * 0.04, w.y, w.z + w.nz * 0.04, w.nx, w.nz, w.w, w.h));

@@ -3,8 +3,8 @@ import {
   PAVE, WATER_Y, CITY, EDGE, CLS, NS, EW, NS_EXTRA, EW_EXTRA, BROADWAY, RIVER, RIVER_LINE, QUAY_OFF, PIERS, SLIPS, BRIDGE,
   SPECIAL, CLOCK, EL, PLACES, GASWORKS, PARK, CRANES, districtAt,
 } from './plan.js';
-// the downtown towers' floors at most (3.6 m a floor: 86 m; the clock tower is 130)
-const TOWER_MAX = 24;
+// the downtown towers' floors at most (3.6 m a floor: 73 m; the clock tower is 200)
+const TOWER_MAX = 20;
 
 // NOIR CITY: the generator (lane O1). The plan (./plan.js) in, plain numbers
 // out: no meshes, no THREE, so a headless tool can build the same city (the
@@ -860,6 +860,28 @@ function furnish(streets, paves, lots, lamps, props, bays, posts, walls0, lines)
       const cloths = [];
       for (let k = 0; k < rng.int(2, 6); k++) cloths.push({ t: rng.range(0.15, 0.85), w: rng.range(0.5, 1.2), h: rng.range(0.5, 1.1) });
       lines.push({ a: [pa[0], y, pa[1]], b: [pb[0], y + rng.range(-0.6, 0.6), pb[1]], sag, cloths, x: cx, z: cz });
+    }
+  }
+  // ---- the Yards' telegraph poles down one side of their streets, three
+  // wires sagging pole to pole (the Yards' own lines across the sky, seen
+  // through a windscreen: the critic's B3 - the Yards read as the Docks)
+  const lampNear = (x, z, r) => lamps.some((l) => Math.abs(l.x - x) < r && Math.abs(l.z - z) < r);
+  for (const st of streets) {
+    if (st.river || st.bridge || st.cls === 'lane' || st.diag) continue;
+    if (districtAt((st.a[0] + st.b[0]) / 2, (st.a[1] + st.b[1]) / 2).id !== 'yards') continue;
+    const [ax, az] = st.a, [bx, bz] = st.b;
+    const L = Math.hypot(bx - ax, bz - az);
+    if (L < 40) continue;
+    const dx = (bx - ax) / L, dz = (bz - az) / L, nx = -dz, nz = dx;
+    const off = st.hw + 0.45, yaw = Math.atan2(-dz, dx);
+    let prev = null;
+    for (let u = 9; u < L - 9; u += 28) {
+      const x = ax + dx * u - nx * off, z = az + dz * u - nz * off;
+      if (!onPave(x, z, 0.2) || inLot(x, z, 0.3) || lampNear(x, z, 2.2) || near(props, x, z, 1.8)) { prev = null; continue; }
+      props.push({ kind: 'pole', x, z, yaw, street: st.id });
+      posts.push({ x, z, r: 0.17, tag: 'pole' });
+      if (prev) for (const k of [-0.95, 0, 0.95]) lines.push({ a: [prev.x + nx * k, 8.45, prev.z + nz * k], b: [x + nx * k, 8.45, z + nz * k], sag: 0.55, cloths: [], wire: true, x: (prev.x + x) / 2, z: (prev.z + z) / 2 });
+      prev = { x, z };
     }
   }
 }

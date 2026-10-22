@@ -166,9 +166,12 @@ export const SPECIAL = [
 ];
 // Clock Square: the north-west half of the cell Broadway cuts between Baxter,
 // Canal St, Clock St and Centre St, a paved plaza with the tower at its middle
-// (h 130, w 14: the tallest thing in the city by 40 m, its four lit faces
-// at 95 m over the roofs from every district; no tower within `clear` m)
-export const CLOCK = { x: 0, z: -90, h: 130, w: 14, clear: 125, name: 'CLOCK SQUARE', cell: [-30, 60, -120, -30], half: 'nw' };
+// (h 200, w 18: a clock tower of the Metropolitan Life's kind, the tallest
+// thing in the city by twice - no tower within `clear` m of it, none over
+// 20 floors elsewhere - its four lit faces at 150 m over the roofs, down
+// the streets that point at it and from the open places: the Hill, the
+// bridge, the quay, the Straight, the park)
+export const CLOCK = { x: 0, z: -90, h: 200, w: 18, clear: 125, name: 'CLOCK SQUARE', cell: [-30, 60, -120, -30], half: 'nw' };
 // the gasworks' holders and stacks (their ground is the gasworks' special)
 export const GASWORKS = {
   holders: [{ x: -415, z: -255, r: 22, h: 34 }, { x: -340, z: -255, r: 18, h: 28 }, { x: -415, z: -170, r: 16, h: 24 }],

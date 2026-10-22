@@ -67,7 +67,6 @@ async function drive({ js, keyDown, keyUp, log, sleep, shot, opts }) {
   // get in if on foot
   const st0 = await js('({ inCar: G.city.inCar })');
   if (!st0.inCar) { await keyDown('KeyE'); await sleep(60); await keyUp('KeyE'); await sleep(900); }
-  await js('(window.__o1rec.n = 0, window.__o1rec.over50 = 0, window.__o1rec.max = 0, window.__o1rec.dts = [], window.__o1rec.missing = 0, window.__o1rec.late = [], window.__o1rec.samples = 0, 1)');
   const pts = opts.points || DISTRICTS.map((d) => d[1]);
   // the path: the graph's routes between the points, the right lane kept
   const path = await js(`(() => {
@@ -96,6 +95,11 @@ async function drive({ js, keyDown, keyUp, log, sleep, shot, opts }) {
     return R; })()`);
   if (!path || path.err) return { err: path && path.err };
   log(`drive: path ${path.length} points (${(path.length * 3 / 1000).toFixed(2)} km)`);
+  // [O1 after the critic] the counts start after the route is worked out: its
+  // A* over five legs is one long evaluate of the tool's own in the page (the
+  // first seconds' 'hitches' of the critic's run and the owner's were partly it)
+  await sleep(300);
+  await js('(window.__o1rec.n = 0, window.__o1rec.over50 = 0, window.__o1rec.max = 0, window.__o1rec.dts = [], window.__o1rec.missing = 0, window.__o1rec.late = [], window.__o1rec.samples = 0, window.__o1rec.last = performance.now(), 1)');
   const held = new Set();
   const set = async (code, on) => { if (on && !held.has(code)) { held.add(code); await keyDown(code); } else if (!on && held.has(code)) { held.delete(code); await keyUp(code); } };
   let idx = 0, stuckT = 0, revUntil = 0, lastT = Date.now();
@@ -145,7 +149,8 @@ async function drive({ js, keyDown, keyUp, log, sleep, shot, opts }) {
     const wide = Math.abs(ang) > 1.2;
     await set('KeyW', wide ? s.v < 3 : s.v < target - 0.5);
     await set('KeyS', s.v > target + 2.5 || (wide && s.v > 4));
-    if (opts.shots && opts.shots[idx] && !rec['shot' + idx]) { rec['shot' + idx] = 1; await shot(opts.shots[idx]); }
+    // (a screenshot stalls the page's frames: the recorder is paused round it)
+    if (opts.shots && opts.shots[idx] && !rec['shot' + idx]) { rec['shot' + idx] = 1; await js('(window.__o1rec.on = false, 1)'); await shot(opts.shots[idx]); await js('(window.__o1rec.last = performance.now(), window.__o1rec.on = true, 1)'); }
     await sleep(25);
   }
   for (const c of [...held]) await set(c, false);

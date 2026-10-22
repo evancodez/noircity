@@ -75,6 +75,12 @@ export function lampHead(l, out = new THREE.Vector3()) {
 
 // ---- the furniture ---------------------------------------------------------------------------------------
 const PROPS = {
+  // a telegraph pole (the Yards'): its crossbar across the street (local z), its insulators
+  pole: () => merge([
+    new THREE.CylinderGeometry(0.11, 0.16, 9.0, 7).translate(0, 4.5, 0),
+    new THREE.BoxGeometry(0.13, 0.13, 2.4).translate(0, 8.3, 0),
+    ...[-0.95, 0, 0.95].map((k) => new THREE.CylinderGeometry(0.05, 0.06, 0.2, 6).translate(0, 8.46, k)),
+  ]),
   hydrant: () => merge([
     lathe([[0, 0], [0.17, 0], [0.17, 0.06], [0.13, 0.1], [0.12, 0.55], [0.15, 0.58], [0.15, 0.64], [0.1, 0.7], [0.06, 0.78], [0, 0.8]], 16),
     new THREE.CylinderGeometry(0.05, 0.05, 0.36, 10).rotateZ(Math.PI / 2).translate(0, 0.45, 0),

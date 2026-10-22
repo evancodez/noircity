@@ -1,0 +1,113 @@
+{
+ "about": "[O1 after the critic] the cards and the car's verbs: the first frame's one card (the teach card), the pedals' card in the seat before W, E at speed (the brakes on the press, out as it stops: no dead stop), the map's me-mark.",
+ "url": "/?mute=1&start=city",
+ "size": [
+  1280,
+  800
+ ],
+ "out": "shots/o1fix/after",
+ "steps": [
+  {
+   "wait": 2000
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]",
+   "taken": "G.state !== 'title'",
+   "retries": 5,
+   "every": 4000
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'city' && G.scenes.fadeK < 0.05",
+   "timeout": 20000
+  },
+  {
+   "wait": 800
+  },
+  {
+   "name": "the first frame: one card, the teach card (its key drawn)",
+   "expect": "G.hud.kit.teachCur && G.hud.kit.teachCur.id === 'city_in' && !G.hud.promptShown"
+  },
+  {
+   "shot": "00_start"
+  },
+  {
+   "key": "KeyE",
+   "hold": 60
+  },
+  {
+   "wait": 900
+  },
+  {
+   "name": "in the seat: the pedals' card before any W",
+   "expect": "G.city.inCar && G.hud.kit.teachCur && G.hud.kit.teachCur.id === 'city_drive' && !G.hud.promptShown"
+  },
+  {
+   "shot": "01_seat"
+  },
+  {
+   "down": "KeyW"
+  },
+  {
+   "wait": 3200
+  },
+  {
+   "up": "KeyW"
+  },
+  {
+   "eval": "JSON.stringify({t:+(performance.now()/1000).toFixed(2), teach:G.hud.kit.teachCur?G.hud.kit.teachCur.id:null, prompt:G.hud.promptShown, inCar:G.city.inCar, v:+(G.city.car.speed*3.6).toFixed(1), car:[G.city.car.pos.x,G.city.car.pos.z].map(v=>+v.toFixed(1))})"
+  },
+  {
+   "eval": "(window.__out = null, (function t() { if (!G.city.inCar && !window.__out) window.__out = { t: +(performance.now()/1000).toFixed(2), v: +(G.city.car.speed*3.6).toFixed(1) }; if (!window.__out) requestAnimationFrame(t); })(), window.__e = +(performance.now()/1000).toFixed(2), 1)"
+  },
+  {
+   "key": "KeyE",
+   "hold": 60
+  },
+  {
+   "wait": 250
+  },
+  {
+   "name": "E at speed: the brakes go on at once",
+   "expect": "G.city.car.input.brake === 1 && G.city.car.input.throttle === 0"
+  },
+  {
+   "until": "!G.city.inCar",
+   "timeout": 6000
+  },
+  {
+   "eval": "JSON.stringify({ e: window.__e, out: window.__out })"
+  },
+  {
+   "wait": 300
+  },
+  {
+   "eval": "JSON.stringify({t:+(performance.now()/1000).toFixed(2), teach:G.hud.kit.teachCur?G.hud.kit.teachCur.id:null, prompt:G.hud.promptShown, inCar:G.city.inCar, v:+(G.city.car.speed*3.6).toFixed(1), car:[G.city.car.pos.x,G.city.car.pos.z].map(v=>+v.toFixed(1))})"
+  },
+  {
+   "wait": 600
+  },
+  {
+   "key": "KeyM",
+   "hold": 60
+  },
+  {
+   "wait": 400
+  },
+  {
+   "expect": "G.city.map.isOpen"
+  },
+  {
+   "shot": "02_map"
+  },
+  {
+   "key": "KeyM",
+   "hold": 60
+  },
+  {
+   "wait": 300
+  },
+  {
+   "expect": "!G.city.map.isOpen"
+  }
+ ]
+}

@@ -1,0 +1,374 @@
+{
+ "about": "[O1 after the critic] every start: the first frame (one card: the teach card the first time, its key drawn), then turned round; the cards up at each.",
+ "url": "/?mute=1&start=city&at=grand",
+ "size": [
+  1280,
+  800
+ ],
+ "out": "shots/o1fix/starts",
+ "steps": [
+  {
+   "clickOn": "#title .opt[data-k=begin]",
+   "taken": "G.state !== 'title'",
+   "retries": 5,
+   "every": 4000
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'city' && G.scenes.fadeK < 0.05",
+   "timeout": 20000
+  },
+  {
+   "wait": 1200
+  },
+  {
+   "shot": "grand_a"
+  },
+  {
+   "eval": "JSON.stringify({at:new URLSearchParams(location.search).get('at'), teach:G.hud.kit.teachCur?G.hud.kit.teachCur.id:null, prompt:G.hud.promptShown, warn:G.hud.kit.sceneWarn, p:[G.controller.pos.x,G.controller.pos.z].map(v=>+v.toFixed(1)), car:[G.city.car.pos.x,G.city.car.pos.z].map(v=>+v.toFixed(1))})"
+  },
+  {
+   "look": [
+    1500,
+    0
+   ],
+   "steps": 12
+  },
+  {
+   "wait": 700
+  },
+  {
+   "shot": "grand_b"
+  },
+  {
+   "eval": "JSON.stringify({at:new URLSearchParams(location.search).get('at'), teach:G.hud.kit.teachCur?G.hud.kit.teachCur.id:null, prompt:G.hud.promptShown, warn:G.hud.kit.sceneWarn, p:[G.controller.pos.x,G.controller.pos.z].map(v=>+v.toFixed(1)), car:[G.city.car.pos.x,G.city.car.pos.z].map(v=>+v.toFixed(1))})"
+  },
+  {
+   "eval": "(location.href = '/?mute=1&start=city&at=docks', 1)"
+  },
+  {
+   "wait": 2500
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]",
+   "taken": "G.state !== 'title'",
+   "retries": 5,
+   "every": 4000
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'city' && G.scenes.fadeK < 0.05",
+   "timeout": 20000
+  },
+  {
+   "wait": 1200
+  },
+  {
+   "shot": "docks_a"
+  },
+  {
+   "eval": "JSON.stringify({at:new URLSearchParams(location.search).get('at'), teach:G.hud.kit.teachCur?G.hud.kit.teachCur.id:null, prompt:G.hud.promptShown, warn:G.hud.kit.sceneWarn, p:[G.controller.pos.x,G.controller.pos.z].map(v=>+v.toFixed(1)), car:[G.city.car.pos.x,G.city.car.pos.z].map(v=>+v.toFixed(1))})"
+  },
+  {
+   "look": [
+    1500,
+    0
+   ],
+   "steps": 12
+  },
+  {
+   "wait": 700
+  },
+  {
+   "shot": "docks_b"
+  },
+  {
+   "eval": "JSON.stringify({at:new URLSearchParams(location.search).get('at'), teach:G.hud.kit.teachCur?G.hud.kit.teachCur.id:null, prompt:G.hud.promptShown, warn:G.hud.kit.sceneWarn, p:[G.controller.pos.x,G.controller.pos.z].map(v=>+v.toFixed(1)), car:[G.city.car.pos.x,G.city.car.pos.z].map(v=>+v.toFixed(1))})"
+  },
+  {
+   "eval": "(location.href = '/?mute=1&start=city&at=tenements', 1)"
+  },
+  {
+   "wait": 2500
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]",
+   "taken": "G.state !== 'title'",
+   "retries": 5,
+   "every": 4000
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'city' && G.scenes.fadeK < 0.05",
+   "timeout": 20000
+  },
+  {
+   "wait": 1200
+  },
+  {
+   "shot": "tenements_a"
+  },
+  {
+   "eval": "JSON.stringify({at:new URLSearchParams(location.search).get('at'), teach:G.hud.kit.teachCur?G.hud.kit.teachCur.id:null, prompt:G.hud.promptShown, warn:G.hud.kit.sceneWarn, p:[G.controller.pos.x,G.controller.pos.z].map(v=>+v.toFixed(1)), car:[G.city.car.pos.x,G.city.car.pos.z].map(v=>+v.toFixed(1))})"
+  },
+  {
+   "look": [
+    1500,
+    0
+   ],
+   "steps": 12
+  },
+  {
+   "wait": 700
+  },
+  {
+   "shot": "tenements_b"
+  },
+  {
+   "eval": "JSON.stringify({at:new URLSearchParams(location.search).get('at'), teach:G.hud.kit.teachCur?G.hud.kit.teachCur.id:null, prompt:G.hud.promptShown, warn:G.hud.kit.sceneWarn, p:[G.controller.pos.x,G.controller.pos.z].map(v=>+v.toFixed(1)), car:[G.city.car.pos.x,G.city.car.pos.z].map(v=>+v.toFixed(1))})"
+  },
+  {
+   "eval": "(location.href = '/?mute=1&start=city&at=yards', 1)"
+  },
+  {
+   "wait": 2500
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]",
+   "taken": "G.state !== 'title'",
+   "retries": 5,
+   "every": 4000
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'city' && G.scenes.fadeK < 0.05",
+   "timeout": 20000
+  },
+  {
+   "wait": 1200
+  },
+  {
+   "shot": "yards_a"
+  },
+  {
+   "eval": "JSON.stringify({at:new URLSearchParams(location.search).get('at'), teach:G.hud.kit.teachCur?G.hud.kit.teachCur.id:null, prompt:G.hud.promptShown, warn:G.hud.kit.sceneWarn, p:[G.controller.pos.x,G.controller.pos.z].map(v=>+v.toFixed(1)), car:[G.city.car.pos.x,G.city.car.pos.z].map(v=>+v.toFixed(1))})"
+  },
+  {
+   "look": [
+    1500,
+    0
+   ],
+   "steps": 12
+  },
+  {
+   "wait": 700
+  },
+  {
+   "shot": "yards_b"
+  },
+  {
+   "eval": "JSON.stringify({at:new URLSearchParams(location.search).get('at'), teach:G.hud.kit.teachCur?G.hud.kit.teachCur.id:null, prompt:G.hud.promptShown, warn:G.hud.kit.sceneWarn, p:[G.controller.pos.x,G.controller.pos.z].map(v=>+v.toFixed(1)), car:[G.city.car.pos.x,G.city.car.pos.z].map(v=>+v.toFixed(1))})"
+  },
+  {
+   "eval": "(location.href = '/?mute=1&start=city&at=hill', 1)"
+  },
+  {
+   "wait": 2500
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]",
+   "taken": "G.state !== 'title'",
+   "retries": 5,
+   "every": 4000
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'city' && G.scenes.fadeK < 0.05",
+   "timeout": 20000
+  },
+  {
+   "wait": 1200
+  },
+  {
+   "shot": "hill_a"
+  },
+  {
+   "eval": "JSON.stringify({at:new URLSearchParams(location.search).get('at'), teach:G.hud.kit.teachCur?G.hud.kit.teachCur.id:null, prompt:G.hud.promptShown, warn:G.hud.kit.sceneWarn, p:[G.controller.pos.x,G.controller.pos.z].map(v=>+v.toFixed(1)), car:[G.city.car.pos.x,G.city.car.pos.z].map(v=>+v.toFixed(1))})"
+  },
+  {
+   "look": [
+    1500,
+    0
+   ],
+   "steps": 12
+  },
+  {
+   "wait": 700
+  },
+  {
+   "shot": "hill_b"
+  },
+  {
+   "eval": "JSON.stringify({at:new URLSearchParams(location.search).get('at'), teach:G.hud.kit.teachCur?G.hud.kit.teachCur.id:null, prompt:G.hud.promptShown, warn:G.hud.kit.sceneWarn, p:[G.controller.pos.x,G.controller.pos.z].map(v=>+v.toFixed(1)), car:[G.city.car.pos.x,G.city.car.pos.z].map(v=>+v.toFixed(1))})"
+  },
+  {
+   "eval": "(location.href = '/?mute=1&start=city&at=clock', 1)"
+  },
+  {
+   "wait": 2500
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]",
+   "taken": "G.state !== 'title'",
+   "retries": 5,
+   "every": 4000
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'city' && G.scenes.fadeK < 0.05",
+   "timeout": 20000
+  },
+  {
+   "wait": 1200
+  },
+  {
+   "shot": "clock_a"
+  },
+  {
+   "eval": "JSON.stringify({at:new URLSearchParams(location.search).get('at'), teach:G.hud.kit.teachCur?G.hud.kit.teachCur.id:null, prompt:G.hud.promptShown, warn:G.hud.kit.sceneWarn, p:[G.controller.pos.x,G.controller.pos.z].map(v=>+v.toFixed(1)), car:[G.city.car.pos.x,G.city.car.pos.z].map(v=>+v.toFixed(1))})"
+  },
+  {
+   "look": [
+    1500,
+    0
+   ],
+   "steps": 12
+  },
+  {
+   "wait": 700
+  },
+  {
+   "shot": "clock_b"
+  },
+  {
+   "eval": "JSON.stringify({at:new URLSearchParams(location.search).get('at'), teach:G.hud.kit.teachCur?G.hud.kit.teachCur.id:null, prompt:G.hud.promptShown, warn:G.hud.kit.sceneWarn, p:[G.controller.pos.x,G.controller.pos.z].map(v=>+v.toFixed(1)), car:[G.city.car.pos.x,G.city.car.pos.z].map(v=>+v.toFixed(1))})"
+  },
+  {
+   "eval": "(location.href = '/?mute=1&start=city&at=bridge', 1)"
+  },
+  {
+   "wait": 2500
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]",
+   "taken": "G.state !== 'title'",
+   "retries": 5,
+   "every": 4000
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'city' && G.scenes.fadeK < 0.05",
+   "timeout": 20000
+  },
+  {
+   "wait": 1200
+  },
+  {
+   "shot": "bridge_a"
+  },
+  {
+   "eval": "JSON.stringify({at:new URLSearchParams(location.search).get('at'), teach:G.hud.kit.teachCur?G.hud.kit.teachCur.id:null, prompt:G.hud.promptShown, warn:G.hud.kit.sceneWarn, p:[G.controller.pos.x,G.controller.pos.z].map(v=>+v.toFixed(1)), car:[G.city.car.pos.x,G.city.car.pos.z].map(v=>+v.toFixed(1))})"
+  },
+  {
+   "look": [
+    1500,
+    0
+   ],
+   "steps": 12
+  },
+  {
+   "wait": 700
+  },
+  {
+   "shot": "bridge_b"
+  },
+  {
+   "eval": "JSON.stringify({at:new URLSearchParams(location.search).get('at'), teach:G.hud.kit.teachCur?G.hud.kit.teachCur.id:null, prompt:G.hud.promptShown, warn:G.hud.kit.sceneWarn, p:[G.controller.pos.x,G.controller.pos.z].map(v=>+v.toFixed(1)), car:[G.city.car.pos.x,G.city.car.pos.z].map(v=>+v.toFixed(1))})"
+  },
+  {
+   "eval": "(location.href = '/?mute=1&start=city&at=gasworks', 1)"
+  },
+  {
+   "wait": 2500
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]",
+   "taken": "G.state !== 'title'",
+   "retries": 5,
+   "every": 4000
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'city' && G.scenes.fadeK < 0.05",
+   "timeout": 20000
+  },
+  {
+   "wait": 1200
+  },
+  {
+   "shot": "gasworks_a"
+  },
+  {
+   "eval": "JSON.stringify({at:new URLSearchParams(location.search).get('at'), teach:G.hud.kit.teachCur?G.hud.kit.teachCur.id:null, prompt:G.hud.promptShown, warn:G.hud.kit.sceneWarn, p:[G.controller.pos.x,G.controller.pos.z].map(v=>+v.toFixed(1)), car:[G.city.car.pos.x,G.city.car.pos.z].map(v=>+v.toFixed(1))})"
+  },
+  {
+   "look": [
+    1500,
+    0
+   ],
+   "steps": 12
+  },
+  {
+   "wait": 700
+  },
+  {
+   "shot": "gasworks_b"
+  },
+  {
+   "eval": "JSON.stringify({at:new URLSearchParams(location.search).get('at'), teach:G.hud.kit.teachCur?G.hud.kit.teachCur.id:null, prompt:G.hud.promptShown, warn:G.hud.kit.sceneWarn, p:[G.controller.pos.x,G.controller.pos.z].map(v=>+v.toFixed(1)), car:[G.city.car.pos.x,G.city.car.pos.z].map(v=>+v.toFixed(1))})"
+  },
+  {
+   "eval": "(location.href = '/?mute=1&start=city&at=park', 1)"
+  },
+  {
+   "wait": 2500
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]",
+   "taken": "G.state !== 'title'",
+   "retries": 5,
+   "every": 4000
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'city' && G.scenes.fadeK < 0.05",
+   "timeout": 20000
+  },
+  {
+   "wait": 1200
+  },
+  {
+   "shot": "park_a"
+  },
+  {
+   "eval": "JSON.stringify({at:new URLSearchParams(location.search).get('at'), teach:G.hud.kit.teachCur?G.hud.kit.teachCur.id:null, prompt:G.hud.promptShown, warn:G.hud.kit.sceneWarn, p:[G.controller.pos.x,G.controller.pos.z].map(v=>+v.toFixed(1)), car:[G.city.car.pos.x,G.city.car.pos.z].map(v=>+v.toFixed(1))})"
+  },
+  {
+   "look": [
+    1500,
+    0
+   ],
+   "steps": 12
+  },
+  {
+   "wait": 700
+  },
+  {
+   "shot": "park_b"
+  },
+  {
+   "eval": "JSON.stringify({at:new URLSearchParams(location.search).get('at'), teach:G.hud.kit.teachCur?G.hud.kit.teachCur.id:null, prompt:G.hud.promptShown, warn:G.hud.kit.sceneWarn, p:[G.controller.pos.x,G.controller.pos.z].map(v=>+v.toFixed(1)), car:[G.city.car.pos.x,G.city.car.pos.z].map(v=>+v.toFixed(1))})"
+  }
+ ]
+}

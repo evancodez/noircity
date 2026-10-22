@@ -1,0 +1,70 @@
+{
+ "about": "[O1 after the critic] the first seconds of a drive (E, W 7 s on Grand Ave): every frame over 34 ms with what changed in it (programs compiled, geometries, textures, chunks built, the stream's ms).",
+ "url": "/?mute=1&start=city",
+ "size": [
+  1280,
+  800
+ ],
+ "out": "shots/o1fix/hitch",
+ "steps": [
+  {
+   "wait": 2000
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]",
+   "taken": "G.state !== 'title'",
+   "retries": 5,
+   "every": 4000
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'city' && G.scenes.fadeK < 0.05",
+   "timeout": 20000
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "eval": "(() => {\n  const N = window.__noir, G = N.game, r = N.renderer;\n  const R = window.__hr = { frames: [], t0: performance.now(), mark: {} };\n  let last = performance.now();\n  const info = () => ({ prog: (r.info.programs || []).length, geo: r.info.memory.geometries, tex: r.info.memory.textures });\n  let prev = info();\n  const tick = (now) => {\n    const dt = now - last; last = now;\n    const cur = info();\n    const S = G.city && G.city.stream ? G.city.stream.stats : null;\n    const row = { t: +((now - R.t0) / 1000).toFixed(2), dt: +dt.toFixed(1), dprog: cur.prog - prev.prog, dgeo: cur.geo - prev.geo, dtex: cur.tex - prev.tex, built: S ? S.built : 0, sms: S ? +S.lastMs.toFixed(1) : 0, v: G.city && G.city.car ? +(G.city.car.speed * 3.6).toFixed(0) : 0 };\n    prev = cur;\n    R.frames.push(row);\n    requestAnimationFrame(tick);\n  };\n  requestAnimationFrame(tick);\n  return 1;\n})()"
+  },
+  {
+   "walk": [
+    [
+     -112.4,
+     33.2
+    ]
+   ],
+   "timeout": 4000
+  },
+  {
+   "eval": "(() => {\n  const G = window.__noir.game, R = G.city, T = window.__ht = {};\n  const w = (o, k, name) => { const f = o[k].bind(o); o[k] = (...a) => { const t = performance.now(); const r = f(...a); T[name] = (T[name] || 0) + performance.now() - t; return r; }; };\n  w(R.cabin, 'attach', 'cabin.attach'); w(G.vehicles, 'setPlayer', 'setPlayer'); w(G.sfx, 'play', 'sfx.play'); w(R.cabin.screen, 'attach', 'screen.attach');\n  w(G.player.hands, 'equip', 'hands.equip'); w(G.controller, 'setMode', 'setMode');\n  const pl = window.__noir.pipeline; if (pl && pl.render) w(pl, 'render', 'render');\n  return 1;\n})()"
+  },
+  {
+   "eval": "(window.__hr.mark.E = +((performance.now() - window.__hr.t0) / 1000).toFixed(2), 1)"
+  },
+  {
+   "key": "KeyE",
+   "hold": 60
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "eval": "(window.__hr.mark.W = +((performance.now() - window.__hr.t0) / 1000).toFixed(2), JSON.stringify({inCar: G.city.inCar}))"
+  },
+  {
+   "eval": "JSON.stringify(Object.fromEntries(Object.entries(window.__ht).map(([k, v]) => [k, +v.toFixed(1)])))"
+  },
+  {
+   "down": "KeyW"
+  },
+  {
+   "wait": 7000
+  },
+  {
+   "up": "KeyW"
+  },
+  {
+   "eval": "(() => { const R = window.__hr; const slow = R.frames.filter((f) => f.dt > 34); return JSON.stringify({ n: R.frames.length, over50: R.frames.filter((f) => f.dt > 50).length, marks: R.mark, slow }); })()"
+  }
+ ]
+}

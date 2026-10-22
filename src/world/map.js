@@ -131,7 +131,10 @@ export class MapOverlay {
     if (!this.isOpen) return;
     const g = this.marks.getContext('2d');
     g.clearRect(0, 0, 1024, 1024);
-    for (const m of marks) {
+    // (me drawn last, over the rest; the car's word only when it is off my ring)
+    const me = marks.find((m) => m.kind === 'me');
+    const meUV = me ? this.map.toMap(me.x, me.z) : null;
+    for (const m of [...marks.filter((q) => q !== me), ...(me ? [me] : [])]) {
       const [u, v] = this.map.toMap(m.x, m.z);
       g.save();
       g.translate(u, v);
@@ -153,6 +156,7 @@ export class MapOverlay {
         g.fillStyle = '#d4cfc4'; g.strokeStyle = '#000'; g.lineWidth = 2.5;
         g.beginPath(); g.rect(-5, -9, 10, 18); g.fill(); g.stroke();
         g.rotate(m.yaw ?? 0);
+        if (meUV && Math.hypot(u - meUV[0], v - meUV[1]) < 70) { g.restore(); continue; }
         g.font = `700 15px ${LETTER_FONT}`; g.textAlign = 'left'; g.textBaseline = 'middle';
         g.lineWidth = 4; g.strokeStyle = '#d4cfc4'; g.strokeText('CAR', 12, 0); g.fillStyle = '#000'; g.fillText('CAR', 12, 0);
       }

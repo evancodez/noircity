@@ -62,7 +62,7 @@ export default {
       for (const l of D.lamps) { push('iron', placeLamp(LAMP.iron, l)); push('shade', placeLamp(LAMP.shade, l)); }
       for (const p of D.props) {
         if (p.kind === 'namesign') { const B = nameBlades(p, names); for (const g of B.faces) push('signs', g); for (const g of B.iron) push('iron', g); continue; }
-        push(p.road ? 'iron' : p.kind === 'bench' || p.kind === 'stall' ? 'tree' : 'prop', placeProp(p.kind, p));
+        push(p.road || p.kind === 'pole' ? 'iron' : p.kind === 'bench' || p.kind === 'stall' ? 'tree' : 'prop', placeProp(p.kind, p));
       }
       // the laundry lines: the line sagging between the walls, the washing pegged on it
       for (const l of D.lines || []) {
@@ -70,7 +70,7 @@ export default {
         for (let k = 0; k <= n; k++) { const t = k / n; P.push([l.a[0] + (l.b[0] - l.a[0]) * t, l.a[1] + (l.b[1] - l.a[1]) * t - l.sag * 4 * t * (1 - t), l.a[2] + (l.b[2] - l.a[2]) * t]); }
         for (let k = 0; k < n; k++) {
           const [x0, y0, z0] = P[k], [x1, y1, z1] = P[k + 1], L = Math.hypot(x1 - x0, y1 - y0, z1 - z0);
-          const g = new THREE.CylinderGeometry(0.012, 0.012, L, 3);
+          const g = new THREE.CylinderGeometry(l.wire ? 0.025 : 0.012, l.wire ? 0.025 : 0.012, L, 3);
           g.applyQuaternion(new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), new THREE.Vector3(x1 - x0, y1 - y0, z1 - z0).normalize()));
           g.translate((x0 + x1) / 2, (y0 + y1) / 2, (z0 + z1) / 2);
           push('iron', g);
