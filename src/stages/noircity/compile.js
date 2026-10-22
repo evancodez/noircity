@@ -35,6 +35,19 @@ export function compileAll(stage, game) {
       if (!kinds.has(kk)) { kinds.add(kk); const m0 = o.material; o.material = idMat; r.setRenderTarget((P && P.rtScene) || prev); try { r.compile(o, cam, LS); } catch (e) { /* */ } o.material = m0; }
     }
   });
+  // (and every buffer on the GPU: one draw of the whole city, nothing culled,
+  // into a small target - the far tiles' masses and lights are uploaded here,
+  // not the first time each turns into view)
+  const rt = new THREE.WebGLRenderTarget(64, 64);
+  const culled = [];
+  stage.scene.traverse((o) => { if ((o.isMesh || o.isPoints || o.isSprite) && o.frustumCulled) { culled.push(o); o.frustumCulled = false; } });
+  const mask = cam.layers.mask;
+  cam.layers.enableAll();
+  r.setRenderTarget(rt);
+  try { r.render(stage.scene, cam); } catch (e) { /* its first frame will */ }
+  cam.layers.mask = mask;
+  for (const o of culled) o.frustumCulled = true;
   r.setRenderTarget(prev);
+  rt.dispose();
   return performance.now() - t0;
 }

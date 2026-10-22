@@ -26,6 +26,14 @@ const MOMENTS = [
   ['VIII block: the flank, the kitchen up', 'scene=shootout&beat=flank&t=20&anim=1'],
   ['VIII block: the cars, five men, the glass', 'scene=shootout&beat=cars&t=15&anim=1'],
 ].filter(([l]) => !ONLY || ONLY.some((o) => l.startsWith(o)));
+// [O1] NOIR CITY's five busiest spots (MOMENTS=city): they replace the chapters
+if (process.env.MOMENTS === 'city') MOMENTS.splice(0, MOMENTS.length,
+  ['city: Grand Ave from the car, the el, the neon', 'scene=city&beat=roam&t=3&anim=1&car=-112.2,40,1.5708'],
+  ['city: the el\'s corner over Houston St', 'scene=city&beat=roam&t=3&anim=1&pose=-80,160,1.326,0.12'],
+  ['city: Broadway to the clock tower', 'scene=city&beat=roam&t=3&anim=1&pose=-75,15,-0.785,0.08'],
+  ['city: the Bowery under the station', 'scene=city&beat=roam&t=3&anim=1&pose=158,20,0,0.15'],
+  ['city: the quay, the river\'s lights', 'scene=city&beat=roam&t=3&anim=1&at=docks&pose=100,446,1.5708,0.06'],
+);
 
 function gpuUtil() {
   try { const o = execSync('ioreg -r -d 1 -w 0 -c IOAccelerator', { encoding: 'utf8' }); const m = [...o.matchAll(/"Device Utilization %"=(\d+)/g)].map((x) => +x[1]); return m.length ? Math.max(...m) : null; } catch { return null; }

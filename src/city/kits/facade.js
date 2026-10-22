@@ -23,6 +23,17 @@ const box = (x0, x1, y0, y1, z0, z1) => new THREE.BoxGeometry(Math.max(0.01, x1 
 // a quad on a face: centre (x, y, z), normal (nx, nz), width w along the face, height h
 const quad = (x, y, z, nx, nz, w, h) => new THREE.PlaneGeometry(w, h).rotateY(Math.atan2(nx, nz)).translate(x, y, z);
 const push = (out, k, g) => { (out[k] || (out[k] = [])).push(g); };
+const sill = (w) => {
+  const top = new THREE.PlaneGeometry(w, 0.22).rotateX(-Math.PI / 2).translate(0, 0.06, 0.11);
+  const face = new THREE.PlaneGeometry(w, 0.12).translate(0, 0, 0.22);
+  const g = new THREE.BufferGeometry();
+  const a = top.toNonIndexed(), b = face.toNonIndexed();
+  const pos = new Float32Array([...a.getAttribute('position').array, ...b.getAttribute('position').array]);
+  const nor = new Float32Array([...a.getAttribute('normal').array, ...b.getAttribute('normal').array]);
+  g.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+  g.setAttribute('normal', new THREE.BufferAttribute(nor, 3));
+  return g;
+};
 
 // the kit's numbers by district (and the named places' own)
 export const KITS = {
@@ -184,7 +195,8 @@ export function nearLot(lot, out) {
     const k = w.kind === 'shop' ? 'glass' : 'dark';
     push(out, k, quad(w.x + w.nx * 0.04, w.y, w.z + w.nz * 0.04, w.nx, w.nz, w.w, w.h));
     // a sill under a window, a frame round a shop front
-    if (w.kind === 'win') push(out, 'trim', box(-w.w / 2 - 0.08, w.w / 2 + 0.08, -0.06, 0.06, 0, 0.22).rotateY(Math.atan2(w.nx, w.nz)).translate(w.x, w.y - w.h / 2 - 0.06, w.z));
+    // (the sill: its top and its face, four triangles - a box was twelve, a hundred thousand of them in view)
+    if (w.kind === 'win') push(out, 'trim', sill(w.w + 0.16).rotateY(Math.atan2(w.nx, w.nz)).translate(w.x, w.y - w.h / 2 - 0.06, w.z));
     if (w.kind === 'shop') push(out, 'trim', box(-w.w / 2 - 0.15, w.w / 2 + 0.15, w.h / 2, w.h / 2 + 0.35, 0, 0.18).rotateY(Math.atan2(w.nx, w.nz)).translate(w.x, w.y, w.z));
   }
   const tiers = lotTiers(lot);

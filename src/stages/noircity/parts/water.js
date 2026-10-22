@@ -62,16 +62,17 @@ export default {
     group.add(faceM);
     yield;
     // the railings: posts every 2 m, a pier every 20, two rails (the walls the generator made: rail = true)
-    const post = lathe([[0, 0], [0.07, 0], [0.07, 0.06], [0.04, 0.1], [0.03, 0.5], [0.045, 0.53], [0.03, 0.56], [0.028, 1.02], [0.05, 1.06], [0.04, 1.12], [0, 1.16]], 8).translate(0, PAVE, 0);
-    const pier = roundedBox(0.34, 1.25, 0.34, 0.04, 2).translate(0, PAVE + 0.62, 0);
+    // (the posts every 3 m in a light lathe: they are instanced along 2.5 km of quay, all drawn whenever any is)
+    const post = lathe([[0, 0], [0.07, 0], [0.07, 0.06], [0.03, 0.12], [0.03, 1.02], [0.05, 1.06], [0, 1.16]], 6).translate(0, PAVE, 0);
+    const pier = new THREE.BoxGeometry(0.34, 1.25, 0.34).translate(0, PAVE + 0.62, 0);
     const posts = [], piers = [], rails = [];
     for (const w of C.walls) {
       if (!w.rail || w.parapet) continue;
       const [ax, az] = w.a, [bx, bz] = w.b, L = Math.hypot(bx - ax, bz - az);
-      const n = Math.max(1, Math.round(L / 2));
+      const n = Math.max(1, Math.round(L / 3));
       for (let k = 0; k <= n; k++) {
         const m = new THREE.Matrix4().makeTranslation(ax + (bx - ax) * (k / n), 0, az + (bz - az) * (k / n));
-        if (k % 10 === 0 || k === n) piers.push(m); else posts.push(m);
+        if (k % 7 === 0 || k === n) piers.push(m); else posts.push(m);
       }
       for (const y of [PAVE + 0.55, PAVE + 1.08]) rails.push(new THREE.CylinderGeometry(0.028, 0.028, L, 5).rotateZ(Math.PI / 2).rotateY(Math.atan2(-(bz - az), bx - ax)).translate((ax + bx) / 2, y, (az + bz) / 2));
     }

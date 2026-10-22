@@ -16,8 +16,8 @@ import { mergeUV } from './places.js';
 // it is well behind: the whole city is never in memory at once.
 //   api: { loaded: Map(key -> chunk), queue, warmAround(x, z), stats, update(camera) }
 //   stats: { built, dropped, buildMs (the longest single step), live }
-export const NEAR = 210;          // a chunk within this (its nearest point) is built
-const FAR_OUT = 290;              // ... and dropped past this
+export const NEAR = 180;          // a chunk within this (its nearest point) is built (the fog has the relief past it)
+const FAR_OUT = 250;              // ... and dropped past this
 const BUDGET_MS = 4;              // a frame's building
 
 export default {
