@@ -70,6 +70,12 @@ def compare(name):
          'blk': float(bd.max()), 'blk6': float((bd > 6).mean() * 100)}
     if changed == 0:
         r['verdict'] = 'IDENTICAL'
+    elif r['px8'] == 0 and r['mean'] < 0.05:
+        # [G0] a Chrome update (155, 2026-10-15) moved a few pixels by a few
+        # levels in every frame: nothing a person sees. Within this noise the
+        # frame counts as identical; the numbers are printed so it is seen.
+        r['verdict'] = 'IDENTICAL'
+        r['noise'] = True
     else:
         r['verdict'] = 'CHANGED'
         ys, xs = np.where(d > 8)
@@ -90,7 +96,7 @@ def report(rows):
     for r in rows:
         v = r['verdict']
         if v == 'IDENTICAL':
-            print('%-16s %-10s' % (r['name'], v))
+            print('%-16s %-10s' % (r['name'], v) + ('  (noise: px%% %.3f mean %.3f)' % (r['px'], r['mean']) if r.get('noise') else ''))
             continue
         if 'mean' not in r:
             print('%-16s %-10s' % (r['name'], v)); bad += 1
