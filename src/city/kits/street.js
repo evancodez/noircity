@@ -88,6 +88,78 @@ const PROPS = {
     roundedBox(0.5, 0.08, 0.4, 0.03, 2).translate(0, 2.0, 0),
   ]),
 };
+PROPS.bench = () => merge([
+  roundedBox(1.7, 0.07, 0.42, 0.02, 2).translate(0, 0.46, 0),
+  roundedBox(1.7, 0.36, 0.06, 0.02, 2).rotateX(-0.18).translate(0, 0.72, -0.22),
+  ...[-0.72, 0.72].map((x) => new THREE.BoxGeometry(0.06, 0.46, 0.4).translate(x, 0.23, 0)),
+]);
+PROPS.newsstand = () => merge([
+  roundedBox(1.6, 1.7, 1.0, 0.04, 2).translate(0, 0.85, 0),
+  new THREE.BoxGeometry(1.9, 0.08, 1.3).rotateX(0.12).translate(0, 1.95, 0.08),
+  new THREE.BoxGeometry(1.4, 0.5, 0.25).rotateX(-0.5).translate(0, 1.0, 0.6),
+]);
+PROPS.stop = () => merge([
+  new THREE.CylinderGeometry(0.05, 0.06, 2.7, 8).translate(0, 1.35, 0),
+  new THREE.CylinderGeometry(0.28, 0.28, 0.04, 20).rotateX(Math.PI / 2).translate(0, 2.5, 0.04),
+]);
+PROPS.stall = () => merge([
+  roundedBox(2.6, 0.9, 1.0, 0.03, 2).translate(0, 0.45, 0),
+  ...[[-1.25, -0.45], [1.25, -0.45], [-1.25, 0.45], [1.25, 0.45]].map(([x, z]) => new THREE.BoxGeometry(0.06, 2.2, 0.06).translate(x, 1.1, z)),
+  new THREE.BoxGeometry(2.9, 0.05, 1.5).rotateX(0.25).translate(0, 2.25, 0.2),
+  ...[-0.8, 0, 0.8].map((x) => new THREE.BoxGeometry(0.62, 0.22, 0.42).translate(x, 1.0, 0.15)),
+]);
+// a street-name post: its two blades (a name each, the one along the street it names)
+PROPS.namepost = () => merge([
+  new THREE.CylinderGeometry(0.045, 0.06, 2.95, 8).translate(0, 1.47, 0),
+  new THREE.SphereGeometry(0.07, 8, 6).translate(0, 2.97, 0),
+]);
+
+// the street names' atlas: every name, pale capitals on black enamel (a cell each)
+let NAMES = null;
+export function nameAtlas(names) {
+  if (NAMES) return NAMES;
+  const W = 1024, cw = 256, ch = 44, cols = W / cw;
+  const c = document.createElement('canvas'); c.width = W; c.height = Math.max(64, Math.ceil(names.length / cols) * ch);
+  const g = c.getContext('2d');
+  g.fillStyle = '#060606'; g.fillRect(0, 0, c.width, c.height);
+  const uv = new Map();
+  names.forEach((n, i) => {
+    const x = (i % cols) * cw, y = Math.floor(i / cols) * ch;
+    g.strokeStyle = '#8a877f'; g.lineWidth = 2; g.strokeRect(x + 3, y + 3, cw - 6, ch - 6);
+    g.fillStyle = '#d6d2c6'; g.textAlign = 'center'; g.textBaseline = 'middle';
+    const fs = Math.min(26, (cw - 16) / (n.length * 0.62));
+    g.font = `700 ${fs}px "Avenir Next Condensed", "Arial Narrow", sans-serif`;
+    g.fillText(n, x + cw / 2, y + ch / 2 + 1);
+    uv.set(n, [x / W, 1 - (y + ch) / c.height, (x + cw) / W, 1 - y / c.height]);
+  });
+  const tex = new THREE.CanvasTexture(c);
+  tex.colorSpace = THREE.SRGBColorSpace; tex.anisotropy = 4;
+  NAMES = { tex, uv, mat: new THREE.MeshBasicMaterial({ map: tex, color: new THREE.Color().setScalar(0.6) }) };
+  return NAMES;
+}
+// a name post's blades as faces with the atlas' uvs: [{ geo (with uv) }] and its iron
+export function nameBlades(p, A) {
+  const faces = [], iron = [];
+  const blade = (name, along, y) => {
+    // (a blade along x names an east-west street; along z, a north-south one)
+    const yaw = along === 'x' ? 0 : Math.PI / 2;
+    iron.push(new THREE.BoxGeometry(1.25, 0.24, 0.05).rotateY(yaw).translate(p.x, PAVE + y, p.z));
+    const uv = A.uv.get(name);
+    if (!uv) return;
+    for (const s of [1, -1]) {
+      const f = new THREE.PlaneGeometry(1.2, 0.2);
+      const U = f.getAttribute('uv');
+      for (let i = 0; i < U.count; i++) U.setXY(i, U.getX(i) ? uv[2] : uv[0], U.getY(i) ? uv[3] : uv[1]);
+      f.rotateY(yaw + (s > 0 ? 0 : Math.PI)).translate(p.x + (along === 'x' ? 0 : s * 0.03), PAVE + y, p.z + (along === 'x' ? s * 0.03 : 0));
+      faces.push(f);
+    }
+  };
+  blade(p.names[0], 'z', 2.68);
+  blade(p.names[1], 'x', 2.4);
+  iron.push(placeProp('namepost', p));
+  return { faces, iron };
+}
+
 const CACHE = new Map();
 export function propGeo(kind) {
   if (!CACHE.has(kind)) CACHE.set(kind, (PROPS[kind] || PROPS.bin)());

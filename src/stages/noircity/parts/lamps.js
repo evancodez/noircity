@@ -151,7 +151,7 @@ export default {
           const k = c.lamp.on && !c.lamp.dead ? 1 : 0;
           c.lamp._k = k;
           const d = Math.hypot(c.lamp.head.x - p.x, c.lamp.head.z - p.z);
-          const near = 0.4 + 0.6 * Math.min(1, Math.max(0, (d - 4) / 14));
+          const near = 0.25 + 0.75 * Math.min(1, Math.max(0, (d - 3) / 17));
           c.mesh.material.uniforms.uIntensity.value = c.base * k * near;
           c.entry.intensity = k;
         }

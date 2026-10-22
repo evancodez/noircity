@@ -168,6 +168,18 @@ export function nearLot(lot, out) {
   const rng = new RNG((lot.seed || 1) ^ 0x7EA4);
   // the dark openings (a lit one is the far build's: its quad is in front)
   for (const w of lotWindows(lot)) {
+    const ang = Math.atan2(w.nx, w.nz);
+    // a lit pane (the far build's light): its bars dark over it - a sash's
+    // cross, a shop front's mullions and transom - so it reads as a window
+    if (w.lit && w.kind === 'win') {
+      push(out, 'dark', box(-0.035, 0.035, -w.h / 2, w.h / 2, 0, 0.03).rotateY(ang).translate(w.x + w.nx * 0.08, w.y, w.z + w.nz * 0.08));
+      push(out, 'dark', box(-w.w / 2, w.w / 2, -0.035, 0.035, 0, 0.03).rotateY(ang).translate(w.x + w.nx * 0.08, w.y + w.h * 0.1, w.z + w.nz * 0.08));
+    }
+    if (w.lit && w.kind === 'shop') {
+      for (const f of [-1 / 6, 1 / 6]) push(out, 'dark', box(-0.05, 0.05, -w.h / 2, w.h / 2, 0, 0.03).rotateY(ang).translate(w.x + w.nx * 0.08 + Math.cos(ang) * f * w.w * 2, w.y, w.z + w.nz * 0.08 - Math.sin(ang) * f * w.w * 2));
+      push(out, 'dark', box(-w.w / 2, w.w / 2, -0.05, 0.05, 0, 0.03).rotateY(ang).translate(w.x + w.nx * 0.08, w.y + w.h * 0.28, w.z + w.nz * 0.08));
+    }
+    if (w.kind === 'door') push(out, 'trim', box(-0.75, 0.75, 0, 0.15, 0, 0.45).rotateY(ang).translate(w.x, 0.15, w.z));
     if (w.lit && w.kind !== 'door') continue;
     const k = w.kind === 'shop' ? 'glass' : 'dark';
     push(out, k, quad(w.x + w.nx * 0.04, w.y, w.z + w.nz * 0.04, w.nx, w.nz, w.w, w.h));

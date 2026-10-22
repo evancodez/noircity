@@ -1,9 +1,10 @@
 import * as THREE from 'three';
 import { markFigure } from '../../../render/layers.js';
 import { nearLot, lotWindows } from '../../../city/kits/facade.js';
-import { paveGeo, kerbGeos, LAMP, placeLamp, placeProp } from '../../../city/kits/street.js';
+import { paveGeo, kerbGeos, LAMP, placeLamp, placeProp, nameAtlas, nameBlades } from '../../../city/kits/street.js';
 import { CHUNK } from '../../../world/cityGen.js';
 import { mergeAll } from './street.js';
+import { mergeUV } from './places.js';
 
 // The near city (lane O1): chunks of CHUNK m streamed round the eye. A chunk
 // holds what only matters near: the raised pavements and their kerb stones,
@@ -30,15 +31,19 @@ export default {
     scene.add(group);
     // what each chunk holds
     const index = new Map();
-    const slot = (k) => { if (!index.has(k)) index.set(k, { lots: [], paves: [], lamps: [], props: [] }); return index.get(k); };
+    const slot = (k) => { if (!index.has(k)) index.set(k, { lots: [], paves: [], lamps: [], props: [], lines: [] }); return index.get(k); };
     for (const L of C.lots) slot(L.chunk).lots.push(L);
     for (const p of C.paves) slot(p.chunk).paves.push(p);
     for (const l of C.lamps) slot(l.chunk).lamps.push(l);
     for (const p of C.props) slot(p.chunk).props.push(p);
+    for (const l of C.lines) slot(l.chunk).lines.push(l);
     // (the kit's buckets folded into six meshes a chunk: every mesh is a draw
     // in the id pass and the scene pass, and twenty-odd chunks stand round the eye)
-    const FOLD = { dark: 'dark', glass: 'dark', trim: 'trim', iron: 'iron', shade: 'iron', kerb: 'kerb', prop: 'kerb', tree: 'tree', awning: 'tree', pave: 'pave' };
-    const MATS = { dark: M.black, trim: M.stoneTrim, iron: M.lampIron, tree: M.tower, pave: street.paveMat, kerb: M.kerb };
+    const FOLD = { dark: 'dark', glass: 'dark', trim: 'trim', iron: 'iron', shade: 'iron', kerb: 'kerb', prop: 'kerb', tree: 'tree', awning: 'tree', pave: 'pave', signs: 'signs', cloth: 'cloth' };
+    // (the street names' enamel: one atlas for the city; the washing: pale, both sides)
+    const names = nameAtlas([...new Set(C.streets.map((s) => s.name))]);
+    const clothMat = new THREE.MeshStandardMaterial({ color: 0x6e6e6e, roughness: 0.9, side: THREE.DoubleSide });
+    const MATS = { dark: M.black, trim: M.stoneTrim, iron: M.lampIron, tree: M.tower, pave: street.paveMat, kerb: M.kerb, signs: names.mat, cloth: clothMat };
     const SOLID = new Set(['pave', 'kerb', 'iron']);
     const loaded = new Map(), building = new Map();
     const stats = { built: 0, dropped: 0, buildMs: 0, live: 0, lastMs: 0 };
@@ -55,7 +60,27 @@ export default {
       yield;
       for (const L of D.lots) { nearLot(L, out0); yield; }
       for (const l of D.lamps) { push('iron', placeLamp(LAMP.iron, l)); push('shade', placeLamp(LAMP.shade, l)); }
-      for (const p of D.props) push(p.road ? 'iron' : 'prop', placeProp(p.kind, p));
+      for (const p of D.props) {
+        if (p.kind === 'namesign') { const B = nameBlades(p, names); for (const g of B.faces) push('signs', g); for (const g of B.iron) push('iron', g); continue; }
+        push(p.road ? 'iron' : p.kind === 'bench' || p.kind === 'stall' ? 'tree' : 'prop', placeProp(p.kind, p));
+      }
+      // the laundry lines: the line sagging between the walls, the washing pegged on it
+      for (const l of D.lines || []) {
+        const n = 8, P = [];
+        for (let k = 0; k <= n; k++) { const t = k / n; P.push([l.a[0] + (l.b[0] - l.a[0]) * t, l.a[1] + (l.b[1] - l.a[1]) * t - l.sag * 4 * t * (1 - t), l.a[2] + (l.b[2] - l.a[2]) * t]); }
+        for (let k = 0; k < n; k++) {
+          const [x0, y0, z0] = P[k], [x1, y1, z1] = P[k + 1], L = Math.hypot(x1 - x0, y1 - y0, z1 - z0);
+          const g = new THREE.CylinderGeometry(0.012, 0.012, L, 3);
+          g.applyQuaternion(new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), new THREE.Vector3(x1 - x0, y1 - y0, z1 - z0).normalize()));
+          g.translate((x0 + x1) / 2, (y0 + y1) / 2, (z0 + z1) / 2);
+          push('iron', g);
+        }
+        const yaw = Math.atan2(l.b[0] - l.a[0], l.b[2] - l.a[2]) + Math.PI / 2;
+        for (const c of l.cloths) {
+          const x = l.a[0] + (l.b[0] - l.a[0]) * c.t, z = l.a[2] + (l.b[2] - l.a[2]) * c.t, y = l.a[1] + (l.b[1] - l.a[1]) * c.t - l.sag * 4 * c.t * (1 - c.t);
+          push('cloth', new THREE.PlaneGeometry(c.w, c.h).translate(0, -c.h / 2, 0).rotateY(yaw).translate(x, y, z));
+        }
+      }
       yield;
       const out = {};
       for (const [b, list] of Object.entries(out0)) { const f = FOLD[b]; if (!f) continue; (out[f] || (out[f] = [])).push(...list); }
@@ -63,7 +88,7 @@ export default {
       let k = 0;
       for (const [b, list] of Object.entries(out)) {
         if (!list.length || !MATS[b]) continue;
-        const m = new THREE.Mesh(mergeAll(list), MATS[b]);
+        const m = new THREE.Mesh(b === 'signs' ? mergeUV(list) : mergeAll(list), MATS[b]);
         for (const g of list) g.dispose();
         m.userData.inkId = city.idFor(key, k++);
         m.receiveShadow = true;

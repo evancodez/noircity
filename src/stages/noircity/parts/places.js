@@ -212,7 +212,7 @@ export default {
 };
 
 // planes with uvs merged (position, normal, uv; non-indexed)
-function mergeUV(list) {
+export function mergeUV(list) {
   const L = list.map((g) => (g.index ? g.toNonIndexed() : g));
   let n = 0; for (const g of L) n += g.getAttribute('position').count;
   const pos = new Float32Array(n * 3), nor = new Float32Array(n * 3), uv = new Float32Array(n * 2);

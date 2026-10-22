@@ -147,7 +147,7 @@ export function getCity() { return CACHE || (CACHE = generate()); }
 export function generate() {
   const xs = [...new Set([...NS.map((l) => l.x), ...NS_EXTRA])].sort((a, b) => a - b);
   const zs = [...new Set([...EW.map((l) => l.z), ...EW_EXTRA])].sort((a, b) => a - b);
-  const cells = [], paves = [], lots = [], walls = [], posts = [], lamps = [], props = [], bays = [], streets = [], alleys = [];
+  const cells = [], paves = [], lots = [], walls = [], posts = [], lamps = [], props = [], bays = [], streets = [], alleys = [], lines = [];
   const specialOf = (x, z) => SPECIAL.find((S) => x > S.rect[0] && x < S.rect[1] && z > S.rect[2] && z < S.rect[3]) || null;
 
   // ---- the streets' segments (between junctions: where another road meets this one) ------------
@@ -299,7 +299,7 @@ export function generate() {
   quay(walls, posts);
 
   // ---- street furniture: lamps, hydrants, call boxes, bins, bays ---------------------------------------------
-  furnish(streets, paves, lots, lamps, props, bays, posts);
+  furnish(streets, paves, lots, lamps, props, bays, posts, walls, lines);
 
   // ---- the chunks --------------------------------------------------------------------------------------------
   const chunkOf = (x, z) => `${Math.floor(x / CHUNK)},${Math.floor(z / CHUNK)}`;
@@ -307,6 +307,7 @@ export function generate() {
   for (const p of paves) { const c = centroid(p.pts); p.chunk = chunkOf(c[0], c[1]); }
   for (const l of lamps) l.chunk = chunkOf(l.x, l.z);
   for (const p of props) p.chunk = chunkOf(p.x, p.z);
+  for (const l of lines) l.chunk = chunkOf(l.x, l.z);
 
   // ---- the ground ------------------------------------------------------------------------------------------------
   const cellAt = (x, z) => {
@@ -347,7 +348,7 @@ export function generate() {
     }
     return PAVE * k;
   }
-  return { xs, zs, cells, paves, lots, walls, posts, lamps, props, bays, streets, alleys, specials: specialsOut, groundAt, inWater, cellAt, chunkOf, CHUNK };
+  return { xs, zs, cells, paves, lots, walls, posts, lamps, props, bays, streets, alleys, lines, specials: specialsOut, groundAt, inWater, cellAt, chunkOf, CHUNK };
 }
 
 // which edges of a kerb polygon are kerbs (they face a road): all of them but
@@ -390,7 +391,7 @@ function edgeBox(a, b, t, tag, lot = null) {
 // ---- the lots of a rectangular block -----------------------------------------------------------------------------
 // DEPTH, WIDTH, FLOORS by kit
 const KIT = {
-  downtown: { depth: [18, 26], width: [12, 26], floors: [5, 11], fh: 3.6, back: 0.75 },
+  downtown: { depth: [18, 26], width: [12, 26], floors: [6, 13], fh: 3.6, back: 0.75 },
   tenement: { depth: [13, 17], width: [8, 13], floors: [4, 6], fh: 3.2, back: 0.8 },
   docks: { depth: [24, 36], width: [24, 42], floors: [2, 3], fh: 4.6, back: 0.9, warehouse: true },
   yards: { depth: [16, 26], width: [16, 34], floors: [1, 3], fh: 4.4, back: 0.7, shed: true },
@@ -431,8 +432,8 @@ function rectLots(P, br, cell, fl, rng, lots, alleys) {
     }
     let floors = floorsOf();
     // (downtown: now and then a tower, its setbacks the kit's: the skyline)
-    const tower = cell.kit === 'downtown' && x1 - x0 > 15 && z1 - z0 > 15 && rng.chance(0.16);
-    if (tower) floors = rng.int(15, 24);
+    const tower = cell.kit === 'downtown' && x1 - x0 > 15 && z1 - z0 > 15 && rng.chance(0.24);
+    if (tower) floors = rng.int(16, 28);
     const h = 1.0 + floors * K.fh + rng.range(0, 1.4);
     lots.push({ kind: 'rect', x0, x1, z0, z1, h, floors, fh: K.fh, kit: cell.kit, faces, district: cell.district, tower, seed: rng.next() * 1e6 | 0 });
   };
@@ -672,7 +673,7 @@ function specials(walls, posts, lamps, lots) {
 // lamps along every kerb (by the street's class, alternating sides on the
 // streets, both on the avenues), one at a corner of every junction; a
 // hydrant, a call box, bins; parking bays along the kerbs of the streets
-function furnish(streets, paves, lots, lamps, props, bays, posts) {
+function furnish(streets, paves, lots, lamps, props, bays, posts, walls0, lines) {
   const rng = new RNG(0x51AE);
   // (buckets of 32 m: a lot, a pavement listed in every bucket its bounds touch)
   const B = 32, bk = (x, z) => Math.floor(x / B) * 4096 + Math.floor(z / B);
@@ -767,6 +768,88 @@ function furnish(streets, paves, lots, lamps, props, bays, posts) {
     const z = BRIDGE.z + sz * (BRIDGE.hw + 0.9);
     lamps.push({ x, z, yaw: Math.atan2(sz, 0), kind: 'post', street: 'bridge', bridge: true });
     posts.push({ x, z, r: 0.22, tag: 'lamp' });
+  }
+  // ---- the junctions: a street-name post at a corner of every crossing (the
+  // two names on its blades: where am I, read from the car), a newsstand at
+  // some of downtown's
+  const ends = new Map();
+  for (const st of streets) {
+    if (st.river || st.bridge) continue;
+    for (const p of [st.a, st.b]) { const k = `${Math.round(p[0])},${Math.round(p[1])}`; if (!ends.has(k)) ends.set(k, { x: p[0], z: p[1], sts: [] }); ends.get(k).sts.push(st); }
+  }
+  for (const J of ends.values()) {
+    const names = [...new Set(J.sts.map((s) => s.name))];
+    if (names.length < 2) continue;
+    const hwMax = Math.max(...J.sts.map((s) => s.hw));
+    // (the corner: the north-east one, else any that is pavement)
+    for (const [sx, sz] of [[1, -1], [-1, -1], [1, 1], [-1, 1]]) {
+      const x = J.x + sx * (hwMax + 0.8), z = J.z + sz * (hwMax + 0.8);
+      if (!onPave(x, z, 0.3) || inLot(x, z, 0.4)) continue;
+      const ns = J.sts.find((s) => Math.abs(s.a[0] - s.b[0]) < 1e-3), ew = J.sts.find((s) => Math.abs(s.a[1] - s.b[1]) < 1e-3);
+      props.push({ kind: 'namesign', x, z, yaw: 0, names: [(ns || J.sts[0]).name, (ew || J.sts[1]).name] });
+      posts.push({ x, z, r: 0.12, tag: 'sign' });
+      const D = districtAt(J.x, J.z);
+      if (D.id === 'downtown' && rng.chance(0.35)) {
+        const nx2 = x - sx * 3.2, nz2 = z;
+        if (onPave(nx2, nz2, 1.0) && !inLot(nx2, nz2, 1.0)) { props.push({ kind: 'newsstand', x: nx2, z: nz2, yaw: sz > 0 ? Math.PI : 0 }); walls0.push({ cx: nx2, cz: nz2, hx: 0.85, hz: 0.55, angle: 0, tag: 'stand' }); }
+      }
+      break;
+    }
+  }
+  // ---- benches along the wide streets downtown and on the Hill (backs to the
+  // buildings), the tram's stops on Grand Ave
+  for (const st of streets) {
+    if (st.river || st.bridge || st.cls === 'lane') continue;
+    const [ax, az] = st.a, [bx, bz] = st.b;
+    const L = Math.hypot(bx - ax, bz - az);
+    const dx = (bx - ax) / L, dz = (bz - az) / L, nx = -dz, nz = dx;
+    const D = districtAt((ax + bx) / 2, (az + bz) / 2);
+    if (st.tram) for (let u = 40; u < L - 30; u += 180) {
+      for (const sd of [-1, 1]) {
+        const x = ax + dx * u + nx * (st.hw + 1.0) * sd, z = az + dz * u + nz * (st.hw + 1.0) * sd;
+        if (!onPave(x, z, 0.3) || inLot(x, z, 0.4)) continue;
+        props.push({ kind: 'stop', x, z, yaw: Math.atan2(-nz * sd, nx * sd) });
+        posts.push({ x, z, r: 0.12, tag: 'sign' });
+      }
+    }
+    if (D.id !== 'downtown' && D.id !== 'hill') continue;
+    for (let u = 30; u < L - 25; u += rng.range(55, 90)) {
+      const sd = rng.chance(0.5) ? 1 : -1;
+      const p = st.p || 3;
+      const x = ax + dx * u + nx * (st.hw + p - 0.6) * sd, z = az + dz * u + nz * (st.hw + p - 0.6) * sd;
+      if (!onPave(x, z, 0.4) || inLot(x, z, 0.2) || near(lamps, x, z, 2.5) || near(props, x, z, 3)) continue;
+      // (the bench along the kerb, facing the road)
+      const yaw = Math.atan2(-dz, dx);
+      props.push({ kind: 'bench', x, z, yaw, face: sd });
+      walls0.push({ cx: x, cz: z, hx: 0.85, hz: 0.28, angle: yaw, tag: 'bench' });
+    }
+  }
+  // ---- the stalls by the market hall (Hester St's west pavement), a fruit
+  // and fish row under their awnings
+  for (let z = -14; z < 20; z += 3.4) {
+    const x = 322.0;
+    if (!onPave(x, z, 0.3)) continue;
+    props.push({ kind: 'stall', x, z, yaw: Math.PI / 2 });
+    walls0.push({ cx: x, cz: z, hx: 0.6, hz: 1.4, angle: 0, tag: 'stall' });
+  }
+  // ---- the laundry lines across the Tenements' lanes (a man's height and more over the lane)
+  for (const st of streets) {
+    if (st.cls !== 'lane' || districtAt((st.a[0] + st.b[0]) / 2, (st.a[1] + st.b[1]) / 2).id !== 'tenements') continue;
+    const [ax, az] = st.a, [bx, bz] = st.b;
+    const L = Math.hypot(bx - ax, bz - az);
+    const dx = (bx - ax) / L, dz = (bz - az) / L, nx = -dz, nz = dx;
+    const half = st.hw + (st.p || 2);
+    for (let u = 8; u < L - 6; u += rng.range(7, 13)) {
+      if (!rng.chance(0.7)) continue;
+      const cx = ax + dx * u, cz = az + dz * u;
+      const pa = [cx + nx * half, cz + nz * half], pb = [cx - nx * half, cz - nz * half];
+      // (both ends on a wall: a lot each side)
+      if (!inLot(pa[0] + nx * 0.6, pa[1] + nz * 0.6, 0) || !inLot(pb[0] - nx * 0.6, pb[1] - nz * 0.6, 0)) continue;
+      const y = rng.range(6.5, 12), sag = rng.range(0.5, 1.2);
+      const cloths = [];
+      for (let k = 0; k < rng.int(2, 6); k++) cloths.push({ t: rng.range(0.15, 0.85), w: rng.range(0.5, 1.2), h: rng.range(0.5, 1.1) });
+      lines.push({ a: [pa[0], y, pa[1]], b: [pb[0], y + rng.range(-0.6, 0.6), pb[1]], sag, cloths, x: cx, z: cz });
+    }
   }
 }
 

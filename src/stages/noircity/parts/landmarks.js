@@ -134,9 +134,16 @@ export default {
       add(bs, M.iron);
       // the trees (the generator's: their trunks are solid)
       void a; void b; void c; void d;
+      // (a crown of four or five lumps on a forked trunk: one ball read as a lollipop)
+      const tr = new (stage.rng.fork(4004).constructor)(0x7EE6);
       for (const [x, z, r] of SP.trees || []) {
-        trees.push(new THREE.IcosahedronGeometry(r, 1).scale(1, 0.8, 1).translate(x, 4.5 + r * 0.6, z));
-        trunks.push(new THREE.CylinderGeometry(0.2, 0.3, 5, 6).translate(x, 2.5, z));
+        const n = 4 + (tr.next() < 0.5 ? 1 : 0);
+        for (let k = 0; k < n; k++) {
+          const a = (k / n) * Math.PI * 2 + tr.next(), d = r * (0.25 + tr.next() * 0.35);
+          trees.push(new THREE.IcosahedronGeometry(r * (0.5 + tr.next() * 0.3), 2).scale(1, 0.75, 1).translate(x + Math.cos(a) * d, 4.2 + r * (0.5 + tr.next() * 0.5), z + Math.sin(a) * d));
+        }
+        trunks.push(new THREE.CylinderGeometry(0.16, 0.3, 4.6, 6).translate(x, 2.3, z));
+        for (const s of [-1, 1]) trunks.push(new THREE.CylinderGeometry(0.08, 0.14, 2.4, 5).rotateZ(s * 0.6).translate(x + s * 0.6, 4.6, z));
       }
       add(trees, M.tower, { ray: false });
       add(trunks, M.iron);
