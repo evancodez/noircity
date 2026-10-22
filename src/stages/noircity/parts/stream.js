@@ -163,6 +163,8 @@ export default {
       },
       update(camera) {
         const p = camera.position;
+        // (shot mode: every chunk round the eye at once - a frame never depends on how fast a machine built)
+        if (stage.game && stage.game.shotMode) { this.warmAround(p.x, p.z); stats.live = loaded.size; return; }
         // drop what is well behind
         for (const key of [...loaded.keys()]) {
           const [i, j] = key.split(',').map(Number);

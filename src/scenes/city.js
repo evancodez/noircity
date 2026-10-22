@@ -103,6 +103,16 @@ function step(ctx, R, T, dt) {
   const G = ctx.game, C = ctx.stage.part('city').C, hud = ctx.hud, ctl = ctx.controller;
   if (G.failing || G.state !== 'playing') return;
   const car = R.car;
+  // the warning before the river (WAVE_C §1 rule 2): on a slipway's ramp, or
+  // near a pier's open end
+  {
+    const p = R.inCar && car ? car.pos : ctl.pos;
+    const edge = RIVER.s + QUAY_OFF;
+    const slip = SLIPS.some((s) => Math.abs(p.x - s.x) < s.w / 2 + 0.5 && p.z > RIVER.s + RIVER.hw + 1);
+    const pier = PIERS.some((q) => Math.abs(p.x - q.x) < q.w / 2 && p.z > edge + q.len - (R.inCar ? 14 : 5));
+    const w = slip || pier;
+    if (w !== !!T.warned) { T.warned = w; hud.warn(w ? 'The river.' : null); }
+  }
   // the map: M (the pad's d-pad down taps M)
   if (ctx.pressed('KeyM')) { const open = R.map.toggle(); ctl.frozen = open; if (car && R.inCar) { car.input.throttle = 0; car.input.brake = open ? 1 : 0; } }
   if (R.map.isOpen) { R.map.draw([{ x: G.eye.x, z: G.eye.z, yaw: ctl.yaw, kind: 'me' }, ...(car && !R.inCar ? [{ x: car.pos.x, z: car.pos.z, kind: 'car' }] : [])]); return; }
@@ -208,6 +218,7 @@ function wet(ctx, R, at, why) {
   G.cityWet = { x: at.x, z: at.z };
   ctx.hud.clearPrompt('cityin'); ctx.hud.clearPrompt('cityout');
   if (R.map) R.map.close();
+  // (the warning stays up into the fail: it was the reason)
   G.fail({ why, to: 'ashore', fall: false, hold: 1.1 });
 }
 
