@@ -184,6 +184,24 @@ export default {
       blade(shop.x + (-F.n[1]) * shop.w * 0.5, shop.z + F.n[0] * shop.w * 0.5, F.n, 4.6 + text.replace(/ /g, '').length * 0.29, text, col);
       if (++nB >= 40) break;
     }
+    // ---- the warehouses' and the sheds' painted names, high on their street faces (the Docks, the Yards) ------------
+    const PAINT = {
+      docks: ['HARBOR FREIGHT', 'COLD STORAGE', 'PIER 5 TERMINAL', 'BONDED WAREHOUSE', 'COFFEE & SUGAR', 'LUMBER', 'SHIP CHANDLER', 'FISH', 'HEMP & ROPE', 'IMPORTS', 'GENERAL CARGO', 'TEA'],
+      yards: ['MOTOR FREIGHT', 'FOUNDRY', 'COAL & COKE', 'SCRAP IRON', 'STEEL', 'MACHINE WORKS', 'CARTAGE', 'FEED & GRAIN'],
+    };
+    const prng = new RNG(0x9A1A7);
+    let nP = 0;
+    for (const L of C.lots) {
+      if (L.kind !== 'rect' || L.place || L.back || !PAINT[L.district] || L.h < 7) continue;
+      if (!prng.chance(0.22)) continue;
+      const Fs = facesOf(L).filter((F) => F.len > 14);
+      if (!Fs.length) continue;
+      const F = Fs[Math.floor(prng.next() * Fs.length)];
+      const list = PAINT[L.district], text = list[Math.floor(prng.next() * list.length)];
+      const w = Math.min(F.len * 0.7, text.length * 0.9 + 2), h = Math.min(2.2, Math.max(1.4, w / text.length * 1.4));
+      flat(F.mid[0], F.mid[1], F.n, L.h - h / 2 - 1.0, text, w, h, 'dark');
+      if (++nP >= 30) break;
+    }
     // ---- the meshes ----------------------------------------------------------------------------------------------
     const tex = new THREE.CanvasTexture(cv);
     tex.colorSpace = THREE.SRGBColorSpace;
@@ -199,7 +217,7 @@ export default {
     };
     const neonMat = new THREE.MeshBasicMaterial({ map: tex, color: new THREE.Color().setScalar(3.2), fog: false });
     const litMat = new THREE.MeshBasicMaterial({ map: tex, color: new THREE.Color().setScalar(1.25) });
-    const darkMat = new THREE.MeshBasicMaterial({ map: tex, color: new THREE.Color().setScalar(0.45) });
+    const darkMat = new THREE.MeshBasicMaterial({ map: tex, color: new THREE.Color().setScalar(0.8) });
     mk(neonFaces, neonMat, 0);
     mk(litFaces, litMat, 1);
     mk(darkFaces, darkMat, 1);
