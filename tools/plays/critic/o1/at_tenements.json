@@ -1,0 +1,15 @@
+{
+ "about": "[O1 critic] arrive at tenements on foot (?start=city&at=tenements): what the first frame says, and the other way.",
+ "url": "/?mute=1&start=city&at=tenements",
+ "size": [1280, 800],
+ "out": "shots/critic_o1/at",
+ "steps": [
+  { "wait": 2000 },
+  { "clickOn": "#title .opt[data-k=begin]", "taken": "G.state !== 'title'", "retries": 5, "every": 4000 },
+  { "until": "G.scenes.current && G.scenes.current.id === 'city' && G.scenes.fadeK < 0.05", "timeout": 20000 },
+  { "wait": 1200 },
+  { "shot": "tenements_a" },
+  { "look": [1500, 0], "steps": 12 }, { "wait": 600 },
+  { "shot": "tenements_b" }
+ ]
+}

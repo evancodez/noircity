@@ -1,0 +1,16 @@
+{
+ "about": "[O1 critic] the clock tower, 'the landmark seen from everywhere': from the yards start, turn toward it (0, -90) with the eye level.",
+ "url": "/?mute=1&start=city&at=yards",
+ "size": [1280, 800],
+ "out": "shots/critic_o1/tower",
+ "steps": [
+  { "wait": 2000 },
+  { "clickOn": "#title .opt[data-k=begin]", "taken": "G.state !== 'title'", "retries": 5, "every": 4000 },
+  { "until": "G.scenes.current && G.scenes.current.id === 'city' && G.scenes.fadeK < 0.05", "timeout": 20000 },
+  { "wait": 1000 },
+  { "look": "[(() => { const p = G.controller.pos, dx = 0 - p.x, dz = -90 - p.z; const want = Math.atan2(-dx, -dz); let d = want - G.controller.yaw; d = Math.atan2(Math.sin(d), Math.cos(d)); return Math.round(-d / 0.0021); })(), Math.round((G.controller.pitch - 0.08) / 0.0021)]", "steps": 10 },
+  { "wait": 800 },
+  { "eval": "JSON.stringify({yaw:+G.controller.yaw.toFixed(2), pitch:+G.controller.pitch.toFixed(2), p:[G.controller.pos.x,G.controller.pos.z].map(v=>+v.toFixed(0))})" },
+  { "shot": "yards" }
+ ]
+}

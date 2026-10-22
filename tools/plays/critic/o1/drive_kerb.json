@@ -1,0 +1,25 @@
+{
+ "about": "[O1 critic] the car up the kerb and along the pavement of Grand Ave at speed: into the lamps, bins, benches, posts. Does anything pass through the car (a prop's circle inside the car's box)? What does a hit do?",
+ "url": "/?mute=1&start=city",
+ "size": [1280, 800],
+ "out": "shots/critic_o1/kerb",
+ "steps": [
+  { "wait": 2000 },
+  { "clickOn": "#title .opt[data-k=begin]", "taken": "G.state !== 'title'", "retries": 5, "every": 4000 },
+  { "until": "G.scenes.current && G.scenes.current.id === 'city' && G.scenes.fadeK < 0.05", "timeout": 20000 },
+  { "wait": 800 },
+  { "key": "KeyE", "hold": 60 }, { "wait": 1200 },
+  { "eval": "(() => { const R = window.__kr = { through: [], hits: [], n: 0 }; const tick = () => { const c = G.city.car; if (c) { R.n++; for (const o of G.stage.colliders.near(c.pos.x, c.pos.z, 4)) { if (o.r == null) continue; const l = c.local(new N.THREE.Vector3(o.cx ?? o.x, 0, o.cz ?? o.z), new N.THREE.Vector3()); if (Math.abs(l.x) < c.spec.halfL - 0.3 && Math.abs(l.z) < c.spec.halfW - 0.3) { const k = o.tag + '@' + (o.cx ?? o.x).toFixed(1) + ',' + (o.cz ?? o.z).toFixed(1); if (!R.through.includes(k)) R.through.push(k); } } } requestAnimationFrame(tick); }; requestAnimationFrame(tick); return 1; })()" },
+  { "down": "KeyW" }, { "wait": 900 },
+  { "down": "KeyD" }, { "wait": 350 }, { "up": "KeyD" },
+  { "wait": 300 },
+  { "down": "KeyA" }, { "wait": 250 }, { "up": "KeyA" },
+  { "wait": 1200 }, { "shot": "00_pavement" },
+  { "eval": "JSON.stringify({v:+(G.city.car.speed*3.6).toFixed(0), pos:[+G.city.car.pos.x.toFixed(1),+G.city.car.pos.z.toFixed(1)], cr:G.city.car.stats.crashes, sc:G.city.car.stats.scrapes, thr:window.__kr.through})" },
+  { "wait": 2000 }, { "shot": "01_pavement2" },
+  { "eval": "JSON.stringify({v:+(G.city.car.speed*3.6).toFixed(0), pos:[+G.city.car.pos.x.toFixed(1),+G.city.car.pos.z.toFixed(1)], cr:G.city.car.stats.crashes, sc:G.city.car.stats.scrapes, thr:window.__kr.through})" },
+  { "wait": 3000 }, { "shot": "02_pavement3" },
+  { "up": "KeyW" },
+  { "eval": "JSON.stringify({v:+(G.city.car.speed*3.6).toFixed(0), pos:[+G.city.car.pos.x.toFixed(1),+G.city.car.pos.z.toFixed(1)], cr:G.city.car.stats.crashes, sc:G.city.car.stats.scrapes, thr:window.__kr.through, n:window.__kr.n, props: G.stage.colliders.near(G.city.car.pos.x, G.city.car.pos.z, 30).filter(o=>o.r!=null).map(o=>o.tag).join(',')})" }
+ ]
+}
