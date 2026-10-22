@@ -1,0 +1,133 @@
+# O7 — the night: HUD, map, saves, radio, title, pad, polish, the whole-game hunt
+
+Branch `ow/O7-night`, port 5377. The last lane, after O1 to O6 are
+merged: read every `docs/reports/O<n>.md` and its `Left` (they are yours
+now), `docs/seams/WORLD.md` and `SMASH.md`. The pattern is game two's
+whole lane (`docs/story/briefs/G8_WHOLE.md`, `docs/story/reports/game-two/G8.md`)
+and the hunts (`tools/hunts/*.mjs`, `tools/hunt.mjs`, `tools/lib/whole.py`,
+`tools/fpstable.mjs`). The user's words:
+
+- **[must]** "a full open world game": it plays from the title through
+  an hour of a night with no seam that breaks, no save that strands, no
+  system that does not know the others.
+- **[must]** "No story mode or outright missions yet": nothing lists
+  what to do; the city shows it.
+- **[must]** "Keep it very much this same aesthetic": the HUD, the map,
+  the title and the cards in the game's own ink and lettering.
+- **[must]** The three bars (GAME_TWO §1) over the whole: smooth
+  everywhere, the middle everywhere (the line is the player's own
+  situation), everything works.
+
+What you build on: the HUD (`src/ui/Hud.js`, `kit.js`, `inkArt.js`,
+`lettering.js`: the title, the pause card and its settings line, the
+objective, the cards), the saves (`src/game/Save.js`), the music
+(`src/audio/Music.js`: the slots and the diegetic speaker), the sound
+(`src/audio/Sfx.js`), the pad (`src/input/Pad.js`, `?padfake=1`), O1's
+map (`src/world/map.js`), O3's `police.heat` and its event, O4's
+`save.money`, O5's matchbooks and the hotel's save, O2's garage.
+
+## 1. The HUD (`src/night/hud.js` on `Hud.js`)
+- **The heat** as badges top right, 0 to 5, drawn in ink (a badge
+  brushed in as it rises, struck out as it falls; the search state a
+  badge half-tone); the stand-in row of O3 replaced.
+- **The money** `$` bottom right in the typewriter face, only when it
+  changes (it comes, it settles, it goes) and on Tab.
+- **Tab** held: the heat, the money, the car's state, the hour, for a
+  moment, and nothing else.
+- **The objective line** only when a thing to do is taken up (a fare,
+  a race, a bout, a hideout entered, the heat: `Lose them.`), and gone
+  when it is done: an open world's line is the player's situation,
+  never an order. Every line in the game audited (a table in the
+  report: where it comes, where it goes).
+- The kit's cards once per save: the table of every card id, where it
+  is first taught (the first E at a car, the first punch, the first
+  shot, the first crouch, the first dodge, M for the map), its nudge
+  rule, and the fails whose black names it. At most a dozen cards in
+  the whole game; none in danger; none twice; no key as text.
+
+## 2. The map and the pause (`src/night/map.js`)
+**M** opens O1's inked city map on the pause card (the frame dims; the
+map with the district names in the game's lettering, north up, the
+player's mark, the heat's badge, the hotel and the garage marked once
+found, nothing else at first; a second M or ESC closes it). The pause
+card: `PAUSED`, the keys (the rulebook with the open world's additions),
+the settings line (mouse, volume, subtitles; the old M for sound moves
+here), the matchbooks collected (a row of little covers), `click to
+resume`. The pad's menu mapping covers it.
+
+## 3. Saves (`src/night/save.js` on `Save.js`)
+The open world's save, v3: where I am (the position and the yaw, the
+car and its state if I am in one, the hour), the heat, the money, the
+garage's cars, the matchbooks, the cards taught, the places found;
+written at the hotel's bed (O5) and as a **quiet autosave** when I get
+into a car with the heat at 0 (never under fire, never mid-brawl: the
+rule written). CONTINUE on the title puts me there with the world as it
+was (the traffic and the people drawn afresh: the city is never the same
+film). BEGIN starts the night at the kerb. No CHAPTERS. A v2 save is
+dropped quietly.
+
+## 4. The title, the radio and the city's sound
+- **The title**: `NOIR CITY` in the lettering over the live city from
+  the start's kerb in the rain (the base's title over the diner is the
+  pattern), BEGIN and CONTINUE, the red splatter accent.
+- **The radio** (`src/night/radio.js` on `Music.js`): in a car, the
+  slots are stations (`public/music/<station>.(mp3|ogg|m4a)`: the user
+  drops real jazz in; silent until then, with a needle hiss and the
+  dial's click): a key the rulebook allows (Q is the horn: use the
+  pause card's line or F while driving; say which in the report), the
+  station's sound from the dashboard's speaker (the diegetic filter),
+  fading as I get out and gone with the door.
+- **The city's sound**: the rain's rise and fall, the el passing
+  overhead, a distant siren, a ship's horn from the river, a bell from
+  the Hill, the market's voices, the gasworks' hum: each placed by the
+  district and heard at the right distance, never on top of the game's
+  own sounds.
+
+## 5. Things to do, tied (every lane added its own)
+- **The el**: a seat on a station platform (E boards the next train; the
+  ride round the loop with the view; E at any station gets off).
+- **The bounty board** at the police station (O5's board): three names
+  a night with a photo (three of O3's gang men, somewhere in their
+  turf, marked by nothing but the photo's face and the district named
+  under it); found and taken down (a fight, or a shot), `$` at the desk.
+  Not a mission list: nothing says go, nothing counts.
+- **The phone box**: E in a call box with `$`: a car brought to the
+  kerb beside it in a minute (O2's car at a point).
+- **The matchbooks** on the pause card; **the theatre's reel** (O5);
+  **the fares**, **the race**, **the gym**, **the hideouts** (theirs):
+  each checked by you in play, each with its line coming and going
+  right.
+
+## 6. The whole-game hunt and polish
+- The whole play: twenty minutes of a night by real input, twice (the
+  good hands, the medium hands): drive every district, hijack, a fare,
+  a race, a bout, a shootout at a hideout, heat to 3 and lost, the
+  hotel's save, CONTINUE, the el, the map; every seam between systems
+  (a hijack into a fight into the heat into the chase into an interior
+  into the search) with no break.
+- The hunts on the city: ten retries at the hospital and the station
+  (nothing piles up: GPU geometries, listeners, timers), the edges of
+  every district and the river (nothing unfinished, nothing invisible),
+  the bodies, the cars, the doors; `drive_abuse`, `pile`, `edges`,
+  `brawl` brought to the city. Errors clean everywhere (`?start=city`
+  at every landmark, inside every building, at every heat).
+- The fps table at the five busiest spots (the avenue at speed, the
+  market, a heat 4 chase, the hideout fight, the race) against
+  `shot=perf`, with each lane's number before and yours after; memory
+  flat after thirty minutes.
+- The look, once over the whole: one frame per district and per room
+  against the reference (pools and ink, paper white 5 to 8 %, no grey);
+  the golden manifest of the city brought to its final set.
+- The pad through everything (`?padfake=1`): the drive, the hijack, the
+  brawl, the guns, the map, the pause, the title.
+
+## 7. The documents and the gate
+`README.md` (how to play NOIR CITY by hand: the keys, what the city
+offers, how to see each thing; NOIR EXTREME's game at its own port),
+`docs/OPEN_WORLD.md` §7 "As built" (the systems, the seams, the budgets,
+the parked base scenes and what O7 decided is dead), `docs/seams/`
+consistent with the code. Build; golden identical or every change named
+and shown; the whole play twice; the saves; the pad; the fps table;
+errors; the report `docs/reports/O7.md` with "What the user should
+feel", "Found and fixed", "The middle, audited", "Left". Edits to shared
+files marked `// [O7]`. Hours, not days.
