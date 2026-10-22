@@ -13,15 +13,17 @@ import { PAVE, CLS, NS, EW } from '../../../world/plan.js';
 // and their lettered board; the gym's, the gun shop's, the garage's, the
 // store's, the bank's painted boards; and along Grand Ave, the Bowery and
 // Centre St, blades over the shop fronts (BAR, HOTEL, CHOP SUEY, PAWN ...):
-// the neon's one colour a sign (the registry's blue, a green, an amber: no
-// red, red is the crew's). Always drawn (they are few: the city's lights,
+// the neon's one colour - the registry's blue (accents.js 'neon', the
+// diner's) on the places a man goes into (the diner, the bars, the hotel)
+// and on one shop blade in five; every other tube burns white (ink: no
+// chroma). No green, no amber (the critic's M4: DESIGN.md, colour an accent,
+// one or two a frame). Always drawn (they are few: the city's lights,
 // seen down a street from far off); one atlas, one material, one mesh of
 // faces, one of boards, one of bulbs.
 //   api: { signs: [{ text, x, z, n, kind, place }], doors: [{ x, z, nx, nz, place }] (the places' doors: O5's) }
 const COL = {
   blue: { rim: '#4aa8ff', core: '#dff0ff' },
-  green: { rim: '#3cff88', core: '#e6fff0' },
-  amber: { rim: '#ff9a2e', core: '#fff1d8' },
+  white: { rim: '#cfcfcf', core: '#ffffff' },
 };
 const PX = 96, ATLAS = 2048;
 const BLADES = ['BAR', 'HOTEL', 'CHOP SUEY', 'PAWN', 'DANCING', 'LIQUORS', 'BILLIARDS', 'LUNCH', 'ROOMS', 'DRUGS', 'CAFE', 'TAILOR', 'GRILL', 'SHOES', 'RADIO', 'JEWELRY'];
@@ -139,7 +141,7 @@ export default {
         const uvS = boardFace('TONIGHT', d, h, true);
         for (const sd of [1, -1]) litFaces.push(faceGeo(d, h, tx * sd, tz * sd, cx + tx * sd * (w / 2 + 0.01), y, cz + tz * sd * (w / 2 + 0.01), uvS));
         for (let u = -w / 2 + 0.4; u <= w / 2 - 0.3; u += 0.7) for (const k of [0.4, 0.8]) bulbs.push(new THREE.SphereGeometry(0.07, 6, 4).translate(mx + tx * u + n[0] * d * k, y - h / 2 - 0.22, mz + tz * u + n[1] * d * k));
-        blade(mx + tx * (w / 2 - 1), mz + tz * (w / 2 - 1), n, Math.min(L.h - 3, 12), P.name.replace('THE ', ''), P.id === 'theatre1' ? 'amber' : 'blue', { big: true });
+        blade(mx + tx * (w / 2 - 1), mz + tz * (w / 2 - 1), n, Math.min(L.h - 3, 12), P.name.replace('THE ', ''), 'white', { big: true });
       } else if (P.kind === 'hotel') {
         blade(dx + tx * 3, dz + tz * 3, n, Math.min(L.h - 3, 10.5), 'HOTEL', 'blue', { big: true });
         flat(dx, dz, n, 4.0, P.name, Math.min(8, F.len * 0.6), 0.7, 'dark');
@@ -147,7 +149,7 @@ export default {
       } else if (P.kind === 'diner') {
         flat(dx + tx * 2.5, dz + tz * 2.5, n, 3.9, 'DINER', 3.2, 0.9, 'neon', 'blue');
       } else if (P.kind === 'bar') {
-        flat(dx + tx * 1.8, dz + tz * 1.8, n, 3.6, 'BAR', 1.8, 0.8, 'neon', P.id === 'bar1' ? 'green' : 'amber');
+        flat(dx + tx * 1.8, dz + tz * 1.8, n, 3.6, 'BAR', 1.8, 0.8, 'neon', 'blue');
       } else if (P.kind === 'police' || P.kind === 'station') {
         flat(dx, dz, n, 4.3, 'POLICE', 4.2, 0.8, 'lit');
         // the two globe lamps by the door, on short iron posts
@@ -179,7 +181,8 @@ export default {
       if (!F) continue;
       const shop = lotWindows(L).find((w) => w.kind === 'shop' && w.nx === F.n[0] && w.nz === F.n[1]);
       if (!shop) continue;
-      const col = rng.chance(0.6) ? 'blue' : rng.chance(0.5) ? 'green' : 'amber';
+      // (the draws as they were, so the blades stand where they stood: one in five blue)
+      const col = rng.chance(0.6) ? 'white' : rng.chance(0.5) ? 'blue' : 'white';
       const text = BLADES[Math.floor(rng.next() * BLADES.length)];
       blade(shop.x + (-F.n[1]) * shop.w * 0.5, shop.z + F.n[0] * shop.w * 0.5, F.n, 4.6 + text.replace(/ /g, '').length * 0.29, text, col);
       if (++nB >= 40) break;

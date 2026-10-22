@@ -10,7 +10,10 @@ import { LETTER_FONT } from '../ui/lettering.js';
 //   drawMap(C, size = 1024) -> { canvas, toMap(x, z) -> [u, v] (canvas pixels) }
 //   MapOverlay: new MapOverlay(C); overlay.open / close / toggle; overlay.draw(marks)
 //   marks: [{ x, z, yaw, kind: 'me' | 'car' | 'heat' }]
-const PAPER = '#cfcac0', INK = '#141414', BLOCK = '#3a3835', WATERC = '#0b0b0b', STREET = '#d8d3c9';
+// (the blocks near black: an ink drawing, not a grey plan - the critic's M7)
+const PAPER = '#d4cfc4', INK = '#141414', BLOCK = '#1e1d1b', WATERC = '#0b0b0b', STREET = '#d8d3c9';
+// a district's name off the streets' names (DOWNTOWN sat on CENTRE ST): where it is printed
+const NAME_AT = { downtown: [-205, 105] };
 
 export function drawMap(C, size = 1024) {
   const c = document.createElement('canvas');
@@ -37,7 +40,8 @@ export function drawMap(C, size = 1024) {
   // the piers, the bridge
   g.fillStyle = STREET;
   for (const p of PIERS) { const [u, v] = toMap(p.x - p.w / 2, RIVER.s + 20); g.fillRect(u, v, p.w * k, p.len * k); }
-  { const [u, v] = toMap(RIVER.e + 18, BRIDGE.z - BRIDGE.hw - 2); g.fillRect(u, v, (BRIDGE.x1 - RIVER.e - 18) * k, (BRIDGE.hw * 2 + 4) * k); }
+  // (its two spans; the gap between them, the bascule up)
+  for (const [a, b] of [[RIVER.e + 18, BRIDGE.hinge[0]], [BRIDGE.hinge[1], BRIDGE.x1]]) { const [u, v] = toMap(a, BRIDGE.z - BRIDGE.hw - 2); g.fillRect(u, v, (b - a) * k, (BRIDGE.hw * 2 + 4) * k); }
   // the land beyond the edges (the rail embankment, the Hill's woods): darker
   g.fillStyle = 'rgba(20,20,20,0.35)';
   { const [u0, v0] = toMap(CITY.x0 - 50, CITY.z0 - 50), [u1] = toMap(-590, 0); g.fillRect(u0, v0, u1 - u0, size); }
@@ -45,7 +49,7 @@ export function drawMap(C, size = 1024) {
   // the blocks: every pavement slab, ink; the specials' grounds lighter
   for (const p of C.paves) {
     const sp = p.cell.special;
-    g.fillStyle = sp === 'park' ? '#58554f' : sp ? '#4a4844' : BLOCK;
+    g.fillStyle = sp === 'park' ? '#3e3c38' : sp ? '#33312e' : BLOCK;
     g.beginPath();
     p.pts.forEach(([x, z], i) => { const [u, v] = toMap(x, z); if (i) g.lineTo(u, v); else g.moveTo(u, v); });
     g.closePath(); g.fill();
@@ -70,7 +74,7 @@ export function drawMap(C, size = 1024) {
   for (const d of DISTRICTS) {
     const [x0, x1, z0, z1] = d.rect;
     const cx = Math.max(-560, Math.min(420, (Math.max(x0, -590) + Math.min(x1, 440)) / 2)), cz = Math.max(-560, Math.min(420, (Math.max(z0, -590) + Math.min(z1, 440)) / 2));
-    const [u, v] = toMap(cx, cz);
+    const [u, v] = toMap(...(NAME_AT[d.id] || [cx, cz]));
     g.font = `700 ${Math.round(size * 0.026)}px ${LETTER_FONT}`;
     g.lineWidth = 6; g.strokeStyle = PAPER; g.strokeText(d.name, u, v); g.fillStyle = INK; g.fillText(d.name, u, v);
   }
@@ -132,13 +136,25 @@ export class MapOverlay {
       g.save();
       g.translate(u, v);
       if (m.kind === 'me') {
-        // an arrowhead the way I face (a viewer's yaw: looking along (-sin, -cos))
+        // me: a ring that breathes round a big ink arrowhead the way I face
+        // (a viewer's yaw: looking along (-sin, -cos)), paper round both, so
+        // it reads on a street and on a block (the critic's M7: a 15 px pale
+        // arrow on a pale street lost to the car's square)
+        const t = (typeof performance !== 'undefined' ? performance.now() : 0) / 1000;
+        const pr = 34 + 8 * (0.5 + 0.5 * Math.sin(t * 4));
+        g.lineWidth = 7; g.strokeStyle = 'rgba(212,207,196,0.9)'; g.beginPath(); g.arc(0, 0, pr, 0, Math.PI * 2); g.stroke();
+        g.lineWidth = 3.5; g.strokeStyle = '#000'; g.beginPath(); g.arc(0, 0, pr, 0, Math.PI * 2); g.stroke();
         g.rotate(-m.yaw);
-        g.fillStyle = '#f4f1ea'; g.strokeStyle = '#000'; g.lineWidth = 2.5;
-        g.beginPath(); g.moveTo(0, -15); g.lineTo(9, 10); g.lineTo(0, 5); g.lineTo(-9, 10); g.closePath(); g.stroke(); g.fill();
+        g.fillStyle = '#000'; g.strokeStyle = '#f4f1ea'; g.lineWidth = 5; g.lineJoin = 'round';
+        g.beginPath(); g.moveTo(0, -30); g.lineTo(18, 20); g.lineTo(0, 10); g.lineTo(-18, 20); g.closePath(); g.stroke(); g.fill();
       } else if (m.kind === 'car') {
-        g.fillStyle = '#000'; g.strokeStyle = '#f4f1ea'; g.lineWidth = 2;
-        g.beginPath(); g.rect(-5, -5, 10, 10); g.fill(); g.stroke();
+        // the car: a small outlined body and the word, so it is never taken for me
+        g.rotate(-(m.yaw ?? 0));
+        g.fillStyle = '#d4cfc4'; g.strokeStyle = '#000'; g.lineWidth = 2.5;
+        g.beginPath(); g.rect(-5, -9, 10, 18); g.fill(); g.stroke();
+        g.rotate(m.yaw ?? 0);
+        g.font = `700 15px ${LETTER_FONT}`; g.textAlign = 'left'; g.textBaseline = 'middle';
+        g.lineWidth = 4; g.strokeStyle = '#d4cfc4'; g.strokeText('CAR', 12, 0); g.fillStyle = '#000'; g.fillText('CAR', 12, 0);
       }
       g.restore();
     }

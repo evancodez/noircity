@@ -4,7 +4,7 @@ import { segBox } from '../../../world/graph.js';
 // What the cars drive in (src/vehicles/Car.js reads stage.track with
 // plane = true): the lots' walls, the edges, the quay's railing, the
 // bridge's parapets and barrier, the rail yard's fence (boxes); the el's
-// columns, the lamp posts (they give to a hard blow: bent, out), the
+// columns, the lamp posts (solid: O6 makes them give), the
 // hydrants, the bollards (circles); the bodies (every car of game.vehicles,
 // the parked ones); the ground's height (kerbs, the slipways, the water);
 // the two real headlamp lights. The same api as the old city's track.
@@ -42,14 +42,16 @@ export default {
       return c;
     };
     for (const w of C.walls) addBox(w.cx, w.cz, w.hx, w.hz, w.angle, w.tag === 'edge' ? 'wall' : w.tag);
-    for (const p of C.posts) {
-      if (p.tag === 'lamp') addCircle(p.x, p.z, p.r, 'post', { give: true, giveAt: 4.5, hurt: 0.1, drag: 0.8 });
-      else addCircle(p.x, p.z, p.r, p.tag === 'bollard' ? 'post' : p.tag);
-    }
+    // (a lamp post is solid, as a hydrant and the el's columns are: it is
+    // merged into its chunk's iron, so a post that gave to a car would stay
+    // standing in the picture with the car through it - the critic's B1. O6
+    // draws a breakable post on its own mesh and gives it back its give:
+    // { give: true, giveAt: 4.5, hurt: 0.1, drag: 0.8 } and hides the merged one)
+    for (const p of C.posts) addCircle(p.x, p.z, p.r, p.tag === 'bollard' || p.tag === 'lamp' ? 'post' : p.tag, p.tag === 'lamp' ? { lamp: true } : {});
     if (el) for (const c of el.columns) addCircle(c.x, c.z, c.r, 'column');
-    // the lamps' records know their post (a bent post puts its lamp out: O6)
+    // the lamps' records know their post (O6: a bent post puts its lamp out)
     const L = stage.part('lamps');
-    if (L) for (const c of circles) if (c.give) c.lamp = L.near(c.x, c.z, 0.6);
+    if (L) for (const c of circles) if (c.lamp === true) c.lamp = L.near(c.x, c.z, 0.6);
     // the headlamps' lights (no shadows): off until a car takes one
     const spots = [];
     for (let i = 0; i < 2; i++) {

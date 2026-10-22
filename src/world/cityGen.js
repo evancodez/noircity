@@ -3,6 +3,8 @@ import {
   PAVE, WATER_Y, CITY, EDGE, CLS, NS, EW, NS_EXTRA, EW_EXTRA, BROADWAY, RIVER, RIVER_LINE, QUAY_OFF, PIERS, SLIPS, BRIDGE,
   SPECIAL, CLOCK, EL, PLACES, GASWORKS, PARK, CRANES, districtAt,
 } from './plan.js';
+// the downtown towers' floors at most (3.6 m a floor: 86 m; the clock tower is 130)
+const TOWER_MAX = 24;
 
 // NOIR CITY: the generator (lane O1). The plan (./plan.js) in, plain numbers
 // out: no meshes, no THREE, so a headless tool can build the same city (the
@@ -432,8 +434,17 @@ function rectLots(P, br, cell, fl, rng, lots, alleys) {
     }
     let floors = floorsOf();
     // (downtown: now and then a tower, its setbacks the kit's: the skyline)
-    const tower = cell.kit === 'downtown' && x1 - x0 > 15 && z1 - z0 > 15 && rng.chance(0.24);
+    let tower = cell.kit === 'downtown' && x1 - x0 > 15 && z1 - z0 > 15 && rng.chance(0.24);
     if (tower) floors = rng.int(16, 28);
+    // (the clock tower is the tallest thing in the city by a clear margin -
+    // the critic's M3: at 58 m it hid among the towers round it - so round
+    // Clock Square the towers come down to the street's height, and the
+    // rest stop at TOWER_MAX floors; the draws as they were, so every other
+    // lot stands where it stood)
+    if (tower) {
+      if (Math.hypot((x0 + x1) / 2 - CLOCK.x, (z0 + z1) / 2 - CLOCK.z) < CLOCK.clear) { tower = false; floors = Math.min(floors, 12); }
+      else floors = Math.min(floors, TOWER_MAX);
+    }
     const h = 1.0 + floors * K.fh + rng.range(0, 1.4);
     lots.push({ kind: 'rect', x0, x1, z0, z1, h, floors, fh: K.fh, kit: cell.kit, faces, district: cell.district, tower, seed: rng.next() * 1e6 | 0 });
   };
@@ -663,7 +674,7 @@ function specials(walls, posts, lamps, lots) {
     }
   }
   // the clock tower on its square
-  walls.push({ cx: CLOCK.x, cz: CLOCK.z, hx: 5.6, hz: 5.6, angle: 0, tag: 'wall', clock: true });
+  walls.push({ cx: CLOCK.x, cz: CLOCK.z, hx: CLOCK.w / 2 + 0.1, hz: CLOCK.w / 2 + 0.1, angle: 0, tag: 'wall', clock: true });
   // the cranes' legs on the south quay (they straddle the quay's walk: a gantry)
   for (const c of CRANES) for (const dx of [-4.2, 4.2]) for (const z of [RIVER.s + RIVER.hw + 1.6, RIVER.s + QUAY_OFF - 1.2]) posts.push({ x: c.x + dx, z, r: 0.55, tag: 'crane' });
   return out;
@@ -709,7 +720,7 @@ function furnish(streets, paves, lots, lamps, props, bays, posts, walls0, lines)
         if (!onPave(x, z, 0.3) || inLot(x, z, 0.5) || near(lamps, x, z, 12)) continue;
         // (the arm reaches over the road: its heading toward the street's middle)
         lamps.push({ x, z, yaw: Math.atan2(-(-nz * sd), -nx * sd), kind: 'post', street: st.id });
-        posts.push({ x, z, r: 0.22, tag: 'lamp', give: true });
+        posts.push({ x, z, r: 0.22, tag: 'lamp' });
       }
     }
     // the parking bays: the kerb lane of streets and the wide ones, not lanes, never near a junction
@@ -761,7 +772,7 @@ function furnish(streets, paves, lots, lamps, props, bays, posts, walls0, lines)
       const x = cx - s.nx * (RIVER.hw + 0.8), z = cz - s.nz * (RIVER.hw + 0.8);
       if (Math.abs(z - BRIDGE.z) < BRIDGE.hw + 6 && x > RIVER.e - 1) continue;
       lamps.push({ x, z, yaw: Math.atan2(-s.nz, s.nx), kind: 'post', street: 'river', quay: true });
-      posts.push({ x, z, r: 0.22, tag: 'lamp', give: true });
+      posts.push({ x, z, r: 0.22, tag: 'lamp' });
     }
   }
   for (let x = RIVER.e + QUAY_OFF + 8; x < BRIDGE.barrier - 4; x += 30) for (const sz of [-1, 1]) {

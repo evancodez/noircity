@@ -44,8 +44,9 @@ export default {
     sh.closePath();
     const road = mk(new THREE.ShapeGeometry(sh, 1).rotateX(-Math.PI / 2), roadMat, 'cityGround');
     // the bridge's deck (road) and the piers' decks (raised: pavement)
-    const deckL = BRIDGE.x1 - (RIVER.e + QUAY_OFF) + 2;
-    mk(new THREE.PlaneGeometry(deckL, BRIDGE.hw * 2).rotateX(-Math.PI / 2).translate(RIVER.e + QUAY_OFF - 1 + deckL / 2, BRIDGE.deckY, BRIDGE.z), roadMat, 'bridgeDeck');
+    // (two fixed spans: the gap between the bascule's hinges is open water - its leaves are up)
+    const spans = [[RIVER.e + QUAY_OFF - 1, BRIDGE.hinge[0]], [BRIDGE.hinge[1], BRIDGE.x1]];
+    mk(mergeAll(spans.map(([a, b]) => new THREE.PlaneGeometry(b - a, BRIDGE.hw * 2).rotateX(-Math.PI / 2).translate((a + b) / 2, BRIDGE.deckY, BRIDGE.z))), roadMat, 'bridgeDeck');
     const piers = [];
     for (const p of PIERS) piers.push(new THREE.PlaneGeometry(p.w, p.len + 1).rotateX(-Math.PI / 2).translate(p.x, PAVE, RIVER.s + QUAY_OFF + p.len / 2 - 0.5));
     // the quay's pavement (river side of the river road) and the bridge's footways
@@ -57,7 +58,7 @@ export default {
     }
     for (const sz of [-1, 1]) {
       const z0 = BRIDGE.z + sz * BRIDGE.hw, z1 = BRIDGE.z + sz * (BRIDGE.hw + BRIDGE.foot);
-      quay.push(quadGeo([RIVER.e + QUAY_OFF - 1, z0], [BRIDGE.x1, z0], [BRIDGE.x1, z1], [RIVER.e + QUAY_OFF - 1, z1], PAVE));
+      for (const [a, b] of spans) quay.push(quadGeo([a, z0], [b, z0], [b, z1], [a, z1], PAVE));
     }
     const pave = mk(mergeAll([...piers, ...quay]), paveMat, 'quayPave');
     void EDGE;

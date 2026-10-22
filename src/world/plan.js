@@ -134,9 +134,11 @@ export const PIERS = [
   { x: 230, w: 18, len: 60, name: 'PIER 9' },
 ];
 export const SLIPS = [{ x: -400, w: 8 }, { x: 0, w: 8 }];
-// the one bridge: Bridge St out over the river to the far bank, where the
-// road is shut (a toll barrier, a lorry across it)
-export const BRIDGE = { z: -420, x0: 432, x1: 610, hw: 7, foot: 2.5, deckY: 0, barrier: 596, name: 'THE BRIDGE' };
+// the one bridge: Bridge St out over the river on its arches to a bascule in
+// the river's middle whose two leaves are up (raise: their angle) - the road
+// shut at the barrier before the near leaf's pier, seen from the river road;
+// past the gap the far span to the far bank (hinge: the leaves' hinges, x)
+export const BRIDGE = { z: -420, x0: 432, x1: 610, hw: 7, foot: 2.5, deckY: 0, barrier: 503, hinge: [517, 565], raise: 1.31, name: 'THE BRIDGE' };
 // the far bank (a silhouette, not a place)
 export const FAR_BANK = { east: 610, south: 610 };
 
@@ -164,7 +166,9 @@ export const SPECIAL = [
 ];
 // Clock Square: the north-west half of the cell Broadway cuts between Baxter,
 // Canal St, Clock St and Centre St, a paved plaza with the tower at its middle
-export const CLOCK = { x: 0, z: -90, h: 58, name: 'CLOCK SQUARE', cell: [-30, 60, -120, -30], half: 'nw' };
+// (h 130, w 14: the tallest thing in the city by 40 m, its four lit faces
+// at 95 m over the roofs from every district; no tower within `clear` m)
+export const CLOCK = { x: 0, z: -90, h: 130, w: 14, clear: 125, name: 'CLOCK SQUARE', cell: [-30, 60, -120, -30], half: 'nw' };
 // the gasworks' holders and stacks (their ground is the gasworks' special)
 export const GASWORKS = {
   holders: [{ x: -415, z: -255, r: 22, h: 34 }, { x: -340, z: -255, r: 18, h: 28 }, { x: -415, z: -170, r: 16, h: 24 }],
@@ -207,7 +211,7 @@ export const STARTS = {
   yards: { name: 'the Yards', car: { x: -444.2, z: 0, yaw: Math.PI / 2 } },
   hill: { name: 'the Hill', car: { x: -100, z: -414.3, yaw: 0 } },
   gasworks: { name: 'the Gasworks', car: { x: -294.2, z: -200, yaw: Math.PI / 2 } },
-  bridge: { name: 'the Bridge', car: { x: 470, z: -416, yaw: 0 } },
+  bridge: { name: 'the Bridge', car: { x: 400, z: -414.3, yaw: 0 } },
   river: { name: 'the river road', car: { x: 427.3, z: -100, yaw: -Math.PI / 2 } },
   park: { name: 'the Park', car: { x: -205.7, z: -470, yaw: Math.PI / 2 } },
 };

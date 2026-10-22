@@ -38,29 +38,34 @@ export default {
     // ---- the clock tower -------------------------------------------------------------------
     let clockFaces = null;
     {
-      const { x, z, h } = CLOCK, W = 11;
+      // (130 m: the shaft to 0.68, a cornice, the clock's stage with its four
+      // faces at 0.745, a lantern, the pyramid roof and its mast)
+      const { x, z, h } = CLOCK, W = CLOCK.w;
       const parts = [];
-      parts.push(box(x - W / 2, x + W / 2, 0, h * 0.62, z - W / 2, z + W / 2));
-      parts.push(box(x - W / 2 - 0.5, x + W / 2 + 0.5, h * 0.62, h * 0.65, z - W / 2 - 0.5, z + W / 2 + 0.5));
-      parts.push(box(x - W / 2 + 1, x + W / 2 - 1, h * 0.65, h * 0.82, z - W / 2 + 1, z + W / 2 - 1));
-      parts.push(box(x - W / 2 + 0.5, x + W / 2 - 0.5, h * 0.82, h * 0.84, z - W / 2 + 0.5, z + W / 2 - 0.5));
-      parts.push(new THREE.ConeGeometry(W * 0.48, h * 0.22, 4).rotateY(Math.PI / 4).translate(x, h * 0.84 + h * 0.11, z));
-      parts.push(new THREE.CylinderGeometry(0.12, 0.12, 6, 6).translate(x, h * 1.06 + 3, z));
-      // the base's door and the pilasters up its faces
-      for (const s of [-1, 1]) for (const t of [-1, 1]) parts.push(box(x + s * (W / 2 - 0.6) - 0.6, x + s * (W / 2 - 0.6) + 0.6, 0, h * 0.62, z + t * (W / 2) - 0.6, z + t * (W / 2) + 0.6));
+      parts.push(box(x - W / 2, x + W / 2, 0, h * 0.68, z - W / 2, z + W / 2));
+      parts.push(box(x - W / 2 - 0.6, x + W / 2 + 0.6, h * 0.68, h * 0.695, z - W / 2 - 0.6, z + W / 2 + 0.6));
+      parts.push(box(x - W / 2 + 0.6, x + W / 2 - 0.6, h * 0.695, h * 0.81, z - W / 2 + 0.6, z + W / 2 - 0.6));
+      parts.push(box(x - W / 2, x + W / 2, h * 0.81, h * 0.825, z - W / 2, z + W / 2));
+      parts.push(box(x - W / 2 + 2.2, x + W / 2 - 2.2, h * 0.825, h * 0.87, z - W / 2 + 2.2, z + W / 2 - 2.2));
+      parts.push(new THREE.ConeGeometry(W * 0.5, h * 0.12, 4).rotateY(Math.PI / 4).translate(x, h * 0.87 + h * 0.06, z));
+      parts.push(new THREE.CylinderGeometry(0.15, 0.15, 9, 6).translate(x, h * 0.99 + 4.5, z));
+      // the base's door and the pilasters up its faces; the bands that step its shaft
+      for (const s of [-1, 1]) for (const t of [-1, 1]) parts.push(box(x + s * (W / 2 - 0.7) - 0.7, x + s * (W / 2 - 0.7) + 0.7, 0, h * 0.68, z + t * (W / 2) - 0.7, z + t * (W / 2) + 0.7));
+      for (const y of [h * 0.18, h * 0.36, h * 0.54]) parts.push(box(x - W / 2 - 0.3, x + W / 2 + 0.3, y, y + 0.7, z - W / 2 - 0.3, z + W / 2 + 0.3));
       add(parts, stoneT, { shadow: false });
-      // the faces: a lit disc on each side, its hands dark over it
-      const faceY = h * 0.735, R = 3.2, faces = [], hands = [];
+      // the faces: a lit disc on each side (unfogged: they are the city's
+      // compass, seen through the fog from the far districts), its hands dark over it
+      const faceY = h * 0.75, R = W * 0.33, faces = [], hands = [];
       for (let k = 0; k < 4; k++) {
         const a = k * Math.PI / 2, nx = Math.sin(a), nz = Math.cos(a);
-        const fx = x + nx * (W / 2 - 1 + 0.05), fz = z + nz * (W / 2 - 1 + 0.05);
+        const fx = x + nx * (W / 2 - 0.6 + 0.05), fz = z + nz * (W / 2 - 0.6 + 0.05);
         faces.push(new THREE.CircleGeometry(R, 40).rotateY(a).translate(fx, faceY, fz));
         // (ten to eleven: the hour, the minute)
-        hands.push(new THREE.BoxGeometry(0.22, R * 0.62, 0.05).translate(0, R * 0.31, 0).rotateZ(0.52).rotateY(a).translate(fx + nx * 0.04, faceY, fz + nz * 0.04));
-        hands.push(new THREE.BoxGeometry(0.16, R * 0.88, 0.05).translate(0, R * 0.44, 0).rotateZ(-1.05).rotateY(a).translate(fx + nx * 0.06, faceY, fz + nz * 0.06));
-        hands.push(new THREE.TorusGeometry(R, 0.18, 6, 40).rotateY(a).translate(fx + nx * 0.03, faceY, fz + nz * 0.03));
+        hands.push(new THREE.BoxGeometry(0.3, R * 0.62, 0.05).translate(0, R * 0.31, 0).rotateZ(0.52).rotateY(a).translate(fx + nx * 0.04, faceY, fz + nz * 0.04));
+        hands.push(new THREE.BoxGeometry(0.22, R * 0.88, 0.05).translate(0, R * 0.44, 0).rotateZ(-1.05).rotateY(a).translate(fx + nx * 0.06, faceY, fz + nz * 0.06));
+        hands.push(new THREE.TorusGeometry(R, 0.24, 6, 40).rotateY(a).translate(fx + nx * 0.03, faceY, fz + nz * 0.03));
       }
-      clockFaces = add(faces, new THREE.MeshBasicMaterial({ color: new THREE.Color().setScalar(1.6) }), { ray: false });
+      clockFaces = add(faces, new THREE.MeshBasicMaterial({ color: new THREE.Color().setScalar(1.6), fog: false }), { ray: false });
       add(hands, M.black, { ray: false });
     }
     yield;
