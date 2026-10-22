@@ -95,6 +95,9 @@ export function propGeo(kind) {
 }
 export function placeProp(kind, p) {
   _q.setFromAxisAngle(_y, p.yaw || 0);
-  _m.compose(new THREE.Vector3(p.x, PAVE, p.z), _q, _s);
+  _m.compose(new THREE.Vector3(p.x, p.road ? 0 : PAVE, p.z), _q, _s);
+  // (in the road: a manhole's lid, a length of the tram's rail - flush, a glint in the wet)
+  if (kind === 'manhole') return new THREE.CylinderGeometry(0.42, 0.42, 0.024, 16).translate(0, 0.006, 0).applyMatrix4(_m);
+  if (kind === 'rail') return new THREE.BoxGeometry(p.len, 0.02, 0.075).translate(0, 0.004, 0).applyMatrix4(_m);
   return propGeo(kind).clone().applyMatrix4(_m);
 }

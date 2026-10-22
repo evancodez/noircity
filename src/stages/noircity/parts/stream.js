@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { markFigure } from '../../../render/layers.js';
-import { nearLot } from '../../../city/kits/facade.js';
+import { nearLot, lotWindows } from '../../../city/kits/facade.js';
 import { paveGeo, kerbGeos, LAMP, placeLamp, placeProp } from '../../../city/kits/street.js';
 import { CHUNK } from '../../../world/cityGen.js';
 import { mergeAll } from './street.js';
@@ -35,28 +35,30 @@ export default {
     for (const p of C.paves) slot(p.chunk).paves.push(p);
     for (const l of C.lamps) slot(l.chunk).lamps.push(l);
     for (const p of C.props) slot(p.chunk).props.push(p);
-    const MATS = {
-      dark: M.black, glass: M.glassDark, trim: M.stoneTrim, iron: M.lampIron, awning: M.wood, tree: M.tower,
-      pave: street.paveMat, kerb: M.kerb, shade: M.lampShade, prop: M.paintedMetal,
-    };
-    const SOLID = new Set(['pave', 'kerb', 'iron', 'prop']);
+    // (the kit's buckets folded into six meshes a chunk: every mesh is a draw
+    // in the id pass and the scene pass, and twenty-odd chunks stand round the eye)
+    const FOLD = { dark: 'dark', glass: 'dark', trim: 'trim', iron: 'iron', shade: 'iron', kerb: 'kerb', prop: 'kerb', tree: 'tree', awning: 'tree', pave: 'pave' };
+    const MATS = { dark: M.black, trim: M.stoneTrim, iron: M.lampIron, tree: M.tower, pave: street.paveMat, kerb: M.kerb };
+    const SOLID = new Set(['pave', 'kerb', 'iron']);
     const loaded = new Map(), building = new Map();
     const stats = { built: 0, dropped: 0, buildMs: 0, live: 0, lastMs: 0 };
 
     // a chunk's build, a lot a step
     function* buildChunk(key) {
       const D = index.get(key) || { lots: [], paves: [], lamps: [], props: [] };
-      const out = {};
-      const push = (k, g) => (out[k] || (out[k] = [])).push(g);
+      const out0 = {};
+      const push = (k, g) => (out0[k] || (out0[k] = [])).push(g);
       for (const p of D.paves) {
         push('pave', paveGeo(p.pts));
         for (const g of kerbGeos(p.pts, p.kerbSides)) push('kerb', g);
       }
       yield;
-      for (const L of D.lots) { nearLot(L, out); yield; }
+      for (const L of D.lots) { nearLot(L, out0); yield; }
       for (const l of D.lamps) { push('iron', placeLamp(LAMP.iron, l)); push('shade', placeLamp(LAMP.shade, l)); }
-      for (const p of D.props) push('prop', placeProp(p.kind, p));
+      for (const p of D.props) push(p.road ? 'iron' : 'prop', placeProp(p.kind, p));
       yield;
+      const out = {};
+      for (const [b, list] of Object.entries(out0)) { const f = FOLD[b]; if (!f) continue; (out[f] || (out[f] = [])).push(...list); }
       const meshes = [];
       let k = 0;
       for (const [b, list] of Object.entries(out)) {
@@ -66,9 +68,10 @@ export default {
         m.userData.inkId = city.idFor(key, k++);
         m.receiveShadow = true;
         if (b === 'pave') m.layers.set(1);   // (LAYER.GROUND: the wet street's pass)
-        if (b === 'shade') markFigure(m);
+        void markFigure;
         if (!SOLID.has(b)) m.userData.noRay = true;
         m.name = `chunk ${key} ${b}`;
+        m.userData.bucket = b;
         meshes.push(m);
         yield;
       }
@@ -76,7 +79,11 @@ export default {
     }
     function attach(key, meshes) {
       for (const m of meshes) { group.add(m); if (!m.userData.noRay && stage.rays) stage.addSolid(m); }
-      loaded.set(key, { key, meshes });
+      // the chunk's doors (every street door of its lots: shut now, they
+      // rattle; O5 opens the places' - city:door)
+      const doors = [];
+      for (const L of (index.get(key) || { lots: [] }).lots) for (const w of lotWindows(L)) if (w.kind === 'door') doors.push({ x: w.x, z: w.z, nx: w.nx, nz: w.nz, lot: L, place: L.place ? L.place.id : null });
+      loaded.set(key, { key, meshes, doors });
       stats.built++;
     }
     function drop(key) {
@@ -101,8 +108,24 @@ export default {
       }
       return out.sort((a, b) => a.d - b.d);
     };
+    // (the wet street's mirror keeps only light and its occluders: the near
+    // relief - dark panes, trim, iron, trees, kerbs - is left out of it, a
+    // pass's worth of draws saved; the far masses stand in for it there)
+    const REFL_OUT = new Set(['dark', 'trim', 'iron', 'tree', 'kerb']);
+    stage.onReflLod((on) => { for (const ch of loaded.values()) for (const m of ch.meshes) if (REFL_OUT.has(m.userData.bucket)) m.visible = !on; });
     const api = {
       group, loaded, index, stats,
+      // the door nearest a point in the loaded chunks (within r): { x, z, nx, nz, lot, place, d }
+      doorNear(x, z, r = 2) {
+        let best = null, bd = r;
+        const i0 = Math.floor((x - r) / CHUNK), i1 = Math.floor((x + r) / CHUNK), j0 = Math.floor((z - r) / CHUNK), j1 = Math.floor((z + r) / CHUNK);
+        for (let i = i0; i <= i1; i++) for (let j = j0; j <= j1; j++) {
+          const ch = loaded.get(`${i},${j}`);
+          if (!ch) continue;
+          for (const d of ch.doors) { const e = Math.hypot(d.x - x, d.z - z); if (e < bd) { bd = e; best = d; } }
+        }
+        return best ? { ...best, d: bd } : null;
+      },
       // every chunk round a point built now (a start, a jump: before the first frame)
       warmAround(x, z, r = NEAR) {
         for (const { key } of want(x, z, r)) {

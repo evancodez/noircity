@@ -1,0 +1,14 @@
+{
+ "about": "[O1] the budget at the start of the free roam (Grand Ave): the draws and triangles of a frame by group, the stream's chunks, the memory. node tools/play.mjs tools/plays/o1_budget.json",
+ "url": "/?mute=1&start=city",
+ "size": [1280, 800],
+ "out": "shots/o1/budget",
+ "steps": [
+  { "wait": 1500 },
+  { "clickOn": "#title .opt[data-k=begin]", "taken": "G.state !== 'title'", "retries": 5, "every": 4000 },
+  { "until": "G.scenes.current && G.scenes.current.id === 'city' && G.scenes.fadeK < 0.05", "timeout": 20000 },
+  { "wait": 1500 },
+  { "eval": "(() => { const out = {}; const cam = N.camera; const fr = new N.THREE.Frustum().setFromProjectionMatrix(new N.THREE.Matrix4().multiplyMatrices(cam.projectionMatrix, cam.matrixWorldInverse)); const top = (o) => { let p = o; while (p.parent && p.parent.parent) p = p.parent; return p.name || p.type; }; G.stage.scene.traverseVisible((o) => { if (!o.isMesh) return; if (o.frustumCulled && o.geometry) { if (!o.geometry.boundingSphere) o.geometry.computeBoundingSphere(); const s = o.geometry.boundingSphere.clone().applyMatrix4(o.matrixWorld); if (!fr.intersectsSphere(s)) return; } const g = o.geometry; const tri = (g.index ? g.index.count : g.attributes.position.count) / 3 * (o.isInstancedMesh ? o.count : 1); const k = top(o) + (o.layers.mask & 16 ? ':vol' : ''); out[k] = out[k] || { n: 0, tri: 0 }; out[k].n++; out[k].tri += Math.round(tri); }); return out; })()" },
+  { "eval": "({ calls: N.renderer.info.render.calls, tris: N.renderer.info.render.triangles, mem: N.renderer.info.memory, stream: G.city.stream.stats })" }
+ ]
+}

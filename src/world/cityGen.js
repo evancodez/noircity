@@ -1,7 +1,7 @@
 import { RNG } from '../util/rng.js';
 import {
   PAVE, WATER_Y, CITY, EDGE, CLS, NS, EW, NS_EXTRA, EW_EXTRA, BROADWAY, RIVER, RIVER_LINE, QUAY_OFF, PIERS, SLIPS, BRIDGE,
-  SPECIAL, CLOCK, EL, PLACES, districtAt,
+  SPECIAL, CLOCK, EL, PLACES, GASWORKS, PARK, CRANES, districtAt,
 } from './plan.js';
 
 // NOIR CITY: the generator (lane O1). The plan (./plan.js) in, plain numbers
@@ -265,6 +265,8 @@ export function generate() {
       else rectLots(P, ar || br, cell, fl, rng, lots, alleys);
     }
   }
+  // the specials' own solids (the market hall's lot among them), before the walls are made
+  const specialsOut = specials(walls, posts, lamps, lots);
   // the el's corner lots: nothing stands under its arcs (a parking lot, the columns)
   for (let k = lots.length - 1; k >= 0; k--) {
     const L = lots[k];
@@ -295,7 +297,6 @@ export function generate() {
   // ---- the edges, the quay, the piers, the bridge, the specials' walls ------------------------------------
   edges(walls);
   quay(walls, posts);
-  specials(walls, posts);
 
   // ---- street furniture: lamps, hydrants, call boxes, bins, bays ---------------------------------------------
   furnish(streets, paves, lots, lamps, props, bays, posts);
@@ -346,7 +347,7 @@ export function generate() {
     }
     return PAVE * k;
   }
-  return { xs, zs, cells, paves, lots, walls, posts, lamps, props, bays, streets, alleys, groundAt, inWater, cellAt, chunkOf, CHUNK };
+  return { xs, zs, cells, paves, lots, walls, posts, lamps, props, bays, streets, alleys, specials: specialsOut, groundAt, inWater, cellAt, chunkOf, CHUNK };
 }
 
 // which edges of a kerb polygon are kerbs (they face a road): all of them but
@@ -552,6 +553,8 @@ function quay(walls, posts) {
   for (const p of PIERS) {
     for (const sx of [-1, 1]) { const x = p.x + sx * (p.w / 2 - 0.3); walls.push({ ...edgeBox([x, e0], [x, e0 + p.len - 0.5], 0.15, 'rail'), rail: true, a: [x, e0], b: [x, e0 + p.len - 0.5] }); }
     for (let x = p.x - p.w / 2 + 1.5; x < p.x + p.w / 2 - 1; x += 3) posts.push({ x, z: e0 + p.len - 0.6, r: 0.25, tag: 'bollard' });
+    // the shed on the pier (its office, on PIER 7)
+    walls.push({ cx: p.x, cz: e0 + p.len * 0.575, hx: p.w / 2 - 2, hz: p.len * 0.225, angle: 0, tag: 'wall', shed: true });
   }
   // the bridge's parapets, its barrier at the far end (shut) and the lorry across it
   for (const sz of [-1, 1]) {
@@ -561,19 +564,108 @@ function quay(walls, posts) {
   walls.push({ cx: BRIDGE.barrier, cz: BRIDGE.z, hx: 0.3, hz: BRIDGE.hw + BRIDGE.foot, angle: 0, tag: 'barrier', barrier: true });
 }
 
-// the specials' fences and solids (the rail yard's fence and gate, the
-// gasworks' holders and stacks, the park's railing, the market's sheds)
-function specials(walls, posts) {
+// the specials' fences and solids (the rail yard's fence, gate and wagons,
+// the gasworks' fence, holders and stacks, the park's railing and its lamps,
+// the fish market's shed, the clock tower, the cranes' legs). The
+// landmarks part (stages/noircity/parts/landmarks.js) draws them from the
+// same numbers: C.specials
+export const RAIL = { tracks: 9, gauge: 1.435, wagons: [[2, -380, 4], [2, -300, 3], [4, -60, 5], [5, 60, 2], [7, 200, 4], [1, 300, 3], [6, -470, 3]] };
+function specials(walls, posts, lamps, lots) {
+  const out = { fences: [], wagons: [], parkPaths: [], shed: null, hall: null };
+  const fence = (a, b, tag = 'fence', extra = {}) => { const w = { ...edgeBox(a, b, 0.12, tag), fence: true, a, b, ...extra }; walls.push(w); out.fences.push(w); };
+  // a side of a rect with gates (gaps): [[u0, u1]] along it
+  const fenceRun = (a, b, gaps = [], extra = {}) => {
+    const L = Math.hypot(b[0] - a[0], b[1] - a[1]), dx = (b[0] - a[0]) / L, dz = (b[1] - a[1]) / L;
+    let u = 0;
+    for (const [g0, g1] of [...gaps].sort((p, q) => p[0] - q[0])) { if (g0 > u + 0.3) fence([a[0] + dx * u, a[1] + dz * u], [a[0] + dx * g0, a[1] + dz * g0], 'fence', extra); u = g1; }
+    if (L > u + 0.3) fence([a[0] + dx * u, a[1] + dz * u], b, 'fence', extra);
+  };
+  // the building line of a special's rect: inset by its streets' half widths and pavements
+  const lineOf = (S) => {
+    const [x0, x1, z0, z1] = S.rect;
+    const W = nsAt(x0, z0, z1), E = nsAt(x1, z0, z1), N = ewAt(z0, x0, x1), Sx = ewAt(z1, x0, x1);
+    const ins = (L) => (L ? cls(L).hw + cls(L).p : 0);
+    return [x0 + ins(W), x1 - ins(E), z0 + ins(N), z1 - Math.max(ins(Sx), z1 >= RIVER.s - 1 ? RIVER.hw + RIVER.pIn : 0)];
+  };
   for (const S of SPECIAL) {
     const [x0, x1, z0, z1] = S.rect;
     if (S.kind === 'railyard') {
       // its fence on the east side (the gate at Clock St), the north end
       const g0 = S.gate.z - S.gate.w / 2, g1 = S.gate.z + S.gate.w / 2;
-      walls.push({ ...edgeBox([x1 - 0.3, z0], [x1 - 0.3, g0], 0.12, 'fence'), fence: true, a: [x1 - 0.3, z0], b: [x1 - 0.3, g0] });
-      walls.push({ ...edgeBox([x1 - 0.3, g1], [x1 - 0.3, z1], 0.12, 'fence'), fence: true, a: [x1 - 0.3, g1], b: [x1 - 0.3, z1] });
-      walls.push({ ...edgeBox([x0, z0 + 0.3], [x1, z0 + 0.3], 0.12, 'fence'), fence: true, a: [x0, z0 + 0.3], b: [x1, z0 + 0.3] });
+      fence([x1 - 0.3, z0], [x1 - 0.3, g0]);
+      fence([x1 - 0.3, g1], [x1 - 0.3, z1 - 8]);
+      fence([x0, z0 + 0.3], [x1, z0 + 0.3]);
+      // (the south end: the river road's mouth closed by the fence too)
+      fence([x0, z1 - 8], [x1 - 0.3, z1 - 8]);
+      // the wagons standing on its tracks: [track, z, count]
+      for (const [k, z, n] of RAIL.wagons) {
+        const x = x0 + 8 + k * 8;
+        for (let i = 0; i < n; i++) {
+          const wz = z + i * 13.4;
+          if (wz > z1 - 14 || wz < z0 + 8) continue;
+          const w = { cx: x, cz: wz, hx: 1.45, hz: 6.3, angle: 0, tag: 'wall' };
+          walls.push(w); out.wagons.push(w);
+        }
+      }
+    } else if (S.kind === 'gasworks') {
+      const [a, b, c, d] = lineOf(S);
+      // the fence round it, its gate (open) on Clock St and on Gasworks Ave
+      fenceRun([a, c], [b, c]);
+      fenceRun([a, d], [b, d], [[(b - a) * 0.4, (b - a) * 0.4 + 12]]);
+      fenceRun([a, c], [a, d]);
+      fenceRun([b, c], [b, d], [[(d - c) * 0.55, (d - c) * 0.55 + 12]]);
+      for (const h of GASWORKS.holders) posts.push({ x: h.x, z: h.z, r: h.r + 1.4, tag: 'holder' });
+      for (const s of GASWORKS.stacks) posts.push({ x: s.x, z: s.z, r: s.r * 1.6 + 0.3, tag: 'stack' });
+    } else if (S.kind === 'park') {
+      const [a, b, c, d] = lineOf(S);
+      const cx = PARK.bandstand.x, cz = PARK.bandstand.z;
+      // the railing round it, a gate in the middle of each side (on Grand Ave's line south)
+      const gw = 7;
+      fenceRun([a, c], [b, c], [[cx - a - gw / 2, cx - a + gw / 2]], { rail: true, park: true });
+      fenceRun([a, d], [b, d], [[cx - a - gw / 2, cx - a + gw / 2]], { rail: true, park: true });
+      fenceRun([a, c], [a, d], [[cz - c - gw / 2, cz - c + gw / 2]], { rail: true, park: true });
+      fenceRun([b, c], [b, d], [[cz - c - gw / 2, cz - c + gw / 2]], { rail: true, park: true });
+      // the bandstand (its platform), the paths from the gates to it, their lamps
+      posts.push({ x: cx, z: cz, r: PARK.bandstand.r, tag: 'bandstand' });
+      for (const [gx, gz] of [[cx, c], [cx, d], [a, cz], [b, cz]]) {
+        out.parkPaths.push([[gx, gz], [cx, cz]]);
+        const L = Math.hypot(cx - gx, cz - gz), dx = (cx - gx) / L, dz = (cz - gz) / L;
+        for (let u = 10; u < L - PARK.bandstand.r - 4; u += 22) {
+          const x = gx + dx * u - dz * 2.4, z = gz + dz * u + dx * 2.4;
+          lamps.push({ x, z, yaw: Math.atan2(dx, dz), kind: 'post', street: 'park', park: true });
+          posts.push({ x, z, r: 0.22, tag: 'lamp' });
+        }
+      }
+      out.park = { rect: [a, b, c, d] };
+      // the trees: scattered between the paths (clear of them and the bandstand); their trunks solid
+      const rng = new RNG(0x7EE5);
+      const clearOfPaths = (x, z) => out.parkPaths.every(([[gx, gz], [px, pz]]) => { const L = Math.hypot(px - gx, pz - gz), u = Math.max(0, Math.min(L, ((x - gx) * (px - gx) + (z - gz) * (pz - gz)) / L)); return Math.hypot(x - gx - (px - gx) * u / L, z - gz - (pz - gz) * u / L) > 5; });
+      out.trees = [];
+      for (let k = 0; k < 70; k++) {
+        const x = a + 4 + rng.next() * (b - a - 8), z = c + 4 + rng.next() * (d - c - 8);
+        if (!clearOfPaths(x, z) || Math.hypot(x - cx, z - cz) < PARK.bandstand.r + 8 || out.trees.some(([tx, tz]) => Math.hypot(tx - x, tz - z) < 4)) continue;
+        out.trees.push([x, z, rng.range(2.6, 4.6)]);
+        posts.push({ x, z, r: 0.3, tag: 'tree' });
+      }
+    } else if (S.kind === 'market') {
+      // the fish market's shed: open sides, its roof on columns every 9 m
+      const [a, b, c, d] = lineOf(S);
+      const sx0 = a + 3, sx1 = b - 3, sz0 = c + 3, sz1 = d - 3;
+      out.shed = { x0: sx0, x1: sx1, z0: sz0, z1: sz1, h: 9 };
+      for (let x = sx0; x <= sx1 + 0.1; x += (sx1 - sx0) / Math.round((sx1 - sx0) / 9)) for (let z = sz0; z <= sz1 + 0.1; z += (sz1 - sz0) / Math.round((sz1 - sz0) / 9)) posts.push({ x, z, r: 0.3, tag: 'column' });
+    } else if (S.kind === 'hall') {
+      // the market hall: one building on its block, a barrel roof (a lot: its walls, its far mass)
+      const [a, b, c, d] = lineOf(S);
+      const L = { kind: 'rect', x0: a, x1: b, z0: c, z1: d, h: 13, floors: 2, fh: 5.5, kit: 'tenement', faces: { n: true, s: true, w: true, e: true }, district: 'tenements', hall: true, seed: 0x4A11 };
+      lots.push(L);
+      out.hall = L;
     }
   }
+  // the clock tower on its square
+  walls.push({ cx: CLOCK.x, cz: CLOCK.z, hx: 5.6, hz: 5.6, angle: 0, tag: 'wall', clock: true });
+  // the cranes' legs on the south quay (they straddle the quay's walk: a gantry)
+  for (const c of CRANES) for (const dx of [-4.2, 4.2]) for (const z of [RIVER.s + RIVER.hw + 1.6, RIVER.s + QUAY_OFF - 1.2]) posts.push({ x: c.x + dx, z, r: 0.55, tag: 'crane' });
+  return out;
 }
 
 // ---- the furniture -------------------------------------------------------------------------------------------------
@@ -640,6 +732,19 @@ function furnish(streets, paves, lots, lamps, props, bays, posts) {
       const kind = rng.pick(['hydrant', 'hydrant', 'bin', 'bin', 'callbox']);
       props.push({ kind, x, z, yaw: Math.atan2(-nz * sd, nx * sd), street: st.id });
       posts.push({ x, z, r: kind === 'callbox' ? 0.5 : 0.3, tag: kind });
+    }
+  }
+  // the road's iron: a manhole now and then down the middle of a street, the
+  // tram's rails down Grand Ave's (two tracks, between the el's columns)
+  for (const st of streets) {
+    if (st.river || st.bridge) continue;
+    const [ax, az] = st.a, [bx, bz] = st.b;
+    const L = Math.hypot(bx - ax, bz - az);
+    const dx = (bx - ax) / L, dz = (bz - az) / L;
+    for (let u = 18; u < L - 14; u += rng.range(36, 60)) props.push({ kind: 'manhole', x: ax + dx * u + -dz * rng.range(-1.5, 1.5), z: az + dz * u + dx * rng.range(-1.5, 1.5), yaw: 0, street: st.id, road: true });
+    if (st.tram) for (let u = 0; u < L; u += 24) {
+      const u1 = Math.min(L, u + 24);
+      for (const off of [-1.9 - 0.72, -1.9 + 0.72, 1.9 - 0.72, 1.9 + 0.72]) props.push({ kind: 'rail', x: ax + dx * (u + u1) / 2 - dz * off, z: az + dz * (u + u1) / 2 + dx * off, len: u1 - u, yaw: Math.atan2(-dz, dx), street: st.id, road: true });
     }
   }
   // the quay's lamps on the river side of the river road (their arms over the

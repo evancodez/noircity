@@ -26,8 +26,8 @@ const push = (out, k, g) => { (out[k] || (out[k] = [])).push(g); };
 
 // the kit's numbers by district (and the named places' own)
 export const KITS = {
-  downtown: { ground: 4.4, step: [2.8, 3.4], win: [1.2, 1.9], lit: 0.07, shop: 0.7, litShop: 0.35, stone: true, cornice: 0.5, parapet: 0.9 },
-  tenement: { ground: 3.4, step: [2.4, 2.9], win: [1.0, 1.6], lit: 0.11, shop: 0.75, litShop: 0.3, cornice: 0.35, parapet: 0.6, escape: 0.55, tank: 0.18 },
+  downtown: { ground: 4.4, step: [2.8, 3.4], win: [1.2, 1.9], lit: 0.07, shop: 0.7, litShop: 0.18, stone: true, cornice: 0.5, parapet: 0.9 },
+  tenement: { ground: 3.4, step: [2.4, 2.9], win: [1.0, 1.6], lit: 0.11, shop: 0.75, litShop: 0.14, cornice: 0.35, parapet: 0.6, escape: 0.55, tank: 0.18 },
   docks: { ground: 4.6, step: [6.5, 9], win: [1.6, 1.2], lit: 0.04, shop: 0, litShop: 0, loading: true, parapet: 0.5 },
   yards: { ground: 4.4, step: [5, 7], win: [1.4, 1.2], lit: 0.03, shop: 0, litShop: 0, loading: true, parapet: 0.3, clerestory: true },
   hill: { ground: 3.8, step: [2.8, 3.4], win: [1.1, 1.9], lit: 0.16, shop: 0, litShop: 0, roof: true },
@@ -255,7 +255,8 @@ function nearGarden(lot, out) {
   for (let k = 0; k < nT; k++) {
     const tx = x0 + 4 + rng.next() * (W - 8), tz = z0 + 4 + rng.next() * (z1 - z0 - 8);
     const r = rng.range(2.5, 4.2);
-    push(out, 'tree', new THREE.IcosahedronGeometry(r, 1).scale(1, 0.85, 1).translate(tx, 5 + r * 0.6, tz));
+    // (a crown of three lumps: one ball read as a balloon over the wall)
+    for (let q = 0; q < 3; q++) push(out, 'tree', new THREE.IcosahedronGeometry(r * rng.range(0.6, 0.85), 2).scale(1, 0.8, 1).translate(tx + rng.range(-1, 1) * r * 0.45, 5 + r * rng.range(0.4, 0.9), tz + rng.range(-1, 1) * r * 0.45));
     push(out, 'iron', new THREE.CylinderGeometry(0.18, 0.25, 5, 6).translate(tx, 2.5, tz));
   }
 }

@@ -61,6 +61,19 @@ export default defineScene({
   setup: {
     roam(ctx) {
       const a = ctx.stage.anchor(`city.start.${startOf()}`);
+      // (look development and the frames: ?car=x,z,yaw puts the car there and me in its seat)
+      const q = typeof location !== 'undefined' ? new URLSearchParams(location.search) : null;
+      const cq = q && q.get('car');
+      if (cq) {
+        const [x, z, yaw] = cq.split(',').map(Number);
+        place(ctx, { car: { x, z }, carYaw: yaw, pos: { x: x + Math.sin(yaw) * 2.3, z: z + Math.cos(yaw) * 2.3 }, yaw: 0 });
+        const G = ctx.game, R = G.city;
+        G.vehicles.setPlayer(R.car);
+        if (R.car.lamps && R.car.lamps.setOn) R.car.lamps.setOn(true);
+        R.cabin.attach(R.car);
+        R.inCar = true;
+        return;
+      }
       place(ctx, { car: a.car, carYaw: a.carYaw, pos: a.pos, yaw: a.yaw });
     },
     // out of the river: on the quay at the nearest steps, a car at the kerb by them
@@ -118,7 +131,25 @@ function step(ctx, R, T, dt) {
     }
   }
   if (near !== T.near) { T.near = near; if (near) { hud.prompt('E  get in', null, 'cityin'); if (!T.taughtIn) { T.taughtIn = true; hud.teach('city_in', '[E] get in'); } } else hud.clearPrompt('cityin'); }
-  if (near && ctx.pressed('KeyE')) getIn(ctx, R, T);
+  if (near && ctx.pressed('KeyE')) { getIn(ctx, R, T); return; }
+  // a street door: in front of it, close, looking at it - E tries it. Shut,
+  // it rattles (a place's door is O5's to open: city:door, e.handled)
+  let door = null;
+  if (!near) {
+    const D = R.stream.doorNear(ctl.pos.x, ctl.pos.z, 1.9);
+    if (D && (ctl.pos.x - D.x) * D.nx + (ctl.pos.z - D.z) * D.nz > 0.05) {
+      const f = G.camera.getWorldDirection(_v);
+      const toX = D.x - G.eye.x, toZ = D.z - G.eye.z, tl = Math.max(0.05, Math.hypot(toX, toZ)), fl = Math.max(1e-3, Math.hypot(f.x, f.z));
+      if ((toX * f.x + toZ * f.z) / (tl * fl) > 0.72) door = D;
+    }
+  }
+  const dk = door ? `${door.x.toFixed(1)},${door.z.toFixed(1)}` : null;
+  if (dk !== T.door) { T.door = dk; if (door) hud.prompt('E  try the door', null, 'citydoor'); else hud.clearPrompt('citydoor'); }
+  if (door && ctx.pressed('KeyE')) {
+    const e = { door, handled: false };
+    G.emit('city:door', e);
+    if (!e.handled) { G.sfx.play('f_c4rattle', new THREE.Vector3(door.x, 1.2, door.z)); hud.message('locked', 1.2); G.emit('city:locked', { door }); }
+  }
 }
 
 function getIn(ctx, R, T) {
@@ -154,6 +185,8 @@ function getOut(ctx, R, T) {
   R.inCar = false;
   car.driver = null;
   G.vehicles.player = null;
+  // (its lamps off as I leave it at the kerb: on foot their wash greyed the road)
+  if (car.lamps && car.lamps.setOn) car.lamps.setOn(false);
   G.player.hands.equip('empty');
   G.setViewmodelVisible(false);
   // (looking along the car, away from its door: eased out of the seat)

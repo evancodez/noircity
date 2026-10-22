@@ -17,6 +17,17 @@ import { mergeAll } from './street.js';
 //   api: { tiles: [{ key, meshes, mid }], litMat, update(camera) }
 export const TILE = 240;
 const SHOW = 1200;
+// position + colour, non-indexed
+function mergeLit(list) {
+  let n = 0; for (const g of list) n += g.getAttribute('position').count;
+  const pos = new Float32Array(n * 3), col = new Float32Array(n * 3);
+  let o = 0;
+  for (const g of list) { pos.set(g.getAttribute('position').array, o * 3); col.set(g.getAttribute('color').array, o * 3); o += g.getAttribute('position').count; }
+  const out = new THREE.BufferGeometry();
+  out.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+  out.setAttribute('color', new THREE.BufferAttribute(col, 3));
+  return out;
+}
 
 export default {
   name: 'far', order: 30,
@@ -28,15 +39,17 @@ export default {
     scene.add(group);
     const stoneFar = new THREE.MeshStandardMaterial({ color: 0x232323, roughness: 0.9, envMap: M.envSoft, envMapIntensity: 0.2 });
     // the lights: a lit window a small pale pane, a shop front dimmer and wider
-    const litMat = new THREE.MeshBasicMaterial({ color: new THREE.Color().setScalar(0.62) });
-    const shopMat = new THREE.MeshBasicMaterial({ color: new THREE.Color().setScalar(0.34) });
-    const roofMat = M.tower;
+    // (a lit shop front is a big pane low in the frame: at 0.34 it printed as
+    // a white slab), a lamp's mouth the bulb's white (M.bulb's 8)
+    const LIT = 0.62, SHOP = 0.1, BULB = 8;
+    const lightMat = new THREE.MeshBasicMaterial({ vertexColors: true });
+    const litMat = lightMat, shopMat = lightMat;
     const tiles = new Map();
     const tileOf = (x, z) => `${Math.floor(x / TILE)},${Math.floor(z / TILE)}`;
     C.lots.forEach((L, i) => {
       const k = tileOf(L.cx, L.cz);
       if (!tiles.has(k)) tiles.set(k, { key: k, out: {}, lamps: [] });
-      farLot(L, tiles.get(k).out, i % 3);
+      farLot(L, tiles.get(k).out, i % 2);
     });
     yield;
     for (const l of C.lamps) {
@@ -60,19 +73,24 @@ export default {
         meshes.push(m);
         return m;
       };
-      for (let g = 0; g < 3; g++) { mk(T.out['mass' + g], M.brickFar, ids + g, true); mk(T.out['stone' + g], stoneFar, ids + g, true); }
-      mk(T.out.roof, roofMat, ids, true);
-      mk(T.out.lit, litMat, ids + 1, false);
-      mk(T.out.shop, shopMat, ids + 2, false);
-      // the lamps' mouths (their posts are the near chunks')
-      if (T.lamps.length) {
-        const discs = T.lamps.map((l) => {
-          _q.setFromAxisAngle(_y, l.yaw);
-          _m.compose(new THREE.Vector3(l.x, 0.15, l.z), _q, _s);
-          return LAMP.bulb.clone().applyMatrix4(_m);
-        });
-        const bm = mk(discs, M.bulb, ids, false);
-        if (bm) bm.userData.lampBulbs = T.lamps;
+      // (the roofs' pieces with the first group's masses: a draw saved a tile)
+      mk([...(T.out.mass0 || []), ...(T.out.roof || [])], M.brickFar, ids, true);
+      mk(T.out.mass1, M.brickFar, ids + 1, true);
+      mk(T.out.stone0, stoneFar, ids, true); mk(T.out.stone1, stoneFar, ids + 1, true);
+      // the lights in one mesh, each its own level (a vertex colour): the lit
+      // windows, the lit shop fronts, the lamps' mouths (their posts are the near chunks')
+      const lights = [];
+      const tint = (geos, v) => { for (const g0 of geos || []) { const g = g0.index ? g0.toNonIndexed() : g0; const n = g.getAttribute('position').count; g.setAttribute('color', new THREE.Float32BufferAttribute(new Float32Array(n * 3).fill(v), 3)); lights.push(g); } };
+      tint(T.out.lit, LIT); tint(T.out.shop, SHOP);
+      tint(T.lamps.map((l) => {
+        _q.setFromAxisAngle(_y, l.yaw);
+        _m.compose(new THREE.Vector3(l.x, 0.15, l.z), _q, _s);
+        return LAMP.bulb.clone().applyMatrix4(_m);
+      }), BULB);
+      if (lights.length) {
+        const m = new THREE.Mesh(mergeLit(lights), lightMat);
+        m.userData.inkId = ids + 2; m.userData.noRay = true;
+        group.add(m); meshes.push(m);
       }
       const [i, j] = T.key.split(',').map(Number);
       const mid = new THREE.Vector3((i + 0.5) * TILE, 0, (j + 0.5) * TILE);

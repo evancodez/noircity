@@ -143,12 +143,16 @@ export default {
             s.spot.angle = l.hanging ? 0.62 : LIGHT_ANGLE; s.spot.penumbra = LIGHT_PENUMBRA; s.spot.distance = 26;
           }
         }
-        // the cones' strength (a lamp switched off goes dark at once)
+        // the cones' strength (a lamp switched off goes dark at once); a cone
+        // close to the eye is dimmed (x 0.4 at 4 m, whole by 18 m: the old
+        // city's rule - driving the kerb lane through them, each was a white wall)
         for (const c of cones) {
           if (!c.lamp) continue;
           const k = c.lamp.on && !c.lamp.dead ? 1 : 0;
           c.lamp._k = k;
-          c.mesh.material.uniforms.uIntensity.value = c.base * k;
+          const d = Math.hypot(c.lamp.head.x - p.x, c.lamp.head.z - p.z);
+          const near = 0.4 + 0.6 * Math.min(1, Math.max(0, (d - 4) / 14));
+          c.mesh.material.uniforms.uIntensity.value = c.base * k * near;
           c.entry.intensity = k;
         }
         for (const s of pool) {
