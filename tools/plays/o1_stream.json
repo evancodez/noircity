@@ -1,0 +1,22 @@
+{
+ "about": "[O1] The streaming test (brief O1 §3): two loops of the drive-through by real keys (over ten minutes), the JS heap (after a collection) and the renderer's geometries and textures read at the start, after the first loop and after the second - flat (no leak: geometries, textures, listeners), the chunks built and dropped. node tools/play.mjs tools/plays/o1_stream.json",
+ "url": "/?mute=1&start=city",
+ "size": [1280, 800],
+ "out": "shots/o1/stream",
+ "steps": [
+  { "wait": 1500 },
+  { "clickOn": "#title .opt[data-k=begin]", "taken": "G.state !== 'title'", "retries": 5, "every": 4000 },
+  { "until": "G.scenes.current && G.scenes.current.id === 'city' && G.scenes.fadeK < 0.05", "timeout": 20000 },
+  { "wait": 1000 },
+  { "heap": "start" },
+  { "eval": "(window.__mem = [{ at: 'start', ...N.renderer.info.memory, chunks: G.city.stream.stats.live, programs: N.renderer.info.programs.length }], window.__mem[0])" },
+  { "drive": "tools/lib/o1_city.mjs", "mode": "drive", "timeout": 480000, "check": "D.end === 'done' && D.inWall === 0", "label": "loop 1" },
+  { "heap": "loop1" },
+  { "eval": "(window.__mem.push({ at: 'loop1', ...N.renderer.info.memory, chunks: G.city.stream.stats.live, built: G.city.stream.stats.built, dropped: G.city.stream.stats.dropped, programs: N.renderer.info.programs.length }), window.__mem.at(-1))" },
+  { "drive": "tools/lib/o1_city.mjs", "mode": "drive", "timeout": 480000, "check": "D.end === 'done' && D.inWall === 0", "label": "loop 2" },
+  { "heap": "loop2" },
+  { "eval": "(window.__mem.push({ at: 'loop2', ...N.renderer.info.memory, chunks: G.city.stream.stats.live, built: G.city.stream.stats.built, dropped: G.city.stream.stats.dropped, programs: N.renderer.info.programs.length }), window.__mem.at(-1))" },
+  { "expect": "window.__heap.loop2 <= window.__heap.loop1 * 1.08 + 4 && window.__mem[2].geometries <= window.__mem[1].geometries + 20 && window.__mem[2].textures <= window.__mem[1].textures + 2", "label": "memory flat from the first loop to the second" },
+  { "eval": "({ heap: window.__heap, mem: window.__mem })" }
+ ]
+}

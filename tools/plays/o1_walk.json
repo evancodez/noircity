@@ -1,0 +1,30 @@
+{
+ "about": "[O1] The walk-through (brief O1 §7, WAVE_C §7 5, GAME_TWO §1 C): on foot by real keys (W held, each walk set up facing its target) into what is solid in every district - a facade, an el column, a kerb (stepped up), a dead end's wall, a street door (E: it rattles, locked), the quay's railing, the rail yard's gate (open) and its fence, a gas holder, a garden's wall, the park's railing and its gate (open), the clock tower, the bridge's barrier, my own car - each stops the eye short (never inside a box) or lets it through where it is open. tools/lib/o1_city.mjs 'walk'. node tools/play.mjs tools/plays/o1_walk.json",
+ "url": "/?mute=1&start=city",
+ "size": [1280, 800],
+ "out": "shots/o1/walk",
+ "steps": [
+  { "wait": 1500 },
+  { "clickOn": "#title .opt[data-k=begin]", "taken": "G.state !== 'title'", "retries": 5, "every": 4000 },
+  { "until": "G.scenes.current && G.scenes.current.id === 'city' && G.scenes.fadeK < 0.05", "timeout": 20000 },
+  { "wait": 800 },
+  { "drive": "tools/lib/o1_city.mjs", "mode": "walk", "walks": [
+    { "name": "downtown facade", "from": [-108.5, 100], "to": [-100, 100], "expect": "stop", "ms": 3500 },
+    { "name": "el column", "from": "(() => { const c = G.stage.part('el').columns.filter((c) => Math.abs(c.x + 116.1) < 0.6 && c.z > 0 && c.z < 60)[0]; window.__col = c; return [c.x + 5, c.z]; })()", "to": "[window.__col.x, window.__col.z]", "expect": "stop", "ms": 4000 },
+    { "name": "kerb up (road to pavement)", "from": [-114, 105], "to": [-108.5, 105], "expect": "up", "ms": 3500 },
+    { "name": "tenements dead end (Eldridge Ln)", "from": [255, -60], "to": [275, -60], "expect": "stop", "ms": 9000, "run": true },
+    { "name": "tenements street door", "from": "(() => { const S = G.stage.part('stream'); S.warmAround(240, -25); const d = S.doorNear(240, -25, 25); window.__door = d; return [d.x + d.nx * 3, d.z + d.nz * 3]; })()", "to": "[window.__door.x, window.__door.z]", "expect": "locked", "tryE": true, "ms": 2500 },
+    { "name": "docks quay railing", "from": [100, 445], "to": [100, 456], "expect": "stop", "ms": 4000 },
+    { "name": "rail yard gate (open)", "from": [-500, -120], "to": [-525, -120], "expect": "pass", "ms": 12000, "run": true },
+    { "name": "rail yard fence", "from": [-520, -40], "to": [-500, -40], "expect": "stop", "ms": 6000 },
+    { "name": "gasworks holder", "from": [-385, -236], "to": [-415, -255], "expect": "stop", "ms": 9000, "run": true },
+    { "name": "hill garden wall", "from": [-250, -411.5], "to": [-250, -400], "expect": "stop", "ms": 3500 },
+    { "name": "park railing", "from": [-150, -428.5], "to": [-150, -440], "expect": "stop", "ms": 3500 },
+    { "name": "park gate (open)", "from": [-120, -428.5], "to": [-120, -440], "expect": "pass", "ms": 6000 },
+    { "name": "clock tower", "from": [0, -72], "to": [0, -90], "expect": "stop", "ms": 8000 },
+    { "name": "bridge barrier", "from": [586, -416], "to": [600, -416], "expect": "stop", "ms": 6000 },
+    { "name": "my car", "from": "(() => { const c = G.city.car; return [c.pos.x - 6, c.pos.z]; })()", "to": "(() => { const c = G.city.car; return [c.pos.x, c.pos.z]; })()", "expect": "stop", "ms": 4000 }
+   ], "check": "D.insideAny.length === 0 && D.bad.length === 0", "label": "the walk-through: every wall, pillar, kerb, door, rail and fence answers" },
+  { "shot": "w_end" }
+ ]
+}

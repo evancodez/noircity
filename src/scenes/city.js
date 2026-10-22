@@ -4,6 +4,7 @@ import { Cabin } from '../vehicles/cabin.js';
 import { STARTS, START_DEFAULT, PAVE, RIVER, QUAY_OFF, SLIPS, PIERS } from '../world/plan.js';
 import { riverNearest } from '../world/cityGen.js';
 import { MapOverlay } from '../world/map.js';
+import { compileAll } from '../stages/noircity/compile.js';
 
 // NOIR CITY's free roam (lane O1): the city, a car at the kerb, nothing I
 // must do. Every critic and every later lane starts from here.
@@ -50,6 +51,8 @@ function place(ctx, at) {
   ctx.controller.setPose(at.pos.x, at.pos.z, at.yaw, -0.06);
   stage.part('bounds').navAround(at.pos.x, at.pos.z, 14);
   R.stream = stage.part('stream');
+  // (every program the city draws with, compiled under the fade in: none met first down a street)
+  if (!G.shotMode) R.compileMs = compileAll(stage, G);
 }
 
 export default defineScene({
@@ -214,13 +217,12 @@ export function stepsNear(x, z) {
   // (along the quay: the nearest point of the river road's line, then a
   // little back toward the city, on the quay's pavement)
   const N = riverNearest(x, z);
-  // (the quay's walk: between the outer kerb and the railing)
-  const qx = N.x - N.nx * (RIVER.hw + 6), qz = N.z - N.nz * (RIVER.hw + 6);
-  // the car at the city side's kerb, the way the traffic goes there
-  const cx = N.x + N.nx * (RIVER.hw - 1.3), cz = N.z + N.nz * (RIVER.hw - 1.3);
-  // (a car on the city side: right-hand traffic; heading along the road)
-  // (the car's right is (-dz, dx) for a heading along d: the city side is its right)
-  const sgn = (N.dx * N.nz - N.dz * N.nx) >= 0 ? 1 : -1;
+  // (the quay's walk, by the outer kerb: up the steps there)
+  const qx = N.x - N.nx * (RIVER.hw + 2.2), qz = N.z - N.nz * (RIVER.hw + 2.2);
+  // the car at the quay side's kerb by me, the way the traffic goes there
+  const cx = N.x - N.nx * (RIVER.hw - 1.3), cz = N.z - N.nz * (RIVER.hw - 1.3);
+  // (the car's right is (-dz, dx) for a heading along d: the quay side, -n, is its right)
+  const sgn = (N.dx * N.nz - N.dz * N.nx) >= 0 ? -1 : 1;
   const carYaw = Math.atan2(-(N.dz * sgn), N.dx * sgn);
   const yaw = Math.atan2(-(cx - qx), -(cz - qz));
   void PAVE; void QUAY_OFF; void SLIPS; void PIERS;

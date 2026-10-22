@@ -43,7 +43,8 @@ async function installRecorder(js) {
     const tick = () => {
       const t = performance.now(), dt = t - R.last; R.last = t;
       if (R.on) {
-        R.n++; if (dt > R.max) R.max = dt; if (dt > 50) { R.over50++; R.dts.push(+dt.toFixed(0)); }
+        R.n++; if (dt > R.max) R.max = dt;
+        if (dt > 50) { R.over50++; const p = G.camera.position; R.dts.push([+dt.toFixed(0), +p.x.toFixed(0), +p.z.toFixed(0), st.stats.built, st.stats.lastMs.toFixed(1), +(performance.now() / 1000).toFixed(1)]); }
         // (every chunk within 100 m of the eye is built)
         const p = G.camera.position, C = 96;
         for (let i = Math.floor((p.x - 100) / C); i <= Math.floor((p.x + 100) / C); i++) for (let j = Math.floor((p.z - 100) / C); j <= Math.floor((p.z + 100) / C); j++) {
@@ -194,21 +195,32 @@ async function latency({ js, keyDown, keyUp, sleep, log }) {
 // the record says where it stopped and what stopped it
 async function walkJank({ js, keyDown, keyUp, sleep, log, opts }) {
   const out = [];
-  for (const w of opts.walks || []) {
+  for (const w0 of opts.walks || []) {
+    // (from / to may be expressions over N, G: an el column's place, a door's)
+    const w = { ...w0 };
+    if (typeof w.from === 'string') w.from = await js(w.from);
+    if (typeof w.to === 'string') w.to = await js(w.to);
     // stand at `from` facing `to` (a set-up between walks, as a tool's teleport; the walk itself is the keys)
-    await js(`(() => { const [x, z] = ${JSON.stringify(w.from)}, [tx, tz] = ${JSON.stringify(w.to)}; G.stage.part('stream').warmAround(x, z); N.controller.setPose(x, z, Math.atan2(-(tx - x), -(tz - z)), 0); return 1; })()`);
+    await js(`(() => { const [x, z] = ${JSON.stringify(w.from)}, [tx, tz] = ${JSON.stringify(w.to)}; G.stage.part('stream').warmAround(x, z); N.controller.setPose(x, z, Math.atan2(-(tx - x), -(tz - z)), 0); window.__locked = 0; if (!window.__lockedOn) { window.__lockedOn = 1; G.on('city:locked', () => { window.__locked++; }); } return 1; })()`);
     await sleep(300);
     await keyDown('KeyW'); if (w.run) await keyDown('ShiftLeft');
     await sleep(w.ms || 4000);
     if (w.run) await keyUp('ShiftLeft');
     await keyUp('KeyW');
     await sleep(200);
+    // (a door: E at it, then is it locked?)
+    if (w.tryE) { await keyDown('KeyE'); await sleep(70); await keyUp('KeyE'); await sleep(300); w.locked = await js('window.__locked'); }
     const r = await js(`(() => { const C = N.controller, col = G.stage.colliders, [tx, tz] = ${JSON.stringify(w.to)};
       let inside = null; for (const o of col.near(C.pos.x, C.pos.z, 1)) { if (o.r != null) { if (Math.hypot(C.pos.x - o.x, C.pos.z - o.z) < o.r - 0.05) inside = o.tag; continue; } const dx = C.pos.x - o.cx, dz = C.pos.z - o.cz; const lx = dx * o.c - dz * o.s, lz = dx * o.s + dz * o.c; if (Math.abs(lx) < o.hx - 0.05 && Math.abs(lz) < o.hz - 0.05) inside = o.tag; }
       let by = null, bd = 9; for (const o of col.near(C.pos.x, C.pos.z, 1.5)) { let d; if (o.r != null) d = Math.hypot(C.pos.x - o.x, C.pos.z - o.z) - o.r; else { const dx = C.pos.x - o.cx, dz = C.pos.z - o.cz; const lx = dx * o.c - dz * o.s, lz = dx * o.s + dz * o.c; d = Math.hypot(Math.max(0, Math.abs(lx) - o.hx), Math.max(0, Math.abs(lz) - o.hz)); } if (d < bd) { bd = d; by = o.tag; } }
       return { at: [+C.pos.x.toFixed(2), +C.pos.z.toFixed(2)], left: +Math.hypot(tx - C.pos.x, tz - C.pos.z).toFixed(2), inside, by, gap: +bd.toFixed(2), y: +C.groundY.toFixed(2) }; })()`);
-    out.push({ name: w.name, ...r });
-    log(`  walk ${w.name}: stopped ${r.left} m short by ${r.by} (${r.gap} m), inside: ${r.inside}`);
+    // (how far it got along the walk's line: a 'pass' reached its target or went on past it)
+    const L = Math.hypot(w.to[0] - w.from[0], w.to[1] - w.from[1]);
+    const along = ((r.at[0] - w.from[0]) * (w.to[0] - w.from[0]) + (r.at[1] - w.from[1]) * (w.to[1] - w.from[1])) / L;
+    r.along = +along.toFixed(2);
+    const ok = w.expect === 'stop' ? along < L - 0.25 && !r.inside : w.expect === 'pass' ? along > L - 1.5 && !r.inside : w.expect === 'up' ? along > L - 1.5 && r.y > 0.1 && !r.inside : w.expect === 'locked' ? w.locked > 0 && !r.inside : !r.inside;
+    out.push({ name: w.name, expect: w.expect, ok, locked: w.locked, ...r });
+    log(`  walk ${w.name}: ${w.expect || ''} ${ok ? 'ok' : 'NOT OK'} - ${r.left} m short, by ${r.by} (${r.gap} m), inside: ${r.inside}, ground ${r.y}${w.tryE ? `, E: locked ${w.locked}` : ''}`);
   }
-  return { walks: out, insideAny: out.filter((w) => w.inside).map((w) => w.name) };
+  return { walks: out, insideAny: out.filter((w) => w.inside).map((w) => w.name), bad: out.filter((w) => !w.ok).map((w) => w.name) };
 }
