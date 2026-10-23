@@ -1,0 +1,33 @@
+{
+ "about": "[O3] the review frames at 1440 x 900 (not a proof): 'Hands up.' face on, the roadblock ahead from the car, the gang's word",
+ "url": "/?mute=1&start=city",
+ "size": [
+  1440,
+  900
+ ],
+ "out": "shots/o3/o3_frames",
+ "steps": [
+  {
+   "wait": 1500
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]",
+   "taken": "G.state !== 'title'",
+   "retries": 5,
+   "every": 4000
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'city' && G.scenes.fadeK < 0.05 && !!G.people",
+   "timeout": 30000
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "drive": "tools/lib/o3_people.mjs",
+   "mode": "frames",
+   "check": "D.ok",
+   "label": "the frames"
+  }
+ ]
+}

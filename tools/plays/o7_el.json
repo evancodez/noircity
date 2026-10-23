@@ -1,0 +1,32 @@
+{
+ "about": "[O7] The el by real keys: set at the foot of the Grand - Centre station's stair (a tool's teleport, as o1_map's), 'E  take the el'; E: up front in the first car, the train runs the loop and pulls in at the next station ('E  get off'); E: at that station's stair foot on the pavement, on my feet, the controls mine. node tools/play.mjs tools/plays/o7_el.json",
+ "url": "/?mute=1&start=city",
+ "size": [1280, 800],
+ "out": "shots/o7/el",
+ "steps": [
+  { "wait": 1500 },
+  { "clickOn": "#title .opt[data-k=begin]", "taken": "G.state !== 'title'", "retries": 5, "every": 4000 },
+  { "until": "G.scenes.current && G.scenes.current.id === 'city' && G.scenes.fadeK < 0.05", "timeout": 30000 },
+  { "wait": 800 },
+  { "eval": "(() => { const S = G.night.el.setup(); const s = S.find((q) => /GRAND/.test(q.name)); window.__st = s.name; G.stage.part('stream').warmAround(s.foot.x, s.foot.z); N.controller.setPose(s.foot.x, s.foot.z + 1.2, 0, 0); return s.name; })()" },
+  { "wait": 600 },
+  { "until": "G.hud.promptShown === 'E  take the el'", "timeout": 3000, "label": "at the stair's foot: E  take the el" },
+  { "key": "KeyE", "hold": 80 },
+  { "until": "G.night.el.riding && N.controller.mode === 'hold' && G.scenes.fadeK < 0.05", "timeout": 5000, "label": "E: on the train, up front" },
+  { "until": "G.night.el.v > 3", "timeout": 15000, "label": "it pulls out and runs" },
+  { "shot": "e00_ride" },
+  { "look": [-300, 0], "steps": 10 },
+  { "wait": 300 },
+  { "shot": "e01_look" },
+  { "until": "!!(G.night.el.dwell > 0 && G.night.el.at && G.night.el.at.name !== window.__st)", "timeout": 150000, "label": "pulls in at the next station" },
+  { "until": "G.hud.promptShown === 'E  get off'", "timeout": 3000 },
+  { "eval": "(window.__at = G.night.el.at.name, window.__at)" },
+  { "key": "KeyE", "hold": 80 },
+  { "until": "!G.night.el.riding && N.controller.mode === 'walk' && G.scenes.fadeK < 0.05", "timeout": 5000 },
+  { "expect": "(() => { const s = G.night.el.stops.find((q) => q.name === window.__at); return Math.hypot(N.controller.pos.x - s.foot.x, N.controller.pos.z - s.foot.z) < 1 && N.controller.groundY < 0.5; })()", "label": "E: off at that station's stair foot, on the pavement" },
+  { "eval": "(window.__p0 = [N.controller.pos.x, N.controller.pos.z], 1)" },
+  { "key": "KeyW", "hold": 700 },
+  { "expect": "Math.hypot(N.controller.pos.x - window.__p0[0], N.controller.pos.z - window.__p0[1]) > 0.5", "label": "the controls mine" },
+  { "shot": "e02_off" }
+ ]
+}

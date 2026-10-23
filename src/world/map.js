@@ -43,9 +43,11 @@ export function drawMap(C, size = 1024) {
   // (its two spans; the gap between them, the bascule up)
   for (const [a, b] of [[RIVER.e + 18, BRIDGE.hinge[0]], [BRIDGE.hinge[1], BRIDGE.x1]]) { const [u, v] = toMap(a, BRIDGE.z - BRIDGE.hw - 2); g.fillRect(u, v, (b - a) * k, (BRIDGE.hw * 2 + 4) * k); }
   // the land beyond the edges (the rail embankment, the Hill's woods): darker
-  g.fillStyle = 'rgba(20,20,20,0.35)';
-  { const [u0, v0] = toMap(CITY.x0 - 50, CITY.z0 - 50), [u1] = toMap(-590, 0); g.fillRect(u0, v0, u1 - u0, size); }
-  { const [u0, v0] = toMap(CITY.x0 - 50, CITY.z0 - 50), [, v1] = toMap(0, -590); g.fillRect(u0, v0, size, v1 - v0); }
+  // ([O7] after the critic, m5: the paper's margin and a half-tone band read as a grey panel offset from the
+  // map on the pause card - the land beyond the edges is one dark ground to the sheet's edge now)
+  g.fillStyle = '#262422';
+  { const [u1] = toMap(-590, 0); g.fillRect(0, 0, u1, size); }
+  { const [, v1] = toMap(0, -590); g.fillRect(0, 0, size, v1); }
   // the blocks: every pavement slab, ink; the specials' grounds lighter
   for (const p of C.paves) {
     const sp = p.cell.special;

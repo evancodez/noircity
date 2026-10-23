@@ -1,0 +1,18 @@
+{
+ "about": "[O6 after the critic, major 6] A man on the tram's rails (the bed, idle): the bell and `The tram. Off the rails.` while it comes; met, he is knocked aside off the rails and hurt by its speed - never carried along in front of its nose (the critic was pushed 175 m unhurt). node tools/play.mjs tools/plays/o6_tram_foot.json",
+ "url": "/?mute=1&start=smash",
+ "size": [1280, 800],
+ "out": "shots/o6/tramfoot",
+ "steps": [
+  { "wait": 1500 },
+  { "clickOn": "#title .opt[data-k=begin]", "taken": "G.state !== 'title'", "retries": 5, "every": 4000 },
+  { "until": "G.scenes.current && G.scenes.current.id === 'smash' && G.scenes.fadeK < 0.05", "timeout": 30000 },
+  { "walk": [[-117, 22], [-121.9, 20]], "timeout": 20000 },
+  { "eval": "(() => { G.city.tram.pos.z = 70; const W = window.__tw = { warned: null, hitAt: null, maxCarry: 0 }; const t = () => { const p = G.camera.position, tz = G.city.tram.pos.z; if (!W.warned && G.hud.kit.warnText === 'The tram. Off the rails.') W.warned = +(tz - p.z).toFixed(1); if (W.hitAt == null && G.health.hp < 100) W.hitAt = [+p.x.toFixed(1), +p.z.toFixed(1)]; if (W.hitAt) W.maxCarry = Math.max(W.maxCarry, Math.abs(p.z - W.hitAt[1])); if (!W.stop) requestAnimationFrame(t); }; requestAnimationFrame(t); return 1; })()" },
+  { "until": "window.__tw.hitAt != null", "timeout": 15000, "label": "the tram meets me" },
+  { "wait": 3000 },
+  { "eval": "(() => { const W = window.__tw; W.stop = true; return JSON.stringify({ ...W, hp: G.health.hp, eye: [+G.camera.position.x.toFixed(1), +G.camera.position.z.toFixed(1)], tram: +G.city.tram.pos.z.toFixed(1), failing: !!G.failing }); })()" },
+  { "expect": "window.__tw.warned >= 12", "label": "warned while it was still 12 m off and more (the bell, the line)" },
+  { "expect": "G.health.hp <= 70 && Math.abs(G.camera.position.x + 121.9) > 1.6 && window.__tw.maxCarry < 4 && G.city.tram.pos.z < window.__tw.hitAt[1] - 10", "label": "met: hurt, knocked aside off its rails, not carried - it went on past" }
+ ]
+}

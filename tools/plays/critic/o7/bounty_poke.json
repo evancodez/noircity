@@ -1,0 +1,184 @@
+{
+ "about": "[O7 critic] the bounty as a player: the board, the first man; does he answer anything (idle by him 15 s, then close 5 s, fists, the gun drawn, shots)?",
+ "url": "/?mute=1&start=city",
+ "size": [
+  1280,
+  800
+ ],
+ "out": "shots/critic_o7/bounty",
+ "steps": [
+  {
+   "wait": 1500
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]",
+   "taken": "G.state !== 'title'",
+   "retries": 5,
+   "every": 4000
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'city' && G.scenes.fadeK < 0.05",
+   "timeout": 30000
+  },
+  {
+   "wait": 800
+  },
+  {
+   "eval": "(window.__toBoard = () => { const B = G.night.bounty.board(); G.stage.part('stream').warmAround(B.standX, B.standZ); N.controller.setPose(B.standX + B.nx * 0.4, B.standZ + B.nz * 0.4, Math.atan2(B.nx, B.nz), 0); return [B.x, B.z]; }, window.__toBoard())"
+  },
+  {
+   "wait": 600
+  },
+  {
+   "eval": "'board prompt: '+G.hud.promptShown"
+  },
+  {
+   "key": "KeyE",
+   "hold": 80
+  },
+  {
+   "wait": 600
+  },
+  {
+   "shot": "wanted"
+  },
+  {
+   "eval": "'card '+document.getElementById('nbounty').innerText.replace(/\\s+/g,' ')"
+  },
+  {
+   "key": "KeyE",
+   "hold": 80
+  },
+  {
+   "wait": 400
+  },
+  {
+   "eval": "(() => { const b = G.night.bounty.names()[0]; window.__b = b; G.stage.part('stream').warmAround(b.x, b.z); const g = G.night.graph(); let px = b.x + 9, pz = b.z; for (let i = 0; i < 16; i++) { const a = i * Math.PI / 8, q = new N.THREE.Vector3(b.x + Math.cos(a) * 9, 0, b.z + Math.sin(a) * 9); const q0 = q.clone(); G.stage.colliders.resolve(q, 0.4); if (q.distanceTo(q0) < 0.05 && g.lineOfSight(q.x, q.z, b.x, b.z) && !G.stage.part('city').C.inWater(q.x, q.z)) { px = q.x; pz = q.z; break; } } N.controller.setPose(px, pz, Math.atan2(-(b.x - px), -(b.z - pz)), -0.02); G.stage.part('bounds').navAround(px, pz, 20); return [b.name, b.district, b.x, b.z]; })()"
+  },
+  {
+   "until": "!!G.night.bounty.men.get('b0')",
+   "timeout": 3000
+  },
+  {
+   "eval": "(()=>{const h=G.night.bounty.men.get('b0');if(!h)return 'none';const p=N.controller.pos;return 'man d '+Math.hypot(h.pos?h.pos.x-p.x:h.root.position.x-p.x,(h.pos?h.pos.z:h.root.position.z)-p.z).toFixed(1)+' alive '+h.alive+' state '+h.state+' hp '+h.health+' brawl '+!!(G.fight||G.brawl&&G.brawl.active)+' heat '+G.police.heat+' line '+G.hud.kit.objectiveText+' hp me '+(G.player.health&&G.player.health.hp)})()"
+  },
+  {
+   "eval": "(()=>{const h=G.night.bounty.men.get('b0');const c=new N.THREE.Vector3().setFromMatrixPosition(h.bones.chest.matrixWorld);const e=N.camera.position;N.controller.yaw=Math.atan2(-(c.x-e.x),-(c.z-e.z));N.controller.pitch=Math.atan2(c.y-e.y,Math.hypot(c.x-e.x,c.z-e.z));return Math.hypot(c.x-e.x,c.z-e.z).toFixed(1)})()"
+  },
+  {
+   "wait": 500
+  },
+  {
+   "shot": "him"
+  },
+  {
+   "wait": 15000
+  },
+  {
+   "eval": "(()=>{const h=G.night.bounty.men.get('b0');if(!h)return 'none';const p=N.controller.pos;return 'man d '+Math.hypot(h.pos?h.pos.x-p.x:h.root.position.x-p.x,(h.pos?h.pos.z:h.root.position.z)-p.z).toFixed(1)+' alive '+h.alive+' state '+h.state+' hp '+h.health+' brawl '+!!(G.fight||G.brawl&&G.brawl.active)+' heat '+G.police.heat+' line '+G.hud.kit.objectiveText+' hp me '+(G.player.health&&G.player.health.hp)})()"
+  },
+  {
+   "eval": "(()=>{const h=G.night.bounty.men.get('b0');const r=h.root?h.root.position:h.pos;const p=N.controller.pos;const dx=r.x-p.x,dz=r.z-p.z,d=Math.hypot(dx,dz);N.controller.setPose(r.x-dx/d*1.3,r.z-dz/d*1.3,Math.atan2(-dx,-dz),0);return d.toFixed(1)})()"
+  },
+  {
+   "wait": 5000
+  },
+  {
+   "eval": "(()=>{const h=G.night.bounty.men.get('b0');if(!h)return 'none';const p=N.controller.pos;return 'man d '+Math.hypot(h.pos?h.pos.x-p.x:h.root.position.x-p.x,(h.pos?h.pos.z:h.root.position.z)-p.z).toFixed(1)+' alive '+h.alive+' state '+h.state+' hp '+h.health+' brawl '+!!(G.fight||G.brawl&&G.brawl.active)+' heat '+G.police.heat+' line '+G.hud.kit.objectiveText+' hp me '+(G.player.health&&G.player.health.hp)})()"
+  },
+  {
+   "eval": "(N.controller.pitch=0,1)"
+  },
+  {
+   "shot": "close"
+  },
+  {
+   "mouse": "click",
+   "button": "left"
+  },
+  {
+   "wait": 500
+  },
+  {
+   "eval": "(()=>{const h=G.night.bounty.men.get('b0');if(!h)return 'none';const p=N.controller.pos;return 'man d '+Math.hypot(h.pos?h.pos.x-p.x:h.root.position.x-p.x,(h.pos?h.pos.z:h.root.position.z)-p.z).toFixed(1)+' alive '+h.alive+' state '+h.state+' hp '+h.health+' brawl '+!!(G.fight||G.brawl&&G.brawl.active)+' heat '+G.police.heat+' line '+G.hud.kit.objectiveText+' hp me '+(G.player.health&&G.player.health.hp)})()"
+  },
+  {
+   "mouse": "click",
+   "button": "left"
+  },
+  {
+   "wait": 500
+  },
+  {
+   "mouse": "click",
+   "button": "left"
+  },
+  {
+   "wait": 1200
+  },
+  {
+   "eval": "(()=>{const h=G.night.bounty.men.get('b0');if(!h)return 'none';const p=N.controller.pos;return 'man d '+Math.hypot(h.pos?h.pos.x-p.x:h.root.position.x-p.x,(h.pos?h.pos.z:h.root.position.z)-p.z).toFixed(1)+' alive '+h.alive+' state '+h.state+' hp '+h.health+' brawl '+!!(G.fight||G.brawl&&G.brawl.active)+' heat '+G.police.heat+' line '+G.hud.kit.objectiveText+' hp me '+(G.player.health&&G.player.health.hp)})()"
+  },
+  {
+   "shot": "punched"
+  },
+  {
+   "wait": 5000
+  },
+  {
+   "eval": "(()=>{const h=G.night.bounty.men.get('b0');if(!h)return 'none';const p=N.controller.pos;return 'man d '+Math.hypot(h.pos?h.pos.x-p.x:h.root.position.x-p.x,(h.pos?h.pos.z:h.root.position.z)-p.z).toFixed(1)+' alive '+h.alive+' state '+h.state+' hp '+h.health+' brawl '+!!(G.fight||G.brawl&&G.brawl.active)+' heat '+G.police.heat+' line '+G.hud.kit.objectiveText+' hp me '+(G.player.health&&G.player.health.hp)})()"
+  },
+  {
+   "drive": "tools/lib/o4_wheel.mjs",
+   "dy": 100
+  },
+  {
+   "wait": 800
+  },
+  {
+   "eval": "'gun '+G.player.weapons.current"
+  },
+  {
+   "wait": 4000
+  },
+  {
+   "eval": "(()=>{const h=G.night.bounty.men.get('b0');if(!h)return 'none';const p=N.controller.pos;return 'man d '+Math.hypot(h.pos?h.pos.x-p.x:h.root.position.x-p.x,(h.pos?h.pos.z:h.root.position.z)-p.z).toFixed(1)+' alive '+h.alive+' state '+h.state+' hp '+h.health+' brawl '+!!(G.fight||G.brawl&&G.brawl.active)+' heat '+G.police.heat+' line '+G.hud.kit.objectiveText+' hp me '+(G.player.health&&G.player.health.hp)})()"
+  },
+  {
+   "shot": "drawn"
+  },
+  {
+   "eval": "(()=>{const h=G.night.bounty.men.get('b0');const c=new N.THREE.Vector3().setFromMatrixPosition(h.bones.chest.matrixWorld);const e=N.camera.position;N.controller.yaw=Math.atan2(-(c.x-e.x),-(c.z-e.z));N.controller.pitch=Math.atan2(c.y-e.y,Math.hypot(c.x-e.x,c.z-e.z));return Math.hypot(c.x-e.x,c.z-e.z).toFixed(1)})()"
+  },
+  {
+   "mouse": "click",
+   "button": "left"
+  },
+  {
+   "wait": 900
+  },
+  {
+   "mouse": "click",
+   "button": "left"
+  },
+  {
+   "wait": 900
+  },
+  {
+   "mouse": "click",
+   "button": "left"
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "eval": "(()=>{const h=G.night.bounty.men.get('b0');if(!h)return 'none';const p=N.controller.pos;return 'man d '+Math.hypot(h.pos?h.pos.x-p.x:h.root.position.x-p.x,(h.pos?h.pos.z:h.root.position.z)-p.z).toFixed(1)+' alive '+h.alive+' state '+h.state+' hp '+h.health+' brawl '+!!(G.fight||G.brawl&&G.brawl.active)+' heat '+G.police.heat+' line '+G.hud.kit.objectiveText+' hp me '+(G.player.health&&G.player.health.hp)})()"
+  },
+  {
+   "eval": "'b0 '+G.night.bounty.names()[0].state"
+  },
+  {
+   "shot": "down"
+  }
+ ]
+}

@@ -1,0 +1,40 @@
+{
+ "about": "[O4] The feel measure of the shotgun (fire, crouch, reload) on the range.",
+ "url": "/?mute=1&start=o4.range",
+ "size": [
+  1280,
+  800
+ ],
+ "out": "shots/play/latency_shotgun",
+ "steps": [
+  {
+   "until": "G.state === 'title' && !!document.querySelector('#title .opt[data-k=begin]')",
+   "timeout": 60000
+  },
+  {
+   "wait": 1200
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]",
+   "taken": "G.scenes.current && G.scenes.current.id === 'o4'",
+   "retries": 4
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'o4' && G.scenes.beat === 'range' && !G.failing && document.pointerLockElement === N.renderer.domElement",
+   "timeout": 30000
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "eval": "(1)"
+  },
+  {
+   "drive": "tools/lib/o4_latency.mjs",
+   "part": "guns",
+   "n": 12,
+   "check": "[D.jab, D.block, D.hop, D.heavyFromRelease, D.fire, D.crouch, D.reload].filter(Boolean).every((v) => v.mean < 50 && v.n >= 8)",
+   "label": "every verb acts within 50 ms of its press (mean), on most presses"
+  }
+ ]
+}

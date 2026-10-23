@@ -10,3 +10,9 @@ city_straight|scene=city&beat=roam&t=2&at=yards&pose=-446,380,0,0.04
 city_clock|scene=city&beat=roam&t=2&at=clock&pose=-28,-118,-2.32,0.95
 city_wheels_street|scene=city&beat=roam&t=30&traffic=1&pose=-31,30,0.08,0.02
 city_wheels_lineup|scene=city&beat=roam&t=2&traffic=1&lineup=all&pose=-125,-24,-1.5708,0.02
+city_o3_police|scene=city&beat=roam&people=1&o3stage=police&t=3&pose=-109.5,25,0.33,-0.08
+city_o3_crowd|scene=city&beat=roam&people=1&o3stage=crowd&t=3&pose=-115.8,25,-0.22,-0.03
+o5_bar|scene=city&beat=roam&t=2&place=bar1
+o5_gym|scene=city&beat=roam&t=2&place=gym
+smash_bed|scene=smash&beat=bed&t=1&hud=0
+smash_wreck|scene=smash&beat=burn&t=10&hud=0

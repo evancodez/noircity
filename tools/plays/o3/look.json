@@ -1,0 +1,16 @@
+{
+ "about": "[O3] look development: the city's crowd, the camera turned onto the nearest walkers (not a proof)",
+ "url": "/?mute=1&start=city",
+ "size": [1440, 900],
+ "out": "shots/o3/look",
+ "steps": [
+  { "wait": 1500 },
+  { "clickOn": "#title .opt[data-k=begin]", "taken": "G.state !== 'title'", "retries": 5, "every": 4000 },
+  { "until": "G.scenes.current && G.scenes.current.id === 'city' && G.scenes.fadeK < 0.05", "timeout": 30000 },
+  { "until": "G.people && G.people.list.filter(p => p.role === 'walker').length >= 12", "timeout": 40000 },
+  { "eval": "(() => { const P = G.people, E = G.eye; const L = P.list.filter(p => p.role === 'walker').sort((a, b) => a.pos.distanceTo(E) - b.pos.distanceTo(E)); const p = L[0]; const C = G.controller; const dx = p.pos.x - C.pos.x, dz = p.pos.z - C.pos.z, d = Math.hypot(dx, dz); C.setPose(p.pos.x - dx / d * 9, p.pos.z - dz / d * 9, Math.atan2(dx, dz) + Math.PI, -0.04); return [p.kind, +d.toFixed(1)]; })()" },
+  { "wait": 700 },
+  { "shot": "near" },
+  { "eval": "JSON.stringify(G.people.stats)" }
+ ]
+}

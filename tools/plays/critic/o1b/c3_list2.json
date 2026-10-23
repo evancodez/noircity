@@ -1,0 +1,34 @@
+{
+ "about": "[O1b critic] where the usable-looking things are (booth, cart, fruit stand, mailbox, the uniques)",
+ "url": "/?mute=1&start=city",
+ "size": [
+  1280,
+  800
+ ],
+ "out": "shots/o1bc/list",
+ "steps": [
+  {
+   "wait": 2000
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]",
+   "taken": "G.state !== 'title'",
+   "retries": 5,
+   "every": 4000
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'city' && G.scenes.fadeK < 0.05",
+   "timeout": 30000
+  },
+  {
+   "look": [
+    1,
+    0
+   ],
+   "steps": 1
+  },
+  {
+   "eval": "(() => { const C = G.stage.part('city').C; const p = N.controller.pos; const near = (k) => C.dress.filter(d => d.kind === k).map(d => ({x:+d.x.toFixed(1), z:+d.z.toFixed(1), yaw: +(d.yaw||0).toFixed(2), d: Math.hypot(d.x-p.x, d.z-p.z)})).sort((a,b)=>a.d-b.d)[0]; const u = {}; for (const q of C.uniques) u[q.kind] = (u[q.kind]||0)+1; const un = C.uniques.map(q => ({k: q.kind, st: q.street, x: +q.x.toFixed(0), z: +q.z.toFixed(0), nx: q.nx, nz: q.nz, d: Math.hypot(q.x-p.x, q.z-p.z)})).sort((a,b)=>a.d-b.d).slice(0,4); return JSON.stringify({booth: near('booth'), cart: near('cart'), fruit: near('fruit'), mailbox: near('mailbox'), uniques: u, un}); })()"
+  }
+ ]
+}

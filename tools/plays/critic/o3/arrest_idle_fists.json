@@ -1,0 +1,19 @@
+{
+ "about": "[O3 critic] the walk-over arrest by the owner's staging (a walker, a cop 14 m on): hands off (warned? the station?), then from the station the same punch and the fight, first-timer's hands (play.mjs fight step), then hands off again.",
+ "url": "/?mute=1",
+ "size": [1280, 800],
+ "out": "shots/critic_o3",
+ "steps": [
+  { "wait": 2500 },
+  { "clickOn": "#title .opt[data-k=begin]", "taken": "G.state !== 'title'", "retries": 5, "every": 4000 },
+  { "until": "G.state === 'playing' && G.people && G.scenes.beat === 'roam'", "timeout": 25000 },
+  { "wait": 1500 },
+  { "drive": "tools/lib/o3_people.mjs", "mode": "punch", "then": "idle", "shots": true },
+  { "eval": "[...document.querySelectorAll('body *')].filter(e=>e.offsetParent&&e.children.length===0&&e.innerText&&e.innerText.trim()).map(e=>e.innerText.trim().slice(0,40)).join(' | ')" },
+  { "wait": 4000 },
+  { "eval": "[...document.querySelectorAll('body *')].filter(e=>e.offsetParent&&e.children.length===0&&e.innerText&&e.innerText.trim()).map(e=>e.innerText.trim().slice(0,40)).join(' | ')" },
+  { "drive": "tools/lib/o3_people.mjs", "mode": "punch", "then": "fists" },
+  { "fight": { "timeout": 120000 } },
+  { "drive": "tools/plays/critic/o3/cold.mjs", "mode": "watch", "secs": 60 }
+ ]
+}

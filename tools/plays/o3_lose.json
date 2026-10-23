@@ -1,0 +1,34 @@
+{
+ "about": "[O3] losing them on foot: HEAT 1 seen, away round the corner - the search shown (the badges breathe, 'Lose them.'), found again (the heat as it was), away again: 'Clear.'.",
+ "url": "/?mute=1&start=city",
+ "size": [
+  1280,
+  800
+ ],
+ "out": "shots/o3/o3_lose",
+ "steps": [
+  {
+   "wait": 1500
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]",
+   "taken": "G.state !== 'title'",
+   "retries": 5,
+   "every": 4000
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'city' && G.scenes.fadeK < 0.05 && !!G.people",
+   "timeout": 30000
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "drive": "tools/lib/o3_people.mjs",
+   "mode": "lose",
+   "shots": true,
+   "check": "D.ok",
+   "label": "the search shown, found again, lost: Clear."
+  }
+ ]
+}

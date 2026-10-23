@@ -1,0 +1,24 @@
+{
+ "about": "[O5 critic] the warehouse's first seconds: in by the door, what I see, where the men are, how fast the hp goes; then into cover behind the crate by the door (C) and what that buys",
+ "url": "/?mute=1&start=city",
+ "size": [1280, 800],
+ "out": "shots/critic_o5/hlook",
+ "steps": [
+  { "wait": 1500 },
+  { "clickOn": "#title .opt[data-k=begin]", "taken": "G.state !== 'title'", "retries": 5, "every": 4000 },
+  { "until": "G.scenes.current && G.scenes.current.id === 'city' && G.scenes.fadeK < 0.05", "timeout": 25000 },
+  { "eval": "(() => { const s = G.city.places.byId.get('warehouse'), d = s.door; const x = d.x + d.nx * 3, z = d.z + d.nz * 3; G.stage.part('stream').warmAround(x, z); N.controller.setPose(x, z, Math.atan2(d.nx, d.nz), -0.05); window.__hp = []; setInterval(() => window.__hp.push(Math.round(G.health.hp)), 500); return 1; })()" },
+  { "wait": 2500 },
+  { "key": "KeyE", "hold": 70 }, { "wait": 500 },
+  { "walk": "(()=>{const F=G.city.places.byId.get('warehouse').frame;return [[0,-1.2]].map(([x,z])=>{const p=F.w(x,z);return [p.x,p.z]})})()", "timeout": 8000, "stop": false },
+  { "shot": "enter" },
+  { "eval": "(()=>{const s=G.city.places.byId.get('warehouse'),F=s.frame;return 'men (local): '+s.live.run.st.men.map(h=>{const l=F.l(h.pos.x,h.pos.z);return h.kind+'@'+l.x.toFixed(1)+','+l.z.toFixed(1)}).join(' ')+' | hud '+document.getElementById('hud').innerText.replace(/\\s+/g,' ').slice(0,100)})()" },
+  { "walk": "(()=>{const F=G.city.places.byId.get('warehouse').frame;return [[-2.4,-2.2]].map(([x,z])=>{const p=F.w(x,z);return [p.x,p.z]})})()", "timeout": 6000, "stop": false },
+  { "key": "KeyC", "hold": 60 }, { "wait": 1500 },
+  { "shot": "crouched" },
+  { "eval": "'hostile '+G.city.places.byId.get('warehouse').live.run.st.hostile+' crouch '+(N.controller.crouchK||0).toFixed(2)+' mode '+N.controller.mode+' hp '+window.__hp.join(',')" },
+  { "wait": 6000 },
+  { "eval": "'after 6 s behind the crate: hp '+window.__hp.join(',')+' failing '+G.failing" },
+  { "shot": "later" }
+ ]
+}

@@ -36,3 +36,5 @@ still_check|still=check&panel=1
 still_photo|still=photo&panel=0
 still_diner|still=diner&panel=0
 still_end|still=end&panel=0
+o4_brawl3|scene=o4&beat=brawl3&t=0.6
+o4_shotgun|scene=o4&beat=range&t=1.5

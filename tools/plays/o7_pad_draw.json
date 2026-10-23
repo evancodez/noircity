@@ -1,0 +1,94 @@
+{
+ "about": "[O7] The gun drawn in a fist fight by the pad alone (O4's merge: 'a pad player cannot draw a gun in a fight: map it'): the d-pad's right is the wheel on foot - the revolver out, the fight over, the driver runs; the keyboard and the mouse never used. The same steps as O4's draw.json up to the draw. node tools/play.mjs tools/plays/o7_pad_draw.json",
+ "url": "/?mute=1&o4stay=1&padfake=1&start=o4.brawl1",
+ "size": [
+  1280,
+  800
+ ],
+ "out": "shots/o7/pad_draw",
+ "steps": [
+  {
+   "until": "G.state === 'title' && !!document.querySelector('#title .opt[data-k=begin]')",
+   "timeout": 60000
+  },
+  {
+   "wait": 800
+  },
+  {
+   "wait": 800
+  },
+  {
+   "pad": {
+    "b": [
+     "x"
+    ],
+    "secs": 0.12
+   }
+  },
+  {
+   "wait": 400
+  },
+  {
+   "pad": {
+    "b": [
+     "x"
+    ],
+    "secs": 0.12
+   }
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'o4'",
+   "timeout": 30000
+  },
+  {
+   "until": "G.scenes.beat === 'brawl1' && G.crowd.active && G.crowd.seen() && !G.failing",
+   "timeout": 30000
+  },
+  {
+   "eval": "(window.__crime = [], G.on('crime', (e) => window.__crime.push(e.kind + (e.cop ? ':cop' : ''))), G.o4stay = true, ({ owns: G.save.inventory, money: G.save.money }))"
+  },
+  {
+   "expect": "G.save.inventory.includes('revolver')",
+   "label": "G.save.inventory.includes('revolver')"
+  },
+  {
+   "until": "G.crowd.men.some((m) => Math.hypot(m.c.pos.x - G.eye.x, m.c.pos.z - G.eye.z) < 2.6)",
+   "timeout": 8000
+  },
+  {
+   "wait": 400
+  },
+  {
+   "name": "the d-pad's right: the revolver out",
+   "pad": {
+    "b": [
+     "right"
+    ],
+    "secs": 0.12
+   }
+  },
+  {
+   "until": "G.crowd.result === 'drawn'",
+   "timeout": 3000
+  },
+  {
+   "wait": 500
+  },
+  {
+   "eval": "({res:G.crowd.result,act:G.crowd.active,gun:G.player.weapons.current,mode:N.controller.mode,say:N.hud.lastSay,crime:window.__crime,men:G.crowd.men.map(m=>[m.kind,m.state,!!m.off,!!m.removed,+Math.hypot(m.c.pos.x-G.eye.x,m.c.pos.z-G.eye.z).toFixed(1)])})"
+  },
+  {
+   "expect": "G.player.weapons.current === 'revolver' && N.controller.mode === 'gun' && /ran/.test(N.hud.lastSay || '') && window.__crime.includes('draw')",
+   "label": "G.player.weapons.current === 'revolver' && N.controller.mode === 'gun' && /ran/."
+  },
+  {
+   "expect": "G.crowd.men.every((m) => m.off || m.removed)",
+   "label": "G.crowd.men.every((m) => m.off || m.removed)"
+  },
+  {
+   "expect": "!document.querySelector('#errlog') || !document.querySelector('#errlog').textContent.trim()",
+   "label": "no errors in #errlog"
+  }
+ ],
+ "input": "pad"
+}

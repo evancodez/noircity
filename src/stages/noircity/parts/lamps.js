@@ -83,6 +83,23 @@ export default {
       all, lamps: [], pool, cones,
       setOn(lamp, on) { lamp.on = on; dealT = 0; },
       near(x, z, r = 6) { let best = null, bd = r; for (const l of nearList(x, z, r)) { const d = Math.hypot(l.x - x, l.z - z); if (d < bd && !l.bent) { bd = d; best = l; } } return best; },
+      // [O5] a room's own lamps join the deal while its place is loaded (inside,
+      // they are the nearest: the cones and the real lights go to them):
+      // { x, z, head, hanging, on, power (the real light's), drop (the cone's
+      // height: the floor under it), noCone } - and leave it when it is dropped
+      addExtra(list) {
+        for (const l of list) { all.push(l); const k = Math.floor(l.x / B) * 4096 + Math.floor(l.z / B); if (!buckets.has(k)) buckets.set(k, []); buckets.get(k).push(l); }
+        dealT = 0;
+      },
+      removeExtra(list) {
+        const S = new Set(list);
+        for (let i = all.length - 1; i >= 0; i--) if (S.has(all[i])) all.splice(i, 1);
+        for (const L of buckets.values()) for (let i = L.length - 1; i >= 0; i--) if (S.has(L[i])) L.splice(i, 1);
+        for (const c of cones) if (c.lamp && S.has(c.lamp)) { c.lamp.cone = null; c.lamp = null; c.mesh.visible = false; c.entry.enabled = false; c.entry.intensity = 0; }
+        for (const s of pool) if (s.lamp && S.has(s.lamp)) { s.lamp = null; s.k = 0; s.spot.intensity = 0; }
+        this.lamps = this.lamps.filter((l) => !S.has(l));
+        dealT = 0;
+      },
       // (a round at a lamp's head: O6's to answer; the head is not a mesh of its own here)
       hit() { return null; },
       react() {},
@@ -109,13 +126,13 @@ export default {
           for (const c of cones) if (c.lamp && !want.has(c.lamp)) { c.lamp.cone = null; c.lamp = null; c.mesh.visible = false; c.entry.enabled = false; c.entry.intensity = 0; }
           const free = cones.filter((c) => !c.lamp);
           for (const l of want) {
-            if (l.cone) continue;
+            if (l.cone || l.noCone) continue;
             const c = free.pop();
             if (!c) break;
             c.lamp = l; l.cone = c;
             // aim: down and a little out over the road (a post), straight down (a hung lamp)
             const axis = l.hanging ? _down.clone() : _a.set(Math.cos(l.yaw) * 0.18, -1, -Math.sin(l.yaw) * 0.18).normalize().clone();
-            const h = l.head.y / Math.max(0.3, -axis.y) * 0.98;
+            const h = (l.drop ?? l.head.y) / Math.max(0.3, -axis.y) * 0.98;   // [O5] (a room's lamp: down to its own floor)
             const M = c.mesh;
             M.position.copy(l.head);
             M.quaternion.setFromUnitVectors(_down, axis);
@@ -157,7 +174,7 @@ export default {
         }
         for (const s of pool) {
           s.k = s.lamp ? Math.min(1, s.k + dt * 4) : 0;
-          s.spot.intensity = s.lamp && s.lamp.on && !s.lamp.dead ? (s.lamp.hanging ? 70 : 90) * s.k : 0;
+          s.spot.intensity = s.lamp && s.lamp.on && !s.lamp.dead ? (s.lamp.power ?? (s.lamp.hanging ? 70 : 90)) * s.k : 0;
         }
       },
     };

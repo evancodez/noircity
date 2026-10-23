@@ -1,0 +1,95 @@
+{
+ "about": "[O5] The station's wake (O3's seam places.wake('police')): on the cell's bench at headquarters, E up, out of the cell, the corridor's door, the desk, the street door, out (brief O5 \u00a72.7).",
+ "url": "/?mute=1&start=city.station",
+ "size": [
+  1280,
+  800
+ ],
+ "out": "shots/o5/station",
+ "steps": [
+  {
+   "until": "G.state === 'title' && !document.getElementById('title').classList.contains('hidden')",
+   "timeout": 60000
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]",
+   "taken": "G.state !== 'title'",
+   "retries": 5,
+   "every": 4000
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'city' && G.scenes.fadeK < 0.05",
+   "timeout": 60000
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "name": "on the bench, in the cell",
+   "expect": "G.city.places.seat && G.city.places.seat.name === 'cellbench'"
+  },
+  {
+   "shot": "01_cell"
+  },
+  {
+   "key": "KeyE",
+   "hold": 60
+  },
+  {
+   "wait": 900
+  },
+  {
+   "name": "up",
+   "expect": "!G.city.places.seat && N.controller.mode === 'walk'"
+  },
+  {
+   "walk": "(() => { const s = G.city.places.byId.get('police'), F = s.frame, K = s.live.K, c = K.cells[1]; const z = (K.cells[1].door.centre ? F.l(K.cells[1].door.centre.x, K.cells[1].door.centre.z).z : -12); const a = F.w(c.a + 0.75, z + 0.8), b = F.w(c.a + 0.75, z - 0.6); return [[b.x, b.z], [a.x, a.z]]; })()",
+   "timeout": 15000
+  },
+  {
+   "walk": "(() => { const s = G.city.places.byId.get('police'), F = s.frame; return [[5.9, -9.5]].map(([x, z]) => { const p = F.w(x, z); return [p.x, p.z]; }); })()",
+   "timeout": 20000
+  },
+  {
+   "eval": "(() => { const s = G.city.places.byId.get('police'), F = s.frame; N.controller.yaw = F.yaw(Math.PI); N.controller.pitch = -0.05; return 1; })()"
+  },
+  {
+   "wait": 400
+  },
+  {
+   "key": "KeyE",
+   "hold": 60
+  },
+  {
+   "wait": 900
+  },
+  {
+   "walk": "(() => { const s = G.city.places.byId.get('police'), F = s.frame; return [[5.9, -6.9], [4.6, -3.0], [0, -1.2]].map(([x, z]) => { const p = F.w(x, z); return [p.x, p.z]; }); })()",
+   "timeout": 25000
+  },
+  {
+   "eval": "(() => { const s = G.city.places.byId.get('police'), F = s.frame; N.controller.yaw = F.yaw(Math.PI); N.controller.pitch = -0.05; return 1; })()"
+  },
+  {
+   "wait": 400
+  },
+  {
+   "key": "KeyE",
+   "hold": 60
+  },
+  {
+   "wait": 700
+  },
+  {
+   "walk": "(() => { const s = G.city.places.byId.get('police'), F = s.frame; return [[0, 2.5]].map(([x, z]) => { const p = F.w(x, z); return [p.x, p.z]; }); })()",
+   "timeout": 12000
+  },
+  {
+   "name": "out on the street",
+   "expect": "!G.city.places.inside"
+  }
+ ]
+}

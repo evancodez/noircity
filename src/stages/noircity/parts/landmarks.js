@@ -152,7 +152,8 @@ export default {
       void a; void b; void c; void d;
       // (a crown of four or five lumps on a forked trunk: one ball read as a lollipop)
       const tr = new (stage.rng.fork(4004).constructor)(0x7EE6);
-      for (const [x, z, r] of SP.trees || []) {
+      // ([O1b] the park's trees are the dressing's now: a shape each, streamed - SP.treesO1b)
+      for (const [x, z, r] of SP.treesO1b ? [] : SP.trees || []) {
         const n = 4 + (tr.next() < 0.5 ? 1 : 0);
         for (let k = 0; k < n; k++) {
           const a = (k / n) * Math.PI * 2 + tr.next(), d = r * (0.25 + tr.next() * 0.35);

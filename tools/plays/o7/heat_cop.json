@@ -1,0 +1,27 @@
+{
+ "about": "[O7 after the critic, B1] heat 1 (the bed's key 1: what a punch seen gives) on foot: a beat cop on the street within about 10 s, running at me; at arm's length 'Hands up.', then O4's fist fight with him; idle: down to him is the arrest - the black says 'Hands up.', the station's cell, the heat gone.",
+ "url": "/?mute=1&start=city&nightbed=1",
+ "size": [1280, 800],
+ "out": "shots/o7/heat_cop",
+ "steps": [
+  { "wait": 1500 },
+  { "clickOn": "#title .opt[data-k=begin]", "taken": "G.state !== 'title'", "retries": 5, "every": 4000 },
+  { "until": "G.scenes.current && G.scenes.current.id === 'city' && G.scenes.fadeK < 0.05", "timeout": 30000 },
+  { "look": [0, 0], "steps": 1 },
+  { "eval": "(N.controller.pitch = 0, window.__t0 = G.time, 1)" },
+  { "key": "Digit1", "hold": 60 },
+  { "wait": 300 },
+  { "expect": "G.police.heat === 1 && G.hud.kit.objectiveText === 'Lose them.'", "label": "heat 1: one shield, 'Lose them.'" },
+  { "until": "(G.police.units || []).length >= 1", "timeout": 12000, "label": "a beat cop on the street within 10 s" },
+  { "eval": "'cop at '+(G.time - window.__t0).toFixed(1)+' s, '+Math.round(Math.hypot(G.police.units[0].pos.x - G.eye.x, G.police.units[0].pos.z - G.eye.z))+' m'" },
+  { "until": "G.hud.warnText === 'Hands up.'", "timeout": 30000, "label": "he runs up: 'Hands up.'" },
+  { "eval": "'hands up at '+(G.time - window.__t0).toFixed(1)+' s'" },
+  { "shot": "c01_hands_up" },
+  { "until": "G.crowd.active && G.crowd.men.some((m) => m.kind === 'cop')", "timeout": 4000, "label": "then the fist fight with him (O4's cop)" },
+  { "until": "!!G.failing", "timeout": 90000, "label": "idle: he puts me down" },
+  { "eval": "'why '+G.failing.why+' to '+G.failing.to" },
+  { "expect": "G.failing.why === 'Hands up.' && G.failing.to === 'station'", "label": "the arrest: 'Hands up.', the station" },
+  { "until": "!G.failing && G.scenes.beat === 'station'", "timeout": 20000, "label": "the station's cell" },
+  { "expect": "G.police.heat === 0", "label": "the heat gone" }
+ ]
+}

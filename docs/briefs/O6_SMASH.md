@@ -64,3 +64,8 @@ a lamp dying, a car's fire, looked at; the fps reading at the hundred;
 the memory reading; golden identical (the base's frames) plus two of
 yours; errors clean on the bed. Report `docs/reports/O6.md`. Hours, not
 days.
+
+## From the cold play of the merged city (`docs/reports/CITY_COLD_PLAY.md`): yours
+Yours, in your fix pass: **finding 10**, a car into the river: a splash
+in ink and the water closing over it, not grey planes; the wreck under the
+surface a dark shape with its lamps dying.

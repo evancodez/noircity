@@ -1,0 +1,38 @@
+{
+ "about": "[O4] The street shootout (four of the gang down the avenue, the cover the world's; tools/lib/o4_guns.mjs). Hands off: down, warned, the reason said.",
+ "url": "/?mute=1&start=o4.street",
+ "size": [
+  1280,
+  800
+ ],
+ "out": "shots/play/street_idle",
+ "steps": [
+  {
+   "until": "G.state === 'title' && !!document.querySelector('#title .opt[data-k=begin]')",
+   "timeout": 60000
+  },
+  {
+   "wait": 1200
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]",
+   "taken": "G.scenes.current && G.scenes.current.id === 'o4'",
+   "retries": 4
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'o4' && document.pointerLockElement === N.renderer.domElement",
+   "timeout": 30000
+  },
+  {
+   "drive": "tools/lib/o4_guns.mjs",
+   "profile": "idle",
+   "beats": [
+    "street"
+   ],
+   "tries": 1,
+   "beatTimeout": 150,
+   "check": "D.lost === 1 && D.allWarned",
+   "label": "idle dies, warned a second or more before"
+  }
+ ]
+}

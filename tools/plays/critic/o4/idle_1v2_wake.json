@@ -1,0 +1,64 @@
+{
+ "about": "[O4 critic] 1v2 hands off, no o4stay: the fall and where I wake",
+ "url": "/?mute=1&start=o4.brawl2",
+ "size": [
+  1280,
+  800
+ ],
+ "out": "shots/critic/idle12",
+ "steps": [
+  {
+   "until": "G.state === 'title' && !!document.querySelector('#title .opt[data-k=begin]')",
+   "timeout": 60000
+  },
+  {
+   "wait": 1000
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]",
+   "taken": "G.scenes.current && G.scenes.current.id === 'o4'",
+   "retries": 4
+  },
+  {
+   "until": "G.scenes.beat === 'brawl2' && G.crowd.active && !G.failing",
+   "timeout": 30000
+  },
+  {
+   "drive": "tools/lib/o4_brawl.mjs",
+   "profile": "idle",
+   "beat": "brawl2",
+   "tries": 1,
+   "wins": 1,
+   "timeout": 150000,
+   "check": "D.tries.length>=1 && D.tries[0].result==='down' && D.tries[0].warnedFor>0",
+   "label": "idle 1v2 falls, warned"
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "eval": "({t:+G.time.toFixed(1), beat:G.scenes.beat, hud:(document.querySelector('#hud')||{}).innerText?.replace(/\\s+/g,' ').slice(0,300), pos:[+G.eye.x.toFixed(1),+G.eye.z.toFixed(1)], money:G.save.money, failing:!!G.failing})"
+  },
+  {
+   "shot": "fall_a"
+  },
+  {
+   "wait": 3000
+  },
+  {
+   "eval": "({t:+G.time.toFixed(1), beat:G.scenes.beat, hud:(document.querySelector('#hud')||{}).innerText?.replace(/\\s+/g,' ').slice(0,300), pos:[+G.eye.x.toFixed(1),+G.eye.z.toFixed(1)], money:G.save.money, failing:!!G.failing})"
+  },
+  {
+   "shot": "fall_b"
+  },
+  {
+   "wait": 4000
+  },
+  {
+   "eval": "({t:+G.time.toFixed(1), beat:G.scenes.beat, hud:(document.querySelector('#hud')||{}).innerText?.replace(/\\s+/g,' ').slice(0,300), pos:[+G.eye.x.toFixed(1),+G.eye.z.toFixed(1)], money:G.save.money, failing:!!G.failing})"
+  },
+  {
+   "shot": "fall_c"
+  }
+ ]
+}

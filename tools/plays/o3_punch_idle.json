@@ -1,0 +1,36 @@
+{
+ "about": "[O3] the walk-over arrest, idle: a man punched before a beat cop, then nothing - HEAT 1 at once, he walks over, 'Hands up.' (up over a second), 'Arrested.', the station: the gun gone, the heat gone, back in under ten seconds. Twice.",
+ "url": "/?mute=1&start=city",
+ "size": [
+  1280,
+  800
+ ],
+ "out": "shots/o3/o3_punch_idle",
+ "steps": [
+  {
+   "wait": 1500
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]",
+   "taken": "G.state !== 'title'",
+   "retries": 5,
+   "every": 4000
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'city' && G.scenes.fadeK < 0.05 && !!G.people",
+   "timeout": 30000
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "drive": "tools/lib/o3_people.mjs",
+   "mode": "punch",
+   "then": "idle",
+   "tries": 2,
+   "shots": true,
+   "check": "D.ok",
+   "label": "punch seen, idle: warned, arrested, the station (twice)"
+  }
+ ]
+}

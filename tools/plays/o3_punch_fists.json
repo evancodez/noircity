@@ -1,0 +1,80 @@
+{
+ "about": "[O3] the walk-over arrest, the fists: a man punched before a beat cop; I wait for him and punch him - the fist fight (lane O4's crowd brawl, COP), played by O4's bot with a first-timer's hands (bad); won: he lies there, HEAT 2, his gun on the pavement, taken with E.",
+ "url": "/?mute=1&start=city",
+ "size": [
+  1280,
+  800
+ ],
+ "out": "shots/o3/o3_punch_fists",
+ "steps": [
+  {
+   "wait": 1500
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]",
+   "taken": "G.state !== 'title'",
+   "retries": 5,
+   "every": 4000
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'city' && G.scenes.fadeK < 0.05 && !!G.people",
+   "timeout": 30000
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "eval": "(G.people.hands.hasGun = false, 'staged: out of the station, no gun')"
+  },
+  {
+   "drive": "tools/lib/o3_people.mjs",
+   "mode": "punch",
+   "then": "fists",
+   "tries": 1,
+   "check": "D.ok",
+   "label": "the cop's fist fight starts"
+  },
+  {
+   "drive": "tools/lib/o4_brawl.mjs",
+   "profile": "bad",
+   "beat": "roam",
+   "tries": 1,
+   "wins": 1,
+   "timeout": 150000
+  },
+  {
+   "wait": 2500
+  },
+  {
+   "eval": "JSON.stringify({ fa: G.police.fists.active, who: window.__o3c.mode, down: window.__o3c.down, res: G.crowd.result, cmode: G.controller.mode, heat: G.police.heat, beat: G.scenes.beat, fail: G.lastFail, ev: G.police.events.slice(-6) })"
+  },
+  {
+   "expect": "G.lastFail ? G.lastFail.why.startsWith('Arrested.') && G.scenes.beat === 'station' : (window.__o3c && window.__o3c.down && G.police.heat >= 2 && G.controller.mode === 'walk')",
+   "label": "the fight ends: won (he lies there, HEAT 2: a cop down) or lost (arrested)"
+  },
+  {
+   "walk": "G.lastFail ? [[G.eye.x, G.eye.z]] : (() => { const I = G.stage.part('items').list.filter(i => i.dropped && i.kind === 'weapon' && !i.taken).slice(-1)[0]; return [[I.x + 0.9, I.z]]; })()",
+   "timeout": 6000,
+   "into": true
+  },
+  {
+   "look": "G.lastFail ? [0, 0] : (() => { const I = G.stage.part('items').list.filter(i => i.dropped && i.kind === 'weapon' && !i.taken).slice(-1)[0]; const C = G.controller; const want = Math.atan2(-(I.x - G.eye.x), -(I.z - G.eye.z)); const dy = Math.atan2(Math.sin(want - C.yaw), Math.cos(want - C.yaw)); return [Math.round(-dy / 0.0021), Math.round(-(-0.9 - C.pitch) / 0.0021)]; })()",
+   "steps": 8
+  },
+  {
+   "until": "!!G.lastFail || /^E +take/.test(G.hud.promptShown || '')",
+   "timeout": 4000,
+   "stop": false
+  },
+  {
+   "key": "KeyE"
+  },
+  {
+   "wait": 900
+  },
+  {
+   "expect": "!!G.lastFail || G.people.hands.hasGun === true",
+   "label": "won: his gun taken from the pavement (E)"
+  }
+ ]
+}

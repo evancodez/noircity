@@ -36,6 +36,8 @@ export const CAST_CLIPS = {
   // out cold (c.ko() puts him there): breathing on his back
   ko: { duration: 3.2, marks: {}, loop: true },
   koFall: { duration: 1.15, marks: { land: 0.8 }, hold: true },
+  // [O4] up again after a knock-down (the crowd brawl): on his feet at `up`
+  o4_getUp: { duration: 1.5, marks: { up: 1.2 }, fadeOut: 0.2 },
 
   // ---- the brawler at the counter (lane 6 P0.3) ----------------------------------
   notice: { duration: 2.0, marks: { turned: 0.9 }, hold: true },

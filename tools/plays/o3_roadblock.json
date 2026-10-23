@@ -1,0 +1,38 @@
+{
+ "about": "[O3] HEAT 3 in the car: two cars and the roadblock on my road ahead (two cars nose to nose, men behind them); medium hands: through it, round it, or away - lost in one to three.",
+ "url": "/?mute=1&start=city",
+ "size": [
+  1280,
+  800
+ ],
+ "out": "shots/o3/o3_roadblock",
+ "steps": [
+  {
+   "wait": 1500
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]",
+   "taken": "G.state !== 'title'",
+   "retries": 5,
+   "every": 4000
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'city' && G.scenes.fadeK < 0.05 && !!G.people",
+   "timeout": 30000
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "drive": "tools/lib/o3_people.mjs",
+   "mode": "chase",
+   "heat": 3,
+   "profile": "medium",
+   "tries": 3,
+   "secs": 180,
+   "shots": true,
+   "check": "D.wins >= 1 && D.tries.some(t => t.ev.some(e => e.startsWith('roadblock')))",
+   "label": "roadblock: seen, and lost in one to three"
+  }
+ ]
+}

@@ -1,0 +1,28 @@
+{
+ "about": "[O1b critic] The first minute cold: the title, BEGIN, look round, walk the pavement of Grand Ave, E at whatever prompts, what the screen says.",
+ "url": "/?mute=1&start=city",
+ "size": [1440, 900],
+ "out": "shots/o1bc/01",
+ "steps": [
+  { "wait": 2500 },
+  { "shot": "00_title" },
+  { "clickOn": "#title .opt[data-k=begin]", "taken": "G.state !== 'title'", "retries": 5, "every": 4000 },
+  { "until": "G.scenes.current && G.scenes.current.id === 'city' && G.scenes.fadeK < 0.05", "timeout": 30000 },
+  { "look": [1, 0], "steps": 1 },
+  { "eval": "(N.controller.pitch = -0.05, 1)" },
+  { "wait": 800 },
+  { "shot": "01_start" },
+  { "eval": "JSON.stringify({pos:[+N.controller.pos.x.toFixed(1),+N.controller.pos.z.toFixed(1)], yaw:+N.controller.yaw.toFixed(2), txt: document.body.innerText.replace(/\\s+/g,' ').slice(0,300)})" },
+  { "look": [560, 0], "steps": 8 }, { "wait": 400 }, { "shot": "02_r" },
+  { "look": [560, 0], "steps": 8 }, { "wait": 400 }, { "shot": "03_back" },
+  { "look": [560, 0], "steps": 8 }, { "wait": 400 }, { "shot": "04_l" },
+  { "look": [560, 0], "steps": 8 }, { "wait": 300 },
+  { "down": "KeyW" }, { "wait": 4000 }, { "shot": "05_walk4" },
+  { "eval": "JSON.stringify({pos:[+N.controller.pos.x.toFixed(1),+N.controller.pos.z.toFixed(1)], txt: document.body.innerText.replace(/\\s+/g,' ').slice(0,300)})" },
+  { "wait": 4000 }, { "shot": "06_walk8" },
+  { "up": "KeyW" },
+  { "eval": "JSON.stringify({pos:[+N.controller.pos.x.toFixed(1),+N.controller.pos.z.toFixed(1)], txt: document.body.innerText.replace(/\\s+/g,' ').slice(0,300)})" },
+  { "look": [-400, 0], "steps": 6 }, { "wait": 400 }, { "shot": "07_side" },
+  { "eval": "JSON.stringify({txt: document.body.innerText.replace(/\\s+/g,' ').slice(0,300)})" }
+ ]
+}

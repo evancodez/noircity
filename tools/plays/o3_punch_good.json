@@ -1,0 +1,35 @@
+{
+ "about": "[O3] the walk-over arrest, good: a man punched before a beat cop; as he comes I run (Shift) round the corner - the search, then 'Clear.'. Twice.",
+ "url": "/?mute=1&start=city",
+ "size": [
+  1280,
+  800
+ ],
+ "out": "shots/o3/o3_punch_good",
+ "steps": [
+  {
+   "wait": 1500
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]",
+   "taken": "G.state !== 'title'",
+   "retries": 5,
+   "every": 4000
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'city' && G.scenes.fadeK < 0.05 && !!G.people",
+   "timeout": 30000
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "drive": "tools/lib/o3_people.mjs",
+   "mode": "punch",
+   "then": "run",
+   "tries": 2,
+   "check": "D.ok",
+   "label": "punch seen, good: away and lost (twice)"
+  }
+ ]
+}

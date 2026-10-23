@@ -1,0 +1,181 @@
+{
+ "about": "[O5 critic] the bar stool: sat down (E), the bar top before me; how does a first-timer get up? E three times as the card says, W held, then a look away and E",
+ "url": "/?mute=1&start=city",
+ "size": [
+  1280,
+  800
+ ],
+ "out": "shots/critic_o5/stool",
+ "steps": [
+  {
+   "wait": 1500
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]",
+   "taken": "G.state !== 'title'",
+   "retries": 5,
+   "every": 4000
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'city' && G.scenes.fadeK < 0.05",
+   "timeout": 25000
+  },
+  {
+   "eval": "(() => { const s = G.city.places.byId.get('bar1'), d = s.door; const x = d.x + d.nx * 3, z = d.z + d.nz * 3; G.stage.part('stream').warmAround(x, z); N.controller.setPose(x, z, Math.atan2(d.nx, d.nz), -0.05); window.__m = []; const m0 = G.hud.message.bind(G.hud); G.hud.message = (t, s) => { window.__m.push(t); return m0(t, s); }; return 1; })()"
+  },
+  {
+   "wait": 2500
+  },
+  {
+   "key": "KeyE",
+   "hold": 70
+  },
+  {
+   "wait": 700
+  },
+  {
+   "walk": "(()=>{const s=G.city.places.byId.get('bar1'),F=s.frame,S=s.live.K.seats.find(x=>/stool16/.test(x.name));return [[0,-1.8],[S.x,S.z+1.4]].map(([x,z])=>{const p=F.w(x,z);return [p.x,p.z]})})()",
+   "timeout": 10000,
+   "stop": false
+  },
+  {
+   "look": "(()=>{const s=G.city.places.byId.get('bar1'),F=s.frame,S=s.live.K.seats.find(x=>/stool16/.test(x.name)),a=F.v(S.at[0],S.at[1],S.at[2]);const dx=a.x-G.eye.x,dz=a.z-G.eye.z,dy=a.y-G.eye.y;const w=Math.atan2(-dx,-dz);const e=Math.atan2(Math.sin(w-N.controller.yaw),Math.cos(w-N.controller.yaw));const p=Math.atan2(dy,Math.hypot(dx,dz));return [Math.round(-e/N.controller.sensitivity),Math.round(-(p-N.controller.pitch)/N.controller.sensitivity)]})()",
+   "steps": 6
+  },
+  {
+   "wait": 300
+  },
+  {
+   "eval": "'before: prompt '+G.hud.promptShown"
+  },
+  {
+   "key": "KeyE",
+   "hold": 70
+  },
+  {
+   "wait": 1200
+  },
+  {
+   "shot": "sat"
+  },
+  {
+   "eval": "'sat: seat '+!!G.city.places.seat+' prompt '+G.hud.promptShown+' | hud '+document.getElementById('hud').innerText.replace(/\\s+/g,' ').slice(0,120)"
+  },
+  {
+   "key": "KeyE",
+   "hold": 70
+  },
+  {
+   "wait": 900
+  },
+  {
+   "eval": "'E #1: seat '+!!G.city.places.seat+' prompt '+G.hud.promptShown+' msgs '+window.__m.join(' / ')+' $'+(G.save.money||0)"
+  },
+  {
+   "key": "KeyE",
+   "hold": 70
+  },
+  {
+   "wait": 900
+  },
+  {
+   "eval": "'E #2: seat '+!!G.city.places.seat+' prompt '+G.hud.promptShown+' msgs '+window.__m.join(' / ')"
+  },
+  {
+   "key": "KeyE",
+   "hold": 70
+  },
+  {
+   "wait": 900
+  },
+  {
+   "eval": "'E #3: seat '+!!G.city.places.seat+' prompt '+G.hud.promptShown+' msgs '+window.__m.join(' / ')+' hp '+Math.round(G.health.hp)"
+  },
+  {
+   "key": "KeyW",
+   "hold": 1200
+  },
+  {
+   "wait": 300
+  },
+  {
+   "eval": "'W held 1.2 s: seat '+!!G.city.places.seat+' mode '+N.controller.mode"
+  },
+  {
+   "key": "KeyS",
+   "hold": 600
+  },
+  {
+   "key": "Space",
+   "hold": 100
+  },
+  {
+   "wait": 300
+  },
+  {
+   "eval": "'S, SPACE: seat '+!!G.city.places.seat"
+  },
+  {
+   "look": [
+    700,
+    0
+   ],
+   "steps": 8
+  },
+  {
+   "wait": 400
+  },
+  {
+   "eval": "'looked away: prompt '+G.hud.promptShown"
+  },
+  {
+   "key": "KeyE",
+   "hold": 70
+  },
+  {
+   "wait": 1000
+  },
+  {
+   "eval": "'E looking away: seat '+!!G.city.places.seat+' mode '+N.controller.mode"
+  },
+  {
+   "eval": "'G.interact.current '+(G.interact.current&&(G.interact.current.prompt||'obj'))+' seatLock '+G.city.places.seatLock+' modeT '+N.controller.modeT.toFixed(2)"
+  },
+  {
+   "key": "KeyE",
+   "hold": 150
+  },
+  {
+   "wait": 1000
+  },
+  {
+   "eval": "'E again (150 ms): seat '+!!G.city.places.seat+' prompt '+G.hud.promptShown"
+  },
+  {
+   "look": [
+    -1400,
+    0
+   ],
+   "steps": 10
+  },
+  {
+   "wait": 400
+  },
+  {
+   "eval": "'looked the other way: prompt '+G.hud.promptShown"
+  },
+  {
+   "key": "KeyE",
+   "hold": 100
+  },
+  {
+   "wait": 1000
+  },
+  {
+   "eval": "'E: seat '+!!G.city.places.seat+' mode '+N.controller.mode"
+  },
+  {
+   "shot": "stuck"
+  }
+ ]
+}

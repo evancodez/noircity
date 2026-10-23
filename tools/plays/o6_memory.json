@@ -1,0 +1,15 @@
+{
+ "about": "[O6] Memory flat after a hundred cycles (brief O6 §3): the bed's hundred beat - a hundred things in the road - every one knocked over by a blast's push, held a moment, then everything mended (Smash.mendAll: the pools take back their instances and pieces), a hundred times; the JS heap and the renderer's geometries and textures read every 25 cycles. node tools/play.mjs tools/plays/o6_memory.json",
+ "url": "/?mute=1&start=smash.hundred",
+ "size": [1280, 800],
+ "out": "shots/o6/memory",
+ "steps": [
+  { "wait": 1500 },
+  { "clickOn": "#title .opt[data-k=begin]", "taken": "G.state !== 'title'", "retries": 5, "every": 4000 },
+  { "until": "G.scenes.current && G.scenes.current.id === 'smash' && G.scenes.fadeK < 0.05", "timeout": 30000 },
+  { "wait": 6000 },
+  { "drive": "tools/lib/o6_smash.mjs", "mode": "memory", "cycles": 100, "hold": 600,
+    "check": "D.reads.length === 5 && D.reads[4].geo <= D.reads[1].geo + 2 && D.reads[4].tex <= D.reads[1].tex && D.reads[4].solids <= D.reads[1].solids + 2 && D.reads[4].heap <= D.reads[1].heap * 1.15",
+    "label": "geometries, textures, solids and the heap flat over a hundred cycles" }
+ ]
+}

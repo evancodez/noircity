@@ -184,3 +184,25 @@ car at the kerb by them (`stepsNear(x, z)`). M is the map (`mapKey: true` on
 the scene leaves the sound alone; O7 moves the map to the pause card). Look
 development: `?scene=city&beat=roam&car=x,z,yaw` (in the car there),
 `&pose=x,z,yaw,pitch` (the eye there), `&at=<id>`.
+
+---------------------------------------------------------------------------
+## 8. The streets dressed (lane O1b; `docs/reports/O1b.md` §5 has the seams in full)
+
+`generate()` ends with `dress(C)` (`src/world/dressing.js`), which adds:
+
+| field | what |
+| --- | --- |
+| `lot.fc` | a lot's street faces `[{ a, b, n, mid, len, st, name, hw, p, ch }]` (`ch`: `src/world/streets.js` `character(street, district)`); `lot.ch`, `lot.mat`, `lot.win`, `lot.st` its main face's; `lot.unique` when it carries one |
+| `win.trade` | a shop front's trade (`lotWindows` shop windows), by its street |
+| `C.lamps[].style` | `goose` `globe` `bracket` `hung` `dish` (`street.js` `LAMP_STYLES`; `placeLamp` / `lampHead` read it); a bracket's and a hung lamp's `kind` is `'wall'` (no post); `hanging` for globe and hung (the cone straight down); a hung lamp's `span` |
+| `C.dress` | the pavement things, one record each `{ id, kind, x, z, yaw, v, chunk, r or hx/hz, face, tag, smash }`, their colliders in `C.posts` / `C.walls` (`dress: rec`) |
+| `C.trees` | `{ x, z, kind, v, s, chunk, street | park }` (trunks in `C.posts`, tag `tree`) |
+| `C.uniques` | the one thing mid-block a street `{ kind, street, x, z, nx, nz, len, lot, chunk }`; the Hill's lane `{ kind: 'lane', pts, walls }` |
+| `C.itemSpots` | `{ kind: cash rounds bottle matchbook paper, x, y, z, yaw, place?, name? }` |
+| `C.steps` | the quay's and the piers' steps `{ x, z, dx, dz, nx, nz, len, top, step, foot, lamp, kind }` |
+
+Parts: `dressing` (62: `warmAround`, `loaded`, `stats`, `vents`), `items` (64:
+`drop(kind, x, z, opts)`, `glovebox(car)`, `taken`, `list`), `ambience` (66:
+`startle(x, z, r)`, `flocks`, `flushed`). `stream.doorNear` keeps doors by
+where they stand; `stream.addDoor(d)` adds a door that is no lot's (the el's
+stair gates: `door.gate === 'el'`). The news: `newsOf(G).say(line, where)`.

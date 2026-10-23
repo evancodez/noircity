@@ -1,0 +1,285 @@
+{
+ "about": "[O4 critic] the gun shop poked at: everything on the counter, E on each, beyond the money",
+ "url": "/?mute=1&o4stay=1&start=o4.shop",
+ "size": [
+  1280,
+  800
+ ],
+ "out": "shots/critic/shop",
+ "steps": [
+  {
+   "until": "G.state === 'title' && !!document.querySelector('#title .opt[data-k=begin]')",
+   "timeout": 60000
+  },
+  {
+   "wait": 1000
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]",
+   "taken": "G.scenes.current && G.scenes.current.id === 'o4'",
+   "retries": 4
+  },
+  {
+   "until": "G.scenes.beat === 'shop' && !G.failing",
+   "timeout": 30000
+  },
+  {
+   "eval": "(G.o4stay = true)"
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "eval": "({t:+G.time.toFixed(1),me:[+G.eye.x.toFixed(2),+G.eye.z.toFixed(2)],prompt:G.hud.promptShown||'',obj:G.hud.objectiveText||'',say:(document.querySelector('#hud')||{}).innerText.replace(/\\s+/g,' ').slice(0,260),money:G.save.money,ammo:JSON.stringify(G.save.ammo||{}),gun:G.player.weapons.current,rounds:(G.player.weapons.active||{}).rounds,pocket:(G.player.weapons.active||{}).pocket})"
+  },
+  {
+   "shot": "s0_counter"
+  },
+  {
+   "look": [
+    -60,
+    0
+   ],
+   "steps": 3
+  },
+  {
+   "wait": 350
+  },
+  {
+   "eval": "({t:+G.time.toFixed(1),me:[+G.eye.x.toFixed(2),+G.eye.z.toFixed(2)],prompt:G.hud.promptShown||'',obj:G.hud.objectiveText||'',say:(document.querySelector('#hud')||{}).innerText.replace(/\\s+/g,' ').slice(0,260),money:G.save.money,ammo:JSON.stringify(G.save.ammo||{}),gun:G.player.weapons.current,rounds:(G.player.weapons.active||{}).rounds,pocket:(G.player.weapons.active||{}).pocket})"
+  },
+  {
+   "key": "KeyE"
+  },
+  {
+   "wait": 700
+  },
+  {
+   "eval": "({t:+G.time.toFixed(1),me:[+G.eye.x.toFixed(2),+G.eye.z.toFixed(2)],prompt:G.hud.promptShown||'',obj:G.hud.objectiveText||'',say:(document.querySelector('#hud')||{}).innerText.replace(/\\s+/g,' ').slice(0,260),money:G.save.money,ammo:JSON.stringify(G.save.ammo||{}),gun:G.player.weapons.current,rounds:(G.player.weapons.active||{}).rounds,pocket:(G.player.weapons.active||{}).pocket})"
+  },
+  {
+   "look": [
+    25,
+    0
+   ],
+   "steps": 3
+  },
+  {
+   "wait": 350
+  },
+  {
+   "eval": "({t:+G.time.toFixed(1),me:[+G.eye.x.toFixed(2),+G.eye.z.toFixed(2)],prompt:G.hud.promptShown||'',obj:G.hud.objectiveText||'',say:(document.querySelector('#hud')||{}).innerText.replace(/\\s+/g,' ').slice(0,260),money:G.save.money,ammo:JSON.stringify(G.save.ammo||{}),gun:G.player.weapons.current,rounds:(G.player.weapons.active||{}).rounds,pocket:(G.player.weapons.active||{}).pocket})"
+  },
+  {
+   "key": "KeyE"
+  },
+  {
+   "wait": 700
+  },
+  {
+   "eval": "({t:+G.time.toFixed(1),me:[+G.eye.x.toFixed(2),+G.eye.z.toFixed(2)],prompt:G.hud.promptShown||'',obj:G.hud.objectiveText||'',say:(document.querySelector('#hud')||{}).innerText.replace(/\\s+/g,' ').slice(0,260),money:G.save.money,ammo:JSON.stringify(G.save.ammo||{}),gun:G.player.weapons.current,rounds:(G.player.weapons.active||{}).rounds,pocket:(G.player.weapons.active||{}).pocket})"
+  },
+  {
+   "look": [
+    25,
+    0
+   ],
+   "steps": 3
+  },
+  {
+   "wait": 350
+  },
+  {
+   "eval": "({t:+G.time.toFixed(1),me:[+G.eye.x.toFixed(2),+G.eye.z.toFixed(2)],prompt:G.hud.promptShown||'',obj:G.hud.objectiveText||'',say:(document.querySelector('#hud')||{}).innerText.replace(/\\s+/g,' ').slice(0,260),money:G.save.money,ammo:JSON.stringify(G.save.ammo||{}),gun:G.player.weapons.current,rounds:(G.player.weapons.active||{}).rounds,pocket:(G.player.weapons.active||{}).pocket})"
+  },
+  {
+   "key": "KeyE"
+  },
+  {
+   "wait": 700
+  },
+  {
+   "eval": "({t:+G.time.toFixed(1),me:[+G.eye.x.toFixed(2),+G.eye.z.toFixed(2)],prompt:G.hud.promptShown||'',obj:G.hud.objectiveText||'',say:(document.querySelector('#hud')||{}).innerText.replace(/\\s+/g,' ').slice(0,260),money:G.save.money,ammo:JSON.stringify(G.save.ammo||{}),gun:G.player.weapons.current,rounds:(G.player.weapons.active||{}).rounds,pocket:(G.player.weapons.active||{}).pocket})"
+  },
+  {
+   "look": [
+    25,
+    0
+   ],
+   "steps": 3
+  },
+  {
+   "wait": 350
+  },
+  {
+   "eval": "({t:+G.time.toFixed(1),me:[+G.eye.x.toFixed(2),+G.eye.z.toFixed(2)],prompt:G.hud.promptShown||'',obj:G.hud.objectiveText||'',say:(document.querySelector('#hud')||{}).innerText.replace(/\\s+/g,' ').slice(0,260),money:G.save.money,ammo:JSON.stringify(G.save.ammo||{}),gun:G.player.weapons.current,rounds:(G.player.weapons.active||{}).rounds,pocket:(G.player.weapons.active||{}).pocket})"
+  },
+  {
+   "key": "KeyE"
+  },
+  {
+   "wait": 700
+  },
+  {
+   "eval": "({t:+G.time.toFixed(1),me:[+G.eye.x.toFixed(2),+G.eye.z.toFixed(2)],prompt:G.hud.promptShown||'',obj:G.hud.objectiveText||'',say:(document.querySelector('#hud')||{}).innerText.replace(/\\s+/g,' ').slice(0,260),money:G.save.money,ammo:JSON.stringify(G.save.ammo||{}),gun:G.player.weapons.current,rounds:(G.player.weapons.active||{}).rounds,pocket:(G.player.weapons.active||{}).pocket})"
+  },
+  {
+   "look": [
+    25,
+    0
+   ],
+   "steps": 3
+  },
+  {
+   "wait": 350
+  },
+  {
+   "eval": "({t:+G.time.toFixed(1),me:[+G.eye.x.toFixed(2),+G.eye.z.toFixed(2)],prompt:G.hud.promptShown||'',obj:G.hud.objectiveText||'',say:(document.querySelector('#hud')||{}).innerText.replace(/\\s+/g,' ').slice(0,260),money:G.save.money,ammo:JSON.stringify(G.save.ammo||{}),gun:G.player.weapons.current,rounds:(G.player.weapons.active||{}).rounds,pocket:(G.player.weapons.active||{}).pocket})"
+  },
+  {
+   "key": "KeyE"
+  },
+  {
+   "wait": 700
+  },
+  {
+   "eval": "({t:+G.time.toFixed(1),me:[+G.eye.x.toFixed(2),+G.eye.z.toFixed(2)],prompt:G.hud.promptShown||'',obj:G.hud.objectiveText||'',say:(document.querySelector('#hud')||{}).innerText.replace(/\\s+/g,' ').slice(0,260),money:G.save.money,ammo:JSON.stringify(G.save.ammo||{}),gun:G.player.weapons.current,rounds:(G.player.weapons.active||{}).rounds,pocket:(G.player.weapons.active||{}).pocket})"
+  },
+  {
+   "look": [
+    25,
+    0
+   ],
+   "steps": 3
+  },
+  {
+   "wait": 350
+  },
+  {
+   "eval": "({t:+G.time.toFixed(1),me:[+G.eye.x.toFixed(2),+G.eye.z.toFixed(2)],prompt:G.hud.promptShown||'',obj:G.hud.objectiveText||'',say:(document.querySelector('#hud')||{}).innerText.replace(/\\s+/g,' ').slice(0,260),money:G.save.money,ammo:JSON.stringify(G.save.ammo||{}),gun:G.player.weapons.current,rounds:(G.player.weapons.active||{}).rounds,pocket:(G.player.weapons.active||{}).pocket})"
+  },
+  {
+   "key": "KeyE"
+  },
+  {
+   "wait": 700
+  },
+  {
+   "eval": "({t:+G.time.toFixed(1),me:[+G.eye.x.toFixed(2),+G.eye.z.toFixed(2)],prompt:G.hud.promptShown||'',obj:G.hud.objectiveText||'',say:(document.querySelector('#hud')||{}).innerText.replace(/\\s+/g,' ').slice(0,260),money:G.save.money,ammo:JSON.stringify(G.save.ammo||{}),gun:G.player.weapons.current,rounds:(G.player.weapons.active||{}).rounds,pocket:(G.player.weapons.active||{}).pocket})"
+  },
+  {
+   "look": [
+    25,
+    0
+   ],
+   "steps": 3
+  },
+  {
+   "wait": 350
+  },
+  {
+   "eval": "({t:+G.time.toFixed(1),me:[+G.eye.x.toFixed(2),+G.eye.z.toFixed(2)],prompt:G.hud.promptShown||'',obj:G.hud.objectiveText||'',say:(document.querySelector('#hud')||{}).innerText.replace(/\\s+/g,' ').slice(0,260),money:G.save.money,ammo:JSON.stringify(G.save.ammo||{}),gun:G.player.weapons.current,rounds:(G.player.weapons.active||{}).rounds,pocket:(G.player.weapons.active||{}).pocket})"
+  },
+  {
+   "key": "KeyE"
+  },
+  {
+   "wait": 700
+  },
+  {
+   "eval": "({t:+G.time.toFixed(1),me:[+G.eye.x.toFixed(2),+G.eye.z.toFixed(2)],prompt:G.hud.promptShown||'',obj:G.hud.objectiveText||'',say:(document.querySelector('#hud')||{}).innerText.replace(/\\s+/g,' ').slice(0,260),money:G.save.money,ammo:JSON.stringify(G.save.ammo||{}),gun:G.player.weapons.current,rounds:(G.player.weapons.active||{}).rounds,pocket:(G.player.weapons.active||{}).pocket})"
+  },
+  {
+   "shot": "s1_after"
+  },
+  {
+   "look": [
+    -30,
+    0
+   ],
+   "steps": 3
+  },
+  {
+   "wait": 300
+  },
+  {
+   "key": "KeyE"
+  },
+  {
+   "wait": 600
+  },
+  {
+   "eval": "({t:+G.time.toFixed(1),me:[+G.eye.x.toFixed(2),+G.eye.z.toFixed(2)],prompt:G.hud.promptShown||'',obj:G.hud.objectiveText||'',say:(document.querySelector('#hud')||{}).innerText.replace(/\\s+/g,' ').slice(0,260),money:G.save.money,ammo:JSON.stringify(G.save.ammo||{}),gun:G.player.weapons.current,rounds:(G.player.weapons.active||{}).rounds,pocket:(G.player.weapons.active||{}).pocket})"
+  },
+  {
+   "look": [
+    -30,
+    0
+   ],
+   "steps": 3
+  },
+  {
+   "wait": 300
+  },
+  {
+   "key": "KeyE"
+  },
+  {
+   "wait": 600
+  },
+  {
+   "eval": "({t:+G.time.toFixed(1),me:[+G.eye.x.toFixed(2),+G.eye.z.toFixed(2)],prompt:G.hud.promptShown||'',obj:G.hud.objectiveText||'',say:(document.querySelector('#hud')||{}).innerText.replace(/\\s+/g,' ').slice(0,260),money:G.save.money,ammo:JSON.stringify(G.save.ammo||{}),gun:G.player.weapons.current,rounds:(G.player.weapons.active||{}).rounds,pocket:(G.player.weapons.active||{}).pocket})"
+  },
+  {
+   "look": [
+    -30,
+    0
+   ],
+   "steps": 3
+  },
+  {
+   "wait": 300
+  },
+  {
+   "key": "KeyE"
+  },
+  {
+   "wait": 600
+  },
+  {
+   "eval": "({t:+G.time.toFixed(1),me:[+G.eye.x.toFixed(2),+G.eye.z.toFixed(2)],prompt:G.hud.promptShown||'',obj:G.hud.objectiveText||'',say:(document.querySelector('#hud')||{}).innerText.replace(/\\s+/g,' ').slice(0,260),money:G.save.money,ammo:JSON.stringify(G.save.ammo||{}),gun:G.player.weapons.current,rounds:(G.player.weapons.active||{}).rounds,pocket:(G.player.weapons.active||{}).pocket})"
+  },
+  {
+   "look": [
+    -30,
+    0
+   ],
+   "steps": 3
+  },
+  {
+   "wait": 300
+  },
+  {
+   "key": "KeyE"
+  },
+  {
+   "wait": 600
+  },
+  {
+   "eval": "({t:+G.time.toFixed(1),me:[+G.eye.x.toFixed(2),+G.eye.z.toFixed(2)],prompt:G.hud.promptShown||'',obj:G.hud.objectiveText||'',say:(document.querySelector('#hud')||{}).innerText.replace(/\\s+/g,' ').slice(0,260),money:G.save.money,ammo:JSON.stringify(G.save.ammo||{}),gun:G.player.weapons.current,rounds:(G.player.weapons.active||{}).rounds,pocket:(G.player.weapons.active||{}).pocket})"
+  },
+  {
+   "name": "walk into counter",
+   "walk": "[[G.eye.x-4,G.eye.z]]",
+   "into": true,
+   "timeout": 4000
+  },
+  {
+   "eval": "({t:+G.time.toFixed(1),me:[+G.eye.x.toFixed(2),+G.eye.z.toFixed(2)],prompt:G.hud.promptShown||'',obj:G.hud.objectiveText||'',say:(document.querySelector('#hud')||{}).innerText.replace(/\\s+/g,' ').slice(0,260),money:G.save.money,ammo:JSON.stringify(G.save.ammo||{}),gun:G.player.weapons.current,rounds:(G.player.weapons.active||{}).rounds,pocket:(G.player.weapons.active||{}).pocket})"
+  },
+  {
+   "name": "wheel",
+   "eval": "1"
+  }
+ ]
+}

@@ -1,0 +1,132 @@
+{
+ "about": "[O5] The pad alone (?padfake=1): BEGIN, a place's door (square: E), in, a seat (square), up (square).",
+ "url": "/?mute=1&start=city&padfake=1",
+ "size": [
+  1280,
+  800
+ ],
+ "out": "shots/o5/pad",
+ "input": "pad",
+ "steps": [
+  {
+   "until": "G.state === 'title' && !document.getElementById('title').classList.contains('hidden')",
+   "timeout": 60000
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "pad": {
+    "b": [
+     "x"
+    ],
+    "secs": 0.12
+   }
+  },
+  {
+   "wait": 400
+  },
+  {
+   "pad": {
+    "b": [
+     "x"
+    ],
+    "secs": 0.12
+   }
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'city' && G.scenes.fadeK < 0.05",
+   "timeout": 60000
+  },
+  {
+   "wait": 1000
+  },
+  {
+   "eval": "(() => { const s = G.city.places.byId.get('diner'), F = s.frame; const p = F.w(0, 3.0); G.stage.part('stream').warmAround(p.x, p.z); N.controller.setPose(p.x, p.z, F.yaw(0), -0.05); return 1; })()"
+  },
+  {
+   "wait": 2500
+  },
+  {
+   "name": "the door",
+   "expect": "/go in/.test(G.hud.promptShown)"
+  },
+  {
+   "pad": {
+    "b": [
+     "sq"
+    ],
+    "secs": 0.35
+   }
+  },
+  {
+   "wait": 700
+  },
+  {
+   "name": "the door opens",
+   "expect": "!G.city.places.byId.get('diner').live.street[0].shut"
+  },
+  {
+   "pad": {
+    "a": [
+     0,
+     -1,
+     0,
+     0
+    ],
+    "secs": 1.6
+   }
+  },
+  {
+   "wait": 400
+  },
+  {
+   "name": "inside",
+   "expect": "G.city.places.inside && G.city.places.inside.id === 'diner'"
+  },
+  {
+   "eval": "(() => { const s = G.city.places.byId.get('diner'), F = s.frame, K = s.live.K; const S = K.seats[0]; const a = F.v(S.at[0], S.at[1], S.at[2]); const p = F.w(S.x, S.z + 1.0); N.controller.setPose(p.x, p.z, Math.atan2(-(a.x - p.x), -(a.z - p.z)), -0.6); return 1; })()"
+  },
+  {
+   "until": "/sit/.test(G.hud.promptShown)",
+   "timeout": 10000
+  },
+  {
+   "pad": {
+    "b": [
+     "sq"
+    ],
+    "secs": 0.35
+   }
+  },
+  {
+   "until": "!!G.city.places.seat",
+   "timeout": 8000
+  },
+  {
+   "name": "seated",
+   "expect": "!!G.city.places.seat"
+  },
+  {
+   "eval": "(() => { N.controller.yaw += 2.6; return 1; })()"
+  },
+  {
+   "wait": 300
+  },
+  {
+   "pad": {
+    "b": [
+     "sq"
+    ],
+    "secs": 0.35
+   }
+  },
+  {
+   "wait": 900
+  },
+  {
+   "name": "up",
+   "expect": "!G.city.places.seat"
+  }
+ ]
+}

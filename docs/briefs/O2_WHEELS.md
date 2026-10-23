@@ -7,6 +7,7 @@ you) and on the destruction set (lane O6, `docs/seams/SMASH.md`: a car's
 damage states, its fire and its wreck are O6's rule; you call it, you do
 not redo it). The user's words:
 
+- **[must]** "When in a car, allow a third person view mode too." (The user, 2026-10-23.) V in a car (the pad's R3) toggles between the seat and a camera behind the car: a smooth follow (a spring on position and heading, a touch of lag in turns and under the brake, never through a wall: it comes in on a wall or a column, pulled by a sphere cast), the car seen whole in the ink (its damage, its lamps, its wheels turning), the eye high enough to read the street, the look stick swinging the view round the car and settling behind it; reverse looks back; the choice remembered in the save; the HUD and the minimap unchanged; the aim out of the window stays first person (RMB brings the seat back while held). The ink pipeline and the rain must hold from outside the car as they do inside.
 - **[must]** "A variety of cars (not a ton for now but yk). Make it a world that feels not overly copy-paste." (The user, 2026-10-23.) The fleet's kinds each in two or three visible variants (body: two-door, four-door, a roof up or down, a pickup bed; livery: the taxi's band and roof light, the police markings, the vans' painted names, the hearse; grilles, lamps, wheels, a dent or a scrape on some parked ones), picked by a seeded hash of the bay or the lane, so no street of parked cars reads as one car repeated.
 - **[must]** "You should be able to drive around."
 - **[must]** "Hijack cars and various cars."
@@ -125,3 +126,39 @@ drive and a hijack. Edits to shared files marked `// [O2]`. Report
 `docs/reports/O2.md` with "For other lanes" (how a system asks for a
 car at a point, how the police car hunts, `traffic.alarm`, the hijack's
 events, the garage's save). Hours, not days.
+
+## From the cold play of the merged city (`docs/reports/CITY_COLD_PLAY.md`): yours
+Yours, in your fix pass: **finding 5**, the coupe tops out at 75 km/h
+(`vmax` 22.5 in `src/vehicles/Car.js` line 33): a faster coupe for the
+Straight, the lorry slow, each kind its own top speed that reads; and
+**finding 4's cabin**: it fills about two fifths of the frame from the
+seat (a lower dash or a wider view from the seat): the districts must read
+from the car. Keep the cabin's craft the report praises (the drops on the
+glass, the wiper, the mascot, the mirror).
+
+## From the performance audit (`docs/reports/PERF_AUDIT.md`): yours
+Hold your merge to the audit's budget table (its section 5). Yours, in
+your fix pass (or your build if you read this first): `src/world/Cars.js`
+`spawn` draws 12 meshes per car and `src/stages/noircity/parts/cars.js`
+`update` never calls `lodUpdate`, so every car is drawn at full detail at
+any range. A **one-draw far build** beyond about 36 m, with `lodUpdate`
+called every tick (30 cars from about 400 draws to under 90), and the
+variants' extra parts inside that budget.
+
+## From lane O5's merge (2026-10-23, main 407278b): yours
+O5's garage (`src/places/rooms/garage.js`): the mechanic fixes ($15) or
+repaints ($10) the car parked outside, but the garage stores no car. Yours:
+a car left at the garage is kept (one bay: the save holds it, the sheet goes
+over it), taken again from the mechanic; and the repaint through your
+variants (a new colour and plate, the heat off it: the reason to repaint).
+
+## From lane O3's merge (2026-10-23, main 768adb5): yours
+O3's police drive a stand-in patrol car on the base's Car.js and pilot.js
+(`src/police/`), with a red roof lamp, a siren, the prowl of the search and
+the roadblock; it once never reached an idle player in 120 s, and a car
+stuck for good is not replaced the way men on foot are. Yours at your fix
+pass: the patrol car on your model, lamp, siren and hunting pilot
+(`traffic.alarm`, the brief's §3), a stuck unit replaced, and the chase's
+knocks felt in the wheel without burning the car (O6b's wear). O3's plays
+`o3_chase_idle`, `o3_chase_medium`, `o3_roadblock` and `o3_pad_chase` are
+the measure.

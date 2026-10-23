@@ -1,0 +1,94 @@
+{
+ "about": "[O4] after the critic: the gun in a fist fight - the wheel draws the revolver in the street fight (the night's own, given once a save), the fight is over, the driver runs ('He ran.', the 'crime' event for lane O3's heat), the revolver in hand in the gun's footwork; a round after him puts him down where he ran. By real input.",
+ "url": "/?mute=1&o4stay=1&start=o4.brawl1",
+ "size": [
+  1280,
+  800
+ ],
+ "out": "shots/o4/draw",
+ "steps": [
+  {
+   "until": "G.state === 'title' && !!document.querySelector('#title .opt[data-k=begin]')",
+   "timeout": 60000
+  },
+  {
+   "wait": 800
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]",
+   "taken": "G.scenes.current && G.scenes.current.id === 'o4'",
+   "retries": 4
+  },
+  {
+   "until": "G.scenes.beat === 'brawl1' && G.crowd.active && G.crowd.seen() && !G.failing",
+   "timeout": 30000
+  },
+  {
+   "eval": "(window.__crime = [], G.on('crime', (e) => window.__crime.push(e.kind + (e.cop ? ':cop' : ''))), G.o4stay = true, ({ owns: G.save.inventory, money: G.save.money }))"
+  },
+  {
+   "expect": "G.save.inventory.includes('revolver')"
+  },
+  {
+   "until": "G.crowd.men.some((m) => Math.hypot(m.c.pos.x - G.eye.x, m.c.pos.z - G.eye.z) < 2.6)",
+   "timeout": 8000
+  },
+  {
+   "name": "(the cursor to the frame's middle first: the play tool's first trusted move)",
+   "look": [
+    2,
+    0
+   ],
+   "steps": 1
+  },
+  {
+   "wait": 400
+  },
+  {
+   "name": "the wheel: the revolver out",
+   "drive": "tools/lib/o4_wheel.mjs",
+   "dy": 100,
+   "check": "D.ok"
+  },
+  {
+   "until": "G.crowd.result === 'drawn'",
+   "timeout": 3000
+  },
+  {
+   "wait": 500
+  },
+  {
+   "eval": "({res:G.crowd.result,act:G.crowd.active,gun:G.player.weapons.current,mode:N.controller.mode,say:N.hud.lastSay,crime:window.__crime,men:G.crowd.men.map(m=>[m.kind,m.state,!!m.off,!!m.removed,+Math.hypot(m.c.pos.x-G.eye.x,m.c.pos.z-G.eye.z).toFixed(1)])})"
+  },
+  {
+   "expect": "G.player.weapons.current === 'revolver' && N.controller.mode === 'gun' && /ran/.test(N.hud.lastSay || '') && window.__crime.includes('draw')"
+  },
+  {
+   "expect": "G.crowd.men.every((m) => m.off || m.removed)"
+  },
+  {
+   "shot": "he_runs"
+  },
+  {
+   "name": "a round after him",
+   "look": "(()=>{const C=N.controller,e=G.eye;const m=G.crowd.men.filter(m=>m.off&&!m.removed)[0];if(!m)return [0,0];const p=m.c.bones.chest.getWorldPosition(new N.THREE.Vector3());const look=Math.atan2(-Math.sin(C.yaw),-Math.cos(C.yaw));const a=Math.atan2(p.x-e.x,p.z-e.z);const r=Math.atan2(Math.sin(a-look),Math.cos(a-look));const wp=Math.atan2(p.y-e.y,Math.hypot(p.x-e.x,p.z-e.z));return [Math.round(-r/C.sensitivity),Math.round(-(wp-C.pitch)/C.sensitivity)]})()",
+   "steps": 3
+  },
+  {
+   "mouse": "click",
+   "button": "left"
+  },
+  {
+   "wait": 600
+  },
+  {
+   "eval": "({res:G.crowd.result,act:G.crowd.active,gun:G.player.weapons.current,mode:N.controller.mode,say:N.hud.lastSay,crime:window.__crime,men:G.crowd.men.map(m=>[m.kind,m.state,!!m.off,!!m.removed,+Math.hypot(m.c.pos.x-G.eye.x,m.c.pos.z-G.eye.z).toFixed(1)])})"
+  },
+  {
+   "expect": "G.crowd.men[0].state === 'out' && window.__crime.includes('shot')"
+  },
+  {
+   "shot": "he_falls"
+  }
+ ]
+}

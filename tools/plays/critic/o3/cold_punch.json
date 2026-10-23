@@ -1,0 +1,16 @@
+{
+ "about": "[O3 critic] cold: the title, the first seconds, a walk, the nearest walker punched, then hands off: what does the city do, and what does the screen say?",
+ "url": "/?mute=1",
+ "size": [1280, 800],
+ "out": "shots/critic_o3",
+ "steps": [
+  { "wait": 2500 },
+  { "eval": "document.querySelector('#title') && document.querySelector('#title').innerText.slice(0,300)" },
+  { "clickOn": "#title .opt[data-k=begin]", "taken": "G.state !== 'title'", "retries": 5, "every": 4000 },
+  { "until": "G.state === 'playing' && G.people && G.scenes.beat === 'roam'", "timeout": 25000 },
+  { "wait": 1200 },
+  { "eval": "[...document.querySelectorAll('body *')].filter(e=>e.offsetParent&&e.children.length===0&&e.innerText&&e.innerText.trim()).map(e=>(e.id||e.className)+': '+e.innerText.trim().slice(0,60)).join(' | ')" },
+  { "eval": "({ n: G.people.list.length, roles: G.people.list.reduce((a,p)=>(a[p.role]=(a[p.role]||0)+1,a),{}), heat: G.police.heat, eye: [G.eye.x, G.eye.z] })" },
+  { "drive": "tools/plays/critic/o3/cold.mjs", "mode": "punch", "after": "idle", "secs": 120, "shots": false }
+ ]
+}

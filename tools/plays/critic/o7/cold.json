@@ -1,0 +1,32 @@
+{
+ "about": "[O7 critic] cold: the title as a first-timer sees it, BEGIN, what the screen says, a look round, E at the car, a drive, M, Tab, Esc",
+ "url": "/?mute=1",
+ "size": [1280, 800],
+ "out": "shots/critic_o7/cold",
+ "steps": [
+  { "wait": 3000 },
+  { "shot": "title" },
+  { "eval": "document.getElementById('title') && document.getElementById('title').innerText.replace(/\\s+/g,' ')" },
+  { "clickOn": "#title .opt[data-k=begin]", "taken": "G.state !== 'title'", "retries": 5, "every": 4000 },
+  { "until": "G.scenes.current && G.scenes.current.id === 'city' && G.scenes.fadeK < 0.05", "timeout": 25000 },
+  { "wait": 1500 },
+  { "shot": "first" },
+  { "eval": "'HUD: '+document.getElementById('hud').innerText.replace(/\\s+/g,' ').slice(0,400)" },
+  { "wait": 4000 },
+  { "eval": "'HUD4s: '+document.getElementById('hud').innerText.replace(/\\s+/g,' ').slice(0,400)" },
+  { "shot": "first4s" },
+  { "look": [900, 0], "steps": 10 }, { "wait": 500 }, { "shot": "look1" },
+  { "eval": "'HUDlook: '+document.getElementById('hud').innerText.replace(/\\s+/g,' ').slice(0,400)" },
+  { "look": [900, 0], "steps": 10 }, { "wait": 500 }, { "shot": "look2" },
+  { "eval": "'HUDlook2: '+document.getElementById('hud').innerText.replace(/\\s+/g,' ').slice(0,400)" },
+  { "key": "KeyM", "hold": 80 }, { "wait": 800 }, { "shot": "map" },
+  { "eval": "'state:'+G.state" },
+  { "key": "KeyM", "hold": 80 }, { "wait": 600 },
+  { "eval": "'state after 2nd M:'+G.state" },
+  { "down": "Tab" }, { "wait": 500 }, { "shot": "tab" },
+  { "eval": "'TAB: '+document.getElementById('hud').innerText.replace(/\\s+/g,' ').slice(0,400)" },
+  { "up": "Tab" },
+  { "key": "Escape", "hold": 60 }, { "wait": 800 }, { "shot": "pause" },
+  { "eval": "'state:'+G.state+' | '+document.body.innerText.replace(/\\s+/g,' ').slice(0,600)" }
+ ]
+}

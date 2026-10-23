@@ -1,0 +1,49 @@
+{
+ "about": "[O3 critic] a beat cop put 5 m ahead (the only staging); I walk up and punch him, then hands off in the fist fight for 100 s: do I lose, warned?",
+ "url": "/?mute=1",
+ "size": [
+  1280,
+  800
+ ],
+ "out": "shots/critic_o3",
+ "steps": [
+  {
+   "wait": 2500
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]",
+   "taken": "G.state !== 'title'",
+   "retries": 5,
+   "every": 4000
+  },
+  {
+   "until": "G.state === 'playing' && G.people && G.scenes.beat === 'roam'",
+   "timeout": 25000
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "eval": "(() => { const E = G.eye, y = G.controller.yaw, fx = -Math.sin(y), fz = -Math.cos(y); G.people.dbgCop(E.x + fx * 5, E.z + fz * 5, Math.atan2(-fx, -fz)); return 'cop 5 m ahead'; })()"
+  },
+  {
+   "drive": "tools/plays/critic/o3/cold.mjs",
+   "mode": "punch",
+   "role": "cop",
+   "run": false,
+   "hits": 1,
+   "after": "idle",
+   "secs": 100,
+   "shots": false
+  },
+  {
+   "wait": 5000
+  },
+  {
+   "eval": "({ beat: G.scenes.beat, heat: G.police.heat, fail: G.lastFail && G.lastFail.why, say: [...document.querySelectorAll('body *')].filter(e=>e.offsetParent&&e.children.length===0&&e.innerText&&e.innerText.trim()).map(e=>e.innerText.trim().slice(0,40)).join(' | ') })"
+  },
+  {
+   "shot": "o3c_wake"
+  }
+ ]
+}

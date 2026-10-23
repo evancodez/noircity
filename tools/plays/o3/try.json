@@ -1,0 +1,32 @@
+{
+ "about": "[O3] exploration (not a proof): punch a walker, watch the witnesses and the heat",
+ "url": "/?mute=1&start=city",
+ "size": [1280, 800],
+ "out": "shots/o3/try",
+ "steps": [
+  { "wait": 1500 },
+  { "clickOn": "#title .opt[data-k=begin]", "taken": "G.state !== 'title'", "retries": 5, "every": 4000 },
+  { "until": "G.scenes.current && G.scenes.current.id === 'city' && G.scenes.fadeK < 0.05", "timeout": 30000 },
+  { "until": "G.people && G.people.list.filter(p => p.role === 'walker').length >= 10", "timeout": 40000 },
+  { "eval": "(() => { const P = G.people, E = G.eye; const L = P.list.filter(p => p.role === 'walker' && p.standing).sort((a, b) => a.pos.distanceTo(E) - b.pos.distanceTo(E)); const p = L[0]; window.__v = p; const C = G.controller; const yaw = p.yaw; C.setPose(p.pos.x + Math.sin(yaw) * 1.3, p.pos.z + Math.cos(yaw) * 1.3, yaw, -0.15); p.stop(); p.mode = 'stand'; p.until = 30; p.t = 0; return [p.kind, P.list.length]; })()" },
+  { "wait": 400 },
+  { "mouse": "click" },
+  { "wait": 250 },
+  { "mouse": "click" },
+  { "wait": 600 },
+  { "shot": "punched" },
+  { "eval": "JSON.stringify({ log: G.crime.log.map(r => [r.kind, r.level, r.seen, r.reporters]), heat: G.police.heat, v: window.__v.mode, rep: G.people.list.filter(p => p.mode === 'report').map(p => [p.kind, p.phase, p.reportTo.box ? 'box' : 'cop']) })" },
+  { "wait": 6000 },
+  { "eval": "JSON.stringify({ heat: G.police.heat, state: G.police.state, rep: G.people.list.filter(p => p.mode === 'report').map(p => [p.kind, p.phase, +p.pos.distanceTo(G.eye).toFixed(1)]), ev: G.police.events.slice(-8) })" },
+  { "until": "G.police.heat > 0 || G.people.stats.reports > 0", "timeout": 40000, "stop": false },
+  { "eval": "JSON.stringify({ heat: G.police.heat, state: G.police.state, stats: G.people.stats, ev: G.police.events.slice(-10), cops: G.police.cops.map(c => [c.job, c.mode, +c.pos.distanceTo(G.eye).toFixed(1)]), obj: G.hud.objectiveText })" },
+  { "until": "G.police.cops.some(c => c.job === 'respond' && c.pos.distanceTo(G.eye) < 6)", "timeout": 60000, "stop": false },
+  { "shot": "cop_near" },
+  { "until": "G.failing || G.police.events.some(e => e.what === 'arrest')", "timeout": 20000, "stop": false },
+  { "eval": "JSON.stringify({ warn: G.hud.warnText, fail: G.lastFail, ev: G.police.events.slice(-6) })" },
+  { "until": "G.scenes.beat === 'station' && !G.failing", "timeout": 20000, "stop": false },
+  { "wait": 800 },
+  { "shot": "station" },
+  { "eval": "JSON.stringify({ beat: G.scenes.beat, heat: G.police.heat, gun: G.people.hands.hasGun, eye: [G.eye.x.toFixed(1), G.eye.z.toFixed(1)], money: G.save.money })" }
+ ]
+}

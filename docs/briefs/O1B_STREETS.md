@@ -86,3 +86,39 @@ kind picked up by E and its count seen); the train waits; the swim; the
 colour measure on ten frames; the city's golden frames re-taken with
 each change named and shown as better; errors clean at every start.
 Report `docs/reports/O1b.md`. Hours, not days.
+
+## From the cold play of the merged city (`docs/reports/CITY_COLD_PLAY.md`): yours
+Read that report's findings and its section 2 (what is good and must not
+be lost: the Grand Ave start, the lightning, the landmarks, the instant
+verbs, solid everywhere). These are yours, in your fix pass (or your build
+if you read this first):
+- **Finding 6 (a bug, first):** `doorNear` in `src/stages/noircity/parts/stream.js`
+  (line 144) searches only the chunks around the player while each door is
+  stored in its lot's chunk, so about one street door in four (139 of 602 at
+  the Grand Ave start) gives no prompt and E does nothing; O5's `city:door`
+  depends on that call. Fix it with a play that tries every door of a block
+  (O5 may land it first: whoever comes first; the other takes it from main).
+- **Findings 4, 7, 8, 9, 11:** the districts alike from the seat; the Hill's
+  lollipop trees and its blank-wall streets; every door the same door and
+  every wall at arm's length the same brush field; Pier 7's shed and the
+  bridge's leaves as blank slabs (and the stray tiles on the pier); the el's
+  stair that looks climbable, goes black at its foot and says nothing.
+- **Finding 3 (the look of the near ground):** a mid-grey wash with
+  camouflage blotches under a lamp (frame 1). Tune the city's ground
+  material through its uniforms (the near splatter and the wash darker, the
+  light in the reflections); if the shader itself needs a change, add a
+  uniform whose default keeps the base's golden frames (street, lamp, cars)
+  identical, marked `[O1b]`.
+
+## From the performance audit (`docs/reports/PERF_AUDIT.md`): yours
+Hold your merge to the audit's budget table (its section 5) and the
+drive's hitch bar. Yours, in your fix pass (or your build if you read this
+first): the lamp post `LAMP` in `src/city/kits/street.js` is about 1,300
+triangles per post merged into every chunk (43 to 49 % of the near city's
+triangles): a lighter post, or instanced; the el's `buildSteps` in
+`parts/el.js` makes a mesh per column bay (merge per 80 m); and the two
+hitches that are the game's own: `compileAll` in `compile.js` misses one
+program made on the first car entry (108 and 127 ms frames: compile it
+under the fade too), and `buildChunk`'s `mergeAll` in `stream.js` ran
+8.9 ms against its 4 ms budget (split it across steps). Memory is flat:
+keep it so.
