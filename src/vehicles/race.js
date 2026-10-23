@@ -78,10 +78,10 @@ export class Race {
       this.W.ownLamps(v);
       this.cars.push({ v, pace: RACE.paces[i], s: 0, done: false });
     }
-    // the man with the flag at the kerb by the line
+    // the man with the flag at the kerb up ahead of the line, facing the grid (seen from the pole)
     const p = this.path.pts[0];
     try {
-      const c = W.stage.cast.spawn('o2_fare', { at: { x: START.x + 8.4, z: START.z - 1 }, yaw: -Math.PI / 2, name: 'o2flag' });
+      const c = W.stage.cast.spawn('o2_fare', { at: { x: START.x + 7.4, z: START.z - 16 }, yaw: Math.atan2(-7.4, 20), name: 'o2flag' });
       c.hold(flagProp(W.stage), 'R');
       c.play('o2_flagUp');
       this.flag = c;

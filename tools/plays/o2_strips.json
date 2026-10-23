@@ -8,6 +8,6 @@
   { "clickOn": "#title .opt[data-k=begin]", "taken": "G.state !== 'title'", "retries": 5, "every": 4000 },
   { "until": "G.scenes.current && G.scenes.current.id === 'city' && G.scenes.fadeK < 0.05", "timeout": 20000 },
   { "wait": 800 },
-  { "drive": "tools/lib/o2_wheels.mjs", "mode": "pull", "hands": "good", "strip": 9 }
+  { "drive": "tools/lib/o2_wheels.mjs", "mode": "pull", "hands": "good", "strip": 9, "stripLook": -200 }
  ]
 }

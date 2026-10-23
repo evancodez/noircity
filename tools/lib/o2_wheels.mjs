@@ -197,7 +197,7 @@ async function park(P, { js, sleep, log, shot }, H) {
 }
 // ---- pull: the man at the wheel ---------------------------------------------------------------------
 // (&come=<kind>:<who>&held=1: a car comes up the near lane and stops beside the start's car)
-async function pull(P, { js, sleep, log, shot }, H) {
+async function pull(P, { js, sleep, log, shot, turn }, H) {
   const T0 = Date.now();
   let c = null;
   for (let i = 0; i < 300; i++) {
@@ -220,7 +220,7 @@ async function pull(P, { js, sleep, log, shot }, H) {
   const look = await js(`(() => { const L = G.wheels.hijack.look(G.city.car); return L ? { what: L.what, db: +L.db.toFixed(2), v: +L.o.speedAbs.toFixed(2) } : null; })()`);
   if (P.opts.strip && shot) await shot('strip_0');
   await P.tap('KeyE');
-  if (P.opts.strip && shot) for (let k = 1; k <= P.opts.strip; k++) { await sleep(150); await shot('strip_' + k); }
+  if (P.opts.strip && shot) for (let k = 1; k <= P.opts.strip; k++) { await sleep(150); if (P.opts.stripLook && k >= 1 && k <= 3) await turn(P.opts.stripLook, 0); await shot('strip_' + k); }
   let inT = null;
   for (let i = 0; i < 60; i++) { const s = await P.state(); if (s.inCar) { inT = i * 50; break; } await sleep(50); }
   if (inT == null) return { err: 'not in', prompt: pr, look, me: await P.state() };

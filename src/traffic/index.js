@@ -242,7 +242,7 @@ export class Wheels {
   // a fare at the kerb)? Then the free roam's 'E get out' waits
   claimsE(ctx, R) {
     if (this.garage.inCar(ctx, R)) return true;
-    if (this.race.shown || this.race.state === 'grid') return true;
+    if (this.race.shown || this.race.state === 'grid' || (this.race.state === 'run' && this.race.t < 6)) return true;
     if (this.fares.fare && (this.fares.fare.prompted || this.fares.state === 'boarding')) return true;
     return false;
   }

@@ -196,7 +196,9 @@ export class Hijack {
       return;
     }
     if (m.state === 'flee') {
-      this.steerRun(c, m.away || (m.away = new THREE.Vector3().subVectors(c.fig.pos, v.pos).setY(0).normalize()), dt);
+      // (away from the car and on up the street ahead of it: seen through the glass from his seat)
+      if (!m.away) { m.away = new THREE.Vector3().subVectors(c.fig.pos, v.pos).setY(0).normalize(); m.away.x += Math.cos(v.yaw) * 0.9; m.away.z -= Math.sin(v.yaw) * 0.9; m.away.normalize(); }
+      this.steerRun(c, m.away, dt);
       if (m.t > 9 || (m.t > 3 && !this.inView(c.fig.pos))) this.drop(m);
       return;
     }
