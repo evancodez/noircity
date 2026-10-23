@@ -1274,7 +1274,7 @@ export class Crowd {
       else if (!L) { this.breakAt = { x: e.x, z: e.z }; this.run = 0; }
       else { this.run += Math.hypot(e.x - L.x, e.z - L.z); L.x = e.x; L.z = e.z; }
       const run = this.run;
-      if (run > CROWD.leave.gone && near > 8) { this.finish('left'); return; }
+      if (run > CROWD.leave.gone) { this.finish("left"); return; }
       const w = this.leaveWarn ? run > CROWD.leave.warn - 2 : run > CROWD.leave.warn;
       if (w !== !!this.leaveWarn) { this.leaveWarn = w; if (!this.warned) G.hud.warn(w ? (live.length > 1 ? 'They’re coming.' : 'He’s coming.') : null); }
       for (const m of live) m.chase = near > 4;

@@ -40,14 +40,14 @@
   },
   {
    "drive": "tools/lib/o4_guns.mjs",
-   "profile": "medium",
+   "profile": "good",
    "beats": [
     "street"
    ],
    "tries": 3,
    "beatTimeout": 150,
    "check": "D.won === 1",
-   "label": "the street by the pad: medium hands within three tries"
+   "label": "the street by the pad: good hands within three tries"
   }
  ]
 }
