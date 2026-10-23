@@ -1,0 +1,69 @@
+{
+ "about": "[O4] after the critic: while the first dodge's held card stops the clock my feet stop too (W held 1.2 s under it: the eye does not walk); then the dodge lets it go (D at once: the card goes and the world is back, the blow slipped)",
+ "url": "/?mute=1&o4stay=1&start=o4.brawl1",
+ "size": [
+  1280,
+  800
+ ],
+ "out": "shots/o4/held",
+ "steps": [
+  {
+   "until": "G.state === 'title' && !!document.querySelector('#title .opt[data-k=begin]')",
+   "timeout": 60000
+  },
+  {
+   "wait": 800
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]",
+   "taken": "G.scenes.current && G.scenes.current.id === 'o4'",
+   "retries": 4
+  },
+  {
+   "until": "G.scenes.beat === 'brawl1' && G.crowd.active",
+   "timeout": 30000
+  },
+  {
+   "eval": "(G.o4stay = true, 1)"
+  },
+  {
+   "until": "!!(G.crowd.cue && G.crowd.cue.held)",
+   "timeout": 40000
+  },
+  {
+   "eval": "(window.__p0 = [N.controller.pos.x, N.controller.pos.z, G.time], ({ t: +G.time.toFixed(2), live: +G.crowd.liveT.toFixed(2), teach: G.hud.kit.teachCur && G.hud.kit.teachCur.id, crawl: G.crawl }))"
+  },
+  {
+   "down": "KeyW"
+  },
+  {
+   "wait": 1200
+  },
+  {
+   "eval": "({ moved: +Math.hypot(N.controller.pos.x - window.__p0[0], N.controller.pos.z - window.__p0[1]).toFixed(3), dt: +(G.time - window.__p0[2]).toFixed(3), held: !!(G.crowd.cue && G.crowd.cue.held) })"
+  },
+  {
+   "expect": "Math.hypot(N.controller.pos.x - window.__p0[0], N.controller.pos.z - window.__p0[1]) < 0.15"
+  },
+  {
+   "up": "KeyW"
+  },
+  {
+   "eval": "(window.__side = G.crowd.cue ? G.crowd.cue.side : null)"
+  },
+  {
+   "key": "KeyD",
+   "hold": 60,
+   "name": "the dodge toward the light (D: the side is read as R in this seed)"
+  },
+  {
+   "wait": 400
+  },
+  {
+   "eval": "({ cue: !!(G.crowd.cue && !G.crowd.cue.done), last: G.crowd.lastCue, crawl: G.crawl, teach: G.hud.kit.teachCur && G.hud.kit.teachCur.id, slips: G.crowd.stats.slips })"
+  },
+  {
+   "expect": "window.__side !== 'R' || (G.crawl === 1 && G.crowd.stats.slips >= 1)"
+  }
+ ]
+}

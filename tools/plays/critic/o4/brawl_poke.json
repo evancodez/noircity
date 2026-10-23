@@ -1,0 +1,134 @@
+{
+ "about": "[O4 critic] the street fight poked at: into him, the gun, stray keys, running off",
+ "url": "/?mute=1&o4stay=1&start=o4.brawl1",
+ "size": [
+  1280,
+  800
+ ],
+ "out": "shots/critic/poke1",
+ "steps": [
+  {
+   "until": "G.state === 'title' && !!document.querySelector('#title .opt[data-k=begin]')",
+   "timeout": 60000
+  },
+  {
+   "wait": 1000
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]",
+   "taken": "G.scenes.current && G.scenes.current.id === 'o4'",
+   "retries": 4
+  },
+  {
+   "until": "G.scenes.beat === 'brawl1' && G.crowd.active && !G.failing",
+   "timeout": 30000
+  },
+  {
+   "eval": "(G.o4stay = true)"
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "eval": "({t:+G.time.toFixed(1),me:[+G.eye.x.toFixed(2),+G.eye.z.toFixed(2)],hp:Math.round(G.health.hp),act:G.crowd.active,res:G.crowd.result,meAct:G.crowd.me&&G.crowd.me.act,gun:G.player.weapons.current,warn:G.hud.warnText||'',obj:G.hud.objectiveText||'',prompt:G.hud.promptShown||'',men:(G.crowd.men||[]).map(m=>[m.state,+Math.hypot(m.c.pos.x-G.eye.x,m.c.pos.z-G.eye.z).toFixed(2)])})"
+  },
+  {
+   "name": "W held into him",
+   "key": "KeyW",
+   "hold": 2000
+  },
+  {
+   "eval": "({t:+G.time.toFixed(1),me:[+G.eye.x.toFixed(2),+G.eye.z.toFixed(2)],hp:Math.round(G.health.hp),act:G.crowd.active,res:G.crowd.result,meAct:G.crowd.me&&G.crowd.me.act,gun:G.player.weapons.current,warn:G.hud.warnText||'',obj:G.hud.objectiveText||'',prompt:G.hud.promptShown||'',men:(G.crowd.men||[]).map(m=>[m.state,+Math.hypot(m.c.pos.x-G.eye.x,m.c.pos.z-G.eye.z).toFixed(2)])})"
+  },
+  {
+   "shot": "p0_into_him"
+  },
+  {
+   "name": "wheel for the gun",
+   "eval": "1"
+  },
+  {
+   "key": "Digit2"
+  },
+  {
+   "wait": 300
+  },
+  {
+   "eval": "({t:+G.time.toFixed(1),me:[+G.eye.x.toFixed(2),+G.eye.z.toFixed(2)],hp:Math.round(G.health.hp),act:G.crowd.active,res:G.crowd.result,meAct:G.crowd.me&&G.crowd.me.act,gun:G.player.weapons.current,warn:G.hud.warnText||'',obj:G.hud.objectiveText||'',prompt:G.hud.promptShown||'',men:(G.crowd.men||[]).map(m=>[m.state,+Math.hypot(m.c.pos.x-G.eye.x,m.c.pos.z-G.eye.z).toFixed(2)])})"
+  },
+  {
+   "key": "KeyR"
+  },
+  {
+   "key": "KeyC"
+  },
+  {
+   "wait": 300
+  },
+  {
+   "eval": "({t:+G.time.toFixed(1),me:[+G.eye.x.toFixed(2),+G.eye.z.toFixed(2)],hp:Math.round(G.health.hp),act:G.crowd.active,res:G.crowd.result,meAct:G.crowd.me&&G.crowd.me.act,gun:G.player.weapons.current,warn:G.hud.warnText||'',obj:G.hud.objectiveText||'',prompt:G.hud.promptShown||'',men:(G.crowd.men||[]).map(m=>[m.state,+Math.hypot(m.c.pos.x-G.eye.x,m.c.pos.z-G.eye.z).toFixed(2)])})"
+  },
+  {
+   "key": "KeyC"
+  },
+  {
+   "key": "KeyE"
+  },
+  {
+   "wait": 300
+  },
+  {
+   "eval": "({t:+G.time.toFixed(1),me:[+G.eye.x.toFixed(2),+G.eye.z.toFixed(2)],hp:Math.round(G.health.hp),act:G.crowd.active,res:G.crowd.result,meAct:G.crowd.me&&G.crowd.me.act,gun:G.player.weapons.current,warn:G.hud.warnText||'',obj:G.hud.objectiveText||'',prompt:G.hud.promptShown||'',men:(G.crowd.men||[]).map(m=>[m.state,+Math.hypot(m.c.pos.x-G.eye.x,m.c.pos.z-G.eye.z).toFixed(2)])})"
+  },
+  {
+   "name": "turn round and run",
+   "look": [
+    1400,
+    0
+   ],
+   "steps": 6
+  },
+  {
+   "down": "ShiftLeft"
+  },
+  {
+   "key": "KeyW",
+   "hold": 2500
+  },
+  {
+   "eval": "({t:+G.time.toFixed(1),me:[+G.eye.x.toFixed(2),+G.eye.z.toFixed(2)],hp:Math.round(G.health.hp),act:G.crowd.active,res:G.crowd.result,meAct:G.crowd.me&&G.crowd.me.act,gun:G.player.weapons.current,warn:G.hud.warnText||'',obj:G.hud.objectiveText||'',prompt:G.hud.promptShown||'',men:(G.crowd.men||[]).map(m=>[m.state,+Math.hypot(m.c.pos.x-G.eye.x,m.c.pos.z-G.eye.z).toFixed(2)])})"
+  },
+  {
+   "key": "KeyW",
+   "hold": 2500
+  },
+  {
+   "eval": "({t:+G.time.toFixed(1),me:[+G.eye.x.toFixed(2),+G.eye.z.toFixed(2)],hp:Math.round(G.health.hp),act:G.crowd.active,res:G.crowd.result,meAct:G.crowd.me&&G.crowd.me.act,gun:G.player.weapons.current,warn:G.hud.warnText||'',obj:G.hud.objectiveText||'',prompt:G.hud.promptShown||'',men:(G.crowd.men||[]).map(m=>[m.state,+Math.hypot(m.c.pos.x-G.eye.x,m.c.pos.z-G.eye.z).toFixed(2)])})"
+  },
+  {
+   "key": "KeyW",
+   "hold": 3000
+  },
+  {
+   "eval": "({t:+G.time.toFixed(1),me:[+G.eye.x.toFixed(2),+G.eye.z.toFixed(2)],hp:Math.round(G.health.hp),act:G.crowd.active,res:G.crowd.result,meAct:G.crowd.me&&G.crowd.me.act,gun:G.player.weapons.current,warn:G.hud.warnText||'',obj:G.hud.objectiveText||'',prompt:G.hud.promptShown||'',men:(G.crowd.men||[]).map(m=>[m.state,+Math.hypot(m.c.pos.x-G.eye.x,m.c.pos.z-G.eye.z).toFixed(2)])})"
+  },
+  {
+   "up": "ShiftLeft"
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "eval": "({t:+G.time.toFixed(1),me:[+G.eye.x.toFixed(2),+G.eye.z.toFixed(2)],hp:Math.round(G.health.hp),act:G.crowd.active,res:G.crowd.result,meAct:G.crowd.me&&G.crowd.me.act,gun:G.player.weapons.current,warn:G.hud.warnText||'',obj:G.hud.objectiveText||'',prompt:G.hud.promptShown||'',men:(G.crowd.men||[]).map(m=>[m.state,+Math.hypot(m.c.pos.x-G.eye.x,m.c.pos.z-G.eye.z).toFixed(2)])})"
+  },
+  {
+   "shot": "p1_ran"
+  },
+  {
+   "wait": 3000
+  },
+  {
+   "eval": "({t:+G.time.toFixed(1),me:[+G.eye.x.toFixed(2),+G.eye.z.toFixed(2)],hp:Math.round(G.health.hp),act:G.crowd.active,res:G.crowd.result,meAct:G.crowd.me&&G.crowd.me.act,gun:G.player.weapons.current,warn:G.hud.warnText||'',obj:G.hud.objectiveText||'',prompt:G.hud.promptShown||'',men:(G.crowd.men||[]).map(m=>[m.state,+Math.hypot(m.c.pos.x-G.eye.x,m.c.pos.z-G.eye.z).toFixed(2)])})"
+  }
+ ]
+}

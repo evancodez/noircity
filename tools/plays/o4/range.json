@@ -1,0 +1,37 @@
+{
+ "about": "[O4] The shotgun on the range (tools/lib/o4_range.mjs): one barrel at a man 4 m off drops him; at 10 m it hurts; at 25 m it does nothing to him (ink on the street). By real input.",
+ "url": "/?mute=1&start=o4.range",
+ "size": [
+  1280,
+  800
+ ],
+ "out": "shots/play/o4_range",
+ "steps": [
+  {
+   "until": "G.state === 'title' && !!document.querySelector('#title .opt[data-k=begin]')",
+   "timeout": 60000
+  },
+  {
+   "wait": 1200
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]",
+   "taken": "G.scenes.current && G.scenes.current.id === 'o4'",
+   "retries": 4
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'o4' && G.scenes.beat === 'range' && !G.failing && G.player.weapons.get('shotgun').phase === 'ready'",
+   "timeout": 30000
+  },
+  {
+   "drive": "tools/lib/o4_range.mjs",
+   "order": [
+    0,
+    1,
+    2
+   ],
+   "check": "!D.shots[0].alive && D.shots[1].alive && D.shots[1].hpAfter < 100 && D.shots[2].hpAfter === 100 && D.pocket < 10",
+   "label": "4 m down with one barrel, 10 m hurt, 25 m untouched; the shells counted"
+  }
+ ]
+}
