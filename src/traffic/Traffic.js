@@ -100,6 +100,43 @@ export class Traffic {
     }
     return null;
   }
+  // [O2] a car for the street I stand in: none coming up my lane within 150 m, one is made on a
+  // street into the junction behind me (25 - 60 m short of it, round the corner: out of sight),
+  // routed through that junction and down my lane past me
+  feed(eye) {
+    const W = this.W, R = this.game.city;
+    if (!R || R.inCar || (this.avoid && this.avoid(eye))) return null;
+    const G = this.graph, L = G.nearestLane(eye.x, eye.z);
+    if (!L || L.d > L.edge.hw + 2.5) return null;
+    const e = L.edge, hx = Math.cos(L.heading), hz = -Math.sin(L.heading);
+    // (one coming already: up my lane behind me, heading my way)
+    for (const c of this.cars) {
+      const v = c.v, dx = v.pos.x - eye.x, dz = v.pos.z - eye.z, along = -(dx * hx + dz * hz), lat = Math.abs(dx * hz - dz * hx);
+      if (along > -4 && along < 150 && lat < 6 && (Math.cos(v.yaw) * hx - Math.sin(v.yaw) * hz) > 0.5) return null;
+    }
+    if (this.cars.length >= this.max + 2) return null;
+    const J = L.dir > 0 ? e.a : e.b, D = L.dir > 0 ? e.b : e.a, N = G.nodes.get(J);
+    if (!N || Math.hypot(N.x - eye.x, N.z - eye.z) > 140) return null;
+    const rng = this.rng;
+    const feeders = N.edges.filter((f) => f !== e && !f.bridge && f.len > 40);
+    for (let k = 0; k < feeders.length; k++) {
+      const f = feeders[(k + Math.floor(rng.next() * feeders.length)) % feeders.length];
+      const dir = f.b === J ? 1 : -1, F = dir > 0 ? f.a : f.b;
+      const back = 25 + rng.next() * 35, sAt = dir > 0 ? f.len - back : back;
+      const off = f.lanes[0];
+      const x = f.ax + f.dx * sAt - f.dz * off * dir, z = f.az + f.dz * sAt + f.dx * off * dir;
+      const d = Math.hypot(x - eye.x, z - eye.z);
+      if (d < 25 || !this.hidden(eye, x, z, d) || this.inView(x, z)) continue;
+      if (this.avoid && this.avoid({ x, z })) continue;
+      if (W.bodiesNear(x, z, 9).length) continue;
+      const ids = [F, ...walk(G, D, J, 6, rng)];
+      const [kind, district] = this.pickKind(x, z);
+      const car = this.add(kind, district, ids, { x, z }, d);
+      if (car) { car.fed = true; this.stats.fed = (this.stats.fed || 0) + 1; }
+      return car;
+    }
+    return null;
+  }
   add(kind, district, ids, at, d = 999) {
     const rng = this.rng;
     let path;
@@ -175,6 +212,11 @@ export class Traffic {
     if (this.spawnT <= 0) {
       this.spawnT = 0.35;
       if (this.cars.length < this.max) this.spawnOne(eye);
+      // [O2] after the critic (M4: standing in Grand Ave's lane, 42 s before a car came up it):
+      // a man on foot in a street gets its traffic - a car turned into his lane at the junction
+      // behind him, out of his sight, every few seconds that none is coming
+      this.feedT = (this.feedT ?? 2) - 0.35;
+      if (this.feedT <= 0) { this.feedT = 4; this.feed(eye); }
       for (const car of [...this.cars]) {
         const d = Math.hypot(car.v.pos.x - eye.x, car.v.pos.z - eye.z);
         if (d > DROP_ALWAYS || (d > DROP && this.hidden(eye, car.v.pos.x, car.v.pos.z, d))) this.drop(car);

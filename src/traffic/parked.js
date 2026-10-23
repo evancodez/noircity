@@ -52,7 +52,14 @@ export class Parked {
     const alongOf = (b) => b.x * Math.cos(b.yaw) - b.z * Math.sin(b.yaw);
     const order = [...C.bays].map((b, i) => ({ ...b, i, along: alongOf(b) })).sort((a, b) => (a.street < b.street ? -1 : a.street > b.street ? 1 : a.side - b.side || a.along - b.along));
     let lastKey = null, freeFrom = -1e9;
+    // [O2] after the critic (M3: the first W of the game ran into a car parked 20 m ahead of
+    // the start's coupe): each start's kerb is kept clear 48 m ahead of its car, in its line
     const starts = Object.values(STARTS).map((s) => s.car);
+    const inLine = (b) => starts.some((s) => {
+      const fx = Math.cos(s.yaw ?? 0), fz = -Math.sin(s.yaw ?? 0), dx = b.x - s.x, dz = b.z - s.z;
+      const along = dx * fx + dz * fz, lat = Math.abs(dx * fz - dz * fx);
+      return along > -9 && along < 48 && lat < 3.6;
+    });
     for (const b of order) {
       const key = b.street + ':' + b.side;
       if (key !== lastKey) { lastKey = key; freeFrom = -1e9; }
@@ -64,7 +71,7 @@ export class Parked {
       // (clear of the starts' cars and of the junctions' mouths; the race's
       // loop in the Yards kept clear: the Straight, Centre St, Foundry St and
       // Water St round it are the course - vehicles/race.js)
-      if (starts.some((s) => Math.hypot(s.x - b.x, s.z - b.z) < 9)) continue;
+      if (starts.some((s) => Math.hypot(s.x - b.x, s.z - b.z) < 9) || inLine(b)) continue;
       if (b.x > -462 && b.x < -358 && b.z > -42 && b.z < 252) continue;
       const S = G.streetAt(b.x, b.z);
       if (S && (S.s < S.edge.hw + 7 || S.s > S.edge.len - S.edge.hw - 7)) continue;

@@ -10,6 +10,7 @@ import { Wheels } from '../traffic/index.js';
 import { KINDS } from '../vehicles/kinds.js';
 import { cockpitInto, cockpitOut, screenBasis } from '../vehicles/cockpit.js';
 import { watchDamage } from '../vehicles/damage.js';
+import { Chase } from '../vehicles/chase.js';   // [O2] V: the view behind the car
 import { installPeople } from '../people/index.js';   // [O3]
 import { swimStep } from '../world/swim.js';
 import { placesOf } from '../places/Places.js';   // [O5] the places: their doors, their rooms
@@ -186,12 +187,8 @@ export default defineScene({
         const G = ctx.game, R = G.city;
         G.vehicles.setPlayer(R.car);
         if (R.car.lamps && R.car.lamps.setOn) R.car.lamps.setOn(true);
-        // [O2] (a fleet car: its seat, its cockpit, its screen)
-        const fl = R.car.model && R.car.model.fleet, so = fl ? { ...seatOpts(), eye: KINDS[R.car.kind].eye.clone() } : seatOpts();
-        if (fl) cockpitInto(ctx.stage, R.car);
-        R.cabin.attach(R.car, { ...so, control: brakesFor(G) });
-        R.cabin.eye = fl ? so.eye : null;
-        if (fl) R.cabin.screen.mesh.matrix.copy(screenBasis(R.car.kind));
+        // [O2] (a fleet car: its seat, its cockpit, its screen; the view behind it)
+        takeSeat(ctx, R, R.car);
         R.inCar = true;
         return;
       }
@@ -319,6 +316,8 @@ export function step(ctx, R, T, dt) {   // [O6] exported
     T.drive += dt;
     T.dist += Math.abs(car.speed) * dt;
     R.cabin.step(dt);
+    // [O2] V (the pad's R3): the view - the seat, or behind the car (remembered in the save)
+    if (ctx.pressed('KeyV') && R.chase) { R.chase.toggle(); if (!T.viewTold && R.chase.want) T.viewTold = true; }
     // [O2] Q: the horn (the car ahead pulls over; the others answer)
     if (ctx.pressed('KeyQ')) { G.sfx.play('tail_horn', car.seat(_v.set(2, 1, 0), new THREE.Vector3()), { k: 1, dur: 0.5, low: car.model && car.model.K && car.model.K.note < 0.9 ? 1 : 0 }, { ref: 3 }); if (G.wheels) G.wheels.traffic.horn(car); G.emit('city:horn', { car }); }
     // the river: the car in the water is lost
@@ -330,6 +329,8 @@ export function step(ctx, R, T, dt) {   // [O6] exported
     // gone a few lengths, or its time
     if (T.drive > 0.4 && !T.driveCard) T.driveCard = hud.teach('city_drive', '[W] drive  [S] brake  [SPACE] handbrake', { until: () => T.dist > 30, secs: 5 });
     if (T.drive > 25 && !T.taughtMap && !T.warned) { T.taughtMap = true; hud.teach('city_map', '[M] the map'); }
+    // [O2] the view behind the car, once, in a quiet second of a drive (never over another card)
+    if (T.drive > 50 && T.dist > 300 && !T.taughtView && !T.warned && !hud.kit.teachCur && !(R.chase && R.chase.want)) { T.taughtView = true; hud.teach('city_view', '[V] the view', { until: () => R.chase && R.chase.want, secs: 4 }); }
     // [O2] a thing to do wants E here (the garage's door, the race's line, a fare): not out
     const claimed = G.wheels && G.wheels.claimsE(ctx, R);
     if (claimed && T.outShown) { T.outShown = false; hud.clearPrompt('cityout'); }
@@ -438,17 +439,39 @@ export function getIn(ctx, R, T, car = R.car) {   // [O6] exported
   if (W) { W.ownLamps(car); W.took(car); watchDamage(W, car); W.watch(car); }
   if (car.lamps && car.lamps.setOn) car.lamps.setOn(true);
   // (eased into the seat: the camera never jumps)
-  // [O2] a car of the fleet: its own seat, the cockpit put in it, the screen's rain in its screen
-  const fleet = car.model && car.model.fleet;
-  const seat = fleet ? { ...seatOpts(), eye: KINDS[car.kind].eye.clone() } : seatOpts();
-  if (fleet) cockpitInto(ctx.stage, car);
-  R.cabin.attach(car, { ease: 0.35, ...seat, ...(car.seatOpts || {}), control: brakesFor(G) });   // [O6] (car.seatOpts: another kind's seat)
-  R.cabin.eye = fleet ? seat.eye : null;
-  if (fleet) R.cabin.screen.mesh.matrix.copy(screenBasis(car.kind));
+  // [O2] a car of the fleet: its own seat, the cockpit put in it, the screen's rain in its screen;
+  // [O6] (car.seatOpts: another kind's seat); the view behind it as the save has it
+  takeSeat(ctx, R, car, { ease: 0.35 });
   R.inCar = true;
   G.sfx.play('tail_door', null, { open: false });
   ctx.stage.part('bounds').navAround(car.pos.x, car.pos.z, 14);
   G.emit('city:in', { car });
+}
+
+// [O2] the seat of the car I am in (a fleet car's own eye, its cockpit, its screen) and the
+// view behind it (V, the pad's R3: vehicles/chase.js), eased in as the save remembers it
+function takeSeat(ctx, R, car, extra = {}) {
+  const G = ctx.game;
+  const fleet = car.model && car.model.fleet;
+  const seat = fleet ? { ...seatOpts(), eye: KINDS[car.kind].eye.clone() } : seatOpts();
+  if (fleet) cockpitInto(ctx.stage, car);
+  const C = R.chase || (R.chase = new Chase(G));
+  C.begin(car);
+  C.onSwap = (third, v) => showSeat(ctx, R, v, !third);
+  R.cabin.attach(car, { ...seat, ...(car.seatOpts || {}), ...extra, control: brakesFor(G),
+    view: (ctl, D, v, dt) => C.apply(ctl, D, v, dt),
+    lookAround: (e, ctl) => { if (!(C.want && C.k > 0.5)) return false; C.mouse(e.movementX, e.movementY, ctl.sensitivity); return true; } });
+  R.cabin.eye = fleet ? seat.eye : null;
+  if (fleet) R.cabin.screen.mesh.matrix.copy(screenBasis(car.kind));
+}
+// the seat shown (the cockpit, the hands on the wheel, the rain on the screen), or the car whole from behind
+function showSeat(ctx, R, car, seat) {
+  const G = ctx.game, m = car && car.model;
+  if (!m) return;
+  if (m.fleet) { if (seat) cockpitInto(ctx.stage, car); else cockpitOut(ctx.stage, car); }
+  G.setViewmodelVisible(seat);
+  if (R.cabin.screen && R.cabin.screen.mesh) R.cabin.screen.mesh.visible = seat;
+  if (m.meshes && m.meshes.bust) m.meshes.bust.visible = !seat;
 }
 
 export function getOut(ctx, R, T) {   // [O6] exported
@@ -481,7 +504,10 @@ export function getOut(ctx, R, T) {   // [O6] exported
   G.setViewmodelVisible(false);
   // (looking along the car, away from its door: eased out of the seat)
   const yaw = car.yaw - Math.PI / 2;
-  ctx.controller.setMode('walk', { pose: { x: d.p.x, z: d.p.z, yaw, pitch: -0.05 }, ease: 0.4 });
+  const chased = R.chase && R.chase.k > 0;
+  ctx.controller.setMode('walk', { pose: { x: d.p.x, z: d.p.z, yaw, pitch: -0.05 }, ease: chased ? 0.55 : 0.4 });
+  // [O2] (from behind the car the eye is metres off the door: the blend is kept - never a cut)
+  if (chased) { const B = ctx.controller._modeBlend; if (B) B.checked = true; if (R.cabin.screen && R.cabin.screen.mesh) R.cabin.screen.mesh.visible = true; if (car.model && car.model.meshes && car.model.meshes.bust) car.model.meshes.bust.visible = false; R.chase.end(); }
   if (R.cabin.car) { R.cabin.dispose(); }
   // [O2] the car stays where I left it (the wheels keep it); a fleet car shut again
   cockpitOut(ctx.stage, car);
