@@ -9,7 +9,9 @@
   { "until": "G.scenes.current && G.scenes.current.id === 'city' && G.scenes.fadeK < 0.05", "timeout": 20000 },
   { "wait": 1000 },
   { "drive": "tools/lib/o2_wheels.mjs", "mode": "drive", "timeout": 1000000, "shots": { "60": "d01", "500": "d02", "900": "d03" },
-    "check": "D.end === 'done' && D.overlap === 0 && D.inWall === 0 && D.districts.length >= 5 && D.over50 <= 3 && (D.traffic.popIn || 0) === 0 && (D.traffic.popOut || 0) === 0 && D.traffic.maxWait < 10", "label": "the drive-through in the traffic: every district, nothing through anything, nothing come or gone in view, no hitch, nothing stuck" },
+    "check": "D.end === 'done' && D.overlap === 0 && D.inWall === 0 && D.districts.length >= 5 && (D.traffic.popIn || 0) === 0 && (D.traffic.popOut || 0) === 0 && D.traffic.maxWait < 10", "label": "the drive-through in the traffic: every district, nothing through anything, nothing come or gone in view, nothing stuck" },
+  { "expect": "window.__o2rec.w16 === 0 && window.__o2rec.w8 <= 3", "label": "the wheels' own step (traffic, parked, signals, tram, the things to do) never over 16 ms, over 8 ms at most 3 times" },
+  { "expect": "window.__o2rec.over50 <= 3", "label": "no frame over 50 ms (3 allowed, as O1's) - the whole frame, on this machine as loaded" },
   { "eval": "({ calls: N.renderer.info.render.calls, tris: N.renderer.info.render.triangles, mem: N.renderer.info.memory })" }
  ]
 }
