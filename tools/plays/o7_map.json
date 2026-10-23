@@ -28,7 +28,7 @@
   { "wait": 400 },
   { "eval": "(document.exitPointerLock(), 1)" },
   { "wait": 700 },
-  { "expect": "N.hud.paused && !G.night.map.open && !G.night.holding && document.querySelector('#pausecard.ncity:not(.mview):not(.hidden) .nmapp') && document.querySelector('#pausecard .set').textContent.includes('sound') && document.querySelectorAll('#pausecard .nmatch canvas').length >= 2", "label": "ESC: the pause card, the map at its side, sound in the settings, the matchbooks" },
+  { "expect": "N.hud.paused && !G.night.map.open && !G.night.holding && document.querySelector('#pausecard.ncity:not(.mview):not(.hidden) .nmapp') && document.querySelector('#pausecard .set').textContent.includes('sound') && document.querySelectorAll('#pausecard .nmatch canvas').length === 1 && !/\\d/.test(document.querySelector('#pausecard .nmatch').textContent)", "label": "ESC: the pause card, the map at its side, sound in the settings, the matchbook taken (only the covers taken, no count: [O7] after the critic)" },
   { "shot": "m01_pause" },
   { "clickOn": "#pausecard h1", "taken": "!N.hud.paused", "retries": 4, "every": 2500 },
   { "until": "!N.hud.paused && !!document.pointerLockElement", "timeout": 5000, "label": "click resumes" }

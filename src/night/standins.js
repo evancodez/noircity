@@ -58,7 +58,7 @@ export function installStandins(night) {
         // seen: the clock stands; seen while they searched - found again
         if (seen) { this.quiet = 0; if (this.searching) this.set(this.heat, { searching: false }); return; }
         // (nobody out yet - they are on their way: the clock waits for them, unless no unit can be sent here)
-        if (!patrol.units.length && !this.searching && G.time < patrol.nextAt + 12) return;
+        if (!patrol.units.length && !this.searching && patrol.nextAt !== Infinity && G.time < patrol.nextAt + 12) return;
         this.quiet += dt;
         if (!this.searching && this.quiet > LOSE.quiet) { this.searching = true; this.quiet = 0; this.emit('heat', { heat: this.heat, was: this.heat, searching: true }); }
         else if (this.searching && this.quiet > LOSE.search) { const h = this.heat - 1; this.set(h, { searching: h > 0 }); }

@@ -65,8 +65,10 @@ export class Patrol {
     this.downAt = -99;
     const G = night.game;
     // (a fall ends them: the black clears the street - the arrest and the hospital clear the heat too)
-    G.on('fail', (e) => { this.dropAll(); const P = G.police; if (P && P.stand && e && (e.to === 'station' || e.to === 'hospital') && P.clear) P.clear(); });
-    G.on('scene:enter', () => this.dropAll());
+    // (any other fall - the river, thrown out of a bar - they lost me in it: the search)
+    G.on('fail', (e) => { this.dropAll(); const P = G.police; if (!P || !P.stand || !e) return; if ((e.to === 'station' || e.to === 'hospital') && P.clear) P.clear(); else if (P.heat > 0 && P.lost) P.lost(); });
+    // (a scene entered with the heat on and nobody searching: they are sent again)
+    G.on('scene:enter', () => { this.dropAll(); const P = G.police; if (P && P.stand && P.heat > 0 && !P.searching) this.dispatch(P.heat, 0); });
     G.on('night:start', () => this.dropAll());
   }
   get G() { return this.night.game; }

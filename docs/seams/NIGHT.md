@@ -170,8 +170,9 @@ Installed only when the real seam is absent; dropped at O7's fix pass.
 
 | seam | owner | the stand-in |
 | --- | --- | --- |
-| `game.police` `{ heat, searching, units, on('heat', fn), set(level), lost() }` | O3 | a heat that falls by itself (14 s unseen: the search; 9 s searching: a shield less) |
-| `game.crime.emit(kind, point, by)` | O3 | raises the stand-in's heat to the kind's level (punch 1, hijack 1, shot 2, death 3, cop 4); until O3's witnesses a shot in the city (`shot`) and O4's crowd's `crime` raise it too |
+| `game.police` `{ heat, searching, units, seen, on('heat', fn), set(level), lost(), clear() }` | O3 | [O7 after the critic] somebody comes (`src/night/patrol.js`): heat 1 a beat cop (O4's `o4_cop`, the fist fight, 'Hands up.', the station), heat 2+ the siren then O4's police gunmen (the gun kit in the street; 3 at heat 3+); the quiet clock (14 s: the search; 9 s: a shield less) runs only while none of them sees me (42 m, no building between, not inside a place); `lost()` (a room after 20 s, the el's next station) begins the search, it never clears the heat; `clear()` the hotel's sleep, the arrest, the hospital. `units: [{ pos, kind }]` are the cop marks |
+| `game.crime.emit(kind, point, by)` | O3 | raises the stand-in's heat to the kind's level (punch 1, hijack 1, shot 2, death 3, cop 4); until O3's witnesses a shot in the city (`shot`), O4's crowd's `crime` (a gun drawn on a cop: 2; a man shot running: 3; a cop: 4) and O5's rooms' `crime` (level 1: punch, 2: shot) raise it too |
+| the street's gun fight | O7 | `kitUse(night, owner, cfg)` / `kitFree(night, owner)` (`src/night/patrol.js`): one gun kit encounter in the street shared by the police and the wanted man; a place's own (a hideout) is never taken over |
 | `game.news` | O1b | merged: O1b's own (`world/items.js` `newsOf`), no stand-in |
 | `save.money`, `save.matchbooks`, `save.garage` | O4, O5, O2 | the save's own fields (no stand-in needed) |
 
