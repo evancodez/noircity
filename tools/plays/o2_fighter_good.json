@@ -1,0 +1,48 @@
+{
+ "about": "[O2] The hijack of a car with a man with a jaw at the wheel, good hands (brief O2 \u00a73, \u00a75): E at his door, in his seat, away before he is back for it. node tools/play.mjs tools/plays/o2_fighter_good.json",
+ "url": "/?mute=1&start=city&held=1&again=1&come=saloon:fighter",
+ "size": [
+  1280,
+  800
+ ],
+ "out": "shots/o2/o2_fighter_good",
+ "steps": [
+  {
+   "wait": 1500
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]",
+   "taken": "G.state !== 'title'",
+   "retries": 5,
+   "every": 4000
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'city' && G.scenes.fadeK < 0.05",
+   "timeout": 20000
+  },
+  {
+   "wait": 800
+  },
+  {
+   "drive": "tools/lib/o2_wheels.mjs",
+   "mode": "pull",
+   "hands": "good",
+   "check": "D.inCar && D.drove > 40 && D.kind === 'saloon' && !D.stats.fights",
+   "label": "good: in his seat and away before he is back"
+  },
+  {
+   "key": "KeyE"
+  },
+  {
+   "until": "!G.city.inCar",
+   "timeout": 8000
+  },
+  {
+   "drive": "tools/lib/o2_wheels.mjs",
+   "mode": "pull",
+   "hands": "good",
+   "check": "D.inCar && D.drove > 40 && D.kind === 'saloon' && !D.stats.fights && D.stats.pulled === 2",
+   "label": "good, again: the next one too"
+  }
+ ]
+}

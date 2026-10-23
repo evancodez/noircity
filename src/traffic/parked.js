@@ -23,11 +23,11 @@ const RADIUS = 190, DROP = 240, NEAR = 42, FAR = 95;
 const MARGIN = 0.62, CLOSE = 10;
 // a district's share of bays taken and its mix of kinds
 const MIX = {
-  downtown: { share: 0.2, kinds: [['coupe', 3], ['saloon', 3], ['taxi', 3], ['van', 1], ['police', 0.4]] },
-  tenements: { share: 0.28, kinds: [['saloon', 4], ['coupe', 2], ['van', 2.5], ['taxi', 1]] },
-  docks: { share: 0.2, kinds: [['saloon', 3.5], ['van', 2.5], ['lorry', 2.5], ['coupe', 1]] },
-  yards: { share: 0.18, kinds: [['lorry', 4], ['van', 3], ['saloon', 1.5], ['coupe', 1.5]] },
-  hill: { share: 0.12, kinds: [['coupe', 4], ['saloon', 4.5], ['hearse', 1]] },
+  downtown: { share: 0.28, kinds: [['coupe', 3], ['saloon', 3], ['taxi', 3], ['van', 1], ['police', 0.4]] },
+  tenements: { share: 0.34, kinds: [['saloon', 4], ['coupe', 2], ['van', 2.5], ['taxi', 1]] },
+  docks: { share: 0.26, kinds: [['saloon', 3.5], ['van', 2.5], ['lorry', 2.5], ['coupe', 1]] },
+  yards: { share: 0.22, kinds: [['lorry', 4], ['van', 3], ['saloon', 1.5], ['coupe', 1.5]] },
+  hill: { share: 0.16, kinds: [['coupe', 4], ['saloon', 4.5], ['hearse', 1]] },
 };
 const PARTS = ['body', 'chrome', 'dark', 'glass', 'pale'];
 const _m = new THREE.Matrix4(), _q = new THREE.Quaternion(), _p = new THREE.Vector3(), _s = new THREE.Vector3(1, 1, 1), _e = new THREE.Euler(), _f = new THREE.Vector3();

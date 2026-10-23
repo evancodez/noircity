@@ -21,7 +21,9 @@ export function edgeOf(graph, a, b) { const n = graph.nodes.get(a); return n ? n
 // the way a car may take from a junction (not back the way it came, not into
 // a dead end, not the bridge: it is up)
 export const okEdge = (e, to) => !e.bridge && !to.deadEnd;
-export function walk(graph, from, prev, n, rng, ok = okEdge) {
+// (toward: { x, z } - the way on bends toward it more often than not: the
+// traffic comes past where the eye is)
+export function walk(graph, from, prev, n, rng, ok = okEdge, toward = null) {
   const ids = prev != null ? [prev, from] : [from];
   let p = prev, cur = from;
   for (let k = 0; k < n; k++) {
@@ -31,6 +33,10 @@ export function walk(graph, from, prev, n, rng, ok = okEdge) {
     if (!opts.length) break;
     // (straight on a little more often than a turn: a street is driven down)
     let pick = opts[Math.floor(rng.next() * opts.length) % opts.length];
+    if (toward && opts.length > 1 && rng.next() < 0.55) {
+      let bd = Infinity;
+      for (const e of opts) { const O = graph.nodes.get(other(e, cur)); const d = Math.hypot(O.x - toward.x, O.z - toward.z); if (d < bd) { bd = d; pick = e; } }
+    }
     if (p != null && opts.length > 1 && rng.next() < 0.35) {
       const P = graph.nodes.get(p), C = N;
       const ix = C.x - P.x, iz = C.z - P.z, il = Math.hypot(ix, iz) || 1;

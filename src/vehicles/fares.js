@@ -8,9 +8,9 @@ import { pay } from '../traffic/seams.js';
 // (O1's starts as the places: `The Hill.`); the meter runs by the distance;
 // stop there and they pay ($). A passenger thrown about - a hard knock -
 // says `Easy.`; a second (or a wreck) and he gets out, the fare lost (`He
-// got out.`). Left sitting (not on the way there for 20 s) he says `Come on.`
+// got out.`). Left sitting (sitting there 20 s) he says `Come on.`
 // and after 20 s more he gets out. One fare at a time; the next hails a
-// little after. The cab's roof lamp is lit while it is free.
+// little after.
 //   fares.state 'none' | 'hail' | 'in' ; fares.fare { dest, meter, knocks }
 //   fares.stats { hailed, rode, paid, lost, idle, knocks, money }
 // Events: 'wheels:fare' { what: 'hail' | 'in' | 'paid' | 'lost', n }
@@ -74,7 +74,9 @@ export class Fares {
       F.dist += v.speedAbs * dt;
       const d = Math.hypot(v.pos.x - F.dest.x, v.pos.z - F.dest.z);
       // (on his way? the distance to go falling)
-      if (d < F.best - 3) { F.best = d; F.idleT = 0; } else F.idleT += dt;
+      // (sitting there with him in the back: the clock runs; on the move, it eases off)
+      if (d < F.best) F.best = d;
+      F.idleT = v.speedAbs < 1.5 ? F.idleT + dt : Math.max(0, F.idleT - dt * 2);
       if (F.idleT > 20 && !F.nagged) { F.nagged = true; hud.warn('Come on.'); F.warnT = 3; }
       if (F.idleT > 40) { this.stats.idle++; this.lose('He got out.'); return; }
       if (F.warnT > 0) { F.warnT -= dt; if (F.warnT <= 0) hud.warn(null); }
@@ -86,16 +88,22 @@ export class Fares {
   // a fare on the pavement ahead of the cab, on its side of the street
   hail(v) {
     const W = this.W, G = this.G, g = W.graph;
-    const L = g.nearestLane(v.pos.x, v.pos.z, v.yaw);
-    this.nextT = 6;
-    if (!L) return;
-    const e = L.edge, dir = L.dir;
-    // (60 to 90 m on along this street, or the next; the kerb on my right)
-    let s = L.s + dir * (55 + Math.random() * 30);
-    if (s < e.hw + 6 || s > e.len - e.hw - 6) return;
-    const nx = -e.dz * dir, nz = e.dx * dir;   // (the right of the way)
-    const kx = e.ax + e.dx * s + nx * (e.hw + 1.4), kz = e.az + e.dz * s + nz * (e.hw + 1.4);
-    if (Math.abs(G.stage.part('city').C.groundAt(kx, kz)) < 0.05) return;   // (not on a pavement)
+    this.nextT = 3;
+    // (on the pavement on my right, 45 to 120 m on along my way: this street or the next)
+    const C = G.stage.part('city').C, fx = Math.cos(v.yaw), fz = -Math.sin(v.yaw);
+    let kx = null, kz = null, nx = 0, nz = 0;
+    for (const ahead of [65, 80, 50, 95, 115]) {
+      const L = g.nearestLane(v.pos.x + fx * ahead, v.pos.z + fz * ahead, v.yaw);
+      if (!L || L.d > L.edge.hw) continue;
+      const e = L.edge, dir = L.dir;
+      if (L.s < e.hw + 6 || L.s > e.len - e.hw - 6) continue;
+      nx = -e.dz * dir; nz = e.dx * dir;   // (the right of the way)
+      const x = e.ax + e.dx * L.s + nx * (e.hw + 1.4), z = e.az + e.dz * L.s + nz * (e.hw + 1.4);
+      if (C.groundAt(x, z) < 0.05 || C.inWater(x, z)) continue;   // (on a pavement)
+      if (W.bodiesNear(x, z, 3).length) continue;
+      kx = x; kz = z; break;
+    }
+    if (kx == null) return;
     // (where he goes: a place 300 m to 900 m off)
     const far = DESTS.filter((D) => { const dd = Math.hypot(D.x - kx, D.z - kz); return dd > 300 && dd < 900; });
     if (!far.length) return;

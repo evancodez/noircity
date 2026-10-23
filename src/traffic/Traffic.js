@@ -20,7 +20,7 @@ import { RNG } from '../util/rng.js';
 //   traffic.step(dt, eye)  traffic.alarm(point, k)  traffic.horn(fromCar)
 //   traffic.release(car) -> v   (the hijack: the car out of the traffic, its driver out)
 //   traffic.stats { spawned, dropped, inView, maxNear, stuck }
-const MAX = 13;
+const MAX = 14;
 const SPAWN_MIN = 105, SPAWN_MAX = 200, DROP = 235, DROP_ALWAYS = 300;
 const POOL = 4;
 const _v = new THREE.Vector3();
@@ -62,6 +62,16 @@ export class Traffic {
     for (const [k, w] of mix) { if (u < w) return [k, d]; u -= w; }
     return [mix[0][0], d];
   }
+  // in my view: ahead within the lens (and a margin), near, nothing between
+  inView(x, z) {
+    const cam = this.game.camera, e = cam.position, f = cam.getWorldDirection(_v);
+    const dx = x - e.x, dz = z - e.z, d = Math.hypot(dx, dz);
+    if (d > 165) return false;
+    const fl = Math.hypot(f.x, f.z) || 1;
+    const half = Math.atan(Math.tan((cam.fov * Math.PI) / 360) * (cam.aspect || 1.6)) + 0.15;
+    if ((dx * f.x + dz * f.z) / (fl * Math.max(d, 0.1)) < Math.cos(half) && d > 6) return false;
+    return this.graph.lineOfSight(e.x, e.z, x, z);
+  }
   hidden(eye, x, z, d) {
     if (d > 165) return true;
     return !this.graph.lineOfSight(eye.x, eye.z, x, z);
@@ -72,7 +82,10 @@ export class Traffic {
       const e = this.edges[Math.floor(rng.next() * this.edges.length)];
       if (e.len < 30) continue;
       const s = e.hw + 8 + rng.next() * Math.max(1, e.len - 2 * (e.hw + 8));
-      const dir = rng.next() < 0.5 ? 1 : -1;
+      // (three in four come toward where I am: the street I am in gets its traffic)
+      const tx = eye.x - (e.ax + e.dx * s), tz = eye.z - (e.az + e.dz * s);
+      const toward = tx * e.dx + tz * e.dz >= 0 ? 1 : -1;
+      const dir = rng.next() < 0.75 ? toward : -toward;
       const off = e.lanes[0];
       const x = e.ax + e.dx * s - e.dz * off * dir, z = e.az + e.dz * s + e.dx * off * dir;
       const d = Math.hypot(x - eye.x, z - eye.z);
@@ -82,7 +95,7 @@ export class Traffic {
       // (nothing there)
       if (this.W.bodiesNear(x, z, 9).length) continue;
       const from = dir > 0 ? e.a : e.b, to = dir > 0 ? e.b : e.a;
-      const ids = walk(G, to, from, 7, rng);
+      const ids = walk(G, to, from, 7, rng, undefined, { x: eye.x, z: eye.z });
       const [kind, district] = this.pickKind(x, z);
       return this.add(kind, district, ids, { x, z }, d);
     }
@@ -113,9 +126,11 @@ export class Traffic {
     if (this.game.rays && v.model.meshes.body) this.game.rays.add(v.model.meshes.body);
     if (kind === 'police') policeGlow(v.model);
     this.cars.push(car);
+    if (this.inView(v.pos.x, v.pos.z)) this.stats.popIn++;
     return car;
   }
   drop(car) {
+    if (this.inView(car.v.pos.x, car.v.pos.z)) this.stats.popOut = (this.stats.popOut || 0) + 1;
     const i = this.cars.indexOf(car);
     if (i >= 0) this.cars.splice(i, 1);
     this.unlamp(car.v);
@@ -220,7 +235,8 @@ export class Traffic {
     const ids = car.ids;
     if (ids.length < 3) return;
     const a = ids[ids.length - 2], b = ids[ids.length - 1];
-    const more = walk(this.graph, b, a, 6, this.rng);
+    const E = this.game.camera.position;
+    const more = walk(this.graph, b, a, 6, this.rng, undefined, { x: E.x, z: E.z });
     const ids2 = [ids[ids.length - 3], ...more];
     let path;
     try { path = lanePath(this.graph, ids2, { pace: car.pace || 1 }); } catch (err) { car.pilot.done = true; return; }
@@ -242,8 +258,9 @@ export class Traffic {
     }
     const s = P.s, sp = Math.max(0, v.speed);
     let stop = Infinity;
-    // (a man at my door: I brake for him - the hijack's 'he brakes when I stand at his door')
-    if (car.held) stop = s - 1;
+    // (a man at my door: I brake for him - the hijack's 'he brakes when I stand at his door';
+    // the hijack says so each step it sees me there)
+    if (car.held) { stop = s - 1; car.held = false; car.why = 'held'; }
     // (the proofs' bed: a car that stops beside a car - &come=..&held=1)
     if (car.stopBy) { const i = path.nearestAll(car.stopBy.pos.x, car.stopBy.pos.z); stop = Math.min(stop, path.pts[i].s + 1.5); }
     // the next junction ahead and the line before it
@@ -261,6 +278,9 @@ export class Traffic {
         if (st === 'stop') stop = Math.min(stop, line);
         else if (st === 'amber') { const need = (sp * sp) / (2 * 3.2) + 1; if (line - s > need) stop = Math.min(stop, line); }
         car.atSignal = st !== 'go' && line - s < 25;
+        // (and a car of mine across it on its red: they brake for me)
+        const pv = W.V.player;
+        if (st === 'go' && pv && line - s < 14 && Math.hypot(pv.pos.x - N.node.x, pv.pos.z - N.node.z) < box + 2 && pv.speedAbs > 1.5 && Math.abs(Math.cos(pv.yaw - v.yaw)) < 0.6) stop = Math.min(stop, line);
       } else if (N.node.ways >= 3) {
         // give way to a car already in the junction (and never wait for ever)
         if (line - s < 12) {

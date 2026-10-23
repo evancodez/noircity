@@ -21,7 +21,7 @@ import { money, pay, spend } from '../traffic/seams.js';
 const LOOP = ['-4500,2400', '-4500,1500', '-4500,600', '-4500,-300', '-3700,-300', '-3700,600', '-3700,1500', '-3700,2400'];
 const LAPS = 3, BET = 10, BOX = { x0: -470, x1: -350, z0: -55, z1: 265 };
 const START = { x: -450, z: 222 };      // the line: on the Straight 18 m north of Water St
-export const RACE = { paces: [0.95, 0.9, 0.85], kinds: ['coupe', 'saloon', 'coupe'], LAPS, BET };
+export const RACE = { paces: [1.0, 0.95, 0.9], kinds: ['coupe', 'saloon', 'coupe'], LAPS, BET };
 const _v = new THREE.Vector3();
 
 export class Race {
@@ -165,6 +165,8 @@ export class Race {
   run(dt) {
     const G = this.G, hud = G.hud, R = G.city, v = this.me, P = this.path;
     this.t += dt;
+    // (a car of the traffic come onto the course while it runs, out of my sight: gone)
+    for (const c of [...this.W.traffic.cars]) if (inBox(c.v.pos) && this.W.traffic.hidden(G.camera.position, c.v.pos.x, c.v.pos.z, Math.hypot(c.v.pos.x - G.camera.position.x, c.v.pos.z - G.camera.position.z))) this.W.traffic.drop(c);
     // my place on the course
     const M = this.mine;
     M.i = P.nearest(v.pos.x, v.pos.z, M.i, 40);

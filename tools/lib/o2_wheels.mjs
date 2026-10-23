@@ -77,7 +77,7 @@ function prims({ js, turn, keyDown, keyUp, sleep, log }, H) {
       return true;
     },
     // a car's way by the keys: pure pursuit on a path of points; until(s) ends it
-    async driveAlong(path, { until = null, speed = 14, timeout = 120000, onStep = null } = {}) {
+    async driveAlong(path, { until = null, speed = 14, timeout = 120000, onStep = null, traffic = false } = {}) {
       const T0 = Date.now();
       let idx = 0, stuckT = 0, revUntil = 0, last = Date.now();
       for (;;) {
@@ -100,7 +100,14 @@ function prims({ js, turn, keyDown, keyUp, sleep, log }, H) {
         const a0 = path[Math.min(path.length - 1, idx + 2)], a1 = path[Math.min(path.length - 1, idx + 6)], a2 = path[Math.min(path.length - 1, idx + 12)];
         const h1 = Math.atan2(a1[1] - a0[1], a1[0] - a0[0]), h2 = Math.atan2(a2[1] - a1[1], a2[0] - a1[0]);
         const tn = Math.abs(Math.atan2(Math.sin(h2 - h1), Math.cos(h2 - h1)));
-        const target = (tn > 0.9 ? 6.5 : tn > 0.4 ? 10 : speed) * H.slow;
+        let target = (tn > 0.9 ? 6.5 : tn > 0.4 ? 10 : speed) * H.slow;
+        // (a car in my lane ahead: kept off it, stopped behind it)
+        if (traffic) {
+          const ah = await js(`(() => { const c = G.city.car, ca = Math.cos(c.yaw), sa = Math.sin(c.yaw); let best = 99; for (const o of G.wheels.bodies()) { if (o === c || !o.spec) continue; const dx = o.pos.x - c.pos.x, dz = o.pos.z - c.pos.z; if (Math.abs(dx) > 30 || Math.abs(dz) > 30) continue; const lx = dx * ca - dz * sa, lz = dx * sa + dz * ca; if (lx > 1 && lx < 28 && Math.abs(lz) < o.spec.halfW + (o.parked ? 0.45 : 1.25)) best = Math.min(best, lx - o.spec.halfL - 2.45); } return best; })()`);
+          if (ah < 22) target = Math.min(target, Math.max(0, (ah - 3) * 0.8));
+          if (ah < 3) target = 0;
+          if (ah < 4 && Math.abs(c.v) < 0.5) stuckT = 0;
+        }
         if (Math.abs(c.v) < 0.8 && P.held.has('KeyW')) stuckT += dt; else stuckT = 0;
         if (stuckT > 2.0) { revUntil = now + 1300; stuckT = 0; }
         if (now < revUntil) { await P.set('KeyW', false); await P.set('KeyS', true); await P.set('KeyA', ang > 0); await P.set('KeyD', ang < 0); await sleep(30); continue; }
@@ -125,7 +132,7 @@ function prims({ js, turn, keyDown, keyUp, sleep, log }, H) {
       for (let i = 0; i + 1 < out.length; i++) { const [ax, az] = out[i], [bx, bz] = out[i + 1]; const L = Math.hypot(bx - ax, bz - az); const n = Math.max(1, Math.ceil(L / 3)); for (let k = 0; k < n; k++) D.push([ax + (bx - ax) * k / n, az + (bz - az) * k / n]); }
       D.push(out[out.length - 1]);
       const R = [];
-      for (let i = 0; i < D.length; i++) { const a = D[Math.max(0, i - 2)], b = D[Math.min(D.length - 1, i + 2)]; const dx = b[0] - a[0], dz = b[1] - a[1], L = Math.hypot(dx, dz) || 1; const S = g.streetAt(D[i][0], D[i][1]); const off = S && S.edge.el && S.d < 1 ? (S.edge.hw + 4.56) / 2 : ${off}; R.push([D[i][0] - dz / L * off, D[i][1] + dx / L * off]); }
+      for (let i = 0; i < D.length; i++) { const a = D[Math.max(0, i - 2)], b = D[Math.min(D.length - 1, i + 2)]; const dx = b[0] - a[0], dz = b[1] - a[1], L = Math.hypot(dx, dz) || 1; const S = g.streetAt(D[i][0], D[i][1]); const off = ${off}; R.push([D[i][0] - dz / L * off, D[i][1] + dx / L * off]); }
       return R; })()`),
   };
   return P;
@@ -225,11 +232,70 @@ async function pull(P, { js, sleep, log, shot }, H) {
   R.drove = end.car ? +Math.hypot(end.car.x - s.car.x, end.car.z - s.car.z).toFixed(1) : 0;
   R.end = r.end; R.inCar = end.inCar; R.kind = end.car && end.car.kind;
   R.stats = await js('({ ...G.wheels.hijack.stats, men: G.wheels.hijack.men.map((m) => m.state), money: G.save.money, crime: G.crime.log.slice(-2) })');
+  R.crime = R.stats.crime;
   R.secs = (Date.now() - T0) / 1000;
   return R;
 }
-async function witness() { return { err: 'todo' }; }
-async function fare() { return { err: 'todo' }; }
+// ---- witness: the break-in seen, and unseen ------------------------------------------------------------------
+// (with &come=coupe&held=1 a car stands by in the lane while I break in: its
+// man sees; with &notraffic=1 nobody is about: the event is logged unseen)
+async function witness(P, api, H) {
+  const { js, sleep } = api;
+  if (P.opts.waitCar) for (let i = 0; i < 300; i++) { const c = await js('G.wheels.traffic.cars.some((c) => c.stopBy && Math.abs(c.v.speed) < 0.3)'); if (c) break; await sleep(100); }
+  const r = await park(P, api, H);
+  const log = await js('G.crime.log.slice()');
+  return { ...r, log };
+}
+// ---- fare: the taxi's fares (&ckind=taxi: the start's car is a cab) ----------------------------------------
+// opts.fares: how many to take; idle: the first one in, then nothing (he
+// says Come on., and gets out); bad: sloppy hands and a knock into the kerb's
+// things now and then; medium, good: there and paid
+async function fare(P, { js, sleep, log, shot }, H) {
+  const T0 = Date.now();
+  const st0 = await P.state();
+  if (!st0.inCar) { await P.tap('KeyE'); await sleep(1400); }
+  const out = [];
+  const n = P.opts.fares || 2;
+  for (let k = 0; k < n; k++) {
+    // the hail: wait for it (it comes on the street ahead)
+    let F = null;
+    for (let i = 0; i < 300; i++) { F = await js(`(() => { const f = G.wheels.fares; if (f.state !== 'hail' || !f.fare.c) return null; const p = f.fare.c.fig.pos; return { x: p.x, z: p.z, dest: f.fare.dest }; })()`); if (F) break; await sleep(100); if (i % 50 === 49) { const s = await P.state(); const r = await P.route([s.car.x + Math.cos(s.car.yaw) * 90, s.car.z - Math.sin(s.car.yaw) * 90]); await P.driveAlong(r || [], { timeout: 8000, traffic: true, until: async () => !!(await js("G.wheels.fares.state === 'hail'")) }); await P.stop(); } }
+    if (!F) { out.push({ err: 'no hail' }); break; }
+    log(`fare ${k}: a hail at (${F.x.toFixed(0)}, ${F.z.toFixed(0)}) for ${F.dest.name}`);
+    await sleep(H.react);
+    // to him: along the road to a stop by him
+    const r1 = await P.route([F.x, F.z], 2.6);
+    await P.driveAlong(r1 || [], { timeout: 40000, speed: 9, traffic: true, until: async (s) => Math.hypot(s.car.x - F.x, s.car.z - F.z) < 6.5 });
+    await P.stop();
+    if (shot && k === 0) await shot('hail');
+    // (good hands say it: E; the others wait the two seconds)
+    if (H.name === 'good') await P.tap('KeyE');
+    let inside = false;
+    for (let i = 0; i < 80; i++) { const s = await js('G.wheels.fares.state'); if (s === 'in') { inside = true; break; } await sleep(100); }
+    if (!inside) { out.push({ err: 'not in', state: await js('G.wheels.fares.state') }); continue; }
+    const t1 = Date.now();
+    if (H.name === 'idle') {
+      // nothing: he waits, says Come on., and gets out
+      let warned = null;
+      for (let i = 0; i < 700; i++) { const w = await js("G.hud.kit.warnText"); if (w && !warned) warned = { warn: w, at: (Date.now() - t1) / 1000 }; const s = await js('G.wheels.fares.state'); if (s !== 'in') break; await sleep(100); }
+      out.push({ idle: true, warned, secs: (Date.now() - t1) / 1000, stats: await js('({ ...G.wheels.fares.stats })') });
+      break;
+    }
+    const dest = F.dest;
+    const r2 = await P.route([dest.x, dest.z]);
+    const speed = H.name === 'good' ? 15 : H.name === 'medium' ? 13 : 12;
+    let knocks = 0;
+    const res = await P.driveAlong(r2 || [], { timeout: 180000, speed, traffic: true, until: async () => (await js('G.wheels.fares.state')) !== 'in',
+      onStep: async (s, idx) => { if (H.name === 'bad' && knocks < 2 && idx > 30 + knocks * 60 && Math.random() < 0.01) { knocks++; log('  bad hands: into the kerb'); await P.set('KeyW', true); await P.set(Math.random() < 0.5 ? 'KeyA' : 'KeyD', true); await sleep(1300); } } });
+    await P.stop();
+    await sleep(600);
+    const fs = await js('({ ...G.wheels.fares.stats, money: G.save.money })');
+    out.push({ dest: dest.name, end: res.end, secs: (Date.now() - t1) / 1000, stats: fs });
+    log(`  fare ${k}: ${JSON.stringify(out[out.length - 1])}`);
+  }
+  const S = await js('({ ...G.wheels.fares.stats, money: G.save.money })');
+  return { hands: H.name, fares: out, stats: S, secs: (Date.now() - T0) / 1000 };
+}
 // ---- race: the Yards' corner ------------------------------------------------------------------------
 // (&car=-444,252,1.5708: in a coupe on the Straight just short of the line)
 async function race(P, { js, sleep, log, shot }, H) {
@@ -266,6 +332,138 @@ async function race(P, { js, sleep, log, shot }, H) {
   const res = await js('({ result: G.wheels.race.result, stats: G.wheels.race.stats, money: G.save.money, others: G.wheels.race.cars.map((c) => +c.s.toFixed(0)), mine: +G.wheels.race.mine.s.toFixed(0), knocks: G.city.car && G.city.car.stats.log, crashes: G.city.car && G.city.car.stats.crashes, damage: G.city.car && +G.city.car.damage.toFixed(2) })');
   return { hands: H.name, prompt: pr, ...res, secs: (Date.now() - T0) / 1000 };
 }
-async function drive() { return { err: 'todo' }; }
-async function latency() { return { err: 'todo' }; }
-async function bench() { return { err: 'todo' }; }
+// ---- drive: the drive-through of every district in the traffic -----------------------------------------
+// O1's loop (tools/lib/o1_city.mjs DISTRICTS) by the keys, braking for what is
+// ahead in my lane; the page's recorder counts: frames over 50 ms, any two cars
+// inside each other (and a car inside a wall), the traffic come or gone in my
+// view, the longest wait of a car not at a red, the crashes.
+const DISTRICTS = [[-30, -115], [240, -30], [432, -200], [330, -420], [-300, -480], [-450, -100], [-450, 300], [-200, 330], [100, 432], [150, 200], [-112, 60]];
+async function drive(P, { js, sleep, log, shot }, H) {
+  const T0 = Date.now();
+  await js(`(() => {
+    if (window.__o2rec) return 1;
+    const R = window.__o2rec = { n: 0, over50: 0, max: 0, last: performance.now(), dts: [], overlap: 0, pairs: [], inWall: 0, walls: [], on: true, cars: 0, maxCars: 0, nearMax: 0 };
+    const pen = (a, o) => { const dx = o.pos.x - a.pos.x, dz = o.pos.z - a.pos.z; const ca = Math.cos(a.yaw), sa = Math.sin(a.yaw), cb = Math.cos(o.yaw), sb = Math.sin(o.yaw); let p = 9; for (const [x, z] of [[ca, -sa], [sa, ca], [cb, -sb], [sb, cb]]) { const ra = a.spec.halfL * Math.abs(ca * x - sa * z) + a.spec.halfW * Math.abs(sa * x + ca * z); const rb = o.spec.halfL * Math.abs(cb * x - sb * z) + o.spec.halfW * Math.abs(sb * x + cb * z); p = Math.min(p, ra + rb - Math.abs(dx * x + dz * z)); } return p; };
+    const tick = () => {
+      const t = performance.now(), dt = t - R.last; R.last = t;
+      if (R.on) {
+        R.n++; if (dt > R.max) R.max = dt;
+        if (dt > 50) { R.over50++; if (R.dts.length < 20) R.dts.push([+dt.toFixed(0), Math.round(G.camera.position.x), Math.round(G.camera.position.z)]); }
+        const W = G.wheels;
+        if (W && R.n % 3 === 0) {
+          const L = W.bodies().filter((o) => o.spec && !o.stored);
+          const mov = L.filter((o) => !o.parked || (o.vel && o.vel.lengthSq() > 0.01));
+          for (const a of mov) for (const o of L) { if (o === a || a.kind === 'tram' && o.kind === 'tram') continue; if (Math.abs(o.pos.x - a.pos.x) > 9 || Math.abs(o.pos.z - a.pos.z) > 9) continue; const p = pen(a, o); if (p > 0.3) { R.overlap++; if (R.pairs.length < 12) R.pairs.push([a.kind, o.kind || 'parked', +p.toFixed(2), Math.round(a.pos.x), Math.round(a.pos.z), a.traffic ? 'T' : a.parked ? 'P' : a === G.vehicles.player ? 'me' : '?', o.traffic ? 'T' : o.parked ? 'P' : o === G.vehicles.player ? 'me' : '?', G.stage.track.bodies().includes(o), +(a.speed || 0).toFixed(1)]); } }
+          const col = G.stage.colliders;
+          for (const a of mov) { if (a.kind === 'tram') continue; for (const w of col.near(a.pos.x, a.pos.z, 1)) { if (w.r != null || w.tag !== 'wall') continue; const dx = a.pos.x - w.cx, dz = a.pos.z - w.cz; const lx = dx * w.c - dz * w.s, lz = dx * w.s + dz * w.c; if (Math.abs(lx) < w.hx - 0.3 && Math.abs(lz) < w.hz - 0.3) { R.inWall++; if (R.walls.length < 8) R.walls.push([a.kind, Math.round(a.pos.x), Math.round(a.pos.z)]); } } }
+          R.maxCars = Math.max(R.maxCars, W.traffic.cars.length); R.nearMax = Math.max(R.nearMax, W.traffic.stats.near || 0);
+        }
+      }
+      requestAnimationFrame(tick);
+    };
+    requestAnimationFrame(tick);
+    return 1; })()`);
+  const st0 = await P.state();
+  if (!st0.inCar) { await P.tap('KeyE'); await sleep(1200); }
+  const pts = P.opts.points || DISTRICTS;
+  const path = await js(`(() => {
+    const g = G.stage.part('city').graph, c = G.city.car;
+    const snap = ([x, z]) => { const S = g.streetAt(x, z); return S ? [S.edge.ax + S.edge.dx * S.s, S.edge.az + S.edge.dz * S.s] : [x, z]; };
+    const P = [[c.pos.x, c.pos.z], ...${JSON.stringify(pts)}].map(snap);
+    const out = [];
+    for (let i = 0; i + 1 < P.length; i++) { const r = g.route({ x: P[i][0], z: P[i][1] }, { x: P[i + 1][0], z: P[i + 1][1] }); if (!r) return { err: 'no route ' + i }; for (const p of r.pts) { if (out.length && Math.hypot(p[0] - out[out.length - 1][0], p[1] - out[out.length - 1][1]) < 1) continue; out.push(p); } }
+    const D = [];
+    for (let i = 0; i + 1 < out.length; i++) { const [ax, az] = out[i], [bx, bz] = out[i + 1]; const L = Math.hypot(bx - ax, bz - az); const n = Math.max(1, Math.ceil(L / 3)); for (let k = 0; k < n; k++) D.push([ax + (bx - ax) * k / n, az + (bz - az) * k / n]); }
+    D.push(out[out.length - 1]);
+    const R = [];
+    for (let i = 0; i < D.length; i++) { const a = D[Math.max(0, i - 2)], b = D[Math.min(D.length - 1, i + 2)]; const dx = b[0] - a[0], dz = b[1] - a[1], L = Math.hypot(dx, dz) || 1; const S = g.streetAt(D[i][0], D[i][1]); const off = 2.0; R.push([D[i][0] - dz / L * off, D[i][1] + dx / L * off]); }
+    return R; })()`);
+  if (!path || path.err) return { err: path && path.err };
+  log(`drive: ${path.length} points (${(path.length * 3 / 1000).toFixed(2)} km)`);
+  await sleep(300);
+  await js('(window.__o2rec.n = 0, window.__o2rec.over50 = 0, window.__o2rec.max = 0, window.__o2rec.dts = [], window.__o2rec.last = performance.now(), 1)');
+  const visited = new Set();
+  const shots = P.opts.shots || {};
+  const done = new Set();
+  const r = await P.driveAlong(path, { speed: 14, timeout: P.opts.timeout || 600000, traffic: true,
+    onStep: async (s, idx) => {
+      if (idx % 25 === 0) { const d = await js('(() => { const c = G.city.car, d = G.stage.part("city").C.cellAt(c.pos.x, c.pos.z); return d ? d.district : null; })()'); if (d) visited.add(d); }
+      for (const [k, name] of Object.entries(shots)) if (idx >= +k && !done.has(k)) { done.add(k); await js('(window.__o2rec.on = false, 1)'); await shot(name); await js('(window.__o2rec.last = performance.now(), window.__o2rec.on = true, 1)'); }
+      if (idx % 200 === 0 && idx !== P.lastLog) P.lastLog = idx, log(`  at ${idx}/${path.length} (${s.car.x.toFixed(0)}, ${s.car.z.toFixed(0)}) ${(s.car.v * 3.6).toFixed(0)} km/h`);
+    } });
+  const R = await js(`(() => { const R = window.__o2rec, W = G.wheels; return { frames: R.n, over50: R.over50, maxMs: +R.max.toFixed(0), dts: R.dts, overlap: R.overlap, pairs: R.pairs, inWall: R.inWall, walls: R.walls, maxCars: R.maxCars, nearMax: R.nearMax, traffic: W.traffic.stats, tram: W.tram.stats, crashes: G.city.car.stats.crashes, knocks: (G.city.car.stats.log || []).length, damage: +G.city.car.damage.toFixed(2) }; })()`);
+  const last = await js(`(() => { const c = G.city.car, ca = Math.cos(c.yaw), sa = Math.sin(c.yaw); const near = G.wheels.bodies().filter((o) => o !== c && o.spec && Math.hypot(o.pos.x - c.pos.x, o.pos.z - c.pos.z) < 14).map((o) => { const dx = o.pos.x - c.pos.x, dz = o.pos.z - c.pos.z; return [o.kind, o.traffic ? 'T' : o.parked ? 'P' : '?', +(dx * ca - dz * sa).toFixed(1), +(dx * sa + dz * ca).toFixed(1), +(o.speed || 0).toFixed(1)]; }); return { at: [+c.pos.x.toFixed(1), +c.pos.z.toFixed(1), +c.yaw.toFixed(2)], v: +c.speed.toFixed(2), input: c.input, near }; })()`);
+  return { end: r.end, districts: [...visited], km: +(r.idx * 3 / 1000).toFixed(2), secs: (Date.now() - T0) / 1000, last, ...R };
+}
+// ---- latency: trusted key to the first frame of the act ---------------------------------------------------
+// W (the car moves), A (the wheel turns), SPACE (the handbrake on), Q (the horn
+// sounds: the 'city:horn' event), E at a parked car's door (the break-in begun)
+async function latency(P, { js, keyDown, keyUp, sleep, log }, H) {
+  const arm = async (what) => js(`(() => {
+    const L = window.__lat = { what: ${JSON.stringify(what)}, key: 0, frame: 0 };
+    const car = G.city.car, p0 = { x: car.pos.x, z: car.pos.z, steer: car.steer };
+    let horn = false; const hf = () => { horn = true; }; G.on('city:horn', hf);
+    addEventListener('keydown', () => { if (!L.key) L.key = performance.now(); }, { capture: true, once: true });
+    const tick = () => {
+      const c = G.city.car;
+      const done = L.what === 'W' ? Math.hypot(c.pos.x - p0.x, c.pos.z - p0.z) > 1e-4 : L.what === 'A' ? Math.abs(c.steer - p0.steer) > 1e-4 : L.what === 'SPACE' ? c.input.handbrake > 0 : L.what === 'Q' ? horn : L.what === 'E' ? !!G.wheels.hijack.act : false;
+      if (L.key && done) { L.frame = performance.now(); G.off('city:horn', hf); return; }
+      if (performance.now() - (L.key || performance.now()) < 2000) requestAnimationFrame(tick);
+    };
+    requestAnimationFrame(tick);
+    return 1; })()`);
+  const read = async () => { await sleep(500); return js('(() => { const L = window.__lat; return L.frame && L.key ? +(L.frame - L.key).toFixed(1) : null; })()'); };
+  const out = {};
+  // E at the parked car's door (&park=saloon): walk there first
+  const b = await js(`(() => { const b = G.wheels.parked.bodies.find((x) => x.rec.bay === -1); if (!b) return null; const c = Math.cos(b.yaw), s = Math.sin(b.yaw), hw = b.spec.halfW + 0.85; return { x: b.pos.x, z: b.pos.z, door: [b.pos.x + -0.3 * c + -hw * s, b.pos.z - -0.3 * s + -hw * c] }; })()`);
+  if (b) { await P.walkTo(b.door[0], b.door[1]); await P.face(b.x, b.z); await sleep(400); await arm('E'); await keyDown('KeyE'); out.E = await read(); await keyUp('KeyE'); await sleep(2600); }
+  const s = await P.state();
+  if (!s.inCar) return { ...out, err: 'not in the car' };
+  await sleep(800);
+  await arm('W'); await keyDown('KeyW'); out.W = await read(); await sleep(900); await keyUp('KeyW');
+  await arm('A'); await keyDown('KeyA'); out.A = await read(); await keyUp('KeyA');
+  await arm('SPACE'); await keyDown('Space'); out.SPACE = await read(); await keyUp('Space');
+  await P.stop();
+  await arm('Q'); await keyDown('KeyQ'); out.Q = await read(); await keyUp('KeyQ');
+  log(`latency: ${JSON.stringify(out)}`);
+  return out;
+}
+// ---- bench: my car into every kind of car, and the tram --------------------------------------------------------
+// (&lineup=1: one of each kind up the kerb ahead of the start's car; I take
+// each head-on at 30 km/h from 18 m, then S to back off it; after each: no two
+// boxes inside each other by more than 0.3 m, the struck car moved or not)
+async function bench(P, { js, sleep, log, shot }, H) {
+  const st0 = await P.state();
+  if (!st0.inCar) { await P.tap('KeyE'); await sleep(1400); }
+  const L = await js(`G.wheels.left.filter((x) => x.v && x.v !== G.city.car).map((x) => ({ kind: x.kind, x: x.v.pos.x, z: x.v.pos.z, yaw: x.v.yaw, hl: x.v.spec.halfL }))`);
+  const out = [];
+  const pen = `(a, o) => { const dx = o.pos.x - a.pos.x, dz = o.pos.z - a.pos.z; const ca = Math.cos(a.yaw), sa = Math.sin(a.yaw), cb = Math.cos(o.yaw), sb = Math.sin(o.yaw); let p = 9; for (const [x, z] of [[ca, -sa], [sa, ca], [cb, -sb], [sb, cb]]) { const ra = a.spec.halfL * Math.abs(ca * x - sa * z) + a.spec.halfW * Math.abs(sa * x + ca * z); const rb = o.spec.halfL * Math.abs(cb * x - sb * z) + o.spec.halfW * Math.abs(sb * x + cb * z); p = Math.min(p, ra + rb - Math.abs(dx * x + dz * z)); } return p; }`;
+  for (const T of [...L, { kind: 'tram' }]) {
+    // a run up at it: from 18 m behind it on its line (the tram: at its side, in its path)
+    let tgt = T;
+    if (T.kind === 'tram') { tgt = await js('({ kind: "tram", x: G.wheels.tram.v.pos.x, z: G.wheels.tram.v.pos.z, yaw: G.wheels.tram.v.yaw, hl: 6.5 })'); }
+    const s = await P.state();
+    const back = T.kind === 'tram' ? 16 : tgt.hl + 18;
+    const fx = Math.cos(tgt.yaw), fz = -Math.sin(tgt.yaw);
+    const from = T.kind === 'tram' ? [tgt.x + 9, tgt.z + 6] : [tgt.x - fx * back, tgt.z - fz * back];
+    // (driven round to the run-up point by the road, then the hit)
+    const r = await P.route(from, 0);
+    await P.driveAlong(r || [], { timeout: 45000, speed: 8, until: async (q) => Math.hypot(q.car.x - from[0], q.car.z - from[1]) < 3 });
+    await P.stop();
+    const line = [];
+    const ax = T.kind === 'tram' ? tgt.x : tgt.x, az = tgt.z;
+    for (let k = 0; k <= 12; k++) line.push([from[0] + (ax - from[0]) * k / 12 * 1.4, from[1] + (az - from[1]) * k / 12 * 1.4]);
+    const res = await P.driveAlong(line, { timeout: 9000, speed: 8.5, until: async (q) => (await js('G.city.car.touchT')) < 0.1 && Math.abs(q.car.v) < 1.5 });
+    await sleep(300);
+    const after = await js(`(() => { const pen = ${pen}; const c = G.city.car; let worst = 0, what = null; for (const o of G.wheels.bodies()) { if (o === c || !o.spec) continue; if (Math.hypot(o.pos.x - c.pos.x, o.pos.z - c.pos.z) > 12) continue; const p = pen(c, o); if (p > worst) { worst = p; what = o.kind; } } return { worst: +worst.toFixed(2), what, crashes: c.stats.crashes, max: +c.stats.maxImpact.toFixed(1), damage: +c.damage.toFixed(2) }; })()`);
+    // and S backs off it
+    const p0 = await P.state();
+    await P.set('KeyS', true); await sleep(1600); await P.set('KeyS', false);
+    const p1 = await P.state();
+    const backed = +Math.hypot(p1.car.x - p0.car.x, p1.car.z - p0.car.z).toFixed(2);
+    out.push({ kind: T.kind, end: res.end, ...after, backed });
+    log(`  bench ${T.kind}: ${JSON.stringify(out[out.length - 1])}`);
+    if (shot && T.kind === 'lorry') await shot('bench_lorry');
+  }
+  return { hits: out, worst: Math.max(...out.map((h) => h.worst)), backedAll: out.every((h) => h.backed > 0.8) };
+}

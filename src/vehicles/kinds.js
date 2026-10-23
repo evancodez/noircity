@@ -467,7 +467,7 @@ export function fleetModel(kind, stage, { paint = null } = {}) {
   mk('pale', G.pale, M.whitewall, 'body');
   mk('bust', G.bust, M.rubber, 'driver');
   if (meshes.bust) { meshes.bust.visible = false; meshes.bust.userData.noRay = true; }
-  if (G.red) { const r = mk('red', G.red, X.redDim, 'lamp'); r.userData.emitter = true; r.userData.noRay = true; }
+  if (G.red) { const r = mk('red', G.red, M.glass, 'lamp'); r.userData.emitter = true; r.userData.noRay = true; }
   if (G.lamp) { const r = mk('lamp', G.lamp, X.roof, 'lamp'); r.userData.emitter = true; r.userData.noRay = true; }
   meshes.contact = contactShadow(g, K.halfL * 2 + 1.2, K.halfW * 2 + 1.0);
   const model = { group: g, meshes, kind, K, paint: pname, far: 0, well: false, fleet: true };
@@ -512,7 +512,8 @@ export function repaint(model, stage, name) {
 export function lampsLit(model, stage, on) {
   const M = stage.M, X = fleetMats(M);
   if (model.meshes.lens) model.meshes.lens.material = on ? M.headlamp : M.glass;
-  if (model.meshes.red) model.meshes.red.material = on ? X.red : X.redDim;
+  // (the police lamp unlit is dark glass: the crew's red only while it burns)
+  if (model.meshes.red) model.meshes.red.material = on ? X.red : M.glass;
 }
 // a soft red halo over the police lamp (the siren's turn): a sprite of the crew's red
 export function policeGlow(model) {

@@ -86,6 +86,8 @@ export class Wheels {
       }
     }
     if (q && q.get('come') && car) this.comeT = 0.3;
+    // (&notraffic=1: the parked and the tram, no moving traffic - the unseen break-in's bed)
+    if (q && q.get('notraffic')) this.traffic.on = false;
     if (q && q.get('lineup') && car) {
       const kinds = q.get('lineup') === '1' ? ['coupe', 'saloon', 'taxi', 'police', 'hearse', 'van', 'lorry'] : q.get('lineup').split(',');
       let ahead = 7;
@@ -166,6 +168,8 @@ export class Wheels {
     damageStep(this, dt);
     sirenStep(this, dt);
     if (this.comeT != null) { this.comeT -= dt; if (this.comeT <= 0) { this.comeT = null; this.come(); } }
+    // (&again=1: when that one is gone - taken, driven off - and I am on foot, the next comes)
+    if (this.comeAgain && this.comeT == null && !this.traffic.cars.some((c) => c.stopBy) && this.game.city && !this.game.city.inCar && !this.hijack.fight && !this.game.brawl.active) this.comeT = 4;
     for (const x of this.extras) x.step(dt);
     // (the hunters O3 asks for: stepped here, like the traffic)
     if (this.hunters) for (const v of this.hunters) if (this.V.list.includes(v) && v !== this.V.player) v.step(dt);
@@ -202,7 +206,7 @@ export class Wheels {
   claimsE(ctx, R) {
     if (this.garage.inCar(ctx, R)) return true;
     if (this.race.shown || this.race.state === 'grid') return true;
-    if (this.fares.fare && this.fares.fare.prompted) return true;
+    if (this.fares.fare && (this.fares.fare.prompted || this.fares.state === 'boarding')) return true;
     return false;
   }
   // a car of mine taken again (I am in it)
@@ -252,7 +256,7 @@ export class Wheels {
     const c = this.traffic.add(kind, 'downtown', ids, { x: L.x, z: L.z });
     if (c && who) c.driver.kind = who;
     if (c && q.get('held')) c.stopBy = car;
-    this.come = () => {};
+    this.comeAgain = !!q.get('again');
     return c;
   }
 
