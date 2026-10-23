@@ -46,6 +46,8 @@ export class Night {
     this.standins = installStandins(this);
     this.things = installThings(this);   // game.things, game.money (docs/THINGS_TO_DO.md's seams)
     this.clock = makeClock(this);
+    // (O5's hotel bed: 'night:hour' { hours, why: 'sleep' } - the night on by that many hours)
+    game.on('night:hour', (e) => { if (e && e.hours) this.clock.add(60 * e.hours); });
     this.hud = new NightHud(this);
     this.mini = new Minimap(this);
     this.map = new NightMap(this);

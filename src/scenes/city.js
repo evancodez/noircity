@@ -6,7 +6,8 @@ import { riverNearest } from '../world/cityGen.js';
 import { MapOverlay } from '../world/map.js';
 import { compileAll } from '../stages/noircity/compile.js';
 import { swimStep } from '../world/swim.js';
-import { arms, owns } from '../combat/money.js';   // [O7] the revolver under my arm
+import { placesOf } from '../places/Places.js';   // [O5] the places: their doors, their rooms
+import { arms, owns } from '../combat/money.js';   // [O5] the wheel through what I own; [O7] the revolver under my arm
 
 // NOIR CITY's free roam (lane O1): the city, a car at the kerb, nothing I
 // must do. Every critic and every later lane starts from here.
@@ -85,6 +86,8 @@ function place(ctx, at) {
   ctx.controller.setPose(at.pos.x, at.pos.z, at.yaw, -0.06);
   stage.part('bounds').navAround(at.pos.x, at.pos.z, 14);
   R.stream = stage.part('stream');
+  // [O5] the places (src/places/): loaded as I come near their doors
+  R.places = placesOf(G, stage);
   // (every program the city draws with, compiled under the fade in: none met first down a street)
   // [O1b] (the performance audit's lever 3: the first E into the car made a
   // program and uploaded the seat's geometries in its frame - 108 and 127 ms.
@@ -114,10 +117,13 @@ function place(ctx, at) {
 
 export default defineScene({
   id: 'city', stage: 'noircity', title: '', name: 'Noir City',
-  beats: ['roam', 'ashore'],
+  // [O5] hotel: up in my room at the Carlton (the save the bed writes; CONTINUE);
+  // station: on the cell's bench at headquarters (the arrest's wake: O3);
+  // wake: up after a fall in a place (G.city.wake: outside its door, or by the gym's ring), the car where I left it
+  beats: ['roam', 'ashore', 'hotel', 'station', 'wake'],
   // (M is the map here: Game.bindInput leaves the sound alone)
   mapKey: true,
-  objectives: { roam: null, ashore: null },
+  objectives: { roam: null, ashore: null, hotel: null, station: null, wake: null },
   // [O6] the low line when the destruction set hurt him (the fire, the tram): its fix, not the gun kit's
   lowWarn: (ctx) => (ctx.stage.smash && ctx.stage.smash.cars.lowWarn()) || null,
   setup: {
@@ -144,6 +150,42 @@ export default defineScene({
         return;
       }
       place(ctx, { car: a.car, carYaw: a.carYaw, pos: a.pos, yaw: a.yaw });
+      // [O5] (look development and the frames: ?place=<id> puts me inside it, &seat=<name> in its seat)
+      const pq = q && q.get('place');
+      // (&out=1: loaded, but I stay where the pose puts me - outside its door)
+      if (pq && !q.get('out')) ctx.game.city.places.enter(pq, { seat: q.get('sit') || null });
+      // (&opendoor=<s>: its street door opened that many seconds in - the strips)
+      if (pq && q.get('opendoor')) { const P = ctx.game.city.places, at = +q.get('opendoor'); let t = 0; P.later((dt) => { t += dt; const s = P.byId.get(pq); if (t < at || !s || !s.live) return false; s.live.street[0].open(ctx.game.eye); return true; }); }
+    },
+    // [O5] the hotel's bed wrote the save: CONTINUE wakes me in my room, the car at the kerb outside
+    hotel(ctx) {
+      const P = placesOf(ctx.game, ctx.stage), s = P.byId.get('hotel');
+      const kerb = s ? s.frame.w(0, 7.5) : { x: -112, z: 83 };
+      place(ctx, { car: kerb, carYaw: Math.PI / 2, pos: { x: kerb.x + 2, z: kerb.z }, yaw: 0 });
+      P.wake('hotel');
+    },
+    // [O5] after an arrest (O3's): the cell's bench at headquarters; the car is gone (it is at the Grand Ave start)
+    station(ctx) {
+      const a = ctx.stage.anchor('city.start.grand');
+      place(ctx, { car: a.car, carYaw: a.carYaw, pos: a.pos, yaw: a.yaw });
+      placesOf(ctx.game, ctx.stage).wake('police');
+    },
+    // [O5] a fall in a place (a hideout's men, the bout, a room's fight): the place as it was (built
+    // again under the black: every man back), me outside its street door facing it - or by the
+    // gym's ring - and my car where I left it
+    wake(ctx) {
+      const G = ctx.game, R = G.city || (G.city = {}), P = placesOf(G, ctx.stage);
+      // (the plays: ?start=city.wake&wake=<place>:<where> - the gym's ring, a hideout's door)
+      const q = typeof location !== 'undefined' ? new URLSearchParams(location.search) : null;
+      if (!R.wake && q && q.get('wake')) { const [id, where] = q.get('wake').split(':'); R.wake = { id, where: where || 'door' }; }
+      const W = R.wake || {}, s = P.byId.get(W.id);
+      const car = R.car ? { x: R.car.pos.x, z: R.car.pos.z, yaw: R.car.yaw } : null;
+      if (!s) { const a = ctx.stage.anchor('city.start.grand'); place(ctx, { car: a.car, carYaw: a.carYaw, pos: a.pos, yaw: a.yaw }); return; }
+      const out = s.frame.w(0, 2.6);
+      const kerb = car || { ...s.frame.w(2.5, 6.5), yaw: s.frame.yaw(Math.PI / 2) };
+      place(ctx, { car: { x: kerb.x, z: kerb.z }, carYaw: kerb.yaw, pos: out, yaw: s.frame.yaw(0) });
+      P.wakeAfter(W);
+      R.wake = null;
     },
     // out of the river: on the quay at the nearest steps, a car at the kerb by them
     ashore(ctx) {
@@ -168,6 +210,8 @@ export default defineScene({
 export function step(ctx, R, T, dt) {   // [O6] exported
   const G = ctx.game, C = ctx.stage.part('city').C, hud = ctx.hud, ctl = ctx.controller;
   if (G.failing || G.state !== 'playing') return;
+  // [O5] the places: loaded and dropped, their doors and their life
+  if (R.places) R.places.step(dt);
   const car = R.car;
   // the warning before the river (WAVE_C §1 rule 2): on a slipway's ramp, or
   // near a pier's open end - in the car at least 1.6 s ahead at its speed
@@ -189,6 +233,13 @@ export function step(ctx, R, T, dt) {   // [O6] exported
   // the map: M (the pad's d-pad down taps M)
   if (ctx.pressed('KeyM')) { const open = R.map.toggle(); ctl.frozen = open; if (car && R.inCar) { car.input.throttle = 0; car.input.brake = open ? 1 : 0; } }
   if (R.map.isOpen) { R.map.draw([{ x: G.eye.x, z: G.eye.z, yaw: ctl.yaw, kind: 'me' }, ...(car && !R.inCar ? [{ x: car.pos.x, z: car.pos.z, yaw: car.yaw - Math.PI / 2, kind: 'car' }] : [])]); return; }
+  // [O5] on foot, the mouse wheel turns through what I own (O4's arms: fists, a gun bought at the
+  // gun shop) - a gun out is the gun mode, fists the walk (lane O7 owns the wheel's card and the pad's)
+  if (!R.inCar && G.mouse.wheel && !G.crowd.active && !(R.places && R.places.seat)) {
+    const g = arms(G).next(Math.sign(G.mouse.wheel));
+    if (g) { G.setViewmodelVisible(g !== 'fists'); if (g === 'fists') G.player.hands.equip('empty'); ctl.setMode(g === 'fists' ? 'walk' : 'gun', { crouch: false }); G.emit('city:arms', { gun: g }); }   // [O7] (city:arms)
+    if (g && g !== 'fists') T.drawn = true;   // [O7] (the wheel's card is not needed any more)
+  }
   if (R.inCar) {
     T.drive += dt;
     T.dist += Math.abs(car.speed) * dt;
@@ -220,15 +271,8 @@ export function step(ctx, R, T, dt) {   // [O6] exported
   // on foot: the river (walked off a pier's end, down a slipway, the steps):
   // [O1b] a swim to the steps (world/swim.js), never the fade
   if (swimStep(ctx, R)) { if (gunOut(G)) holster(ctx); return; }
-  // [O7] the revolver under my arm (OPEN_WORLD §1): the wheel - the pad's
-  // d-pad left / right - draws it and puts it away (O4's arms: what I own,
-  // fists first); in a fist fight the crowd takes the wheel (Crowd.draw)
-  const wh = G.mouse.wheel;
-  if (wh && !(G.crowd && G.crowd.active)) {
-    const g = arms(G).next(Math.sign(wh));
-    if (g) { ctl.setMode(g === 'fists' ? 'walk' : 'gun', { crouch: false }); if (g === 'fists') G.player.hands.equip('empty'); G.setViewmodelVisible(g !== 'fists'); G.emit('city:arms', { gun: g }); }
-    if (g && g !== 'fists') T.drawn = true;
-  }
+  // [O7] the revolver under my arm (OPEN_WORLD §1; a new night gives it: night/save.js): the wheel
+  // above draws it (the pad's d-pad left / right); its card once, on foot, in a quiet second
   if (!T.drawn && T.foot > 4 && owns(G, 'revolver') && !T.warned && !T.near && !hud.kit.teachCur && !(G.police && G.police.heat > 0)) { T.drawn = true; hud.teach('city_gun', '[WHEEL] the revolver', { until: () => gunOut(G) || R.inCar, secs: 4 }); }
   // E at the car: any door, looking at it, close by
   let near = false;
@@ -255,7 +299,8 @@ export function step(ctx, R, T, dt) {   // [O6] exported
   let door = null;
   if (!near) {
     const D = R.stream.doorNear(ctl.pos.x, ctl.pos.z, 1.9);
-    if (D && (ctl.pos.x - D.x) * D.nx + (ctl.pos.z - D.z) * D.nz > 0.05) {
+    // [O5] (a place's door is the place's: it opens, src/places/)
+    if (D && !(R.places && R.places.owns(D)) && (ctl.pos.x - D.x) * D.nx + (ctl.pos.z - D.z) * D.nz > 0.05) {
       const f = G.camera.getWorldDirection(_v);
       const toX = D.x - G.eye.x, toZ = D.z - G.eye.z, tl = Math.max(0.05, Math.hypot(toX, toZ)), fl = Math.max(1e-3, Math.hypot(f.x, f.z));
       if ((toX * f.x + toZ * f.z) / (tl * fl) > 0.72) door = D;

@@ -74,6 +74,7 @@ export class NightSave {
     const d = this.resume;
     this.resume = null;
     if (!d || !d.city) return null;
+    if (d.beat && d.beat !== 'roam') return null;   // (O5's hotel: its beat wakes me in the room)
     const C = d.city, car = C.car;
     if (!car) {
       // (no car in the save: one at the kerb nearest me, as the starts have it)

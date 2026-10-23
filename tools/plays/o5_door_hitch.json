@@ -1,0 +1,104 @@
+{
+ "about": "[O5] the street door's first open: E to the leaf moving, and every frame's gap for 0.7 s after the press (the room's first draw), first and second open",
+ "url": "/?mute=1&start=city",
+ "size": [
+  1280,
+  800
+ ],
+ "out": "shots/o5/door_hitch",
+ "steps": [
+  {
+   "wait": 1500
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]",
+   "taken": "G.state !== 'title'",
+   "retries": 5,
+   "every": 4000
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'city' && G.scenes.fadeK < 0.05",
+   "timeout": 25000
+  },
+  {
+   "eval": "(()=>{window.__c={gaps:[]};addEventListener('keydown',e=>{if(e.code==='KeyE'&&window.__c.door){__c.t0=performance.now();__c.a0=__c.door.angle;__c.t1=null;__c.gaps=[]}},true);let last=performance.now();const tick=()=>{const c=__c,n=performance.now();if(c.t0!=null&&n-c.t0<700)c.gaps.push(+(n-last).toFixed(1));last=n;if(c.door&&c.t0!=null&&c.t1==null&&Math.abs(c.door.angle-c.a0)>1e-4)c.t1=n;requestAnimationFrame(tick)};requestAnimationFrame(tick);return 1})()"
+  },
+  {
+   "walk": [
+    [
+     -124,
+     28
+    ],
+    [
+     -127,
+     14
+    ],
+    [
+     -131.4,
+     13.9
+    ]
+   ],
+   "timeout": 20000
+  },
+  {
+   "wait": 400
+  },
+  {
+   "eval": "'prompt:'+G.hud.promptShown+' | hud:'+document.getElementById('hud').innerText.replace(/\\s+/g,' ').slice(0,200)+' | live:'+!!(G.city.places.byId.get('theatre1').live)"
+  },
+  {
+   "eval": "(()=>{const s=G.city.places.byId.get('theatre1');__c.door=s.live&&s.live.street[0];return !!__c.door})()"
+  },
+  {
+   "eval": "(window.__progs0=G.pipeline.renderer.info.programs.length, 'programs before the first open: '+__progs0+' geometries '+G.pipeline.renderer.info.memory.geometries+' textures '+G.pipeline.renderer.info.memory.textures)"
+  },
+  {
+   "key": "KeyE",
+   "hold": 70
+  },
+  {
+   "wait": 150
+  },
+  {
+   "eval": "'lat ms '+(__c.t1?(__c.t1-__c.t0).toFixed(1):'none')+' angle '+(__c.door&&__c.door.angle.toFixed(2))"
+  },
+  {
+   "eval": "'programs after: '+G.pipeline.renderer.info.programs.length+' geometries '+G.pipeline.renderer.info.memory.geometries+' textures '+G.pipeline.renderer.info.memory.textures"
+  },
+  {
+   "wait": 600
+  },
+  {
+   "eval": "'frame gaps after E (ms): '+__c.gaps.join(' ')+' | max '+Math.max(...__c.gaps)"
+  },
+  {
+   "wait": 2500
+  },
+  {
+   "key": "KeyE",
+   "hold": 70
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "eval": "'closed? angle '+__c.door.angle.toFixed(2)"
+  },
+  {
+   "key": "KeyE",
+   "hold": 70
+  },
+  {
+   "wait": 400
+  },
+  {
+   "eval": "'lat2 ms '+(__c.t1?(__c.t1-__c.t0).toFixed(1):'none')+' angle '+__c.door.angle.toFixed(2)"
+  },
+  {
+   "wait": 600
+  },
+  {
+   "eval": "'frame gaps after E (ms): '+__c.gaps.join(' ')+' | max '+Math.max(...__c.gaps)"
+  }
+ ]
+}

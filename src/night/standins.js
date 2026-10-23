@@ -42,6 +42,8 @@ export function installStandins(night) {
       },
       // (O5's door: an interior shakes them off)
       lost() { if (this.heat > 0) this.set(0); },
+      // (O5's hotel bed: sleep clears it)
+      clear() { if (this.heat > 0) this.set(0); },
       step(dt) {
         if (this.heat <= 0) return;
         this.quiet += dt;
