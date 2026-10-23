@@ -1,0 +1,14 @@
+{
+ "about": "[O3 critic] unstaged: the gun out (RMB) at the nearest walkers, two shots, hands off 45 s (do they run, does anyone tell, what comes?); then the owner's crowd walk (anyone through anyone) and a car into four walkers.",
+ "url": "/?mute=1",
+ "size": [1280, 800],
+ "out": "shots/critic_o3",
+ "steps": [
+  { "wait": 2500 },
+  { "clickOn": "#title .opt[data-k=begin]", "taken": "G.state !== 'title'", "retries": 5, "every": 4000 },
+  { "until": "G.state === 'playing' && G.people && G.scenes.beat === 'roam'", "timeout": 25000 },
+  { "until": "G.people.list.filter(p => p.role === 'walker').length >= 8", "timeout": 30000 },
+  { "drive": "tools/plays/critic/o3/cold.mjs", "mode": "shoot", "after": "idle", "secs": 45, "shots": true },
+  { "drive": "tools/lib/o3_people.mjs", "mode": "crowd", "car": true, "shots": true }
+ ]
+}

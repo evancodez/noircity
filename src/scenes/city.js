@@ -5,6 +5,7 @@ import { STARTS, START_DEFAULT, PAVE, RIVER, QUAY_OFF, SLIPS, PIERS, BRIDGE } fr
 import { riverNearest } from '../world/cityGen.js';
 import { MapOverlay } from '../world/map.js';
 import { compileAll } from '../stages/noircity/compile.js';
+import { installPeople } from '../people/index.js';   // [O3]
 import { swimStep } from '../world/swim.js';
 import { placesOf } from '../places/Places.js';   // [O5] the places: their doors, their rooms
 import { arms, owns } from '../combat/money.js';   // [O5] the wheel through what I own; [O7] the revolver under my arm
@@ -85,7 +86,7 @@ function place(ctx, at) {
   if (car.lamps && car.lamps.setOn) car.lamps.setOn(false);
   G.player.hands.equip('empty');
   G.setViewmodelVisible(false);
-  ctx.controller.setPose(at.pos.x, at.pos.z, at.yaw, -0.06);
+  ctx.controller.setPose(at.pos.x, at.pos.z, at.yaw, at.pitch ?? -0.06);   // [O3] (a wake's own pitch)
   stage.part('bounds').navAround(at.pos.x, at.pos.z, 14);
   R.stream = stage.part('stream');
   // [O5] the places (src/places/): loaded as I come near their doors
@@ -117,7 +118,7 @@ function place(ctx, at) {
     if (lampsOn) lampsOn.setOn(false);
     G.player.hands.equip('empty');
     G.setViewmodelVisible(false);
-    ctx.controller.setPose(at.pos.x, at.pos.z, at.yaw, -0.06);
+    ctx.controller.setPose(at.pos.x, at.pos.z, at.yaw, at.pitch ?? -0.06);   // [O3]
   }
   if (!G.shotMode && !stage._compiled) R.compileMs = compileAll(stage, G);
 }
@@ -127,9 +128,9 @@ export default defineScene({
   // [O5] hotel: up in my room at the Carlton (the save the bed writes; CONTINUE);
   // station: on the cell's bench at headquarters (the arrest's wake: O3);
   // wake: up after a fall in a place (G.city.wake: outside its door, or by the gym's ring), the car where I left it
-  // [O7] hospital: after a fall in the street (the bounty's man, a fight lost to anyone but the police):
-  // up on the pavement by my car where I left it - O4's rules (fall.js: the stitches' cost) - until a
-  // hospital's door is built
+  // [O7, O3] hospital: after a fall in the street (shot, beaten, the bounty's man: a fight lost to
+  // anyone but the police): up on the pavement by my car where I left it - O4's rules (fall.js: the
+  // stitches' cost) - until O5b's hospital door is built
   beats: ['roam', 'ashore', 'hotel', 'station', 'wake', 'hospital'],
   // (M is the map here: Game.bindInput leaves the sound alone)
   mapKey: true,
@@ -175,10 +176,22 @@ export default defineScene({
       P.wake('hotel');
     },
     // [O5] after an arrest (O3's): the cell's bench at headquarters; the car is gone (it is at the Grand Ave start)
+    // [O3] at the O5 merge the cell's wake rendered black (the seated view in the cell: nothing
+    // but `E get up`, in play and in shot mode - docs/reports/O3.md §0): until it shows the
+    // cell, the arrest wakes on the pavement outside the headquarters' door, facing it. Back
+    // to the cell: `placesOf(G, stage).wake('police')` here, then `afterFail('arrest', { room: true })`
+    // (the room's wake takes the fine and the guns itself)
     station(ctx) {
-      const a = ctx.stage.anchor('city.start.grand');
-      place(ctx, { car: a.car, carYaw: a.carYaw, pos: a.pos, yaw: a.yaw });
-      placesOf(ctx.game, ctx.stage).wake('police');
+      const G = ctx.game;
+      if (STATION_CELL) {
+        const a = ctx.stage.anchor('city.start.grand');
+        place(ctx, { car: a.car, carYaw: a.carYaw, pos: a.pos, yaw: a.yaw });
+        placesOf(G, ctx.stage).wake('police');
+        if (G.people) G.people.afterFail('arrest', { room: true });
+        return;
+      }
+      place(ctx, wakeAt(ctx, 'police'));
+      if (G.people) G.people.afterFail('arrest');
     },
     // [O5] a fall in a place (a hideout's men, the bout, a room's fight): the place as it was (built
     // again under the black: every man back), me outside its street door facing it - or by the
@@ -197,20 +210,23 @@ export default defineScene({
       P.wakeAfter(W);
       R.wake = null;
     },
-    // [O7] up after a fall in the street: by my car where I left it (or at Grand Ave's kerb), the stitches paid
+    // [O7, O3] up after a fall in the street: by my car where I left it (or at Grand Ave's kerb), the stitches paid
     hospital(ctx) {
       const G = ctx.game, R = G.city || (G.city = {});
       const car = R.car && R.car.solid !== false && !R.car.wrecked ? { x: R.car.pos.x, z: R.car.pos.z, yaw: R.car.yaw, kind: R.car.kind } : null;
       if (car) place(ctx, { car: { x: car.x, z: car.z }, carYaw: car.yaw, kind: car.kind, pos: { x: car.x + Math.sin(car.yaw) * 2.4, z: car.z + Math.cos(car.yaw) * 2.4 }, yaw: car.yaw - Math.PI / 2 });
       else { const a = ctx.stage.anchor('city.start.grand'); place(ctx, { car: a.car, carYaw: a.carYaw, pos: a.pos, yaw: a.yaw }); }
-      const r = fallWake(G, 'hospital');
-      G.hud.message(r.line, 3.0);
+      // [O3] the police reset and the stitches paid once (People.afterFail: O4's fall.js); the words
+      if (G.people) G.people.afterFail('hospital');
+      else { const r = fallWake(G, 'hospital'); G.hud.message(r.line, 3.0); }
     },
     // out of the river: on the quay at the nearest steps, a car at the kerb by them
     ashore(ctx) {
       const G = ctx.game, W = G.cityWet || { x: 300, z: 432 };
       const S = stepsNear(W.x, W.z);
       place(ctx, S);
+      // [O3] (out of the river unseen: the police have lost me)
+      if (G.people) G.people.afterFail('river');
     },
   },
   *script(ctx) {
@@ -218,6 +234,7 @@ export default defineScene({
     yield beat(ctx.beat || 'roam');
     if (!R.map) R.map = new MapOverlay(ctx.stage.part('city').C);
     R.map.close();
+    installPeople(ctx);   // [O3] the crowd, the police, the gangs
     const T = { foot: 0, drive: 0, dist: 0, near: false };
     ctx.onStep((dt) => step(ctx, R, T, dt));
     for (;;) yield null;
@@ -290,6 +307,13 @@ export function step(ctx, R, T, dt) {   // [O6] exported
   // on foot: the river (walked off a pier's end, down a slipway, the steps):
   // [O1b] a swim to the steps (world/swim.js), never the fade
   if (swimStep(ctx, R)) { if (gunOut(G)) holster(ctx); return; }
+  // [O3] a fist fight on (lane O4's crowd brawl): no prompt of the street's under it
+  // (no card in danger, and E is the fight's: a bottle) - the critic's m2
+  if (G.crowd && G.crowd.active) {
+    if (T.inShown || T.door) { hud.clearPrompt('cityin'); hud.clearPrompt('citydoor'); }
+    T.inShown = false; T.near = false; T.door = null;
+    return;
+  }
   // [O7] the revolver under my arm (OPEN_WORLD §1; a new night gives it: night/save.js): the wheel
   // above draws it (the pad's d-pad left / right); its card once, on foot, in a quiet second
   if (!T.drawn && T.foot > 4 && owns(G, 'revolver') && !T.warned && !T.near && !hud.kit.teachCur && !(G.police && G.police.heat > 0)) { T.drawn = true; hud.teach('city_gun', '[WHEEL] the revolver', { until: () => gunOut(G) || R.inCar, secs: 4 }); }
@@ -414,6 +438,45 @@ function wet(ctx, R, at, why) {
   if (R.map) R.map.close();
   // (the warning stays up into the fail: it was the reason)
   G.fail({ why, to: 'ashore', fall: false, hold: 1.1 });
+}
+
+// [O3] where I wake after the black: the pavement outside a place's door
+// (the police headquarters; the hospital - no lot of the plan is one yet: the
+// stand-in is the pavement at Baxter St and Fifth St, downtown), a car at the
+// kerb down the street
+const HOSPITAL = { x: -36.5, z: 66 };
+// [O3] the arrest's wake in O5's cell (false: the pavement at the headquarters' door - see the station beat)
+const STATION_CELL = false;
+function wakeAt(ctx, what) {
+  const stage = ctx.stage, C = stage.part('city').C, g = stage.part('city').graph;
+  let x, z, yaw, pitch = -0.06;
+  const D = what === 'police' ? (stage.part('places').doors || []).find((d) => d.place === 'police' || (d.place && d.place.id === 'police')) : null;
+  if (D) {
+    // (out on the street side of the door, whichever way its normal is cut: the side nearer the road)
+    const sd = (k) => { const S = g.streetAt(D.x + D.nx * k * 3, D.z + D.nz * k * 3); return S ? S.d : 99; };
+    const k = sd(1) <= sd(-1) ? 1 : -1;
+    // [O3] after the critic (m1): out on the pavement 5.5 m from the door and a
+    // stride to one side, facing it - the door, its two lamps and the POLICE
+    // board over it in the frame: the frame itself says where I am
+    const tx = D.nz * k, tz = -D.nx * k;
+    x = D.x + D.nx * k * 5.5 + tx * 2.2; z = D.z + D.nz * k * 5.5 + tz * 2.2;
+    yaw = Math.atan2(x - D.x, z - D.z);
+    pitch = 0.1;
+  } else {
+    const n = g.nearestPavement(HOSPITAL.x, HOSPITAL.z).node;
+    x = n.x; z = n.z;
+    const L = g.nearestLane(x, z);
+    yaw = L ? Math.atan2(-(L.x - x), -(L.z - z)) : 0;
+  }
+  const v = new THREE.Vector3(x, 0, z);
+  stage.colliders.resolve(v, 0.4);
+  // (the car: a bay 25 - 70 m off, the way the traffic goes there)
+  const bays = g.baysNear(x, z, 70).filter((b) => b.d > 25);
+  const b = bays[0] || g.baysNear(x, z, 120)[0];
+  const car = b ? { x: b.x, z: b.z } : { x: x + 6, z };
+  const carYaw = b ? b.yaw : 0;
+  void C;
+  return { car, carYaw, pos: { x: v.x, z: v.z }, yaw, pitch };
 }
 
 // the steps up out of the water nearest a point: a place on the quay's

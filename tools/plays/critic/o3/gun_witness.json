@@ -1,0 +1,67 @@
+{
+ "about": "[O3 critic] unstaged: the gun out (RMB) among walkers downtown and two shots; then hands off 60 s, the witnesses and the heat read every 15 s.",
+ "url": "/?mute=1",
+ "size": [
+  1280,
+  800
+ ],
+ "out": "shots/critic_o3",
+ "steps": [
+  {
+   "wait": 2500
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]",
+   "taken": "G.state !== 'title'",
+   "retries": 5,
+   "every": 4000
+  },
+  {
+   "until": "G.state === 'playing' && G.people && G.scenes.beat === 'roam'",
+   "timeout": 25000
+  },
+  {
+   "until": "G.people.list.filter(p => p.role === 'walker').length >= 8",
+   "timeout": 30000
+  },
+  {
+   "drive": "tools/plays/critic/o3/cold.mjs",
+   "mode": "shoot",
+   "after": "none",
+   "shots": false
+  },
+  {
+   "eval": "G.crime.log.slice(-3).map(r => [r.kind, r.level, r.seen, r.reporters, r.reported])"
+  },
+  {
+   "wait": 15000
+  },
+  {
+   "eval": "({ heat: G.police.heat, log: G.crime.log.slice(-2).map(r => [r.kind, r.seen, r.reporters, r.reported]), rep: G.people.list.filter(p => p.mode === 'report').map(p => [p.phase, +Math.hypot(p.pos.x-G.eye.x,p.pos.z-G.eye.z).toFixed(0), p.reportTo && p.reportTo.box ? +Math.hypot(p.reportTo.box.x-p.pos.x,p.reportTo.box.z-p.pos.z).toFixed(0) : 'cop']) })"
+  },
+  {
+   "wait": 15000
+  },
+  {
+   "eval": "({ heat: G.police.heat, log: G.crime.log.slice(-2).map(r => [r.kind, r.seen, r.reporters, r.reported]), rep: G.people.list.filter(p => p.mode === 'report').map(p => [p.phase, +Math.hypot(p.pos.x-G.eye.x,p.pos.z-G.eye.z).toFixed(0), p.reportTo && p.reportTo.box ? +Math.hypot(p.reportTo.box.x-p.pos.x,p.reportTo.box.z-p.pos.z).toFixed(0) : 'cop']) })"
+  },
+  {
+   "wait": 15000
+  },
+  {
+   "eval": "({ heat: G.police.heat, log: G.crime.log.slice(-2).map(r => [r.kind, r.seen, r.reporters, r.reported]), rep: G.people.list.filter(p => p.mode === 'report').map(p => [p.phase, +Math.hypot(p.pos.x-G.eye.x,p.pos.z-G.eye.z).toFixed(0), p.reportTo && p.reportTo.box ? +Math.hypot(p.reportTo.box.x-p.pos.x,p.reportTo.box.z-p.pos.z).toFixed(0) : 'cop']) })"
+  },
+  {
+   "wait": 15000
+  },
+  {
+   "eval": "({ heat: G.police.heat, log: G.crime.log.slice(-2).map(r => [r.kind, r.seen, r.reporters, r.reported]), rep: G.people.list.filter(p => p.mode === 'report').map(p => [p.phase, +Math.hypot(p.pos.x-G.eye.x,p.pos.z-G.eye.z).toFixed(0), p.reportTo && p.reportTo.box ? +Math.hypot(p.reportTo.box.x-p.pos.x,p.reportTo.box.z-p.pos.z).toFixed(0) : 'cop']) })"
+  },
+  {
+   "eval": "G.police.events.filter(e => e.what !== 'cop' || e.job !== 'beat').slice(-20).map(e => JSON.stringify(e)).join(' ')"
+  },
+  {
+   "eval": "[G.eye.x, G.eye.z, G.police.cars.map(pc => [pc.mode, +pc.pos.distanceTo(G.eye).toFixed(0)])]"
+  }
+ ]
+}

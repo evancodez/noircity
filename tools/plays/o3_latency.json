@@ -1,0 +1,35 @@
+{
+ "about": "[O3] the latency: LMB on foot to the fist's first frame (seven), E at a police car to the seat (five): the median under 50 ms (the machine loaded: a stall frame now and then is the machine's, the record lists every frame).",
+ "url": "/?mute=1&start=city",
+ "size": [
+  1280,
+  800
+ ],
+ "out": "shots/o3/o3_latency",
+ "steps": [
+  {
+   "wait": 1500
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]",
+   "taken": "G.state !== 'title'",
+   "retries": 5,
+   "every": 4000
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'city' && G.scenes.fadeK < 0.05 && !!G.people",
+   "timeout": 30000
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "drive": "tools/lib/o3_people.mjs",
+   "mode": "latency",
+   "n": 7,
+   "nE": 5,
+   "check": "D.ok",
+   "label": "fists and E: under 50 ms"
+  }
+ ]
+}

@@ -1,0 +1,53 @@
+{
+ "about": "[O3] the pad alone (the fake pad; no key, no mouse): R2 jabs a man before a beat cop (HEAT 1), then nothing - 'Hands up.', 'Arrested.', the station.",
+ "url": "/?mute=1&padfake=1&start=city",
+ "size": [
+  1280,
+  800
+ ],
+ "out": "shots/o3/o3_pad_arrest",
+ "steps": [
+  {
+   "until": "G.state === 'title' && N.hud.titleShown",
+   "timeout": 40000
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "pad": {
+    "b": [
+     "x"
+    ],
+    "secs": 0.12
+   }
+  },
+  {
+   "wait": 400
+  },
+  {
+   "pad": {
+    "b": [
+     "x"
+    ],
+    "secs": 0.12
+   }
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'city' && G.scenes.fadeK < 0.05 && !!G.people",
+   "timeout": 30000
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "drive": "tools/lib/o3_people.mjs",
+   "mode": "punch",
+   "then": "idle",
+   "tries": 1,
+   "check": "D.ok",
+   "label": "pad: punch seen, arrested, the station"
+  }
+ ],
+ "input": "pad"
+}

@@ -1,0 +1,35 @@
+{
+ "about": "[O3] after the critic (M1): unstaged on Grand Avenue, three times in a row (each from where the last ended): the nearest walker punched down, then hands off at the place - answered within about 10 s with something seen or heard (a witness going, a whistle, a car), the heat comes, and it never dies while I stand there unfound.",
+ "url": "/?mute=1&start=city",
+ "size": [
+  1280,
+  800
+ ],
+ "out": "shots/o3/o3_unstaged_punch",
+ "steps": [
+  {
+   "wait": 1500
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]",
+   "taken": "G.state !== 'title'",
+   "retries": 5,
+   "every": 4000
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'city' && G.scenes.fadeK < 0.05 && !!G.people",
+   "timeout": 30000
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "drive": "tools/lib/o3_unstaged.mjs",
+   "mode": "punch",
+   "tries": 3,
+   "secs": 90,
+   "check": "D.answered === 3",
+   "label": "three of three answered, the heat held at the place"
+  }
+ ]
+}
