@@ -17,6 +17,8 @@ and the hunts (`tools/hunts/*.mjs`, `tools/hunt.mjs`, `tools/lib/whole.py`,
 - **[must]** The three bars (GAME_TWO §1) over the whole: smooth
   everywhere, the middle everywhere (the line is the player's own
   situation), everything works.
+- **[must]** "This city should really react to player interaction (like a dynamic police system), fun shootouts, brawls, etc. Keep the scope manageable but it should feel fun." (OPEN_WORLD.md: the city answers everything the player does, within seconds, visibly.)
+- **[must]** "Think GTA but noir. Make sure the player has freedom to cause havoc and do what they want in this open world, one that reacts to them." (OPEN_WORLD.md: the player may do anything the systems allow and the city answers everything he does, visibly, within seconds; no invisible hand says no, never a scripted stop or a locked verb; the only answer is the city's own, and a scene broken on purpose still ends somewhere sane.)
 
 What you build on: the HUD (`src/ui/Hud.js`, `kit.js`, `inkArt.js`,
 `lettering.js`: the title, the pause card and its settings line, the
@@ -105,6 +107,14 @@ dropped quietly.
   hotel's save, CONTINUE, the el, the map; every seam between systems
   (a hijack into a fight into the heat into the chase into an interior
   into the search) with no break.
+- **The havoc play** (the user's freedom, by real input): run people
+  down, steal the police car from under the cop, start a gang war at the
+  border, ram the tram, shoot every lamp on Grand Avenue, drive off the
+  pier, sleep at the hotel at heat 5, hijack a hearse: the city answers
+  each within seconds, visibly, with its own means; nothing says no; every
+  scene broken on purpose ends sane (the hospital, the station, the quay).
+  Any place the game says no with a locked verb or a scripted stop is a
+  blocker to fix with that system's owner's levers, marked `[O7]`.
 - The hunts on the city: ten retries at the hospital and the station
   (nothing piles up: GPU geometries, listeners, timers), the edges of
   every district and the river (nothing unfinished, nothing invisible),
