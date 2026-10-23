@@ -40,6 +40,7 @@ if (process.env.MOMENTS === 'wheels') MOMENTS.splice(0, MOMENTS.length,
   ['wheels: Grand Ave from the car, the traffic at its cap', 'scene=city&beat=roam&t=45&anim=1&traffic=1&car=-112.2,40,1.5708'],
   ['wheels: Grand Ave at Centre St, the signals, the tram', 'scene=city&beat=roam&t=45&anim=1&traffic=1&pose=-108,-14,0.75,0.04'],
   ['wheels: the race, the Yards\' corner', 'scene=city&beat=roam&t=14&anim=1&traffic=1&car=-448,236,1.5708&racego=1'],
+  ['wheels: Grand Ave, the view behind the car (V), the traffic at its cap', 'scene=city&beat=roam&t=45&anim=1&traffic=1&car=-112.2,40,1.5708&carview=third'],
 );
 
 function gpuUtil() {

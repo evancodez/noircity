@@ -459,6 +459,8 @@ function takeSeat(ctx, R, car, extra = {}) {
   if (fleet) cockpitInto(ctx.stage, car);
   const C = R.chase || (R.chase = new Chase(G));
   C.begin(car);
+  // (look development and the fps table: &carview=third - the view behind from the first frame)
+  if (typeof location !== 'undefined' && new URLSearchParams(location.search).get('carview') === 'third') C.want = true;
   // (the man is in the seat whatever the view: G.eye there for what sees, shoots at and hears him)
   const eyeL = seat.eye.clone();
   G.eyeFix = (e) => { const Rc = G.city; if (Rc && Rc.inCar && Rc.chase && Rc.chase.k > 0 && Rc.car === car) car.seat(eyeL, e); };

@@ -355,7 +355,7 @@ async function fare(P, { js, sleep, log, shot }, H) {
       onStep: async (s, idx) => { if (shot && k === 0 && !out.lanternShot && Math.hypot(s.car.x - dest.x, s.car.z - dest.z) < 42) { out.lanternShot = true; await shot('lantern'); } if (H.name === 'bad' && knocks < 2 && idx > 30 + knocks * 60 && Math.random() < 0.01) { knocks++; log('  bad hands: into the kerb'); await P.set('KeyW', true); await P.set(Math.random() < 0.5 ? 'KeyA' : 'KeyD', true); await sleep(1300); } } });
     await P.stop();
     await sleep(600);
-    const fs = await js('({ ...G.wheels.fares.stats, money: G.save.money })');
+    const fs = await js('({ ...G.wheels.fares.stats, money: G.save.money, met: G.city.car ? (G.city.car.stats.log || []).slice(-5) : null, fail: G.lastFail ? G.lastFail.why : null })');
     out.push({ dest: dest.name, end: res.end, secs: (Date.now() - t1) / 1000, shown, stats: fs });
     log(`  fare ${k}: ${JSON.stringify(out[out.length - 1])}`);
   }

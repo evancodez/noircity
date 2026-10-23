@@ -167,7 +167,7 @@ export class Race {
       // (on foot at the man with the flag, or a racer's door: what it takes)
       const foot = R && !R.inCar && this.flag && this.cars.length && Math.hypot(G.controller.pos.x - this.flag.fig.pos.x, G.controller.pos.z - this.flag.fig.pos.z) < 3.2;
       if (foot !== !!this.footShown) { this.footShown = foot; if (foot) hud.prompt('E  the race', null, 'o2racefoot'); else hud.clearPrompt('o2racefoot'); }
-      if (foot && G.pressed('KeyE')) { (hud.say ? hud.say('Bring a car. Ten to race.', 2.2, { always: true }) : hud.message('Bring a car. Ten to race.', 2.2)); this.flag.lookAt && this.flag.lookAt(G.eye); }
+      if (foot && G.pressed('KeyE')) { this.stats.asked = (this.stats.asked || 0) + 1; (hud.say ? hud.say('Bring a car. Ten to race.', 2.2, { always: true }) : hud.message('Bring a car. Ten to race.', 2.2)); this.flag.lookAt && this.flag.lookAt(G.eye); }
       const v = R && R.inCar ? R.car : null;
       const near = !!v && this.cars.length && Math.hypot(v.pos.x - START.x, v.pos.z - START.z) < 26 && v.speedAbs < 1.5;
       if (near !== !!this.shown) { this.shown = near; if (near) hud.prompt(money(G) >= BET ? `E  race them  $${BET}` : 'E  race them', null, 'o2race'); else hud.clearPrompt('o2race'); }

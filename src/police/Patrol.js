@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { Pilot } from '../vehicles/pilot.js';
+import { CAR_SPECS } from '../vehicles/Car.js';   // [O2]
 import { samplePath } from '../stages/city/route.js';
 import { accentMaterial } from '../render/accents.js';
 
@@ -29,7 +30,8 @@ export function makeCar(police, { x, z, yaw, kind = 'sedan' }) {
   const W = G.wheels && G.wheels.stage === G.stage ? G.wheels : null;
   const fk = kind === 'truck' ? 'lorry' : 'police';
   const v = W ? W.carAt(x, z, fk, { yaw, lights: true }) : G.vehicles.spawn(kind, { at: { x, z }, yaw, lights: true });
-  if (W) { W.ownLamps(v); if (v.model.meshes.bust) v.model.meshes.bust.visible = true; }
+  // (at the base sedan's pace and pull: O3's chases, its box and its roadblock were tuned on it)
+  if (W) { W.ownLamps(v); if (v.model.meshes.bust) v.model.meshes.bust.visible = true; if (kind === 'sedan') Object.assign(v.spec, { vmax: CAR_SPECS.sedan.vmax, accel: CAR_SPECS.sedan.accel }); }
   v.police = true;
   // the red lamp on the roof: a small lit dome, the registry's red
   if (!LAMP_MAT) { LAMP_MAT = accentMaterial('blood', { gain: 3.2 }); LAMP_GEO = new THREE.SphereGeometry(0.15, 16, 10, 0, Math.PI * 2, 0, Math.PI / 2).scale(1, 1.3, 1); }

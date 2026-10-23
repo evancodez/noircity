@@ -1,0 +1,14 @@
+{
+ "about": "[O2 critic] cold: from BEGIN, on foot into the road; does a car stop for me, and can I take it at its door (no &come, no &held)",
+ "url": "/?mute=1",
+ "size": [1280, 800],
+ "out": "shots/o2/c_standroad",
+ "steps": [
+  { "until": "G.state === 'title'", "timeout": 30000 },
+  { "wait": 1000 },
+  { "clickOn": "#title .opt[data-k=begin]", "taken": "G.state !== 'title'", "retries": 5, "every": 4000 },
+  { "until": "G.scenes.current && G.scenes.current.id === 'city' && G.scenes.fadeK < 0.05", "timeout": 25000 },
+  { "wait": 1500 },
+  { "drive": "tools/plays/critic/o2/cold.mjs", "mode": "standroad", "take": true, "watch": 70000, "react": 700, "after": 9000 }
+ ]
+}
