@@ -215,3 +215,19 @@ mirrored (frame 2); labels stay upright. The el ride's right third is a
 flat white panel (the car's own window): the window's frame and the dark
 of the car instead. The title's colour measured (the splash, the blue
 sign, the red lanterns together under 2 %).
+
+## From the merge check of O7 with O3 (2026-10-23, main 768adb5): yours (second pass)
+On main with O3's police, your plays written against the stand-in fail on
+their timings: `o7_hud` (two shields within 2 s of a shot), `o7_gun` and
+`o7_havoc` (heat 2 and 'Lose them.' within 1.5 s), `o7/heat_idle` and
+`o7/heat_lose` (`G.police.units` of length 1 within 12 s), `o7_save`
+(an autosave blocked by heat). O3's police answer a shot through who
+hears it: a cop within 80 m whistles and the heat is at once; with
+nobody near, a witness runs to a box and the heat comes in ten to forty
+seconds; a crime nobody sees raises none. Bring the plays to that (a
+shot staged with a cop in earshot for the instant answer, and one with
+none for the witness's), read units through O3's `units` or `marks()`,
+and make the HUD show the city's answer the moment it exists (the whistle
+heard, the shields brushed in when the heat moves). The manager removed
+O3's RMB draw on main (the wheel draws; O3's card says the fist only):
+one card for the revolver, yours.
