@@ -64,11 +64,10 @@ export class PhoneBox {
     const G = this.G;
     if (G.sfx) G.sfx.play('n_phone', new THREE.Vector3(box.x, 1.4, box.z), {}, { ref: 1.5, send: false });
     if (this.order) { G.hud.message('it is on its way', 1.6); return; }
-    if (G.save.money < PHONE.cost) { G.hud.message(`$${PHONE.cost} for a car`, 1.8); return; }
-    G.save.money -= PHONE.cost;
+    if (!G.money.take(PHONE.cost, 'phone')) { G.hud.message(`$${PHONE.cost} for a car`, 1.8); return; }
     this.calls++;
     this.order = { box, t: 0, car: null };
-    this.night.take('phone', 'A car is coming.');
+    G.things.start('phone', { line: 'A car is coming.' });
     G.emit('phone:call', { box });
   }
 
@@ -98,15 +97,16 @@ export class PhoneBox {
     car.driver = null;
     if (G.city) G.city.car = car;
     O.car = car; O.t = 0;
-    N.target = { x: bay.x, z: bay.z, kind: 'phone' };
-    N.take('phone', 'Your car.');
+    const T = G.things.active.get('phone');
+    if (T) T.at = { x: bay.x, z: bay.z, kind: 'phone' };
+    G.things.line('phone', 'Your car.');
     G.emit('phone:car', { car, bay });
   }
   taken(b) { return this.G.vehicles.list.some((v) => Math.hypot(v.pos.x - b.x, v.pos.z - b.z) < 4); }
 
   done() {
+    const O = this.order;
     this.order = null;
-    if (this.night.target && this.night.target.kind === 'phone') this.night.target = null;
-    this.night.take('phone', null);
+    this.G.things.end('phone', { result: O && O.car && this.G.city && this.G.city.inCar && this.G.city.car === O.car ? 'in' : 'left' });
   }
 }

@@ -1,4 +1,5 @@
 import { installStandins, stepStandins } from './standins.js';
+import { installThings } from './things.js';
 import { NightHud } from './hud.js';
 import { Minimap } from './minimap.js';
 import { NightMap } from './map.js';
@@ -39,10 +40,11 @@ export class Night {
     const q = params || new URLSearchParams(typeof location !== 'undefined' ? location.search : '');
     this.bed = q.get('nightbed') === '1';
     this.holding = false;
-    this.target = null;
+    this._target = null;
     this.extraMarks = [];
     this.taken = new Map();
     this.standins = installStandins(this);
+    this.things = installThings(this);   // game.things, game.money (docs/THINGS_TO_DO.md's seams)
     this.clock = makeClock(this);
     this.hud = new NightHud(this);
     this.mini = new Minimap(this);
@@ -107,6 +109,16 @@ export class Night {
     this.hud.lines.taken = last;
     this.hud.applyLine();
   }
+
+  // the thing taken up's mark: one set by hand, else the last thing taken up
+  // with a place (game.things.start(id, { at }))
+  get target() {
+    if (this._target) return this._target;
+    let t = null;
+    if (this.things) for (const o of this.things.active.values()) { const p = typeof o.at === 'function' ? o.at() : o.at; if (p && Number.isFinite(p.x)) t = p; }
+    return t;
+  }
+  set target(v) { this._target = v; }
 
   addMarks(fn) { this.extraMarks.push(fn); return fn; }
   marks() {

@@ -134,7 +134,7 @@ export class Bounty {
       const sum = owed.reduce((a, b) => a + b.reward, 0);
       for (const b of owed) b.state = 'paid';
       this.paid += sum;
-      G.save.money += sum;
+      G.money.add(sum, "bounty");   // (game.money: O4's wallet)
     }
     this.openCard();
   }
