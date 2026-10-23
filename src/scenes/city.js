@@ -306,8 +306,11 @@ function wakeAt(ctx, what) {
   let x, z, yaw;
   const D = what === 'police' ? (stage.part('places').doors || []).find((d) => d.place === 'police' || (d.place && d.place.id === 'police')) : null;
   if (D) {
-    x = D.x + D.nx * 2.2; z = D.z + D.nz * 2.2;
-    yaw = Math.atan2(-D.nx, -D.nz);
+    // (out on the street side of the door, whichever way its normal is cut: the side nearer the road)
+    const sd = (k) => { const S = g.streetAt(D.x + D.nx * k * 3, D.z + D.nz * k * 3); return S ? S.d : 99; };
+    const k = sd(1) <= sd(-1) ? 1 : -1;
+    x = D.x + D.nx * k * 2.2; z = D.z + D.nz * k * 2.2;
+    yaw = Math.atan2(-D.nx * k, -D.nz * k);
   } else {
     const n = g.nearestPavement(HOSPITAL.x, HOSPITAL.z).node;
     x = n.x; z = n.z;

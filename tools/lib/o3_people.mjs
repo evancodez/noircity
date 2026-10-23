@@ -30,6 +30,7 @@ export default async function o3(api) {
   if (opts.mode === 'gangs') return gangs(api);
   if (opts.mode === 'crowd') return crowd(api);
   if (opts.mode === 'latency') return latency(api);
+  if (opts.mode === 'strip') return strip(api);
   return { err: 'no mode ' + opts.mode };
 }
 
@@ -600,5 +601,64 @@ async function latency(api) {
   R.fistMedian = med(fist); R.carEMedian = med(ins);
   R.ok = ok && fist.every((v) => v != null) && ins.every((v) => v != null) && R.fistMedian < 50 && R.carEMedian < 50;
   log(`latency: ${JSON.stringify(R)}`);
+  return R;
+}
+
+// ---- the strips: frames of an arrest, a witness's run, the roadblock (shots s_00.. for tools/plays/o3/tile.py) ----
+async function strip(api) {
+  const { js, shot, sleep, log, opts, turn } = api;
+  const R = { frames: 0 };
+  const snap = async () => { await shot('s_' + String(R.frames).padStart(2, '0')); R.frames++; };
+  if (opts.what === 'arrest') {
+    // the cop comes face on: me looking at him over the man I put down
+    await stagePunch(api, { copD: 16 });
+    await click(api); await sleep(320); await click(api);
+    await sleep(500); await snap();
+    for (let i = 0; i < 9 && R.frames < 9; i++) {
+      await sleep(opts.every ?? 1300);
+      const c = await js(`window.__o3c && window.__o3c.standing ? { x: window.__o3c.pos.x, z: window.__o3c.pos.z } : null`);
+      if (c) await turnTo(api, c.x, c.z, { pitch: -0.08, steps: 3 });
+      await snap();
+      if ((await js('!!G.failing')) === true) break;
+    }
+    await waitFor(js, `!G.failing && G.scenes.beat === 'station'`, 15000);
+    await sleep(900); await snap();
+  } else if (opts.what === 'witness') {
+    await stagePunch(api, { cop: false, civ: [8, 4.5] });
+    await click(api); await sleep(320); await click(api);
+    for (let i = 0; i < 12; i++) {
+      await sleep(opts.every ?? 1200);
+      const w = await js(`({ x: window.__o3w.pos.x, z: window.__o3w.pos.z, m: window.__o3w.mode, ph: window.__o3w.phase })`);
+      await turnTo(api, w.x, w.z, { pitch: -0.06, steps: 3 });
+      // (I follow him at a walk, a few steps behind: the box comes into the frame)
+      const d = await js(`Math.hypot(window.__o3w.pos.x - G.eye.x, window.__o3w.pos.z - G.eye.z)`);
+      if (d > 9) await goTo(api, w.x, w.z, { near: 7, ms: 900 });
+      await snap();
+      if (w.ph === 'call' && i > 3) { await sleep(1500); await snap(); break; }
+    }
+    R.heat = await js('G.police.heat');
+  } else if (opts.what === 'roadblock') {
+    await js(`(() => { const P = G.people; P.dbgClear(); P.dbgAtCar(); return 1; })()`);
+    await sleep(300);
+    if (!(await js('G.city.inCar'))) { await tap(api, 'KeyE'); await sleep(1200); }
+    await js(`(G.police.raise(3, G.city.car.pos, 'staged'), 1)`);
+    // drive on along the road until the block is put across it ahead, then on toward it, braking to a stop short of it
+    const { keyDown, keyUp } = api;
+    await keyDown('KeyW');
+    await waitFor(js, '!!G.police.block', 20000);
+    await keyUp('KeyW');
+    for (let i = 0; i < 12; i++) {
+      const b = await js(`(() => { const B = G.police.block, c = G.city.car; if (!B) return null; const d = Math.hypot(B.x - c.pos.x, B.z - c.pos.z); const fx = Math.cos(c.yaw), fz = -Math.sin(c.yaw); const ang = Math.atan2(fx * (B.z - c.pos.z) - fz * (B.x - c.pos.x), fx * (B.x - c.pos.x) + fz * (B.z - c.pos.z)); return { d, ang, v: c.speed }; })()`);
+      if (!b) break;
+      if (b.d > 22) { await keyDown('KeyW'); if (b.ang > 0.05) await keyDown('KeyD'); else if (b.ang < -0.05) await keyDown('KeyA'); }
+      await sleep(b.d > 40 ? 900 : 600);
+      await keyUp('KeyW'); await keyUp('KeyD'); await keyUp('KeyA');
+      if (b.d < 30) { await keyDown('KeyS'); await sleep(500); await keyUp('KeyS'); }
+      await snap();
+      if (b.d < 16 && Math.abs(b.v) < 1) break;
+    }
+  }
+  log(`strip ${opts.what}: ${JSON.stringify(R)}`);
+  R.ok = R.frames >= 5;
   return R;
 }

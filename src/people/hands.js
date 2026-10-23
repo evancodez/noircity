@@ -58,7 +58,7 @@ export class StandinHands {
     const up = H.set === 'fists' || W.current === 'revolver';
     if (up !== !!G.vmWanted) G.setViewmodelVisible(up);
     // the keys, once: on foot a few seconds, nothing else up
-    if (this.footT > 7 && !this.taught && !G.hud.kit.warnText) { this.taught = true; G.hud.teach('o3_hands', '[LMB] punch  [RMB] the gun', { until: ['Mouse0', 'Mouse2'], secs: 4 }); }
+    if (this.footT > 9 && !this.taught && !G.hud.kit.warnText && !G.hud.sayShown && !(G.police && G.police.heat)) { this.taught = true; G.hud.teach('o3_hands', '[LMB] punch  [RMB] the gun', { until: ['Mouse0', 'Mouse2'], secs: 4 }); }
     const gun = this.gunOut;
     // RMB: the gun out
     if (G.pressed('Mouse2') && W.current !== 'revolver') {

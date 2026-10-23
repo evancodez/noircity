@@ -195,7 +195,10 @@ export class Police {
   warn(text) {
     if (this.warned === text) return;
     this.warned = text;
-    this.G.hud.warn(text);
+    const hud = this.G.hud;
+    // (a warning is danger: no card under it, no other line - the car's 'E get in' goes too)
+    if (text) { hud.teach.dismiss(); hud.clearPrompt('cityin'); hud.clearPrompt('cityout'); }
+    hud.warn(text);
   }
 
   // ---- one step ------------------------------------------------------------------------------------
@@ -312,7 +315,7 @@ export class Police {
     // (the first time a man comes for me: what I can do about it, once, while he is still coming)
     if (foot.length && foot[0] && !this.taught && !inCar) {
       const c = foot[0], d = Math.hypot(c.pos.x - E.x, c.pos.z - E.z);
-      if (d < 24 && d > 6 && P.sees(c.pos, E, 30) && !G.hud.kit.warnText) { this.taught = true; G.hud.teach('o3_runfight', '[SHIFT] run   [LMB] fight', { until: ['ShiftLeft', 'Mouse0'], secs: 4 }); }
+      if (d < 40 && d > 8 && P.sees(c.pos, E, 40) && !G.hud.kit.warnText && !G.hud.sayShown) { this.taught = true; G.hud.teach('o3_runfight', '[SHIFT] run   [LMB] fight', { until: () => !!G.hud.kit.warnText || G.held('ShiftLeft') || G.held('Mouse0'), secs: 3.5 }); }
     }
     if (!foot.length) {
       let best = null, bd = 130;
@@ -606,7 +609,9 @@ export class Police {
     }
     // (HEAT 4 and up: a man on foot who sees me draws - the gun kit's tells, its cover)
     if (this._heat >= 4 && d < 35 && P.sees(c.pos, E, 35)) { this.guns.arm(c, 'pistol', 'police'); return; }
-    const run = c.mode === 'chase' || d > 14 || this._heat >= 2;
+    // (at HEAT 1 he walks over - the walk is the warning's time; he runs when I run, or at 2 and up)
+    const V = G.controller.vel, mySp = Math.hypot(V.x, V.z);
+    const run = c.mode === 'chase' || this._heat >= 2 || d > 45 || (mySp > 3.4 && d > 5);
     c.mode = run ? 'chase' : 'approach';
     // (his wind: a sprint of ten seconds, then a run until he has his breath back)
     const W = HEAT.wind;

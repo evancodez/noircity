@@ -60,3 +60,9 @@ play('o3_crowd', "[O3] the jank walk through the busiest crowd (Grand Ave under 
      [{"drive": D, "mode": "crowd", "min": 14, "car": True, "gun": True, "fast": True, "shots": True, "check": "D.ok", "label": "the crowd: nothing through anything; the gun out, they run; a shot, they scatter; a car too fast, down"}])
 play('o3_latency', "[O3] the latency: LMB on foot to the fist's first frame (seven), E at a police car to the seat (five): the median under 50 ms (the machine loaded: a stall frame now and then is the machine's, the record lists every frame).",
      [{"drive": D, "mode": "latency", "n": 7, "nE": 5, "check": "D.ok", "label": "fists and E: under 50 ms"}])
+
+for what, about in [('arrest', "the arrest: the punch, the cop coming face on, 'Hands up.', the black, the station"),
+                    ('witness', "a witness: he looks at me, he runs, the call box, HEAT 1"),
+                    ('roadblock', "the roadblock: HEAT 3 in the car, the two cars across the road ahead, the men behind them")]:
+    play('o3_strip_' + what, "[O3] the strip of " + about + " (shots s_00.. tiled by tools/plays/o3/tile.py; not a proof)",
+         [{"drive": D, "mode": "strip", "what": what, "check": "D.ok", "label": "the strip's frames"}])

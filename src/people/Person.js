@@ -18,7 +18,7 @@ import { makeUmbrella } from '../scenes/watcher/umbrella.js';
 // Modes are data the plays read (p.mode, p.t); the figure is p.c (a Character).
 const _v = new THREE.Vector3();
 let SEQ = 0;
-export const GAIT = { walk: 1.25, stroll: 1.05, hurry: 1.7, run: 4.3, sprint: 5.2 };
+export const GAIT = { walk: 1.25, stroll: 1.05, hurry: 1.7, jog: 3.0, run: 4.3, sprint: 5.2 };
 const wrap = (a) => Math.atan2(Math.sin(a), Math.cos(a));
 
 export class Person {
@@ -95,7 +95,7 @@ export class Person {
     const c = this.c, F = this.fig;
     if (this.gaitNow === g) return;
     this.gaitNow = g;
-    const run = g === 'run' || g === 'sprint';
+    const run = g === 'run' || g === 'sprint' || g === 'jog';
     if (g === 'idle') { F.speed = 0; c.clipH = null; c.setState('idle', fade); }
     else { F.speed = (GAIT[g] || GAIT.walk) * (this.paceK || 1); c.clipH = null; c.setState(run ? 'run' : 'walk', fade); }
     // (an umbrella is carried up in the right fist while it is held)
@@ -183,7 +183,7 @@ export class Person {
         if (ll > 0.5) { tx += (-lz / ll) * this.side; tz += (lx / ll) * this.side; }
       }
       const dx = tx - this.pos.x, dz = tz - this.pos.z, d = Math.hypot(dx, dz);
-      const reach = this.gait === 'run' || this.gait === 'sprint' ? 1.1 : 0.7;
+      const reach = this.gait === 'run' || this.gait === 'sprint' || this.gait === 'jog' ? 1.1 : 0.7;
       if (d < reach) {
         this.pi++;
         if (this.pi >= this.path.length) {

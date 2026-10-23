@@ -437,8 +437,9 @@ export class People {
           // (out of the pavement's line to the box's front)
           const fx = to.box.x + Math.sin(to.box.yaw || 0) * 0.9, fz = to.box.z + Math.cos(to.box.yaw || 0) * 0.9;
           pts.push([fx, fz]);
-          p.goTo(pts, { gait: 'run', then: (q) => { q.phase = 'call'; q.t = 0; q.face(to.box.x, to.box.z); q.say('o3_callbox'); } });
-        } else p.goTo({ x: to.cop.pos.x, z: to.cop.pos.z }, { gait: 'run' });
+          // (a jog: he is seen going, and a man who runs after him catches him)
+          p.goTo(pts, { gait: 'jog', then: (q) => { q.phase = 'call'; q.t = 0; q.face(to.box.x, to.box.z); q.say('o3_callbox'); } });
+        } else p.goTo({ x: to.cop.pos.x, z: to.cop.pos.z }, { gait: 'jog' });
         p.mode = 'report';
       }
       return;
