@@ -125,6 +125,45 @@ z, yaw }, car: { kind, x, z, yaw, damage } | null, inCar, hour } }`.
   on the man so the night sees him fall); **O5**: the board inside the
   station with the desk.
 
+## 5a. Things to do, any lane's: `game.things` and `game.money` (`src/night/things.js`)
+
+The seams of `docs/THINGS_TO_DO.md`. A thing is only ever started by its
+own place when the player walks up to it (nothing lists, nothing says go).
+
+```js
+G.things.start(id, { line, at })   // taken up: the line (under the heat's), the mark
+                                   // (at: { x, z } or () => { x, z }: the minimap's ring, the map's)
+G.things.line(id, text)            // the line changed (a lap, the place)
+G.things.end(id, { result, money, news, weight, where })
+                                   // put down: the line and the mark gone; money +/- through
+                                   // O4's wallet (the HUD counts it in); O1b's news.say;
+                                   // the night's record save.flags.night[id] = { result, hour }
+G.things.done(id)                  // that record or null (a cleared hideout stays cleared)
+G.things.active                    // Map id -> opts
+G.money.add(n, why)  G.money.take(n, why) -> bool  G.money.n   // O4's earn / pay
+```
+The phone's car and the bounty's pay use them. Events `things:start`,
+`things:end`.
+
+## 5b. The revolver under the coat (`src/scenes/city.js`, marked `[O7]`)
+
+A new night in the city (BEGIN) gives `save.inventory` the revolver and
+`save.ammo` `{ revolver: 12, revolverIn: 6 }` (OPEN_WORLD §1). On foot the
+mouse wheel (the pad's d-pad left / right, a notch a press) turns O4's
+`arms(G).next` (fists, then what I own): drawn, the controller's gun mode;
+put away, the walk. Getting into a car or into the river puts it away. The
+card `city_gun` (`[WHEEL] the revolver`) once, on foot, in a quiet second.
+`city:arms` `{ gun }` on each change. In a fist fight O4's crowd takes the
+wheel (`Crowd.draw`).
+
+## 5c. The pad's aim help (`src/input/Pad.js`, `PAD.aim`)
+
+L2 raised with a gun, by the pad: the man nearest the sight within
+`cone` rad (or `width` m of his chest at his distance), with a clear line,
+is eased toward: `snap` of the way on the raise, then `rate` of what is
+left a second (at most `max` rad/s); a stick pushed past `stick` away from
+him is never pulled. `pad.aimed` / `pad.aimedHood` name him (the tools).
+
 ## 6. The stand-ins (until the lane merges; `src/night/standins.js`)
 
 Installed only when the real seam is absent; dropped at O7's fix pass.
@@ -132,8 +171,8 @@ Installed only when the real seam is absent; dropped at O7's fix pass.
 | seam | owner | the stand-in |
 | --- | --- | --- |
 | `game.police` `{ heat, searching, units, on('heat', fn), set(level), lost() }` | O3 | a heat that falls by itself (14 s unseen: the search; 9 s searching: a shield less) |
-| `game.crime.emit(kind, point, by)` | O3 | raises the stand-in's heat to the kind's level (punch 1, hijack 1, shot 2, death 3, cop 4) |
-| `game.news` `{ say(line), last, lines }` | O1b | keeps the lines (the bounty says its takedowns there) |
+| `game.crime.emit(kind, point, by)` | O3 | raises the stand-in's heat to the kind's level (punch 1, hijack 1, shot 2, death 3, cop 4); until O3's witnesses a shot in the city (`shot`) and O4's crowd's `crime` raise it too |
+| `game.news` | O1b | merged: O1b's own (`world/items.js` `newsOf`), no stand-in |
 | `save.money`, `save.matchbooks`, `save.garage` | O4, O5, O2 | the save's own fields (no stand-in needed) |
 
 The debug bed: `?nightbed=1` (never in a normal run): 1-5 the heat, 0 none,
