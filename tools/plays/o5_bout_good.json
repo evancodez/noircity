@@ -1,6 +1,6 @@
 {
- "about": "[O5] The gym's bout, profile good (brief O5 \u00a73: idle / bad / medium / good): E at the man by the ring, the bout (the base's fist fight, the stand-in for O4's), its end: the purse or out of the ring.",
- "url": "/?mute=1&start=city",
+ "about": "[O5] the gym's bout by good hands (O4's crowd brawl and its bot tools/lib/o4_brawl.mjs): E at the man by the ring, the bet, the fight; a fall wakes me by the ring's steps, the man offering again",
+ "url": "/?mute=1&start=city.wake&wake=gym:ring",
  "size": [
   1280,
   800
@@ -8,69 +8,37 @@
  "out": "shots/o5/bout_good",
  "steps": [
   {
-   "until": "G.state === 'title' && !document.getElementById('title').classList.contains('hidden')",
+   "until": "G.state === 'title' && !!document.querySelector('#title .opt[data-k=begin]')",
    "timeout": 60000
   },
   {
-   "wait": 1500
+   "wait": 1200
   },
   {
    "clickOn": "#title .opt[data-k=begin]",
-   "taken": "G.state !== 'title'",
-   "retries": 5,
-   "every": 4000
+   "taken": "G.scenes.current && G.scenes.current.id === 'city'",
+   "retries": 4
   },
   {
-   "until": "G.scenes.current && G.scenes.current.id === 'city' && G.scenes.fadeK < 0.05",
-   "timeout": 60000
-  },
-  {
-   "wait": 1000
-  },
-  {
-   "eval": "(() => { const s = G.city.places.byId.get('gym'), F = s.frame; const p = F.w(0, -1.6); G.stage.part('stream').warmAround(p.x, p.z); N.controller.setPose(p.x, p.z, F.yaw(0), -0.05); return 1; })()"
-  },
-  {
-   "wait": 2500
-  },
-  {
-   "walk": "(() => { const s = G.city.places.byId.get('gym'), F = s.frame, K = s.live.K; const p = F.w(K.man.x - 1.2, K.man.z + 0.9); return [[p.x, p.z]]; })()",
-   "timeout": 25000
-  },
-  {
-   "eval": "(() => { const s = G.city.places.byId.get('gym'), F = s.frame, K = s.live.K; const a = F.v(K.man.x, 1.8, K.man.z); const C = N.controller; C.yaw = Math.atan2(-(a.x - G.eye.x), -(a.z - G.eye.z)); C.pitch = 0; window.__m0 = G.save.money || 0; return 1; })()"
-  },
-  {
-   "wait": 600
-  },
-  {
-   "name": "the man offers a bout",
-   "expect": "/bout/.test(G.hud.promptShown)"
-  },
-  {
-   "key": "KeyE",
-   "hold": 60
-  },
-  {
-   "until": "G.brawl.active",
-   "timeout": 8000
-  },
-  {
-   "drive": "tools/plays/critic/c4_bot.mjs",
-   "profile": "good",
-   "timeout": 400000,
-   "shots": 0
-  },
-  {
-   "until": "!G.city.places.byId.get('gym').live.run.busy",
+   "until": "G.scenes.current && G.scenes.current.id === 'city' && G.scenes.beat === 'wake' && !G.failing && G.scenes.fadeK < 0.05",
    "timeout": 30000
   },
   {
-   "eval": "JSON.stringify({ wins: G.city.places.byId.get('gym').state.wins || 0, money: (G.save.money || 0) - window.__m0, downs: G.brawl.stats && G.brawl.stats.downs, time: G.brawl.stats && +G.brawl.stats.time.toFixed(1), warned: G.brawl.stats && G.brawl.stats.downWarned })"
+   "eval": "'at the ring: inside '+(G.city.places.inside&&G.city.places.inside.id)+' prompt '+G.hud.promptShown+' $'+G.save.money"
   },
   {
-   "name": "[O5] good hands: the first bout won, the purse paid",
-   "expect": "(G.city.places.byId.get('gym').state.wins || 0) === 1 && (G.save.money || 0) - window.__m0 === 25"
+   "drive": "tools/lib/o4_brawl.mjs",
+   "profile": "good",
+   "beat": "wake",
+   "tries": 2,
+   "wins": 2,
+   "timeout": 480000,
+   "check": "D.wins >= 2 && D.tries.every((t) => t.result === 'won')",
+   "label": "good hands win twice, no fall",
+   "startKey": "KeyE"
+  },
+  {
+   "eval": "'after: $'+G.save.money+' wins '+G.city.places.byId.get('gym').state.wins+' prompt '+G.hud.promptShown"
   }
  ]
 }

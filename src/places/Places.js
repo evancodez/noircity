@@ -413,8 +413,9 @@ export class Places {
     if (s.live) this.drop(s);
     s.state.dead = [];
     const def = ROOMS[s.kind] || {};
-    if (where !== 'door' && def.wakeAt) return this.enter(id, { at: def.wakeAt(where) });
     this.load(s);
+    const at = where !== 'door' && def.wakeAt ? def.wakeAt(where, s.live.K) : null;
+    if (at) return this.enter(id, { at });
     this.inside = null; this.level = 0;
     return s;
   }

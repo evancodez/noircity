@@ -46,14 +46,19 @@ export function boutStart(K, s, P) {
       G.eye.copy(G.camera.position);
       const inner = F.box(R.x0 + 0.3, R.x1 - 0.3, R.z0 + 0.3, R.z1 - 0.3);
       const falls = (s.state.falls || (s.state.falls = {}))[st.lv] || 0;
-      C.start({ men: [{ kind: 'boxer', at: { x: p1.x, z: p1.z }, yaw: Math.atan2(p0.x - p1.x, p0.z - p1.z), name: L.name, over: { ...L }, hp: L.hp }],
+      // (each fall at this level, on top of O4's mercy - his openings longer, his blows further apart -
+      // the man is a little less: less to put down, his guard and his answer a little slower; the
+      // clumsy hand is through by the third or fourth try, an idle one never)
+      const f = Math.min(3, falls), over = { ...L, guard: L.guard - 0.1 * f, answer: Math.max(0.2, L.answer - 0.08 * f) }, hp = Math.round(L.hp * (1 - 0.15 * f));
+      C.start({ men: [{ kind: 'boxer', at: { x: p1.x, z: p1.z }, yaw: Math.atan2(p0.x - p1.x, p0.z - p1.z), name: L.name, over, hp }],
         bounds: inner, leave: false, maxIn: 1, seed: 7100 + st.lv + falls * 7, mercy: falls,
         onEnd: (r) => { st.result = r; },
-        onDown: () => {
+        onDown: ({ why } = {}) => {
           s.state.falls[st.lv] = falls + 1;
           // (the city's beat: up by the ring's steps, the man offering again)
           G.city.wake = { id: s.id, where: 'ring' };
-          return { why: st.bet > 0 ? 'Out cold. The bet is his.' : 'Out cold.', to: 'wake' };
+          // (the black says what put me down - the crowd's fix - and what it cost)
+          return { why: (why || 'Out cold.') + (st.bet > 0 ? ' The bet is his.' : ''), to: 'wake' };
         } });
       st.phase = 'fight'; st.ours = true;
       G.hud.objective('Win the bout.');
@@ -61,7 +66,8 @@ export function boutStart(K, s, P) {
     // out of the ring by the steps, the controls mine
     out() {
       const p = F.w(K.man.x - 0.9, K.man.z + 0.3);
-      G.controller.setPose(p.x, p.z, F.yaw(0) + Math.PI * 0.9, -0.1, 0.3);
+      // (facing the man by the steps: the next bout is offered at once)
+      G.controller.setPose(p.x, p.z, F.yaw(Math.atan2(-0.9, 0.3)), -0.08, 0.3);
       G.eye.copy(G.camera.position);
       if (st.ours) { C.clearMen(); st.ours = false; }
       G.player.hands.equip('empty');

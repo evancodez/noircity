@@ -12,7 +12,6 @@ import { crowdOf } from '../../combat/brawl/Crowd.js';
 // the ring's corner runs the bouts: E, a bout for money, three levels
 // (bout.js: O4's crowd brawl with the boxer of a level, O4's bet and purse). Men train at the bags; a crowd comes to the
 // ropes for a bout.
-let MAN = null;
 export default {
   kind: 'gym',
   spawn: { x: 0, z: -1.6, yaw: 0 },
@@ -49,7 +48,7 @@ export default {
     label(K, 'SEE THE MAN\nAT THE RING', -8.2, FLOOR + 1.9, x0, { w: 1.0, h: 0.5, dir: 'e', lit: true });
     // the man at the ring's corner (by the steps); two men at the bags and the bench
     K.ring = { x0: rcx - rw / 2, x1: rcx + rw / 2, z0: rz0, z1: rz1, y: R.y };
-    K.man = MAN = { x: rcx + rw / 2 + 0.4, z: rz1 + 0.7 };
+    K.man = { x: rcx + rw / 2 + 0.4, z: rz1 + 0.7 };
     K.fig('oldman', K.man.x, K.man.z, Math.PI * 0.85, { name: 'promoter', state: 'watch' });
     K.fig('docker', x0 + 1.75, -3.2, -Math.PI / 2, { name: 'trainer', state: 'br_guard' });
     K.fig('dockhand', x1 - 0.9, -5.0, -Math.PI / 2, { name: 'sitter', state: 'idle' });
@@ -62,7 +61,7 @@ export default {
   },
   live(K, s, P) { return boutStart(K, s, P); },
   // (up after a fall in the ring: on the boards by its steps, the man offering again)
-  wakeAt(where) { return where === 'ring' && MAN ? { x: MAN.x - 0.9, z: MAN.z + 0.3, yaw: Math.PI * 0.9, pitch: -0.1 } : null; },
+  wakeAt(where, K) { return where === 'ring' && K.man ? { x: K.man.x - 0.9, z: K.man.z + 0.3, yaw: Math.atan2(-0.9, 0.3), pitch: -0.08 } : null; },
 };
 
 void THREE;

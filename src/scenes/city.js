@@ -141,7 +141,11 @@ export default defineScene({
     // again under the black: every man back), me outside its street door facing it - or by the
     // gym's ring - and my car where I left it
     wake(ctx) {
-      const G = ctx.game, R = G.city || {}, W = R.wake || {}, P = placesOf(G, ctx.stage), s = P.byId.get(W.id);
+      const G = ctx.game, R = G.city || (G.city = {}), P = placesOf(G, ctx.stage);
+      // (the plays: ?start=city.wake&wake=<place>:<where> - the gym's ring, a hideout's door)
+      const q = typeof location !== 'undefined' ? new URLSearchParams(location.search) : null;
+      if (!R.wake && q && q.get('wake')) { const [id, where] = q.get('wake').split(':'); R.wake = { id, where: where || 'door' }; }
+      const W = R.wake || {}, s = P.byId.get(W.id);
       const car = R.car ? { x: R.car.pos.x, z: R.car.pos.z, yaw: R.car.yaw } : null;
       if (!s) { const a = ctx.stage.anchor('city.start.grand'); place(ctx, { car: a.car, carYaw: a.carYaw, pos: a.pos, yaw: a.yaw }); return; }
       const out = s.frame.w(0, 2.6);
