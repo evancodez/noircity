@@ -26,7 +26,13 @@ export default {
     K.box('wood', x0, x0 + 0.04, FLOOR, FLOOR + 1.0, z0, z1, 0);
     K.box('wood', x1 - 0.04, x1, FLOOR, FLOOR + 1.0, z0, z1, 0);
     // the kitchen behind the hatch: lit walls, the cook at the pass
-    K.room(3.6, 8.2, z0 - 2.9, z0 - 0.24, { h: 3.0, floor: 'tile', wall: 'litDim', ceil: 'litDim', sides: { s: false }, look: { ambient: 0.8 } });
+    // (built piece by piece: nothing of it may reach into the diner's back wall)
+    K.floor(3.6, 8.2, z0 - 2.9, z0 - 0.25, FLOOR, 'tile');
+    K.box('litDim', 3.6, 8.2, FLOOR + 3.0, FLOOR + 3.2, z0 - 2.9, z0 - 0.4, 0);
+    K.wall('x', z0 - 3.02, 3.36, 8.44, FLOOR, FLOOR + 3.2, { key: 'litDim' });
+    K.wall('z', 3.48, z0 - 2.9, z0 - 0.25, FLOOR, FLOOR + 3.2, { key: 'litDim' });
+    K.wall('z', 8.32, z0 - 2.9, z0 - 0.25, FLOOR, FLOOR + 3.2, { key: 'litDim' });
+    K.volume(3.6, 8.2, z0 - 2.9, z0 - 0.25, FLOOR, FLOOR + 3.0, { ambient: 0.8 });
     K.box('chrome', 4.0, 7.8, FLOOR + 0.9, FLOOR + 0.95, z0 - 2.9, z0 - 2.3, 1);
     K.box('woodHi', 4.2, 7.0, FLOOR + 1.12, FLOOR + 1.16, z0 - 0.36, z0 + 0.12, 1);
     K.lamp(5.9, FLOOR + 2.6, z0 - 1.5, { kind: 'bare', power: 0.5, ceilY: FLOOR + 3.0, cone: false });
@@ -52,8 +58,10 @@ export default {
     // the jukebox at the far end: an arch of lit tubes
     const jx = x1 - 0.55, jz = -7.6;
     K.box('wood', jx - 0.38, jx + 0.38, FLOOR, FLOOR + 1.45, jz - 0.35, jz + 0.35, 1);
-    K.box('lit', jx - 0.4, jx - 0.32, FLOOR + 0.3, FLOOR + 1.5, jz - 0.36, jz + 0.36, 2);
-    K.box('litDim', jx - 0.42, jx - 0.4, FLOOR + 0.9, FLOOR + 1.3, jz - 0.25, jz + 0.25, 2);
+    // (its face dark, its tubes lit: an arch of light, not a white box)
+    K.box('litDim', jx - 0.42, jx - 0.38, FLOOR + 0.9, FLOOR + 1.3, jz - 0.22, jz + 0.22, 2);
+    for (const sd of [-1, 1]) K.box('lit', jx - 0.44, jx - 0.38, FLOOR + 0.2, FLOOR + 1.35, jz + sd * 0.33 - 0.03, jz + sd * 0.33 + 0.03, 2);
+    K.box('lit', jx - 0.44, jx - 0.38, FLOOR + 1.35, FLOOR + 1.41, jz - 0.36, jz + 0.36, 2);
     K.solid(jx - 0.4, jx + 0.4, jz - 0.38, jz + 0.38);
     // the menu board over the back bar
     label(K, 'COFFEE   5\nPIE     10\nHASH    25\nEGGS    20', cx0 + 1.6, FLOOR + 2.9, z0, { w: 1.6, h: 0.9, dir: 's', dark: true });

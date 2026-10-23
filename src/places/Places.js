@@ -40,7 +40,9 @@ export class Places {
     this.C = stage.part('city').C;
     this.list = sites(this.C);
     this.byId = new Map(this.list.map((s) => [s.id, s]));
-    for (const s of this.list) { s.ids = allocInkId(4); s.live = null; s.state = s.state || {}; }
+    // (ink ids allocated when a place is first loaded, once: a city that never
+    // loads one allocates nothing - the city's frames are the city's)
+    for (const s of this.list) { s.live = null; s.state = s.state || {}; }
     this.lampsApi = stage.part('lamps');
     this.inside = null; this.level = 0; this.seat = null; this.insideT = 0;
     this.lots = new Set(this.list.map((s) => s.lot));
@@ -88,6 +90,7 @@ export class Places {
     const t0 = performance.now();
     const G = this.game, stage = this.stage;
     const def = ROOMS[s.kind];
+    if (s.ids == null) s.ids = allocInkId(4);
     const K = new RoomKit(this, s);
     s.live = { K, t0 };
     // the street doors' frames in the room's frame (the room cuts their holes)
@@ -293,7 +296,8 @@ export class Places {
     const add = (h) => { const x = G.interact.add({ scope: 'o5', ...h, id: `o5_${s.id}_${s.live.ix.length}` }); s.live.ix.push(x); return x; };
     for (const D of K.doors) {
       if (D._wired) continue; D._wired = true;
-      const h = add({ at: D.centre, range: 2.3, cone: 0.62, prompt: '', when: () => this.canUse(D.lvl), onUse: () => this.useDoor(s, D) });
+      // (a street door is met from the pavement: its prompt comes at 3 m)
+      const h = add({ at: D.centre.clone().setY(D.centre.y + 0.35), range: D.street ? 3.3 : 2.4, cone: 0.62, prompt: '', when: () => this.canUse(D.lvl), onUse: () => this.useDoor(s, D) });
       Object.defineProperty(h, 'prompt', { get: () => (D.locked ? 'try the door' : D.shut || D.target === 0 ? (D.street && !this.inSite(s) ? 'go in' : 'open') : 'close') });
     }
     for (const S of K.seats) {
@@ -423,7 +427,13 @@ export class Places {
       if (!L) continue;
       // the floors' own colliders: only the floor I am on
       for (const c of L.K.cols) if (c.lvl != null) c.gone = c.lvl !== this.level;
+      const C = G.controller, vx = C.vel ? C.vel.x : 0, vz = C.vel ? C.vel.z : 0, sp = Math.hypot(vx, vz);
       for (const D of L.K.doors) {
+        // (a push door is pushed: walked into, shut and not locked, it swings open before me)
+        if (D.shut && !D.moving && !D.locked && sp > 0.8 && this.canUse(D.lvl) && Math.abs(C.groundY + 1.0 - D.centre.y) < 1.2) {
+          const dx = D.centre.x - C.pos.x, dz = D.centre.z - C.pos.z, d = Math.hypot(dx, dz);
+          if (d < 0.75 && (dx * vx + dz * vz) / (d * sp) > 0.6) D.open(C.pos);
+        }
         D.update(dt);
         // (a street door has a closer: it swings shut behind me once I am clear)
         if (D.street && !D.shut && !D.moving && D.openT > 3.5 && Math.hypot(G.eye.x - D.centre.x, G.eye.z - D.centre.z) > 1.8) D.close(1.6);

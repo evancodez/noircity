@@ -163,6 +163,8 @@ function hideoutLife(K, s, P) {
     alarm(why) { if (!st.hostile && st.begun) { st.hostile = true; G.hud.warn(null); P.crime('hideout', G.eye.clone(), 2); arm(); void why; } },
     step(dt) {
       st.t += dt;
+      // the safe's door swings open once it is kicked in (open at once if it was before)
+      if (s.state.safeOpen && K.safe) { const D = K.safe.door, to = F.yaw(K.safeAt.yaw) - 1.7; D.rotation.y += (to - D.rotation.y) * (st.safeSeen ? Math.min(1, dt * 5) : 1); st.safeSeen = true; D.updateMatrixWorld(true); }
       if (!st.begun && !s.state.cleared) begin();
       if (!st.begun) return;
       const inside = P.inside === s;

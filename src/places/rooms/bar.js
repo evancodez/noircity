@@ -157,6 +157,7 @@ function barLife(K, s, P) {
       if (!A || !B || !A.alive || !B.alive) return;
       if (P.inside !== s) return;
       st.t += dt;
+      if (run.__forceNext) { run.__forceNext = false; st.t = st.next; }
       if (!st.fight && st.t > st.next && !G.brawl.active) {
         st.fight = { t: 0, n: 0, next: 0.6 };
         A.lookAt(null); B.lookAt(null);

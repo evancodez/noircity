@@ -1,0 +1,154 @@
+{
+ "about": "[O5] The Tenements' bar: a stool, a whiskey (E), the matchbook taken, the fight at the bar's end - stepped into (brief O5 \u00a72.3).",
+ "url": "/?mute=1&start=city",
+ "size": [
+  1280,
+  800
+ ],
+ "out": "shots/o5/bar",
+ "steps": [
+  {
+   "until": "G.state === 'title' && !document.getElementById('title').classList.contains('hidden')",
+   "timeout": 60000
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]",
+   "taken": "G.state !== 'title'",
+   "retries": 5,
+   "every": 4000
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'city' && G.scenes.fadeK < 0.05",
+   "timeout": 60000
+  },
+  {
+   "wait": 1000
+  },
+  {
+   "eval": "(G.save.money = 10, 1)"
+  },
+  {
+   "eval": "(() => { const s = G.city.places.byId.get('bar1'), F = s.frame; const p = F.w(0, -1.4); G.stage.part('stream').warmAround(p.x, p.z); N.controller.setPose(p.x, p.z, F.yaw(0), -0.05); return 1; })()"
+  },
+  {
+   "wait": 2500
+  },
+  {
+   "eval": "(() => { const s = G.city.places.byId.get('bar1'), F = s.frame, K = s.live.K; const st = K.bar.stools[2]; const p = F.w(st[0], st[1] + 0.9); const a = F.v(st[0], 1.1, st[1]); N.controller.setPose(p.x, p.z, Math.atan2(-(a.x - p.x), -(a.z - p.z)), -0.5); return 1; })()"
+  },
+  {
+   "wait": 500
+  },
+  {
+   "name": "a stool",
+   "expect": "/sit/.test(G.hud.promptShown)"
+  },
+  {
+   "key": "KeyE",
+   "hold": 60
+  },
+  {
+   "wait": 900
+  },
+  {
+   "eval": "(() => { const s = G.city.places.byId.get('bar1'), F = s.frame, K = s.live.K; const a = F.v(...(K.bar.top(K.bar.stools[2][0]))); const C = N.controller; C.yaw = Math.atan2(-(a.x - G.eye.x), -(a.z - G.eye.z)); C.pitch = Math.atan2(a.y - G.eye.y, Math.hypot(a.x - G.eye.x, a.z - G.eye.z)); return 1; })()"
+  },
+  {
+   "wait": 500
+  },
+  {
+   "name": "a whiskey",
+   "expect": "/whiskey/.test(G.hud.promptShown)"
+  },
+  {
+   "key": "KeyE",
+   "hold": 60
+  },
+  {
+   "wait": 900
+  },
+  {
+   "shot": "01_whiskey"
+  },
+  {
+   "name": "the glass and the bottle, $2",
+   "expect": "G.save.money === 8 && G.city.places.byId.get('bar1').state.glass"
+  },
+  {
+   "eval": "(() => { const C = N.controller; C.yaw += 2.5; C.pitch = 0.3; return 1; })()"
+  },
+  {
+   "wait": 300
+  },
+  {
+   "key": "KeyE",
+   "hold": 60
+  },
+  {
+   "wait": 800
+  },
+  {
+   "name": "up",
+   "expect": "!G.city.places.seat"
+  },
+  {
+   "eval": "(() => { const s = G.city.places.byId.get('bar1'), F = s.frame, K = s.live.K; const mb = K.props.find((p) => p.name === 'matchbook'); const a = mb.o.position; const p = F.w(K.bar.stools[0][0], K.bar.stools[0][1] + 0.7); N.controller.setPose(p.x, p.z, Math.atan2(-(a.x - p.x), -(a.z - p.z)), Math.atan2(a.y - 1.93, Math.hypot(a.x - p.x, a.z - p.z))); return 1; })()"
+  },
+  {
+   "wait": 500
+  },
+  {
+   "name": "the matchbook",
+   "expect": "/matchbook/.test(G.hud.promptShown)"
+  },
+  {
+   "key": "KeyE",
+   "hold": 60
+  },
+  {
+   "wait": 700
+  },
+  {
+   "name": "taken",
+   "expect": "G.save.matchbooks.includes('bar1')"
+  },
+  {
+   "eval": "(() => { const s = G.city.places.byId.get('bar1'), F = s.frame, K = s.live.K, e = K.bar.end; const m = s.live.cast.find((c) => c.name === 'bar1_drunkA'); const p = F.w(e[0], e[1] + 1.5); const a = m.pos; N.controller.setPose(p.x, p.z, Math.atan2(-(a.x - p.x), -(a.z - p.z)), -0.05); s.live.run.__forceNext = true; return 1; })()"
+  },
+  {
+   "until": "(() => { const r = window.__noir.game.hud.el.msg.textContent; return /fight/.test(r); })()",
+   "timeout": 30000
+  },
+  {
+   "wait": 700
+  },
+  {
+   "name": "step in",
+   "expect": "/step in/.test(G.hud.promptShown)"
+  },
+  {
+   "key": "KeyE",
+   "hold": 60
+  },
+  {
+   "wait": 600
+  },
+  {
+   "name": "my fight",
+   "expect": "G.brawl.active"
+  },
+  {
+   "drive": "tools/plays/critic/c4_bot.mjs",
+   "profile": "good",
+   "timeout": 200000,
+   "shots": 0
+  },
+  {
+   "until": "N.controller.mode === 'walk'",
+   "timeout": 20000
+  }
+ ]
+}

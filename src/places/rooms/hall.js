@@ -96,7 +96,10 @@ export default {
             c.fig.pos.x += dx / d * sp; c.fig.pos.z += dz / d * sp;
             c.face(Math.atan2(dx, dz));
           } else if (W.t > W.next) {
-            const st = K.stallsAt[Math.floor(Math.random() * K.stallsAt.length)];
+            // (the stalls either side of the middle aisle: the way between them is clear)
+            const mids = K.stallsAt.filter((q) => Math.abs(q.x) < 6);
+            const st = mids[Math.floor(Math.random() * mids.length)];
+            if (!st) continue;
             const side = st.x < 0 ? 1 : -1;
             const gx = side > 0 ? st.c + 0.7 : st.a - 0.7, gz = st.z + (Math.random() - 0.5) * 2.0;
             const p = F.w(gx, gz), f = F.w(st.x, gz);

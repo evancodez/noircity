@@ -11,7 +11,7 @@ import { RNG } from '../../util/rng.js';
 // the door to the roof: the roof, its parapet, the city round it, and the
 // fire escape down to the street. No two alike (the walls' paint, the lamps,
 // what stands in the hall below, how many floors - a seeded variant each).
-const PAINT = ['plaster', 'paper', 'dark'];
+const PAINT = ['paper', 'plaster', 'paper'];
 const LAMP = ['cage', 'bare', 'globe'];
 export default {
   kind: 'stair',
@@ -50,7 +50,7 @@ export default {
       K.wall('x', zH - t / 2, L0 - t, L1 + t, yk, yk + (top ? wH : fh), { key: paint, holes: k > 0 && !top ? [{ a: L0 + 0.25, b: L0 + 1.15, top: yk + fh / 2 + 2.05, bottom: yk + fh / 2 }] : [] });
       if (top) { K.ceil(L0 - t, L1 + t, zH - t, zF, yk + wH); K.wall('x', zF + t / 2 - 0.02, L0 - t, L1 + t, yk, yk + wH, { key: 'concrete', t: 0.2 }); }
       // the lamp on the landing
-      const lamp = K.lamp(0.1, yk + Math.min(2.6, fh - 0.5), -1.2, { kind: lampKind, power: 0.55, ceilY: yk + Math.min(3.1, fh - 0.05), on: !(k === 2 && v === 1) });
+      const lamp = K.lamp(0.1, yk + Math.min(2.6, fh - 0.5), -1.2, { kind: lampKind, power: 0.85, ceilY: yk + Math.min(3.1, fh - 0.05), on: !(k === 2 && v === 1) });
       if (k === 2 && v === 1) lamp.flicker = true;
       // the doors
       if (k > 0 && !top) {
@@ -67,7 +67,8 @@ export default {
       if (k === 0) {
         for (let i = 0; i < 8; i++) K.box('iron', L0 + 0.0, L0 + 0.12, FLOOR + 1.1 + (i % 4) * 0.22, FLOOR + 1.3 + (i % 4) * 0.22, -1.9 + Math.floor(i / 4) * 0.42, -1.55 + Math.floor(i / 4) * 0.42, 3);
         K.box('wood', mid, L1, FLOOR, y(0) + fh / 2 - 0.1, zB, zA, 1);
-        K.solid(mid, L1, zB, zA, { lvl: 0 });
+        // (the cupboard is solid at the ground only: over it runs the first flight back, on the same floor's level)
+        K.cupboard = K.solid(mid, L1, zB, zA, { lvl: null }); K.cupboard.lvl = undefined;
         if (v === 0) { K.box('leather', L1 - 0.75, L1 - 0.1, FLOOR + 0.3, FLOOR + 0.85, -1.9, -0.9, 1); K.add('iron', new THREE.TorusGeometry(0.17, 0.02, 6, 14).rotateY(Math.PI / 2).translate(L1 - 0.4, FLOOR + 0.2, -1.8), 1); K.add('iron', new THREE.TorusGeometry(0.17, 0.02, 6, 14).rotateY(Math.PI / 2).translate(L1 - 0.4, FLOOR + 0.2, -1.0), 1); K.solid(L1 - 0.8, L1, -2.0, -0.8, { lvl: 0 }); }
         else if (v === 1) { for (const z of [-1.7, -0.7]) K.add('iron', new THREE.TorusGeometry(0.32, 0.025, 6, 18).rotateY(Math.PI / 2).translate(L1 - 0.12, FLOOR + 0.33, z), 1); K.box('iron', L1 - 0.15, L1 - 0.1, FLOOR + 0.3, FLOOR + 0.75, -1.7, -0.7, 1); K.solid(L1 - 0.25, L1, -2.1, -0.4, { lvl: 0 }); }
         else { for (const z of [-1.7, -1.0]) { K.cyl('iron', L1 - 0.35, FLOOR, FLOOR + 0.75, z, 0.27, 0.25, 12, 1); } K.solid(L1 - 0.65, L1, -2.0, -0.7, { lvl: 0 }); }
@@ -105,6 +106,7 @@ export default {
     return {
       step(dt) {
         t += dt;
+        if (K.cupboard) K.cupboard.gone = !(P.inside === s && P.game.controller.groundY < FLOOR + 0.5);
         for (const l of fl) { const on = Math.sin(t * 13) + Math.sin(t * 5.7) > 0.6; if (on !== l.on) l.set(on); }
         // (the roof's surface: not inside the bulkhead)
       },

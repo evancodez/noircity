@@ -36,10 +36,12 @@ export default {
     } });
     label(K, 'TICKETS', (bx0 + bx1) / 2, FLOOR + 2.25, bz1 + 0.01, { w: 1.2, h: 0.25, dir: 's', dark: true });
     // the posters in their frames; the stairs up the right wall to the balcony's door (closed tonight)
-    for (let i = 0; i < 3; i++) { const z = -1.6 - i * 1.8; K.box('woodHi', x1 - 0.05, x1, FLOOR + 0.9, FLOOR + 2.5, z - 0.55, z + 0.55, 3); sheet(K, z, FLOOR + 1.7, x1 - 0.05, { w: 0.9, h: 1.4, dir: 'w' }); }
+    for (let i = 0; i < 3; i++) { const z = -1.6 - i * 1.8; K.box('woodHi', x1 - 0.06, x1, FLOOR + 0.85, FLOOR + 2.55, z - 0.6, z + 0.6, 3); K.box('litDim', x1 - 0.07, x1 - 0.06, FLOOR + 0.92, FLOOR + 2.48, z - 0.53, z + 0.53, 2); sheet(K, z, FLOOR + 1.7, x1 - 0.08, { w: 0.8, h: 1.3, dir: 'w' }); }
     label(K, 'NOW SHOWING\nTHE LONG NIGHT', x0 + 0.02, FLOOR + 2.0, -5.4, { w: 1.6, h: 0.7, dir: 'e', lit: true });
     bench(K, x0 + 0.05, x0 + 0.5, -6.6, -4.6);
     K.lamp(hx, FLOOR + 3.4, -3.6, { kind: 'globe', power: 1.0, ceilY: FLOOR + H });
+    // (a chandelier: small lit globes on a ring of arms round it)
+    for (let i = 0; i < 6; i++) { const a = i * Math.PI / 3; K.add('bulb', new THREE.SphereGeometry(0.05, 8, 6).translate(hx + Math.cos(a) * 0.45, FLOOR + 3.3, -3.6 + Math.sin(a) * 0.45), 2); K.add('chrome', new THREE.CylinderGeometry(0.008, 0.008, 0.46, 4).rotateZ(Math.PI / 2).rotateY(-a).translate(hx + Math.cos(a) * 0.23, FLOOR + 3.36, -3.6 + Math.sin(a) * 0.23), 2); }
     K.lamp(x1 - 1.6, FLOOR + 3.4, -1.6, { kind: 'globe', power: 0.6, ceilY: FLOOR + H });
     K.fig('oldman', hx + 1.4, zl + 0.5, 0, { name: 'usher', state: 'idle' });
     // the doors into the house (a double door, pushed either way)

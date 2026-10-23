@@ -50,7 +50,7 @@
    "timeout": 15000
   },
   {
-   "walk": "(() => { const s = G.city.places.byId.get('police'), F = s.frame; return [[4.4, -9.6]].map(([x, z]) => { const p = F.w(x, z); return [p.x, p.z]; }); })()",
+   "walk": "(() => { const s = G.city.places.byId.get('police'), F = s.frame; return [[5.9, -9.5]].map(([x, z]) => { const p = F.w(x, z); return [p.x, p.z]; }); })()",
    "timeout": 20000
   },
   {
@@ -67,7 +67,7 @@
    "wait": 900
   },
   {
-   "walk": "(() => { const s = G.city.places.byId.get('police'), F = s.frame; return [[5.4, -6.9], [5.4, -3.0], [0, -1.2]].map(([x, z]) => { const p = F.w(x, z); return [p.x, p.z]; }); })()",
+   "walk": "(() => { const s = G.city.places.byId.get('police'), F = s.frame; return [[5.9, -6.9], [4.6, -3.0], [0, -1.2]].map(([x, z]) => { const p = F.w(x, z); return [p.x, p.z]; }); })()",
    "timeout": 25000
   },
   {

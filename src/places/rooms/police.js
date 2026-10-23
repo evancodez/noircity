@@ -19,8 +19,7 @@ export default {
     K.room(x0, x1, zm, z1, { h: H, floor: 'tile', wall: 'paper', look: { ambient: 0.6, haze: 0.2 }, sides: { s: { holes: P.doorHoles(s, 's') }, n: { holes: [{ a: x1 - 1.6, b: x1 - 0.6, top: FLOOR + 2.05 }] } } });
     K.box('wood', x0, x1, FLOOR, FLOOR + 1.2, zm, zm + 0.04, 0);
     // the high desk across the hall, the sergeant behind it, the gate at its end
-    counter(K, x0 + 1.5, x1 - 2.2, -5.6, -4.9, { dir: 's', h: 1.25 });
-    K.box('wood', x0 + 1.5, x1 - 2.2, FLOOR + 1.25, FLOOR + 1.6, -5.65, -5.55, 1);
+    counter(K, x0 + 1.5, x1 - 2.2, -5.6, -4.9, { dir: 's', h: 1.12 });
     K.fig('oldman', 0, -6.4, 0, { name: 'sergeant', state: 'read' });
     K.use({ at: [0, FLOOR + 1.5, -5.2], range: 2.2, cone: 0.5, prompt: 'the desk sergeant', onUse: () => { P.game.sfx.play('paperTouch', null, {}, { ref: 1 }); P.game.hud.message(P.arrested ? 'He pushes your things across. Sign.' : 'He looks up. Then down again.', 2.0); P.arrested = false; } });
     // the benches along the walls, the bounty board by the door
@@ -31,8 +30,8 @@ export default {
     for (let i = 0; i < 3; i++) sheet(K, bx - 0.45 + i * 0.45, FLOOR + 1.9, z1, { w: 0.36, h: 0.5, dir: 'n' });
     K.bounty = { x: bx, y: FLOOR + 1.9, z: z1, dir: 'n', w: 1.4 };
     K.use({ at: [bx, FLOOR + 1.9, z1 - 0.05], range: 2.2, cone: 0.45, prompt: 'the board', onUse: () => { P.game.emit('bounty:look', {}); P.game.hud.message(P.game.bounty ? 'Three names tonight.' : 'Three names. No faces yet.', 2.0); } });
-    K.lamp(-2.2, FLOOR + 3.2, -4.0, { kind: 'globe', power: 0.8, ceilY: FLOOR + H });
-    K.lamp(2.4, FLOOR + 3.2, -4.0, { kind: 'globe', power: 0.8, ceilY: FLOOR + H });
+    K.lamp(-2.2, FLOOR + 3.2, -5.2, { kind: 'globe', power: 0.8, ceilY: FLOOR + H });
+    K.lamp(2.4, FLOOR + 3.2, -5.2, { kind: 'globe', power: 0.8, ceilY: FLOOR + H });
     K.lamp(bx, FLOOR + 3.1, -1.2, { kind: 'bare', power: 0.4, ceilY: FLOOR + H });
     label(K, 'POLICE', 0, FLOOR + 3.2, zm, { w: 1.8, h: 0.42, dir: 's', dark: true });
     // the back: the cells' corridor, the cells behind their bars

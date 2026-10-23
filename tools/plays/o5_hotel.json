@@ -48,7 +48,7 @@
    "wait": 500
   },
   {
-   "walk": "(() => { const s = G.city.places.byId.get('hotel'), F = s.frame; return [[0, -1.6], [-3.5, -10.6], [-6.6, -10.7]].map(([x, z]) => { const p = F.w(x, z); return [p.x, p.z]; }); })()",
+   "walk": "(() => { const s = G.city.places.byId.get('hotel'), F = s.frame; return [[0, -1.6], [1.8, -3.0], [1.8, -9.8], [-3.5, -10.7], [-6.6, -10.7]].map(([x, z]) => { const p = F.w(x, z); return [p.x, p.z]; }); })()",
    "timeout": 25000
   },
   {

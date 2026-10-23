@@ -100,6 +100,8 @@ export function boutStart(K, s, P) {
         // (the down's black is up: when it has said its word, out of the ring)
         if (B.blackT <= 0) {
           this.out('Lost the bout.');
+          // (the bout is over: finished, not won - stats.won says which)
+          B.finished = true;
           st.phase = 'back'; st.t = 0;
         }
         return;

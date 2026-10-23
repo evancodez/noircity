@@ -113,7 +113,8 @@ export default defineScene({
       place(ctx, { car: a.car, carYaw: a.carYaw, pos: a.pos, yaw: a.yaw });
       // [O5] (look development and the frames: ?place=<id> puts me inside it, &seat=<name> in its seat)
       const pq = q && q.get('place');
-      if (pq) ctx.game.city.places.enter(pq, { seat: q.get('sit') || null });
+      // (&out=1: loaded, but I stay where the pose puts me - outside its door)
+      if (pq && !q.get('out')) ctx.game.city.places.enter(pq, { seat: q.get('sit') || null });
     },
     // [O5] the hotel's bed wrote the save: CONTINUE wakes me in my room, the car at the kerb outside
     hotel(ctx) {

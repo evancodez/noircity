@@ -110,7 +110,8 @@ export default {
     K.use({ at: [rx0 + 0.8, y1 + 0.6, rz0 + 1.3], range: 2.2, cone: 0.6, prompt: 'sleep', onUse: () => sleep(K, s, P) });
     K.use({ at: [rx1 - 0.05, y1 + 1.3, rz1 - 1.8], range: 2.0, cone: 0.4, prompt: 'the light', onUse: () => { const l = K.lamps.at(-1); l.set(!l.on); P.game.sfx.play('c3_switch', null, {}, { ref: 1 }); } });
     K.box('chrome', rx1 - 0.06, rx1 - 0.02, y1 + 1.25, y1 + 1.37, rz1 - 1.85, rz1 - 1.75, 3);
-    K.wake = { x: rx0 + 0.8, z: rz0 + 1.2, yaw: -Math.PI / 2 - 0.3, y: y1, lvl: 1 };
+    // (beside the bed, looking down at it)
+    K.wake = { x: rx0 + 2.1, z: rz0 + 1.4, yaw: Math.PI / 2 - 0.15, y: y1, lvl: 1, pitch: -0.45 };
     K.at(null);
   },
   live(K, s, P) {
@@ -135,7 +136,7 @@ export default {
   // CONTINUE (the 'hotel' beat): up in my room, by the bed
   wake(K, s, P) {
     const G = P.game, W = K.wake, p = s.frame.w(W.x, W.z);
-    G.controller.setPose(p.x, p.z, s.frame.yaw(W.yaw), -0.1, W.y);
+    G.controller.setPose(p.x, p.z, s.frame.yaw(W.yaw), W.pitch ?? -0.1, W.y);
     P.level = 1;
     G.hud.message('Morning, near enough. The rain again.', 2.4);
   },

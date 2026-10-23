@@ -183,7 +183,7 @@ export class RoomKit {
     } else if (kind === 'globe') {
       this.cyl('iron', x, y + 0.14, top, z, 0.012, 0.012, 6, 2);
     }
-    const bulbR = kind === 'globe' ? 0.16 : 0.05;
+    const bulbR = kind === 'globe' ? 0.1 : 0.05;
     const bulb = new THREE.Mesh(new THREE.SphereGeometry(bulbR, 12, 8), on ? mats.bulb : this.stage.M.bulbDead);
     const p = this.F.v(x, y - (kind === 'globe' ? 0.05 : 0.04), z);
     bulb.position.copy(p);
