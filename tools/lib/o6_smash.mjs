@@ -17,6 +17,9 @@
 // city     the city's own: down Grand Ave and through the Tenements' market by the keys
 const PATHS = {
   // the bed: the east kerb line north, the junction, the west lane south, the west kerb line, a shop window
+  // the city's own (start=city, at Grand Ave): up Grand Ave's east kerb (its lamps, its hydrant, the tram stop's sign),
+  // east along Centre St, south down Hester St's west pavement through the Tenements' market (its stalls)
+  city: [[-112.2, 30], [-110.1, 25], [-110.1, -19], [-107.6, -25], [-100, -26.6], [140, -26.6], [160, -26.6], [308, -26.6], [317, -24.5], [322, -19], [322, 22], [322.4, 27]],
   bed: [[-112.2, 30], [-110.1, 25.5], [-110.1, 10], [-110.1, -21], [-111.6, -26], [-116, -30.2], [-121, -31.2], [-125.4, -28.5], [-126.8, -22], [-126.8, -6], [-128.3, 0.5], [-130.6, 5], [-130.6, 20], [-130.6, 44.2], [-131.6, 47.4], [-132.2, 47.5]],
 };
 
@@ -27,7 +30,33 @@ export default async function o6(api) {
   if (m === 'tram') return tram(api);
   if (m === 'latency') return latency(api);
   if (m === 'memory') return memory(api);
+  if (m === 'walkinto') return walkInto(api);
   return drive(api);
+}
+
+// ---- walk into what lies: a stall, a newsstand, a bench over on the pavement stops a man ---------------------------
+async function walkInto(api) {
+  const { js, log, sleep, keyDown, keyUp, turn, opts } = api;
+  const out = [];
+  const kinds = opts.kinds || ['stall', 'newsstand', 'bench', 'callbox'];
+  for (const kind of kinds) {
+    const L = await js(`(() => { const S = G.stage.smash, C = N.controller; let best = null, bd = 1e9; for (const it of S.out) { if (it.kind !== '${kind}' || !it.lie || it.state !== 'rest') continue; const d = Math.hypot(it.lie.cx - C.pos.x, it.lie.cz - C.pos.z); if (d < bd) { bd = d; best = it; } } if (!best) return null; const b = best.lie; return { cx: b.cx, cz: b.cz, hx: b.hx, hz: b.hz, c: b.c, s: b.s, id: best.id }; })()`);
+    if (!L) { out.push({ kind, err: 'none lying' }); continue; }
+    // (from 3.5 m off its long side, straight through its middle)
+    const nx = L.s, nz = L.c;    // (the box's local z in the world: its short side's normal)
+    const from = [L.cx + nx * (L.hz + 3), L.cz + nz * (L.hz + 3)], to = [L.cx - nx * (L.hz + 3), L.cz - nz * (L.hz + 3)];
+    await walkTo(api, from[0], from[1], 15000);
+    // face it, then W held at it for 3 s; the eye checked every frame
+    await js(`(() => { const W = window.__o6in = { min: 9, inside: 0 }; const b = G.stage.smash.items.find((i) => i.id === ${L.id}).lie; const tick = () => { const p = N.controller.pos; const dx = p.x - b.cx, dz = p.z - b.cz; const lx = dx * b.c - dz * b.s, lz = dx * b.s + dz * b.c; const d = Math.max(Math.abs(lx) - b.hx, Math.abs(lz) - b.hz); W.min = Math.min(W.min, d); if (d < -0.05) W.inside++; if (!W.stop) requestAnimationFrame(tick); }; requestAnimationFrame(tick); return 1; })()`);
+    const s = await js(`(() => { const C = N.controller; let d = Math.atan2(-(${to[0]} - C.pos.x), -(${to[1]} - C.pos.z)) - C.yaw; d = Math.atan2(Math.sin(d), Math.cos(d)); return { dyaw: d, sens: C.sensitivity }; })()`);
+    await turn(-s.dyaw / s.sens, 0);
+    await sleep(100);
+    await keyDown('KeyW'); await sleep(3000); await keyUp('KeyW');
+    const r = await js('(() => { const W = window.__o6in; W.stop = true; return { min: +W.min.toFixed(2), inside: W.inside }; })()');
+    out.push({ kind, ...r });
+    log(`walk into the ${kind}: ${JSON.stringify(r)}`);
+  }
+  return { walks: out };
 }
 
 // ---- driving a path by the keys ------------------------------------------------------------------------
@@ -137,7 +166,7 @@ async function drive(api) {
   await js('(window.__o6w.frames = 0, window.__o6w.over50 = 0, window.__o6w.maxMs = 0, window.__o6w.inside = [], 1)');
   let shotN = 0;
   const shots = opts.shots || {};
-  const r = await followPath(api, opts.path || PATHS.bed, { speed: opts.speed ?? 9.5, timeout: opts.timeout ?? 150000, onStep: async (s, idx) => {
+  const r = await followPath(api, (typeof opts.path === 'string' ? PATHS[opts.path] : opts.path) || PATHS.bed, { speed: opts.speed ?? 9.5, timeout: opts.timeout ?? 150000, onStep: async (s, idx) => {
     for (const [k, name] of Object.entries(shots)) if (idx >= +k && !shots['_' + k]) { shots['_' + k] = 1; await js('(window.__o6w.on = false, 1)'); await shot(name); shotN++; await js('(window.__o6w.last = performance.now(), window.__o6w.on = true, 1)'); }
   } });
   log(`drive: ${JSON.stringify(r)}`);

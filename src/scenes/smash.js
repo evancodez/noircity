@@ -213,7 +213,32 @@ function place(ctx, at = {}) {
   G.health.reset && G.health.reset();
   G.health.onDeath = () => G.fail({ why: 'Too close when she went.', to: 'bed' });
   if (!G.shotMode) R.compileMs = compileAll(stage, G);
+  lookDev(ctx);
   return { coupe, sedan, lorry };
+}
+
+// (look development, the strips: ?pose=x,z,yaw,pitch puts the eye there;
+// ?stage=<kind>@<t>[,<speed>[,<dirx>,<dirz>]] knocks the bed's first thing of
+// that kind over as a car at that speed would, t s after the start)
+function lookDev(ctx) {
+  const q = typeof location !== 'undefined' ? new URLSearchParams(location.search) : null;
+  if (!q) return;
+  const G = ctx.game, S = ctx.stage.smash;
+  const pose = q.get('pose');
+  if (pose) { const [x, z, yaw, pitch] = pose.split(',').map(Number); ctx.controller.setPose(x, z, yaw, pitch || 0); }
+  const st = q.get('stage');
+  if (!st || !S) return;
+  const [kind, rest] = st.split('@');
+  const [at, sp, dx, dz] = (rest || '0.5').split(',').map(Number);
+  const it = S.items.find((i) => i.kind === kind && i.rec && i.rec.bed) || S.items.find((i) => i.kind === kind && Math.hypot(i.x - BED.car.x, i.z - BED.car.z) < 50);
+  if (!it) return;
+  const t0 = G.time;
+  const f = () => {
+    if (G.time - t0 < at) return;
+    G.scripts.splice(G.scripts.indexOf(f), 1);
+    S.hit(it, null, V(dx || 1, 0, dz || 0).normalize().multiplyScalar(sp || 8), 'car');
+  };
+  G.scripts.push(f);
 }
 
 // a hundred things in the road round the sedan (the budget's moment)

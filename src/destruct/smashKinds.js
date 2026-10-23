@@ -32,7 +32,7 @@ export const KINDS = {
   crate: { fp: [0.31, 0.21], h: 0.34, giveAt: 0.8, drag: 0.975, hurt: 0.01, how: 'break', shot: 'knock', hp: 2, cap: 48, mat: 'wood', surf: SURF.STONE, sound: 'smash_crate', knock: 'b9crate', tags: ['crate'], light: true, lift: 2, carry: 1.05 },
   fence: { fp: [1.15, 0.06], h: 1.9, giveAt: 1.5, drag: 0.88, hurt: 0.04, how: 'tumble', shot: 'wood', hp: 3, cap: 24, mat: 'wood', surf: SURF.STONE, sound: 'smash_fence', knock: 'w_fenceHit', tags: ['fence'], lie: false, lift: 0.8, carry: 0.6, light: true },
   // (an awning: an object of its own on a wall; only a tall thing reaches it)
-  awning: { high: true, low: 2.45, h: 0.6, giveAt: 0, drag: 1, hurt: 0, how: 'tear', shot: 'tear', hp: 3, mat: 'cloth', surf: SURF.STONE, sound: 'w_curtain', tags: ['awning'], proxy: false, bounce: 0.1, mu: 0.8 },
+  awning: { high: true, low: 2.45, h: 0.6, giveAt: 0, drag: 1, hurt: 0, how: 'tear', shot: 'tear', hp: 3, mat: 'cloth', surf: SURF.STONE, sound: 'awning_tear', tags: ['awning'], proxy: false, bounce: 0.1, mu: 0.8 },
   // (shop glass: a Glass pane; its rounds are the pane's own)
   glass: { pane: true, h: 2, giveAt: 0, drag: 0.97, hurt: 0.02, how: 'pane', shot: 'pane', mat: 'kerb', sound: 'glass', tags: ['glass'], proxy: false },
 };

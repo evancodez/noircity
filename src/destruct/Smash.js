@@ -651,7 +651,7 @@ export class Smash {
         it.torn = (it.torn || 0) + 1;
         if (it.torn === 1) this.dump(it);
         if (it.obj) it.obj.traverse((o) => { if (o.isMesh) { if (o.userData.sag0 == null) o.userData.sag0 = o.rotation.x; o.rotation.x = o.userData.sag0 + 0.08 * it.torn; } });
-        G0.sfx.play('w_curtain', p, { k: 0.8 }, { ref: 3 });
+        G0.sfx.play('awning_tear', p, { k: 0.8 }, { ref: 3 });
         if (it.torn >= (K.hp ?? 3)) this.tearDown(it, dir.clone().multiplyScalar(2));
         return null;
       }
