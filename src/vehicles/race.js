@@ -3,7 +3,16 @@ import { Pilot } from './pilot.js';
 import { lanePath } from '../traffic/path.js';
 import { lampsLit, KINDS } from './kinds.js';
 import { money, pay, spend } from '../traffic/seams.js';
+import { sawhorse } from './marks.js';
 
+// [O2] after the critic (B3, B4, m1, m4; the cheats): two laps (about two minutes), and I
+// start at the BACK of the grid - the field shows the way on the first lap; each of the
+// loop's four corners is marked on its outer kerb (a white board on a trestle, black
+// chevrons pointing right, its lantern lit: vehicles/marks.js), the next corner is the
+// ring on the minimap (O7's game.things, at: the corner), and off the course the warning
+// points the way (`Back on the course: to your left.`, `... behind you.`). No rubber band:
+// the field drives at its own three paces every race (RACE.paces), a dead heat is theirs,
+// and on foot at the corner the man with the flag says what it takes (`Bring a car.`).
 // The race (lane O2): at the Yards' corner (the Straight at Water St), by
 // night, three cars at the line with their lamps on and a man with a flag.
 // Stop by them in a car and E: a bet of $10 (or nothing, if I have nothing:
@@ -22,9 +31,10 @@ import { money, pay, spend } from '../traffic/seams.js';
 //   race.stats { races, won, lost, out, best }
 // Events: 'wheels:race' { what: 'start' | 'lap' | 'end', ... }
 const LOOP = ['-4500,2400', '-4500,1500', '-4500,600', '-4500,-300', '-3700,-300', '-3700,600', '-3700,1500', '-3700,2400'];
-const LAPS = 3, BET = 10, BOX = { x0: -470, x1: -350, z0: -55, z1: 265 };
+const LAPS = 2, BET = 10, BOX = { x0: -470, x1: -350, z0: -55, z1: 265 };
 const START = { x: -450, z: 222 };      // the line: on the Straight 18 m north of Water St
-export const RACE = { paces: [1.04, 0.99, 0.94], ease: 0.05, kinds: ['coupe', 'saloon', 'coupe'], LAPS, BET };
+export const RACE = { paces: [0.9, 0.85, 0.8], kinds: ['coupe', 'saloon', 'coupe'], LAPS, BET, offWarn: 12, offOut: 26, offSecs: 9 };
+const CORNERS = [LOOP[3], LOOP[4], LOOP[7], LOOP[0]];   // (the four right turns, in the order they come)
 const _v = new THREE.Vector3();
 
 export class Race {
@@ -34,8 +44,7 @@ export class Race {
     this.state = 'idle';
     this.cars = [];
     this.flag = null;
-    this.stats = { races: 0, won: 0, lost: 0, out: 0, best: null };
-    this.ease = 0;      // (losses in a row: the field's lead eases a step for each, two at most)
+    this.stats = { races: 0, won: 0, lost: 0, out: 0, best: null, offWarned: 0 };
     // the course: three laps, then the run on past the line; its length a lap
     const g = W.graph;
     const ids = [];
@@ -48,6 +57,8 @@ export class Race {
     const meets = P.nodes.filter((n) => n.id === LOOP[0]).map((n) => n.s);
     this.lap = meets.length > 1 ? meets[1] - meets[0] : 700;
     this.len = this.lap * LAPS;   // (the distance to run from the line)
+    // (where each corner comes along a lap, from the line)
+    this.cornerS = CORNERS.map((id) => { const n = P.nodes.find((q) => q.id === id && q.s >= this.s0); return n ? n.s - this.s0 : 0; }).sort((a, b) => a - b);
     W.extras.push(this);
   }
 
@@ -76,8 +87,29 @@ export class Race {
     const off = e ? (e.park || Math.max(3.2, (e.hw || 7) - 1.15)) : 4.2;
     return { x: START.x - ux * (3 + i * 6.6) + rx * off, z: START.z - uz * (3 + i * 6.6) + rz * off, yaw: Math.atan2(-uz, ux) };
   }
+  // the corners' marks (once; kept): on the outer kerb of each right turn, facing the man coming
+  marks() {
+    if (this.corners) return;
+    const g = this.W.graph, S = this.W.stage;
+    this.corners = [];
+    for (const id of CORNERS) {
+      const k = LOOP.indexOf(id), N = g.nodeAt(id), A = g.nodeAt(LOOP[(k + LOOP.length - 1) % LOOP.length]), B = g.nodeAt(LOOP[(k + 1) % LOOP.length]);
+      if (!N || !A || !B) continue;
+      const il = Math.hypot(N.x - A.x, N.z - A.z) || 1, ix = (N.x - A.x) / il, iz = (N.z - A.z) / il;
+      const ol = Math.hypot(B.x - N.x, B.z - N.z) || 1, ox = (B.x - N.x) / ol, oz = (B.z - N.z) / ol;
+      const ein = g.edgeOf(A.id, N.id), eout = g.edgeOf(N.id, B.id);
+      const hin = (ein && ein.hw) || 7, hout = (eout && eout.hw) || 7;
+      const x = N.x + ix * (hout + 2.4) - ox * (hin + 2.4), z = N.z + iz * (hout + 2.4) - oz * (hin + 2.4);
+      const name = eout && eout.name ? eout.name : null;
+      let m = null;
+      try { m = sawhorse(S, x, z, { yaw: Math.atan2(-ix, -iz), turn: 1 }); } catch (e) { m = null; }
+      if (m && S.smash && S.smash.register) { try { S.smash.register(m.group, 'fence'); } catch (e) { /* a mark that stands */ } }
+      this.corners.push({ id, x: N.x, z: N.z, mark: m, name });
+    }
+  }
   setUp() {
     const W = this.W;
+    this.marks();
     for (let i = 0; i < 3; i++) {
       const s = this.kerb(i);
       const v = W.carAt(s.x, s.z, RACE.kinds[i], { yaw: s.yaw, lights: true, look: [{ variant: 2, paint: 'paint', white: true }, { variant: 1, paint: 'paintGrey', white: false }, { variant: 1, paint: 'paintPale', white: true }][i] });
@@ -119,6 +151,10 @@ export class Race {
       if (t > 1.0) { hud.fade(0); this.fade = null; }
     }
     if (this.state === 'idle') {
+      // (on foot at the man with the flag, or a racer's door: what it takes)
+      const foot = R && !R.inCar && this.flag && this.cars.length && Math.hypot(G.controller.pos.x - this.flag.fig.pos.x, G.controller.pos.z - this.flag.fig.pos.z) < 3.2;
+      if (foot !== !!this.footShown) { this.footShown = foot; if (foot) hud.prompt('E  the race', null, 'o2racefoot'); else hud.clearPrompt('o2racefoot'); }
+      if (foot && G.pressed('KeyE')) { (hud.say ? hud.say('Bring a car. Ten to race.', 2.2, { always: true }) : hud.message('Bring a car. Ten to race.', 2.2)); this.flag.lookAt && this.flag.lookAt(G.eye); }
       const v = R && R.inCar ? R.car : null;
       const near = !!v && this.cars.length && Math.hypot(v.pos.x - START.x, v.pos.z - START.z) < 26 && v.speedAbs < 1.5;
       if (near !== !!this.shown) { this.shown = near; if (near) hud.prompt(money(G) >= BET ? `E  race them  $${BET}` : 'E  race them', null, 'o2race'); else hud.clearPrompt('o2race'); }
@@ -144,6 +180,7 @@ export class Race {
   start(v) {
     const G = this.G;
     G.hud.clearPrompt('o2race'); this.shown = false;
+    if (this.footShown) { this.footShown = false; G.hud.clearPrompt('o2racefoot'); }
     this.bet = spend(G, BET) ? BET : 0;
     this.me = v;
     this.state = 'grid'; this.t = -0.6; this.jumped = false;
@@ -151,15 +188,18 @@ export class Race {
     this.stats.races++;
     G.emit('wheels:race', { what: 'start', bet: this.bet });
   }
-  // (under the black: me on the grid's pole, the traffic off the loop)
+  // (under the black: the field ahead, me at the back of the grid - they show the way; the traffic off the loop)
   grid() {
     const G = this.G, W = this.W, v = this.me;
-    const s = this.slot(0);
+    const s = this.slot(this.cars.length);
     v.place(new THREE.Vector3(s.x, 0, s.z), s.yaw, 0);
-    for (let i = 0; i < this.cars.length; i++) { const q = this.slot(i + 1); this.cars[i].v.place(new THREE.Vector3(q.x, 0, q.z), q.yaw, 0); }
+    for (let i = 0; i < this.cars.length; i++) { const q = this.slot(i); this.cars[i].v.place(new THREE.Vector3(q.x, 0, q.z), q.yaw, 0); }
     for (const c of [...W.traffic.cars]) if (inBox(c.v.pos)) W.traffic.drop(c);
     W.traffic.avoid = inBox;
-    G.hud.objective(`Three laps.`);
+    const line = 'Two laps. Right at every lamp.';
+    this.next = 0;
+    if (G.things) G.things.start('race', { line, at: () => this.nextCorner() });
+    else G.hud.objective(line);
     if (this.flag) this.flag.play('o2_flagUp');
     G.hud.teach('o2_race', '[W] go when the flag drops', { until: false, secs: 2.6 });
   }
@@ -169,10 +209,9 @@ export class Race {
     G.hud.warn(null);
     if (this.flag) this.flag.play('o2_flagDown');
     G.sfx.play('tail_horn', this.flag ? this.flag.fig.pos : this.me.pos, { k: 0.6, dur: 0.15 }, { ref: 8 });
-    const ease = Math.min(2, this.ease) * RACE.ease;
     for (let i = 0; i < this.cars.length; i++) {
       const c = this.cars[i];
-      c.pace = RACE.paces[i] - ease;
+      c.pace = RACE.paces[i];
       const p = new Pilot(this.path, { pace: c.pace, vmax: 24, keep: 4, bodies: () => this.W.bodiesFor(c.v), overtake: true });
       // (the course goes round the same streets three times: found on its first lap)
       p.i = this.path.nearest(c.v.pos.x, c.v.pos.z, 0, 120); p.s = this.path.pts[p.i].s;
@@ -195,32 +234,55 @@ export class Race {
     // (the way run from the line; never back: a car turned round runs no laps)
     if (p.s - this.s0 - M.s < 30) M.s = Math.max(M.s, p.s - this.s0);
     const off = Math.hypot(v.pos.x - p.x, v.pos.z - p.z);
-    M.off = off > 22 ? M.off + dt : 0;
+    M.off = off > RACE.offWarn ? M.off + dt : 0;
+    M.offD = off;
+    // (the next corner: the ring on the minimap)
+    const sl = M.s % this.lap;
+    this.next = this.cornerS ? this.cornerS.findIndex((cs) => cs > sl + 6) : 0;
+    if (this.next < 0) this.next = 0;
     for (const c of this.cars) c.s = c.pilot ? c.pilot.s - this.s0 : 0;
     const lap = Math.min(LAPS, Math.floor(M.s / this.lap) + 1);
     const place = 1 + this.cars.filter((c) => c.s > M.s).length;
     const word = ['First.', 'Second.', 'Third.', 'Last.'][place - 1];
     const line = lap >= LAPS ? `Last lap. ${word}` : `Lap ${lap} of ${LAPS}. ${word}`;
-    if (line !== this.line) { this.line = line; hud.objective(line, { strike: false }); }
+    if (line !== this.line) { this.line = line; if (G.things && G.things.active.has('race')) G.things.line('race', line); else hud.objective(line, { strike: false }); }
     if (lap !== this.lastLap) { this.lastLap = lap; G.emit('wheels:race', { what: 'lap', lap }); }
     // the warnings before the loss: off the course; behind on the last lap
-    const away = M.off > 0.5 || !R.inCar || R.car !== v;
+    const away = M.off > 0.4 || !R.inCar || R.car !== v;
     const behind = lap >= LAPS && place > 1 && this.cars.some((c) => c.s > this.len - 0.45 * this.lap);
-    hud.warn(away ? 'Back on the course.' : behind ? 'They’re ahead.' : null);
-    if (M.off > 8 || (!R.inCar && this.t > 1)) { this.end(false, 'Out of the race.'); this.stats.out++; return; }
+    // (off it: the warning points the way back - the course's nearest point from the car's nose)
+    let warn = null;
+    if (away) {
+      const fx = Math.cos(v.yaw), fz = -Math.sin(v.yaw), dx = p.x - v.pos.x, dz = p.z - v.pos.z, dl = Math.hypot(dx, dz) || 1;
+      const ahead = (dx * fx + dz * fz) / dl, right = (dx * -fz + dz * fx) / dl;
+      warn = ahead < -0.5 ? 'Back on the course: behind you.' : ahead > 0.7 ? 'Back on the course: ahead.' : right > 0 ? 'Back on the course: to your right.' : 'Back on the course: to your left.';
+      if (this.lastWarn !== warn) this.stats.offWarned++;
+    }
+    this.lastWarn = warn;
+    hud.warn(warn || (behind ? 'They’re ahead.' : null));
+    if (M.off > RACE.offSecs || M.offD > RACE.offOut + 40 || (!R.inCar && this.t > 1)) { this.end(false, 'Out of the race.'); this.stats.out++; return; }
+    // (a dead heat is theirs: the field's line first)
+    const first = this.cars.find((c) => c.s >= this.len - 1.5 && c.s >= M.s);
+    if (first) { this.end(false, 'Beaten.'); return; }
     if (M.s >= this.len - 1.5) { this.end(true); return; }
-    const first = this.cars.find((c) => c.s >= this.len - 1.5);
-    if (first) this.end(false, 'Beaten.');
+  }
+  // the next corner's place (the ring on the minimap), the line's
+  nextCorner() {
+    const C = this.corners;
+    if (!C || !C.length) return { x: START.x, z: START.z };
+    const c = C[(this.next || 0) % C.length];
+    return { x: c.x, z: c.z };
   }
   end(won, why = null) {
     const G = this.G;
     this.state = 'done'; this.doneT = 0;
     G.hud.warn(null);
-    G.hud.objective(null);
     const place = 1 + this.cars.filter((c) => c.s > this.mine.s).length;
     this.result = { won, place, time: +this.t.toFixed(1), laps: Math.min(LAPS, Math.floor((this.mine.s + 2) / this.lap)), why };
-    this.ease = won ? 0 : Math.min(2, this.ease + 1);
-    if (won) { this.stats.won++; this.stats.best = Math.min(this.stats.best ?? 1e9, this.t); pay(G, this.bet ? this.bet * 3 : 5, 'the purse'); G.hud.message('Won.', 2.4); }
+    const purse = won ? (this.bet ? this.bet * 3 : 5) : 0;
+    if (G.things && G.things.active.has('race')) G.things.end('race', { result: won ? 'won' : 'lost', money: purse });
+    else { G.hud.objective(null); if (purse) pay(G, purse, 'the purse'); }
+    if (won) { this.stats.won++; this.stats.best = Math.min(this.stats.best ?? 1e9, this.t); G.hud.message('Won.', 2.4); }
     else { this.stats.lost++; G.hud.message(why || 'Beaten.', 2.4); }
     // (the others run their laps out, over the line, pull in to the kerb past it and stop, one behind another)
     const order = this.cars.filter((c) => c.pilot).sort((a, b) => b.pilot.s - a.pilot.s);
@@ -237,7 +299,11 @@ export class Race {
     this.takeDown();
     this.state = 'idle';
   }
-  detach() { this.takeDown(); this.state = 'idle'; this.fade = null; this.W.traffic.avoid = null; }
+  detach() {
+    if (this.state === 'run' || this.state === 'grid') { const G = this.G; if (G.things && G.things.active.has('race')) G.things.end('race', { result: 'lost' }); else G.hud.objective(null); }
+    if (this.footShown) { this.footShown = false; this.G.hud.clearPrompt('o2racefoot'); }
+    this.takeDown(); this.state = 'idle'; this.fade = null; this.W.traffic.avoid = null;
+  }
 }
 const inBox = (p) => p.x > BOX.x0 && p.x < BOX.x1 && p.z > BOX.z0 && p.z < BOX.z1;
 

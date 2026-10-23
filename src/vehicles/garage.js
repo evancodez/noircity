@@ -13,7 +13,9 @@ import { money, spend } from '../traffic/seams.js';
 //                                      of three, $10), E brought out to the kerb
 //                                      (a short black: the door's roll), walking
 //                                      off closes it
-// save.garage: [{ kind, paint, damage, full }] in the save's flags (a CONTINUE keeps it).
+// save.garage: [{ kind, paint, damage, full }] (a CONTINUE keeps it). [O2] after O5's room: the
+// street door is the room's; inside, the mechanic (rooms/garage.js) brings a kept car out
+// (wheels.garage.open(): the card) when mine is not at the kerb outside.
 // Events: 'wheels:garage' { what: 'in' | 'out', car }.
 const MAX = 3, MEND = 10, PAINT = 10;
 const NAMES = { paint: 'black', paintGrey: 'dark grey', paintPale: 'pale grey' };
@@ -30,7 +32,13 @@ export class Garage {
     this.G.on('city:door', (e) => { if (e.door && e.door.place === 'garage' && this.W.stage === this.G.stage) { e.handled = true; this.open(); } });
     W.extras.push(this);
   }
-  get list() { const f = this.G.save.flags; if (!Array.isArray(f.garage)) f.garage = []; return f.garage; }
+  // [O2] the save's own list (O7's v3 save keeps save.garage); an older save's flags.garage taken over
+  get list() {
+    const S = this.G.save;
+    if (!Array.isArray(S.garage)) S.garage = [];
+    if (S.flags && Array.isArray(S.flags.garage) && S.flags.garage.length) { S.garage.push(...S.flags.garage); S.flags.garage = []; }
+    return S.garage;
+  }
   // the kerb in front of the door, and its way along the street
   front() {
     const D = this.door, p = { x: D.x + D.nx * 4.5, z: D.z + D.nz * 4.5 };

@@ -372,7 +372,7 @@ export function step(ctx, R, T, dt) {   // [O6] exported
   let near = false, nearCar = null, nearD = Infinity;
   const f = G.camera.getWorldDirection(new THREE.Vector3()), fl = Math.max(1e-3, Math.hypot(f.x, f.z));
   for (const cv of G.vehicles.list) {
-    if (!cv || cv.solid === false || cv.wrecked || cv.driver || cv === G.vehicles.player) continue;   // [O6] (a burnt wreck is no car to get into)
+    if (!cv || cv.solid === false || cv.wrecked || cv.driver || cv === G.vehicles.player || cv.racer || cv.stored) continue;   // [O6] (a burnt wreck is no car to get into); [O2] (a racer waiting at the kerb has his man in it; a car going into the garage is the garage's)
     const l = cv.local(ctl.pos, _v);
     const db = Math.hypot(Math.max(0, Math.abs(l.x) - cv.spec.halfL), Math.max(0, Math.abs(l.z) - cv.spec.halfW));
     // (within a stride of its body: 2.5 m, the starts' place behind its tail included)

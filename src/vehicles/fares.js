@@ -1,20 +1,31 @@
 import * as THREE from 'three';
 import { STARTS } from '../world/plan.js';
 import { pay } from '../traffic/seams.js';
+import { lantern } from './marks.js';
 
 // The fares (lane O2): in a taxi, a man or a woman on the pavement ahead
-// hails (the arm up, seen at 40 m); stop by them (within 7 m) and they get in
-// (E, or just two seconds stood there); the objective line says where
-// (O1's starts as the places: `The Hill.`); the meter runs by the distance;
-// stop there and they pay ($). A passenger thrown about - a hard knock -
-// says `Easy.`; a second (or a wreck) and he gets out, the fare lost (`He
-// got out.`). Left sitting (sitting there 20 s) he says `Come on.`
-// and after 20 s more he gets out. One fare at a time; the next hails a
-// little after.
-//   fares.state 'none' | 'hail' | 'in' ; fares.fare { dest, meter, knocks }
-//   fares.stats { hailed, rode, paid, lost, idle, knocks, money }
+// hails (the arm up, seen at 40 m); stop by them (within 9 m) and they get in
+// (E, or just two seconds stood there); the line says where (O1's starts as
+// the places: `The Hill.`) and [O2] after the critic (B1: the place named, the
+// pay at one unmarked point, a lost driver never losing) the drop-off is
+// marked - a lantern lit at its kerb (the city's lamp deal: a pool of light on
+// the pavement), the ring on the minimap and the map (O7's game.things, at:
+// the kerb) - the fare says `Here.` as the cab comes within 60 m and pays when
+// it stops within 30 m of the lantern (the meter by the distance driven).
+// The other way: driven away from it for 15 s, `Wrong way.`; his patience is
+// the road's length at a cab's pace and half a minute more (`Come on.` at
+// three quarters of it, out at the end: `He got out.`), and sat still - not at
+// a red, not behind a car - 20 s is `Come on.` and 40 s out (it never runs
+// back down: a lost fare ends). A passenger thrown about - a hard knock -
+// says `Easy.`; a second (or a wreck) and he gets out (`He got out.`). A car
+// that hits him on the pavement knocks him down (O3's people: he is the
+// street's man while he waits) and the fare is gone. One at a time; the next
+// hails a little after.
+//   fares.state 'none' | 'hail' | 'boarding' | 'in' ; fares.fare { dest, dist, knocks, mark }
+//   fares.stats { hailed, rode, paid, lost, idle, knocks, money, wrong, late, hurt }
 // Events: 'wheels:fare' { what: 'hail' | 'in' | 'paid' | 'lost', n }
-const DESTS = Object.entries(STARTS).filter(([id]) => id !== 'bridge').map(([id, s]) => ({ id, name: s.name.replace(/^the /, 'The '), x: s.car.x, z: s.car.z }));
+export const FARE = { here: 60, pay: 30, wrongAfter: 15, pace: 6.5, spare: 30, nag: 20, quit: 40 };
+const DESTS = Object.entries(STARTS).filter(([id]) => id !== 'bridge').map(([id, s]) => ({ id, name: s.name.replace(/^the /, 'The '), x: s.car.x, z: s.car.z, yaw: s.car.yaw ?? 0 }));
 const _v = new THREE.Vector3();
 
 export class Fares {
@@ -25,10 +36,27 @@ export class Fares {
     this.fare = null;
     this.nextT = 2;
     this.n = 0;
-    this.stats = { hailed: 0, rode: 0, paid: 0, lost: 0, idle: 0, knocks: 0, money: 0 };
+    this.stats = { hailed: 0, rode: 0, paid: 0, lost: 0, idle: 0, knocks: 0, money: 0, wrong: 0, late: 0, hurt: 0 };
     W.extras.push(this);
   }
   get taxi() { const R = this.G.city; return R && R.inCar && R.car && R.car.kind === 'taxi' ? R.car : null; }
+
+  // the man (O3's Person when the people are in: a car hits him, the crowd sees him)
+  man(her, x, z, yaw, name) {
+    const G = this.G, P = G.people, kind = her ? 'o2_fare_her' : 'o2_fare';
+    if (P && P.spawn) {
+      const p = P.spawn(kind, x, z, yaw, 'o2');
+      p.mode = 'fight'; p.path = null; p.then = null; p.fig.speed = 0; p.gaitNow = null;
+      return { c: p.c, p };
+    }
+    return { c: this.W.stage.cast.spawn(kind, { at: { x, z }, yaw, name }), p: null };
+  }
+  letGo(F) {
+    if (!F || !F.c) return;
+    if (F.p) { try { this.G.people.release(F.p); } catch (e) { /* gone */ } }
+    else { try { this.W.stage.cast.remove(F.c); } catch (e) { /* gone */ } }
+    F.c = null; F.p = null;
+  }
 
   step(dt) {
     const G = this.G, taxi = this.taxi, hud = G.hud;
@@ -42,6 +70,8 @@ export class Fares {
     if (this.state === 'hail') {
       const F = this.fare, c = F.c;
       F.t += dt;
+      // (knocked down on the pavement by a car: O3 has him now - the fare is gone)
+      if (F.p && !F.p.standing) { this.hurt(F); return; }
       // (a man on the pavement left behind, or the cab given up: he goes)
       const v = taxi;
       if (!v) { if (F.t > 4) this.dismiss('gone'); return; }
@@ -58,6 +88,7 @@ export class Fares {
     if (this.state === 'boarding') {
       const F = this.fare, c = F.c, v = taxi;
       F.t += dt;
+      if (F.p && !F.p.standing) { this.hurt(F); return; }
       if (!v) { this.lose('He got out.'); return; }
       // (to the back door, in)
       const door = v.world(-0.9, v.spec.halfW + 0.5, _v);
@@ -73,10 +104,13 @@ export class Fares {
       // the meter: by the distance
       F.dist += v.speedAbs * dt;
       const d = Math.hypot(v.pos.x - F.dest.x, v.pos.z - F.dest.z);
-      // (on his way? the distance to go falling)
-      // (sitting there with him in the back: the clock runs; on the move, it eases
-      // off; stood at a light or behind a car in my lane is not sitting there)
-      if (d < F.best) F.best = d;
+      // (nearly there: he says so - the lantern is his kerb)
+      if (d < FARE.here && !F.here) { F.here = true; hud.say ? hud.say('Here.', 1.8, { always: true }) : hud.message('Here.', 1.8); }
+      // (the wrong way: further from it than the best for 15 s of driving)
+      if (d < F.best - 1) { F.best = d; F.awayT = 0; }
+      else if (v.speedAbs > 2 && d > F.best + 25) F.awayT += dt;
+      if (F.awayT > FARE.wrongAfter && G.time - (F.wrongAt ?? -99) > 20 && !G.hud.kit.warnText) { F.wrongAt = G.time; F.awayT = 0; F.best = d; this.stats.wrong++; hud.warn('Wrong way.'); F.warnT = 2.5; }
+      // (sitting there with him in the back: the clock runs - not at a red, not behind a car in my lane)
       let held = false;
       if (v.speedAbs < 1.5) {
         // (the light of the street I am on - not the way the cab points, angled in a turn)
@@ -84,12 +118,15 @@ export class Fares {
         held = this.W.signals.nodes.some((n) => { const dx = n.x - v.pos.x, dz = n.z - v.pos.z, ax = dx * fx + dz * fz, lz = Math.abs(dx * fz - dz * fx); return ax > 0 && ax < 30 && lz < 12 && this.W.signals.state(n, way) !== 'go'; });
         if (!held) for (const o of this.W.bodies()) { if (o === v || !o.spec || o.parked || Math.abs(o.pos.x - v.pos.x) > 16 || Math.abs(o.pos.z - v.pos.z) > 16) continue; const l = v.local(o.pos, _v); if (l.x > 2 && l.x < 15 && Math.abs(l.z) < 2.6) { held = true; break; } }
       }
-      F.idleT = v.speedAbs < 1.5 && !held ? F.idleT + dt : Math.max(0, F.idleT - dt * 2);
-      if (F.idleT > 20 && !F.nagged) { F.nagged = true; hud.warn('Come on.'); F.warnT = 3; }
-      if (F.idleT > 40) { this.stats.idle++; this.lose('He got out.'); return; }
+      // ([O2] after the critic: it never runs back down - sat still is sat still)
+      if (v.speedAbs < 1.5 && !held && d > FARE.pay) F.idleT += dt;
+      if (F.idleT > FARE.nag && !F.nagged) { F.nagged = true; hud.warn('Come on.'); F.warnT = 3; }
+      if (F.idleT > FARE.quit) { this.stats.idle++; this.lose('He got out.'); return; }
+      // his patience: the road's length at a cab's pace, and half a minute
+      if (F.t > F.patience * 0.75 && !F.late) { F.late = true; hud.warn('Come on.'); F.warnT = 3; }
+      if (F.t > F.patience) { this.stats.late++; this.lose('He got out.'); return; }
       if (F.warnT > 0) { F.warnT -= dt; if (F.warnT <= 0) hud.warn(null); }
-      if (F.idleT < 1 && F.nagged) F.nagged = false;
-      if (d < 28 && v.speedAbs < 1.2) this.arrive(v);
+      if (d < FARE.pay && v.speedAbs < 1.2) this.arrive(v);
     }
   }
 
@@ -117,10 +154,10 @@ export class Fares {
     if (!far.length) return;
     const dest = far[Math.floor(Math.random() * far.length)];
     const her = Math.random() < 0.4;
-    let c;
-    try { c = W.stage.cast.spawn(her ? 'o2_fare_her' : 'o2_fare', { at: { x: kx, z: kz }, yaw: Math.atan2(-nx, -nz), name: 'o2fare' + (++this.n) }); } catch (err) { return; }
-    c.play(her ? 'o2h_hail' : 'o2_hail');
-    this.fare = { c, her, dest, t: 0, stoodT: 0, dist: 0, best: Infinity, idleT: 0, knocks: 0, at: { x: kx, z: kz } };
+    let M;
+    try { M = this.man(her, kx, kz, Math.atan2(-nx, -nz), 'o2fare' + (++this.n)); } catch (err) { return; }
+    M.c.play(her ? 'o2h_hail' : 'o2_hail');
+    this.fare = { c: M.c, p: M.p, her, dest, t: 0, stoodT: 0, dist: 0, best: Infinity, idleT: 0, awayT: 0, knocks: 0, at: { x: kx, z: kz } };
     this.state = 'hail';
     this.stats.hailed++;
     G.emit('wheels:fare', { what: 'hail', n: this.n });
@@ -134,25 +171,39 @@ export class Fares {
   }
   seat(v) {
     const F = this.fare, G = this.G;
-    try { this.W.stage.cast.remove(F.c); } catch (e) { /* gone */ }
-    F.c = null;
+    this.letGo(F);
     G.sfx.play('tail_door', v.pos.clone().setY(1), { open: false });
     this.state = 'in'; F.t = 0; F.dist = 0; F.best = Math.hypot(v.pos.x - F.dest.x, v.pos.z - F.dest.z);
-    G.hud.objective(F.dest.name + '.');
+    // (his patience: the way by the roads at a cab's pace, and half a minute)
+    const way = this.W.pathFor ? this.W.pathFor({ x: v.pos.x, z: v.pos.z }, { x: F.dest.x, z: F.dest.z }, { yaw: v.yaw }) : null;
+    F.road = way ? way.len : F.best * 1.4;
+    F.patience = FARE.spare + F.road / FARE.pace;
+    // the drop-off: the lantern at its kerb, the ring on the minimap and the map
+    try { F.mark = lantern(this.W.stage, F.dest.x + Math.sin(F.dest.yaw) * 2.2, F.dest.z + Math.cos(F.dest.yaw) * 2.2, { yaw: F.dest.yaw }); } catch (e) { F.mark = null; }
+    const line = F.dest.name + '.';
+    if (G.things) G.things.start('fare', { line, at: { x: F.dest.x, z: F.dest.z } });
+    else G.hud.objective(line);
     G.sfx.play('o2_meter', null, {});
     this.stats.rode++;
     // (a knock hard enough to throw him about: Easy., then he is out)
     F.onCrash = (e) => { if (this.state !== 'in' || !e || (e.k || 0) < 0.3) return; F.knocks++; this.stats.knocks++; if (F.knocks === 1) { G.hud.warn('Easy.'); F.warnT = 2.5; } else this.lose('He got out.'); };
     v.on('crash', F.onCrash);
     F.car = v;
-    G.emit('wheels:fare', { what: 'in', n: this.n });
+    G.emit('wheels:fare', { what: 'in', n: this.n, dest: F.dest.id, patience: +F.patience.toFixed(1) });
+  }
+  // the line and the mark gone (O7's things), the lantern out
+  unmark(F, result, money = 0) {
+    const G = this.G;
+    if (F && F.mark) { F.mark.dispose(); F.mark = null; }
+    if (G.things && G.things.active && G.things.active.has('fare')) G.things.end('fare', { result, money });
+    else { G.hud.objective(null); if (money > 0) pay(G, money, 'the fare'); }
   }
   arrive(v) {
     const F = this.fare, G = this.G;
     const n = Math.max(6, Math.round(4 + F.dist / 70));
-    pay(G, n, 'the fare');
+    this.unmark(F, 'paid', n);
     this.stats.paid++; this.stats.money += n;
-    G.hud.objective(null);
+    G.hud.warn(null);
     this.out(v);
     G.emit('wheels:fare', { what: 'paid', n });
     this.state = 'none'; this.fare = null; this.nextT = 4;
@@ -161,22 +212,37 @@ export class Fares {
     const F = this.fare, G = this.G;
     if (!F) return;
     this.stats.lost++;
-    G.hud.objective(null);
+    this.unmark(F, 'lost');
     G.hud.warn(null);
     G.hud.message(why, 2.2);
-    if (F.c) { try { this.W.stage.cast.remove(F.c); } catch (e) { /* gone */ } F.c = null; }
+    if (F.c) this.letGo(F);
     else if (F.car) this.out(F.car);
     G.emit('wheels:fare', { what: 'lost', why });
     this.state = 'none'; this.fare = null; this.nextT = 8;
+  }
+  // knocked down on the pavement while he waited: he is the street's (O3: hurt, the crime, the crowd)
+  hurt(F) {
+    const G = this.G;
+    this.stats.hurt++;
+    if (F.prompted) G.hud.clearPrompt('o2fare');
+    if (F.p) { F.p.role = 'walker'; F.c = null; F.p = null; }
+    G.emit('wheels:fare', { what: 'lost', why: 'hurt' });
+    this.state = 'none'; this.fare = null; this.nextT = 10;
   }
   // out of the back door onto the pavement, and away
   out(v) {
     const F = this.fare;
     if (F && F.car && F.onCrash) F.car.off('crash', F.onCrash);
     const p = v.world(-0.9, v.spec.halfW + 0.8, new THREE.Vector3());
-    let c;
-    try { c = this.W.stage.cast.spawn(F && F.her ? 'o2_fare_her' : 'o2_fare', { at: { x: p.x, z: p.z }, yaw: v.yaw, name: 'o2fareout' + this.n }); } catch (e) { return; }
+    let M;
+    try { M = this.man(F && F.her, p.x, p.z, v.yaw, 'o2fareout' + this.n); } catch (e) { return; }
     this.G.sfx.play('tail_door', p.clone().setY(1), { open: true });
+    if (M.p) {
+      // (the street's again: he walks off the kerb and on, as O3's walkers do)
+      M.p.role = 'walker'; M.p.mode = 'flee'; M.p.flee(v.pos, 3, { cry: false });
+      return;
+    }
+    const c = M.c;
     c.clipH = null; c.setState('walk', 0.2); c.fig.speed = 1.3;
     // (away across the pavement from the kerb: the car's right)
     c.fig.yaw = Math.atan2(Math.sin(v.yaw), Math.cos(v.yaw));
@@ -193,10 +259,16 @@ export class Fares {
   }
   dismiss(why) {
     const F = this.fare;
-    if (F && F.c) { try { this.W.stage.cast.remove(F.c); } catch (e) { /* gone */ } }
+    if (F) this.letGo(F);
     if (F && F.prompted) this.G.hud.clearPrompt('o2fare');
     this.state = 'none'; this.fare = null; this.nextT = 5;
     void why;
   }
-  detach() { if (this.fare) this.dismiss('reset'); this.G.hud.objective(null); }
+  detach() {
+    const F = this.fare;
+    if (F && F.mark) { F.mark.dispose(); F.mark = null; }
+    if (this.state === 'in' && this.G.things && this.G.things.active && this.G.things.active.has('fare')) this.G.things.end('fare', { result: 'lost' });
+    if (F) this.dismiss('reset');
+    this.G.hud.objective(null);
+  }
 }
