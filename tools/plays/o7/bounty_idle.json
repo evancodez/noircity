@@ -1,0 +1,59 @@
+{
+ "about": "[O7 after the critic, B2] the wanted man, idle: I stand 9 m off watching him; he notices ('Looking for me?'), comes and fights; nothing pressed, the crowd brawl's warning first ('One more and you're down.'), then down - the black names him - and up at the hospital (by my car, the stitches paid); he is back on his corner.",
+ "url": "/?mute=1&start=city",
+ "size": [
+  1280,
+  800
+ ],
+ "out": "shots/o7/bounty_idle",
+ "steps": [
+  {
+   "wait": 1500
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]",
+   "taken": "G.state !== 'title'",
+   "retries": 5,
+   "every": 4000
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'city' && G.scenes.fadeK < 0.05",
+   "timeout": 30000
+  },
+  {
+   "look": [
+    0,
+    0
+   ],
+   "steps": 1
+  },
+  {
+   "eval": "(N.controller.pitch = 0, window.__fails = [], G.on('fail', (e) => window.__fails.push(e.why + ' -> ' + e.to)), window.__warns = [], setInterval(() => { const w = G.hud.warnText; if (w && window.__warns[window.__warns.length - 1] !== w) window.__warns.push(w); }, 100), 1)"
+  },
+  {
+   "drive": "tools/lib/o7_bounty.mjs",
+   "profile": "idle",
+   "tries": 1,
+   "wins": 1,
+   "timeout": 200000,
+   "check": "D.losses === 1 && D.wins === 0",
+   "label": "idle: he puts me down"
+  },
+  {
+   "until": "!G.failing && G.scenes.beat === 'hospital' && G.scenes.fadeK < 0.05",
+   "timeout": 20000,
+   "label": "up at the hospital beat"
+  },
+  {
+   "eval": "'the black: '+JSON.stringify(window.__fails)+' warned: '+JSON.stringify(window.__warns)+' msg: '+document.querySelector('#hud .msg').textContent+' b0 '+G.night.bounty.names()[0].state"
+  },
+  {
+   "expect": "window.__fails.length === 1 && /put you down/.test(window.__fails[0]) && /hospital/.test(window.__fails[0]) && window.__warns.length > 0",
+   "label": "warned first; the black names him; the hospital"
+  },
+  {
+   "expect": "G.night.bounty.names()[0].state === 'out'",
+   "label": "he is still out: nothing paid, nothing lost but the stitches"
+  }
+ ]
+}

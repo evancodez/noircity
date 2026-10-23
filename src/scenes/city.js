@@ -100,6 +100,10 @@ function place(ctx, at) {
   if (!G.shotMode && !stage._seatWarm && G.pipeline && G.pipeline.renderer) {
     stage._seatWarm = true;
     const r = G.pipeline.renderer;
+    // [O7] after the critic (M2: the first E 171 ms): the headlamps' cones and their pool on the road are
+    // drawn only while lit - invisible at the warm, their programs were made in the first E's frame: lit here
+    const lampsOn = car.lamps && car.lamps.setOn ? car.lamps : null;
+    if (lampsOn) lampsOn.setOn(true);
     try {
       R.cabin.attach(car, { ...seatOpts(), ease: 0.001 });
       G.vm.sync && G.vm.sync(G.camera);
@@ -110,6 +114,7 @@ function place(ctx, at) {
       R.compileMs = compileAll(stage, G);
     } catch (e) { /* its first entry will */ }
     R.cabin.dispose();
+    if (lampsOn) lampsOn.setOn(false);
     G.player.hands.equip('empty');
     G.setViewmodelVisible(false);
     ctx.controller.setPose(at.pos.x, at.pos.z, at.yaw, -0.06);

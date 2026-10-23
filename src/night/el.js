@@ -11,7 +11,10 @@ import { OVERPASS } from '../world/Overpass.js';
 // The train is the stage's (src/stages/noircity/parts/train.js): while I
 // ride, the night steps it (pulled in at the stations, never gone after one
 // loop); when I get off it runs on its own way.
-export const EL_RIDE = { vmax: 14, acc: 1.3, dwell: 7, reach: 2.6, fade: 0.35, look: 0.3, pitch: -0.06 };
+// [O7] after the critic (M4: the view was 80 % black - the dark storeys at the eye's height): the eye lower at
+// the window and pitched down, turned more to the street side, so the avenue, its lamps and the pavements are in
+// the frame; the train a little quicker between stations
+export const EL_RIDE = { vmax: 17, acc: 1.6, dwell: 7, reach: 2.6, fade: 0.35, look: 0.2, pitch: -0.18, eyeY: 2.5, out: 0.7 };
 const LEN = 13.6, GAP = 0.9;
 const _f = {};
 
@@ -116,8 +119,8 @@ export class ElRide {
     const line = this.line;
     line.at(this.s - this.dir * 3.0, _f);
     const deck = OVERPASS.deckY + OVERPASS.girderH - 0.1;
-    const tr = (1.7 + 1.25) * (this.dir > 0 ? 1 : -1);
-    return out.set(_f.x - _f.nx * tr, deck + 2.7, _f.z - _f.nz * tr);
+    const tr = (1.7 + 1.25 + EL_RIDE.out) * (this.dir > 0 ? 1 : -1);
+    return out.set(_f.x - _f.nx * tr, deck + EL_RIDE.eyeY, _f.z - _f.nz * tr);
   }
   // (the travel's way turned out toward the window's side)
   face() { this.line.at(this.s, _f); return Math.atan2(-_f.fx * this.dir, -_f.fz * this.dir) + EL_RIDE.look; }

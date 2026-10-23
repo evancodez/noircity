@@ -1,0 +1,23 @@
+{
+ "about": "[O7 after the critic, B2] the wanted man by medium hands: by his corner he turns ('Looking for me?') and fights (O4's crowd brawl); beaten once he gets up and runs; run down; E takes him in ('Come on.'); at the board the full reward. Through in one to three tries.",
+ "url": "/?mute=1&start=city",
+ "size": [1280, 800],
+ "out": "shots/o7/bounty_medium",
+ "steps": [
+  { "wait": 1500 },
+  { "clickOn": "#title .opt[data-k=begin]", "taken": "G.state !== 'title'", "retries": 5, "every": 4000 },
+  { "until": "G.scenes.current && G.scenes.current.id === 'city' && G.scenes.fadeK < 0.05", "timeout": 30000 },
+  { "look": [0, 0], "steps": 1 },
+  { "eval": "(N.controller.pitch = 0, 1)" },
+  { "drive": "tools/lib/o7_bounty.mjs", "profile": "medium", "tries": 3, "wins": 1, "timeout": 400000, "check": "D.wins >= 1", "label": "medium hands: taken in within three tries" },
+  { "eval": "'b0 '+G.night.bounty.names()[0].state+' owed $'+G.night.bounty.owed()" },
+  { "eval": "(() => { const B = G.night.bounty.board(); G.stage.part('stream').warmAround(B.standX, B.standZ); N.controller.setPose(B.standX + B.nx * 0.4, B.standZ + B.nz * 0.4, Math.atan2(B.nx, B.nz), 0); return 1; })()" },
+  { "until": "G.hud.promptShown === 'E  collect  $150'", "timeout": 4000, "label": "at the board: the full reward for a man taken in" },
+  { "eval": "(window.__m0 = G.save.money, 1)" },
+  { "key": "KeyE", "hold": 80 },
+  { "wait": 600 },
+  { "expect": "G.save.money === window.__m0 + 150 && G.night.bounty.names()[0].state === 'paid'", "label": "paid $150" },
+  { "shot": "b01_paid" },
+  { "key": "KeyE", "hold": 80 }
+ ]
+}
