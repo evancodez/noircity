@@ -94,7 +94,7 @@ export class Chase {
       const hit = this.clear(_p, want, far, v);
       const aim = Math.min(far, Math.max(0.9, hit));
       if (this.dist == null || !this.held) this.dist = aim;
-      else if (dt > 0) this.dist += (aim - this.dist) * (1 - Math.exp(-dt * (aim < this.dist ? 40 : 3)));
+      else if (dt > 0) this.dist += Math.max(-2.0, (aim - this.dist) * (1 - Math.exp(-dt * (aim < this.dist ? 40 : 3))));   // (in by 2 m a step at most: never a cut)
       this.dist = Math.min(this.dist, far);
       this.held = true;
       if (aim < far - 0.05) this.stats.pulled++;
