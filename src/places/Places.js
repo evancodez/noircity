@@ -427,9 +427,10 @@ export class Places {
       if (was) { G.emit('places:leave', { id: was.id }); if (was.live && was.live.run && was.live.run.leave) was.live.run.leave(); }
       if (this.inside) { this.insideT = 0; G.emit('places:enter', { id: this.inside.id }); if (this.inside.live.run && this.inside.live.run.enter) this.inside.live.run.enter(); }
     }
+    // (the floor I am on: of a place's surfaces under me - its roof too, out of its rooms)
     this._lvlAt = 0;
-    this.surfaceAt(G.controller.pos.x, G.controller.pos.z);
-    this.level = this.inside ? (this._lvlAt || 0) : 0;
+    const ys = this.surfaceAt(G.controller.pos.x, G.controller.pos.z);
+    this.level = ys !== undefined ? (this._lvlAt || 0) : 0;
     if (this.inside) {
       this.insideT += dt;
       // (the police lose me inside after a while: O3's)

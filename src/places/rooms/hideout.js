@@ -133,7 +133,7 @@ function warehouse(K, s, P, rng) {
   K.at(null);
   K.men = [
     { kind: 'pistol', x: -4.0, z: -11.0 }, { kind: 'pistol', x: 4.5, z: -14.0 },
-    { kind: 'pistol', x: -8.0, z: -16.0 }, { kind: 'tommy', x: 7.5, z: -20.0 }, { kind: 'pistol', x: ox0 + 2.0, z: z0 + 3.0 },
+    { kind: 'tommy', x: 7.5, z: -20.0 }, { kind: 'pistol', x: ox0 - 1.2, z: oz1 + 1.6 },
   ];
   K.area = { x0, x1, z0, z1 };
 }
@@ -152,7 +152,7 @@ function hideoutLife(K, s, P) {
     G.stage.part('bounds').navAround(c.x, c.z, Math.max(A.x1 - A.x0, A.z1 - A.z0) / 2 + 3);
     Kt.end();
     // (a first gunfight's numbers: slower to settle, a little lighter - GUNS.md's table)
-    Kt.begin({ to: 'roam', area: box, maxFiring: 2, flankAfter: 9, settleK: 1.25, dmgK: 0.85, why: { open: 'Shot standing in the open.', moving: 'Shot in the open.' } });
+    Kt.begin({ to: 'roam', area: box, maxFiring: 2, flankAfter: 9, settleK: 1.35, dmgK: 0.75, why: { open: 'Shot standing in the open.', moving: 'Shot in the open.' } });
     for (const m of K.men) {
       if (s.state.dead && s.state.dead.includes(m)) continue;
       const p = F.w(m.x, m.z), e = F.w(0, 0);

@@ -72,10 +72,10 @@
    "wait": 1200
   },
   {
-   "up": "KeyW"
+   "eval": "(() => { const s = G.city.places.byId.get('hotel'), F = s.frame; const p = { x: N.controller.pos.x, z: N.controller.pos.z }; const l = F.l(p.x, p.z); return JSON.stringify({ me: [+l.x.toFixed(2), +l.z.toFixed(2)], frozen: N.controller.frozen, mode: N.controller.mode, vel: [N.controller.vel.x, N.controller.vel.z].map((v) => +v.toFixed(2)), all: G.stage.colliders.near(p.x, p.z, 0.8).map((o) => ({ tag: o.tag, gone: !!o.gone, lvl: o.lvl, c: o.cx != null ? [+F.l(o.cx, o.cz).x.toFixed(2), +F.l(o.cx, o.cz).z.toFixed(2)] : [+F.l(o.x, o.z).x.toFixed(2), +F.l(o.x, o.z).z.toFixed(2)], h: o.hx != null ? [+o.hx.toFixed(2), +o.hz.toFixed(2)] : o.r })), cast: G.stage.cast.list.map((c) => [c.name, +F.l(c.pos.x, c.pos.z).x.toFixed(1), +F.l(c.pos.x, c.pos.z).z.toFixed(1)]) }); })()"
   },
   {
-   "eval": "(() => { const s = G.city.places.byId.get('hotel'), F = s.frame; const p = { x: N.controller.pos.x, z: N.controller.pos.z }; const l = F.l(p.x, p.z); return JSON.stringify({ me: [+l.x.toFixed(2), +l.z.toFixed(2)], gy: +N.controller.groundY.toFixed(2), lvl: G.city.places.level, inside: G.city.places.inside && G.city.places.inside.id, near: G.stage.colliders.near(p.x, p.z, 0.6).filter((o) => !o.gone).map((o) => ({ tag: o.tag, lvl: o.lvl, c: o.cx != null ? [+F.l(o.cx, o.cz).x.toFixed(2), +F.l(o.cx, o.cz).z.toFixed(2)] : [+F.l(o.x, o.z).x.toFixed(2), +F.l(o.x, o.z).z.toFixed(2)], h: o.hx != null ? [+o.hx.toFixed(2), +o.hz.toFixed(2), +(o.angle || 0).toFixed(2)] : o.r })) }); })()"
+   "up": "KeyW"
   },
   {
    "shot": "cab_exit"

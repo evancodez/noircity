@@ -75,6 +75,9 @@
    }
   },
   {
+   "eval": "(() => { const s = G.city.places.byId.get('warehouse'); const st = s.live && s.live.run && s.live.run.st; return JSON.stringify({ men: st ? st.men.length : null, down: st ? st.men.filter((h) => !h.alive).length : null, cleared: !!s.state.cleared, deaths: G.counters.deaths, hp: G.health.hp }); })()"
+  },
+  {
    "name": "[O5] good hands: the warehouse cleared",
    "expect": "G.city.places.byId.get('warehouse').state.cleared"
   }

@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { PURSE, NAMES } from './rooms/gym.js';
+import { MANNERS } from '../cast/brawl/brain.js';
 
 // A bout at the gym (brief O5 §2.1; the seam O4 fills: brawl.bout(level,
 // bet)). Until O4's crowd brawl lands this is the base's fist fight
@@ -14,6 +15,11 @@ import { PURSE, NAMES } from './rooms/gym.js';
 const HP = [52, 90, 130];
 const KIND = ['dockhand', 'brawler', 'foreman'];
 const DOWNS = [4, 3, 2];
+// (each level's man by his manners: the base's table slowed - a kid leaves
+// long openings and breathes often; the second a little quicker; the third
+// the base's own, the fight of the story)
+const slow = (k, open = 0) => Object.fromEntries(Object.entries(MANNERS).map(([m, M]) => [m, { ...M, gap: [M.gap[0] * k, M.gap[1] * k], breathe: M.breathe * (1 + (k - 1) * 0.5), open: [M.open[0] + open, M.open[1] + open], combo: M.combo / k, feint: M.feint / k }]));
+const STYLE = [slow(1.55, 0.2), slow(1.2, 0.08), MANNERS];
 
 export function boutStart(K, s, P) {
   const G = P.game, B = G.brawl, F = s.frame;
@@ -59,7 +65,7 @@ export function boutStart(K, s, P) {
         { name: 'ropesW', spot: F.w(R.x0 + 0.7, (R.z0 + R.z1) / 2), clip: 'koFall' },
       ] };
       B.start({ opponent: opp, manner, hp, room: ring, rng: G.stage.rng.fork(700 + st.lv), retry, lesson: false,
-        who: { name: NAMES[st.lv], hp: HP[st.lv] },
+        who: { name: NAMES[st.lv], hp: HP[st.lv], manners: STYLE[st.lv] },
         onRetry: (m, hp2) => {
           st.downs++;
           if (st.downs >= DOWNS[st.lv]) { st.phase = 'lost'; return; }
