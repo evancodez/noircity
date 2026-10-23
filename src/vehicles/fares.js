@@ -79,7 +79,8 @@ export class Fares {
       if (d < F.best) F.best = d;
       let held = false;
       if (v.speedAbs < 1.5) {
-        held = this.W.signals.nodes.some((n) => Math.abs(n.x - v.pos.x) < 32 && Math.abs(n.z - v.pos.z) < 32);
+        const fx = Math.cos(v.yaw), fz = -Math.sin(v.yaw), way = { dx: fx, dz: fz };
+        held = this.W.signals.nodes.some((n) => { const dx = n.x - v.pos.x, dz = n.z - v.pos.z, ax = dx * fx + dz * fz, lz = Math.abs(dx * fz - dz * fx); return ax > 0 && ax < 30 && lz < 12 && this.W.signals.state(n, way) !== 'go'; });
         if (!held) for (const o of this.W.bodies()) { if (o === v || !o.spec || o.parked || Math.abs(o.pos.x - v.pos.x) > 16 || Math.abs(o.pos.z - v.pos.z) > 16) continue; const l = v.local(o.pos, _v); if (l.x > 2 && l.x < 15 && Math.abs(l.z) < 2.6) { held = true; break; } }
       }
       F.idleT = v.speedAbs < 1.5 && !held ? F.idleT + dt : Math.max(0, F.idleT - dt * 2);
