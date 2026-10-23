@@ -151,3 +151,33 @@ repaints ($10) the car parked outside, but the garage stores no car. Yours:
 a car left at the garage is kept (one bay: the save holds it, the sheet goes
 over it), taken again from the mechanic; and the repaint through your
 variants (a new colour and plate, the heat off it: the reason to repaint).
+
+## From lane O3's merge (2026-10-23, main 768adb5): yours
+O3's police drive a stand-in patrol car on the base's Car.js and pilot.js
+(`src/police/`), with a red roof lamp, a siren, the prowl of the search and
+the roadblock; it once never reached an idle player in 120 s, and a car
+stuck for good is not replaced the way men on foot are. Yours at your fix
+pass: the patrol car on your model, lamp, siren and hunting pilot
+(`traffic.alarm`, the brief's §3), a stuck unit replaced, and the chase's
+knocks felt in the wheel without burning the car (O6b's wear). O3's plays
+`o3_chase_idle`, `o3_chase_medium`, `o3_roadblock` and `o3_pad_chase` are
+the measure.
+
+## From the user's first play of the systems (2026-10-23, main 43df2f8): yours, at your fix pass
+His words: the car hitboxes may be too big (bullets seem to hit cars
+sometimes), and some first-person car views (the police car's) are
+blocked. Yours now, through main (if your fix pass has already merged
+main when you read this at its end, do them before your report; they
+are O9's otherwise, docs/briefs/O9_ALIVE.md):
+- **A tight hull for rounds against cars**: the body and the cabin as
+  boxes inside the silhouette (never a box round the whole car), the
+  glass a round goes through (and breaks: O6's), a tyre its own target
+  (O6's shot-out pull), the lamps theirs; a round aimed past a car passes
+  it. Prove it: a play that fires past every car kind at the kerb from
+  three angles and counts the hits (zero), and one that fires into the
+  glass, a tyre and a lamp from the seat of the car behind.
+- **The view from every car kind's seat**: the eye and the cabin's
+  pillars per kind so the road is visible from every seat (the police
+  car's first), the mirror where it belongs, the dash under the sight
+  line; a frame from each seat in the report, named, with the road
+  ahead and the kerb visible in each.

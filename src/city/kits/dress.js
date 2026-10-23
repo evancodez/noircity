@@ -540,14 +540,19 @@ export function faceRelief(L, out) {
         lit.push([onWin(new THREE.SphereGeometry(0.09, 10, 6).translate(px, y0 + 1.0, 0.24), w), 2.2]);
       }
       // the awning in the street's canvas
-      if (ch.awning && vhash(w.x, w.z, 14) < awnK) awning(rel, w, ch.awning, w.y + w.h / 2 - 0.05, vhash(w.x, w.z, 15));
+      // ([O6b] each awning its own record, its pieces in out.awn when the caller keeps
+      // them apart: a thing of the destruction set - torn by a lorry's roof or by rounds)
+      if (ch.awning && vhash(w.x, w.z, 14) < awnK) awning(out.awn || rel, w, ch.awning, w.y + w.h / 2 - 0.05, vhash(w.x, w.z, 15), !!out.awn);
     }
   }
 }
 // an awning raked out from the wall over a shop front: its canvas in strips
 // (the street's: stripe, pin, pale, dark, scallop), its valance, its arms
-function awning(rel, w, kind, y, v) {
+function awning(rel0, w, kind, y, v, own = false) {
   const D = 1.35 + v * 0.3, drop = 0.5, Wd = w.w + 0.2;
+  // [O6b] (its record: fixed to the wall at (x, z), out along the window's normal; y the canvas's middle)
+  const rec = own ? (w._awn || (w._awn = { kind: 'awning', x: w.x, z: w.z, yaw: Math.atan2(w.nx, w.nz), y: y - drop / 2, w: Wd, d: D, nx: w.nx, nz: w.nz })) : null;
+  const rel = own ? { push: (p) => rel0.push([p[0], p[1], rec]) } : rel0;
   const n = Math.max(3, Math.round(Wd / (kind === 'pin' ? 0.22 : 0.42)));
   const sw = Wd / n;
   const tilt = Math.atan2(drop, D), L = Math.hypot(D, drop);

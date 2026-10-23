@@ -201,3 +201,45 @@ O5 (the places) is in main: fifteen street doors open on rooms (`src/places/`,
   arrest.
 - **The stills' footer** writes keys as words (`CLICK: NEXT · ESC ESC: SKIP`)
   outside O5's reel; the kit's key caps everywhere.
+
+## From lane O3's merge (2026-10-23, main 768adb5): yours (second pass)
+O3's police are in: `game.police` (heat, searching, units, marks(),
+on('heat'), set, lost, clear); your stand-in (`src/night/standins.js`,
+`patrol.js`) is installed only while it is absent: drop it. The title's
+and the pause card's key line says `RMB steady, other fist`; in the street
+RMB draws the gun you own and steadies it, in a fist fight it is the other
+fist: say `RMB draw / steady, other fist` (game one's title golden frame
+changes once, named). From the art director's look at your frames: the
+minimap's district label rotates with the heading-up map and reads
+mirrored (frame 2); labels stay upright. The el ride's right third is a
+flat white panel (the car's own window): the window's frame and the dark
+of the car instead. The title's colour measured (the splash, the blue
+sign, the red lanterns together under 2 %).
+
+## From the merge check of O7 with O3 (2026-10-23, main 768adb5): yours (second pass)
+On main with O3's police, your plays written against the stand-in fail on
+their timings: `o7_hud` (two shields within 2 s of a shot), `o7_gun` and
+`o7_havoc` (heat 2 and 'Lose them.' within 1.5 s), `o7/heat_idle` and
+`o7/heat_lose` (`G.police.units` of length 1 within 12 s), `o7_save`
+(an autosave blocked by heat). O3's police answer a shot through who
+hears it: a cop within 80 m whistles and the heat is at once; with
+nobody near, a witness runs to a box and the heat comes in ten to forty
+seconds; a crime nobody sees raises none. Bring the plays to that (a
+shot staged with a cop in earshot for the instant answer, and one with
+none for the witness's), read units through O3's `units` or `marks()`,
+and make the HUD show the city's answer the moment it exists (the whistle
+heard, the shields brushed in when the heat moves). The manager removed
+O3's RMB draw on main (the wheel draws; O3's card says the fist only):
+one card for the revolver, yours.
+
+## From the user's first play of the systems (2026-10-23, main 43df2f8): the rule your hunt judges by
+"Make the city feel more alive and less canned and stiff." The rule is in
+docs/OPEN_WORLD.md ('alive, not canned, not stiff': the near street never
+empty, events on their own, every NPC with a readable state and human
+delays, no reaction without a cause he saw and none that outlives its
+cause). Your second pass's whole-game hunt (§6) judges by it above the
+rest: the alive test at three corners (a minute standing still: what
+happens?), the read test (name each man's state from a strip), the
+nonsense list (every reaction without a cause, every one that outlives
+it), each counted in your report. Lane O9 (docs/briefs/O9_ALIVE.md) builds
+the life; your hunt finds what it missed.

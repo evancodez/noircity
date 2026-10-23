@@ -81,11 +81,14 @@ export function installStandins(night) {
     // brief's table has it), O4's crowd's crimes (a gun drawn in a fist fight,
     // a runner put down) the same - the city answers within the second, the
     // shields brushed in and 'Lose them.'; it falls by itself unseen (LOSE)
-    G.on('shot', () => { if (night.inCity) { if (G.police.patrol) G.police.patrol.shotAt(); G.crime.emit('shot', null, 'me'); } });
+    // [manager, after O3] these three listeners feed the stand-in's crime only: once O3's crime bus and
+    // police are in (G.crime without .stand), they stand down (O3 hears the shot and O4's crimes itself)
+    const live = () => night.inCity && G.crime && G.crime.stand && G.police && G.police.stand;
+    G.on('shot', () => { if (live()) { if (G.police.patrol) G.police.patrol.shotAt(); G.crime.emit('shot', null, 'me'); } });
     // ([O7] after the critic: a gun drawn on a cop is a shot's heat, on anyone else a punch's; a man shot running from it a death's)
-    G.on('crime', (e) => { if (night.inCity && e && e.by === 'player') G.crime.emit(e.kind === 'draw' ? (e.cop ? 'shot' : 'punch') : e.cop ? 'cop' : e.kind === 'shot' ? 'death' : 'punch', e.at, 'me'); });
+    G.on('crime', (e) => { if (live() && e && e.by === 'player') G.crime.emit(e.kind === 'draw' ? (e.cop ? 'shot' : 'punch') : e.cop ? 'cop' : e.kind === 'shot' ? 'death' : 'punch', e.at, 'me'); });
     // (O5's rooms tell theirs with a level and no 'by': a fist in a bar, a brawl, a shot, a hideout's fight - heard as the same)
-    G.on('crime', (e) => { if (night.inCity && e && e.by == null && e.level != null) G.crime.emit(e.level >= 2 ? 'shot' : 'punch', e.pos || null, 'me'); });
+    G.on('crime', (e) => { if (live() && e && e.by == null && e.level != null) G.crime.emit(e.level >= 2 ? 'shot' : 'punch', e.pos || null, 'me'); });
   }
   // (the news is O1b's now, in main: world/items.js newsOf - no stand-in)
   newsOf(G);

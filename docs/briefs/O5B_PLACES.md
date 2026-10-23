@@ -81,3 +81,26 @@ looked at against the reference, each named). Errors clean at every place
 and the hospital, station and wake beats. The fps at the hospital's door
 against `shot=perf`. Report `docs/reports/O5b.md` (what changed, each
 play, the look at the three new frames, Left). Hours, not days.
+
+## From lane O3's merge (2026-10-23, main 768adb5): yours
+O3's arrest wakes the player on the pavement outside headquarters' door
+(`city.js`: `STATION_CELL = false`) because O5's cell bench renders black,
+in play ('E get up' on black) and in shot mode (`scene=city&beat=station`,
+no people). Yours: the cell shows (the bench, the bars, the corridor's lamp
+through them, the door open), then flip `STATION_CELL` so the arrest wakes
+on the bench and walks out past the sergeant (that branch calls
+`places.wake('police')` and `afterFail('arrest', { room: true })` once, the
+room's wake taking the fine and the guns). The POLICE board over the HQ
+door prints its letters half out of the board's top edge (O3's frame
+`docs/review/O3/5_station_wake_at_the_door.jpg`): on the board.
+
+## From the merge checks after O7 and O3 (2026-10-23, main 47c4333): yours
+On main the bar's matchbook is not offered: standing at the Tenements
+bar's end 1.6 m from the matchbook and looking at it (`o5_bar.json`'s
+own pose), `G.hud.promptShown` is empty and `G.interact.current` null,
+though the use exists (`when` true, range 2.3, cone 0.45) and the prop is
+visible. The whiskey and the stool are offered a moment earlier at the
+same counter. Find what takes the use since O7 and O3 merged (the wheel
+handler, the fist's step, the street's hands, a prompt key cleared by the
+city's step) and make every use of every room answer again: the tour
+whole is your gate.

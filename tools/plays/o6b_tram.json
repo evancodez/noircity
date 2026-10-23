@@ -1,0 +1,56 @@
+{
+ "about": "[O6b] The tram on a car (brief O6b \u00a72, O6's left 6): the bed's tram beat, the sedan across the west rails, the tram coming: three seconds and more of shove and sparks (and dents, a door, a bumper) before she burns - O6's half a second; then her fuse and the blast as before. node tools/play.mjs tools/plays/o6b_tram.json",
+ "url": "/?mute=1&start=smash.tram",
+ "size": [
+  1440,
+  900
+ ],
+ "out": "shots/o6b/tram",
+ "steps": [
+  {
+   "wait": 1500
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]",
+   "taken": "G.state !== 'title'",
+   "retries": 5,
+   "every": 4000
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'smash' && G.scenes.fadeK < 0.05",
+   "timeout": 30000
+  },
+  {
+   "until": "(G.stage.smash.cars.sparkCount || 0) > 0",
+   "timeout": 25000
+  },
+  {
+   "eval": "(window.__tr = { t0: G.time, d0: G.city.cars[2].damage }, 1)"
+  },
+  {
+   "wait": 900
+  },
+  {
+   "shot": "t1_shove"
+  },
+  {
+   "until": "G.city.cars[2].smashD && G.city.cars[2].smashD.state === 'burning'",
+   "timeout": 15000
+  },
+  {
+   "eval": "(() => { const v = G.city.cars[2], D = v.smashD; window.__tr.t1 = G.time; window.__tr.parts = { doors: D.doors.filter((d) => d && (d.pivot || d.off)).length, bumpers: D.bumper.filter((b) => b && (b.pivot || b.off)).length, dents: Object.values(D.dents).reduce((a, b) => a + b, 0) }; return JSON.stringify(window.__tr); })()"
+  },
+  {
+   "expect": "window.__tr.t1 - window.__tr.t0 >= 2.5 && window.__tr.parts.dents > 0",
+   "label": "the tram shoves her three seconds and more (dents) before she burns"
+  },
+  {
+   "until": "G.city.cars[2].wrecked",
+   "timeout": 15000
+  },
+  {
+   "expect": "!G.failing",
+   "label": "the wreck, nobody hurt (me across the road)"
+  }
+ ]
+}

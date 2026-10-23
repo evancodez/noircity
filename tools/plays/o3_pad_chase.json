@@ -1,0 +1,55 @@
+{
+ "about": "[O3] the pad alone: square into the car, HEAT 2, R2 / L2 and the stick away down the streets until they lose me.",
+ "url": "/?mute=1&padfake=1&start=city",
+ "size": [
+  1280,
+  800
+ ],
+ "out": "shots/o3/o3_pad_chase",
+ "steps": [
+  {
+   "until": "G.state === 'title' && N.hud.titleShown",
+   "timeout": 40000
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "pad": {
+    "b": [
+     "x"
+    ],
+    "secs": 0.12
+   }
+  },
+  {
+   "wait": 400
+  },
+  {
+   "pad": {
+    "b": [
+     "x"
+    ],
+    "secs": 0.12
+   }
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'city' && G.scenes.fadeK < 0.05 && !!G.people",
+   "timeout": 30000
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "drive": "tools/lib/o3_people.mjs",
+   "mode": "chase",
+   "heat": 2,
+   "profile": "medium",
+   "tries": 1,
+   "secs": 180,
+   "check": "D.tries[0].drive.km > 0.3 && !D.tries[0].drive.failed || D.wins === 1",
+   "label": "pad: the chase driven by the pad (lost, or at least away and not taken)"
+  }
+ ],
+ "input": "pad"
+}

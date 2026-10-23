@@ -109,3 +109,15 @@ nothing in them breaks. Yours if the hours allow, else named in left: the
 bar's bottles and glasses, a stool, a table, the diner's cups, the gym's
 bag as your set's kinds (a shot into the back bar is the noir thing), capped
 per room; what does not break says so (a round into a wall is a chip).
+
+## From lane O3's merge check (2026-10-23): yours
+O3's car chases at heat 2 and 3 (its bot knocks into things two to six
+times a chase, under 60 km/h) all ended in the car's own fire, `She went
+up with you in her.`, after two or three knocks, twice with **no warning
+first** (`warnedFor` null). The police side worked; the car's wear decided
+the chase. Yours with the wear above: a chase's knocks at city speeds do
+not burn a car (dents, a wing, a lamp, steam at worst); the fire comes
+only from the hard crash and the rounds; and the warning (`She's burning.
+Get out.`) always fires before the fire, with time to get out. Prove it
+with O3's `o3_chase_medium.json` and `o3_roadblock.json`: the chases end
+by the police or by losing them, never by the fire.

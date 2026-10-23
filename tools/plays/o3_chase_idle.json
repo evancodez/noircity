@@ -1,0 +1,37 @@
+{
+ "about": "[O3] the car chase at HEAT 2, idle: in my car, the patrol car comes (the siren first), stops across my nose, its men at my door - 'Hands up.', 'Arrested.'.",
+ "url": "/?mute=1&start=city",
+ "size": [
+  1280,
+  800
+ ],
+ "out": "shots/o3/o3_chase_idle",
+ "steps": [
+  {
+   "wait": 1500
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]",
+   "taken": "G.state !== 'title'",
+   "retries": 5,
+   "every": 4000
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'city' && G.scenes.fadeK < 0.05 && !!G.people",
+   "timeout": 30000
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "drive": "tools/lib/o3_people.mjs",
+   "mode": "chase",
+   "heat": 2,
+   "profile": "idle",
+   "tries": 1,
+   "shots": true,
+   "check": "D.wins === 1",
+   "label": "chase idle: boxed, warned, arrested"
+  }
+ ]
+}

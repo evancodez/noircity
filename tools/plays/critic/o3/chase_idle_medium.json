@@ -1,0 +1,14 @@
+{
+ "about": "[O3 critic] in a car at HEAT 3 (the owner's staging: raise): hands off once (boxed, warned, the station?), then medium hands twice (the owner's driver, profile medium), with the screen read every second.",
+ "url": "/?mute=1",
+ "size": [1280, 800],
+ "out": "shots/critic_o3",
+ "steps": [
+  { "wait": 2500 },
+  { "clickOn": "#title .opt[data-k=begin]", "taken": "G.state !== 'title'", "retries": 5, "every": 4000 },
+  { "until": "G.state === 'playing' && G.people && G.scenes.beat === 'roam'", "timeout": 25000 },
+  { "wait": 1500 },
+  { "drive": "tools/lib/o3_people.mjs", "mode": "chase", "heat": 3, "profile": "idle", "tries": 1, "shots": true },
+  { "drive": "tools/lib/o3_people.mjs", "mode": "chase", "heat": 3, "profile": "medium", "tries": 2, "secs": 150, "shots": true }
+ ]
+}

@@ -1,0 +1,37 @@
+{
+ "about": "[O3] HEAT 4 on foot: the detectives' car, the Tommy gun and the pistol out of it (the gun kit's men, every tell); idle: down, warned, the hospital; good (the chase driver in my car): away.",
+ "url": "/?mute=1&start=city",
+ "size": [
+  1280,
+  800
+ ],
+ "out": "shots/o3/o3_heat4",
+ "steps": [
+  {
+   "wait": 1500
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]",
+   "taken": "G.state !== 'title'",
+   "retries": 5,
+   "every": 4000
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'city' && G.scenes.fadeK < 0.05 && !!G.people",
+   "timeout": 30000
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "drive": "tools/lib/o3_people.mjs",
+   "mode": "chase",
+   "heat": 4,
+   "profile": "good",
+   "tries": 1,
+   "secs": 180,
+   "check": "D.wins === 1",
+   "label": "HEAT 4 in the car: away and lost"
+  }
+ ]
+}
