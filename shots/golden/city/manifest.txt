@@ -10,3 +10,4 @@ city_straight|scene=city&beat=roam&t=2&at=yards&pose=-446,380,0,0.04
 city_clock|scene=city&beat=roam&t=2&at=clock&pose=-28,-118,-2.32,0.95
 smash_bed|scene=smash&beat=bed&t=1&hud=0
 smash_wreck|scene=smash&beat=burn&t=10&hud=0
+smash_ten|scene=smash&beat=ten&ten=wrecks&t=14&hud=0&vm=0&pose=-120,-21,3.1416,-0.06

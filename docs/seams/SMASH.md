@@ -220,3 +220,61 @@ it reads: `Car.js`'s contacts (`crash`, `scrape`, `bump`, `lean`, `post`),
   blast borrows the muzzle flash's.
 - Ink ids from the city's block (`city.ids`): nothing taken from the shared
   counter (the city's golden frames keep theirs).
+
+---------------------------------------------------------------------------
+## 5. [O6b] A car's parts, physical (lane O6b: `docs/reports/O6b.md`)
+
+What every car of `game.vehicles` shows now on top of §3 (`src/destruct/CarDamage.js`):
+- **Dents** pushed in at the contact, along `e.n` (the contact's normal points
+  into the car: O6 pushed them out), deeper the harder, the normals tilted to
+  the hollow, **capped**: no vertex further than `DENT_MAX` (12 cm) from where
+  it was built. A contact held (a car leaning on another) counts once: within
+  a third of a second only what is harder than the last knock adds.
+- **The bonnet**: cut out of the car's own skin (my build of `paint`/`body`,
+  `chrome`, `seams`) on a hinge at the scuttle; sprung by a hard front blow or
+  the engine's smoke (2.5), it rides on its broken catch and beats in the
+  wind; struck again at the front (k >= 0.55) or flat out for a few seconds it
+  tears off over the roof; at the blast it goes up with her. The bay under it
+  is black (no hole through the car).
+- **Doors**: a side blow at the door (k >= 0.3) hangs it open: a panel of the
+  car's paint on its front hinge, swinging with the car's moves, over the
+  cabin's pale inside; struck again, slammed on its stop or driven on fast it
+  comes off and lies.
+- **Bumpers**: a smashed corner tears its end's bumper loose (cut from
+  `chrome`): it hangs from the other end and drags on the road with sparks
+  and a scrape, slowing the car a little; worked or struck again, it comes off.
+- **Wheels**: a smashed corner sets its wheel wobbling (cut from `rubber`,
+  `dark`, `hubs`, `caps`, `white`: one mesh a material); struck again or
+  driven hard it comes off and rolls away; the car drops on that hub (24 cm),
+  grinds (sparks, `o6b_grind`), loses half its power and pulls that way.
+- **Parts as things**: `smash.spawnPart(kind, pos, q, vel, spin, { roll,
+  scale, color })` - kinds `carbonnet`, `cardoor`, `carbumper`, `carwheel`
+  (pooled, 10-12 each, the pool's unit shape scaled to the car's part, the
+  paint as the instance's colour): a rigid body that flies, rests, lies as a
+  man's box (bonnet, door), is a bump that slows a car (bonnet, door: heavy)
+  or is kicked on (bumper, wheel), is swept by the cap and the mend at 200 m
+  (then gone, never put back). Events: `smash:part { car, part, how }`.
+- **The tram** on a car: the car's own contact with it marks it; its damage
+  comes on at 1.15 a second at most while the tram has it (three seconds of
+  shove before the fire).
+- **The river**: `S.cars.sink(car)` (city.js calls it as the car goes in; the
+  words `The river took it.` 0.95 s later), `S.cars.splash(at, k)` (a man).
+
+**For O2 (the car kinds)**: a kind needs nothing to get all this but its
+meshes in `model.meshes` at the identity (`paint` or `body`, `chrome`, `dark`,
+`rubber`, `hubs`...) and, if its body is not the coupe's or the sedan's shape,
+**`model.parts`** in the form of `PARTS` (CarDamage.js): `hood { x0, x1, w }`,
+`door { x0, x1, y0, y1, z }`, `bumper { x, y1 }`, `wheel { x: [front, rear],
+z: [front, rear], y, r }` (model frame: x ahead, y up, z right). A kind
+without them uses the sedan's. A damaged sedan of world/Cars keeps its near
+build (`car.own`): Cars' LOD leaves it be.
+
+**The city** (`parts/props.js`, `parts/stream.js`, marked `[O6b]`): the near
+build's awnings are records of the set (read back from facade.js's boxes,
+registered once a lot: kind `awning`, a pool of 12) - a lorry's roof (3.3 m)
+reaches their valance (`low: -0.6` under the fixing; the bed's too now); the
+el's hung lamps are items of kind `hanglamp` (`how: 'fixed'`: no car or blast
+moves them) with a box in the bullets' world at the head: a round there puts
+one out (cone, light and the lamps part's `dead`), the mend at 200 m lights it
+again. A lamp's far mouth gone dark is collapsed out of the far tile's lights
+mesh (the grey disc).
