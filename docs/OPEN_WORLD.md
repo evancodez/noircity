@@ -21,8 +21,18 @@ fails, the tools). The user's words, which are the standard:
 > really react to player interaction (like a dynamic police system), fun
 > shootouts, brawls, etc. Keep the scope manageable but it should feel fun.
 
-**The north star, in one line: the city answers everything the player
-does, within seconds, in a way he can see.** A punch draws a crowd and a
+> (And:) Think GTA but noir. Make sure the player has freedom to cause
+> havoc and do what they want in this open world, one that reacts to them.
+
+**The north star, in one line: the player may do anything the systems
+allow, and the city answers everything he does, within seconds, in a way
+he can see.** Freedom first: no invisible hand says no. He may run people
+down, steal the police car from under the cop, start a gang war, ram the
+tram, shoot every lamp on Grand Avenue, drive off the pier, and the only
+answer is the city's own (the heat, the crowd, the gangs, the wreck,
+the river), never a scripted stop, never a locked verb. A scene the
+player breaks on purpose must still end somewhere sane (the hospital,
+the station, the quay). A punch draws a crowd and a
 cop; a shot scatters the street and sends a witness running for a call
 box; a hijack brings a patrol car with its siren heard before it is
 seen; a wreck gathers onlookers; a gang watched too long turns and asks
