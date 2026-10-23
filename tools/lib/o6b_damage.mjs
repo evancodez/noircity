@@ -162,11 +162,17 @@ async function ram(api) {
       if (!pick || pick.__exc) { out.end = 'no car to take'; return 'end'; }
       // (its door on the lane's side: a car at the east kerb from its west side)
       const sd = pick.east ? -1 : 1;
-      await walkTo(api, pick.x + sd * (pick.hw + 1.0), pick.z, 40000, true);
-      const f = await js(`(() => { const C = N.controller; let d = Math.atan2(-(${pick.x} - C.pos.x), -(${pick.z} - C.pos.z)) - C.yaw; return { d: Math.atan2(Math.sin(d), Math.cos(d)), sens: C.sensitivity }; })()`);
-      await api.turn(-f.d / f.sens, 0);
-      await sleep(300);
-      if (!(await into())) { out.end = 'could not take ' + pick.id; return 'end'; }
+      // (to its side and facing it; a walk cut short - a loaded machine, something in the way - is walked again)
+      let inside = false;
+      for (let tries = 0; tries < 3 && !inside; tries++) {
+        await walkTo(api, pick.x + sd * (pick.hw + 1.0), pick.z, 40000, true);
+        const f = await js(`(() => { const C = N.controller; let d = Math.atan2(-(${pick.x} - C.pos.x), -(${pick.z} - C.pos.z)) - C.yaw; return { d: Math.atan2(Math.sin(d), Math.cos(d)), sens: C.sensitivity, dist: Math.hypot(${pick.x} - C.pos.x, ${pick.z} - C.pos.z) }; })()`);
+        await api.turn(-f.d / f.sens, 0);
+        await sleep(300);
+        inside = await into();
+        if (!inside) log(`  E at car ${pick.id} from ${f.dist.toFixed(1)} m: not in - again`);
+      }
+      if (!inside) { out.end = 'could not take ' + pick.id; return 'end'; }
       out.swaps++;
       log(`  took car ${pick.id}`);
       // (out of its kerb into the lane I was going down: back off it, then on)

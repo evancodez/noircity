@@ -5,6 +5,56 @@ Branch `ow/O6b-damage` (from main at 5e83e76), port 5380. Brief:
 seams for other lanes are `docs/seams/SMASH.md` §5 (new). Code marks in shared
 files: `[O6b]`. Review frames: `docs/review/O6b/`.
 
+---------------------------------------------------------------------------
+## 0. After the critic (`docs/reports/O6b_CRITIC.md`, frames in `docs/review/O6b/critic/`)
+
+**Main merged first** (O1b's streets and the swim, 6c1a623 and 31e02ff): two
+conflicts. `src/scenes/city.js`: a man in the river now swims (O1b's
+`swimStep`); this lane's ink splash is kept at the moment he goes in (the swim
+counter changes), and this lane's shim against `The river.` on the steps is
+dropped (main now warns of the river only in a car). `smash_wreck`'s golden was
+re-taken at the gate. A regression the merge brought without a conflict: O1b
+moved the streets' awnings out of facade.js into its dressing's relief merge,
+so the awnings this lane had made things of the set were gone - re-hooked (m8
+below).
+
+| finding | what changed | the play (by real input, on the final code) |
+| --- | --- | --- |
+| **B1 the havoc cannot be won by ramming** (the rammer spent first; no victim even steamed; diagonals did nothing; wrecks did not chain; three cars to take) | **Car to car by role** (`Car.contact`, `[O6b]`): the rammer is the car closing the faster (a parked car stepped first is still the one struck); the car struck takes `(impC * mr - 2.5) * 0.3`, `impC` the closing speed at the contact (at most 2.2 x its square part: a diagonal into a door is a blow, a long scrape is not), `mr` the masses' root ratio (a lorry breaks a sedan in one or two, a coupe into a lorry three quarters); the rammer's nose takes `(imp - 5) * 0.07 / mr` (was 0.14 for him and 0.1 for the car hit). A sedan now burns at two blows at 35 km/h and more, three or four at 20-25. The events carry `struck`: the car struck is knocked as the soft one (a corner smashed at about 25 km/h), the rammer as the hard one (46 km/h into a car). **A T-bone tears the door off** (k >= 0.62: it hangs a breath and goes). **The blast** reaches 14 m: 2.0 at 4 m, 1.5 at 6.5, 0.5 at 11.5 (the next car along a kerb): a smoking neighbour goes up with it, a whole one steams. **Three spare coupes** (two by the start, one past the ten at Centre St, never in the ram line). | `o6b_ram.json` (the check counts **wrecks**): see the runs below. The critic's own `ram_medium.json` replayed on the final code (his bot, his limit of three blows a car at 13-29 km/h): **4 wrecks and one burning** of the ten (before: none even steamed), the six others steaming or smoking; his coupe at 1.78 after 21 blows (before: smoking by blow 14) |
+| **M2 a door lying stands on its 4.5 cm edge** | `K.topple` names the axis that ends vertical (`cardoor` 'z', `carbonnet` 'y'; the wheel's `true` as before): a plate tips over onto its face as it comes to rest, and `settle` squares it on that face whatever it was nearest | `o6b_parts.json` PASS (the door now lies flat: a man still stopped at 0.36 m, the car meets it 8.2 -> 7.7 m/s); `o6b_ram.json`'s parts check: every door lying on its face (`edge: []`), none floating, none in a wall |
+| **M3 damage black on black from the street** | **The paint scraped to the metal** round every dent: a few pale strokes of uneven length (`scarMaterial`, the car's own twin of its paint, eight dents a car, one program); the loose parts' rim on the car 0.08 -> 0.13; and the rams now bring the engine's states (steam at 1.5, smoke at 2.5, fire) at the second blow, which read from anywhere | frame `o6b_6`; the review frames. **Partly met**: from 15-20 m at night a rammed car reads by its steam, smoke or fire and an open door's pale cabin; the scrapes read within about 10 m; a dent alone is still dark from across the street (left 1) |
+| **M4 slow contacts break the rammer** (two nudges at 15 km/h: bonnet up, bumper dragging, wheel wobbling) | a corner is smashed by **one** real blow (a crash of k >= 0.55 into a wall or post, 0.8 into a car; struck by a car, 0.56) or by real blows adding up (only knocks of 0.4 and more count, to 1.2), never by the corner's sum of nudges | the critic's `ram_medium.json` on the final code: blows 1-2 at 15-20 km/h (one stuck against the sedan) leave his coupe whole (bonnet on, bumpers on, no wobble, 0.08) |
+| m5 `E GET IN` by distance | the bed picks the car I look at before the nearest; the city's (and the bed's) look test is the eye's, up and down too (not above the roof line) | `o6b_after.json` PASS: the prompt by the coupe; gone looking straight up at the el (pitch 1.45); back looking down |
+| m6 a burning fail resets the havoc | the havoc kept over the retry: each car's engine (short of the fire), its smashed corners, its doors and bonnet, a wreck a wreck (doused to embers) - all but the car I was in; my coupe whole at the start; down on foot in the havoc the retry is the havoc's, not the bed's start | `o6b_retry.json` PASS: two cars rammed until they burn, my car on fire (staged), warned 7 s, the fail, the retry: the two wrecks wrecks, their neighbours' damage kept, my coupe whole |
+| m7 the pedals card into the first ram | it goes once she has moved 9 m or at her first contact, whichever first (was 30 m or 5 s) | `o6b_after.json` PASS: up before the first W, gone at 12 m, before any blow |
+| m8 city awnings cannot be shot | the streets' awnings (O1b's dressing) are records of the set again, one a shop front, their pieces in a merge of their own per chunk (solid to rounds, the relief's material and ink id: the frame unchanged); a round into that merge picks only an awning (`pickKind`), down to its valance's hem | `o6b_awnshot.json` PASS: one burst, three rounds, the Flowers awning on Fifth St torn down; `o6b_awning.json` PASS: the bed's lorry along Fifth St's pavement tears two down, at rest |
+
+**The cheats removed.** `Car.js:466-469`'s split against the rammer is gone
+(above). `o6b_ram.json` no longer checks states: it counts wrecks, never a fail,
+and the parts at rest.
+
+**Where I disagree, after playing it.** The critic asked for the blast at
+"at least 2.0 within 8 m" so that wrecks chain. Played: at 2.0 at 8 m (and 1.6 at
+11.5 m) three burning cars sent the whole street up (all ten wrecks, the west
+kerb never touched), and the rammer's own car, 6-10 m off when the car he lit
+went up, was spent faster than his rams spent the cars he rammed (three coupes
+for two wrecks). At 2.0 at 4 m, 0.5 at 11.5, a burning car takes a smoking
+neighbour with it and the rammer who backs off is not punished for it: the
+chain is there, earned. He also asked for "about three good blows (35 to 50
+km/h)": it is two at 35 km/h and more (the second lights her), three or four
+at 20-25, which is how the hands ram under the el's columns.
+
+**The havoc's runs** (the proof driver: `tools/lib/o6b_damage.mjs ram` with
+`untilFire`: each car rammed again and again until it burns, backing off out of
+its blast, my car swapped when it is smoking past 3.0 or burning; the critic's
+own bot, `tools/lib/o6b_havoc.mjs`, a copy of his with E by look, was tried
+first and dropped: its straight line into a column gap stalls on the el's
+columns). The east kerb's five go up every run, at two or three blows each,
+in about three minutes. On the final code: RAMRUNS. The west kerb's tail rams
+and the driver's walks to a spare coupe are what the hands do worst: a pass
+ends when no car is left in reach. The bar is **seven wrecks of ten in one
+pass, never a fail** (left 4).
+
 The copy's start (`ow/O6b-copy-wip`, d1b420d) was cherry-picked, played and
 judged: **kept** its idea of cutting a part out of the car's own skin (`own`,
 `cut`), the dents' normals tilted to the hollow, `spawnPart`, the bonnet's
@@ -71,8 +121,10 @@ door lying in an unlit stretch reads by its shape.
 in the gaps between the el's columns (sedans in two paints, a second coupe,
 two lorries: the bed's sedan and lorry among them), my coupe in the lane
 under the el at Fifth St heading north, the tram kept off. Ram them all. The
-sedans are locked (no seat in them yet: E at one rattles `locked`); the coupes
-and the lorries can be taken when mine is spent. Look development:
+sedans are locked (no seat in them yet: E at one rattles `locked`); the coupes,
+the lorries and three spare coupes (after the critic: two by the start, one
+past the ten at Centre St) can be taken when mine is spent; a burning fail
+keeps the havoc as it was (section 0). Look development:
 `&ten=states` (the ten states of a car's damage, one a car), `&ten=wrecks`
 (all ten up), `&ten=parts` (a door and a bonnet lying in the lane), `&ten=drive`
 (a sedan with its bonnet up, a door hanging, a bumper dragging and a wheel
@@ -121,9 +173,10 @@ rim, sparks at its end); the bonnet reads from the seat (its rim over the
 screen, review frames 2 and 3) more than from outside; an open door reads by
 the pale cabin in the gap. The splash is a white crown and its streak in the
 wet. Frames (`docs/review/O6b/`, 1440 x 900): `o6b_1_ten_wrecks_on_grand_ave`
-(a golden frame), `o6b_2_a_tail_rammed_from_the_seat`,
-`o6b_3_the_bonnet_riding_on_its_catch`, `o6b_4_a_bumper_dragging`,
-`o6b_5_into_the_river`, `o6b_6_a_shot_out_lamp_head_black`.
+(a golden frame, re-made after the critic), `o6b_2_after_the_havoc_the_east_kerb_burnt_out`
+(after the critic: the proof's own last frame), `o6b_3_the_bonnet_riding_on_its_catch`,
+`o6b_4_a_door_lying_on_its_face` (after the critic), `o6b_5_into_the_river`,
+`o6b_6_the_paint_scraped_round_the_dents` (after the critic).
 
 ---------------------------------------------------------------------------
 ## 4. For other lanes
@@ -201,33 +254,38 @@ wet. Frames (`docs/review/O6b/`, 1440 x 900): `o6b_1_ten_wrecks_on_grand_ave`
   lorries can be taken.
 
 ---------------------------------------------------------------------------
-## 7. Left (most felt first)
+## 7. Left (most felt first; rewritten after the critic)
 
-1. **Black on black.** Dents read only in the glints of a black car's paint;
-   the bonnet up and a hanging door read by their paper rim and by the sparks,
-   white marks and sounds at the moment they go - from the seat best; from
-   across a dark street a damaged parked car is still mostly a black shape.
-   The ink draws no contour between parts of one car (one ink id): a distinct
-   id for a loose part would outline it - a shader lane's call.
-2. **The sunk car's shape** under the water reads only near (a dark disc with
-   a pale ripple and two small lamps on black water); from the steps it is
-   hardly seen.
-3. **A wheel came to rest once with its middle inside an el column's plinth
-   collider** (one havoc run in four; never in a building's wall). Parts meet
-   the walking colliders (walls, columns) but not other cars' boxes: a door
-   can lie partly under a parked car.
-4. **The driver's rams** are 13-35 km/h (pure pursuit by the keys under the
-   el's columns); harder rams were proved only by staging (`&ten=states`).
-5. **The parts are generic shapes once off**: the pool's unit shapes (a plate,
-   a bar, a wheel) scaled to the car's part, in its paint, not the panel that
-   hung with its dents.
-6. **A damaged sedan never takes its far build** (`car.own`): ten damaged
-   sedans far down a street cost their near triangles. O2's far build should
-   give a damaged car one too, or drop the damage beyond 40 m.
-7. **City awnings cannot be shot** (the near chunk's `tree` merge is not in
-   the bullets' world); only a tall vehicle tears them. The city has no lorry
-   of its own yet (O2): the proof drove the bed's.
-8. The `hundred` beat's errors dump (O6's left 12) was not run; the `hundred`
-   fps was not re-measured (O6's 1.20 x).
-9. Sounds were not listened to (every run muted); built from the kit like
-   O6's and played by the events above.
+1. **The real city has no other cars yet.** The havoc lives on the bed
+   (`?start=smash.ten`): in the game from the title the user meets car damage
+   only on his own car against walls and columns until O2's traffic and parked
+   cars land (the critic's note). Nothing here needs changing for them: every
+   car of `game.vehicles` gets it (SMASH.md section 5).
+2. **The havoc proof's hands are the weak part, not the havoc.** The driver
+   burns the east kerb's five every run; its tail rams down the west kerb (a
+   short run-up between parked cars and columns, 15-20 km/h) and its walks to a
+   spare coupe across the junction are where a pass ends. The bar is seven of
+   ten in one pass, never a fail; a player who goes round again finishes the
+   street (the spares stay whole: the blasts reach 14 m, they are 30 m off).
+3. **Black on black, partly.** A rammed car reads from across the street by
+   its steam, smoke or fire, an open door's pale cabin and the scrapes within
+   about 10 m; a dent alone on a black car is still dark at 20 m at night. The
+   ink draws no contour between parts of one car (one ink id): a loose part's
+   own id would outline it - a shader lane's call.
+4. **The blast hurts the car I am in** like any other (2.0 at 4 m, 0.5 at
+   11.5): a player who rams on beside a burning car loses his car in two or
+   three of them (the hands back off after each). Tuned in play, see section 0.
+5. **A torn awning lying on a stall or a bench** rests on it only when the
+   set's twelve-second rule settles it (the set's bodies rest on the ground,
+   not on other things): it hangs 'live' up to twelve seconds.
+6. **The bed's own awnings and the street's** (O1b's dressing) both stand over
+   some shop fronts on Grand Ave's west side (x -134): not looked at closely.
+7. **The sunk car's shape** under the water reads only near.
+8. **A wheel came to rest once inside an el column's plinth collider** (O6b's
+   first pass; not met after the critic). Parts meet the walking colliders but
+   not other cars' boxes: a door can lie partly under a parked car.
+9. **The parts are generic shapes once off** (the pool's unit shapes scaled).
+10. **A damaged sedan never takes its far build** (`car.own`); each scarred car
+    carries its own twin of its paint material (one program for all).
+11. The `hundred` beat's errors and fps were not re-measured (O6's left 12);
+    sounds were not listened to (every run muted).
