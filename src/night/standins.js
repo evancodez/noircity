@@ -17,9 +17,11 @@
 // clears it, 9 toggles the search, 8 gives $50, 7 a matchbook - keys read
 // through the game's own input edges, so a pad or a play reaches them alike.
 import { newsOf } from '../world/items.js';
+import { Patrol } from './patrol.js';   // [O7] after the critic: somebody comes
 
 export const CRIME = { punch: 1, hijack: 1, shot: 2, death: 3, cop: 4 };
-// the stand-in's fall: unseen this long, the search; searching this long, a badge less
+// the stand-in's fall: out of every unit's sight this long, the search; searching (still unseen) this long, a badge less
+// ([O7] after the critic, B1: the clock runs only while nobody sees me - src/night/patrol.js sends them and says who does)
 export const LOSE = { quiet: 14, search: 9 };
 
 export function installStandins(night) {
@@ -27,8 +29,9 @@ export function installStandins(night) {
   const made = [];
   if (!G.police) {
     const L = new Map();
+    const patrol = new Patrol(night);
     G.police = {
-      stand: true, heat: 0, searching: false, units: [], quiet: 0,
+      stand: true, heat: 0, searching: false, units: [], quiet: 0, seen: false, patrol,
       on(name, fn) { if (!L.has(name)) L.set(name, []); L.get(name).push(fn); return fn; },
       off(name, fn) { const a = L.get(name); if (a) { const i = a.indexOf(fn); if (i >= 0) a.splice(i, 1); } },
       emit(name, e) { const a = L.get(name); if (a) for (const f of [...a]) f(e); },
@@ -38,14 +41,24 @@ export function installStandins(night) {
         this.searching = this.heat > 0 && !!searching;
         this.quiet = 0;
         G.save.heat = this.heat;
+        // [O7] (the heat up, or found again: they are sent)
+        if (this.heat > 0 && !this.searching && (this.heat > was || ws)) patrol.dispatch(this.heat, was);
+        if (this.heat === 0 && was > 0) patrol.nextAt = Infinity;
         if (was !== this.heat || ws !== this.searching) this.emit('heat', { heat: this.heat, was, searching: this.searching });
       },
-      // (O5's door: an interior shakes them off)
-      lost() { if (this.heat > 0) this.set(0); },
-      // (O5's hotel bed: sleep clears it)
-      clear() { if (this.heat > 0) this.set(0); },
+      // (O5's door, the el's next station: they lost me there - the search begins at once; the
+      // clock takes the badges off while nobody sees me. [O7] after the critic: it cleared all
+      // five at once - a door was a heat-5 eraser)
+      lost() { if (this.heat > 0) { patrol.shake(); if (!this.searching) this.set(this.heat, { searching: true }); this.quiet = 0; } },
+      // (O5's hotel bed: sleep clears it; the arrest and the hospital)
+      clear() { patrol.dropAll(); if (this.heat > 0) this.set(0); },
       step(dt) {
+        const seen = patrol.step(dt);
         if (this.heat <= 0) return;
+        // seen: the clock stands; seen while they searched - found again
+        if (seen) { this.quiet = 0; if (this.searching) this.set(this.heat, { searching: false }); return; }
+        // (nobody out yet - they are on their way: the clock waits for them, unless no unit can be sent here)
+        if (!patrol.units.length && !this.searching && G.time < patrol.nextAt + 12) return;
         this.quiet += dt;
         if (!this.searching && this.quiet > LOSE.quiet) { this.searching = true; this.quiet = 0; this.emit('heat', { heat: this.heat, was: this.heat, searching: true }); }
         else if (this.searching && this.quiet > LOSE.search) { const h = this.heat - 1; this.set(h, { searching: h > 0 }); }
@@ -68,8 +81,11 @@ export function installStandins(night) {
     // brief's table has it), O4's crowd's crimes (a gun drawn in a fist fight,
     // a runner put down) the same - the city answers within the second, the
     // shields brushed in and 'Lose them.'; it falls by itself unseen (LOSE)
-    G.on('shot', () => { if (night.inCity) G.crime.emit('shot', null, 'me'); });
-    G.on('crime', (e) => { if (night.inCity && e && e.by === 'player') G.crime.emit(e.kind === 'draw' ? 'punch' : 'shot', e.at, 'me'); });
+    G.on('shot', () => { if (night.inCity) { if (G.police.patrol) G.police.patrol.shotAt(); G.crime.emit('shot', null, 'me'); } });
+    // ([O7] after the critic: a gun drawn on a cop is a shot's heat, on anyone else a punch's; a man shot running from it a death's)
+    G.on('crime', (e) => { if (night.inCity && e && e.by === 'player') G.crime.emit(e.kind === 'draw' ? (e.cop ? 'shot' : 'punch') : e.cop ? 'cop' : e.kind === 'shot' ? 'death' : 'punch', e.at, 'me'); });
+    // (O5's rooms tell theirs with a level and no 'by': a fist in a bar, a brawl, a shot, a hideout's fight - heard as the same)
+    G.on('crime', (e) => { if (night.inCity && e && e.by == null && e.level != null) G.crime.emit(e.level >= 2 ? 'shot' : 'punch', e.pos || null, 'me'); });
   }
   // (the news is O1b's now, in main: world/items.js newsOf - no stand-in)
   newsOf(G);

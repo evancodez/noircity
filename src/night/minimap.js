@@ -132,8 +132,10 @@ export class Minimap {
         g.fillStyle = '#d4cfc4'; g.strokeStyle = '#050505'; g.lineWidth = 3; g.beginPath(); g.rect(-6, -11, 12, 22); g.fill(); g.stroke();
         g.restore();
       } else if (m.kind === 'cop') {
-        g.fillStyle = '#050505'; g.beginPath(); g.arc(px, py, 7.5, 0, Math.PI * 2); g.fill();
-        g.fillStyle = '#ebe8e1'; g.beginPath(); g.arc(px, py, 3.2, 0, Math.PI * 2); g.fill();
+        // ([O7] a paper rim round the ink: read on the black blocks and the white streets alike)
+        g.fillStyle = '#ebe8e1'; g.beginPath(); g.arc(px, py, 9, 0, Math.PI * 2); g.fill();
+        g.fillStyle = '#050505'; g.beginPath(); g.arc(px, py, 6.6, 0, Math.PI * 2); g.fill();
+        g.fillStyle = '#ebe8e1'; g.beginPath(); g.arc(px, py, 2.6, 0, Math.PI * 2); g.fill();
       } else if (m.kind === 'place') {
         g.fillStyle = '#050505'; g.fillRect(px - 5, py - 5, 10, 10);
       }

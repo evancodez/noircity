@@ -82,6 +82,7 @@ export class Night {
   enter(id) {
     const G = this.game, city = id === 'city';
     G.hud.root.classList.toggle('nnocity', !city);
+    G.hud.kit.sitFade = city ? 0.1 : undefined;   // [O7] after the critic (M3): the city's line sits at 90 %, not 58 %
     this.map.cityCard(city);
     if (!city) return;
     // city.js's M opens this map (its MapOverlay is O1's stand-in for it)
@@ -155,6 +156,7 @@ export class Night {
     this.phone.step(dt);
     this.bounty.step(dt);
     this.amb.step(dt);
+    this.saver.step(dt);   // [O7] after the critic: the quiet autosave every two minutes
     // places found (the hotel, the garage...): marked on the map once I have been by their door
     this.foundT -= dt;
     if (this.foundT <= 0) {

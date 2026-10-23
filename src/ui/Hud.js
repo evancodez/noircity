@@ -103,6 +103,7 @@ export class Hud {
       #title .sep { width: 6px; height: 6px; border-radius: 50%; background: #d8d6d0; box-shadow: 0 0 4px #000; }
       #title .sep.hidden { display: none; }
       #title .go { margin-top: 10px; animation: noirBlink 2.6s ease-in-out infinite; }
+      #title.nconfirm .go { animation: none; font-size: 15px; letter-spacing: 0.3em; color: #f1efe9; text-shadow: 0 0 6px #000, 0 0 2px #000; }
       #title .toc { display: none; position: absolute; right: 5%; top: 46%; transform: translateY(-50%); z-index: 2; padding: min(2.2vh, 18px) 6px; text-transform: uppercase;
         color: #eeece6; background: #050505; border: 1px solid #55534e; box-shadow: 0 0 0 5px #050505, 0 0 34px 14px rgba(0, 0, 0, 0.8); }
       #title.toc-open .toc { display: block; }
@@ -233,6 +234,12 @@ export class Hud {
     this.sepEl = document.createElement('div'); this.sepEl.className = 'sep hidden'; opts.appendChild(this.sepEl);
     this.contOpt = opt('continue', 'continue', 4102);
     this.contOpt.classList.add('hidden');
+    // [O7] after the critic (M1: BEGIN first and focused over a save, and it wiped the night without a
+    // word): with a save CONTINUE comes first; BEGIN over it asks once - 'A new night? The old one is
+    // lost.' - BACK (first) or BEGIN again
+    this.backOpt = opt('back', 'back', 4104);
+    this.backOpt.classList.add('hidden');
+    this.optsEl = opts;
     // CHAPTERS: the table of contents (setChapters): start at any chapter
     const sep2 = document.createElement('div'); sep2.className = 'sep'; opts.appendChild(sep2);
     this.chapOpt = opt('chapters', 'chapters', 4103);
@@ -267,6 +274,8 @@ export class Hud {
       if (o && o.dataset.k === 'chapters') { this.title.classList.toggle('toc-open'); return; }
       if (this.title.classList.contains('toc-open') && !o) { this.title.classList.remove('toc-open'); return; }
       const k = o ? o.dataset.k : this.canContinue ? null : 'begin';
+      if (k === 'back') { this.confirmNew(false); return; }
+      if (k === 'begin' && this.canContinue && !this.confirming) { this.confirmNew(true); return; }   // [O7]
       if (k === 'continue' && onContinue) onContinue();
       else if (k === 'begin' && onBegin) onBegin();
     });
@@ -346,10 +355,21 @@ export class Hud {
     this.canContinue = !!canContinue;
     this.contOpt.classList.toggle('hidden', !this.canContinue);
     this.sepEl.classList.toggle('hidden', !this.canContinue);
+    // [O7] (a save: CONTINUE first, BEGIN after it)
+    if (this.optsEl) { if (this.canContinue) this.optsEl.insertBefore(this.contOpt, this.beginOpt); else this.optsEl.insertBefore(this.beginOpt, this.contOpt); this.optsEl.insertBefore(this.sepEl, this.canContinue ? this.beginOpt : this.contOpt); }
+    this.confirmNew(false, text);
     this.title.classList.remove('hidden');
     this.root.classList.add('titled');
   }
   hideTitle() { this.title.classList.add('hidden'); this.retitle(); }
+  // [O7] BEGIN over a save: asked once, in the title's own lettering (BACK first: the safe choice)
+  confirmNew(on, text = '') {
+    this.confirming = !!on;
+    this.title.classList.toggle('nconfirm', this.confirming);
+    this.backOpt.classList.toggle('hidden', !this.confirming);
+    if (this.confirming) { this.contOpt.classList.add('hidden'); this.optsEl.insertBefore(this.backOpt, this.optsEl.firstChild); this.optsEl.insertBefore(this.sepEl, this.beginOpt); this.sepEl.classList.remove('hidden'); this.titlePrompt.textContent = 'A new night? The old one is lost.'; }
+    else if (this.backOpt.parentNode) { this.contOpt.classList.toggle('hidden', !this.canContinue); this.sepEl.classList.toggle('hidden', !this.canContinue); if (this.canContinue) { this.optsEl.insertBefore(this.contOpt, this.optsEl.firstChild); this.optsEl.insertBefore(this.sepEl, this.beginOpt); } this.titlePrompt.textContent = text; }
+  }
   setVisible(v) { this.visible = v; this.root.style.display = v ? '' : 'none'; if (!v) this.hideTitle(); }
   get titleShown() { return !this.title.classList.contains('hidden'); }
   get endShown() { return !this.endCard.el.classList.contains('hidden'); }
@@ -550,7 +570,8 @@ export class Hud {
       Object.assign(E.xr.style, { width: 2 * r + 'px', height: 2 * r + 'px', marginLeft: -r - 1 + 'px', marginTop: -r - 1 + 'px', opacity: s.spread > 0.008 ? '1' : '0' });
       L.xr = r;
     }
-    if (this.msgT > 0) { this.msgT -= s.dt; if (this.msgT <= 0) E.msg.style.opacity = '0'; }
+    if (this.msgT > 0) { this.msgT -= s.dt; if (this.msgT <= 0) { E.msg.style.opacity = '0'; this.msgClearT = 0.6; } }
+    else if (this.msgClearT > 0) { this.msgClearT -= s.dt; if (this.msgClearT <= 0) E.msg.textContent = ''; }   // [O7] (faded: its words go too)
   }
 }
 

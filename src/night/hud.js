@@ -110,6 +110,11 @@ export class NightHud {
       #hud.titled .nheat, #hud.titled .nmoney, #hud.titled .ntab, #hud.titled .nsaved { display: none; }
       #hud.stilled .nheat, #hud.stilled .nmoney, #hud.stilled .ntab, #hud.failing .nheat, #hud.failing .nmoney, #hud.failing .ntab, #hud.failing .nsaved { visibility: hidden; }
       #hud.nnocity .nheat, #hud.nnocity .nmoney, #hud.nnocity .ntab { display: none; }
+      /* [O7] after the critic (M3: the line was tiny, letter-spaced, lost over a lit sign): in the city the
+         line a size larger on its torn ink stroke at full strength, and it stays strong while it sits */
+      #hud:not(.nnocity) .kobj { transform: scale(1.34); transform-origin: 0 50%; left: 44px; top: 34px; }
+      #hud:not(.nnocity) .kobj .g { opacity: 0.97; filter: drop-shadow(0 0 4px rgba(0,0,0,0.6)); }
+      #hud:not(.nnocity) .kobj .t { text-shadow: 0 0 4px #000, 0 0 2px #000, 0 0 1px #000, 0 0 8px #000; }
     `;
     document.head.appendChild(st);
     const mk = (cls) => { const e = document.createElement('div'); e.className = cls; hud.root.appendChild(e); return e; };
@@ -128,7 +133,6 @@ export class NightHud {
     this.moneyEl = mk('nmoney');
     this.moneyEl.innerHTML = '<div class="d"></div><div class="v"></div>';
     this.savedEl = mk('nsaved');
-    this.savedEl.textContent = 'saved';
     this.tabEl = mk('ntab');
     // the line's two layers: the heat's, the thing taken up (any lane's hud.objective)
     this.lines = { heat: null, taken: null };
@@ -160,7 +164,7 @@ export class NightHud {
   }
 
   // (the save's autosave) a tick, a word, gone
-  saved() { this.savedT = 1.8; this.savedEl.classList.add('up'); }
+  saved() { this.savedT = 1.8; this.savedEl.textContent = 'saved'; this.savedEl.classList.add('up'); }
 
   onMoney(e) {
     // (the save's setter tells every change with was and d; O4's wallet and
@@ -233,7 +237,8 @@ export class NightHud {
     if (M.up > 0) { M.up -= dt; if (M.up <= 0) { M.d = 0; this.moneyEl.querySelector('.d').textContent = ''; } }
     const mUp = M.up > 0 || tab;
     if (mUp !== this.moneyEl.classList.contains('up')) this.moneyEl.classList.toggle('up', mUp);
-    if (this.savedT > 0) { this.savedT -= dt; if (this.savedT <= 0) this.savedEl.classList.remove('up'); }
+    if (this.savedT > 0) { this.savedT -= dt; if (this.savedT <= 0) { this.savedEl.classList.remove('up'); this.savedGoT = 0.6; } }
+    else if (this.savedGoT > 0) { this.savedGoT -= dt; if (this.savedGoT <= 0) this.savedEl.textContent = ''; }   // [O7] (gone from the page too)
   }
 
   drawMoney(v) { this.moneyEl.querySelector('.v').innerHTML = `<small>$</small>${v.toLocaleString('en-US')}`; }

@@ -59,7 +59,11 @@ export class PadUi {
     const awake = this.sel.style.display === 'block';
     if (!awake && (nav.ok || nav.back)) nav = { go: null, ok: false, back: false, opt: false };
     const opts = [...T.querySelectorAll('.opts .opt')].filter((o) => !o.classList.contains('hidden'));
-    if (this.titleIx == null) { const c = opts.findIndex((o) => o.dataset.k === 'continue'); this.titleIx = c >= 0 ? c : 0; }
+    // [O7] (the choices changed - a save's CONTINUE first, BEGIN's 'a new night?': the highlight on the first)
+    const keys = opts.map((o) => o.dataset.k).join();
+    if (keys !== this.titleKeys) { this.titleKeys = keys; this.titleIx = null; }
+    if (this.titleIx == null) { const c = opts.findIndex((o) => o.dataset.k === 'continue' || o.dataset.k === 'back'); this.titleIx = c >= 0 ? c : 0; }
+    if (nav.back && H.confirming) { this.press(H.backOpt); return; }
     for (const r of T.querySelectorAll('.toc .row.padsel')) r.classList.remove('padsel');
     if (toc) {
       const rows = [...T.querySelectorAll('.toc .row')].filter((r) => !r.classList.contains('off'));
@@ -80,6 +84,8 @@ export class PadUi {
       if (o.dataset.k === 'chapters') { this.press(o); this.tocIx = 0; return; }
       this.pad.engaged = true;
       this.press(o);
+      // [O7] (BACK, or BEGIN asking 'a new night?': nothing is started yet)
+      if (o.dataset.k === 'back' || H.confirming) return;
       if (this.pad.cb.start) this.pad.cb.start();
     }
   }

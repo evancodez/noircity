@@ -3,6 +3,7 @@ import { drawShield } from './hud.js';
 import { RNG } from '../util/rng.js';
 import { blob, frayEdges } from '../ui/inkArt.js';
 import { PLACES } from '../world/plan.js';
+import { input } from '../input/Pad.js';
 
 // The map and the pause card (lane O7, docs/seams/NIGHT.md §2).
 // M (the pad's d-pad down) opens O1's inked city map on the pause card: the
@@ -13,7 +14,7 @@ import { PLACES } from '../world/plan.js';
 // The pause card (ESC, the pointer lock lost): PAUSED, the same map at its
 // side, the keys, the settings line (mouse, volume, sound, subtitles: the
 // old M for sound lives here now), the matchbooks collected (a row of little
-// covers, the empty ones dotted), `click to resume`.
+// covers taken - [O7] after the critic: no count, no empty boxes), `click to resume`.
 // city.js's own M (O1's MapOverlay) is handed this map instead (night.mapFor:
 // { isOpen, toggle, close, draw }): its toggle opens and closes this one.
 const PAPER = '#d4cfc4';
@@ -123,7 +124,8 @@ export class NightMap {
   frame() {
     const G = this.G, H = this.hud;
     if (this.open) {
-      if (G.keysDown.has('KeyM')) { G.keysDown.delete('KeyM'); this.close(); return; }
+      // ([O7] after the critic, m1: the pad's circle - 'back' on a PS5 pad, the crouch's C in play - closes it too)
+      if (G.keysDown.has('KeyM') || (G.keysDown.has('KeyC') && input.last === 'pad')) { G.keysDown.delete('KeyM'); G.keysDown.delete('KeyC'); this.close(); return; }
       // (ESC: the browser let the mouse go - the pause card proper, the map on it)
       if (H.paused) { this.open = false; this.night.holding = false; G.controller.lookLocked = !!this.lookWas; G.controller.frozen = false; this.card.classList.remove('mview'); H.root.classList.remove('nmapopen'); H.retitle(); }
       else { this.drawMarks(); return; }
@@ -166,7 +168,7 @@ export class NightMap {
       if (Math.hypot(u - me[0], v - me[1]) > 70) label(g, 'CAR', u + 12, v);
     }
     // the cops near me
-    for (const m of N.marks()) if (m.kind === 'cop') { const [u, v] = at(m.x, m.z); g.fillStyle = '#050505'; g.beginPath(); g.arc(u, v, 7, 0, Math.PI * 2); g.fill(); g.fillStyle = PAPER; g.beginPath(); g.arc(u, v, 3, 0, Math.PI * 2); g.fill(); }
+    for (const m of N.marks()) if (m.kind === 'cop') { const [u, v] = at(m.x, m.z); g.fillStyle = PAPER; g.beginPath(); g.arc(u, v, 10, 0, Math.PI * 2); g.fill(); g.fillStyle = '#050505'; g.beginPath(); g.arc(u, v, 7, 0, Math.PI * 2); g.fill(); g.fillStyle = PAPER; g.beginPath(); g.arc(u, v, 3, 0, Math.PI * 2); g.fill(); }
     // me: the breathing ring round a big ink arrowhead (O1's mark, kept)
     const yaw = R && R.inCar && R.car ? R.car.yaw - Math.PI / 2 : G.controller.yaw;
     const t = performance.now() / 1000;
@@ -203,11 +205,13 @@ export class NightMap {
     const have = new Set([...Object.keys(F), ...(G.save.matchbooks || [])]);
     for (const h of have) if (!names.has(h)) names.set(h, F[h] || null);
     this.matchEl.textContent = '';
-    if (!names.size) return;
-    const got = [...names.keys()].filter((id) => have.has(id)).length;
-    const lab = document.createElement('span'); lab.className = 'lab'; lab.textContent = `matchbooks ${got} / ${names.size}`;
+    // [O7] after the critic (m2: 'MATCHBOOKS 0 / 6' and six dotted boxes read as a to-do list): only the
+    // covers taken, no count, no empty boxes - nothing at all until the first one is in the coat
+    const got = [...names.keys()].filter((id) => have.has(id));
+    if (!got.length) return;
+    const lab = document.createElement('span'); lab.className = 'lab'; lab.textContent = 'matchbooks';
     this.matchEl.appendChild(lab);
-    for (const [id, name] of names) this.matchEl.appendChild(matchbook(id, have.has(id), F[id] || name));
+    for (const id of got) this.matchEl.appendChild(matchbook(id, true, F[id] || names.get(id)));
   }
 }
 
