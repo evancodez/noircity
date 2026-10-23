@@ -222,6 +222,7 @@ export function nearLot(lot, out) {
       for (const f of [-1 / 6, 1 / 6]) push(out, 'dark', box(-0.05, 0.05, -w.h / 2, w.h / 2, 0, 0.03).rotateY(ang).translate(w.x + w.nx * 0.08 + Math.cos(ang) * f * w.w * 2, w.y, w.z + w.nz * 0.08 - Math.sin(ang) * f * w.w * 2));
       push(out, 'dark', box(-w.w / 2, w.w / 2, -0.05, 0.05, 0, 0.03).rotateY(ang).translate(w.x + w.nx * 0.08, w.y + w.h * 0.28, w.z + w.nz * 0.08));
     }
+    if (w.unique) continue;   // [O1b] (a unique's own door: its builder draws it - city/kits/uniques.js)
     if (w.kind === 'door') {
       push(out, 'trim', box(-0.75, 0.75, 0, 0.15, 0, 0.45).rotateY(ang).translate(w.x, 0.15, w.z));
       // its stone frame - the jambs, the lintel, a transom's sill - so a door

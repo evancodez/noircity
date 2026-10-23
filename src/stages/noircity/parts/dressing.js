@@ -1,5 +1,6 @@
 import * as THREE from 'three';
-import { propPieces, treePieces, faceRelief, boardAtlas, stepsPieces } from '../../../city/kits/dress.js';
+import { propPieces, treePieces, faceRelief, boardAtlas, stepsPieces, AMBER } from '../../../city/kits/dress.js';
+const GATE_LAMP = AMBER.map((c) => c * 0.45);
 import { uniquePieces, signAtlas, stairGate, pierShed } from '../../../city/kits/uniques.js';
 import { CHUNK } from '../../../world/cityGen.js';
 import { WATER_Y, PIERS, RIVER, QUAY_OFF, PAVE } from '../../../world/plan.js';
@@ -84,7 +85,11 @@ export default {
     const boards = new THREE.MeshStandardMaterial({ map: A.tex, roughness: 0.65, emissive: 0xffffff, emissiveMap: A.tex, emissiveIntensity: 0.1 });
     const signs = new THREE.MeshStandardMaterial({ map: SA.tex, roughness: 0.6, emissive: 0xffffff, emissiveMap: SA.tex, emissiveIntensity: 0.18 });
     const lit = new THREE.MeshBasicMaterial({ vertexColors: true });
-    const mats = { props: relief, relief, boards, lit };
+    // ([O1b] after the critic, m1: the street's things dark on dark away from the
+    // lamps - a floor of light on the pavement things, so a crate or a bin reads
+    // as a shape in the black between the pools; the relief keeps none)
+    const props = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.8, metalness: 0, envMap: M.envSoft, envMapIntensity: 0.25, emissive: 0x262626 });
+    const mats = { props, relief, boards, lit };
     // what each chunk holds
     const index = new Map();
     const slot = (k) => { if (!index.has(k)) index.set(k, { props: [], trees: [], lots: [], gardens: [] }); return index.get(k); };
@@ -113,7 +118,7 @@ export default {
             const y = 0.15 + L.wallH + 1.4;
             out.relief.push([new THREE.BoxGeometry(0.36, 0.06, 0.36).translate(gx + ox, y + 0.02, gz), 0.008]);
             out.relief.push([new THREE.ConeGeometry(0.26, 0.2, 4).rotateY(Math.PI / 4).translate(gx + ox, y + 0.62, gz), 0.008]);
-            out.lit.push([new THREE.BoxGeometry(0.22, 0.4, 0.22).translate(gx + ox, y + 0.3, gz + s * 0.0), 1.5]);
+            out.lit.push([new THREE.BoxGeometry(0.26, 0.44, 0.26).translate(gx + ox, y + 0.3, gz + s * 0.0), GATE_LAMP]);   // [O1b] (M2: the Hill's colour - its lanterns burn amber)
           }
         }
       }
@@ -132,7 +137,7 @@ export default {
       };
       if (out.props.length) {
         const g = yield* mergeColSteps(out.props);
-        const m = mk(g, relief, 'props', true);
+        const m = mk(g, props, 'props', true);
         // (each record's vertices in the merge: lane O6's set takes one out of it as it goes)
         m.userData.ranges = g.userData.ranges; m.userData.prop = 'merged';
       }

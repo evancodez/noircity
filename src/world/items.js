@@ -1,4 +1,5 @@
 import { vhash } from './streets.js';
+import { wallet, owns, give, arms } from '../combat/money.js';
 
 // NOIR CITY: the things a man picks up with E (lane O1b, brief §3). Placed by
 // rule (world/dressing.js C.itemSpots: a roll of cash in an alley's end or by
@@ -12,28 +13,65 @@ import { vhash } from './streets.js';
 //   news: the city's own news of what I did last: news.say(line) (the police
 //   system's events - O3 - and the night's; until they come, three lines of
 //   the night), news.latest() -> the headline a paper carries.
-// Seams for the other lanes: save.money a plain number (O4's money.js
-// replaces the adding); the rounds into the revolver's pocket as the base
-// keeps it (src/player/weapons/revolver.js); a gun picked up is the base's
-// weapon kinds (weapons.equip); a bottle is counted (save.flags.bottles) for
-// the crowd brawl (O4); the matchbooks a collection (save.flags.matchbooks:
-// { id: name }) for the pause card (O7).
-export const RESPAWN = 300;          // (s) a taken thing is back after this, unless it is in view
+// Seams for the other lanes: save.money and save.ammo are lane O4's
+// (combat/money.js wallet: the rounds into the coat's count, and into the
+// revolver's pocket when it is in hand); a gun picked up is O4's give + arms;
+// a bottle is counted (save.flags.bottles) and offered in a fist fight
+// (coatBottle, read by O4's Crowd.start); the matchbooks a collection
+// (save.flags.matchbooks: { id: name }) for the pause card (O7); what I carry
+// is pockets(G) (the Tab card until O7's HUD).
+export const RESPAWN = 300;          // (s) a taken bottle is back after this, unless it is in view
+// [O1b] after the critic (the cheat: a roll of cash came back where nobody
+// looked, so one alley was a bank): money and rounds are found once a save -
+// a taken spot is kept in save.flags.o1bTaken and never laid again; a bottle
+// (junk in a doorway) comes back, a matchbook is a collection (once each)
+export const ONCE = { cash: true, rounds: true, matchbook: true };
+export const spotKey = (it) => `${it.kind}:${Math.round(it.x * 2)},${Math.round(it.z * 2)}`;
 
 export function money(G, n) {
-  const S = G.save;
-  S.money = (S.money || 0) + n;
+  const S = wallet(G);
+  S.money += n;
   G.emit('money', { money: S.money, delta: n, why: 'found' });
   return S.money;
 }
-// the rounds: into the revolver's pocket (counted from the first box in the
-// city: the city's pocket is never endless), and the coat's count if lane O4's is there
+// the rounds (lane O4's coat: save.ammo.revolver, counted): into the coat's
+// count always; into the revolver's pocket too when it is the gun in my hand
+// (O4's arms.to keeps the two the same as the gun goes in and out). The line
+// says the truth: a coat's count when I own the revolver, 'no gun' when I do not.
 export function rounds(G, n) {
-  const W = G.player && G.player.weapons && G.player.weapons.get('revolver');
-  if (W) { if (!isFinite(W.pocket)) W.pocket = 0; W.pocket += n; if (W.keep) W.keep(); }
-  const A = G.save.ammo;
-  if (A && typeof A === 'object' && typeof A.revolver === 'number') A.revolver += n;
-  return W ? W.pocket : n;
+  const A = wallet(G).ammo;
+  A.revolver = (A.revolver || 0) + n;
+  const Ws = G.player && G.player.weapons;
+  const W = Ws && Ws.current === 'revolver' ? Ws.get('revolver') : null;
+  if (W) { if (!isFinite(W.pocket)) W.pocket = 0; W.pocket += n; if (W.keep) W.keep(); A.revolver = W.pocket; }
+  return A.revolver;
+}
+export const roundsLine = (G, n, total) => (owns(G, 'revolver') ? `${n} rounds  -  ${total} in the coat` : `${n} .38 rounds  -  no gun for them yet`);
+// what is in my pockets (the Tab card, parts/items.js): [[label, value]]
+export function pockets(G) {
+  const S = wallet(G), F = S.flags || {}, A = S.ammo || {};
+  const out = [['$', String(S.money)]];
+  if (A.revolver) out.push(['.38 rounds', String(A.revolver) + (owns(G, 'revolver') ? '' : '  (no gun)')]);
+  if (A.shotgun) out.push(['shells', String(A.shotgun)]);
+  if (A.tommy) out.push(['drums', String(A.tommy)]);
+  if (F.bottles) out.push(['bottles', String(F.bottles)]);
+  const M = F.matchbooks ? Object.keys(F.matchbooks).length : 0;
+  if (M) out.push(['matchbooks', `${M} of 6`]);
+  return out;
+}
+// [O1b] a bottle in the coat is one of the things in reach of a fist fight
+// (lane O4's Crowd: the room's bottles and chairs - E takes it out, it is
+// swung once and breaks on him); one less in the coat when it is taken out
+export function coatBottle(G, makeObject) {
+  const F = G.save.flags;
+  const pos = { x: 0, y: 0, z: 0 };
+  const it = {
+    kind: 'bottle', name: 'coat', coat: true,
+    get pos() { const e = G.eye, y = G.controller ? G.controller.yaw : 0; pos.x = e.x - Math.sin(y) * 0.45; pos.y = e.y - 0.55; pos.z = e.z - Math.cos(y) * 0.45; return pos; },
+    available: () => (F.bottles || 0) > 0,
+    take: () => { if (!(F.bottles > 0)) return null; F.bottles -= 1; return makeObject(); },
+  };
+  return it;
 }
 
 export const KINDS = {
@@ -43,23 +81,22 @@ export const KINDS = {
   },
   rounds: {
     prompt: 'take', sound: 'revRound',
-    take(G) { const p = rounds(G, 12); return `12 rounds  -  ${p} in the pocket`; },
+    take(G) { return roundsLine(G, 12, rounds(G, 12)); },
   },
   weapon: {
     prompt: 'take', sound: 'revDraw',
     take(G, it) {
       const kind = it.gun || 'revolver';
-      const S = G.save;
-      if (!S.inventory.includes(kind)) S.inventory.push(kind);
+      give(G, kind);
       const Ws = G.player.weapons;
-      if (Ws && Ws.get(kind)) { Ws.equip(kind); if (G.setViewmodelVisible) G.setViewmodelVisible(true); }
-      if (kind === 'revolver') rounds(G, 6);
-      return kind === 'tommy' ? 'his Tommy gun' : 'his revolver  -  6 rounds';
+      if (Ws && Ws.get(kind)) { arms(G).to(kind); if (G.setViewmodelVisible) G.setViewmodelVisible(true); }
+      if (kind === 'revolver') { const n = rounds(G, 6); return `his revolver  -  ${n} rounds in the coat`; }
+      return 'his Tommy gun';
     },
   },
   bottle: {
     prompt: 'take', sound: 'casingTick',
-    take(G) { const F = G.save.flags; F.bottles = (F.bottles || 0) + 1; return F.bottles > 1 ? `a bottle  -  ${F.bottles}` : 'a bottle'; },
+    take(G) { const F = G.save.flags; F.bottles = (F.bottles || 0) + 1; return F.bottles > 1 ? `a bottle for a fight  -  ${F.bottles} in the coat` : 'a bottle  -  for the next fight'; },
   },
   matchbook: {
     prompt: 'take', sound: 'paperTouch',

@@ -30,6 +30,7 @@ const COL = {
   blue: { rim: '#4aa8ff', core: '#dff0ff' },
   white: { rim: '#cfcfcf', core: '#ffffff' },
   red: { rim: toCss(accent('neonRed', { gain: 1 / 3 })), core: '#ffe2e2' },
+  amber: { rim: toCss(accent('neonAmber', { gain: 1 / 3 })), core: '#fff0dc' },   // [O1b] (the registry's neonAmber)
 };
 const PX = 96, ATLAS = 2048, ATLAS_H = 4096;   // ([O1b] twice as tall: the painted names and the windows' neon ran off the bottom of a square one)
 const BLADES = ['BAR', 'HOTEL', 'CHOP SUEY', 'PAWN', 'DANCING', 'LIQUORS', 'BILLIARDS', 'LUNCH', 'ROOMS', 'DRUGS', 'CAFE', 'TAILOR', 'GRILL', 'SHOES', 'RADIO', 'JEWELRY'];
@@ -51,7 +52,15 @@ export default {
     const alloc = (w, h) => { if (ax + w + 4 > ATLAS) { ax = 4; ay += row + 6; row = 0; } const c = { x: ax, y: ay, w, h }; ax += w + 6; row = Math.max(row, h); return c; };
     const uvOf = (c) => [c.x / ATLAS, 1 - (c.y + c.h) / ATLAS_H, (c.x + c.w) / ATLAS, 1 - c.y / ATLAS_H];
     // a neon face: the black board, the tube's glow, the tube, its white-hot line
+    const faceCache = new Map();   // [O1b] (a blade's face drawn once a word and a colour)
     const neonFace = (text, col, wM, hM, vert) => {
+      const ck = vert ? `${text}|${col}|${wM.toFixed(2)}|${hM.toFixed(2)}` : null;
+      if (ck && faceCache.has(ck)) return faceCache.get(ck);
+      const r = neonFace0(text, col, wM, hM, vert);
+      if (ck) faceCache.set(ck, r);
+      return r;
+    };
+    const neonFace0 = (text, col, wM, hM, vert) => {
       const c = alloc(Math.round(wM * PX), Math.round(hM * PX));
       const K = COL[col];
       g.save(); g.beginPath(); g.rect(c.x, c.y, c.w, c.h); g.clip(); g.translate(c.x, c.y);
@@ -216,6 +225,49 @@ export default {
         if (++nW >= 260) break;
       }
     }
+    // ---- [O1b] after the critic (M2: seven streets of ten under 0.1 % colour, 'a bit
+    // more color' not felt): every street its one colour a driver sees - a blade in
+    // the street's accent (world/streets.js: red, blue or amber) over a shop front
+    // every so many metres a side, its word the trade's under it (in the Docks
+    // and the Yards over a door: the bars' and the garages' blades); never two
+    // blades within 9 m. The vast majority of every frame stays ink.
+    const TW = { tailor: 'TAILOR', jeweler: 'JEWELRY', shoes: 'SHOES', hats: 'HATS', radio: 'RADIO', books: 'BOOKS', cafe: 'CAFE', drugs: 'DRUGS', grocer: 'GROCERY', butcher: 'MEATS', barber: 'BARBER', laundry: 'LAUNDRY', deli: 'DELI', pawn: 'LOANS', chopsuey: 'CHOP SUEY', chandler: 'SHIPS STORES', hardware: 'TOOLS', florist: 'FLOWERS', cigars: 'CIGARS', tobacco: 'SMOKES' };
+    const DOORW = { docks: ['BAR', 'ROOMS', 'EATS', 'GRILL', 'BAR'], yards: ['GARAGE', 'DINER', 'EATS', 'TRUCKS', 'GAS'], tenements: ['BAR', 'ROOMS', 'HOTEL'], downtown: ['BAR', 'HOTEL', 'GRILL'] };
+    const sides = new Map();
+    for (const L of C.lots) {
+      if (!L.fc || L.place || L.house) continue;
+      for (const f of L.fc) {
+        const A = f.ch && f.ch.accent;
+        if (!A || !A.every) continue;
+        const works = L.district === 'docks' || L.district === 'yards';
+        for (const w of lotWindows(L)) {
+          if (Math.abs(w.nx - f.n[0]) > 0.01 || Math.abs(w.nz - f.n[1]) > 0.01 || w.y > 4.6 || w.unique) continue;
+          if (!(w.kind === 'shop' || (works && (w.kind === 'door' || w.kind === 'loading')))) continue;
+          const key = `${f.st}|${f.n[0].toFixed(2)}|${f.n[1].toFixed(2)}`;
+          if (!sides.has(key)) sides.set(key, []);
+          sides.get(key).push({ s: -w.x * f.n[1] + w.z * f.n[0], w, L, A });
+        }
+      }
+    }
+    let nA = 0;
+    const bladeNear = (x, z, r) => signs.some((q) => q.kind === 'blade' && Math.abs(q.x - x) < r && Math.abs(q.z - z) < r);
+    for (const arr of sides.values()) {
+      arr.sort((a, b) => a.s - b.s);
+      const A = arr[0].A;
+      let last = arr[0].s - A.every * (0.35 + 0.6 * vhash(arr[0].w.x, arr[0].w.z, 81));
+      for (const e of arr) {
+        if (e.s - last < A.every) continue;
+        const w = e.w;
+        if (bladeNear(w.x, w.z, 9)) continue;
+        const words = w.kind === 'shop' && w.trade && TW[w.trade] ? [TW[w.trade]] : DOORW[e.L.district] || DOORW.downtown;
+        const text = words[Math.floor(vhash(w.x, w.z, 82) * words.length) % words.length];
+        const tx = -w.nz, tz = w.nx, side = vhash(w.x, w.z, 83) < 0.5 ? -1 : 1;
+        const base = e.L.district === 'tenements' ? 4.1 : 4.6;
+        blade(w.x + tx * side * (w.w * 0.5 + 0.1), w.z + tz * side * (w.w * 0.5 + 0.1), [w.nx, w.nz], base + text.replace(/ /g, '').length * 0.29, text, A.col);
+        last = e.s;
+        nA++;
+      }
+    }
     // ---- the warehouses' and the sheds' painted names, high on their street faces (the Docks, the Yards) ------------
     const PAINT = {
       docks: ['HARBOR FREIGHT', 'COLD STORAGE', 'PIER 5 TERMINAL', 'BONDED WAREHOUSE', 'COFFEE & SUGAR', 'LUMBER', 'SHIP CHANDLER', 'FISH', 'HEMP & ROPE', 'IMPORTS', 'GENERAL CARGO', 'TEA'],
@@ -258,7 +310,7 @@ export default {
     mk(bulbs, M.bulb, 2);
     mk(amberBulbs, new THREE.MeshBasicMaterial({ color: accent('neonAmber', { gain: 0.7 }) }), 2);   // [O1b]
     void CLS; void NS; void EW;
-    return { group, signs, doors, atlasUsed: ay + row };   // ([O1b] the atlas's height used: under ATLAS_H)
+    return { group, signs, doors, atlasUsed: ay + row, accentBlades: nA };   // ([O1b] the atlas's height used: under ATLAS_H)
   },
 };
 

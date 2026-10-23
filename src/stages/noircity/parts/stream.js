@@ -151,7 +151,7 @@ export default {
       // the chunk's doors (every street door of its lots: shut now, they
       // rattle; O5 opens the places' - city:door)
       const doors = [];
-      for (const L of (index.get(key) || { lots: [] }).lots) for (const w of lotWindows(L)) if (w.kind === 'door') doors.push({ x: w.x, z: w.z, nx: w.nx, nz: w.nz, lot: L, place: L.place ? L.place.id : null });
+      for (const L of (index.get(key) || { lots: [] }).lots) for (const w of lotWindows(L)) if (w.kind === 'door') doors.push({ x: w.x, z: w.z, nx: w.nx, nz: w.nz, lot: L, place: L.place ? L.place.id : null, unique: w.unique || null });   // [O1b] (a unique's door: the firehouse's, the church's ...)
       // ([O1b] the cold play's finding 6: a door is kept by where it stands,
       // not by its lot's chunk - a lot across a chunk line hid one door in four from doorNear)
       for (const d of doors) { const k = `${Math.floor(d.x / CHUNK)},${Math.floor(d.z / CHUNK)}`; if (!doorsAt.has(k)) doorsAt.set(k, new Set()); doorsAt.get(k).add(d); d.at = k; }

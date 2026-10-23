@@ -49,7 +49,7 @@ export const PAD = {
 export const BTN = { cross: 0, circle: 1, square: 2, triangle: 3, L1: 4, R1: 5, L2: 6, R2: 7, share: 8, options: 9, L3: 10, R3: 11, up: 12, down: 13, left: 14, right: 15, ps: 16, touch: 17 };
 export const input = { last: 'keys' };
 
-const KEYNAME = { Space: ' ', KeyE: 'e', KeyC: 'c', KeyR: 'r', KeyF: 'f', KeyQ: 'q', KeyM: 'm', KeyW: 'w', KeyA: 'a', KeyS: 's', KeyD: 'd', ShiftLeft: 'Shift', ControlLeft: 'Control', Escape: 'Escape' };
+const KEYNAME = { Space: ' ', KeyE: 'e', KeyC: 'c', KeyR: 'r', KeyF: 'f', KeyQ: 'q', KeyM: 'm', KeyW: 'w', KeyA: 'a', KeyS: 's', KeyD: 'd', ShiftLeft: 'Shift', ControlLeft: 'Control', Escape: 'Escape', Tab: 'Tab' };
 const curve = (u, C) => C.lin * u + (1 - C.lin) * Math.pow(u, C.pow);
 
 class Pad {
@@ -333,6 +333,7 @@ class Pad {
     if (on(BTN.triangle)) want.add('KeyR');
     if (on(BTN.left) || on(BTN.right) || on(BTN.up)) want.add('KeyQ');
     if (edge(BTN.down)) this.tap('KeyM');
+    if (edge(BTN.share) || edge(BTN.touch)) this.tap('Tab');   // [O1b] the rulebook's Tab (what I carry, for a moment)
     void C;
   }
   isLow() { const C = this.controller; return !!(C.crouchOn || (C.sneak && C.sneak.crouch)); }

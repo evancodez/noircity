@@ -32,7 +32,7 @@ const KEEP_START = 8;
 
 export function dress(C, ctx) {
   const { inLot, onPave, chunkOf } = ctx;
-  const dress = [], trees = [], uniques = [], spots = [];
+  const dress = [], trees = [], spots = [];
   // ---- the streets' segments in buckets (which street a face fronts) -------------------
   const SB = 48, segs = new Map();
   const sk = (i, j) => i * 4096 + j;
@@ -95,12 +95,63 @@ export function dress(C, ctx) {
     if (!L.fc.length) continue;
     const main = L.fc.reduce((a, b) => (b.len > a.len ? b : a));
     L.ch = main.ch; L.mat = main.ch.mat; L.win = main.ch.win; L.st = main.st;
-    // the shop fronts' trades: by the street each faces (a seeded pick by where it stands)
+  }
+
+  // ---- [O1b] the laundry lines by their lane (M6: the Tenements' lanes alike - the
+  // same washing across every one): a lane keeps its character's share (wash)
+  if (C.lines && C.lines.length) {
+    const kept = [];
+    for (const l of C.lines) {
+      let st = null, bd = Infinity;
+      for (const sg of segs.get(sk(Math.floor(l.x / SB), Math.floor(l.z / SB))) || []) {
+        const u = Math.max(0, Math.min(sg.L, (l.x - sg.ax) * sg.dx + (l.z - sg.az) * sg.dz)), d = Math.hypot(l.x - sg.ax - sg.dx * u, l.z - sg.az - sg.dz * u);
+        if (d < bd) { bd = d; st = sg.st; }
+      }
+      const w = st ? character(st.id, districtAt(l.x, l.z).id).wash : undefined;
+      if (w == null || vhash(l.x, l.z, 915) < w) kept.push(l);
+    }
+    C.lines.length = 0; C.lines.push(...kept);
+  }
+
+  // ---- the one thing mid-block that is only there (chosen before anything is laid
+  // on the faces: [O1b] after the critic, B2 - the firehouse was pasted over three
+  // shop fronts, their boards over its doors, iron pilasters across them, a
+  // bicycle through a door - the lot's ground floor is cleared under each
+  // unique's span, and its own doors are the face's doors there)
+  const uniques = pickUniques(C, chunkOf);
+
+  // ---- the shop fronts' trades: by the street each faces (a seeded pick by where it
+  // stands), never the trade of the shop beside it or of the one facing it across
+  // the street ([O1b] after the critic, M6: two DRUGS stores facing on Canal St)
+  const traded = new Map(), TB = 24;
+  const tk = (x, z) => Math.floor(x / TB) * 8192 + Math.floor(z / TB);
+  const clash = (w, trade) => {
+    for (let i = Math.floor(w.x / TB) - 2; i <= Math.floor(w.x / TB) + 2; i++) for (let j = Math.floor(w.z / TB) - 2; j <= Math.floor(w.z / TB) + 2; j++) {
+      for (const o of traded.get(i * 8192 + j) || []) {
+        if (o.trade !== trade) continue;
+        const dx = o.x - w.x, dz = o.z - w.z;
+        const along = Math.abs(dx * w.nz - dz * w.nx), out = dx * w.nx + dz * w.nz;
+        // (beside it on its face, or across the street within a few doors)
+        if (Math.abs(o.nx - w.nx) < 0.01 && Math.abs(o.nz - w.nz) < 0.01 && Math.abs(out) < 1 && along < 9) return true;
+        if (o.nx * w.nx + o.nz * w.nz < -0.9 && out > 4 && out < 40 && along < 12) return true;
+      }
+    }
+    return false;
+  };
+  for (const L of C.lots) {
+    if (!L.fc || !L.fc.length) continue;
     for (const w of lotWindows(L)) {
       if (w.kind !== 'shop') continue;
       const fc = L.fc.find((q) => Math.abs(q.n[0] - w.nx) < 0.01 && Math.abs(q.n[1] - w.nz) < 0.01);
       const ch = fc ? fc.ch : L.ch;
-      if (ch.trades && ch.trades.length && !L.place) w.trade = vpick(ch.trades, w.x, w.z, 7);
+      if (ch.trades && ch.trades.length && !L.place) {
+        let t = vpick(ch.trades, w.x, w.z, 7);
+        if (clash(w, t)) { const ok = ch.trades.filter((q) => !clash(w, q)); if (ok.length) t = vpick(ok, w.x, w.z, 9); }
+        w.trade = t;
+        const k = tk(w.x, w.z);
+        if (!traded.has(k)) traded.set(k, []);
+        traded.get(k).push(w);
+      }
       // (a fifth more of them lit: what the trade has shows dark against the glass)
       if (w.trade && !w.lit && vhash(w.x, w.z, 8) < 0.2) w.lit = true;
     }
@@ -120,7 +171,7 @@ export function dress(C, ctx) {
   for (const w of C.walls) if (w.tag !== 'wall' && w.tag !== 'edge' && w.hx < 3 && w.hz < 3) note(w.cx, w.cz, Math.hypot(w.hx, w.hz), w.tag);
   for (const p of C.props) if (!p.road) note(p.x, p.z, p.kind === 'newsstand' ? 1.2 : p.kind === 'bench' ? 1.0 : 0.5, p.kind);
   // (the doors: a clear way in front of every one)
-  for (const L of C.lots) if (L.fc) for (const w of lotWindows(L)) if (w.kind === 'door') { note(w.x + w.nx * 0.75, w.z + w.nz * 0.75, 0.55, 'door'); }
+  for (const L of C.lots) if (L.fc) for (const w of lotWindows(L)) if (w.kind === 'door') { note(w.x + w.nx * 0.75, w.z + w.nz * 0.75, w.unique ? Math.max(0.55, w.w / 2) : 0.55, 'door'); }
   // (the starts: their car and me kept clear)
   for (const s of Object.values(STARTS)) note(s.car.x, s.car.z, KEEP_START, 'start');
   // (the places' doors: O5's ways in)
@@ -189,7 +240,7 @@ export function dress(C, ctx) {
           else if (h < (P.fruit || 0) * 0.3 && room > 0.8) tryPut('crates', f, u + side * w.w * 0.35, 0.05);
           if (h2 < (P.board || 0) * 0.5 && room > 1.1) tryPut('board', f, u + side * (w.w / 2 + 0.2), 0.9, { yaw0: 1 });
           if (vhash(w.x, w.z, 505) < (P.bike || 0) * 0.5) tryPut('bike', f, u - side * (w.w / 2 + 0.5), 0.02);
-        } else if (w.kind === 'door') {
+        } else if (w.kind === 'door' && !w.unique) {
           if (h < (P.churn || 0) * 0.5) tryPut('churns', f, u + side * 1.3, 0.05);
           if (h2 < (P.bin || 0) * 0.35) tryPut('bins', f, u - side * 1.55, 0.05);
           if (vhash(w.x, w.z, 606) < (P.bike || 0) * 0.3) tryPut('bike', f, u + side * 2.0, 0.02);
@@ -330,47 +381,6 @@ export function dress(C, ctx) {
   // ---- the Hill's curving lane (the brief: "the Hill gets a curving lane") ------------------------
   const lane = hillLane(C, { chunkOf, note, trees });
   if (lane) uniques.push(lane);
-  // ---- the one thing mid-block that is only there -----------------------------------------------
-  for (const [id, S] of Object.entries(STREETS)) {
-    if (!S.unique || S.unique === 'lane') continue;
-    // the street's segments, its middle by length
-    const parts = C.streets.filter((s) => s.id === id && !s.bridge);
-    if (!parts.length) continue;
-    let tot = 0; for (const s of parts) tot += Math.hypot(s.b[0] - s.a[0], s.b[1] - s.a[1]);
-    // the faces on this street: the one nearest the street's middle (by length), long enough
-    let acc = 0, mid = null;
-    for (const s of parts) { const l = Math.hypot(s.b[0] - s.a[0], s.b[1] - s.a[1]); if (acc + l >= tot / 2) { const t = (tot / 2 - acc) / l; mid = [s.a[0] + (s.b[0] - s.a[0]) * t, s.a[1] + (s.b[1] - s.a[1]) * t]; break; } acc += l; }
-    if (!mid) continue;
-    const want = UNIQUE_W[S.unique] || 8;
-    let best = null, bd = Infinity;
-    for (const L of C.lots) {
-      if (!L.fc || L.place || L.used) continue;
-      for (const f of L.fc) {
-        if (f.st !== id || f.len < want) continue;
-        const d = Math.hypot(f.mid[0] - mid[0], f.mid[1] - mid[1]);
-        if (d < bd) { bd = d; best = { L, f }; }
-      }
-    }
-    if (!best) continue;
-    best.L.used = S.unique;
-    const f = best.f;
-    const u = { id, kind: S.unique, street: id, name: f.name, x: f.mid[0], z: f.mid[1], nx: f.n[0], nz: f.n[1], len: f.len, a: f.a, b: f.b, lot: best.L, h: best.L.h, p: f.p || 3, hw: f.hw, chunk: chunkOf(f.mid[0], f.mid[1]) };
-    uniques.push(u);
-    best.L.unique = u;
-    // (what stands out on the pavement is solid: the canopy's posts, the clock's pillar, the statue, the fountain, the water tower's legs)
-    const ox = (o) => [u.x + u.nx * o, u.z + u.nz * o];
-    if (u.kind === 'canopy') for (const s of [-1, 1]) { const [x, z] = ox(u.p - 0.6); C.posts.push({ x: x - u.nz * s * 2.6, z: z + u.nx * s * 2.6, r: 0.12, tag: 'post' }); }
-    if (u.kind === 'clock') { const [x, z] = ox(u.p - 0.8); C.posts.push({ x, z, r: 0.28, tag: 'post' }); u.post = [x, z]; }
-    // (a piece in the face's frame: along a, out o -> the world; a box there)
-    const tx = u.nz, tz = -u.nx;     // (the builders' local +x: rotateY(atan2(nx, nz)) of (1, 0, 0))
-    const lbox = (a, o, hx, hz) => C.walls.push({ cx: u.x + tx * a + u.nx * o, cz: u.z + tz * a + u.nz * o, hx, hz, angle: Math.atan2(-tz, tx), tag: 'stand', unique: u.kind });
-    if (u.kind === 'columns') { const w = Math.min(u.len - 2, 14); for (let k = 0; k < 6; k++) { const a = -w / 2 + (k + 0.5) * (w / 6); C.posts.push({ x: u.x + tx * a + u.nx * 1.1, z: u.z + tz * a + u.nz * 1.1, r: 0.42, tag: 'post' }); } }
-    if (u.kind === 'cellar') lbox(1.2, 0.63, 1.42, 0.64);
-    if (u.kind === 'poultry') lbox(-0.85, 0.35, 1.2, 0.3);
-    if (u.kind === 'yardgate') { const w = Math.min(u.len - 2, 10); for (const s of [-1, 1]) lbox(s * (w / 2 + 0.3), 0.3, 0.3, 0.3); }
-    if (u.kind === 'fountain') lbox(0, 0.3, 0.6, 0.3);
-    if (u.kind === 'barber') C.posts.push({ x: u.x + tx * 1.4 + u.nx * 0.35, z: u.z + tz * 1.4 + u.nz * 0.35, r: 0.16, tag: 'post' });
-  }
   // ---- where the items lie (world/items.js places and renews them) ---------------------------------
   // cash: at a dead end's end, in an alley behind its bins (a roll in the rain)
   for (const A of C.alleys) {
@@ -423,6 +433,39 @@ export function dress(C, ctx) {
     if (!name) continue;
     const x = u.x + u.nx * 0.6 + (-u.nz) * (u.kind === 'cellar' ? 2.6 : 1.4), z = u.z + u.nz * 0.6 + u.nx * (u.kind === 'cellar' ? 2.6 : 1.4);
     spots.push({ kind: 'matchbook', place: u.kind, name, x, y: PAVE + 0.15, z, yaw: 0.2, chunk: chunkOf(x, z) });
+  }
+  // ---- [O1b] after the critic (B1: 148 things in the city, the nearest roll of
+  // cash 177 m from the start): more of them, and some where a player begins
+  const nOf = (k) => spots.reduce((n, q) => n + (q.kind === k), 0);
+  const free = (x, z, gap = 7) => onPave(x, z, 0.12) && !inLot(x, z, 0.05) && clear(x, z, 0.12, 0.06) && !spots.some((q) => Math.abs(q.x - x) < gap && Math.abs(q.z - z) < gap && Math.hypot(q.x - x, q.z - z) < gap);
+  const lay = (kind, x, z, y = PAVE, gap = 7) => { if (!free(x, z, gap)) return false; spots.push({ kind, x, y, z, yaw: vhash(x, z, 4) * 6.28, chunk: chunkOf(x, z), more: true }); return true; };
+  // by a door's step, to the side (a man's things: a roll dropped, a box left, an empty)
+  const doorsAll = [];
+  for (const L of C.lots) if (L.fc && !L.place && L.district !== 'hill') for (const w of lotWindows(L)) if (w.kind === 'door' && !w.unique) doorsAll.push({ w, d: L.district });
+  for (const { w, d } of doorsAll) {
+    const h = vhash(w.x, w.z, 911), s2 = vhash(w.x, w.z, 912) < 0.5 ? -1 : 1;
+    const x = w.x + w.nx * 0.5 - w.nz * 0.85 * s2, z = w.z + w.nz * 0.5 + w.nx * 0.85 * s2;
+    const rough = d === 'tenements' || d === 'docks' || d === 'yards';
+    if (h < (rough ? 0.05 : 0.025) && nOf('bottle') < 180) lay('bottle', x, z);
+    else if (h > 0.986 && nOf('cash') < 120) lay('cash', x, z);
+    else if (rough && h > 0.97 && h <= 0.986 && nOf('rounds') < 64) lay('rounds', x, z);
+  }
+  // by the bins on the pavements (a roll in the gutter of the bins)
+  for (const r of dress) {
+    if (r.kind !== 'bins' || r.alley || vhash(r.x, r.z, 913) > 0.07 || nOf('cash') >= 120) continue;
+    const fx = r.face ? r.face[0] : 0, fz = r.face ? r.face[1] : 0;
+    lay('cash', r.x + fx * 0.8 - fz * 0.4, r.z + fz * 0.8 + fx * 0.4);
+  }
+  // round every start: a roll of cash, a bottle and a box of rounds within a minute's walk
+  // (by the doors 15 to 70 m from the car, the nearest first)
+  for (const st of Object.values(STARTS)) {
+    const near = doorsAll.map((q) => ({ ...q, e: Math.hypot(q.w.x - st.car.x, q.w.z - st.car.z) })).filter((q) => q.e > 14 && q.e < 70).sort((a, b) => a.e - b.e);
+    for (const [kind, at] of [['cash', 0.25], ['bottle', 0.45], ['rounds', 0.7]]) {
+      for (let k = Math.floor(at * near.length); k < near.length; k++) {
+        const w = near[k].w, s2 = vhash(w.x, w.z, 914) < 0.5 ? -1 : 1;
+        if (lay(kind, w.x + w.nx * 0.5 - w.nz * 0.85 * s2, w.z + w.nz * 0.5 + w.nx * 0.85 * s2, PAVE, 4)) break;
+      }
+    }
   }
   // a newspaper at every newsstand
   for (const p of C.props) {
@@ -494,6 +537,92 @@ function hillLane(C, { chunkOf, note, trees }) {
   }
   return { id: 'hillrd', kind: 'lane', street: 'hillrd', name: 'HILL RD', pts, hw, verge, walls, x: cx, z: (z0 + z1) / 2, nx: 0, nz: -1, len: 0, h: 0, p: 0, chunk: chunkOf(cx, (z0 + z1) / 2) };
 }
+
+// ---- the uniques: the one thing mid-block on each street ([O1b] chosen before
+// the faces are dressed). For each: the lot face nearest the street's middle,
+// long enough; its colliders; the lot's ground floor cleared under its SPAN
+// (no shop front, door or loading door there: so no board, pilaster, display,
+// awning, blade, glass or pavement thing of the lot's) and its own DOORS put
+// in their place (lotWindows' kind 'door' with unique set: they rattle locked
+// as every street door does - stream.js doorNear, city:door - and are drawn by
+// the unique, not by the facade or the dressing)
+function pickUniques(C, chunkOf) {
+  const uniques = [];
+  for (const [id, S] of Object.entries(STREETS)) {
+    if (!S.unique || S.unique === 'lane') continue;
+    // the street's segments, its middle by length
+    const parts = C.streets.filter((s) => s.id === id && !s.bridge);
+    if (!parts.length) continue;
+    let tot = 0; for (const s of parts) tot += Math.hypot(s.b[0] - s.a[0], s.b[1] - s.a[1]);
+    // the faces on this street: the one nearest the street's middle (by length), long enough
+    let acc = 0, mid = null;
+    for (const s of parts) { const l = Math.hypot(s.b[0] - s.a[0], s.b[1] - s.a[1]); if (acc + l >= tot / 2) { const t = (tot / 2 - acc) / l; mid = [s.a[0] + (s.b[0] - s.a[0]) * t, s.a[1] + (s.b[1] - s.a[1]) * t]; break; } acc += l; }
+    if (!mid) continue;
+    const want = UNIQUE_W[S.unique] || 8;
+    let best = null, bd = Infinity;
+    for (const L of C.lots) {
+      if (!L.fc || L.place || L.used) continue;
+      for (const f of L.fc) {
+        if (f.st !== id || f.len < want) continue;
+        const d = Math.hypot(f.mid[0] - mid[0], f.mid[1] - mid[1]);
+        if (d < bd) { bd = d; best = { L, f }; }
+      }
+    }
+    if (!best) continue;
+    best.L.used = S.unique;
+    const f = best.f;
+    const u = { id, kind: S.unique, street: id, name: f.name, x: f.mid[0], z: f.mid[1], nx: f.n[0], nz: f.n[1], len: f.len, a: f.a, b: f.b, lot: best.L, h: best.L.h, p: f.p || 3, hw: f.hw, chunk: chunkOf(f.mid[0], f.mid[1]) };
+    uniques.push(u);
+    best.L.unique = u;
+    // (what stands out on the pavement is solid: the canopy's posts, the clock's pillar, the statue, the fountain, the water tower's legs)
+    const ox = (o) => [u.x + u.nx * o, u.z + u.nz * o];
+    if (u.kind === 'canopy') for (const s of [-1, 1]) { const [x, z] = ox(u.p - 0.6); C.posts.push({ x: x - u.nz * s * 2.6, z: z + u.nx * s * 2.6, r: 0.12, tag: 'post' }); }
+    if (u.kind === 'clock') { const [x, z] = ox(u.p - 0.8); C.posts.push({ x, z, r: 0.28, tag: 'post' }); u.post = [x, z]; }
+    // (a piece in the face's frame: along a, out o -> the world; a box there)
+    const tx = u.nz, tz = -u.nx;     // (the builders' local +x: rotateY(atan2(nx, nz)) of (1, 0, 0))
+    const lbox = (a, o, hx, hz) => C.walls.push({ cx: u.x + tx * a + u.nx * o, cz: u.z + tz * a + u.nz * o, hx, hz, angle: Math.atan2(-tz, tx), tag: 'stand', unique: u.kind });
+    if (u.kind === 'columns') { const w = Math.min(u.len - 2, 14); for (let k = 0; k < 6; k++) { const a = -w / 2 + (k + 0.5) * (w / 6); C.posts.push({ x: u.x + tx * a + u.nx * 1.1, z: u.z + tz * a + u.nz * 1.1, r: 0.42, tag: 'post' }); } }
+    if (u.kind === 'cellar') lbox(1.2, 0.63, 1.42, 0.64);
+    if (u.kind === 'poultry') lbox(-0.85, 0.35, 1.2, 0.3);
+    if (u.kind === 'yardgate') { const w = Math.min(u.len - 2, 10); for (const s of [-1, 1]) lbox(s * (w / 2 + 0.3), 0.3, 0.3, 0.3); }
+    if (u.kind === 'fountain') lbox(0, 0.3, 0.6, 0.3);
+    if (u.kind === 'barber') C.posts.push({ x: u.x + tx * 1.4 + u.nx * 0.35, z: u.z + tz * 1.4 + u.nz * 0.35, r: 0.16, tag: 'post' });
+    // its span and its doors
+    const span = UNIQUE_SPAN[u.kind] ? UNIQUE_SPAN[u.kind](u) : null;
+    u.span = span;
+    const W = lotWindows(best.L);
+    if (span) {
+      for (let i = W.length - 1; i >= 0; i--) {
+        const w = W[i];
+        if (Math.abs(w.nx - u.nx) > 0.01 || Math.abs(w.nz - u.nz) > 0.01 || w.y > 4.6 || w.kind === 'win') continue;
+        const a = (w.x - u.x) * tx + (w.z - u.z) * tz, half = (w.kind === 'door' ? w.w + 0.4 : w.w) / 2;
+        if (a + half > span[0] - 0.3 && a - half < span[1] + 0.3) W.splice(i, 1);
+      }
+    }
+    for (const [a, w, h] of UNIQUE_DOORS[u.kind] ? UNIQUE_DOORS[u.kind](u) : []) {
+      W.push({ x: u.x + tx * a, y: h / 2 + 0.05, z: u.z + tz * a, nx: u.nx, nz: u.nz, w, h, lit: false, kind: 'door', unique: u.kind });
+    }
+  }
+  return uniques;
+}
+// the ground floor each unique takes (along its face, from its middle: [a0, a1] m)
+const UNIQUE_SPAN = {
+  canopy: () => [-2.9, 2.9], cinema: (u) => { const w = Math.min(8, u.len * 0.8); return [-w / 2 - 0.2, w / 2 + 0.2]; },
+  firehouse: () => [-3.9, 3.9], baths: (u) => { const w = Math.min(u.len, 12); return [-w / 2, w / 2]; },
+  church: (u) => { const w = Math.min(u.len - 1, 14); return [-w / 2, w / 2]; }, steeple: (u) => { const w = Math.min(u.len - 1, 14); return [-w / 2, w / 2]; },
+  ballroom: () => [-4.1, 4.1], columns: (u) => { const w = Math.min(u.len - 2, 14); return [-w / 2 - 0.4, w / 2 + 0.4]; },
+  mission: () => [-2.9, 2.9], seamen: () => [-3.9, 3.2], balls: () => [-1.4, 1.4], barber: () => [-2.5, 1.7],
+  cellar: () => [-2.4, 2.7], chinese: () => [-0.6, 3.6], steamvent: () => [-2.3, 2.3], poultry: () => [-2.1, 2.6],
+  gate: () => [-2.1, 2.1], bakery: () => [-1.7, 1.7], cycles: () => [-2.7, 2.2], fountain: () => [-1.3, 1.3],
+  yardgate: (u) => { const w = Math.min(u.len - 2, 10); return [-w / 2 - 0.7, w / 2 + 0.7]; },
+};
+// a unique's own doors: [[along, width, height]] (city/kits/uniques.js draws them)
+const UNIQUE_DOORS = {
+  canopy: () => [[0, 1.6, 2.6]], cinema: () => [[0, 2.4, 2.6]], firehouse: () => [[-1.75, 3.0, 3.8], [1.75, 3.0, 3.8]],
+  baths: () => [[0, 1.4, 2.6]], church: () => [[0, 2.0, 3.8]], steeple: () => [[0, 2.0, 3.8]], ballroom: () => [[0, 2.4, 2.6]],
+  columns: () => [[0, 2.2, 3.4]], mission: () => [[0, 1.4, 2.4]], seamen: () => [[0, 1.3, 2.4]], gate: () => [[0, 4.0, 3.6]],
+  yardgate: (u) => [[0, Math.min(u.len - 2, 10), 3.8]],
+};
 
 // the width of street face each unique wants
 const UNIQUE_W = { church: 16, steeple: 16, firehouse: 10, canopy: 8, cinema: 10, baths: 10, ballroom: 12, columns: 14, mission: 8, paper: 10, seamen: 10, yardgate: 12, watertower: 12, billboard: 12, gasboard: 10 };

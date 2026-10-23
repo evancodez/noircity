@@ -66,6 +66,23 @@ function sign(k, x, y, z, w, h, yaw = 0) {
 }
 // a row of bulbs (lit)
 const bulbs = (out, x0, x1, y, z, step = 0.45, r = 0.07, c = 3) => { for (let x = x0; x <= x1 + 1e-6; x += step) out.push([new THREE.SphereGeometry(r, 6, 4).translate(x, y, z), c]); };
+// [O1b] a unique's own door (registered as the face's door: world/dressing.js
+// UNIQUE_DOORS - E tries it, it rattles): its stone frame, its leaf or leaves
+// ('panel' dark wood; 'glazed' a lit pane in a dark leaf; 'pair' two glazed
+// leaves), a lit transom over it - centred at x, w wide, h tall, on the face
+function door(R, L, x, w, h, kind) {
+  for (const s of [-1, 1]) R.push([box(0.18, h + 0.3, 0.12).translate(x + s * (w / 2 + 0.09), (h + 0.3) / 2, 0.06), G.trim * 1.3]);
+  R.push([box(w + 0.56, 0.22, 0.16).translate(x, h + 0.41, 0.08), G.trim * 1.3]);
+  L.push([new THREE.PlaneGeometry(w - 0.1, 0.24).translate(x, h + 0.14, 0.03), 0.42]);
+  R.push([box(w, 0.04, 0.03).translate(x, h + 0.01, 0.05), G.ink]);
+  const leaves = kind === 'pair' ? [[-w / 4, w / 2 - 0.03], [w / 4, w / 2 - 0.03]] : [[0, w - 0.04]];
+  for (const [lx, lw] of leaves) {
+    R.push([box(lw, h - 0.02, 0.05).translate(x + lx, h / 2, 0.035), G.wood]);
+    if (kind === 'panel') for (const y of [h * 0.28, h * 0.7]) R.push([new THREE.PlaneGeometry(lw * 0.62, h * 0.3).translate(x + lx, y, 0.062), G.ink]);
+    else { L.push([new THREE.PlaneGeometry(lw * 0.66, h * 0.46).translate(x + lx, h * 0.62, 0.062), 0.34]); R.push([box(0.025, h * 0.46, 0.01).translate(x + lx, h * 0.62, 0.068), G.wood]); }
+    R.push([new THREE.SphereGeometry(0.04, 6, 4).translate(x + lx + (kind === 'pair' ? -Math.sign(lx) * lw * 0.38 : lw * 0.38), h * 0.45, 0.08), G.tin * 1.5]);
+  }
+}
 
 const B = {
   canopy(u, R, L, S) {
@@ -74,7 +91,7 @@ const B = {
     for (const s of [-1, 1]) R.push([cyl(0.06, 0.07, 3.6, 8).translate(s * 2.6, 1.8, d - 0.15), G.iron]);
     S.push(sign('canopy', 0, 3.6, d + 0.15, 5.4, 0.4 * 0 + 0.55));
     bulbs(L, -2.5, 2.5, 3.42, d * 0.5, 0.5, 0.06, 4);
-    R.push([box(1.6, 2.6, 0.08).translate(0, 1.3, 0.04), G.wood]);
+    door(R, L, 0, 1.6, 2.6, 'glazed');
   },
   paper(u, R, L, S) {
     S.push(sign('paper', 0, 5.4, 0.25, 7.2, 1.1));
@@ -93,6 +110,7 @@ const B = {
     // the blade over it
     R.push([box(0.9, 4.2, 0.18).translate(w / 2 - 0.6, y + 3.4, 0.9), G.iron]);
     L.push([box(0.7, 3.9, 0.2).translate(w / 2 - 0.6, y + 3.4, 0.9), AMBER.map((c) => c * 0.25)]);
+    door(R, L, 0, 2.4, 2.6, 'pair');
   },
   clock(u, R, L) {
     // a street clock on its pillar at the kerb (u.post)
@@ -104,22 +122,35 @@ const B = {
     R.push([new THREE.ConeGeometry(0.3, 0.5, 12).translate(0, 4.3, z), G.iron]);
   },
   firehouse(u, R, L, S) {
-    // the engine house: two tall doors in the registry's red, the company's board, a red lamp by them
+    // the engine house: two tall doors (each a pair of leaves in dark enamel,
+    // a row of lights near the top, pale rails), the pier between, the
+    // company's board; the red is a lamp over each door and the alarm box on
+    // its post ([O1b] after the critic, B2: the doors were a 47 % red wash at
+    // arm's length - the registry's red is a touch, never a wall)
     for (const s of [-1, 1]) {
-      R.push([box(3.0, 3.8, 0.1).translate(s * 1.75, 1.9, 0.06), RED]);
-      R.push([box(3.3, 0.2, 0.18).translate(s * 1.75, 3.9, 0.09), G.trim * 1.6]);
-      for (let k = 0; k < 3; k++) R.push([box(0.4, 0.5, 0.02).translate(s * 1.75 - 0.7 + k * 0.7, 2.9, 0.12), G.ink]);
+      const cx = s * 1.75;
+      R.push([box(3.0, 3.8, 0.1).translate(cx, 1.9, 0.06), G.wood]);
+      R.push([box(3.3, 0.2, 0.18).translate(cx, 3.9, 0.09), G.trim * 1.6]);
+      R.push([box(0.04, 3.7, 0.02).translate(cx, 1.88, 0.12), G.ink]);
+      for (const y of [0.7, 1.9]) R.push([box(2.9, 0.06, 0.02).translate(cx, y, 0.12), G.trim * 1.2]);
+      for (const q of [-1, 1]) R.push([box(0.06, 3.7, 0.02).translate(cx + q * 1.45, 1.88, 0.12), G.trim * 1.2]);
+      for (let k = 0; k < 4; k++) R.push([box(0.5, 0.45, 0.02).translate(cx - 1.08 + k * 0.72, 2.95, 0.12), G.paper * 0.9]);
+      L.push([new THREE.SphereGeometry(0.15, 12, 8).translate(cx, 4.35, 0.42), NEON_RED]);
+      R.push([box(0.04, 0.04, 0.34).translate(cx, 4.35, 0.22), G.iron]);
     }
     R.push([box(0.4, 4.0, 0.2).translate(0, 2.0, 0.1), G.trim * 1.6]);
-    S.push(sign('firehouse', 0, 4.6, 0.12, 5.0, 0.75));
-    L.push([new THREE.SphereGeometry(0.2, 12, 8).translate(3.6, 3.2, 0.35), NEON_RED]);
-    R.push([box(0.05, 0.05, 0.3).translate(3.6, 3.45, 0.18), G.iron]);
+    S.push(sign('firehouse', 0, 4.95, 0.12, 5.0, 0.6));
+    // the street's fire alarm: a red box on a post at the kerb's side of the doors
+    R.push([cyl(0.05, 0.06, 1.3, 8).translate(3.75, 0.65, 0.5), G.iron]);
+    R.push([box(0.2, 0.3, 0.13).translate(3.75, 1.42, 0.5), RED]);
+    R.push([box(0.12, 0.1, 0.01).translate(3.75, 1.45, 0.57), G.paper]);
   },
   baths(u, R, L, S, V) {
     R.push([new THREE.PlaneGeometry(Math.min(u.len, 12), 5.2).translate(0, 2.6, 0.03), G.tile * 1.3]);
     S.push(sign('baths', 0, 4.4, 0.06, 6.0, 0.9));
     for (const s of [-1, 1]) { L.push([new THREE.CircleGeometry(0.55, 20).translate(s * 3.2, 2.8, 0.05), 0.5]); R.push([new THREE.TorusGeometry(0.58, 0.07, 6, 20).translate(s * 3.2, 2.8, 0.06), G.trim]); }
     for (const s of [-1, 1]) { R.push([cyl(0.12, 0.12, 0.6, 8).rotateX(Math.PI / 2).translate(s * 1.2, 5.6, 0.3), G.iron]); V.push([s * 1.2, 5.6, 0.62]); }
+    door(R, L, 0, 1.4, 2.6, 'glazed');
   },
   church(u, R, L, S, V, steeple = false) {
     const H = u.h, w = Math.min(u.len - 1, 14);
@@ -153,9 +184,10 @@ const B = {
   ballroom(u, R, L, S) {
     R.push([box(8, 1.5, 0.3).translate(0, 5.8, 0.2), G.iron]);
     S.push(sign('ballroom', 0, 5.8, 0.38, 7.2, 1.1));
-    bulbs(L, -3.9, 3.9, 6.75, 0.3, 0.35, 0.06, 3);
-    bulbs(L, -3.9, 3.9, 4.85, 0.3, 0.35, 0.06, 3);
-    L.push([box(2.4, 2.6, 0.04).translate(0, 1.3, 0.04), 0.7]);
+    bulbs(L, -3.9, 3.9, 6.75, 0.3, 0.35, 0.06, AMBER);
+    bulbs(L, -3.9, 3.9, 4.85, 0.3, 0.35, 0.06, AMBER);
+    // ([O1b] after the critic, M4: the door was a flat white card) the dance hall's doors: a glazed pair, lit within
+    door(R, L, 0, 2.4, 2.6, 'pair');
   },
   columns(u, R, L, S) {
     const w = Math.min(u.len - 2, 14), n = 6, H = 7.2;
@@ -166,7 +198,7 @@ const B = {
     ped.computeVertexNormals();
     R.push([ped, G.trim * 1.2]);
     S.push(sign('columns', 0, H + 0.55, 1.72, w * 0.7, 0.7));
-    L.push([box(2.2, 3.4, 0.04).translate(0, 1.7, 0.04), 0.35]);
+    door(R, L, 0, 2.2, 3.4, 'pair');
   },
   mission(u, R, L, S) {
     R.push([box(5.6, 1.3, 0.2).translate(0, 4.6, 0.12), G.iron]);
@@ -175,7 +207,7 @@ const B = {
     S.push(sign('mission', 0, 4.6, 0.24, 5.2, 0.78));
     L.push([box(0.14, 1.6, 0.06).translate(0, 6.6, 0.15), NEON_RED]);
     L.push([box(0.9, 0.14, 0.06).translate(0, 6.9, 0.15), NEON_RED]);
-    L.push([box(1.4, 2.4, 0.04).translate(0, 1.2, 0.04), 0.5]);
+    door(R, L, 0, 1.4, 2.4, 'glazed');
   },
   seamen(u, R, L, S) {
     S.push(sign('seamen', 0, 4.4, 0.12, 6.0, 0.9));
@@ -183,8 +215,9 @@ const B = {
     R.push([new THREE.TorusGeometry(0.7, 0.09, 6, 16, Math.PI).rotateZ(Math.PI).translate(0, 6.2, 0.15), G.tin]);
     R.push([box(0.14, 1.6, 0.1).translate(0, 6.6, 0.15), G.tin]);
     R.push([box(0.9, 0.12, 0.1).translate(0, 7.2, 0.15), G.tin]);
-    L.push([box(0.3, 0.4, 0.3).translate(-3.6, 3.0, 0.5), 2.0]);
+    L.push([box(0.3, 0.4, 0.3).translate(-3.6, 3.0, 0.5), AMBER.map((c) => c * 0.6)]);
     R.push([box(0.05, 0.05, 0.5).translate(-3.6, 3.3, 0.25), G.iron]);
+    door(R, L, 0, 1.3, 2.4, 'panel');
   },
   balls(u, R, L, S) {
     // the pawnbroker's three gilt balls on their bracket, the board

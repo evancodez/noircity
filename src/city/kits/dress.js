@@ -118,11 +118,13 @@ const PIECES = {
   },
   bike(v) {
     // a bicycle leaning on the wall (local -z): two wheels, the frame, the bars
+    // ([O1b] after the critic, m1: a black bicycle on a black wall was not there
+    // at night - its frame enamel, pale or mid by the variant, its tyres grey)
     const P = [];
-    const tilt = 0.18;
-    for (const x of [-0.52, 0.52]) P.push([new THREE.TorusGeometry(0.33, 0.018, 4, 18).translate(x, 0.34, 0), G.ink]);
-    P.push([tube([V3(-0.52, 0.34, 0), V3(-0.12, 0.62, 0), V3(0.36, 0.64, 0), V3(0.52, 0.34, 0)], 0.022, 4, 10), G.ink]);
-    P.push([tube([V3(-0.12, 0.62, 0), V3(0.02, 0.34, 0), V3(0.52, 0.34, 0)], 0.02, 4, 8), G.ink]);
+    const tilt = 0.18, paint = v < 0.4 ? G.paper * 0.8 : v < 0.75 ? G.tin * 1.5 : G.paper * 0.45;
+    for (const x of [-0.52, 0.52]) P.push([new THREE.TorusGeometry(0.33, 0.022, 4, 18).translate(x, 0.34, 0), G.tin * 0.7]);
+    P.push([tube([V3(-0.52, 0.34, 0), V3(-0.12, 0.62, 0), V3(0.36, 0.64, 0), V3(0.52, 0.34, 0)], 0.026, 4, 10), paint]);
+    P.push([tube([V3(-0.12, 0.62, 0), V3(0.02, 0.34, 0), V3(0.52, 0.34, 0)], 0.024, 4, 8), paint]);
     P.push([box(0.22, 0.05, 0.08).translate(-0.16, 0.8, 0), G.ink]);
     P.push([box(0.05, 0.05, 0.46).translate(0.42, 0.88, 0), G.ink]);
     if (v > 0.6) P.push([box(0.32, 0.2, 0.26).translate(0.62, 0.72, 0), G.wood]);   // (a basket)
@@ -435,6 +437,8 @@ const onFace = (g, f, u, y) => {
   return g.rotateY(Math.atan2(f.n[0], f.n[1])).translate(f.a[0] + ux * u, y, f.a[1] + uz * u);
 };
 const onWin = (g, w, dz = 0) => g.rotateY(Math.atan2(w.nx, w.nz)).translate(w.x + w.nx * dz, w.y, w.z + w.nz * dz);
+// a display piece flattened into the window's own depth (local z 0.076 .. 0.096)
+const inGlass = (g) => { g.computeBoundingBox(); const b = g.boundingBox, d = Math.max(1e-3, b.max.z - b.min.z); return g.translate(0, 0, -b.min.z).scale(1, 1, Math.min(1, 0.02 / d)).translate(0, 0, 0.076); };
 
 export function faceRelief(L, out) {
   if (!L.fc || !L.fc.length) return;
@@ -458,7 +462,14 @@ export function faceRelief(L, out) {
     if (ch.mat === 'iron') {
       // cast-iron fronts: a pilaster at every window column, up the face
       const cols = [...new Set(mine.filter((w) => w.kind === 'win').map((w) => Math.round(((w.x - f.a[0]) * (f.b[0] - f.a[0]) + (w.z - f.a[1]) * (f.b[1] - f.a[1])) / f.len * 10) / 10))].sort((a, b) => a - b);
-      for (let i = 0; i + 1 < cols.length; i++) rel.push([onFace(box(0.2, H - 0.3, 0.12).translate(0, (H - 0.3) / 2, 0.06), f, (cols[i] + cols[i + 1]) / 2, 0), G.trim * 0.6]);
+      // ([O1b] after the critic, B2: never across a unique's front - the firehouse's doors)
+      const U = L.unique && Math.abs(L.unique.nx - f.n[0]) < 0.01 && Math.abs(L.unique.nz - f.n[1]) < 0.01 && L.unique.span ? L.unique : null;
+      const uMid = U ? ((U.x - f.a[0]) * (f.b[0] - f.a[0]) + (U.z - f.a[1]) * (f.b[1] - f.a[1])) / f.len : 0;
+      for (let i = 0; i + 1 < cols.length; i++) {
+        const c = (cols[i] + cols[i + 1]) / 2;
+        if (U && c - uMid > U.span[0] - 0.4 && c - uMid < U.span[1] + 0.4) continue;
+        rel.push([onFace(box(0.2, H - 0.3, 0.12).translate(0, (H - 0.3) / 2, 0.06), f, c, 0), G.trim * 0.6]);
+      }
     } else if ((ch.mat === 'stone' || ch.mat === 'pale') && L.kind === 'rect') {
       // quoins at the face's corners (an end where the lot turns onto another street): blocks long and short up the corner
       const F = L.faces || {};
@@ -474,7 +485,7 @@ export function faceRelief(L, out) {
     // transom over some, a number plate beside many
     const works = L.district === 'docks' || L.district === 'yards';
     for (const w of mine) {
-      if (w.kind !== 'door') continue;
+      if (w.kind !== 'door' || w.unique) continue;
       const h = vhash(w.x, w.z, 21), h2 = vhash(w.x, w.z, 22), h3 = vhash(w.x, w.z, 23);
       const paint = h2 < 0.4 ? G.ink * 1.5 : h2 < 0.8 ? G.wood : G.woodP * 1.4;
       const ww = w.w - 0.06, hh = w.h - 0.04, z0 = 0.03;
@@ -514,7 +525,11 @@ export function faceRelief(L, out) {
           } else brd.push(boardFace(uvT, w.x + w.nx * 0.2, y0 + room / 2, w.z + w.nz * 0.2, w.nx, w.nz, bw, room * 0.9));
         }
         // behind the lit glass, what the trade has (dark against the light)
-        if (w.lit && DISPLAY[w.trade]) for (const [g, c] of DISPLAY[w.trade](w.w, w.h, vhash(w.x, w.z, 13))) (Array.isArray(c) ? lit : rel).push([onWin(g.translate(0, 0, 0.12), w), c]);
+        // ([O1b] after the critic, M3: the display stood 0 to 0.25 m out of the wall
+        // on the pavement's side - the shelves, the counters, the cases: now pressed
+        // into the 3 cm between the lit pane (+0.07) and where O6's glass goes (+0.1),
+        // a silhouette against the light, never proud of the window)
+        if (w.lit && DISPLAY[w.trade]) for (const [g, c] of DISPLAY[w.trade](w.w, w.h, vhash(w.x, w.z, 13))) (Array.isArray(c) ? lit : rel).push([onWin(inGlass(g), w), c]);
       }
       // a barber's pole by his window, red and white, its glass top lit (the registry's red)
       if (w.trade === 'barber' && vhash(w.x, w.z, 16) < 0.7) {
