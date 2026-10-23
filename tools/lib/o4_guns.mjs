@@ -77,7 +77,7 @@ export default async function drive({ js, turn, keyDown, keyUp, mouse, shot, log
       x: C.pos.x, z: C.pos.z, ex: e.x, ey: e.y, ez: e.z, yaw: C.yaw, pitch: C.pitch, sens: C.sensitivity, mode: C.mode, ck: C.crouchK || 0, rk: C.riseK || 0, on: !!C.crouchOn,
       ammo: W ? W.ammo : 0, reloading: !!(W && W.reloading), gun: G.player.weapons.current, men, spots: F ? F.spots : [], open: F ? F.open : null, won: !!(F && F.won),
       flankId: K && K.flank && !K.flank.done && K.flank.ai.h.alive ? K.flank.ai.h.slot : null,
-      broke: K ? K.events.filter((q) => q.what === 'break' && G.time - q.t < 1.2 && q.at && Math.hypot(q.at[0] - e.x, q.at[1] - e.z) < 2.2).length : 0, wins: (G._c2won || []).length, fails: Object.fromEntries(BEATS.map((b) => [b, G.fails(b, '${SCENE}')])), why: G.lastFail ? G.lastFail.why : null, warnedFor: G.lastFail ? G.lastFail.warnedFor : null, nFails: G.counters.fails || 0, shots: G.counters.shots, hits: G.counters.hits, warn: G.hud.warnText || null };
+      broke: K ? K.events.filter((q) => q.what === 'break' && G.time - q.t < 1.2 && q.at && Math.hypot(q.at[0] - e.x, q.at[1] - e.z) < 2.2).length : 0, wins: (G._c2won || []).length, fails: Object.fromEntries(BEATS.map((b) => [b, G.fails(b, '${SCENE}')])), why: G.lastFail ? G.lastFail.why : null, warnedFor: G.lastFail ? G.lastFail.warnedFor : null, nFails: G.counters.fails || 0, shots: G.counters.shots, hits: G.counters.hits, warn: G.hud.warnText || null, aimSlot: N.pad && N.pad.aimed && N.pad.aimedHood ? N.pad.aimedHood.slot : null };   // [O7] (the pad's aim help holding a man)
   })()`;
   // the beat's cover spot hidden from the most men as they stand now (then the nearest)
   const BEST = `(() => { const G = N.game, K = G.guns, F = G.scenes.ctx && G.scenes.ctx.flags.c2, V = N.THREE.Vector3;
@@ -259,6 +259,8 @@ export default async function drive({ js, turn, keyDown, keyUp, mouse, shot, log
         const errOf = () => { const e0 = P.errM / Math.max(2, m.d); return [(Math.random() - 0.5) * 2 * e0, (Math.random() - 0.5) * 2 * e0]; };
         if (!noticed.has(m.id)) noticed.set(m.id, now + rr(P.react[0], P.react[1]));
         if (!target || target.id !== m.id) target = { id: m.id, err: errOf() };
+        // [O7] (by the pad, the aim help holding him takes the hand's error: the sight sits on his chest)
+        if (s.aimSlot != null && s.aimSlot === m.id) target.err = [0, 0];
         const yNow = yawTo(s, m.x, m.z);
         if (target.py != null && now > target.pt) { const w = wrap(yNow - target.py) / ((now - target.pt) / 1000); target.w = target.w == null ? w : target.w * 0.5 + w * 0.5; }
         target.py = yNow; target.pt = now;

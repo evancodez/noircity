@@ -229,7 +229,7 @@ export function step(ctx, R, T, dt) {   // [O6] exported
     if (g) { ctl.setMode(g === 'fists' ? 'walk' : 'gun', { crouch: false }); if (g === 'fists') G.player.hands.equip('empty'); G.setViewmodelVisible(g !== 'fists'); G.emit('city:arms', { gun: g }); }
     if (g && g !== 'fists') T.drawn = true;
   }
-  if (!T.drawn && T.foot > 4 && owns(G, 'revolver') && !T.warned && !(G.police && G.police.heat > 0)) { T.drawn = true; hud.teach('city_gun', '[WHEEL] the revolver', { until: () => gunOut(G) || R.inCar, secs: 4 }); }
+  if (!T.drawn && T.foot > 4 && owns(G, 'revolver') && !T.warned && !T.near && !hud.kit.teachCur && !(G.police && G.police.heat > 0)) { T.drawn = true; hud.teach('city_gun', '[WHEEL] the revolver', { until: () => gunOut(G) || R.inCar, secs: 4 }); }
   // E at the car: any door, looking at it, close by
   let near = false;
   if (car && car.solid !== false && !car.wrecked) {   // [O6] (a burnt wreck is no car to get into)

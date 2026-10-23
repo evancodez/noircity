@@ -1,5 +1,5 @@
 {
- "about": "[O4] The street shootout (four of the gang down the avenue, the cover the world's; tools/lib/o4_guns.mjs). The pad (?padfake=1): medium hands by the pad only (the keys and the mouse never used).",
+ "about": "[O4] The street shootout (four of the gang down the avenue, the cover the world's; tools/lib/o4_guns.mjs). The pad (?padfake=1): medium hands by the pad only (the keys and the mouse never used). [O7] medium hands (they were good: the pad's aim help is O7's, src/input/Pad.js PAD.aim).",
  "url": "/?mute=1&start=o4.street&padfake=1",
  "size": [
   1280,
@@ -40,14 +40,14 @@
   },
   {
    "drive": "tools/lib/o4_guns.mjs",
-   "profile": "good",
+   "profile": "medium",
    "beats": [
     "street"
    ],
    "tries": 3,
    "beatTimeout": 150,
    "check": "D.won === 1",
-   "label": "the street by the pad: good hands within three tries"
+   "label": "the street by the pad: medium hands within three tries"
   }
  ]
 }

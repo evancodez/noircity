@@ -41,8 +41,8 @@ export const PAD = {
   // raised with a man near the sight (within cone rad, or width m of his chest
   // at his distance) and a clear line - the sight eased toward his chest: snap
   // of the way on the raise, then rate of what is left a second (at most max
-  // rad/s); a stick pushed past stick is the hand's own and is never pulled
-  aim: { cone: 0.1, width: 0.9, snap: 0.6, rate: 4.5, max: 1.4, stick: 0.55, range: 40 },
+  // rad/s); a stick pushed past stick away from him is the hand's own: never pulled
+  aim: { cone: 0.12, width: 1.0, snap: 0.7, rate: 6, max: 2, stick: 0.55, range: 40 },
   move: 0.5, moveOff: 0.35,        // the left stick as W A S D: on past 0.5, off under 0.35
   trig: 0.3, trigOff: 0.18,        // a trigger as a button
   holdLow: 0.3,                    // circle held past this: a hold (let go, he stands)
@@ -426,7 +426,7 @@ class Pad {
     this.aimWas = aiming;
     this.aimed = null;
     const list = G.stage && G.stage.hoods ? G.stage.hoods.list : null;
-    if (!aiming || !list || Math.hypot(rx, ry) > A.stick) return null;
+    if (!aiming || !list) return null;
     const m = G.camera.matrixWorld.elements, ex = m[12], ey = m[13], ez = m[14], fx = -m[8], fy = -m[9], fz = -m[10];
     let best = null, bestAng = Infinity;
     for (const h of list) {
@@ -440,7 +440,7 @@ class Pad {
       best = { h, dx, dy, dz }; bestAng = ang;
     }
     if (!best) return null;
-    this.aimed = best.h.name || best.h.id || 'him';
+    this.aimed = best.h.name || best.h.id || 'him'; this.aimedHood = best.h;
     const wrapA = (a) => Math.atan2(Math.sin(a), Math.cos(a));
     const dyaw = wrapA(Math.atan2(-best.dx, -best.dz) - Math.atan2(-fx, -fz));
     const dp = Math.atan2(best.dy, Math.hypot(best.dx, best.dz)) - Math.asin(Math.max(-1, Math.min(1, fy)));
@@ -450,8 +450,10 @@ class Pad {
       const k = Math.min(1, A.rate * dt), cap = A.max * dt;
       ay = Math.max(-cap, Math.min(cap, dyaw * k)); ap = Math.max(-cap, Math.min(cap, dp * k));
     }
-    const s = C.sensitivity || 0.0021;
-    return [-ay / s, -ap / s];
+    const s = C.sensitivity || 0.0021, mx = -ay / s, my = -ap / s;
+    // (a stick pushed hard away from him is the hand's own: never pulled back)
+    if (Math.hypot(rx, ry) > A.stick && rx * mx + ry * my < 0) { this.aimed = null; return null; }
+    return [mx, my];
   }
   // a clear line for the eyes from (ax, ay, az) to (bx, by, bz)
   sees(ax, ay, az, bx, by, bz) {
