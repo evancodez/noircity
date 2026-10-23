@@ -82,12 +82,18 @@ function shirtFront(fig) {
 function lining(fig) {
   // the coat's tails thrown up over his back as he went down on his front: the lining's grey
   // (hips bone space: -z his back), from the waist over the seat to the thighs, flaring
-  const g = new THREE.CylinderGeometry(1, 1, 0.6, 14, 6, true, Math.PI - 0.95, 1.9);
+  const g = new THREE.CylinderGeometry(1, 1, 0.6, 18, 8, true, Math.PI - 0.95, 1.9);
   const P = g.getAttribute('position');
   for (let i = 0; i < P.count; i++) {
-    const x = P.getX(i), y = P.getY(i), z = P.getZ(i);
+    const x = P.getX(i), z = P.getZ(i);
+    let y = P.getY(i);
+    // (not a card: the tails' hems fall in two curves to the vent between them, the waist a
+    // shallow curve, the sides drawn in where the coat's edge folds over)
+    const a = Math.atan2(x, -z), u = Math.min(1, Math.abs(a) / 0.95);
+    const lo = (0.3 - y) / 0.6;
+    y += lo * lo * (0.13 * u * u - 0.06 + 0.2 * Math.max(0, 1 - Math.abs(a) / 0.14)) - (1 - lo) * (1 - lo) * 0.05 * u * u;
     const fl = 1 + 0.3 * Math.max(0, -y) / 0.3;
-    P.setXYZ(i, x * 0.23 * fl, y, z * 0.2 * fl - 0.07);
+    P.setXYZ(i, x * 0.23 * fl * (1 - 0.12 * u * u * u), y, z * 0.2 * fl - 0.07);
   }
   g.translate(0, -0.23, 0);
   g.computeVertexNormals();
