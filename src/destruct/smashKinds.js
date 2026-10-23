@@ -48,8 +48,8 @@ export const KINDS = {
   // bonnet and a door lie as a man's box and are heavy to a car (a bump that slows it, a
   // shove); a bumper and a wheel are kicked on. Their pool's shape is scaled to the car's part
   // (it.S); `paintable`: drawn in its car's paint (the instance's colour)
-  carbonnet: { part: true, paintable: true, h: 0.06, giveAt: 0, drag: 0.97, hurt: 0, how: 'part', shot: 'knock', cap: 10, mat: 'paint', surf: SURF.IRON, sound: 'o6b_flap', knock: 'clang', tags: ['part'], lie: true, lieDrag: 0.94, mu: 0.45, bounce: 0.15, scrub: 1.6 },
-  cardoor: { part: true, paintable: true, h: 0.62, giveAt: 0, drag: 0.97, hurt: 0, how: 'part', shot: 'knock', cap: 12, mat: 'paint', surf: SURF.IRON, sound: 'o6b_door', knock: 'clang', tags: ['part'], lie: true, lieDrag: 0.92, mu: 0.5, bounce: 0.18 },
+  carbonnet: { part: true, paintable: true, h: 0.06, giveAt: 0, drag: 0.97, hurt: 0, how: 'part', shot: 'knock', cap: 10, mat: 'paint', surf: SURF.IRON, sound: 'o6b_flap', knock: 'clang', tags: ['part'], lie: true, lieDrag: 0.94, mu: 0.45, bounce: 0.15, scrub: 1.6, topple: 'y' },   // [O6b] topple: on its face
+  cardoor: { part: true, paintable: true, h: 0.62, giveAt: 0, drag: 0.97, hurt: 0, how: 'part', shot: 'knock', cap: 12, mat: 'paint', surf: SURF.IRON, sound: 'o6b_door', knock: 'clang', tags: ['part'], lie: true, lieDrag: 0.92, mu: 0.5, bounce: 0.18, topple: 'z' },   // [O6b] topple: on its face, never its edge
   carbumper: { part: true, h: 0.17, giveAt: 0, drag: 0.98, hurt: 0, how: 'part', shot: 'knock', cap: 12, mat: 'chrome', surf: SURF.IRON, sound: 'clang', knock: 'clang', tags: ['part'], light: true, mu: 0.4, bounce: 0.25 },
   carwheel: { part: true, h: 0.75, giveAt: 0, drag: 0.98, hurt: 0, how: 'part', shot: 'knock', cap: 12, mat: 'rubber', surf: SURF.STONE, sound: 'o6b_wheel', knock: 'b9thunk', tags: ['part'], light: true, mu: 0.6, bounce: 0.35, topple: true },
   // (shop glass: a Glass pane; its rounds are the pane's own)

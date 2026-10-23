@@ -9,6 +9,7 @@ import { merge, roundedBox } from '../world/geom.js';
 import { compileAll } from '../stages/noircity/compile.js';
 import { mergeAll } from '../stages/noircity/parts/street.js';
 import { kindGeo, KINDS, awningGeo } from '../destruct/smashKinds.js';
+import { BURN } from '../destruct/CarDamage.js';
 import { step as roam } from './city.js';
 
 // [O6] The destruction set's test bed (lane O6, docs/briefs/O6_SMASH.md §3):
@@ -321,7 +322,36 @@ export const TEN = {
     ['sedan', -112.4, MID[3] + 0.17, Math.PI / 2, 'paintGrey'], ['coupe', -112.4, MID[4] - 0.1, Math.PI / 2],
     ['sedan', -127.6, MID[4] + 0.17, -Math.PI / 2, 'paintGrey'], ['sedan', -127.6, MID[2] + 0.17, -Math.PI / 2, 'paint'], ['sedan', -127.6, MID[1] + 0.17, -Math.PI / 2, 'paintGrey'],
   ],
+  // [O6b] (the cold play's blocker: only three cars to take, the second one
+  // already spent by my own rams - two spare coupes at the kerbs by the start,
+  // short of the ten: the next car when mine burns)
+  spares: [['coupe', -112.4, 49.35 - 0.1, Math.PI / 2, 'paintGrey'], ['coupe', -127.6, 49.35 + 0.1, -Math.PI / 2, 'paint']],
 };
+// [O6b] the cold play's m6: a burning fail threw two minutes of havoc away (the
+// retry put all ten back whole). What each car had is kept for the retry - its
+// engine's damage (short of the fire), its smashed corners, its doors and bonnet,
+// a wreck a wreck - all but the car I was in; a part that was off comes back loose
+function tenKeep(G) {
+  const R = G.city;
+  if (!R || !R.cars) return null;
+  return R.cars.map((c, i) => {
+    const D = c.smashD;
+    if (!D || (R.inCar && c === R.car) || i === 0) return null;
+    return { i, dmg: c.damage, wreck: !!c.wrecked || D.state === 'wreck', smashed: [...D.smashed], doors: D.doors.map((d) => (d ? 1 : 0)), hood: D.hood && (D.hood.pivot || D.hood.off) ? 1 : 0 };
+  }).filter(Boolean);
+}
+function tenRestore(ctx, keep) {
+  const G = ctx.game, R = G.city, CD = ctx.stage.smash.cars;
+  for (const k of keep) {
+    const v = R.cars[k.i], D = v && v.smashD;
+    if (!D) continue;
+    if (k.wreck) { v.damage = 4.3; D.state = 'wreck'; CD.toWreck(D); if (D.fire && D.fire.douse) D.fire.douse(); continue; }
+    for (const c of k.smashed) CD.smashCorner(D, c, v.pos);
+    k.doors.forEach((d, j) => { if (d) CD.hangDoor(D, j ? 1 : -1); });
+    if (k.hood) CD.popHood(D, 1);
+    v.damage = Math.min(k.dmg, BURN - 0.3);
+  }
+}
 function ten(ctx) {
   const G = ctx.game, R = G.city, Vh = G.vehicles;
   for (const [kind, x, z, yaw, paint] of TEN.cars) {
@@ -332,13 +362,25 @@ function ten(ctx) {
     if (kind === 'truck') v.seatOpts = { eye: V(1.55, 2.45, -0.45), fov: 64, pitch: -0.05 };
     R.cars.push(v);
   }
+  for (const [kind, x, z, yaw, paint] of TEN.spares) {
+    const v = Vh.spawn(kind, { at: V(x, 0, z), yaw, lights: false, paint });
+    v.driver = null; v.input.hold = 1; v.input.brake = 1; v.input.handbrake = 1; v.spare = true;
+    if (v.lamps && v.lamps.setOn) v.lamps.setOn(false);
+    R.cars.push(v);
+  }
   for (const v of [R.cars[1], R.cars[2]]) { v.input.hold = 1; v.input.brake = 1; v.input.handbrake = 1; }
+  // (down on foot in the havoc: back to the havoc, not the bed's start)
+  G.health.onDeath = () => G.fail({ why: (ctx.stage.smash && ctx.stage.smash.cars.why()) || 'Too close when she went.' });
+  const keep = G._tenKeep; G._tenKeep = null;
   // (look development and the frames: &ten=states puts the ten in the ten
   // states of a car's damage, &ten=wrecks sends every one up, a few at a time)
   const q = typeof location !== 'undefined' ? new URLSearchParams(location.search) : null;
   const mode = q && q.get('ten');
-  if (!mode) return;
-  const S = ctx.stage.smash, D = S.cars, cars = R.cars.filter((c) => c !== R.car);
+  if (!mode) {
+    if (keep && keep.length) { const t0 = G.time; const f = () => { if (G.time - t0 < 0.3) return; G.scripts.splice(G.scripts.indexOf(f), 1); tenRestore(ctx, keep); }; G.scripts.push(f); }
+    return;
+  }
+  const S = ctx.stage.smash, D = S.cars, cars = R.cars.filter((c) => c !== R.car && !c.spare);
   const t0 = G.time;
   const f = () => {
     if (G.time - t0 < 0.3) return;
@@ -438,18 +480,24 @@ export default defineScene({
         out: () => { if (G.scenes.current && G.scenes.current.id === 'smash') { G.player.weapons.equip('tommy'); G.setViewmodelVisible(true); } },
         in: (e) => { if (e.car && e.car.seatOpts && G.scenes.current && G.scenes.current.id === 'smash') G.setViewmodelVisible(false); },
         exit: (e) => { if (e && e.id === 'smash') G.health.onDeath = null; },
+        fail: (e) => { if (e.scene === 'smash' && e.from === 'ten' && e.to === 'ten') G._tenKeep = tenKeep(G); },   // [O6b]
       };
-      G.on('city:out', H.out); G.on('city:in', H.in); G.on('scene:exit', H.exit);
+      G.on('city:out', H.out); G.on('city:in', H.in); G.on('scene:exit', H.exit); G.on('fail', H.fail);
     }
     let dealT = 0;
     ctx.onStep((dt) => {
       if (G.failing || G.state !== 'playing') return;
       // on foot: the car I would get into is the nearest of the bed's (a wreck is none)
       if (!R.inCar) {
+        // ([O6b] the one I look at first, then the nearest: two cars side by side,
+        // E took the nearer one whichever I faced - the smoking one I had left)
         let best = null, bd = 6;
+        const f = G.camera.getWorldDirection(_v), fl = Math.max(1e-3, Math.hypot(f.x, f.z));
         for (const c of R.cars) {
           if (c.wrecked || !G.vehicles.list.includes(c) || c.kind === 'sedan') continue;   // [O6b] (every sedan of the bed is locked: no seat in it yet)
-          const d = Math.hypot(c.pos.x - ctx.controller.pos.x, c.pos.z - ctx.controller.pos.z) - c.spec.halfL * 0.6;
+          const dx = c.pos.x - ctx.controller.pos.x, dz = c.pos.z - ctx.controller.pos.z;
+          const look = (dx * f.x + dz * f.z) / (Math.max(0.05, Math.hypot(dx, dz)) * fl);
+          const d = Math.hypot(dx, dz) - c.spec.halfL * 0.6 - (look > 0.35 ? 4 : 0);
           if (d < bd) { bd = d; best = c; }
         }
         if (best && best !== R.car && !R.car.vel.lengthSq()) R.car = best;

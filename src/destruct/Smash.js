@@ -946,8 +946,12 @@ export class Smash {
     // [O6b] a wheel run down on its rim tips on over onto its side (never left
     // standing: settle would square it up on its edge) - a pull about its line
     // of roll, the way it already leans
+    // ([O6b] the cold play's M2: a door came to rest standing on its 4.5 cm
+    // edge like a tombstone - a thin plate tips over onto its face the same way:
+    // K.topple names the local axis that ends up vertical; true is a wheel's y)
     if (it.K.topple) {
-      _v.set(0, 1, 0).applyQuaternion(it.Q);
+      const ta = it.K.topple;
+      _v.set(ta === 'x' ? 1 : 0, ta === true || ta === 'y' ? 1 : 0, ta === 'z' ? 1 : 0).applyQuaternion(it.Q);
       if (Math.abs(_v.y) < 0.94) {
         _a.crossVectors(_v, UP);
         const l = _a.length();
@@ -1005,6 +1009,9 @@ export class Smash {
       const ax = [new THREE.Vector3(1, 0, 0), new THREE.Vector3(0, 1, 0), new THREE.Vector3(0, 0, 1)].map((a) => a.applyQuaternion(it.Q));
       let best = 0;
       for (let i = 1; i < 3; i++) if (Math.abs(ax[i].y) > Math.abs(ax[best].y)) best = i;
+      // ([O6b] a plate or a wheel: on its face, whatever it was squared from)
+      const ta = it.K.topple;
+      if (ta) best = ta === 'x' ? 0 : ta === 'z' ? 2 : 1;
       it.Q.premultiply(_q.setFromUnitVectors(ax[best].clone(), _v.set(0, Math.sign(ax[best].y) || 1, 0)));
       b.vert = best;
     }

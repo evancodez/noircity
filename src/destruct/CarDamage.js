@@ -87,8 +87,43 @@ let WRECK = null;
 const RIMS = new Map();
 function rimmed(mat) {
   if (!mat || !mat.isMaterial) return mat;
+  if (mat.userData && mat.userData.scarBase) mat = mat.userData.scarBase;   // (a scarred car's own paint: its base's twin)
   if (!RIMS.has(mat)) RIMS.set(mat, rimMaterial(mat, 0.08, false));
   return RIMS.get(mat);
+}
+
+// [O6b] the cold play's M3: damage black on black from the street. Where a car
+// is struck its paint is scraped to the metal: a few pale strokes along it,
+// round each dent (car frame: uDents xyz, w its reach), drawn by the car's own
+// twin of its paint (one a car: the program shared, its dents its own)
+const SCAR_N = 8;
+function scarMaterial(base, dents) {
+  const m = base.clone();
+  m.userData = { ...base.userData, scarBase: base };
+  const own = base.onBeforeCompile, ownKey = base.customProgramCacheKey ? base.customProgramCacheKey() : '';
+  m.onBeforeCompile = (sh, r) => {
+    if (own) own.call(m, sh, r);
+    sh.uniforms.uDents = { value: dents };
+    sh.vertexShader = sh.vertexShader.replace('#include <common>', '#include <common>\nvarying vec3 vScarP;')
+      .replace('#include <begin_vertex>', '#include <begin_vertex>\nvScarP = position;');
+    sh.fragmentShader = sh.fragmentShader.replace('#include <common>', `#include <common>
+      varying vec3 vScarP; uniform vec4 uDents[${SCAR_N}];`)
+      .replace('#include <opaque_fragment>', `{ float sc = 0.0;
+        for (int i = 0; i < ${SCAR_N}; i++) { vec4 d = uDents[i]; if (d.w > 0.0) sc = max(sc, 1.0 - length(vScarP - d.xyz) / d.w); }
+        if (sc > 0.0) {
+          // (scrapes: rows a little slanted, some bare, each its own width and
+          // reach from the dent's middle - a few strokes, never a pattern)
+          float u = vScarP.y * 9.0 + vScarP.x * 0.45 + sin(vScarP.x * 2.3 + vScarP.z * 1.7) * 0.25;
+          float row = floor(u), st = fract(u);
+          float h = fract(sin(row * 12.9898 + 78.233) * 43758.5453);
+          float ln = smoothstep(0.2, 0.28, st) * (1.0 - smoothstep(0.42 + 0.35 * h, 0.5 + 0.35 * h, st));
+          ln *= step(0.2, h) * smoothstep(h * 0.55, h * 0.55 + 0.08, sc);
+          outgoingLight = mix(outgoingLight, vec3(1.6), ln * 0.85);
+        } }
+      #include <opaque_fragment>`);
+  };
+  m.customProgramCacheKey = () => 'o6bScar' + ownKey;
+  return m;
 }
 
 export class CarDamage {
@@ -152,6 +187,11 @@ export class CarDamage {
       if (!M[k] || !M[k].isMaterial) continue;
       const m = new THREE.Mesh(tiny, rimmed(M[k])); m.frustumCulled = false; m.userData.noRay = true; m.userData.inkFigure = true; g.add(m);
     }
+    // [O6b] (and the scarred paint's)
+    for (const k of ['paint', 'paintGrey']) {
+      if (!M[k] || !M[k].isMaterial) continue;
+      const m = new THREE.Mesh(tiny, scarMaterial(M[k], Array.from({ length: SCAR_N }, () => new THREE.Vector4()))); m.frustumCulled = false; m.userData.noRay = true; m.userData.inkFigure = true; g.add(m);
+    }
     this.smash.group.add(g);
   }
   // what the fail says when the man goes down by what this set did (null: not ours)
@@ -173,7 +213,7 @@ export class CarDamage {
   attach(v) {
     const S = v.spec;
     const D = {
-      v, corners: { fl: 0, fr: 0, rl: 0, rr: 0 }, dents: { fl: 0, fr: 0, rl: 0, rr: 0 }, smashed: new Set(), lampOut: [false, false],
+      v, corners: { fl: 0, fr: 0, rl: 0, rr: 0 }, heavy: { fl: 0, fr: 0, rl: 0, rr: 0 }, dents: { fl: 0, fr: 0, rl: 0, rr: 0 }, smashed: new Set(), lampOut: [false, false],
       tyres: [0, 0, 0, 0], state: 'whole', acc: { steam: 0, smoke: 0, flame: 0, rim: 0, spark: 0 }, fuse: null, fire: null, door: null,
       geo0: new Map(), hidden: [], added: [], proxy: null, entry: null, sagP: 0, sagR: 0, crushP: 0, crushR: 0, knockT: 0, t: 0,
       // [the user's must: car damage, physical within reason] my own build of a skin mesh, the parts cut out of it
@@ -189,9 +229,17 @@ export class CarDamage {
     // ([O6b] its listeners kept, taken off again when it is dropped: a car put back and attached again
     // carried every earlier attach's too, and was knocked twice)
     const on = (name, fn) => { v.on(name, fn); (D.handlers || (D.handlers = [])).push([name, fn]); };
-    on('crash', (e) => { tramT(e); this.knock(D, e, 1); });
-    on('scrape', (e) => { tramT(e); this.knock(D, e, 0.35); });
-    on('bump', (e) => { if (e.by && e.by.kind === 'tram') this.tramSparks(e.point, e.k ?? 0.6, D); this.knock(D, { point: e.point, k: e.k ?? 0.3, n: e.n }, 0.8); });
+    // ([O6b] by role in a car-to-car blow: the car struck takes it as a bump
+    // (its closing speed, the softer bar), the rammer as a crash (its nose's
+    // own speed into it, the harder bar) - whichever of the two found the contact)
+    const asHit = (e) => this.knock(D, { point: e.point, k: Math.min(1, (e.impC ?? 3) / 10), n: e.n }, 0.8);
+    on('crash', (e) => { tramT(e); if (e.struck) asHit(e); else this.knock(D, e, 1); });
+    on('scrape', (e) => { tramT(e); if (e.struck) asHit(e); else this.knock(D, e, 0.35); });
+    on('bump', (e) => {
+      if (e.by && e.by.kind === 'tram') this.tramSparks(e.point, e.k ?? 0.6, D);
+      if (e.struck === false) { const k = Math.min(1, (e.impN || 0) / 16); if (e.impN > 5) this.knock(D, { point: e.point, k, n: e.n, car: true }, 1); else if (e.impN > 0.6) this.knock(D, { point: e.point, k: Math.max(0.15, e.impN / 9), n: e.n }, 0.35); return; }
+      this.knock(D, { point: e.point, k: e.k ?? 0.3, n: e.n }, 0.8);
+    });
     on('lean', (e) => { if (e.by && e.by.kind === 'tram') this.tramSparks(e.point, 0.3, D); });
     on('post', (e) => this.knock(D, { point: new THREE.Vector3(e.thing.x, 0.6, e.thing.z), k: e.k ?? 0.5 }, 0.35));
     // the tram's own contacts (a car it shoves: Car.contact on the car finds the tram as `o` and tells it 'bump')
@@ -211,6 +259,7 @@ export class CarDamage {
     if (v.car) delete v.car.own;
     for (const m of D.hidden) m.visible = true;
     for (const o of D.added) { if (o.parent) o.parent.remove(o); }
+    if (D.scar && D.scar.mesh) { const sm = D.scar.mesh.material; D.scar.mesh.material = D.scar.base; if (sm !== D.scar.base) sm.dispose(); D.scar = null; }   // [O6b] (its paint back)
     if (D.fire) { const i = this.stage.cars && this.stage.cars.fires ? this.stage.cars.fires.indexOf(D.fire) : -1; if (i >= 0) this.stage.cars.fires.splice(i, 1); D.fire.dispose(); }
     if (D.proxy) { this.stage.removeSolid(D.proxy); if (D.proxy.parent) D.proxy.parent.remove(D.proxy); }
     v.sagPitch = 0; v.sagRoll = 0; v.pull = 0; v.power = 1;
@@ -293,10 +342,37 @@ export class CarDamage {
     if (c[0] === 'f' && D.corners[c] >= 0.35) this.lampOut(D, l.z >= 0 ? 1 : 0);
     // a side hit at the door: it hangs open
     const Pd = this.partsOf(v).door;
-    if (Pd && l.x > Pd.x0 - 0.7 && l.x < Pd.x1 + 0.4 && Math.abs(l.z) > S.halfW * 0.6 && k >= 0.3 && !D.doors[dk]) { this.hangDoor(D, l.z >= 0 ? 1 : -1); if (D.doors[dk]) D.doors[dk].t0 = D.t; }
+    if (Pd && l.x > Pd.x0 - 0.7 && l.x < Pd.x1 + 0.4 && Math.abs(l.z) > S.halfW * 0.6 && k >= 0.3 && !D.doors[dk]) {
+      this.hangDoor(D, l.z >= 0 ? 1 : -1);
+      if (D.doors[dk]) D.doors[dk].t0 = D.t;
+      // ([O6b] the cold play: no door came off at 20-40 km/h. A T-bone - a car
+      // struck square in the door at 30 km/h and more - hangs it a breath and
+      // tears it off: it lies in the road)
+      if (D.doors[dk] && D.doors[dk].pivot && k >= 0.62) { const Dd2 = D.doors[dk]; Dd2.w = 9; Dd2.strain = 0.75; }
+    }
     // a hard blow at any speed (C3b's wreck smash): the corner down, the glass, the lamp
-    if ((k >= 0.55 && w >= 1) || D.corners[c] >= 0.75) this.smashCorner(D, c, e.point);
+    // ([O6b] the cold play's M4: a pile of nudges - a column scraped, a car leant
+    // on at 15 km/h - smashed the rammer's corner (its bonnet up, its bumper
+    // dragging, its wheel wobbling) by the corner's sum. Now one blow does it
+    // (a crash into a wall or post at 32 km/h; into a car, the rammer's nose at
+    // 46 - the car hit is the soft one: struck at 25), or real blows adding up:
+    // only a knock of 0.4 or more counts toward it)
+    if (k >= 0.4) D.heavy[c] = (D.heavy[c] || 0) + add;
+    const one = w >= 1 ? (e.car ? 0.8 : 0.55) : w >= 0.8 ? 0.56 : Infinity;
+    if (k >= one || D.heavy[c] >= 1.2) this.smashCorner(D, c, e.point);
     if (G0 && w >= 1 && k > 0.3) G0.sfx.play('c3_dent', e.point, { k }, { ref: 5 });
+  }
+  // [O6b] the paint scraped round a dent (p, car frame): the car's skin takes its scarred twin
+  scar(D, p, reach) {
+    const M = D.v.model && D.v.model.meshes;
+    const m = M && (M.paint || M.body);
+    if (!m || !m.isMesh || !m.material || !m.material.isMaterial || m.position.lengthSq() > 1e-6) return;
+    if (!D.scar) D.scar = { dents: Array.from({ length: SCAR_N }, () => new THREE.Vector4(0, 0, 0, 0)), n: 0, mesh: null, base: null };
+    const S = D.scar;
+    if (!S.mesh) { S.mesh = m; S.base = m.material; m.material = scarMaterial(m.material, S.dents); }
+    // (a dent near an earlier one widens it; else the next slot, the oldest overwritten)
+    for (const d of S.dents) if (d.w > 0 && Math.hypot(d.x - p.x, d.y - p.y, d.z - p.z) < 0.3) { d.w = Math.min(1.1, Math.max(d.w, reach) + 0.08); return; }
+    S.dents[S.n++ % SCAR_N].set(p.x, p.y, p.z, Math.min(1.1, reach));
   }
   toLocalDir(v, d) { _q.setFromAxisAngle(_w.set(0, 1, 0), -v.yaw); return d.clone().applyQuaternion(_q); }
 
@@ -304,6 +380,7 @@ export class CarDamage {
   dent(D, p, n, r, depth) {
     const v = D.v, M = v.model && v.model.meshes ? v.model.meshes : null;
     if (!M) return;
+    this.scar(D, p, r * 1.1 + 0.25);
     for (const key of SKIN) {
       const m = M[key];
       if (!m || !m.isMesh || !m.geometry || m.position.lengthSq() > 1e-6 || m.quaternion.w < 0.9999) continue;
@@ -1012,7 +1089,11 @@ export class CarDamage {
       // what stands near goes over; what lies is thrown
       sm.blast(at, 7, 1);
       // (the cars near take it too)
-      for (const o of this.list) if (o !== D && o.state !== 'wreck' && Math.hypot(o.v.pos.x - v.pos.x, o.v.pos.z - v.pos.z) < 6.5) o.v.hurt(1.4, at);
+      // ([O6b] the cold play's blocker: 1.4 within 6.5 m never reached the next
+      // car along a kerb, 11.5 m off. Now 2.0 at 8 m, 1.6 at 11.5, nothing past
+      // 14: a burning car takes a damaged neighbour with it - the chain - and a
+      // whole one is left steaming)
+      for (const o of this.list) { if (o === D || o.state === 'wreck') continue; const d = Math.hypot(o.v.pos.x - v.pos.x, o.v.pos.z - v.pos.z); if (d < 14) o.v.hurt(3.0 - 0.12 * d, at); }
       const mine = G0.vehicles && G0.vehicles.player === v && G0.city && G0.city.inCar;
       if (Math.hypot(G0.eye.x - at.x, G0.eye.z - at.z) < 8) this.hurtBy = { by: 'blast', t: G0.time };
       G0.onCarExploded({ pos: v.pos.clone(), id: -1, smash: true }, at);

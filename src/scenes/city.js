@@ -194,7 +194,7 @@ export function step(ctx, R, T, dt) {   // [O6] exported
     // the pedals, taught in the seat before the first W (the critic's m2:
     // it came 2.5 s after W, and S was never taught); up until the car has
     // gone a few lengths, or its time
-    if (T.drive > 0.4 && !T.driveCard) T.driveCard = hud.teach('city_drive', '[W] drive  [S] brake  [SPACE] handbrake', { until: () => T.dist > 30, secs: 5 });
+    if (T.drive > 0.4 && !T.driveCard) { const c0 = car.stats.crashes + car.stats.scrapes; T.driveCard = hud.teach('city_drive', '[W] drive  [S] brake  [SPACE] handbrake', { until: () => T.dist > 9 || car.stats.crashes + car.stats.scrapes > c0, secs: 5 }); }   // ([O6b] the cold play's m7: gone once she moves off - never up into the first ram)
     if (T.drive > 25 && !T.taughtMap && !T.warned) { T.taughtMap = true; hud.teach('city_map', '[M] the map'); }
     // E, moving: the brakes go on and I get out as it stops (W again
     // changes my mind) - E acts on the press (the critic's m3)
@@ -225,7 +225,9 @@ export function step(ctx, R, T, dt) {   // [O6] exported
       const f = G.camera.getWorldDirection(new THREE.Vector3());
       const toX = car.pos.x - G.eye.x, toZ = car.pos.z - G.eye.z, tl = Math.max(0.05, Math.hypot(toX, toZ));
       const fl = Math.max(1e-3, Math.hypot(f.x, f.z));
-      near = (toX * f.x + toZ * f.z) / (tl * fl) > 0.35 || db < 0.5;
+      // ([O6b] the cold play's m5: looking straight up at a hung lamp the prompt
+      // stayed - the look is the eye's, up and down too: not above the roof line)
+      near = ((toX * f.x + toZ * f.z) / (tl * fl) > 0.35 && f.y < 0.62) || db < 0.5;
     }
   }
   // E at the car: the teach card the first time (the key drawn; it goes when

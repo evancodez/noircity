@@ -449,24 +449,45 @@ export class Car {
     const imp = -vn;
     const point = new THREE.Vector3(px, 0.6, pz);
     const what = o ? o.kind || 'car' : thing.tag || 'wall';
+    // ([O6b] the cold play's blocker: car to car the blow was split against
+    // the rammer - he took 0.14 a step, the car he hit 0.1, by the speed along
+    // the contact's normal only, so a diagonal into a parked car's door did
+    // nothing and the rammer burned first. Now the car hit is the soft one: it
+    // takes the closing speed (a side blow counts), by the masses (a lorry
+    // breaks a sedan; a coupe into a lorry is hurt), and the rammer's own nose
+    // takes about a third of it. A wall, a wreck, a column: as before)
+    // (the rammer is the one closing the faster: a parked car stepped first
+    // into the car that is shoving it is still the one struck)
+    const car2 = !!(o && o.spec && !fixed);
+    // (the closing speed counts up to twice the square part: a diagonal into a
+    // door is a blow; a long scrape along a side, frame after frame, is not)
+    const impC = car2 ? Math.max(imp, Math.min(0.8 * Math.hypot(rvx, rvz), 2.2 * imp)) : imp;
+    const iRam = !car2 || -(v1x * nx + v1z * nz) >= v2x * nx + v2z * nz;
     const f = this.fwd, headOn = Math.abs(f.x * nx + f.z * nz);
     if (imp > 5 && headOn > 0.7) {
       this.hardT = 0; this.shake = 1; this.pitchV -= 2.2 * Math.sign(-(f.x * nx + f.z * nz) || 1);
       this.stats.crashes++;
-      this.emit('crash', { point, k: Math.min(1, imp / 16), what, thing: o || thing, n: new THREE.Vector3(nx, 0, nz) });
+      this.emit('crash', { point, k: Math.min(1, imp / 16), what, thing: o || thing, n: new THREE.Vector3(nx, 0, nz), car: car2, struck: car2 && !iRam, impC });   // [O6b] car: into a car; struck: I was the one hit
     } else if (imp > 0.6) {
       this.shake = Math.min(1, this.shake + 0.25 + imp * 0.06);
       this.stats.scrapes++;
-      this.emit('scrape', { point, k: Math.min(1, Math.max(0.15, imp / 9)), what, thing: o || thing, n: new THREE.Vector3(nx, 0, nz) });
+      this.emit('scrape', { point, k: Math.min(1, Math.max(0.15, imp / 9)), what, thing: o || thing, n: new THREE.Vector3(nx, 0, nz), car: car2, struck: car2 && !iRam, impC });
     }
     this.stats.maxImpact = Math.max(this.stats.maxImpact, imp);
     if (imp > 3) { const L = this.stats.log || (this.stats.log = []); if (L.length < 40) L.push([+px.toFixed(1), +pz.toFixed(1), +imp.toFixed(1), what]); }
     // the damage: a glance costs nothing, a square blow a step or two
     // (a square blow at 45 km/h is about a step; a glance a fraction of one)
-    if (imp > 5) this.hurt((imp - 5) * (headOn > 0.6 ? 0.14 : 0.08), point);
+    const ram = iRam ? this : o, hit = iRam ? o : this;
+    const mr = car2 ? Math.sqrt(clamp(ram.spec.mass / hit.spec.mass, 0.4, 2.5)) : 1;
+    if (!car2) { if (imp > 5) this.hurt((imp - 5) * (headOn > 0.6 ? 0.14 : 0.08), point); }
+    else {
+      const hOn = Math.abs(ram.fwd.x * nx + ram.fwd.z * nz);
+      if (imp > 5) ram.hurt((imp - 5) * (hOn > 0.6 ? 0.07 : 0.05) / mr, point);
+      if (impC > 3 && hit.hurt) hit.hurt((impC - 3) * 0.24 * mr, point);
+    }
     if (o) {
-      o.emit && o.emit('bump', { by: this, k: Math.min(1, imp / 10), imp, point, n: new THREE.Vector3(-nx, 0, -nz) });
-      if (o.hurt && imp > 5) o.hurt((imp - 5) * 0.1, point);
+      o.emit && o.emit('bump', { by: this, k: Math.min(1, impC / 10), imp: impC, impN: imp, point, n: new THREE.Vector3(-nx, 0, -nz), struck: iRam });
+      if (!car2 && o.hurt && imp > 5) o.hurt((imp - 5) * 0.1, point);
     }
   }
 
