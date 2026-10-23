@@ -29,16 +29,18 @@
    "hands": "bad"
   },
   {
-   "eval": "({ fight: G.brawl.active, stats: G.wheels.hijack.stats })"
-  },
-  {
    "fight": {
-    "timeout": 120000
-   },
-   "when": "G.brawl.active"
+    "timeout": 90000,
+    "expect": "F.downs >= 0",
+    "label": "the fight, if he had me out (the play tool's first-timer)"
+   }
   },
   {
    "wait": 3000
+  },
+  {
+   "expect": "!G.brawl.active && (G.city.inCar || N.controller.mode === 'walk') && !G.failing",
+   "label": "bad: through it (the car mine, or his and me on the pavement) - never stuck"
   },
   {
    "eval": "({ inCar: G.city.inCar, car: G.city.car && G.city.car.kind, stats: G.wheels.hijack.stats })"

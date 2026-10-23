@@ -198,7 +198,7 @@ async function pull(P, { js, sleep, log, shot }, H) {
   let inT = null;
   for (let i = 0; i < 60; i++) { const s = await P.state(); if (s.inCar) { inT = i * 50; break; } await sleep(50); }
   if (inT == null) return { err: 'not in', prompt: pr, look, me: await P.state() };
-  if (shot) await shot('pulled');
+  // (no frame taken here: a screenshot stalls the page a second - the hands would be that late)
   const t0 = Date.now();
   const R = { hands: H.name, who: c.who, prompt: pr, inMs: inT };
   // the answer: drive off (good, medium: at once; bad: late) - or sit (opts.sit: the fight)
@@ -261,12 +261,20 @@ async function fare(P, { js, sleep, log, shot }, H) {
     log(`fare ${k}: a hail at (${F.x.toFixed(0)}, ${F.z.toFixed(0)}) for ${F.dest.name}`);
     await sleep(H.react);
     // to him: along the road to a stop by him
-    const r1 = await P.route([F.x, F.z], 2.6);
-    await P.driveAlong(r1 || [], { timeout: 40000, speed: 8, traffic: true, until: async (s) => Math.hypot(s.car.x - F.x, s.car.z - F.z) < 5.5 });
-    await P.stop();
+    // (to him: along the roads - again if a car or a light held me short of him)
+    for (let tries = 0; tries < 4; tries++) {
+      const s0 = await P.state();
+      if (Math.hypot(s0.car.x - F.x, s0.car.z - F.z) < 8) break;
+      const r1 = await P.route([F.x, F.z], 2.6);
+      const rr = await P.driveAlong(r1 || [], { timeout: 40000, speed: 8, traffic: true, until: async (s) => Math.hypot(s.car.x - F.x, s.car.z - F.z) < 5.5 });
+      await P.stop();
+      const s1 = await P.state();
+      log(`  to the fare: ${rr.end}, ${r1 ? r1.length : 0} points, ${Math.hypot(s1.car.x - F.x, s1.car.z - F.z).toFixed(1)} m off him`);
+      if ((await js('G.wheels.fares.state')) !== 'hail') break;
+    }
     if (shot && k === 0) await shot('hail');
-    // (good hands say it: E; the others wait the two seconds)
-    if (H.name === 'good') await P.tap('KeyE');
+    // (good hands say it: E, when the line says so; the others wait the two seconds)
+    if (H.name === 'good') { for (let i = 0; i < 20; i++) { const s = await P.state(); if (s.prompt === 'E  take him') { await P.tap('KeyE'); break; } if ((await js('G.wheels.fares.state')) !== 'hail') break; await sleep(100); } }
     let inside = false;
     for (let i = 0; i < 80; i++) { const s = await js('G.wheels.fares.state'); if (s === 'in') { inside = true; break; } await sleep(100); }
     if (!inside) { out.push({ err: 'not in', state: await js('G.wheels.fares.state'), dbg: await js(`(() => { const f = G.wheels.fares, c = G.city.car, F = f.fare; return { taxi: !!f.taxi, inCar: G.city.inCar, kind: c && c.kind, v: c && +c.speedAbs.toFixed(2), d: F && F.c ? +Math.hypot(c.pos.x - F.c.fig.pos.x, c.pos.z - F.c.fig.pos.z).toFixed(1) : null, stood: F && F.stoodT, t: F && F.t }; })()`) }); continue; }
@@ -299,6 +307,8 @@ async function race(P, { js, sleep, log, shot }, H) {
   const T0 = Date.now();
   const site = await js(`(() => { const R = G.wheels.race; return { line: [R.path.pts[0].x, R.path.pts[0].z], s0: R.s0, lap: R.lap, len: R.len, cars: R.cars.length, state: R.state }; })()`);
   log(`race: ${JSON.stringify(site)}`);
+  // (the corner set: its cars and its flag there)
+  for (let i = 0; i < 100; i++) { if ((await js('G.wheels.race.cars.length')) > 0) break; await sleep(100); }
   // to the line: creep up to it and stop
   for (let i = 0; i < 200; i++) {
     const s = await P.state();

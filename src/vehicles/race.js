@@ -21,7 +21,7 @@ import { money, pay, spend } from '../traffic/seams.js';
 const LOOP = ['-4500,2400', '-4500,1500', '-4500,600', '-4500,-300', '-3700,-300', '-3700,600', '-3700,1500', '-3700,2400'];
 const LAPS = 3, BET = 10, BOX = { x0: -470, x1: -350, z0: -55, z1: 265 };
 const START = { x: -450, z: 222 };      // the line: on the Straight 18 m north of Water St
-export const RACE = { paces: [0.96, 0.91, 0.86], kinds: ['coupe', 'saloon', 'coupe'], LAPS, BET };
+export const RACE = { paces: [0.93, 0.89, 0.85], kinds: ['coupe', 'saloon', 'coupe'], LAPS, BET };
 const _v = new THREE.Vector3();
 
 export class Race {
