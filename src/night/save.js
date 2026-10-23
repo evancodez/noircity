@@ -46,7 +46,7 @@ export class NightSave {
   step() {
     const N = this.night, G = N.game, R = G.city;
     if (!N.inCity || G.time - this.lastAuto < AUTOSAVE.period || G.time - (this.started ?? G.time) < AUTOSAVE.period) return;
-    if (!R || R.swim || N.el.riding || N.el.fadeT != null || N.holding || (R.places && (R.places.inside || R.places.seat || R.places.level)) || (R.inCar && R.wantOut)) return;
+    if (!R || (R.swim && (R.swim.on || R.swim.climbing)) || N.el.riding || N.el.fadeT != null || N.holding || (R.places && (R.places.inside || R.places.seat || R.places.level)) || (R.inCar && R.wantOut)) return;
     if (this.blocked()) { this.lastAuto = G.time - AUTOSAVE.period + 10; return; }   // (tried again in ten seconds)
     this.auto('quiet');
   }
