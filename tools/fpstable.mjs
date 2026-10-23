@@ -30,7 +30,7 @@ const MOMENTS = [
 if (process.env.MOMENTS === 'city') MOMENTS.splice(0, MOMENTS.length,
   ['city: Grand Ave from the car, the el, the neon', 'scene=city&beat=roam&t=3&anim=1&car=-112.2,40,1.5708'],
   ['city: the el\'s corner over Houston St', 'scene=city&beat=roam&t=3&anim=1&pose=-80,160,1.326,0.12'],
-  ['city: Broadway to the clock tower', 'scene=city&beat=roam&t=3&anim=1&pose=-75,15,-0.785,0.08'],
+  ['city: Broadway to the clock tower', 'scene=city&beat=roam&t=3&anim=1&pose=-150,90,-0.72,0.3'],
   ['city: the Bowery under the station', 'scene=city&beat=roam&t=3&anim=1&pose=158,20,0,0.15'],
   ['city: the quay, the river\'s lights', 'scene=city&beat=roam&t=3&anim=1&at=docks&pose=100,446,1.5708,0.06'],
 );

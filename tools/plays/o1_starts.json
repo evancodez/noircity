@@ -14,14 +14,22 @@
    "every": 4000
   },
   {
+   "name": "the title's key line in the city: M is the map",
+   "expect": "document.querySelector('#title .keys').textContent.includes('M map') && !document.querySelector('#title .keys').textContent.includes('M sound')"
+  },
+  {
    "until": "G.scenes.current && G.scenes.current.id === 'city' && G.scenes.fadeK < 0.05",
    "timeout": 20000
   },
   {
-   "wait": 1200
+   "wait": 900
   },
   {
    "shot": "grand_a"
+  },
+  {
+   "expect": "G.hud.kit.teachCur && G.hud.kit.teachCur.id === 'city_in' && !G.hud.promptShown",
+   "label": "one card at the start: the teach card, its key drawn"
   },
   {
    "eval": "JSON.stringify({at:new URLSearchParams(location.search).get('at'), teach:G.hud.kit.teachCur?G.hud.kit.teachCur.id:null, prompt:G.hud.promptShown, warn:G.hud.kit.sceneWarn, p:[G.controller.pos.x,G.controller.pos.z].map(v=>+v.toFixed(1)), car:[G.city.car.pos.x,G.city.car.pos.z].map(v=>+v.toFixed(1))})"
@@ -59,10 +67,14 @@
    "timeout": 20000
   },
   {
-   "wait": 1200
+   "wait": 900
   },
   {
    "shot": "docks_a"
+  },
+  {
+   "expect": "G.hud.kit.teachCur && G.hud.kit.teachCur.id === 'city_in' && !G.hud.promptShown",
+   "label": "one card at the start: the teach card, its key drawn"
   },
   {
    "eval": "JSON.stringify({at:new URLSearchParams(location.search).get('at'), teach:G.hud.kit.teachCur?G.hud.kit.teachCur.id:null, prompt:G.hud.promptShown, warn:G.hud.kit.sceneWarn, p:[G.controller.pos.x,G.controller.pos.z].map(v=>+v.toFixed(1)), car:[G.city.car.pos.x,G.city.car.pos.z].map(v=>+v.toFixed(1))})"
@@ -100,10 +112,14 @@
    "timeout": 20000
   },
   {
-   "wait": 1200
+   "wait": 900
   },
   {
    "shot": "tenements_a"
+  },
+  {
+   "expect": "G.hud.kit.teachCur && G.hud.kit.teachCur.id === 'city_in' && !G.hud.promptShown",
+   "label": "one card at the start: the teach card, its key drawn"
   },
   {
    "eval": "JSON.stringify({at:new URLSearchParams(location.search).get('at'), teach:G.hud.kit.teachCur?G.hud.kit.teachCur.id:null, prompt:G.hud.promptShown, warn:G.hud.kit.sceneWarn, p:[G.controller.pos.x,G.controller.pos.z].map(v=>+v.toFixed(1)), car:[G.city.car.pos.x,G.city.car.pos.z].map(v=>+v.toFixed(1))})"
@@ -141,10 +157,14 @@
    "timeout": 20000
   },
   {
-   "wait": 1200
+   "wait": 900
   },
   {
    "shot": "yards_a"
+  },
+  {
+   "expect": "G.hud.kit.teachCur && G.hud.kit.teachCur.id === 'city_in' && !G.hud.promptShown",
+   "label": "one card at the start: the teach card, its key drawn"
   },
   {
    "eval": "JSON.stringify({at:new URLSearchParams(location.search).get('at'), teach:G.hud.kit.teachCur?G.hud.kit.teachCur.id:null, prompt:G.hud.promptShown, warn:G.hud.kit.sceneWarn, p:[G.controller.pos.x,G.controller.pos.z].map(v=>+v.toFixed(1)), car:[G.city.car.pos.x,G.city.car.pos.z].map(v=>+v.toFixed(1))})"
@@ -182,10 +202,14 @@
    "timeout": 20000
   },
   {
-   "wait": 1200
+   "wait": 900
   },
   {
    "shot": "hill_a"
+  },
+  {
+   "expect": "G.hud.kit.teachCur && G.hud.kit.teachCur.id === 'city_in' && !G.hud.promptShown",
+   "label": "one card at the start: the teach card, its key drawn"
   },
   {
    "eval": "JSON.stringify({at:new URLSearchParams(location.search).get('at'), teach:G.hud.kit.teachCur?G.hud.kit.teachCur.id:null, prompt:G.hud.promptShown, warn:G.hud.kit.sceneWarn, p:[G.controller.pos.x,G.controller.pos.z].map(v=>+v.toFixed(1)), car:[G.city.car.pos.x,G.city.car.pos.z].map(v=>+v.toFixed(1))})"
@@ -223,10 +247,14 @@
    "timeout": 20000
   },
   {
-   "wait": 1200
+   "wait": 900
   },
   {
    "shot": "clock_a"
+  },
+  {
+   "expect": "G.hud.kit.teachCur && G.hud.kit.teachCur.id === 'city_in' && !G.hud.promptShown",
+   "label": "one card at the start: the teach card, its key drawn"
   },
   {
    "eval": "JSON.stringify({at:new URLSearchParams(location.search).get('at'), teach:G.hud.kit.teachCur?G.hud.kit.teachCur.id:null, prompt:G.hud.promptShown, warn:G.hud.kit.sceneWarn, p:[G.controller.pos.x,G.controller.pos.z].map(v=>+v.toFixed(1)), car:[G.city.car.pos.x,G.city.car.pos.z].map(v=>+v.toFixed(1))})"
@@ -264,10 +292,14 @@
    "timeout": 20000
   },
   {
-   "wait": 1200
+   "wait": 900
   },
   {
    "shot": "bridge_a"
+  },
+  {
+   "expect": "G.hud.kit.teachCur && G.hud.kit.teachCur.id === 'city_in' && !G.hud.promptShown",
+   "label": "one card at the start: the teach card, its key drawn"
   },
   {
    "eval": "JSON.stringify({at:new URLSearchParams(location.search).get('at'), teach:G.hud.kit.teachCur?G.hud.kit.teachCur.id:null, prompt:G.hud.promptShown, warn:G.hud.kit.sceneWarn, p:[G.controller.pos.x,G.controller.pos.z].map(v=>+v.toFixed(1)), car:[G.city.car.pos.x,G.city.car.pos.z].map(v=>+v.toFixed(1))})"
@@ -305,10 +337,14 @@
    "timeout": 20000
   },
   {
-   "wait": 1200
+   "wait": 900
   },
   {
    "shot": "gasworks_a"
+  },
+  {
+   "expect": "G.hud.kit.teachCur && G.hud.kit.teachCur.id === 'city_in' && !G.hud.promptShown",
+   "label": "one card at the start: the teach card, its key drawn"
   },
   {
    "eval": "JSON.stringify({at:new URLSearchParams(location.search).get('at'), teach:G.hud.kit.teachCur?G.hud.kit.teachCur.id:null, prompt:G.hud.promptShown, warn:G.hud.kit.sceneWarn, p:[G.controller.pos.x,G.controller.pos.z].map(v=>+v.toFixed(1)), car:[G.city.car.pos.x,G.city.car.pos.z].map(v=>+v.toFixed(1))})"
@@ -346,10 +382,14 @@
    "timeout": 20000
   },
   {
-   "wait": 1200
+   "wait": 900
   },
   {
    "shot": "park_a"
+  },
+  {
+   "expect": "G.hud.kit.teachCur && G.hud.kit.teachCur.id === 'city_in' && !G.hud.promptShown",
+   "label": "one card at the start: the teach card, its key drawn"
   },
   {
    "eval": "JSON.stringify({at:new URLSearchParams(location.search).get('at'), teach:G.hud.kit.teachCur?G.hud.kit.teachCur.id:null, prompt:G.hud.promptShown, warn:G.hud.kit.sceneWarn, p:[G.controller.pos.x,G.controller.pos.z].map(v=>+v.toFixed(1)), car:[G.city.car.pos.x,G.city.car.pos.z].map(v=>+v.toFixed(1))})"
