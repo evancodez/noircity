@@ -212,11 +212,13 @@ async function ram(api) {
   out.mine.push(await js(SHOWS('G.city.car')));
   await brakeAndBack(api, 0);
   await sleep(opts.settle ?? 5000);
-  out.parts = await js(`(() => { const S = G.stage.smash, st = G.stage; const P = S.out.filter((i) => i.part); const R = { n: P.length, kinds: {}, live: 0, floating: [], inWall: [] };
+  out.parts = await js(`(() => { const S = G.stage.smash, st = G.stage; const P = S.out.filter((i) => i.part); const R = { n: P.length, kinds: {}, live: 0, floating: [], inWall: [], against: [] };
     for (const it of P) { R.kinds[it.kind] = (R.kinds[it.kind] || 0) + 1; if (it.state === 'live') R.live++;
       const b = it.body; if (!b) continue; let low = Infinity; for (const sx of [-1, 1]) for (const sy of [-1, 1]) for (const sz of [-1, 1]) { const r = new N.THREE.Vector3(sx * b.e.x, sy * b.e.y, sz * b.e.z).applyQuaternion(it.Q); const y = b.p.y + r.y - st.surfaceY(b.p.x + r.x, b.p.z + r.z); if (y < low) low = y; }
       if (it.state === 'rest' && low > 0.06) R.floating.push([it.kind, +low.toFixed(2)]);
-      const c = new N.THREE.Vector3(b.p.x, 0, b.p.z); st.colliders.resolve(c, 0.05, it.lie || null, false); if (Math.hypot(c.x - b.p.x, c.z - b.p.z) > 0.04) R.inWall.push([it.kind, +b.p.x.toFixed(1), +b.p.z.toFixed(1)]); }
+      // (inside a wall: its middle well inside a building's or a fence's box - O6's test; against an el column's
+      // plinth, a kerb's post or another thing's box it may lie, that is touching, listed apart)
+      for (const o of st.colliders.near(b.p.x, b.p.z, 1)) { if (o.gone || o === it.lie) continue; if (o.r != null) { if (Math.hypot(b.p.x - o.x, b.p.z - o.z) < o.r - 0.1) R.against.push([it.kind, o.tag]); continue; } const dx = b.p.x - o.cx, dz = b.p.z - o.cz; const lx = dx * o.c - dz * o.s, lz = dx * o.s + dz * o.c; if (Math.abs(lx) < o.hx - 0.1 && Math.abs(lz) < o.hz - 0.1) (o.tag === 'wall' ? R.inWall : R.against).push([it.kind, o.tag, +b.p.x.toFixed(1), +b.p.z.toFixed(1)]); } }
     return R; })()`);
   out.cars = [];
   for (let i = 0; i < cars.length; i++) out.cars.push(await js(SHOWS(`G.city.cars[${i}]`)));
