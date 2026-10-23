@@ -1,7 +1,7 @@
 // Saves (docs/story/CONTRACTS.md §12.4; wave C: docs/story/seams/Z.md §7;
 // [O7] NOIR CITY's open world: docs/seams/NIGHT.md §3).
 //   save.write(opts)  the open world's save, v3 -> localStorage['noir.save']:
-//       { v: 3, scene: 'city', beat, at (ms), flags, inventory, money, heat,
+//       { v: 3, scene: 'city', beat, at (ms), flags, inventory, money, ammo, heat,
 //         matchbooks, garage, found, bounty, city: { pos: { x, z, yaw },
 //         car: { kind, x, z, yaw, damage } | null, inCar, hour } }
 //     written by the night (src/night/save.js): the hotel's bed (O5 calls
@@ -36,6 +36,7 @@ export class Save {
   // [O7] the open world's own state: a new night's
   fresh() {
     this._money = 0;
+    this.ammo = {};   // [O4] the coat's rounds (src/combat/money.js)
     this.heat = 0;
     this.matchbooks = [];
     this.garage = [];
@@ -65,7 +66,7 @@ export class Save {
     if (!city) return null;
     const data = {
       v: SAVE_VERSION, scene, beat: 'roam', at: Date.now(), flags: plain(this.flags), inventory: [...this.inventory],
-      money: this.money, heat: this.heat | 0, matchbooks: [...this.matchbooks], garage: this.garage.map((c) => ({ ...c })),
+      money: this.money, ammo: { ...(this.ammo || {}) }, heat: this.heat | 0, matchbooks: [...this.matchbooks], garage: this.garage.map((c) => ({ ...c })),
       found: { ...this.found }, bounty: this.bounty ? JSON.parse(JSON.stringify(this.bounty)) : null, city,
     };
     try { localStorage.setItem(KEY, JSON.stringify(data)); } catch (e) { return null; }
@@ -91,6 +92,7 @@ export class Save {
     this.fresh();
     if (!d) return;
     this._money = Math.max(0, d.money | 0);
+    this.ammo = d.ammo && typeof d.ammo === 'object' ? { ...d.ammo } : {};
     this.heat = d.heat | 0;
     this.matchbooks = Array.isArray(d.matchbooks) ? [...d.matchbooks] : [];
     this.garage = Array.isArray(d.garage) ? d.garage.map((c) => ({ ...c })) : [];

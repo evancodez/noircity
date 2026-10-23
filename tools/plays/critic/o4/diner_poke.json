@@ -1,0 +1,177 @@
+{
+ "about": "[O4 critic] the diner brawl poked at: a bottle, a chair, the walls",
+ "url": "/?mute=1&o4stay=1&start=o4.diner",
+ "size": [
+  1280,
+  800
+ ],
+ "out": "shots/critic/diner",
+ "steps": [
+  {
+   "until": "G.state === 'title' && !!document.querySelector('#title .opt[data-k=begin]')",
+   "timeout": 60000
+  },
+  {
+   "wait": 1000
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]",
+   "taken": "G.scenes.current && G.scenes.current.id === 'o4'",
+   "retries": 4
+  },
+  {
+   "until": "G.scenes.beat === 'diner' && G.crowd.active && !G.failing",
+   "timeout": 30000
+  },
+  {
+   "eval": "(G.o4stay = true)"
+  },
+  {
+   "eval": "({t:+G.time.toFixed(1),me:[+G.eye.x.toFixed(2),+G.eye.z.toFixed(2)],hp:Math.round(G.health.hp),prompt:G.hud.promptShown||'',obj:G.hud.objectiveText||'',warn:G.hud.warnText||'',teach:(G.hud.kit&&G.hud.kit.teachCur)?G.hud.kit.teachCur.text:'',holding:!!(G.crowd.me&&G.crowd.me.holding),men:(G.crowd.men||[]).map(m=>[m.kind,m.state,+m.c.pos.x.toFixed(2),+m.c.pos.z.toFixed(2),Math.round(m.hp)]),act:G.crowd.active,res:G.crowd.result})"
+  },
+  {
+   "eval": "G.crowd.cfg.things.map(t=>{const v=new N.THREE.Vector3();t.object.getWorldPosition(v);return [t.kind,+v.x.toFixed(2),+v.z.toFixed(2)]})"
+  },
+  {
+   "shot": "d0_start"
+  },
+  {
+   "name": "face bottle",
+   "look": "(()=>{const C=N.controller,e=G.eye;const P=(()=>{const t=G.crowd.cfg.things.find(t=>t.kind==='bottle');const v=new N.THREE.Vector3();t.object.getWorldPosition(v);return [v.x,v.z]})();const look=Math.atan2(-Math.sin(C.yaw),-Math.cos(C.yaw));const a=Math.atan2(P[0]-e.x,P[1]-e.z);const r=Math.atan2(Math.sin(a-look),Math.cos(a-look));return [Math.round(-r/C.sensitivity),0]})()",
+   "steps": 6
+  },
+  {
+   "wait": 300
+  },
+  {
+   "eval": "({t:+G.time.toFixed(1),me:[+G.eye.x.toFixed(2),+G.eye.z.toFixed(2)],hp:Math.round(G.health.hp),prompt:G.hud.promptShown||'',obj:G.hud.objectiveText||'',warn:G.hud.warnText||'',teach:(G.hud.kit&&G.hud.kit.teachCur)?G.hud.kit.teachCur.text:'',holding:!!(G.crowd.me&&G.crowd.me.holding),men:(G.crowd.men||[]).map(m=>[m.kind,m.state,+m.c.pos.x.toFixed(2),+m.c.pos.z.toFixed(2),Math.round(m.hp)]),act:G.crowd.active,res:G.crowd.result})"
+  },
+  {
+   "name": "walk to bottle",
+   "walk": "[(()=>{const t=G.crowd.cfg.things.find(t=>t.kind==='bottle');const v=new N.THREE.Vector3();t.object.getWorldPosition(v);return [v.x,v.z]})()]",
+   "timeout": 6000,
+   "into": true
+  },
+  {
+   "eval": "({t:+G.time.toFixed(1),me:[+G.eye.x.toFixed(2),+G.eye.z.toFixed(2)],hp:Math.round(G.health.hp),prompt:G.hud.promptShown||'',obj:G.hud.objectiveText||'',warn:G.hud.warnText||'',teach:(G.hud.kit&&G.hud.kit.teachCur)?G.hud.kit.teachCur.text:'',holding:!!(G.crowd.me&&G.crowd.me.holding),men:(G.crowd.men||[]).map(m=>[m.kind,m.state,+m.c.pos.x.toFixed(2),+m.c.pos.z.toFixed(2),Math.round(m.hp)]),act:G.crowd.active,res:G.crowd.result})"
+  },
+  {
+   "look": "(()=>{const C=N.controller,e=G.eye;const P=(()=>{const t=G.crowd.cfg.things.find(t=>t.kind==='bottle');const v=new N.THREE.Vector3();t.object.getWorldPosition(v);return [v.x,v.z]})();const look=Math.atan2(-Math.sin(C.yaw),-Math.cos(C.yaw));const a=Math.atan2(P[0]-e.x,P[1]-e.z);const r=Math.atan2(Math.sin(a-look),Math.cos(a-look));return [Math.round(-r/C.sensitivity),0]})()",
+   "steps": 4
+  },
+  {
+   "look": [
+    0,
+    120
+   ],
+   "steps": 4
+  },
+  {
+   "wait": 300
+  },
+  {
+   "eval": "({t:+G.time.toFixed(1),me:[+G.eye.x.toFixed(2),+G.eye.z.toFixed(2)],hp:Math.round(G.health.hp),prompt:G.hud.promptShown||'',obj:G.hud.objectiveText||'',warn:G.hud.warnText||'',teach:(G.hud.kit&&G.hud.kit.teachCur)?G.hud.kit.teachCur.text:'',holding:!!(G.crowd.me&&G.crowd.me.holding),men:(G.crowd.men||[]).map(m=>[m.kind,m.state,+m.c.pos.x.toFixed(2),+m.c.pos.z.toFixed(2),Math.round(m.hp)]),act:G.crowd.active,res:G.crowd.result})"
+  },
+  {
+   "shot": "d1_bottle"
+  },
+  {
+   "key": "KeyE"
+  },
+  {
+   "wait": 400
+  },
+  {
+   "eval": "({t:+G.time.toFixed(1),me:[+G.eye.x.toFixed(2),+G.eye.z.toFixed(2)],hp:Math.round(G.health.hp),prompt:G.hud.promptShown||'',obj:G.hud.objectiveText||'',warn:G.hud.warnText||'',teach:(G.hud.kit&&G.hud.kit.teachCur)?G.hud.kit.teachCur.text:'',holding:!!(G.crowd.me&&G.crowd.me.holding),men:(G.crowd.men||[]).map(m=>[m.kind,m.state,+m.c.pos.x.toFixed(2),+m.c.pos.z.toFixed(2),Math.round(m.hp)]),act:G.crowd.active,res:G.crowd.result})"
+  },
+  {
+   "name": "face nearest man",
+   "look": "(()=>{const C=N.controller,e=G.eye;const m=G.crowd.men.filter(m=>m.hp>0).sort((a,b)=>Math.hypot(a.c.pos.x-e.x,a.c.pos.z-e.z)-Math.hypot(b.c.pos.x-e.x,b.c.pos.z-e.z))[0];const look=Math.atan2(-Math.sin(C.yaw),-Math.cos(C.yaw));const a=Math.atan2(m.c.pos.x-e.x,m.c.pos.z-e.z);const r=Math.atan2(Math.sin(a-look),Math.cos(a-look));return [Math.round(-r/C.sensitivity),-120]})()",
+   "steps": 4
+  },
+  {
+   "mouse": "click",
+   "button": "left",
+   "x": 640,
+   "y": 400
+  },
+  {
+   "wait": 250
+  },
+  {
+   "shot": "d2_swing"
+  },
+  {
+   "wait": 600
+  },
+  {
+   "eval": "({t:+G.time.toFixed(1),me:[+G.eye.x.toFixed(2),+G.eye.z.toFixed(2)],hp:Math.round(G.health.hp),prompt:G.hud.promptShown||'',obj:G.hud.objectiveText||'',warn:G.hud.warnText||'',teach:(G.hud.kit&&G.hud.kit.teachCur)?G.hud.kit.teachCur.text:'',holding:!!(G.crowd.me&&G.crowd.me.holding),men:(G.crowd.men||[]).map(m=>[m.kind,m.state,+m.c.pos.x.toFixed(2),+m.c.pos.z.toFixed(2),Math.round(m.hp)]),act:G.crowd.active,res:G.crowd.result})"
+  },
+  {
+   "mouse": "click",
+   "button": "left",
+   "x": 640,
+   "y": 400
+  },
+  {
+   "wait": 800
+  },
+  {
+   "eval": "({t:+G.time.toFixed(1),me:[+G.eye.x.toFixed(2),+G.eye.z.toFixed(2)],hp:Math.round(G.health.hp),prompt:G.hud.promptShown||'',obj:G.hud.objectiveText||'',warn:G.hud.warnText||'',teach:(G.hud.kit&&G.hud.kit.teachCur)?G.hud.kit.teachCur.text:'',holding:!!(G.crowd.me&&G.crowd.me.holding),men:(G.crowd.men||[]).map(m=>[m.kind,m.state,+m.c.pos.x.toFixed(2),+m.c.pos.z.toFixed(2),Math.round(m.hp)]),act:G.crowd.active,res:G.crowd.result})"
+  },
+  {
+   "name": "walk to a chair",
+   "walk": "[(()=>{const t=G.crowd.cfg.things.find(t=>t.kind==='chair');const v=new N.THREE.Vector3();t.object.getWorldPosition(v);return [v.x,v.z]})()]",
+   "into": true,
+   "timeout": 6000
+  },
+  {
+   "eval": "({t:+G.time.toFixed(1),me:[+G.eye.x.toFixed(2),+G.eye.z.toFixed(2)],hp:Math.round(G.health.hp),prompt:G.hud.promptShown||'',obj:G.hud.objectiveText||'',warn:G.hud.warnText||'',teach:(G.hud.kit&&G.hud.kit.teachCur)?G.hud.kit.teachCur.text:'',holding:!!(G.crowd.me&&G.crowd.me.holding),men:(G.crowd.men||[]).map(m=>[m.kind,m.state,+m.c.pos.x.toFixed(2),+m.c.pos.z.toFixed(2),Math.round(m.hp)]),act:G.crowd.active,res:G.crowd.result})"
+  },
+  {
+   "shot": "d3_chair"
+  },
+  {
+   "key": "KeyE"
+  },
+  {
+   "wait": 500
+  },
+  {
+   "eval": "({t:+G.time.toFixed(1),me:[+G.eye.x.toFixed(2),+G.eye.z.toFixed(2)],hp:Math.round(G.health.hp),prompt:G.hud.promptShown||'',obj:G.hud.objectiveText||'',warn:G.hud.warnText||'',teach:(G.hud.kit&&G.hud.kit.teachCur)?G.hud.kit.teachCur.text:'',holding:!!(G.crowd.me&&G.crowd.me.holding),men:(G.crowd.men||[]).map(m=>[m.kind,m.state,+m.c.pos.x.toFixed(2),+m.c.pos.z.toFixed(2),Math.round(m.hp)]),act:G.crowd.active,res:G.crowd.result})"
+  },
+  {
+   "name": "walk the room north",
+   "walk": "[[G.eye.x, G.eye.z+8]]",
+   "into": true,
+   "timeout": 5000
+  },
+  {
+   "eval": "({t:+G.time.toFixed(1),me:[+G.eye.x.toFixed(2),+G.eye.z.toFixed(2)],hp:Math.round(G.health.hp),prompt:G.hud.promptShown||'',obj:G.hud.objectiveText||'',warn:G.hud.warnText||'',teach:(G.hud.kit&&G.hud.kit.teachCur)?G.hud.kit.teachCur.text:'',holding:!!(G.crowd.me&&G.crowd.me.holding),men:(G.crowd.men||[]).map(m=>[m.kind,m.state,+m.c.pos.x.toFixed(2),+m.c.pos.z.toFixed(2),Math.round(m.hp)]),act:G.crowd.active,res:G.crowd.result})"
+  },
+  {
+   "name": "walk the room west",
+   "walk": "[[G.eye.x-8, G.eye.z]]",
+   "into": true,
+   "timeout": 5000
+  },
+  {
+   "eval": "({t:+G.time.toFixed(1),me:[+G.eye.x.toFixed(2),+G.eye.z.toFixed(2)],hp:Math.round(G.health.hp),prompt:G.hud.promptShown||'',obj:G.hud.objectiveText||'',warn:G.hud.warnText||'',teach:(G.hud.kit&&G.hud.kit.teachCur)?G.hud.kit.teachCur.text:'',holding:!!(G.crowd.me&&G.crowd.me.holding),men:(G.crowd.men||[]).map(m=>[m.kind,m.state,+m.c.pos.x.toFixed(2),+m.c.pos.z.toFixed(2),Math.round(m.hp)]),act:G.crowd.active,res:G.crowd.result})"
+  },
+  {
+   "shot": "d4_west"
+  },
+  {
+   "name": "walk the room south",
+   "walk": "[[G.eye.x, G.eye.z-10]]",
+   "into": true,
+   "timeout": 6000
+  },
+  {
+   "eval": "({t:+G.time.toFixed(1),me:[+G.eye.x.toFixed(2),+G.eye.z.toFixed(2)],hp:Math.round(G.health.hp),prompt:G.hud.promptShown||'',obj:G.hud.objectiveText||'',warn:G.hud.warnText||'',teach:(G.hud.kit&&G.hud.kit.teachCur)?G.hud.kit.teachCur.text:'',holding:!!(G.crowd.me&&G.crowd.me.holding),men:(G.crowd.men||[]).map(m=>[m.kind,m.state,+m.c.pos.x.toFixed(2),+m.c.pos.z.toFixed(2),Math.round(m.hp)]),act:G.crowd.active,res:G.crowd.result})"
+  },
+  {
+   "shot": "d5_south"
+  }
+ ]
+}

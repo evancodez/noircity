@@ -1,0 +1,15 @@
+{
+ "about": "[O6] The set in the city (the lane's task: the city's own furniture, not the bed's): O1's free roam at Grand Ave (?start=city), E into the coupe, up Grand Ave's east kerb through the city's lamps, hydrant and tram stop's sign, east along Centre St, and south down Hester St's west pavement through the Tenements' market's ten stalls, by the keys (tools/lib/o6_smash.mjs drive on its 'city' path). Every one goes over (the lamps lean and die), the car is never inside a standing thing, nothing floats, everything rests. node tools/play.mjs tools/plays/o6_city.json",
+ "url": "/?mute=1&start=city",
+ "size": [1280, 800],
+ "out": "shots/o6/city",
+ "steps": [
+  { "wait": 1500 },
+  { "clickOn": "#title .opt[data-k=begin]", "taken": "G.state !== 'title'", "retries": 5, "every": 4000 },
+  { "until": "G.scenes.current && G.scenes.current.id === 'city' && G.scenes.fadeK < 0.05", "timeout": 30000 },
+  { "wait": 1200 },
+  { "drive": "tools/lib/o6_smash.mjs", "mode": "drive", "path": "city", "speed": 10, "settle": 5000, "timeout": 200000,
+    "check": "D.end === 'done' && D.kinds.lamp >= 2 && D.kinds.hydrant >= 1 && D.kinds.stop >= 1 && D.kinds.stall >= 8 && D.inside.length === 0 && D.rest.floating.length === 0 && D.rest.inWall.length === 0 && D.rest.live === 0",
+    "label": "down Grand Ave and through the Tenements' market: the city's own over, nothing passed through, nothing floating, everything resting" }
+ ]
+}

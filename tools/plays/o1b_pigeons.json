@@ -1,0 +1,14 @@
+{
+ "about": "[O1b] The pigeons (brief §2): a flock on a ledge; walked at by W, it goes up before the eye is under it. node tools/play.mjs tools/plays/o1b_pigeons.json",
+ "url": "/?mute=1&start=city&at=tenements",
+ "size": [1280, 800],
+ "out": "shots/o1b/pigeons",
+ "steps": [
+  { "wait": 1500 },
+  { "clickOn": "#title .opt[data-k=begin]", "taken": "G.state !== 'title'", "retries": 5, "every": 4000 },
+  { "until": "G.scenes.current && G.scenes.current.id === 'city' && G.scenes.fadeK < 0.05", "timeout": 25000 },
+  { "eval": "(G.save.flags.taught = { city_in: true, city_drive: true, city_map: true }, 1)" },
+  { "until": "G.stage.part('ambience').flocks.some((f) => f.ledge && f.n > 0)", "timeout": 10000 },
+  { "drive": "tools/lib/o1b_streets.mjs", "mode": "pigeons", "n": 2, "shots": true, "check": "D.bad === 0", "label": "the flocks go up as I come" }
+ ]
+}

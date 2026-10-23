@@ -84,7 +84,10 @@ export function stepStandins(night, dt) {
   }
   if (pr('Digit8')) G.save.money += 50;
   if (pr('Digit7')) {
-    const next = night.barIds().find((b) => !G.save.matchbooks.includes(b));
-    if (next) { G.save.matchbooks.push(next); G.emit('matchbook', { id: next }); }
+    // (one of O1b's six, as if taken off its bar's step)
+    const C = G.stage && G.stage.part && G.stage.part('city') ? G.stage.part('city').C : null;
+    const F = G.save.flags.matchbooks || (G.save.flags.matchbooks = {});
+    const sp = ((C && C.itemSpots) || []).find((q) => q.kind === 'matchbook' && !F[q.place]);
+    if (sp) { F[sp.place] = sp.name; G.emit('matchbook', { id: sp.place }); }
   }
 }

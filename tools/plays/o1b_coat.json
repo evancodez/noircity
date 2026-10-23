@@ -1,0 +1,97 @@
+{
+ "about": "[O1b] after the critic (M5: a bottle taken in the street meant nothing): a bottle in the coat (save.flags.bottles) is one of the things in reach of a fist fight - on lane O4's bed (the driver in the street), the prompt E take the bottle, E puts it in the hand, the coat's count down by one, swung into him once (it lands). node tools/play.mjs tools/plays/o1b_coat.json",
+ "url": "/?mute=1&o4stay=1&start=o4.brawl1",
+ "size": [
+  1280,
+  800
+ ],
+ "out": "shots/o1b/coat",
+ "steps": [
+  {
+   "until": "G.state === 'title' && !!document.querySelector('#title .opt[data-k=begin]')",
+   "timeout": 60000
+  },
+  {
+   "wait": 800
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]",
+   "taken": "G.scenes.current && G.scenes.current.id === 'o4'",
+   "retries": 4
+  },
+  {
+   "until": "G.scenes.beat === 'brawl1' && G.crowd.active && !G.failing",
+   "timeout": 30000
+  },
+  {
+   "eval": "(G.save.flags.bottles = 1, G.crowd.stop('test'), G.crowd.clearMen(), G.scenes.go('o4', { beat: 'brawl1' }), 1)"
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "until": "G.scenes.beat === 'brawl1' && G.crowd.active && !G.failing && G.crowd.seen()",
+   "timeout": 30000
+  },
+  {
+   "eval": "(G.crowd.hold = true, 1)"
+  },
+  {
+   "wait": 600
+  },
+  {
+   "eval": "JSON.stringify({prompt:G.hud.promptShown, bottles:G.save.flags.bottles, things:G.crowd.thingHandles.length})"
+  },
+  {
+   "expect": "/take the bottle/.test(G.hud.promptShown||'')",
+   "label": "the prompt in the fight: E take the bottle (the coat's)"
+  },
+  {
+   "shot": "coat_prompt"
+  },
+  {
+   "key": "KeyE"
+  },
+  {
+   "wait": 800
+  },
+  {
+   "eval": "JSON.stringify({holding:G.crowd.me.holding&&G.crowd.me.holding.kind, bottles:G.save.flags.bottles, prompt:G.hud.promptShown})"
+  },
+  {
+   "expect": "G.crowd.me.holding && G.crowd.me.holding.kind === 'bottle' && G.save.flags.bottles === 0",
+   "label": "E: the bottle in the hand, the coat's count down to 0"
+  },
+  {
+   "shot": "coat_held"
+  },
+  {
+   "eval": "(G.crowd.hold = false, 1)"
+  },
+  {
+   "until": "(()=>{const e=G.eye;return G.crowd.men.some(m=>m.hp>0&&Math.hypot(m.c.pos.x-e.x,m.c.pos.z-e.z)<1.8)})()",
+   "timeout": 8000
+  },
+  {
+   "look": "(()=>{const C=N.controller,e=G.eye;const m=G.crowd.men.filter(m=>m.hp>0)[0];const look=Math.atan2(-Math.sin(C.yaw),-Math.cos(C.yaw));const a=Math.atan2(m.c.pos.x-e.x,m.c.pos.z-e.z);let d=a-look;while(d>Math.PI)d-=2*Math.PI;while(d<-Math.PI)d+=2*Math.PI;return [-d*400,0]})()",
+   "steps": 3
+  },
+  {
+   "mouse": "click",
+   "button": "left"
+  },
+  {
+   "wait": 1000
+  },
+  {
+   "eval": "JSON.stringify({holding:G.crowd.me.holding&&G.crowd.me.holding.kind, landed:G.crowd.stats.landed, breaks:G.crowd.stats.breaks, things:G.crowd.stats.things, prompt:G.hud.promptShown})"
+  },
+  {
+   "expect": "G.crowd.stats.landed >= 1 && !G.crowd.me.holding",
+   "label": "swung into him: it lands and is spent"
+  },
+  {
+   "shot": "coat_swung"
+  }
+ ]
+}

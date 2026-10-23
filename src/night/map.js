@@ -191,14 +191,23 @@ export class NightMap {
   // ones not found yet a dotted outline; the name lettered on the found
   drawMatchbooks() {
     const G = this.G, N = this.night;
-    const ids = N.barIds();
-    const have = G.save.matchbooks || [];
-    const all = [...ids, ...have.filter((h) => !ids.includes(h))];
+    // [O7] the six matchbooks are O1b's (world/dressing.js: one on every bar's
+    // step, taken with E into save.flags.matchbooks { place: name }); O5's
+    // save.matchbooks (ids) join them when its bars give their own
+    const C = G.stage && G.stage.part && G.stage.part('city') ? G.stage.part('city').C : null;
+    const spots = ((C && C.itemSpots) || []).filter((s) => s.kind === 'matchbook');
+    const names = new Map();
+    for (const s of spots) if (!names.has(s.place)) names.set(s.place, s.name);
+    if (!names.size) for (const id of N.barIds()) names.set(id, null);
+    const F = (G.save.flags && G.save.flags.matchbooks) || {};
+    const have = new Set([...Object.keys(F), ...(G.save.matchbooks || [])]);
+    for (const h of have) if (!names.has(h)) names.set(h, F[h] || null);
     this.matchEl.textContent = '';
-    if (!all.length) return;
-    const lab = document.createElement('span'); lab.className = 'lab'; lab.textContent = `matchbooks ${have.length} / ${all.length}`;
+    if (!names.size) return;
+    const got = [...names.keys()].filter((id) => have.has(id)).length;
+    const lab = document.createElement('span'); lab.className = 'lab'; lab.textContent = `matchbooks ${got} / ${names.size}`;
     this.matchEl.appendChild(lab);
-    for (const id of all) this.matchEl.appendChild(matchbook(id, have.includes(id)));
+    for (const [id, name] of names) this.matchEl.appendChild(matchbook(id, have.has(id), F[id] || name));
   }
 }
 
@@ -209,7 +218,7 @@ function label(g, t, x, y) {
 function placeWord(P) { return ({ hotel: 'HOTEL', garage: 'GARAGE', station: 'POLICE', gym: 'GYM', gunshop: 'GUNS', diner: 'DINER', bar1: 'BAR', bar2: 'BAR' })[P.id] || P.name; }
 
 // a matchbook cover: paper, its striker an ink band, the bar's name; or a dotted outline
-function matchbook(id, got) {
+function matchbook(id, got, name = null) {
   const c = document.createElement('canvas');
   const w = 30, h = 44;
   c.width = w * 2; c.height = h * 2;
@@ -227,7 +236,9 @@ function matchbook(id, got) {
   g.fillStyle = '#060606';
   blob(g, w / 2, h * 0.36, 6 + rng.next() * 2, rng, 0.25);
   g.font = `700 7px ${LETTER_FONT}`; g.textAlign = 'center'; g.fillStyle = '#e9e5dc';
-  g.fillText(id.startsWith('bar') ? 'BAR' : id.toUpperCase().slice(0, 6), w / 2, h * 0.38);
+  const word = name ? String(name).replace(/^THE\s+/i, '').split(/\s+/)[0].toUpperCase().slice(0, 7) : id.startsWith('bar') ? 'BAR' : id.toUpperCase().slice(0, 6);
+  g.font = `700 ${word.length > 5 ? 6 : 7}px ${LETTER_FONT}`;
+  g.fillText(word, w / 2, h * 0.38);
   frayEdges(c, [233, 229, 220], new RNG(5), 20);
   return c;
 }

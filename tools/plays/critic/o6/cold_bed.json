@@ -1,0 +1,23 @@
+{
+ "about": "[O6 critic] the bed cold (?start=smash): what the first seconds say, a look round, walk, a shot at what is ahead.",
+ "url": "/?mute=1&start=smash",
+ "size": [1280, 800],
+ "out": "shots/critic_o6/bed",
+ "steps": [
+  { "wait": 2500 },
+  { "shot": "00_first" },
+  { "eval": "JSON.stringify({st:G&&G.state, sc:G&&G.scenes&&G.scenes.current&&G.scenes.current.id, t:[...document.querySelectorAll('body *')].filter(e=>e.offsetParent&&e.children.length===0&&e.innerText&&e.innerText.trim()).map(e=>e.innerText.trim().slice(0,50)).join(' | ')})" },
+  { "clickOn": "#title .opt[data-k=begin]", "taken": "G.state !== 'title'", "retries": 3, "every": 3000 },
+  { "wait": 2500 },
+  { "shot": "01_in" },
+  { "eval": "JSON.stringify({st:G.state, sc:G.scenes.current&&G.scenes.current.id, inCar:G.city&&G.city.inCar, p:G.camera.position.toArray().map(v=>+v.toFixed(1)), t:[...document.querySelectorAll('body *')].filter(e=>e.offsetParent&&e.children.length===0&&e.innerText&&e.innerText.trim()).map(e=>e.innerText.trim().slice(0,50)).join(' | ')})" },
+  { "look": [900, 0], "steps": 10 }, { "wait": 500 }, { "shot": "02_right" },
+  { "look": [900, 0], "steps": 10 }, { "wait": 500 }, { "shot": "03_back" },
+  { "look": [900, 0], "steps": 10 }, { "wait": 500 }, { "shot": "04_left" },
+  { "look": [900, 0], "steps": 10 }, { "wait": 500 },
+  { "mouse": "click", "button": "left", "x": 640, "y": 400 },
+  { "wait": 200 }, { "shot": "05_shot" },
+  { "wait": 1500 },
+  { "eval": "JSON.stringify({p:G.camera.position.toArray().map(v=>+v.toFixed(1)), t:[...document.querySelectorAll('body *')].filter(e=>e.offsetParent&&e.children.length===0&&e.innerText&&e.innerText.trim()).map(e=>e.innerText.trim().slice(0,50)).join(' | ')})" }
+ ]
+}

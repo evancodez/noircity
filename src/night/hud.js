@@ -1,4 +1,5 @@
 import { RNG } from '../util/rng.js';
+import { pockets } from '../world/items.js';   // [O7] Tab's lines take O1b's pockets
 import { frayEdges, blob } from '../ui/inkArt.js';
 import { strikeStroke } from '../ui/lettering.js';
 
@@ -160,6 +161,9 @@ export class NightHud {
   saved() { this.savedT = 1.8; this.savedEl.classList.add('up'); }
 
   onMoney(e) {
+    // (the save's setter tells every change with was and d; O4's wallet and
+    // O1b's items say it again with a why: the one telling is enough)
+    if (!e || e.was === undefined) return;
     const M = this.money;
     if (M.shown == null) M.shown = e.was;
     M.from = M.shown; M.target = e.money; M.t = 0;
@@ -240,6 +244,8 @@ export class NightHud {
     out.push(N.clock.text());
     if (this.heat === 0) out.push('no heat');
     else if (this.searching) out.push('they are looking');
+    // what I carry beside the money (O1b's pockets: the rounds, the bottles, the matchbooks)
+    for (const [k, v] of pockets(G)) if (k !== '$') out.push(`${k} ${v}`);
     return out;
   }
 }

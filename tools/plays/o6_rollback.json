@@ -1,0 +1,103 @@
+{
+ "about": "[O6 after the critic, major 7 - O1's roam, O2's car] Out of a car rolling back: in the city, S held into reverse (15 km/h), E: the brakes stop it (they never reverse on - E while rolling back was S held), I am out and the empty coupe stands; back in, S reverses again. node tools/play.mjs tools/plays/o6_rollback.json",
+ "url": "/?mute=1&start=city",
+ "size": [
+  1280,
+  800
+ ],
+ "out": "shots/o6/rollback",
+ "steps": [
+  {
+   "wait": 2000
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]",
+   "taken": "G.state !== 'title'",
+   "retries": 4,
+   "every": 3500
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'city' && G.scenes.fadeK < 0.05",
+   "timeout": 30000
+  },
+  {
+   "wait": 800
+  },
+  {
+   "key": "KeyE",
+   "hold": 80
+  },
+  {
+   "wait": 1200
+  },
+  {
+   "down": "KeyS"
+  },
+  {
+   "wait": 2600
+  },
+  {
+   "up": "KeyS"
+  },
+  {
+   "eval": "JSON.stringify({ a: 'reversing', inCar: G.city.inCar, v: +(G.city.car.speed * 3.6).toFixed(1), z: +G.city.car.pos.z.toFixed(1) })"
+  },
+  {
+   "key": "KeyE",
+   "hold": 80
+  },
+  {
+   "wait": 2500
+  },
+  {
+   "eval": "JSON.stringify({ a: 'E then 2.5 s', inCar: G.city.inCar, v: +(G.city.car.speed * 3.6).toFixed(1), z: +G.city.car.pos.z.toFixed(1) })"
+  },
+  {
+   "expect": "!G.city.inCar && Math.abs(G.city.car.speed) < 0.3",
+   "label": "out of the car that rolled back: it stands"
+  },
+  {
+   "eval": "(window.__z = G.city.car.pos.z, 1)"
+  },
+  {
+   "wait": 5000
+  },
+  {
+   "eval": "JSON.stringify({ a: '+5 s', inCar: G.city.inCar, v: +(G.city.car.speed * 3.6).toFixed(1), z: +G.city.car.pos.z.toFixed(1) })"
+  },
+  {
+   "expect": "Math.abs(G.city.car.pos.z - window.__z) < 0.2 && Math.abs(G.city.car.speed) < 0.1",
+   "label": "the empty coupe has not moved in 5 s"
+  },
+  {
+   "look": "(() => { const C = N.controller, e = G.camera.position, c = G.city.car.pos; const dx = c.x - e.x, dz = c.z - e.z; let d = Math.atan2(-dx, -dz) - C.yaw; d = Math.atan2(Math.sin(d), Math.cos(d)); return [-d / C.sensitivity, (C.pitch + 0.2) / C.sensitivity]; })()",
+   "steps": 6
+  },
+  {
+   "wait": 400
+  },
+  {
+   "key": "KeyE",
+   "hold": 80
+  },
+  {
+   "wait": 1200
+  },
+  {
+   "down": "KeyS"
+  },
+  {
+   "wait": 2200
+  },
+  {
+   "up": "KeyS"
+  },
+  {
+   "eval": "JSON.stringify({ a: 'back in, S reverses', inCar: G.city.inCar, v: +(G.city.car.speed * 3.6).toFixed(1), z: +G.city.car.pos.z.toFixed(1) })"
+  },
+  {
+   "expect": "G.city.inCar && G.city.car.speed * 3.6 < -8",
+   "label": "back in: S reverses again"
+  }
+ ]
+}

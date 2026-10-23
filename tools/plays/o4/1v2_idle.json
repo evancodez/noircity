@@ -1,0 +1,40 @@
+{
+ "about": "[O4] The crowd brawl on the street (tools/lib/o4_brawl.mjs). 1v2: hands off - he loses, warned first, the black says why.",
+ "url": "/?mute=1&o4stay=1&start=o4.brawl2",
+ "size": [
+  1280,
+  800
+ ],
+ "out": "shots/play/1v2_idle",
+ "steps": [
+  {
+   "until": "G.state === 'title' && !!document.querySelector('#title .opt[data-k=begin]')",
+   "timeout": 60000
+  },
+  {
+   "wait": 1200
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]",
+   "taken": "G.scenes.current && G.scenes.current.id === 'o4'",
+   "retries": 4
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'o4' && G.scenes.beat === 'brawl2' && G.crowd.active && !G.failing",
+   "timeout": 30000
+  },
+  {
+   "eval": "(G.o4stay = true)"
+  },
+  {
+   "drive": "tools/lib/o4_brawl.mjs",
+   "profile": "idle",
+   "beat": "brawl2",
+   "tries": 1,
+   "wins": 1,
+   "timeout": 120000,
+   "check": "D.losses >= 1 && D.wins === 0 && D.tries[0].warnedFor >= 1",
+   "label": "1v2 idle loses, warned a second or more before"
+  }
+ ]
+}

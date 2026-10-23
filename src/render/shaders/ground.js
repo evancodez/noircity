@@ -52,7 +52,10 @@ export function makeGroundMaterial(U, { paving = 0 } = {}) {
   const uniforms = Object.assign(
     THREE.UniformsUtils.clone(THREE.UniformsLib.lights),
     U,
-    { uPaving: { value: paving } },
+    // [O1b] uDryK: the dry ground's albedo against the puddles' (1: the base's,
+    // its golden frames identical; the city's ink-and-pools street darkens it -
+    // the cold play's finding 3, the grey camouflage wash)
+    { uPaving: { value: paving }, uDryK: { value: 1 } },
   );
   const mat = new THREE.ShaderMaterial({
     name: paving ? 'NoirPavement' : 'NoirStreet',
@@ -84,6 +87,7 @@ export function makeGroundMaterial(U, { paving = 0 } = {}) {
       #include <shadowmap_pars_fragment>
       uniform sampler2D tRefl, tReflBlur, tNoise, tBrush;
       uniform float uTime, uPaving, uReflStrength;
+      uniform float uDryK;   // [O1b]
       uniform vec2 uReflRemap;
       uniform int uGroundDebug;
       uniform float uFast;
@@ -349,6 +353,7 @@ export function makeGroundMaterial(U, { paving = 0 } = {}) {
         }
 
         albedo *= ( 1.0 - 0.9 * blobs ) * ( 1.0 - 0.6 * groove ) * ( 1.0 - 0.3 * joint );
+        albedo *= mix( uDryK, 1.0, puddle );   // [O1b] (1.0: unchanged)
         albedo = mix( albedo, 0.1, rail );
         rough = mix( rough, 0.2, rail );
 

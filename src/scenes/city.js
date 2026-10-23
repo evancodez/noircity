@@ -5,6 +5,7 @@ import { STARTS, START_DEFAULT, PAVE, RIVER, QUAY_OFF, SLIPS, PIERS, BRIDGE } fr
 import { riverNearest } from '../world/cityGen.js';
 import { MapOverlay } from '../world/map.js';
 import { compileAll } from '../stages/noircity/compile.js';
+import { swimStep } from '../world/swim.js';
 
 // NOIR CITY's free roam (lane O1): the city, a car at the kerb, nothing I
 // must do. Every critic and every later lane starts from here.
@@ -31,12 +32,14 @@ const _v = new THREE.Vector3();
 export const CITY_SEAT = { eye: new THREE.Vector3(-0.02, 1.5, -0.34), fov: 64, pitch: -0.01 };
 // E moving (game.city.wantOut): the brakes on and the throttle off until it
 // stands, the steering still mine (the drive mode's control hook: true = I set the pedals)
-function brakesFor(G) {
+export function brakesFor(G) {   // [O6] exported: the bed (scenes/smash.js) runs the same roam
   return (v) => {
     const R = G.city;
-    if (!R || !R.wantOut) return false;
+    if (!R || !R.wantOut) { v.input.hold = 0; return false; }
     const I = v.input, held = (c) => G.held(c);
-    I.throttle = 0; I.brake = 1; I.handbrake = 0;
+    // ([O6] hold: the brake brakes a car rolling back too - E while it rolled
+    // back was S held, and S past a breath reverses: it backed away faster)
+    I.throttle = 0; I.brake = 1; I.handbrake = 0; I.hold = 1;
     I.steer = ((held('KeyA') || held('ArrowLeft')) ? 1 : 0) - ((held('KeyD') || held('ArrowRight')) ? 1 : 0);
     const P = G.controller.pad && G.controller.pad.car;
     if (P && P.steer) I.steer = Math.max(-1, Math.min(1, P.steer));
@@ -65,11 +68,13 @@ function place(ctx, at) {
   const R = G.city || (G.city = {});
   V.clear();
   stage.part('stream').warmAround(at.car.x, at.car.z);
+  if (stage.part('dressing')) stage.part('dressing').warmAround(at.car.x, at.car.z);   // [O1b]
   const car = V.spawn(at.kind || 'coupe', { at: new THREE.Vector3(at.car.x, 0, at.car.z), yaw: at.carYaw, lights: true });   // [O7] (a save's kind)
   car.driver = null;
   V.player = null;
   R.car = car;
   R.inCar = false;
+  R.swim = null;   // [O1b]
   R.cabin = stage._cabin || (stage._cabin = new Cabin(G));
   R.cabin.car = null;
   // (its lamps off while it stands: on as I get in)
@@ -80,7 +85,26 @@ function place(ctx, at) {
   stage.part('bounds').navAround(at.pos.x, at.pos.z, 14);
   R.stream = stage.part('stream');
   // (every program the city draws with, compiled under the fade in: none met first down a street)
-  if (!G.shotMode) R.compileMs = compileAll(stage, G);
+  // [O1b] (the performance audit's lever 3: the first E into the car made a
+  // program and uploaded the seat's geometries in its frame - 108 and 127 ms.
+  // The seat taken once now, under the fade in: the hands on the wheel, the
+  // screen's drops, compiled and drawn into a scrap target, then let go)
+  if (!G.shotMode && !stage._compiled && G.pipeline && G.pipeline.renderer) {
+    const r = G.pipeline.renderer;
+    try {
+      R.cabin.attach(car, { ...seatOpts(), ease: 0.001 });
+      G.vm.sync && G.vm.sync(G.camera);
+      r.compile(G.vm.scene, G.vm.cam);
+      const rt = new THREE.WebGLRenderTarget(64, 64), prev = r.getRenderTarget();
+      r.setRenderTarget(rt); r.render(G.vm.scene, G.vm.cam); r.setRenderTarget(prev); rt.dispose();
+      R.compileMs = compileAll(stage, G);
+    } catch (e) { /* its first entry will */ }
+    R.cabin.dispose();
+    G.player.hands.equip('empty');
+    G.setViewmodelVisible(false);
+    ctx.controller.setPose(at.pos.x, at.pos.z, at.yaw, -0.06);
+  }
+  if (!G.shotMode && !stage._compiled) R.compileMs = compileAll(stage, G);
 }
 
 export default defineScene({
@@ -89,6 +113,8 @@ export default defineScene({
   // (M is the map here: Game.bindInput leaves the sound alone)
   mapKey: true,
   objectives: { roam: null, ashore: null },
+  // [O6] the low line when the destruction set hurt him (the fire, the tram): its fix, not the gun kit's
+  lowWarn: (ctx) => (ctx.stage.smash && ctx.stage.smash.cars.lowWarn()) || null,
   setup: {
     roam(ctx) {
       const a = ctx.stage.anchor(`city.start.${startOf()}`);
@@ -134,7 +160,7 @@ export default defineScene({
 });
 
 // ---- per step ------------------------------------------------------------------------------
-function step(ctx, R, T, dt) {
+export function step(ctx, R, T, dt) {   // [O6] exported
   const G = ctx.game, C = ctx.stage.part('city').C, hud = ctx.hud, ctl = ctx.controller;
   if (G.failing || G.state !== 'playing') return;
   const car = R.car;
@@ -147,8 +173,9 @@ function step(ctx, R, T, dt) {
     const edge = RIVER.s + QUAY_OFF;
     const vs = R.inCar && car ? Math.max(0, car.vel.z) : 0, ve = R.inCar && car ? Math.max(0, car.vel.x) : 0;
     const lead = R.inCar ? Math.max(14, vs * 1.6) : 5;
-    const slip = SLIPS.some((s) => Math.abs(p.x - s.x) < s.w / 2 + 0.5 && (p.z > RIVER.s + RIVER.hw + 1 || (vs > 4 && p.z > edge - lead)));
-    const pier = PIERS.some((q) => Math.abs(p.x - q.x) < q.w / 2 && p.z > edge + q.len - lead);
+    // ([O1b] on foot the river is a swim, not a loss: the warning is the car's)
+    const slip = R.inCar && SLIPS.some((s) => Math.abs(p.x - s.x) < s.w / 2 + 0.5 && (p.z > RIVER.s + RIVER.hw + 1 || (vs > 4 && p.z > edge - lead)));
+    const pier = R.inCar && PIERS.some((q) => Math.abs(p.x - q.x) < q.w / 2 && p.z > edge + q.len - lead);
     const bridge = R.inCar && Math.abs(p.z - BRIDGE.z) < BRIDGE.hw + 2 && p.x > RIVER.e && p.x > BRIDGE.barrier - Math.max(12, ve * 2.4) && p.x < BRIDGE.barrier;
     const w = slip || pier ? 'The river.' : bridge ? 'The bridge is up.' : null;
     // (a warning is danger: a teach card up goes - never two cards, never a card in danger)
@@ -163,7 +190,8 @@ function step(ctx, R, T, dt) {
     R.cabin.step(dt);
     // the river: the car in the water is lost
     if (C.inWater(car.pos.x, car.pos.z)) { wet(ctx, R, car.pos, 'The river took it.'); return; }
-    const slow = Math.abs(car.speed) < 1.5;
+    // ([O6] shoved by the tram the car is not slow, but a man may still get out of it)
+    const slow = Math.abs(car.speed) < 1.5 || (car.smashD && car.smashD.tramT != null && G.time - car.smashD.tramT < 0.4);
     // the pedals, taught in the seat before the first W (the critic's m2:
     // it came 2.5 s after W, and S was never taught); up until the car has
     // gone a few lengths, or its time
@@ -184,11 +212,12 @@ function step(ctx, R, T, dt) {
   // the car I left rolls out what was left of its roll, its brakes on, and
   // stands (nothing else steps a parked car yet: O2's traffic will)
   if (car && !R.inCar && (car.vel.lengthSq() > 4e-4 || Math.abs(car.yawRate) > 0.01)) car.step(dt);
-  // on foot: the river (walked off a pier's end, down a slipway, the steps)
-  if (C.inWater(ctl.pos.x, ctl.pos.z) && ctl.groundY < -0.6) { wet(ctx, R, ctl.pos, 'Into the river.'); return; }
+  // on foot: the river (walked off a pier's end, down a slipway, the steps):
+  // [O1b] a swim to the steps (world/swim.js), never the fade
+  if (swimStep(ctx, R)) return;
   // E at the car: any door, looking at it, close by
   let near = false;
-  if (car && car.solid !== false) {
+  if (car && car.solid !== false && !car.wrecked) {   // [O6] (a burnt wreck is no car to get into)
     const l = car.local(ctl.pos, _v);
     const db = Math.hypot(Math.max(0, Math.abs(l.x) - car.spec.halfL), Math.max(0, Math.abs(l.z) - car.spec.halfW));
     // (within a stride of its body: 2.5 m, the starts' place behind its tail included)
@@ -226,27 +255,32 @@ function step(ctx, R, T, dt) {
   }
 }
 
-function getIn(ctx, R, T) {
+export function getIn(ctx, R, T) {   // [O6] exported
   const G = ctx.game, car = R.car;
   ctx.hud.clearPrompt('cityin');
   T.near = false; T.inShown = false; T.drive = 0; T.dist = 0; T.outShown = false; R.wantOut = false;
   G.vehicles.setPlayer(car);
+  car.input.hold = 0;   // [O6] (my S reverses again)
   if (car.lamps && car.lamps.setOn) car.lamps.setOn(true);
   // (eased into the seat: the camera never jumps)
-  R.cabin.attach(car, { ease: 0.35, ...seatOpts(), control: brakesFor(G) });
+  R.cabin.attach(car, { ease: 0.35, ...seatOpts(), ...(car.seatOpts || {}), control: brakesFor(G) });   // [O6] (car.seatOpts: another kind's seat)
   R.inCar = true;
   G.sfx.play('tail_door', null, { open: false });
   ctx.stage.part('bounds').navAround(car.pos.x, car.pos.z, 14);
   G.emit('city:in', { car });
 }
 
-function getOut(ctx, R, T) {
+export function getOut(ctx, R, T) {   // [O6] exported
   const G = ctx.game, car = R.car, C = ctx.stage.part('city').C;
   ctx.hud.clearPrompt('cityout');
   T.outShown = false; R.wantOut = false;
   // (the brakes on, the handbrake up: what is left of its roll it rolls -
   // under 1.5 m/s, a few centimetres - never a dead stop)
   car.input.throttle = 0; car.input.brake = 1; car.input.steer = 0; car.input.handbrake = 1;
+  // ([O6] a foot held on the brake: a car left rolling back never reversed on
+  // by itself - the critic's 7: S's brake past a breath is reverse, and the
+  // empty coupe drove itself 37 m down Grand Ave)
+  car.input.hold = 1;
   // the driver's door (left), or the other if that is against a wall
   const col = ctx.stage.colliders;
   const tryDoor = (side) => {

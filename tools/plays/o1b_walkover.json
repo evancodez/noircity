@@ -1,0 +1,18 @@
+{
+ "about": "[O1b] after the critic (B1): walking at each kind of thing with a man's gaze (the eye 7 degrees down, W held), the prompt E take comes before he is on it, and E takes it - the roll of cash, the bottle, the box of rounds, the matchbook nearest the Grand Ave start, each from 5.5 m on its open side; and the Tab card (what I carry) after. tools/lib/o1b_streets.mjs 'walkover'. node tools/play.mjs tools/plays/o1b_walkover.json",
+ "url": "/?mute=1&start=city",
+ "size": [1440, 900],
+ "out": "shots/o1b/walkover",
+ "steps": [
+  { "wait": 1500 },
+  { "clickOn": "#title .opt[data-k=begin]", "taken": "G.state !== 'title'", "retries": 5, "every": 4000 },
+  { "until": "G.scenes.current && G.scenes.current.id === 'city' && G.scenes.fadeK < 0.05", "timeout": 25000 },
+  { "wait": 1200 },
+  { "eval": "(G.save.flags.taught = { city_in: true, city_drive: true, city_map: true }, JSON.stringify(['cash','bottle','rounds'].map((k) => [k, Math.round(Math.min(...G.stage.part('items').list.filter((q) => q.kind === k).map((q) => Math.hypot(q.x + 112.2, q.z - 30))))])))", "label": "the nearest of each kind from the start (m)" },
+  { "drive": "tools/lib/o1b_streets.mjs", "mode": "walkover", "shots": true, "check": "D.bad.length === 0", "label": "each kind: the prompt as he walks at it (1.5 m or more off), E takes it" },
+  { "key": "Tab" },
+  { "wait": 300 },
+  { "expect": "/\\$\\s*\\d+/.test(G.stage.part('items').pockets() || '') && /matchbooks/i.test(G.stage.part('items').pockets() || '')", "label": "Tab: the money and the matchbooks shown" },
+  { "shot": "tab" }
+ ]
+}

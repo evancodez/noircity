@@ -1,0 +1,21 @@
+{
+ "about": "[O1b] The el's train (brief §2, O1 Left 5): it runs the loop for ever, brakes into a station, stands there with its windows lit (the doors' time), pulls out; never gone at the station it left. node tools/play.mjs tools/plays/o1b_train.json",
+ "url": "/?mute=1&start=city",
+ "size": [1280, 800],
+ "out": "shots/o1b/train",
+ "steps": [
+  { "wait": 1500 },
+  { "clickOn": "#title .opt[data-k=begin]", "taken": "G.state !== 'title'", "retries": 5, "every": 4000 },
+  { "until": "G.scenes.current && G.scenes.current.id === 'city' && G.scenes.fadeK < 0.05", "timeout": 25000 },
+  { "until": "G.stage.train.active", "timeout": 30000 },
+  { "until": "G.stage.train.mode === 'wait'", "timeout": 120000 },
+  { "eval": "(() => { const T = G.stage.train, st = G.stage.part('el').stops[T.stopAt]; const F = {}; G.stage.part('el').line.at(T.s - T.dir * 4 * 14.5 / 2, F); return { station: st.name, d: +Math.hypot(F.x - st.x, F.z - st.z).toFixed(1), v: T.v, visible: T.group.visible }; })()" },
+  { "expect": "(() => { const T = G.stage.train, st = G.stage.part('el').stops[T.stopAt]; const F = {}; G.stage.part('el').line.at(T.s - T.dir * 4 * 14.5 / 2, F); return Math.hypot(F.x - st.x, F.z - st.z) < 6 && T.v === 0 && T.group.visible; })()", "label": "standing at a station's platform, its middle by the platform's" },
+  { "wait": 8000 },
+  { "expect": "G.stage.train.mode === 'wait'", "label": "still standing 8 s on (it waits)" },
+  { "until": "G.stage.train.mode === 'run' && G.stage.train.v > 3", "timeout": 20000 },
+  { "expect": "G.stage.train.group.visible && G.stage.train.active", "label": "it pulls out and runs on (not gone)" },
+  { "until": "G.stage.train.waits >= 2", "timeout": 150000 },
+  { "expect": "G.stage.train.waits >= 2", "label": "and stops at the next station" }
+ ]
+}
