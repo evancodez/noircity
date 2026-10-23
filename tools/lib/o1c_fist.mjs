@@ -45,7 +45,8 @@ const HELPERS = `(() => {
     for (const X of [b.min.x, b.max.x]) for (const Y of [b.min.y, b.max.y]) for (const Z of [b.min.z, b.max.z]) { v.set(X, Y, Z).applyQuaternion(it.Q).add(it.P); lo = Math.min(lo, v.y); }
     return +(lo - G.stage.surfaceY(it.P.x, it.P.z)).toFixed(3);
   };
-  window.__T = (kind, i = 0) => { const it = window.__item(kind, i); return it && { x: it.x, z: it.z, it }; };
+  // (the i-th of a kind with a clear place to stand by it: the next one when it has none)
+  window.__T = (kind, i = 0) => { for (let k = i; k < i + 6; k++) { const it = window.__item(kind, k); if (!it) return null; const r = it.K.round ? it.K.r : Math.max(it.fp ? Math.min(it.fp.hx, it.fp.hz) : 0.3, 0.2); const st = window.__standBy(it.x, it.z, r); if (st) return { x: it.x, z: it.z, it, stand: st }; } return null; };
   // a place on a facade with nothing on it (no shop glass, no door) and clear ground before it
   const clearAt = (x, z) => { const q = new N.THREE.Vector3(x, 0, z), q0 = q.clone(); G.stage.colliders.resolve(q, 0.4); return q.distanceTo(q0) < 0.02 && !S.near(x, z, 1.6).some((it) => it.state === 'stand' && Math.hypot(it.x - x, it.z - z) < 1.6); };
   window.__face = (want) => {
