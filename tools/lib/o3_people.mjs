@@ -233,7 +233,7 @@ async function witness(api) {
   // (a2) a crime nobody sees or hears: a shot in a lane with nobody in it - nothing
   await stagePunch(api, { cop: false, at: opts.alley || null });
   await js(`(() => { const P = G.people; P.release(window.__o3v); window.__o3v = null; return 1; })()`);
-  await click(api, 'right', 600);
+  await api.mouse('mouseWheel', ...api.cursor(), 'none', { deltaX: 0, deltaY: 100 }); await sleep(700);   // (the wheel draws: O7)
   await api.mouse('mousePressed', ...api.cursor(), 'right'); await sleep(450); await click(api); await sleep(200); await api.mouse('mouseReleased', ...api.cursor(), 'right');
   await sleep(opts.quiet ?? 25000);
   R.empty = await js(`({ heat: G.police.heat, last: (() => { const r = G.crime.log.filter(r => r.kind === 'shot').slice(-1)[0]; return r ? { seen: r.seen, heard: !!r.heard, reporters: r.reporters } : null; })() })`);
@@ -485,7 +485,7 @@ async function gangs(api) {
       return { x: post.x, z: post.z, kinds: T.men.map(m => m.kind) }; })()`);
     R.docks = D;
     await sleep(1200);
-    await click(api, 'right', 150);
+    await api.mouse('mouseWheel', ...api.cursor(), 'none', { deltaX: 0, deltaY: 100 }); await sleep(700);   // (the wheel draws: O7)
     R.drew = await waitFor(js, `window.__o3d.hostile && window.__o3d.men.filter(m => m.armed).length >= 2`, 4000);
     await sleep(1200);
     if (opts.shots) await shot('gang_draw');
@@ -562,7 +562,7 @@ async function crowd(api) {
     await js(`(() => { const P = G.people, C = G.controller; P.dbgClear(); C.setPose(-108.6, 20, 0, 0.25); window.__o3g = [];
       for (const [x, z] of [[-108.4, 12], [-107.2, 9], [-109.5, 15], [-108.0, 4], [-110.0, 24], [-107.4, 27]]) { const p = P.dbgWalker(x, z, Math.PI); p.mode = 'walk'; p.goTo([[x, z + 30]], { gait: 'stroll' }); window.__o3g.push(p); } return 1; })()`);
     await sleep(800);
-    await click(api, 'right', 120);
+    await api.mouse('mouseWheel', ...api.cursor(), 'none', { deltaX: 0, deltaY: 100 }); await sleep(700);   // (the wheel draws: O7)
     await sleep(1500);
     R.gun = await js(`({ flee: window.__o3g.filter(p => p.mode === 'flee').length, menace: G.crime.log.filter(r => r.kind === 'menace').length, heat: G.police.heat, out: G.people.hands.gunOut })`);
     if (opts.shots) await shot('crowd_gun');
@@ -789,7 +789,7 @@ async function frames(api) {
   await js(`(() => { const P = G.people, C = G.controller; P.dbgClear(); P.hands.hasGun = true; C.setPose(-108.9, 26, 0.05, -0.02); window.__o3g = [];
     for (const [x, z, k] of [[-108.4, 17, 'o3_woman_a'], [-107.4, 13, 'o3_fedora_b'], [-109.6, 21, 'oldman'], [-108.0, 9, 'o3_fedora_g'], [-110.2, 14, 'o3_woman_d'], [-107.6, 5, 'o3_fedora_c']]) { const p = P.dbgWalker(x, z, Math.PI, k); p.mode = 'walk'; p.goTo([[x, z + 30]], { gait: 'stroll' }); window.__o3g.push(p); } return 1; })()`);
   await sleep(1400);
-  await click(api, 'right', 900);
+  await api.mouse('mouseWheel', ...api.cursor(), 'none', { deltaX: 0, deltaY: 100 }); await sleep(700);   // (the wheel draws: O7)
   await sleep(300);
   await shot('f_gun');
   R.fled = await js(`window.__o3g.filter(p => p.mode === 'flee').length`);

@@ -57,7 +57,9 @@ export class StandinHands {
   step(dt) {
     const G = this.G, C = G.controller, H = G.player.hands, W = G.player.weapons;
     if (!G.city || G.city.inCar || G.brawl.active || (G.crowd && G.crowd.active) || G.failing || G.state !== 'playing') return;
-    if (C.mode !== 'walk' || C.frozen) return;
+    // [manager, after O7] the wheel's draw puts the controller in the gun mode (city.js [O5/O7]): the
+    // street's hands (the menace, the rounds' count) run there too
+    if ((C.mode !== 'walk' && C.mode !== 'gun') || C.frozen) return;
     this.footT += dt;
     // (the hands in the frame only while they hold something up: the fists, the gun)
     const up = H.set === 'fists' || W.current === 'revolver';
@@ -66,18 +68,14 @@ export class StandinHands {
     // [O3] after the critic (M2): the card says what is true - the draw only with a gun of mine
     if (this.footT > 5 && !this.taught && !G.hud.kit.warnText && !G.hud.sayShown && !(G.police && G.police.heat)) {
       this.taught = true;
-      if (this.hasGun) G.hud.teach('o3_hands', '[LMB] punch   [RMB] draw', { until: ['Mouse0', 'Mouse2'], secs: 4 });
-      else G.hud.teach('o3_punch', '[LMB] punch', { until: ['Mouse0'], secs: 3.4 });
+      // [manager, after O7] the draw is the wheel's (O7's card '[WHEEL] the revolver', city.js); this card says the fist
+      G.hud.teach('o3_punch', '[LMB] punch', { until: ['Mouse0'], secs: 3.4 });
     }
     const gun = this.gunOut;
     // (the gun's rounds kept in the coat's count as they go: a draw again loads what is left - O4's arms)
     if (W.current === 'revolver' && W.active && Number.isFinite(W.active.pocket)) { const A = wallet(G).ammo; A.revolver = W.active.pocket; A.revolverIn = W.active.ammo; }
-    // RMB: the gun out
-    if (G.pressed('Mouse2') && W.current !== 'revolver') {
-      if (this.hasGun) { arms(G).to('revolver'); this.gunIdle = 0; this.stats.draws++; this.menace(true); }
-      else if (G.time - (this.noGunT ?? -9) > 3) { this.noGunT = G.time; G.hud.message('no gun', 1.4); }
-      return;
-    }
+    // [manager, after O7] RMB no longer draws: the wheel does (city.js [O7], O4's arms; the title's keys line:
+    // 'WHEEL the revolver, RMB steady'); with nothing drawn RMB is O7's jab (night/fist.js)
     if (gun) {
       if (G.held('Mouse2') || G.pressed('Mouse0')) this.gunIdle = 0; else this.gunIdle += dt;
       const R = W.active;
