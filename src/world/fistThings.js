@@ -91,11 +91,11 @@ export function thingAhead(G) {
     }
   }
   // a thing lying in front of my feet (items.ahead: a bottle on a stoop) - ([O1c] after the
-  // critic, m2) the jab is chest high: what stands in reach is hit first; the bottle when
-  // nothing stands there, or when I look down at it
+  // critic, m2) the jab is chest high: a bottle on a step is hit when I look down at it (at my
+  // feet it is out of the view otherwise), never by a jab meant for what stands behind it
   const I = G.stage && G.stage.part && G.stage.part('items');
   const item = I && I.ahead ? I.ahead(e, fx, fz, reach + 0.3) : null;
-  if (item && (!best || pitch < -0.3)) offer({ kind: 'item', item, gap: Math.hypot(item.x - e.x, item.z - e.z) - 0.3, ang: angTo(item.x, item.z) });
+  if (item && pitch < -0.3) offer({ kind: 'item', item, gap: Math.hypot(item.x - e.x, item.z - e.z) - 0.3, ang: angTo(item.x, item.z) });
   return best;
 }
 
