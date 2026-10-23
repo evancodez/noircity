@@ -231,3 +231,15 @@ and make the HUD show the city's answer the moment it exists (the whistle
 heard, the shields brushed in when the heat moves). The manager removed
 O3's RMB draw on main (the wheel draws; O3's card says the fist only):
 one card for the revolver, yours.
+
+## From the user's first play of the systems (2026-10-23, main 43df2f8): the rule your hunt judges by
+"Make the city feel more alive and less canned and stiff." The rule is in
+docs/OPEN_WORLD.md ('alive, not canned, not stiff': the near street never
+empty, events on their own, every NPC with a readable state and human
+delays, no reaction without a cause he saw and none that outlives its
+cause). Your second pass's whole-game hunt (§6) judges by it above the
+rest: the alive test at three corners (a minute standing still: what
+happens?), the read test (name each man's state from a strip), the
+nonsense list (every reaction without a cause, every one that outlives
+it), each counted in your report. Lane O9 (docs/briefs/O9_ALIVE.md) builds
+the life; your hunt finds what it missed.
