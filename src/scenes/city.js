@@ -89,7 +89,10 @@ function place(ctx, at) {
   // program and uploaded the seat's geometries in its frame - 108 and 127 ms.
   // The seat taken once now, under the fade in: the hands on the wheel, the
   // screen's drops, compiled and drawn into a scrap target, then let go)
-  if (!G.shotMode && !stage._compiled && G.pipeline && G.pipeline.renderer) {
+  // [O7] (its own flag: the title's backdrop compiles the city's stage at load - night/title.js -
+  // and the seat was skipped with it, so the first E made TailScreen in its frame again: 100+ ms)
+  if (!G.shotMode && !stage._seatWarm && G.pipeline && G.pipeline.renderer) {
+    stage._seatWarm = true;
     const r = G.pipeline.renderer;
     try {
       R.cabin.attach(car, { ...seatOpts(), ease: 0.001 });
@@ -97,6 +100,7 @@ function place(ctx, at) {
       r.compile(G.vm.scene, G.vm.cam);
       const rt = new THREE.WebGLRenderTarget(64, 64), prev = r.getRenderTarget();
       r.setRenderTarget(rt); r.render(G.vm.scene, G.vm.cam); r.setRenderTarget(prev); rt.dispose();
+      stage._compiled = false;   // [O7] (the seat's own programs - TailScreen's FX layer - with the city's lights: the cached ones cost nothing)
       R.compileMs = compileAll(stage, G);
     } catch (e) { /* its first entry will */ }
     R.cabin.dispose();

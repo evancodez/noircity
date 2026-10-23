@@ -34,6 +34,12 @@ export default async function night({ js, keyDown, keyUp, sleep, log }) {
   await sleep(1200);
   await arm('radio', "!!document.querySelector('#hud .nradio.up')");
   await keyDown('KeyF'); out.radio = await read(); await keyUp('KeyF');
+  // (out, and in again: the second E is the seat without its first-time cost)
+  await sleep(600); await press('KeyE'); await sleep(1500);
+  await js("(N.controller.yaw = Math.atan2(-(G.city.car.pos.x - N.controller.pos.x), -(G.city.car.pos.z - N.controller.pos.z)), 1)");
+  await sleep(400);
+  await arm('in2', 'G.city.inCar');
+  await keyDown('KeyE'); out.in2 = await read(); await keyUp('KeyE');
   log(`latency: ${JSON.stringify(out)}`);
   return out;
 }

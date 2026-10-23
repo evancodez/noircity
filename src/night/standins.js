@@ -1,7 +1,7 @@
 // The seams the night reads from lanes not merged yet (lane O7's first pass,
 // docs/seams/NIGHT.md §6). Each is a tiny module that gives the seam's shape
 // so the HUD can be played; each is installed ONLY when the real one is
-// absent (game.police and game.crime from O3, game.news from O1b), and is
+// absent (game.police and game.crime from O3), and is
 // dropped at O7's fix pass when the real one has merged into main.
 //   police (O3's seam):  game.police = { heat 0..5, searching, units: [],
 //                          on('heat', fn), set(level), lost(), stand: true }
@@ -10,12 +10,14 @@
 //                        the brief's level for the crime (punch 1, hijack 1,
 //                        shot 2, death 3, cop 4); unseen time lets it fall
 //                        (the search, then a badge less)
-//   news (O1b's seam):   game.news = { say(line), last, lines }
+//   news: O1b's, merged (world/items.js newsOf(G): say(line, weight, where), latest())
 // The money (save.money), the matchbooks (save.matchbooks) and the garage
 // (save.garage) are the save's own fields (src/game/Save.js): no stand-in.
 // The debug bed (?nightbed=1, never in a normal run): 1..5 set the heat, 0
 // clears it, 9 toggles the search, 8 gives $50, 7 a matchbook - keys read
 // through the game's own input edges, so a pad or a play reaches them alike.
+import { newsOf } from '../world/items.js';
+
 export const CRIME = { punch: 1, hijack: 1, shot: 2, death: 3, cop: 4 };
 // the stand-in's fall: unseen this long, the search; searching this long, a badge less
 export const LOSE = { quiet: 14, search: 9 };
@@ -61,14 +63,8 @@ export function installStandins(night) {
     };
     made.push('crime');
   }
-  if (!G.news) {
-    G.news = {
-      stand: true, last: null,
-      lines: ['RAIN TO LAST ALL NIGHT', 'EL RUNS LATE ON THE LOOP', 'CITY HALL SAYS STREETS ARE SAFE'],
-      say(line) { if (!line) return; this.last = String(line).toUpperCase(); this.lines.unshift(this.last); this.lines.length = Math.min(this.lines.length, 8); G.emit('news', { line: this.last }); },
-    };
-    made.push('news');
-  }
+  // (the news is O1b's now, in main: world/items.js newsOf - no stand-in)
+  newsOf(G);
   return made;
 }
 
