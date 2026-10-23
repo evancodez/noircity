@@ -214,7 +214,8 @@ export class Hud {
     // low in the frame over the wet street BEGIN and CONTINUE, the keys
     // (fewer, shorter drops and spikes than the other cards: nothing flung
     // down onto the signs)
-    this.titleCard = makeCard('title', 'NOIR EXTREME', { w: 1400, h: 620, R: 190, wide: 5.6, vw: 65, seed: 1937, red: true,
+    // [AD] NOIR CITY's title (lane O7 owns the title's final form)
+    this.titleCard = makeCard('title', 'NOIR CITY', { w: 1400, h: 620, R: 190, wide: 5.6, vw: 65, seed: 1937, red: true,
       splat: { drops: 24, spikes: 14, spikeLen: 0.6, drips: 1 }, redAt: [2.05, -0.55] });
     this.title = this.titleCard.el;
     const opts = document.createElement('div');
