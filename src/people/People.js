@@ -153,6 +153,11 @@ export class People {
     G.on('crime', this._o4crime);
     // lane O6's destruction set ('smash' { kind, pos, by }): what is someone's (a shop's
     // glass, a stall, a newsstand) broken by my car or my fist is a crime ('smash', 1)
+    // [O8] a gun drawn by the wheel (O7's draw on foot: 'city:arms') is a gun drawn for the street
+    // too - the near ones run the step it comes out (the stand-in hands' own draw did this; the
+    // wheel's did not: nobody turned a head at a revolver out among them)
+    this._arms = (e) => { if (e && e.gun && e.gun !== 'fists' && this.G.city && !this.G.city.inCar && this.G.stage === this.stage) this.hands.menace(true); };
+    G.on('city:arms', this._arms);
     this._smash = (e) => {
       if (!e || !e.pos || !this.G.city || this.G.stage !== this.stage) return;
       if (!(e.kind === 'glass' || e.kind === 'stall' || e.kind === 'newsstand')) return;
@@ -169,6 +174,7 @@ export class People {
     this.G.off('city:in', this._in);
     this.G.off('crime', this._o4crime);
     this.G.off('smash', this._smash);
+    this.G.off('city:arms', this._arms);   // [O8]
     this.police.dispose();
     this.gangs.dispose();
     for (const p of this.list) p.dispose();
