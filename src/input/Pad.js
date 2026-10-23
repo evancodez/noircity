@@ -36,6 +36,13 @@ export const PAD = {
   look: { yaw: 3.2, pitch: 2.0, lin: 0.28, pow: 2.4 },   // rad/s at full tilt; u -> lin*u + (1-lin)*u^pow
   cursor: { rate: 900, lin: 0.3, pow: 2.2 },             // a puzzle's cursor: mouse counts/s at full tilt
   wheel: 900,                      // L1 / R1 on a puzzle: the wheel's units/s
+  notch: 100,                      // [O7] the d-pad's left / right on foot: one notch of the wheel
+  // [O7] the aim help (O4's merge: the pad's medium hands lost the street): L2
+  // raised with a man near the sight (within cone rad, or width m of his chest
+  // at his distance) and a clear line - the sight eased toward his chest: snap
+  // of the way on the raise, then rate of what is left a second (at most max
+  // rad/s); a stick pushed past stick away from him is the hand's own: never pulled
+  aim: { cone: 0.12, width: 1.0, snap: 0.7, rate: 6, max: 2, stick: 0.55, range: 40 },
   move: 0.5, moveOff: 0.35,        // the left stick as W A S D: on past 0.5, off under 0.35
   trig: 0.3, trigOff: 0.18,        // a trigger as a button
   holdLow: 0.3,                    // circle held past this: a hold (let go, he stands)
@@ -48,6 +55,8 @@ export const PAD = {
 };
 export const BTN = { cross: 0, circle: 1, square: 2, triangle: 3, L1: 4, R1: 5, L2: 6, R2: 7, share: 8, options: 9, L3: 10, R3: 11, up: 12, down: 13, left: 14, right: 15, ps: 16, touch: 17 };
 export const input = { last: 'keys' };
+// [O7] a gun of mine (O4's save.inventory): the d-pad's left / right turn through them
+const hasGun = (G) => !!(G && G.save && (G.save.inventory || []).some((k) => k === 'revolver' || k === 'shotgun' || k === 'tommy'));
 
 const KEYNAME = { Space: ' ', KeyE: 'e', KeyC: 'c', KeyR: 'r', KeyF: 'f', KeyQ: 'q', KeyM: 'm', KeyW: 'w', KeyA: 'a', KeyS: 's', KeyD: 'd', ShiftLeft: 'Shift', ControlLeft: 'Control', Escape: 'Escape', Tab: 'Tab' };
 const curve = (u, C) => C.lin * u + (1 - C.lin) * Math.pow(u, C.pow);
@@ -331,7 +340,16 @@ class Pad {
     }
     if (on(BTN.square)) want.add('KeyE');
     if (on(BTN.triangle)) want.add('KeyR');
-    if (on(BTN.left) || on(BTN.right) || on(BTN.up)) want.add('KeyQ');
+    // [O7] (in the car the d-pad's right is the radio's dial, F; the touchpad held is Tab: the heat, the money)
+    // [O7] on foot with a gun of mine the d-pad's left and right are the mouse's
+    // wheel (one notch a press: the revolver drawn, put away; in a fist fight
+    // the crowd's draw - O4's arms); else, and d-pad up, Q (the horn)
+    const foot = ctx === 'play' || ctx === 'brawl';
+    const armed = foot && hasGun(this.game);
+    if (armed && (edge(BTN.left) || edge(BTN.right)) && (document.pointerLockElement === this.dom || this.holds)) this.game._mouseAcc.wheel += edge(BTN.right) ? PAD.notch : -PAD.notch;
+    if (on(BTN.up) || (on(BTN.left) && !armed) || (on(BTN.right) && ctx !== 'drive' && !armed)) want.add('KeyQ');
+    if (ctx === 'drive' && on(BTN.right)) want.add('KeyF');
+    if (on(BTN.touch)) want.add('Tab');
     if (edge(BTN.down)) this.tap('KeyM');
     if (edge(BTN.share) || edge(BTN.touch)) this.tap('Tab');   // [O1b] the rulebook's Tab (what I carry, for a moment)
     void C;
@@ -364,6 +382,8 @@ class Pad {
       const fr = ctx === 'play' && (rx || ry) ? this.friction() : 1;
       cx = Math.sign(rx) * curve(Math.abs(rx), PAD.look) * PAD.look.yaw * this.sens * fr * dt / s;
       cy = Math.sign(ry) * curve(Math.abs(ry), PAD.look) * PAD.look.pitch * this.sens * fr * dt / s;
+      // [O7] the aim help: the pad's hand only
+      if (ctx === 'play' && input.last === 'pad') { const a = this.aimHelp(rx, ry, dt); if (a) { cx += a[0]; cy += a[1]; } }
     }
     if (!cx && !cy) return;
     C._onMouse({ movementX: cx, movementY: cy, pad: true });
@@ -395,6 +415,45 @@ class Pad {
     }
     this.fr = best;
     return best;
+  }
+  // [O7] the aim help (PAD.aim): -> [movementX, movementY] toward the man
+  // nearest the sight, or null; this.aimed = his name (the plays read it)
+  aimHelp(rx, ry, dt) {
+    const G = this.game, C = this.controller, A = PAD.aim;
+    const W = G.player && G.player.weapons && G.player.weapons.active;
+    const aiming = !!W && this.trigOn[0] && !this.stale.has(BTN.L2);
+    const raised = aiming && !this.aimWas;
+    this.aimWas = aiming;
+    this.aimed = null;
+    const list = G.stage && G.stage.hoods ? G.stage.hoods.list : null;
+    if (!aiming || !list) return null;
+    const m = G.camera.matrixWorld.elements, ex = m[12], ey = m[13], ez = m[14], fx = -m[8], fy = -m[9], fz = -m[10];
+    let best = null, bestAng = Infinity;
+    for (const h of list) {
+      if (!h.alive || !h.bones || !h.bones.chest) continue;
+      const c = h.bones.chest.matrixWorld.elements;
+      const dx = c[12] - ex, dy = c[13] - ey, dz = c[14] - ez, L = Math.hypot(dx, dy, dz);
+      if (L < 0.8 || L > A.range) continue;
+      const ang = Math.acos(Math.max(-1, Math.min(1, (dx * fx + dy * fy + dz * fz) / L)));
+      if (ang > Math.max(A.cone, Math.atan2(A.width, L)) || ang >= bestAng) continue;
+      if (!this.sees(ex, ey, ez, c[12], c[13], c[14])) continue;
+      best = { h, dx, dy, dz }; bestAng = ang;
+    }
+    if (!best) return null;
+    this.aimed = best.h.name || best.h.id || 'him'; this.aimedHood = best.h;
+    const wrapA = (a) => Math.atan2(Math.sin(a), Math.cos(a));
+    const dyaw = wrapA(Math.atan2(-best.dx, -best.dz) - Math.atan2(-fx, -fz));
+    const dp = Math.atan2(best.dy, Math.hypot(best.dx, best.dz)) - Math.asin(Math.max(-1, Math.min(1, fy)));
+    let ay, ap;
+    if (raised) { ay = dyaw * A.snap; ap = dp * A.snap; }
+    else {
+      const k = Math.min(1, A.rate * dt), cap = A.max * dt;
+      ay = Math.max(-cap, Math.min(cap, dyaw * k)); ap = Math.max(-cap, Math.min(cap, dp * k));
+    }
+    const s = C.sensitivity || 0.0021, mx = -ay / s, my = -ap / s;
+    // (a stick pushed hard away from him is the hand's own: never pulled back)
+    if (Math.hypot(rx, ry) > A.stick && rx * mx + ry * my < 0) { this.aimed = null; return null; }
+    return [mx, my];
   }
   // a clear line for the eyes from (ax, ay, az) to (bx, by, bz)
   sees(ax, ay, az, bx, by, bz) {

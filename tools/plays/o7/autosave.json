@@ -1,0 +1,73 @@
+{
+ "about": "[O7 after the critic, B5] the quiet autosave without a car: two minutes on foot at no heat - written ('quiet', the SAVED tick); into a place's room at heat 0 - written as standing outside its street door.",
+ "url": "/?mute=1&start=city",
+ "size": [
+  1280,
+  800
+ ],
+ "out": "shots/o7/autosave",
+ "steps": [
+  {
+   "eval": "(localStorage.clear(), 1)"
+  },
+  {
+   "reload": true
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]",
+   "taken": "G.state !== 'title'",
+   "retries": 5,
+   "every": 4000
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'city' && G.scenes.fadeK < 0.05",
+   "timeout": 30000
+  },
+  {
+   "until": "G.night.saver.autos >= 1",
+   "timeout": 140000,
+   "label": "two minutes on foot, no car: the quiet autosave"
+  },
+  {
+   "expect": "G.night.saver.reason === 'quiet' && !!localStorage.getItem('noir.save') && !G.city.inCar",
+   "label": "written: quiet, on foot"
+  },
+  {
+   "eval": "(() => { const P = G.city.places, s = P.byId.get('diner'), o = s.frame.w(0, 2.4); G.stage.part('stream').warmAround(o.x, o.z); N.controller.setPose(o.x, o.z, s.frame.yaw(0), 0); window.__door = s.frame.w(0, 2.6); return [Math.round(o.x), Math.round(o.z)]; })()"
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "eval": "(G.night.saver.lastAuto = G.time - 30, 1)"
+  },
+  {
+   "key": "KeyE",
+   "hold": 80
+  },
+  {
+   "wait": 800
+  },
+  {
+   "down": "KeyW"
+  },
+  {
+   "until": "G.city.places.inside && G.city.places.inside.id === 'diner'",
+   "timeout": 8000,
+   "label": "walked into the diner"
+  },
+  {
+   "up": "KeyW"
+  },
+  {
+   "wait": 300
+  },
+  {
+   "expect": "G.night.saver.reason === 'room' && (() => { const d = JSON.parse(localStorage.getItem('noir.save')); const p = d.city.pos; return Math.hypot(p.x - window.__door.x, p.z - window.__door.z) < 0.5; })()",
+   "label": "the room at heat 0: saved outside its street door"
+  }
+ ]
+}

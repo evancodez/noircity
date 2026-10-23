@@ -1,0 +1,43 @@
+{
+ "about": "[O7 after the critic, B2] the wanted man by bad hands (O4's clumsy first-timer): through by the third try.",
+ "url": "/?mute=1&start=city",
+ "size": [
+  1280,
+  800
+ ],
+ "out": "shots/o7/bounty_bad",
+ "steps": [
+  {
+   "wait": 1500
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]",
+   "taken": "G.state !== 'title'",
+   "retries": 5,
+   "every": 4000
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'city' && G.scenes.fadeK < 0.05",
+   "timeout": 30000
+  },
+  {
+   "look": [
+    0,
+    0
+   ],
+   "steps": 1
+  },
+  {
+   "eval": "(N.controller.pitch = 0, 1)"
+  },
+  {
+   "drive": "tools/lib/o7_bounty.mjs",
+   "profile": "bad",
+   "tries": 3,
+   "wins": 1,
+   "timeout": 600000,
+   "check": "D.wins >= 1",
+   "label": "bad hands: taken in by the third try"
+  }
+ ]
+}

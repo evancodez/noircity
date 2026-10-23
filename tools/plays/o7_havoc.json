@@ -1,0 +1,187 @@
+{
+ "about": "[O7] The havoc play, first pass (the brief's \u00a76, on what is in main: O1's river, O4's revolver, O6's set, O1b's news; the police are O3's stand-in): by real input, the night's revolver drawn and the lamps on Grand Ave shot out - the set answers (the head's glass, the pop, a buzz, dark), the city answers the shot within the second (two shields, 'Lose them.') and the paper prints it (SHOTS FIRED); into the car with the heat on (no autosave: never under heat) and off the slipway into the river - 'The river took it.' and up on the quay with a car, the controls mine (a scene broken on purpose ends sane); out of their sight the search ('Stay out of sight.'). Nothing says no. node tools/play.mjs tools/plays/o7_havoc.json",
+ "url": "/?mute=1&start=city",
+ "size": [
+  1440,
+  900
+ ],
+ "out": "shots/o7/havoc",
+ "steps": [
+  {
+   "wait": 1500
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]",
+   "taken": "G.state !== 'title'",
+   "retries": 5,
+   "every": 4000
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'city' && G.scenes.fadeK < 0.05",
+   "timeout": 30000
+  },
+  {
+   "wait": 800
+  },
+  {
+   "drive": "tools/lib/o4_wheel.mjs",
+   "dy": 100
+  },
+  {
+   "wait": 500
+  },
+  {
+   "expect": "G.player.weapons.current === 'revolver'",
+   "label": "the wheel: the revolver out"
+  },
+  {
+   "eval": "(window.__aimLamp = () => { const S = G.stage.smash, e = G.eye; const L = [...S.near(e.x, e.z, 26)].filter((i) => i.kind === 'lamp' && i.state === 'stand' && !i.dark && !(i.flick && i.flick.dying)).map((i) => ({ i, h: (i.lamp || S.lampOf(i) || {}).head })).filter((q) => q.h && (() => { const dv = q.h.clone().sub(e); const L = dv.length(); return !G.rays.raycast(e, dv.divideScalar(L), L - 0.9, { anyHit: true }); })()).sort((a, b) => Math.hypot(a.h.x - e.x, a.h.z - e.z) - Math.hypot(b.h.x - e.x, b.h.z - e.z)); const q = L.find((q) => Math.hypot(q.h.x - e.x, q.h.z - e.z) > 4 && Math.hypot(q.h.x - e.x, q.h.z - e.z) < 15) || L[0]; if (!q) return null; window.__lamps = (window.__lamps || new Set()).add(q.i); const d = Math.hypot(q.h.x - e.x, q.h.z - e.z); N.controller.yaw = Math.atan2(-(q.h.x - e.x), -(q.h.z - e.z)); N.controller.pitch = Math.atan2(q.h.y - 0.15 - e.y, d); return [q.i.id, +d.toFixed(1)]; }, window.__ev0 = G.stage.smash.events.length, window.__aimLamp())"
+  },
+  {
+   "wait": 300
+  },
+  {
+   "mouse": "click",
+   "button": "left"
+  },
+  {
+   "wait": 700
+  },
+  {
+   "until": "G.police.heat >= 2 && G.hud.kit.objectiveText === 'Lose them.'",
+   "timeout": 1200,
+   "label": "the shot answered within the second: two shields, 'Lose them.'"
+  },
+  {
+   "eval": "window.__aimLamp()"
+  },
+  {
+   "mouse": "click",
+   "button": "left"
+  },
+  {
+   "wait": 700
+  },
+  {
+   "eval": "window.__aimLamp()"
+  },
+  {
+   "mouse": "click",
+   "button": "left"
+  },
+  {
+   "wait": 700
+  },
+  {
+   "eval": "window.__aimLamp()"
+  },
+  {
+   "mouse": "click",
+   "button": "left"
+  },
+  {
+   "wait": 700
+  },
+  {
+   "eval": "window.__aimLamp()"
+  },
+  {
+   "mouse": "click",
+   "button": "left"
+  },
+  {
+   "wait": 700
+  },
+  {
+   "eval": "window.__aimLamp()"
+  },
+  {
+   "mouse": "click",
+   "button": "left"
+  },
+  {
+   "wait": 900
+  },
+  {
+   "shot": "h01_lamps"
+  },
+  {
+   "eval": "JSON.stringify({ ev: G.stage.smash.events.slice(window.__ev0).map((e) => [e.kind, e.what, e.by]), stats: G.stage.smash.stats, news: G.news && G.news.latest ? G.news.latest() : null })"
+  },
+  {
+   "until": "[...window.__lamps].filter((i) => i.dark || (i.flick && i.flick.dying)).length >= 1",
+   "timeout": 3000,
+   "label": "a lamp shot out (O6's set: the head's glass, the pop, a buzz, dark)"
+  },
+  {
+   "expect": "/SHOTS/.test(JSON.stringify(G.news.lines))",
+   "label": "the paper has it (O1b's news: SHOTS FIRED)"
+  },
+  {
+   "eval": "(() => { const c = G.city.car, C = N.controller; const d = Math.hypot(c.pos.x - C.pos.x, c.pos.z - C.pos.z); if (d > 2.3) { const k = (d - 1.6) / d; C.setPose(C.pos.x + (c.pos.x - C.pos.x) * k, C.pos.z + (c.pos.z - C.pos.z) * k, 0, 0); } C.yaw = Math.atan2(-(c.pos.x - C.pos.x), -(c.pos.z - C.pos.z)); C.pitch = -0.1; return 1; })()"
+  },
+  {
+   "until": "G.hud.promptShown === 'E  get in' || (G.hud.kit.teachCur && G.hud.kit.teachCur.id === 'city_in')",
+   "timeout": 4000
+  },
+  {
+   "key": "KeyE"
+  },
+  {
+   "until": "G.city.inCar",
+   "timeout": 3000
+  },
+  {
+   "expect": "G.city.inCar && G.player.weapons.current === 'fists' && G.night.saver.skipped === 'heat'",
+   "label": "into the car with the heat on: the gun away, no autosave (heat)"
+  },
+  {
+   "eval": "(() => { G.stage.part('stream').warmAround(0, 418); G.city.car.place(new N.THREE.Vector3(0, 0, 418), -1.5708); return 1; })()"
+  },
+  {
+   "wait": 600
+  },
+  {
+   "down": "KeyW"
+  },
+  {
+   "until": "!!G.failing",
+   "timeout": 9000
+  },
+  {
+   "up": "KeyW"
+  },
+  {
+   "expect": "G.lastFail && G.lastFail.why === 'The river took it.'",
+   "label": "off the slipway: 'The river took it.'"
+  },
+  {
+   "until": "!G.failing && G.scenes.beat === 'ashore'",
+   "timeout": 14000,
+   "label": "up on the quay"
+  },
+  {
+   "wait": 800
+  },
+  {
+   "shot": "h02_quay"
+  },
+  {
+   "expect": "G.police.heat > 0 && ['Lose them.', 'Stay out of sight.'].includes(G.hud.kit.objectiveText)",
+   "label": "the heat's line kept through the river's black (it was lost with the scene's entry)"
+  },
+  {
+   "expect": "!G.city.inCar && !G.stage.part('city').C.inWater(N.controller.pos.x, N.controller.pos.z) && Math.hypot(G.city.car.pos.x - N.controller.pos.x, G.city.car.pos.z - N.controller.pos.z) < 8 && N.controller.enabled !== false",
+   "label": "ends sane: on the quay, a car by me, the controls mine"
+  },
+  {
+   "until": "G.police.searching && G.hud.kit.objectiveText === 'Stay out of sight.'",
+   "timeout": 20000,
+   "label": "out of their sight: the search"
+  },
+  {
+   "expect": "!document.querySelector('#errlog') || !document.querySelector('#errlog').textContent.trim()",
+   "label": "no errors in #errlog"
+  }
+ ]
+}

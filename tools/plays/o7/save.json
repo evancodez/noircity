@@ -1,0 +1,154 @@
+{
+ "about": "[O7 after the critic, B5 and M1] the first car of the night is saved at once (no 'too soon'); out, turned back to it: 'E  get in' (m3); the reload: CONTINUE first and the pad's highlight on it; BEGIN asks ('A new night? The old one is lost.'), BACK puts it back; CONTINUE: in that seat.",
+ "url": "/?mute=1",
+ "size": [
+  1280,
+  800
+ ],
+ "out": "shots/o7/save",
+ "steps": [
+  {
+   "eval": "(localStorage.clear(), 1)"
+  },
+  {
+   "reload": true
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]",
+   "taken": "G.state !== 'title'",
+   "retries": 5,
+   "every": 4000
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'city' && G.scenes.fadeK < 0.05",
+   "timeout": 30000
+  },
+  {
+   "look": [
+    0,
+    0
+   ],
+   "steps": 1
+  },
+  {
+   "eval": "(N.controller.pitch = 0, 1)"
+  },
+  {
+   "key": "KeyE",
+   "hold": 60
+  },
+  {
+   "wait": 1200
+  },
+  {
+   "expect": "G.city.inCar && G.night.saver.autos === 1 && !!localStorage.getItem('noir.save')",
+   "label": "the first E, seconds after BEGIN: saved"
+  },
+  {
+   "down": "KeyW"
+  },
+  {
+   "wait": 2500
+  },
+  {
+   "up": "KeyW"
+  },
+  {
+   "down": "KeyS"
+  },
+  {
+   "wait": 2000
+  },
+  {
+   "up": "KeyS"
+  },
+  {
+   "key": "KeyE",
+   "hold": 60
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "eval": "(N.controller.yaw = Math.atan2(-(G.city.car.pos.x - N.controller.pos.x), -(G.city.car.pos.z - N.controller.pos.z)), 1)"
+  },
+  {
+   "wait": 500
+  },
+  {
+   "expect": "G.hud.promptShown === 'E  get in'",
+   "label": "out and turned back to it: 'E  get in'"
+  },
+  {
+   "key": "KeyE",
+   "hold": 60
+  },
+  {
+   "wait": 1200
+  },
+  {
+   "eval": "(sessionStorage.setItem('o7car', JSON.stringify([G.city.car.pos.x, G.city.car.pos.z])), G.save.money = 77, G.save.write({ reason: 'test' }), 1)"
+  },
+  {
+   "reload": true
+  },
+  {
+   "wait": 3500
+  },
+  {
+   "expect": "(() => { const o = [...document.querySelectorAll('#title .opts .opt')].filter((x) => !x.classList.contains('hidden')).map((x) => x.dataset.k); return o[0] === 'continue' && o[1] === 'begin'; })()",
+   "label": "a save: CONTINUE first, BEGIN after"
+  },
+  {
+   "shot": "s01_title"
+  },
+  {
+   "mouse": "click",
+   "x": 0,
+   "y": 0
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]"
+  },
+  {
+   "wait": 400
+  },
+  {
+   "expect": "G.state === 'title' && G.hud.confirming && /A new night/.test(document.querySelector('#title .go').textContent)",
+   "label": "BEGIN over a save asks"
+  },
+  {
+   "shot": "s02_asks"
+  },
+  {
+   "clickOn": "#title .opt[data-k=back]"
+  },
+  {
+   "wait": 300
+  },
+  {
+   "expect": "G.state === 'title' && !G.hud.confirming && !document.querySelector('#title .opt[data-k=continue]').classList.contains('hidden')",
+   "label": "BACK: CONTINUE again"
+  },
+  {
+   "clickOn": "#title .opt[data-k=continue]",
+   "taken": "G.state !== 'title'",
+   "retries": 5,
+   "every": 4000
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'city' && G.scenes.fadeK < 0.05",
+   "timeout": 30000
+  },
+  {
+   "wait": 800
+  },
+  {
+   "expect": "G.city.inCar && Math.hypot(G.city.car.pos.x - JSON.parse(sessionStorage.getItem('o7car'))[0], G.city.car.pos.z - JSON.parse(sessionStorage.getItem('o7car'))[1]) < 1 && G.save.money === 77",
+   "label": "CONTINUE: in that seat, the money kept"
+  }
+ ]
+}

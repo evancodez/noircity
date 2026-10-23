@@ -15,13 +15,14 @@ export function wallet(G) {
   return S;
 }
 export const money = (G) => wallet(G).money;
+// [O7] (in the city the night's HUD counts the money in: no second line)
 export function earn(G, n, why = '') {
   const S = wallet(G);
   n = Math.round(n);
   if (!n) return S.money;
   S.money += n;
   G.emit('money', { money: S.money, delta: n, why });
-  if (G.hud && G.hud.message) G.hud.message(`$ ${S.money}   + ${n}`, 2.2);
+  if (G.hud && G.hud.message && !(G.night && G.night.inCity)) G.hud.message(`$ ${S.money}   + ${n}`, 2.2);
   return S.money;
 }
 export function pay(G, n, why = '') {
@@ -30,7 +31,7 @@ export function pay(G, n, why = '') {
   if (S.money < n) return false;
   S.money -= n;
   G.emit('money', { money: S.money, delta: -n, why });
-  if (G.hud && G.hud.message) G.hud.message(`$ ${S.money}   - ${n}`, 2.2);
+  if (G.hud && G.hud.message && !(G.night && G.night.inCity)) G.hud.message(`$ ${S.money}   - ${n}`, 2.2);
   return true;
 }
 // (a fall in the city costs a little: the hospital's stitches, the station's fine)

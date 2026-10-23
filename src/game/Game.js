@@ -328,6 +328,8 @@ export class Game {
   // wet street below for the choices). A pure function of time (shot=title
   // renders it at t=).
   titleDrift(t) {
+    // [O7] NOIR CITY's title: the live city from the start's kerb (src/night/title.js)
+    if (this.titleCam) { this.titleCam(t); return; }
     const u = 0.5 - 0.5 * Math.cos((t / 70) * Math.PI * 2);
     const x = 2.5 - 1.0 * u, z = 9.5 - 2.0 * u;
     const tx = -10.2, ty = 1.95, tz = 0.6;
@@ -397,13 +399,17 @@ export class Game {
     if (from && from.scene && this.scenes.get(from.scene)) {
       this.save.flags = { ...(from.flags || {}) };
       this.save.inventory = [...(from.inventory || [])];
-      this.save.money = from.money || 0; this.save.ammo = { ...(from.ammo || {}) };   // [O4]
+      // [O7] the open world's own state: a v3 save's (CONTINUE), else a new night's
+      this.save.load(from.v ? from : null);
+      this.emit('night:start', { from: from.v ? from : null, scene: from.scene });
+      if (!from.v) { if (from.money) this.save.money = from.money; if (from.ammo) this.save.ammo = { ...from.ammo }; }   // [O4] (a bed's purse)
       const def = this.scenes.get(from.scene);
       const beat = def.beats.includes(from.beat) ? from.beat : def.beats[0];
       this.scenes.go(from.scene, { beat, fade: 'black', card: true, fadeIn: 1.6 });
     } else {
       this.save.flags = {};
       this.save.inventory = [];
+      this.save.load(null);   // [O7]
       // (scene 1 fades in from black over 2.5 s under its chapter card)
       this.scenes.go('diner', { fade: 'black', card: true, fadeIn: 2.5 });
     }

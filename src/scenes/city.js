@@ -7,7 +7,9 @@ import { MapOverlay } from '../world/map.js';
 import { compileAll } from '../stages/noircity/compile.js';
 import { swimStep } from '../world/swim.js';
 import { placesOf } from '../places/Places.js';   // [O5] the places: their doors, their rooms
-import { arms } from '../combat/money.js';   // [O5] the wheel through what I own
+import { arms, owns } from '../combat/money.js';   // [O5] the wheel through what I own; [O7] the revolver under my arm
+import { fistStep } from '../night/fist.js';   // [O7] after the critic: the bare hand in the street
+import { wake as fallWake } from '../combat/fall.js';   // [O7] the hospital's words
 
 // NOIR CITY's free roam (lane O1): the city, a car at the kerb, nothing I
 // must do. Every critic and every later lane starts from here.
@@ -71,7 +73,7 @@ function place(ctx, at) {
   V.clear();
   stage.part('stream').warmAround(at.car.x, at.car.z);
   if (stage.part('dressing')) stage.part('dressing').warmAround(at.car.x, at.car.z);   // [O1b]
-  const car = V.spawn('coupe', { at: new THREE.Vector3(at.car.x, 0, at.car.z), yaw: at.carYaw, lights: true });
+  const car = V.spawn(at.kind || 'coupe', { at: new THREE.Vector3(at.car.x, 0, at.car.z), yaw: at.carYaw, lights: true });   // [O7] (a save's kind)
   car.driver = null;
   V.player = null;
   R.car = car;
@@ -93,17 +95,26 @@ function place(ctx, at) {
   // program and uploaded the seat's geometries in its frame - 108 and 127 ms.
   // The seat taken once now, under the fade in: the hands on the wheel, the
   // screen's drops, compiled and drawn into a scrap target, then let go)
-  if (!G.shotMode && !stage._compiled && G.pipeline && G.pipeline.renderer) {
+  // [O7] (its own flag: the title's backdrop compiles the city's stage at load - night/title.js -
+  // and the seat was skipped with it, so the first E made TailScreen in its frame again: 100+ ms)
+  if (!G.shotMode && !stage._seatWarm && G.pipeline && G.pipeline.renderer) {
+    stage._seatWarm = true;
     const r = G.pipeline.renderer;
+    // [O7] after the critic (M2: the first E 171 ms): the headlamps' cones and their pool on the road are
+    // drawn only while lit - invisible at the warm, their programs were made in the first E's frame: lit here
+    const lampsOn = car.lamps && car.lamps.setOn ? car.lamps : null;
+    if (lampsOn) lampsOn.setOn(true);
     try {
       R.cabin.attach(car, { ...seatOpts(), ease: 0.001 });
       G.vm.sync && G.vm.sync(G.camera);
       r.compile(G.vm.scene, G.vm.cam);
       const rt = new THREE.WebGLRenderTarget(64, 64), prev = r.getRenderTarget();
       r.setRenderTarget(rt); r.render(G.vm.scene, G.vm.cam); r.setRenderTarget(prev); rt.dispose();
+      stage._compiled = false;   // [O7] (the seat's own programs - TailScreen's FX layer - with the city's lights: the cached ones cost nothing)
       R.compileMs = compileAll(stage, G);
     } catch (e) { /* its first entry will */ }
     R.cabin.dispose();
+    if (lampsOn) lampsOn.setOn(false);
     G.player.hands.equip('empty');
     G.setViewmodelVisible(false);
     ctx.controller.setPose(at.pos.x, at.pos.z, at.yaw, -0.06);
@@ -116,10 +127,13 @@ export default defineScene({
   // [O5] hotel: up in my room at the Carlton (the save the bed writes; CONTINUE);
   // station: on the cell's bench at headquarters (the arrest's wake: O3);
   // wake: up after a fall in a place (G.city.wake: outside its door, or by the gym's ring), the car where I left it
-  beats: ['roam', 'ashore', 'hotel', 'station', 'wake'],
+  // [O7] hospital: after a fall in the street (the bounty's man, a fight lost to anyone but the police):
+  // up on the pavement by my car where I left it - O4's rules (fall.js: the stitches' cost) - until a
+  // hospital's door is built
+  beats: ['roam', 'ashore', 'hotel', 'station', 'wake', 'hospital'],
   // (M is the map here: Game.bindInput leaves the sound alone)
   mapKey: true,
-  objectives: { roam: null, ashore: null, hotel: null, station: null, wake: null },
+  objectives: { roam: null, ashore: null, hotel: null, station: null, wake: null, hospital: null },
   // [O6] the low line when the destruction set hurt him (the fire, the tram): its fix, not the gun kit's
   lowWarn: (ctx) => (ctx.stage.smash && ctx.stage.smash.cars.lowWarn()) || null,
   setup: {
@@ -128,9 +142,16 @@ export default defineScene({
       // (look development and the frames: ?car=x,z,yaw puts the car there and me in its seat)
       const q = typeof location !== 'undefined' ? new URLSearchParams(location.search) : null;
       const cq = q && q.get('car');
-      if (cq) {
-        const [x, z, yaw] = cq.split(',').map(Number);
-        place(ctx, { car: { x, z }, carYaw: yaw, pos: { x: x + Math.sin(yaw) * 2.3, z: z + Math.cos(yaw) * 2.3 }, yaw: 0 });
+      // [O7] CONTINUE (src/night/save.js): the car and me where the save has us (in its seat, or beside it)
+      const rs = ctx.game.night && ctx.game.night.takeResume ? ctx.game.night.takeResume() : null;
+      if (rs) {
+        place(ctx, rs);
+        if (rs.damage) ctx.game.city.car.damage = rs.damage;
+        if (!rs.inCar) return;
+      }
+      if (cq || (rs && rs.inCar)) {
+        const [x, z, yaw] = rs ? [rs.car.x, rs.car.z, rs.carYaw] : cq.split(',').map(Number);
+        if (!rs) place(ctx, { car: { x, z }, carYaw: yaw, pos: { x: x + Math.sin(yaw) * 2.3, z: z + Math.cos(yaw) * 2.3 }, yaw: 0 });
         const G = ctx.game, R = G.city;
         G.vehicles.setPlayer(R.car);
         if (R.car.lamps && R.car.lamps.setOn) R.car.lamps.setOn(true);
@@ -175,6 +196,15 @@ export default defineScene({
       place(ctx, { car: { x: kerb.x, z: kerb.z }, carYaw: kerb.yaw, pos: out, yaw: s.frame.yaw(0) });
       P.wakeAfter(W);
       R.wake = null;
+    },
+    // [O7] up after a fall in the street: by my car where I left it (or at Grand Ave's kerb), the stitches paid
+    hospital(ctx) {
+      const G = ctx.game, R = G.city || (G.city = {});
+      const car = R.car && R.car.solid !== false && !R.car.wrecked ? { x: R.car.pos.x, z: R.car.pos.z, yaw: R.car.yaw, kind: R.car.kind } : null;
+      if (car) place(ctx, { car: { x: car.x, z: car.z }, carYaw: car.yaw, kind: car.kind, pos: { x: car.x + Math.sin(car.yaw) * 2.4, z: car.z + Math.cos(car.yaw) * 2.4 }, yaw: car.yaw - Math.PI / 2 });
+      else { const a = ctx.stage.anchor('city.start.grand'); place(ctx, { car: a.car, carYaw: a.carYaw, pos: a.pos, yaw: a.yaw }); }
+      const r = fallWake(G, 'hospital');
+      G.hud.message(r.line, 3.0);
     },
     // out of the river: on the quay at the nearest steps, a car at the kerb by them
     ashore(ctx) {
@@ -226,7 +256,8 @@ export function step(ctx, R, T, dt) {   // [O6] exported
   // gun shop) - a gun out is the gun mode, fists the walk (lane O7 owns the wheel's card and the pad's)
   if (!R.inCar && G.mouse.wheel && !G.crowd.active && !(R.places && R.places.seat)) {
     const g = arms(G).next(Math.sign(G.mouse.wheel));
-    if (g) { G.setViewmodelVisible(g !== 'fists'); if (g === 'fists') G.player.hands.equip('empty'); ctl.setMode(g === 'fists' ? 'walk' : 'gun', { crouch: false }); }
+    if (g) { G.setViewmodelVisible(g !== 'fists'); if (g === 'fists') G.player.hands.equip('empty'); ctl.setMode(g === 'fists' ? 'walk' : 'gun', { crouch: false }); G.emit('city:arms', { gun: g }); }   // [O7] (city:arms)
+    if (g && g !== 'fists') T.drawn = true;   // [O7] (the wheel's card is not needed any more)
   }
   if (R.inCar) {
     T.drive += dt;
@@ -258,27 +289,37 @@ export function step(ctx, R, T, dt) {   // [O6] exported
   if (car && !R.inCar && (car.vel.lengthSq() > 4e-4 || Math.abs(car.yawRate) > 0.01)) car.step(dt);
   // on foot: the river (walked off a pier's end, down a slipway, the steps):
   // [O1b] a swim to the steps (world/swim.js), never the fade
-  if (swimStep(ctx, R)) return;
-  // E at the car: any door, looking at it, close by
-  let near = false;
-  if (car && car.solid !== false && !car.wrecked) {   // [O6] (a burnt wreck is no car to get into)
-    const l = car.local(ctl.pos, _v);
-    const db = Math.hypot(Math.max(0, Math.abs(l.x) - car.spec.halfL), Math.max(0, Math.abs(l.z) - car.spec.halfW));
+  if (swimStep(ctx, R)) { if (gunOut(G)) holster(ctx); return; }
+  // [O7] the revolver under my arm (OPEN_WORLD §1; a new night gives it: night/save.js): the wheel
+  // above draws it (the pad's d-pad left / right); its card once, on foot, in a quiet second
+  if (!T.drawn && T.foot > 4 && owns(G, 'revolver') && !T.warned && !T.near && !hud.kit.teachCur && !(G.police && G.police.heat > 0)) { T.drawn = true; hud.teach('city_gun', '[WHEEL] the revolver', { until: () => gunOut(G) || R.inCar, secs: 4 }); }
+  // E at a car: any door, looking at it, close by - [O7] after the critic (B4: the car I came in was
+  // furniture once the phone box brought another): any intact car of the night's (G.vehicles: mine, the
+  // phone's, a save's), the nearest I look at; the one I get into is my car (R.car)
+  let near = false, nearCar = null, nearD = Infinity;
+  const f = G.camera.getWorldDirection(new THREE.Vector3()), fl = Math.max(1e-3, Math.hypot(f.x, f.z));
+  for (const cv of G.vehicles.list) {
+    if (!cv || cv.solid === false || cv.wrecked || cv.driver || cv === G.vehicles.player) continue;   // [O6] (a burnt wreck is no car to get into)
+    const l = cv.local(ctl.pos, _v);
+    const db = Math.hypot(Math.max(0, Math.abs(l.x) - cv.spec.halfL), Math.max(0, Math.abs(l.z) - cv.spec.halfW));
     // (within a stride of its body: 2.5 m, the starts' place behind its tail included)
-    if (db < 2.5) {
-      const f = G.camera.getWorldDirection(new THREE.Vector3());
-      const toX = car.pos.x - G.eye.x, toZ = car.pos.z - G.eye.z, tl = Math.max(0.05, Math.hypot(toX, toZ));
-      const fl = Math.max(1e-3, Math.hypot(f.x, f.z));
-      near = (toX * f.x + toZ * f.z) / (tl * fl) > 0.35 || db < 0.5;
-    }
+    if (db >= 2.5 || db >= nearD) continue;
+    const toX = cv.pos.x - G.eye.x, toZ = cv.pos.z - G.eye.z, tl = Math.max(0.05, Math.hypot(toX, toZ));
+    if ((toX * f.x + toZ * f.z) / (tl * fl) > 0.35 || db < 0.5) { nearCar = cv; nearD = db; }
   }
+  near = !!nearCar;
   // E at the car: the teach card the first time (the key drawn; it goes when
   // I look away), the plain prompt after it - never both (the critic's M1)
   if (near && !T.near && !T.inCard) T.inCard = hud.teach('city_in', '[E] get in', { until: () => !T.near || R.inCar });
   T.near = near;
   const inP = near && (!T.inCard || T.inCard.done);
-  if (inP !== !!T.inShown) { T.inShown = inP; if (inP) hud.prompt('E  get in', null, 'cityin'); else hud.clearPrompt('cityin'); }
-  if (near && ctx.pressed('KeyE')) { getIn(ctx, R, T); return; }
+  // ([O7] after the critic, m3: turned back to the car after getting out, no prompt - another's prompt
+  // was up when it came, and it was never asked again: asked each step until it shows)
+  if (inP !== !!T.inShown || (inP && hud.promptOwner !== 'cityin')) { T.inShown = inP; if (inP) hud.prompt('E  get in', null, 'cityin'); else hud.clearPrompt('cityin'); }
+  if (near && ctx.pressed('KeyE')) { if (nearCar !== R.car) { R.car = nearCar; G.emit('city:mycar', { car: nearCar }); } getIn(ctx, R, T); return; }
+  // [O7] after the critic (B3: LMB on foot with empty hands did nothing): the bare hand's LMB / RMB throws
+  // O4's jab on the press - the hands, the whiff; on a man in reach, the fight (fist.js)
+  if (fistStep(ctx, R)) return;
   // a street door: in front of it, close, looking at it - E tries it. Shut,
   // it rattles (a place's door is O5's to open: city:door, e.handled)
   let door = null;
@@ -300,8 +341,20 @@ export function step(ctx, R, T, dt) {   // [O6] exported
   }
 }
 
+// [O7] a gun in hand: put away (into the car, into the river)
+export function gunOut(G) { const c = G.player.weapons.current; return !!c && c !== 'fists'; }
+export function holster(ctx) {
+  const G = ctx.game;
+  arms(G).to('fists');
+  G.player.hands.equip('empty');
+  G.setViewmodelVisible(false);
+  if (ctx.controller.mode === 'gun') ctx.controller.setMode('walk', { crouch: false });
+  G.emit('city:arms', { gun: 'fists' });
+}
+
 export function getIn(ctx, R, T) {   // [O6] exported
   const G = ctx.game, car = R.car;
+  if (gunOut(G)) holster(ctx);   // [O7]
   ctx.hud.clearPrompt('cityin');
   T.near = false; T.inShown = false; T.drive = 0; T.dist = 0; T.outShown = false; R.wantOut = false;
   G.vehicles.setPlayer(car);

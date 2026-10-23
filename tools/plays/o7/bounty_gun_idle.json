@@ -1,0 +1,71 @@
+{
+ "about": "[O7 after the critic, B2] the wanted man and a gun, idle: my revolver out 15 m from him and nothing else - he draws, the gun kit's warning, down: the hospital.",
+ "url": "/?mute=1&start=city",
+ "size": [
+  1280,
+  800
+ ],
+ "out": "shots/o7/bounty_gun_idle",
+ "steps": [
+  {
+   "wait": 1500
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]",
+   "taken": "G.state !== 'title'",
+   "retries": 5,
+   "every": 4000
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'city' && G.scenes.fadeK < 0.05",
+   "timeout": 30000
+  },
+  {
+   "look": [
+    0,
+    0
+   ],
+   "steps": 1
+  },
+  {
+   "eval": "(N.controller.pitch = 0, 1)"
+  },
+  {
+   "eval": "(window.__fails = [], G.on('fail', (e) => window.__fails.push(e.why + ' -> ' + e.to)), 1)"
+  },
+  {
+   "eval": "(() => { const b = G.night.bounty.names()[0]; G.stage.part('stream').warmAround(b.x, b.z); const g = G.night.graph(); let px = b.x + 15, pz = b.z; for (let i = 0; i < 16; i++) { const a = i * Math.PI / 8, q = new N.THREE.Vector3(b.x + Math.cos(a) * 15, 0, b.z + Math.sin(a) * 15); const q0 = q.clone(); G.stage.colliders.resolve(q, 0.4); if (q.distanceTo(q0) < 0.05 && g.lineOfSight(q.x, q.z, b.x, b.z) && !G.stage.part('city').C.inWater(q.x, q.z)) { px = q.x; pz = q.z; break; } } N.controller.setPose(px, pz, Math.atan2(-(b.x - px), -(b.z - pz)), -0.05); G.stage.part('bounds').navAround(px, pz, 30); return [b.name, Math.round(px), Math.round(pz)]; })()"
+  },
+  {
+   "until": "!!G.night.bounty.men.get('b0')",
+   "timeout": 3000
+  },
+  {
+   "wait": 400
+  },
+  {
+   "drive": "tools/lib/o4_wheel.mjs",
+   "dy": 100
+  },
+  {
+   "until": "G.night.bounty.men.get('b0').mode === 'gun'",
+   "timeout": 3000,
+   "label": "my gun out: he draws"
+  },
+  {
+   "until": "!!G.failing",
+   "timeout": 90000,
+   "label": "idle with the gun out: he puts me down"
+  },
+  {
+   "wait": 3000
+  },
+  {
+   "eval": "'b0 '+G.night.bounty.names()[0].state+' mode '+((G.night.bounty.men.get('b0')||{}).mode)+' owed $'+G.night.bounty.owed()+' fails '+JSON.stringify(window.__fails)"
+  },
+  {
+   "expect": "window.__fails.length === 1 && /hospital/.test(window.__fails[0])",
+   "label": "down to him: the hospital, the black names him"
+  }
+ ]
+}

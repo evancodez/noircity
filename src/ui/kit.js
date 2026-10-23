@@ -133,7 +133,7 @@ export class KitUi {
   drawObjective(text) {
     const E = this.objEl;
     for (const c of [...E.querySelectorAll('canvas')]) c.remove();
-    if (!text) { E.style.display = 'none'; return; }
+    if (!text) { E.style.display = 'none'; E.querySelector('.t').textContent = ''; return; }   // [O7] (gone: no words left in the page for a reader)
     E.querySelector('.t').textContent = text;
     const { ground, s } = this.objArt(text);
     E.insertBefore(ground, E.firstChild);
@@ -165,7 +165,7 @@ export class KitUi {
     if (!O) { E.style.display = 'none'; return; }
     let reveal = 1, op = 1, strike = 0;
     if (O.phase === 'in') { reveal = ease(Math.min(1, O.t / 0.45)); }
-    else if (O.phase === 'sit') { op = 1 - 0.42 * ease(Math.min(1, Math.max(0, (O.t - 2.5) / 1.0))); }
+    else if (O.phase === 'sit') { op = 1 - (this.sitFade ?? 0.42) * ease(Math.min(1, Math.max(0, (O.t - 2.5) / 1.0))); }   // [O7] (sitFade: the city's line stays readable)
     else if (O.phase === 'strike') { strike = ease(Math.min(1, O.t / 0.3)); op = 1; }
     else if (O.phase === 'out') { op = 1 - Math.min(1, O.t / 0.3); strike = O.struck ? 1 : 0; }
     E.style.clipPath = reveal < 1 ? `inset(-20px ${(100 * (1 - reveal)).toFixed(1)}% -20px -40px)` : '';
@@ -229,7 +229,7 @@ export class KitUi {
       if (p.key) {
         const K = p.key.toUpperCase().replace(/\s+/g, '');
         const gid = pad ? glyphOf(K, ctx) : null;   // [C12]
-        const c = gid ? padGlyph(gid, { h: 46 }) : K === 'LMB' ? mouseGlyph('L', { h: 50 }) : K === 'RMB' ? mouseGlyph('R', { h: 50 }) : keyCap(K, { h: 44 });
+        const c = gid ? padGlyph(gid, { h: 46 }) : K === 'LMB' ? mouseGlyph('L', { h: 50 }) : K === 'RMB' ? mouseGlyph('R', { h: 50 }) : K === 'WHEEL' ? mouseGlyph('W', { h: 50 }) : keyCap(K, { h: 44 });   // [O7] (WHEEL: the mouse's wheel)
         c.classList.add('cap');
         row.appendChild(c);
         width += parseFloat(c.style.width) + 12;

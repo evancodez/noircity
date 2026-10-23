@@ -545,6 +545,7 @@ export class Places {
     if (this.inside) {
       this.insideT += dt;
       // (the police lose me inside after a while: O3's)
+      // ([O7] after the critic: lost() begins the search - the badges go one by one while nobody sees me - it cleared all five at once)
       if (this.insideT > 20 && !this.lostSaid) { this.lostSaid = true; if (G.police && G.police.lost) G.police.lost(); }
     } else this.lostSaid = false;
     for (const s of this.list) {
@@ -570,7 +571,7 @@ export class Places {
     }
     // a fist at one of the room's people (nothing drawn, no fight on, on my feet)
     if (this.inside && !this.seat && !G.crowd.active && !G.brawl.active && !G.failing && !drawn(G)
-      && (G.pressed('Mouse0') || G.pressed('Mouse2'))) this.fist(G.pressed('Mouse0') ? 'L' : 'R');
+      && (G.pressed('Mouse0') || G.pressed('Mouse2'))) { if (this.fist(G.pressed('Mouse0') ? 'L' : 'R')) this.fistAt = G.time; }   // [O7] (taken: the street's jab - night/fist.js - leaves it)
     // seated: S or SPACE gets me up always (the stick back, cross on the pad); E too when nothing
     // in reach takes it (then the prompt says so - but not under the card that says it)
     if (this.seat) {

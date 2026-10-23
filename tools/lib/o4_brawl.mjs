@@ -77,7 +77,7 @@ export default async function drive({ js, turn, keyDown, keyUp, mouse, log, slee
         out.tries.push({ result: e.result, why: e.why, warnedFor: e.warned, secs, stats: e.stats });
         log(`END ${e.result}${e.why ? ' (' + e.why + ')' : ''} after ${secs} s, warned ${e.warned} s before; ${JSON.stringify(e.stats)}`);
         await snap('end_' + e.result);
-        if (e.result === 'won') wins++; else if (e.result === 'down') losses++;
+        if (e.result === 'won' || e.result === 'fled') wins++; else if (e.result === 'down') losses++;   // [O7] (fled: the wanted man ran, beaten - night/bounty.js)
         tryT0 = Date.now();
         // the clumsy hand reads the word on the black
         if (P && prof === 'bad' && e.why) {

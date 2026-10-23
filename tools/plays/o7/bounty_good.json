@@ -1,0 +1,43 @@
+{
+ "about": "[O7 after the critic, B2] the wanted man by good hands: taken in twice in a row (the tool puts him back on his corner for the second).",
+ "url": "/?mute=1&start=city",
+ "size": [
+  1280,
+  800
+ ],
+ "out": "shots/o7/bounty_good",
+ "steps": [
+  {
+   "wait": 1500
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]",
+   "taken": "G.state !== 'title'",
+   "retries": 5,
+   "every": 4000
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'city' && G.scenes.fadeK < 0.05",
+   "timeout": 30000
+  },
+  {
+   "look": [
+    0,
+    0
+   ],
+   "steps": 1
+  },
+  {
+   "eval": "(N.controller.pitch = 0, 1)"
+  },
+  {
+   "drive": "tools/lib/o7_bounty.mjs",
+   "profile": "good",
+   "tries": 1,
+   "wins": 2,
+   "timeout": 400000,
+   "check": "D.wins >= 2 && D.losses === 0",
+   "label": "good hands: twice in a row"
+  }
+ ]
+}

@@ -179,6 +179,13 @@ const padKeyUp = async (code) => { VKH.delete(code); await padSync(); };
 async function padMouse(type, x, y, button = 'left', extra = {}) {
   if (type === 'mouseMoved') return;
   if (type === 'mouseWheel') {
+    // [O7] (on foot - the walk, a fist fight - the wheel is the d-pad's left / right: a notch a press)
+    const pc = (await js('N.pad.context()')) || 'play';
+    if (pc === 'play' || pc === 'brawl') {
+      const n = Math.max(1, Math.round(Math.abs(extra.deltaY || 0) / 100)), b = (extra.deltaY || 0) > 0 ? PADB.right : PADB.left;
+      for (let i = 0; i < n; i++) { PS.buttons[b] = 1; await pushPad(); await sleep(90); PS.buttons[b] = 0; await pushPad(); await sleep(60); }
+      return;
+    }
     // (a puzzle's wheel: R1 / L1 held as long as the wheel's units take at the pad's rate)
     const units = extra.deltaY || 0, rate = (await js('N.pad.cfg.wheel')) || 900;
     const b = units > 0 ? PADB.r1 : PADB.l1;

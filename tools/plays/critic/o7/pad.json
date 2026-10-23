@@ -1,0 +1,258 @@
+{
+ "about": "[O7 critic] the pad cold (?padfake=1, no keyboard, no mouse): X wakes and begins; the card at the car in pad glyphs?; square in; R2 drive, the left stick steer; options: the pause card (what is on it), the d-pad through it, X resume; square out; d-pad right the revolver, R2 fires; d-pad down the map, circle closes?",
+ "url": "/?mute=1&padfake=1",
+ "input": "pad",
+ "size": [
+  1280,
+  800
+ ],
+ "out": "shots/critic_o7/pad",
+ "steps": [
+  {
+   "until": "G.state === 'title' && N.hud.titleShown",
+   "timeout": 40000
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "pad": {
+    "b": [
+     "x"
+    ],
+    "secs": 0.12
+   }
+  },
+  {
+   "wait": 400
+  },
+  {
+   "pad": {
+    "b": [
+     "x"
+    ],
+    "secs": 0.12
+   }
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'city' && !G.scenes.fadeK",
+   "timeout": 45000
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "shot": "first"
+  },
+  {
+   "eval": "'HUD '+document.getElementById('hud').innerText.replace(/\\s+/g,' ').slice(0,200)+' | teach '+(G.hud.kit.teachCur&&G.hud.kit.teachCur.id)+' html '+(document.querySelector('#hud .teach, #hud .kteach')||{}).outerHTML"
+  },
+  {
+   "pad": {
+    "b": [
+     "sq"
+    ],
+    "secs": 0.12
+   }
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "eval": "'in '+G.city.inCar"
+  },
+  {
+   "shot": "incar"
+  },
+  {
+   "pad": {
+    "v": {
+     "r2": 1
+    },
+    "secs": 3
+   }
+  },
+  {
+   "eval": "'speed after 3s R2 '+G.city.car.speed.toFixed(1)+' pos '+G.city.car.pos.x.toFixed(1)+','+G.city.car.pos.z.toFixed(1)"
+  },
+  {
+   "shot": "drive"
+  },
+  {
+   "pad": {
+    "v": {
+     "r2": 1
+    },
+    "a": [
+     -0.8,
+     0,
+     0,
+     0
+    ],
+    "secs": 0.8
+   }
+  },
+  {
+   "pad": {
+    "v": {
+     "r2": 1
+    },
+    "secs": 1
+   }
+  },
+  {
+   "eval": "'speed '+G.city.car.speed.toFixed(1)"
+  },
+  {
+   "pad": {
+    "v": {
+     "l2": 1
+    },
+    "secs": 2
+   }
+  },
+  {
+   "pad": {
+    "b": [
+     "opt"
+    ],
+    "secs": 0.12
+   }
+  },
+  {
+   "wait": 700
+  },
+  {
+   "shot": "pause"
+  },
+  {
+   "eval": "'paused '+G.hud.paused+' | '+(document.querySelector('#pausecard')||{innerText:'none'}).innerText.replace(/\\s+/g,' ').slice(0,500)"
+  },
+  {
+   "pad": {
+    "b": [
+     "down"
+    ],
+    "secs": 0.12
+   }
+  },
+  {
+   "wait": 300
+  },
+  {
+   "pad": {
+    "b": [
+     "down"
+    ],
+    "secs": 0.12
+   }
+  },
+  {
+   "wait": 300
+  },
+  {
+   "shot": "pause2"
+  },
+  {
+   "pad": {
+    "b": [
+     "o"
+    ],
+    "secs": 0.12
+   }
+  },
+  {
+   "wait": 700
+  },
+  {
+   "eval": "'after circle: paused '+G.hud.paused"
+  },
+  {
+   "pad": {
+    "b": [
+     "sq"
+    ],
+    "secs": 0.12
+   }
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "eval": "'out: in '+G.city.inCar"
+  },
+  {
+   "pad": {
+    "b": [
+     "right"
+    ],
+    "secs": 0.12
+   }
+  },
+  {
+   "wait": 800
+  },
+  {
+   "eval": "'d-right: '+G.player.weapons.current+' teach '+(G.hud.kit.teachCur&&G.hud.kit.teachCur.id)"
+  },
+  {
+   "pad": {
+    "v": {
+     "r2": 1
+    },
+    "secs": 0.15
+   }
+  },
+  {
+   "wait": 500
+  },
+  {
+   "eval": "'R2: shots '+(G.counters.shots||0)+' heat '+G.police.heat"
+  },
+  {
+   "pad": {
+    "b": [
+     "down"
+    ],
+    "secs": 0.12
+   }
+  },
+  {
+   "wait": 800
+  },
+  {
+   "shot": "map"
+  },
+  {
+   "eval": "'map open '+G.night.map.open"
+  },
+  {
+   "pad": {
+    "b": [
+     "o"
+    ],
+    "secs": 0.12
+   }
+  },
+  {
+   "wait": 700
+  },
+  {
+   "eval": "'circle on map: open '+G.night.map.open+' paused '+G.hud.paused"
+  },
+  {
+   "pad": {
+    "b": [
+     "down"
+    ],
+    "secs": 0.12
+   }
+  },
+  {
+   "wait": 700
+  },
+  {
+   "eval": "'down again: open '+G.night.map.open+' paused '+G.hud.paused"
+  }
+ ]
+}

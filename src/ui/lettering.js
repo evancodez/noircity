@@ -120,12 +120,21 @@ export function mouseGlyph(button = 'L', { h = 40, scale = 2 } = {}) {
   g.save(); body(); g.clip();
   g.fillStyle = '#f4f2ec';
   const bx = button === 'L' ? x0 - 1 : cx, bw = rx + (button === 'L' ? 1 : 2);
-  g.fillRect(bx, y0 - 1, bw, split - y0 + 1);
+  if (button !== 'W') g.fillRect(bx, y0 - 1, bw, split - y0 + 1);
   g.restore();
   g.strokeStyle = '#e8e5dd'; g.lineWidth = 2.0; g.lineJoin = 'round'; g.lineCap = 'round';
   body(); g.stroke();
   g.beginPath(); g.moveTo(x0 + 1, split + rng.gauss() * 0.3); g.lineTo(x0 + w - 1, split + rng.gauss() * 0.3); g.stroke();
   g.beginPath(); g.moveTo(cx, y0 + 1); g.lineTo(cx + rng.gauss() * 0.3, split); g.stroke();
+  // [O7] 'W': the wheel - neither button lit, the wheel between them white, ridged
+  if (button === 'W') {
+    const ww = Math.max(4, w * 0.2), wh = (split - y0) * 0.62, wy = y0 + (split - y0) * 0.2;
+    g.fillStyle = '#f4f2ec'; g.beginPath(); g.roundRect ? g.roundRect(cx - ww / 2, wy, ww, wh, ww / 2) : g.rect(cx - ww / 2, wy, ww, wh); g.fill();
+    g.strokeStyle = '#0a0a0a'; g.lineWidth = 1.2;
+    for (let i = 1; i < 4; i++) { const y = wy + (wh * i) / 4; g.beginPath(); g.moveTo(cx - ww / 2 + 1, y); g.lineTo(cx + ww / 2 - 1, y); g.stroke(); }
+    c.style.width = (w + 8) + 'px'; c.style.height = (h + 8) + 'px';
+    return c;
+  }
   // (its letter, inked in the lit button)
   g.fillStyle = '#0a0a0a';
   g.font = `700 ${Math.round(h * 0.24)}px "American Typewriter", "Courier New", monospace`;

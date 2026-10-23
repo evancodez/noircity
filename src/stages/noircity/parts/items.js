@@ -220,7 +220,7 @@ export default {
         }
         if (paperT > 0) { paperT -= dt; if (paperT <= 0 && paperEl) paperEl.style.opacity = '0'; }
         if (pocketT > 0) { pocketT -= dt; if (pocketT <= 0 && pocketEl) pocketEl.style.opacity = '0'; }
-        if (G.pressed('Tab') && G.state === 'playing') showPockets(G);
+        if (G.pressed('Tab') && G.state === 'playing' && !(G.night && G.night.inCity)) showPockets(G);   // [O7] (the night's Tab shows the pockets with the heat and the money)
         // the glints: a flash every couple of seconds on each thing near enough, kept a
         // dozen pixels across at any distance; never on the thing I am looking at
         for (const it of shown) {
