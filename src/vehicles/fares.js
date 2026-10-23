@@ -80,7 +80,7 @@ export class Fares {
       let held = false;
       if (v.speedAbs < 1.5) {
         held = this.W.signals.nodes.some((n) => Math.abs(n.x - v.pos.x) < 32 && Math.abs(n.z - v.pos.z) < 32);
-        if (!held) for (const o of this.W.bodies()) { if (o === v || !o.spec || Math.abs(o.pos.x - v.pos.x) > 16 || Math.abs(o.pos.z - v.pos.z) > 16) continue; const l = v.local(o.pos, _v); if (l.x > 2 && l.x < 15 && Math.abs(l.z) < 2.6) { held = true; break; } }
+        if (!held) for (const o of this.W.bodies()) { if (o === v || !o.spec || o.parked || Math.abs(o.pos.x - v.pos.x) > 16 || Math.abs(o.pos.z - v.pos.z) > 16) continue; const l = v.local(o.pos, _v); if (l.x > 2 && l.x < 15 && Math.abs(l.z) < 2.6) { held = true; break; } }
       }
       F.idleT = v.speedAbs < 1.5 && !held ? F.idleT + dt : Math.max(0, F.idleT - dt * 2);
       if (F.idleT > 20 && !F.nagged) { F.nagged = true; hud.warn('Come on.'); F.warnT = 3; }

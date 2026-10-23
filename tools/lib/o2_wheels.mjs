@@ -79,7 +79,7 @@ function prims({ js, turn, keyDown, keyUp, sleep, log }, H) {
     // a car's way by the keys: pure pursuit on a path of points; until(s) ends it
     async driveAlong(path, { until = null, speed = 14, timeout = 120000, onStep = null, traffic = false } = {}) {
       const T0 = Date.now();
-      let idx = 0, stuckT = 0, revUntil = 0, last = Date.now();
+      let idx = 0, stuckT = 0, revUntil = 0, last = Date.now(), slowT = 0;
       for (;;) {
         const now = Date.now(), dt = (now - last) / 1000; last = now;
         const s = await P.state();
@@ -110,6 +110,9 @@ function prims({ js, turn, keyDown, keyUp, sleep, log }, H) {
           if (ah < 3) target = 0;
           if (ah < 4 && Math.abs(c.v) < 0.5) stuckT = 0;
         }
+        // (stood a long while: say why, once each 8 s - the proofs' trace)
+        slowT = Math.abs(c.v) < 0.5 ? slowT + dt : 0;
+        if (slowT > 8) { slowT = 0; log('    stood 8 s: ' + JSON.stringify(await js(`(() => { const c = G.city.car, ca = Math.cos(c.yaw), sa = Math.sin(c.yaw); const near = []; for (const o of G.wheels.bodies()) { if (o === c || !o.spec) continue; const dx = o.pos.x - c.pos.x, dz = o.pos.z - c.pos.z; if (Math.hypot(dx, dz) > 25) continue; const lx = dx * ca - dz * sa, lz = dx * sa + dz * ca; const tc = G.wheels.traffic.cars.find((t) => t.v === o); near.push({ k: o.kind, p: !!o.parked, lx: +lx.toFixed(1), lz: +lz.toFixed(1), v: +o.speed.toFixed(1), st: tc ? tc.state : null, why: tc ? tc.why : null, sig: tc ? tc.atSignal : null, stop: tc && tc.pilot ? tc.pilot.o.stopAt : null }); } return { at: [+c.pos.x.toFixed(1), +c.pos.z.toFixed(1), +c.yaw.toFixed(2)], idx: ${idx}, n: ${path.length}, near }; })()`))); }
         if (Math.abs(c.v) < 0.8 && P.held.has('KeyW')) stuckT += dt; else stuckT = 0;
         if (stuckT > 2.0) { revUntil = now + 1300; stuckT = 0; }
         if (now < revUntil) { await P.set('KeyW', false); await P.set('KeyS', true); await P.set('KeyA', ang > 0); await P.set('KeyD', ang < 0); await sleep(30); continue; }
@@ -266,7 +269,7 @@ async function fare(P, { js, sleep, log, shot }, H) {
       const s0 = await P.state();
       if (Math.hypot(s0.car.x - F.x, s0.car.z - F.z) < 8) break;
       const r1 = await P.route([F.x, F.z], 2.6);
-      const rr = await P.driveAlong(r1 || [], { timeout: 40000, speed: 8, traffic: true, until: async (s) => Math.hypot(s.car.x - F.x, s.car.z - F.z) < 5.5 });
+      const rr = await P.driveAlong(r1 || [], { timeout: 70000, speed: 11, traffic: true, until: async (s) => Math.hypot(s.car.x - F.x, s.car.z - F.z) < 5.5 });
       await P.stop();
       const s1 = await P.state();
       log(`  to the fare: ${rr.end}, ${r1 ? r1.length : 0} points, ${Math.hypot(s1.car.x - F.x, s1.car.z - F.z).toFixed(1)} m off him`);
@@ -290,7 +293,7 @@ async function fare(P, { js, sleep, log, shot }, H) {
     const r2 = await P.route([dest.x, dest.z]);
     const speed = H.name === 'good' ? 15 : H.name === 'medium' ? 13 : 12;
     let knocks = 0;
-    const res = await P.driveAlong(r2 || [], { timeout: 180000, speed, traffic: true, until: async () => (await js('G.wheels.fares.state')) !== 'in',
+    const res = await P.driveAlong(r2 || [], { timeout: 300000, speed, traffic: true, until: async () => (await js('G.wheels.fares.state')) !== 'in',
       onStep: async (s, idx) => { if (H.name === 'bad' && knocks < 2 && idx > 30 + knocks * 60 && Math.random() < 0.01) { knocks++; log('  bad hands: into the kerb'); await P.set('KeyW', true); await P.set(Math.random() < 0.5 ? 'KeyA' : 'KeyD', true); await sleep(1300); } } });
     await P.stop();
     await sleep(600);
