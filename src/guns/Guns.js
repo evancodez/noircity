@@ -96,6 +96,9 @@ export class Guns {
     this.tokens.clear();
     this.flank = null; this.flankCoolT = 0; this.lastKill = null; this.chewT = -9; this._w = null; this.doorIn = null;
     this.post = { x: G.eye.x, z: G.eye.z, t: 0 };
+    // [O4] (a car blown up by the rounds: the blast's hurt is the world's, not a round's - the line says it)
+    this.lastBlastT = -9;
+    if (!this._blastHook && G.on) { this._blastHook = true; G.on('car:exploded', (e) => { if (this.active && e && e.at && Math.hypot(e.at.x - G.eye.x, e.at.z - G.eye.z) < 8) this.lastBlastT = G.time; }); }
     // (the record runs on across encounters, a marker at each: the plays read it)
     if (this.events.length > 600) this.events.splice(0, this.events.length - 400);
     this.events.push({ t: +G.time.toFixed(2), what: 'begin', name: cfg.to || '' });
@@ -726,6 +729,8 @@ export class Guns {
     // [O4] after the critic (75 of the damage came down behind the car, the last round as I
     // rose, and the black said 'Up over the cover too long.'): the pose that took most of
     // the last 6 s's damage names the fix, not the last round's alone
+    // [O4] (a blast within the last moment put me down: the car I hid behind went up)
+    if (this.game.time - (this.lastBlastT ?? -9) < 1.5) return W.blast || 'Smoking car. Get away from it.';
     const P = this.mostHurt(6);
     if (P === 'down' || P === 'down-open') L = { ...L, crouched: true, risen: false, bare: P === 'down-open' };
     else if (P === 'risen') L = { ...L, crouched: true, risen: true };
@@ -800,6 +805,8 @@ export class Guns {
       // click, the star: the line says it with them)
       if (!down && ai.brain.hasLine && (S.state === 'aim' || S.state === 'out' || S.state === 'fire')) say(4, W.open || 'Get down!', ai);
     }
+    // [O4] (the car I hide behind smoking black, a flame at its seam: it will go up)
+    for (const z of (G.react && G.react.hazards) || []) if (z.kind === 'smoke' && z.car && z.car.state === 'smoking' && Math.hypot(z.pos.x - e.x, z.pos.z - e.z) < 7) say(1, W.car || 'The car\u2019s burning. Move!');
     const L = this.lastKill;
     if (L && G.time - L.t < 1.2 && L.through && down) say(1, W.cover || 'Your cover won\u2019t hold. Move!');
     // (and before a round comes through: the wood I hide behind being chewed to its last)

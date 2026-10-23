@@ -62,7 +62,7 @@ export class Covers {
     const nav = S.nav;
     const P = [];
     for (const b of C.boxes) {
-      if (!COVER_TAGS.has(b.tag)) continue;
+      if (!COVER_TAGS.has(b.tag) || b.noCover) continue;   // [O4] (noCover: a thing that is not theirs to hold - the car I start behind)
       // along each face, a man's width off it
       for (const [ax, sgn] of [[0, 1], [0, -1], [1, 1], [1, -1]]) {
         const half = ax === 0 ? b.hz : b.hx, out = ax === 0 ? b.hx : b.hz;
@@ -79,7 +79,7 @@ export class Covers {
       }
     }
     for (const c of C.circles) {
-      if (!COVER_TAGS.has(c.tag)) continue;
+      if (!COVER_TAGS.has(c.tag) || c.noCover) continue;   // [O4]
       const n = c.r > 0.35 ? 8 : 6;
       for (let k = 0; k < n; k++) {
         const a = (k / n) * Math.PI * 2 + 0.2;

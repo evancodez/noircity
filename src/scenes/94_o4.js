@@ -267,13 +267,29 @@ function hospital(ctx, where = 'hospital') {
   if (gun) { arms(G).to(gun); C.setMode('gun', { crouch: false }); } else ctx.player.weapons.equip('fists');
   ctx.flags.o4 = { beat: where, woke };
 }
+// a car of the bed's off the stage: its meshes, its solids, its collider, its fire, its shadow
+function dropCar(S, car) {
+  const cars = S.part('cars');
+  car.group.traverse((o) => { if (o.isMesh && S.solids.includes(o)) S.removeSolid(o); });
+  if (car.group.parent) car.group.parent.remove(car.group);
+  if (car.shadow && car.shadow.parent) car.shadow.parent.remove(car.shadow);
+  if (car.fire) { const k = cars.fires.indexOf(car.fire); if (k >= 0) cars.fires.splice(k, 1); try { car.fire.dispose(); } catch (e) { /* gone */ } car.fire = null; }
+  const i = cars.cars.indexOf(car); if (i >= 0) cars.cars.splice(i, 1);
+  const b = S.colliders.boxes.indexOf(car.collider); if (b >= 0) S.colliders.boxes.splice(b, 1);
+  if (S.game && S.game.react) S.game.react.hazards = S.game.react.hazards.filter((z) => z.car !== car);
+}
 function shootout(ctx, men = null) {
   const G = ctx.game, K = gunsOf(G), B = men ? { ...STREET, men: men.men } : STREET, C = ctx.controller, S = ctx.stage;
   // (the sedan across the lane: once on this stage; it stays, a car like the others)
   // ([O4] after the critic: its body joins the rounds' and the eyes' world, as the stage's own
   // cars do - before, a round and a look went through it and the start was 'down in the open')
+  // ([O4] after the critic's proofs: a retry is the world as it was - the sedan the last try's
+  // rounds set smoking, or blew up, is taken away and a whole one stands there again)
+  if (S._o4car && (S._o4car.pts > 0 || S._o4car.state !== 'intact')) { dropCar(S, S._o4car); S._o4car = null; }
   if (!S._o4car) { const cars = S.part('cars'); const car = cars.spawn({ pos: new G.camera.position.constructor(B.car.x, 0, B.car.z), yaw: B.car.yaw, lights: false, paint: 'paint' }); cars.cars.push(car); S._o4car = car;
     car.group.updateMatrixWorld(true);
+    // (the car I start behind is mine: their plans hold the street's other cover, not its far face 2 m from me)
+    car.collider.noCover = true;
     if (S.rays) car.group.traverse((o) => { if (o.isMesh && o.layers.mask & 3 && !o.userData.noRay && !S.solids.includes(o)) S.addSolid(o); }); }
   C.setPose(B.at[0], B.at[1], B.at[2], -0.04);
   // (?c2pose=stand, shot mode only: the beat from standing - a review frame's look over the car)
@@ -283,7 +299,11 @@ function shootout(ctx, men = null) {
   const beatName = men ? 'police' : 'street';
   // (a play proving the contest retries it: G.o4stay; else a fall ends at the hospital, as in the city)
   // (a play proving the contest retries it; else the city's: [O4] after the critic, down to the police is the station)
-  K.begin({ world: true, area: B.area, to: G.o4stay ? beatName : beatName === 'police' ? 'station' : 'hospital', maxFiring: 2, flankAfter: 14, settleK: 1.2, dmgK: 0.9 });
+  // (the mercy after a fall in this contest, as the fist fight's: the flank a little later and
+  // their rounds a little lighter for each of my falls, three at most - it never fires a round for
+  // me, and a man who does nothing still goes down)
+  const mc = Math.min(3, G.fails(beatName));
+  K.begin({ world: true, area: B.area, to: G.o4stay ? beatName : beatName === 'police' ? 'station' : 'hospital', maxFiring: 2, flankAfter: 14 + 3 * mc, settleK: 1.2, dmgK: 0.9 - 0.07 * mc });
   // ([O4] after the critic: under a fade - and the place's card on a direct start - the men wait for it)
   const T = G.scenes.trans, late = T ? (T.opts && T.opts.card === true ? 2.0 : 0.8) : 0;
   ctx.flags.c2 = { beat: beatName, men: [], won: false, t0: G.time, spots: B.spots, open: B.open };

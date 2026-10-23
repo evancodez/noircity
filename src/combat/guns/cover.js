@@ -30,7 +30,7 @@ export function worldCoverPoints(G, nav, area = null, { tagged = false } = {}) {
   const S = G.stage, C = S.colliders, A = area || aroundMe(G);
   const P = [];
   for (const b of C.boxes) {
-    if (SKIP.has(b.tag) || (!tagged && COVER_TAGS.has(b.tag))) continue;
+    if (SKIP.has(b.tag) || b.noCover || (!tagged && COVER_TAGS.has(b.tag))) continue;
     if (!inArea(A, b.cx, b.cz, Math.max(b.hx, b.hz))) continue;
     // (too thin to hide behind: a rail, a sign's post)
     if (Math.min(b.hx, b.hz) < 0.08 && Math.max(b.hx, b.hz) < 0.3) continue;
@@ -59,7 +59,7 @@ export function worldCoverPoints(G, nav, area = null, { tagged = false } = {}) {
     }
   }
   for (const c of C.circles) {
-    if (SKIP.has(c.tag) || (!tagged && COVER_TAGS.has(c.tag)) || c.r < 0.22) continue;
+    if (SKIP.has(c.tag) || c.noCover || (!tagged && COVER_TAGS.has(c.tag)) || c.r < 0.22) continue;
     if (!inArea(A, c.x, c.z, c.r)) continue;
     const n = c.r > 0.35 ? 8 : 6;
     for (let k = 0; k < n; k++) {
