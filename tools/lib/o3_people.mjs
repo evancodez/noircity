@@ -700,9 +700,14 @@ async function soak(api) {
     if ((Date.now() - T0) / 1000 >= nextRead) { await read('t' + nextRead); nextRead += 120; }
   }
   await read('end');
+  // (from the first read in play - two minutes in - to the end: the heap, the
+  // geometries (the near chunks come and go with them), and the textures
+  // beyond the figures' own bone textures (one a skeleton: the figures alive
+  // and pooled are bounded by the crowd's cap and the pool's 40))
   const a = R.reads[1] || R.reads[0], z = R.reads[R.reads.length - 1];
-  R.growMB = +(z.heapMB - a.heapMB).toFixed(1); R.growGeo = z.geo - a.geo; R.growTex = z.tex - a.tex;
-  R.ok = R.growMB < 15 && R.growGeo < 150 && R.growTex < 10;
+  const figs = (r) => r.people + r.pooled + r.hoods;
+  R.growMB = +(z.heapMB - a.heapMB).toFixed(1); R.growGeo = z.geo - a.geo; R.growTex = z.tex - a.tex; R.growFigs = figs(z) - figs(a);
+  R.ok = R.growMB < 6 && R.growGeo < 150 && R.growTex <= R.growFigs + 6 && figs(z) <= 90;
   return R;
 }
 
