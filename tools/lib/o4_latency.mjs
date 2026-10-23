@@ -25,7 +25,7 @@ export default async function drive({ js, keyDown, keyUp, mouse, log, sleep, W, 
     const e = (L || []).find((x) => x.t >= t0 && x.act === act);
     return e ? +(e.t - t0).toFixed(1) : null;
   };
-  const stats = (a) => { const v = a.filter((x) => x != null).sort((p, q) => p - q); if (!v.length) return null; return { n: v.length, mean: +(v.reduce((s, x) => s + x, 0) / v.length).toFixed(1), max: v[v.length - 1], median: v[Math.floor(v.length / 2)] }; };
+  const stats = (a) => { const v = a.filter((x) => x != null).sort((p, q) => p - q); if (!v.length) return null; return { n: v.length, mean: +(v.reduce((s, x) => s + x, 0) / v.length).toFixed(1), max: v[v.length - 1], median: v[Math.floor(v.length / 2)], seq: a.map((x) => (x == null ? null : Math.round(x))) }; };
   const out = {};
   if ((opts.part || 'fists') === 'fists') {
     const jab = [], contact = [], block = [], hop = [], heavyWind = [], heavyGo = [];
