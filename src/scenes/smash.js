@@ -302,19 +302,24 @@ function hundred(ctx) {
 
 export default defineScene({
   id: 'smash', stage: 'noircity', title: '', name: 'Smash (the bed)',
-  beats: ['bed', 'burn', 'tram', 'hundred'],
+  beats: ['bed', 'burn', 'tram', 'hundred', 'fire'],
   mapKey: true,
-  objectives: { bed: null, burn: null, tram: null, hundred: null },
+  objectives: { bed: null, burn: null, tram: null, hundred: null, fire: null },
   setup: {
     bed(ctx) { place(ctx); },
     // the sedan already burning, its fuse running; me across the road
     burn(ctx) {
-      const { sedan } = place(ctx, { me: { x: -112.5, z: 12.0, yaw: Math.PI / 2 + 0.25, pitch: -0.02 } });
+      const { sedan } = place(ctx, { me: { x: -113.0, z: 3.0, yaw: 1.776, pitch: -0.03 } });
       sedan.damage = 3.4;
     },
     // the sedan stalled across the west rails, the tram coming from the north
     tram(ctx) {
       place(ctx, { sedan: { x: -121.6, z: 4, yaw: 0.25 }, tramZ: -40, tramDir: 1, me: { x: -110.5, z: 9.0, yaw: Math.PI / 2 - 0.35, pitch: -0.03 } });
+    },
+    // the coupe itself on fire at the kerb (the lane's one loss: in it when it goes)
+    fire(ctx) {
+      const { coupe } = place(ctx);
+      coupe.damage = 3.36;
     },
     // a hundred things round the sedan, its fuse at a second
     hundred(ctx) {
