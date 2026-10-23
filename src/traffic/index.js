@@ -5,7 +5,7 @@ import { Traffic } from './Traffic.js';
 import { Tram } from './tram.js';
 import { crimeOf } from './seams.js';
 import { Hijack } from '../vehicles/hijack.js';
-import { KINDS, FLEET, lampsLit, kindGeo } from '../vehicles/kinds.js';
+import { KINDS, FLEET, lampsLit, kindGeo, lookAt } from '../vehicles/kinds.js';
 import { lanePath, samplePath } from './path.js';
 import { fleetModel, fleetMats, policeGlow } from '../vehicles/kinds.js';
 import { cockpitWarm } from '../vehicles/cockpit.js';
@@ -37,7 +37,7 @@ export class Wheels {
     this.graph = city.graph;
     this.V = game.vehicles;
     // (every kind's builds made now, under the stage's black: never on the road)
-    for (const k of FLEET) for (const lv of [0, 1, 2]) kindGeo(k, lv);
+    for (const k of FLEET) for (let v = 0; v < KINDS[k].nv; v++) for (const lv of [0, 1, 2]) kindGeo(k, lv, v);
     this.crime = crimeOf(game);
     this.signals = new Signals(stage, this.graph);
     this.parked = new Parked(this);
@@ -99,13 +99,17 @@ export class Wheels {
     // (&notraffic=1: the parked and the tram, no moving traffic - the unseen break-in's bed)
     if (q && q.get('notraffic')) this.traffic.on = false;
     if (q && q.get('lineup') && car) {
-      const kinds = q.get('lineup') === '1' ? ['coupe', 'saloon', 'taxi', 'police', 'hearse', 'van', 'lorry'] : q.get('lineup').split(',');
-      let ahead = 7;
-      for (const k of kinds) {
+      // (&lineup=all: every variant of every kind, in its greys by turn, whitewalls every other)
+      const lq = q.get('lineup');
+      const list = lq === 'all' ? Object.keys(KINDS).flatMap((k) => KINDS[k].variants.map((_, vi) => [k, vi])) : (lq === '1' ? ['coupe', 'saloon', 'taxi', 'police', 'hearse', 'van', 'lorry'] : lq.split(',')).map((k) => [k, 0]);
+      let ahead = 7, n = 0;
+      for (const [k, vi] of list) {
         const K = KINDS[k];
         ahead += K.halfL + 0.8;
         const p = car.world(ahead, 0, new THREE.Vector3());
-        const v = this.carAt(p.x, p.z, k, { yaw: car.yaw, lights: false });
+        const fixed = k === 'police' || k === 'taxi' || k === 'hearse';
+        const v = this.carAt(p.x, p.z, k, { yaw: car.yaw, lights: false, look: { variant: vi, paint: fixed ? K.paint : ['paint', 'paintGrey', 'paintPale'][n % 3], white: n % 2 === 0 } });
+        n++;
         v.parked = true;
         this.left.push({ v, kind: k, x: p.x, z: p.z, yaw: car.yaw, paint: v.model.paint });
         ahead += K.halfL + 0.8;
@@ -118,10 +122,10 @@ export class Wheels {
   warm() {
     const S = this.stage, put = (o) => { o.position.set(0, -80, 0); S.scene.add(o); this._warm.push(o); return o; };
     this._warm = [];
-    for (const k of Object.keys(KINDS)) { const m = fleetModel(k, S); lampsLit(m, S, true); if (k === 'police') { const g = policeGlow(m); if (g) g.visible = true; } put(m.group); if (this.game.rays) { this.game.rays.add(m.meshes.body); this.game.rays.remove(m.meshes.body); } }
+    for (const k of Object.keys(KINDS)) { const m = fleetModel(k, S, { variant: k === 'van' ? 0 : 0, white: true }); lampsLit(m, S, true); if (k === 'police') { const g = policeGlow(m); if (g) g.visible = true; } put(m.group); if (this.game.rays) { this.game.rays.add(m.meshes.body); this.game.rays.remove(m.meshes.body); } }
     put(cockpitWarm(S));
     this._inst = [];
-    for (const I of Object.values(this.parked.inst)) for (const lod of ['hi', 'lo', 'box']) for (const im of Object.values(I[lod] || {})) { if (!im.visible) { im.count = 1; im.visible = true; im.setMatrixAt(0, new THREE.Matrix4().makeTranslation(0, -80, 0)); this._inst.push(im); } }
+    for (const I of [...Object.values(this.parked.inst), { hi: { s: this.parked.scrapes } }]) for (const lod of ["hi", "lo", "box"]) for (const im of Object.values(I[lod] || {})) { if (!im.visible) { im.count = 1; im.visible = true; im.setMatrixAt(0, new THREE.Matrix4().makeTranslation(0, -80, 0)); this._inst.push(im); } }
     void fleetMats;
     try { const c = S.cast.spawn('o2_fare', { at: { x: 0, z: 0 }, name: 'o2warm' }); c.fig.object.position.y = -80; this._warmCast = [c]; const c2 = S.cast.spawn('o2_fare_her', { at: { x: 0, z: 0 }, name: 'o2warm2' }); this._warmCast.push(c2); } catch (e) { this._warmCast = []; }
   }
@@ -214,7 +218,7 @@ export class Wheels {
         L.x = L.v.pos.x; L.z = L.v.pos.z; L.yaw = L.v.yaw; L.damage = L.v.damage;
         if (Math.hypot(L.x - eye.x, L.z - eye.z) > 320) { this.V.remove(L.v); L.v = null; }
       } else if (Math.hypot(L.x - eye.x, L.z - eye.z) < 240) {
-        L.v = this.V.spawn(L.kind, { at: new THREE.Vector3(L.x, 0, L.z), yaw: L.yaw, lights: !!L.full, fleet: !L.full, fleetPaint: L.paint });
+        L.v = this.V.spawn(L.kind, { at: new THREE.Vector3(L.x, 0, L.z), yaw: L.yaw, lights: !!L.full, fleet: !L.full, fleetPaint: L.paint, look: L.look });
         L.v.damage = L.damage || 0; L.v.parked = true; L.v.left = L;
         if (L.v.lamps && L.v.lamps.setOn) L.v.lamps.setOn(false);
         showDamage(this, L.v, true);
@@ -225,7 +229,7 @@ export class Wheels {
   leave(v) {
     if (!v) return;
     let L = this.left.find((x) => x.v === v);
-    if (!L) { L = { v, kind: v.kind, paint: v.model && v.model.paint, full: !(v.model && v.model.fleet) }; this.left.push(L); }
+    if (!L) { L = { v, kind: v.kind, paint: v.model && v.model.paint, look: v.model && v.model.fleet ? { variant: v.model.variant, paint: v.model.paint, white: v.model.white } : null, full: !(v.model && v.model.fleet) }; this.left.push(L); }
     L.x = v.pos.x; L.z = v.pos.z; L.yaw = v.yaw;
     v.parked = true; v.left = L;
     // (at most six kept: the oldest out of sight goes)
@@ -257,10 +261,10 @@ export class Wheels {
 
   // a car of a kind at a point (O3's patrol, the phone box's delivery, the race's men):
   //   { driver: Pilot | null, paint, lights } -> Car
-  carAt(x, z, kind, { yaw = null, driver = null, paint = null, lights = true } = {}) {
+  carAt(x, z, kind, { yaw = null, driver = null, paint = null, lights = true, look = null } = {}) {
     let y = yaw;
     if (y == null) { const L = this.graph.nearestLane(x, z); if (L) { x = L.x; z = L.z; y = L.heading; } else y = 0; }
-    const v = this.V.spawn(kind, { at: new THREE.Vector3(x, 0, z), yaw: y, lights, fleet: true, fleetPaint: paint });
+    const v = this.V.spawn(kind, { at: new THREE.Vector3(x, 0, z), yaw: y, lights, fleet: true, fleetPaint: paint, look: look || lookAt(kind, Math.round(x), Math.round(z), 11) });
     if (driver) v.driver = driver;
     if (v.model.fleet) lampsLit(v.model, this.stage, lights);
     if (this.game.rays && v.model.meshes.body) this.game.rays.add(v.model.meshes.body);

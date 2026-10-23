@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { allocInkId, LAYER } from '../render/layers.js';
 import { merge } from '../world/geom.js';
-import { KINDS, kindGeo, fleetMats } from '../vehicles/kinds.js';
+import { KINDS, kindGeo, fleetMats, lookAt, scrapeGeo } from '../vehicles/kinds.js';
 import { contactShadow } from '../vehicles/models.js';
 import { RNG } from '../util/rng.js';
 import { STARTS } from '../world/plan.js';
@@ -17,6 +17,10 @@ import { STARTS } from '../world/plan.js';
 // rocks and settles), to men (the walking colliders' bodies) and is a car to
 // take: E at its door (vehicles/hijack.js) makes it a real car
 // (promote): from then on it is a Car, kept where it is left.
+// [the user: "not overly copy-paste"] Each car's look by a seeded hash of its
+// bay (kinds.js lookAt): its kind's variant (a set of instances each), its grey
+// (the instance's colour), whitewalls (a part of their own), now and then a
+// scrape along a door (one draw for all of them) or a flat tyre it sags on.
 //   parked.bodies (live)  parked.promote(body) -> Car  parked.step(dt, camera)
 //   parked.taken (bay keys gone: a car taken or driven off from its bay)
 const RADIUS = 190, DROP = 240, NEAR = 42, FAR = 95;
@@ -29,7 +33,11 @@ const MIX = {
   yards: { share: 0.22, kinds: [['lorry', 4], ['van', 3], ['saloon', 1.5], ['coupe', 1.5]] },
   hill: { share: 0.16, kinds: [['coupe', 4], ['saloon', 4.5], ['hearse', 1]] },
 };
-const PARTS = ['body', 'chrome', 'dark', 'glass', 'pale'];
+const PARTS = ['body', 'chrome', 'dark', 'glass', 'pale', 'name', 'white', 'all'];
+// a paint's grey as the instance's colour over the black paint's (linear: the ratio)
+const PAINT_HEX = { paint: 0x030303, paintGrey: 0x101010, paintPale: 0x2a2a2a };
+const _c = new THREE.Color();
+const _m2 = new THREE.Matrix4(), _m3 = new THREE.Matrix4(), _r = new THREE.Matrix4();
 const _m = new THREE.Matrix4(), _q = new THREE.Quaternion(), _p = new THREE.Vector3(), _s = new THREE.Vector3(1, 1, 1), _e = new THREE.Euler(), _f = new THREE.Vector3();
 
 export class Parked {
@@ -66,45 +74,60 @@ export class Parked {
       const K = KINDS[kind];
       // (a long one takes its neighbour's bay too)
       freeFrom = along + K.halfL * 2 + 1.4;
-      recs.push({ bay: b.i, kind, x: b.x, z: b.z, yaw: b.yaw, body: null, gone: false });
+      recs.push({ bay: b.i, kind, x: b.x, z: b.z, yaw: b.yaw, body: null, gone: false, look: lookAt(kind, b.x, b.z, 0, { parked: true }) });
     }
     this.recs = recs;
     this.grid = new Map();
     for (const r of recs) { const k = Math.floor(r.x / 64) * 4096 + Math.floor(r.z / 64); if (!this.grid.has(k)) this.grid.set(k, []); this.grid.get(k).push(r); }
     this.bodies = [];
     this.taken = new Set();
-    // ---- the draws: by kind, near and far, by part ------------------------------------
+    // ---- the draws: by kind and variant, near, light and far, by part ----------------
     const M = stage.M, X = fleetMats(M);
-    const mats = { body: null, chrome: M.chrome, dark: M.rubber, glass: M.carGlass, pale: M.whitewall };
+    const mats = { body: M.paint, chrome: M.chrome, dark: M.rubber, glass: M.carGlass, pale: M.whitewall, name: X.name, white: M.whitewall, all: M.paint };
+    const base = new THREE.Color(PAINT_HEX.paint);
+    this.tint = {};
+    for (const [k, hex] of Object.entries(PAINT_HEX)) { _c.setHex(hex); this.tint[k] = new THREE.Color(_c.r / base.r, _c.g / base.g, _c.b / base.b); }
     this.inst = {};
-    const count = {};
-    for (const r of recs) count[r.kind] = (count[r.kind] || 0) + 1;
-    for (const kind of Object.keys(count)) {
-      const cap = Math.min(90, count[kind]);
-      this.inst[kind] = { cap };
-      const id = allocInkId(1);
+    const count = {}, ids = {};
+    for (const r of recs) { const key = r.kind + ':' + r.look.variant; count[key] = (count[key] || 0) + 1; }
+    for (const key of Object.keys(count)) {
+      const [kind, vs] = key.split(':'), v = +vs;
+      const cap = Math.min(60, count[key]);
+      this.inst[key] = { cap };
+      const id = ids[kind] || (ids[kind] = allocInkId(1));
       for (const lod of ['hi', 'lo', 'box']) {
-        const g = kindGeo(kind, lod === 'box' ? 2 : lod === 'lo' ? 1 : 0);
-        const geo = {
-          body: g.body, chrome: g.chrome,
-          dark: merge([g.dark, g.hub, g.red, g.bust].filter(Boolean)),
+        const g = kindGeo(kind, lod === 'box' ? 2 : lod === 'lo' ? 1 : 0, v);
+        // (near: every part; the light build: the chrome with the dark, no names, no
+        // whitewalls; far: the whole car one mesh)
+        const geo = lod === 'box' ? { all: g.all } : {
+          body: g.body,
+          chrome: lod === 'hi' ? g.chrome : null,
+          dark: merge([g.dark, g.hub, g.red, g.bust, lod === 'lo' ? g.chrome : null].filter(Boolean)),
           glass: merge([g.glass, g.lens].filter(Boolean)),
           pale: g.pale || g.lamp ? merge([g.pale, g.lamp].filter(Boolean)) : null,
+          name: lod === 'hi' ? g.name : null,
+          white: lod === 'hi' ? g.white : null,
         };
         const set = {};
         for (const part of PARTS) {
           if (!geo[part]) continue;
-          const im = new THREE.InstancedMesh(geo[part], part === 'body' ? M[KINDS[kind].paint] || M.paint : mats[part], cap);
+          const im = new THREE.InstancedMesh(geo[part], mats[part], cap);
           im.userData.inkId = id; im.userData.inkFigure = true; im.userData.noRay = true;
           im.castShadow = false; im.receiveShadow = true; im.count = 0; im.visible = false;
           im.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+          // (the paint's grey: the instance's colour)
+          if (part === 'body' || part === 'all') { im.instanceColor = new THREE.InstancedBufferAttribute(new Float32Array(cap * 3).fill(1), 3); im.instanceColor.setUsage(THREE.DynamicDrawUsage); }
           stage.scene.add(im);
           set[part] = im;
         }
-        this.inst[kind][lod] = set;
+        this.inst[key][lod] = set;
       }
-      void X;
     }
+    // the scrapes along the doors: one draw for all of them
+    this.scrapes = new THREE.InstancedMesh(scrapeGeo(), M.whitewall, 60);
+    this.scrapes.userData.noRay = true; this.scrapes.castShadow = false; this.scrapes.count = 0; this.scrapes.frustumCulled = false;
+    this.scrapes.userData.inkId = ids.saloon || allocInkId(1); this.scrapes.userData.inkFigure = true;
+    stage.scene.add(this.scrapes);
     // their contact shadows: one draw (the coupe's soft footprint, scaled by kind)
     const sh = contactShadow(new THREE.Group(), 1, 1);
     this.shadow = new THREE.InstancedMesh(sh.geometry, sh.material, 240);
@@ -139,7 +162,7 @@ export class Parked {
     for (const [b, m] of this.proxies) if (!this.bodies.includes(b) || Math.hypot(b.pos.x - eye.x, b.pos.z - eye.z) > 85) { R.remove(m); this.proxies.delete(b); }
     for (const b of this.bodies) {
       if (this.proxies.has(b) || Math.hypot(b.pos.x - eye.x, b.pos.z - eye.z) > 75) continue;
-      const m = new THREE.Mesh(kindGeo(b.kind, 2).body);
+      const m = new THREE.Mesh(kindGeo(b.kind, 2, b.rec.look.variant).body);
       m.userData.part = 'body'; m.userData.parked = b;
       m.position.set(b.pos.x, 0, b.pos.z); m.rotation.y = b.yaw; m.updateMatrixWorld(true);
       R.add(m);
@@ -154,7 +177,7 @@ export class Parked {
     if (r) { r.gone = true; r.body = null; this.taken.add(r.bay); }
     const px = this.proxies.get(b); if (px && this.W.game.rays) { this.W.game.rays.remove(px); this.proxies.delete(b); }
     this.dirty = true;
-    const v = this.W.V.spawn(b.kind, { at: new THREE.Vector3(b.pos.x, 0, b.pos.z), yaw: b.yaw, lights: false, fleet: true, ink: true });
+    const v = this.W.V.spawn(b.kind, { at: new THREE.Vector3(b.pos.x, 0, b.pos.z), yaw: b.yaw, lights: false, fleet: true, ink: true, look: b.rec.look });
     v.driver = null;
     return v;
   }
@@ -222,35 +245,54 @@ export class Parked {
     const half = Math.atan(Math.tan((camera.fov * Math.PI) / 360) * (camera.aspect || 1.6)) + MARGIN;
     const cosHalf = Math.cos(Math.min(Math.PI, half));
     const n = {};
-    let ns = 0;
+    let ns = 0, nsc = 0;
     const G = this.W.C;
     for (const b of this.bodies) {
       const dx = b.pos.x - eye.x, dz = b.pos.z - eye.z, d = Math.hypot(dx, dz);
-      const I = this.inst[b.kind];
+      const L = b.rec.look, set = b.kind + ':' + L.variant;
+      const I = this.inst[set];
       if (!I) continue;
       if (d > CLOSE && (dx * fx + dz * fz) / d < cosHalf) continue;
       const lod = d < NEAR ? 'hi' : d < FAR ? 'lo' : 'box';
-      const key = b.kind + lod;
+      const key = set + lod;
       const k = n[key] = (n[key] || 0);
       if (k >= I.cap) continue;
       n[key] = k + 1;
       const gy = G.groundAt(b.pos.x, b.pos.z);
-      _q.setFromEuler(_e.set(Math.sin(b.rock * 9) * 0.03 * Math.min(1, b.rockAmp), b.yaw, 0, 'YXZ'));
-      _m.compose(_p.set(b.pos.x, gy, b.pos.z), _q, _s.set(1, 1, 1));
-      for (const im of Object.values(I[lod])) im.setMatrixAt(k, _m);
+      // (a flat tyre: the car down on that side and that end a little)
+      _q.setFromEuler(_e.set(Math.sin(b.rock * 9) * 0.03 * Math.min(1, b.rockAmp) + L.sag * 0.04, b.yaw, L.sag ? 0.012 : 0, 'YXZ'));
+      _m.compose(_p.set(b.pos.x, gy - (L.sag ? 0.05 : 0), b.pos.z), _q, _s.set(1, 1, 1));
+      const S = I[lod];
+      for (const [part, im] of Object.entries(S)) {
+        if (part === 'white') continue;
+        im.setMatrixAt(k, _m);
+        if (im.instanceColor) im.setColorAt(k, this.tint[L.paint] || this.tint.paint);
+      }
+      if (S.white && L.white) { const kw = n[key + 'w'] = (n[key + 'w'] || 0); if (kw < I.cap) { n[key + 'w'] = kw + 1; S.white.setMatrixAt(kw, _m); } }
+      // (a scrape along a door: a few pale strokes, near only)
+      if (L.scrape && lod === 'hi' && nsc < this.scrapes.instanceMatrix.count) {
+        const SC = KINDS[b.kind].scrape;
+        if (SC) {
+          const lx = SC.x[0] + (SC.x[1] - SC.x[0]) * L.u;
+          _m2.makeTranslation(lx, SC.y, L.scrape * SC.z);
+          if (L.scrape < 0) _m2.multiply(_r.makeRotationY(Math.PI));
+          this.scrapes.setMatrixAt(nsc++, _m3.multiplyMatrices(_m, _m2));
+        }
+      }
       if (ns < this.shadow.instanceMatrix.count) {
         const K = KINDS[b.kind];
         _q.setFromAxisAngle(_p.set(0, 1, 0), b.yaw);
         this.shadow.setMatrixAt(ns++, _m.compose(_p.set(b.pos.x, gy + 0.012, b.pos.z), _q, _s.set(K.halfL * 2 + 1.2, 1, K.halfW * 2 + 1.0)));
       }
     }
-    for (const [kind, I] of Object.entries(this.inst)) for (const lod of ['hi', 'lo', 'box']) {
-      const c = n[kind + lod] || 0;
-      for (const im of Object.values(I[lod])) {
+    for (const [set, I] of Object.entries(this.inst)) for (const lod of ['hi', 'lo', 'box']) {
+      for (const [part, im] of Object.entries(I[lod])) {
+        const c = part === 'white' ? (n[set + lod + 'w'] || 0) : (n[set + lod] || 0);
         im.count = c; im.visible = c > 0;
-        if (c) { im.instanceMatrix.needsUpdate = true; im.computeBoundingSphere(); im.boundingSphere.radius += 4; }
+        if (c) { im.instanceMatrix.needsUpdate = true; if (im.instanceColor) im.instanceColor.needsUpdate = true; im.computeBoundingSphere(); im.boundingSphere.radius += 4; }
       }
     }
+    this.scrapes.count = nsc; this.scrapes.visible = nsc > 0; this.scrapes.instanceMatrix.needsUpdate = true;
     this.shadow.count = ns; this.shadow.instanceMatrix.needsUpdate = true;
   }
 
@@ -259,6 +301,7 @@ export class Parked {
 
   dispose() {
     for (const I of Object.values(this.inst)) for (const lod of ['hi', 'lo', 'box']) for (const im of Object.values(I[lod] || {})) { if (im.parent) im.parent.remove(im); im.dispose(); }
+    if (this.scrapes.parent) this.scrapes.parent.remove(this.scrapes);
     if (this.shadow.parent) this.shadow.parent.remove(this.shadow);
     this.shadow.dispose();
   }

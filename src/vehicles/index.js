@@ -31,14 +31,15 @@ export class Vehicles {
   // 'lorry', and 'coupe' with fleet: true (the light build; without it the base's
   // full coupe); fleetPaint: one of kinds.PAINTS; ink: false - no figure slot (a
   // parked car takes world ids, traffic/Traffic.js)
-  spawn(kind, { at, yaw = 0, speed = 0, lights = true, tail = null, paint = 'paint', spec = null, fleet = false, fleetPaint = null, ink = true } = {}) {
+  // look: { variant, paint, white } (vehicles/kinds.js lookAt)
+  spawn(kind, { at, yaw = 0, speed = 0, lights = true, tail = null, paint = 'paint', spec = null, fleet = false, fleetPaint = null, ink = true, look = null } = {}) {
     const G = this.game, stage = G.stage;
     const pos = at && at.isVector3 ? at.clone() : new THREE.Vector3(at?.x ?? 0, 0, at?.z ?? 0);
     const T = stage.track;
     let model, lampPts, tailPts;
     if (FLEET_KINDS[kind] && (kind !== 'coupe' || fleet)) {
       // [O2] a car of the fleet: its kind's shared geometry, its spec, its lamps
-      model = fleetModel(kind, stage, { paint: fleetPaint });
+      model = fleetModel(kind, stage, { ...(look || {}), paint: fleetPaint || (look && look.paint) || null });
       stage.scene.add(model.group);
       lampPts = model.K.lamps; tailPts = model.K.tail;
       spec = { ...model.K.spec, ...(spec || {}) };

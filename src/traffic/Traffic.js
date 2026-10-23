@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { Pilot } from '../vehicles/pilot.js';
 import { Headlamps } from '../vehicles/Vehicle.js';
-import { lampsLit, fleetLod, KINDS, policeGlow } from '../vehicles/kinds.js';
+import { lampsLit, fleetLod, KINDS, policeGlow, lookAt } from '../vehicles/kinds.js';
 import { lanePath, walk } from './path.js';
 import { RNG } from '../util/rng.js';
 
@@ -33,7 +33,6 @@ const MIX = {
   yards: [['lorry', 3.5], ['van', 2.5], ['saloon', 1.5], ['coupe', 1.5]],
   hill: [['coupe', 3], ['saloon', 3], ['hearse', 1], ['taxi', 1]],
 };
-const PAINT = ['paint', 'paint', 'paintGrey', 'paintPale'];
 
 export class Traffic {
   constructor(W) {
@@ -106,8 +105,9 @@ export class Traffic {
     let path;
     try { path = lanePath(this.graph, ids, { pace: 0.85 + rng.next() * 0.15 }); } catch (err) { return null; }
     const i = path.nearestAll(at.x, at.z), p = path.at(path.pts[i].s, {});
-    const paint = kind === 'police' || kind === 'hearse' || kind === 'taxi' ? null : PAINT[Math.floor(rng.next() * PAINT.length)];
-    const v = this.W.V.spawn(kind, { at: new THREE.Vector3(p.x, 0, p.z), yaw: Math.atan2(-p.fz, p.fx), speed: Math.min(6, p.v), lights: false, fleet: true, fleetPaint: paint });
+    // (its look: by where it came on and the count - kinds.js lookAt)
+    const look = lookAt(kind, Math.round(at.x), Math.round(at.z), this.stats.spawned);
+    const v = this.W.V.spawn(kind, { at: new THREE.Vector3(p.x, 0, p.z), yaw: Math.atan2(-p.fz, p.fx), speed: Math.min(6, p.v), lights: false, fleet: true, look });
     v.traffic = true;
     lampsLit(v.model, this.stage, true);
     if (v.model.meshes.bust) v.model.meshes.bust.visible = true;

@@ -55,7 +55,7 @@ export class Garage {
     const steps = Math.ceil(v.damage || 0), cost = steps * MEND;
     let mended = steps === 0;
     if (steps && spend(G, cost)) { mended = true; this.stats.mended++; }
-    const rec = { kind: v.kind, paint: (v.model && v.model.paint) || 'paint', damage: mended ? 0 : v.damage, full: !(v.model && v.model.fleet) };
+    const rec = { kind: v.kind, paint: (v.model && v.model.paint) || 'paint', variant: (v.model && v.model.variant) || 0, white: !!(v.model && v.model.white), damage: mended ? 0 : v.damage, full: !(v.model && v.model.fleet) };
     this.list.push(rec);
     this.stats.stored++;
     G.save.write();
@@ -130,7 +130,7 @@ export class Garage {
     const rec = this.list.splice(i, 1)[0];
     if (!rec) return;
     const f = this.front();
-    const v = this.W.V.spawn(rec.kind, { at: new THREE.Vector3(f.x, 0, f.z), yaw: f.yaw, lights: !!rec.full, fleet: !rec.full, fleetPaint: rec.paint });
+    const v = this.W.V.spawn(rec.kind, { at: new THREE.Vector3(f.x, 0, f.z), yaw: f.yaw, lights: !!rec.full, fleet: !rec.full, fleetPaint: rec.paint, look: { variant: rec.variant || 0, white: !!rec.white } });
     v.damage = rec.damage || 0;
     if (v.lamps && v.lamps.setOn) v.lamps.setOn(false);
     if (this.G.rays && v.model.meshes.body && !rec.full) this.G.rays.add(v.model.meshes.body);

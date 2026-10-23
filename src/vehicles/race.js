@@ -67,7 +67,7 @@ export class Race {
     const W = this.W;
     for (let i = 0; i < 3; i++) {
       const s = this.slot(i + 1);
-      const v = W.carAt(s.x, s.z, RACE.kinds[i], { yaw: s.yaw, lights: true, paint: i === 1 ? 'paintGrey' : 'paint' });
+      const v = W.carAt(s.x, s.z, RACE.kinds[i], { yaw: s.yaw, lights: true, look: [{ variant: 2, paint: 'paint', white: true }, { variant: 1, paint: 'paintGrey', white: false }, { variant: 1, paint: 'paintPale', white: true }][i] });
       v.racer = true;
       if (v.model.meshes.bust) v.model.meshes.bust.visible = true;
       v.input.brake = 1; v.input.hold = 1;
