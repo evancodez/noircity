@@ -1,0 +1,178 @@
+{
+ "about": "[O5 critic] the hotel by input from the start: its door, the lobby (the bell), the lift up, the corridor's doors, my room, the light, the bed (sleep: the save), then a reload and CONTINUE",
+ "url": "/?mute=1&start=city",
+ "size": [
+  1280,
+  800
+ ],
+ "out": "shots/critic_o5/hotel",
+ "steps": [
+  {
+   "wait": 1500
+  },
+  {
+   "eval": "(localStorage.clear(), 1)"
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]",
+   "taken": "G.state !== 'title'",
+   "retries": 5,
+   "every": 4000
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'city' && G.scenes.fadeK < 0.05",
+   "timeout": 25000
+  },
+  {
+   "look": [
+    2,
+    0
+   ],
+   "steps": 1
+  },
+  {
+   "look": "[0, Math.round((N.controller.pitch + 0.04) / N.controller.sensitivity)]",
+   "steps": 4
+  },
+  {
+   "walk": [
+    [
+     -110,
+     40
+    ],
+    [
+     -110,
+     83.3
+    ],
+    [
+     -107.4,
+     83.3
+    ]
+   ],
+   "timeout": 30000
+  },
+  {
+   "eval": "'at the door: prompt ' + G.hud.promptShown"
+  },
+  {
+   "key": "KeyE",
+   "hold": 70
+  },
+  {
+   "wait": 700
+  },
+  {
+   "walk": "(()=>{const F=G.city.places.byId.get('hotel').frame;return [[0,-1.8],[0,-4.0]].map(([x,z])=>{const p=F.w(x,z);return [p.x,p.z]})})()",
+   "timeout": 10000
+  },
+  {
+   "shot": "lobby"
+  },
+  {
+   "eval": "(()=>{const s=G.city.places.byId.get('hotel'),F=s.frame,b=s.lb,L=s.live.K.lift.L,me=F.l(N.controller.pos.x,N.controller.pos.z);return 'lobby local box '+JSON.stringify(b)+' lift '+JSON.stringify(L)+' me '+me.x.toFixed(1)+','+me.z.toFixed(1)})()"
+  },
+  {
+   "drive": "tools/plays/critic/o5/poke.mjs",
+   "site": "hotel",
+   "only": "uses"
+  },
+  {
+   "walk": "(()=>{const s=G.city.places.byId.get('hotel'),F=s.frame,L=s.live.K.lift.L;return [[1.5,-3],[1.5,-7.5],[L.x1+1.4,(L.z0+L.z1)/2],[(L.x0+L.x1)/2,(L.z0+L.z1)/2]].map(([x,z])=>{const p=F.w(x,z);return [p.x,p.z]})})()",
+   "timeout": 15000,
+   "stop": false
+  },
+  {
+   "look": "(()=>{const s=G.city.places.byId.get('hotel'),F=s.frame,L=s.live.K.lift.L,a=F.v(L.x1,1.45,(L.z0+L.z1)/2);const dx=a.x-G.eye.x,dz=a.z-G.eye.z,dy=a.y-G.eye.y;const w=Math.atan2(-dx,-dz);const e=Math.atan2(Math.sin(w-N.controller.yaw),Math.cos(w-N.controller.yaw));const p=Math.atan2(dy,Math.hypot(dx,dz));return [Math.round(-e/N.controller.sensitivity),Math.round(-(p-N.controller.pitch)/N.controller.sensitivity)]})()",
+   "steps": 6
+  },
+  {
+   "wait": 400
+  },
+  {
+   "eval": "'in the cab: prompt ' + G.hud.promptShown"
+  },
+  {
+   "key": "KeyE",
+   "hold": 70
+  },
+  {
+   "wait": 1600
+  },
+  {
+   "shot": "lift_mid"
+  },
+  {
+   "eval": "'riding: eye y ' + G.eye.y.toFixed(2) + ' lvl ' + G.city.places.level"
+  },
+  {
+   "wait": 2500
+  },
+  {
+   "eval": "'after the ride: eye y ' + G.eye.y.toFixed(2) + ' lvl ' + G.city.places.level + ' prompt ' + G.hud.promptShown"
+  },
+  {
+   "walk": "(()=>{const s=G.city.places.byId.get('hotel'),F=s.frame,L=s.live.K.lift.L;return [[L.x1+1.2,(L.z0+L.z1)/2]].map(([x,z])=>{const p=F.w(x,z);return [p.x,p.z]})})()",
+   "timeout": 10000,
+   "stop": false
+  },
+  {
+   "shot": "corridor"
+  },
+  {
+   "drive": "tools/plays/critic/o5/poke.mjs",
+   "site": "hotel",
+   "only": "doors"
+  },
+  {
+   "walk": "(()=>{const s=G.city.places.byId.get('hotel'),F=s.frame;const d=s.live.K.doors.find(d=>d.name==='room3');const l=F.l(d.centre.x,d.centre.z);return [[l.x+0.5,l.z-0.8],[l.x+0.5,l.z+1.2]].map(([x,z])=>{const p=F.w(x,z);return [p.x,p.z]})})()",
+   "timeout": 10000,
+   "stop": false
+  },
+  {
+   "shot": "room"
+  },
+  {
+   "drive": "tools/plays/critic/o5/poke.mjs",
+   "site": "hotel",
+   "only": "uses",
+   "shots": true
+  },
+  {
+   "wait": 3500
+  },
+  {
+   "eval": "'after sleep: save ' + (localStorage.getItem(Object.keys(localStorage).find(k=>/save/i.test(k))||'')||'').slice(0,160) + ' | keys ' + Object.keys(localStorage).join(',')"
+  },
+  {
+   "reload": true
+  },
+  {
+   "wait": 3000
+  },
+  {
+   "shot": "title_after"
+  },
+  {
+   "eval": "'title: ' + document.getElementById('title').innerText.replace(/\\s+/g,' ').slice(0,120)"
+  },
+  {
+   "clickOn": "#title .opt[data-k=continue]",
+   "taken": "G.state !== 'title'",
+   "retries": 5,
+   "every": 4000
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'city' && G.scenes.fadeK < 0.05",
+   "timeout": 25000
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "shot": "continued"
+  },
+  {
+   "eval": "'continued: beat ' + G.scenes.beat + ' inside ' + (G.city.places.inside&&G.city.places.inside.id) + ' lvl ' + G.city.places.level + ' eye y ' + G.eye.y.toFixed(2) + ' hud ' + document.getElementById('hud').innerText.replace(/\\s+/g,' ').slice(0,120)"
+  }
+ ]
+}
