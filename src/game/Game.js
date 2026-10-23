@@ -397,6 +397,7 @@ export class Game {
     if (from && from.scene && this.scenes.get(from.scene)) {
       this.save.flags = { ...(from.flags || {}) };
       this.save.inventory = [...(from.inventory || [])];
+      this.save.money = from.money || 0; this.save.ammo = { ...(from.ammo || {}) };   // [O4]
       const def = this.scenes.get(from.scene);
       const beat = def.beats.includes(from.beat) ? from.beat : def.beats[0];
       this.scenes.go(from.scene, { beat, fade: 'black', card: true, fadeIn: 1.6 });

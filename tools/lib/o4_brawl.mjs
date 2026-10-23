@@ -60,7 +60,7 @@ export default async function drive({ js, turn, keyDown, keyUp, mouse, log, slee
     const K = G.hud.kit;
     return { act: !!F.active, done: !!F.done, result: F.result, failing: !!G.failing, beat: G.scenes.beat, me: me.act, holding: !!me.holding,
       tgt: F.target ? F.target.id : null, men, cue: F.cue && !F.cue.done ? F.cue.side : null, cueHeld: !!(F.cue && F.cue.held), cueT: F.cue ? F.cue.atk + ':' + F.cue.m.id : null,
-      yaw: C.yaw, pitch: C.pitch, sens: C.sensitivity, ey: e.y, hp: Math.round(G.health.hp), fails: G.fails(), warn: G.hud.warnText || '', teach: K && K.teachCur ? K.teachCur.text : '', obj: G.hud.objectiveText || '', ends: window.__o4.ends.length,
+      yaw: C.yaw, pitch: C.pitch, sens: C.sensitivity, ey: e.y, hp: Math.round(G.health.hp), fails: G.fails(), warn: G.hud.warnText || '', teach: K && K.teachCur ? K.teachCur.text : '', obj: G.hud.objectiveText || '', ends: window.__o4.ends.length, prompt: G.hud.promptShown || '', money: G.save.money,
       free: F.active ? F.free() : true };
   })()`;
   for (;;) {
@@ -92,6 +92,8 @@ export default async function drive({ js, turn, keyDown, keyUp, mouse, log, slee
       await release(true);
       if (wins >= wantWins || losses >= maxTries) break;
     }
+    // (a bout is taken up with E at the ring's corner: opts.startKey)
+    if (!s.act && !s.failing && s.beat === beatName && opts.startKey && s.prompt && Date.now() > (out.keyAt || 0)) { out.keyAt = Date.now() + 1500; await tap(opts.startKey); log('start: ' + opts.startKey + ' (' + s.prompt + ')'); }
     if (!s.act || s.failing || s.beat !== beatName) { await release(true); await sleep(80); continue; }
     if (prof === 'idle' || !P) { await sleep(60); continue; }
     await release();
