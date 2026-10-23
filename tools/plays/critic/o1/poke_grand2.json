@@ -1,0 +1,28 @@
+{
+ "about": "[O1 critic] into the car's flank on foot; a door seen from 3 m with the eye level; E on it; how long LOCKED stays.",
+ "url": "/?mute=1&start=city",
+ "size": [1280, 800],
+ "out": "shots/critic_o1/poke2",
+ "steps": [
+  { "wait": 2000 },
+  { "clickOn": "#title .opt[data-k=begin]", "taken": "G.state !== 'title'", "retries": 5, "every": 4000 },
+  { "until": "G.scenes.current && G.scenes.current.id === 'city' && G.scenes.fadeK < 0.05", "timeout": 20000 },
+  { "wait": 500 },
+  { "name": "into the car's flank", "walk": [[-109.9, 30.5], [-114.5, 30.5]], "into": true, "timeout": 5000 },
+  { "eval": "JSON.stringify({p:[G.controller.pos.x,G.controller.pos.z].map(v=>+v.toFixed(2)), pitch:+G.controller.pitch.toFixed(2), yaw:+G.controller.yaw.toFixed(2), msg:[...document.querySelectorAll(\"body *\")].filter(e=>e.offsetParent&&e.children.length===0&&e.innerText&&e.innerText.trim()&&getComputedStyle(e).opacity>0.05).map(e=>e.innerText.trim().slice(0,30)+\"@\"+(+getComputedStyle(e).opacity).toFixed(2)+\"/\"+(+getComputedStyle(e.parentElement).opacity).toFixed(2)).join(\" | \")})" },
+  { "down": "ShiftLeft" }, { "walk": [[-108.5, 30.5], [-114.5, 30.5]], "into": true, "timeout": 5000 }, { "up": "ShiftLeft" },
+  { "eval": "JSON.stringify({p:[G.controller.pos.x,G.controller.pos.z].map(v=>+v.toFixed(2)), pitch:+G.controller.pitch.toFixed(2), yaw:+G.controller.yaw.toFixed(2), msg:[...document.querySelectorAll(\"body *\")].filter(e=>e.offsetParent&&e.children.length===0&&e.innerText&&e.innerText.trim()&&getComputedStyle(e).opacity>0.05).map(e=>e.innerText.trim().slice(0,30)+\"@\"+(+getComputedStyle(e).opacity).toFixed(2)+\"/\"+(+getComputedStyle(e.parentElement).opacity).toFixed(2)).join(\" | \")})" },
+  { "walk": [[-109, 36], [-118, 40], [-128, 38], [-129.5, 37.1]], "timeout": 15000 },
+  { "eval": "JSON.stringify({p:[G.controller.pos.x,G.controller.pos.z].map(v=>+v.toFixed(2)), pitch:+G.controller.pitch.toFixed(2), yaw:+G.controller.yaw.toFixed(2), msg:[...document.querySelectorAll(\"body *\")].filter(e=>e.offsetParent&&e.children.length===0&&e.innerText&&e.innerText.trim()&&getComputedStyle(e).opacity>0.05).map(e=>e.innerText.trim().slice(0,30)+\"@\"+(+getComputedStyle(e).opacity).toFixed(2)+\"/\"+(+getComputedStyle(e.parentElement).opacity).toFixed(2)).join(\" | \")})" },
+  { "look": "[(() => { const d = -Math.PI/2 - G.controller.yaw; return Math.round(-d/0.0021); })(), Math.round(G.controller.pitch/0.0021)]", "steps": 8 },
+  { "wait": 300 },
+  { "eval": "JSON.stringify({p:[G.controller.pos.x,G.controller.pos.z].map(v=>+v.toFixed(2)), pitch:+G.controller.pitch.toFixed(2), yaw:+G.controller.yaw.toFixed(2), msg:[...document.querySelectorAll(\"body *\")].filter(e=>e.offsetParent&&e.children.length===0&&e.innerText&&e.innerText.trim()&&getComputedStyle(e).opacity>0.05).map(e=>e.innerText.trim().slice(0,30)+\"@\"+(+getComputedStyle(e).opacity).toFixed(2)+\"/\"+(+getComputedStyle(e.parentElement).opacity).toFixed(2)).join(\" | \")})" },
+  { "shot": "00_door_3m" },
+  { "walk": [[-132.6, 37.1]], "timeout": 5000 },
+  { "key": "KeyE", "hold": 60 }, { "wait": 200 },
+  { "eval": "JSON.stringify({p:[G.controller.pos.x,G.controller.pos.z].map(v=>+v.toFixed(2)), pitch:+G.controller.pitch.toFixed(2), yaw:+G.controller.yaw.toFixed(2), msg:[...document.querySelectorAll(\"body *\")].filter(e=>e.offsetParent&&e.children.length===0&&e.innerText&&e.innerText.trim()&&getComputedStyle(e).opacity>0.05).map(e=>e.innerText.trim().slice(0,30)+\"@\"+(+getComputedStyle(e).opacity).toFixed(2)+\"/\"+(+getComputedStyle(e.parentElement).opacity).toFixed(2)).join(\" | \")})" },
+  { "wait": 1500 }, { "eval": "JSON.stringify({p:[G.controller.pos.x,G.controller.pos.z].map(v=>+v.toFixed(2)), pitch:+G.controller.pitch.toFixed(2), yaw:+G.controller.yaw.toFixed(2), msg:[...document.querySelectorAll(\"body *\")].filter(e=>e.offsetParent&&e.children.length===0&&e.innerText&&e.innerText.trim()&&getComputedStyle(e).opacity>0.05).map(e=>e.innerText.trim().slice(0,30)+\"@\"+(+getComputedStyle(e).opacity).toFixed(2)+\"/\"+(+getComputedStyle(e.parentElement).opacity).toFixed(2)).join(\" | \")})" },
+  { "wait": 3000 }, { "eval": "JSON.stringify({p:[G.controller.pos.x,G.controller.pos.z].map(v=>+v.toFixed(2)), pitch:+G.controller.pitch.toFixed(2), yaw:+G.controller.yaw.toFixed(2), msg:[...document.querySelectorAll(\"body *\")].filter(e=>e.offsetParent&&e.children.length===0&&e.innerText&&e.innerText.trim()&&getComputedStyle(e).opacity>0.05).map(e=>e.innerText.trim().slice(0,30)+\"@\"+(+getComputedStyle(e).opacity).toFixed(2)+\"/\"+(+getComputedStyle(e.parentElement).opacity).toFixed(2)).join(\" | \")})" },
+  { "look": [1500, 0], "steps": 10 }, { "wait": 500 }, { "eval": "JSON.stringify({p:[G.controller.pos.x,G.controller.pos.z].map(v=>+v.toFixed(2)), pitch:+G.controller.pitch.toFixed(2), yaw:+G.controller.yaw.toFixed(2), msg:[...document.querySelectorAll(\"body *\")].filter(e=>e.offsetParent&&e.children.length===0&&e.innerText&&e.innerText.trim()&&getComputedStyle(e).opacity>0.05).map(e=>e.innerText.trim().slice(0,30)+\"@\"+(+getComputedStyle(e).opacity).toFixed(2)+\"/\"+(+getComputedStyle(e.parentElement).opacity).toFixed(2)).join(\" | \")})" }
+ ]
+}

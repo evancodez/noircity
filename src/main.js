@@ -90,7 +90,8 @@ const sfx = new Sfx({ enabled: !shotMode, forceMute: autoMute });
 // instead of the diner, the save unread - a scene played without the ones
 // before it, by hand or by tools/play.mjs)
 const startParam = shotMode ? null : params.get('start');
-const startAt = startParam ? { scene: startParam.split('.')[0], beat: startParam.split('.')[1] || null } : null;
+// [AD] NOIR CITY: BEGIN drops into the city (no story, no chapters); ?start= still picks any scene
+const startAt = startParam ? { scene: startParam.split('.')[0], beat: startParam.split('.')[1] || null } : (shotMode ? null : { scene: 'city', beat: null });
 let startFrom = null, chosen = null;
 const hud = new Hud({
   brush: tex.brush.image,
@@ -110,6 +111,11 @@ const hud = new Hud({
 // the rain in behind it; the click that begins the game does too)
 if (!shotMode) for (const ev of ['mousedown', 'keydown', 'touchstart']) addEventListener(ev, () => { sfx.unlock(); hud.soundHint(!sfx.live, sfx.muted); }, { passive: true });
 hud.soundHint(!shotMode, sfx.muted);
+// [O1] in the city M is the map (the sound is the settings'): its key line says so on the title and the pause card (O7 makes the city's own title)
+if (startAt && startAt.scene === 'city') {
+  hud.keysText = hud.keysText.replace('M sound', 'M map');
+  for (const el of [hud.titleKeys, hud.pauseCard && hud.pauseCard.keys]) if (el && el.textContent) el.textContent = el.textContent.replace('M sound', 'M map');
+}
 hud.setVisible(hudOn);
 if (shotMode) hud.hideTitle();
 // (a screenshot never depends on when the page loaded: no CSS animation runs)
@@ -156,7 +162,8 @@ if (!shotMode && !autoplay) {
 }
 // the title offers CONTINUE when a checkpoint exists
 if (!shotMode) hud.showTitle('', { canContinue: game.save.exists });
-hud.setChapters(ORDER.map((c) => ({ ...c, ready: !!game.scenes.get(c.id) })));
+hud.setChapters([]);   // [AD] NOIR CITY has no chapters: the title shows BEGIN (and CONTINUE) only
+if (hud.chapOpt) { hud.chapOpt.style.display = 'none'; if (hud.chapOpt.previousSibling && hud.chapOpt.previousSibling.className === 'sep') hud.chapOpt.previousSibling.style.display = 'none'; }
 if (startAt && !game.scenes.get(startAt.scene)) console.error(`start=${startParam}: no scene '${startAt.scene}' (scenes: ${game.scenes.names.join(', ')})`);
 else if (startAt && startAt.beat && !game.scenes.get(startAt.scene).beats.includes(startAt.beat)) console.error(`start=${startParam}: '${startAt.scene}' has no beat '${startAt.beat}'`);
 // (play and the fight presets: every Hood variant + combat program up front)

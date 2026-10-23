@@ -1,0 +1,28 @@
+{
+ "about": "[O1 critic] cold open: the title, the first seconds of ?start=city, what the screen says, a first walk and look.",
+ "url": "/?mute=1&start=city",
+ "size": [1280, 800],
+ "out": "shots/critic_o1/cold",
+ "steps": [
+  { "wait": 2500 },
+  { "shot": "00_title" },
+  { "eval": "document.querySelector('#title') && document.querySelector('#title').innerText.slice(0,300)" },
+  { "clickOn": "#title .opt[data-k=begin]", "taken": "G.state !== 'title'", "retries": 5, "every": 4000 },
+  { "until": "G.scenes.current && G.scenes.current.id === 'city' && G.scenes.fadeK < 0.05", "timeout": 20000 },
+  { "wait": 800 },
+  { "shot": "01_first" },
+  { "eval": "Object.keys(N).join(',')" },
+  { "eval": "Object.keys(G).join(',')" },
+  { "eval": "Object.keys(G.scenes.current).join(',')" },
+  { "eval": "[...document.querySelectorAll('body *')].filter(e=>e.offsetParent&&e.children.length===0&&e.innerText&&e.innerText.trim()).map(e=>(e.id||e.className)+': '+e.innerText.trim().slice(0,60)).slice(0,40).join(' | ')" },
+  { "wait": 4000 },
+  { "eval": "[...document.querySelectorAll('body *')].filter(e=>e.offsetParent&&e.children.length===0&&e.innerText&&e.innerText.trim()).map(e=>(e.id||e.className)+': '+e.innerText.trim().slice(0,60)).slice(0,40).join(' | ')" },
+  { "shot": "02_after5s" },
+  { "look": [-600, 0], "steps": 20 },
+  { "wait": 300 },
+  { "shot": "03_lookleft" },
+  { "look": [1200, 0], "steps": 30 },
+  { "wait": 300 },
+  { "shot": "04_lookright" }
+ ]
+}

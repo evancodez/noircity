@@ -1,0 +1,13 @@
+{
+ "about": "[O1] The feel measure (GAME_TWO §1 A1, brief O1 §7): the latency of W on foot (trusted key down to the first frame the eye moves), of W in the car (to the first frame the car moves) and of A (to the first frame the wheel turns), each under 50 ms. tools/lib/o1_city.mjs 'latency'. node tools/play.mjs tools/plays/o1_latency.json",
+ "url": "/?mute=1&start=city",
+ "size": [1280, 800],
+ "out": "shots/o1/latency",
+ "steps": [
+  { "wait": 1500 },
+  { "clickOn": "#title .opt[data-k=begin]", "taken": "G.state !== 'title'", "retries": 5, "every": 4000 },
+  { "until": "G.scenes.current && G.scenes.current.id === 'city' && G.scenes.fadeK < 0.05", "timeout": 20000 },
+  { "wait": 1500 },
+  { "drive": "tools/lib/o1_city.mjs", "mode": "latency", "check": "D.foot && D.foot.ms != null && D.foot.ms < 50 && D.car && D.car.ms != null && D.car.ms < 50 && D.steer && D.steer.ms != null && D.steer.ms < 50", "label": "W on foot, W in the car, A in the car: the first frame of the act within 50 ms" }
+ ]
+}

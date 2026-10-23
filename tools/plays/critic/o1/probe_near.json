@@ -1,0 +1,13 @@
+{
+ "url": "/?mute=1&start=city",
+ "size": [960, 600],
+ "out": "shots/critic_o1/probe",
+ "steps": [
+  { "wait": 2000 },
+  { "clickOn": "#title .opt[data-k=begin]", "taken": "G.state !== 'title'", "retries": 5, "every": 4000 },
+  { "until": "G.scenes.current && G.scenes.current.id === 'city' && G.scenes.fadeK < 0.05", "timeout": 20000 },
+  { "eval": "JSON.stringify({me:[G.controller.pos.x,G.controller.pos.z].map(v=>+v.toFixed(1)), yaw:+G.controller.yaw.toFixed(2)})" },
+  { "eval": "JSON.stringify([...Array(40)].map((_,i)=>{const a=i/40*6.283; for(let r=2;r<40;r+=1.5){const D=G.city.stream.doorNear(-110+Math.cos(a)*r,30+Math.sin(a)*r,1.5); if(D) return [+D.x.toFixed(1),+D.z.toFixed(1),D.nx,D.nz];} return null}).filter(Boolean).filter((d,i,A)=>A.findIndex(e=>e[0]===d[0]&&e[1]===d[1])===i).slice(0,8))" },
+  { "eval": "JSON.stringify(G.stage.colliders.near(-110,30,14).map(o=>[o.tag, o.r!=null?'r'+o.r.toFixed(1):'b', +(o.cx??o.x??0).toFixed(1), +(o.cz??o.z??0).toFixed(1), o.hx&&+o.hx.toFixed(1), o.hz&&+o.hz.toFixed(1)]).slice(0,40))" }
+ ]
+}

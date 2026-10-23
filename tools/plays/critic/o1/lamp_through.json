@@ -1,0 +1,116 @@
+{
+ "about": "[O1 critic] the car up the kerb into a lamp post on Grand Ave (W, a flick of D, A): the post ends inside the bonnet; out, and look at it from the pavement.",
+ "url": "/?mute=1&start=city",
+ "size": [
+  1280,
+  800
+ ],
+ "out": "shots/critic_o1/lamp",
+ "steps": [
+  {
+   "wait": 2000
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]",
+   "taken": "G.state !== 'title'",
+   "retries": 5,
+   "every": 4000
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'city' && G.scenes.fadeK < 0.05",
+   "timeout": 20000
+  },
+  {
+   "wait": 800
+  },
+  {
+   "key": "KeyE",
+   "hold": 60
+  },
+  {
+   "wait": 1200
+  },
+  {
+   "eval": "(() => { const R = window.__kr = { through: [], hits: [], n: 0 }; const tick = () => { const c = G.city.car; if (c) { R.n++; for (const o of G.stage.colliders.near(c.pos.x, c.pos.z, 4)) { if (o.r == null) continue; const l = c.local(new N.THREE.Vector3(o.cx ?? o.x, 0, o.cz ?? o.z), new N.THREE.Vector3()); if (Math.abs(l.x) < c.spec.halfL - 0.3 && Math.abs(l.z) < c.spec.halfW - 0.3) { const k = o.tag + '@' + (o.cx ?? o.x).toFixed(1) + ',' + (o.cz ?? o.z).toFixed(1); if (!R.through.includes(k)) R.through.push(k); } } } requestAnimationFrame(tick); }; requestAnimationFrame(tick); return 1; })()"
+  },
+  {
+   "down": "KeyW"
+  },
+  {
+   "wait": 900
+  },
+  {
+   "down": "KeyD"
+  },
+  {
+   "wait": 350
+  },
+  {
+   "up": "KeyD"
+  },
+  {
+   "wait": 300
+  },
+  {
+   "down": "KeyA"
+  },
+  {
+   "wait": 250
+  },
+  {
+   "up": "KeyA"
+  },
+  {
+   "wait": 1200
+  },
+  {
+   "shot": "00_pavement"
+  },
+  {
+   "eval": "JSON.stringify({v:+(G.city.car.speed*3.6).toFixed(0), pos:[+G.city.car.pos.x.toFixed(1),+G.city.car.pos.z.toFixed(1)], cr:G.city.car.stats.crashes, sc:G.city.car.stats.scrapes, thr:window.__kr.through})"
+  },
+  {
+   "up": "KeyW"
+  },
+  {
+   "wait": 800
+  },
+  {
+   "key": "KeyE",
+   "hold": 60
+  },
+  {
+   "wait": 1300
+  },
+  {
+   "eval": "JSON.stringify({inCar:G.city.inCar, p:[G.controller.pos.x,G.controller.pos.z].map(v=>+v.toFixed(1)), car:[G.city.car.pos.x,G.city.car.pos.z].map(v=>+v.toFixed(1)), yaw:+G.city.car.yaw.toFixed(2), lamp:window.__kr.through})"
+  },
+  {
+   "walk": [
+    [
+     -113.5,
+     13
+    ],
+    [
+     -114,
+     18.5
+    ]
+   ],
+   "timeout": 9000,
+   "into": true
+  },
+  {
+   "look": "[(() => { const p = G.controller.pos, c = {x:-110.3,z:14.0}, dx = c.x - p.x, dz = c.z - p.z; const want = Math.atan2(-dx, -dz); let d = want - G.controller.yaw; d = Math.atan2(Math.sin(d), Math.cos(d)); return Math.round(-d / 0.0021); })(), Math.round((G.controller.pitch + 0.12) / 0.0021)]",
+   "steps": 10
+  },
+  {
+   "wait": 600
+  },
+  {
+   "eval": "JSON.stringify({p:[G.controller.pos.x,G.controller.pos.z].map(v=>+v.toFixed(1)), yaw:+G.controller.yaw.toFixed(2), pitch:+G.controller.pitch.toFixed(2)})"
+  },
+  {
+   "shot": "03_lamp_in_car"
+  }
+ ]
+}

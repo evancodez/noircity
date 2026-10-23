@@ -17,6 +17,9 @@ and the hunts (`tools/hunts/*.mjs`, `tools/hunt.mjs`, `tools/lib/whole.py`,
 - **[must]** The three bars (GAME_TWO §1) over the whole: smooth
   everywhere, the middle everywhere (the line is the player's own
   situation), everything works.
+- **[must]** "This city should really react to player interaction (like a dynamic police system), fun shootouts, brawls, etc. Keep the scope manageable but it should feel fun." (OPEN_WORLD.md: the city answers everything the player does, within seconds, visibly.)
+- **[must]** "Probably add a mini map in the bottom left corner too or something." (The user, after his first drive, 2026-10-23.) An inked minimap bottom left: the streets within about 150 m, heading up, my mark, the cops' marks when they are close, the thing I have taken up (a fare, a bout) as a mark; a torn-paper patch in the game's ink, small, hidden on the title and under stills; M still opens the full map.
+- **[must]** "Think GTA but noir. Make sure the player has freedom to cause havoc and do what they want in this open world, one that reacts to them." (OPEN_WORLD.md: the player may do anything the systems allow and the city answers everything he does, visibly, within seconds; no invisible hand says no, never a scripted stop or a locked verb; the only answer is the city's own, and a scene broken on purpose still ends somewhere sane.)
 
 What you build on: the HUD (`src/ui/Hud.js`, `kit.js`, `inkArt.js`,
 `lettering.js`: the title, the pause card and its settings line, the
@@ -67,9 +70,16 @@ film). BEGIN starts the night at the kerb. No CHAPTERS. A v2 save is
 dropped quietly.
 
 ## 4. The title, the radio and the city's sound
-- **The title**: `NOIR CITY` in the lettering over the live city from
-  the start's kerb in the rain (the base's title over the diner is the
-  pattern), BEGIN and CONTINUE, the red splatter accent.
+- **The title**: the rename is done on `main` (2bf5989, marked `[AD]`:
+  `index.html` and the title card say `NOIR CITY`, BEGIN drops into the
+  city when no `?start=` is given (`src/main.js` startAt), CHAPTERS is
+  hidden, the title's golden frame re-accepted). Yours: the title's own
+  backdrop (today it is still the old diner street: make it the live
+  city from the start's kerb in the rain, the lettering over it, the red
+  splatter accent; re-accept the title frame once, named), and what
+  CONTINUE means: a save of the old story (v2, a chapter id) must never
+  continue into the old chapters; it is dropped quietly and the title
+  offers BEGIN alone; CONTINUE appears only for a v3 city save.
 - **The radio** (`src/night/radio.js` on `Music.js`): in a car, the
   slots are stations (`public/music/<station>.(mp3|ogg|m4a)`: the user
   drops real jazz in; silent until then, with a needle hiss and the
@@ -105,6 +115,14 @@ dropped quietly.
   hotel's save, CONTINUE, the el, the map; every seam between systems
   (a hijack into a fight into the heat into the chase into an interior
   into the search) with no break.
+- **The havoc play** (the user's freedom, by real input): run people
+  down, steal the police car from under the cop, start a gang war at the
+  border, ram the tram, shoot every lamp on Grand Avenue, drive off the
+  pier, sleep at the hotel at heat 5, hijack a hearse: the city answers
+  each within seconds, visibly, with its own means; nothing says no; every
+  scene broken on purpose ends sane (the hospital, the station, the quay).
+  Any place the game says no with a locked verb or a scripted stop is a
+  blocker to fix with that system's owner's levers, marked `[O7]`.
 - The hunts on the city: ten retries at the hospital and the station
   (nothing piles up: GPU geometries, listeners, timers), the edges of
   every district and the river (nothing unfinished, nothing invisible),
