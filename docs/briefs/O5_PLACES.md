@@ -17,6 +17,7 @@ shop fronts and the interiors' breakables). The user's words:
   answer is the honest one; a door I cannot enter rattles, locked; a
   door never opens on nothing; nothing passes through anything; a body
   never blocks feet.
+- **[must]** "This city should really react to player interaction (like a dynamic police system), fun shootouts, brawls, etc. Keep the scope manageable but it should feel fun." (OPEN_WORLD.md: the city answers everything the player does, within seconds, visibly.)
 
 What you build on: the office (`src/stages/office/`: `plan.js`, `build/`,
 `parts/`: a whole interior with its doors, lights and furniture), the

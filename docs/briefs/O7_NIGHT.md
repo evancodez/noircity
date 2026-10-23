@@ -17,6 +17,7 @@ and the hunts (`tools/hunts/*.mjs`, `tools/hunt.mjs`, `tools/lib/whole.py`,
 - **[must]** The three bars (GAME_TWO §1) over the whole: smooth
   everywhere, the middle everywhere (the line is the player's own
   situation), everything works.
+- **[must]** "This city should really react to player interaction (like a dynamic police system), fun shootouts, brawls, etc. Keep the scope manageable but it should feel fun." (OPEN_WORLD.md: the city answers everything the player does, within seconds, visibly.)
 
 What you build on: the HUD (`src/ui/Hud.js`, `kit.js`, `inkArt.js`,
 `lettering.js`: the title, the pause card and its settings line, the

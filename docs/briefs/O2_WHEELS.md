@@ -12,6 +12,7 @@ not redo it). The user's words:
 - **[must]** "everything works": cars never through cars, people, walls
   or each other; a car that is hit shows it; where I cannot drive I see
   why (a parked lorry, water, a wall, a chained yard).
+- **[must]** "This city should really react to player interaction (like a dynamic police system), fun shootouts, brawls, etc. Keep the scope manageable but it should feel fun." (OPEN_WORLD.md: the city answers everything the player does, within seconds, visibly.)
 - Still binding from game two (`docs/story/briefs/G4_CARS.md` §1, as
   `Car.js` left it): steer a hand can trust (W to the first frame of
   motion and A to the wheel's first turn under 50 ms), weight, the
