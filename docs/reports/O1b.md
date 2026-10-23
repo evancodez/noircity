@@ -175,6 +175,7 @@ where it stands, not by its lot's chunk: at Grand Ave and Centre St 25 of
 | **the train waits** | `o1b_train.json` | PASS: braked into BOWERY - CLOCK, its middle 0.2 m from the platform's; still standing 8 s on; pulled out; stopped at the next station |
 | **the pigeons** | `o1b_pigeons.json` | PASS: two flocks walked at by W, up at 8.1 m and 23.7 m (the second a roof's flock, 19 m up) |
 | **the jank walk of the new things** | `o1b_jank.json` | PASS: 20 walks by W into crates, barrels, a barrel, churns, a fruit stand, flowers, a sandwich board, a bicycle, dustbins, a rain barrel, oil drums, a handcart, a phone booth, a mailbox, a newsstand, a street tree, the Hill lane's wall, the cellar's railing, the bank's columns, a steps' lamp: each stopped short (0.5-2.2 m), never inside |
+| **the new things go over** (O6's set, after the merge) | `o1b_smash.json` (O6's driver on a path) | PASS: E into the coupe at the Docks, west along Dock Rd and up onto its north pavement through the loading doors' crates, barrels and drums by the keys: at least five of them over (crates broken to planks, barrels and drums rolling), the car never inside a standing thing, nothing floating, nothing in a wall, everything resting |
 | **the doors** (finding 6) | `o1b_doors.json` | PASS: 25 doors round Grand Ave x Centre St's west block, 9 on lots across a chunk line: `E  try the door` at each, E, `locked` |
 | **errors** at every start | `tools/errors.sh "scene=city&beat=roam&anim=1&t=3&at=<id>"` x 10, `beat=ashore` | clean, all eleven |
 | **the drive-through** | `o1_drive.json` | all five districts in 321 s, never inside a wall, **0 chunks missing** within 100 m, **0 built late**, 3 crashes / 22 scrapes (the bot's corners); **720 frames over 50 ms of 8,705** (27 fps on average in the 1280 x 800 window, the worst 209 ms) - **not under the hitch bar**, measured at load 20-85 (the 5-minute load 55 through the run; `secd` 160 % CPU); 519 draws, 2.13 M triangles at its end. O1's quiet run was 56 fps; see Left 1 |
@@ -207,34 +208,29 @@ free). The swim: W acts on the press as the walk does (it is the walk's step).
 ---------------------------------------------------------------------------
 ## 5. For other lanes
 
-- **O6 (smash) - the registry seam, exactly** (O6 was not in `main` when
-  this lane finished; nothing of it is called): every new pavement thing is
-  one record in `C.dress` - `{ id, kind, x, z, yaw, v, chunk, r | hx hz,
-  face, tag, smash }` - with its collider in `C.posts` (round: `r`) or
-  `C.walls` (a box: `hx`, `hz`, `angle` = its yaw) tagged `rec.tag || rec.kind`
-  and carrying `dress: rec`; drawn by `parts/dressing.js` in its own merged
-  `props` mesh per chunk with `m.userData.ranges = [{ owner: rec, start,
-  count }]` and `m.userData.prop = 'merged'`, and `stage.smash.chunkIn(key,
-  meshes)` / `chunkOut` already called when `stage.smash` exists. So
-  registering is one call a record: `smash.register(rec, rec.smash, {
-  merged: true })` (in O6's `props.js`, beside its `C.props` loop:
-  `for (const r of C.dress) smash.register(r, r.smash, { merged: true })`).
-  The kinds it names that O6's set lacks are to be added to
-  `smashKinds.js` (their whole shapes are already in `street.js`
-  `PROPS_EXT` / `propGeo(kind)`, which `kindGeo` falls back to): `barrel`
-  (a single barrel and `barrels`, a cluster: tumble, roll), `churn`
-  (`churns`: tumble, light), `mailbox` (over, heavy), `booth` (over, glass),
-  `flowers` (break: buckets, petals as fruit), `board` (tumble, light),
-  `bike` (tumble, light), `rainbarrel` (tumble, water), `drum` (`drums`: roll),
-  `cart` (tumble, heavy). Existing O6 kinds used as they are: `crate`
-  (`crates`), `bin` (`bins`), `stall` (`fruit`). The newsstands I added are
-  O1's kind in `C.props` (`o1b: true`): O6's loop registers them already.
-  The track's circles: O6's `track.js` binds by `itemAt(x, z, tag)`, so a
-  round thing is found by its tag. The lamps: bracket and hung lamps are
-  `kind: 'wall'` (O6 skips them: no post to knock); globe and dish posts are
-  `kind: 'post'` with `l.style` - O6's `lamp` pool draws a gooseneck, so a
-  `lampGlobe` / `lampDish` kind (from `LAMP_STYLES`) is wanted; a shot at a
-  bracket's or a hung lamp's head (`stage.lamps.hit`) is O6's to answer.
+- **O6 (smash) - registered** (O6 merged into `main` while this lane ran;
+  its fix pass merged it and did this): every new pavement thing is one
+  record in `C.dress` - `{ id, kind, x, z, yaw, v, chunk, r | hx hz, face,
+  tag, smash }` - with its collider in `C.posts` (round: `r`) or `C.walls`
+  (a box: `hx`, `hz`, `angle` = its yaw) tagged by its kind and carrying
+  `dress: rec`; drawn by `parts/dressing.js` in its own merged `props` mesh
+  per chunk with `m.userData.ranges = [{ owner: rec, start, count }]` and
+  `m.userData.prop = 'merged'`, `stage.smash.chunkIn` / `chunkOut` called
+  as each chunk comes and goes. Registering is one call a record in O6's
+  `props.js`: `for (const r of C.dress) if (KINDS[r.kind]) smash.register(r,
+  r.kind, { merged: true })`. The kinds are added to `smashKinds.js`
+  (`[O1b]`), each named as its record's kind and its collider's tag (so
+  bounds' and track's solids are found by `itemAt`): `crates` (break),
+  `barrels`, `barrel`, `drums`, `bins`, `churns`, `rainbarrel` (tumble,
+  roll), `flowers` and `fruit` (goods), `board`, `bike` (light), `mailbox`,
+  `booth`, `cart` (over, they lie); their whole shapes are `street.js`
+  `PROPS_EXT` (`propGeo`, which `kindGeo` falls back to). 1,873 registered
+  (the Docks start: 145 of them already in merged slots). The newsstands I
+  added are O1's kind in `C.props` (`o1b: true`): O6's loop registers them.
+  Still O6's: globe and dish posts are registered as `lamp` and its pool
+  draws a gooseneck when one goes over (a `lampGlobe` / `lampDish` kind from
+  `LAMP_STYLES` is wanted); bracket and hung lamps are `kind: 'wall'` (no
+  post to knock), so a shot at their heads (`stage.lamps.hit`) gets no answer.
 - **O2 (wheels)**: the glovebox is `stage.part('items').glovebox(car)`
   (called on `city:in` already: a police car is `car.kind === 'police'`, or
   `car.police`); the parked cars' bays are untouched; hung lamps hang at
@@ -242,11 +238,12 @@ free). The swim: W acts on the press as the walk does (it is the walk's step).
   7.6 m. The cabin's share of the frame (the cold play's finding 4) is
   yours: the streets now differ at street height, but the seat shows two
   fifths of the frame as the cabin.
-- **O3 (people, police)**: `newsOf(G).say(line, where)` (`G.news.say`):
-  the newest line is the paper's headline (the city's own events feed it
-  meanwhile: a man shot dead, a car burning, shots fired, a car running
-  wild, by street name). THINGS_TO_DO §10 wants a weight (the worst thing
-  wins): `say` keeps the order; a weight is a small change in `latest()`.
+- **O3 (people, police)**: `newsOf(G).say(line, weight, where)`
+  (`G.news.say`, THINGS_TO_DO §10): the worst line of the last ten minutes
+  is the paper's headline, ties the newest (the city's own events feed it
+  meanwhile, by street name: `MAN SHOT DEAD ON GRAND AVE` 3, `CAR BURNS ON
+  ...` 2, `SHOTS FIRED ON ...` and `CAR RUNS WILD ON ...` 1); the `news`
+  event `{ line, weight, where }`.
   The pavements carry more now: the walking graph is O1's; my things stand
   clear of doors and within a metre of the wall.
 - **O4 (combat)**: `money(G, n)` adds to `save.money` (replace by your
@@ -278,8 +275,10 @@ free). The swim: W acts on the press as the walk does (it is the walk's step).
    posts' triangles and nine tenths of the el's bay draws. Re-run
    `o1_drive.json` on a quiet machine; the dressing's `stats` (`buildMs`,
    `tris`) are there to read.
-2. **O6's registration is not done** (O6 not in `main`): the new things are
-   solid but do not go over; the seam is written out exactly in section 5.
+2. **Only the car's way was proved going over** (`o1b_smash.json`): rounds
+   into the new things, a man at a run into a bin, a blast among them are
+   O6's code paths and were not played for these kinds; the rain barrel's
+   downpipe goes over with its barrel.
 3. **The colour is a touch from the street, nearly none from the seat**
    (see the measure): most of it is in shop windows and blades, which the
    coupe's pillars and the right-hand lane keep at the frame's edge.
@@ -297,8 +296,10 @@ free). The swim: W acts on the press as the walk does (it is the walk's step).
 8. **The glovebox** is searched on `city:in`, so the free roam's own coupe
    is searched at the first E (empty or not by its hash); O2's hijack should
    call it for the cars it hands over.
-9. **The news** has no weight (`say` keeps the newest); the paper stays at
-   the stand (endless) - only its card shows.
+9. **The news** is weighed (`say(line, weight, where)`: the worst thing of
+   the last ten minutes is the headline) but only the city's own events feed
+   it (a man shot dead 3, a car burning 2, shots or a wild car 1) until O3's
+   police do; the paper stays at the stand (endless) - only its card shows.
 10. **Stoops** (O1 Left 9) are still doorsteps: a raised stoop wants the
     door raised with it (O1's facade).
 11. Pigeons come back to a ledge only after a minute and out of sight; a
