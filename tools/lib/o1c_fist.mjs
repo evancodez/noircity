@@ -4,7 +4,7 @@
 // jank walk's), a short walk at it by W, then LMB (twice for the second blow) -
 // and what it did: the set's record (a jolt, over, broken), the hand (hurt: the
 // flinch and the beat), the glass (cracked, then gone), a bottle (broken), a car
-// (its skin dented - the damage record's dents -, its body rocked, the crime),
+// (its skin pushed in - read off its geometry -, its body rocked, the crime),
 // the crimes it made; 3.5 s on, nothing floating, everything resting, and
 // ([O1c] after the critic, B2) SEEN where it lies: from 3 m, looking at it,
 // the frame with it and without it differ where it lies (__seeLying).
@@ -70,7 +70,9 @@ const HELPERS = `(() => {
   };
   window.__car = () => { const L = (G.vehicles.list || []).filter((c) => !c.wrecked && Math.abs(c.speed || 0) < 0.1); L.sort((a, b) => Math.hypot(a.pos.x + 120, a.pos.z - 30) - Math.hypot(b.pos.x + 120, b.pos.z - 30)); const c = L[0]; return c ? { x: c.pos.x, z: c.pos.z, r: 1.05, kind: 'car', car: c } : null; };
   // (a car's damage record: its dents (the scar's slots in use) and the body's rock, sampled)
-  window.__dents = (c) => { const D = c && c.smashD; return D && D.scar ? D.scar.dents.filter((d) => d.w > 0).length : 0; };
+  // (how far the car's skin is pushed in from where it was built, in metres summed over its
+  // vertices - the dent itself, read off the geometry, not off any label)
+  window.__dents = (c) => { const D = c && c.smashD; if (!D) return 0; let sum = 0; for (const [m, o] of D.orig) { const a = m.geometry && m.geometry.getAttribute('position'); if (!a || a.array.length !== o.length) continue; for (let i = 0; i < o.length; i += 3) sum += Math.hypot(a.array[i] - o[i], a.array[i + 1] - o[i + 1], a.array[i + 2] - o[i + 2]); } return sum; };
   // (the car at a target: its own, or - an O2 parked body, made a car by the blow - the car standing there now)
   window.__carAt = (t) => t.car || (G.vehicles.list || []).find((v) => Math.hypot(v.pos.x - t.x, v.pos.z - t.z) < 1.5) || null;
   window.__rockOn = (t) => { window.__rock = 0; const f = () => { const c = window.__carAt(t); if (c) window.__rock = Math.max(window.__rock, Math.abs(c.roll) + Math.abs(c.pitch)); if (window.__rockT > performance.now()) requestAnimationFrame(f); }; window.__rockT = performance.now() + 3000; requestAnimationFrame(f); };
@@ -163,7 +165,7 @@ export default async function o1cFist({ js, keyDown, keyUp, mouse, sleep, log, o
       return { state: it ? it.state : null, gone: it ? !!it.gone : null, rest: it && it.state !== 'stand' && !it.gone ? window.__rest(it) : null, ev, fl, cr, pane, item,
         heat: window.__heat ?? (G.police ? G.police.heat : null),
         tilt: it && it.Q && it.state !== 'stand' ? Math.round(Math.acos(Math.min(1, new N.THREE.Vector3(0, 1, 0).applyQuaternion(it.Q).y)) * 57.3) : null,
-        dents: t.car || t.parked ? window.__dents(window.__carAt(t)) - window.__dent0 : null, rock: t.car || t.parked ? +window.__rock.toFixed(3) : null,
+        dents: t.car || t.parked ? +(window.__dents(window.__carAt(t)) - window.__dent0).toFixed(3) : null, rock: t.car || t.parked ? +window.__rock.toFixed(3) : null,
         hands: G.player.hands.set, clip: G.player.hands.clip ? G.player.hands.clip.name : null }; })()`);
     // (what went over: seen where it lies, from 3 m)
     if (T.expect === 'over' && r.state === 'rest' && !r.gone) r.seen = await js(`window.__seeLying(window.__t.it)`);
@@ -179,14 +181,14 @@ export default async function o1cFist({ js, keyDown, keyUp, mouse, sleep, log, o
     else if (e === 'glass') ok = /glass:crack/.test(fl) && /glass:break/.test(fl) && r.pane === 'gone';
     else if (e === 'wall') ok = /wall:hit:hurt/.test(fl);
     else if (e === 'door') ok = /door:hit/.test(fl);
-    else if (e === 'car') ok = r.dents >= 1 && r.rock > 0.004 && r.cr.some((c) => c.startsWith('vandal'));
+    else if (e === 'car') ok = r.dents > 0.05 && r.rock > 0.004 && r.cr.some((c) => c.startsWith('vandal'));
     else if (e === 'item') ok = /item:bottle:broken/.test(fl) && r.item && r.item.taken;
     else ok = true;
     if (T.crime) ok = ok && r.cr.some((c) => c.startsWith(T.crime));
     if (T.heat != null) ok = ok && r.heat >= T.heat;
     const rec = { name: T.name, kind: tg.kind, ok, lat, ...r };
     out.push(rec);
-    log(`  ${T.name} (${tg.kind} at ${tg.x}, ${tg.z}): ${e} ${ok ? 'ok' : 'NOT OK'} - set: [${ev}] fist: [${fl}] ${r.state ? 'now ' + r.state : ''}${r.rest != null ? ` lowest ${r.rest} m over the ground, tilted ${r.tilt} deg` : ''}${r.seen ? ` seen from 3 m: ${(r.seen.frac * 100).toFixed(0)} % of its box changed by it (${(r.seen.up * 100).toFixed(0)} % brighter), mean ${r.seen.d}` : ''}${r.dents != null ? ` dents +${r.dents}, rock ${r.rock} rad` : ''}${r.pane ? ' pane ' + r.pane : ''}${r.cr.length ? ' crimes: ' + r.cr.join(',') : ''}${T.heat != null ? ' heat ' + r.heat : ''} (press to act ${lat} ms)`);
+    log(`  ${T.name} (${tg.kind} at ${tg.x}, ${tg.z}): ${e} ${ok ? 'ok' : 'NOT OK'} - set: [${ev}] fist: [${fl}] ${r.state ? 'now ' + r.state : ''}${r.rest != null ? ` lowest ${r.rest} m over the ground, tilted ${r.tilt} deg` : ''}${r.seen ? ` seen from 3 m: ${(r.seen.frac * 100).toFixed(0)} % of its box changed by it (${(r.seen.up * 100).toFixed(0)} % brighter), mean ${r.seen.d}` : ''}${r.dents != null ? ` skin pushed in +${r.dents} m (summed over its vertices), rock ${r.rock} rad` : ''}${r.pane ? ' pane ' + r.pane : ''}${r.cr.length ? ' crimes: ' + r.cr.join(',') : ''}${T.heat != null ? ' heat ' + r.heat : ''} (press to act ${lat} ms)`);
     if (T.shot && opts.shotEach) await sleep(10);
   }
   return { hits: out, bad: out.filter((h) => !h.ok).map((h) => h.name), lat: out.map((h) => h.lat).filter((x) => x != null) };
