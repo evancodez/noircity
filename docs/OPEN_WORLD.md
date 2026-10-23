@@ -16,6 +16,20 @@ fails, the tools). The user's words, which are the standard:
 > (use the base as inspiration for the aesthetic). No story mode or
 > outright missions yet: a full open world game.
 
+> (Later the same day:) I really want the game to have that noir style,
+> like the game you are basing it off of. But importantly this city should
+> really react to player interaction (like a dynamic police system), fun
+> shootouts, brawls, etc. Keep the scope manageable but it should feel fun.
+
+**The north star, in one line: the city answers everything the player
+does, within seconds, in a way he can see.** A punch draws a crowd and a
+cop; a shot scatters the street and sends a witness running for a call
+box; a hijack brings a patrol car with its siren heard before it is
+seen; a wreck gathers onlookers; a gang watched too long turns and asks
+what you want. The police system is the spine of that answer (§3 People)
+and every other lane feeds it (`crime.emit`) or is fed by it. Judge every
+system by: when I do this, what does the city do back, and is it fun?
+
 Read first, in this order: `reference/noir_reference.png`, `DESIGN.md`,
 this file, your brief `docs/briefs/O<n>_*.md`, then the parts of
 `docs/story/WAVE_C.md` §1 and §2 and `docs/story/GAME_TWO.md` §1 that

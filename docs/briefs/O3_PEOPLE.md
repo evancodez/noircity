@@ -12,6 +12,7 @@ pilot, `traffic.alarm`, the hijack's events; until then a stand-in
 patrol car on the base's `Car.js` and `pilot.js`, dropped when O2
 merges). The user's words:
 
+- **[must]** "This city should really react to player interaction (like a dynamic police system), fun shootouts, brawls, etc. Keep the scope manageable but it should feel fun." (OPEN_WORLD.md: the city answers everything the player does, within seconds, visibly.)
 - **[must]** "there should be a police system too."
 - **[must]** "everything works": nobody walks through anyone; a man a
   car hits goes down; a body is solid to things, not to feet (lane
