@@ -48,6 +48,12 @@ const KEYS = {
   neonAmber: { rgb: [1.0, 0.33, 0.03], emit: true, gain: 3 },
   // the Cardinal's red: the same red as blood, on an object
   crew: { rgb: [0.578, 0.0056, 0.0273], emit: false },
+  // [O1b] NOIR CITY's touch of colour (docs/briefs/O1B_STREETS.md §4: under
+  // 2 % of a frame, never a wash): a red tube (one sign in ten, the mission's
+  // JESUS SAVES, the chop suey's lanterns, the firehouse's lamp) and a red
+  // paint (the firehouse's doors, the barber's pole) - lit like any surface
+  neonRed: { rgb: [1.0, 0.035, 0.05], emit: true, gain: 3 },
+  paintRed: { rgb: [0.52, 0.012, 0.018], emit: false },
 };
 export const ACCENT_KEYS = Object.keys(KEYS);
 

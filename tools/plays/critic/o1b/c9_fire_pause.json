@@ -1,0 +1,87 @@
+{
+ "about": "[O1b critic] the firehouse from across Baxter St; then Tab and the pause card after a matchbook and a roll of cash (are they seen anywhere?)",
+ "url": "/?mute=1&start=city",
+ "size": [
+  1440,
+  900
+ ],
+ "out": "shots/o1bc/fire",
+ "steps": [
+  {
+   "wait": 2000
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]",
+   "taken": "G.state !== 'title'",
+   "retries": 5,
+   "every": 4000
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'city' && G.scenes.fadeK < 0.05",
+   "timeout": 30000
+  },
+  {
+   "look": [
+    1,
+    0
+   ],
+   "steps": 1
+  },
+  {
+   "eval": "(G.save.money = 14, G.save.flags.matchbooks = {ballroom: 'THE ROSELAND'}, 1)"
+  },
+  {
+   "eval": "(N.controller.pos.x=-21.5, N.controller.pos.z=-44, 1)"
+  },
+  {
+   "wait": 3000
+  },
+  {
+   "eval": "(() => { const p = G.camera.position; const dx = -39-p.x, dy = 2.0-p.y, dz = -51-p.z; N.controller.yaw = Math.atan2(-dx, -dz); N.controller.pitch = Math.atan2(dy, Math.hypot(dx, dz)); return 1; })()"
+  },
+  {
+   "wait": 400
+  },
+  {
+   "shot": "fire_far"
+  },
+  {
+   "down": "Tab"
+  },
+  {
+   "wait": 600
+  },
+  {
+   "shot": "tab"
+  },
+  {
+   "eval": "JSON.stringify({txt: document.body.innerText.replace(/\\s+/g,' ').slice(0,400), state: G.state})"
+  },
+  {
+   "up": "Tab"
+  },
+  {
+   "wait": 300
+  },
+  {
+   "key": "Escape",
+   "hold": 80
+  },
+  {
+   "wait": 900
+  },
+  {
+   "shot": "pause"
+  },
+  {
+   "eval": "JSON.stringify({txt: document.body.innerText.replace(/\\s+/g,' ').slice(0,400), state: G.state})"
+  },
+  {
+   "key": "Escape",
+   "hold": 80
+  },
+  {
+   "wait": 600
+  }
+ ]
+}

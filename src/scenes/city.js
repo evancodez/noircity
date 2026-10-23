@@ -5,6 +5,7 @@ import { STARTS, START_DEFAULT, PAVE, RIVER, QUAY_OFF, SLIPS, PIERS, BRIDGE } fr
 import { riverNearest } from '../world/cityGen.js';
 import { MapOverlay } from '../world/map.js';
 import { compileAll } from '../stages/noircity/compile.js';
+import { swimStep } from '../world/swim.js';
 
 // NOIR CITY's free roam (lane O1): the city, a car at the kerb, nothing I
 // must do. Every critic and every later lane starts from here.
@@ -67,11 +68,13 @@ function place(ctx, at) {
   const R = G.city || (G.city = {});
   V.clear();
   stage.part('stream').warmAround(at.car.x, at.car.z);
+  if (stage.part('dressing')) stage.part('dressing').warmAround(at.car.x, at.car.z);   // [O1b]
   const car = V.spawn('coupe', { at: new THREE.Vector3(at.car.x, 0, at.car.z), yaw: at.carYaw, lights: true });
   car.driver = null;
   V.player = null;
   R.car = car;
   R.inCar = false;
+  R.swim = null;   // [O1b]
   R.cabin = stage._cabin || (stage._cabin = new Cabin(G));
   R.cabin.car = null;
   // (its lamps off while it stands: on as I get in)
@@ -82,7 +85,26 @@ function place(ctx, at) {
   stage.part('bounds').navAround(at.pos.x, at.pos.z, 14);
   R.stream = stage.part('stream');
   // (every program the city draws with, compiled under the fade in: none met first down a street)
-  if (!G.shotMode) R.compileMs = compileAll(stage, G);
+  // [O1b] (the performance audit's lever 3: the first E into the car made a
+  // program and uploaded the seat's geometries in its frame - 108 and 127 ms.
+  // The seat taken once now, under the fade in: the hands on the wheel, the
+  // screen's drops, compiled and drawn into a scrap target, then let go)
+  if (!G.shotMode && !stage._compiled && G.pipeline && G.pipeline.renderer) {
+    const r = G.pipeline.renderer;
+    try {
+      R.cabin.attach(car, { ...seatOpts(), ease: 0.001 });
+      G.vm.sync && G.vm.sync(G.camera);
+      r.compile(G.vm.scene, G.vm.cam);
+      const rt = new THREE.WebGLRenderTarget(64, 64), prev = r.getRenderTarget();
+      r.setRenderTarget(rt); r.render(G.vm.scene, G.vm.cam); r.setRenderTarget(prev); rt.dispose();
+      R.compileMs = compileAll(stage, G);
+    } catch (e) { /* its first entry will */ }
+    R.cabin.dispose();
+    G.player.hands.equip('empty');
+    G.setViewmodelVisible(false);
+    ctx.controller.setPose(at.pos.x, at.pos.z, at.yaw, -0.06);
+  }
+  if (!G.shotMode && !stage._compiled) R.compileMs = compileAll(stage, G);
 }
 
 export default defineScene({
@@ -144,8 +166,9 @@ export function step(ctx, R, T, dt) {   // [O6] exported
     const edge = RIVER.s + QUAY_OFF;
     const vs = R.inCar && car ? Math.max(0, car.vel.z) : 0, ve = R.inCar && car ? Math.max(0, car.vel.x) : 0;
     const lead = R.inCar ? Math.max(14, vs * 1.6) : 5;
-    const slip = SLIPS.some((s) => Math.abs(p.x - s.x) < s.w / 2 + 0.5 && (p.z > RIVER.s + RIVER.hw + 1 || (vs > 4 && p.z > edge - lead)));
-    const pier = PIERS.some((q) => Math.abs(p.x - q.x) < q.w / 2 && p.z > edge + q.len - lead);
+    // ([O1b] on foot the river is a swim, not a loss: the warning is the car's)
+    const slip = R.inCar && SLIPS.some((s) => Math.abs(p.x - s.x) < s.w / 2 + 0.5 && (p.z > RIVER.s + RIVER.hw + 1 || (vs > 4 && p.z > edge - lead)));
+    const pier = R.inCar && PIERS.some((q) => Math.abs(p.x - q.x) < q.w / 2 && p.z > edge + q.len - lead);
     const bridge = R.inCar && Math.abs(p.z - BRIDGE.z) < BRIDGE.hw + 2 && p.x > RIVER.e && p.x > BRIDGE.barrier - Math.max(12, ve * 2.4) && p.x < BRIDGE.barrier;
     const w = slip || pier ? 'The river.' : bridge ? 'The bridge is up.' : null;
     // (a warning is danger: a teach card up goes - never two cards, never a card in danger)
@@ -182,8 +205,9 @@ export function step(ctx, R, T, dt) {   // [O6] exported
   // the car I left rolls out what was left of its roll, its brakes on, and
   // stands (nothing else steps a parked car yet: O2's traffic will)
   if (car && !R.inCar && (car.vel.lengthSq() > 4e-4 || Math.abs(car.yawRate) > 0.01)) car.step(dt);
-  // on foot: the river (walked off a pier's end, down a slipway, the steps)
-  if (C.inWater(ctl.pos.x, ctl.pos.z) && ctl.groundY < -0.6) { wet(ctx, R, ctl.pos, 'Into the river.'); return; }
+  // on foot: the river (walked off a pier's end, down a slipway, the steps):
+  // [O1b] a swim to the steps (world/swim.js), never the fade
+  if (swimStep(ctx, R)) return;
   // E at the car: any door, looking at it, close by
   let near = false;
   if (car && car.solid !== false && !car.wrecked) {   // [O6] (a burnt wreck is no car to get into)

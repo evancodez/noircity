@@ -5,6 +5,8 @@ import { FightCards } from '../../ui/fightCards.js';
 import { MEN, BIG } from './kinds.js';
 import { EdgeInk } from './ink.js';
 import { arms } from '../money.js';
+import { coatBottle } from '../../world/items.js';   // [O1b]
+import { buildProp } from '../../props/index.js';   // [O1b]
 
 // [O4] The crowd brawl (docs/briefs/O4_COMBAT.md §1): one fist fight for one
 // to four men in the open city - a street, a bar, the gym's ring. Built on
@@ -190,6 +192,8 @@ export class Crowd {
     // the things in reach: E takes one (the place lists them)
     this.thingHandles = [];
     for (const it of this.cfg.things || []) this.offerThing(it);
+    // [O1b] a bottle picked up in the street is in the coat (save.flags.bottles): one of the things in reach
+    if ((G.save.flags.bottles || 0) > 0) this.offerThing(coatBottle(G, () => buildProp('bottle', { variant: 'beer' })));
     G.emit('crowd:start', { n: this.men.length });
     return this;
   }

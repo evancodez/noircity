@@ -39,6 +39,24 @@ export const KINDS = {
   awning: { high: true, low: 2.45, h: 0.6, giveAt: 0, drag: 1, hurt: 0, how: 'tear', shot: 'tear', hp: 3, mat: 'cloth', surf: SURF.STONE, sound: 'awning_tear', tags: ['awning'], proxy: false, bounce: 0.1, mu: 0.8 },
   // (shop glass: a Glass pane; its rounds are the pane's own)
   glass: { pane: true, h: 2, giveAt: 0, drag: 0.97, hurt: 0.02, how: 'pane', shot: 'pane', mat: 'kerb', sound: 'glass', tags: ['glass'], proxy: false },
+  // [O1b] the streets' new things (world/dressing.js C.dress, one record each;
+  // their shapes: city/kits/dress.js PIECES through street.js propGeo, which
+  // kindGeo falls back to). A kind's name is its record's kind and its
+  // collider's tag, so bounds' and track's solids are found by itemAt
+  crates: { fp: [0.55, 0.42], h: 0.9, giveAt: 1.0, drag: 0.93, hurt: 0.02, how: 'break', shot: 'knock', hp: 2, cap: 24, mat: 'wood', surf: SURF.STONE, sound: 'smash_crate', knock: 'b9crate', tags: ['crates'], light: true, lift: 1.6, carry: 1.0 },
+  barrels: { round: true, r: 0.62, h: 0.84, giveAt: 2.0, drag: 0.85, hurt: 0.03, how: 'tumble', shot: 'knock', hp: 3, cap: 10, mat: 'wood', surf: SURF.STONE, sound: 'smash_crate', knock: 'b9thunk', tags: ['barrels'], roll: true, lift: 1.0, carry: 0.8, mu: 0.4, bounce: 0.25 },
+  barrel: { round: true, r: 0.33, h: 0.84, giveAt: 1.5, drag: 0.92, hurt: 0.02, how: 'tumble', shot: 'knock', hp: 2, cap: 16, mat: 'wood', surf: SURF.STONE, sound: 'smash_crate', knock: 'b9thunk', tags: ['barrel'], light: true, roll: true, lift: 1.3, carry: 0.95, mu: 0.4, bounce: 0.25 },
+  churns: { round: true, r: 0.4, h: 0.72, giveAt: 1.2, drag: 0.95, hurt: 0.01, how: 'tumble', shot: 'knock', hp: 1, cap: 12, mat: 'kerb', surf: SURF.IRON, sound: 'city_bin', knock: 'clang', tags: ['churns'], light: true, roll: true, lift: 1.4, carry: 1.0, mu: 0.35, bounce: 0.3 },
+  mailbox: { round: true, r: 0.3, h: 1.1, giveAt: 3.0, drag: 0.75, hurt: 0.03, how: 'tumble', shot: 'box', hp: 5, cap: 8, mat: 'kerb', surf: SURF.IRON, sound: 'smash_stand', knock: 'clang', tags: ['mailbox'], lie: true, lift: 0.8, carry: 0.6 },
+  booth: { fp: [0.55, 0.55], h: 2.6, giveAt: 3.5, drag: 0.7, hurt: 0.05, how: 'tumble', shot: 'box', hp: 6, cap: 6, mat: 'kerb', surf: SURF.IRON, sound: 'smash_stand', knock: 'clang', tags: ['booth'], lie: true, lift: 0.7, carry: 0.55, lieDrag: 0.9, mu: 0.6 },
+  fruit: { fp: [1.15, 0.42], h: 2.1, giveAt: 1.8, drag: 0.7, hurt: 0.05, how: 'tumble', shot: 'goods', hp: 6, cap: 12, mat: 'tree', surf: SURF.STONE, sound: 'smash_stall', knock: 'b9thunk', tags: ['fruit'], goods: true, lie: true, lift: 1.0, carry: 0.6, lieDrag: 0.88, mu: 0.6 },
+  flowers: { round: true, r: 0.5, h: 0.7, giveAt: 1.0, drag: 0.95, hurt: 0.01, how: 'tumble', shot: 'goods', hp: 2, cap: 10, mat: 'kerb', surf: SURF.IRON, sound: 'city_bin', knock: 'city_bin', tags: ['flowers'], goods: true, light: true, lift: 1.4, carry: 1.0 },
+  board: { fp: [0.32, 0.28], h: 0.95, giveAt: 1.0, drag: 0.97, hurt: 0.005, how: 'tumble', shot: 'wood', hp: 2, cap: 12, mat: 'wood', surf: SURF.STONE, sound: 'smash_fence', knock: 'b9thunk', tags: ['board'], light: true, lift: 1.6, carry: 1.0 },
+  bike: { fp: [0.88, 0.14], h: 1.0, giveAt: 1.0, drag: 0.96, hurt: 0.01, how: 'tumble', shot: 'knock', hp: 2, cap: 12, mat: 'iron', surf: SURF.IRON, sound: 'city_bin', knock: 'clang', tags: ['bike'], light: true, lift: 1.2, carry: 0.9 },
+  bins: { round: true, r: 0.5, h: 0.95, giveAt: 1.2, drag: 0.93, hurt: 0.01, how: 'tumble', shot: 'knock', hp: 1, cap: 16, mat: 'kerb', surf: SURF.IRON, sound: 'city_bin', knock: 'city_bin', tags: ['bins'], light: true, roll: true, lift: 1.6, carry: 1.05, mu: 0.35, bounce: 0.3 },
+  rainbarrel: { round: true, r: 0.38, h: 0.9, giveAt: 1.6, drag: 0.9, hurt: 0.02, how: 'tumble', shot: 'knock', hp: 2, cap: 10, mat: 'wood', surf: SURF.STONE, sound: 'smash_crate', knock: 'b9thunk', tags: ['rainbarrel'], roll: true, lift: 1.0, carry: 0.85, mu: 0.4, bounce: 0.2 },
+  drums: { round: true, r: 0.62, h: 0.88, giveAt: 2.0, drag: 0.85, hurt: 0.03, how: 'tumble', shot: 'knock', hp: 3, cap: 10, mat: 'kerb', surf: SURF.IRON, sound: 'city_bin', knock: 'clang', tags: ['drums'], roll: true, lift: 1.0, carry: 0.8, mu: 0.35, bounce: 0.3 },
+  cart: { fp: [1.15, 0.6], h: 1.1, giveAt: 2.2, drag: 0.85, hurt: 0.03, how: 'tumble', shot: 'wood', hp: 4, cap: 6, mat: 'wood', surf: SURF.STONE, sound: 'smash_crate', knock: 'b9thunk', tags: ['cart'], lie: true, lift: 0.9, carry: 0.7, lieDrag: 0.9 },
 };
 // the city's furniture kinds (cityGen's C.props) -> the set's
 export const KIND_OF = { hydrant: 'hydrant', bin: 'bin', callbox: 'callbox', bench: 'bench', stall: 'stall', newsstand: 'newsstand', namesign: 'namesign', stop: 'stop', pole: 'pole' };

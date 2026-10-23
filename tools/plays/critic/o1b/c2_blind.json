@@ -1,0 +1,121 @@
+{
+ "about": "[O1b critic] the blind test: ten streets, unnamed, from the road at eye height (positions from a seeded draw; the key kept apart until the frames are named)",
+ "url": "/?mute=1&start=city",
+ "size": [
+  1440,
+  900
+ ],
+ "out": "shots/o1bc/blind",
+ "steps": [
+  {
+   "wait": 2500
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]",
+   "taken": "G.state !== 'title'",
+   "retries": 5,
+   "every": 4000
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'city' && G.scenes.fadeK < 0.05",
+   "timeout": 30000
+  },
+  {
+   "look": [
+    1,
+    0
+   ],
+   "steps": 1
+  },
+  {
+   "eval": "(N.controller.pos.x=212.5,N.controller.pos.z=-195,N.controller.yaw=3.1416,N.controller.pitch=0.02,1)"
+  },
+  {
+   "wait": 5000
+  },
+  {
+   "shot": "b00"
+  },
+  {
+   "eval": "(N.controller.pos.x=-165,N.controller.pos.z=332.5,N.controller.yaw=-1.5708,N.controller.pitch=0.02,1)"
+  },
+  {
+   "wait": 5000
+  },
+  {
+   "shot": "b01"
+  },
+  {
+   "eval": "(N.controller.pos.x=-105,N.controller.pos.z=152.5,N.controller.yaw=-1.5708,N.controller.pitch=0.02,1)"
+  },
+  {
+   "wait": 5000
+  },
+  {
+   "shot": "b02"
+  },
+  {
+   "eval": "(N.controller.pos.x=62.5,N.controller.pos.z=135,N.controller.yaw=0,N.controller.pitch=0.02,1)"
+  },
+  {
+   "wait": 5000
+  },
+  {
+   "shot": "b03"
+  },
+  {
+   "eval": "(N.controller.pos.x=255,N.controller.pos.z=-147.5,N.controller.yaw=-1.5708,N.controller.pitch=0.02,1)"
+  },
+  {
+   "wait": 5000
+  },
+  {
+   "shot": "b04"
+  },
+  {
+   "eval": "(N.controller.pos.x=392.5,N.controller.pos.z=-225,N.controller.yaw=0,N.controller.pitch=0.02,1)"
+  },
+  {
+   "wait": 5000
+  },
+  {
+   "shot": "b05"
+  },
+  {
+   "eval": "(N.controller.pos.x=152.5,N.controller.pos.z=-285,N.controller.yaw=3.1416,N.controller.pitch=0.02,1)"
+  },
+  {
+   "wait": 5000
+  },
+  {
+   "shot": "b06"
+  },
+  {
+   "eval": "(N.controller.pos.x=285,N.controller.pos.z=-117.5,N.controller.yaw=-1.5708,N.controller.pitch=0.02,1)"
+  },
+  {
+   "wait": 5000
+  },
+  {
+   "shot": "b07"
+  },
+  {
+   "eval": "(N.controller.pos.x=225,N.controller.pos.z=32.5,N.controller.yaw=1.5708,N.controller.pitch=0.02,1)"
+  },
+  {
+   "wait": 5000
+  },
+  {
+   "shot": "b08"
+  },
+  {
+   "eval": "(N.controller.pos.x=-447.5,N.controller.pos.z=-255,N.controller.yaw=0,N.controller.pitch=0.02,1)"
+  },
+  {
+   "wait": 5000
+  },
+  {
+   "shot": "b09"
+  }
+ ]
+}

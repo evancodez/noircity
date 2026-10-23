@@ -1,0 +1,201 @@
+{
+ "about": "[O1b critic] E at what looks usable: a phone booth, a mailbox, the firehouse's doors, the cinema, the ballroom (what the city answers)",
+ "url": "/?mute=1&start=city",
+ "size": [
+  1440,
+  900
+ ],
+ "out": "shots/o1bc/poke",
+ "steps": [
+  {
+   "wait": 2000
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]",
+   "taken": "G.state !== 'title'",
+   "retries": 5,
+   "every": 4000
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'city' && G.scenes.fadeK < 0.05",
+   "timeout": 30000
+  },
+  {
+   "look": [
+    1,
+    0
+   ],
+   "steps": 1
+  },
+  {
+   "eval": "(N.controller.pos.x=-201.1, N.controller.pos.z=56.5, 1)"
+  },
+  {
+   "wait": 2500
+  },
+  {
+   "eval": "(() => { const p = G.camera.position; const dx = -201.1-p.x, dy = 1.2-p.y, dz = 53.7-p.z; N.controller.yaw = Math.atan2(-dx, -dz); N.controller.pitch = Math.atan2(dy, Math.hypot(dx, dz)); return 1; })()"
+  },
+  {
+   "wait": 400
+  },
+  {
+   "shot": "booth"
+  },
+  {
+   "eval": "JSON.stringify({pos:[+N.controller.pos.x.toFixed(1),+N.controller.pos.z.toFixed(1)], prompt: (G.hud.el.prompt.style.display!=='none') ? G.hud.el.prompt.innerText.replace(/\\n/g,' ') : null, txt: document.body.innerText.replace(/\\s+/g,' ').slice(0,160), state: G.state})"
+  },
+  {
+   "key": "KeyE",
+   "hold": 80
+  },
+  {
+   "wait": 500
+  },
+  {
+   "eval": "JSON.stringify({pos:[+N.controller.pos.x.toFixed(1),+N.controller.pos.z.toFixed(1)], prompt: (G.hud.el.prompt.style.display!=='none') ? G.hud.el.prompt.innerText.replace(/\\n/g,' ') : null, txt: document.body.innerText.replace(/\\s+/g,' ').slice(0,160), state: G.state})"
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "eval": "JSON.stringify({pos:[+N.controller.pos.x.toFixed(1),+N.controller.pos.z.toFixed(1)], prompt: (G.hud.el.prompt.style.display!=='none') ? G.hud.el.prompt.innerText.replace(/\\n/g,' ') : null, txt: document.body.innerText.replace(/\\s+/g,' ').slice(0,160), state: G.state})"
+  },
+  {
+   "eval": "(N.controller.pos.x=-112.6, N.controller.pos.z=-42.4, 1)"
+  },
+  {
+   "wait": 2500
+  },
+  {
+   "eval": "(() => { const p = G.camera.position; const dx = -110.2-p.x, dy = 0.8-p.y, dz = -42.4-p.z; N.controller.yaw = Math.atan2(-dx, -dz); N.controller.pitch = Math.atan2(dy, Math.hypot(dx, dz)); return 1; })()"
+  },
+  {
+   "wait": 400
+  },
+  {
+   "shot": "mailbox"
+  },
+  {
+   "eval": "JSON.stringify({pos:[+N.controller.pos.x.toFixed(1),+N.controller.pos.z.toFixed(1)], prompt: (G.hud.el.prompt.style.display!=='none') ? G.hud.el.prompt.innerText.replace(/\\n/g,' ') : null, txt: document.body.innerText.replace(/\\s+/g,' ').slice(0,160), state: G.state})"
+  },
+  {
+   "key": "KeyE",
+   "hold": 80
+  },
+  {
+   "wait": 500
+  },
+  {
+   "eval": "JSON.stringify({pos:[+N.controller.pos.x.toFixed(1),+N.controller.pos.z.toFixed(1)], prompt: (G.hud.el.prompt.style.display!=='none') ? G.hud.el.prompt.innerText.replace(/\\n/g,' ') : null, txt: document.body.innerText.replace(/\\s+/g,' ').slice(0,160), state: G.state})"
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "eval": "JSON.stringify({pos:[+N.controller.pos.x.toFixed(1),+N.controller.pos.z.toFixed(1)], prompt: (G.hud.el.prompt.style.display!=='none') ? G.hud.el.prompt.innerText.replace(/\\n/g,' ') : null, txt: document.body.innerText.replace(/\\s+/g,' ').slice(0,160), state: G.state})"
+  },
+  {
+   "eval": "(N.controller.pos.x=-35.5, N.controller.pos.z=-51, 1)"
+  },
+  {
+   "wait": 2500
+  },
+  {
+   "eval": "(() => { const p = G.camera.position; const dx = -39-p.x, dy = 1.5-p.y, dz = -51-p.z; N.controller.yaw = Math.atan2(-dx, -dz); N.controller.pitch = Math.atan2(dy, Math.hypot(dx, dz)); return 1; })()"
+  },
+  {
+   "wait": 400
+  },
+  {
+   "shot": "firehouse"
+  },
+  {
+   "eval": "JSON.stringify({pos:[+N.controller.pos.x.toFixed(1),+N.controller.pos.z.toFixed(1)], prompt: (G.hud.el.prompt.style.display!=='none') ? G.hud.el.prompt.innerText.replace(/\\n/g,' ') : null, txt: document.body.innerText.replace(/\\s+/g,' ').slice(0,160), state: G.state})"
+  },
+  {
+   "key": "KeyE",
+   "hold": 80
+  },
+  {
+   "wait": 500
+  },
+  {
+   "eval": "JSON.stringify({pos:[+N.controller.pos.x.toFixed(1),+N.controller.pos.z.toFixed(1)], prompt: (G.hud.el.prompt.style.display!=='none') ? G.hud.el.prompt.innerText.replace(/\\n/g,' ') : null, txt: document.body.innerText.replace(/\\s+/g,' ').slice(0,160), state: G.state})"
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "eval": "JSON.stringify({pos:[+N.controller.pos.x.toFixed(1),+N.controller.pos.z.toFixed(1)], prompt: (G.hud.el.prompt.style.display!=='none') ? G.hud.el.prompt.innerText.replace(/\\n/g,' ') : null, txt: document.body.innerText.replace(/\\s+/g,' ').slice(0,160), state: G.state})"
+  },
+  {
+   "eval": "(N.controller.pos.x=-59.5, N.controller.pos.z=9.5, 1)"
+  },
+  {
+   "wait": 2500
+  },
+  {
+   "eval": "(() => { const p = G.camera.position; const dx = -57-p.x, dy = 1.5-p.y, dz = 12-p.z; N.controller.yaw = Math.atan2(-dx, -dz); N.controller.pitch = Math.atan2(dy, Math.hypot(dx, dz)); return 1; })()"
+  },
+  {
+   "wait": 400
+  },
+  {
+   "shot": "cinema"
+  },
+  {
+   "eval": "JSON.stringify({pos:[+N.controller.pos.x.toFixed(1),+N.controller.pos.z.toFixed(1)], prompt: (G.hud.el.prompt.style.display!=='none') ? G.hud.el.prompt.innerText.replace(/\\n/g,' ') : null, txt: document.body.innerText.replace(/\\s+/g,' ').slice(0,160), state: G.state})"
+  },
+  {
+   "key": "KeyE",
+   "hold": 80
+  },
+  {
+   "wait": 500
+  },
+  {
+   "eval": "JSON.stringify({pos:[+N.controller.pos.x.toFixed(1),+N.controller.pos.z.toFixed(1)], prompt: (G.hud.el.prompt.style.display!=='none') ? G.hud.el.prompt.innerText.replace(/\\n/g,' ') : null, txt: document.body.innerText.replace(/\\s+/g,' ').slice(0,160), state: G.state})"
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "eval": "JSON.stringify({pos:[+N.controller.pos.x.toFixed(1),+N.controller.pos.z.toFixed(1)], prompt: (G.hud.el.prompt.style.display!=='none') ? G.hud.el.prompt.innerText.replace(/\\n/g,' ') : null, txt: document.body.innerText.replace(/\\s+/g,' ').slice(0,160), state: G.state})"
+  },
+  {
+   "eval": "(N.controller.pos.x=-146, N.controller.pos.z=53.8, 1)"
+  },
+  {
+   "wait": 2500
+  },
+  {
+   "eval": "(() => { const p = G.camera.position; const dx = -146-p.x, dy = 1.3-p.y, dz = 51-p.z; N.controller.yaw = Math.atan2(-dx, -dz); N.controller.pitch = Math.atan2(dy, Math.hypot(dx, dz)); return 1; })()"
+  },
+  {
+   "wait": 400
+  },
+  {
+   "shot": "ballroom"
+  },
+  {
+   "eval": "JSON.stringify({pos:[+N.controller.pos.x.toFixed(1),+N.controller.pos.z.toFixed(1)], prompt: (G.hud.el.prompt.style.display!=='none') ? G.hud.el.prompt.innerText.replace(/\\n/g,' ') : null, txt: document.body.innerText.replace(/\\s+/g,' ').slice(0,160), state: G.state})"
+  },
+  {
+   "key": "KeyE",
+   "hold": 80
+  },
+  {
+   "wait": 500
+  },
+  {
+   "eval": "JSON.stringify({pos:[+N.controller.pos.x.toFixed(1),+N.controller.pos.z.toFixed(1)], prompt: (G.hud.el.prompt.style.display!=='none') ? G.hud.el.prompt.innerText.replace(/\\n/g,' ') : null, txt: document.body.innerText.replace(/\\s+/g,' ').slice(0,160), state: G.state})"
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "eval": "JSON.stringify({pos:[+N.controller.pos.x.toFixed(1),+N.controller.pos.z.toFixed(1)], prompt: (G.hud.el.prompt.style.display!=='none') ? G.hud.el.prompt.innerText.replace(/\\n/g,' ') : null, txt: document.body.innerText.replace(/\\s+/g,' ').slice(0,160), state: G.state})"
+  }
+ ]
+}

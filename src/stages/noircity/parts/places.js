@@ -5,6 +5,8 @@ import { RNG } from '../../../util/rng.js';
 import { LETTER_FONT } from '../../../ui/lettering.js';
 import { lotWindows } from '../../../city/kits/facade.js';
 import { PAVE, CLS, NS, EW } from '../../../world/plan.js';
+import { accent } from '../../../render/accents.js';
+import { vhash } from '../../../world/streets.js';
 
 // The named places and the neon (lane O1): what tells a street from a
 // street at night. The theatres' marquees (a lit board, the name in black,
@@ -21,11 +23,16 @@ import { PAVE, CLS, NS, EW } from '../../../world/plan.js';
 // seen down a street from far off); one atlas, one material, one mesh of
 // faces, one of boards, one of bulbs.
 //   api: { signs: [{ text, x, z, n, kind, place }], doors: [{ x, z, nx, nz, place }] (the places' doors: O5's) }
+// [O1b] red: the registry's neonRed (accents.js) as the canvas draws it (its
+// linear (1, .035, .05) in sRGB), one blade in ten by the street's character
+const toCss = (c) => '#' + [c.r, c.g, c.b].map((v) => Math.round(255 * Math.pow(Math.min(1, v), 1 / 2.2)).toString(16).padStart(2, '0')).join('');
 const COL = {
   blue: { rim: '#4aa8ff', core: '#dff0ff' },
   white: { rim: '#cfcfcf', core: '#ffffff' },
+  red: { rim: toCss(accent('neonRed', { gain: 1 / 3 })), core: '#ffe2e2' },
+  amber: { rim: toCss(accent('neonAmber', { gain: 1 / 3 })), core: '#fff0dc' },   // [O1b] (the registry's neonAmber)
 };
-const PX = 96, ATLAS = 2048;
+const PX = 96, ATLAS = 2048, ATLAS_H = 4096;   // ([O1b] twice as tall: the painted names and the windows' neon ran off the bottom of a square one)
 const BLADES = ['BAR', 'HOTEL', 'CHOP SUEY', 'PAWN', 'DANCING', 'LIQUORS', 'BILLIARDS', 'LUNCH', 'ROOMS', 'DRUGS', 'CAFE', 'TAILOR', 'GRILL', 'SHOES', 'RADIO', 'JEWELRY'];
 const BLADE_STREETS = new Set(['grand', 'bowery', 'centre', 'houston', 'broadway', 'mott', 'clock']);
 
@@ -38,15 +45,26 @@ export default {
     group.name = 'places';
     scene.add(group);
     // ---- the atlas ---------------------------------------------------------------------------------
-    const cv = document.createElement('canvas'); cv.width = ATLAS; cv.height = ATLAS;
+    const cv = document.createElement('canvas'); cv.width = ATLAS; cv.height = ATLAS_H;
     const g = cv.getContext('2d');
-    g.fillStyle = '#000'; g.fillRect(0, 0, ATLAS, ATLAS);
+    g.fillStyle = '#000'; g.fillRect(0, 0, ATLAS, ATLAS_H);
     let ax = 4, ay = 4, row = 0;
     const alloc = (w, h) => { if (ax + w + 4 > ATLAS) { ax = 4; ay += row + 6; row = 0; } const c = { x: ax, y: ay, w, h }; ax += w + 6; row = Math.max(row, h); return c; };
-    const uvOf = (c) => [c.x / ATLAS, 1 - (c.y + c.h) / ATLAS, (c.x + c.w) / ATLAS, 1 - c.y / ATLAS];
+    const uvOf = (c) => [c.x / ATLAS, 1 - (c.y + c.h) / ATLAS_H, (c.x + c.w) / ATLAS, 1 - c.y / ATLAS_H];
     // a neon face: the black board, the tube's glow, the tube, its white-hot line
-    const neonFace = (text, col, wM, hM, vert) => {
-      const c = alloc(Math.round(wM * PX), Math.round(hM * PX));
+    const faceCache = new Map();   // [O1b] (a blade's face drawn once a word and a colour)
+    const neonFace = (text, col, wM, hM, vert, res = 1) => {
+      const ck = vert ? `${text}|${col}|${wM.toFixed(2)}|${hM.toFixed(2)}|${res}` : null;
+      if (ck && faceCache.has(ck)) return faceCache.get(ck);
+      const r = neonFace0(text, col, wM, hM, vert, res);
+      if (ck) faceCache.set(ck, r);
+      return r;
+    };
+    // ([O1b] res: the atlas's pixels a metre, a share of PX - the streets' accent
+    // blades are drawn at half: at full they ran the atlas past its height and
+    // the painted names after them fell off it)
+    const neonFace0 = (text, col, wM, hM, vert, res = 1) => {
+      const c = alloc(Math.round(wM * PX * res), Math.round(hM * PX * res));
       const K = COL[col];
       g.save(); g.beginPath(); g.rect(c.x, c.y, c.w, c.h); g.clip(); g.translate(c.x, c.y);
       g.fillStyle = '#050505'; g.fillRect(0, 0, c.w, c.h);
@@ -84,7 +102,7 @@ export default {
       return p;
     };
     const box = (cx, cy, cz, sx, sy, sz, yaw) => new THREE.BoxGeometry(sx, sy, sz).rotateY(yaw).translate(cx, cy, cz);
-    const neonFaces = [], litFaces = [], darkFaces = [], boards = [], bulbs = [];
+    const neonFaces = [], litFaces = [], darkFaces = [], boards = [], bulbs = [], amberBulbs = [];
     const signs = [], doors = [];
     // the street face of a rect lot nearest a point: { a, b, n, mid, len }
     const facesOf = (L) => {
@@ -98,22 +116,22 @@ export default {
     };
     const nearestFace = (L, at) => { let best = null, bd = Infinity; for (const F of facesOf(L)) { const d = Math.hypot(F.mid[0] - at[0], F.mid[1] - at[1]); if (d < bd) { bd = d; best = F; } } return best; };
     // a blade sign hung out from the wall at (x, z) (n: out of the wall)
-    const blade = (x, z, n, y, text, col, { big = false } = {}) => {
+    const blade = (x, z, n, y, text, col, { big = false, res = 1 } = {}) => {
       const wM = big ? 1.2 : 0.85, lh = big ? 0.8 : 0.58, hM = text.replace(/ /g, '').length * lh + 0.4;
       const out = 0.35 + wM / 2, cx = x + n[0] * out, cz = z + n[1] * out;
       const yawN = Math.atan2(-n[1], n[0]);
       boards.push(box(cx, y, cz, wM, hM, 0.14, yawN));
       boards.push(box(x + n[0] * (0.35 + wM) / 2, y + hM / 2 + 0.08, z + n[1] * (0.35 + wM) / 2, 0.35 + wM, 0.05, 0.05, yawN));
-      const uv = neonFace(text.replace(/ /g, ''), col, wM - 0.06, hM - 0.06, true);
+      const uv = neonFace(text.replace(/ /g, ''), col, wM - 0.06, hM - 0.06, true, res);
       const tx = -n[1], tz = n[0];
       for (const sd of [1, -1]) neonFaces.push(faceGeo(wM - 0.06, hM - 0.06, tx * sd, tz * sd, cx + tx * sd * 0.075, y, cz + tz * sd * 0.075, uv));
       signs.push({ text, x, z, n, kind: 'blade', col });
     };
     // a flat sign on the wall
-    const flat = (x, z, n, y, text, w, h, kind, col = 'blue') => {
+    const flat = (x, z, n, y, text, w, h, kind, col = 'blue', res = 1) => {   // ([O1b] res: the atlas's pixels a metre, a share of PX - the painted names are big and seen far)
       const yawN = Math.atan2(-n[1], n[0]) + Math.PI / 2;
       boards.push(box(x + n[0] * 0.05, y, z + n[1] * 0.05, w + 0.12, h + 0.12, 0.1, yawN));
-      const uv = kind === 'neon' ? neonFace(text, col, w, h, false) : boardFace(text, w, h, kind === 'lit');
+      const uv = kind === 'neon' ? neonFace(text, col, w * res, h * res, false) : boardFace(text, w * res, h * res, kind === 'lit');
       (kind === 'neon' ? neonFaces : kind === 'lit' ? litFaces : darkFaces).push(faceGeo(w, h, n[0], n[1], x + n[0] * 0.11, y, z + n[1] * 0.11, uv));
       signs.push({ text, x, z, n, kind });
     };
@@ -140,7 +158,8 @@ export default {
         litFaces.push(faceGeo(w, h, n[0], n[1], mx + n[0] * (d + 0.01), y, mz + n[1] * (d + 0.01), uvF));
         const uvS = boardFace('TONIGHT', d, h, true);
         for (const sd of [1, -1]) litFaces.push(faceGeo(d, h, tx * sd, tz * sd, cx + tx * sd * (w / 2 + 0.01), y, cz + tz * sd * (w / 2 + 0.01), uvS));
-        for (let u = -w / 2 + 0.4; u <= w / 2 - 0.3; u += 0.7) for (const k of [0.4, 0.8]) bulbs.push(new THREE.SphereGeometry(0.07, 6, 4).translate(mx + tx * u + n[0] * d * k, y - h / 2 - 0.22, mz + tz * u + n[1] * d * k));
+        // ([O1b] the marquee's bulbs a warm amber: the registry's neonAmber)
+        for (let u = -w / 2 + 0.4; u <= w / 2 - 0.3; u += 0.7) for (const k of [0.4, 0.8]) amberBulbs.push(new THREE.SphereGeometry(0.07, 6, 4).translate(mx + tx * u + n[0] * d * k, y - h / 2 - 0.22, mz + tz * u + n[1] * d * k));
         blade(mx + tx * (w / 2 - 1), mz + tz * (w / 2 - 1), n, Math.min(L.h - 3, 12), P.name.replace('THE ', ''), 'white', { big: true });
       } else if (P.kind === 'hotel') {
         blade(dx + tx * 3, dz + tz * 3, n, Math.min(L.h - 3, 10.5), 'HOTEL', 'blue', { big: true });
@@ -182,10 +201,75 @@ export default {
       const shop = lotWindows(L).find((w) => w.kind === 'shop' && w.nx === F.n[0] && w.nz === F.n[1]);
       if (!shop) continue;
       // (the draws as they were, so the blades stand where they stood: one in five blue)
-      const col = rng.chance(0.6) ? 'white' : rng.chance(0.5) ? 'blue' : 'white';
+      let col = rng.chance(0.6) ? 'white' : rng.chance(0.5) ? 'blue' : 'white';
+      // ([O1b] one in ten red, by the street: the Bowery's pawnshops more, the hill's none)
+      if (L.ch && vhash(L.cx, L.cz, 61) < (L.ch.red || 0)) col = 'red';
       const text = BLADES[Math.floor(rng.next() * BLADES.length)];
       blade(shop.x + (-F.n[1]) * shop.w * 0.5, shop.z + F.n[0] * shop.w * 0.5, F.n, 4.6 + text.replace(/ /g, '').length * 0.29, text, col);
       if (++nB >= 40) break;
+    }
+    // ---- [O1b] neon in the lit shop windows (the brief §4: a touch of colour,
+    // the vast majority still ink): one lit shop in four of the trades that
+    // burn one - a cafe's EATS, a pawnshop's LOANS, a chop suey's - red, the
+    // registry's blue or white; red by the street (one in ten and more on the
+    // Bowery, Doyers, Broadway). A tube on its black backing, up in the glass
+    const WN = { cafe: ['EATS', 'CAFE', 'OPEN'], deli: ['DELI', 'OPEN'], chopsuey: ['CHOP SUEY', 'TEA'], pawn: ['LOANS', 'PAWN'], radio: ['RADIO'], drugs: ['DRUGS', 'SODA'], cigars: ['CIGARS'], tobacco: ['SMOKES'], barber: ['BARBER'], shoes: ['OPEN'], grocer: ['OPEN'], laundry: ['LAUNDRY'], hats: ['HATS'], jeweler: ['WATCHES'] };
+    let nW = 0;
+    for (const L of C.lots) {
+      if (!L.fc || L.place || nW >= 260) continue;
+      for (const w of lotWindows(L)) {
+        if (w.kind !== 'shop' || !w.lit || !w.trade || !WN[w.trade] || vhash(w.x, w.z, 71) > 0.3) continue;
+        const words = WN[w.trade], text = words[Math.floor(vhash(w.x, w.z, 72) * words.length) % words.length];
+        const red = Math.max(0.3, ((L.ch && L.ch.red) || 0) * 2.5);
+        const col = vhash(w.x, w.z, 73) < red ? 'red' : vhash(w.x, w.z, 74) < 0.6 ? 'blue' : 'white';
+        const wM = Math.min(w.w * 0.62, text.replace(/ /g, '').length * 0.24 + 0.35), hM = 0.4;
+        neonFaces.push(faceGeo(wM, hM, w.nx, w.nz, w.x + w.nx * 0.16, w.y + w.h * 0.2, w.z + w.nz * 0.16, neonFace(text, col, wM, hM, false)));
+        signs.push({ text, x: w.x, z: w.z, n: [w.nx, w.nz], kind: 'window', col });
+        if (++nW >= 260) break;
+      }
+    }
+    // ---- [O1b] after the critic (M2: seven streets of ten under 0.1 % colour, 'a bit
+    // more color' not felt): every street its one colour a driver sees - a blade in
+    // the street's accent (world/streets.js: red, blue or amber) over a shop front
+    // every so many metres a side, its word the trade's under it (in the Docks
+    // and the Yards over a door: the bars' and the garages' blades); never two
+    // blades within 9 m. The vast majority of every frame stays ink.
+    const TW = { tailor: 'TAILOR', jeweler: 'JEWELRY', shoes: 'SHOES', hats: 'HATS', radio: 'RADIO', books: 'BOOKS', cafe: 'CAFE', drugs: 'DRUGS', grocer: 'GROCERY', butcher: 'MEATS', barber: 'BARBER', laundry: 'LAUNDRY', deli: 'DELI', pawn: 'LOANS', chopsuey: 'CHOP SUEY', chandler: 'SHIPS STORES', hardware: 'TOOLS', florist: 'FLOWERS', cigars: 'CIGARS', tobacco: 'SMOKES' };
+    const DOORW = { docks: ['BAR', 'ROOMS', 'EATS', 'GRILL', 'BAR'], yards: ['GARAGE', 'DINER', 'EATS', 'TRUCKS', 'GAS'], tenements: ['BAR', 'ROOMS', 'HOTEL'], downtown: ['BAR', 'HOTEL', 'GRILL'] };
+    const sides = new Map();
+    for (const L of C.lots) {
+      if (!L.fc || L.place || L.house) continue;
+      for (const f of L.fc) {
+        const A = f.ch && f.ch.accent;
+        if (!A || !A.every) continue;
+        const works = L.district === 'docks' || L.district === 'yards';
+        for (const w of lotWindows(L)) {
+          if (Math.abs(w.nx - f.n[0]) > 0.01 || Math.abs(w.nz - f.n[1]) > 0.01 || w.y > 4.6 || w.unique) continue;
+          if (!(w.kind === 'shop' || (works && (w.kind === 'door' || w.kind === 'loading')))) continue;
+          const key = `${f.st}|${f.n[0].toFixed(2)}|${f.n[1].toFixed(2)}`;
+          if (!sides.has(key)) sides.set(key, []);
+          sides.get(key).push({ s: -w.x * f.n[1] + w.z * f.n[0], w, L, A });
+        }
+      }
+    }
+    let nA = 0;
+    const bladeNear = (x, z, r) => signs.some((q) => q.kind === 'blade' && Math.abs(q.x - x) < r && Math.abs(q.z - z) < r);
+    for (const arr of sides.values()) {
+      arr.sort((a, b) => a.s - b.s);
+      const A = arr[0].A;
+      let last = arr[0].s - A.every * (0.35 + 0.6 * vhash(arr[0].w.x, arr[0].w.z, 81));
+      for (const e of arr) {
+        if (e.s - last < A.every) continue;
+        const w = e.w;
+        if (bladeNear(w.x, w.z, 9)) continue;
+        const words = w.kind === 'shop' && w.trade && TW[w.trade] ? [TW[w.trade]] : DOORW[e.L.district] || DOORW.downtown;
+        const text = words[Math.floor(vhash(w.x, w.z, 82) * words.length) % words.length];
+        const tx = -w.nz, tz = w.nx, side = vhash(w.x, w.z, 83) < 0.5 ? -1 : 1;
+        const base = e.L.district === 'tenements' ? 4.1 : 4.6;
+        blade(w.x + tx * side * (w.w * 0.5 + 0.1), w.z + tz * side * (w.w * 0.5 + 0.1), [w.nx, w.nz], base + text.replace(/ /g, '').length * 0.29, text, A.col, { res: 0.5 });
+        last = e.s;
+        nA++;
+      }
     }
     // ---- the warehouses' and the sheds' painted names, high on their street faces (the Docks, the Yards) ------------
     const PAINT = {
@@ -202,7 +286,7 @@ export default {
       const F = Fs[Math.floor(prng.next() * Fs.length)];
       const list = PAINT[L.district], text = list[Math.floor(prng.next() * list.length)];
       const w = Math.min(F.len * 0.7, text.length * 0.9 + 2), h = Math.min(2.2, Math.max(1.4, w / text.length * 1.4));
-      flat(F.mid[0], F.mid[1], F.n, L.h - h / 2 - 1.0, text, w, h, 'dark');
+      flat(F.mid[0], F.mid[1], F.n, L.h - h / 2 - 1.0, text, w, h, 'dark', 'blue', 0.4);
       if (++nP >= 30) break;
     }
     // ---- the meshes ----------------------------------------------------------------------------------------------
@@ -227,8 +311,11 @@ export default {
     const bm = mk(boards, M.iron, 2);
     if (bm) bm.userData.noRay = false;
     mk(bulbs, M.bulb, 2);
+    mk(amberBulbs, new THREE.MeshBasicMaterial({ color: accent('neonAmber', { gain: 0.7 }) }), 2);   // [O1b]
     void CLS; void NS; void EW;
-    return { group, signs, doors };
+    // ([O1b] a face past the atlas's foot prints nothing: say so where the plays read it)
+    if (ay + row > ATLAS_H) console.error(`places: the neon atlas overflows (${ay + row} of ${ATLAS_H} px)`);
+    return { group, signs, doors, atlasUsed: ay + row, accentBlades: nA };   // ([O1b] the atlas's height used: under ATLAS_H)
   },
 };
 

@@ -1,0 +1,15 @@
+{
+ "about": "[O1b] The items (brief §3): each kind picked up by E - a roll of cash, a box of rounds, a bottle, a matchbook, a paper (its front page: the city's news), a gun where a man fell - the prompt E take before the press, the count after it, the press-to-take time; then the coupe taken by E and its glovebox searched. tools/lib/o1b_streets.mjs 'items'. node tools/play.mjs tools/plays/o1b_items.json",
+ "url": "/?mute=1&start=city",
+ "size": [1280, 800],
+ "out": "shots/o1b/items",
+ "steps": [
+  { "wait": 1500 },
+  { "clickOn": "#title .opt[data-k=begin]", "taken": "G.state !== 'title'", "retries": 5, "every": 4000 },
+  { "until": "G.scenes.current && G.scenes.current.id === 'city' && G.scenes.fadeK < 0.05", "timeout": 25000 },
+  { "wait": 1200 },
+  { "eval": "(G.save.flags.taught = { city_in: true, city_drive: true, city_map: true }, 1)" },
+  { "drive": "tools/lib/o1b_streets.mjs", "mode": "items", "shots": true, "check": "D.bad.length === 0", "label": "every item taken by E, its count seen" },
+  { "expect": "G.news && G.news.latest().length > 0", "label": "the paper carries a headline" }
+ ]
+}

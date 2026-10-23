@@ -3,8 +3,11 @@ import {
   PAVE, WATER_Y, CITY, EDGE, CLS, NS, EW, NS_EXTRA, EW_EXTRA, BROADWAY, RIVER, RIVER_LINE, QUAY_OFF, PIERS, SLIPS, BRIDGE,
   SPECIAL, CLOCK, EL, PLACES, GASWORKS, PARK, CRANES, districtAt,
 } from './plan.js';
+import { dress, quaySteps } from './dressing.js';
 // the downtown towers' floors at most (3.6 m a floor: 73 m; the clock tower is 200)
 const TOWER_MAX = 20;
+// [O1b] the quay's and the piers' steps down to the water (the swim's way out): the railing opens at each landing
+const STEPS = quaySteps();
 
 // NOIR CITY: the generator (lane O1). The plan (./plan.js) in, plain numbers
 // out: no meshes, no THREE, so a headless tool can build the same city (the
@@ -301,7 +304,7 @@ export function generate() {
   quay(walls, posts);
 
   // ---- street furniture: lamps, hydrants, call boxes, bins, bays ---------------------------------------------
-  furnish(streets, paves, lots, lamps, props, bays, posts, walls, lines);
+  const FUR = furnish(streets, paves, lots, lamps, props, bays, posts, walls, lines);
 
   // ---- the chunks --------------------------------------------------------------------------------------------
   const chunkOf = (x, z) => `${Math.floor(x / CHUNK)},${Math.floor(z / CHUNK)}`;
@@ -350,7 +353,15 @@ export function generate() {
     }
     return PAVE * k;
   }
-  return { xs, zs, cells, paves, lots, walls, posts, lamps, props, bays, streets, alleys, lines, specials: specialsOut, groundAt, inWater, cellAt, chunkOf, CHUNK };
+  const C = { xs, zs, cells, paves, lots, walls, posts, lamps, props, bays, streets, alleys, lines, specials: specialsOut, groundAt, inWater, cellAt, chunkOf, CHUNK };
+  // [O1b] every street its own, and more in them (world/dressing.js): the
+  // lots' street faces and characters, the lamps by their street, the trees,
+  // the pavements' things, the one thing mid-block, the items' places, the
+  // quay's steps
+  C.dressed = dress(C, { ...FUR, chunkOf, steps: STEPS });
+  C.steps = STEPS;
+  for (const l of lamps) l.chunk = chunkOf(l.x, l.z);
+  return C;
 }
 
 // which edges of a kerb polygon are kerbs (they face a road): all of them but
@@ -533,6 +544,9 @@ function quay(walls, posts) {
   const gaps = [];
   for (const sl of SLIPS) gaps.push({ x: sl.x, w: sl.w + 0.6, south: true });
   for (const p of PIERS) gaps.push({ x: p.x, w: p.w, south: true });
+  // [O1b] the steps' landings (south: along x; east: along z)
+  const gapsE = [{ z: BRIDGE.z, w: (BRIDGE.hw + BRIDGE.foot) * 2 }];
+  for (const s of STEPS) if (s.kind === 'quay') { if (s.nz > 0.9) gaps.push({ x: s.x, w: 1.9, south: true }); else if (s.nx > 0.9) gapsE.push({ z: s.z, w: 1.9 }); }
   for (let i = 0; i + 1 < RIVER_LINE.length; i++) {
     const [ax, az] = RIVER_LINE[i], [bx, bz] = RIVER_LINE[i + 1];
     const s = RIVER_SEGS[i];
@@ -552,11 +566,16 @@ function quay(walls, posts) {
       pieces.length = 0;
       for (const [a, b] of cuts) pieces.push([[a, A[1]], [b, A[1]]]);
     }
-    // (the bridge crosses the east quay)
+    // (the bridge crosses the east quay; [O1b] the steps' landings open it too)
     if (Math.abs(ax - bx) < 1e-3) {
       const lo = Math.min(A[1], B[1]), hi = Math.max(A[1], B[1]);
-      const g0 = BRIDGE.z - BRIDGE.hw - BRIDGE.foot, g1 = BRIDGE.z + BRIDGE.hw + BRIDGE.foot;
-      if (g1 > lo && g0 < hi) { pieces.length = 0; if (g0 - lo > 0.3) pieces.push([[A[0], lo], [A[0], g0]]); if (hi - g1 > 0.3) pieces.push([[A[0], g1], [A[0], hi]]); }
+      let cuts = [[lo, hi]];
+      for (const g of gapsE) {
+        const g0 = g.z - g.w / 2, g1 = g.z + g.w / 2;
+        cuts = cuts.flatMap(([a, b]) => (g1 <= a || g0 >= b ? [[a, b]] : [[a, g0], [g1, b]].filter(([u, v]) => v - u > 0.3)));
+      }
+      pieces.length = 0;
+      for (const [a, b] of cuts) pieces.push([[A[0], a], [A[0], b]]);
     }
     for (const [p, q] of pieces) walls.push({ ...edgeBox(p, q, 0.15, 'rail'), rail: true, a: p, b: q });
   }
@@ -884,6 +903,8 @@ function furnish(streets, paves, lots, lamps, props, bays, posts, walls0, lines)
       prev = { x, z };
     }
   }
+  // [O1b] (the lots and the pavements' lookups, for the dressing after)
+  return { inLot, onPave };
 }
 
 export { PAVE, WATER_Y, CITY };
