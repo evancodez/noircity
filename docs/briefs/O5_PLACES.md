@@ -18,6 +18,7 @@ shop fronts and the interiors' breakables). The user's words:
   door never opens on nothing; nothing passes through anything; a body
   never blocks feet.
 - **[must]** "This city should really react to player interaction (like a dynamic police system), fun shootouts, brawls, etc. Keep the scope manageable but it should feel fun." (OPEN_WORLD.md: the city answers everything the player does, within seconds, visibly.)
+- **[must]** "Think GTA but noir. Make sure the player has freedom to cause havoc and do what they want in this open world, one that reacts to them." (OPEN_WORLD.md: the player may do anything the systems allow and the city answers everything he does, visibly, within seconds; no invisible hand says no, never a scripted stop or a locked verb; the only answer is the city's own, and a scene broken on purpose still ends somewhere sane.)
 
 What you build on: the office (`src/stages/office/`: `plan.js`, `build/`,
 `parts/`: a whole interior with its doors, lights and furniture), the
@@ -92,6 +93,11 @@ looking (a sign, a lit window, a door with people at it):
     roof: the roofs and the fire escapes down (O1's roofs: this joins
     them).
 Every other door in the city stays O1's kit door: it rattles, locked.
+Nothing else says no: a player who breaks a room on purpose (shoots the
+barman, takes the gym's purse at gunpoint, drives at the market hall's
+doors, sleeps through a heat of 5 at the hotel) gets the city's own answer
+(the heat, the crowd, the men who come) and the room still ends somewhere
+sane (the hospital, the station, the street outside); never a locked verb.
 Shop fronts have glass (O6's): a window broken is a way in to nothing
 (the shop's dark back, a wall at 2 m, the alarm bell that is heat).
 
