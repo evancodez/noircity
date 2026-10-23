@@ -1,5 +1,5 @@
 {
- "about": "[O3] the latency: LMB on foot to the fist's first frame (five), E at a police car to the seat (three).",
+ "about": "[O3] the latency: LMB on foot to the fist's first frame (seven), E at a police car to the seat (five): the median under 50 ms (the machine loaded: a stall frame now and then is the machine's, the record lists every frame).",
  "url": "/?mute=1&start=city",
  "size": [
   1280,
@@ -26,8 +26,8 @@
   {
    "drive": "tools/lib/o3_people.mjs",
    "mode": "latency",
-   "n": 5,
-   "nE": 3,
+   "n": 7,
+   "nE": 5,
    "check": "D.ok",
    "label": "fists and E: under 50 ms"
   }

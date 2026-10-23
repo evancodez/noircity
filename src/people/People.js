@@ -88,6 +88,19 @@ export class People {
       for (let l = 0; l < 3; l++) figureGeometry(c, l);
       try { const B = castBank(k); for (const n of ['idle', 'walk', 'run', 'cower', 'watch', 'koFall', 'ko', 'carry']) if (B.has(n)) B.ensure(n); } catch (e) { /* */ }
     }
+    // (the hands' programs: the fists and the revolver drawn once out of sight,
+    // compiled, put away - the first jab or draw in the street never stalls)
+    const G = this.G, r = G.pipeline && G.pipeline.renderer;
+    if (r && r.compile && G.vm && !G.shotMode) {
+      const W = G.player.weapons, H = G.player.hands, vis = G.vmWanted;
+      try {
+        G.vm.visible = true; G.pipeline.vm.visible = true;
+        H.equip('fists'); r.compile(G.vm.scene, G.vm.cam);
+        W.equip('revolver'); r.compile(G.vm.scene, G.vm.cam);
+        W.equip(null); H.equip('empty');
+      } catch (e) { /* its first draw will */ }
+      G.setViewmodelVisible(vis);
+    }
     this.prewarmMs = performance.now() - t0;
   }
 

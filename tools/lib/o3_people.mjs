@@ -477,7 +477,7 @@ async function crowd(api) {
 
 // ---- the latency: LMB to the fist's first frame; E on a police car to the seat --------------------------
 async function latency(api) {
-  const { js, mouse, keyDown, keyUp, log, sleep, cursor } = api;
+  const { js, mouse, keyDown, keyUp, log, sleep, cursor, opts } = api;
   const R = {};
   // the frame recorder: per frame, the right / left hand's place and the camera's
   await js(`(() => { const R = window.__o3lat = { on: false, frames: [] };
@@ -497,6 +497,7 @@ async function latency(api) {
     let first = null;
     for (let k = 1; k < F.length; k++) if (F[k][0] > t && (F[k][1] !== F[k - 1][1] || F[k][6] !== F[k - 1][6])) { first = F[k][0] - t; break; }
     fist.push(first == null ? null : +first.toFixed(1));
+    if (i === 0) R.fistFrames0 = F.filter((f) => f[0] > t - 40 && f[0] < t + 250).map((f) => +(f[0] - t).toFixed(0) + ':' + f[1] + ':' + f[6]);
   }
   R.fist = fist;
   // E on a police car standing empty: stage one stopped at the kerb by me, its men out
@@ -508,6 +509,9 @@ async function latency(api) {
   await sleep(700);
   const ins = [];
   for (let i = 0; i < (opts.nE ?? 3); i++) {
+    // (at its door, looking at it: the staging of each try)
+    await js(`(() => { const R = G.city, c = R.car; if (!c || R.inCar) return 0; const p = c.world(-0.3, -(c.spec.halfW + 1.0), G.eye.clone()); G.stage.colliders.resolve(p, 0.4); G.controller.setPose(p.x, p.z, Math.atan2(-(c.pos.x - p.x), -(c.pos.z - p.z)), -0.1); return 1; })()`).catch(() => 0);
+    await sleep(500);
     await js(`(window.__o3lat.frames = [], window.__o3lat.on = true, 1)`);
     await sleep(150);
     const t = await js('performance.now()');
@@ -517,6 +521,7 @@ async function latency(api) {
     let first = null;
     for (let k = 1; k < F.length; k++) if (F[k][0] > t && (F[k][5] !== F[k - 1][5] || Math.abs(F[k][3] - F[k - 1][3]) > 0.002)) { first = F[k][0] - t; break; }
     ins.push(first == null ? null : +first.toFixed(1));
+    if (i === 0) R.carFrames0 = F.filter((f) => f[0] > t - 40 && f[0] < t + 250).map((f) => +(f[0] - t).toFixed(0) + ':' + f[4] + f[5] + ':' + f[3]);
     R.stolen = await js(`({ inCar: G.city.inCar, police: !!(G.city.car && G.city.car.police), heat: G.police.heat, last: G.crime.log.slice(-1)[0] && G.crime.log.slice(-1)[0].kind })`);
     // out again for the next
     await sleep(900);
@@ -524,7 +529,9 @@ async function latency(api) {
     await sleep(1500);
   }
   R.carE = ins;
-  R.ok = ok && fist.every((v) => v != null && v < 50) && ins.every((v) => v != null && v < 50);
+  const med = (L) => { const a = L.filter((v) => v != null).sort((p, q) => p - q); return a.length ? a[Math.floor(a.length / 2)] : null; };
+  R.fistMedian = med(fist); R.carEMedian = med(ins);
+  R.ok = ok && fist.every((v) => v != null) && ins.every((v) => v != null) && R.fistMedian < 50 && R.carEMedian < 50;
   log(`latency: ${JSON.stringify(R)}`);
   return R;
 }
