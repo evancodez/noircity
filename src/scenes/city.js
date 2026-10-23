@@ -31,7 +31,7 @@ const _v = new THREE.Vector3();
 export const CITY_SEAT = { eye: new THREE.Vector3(-0.02, 1.5, -0.34), fov: 64, pitch: -0.01 };
 // E moving (game.city.wantOut): the brakes on and the throttle off until it
 // stands, the steering still mine (the drive mode's control hook: true = I set the pedals)
-function brakesFor(G) {
+export function brakesFor(G) {   // [O6] exported: the bed (scenes/smash.js) runs the same roam
   return (v) => {
     const R = G.city;
     if (!R || !R.wantOut) return false;
@@ -127,7 +127,7 @@ export default defineScene({
 });
 
 // ---- per step ------------------------------------------------------------------------------
-function step(ctx, R, T, dt) {
+export function step(ctx, R, T, dt) {   // [O6] exported
   const G = ctx.game, C = ctx.stage.part('city').C, hud = ctx.hud, ctl = ctx.controller;
   if (G.failing || G.state !== 'playing') return;
   const car = R.car;
@@ -181,7 +181,7 @@ function step(ctx, R, T, dt) {
   if (C.inWater(ctl.pos.x, ctl.pos.z) && ctl.groundY < -0.6) { wet(ctx, R, ctl.pos, 'Into the river.'); return; }
   // E at the car: any door, looking at it, close by
   let near = false;
-  if (car && car.solid !== false) {
+  if (car && car.solid !== false && !car.wrecked) {   // [O6] (a burnt wreck is no car to get into)
     const l = car.local(ctl.pos, _v);
     const db = Math.hypot(Math.max(0, Math.abs(l.x) - car.spec.halfL), Math.max(0, Math.abs(l.z) - car.spec.halfW));
     // (within a stride of its body: 2.5 m, the starts' place behind its tail included)
@@ -219,21 +219,21 @@ function step(ctx, R, T, dt) {
   }
 }
 
-function getIn(ctx, R, T) {
+export function getIn(ctx, R, T) {   // [O6] exported
   const G = ctx.game, car = R.car;
   ctx.hud.clearPrompt('cityin');
   T.near = false; T.inShown = false; T.drive = 0; T.dist = 0; T.outShown = false; R.wantOut = false;
   G.vehicles.setPlayer(car);
   if (car.lamps && car.lamps.setOn) car.lamps.setOn(true);
   // (eased into the seat: the camera never jumps)
-  R.cabin.attach(car, { ease: 0.35, ...seatOpts(), control: brakesFor(G) });
+  R.cabin.attach(car, { ease: 0.35, ...seatOpts(), ...(car.seatOpts || {}), control: brakesFor(G) });   // [O6] (car.seatOpts: another kind's seat)
   R.inCar = true;
   G.sfx.play('tail_door', null, { open: false });
   ctx.stage.part('bounds').navAround(car.pos.x, car.pos.z, 14);
   G.emit('city:in', { car });
 }
 
-function getOut(ctx, R, T) {
+export function getOut(ctx, R, T) {   // [O6] exported
   const G = ctx.game, car = R.car, C = ctx.stage.part('city').C;
   ctx.hud.clearPrompt('cityout');
   T.outShown = false; R.wantOut = false;

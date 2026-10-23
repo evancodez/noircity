@@ -1,0 +1,16 @@
+{
+ "about": "[O6] The drive-through (brief O6 §4): from the bed's start, E into the coupe, down the east pavement, across the junction, up the west pavement and into a shop window, by the keys (W / S / A / D: pure pursuit on a path, tools/lib/o6_smash.mjs drive). Every kind of the set goes over or breaks by the car; the car is never inside a standing thing; after it, nothing floats, nothing is inside a wall, everything rests. node tools/play.mjs tools/plays/o6_drive.json",
+ "url": "/?mute=1&start=smash",
+ "size": [1280, 800],
+ "out": "shots/o6/drive",
+ "steps": [
+  { "wait": 1500 },
+  { "clickOn": "#title .opt[data-k=begin]", "taken": "G.state !== 'title'", "retries": 5, "every": 4000 },
+  { "until": "G.scenes.current && G.scenes.current.id === 'smash' && G.scenes.fadeK < 0.05", "timeout": 30000 },
+  { "wait": 1200 },
+  { "drive": "tools/lib/o6_smash.mjs", "mode": "drive", "speed": 9.5, "settle": 5000,
+    "shots": { "12": "a12", "30": "a30", "55": "a55", "80": "a80", "95": "a95" },
+    "check": "D.end === 'done' && ['newsstand','hydrant','stall','crate','callbox','bin','bench','stop','lamp','fence','glass'].every((k) => D.kinds[k] > 0) && D.inside.length === 0 && D.rest.floating.length === 0 && D.rest.inWall.length === 0 && D.rest.live === 0",
+    "label": "every kind over by the car, nothing passed through, nothing floating, everything resting" }
+ ]
+}
