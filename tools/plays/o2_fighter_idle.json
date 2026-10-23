@@ -28,8 +28,8 @@
    "mode": "pull",
    "hands": "good",
    "sit": true,
-   "check": "D.fight === true && D.warned && D.warned.warn === 'He\u2019s coming back.' && D.warned.at > 900",
-   "label": "idle at his door: warned, then had out of the seat, the fight"
+   "check": "D.fight === true && D.warned && D.warned.warn === 'He\u2019s coming back.' && D.fightAt - D.warned.at > 1000",
+   "label": "idle at his door: warned a second and more before he has me out of the seat, the fight"
   },
   {
    "until": "G.wheels.hijack.stats.lost === 1",

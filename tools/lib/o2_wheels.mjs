@@ -163,7 +163,9 @@ async function park(P, { js, sleep, log, shot }, H) {
   if (!(await P.walkTo(b.door[0], b.door[1], 25000))) return { err: 'walk' };
   await P.face(b.x, b.z);
   await sleep(H.react * 0.5);
-  const pr = (await P.state()).prompt;
+  // (the line read before E: up to a second for it to come)
+  let pr = '';
+  for (let i = 0; i < 20 && !pr; i++) { pr = (await P.state()).prompt; if (!pr) await sleep(50); }
   await P.tap('KeyE');
   const t0 = Date.now();
   // (bad hands: turn away in the middle once, and try again)
@@ -230,7 +232,7 @@ async function pull(P, { js, sleep, log, shot }, H) {
     const s = await P.state();
     const f = await js('({ fight: !!G.brawl.active, warn: G.hud.kit && G.hud.kit.warnText, mode: N.controller.mode })');
     if (f.warn && !warned) warned = { warn: f.warn, at: Date.now() - t0 };
-    if (f.fight) { fight = true; break; }
+    if (f.fight) { fight = true; R.fightAt = Date.now() - t0; break; }
     if (Date.now() - t0 > delay) break;
     if (Date.now() - t0 > 15000) break;
     await sleep(60);
