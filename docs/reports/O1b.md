@@ -4,7 +4,7 @@ Branch `ow/O1b-streets`, port 5378. Brief: `docs/briefs/O1B_STREETS.md` (with
 its two later sections: the cold play's findings and the performance
 audit's levers, both merged from `main` and done here). Built on O1's city
 (`docs/reports/O1.md`, `docs/seams/WORLD.md`). Review frames:
-`docs/review/O1b/` (six JPEGs; the blind test is `1_blind_ten_streets.jpg`,
+`docs/review/O1b/` (six JPEGs; the blind test is `1_blind_ten_streets_from_the_seat.jpg`,
 its key below). Every proof was played headless by real input (trusted keys
 and mouse, or the fake pad alone), muted, on a machine at load 20-85 from
 other lanes and system services (`secd`, StorageManagement at 90-160 % CPU):
@@ -165,7 +165,7 @@ where it stands, not by its lot's chunk: at Grand Ave and Centre St 25 of
 | tools | `tools/colour.py` (the colour and tone measure), `tools/lib/o1b_streets.mjs` (items, pigeons, doors), `tools/plays/o1b_*.json` |
 
 ---------------------------------------------------------------------------
-## 3. The proofs (by real input, once on the final code)
+## 3. The proofs (by real input, once on the final code - after the O6 merge: items, doors, jank, swim, pad, pigeons, train, smash all re-run there and passed)
 
 | proof | play | result |
 | --- | --- | --- |
@@ -179,12 +179,14 @@ where it stands, not by its lot's chunk: at Grand Ave and Centre St 25 of
 | **the doors** (finding 6) | `o1b_doors.json` | PASS: 25 doors round Grand Ave x Centre St's west block, 9 on lots across a chunk line: `E  try the door` at each, E, `locked` |
 | **errors** at every start | `tools/errors.sh "scene=city&beat=roam&anim=1&t=3&at=<id>"` x 10, `beat=ashore` | clean, all eleven |
 | **the drive-through** | `o1_drive.json` | all five districts in 321 s, never inside a wall, **0 chunks missing** within 100 m, **0 built late**, 3 crashes / 22 scrapes (the bot's corners); **720 frames over 50 ms of 8,705** (27 fps on average in the 1280 x 800 window, the worst 209 ms) - **not under the hitch bar**, measured at load 20-85 (the 5-minute load 55 through the run; `secd` 160 % CPU); 519 draws, 2.13 M triangles at its end. O1's quiet run was 56 fps; see Left 1 |
-| **the blind test** | ten frames from the seat (below) | made; the critic names them |
-| **the colour measure** | `python3 tools/colour.py` on the ten | see below |
-| **golden frames** | `golden.py check` (game one's 38; the city's 10) | see below |
-| **frames per second** | `MOMENTS=city node tools/fpstable.mjs` | see below |
+| **the blind test** | ten frames from the seat (below) | made (`docs/review/O1b/1_blind_ten_streets_from_the_seat.jpg`); the critic names them |
+| **the colour measure** | `python3 tools/colour.py` on the ten | **under 2 % in all ten**: max 0.81 % (Grand Ave: the ORPHEUM's amber bulbs and a red blade, their streaks), then 0.23 % (Fifth St: a red and a blue window neon), 0.10 (Hester: the barber's pole), 0.08 (Broadway), 0.04 (Orchard), 0.02 (the Bowery), 0.01 (Centre), 0 in the Docks, the Yards and on the Hill (no accent there by design); mean 0.13 %. Red 0.01-0.35, amber 0-0.11, blue 0-0.04. Paper white 1.0-3.2 %, ink 53-83 %, mid 11-41 % |
+| **golden frames, game one's** | `python3 tools/golden.py check` | **38 / 38 identical** (on the final code, after the O6 merge) |
+| **golden frames, the city's** | `NOIR_GOLDEN=shots/golden/city python3 tools/golden.py check` | **12 of 12 changed, re-taken** (O1's ten and O6's two): each by this lane's changes, named - the streets' lamps by style (Orchard's hung lamp over the lane, the Docks' dish lamps, the globes on Centre St and the Hill), the boards, displays, awnings and doors on every shop street, the new things on the pavements, the window neon and the amber marquee bulbs, the trees (the park's balloon crowns now winter trees and poplars), the darker dry ground, the el's merged bays (the same iron, contours between bays gone), the lighter lamp posts. Before and after: `docs/review/O1b/6_golden_before_after_orchard_st_and_the_park.jpg` (Orchard St: a gooseneck and blank fronts become a hung lamp over the lane, DELICATESSEN, SHOES, MEATS, lit windows with their goods, a red window neon; the park: the balloon trees become bare winter trees and poplars) |
+| **frames per second** against `shot=perf` | `MOMENTS=city node tools/fpstable.mjs 5` (load 180-214, the GPU 94-100 % busy before each) | Grand Ave from the car **1.09 x** (646 draws, 2.52 M triangles; perf 729 / 2.9 M), the el's corner **1.49 x**, Broadway to the clock **1.16 x** (900 draws: the clock tower's long view and the uniques), the Bowery under the station **1.06 x** (635 draws), the quay **1.71 x**: every spot at or over `perf`, Grand Ave and the Bowery with little room (O1's were 1.28 / 1.44 / 1.34 / 1.60 / 1.83 at load 16-22: the Bowery lost most) |
+| **the build** | `npx vite build` | passes |
 
-**The blind test** (`docs/review/O1b/1_blind_ten_streets.jpg`, frames
+**The blind test** (`docs/review/O1b/1_blind_ten_streets_from_the_seat.jpg`, frames
 numbered 1-10 as in the sheet; the critic names the district and tells the
 streets apart before reading this key): 1 Orchard St (the Tenements' lane),
 2 Dock Rd (the Docks), 3 Centre St (downtown), 4 Bridge St (the Hill), 5 the
@@ -279,9 +281,12 @@ free). The swim: W acts on the press as the walk does (it is the walk's step).
    into the new things, a man at a run into a bin, a blast among them are
    O6's code paths and were not played for these kinds; the rain barrel's
    downpipe goes over with its barrel.
-3. **The colour is a touch from the street, nearly none from the seat**
-   (see the measure): most of it is in shop windows and blades, which the
-   coupe's pillars and the right-hand lane keep at the frame's edge.
+3. **The colour is a touch** (0-0.8 % of a frame from the seat, none in the
+   Docks, the Yards and on the Hill by design): most of it is in shop
+   windows and blades at the frame's edge; the frame rate's room is thin at
+   Grand Ave and the Bowery (1.09 x and 1.06 x `perf`, loaded) - the
+   dressing's relief mesh (window heads on every window, the trees' tubes)
+   is the first place to cut if the traffic (O2) takes the rest.
 4. **The windows' neon reads as a coloured glow**, its word too small to
    read past a few metres (0.4 m tall); the colour and its streak in the
    wet street are what carry.
@@ -304,6 +309,15 @@ free). The swim: W acts on the press as the walk does (it is the walk's step).
     door raised with it (O1's facade).
 11. Pigeons come back to a ledge only after a minute and out of sight; a
     flock flushed by a far shot is gone from that street a minute.
+12. **The awnings, the boards, the barbers' poles, the window displays and
+    the uniques are relief** (not breakable): O6's Left 1 asked for the
+    awnings as items; they are now this lane's (the street's canvas, in the
+    dressing's `relief` mesh) - one record an awning with its range, as the
+    props have, would let a lorry tear them (O6's `awning` kind, its size
+    from the record).
+13. **The dish lamps' cones** are large white wedges beside the car in the
+    Docks and the Yards (the blind test's frames 2 and 7): their heads hang
+    over the kerb lane; a dimmer cone for the style may read better.
 
 **Where the brief was changed in play**: the props are drawn by a part of
 this lane's (`parts/dressing.js`), merged per chunk with each record's
