@@ -39,14 +39,17 @@ export const SG_POSE = {
   // at the shoulder: the rib under the eye, the bead on the middle
   steady: P([0.034, -0.118, -0.21], 0.0, 0.004, 0.0, [0.14, -0.3, -0.02]),
   // broken open, brought in and tipped: the breech up toward the eye
-  open: P([0.05, -0.2, -0.32], 0.32, -0.38, 0.28, [0.22, -0.5, -0.05]),
+  // (the stock kept level under the arm - it runs back out of the frame low right -
+  // the barrels dropped on their hinge, the breech canted up toward the eye)
+  open: P([0.07, -0.3, -0.58], 0.36, 0.04, 0.38, [0.26, -0.55, -0.2]),
   away: P([0.12, -0.42, -0.2], 0.4, -0.6, 0.6, [0.2, -0.7, 0.0]),
 };
 // the reload (s from its start): break, flick out, the hand down for two, in, shut
 const RL = { brk: [0.0, 0.2], eject: 0.22, flick: [0.18, 0.32], down: [0.3, 0.52], up: [0.52, 0.74], in1: [0.74, 0.86], in2: [0.88, 1.0], shut: [1.06, 1.18], ready: [1.16, 1.45] };
 const RL1 = { brk: [0.0, 0.2], eject: 0.22, flick: [0.18, 0.32], down: [0.3, 0.48], up: [0.48, 0.66], in1: [0.66, 0.8], in2: [9, 9], shut: [0.82, 0.94], ready: [0.92, 1.15] };
 const CUT = { shut: 0.1, ready: 0.18 };
-const EL = [-0.22, -0.56, -0.08];
+// (the left elbow low and out ahead of the eye: its forearm lies in from the bottom edge, never a sleeve across the frame)
+const EL = [-0.22, -0.66, -0.34];
 
 export default (game) => {
   const G = game;
@@ -373,7 +376,7 @@ export default (game) => {
     // the reload's left hand: off the fore-end, down to the coat, up with two, into the breech, back
     leftReload(t, R) {
       const M = this.gunTmp, ud = this.prop.userData;
-      const below = { frame: 'cam', p: [-0.08, -0.5, -0.28], f: [0.3, 0.8, -0.5], b: [-0.6, 0.2, 0.7], F: L_OPEN, e: [-0.14, -0.9, -0.1] };
+      const below = { frame: 'cam', p: [-0.1, -0.62, -0.34], f: [0.3, 0.8, -0.5], b: [-0.6, 0.2, 0.7], F: L_OPEN, e: [-0.16, -1.0, -0.12] };
       const lerpPose = (A, B, k) => { const L = (a, b) => a.map((v, i) => v + (b[i] - v) * k); const F = {}; for (const n of ['i', 'm', 'r', 'l', 't']) F[n] = L(A.F[n], B.F[n]); return { frame: 'cam', p: L(A.p, B.p), f: L(A.f, B.f), b: L(A.b, B.b), F, e: L(A.e, B.e) }; };
       const fore = this.onFore(M);
       // at the breech: the pair held over the chambers, `lift` behind them, pushed in as it goes to 0
@@ -391,7 +394,7 @@ export default (game) => {
       if (t < R.down[1]) return below;
       const H = G.hands;
       if (t < R.shut[0] && this.shells && H.held.L === this.shells) {
-        if (t < R.up[1]) { const f0 = feed(0.06); const low = new THREE.Matrix4().copy(f0.m).setPosition(-0.1, -0.44, -0.28); const k = easeOut(ss(R.up[0], R.up[1], t)); const pa = V(), pb = V(), qa = new THREE.Quaternion(), qb = new THREE.Quaternion(), s = V(); low.decompose(pa, qa, s); f0.m.decompose(pb, qb, s); return { ...f0, m: new THREE.Matrix4().compose(pa.lerp(pb, k), qa.slerp(qb, k), s.set(1, 1, 1)) }; }
+        if (t < R.up[1]) { const f0 = feed(0.06); const low = new THREE.Matrix4().copy(f0.m).setPosition(-0.1, -0.58, -0.34); const k = easeOut(ss(R.up[0], R.up[1], t)); const pa = V(), pb = V(), qa = new THREE.Quaternion(), qb = new THREE.Quaternion(), s = V(); low.decompose(pa, qa, s); f0.m.decompose(pb, qb, s); return { ...f0, m: new THREE.Matrix4().compose(pa.lerp(pb, k), qa.slerp(qb, k), s.set(1, 1, 1)) }; }
         if (t < R.in1[1]) return feed(0.06 * (1 - ss(R.in1[0], R.in1[1], t)));
         if (t < R.in2[1]) return feed(0.03 * (1 - ss(R.in2[0], R.in2[1], t)));
         return feed(0);

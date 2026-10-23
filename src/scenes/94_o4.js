@@ -138,8 +138,11 @@ function stripHooks(ctx, F) {
   if (q.get('o4near')) {
     const E = O4.me;
     F.men.forEach((m, i) => { const a = (i === 0 ? 0 : (i % 2 ? 1 : -1) * (0.9 + 0.3 * i)), r = i === 0 ? 1.45 : 2.6;
-      m.c.fig.pos.x = E.x - Math.sin(a) * r; m.c.fig.pos.z = E.z - Math.cos(a) * r; m.c.fig.yaw = Math.atan2(E.x - m.c.fig.pos.x, E.z - m.c.fig.pos.z); m.next = 9; });
+      m.c.fig.pos.x = E.x - Math.sin(a) * r; m.c.fig.pos.z = E.z - Math.cos(a) * r; m.c.fig.yaw = Math.atan2(E.x - m.c.fig.pos.x, E.z - m.c.fig.pos.z); m.next = 9;
+      m.pin = { x: m.c.fig.pos.x, z: m.c.fig.pos.z }; });
   }
+  // (?o4open=1: the first man's guard down - a breath held - so the strip's blow lands)
+  if (q.get('o4open') && F.men[0]) { const m = F.men[0]; G.scripts.push(() => { if (m.state === 'ring' && !m.breathing) { m.openT = Math.max(m.openT, 0.5); m.breathing = true; } }); }
   if (q.get('o4hold')) F.hold = true;
   const atk = q.get('o4atk');
   if (atk) { const [clip, t] = atk.split('@'); let done = false; G.scripts.push((tt) => { if (!done && tt >= +t && F.men[0]) { done = true; F.attack(F.men[0], clip); } }); }

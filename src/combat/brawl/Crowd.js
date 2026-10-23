@@ -1139,6 +1139,8 @@ export class Crowd {
         m.ang += m.circ * 0.32 * dt;
         const r = m.backT > 0 ? CROWD.ring.rMax + 0.3 : m.chase ? 1.8 : CROWD.ring.r + (m.id % 2) * 0.35;
         gx = e.x + Math.cos(m.ang) * r; gz = e.z + Math.sin(m.ang) * r;
+        // (a man pinned to his spot: the strips' frames)
+        if (m.pin) { gx = m.pin.x; gz = m.pin.z; }
         if (d > 6) speed *= 1.9;
       }
       // (a place he can stand: out of what stands there)
