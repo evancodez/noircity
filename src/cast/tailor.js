@@ -824,6 +824,57 @@ function buildBowler(F) {
   return [{ geo, shade: (x, y) => { const h = y - F.rig.BIND.hat.y; return h > 0.012 * s && h < 0.03 * s ? band : sh; }, weights: () => [[B.hat, 1]] }];
 }
 
+// [O4] the fedora (the city's hoods, lane O4's men): the Hood's own - a
+// pinched, creased crown, a band, a snap brim down at the front, up behind -
+// on a costume's head
+function buildFedora(F) {
+  const c = F.cover, s = c.s ?? 1, br = c.brim ?? 0.175;
+  const prof = [[0.0, 0.03], [0.06, 0.012], [0.098, 0.0], [br - 0.03, -0.001], [br - 0.006, 0.001], [br, 0.0045], [br - 0.004, 0.0085], [br - 0.03, 0.0082],
+    [0.104, 0.0095], [0.1015, 0.014], [0.1015, 0.035], [0.0975, 0.038], [0.0925, 0.066], [0.0855, 0.091], [0.0755, 0.107], [0.058, 0.117], [0.032, 0.1205], [0.0, 0.121]];
+  const geo = coverGeo(F, (u, v, p) => {
+    const [r, h0] = profileAt(prof, v);
+    const th = u * TAU, sn = Math.sin(th), cs = Math.cos(th);
+    let h = h0;
+    const crown = r < 0.106;
+    let x = r * sn * (crown ? 0.85 : lerp(0.85, 0.9, sstep(0.106, br, r))), z = r * cs;
+    if (!crown) { const w = Math.pow(sstep(0.1, br, r), 1.4); h += w * (-0.024 * Math.max(0, cs) ** 1.5 + 0.017 * Math.max(0, -cs) ** 1.5 + 0.007 * sn * sn); }
+    else if (h0 > 0.02) {
+      const hk = sstep(0.045, 0.11, h0);
+      x *= 1 - 0.16 * hk * Math.max(0, cs) ** 1.5;
+      const top = sstep(0.07, 0.113, h0);
+      h -= top * Math.exp(-((x / 0.03) ** 2)) * (0.0205 + 0.0025 * cs);
+      h -= 0.008 * Math.max(0, cs) * sstep(0.04, 0.12, h0);
+    }
+    p.set(x * s, h * s, z * s);
+  }, 80, 40);
+  orientOut(geo, F.rig.BIND.hat.clone().add(new THREE.Vector3(0, 0.04, 0)));
+  const sh = F.shade('cover'), band = F.shade('band');
+  return [{ geo, shade: (x, y) => { const h = y - F.rig.BIND.hat.y; return h > 0.012 * s && h < 0.034 * s ? band : sh; }, weights: () => [[B.hat, 1]] }];
+}
+// [O4] a policeman's peaked cap: a stiff band, the crown flaring out to a flat
+// top, a black visor down over the eyes, a light badge on the band's front
+function buildPoliceCap(F) {
+  const c = F.cover, s = c.s ?? 1;
+  const prof = [[0.0, 0.004], [0.092, 0.0], [0.099, 0.002], [0.1, 0.044], [0.104, 0.05], [0.128, 0.074], [0.132, 0.08], [0.128, 0.086], [0.06, 0.09], [0.0, 0.09]];
+  const crown = coverGeo(F, (u, v, p) => {
+    const [r, h] = profileAt(prof, v);
+    const th = u * TAU;
+    p.set(r * Math.sin(th) * 0.92 * s, h * s, (r * Math.cos(th) * (h > 0.06 ? 1.08 : 1.0) + (h > 0.06 ? 0.008 : 0)) * s);
+  }, 72, 32);
+  orientOut(crown, F.rig.BIND.hat.clone().add(new THREE.Vector3(0, 0.04, 0)));
+  const visor = coverGeo(F, (u, v, p) => {
+    const a = (u - 0.5) * 2.4, r = lerp(0.094, 0.158, v);
+    const x = Math.sin(a) * r * 0.95, z = Math.cos(a) * r;
+    p.set(x * s, (0.004 - 0.34 * Math.max(0, z - 0.09) - 0.004 * v) * s, z * s);
+  }, 28, 6, { wrapU: false });
+  visor.computeVertexNormals();
+  const H = F.rig.BIND.hat, sh = F.shade('cover'), band = F.shade('band');
+  return [
+    { geo: crown, shade: (x, y, z) => { const h = y - H.y; if (h < 0.046 * s && h > 0.008 * s) return Math.abs(x) < 0.016 && z - H.z > 0.06 && h > 0.02 * s ? 0.55 : band; return sh; }, weights: () => [[B.hat, 1]] },
+    { geo: visor, shade: band, weights: () => [[B.hat, 1]] },
+  ];
+}
+
 // the cook's folded paper cap: a boat along the head, a crisp ridge
 function buildPaperCap(F) {
   const c = F.cover, s = c.s ?? 1;
@@ -1043,6 +1094,8 @@ export function figureGeometry(costume, lod = 0) {
   else if (cv === 'bowler') parts.push(...buildBowler(F));
   else if (cv === 'papercap') parts.push(...buildPaperCap(F));
   else if (cv === 'pinned') parts.push(...buildPinnedHair(F));
+  else if (cv === 'fedora') parts.push(...buildFedora(F));   // [O4]
+  else if (cv === 'police') parts.push(...buildPoliceCap(F));   // [O4]
   const geo = assemble(parts);
   Q = 1;
   geo.computeBoundingBox();

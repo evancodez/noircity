@@ -168,7 +168,7 @@ function gym(ctx) {
   if (!ctx.flags.o4gymcash) { ctx.flags.o4gymcash = true; G.save.money = Math.max(G.save.money, GYM.cash); }
   const lv = Math.min(3, (G.save.flags.o4gym || 0) + 1);
   const L = BOXER_LEVELS[lv];
-  const c = G.cast.spawn('brawler', { at: ring.his, yaw: Math.atan2(ring.mine.x - ring.his.x, ring.mine.z - ring.his.z), name: 'boxer' + lv });
+  const c = G.cast.spawn('o4_boxer', { at: ring.his, yaw: Math.atan2(ring.mine.x - ring.his.x, ring.mine.z - ring.his.z), name: 'boxer' + lv });
   c.setState('br_guard', 0);
   ctx.flags.o4 = { beat: 'gym', t0: G.time, level: lv, boxer: c, result: null, bet: 0 };
   void L;

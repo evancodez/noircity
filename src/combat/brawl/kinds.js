@@ -23,27 +23,27 @@
 //   say      what the line calls him ('the drunk', 'the cop')
 export const MEN = {
   drunk: {
-    cast: 'docker', name: 'DRUNK', say: 'the drunk', hp: 34, speed: 1.4, tell: 1.35, gap: [1.5, 2.3], guard: 0.3, answer: 0.25,
+    cast: 'o4_drunk', name: 'DRUNK', say: 'the drunk', hp: 34, speed: 1.4, tell: 1.35, gap: [1.5, 2.3], guard: 0.3, answer: 0.25,
     open: 1.35, breathe: 2.6, dmg: 0.9, breaks: true, getUp: false, feint: 0, combo: 0.05,
     mix: { br_haymaker: 0.32, br_haymakerL: 0.24, br_hook: 0.18, br_shove: 0.14, br_jab: 0.12 },
   },
   driver: {
-    cast: 'tail_trucker', name: 'DRIVER', say: 'the driver', hp: 44, speed: 1.8, tell: 1.15, gap: [1.2, 1.9], guard: 0.6, answer: 0.4,
+    cast: 'o4_driver', name: 'DRIVER', say: 'the driver', hp: 44, speed: 1.8, tell: 1.15, gap: [1.2, 1.9], guard: 0.6, answer: 0.4,
     open: 1.15, breathe: 3.4, dmg: 1.0, breaks: true, getUp: false, feint: 0.05, combo: 0.15,
     mix: { br_jab: 0.26, br_cross: 0.14, br_hook: 0.24, br_hookL: 0.16, br_body: 0.1, br_shove: 0.1 },
   },
   gangster: {
-    cast: 'couple_him', name: 'HOOD', say: 'the hood', hp: 48, speed: 2.1, tell: 1.0, gap: [0.9, 1.5], guard: 0.75, answer: 0.55,
+    cast: 'o4_gangster', name: 'HOOD', say: 'the hood', hp: 48, speed: 2.1, tell: 1.0, gap: [0.9, 1.5], guard: 0.75, answer: 0.55,
     open: 1.0, breathe: 3.8, dmg: 1.05, breaks: true, getUp: true, feint: 0.16, combo: 0.25,
     mix: { br_jab: 0.24, br_hook: 0.2, br_hookL: 0.2, br_body: 0.14, br_cross: 0.12, br_haymaker: 0.1 },
   },
   cop: {
-    cast: 'dockhand', name: 'COP', say: 'the cop', hp: 56, speed: 1.9, tell: 1.05, gap: [1.0, 1.6], guard: 0.88, answer: 0.5,
+    cast: 'o4_cop', name: 'COP', say: 'the cop', hp: 56, speed: 1.9, tell: 1.05, gap: [1.0, 1.6], guard: 0.88, answer: 0.5,
     open: 0.95, breathe: 4.2, dmg: 1.0, breaks: 2, getUp: true, feint: 0.05, combo: 0.2, grabs: true,
     mix: { br_jab: 0.26, br_cross: 0.18, br_hook: 0.16, br_shove: 0.24, br_body: 0.16 },
   },
   boxer: {
-    cast: 'brawler', name: 'BOXER', say: 'the boxer', hp: 80, speed: 2.3, tell: 0.92, gap: [0.7, 1.2], guard: 0.94, answer: 0.7,
+    cast: 'o4_boxer', name: 'BOXER', say: 'the boxer', hp: 80, speed: 2.3, tell: 0.92, gap: [0.7, 1.2], guard: 0.94, answer: 0.7,
     open: 0.9, breathe: 4.6, dmg: 1.1, breaks: false, getUp: true, feint: 0.14, combo: 0.35,
     mix: { br_jab: 0.22, br_jabR: 0.08, br_cross: 0.14, br_hook: 0.16, br_hookL: 0.16, br_body: 0.12, br_bodyL: 0.12 },
   },

@@ -93,6 +93,8 @@ const V = (x, y, z) => new THREE.Vector3(x, y, z);
 const wrap = (a) => Math.atan2(Math.sin(a), Math.cos(a));
 const _a = V(0, 0, 0), _b = V(0, 0, 0), _c = V(0, 0, 0), _d = V(0, 0, 0);
 const SMALL = /^br_(jab|jabR|cross|answerL|answerR)$/;
+const PREWARM = ['br_guard', 'br_stepF', 'br_stepB', 'br_stepL', 'br_stepR', 'br_pivot', 'br_openBoth', 'br_jab', 'br_jabR', 'br_cross', 'br_hook', 'br_hookL', 'br_body', 'br_bodyL',
+  'br_haymaker', 'br_haymakerL', 'br_shove', 'br_answerL', 'br_answerR', 'br_feint', 'br_feintL', 'br_hitHeadL', 'br_hitHeadR', 'br_hitBody', 'br_knockL', 'br_knockR', 'br_stun', 'koFall', 'ko', 'o4_getUp'];
 const fresh = () => ({ time: 0, landed: 0, blocked: 0, intoGuard: 0, taken: 0, dmgTaken: 0, slips: 0, glancing: 0, wrong: 0, late: 0, cues: 0, his: 0, hisBlocked: 0, downs: 0, jabs: 0, heavies: 0, counters: 0, combos: 0, breaks: 0, things: 0, kos: 0, ups: 0, jammed: 0, answers: 0, presses: 0, clicks: [], latency: [], why: {} });
 
 export function crowdOf(game) { return game.crowd || (game.crowd = new Crowd(game)); }
@@ -157,6 +159,9 @@ export class Crowd {
     let c = spec.c;
     if (!c) c = G.cast.spawn(K.cast, { at: spec.at, yaw: spec.yaw ?? Math.atan2(G.eye.x - spec.at.x, G.eye.z - spec.at.z), name: spec.id || null });
     c.noGlance = true;
+    // (his fight's clips baked now, under the fight's opening - not at his first blow)
+    const bank = c.fig && c.fig.bank;
+    if (bank && bank.ensure) for (const n of PREWARM) { try { bank.ensure(n); } catch (e) { /* a clip his kind lacks */ } }
     c.setState('br_guard', 0.25);
     const m = {
       id: this.men.length, c, K, kind: spec.kind, name: spec.name || K.name, hp: spec.hp ?? K.hp, max: spec.hp ?? K.hp,
