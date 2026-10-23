@@ -58,11 +58,11 @@
   },
   {
    "walk": "G.lastFail ? [[G.eye.x, G.eye.z]] : [[window.__o3c.pos.x + 0.9, window.__o3c.pos.z]]",
-   "timeout": 8000,
-   "stop": false
+   "timeout": 6000,
+   "into": true
   },
   {
-   "until": "G.lastFail || G.hud.promptShown === 'E  take the gun'",
+   "until": "!!G.lastFail || G.hud.promptShown === 'E  take the gun'",
    "timeout": 4000,
    "stop": false
   },

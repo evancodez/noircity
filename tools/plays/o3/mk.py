@@ -42,8 +42,8 @@ play('o3_punch_fists', "[O3] the walk-over arrest, the fists: a man punched befo
       {"eval": "JSON.stringify({ fa: G.police.fists.active, fe: G.police.fists.ended, who: window.__o3c.mode, down: window.__o3c.down, n: (G._events.get('brawl:end') || []).length, B: { active: G.brawl.active, done: G.brawl.done, fin: G.brawl.finished }, cmode: G.controller.mode })"},
       {"eval": "JSON.stringify({ heat: G.police.heat, beat: G.scenes.beat, fail: G.lastFail, ev: G.police.events.slice(-6) })"},
       {"expect": "G.lastFail ? G.lastFail.why === 'Arrested.' && G.scenes.beat === 'station' : (window.__o3c && window.__o3c.down && G.police.heat >= 2)", "label": "the fight ends: won (he lies there, HEAT 2: a cop down) or lost (arrested)"},
-      {"walk": "G.lastFail ? [[G.eye.x, G.eye.z]] : [[window.__o3c.pos.x + 0.9, window.__o3c.pos.z]]", "timeout": 8000, "stop": False},
-      {"until": "G.lastFail || G.hud.promptShown === 'E  take the gun'", "timeout": 4000, "stop": False},
+      {"walk": "G.lastFail ? [[G.eye.x, G.eye.z]] : [[window.__o3c.pos.x + 0.9, window.__o3c.pos.z]]", "timeout": 6000, "into": True},
+      {"until": "!!G.lastFail || G.hud.promptShown === 'E  take the gun'", "timeout": 4000, "stop": False},
       {"key": "KeyE"},
       {"wait": 600},
       {"expect": "!!G.lastFail || G.people.hands.hasGun === true", "label": "won: his gun taken from him (E)"}])

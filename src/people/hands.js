@@ -82,7 +82,10 @@ export class StandinHands {
     if (!this.hasGun) {
       const p = this.gunNear();
       const k = p ? 'o3gun' : null;
-      if (k !== this.gunPrompt) { this.gunPrompt = k; if (k) G.hud.prompt('E  take the gun', null, 'o3gun'); else G.hud.clearPrompt('o3gun'); }
+      // (over another's prompt - the car's 'get in' near by: the gun is what E does here)
+      if (k) G.hud.prompt('E  take the gun');
+      else if (this.gunPrompt) G.hud.clearPrompt();
+      this.gunPrompt = k;
       if (p && G.pressed('KeyE')) { this.hasGun = true; G.hud.clearPrompt('o3gun'); this.gunPrompt = null; G.sfx.play('pocket', null, {}, { send: false }); G.hud.message('the gun', 1.2); if (p.gunProp && p.gunProp.parent) p.gunProp.parent.remove(p.gunProp); p.gunTaken = true; }
     }
   }

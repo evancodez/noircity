@@ -168,7 +168,20 @@ async function punch(api) {
       const tRun = await js('G.time');
       await js(`(window.__o3tr = [], clearInterval(window.__o3trI), window.__o3trI = setInterval(() => { const V = G.controller.vel, c = window.__o3c; window.__o3tr.push([+G.time.toFixed(1), +Math.hypot(V.x, V.z).toFixed(1), c ? +c.pos.distanceTo(G.eye).toFixed(1) : null, c ? c.gaitNow : null, G.police.state]); if (window.__o3tr.length > 80) window.__o3tr.shift(); }, 400), 1)`);
       await runAway(api);
-      const lost = await waitFor(js, `G.police.heat === 0`, 45000);
+      // out of their sight: on away from where he last saw me, round another corner, then wait in the dark
+      const away2 = await js(`(() => { const P = G.people, g = P.graph, E = G.eye, L = G.police.lastSeen || E;
+        let best = null, bs = -1e9;
+        for (const n of P.pList) { const d = Math.hypot(n.x - E.x, n.z - E.z); if (d < 25 || d > 70) continue;
+          const dl = Math.hypot(n.x - L.x, n.z - L.z); const hid = !g.lineOfSight(L.x, L.z, n.x, n.z); const s = dl + (hid ? 40 : 0) - d * 0.3; if (s > bs) { bs = s; best = n; } }
+        if (!best) return []; const r = g.pavementRoute(E, best); return r ? r.pts : [[best.x, best.z]]; })()`);
+      if (away2.length) await goPath(api, away2, { run: true, ms: 25000, until: 'G.police.heat === 0' });
+      let lost = false;
+      for (let k = 0; k < 4 && !lost; k++) {
+        const T1 = Date.now();
+        while (Date.now() - T1 < 45000) { const q = await js(`({ h: G.police.heat, st: G.police.state, f: !!G.failing })`); if (q.h === 0) { lost = true; break; } if (q.st === 'hunt' || q.f) break; await sleep(250); }
+        if (!lost && (await js('!G.failing && G.police.state === "hunt"')) === true) await runAway(api);
+        else break;
+      }
       T.after = await state(js);
       T.ok = lost && !(T.after.lastFail && T.after.lastFail.t >= tRun);
       T.trace = await js(`(clearInterval(window.__o3trI), window.__o3tr.slice(0, 30).map(e => e.join(':')).join(' '))`);
@@ -736,7 +749,7 @@ async function frames(api) {
   await shot('f_gang');
   // the gun out among the people of Grand Ave: they run
   await sleep(1500);
-  await js(`(() => { const P = G.people, C = G.controller; P.dbgClear(); C.setPose(-108.9, 26, 0.05, -0.02); window.__o3g = [];
+  await js(`(() => { const P = G.people, C = G.controller; P.dbgClear(); P.hands.hasGun = true; C.setPose(-108.9, 26, 0.05, -0.02); window.__o3g = [];
     for (const [x, z, k] of [[-108.4, 17, 'o3_woman_a'], [-107.4, 13, 'o3_fedora_b'], [-109.6, 21, 'oldman'], [-108.0, 9, 'o3_fedora_g'], [-110.2, 14, 'o3_woman_d'], [-107.6, 5, 'o3_fedora_c']]) { const p = P.dbgWalker(x, z, Math.PI, k); p.mode = 'walk'; p.goTo([[x, z + 30]], { gait: 'stroll' }); window.__o3g.push(p); } return 1; })()`);
   await sleep(1400);
   await click(api, 'right', 900);
