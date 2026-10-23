@@ -1,0 +1,77 @@
+{
+ "about": "[O6b] after the critic (m6: a burning fail on the bed reset all ten cars whole). ?start=smash.ten: E into my coupe, the first car of the havoc rammed by the keys until it burns (tools/lib/o6b_damage.mjs ram), its neighbours hurt by its blast; then my own car set on fire (staged: the rams no longer burn the rammer in a few blows - the critic's burn_idle took sixteen and stayed at steam) and the hands taken off: warned, the fail, the retry. After the retry the cars I rammed are as I left them (a wreck a wreck, the rest's damage short of the fire, its smashed corners and doors), my coupe whole at the start. node tools/play.mjs tools/plays/o6b_retry.json",
+ "url": "/?mute=1&start=smash.ten",
+ "size": [
+  1440,
+  900
+ ],
+ "out": "shots/o6b/retry",
+ "steps": [
+  {
+   "wait": 1500
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]",
+   "taken": "G.state !== 'title'",
+   "retries": 5,
+   "every": 4000
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'smash' && G.scenes.fadeK < 0.05 && G.city.cars.length >= 14",
+   "timeout": 30000
+  },
+  {
+   "wait": 1000
+  },
+  {
+   "drive": "tools/lib/o6b_damage.mjs",
+   "mode": "ram",
+   "untilFire": true,
+   "maxBlows": 6,
+   "n": 2,
+   "settle": 1500,
+   "check": "D.blows.length === 2",
+   "label": "two cars rammed"
+  },
+  {
+   "eval": "(window.__b = G.city.cars.map((c) => ({ id: c.id, dmg: +c.damage.toFixed(2), wreck: !!c.wrecked, sm: c.smashD ? [...c.smashD.smashed].length : 0 })), JSON.stringify(window.__b.filter((c) => c.dmg > 0)))"
+  },
+  {
+   "until": "G.city.inCar",
+   "timeout": 8000
+  },
+  {
+   "eval": "(G.city.car.damage = 3.4, window.__mine = G.city.car.id, 1)",
+   "name": "staged: my car on fire"
+  },
+  {
+   "until": "!!G.lastFail",
+   "timeout": 60000
+  },
+  {
+   "until": "!G.failing && G.state === 'playing' && G.scenes.fadeK < 0.05",
+   "timeout": 25000
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "shot": "r1_after_the_retry"
+  },
+  {
+   "eval": "JSON.stringify({ why: G.lastFail && G.lastFail.why, warned: G.lastFail && G.lastFail.warnedFor, cars: G.city.cars.map((c, i) => [i, +c.damage.toFixed(2), !!c.wrecked, c.smashD ? [...c.smashD.smashed].join('') : '']) })"
+  },
+  {
+   "expect": "G.lastFail && G.lastFail.warnedFor >= 3",
+   "name": "the fail was warned"
+  },
+  {
+   "expect": "window.__b.filter((b, i) => i > 0 && (b.dmg > 0.3 || b.wreck)).every((b) => { const c = G.city.cars[window.__b.indexOf(b)]; return b.wreck ? c.wrecked : c.damage >= Math.min(b.dmg, 3.0) - 0.01; }) && window.__b.filter((b, i) => i > 0 && (b.dmg > 0.3 || b.wreck)).length >= 1",
+   "name": "every car I rammed as I left it after the retry"
+  },
+  {
+   "expect": "G.city.cars[0].damage === 0 && !G.city.cars[0].wrecked",
+   "name": "my coupe whole at the start"
+  }
+ ]
+}
