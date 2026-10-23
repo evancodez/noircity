@@ -10,6 +10,9 @@ const SENS = 0.0021;
 const sleepP = (ms) => new Promise((r) => setTimeout(r, ms));
 async function waitFor(js, expr, ms, every = 100) { const T = Date.now() + ms; while (Date.now() < T) { if ((await js(expr)) === true) return true; await sleepP(every); } return false; }
 
+// (after an arrest I wake on O5's cell bench: the staging walks me out of the station's
+// street door, onto the pavement facing the street - the only staging between tries)
+const OUT_OF_STATION = `(() => { const P = G.city && G.city.places; if (!P || !P.inside) return false; const s = P.byId.get('police'); if (P.seat) P.stand(); P.inside = null; P.level = 0; const o = s.frame.w(0, 3.2); G.controller.setPose(o.x, o.z, s.frame.yaw(0) + Math.PI, -0.05); return true; })()`;
 export default async function copFirst(api) {
   const { js, opts, log, turn, mouse, cursor } = api;
   const R = { profile: opts.profile || 'medium', tries: [] };
@@ -17,6 +20,7 @@ export default async function copFirst(api) {
   for (let k = 0; k < n; k++) {
     await waitFor(js, '!G.failing && G.state === "playing" && !!G.people && G.scenes.fadeK < 0.05', 30000);
     await sleepP(1200);
+    if (await js(OUT_OF_STATION)) await sleepP(800);
     // a beat cop 5 m ahead, facing me (the only staging)
     await js(`(() => { const E = G.eye, y = G.controller.yaw, fx = -Math.sin(y), fz = -Math.cos(y); window.__o3cop = G.people.dbgCop(E.x + fx * 5, E.z + fz * 5, Math.atan2(-fx, -fz)); return 1; })()`);
     // walk up to him and punch (W, then LMB at arm's length)

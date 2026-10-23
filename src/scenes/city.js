@@ -156,13 +156,22 @@ export default defineScene({
       P.wake('hotel');
     },
     // [O5] after an arrest (O3's): the cell's bench at headquarters; the car is gone (it is at the Grand Ave start)
+    // [O3] at the O5 merge the cell's wake rendered black (the seated view in the cell: nothing
+    // but `E get up`, in play and in shot mode - docs/reports/O3.md §0): until it shows the
+    // cell, the arrest wakes on the pavement outside the headquarters' door, facing it. Back
+    // to the cell: `placesOf(G, stage).wake('police')` here, then `afterFail('arrest', { room: true })`
+    // (the room's wake takes the fine and the guns itself)
     station(ctx) {
-      const a = ctx.stage.anchor('city.start.grand');
-      place(ctx, { car: a.car, carYaw: a.carYaw, pos: a.pos, yaw: a.yaw });
-      placesOf(ctx.game, ctx.stage).wake('police');
-      // [O3] the street after the arrest: the heat gone, the police stood down, the street
-      // round the old place let go (the fine and the guns are the room's: O4's fall.wake there)
-      if (ctx.game.people) ctx.game.people.afterFail('arrest', { room: true });
+      const G = ctx.game;
+      if (STATION_CELL) {
+        const a = ctx.stage.anchor('city.start.grand');
+        place(ctx, { car: a.car, carYaw: a.carYaw, pos: a.pos, yaw: a.yaw });
+        placesOf(G, ctx.stage).wake('police');
+        if (G.people) G.people.afterFail('arrest', { room: true });
+        return;
+      }
+      place(ctx, wakeAt(ctx, 'police'));
+      if (G.people) G.people.afterFail('arrest');
     },
     // [O5] a fall in a place (a hideout's men, the bout, a room's fight): the place as it was (built
     // again under the black: every man back), me outside its street door facing it - or by the
@@ -390,6 +399,8 @@ function wet(ctx, R, at, why) {
 // stand-in is the pavement at Baxter St and Fifth St, downtown), a car at the
 // kerb down the street
 const HOSPITAL = { x: -36.5, z: 66 };
+// [O3] the arrest's wake in O5's cell (false: the pavement at the headquarters' door - see the station beat)
+const STATION_CELL = false;
 function wakeAt(ctx, what) {
   const stage = ctx.stage, C = stage.part('city').C, g = stage.part('city').graph;
   let x, z, yaw, pitch = -0.06;

@@ -60,10 +60,16 @@
    "timeout": 20000
   },
   {
-   "wait": 700
+   "wait": 3500
   },
   {
    "shot": "f_station_wake"
+  },
+  {
+   "eval": "(() => { const P = G.city.places, s = P.byId.get('police'); if (P.seat) P.stand(); P.inside = null; P.level = 0; const o = s.frame.w(0, 3.2); G.controller.setPose(o.x, o.z, s.frame.yaw(0) + Math.PI, -0.05); return 1; })()"
+  },
+  {
+   "wait": 800
   },
   {
    "eval": "(() => { const P = G.people; P.dbgClear(); P.dbgAtCar(); return 1; })()"

@@ -39,6 +39,9 @@ async function chase(api, near, ms) {
 }
 async function click(api, button = 'left', ms = 70) { const [x, y] = api.cursor(); await api.mouse('mousePressed', x, y, button); await sleepP(ms); await api.mouse('mouseReleased', x, y, button); }
 
+// (after an arrest I wake on O5's cell bench: the staging walks me out of the station's
+// street door, onto the pavement facing the street - the only staging between tries)
+const OUT_OF_STATION = `(() => { const P = G.city && G.city.places; if (!P || !P.inside) return false; const s = P.byId.get('police'); if (P.seat) P.stand(); P.inside = null; P.level = 0; const o = s.frame.w(0, 3.2); G.controller.setPose(o.x, o.z, s.frame.yaw(0) + Math.PI, -0.05); return true; })()`;
 export default async function unstaged(api) {
   const { js, opts, log, shot } = api;
   const mode = opts.mode || 'punch', n = opts.tries || 3, secs = opts.secs || 90;
@@ -46,6 +49,7 @@ export default async function unstaged(api) {
   for (let k = 0; k < n; k++) {
     await waitFor(js, '!G.failing && G.state === "playing" && G.scenes.fadeK < 0.05 && G.police.heat === 0', 30000);
     const fails0 = await js('G.counters.arrests || 0'), beat0 = await js('G.scenes.beat');
+    if (await js(OUT_OF_STATION)) await sleepP(800);
     // (the street fills round me as it does: at least 8 walkers)
     await waitFor(js, `G.people.list.filter(p => p.role === 'walker' && p.standing).length >= 8`, 30000);
     // (one I can walk to: in my line of sight on the pavements, within 30 m)

@@ -112,12 +112,16 @@ async function runAway(api, legs = 8) {
   return false;
 }
 
+// (after an arrest I wake on O5's cell bench: the staging walks me out of the station's
+// street door, onto the pavement facing the street - the only staging between tries)
+const OUT_OF_STATION = `(() => { const P = G.city && G.city.places; if (!P || !P.inside) return false; const s = P.byId.get('police'); if (P.seat) P.stand(); P.inside = null; P.level = 0; const o = s.frame.w(0, 3.2); G.controller.setPose(o.x, o.z, s.frame.yaw(0) + Math.PI, -0.05); return true; })()`;
 // ---- the staging: the street round me emptied, the walker and the cop placed ---------------------
 // (on the pavement where I stand, looking along it: the walker a stride ahead
 // facing me, the cop `copD` metres on, in the same line of sight)
 async function stagePunch({ js, sleep }, { copD = 14, cop = true, civ = null, at = null } = {}) {
   await waitFor(js, '!G.failing && G.state === "playing"', 20000);
   await sleep(300);
+  if (await js(OUT_OF_STATION)) await sleep(600);
   const r = await js(`(() => {
     const P = G.people, C = G.controller;
     P.dbgClear();
