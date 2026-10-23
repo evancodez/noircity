@@ -209,7 +209,17 @@ async function walkJank({ js, keyDown, keyUp, sleep, log, opts }) {
     await js(`(() => { const [x, z] = ${JSON.stringify(w.from)}, [tx, tz] = ${JSON.stringify(w.to)}; G.stage.part('stream').warmAround(x, z); N.controller.setPose(x, z, Math.atan2(-(tx - x), -(tz - z)), 0); window.__locked = 0; if (!window.__lockedOn) { window.__lockedOn = 1; G.on('city:locked', () => { window.__locked++; }); } return 1; })()`);
     await sleep(300);
     await keyDown('KeyW'); if (w.run) await keyDown('ShiftLeft');
-    await sleep(w.ms || 4000);
+    // [O1c] a round thing (expect 'round': a barrel, a churn, a bucket of flowers, a post) may
+    // stop him or slide him round it - never let him into it: his nearest to its middle, sampled on the walk
+    if (w.expect === 'round') {
+      w.minGap = 9;
+      const t0 = Date.now();
+      while (Date.now() - t0 < (w.ms || 4000)) {
+        const g = await js(`(() => { const C = N.controller, [tx, tz] = ${JSON.stringify(w.to)}; let best = null, bd = 9; for (const o of G.stage.colliders.near(tx, tz, 1.2)) { if (o.r == null) continue; const d = Math.hypot(o.x - tx, o.z - tz); if (d < bd) { bd = d; best = o; } } return best ? +(Math.hypot(C.pos.x - best.x, C.pos.z - best.z) - best.r).toFixed(3) : 9; })()`);
+        w.minGap = Math.min(w.minGap, g);
+        await sleep(120);
+      }
+    } else await sleep(w.ms || 4000);
     if (w.run) await keyUp('ShiftLeft');
     await keyUp('KeyW');
     await sleep(200);
@@ -223,9 +233,10 @@ async function walkJank({ js, keyDown, keyUp, sleep, log, opts }) {
     const L = Math.hypot(w.to[0] - w.from[0], w.to[1] - w.from[1]);
     const along = ((r.at[0] - w.from[0]) * (w.to[0] - w.from[0]) + (r.at[1] - w.from[1]) * (w.to[1] - w.from[1])) / L;
     r.along = +along.toFixed(2);
-    const ok = w.expect === 'stop' ? along < L - 0.25 && !r.inside : w.expect === 'pass' ? along > L - 1.5 && !r.inside : w.expect === 'up' ? along > L - 1.5 && r.y > 0.1 && !r.inside : w.expect === 'locked' ? w.locked > 0 && !r.inside : !r.inside;
+    const ok = w.expect === 'round' ? !r.inside && w.minGap > -0.05 : w.expect === 'stop' ? along < L - 0.25 && !r.inside : w.expect === 'pass' ? along > L - 1.5 && !r.inside : w.expect === 'up' ? along > L - 1.5 && r.y > 0.1 && !r.inside : w.expect === 'locked' ? w.locked > 0 && !r.inside : !r.inside;
     out.push({ name: w.name, expect: w.expect, ok, locked: w.locked, ...r });
-    log(`  walk ${w.name}: ${w.expect || ''} ${ok ? 'ok' : 'NOT OK'} - ${r.left} m short, by ${r.by} (${r.gap} m), inside: ${r.inside}, ground ${r.y}${w.tryE ? `, E: locked ${w.locked}` : ''}`);
+    if (w.minGap != null) r.minGap = w.minGap;
+    log(`  walk ${w.name}: ${w.expect || ''} ${ok ? 'ok' : 'NOT OK'} - ${r.left} m short, by ${r.by} (${r.gap} m), inside: ${r.inside}, ground ${r.y}${w.minGap != null ? `, nearest its edge ${w.minGap} m${along > L - 0.25 ? ' (slid round it)' : ''}` : ''}${w.tryE ? `, E: locked ${w.locked}` : ''}`);
   }
   return { walks: out, insideAny: out.filter((w) => w.inside).map((w) => w.name), bad: out.filter((w) => !w.ok).map((w) => w.name) };
 }

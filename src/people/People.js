@@ -363,11 +363,13 @@ export class People {
   pavWalk(node, n = 4) {
     const G = this.graph, out = [[node.x, node.z]];
     let prev = null, cur = node;
-    for (let k = 0; k < n; k++) {
+    // [O1c] a step round a thing on the pavement (a corner of O1c's mended walk, `round`) is not a step of the walk
+    for (let k = 0, guard = 0; k < n && guard < 80; guard++) {
       let opts = cur.edges.map((e) => (e.a === cur.id ? e.b : e.a)).filter((id) => id !== (prev && prev.id));
       if (!opts.length) break;
       const id = opts[Math.floor(this.rng.next() * opts.length) % opts.length];
       prev = cur; cur = G.pnodes.get(id);
+      if (!cur.round) k++;
       if (!this.inWall(cur.x, cur.z)) out.push([cur.x, cur.z]);
     }
     return out;
@@ -389,7 +391,7 @@ export class People {
       if (best) { cur = best; seen.add(cur.id); }
     }
     out.push([cur.x, cur.z]); len += Math.hypot(cur.x - pos.x, cur.z - pos.z);
-    for (let k = 0; k < 6 && len < dist; k++) {
+    for (let k = 0, guard = 0; k < 6 && len < dist && guard < 60; guard++) {   // ([O1c] a step round a thing is not one of the six)
       let best = null, bs = -Infinity;
       for (const e of cur.edges) {
         const id = e.a === cur.id ? e.b : e.a;
@@ -400,6 +402,7 @@ export class People {
       if (!best || bs < -2) break;
       len += Math.hypot(best.x - cur.x, best.z - cur.z);
       cur = best; seen.add(cur.id);
+      if (!cur.round) k++;
       out.push([cur.x, cur.z]);
     }
     return out;

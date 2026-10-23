@@ -1,5 +1,6 @@
 import { RNG } from '../util/rng.js';
 import { insideDist } from './cityGen.js';
+import { CLS, RIVER } from './plan.js';
 
 // NOIR CITY's graphs (lane O1; docs/seams/WORLD.md has the examples).
 // Plain data and queries, no THREE: the traffic, the police, the people and
@@ -166,12 +167,25 @@ export function buildGraph(C) {
   };
   const pedge = (A, B, kind) => { if (A === B) return; const len = Math.hypot(B.x - A.x, B.z - A.z); const e = { a: A.id, b: B.id, len, kind }; pedges.push(e); A.edges.push(e); B.edges.push(e); };
   const loops = [];
+  // [O1c] only a kerb's side is walked, and only a kerb's side is moved in: a side
+  // with no road (the line where two cells are one block) keeps its line, so the
+  // walk along a kerb runs on to the next cell's corner on that line and no leg
+  // runs along a block's inside (O1's legs did, through the lots: tools/pavecheck.mjs)
+  // The walk's line is in the pavement's clear middle: past the kerb's lamp posts
+  // (0.7 m in) and street trees (1.25 m), short of the things by the wall (within a
+  // metre of it) - 1.2 m in on a lane's 2 m, 2 m on a street's 3.5, 2.7 on an avenue's 5.
+  const walkIn = (P, i) => {
+    const a = P.pts[i], b = P.pts[(i + 1) % P.pts.length];
+    const S = streetAt((a[0] + b[0]) / 2, (a[1] + b[1]) / 2);
+    const p = !S || S.d > S.edge.hw + 1.5 ? 2 : S.edge.river ? RIVER.pIn : (CLS[S.edge.cls] || CLS.street).p;
+    return p >= 3.5 ? Math.min(2.7, Math.max(1.2, p * 0.55)) : 1.2;
+  };
   for (const P of C.paves) {
-    const inset = insetPoly(P.pts, 1.2);
+    const inset = insetPoly(P.pts, P.kerbSides.map((k, i) => (k ? walkIn(P, i) : 0)));
     if (!inset) continue;
     loops.push({ pts: inset, pave: P });
     const ns = inset.map(([x, z]) => pnode(x, z));
-    for (let i = 0; i < ns.length; i++) if (P.kerbSides[i] || P.kerbSides[(i + ns.length - 1) % ns.length]) pedge(ns[i], ns[(i + 1) % ns.length], 'walk');
+    for (let i = 0; i < ns.length; i++) if (P.kerbSides[i]) pedge(ns[i], ns[(i + 1) % ns.length], 'walk');
   }
   // the crossings: at each junction, every pair of pavement corners round it
   // that face each other across one street (within the street's width + 4 m)
@@ -191,6 +205,7 @@ export function buildGraph(C) {
     const A = pnode(x, a.z0 - 1), B = pnode(x, a.z1 - (a.through ? -1 : 1.5));
     pedge(A, B, 'alley');
   }
+  mendWalk(C, pnodes, pedges, pedge, streetAt);
   const pList = [...pnodes.values()];
   function nearestPavement(x, z) {
     let best = null, bd = Infinity;
@@ -254,15 +269,142 @@ export function buildGraph(C) {
   };
 }
 
-// a convex polygon moved in by d (null if it vanishes)
-function insetPoly(P, d) {
+// ---- [O1c] the walk mended ---------------------------------------------------------------------------------
+// (docs/briefs/O1C_STREETS.md §1; tools/pavecheck.mjs walks every leg) A man walks a
+// leg's line (plus his keep-right step); nothing solid may stand on it:
+// - a corner standing in a solid (a dead end's pavement against the building past
+//   it, a garden's wall on the cell's line) is stepped out along its own walk;
+// - a walk leg with a thing on its line (a newsstand, a bench, a crate, a lamp post,
+//   a tree) goes round it by two corners on the side with pavement and room.
+export const WALK_R = 0.35;   // a walker's radius (Person.r 0.3 and a hand's breadth)
+const HARD = new Set(['wall', 'edge', 'fence', 'barrier', 'rail', 'stair']);
+export function walkSolids(C) {
+  const B = 16, cells = new Map();
+  const put = (o, x0, z0, x1, z1) => { for (let i = Math.floor(x0 / B); i <= Math.floor(x1 / B); i++) for (let j = Math.floor(z0 / B); j <= Math.floor(z1 / B); j++) { const k = i * 8192 + j; if (!cells.has(k)) cells.set(k, []); cells.get(k).push(o); } };
+  for (const w of C.walls) {
+    const c = Math.cos(w.angle), s = Math.sin(w.angle);
+    const ex = w.hx * Math.abs(c) + w.hz * Math.abs(s), ez = w.hx * Math.abs(s) + w.hz * Math.abs(c);
+    put({ box: w, c, s, hard: HARD.has(w.tag) && !w.dress }, w.cx - ex, w.cz - ez, w.cx + ex, w.cz + ez);
+  }
+  for (const p of C.posts) put({ post: p, hard: false }, p.x - p.r, p.z - p.r, p.x + p.r, p.z + p.r);
+  const near = (x0, z0, x1, z1, pad = 1) => {
+    const out = new Set();
+    for (let i = Math.floor((Math.min(x0, x1) - pad) / B); i <= Math.floor((Math.max(x0, x1) + pad) / B); i++) for (let j = Math.floor((Math.min(z0, z1) - pad) / B); j <= Math.floor((Math.max(z0, z1) + pad) / B); j++) for (const o of cells.get(i * 8192 + j) || []) out.add(o);
+    return out;
+  };
+  // does the segment (a man of radius r walking it) meet the solid?
+  const meets = (o, x0, z0, x1, z1, r) => {
+    if (o.post) return segPointDist(x0, z0, x1, z1, o.post.x, o.post.z) < o.post.r + r;
+    const b = o.box;
+    return segBox(x0, z0, x1, z1, { cx: b.cx, cz: b.cz, hx: b.hx + r, hz: b.hz + r, c: o.c, s: o.s });
+  };
+  const hits = (x0, z0, x1, z1, r = WALK_R) => [...near(x0, z0, x1, z1)].filter((o) => meets(o, x0, z0, x1, z1, r));
+  return { near, meets, hits };
+}
+export function segPointDist(x0, z0, x1, z1, px, pz) {
+  const dx = x1 - x0, dz = z1 - z0, L2 = dx * dx + dz * dz;
+  const t = L2 > 1e-9 ? Math.max(0, Math.min(1, ((px - x0) * dx + (pz - z0) * dz) / L2)) : 0;
+  return Math.hypot(px - (x0 + dx * t), pz - (z0 + dz * t));
+}
+function mendWalk(C, pnodes, pedges, pedge, streetAt) {
+  const S = walkSolids(C), R = WALK_R;
+  const other = (e, n) => pnodes.get(e.a === n.id ? e.b : e.a);
+  const onPave = (x, z) => { for (const P of C.paves) { const b = P.bb || (P.bb = bbox(P.pts)); if (x < b[0] - 1 || x > b[1] + 1 || z < b[2] - 1 || z > b[3] + 1) continue; if (insideDist(P.pts, x, z) > 0.05) return true; } return false; };
+  const clearAt = (x, z) => !S.hits(x, z, x, z).length;
+  // (a step round a thing keeps to the pavement, or a lane's cobbles - a lane's pavement is 2 m)
+  // or the road's gutter (a man steps off the kerb round a thing that fills the pavement)
+  const lane = (x, z) => { const s = streetAt(x, z); return !!s && !s.edge.bridge && s.d < s.edge.hw - 0.1 && (s.edge.cls === 'lane' || s.d > s.edge.hw - 1.4); };
+  const walkable = (x, z) => onPave(x, z) || lane(x, z);
+  // 1. the corners out of the solids, along their walk
+  for (const n of pnodes.values()) {
+    if (!n.edges.length || clearAt(n.x, n.z)) continue;
+    let done = false;
+    for (let d = 0.2; d <= 3 && !done; d += 0.1) for (const e of n.edges) {
+      if (e.kind !== 'walk') continue;
+      const o = other(e, n), L = Math.hypot(o.x - n.x, o.z - n.z) || 1;
+      if (d > L / 3) continue;
+      const x = n.x + (o.x - n.x) / L * d, z = n.z + (o.z - n.z) / L * d;
+      if (clearAt(x, z)) { n.x = x; n.z = z; done = true; break; }
+    }
+  }
+  for (const e of pedges) { const A = pnodes.get(e.a), B = pnodes.get(e.b); e.len = Math.hypot(B.x - A.x, B.z - A.z); }
+  // 2. the walk round the things on its line
+  let k = 0;
+  for (const e of pedges.slice()) {
+    if (e.kind !== 'walk') continue;
+    const A = pnodes.get(e.a), B = pnodes.get(e.b);
+    const hit = S.hits(A.x, A.z, B.x, B.z);
+    if (!hit.length || e.len < 1) continue;
+    const ux = (B.x - A.x) / e.len, uz = (B.z - A.z) / e.len, vx = -uz, vz = ux;
+    const at = (u, w) => [A.x + ux * u + vx * w, A.z + uz * u + vz * w];
+    // (a thing's extent along the leg and across it)
+    const extOf = (o) => {
+      const pts = o.post ? [[o.post.x - o.post.r, o.post.z - o.post.r], [o.post.x + o.post.r, o.post.z - o.post.r], [o.post.x + o.post.r, o.post.z + o.post.r], [o.post.x - o.post.r, o.post.z + o.post.r]]
+        : [[-1, -1], [1, -1], [1, 1], [-1, 1]].map(([a, b]) => { const w = o.box; const lx = a * w.hx, lz = b * w.hz; return [w.cx + lx * o.c + lz * o.s, w.cz - lx * o.s + lz * o.c]; });
+      let u0 = Infinity, u1 = -Infinity, v0 = Infinity, v1 = -Infinity;
+      for (const [x, z] of pts) { const u = (x - A.x) * ux + (z - A.z) * uz, v = (x - A.x) * vx + (z - A.z) * vz; u0 = Math.min(u0, u); u1 = Math.max(u1, u); v0 = Math.min(v0, v); v1 = Math.max(v1, v); }
+      return { u0, u1, v0, v1, objs: new Set([o]) };
+    };
+    const grow = (g, x) => { g.u0 = Math.min(g.u0, x.u0); g.u1 = Math.max(g.u1, x.u1); g.v0 = Math.min(g.v0, x.v0); g.v1 = Math.max(g.v1, x.v1); for (const o of x.objs) g.objs.add(o); };
+    const groups = [];
+    for (const x of hit.map(extOf).sort((p, q) => p.u0 - q.u0)) { const g = groups[groups.length - 1]; if (g && x.u0 < g.u1 + 4) grow(g, x); else groups.push(x); }
+    // (the way: off the line a metre before the thing, along it clear of it, back on a
+    // metre after; each side tried, the nearer first; a thing met on the way round
+    // joins the group and the way goes round it too)
+    const way = [[A.x, A.z]];
+    let ok = true;
+    for (const g0 of groups) {
+      const order = Math.abs(g0.v1) < Math.abs(g0.v0) ? [1, -1] : [-1, 1];
+      let got = null;
+      for (const side of order) {
+        const g = { ...g0, objs: new Set(g0.objs) };
+        let extra = 0;
+        for (let it = 0; it < 14 && !got; it++) {
+          const v = side > 0 ? g.v1 + R + 0.15 + extra : g.v0 - R - 0.15 - extra;
+          const ua = Math.max(0.2, g.u0 - 0.7), ub = Math.min(e.len - 0.2, g.u1 + 0.7);
+          const p1 = at(ua, v), p2 = at(ub, v), last = way[way.length - 1];
+          const lastU = (last[0] - A.x) * ux + (last[1] - A.z) * uz;
+          const D = globalThis.__mendDebug && globalThis.__mendDebug(A, B);
+          if (D) console.log('  side', side, 'v', v.toFixed(2), 'u', ua.toFixed(1), ub.toFixed(1), 'lastU', lastU.toFixed(1), 'walk', walkable(p1[0], p1[1]), walkable(p2[0], p2[1]));
+          if (ua < lastU - 0.1 || Math.abs(v) > 3.5) break;
+          if (!walkable(p1[0], p1[1]) || !walkable(p2[0], p2[1])) { extra += 0.25; continue; }   // (over the kerb: a little further)
+          const pts = [];
+          if (ua - 1.1 > lastU + 0.3) pts.push(at(ua - 1.1, 0));
+          pts.push(p1, p2);
+          if (ub + 1.1 < e.len - 0.3) pts.push(at(ub + 1.1, 0));
+          let q = last, met = null;
+          for (const p of pts) { const h = S.hits(q[0], q[1], p[0], p[1]); if (h.length) { met = h; break; } q = p; }
+          if (!met) { got = pts; break; }
+          const fresh = met.filter((o) => !g.objs.has(o));
+          if (fresh.some((o) => o.hard)) break;   // (not round a building: the other side)
+          if (fresh.length) for (const o of fresh) grow(g, extOf(o)); else extra += 0.2;
+        }
+        if (got) break;
+      }
+      if (!got) { ok = false; break; }
+      way.push(...got);
+    }
+    const last = way[way.length - 1];
+    if (!ok || S.hits(last[0], last[1], B.x, B.z).length) continue;
+    // (the leg replaced by the way round)
+    pedges.splice(pedges.indexOf(e), 1);
+    A.edges.splice(A.edges.indexOf(e), 1); B.edges.splice(B.edges.indexOf(e), 1);
+    let prev = A;
+    for (let i = 1; i < way.length; i++) { const id = `r${k++}`, n = { id, x: way[i][0], z: way[i][1], edges: [], round: true }; pnodes.set(id, n); pedge(prev, n, 'walk'); prev = n; }
+    pedge(prev, B, 'walk');
+  }
+}
+function bbox(P) { let a = Infinity, b = -Infinity, c = Infinity, d = -Infinity; for (const [x, z] of P) { a = Math.min(a, x); b = Math.max(b, x); c = Math.min(c, z); d = Math.max(d, z); } return [a, b, c, d]; }
+
+// a convex polygon moved in by d (a number, or one per side: [O1c]) (null if it vanishes)
+function insetPoly(P, dd) {
   let a = 0; for (let i = 0; i < P.length; i++) { const p = P[i], q = P[(i + 1) % P.length]; a += p[0] * q[1] - q[0] * p[1]; }
   const s = a >= 0 ? 1 : -1;
   const lines = [];
   for (let i = 0; i < P.length; i++) {
     const p = P[i], q = P[(i + 1) % P.length];
     const ex = q[0] - p[0], ez = q[1] - p[1], L = Math.hypot(ex, ez) || 1;
-    const nx = (-ez / L) * s, nz = (ex / L) * s;
+    const nx = (-ez / L) * s, nz = (ex / L) * s, d = Array.isArray(dd) ? dd[i] : dd;
     lines.push({ px: p[0] + nx * d, pz: p[1] + nz * d, ex, ez });
   }
   const out = [];
