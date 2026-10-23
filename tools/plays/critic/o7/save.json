@@ -1,0 +1,185 @@
+{
+ "about": "[O7 critic] the save as a player: BEGIN, into the car (the quiet autosave), drive off, out, a shot; reload: what the title offers, CONTINUE, where am I; then BEGIN over a save: warned? (the first E within six seconds of BEGIN, then out and in again after six)",
+ "url": "/?mute=1",
+ "size": [
+  1280,
+  800
+ ],
+ "out": "shots/critic_o7/save",
+ "steps": [
+  {
+   "eval": "(localStorage.clear(), 1)"
+  },
+  {
+   "reload": true
+  },
+  {
+   "wait": 3000
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]",
+   "taken": "G.state !== 'title'",
+   "retries": 5,
+   "every": 4000
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'city' && G.scenes.fadeK < 0.05",
+   "timeout": 25000
+  },
+  {
+   "look": [
+    0,
+    0
+   ],
+   "steps": 1
+  },
+  {
+   "eval": "(N.controller.pitch = 0, 1)"
+  },
+  {
+   "wait": 800
+  },
+  {
+   "key": "KeyE",
+   "hold": 60
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "eval": "'first E: skipped='+G.night.saver.skipped+' autos='+G.night.saver.autos+' en '+G.save.enabled+' t since start '+(G.time-G.night.saver.started).toFixed(1)"
+  },
+  {
+   "key": "KeyE",
+   "hold": 60
+  },
+  {
+   "wait": 6000
+  },
+  {
+   "eval": "(N.controller.yaw = Math.atan2(-(G.city.car.pos.x - N.controller.pos.x), -(G.city.car.pos.z - N.controller.pos.z)), 'prompt '+G.hud.promptShown)"
+  },
+  {
+   "wait": 400
+  },
+  {
+   "key": "KeyE",
+   "hold": 60
+  },
+  {
+   "wait": 300
+  },
+  {
+   "shot": "savetick"
+  },
+  {
+   "eval": "'second E: skipped='+G.night.saver.skipped+' autos='+G.night.saver.autos+' keys '+Object.keys(localStorage)"
+  },
+  {
+   "eval": "'in '+G.city.inCar+' car at '+G.city.car.pos.x.toFixed(1)+','+G.city.car.pos.z.toFixed(1)"
+  },
+  {
+   "down": "KeyW"
+  },
+  {
+   "wait": 4000
+  },
+  {
+   "up": "KeyW"
+  },
+  {
+   "down": "KeyS"
+  },
+  {
+   "wait": 2000
+  },
+  {
+   "up": "KeyS"
+  },
+  {
+   "key": "KeyE",
+   "hold": 60
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "eval": "'out at '+N.controller.pos.x.toFixed(1)+','+N.controller.pos.z.toFixed(1)+' car '+G.city.car.pos.x.toFixed(1)+','+G.city.car.pos.z.toFixed(1)"
+  },
+  {
+   "eval": "'saved keys '+Object.keys(localStorage).join(',')"
+  },
+  {
+   "reload": true
+  },
+  {
+   "wait": 3500
+  },
+  {
+   "shot": "title_continue"
+  },
+  {
+   "eval": "'title: '+document.getElementById('title').innerText.replace(/\\s+/g,' ').slice(0,120)"
+  },
+  {
+   "clickOn": "#title .opt[data-k=continue]",
+   "taken": "G.state !== 'title'",
+   "retries": 5,
+   "every": 4000
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'city' && G.scenes.fadeK < 0.05",
+   "timeout": 25000
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "eval": "'continued: in '+G.city.inCar+' me '+N.controller.pos.x.toFixed(1)+','+N.controller.pos.z.toFixed(1)+' car '+G.city.car.pos.x.toFixed(1)+','+G.city.car.pos.z.toFixed(1)+' heat '+G.police.heat+' HUD '+document.getElementById('hud').innerText.replace(/\\s+/g,' ').slice(0,200)"
+  },
+  {
+   "shot": "continued"
+  },
+  {
+   "eval": "(G.save.money = 77, 1)"
+  },
+  {
+   "key": "KeyE",
+   "hold": 60
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "key": "KeyE",
+   "hold": 60
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "eval": "'money '+G.save.money+' in '+G.city.inCar"
+  },
+  {
+   "reload": true
+  },
+  {
+   "wait": 3500
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]",
+   "taken": "G.state !== 'title'",
+   "retries": 5,
+   "every": 4000
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "shot": "begin_over"
+  },
+  {
+   "eval": "'after BEGIN over a save: state '+G.state+' money '+G.save.money+' body '+document.body.innerText.replace(/\\s+/g,' ').slice(0,200)"
+  }
+ ]
+}

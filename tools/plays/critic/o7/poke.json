@@ -1,0 +1,31 @@
+{
+ "about": "[O7 critic] poking: a fist on the street (LMB with empty hands), walk into the facade, the car into a wall at speed, the map read close",
+ "url": "/?mute=1",
+ "size": [1280, 800],
+ "out": "shots/critic_o7/poke",
+ "steps": [
+  { "wait": 2500 },
+  { "clickOn": "#title .opt[data-k=begin]", "taken": "G.state !== 'title'", "retries": 5, "every": 4000 },
+  { "until": "G.scenes.current && G.scenes.current.id === 'city' && G.scenes.fadeK < 0.05", "timeout": 25000 },
+  { "look": [0, 0], "steps": 1 }, { "eval": "(N.controller.pitch = 0, N.controller.yaw += 1.6, 1)" },
+  { "wait": 1500 },
+  { "eval": "'cur '+G.player.weapons.current+' vm '+G.vmWanted+' mode '+N.controller.mode" },
+  { "mouse": "down", "button": "left" }, { "wait": 90 }, { "shot": "jab90" }, { "mouse": "up", "button": "left" },
+  { "wait": 300 }, { "shot": "jab400" },
+  { "eval": "'after LMB: cur '+G.player.weapons.current+' HUD '+document.getElementById('hud').innerText.replace(/\\s+/g,' ').slice(0,200)" },
+  { "down": "KeyW" }, { "wait": 4000 }, { "up": "KeyW" }, { "shot": "wall" },
+  { "eval": "'walked to '+N.controller.pos.x.toFixed(1)+','+N.controller.pos.z.toFixed(1)" },
+  { "eval": "(()=>{const c=G.city.car,p=N.controller.pos;const d=Math.hypot(c.pos.x-p.x,c.pos.z-p.z);const k=(d-1.6)/d;N.controller.setPose(p.x+(c.pos.x-p.x)*k,p.z+(c.pos.z-p.z)*k,0,0);N.controller.yaw=Math.atan2(-(c.pos.x-N.controller.pos.x),-(c.pos.z-N.controller.pos.z));return 1})()" },
+  { "wait": 600 },
+  { "key": "KeyE", "hold": 60 }, { "wait": 1200 },
+  { "eval": "'inCar '+G.city.inCar" },
+  { "down": "KeyW" }, { "wait": 5000 },
+  { "eval": "'speed '+G.city.car.speed.toFixed(1)+' pos '+G.city.car.pos.x.toFixed(0)+','+G.city.car.pos.z.toFixed(0)" },
+  { "down": "KeyD" }, { "wait": 1800 }, { "up": "KeyD" },
+  { "wait": 1500 }, { "shot": "crash" },
+  { "eval": "'after crash speed '+G.city.car.speed.toFixed(1)+' dmg '+JSON.stringify(G.city.car.damage||G.city.car.health||null)+' HUD '+document.getElementById('hud').innerText.replace(/\\s+/g,' ').slice(0,200)" },
+  { "wait": 2500 }, { "up": "KeyW" }, { "shot": "crash2" },
+  { "key": "KeyM", "hold": 80 }, { "wait": 900 }, { "shot": "map" },
+  { "key": "KeyM", "hold": 80 }, { "wait": 400 }
+ ]
+}
