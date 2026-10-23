@@ -1,20 +1,81 @@
 {
  "about": "[O6 after the critic, major 3] A lamp shot out goes dark, head and all (the bed, the city's own lamp at (-110.3, 14), by real input from 9 m across the road): its cone, its light, its pool AND its glowing mouth (the far tile's colour range: it stayed at the buzz's 0.6 for good). node tools/play.mjs tools/plays/o6_lamp_dark.json",
  "url": "/?mute=1&start=smash",
- "size": [1280, 800],
+ "size": [
+  1280,
+  800
+ ],
  "out": "shots/o6/lampdark",
  "steps": [
-  { "wait": 1500 },
-  { "clickOn": "#title .opt[data-k=begin]", "taken": "G.state !== 'title'", "retries": 5, "every": 4000 },
-  { "until": "G.scenes.current && G.scenes.current.id === 'smash' && G.scenes.fadeK < 0.05", "timeout": 30000 },
-  { "walk": [[-118.5, 17.5]], "timeout": 20000 },
-  { "look": "(() => { const C = N.controller, e = G.camera.position, l = G.stage.lamps.all.find((l) => Math.abs(l.x + 110.3) < 0.1 && Math.abs(l.z - 14) < 0.1), h = l.head; const dx = h.x - e.x, dy = h.y - 0.1 - e.y, dz = h.z - e.z; let d = Math.atan2(-dx, -dz) - C.yaw; d = Math.atan2(Math.sin(d), Math.cos(d)); return [-d / C.sensitivity, -(Math.atan2(dy, Math.hypot(dx, dz)) - C.pitch) / C.sensitivity]; })()", "steps": 8 },
-  { "wait": 500 },
-  { "shot": "l0_lit" },
-  { "mouse": "down", "button": "left" }, { "wait": 150 }, { "mouse": "up", "button": "left" },
-  { "wait": 3500 },
-  { "shot": "l1_dark" },
-  { "eval": "(() => { const it = G.stage.smash.items.find((i) => i.kind === 'lamp' && Math.abs(i.x + 110.3) < 0.1 && Math.abs(i.z - 14) < 0.1), l = it.lamp; const S = G.stage.lamps, sp = S.pool.find((s) => s.lamp === l); const col = it.slots.filter((s) => s.attr === 'color').map((s) => Math.max(...s.mesh.geometry.getAttribute('color').array.slice(s.start * 3, (s.start + s.count) * 3))); window.__ld = { dark: !!it.dark, dead: l.dead, on: l.on, cone: !!(l.cone && l.cone.mesh.visible), spot: sp ? sp.spot.intensity : 0, mouth: col }; return JSON.stringify(window.__ld); })()" },
-  { "expect": "(() => { const L = window.__ld; return L.dark && L.dead && !L.on && !L.cone && L.spot === 0 && L.mouth.length >= 1 && L.mouth.every((v) => v === 0); })()", "label": "3.5 s after a round in its head: cone, light and its glowing mouth all out" }
+  {
+   "wait": 1500
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]",
+   "taken": "G.state !== 'title'",
+   "retries": 5,
+   "every": 4000
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'smash' && G.scenes.fadeK < 0.05",
+   "timeout": 30000
+  },
+  {
+   "walk": [
+    [
+     -118.5,
+     17.5
+    ]
+   ],
+   "timeout": 20000
+  },
+  {
+   "look": "(() => { const C = N.controller, e = G.camera.position, l = G.stage.lamps.all.find((l) => Math.abs(l.x + 110.3) < 0.1 && Math.abs(l.z - 14) < 0.1), h = l.head; const dx = h.x - e.x, dy = h.y - 0.1 - e.y, dz = h.z - e.z; let d = Math.atan2(-dx, -dz) - C.yaw; d = Math.atan2(Math.sin(d), Math.cos(d)); return [-d / C.sensitivity, -(Math.atan2(dy, Math.hypot(dx, dz)) - C.pitch) / C.sensitivity]; })()",
+   "steps": 8
+  },
+  {
+   "wait": 300
+  },
+  {
+   "look": "(() => { const C = N.controller, e = G.camera.position, l = G.stage.lamps.all.find((l) => Math.abs(l.x + 110.3) < 0.1 && Math.abs(l.z - 14) < 0.1), h = l.head; const dx = h.x - e.x, dy = h.y - 0.1 - e.y, dz = h.z - e.z; let d = Math.atan2(-dx, -dz) - C.yaw; d = Math.atan2(Math.sin(d), Math.cos(d)); return [-d / C.sensitivity, -(Math.atan2(dy, Math.hypot(dx, dz)) - C.pitch) / C.sensitivity]; })()",
+   "steps": 4
+  },
+  {
+   "wait": 300
+  },
+  {
+   "look": "(() => { const C = N.controller, e = G.camera.position, l = G.stage.lamps.all.find((l) => Math.abs(l.x + 110.3) < 0.1 && Math.abs(l.z - 14) < 0.1), h = l.head; const dx = h.x - e.x, dy = h.y - 0.1 - e.y, dz = h.z - e.z; let d = Math.atan2(-dx, -dz) - C.yaw; d = Math.atan2(Math.sin(d), Math.cos(d)); return [-d / C.sensitivity, -(Math.atan2(dy, Math.hypot(dx, dz)) - C.pitch) / C.sensitivity]; })()",
+   "steps": 2
+  },
+  {
+   "wait": 500
+  },
+  {
+   "shot": "l0_lit"
+  },
+  {
+   "mouse": "down",
+   "button": "left"
+  },
+  {
+   "wait": 150
+  },
+  {
+   "mouse": "up",
+   "button": "left"
+  },
+  {
+   "wait": 3500
+  },
+  {
+   "shot": "l1_dark"
+  },
+  {
+   "eval": "(() => { const it = G.stage.smash.items.find((i) => i.kind === 'lamp' && Math.abs(i.x + 110.3) < 0.1 && Math.abs(i.z - 14) < 0.1), l = it.lamp; const S = G.stage.lamps, sp = S.pool.find((s) => s.lamp === l); const col = it.slots.filter((s) => s.attr === 'color').map((s) => Math.max(...s.mesh.geometry.getAttribute('color').array.slice(s.start * 3, (s.start + s.count) * 3))); window.__ld = { dark: !!it.dark, dead: l.dead, on: l.on, cone: !!(l.cone && l.cone.mesh.visible), spot: sp ? sp.spot.intensity : 0, mouth: col }; return JSON.stringify(window.__ld); })()"
+  },
+  {
+   "expect": "(() => { const L = window.__ld; return L.dark && L.dead && !L.on && !L.cone && L.spot === 0 && L.mouth.length >= 1 && L.mouth.every((v) => v === 0); })()",
+   "label": "3.5 s after a round in its head: cone, light and its glowing mouth all out"
+  }
  ]
 }

@@ -6,7 +6,7 @@
  "steps": [
   { "wait": 1500 },
   { "clickOn": "#title .opt[data-k=begin]", "taken": "G.state !== 'title'", "retries": 5, "every": 4000 },
-  { "until": "G.stage && G.stage.smash && G.city && G.city.cars", "timeout": 30000 },
+  { "until": "!!(G.stage && G.stage.smash && G.city && G.city.cars && G.scenes.current && G.scenes.current.id === 'smash')", "timeout": 30000 },
   { "eval": "(() => { const W = window.__ft = { d: [] }; let last = null; const t = (now) => { if (last != null) W.d.push([+(now - last).toFixed(1), G.city.cars.some((c) => c.wrecked) ? 1 : 0]); last = now; if (W.d.length < 900) requestAnimationFrame(t); }; requestAnimationFrame(t); return 1; })()" },
   { "until": "G.city.cars[2].wrecked", "timeout": 15000 },
   { "wait": 1500 },
