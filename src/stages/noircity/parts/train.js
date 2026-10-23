@@ -60,20 +60,54 @@ export default {
     scene.add(beam);
     const _a = new THREE.Vector3(), _x = new THREE.Vector3(), _up = new THREE.Vector3(0, -1, 0), F = {};
     const deckTop = OVERPASS.deckY + OVERPASS.girderH - 0.1;
+    // [O1b] the stations along the line (O1 Left 5: the train went round once
+    // and was gone at the station it left): it runs the loop for ever now,
+    // braking into each station on a curve a hand would drive, standing there
+    // DWELL s with its windows lit (the doors' time), pulling out again
+    const TRAIN = CARS * (LEN + GAP) - GAP, ACC = 1.1, DWELL = 14;
+    const stopS = (el.stops || []).map((st) => {
+      let best = 0, bd = Infinity;
+      for (let s = 0; s < line.len; s += 1) { line.at(s, F); const d = Math.hypot(F.x - st.x, F.z - st.z); if (d < bd) { bd = d; best = s; } }
+      return best;
+    });
+    const wrap = (s) => ((s % line.len) + line.len) % line.len;
     const api = {
       group, active: false, s: 0, dir: 1, onRumble: null, onSqueal: null, beam, halo, next: 8, run0: 0,
+      v: 0, mode: 'run', waitT: 0, stopAt: -1, stops: stopS, waits: 0,
       light: stage.lights.add({ position: new THREE.Vector3(0, -50, 0), direction: new THREE.Vector3(0, -1, 0), halfAngle: Math.PI, range: 14, intensity: 0 }),
       run(s, dir = 1) {
         this.active = true; this.s = s; this.run0 = s; this.dir = dir; group.visible = true; beam.visible = true; halo.visible = true;
+        this.v = SPEED; this.mode = 'run'; this.stopAt = -1;
       },
       stop() { this.active = false; group.visible = false; beam.visible = false; halo.visible = false; this.light.intensity = 0; if (this.onRumble) this.onRumble(0, null); },
+      // the next station ahead of the train's middle, and how far (m)
+      nextStop() {
+        const mid = this.s - this.dir * TRAIN / 2;
+        let best = -1, bd = Infinity;
+        stopS.forEach((ss, i) => { const d = wrap((ss - mid) * this.dir); if (i !== this.left && d < bd) { bd = d; best = i; } });
+        return { i: best, d: bd };
+      },
       update(dt, t, { camera = null, canStart = true } = {}) {
         if (!this.active) {
           this.next -= dt;
           if (this.next <= 0 && canStart !== false) { this.dirN = -(this.dirN || -1); this.run(this.dirN > 0 ? 0 : line.len, this.dirN); this.next = WAIT; }
           return;
         }
-        this.s += this.dir * SPEED * dt;
+        if (this.mode === 'wait') {
+          this.waitT -= dt;
+          if (this.waitT <= 0) { this.mode = 'run'; this.left = this.stopAt; this.since = 0; }
+        } else {
+          const N = stopS.length ? this.nextStop() : { i: -1, d: Infinity };
+          // (the brake's curve: the speed it may have at this distance from the platform's middle)
+          const vMax = Math.min(SPEED, Math.sqrt(2 * ACC * Math.max(0, N.d)));
+          const v0 = this.v;
+          this.v = Math.min(vMax, this.v + ACC * dt);
+          if (this.v < v0 - 0.01 && this.onSqueal && N.d < 30 && this.v > 1) this.onSqueal(0.45, cars[0].position);
+          if (N.i >= 0 && N.d < 0.4 && this.v < 0.6) { this.mode = 'wait'; this.waitT = DWELL; this.v = 0; this.stopAt = N.i; this.waits++; }
+          // (the station it pulled out of is behind it once it has gone a train's length)
+          if (this.left !== undefined && (this.since = (this.since || 0) + this.v * dt) > TRAIN + 10) this.left = undefined;
+        }
+        this.s += this.dir * this.v * dt;
         let nearest = null, nd = Infinity;
         for (let i = 0; i < CARS; i++) {
           const sc = this.s - this.dir * (i * (LEN + GAP) + LEN / 2);
@@ -99,12 +133,13 @@ export default {
           halo.scale.setScalar(Math.min(6, 2.2 + d * 0.015));
           halo.material.opacity = 1 - 0.55 * Math.min(1, Math.max(0, (d - 140) / 220));
         }
-        if (this.onRumble) this.onRumble(nearest ? Math.max(0, 1 - nd / 140) : 0, nearest);
+        // ([O1b] the rumble with its speed: a train standing at a platform hums, it does not roar)
+        const vk = 0.25 + 0.75 * Math.min(1, this.v / SPEED);
+        if (this.onRumble) this.onRumble(nearest ? Math.max(0, 1 - nd / 140) * vk : 0, nearest);
         if (nearest) { this.light.position.copy(nearest).setY(nearest.y + 1.5); this.light.intensity = 0.9; }
         const G = stage.game;
-        if (nearest && nd < 22 && G) G.controller.shake(0.1 * (1 - nd / 22), 0);
-        // (once round the loop: it stops at the station it left from)
-        if (Math.abs(this.s - this.run0) > line.len) this.stop();
+        if (nearest && nd < 22 && G) G.controller.shake(0.1 * (1 - nd / 22) * vk, 0);
+        this.s = wrap(this.s);
       },
     };
     return api;

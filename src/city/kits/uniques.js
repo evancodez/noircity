@@ -297,9 +297,44 @@ const B = {
   },
 };
 
+// the Hill's lane (world/dressing.js hillLane): in the world's frame - its
+// cobbled ribbon, its walls with their coping, the mouths' piers
+function lanePieces(u, R) {
+  const P = u.pts, n = P.length - 1;
+  const nrm = (k) => { const a = P[Math.max(0, k - 1)], b = P[Math.min(n, k + 1)], dx = b[0] - a[0], dz = b[1] - a[1], L = Math.hypot(dx, dz); return [-dz / L, dx / L]; };
+  const pos = [];
+  for (let k = 0; k < n; k++) {
+    const na = nrm(k), nb = nrm(k + 1), a = P[k], b = P[k + 1], y = PAVE + 0.012;
+    const a0 = [a[0] - na[0] * u.hw, a[1] - na[1] * u.hw], a1 = [a[0] + na[0] * u.hw, a[1] + na[1] * u.hw], b0 = [b[0] - nb[0] * u.hw, b[1] - nb[1] * u.hw], b1 = [b[0] + nb[0] * u.hw, b[1] + nb[1] * u.hw];
+    pos.push(a0[0], y, a0[1], b1[0], y, b1[1], b0[0], y, b0[1], a0[0], y, a0[1], a1[0], y, a1[1], b1[0], y, b1[1]);
+  }
+  const g = new THREE.BufferGeometry();
+  g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+  // (the face looks up)
+  const p = g.getAttribute('position').array;
+  for (let i = 0; i < p.length; i += 9) { const ux = p[i + 3] - p[i], uz = p[i + 5] - p[i + 2], vx = p[i + 6] - p[i], vz = p[i + 8] - p[i + 2]; if (uz * vx - ux * vz < 0) for (let q = 0; q < 3; q++) { const t = p[i + 3 + q]; p[i + 3 + q] = p[i + 6 + q]; p[i + 6 + q] = t; } }
+  g.computeVertexNormals();
+  R.push([g, G.wood * 0.5]);
+  // the walls: 2.6 m of stone, a coping on top
+  for (const w of u.walls) {
+    const L = Math.hypot(w.b[0] - w.a[0], w.b[1] - w.a[1]), yaw = Math.atan2(-(w.b[1] - w.a[1]), w.b[0] - w.a[0]);
+    R.push([box(L + 0.06, 2.6, 0.45).rotateY(yaw).translate((w.a[0] + w.b[0]) / 2, PAVE + 1.3, (w.a[1] + w.b[1]) / 2), G.trim * 0.55]);
+    R.push([box(L + 0.1, 0.12, 0.6).rotateY(yaw).translate((w.a[0] + w.b[0]) / 2, PAVE + 2.66, (w.a[1] + w.b[1]) / 2), G.trim * 1.1]);
+  }
+  // the mouths: a pier each side, a lantern on each
+  for (const k of [1, n - 1]) {
+    const nk = nrm(k);
+    for (const s of [-1, 1]) {
+      const x = P[k][0] + nk[0] * s * (u.hw + u.verge), z = P[k][1] + nk[1] * s * (u.hw + u.verge);
+      R.push([box(0.8, 3.4, 0.8).translate(x, PAVE + 1.7, z), G.trim * 0.8]);
+    }
+  }
+}
+
 // a unique's pieces in the world: { relief, lit, sign, vents }
 export function uniquePieces(u) {
   const R = [], L = [], S = [], V = [];
+  if (u.kind === 'lane') { lanePieces(u, R); return { relief: R, lit: L, sign: S, vents: [] }; }
   const f = B[u.kind];
   if (!f) return { relief: R, lit: L, sign: S, vents: V };
   f(u, R, L, S, V);

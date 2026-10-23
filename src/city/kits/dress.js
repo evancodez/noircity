@@ -543,5 +543,20 @@ function awning(rel, w, kind, y, v) {
   }
   for (const s of [-1, 1]) rel.push([onWin(box(0.03, 0.03, L).rotateX(tilt).translate(s * Wd / 2, y - drop / 2 - w.y - 0.03, D / 2), w), G.iron]);
 }
+// ---- a flight of stone steps down the quay's face into the river (world/dressing.js quaySteps) ----
+export function stepsPieces(s, waterY) {
+  const P = [], n = 12, L = s.len, drop = PAVE - (waterY - 1.0);
+  for (let k = 0; k < n; k++) {
+    const top = PAVE - (k + 1) * drop / n, bot = waterY - 1.6, along = (k + 0.5) * L / n;
+    const cx = s.x + s.nx * 0.72 + s.dx * along, cz = s.z + s.nz * 0.72 + s.dz * along;
+    const g = new THREE.BoxGeometry(1.42, top - bot, L / n + 0.01).rotateY(Math.atan2(s.dx, s.dz)).translate(cx, (top + bot) / 2, cz);
+    P.push([g, G.trim * (k % 2 ? 0.8 : 0.95)]);
+  }
+  // (an iron rail down its open side)
+  const a = V3(s.x + s.nx * 1.4, PAVE + 0.95, s.z + s.nz * 1.4), b = V3(s.x + s.nx * 1.4 + s.dx * L, waterY + 0.9, s.z + s.nz * 1.4 + s.dz * L);
+  P.push([tube([a, b], 0.03, 5, 4), G.iron]);
+  for (let k = 0; k <= 3; k++) { const t = k / 3; P.push([new THREE.CylinderGeometry(0.025, 0.025, 0.95, 5).translate(a.x + (b.x - a.x) * t, (a.y + (b.y - a.y) * t) - 0.47, a.z + (b.z - a.z) * t), G.iron]); }
+  return P;
+}
 export { DISPLAY, PIECES, NAMES };
 void _o;

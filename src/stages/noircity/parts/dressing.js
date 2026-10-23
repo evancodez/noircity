@@ -1,7 +1,8 @@
 import * as THREE from 'three';
-import { propPieces, treePieces, faceRelief, boardAtlas } from '../../../city/kits/dress.js';
+import { propPieces, treePieces, faceRelief, boardAtlas, stepsPieces } from '../../../city/kits/dress.js';
 import { uniquePieces, signAtlas } from '../../../city/kits/uniques.js';
 import { CHUNK } from '../../../world/cityGen.js';
+import { WATER_Y } from '../../../world/plan.js';
 
 // NOIR CITY's dressing (lane O1b): every street its own and more in them,
 // drawn round the eye. What world/dressing.js placed (C.dress, C.trees, the
@@ -147,6 +148,8 @@ export default {
       U.relief.push(...P.relief); U.lit.push(...P.lit); U.sign.push(...P.sign);
       for (const v of P.vents) vents.push({ x: v.x, y: v.y, z: v.z, unique: u.kind });
     }
+    // the quay's steps down to the water (the swim's way out)
+    for (const s of C.steps || []) U.relief.push(...stepsPieces(s, WATER_Y));
     const uid = city.idFor('5,5', 40);
     const umk = (geo, mat, k, solid) => { const m = new THREE.Mesh(geo, mat); m.userData.inkId = uid + k; m.receiveShadow = true; if (!solid) m.userData.noRay = true; m.name = 'uniques ' + k; group.add(m); return m; };
     const uniques = [];

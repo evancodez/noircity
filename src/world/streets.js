@@ -78,7 +78,7 @@ export const STREETS = {
   gasworks: { look: 'the gasworks\' avenue: the holders behind the fence, the dish lamps', mat: 'brick', lamp: 'dish', unique: 'gasboard' },
   // ---- the hill
   hillrd: { look: 'the top of the hill: the long walls, the elms, the globes; the curving lane up to the big house', lamp: 'globe', trees: 'elm', treeStep: 24, unique: 'lane' },
-  bridge: { look: 'Bridge St: the walls and gates, the bridge\'s lanterns ahead', lamp: 'globe', trees: 'bare', treeStep: 30, unique: 'statue' },
+  bridge: { look: 'Bridge St: the walls and gates, bare trees, the curving lane\'s mouth, the bridge\'s lanterns ahead', lamp: 'globe', trees: 'bare', treeStep: 30 },
   parkrow: { look: 'Park Row: the park\'s railing, the poplars, the globe lamps', mat: 'pale', lamp: 'globe', trees: 'poplar', treeStep: 24, trades: ['florist', 'books', 'cafe'], letter: 'script', awning: 'pale', awnK: 0.3, unique: 'fountain' },
 };
 

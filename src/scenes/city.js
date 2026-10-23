@@ -5,6 +5,7 @@ import { STARTS, START_DEFAULT, PAVE, RIVER, QUAY_OFF, SLIPS, PIERS, BRIDGE } fr
 import { riverNearest } from '../world/cityGen.js';
 import { MapOverlay } from '../world/map.js';
 import { compileAll } from '../stages/noircity/compile.js';
+import { swimStep } from '../world/swim.js';
 
 // NOIR CITY's free roam (lane O1): the city, a car at the kerb, nothing I
 // must do. Every critic and every later lane starts from here.
@@ -71,6 +72,7 @@ function place(ctx, at) {
   V.player = null;
   R.car = car;
   R.inCar = false;
+  R.swim = null;   // [O1b]
   R.cabin = stage._cabin || (stage._cabin = new Cabin(G));
   R.cabin.car = null;
   // (its lamps off while it stands: on as I get in)
@@ -141,8 +143,9 @@ function step(ctx, R, T, dt) {
     const edge = RIVER.s + QUAY_OFF;
     const vs = R.inCar && car ? Math.max(0, car.vel.z) : 0, ve = R.inCar && car ? Math.max(0, car.vel.x) : 0;
     const lead = R.inCar ? Math.max(14, vs * 1.6) : 5;
-    const slip = SLIPS.some((s) => Math.abs(p.x - s.x) < s.w / 2 + 0.5 && (p.z > RIVER.s + RIVER.hw + 1 || (vs > 4 && p.z > edge - lead)));
-    const pier = PIERS.some((q) => Math.abs(p.x - q.x) < q.w / 2 && p.z > edge + q.len - lead);
+    // ([O1b] on foot the river is a swim, not a loss: the warning is the car's)
+    const slip = R.inCar && SLIPS.some((s) => Math.abs(p.x - s.x) < s.w / 2 + 0.5 && (p.z > RIVER.s + RIVER.hw + 1 || (vs > 4 && p.z > edge - lead)));
+    const pier = R.inCar && PIERS.some((q) => Math.abs(p.x - q.x) < q.w / 2 && p.z > edge + q.len - lead);
     const bridge = R.inCar && Math.abs(p.z - BRIDGE.z) < BRIDGE.hw + 2 && p.x > RIVER.e && p.x > BRIDGE.barrier - Math.max(12, ve * 2.4) && p.x < BRIDGE.barrier;
     const w = slip || pier ? 'The river.' : bridge ? 'The bridge is up.' : null;
     // (a warning is danger: a teach card up goes - never two cards, never a card in danger)
@@ -178,8 +181,9 @@ function step(ctx, R, T, dt) {
   // the car I left rolls out what was left of its roll, its brakes on, and
   // stands (nothing else steps a parked car yet: O2's traffic will)
   if (car && !R.inCar && (car.vel.lengthSq() > 4e-4 || Math.abs(car.yawRate) > 0.01)) car.step(dt);
-  // on foot: the river (walked off a pier's end, down a slipway, the steps)
-  if (C.inWater(ctl.pos.x, ctl.pos.z) && ctl.groundY < -0.6) { wet(ctx, R, ctl.pos, 'Into the river.'); return; }
+  // on foot: the river (walked off a pier's end, down a slipway, the steps):
+  // [O1b] a swim to the steps (world/swim.js), never the fade
+  if (swimStep(ctx, R)) return;
   // E at the car: any door, looking at it, close by
   let near = false;
   if (car && car.solid !== false) {

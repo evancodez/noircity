@@ -218,6 +218,23 @@ export function dress(C, ctx) {
       else C.walls.push({ cx: x, cz: z, hx: S.hx, hz: S.hz, angle: Math.PI / 2, tag: kind, dress: r0 });
     }
   }
+  // ---- a newsstand at a corner now and then (downtown, the tenements): where
+  // the paper is (the items' newspaper; O1's furniture kind, so lane O6's set takes it)
+  for (const p of [...C.props]) {
+    if (p.kind !== 'namesign') continue;
+    const D = districtAt(p.x, p.z).id;
+    if ((D !== 'downtown' && D !== 'tenements') || vhash(p.x, p.z, 810) > 0.45) continue;
+    const jx = Math.round(p.x / 30) * 30, jz = Math.round(p.z / 30) * 30;
+    const sz = Math.sign(p.z - jz) || 1, sx = Math.sign(p.x - jx) || 1;
+    for (const [d, o] of [[4.5, 0.5], [6.5, 0.5], [4.5, 1.2]]) {
+      const x = p.x + sx * o, z = p.z + sz * d, yaw = sx > 0 ? Math.PI / 2 : -Math.PI / 2;
+      if (!onPave(x, z, 0.6) || inLot(x, z, 0.6) || !clear(x, z, 0.9, 0.3)) continue;
+      C.props.push({ kind: 'newsstand', x, z, yaw, chunk: chunkOf(x, z), o1b: true });
+      C.walls.push({ cx: x, cz: z, hx: 0.85, hz: 0.55, angle: yaw, tag: 'stand' });
+      note(x, z, 1.0, 'newsstand');
+      break;
+    }
+  }
   // ---- the corners: a mailbox, a phone booth (by their street's character) --------------------
   for (const p of C.props) {
     if (p.kind !== 'namesign') continue;
@@ -305,9 +322,12 @@ export function dress(C, ctx) {
     }
   }
 
+  // ---- the Hill's curving lane (the brief: "the Hill gets a curving lane") ------------------------
+  const lane = hillLane(C, { chunkOf, note, trees });
+  if (lane) uniques.push(lane);
   // ---- the one thing mid-block that is only there -----------------------------------------------
   for (const [id, S] of Object.entries(STREETS)) {
-    if (!S.unique) continue;
+    if (!S.unique || S.unique === 'lane') continue;
     // the street's segments, its middle by length
     const parts = C.streets.filter((s) => s.id === id && !s.bridge);
     if (!parts.length) continue;
@@ -414,6 +434,60 @@ export function dress(C, ctx) {
   }
   C.dress = dress; C.trees = trees; C.uniques = uniques; C.itemSpots = spots;
   return { dress: dress.length, trees: trees.length, uniques: uniques.length, spots: spots.length };
+}
+
+// ---- the Hill's lane: an S-curve up from Bridge St to Hill Rd through the
+// garden between Baxter St and the Bowery's block, walled each side, globe
+// lamps along it, a big house in each garden it leaves. At the pavements'
+// height (a car bumps up its mouth as up a kerb); walls solid to a man and a car.
+export const LANE = { x0: -21, x1: 60, z0: -531, z1: -431, amp: 14, hw: 3.2, verge: 1.2 };
+function hillLane(C, { chunkOf, note, trees }) {
+  const gi = C.lots.findIndex((l) => l.kind === 'garden' && Math.abs(l.x0 - LANE.x0) < 1 && Math.abs(l.z0 - LANE.z0) < 1);
+  if (gi < 0) return null;
+  const G0 = C.lots[gi];
+  // the garden and its house go (their walls with them)
+  const gone = new Set([G0, ...C.lots.filter((l) => l.house && l.x0 > G0.x0 && l.x1 < G0.x1 && l.z0 > G0.z0 && l.z1 < G0.z1)]);
+  for (let i = C.lots.length - 1; i >= 0; i--) if (gone.has(C.lots[i])) C.lots.splice(i, 1);
+  for (let i = C.walls.length - 1; i >= 0; i--) if (gone.has(C.walls[i].lot)) C.walls.splice(i, 1);
+  const { x0, x1, z0, z1, amp, hw, verge } = LANE, cx = (x0 + x1) / 2;
+  // the centre line, sampled
+  const N = 32, pts = [];
+  for (let k = 0; k <= N; k++) { const t = k / N; pts.push([cx + amp * Math.sin(t * Math.PI * 2), z0 - 1.5 + (z1 - z0 + 3) * t]); }
+  const nrm = (k) => { const a = pts[Math.max(0, k - 1)], b = pts[Math.min(N, k + 1)], dx = b[0] - a[0], dz = b[1] - a[1], L = Math.hypot(dx, dz); return [-dz / L, dx / L]; };
+  const off = (k, o) => { const n = nrm(k); return [pts[k][0] + n[0] * o, pts[k][1] + n[1] * o]; };
+  const box = (a, b, t, tag = 'wall') => { const dx = b[0] - a[0], dz = b[1] - a[1], L = Math.hypot(dx, dz); return { cx: (a[0] + b[0]) / 2, cz: (a[1] + b[1]) / 2, hx: L / 2 + t * 0.5, hz: t, angle: Math.atan2(-dz, dx), tag, laneWall: true, a, b }; };
+  const walls = [];
+  // the lane's walls, each side, from mouth to mouth
+  for (const s of [-1, 1]) for (let k = 1; k + 1 <= N - 1; k++) walls.push(box(off(k, s * (hw + verge)), off(k + 1, s * (hw + verge)), 0.25));
+  // the gardens' outer walls on the streets' sides (open at the lane's two mouths) and the east side
+  const mouthW = hw + verge + 0.3;
+  const run = (a, b) => { if (Math.hypot(b[0] - a[0], b[1] - a[1]) > 0.4) walls.push(box(a, b, 0.25)); };
+  for (const z of [z0 + 0.25, z1 - 0.25]) { const mx = pts[z === z0 + 0.25 ? 1 : N - 1][0]; run([x0, z], [mx - mouthW, z]); run([mx + mouthW, z], [x1, z]); }
+  run([x0 + 0.25, z0], [x0 + 0.25, z1]); run([x1 - 0.25, z0], [x1 - 0.25, z1]);
+  for (const w of walls) C.walls.push(w);
+  // a big house in each garden, clear of the lane
+  const houses = [[cx - 26, (z0 * 3 + z1) / 4, 11, 8], [cx + 22, (z0 + z1 * 3) / 4, 11, 8]];
+  for (const [hx, hz, ex, ez] of houses) {
+    const floors = 3, L = { kind: 'rect', x0: hx - ex, x1: hx + ex, z0: hz - ez, z1: hz + ez, h: 1.2 + floors * 3.8 + 2.5, floors, fh: 3.8, kit: 'hill', house: true, faces: { n: true, s: true, w: true, e: true }, district: 'hill', seed: Math.round(hx * 37 + hz * 11) & 0xffff, cx: hx, cz: hz, chunk: chunkOf(hx, hz), laneHouse: true };
+    C.lots.push(L);
+    C.walls.push({ cx: hx, cz: hz, hx: ex, hz: ez, angle: 0, tag: 'wall', lot: L });
+  }
+  // its globe lamps, alternately each side between the lane and its wall
+  for (let k = 3, s = 1; k < N - 1; k += 5, s = -s) {
+    const [x, z] = off(k, s * (hw + 0.55)), n = nrm(k);
+    C.lamps.push({ x, z, yaw: Math.atan2(n[1] * -s, -n[0] * s), kind: 'post', style: 'globe', hanging: true, street: 'hillrd', lane: true });
+    C.posts.push({ x, z, r: 0.2, tag: 'lamp' });
+    note(x, z, 0.5, 'lamp');
+  }
+  // the gardens' trees
+  for (let k = 0; k < 14; k++) {
+    const x = x0 + 4 + vhash(k, 1, 61) * (x1 - x0 - 8), z = z0 + 4 + vhash(k, 2, 62) * (z1 - z0 - 8);
+    const near = pts.some((p) => Math.hypot(p[0] - x, p[1] - z) < hw + verge + 3.5) || houses.some(([hx, hz, ex, ez]) => Math.abs(x - hx) < ex + 3 && Math.abs(z - hz) < ez + 3);
+    if (near) continue;
+    trees.push({ x, z, kind: k % 3 ? 'elm' : 'bare', v: vhash(x, z, 77), s: 1.0 + vhash(x, z, 78) * 0.3, chunk: chunkOf(x, z), street: 'hillrd' });
+    C.posts.push({ x, z, r: 0.3, tag: 'tree' });
+  }
+  return { id: 'hillrd', kind: 'lane', street: 'hillrd', name: 'HILL RD', pts, hw, verge, walls, x: cx, z: (z0 + z1) / 2, nx: 0, nz: -1, len: 0, h: 0, p: 0, chunk: chunkOf(cx, (z0 + z1) / 2) };
 }
 
 // the width of street face each unique wants

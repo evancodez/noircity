@@ -5,6 +5,8 @@ import { RNG } from '../../../util/rng.js';
 import { LETTER_FONT } from '../../../ui/lettering.js';
 import { lotWindows } from '../../../city/kits/facade.js';
 import { PAVE, CLS, NS, EW } from '../../../world/plan.js';
+import { accent } from '../../../render/accents.js';
+import { vhash } from '../../../world/streets.js';
 
 // The named places and the neon (lane O1): what tells a street from a
 // street at night. The theatres' marquees (a lit board, the name in black,
@@ -21,9 +23,13 @@ import { PAVE, CLS, NS, EW } from '../../../world/plan.js';
 // seen down a street from far off); one atlas, one material, one mesh of
 // faces, one of boards, one of bulbs.
 //   api: { signs: [{ text, x, z, n, kind, place }], doors: [{ x, z, nx, nz, place }] (the places' doors: O5's) }
+// [O1b] red: the registry's neonRed (accents.js) as the canvas draws it (its
+// linear (1, .035, .05) in sRGB), one blade in ten by the street's character
+const toCss = (c) => '#' + [c.r, c.g, c.b].map((v) => Math.round(255 * Math.pow(Math.min(1, v), 1 / 2.2)).toString(16).padStart(2, '0')).join('');
 const COL = {
   blue: { rim: '#4aa8ff', core: '#dff0ff' },
   white: { rim: '#cfcfcf', core: '#ffffff' },
+  red: { rim: toCss(accent('neonRed', { gain: 1 / 3 })), core: '#ffe2e2' },
 };
 const PX = 96, ATLAS = 2048;
 const BLADES = ['BAR', 'HOTEL', 'CHOP SUEY', 'PAWN', 'DANCING', 'LIQUORS', 'BILLIARDS', 'LUNCH', 'ROOMS', 'DRUGS', 'CAFE', 'TAILOR', 'GRILL', 'SHOES', 'RADIO', 'JEWELRY'];
@@ -84,7 +90,7 @@ export default {
       return p;
     };
     const box = (cx, cy, cz, sx, sy, sz, yaw) => new THREE.BoxGeometry(sx, sy, sz).rotateY(yaw).translate(cx, cy, cz);
-    const neonFaces = [], litFaces = [], darkFaces = [], boards = [], bulbs = [];
+    const neonFaces = [], litFaces = [], darkFaces = [], boards = [], bulbs = [], amberBulbs = [];
     const signs = [], doors = [];
     // the street face of a rect lot nearest a point: { a, b, n, mid, len }
     const facesOf = (L) => {
@@ -140,7 +146,8 @@ export default {
         litFaces.push(faceGeo(w, h, n[0], n[1], mx + n[0] * (d + 0.01), y, mz + n[1] * (d + 0.01), uvF));
         const uvS = boardFace('TONIGHT', d, h, true);
         for (const sd of [1, -1]) litFaces.push(faceGeo(d, h, tx * sd, tz * sd, cx + tx * sd * (w / 2 + 0.01), y, cz + tz * sd * (w / 2 + 0.01), uvS));
-        for (let u = -w / 2 + 0.4; u <= w / 2 - 0.3; u += 0.7) for (const k of [0.4, 0.8]) bulbs.push(new THREE.SphereGeometry(0.07, 6, 4).translate(mx + tx * u + n[0] * d * k, y - h / 2 - 0.22, mz + tz * u + n[1] * d * k));
+        // ([O1b] the marquee's bulbs a warm amber: the registry's neonAmber)
+        for (let u = -w / 2 + 0.4; u <= w / 2 - 0.3; u += 0.7) for (const k of [0.4, 0.8]) amberBulbs.push(new THREE.SphereGeometry(0.07, 6, 4).translate(mx + tx * u + n[0] * d * k, y - h / 2 - 0.22, mz + tz * u + n[1] * d * k));
         blade(mx + tx * (w / 2 - 1), mz + tz * (w / 2 - 1), n, Math.min(L.h - 3, 12), P.name.replace('THE ', ''), 'white', { big: true });
       } else if (P.kind === 'hotel') {
         blade(dx + tx * 3, dz + tz * 3, n, Math.min(L.h - 3, 10.5), 'HOTEL', 'blue', { big: true });
@@ -182,7 +189,9 @@ export default {
       const shop = lotWindows(L).find((w) => w.kind === 'shop' && w.nx === F.n[0] && w.nz === F.n[1]);
       if (!shop) continue;
       // (the draws as they were, so the blades stand where they stood: one in five blue)
-      const col = rng.chance(0.6) ? 'white' : rng.chance(0.5) ? 'blue' : 'white';
+      let col = rng.chance(0.6) ? 'white' : rng.chance(0.5) ? 'blue' : 'white';
+      // ([O1b] one in ten red, by the street: the Bowery's pawnshops more, the hill's none)
+      if (L.ch && vhash(L.cx, L.cz, 61) < (L.ch.red || 0)) col = 'red';
       const text = BLADES[Math.floor(rng.next() * BLADES.length)];
       blade(shop.x + (-F.n[1]) * shop.w * 0.5, shop.z + F.n[0] * shop.w * 0.5, F.n, 4.6 + text.replace(/ /g, '').length * 0.29, text, col);
       if (++nB >= 40) break;
@@ -227,6 +236,7 @@ export default {
     const bm = mk(boards, M.iron, 2);
     if (bm) bm.userData.noRay = false;
     mk(bulbs, M.bulb, 2);
+    mk(amberBulbs, new THREE.MeshBasicMaterial({ color: accent('neonAmber', { gain: 0.7 }) }), 2);   // [O1b]
     void CLS; void NS; void EW;
     return { group, signs, doors };
   },
