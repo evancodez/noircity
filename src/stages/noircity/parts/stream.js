@@ -151,7 +151,7 @@ export default {
       // the chunk's doors (every street door of its lots: shut now, they
       // rattle; O5 opens the places' - city:door)
       const doors = [];
-      for (const L of (index.get(key) || { lots: [] }).lots) for (const w of lotWindows(L)) if (w.kind === 'door') doors.push({ x: w.x, z: w.z, nx: w.nx, nz: w.nz, lot: L, place: L.place ? L.place.id : null, unique: w.unique || null });   // [O1b] (a unique's door: the firehouse's, the church's ...)
+      for (const L of (index.get(key) || { lots: [] }).lots) for (const w of lotWindows(L)) if (w.kind === 'door') doors.push({ x: w.x, z: w.z, nx: w.nx, nz: w.nz, lot: L, place: L.place ? L.place.id : null, unique: w.unique || null, w: w.w });   // [O1b] (a unique's door: the firehouse's, the church's ...)
       // ([O1b] the cold play's finding 6: a door is kept by where it stands,
       // not by its lot's chunk - a lot across a chunk line hid one door in four from doorNear)
       for (const d of doors) { const k = `${Math.floor(d.x / CHUNK)},${Math.floor(d.z / CHUNK)}`; if (!doorsAt.has(k)) doorsAt.set(k, new Set()); doorsAt.get(k).add(d); d.at = k; }
@@ -196,7 +196,13 @@ export default {
         for (let i = i0; i <= i1; i++) for (let j = j0; j <= j1; j++) {
           const S = doorsAt.get(`${i},${j}`);   // [O1b] (by where each door stands)
           if (!S) continue;
-          for (const d of S) { const e = Math.hypot(d.x - x, d.z - z); if (e < bd) { bd = e; best = d; } }
+          for (const d of S) {
+            // ([O1b] a wide door - a unique's: the firehouse's are 3 m - by its nearest point, not its middle)
+            let px = d.x, pz = d.z;
+            if (d.w > 1.4) { const a = Math.max(-d.w / 2 + 0.4, Math.min(d.w / 2 - 0.4, (x - d.x) * -d.nz + (z - d.z) * d.nx)); px = d.x - d.nz * a; pz = d.z + d.nx * a; }
+            const e = Math.hypot(px - x, pz - z);
+            if (e < bd) { bd = e; best = px === d.x && pz === d.z ? d : { ...d, x: px, z: pz, door: d }; }
+          }
         }
         return best ? { ...best, d: bd } : null;
       },

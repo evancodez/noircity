@@ -105,8 +105,9 @@ const B = {
     R.push([box(w + 0.2, 1.4, d).translate(0, y, d / 2), G.iron]);
     L.push([box(w, 1.0, 0.02).translate(0, y, d + 0.02), 0.9]);
     S.push(sign('cinema', 0, y, d + 0.04, w * 0.7, 0.8));
-    bulbs(L, -w / 2, w / 2, y - 0.82, d - 0.1, 0.4, 0.07, AMBER);
-    bulbs(L, -w / 2, w / 2, y + 0.82, d - 0.1, 0.4, 0.07, AMBER);
+    // ([O1b] after the critic: white bulbs, the blade's amber the RIALTO's colour - amber bulbs streaked the wet street, 4.5 % of a frame from the kerb)
+    bulbs(L, -w / 2, w / 2, y - 0.82, d - 0.1, 0.4, 0.07, 3);
+    bulbs(L, -w / 2, w / 2, y + 0.82, d - 0.1, 0.4, 0.07, 3);
     // the blade over it
     R.push([box(0.9, 4.2, 0.18).translate(w / 2 - 0.6, y + 3.4, 0.9), G.iron]);
     L.push([box(0.7, 3.9, 0.2).translate(w / 2 - 0.6, y + 3.4, 0.9), AMBER.map((c) => c * 0.25)]);
@@ -184,8 +185,9 @@ const B = {
   ballroom(u, R, L, S) {
     R.push([box(8, 1.5, 0.3).translate(0, 5.8, 0.2), G.iron]);
     S.push(sign('ballroom', 0, 5.8, 0.38, 7.2, 1.1));
-    bulbs(L, -3.9, 3.9, 6.75, 0.3, 0.35, 0.06, AMBER);
-    bulbs(L, -3.9, 3.9, 4.85, 0.3, 0.35, 0.06, AMBER);
+    // ([O1b] after the critic: white bulbs - amber ones streaked red in the wet street, 4.8 % of a frame from the kerb; Fifth St's colour is its red blades)
+    bulbs(L, -3.9, 3.9, 6.75, 0.3, 0.35, 0.06, 3);
+    bulbs(L, -3.9, 3.9, 4.85, 0.3, 0.35, 0.06, 3);
     // ([O1b] after the critic, M4: the door was a flat white card) the dance hall's doors: a glazed pair, lit within
     door(R, L, 0, 2.4, 2.6, 'pair');
   },
@@ -202,15 +204,16 @@ const B = {
   },
   mission(u, R, L, S) {
     R.push([box(5.6, 1.3, 0.2).translate(0, 4.6, 0.12), G.iron]);
-    L.push([box(5.2, 0.12, 0.05).translate(0, 4.15, 0.25), NEON_RED]);
-    L.push([box(5.2, 0.12, 0.05).translate(0, 5.05, 0.25), NEON_RED]);
+    // ([O1b] after the critic: white tubes, the red the cross's alone - two red tubes and their streaks were 3.4 % of a frame from the kerb)
+    L.push([box(5.2, 0.1, 0.05).translate(0, 4.15, 0.25), 2.4]);
+    L.push([box(5.2, 0.1, 0.05).translate(0, 5.05, 0.25), 2.4]);
     S.push(sign('mission', 0, 4.6, 0.24, 5.2, 0.78));
     L.push([box(0.14, 1.6, 0.06).translate(0, 6.6, 0.15), NEON_RED]);
     L.push([box(0.9, 0.14, 0.06).translate(0, 6.9, 0.15), NEON_RED]);
     door(R, L, 0, 1.4, 2.4, 'glazed');
   },
   seamen(u, R, L, S) {
-    S.push(sign('seamen', 0, 4.4, 0.12, 6.0, 0.9));
+    S.push(sign('seamen', 0, 4.4, 0.17, 6.0, 0.9));   // ([O1b] in front of its board: it was behind it)
     R.push([box(6.3, 1.1, 0.2).translate(0, 4.4, 0.05), G.iron]);
     R.push([new THREE.TorusGeometry(0.7, 0.09, 6, 16, Math.PI).rotateZ(Math.PI).translate(0, 6.2, 0.15), G.tin]);
     R.push([box(0.14, 1.6, 0.1).translate(0, 6.6, 0.15), G.tin]);
@@ -252,8 +255,8 @@ const B = {
   },
   chinese(u, R, L, S) {
     R.push([tube([V3(-u.len / 2 + 0.5, 4.4, 0.25), V3(0, 4.1, 0.6), V3(u.len / 2 - 0.5, 4.4, 0.25)], 0.012, 3, 12), G.iron]);
-    const n = Math.max(4, Math.floor(u.len / 1.8));
-    for (let k = 0; k < n; k++) { const x = -u.len / 2 + 1 + k * (u.len - 2) / (n - 1); L.push([new THREE.SphereGeometry(0.2, 10, 8).scale(1, 1.25, 1).translate(x, 3.9 - Math.sin((k / (n - 1)) * Math.PI) * 0.25, 0.4), NEON_RED]); }
+    const n = Math.max(4, Math.floor(u.len / 2.3));
+    for (let k = 0; k < n; k++) { const x = -u.len / 2 + 1 + k * (u.len - 2) / (n - 1); L.push([new THREE.SphereGeometry(0.17, 10, 8).scale(1, 1.25, 1).translate(x, 3.9 - Math.sin((k / (n - 1)) * Math.PI) * 0.25, 0.4), NEON_RED]); }
     R.push([box(0.9, 3.6, 0.16).translate(-u.len * 0.25, 6.4, 0.9), G.iron]);
     L.push([box(0.08, 3.3, 0.08).translate(-u.len * 0.25 - 0.3, 6.4, 0.99), NEON_RED]);
     L.push([box(0.08, 3.3, 0.08).translate(-u.len * 0.25 + 0.3, 6.4, 0.99), NEON_RED]);

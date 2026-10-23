@@ -15,6 +15,7 @@ export default async function o1b(api) {
   if (opts.mode === 'items') return items(api);
   if (opts.mode === 'pigeons') return pigeons(api);
   if (opts.mode === 'doors') return doors(api);
+  if (opts.mode === 'walkover') return walkover(api);
   return { err: 'no mode' };
 }
 
@@ -50,6 +51,56 @@ async function doors(api) {
   return { tried: out.length, straddling: out.filter((d) => d.straddles).length, bad: bad.length, badAt: bad.map((d) => d.at) };
 }
 
+// walkover  [O1b] after the critic (B1: walking at a thing with a man's gaze the
+//          prompt never came): for each kind, the thing of that kind nearest
+//          the anchor (opts.at; default the Grand Ave start), the eye set
+//          opts.from (5.5) m off it on its open side, facing it, the eye 7
+//          degrees down (as a man walks); W held (trusted) until the prompt
+//          `E  take` is up for that thing (a man stops when he sees it) or
+//          4.5 s; the distance it came at; E; the take
+async function walkover(api) {
+  const { js, sleep, log, shot } = api;
+  const at = api.opts.at || [-112.2, 30], from = api.opts.from || 5.5;
+  const out = [];
+  for (const kind of api.opts.kinds || ['cash', 'bottle', 'rounds', 'matchbook']) {
+    const set = await js(`(() => {
+      const P = G.stage.part('items'), S = G.stage, C = S.part('city').C;
+      const list = P.list.filter((q) => q.kind === ${JSON.stringify(kind)} && !q.taken).sort((a, b) => Math.hypot(a.x - ${at[0]}, a.z - ${at[1]}) - Math.hypot(b.x - ${at[0]}, b.z - ${at[1]}));
+      for (const it of list.slice(0, 8)) {
+        // (its open side: a line ${from} m long from it that nothing stands on)
+        for (let k = 0; k < 24; k++) {
+          const a = k / 24 * Math.PI * 2, dx = Math.sin(a), dz = Math.cos(a);
+          let clear = true;
+          for (let u = 0.5; u <= ${from} + 0.01 && clear; u += 0.5) { const p = { x: it.x + dx * u, y: 0, z: it.z + dz * u }; S.colliders.resolve(p, 0.32); if (Math.hypot(p.x - it.x - dx * u, p.z - it.z - dz * u) > 0.03 || C.inWater(p.x, p.z)) clear = false; }
+          if (!clear) continue;
+          const x = it.x + dx * ${from}, z = it.z + dz * ${from};
+          S.part('stream').warmAround(x, z);
+          N.controller.setPose(x, z, Math.atan2(dx, dz), -0.12);
+          window.__wo = { it, t0: G.time, at: null, owner: null };
+          return { kind: it.kind, x: +it.x.toFixed(2), z: +it.z.toFixed(2), from: [+x.toFixed(2), +z.toFixed(2)] };
+        }
+      }
+      return null;
+    })()`);
+    if (!set || set.__exc) { out.push({ kind, ok: false, why: 'no open approach ' + JSON.stringify(set) }); continue; }
+    await sleep(900);
+    await js(`(window.__woIv = setInterval(() => { const W = window.__wo, I = G.stage.part('items'); if (!W.at && I.target === W.it && G.hud.promptOwner === 'item') W.at = +Math.hypot(G.eye.x - W.it.x, G.eye.z - W.it.z).toFixed(2); }, 16), 1)`);
+    await api.keyDown('KeyW');
+    for (let t = 0; t < 4500; t += 50) { await sleep(50); if (await js('!!window.__wo.at')) break; }
+    await api.keyUp('KeyW');
+    await sleep(200);
+    const seen = await js(`(clearInterval(window.__woIv), { at: window.__wo.at, prompt: G.hud.promptShown, d: +Math.hypot(G.eye.x - window.__wo.it.x, G.eye.z - window.__wo.it.z).toFixed(2) })`);
+    if (api.opts.shots) await shot('walk_' + kind);
+    await press(api, 'KeyE');
+    await sleep(400);
+    const after = await js(`({ taken: window.__wo.it.taken, msg: G.hud.el.msg.textContent })`);
+    const ok = seen.at != null && seen.at >= 1.5 && after.taken;
+    out.push({ kind, ok, promptAt: seen.at, stoppedAt: seen.d, said: after.msg, from: set.from, item: [set.x, set.z] });
+    log(`  ${kind}: ${ok ? 'ok' : 'NOT OK'} - walking at it from ${from} m, the prompt at ${seen.at} m, stopped at ${seen.d} m, E: '${after.msg}'`);
+  }
+  return { items: out, bad: out.filter((r) => !r.ok).map((r) => r.kind), at: out.map((r) => r.promptAt) };
+}
+
 async function press(api, code) { await api.keyDown(code); await api.sleep(60); await api.keyUp(code); }
 
 async function items(api) {
@@ -80,20 +131,20 @@ async function items(api) {
     })()`);
     if (!at || at.__exc) { out.push({ kind, ok: false, why: 'none found ' + JSON.stringify(at) }); continue; }
     await sleep(700);
-    const before = await js(`({ money: G.save.money || 0, pocket: (G.player.weapons.get('revolver') || {}).pocket, bottles: G.save.flags.bottles || 0, matchbooks: Object.keys(G.save.flags.matchbooks || {}).length, inv: [...G.save.inventory], prompt: G.hud.promptShown, target: !!G.stage.part('items').target })`);
+    const before = await js(`({ money: G.save.money || 0, coat: (G.save.ammo || {}).revolver || 0, pocket: (G.player.weapons.get('revolver') || {}).pocket, bottles: G.save.flags.bottles || 0, matchbooks: Object.keys(G.save.flags.matchbooks || {}).length, inv: [...G.save.inventory], prompt: G.hud.promptShown, target: !!G.stage.part('items').target })`);
     await press(api, 'KeyE');
     await sleep(350);
-    const after = await js(`({ money: G.save.money || 0, pocket: (G.player.weapons.get('revolver') || {}).pocket, bottles: G.save.flags.bottles || 0, matchbooks: Object.keys(G.save.flags.matchbooks || {}).length, inv: [...G.save.inventory], taken: window.__o1bit.taken, msg: G.hud.el.msg.textContent, paper: G.stage.part('items').paper(), take: window.__o1bk.takes[window.__o1bk.takes.length - 1] || null, held: G.player.weapons.current || null })`);
+    const after = await js(`({ money: G.save.money || 0, coat: (G.save.ammo || {}).revolver || 0, pocket: (G.player.weapons.get('revolver') || {}).pocket, bottles: G.save.flags.bottles || 0, matchbooks: Object.keys(G.save.flags.matchbooks || {}).length, inv: [...G.save.inventory], taken: window.__o1bit.taken, msg: G.hud.el.msg.textContent, paper: G.stage.part('items').paper(), take: window.__o1bk.takes[window.__o1bk.takes.length - 1] || null, held: G.player.weapons.current || null })`);
     if (api.opts.shots) await shot('item_' + kind);
     let ok = before.prompt.startsWith('E') && before.prompt.includes('take');
     if (kind === 'cash') ok = ok && after.money > before.money;
-    if (kind === 'rounds') ok = ok && after.pocket > (isFinite(before.pocket) ? before.pocket : 0);
+    if (kind === 'rounds') ok = ok && after.coat > before.coat;
     if (kind === 'bottle') ok = ok && after.bottles === before.bottles + 1;
     if (kind === 'matchbook') ok = ok && after.matchbooks === before.matchbooks + 1;
     if (kind === 'paper') ok = ok && !!after.paper;
     if (kind === 'weapon') ok = ok && after.inv.includes('revolver') && after.held === 'revolver';
     if (kind !== 'paper') ok = ok && after.taken === true && after.msg.length > 0;
-    const r = { kind, ok, prompt: before.prompt, said: after.take && after.take.said, ms: after.take && after.take.ms, before: { money: before.money, pocket: before.pocket, bottles: before.bottles, matchbooks: before.matchbooks }, after: { money: after.money, pocket: after.pocket, bottles: after.bottles, matchbooks: after.matchbooks, held: after.held }, paper: after.paper, msg: after.msg };
+    const r = { kind, ok, prompt: before.prompt, said: after.take && after.take.said, ms: after.take && after.take.ms, before: { money: before.money, coat: before.coat, bottles: before.bottles, matchbooks: before.matchbooks }, after: { money: after.money, coat: after.coat, bottles: after.bottles, matchbooks: after.matchbooks, held: after.held }, paper: after.paper, msg: after.msg };
     out.push(r);
     log(`  ${kind}: ${ok ? 'ok' : 'NOT OK'} - prompt '${before.prompt}', said '${r.said || r.paper}', E to take ${r.ms} ms`);
   }

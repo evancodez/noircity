@@ -261,7 +261,7 @@ export default {
         if (ok) for (const r of usesNear(p.x, p.z)) {
           const sm = stage.smash && stage.smash.itemOf ? stage.smash.itemOf(r) : null;
           if (sm && sm.state && sm.state !== 'stand') continue;
-          const sc = lookAt(r.x, USE[r.kind].y + 0.15, r.z, 2.4);
+          const sc = lookAt(r.x, USE[r.kind].y + 0.15, r.z, 2.4 + (r.r ?? Math.max(r.hx || 0, r.hz || 0)));
           if (sc >= 0 && sc < bs) { bs = sc; use = r; best = null; }
         }
         const free = !hud.promptOwner || hud.promptOwner === 'item' || hud.el.prompt.style.display === 'none';
