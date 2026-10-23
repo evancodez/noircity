@@ -47,7 +47,7 @@ import { EdgeInk } from './ink.js';
 // slower: MEN[kind].getUp). All down: won. Me at none: down (the warning
 // 'One more and you're down.' a second first, always) - the fail, by the
 // place's onDown (a cop's fight: 'Hands up.'). Walking off: in the open
-// (no bounds) they follow; past 14 m 'He's coming.', past 30 m they give up
+// (no bounds) they follow; a run of 10 m 'He's coming.', of 30 m they give up
 // ('He's gone.') and the fight is left.
 export const CROWD = {
   me: { jab: 5, heavy: 15, counter: 1.5, back: 1.25, combo: [1, 1, 1.15, 1.3, 1.3], comboGap: 0.55, into: 6 },

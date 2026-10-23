@@ -262,7 +262,8 @@ function shootout(ctx, men = null) {
   // (the sedan across the lane: once on this stage; it stays, a car like the others)
   if (!S._o4car) { const cars = S.part('cars'); const car = cars.spawn({ pos: new G.camera.position.constructor(B.car.x, 0, B.car.z), yaw: B.car.yaw, lights: false, paint: 'paint' }); cars.cars.push(car); S._o4car = car; }
   C.setPose(B.at[0], B.at[1], B.at[2], -0.04);
-  C.setMode('gun', { crouch: true });
+  // (?c2pose=stand, shot mode only: the beat from standing - a review frame's look over the car)
+  C.setMode('gun', { crouch: !(G.shotMode && new URLSearchParams(location.search).get('c2pose') === 'stand') });
   G.eye.copy(G.camera.position);
   K.arm('revolver', { pocket: B.pocket });
   const beatName = men ? 'police' : 'street';
