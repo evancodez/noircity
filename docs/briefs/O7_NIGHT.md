@@ -69,9 +69,16 @@ film). BEGIN starts the night at the kerb. No CHAPTERS. A v2 save is
 dropped quietly.
 
 ## 4. The title, the radio and the city's sound
-- **The title**: `NOIR CITY` in the lettering over the live city from
-  the start's kerb in the rain (the base's title over the diner is the
-  pattern), BEGIN and CONTINUE, the red splatter accent.
+- **The title**: the rename is done on `main` (2bf5989, marked `[AD]`:
+  `index.html` and the title card say `NOIR CITY`, BEGIN drops into the
+  city when no `?start=` is given (`src/main.js` startAt), CHAPTERS is
+  hidden, the title's golden frame re-accepted). Yours: the title's own
+  backdrop (today it is still the old diner street: make it the live
+  city from the start's kerb in the rain, the lettering over it, the red
+  splatter accent; re-accept the title frame once, named), and what
+  CONTINUE means: a save of the old story (v2, a chapter id) must never
+  continue into the old chapters; it is dropped quietly and the title
+  offers BEGIN alone; CONTINUE appears only for a v3 city save.
 - **The radio** (`src/night/radio.js` on `Music.js`): in a car, the
   slots are stations (`public/music/<station>.(mp3|ogg|m4a)`: the user
   drops real jazz in; silent until then, with a needle hiss and the
