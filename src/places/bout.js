@@ -8,7 +8,7 @@ import { MANNERS } from '../cast/brawl/brain.js';
 // (the black, the rope lifted) and I am squared up in one corner, my man in
 // the other, the crowd at the ropes. Three levels, a man each (his hit
 // points and his manners grow); the purse is paid on the knock-out. Losing
-// is two downs (four at the first level, three at the second): the warning before the last
+// is its downs (four at the first level, three at the second, two at the third): the warning before the last
 // ("One more and you're down."), the black, the word, and I am outside the
 // ropes by the steps - nothing taken; the man offers the bout again.
 //   const run = boutStart(K, site, places)   run.offer()   run.step(dt)   run.busy   run.dispose()
