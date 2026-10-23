@@ -1,0 +1,27 @@
+{
+ "about": "[O2] The pad alone (?padfake=1; the keyboard and the mouse never used): X on BEGIN; the left stick walks me to the parked saloon ahead of the start's car; square at its door: the break-in, in; R2 drives it off up Grand Ave (the stick steers), the d-pad's left the horn; L2 stops it; square: out. node tools/play.mjs tools/plays/o2_pad.json",
+ "url": "/?mute=1&padfake=1&start=city&park=saloon",
+ "input": "pad",
+ "size": [1280, 800],
+ "out": "shots/o2/pad",
+ "steps": [
+  { "until": "G.state === 'title' && N.hud.titleShown", "timeout": 40000 },
+  { "wait": 1500 },
+  { "pad": { "b": ["x"], "secs": 0.12 }, "label": "the first press wakes the pad" },
+  { "wait": 400 },
+  { "pad": { "b": ["x"], "secs": 0.12 } },
+  { "until": "G.scenes.current && G.scenes.current.id === 'city' && !G.scenes.fadeK", "timeout": 45000 },
+  { "wait": 1000 },
+  { "drive": "tools/lib/o2_wheels.mjs", "mode": "park", "hands": "good",
+    "check": "D.inMs != null && D.kind === 'saloon' && D.drove > 40 && D.stats.broke === 1", "label": "the pad: walked to the saloon, square at its door, in, driven off" },
+  { "pad": { "b": ["left"], "secs": 0.15 } },
+  { "wait": 300 },
+  { "pad": { "v": { "l2": 1 }, "hold": true } },
+  { "until": "Math.abs(G.city.car.speed) < 0.5", "timeout": 8000 },
+  { "pad": { "v": { "l2": 0 } } },
+  { "wait": 900 },
+  { "pad": { "b": ["sq"], "secs": 0.15 } },
+  { "until": "!G.city.inCar", "timeout": 4000 },
+  { "expect": "!G.city.inCar && G.wheels.left.some((L) => L.kind === 'saloon')", "label": "out by square; the saloon kept where I left it" }
+ ]
+}

@@ -1,0 +1,33 @@
+{
+ "about": "[O2] The jank bench (brief O2 \u00a75): my coupe head on at 30 km/h into one of each kind of car (the lineup up the kerb) and into the tram; after each, no two cars inside each other, and S backs me off it. node tools/play.mjs tools/plays/o2_bench.json",
+ "url": "/?mute=1&start=city&lineup=1",
+ "size": [
+  1280,
+  800
+ ],
+ "out": "shots/o2/o2_bench",
+ "steps": [
+  {
+   "wait": 1500
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]",
+   "taken": "G.state !== 'title'",
+   "retries": 5,
+   "every": 4000
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'city' && G.scenes.fadeK < 0.05",
+   "timeout": 20000
+  },
+  {
+   "wait": 1000
+  },
+  {
+   "drive": "tools/lib/o2_wheels.mjs",
+   "mode": "bench",
+   "check": "D.worst < 0.3 && D.backedAll && D.hits.length >= 8",
+   "label": "every kind and the tram: nothing through, reverse always gets me out"
+  }
+ ]
+}

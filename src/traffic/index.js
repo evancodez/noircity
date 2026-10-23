@@ -55,6 +55,9 @@ export class Wheels {
     this.race = new Race(this);
     const T = stage.track;
     if (T) T.parked = this.parked.bodies;
+    // a shot of mine, a man down: the traffic near panics (the base's events)
+    game.on('shot', () => { if (this.game.stage === this.stage) this.alarm(this.game.camera.position, 1); });
+    game.on('hood:down', (e) => { if (this.game.stage === this.stage && e && e.hood) this.alarm(e.hood.pos, 1); });
     stage.colliders.bodies = () => this.V.list.concat(this.parked.bodies);
   }
 
@@ -91,6 +94,8 @@ export class Wheels {
       }
     }
     if (q && q.get('come') && car) this.comeT = 0.3;
+    // (&hunt=1: a police car 120 m back down the street, hunting me, its siren on)
+    if (q && q.get('hunt') && car) this.huntT = 0.5;
     // (&notraffic=1: the parked and the tram, no moving traffic - the unseen break-in's bed)
     if (q && q.get('notraffic')) this.traffic.on = false;
     if (q && q.get('lineup') && car) {
@@ -195,6 +200,7 @@ export class Wheels {
     damageStep(this, dt);
     sirenStep(this, dt);
     if (this.comeT != null) { this.comeT -= dt; if (this.comeT <= 0) { this.comeT = null; this.come(); } }
+    if (this.huntT != null) { this.huntT -= dt; if (this.huntT <= 0) { this.huntT = null; const c = this.game.city.car, b = c.world(-120, -5.7, new THREE.Vector3()); const man = { get pos() { return G.city.inCar ? G.city.car.pos : G.controller.pos; } }; const G = this.game; this.hunter = this.police(b.x, b.z, { target: man, siren: true }); } }
     // (&again=1: when that one is gone - taken, driven off - and I am on foot, the next comes)
     if (this.comeAgain && this.comeT == null && !this.traffic.cars.some((c) => c.stopBy) && this.game.city && !this.game.city.inCar && !this.hijack.fight && !this.game.brawl.active) this.comeT = 4;
     for (const x of this.extras) x.step(dt);

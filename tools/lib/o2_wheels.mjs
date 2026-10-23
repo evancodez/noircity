@@ -106,7 +106,7 @@ function prims({ js, turn, keyDown, keyUp, sleep, log }, H) {
         // (a car in my lane ahead: kept off it, stopped behind it)
         if (traffic) {
           const ah = await js(`(() => { const c = G.city.car, ca = Math.cos(c.yaw), sa = Math.sin(c.yaw); let best = 99; for (const o of G.wheels.bodies()) { if (o === c || !o.spec) continue; const dx = o.pos.x - c.pos.x, dz = o.pos.z - c.pos.z; if (Math.abs(dx) > 30 || Math.abs(dz) > 30) continue; const lx = dx * ca - dz * sa, lz = dx * sa + dz * ca; if (lx > 1 && lx < 28 && Math.abs(lz) < o.spec.halfW + (o.parked ? 0.45 : 1.25)) best = Math.min(best, lx - o.spec.halfL - 2.45); } return best; })()`);
-          if (ah < 22) target = Math.min(target, Math.max(0, (ah - 3) * 0.8));
+          if (ah < 30) target = Math.min(target, Math.max(0, (ah - 4) * 0.6));
           if (ah < 3) target = 0;
           if (ah < 4 && Math.abs(c.v) < 0.5) stuckT = 0;
         }
@@ -331,8 +331,11 @@ async function race(P, { js, sleep, log, shot }, H) {
 // inside each other (and a car inside a wall), the traffic come or gone in my
 // view, the longest wait of a car not at a red, the crashes.
 const DISTRICTS = [[-30, -115], [240, -30], [432, -200], [330, -420], [-300, -480], [-450, -100], [-450, 300], [-200, 330], [100, 432], [150, 200], [-112, 60]];
-async function drive(P, { js, sleep, log, shot }, H) {
+async function drive(P, { js, sleep, log, shot, send }, H) {
   const T0 = Date.now();
+  // the memory: the heap after a collection, the renderer's (geometries, textures, programs)
+  const mem = async () => { try { await send('HeapProfiler.collectGarbage'); } catch (e) { /* */ } await sleep(300); return js('({ heapMB: performance.memory ? +(performance.memory.usedJSHeapSize / 1048576).toFixed(1) : null, geo: N.renderer.info.memory.geometries, tex: N.renderer.info.memory.textures, prog: N.renderer.info.programs ? N.renderer.info.programs.length : null, cars: G.vehicles.list.length, parked: G.wheels.parked.bodies.length, figures: G.stage.cast.list.length })'); };
+  const memAt = [await mem()];
   await js(`(() => {
     if (window.__o2rec) return 1;
     const R = window.__o2rec = { n: 0, over50: 0, max: 0, last: performance.now(), dts: [], overlap: 0, pairs: [], inWall: 0, walls: [], on: true, cars: 0, maxCars: 0, nearMax: 0 };
@@ -378,9 +381,16 @@ async function drive(P, { js, sleep, log, shot }, H) {
       for (const [k, name] of Object.entries(shots)) if (idx >= +k && !done.has(k)) { done.add(k); await js('(window.__o2rec.on = false, 1)'); await shot(name); await js('(window.__o2rec.last = performance.now(), window.__o2rec.on = true, 1)'); }
       if (idx % 200 === 0 && idx !== P.lastLog) P.lastLog = idx, log(`  at ${idx}/${path.length} (${s.car.x.toFixed(0)}, ${s.car.z.toFixed(0)}) ${(s.car.v * 3.6).toFixed(0)} km/h`);
     } });
-  const R = await js(`(() => { const R = window.__o2rec, W = G.wheels; return { frames: R.n, over50: R.over50, maxMs: +R.max.toFixed(0), dts: R.dts, overlap: R.overlap, pairs: R.pairs, inWall: R.inWall, walls: R.walls, maxCars: R.maxCars, nearMax: R.nearMax, traffic: W.traffic.stats, tram: W.tram.stats, crashes: G.city.car.stats.crashes, knocks: (G.city.car.stats.log || []).length, damage: +G.city.car.damage.toFixed(2) }; })()`);
+  const R = await js(`(() => { const R = window.__o2rec, W = G.wheels; return { knockLog: (G.city.car.stats.log || []).slice(0, 12), frames: R.n, over50: R.over50, maxMs: +R.max.toFixed(0), dts: R.dts, overlap: R.overlap, pairs: R.pairs, inWall: R.inWall, walls: R.walls, maxCars: R.maxCars, nearMax: R.nearMax, traffic: W.traffic.stats, tram: W.tram.stats, crashes: G.city.car.stats.crashes, knocks: (G.city.car.stats.log || []).length, damage: +G.city.car.damage.toFixed(2) }; })()`);
   const last = await js(`(() => { const c = G.city.car, ca = Math.cos(c.yaw), sa = Math.sin(c.yaw); const near = G.wheels.bodies().filter((o) => o !== c && o.spec && Math.hypot(o.pos.x - c.pos.x, o.pos.z - c.pos.z) < 14).map((o) => { const dx = o.pos.x - c.pos.x, dz = o.pos.z - c.pos.z; return [o.kind, o.traffic ? 'T' : o.parked ? 'P' : '?', +(dx * ca - dz * sa).toFixed(1), +(dx * sa + dz * ca).toFixed(1), +(o.speed || 0).toFixed(1)]; }); return { at: [+c.pos.x.toFixed(1), +c.pos.z.toFixed(1), +c.yaw.toFixed(2)], v: +c.speed.toFixed(2), input: c.input, near }; })()`);
-  return { end: r.end, districts: [...visited], km: +(r.idx * 3 / 1000).toFixed(2), secs: (Date.now() - T0) / 1000, last, ...R };
+  memAt.push(await mem());
+  if (P.opts.again) {
+    // (round again: the same loop, the memory after it)
+    const r2 = await P.driveAlong(path.slice(0), { speed: 14, timeout: P.opts.timeout || 600000, traffic: true });
+    memAt.push(await mem());
+    R.again = r2.end;
+  }
+  return { end: r.end, districts: [...visited], secs: (Date.now() - T0) / 1000, last, mem: memAt, ...R };
 }
 // ---- latency: trusted key to the first frame of the act ---------------------------------------------------
 // W (the car moves), A (the wheel turns), SPACE (the handbrake on), Q (the horn

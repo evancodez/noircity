@@ -1,0 +1,34 @@
+{
+ "about": "[O2] The parked-car witness, unseen (brief O2 \u00a73, \u00a75): nobody about (no moving traffic): the break-in is logged (crime hijack) and not seen. node tools/play.mjs tools/plays/o2_witness_unseen.json",
+ "url": "/?mute=1&start=city&park=saloon&notraffic=1",
+ "size": [
+  1280,
+  800
+ ],
+ "out": "shots/o2/o2_witness_unseen",
+ "steps": [
+  {
+   "wait": 1500
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]",
+   "taken": "G.state !== 'title'",
+   "retries": 5,
+   "every": 4000
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'city' && G.scenes.fadeK < 0.05",
+   "timeout": 20000
+  },
+  {
+   "wait": 1000
+  },
+  {
+   "drive": "tools/lib/o2_wheels.mjs",
+   "mode": "witness",
+   "hands": "good",
+   "check": "D.log.length === 1 && D.log[0].kind === 'hijack' && D.log[0].seen === false",
+   "label": "unseen: the event logged, nothing seen"
+  }
+ ]
+}

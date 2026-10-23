@@ -111,6 +111,8 @@ export class Parked {
     this.shadow.layers.set(LAYER.FX); this.shadow.renderOrder = 3; this.shadow.userData.noRay = true; this.shadow.frustumCulled = false; this.shadow.count = 0;
     stage.scene.add(this.shadow);
     this.dealT = 0; this.dirty = true;
+    // (the rounds' world: the near ones' boxes, a mesh each not drawn - RayWorld reads its matrix)
+    this.proxies = new Map();
     this._last = { x: 1e9, z: 1e9, yaw: 0 };
   }
 
@@ -130,12 +132,27 @@ export class Parked {
     return b;
   }
 
+  // the rounds' solids: a proxy for each body within 75 m, out again past it
+  rays() {
+    const G = this.W.game, R = G.rays, eye = G.camera.position;
+    if (!R) return;
+    for (const [b, m] of this.proxies) if (!this.bodies.includes(b) || Math.hypot(b.pos.x - eye.x, b.pos.z - eye.z) > 85) { R.remove(m); this.proxies.delete(b); }
+    for (const b of this.bodies) {
+      if (this.proxies.has(b) || Math.hypot(b.pos.x - eye.x, b.pos.z - eye.z) > 75) continue;
+      const m = new THREE.Mesh(kindGeo(b.kind, 2).body);
+      m.userData.part = 'body'; m.userData.parked = b;
+      m.position.set(b.pos.x, 0, b.pos.z); m.rotation.y = b.yaw; m.updateMatrixWorld(true);
+      R.add(m);
+      this.proxies.set(b, m);
+    }
+  }
   // a parked car becomes a real one (taken): its record gone from the bays
   promote(b) {
     const r = b.rec;
     const i = this.bodies.indexOf(b);
     if (i >= 0) this.bodies.splice(i, 1);
     if (r) { r.gone = true; r.body = null; this.taken.add(r.bay); }
+    const px = this.proxies.get(b); if (px && this.W.game.rays) { this.W.game.rays.remove(px); this.proxies.delete(b); }
     this.dirty = true;
     const v = this.W.V.spawn(b.kind, { at: new THREE.Vector3(b.pos.x, 0, b.pos.z), yaw: b.yaw, lights: false, fleet: true, ink: true });
     v.driver = null;
@@ -147,6 +164,7 @@ export class Parked {
     this.dealT -= dt;
     if (this.dealT <= 0) {
       this.dealT = 0.5;
+      this.rays();
       // bodies for the records within reach; gone past DROP
       for (let i = this.bodies.length - 1; i >= 0; i--) {
         const b = this.bodies[i];
@@ -186,6 +204,8 @@ export class Parked {
           if (push) { b.pos.x += push[0] * 0.6; b.pos.z += push[1] * 0.6; o.pos.x -= push[0] * 0.4; o.pos.z -= push[1] * 0.4; o.vel.addScaledVector(b.vel, 0.3); b.vel.multiplyScalar(0.4); o.rockV += 0.3; }
         }
       }
+      const px = this.proxies.get(b);
+      if (px && (Math.abs(px.position.x - b.pos.x) > 0.05 || Math.abs(px.position.z - b.pos.z) > 0.05)) { px.position.set(b.pos.x, 0, b.pos.z); px.rotation.y = b.yaw; this.W.game.rays.refresh(px); }
       if (b.rockV || b.rockAmp > 0.01) { b.rockAmp = Math.max(0, b.rockAmp + b.rockV - dt * 1.6); b.rockV = 0; b.rock += dt; this.dirty = true; }
     }
     // the instances: rewritten when one moved or the eye turned or went on
