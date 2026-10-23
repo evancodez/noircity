@@ -1,0 +1,172 @@
+{
+ "about": "[cold play] The river: the coupe flat out down the Dock Rd slipway (in the seat by ?car=, 30 m back from the water), what the player sees on the way in, the black and the steps; then on foot off Pier 7's open end (set at the pier's root, walked by W down its side past the shed to the end and over).",
+ "url": "/?mute=1&start=city&car=0,392,-1.5708",
+ "size": [
+  1440,
+  900
+ ],
+ "out": "shots/cold/05",
+ "steps": [
+  {
+   "wait": 2500
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]",
+   "taken": "G.state !== 'title'",
+   "retries": 5,
+   "every": 4000
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'city' && G.scenes.fadeK < 0.05 && G.city.inCar",
+   "timeout": 25000
+  },
+  {
+   "wait": 800
+  },
+  {
+   "shot": "00_slip_ahead"
+  },
+  {
+   "down": "KeyW"
+  },
+  {
+   "until": "/river/i.test(document.body.innerText)",
+   "timeout": 8000
+  },
+  {
+   "shot": "01_warned"
+  },
+  {
+   "eval": "JSON.stringify({kmh: +(G.city.car.speed*3.6).toFixed(0), z: G.city.car.pos.z, txt: document.body.innerText.replace(/\\s+/g,' ').slice(0,80)})"
+  },
+  {
+   "until": "!!G.failing",
+   "timeout": 8000
+  },
+  {
+   "shot": "02_in"
+  },
+  {
+   "up": "KeyW"
+  },
+  {
+   "wait": 700
+  },
+  {
+   "shot": "03_black"
+  },
+  {
+   "eval": "JSON.stringify({why: G.lastFail && G.lastFail.why, warnedFor: G.lastFail && G.lastFail.warnedFor})"
+  },
+  {
+   "until": "!G.failing && G.scenes.beat === 'ashore'",
+   "timeout": 12000
+  },
+  {
+   "wait": 800
+  },
+  {
+   "shot": "04_ashore"
+  },
+  {
+   "eval": "(() => { const C = N.controller; G.stage.part('stream').warmAround(91, 450); C.setPose(91, 446, Math.PI, -0.05); return 1; })()"
+  },
+  {
+   "wait": 600
+  },
+  {
+   "shot": "05_pier_root"
+  },
+  {
+   "walk": [
+    [
+     100.5,
+     452
+    ],
+    [
+     100.5,
+     490
+    ]
+   ],
+   "timeout": 20000,
+   "stop": false
+  },
+  {
+   "eval": "(N.controller.pitch = -0.08, 1)"
+  },
+  {
+   "wait": 300
+  },
+  {
+   "shot": "06_pier_mid"
+  },
+  {
+   "look": [
+    1496,
+    0
+   ],
+   "steps": 10
+  },
+  {
+   "wait": 300
+  },
+  {
+   "shot": "06b_pier_back"
+  },
+  {
+   "look": [
+    -1496,
+    0
+   ],
+   "steps": 10
+  },
+  {
+   "walk": [
+    [
+     100.5,
+     512
+    ]
+   ],
+   "timeout": 15000,
+   "stop": false
+  },
+  {
+   "eval": "(N.controller.pitch = -0.08, 1)"
+  },
+  {
+   "wait": 300
+  },
+  {
+   "shot": "07_pier_end"
+  },
+  {
+   "eval": "JSON.stringify({pos: [N.controller.pos.x, N.controller.pos.z], txt: document.body.innerText.replace(/\\s+/g,' ').slice(0,80)})"
+  },
+  {
+   "down": "KeyW"
+  },
+  {
+   "until": "!!G.failing",
+   "timeout": 12000
+  },
+  {
+   "up": "KeyW"
+  },
+  {
+   "shot": "08_over"
+  },
+  {
+   "eval": "JSON.stringify({why: G.lastFail && G.lastFail.why, warnedFor: G.lastFail && G.lastFail.warnedFor})"
+  },
+  {
+   "until": "!G.failing && G.scenes.beat === 'ashore'",
+   "timeout": 12000
+  },
+  {
+   "wait": 800
+  },
+  {
+   "shot": "09_ashore2"
+  }
+ ]
+}
