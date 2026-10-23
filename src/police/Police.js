@@ -108,6 +108,8 @@ export class Police {
     if (level > h) this.setHeat(level, why);
     else { this.pressure += level * HEAT.press; if (this.pressure >= 1 && h < 5) { this.pressure = 0; this.setHeat(h + 1, why + '+'); } }
     if (at) this.lastSeen = { x: at.x, z: at.z, t: this.G.time };
+    // (they come to the place first: the clock to losing them waits for them, 30 s at most)
+    if (at && !this.seenNow) this.comeTo = { x: at.x, z: at.z, by: this.t + 30 };
     this.state = 'hunt';
     this.unseenT = 0;
     this.badges.set(this._heat, this.state);
@@ -340,7 +342,18 @@ export class Police {
       if (d < 95 || P.inView(L.x, L.z)) continue;
       // (clear of another car there)
       if (G.vehicles.list.some((v) => Math.hypot(v.pos.x - L.x, v.pos.z - L.z) < 8)) continue;
-      const pc = new PatrolCar(this, { x: L.x, z: L.z, yaw: L.heading, role, crew: role === 'riot' ? 3 : 2, kind: role === 'riot' ? 'truck' : 'sedan', crewKind: null });
+      // (facing the way it will go: its lane toward the first junction of its route to me)
+      let yaw = L.heading;
+      const rt = graph.route({ x: L.x, z: L.z }, E);
+      if (rt && rt.nodes.length) {
+        const e = L.edge, ns = rt.nodes, n = graph.nodeAt(ns[0] === e.a || ns[0] === e.b ? (ns.length > 1 && (ns[1] === e.a || ns[1] === e.b) ? ns[1] : ns[0]) : ns[0]);
+        const sx = Math.sign((n.x - L.x) * e.dx + (n.z - L.z) * e.dz) || 1;
+        const off = e.lanes[0] || 2, mx = e.ax + e.dx * L.s, mz = e.az + e.dz * L.s;
+        // (the lane on that way's right)
+        L.x = mx - e.dz * sx * off; L.z = mz + e.dx * sx * off;
+        yaw = Math.atan2(-(e.dz * sx), e.dx * sx);
+      }
+      const pc = new PatrolCar(this, { x: L.x, z: L.z, yaw, role, crew: role === 'riot' ? 3 : 2, kind: role === 'riot' ? 'truck' : 'sedan', crewKind: null });
       pc.mode = 'drive';
       this.cars.push(pc);
       this.chase(pc);
@@ -401,14 +414,20 @@ export class Police {
       this.event('stop', { role: pc.role, d: +d.toFixed(1) });
       return;
     }
+    // in a car, stopped or nearly: it pulls up across my nose (the box)
+    if (myCar && d < 22 && Math.abs(myCar.speed) < 4 && this.state === 'hunt' && pc.mode === 'drive' && (pc.pull || this.P.graph.lineOfSight(pc.pos.x, pc.pos.z, myCar.pos.x, myCar.pos.z))) {
+      if (!pc.pull) {
+        pc.pull = myCar.world(myCar.spec.halfL + 3.2, -1.6, new THREE.Vector3());
+        pc.driveDirect(pc.pull, { vmax: 7 });
+        pc.routeT = 0;
+      }
+      if ((d < 7.5 && myCar.local(pc.pos, new THREE.Vector3()).x > 1) || (pc.pilot && pc.pilot.done) || Math.hypot(pc.pos.x - pc.pull.x, pc.pos.z - pc.pull.z) < 2.5 || pc.stuckT > 2) { pc.park(); pc.mode = 'box'; pc.boxT = 0; pc.pull = null; }
+      return;
+    }
+    pc.pull = null;
     // re-routed as I move (every 2.5 s hunting, at its end searching), or when stuck
     const done = pc.pilot && pc.pilot.done;
     if (pc.routeT > (this.state === 'hunt' ? 2.5 : 9) || done || pc.stuckT > 4) { pc.stuckT = 0; this.chase(pc); }
-    // in a car: it comes up beside me (the box: the pilot aims a little ahead of my car)
-    if (myCar && d < 14 && Math.abs(myCar.speed) < 4 && pc.pilot) {
-      pc.pilot.o.vmax = 6;
-      if (d < 7.5) { pc.park(); pc.mode = 'box'; pc.boxT = 0; }
-    }
     if (pc.mode === 'box') {
       pc.boxT += dt;
       // (a moment stopped across my nose: the men out and at my doors)
@@ -590,7 +609,7 @@ export class Police {
     if (c.sprintT > W.sprint) c.blown = true; else if (c.sprintT <= 0) c.blown = false;
     const fast = c.blown ? 'run' : 'sprint';
     c.gait = run ? fast : 'hurry';
-    if (d > 2.0) {
+    if (d > 1.6) {
       // (straight at me where he can see me, by the pavements where he cannot)
       if (!c.path || !(c.repath > 0) || c.pi >= c.path.length) {
         c.repath = 0.6;

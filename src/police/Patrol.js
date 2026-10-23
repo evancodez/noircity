@@ -37,39 +37,52 @@ export function makeCar(police, { x, z, yaw, kind = 'sedan' }) {
 }
 
 // a road route as a line a car can follow: each street's lane to the right
-// of the way, the corners met (O1's graph: route() gives the junctions)
-export function lanePath(graph, from, to, { vmax = 19, laneK = 1 } = {}) {
+// of the way, the corners met (O1's graph: route() gives the junctions). The
+// first leg is the street I am on, from where I am toward the first junction
+// I go to (never back to the junction behind me and round again), the last
+// the target's street from the last junction to the target's point.
+export function lanePath(graph, from, to, { vmax = 19 } = {}) {
   const R = graph.route(from, to);
-  if (!R || R.nodes.length < 1) return null;
-  const pts = [];
-  const N = R.nodes.map((id) => graph.nodeAt(id));
+  if (!R || !R.nodes.length) return null;
+  let ids = R.nodes.slice();
+  const L0 = graph.nearestLane(from.x, from.z), Le = graph.nearestLane(to.x, to.z);
+  const same = (e, a, b) => e && ((a === e.a && b === e.b) || (a === e.b && b === e.a));
+  if (L0 && ids.length >= 2 && same(L0.edge, ids[0], ids[1])) ids.shift();
+  if (Le && ids.length >= 2 && same(Le.edge, ids[ids.length - 2], ids[ids.length - 1])) ids.pop();
+  const N = ids.map((id) => graph.nodeAt(id));
+  if (!N.length) return samplePath([[from.x, from.z], [to.x, to.z]], { vmax, aLat: 6.5, aBrake: 6 });
+  // (the projection of a point onto an edge's middle line)
+  const proj = (e, x, z) => { const u = Math.max(0, Math.min(e.len, (x - e.ax) * e.dx + (z - e.az) * e.dz)); return [e.ax + e.dx * u, e.az + e.dz * u]; };
+  const laneOf = (e) => (e && e.lanes && e.lanes[0]) || 2;
+  // a leg from p to q, offset to the right of its way by off
+  const leg = (p, q, off) => { const dx = q[0] - p[0], dz = q[1] - p[1], L = Math.hypot(dx, dz) || 1; const rx = -dz / L * off, rz = dx / L * off; return [[p[0] + rx, p[1] + rz], [q[0] + rx, q[1] + rz], L]; };
   const lines = [];
-  for (let i = 0; i + 1 < N.length; i++) {
-    const A = N[i], B = N[i + 1], e = R.edges[i];
-    if (!e) continue;
-    const dx = B.x - A.x, dz = B.z - A.z, L = Math.hypot(dx, dz) || 1;
-    const ux = dx / L, uz = dz / L, off = (e.lanes && e.lanes[0]) || 2 * laneK;
-    // (right of a heading (ux, uz) is (-uz, ux))
-    lines.push([[A.x - uz * off, A.z + ux * off], [B.x - uz * off, B.z + ux * off]]);
+  if (L0) {
+    const p0 = proj(L0.edge, from.x, from.z), n0 = N[0];
+    const l = leg(p0, [n0.x, n0.z], laneOf(L0.edge));
+    if (l[2] > 3) lines.push(l);
   }
-  // from me onto the first lane: the nearest lane's point
-  const L0 = graph.nearestLane(from.x, from.z);
-  pts.push([from.x, from.z]);
-  if (L0 && lines.length) pts.push([L0.x, L0.z]);
+  for (let i = 0; i + 1 < N.length; i++) {
+    const e = graph.edgeOf(N[i].id, N[i + 1].id);
+    lines.push(leg([N[i].x, N[i].z], [N[i + 1].x, N[i + 1].z], laneOf(e)));
+  }
+  if (Le) {
+    const nl = N[N.length - 1], pe = proj(Le.edge, to.x, to.z);
+    const l = leg([nl.x, nl.z], pe, laneOf(Le.edge));
+    if (l[2] > 3) lines.push(l);
+  }
+  const pts = [[from.x, from.z]];
   for (let i = 0; i < lines.length; i++) {
     const [a0, a1] = lines[i];
     if (i === 0) pts.push(a0);
-    if (i + 1 < lines.length) {
-      const [b0, b1] = lines[i + 1];
-      pts.push(meet(a0, a1, b0, b1));
-    } else pts.push(a1);
+    if (i + 1 < lines.length) pts.push(meet(a0, a1, lines[i + 1][0], lines[i + 1][1]));
+    else pts.push(a1);
   }
-  const Le = graph.nearestLane(to.x, to.z);
-  if (Le) pts.push([Le.x, Le.z]);
-  // (no point doubled back on itself: a car turning round in the road)
+  if (pts.length < 2) pts.push([to.x, to.z]);
+  // (no point doubled; none so near the last that the car turns on the spot)
   const clean = [pts[0]];
   for (let i = 1; i < pts.length; i++) if (Math.hypot(pts[i][0] - clean[clean.length - 1][0], pts[i][1] - clean[clean.length - 1][1]) > 1.5) clean.push(pts[i]);
-  if (clean.length < 2) clean.push([to.x, to.z]);
+  if (clean.length < 2) clean.push([to.x + 0.1, to.z + 0.1]);
   return samplePath(clean, { vmax, aLat: 6.5, aBrake: 6 });
 }
 function meet(a0, a1, b0, b1) {
@@ -109,6 +122,17 @@ export class PatrolCar {
     } else { this.pilot.setPath(path, this.v); this.pilot.o.vmax = vmax; this.pilot.o.pace = pace; }
     this.routeT = 0;
     return true;
+  }
+  // straight at a point near by (pulling up across my nose: no route round the block)
+  driveDirect(p, { vmax = 7 } = {}) {
+    const v = this.v, fx = Math.cos(v.yaw), fz = -Math.sin(v.yaw);
+    // (a bend: on along its nose a few metres, then to the point)
+    const path = samplePath([[v.pos.x, v.pos.z], [v.pos.x + fx * 3, v.pos.z + fz * 3], [p.x, p.z]], { vmax, aLat: 5, aBrake: 5 });
+    const V = this.G.vehicles;
+    if (!this.pilot) { this.pilot = new Pilot(path, { pace: 1, vmax, keep: 2, bodies: () => V.list.filter((o) => o !== this.v) }); }
+    else { this.pilot.setPath(path, this.v); this.pilot.o.vmax = vmax; }
+    this.v.driver = this.pilot;
+    this.routeT = 0;
   }
   park() {
     this.v.driver = null;

@@ -35,6 +35,7 @@ play('o3_punch_fists', "[O3] the walk-over arrest, the fists: a man punched befo
      [{"drive": D, "mode": "punch", "then": "fists", "tries": 1, "check": "D.ok", "label": "the cop's fist fight starts"},
       {"fight": {"timeout": 150000, "shots": {"fight": "G.brawl.active && G.brawl.T > 2"}, "expect": "F.time > 0"}},
       {"wait": 2500},
+      {"eval": "JSON.stringify({ fa: G.police.fists.active, fe: G.police.fists.ended, who: window.__o3c.mode, down: window.__o3c.down, n: (G._events.get('brawl:end') || []).length, B: { active: G.brawl.active, done: G.brawl.done, fin: G.brawl.finished }, cmode: G.controller.mode })"},
       {"eval": "JSON.stringify({ heat: G.police.heat, beat: G.scenes.beat, fail: G.lastFail, ev: G.police.events.slice(-6) })"},
       {"expect": "G.lastFail ? G.lastFail.why === 'Arrested.' && G.scenes.beat === 'station' : (window.__o3c && window.__o3c.down && G.police.heat >= 2)", "label": "the fight ends: won (he lies there, HEAT 2: a cop down) or lost (arrested)"}])
 play('o3_witness', "[O3] the witnesses: a punch nobody sees raises nothing; the same before a cop: HEAT 1 at once; before a civilian: he looks at me, runs to the call box, HEAT 1 when he gets there; one I catch gives it up: nothing.",

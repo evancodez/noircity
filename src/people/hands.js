@@ -32,7 +32,7 @@ export class StandinHands {
   }
   get gunOut() { const W = this.G.player.weapons; return W.current === 'revolver' && W.active && W.active.phase !== 'holster' && W.active.phase !== 'away'; }
   // the man in front of me within reach (a cone of the view)
-  inReach(r = 1.75) {
+  inReach(r = 1.9) {
     const G = this.G, E = G.eye;
     G.camera.getWorldDirection(_f);
     const fl = Math.hypot(_f.x, _f.z) || 1;

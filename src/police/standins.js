@@ -58,6 +58,8 @@ export function copFists(police) {
       F.endFn = F.endFn || ((e) => { F.ended = e || {}; });
       G.on('brawl:end', F.endFn);
       police.event('fists', { who: p.role, why });
+      // (the warning was the arrest's: the fight is the answer to it)
+      police.warn(null); police.arrestT = 0;
       return true;
     },
     stop() {
@@ -89,6 +91,8 @@ export function copFists(police) {
           p.knock(null, { why: 'fists' });
           p.fig.pos.y = G.stage.surfaceY(p.pos.x, p.pos.z);
           police.P.crime.emit(p.role === 'cop' ? 'assault' : 'punch', p.pos, 'player', { victim: p });
+          // (a cop put down: his whistle as he goes - the patrol car is on its way)
+          if (p.role === 'cop') { p.say('o3_whistle'); police.raise(2, G.eye, 'assault'); }
           if (p.role === 'gang' && p.gang) p.gang.onBeaten(p);
         }
         void E;

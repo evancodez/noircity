@@ -44,6 +44,9 @@
    "wait": 2500
   },
   {
+   "eval": "JSON.stringify({ fa: G.police.fists.active, fe: G.police.fists.ended, who: window.__o3c.mode, down: window.__o3c.down, n: (G._events.get('brawl:end') || []).length, B: { active: G.brawl.active, done: G.brawl.done, fin: G.brawl.finished }, cmode: G.controller.mode })"
+  },
+  {
    "eval": "JSON.stringify({ heat: G.police.heat, beat: G.scenes.beat, fail: G.lastFail, ev: G.police.events.slice(-6) })"
   },
   {

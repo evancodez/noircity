@@ -265,6 +265,14 @@ function copCostume(name, { h = 1.84, body = BROAD, coat = 0.012 } = {}) {
 export const LOOKS = {};
 const reg = (id, costume, info) => {
   costume.name = id;
+  // (a part's shade function may name a skin shade - 'coat', 'shirt': the
+  // tailor writes what it returns into the vertex colour, so the name is
+  // made its grey here; a name left as it was printed NaN, a glowing coat)
+  for (const g of costume.garments) {
+    if (typeof g.shade !== 'function') continue;
+    const f = g.shade, skin = costume.skin;
+    g.shade = (...a) => { const v = f(...a); return typeof v === 'string' ? (skin[v] ?? 0.012) : v; };
+  }
   if (!COSTUMES[id]) COSTUMES[id] = costume;
   LOOKS[id] = { kind: id, ...info };
 };

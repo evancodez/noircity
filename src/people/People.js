@@ -637,7 +637,7 @@ export class People {
       if (p.role === 'walker' && !this.stepWalker(p, dt)) continue;
       if (p.role === 'cop') this.police.stepCop(p, dt);
       if (p.role === 'gang') this.gangs.stepMan(p, dt);
-      if (p.mode === 'gone') continue;
+      if (p.mode === 'gone' || p.mode === 'fight') continue;
       p.step(dt);
     }
     this.stepCars(dt);

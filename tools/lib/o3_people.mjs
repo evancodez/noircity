@@ -86,6 +86,29 @@ async function waitFor(js, expr, ms = 20000, poll = 100) {
 }
 const state = (js) => js(`({ heat: G.police.heat, st: G.police.state, warn: G.hud.warnText, obj: G.hud.objectiveText, beat: G.scenes.beat, failing: G.failing ? G.failing.phase : null, lastFail: G.lastFail ? { why: G.lastFail.why, to: G.lastFail.to, warnedFor: G.lastFail.warnedFor, t: +G.lastFail.t.toFixed(1) } : null, t: +G.time.toFixed(1), gun: G.people.hands.hasGun, eye: [+G.eye.x.toFixed(1), +G.eye.z.toFixed(1)] })`);
 
+
+// a way away from the cop on the pavements: a corner 25 - 90 m off, away from
+// him (out of his line if there is one), the first corner not back toward him
+const WAY_AWAY = (r0 = 30, r1 = 85) => `(() => { const P = G.people, g = P.graph, E = G.eye, c = window.__o3c;
+  let best = null, bs = -1e9;
+  for (const n of P.pList) { const d = Math.hypot(n.x - E.x, n.z - E.z); if (d < ${r0} || d > ${r1}) continue;
+    const away = (n.x - E.x) * (E.x - c.pos.x) + (n.z - E.z) * (E.z - c.pos.z); if (away < 0) continue;
+    const hid = !g.lineOfSight(c.pos.x, c.pos.z, n.x, n.z); const s = (hid ? 60 : 0) + away / d * 20 - Math.abs(d - 55) * 0.2; if (s > bs) { bs = s; best = n; } }
+  if (!best) return [[E.x + (E.x - c.pos.x) * 2, E.z + (E.z - c.pos.z) * 2]];
+  const r = g.pavementRoute(E, best); const pts = r ? r.pts : [[best.x, best.z]];
+  while (pts.length > 1 && ((pts[0][0] - E.x) * (E.x - c.pos.x) + (pts[0][1] - E.z) * (E.z - c.pos.z)) < 0) pts.shift();
+  return pts; })()`;
+// run from him until out of his sight (a new way while he still sees me)
+async function runAway(api, legs = 8) {
+  const { js } = api;
+  for (let leg = 0; leg < legs; leg++) {
+    const w = await js(WAY_AWAY(leg ? 25 : 30, leg ? 70 : 85));
+    await goPath(api, w, { run: true, ms: 30000, until: 'G.police.state === "search" && G.police.unseenT > 4' });
+    if ((await js('G.police.state === "search" || G.police.heat === 0 || !!G.failing')) === true) return true;
+  }
+  return false;
+}
+
 // ---- the staging: the street round me emptied, the walker and the cop placed ---------------------
 // (on the pavement where I stand, looking along it: the walker a stride ahead
 // facing me, the cop `copD` metres on, in the same line of sight)
@@ -139,46 +162,22 @@ async function punch(api) {
     } else if (opts.then === 'run') {
       // he comes; I turn from him and run (Shift) down the street and round the first corner
       await waitFor(js, `window.__o3c && window.__o3c.pos.distanceTo(G.eye) < ${opts.runAt ?? 12}`, 30000);
-      const way = await js(`(() => { const P = G.people, g = P.graph, E = G.eye, c = window.__o3c;
-        // a pavement corner 40 - 90 m off, away from him and out of his line, and the way there
-        let best = null, bs = -1e9;
-        for (const n of P.pList) { const d = Math.hypot(n.x - E.x, n.z - E.z); if (d < 35 || d > 90) continue;
-          const away = (n.x - E.x) * (E.x - c.pos.x) + (n.z - E.z) * (E.z - c.pos.z); if (away < 0) continue;
-          const hid = !g.lineOfSight(c.pos.x, c.pos.z, n.x, n.z); const s = (hid ? 60 : 0) + away / d * 20 - Math.abs(d - 60) * 0.3; if (s > bs) { bs = s; best = n; } }
-        const r = g.pavementRoute(E, best); const pts = r ? r.pts : [[best.x, best.z]];
-        // (a first corner toward him is not taken: straight on away from him to the next)
-        while (pts.length > 1 && ((pts[0][0] - E.x) * (E.x - c.pos.x) + (pts[0][1] - E.z) * (E.z - c.pos.z)) < 0) pts.shift();
-        return pts; })()`);
-      T.way = way.length;
       const tRun = await js('G.time');
       await js(`(window.__o3tr = [], clearInterval(window.__o3trI), window.__o3trI = setInterval(() => { const V = G.controller.vel, c = window.__o3c; window.__o3tr.push([+G.time.toFixed(1), +Math.hypot(V.x, V.z).toFixed(1), c ? +c.pos.distanceTo(G.eye).toFixed(1) : null, c ? c.gaitNow : null, G.police.state]); if (window.__o3tr.length > 80) window.__o3tr.shift(); }, 400), 1)`);
-      // away along the pavements round the corner; while he still sees me, on again (a new way away from him)
-      let w = way;
-      for (let leg = 0; leg < 8; leg++) {
-        await goPath(api, w, { run: true, ms: 30000, until: 'G.police.state === "search" && G.police.unseenT > 4' });
-        if ((await js('G.police.state === "search" || G.police.heat === 0 || !!G.failing')) === true) break;
-        w = await js(`(() => { const P = G.people, g = P.graph, E = G.eye, c = window.__o3c;
-          let best = null, bs = -1e9;
-          for (const n of P.pList) { const d = Math.hypot(n.x - E.x, n.z - E.z); if (d < 25 || d > 70) continue;
-            const away = (n.x - E.x) * (E.x - c.pos.x) + (n.z - E.z) * (E.z - c.pos.z); if (away < 0) continue;
-            const hid = !g.lineOfSight(c.pos.x, c.pos.z, n.x, n.z); const s = (hid ? 60 : 0) + away / d * 20; if (s > bs) { bs = s; best = n; } }
-          if (!best) return [[E.x + (E.x - c.pos.x), E.z + (E.z - c.pos.z)]];
-          const r = g.pavementRoute(E, best); const pts = r ? r.pts : [[best.x, best.z]];
-          while (pts.length > 1 && ((pts[0][0] - E.x) * (E.x - c.pos.x) + (pts[0][1] - E.z) * (E.z - c.pos.z)) < 0) pts.shift();
-          return pts; })()`);
-      }
+      await runAway(api);
       const lost = await waitFor(js, `G.police.heat === 0`, 45000);
       T.after = await state(js);
       T.ok = lost && !(T.after.lastFail && T.after.lastFail.t >= tRun);
       T.trace = await js(`(clearInterval(window.__o3trI), window.__o3tr.slice(0, 30).map(e => e.join(':')).join(' '))`);
     } else if (opts.then === 'fists') {
       // stand: he comes; at arm's length the punch that starts the fight (the fight step plays it)
-      await waitFor(js, `window.__o3c && window.__o3c.pos.distanceTo(G.eye) < 2.4`, 40000);
+      await waitFor(js, `window.__o3c && Math.hypot(window.__o3c.pos.x - G.eye.x, window.__o3c.pos.z - G.eye.z) < 2.2`, 40000, 40);
       await api.turn(0, 0);
       const c = await js(`({ x: window.__o3c.pos.x, z: window.__o3c.pos.z })`);
       await turnTo(api, c.x, c.z, { pitch: -0.05 });
       await click(api);
       T.fight = await waitFor(js, `G.brawl.active`, 3000);
+      T.dbg = await js(`({ jab: G.people.hands.lastJab, st: G.people.hands.stats, d: +Math.hypot(window.__o3c.pos.x - G.eye.x, window.__o3c.pos.z - G.eye.z).toFixed(2), mode: G.controller.mode, warn: G.hud.warnText, fists: G.police.fists.active })`);
       T.ok = T.fight;
     }
     R.tries.push(T);
@@ -245,25 +244,24 @@ async function lose(api) {
   await stagePunch(api, { copD: 24 });
   await click(api); await sleep(320); await click(api);
   await waitFor(js, `G.police.heat >= 1`, 3000);
-  const way = await js(`(() => { const P = G.people, g = P.graph, E = G.eye, c = window.__o3c;
-    let best = null, bs = -1e9;
-    for (const n of P.pList) { const d = Math.hypot(n.x - E.x, n.z - E.z); if (d < 35 || d > 80) continue;
-      const away = (n.x - E.x) * (E.x - c.pos.x) + (n.z - E.z) * (E.z - c.pos.z); if (away < 0) continue;
-      const hid = !g.lineOfSight(c.pos.x, c.pos.z, n.x, n.z); const s = (hid ? 60 : 0) + away / d * 20 - Math.abs(d - 55) * 0.3; if (s > bs) { bs = s; best = n; } }
-    const r = g.pavementRoute(E, best); return r ? r.pts : [[best.x, best.z]]; })()`);
-  await goPath(api, way, { run: true, ms: 30000 });
+  await runAway(api);
   // the search shown: the badges breathe, the line says it
   const searched = await waitFor(js, `G.police.state === 'search'`, 20000);
   R.search = await js(`({ st: G.police.state, badges: document.querySelector('#o3heat') ? document.querySelector('#o3heat').dataset.state : null, obj: G.hud.objectiveText })`);
   if (opts.shots) await shot('search');
-  // found again: back out where the cop can see me (toward him), then away again
-  const c = await js(`({ x: window.__o3c.pos.x, z: window.__o3c.pos.z })`);
-  await goTo(api, c.x, c.z, { run: false, ms: 12000, until: `G.police.state === 'hunt'` });
+  // found again: out where he can see me again, at the far end of his sight (24 - 33 m), then away again
+  const spot = await js(`(() => { const P = G.people, g = P.graph, E = G.eye, c = window.__o3c;
+    let best = null, bd = 1e9;
+    for (const n of P.pList) { const dc = Math.hypot(n.x - c.pos.x, n.z - c.pos.z); if (dc < 24 || dc > 33 || !g.lineOfSight(c.pos.x, c.pos.z, n.x, n.z)) continue;
+      const d = Math.hypot(n.x - E.x, n.z - E.z); if (d < bd) { bd = d; best = n; } }
+    if (!best) return null; const r = g.pavementRoute(E, best); return r ? r.pts : [[best.x, best.z]]; })()`);
+  if (spot) await goPath(api, spot, { run: false, ms: 30000, until: `G.police.state === 'hunt'` });
+  await waitFor(js, `G.police.state === 'hunt'`, 6000);
   R.found = await js(`({ st: G.police.state, heat: G.police.heat })`);
   // and lost for good: away again and wait
-  await goPath(api, way.slice().reverse().slice(0, 1).concat(way.slice(-1)), { run: true, ms: 20000 });
+  await runAway(api);
   const cleared = await waitFor(js, `G.police.heat === 0`, 60000);
-  R.clear = await js(`({ heat: G.police.heat, obj: G.hud.objectiveText, ev: G.police.events.filter(e => ['search', 'found', 'clear'].includes(e.what)).map(e => e.what + '@' + e.t) })`);
+  R.clear = await js(`({ heat: G.police.heat, obj: G.hud.objectiveText, ev: G.police.events.filter(e => e.t > 10).map(e => e.what + '@' + e.t + (e.why ? ':' + e.why : '')), fail: G.lastFail })`);
   R.ok = searched && R.search.badges === 'search' && R.found.st === 'hunt' && R.found.heat >= 1 && cleared && R.clear.obj === 'Clear.';
   log(`lose: ${JSON.stringify(R)}`);
   return R;
@@ -313,10 +311,11 @@ async function driveAway(api, { vmax = 20, look = 1, react = 80, secs = 120, unt
   const { js, keyDown, keyUp, log, shot } = api;
   const held = new Set();
   const set = async (code, on) => { if (on && !held.has(code)) { held.add(code); await keyDown(code); } else if (!on && held.has(code)) { held.delete(code); await keyUp(code); } };
-  const plan = async () => js(`(() => { const g = G.people.graph, c = G.city.car, pol = G.police.cars.filter(p => p.mode !== 'leave');
-    // away from the nearest of them (or on along my way): a point 450 m off on the roads
-    let ax = Math.cos(c.yaw), az = -Math.sin(c.yaw);
-    if (pol.length) { let b = null, bd = 1e9; for (const p of pol) { const d = p.pos.distanceTo(c.pos); if (d < bd) { bd = d; b = p; } } const dx = c.pos.x - b.pos.x, dz = c.pos.z - b.pos.z, L = Math.hypot(dx, dz) || 1; ax = dx / L * 0.7 + ax * 0.3; az = dz / L * 0.7 + az * 0.3; }
+  let flip = false;
+  const plan = async (back = false) => js(`(() => { const g = G.people.graph, c = G.city.car, pol = G.police.cars.filter(p => p.mode !== 'leave');
+    // away from the nearest of them (or on along my way): a point 450 m off on the roads (the other way: back)
+    let ax = Math.cos(c.yaw) * ${back ? -1 : 1}, az = -Math.sin(c.yaw) * ${back ? -1 : 1};
+    if (pol.length && !${back}) { let b = null, bd = 1e9; for (const p of pol) { const d = p.pos.distanceTo(c.pos); if (d < bd) { bd = d; b = p; } } const dx = c.pos.x - b.pos.x, dz = c.pos.z - b.pos.z, L = Math.hypot(dx, dz) || 1; ax = dx / L * 0.7 + ax * 0.3; az = dz / L * 0.7 + az * 0.3; }
     const L = Math.hypot(ax, az) || 1; let tx = c.pos.x + ax / L * 450, tz = c.pos.z + az / L * 450;
     tx = Math.max(-560, Math.min(420, tx)); tz = Math.max(-520, Math.min(400, tz));
     const r = g.route({ x: c.pos.x, z: c.pos.z }, { x: tx, z: tz }); if (!r) return null;
@@ -325,7 +324,8 @@ async function driveAway(api, { vmax = 20, look = 1, react = 80, secs = 120, unt
     D.push(out[out.length - 1]);
     const Rr = []; for (let i = 0; i < D.length; i++) { const a = D[Math.max(0, i - 2)], b = D[Math.min(D.length - 1, i + 2)]; const dx = b[0] - a[0], dz = b[1] - a[1], L3 = Math.hypot(dx, dz) || 1; const S = g.streetAt(D[i][0], D[i][1]); const off = S && S.edge.el && S.d < 1 ? (S.edge.hw + 4.56) / 2 : 2.0; Rr.push([D[i][0] - dz / L3 * off, D[i][1] + dx / L3 * off]); }
     return Rr; })()`);
-  let path = await plan(), idx = 0, replanT = Date.now();
+  let path = null, idx = 0, replanT = Date.now();
+  path = await plan(false);
   const T0 = Date.now(), rec = { replans: 0, crashes: 0, maxKmh: 0, failed: false, km: 0 };
   let last = null, stuckT = 0, revUntil = 0, shotDone = false;
   while (Date.now() - T0 < secs * 1000) {
@@ -335,13 +335,15 @@ async function driveAway(api, { vmax = 20, look = 1, react = 80, secs = 120, unt
     if (s.u) { rec.done = true; break; }
     if (shots && s.block && !shotDone) { shotDone = true; await shot('roadblock'); }
     if (last) rec.km += Math.hypot(s.x - last.x, s.z - last.z) / 1000;
+    if (!rec.tr) rec.tr = [];
+    if (!rec.trT || Date.now() - rec.trT > 2000) { rec.trT = Date.now(); rec.tr.push([Math.round(s.x), Math.round(s.z), Math.round(s.v * 3.6), s.crashes, idx, path ? path.length : 0].join(',')); }
     last = s;
     rec.crashes = s.crashes; rec.maxKmh = Math.max(rec.maxKmh, Math.abs(s.v) * 3.6);
-    if (!path || idx >= path.length - 4 || Date.now() - replanT > 25000) { path = await plan(); idx = 0; replanT = Date.now(); rec.replans++; if (!path) { await sleepP(200); continue; } }
+    if (!path || idx >= path.length - 4 || Date.now() - replanT > 25000) { path = await plan(flip); idx = 0; replanT = Date.now(); rec.replans++; if (!path) { await sleepP(200); continue; } }
     let best = idx, bd = Infinity;
     for (let k = idx; k < Math.min(path.length, idx + 40); k++) { const d = Math.hypot(path[k][0] - s.x, path[k][1] - s.z); if (d < bd) { bd = d; best = k; } }
     idx = best;
-    if (bd > 25) { path = await plan(); idx = 0; replanT = Date.now(); rec.replans++; continue; }
+    if (bd > 25) { path = await plan(flip); idx = 0; replanT = Date.now(); rec.replans++; continue; }
     const lk = Math.min(path.length - 1, idx + Math.round((6 + Math.abs(s.v) * 0.6 * look) / 3));
     const [tx, tz] = path[lk];
     const fx = Math.cos(s.yaw), fz = -Math.sin(s.yaw);
@@ -350,9 +352,14 @@ async function driveAway(api, { vmax = 20, look = 1, react = 80, secs = 120, unt
     const h1 = Math.atan2(a1[1] - a0[1], a1[0] - a0[0]), h2 = Math.atan2(a2[1] - a1[1], a2[0] - a1[0]);
     const turnA = Math.abs(Math.atan2(Math.sin(h2 - h1), Math.cos(h2 - h1)));
     const want = Math.min(vmax, turnA > 0.9 ? 7 : turnA > 0.4 ? 11 : vmax);
-    // stuck: back off it
+    // stuck: back off it; stuck twice in a short while - another way (the route the other way round)
     stuckT = Math.abs(s.v) < 0.8 ? stuckT + react / 1000 : 0;
-    if (stuckT > 1.6) { revUntil = Date.now() + 1200; stuckT = 0; }
+    if (stuckT > 1.4) {
+      revUntil = Date.now() + 1300; stuckT = 0;
+      rec.stucks = (rec.stucks || 0) + 1;
+      if (Date.now() - (rec.lastStuck || 0) < 9000) { flip = !flip; path = await plan(flip); idx = 0; replanT = Date.now(); rec.replans++; }
+      rec.lastStuck = Date.now();
+    }
     if (Date.now() < revUntil) { await set('KeyW', false); await set('KeyS', true); await set('KeyA', ang < 0); await set('KeyD', ang > 0); await sleepP(react); continue; }
     await set('KeyS', s.v > want + 2.5);
     await set('KeyW', s.v < want);
@@ -363,7 +370,9 @@ async function driveAway(api, { vmax = 20, look = 1, react = 80, secs = 120, unt
   for (const c of [...held]) await set(c, false);
   rec.secs = +((Date.now() - T0) / 1000).toFixed(1);
   rec.km = +rec.km.toFixed(2);
-  log(`driveAway ${JSON.stringify(rec)}`);
+  log(`driveAway ${JSON.stringify({ ...rec, tr: undefined })}`);
+  log(`driveAway trace ${(rec.tr || []).join(' ')}`);
+  delete rec.tr;
   return rec;
 }
 
