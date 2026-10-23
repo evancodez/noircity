@@ -345,6 +345,20 @@ function ten(ctx) {
     G.scripts.splice(G.scripts.indexOf(f), 1);
     // (&ten=parts: a sedan's door and its bonnet lying in the lane under the el, on the
     // way north from my coupe - the parts' proof: a man stopped by one, a car slowed by it)
+    // (&ten=drive: a sedan up the lane under the el with its bonnet sprung, its door
+    // hanging, its front bumper loose and a front wheel wobbling, driven by a hand of
+    // its own - the strips of the parts in motion: ?pose= on the lane's side)
+    if (mode === 'drive') {
+      const v = G.vehicles.spawn('sedan', { at: V(-120.8, 0, 62), yaw: Math.PI / 2, lights: true, paint: 'paint' });
+      R.cars.push(v);
+      S.later(0.1, () => {
+        const d = v.smashD;
+        if (!d) return;
+        D.popHood(d, 1); D.hangDoor(d, -1); D.looseBumper(d, 0, -1); D.wobble(d, 0);
+        v.driver = { drive(car) { car.input.throttle = car.speedAbs < 11 ? 0.75 : 0; car.input.brake = 0; car.input.handbrake = 0; car.input.steer = (car.pos.x + 120.8) * 0.25 - Math.sin(car.yaw - Math.PI / 2) * 1.2; } };
+      });
+      return;
+    }
     if (mode === 'parts') {
       const pc = cars.find((c) => c.kind === 'sedan'), col = pc && pc.smashD ? D.paintOf(pc) : null, q = new THREE.Quaternion();
       S.spawnPart('cardoor', V(-119.6, 0.4, 44), q.clone(), V(0, 0, 0), null, { scale: V(0.91, 0.6 / 0.62, 1), color: col });

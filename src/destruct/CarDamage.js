@@ -67,7 +67,14 @@ export const PARTS = {
   sedan: { hood: { x0: 0.74, x1: 2.3, w: 0.58 }, door: { x0: -0.29, x1: 0.62, y0: 0.5, y1: 1.1, z: 0.7 }, bumper: { x: 2.42, y1: 0.64 }, wheel: { x: [1.55, -1.55], z: [0.78, 0.76], y: 0.375, r: 0.375 } },
   truck: { hood: { x0: 1.9, x1: 3.2, w: 0.5 }, door: { x0: 0.66, x1: 2.04, y0: 0.95, y1: 2.5, z: 1.05 }, bumper: { x: 3.22, y1: 0.7 }, wheel: { x: [2.4, -2.4], z: [0.95, 0.95], y: 0.46, r: 0.46 } },
 };
-const DOOR_GEO = new Map();
+const DOOR_GEO = new Map(), OPEN_GEO = new Map();
+let OPEN_MAT = null;
+function openingGeo(L, H) {
+  const k = L.toFixed(2) + 'x' + H.toFixed(2);
+  if (!OPEN_GEO.has(k)) OPEN_GEO.set(k, new THREE.BoxGeometry(L - 0.06, H - 0.06, 0.012));
+  return OPEN_GEO.get(k);
+}
+function openingMat() { return OPEN_MAT || (OPEN_MAT = new THREE.MeshLambertMaterial({ color: 0x5c5c5c, emissive: 0x161616 })); }
 function doorGeo(L, H) {
   const k = L.toFixed(2) + 'x' + H.toFixed(2);
   if (!DOOR_GEO.has(k)) DOOR_GEO.set(k, roundedBox(L, H, 0.045, 0.02, 2).translate(-L / 2, H / 2, 0));
@@ -80,7 +87,7 @@ let WRECK = null;
 const RIMS = new Map();
 function rimmed(mat) {
   if (!mat || !mat.isMaterial) return mat;
-  if (!RIMS.has(mat)) RIMS.set(mat, rimMaterial(mat, 0.05, false));
+  if (!RIMS.has(mat)) RIMS.set(mat, rimMaterial(mat, 0.08, false));
   return RIMS.get(mat);
 }
 
@@ -140,6 +147,7 @@ export class CarDamage {
     // [O6b] (the loose parts' rimmed twins of the cars' materials, drawn once with the rest)
     const M = st.M || {};
     const tiny = new THREE.PlaneGeometry(0.01, 0.01);
+    { const m = new THREE.Mesh(tiny, openingMat()); m.frustumCulled = false; m.userData.noRay = true; m.userData.inkFigure = true; g.add(m); }
     for (const k of ['paint', 'paintGrey', 'chrome', 'rubber', 'hubcap', 'whitewall', 'seam', 'black', 'iron']) {
       if (!M[k] || !M[k].isMaterial) continue;
       const m = new THREE.Mesh(tiny, rimmed(M[k])); m.frustumCulled = false; m.userData.noRay = true; m.userData.inkFigure = true; g.add(m);
@@ -550,7 +558,12 @@ export class CarDamage {
     const mat = (skin && skin.material) || this.stage.M.paint;
     const L = P.x1 - P.x0, H = P.y1 - P.y0;
     // the opening: black where the door was (a hair proud of the side)
-    this.append(D, 'dark', new THREE.BoxGeometry(L - 0.06, H - 0.06, 0.012).translate((P.x0 + P.x1) / 2, (P.y0 + P.y1) / 2, side * (P.z + 0.008)));
+    // (the opening: the cabin's inside, pale - black on a black car, an open door did not read;
+    // the seat's paper grey in the gap shows the door is open from across the street)
+    const op = new THREE.Mesh(openingGeo(L, H), openingMat());
+    op.position.set((P.x0 + P.x1) / 2, (P.y0 + P.y1) / 2, side * (P.z + 0.008));
+    op.userData.inkId = skin ? skin.userData.inkId : 1; op.userData.inkFigure = true; op.userData.noRay = true;
+    v.body.add(op); D.added.push(op);
     const pivot = new THREE.Group();
     pivot.position.set(P.x1, P.y0, side * (P.z + 0.03));
     const door = new THREE.Mesh(doorGeo(L, H), rimmed(mat));
