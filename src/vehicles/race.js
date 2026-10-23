@@ -67,12 +67,21 @@ export class Race {
     const row = Math.floor(i / 2), side = i % 2 ? 1 : -1;
     return { x: START.x - ux * (2 + row * 7) + rx * side * 1.9, z: START.z - uz * (2 + row * 7) + rz * side * 1.9, yaw: Math.atan2(-uz, ux) };
   }
+  // (waiting: one behind another at the kerb on the right, short of the line)
+  kerb(i) {
+    const p = this.path.pts[0], q = this.path.pts[6];
+    const fx = (q.x - p.x), fz = (q.z - p.z), l = Math.hypot(fx, fz);
+    const ux = fx / l, uz = fz / l, rx = -uz, rz = ux;
+    const S = this.W.graph.streetAt(START.x, START.z), e = S && S.edge;
+    const off = e ? (e.park || Math.max(3.2, (e.hw || 7) - 1.15)) : 4.2;
+    return { x: START.x - ux * (3 + i * 6.6) + rx * off, z: START.z - uz * (3 + i * 6.6) + rz * off, yaw: Math.atan2(-uz, ux) };
+  }
   setUp() {
     const W = this.W;
     for (let i = 0; i < 3; i++) {
-      const s = this.slot(i + 1);
+      const s = this.kerb(i);
       const v = W.carAt(s.x, s.z, RACE.kinds[i], { yaw: s.yaw, lights: true, look: [{ variant: 2, paint: 'paint', white: true }, { variant: 1, paint: 'paintGrey', white: false }, { variant: 1, paint: 'paintPale', white: true }][i] });
-      v.racer = true;
+      v.racer = true; v.parked = true;   // (at the kerb till the flag: a parked car to the traffic)
       if (v.model.meshes.bust) v.model.meshes.bust.visible = true;
       v.input.brake = 1; v.input.hold = 1;
       this.W.ownLamps(v);
@@ -169,7 +178,7 @@ export class Race {
       p.i = this.path.nearest(c.v.pos.x, c.v.pos.z, 0, 120); p.s = this.path.pts[p.i].s;
       // (each stops past the line at the end: the run on is the path's last stretch)
       p.o.stopAt = this.s0 + this.len + 60;
-      c.v.driver = p; c.v.input.hold = 0; c.pilot = p;
+      c.v.driver = p; c.v.input.hold = 0; c.pilot = p; c.v.parked = false;
     }
     this.mine = { s: 0, i: this.path.nearest(this.me.pos.x, this.me.pos.z, 0, 120), lap: 0, off: 0 };
     this.lastLap = 0;

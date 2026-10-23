@@ -1,6 +1,6 @@
 {
  "about": "[O2] The race's start, frame by frame (brief O2 §5): E at the line, the black, the grid, the flag up, the card, the flag down, the first metres. node tools/play.mjs tools/plays/o2_strip_race.json",
- "url": "/?mute=1&start=city&car=-446,262,1.5708",
+ "url": "/?mute=1&start=city&car=-448,262,1.5708",
  "size": [960, 600],
  "out": "shots/o2/strips/race",
  "steps": [

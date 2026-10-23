@@ -1,6 +1,6 @@
 {
  "about": "[O2] The race, good hands (brief O2 §4, §5): E at the line, the flag, three laps of the Yards loop by the keys; twice: after the first, round to the far side, the corner set again, back to the line. node tools/play.mjs tools/plays/o2_race_good.json",
- "url": "/?mute=1&start=city&car=-446,262,1.5708",
+ "url": "/?mute=1&start=city&car=-448,262,1.5708",
  "size": [
   1280,
   800
