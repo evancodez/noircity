@@ -296,7 +296,7 @@ export default {
           if (best.kind === 'paper') showPaper(G, newsOf(G).latest());
           else {
             best.taken = true; best.t = 0; best.flying = true;
-            if (ONCE[best.kind] && !best.dropped) { best.gone = true; G.save.flags.o1bTaken[spotKey(best)] = 1; }
+            if (ONCE[best.kind] && !best.dropped) { best.gone = true; (G.save.flags.o1bTaken || (G.save.flags.o1bTaken = {}))[spotKey(best)] = 1; }   // [manager, after O7] (a night's flags may lack the record)
             if (best.glint) best.glint.visible = false;
             flying.push({ it: best, k: 0, from: best.mesh.position.clone() });
             if (said) hud.message(said, 3.0);

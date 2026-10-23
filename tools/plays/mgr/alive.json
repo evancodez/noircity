@@ -1,0 +1,19 @@
+{
+ "about": "[manager] the alive test (the user's rule, OPEN_WORLD.md 'alive, not canned, not stiff'; O9's proof): stand a minute at three corners doing nothing - Grand Ave under the el, the market hall's door, the quay - and list what happened; the nonsense list: reactions with no cause in sight, reactions that outlive their cause. Run at every merge check; the counts reported. node tools/play.mjs tools/plays/mgr/alive.json",
+ "url": "/?mute=1&start=city",
+ "size": [1280, 800],
+ "out": "shots/mgr/alive",
+ "steps": [
+  { "wait": 1500 },
+  { "clickOn": "#title .opt[data-k=begin]", "taken": "G.state !== 'title'", "retries": 5, "every": 4000 },
+  { "until": "G.scenes.current && G.scenes.current.id === 'city' && G.scenes.fadeK < 0.05", "timeout": 25000 },
+  { "wait": 1000 },
+  { "eval": "(G.save.flags.taught = { city_in: true, city_drive: true, city_map: true, city_gun: true, o3_punch: true }, 1)" },
+  { "drive": "tools/lib/mgr_alive.mjs", "corner": "grand", "secs": 60, "check": "D.near.min > 0 && D.thingsN >= 6 && D.nonsense.withoutCause === 0 && D.nonsense.outlived === 0", "label": "alive at Grand Ave under the el: never empty, six things a minute, no nonsense" },
+  { "shot": "grand" },
+  { "drive": "tools/lib/mgr_alive.mjs", "corner": "hall", "secs": 60, "check": "D.near.min > 0 && D.thingsN >= 6 && D.nonsense.withoutCause === 0 && D.nonsense.outlived === 0", "label": "alive at the market hall's door: never empty, six things a minute, no nonsense" },
+  { "shot": "hall" },
+  { "drive": "tools/lib/mgr_alive.mjs", "corner": "quay", "secs": 60, "check": "D.near.min > 0 && D.thingsN >= 6 && D.nonsense.withoutCause === 0 && D.nonsense.outlived === 0", "label": "alive on the quay: never empty, six things a minute, no nonsense" },
+  { "shot": "quay" }
+ ]
+}

@@ -1,0 +1,29 @@
+{
+ "about": "[O6b critic] the parts as things, poked: the door and bonnet lying in the lane (&ten=parts): walk into the door, stand on it, E at it; look at it close; then the car over both at speed, and a look back at where they went.",
+ "url": "/?mute=1&start=smash.ten&ten=parts",
+ "size": [1440, 900],
+ "out": "shots/critic_o6b/parts",
+ "steps": [
+  { "wait": 2000 },
+  { "clickOn": "#title .opt[data-k=begin]", "taken": "G.state !== 'title'", "retries": 5, "every": 4000 },
+  { "until": "G.scenes.current && G.scenes.current.id === 'smash' && G.scenes.fadeK < 0.05 && G.city.cars.length >= 11", "timeout": 30000 },
+  { "wait": 3500 },
+  { "eval": "JSON.stringify({me:[N.controller.pos.x,N.controller.pos.z].map(v=>+v.toFixed(1)), parts:G.stage.smash.out.filter(i=>i.part).map(i=>[i.kind,i.state,+i.body.p.x.toFixed(2),+i.body.p.y.toFixed(2),+i.body.p.z.toFixed(2)])})" },
+  { "name": "walk into the door lying", "walk": "(() => { const d = G.stage.smash.out.find(i=>i.part && i.kind==='cardoor'); return [[d.body.p.x, d.body.p.z + 3], [d.body.p.x, d.body.p.z - 2]]; })()", "into": true, "timeout": 12000 },
+  { "eval": "(() => { const d = G.stage.smash.out.find(i=>i.part && i.kind==='cardoor'); return JSON.stringify({me:[N.controller.pos.x,N.controller.pos.y,N.controller.pos.z].map(v=>+v.toFixed(2)), door:[d.body.p.x,d.body.p.y,d.body.p.z].map(v=>+v.toFixed(2)), st:d.state, t:[...document.querySelectorAll('body *')].filter(e=>e.offsetParent&&e.children.length===0&&e.innerText&&e.innerText.trim()).map(e=>e.innerText.trim().slice(0,50)).join(' | ')}); })()" },
+  { "look": [0, 260], "steps": 5 },
+  { "wait": 400 },
+  { "shot": "p1_door_at_feet" },
+  { "key": "KeyE", "hold": 80 },
+  { "wait": 500 },
+  { "eval": "(() => { const d = G.stage.smash.out.find(i=>i.part && i.kind==='cardoor'); return JSON.stringify({door:[d.body.p.x,d.body.p.y,d.body.p.z].map(v=>+v.toFixed(2)), st:d.state, inCar:G.city.inCar, t:[...document.querySelectorAll('body *')].filter(e=>e.offsetParent&&e.children.length===0&&e.innerText&&e.innerText.trim()).map(e=>e.innerText.trim().slice(0,50)).join(' | ')}); })()" },
+  { "look": [0, -260], "steps": 5 },
+  { "name": "kick it: hold W into it 2 s more", "down": "KeyW" }, { "wait": 2000 }, { "up": "KeyW" },
+  { "eval": "(() => { const d = G.stage.smash.out.find(i=>i.part && i.kind==='cardoor'); return JSON.stringify({me:[N.controller.pos.x,N.controller.pos.y,N.controller.pos.z].map(v=>+v.toFixed(2)), door:[d.body.p.x,d.body.p.y,d.body.p.z].map(v=>+v.toFixed(2)), st:d.state}); })()" },
+  { "name": "fire at it", "look": [0, 200], "steps": 4 },
+  { "mouse": "click", "button": "left", "hold": 400 },
+  { "wait": 600 },
+  { "eval": "(() => { const d = G.stage.smash.out.find(i=>i.part && i.kind==='cardoor'); return JSON.stringify({door:[d.body.p.x,d.body.p.y,d.body.p.z].map(v=>+v.toFixed(2)), st:d.state, hits:d.hits||null}); })()" },
+  { "shot": "p2_shot_at" }
+ ]
+}

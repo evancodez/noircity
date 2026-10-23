@@ -26,6 +26,18 @@ export const NEAR = 130;
 const FAR_OUT = 190;
 const BUDGET_MS = 2.5;
 
+// [O6b] an awning of a street's canvas (city/kits/dress.js awning: its record) as a
+// thing of the destruction set: torn by a lorry's roof (its valance reaches 0.6 m
+// under its middle: a car never), torn by rounds; registered once
+function awningItem(S, rec) {
+  if (!rec || rec._it || !S.register) return;
+  const it = S.register(rec, 'awning', { merged: true, y: rec.y, w: rec.w, d: rec.d, wall: { nx: rec.nx, nz: rec.nz }, e: [rec.w / 2, 0.3, rec.d / 2], c: [0, 0, rec.d / 2] });
+  if (!it) return;
+  it.fp = { hx: rec.w / 2, hz: rec.d };
+  it.S = new THREE.Vector3(rec.w / 3, 1, rec.d / 1.5);
+  rec._it = true;
+}
+
 // position + normal + colour (+ uv when every piece has one), unindexed
 function mergeCol(list) {
   let n = 0;
@@ -102,12 +114,12 @@ export default {
 
     function* buildChunk(key) {
       const D = index.get(key) || { props: [], trees: [], lots: [] };
-      const out = { props: [], relief: [], board: [], lit: [] };
+      const out = { props: [], relief: [], board: [], lit: [], awn: [] };
       for (const r of D.props) for (const [g, c] of propPieces(r)) out.props.push([g, c, r]);
       yield;
       for (const t of D.trees) for (const p of treePieces(t)) out.relief.push(p);
       yield;
-      const R = { relief: out.relief, board: out.board, lit: out.lit };
+      const R = { relief: out.relief, board: out.board, lit: out.lit, awn: out.awn };
       for (const L of D.lots) { faceRelief(L, R); yield; }
       // the Hill's gates: a lantern lit on each pier (the cold play's finding 7: the Hill's streets a blank wall)
       for (const L of D.gardens || []) {
@@ -154,12 +166,23 @@ export default {
         // (each record's vertices in the merge: lane O6's set takes one out of it as it goes)
         m.userData.ranges = g.userData.ranges; m.userData.prop = 'merged';
       }
-      if (out.relief.length) mk(yield* mergeColSteps(out.relief), relief, 'relief', false);
+      const relM = out.relief.length ? mk(yield* mergeColSteps(out.relief), relief, 'relief', false) : null;
       if (out.board.length) mk(mergeUVs(out.board), boards, 'boards', false);
       if (out.lit.length) mk(yield* mergeColSteps(out.lit), lit, 'lit', false);
+      // [O6b] the awnings apart (lane O6b, after the merge with O1b's streets): solid to
+      // rounds, each record's range kept - the set tears one out of its merge (a lorry, a
+      // burst); drawn as the relief was (its material, its ink id: the frame unchanged)
+      if (out.awn.length) {
+        const g = yield* mergeColSteps(out.awn);
+        const m = mk(g, relief, 'awnings', true);
+        m.userData.ranges = g.userData.ranges; m.userData.prop = 'merged'; m.userData.pickKind = 'awning';
+        if (relM) m.userData.inkId = relM.userData.inkId;
+      }
       return meshes;
     }
     function attach(key, meshes) {
+      // [O6b] (the chunk's awnings made things of the set, once each)
+      if (stage.smash) for (const m of meshes) if (m.userData.bucket === 'awnings') for (const r of m.userData.ranges || []) awningItem(stage.smash, r.owner);
       // ([O6] what is out of its merge already is taken out of the new build: smash.chunkIn)
       if (stage.smash && stage.smash.chunkIn) stage.smash.chunkIn(key, meshes);
       for (const m of meshes) { group.add(m); if (!m.userData.noRay && stage.rays) stage.addSolid(m); stats.tris += m.geometry.getAttribute('position').count / 3; }

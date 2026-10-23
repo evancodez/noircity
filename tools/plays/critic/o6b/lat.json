@@ -1,0 +1,19 @@
+{
+ "about": "[O6b critic] the main verbs' latency on the bed (page clock, key press to the first frame that shows it): E at the coupe -> in the seat; W -> the car moving; then a ram: W into the sedan ahead -> the first frame its damage shows (a part loose or a dent).",
+ "url": "/?mute=1&start=smash.ten",
+ "size": [1280, 800],
+ "out": "shots/critic_o6b/lat",
+ "steps": [
+  { "wait": 2000 },
+  { "clickOn": "#title .opt[data-k=begin]", "taken": "G.state !== 'title'", "retries": 5, "every": 4000 },
+  { "until": "G.scenes.current && G.scenes.current.id === 'smash' && G.scenes.fadeK < 0.05 && G.city.cars.length >= 11", "timeout": 30000 },
+  { "wait": 1200 },
+  { "eval": "(window.__test = () => G.city.inCar, 1)" }, { "eval": "(() => { const W = window.__lat = { down: null, first: null, frames: 0 }; const test = window.__test; addEventListener('keydown', () => { if (W.down == null) W.down = performance.now(); }, { capture: true, once: true }); const tick = () => { if (W.down != null) { W.frames++; if (W.first == null && test()) W.first = performance.now(); } if (W.first == null && W.frames < 120) requestAnimationFrame(tick); }; requestAnimationFrame(tick); return 1; })()" },
+  { "key": "KeyE", "hold": 80 }, { "wait": 1500 }, { "eval": "(() => { const W = window.__lat; return JSON.stringify({ ms: W.first != null ? +(W.first - W.down).toFixed(1) : null, frames: W.frames }); })()" },
+  { "eval": "(window.__test = () => Math.abs(G.city.car.speed) > 0.05, 1)" }, { "eval": "(() => { const W = window.__lat = { down: null, first: null, frames: 0 }; const test = window.__test; addEventListener('keydown', () => { if (W.down == null) W.down = performance.now(); }, { capture: true, once: true }); const tick = () => { if (W.down != null) { W.frames++; if (W.first == null && test()) W.first = performance.now(); } if (W.first == null && W.frames < 120) requestAnimationFrame(tick); }; requestAnimationFrame(tick); return 1; })()" },
+  { "key": "KeyW", "hold": 600 }, { "wait": 800 }, { "eval": "(() => { const W = window.__lat; return JSON.stringify({ ms: W.first != null ? +(W.first - W.down).toFixed(1) : null, frames: W.frames }); })()" },
+  { "key": "KeyE", "hold": 80 }, { "wait": 800 },
+  { "eval": "(window.__test = () => !G.city.inCar, 1)" }, { "eval": "(() => { const W = window.__lat = { down: null, first: null, frames: 0 }; const test = window.__test; addEventListener('keydown', () => { if (W.down == null) W.down = performance.now(); }, { capture: true, once: true }); const tick = () => { if (W.down != null) { W.frames++; if (W.first == null && test()) W.first = performance.now(); } if (W.first == null && W.frames < 120) requestAnimationFrame(tick); }; requestAnimationFrame(tick); return 1; })()" },
+  { "key": "KeyE", "hold": 80 }, { "wait": 1500 }, { "eval": "(() => { const W = window.__lat; return JSON.stringify({ ms: W.first != null ? +(W.first - W.down).toFixed(1) : null, frames: W.frames }); })()" }
+ ]
+}

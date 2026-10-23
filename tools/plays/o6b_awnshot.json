@@ -1,0 +1,15 @@
+{
+ "about": "[O6b] after the critic (m8: city awnings could not be shot): the city's near build round Fifth St (the bed's own corner of the city), on foot with the Tommy gun, aim at the nearest shop awning on Fifth St's north side by trusted mouse moves, LMB bursts until it answers (tools/lib/o6b_damage.mjs awnshot): the canvas torn, it does not stand. node tools/play.mjs tools/plays/o6b_awnshot.json",
+ "url": "/?mute=1&start=smash",
+ "size": [1440, 900],
+ "out": "shots/o6b/awnshot",
+ "steps": [
+  { "wait": 1500 },
+  { "clickOn": "#title .opt[data-k=begin]", "taken": "G.state !== 'title'", "retries": 5, "every": 4000 },
+  { "until": "G.scenes.current && G.scenes.current.id === 'smash' && G.scenes.fadeK < 0.05", "timeout": 30000 },
+  { "wait": 1500 },
+  { "drive": "tools/lib/o6b_damage.mjs", "mode": "awnshot",
+    "check": "!D.err && D.after.state !== 'stand'",
+    "label": "a city awning shot by real input: torn, no longer standing" }
+ ]
+}

@@ -1,0 +1,15 @@
+{
+ "about": "[O6b] Memory flat over fifty cycles (brief O6b §3): the ten cars of the havoc's bed each given every part's damage at once (dents, the bonnet up and off, both doors, both bumpers, two wheels), the parts flying a moment, then every car put back whole (its damage dropped: its own builds, the cut parts, the opening's black disposed) and the set mended - fifty times; the renderer's geometries and textures, the scene's children, the set's items and the heap read every ten (tools/lib/o6b_damage.mjs memory). node tools/play.mjs tools/plays/o6b_memory.json",
+ "url": "/?mute=1&start=smash.ten",
+ "size": [1280, 800],
+ "out": "shots/o6b/memory",
+ "steps": [
+  { "wait": 1500 },
+  { "clickOn": "#title .opt[data-k=begin]", "taken": "G.state !== 'title'", "retries": 5, "every": 4000 },
+  { "until": "G.scenes.current && G.scenes.current.id === 'smash' && G.scenes.fadeK < 0.05 && G.city.cars.length >= 11", "timeout": 30000 },
+  { "wait": 1500 },
+  { "drive": "tools/lib/o6b_damage.mjs", "mode": "memory", "cycles": 50, "hold": 700,
+    "check": "D.reads.length === 6 && D.reads.slice(2).every((r) => r.geo === D.reads[1].geo && r.tex === D.reads[1].tex && r.items === D.reads[1].items && r.scene === D.reads[1].scene && r.cut === 0) && D.reads[5].heap < D.reads[1].heap * 1.25",
+    "label": "fifty cycles of every part on ten cars and back: geometries, textures, items and the scene flat, the heap with no trend" }
+ ]
+}
