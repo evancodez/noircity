@@ -121,6 +121,19 @@ export default {
             out.lit.push([new THREE.BoxGeometry(0.26, 0.44, 0.26).translate(gx + ox, y + 0.3, gz + s * 0.0), GATE_LAMP]);   // [O1b] (M2: the Hill's colour - its lanterns burn amber)
           }
         }
+        // ([O1b] after the critic, M2: the Hill's long walls on its north-south
+        // streets had no gate and no colour from the seat - a lantern on a pier
+        // of the wall every 18 m, amber, as the gates' are)
+        for (const [on, wx] of [[L.sides.w, L.x0], [L.sides.e, L.x1]]) {
+          if (!on) continue;
+          for (let z = L.z0 + 9; z < L.z1 - 8; z += 18) {
+            const y = 0.15 + L.wallH;
+            out.relief.push([new THREE.BoxGeometry(0.62, 0.5, 0.62).translate(wx, y + 0.1, z), 0.06]);
+            out.relief.push([new THREE.BoxGeometry(0.34, 0.06, 0.34).translate(wx, y + 0.42, z), 0.008]);
+            out.relief.push([new THREE.ConeGeometry(0.26, 0.2, 4).rotateY(Math.PI / 4).translate(wx, y + 1.02, z), 0.008]);
+            out.lit.push([new THREE.BoxGeometry(0.32, 0.5, 0.32).translate(wx, y + 0.72, z), GATE_LAMP]);
+          }
+        }
       }
       yield;
       const meshes = [];
