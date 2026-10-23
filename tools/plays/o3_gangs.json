@@ -1,5 +1,5 @@
 {
- "about": "[O3] the gangs: a three on a Tenements corner, three men not one; I walk up - the word; I push one (a jab) - the fist fight.",
+ "about": "[O3] the gangs: a three on a Tenements corner, three men not one; I walk up - the word; I push one (a jab) - the fist fight; the Docks' three draw when I draw at 15 m; the border fight (fists, then guns) seen from 30 m, the police car to it, no heat on me.",
  "url": "/?mute=1&start=city",
  "size": [
   1280,
@@ -27,9 +27,11 @@
    "drive": "tools/lib/o3_people.mjs",
    "mode": "gangs",
    "gang": "tenements",
+   "draw": true,
+   "war": true,
    "shots": true,
    "check": "D.ok",
-   "label": "the gang's word, the push, the fight"
+   "label": "the gang's word, the push, the fight; the Docks draw when I draw; the border fight seen, the police to it"
   }
  ]
 }

@@ -642,8 +642,9 @@ export class People {
           if (Math.abs(ax) < hl + 1.0 && Math.abs(az) < hw + 1.0) { tHit = tt; break; }
         }
         if (tHit == null) continue;
-        // (too fast to clear: a car over 15 m/s inside 0.3 s - the driver's doing)
-        if (tHit < 0.3 && sp > 15) continue;
+        // (too late to clear: a man needs a third of a second to see it and
+        // start; a car coming over 18 m/s gives him less than 0.6 s - the driver's doing)
+        if (tHit < 0.35 || (tHit < 0.6 && sp > 18)) continue;
         const side = lz >= 0 ? 1 : -1;
         let rx = s * side, rz = c * side;
         const T = this.stage.track, J = 2.6;

@@ -426,8 +426,45 @@ async function gangs(api) {
   await turnTo(api, m.x, m.z, { pitch: -0.05 });
   await click(api);
   R.fight = await waitFor(js, `G.brawl.active`, 2500);
+  // out of the fight (the black of its own, or I walk away): the Docks' three, and my gun out at 15 m
+  if (opts.draw) {
+    await waitFor(js, '!G.brawl.active && !G.failing', 120000);
+    await sleep(1500);
+    const D = await js(`(() => { const P = G.people, Gs = P.gangs; P.dbgClear(); P.hold = true;
+      const post = Gs.posts.find(p => p.gang === 'docks');
+      const T = Gs.three('docks', post.x, post.z, { post }); window.__o3d = T;
+      const n = P.nearestP(post.x + 16, post.z); G.controller.setPose(n.x, n.z, Math.atan2(-(post.x - n.x), -(post.z - n.z)), -0.05);
+      return { x: post.x, z: post.z, kinds: T.men.map(m => m.kind) }; })()`);
+    R.docks = D;
+    await sleep(1200);
+    await click(api, 'right', 150);
+    R.drew = await waitFor(js, `window.__o3d.hostile && window.__o3d.men.filter(m => m.armed).length >= 2`, 4000);
+    await sleep(1200);
+    if (opts.shots) await shot('gang_draw');
+    R.drawEv = await js(`G.police.events.filter(e => e.what === 'draw' || e.what === 'gang').map(e => e.what + ':' + (e.side || e.gang) + ':' + (e.kind || e.why))`);
+    // and away (the men stood down by the clear)
+    await js(`(G.people.dbgClear(), 1)`);
+  }
+  if (opts.war) {
+    await sleep(1000);
+    const W = await js(`(() => { const P = G.people, E = G.eye, C = G.controller; P.dbgClear(); P.hold = true;
+      const yaw = C.yaw, fx = -Math.sin(yaw), fz = -Math.cos(yaw);
+      const n = P.nearestP(E.x + fx * 30, E.z + fz * 30);
+      const W = P.gangs.war({ x: n.x, z: n.z }); window.__o3w2 = W; return W ? { x: +W.x.toFixed(0), z: +W.z.toFixed(0) } : null; })()`);
+    R.war = { at: W };
+    if (W) await turnTo(api, W.x, W.z, { pitch: -0.05 });
+    const fists = await waitFor(js, `window.__o3w2 && window.__o3w2.phase === 'fists'`, 20000);
+    await sleep(2500);
+    if (opts.shots) await shot('gang_war_fists');
+    const guns = await waitFor(js, `window.__o3w2 && window.__o3w2.phase === 'guns'`, 15000);
+    await sleep(4000);
+    if (opts.shots) await shot('gang_war_guns');
+    await sleep(8000);
+    R.war.end = await js(`({ phase: window.__o3w2.phase, shots: window.__o3w2.shots, down: [...window.__o3w2.A.men, ...window.__o3w2.B.men].filter(p => !p.standing).length, heat: G.police.heat, police: G.police.events.filter(e => e.what === 'gangwar').length, car: G.police.cars.some(pc => pc.scene) })`);
+    R.war.ok = fists && guns && R.war.end.shots > 0 && R.war.end.heat === 0 && R.war.end.police >= 1;
+  }
   log(`gangs: ${JSON.stringify(R)}`);
-  R.ok = R.word.ok && R.fight;
+  R.ok = R.word.ok && R.fight && (!opts.draw || R.drew) && (!opts.war || R.war.ok);
   return R;
 }
 
@@ -470,7 +507,37 @@ async function crowd(api) {
     if (opts.shots) await shot('crowd_car');
     R.car = await js(`({ modes: window.__o3k.map(p => p.mode), down: window.__o3k.filter(p => p.down).length, dashed: G.people.stats.dashes, hit: G.people.stats.hitByCar, through: window.__o3k.filter(p => p.standing && (() => { const c = G.city.car; const dx = p.pos.x - c.pos.x, dz = p.pos.z - c.pos.z, co = Math.cos(c.yaw), s = Math.sin(c.yaw); return Math.abs(dx * co - dz * s) < c.spec.halfL && Math.abs(dx * s + dz * co) < c.spec.halfW; })()).length, heat: G.police.heat })`);
   }
-  R.ok = R.walk.through === 0 && R.walk.inWall === 0 && R.walk.eyeIn === 0 && (!opts.car || R.car.through === 0);
+  if (opts.gun) {
+    // the gun out among them: six people round me, RMB - they run, with a cry; then a shot (LMB, at the sky): they scatter
+    await waitFor(js, '!G.failing', 15000);
+    if (await js('G.city.inCar')) { await tap(api, 'KeyE'); await waitFor(js, '!G.city.inCar', 5000); await sleep(800); }
+    await js(`(() => { const P = G.people, C = G.controller; P.dbgClear(); C.setPose(-108.6, 20, 0, 0.25); window.__o3g = [];
+      for (const [x, z] of [[-108.4, 12], [-107.2, 9], [-109.5, 15], [-108.0, 4], [-110.0, 24], [-107.4, 27]]) { const p = P.dbgWalker(x, z, Math.PI); p.mode = 'walk'; p.goTo([[x, z + 30]], { gait: 'stroll' }); window.__o3g.push(p); } return 1; })()`);
+    await sleep(800);
+    await click(api, 'right', 120);
+    await sleep(1500);
+    R.gun = await js(`({ flee: window.__o3g.filter(p => p.mode === 'flee').length, menace: G.crime.log.filter(r => r.kind === 'menace').length, heat: G.police.heat, out: G.people.hands.gunOut })`);
+    if (opts.shots) await shot('crowd_gun');
+    await sleep(300);
+    await click(api, 'left', 60);
+    await sleep(1500);
+    R.shot = await js(`({ flee: window.__o3g.filter(p => p.mode === 'flee' || p.mode === 'report').length, reporters: (G.crime.log.filter(r => r.kind === 'shot').slice(-1)[0] || {}).reporters, shots: G.crime.log.filter(r => r.kind === 'shot').length })`);
+  }
+  if (opts.fast) {
+    // a car too fast to clear: two men stepping into the road 45 m ahead, the car flat out
+    await waitFor(js, '!G.failing', 15000);
+    await js(`(() => { const P = G.people; P.dbgClear(); P.dbgAtCar(); return 1; })()`);
+    await sleep(300);
+    if (!(await js('G.city.inCar'))) { await tap(api, 'KeyE'); await sleep(1100); }
+    await api.keyDown('KeyW'); await sleep(2600);
+    await js(`(() => { const P = G.people, c = G.city.car, fx = Math.cos(c.yaw), fz = -Math.sin(c.yaw), rx = Math.sin(c.yaw), rz = Math.cos(c.yaw); window.__o3f = [];
+      for (const k of [-0.5, 0.5]) { const p = P.dbgWalker(c.pos.x + fx * 6 + rx * k, c.pos.z + fz * 6 + rz * k, 0); window.__o3f.push(p); } return +c.speed.toFixed(1); })()`);
+    await sleep(1500); await api.keyUp('KeyW');
+    await api.keyDown('KeyS'); await sleep(1800); await api.keyUp('KeyS');
+    if (opts.shots) await shot('crowd_hit');
+    R.fast = await js(`({ down: window.__o3f.filter(p => p.down).length, dead: window.__o3f.filter(p => p.dead).length, hit: G.people.stats.hitByCar, crimes: G.crime.log.slice(-3).map(r => r.kind) })`);
+  }
+  R.ok = R.walk.through === 0 && R.walk.inWall === 0 && R.walk.eyeIn === 0 && (!opts.car || R.car.through === 0) && (!opts.gun || (R.gun.flee >= 4 && R.gun.menace >= 1 && R.shot.flee >= 5)) && (!opts.fast || R.fast.down >= 1);
   log(`crowd: ${JSON.stringify(R)}`);
   return R;
 }

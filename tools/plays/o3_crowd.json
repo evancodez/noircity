@@ -1,5 +1,5 @@
 {
- "about": "[O3] the jank walk through the busiest crowd (Grand Ave under the el, the crowd at its cap): nobody through anybody, nobody in a wall, the eye never in a man; then my car into four people in the road: they clear or go down, never through.",
+ "about": "[O3] the jank walk through the busiest crowd (Grand Ave under the el, the crowd at its cap): nobody through anybody, nobody in a wall, the eye never in a man; my car into four people in the road: they clear, never through; the gun out among six: they run; a shot: they scatter; the car flat out at two stepping into the road: down.",
  "url": "/?mute=1&start=city",
  "size": [
   1280,
@@ -28,9 +28,11 @@
    "mode": "crowd",
    "min": 14,
    "car": true,
+   "gun": true,
+   "fast": true,
    "shots": true,
    "check": "D.ok",
-   "label": "the crowd: nothing through anything"
+   "label": "the crowd: nothing through anything; the gun out, they run; a shot, they scatter; a car too fast, down"
   }
  ]
 }
