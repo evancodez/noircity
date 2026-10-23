@@ -136,3 +136,12 @@ one street door in four gives no prompt and E does nothing, and your
 `city:door` depends on it. If O1b's fix has not reached main when you need
 it, fix it first yourself (a play that tries every door of a block) and
 mark it `[O5]`; take O1b's from main if it lands first.
+
+## From lane O4's merge (`docs/reports/O4.md`, "For other lanes"): yours
+O4 is in main (5e83e76). A place's things are offered to a brawl by their
+bounding-box middle: pass `{ kind, object, take(), available() }` in the
+crowd's start `cfg.things` (bottles, chairs). The gym's bouts and the gun
+shop's counter have their rules in `src/combat/` (`BOXER_LEVEL`, the price
+card): the rooms are yours, the rules are O4's. The hospital and the
+station are stand-in beats in O4's bed until your rooms exist. Take these
+at your fix pass (it merges main first) and drop your stand-ins for them.

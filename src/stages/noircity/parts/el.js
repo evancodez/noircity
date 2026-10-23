@@ -86,7 +86,12 @@ export default {
       if (!archCache.has(key)) archCache.set(key, P.archPlate.call(null, L, Hs, Math.min(Hs - 0.62, L * 0.42), 0.3, 0.22, lo ? 12 : 30, lo ? 1 : 2));
       return archCache.get(key);
     };
+    // [O1b] the performance audit's lever 2: the bays were a mesh each (~100,
+    // drawn in three passes); now merged by ~80 m of the line, as the deck is
+    // (a group's full build while its nearest bay is within FAR, its light one
+    // to SHOW): the same iron, a tenth of the draws
     const stations = [], columns = [];
+    const GROUP = 80, groups = new Map();
     for (let k = 0; k < st.length; k++) {
       const f = line.at(st[k], {});
       const A = V3(f.x + f.nx * hw, 0, f.z + f.nz * hw), B = V3(f.x - f.nx * hw, 0, f.z - f.nz * hw);
@@ -103,19 +108,26 @@ export default {
           if (L < 1 || L > 40) continue;
           parts.push(P.placeLocal.call(null, archOf(L, lo).clone(), V3(a.x, O.springY, a.z), d.normalize()));
         }
-        const m = new THREE.Mesh(merge(parts), M.iron);
-        m.castShadow = !lo; m.receiveShadow = true;
-        group.add(m);
-        return m;
+        return parts;
       };
-      const mesh = build(false), meshLo = build(true);
+      const gi = Math.floor(st[k] / GROUP);
+      if (!groups.has(gi)) groups.set(gi, { hi: [], lo: [], mids: [], s: st[k] });
+      const Gp = groups.get(gi);
+      Gp.hi.push(...build(false)); Gp.lo.push(...build(true)); Gp.mids.push(V3(f.x, 0, f.z));
+      columns.push({ x: A.x, z: A.z, r: 0.66, s: st[k] }, { x: B.x, z: B.z, r: 0.66, s: st[k] });
+      if (k % 5 === 4) yield;
+    }
+    for (const Gp of groups.values()) {
+      const mesh = new THREE.Mesh(merge(Gp.hi), M.iron), meshLo = new THREE.Mesh(merge(Gp.lo), M.iron);
+      mesh.castShadow = true; mesh.receiveShadow = true; meshLo.receiveShadow = true;
       const id = allocIronId();
       tagInk(mesh, id); tagInk(meshLo, id);
       meshLo.visible = false;
       meshLo.userData.noRay = true;
-      stations.push({ s: st[k], mesh, meshLo, mid: V3(f.x, 0, f.z), lod: 0 });
-      columns.push({ x: A.x, z: A.z, r: 0.66, s: st[k] }, { x: B.x, z: B.z, r: 0.66, s: st[k] });
-      if (k % 5 === 4) yield;
+      group.add(mesh, meshLo);
+      const mid = Gp.mids.reduce((a, b) => a.add(b), V3(0, 0, 0)).multiplyScalar(1 / Gp.mids.length);
+      stations.push({ s: Gp.s, mesh, meshLo, mid, mids: Gp.mids, lod: 0 });
+      yield;
     }
     // the deck: two plate girders and the slab, in chunks of ~80 m, the railing's rails on top
     const H = O.girderH, fw = 0.26, ft = 0.08, wt = 0.05, R = O.railH;
@@ -209,7 +221,9 @@ export default {
       update(camera) {
         const p = camera.position;
         for (const s of stations) {
-          const d = Math.hypot(s.mid.x - p.x, s.mid.z - p.z);
+          // ([O1b] a group of bays: its nearest bay's distance)
+          let d = Infinity;
+          for (const m of s.mids || [s.mid]) { const e = Math.hypot(m.x - p.x, m.z - p.z); if (e < d) d = e; }
           const lod = d > SHOW ? 2 : d > (s.lod ? FAR - 4 : FAR) ? 1 : 0;
           if (lod === s.lod && s._set) continue;
           s.lod = lod; s._set = true;

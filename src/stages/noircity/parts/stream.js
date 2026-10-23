@@ -4,6 +4,30 @@ import { nearLot, lotWindows } from '../../../city/kits/facade.js';
 import { paveGeo, kerbGeos, LAMP, placeLamp, placeProp, nameAtlas, nameBlades } from '../../../city/kits/street.js';
 import { CHUNK } from '../../../world/cityGen.js';
 import { mergeAll } from './street.js';
+
+// [O1b] mergeAll over steps (the performance audit's lever 3: a chunk's iron
+// bucket merged in one step ran 9 ms against the 4 ms budget): the pieces
+// made unindexed with their normals a few at a time, yielding every ~1.5 ms;
+// the copy into the merged buffers is one quick pass. The same geometry out.
+function* mergeSteps(list0) {
+  const list = [];
+  let t = performance.now();
+  for (const g0 of list0) {
+    const g = g0.index ? g0.toNonIndexed() : g0;
+    if (!g.getAttribute('normal')) g.computeVertexNormals();
+    list.push(g);
+    if (performance.now() - t > 1.5) { yield; t = performance.now(); }
+  }
+  void mergeAll;
+  let n = 0; for (const g of list) n += g.getAttribute('position').count;
+  const pos = new Float32Array(n * 3), nor = new Float32Array(n * 3);
+  let o = 0;
+  for (const g of list) { pos.set(g.getAttribute('position').array, o * 3); nor.set(g.getAttribute('normal').array, o * 3); o += g.getAttribute('position').count; }
+  const out = new THREE.BufferGeometry();
+  out.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+  out.setAttribute('normal', new THREE.BufferAttribute(nor, 3));
+  return out;
+}
 import { mergeUV } from './places.js';
 
 // The near city (lane O1): chunks of CHUNK m streamed round the eye. A chunk
@@ -46,6 +70,7 @@ export default {
     const MATS = { dark: M.black, trim: M.stoneTrim, iron: M.lampIron, tree: M.tower, pave: street.paveMat, kerb: M.kerb, signs: names.mat, cloth: clothMat };
     const SOLID = new Set(['pave', 'kerb', 'iron']);
     const loaded = new Map(), building = new Map();
+    const doorsAt = new Map();   // [O1b] chunk key (where the door stands) -> Set(door)
     const stats = { built: 0, dropped: 0, buildMs: 0, live: 0, lastMs: 0 };
 
     // [O6] what breaks (stage.props.smash): each prop's and each lamp's ranges
@@ -110,7 +135,7 @@ export default {
             o += n;
           }
         }
-        const m = new THREE.Mesh(b === 'signs' ? mergeUV(list) : mergeAll(list), MATS[b]);
+        const m = new THREE.Mesh(b === 'signs' ? mergeUV(list) : yield* mergeSteps(list), MATS[b]);   // [O1b] (merged over steps: one bucket was 9 ms in one)
         if (ranges) { m.userData.ranges = ranges; m.userData.prop = 'merged'; }
         for (const g of list) g.dispose();
         m.userData.inkId = city.idFor(key, k++);
@@ -132,13 +157,17 @@ export default {
       // the chunk's doors (every street door of its lots: shut now, they
       // rattle; O5 opens the places' - city:door)
       const doors = [];
-      for (const L of (index.get(key) || { lots: [] }).lots) for (const w of lotWindows(L)) if (w.kind === 'door') doors.push({ x: w.x, z: w.z, nx: w.nx, nz: w.nz, lot: L, place: L.place ? L.place.id : null });
+      for (const L of (index.get(key) || { lots: [] }).lots) for (const w of lotWindows(L)) if (w.kind === 'door') doors.push({ x: w.x, z: w.z, nx: w.nx, nz: w.nz, lot: L, place: L.place ? L.place.id : null, unique: w.unique || null, w: w.w });   // [O1b] (a unique's door: the firehouse's, the church's ...)
+      // ([O1b] the cold play's finding 6: a door is kept by where it stands,
+      // not by its lot's chunk - a lot across a chunk line hid one door in four from doorNear)
+      for (const d of doors) { const k = `${Math.floor(d.x / CHUNK)},${Math.floor(d.z / CHUNK)}`; if (!doorsAt.has(k)) doorsAt.set(k, new Set()); doorsAt.get(k).add(d); d.at = k; }
       loaded.set(key, { key, meshes, doors });
       stats.built++;
     }
     function drop(key) {
       const ch = loaded.get(key);
       if (!ch) return;
+      for (const d of ch.doors) { const S = doorsAt.get(d.at); if (S) { S.delete(d); if (!S.size) doorsAt.delete(d.at); } }   // [O1b]
       if (sm()) sm().chunkOut(key, ch.meshes);   // [O6]
       for (const m of ch.meshes) {
         group.remove(m);
@@ -171,12 +200,20 @@ export default {
         let best = null, bd = r;
         const i0 = Math.floor((x - r) / CHUNK), i1 = Math.floor((x + r) / CHUNK), j0 = Math.floor((z - r) / CHUNK), j1 = Math.floor((z + r) / CHUNK);
         for (let i = i0; i <= i1; i++) for (let j = j0; j <= j1; j++) {
-          const ch = loaded.get(`${i},${j}`);
-          if (!ch) continue;
-          for (const d of ch.doors) { const e = Math.hypot(d.x - x, d.z - z); if (e < bd) { bd = e; best = d; } }
+          const S = doorsAt.get(`${i},${j}`);   // [O1b] (by where each door stands)
+          if (!S) continue;
+          for (const d of S) {
+            // ([O1b] a wide door - a unique's: the firehouse's are 3 m - by its nearest point, not its middle)
+            let px = d.x, pz = d.z;
+            if (d.w > 1.4) { const a = Math.max(-d.w / 2 + 0.4, Math.min(d.w / 2 - 0.4, (x - d.x) * -d.nz + (z - d.z) * d.nx)); px = d.x - d.nz * a; pz = d.z + d.nx * a; }
+            const e = Math.hypot(px - x, pz - z);
+            if (e < bd) { bd = e; best = px === d.x && pz === d.z ? d : { ...d, x: px, z: pz, door: d }; }
+          }
         }
         return best ? { ...best, d: bd } : null;
       },
+      // [O1b] a door that is no lot's (the el's stair gates): kept for good
+      addDoor(d) { const k = `${Math.floor(d.x / CHUNK)},${Math.floor(d.z / CHUNK)}`; if (!doorsAt.has(k)) doorsAt.set(k, new Set()); doorsAt.get(k).add(d); d.at = k; d.fixed = true; return d; },
       // every chunk round a point built now (a start, a jump: before the first frame)
       warmAround(x, z, r = NEAR) {
         for (const { key } of want(x, z, r)) {

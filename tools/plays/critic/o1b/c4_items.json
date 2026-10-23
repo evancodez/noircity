@@ -1,0 +1,243 @@
+{
+ "about": "[O1b critic] the items as a player meets them: brought within 4 m of a matchbook, a bottle, a roll of cash, a box of rounds, seen from there, walked to by real input, E (the prompt before, the count after, press-to-take in ms)",
+ "url": "/?mute=1&start=city",
+ "size": [
+  1440,
+  900
+ ],
+ "out": "shots/o1bc/items",
+ "steps": [
+  {
+   "wait": 2000
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]",
+   "taken": "G.state !== 'title'",
+   "retries": 5,
+   "every": 4000
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'city' && G.scenes.fadeK < 0.05",
+   "timeout": 30000
+  },
+  {
+   "look": [
+    1,
+    0
+   ],
+   "steps": 1
+  },
+  {
+   "eval": "(N.controller.pos.x=-147.5, N.controller.pos.z=47.6, 1)"
+  },
+  {
+   "wait": 2500
+  },
+  {
+   "eval": "(() => { const p = G.camera.position; const dx = -147.5-p.x, dy = 0.3-p.y, dz = 51.6-p.z; N.controller.yaw = Math.atan2(-dx, -dz); N.controller.pitch = Math.atan2(dy, Math.hypot(dx, dz)); return 1; })()"
+  },
+  {
+   "wait": 300
+  },
+  {
+   "shot": "match_4m"
+  },
+  {
+   "walk": [
+    [
+     -147.5,
+     50.300000000000004
+    ]
+   ],
+   "timeout": 8000, "into": true
+  },
+  {
+   "eval": "(() => { const p = G.camera.position; const dx = -147.5-p.x, dy = 0.3-p.y, dz = 51.6-p.z; N.controller.yaw = Math.atan2(-dx, -dz); N.controller.pitch = Math.atan2(dy, Math.hypot(dx, dz)); return 1; })()"
+  },
+  {
+   "wait": 300
+  },
+  {
+   "eval": "JSON.stringify({pos:[+N.controller.pos.x.toFixed(1),+N.controller.pos.z.toFixed(1)], prompt: (G.hud.el.prompt.style.display!=='none') ? G.hud.el.prompt.innerText.replace(/\\n/g,' ') : null, taken: G.stage.part('items').taken.length, money: G.save.money||0, msg: document.body.innerText.replace(/\\s+/g,' ').slice(0,160)})"
+  },
+  {
+   "eval": "(window.__t0 = performance.now(), window.__n0 = G.stage.part('items').taken.length, 1)"
+  },
+  {
+   "key": "KeyE",
+   "hold": 70
+  },
+  {
+   "until": "G.stage.part('items').taken.length > window.__n0",
+   "timeout": 3000
+  },
+  {
+   "eval": "JSON.stringify({ms: Math.round(performance.now()-window.__t0)})"
+  },
+  {
+   "wait": 200
+  },
+  {
+   "eval": "JSON.stringify({pos:[+N.controller.pos.x.toFixed(1),+N.controller.pos.z.toFixed(1)], prompt: (G.hud.el.prompt.style.display!=='none') ? G.hud.el.prompt.innerText.replace(/\\n/g,' ') : null, taken: G.stage.part('items').taken.length, money: G.save.money||0, msg: document.body.innerText.replace(/\\s+/g,' ').slice(0,160)})"
+  },
+  {
+   "eval": "(N.controller.pos.x=-71.3, N.controller.pos.z=21, 1)"
+  },
+  {
+   "wait": 2500
+  },
+  {
+   "eval": "(() => { const p = G.camera.position; const dx = -67.3-p.x, dy = 0.15-p.y, dz = 21-p.z; N.controller.yaw = Math.atan2(-dx, -dz); N.controller.pitch = Math.atan2(dy, Math.hypot(dx, dz)); return 1; })()"
+  },
+  {
+   "wait": 300
+  },
+  {
+   "shot": "bottle_4m"
+  },
+  {
+   "walk": [
+    [
+     -68.6,
+     21.0
+    ]
+   ],
+   "timeout": 8000, "into": true
+  },
+  {
+   "eval": "(() => { const p = G.camera.position; const dx = -67.3-p.x, dy = 0.15-p.y, dz = 21-p.z; N.controller.yaw = Math.atan2(-dx, -dz); N.controller.pitch = Math.atan2(dy, Math.hypot(dx, dz)); return 1; })()"
+  },
+  {
+   "wait": 300
+  },
+  {
+   "eval": "JSON.stringify({pos:[+N.controller.pos.x.toFixed(1),+N.controller.pos.z.toFixed(1)], prompt: (G.hud.el.prompt.style.display!=='none') ? G.hud.el.prompt.innerText.replace(/\\n/g,' ') : null, taken: G.stage.part('items').taken.length, money: G.save.money||0, msg: document.body.innerText.replace(/\\s+/g,' ').slice(0,160)})"
+  },
+  {
+   "eval": "(window.__t0 = performance.now(), window.__n0 = G.stage.part('items').taken.length, 1)"
+  },
+  {
+   "key": "KeyE",
+   "hold": 70
+  },
+  {
+   "until": "G.stage.part('items').taken.length > window.__n0",
+   "timeout": 3000
+  },
+  {
+   "eval": "JSON.stringify({ms: Math.round(performance.now()-window.__t0)})"
+  },
+  {
+   "wait": 200
+  },
+  {
+   "eval": "JSON.stringify({pos:[+N.controller.pos.x.toFixed(1),+N.controller.pos.z.toFixed(1)], prompt: (G.hud.el.prompt.style.display!=='none') ? G.hud.el.prompt.innerText.replace(/\\n/g,' ') : null, taken: G.stage.part('items').taken.length, money: G.save.money||0, msg: document.body.innerText.replace(/\\s+/g,' ').slice(0,160)})"
+  },
+  {
+   "eval": "(N.controller.pos.x=-159.8, N.controller.pos.z=203.6, 1)"
+  },
+  {
+   "wait": 2500
+  },
+  {
+   "eval": "(() => { const p = G.camera.position; const dx = -163.8-p.x, dy = 0.15-p.y, dz = 203.6-p.z; N.controller.yaw = Math.atan2(-dx, -dz); N.controller.pitch = Math.atan2(dy, Math.hypot(dx, dz)); return 1; })()"
+  },
+  {
+   "wait": 300
+  },
+  {
+   "shot": "cash_4m"
+  },
+  {
+   "walk": [
+    [
+     -162.5,
+     203.6
+    ]
+   ],
+   "timeout": 8000, "into": true
+  },
+  {
+   "eval": "(() => { const p = G.camera.position; const dx = -163.8-p.x, dy = 0.15-p.y, dz = 203.6-p.z; N.controller.yaw = Math.atan2(-dx, -dz); N.controller.pitch = Math.atan2(dy, Math.hypot(dx, dz)); return 1; })()"
+  },
+  {
+   "wait": 300
+  },
+  {
+   "eval": "JSON.stringify({pos:[+N.controller.pos.x.toFixed(1),+N.controller.pos.z.toFixed(1)], prompt: (G.hud.el.prompt.style.display!=='none') ? G.hud.el.prompt.innerText.replace(/\\n/g,' ') : null, taken: G.stage.part('items').taken.length, money: G.save.money||0, msg: document.body.innerText.replace(/\\s+/g,' ').slice(0,160)})"
+  },
+  {
+   "eval": "(window.__t0 = performance.now(), window.__n0 = G.stage.part('items').taken.length, 1)"
+  },
+  {
+   "key": "KeyE",
+   "hold": 70
+  },
+  {
+   "until": "G.stage.part('items').taken.length > window.__n0",
+   "timeout": 3000
+  },
+  {
+   "eval": "JSON.stringify({ms: Math.round(performance.now()-window.__t0)})"
+  },
+  {
+   "wait": 200
+  },
+  {
+   "eval": "JSON.stringify({pos:[+N.controller.pos.x.toFixed(1),+N.controller.pos.z.toFixed(1)], prompt: (G.hud.el.prompt.style.display!=='none') ? G.hud.el.prompt.innerText.replace(/\\n/g,' ') : null, taken: G.stage.part('items').taken.length, money: G.save.money||0, msg: document.body.innerText.replace(/\\s+/g,' ').slice(0,160)})"
+  },
+  {
+   "eval": "(N.controller.pos.x=-87.9, N.controller.pos.z=244.4, 1)"
+  },
+  {
+   "wait": 2500
+  },
+  {
+   "eval": "(() => { const p = G.camera.position; const dx = -87.9-p.x, dy = 0.15-p.y, dz = 248.4-p.z; N.controller.yaw = Math.atan2(-dx, -dz); N.controller.pitch = Math.atan2(dy, Math.hypot(dx, dz)); return 1; })()"
+  },
+  {
+   "wait": 300
+  },
+  {
+   "shot": "rounds_4m"
+  },
+  {
+   "walk": [
+    [
+     -87.9,
+     247.1
+    ]
+   ],
+   "timeout": 8000, "into": true
+  },
+  {
+   "eval": "(() => { const p = G.camera.position; const dx = -87.9-p.x, dy = 0.15-p.y, dz = 248.4-p.z; N.controller.yaw = Math.atan2(-dx, -dz); N.controller.pitch = Math.atan2(dy, Math.hypot(dx, dz)); return 1; })()"
+  },
+  {
+   "wait": 300
+  },
+  {
+   "eval": "JSON.stringify({pos:[+N.controller.pos.x.toFixed(1),+N.controller.pos.z.toFixed(1)], prompt: (G.hud.el.prompt.style.display!=='none') ? G.hud.el.prompt.innerText.replace(/\\n/g,' ') : null, taken: G.stage.part('items').taken.length, money: G.save.money||0, msg: document.body.innerText.replace(/\\s+/g,' ').slice(0,160)})"
+  },
+  {
+   "eval": "(window.__t0 = performance.now(), window.__n0 = G.stage.part('items').taken.length, 1)"
+  },
+  {
+   "key": "KeyE",
+   "hold": 70
+  },
+  {
+   "until": "G.stage.part('items').taken.length > window.__n0",
+   "timeout": 3000
+  },
+  {
+   "eval": "JSON.stringify({ms: Math.round(performance.now()-window.__t0)})"
+  },
+  {
+   "wait": 200
+  },
+  {
+   "eval": "JSON.stringify({pos:[+N.controller.pos.x.toFixed(1),+N.controller.pos.z.toFixed(1)], prompt: (G.hud.el.prompt.style.display!=='none') ? G.hud.el.prompt.innerText.replace(/\\n/g,' ') : null, taken: G.stage.part('items').taken.length, money: G.save.money||0, msg: document.body.innerText.replace(/\\s+/g,' ').slice(0,160)})"
+  }
+ ]
+}

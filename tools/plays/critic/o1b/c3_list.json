@@ -1,0 +1,13 @@
+{
+ "about": "[O1b critic] what lies near the Grand Ave start (the item spots by kind, nearest first) and what the street dressing counts",
+ "url": "/?mute=1&start=city",
+ "size": [1280, 800],
+ "out": "shots/o1bc/list",
+ "steps": [
+  { "wait": 2000 },
+  { "clickOn": "#title .opt[data-k=begin]", "taken": "G.state !== 'title'", "retries": 5, "every": 4000 },
+  { "until": "G.scenes.current && G.scenes.current.id === 'city' && G.scenes.fadeK < 0.05", "timeout": 30000 },
+  { "eval": "(() => { const I = G.stage.part('items'); const p = N.controller.pos; const by = {}; for (const it of I.list) by[it.kind] = (by[it.kind]||0)+1; const near = I.list.map(it => ({k: it.kind, x: +it.x.toFixed(1), y:+it.y.toFixed(2), z: +it.z.toFixed(1), d: +Math.hypot(it.x-p.x, it.z-p.z).toFixed(0), place: it.place||''})).sort((a,b)=>a.d-b.d); const firsts = {}; for (const n of near) if (!firsts[n.k]) firsts[n.k] = n; return JSON.stringify({by, total: I.list.length, firsts, near: near.slice(0,8)}); })()" },
+  { "eval": "JSON.stringify(Object.keys(G.stage.parts || {}).slice(0,60))" }
+ ]
+}

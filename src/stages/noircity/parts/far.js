@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { allocInkId } from '../../../render/layers.js';
 import { farLot } from '../../../city/kits/facade.js';
-import { LAMP, lampHead } from '../../../city/kits/street.js';
+import { LAMP, lampHead, placeLamp } from '../../../city/kits/street.js';
 import { mergeAll } from './street.js';
 
 // The far city (lane O1): what is always drawn, the whole city over, in
@@ -38,6 +38,8 @@ export default {
     group.name = 'farCity';
     scene.add(group);
     const stoneFar = new THREE.MeshStandardMaterial({ color: 0x232323, roughness: 0.9, envMap: M.envSoft, envMapIntensity: 0.2 });
+    // [O1b] the limestone streets' masses (world/streets.js mat 'pale': Centre St, Park Row, the Hill)
+    const paleFar = new THREE.MeshStandardMaterial({ color: 0x3a3a3a, roughness: 0.85, envMap: M.envSoft, envMapIntensity: 0.25 });
     // the lights: a lit window a small pale pane, a shop front dimmer and wider
     // (a lit shop front is a big pane low in the frame: at 0.34 it printed as
     // a white slab), a lamp's mouth the bulb's white (M.bulb's 8)
@@ -77,6 +79,7 @@ export default {
       mk([...(T.out.mass0 || []), ...(T.out.roof || [])], M.brickFar, ids, true);
       mk(T.out.mass1, M.brickFar, ids + 1, true);
       mk(T.out.stone0, stoneFar, ids, true); mk(T.out.stone1, stoneFar, ids + 1, true);
+      mk(T.out.pale0, paleFar, ids, true); mk(T.out.pale1, paleFar, ids + 1, true);   // [O1b]
       // the lights in one mesh, each its own level (a vertex colour): the lit
       // windows, the lit shop fronts, the lamps' mouths (their posts are the near chunks')
       const lights = [];
@@ -86,7 +89,7 @@ export default {
       tint(T.lamps.map((l) => {
         _q.setFromAxisAngle(_y, l.yaw);
         _m.compose(new THREE.Vector3(l.x, 0.15, l.z), _q, _s);
-        return LAMP.bulb.clone().applyMatrix4(_m);
+        return placeLamp(LAMP.bulb, l);   // [O1b] (the lamp's own style's mouth)
       }), BULB);
       if (lights.length) {
         // ([O6] each lamp's mouth in the merge: a lamp put out goes dark there - its colour range)

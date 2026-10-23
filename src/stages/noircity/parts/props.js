@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { Smash } from '../../../destruct/Smash.js';
-import { KIND_OF } from '../../../destruct/smashKinds.js';
+import { KIND_OF, KINDS } from '../../../destruct/smashKinds.js';
 import { lotWindows } from '../../../city/kits/facade.js';
 import { SURF } from '../../../util/RayWorld.js';
 
@@ -38,6 +38,9 @@ export default {
     // the generator's furniture and its lamp posts (the el's hung lamps are the el's)
     for (const p of C.props) { const k = KIND_OF[p.kind]; if (k) smash.register(p, k, { merged: true }); }
     for (const l of C.lamps) if (l.kind !== 'wall') smash.register(l, 'lamp', { merged: true });
+    // [O1b] the streets' new things (C.dress: one record each, drawn merged by
+    // parts/dressing.js with its ranges): a kind of the set by its own name
+    for (const r of C.dress || []) if (KINDS[r.kind]) smash.register(r, r.kind, { merged: true });
     // the lamps' mouths in the far tiles (always drawn): their colour ranges
     const far = stage.part('far');
     if (far) for (const t of far.tiles) smash.chunkIn('far:' + t.key, t.meshes);
