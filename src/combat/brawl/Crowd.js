@@ -1185,7 +1185,8 @@ export class Crowd {
     if (m.cueing) this.endCue('gone');
     m.c.fig.anim.setTimeScale(1);
     m.state = 'down'; m.t = 0; m.downT = 0; m.openT = 0;
-    m.c.ko('deathBack');
+    // [O8] (the last blow's way pushes the fall: the city's ragdoll)
+    m.c.ko('deathBack', { push: dir ? { v: V(dir.x, 0, dir.z).normalize().multiplyScalar(2.4), lo: 0.05, hi: 1, up: 0.5 } : null });
     this.colOn(m, false);
     this.stats.kos++;
     this.sfx('bodyFloor', V(m.c.pos.x, 0.2, m.c.pos.z), { k: 1 });

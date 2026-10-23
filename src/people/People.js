@@ -835,8 +835,13 @@ export class People {
         const dx = p.pos.x - v.pos.x, dz = p.pos.z - v.pos.z;
         const lx = dx * c - dz * s, lz = dx * s + dz * c;
         if (p.standing && Math.abs(lx) < hl + p.r * 0.6 && Math.abs(lz) < hw + p.r * 0.6) { this.hitByCar(p, v, sp); continue; }
+        // [O8] (a slow car meets him at its face and pushes him out of its box each step - he was
+        // shoved along before it, never struck: met at its face, coming at him, he is struck)
+        if (p.standing && Math.abs(lz) < hw + p.r * 0.5 && Math.abs(lx) < hl + p.r + 0.12 && (dx * v.vel.x + dz * v.vel.z) > 0) { this.hitByCar(p, v, sp); continue; }
         // [O3] after the critic: a man lying in the road is solid to a car (not to feet):
         // shoved out of its way to the side he lies on, the car jolted a little
+        // [O8] a body on the physics layer is woken and met by the car's own box (rolled aside by it)
+        if (!p.standing && p.fig.rag && Math.abs(lx) < hl + 1.2 && Math.abs(lz) < hw + 1.2) { p.fig.rag.wake(); continue; }
         if (!p.standing && Math.abs(lx) < hl + 0.3 && Math.abs(lz) < hw + 0.3) {
           const sd = lz >= 0 ? 1 : -1, out = hw + 0.45 - Math.abs(lz);
           // (local z is the car's right: world (-s, c)... the side he lies on, out of the box)
@@ -873,10 +878,18 @@ export class People {
   hitByCar(p, v, sp) {
     const dir = new THREE.Vector3(v.vel.x, 0, v.vel.z).normalize();
     const dead = sp > 9;
-    // (thrown along the car's way a little, onto the street)
-    p.fig.pos.x += dir.x * Math.min(2.5, sp * 0.12); p.fig.pos.z += dir.z * Math.min(2.5, sp * 0.12);
-    this.stage.colliders.resolve(p.fig.pos, 0.3, p.fig.collider);
-    p.knock(dir.clone().negate(), { dead, why: 'car', by: v === this.G.vehicles.player ? 'player' : 'traffic' });
+    // [O8] on the physics layer the car throws him itself: the bumper takes his legs and he
+    // goes over the bonnet (fast) or is knocked down before it (slow); else as O3 had it
+    let push = null;
+    if (this.stage.ragdolls) {
+      const vv = new THREE.Vector3(v.vel.x, 0, v.vel.z);
+      push = sp >= 6 ? { v: vv.multiplyScalar(1.0), lo: 1.2, hi: -0.1, up: 0 } : { v: vv.multiplyScalar(0.95), lo: 0.85, hi: 0.75, up: 0.5 };
+    } else {
+      // (thrown along the car's way a little, onto the street)
+      p.fig.pos.x += dir.x * Math.min(2.5, sp * 0.12); p.fig.pos.z += dir.z * Math.min(2.5, sp * 0.12);
+      this.stage.colliders.resolve(p.fig.pos, 0.3, p.fig.collider);
+    }
+    p.knock(dir.clone().negate(), { dead, why: 'car', by: v === this.G.vehicles.player ? 'player' : 'traffic', push, follow: push ? 0 : 1 });
     this.stats.hitByCar++;
     if (this.G.sfx) { this.G.sfx.play('c3_dent', p.pos.clone().setY(0.8), { k: Math.min(1, sp / 14) }, { ref: 4 }); this.G.sfx.grunt(p.pos.clone().setY(1.2)); }
     // (the car takes it: a jolt off its speed)

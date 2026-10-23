@@ -704,6 +704,7 @@ export class Game {
     const ai0 = this.ais.get(h);
     const pick = ai0 && ai0.brain && ai0.brain.deathKind ? ai0.brain.deathKind(dir, head, kind) : null;
     if (pick) { kind = pick.kind; if (pick.yaw != null) h.yaw = pick.yaw; }
+    h._hitDir = dir;   // [O8] (the city's ragdoll: the round's way)
     h.die(kind);
     // (a head shot drops him without a sound)
     if (!head) this.sfx.death(h.pos.clone().setY(h.pos.y + 1.5));

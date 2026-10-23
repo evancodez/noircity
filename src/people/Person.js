@@ -58,6 +58,7 @@ export class Person {
     // (a pooled figure gave its ink slot back: one again - the 64 slots are the people's and the cars')
     if (F.slot < 0 && this.pooled) this.takeSlot();
     this.pooled = false;
+    if (F.endRagdoll) F.endRagdoll({ instant: true });   // [O8] (a pooled figure stands up new)
     F.pos.set(x, this.stage.surfaceY(x, z), z); F._prevPos.copy(F.pos); F.yaw = yaw; F._prevYaw = yaw;
     F.object.visible = true;
     this.mode = 'stand'; this.t = 0; this.life = 0;
@@ -172,7 +173,8 @@ export class Person {
   }
 
   // knocked down (a punch, a car, a round): hurt, or dead. dir: the blow's way
-  knock(dir = null, { dead = false, by = 'player', why = 'punch' } = {}) {
+  // [O8] push: the ragdoll's push ({ v, lo, hi, up }: a car's); else the blow's way at its weight
+  knock(dir = null, { dead = false, by = 'player', why = 'punch', push = null, follow = 1 } = {}) {
     if (this.dead || (this.down && !dead)) return false;
     const F = this.fig, c = this.c;
     const wasDown = this.down;
@@ -186,13 +188,16 @@ export class Person {
     }
     if (!wasDown) {
       c.lookAt(null);
-      try { c.ko('deathBack'); } catch (e) { F.die('deathBack'); }
+      // [O8] (the blow's own push: a punch throws the head and the chest back, a round less)
+      const P = push || (dir ? { v: new THREE.Vector3(dir.x, 0, dir.z).normalize().multiplyScalar(why === 'shot' ? 1.4 : 2.3), lo: 0.05, hi: 1, up: why === 'shot' ? 0 : 0.4 } : null);
+      try { c.ko('deathBack', { push: P, follow }); } catch (e) { F.die('deathBack'); }
       // a body is solid to things, not to feet: out of the walkers' colliders
       const col = this.stage.colliders, i = col.circles.indexOf(F.collider);
       if (i >= 0) col.circles.splice(i, 1);
       if (this.umb && this.umb.state === 'held') this.umb.drop(dir ? dir.clone().multiplyScalar(2).setY(1) : undefined);
     }
-    if (dead) this.G.fx.bloodFx.pool(F, 0.95);
+    // [O8] (the pool where the body comes to rest, not where it was struck)
+    if (dead) { if (F.rag && !F.rag.asleep) F.rag.onSleep = () => this.G.fx.bloodFx.pool(F, 0.1); else this.G.fx.bloodFx.pool(F, 0.95); }
     return true;
   }
 
