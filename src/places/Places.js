@@ -29,7 +29,7 @@ const LOAD = 34, DROP = 62;
 // a fist at a room's people (OPEN_WORLD's havoc: the room answers): who fights back, as O4's
 // kind of man; everyone else flinches, says his word and cowers, and the room turns
 const FIGHTS = { drunkA: 'drunk', drunkB: 'drunk', trainer: 'driver', sitter: 'driver', mechanic: 'driver', grocer: 'driver', supper: 'drunk' };
-const OUCH = { nurse: 'Not in my hospital!', barman: 'Out. Now.', waitress: 'Hey!', cashier: 'Hey! Somebody!', usher: 'Out you go.', clerk: 'Mister!', promoter: 'In the ring. Not out here.',
+const OUCH = { pianist: 'Not the hands!', nurse: 'Not in my hospital!', barman: 'Out. Now.', waitress: 'Hey!', cashier: 'Hey! Somebody!', usher: 'Out you go.', clerk: 'Mister!', promoter: 'In the ring. Not out here.',
   gunman: 'Wrong shop for that.', cook: 'Hey!', sergeant: 'You want a cell? Keep going.', drunk: 'Whassat for?' };
 const ROOMS = {};
 for (const m of Object.values(import.meta.glob('./rooms/*.js', { eager: true }))) if (m.default && m.default.kind) ROOMS[m.default.kind] = m.default;
@@ -175,8 +175,60 @@ export class Places {
     // the room's own life (a bout, a fight breaking out, the men of a hideout)
     s.live.run = def && def.live ? def.live(K, s, this) : null;
     s.live.ms = performance.now() - t0;
+    // [O5b] the first open one frame like the second (brief O5b §4): the room's programs compiled now (in
+    // parallel where the GPU can) with the street's lights, then - a step later - one draw of it into a
+    // scrap target (its buffers and its lettering's textures on the GPU): nothing of it is new at the door
+    this.warm(s);
     this.game.emit('places:load', { id: s.id, ms: s.live.ms });
     return s.live;
+  }
+
+  // [O5b] the warm-up: compileAsync of the room (and its outside) against the stage's lights, then one
+  // scrap draw of it (warmDraw, from step, once the programs are ready)
+  lightScene() {
+    const LS = new THREE.Scene(), sc = this.stage.scene;
+    LS.fog = sc.fog; LS.environment = sc.environment;
+    sc.traverseVisible((o) => { if (o.isLight) { const c = o.clone(false); c.layers.mask = o.layers.mask; LS.add(c); } });
+    return LS;
+  }
+  warm(s) {
+    const G = this.game, r = G.pipeline && G.pipeline.renderer, L = s.live;
+    if (!r || !r.compileAsync || G.shotMode) { L.warm = 'skip'; return; }
+    const K = L.K, vis = K.group.visible, P = G.pipeline, prev = r.getRenderTarget();
+    L.warm = 'compiling';
+    K.group.visible = true;
+    try {
+      const LS = this.lightScene();
+      r.setRenderTarget((P && P.rtScene) || prev);
+      const a = r.compileAsync(K.group, G.camera, LS), b = r.compileAsync(K.outer, G.camera, LS);
+      Promise.all([a, b]).then(() => { if (s.live === L) L.warm = 'draw'; }, () => { if (s.live === L) L.warm = 'draw'; });
+    } catch (e) { L.warm = 'draw'; }
+    r.setRenderTarget(prev);
+    K.group.visible = vis;
+  }
+  warmDraw(s) {
+    const G = this.game, r = G.pipeline && G.pipeline.renderer, L = s.live, K = L.K;
+    L.warm = 'done';
+    if (!r) return;
+    const t0 = performance.now();
+    const LS = this.lightScene(), parent = K.group.parent, vis = K.group.visible;
+    const culled = [];
+    LS.add(K.group);
+    K.group.visible = true;
+    K.group.traverse((o) => { if ((o.isMesh || o.isPoints || o.isSprite) && o.frustumCulled) { culled.push(o); o.frustumCulled = false; } });
+    const rt = new THREE.WebGLRenderTarget(16, 16), prev = r.getRenderTarget(), cam = G.camera, mask = cam.layers.mask;
+    const sm = r.shadowMap.autoUpdate; r.shadowMap.autoUpdate = false;
+    cam.layers.enableAll();
+    r.setRenderTarget(rt);
+    try { r.render(LS, cam); } catch (e) { /* its first frame will */ }
+    cam.layers.mask = mask;
+    r.shadowMap.autoUpdate = sm;
+    r.setRenderTarget(prev);
+    rt.dispose();
+    for (const o of culled) o.frustumCulled = true;
+    if (parent) parent.add(K.group);
+    K.group.visible = vis;
+    L.warmMs = performance.now() - t0;
   }
 
   drop(s) {
@@ -605,6 +657,8 @@ export class Places {
         // (a street door has a closer: it swings shut behind me once I am clear)
         if (D.street && !D.shut && !D.moving && D.openT > 3.5 && Math.hypot(G.eye.x - D.centre.x, G.eye.z - D.centre.z) > 1.8) D.close(1.6);
       }
+      // [O5b] (its warm draw, once its programs are ready)
+      if (L.warm === 'draw') this.warmDraw(s);
       // drawn only when it can be seen: I am in it, a door of it is open, or it has windows
       const see = this.inside === s || L.K.doors.some((D) => D.street && !D.shut) || !!(L.K.windows && L.K.windows.length);
       if (L.K.group.visible !== see) L.K.group.visible = see;

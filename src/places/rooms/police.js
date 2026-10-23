@@ -67,7 +67,7 @@ export default {
     K.wake = { x: K.cells[1].bench.x, z: K.cells[1].bench.z, yaw: 0 };
     // [O5b] a booked man's walk: from the desk's end through the cells' door to the first cell's bench
     { const c0 = K.cells[0]; K.bookPath = [[x1 - 1.1, -4.3], [x1 - 1.1, zm + 0.5], [x1 - 1.1, zm - 0.9], [c0.a + 0.75, cz + 0.9], [c0.a + 0.75, cz - 0.6], [c0.bench.x, c0.bench.z + 0.45]]; K.bookSit = { x: c0.bench.x, z: c0.bench.z + 0.05 }; }
-    K.seat({ name: 'cellbench', x: K.cells[1].bench.x, z: K.cells[1].bench.z + 0.05, yaw: 0, eyeY: FLOOR + 1.2, at: [K.cells[1].bench.x, FLOOR + 0.5, K.cells[1].bench.z], prompt: 'sit', standAt: { x: K.cells[1].bench.x, z: K.cells[1].bench.z + 0.8, yaw: 0 } });
+    K.seat({ name: 'cellbench', x: K.cells[1].bench.x, z: K.cells[1].bench.z + 0.05, yaw: 0, eyeY: FLOOR + 1.2, at: [K.cells[1].bench.x, FLOOR + 0.5, K.cells[1].bench.z], prompt: 'sit', standAt: { x: K.cells[1].bench.x, z: K.cells[1].bench.z + 0.8, yaw: 0 }, tourAt: [K.cells[1].bench.x, K.cells[1].bench.z + 1.3] });
   },
   // [O5b] the posters on the hall's sheets, redrawn when a man's state changes
   live(K, s, P) {

@@ -91,10 +91,14 @@ export default {
     // the beds: the wake's (the east row's first, by the door), a sleep in every free one
     const mine = K.beds.find((q) => q.side === 'e' && q.z === zs[0]);
     K.wakeBed = mine;
-    K.seat({ name: 'wardbed', x: mine.xb - 0.55, z: mine.z, yaw: Math.PI / 2 + 0.25, eyeY: FLOOR + 1.1, pitch: 0.02, yawRange: [-1.7, 1.7], at: [mine.x, FLOOR + 0.62, mine.z], prompt: 'lie down', standAt: { x: mine.xa - 0.55, z: mine.z + 0.15, yaw: Math.PI / 2 }, tourAt: [mine.xa - 0.9, mine.z] });
+    K.seat({ name: 'wardbed', x: mine.xb - 0.55, z: mine.z, yaw: Math.PI / 2 - 0.45, eyeY: FLOOR + 1.1, pitch: 0.02, yawRange: [-1.7, 1.7], at: [mine.x, FLOOR + 0.62, mine.z], prompt: 'lie down', standAt: { x: mine.xa - 0.55, z: mine.z + 0.15, yaw: Math.PI / 2 }, tourAt: [mine.xa - 0.9, mine.z] });
+    let toured = false;
     for (const q of K.beds) {
       if (q === sl || q === mine) continue;
-      K.use({ at: [q.x, FLOOR + 0.62, q.z], range: 2.2, cone: 0.42, prompt: 'sleep', onUse: () => P.sleepAt('ward') });
+      // (the tour tries one of them: a sleep is 4 s of black)
+      const aisle = q.side === 'w' ? q.xb + 0.9 : q.xa - 0.9;
+      K.use({ at: [q.x, FLOOR + 0.62, q.z], range: 2.2, cone: 0.42, prompt: 'sleep', onUse: () => P.sleepAt('ward'), tourAt: toured ? null : [aisle, q.z], tourSkip: toured });
+      toured = true;
     }
     // ---- the outside (drawn with the street, K.outer): the ground floor's shop fronts of O1's block
     // faced over in pale stone (a hospital is not a tailor's), its frosted windows lit, the door
@@ -126,6 +130,8 @@ export default {
     const G = P.game;
     const S = K.seats.find((x) => x.name === 'wardbed');
     if (S) P.sit(s, S);
+    // (the gun kept, under the coat: nothing is drawn in a bed)
+    if (G.player.weapons.current && G.player.weapons.current !== 'fists') G.player.weapons.equip('fists');
     if (how === 'ward') { G.hud.message('Morning, near enough. The rain again.', 2.4); return; }
     P.woke = true;
     const r = fallWake(G, 'hospital');

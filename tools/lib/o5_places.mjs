@@ -66,8 +66,8 @@ async function tour(api) {
     const things = await js(`(() => { const s = G.city.places.byId.get(${JSON.stringify(id)}); const K = s.live.K, F = s.frame;
       const L = [];
       for (const D of K.doors) L.push({ kind: 'door', name: D.name, at: [D.centre.x, D.centre.y + 0.2, D.centre.z], lvl: D.lvl, street: !!D.street });
-      K.seats.forEach((S, i) => { if (S.tourSkip) return; const a = S.at ? F.v(S.at[0], S.at[1], S.at[2]) : F.v(S.x, S.eyeY - 0.5, S.z); L.push({ kind: 'seat', name: S.name || ('seat' + i), at: [a.x, a.y, a.z], lvl: S.lvl, i }); });
-      K.uses.forEach((U, i) => { if (U.seated || U.atFn || U.tourSkip) return; const a = F.v(U.at[0], U.at[1], U.at[2]); L.push({ kind: 'use', name: typeof U.prompt === 'string' ? U.prompt : ('use' + i), at: [a.x, a.y, a.z], lvl: U.lvl, i }); });
+      K.seats.forEach((S, i) => { if (S.tourSkip) return; const a = S.at ? F.v(S.at[0], S.at[1], S.at[2]) : F.v(S.x, S.eyeY - 0.5, S.z); L.push({ kind: 'seat', name: S.name || ('seat' + i), at: [a.x, a.y, a.z], lvl: S.lvl, i, tour: S.tourAt || null }); });
+      K.uses.forEach((U, i) => { if (U.seated || U.atFn || U.tourSkip) return; const a = F.v(U.at[0], U.at[1], U.at[2]); L.push({ kind: 'use', name: typeof U.prompt === 'string' ? U.prompt : ('use' + i), at: [a.x, a.y, a.z], lvl: U.lvl, i, tour: U.tourAt || null }); });
       return L; })()`);
     for (const th of things) {
       if (th.lvl != null && th.lvl > 0) { r.uses.push({ ...th, skipped: 'upstairs (the floor plays)' }); continue; }
@@ -77,6 +77,8 @@ async function tour(api) {
         let dx = c.x - t.x, dz = c.z - t.z; const L = Math.hypot(dx, dz) || 1; dx /= L; dz /= L;
         let px = t.x + dx * 1.25, pz = t.z + dz * 1.25;
         px = Math.max(R.x0 + 0.35, Math.min(R.x1 - 0.35, px)); pz = Math.max(R.z0 + 0.35, Math.min(R.z1 - 0.35, pz));
+        // [O5b] (a thing out of the room's main rect - the diner's jukebox, a cell's bench, a ward's bed - says where to stand: tourAt)
+        const ta = ${JSON.stringify(th.tour)}; if (ta) { px = ta[0]; pz = ta[1]; }
         const w = F.w(px, pz), q = { x: w.x, z: w.z }; G.stage.colliders.resolve(q, 0.3);
         const ey = 0.3 + 1.63, yaw = Math.atan2(-(${th.at[0]} - q.x), -(${th.at[2]} - q.z)), pitch = Math.atan2(${th.at[1]} - ey, Math.hypot(${th.at[0]} - q.x, ${th.at[2]} - q.z));
         if (G.city.places.seat) G.city.places.stand();

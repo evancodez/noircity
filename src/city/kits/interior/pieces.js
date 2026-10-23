@@ -113,13 +113,16 @@ export function shelves(K, a0, a1, c, { y = K.FLOOR, h = 2.0, dir = 's', n = 4, 
 // crates stacked at a point (seeded): solid, a little cover
 export function crates(K, x, z, { y = K.FLOOR, n = 3, s = 0.9, rng = Math.random, key = 'wood' } = {}) {
   let top = y;
+  const out = [];   // [O5b] (each crate's box: a stencil goes on a face)
   for (let i = 0; i < n; i++) {
     const ss = s * (0.85 + rng() * 0.2), ox = (rng() - 0.5) * 0.12, oz = (rng() - 0.5) * 0.12;
     K.box(key, x - ss / 2 + ox, x + ss / 2 + ox, top, top + ss * 0.8, z - ss / 2 + oz, z + ss / 2 + oz, 1);
     K.box('black', x - ss / 2 + ox - 0.01, x + ss / 2 + ox + 0.01, top + ss * 0.38, top + ss * 0.42, z - ss / 2 + oz - 0.01, z + ss / 2 + oz + 0.01, 1);
+    out.push({ x0: x - ss / 2 + ox, x1: x + ss / 2 + ox, y0: top, y1: top + ss * 0.8, z0: z - ss / 2 + oz, z1: z + ss / 2 + oz });
     top += ss * 0.8;
   }
   K.solid(x - s / 2, x + s / 2, z - s / 2, z + s / 2);
+  return out;
 }
 export function heavyBag(K, x, z, { y = K.FLOOR, top = null } = {}) {
   const yt = top ?? y + 3.0;
@@ -213,23 +216,28 @@ export function sheet(K, a, y, c, { w = 0.6, h = 0.8, dir = 's', key = 'poster' 
 // ---- lettering: one atlas a place (a price card, a board, a sign on a door) ------------------------
 // K.labels: [{ text, lines, x, y, z, w, h, dir, lit }] -> drawn at finish into one canvas and one mesh
 // [O5b] outer: drawn with the place's outside (K.outer: seen from the street with its door shut - the hospital's EMERGENCY)
-export function label(K, text, a, y, c, { w = 0.8, h = 0.4, dir = 's', lit = false, dark = false, size = 1, outer = false } = {}) {
-  (K.labels || (K.labels = [])).push({ text, a, y, c, w, h, dir, lit, dark, size, outer });
+// [O5b] draw: (g, pw, ph) => {} paints the face itself (a film poster, a fight card, a chalk board -
+// src/places/art.js), res: its pixels a metre x res; shade: printed as a surface the room's lamps light
+// (a stencil on a crate) instead of a lit panel
+export function label(K, text, a, y, c, { w = 0.8, h = 0.4, dir = 's', lit = false, dark = false, size = 1, outer = false, draw = null, res = 1, shade = false } = {}) {
+  (K.labels || (K.labels = [])).push({ text, a, y, c, w, h, dir, lit, dark, size, outer, draw, res, shade });
 }
 export function finishLabels(K) {
   const L = K.labels;
   if (!L || !L.length) return null;
   const PX = 160, W = 1024;
   const rects = []; let x = 2, y = 2, row = 0;
-  for (const l of L) { const pw = Math.min(W - 4, Math.round(l.w * PX)), ph = Math.round(l.h * PX); if (x + pw > W - 2) { x = 2; y += row + 4; row = 0; } rects.push([x, y, pw, ph]); x += pw + 4; row = Math.max(row, ph); }
+  for (const l of L) { const pw = Math.min(W - 4, Math.round(l.w * PX * (l.res || 1))), ph = Math.round(l.h * PX * (l.res || 1)); if (x + pw > W - 2) { x = 2; y += row + 4; row = 0; } rects.push([x, y, pw, ph]); x += pw + 4; row = Math.max(row, ph); }
   const H = Math.min(2048, Math.pow(2, Math.ceil(Math.log2(y + row + 4))));
   const cv = document.createElement('canvas'); cv.width = W; cv.height = H;
   const g = cv.getContext('2d');
   g.fillStyle = '#000'; g.fillRect(0, 0, W, H);
-  const geos = [], outs = [];
+  const geos = [], outs = [], shades = [];
   L.forEach((l, i) => {
     const [rx, ry, pw, ph] = rects[i];
     g.save(); g.translate(rx, ry);
+    if (l.draw) { l.draw(g, pw, ph); g.restore(); }
+    else {
     g.fillStyle = l.dark ? '#0d0d0d' : l.lit ? '#e2ded2' : '#9c9890'; g.fillRect(0, 0, pw, ph);
     g.strokeStyle = l.dark ? '#77736a' : '#1a1a1a'; g.lineWidth = Math.max(2, ph * 0.03); g.strokeRect(ph * 0.05, ph * 0.05, pw - ph * 0.1, ph - ph * 0.1);
     g.fillStyle = l.dark ? '#b9b5aa' : '#0d0d0d'; g.textAlign = 'center'; g.textBaseline = 'middle';
@@ -238,6 +246,7 @@ export function finishLabels(K) {
     g.font = `700 ${fs}px ${LETTER_FONT}`;
     lines.forEach((s, k) => g.fillText(s, pw / 2, ph / 2 + (k - (lines.length - 1) / 2) * fs * 1.12));
     g.restore();
+    }
     const [dx, dz] = D[l.dir];
     const p = new THREE.PlaneGeometry(l.w, l.h);
     const U = p.getAttribute('uv');
@@ -247,12 +256,13 @@ export function finishLabels(K) {
     const along = dz !== 0;
     const off = 0.016;
     if (along) p.translate(l.a, l.y, l.c + dz * off); else p.translate(l.c + dx * off, l.y, l.a);
-    (l.outer ? outs : geos).push(p);
+    (l.outer ? outs : l.shade ? shades : geos).push(p);
   });
   const tex = new THREE.CanvasTexture(cv); tex.colorSpace = THREE.SRGBColorSpace; tex.anisotropy = 4;
   const mat = new THREE.MeshBasicMaterial({ map: tex, color: new THREE.Color().setScalar(0.85) });
   mat.userData.inkSurface = 'lit';
-  const mesh = (list, into) => {
+  const matLit = mat;
+  const mesh = (list, into, mat = matLit) => {
     if (!list.length) return null;
     const flat = list.map((q0) => { const q = q0.index ? q0.toNonIndexed() : q0; if (q !== q0) q0.dispose(); return q; });
     let n = 0; for (const q of flat) n += q.getAttribute('position').count;
@@ -269,6 +279,12 @@ export function finishLabels(K) {
   };
   const m = mesh(geos, K.group);
   mesh(outs, K.outer);
+  if (shades.length) {
+    const ms = new THREE.MeshStandardMaterial({ map: tex, roughness: 0.92, metalness: 0, envMapIntensity: 0 });
+    ms.userData.inkSurface = 'plaster';
+    mesh(shades, K.group, ms);
+    K.labelMat2 = ms;
+  }
   K.labelTex = tex; K.labelMat = mat;
   return m;
 }
