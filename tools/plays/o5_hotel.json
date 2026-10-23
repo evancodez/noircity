@@ -102,7 +102,8 @@
    "hold": 60
   },
   {
-   "wait": 900
+   "until": "G.city.places.byId.get('hotel').live.K.doors.find((d) => d.name === 'room3').open01 > 0.95",
+   "timeout": 10000
   },
   {
    "walk": "(() => { const s = G.city.places.byId.get('hotel'), F = s.frame; return [[-0.1, -8.0], [0.6, -7.4]].map(([x, z]) => { const p = F.w(x, z); return [p.x, p.z]; }); })()",

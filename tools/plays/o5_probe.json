@@ -1,5 +1,5 @@
 {
- "about": "[O5] A hideout's shootout (the warehouse), profile good (brief O5 \u00a73): in by its door, they know my face (the warning), they draw (the gun kit's men: the stand-in for O4's), the fight: idle loses, warned; good clears it.",
+ "about": "[O5] probe",
  "url": "/?mute=1&start=city",
  "size": [
   1280,
@@ -28,54 +28,78 @@
    "wait": 1000
   },
   {
-   "eval": "(G.health.reset(), 1)"
+   "eval": "(() => { const s = G.city.places.byId.get('hotel'), F = s.frame; const p = F.w(0, 3.0); G.stage.part('stream').warmAround(p.x, p.z); N.controller.setPose(p.x, p.z, F.yaw(0), -0.05); return 1; })()"
   },
   {
-   "eval": "(() => { const s = G.city.places.byId.get('warehouse'), F = s.frame; const p = F.w(0, 3.0); G.stage.part('stream').warmAround(p.x, p.z); N.controller.setPose(p.x, p.z, F.yaw(0), -0.05); return 1; })()"
-  },
-  {
-   "wait": 3000
+   "wait": 2500
   },
   {
    "key": "KeyE",
    "hold": 60
   },
   {
-   "wait": 500
+   "wait": 600
   },
   {
-   "walk": "(() => { const s = G.city.places.byId.get('warehouse'), F = s.frame; return [[0, -1.8]].map(([x, z]) => { const p = F.w(x, z); return [p.x, p.z]; }); })()",
-   "timeout": 12000
+   "walk": "(() => { const s = G.city.places.byId.get('hotel'), F = s.frame; return [[0, -1.6], [1.8, -3.0], [1.8, -9.8], [-3.5, -10.7], [-6.6, -10.7]].map(([x, z]) => { const p = F.w(x, z); return [p.x, p.z]; }); })()",
+   "timeout": 30000
   },
   {
-   "eval": "(() => { const P = G.city.places, s = P.byId.get('warehouse'); const st = s.live && s.live.run && s.live.run.st; return JSON.stringify({ t: +G.time.toFixed(1), inside: P.inside && P.inside.id, eye: [G.eye.x, G.eye.z].map((v) => +v.toFixed(1)), st: st && { begun: st.begun, hostile: st.hostile, seen: +st.seen.toFixed(2), warned: st.warned, alive: st.men.filter((h) => h.alive).length }, warn: G.hud.warnText, gun: G.player.weapons.current, hp: G.health.hp }); })()"
+   "eval": "(() => { const s = G.city.places.byId.get('hotel'), F = s.frame, K = s.live.K; const a = F.v(-5.95, 1.75, -10.7); const C = N.controller; C.yaw = Math.atan2(-(a.x - G.eye.x), -(a.z - G.eye.z)); C.pitch = Math.atan2(a.y - G.eye.y, Math.hypot(a.x - G.eye.x, a.z - G.eye.z)); window.__m = []; const m0 = G.hud.message.bind(G.hud); G.hud.message = (t, x) => { window.__m.push(t); return m0(t, x); }; return 1; })()"
   },
   {
-   "wait": 2000
+   "until": "/lift/.test(G.hud.promptShown)",
+   "timeout": 8000
   },
   {
-   "eval": "(() => { const P = G.city.places, s = P.byId.get('warehouse'); const st = s.live && s.live.run && s.live.run.st; return JSON.stringify({ t: +G.time.toFixed(1), inside: P.inside && P.inside.id, eye: [G.eye.x, G.eye.z].map((v) => +v.toFixed(1)), st: st && { begun: st.begun, hostile: st.hostile, seen: +st.seen.toFixed(2), warned: st.warned, alive: st.men.filter((h) => h.alive).length }, warn: G.hud.warnText, gun: G.player.weapons.current, hp: G.health.hp }); })()"
+   "eval": "(() => { const s = G.city.places.byId.get('hotel'), F = s.frame, K = s.live.K, L = K.lift; const me = F.l(N.controller.pos.x, N.controller.pos.z); return JSON.stringify({ me: [+me.x.toFixed(2), +me.z.toFixed(2)], gy: +N.controller.groundY.toFixed(2), L: [L.L.x0, L.L.x1, L.L.z0, L.L.z1].map((v) => +v.toFixed(2)), ly: L.y, at: L.at, cur: G.interact.current && G.interact.current.prompt }); })()"
   },
   {
-   "wait": 2000
+   "key": "KeyE",
+   "hold": 60
   },
   {
-   "eval": "(() => { const P = G.city.places, s = P.byId.get('warehouse'); const st = s.live && s.live.run && s.live.run.st; return JSON.stringify({ t: +G.time.toFixed(1), inside: P.inside && P.inside.id, eye: [G.eye.x, G.eye.z].map((v) => +v.toFixed(1)), st: st && { begun: st.begun, hostile: st.hostile, seen: +st.seen.toFixed(2), warned: st.warned, alive: st.men.filter((h) => h.alive).length }, warn: G.hud.warnText, gun: G.player.weapons.current, hp: G.health.hp }); })()"
+   "wait": 1500
   },
   {
-   "wait": 2000
+   "eval": "(() => { const L = G.city.places.byId.get('hotel').live.K.lift; return JSON.stringify({ msgs: window.__m, riding: L.riding, y: L.y, target: L.target, t: L.t, gy: +N.controller.groundY.toFixed(2), lvl: G.city.places.level }); })()"
   },
   {
-   "eval": "(() => { const P = G.city.places, s = P.byId.get('warehouse'); const st = s.live && s.live.run && s.live.run.st; return JSON.stringify({ t: +G.time.toFixed(1), inside: P.inside && P.inside.id, eye: [G.eye.x, G.eye.z].map((v) => +v.toFixed(1)), st: st && { begun: st.begun, hostile: st.hostile, seen: +st.seen.toFixed(2), warned: st.warned, alive: st.men.filter((h) => h.alive).length }, warn: G.hud.warnText, gun: G.player.weapons.current, hp: G.health.hp }); })()"
+   "wait": 5000
   },
   {
-   "wait": 2000
+   "eval": "(() => { const L = G.city.places.byId.get('hotel').live.K.lift; return JSON.stringify({ msgs: window.__m, riding: L.riding, y: L.y, at: L.at, gy: +N.controller.groundY.toFixed(2), lvl: G.city.places.level, time: G.time }); })()"
   },
   {
-   "eval": "(() => { const P = G.city.places, s = P.byId.get('warehouse'); const st = s.live && s.live.run && s.live.run.st; return JSON.stringify({ t: +G.time.toFixed(1), inside: P.inside && P.inside.id, eye: [G.eye.x, G.eye.z].map((v) => +v.toFixed(1)), st: st && { begun: st.begun, hostile: st.hostile, seen: +st.seen.toFixed(2), warned: st.warned, alive: st.men.filter((h) => h.alive).length }, warn: G.hud.warnText, gun: G.player.weapons.current, hp: G.health.hp }); })()"
+   "shot": "hotel_cab"
   },
   {
-   "wait": 2000
+   "eval": "(() => { const s = G.city.places.byId.get('stairs1'), F = s.frame; const p = F.w(0.2, 3.0); G.stage.part('stream').warmAround(p.x, p.z); N.controller.setPose(p.x, p.z, F.yaw(0), -0.05); return 1; })()"
+  },
+  {
+   "wait": 2500
+  },
+  {
+   "eval": "(() => { const s = G.city.places.byId.get('stairs1'), F = s.frame, K = s.live.K; const p = F.w(0.85, -1.2); N.controller.setPose(p.x, p.z, F.yaw(-Math.PI / 2), -0.05, K.roofY); return 1; })()"
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "eval": "(() => { const P = G.city.places, s = P.byId.get('stairs1'), K = s.live.K; const D = K.doors.find((d) => d.name === 'roof'); return JSON.stringify({ inside: P.inside && P.inside.id, lvl: P.level, gy: +N.controller.groundY.toFixed(2), N: K.N, dl: D.lvl, prompt: G.hud.promptShown, cur: G.interact.current && G.interact.current.prompt }); })()"
+  },
+  {
+   "key": "KeyE",
+   "hold": 60
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "eval": "(() => { const P = G.city.places, s = P.byId.get('stairs1'), K = s.live.K, F = s.frame; const D = K.doors.find((d) => d.name === 'roof'); const p = F.w(1.75, -1.25); return JSON.stringify({ shut: D.shut, angle: D.angle, lvl: P.level, near: G.stage.colliders.near(p.x, p.z, 0.4).filter((o) => !o.gone).map((o) => ({ tag: o.tag, lvl: o.lvl, cx: o.cx != null ? +F.l(o.cx, o.cz).x.toFixed(2) : null, cz: o.cx != null ? +F.l(o.cx, o.cz).z.toFixed(2) : null, hx: o.hx && +o.hx.toFixed(2), hz: o.hz && +o.hz.toFixed(2), r: o.r })) }); })()"
+  },
+  {
+   "shot": "stairs_top"
   }
  ]
 }

@@ -116,6 +116,8 @@ function warehouse(K, s, P, rng) {
     K.cols.at(-1).tag = 'crates';
   }
   for (let z = -4; z > z0 + 2; z -= 7) K.lamp(0, FLOOR + H - 1.4, z, { kind: 'cage', power: 0.9, ceilY: FLOOR + H });
+  // (cover by the door: a man who comes in has a crate to get down behind)
+  for (const [cx, cz] of [[-2.4, -3.4], [2.6, -3.9]]) { crates(K, cx, cz, { n: 1, s: 1.15, rng }); K.cols.at(-1).tag = 'crates'; }
   // the office in the far corner: its walls, its door, its desk, the safe
   const ox0 = x1 - 5.6, oz1 = z0 + 5.0;
   K.wall('x', oz1 + 0.12, ox0, x1, FLOOR, FLOOR + 3.0, { key: 'plaster', holes: [{ a: ox0 + 0.8, b: ox0 + 1.8, top: FLOOR + 2.05 }] });
@@ -130,7 +132,7 @@ function warehouse(K, s, P, rng) {
   K.safeAt = { x: x1 - 0.6, z: z0 + 2.6, yaw: -Math.PI / 2, y: FLOOR, lvl: 0 };
   K.at(null);
   K.men = [
-    { kind: 'pistol', x: -3.0, z: -7.0 }, { kind: 'pistol', x: 3.5, z: -11.5 },
+    { kind: 'pistol', x: -4.0, z: -11.0 }, { kind: 'pistol', x: 4.5, z: -14.0 },
     { kind: 'pistol', x: -8.0, z: -16.0 }, { kind: 'tommy', x: 7.5, z: -20.0 }, { kind: 'pistol', x: ox0 + 2.0, z: z0 + 3.0 },
   ];
   K.area = { x0, x1, z0, z1 };
@@ -149,7 +151,8 @@ function hideoutLife(K, s, P) {
     const c = F.w((A.x0 + A.x1) / 2, (A.z0 + A.z1) / 2);
     G.stage.part('bounds').navAround(c.x, c.z, Math.max(A.x1 - A.x0, A.z1 - A.z0) / 2 + 3);
     Kt.end();
-    Kt.begin({ to: 'roam', area: box, maxFiring: 2, flankAfter: 8, settleK: 1.1, why: { open: 'Shot standing in the open.', moving: 'Shot in the open.' } });
+    // (a first gunfight's numbers: slower to settle, a little lighter - GUNS.md's table)
+    Kt.begin({ to: 'roam', area: box, maxFiring: 2, flankAfter: 9, settleK: 1.25, dmgK: 0.85, why: { open: 'Shot standing in the open.', moving: 'Shot in the open.' } });
     for (const m of K.men) {
       if (s.state.dead && s.state.dead.includes(m)) continue;
       const p = F.w(m.x, m.z), e = F.w(0, 0);

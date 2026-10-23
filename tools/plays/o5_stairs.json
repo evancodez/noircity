@@ -64,11 +64,8 @@
    "hold": 60
   },
   {
-   "until": "!G.city.places.byId.get('stairs1').live.K.doors.find((d) => d.name === 'roof').shut",
-   "timeout": 8000
-  },
-  {
-   "wait": 600
+   "until": "G.city.places.byId.get('stairs1').live.K.doors.find((d) => d.name === 'roof').open01 > 0.95",
+   "timeout": 10000
   },
   {
    "walk": "(() => { const s = G.city.places.byId.get('stairs1'), F = s.frame; return [[3.0, -1.25], [3.9, -0.9]].map(([x, z]) => { const p = F.w(x, z); return [p.x, p.z]; }); })()",

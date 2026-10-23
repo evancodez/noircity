@@ -78,6 +78,8 @@ export default {
     lift.shut0 = K.solid(L.x1 + 0.08, L.x1 + 0.16, L.z0 + 0.35, L.z1 - 0.25, { lvl: null }); lift.shut0.lvl = undefined;
     lift.shut1 = K.solid(L.x1 + 0.08, L.x1 + 0.16, L.z0 + 0.35, L.z1 - 0.25, { lvl: null }); lift.shut1.lvl = undefined;
     K.lift = lift;
+    // (the shaft is inside: its volume, from the lobby's floor to over the first floor's)
+    K.volume(L.x0, L.x1, L.z0, L.z1, FLOOR, y1 + 2.6, { ambient: 0.5, haze: 0.2 });
     K.use({ atFn: () => K.F.v(L.x1 - 0.05, lift.y + 1.45, (L.z0 + L.z1) / 2), range: 2.4, cone: 0.8, prompt: () => (lift.at === 0 ? 'the lift: up' : 'the lift: down'), when: () => !lift.riding, onUse: () => ride(K, s, P) });
     // (a call button outside each floor's gate)
     // ---- the first floor: the corridor at the back, my room over the avenue
