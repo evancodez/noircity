@@ -121,20 +121,51 @@ O3's own 'smash' through the set's event (`by: 'fist'`).
 | --- | --- |
 | the graph tool `node tools/pavecheck.mjs` | **0 / 0 / 0** (was 194 legs through a solid and 17 corners inside) |
 | `o1b_jank.json` | **PASS 20 of 20** (the flowers slid round, never inside; every round thing nearest its edge 0.36 m) |
-| the fist walk `o1c_fist.json` | see section 3a |
-| the fist by the pad `o1c_fist_pad.json` | see section 3a |
+| the fist walk `o1c_fist.json` | **PASS 30 of 30** (section 3a) |
+| the fist by the pad `o1c_fist_pad.json` | **PASS** (section 3a) |
 | `o6_city.json` | **PASS** (down Grand Ave and the market: over, nothing through, nothing floating, resting) |
 | `o3_witness.json` | **PASS** (empty 0, cop 1, box 1, stopped 0) |
 | `o3_crowd.json` | the walk part passes on the mended graph (1,423 frames, nobody through anybody, in a wall or in the eye; car through 0; the shot scatters 6; fast car down 2); **the gun step fails (2 of 6 run from the drawn gun, 4 wanted)** - and fails the same with main's `graph.js` and `People.js` put back (run here): it is main's RMB clash (O3's draw against O7's wheel and jab), not the graph |
-| `o1_drive.json` | see section 3a |
+| `o1_drive.json` | five districts, never in a wall; ended `failed` on car wear (O6b's, section 3a) |
 | the colour measure (`tools/colour.py`), the ten blind streets from the seat (O1b's poses) + Doyers on foot + `city_o3_police` + `city_park` + the title | **max 1.72 % (Grand Ave under the el, the police's red lamp not in it), mean 0.59 %, none over 2 %**; `city_o3_police` 1.01 % (its red roof lamp: red 0.41), the title 0.94 % (its red splash 0.35 + the blue neon), Doyers 0.88 %, Bridge St from the seat 0.05 % (no real light of the Hill near that pose) |
 | golden, game one's | 39 of 40 identical; **`title` changed** (its backdrop is the city's Grand Ave: the near ground darker) - re-taken |
 | golden, the city's 16 | **12 changed and re-taken, 4 identical** (`city_quay`, `city_clock`, `o5_bar`, `o5_gym`): every street frame's near ground darker (uNearK); `city_park` also the Hill's warm pool; `city_o3_crowd` and `city_o3_police` also the walkers on the mended graph's line; `smash_bed` and `smash_wreck` (O6's bed on the city's ground: the near ground). Old beside new: `docs/review/O1c/1_city_frames_old_new_near_ground_darker.jpg` |
-| errors | see section 3a |
-| fps | see section 3a |
+| errors | **clean** at fourteen starts and beats |
+| fps | every busy spot over `shot=perf` (Grand Ave 1.08 x) |
 
 ### 3a. The last runs
-(filled in below as they run)
+- **The fist walk** `o1c_fist.json` (final code): **PASS, 30 of 30** - every
+  kind once on and about Grand Ave (what the Tenements, the Docks and the Yards
+  have, the nearest one: churns, drums, a handcart): the dustbin, dustbins, a
+  board, a bicycle, flowers, a barrel, a rain barrel, churns over; crates
+  shoved over (`over:body`), crates kicked to planks (`break`); drums, a
+  bench, a fruit stand, a newsstand shake to a jab (no hurt); drums, barrels,
+  a bench, a handcart over to a kick; a mailbox, a hydrant, a lamp post, a call
+  box, a street sign, a booth ring and stand, the hand hurt each time; shop
+  glass `crack` then `break` (pane gone, O3's `smash`); a wall hurt the hand;
+  a door knocked; the coupe's tin dented (no traffic on main before O2: the
+  roam's own coupe); a bottle on a step knocked off and broken; a bin a cop
+  saw knocked over: `vandal@cop` and **HEAT 1**. Everything that went over
+  lay with its lowest point 0.003 m over the ground (`settle`), at rest after
+  3.5 s (7 s for what rolls). Press to the swing 2.2-32.6 ms. #errlog clean.
+- **The fist by the pad** `o1c_fist_pad.json`: **PASS** (R2 a dustbin over,
+  a lamp post rings and hurts, circle + R2 crates kicked to planks, glass
+  cracked then gone), 0 key or mouse events.
+- **The drive-through** `o1_drive.json` (at a one-minute load of 67-77, five
+  NOIR CITY lanes building): all five districts, 3.47 km, **never inside a
+  wall**, 1 crash, 5 scrapes; 36 frames over 50 ms of 10,002 (worst 251 ms);
+  **it ended `failed`** - the car wore out and burned on the bot's scrapes,
+  the O6 car-wear finding routed to O6b (its merge is pending on main), not
+  this lane's.
+- **errors** (`tools/errors.sh`, people on): every start (grand, clock,
+  tenements, docks, yards, hill, gasworks, bridge, river, park), the station,
+  hospital and ashore beats, `start=city`: **clean, all fourteen**.
+- **fps** (`MOMENTS=city tools/fpstable.mjs 5`, at a load of 36-56, ratio to
+  `shot=perf` measured beside each): Grand Ave from the car **1.08 x**, the
+  el's corner 1.33, Broadway to the clock 1.18, the Bowery under the station
+  1.39, the quay 1.60 - every spot over perf (O1b's 1.09 / 1.49 / 1.16 / 1.06
+  / 1.71); draws 652 / 572 / 900 / 650 / 546 (unchanged: nothing of this lane
+  draws more; the firehouse's panels are in the dressing's merged chunk).
 
 ---------------------------------------------------------------------------
 ## 4. Feel
@@ -168,7 +199,7 @@ asks for); nothing holds the feet.
 ## 6. Left (most felt first)
 
 1. **o3_crowd's gun step** fails on main as here (the RMB clash); not the
-   graph's.
+   graph's. **o1_drive ended in a burnt car** (O6's car wear, O6b's fix).
 2. **A kick has no foot**: the hand kit has no leg; the kick is the eye's
    lunge and the fists coming up. A foot in the viewmodel would sell it.
 3. **The Hill's warmth is in its real lights' pools only** (the nearest five
