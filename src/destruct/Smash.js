@@ -1529,15 +1529,16 @@ export class Smash {
     if (prop && prop.carD) return this.cars.bullet(prop.carD, hit, dir, weak);
     if (prop === 'facade') return this.facadeShot(hit, dir, weak);
     let it = prop && prop.K ? prop : null;
-    if (!it) it = this.pick(hit.point);
+    if (!it) it = this.pick(hit.point, hit.mesh && hit.mesh.userData.pickKind);   // [O6b] (a merge of one kind: the awnings' - never the newsstand under one)
     if (!it) return null;
     return this.shot(it, hit.point, dir, weak);
   }
   // the standing item whose shape holds a point (a round on a merged mesh)
-  pick(p) {
+  pick(p, kind = null) {
     let best = null, bd = Infinity;
     for (const it of this.near(p.x, p.z, 2.2)) {
       if (it.state !== 'stand' && !it.dark) continue;
+      if (kind && it.kind !== kind) continue;
       const K = it.K;
       const dy = p.y - it.y0;
       let d;
@@ -1551,7 +1552,7 @@ export class Smash {
         if (dy < -0.1 || dy > K.h + 0.15) continue;
         d = Math.hypot(p.x - it.x, p.z - it.z) - K.r;
       } else if (it.fp) {
-        if (dy < -0.1 || dy > K.h + 0.3) continue;
+        if (dy < Math.min(-0.1, K.low ?? 0) || dy > K.h + 0.3) continue;   // [O6b] (an awning: down to its valance's hem)
         const c = Math.cos(it.yaw), s = Math.sin(it.yaw), dx = p.x - it.x, dz = p.z - it.z;
         const lx = dx * c - dz * s, lz = dx * s + dz * c;
         d = Math.max(Math.abs(lx) - it.fp.hx, Math.abs(lz) - it.fp.hz);

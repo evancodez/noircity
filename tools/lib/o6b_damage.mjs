@@ -18,6 +18,7 @@ export default async function o6b(api) {
   const m = api.opts.mode;
   if (m === 'parts') return parts(api);
   if (m === 'hang') return hang(api);
+  if (m === 'awnshot') return awnShot(api);
   if (m === 'awning') return awning(api);
   if (m === 'river') return river(api);
   if (m === 'memory') return memory(api);
@@ -147,7 +148,7 @@ async function ram(api) {
     const spent = async () => {
     const me = await js(ST);
     if (!me || me.failing) return 'failed';
-    if (me.dmg >= 2.45 || me.hubs >= 1 || me.state === 'burning') {
+    if (me.dmg >= (opts.untilFire ? 3.0 : 2.45) || me.hubs >= 1 || me.state === 'burning') {   // ([O6b] untilFire: a smoking car still drives - power 0.8 - on until it is near the fire)
       out.mine.push(await js(SHOWS('G.city.car')));
       await brakeAndBack(api, 0);
       await press('KeyE');
@@ -156,7 +157,8 @@ async function ram(api) {
       // (out of a burning car: away from it first - its blast reaches a man within 8 m)
       if (me.state === 'burning') { const p = await js('[N.controller.pos.x, N.controller.pos.z]'); await walkTo(api, p[0], p[1] + (southward ? -12 : 12), 6000, true); }
       const done = out.blows.map((b) => b.id);
-      const pick = await js(`(() => { const C = N.controller.pos, done = ${JSON.stringify(done)}; let b = null, bd = 1e9; for (const v of G.city.cars) { if (v.wrecked || v === G.city.car || v.kind === 'sedan' || !v.smashD || v.smashD.state === 'burning' || v.damage > 2.3 || v.smashD.hub.some(Boolean)) continue; const d = Math.hypot(v.pos.x - C.x, v.pos.z - C.z) + (done.includes(v.id) ? 0 : 25) + (v.kind === 'truck' ? 60 : 0); if (d < bd) { bd = d; b = v; } } return b && { id: b.id, x: b.pos.x, z: b.pos.z, yaw: b.yaw, hw: b.spec.halfW, east: b.pos.x > -120 }; })()`);
+      const todo = cars.filter((c) => PLAN.some((p) => p.at && byAt(p.at) === c) && !done.includes(c.id)).map((c) => c.id);   // (never a car still to be rammed)
+      const pick = await js(`(() => { const C = N.controller.pos, done = ${JSON.stringify(done)}; let b = null, bd = 1e9; for (const v of G.city.cars) { if (v.wrecked || v === G.city.car || v.kind === 'sedan' || ${JSON.stringify(todo)}.includes(v.id) || !v.smashD || v.smashD.state === 'burning' || v.damage > 2.9 || v.smashD.hub.some(Boolean)) continue; const d = Math.hypot(v.pos.x - C.x, v.pos.z - C.z) + (done.includes(v.id) ? 0 : 25) + (v.kind === 'truck' ? 60 : 0); if (d < bd) { bd = d; b = v; } } return b && { id: b.id, x: b.pos.x, z: b.pos.z, yaw: b.yaw, hw: b.spec.halfW, east: b.pos.x > -120 }; })()`);
       if (!pick || pick.__exc) { out.end = 'no car to take'; return 'end'; }
       // (its door on the lane's side: a car at the east kerb from its west side)
       const sd = pick.east ? -1 : 1;
@@ -204,6 +206,7 @@ async function ram(api) {
       const kmh = step.blow === 'rear' ? opts.rearKmh ?? 45 : opts.doorKmh ?? 38;
       const r = await follow(api, path, { speed: kmh / 3.6, stop, timeout: 40000, fastFrom: again ? 0 : path.length - 3 });
       if (shots[step.name] && !again) { await sleep(shots[step.name].after ?? 200); await shot(shots[step.name].name || step.name); }
+      if (r.end === 'burning') return { end: r.end, kmh: 0, max: 0 };   // (my car on fire: out at once, not a back-off first)
       await sleep(250);
       await brakeAndBack(api, step.blow === 'door' && step.again && !again ? 2600 : 1500);
       await sleep(300);
@@ -226,8 +229,8 @@ async function ram(api) {
     if (opts.untilFire && !stopAll) {
       const t = await js(`(() => { const v = G.city.cars.find((c) => c.id === ${T.id}); return { wreck: !!v.wrecked, st: v.smashD && v.smashD.state }; })()`);
       if (t.st === 'burning') {
-        await keyDown('KeyS'); await sleep(4000); await keyUp('KeyS'); await keyDown('Space'); await sleep(300); await keyUp('Space');
-        for (let i = 0; i < 60; i++) { const u = await js(`(() => { const v = G.city.cars.find((c) => c.id === ${T.id}); return !!v.wrecked; })()`); if (u) break; await sleep(150); }
+        await keyDown('KeyS'); await sleep(6000); await keyUp('KeyS'); await keyDown('Space'); await sleep(300); await keyUp('Space');
+        for (let i = 0; i < 60; i++) { const u = await js(`(() => { const v = G.city.cars.find((c) => c.id === ${T.id}); const m = G.city.car; return !!v.wrecked || (m.smashD && m.smashD.state === 'burning'); })()`); if (u) break; await sleep(150); }
         await sleep(400);
       }
     }
@@ -364,6 +367,31 @@ async function hang(api) {
   return { before, after, bursts: bursts + 1 };
 }
 
+// ---- [O6b] after the critic (m8): a city awning shot (Fifth St's north side: the street's canvas, O1b's dressing) ------------------
+async function awnShot(api) {
+  const { js, log, sleep, mouse, shot, cursor } = api;
+  const A = await js(`(() => { const C = N.controller.pos; let b = null, bd = 1e9; for (const i of G.stage.smash.items) { if (i.kind !== 'awning' || !i.rec || !i.rec.d || i.state !== 'stand' || !(i.z > 49 && i.z < 53 && i.x < -128 && i.x > -175)) continue; const d = Math.hypot(i.x - C.x, i.z - C.z); if (d < bd) { bd = d; b = i; } } if (!b) return null; const r = b.rec, ox = Math.sin(r.yaw), oz = Math.cos(r.yaw); return { id: b.id, x: r.x, z: r.z, y: b.y0, ox, oz, d: bd, mid: [r.x + ox * r.d * 0.5, b.y0, r.z + oz * r.d * 0.5] }; })()`);
+  if (!A) return { err: 'no awning' };
+  // (across the pavement from it, 7 m out from the wall, a little along)
+  await walkTo(api, A.x + A.ox * 7, A.z + A.oz * 7, 30000, true);
+  await aimAt(api, A.mid);
+  await sleep(300);
+  await shot('a1_awning_aimed');
+  const [cx, cy] = cursor();
+  let bursts = 0;
+  for (; bursts < 5; bursts++) {
+    await mouse('mousePressed', cx, cy, 'left'); await sleep(260); await mouse('mouseReleased', cx, cy, 'left');
+    await sleep(500);
+    if (await js(`G.stage.smash.items.find((i) => i.id === ${A.id}).state !== 'stand'`)) break;
+    await aimAt(api, A.mid);
+  }
+  await sleep(2500);
+  const after = await js(`(() => { const it = G.stage.smash.items.find((i) => i.id === ${A.id}); return { state: it.state, hits: it.hits, torn: it.torn || 0, shots: G.stage.smash.events.filter((e) => e.what === 'shot').slice(-6).map((e) => [e.kind, e.id]) }; })()`);
+  await shot('a2_awning_shot');
+  log(`awning ${A.id}: after ${bursts + 1} bursts ${JSON.stringify(after)}`);
+  return { after, bursts: bursts + 1 };
+}
+
 // ---- a lorry onto the pavement under the city's awnings (the bed's lorry, Fifth St) ----------------------------
 async function awning(api) {
   const { js, log, sleep, keyDown, keyUp, shot, opts } = api;
@@ -388,9 +416,9 @@ async function awning(api) {
   const r = await follow(api, [[lorry.x, lorry.z], [-128, 58.5], [-136, 56.5], [-143, z], [-152, z], [-170, z]], { speed: 6, timeout: 45000 });
   log(`the lorry passed the awnings at ${JSON.stringify(await js('(window.__o6bAw.stop = true, window.__o6bAw)'))}`);
   await brakeAndBack(api, 0);
-  await sleep(5000);
+  await sleep(opts.settle ?? 5000);
   const torn = await js(`G.stage.smash.events.filter((e) => e.kind === 'awning' && e.t >= ${t0}).map((e) => [e.what, e.by, e.id])`);
-  const rest = await js(`G.stage.smash.items.filter((i) => i.kind === 'awning' && i.rec && i.state !== 'stand').map((i) => [i.id, i.state, +i.P.y.toFixed(2)])`);
+  const rest = await js(`G.stage.smash.items.filter((i) => i.kind === 'awning' && i.rec && i.state !== 'stand').map((i) => [i.id, i.state, +i.P.y.toFixed(2), i.body ? +i.body.p.y.toFixed(2) : null, +(i.t || 0).toFixed(1)])`);
   await shot('a1_awning_down');
   log(`the lorry: ${r.end}; awnings: ${JSON.stringify(torn)} ${JSON.stringify(rest)}`);
   return { end: r.end, torn, rest, n: aws.length };

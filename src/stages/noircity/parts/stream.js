@@ -68,7 +68,8 @@ export default {
     const names = nameAtlas([...new Set(C.streets.map((s) => s.name))]);
     const clothMat = new THREE.MeshStandardMaterial({ color: 0x6e6e6e, roughness: 0.9, side: THREE.DoubleSide });
     const MATS = { dark: M.black, trim: M.stoneTrim, iron: M.lampIron, tree: M.tower, pave: street.paveMat, kerb: M.kerb, signs: names.mat, cloth: clothMat };
-    const SOLID = new Set(['pave', 'kerb', 'iron']);
+    // ([O6b] after the critic, m8: the awnings in the bullets' world - a round in one tears it, the set's pick finds which)
+    const SOLID = new Set(['pave', 'kerb', 'iron', 'awning']);
     const loaded = new Map(), building = new Map();
     const doorsAt = new Map();   // [O1b] chunk key (where the door stands) -> Set(door)
     const stats = { built: 0, dropped: 0, buildMs: 0, live: 0, lastMs: 0 };

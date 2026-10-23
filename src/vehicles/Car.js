@@ -478,12 +478,12 @@ export class Car {
     // the damage: a glance costs nothing, a square blow a step or two
     // (a square blow at 45 km/h is about a step; a glance a fraction of one)
     const ram = iRam ? this : o, hit = iRam ? o : this;
-    const mr = car2 ? Math.sqrt(clamp(ram.spec.mass / hit.spec.mass, 0.4, 2.5)) : 1;
+    const mr = car2 ? Math.sqrt(clamp(ram.spec.mass / hit.spec.mass, 0.56, 2.5)) : 1;   // (a coupe into a lorry: three quarters; a lorry into a sedan: half again)
     if (!car2) { if (imp > 5) this.hurt((imp - 5) * (headOn > 0.6 ? 0.14 : 0.08), point); }
     else {
       const hOn = Math.abs(ram.fwd.x * nx + ram.fwd.z * nz);
       if (imp > 5) ram.hurt((imp - 5) * (hOn > 0.6 ? 0.07 : 0.05) / mr, point);
-      if (impC * mr > 2.5 && hit.hurt) hit.hurt((impC * mr - 2.5) * 0.27, point);   // (a lorry's weight: hard at a walking pace)
+      if (impC * mr > 2.5 && hit.hurt) hit.hurt((impC * mr - 2.5) * 0.3, point);   // (a lorry's weight: hard at a walking pace)
     }
     if (o) {
       o.emit && o.emit('bump', { by: this, k: Math.min(1, impC / 10), imp: impC, impN: imp, point, n: new THREE.Vector3(-nx, 0, -nz), struck: iRam });

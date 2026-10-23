@@ -88,7 +88,7 @@ const RIMS = new Map();
 function rimmed(mat) {
   if (!mat || !mat.isMaterial) return mat;
   if (mat.userData && mat.userData.scarBase) mat = mat.userData.scarBase;   // (a scarred car's own paint: its base's twin)
-  if (!RIMS.has(mat)) RIMS.set(mat, rimMaterial(mat, 0.08, false));
+  if (!RIMS.has(mat)) RIMS.set(mat, rimMaterial(mat, 0.13, false));   // ([O6b] after the critic, M3: 0.08 was black on black from the street)
   return RIMS.get(mat);
 }
 

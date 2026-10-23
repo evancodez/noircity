@@ -55,6 +55,9 @@
    "eval": "JSON.stringify(G.city.cars.map((c, i) => [i, c.kind, +c.damage.toFixed(2), c.smashD && c.smashD.state, c.spare ? 'spare' : '']))"
   },
   {
+   "eval": "JSON.stringify(G.lastFail || null)"
+  },
+  {
    "expect": "!G.lastFail",
    "name": "never a fail: out of every burning car in time (the wrecks are the rams' and the chain's, not a retry's)"
   },
