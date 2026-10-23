@@ -147,7 +147,10 @@ export function step(ctx, R, T, dt) {   // [O6] exported
     const slip = SLIPS.some((s) => Math.abs(p.x - s.x) < s.w / 2 + 0.5 && (p.z > RIVER.s + RIVER.hw + 1 || (vs > 4 && p.z > edge - lead)));
     const pier = PIERS.some((q) => Math.abs(p.x - q.x) < q.w / 2 && p.z > edge + q.len - lead);
     const bridge = R.inCar && Math.abs(p.z - BRIDGE.z) < BRIDGE.hw + 2 && p.x > RIVER.e && p.x > BRIDGE.barrier - Math.max(12, ve * 2.4) && p.x < BRIDGE.barrier;
-    const w = slip || pier ? 'The river.' : bridge ? 'The bridge is up.' : null;
+    // ([O6b] the cold play's finding 10: put ashore at the steps, the first thing read
+    // was `The river.` again - the steps are by the water; not in the first seconds ashore)
+    const ashore = !R.inCar && G.scenes.beat === 'ashore' && T.foot < 4;
+    const w = (slip || pier) && !ashore ? 'The river.' : bridge ? 'The bridge is up.' : null;
     // (a warning is danger: a teach card up goes - never two cards, never a card in danger)
     if (w !== (T.warned || null)) { T.warned = w; if (w) hud.teach.dismiss(); hud.warn(w); }
   }
@@ -158,8 +161,14 @@ export function step(ctx, R, T, dt) {   // [O6] exported
     T.drive += dt;
     T.dist += Math.abs(car.speed) * dt;
     R.cabin.step(dt);
-    // the river: the car in the water is lost
-    if (C.inWater(car.pos.x, car.pos.z)) { wet(ctx, R, car.pos, 'The river took it.'); return; }
+    // the river: the car in the water is lost ([O6b] it drops, the splash, the water
+    // closing over it - then the words; stage.smash.cars.sink)
+    if (C.inWater(car.pos.x, car.pos.z) || R.sinkT) {
+      const S = ctx.stage.smash;
+      if (!R.sinkT) { R.sinkT = G.time; if (S) S.cars.sink(car); }
+      if (!S || G.time - R.sinkT > 0.95) { R.sinkT = 0; wet(ctx, R, car.pos, 'The river took it.'); }
+      return;
+    }
     // ([O6] shoved by the tram the car is not slow, but a man may still get out of it)
     const slow = Math.abs(car.speed) < 1.5 || (car.smashD && car.smashD.tramT != null && G.time - car.smashD.tramT < 0.4);
     // the pedals, taught in the seat before the first W (the critic's m2:
@@ -183,7 +192,7 @@ export function step(ctx, R, T, dt) {   // [O6] exported
   // stands (nothing else steps a parked car yet: O2's traffic will)
   if (car && !R.inCar && (car.vel.lengthSq() > 4e-4 || Math.abs(car.yawRate) > 0.01)) car.step(dt);
   // on foot: the river (walked off a pier's end, down a slipway, the steps)
-  if (C.inWater(ctl.pos.x, ctl.pos.z) && ctl.groundY < -0.6) { wet(ctx, R, ctl.pos, 'Into the river.'); return; }
+  if (C.inWater(ctl.pos.x, ctl.pos.z) && ctl.groundY < -0.6) { if (ctx.stage.smash) ctx.stage.smash.cars.splash(ctl.pos.clone(), 0.55); wet(ctx, R, ctl.pos, 'Into the river.'); return; }   // [O6b] (the splash)
   // E at the car: any door, looking at it, close by
   let near = false;
   if (car && car.solid !== false && !car.wrecked) {   // [O6] (a burnt wreck is no car to get into)

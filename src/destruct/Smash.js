@@ -247,7 +247,7 @@ export class Smash {
     if (!A) return;
     const a = A.array, i0 = s.start * A.itemSize, n = s.count * A.itemSize;
     s.saved = a.slice(i0, i0 + n);
-    if (s.attr === 'color') a.fill(0, i0, i0 + n);
+    if (s.attr === 'color') { a.fill(0, i0, i0 + n); this.mouthHide(s, true); }
     else {
       const x = a[i0], y = a[i0 + 1], z = a[i0 + 2];
       for (let i = i0; i < i0 + n; i += 3) { a[i] = x; a[i + 1] = y; a[i + 2] = z; }
@@ -277,6 +277,23 @@ export class Smash {
       }
     }
     s.saved = null; s.savedTri = null;
+    if (s.attr === 'color') this.mouthHide(s, false);
+  }
+  // [O6b] a lamp's mouth gone dark leaves the far tile's draw: black in its
+  // vertex colour it printed a paper-grey disc (O6's left 5; hiding the far
+  // tile's lights mesh took the disc away - the ink does not print that
+  // mesh's black as black); collapsed, the shade's own black mouth (the near
+  // chunk's) is what is seen
+  mouthHide(s, hide) {
+    const A = s.mesh.geometry.getAttribute('position');
+    if (!A) return;
+    const i0 = s.start * 3, n = s.count * 3, a = A.array;
+    if (hide && !s.savedPos) {
+      s.savedPos = a.slice(i0, i0 + n);
+      for (let i = i0; i < i0 + n; i += 3) { a[i] = a[i0]; a[i + 1] = a[i0 + 1]; a[i + 2] = a[i0 + 2]; }
+    } else if (!hide && s.savedPos) { a.set(s.savedPos, i0); s.savedPos = null; }
+    else return;
+    A.addUpdateRange(i0, n); A.needsUpdate = true;
   }
   // a lamp's mouth at a level (0 dark, 1 lit): its colour slot rewritten
   bulbLevel(it, k) {
@@ -289,6 +306,7 @@ export class Smash {
       const A = s.mesh.geometry.getAttribute('color'), i0 = s.start * 3;
       for (let i = 0; i < s.saved.length; i++) A.array[i0 + i] = s.saved[i] * Math.max(0, k);
       A.addUpdateRange(i0, s.saved.length); A.needsUpdate = true;
+      this.mouthHide(s, k <= 0);
     }
   }
   entryOf(mesh) {
@@ -511,6 +529,7 @@ export class Smash {
   carHit(it, car, vn, dir = null, point = null, by = 'car') {
     if (it.state !== 'stand' && it.state !== 'rest') return null;
     const K = it.K, G0 = this.game;
+    if (K.how === 'fixed') return null;   // [O6b] (the el's hung lamps: only a round puts one out)
     const d = dir ? dir.clone() : car ? new THREE.Vector3(car.vel.x, 0, car.vel.z).normalize() : new THREE.Vector3(1, 0, 0);
     d.y = 0; if (d.lengthSq() < 1e-6) d.set(1, 0, 0); d.normalize();
     const pt = point || new THREE.Vector3(it.x, it.y0 + 0.5, it.z);
@@ -1599,7 +1618,7 @@ function G0play(G0, name, at, k) { if (G0) G0.sfx.play(name, at, { k }, { ref: 3
 // turns from the eye (the ink keeps the black contour outside it): a fallen
 // thing reads by its edge in an unlit stretch. `white`: the colour comes from
 // the instances (a car's part takes its car's paint).
-function rimMaterial(base, k, white) {
+export function rimMaterial(base, k, white) {
   const m = base.clone();
   if (white && m.color) m.color.setRGB(1, 1, 1);
   if (!(m.isMeshStandardMaterial || m.isMeshLambertMaterial || m.isMeshPhongMaterial)) return m;

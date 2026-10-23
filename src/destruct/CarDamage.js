@@ -3,6 +3,9 @@ import { FIRE, ATLAS } from '../fx/fxTextures.js';
 import { FIRE_COL } from '../fx/Explosion.js';
 import { Fire } from '../fx/Fire.js';
 import { buildWreck, wreckMaterials, WRECK_DROP } from './Wreck.js';
+import { rimMaterial } from './Smash.js';
+import { KINDS } from './smashKinds.js';
+import { WATER_Y } from '../world/plan.js';
 import { SEDAN_SHAPES } from '../world/Cars.js';
 import { SURF } from '../util/RayWorld.js';
 import { LAYER } from '../render/layers.js';
@@ -72,6 +75,14 @@ function doorGeo(L, H) {
 }
 const _s = new THREE.Vector3(), _p = new THREE.Vector3(), _q3 = new THREE.Quaternion();
 let WRECK = null;
+// [O6b] a loose part's material: its own with a faint paper rim (a bonnet up, a
+// door hanging read by their edge on a black car; made with the stage: prewarm)
+const RIMS = new Map();
+function rimmed(mat) {
+  if (!mat || !mat.isMaterial) return mat;
+  if (!RIMS.has(mat)) RIMS.set(mat, rimMaterial(mat, 0.05, false));
+  return RIMS.get(mat);
+}
 
 export class CarDamage {
   constructor(smash) {
@@ -125,6 +136,13 @@ export class CarDamage {
       for (const mat of [new THREE.LineBasicMaterial({ color: new THREE.Color(0.2, 0.2, 0.2), transparent: true, opacity: 0.7, depthWrite: false }), new THREE.LineBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.85, depthWrite: false })]) {
         const l = new THREE.LineSegments(seg, mat); l.layers.set(LAYER.FX); l.frustumCulled = false; l.userData.noRay = true; g.add(l);
       }
+    }
+    // [O6b] (the loose parts' rimmed twins of the cars' materials, drawn once with the rest)
+    const M = st.M || {};
+    const tiny = new THREE.PlaneGeometry(0.01, 0.01);
+    for (const k of ['paint', 'paintGrey', 'chrome', 'rubber', 'hubcap', 'whitewall', 'seam', 'black', 'iron']) {
+      if (!M[k] || !M[k].isMaterial) continue;
+      const m = new THREE.Mesh(tiny, rimmed(M[k])); m.frustumCulled = false; m.userData.noRay = true; m.userData.inkFigure = true; g.add(m);
     }
     this.smash.group.add(g);
   }
@@ -182,6 +200,8 @@ export class CarDamage {
     if (D.proxy) { this.stage.removeSolid(D.proxy); if (D.proxy.parent) D.proxy.parent.remove(D.proxy); }
     v.sagPitch = 0; v.sagRoll = 0; v.pull = 0; v.power = 1;
     for (const k of GRIP_KEYS) v.grip[k] = 1;
+    if (v._sinking) { v._sinking = null; v.onPose = null; }
+    v.body.visible = true;
     delete v.smashD;
     const i = this.list.indexOf(D); if (i >= 0) this.list.splice(i, 1);
     this.byCar.delete(v);
@@ -440,7 +460,7 @@ export class CarDamage {
       ng.setAttribute('normal', new THREE.Float32BufferAttribute(rec.nor, 3));
       ng.computeBoundingSphere();
       D.cutGeos.push(ng);
-      const m = rec.src, pm = new THREE.Mesh(ng, mat);
+      const m = rec.src, pm = new THREE.Mesh(ng, rimmed(mat));
       pm.userData = { ...m.userData, noRay: true };
       pm.castShadow = m.castShadow; pm.receiveShadow = m.receiveShadow; pm.renderOrder = m.renderOrder;
       pm.layers.mask = m.layers.mask;
@@ -493,7 +513,7 @@ export class CarDamage {
     this.append(D, 'dark', new THREE.BoxGeometry(L - 0.08, 0.03, zw * 2 - 0.08).translate(mid, Math.min(topAt(x0), topAt(x1)) - 0.1, 0));
     D.hood = { pivot: grp, ang: 0, w: 4 + 5 * k, strain: 0, L, zw, flapT: 0 };
     const G0 = this.game;
-    if (G0) { const p = v.body.localToWorld(V(mid, at.y + 0.2, 0)); G0.sfx.play('o6b_bonnet', p, { k: 0.6 + 0.4 * k }, { ref: 5 }); G0.emit('smash:part', { car: v, part: 'bonnet', how: 'sprung' }); }
+    if (G0) { const p = v.body.localToWorld(V(mid, at.y + 0.2, 0)); G0.sfx.play('o6b_bonnet', p, { k: 0.6 + 0.4 * k }, { ref: 5 }); this.smash.mark(p, 0.7, V(0, 1, 0), KINDS.carbonnet); G0.emit('smash:part', { car: v, part: 'bonnet', how: 'sprung' }); }
   }
   hoodOff(D, up = 1) {
     const H = D.hood, v = D.v;
@@ -509,7 +529,7 @@ export class CarDamage {
     const vel = V(v.vel.x * 0.55 - f.x * 2 * up, 3.5 + 3 * up + sp * 0.12, v.vel.z * 0.55 - f.z * 2 * up);
     sm.spawnPart('carbonnet', c, _q3.clone(), vel, V(sm.gauss() * 2, sm.gauss() * 2, -6 - sm.rnd(0, 4)).applyQuaternion(_q3), { scale: V(H.L, 1, H.zw * 2), color: this.paintOf(v) });
     const G0 = this.game;
-    if (G0) { G0.sfx.play('o6b_bonnet', c, { k: 1 }, { ref: 5 }); G0.emit('smash:part', { car: v, part: 'bonnet', how: 'off' }); }
+    if (G0) { G0.sfx.play('o6b_bonnet', c, { k: 1 }, { ref: 5 }); sm.mark(c, 1, V(0, 1, 0), KINDS.carbonnet); G0.emit('smash:part', { car: v, part: 'bonnet', how: 'off' }); }
   }
 
   // a door hanging off its hinge after a side blow: a panel of its paint
@@ -526,7 +546,7 @@ export class CarDamage {
     this.append(D, 'dark', new THREE.BoxGeometry(L - 0.06, H - 0.06, 0.012).translate((P.x0 + P.x1) / 2, (P.y0 + P.y1) / 2, side * (P.z + 0.008)));
     const pivot = new THREE.Group();
     pivot.position.set(P.x1, P.y0, side * (P.z + 0.03));
-    const door = new THREE.Mesh(doorGeo(L, H), mat);
+    const door = new THREE.Mesh(doorGeo(L, H), rimmed(mat));
     door.userData.inkId = skin ? skin.userData.inkId : 1;
     door.userData.inkFigure = true;
     door.userData.noRay = true;
@@ -550,7 +570,7 @@ export class CarDamage {
     const vel = V(v.vel.x * 0.7, 1.2, v.vel.z * 0.7).addScaledVector(sv, 2.4);
     sm.spawnPart('cardoor', c, _q3.clone(), vel, V(sm.gauss() * 2, sm.gauss() * 3, sm.gauss() * 2), { scale: V(Dd.L, Dd.H / 0.62, 1), color: this.paintOf(v) });
     const G0 = this.game;
-    if (G0) { G0.sfx.play('o6b_door', c, { k: 1 }, { ref: 5 }); G0.emit('smash:part', { car: v, part: 'door', how: 'off', side: Dd.side }); }
+    if (G0) { G0.sfx.play('o6b_door', c, { k: 1 }, { ref: 5 }); sm.mark(c, 1, sv, KINDS.cardoor); G0.emit('smash:part', { car: v, part: 'door', how: 'off', side: Dd.side }); }
   }
 
   // a bumper torn loose at the struck side: it hangs from its other end and
@@ -581,7 +601,7 @@ export class CarDamage {
     // (the pool's bar across: its z along the car's width, as the cut one)
     this.smash.spawnPart('carbumper', c, _q3.clone(), V(v.vel.x * 0.55, 0.8, v.vel.z * 0.55), V(0, this.smash.gauss() * 3, 0), { scale: V(1, 1, 2 * B.zEnd) });
     const G0 = this.game;
-    if (G0) { G0.sfx.play('clang', c, { k: 0.9 }, { ref: 5 }); G0.sfx.play('o6b_scrape', c, { k: 0.6 }, { ref: 4 }); G0.emit('smash:part', { car: v, part: 'bumper', how: 'off', end }); }
+    if (G0) { G0.sfx.play('clang', c, { k: 0.9 }, { ref: 5 }); G0.sfx.play('o6b_scrape', c, { k: 0.6 }, { ref: 4 }); this.smash.mark(c, 0.8, V(v.vel.x, 0, v.vel.z).normalize(), KINDS.carbumper); G0.emit('smash:part', { car: v, part: 'bumper', how: 'off', end }); }
   }
 
   // the wheel at a corner after a bad blow: cut out of the car, it wobbles
@@ -625,6 +645,7 @@ export class CarDamage {
     this.smash.spawnPart('carwheel', c, q, V(v.vel.x, 0, v.vel.z), null, { roll: { dir, sp: Math.min(12, sp * 0.9 + 1.5) }, scale: V(sc, sc, sc) });
     if (G0) {
       G0.sfx.play('o6b_wheel', c, { k: 1 }, { ref: 5 });
+      this.smash.mark(c.clone(), 0.9, sv.clone(), KINDS.carwheel);
       this.smash.sparksAt(c.clone().setY((v.groundY || 0) + 0.1), sv.clone(), 1.2);
       if (G0.controller && G0.vehicles && G0.vehicles.player === v && G0.controller.kick) G0.controller.kick(3, 4, 0.2);
       G0.emit('smash:part', { car: v, part: 'wheel', how: 'off', i });
@@ -714,6 +735,133 @@ export class CarDamage {
       if (Dd.ang === 1.35 || Dd.ang === 0.04) Dd.w *= -0.3;
       Dd.pivot.rotation.y = Dd.side * Dd.ang;
       if (Dd.strain >= 1) this.doorOff(D, key);
+    }
+  }
+
+  // ---- the river [O6b] (the cold play's finding 10: a car went in as grey planes and the black) --------------
+  // A car over the quay's edge: it drops to the water nose first, the splash
+  // (white, a column of drops and a ring that closes), and goes under; what is
+  // left is a dark shape under the surface where it went down, its lamps two
+  // glows dying under the water. (scenes/city.js gives the fail a moment for it:
+  // `The river took it.` comes as the water closes.) A man the same: splash().
+  sink(v) {
+    const G0 = this.game;
+    if (!G0 || v._sinking) return;
+    v._sinking = { t: 0, y0: v.body.position.y, vy: Math.min(0, v.vel.y || 0), fwd: v.fwd.clone(), sp: Math.min(9, v.speedAbs), splashed: false, pitch: 0 };
+    v.frozen = true;
+    const S = v._sinking;
+    v.onPose = (car) => {
+      const B = car.body;
+      B.position.y = S.y;
+      B.position.x = car.pos.x; B.position.z = car.pos.z;
+      B.quaternion.setFromAxisAngle(_w.set(0, 1, 0), car.yaw).multiply(_q.setFromAxisAngle(_v.set(0, 0, 1), -S.pitch));
+      B.updateMatrixWorld(true);
+    };
+    S.y = S.y0;
+    this.sinking = this.sinking || [];
+    this.sinking.push(v);
+  }
+  sinkStep(dt) {
+    const L = this.sinking;
+    if (!L || !L.length) return;
+    for (let i = L.length - 1; i >= 0; i--) {
+      const v = L[i], S = v._sinking;
+      if (!S || !this.game.vehicles.list.includes(v)) { L.splice(i, 1); continue; }
+      S.t += dt;
+      // (off the edge it carries on a little and falls; in the water it slows and goes down by the nose)
+      const inW = S.y < WATER_Y + 0.2;
+      S.sp = Math.max(0, S.sp - dt * (inW ? 9 : 1));
+      v.pos.x += S.fwd.x * S.sp * dt; v.pos.z += S.fwd.z * S.sp * dt;
+      S.vy = inW ? Math.max(S.vy - dt * 2, -0.9) * Math.exp(-dt * 0.5) : S.vy - 9.8 * dt;
+      if (inW && S.vy < -0.9) S.vy = -0.9;
+      S.y += S.vy * dt;
+      S.pitch = Math.min(0.5, S.pitch + dt * (inW ? 0.35 : 0.55));
+      if (!S.splashed && S.y < WATER_Y + 0.6) { S.splashed = true; this.splash(_v.set(v.pos.x, WATER_Y, v.pos.z).clone(), 1.4, v); }
+      if (v.lamps && v.lamps.setOn && S.y < WATER_Y - 0.6 && v.lamps.on) v.lamps.setOn(false);
+      if (S.y < WATER_Y - 2.6) { v.body.visible = false; L.splice(i, 1); }
+      v.pose(0);
+    }
+  }
+  // a splash in ink: white drops thrown up in a crown and falling back, a white
+  // ring that spreads and closes, the sound; for a car, its dark shape under
+  // the surface after (with its lamps' glows dying)
+  splash(at, k = 1, car = null) {
+    const G0 = this.game, sm = this.smash;
+    if (!G0) return;
+    const n = Math.round(70 * k);
+    for (let i = 0; i < n; i++) {
+      const a = sm.rnd(0, 6.283), r = sm.rnd(0.2, 1.1) * k, up = sm.rnd(2.5, 6.5) * Math.sqrt(k);
+      G0.fx.splash.spawn({ pos: _w.set(at.x + Math.cos(a) * r, WATER_Y + 0.05, at.z + Math.sin(a) * r).clone(), vel: V(Math.cos(a) * sm.rnd(0.6, 2.4), up, Math.sin(a) * sm.rnd(0.6, 2.4)), life: sm.rnd(0.7, 1.4), size: [0.02, 0.07], stretch: 0.05, col: [3, 3, 3], alpha: 1, cell: ATLAS.DROP, gravity: 9.8, ground: WATER_Y + 0.02, fadeOut: 0.2 });
+    }
+    for (let i = 0; i < 4; i++) G0.fx.dust.spawn({ pos: _w.set(at.x + sm.gauss() * 0.6 * k, WATER_Y + 0.4, at.z + sm.gauss() * 0.6 * k).clone(), vel: V(sm.gauss() * 0.4, sm.rnd(0.6, 1.4), sm.gauss() * 0.4), life: sm.rnd(0.8, 1.3), size: [1.2 * k, 1.0 * k], grow: 0.8, rot: sm.rnd(0, 6.28), col: [1.2, 1.2, 1.2], alpha: 0.4, drag: 1.5, fadeOut: 0.6 });
+    sm.mark(_w.set(at.x, WATER_Y + 0.5, at.z).clone(), Math.min(1, 0.6 + 0.3 * k), null, null);
+    G0.sfx.play('o6b_splash', at.clone ? at.clone() : at, { k: Math.min(1, 0.5 + 0.4 * k) }, { ref: 6 });
+    // the ring: white, out from where it went in, closing over it
+    const ring = this.ringOf();
+    ring.position.set(at.x, WATER_Y + 0.03, at.z); ring.scale.setScalar(0.6 * k); ring.visible = true;
+    ring.userData.t = 0; ring.userData.k = k;
+    if (car) {
+      // the shape it leaves under the water: dark, the car's size, its lamps dying
+      const S = this.sunkShape(), c = car;
+      S.position.set(at.x + c.fwd.x * 1.2, WATER_Y + 0.02, at.z + c.fwd.z * 1.2);
+      S.rotation.set(0, c.yaw, 0);
+      S.scale.set(c.spec.halfL * 1.9, 1, c.spec.halfW * 1.9);
+      S.visible = true; S.userData.t = 0;
+    }
+  }
+  ringOf() {
+    const R = this._rings || (this._rings = []);
+    let r = R.find((x) => !x.visible);
+    if (!r && R.length < 3) {
+      r = new THREE.Mesh(new THREE.RingGeometry(0.75, 1, 40).rotateX(-Math.PI / 2), new THREE.MeshBasicMaterial({ color: new THREE.Color(2.2, 2.2, 2.2), transparent: true, opacity: 0.9, depthWrite: false, fog: false }));
+      r.layers.set(LAYER.FX); r.renderOrder = 5; r.userData.noRay = true; r.frustumCulled = false;
+      this.smash.group.add(r); R.push(r);
+    }
+    return r || R[0];
+  }
+  sunkShape() {
+    const L = this._sunk || (this._sunk = []);
+    let s = L.find((x) => !x.visible);
+    if (!s && L.length < 3) {
+      s = new THREE.Group();
+      // (black where it lies under the water - it takes the lamps' streaks out of the wet - a pale
+      // ripple round it where the water closed, and its two lamps glowing up through the water)
+      const body = new THREE.Mesh(new THREE.CircleGeometry(0.5, 28).rotateX(-Math.PI / 2), new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.8, depthWrite: false, fog: false }));
+      body.layers.set(LAYER.FX); body.renderOrder = 4; body.userData.noRay = true;
+      const rim = new THREE.Mesh(new THREE.RingGeometry(0.5, 0.56, 36).rotateX(-Math.PI / 2), new THREE.MeshBasicMaterial({ color: new THREE.Color(0.9, 0.9, 0.9), transparent: true, opacity: 0.5, depthWrite: false, fog: false }));
+      rim.layers.set(LAYER.FX); rim.renderOrder = 5; rim.userData.noRay = true;
+      const glows = [-0.2, 0.2].map((z) => { const m = new THREE.Mesh(new THREE.CircleGeometry(0.06, 14).rotateX(-Math.PI / 2), new THREE.MeshBasicMaterial({ color: new THREE.Color(4, 4, 4), transparent: true, opacity: 0.9, depthWrite: false, fog: false })); m.position.set(0.44, 0.004, z); m.layers.set(LAYER.FX); m.renderOrder = 5; m.userData.noRay = true; return m; });
+      s.add(body, rim, ...glows);
+      s.userData.rim = rim;
+      s.userData.glows = glows;
+      this.smash.group.add(s); L.push(s);
+    }
+    if (!s) { s = L.reduce((a, b) => (a.userData.t > b.userData.t ? a : b)); }
+    return s;
+  }
+  // the rings spreading and closing, the shapes' lamps dying, far ones gone (the mend's 200 m)
+  waterStep(dt) {
+    for (const r of this._rings || []) {
+      if (!r.visible) continue;
+      const u = (r.userData.t += dt) / 1.8;
+      r.scale.setScalar((0.6 + 3.2 * Math.sqrt(Math.min(1, u))) * r.userData.k);
+      r.material.opacity = 0.9 * Math.max(0, 1 - u) * (u < 0.1 ? u * 10 : 1);
+      if (u >= 1) r.visible = false;
+    }
+    const e = this.game && this.game.camera.position;
+    for (const s of this._sunk || []) {
+      if (!s.visible) continue;
+      const t = (s.userData.t += dt);
+      // (the lamps under the water: dimming over twenty seconds, a flicker as they go)
+      const k = Math.max(0, 1 - t / 20) * (t > 12 ? (Math.sin(t * 31) * Math.sin(t * 13.7) > -0.3 ? 1 : 0.2) : 1);
+      for (const g of s.userData.glows) g.material.opacity = 0.9 * k;
+      s.userData.rim.material.opacity = 0.5 * Math.max(0.25, 1 - t / 30);
+      // (air coming up off it for a while: a bubble breaking now and then)
+      if (t < 14 && this.game && this.smash.rnd() < dt * (6 - t * 0.4)) {
+        const sm = this.smash, c = Math.cos(s.rotation.y), sn = Math.sin(s.rotation.y), u = sm.gauss() * 0.3 * s.scale.x, w = sm.gauss() * 0.3 * s.scale.z;
+        this.game.fx.splash.spawn({ pos: V(s.position.x + u * c + w * sn, WATER_Y + 0.03, s.position.z - u * sn + w * c), vel: V(0, sm.rnd(0.3, 0.9), 0), life: 0.35, size: [0.02, 0.03], stretch: 0.01, col: [2.5, 2.5, 2.5], alpha: 1, cell: ATLAS.DROP, gravity: 6, ground: WATER_Y + 0.01, fadeOut: 0.2 });
+      }
+      if (e && Math.hypot(s.position.x - e.x, s.position.z - e.z) > 200) s.visible = false;
     }
   }
 
@@ -943,6 +1091,7 @@ export class CarDamage {
     // (the warm meshes drawn a third of a second of play, then not again)
     if (this._warm && this._warm.visible && G0.state === 'playing' && ++this._warmN > 20) this._warm.visible = false;
     const L = G0.vehicles.list;
+    this.sinkStep(dt); this.waterStep(dt);
     for (const v of L) if (!v.smashD && v.spec && v.local && v.body) this.attach(v);
     for (let i = this.list.length - 1; i >= 0; i--) { const D = this.list[i]; if (!L.includes(D.v)) this.detach(D); }
     for (const D of this.list) {

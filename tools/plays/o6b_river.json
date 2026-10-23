@@ -1,0 +1,15 @@
+{
+ "about": "[O6b] The river's splash (brief O6b §2, the cold play's finding 10): O1's free roam, the coupe at the head of the slipway at the foot of the docks, W held (tools/lib/o6b_damage.mjs river): the car drops into the water nose first, the splash in ink (white drops, a ring closing), the words The river took it., ashore at the steps; looking back, a dark shape under the surface where it went, its lamps glowing and dying. node tools/play.mjs tools/plays/o6b_river.json",
+ "url": "/?mute=1&start=city&car=0,436,-1.5708",
+ "size": [1440, 900],
+ "out": "shots/o6b/river",
+ "steps": [
+  { "wait": 1500 },
+  { "clickOn": "#title .opt[data-k=begin]", "taken": "G.state !== 'title'", "retries": 5, "every": 4000 },
+  { "until": "G.scenes.current && G.scenes.current.id === 'city' && G.scenes.fadeK < 0.05 && G.city.inCar", "timeout": 30000 },
+  { "wait": 1200 },
+  { "drive": "tools/lib/o6b_damage.mjs", "mode": "river",
+    "check": "!D.err && D.sinkT > 0 && D.mid.rings > 0 && D.mid.shape && D.why === 'The river took it.' && D.end.shape && D.end.beat === 'ashore'",
+    "label": "a car into the river: the splash and the ring, the words, ashore; its shape under the water after" }
+ ]
+}

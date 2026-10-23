@@ -36,7 +36,12 @@ export const KINDS = {
   crate: { fp: [0.31, 0.21], h: 0.34, giveAt: 0.8, drag: 0.975, hurt: 0.01, how: 'break', shot: 'knock', hp: 2, cap: 48, mat: 'wood', surf: SURF.STONE, sound: 'smash_crate', knock: 'b9crate', tags: ['crate'], light: true, lift: 2, carry: 1.05 },
   fence: { fp: [1.15, 0.06], h: 1.9, giveAt: 1.5, drag: 0.85, hurt: 0.04, how: 'tumble', shot: 'wood', hp: 3, cap: 24, mat: 'wood', surf: SURF.STONE, sound: 'smash_fence', knock: 'w_fenceHit', tags: ['fence'], lie: false, lift: 0.8, carry: 0.6, light: true },
   // (an awning: an object of its own on a wall; only a tall thing reaches it)
-  awning: { high: true, low: 2.45, h: 0.6, giveAt: 0, drag: 1, hurt: 0, how: 'tear', shot: 'tear', hp: 3, mat: 'cloth', surf: SURF.STONE, sound: 'awning_tear', tags: ['awning'], proxy: false, bounce: 0.1, mu: 0.8 },
+  // [O6b] (low: its valance's hem under its fixing - a lorry's roof, 3.3 m, reaches the city's at 3.85; a car's
+  // 1.75 never: the old 2.45 over the fixing was out of reach of anything. cap: a pool for the city's
+  // awnings, records in the near chunks' merge, drawn as the pool's canvas scaled to their width)
+  awning: { high: true, low: -0.6, h: 0.6, giveAt: 0, drag: 1, hurt: 0, how: 'tear', shot: 'tear', hp: 3, cap: 12, mat: 'cloth', surf: SURF.STONE, sound: 'awning_tear', tags: ['awning'], proxy: false, bounce: 0.1, mu: 0.8 },
+  // [O6b] the el's hung lamps (no post: a round in the head puts one out; a car, a blast never reach it)
+  hanglamp: { lamp: true, high: true, low: 99, how: 'fixed', shot: 'lamp', h: 0.4, giveAt: 99, drag: 1, hurt: 0, hp: 1, surf: SURF.IRON, sound: 'zap', knock: 'clang', tags: ['hanglamp'], proxy: false },
   // [O6b] the parts that come off a car (CarDamage, the user's must: "car damage ... physical
   // within reason"): things of the set once they are off - never standing (Smash.spawnPart),
   // a rigid body that flies, rests and is swept by the cap and the mend at a distance. The

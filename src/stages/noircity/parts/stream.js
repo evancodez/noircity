@@ -63,7 +63,13 @@ export default {
         for (const g of kerbGeos(p.pts, p.kerbSides)) push('kerb', g);
       }
       yield;
-      for (const L of D.lots) { nearLot(L, out0); yield; }
+      for (const L of D.lots) {
+        const a0 = (out0.awning || []).length;
+        nearLot(L, out0);
+        // [O6b] the lot's awnings, records of the set (stage.smash): torn down by a lorry
+        if (sm() && out0.awning) for (let i = a0; i < out0.awning.length; i++) { const r = awningRec(L, i - a0, out0.awning[i], sm()); if (r) (own0.awning || (own0.awning = []))[i] = r; }
+        yield;
+      }
       for (const l of D.lamps) { push('iron', placeLamp(LAMP.iron, l), l); push('shade', placeLamp(LAMP.shade, l), l); }
       for (const p of D.props) {
         if (p.kind === 'namesign') { const B = nameBlades(p, names); for (const g of B.faces) push('signs', g, p); for (const g of B.iron) push('iron', g, p); continue; }
@@ -221,3 +227,29 @@ export default {
   },
   update: (s, dt, t, camera) => s.update(camera),
 };
+
+// [O6b] an awning the near build laid over a shop front (facade.js nearLot:
+// a box w x 0.08 x 1.6, tilted, out from the wall at the ground floor's top)
+// as a record of the destruction set, made and registered once a lot: where
+// it is fixed to the wall (x, y, z), the way out from the wall (yaw), its
+// width - read back from the box's own faces (+x face: vertices 0-3, -x: 4-7)
+function awningRec(lot, j, g, S) {
+  const A = (lot._awn || (lot._awn = []));
+  if (A[j]) return A[j];
+  const P = g.getAttribute('position');
+  if (!P || P.count < 8) return null;
+  let px = 0, pz = 0, nx = 0, nz = 0, cx = 0, cy = 0, cz = 0;
+  for (let i = 0; i < 4; i++) { px += P.getX(i); pz += P.getZ(i); nx += P.getX(4 + i); nz += P.getZ(4 + i); }
+  for (let i = 0; i < P.count; i++) { cx += P.getX(i); cy += P.getY(i); cz += P.getZ(i); }
+  cx /= P.count; cy /= P.count; cz /= P.count;
+  const ax = (px - nx) / 4, az = (pz - nz) / 4, w = Math.hypot(ax, az);
+  if (w < 0.5) return null;
+  const yaw = Math.atan2(-az, ax);                 // (its width along (cos yaw, -sin yaw))
+  const ox = Math.sin(yaw), oz = Math.cos(yaw);     // (out from the wall)
+  const rec = { kind: 'awning', x: cx - ox * 0.8, z: cz - oz * 0.8, yaw, y: cy, w };
+  const it = S.register(rec, 'awning', { merged: true, y: cy, w, d: 1.6, wall: { nx: ox, nz: oz }, e: [w / 2, 0.35, 0.8], c: [0, -0.3, 0.8] });
+  it.fp = { hx: w / 2, hz: 1.6 };
+  it.S = new THREE.Vector3(w / 3, 1, 1.6 / 1.5);
+  A[j] = rec;
+  return rec;
+}

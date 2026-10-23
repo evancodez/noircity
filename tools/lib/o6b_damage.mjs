@@ -17,6 +17,9 @@ const COLS_X = [-116.1, -123.9];
 export default async function o6b(api) {
   const m = api.opts.mode;
   if (m === 'parts') return parts(api);
+  if (m === 'hang') return hang(api);
+  if (m === 'awning') return awning(api);
+  if (m === 'river') return river(api);
   return ram(api);
 }
 
@@ -51,7 +54,7 @@ async function follow(api, path, { speed = 9, timeout = 40000, stop = null, slow
     for (let k = idx; k < Math.min(P.length, idx + 10); k++) { const d = Math.hypot(P[k][0] - s.x, P[k][1] - s.z); if (d < bd) { bd = d; best = k; } }
     idx = best;
     if (idx >= P.length - 2) { end = 'done'; break; }
-    const look = Math.min(P.length - 1, idx + Math.round(3 + Math.abs(s.v) * 0.4));
+    const look = Math.min(P.length - 1, idx + Math.round(4 + Math.abs(s.v) * 0.6));
     const [tx, tz] = P[look];
     const fx = Math.cos(s.yaw), fz = -Math.sin(s.yaw);
     const ang = Math.atan2(fx * (tz - s.z) - fz * (tx - s.x), fx * (tx - s.x) + fz * (tz - s.z));
@@ -63,7 +66,8 @@ async function follow(api, path, { speed = 9, timeout = 40000, stop = null, slow
     if (slowAt != null && idx < slowAt) target = Math.min(target, 7);
     if (Math.abs(s.v) < 0.5 && K.held.has('KeyW')) stuckT += dt; else stuckT = 0;
     if (stuckT > 2.5) { end = 'stuck'; break; }
-    const on = Math.abs(ang) > 0.03;
+    // (a hand on the wheel: a dead band that widens with the speed - held full lock at speed scrubs the car down to 8 m/s)
+    const on = Math.abs(ang) > 0.03 + 0.012 * Math.abs(s.v);
     await K.set('KeyD', on && ang > 0);
     await K.set('KeyA', on && ang < 0);
     const wide = Math.abs(ang) > 1.1;
@@ -176,14 +180,15 @@ async function ram(api) {
         hit = [now.x + fT[0] * tail * T.hl + T.hw * 0.75, now.z + fT[1] * tail * T.hl];
         // (from the lane under the el, a long diagonal run through the gap between two columns)
         const st = [-119.6, hit[1] - sgn * 14];
-        path = [[s.x, s.z], [-120.4, Math.max(s.z + sgn * 2.5, st[1] - sgn * 6)], st, hit, [hit[0] - 2.5, hit[1] + sgn * 3]];
+        path = [[s.x, s.z], ...[[-120.4, st[1] - sgn * 6], st].filter((w) => sgn * (w[1] - s.z) > 2), hit];
       } else {
         // into its door: from the lane under the el, through the gap
         const dz = step.doorZ ?? T.z;
-        hit = [T.x - T.hw * 0.92, dz + sgn * 0.6];
-        if (again) path = [[s.x, s.z], hit, [hit[0] + 2, hit[1] - sgn * 1]];
-        else path = [[s.x, s.z], [-119.6, Math.max(s.z - 2, dz + 9)], [-119.4, dz + 6], hit, [hit[0] + 2.2, hit[1] - 1.6]];
+        hit = [T.x - T.hw * 0.92, dz + sgn * (T.kind === 'truck' ? 1.6 : 0.6)];
+        if (again) path = [[s.x, s.z], hit];
+        else path = [[s.x, s.z], ...[[-119.6, dz - sgn * 9], [-119.4, dz - sgn * 6]].filter((w) => sgn * (w[1] - s.z) > 2), hit];
       }
+      { const a = path[path.length - 2], L = Math.hypot(hit[0] - a[0], hit[1] - a[1]) || 1; path.push([hit[0] + (hit[0] - a[0]) / L * 3, hit[1] + (hit[1] - a[1]) / L * 3]); }
       await js(`(window.__o6bC = ${corners(T.id)}, 1)`);
       const stop = async () => js(`(() => { const v = G.city.cars.find((c) => c.id === ${T.id}); return Math.hypot(v.vel.x, v.vel.z) > 1.0 || ${corners(T.id)} > window.__o6bC + 0.01; })()`);
       const kmh = step.blow === 'rear' ? opts.rearKmh ?? 45 : opts.doorKmh ?? 38;
@@ -256,4 +261,99 @@ async function parts(api) {
   out.walks.push({ kind: L.kind, ...r });
   log(`walk into the ${L.kind}: ${JSON.stringify(r)}`);
   return out;
+}
+
+// ---- aim the eye at a world point by trusted mouse moves --------------------------------------------------------
+async function aimAt({ js, turn, sleep }, p) {
+  for (let k = 0; k < 8; k++) {
+    const s = await js(`(() => { const C = N.controller, e = G.camera.position; const dx = ${p[0]} - e.x, dy = ${p[1]} - e.y, dz = ${p[2]} - e.z; const yaw = Math.atan2(-dx, -dz), pitch = Math.atan2(dy, Math.hypot(dx, dz)); let dyaw = yaw - C.yaw; dyaw = Math.atan2(Math.sin(dyaw), Math.cos(dyaw)); return { dyaw, dpitch: pitch - C.pitch, sens: C.sensitivity }; })()`);
+    if (Math.abs(s.dyaw) < 0.004 && Math.abs(s.dpitch) < 0.004) return true;
+    const px = -s.dyaw / s.sens, py = -s.dpitch / s.sens;
+    const n = Math.max(1, Math.ceil(Math.max(Math.abs(px), Math.abs(py)) / 60));
+    for (let i = 0; i < n; i++) { await turn(px / n, py / n); await sleep(16); }
+    await sleep(60);
+  }
+  return false;
+}
+
+// ---- the el's hung lamp shot out (the bed, under the el) -------------------------------------------------------
+async function hang(api) {
+  const { js, log, sleep, mouse, shot, cursor } = api;
+  const L = await js(`(() => { const S = G.stage.smash, C = N.controller.pos; let b = null, bd = 1e9; for (const it of S.items) { if (it.kind !== 'hanglamp' || it.dark) continue; const d = Math.hypot(it.x - C.x, it.z - C.z); if (d < bd) { bd = d; b = it; } } return b && { id: b.id, x: b.x, z: b.z, head: b.lamp.head.toArray() }; })()`);
+  if (!L) return { err: 'no hung lamp' };
+  await walkTo(api, L.x + 1.5, L.z + 6.5, 20000);
+  await aimAt(api, L.head);
+  await sleep(300);
+  const before = await js(`(() => { const it = G.stage.smash.items.find((i) => i.id === ${L.id}); const l = it.lamp; return { dead: !!l.dead, cone: !!(l.cone && l.cone.mesh.visible && l.cone.mesh.material.uniforms.uIntensity.value > 0) }; })()`);
+  await shot('h1_hung_lamp_lit');
+  const [cx, cy] = cursor();
+  let bursts = 0;
+  for (; bursts < 4; bursts++) {
+    await mouse('mousePressed', cx, cy, 'left'); await sleep(260); await mouse('mouseReleased', cx, cy, 'left');
+    await sleep(500);
+    if (await js(`G.stage.smash.items.find((i) => i.id === ${L.id}).dark`)) break;
+    await aimAt(api, L.head);
+  }
+  await sleep(3000);
+  const after = await js(`(() => { const it = G.stage.smash.items.find((i) => i.id === ${L.id}); const l = it.lamp; const sp = G.stage.part('lamps').pool.find((s) => s.lamp === l); return { dark: !!it.dark, dead: !!l.dead, on: l.on, cone: !!(l.cone && l.cone.mesh.visible && l.cone.mesh.material.uniforms.uIntensity.value > 0.01), light: sp ? +sp.spot.intensity.toFixed(1) : 0 }; })()`);
+  await shot('h2_hung_lamp_out');
+  log(`hung lamp ${L.id}: before ${JSON.stringify(before)} after ${bursts + 1} bursts ${JSON.stringify(after)}`);
+  return { before, after, bursts: bursts + 1 };
+}
+
+// ---- a lorry onto the pavement under the city's awnings (the bed's lorry, Fifth St) ----------------------------
+async function awning(api) {
+  const { js, log, sleep, keyDown, keyUp, shot, opts } = api;
+  const lorry = await js(`(() => { const v = G.city.cars.find((c) => c.kind === 'truck'); return v && { id: v.id, x: v.pos.x, z: v.pos.z, yaw: v.yaw, hw: v.spec.halfW }; })()`);
+  if (!lorry) return { err: 'no lorry' };
+  // the awnings along the way (records of the city's near build: the set's items)
+  const aws = await js(`G.stage.smash.items.filter((i) => i.kind === 'awning' && i.rec && i.z > 49 && i.z < 53 && i.x < -128 && i.x > -175).map((i) => ({ id: i.id, x: +i.x.toFixed(1), z: +i.z.toFixed(1), y: +i.y0.toFixed(2), w: i.rec.w }))`);
+  log(`awnings on Fifth St's north side: ${JSON.stringify(aws)}`);
+  // to its door (its left: -z of its frame), E
+  const lx = lorry.x - Math.sin(lorry.yaw) * (lorry.hw + 0.9), lz = lorry.z - Math.cos(lorry.yaw) * (lorry.hw + 0.9);
+  await walkTo(api, lx, lz, 25000);
+  const f = await js(`(() => { const C = N.controller; let d = Math.atan2(-(${lorry.x} - C.pos.x), -(${lorry.z} - C.pos.z)) - C.yaw; return { d: Math.atan2(Math.sin(d), Math.cos(d)), sens: C.sensitivity }; })()`);
+  await api.turn(-f.d / f.sens, 0);
+  await sleep(300);
+  await keyDown('KeyE'); await sleep(70); await keyUp('KeyE');
+  for (let i = 0; i < 50 && !(await js('G.city.inCar')); i++) await sleep(100);
+  if (!(await js(`G.city.inCar && G.city.car.id === ${lorry.id}`))) return { err: 'not in the lorry' };
+  const t0 = await js('G.time');
+  // out of Grand Ave west into Fifth St, up onto its north pavement under the shop fronts
+  const z = opts.z ?? 52.7;
+  await js(`(window.__o6bAw = { min: 99, at: null }, (() => { const tick = () => { const v = G.city.car, W = window.__o6bAw; for (const a of ${JSON.stringify(aws)}) { const d = Math.hypot(v.pos.x - a.x, v.pos.z - a.z); if (d < W.min) { W.min = +d.toFixed(2); W.at = [+v.pos.x.toFixed(2), +v.pos.z.toFixed(2), +(v.groundY || 0).toFixed(2)]; } } if (!W.stop) requestAnimationFrame(tick); }; requestAnimationFrame(tick); })(), 1)`);
+  const r = await follow(api, [[lorry.x, lorry.z], [-128, 58.5], [-136, 56.5], [-143, z], [-152, z], [-170, z]], { speed: 6, timeout: 45000 });
+  log(`the lorry passed the awnings at ${JSON.stringify(await js('(window.__o6bAw.stop = true, window.__o6bAw)'))}`);
+  await brakeAndBack(api, 0);
+  await sleep(5000);
+  const torn = await js(`G.stage.smash.events.filter((e) => e.kind === 'awning' && e.t >= ${t0}).map((e) => [e.what, e.by, e.id])`);
+  const rest = await js(`G.stage.smash.items.filter((i) => i.kind === 'awning' && i.rec && i.state !== 'stand').map((i) => [i.id, i.state, +i.P.y.toFixed(2)])`);
+  await shot('a1_awning_down');
+  log(`the lorry: ${r.end}; awnings: ${JSON.stringify(torn)} ${JSON.stringify(rest)}`);
+  return { end: r.end, torn, rest, n: aws.length };
+}
+
+// ---- into the river (the city: a coupe down the slipway at the foot of Pier Street) ----------------------------
+async function river(api) {
+  const { js, log, sleep, keyDown, keyUp, shot } = api;
+  if (!(await js('G.city.inCar'))) return { err: 'not in a car' };
+  await keyDown('KeyW');
+  let sinkT = null;
+  for (let i = 0; i < 160; i++) { await sleep(50); const s = await js('({ sink: G.city.sinkT || 0, fail: !!G.failing })'); if (s.sink || s.fail) { sinkT = s.sink; break; } }
+  await keyUp('KeyW');
+  await sleep(420);
+  await shot('w1_splash');
+  const mid = await js(`(() => { const D = G.stage.smash.cars; return { rings: (D._rings || []).filter((r) => r.visible).length, shape: (D._sunk || []).some((s) => s.visible), sinking: (D.sinking || []).length, failing: !!G.failing }; })()`);
+  // the black, the words, ashore at the steps
+  let why = null;
+  for (let i = 0; i < 100; i++) { await sleep(100); const s = await js('({ f: !!G.failing, why: G.lastFail ? G.lastFail.why : null, beat: G.scenes.beat })'); if (s.why) why = s.why; if (!s.f && s.beat === 'ashore') break; }
+  await sleep(1200);
+  // look back at the water where it went down
+  const sh = await js(`(() => { const s = (G.stage.smash.cars._sunk || []).find((x) => x.visible); return s && [s.position.x, s.position.z]; })()`);
+  if (sh) await aimAt(api, [sh[0], -2.1, sh[1]]);
+  await sleep(400);
+  await shot('w2_the_shape_under_the_water');
+  const end = await js(`(() => { const s = (G.stage.smash.cars._sunk || []).find((x) => x.visible); return { shape: !!s, glow: s ? +s.userData.glows[0].material.opacity.toFixed(2) : 0, beat: G.scenes.beat, inCar: G.city.inCar }; })()`);
+  log(`river: sink at ${sinkT}, mid ${JSON.stringify(mid)}, why ${why}, end ${JSON.stringify(end)}`);
+  return { sinkT, mid, why, end };
 }

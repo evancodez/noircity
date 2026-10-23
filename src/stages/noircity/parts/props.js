@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { Smash } from '../../../destruct/Smash.js';
 import { KIND_OF } from '../../../destruct/smashKinds.js';
 import { lotWindows } from '../../../city/kits/facade.js';
+import { SURF } from '../../../util/RayWorld.js';
 
 // [O6] The city's destruction set (lane O6, docs/seams/SMASH.md): the
 // furniture the generator placed (cityGen's C.props, C.lamps) registered
@@ -46,8 +47,23 @@ export default {
     for (const L of C.lots) for (const w of lotWindows(L)) if (w.kind === 'shop') shops.push(w);
     smash.setShops(shops);
     if (far) for (const t of far.tiles) for (const m of t.meshes) if (!m.userData.noRay && !m.userData.prop) m.userData.prop = 'facade';
+    // [O6b] the el's hung lamps (the lamps part's, no post): items of the set
+    // with a box in the bullets' world at the head - a round there puts one out
+    const L = stage.part('lamps'), solids = [];
+    if (L) {
+      const box = new THREE.BoxGeometry(0.7, 0.6, 0.7), mat = new THREE.MeshBasicMaterial({ visible: false });
+      for (const l of L.all) {
+        if (!l.hanging) continue;
+        l.src = l;
+        const it = smash.register(l, 'hanglamp', { y: l.head.y - 0.2 });
+        it.lamp = l; l.head0 = l.head.clone();
+        const m = new THREE.Mesh(box, mat);
+        m.visible = false; m.position.copy(l.head).add(new THREE.Vector3(0, 0.15, 0)); m.userData.lamp = l; m.userData.surf = SURF.IRON;
+        m.updateMatrixWorld(true);
+        stage.scene.add(m); solids.push(m);   // (into the bullets' world at the first step: it is not made yet)
+      }
+    }
     // (the lamps' own answer to a round in a head: O1's stage.lamps.hit gave null)
-    const L = stage.part('lamps');
     if (L) L.hit = (lamp, hit, dir) => {
       const it = lamp && lamp.src ? smash.byRec.get(lamp.src) : null;
       if (!it || it.dark || it.state !== 'stand' || !hit || hit.point.distanceTo(lamp.head) > 0.8) return null;
@@ -58,7 +74,7 @@ export default {
       smash,
       nearGrate: null,
       hit: (prop, hit, dir, opts = {}) => smash.bullet(prop, hit, dir, !!opts.weak),
-      update: (dt, t) => smash.update(dt, t),
+      update: (dt, t) => { if (solids.length) { for (const m of solids) stage.addSolid(m); solids.length = 0; } smash.update(dt, t); },
     };
   },
 };
