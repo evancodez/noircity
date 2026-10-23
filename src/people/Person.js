@@ -60,7 +60,7 @@ export class Person {
     this.path = null; this.pi = 0; this.then = null; this.gait = 'walk';
     this.down = false; this.dead = false; this.hurt = 0; this.hits = 0;
     this.from = null; this.until = 0; this.watchAt = null; this.wantYaw = yaw;
-    this.side = (Math.random() < 0.5 ? 0.35 : 0.75);
+    this.side = (((Math.sin(x * 7.13 + z * 3.71) * 9187.31) % 1 + 1) % 1 < 0.5 ? 0.35 : 0.75);
     // (no two alike: a little taller or shorter, a pace of his own)
     const hk = 0.955 + ((Math.sin(x * 12.9898 + z * 78.233) * 43758.5453) % 1 + 1) % 1 * 0.09;
     F.scale = this.scale0 * hk; F.object.scale.setScalar(F.scale);

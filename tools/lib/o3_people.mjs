@@ -734,7 +734,16 @@ async function frames(api) {
   R.word = await waitFor(js, `G.people.gangs.stats.words >= 1`, 6000);
   await sleep(300);
   await shot('f_gang');
+  // the gun out among the people of Grand Ave: they run
+  await sleep(1500);
+  await js(`(() => { const P = G.people, C = G.controller; P.dbgClear(); C.setPose(-108.9, 26, 0.05, -0.02); window.__o3g = [];
+    for (const [x, z, k] of [[-108.4, 17, 'o3_woman_a'], [-107.4, 13, 'o3_fedora_b'], [-109.6, 21, 'oldman'], [-108.0, 9, 'o3_fedora_g'], [-110.2, 14, 'o3_woman_d'], [-107.6, 5, 'o3_fedora_c']]) { const p = P.dbgWalker(x, z, Math.PI, k); p.mode = 'walk'; p.goTo([[x, z + 30]], { gait: 'stroll' }); window.__o3g.push(p); } return 1; })()`);
+  await sleep(1400);
+  await click(api, 'right', 900);
+  await sleep(300);
+  await shot('f_gun');
+  R.fled = await js(`window.__o3g.filter(p => p.mode === 'flee').length`);
   log(`frames ${JSON.stringify(R)}`);
-  R.ok = R.handsup && !!R.block && R.word;
+  R.ok = R.handsup && !!R.block && R.word && R.fled >= 4;
   return R;
 }

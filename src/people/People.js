@@ -782,7 +782,7 @@ export class People {
     const cam = G.camera, t = G.time, E = G.eye;
     this.frame = (this.frame || 0) + 1;
     for (const p of this.list) {
-      const far = Math.abs(p.pos.x - E.x) + Math.abs(p.pos.z - E.z) > 52 && p.pos.distanceToSquared(E) > 38 * 38;
+      const far = dt > 0 && Math.abs(p.pos.x - E.x) + Math.abs(p.pos.z - E.z) > 52 && p.pos.distanceToSquared(E) > 38 * 38;
       if (far && ((this.frame + p.id) & 1)) { p.owed = (p.owed || 0) + dt; continue; }
       p.update(dt + (p.owed || 0), t, cam);
       p.owed = 0;
