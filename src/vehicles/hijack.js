@@ -15,9 +15,16 @@ import { fightDriver, gunman } from './answers.js';
 //     a civilian (most)   runs
 //     a man with a jaw    comes back for me while I sit there ('He’s coming
 //                         back.'): drive off, or he has me out and we fight
-//                         (the base's Brawl: down, he has his car back)
-//     a gangster          steps back and draws (the raise first): drive
-//     a cop               as the man with a jaw, and he calls it in (crime 'cop')
+//                         (O4's crowd brawl: down, he has his car back - the
+//                         hospital; won, the car is mine)
+//     a gangster          steps back and draws (`They’re drawing.`, the raise
+//                         first); sat still, they come to the glass: drive
+//     a cop               calls it in (the heat), comes back for me as the man
+//                         with a jaw does: O3's street fists (down is the arrest)
+// [O2] after the critic: the men pulled out are the street's own people (O3's
+// Persons: a car that hits them knocks them down, the crowd sees them) - the
+// civilian runs to the call box and tells it (O3's witness), the fighter and
+// the cop fight on O4's and O3's rules, a man left is the street's again.
 //   a car its driver ran from (a panic) E  get in
 // What was in it is mine (a wallet now and then: $). Events: game 'wheels:hijack'
 // { car, how: 'parked' | 'pulled', driver, seen }.
@@ -26,8 +33,8 @@ import { fightDriver, gunman } from './answers.js';
 //   hijack.stats { broke, pulled, fights, won, lost, fled, drew, cancelled }
 const REACH = 2.3, BREAK = 2.0, PULL = 0.8;
 const _f = new THREE.Vector3(), _l = new THREE.Vector3(), _w = new THREE.Vector3();
-// the cast's kinds for the men at the wheel (O3's people when they land)
-const CAST = { civilian: ['dockhand', 'tail_trucker', 'watcher'], fighter: ['foreman', 'dockhand'], gangster: ['hood'], cop: ['tail_trucker'] };
+// the cast's kinds for the men at the wheel (off the city's people: a bed without them)
+const CAST = { civilian: ['dockhand', 'tail_trucker', 'watcher'], fighter: ['o4_driver'], gangster: ['hood'], cop: ['o3_patrolman'] };
 
 export class Hijack {
   constructor(W) {
@@ -128,9 +135,18 @@ export class Hijack {
     const seat = v.world(K.eye.x, K.eye.z, new THREE.Vector3());
     const out = v.world(K.eye.x - 0.2, -(K.halfW + 1.6), new THREE.Vector3());
     const men = [];
+    const P = G.people;
     const spawn = (kind, from, to) => {
       try {
         const yaw = Math.atan2(to.x - from.x, to.z - from.z);
+        // (the street's own man: O3's Person, held out of its brains while he is mine - p.role 'o2')
+        if (P && P.spawn) {
+          const look = D.kind === 'civilian' && P.pedLook ? P.pedLook(from.x, from.z) : D.kind === 'cop' && P.copLook ? P.copLook(this.stats.pulled) : kind;
+          const p = P.spawn(look, from.x, from.z, yaw, 'o2');
+          p.mode = 'fight'; p.path = null; p.then = null; p.fig.speed = 0; p.gaitNow = null;
+          if (p.umb && p.umb.state === 'held') p.umb.drop();
+          return { p, c: p.c, from: from.clone(), to: to.clone(), t: 0, state: 'out', kind: D.kind, v };
+        }
         const c = this.W.stage.cast.spawn(kind, { at: { x: from.x, z: from.z }, yaw, name: 'o2_' + kind + '_' + (++this.n || (this.n = 1)) });
         return { c, from: from.clone(), to: to.clone(), t: 0, state: 'out', kind: D.kind, v };
       } catch (e) { return null; }
@@ -144,10 +160,14 @@ export class Hijack {
       if (D.men > 1) men.push({ c: null, from: v.world(K.eye.x, 0.3, new THREE.Vector3()), to: v.world(K.eye.x - 0.3, K.halfW + 1.3, new THREE.Vector3()), t: 0.3, state: 'gun', kind: 'gangster', v });
     }
     for (const m of men) this.men.push(m);
+    if (D.kind === 'gangster') { this.gangT = 0; G.hud.warn('They’re drawing.'); this.warnT = 2.2; }
     G.sfx.play('tail_door', null, { open: true });
     G.sfx.play('tail_thud', seat.clone().setY(1), { k: 0.6 }, { ref: 3 });
     W.enter(v);
-    this.W.crime.emit(D.kind === 'cop' ? 'cop' : 'hijack', v.pos, { seen: true, by: 'driver' });
+    // (O3's bus: its witnesses judge it - the man pulled out among them; a cop's car is worse)
+    this.rec = this.W.crime.emit('hijack', v.pos, 'player', D.kind === 'cop' ? { level: 2 } : {});
+    // (a cop calls it in at once: the heat a hurt cop's car is worth)
+    if (D.kind === 'cop' && G.police && G.police.raise) G.police.raise(2, v.pos, 'his car taken');
     if (D.wallet) setTimeout(() => pay(G, D.wallet, 'in the glovebox'), 900);
     G.emit('wheels:hijack', { car: v, how: 'pulled', driver: D.kind, seen: true });
     this.lastPull = { kind: D.kind, car: v, t: G.time };
@@ -171,13 +191,38 @@ export class Hijack {
         G.sfx.play('tail_door', null, { open: true });
         const v = W.parked.promote(b);
         this.stats.broke++;
-        W.crime.emit('hijack', v.pos, { seen: !!A.seen, by: A.seen });
+        W.crime.emit('hijack', v.pos, 'player');
         G.emit('wheels:hijack', { car: v, how: 'parked', driver: null, seen: !!A.seen });
         W.enter(v);
       }
     }
     if (this.fight) { this.fight.step(dt); if (this.fight.done) this.fight = null; }
+    if (this.warnT > 0) { this.warnT -= dt; if (this.warnT <= 0) G.hud.warn(null); }
     for (const m of [...this.men]) this.man(m, dt);
+    this.struck(dt);
+  }
+  // [O2] after the critic (B5): a gang's man standing in a car's way is hit - knocked down,
+  // dead over 9 m/s (the base's Hood: Game.damageHood); the street's Persons are O3's (stepCars)
+  struck(dt) {
+    const G = this.G;
+    for (const m of this.men) {
+      const h = m.gun && m.gun.h;
+      if (!h || !h.alive) continue;
+      for (const v of this.W.V.list) {
+        const sp = Math.hypot(v.vel.x, v.vel.z);
+        if (sp < 1.5 || Math.abs(v.pos.x - h.pos.x) > 6 || Math.abs(v.pos.z - h.pos.z) > 6) continue;
+        const l = v.local(h.pos, _l);
+        if (Math.abs(l.x) > v.spec.halfL + 0.25 || Math.abs(l.z) > v.spec.halfW + 0.25) continue;
+        const dir = new THREE.Vector3(v.vel.x, 0, v.vel.z).normalize();
+        G.damageHood(h, sp > 9 ? 999 : 18 + sp * 6, dir.clone().negate());
+        h.pos.x += dir.x * Math.min(2, sp * 0.12); h.pos.z += dir.z * Math.min(2, sp * 0.12);
+        G.sfx.play('c3_dent', h.pos.clone().setY(0.8), { k: Math.min(1, sp / 14) }, { ref: 4 });
+        v.vel.multiplyScalar(0.9);
+        if (v === this.W.V.player) { if (G.controller.shake) G.controller.shake(0.25, 0); this.W.crime.emit(sp > 9 ? 'death' : 'punch', h.pos, 'player'); }
+        break;
+      }
+    }
+    void dt;
   }
 
   man(m, dt) {
@@ -190,7 +235,12 @@ export class Hijack {
       const u = Math.min(1, m.t / PULL), e = 1 - (1 - u) * (1 - u);
       c.fig.pos.x = m.from.x + (m.to.x - m.from.x) * e; c.fig.pos.z = m.from.z + (m.to.z - m.from.z) * e;
       if (u >= 1) {
-        if (m.kind === 'civilian') { m.state = 'flee'; m.t = 0; this.stats.fled++; this.run(c, v.pos); }
+        if (m.kind === 'civilian') {
+          m.state = 'flee'; m.t = 0; this.stats.fled++;
+          // [O2] the street's man again: he tells it at the call box (or to a cop in sight) - O3's witness
+          if (m.p) { this.street(m); return; }
+          this.run(c, v.pos);
+        }
         else { m.state = 'recover'; m.t = 0; c.setState('idle', 0.2); c.lookAt(G.eye); if (mine) G.hud.warn('He’s coming back.'); }
       }
       return;
@@ -221,26 +271,27 @@ export class Hijack {
         return;
       }
       if (d < 0.45 && v.speedAbs <= 1.2) {
-        // he has me out of my seat: the fight (the base's brawl, one man)
+        // he has me out of my seat: the fight (O4's crowd brawl; a cop's is O3's street fists)
         G.hud.warn(null);
         c.fig.speed = 0;
         this.stats.fights++;
         m.state = 'fight';
         W.exit(v, { side: -1 });
-        this.fight = fightDriver(W, c, {
+        this.fight = fightDriver(W, m, {
           at: v.pos,
-          onWin: () => { this.stats.won++; m.state = 'down'; m.t = 0; G.hud.message('The car’s yours.', 1.8); },
+          onWin: () => { this.stats.won++; m.state = 'down'; m.t = 0; G.hud.message('The car’s yours.', 1.8); if (m.p) this.street(m, { down: true }); },
           onLose: () => { this.stats.lost++; this.giveBack(m); },
+          onLeft: () => { this.stats.left = (this.stats.left || 0) + 1; this.giveBack(m); },
         });
       }
       return;
     }
-    if (m.state === 'left' || m.state === 'down') { if (m.t > 12 && !this.inView(c.fig.pos)) this.drop(m); return; }
+    if (m.state === 'left' || m.state === 'down') { if (m.p) { this.street(m); return; } if (m.t > 12 && !this.inView(c.fig.pos)) this.drop(m); return; }
     if (m.state === 'gun') {
       // a gangster: out of his door, a step back, the gun up (the tell), his rounds
       if (!m.gun && m.t > 0.35) {
         const yaw = Math.atan2(G.eye.x - m.to.x, G.eye.z - m.to.z);
-        m.gun = gunman(W, m.to, { yaw });
+        m.gun = gunman(W, m.to, { yaw, car: v, side: m.to });
         this.stats.drew++;
       }
       if (m.gun) { m.gun.step(dt); if (m.gun.done) { m.state = 'gone'; m.t = 0; } }
@@ -255,10 +306,13 @@ export class Hijack {
   // the fight lost: he has his car back, gets in and drives off
   giveBack(m) {
     const W = this.W, v = m.v;
-    if (m.c) { try { W.stage.cast.remove(m.c); } catch (e) { /* gone */ } }
-    this.men.splice(this.men.indexOf(m), 1);
+    if (m.p) { try { this.G.people.release(m.p); } catch (e) { /* gone */ } }
+    else if (m.c) { try { W.stage.cast.remove(m.c); } catch (e) { /* gone */ } }
+    const i = this.men.indexOf(m);
+    if (i >= 0) this.men.splice(i, 1);
     const R = this.G.city;
-    if (R && R.car === v) R.car = null;
+    // (my car is the one I left before I took his, if it is still about)
+    if (R && R.car === v) { const L = W.left.find((x) => x.v && x.v !== v && !x.v.wrecked); R.car = L ? L.v : null; }
     W.forgetLeft(v);
     W.traffic.adopt(v, { kind: m.kind, men: 1, wallet: 0 });
   }
@@ -282,9 +336,24 @@ export class Hijack {
     return (dx * f.x + dz * f.z) / Math.max(d, 0.01) > 0.45 && this.W.graph.lineOfSight(cam.position.x, cam.position.z, p.x, p.z);
   }
   drop(m) {
-    if (m.c) { try { this.W.stage.cast.remove(m.c); } catch (e) { /* gone */ } }
+    if (m.p) { try { this.G.people.release(m.p); } catch (e) { /* gone */ } }
+    else if (m.c) { try { this.W.stage.cast.remove(m.c); } catch (e) { /* gone */ } }
     const i = this.men.indexOf(m);
     if (i >= 0) this.men.splice(i, 1);
+  }
+  // [O2] a man of the street's handed back to it (O3's brains): the civilian runs to the box
+  // and tells it, a man down lies there and gets up as the street's do, one left in the road walks on
+  street(m, { down = false } = {}) {
+    const G = this.G, P = G.people, p = m.p;
+    const i = this.men.indexOf(m);
+    if (i >= 0) this.men.splice(i, 1);
+    if (!P || !p) return;
+    p.role = m.kind === 'cop' ? 'cop' : 'walker';
+    p.mode = 'walk'; p.path = null; p.t = 0; p.gaitNow = null;
+    if (down || !p.standing) { p.down = true; p.mode = 'down'; p.t = 0; p.downBy = 'player'; p.downWhy = 'fists'; p.fig.speed = 0; return; }
+    if (m.kind === 'cop') { p.job = G.police && G.police.heat ? 'respond' : 'beat'; p.mode = G.police && G.police.heat ? 'chase' : 'walk'; return; }
+    if (m.kind === 'civilian' && this.rec && P.startReport) { P.startReport(p, this.rec); if (p.mode === 'report') { this.stats.reported = (this.stats.reported || 0) + 1; return; } }
+    p.flee(m.v ? m.v.pos : G.eye, 6);
   }
 
   cancel() {
@@ -295,7 +364,8 @@ export class Hijack {
     this.cancel();
     if (this.fight && this.fight.cancel) this.fight.cancel();
     this.fight = null;
-    for (const m of [...this.men]) { if (m.gun && m.gun.h) this.W.stage.hoods.remove(m.gun.h); this.drop(m); }
+    for (const m of [...this.men]) { if (m.gun) { if (m.gun.cancel) m.gun.cancel(); if (m.gun.h) this.W.stage.hoods.remove(m.gun.h); } this.drop(m); }
+    this.G.hud.warn(null); this.warnT = 0;
     this.men = [];
   }
 }

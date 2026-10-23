@@ -38,7 +38,6 @@ export class Wheels {
     this.V = game.vehicles;
     // (every kind's builds made now, under the stage's black: never on the road)
     for (const k of FLEET) for (let v = 0; v < KINDS[k].nv; v++) for (const lv of [0, 1, 2]) kindGeo(k, lv, v);
-    this.crime = crimeOf(game);
     this.signals = new Signals(stage, this.graph);
     this.parked = new Parked(this);
     this.traffic = new Traffic(this);
@@ -60,6 +59,9 @@ export class Wheels {
     game.on('hood:down', (e) => { if (this.game.stage === this.stage && e && e.hood) this.alarm(e.hood.pos, 1); });
     stage.colliders.bodies = () => this.V.list.concat(this.parked.bodies);
   }
+
+  // [O2] the crime bus: O3's (game.crime) once the people are in, read at the time it is wanted
+  get crime() { return crimeOf(this.game); }
 
   // the free roam's start (and a retry, the river's steps): before the vehicles
   // are cleared, what the wheels hold is let go - the traffic, the men, the tram
@@ -348,6 +350,12 @@ export class Wheels {
 
   // a shot, a man down near the traffic: they panic
   alarm(point, k = 1) { this.traffic.alarm(point, k); }
+  // [O2] my fall to the wheels' men (the free roam's onDown): the hospital, and why
+  downSpec() {
+    const G = this.game;
+    if (this.gunT == null || G.time - this.gunT > 4) return null;
+    return { why: G.city && G.city.inCar ? 'Shot sitting at the wheel. Drive.' : 'Shot down by the gang.', to: 'hospital' };
+  }
 
   // ---- the knocks: what a car meets, heard and seen (mine, and theirs near me) ------------------
   knock(v, e, hard) {

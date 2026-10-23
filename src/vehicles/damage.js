@@ -13,7 +13,12 @@ import { FIRE } from '../fx/fxTextures.js';
 //   damageStep(W, dt)        the steam and the smoke of every hurt car near the eye
 //   watchDamage(W, v)        v's 'damage' events into the above (and the warning)
 const _v = new THREE.Vector3();
+// [O2] O6's car damage (src/destruct/CarDamage.js: every car of game.vehicles, its dents, its
+// lamps, its steam, smoke, fire and wreck, the warning) is the rule where its set is on the stage:
+// this stand-in steps aside there
+const o6 = (W) => !!(W.stage && W.stage.smash && W.stage.smash.cars);
 export function watchDamage(W, v) {
+  if (o6(W)) return;
   if (v._dmgWatch) return;
   v._dmgWatch = true;
   v.on('damage', (e) => {
@@ -23,6 +28,7 @@ export function watchDamage(W, v) {
   });
 }
 export function showDamage(W, v, cold = false) {
+  if (o6(W)) return;
   const d = Math.floor(v.damage || 0), G = W.game;
   if (d >= 1 && !v._lampOut) {
     v._lampOut = true;
@@ -41,6 +47,7 @@ export function showDamage(W, v, cold = false) {
   if (v === W.V.player && d === DAMAGE.wreck - 1 && !cold && !v._warned) { v._warned = true; G.hud.warn('She won’t take much more.'); v._warnT = 4; }
 }
 export function damageStep(W, dt) {
+  if (o6(W)) return;
   const G = W.game, eye = G.camera.position;
   const P = W.V.player;
   if (P && P._warnT > 0) { P._warnT -= dt; if (P._warnT <= 0) G.hud.warn(null); }

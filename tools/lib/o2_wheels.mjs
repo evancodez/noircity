@@ -207,7 +207,7 @@ async function pull(P, { js, sleep, log, shot, turn }, H) {
   }
   if (!c) return { err: 'no car came' };
   log(`pull: a ${c.kind} (${c.who}) stopped at (${c.x.toFixed(1)}, ${c.z.toFixed(1)})`);
-  if (H.name === 'idle') {
+  if (H.name === 'idle' && !P.opts.take) {
     await sleep(10000);
     const s = await P.state();
     return { hands: 'idle', inCar: s.inCar, took: false };
@@ -228,12 +228,28 @@ async function pull(P, { js, sleep, log, shot, turn }, H) {
   const t0 = Date.now();
   const R = { hands: H.name, who: c.who, prompt: pr, inMs: inT };
   // the answer: drive off (good, medium: at once; bad: late) - or sit (opts.sit: the fight)
+  // (opts.take with idle hands: in his seat, then hands off until the black - or opts.sitMs)
+  if (H.name === 'idle') {
+    let warned = null, failAt = null;
+    for (;;) {
+      const f = await js('({ warn: G.hud.kit && G.hud.kit.warnText, failing: !!G.failing, hp: G.health.hp, shots: G.wheels.hijack.men.reduce((n, m) => n + (m.gun ? m.gun.shots : 0), 0), close: G.wheels.hijack.men.some((m) => m.gun && m.gun.close) })');
+      if (f.warn && !warned) warned = { warn: f.warn, at: Date.now() - t0 };
+      if (f.close && !R.closeAt) R.closeAt = Date.now() - t0;
+      R.shots = f.shots;
+      if (f.failing) { failAt = Date.now() - t0; break; }
+      if (Date.now() - t0 > (P.opts.sitMs || 40000)) break;
+      await sleep(100);
+    }
+    R.warned = warned; R.failAt = failAt;
+    R.fail = await js('G.lastFail ? { why: G.lastFail.why, to: G.lastFail.to, warnedFor: G.lastFail.warnedFor } : null');
+    return R;
+  }
   const sit = !!(P.opts && P.opts.sit);
   const delay = sit ? 99999 : H.name === 'bad' ? 1900 : H.name === 'medium' ? 900 : 350;
   let warned = null, fight = false;
   for (;;) {
     const s = await P.state();
-    const f = await js('({ fight: !!G.brawl.active, warn: G.hud.kit && G.hud.kit.warnText, mode: N.controller.mode })');
+    const f = await js('({ fight: !!(G.brawl.active || (G.crowd && G.crowd.active) || (G.police && G.police.fists && G.police.fists.active)), warn: G.hud.kit && G.hud.kit.warnText, mode: N.controller.mode, failing: !!G.failing })');
     if (f.warn && !warned) warned = { warn: f.warn, at: Date.now() - t0 };
     if (f.fight) { fight = true; R.fightAt = Date.now() - t0; break; }
     if (Date.now() - t0 > delay) break;

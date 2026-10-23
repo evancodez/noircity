@@ -1,5 +1,5 @@
 {
- "about": "[O2] The hijack of a car with a man with a jaw at the wheel, idle at his door (brief O2 \u00a73, \u00a75): E at his door, I am in his seat, and then nothing - he is back for his car (warned: He\u2019s coming back.), has me out, and the fight (the base Brawl) is lost standing there: he gets in and drives off. node tools/play.mjs tools/plays/o2_fighter_idle.json",
+ "about": "[O2] The hijack of a car with a man with a jaw at the wheel, idle at his door (brief O2 §3, §5): E at his door, I am in his seat, and then nothing - he is back for his car (warned: He’s coming back.), has me out, and the fight (O4's crowd brawl) is lost standing there: the black says why (He wanted his car back.), up at the hospital beat; he drove off in it. node tools/play.mjs tools/plays/o2_fighter_idle.json",
  "url": "/?mute=1&start=city&held=1&again=1&come=saloon:fighter",
  "size": [
   1280,
@@ -28,7 +28,7 @@
    "mode": "pull",
    "hands": "good",
    "sit": true,
-   "check": "D.fight === true && D.warned && D.warned.warn === 'He\u2019s coming back.' && D.fightAt - D.warned.at > 1000",
+   "check": "D.fight === true && D.warned && D.warned.warn === 'He’s coming back.' && D.fightAt - D.warned.at > 1000",
    "label": "idle at his door: warned a second and more before he has me out of the seat, the fight"
   },
   {
@@ -36,11 +36,12 @@
    "timeout": 90000
   },
   {
-   "wait": 2500
+   "until": "G.scenes.beat === 'hospital' && !G.failing",
+   "timeout": 20000
   },
   {
-   "expect": "!G.city.inCar && G.wheels.traffic.cars.some((c) => c.kind === 'saloon' && c.driver.kind === 'fighter' && Math.hypot(c.v.pos.x - G.eye.x, c.v.pos.z - G.eye.z) < 40) && !G.brawl.active && N.controller.mode === 'walk'",
-   "label": "lost: he has his car back and drives off; I am on the pavement, the controls mine"
+   "expect": "G.lastFail && G.lastFail.why === 'He wanted his car back.' && G.lastFail.to === 'hospital' && G.scenes.beat === 'hospital' && !G.city.inCar && !(G.crowd && G.crowd.active) && N.controller.mode === 'walk'",
+   "label": "lost: the black says why, up at the hospital, on foot, the controls mine"
   }
  ]
 }

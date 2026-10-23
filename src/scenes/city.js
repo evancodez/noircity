@@ -166,6 +166,8 @@ export default defineScene({
   // (M is the map here: Game.bindInput leaves the sound alone)
   mapKey: true,
   objectives: { roam: null, ashore: null, hotel: null, station: null, wake: null, hospital: null },
+  // [O2] a fall in the street to the wheels' men (the gang's gunmen at the glass): the hospital and its words
+  onDown: (ctx) => (ctx.game.wheels && ctx.game.wheels.downSpec ? ctx.game.wheels.downSpec() : null),
   // [O6] the low line when the destruction set hurt him (the fire, the tram): its fix, not the gun kit's
   lowWarn: (ctx) => (ctx.stage.smash && ctx.stage.smash.cars.lowWarn()) || null,
   setup: {
@@ -457,6 +459,9 @@ function takeSeat(ctx, R, car, extra = {}) {
   if (fleet) cockpitInto(ctx.stage, car);
   const C = R.chase || (R.chase = new Chase(G));
   C.begin(car);
+  // (the man is in the seat whatever the view: G.eye there for what sees, shoots at and hears him)
+  const eyeL = seat.eye.clone();
+  G.eyeFix = (e) => { const Rc = G.city; if (Rc && Rc.inCar && Rc.chase && Rc.chase.k > 0 && Rc.car === car) car.seat(eyeL, e); };
   C.onSwap = (third, v) => showSeat(ctx, R, v, !third);
   R.cabin.attach(car, { ...seat, ...(car.seatOpts || {}), ...extra, control: brakesFor(G),
     view: (ctl, D, v, dt) => C.apply(ctl, D, v, dt),

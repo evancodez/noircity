@@ -27,7 +27,7 @@
    "drive": "tools/lib/o2_wheels.mjs",
    "mode": "pull",
    "hands": "good",
-   "check": "D.inCar && D.drove > 40 && D.stats.fled === 1 && D.crime && D.crime.some((c) => c.kind === 'hijack' && c.seen)",
+   "check": "D.inCar && D.drove > 40 && D.stats.fled === 1 && D.crime && D.crime.some((c) => c.kind === 'hijack') && D.stats.reported === 1",
    "label": "the civilian out and running, the car mine, the hijack seen (he saw it)"
   }
  ]
