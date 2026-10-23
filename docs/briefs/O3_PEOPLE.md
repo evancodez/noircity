@@ -123,3 +123,14 @@ chase. Edits to shared files marked `// [O3]`. Report
 `docs/reports/O3.md` with "For other lanes" (`crime.emit`, `police.heat`
 and its event, `police.lost`, how a place spawns a gang, the crowd's
 budget). Hours, not days.
+
+## From lane O4's merge (`docs/reports/O4.md`, "For other lanes"): yours
+O4 is in main (5e83e76). The crowd brawl and the gun in it emit
+`G.emit('crime', { kind: 'draw' | 'shot', by: 'player', at: { x, z }, cop })`:
+nothing listens yet; it is the heat's input, yours. A cop fight is a crowd
+fight of the kind `cop` (it ends in `Hands up.`); the gunman variants (the
+police cap and tunic, the second gang in flat caps) are in `src/combat/`.
+A car the player hides behind in a gunfight must be in the ray world
+(`S.addSolid` on each mesh) or rounds pass through it; `collider.noCover`
+keeps a thing from being cover. Take these at your fix pass (it merges
+main first) and drop your stand-ins for them.

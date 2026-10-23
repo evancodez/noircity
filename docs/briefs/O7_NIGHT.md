@@ -161,3 +161,13 @@ verbs the city does not have yet and lists M twice: one line per device
 (keys, pad) that is true of the city as built, kept true as lanes merge.
 And its section 2 (what is good and must not be lost) is a list your
 whole-game check keeps.
+
+## From lane O4's merge (`docs/reports/O4.md`, "For other lanes"): yours
+O4 is in main (5e83e76). The weapon wheel is `arms(G).next(dir)`; in a
+fist fight `crowd.draw(gun)` ends the fight. The pad has no wheel in play
+(L1 and R1 are Shift and F), so a pad player cannot draw a gun in a fight:
+map it. The pad needs an aim help in a gunfight (the pad's medium hands
+lost the street three of three and the 1v2 at the merge check): a soft
+snap toward the nearest man in the reticle's cone while aiming on the
+stick, in `src/input/Pad.js`, measured by `tools/plays/o4/pad_street.json`
+and `pad_1v2.json` passing by medium hands. Take these at your fix pass.
