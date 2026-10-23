@@ -143,9 +143,43 @@ in the store** among the crates and come out through the opening when they draw.
   `loadR`/`dropR` on its site; nothing is needed for the first open (the warm-up is the
   places' own).
 
-## 4. Proofs (by real input, on the final code)
+## 4. Proofs (by real input, on the final code; dev server on 5375, the GPU 100 % busy from other lanes)
 
-(filled at the end of the lane: §6)
+| proof | play | result |
+| --- | --- | --- |
+| **the hospital**: a shot in the street by the wanted man (heat 2, he draws), then the bot stands in the open and does nothing | `o5b_hospital.json` | **9 / 9**: the black names him (`Flanked. -> hospital`), `Came round. $10 for the stitches.` in the ward's bed, $100 -> $90, heat 0, the revolver kept; up (S), out through the ward, the swing doors, the hall and the street door by walking; the car 0 m from where it was |
+| O7's idle bounty wakes there | `o7/bounty_idle.json` | **4 / 4**: warned, put down, `Came round. Stitched up.` (broke: nothing docked), he is still out |
+| **a ward's bed is a sleep**, CONTINUE in the ward | `o5b_wardsleep.json` | **5 / 5**: woken at `?start=city.hospital`, up, to the bed across the aisle, `sleep`: black, health 60 -> 100, the save at `ward`, the clock +60 min; reload, CONTINUE: the `ward` beat, in the ward's bed |
+| **the board and the desk**: the first man put on HQ's street, beaten by O4's good brawl bot, `Come on.` | `o5b_board.json` | **7 / 7**: the outside board gone; `Take him to headquarters.`; he follows (5 m behind, running) along the pavement and in at the street door; `E  book him` at the desk; +$150, `bounty_b0` booked, the poster on the hall's sheet `PAID`; walked through the cells' door to the first cell (sat at -4.7, -14.6 in the room's frame) |
+| O7's medium bounty, its tail to the desk | `o7/bounty_medium.json` | **4 / 4**: taken in on the first try (44 s), led in to the desk, `book him`, +$150 |
+| **the first open** at three big rooms, each walked to from 44 m down its pavement | `o5b_door_hitch.json` | **7 / 7**: the Docks bar E -> leaf **17.5 ms**, every frame after it <= 19.8 ms; the market hall **6.4 ms** (<= 18.6); the hotel **12.7 ms** (<= 21.3). Loaded under the walk in 39.6 / 59.7 / 8.9 ms, warm draw 5.2 / 5.8 / 1.0 ms |
+| **the pier office's store** | `o5b_pierstore.json` | **4 / 4**: its three men start among the store's crates; 5.5 s after I am in the front office all three are in the opening under the landing, firing from it (a nav proof: my health held by the tool) |
+| the pier office's contest after the move | `o5_hide_idle_pieroffice`, `o5_hide_medium_pieroffice` | idle: down in 26 s, warned (`They know your face.`); medium: **cleared first try** (42 s) |
+| **the tour, whole** (14 places: O5's 13 and the hospital) | `o5_tour.json` | **PASS**: in and out of all 14, every door / seat / use answered (the diner's jukebox, HQ's cell bench, a ward's bed reached; the WANTED card; a sleep), the jank walk ok everywhere, each loaded once in its turn, the car never moved; first opens 5.8 - 19.4 ms |
+| O5's and O7's plays that touch the places | `o5_hotel` 13/13, `o5_station` 8/8, `o5_bar` 11/11, `o5_havoc` 6/6, `o5_stool` 9/9, `o5_reel` 8/8, `o7/save` 7/7, `o7/autosave` 3/3 | all pass |
+| **the pad** (`?padfake=1`, no key or mouse event) | `o5_pad.json` | **7 / 7** |
+
+**The gate.**
+- **Golden** (one check, on the final code): game one's **40 / 40 identical**; the city's **15 / 17
+  identical**, two re-accepted and named: `o5_gym` (the four fight cards on the left wall: the
+  brief's own change; nothing else in the frame moved) and `o5_bar` (the two drunks' and the
+  barman's outlines a frame apart: the pianist added to the room's cast shifts the figures'
+  idle phase; the room, its lamps and its bottles identical - looked at in the diff sheet).
+  **Three new**, each looked at against the reference: `o5b_diner` (the long counter under its
+  pendants' pools, the stools' black lathes, the lit price board and the hatch, the urns under
+  COFFEE, the booths' black masses and the street through the glass: the reference's few hard
+  pools in the black), `o5b_orpheum` (the chandelier the one white burst over a pale pool on
+  the carpet, the posters' lit frames, the walls black), `o5b_ward` (one pendant's cone onto
+  the aisle, the iron beds in silhouette at its edge, two lit windows and the night nurse's low
+  lamp at the end).
+- **Errors**: clean in all 16 places (`place=<id>`) and at the beats `hospital`, `ward`, `wake`,
+  `hotel`; the garage and `station` hung in `errors.sh`'s virtual time and were killed by the
+  watchdog (twice for the garage: as O5 saw with the hall) - in real time both are clean
+  (`#errlog` empty after 724 / 726 frames), and every play above ends `no errors in #errlog`.
+- **Frames per second** (`tools/fps.mjs`, 8 s, 1440 x 900, the GPU 100 % busy before each run):
+  outside the hospital's door, the globe, the ambulance and the street **28.3 fps** against
+  `shot=perf` 26.6 / 22.8 before and after: **1.15 x perf**.
+- `npx vite build` passes.
 
 ## 5. Where the brief was changed in play
 
@@ -165,4 +199,28 @@ in the store** among the crates and come out through the opening when they draw.
 
 ## 6. Left (most felt first)
 
-(filled at the end of the lane)
+1. **O1b's item on a door's step takes E first** (the Docks bar's: `E  take` where the door
+   says `go in`): a player looking down at the step picks it up; the next E opens the door.
+   O1b's to place items off doorsteps (or the items' E to yield to a door looked at).
+2. **The pier office's idle player dies in 26 s**, not "a few seconds": the three men come from
+   the back of the store (3.5 s to draw, then the walk). The contest still holds (idle loses,
+   warned; medium clears first try); bad and good not re-run after the move.
+3. **The led man is not O3's yet**: he never tries to run on the way (THINGS_TO_DO §5), his
+   gang holds no grudge, and when he is out of sight 24 m behind he is put at my back (no path
+   finding across the city). O3's man and his brain when they land.
+4. **A place's load is a long frame** when I come within its radius (40 - 60 ms at the Docks
+   bar and the hall, O5's own cost; the warm-up added 1 - 6 ms a step later): the first open is
+   now one frame, the approach is not. Building a room over two or three steps would spread it.
+5. **The wanted men's tails** in O7's other plays (`o7/bounty_good`, `_bad`, `_gun`) were not
+   re-run: their `taken` is still `taken` (the driver's check), but none of them walks the man
+   to the desk.
+6. **The ambulance** is the lorry repainted (O2 has no ambulance kind yet); it cannot be taken
+   (no hijack in main) and its bell lamp is dark.
+7. **The hospital's upper floors** are O1's facade (no rooms up there); the ward's sleeping man
+   is a shape, not a figure (a cast figure lying in a bed has no pose of its own).
+8. **The pianist's hands** are the cast's seated `sitTalk` gestures, not a pianist's; his set is
+   a procedural blues of single notes (no record in `public/music/`).
+9. **`errors.sh` hangs in virtual time** at the garage and at `station` on this loaded machine
+   (clean in real time).
+10. Still standing from O5: upper floors hold no people, the rooms' furniture merged (O6b's
+    breakables), the garage stores no car (O2), the hall's shoppers slide without a gait.
