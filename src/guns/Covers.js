@@ -54,7 +54,10 @@ export class Covers {
     // (a door that can stand open is in the grid as it stands open: the leaf
     // into the room is a thing to go round, the doorway a way through)
     const opened = all.filter((D) => doors.has(D.col) && D.openBox).map((D) => ({ ...D.col, ...D.openBox(), tag: 'door' }));
-    C.boxes = [...boxes.filter((b) => !doors.has(b)), ...opened];
+    // [O5b] (nor what is not there for a man on the ground: a collider switched off - a lot's box under
+    // its room, a pane broken - nor an upper floor's - a landing's rails - which closed the pier office's
+    // opening under its landing to the men in its store: O5's Left 2)
+    C.boxes = [...boxes.filter((b) => !doors.has(b) && !b.gone && !(b.lvl > 0)), ...opened];
     C.circles = circles.filter((c) => c.tag !== 'corpse');
     // (a quarter-metre grid, 0.3 m round what stands: a 1 m doorway is a way
     // through - the stage's own 0.5 m grid closes it)

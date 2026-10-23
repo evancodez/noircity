@@ -1,6 +1,8 @@
 import * as THREE from 'three';
 import { FLOOR } from '../../city/kits/interior/kit.js';
 import { sheet, label, litWindow, bench } from '../../city/kits/interior/pieces.js';
+import { lathe } from '../../props/lib.js';
+import { filmPoster } from '../art.js';
 
 // The theatre's lobby (the Orpheum, Downtown under its marquee; brief O5
 // §2.10): the lobby with its carpet, the box office's lit window and its
@@ -38,14 +40,16 @@ export default {
     } });
     label(K, 'TICKETS', (bx0 + bx1) / 2, FLOOR + 2.25, bz1 + 0.01, { w: 1.2, h: 0.25, dir: 's', dark: true });
     // the posters in their frames; the stairs up the right wall to the balcony's door (closed tonight)
-    for (let i = 0; i < 3; i++) { const z = -1.6 - i * 1.8; K.box('woodHi', x1 - 0.06, x1, FLOOR + 0.85, FLOOR + 2.55, z - 0.6, z + 0.6, 3); K.box('lit', x1 - 0.07, x1 - 0.06, FLOOR + 0.92, FLOOR + 2.48, z - 0.53, z + 0.53, 2); sheet(K, z, FLOOR + 1.7, x1 - 0.08, { w: 0.8, h: 1.3, dir: 'w', key: 'wood' }); }
+    // ([O5b] brief O5b §3: the frames held a poster's dark shape and read as empty - a picture and a title in each)
+    for (let i = 0; i < 3; i++) { const z = -1.6 - i * 1.8; K.box('woodHi', x1 - 0.06, x1, FLOOR + 0.85, FLOOR + 2.55, z - 0.6, z + 0.6, 3); K.box('lit', x1 - 0.07, x1 - 0.06, FLOOR + 0.92, FLOOR + 2.48, z - 0.53, z + 0.53, 2); label(K, '', z, FLOOR + 1.7, x1 - 0.075, { w: 0.92, h: 1.42, dir: 'w', draw: filmPoster(i), res: 2.2 }); }
     // two lit frames either side of the doors into the house, a poster's dark shape in each
-    for (const px of [hx - 2.1, hx + 2.1]) { K.box('woodHi', px - 0.62, px + 0.62, FLOOR + 0.8, FLOOR + 2.6, zl, zl + 0.06, 3); K.box('lit', px - 0.55, px + 0.55, FLOOR + 0.87, FLOOR + 2.53, zl + 0.06, zl + 0.07, 2); sheet(K, px, FLOOR + 1.7, zl + 0.07, { w: 0.82, h: 1.36, dir: 's', key: 'wood' }); }
+    [hx - 2.1, hx + 2.1].forEach((px, k) => { K.box('woodHi', px - 0.62, px + 0.62, FLOOR + 0.8, FLOOR + 2.6, zl, zl + 0.06, 3); K.box('lit', px - 0.55, px + 0.55, FLOOR + 0.87, FLOOR + 2.53, zl + 0.06, zl + 0.07, 2); label(K, '', px, FLOOR + 1.7, zl + 0.075, { w: 0.96, h: 1.5, dir: 's', draw: filmPoster(3 + k), res: 2.2 }); });
     label(K, 'NOW SHOWING\nTHE LONG NIGHT', x0 + 0.02, FLOOR + 2.0, -5.4, { w: 1.6, h: 0.7, dir: 'e', lit: true });
     bench(K, x0 + 0.05, x0 + 0.5, -6.6, -4.6);
-    K.lamp(hx, FLOOR + 2.9, -3.6, { kind: 'pendant', power: 1.5, ceilY: FLOOR + H });
-    // (a chandelier: small lit globes on a ring of arms round it)
-    for (let i = 0; i < 6; i++) { const a = i * Math.PI / 3; K.add('bulb', new THREE.SphereGeometry(0.05, 8, 6).translate(hx + Math.cos(a) * 0.45, FLOOR + 3.3, -3.6 + Math.sin(a) * 0.45), 2); K.add('chrome', new THREE.CylinderGeometry(0.008, 0.008, 0.46, 4).rotateZ(Math.PI / 2).rotateY(-a).translate(hx + Math.cos(a) * 0.23, FLOOR + 3.36, -3.6 + Math.sin(a) * 0.23), 2); }
+    // ([O5b] brief O5b §3: the lobby's second stroke) the chandelier: two tiers of lit arms round a
+    // stem, glass drops hanging off them, its light the one pool on the carpet
+    chandelier(K, hx, FLOOR + 3.05, -3.6, FLOOR + H);
+    K.lamp(hx, FLOOR + 2.85, -3.6, { kind: 'chandelier', power: 1.55, ceilY: FLOOR + H, drop: 2.85 });
     K.lamp(x1 - 1.6, FLOOR + 3.4, -1.6, { kind: 'globe', power: 0.35, ceilY: FLOOR + H });
     K.fig('oldman', hx + 1.4, zl + 0.5, 0, { name: 'usher', state: 'idle' });
     // the doors into the house (a double door, pushed either way)
@@ -90,3 +94,24 @@ function reel(K, s, P) {
     } G.emit('theatre:reel', {}); return true; }; })());
 }
 void THREE; void litWindow;
+
+// [O5b] the Orpheum's chandelier: a stem, a bowl, a ring of ten arms with their bulbs and an
+// upper ring of five, glass drops on every arm and a long one under the bowl
+function chandelier(K, x, y, z, ceil) {
+  K.cyl('chrome', x, y + 0.5, ceil, z, 0.012, 0.012, 6, 2);
+  K.add('chrome', lathe([[0.0001, -0.32], [0.04, -0.3], [0.12, -0.18], [0.2, -0.05], [0.22, 0.0], [0.08, 0.06], [0.05, 0.5], [0.0001, 0.52]], 20).translate(x, y, z), 2);
+  const ring = (r, yy, n, a0) => {
+    for (let i = 0; i < n; i++) {
+      const a = a0 + i * Math.PI * 2 / n, cx = x + Math.cos(a) * r, cz = z + Math.sin(a) * r;
+      K.add('chrome', new THREE.CylinderGeometry(0.008, 0.008, r, 5).rotateZ(Math.PI / 2).rotateY(-a).translate(x + Math.cos(a) * r / 2, yy - 0.02, z + Math.sin(a) * r / 2), 2);
+      K.add('chrome', new THREE.CylinderGeometry(0.025, 0.018, 0.06, 8).translate(cx, yy, cz), 2);
+      K.add('bulb', new THREE.SphereGeometry(0.042, 10, 8).scale(1, 1.3, 1).translate(cx, yy + 0.07, cz), 2);
+      // the drop under the arm: a slim cone of glass catching the light
+      K.add('chrome', new THREE.ConeGeometry(0.018, 0.12, 6).rotateX(Math.PI).translate(cx, yy - 0.1, cz), 3);
+    }
+  };
+  ring(0.62, y, 10, 0);
+  ring(0.34, y + 0.26, 5, Math.PI / 5);
+  K.add('chrome', new THREE.ConeGeometry(0.03, 0.22, 6).rotateX(Math.PI).translate(x, y - 0.44, z), 3);
+  K.add('chrome', new THREE.TorusGeometry(0.62, 0.01, 4, 40).rotateX(Math.PI / 2).translate(x, y - 0.03, z), 2);
+}

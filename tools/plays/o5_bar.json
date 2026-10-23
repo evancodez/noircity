@@ -1,5 +1,5 @@
 {
- "about": "[O5] The Tenements' bar: a stool, a whiskey (E), the matchbook taken, the fight at the bar's end - stepped into (brief O5 \u00a72.3).",
+ "about": "[O5] The Tenements' bar: a stool, a whiskey (E), the matchbook taken, the fight at the bar's end - stepped into (brief O5 §2.3).",
  "url": "/?mute=1&start=city",
  "size": [
   1280,
@@ -95,7 +95,15 @@
    "expect": "!G.city.places.seat"
   },
   {
-   "eval": "(() => { const s = G.city.places.byId.get('bar1'), F = s.frame, K = s.live.K; const mb = K.props.find((p) => p.name === 'matchbook'); const a = mb.o.position; const p = F.w(K.bar.stools[0][0], K.bar.stools[0][1] + 0.7); N.controller.setPose(p.x, p.z, Math.atan2(-(a.x - p.x), -(a.z - p.z)), Math.atan2(a.y - 1.93, Math.hypot(a.x - p.x, a.z - p.z))); return 1; })()"
+   "eval": "(() => { const s = G.city.places.byId.get('bar1'), F = s.frame, K = s.live.K; const mb = K.props.find((p) => p.name === 'matchbook'); const a = mb.o.position; const p = F.w(K.bar.stools[0][0], K.bar.stools[0][1] + 0.7); window.__mbp = [p.x, p.z]; N.controller.setPose(p.x, p.z, Math.atan2(-(a.x - p.x), -(a.z - p.z)), -0.3); return 1; })()",
+   "note": "[O5b] the stand point is taken by the bar end's drinker since O3's people are solid: the look is aimed from where I stand"
+  },
+  {
+   "wait": 500
+  },
+  {
+   "eval": "(() => { const s = G.city.places.byId.get('bar1'), K = s.live.K; const a = K.props.find((p) => p.name === 'matchbook').o.position; const C = N.controller, e = C.pos; C.yaw = Math.atan2(-(a.x - e.x), -(a.z - e.z)); C.pitch = Math.atan2(a.y - G.eye.y, Math.hypot(a.x - e.x, a.z - e.z)); return 'stood ' + Math.hypot(e.x - __mbp[0], e.z - __mbp[1]).toFixed(2) + ' m from the asked spot (the solid people since O3 step me aside), looked at the matchbook from there'; })()",
+   "note": "[O5b] since O3's people are solid the asked stand point is not where I end up: the look is aimed from where I stand"
   },
   {
    "wait": 500

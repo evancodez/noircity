@@ -29,6 +29,9 @@ export function interiorMats(stage) {
     dark: std('plaster', { color: 0x101010, roughness: 0.95 }),
     boards: std('wood', { color: 0x1c1c1c, roughness: 0.6, envMapIntensity: 0.3 }),
     tile: std('lino', { color: 0x2e2e2e, roughness: 0.3, envMapIntensity: 0.45 }),
+    // [O5b] the hospital's pale lino (where a pool of light lands white) and its stone front
+    lino: std('lino', { color: 0x4e4e4c, roughness: 0.32, envMapIntensity: 0.4 }),
+    stone: std('plaster', { color: 0x4a4a47, roughness: 0.9 }),
     concrete: std('plaster', { color: 0x1d1d1d, roughness: 0.92 }),
     canvas: std('cloth', { color: 0x4a4a48, roughness: 1.0, envMapIntensity: 0 }),
     wood: std('wood', { color: 0x141414, roughness: 0.62, envMapIntensity: 0.2 }),

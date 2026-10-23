@@ -255,7 +255,7 @@ export class RoomKit {
     for (const d of this.doors) for (const l of d.leaves) l.hinge.traverse((o) => { if (o.isMesh && o.geometry) o.geometry.dispose(); });
     for (const p of this.props) if (p.o.parent) p.o.parent.remove(p.o);
     for (const c of this.cols) this.stage.colliders.remove(c);
-    if (this.labelTex) { this.labelTex.dispose(); this.labelMat.dispose(); }
+    if (this.labelTex) { this.labelTex.dispose(); this.labelMat.dispose(); if (this.labelMat2) this.labelMat2.dispose(); }
     this.meshes.length = 0; this.extra.length = 0; this.cols.length = 0;
     if (this.group.parent) this.group.parent.remove(this.group);
     if (this.outer.parent) this.outer.parent.remove(this.outer);

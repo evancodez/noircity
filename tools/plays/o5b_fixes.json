@@ -1,0 +1,291 @@
+{
+ "about": "[O5b after the critic] the critic's blockers and the board, by real input: the ambulance at the hospital's kerb is locked (E: 'try the door', the rattle, 'locked', never in it: B1); the nurse answers at her desk, looked at in the face (B2); a shot in the hall (heat 2), a free ward bed: 'Not with the law on your heels.', no sleep, the heat kept (B3); HQ: from the street door the WANTED board is in view on the back wall, its posters left to right in the card's order (M4, M5), E at it from the desk's front.",
+ "url": "/?mute=1&start=city",
+ "size": [
+  1280,
+  800
+ ],
+ "out": "shots/o5b_fixes",
+ "steps": [
+  {
+   "wait": 1500
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]",
+   "taken": "G.state !== 'title'",
+   "retries": 5,
+   "every": 4000
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'city' && G.scenes.fadeK < 0.05",
+   "timeout": 30000
+  },
+  {
+   "look": [
+    0,
+    0
+   ],
+   "steps": 1
+  },
+  {
+   "eval": "(N.controller.pitch=0,window.__log=[],window.__lp={},setInterval(()=>{const t=(performance.now()/1000).toFixed(1);const p=G.hud.promptShown,m=document.querySelector('#hud .msg').textContent,s=G.hud.sayShown,w=G.hud.warnText;if(p!==__lp.p)__log.push(t+' P['+p+']');if(m!==__lp.m&&m)__log.push(t+' M['+m+']');if(s!==__lp.s&&s)__log.push(t+' S['+s+']');if(w!==__lp.w&&w)__log.push(t+' W['+w+']');__lp={p,m,s,w}},50),window.__H=()=>G.city.places.byId.get('hospital'),window.__hq=()=>G.city.places.byId.get('police'),window.__face=(x,y,z)=>{const C=N.controller,e=G.eye;let dy=Math.atan2(-(x-e.x),-(z-e.z))-C.yaw;dy=Math.atan2(Math.sin(dy),Math.cos(dy));const dp=Math.atan2(y-e.y,Math.hypot(x-e.x,z-e.z))-C.pitch;return [-dy/C.sensitivity,-dp/C.sensitivity]},1)"
+  },
+  {
+   "eval": "(()=>{const s=__H(),d=s.door;const x=d.x+d.nx*3,z=d.z+d.nz*3;G.stage.part('stream').warmAround(x,z);N.controller.setPose(x,z,Math.atan2(d.nx,d.nz),0);G.stage.part('bounds').navAround(x,z,30);return 'at the hospital door (a tool move across the city)'})()"
+  },
+  {
+   "wait": 2000
+  },
+  {
+   "eval": "(()=>{const v=G.vehicles.list.find(v=>v.ambulance);window.__amb=v;const p=v.world(0,-(v.spec.halfW+0.9),new N.THREE.Vector3());window.__ap=[p.x,p.z];return 'ambulance '+(v?'parked, locked '+v.locked:'none')})()"
+  },
+  {
+   "walk": "[__ap]",
+   "timeout": 15000
+  },
+  {
+   "look": "__face(__amb.pos.x,1.4,__amb.pos.z)",
+   "steps": 5
+  },
+  {
+   "wait": 300
+  },
+  {
+   "eval": "'at the ambulance: prompt '+G.hud.promptShown"
+  },
+  {
+   "expect": "G.hud.promptShown === 'E  try the door'",
+   "label": "B1: the ambulance offers its door to try, not 'get in'"
+  },
+  {
+   "key": "KeyE",
+   "hold": 70
+  },
+  {
+   "wait": 800
+  },
+  {
+   "expect": "!G.city.inCar && G.city.car !== __amb && __log.some(x=>x.includes('M[locked]'))",
+   "label": "B1: E at it: 'locked', not in it"
+  },
+  {
+   "walk": "(()=>{const d=__H().door;return [[d.x+d.nx*1.3,d.z+d.nz*1.3]]})()",
+   "timeout": 15000
+  },
+  {
+   "look": "(()=>{const d=__H().door;return __face(d.x,1.6,d.z)})()",
+   "steps": 4
+  },
+  {
+   "key": "KeyE",
+   "hold": 70
+  },
+  {
+   "wait": 700
+  },
+  {
+   "walk": "(()=>{const F=__H().frame;const a=F.w(0,-1.4);return [[a.x,a.z]]})()",
+   "timeout": 10000
+  },
+  {
+   "look": "(()=>{const F=__H().frame,C=N.controller;let dy=F.yaw(0)-C.yaw;dy=Math.atan2(Math.sin(dy),Math.cos(dy));return [-dy/C.sensitivity,C.pitch/C.sensitivity]})()",
+   "steps": 4
+  },
+  {
+   "wait": 500
+  },
+  {
+   "shot": "a_hall_from_the_door"
+  },
+  {
+   "walk": "(()=>{const F=__H().frame,K=__H().live.K;window.__nu=K.uses.find(u=>u.prompt==='the nurse');const a=F.w(__nu.at[0],-3.35);return [[a.x,a.z]]})()",
+   "timeout": 10000,
+   "into": true
+  },
+  {
+   "look": "(()=>{const F=__H().frame;const p=F.v(__nu.at[0],__nu.at[1],__nu.at[2]);return __face(p.x,p.y,p.z)})()",
+   "steps": 4
+  },
+  {
+   "wait": 400
+  },
+  {
+   "eval": "(()=>{const F=__H().frame,l=F.l(N.controller.pos.x,N.controller.pos.z);return 'at the desk front (local '+l.x.toFixed(2)+','+l.z.toFixed(2)+'): prompt '+G.hud.promptShown})()"
+  },
+  {
+   "shot": "b_nurse"
+  },
+  {
+   "expect": "G.hud.promptShown === 'E  the nurse'",
+   "label": "B2: at her desk, looking at her: 'E the nurse'"
+  },
+  {
+   "key": "KeyE",
+   "hold": 70
+  },
+  {
+   "wait": 600
+  },
+  {
+   "expect": "__log.some(x=>/M\\[(Nobody|You look|Wait)/.test(x))",
+   "label": "B2: E: her word"
+  },
+  {
+   "drive": "tools/lib/o4_wheel.mjs",
+   "dy": 100
+  },
+  {
+   "wait": 500
+  },
+  {
+   "look": [
+    0,
+    -150
+   ],
+   "steps": 3
+  },
+  {
+   "mouse": "click",
+   "button": "left"
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "eval": "'after the shot in the hall: heat '+G.police.heat"
+  },
+  {
+   "drive": "tools/lib/o4_wheel.mjs",
+   "dy": 100
+  },
+  {
+   "wait": 400
+  },
+  {
+   "walk": "(()=>{const F=__H().frame,K=__H().live.K;const q=K.beds.find(b=>b!==K.wakeBed&&b.side==='e');window.__bed=q;const a=F.w(-0.3,-5.5),b=F.w(0,-8),c=F.w(q.xa-0.9,q.z);return [[a.x,a.z],[b.x,b.z],[c.x,c.z]]})()",
+   "timeout": 40000
+  },
+  {
+   "look": "(()=>{const F=__H().frame;const p=F.v(__bed.x,0.62+(__H().live.K.floorY||0),__bed.z);return __face(p.x,G.eye.y-0.9,p.z)})()",
+   "steps": 5
+  },
+  {
+   "wait": 400
+  },
+  {
+   "eval": "'bed: prompt '+G.hud.promptShown+' heat '+G.police.heat+' hp '+G.health.hp"
+  },
+  {
+   "expect": "G.hud.promptShown === 'E  sleep' && G.police.heat >= 1",
+   "label": "B3: a free bed, the heat up"
+  },
+  {
+   "key": "KeyE",
+   "hold": 70
+  },
+  {
+   "wait": 2500
+  },
+  {
+   "eval": "'after E: heat '+G.police.heat+' sleeping '+!!G.city.places.sleeping"
+  },
+  {
+   "expect": "G.police.heat >= 1 && !G.city.places.sleeping && __log.some(x=>x.includes('Not with the law'))",
+   "label": "B3: no sleep with the law on me: the nurse's word, the heat kept"
+  },
+  {
+   "eval": "(G.people&&G.people.dbgClear&&G.people.dbgClear(),G.people&&(G.people.hold=false),'the heat cleared by a tool (the next test is HQ)')"
+  },
+  {
+   "eval": "(()=>{const s=__hq(),d=s.door;const x=d.x+d.nx*4,z=d.z+d.nz*4;G.stage.part('stream').warmAround(x,z);N.controller.setPose(x,z,Math.atan2(d.nx,d.nz),0);G.stage.part('bounds').navAround(x,z,30);return 'at HQ door (a tool move)'})()"
+  },
+  {
+   "wait": 2000
+  },
+  {
+   "walk": "(()=>{const d=__hq().door;return [[d.x+d.nx*1.3,d.z+d.nz*1.3]]})()",
+   "timeout": 15000
+  },
+  {
+   "look": "(()=>{const d=__hq().door;return __face(d.x,1.6,d.z)})()",
+   "steps": 4
+  },
+  {
+   "key": "KeyE",
+   "hold": 70
+  },
+  {
+   "wait": 700
+  },
+  {
+   "walk": "(()=>{const F=__hq().frame;const a=F.w(0,-1.2);return [[a.x,a.z]]})()",
+   "timeout": 10000
+  },
+  {
+   "look": "(()=>{const F=__hq().frame,C=N.controller;let dy=F.yaw(0)-C.yaw;dy=Math.atan2(Math.sin(dy),Math.cos(dy));return [-dy/C.sensitivity,C.pitch/C.sensitivity]})()",
+   "steps": 4
+  },
+  {
+   "wait": 600
+  },
+  {
+   "shot": "c_hq_from_the_door"
+  },
+  {
+   "eval": "(()=>{const K=__hq().live.K,F=__hq().frame;const L=G.night.bounty.names().slice(0,3);window.__ps=K.posters.map((p,i)=>{const w=F.v(p.x,p.y,p.z);const s=G.screenOf(w);return {name:L[i]&&L[i].name,x:s&&s.x,y:s&&s.y}});return JSON.stringify(__ps)})()"
+  },
+  {
+   "expect": "__ps.every(p=>p.x>0&&p.x<innerWidth&&p.y>0&&p.y<innerHeight)",
+   "label": "M5: from the street door, the board's three posters are in view"
+  },
+  {
+   "walk": "(()=>{const F=__hq().frame,K=__hq().live.K;const a=F.w(K.bounty.x,-4.4);return [[a.x,a.z]]})()",
+   "timeout": 10000,
+   "into": true
+  },
+  {
+   "look": "(()=>{const F=__hq().frame,K=__hq().live.K;const p=F.v(K.bounty.x,K.bounty.y,K.bounty.z+0.05);return __face(p.x,p.y,p.z)})()",
+   "steps": 4
+  },
+  {
+   "wait": 400
+  },
+  {
+   "eval": "'at the desk front: prompt '+G.hud.promptShown"
+  },
+  {
+   "expect": "G.hud.promptShown === 'E  the wanted board'",
+   "label": "the board answers E from the desk's front"
+  },
+  {
+   "shot": "d_board"
+  },
+  {
+   "key": "KeyE",
+   "hold": 70
+  },
+  {
+   "wait": 900
+  },
+  {
+   "shot": "e_card"
+  },
+  {
+   "eval": "(()=>{const L=G.night.bounty.names().slice(0,3).map(b=>b.name);const sx=[...__ps].sort((a,b)=>a.x-b.x).map(p=>p.name);const cv=[...document.querySelectorAll('#nbounty .row > *')].map(c=>Math.round(c.getBoundingClientRect().x));window.__ok=JSON.stringify(sx)===JSON.stringify(L)&&cv.length===L.length&&cv.every((v,i)=>i==0||v>cv[i-1]);return 'posters on the wall left to right: '+sx.join(' / ')+'; on the card left to right (names() order, its sheets at x '+cv.join(', ')+'): '+L.join(' / ')})()"
+  },
+  {
+   "expect": "__ok",
+   "label": "M4: the wall's order is the card's"
+  },
+  {
+   "key": "KeyE",
+   "hold": 70
+  },
+  {
+   "wait": 400
+  },
+  {
+   "eval": "__log.join(' | ')"
+  }
+ ]
+}

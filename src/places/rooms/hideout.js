@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { FLOOR } from '../../city/kits/interior/kit.js';
 import { counter, desk, chair, crates, shelves, safe, label, table, lockers } from '../../city/kits/interior/pieces.js';
+import { stencil } from '../art.js';
 import { RNG } from '../../util/rng.js';
 import { gunsOf } from '../../guns/Guns.js';
 import { owns } from '../../combat/money.js';
@@ -102,12 +103,13 @@ function pierOffice(K, s, P, rng) {
   // the men: two in the front office, two in the store (one upstairs would stand on the office's floor)
   // ([O5] after the critic: three - a Tommy gunner in the store was the last man, pinned from his
   // range and never came: two minutes of nobody)
+  // [O5b] (the men's grid takes the opening under the landing now - Covers.rebuild leaves an upper floor's
+  // rails out of it: O5's Left 2): the three in the store at the back, among the crates; they heard the
+  // street door and come through the opening (brief O5b §4) - the front office is the place to meet them
   K.men = [
-    { kind: 'pistol', x: -2.6, z: -4.0 }, { kind: 'pistol', x: 2.8, z: -1.6 },
-    // (the third at the back of the front office: a man put in the store never found his way out to
-    // me - the men's grid does not take the opening under the landing - and the fight stalled)
-    { kind: 'pistol', x: 0.4, z: -4.7 },
+    { kind: 'pistol', x: -3.5, z: -10.5 }, { kind: 'pistol', x: 6.5, z: -11.5 }, { kind: 'pistol', x: 0.6, z: -8.6 },
   ];
+  K.opening = { x0: 2.6, x1: 4.4, z: zf };
   K.area = { x0: sx0, x1: sx1, z0: sz0, z1 };
 }
 
@@ -118,12 +120,22 @@ function warehouse(K, s, P, rng) {
   K.at(0);
   K.room(x0, x1, z0, z1, { h: H, floor: 'concrete', wall: 'concrete', ceil: 'dark', look: { ambient: 0.35, haze: 0.55, room: 'o5_big' }, sides: { s: { holes: P.doorHoles(s, 's') }, e: { holes: P.doorHoles(s, 'e') } } });
   // the crates in their rows down the hall (cover), a lane down the middle
+  // ([O5b] brief O5b §3: a stroke of its own - the goods stencilled on the faces that look on the lane)
+  const WORDS = [['PIER 7', 'HARBOR SHIPPING CO.'], ['FRAGILE', 'THIS SIDE UP'], ['HAVANA', 'NO HOOKS'], ['MACHINE PARTS', 'BONDED'], ['CANNED GOODS', '24 TINS'], ['HANDLE WITH CARE', '']];
+  let wi = 0;
   for (let z = -5.0; z > z0 + 6; z -= 4.6) for (const x of [-10.0, -6.0, 5.5, 9.5]) {
     if (x < x0 + 1 || x > x1 - 1) continue;
     if (rng() < 0.2) continue;
-    crates(K, x + (rng() - 0.5) * 0.6, z + (rng() - 0.5) * 0.6, { n: 1 + Math.floor(rng() * 3), s: 1.2, rng });
+    const B = crates(K, x + (rng() - 0.5) * 0.6, z + (rng() - 0.5) * 0.6, { n: 1 + Math.floor(rng() * 3), s: 1.2, rng });
     K.cols.at(-1).tag = 'crates';
+    if (Math.abs(x) < 7 && B && B.length) {
+      const c = B[0], [t, sub] = WORDS[wi++ % WORDS.length], fx = x < 0 ? c.x1 : c.x0;
+      label(K, '', (c.z0 + c.z1) / 2, (c.y0 + c.y1) / 2, fx, { w: (c.z1 - c.z0) * 0.86, h: (c.y1 - c.y0) * 0.74, dir: x < 0 ? 'e' : 'w', draw: stencil(t, sub), res: 1.6, shade: true });
+    }
   }
+  // the chain hanging from the roof's beam over the lane, its hook, the block and tackle on another
+  chain(K, -1.9, FLOOR + H, -10.6, FLOOR + 1.7);
+  chain(K, 2.3, FLOOR + H, -15.2, FLOOR + 3.1, true);
   for (let z = -4; z > z0 + 2; z -= 7) K.lamp(0, FLOOR + H - 1.4, z, { kind: 'cage', power: 0.9, ceilY: FLOOR + H });
   // (cover by the door: a man who comes in has a crate to get down behind - one each side and
   // a row of goods a step in front of the door itself, chest high (my belly behind it from their eyes): crouched behind it
@@ -257,4 +269,22 @@ function hideoutLife(K, s, P) {
   const d0 = run.dispose;
   run.dispose = () => { G.off('shot', onShot); if (st.fallHook) G.off('fail', onFail); d0(); };
   return run;
+}
+
+// [O5b] a chain from the roof: links alternating their plane, a hook at its end (or a pulley block)
+function chain(K, x, top, z, bottom, block = false) {
+  const step = 0.088, n = Math.floor((top - bottom) / step);
+  for (let i = 0; i < n; i++) {
+    const g = new THREE.TorusGeometry(0.045, 0.011, 5, 10).scale(0.7, 1.25, 1);
+    if (i % 2) g.rotateY(Math.PI / 2);
+    K.add('iron', g.translate(x, top - i * step - 0.05, z), 2);
+  }
+  const y = top - n * step;
+  if (block) {
+    K.box('iron', x - 0.09, x + 0.09, y - 0.36, y, z - 0.07, z + 0.07, 2);
+    K.add('iron', new THREE.TorusGeometry(0.07, 0.018, 6, 14).translate(x, y - 0.18, z + 0.08), 2);
+    K.add('iron', new THREE.TorusGeometry(0.09, 0.02, 6, 16, Math.PI * 1.4).rotateZ(Math.PI * 0.8).translate(x, y - 0.5, z), 2);
+  } else {
+    K.add('iron', new THREE.TorusGeometry(0.1, 0.022, 6, 18, Math.PI * 1.45).rotateZ(Math.PI * 0.78).translate(x + 0.02, y - 0.13, z), 2);
+  }
 }

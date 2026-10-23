@@ -1,0 +1,496 @@
+{
+ "about": "[O5b critic] the rooms told apart: each place's street door from 7 m out, walked to, E (the first open timed: the key to the leaf's first move), 2.4 m in, a frame; then walked straight in until something stops me.",
+ "url": "/?mute=1&start=city",
+ "size": [
+  1280,
+  800
+ ],
+ "out": "shots/critic_o5b/rooms",
+ "steps": [
+  {
+   "wait": 1500
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]",
+   "taken": "G.state !== 'title'",
+   "retries": 5,
+   "every": 4000
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'city' && G.scenes.fadeK < 0.05",
+   "timeout": 30000
+  },
+  {
+   "look": [
+    0,
+    0
+   ],
+   "steps": 1
+  },
+  {
+   "eval": "(N.controller.pitch=0,window.__lat={},window.__arm=null,addEventListener('keydown',e=>{if(e.code!=='KeyE'||!window.__arm)return;const s=G.city.places.byId.get(__arm);const L=s&&s.live;const D=L&&L.street&&L.street[0];if(!D){__lat[__arm]='no live door';return}const a0=D.angle,t0=performance.now();let last=t0,mx=0,n=0,id=__arm;__arm=null;const f=()=>{const t=performance.now();mx=Math.max(mx,t-last);last=t;n++;if(Math.abs(D.angle-a0)>1e-4){__lat[id]={lat:+(t-t0).toFixed(0),warm:L.warm};setTimeout(()=>{},0);return}if(n<90)requestAnimationFrame(f);else __lat[id]='no move'};requestAnimationFrame(f)},true),1)"
+  },
+  {
+   "eval": "(()=>{const s=G.city.places.byId.get('diner');if(!s)return 'none diner';const d=s.door;const x=d.x+d.nx*7,z=d.z+d.nz*7;G.stage.part('stream').warmAround(x,z);N.controller.setPose(x,z,Math.atan2(d.nx,d.nz),0);G.stage.part('bounds').navAround(x,z,30);return 'diner live '+!!s.live})()"
+  },
+  {
+   "wait": 1200
+  },
+  {
+   "walk": "(()=>{const d=G.city.places.byId.get('diner').door;return [[d.x+d.nx*1.3,d.z+d.nz*1.3]]})()",
+   "timeout": 20000
+  },
+  {
+   "look": "(()=>{const d=G.city.places.byId.get('diner').door;const C=N.controller;let dy=Math.atan2(d.nx,d.nz)-C.yaw;dy=Math.atan2(Math.sin(dy),Math.cos(dy));return [-dy/C.sensitivity,0]})()",
+   "steps": 4
+  },
+  {
+   "eval": "(window.__arm='diner','diner prompt: '+G.hud.promptShown+' live '+!!G.city.places.byId.get('diner').live)"
+  },
+  {
+   "key": "KeyE",
+   "hold": 70
+  },
+  {
+   "wait": 900
+  },
+  {
+   "walk": "(()=>{const F=G.city.places.byId.get('diner').frame;const p=F.w(0,-2.4);return [[p.x,p.z]]})()",
+   "timeout": 12000
+  },
+  {
+   "wait": 600
+  },
+  {
+   "shot": "diner"
+  },
+  {
+   "walk": "(()=>{const F=G.city.places.byId.get('diner').frame;const p=F.w(0.3,-14);return [[p.x,p.z]]})()",
+   "timeout": 7000,
+   "into": true
+  },
+  {
+   "eval": "(()=>{const s=G.city.places.byId.get('diner');const l=s.frame.l(N.controller.pos.x,N.controller.pos.z);return 'diner into: stopped at '+l.x.toFixed(1)+','+l.z.toFixed(1)+' prompt '+G.hud.promptShown+' lat '+JSON.stringify(__lat['diner'])})()"
+  },
+  {
+   "eval": "(()=>{const s=G.city.places.byId.get('theatre1');if(!s)return 'none theatre1';const d=s.door;const x=d.x+d.nx*7,z=d.z+d.nz*7;G.stage.part('stream').warmAround(x,z);N.controller.setPose(x,z,Math.atan2(d.nx,d.nz),0);G.stage.part('bounds').navAround(x,z,30);return 'theatre1 live '+!!s.live})()"
+  },
+  {
+   "wait": 1200
+  },
+  {
+   "walk": "(()=>{const d=G.city.places.byId.get('theatre1').door;return [[d.x+d.nx*1.3,d.z+d.nz*1.3]]})()",
+   "timeout": 20000
+  },
+  {
+   "look": "(()=>{const d=G.city.places.byId.get('theatre1').door;const C=N.controller;let dy=Math.atan2(d.nx,d.nz)-C.yaw;dy=Math.atan2(Math.sin(dy),Math.cos(dy));return [-dy/C.sensitivity,0]})()",
+   "steps": 4
+  },
+  {
+   "eval": "(window.__arm='theatre1','theatre1 prompt: '+G.hud.promptShown+' live '+!!G.city.places.byId.get('theatre1').live)"
+  },
+  {
+   "key": "KeyE",
+   "hold": 70
+  },
+  {
+   "wait": 900
+  },
+  {
+   "walk": "(()=>{const F=G.city.places.byId.get('theatre1').frame;const p=F.w(0,-2.4);return [[p.x,p.z]]})()",
+   "timeout": 12000
+  },
+  {
+   "wait": 600
+  },
+  {
+   "shot": "theatre1"
+  },
+  {
+   "walk": "(()=>{const F=G.city.places.byId.get('theatre1').frame;const p=F.w(0.3,-14);return [[p.x,p.z]]})()",
+   "timeout": 7000,
+   "into": true
+  },
+  {
+   "eval": "(()=>{const s=G.city.places.byId.get('theatre1');const l=s.frame.l(N.controller.pos.x,N.controller.pos.z);return 'theatre1 into: stopped at '+l.x.toFixed(1)+','+l.z.toFixed(1)+' prompt '+G.hud.promptShown+' lat '+JSON.stringify(__lat['theatre1'])})()"
+  },
+  {
+   "eval": "(()=>{const s=G.city.places.byId.get('gym');if(!s)return 'none gym';const d=s.door;const x=d.x+d.nx*7,z=d.z+d.nz*7;G.stage.part('stream').warmAround(x,z);N.controller.setPose(x,z,Math.atan2(d.nx,d.nz),0);G.stage.part('bounds').navAround(x,z,30);return 'gym live '+!!s.live})()"
+  },
+  {
+   "wait": 1200
+  },
+  {
+   "walk": "(()=>{const d=G.city.places.byId.get('gym').door;return [[d.x+d.nx*1.3,d.z+d.nz*1.3]]})()",
+   "timeout": 20000
+  },
+  {
+   "look": "(()=>{const d=G.city.places.byId.get('gym').door;const C=N.controller;let dy=Math.atan2(d.nx,d.nz)-C.yaw;dy=Math.atan2(Math.sin(dy),Math.cos(dy));return [-dy/C.sensitivity,0]})()",
+   "steps": 4
+  },
+  {
+   "eval": "(window.__arm='gym','gym prompt: '+G.hud.promptShown+' live '+!!G.city.places.byId.get('gym').live)"
+  },
+  {
+   "key": "KeyE",
+   "hold": 70
+  },
+  {
+   "wait": 900
+  },
+  {
+   "walk": "(()=>{const F=G.city.places.byId.get('gym').frame;const p=F.w(0,-2.4);return [[p.x,p.z]]})()",
+   "timeout": 12000
+  },
+  {
+   "wait": 600
+  },
+  {
+   "shot": "gym"
+  },
+  {
+   "walk": "(()=>{const F=G.city.places.byId.get('gym').frame;const p=F.w(0.3,-14);return [[p.x,p.z]]})()",
+   "timeout": 7000,
+   "into": true
+  },
+  {
+   "eval": "(()=>{const s=G.city.places.byId.get('gym');const l=s.frame.l(N.controller.pos.x,N.controller.pos.z);return 'gym into: stopped at '+l.x.toFixed(1)+','+l.z.toFixed(1)+' prompt '+G.hud.promptShown+' lat '+JSON.stringify(__lat['gym'])})()"
+  },
+  {
+   "eval": "(()=>{const s=G.city.places.byId.get('bar1');if(!s)return 'none bar1';const d=s.door;const x=d.x+d.nx*7,z=d.z+d.nz*7;G.stage.part('stream').warmAround(x,z);N.controller.setPose(x,z,Math.atan2(d.nx,d.nz),0);G.stage.part('bounds').navAround(x,z,30);return 'bar1 live '+!!s.live})()"
+  },
+  {
+   "wait": 1200
+  },
+  {
+   "walk": "(()=>{const d=G.city.places.byId.get('bar1').door;return [[d.x+d.nx*1.3,d.z+d.nz*1.3]]})()",
+   "timeout": 20000
+  },
+  {
+   "look": "(()=>{const d=G.city.places.byId.get('bar1').door;const C=N.controller;let dy=Math.atan2(d.nx,d.nz)-C.yaw;dy=Math.atan2(Math.sin(dy),Math.cos(dy));return [-dy/C.sensitivity,0]})()",
+   "steps": 4
+  },
+  {
+   "eval": "(window.__arm='bar1','bar1 prompt: '+G.hud.promptShown+' live '+!!G.city.places.byId.get('bar1').live)"
+  },
+  {
+   "key": "KeyE",
+   "hold": 70
+  },
+  {
+   "wait": 900
+  },
+  {
+   "walk": "(()=>{const F=G.city.places.byId.get('bar1').frame;const p=F.w(0,-2.4);return [[p.x,p.z]]})()",
+   "timeout": 12000
+  },
+  {
+   "wait": 600
+  },
+  {
+   "shot": "bar1"
+  },
+  {
+   "walk": "(()=>{const F=G.city.places.byId.get('bar1').frame;const p=F.w(0.3,-14);return [[p.x,p.z]]})()",
+   "timeout": 7000,
+   "into": true
+  },
+  {
+   "eval": "(()=>{const s=G.city.places.byId.get('bar1');const l=s.frame.l(N.controller.pos.x,N.controller.pos.z);return 'bar1 into: stopped at '+l.x.toFixed(1)+','+l.z.toFixed(1)+' prompt '+G.hud.promptShown+' lat '+JSON.stringify(__lat['bar1'])})()"
+  },
+  {
+   "eval": "(()=>{const s=G.city.places.byId.get('bar2');if(!s)return 'none bar2';const d=s.door;const x=d.x+d.nx*7,z=d.z+d.nz*7;G.stage.part('stream').warmAround(x,z);N.controller.setPose(x,z,Math.atan2(d.nx,d.nz),0);G.stage.part('bounds').navAround(x,z,30);return 'bar2 live '+!!s.live})()"
+  },
+  {
+   "wait": 1200
+  },
+  {
+   "walk": "(()=>{const d=G.city.places.byId.get('bar2').door;return [[d.x+d.nx*1.3,d.z+d.nz*1.3]]})()",
+   "timeout": 20000
+  },
+  {
+   "look": "(()=>{const d=G.city.places.byId.get('bar2').door;const C=N.controller;let dy=Math.atan2(d.nx,d.nz)-C.yaw;dy=Math.atan2(Math.sin(dy),Math.cos(dy));return [-dy/C.sensitivity,0]})()",
+   "steps": 4
+  },
+  {
+   "eval": "(window.__arm='bar2','bar2 prompt: '+G.hud.promptShown+' live '+!!G.city.places.byId.get('bar2').live)"
+  },
+  {
+   "key": "KeyE",
+   "hold": 70
+  },
+  {
+   "wait": 900
+  },
+  {
+   "walk": "(()=>{const F=G.city.places.byId.get('bar2').frame;const p=F.w(0,-2.4);return [[p.x,p.z]]})()",
+   "timeout": 12000
+  },
+  {
+   "wait": 600
+  },
+  {
+   "shot": "bar2"
+  },
+  {
+   "walk": "(()=>{const F=G.city.places.byId.get('bar2').frame;const p=F.w(0.3,-14);return [[p.x,p.z]]})()",
+   "timeout": 7000,
+   "into": true
+  },
+  {
+   "eval": "(()=>{const s=G.city.places.byId.get('bar2');const l=s.frame.l(N.controller.pos.x,N.controller.pos.z);return 'bar2 into: stopped at '+l.x.toFixed(1)+','+l.z.toFixed(1)+' prompt '+G.hud.promptShown+' lat '+JSON.stringify(__lat['bar2'])})()"
+  },
+  {
+   "eval": "(()=>{const s=G.city.places.byId.get('warehouse');if(!s)return 'none warehouse';const d=s.door;const x=d.x+d.nx*7,z=d.z+d.nz*7;G.stage.part('stream').warmAround(x,z);N.controller.setPose(x,z,Math.atan2(d.nx,d.nz),0);G.stage.part('bounds').navAround(x,z,30);return 'warehouse live '+!!s.live})()"
+  },
+  {
+   "wait": 1200
+  },
+  {
+   "walk": "(()=>{const d=G.city.places.byId.get('warehouse').door;return [[d.x+d.nx*1.3,d.z+d.nz*1.3]]})()",
+   "timeout": 20000
+  },
+  {
+   "look": "(()=>{const d=G.city.places.byId.get('warehouse').door;const C=N.controller;let dy=Math.atan2(d.nx,d.nz)-C.yaw;dy=Math.atan2(Math.sin(dy),Math.cos(dy));return [-dy/C.sensitivity,0]})()",
+   "steps": 4
+  },
+  {
+   "eval": "(window.__arm='warehouse','warehouse prompt: '+G.hud.promptShown+' live '+!!G.city.places.byId.get('warehouse').live)"
+  },
+  {
+   "key": "KeyE",
+   "hold": 70
+  },
+  {
+   "wait": 900
+  },
+  {
+   "walk": "(()=>{const F=G.city.places.byId.get('warehouse').frame;const p=F.w(0,-2.4);return [[p.x,p.z]]})()",
+   "timeout": 12000
+  },
+  {
+   "wait": 600
+  },
+  {
+   "shot": "warehouse"
+  },
+  {
+   "walk": "(()=>{const F=G.city.places.byId.get('warehouse').frame;const p=F.w(0.3,-14);return [[p.x,p.z]]})()",
+   "timeout": 7000,
+   "into": true
+  },
+  {
+   "eval": "(()=>{const s=G.city.places.byId.get('warehouse');const l=s.frame.l(N.controller.pos.x,N.controller.pos.z);return 'warehouse into: stopped at '+l.x.toFixed(1)+','+l.z.toFixed(1)+' prompt '+G.hud.promptShown+' lat '+JSON.stringify(__lat['warehouse'])})()"
+  },
+  {
+   "eval": "(()=>{const s=G.city.places.byId.get('hall');if(!s)return 'none hall';const d=s.door;const x=d.x+d.nx*7,z=d.z+d.nz*7;G.stage.part('stream').warmAround(x,z);N.controller.setPose(x,z,Math.atan2(d.nx,d.nz),0);G.stage.part('bounds').navAround(x,z,30);return 'hall live '+!!s.live})()"
+  },
+  {
+   "wait": 1200
+  },
+  {
+   "walk": "(()=>{const d=G.city.places.byId.get('hall').door;return [[d.x+d.nx*1.3,d.z+d.nz*1.3]]})()",
+   "timeout": 20000
+  },
+  {
+   "look": "(()=>{const d=G.city.places.byId.get('hall').door;const C=N.controller;let dy=Math.atan2(d.nx,d.nz)-C.yaw;dy=Math.atan2(Math.sin(dy),Math.cos(dy));return [-dy/C.sensitivity,0]})()",
+   "steps": 4
+  },
+  {
+   "eval": "(window.__arm='hall','hall prompt: '+G.hud.promptShown+' live '+!!G.city.places.byId.get('hall').live)"
+  },
+  {
+   "key": "KeyE",
+   "hold": 70
+  },
+  {
+   "wait": 900
+  },
+  {
+   "walk": "(()=>{const F=G.city.places.byId.get('hall').frame;const p=F.w(0,-2.4);return [[p.x,p.z]]})()",
+   "timeout": 12000
+  },
+  {
+   "wait": 600
+  },
+  {
+   "shot": "hall"
+  },
+  {
+   "walk": "(()=>{const F=G.city.places.byId.get('hall').frame;const p=F.w(0.3,-14);return [[p.x,p.z]]})()",
+   "timeout": 7000,
+   "into": true
+  },
+  {
+   "eval": "(()=>{const s=G.city.places.byId.get('hall');const l=s.frame.l(N.controller.pos.x,N.controller.pos.z);return 'hall into: stopped at '+l.x.toFixed(1)+','+l.z.toFixed(1)+' prompt '+G.hud.promptShown+' lat '+JSON.stringify(__lat['hall'])})()"
+  },
+  {
+   "eval": "(()=>{const s=G.city.places.byId.get('gunshop');if(!s)return 'none gunshop';const d=s.door;const x=d.x+d.nx*7,z=d.z+d.nz*7;G.stage.part('stream').warmAround(x,z);N.controller.setPose(x,z,Math.atan2(d.nx,d.nz),0);G.stage.part('bounds').navAround(x,z,30);return 'gunshop live '+!!s.live})()"
+  },
+  {
+   "wait": 1200
+  },
+  {
+   "walk": "(()=>{const d=G.city.places.byId.get('gunshop').door;return [[d.x+d.nx*1.3,d.z+d.nz*1.3]]})()",
+   "timeout": 20000
+  },
+  {
+   "look": "(()=>{const d=G.city.places.byId.get('gunshop').door;const C=N.controller;let dy=Math.atan2(d.nx,d.nz)-C.yaw;dy=Math.atan2(Math.sin(dy),Math.cos(dy));return [-dy/C.sensitivity,0]})()",
+   "steps": 4
+  },
+  {
+   "eval": "(window.__arm='gunshop','gunshop prompt: '+G.hud.promptShown+' live '+!!G.city.places.byId.get('gunshop').live)"
+  },
+  {
+   "key": "KeyE",
+   "hold": 70
+  },
+  {
+   "wait": 900
+  },
+  {
+   "walk": "(()=>{const F=G.city.places.byId.get('gunshop').frame;const p=F.w(0,-2.4);return [[p.x,p.z]]})()",
+   "timeout": 12000
+  },
+  {
+   "wait": 600
+  },
+  {
+   "shot": "gunshop"
+  },
+  {
+   "walk": "(()=>{const F=G.city.places.byId.get('gunshop').frame;const p=F.w(0.3,-14);return [[p.x,p.z]]})()",
+   "timeout": 7000,
+   "into": true
+  },
+  {
+   "eval": "(()=>{const s=G.city.places.byId.get('gunshop');const l=s.frame.l(N.controller.pos.x,N.controller.pos.z);return 'gunshop into: stopped at '+l.x.toFixed(1)+','+l.z.toFixed(1)+' prompt '+G.hud.promptShown+' lat '+JSON.stringify(__lat['gunshop'])})()"
+  },
+  {
+   "eval": "(()=>{const s=G.city.places.byId.get('hotel');if(!s)return 'none hotel';const d=s.door;const x=d.x+d.nx*7,z=d.z+d.nz*7;G.stage.part('stream').warmAround(x,z);N.controller.setPose(x,z,Math.atan2(d.nx,d.nz),0);G.stage.part('bounds').navAround(x,z,30);return 'hotel live '+!!s.live})()"
+  },
+  {
+   "wait": 1200
+  },
+  {
+   "walk": "(()=>{const d=G.city.places.byId.get('hotel').door;return [[d.x+d.nx*1.3,d.z+d.nz*1.3]]})()",
+   "timeout": 20000
+  },
+  {
+   "look": "(()=>{const d=G.city.places.byId.get('hotel').door;const C=N.controller;let dy=Math.atan2(d.nx,d.nz)-C.yaw;dy=Math.atan2(Math.sin(dy),Math.cos(dy));return [-dy/C.sensitivity,0]})()",
+   "steps": 4
+  },
+  {
+   "eval": "(window.__arm='hotel','hotel prompt: '+G.hud.promptShown+' live '+!!G.city.places.byId.get('hotel').live)"
+  },
+  {
+   "key": "KeyE",
+   "hold": 70
+  },
+  {
+   "wait": 900
+  },
+  {
+   "walk": "(()=>{const F=G.city.places.byId.get('hotel').frame;const p=F.w(0,-2.4);return [[p.x,p.z]]})()",
+   "timeout": 12000
+  },
+  {
+   "wait": 600
+  },
+  {
+   "shot": "hotel"
+  },
+  {
+   "walk": "(()=>{const F=G.city.places.byId.get('hotel').frame;const p=F.w(0.3,-14);return [[p.x,p.z]]})()",
+   "timeout": 7000,
+   "into": true
+  },
+  {
+   "eval": "(()=>{const s=G.city.places.byId.get('hotel');const l=s.frame.l(N.controller.pos.x,N.controller.pos.z);return 'hotel into: stopped at '+l.x.toFixed(1)+','+l.z.toFixed(1)+' prompt '+G.hud.promptShown+' lat '+JSON.stringify(__lat['hotel'])})()"
+  },
+  {
+   "eval": "(()=>{const s=G.city.places.byId.get('garage');if(!s)return 'none garage';const d=s.door;const x=d.x+d.nx*7,z=d.z+d.nz*7;G.stage.part('stream').warmAround(x,z);N.controller.setPose(x,z,Math.atan2(d.nx,d.nz),0);G.stage.part('bounds').navAround(x,z,30);return 'garage live '+!!s.live})()"
+  },
+  {
+   "wait": 1200
+  },
+  {
+   "walk": "(()=>{const d=G.city.places.byId.get('garage').door;return [[d.x+d.nx*1.3,d.z+d.nz*1.3]]})()",
+   "timeout": 20000
+  },
+  {
+   "look": "(()=>{const d=G.city.places.byId.get('garage').door;const C=N.controller;let dy=Math.atan2(d.nx,d.nz)-C.yaw;dy=Math.atan2(Math.sin(dy),Math.cos(dy));return [-dy/C.sensitivity,0]})()",
+   "steps": 4
+  },
+  {
+   "eval": "(window.__arm='garage','garage prompt: '+G.hud.promptShown+' live '+!!G.city.places.byId.get('garage').live)"
+  },
+  {
+   "key": "KeyE",
+   "hold": 70
+  },
+  {
+   "wait": 900
+  },
+  {
+   "walk": "(()=>{const F=G.city.places.byId.get('garage').frame;const p=F.w(0,-2.4);return [[p.x,p.z]]})()",
+   "timeout": 12000
+  },
+  {
+   "wait": 600
+  },
+  {
+   "shot": "garage"
+  },
+  {
+   "walk": "(()=>{const F=G.city.places.byId.get('garage').frame;const p=F.w(0.3,-14);return [[p.x,p.z]]})()",
+   "timeout": 7000,
+   "into": true
+  },
+  {
+   "eval": "(()=>{const s=G.city.places.byId.get('garage');const l=s.frame.l(N.controller.pos.x,N.controller.pos.z);return 'garage into: stopped at '+l.x.toFixed(1)+','+l.z.toFixed(1)+' prompt '+G.hud.promptShown+' lat '+JSON.stringify(__lat['garage'])})()"
+  },
+  {
+   "eval": "(()=>{const s=G.city.places.byId.get('pieroffice');if(!s)return 'none pieroffice';const d=s.door;const x=d.x+d.nx*7,z=d.z+d.nz*7;G.stage.part('stream').warmAround(x,z);N.controller.setPose(x,z,Math.atan2(d.nx,d.nz),0);G.stage.part('bounds').navAround(x,z,30);return 'pieroffice live '+!!s.live})()"
+  },
+  {
+   "wait": 1200
+  },
+  {
+   "walk": "(()=>{const d=G.city.places.byId.get('pieroffice').door;return [[d.x+d.nx*1.3,d.z+d.nz*1.3]]})()",
+   "timeout": 20000
+  },
+  {
+   "look": "(()=>{const d=G.city.places.byId.get('pieroffice').door;const C=N.controller;let dy=Math.atan2(d.nx,d.nz)-C.yaw;dy=Math.atan2(Math.sin(dy),Math.cos(dy));return [-dy/C.sensitivity,0]})()",
+   "steps": 4
+  },
+  {
+   "eval": "(window.__arm='pieroffice','pieroffice prompt: '+G.hud.promptShown+' live '+!!G.city.places.byId.get('pieroffice').live)"
+  },
+  {
+   "key": "KeyE",
+   "hold": 70
+  },
+  {
+   "wait": 900
+  },
+  {
+   "walk": "(()=>{const F=G.city.places.byId.get('pieroffice').frame;const p=F.w(0,-2.4);return [[p.x,p.z]]})()",
+   "timeout": 12000
+  },
+  {
+   "wait": 600
+  },
+  {
+   "shot": "pieroffice"
+  },
+  {
+   "walk": "(()=>{const F=G.city.places.byId.get('pieroffice').frame;const p=F.w(0.3,-14);return [[p.x,p.z]]})()",
+   "timeout": 7000,
+   "into": true
+  },
+  {
+   "eval": "(()=>{const s=G.city.places.byId.get('pieroffice');const l=s.frame.l(N.controller.pos.x,N.controller.pos.z);return 'pieroffice into: stopped at '+l.x.toFixed(1)+','+l.z.toFixed(1)+' prompt '+G.hud.promptShown+' lat '+JSON.stringify(__lat['pieroffice'])})()"
+  }
+ ]
+}

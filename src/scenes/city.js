@@ -159,13 +159,13 @@ export default defineScene({
   // [O5] hotel: up in my room at the Carlton (the save the bed writes; CONTINUE);
   // station: on the cell's bench at headquarters (the arrest's wake: O3);
   // wake: up after a fall in a place (G.city.wake: outside its door, or by the gym's ring), the car where I left it
-  // [O7, O3] hospital: after a fall in the street (shot, beaten, the bounty's man: a fight lost to
-  // anyone but the police): up on the pavement by my car where I left it - O4's rules (fall.js: the
-  // stitches' cost) - until O5b's hospital door is built
-  beats: ['roam', 'ashore', 'hotel', 'station', 'wake', 'hospital'],
+  // [O7] hospital: after a fall in the street (the bounty's man, a fight lost to anyone but the police):
+  // [O5b] the hospital's door is built: up in the ward's bed by its door ('Came round.', O4's
+  // stitches), my car where I left it; ward: CONTINUE after a sleep in a ward's bed
+  beats: ['roam', 'ashore', 'hotel', 'station', 'wake', 'hospital', 'ward'],
   // (M is the map here: Game.bindInput leaves the sound alone)
   mapKey: true,
-  objectives: { roam: null, ashore: null, hotel: null, station: null, wake: null, hospital: null },
+  objectives: { roam: null, ashore: null, hotel: null, station: null, wake: null, hospital: null, ward: null },   // [O5b] (ward)
   // [O2] a fall in the street to the wheels' men (the gang's gunmen at the glass): the hospital and its words
   onDown: (ctx) => (ctx.game.wheels && ctx.game.wheels.downSpec ? ctx.game.wheels.downSpec() : null),
   // [O6] the low line when the destruction set hurt him (the fire, the tram): its fix, not the gun kit's
@@ -244,15 +244,31 @@ export default defineScene({
       P.wakeAfter(W);
       R.wake = null;
     },
-    // [O7, O3] up after a fall in the street: by my car where I left it (or at Grand Ave's kerb), the stitches paid
+    // [O7] up after a fall in the street, the stitches paid
+    // [O5b] in the hospital's ward (src/places/rooms/hospital.js): the bed by the door, 'Came round.', my car
+    // where I left it (or, gone or burnt out, at the hospital's kerb)
     hospital(ctx) {
-      const G = ctx.game, R = G.city || (G.city = {});
+      const G = ctx.game, R = G.city || (G.city = {}), P = placesOf(G, ctx.stage), s = P.byId.get('hospital');
       const car = R.car && R.car.solid !== false && !R.car.wrecked ? { x: R.car.pos.x, z: R.car.pos.z, yaw: R.car.yaw, kind: R.car.kind } : null;
       if (car) place(ctx, { car: { x: car.x, z: car.z }, carYaw: car.yaw, kind: car.kind, pos: { x: car.x + Math.sin(car.yaw) * 2.4, z: car.z + Math.cos(car.yaw) * 2.4 }, yaw: car.yaw - Math.PI / 2 });
+      else if (s) { const k = s.frame.w(-5.5, 4.9); place(ctx, { car: k, carYaw: s.frame.yaw(Math.PI / 2), pos: s.frame.w(-5.5, 2.4), yaw: 0 }); }
       else { const a = ctx.stage.anchor('city.start.grand'); place(ctx, { car: a.car, carYaw: a.carYaw, pos: a.pos, yaw: a.yaw }); }
+      if (s) {
+        P.wake('hospital', 'fall');
+        // [O3] the police reset (People.afterFail); the room's wake paid the stitches and said its line
+        if (G.people) G.people.afterFail('hospital', { room: true });
+        return;
+      }
       // [O3] the police reset and the stitches paid once (People.afterFail: O4's fall.js); the words
       if (G.people) G.people.afterFail('hospital');
       else { const r = fallWake(G, 'hospital'); G.hud.message(r.line, 3.0); }
+    },
+    // [O5b] a ward's bed wrote the save: CONTINUE wakes me in it, the car at the hospital's kerb
+    ward(ctx) {
+      const P = placesOf(ctx.game, ctx.stage), s = P.byId.get('hospital');
+      const k = s ? s.frame.w(-5.5, 4.9) : { x: -205, z: 13 };
+      place(ctx, { car: k, carYaw: s ? s.frame.yaw(Math.PI / 2) : Math.PI / 2, pos: s ? s.frame.w(-5.5, 2.4) : k, yaw: 0 });
+      P.wake('hospital', 'ward');
     },
     // out of the river: on the quay at the nearest steps, a car at the kerb by them
     ashore(ctx) {
@@ -389,6 +405,12 @@ export function step(ctx, R, T, dt) {   // [O6] exported
     // the eye's, up and down too: not above the roof line)
     if (((toX * f.x + toZ * f.z) / (tl * fl) > 0.35 && f.y < 0.62) || db < 0.5) { nearCar = cv; nearD = db; }
   }
+  // [O5b] a locked car (the hospital's ambulance: its seat has no view to drive by) is no car to get
+  // into: E tries its door - the rattle, 'locked' - as a street door's
+  let lockedCar = null;
+  if (nearCar && nearCar.locked) { lockedCar = nearCar; nearCar = null; }
+  if (!!lockedCar !== !!T.lkShown || (lockedCar && hud.promptOwner !== 'citylk')) { T.lkShown = !!lockedCar; if (lockedCar) hud.prompt('E  try the door', null, 'citylk'); else hud.clearPrompt('citylk'); }
+  if (lockedCar && ctx.pressed('KeyE')) { G.sfx.play('f_c4rattle', new THREE.Vector3(lockedCar.pos.x, 1.2, lockedCar.pos.z)); hud.message('locked', 1.2); G.emit('city:locked', { car: lockedCar }); return; }
   near = !!nearCar;
   // E at the car: the teach card the first time (the key drawn; it goes when
   // I look away), the plain prompt after it - never both (the critic's M1)
@@ -551,7 +573,8 @@ function wet(ctx, R, at, why) {
 // kerb down the street
 const HOSPITAL = { x: -36.5, z: 66 };
 // [O3] the arrest's wake in O5's cell (false: the pavement at the headquarters' door - see the station beat)
-const STATION_CELL = false;
+// [O5b] true: the cell's bench faces its bars and the corridor's lamp (it faced its own wall: the black)
+const STATION_CELL = true;
 function wakeAt(ctx, what) {
   const stage = ctx.stage, C = stage.part('city').C, g = stage.part('city').graph;
   let x, z, yaw, pitch = -0.06;

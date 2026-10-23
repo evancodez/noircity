@@ -1,0 +1,250 @@
+{
+ "about": "[O5b after the critic] the man led (M1, M2 and the cheats): good hands take him in; he steps back out of my face; my car beside me, E get in: he stays in sight and walks to its back door, in only when it stands; at HQ's kerb out and straight in again and away at once: he runs after on my car's way (no catch-up put), 'He's falling behind.' from 40 m, the car stopped: he comes up and gets in, the warning gone; then away for good: warned first, 'He got away.' after 8 s past 70 m.",
+ "url": "/?mute=1&start=city",
+ "size": [
+  1280,
+  800
+ ],
+ "out": "shots/o5b_led",
+ "steps": [
+  {
+   "wait": 1500
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]",
+   "taken": "G.state !== 'title'",
+   "retries": 5,
+   "every": 4000
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'city' && G.scenes.fadeK < 0.05",
+   "timeout": 30000
+  },
+  {
+   "look": [
+    0,
+    0
+   ],
+   "steps": 1
+  },
+  {
+   "eval": "(N.controller.pitch=0,window.__log=[],window.__lp={},setInterval(()=>{const t=(performance.now()/1000).toFixed(1);const p=G.hud.promptShown,m=document.querySelector('#hud .msg').textContent,o=G.hud.objectiveText,w=G.hud.warnText;if(p!==__lp.p)__log.push(t+' P['+p+']');if(m!==__lp.m&&m)__log.push(t+' M['+m+']');if(o!==__lp.o)__log.push(t+' O['+o+']');if(w!==__lp.w)__log.push(t+' W['+w+']');__lp={p,m,o,w}},50),window.__hq=()=>G.city.places.byId.get('police'),window.__M=()=>G.night.bounty.men.get('b0'),window.__d=()=>{const M=__M(),p=N.controller.pos;return Math.hypot(M.c.pos.x-p.x,M.c.pos.z-p.z)},window.__puts=0,1)"
+  },
+  {
+   "drive": "tools/lib/o7_bounty.mjs",
+   "profile": "good",
+   "tries": 3,
+   "wins": 1,
+   "timeout": 300000,
+   "check": "D.wins >= 1",
+   "label": "good hands take the man in"
+  },
+  {
+   "eval": "(window.__dd=[],window.__ddI=setInterval(()=>__dd.push(__d().toFixed(2)),250),'taken: d '+__d().toFixed(2))"
+  },
+  {
+   "wait": 4500
+  },
+  {
+   "eval": "(clearInterval(__ddI),'d over 4.5 s: '+__dd.join(' '))"
+  },
+  {
+   "expect": "__d() >= 1.5",
+   "label": "M2: he stepped back out of my face"
+  },
+  {
+   "look": "(()=>{const M=__M(),C=N.controller,e=G.eye;let dy=Math.atan2(-(M.c.pos.x-e.x),-(M.c.pos.z-e.z))-C.yaw;dy=Math.atan2(Math.sin(dy),Math.cos(dy));return [-dy/C.sensitivity,0]})()",
+   "steps": 6
+  },
+  {
+   "shot": "a_man_stepped_back"
+  },
+  {
+   "eval": "(()=>{const C=N.controller,p=C.pos,f=G.camera.getWorldDirection(new N.THREE.Vector3());const q=new N.THREE.Vector3(p.x-f.z*3.4,0,p.z+f.x*3.4);G.city.car.place(q,Math.atan2(-f.z,f.x));return 'car put to my right; man at '+__d().toFixed(1)+' m'})()"
+  },
+  {
+   "wait": 1200
+  },
+  {
+   "look": "[Math.PI/2/N.controller.sensitivity,0]",
+   "steps": 6
+  },
+  {
+   "wait": 400
+  },
+  {
+   "eval": "'prompt '+G.hud.promptShown+' man d '+__d().toFixed(1)"
+  },
+  {
+   "eval": "(window.__mv=[],window.__mvI=setInterval(()=>{const M=__M();if(M&&M.c){const c=G.city.car,dd=Math.hypot(M.c.pos.x-c.pos.x,M.c.pos.z-c.pos.z);__mv.push((performance.now()/1000).toFixed(1)+':'+M.c.object.visible+(M.inCar?':in':'')+':'+dd.toFixed(1))}},100),1)"
+  },
+  {
+   "key": "KeyE",
+   "hold": 70
+  },
+  {
+   "wait": 300
+  },
+  {
+   "eval": "'at the press+0.3 s: inCar '+G.city.inCar+' man visible '+__M().c.object.visible+' inCar '+__M().inCar"
+  },
+  {
+   "expect": "G.city.inCar && __M().c.object.visible && !__M().inCar",
+   "label": "M1: he does not vanish the frame I get in"
+  },
+  {
+   "until": "__M().inCar",
+   "timeout": 8000,
+   "label": "M1: he walks to the back door and gets in"
+  },
+  {
+   "eval": "(clearInterval(__mvI),'his walk to the car (t:visible:in:d to car): '+__mv.filter((x,i,a)=>i==0||i==a.length-1||x.split(':')[1]!==a[i-1].split(':')[1]||i%4==0).join(' '))"
+  },
+  {
+   "eval": "(()=>{const s=__hq(),d=s.door;const q=new N.THREE.Vector3(d.x+d.nx*5.5,0,d.z+d.nz*5.5);G.stage.part('stream').warmAround(q.x,q.z);G.city.car.place(q,Math.atan2(-d.nz,d.nx)+Math.PI/2);G.stage.part('bounds').navAround(q.x,q.z,30);return 'car at HQ along the kerb (a tool move: the drive across the city is not the contest)'})()"
+  },
+  {
+   "wait": 2500
+  },
+  {
+   "key": "KeyE",
+   "hold": 70
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "eval": "'out: inCar '+G.city.inCar+' man inCar '+__M().inCar+' d '+__d().toFixed(1)+' visible '+__M().c.object.visible"
+  },
+  {
+   "eval": "(()=>{const c=G.city.car,C=N.controller,e=G.eye;let dy=Math.atan2(-(c.pos.x-e.x),-(c.pos.z-e.z))-C.yaw;dy=Math.atan2(Math.sin(dy),Math.cos(dy));window.__lk=[-dy/C.sensitivity,0];return 1})()"
+  },
+  {
+   "look": "__lk",
+   "steps": 4
+  },
+  {
+   "until": "G.hud.promptShown === 'E  get in'",
+   "timeout": 4000
+  },
+  {
+   "eval": "(()=>{const c=G.city.car,M=__M();const q=c.world(-15,0,new N.THREE.Vector3());G.stage.colliders.resolve(q,0.35,M.c.fig&&M.c.fig.collider);M.c.pos.x=q.x;M.c.pos.z=q.z;M.c.object.position.x=q.x;M.c.object.position.z=q.z;return 'staging: a tool puts him '+__d().toFixed(1)+' m up the road behind the car (I drive off before he can reach it)'})()"
+  },
+  {
+   "eval": "(window.__tr=[],window.__trI=setInterval(()=>{const M=__M();if(M&&M.c)__tr.push({x:M.c.pos.x,z:M.c.pos.z,v:M.c.object.visible,in:!!M.inCar})},100),1)"
+  },
+  {
+   "eval": "(window.__dg=[],window.__dgI=setInterval(()=>{const M=__M();if(!M)return;const c=G.city.car;__dg.push((performance.now()/1000).toFixed(1)+' v'+c.speedAbs.toFixed(1)+' d'+__d().toFixed(1)+' T'+(M.trail?M.trail.length:'-')+' w'+M.walk+' in'+(M.inCar?1:0)+' far'+(M.far||0).toFixed(1)+' car@'+c.pos.x.toFixed(0)+','+c.pos.z.toFixed(0)+' him@'+M.c.pos.x.toFixed(0)+','+M.c.pos.z.toFixed(0))},700),1)"
+  },
+  {
+   "key": "KeyE",
+   "hold": 70
+  },
+  {
+   "down": "KeyW"
+  },
+  {
+   "wait": 6500
+  },
+  {
+   "up": "KeyW"
+  },
+  {
+   "down": "KeyS"
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "up": "KeyS"
+  },
+  {
+   "eval": "'stopped: car speed '+G.city.car.speedAbs.toFixed(1)+' man d '+__d().toFixed(1)+' in '+__M().inCar+' warn '+G.hud.warnText"
+  },
+  {
+   "eval": "'warnings so far: '+__log.filter(x=>x.includes('W[')).join(' | ')"
+  },
+  {
+   "eval": "__dg.join(' | ')"
+  },
+  {
+   "expect": "__log.some(x=>x.includes('W[He'))",
+   "label": "falling behind: warned"
+  },
+  {
+   "until": "!__M() || __M().inCar || __M().mode !== 'led'",
+   "timeout": 30000,
+   "label": "he comes up the road and gets in"
+  },
+  {
+   "eval": "(clearInterval(__trI),(()=>{let mx=0;for(let i=1;i<__tr.length;i++){const a=__tr[i-1],b=__tr[i];if(a.in||b.in)continue;mx=Math.max(mx,Math.hypot(b.x-a.x,b.z-a.z))}return 'mode '+__M().mode+' in '+__M().inCar+'; his longest move in 0.1 s on foot: '+mx.toFixed(2)+' m (a put would be metres)'})())"
+  },
+  {
+   "expect": "__M() && __M().mode === 'led' && __M().inCar && G.hud.warnText !== 'He’s falling behind.'",
+   "label": "caught up, in, the warning gone"
+  },
+  {
+   "key": "KeyE",
+   "hold": 70
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "eval": "(()=>{const c=G.city.car,C=N.controller,e=G.eye;let dy=Math.atan2(-(c.pos.x-e.x),-(c.pos.z-e.z))-C.yaw;dy=Math.atan2(Math.sin(dy),Math.cos(dy));window.__lk=[-dy/C.sensitivity,0];return 1})()"
+  },
+  {
+   "look": "__lk",
+   "steps": 4
+  },
+  {
+   "until": "G.hud.promptShown === 'E  get in'",
+   "timeout": 4000
+  },
+  {
+   "eval": "(()=>{const c=G.city.car,M=__M();c.place(c.pos.clone(),c.yaw+Math.PI);const q=c.world(-15,0,new N.THREE.Vector3());M.c.pos.x=q.x;M.c.pos.z=q.z;M.c.object.position.x=q.x;M.c.object.position.z=q.z;return 'staging: the car turned back down the street, him 15 m behind it: '+__d().toFixed(1)})()"
+  },
+  {
+   "eval": "(()=>{const c=G.city.car,C=N.controller,e=G.eye;let dy=Math.atan2(-(c.pos.x-e.x),-(c.pos.z-e.z))-C.yaw;dy=Math.atan2(Math.sin(dy),Math.cos(dy));window.__lk=[-dy/C.sensitivity,0];return 1})()"
+  },
+  {
+   "look": "__lk",
+   "steps": 3
+  },
+  {
+   "until": "G.hud.promptShown === 'E  get in'",
+   "timeout": 4000
+  },
+  {
+   "eval": "(window.__dg=[],G.on('bounty:away',()=>__log.push((performance.now()/1000).toFixed(1)+' AWAY['+G.hud.sayShown+']')),1)"
+  },
+  {
+   "key": "KeyE",
+   "hold": 70
+  },
+  {
+   "down": "KeyW"
+  },
+  {
+   "until": "!__M() || __M().mode !== 'led'",
+   "timeout": 45000,
+   "label": "driven away for good: lost"
+  },
+  {
+   "up": "KeyW"
+  },
+  {
+   "eval": "(()=>{const L=__log.filter(x=>/W\\[|got away/.test(x));return L.join(' | ')})()"
+  },
+  {
+   "eval": "(clearInterval(__dgI),__dg.filter((x,i)=>i%2==0).join(' | '))"
+  },
+  {
+   "expect": "(()=>{const w=__log.filter(x=>x.includes('W[He')).map(x=>+x.split(' ')[0]);const g=__log.find(x=>x.includes('AWAY'));return !!g&&w.length>0&&(+g.split(' ')[0]-w[w.length-1])>=1})()",
+   "label": "warned at least a second before 'He got away.'"
+  },
+  {
+   "eval": "__log.slice(-40).join(' | ')"
+  }
+ ]
+}

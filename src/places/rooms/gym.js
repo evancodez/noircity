@@ -4,6 +4,8 @@ import { ring, heavyBag, bench, lockers, sheet, label, crates } from '../../city
 import { RNG } from '../../util/rng.js';
 import { boutStart, boutPrompt } from '../bout.js';
 import { crowdOf } from '../../combat/brawl/Crowd.js';
+import { BOXER_LEVELS } from '../../combat/brawl/kinds.js';
+import { fightCard, chalkBoard } from '../art.js';
 
 // The boxing gym (the Tenements; brief O5 §2.1): a long hall behind its
 // street door, the ring at the back under two caged lamps (the brightest
@@ -43,7 +45,12 @@ export default {
     lockers(K, rz1 + 1.4, Math.min(-7.8, rz1 + 4.2), x1, { dir: 'w' });
     crates(K, x0 + 0.5, rz1 + 1.6, { n: 1, s: 0.7, rng });
     // the fight cards and a poster or two on the walls
-    for (let i = 0; i < 4; i++) sheet(K, -3.0 - i * 1.6, FLOOR + 1.9 + (i % 2) * 0.25, x0, { w: 0.55, h: 0.75, dir: 'e' });
+    // ([O5b] brief O5b §3: the walls were flat grey washes) the cards: two men squared up, the names, the night
+    const B = BOXER_LEVELS.filter(Boolean).map((b) => b.name);
+    const pairs = [[B[0], 'TOMMY RIZZO'], [B[1], 'BIG LOU KRAUSE'], [B[2], 'JACK "THE OX" MALONE'], ['KID SHEA', 'RED DUGAN']];
+    for (let i = 0; i < 4; i++) { sheet(K, -3.0 - i * 1.6, FLOOR + 1.9 + (i % 2) * 0.25, x0, { w: 0.55, h: 0.75, dir: 'e' }); label(K, '', -3.0 - i * 1.6, FLOOR + 1.9 + (i % 2) * 0.25, x0 + 0.004, { w: 0.53, h: 0.73, dir: 'e', draw: fightCard(i, pairs), res: 2.4, shade: true }); }
+    // the chalk board of tonight's bouts over the bench on the right wall (the men at the ring: their purses)
+    { const z = -5.3; K.box('wood', x1 - 0.04, x1, FLOOR + 1.25, FLOOR + 2.55, z - 0.85, z + 0.85, 2); label(K, '', z, FLOOR + 1.9, x1 - 0.04, { w: 1.6, h: 1.2, dir: 'w', draw: chalkBoard(BOXER_LEVELS.filter(Boolean).map((b) => [b.name, '$' + b.purse])), res: 2, shade: true }); K.box('wood', x1 - 0.12, x1 - 0.04, FLOOR + 1.27, FLOOR + 1.31, z - 0.8, z + 0.8, 3); }
     label(K, 'BOUTS\nNIGHTLY', x0 + 0.01 + (x1 - x0) * 0.5, FLOOR + 3.0, z0, { w: 2.0, h: 0.9, dir: 's', dark: true });
     label(K, 'SEE THE MAN\nAT THE RING', -8.2, FLOOR + 1.9, x0, { w: 1.0, h: 0.5, dir: 'e', lit: true });
     // the man at the ring's corner (by the steps); two men at the bags and the bench

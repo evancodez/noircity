@@ -1,0 +1,162 @@
+{
+ "about": "[O5b critic] the wanted man led by car: good hands take him in (O7's driver), my car brought near (a tool's move), in it with him at 4 to 8 m (does he vanish in sight?), the car and me at HQ's kerb, out (where is he?), in at the door, book him; his walk to the cell logged in the room's frame.",
+ "url": "/?mute=1&start=city",
+ "size": [
+  1280,
+  800
+ ],
+ "out": "shots/critic_o5b/led",
+ "steps": [
+  {
+   "wait": 1500
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]",
+   "taken": "G.state !== 'title'",
+   "retries": 5,
+   "every": 4000
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'city' && G.scenes.fadeK < 0.05",
+   "timeout": 30000
+  },
+  {
+   "look": [
+    0,
+    0
+   ],
+   "steps": 1
+  },
+  {
+   "eval": "(N.controller.pitch=0,window.__log=[],window.__lp={},setInterval(()=>{const t=(performance.now()/1000).toFixed(1);const p=G.hud.promptShown,m=document.querySelector('#hud .msg').textContent,o=G.hud.objectiveText;if(p!==__lp.p)__log.push(t+' P['+p+']');if(m!==__lp.m&&m)__log.push(t+' M['+m+']');if(o!==__lp.o)__log.push(t+' O['+o+']');__lp={p,m,o}},50),window.__hq=()=>G.city.places.byId.get('police'),1)"
+  },
+  {
+   "drive": "tools/lib/o7_bounty.mjs",
+   "profile": "good",
+   "tries": 3,
+   "wins": 1,
+   "timeout": 300000,
+   "check": "D.wins >= 1",
+   "label": "good hands take the man in"
+  },
+  {
+   "eval": "(()=>{const M=G.night.bounty.men.get('b0');return 'mode '+(M&&M.mode)+' line '+G.hud.objectiveText})()"
+  },
+  {
+   "wait": 2500
+  },
+  {
+   "look": "(()=>{const M=G.night.bounty.men.get('b0'),C=N.controller,e=G.eye;let dy=Math.atan2(-(M.c.pos.x-e.x),-(M.c.pos.z-e.z))-C.yaw;dy=Math.atan2(Math.sin(dy),Math.cos(dy));return [-dy/C.sensitivity,0]})()",
+   "steps": 6
+  },
+  {
+   "shot": "a_man_before"
+  },
+  {
+   "eval": "(()=>{const C=N.controller,p=C.pos,f=G.camera.getWorldDirection(new N.THREE.Vector3());const q=new N.THREE.Vector3(p.x-f.z*3.4,0,p.z+f.x*3.4);G.city.car.place(q,Math.atan2(-f.z,f.x));const M=G.night.bounty.men.get('b0');return 'car put to my right; man at '+Math.hypot(M.c.pos.x-p.x,M.c.pos.z-p.z).toFixed(1)+' m'})()"
+  },
+  {
+   "wait": 1200
+  },
+  {
+   "look": "[Math.PI/2/N.controller.sensitivity,0]",
+   "steps": 6
+  },
+  {
+   "wait": 400
+  },
+  {
+   "eval": "(()=>{const M=G.night.bounty.men.get('b0'),p=N.controller.pos;return 'prompt '+G.hud.promptShown+' man d '+Math.hypot(M.c.pos.x-p.x,M.c.pos.z-p.z).toFixed(1)+' visible '+M.c.object.visible})()"
+  },
+  {
+   "eval": "(window.__mv=[],window.__mvI=setInterval(()=>{const M=G.night.bounty.men.get('b0');if(M&&M.c)__mv.push((performance.now()/1000).toFixed(2)+':'+M.c.object.visible+':'+M.mode+(M.inCar?':car':''))},100),1)"
+  },
+  {
+   "key": "KeyE",
+   "hold": 70
+  },
+  {
+   "wait": 300
+  },
+  {
+   "shot": "f_getin"
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "eval": "(clearInterval(__mvI),'inCar '+G.city.inCar+' man '+__mv.filter((x,i,a)=>i==0||x.split(':').slice(1).join()!=a[i-1].split(':').slice(1).join()).join(' '))"
+  },
+  {
+   "eval": "(()=>{const s=__hq(),d=s.door,tx=-d.nz,tz=d.nx;const q=new N.THREE.Vector3(d.x+d.nx*5.5+tx*3,0,d.z+d.nz*5.5+tz*3);G.stage.part('stream').warmAround(q.x,q.z);G.city.car.place(q,Math.atan2(tx,tz));G.stage.part('bounds').navAround(q.x,q.z,30);return 'car at HQ'})()"
+  },
+  {
+   "wait": 2500
+  },
+  {
+   "key": "KeyE",
+   "hold": 70
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "eval": "(()=>{const M=G.night.bounty.men.get('b0'),p=N.controller.pos;return 'out: inCar '+G.city.inCar+' man mode '+M.mode+' inCar '+M.inCar+' d '+Math.hypot(M.c.pos.x-p.x,M.c.pos.z-p.z).toFixed(1)+' visible '+M.c.object.visible})()"
+  },
+  {
+   "shot": "h_out"
+  },
+  {
+   "walk": "(()=>{const d=__hq().door;return [[d.x+d.nx*1.4,d.z+d.nz*1.4]]})()",
+   "timeout": 20000
+  },
+  {
+   "look": "(()=>{const d=__hq().door;const C=N.controller;let dy=Math.atan2(d.nx,d.nz)-C.yaw;dy=Math.atan2(Math.sin(dy),Math.cos(dy));return [-dy/C.sensitivity,0]})()",
+   "steps": 6
+  },
+  {
+   "wait": 300
+  },
+  {
+   "eval": "'door prompt: '+G.hud.promptShown"
+  },
+  {
+   "key": "KeyE",
+   "hold": 70
+  },
+  {
+   "wait": 500
+  },
+  {
+   "walk": "(()=>{const F=__hq().frame;const p=F.w(0,-1.5),q=F.w(0,-3.7);return [[p.x,p.z],[q.x,q.z]]})()",
+   "timeout": 20000
+  },
+  {
+   "until": "G.hud.promptShown === 'E  book him'",
+   "timeout": 8000,
+   "label": "at the desk with him: book him"
+  },
+  {
+   "eval": "(window.__m0=G.save.money,window.__path=[],window.__pI=setInterval(()=>{const M=G.night.bounty.men.get('b0');if(M&&M.c){const l=__hq().frame.l(M.c.pos.x,M.c.pos.z);__path.push(l.x.toFixed(1)+','+l.z.toFixed(1))}},250),1)"
+  },
+  {
+   "key": "KeyE",
+   "hold": 70
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "shot": "g_booked"
+  },
+  {
+   "wait": 6000
+  },
+  {
+   "eval": "(clearInterval(__pI),'money +'+(G.save.money-__m0)+' state '+G.night.bounty.names()[0].state+' mode '+G.night.bounty.men.get('b0').mode+' path '+__path.filter((x,i,a)=>x!==a[i-1]).join(' '))"
+  },
+  {
+   "eval": "__log.slice(-30).join(' | ')"
+  }
+ ]
+}

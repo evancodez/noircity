@@ -1,0 +1,33 @@
+{
+ "about": "[O5b] a ward's bed is a sleep (brief O5b §1, the hotel's rule): woken in the ward after a fall (?start=city.hospital), up, to a free bed across the aisle, E: sleep - the black, 'Slept. Saved.', health whole, the night on an hour, the save at the city's 'ward' beat; the page reloaded, CONTINUE: in the ward's bed, no bill.",
+ "url": "/?mute=1&start=city.hospital",
+ "size": [1280, 800],
+ "out": "shots/o5b/wardsleep",
+ "steps": [
+  { "until": "G.state === 'title' && !document.getElementById('title').classList.contains('hidden')", "timeout": 60000 },
+  { "wait": 1500 },
+  { "clickOn": "#title .opt[data-k=begin]", "taken": "G.state !== 'title'", "retries": 5, "every": 4000 },
+  { "until": "G.scenes.current && G.scenes.current.id === 'city' && G.scenes.fadeK < 0.05", "timeout": 60000 },
+  { "wait": 1200 },
+  { "name": "in the ward's bed", "expect": "G.city.places.seat && G.city.places.seat.name === 'wardbed'" },
+  { "key": "KeyS", "hold": 80 },
+  { "wait": 900 },
+  { "eval": "(window.__h0 = G.night && G.night.clock ? G.night.clock.min : 0, G.health.hp = 60, 1)" },
+  { "walk": "(() => { const s = G.city.places.byId.get('hospital'), F = s.frame, K = s.live.K, q = K.beds.find((b) => b.side === 'w' && b.z === K.wakeBed.z); const p = F.w(q.xb + 0.9, q.z); return [[p.x, p.z]]; })()", "timeout": 15000 },
+  { "eval": "(() => { const s = G.city.places.byId.get('hospital'), F = s.frame, K = s.live.K, q = K.beds.find((b) => b.side === 'w' && b.z === K.wakeBed.z); const a = F.v(q.x, 0.92, q.z), C = N.controller; C.yaw = Math.atan2(-(a.x - G.eye.x), -(a.z - G.eye.z)); C.pitch = Math.atan2(a.y - G.eye.y, Math.hypot(a.x - G.eye.x, a.z - G.eye.z)); return 1; })()" },
+  { "until": "/sleep/.test(G.hud.promptShown || '')", "timeout": 4000, "label": "a free bed: 'sleep'" },
+  { "key": "KeyE", "hold": 70 },
+  { "wait": 1700 },
+  { "shot": "01_black" },
+  { "until": "!G.city.places.sleeping", "timeout": 15000 },
+  { "name": "slept: health whole, the night on, the save at the ward", "expect": "G.health.hp === 100 && JSON.parse(localStorage.getItem('noir.save')).beat === 'ward' && (!G.night || G.night.clock.min - window.__h0 >= 55)" },
+  { "reload": true },
+  { "until": "G.state === 'title' && !document.getElementById('title').classList.contains('hidden')", "timeout": 60000 },
+  { "wait": 1500 },
+  { "clickOn": "#title .opt[data-k=continue]", "taken": "G.state !== 'title'", "retries": 5, "every": 4000 },
+  { "until": "G.scenes.current && G.scenes.current.id === 'city' && G.scenes.fadeK < 0.05", "timeout": 60000 },
+  { "wait": 1200 },
+  { "name": "CONTINUE: in the ward's bed", "expect": "G.scenes.beat === 'ward' && G.city.places.inside && G.city.places.inside.id === 'hospital' && G.city.places.seat && G.city.places.seat.name === 'wardbed'" },
+  { "shot": "02_continue" }
+ ]
+}

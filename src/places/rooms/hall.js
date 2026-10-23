@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { FLOOR } from '../../city/kits/interior/kit.js';
 import { crates, label } from '../../city/kits/interior/pieces.js';
 import { RNG } from '../../util/rng.js';
+import { lathe } from '../../props/lib.js';
 
 // The market hall (the Tenements; brief O5 §2.9): one high hall under its
 // iron roof, the stalls in rows down its length (their awnings, their
@@ -38,7 +39,14 @@ export default {
       }
     }
     // the lamps over the aisles
-    for (const x of [0, x0 + 4.0, x1 - 4.0]) for (let z = -4.0; z > z0 + 2; z -= 7.5) K.lamp(x, FLOOR + 4.6, z, { kind: 'pendant', power: 0.9, ceilY: FLOOR + H, drop: 4.6 });
+    // ([O5b] brief O5b §3: the hall's second stroke) on long cords, each its own: they swing in the
+    // draught when a street door stands open, and settle when it shuts (live: K.swings)
+    const R1 = new RNG(0x5a1), ph = () => R1.next() * Math.PI * 2;
+    K.swings = [];
+    for (const x of [0, x0 + 4.0, x1 - 4.0]) for (let z = -4.0; z > z0 + 2; z -= 7.5) {
+      const L = K.lamp(x, FLOOR + 4.6, z, { kind: 'swing', power: 0.9, ceilY: FLOOR + H, drop: 4.6 });
+      K.swings.push({ L, x, z, top: FLOOR + H, y: FLOOR + 4.6, ph: ph(), ph2: ph(), w: 1 + (R1.next() - 0.5) * 0.12 });
+    }
     // the gallery along the west wall: its floor on posts, its rail, the stairs up from the front
     const gx1 = x0 + 3.2, gy = FLOOR + 3.6, gz0 = z0 + 1.0, gz1 = -9.0;
     K.at(1);
@@ -80,11 +88,13 @@ export default {
   live(K, s, P) {
     // the shoppers drift from stall to stall down the middle aisle
     const G = P.game, F = s.frame;
+    const sway = swingLamps(K, s);
     const walkers = () => s.live.cast.filter((c) => /^hall_(couple|oldman|dockhand)/.test(c.name));
     let t = 0;
     return {
       step(dt) {
         t += dt;
+        sway(dt);
         for (const c of walkers()) {
           if (!c.alive || c.down) continue;
           const W = c._w || (c._w = { t: 0, next: 3 + Math.random() * 6 });
@@ -112,3 +122,45 @@ export default {
     };
   },
 };
+
+// [O5b] the hall's lamps on their cords: each a pivot at the roof with its cord, its shade and its
+// bulb; the draught (a street door open: its open01) swings them along the hall, a little across,
+// each at its own period; the light's head follows the bulb (the lamps' deal reads L.head)
+function swingLamps(K, s) {
+  const F = s.frame, M = K.mats, list = [];
+  const ax = F.v(1, 0, 0).sub(F.v(0, 0, 0)).normalize(), az = F.v(0, 0, 1).sub(F.v(0, 0, 0)).normalize();
+  const shadeGeo = lathe([[0.03, 0.16], [0.05, 0.15], [0.1, 0.1], [0.22, 0.0], [0.24, -0.02]], 20);
+  for (const S of K.swings) {
+    const len = S.top - S.y;
+    const piv = new THREE.Group();
+    piv.position.copy(F.v(S.x, S.top, S.z));
+    const cord = new THREE.Mesh(new THREE.CylinderGeometry(0.006, 0.006, len - 0.12, 4).translate(0, -(len - 0.12) / 2, 0), M.iron);
+    const shade = new THREE.Mesh(shadeGeo.clone().translate(0, -len, 0), M.lampIron);
+    for (const m of [cord, shade]) { m.userData.inkId = K.id + 2; m.castShadow = true; piv.add(m); K.extra.push(m); }
+    const b = S.L.bulb;
+    b.position.set(0, -len - 0.04, 0);
+    piv.add(b);
+    K.group.add(piv);
+    piv.updateMatrixWorld(true);
+    list.push({ S, piv, len, T: 2 * Math.PI * Math.sqrt(len / 9.81) * S.w });
+  }
+  shadeGeo.dispose();
+  const q = new THREE.Quaternion(), q2 = new THREE.Quaternion(), v = new THREE.Vector3();
+  let amp = 0.006, t = 0;
+  return (dt) => {
+    t += dt;
+    // the draught: the most open of its street doors
+    let open = 0;
+    for (const D of K.doors) if (D.street) open = Math.max(open, D.open01 || 0);
+    const want = 0.006 + 0.055 * open;
+    amp += (want - amp) * Math.min(1, dt * (want > amp ? 0.9 : 0.25));
+    for (const W of list) {
+      const a = amp * Math.sin(t * 2 * Math.PI / W.T + W.S.ph), c = amp * 0.3 * Math.sin(t * 2 * Math.PI / (W.T * 1.07) + W.S.ph2);
+      W.piv.quaternion.copy(q.setFromAxisAngle(ax, a)).multiply(q2.setFromAxisAngle(az, c));
+      W.piv.updateMatrixWorld(true);
+      // the light hangs where the bulb is
+      v.set(0, -W.len - 0.1, 0); W.piv.localToWorld(v);
+      W.S.L.head.copy(v); W.S.L.x = v.x; W.S.L.z = v.z;
+    }
+  };
+}

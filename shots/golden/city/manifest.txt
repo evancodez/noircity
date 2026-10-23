@@ -17,3 +17,6 @@ o5_gym|scene=city&beat=roam&t=2&place=gym
 smash_bed|scene=smash&beat=bed&t=1&hud=0
 smash_wreck|scene=smash&beat=burn&t=10&hud=0
 smash_ten|scene=smash&beat=ten&ten=wrecks&t=14&hud=0&vm=0&pose=-120,-21,3.1416,-0.06
+o5b_diner|scene=city&beat=roam&t=2&place=diner&pose=-41.6,101.4,2.646,-0.04
+o5b_orpheum|scene=city&beat=roam&t=2&place=theatre1&pose=-136.6,16.89,0.114,0.12
+o5b_ward|scene=city&beat=roam&t=2&place=hospital&pose=-189.2,13.45,-1.571,0.02
