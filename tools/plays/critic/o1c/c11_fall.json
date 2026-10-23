@@ -1,0 +1,59 @@
+{
+ "about": "[O1c critic] how things lie after a fist: dustbins in a row, a kicked crate stack, a board; a frame of each where it came to rest; then walking into the fallen things.",
+ "url": "/?mute=1&start=city",
+ "size": [
+  1440,
+  900
+ ],
+ "out": "shots/o1cc/11",
+ "steps": [
+  {
+   "wait": 1500
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]",
+   "taken": "G.state !== 'title'",
+   "retries": 5,
+   "every": 4000
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'city' && G.scenes.fadeK < 0.05",
+   "timeout": 30000
+  },
+  {
+   "eval": "(G.save.flags.taught = Object.assign(G.save.flags.taught || {}, { city_in: true, city_drive: true, city_map: true, o3_punch: true, o3_hands: true }), 1)"
+  },
+  {
+   "wait": 800
+  },
+  {
+   "drive": "tools/plays/critic/o1c/approach.mjs",
+   "targets": [
+    {
+     "name": "bins",
+     "find": "__T('bins', 2)",
+     "settle": 500,
+     "burst": [
+      0,
+      300,
+      700,
+      1500
+     ],
+     "back": 3.5
+    },
+    {
+     "name": "board",
+     "find": "__T('board', 1)",
+     "settle": 500,
+     "burst": [
+      0,
+      700,
+      1500
+     ],
+     "back": 3.5
+    }
+   ],
+   "check": "true"
+  }
+ ]
+}

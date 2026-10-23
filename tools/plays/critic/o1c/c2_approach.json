@@ -1,0 +1,27 @@
+{
+ "about": "[O1c critic] the fist on things as a player swings: walking at it, LMB every 350 ms from 3 m out.",
+ "url": "/?mute=1&start=city",
+ "size": [1440, 900],
+ "out": "shots/o1cc/02",
+ "steps": [
+  { "wait": 1500 },
+  { "clickOn": "#title .opt[data-k=begin]", "taken": "G.state !== 'title'", "retries": 5, "every": 4000 },
+  { "until": "G.scenes.current && G.scenes.current.id === 'city' && G.scenes.fadeK < 0.05", "timeout": 30000 },
+  { "wait": 800 },
+  { "drive": "tools/plays/critic/o1c/approach.mjs", "targets": [
+    { "name": "a dustbin", "find": "__T('bin')" },
+    { "name": "a sandwich board", "find": "__T('board')" },
+    { "name": "crates", "find": "__T('crates')" },
+    { "name": "a hydrant", "find": "__T('hydrant')" },
+    { "name": "a lamp post", "find": "__T('lamp')" },
+    { "name": "a bench", "find": "__T('bench')" },
+    { "name": "a bench, C held", "find": "__T('bench', 1)", "kick": true },
+    { "name": "shop glass", "find": "__face('glass')", "back": 2.5 },
+    { "name": "a wall", "find": "__face('wall')" },
+    { "name": "a door", "find": "__face('door')" },
+    { "name": "a parked car", "find": "__car()", "shot": "car_hit", "back": 2.2 },
+    { "name": "a bottle on a step", "find": "__bottle()", "pitch": -0.45 }
+   ], "check": "true" },
+  { "eval": "JSON.stringify({heat: G.police && G.police.heat, mode: N.controller.mode, txt: document.body.innerText.replace(/\\s+/g,' ').slice(0,200)})" }
+ ]
+}

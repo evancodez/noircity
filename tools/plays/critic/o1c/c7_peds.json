@@ -1,0 +1,18 @@
+{
+ "about": "[O1c critic] the mended pavement graph as a player sees it: stand at three corners 45 s each (Grand Ave, the Tenements, Chinatown) and record every walker found inside a wall, a lot's edge or a prop (penetration over 0.15 m of his 0.3 m body), and every walker standing still against something for over 4 s.",
+ "url": "/?mute=1&start=city",
+ "size": [1280, 800],
+ "out": "shots/o1cc/07",
+ "steps": [
+  { "wait": 1500 },
+  { "clickOn": "#title .opt[data-k=begin]", "taken": "G.state !== 'title'", "retries": 5, "every": 4000 },
+  { "until": "G.scenes.current && G.scenes.current.id === 'city' && G.scenes.fadeK < 0.05", "timeout": 30000 },
+  { "eval": "(() => { const P = G.people, cols = G.stage.colliders; window.__pen = {}; window.__still = {}; window.__n = 0; const pr = 0.15; window.__iv = setInterval(() => { if (G.state !== 'playing') return; for (const p of P.list) { if (!p.object.visible || !p.standing || p.seat || p.mode === 'fight' || p.inside) continue; window.__n++; const x = p.pos.x, z = p.pos.z; for (const o of cols.near(x, z, 1.5)) { let pen = 0; if (o.r != null) { pen = o.r + pr - Math.hypot(x - o.cx, z - o.cz); } else { const dx = x - o.cx, dz = z - o.cz, lx = dx * o.c - dz * o.s, lz = dx * o.s + dz * o.c; const ox = o.hx + pr - Math.abs(lx), oz = o.hz + pr - Math.abs(lz); if (ox > 0 && oz > 0) pen = Math.min(ox, oz); } if (pen > 0.15) { const k = p.id + ':' + (o.tag || 'r') + ':' + (o.kind || ''); const r = window.__pen[k] || (window.__pen[k] = { id: p.id, role: p.role, tag: o.tag || (o.r != null ? 'round' : '?'), kind: o.kind || (o.it && o.it.kind) || null, at: [+x.toFixed(1), +z.toFixed(1)], pen: 0, n: 0 }); r.n++; r.pen = Math.max(r.pen, +pen.toFixed(2)); } } const s = window.__still[p.id] || (window.__still[p.id] = { x, z, t: G.time, max: 0 }); if (Math.hypot(x - s.x, z - s.z) > 0.2) { s.x = x; s.z = z; s.t = G.time; } else if (p.path && p.mode !== 'stand') { s.max = Math.max(s.max, G.time - s.t); s.at = [+x.toFixed(1), +z.toFixed(1)]; s.role = p.role; s.mode = p.mode; } } }, 200); return 1; })()" },
+  { "wait": 45000 },
+  { "eval": "JSON.stringify({n: window.__n, people: G.people.list.filter((p) => p.object.visible).length, pen: Object.values(window.__pen).filter((r) => r.n > 2), stuck: Object.values(window.__still).filter((s) => s.max > 4)})" },
+  { "eval": "(window.__pen = {}, window.__still = {}, N.controller.setPose(-20, 40, 1.57, -0.05), 1)" },
+  { "wait": 45000 },
+  { "eval": "JSON.stringify({pos: [N.controller.pos.x, N.controller.pos.z], people: G.people.list.filter((p) => p.object.visible).length, pen: Object.values(window.__pen).filter((r) => r.n > 2), stuck: Object.values(window.__still).filter((s) => s.max > 4)})" },
+  { "eval": "(clearInterval(window.__iv), 1)" }
+ ]
+}

@@ -1,0 +1,54 @@
+{
+ "about": "[O1c critic] how things lie after a fist: dustbins in a row, a kicked crate stack, a board; a frame of each where it came to rest; then walking into the fallen things.",
+ "url": "/?mute=1&start=city",
+ "size": [
+  1440,
+  900
+ ],
+ "out": "shots/o1cc/09",
+ "steps": [
+  {
+   "wait": 1500
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]",
+   "taken": "G.state !== 'title'",
+   "retries": 5,
+   "every": 4000
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'city' && G.scenes.fadeK < 0.05",
+   "timeout": 30000
+  },
+  {
+   "eval": "(G.save.flags.taught = Object.assign(G.save.flags.taught || {}, { city_in: true, city_drive: true, city_map: true, o3_punch: true, o3_hands: true }), 1)"
+  },
+  {
+   "wait": 800
+  },
+  {
+   "drive": "tools/plays/critic/o1c/approach.mjs",
+   "targets": [
+    {
+     "name": "dustbins in a row",
+     "find": "__T('bins')",
+     "settle": 4000,
+     "shot2": "bins_rest2"
+    }
+   ],
+   "check": "true"
+  },
+  {
+   "eval": "(() => { const it = window.__t.it, S = G.stage.smash, P = S.pools[it.kind]; const m = new N.THREE.Matrix4(); P.im.getMatrixAt(it.inst, m); const v = new N.THREE.Vector3().setFromMatrixPosition(m); const sc = new N.THREE.Vector3(); m.decompose(new N.THREE.Vector3(), new N.THREE.Quaternion(), sc); return JSON.stringify({inst: it.inst, vis: P.im.visible, count: P.im.count, used: P.used, pos: [v.x.toFixed(2), v.y.toFixed(2), v.z.toFixed(2)], sc: [sc.x.toFixed(2), sc.y.toFixed(2), sc.z.toFixed(2)], parentVis: P.im.parent && P.im.parent.visible, mat: P.im.material.name || P.im.material.type, layers: P.im.layers.mask, state: it.state, proxy: !!it.proxy, obj: !!it.obj}); })()"
+  },
+  {
+   "eval": "(() => { const it = window.__t.it; N.controller.setPose(it.P.x + 1.3, it.P.z + 0.4, Math.atan2(-(-1.3), -(-0.4)), -0.7); return 1; })()"
+  },
+  {
+   "wait": 600
+  },
+  {
+   "shot": "bins_close"
+  }
+ ]
+}

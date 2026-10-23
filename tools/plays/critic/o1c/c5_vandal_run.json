@@ -1,0 +1,183 @@
+{
+ "url": "/?mute=1&start=city",
+ "size": [
+  1440,
+  900
+ ],
+ "out": "shots/o1cc/04",
+ "steps": [
+  {
+   "wait": 1500
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]",
+   "taken": "G.state !== 'title'",
+   "retries": 5,
+   "every": 4000
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'city' && G.scenes.fadeK < 0.05",
+   "timeout": 30000
+  },
+  {
+   "wait": 800
+  },
+  {
+   "drive": "tools/plays/critic/o1c/approach.mjs",
+   "targets": [
+    {
+     "name": "a bin a cop sees",
+     "find": "__seen('bin') || __seen('bins') || __seen('board')",
+     "settle": 300,
+     "waitFind": 30
+    }
+   ],
+   "check": "true"
+  },
+  {
+   "eval": "JSON.stringify({t: +G.time.toFixed(1), heat: G.police.heat, state: G.state, failing: !!G.failing, pos:[+N.controller.pos.x.toFixed(1),+N.controller.pos.z.toFixed(1)], cop: (() => { let b=null; for (const c of G.police.cops) { const d=Math.hypot(c.pos.x-N.controller.pos.x,c.pos.z-N.controller.pos.z); if(!b||d<b) b=+d.toFixed(1);} return b; })(), txt: document.body.innerText.replace(/\\s+/g,' ').slice(0,160)})"
+  },
+  {
+   "eval": "(() => { const P = N.controller.pos; let c = null, bd = 1e9; for (const q of G.police.cops) { const d = Math.hypot(q.pos.x - P.x, q.pos.z - P.z); if (d < bd) { bd = d; c = q; } } if (!c) return 'none'; const ax = P.x - c.pos.x, az = P.z - c.pos.z; const opts = [[1,0],[-1,0],[0,1],[0,-1]].filter(([x,z]) => { const q = new N.THREE.Vector3(P.x + x*3, 0, P.z + z*3), q0 = q.clone(); G.stage.colliders.resolve(q, 0.4); return q.distanceTo(q0) < 0.05; }); opts.sort((a,b) => (b[0]*ax+b[1]*az) - (a[0]*ax+a[1]*az)); const d = opts[0] || [Math.sign(ax),0]; N.controller.yaw = Math.atan2(-d[0], -d[1]); return JSON.stringify(d); })()"
+  },
+  {
+   "down": "ShiftLeft"
+  },
+  {
+   "down": "KeyW"
+  },
+  {
+   "wait": 2500
+  },
+  {
+   "eval": "(() => { const P = N.controller.pos; let c = null, bd = 1e9; for (const q of G.police.cops) { const d = Math.hypot(q.pos.x - P.x, q.pos.z - P.z); if (d < bd) { bd = d; c = q; } } if (!c) return 'none'; const ax = P.x - c.pos.x, az = P.z - c.pos.z; const opts = [[1,0],[-1,0],[0,1],[0,-1]].filter(([x,z]) => { const q = new N.THREE.Vector3(P.x + x*3, 0, P.z + z*3), q0 = q.clone(); G.stage.colliders.resolve(q, 0.4); return q.distanceTo(q0) < 0.05; }); opts.sort((a,b) => (b[0]*ax+b[1]*az) - (a[0]*ax+a[1]*az)); const d = opts[0] || [Math.sign(ax),0]; N.controller.yaw = Math.atan2(-d[0], -d[1]); return JSON.stringify(d); })()"
+  },
+  {
+   "eval": "JSON.stringify({t: +G.time.toFixed(1), heat: G.police.heat, state: G.state, failing: !!G.failing, pos:[+N.controller.pos.x.toFixed(1),+N.controller.pos.z.toFixed(1)], cop: (() => { let b=null; for (const c of G.police.cops) { const d=Math.hypot(c.pos.x-N.controller.pos.x,c.pos.z-N.controller.pos.z); if(!b||d<b) b=+d.toFixed(1);} return b; })(), txt: document.body.innerText.replace(/\\s+/g,' ').slice(0,160)})"
+  },
+  {
+   "wait": 2500
+  },
+  {
+   "eval": "(() => { const P = N.controller.pos; let c = null, bd = 1e9; for (const q of G.police.cops) { const d = Math.hypot(q.pos.x - P.x, q.pos.z - P.z); if (d < bd) { bd = d; c = q; } } if (!c) return 'none'; const ax = P.x - c.pos.x, az = P.z - c.pos.z; const opts = [[1,0],[-1,0],[0,1],[0,-1]].filter(([x,z]) => { const q = new N.THREE.Vector3(P.x + x*3, 0, P.z + z*3), q0 = q.clone(); G.stage.colliders.resolve(q, 0.4); return q.distanceTo(q0) < 0.05; }); opts.sort((a,b) => (b[0]*ax+b[1]*az) - (a[0]*ax+a[1]*az)); const d = opts[0] || [Math.sign(ax),0]; N.controller.yaw = Math.atan2(-d[0], -d[1]); return JSON.stringify(d); })()"
+  },
+  {
+   "eval": "JSON.stringify({t: +G.time.toFixed(1), heat: G.police.heat, state: G.state, failing: !!G.failing, pos:[+N.controller.pos.x.toFixed(1),+N.controller.pos.z.toFixed(1)], cop: (() => { let b=null; for (const c of G.police.cops) { const d=Math.hypot(c.pos.x-N.controller.pos.x,c.pos.z-N.controller.pos.z); if(!b||d<b) b=+d.toFixed(1);} return b; })(), txt: document.body.innerText.replace(/\\s+/g,' ').slice(0,160)})"
+  },
+  {
+   "wait": 2500
+  },
+  {
+   "eval": "(() => { const P = N.controller.pos; let c = null, bd = 1e9; for (const q of G.police.cops) { const d = Math.hypot(q.pos.x - P.x, q.pos.z - P.z); if (d < bd) { bd = d; c = q; } } if (!c) return 'none'; const ax = P.x - c.pos.x, az = P.z - c.pos.z; const opts = [[1,0],[-1,0],[0,1],[0,-1]].filter(([x,z]) => { const q = new N.THREE.Vector3(P.x + x*3, 0, P.z + z*3), q0 = q.clone(); G.stage.colliders.resolve(q, 0.4); return q.distanceTo(q0) < 0.05; }); opts.sort((a,b) => (b[0]*ax+b[1]*az) - (a[0]*ax+a[1]*az)); const d = opts[0] || [Math.sign(ax),0]; N.controller.yaw = Math.atan2(-d[0], -d[1]); return JSON.stringify(d); })()"
+  },
+  {
+   "eval": "JSON.stringify({t: +G.time.toFixed(1), heat: G.police.heat, state: G.state, failing: !!G.failing, pos:[+N.controller.pos.x.toFixed(1),+N.controller.pos.z.toFixed(1)], cop: (() => { let b=null; for (const c of G.police.cops) { const d=Math.hypot(c.pos.x-N.controller.pos.x,c.pos.z-N.controller.pos.z); if(!b||d<b) b=+d.toFixed(1);} return b; })(), txt: document.body.innerText.replace(/\\s+/g,' ').slice(0,160)})"
+  },
+  {
+   "wait": 2500
+  },
+  {
+   "eval": "(() => { const P = N.controller.pos; let c = null, bd = 1e9; for (const q of G.police.cops) { const d = Math.hypot(q.pos.x - P.x, q.pos.z - P.z); if (d < bd) { bd = d; c = q; } } if (!c) return 'none'; const ax = P.x - c.pos.x, az = P.z - c.pos.z; const opts = [[1,0],[-1,0],[0,1],[0,-1]].filter(([x,z]) => { const q = new N.THREE.Vector3(P.x + x*3, 0, P.z + z*3), q0 = q.clone(); G.stage.colliders.resolve(q, 0.4); return q.distanceTo(q0) < 0.05; }); opts.sort((a,b) => (b[0]*ax+b[1]*az) - (a[0]*ax+a[1]*az)); const d = opts[0] || [Math.sign(ax),0]; N.controller.yaw = Math.atan2(-d[0], -d[1]); return JSON.stringify(d); })()"
+  },
+  {
+   "eval": "JSON.stringify({t: +G.time.toFixed(1), heat: G.police.heat, state: G.state, failing: !!G.failing, pos:[+N.controller.pos.x.toFixed(1),+N.controller.pos.z.toFixed(1)], cop: (() => { let b=null; for (const c of G.police.cops) { const d=Math.hypot(c.pos.x-N.controller.pos.x,c.pos.z-N.controller.pos.z); if(!b||d<b) b=+d.toFixed(1);} return b; })(), txt: document.body.innerText.replace(/\\s+/g,' ').slice(0,160)})"
+  },
+  {
+   "wait": 2500
+  },
+  {
+   "eval": "(() => { const P = N.controller.pos; let c = null, bd = 1e9; for (const q of G.police.cops) { const d = Math.hypot(q.pos.x - P.x, q.pos.z - P.z); if (d < bd) { bd = d; c = q; } } if (!c) return 'none'; const ax = P.x - c.pos.x, az = P.z - c.pos.z; const opts = [[1,0],[-1,0],[0,1],[0,-1]].filter(([x,z]) => { const q = new N.THREE.Vector3(P.x + x*3, 0, P.z + z*3), q0 = q.clone(); G.stage.colliders.resolve(q, 0.4); return q.distanceTo(q0) < 0.05; }); opts.sort((a,b) => (b[0]*ax+b[1]*az) - (a[0]*ax+a[1]*az)); const d = opts[0] || [Math.sign(ax),0]; N.controller.yaw = Math.atan2(-d[0], -d[1]); return JSON.stringify(d); })()"
+  },
+  {
+   "eval": "JSON.stringify({t: +G.time.toFixed(1), heat: G.police.heat, state: G.state, failing: !!G.failing, pos:[+N.controller.pos.x.toFixed(1),+N.controller.pos.z.toFixed(1)], cop: (() => { let b=null; for (const c of G.police.cops) { const d=Math.hypot(c.pos.x-N.controller.pos.x,c.pos.z-N.controller.pos.z); if(!b||d<b) b=+d.toFixed(1);} return b; })(), txt: document.body.innerText.replace(/\\s+/g,' ').slice(0,160)})"
+  },
+  {
+   "wait": 2500
+  },
+  {
+   "eval": "(() => { const P = N.controller.pos; let c = null, bd = 1e9; for (const q of G.police.cops) { const d = Math.hypot(q.pos.x - P.x, q.pos.z - P.z); if (d < bd) { bd = d; c = q; } } if (!c) return 'none'; const ax = P.x - c.pos.x, az = P.z - c.pos.z; const opts = [[1,0],[-1,0],[0,1],[0,-1]].filter(([x,z]) => { const q = new N.THREE.Vector3(P.x + x*3, 0, P.z + z*3), q0 = q.clone(); G.stage.colliders.resolve(q, 0.4); return q.distanceTo(q0) < 0.05; }); opts.sort((a,b) => (b[0]*ax+b[1]*az) - (a[0]*ax+a[1]*az)); const d = opts[0] || [Math.sign(ax),0]; N.controller.yaw = Math.atan2(-d[0], -d[1]); return JSON.stringify(d); })()"
+  },
+  {
+   "eval": "JSON.stringify({t: +G.time.toFixed(1), heat: G.police.heat, state: G.state, failing: !!G.failing, pos:[+N.controller.pos.x.toFixed(1),+N.controller.pos.z.toFixed(1)], cop: (() => { let b=null; for (const c of G.police.cops) { const d=Math.hypot(c.pos.x-N.controller.pos.x,c.pos.z-N.controller.pos.z); if(!b||d<b) b=+d.toFixed(1);} return b; })(), txt: document.body.innerText.replace(/\\s+/g,' ').slice(0,160)})"
+  },
+  {
+   "wait": 2500
+  },
+  {
+   "eval": "(() => { const P = N.controller.pos; let c = null, bd = 1e9; for (const q of G.police.cops) { const d = Math.hypot(q.pos.x - P.x, q.pos.z - P.z); if (d < bd) { bd = d; c = q; } } if (!c) return 'none'; const ax = P.x - c.pos.x, az = P.z - c.pos.z; const opts = [[1,0],[-1,0],[0,1],[0,-1]].filter(([x,z]) => { const q = new N.THREE.Vector3(P.x + x*3, 0, P.z + z*3), q0 = q.clone(); G.stage.colliders.resolve(q, 0.4); return q.distanceTo(q0) < 0.05; }); opts.sort((a,b) => (b[0]*ax+b[1]*az) - (a[0]*ax+a[1]*az)); const d = opts[0] || [Math.sign(ax),0]; N.controller.yaw = Math.atan2(-d[0], -d[1]); return JSON.stringify(d); })()"
+  },
+  {
+   "eval": "JSON.stringify({t: +G.time.toFixed(1), heat: G.police.heat, state: G.state, failing: !!G.failing, pos:[+N.controller.pos.x.toFixed(1),+N.controller.pos.z.toFixed(1)], cop: (() => { let b=null; for (const c of G.police.cops) { const d=Math.hypot(c.pos.x-N.controller.pos.x,c.pos.z-N.controller.pos.z); if(!b||d<b) b=+d.toFixed(1);} return b; })(), txt: document.body.innerText.replace(/\\s+/g,' ').slice(0,160)})"
+  },
+  {
+   "wait": 2500
+  },
+  {
+   "eval": "(() => { const P = N.controller.pos; let c = null, bd = 1e9; for (const q of G.police.cops) { const d = Math.hypot(q.pos.x - P.x, q.pos.z - P.z); if (d < bd) { bd = d; c = q; } } if (!c) return 'none'; const ax = P.x - c.pos.x, az = P.z - c.pos.z; const opts = [[1,0],[-1,0],[0,1],[0,-1]].filter(([x,z]) => { const q = new N.THREE.Vector3(P.x + x*3, 0, P.z + z*3), q0 = q.clone(); G.stage.colliders.resolve(q, 0.4); return q.distanceTo(q0) < 0.05; }); opts.sort((a,b) => (b[0]*ax+b[1]*az) - (a[0]*ax+a[1]*az)); const d = opts[0] || [Math.sign(ax),0]; N.controller.yaw = Math.atan2(-d[0], -d[1]); return JSON.stringify(d); })()"
+  },
+  {
+   "eval": "JSON.stringify({t: +G.time.toFixed(1), heat: G.police.heat, state: G.state, failing: !!G.failing, pos:[+N.controller.pos.x.toFixed(1),+N.controller.pos.z.toFixed(1)], cop: (() => { let b=null; for (const c of G.police.cops) { const d=Math.hypot(c.pos.x-N.controller.pos.x,c.pos.z-N.controller.pos.z); if(!b||d<b) b=+d.toFixed(1);} return b; })(), txt: document.body.innerText.replace(/\\s+/g,' ').slice(0,160)})"
+  },
+  {
+   "wait": 2500
+  },
+  {
+   "eval": "(() => { const P = N.controller.pos; let c = null, bd = 1e9; for (const q of G.police.cops) { const d = Math.hypot(q.pos.x - P.x, q.pos.z - P.z); if (d < bd) { bd = d; c = q; } } if (!c) return 'none'; const ax = P.x - c.pos.x, az = P.z - c.pos.z; const opts = [[1,0],[-1,0],[0,1],[0,-1]].filter(([x,z]) => { const q = new N.THREE.Vector3(P.x + x*3, 0, P.z + z*3), q0 = q.clone(); G.stage.colliders.resolve(q, 0.4); return q.distanceTo(q0) < 0.05; }); opts.sort((a,b) => (b[0]*ax+b[1]*az) - (a[0]*ax+a[1]*az)); const d = opts[0] || [Math.sign(ax),0]; N.controller.yaw = Math.atan2(-d[0], -d[1]); return JSON.stringify(d); })()"
+  },
+  {
+   "eval": "JSON.stringify({t: +G.time.toFixed(1), heat: G.police.heat, state: G.state, failing: !!G.failing, pos:[+N.controller.pos.x.toFixed(1),+N.controller.pos.z.toFixed(1)], cop: (() => { let b=null; for (const c of G.police.cops) { const d=Math.hypot(c.pos.x-N.controller.pos.x,c.pos.z-N.controller.pos.z); if(!b||d<b) b=+d.toFixed(1);} return b; })(), txt: document.body.innerText.replace(/\\s+/g,' ').slice(0,160)})"
+  },
+  {
+   "wait": 2500
+  },
+  {
+   "eval": "(() => { const P = N.controller.pos; let c = null, bd = 1e9; for (const q of G.police.cops) { const d = Math.hypot(q.pos.x - P.x, q.pos.z - P.z); if (d < bd) { bd = d; c = q; } } if (!c) return 'none'; const ax = P.x - c.pos.x, az = P.z - c.pos.z; const opts = [[1,0],[-1,0],[0,1],[0,-1]].filter(([x,z]) => { const q = new N.THREE.Vector3(P.x + x*3, 0, P.z + z*3), q0 = q.clone(); G.stage.colliders.resolve(q, 0.4); return q.distanceTo(q0) < 0.05; }); opts.sort((a,b) => (b[0]*ax+b[1]*az) - (a[0]*ax+a[1]*az)); const d = opts[0] || [Math.sign(ax),0]; N.controller.yaw = Math.atan2(-d[0], -d[1]); return JSON.stringify(d); })()"
+  },
+  {
+   "eval": "JSON.stringify({t: +G.time.toFixed(1), heat: G.police.heat, state: G.state, failing: !!G.failing, pos:[+N.controller.pos.x.toFixed(1),+N.controller.pos.z.toFixed(1)], cop: (() => { let b=null; for (const c of G.police.cops) { const d=Math.hypot(c.pos.x-N.controller.pos.x,c.pos.z-N.controller.pos.z); if(!b||d<b) b=+d.toFixed(1);} return b; })(), txt: document.body.innerText.replace(/\\s+/g,' ').slice(0,160)})"
+  },
+  {
+   "up": "KeyW"
+  },
+  {
+   "up": "ShiftLeft"
+  },
+  {
+   "wait": 5000
+  },
+  {
+   "eval": "JSON.stringify({t: +G.time.toFixed(1), heat: G.police.heat, state: G.state, failing: !!G.failing, pos:[+N.controller.pos.x.toFixed(1),+N.controller.pos.z.toFixed(1)], cop: (() => { let b=null; for (const c of G.police.cops) { const d=Math.hypot(c.pos.x-N.controller.pos.x,c.pos.z-N.controller.pos.z); if(!b||d<b) b=+d.toFixed(1);} return b; })(), txt: document.body.innerText.replace(/\\s+/g,' ').slice(0,160)})"
+  },
+  {
+   "wait": 5000
+  },
+  {
+   "eval": "JSON.stringify({t: +G.time.toFixed(1), heat: G.police.heat, state: G.state, failing: !!G.failing, pos:[+N.controller.pos.x.toFixed(1),+N.controller.pos.z.toFixed(1)], cop: (() => { let b=null; for (const c of G.police.cops) { const d=Math.hypot(c.pos.x-N.controller.pos.x,c.pos.z-N.controller.pos.z); if(!b||d<b) b=+d.toFixed(1);} return b; })(), txt: document.body.innerText.replace(/\\s+/g,' ').slice(0,160)})"
+  },
+  {
+   "wait": 5000
+  },
+  {
+   "eval": "JSON.stringify({t: +G.time.toFixed(1), heat: G.police.heat, state: G.state, failing: !!G.failing, pos:[+N.controller.pos.x.toFixed(1),+N.controller.pos.z.toFixed(1)], cop: (() => { let b=null; for (const c of G.police.cops) { const d=Math.hypot(c.pos.x-N.controller.pos.x,c.pos.z-N.controller.pos.z); if(!b||d<b) b=+d.toFixed(1);} return b; })(), txt: document.body.innerText.replace(/\\s+/g,' ').slice(0,160)})"
+  },
+  {
+   "wait": 5000
+  },
+  {
+   "eval": "JSON.stringify({t: +G.time.toFixed(1), heat: G.police.heat, state: G.state, failing: !!G.failing, pos:[+N.controller.pos.x.toFixed(1),+N.controller.pos.z.toFixed(1)], cop: (() => { let b=null; for (const c of G.police.cops) { const d=Math.hypot(c.pos.x-N.controller.pos.x,c.pos.z-N.controller.pos.z); if(!b||d<b) b=+d.toFixed(1);} return b; })(), txt: document.body.innerText.replace(/\\s+/g,' ').slice(0,160)})"
+  },
+  {
+   "wait": 5000
+  },
+  {
+   "eval": "JSON.stringify({t: +G.time.toFixed(1), heat: G.police.heat, state: G.state, failing: !!G.failing, pos:[+N.controller.pos.x.toFixed(1),+N.controller.pos.z.toFixed(1)], cop: (() => { let b=null; for (const c of G.police.cops) { const d=Math.hypot(c.pos.x-N.controller.pos.x,c.pos.z-N.controller.pos.z); if(!b||d<b) b=+d.toFixed(1);} return b; })(), txt: document.body.innerText.replace(/\\s+/g,' ').slice(0,160)})"
+  },
+  {
+   "wait": 5000
+  },
+  {
+   "eval": "JSON.stringify({t: +G.time.toFixed(1), heat: G.police.heat, state: G.state, failing: !!G.failing, pos:[+N.controller.pos.x.toFixed(1),+N.controller.pos.z.toFixed(1)], cop: (() => { let b=null; for (const c of G.police.cops) { const d=Math.hypot(c.pos.x-N.controller.pos.x,c.pos.z-N.controller.pos.z); if(!b||d<b) b=+d.toFixed(1);} return b; })(), txt: document.body.innerText.replace(/\\s+/g,' ').slice(0,160)})"
+  }
+ ],
+ "about": "[O1c critic] the vandal's contest, good: knock the bin where a cop sees it, then run away from him along the streets (a player's turn away each 2.5 s), then wait out of sight: does the heat go."
+}
