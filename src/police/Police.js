@@ -501,19 +501,19 @@ export class Police {
   }
 
   // ---- the roadblock: two cars nose to nose across the road ahead, men behind them --------------
-  makeBlock() {
+  makeBlock(force = null) {
     const G = this.G, P = this.P, graph = P.graph;
     const car = G.city.car;
-    if (!car || Math.abs(car.speed) < 4) return;
+    if (!car || (!force && Math.abs(car.speed) < 4)) return;
     const fx = Math.cos(car.yaw), fz = -Math.sin(car.yaw);
-    for (const ahead of [110, 90, 140, 75]) {
+    for (const ahead of force ? [force] : [110, 90, 140, 75]) {
       const L = graph.nearestLane(car.pos.x + fx * ahead, car.pos.z + fz * ahead);
       if (!L || L.d > 8 || L.edge.bridge || L.edge.cls === 'lane') continue;
       const e = L.edge;
       // the street's middle at that point, the cars across it
       const s = Math.max(14, Math.min(e.len - 14, L.s));
       const mx = e.ax + e.dx * s, mz = e.az + e.dz * s;
-      if (Math.hypot(mx - car.pos.x, mz - car.pos.z) < 60) continue;
+      if (Math.hypot(mx - car.pos.x, mz - car.pos.z) < (force ? force * 0.6 : 60)) continue;
       // (both lanes: two cars nose to nose across its width)
       const nx = -e.dz, nz = e.dx;
       const across = Math.atan2(-nz, nx);   // a car's heading along the normal

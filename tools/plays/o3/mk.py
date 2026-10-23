@@ -88,3 +88,6 @@ play('o3_pad_chase', "[O3] the pad alone: square into the car, HEAT 2, R2 / L2 a
 
 play('o3_soak', "[O3] memory: ten minutes at HEAT 3 (in the car, chased, boxed, arrested and back, the heat put back each time it falls): the heap after a collection, the renderer's geometries and textures, the people made and pooled, read every two minutes - flat.",
      [{"drive": D, "mode": "soak", "secs": 600, "check": "D.ok", "label": "ten minutes at HEAT 3: memory flat"}])
+
+play('o3_frames', "[O3] the review frames at 1440 x 900 (not a proof): 'Hands up.' face on, the roadblock ahead from the car, the gang's word",
+     [{"drive": D, "mode": "frames", "check": "D.ok", "label": "the frames"}], extra={"size": [1440, 900]})

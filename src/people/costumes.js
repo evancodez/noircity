@@ -208,16 +208,17 @@ function womanCostume(o, name) {
 // ---- the Tenements' gang: flat caps pulled low, short jackets to the hip,
 // the shirt's collar out over the jacket (a light V at the throat) -----------------------------
 const CAPS = [
-  { id: 'a', jacket: 0.012, shirt: 0.3, body: BROAD, h: 1.8 },
-  { id: 'b', jacket: 0.03, shirt: 0.22, body: MAN, h: 1.76 },
-  { id: 'c', jacket: 0.016, shirt: 0.36, body: MAN, h: 1.83, vest: true },
+  { id: 'a', jacket: 0.012, shirt: 0.13, body: BROAD, h: 1.8 },
+  { id: 'b', jacket: 0.03, shirt: 0.1, body: MAN, h: 1.76 },
+  { id: 'c', jacket: 0.016, shirt: 0.16, body: MAN, h: 1.83, vest: true },
 ];
 function capCostume(o, name) {
   return {
     name, h: o.h, body: o.body,
     cover: { kind: 'flatcap', hatDY: 0.124, hatDZ: 0.012, pitch: 0.18, s: 1.04, peak: 0.064, peakDrop: 0.34 },
     garments: [
-      { kind: 'torso', shade: (th, y) => (y > 1.22 && A(th) < 0.16 ? 'shirt' : 'coat') },
+      // (the shirt a narrow grey V at the throat: a light shape, not a bib)
+      { kind: 'torso', shade: (th, y) => (y > 1.24 && A(th) < 0.03 + (y - 1.24) * 0.42 ? 'shirt' : 'coat') },
       { kind: 'skirt', y0: 1.02, hem: 0.84, flare: [1.04, 1.08], back: 0.8, folds: 0.3, grow: 0.01, split: 0.22, shade: 'coat' },
       { kind: 'collar', style: 'band', h: 0.05, hFront: 0.04, open: 0.6, gap: 0.04, lean: 0.004, flareOut: 0.008, shade: 'shirt' },
       { kind: 'sleeves', r: 0.084, cuff: 0.07 },

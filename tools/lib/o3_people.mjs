@@ -32,6 +32,7 @@ export default async function o3(api) {
   if (opts.mode === 'latency') return latency(api);
   if (opts.mode === 'strip') return strip(api);
   if (opts.mode === 'soak') return soak(api);
+  if (opts.mode === 'frames') return frames(api);
   return { err: 'no mode ' + opts.mode };
 }
 
@@ -689,5 +690,51 @@ async function soak(api) {
   const a = R.reads[1] || R.reads[0], z = R.reads[R.reads.length - 1];
   R.growMB = +(z.heapMB - a.heapMB).toFixed(1); R.growGeo = z.geo - a.geo; R.growTex = z.tex - a.tex;
   R.ok = R.growMB < 15 && R.growGeo < 150 && R.growTex < 10;
+  return R;
+}
+
+// ---- the review frames (1440 x 900): 'Hands up.' face on, the roadblock ahead, the gang's word ----
+async function frames(api) {
+  const { js, shot, sleep, log, opts, keyDown, keyUp } = api;
+  const R = {};
+  // 'Hands up.': the cop at arm's length, face on, the man I put down at my feet
+  await stagePunch(api, { copD: 13 });
+  await click(api); await sleep(320); await click(api);
+  R.handsup = await waitFor(js, `G.hud.warnText === 'Hands up.'`, 30000, 40);
+  const c = await js(`({ x: window.__o3c.pos.x, z: window.__o3c.pos.z })`);
+  await turnTo(api, c.x, c.z, { pitch: -0.06, steps: 3 });
+  await sleep(150);
+  await shot('f_handsup');
+  await waitFor(js, `!G.failing && G.scenes.beat === 'station'`, 20000);
+  await sleep(1200);
+  // the roadblock: in the car, HEAT 3, the block put across the road 70 m ahead; on toward it, slowly
+  await js(`(() => { const P = G.people; P.dbgClear(); P.dbgAtCar(); return 1; })()`);
+  await sleep(300);
+  if (!(await js('G.city.inCar'))) { await tap(api, 'KeyE'); await sleep(1300); }
+  await js(`(G.police.raise(3, G.city.car.pos, 'staged'), G.police.makeBlock(75), 1)`);
+  R.block = await js(`G.police.block ? { street: G.police.block.cars.length } : null`);
+  for (let i = 0; i < 14; i++) {
+    const b = await js(`(() => { const B = G.police.block, c = G.city.car; if (!B) return null; return { d: Math.hypot(B.x - c.pos.x, B.z - c.pos.z), v: c.speed }; })()`);
+    if (!b) break;
+    if (b.d < 34) { await keyDown('KeyS'); await sleep(700); await keyUp('KeyS'); break; }
+    await keyDown('KeyW'); await sleep(b.v < 6 ? 500 : 150); await keyUp('KeyW'); await sleep(250);
+  }
+  await sleep(800);
+  await shot('f_roadblock');
+  await tap(api, 'KeyE'); await sleep(1500);
+  // the gang's word: a Tenements three on its corner, me at its edge
+  await js(`(() => { const P = G.people, Gs = P.gangs; P.dbgClear(); P.hold = true;
+    const post = Gs.posts.find(p => p.gang === 'tenements');
+    const T = Gs.three(post.gang, post.x, post.z, { post }); window.__o3t = T;
+    const n = P.nearestP(post.x + 9, post.z + 1); G.controller.setPose(n.x, n.z, Math.atan2(-(post.x - n.x), -(post.z - n.z)), -0.04); return 1; })()`);
+  await sleep(600);
+  const T = await js(`({ x: window.__o3t.x, z: window.__o3t.z })`);
+  await goTo(api, T.x, T.z, { near: 3.0, ms: 8000 });
+  await turnTo(api, T.x, T.z, { pitch: -0.02, steps: 3 });
+  R.word = await waitFor(js, `G.people.gangs.stats.words >= 1`, 6000);
+  await sleep(300);
+  await shot('f_gang');
+  log(`frames ${JSON.stringify(R)}`);
+  R.ok = R.handsup && !!R.block && R.word;
   return R;
 }

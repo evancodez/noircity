@@ -508,6 +508,8 @@ export class People {
     if (dead) { this.stats.killed++; G.sfx.death(p.pos.clone().setY(1.5)); } else G.sfx.grunt(p.pos.clone().setY(1.5));
     const kind = p.role === 'cop' ? 'cophurt' : dead ? 'death' : 'shot';
     if (kind !== 'shot') this.crime.emit(kind, p.pos, 'player', { victim: p });
+    // (a gang man shot: the rest of his three draw)
+    if (p.gang && !p.gang.war) this.gangs.hostile(p.gang, 'shot');
   }
 
   // ---- the crowd's own brain ---------------------------------------------------------------------

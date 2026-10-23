@@ -26,7 +26,7 @@ const TOUGH = {
   cover: { kind: 'flatcap', hatDY: 0.124, hatDZ: 0.016, pitch: 0.2, s: 1.04, peak: 0.064, peakDrop: 0.36 },
   garments: [
     // the shirt open in a V down the front, the jacket black either side
-    { kind: 'torso', shade: (th, y) => (A(th) < 0.1 + (y - 1.05) * 0.5 && y > 1.05 ? 0.3 : 0.013) },
+    { kind: 'torso', shade: (th, y) => (A(th) < 0.03 + (y - 1.2) * 0.4 && y > 1.2 ? 0.13 : 0.013) },
     { kind: 'skirt', y0: 1.02, hem: 0.86, flare: [1.05, 1.08], back: 0.8, folds: 0.3, grow: 0.01, split: 0.32, shade: 'coat' },
     { kind: 'collar', style: 'band', h: 0.05, hFront: 0.04, open: 0.6, gap: 0.05, lean: 0.004, flareOut: 0.006, shade: 'collar' },
     { kind: 'sleeves', r: 0.082, cuff: 0.07 },
