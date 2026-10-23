@@ -66,7 +66,7 @@ export class Person {
     F.scale = this.scale0 * hk; F.object.scale.setScalar(F.scale);
     this.paceK = 0.88 + ((Math.sin(x * 39.34 + z * 11.13) * 24634.6345) % 1 + 1) % 1 * 0.24;
     this.fear = 0; this.calmT = 0; this.reportOf = null; this.box = null;
-    this.speed = 0; this.blocked = 0; this.lastPos = { x, z }; this.stuckT = 0;
+    this.speed = 0; this.blocked = 0; this.lastPos = { x, z }; this.stuckT = 0; this.stuckN = 0;
     this.seenBy = 0; this.outT = 0;
     this.c.down = false; this.c.hp = 100; this.c.state = 'idle'; this.c.base = 'idle'; this.c.clipH = null; this.c._koFall = null; this.gaitNow = null;
     if (F.collider && this.stage.colliders.circles.indexOf(F.collider) < 0) { this.stage.colliders.circles.push(F.collider); if (this.stage.colliders.moving) this.stage.colliders.moving.push(F.collider); }
@@ -219,7 +219,7 @@ export class Person {
     if (F.speed > 0.5) {
       const moved = Math.hypot(this.pos.x - this.lastPos.x, this.pos.z - this.lastPos.z);
       this.stuckT = moved < F.speed * dt * 0.25 ? this.stuckT + dt : Math.max(0, this.stuckT - dt);
-      if (this.stuckT > 3) { this.stuckT = 0; if (this.path && this.pi < this.path.length - 1) this.pi++; else { this.path = null; this.setGait('idle'); } }
+      if (this.stuckT > 3) { this.stuckT = 0; this.stuckN = (this.stuckN || 0) + 1; if (this.path && this.pi < this.path.length - 1) this.pi++; else { this.path = null; this.setGait('idle'); } }
     }
     this.lastPos.x = this.pos.x; this.lastPos.z = this.pos.z;
   }

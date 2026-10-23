@@ -59,7 +59,7 @@ export class Gangs {
   // a three at a corner (out of my sight), standing round a point
   three(gang, x, z, { post = null, walkTo = null } = {}) {
     const P = this.P, looks = P.gangLooks(gang, x, z);
-    const T = { gang, x, z, men: [], post, hostile: false, sayT: 0, nearT: 0, t: 0 };
+    const T = { gang, x, z, men: [], post, hostile: false, sayT: -99, nearT: 0, t: 0 };
     for (let i = 0; i < 3; i++) {
       const kind = looks[i] || GANG[gang].kind;
       const a = i * 2.1 + Math.random() * 0.4, r = 0.95;

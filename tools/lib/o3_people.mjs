@@ -275,12 +275,25 @@ async function chase(api) {
   for (let k = 0; k < n; k++) {
     const T = { k };
     // the beat's setup: in my car at the kerb, HEAT n (O2's hijack stands in: raise)
-    await js(`(() => { const P = G.people; P.dbgClear(); return 1; })()`);
+    await waitFor(js, '!G.failing && G.state === "playing"', 20000);
+    await sleep(400);
+    await js(`(() => { const P = G.people; P.dbgClear(); if (!${!!opts.onFoot}) P.dbgAtCar(); return 1; })()`);
+    await sleep(300);
     const inCar = await js('G.city.inCar');
-    if (!inCar) { await tap(api, 'KeyE'); await sleep(1200); }
-    await js(`(G.police.raise(${opts.heat ?? 2}, G.city.car.pos, 'staged'), 1)`);
+    if (!inCar && !opts.onFoot) { await tap(api, 'KeyE'); await sleep(1200); }
+    await js(`(G.police.raise(${opts.heat ?? 2}, G.city.inCar ? G.city.car.pos : G.eye, 'staged'), 1)`);
     const t0 = Date.now();
-    if (opts.profile === 'idle') {
+    if (opts.profile === 'idle' && opts.onFoot) {
+      const fell = await waitFor(js, `!!G.failing`, 120000);
+      T.fail = (await state(js)).lastFail;
+      if (opts.shots && k === 0) await shot('down');
+      const back = await waitFor(js, `!G.failing && G.scenes.beat === 'hospital'`, 15000);
+      await sleep(800);
+      if (opts.shots && k === 0) await shot('hospital');
+      T.ev = await js(`G.police.events.filter(e => ['car', 'stop', 'guns', 'draw', 'wake'].includes(e.what)).map(e => e.what + '@' + e.t + (e.role ? ':' + e.role : '') + (e.kind ? ':' + e.kind : ''))`);
+      T.health = await js(`({ hits: G.counters.hoodHits, shots: G.counters.hoodShots })`);
+      T.ok = fell && back && T.fail && T.fail.to === 'hospital' && T.fail.warnedFor >= 1;
+    } else if (opts.profile === 'idle') {
       // hands off: they come, they box me, 'Hands up.', the cuffs
       const warned = await waitFor(js, `G.hud.warnText === 'Hands up.'`, 90000);
       T.warnAt = (Date.now() - t0) / 1000;
@@ -288,11 +301,11 @@ async function chase(api) {
       const failed = await waitFor(js, `!!G.failing`, 15000);
       T.fail = (await state(js)).lastFail;
       const back = await waitFor(js, `!G.failing && G.scenes.beat === 'station'`, 15000);
-      T.ev = await js(`G.police.events.filter(e => ['car', 'stop', 'crew', 'handsup', 'arrest'].includes(e.what)).map(e => e.what + '@' + e.t)`);
+      T.ev = await js(`G.police.events.filter(e => ['car', 'stop', 'crew', 'handsup', 'arrest', 'guns', 'draw'].includes(e.what)).map(e => e.what + '@' + e.t + (e.role ? ':' + e.role : '') + (e.kind ? ':' + e.kind : ''))`);
       T.ok = warned && failed && back && T.fail && T.fail.why === 'Arrested.' && T.fail.warnedFor >= 1;
     } else {
       // away: a route through the streets, the far end from the nearest police car, driven by the keys
-      const P = opts.profile === 'good' ? { vmax: 22, look: 1, react: 60 } : { vmax: 16, look: 1.2, react: 160 };
+      const P = opts.profile === 'good' ? { vmax: 22, look: 1, react: 60, hide: true } : { vmax: 16, look: 1.2, react: 160, hide: false };
       const res = await driveAway(api, { ...P, secs: opts.secs ?? 120, until: 'G.police.heat === 0', shots: opts.shots && k === 0 });
       T.drive = res;
       T.after = await state(js);
@@ -301,13 +314,13 @@ async function chase(api) {
     }
     R.tries.push(T);
     log(`chase ${k} (${opts.profile}): ${JSON.stringify(T)}`);
-    if (k + 1 < n) { await sleep(1500); if (!(await js('G.city.inCar'))) { await tap(api, 'KeyE'); await sleep(1000); } }
+    if (k + 1 < n) await sleep(1500);
   }
   R.wins = R.tries.filter((t) => t.ok).length;
   return R;
 }
 // drive away from the police by the keys: the route to a far point, pure pursuit on W / A / D / SPACE
-async function driveAway(api, { vmax = 20, look = 1, react = 80, secs = 120, until = 'false', shots = false } = {}) {
+async function driveAway(api, { vmax = 20, look = 1, react = 80, secs = 120, until = 'false', shots = false, hide = false } = {}) {
   const { js, keyDown, keyUp, log, shot } = api;
   const held = new Set();
   const set = async (code, on) => { if (on && !held.has(code)) { held.add(code); await keyDown(code); } else if (!on && held.has(code)) { held.delete(code); await keyUp(code); } };
@@ -315,7 +328,10 @@ async function driveAway(api, { vmax = 20, look = 1, react = 80, secs = 120, unt
   const plan = async (back = false) => js(`(() => { const g = G.people.graph, c = G.city.car, pol = G.police.cars.filter(p => p.mode !== 'leave');
     // away from the nearest of them (or on along my way): a point 450 m off on the roads (the other way: back)
     let ax = Math.cos(c.yaw) * ${back ? -1 : 1}, az = -Math.sin(c.yaw) * ${back ? -1 : 1};
-    if (pol.length && !${back}) { let b = null, bd = 1e9; for (const p of pol) { const d = p.pos.distanceTo(c.pos); if (d < bd) { bd = d; b = p; } } const dx = c.pos.x - b.pos.x, dz = c.pos.z - b.pos.z, L = Math.hypot(dx, dz) || 1; ax = dx / L * 0.7 + ax * 0.3; az = dz / L * 0.7 + az * 0.3; }
+    // (they have lost sight of me: away from where they last saw me)
+    const LS = G.police.state === 'search' && G.police.lastSeen;
+    if (LS && !${back}) { const dx = c.pos.x - LS.x, dz = c.pos.z - LS.z, L0 = Math.hypot(dx, dz) || 1; ax = dx / L0 * 0.8 + ax * 0.2; az = dz / L0 * 0.8 + az * 0.2; }
+    else if (pol.length && !${back}) { let b = null, bd = 1e9; for (const p of pol) { const d = p.pos.distanceTo(c.pos); if (d < bd) { bd = d; b = p; } } const dx = c.pos.x - b.pos.x, dz = c.pos.z - b.pos.z, L = Math.hypot(dx, dz) || 1; ax = dx / L * 0.7 + ax * 0.3; az = dz / L * 0.7 + az * 0.3; }
     const L = Math.hypot(ax, az) || 1; let tx = c.pos.x + ax / L * 450, tz = c.pos.z + az / L * 450;
     tx = Math.max(-560, Math.min(420, tx)); tz = Math.max(-520, Math.min(400, tz));
     const r = g.route({ x: c.pos.x, z: c.pos.z }, { x: tx, z: tz }); if (!r) return null;
@@ -333,6 +349,17 @@ async function driveAway(api, { vmax = 20, look = 1, react = 80, secs = 120, unt
     if (!s || s.__exc) { await sleepP(40); continue; }
     if (s.failing || !s.inCar) { rec.failed = s.failing; break; }
     if (s.u) { rec.done = true; break; }
+    if (hide) {
+      const h = await js(`(() => { const L = G.police.lastSeen, c = G.city.car; return { st: G.police.state, far: L ? Math.hypot(c.pos.x - L.x, c.pos.z - L.z) : 0, near: G.police.cars.some(p => p.mode !== 'leave' && p.pos.distanceTo(c.pos) < 70) }; })()`);
+      if (h.st === 'search' && h.far > 220 && !h.near) {
+        for (const c of [...held]) await set(c, false);
+        await set('KeyS', true); await sleepP(1200); await set('KeyS', false);
+        rec.hid = (rec.hid || 0) + 1;
+        const T1 = Date.now();
+        while (Date.now() - T1 < 20000) { const q = await js(`({ st: G.police.state, u: !!(${until}), f: !!G.failing })`); if (q.u || q.f || q.st === 'hunt') break; await sleepP(250); }
+        continue;
+      }
+    }
     if (shots && s.block && !shotDone) { shotDone = true; await shot('roadblock'); }
     if (last) rec.km += Math.hypot(s.x - last.x, s.z - last.z) / 1000;
     if (!rec.tr) rec.tr = [];
@@ -416,7 +443,7 @@ async function crowd(api) {
       for (let i = 0; i < L.length; i++) { const a = L[i];
         for (let j = i + 1; j < L.length; j++) { const b = L[j]; const d = Math.hypot(a.pos.x - b.pos.x, a.pos.z - b.pos.z); if (d < (a.r + b.r) * 0.55) { R.through++; if (R.worst.length < 8) R.worst.push(['pp', a.kind, b.kind, +d.toFixed(2)]); } }
         const e = Math.hypot(a.pos.x - G.eye.x, a.pos.z - G.eye.z); if (e < a.r * 0.6 && !G.city.inCar) R.eyeIn++;
-        for (const o of col.near(a.pos.x, a.pos.z, 1)) { if (o.r != null || (o.tag !== 'wall')) continue; const dx = a.pos.x - o.cx, dz = a.pos.z - o.cz; const lx = dx * o.c - dz * o.s, lz = dx * o.s + dz * o.c; if (Math.abs(lx) < o.hx - 0.15 && Math.abs(lz) < o.hz - 0.15) { R.inWall++; if (R.worst.length < 8) R.worst.push(['wall', a.kind]); } } } }
+        for (const o of col.near(a.pos.x, a.pos.z, 1)) { if (o.r != null || (o.tag !== 'wall')) continue; const dx = a.pos.x - o.cx, dz = a.pos.z - o.cz; const lx = dx * o.c - dz * o.s, lz = dx * o.s + dz * o.c; if (Math.abs(lx) < o.hx - 0.15 && Math.abs(lz) < o.hz - 0.15) { R.inWall++; if (R.worst.length < 8) R.worst.push(['wall', a.kind, a.mode, +a.pos.x.toFixed(1), +a.pos.z.toFixed(1), +o.cx.toFixed(1), +o.cz.toFixed(1), +o.hx.toFixed(1), +o.hz.toFixed(1), a.object.visible]); } } } }
       requestAnimationFrame(tick); };
     requestAnimationFrame(tick); return 1; })()`);
   // the busiest street: the crowd at its cap round Grand Ave; walk up and down through it
@@ -431,8 +458,13 @@ async function crowd(api) {
   if (opts.car) {
     await js(`(() => { const P = G.people, c = G.city.car; P.hold = true; const fx = Math.cos(c.yaw), fz = -Math.sin(c.yaw), rx = Math.sin(c.yaw), rz = Math.cos(c.yaw);
       window.__o3k = []; for (let i = 0; i < 4; i++) { const p = P.dbgWalker(c.pos.x + fx * (26 + i * 2.5) + rx * (i % 2 ? 0.8 : -0.8), c.pos.z + fz * (26 + i * 2.5) + rz * (i % 2 ? 0.8 : -0.8), 0); window.__o3k.push(p); } return 1; })()`);
+    await js('(G.people.dbgAtCar(), 1)');
+    await sleep(300);
     const inCar = await js('G.city.inCar');
     if (!inCar) { await tap(api, 'KeyE'); await sleep(1100); }
+    // (the four in the road ahead of it, now that I am in its seat)
+    await js(`(() => { const c = G.city.car, fx = Math.cos(c.yaw), fz = -Math.sin(c.yaw), rx = Math.sin(c.yaw), rz = Math.cos(c.yaw);
+      window.__o3k.forEach((p, i) => { p.fig.pos.x = c.pos.x + fx * (26 + i * 2.5) + rx * (i % 2 ? 0.8 : -0.8); p.fig.pos.z = c.pos.z + fz * (26 + i * 2.5) + rz * (i % 2 ? 0.8 : -0.8); p.fig.yaw = c.yaw; }); return 1; })()`);
     await api.keyDown('KeyW'); await sleep(opts.carMs ?? 3500); await api.keyUp('KeyW');
     await api.keyDown('KeyS'); await sleep(1500); await api.keyUp('KeyS');
     if (opts.shots) await shot('crowd_car');

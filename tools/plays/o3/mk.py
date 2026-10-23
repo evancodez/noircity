@@ -52,6 +52,8 @@ play('o3_roadblock', "[O3] HEAT 3 in the car: two cars and the roadblock on my r
      [{"drive": D, "mode": "chase", "heat": 3, "profile": "medium", "tries": 3, "secs": 180, "shots": True, "check": "D.wins >= 1 && D.tries.some(t => t.ev.some(e => e.startsWith('roadblock')))", "label": "roadblock: seen, and lost in one to three"}])
 play('o3_heat4', "[O3] HEAT 4 on foot: the detectives' car, the Tommy gun and the pistol out of it (the gun kit's men, every tell); idle: down, warned, the hospital; good (the chase driver in my car): away.",
      [{"drive": D, "mode": "chase", "heat": 4, "profile": "good", "tries": 1, "secs": 180, "check": "D.wins === 1", "label": "HEAT 4 in the car: away and lost"}])
+play('o3_heat4_idle', "[O3] HEAT 4 on foot, idle: the detectives' car comes, the Tommy gun and the pistol out of it (the gun kit's men: the raise, the glint, the settle); a man who stands there goes down - warned first ('You're hit. Get to cover.') - and wakes at the hospital.",
+     [{"drive": D, "mode": "chase", "heat": 4, "profile": "idle", "onFoot": True, "tries": 1, "shots": True, "check": "D.wins === 1", "label": "HEAT 4 idle on foot: warned, down, the hospital"}])
 play('o3_gangs', "[O3] the gangs: a three on a Tenements corner, three men not one; I walk up - the word; I push one (a jab) - the fist fight.",
      [{"drive": D, "mode": "gangs", "gang": "tenements", "shots": True, "check": "D.ok", "label": "the gang's word, the push, the fight"}])
 play('o3_crowd', "[O3] the jank walk through the busiest crowd (Grand Ave under the el, the crowd at its cap): nobody through anybody, nobody in a wall, the eye never in a man; then my car into four people in the road: they clear or go down, never through.",

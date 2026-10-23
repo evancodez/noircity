@@ -148,6 +148,15 @@ export class People {
   // ---- the plays' staging (tools/plays/o3_*: a beat's setup, like the kit's debug hooks) ---------
   // the street round me emptied, the police stood down (the start of a proof)
   dbgClear() { this.afterFail('reset'); this.hold = true; }
+  // me at my car's door, looking at it (the next E gets in)
+  dbgAtCar() {
+    const R = this.G.city, c = R && R.car;
+    if (!c || R.inCar) return false;
+    const p = c.world(-0.3, -(c.spec.halfW + 0.95), new THREE.Vector3());
+    this.stage.colliders.resolve(p, 0.4);
+    this.G.controller.setPose(p.x, p.z, Math.atan2(-(c.pos.x - p.x), -(c.pos.z - p.z)), -0.1);
+    return true;
+  }
   // a walker standing at a place (held there until let go: p.mode 'stand', long)
   dbgWalker(x, z, yaw = 0, kind = null) {
     const p = this.spawn(kind || this.pedLook(x, z), x, z, yaw, 'walker');
@@ -242,7 +251,7 @@ export class People {
       if (!opts.length) break;
       const id = opts[Math.floor(this.rng.next() * opts.length) % opts.length];
       prev = cur; cur = G.pnodes.get(id);
-      out.push([cur.x, cur.z]);
+      if (!this.inWall(cur.x, cur.z)) out.push([cur.x, cur.z]);
     }
     return out;
   }
@@ -277,6 +286,15 @@ export class People {
       out.push([cur.x, cur.z]);
     }
     return out;
+  }
+  // a point inside a building's walls (a corner of the walk that cuts a lot's corner)
+  inWall(x, z, pad = 0.35) {
+    for (const o of this.stage.colliders.near(x, z, 1)) {
+      if (o.r != null || (o.tag !== 'wall' && o.tag !== 'edge' && o.tag !== 'stair')) continue;
+      const dx = x - o.cx, dz = z - o.cz, lx = dx * o.c - dz * o.s, lz = dx * o.s + dz * o.c;
+      if (Math.abs(lx) < o.hx + pad && Math.abs(lz) < o.hz + pad) return true;
+    }
+    return false;
   }
   callBoxNear(x, z, r = 220) {
     let best = null, bd = r;
@@ -492,7 +510,7 @@ export class People {
       const d = Math.hypot(x - E.x, z - E.z);
       if (d < R[0] || d > R[1]) continue;
       if (this.inView(x, z)) continue;
-      if (this.near(x, z, 2.5).length) continue;
+      if (this.near(x, z, 2.5).length || this.inWall(x, z, 0.5)) continue;
       const kind = this.pedLook(x, z);
       const umb = kind !== 'o3_newsboy' && kind !== 'docker' && this.rng.next() < CROWD.umbrella;
       // (on along the edge one way or the other, then a walk on from there)
@@ -516,6 +534,8 @@ export class People {
       if (d > CROWD.gone && p.outT > 0.5 || p.outT > 5) { this.release(p); return false; }
     } else p.outT = 0;
     if (!p.standing) return true;
+    // (wedged - his way blocked a long while: out of my sight he goes; in it, back the way he came)
+    if (p.stuckN >= 2) { p.stuckN = 0; if (!this.inView(p.pos.x, p.pos.z)) { this.release(p); return false; } p.goTo(this.awayPath(p.pos, { x: p.pos.x + Math.sin(p.yaw), z: p.pos.z + Math.cos(p.yaw) }, 20), { gait: 'walk' }); }
     if (p.mode === 'report') { this.stepReport(p, dt); return true; }
     if (p.mode === 'flee') {
       if (!p.path || p.t > p.until) {
@@ -620,6 +640,7 @@ export class People {
       p.fig.flinch(new THREE.Vector3(V.x, 0, V.z).normalize());
       if (sp > 4 || Math.random() < 0.35) p.say('o3_hey');
       p.look(E);
+      this.stats.bumps = (this.stats.bumps || 0) + 1;
       G.emit('people:bump', { who: p, speed: sp });
     }
   }

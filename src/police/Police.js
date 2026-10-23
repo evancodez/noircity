@@ -34,8 +34,8 @@ import { copFists, copGuns } from './standins.js';
 //   police.lost()   police.changedCar()   police.clear()
 //   police.events   the record (the plays read it)
 export const HEAT = {
-  lose: [0, 20, 32, 60, 75, 90],     // s out of their sight to lose it, by level
-  sight: { foot: 36, car: 55 },      // how far they see me (m), in line of sight (night, the rain)
+  lose: [0, 20, 32, 60, 70, 80],     // s out of their sight to lose it, by level
+  sight: { foot: 36, car: 55, carSearch: 42 },   // how far they see me (m), in line of sight (night, the rain; a car prowling sees less)
   wind: { sprint: 10, rest: 6 },     // a man on foot sprints this long, then runs until he has his breath (s)
   searchAfter: 2.5,                  // s unseen before the search begins (the siren drops)
   arrest: { r: 3.0, warn: 1.3, box: 4.0, boxR: 9 },
@@ -212,7 +212,7 @@ export class Police {
       this.seenNow = false;
       if (this._heat) {
         for (const c of this.cops) if (c.standing && c.job !== 'leave' && P.sees(c.pos, me, HEAT.sight.foot)) { this.seenNow = true; break; }
-        if (!this.seenNow) for (const pc of this.cars) if (pc.mode !== 'leave' && P.sees(pc.pos, me, HEAT.sight.car)) { this.seenNow = true; break; }
+        if (!this.seenNow) for (const pc of this.cars) if (pc.mode !== 'leave' && P.sees(pc.pos, me, this.state === 'search' ? HEAT.sight.carSearch : HEAT.sight.car)) { this.seenNow = true; break; }
         if (!this.seenNow && this.guns.active) for (const h of this.guns.men()) if (h.alive && P.sees(h.pos, me, HEAT.sight.foot)) { this.seenNow = true; break; }
       }
     }
@@ -307,8 +307,10 @@ export class Police {
     }
     // 1: a man on foot to make the arrest (the nearest cop on the beat, or one sent)
     const foot = this.cops.filter((c) => c.standing && (c.job === 'respond' || c.job === 'arrest'));
+    // (HEAT 4 and up: no man walks over to cuff me - the detectives come, and the men on foot draw)
+    if (h >= 4) foot.push(null);
     // (the first time a man comes for me: what I can do about it, once, while he is still coming)
-    if (foot.length && !this.taught && !inCar) {
+    if (foot.length && foot[0] && !this.taught && !inCar) {
       const c = foot[0], d = Math.hypot(c.pos.x - E.x, c.pos.z - E.z);
       if (d < 24 && d > 6 && P.sees(c.pos, E, 30) && !G.hud.kit.warnText) { this.taught = true; G.hud.teach('o3_runfight', '[SHIFT] run   [LMB] fight', { until: ['ShiftLeft', 'Mouse0'], secs: 4 }); }
     }
@@ -328,7 +330,8 @@ export class Police {
       this.carT = pc ? 7 : 1.5;
     }
     // 3: the roadblock on the road ahead of my car
-    if (h >= 3 && inCar && !this.block && this.t - this.blockT > 35) this.makeBlock();
+    // (only while they see me: a roadblock is put on the road they watch me take)
+    if (h >= 3 && inCar && !this.block && this.state === 'hunt' && this.seenNow && this.t - this.blockT > 35) this.makeBlock();
     if (this.block) this.stepBlock();
   }
   // a car comes on out of my sight, on the roads 110 - 170 m off
@@ -601,6 +604,8 @@ export class Police {
       c.look(E);
       return;
     }
+    // (HEAT 4 and up: a man on foot who sees me draws - the gun kit's tells, its cover)
+    if (this._heat >= 4 && d < 35 && P.sees(c.pos, E, 35)) { this.guns.arm(c, 'pistol', 'police'); return; }
     const run = c.mode === 'chase' || d > 14 || this._heat >= 2;
     c.mode = run ? 'chase' : 'approach';
     // (his wind: a sprint of ten seconds, then a run until he has his breath back)
