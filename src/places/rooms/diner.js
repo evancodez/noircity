@@ -16,6 +16,8 @@ export default {
   spawn: { x: 0.6, z: -1.6, yaw: -0.25 },
   build(K, s, P) {
     const b = s.lb, R0 = new RNG(0xD1E), rng = () => R0.next();
+    // (what was on the counter went with the last visit)
+    s.state.cups = {}; s.state.pies = {};
     const x0 = Math.max(b.x0 + 0.6, -11.6), x1 = Math.min(b.x1 - 0.6, 11.6), z0 = -10, z1 = -0.3, H = 3.8;
     // the windows: the shop fronts of its face (the door's is the door)
     const W = P.faceWindows(s, { kinds: ['shop'], y0: 0, y1: 3, x0: x0 + 0.5, x1: x1 - 0.5 });
@@ -71,8 +73,8 @@ export default {
     const free = stools.filter((x, i) => i !== 1 && i !== stools.length - 2);
     for (const x of free) {
       const S = K.seat({ name: 'stool' + Math.round(x * 10), x, z: -5.25, yaw: 0, eyeY: FLOOR + 1.62, at: [x, FLOOR + 0.8, -5.25], prompt: 'sit at the counter', standAt: { x, z: -4.4, yaw: 0 } });
-      K.use({ seated: S, at: [x, FLOOR + 1.08, -6.25], range: 1.6, cone: 0.6, prompt: () => (s.state.cup === x ? 'drink the coffee' : `coffee: $${COFFEE}`), onUse: () => coffee(K, s, P, x) });
-      K.use({ seated: S, at: [x + 0.32, FLOOR + 1.08, -6.3], range: 1.6, cone: 0.35, prompt: `pie: $${PIE}`, when: () => s.state.pie !== x, onUse: () => pie(K, s, P, x) });
+      K.use({ seated: S, at: [x, FLOOR + 1.08, -6.25], range: 1.6, cone: 0.6, prompt: () => ((s.state.cups || {})[x.toFixed(2)] ? 'drink the coffee' : `coffee: $${COFFEE}`), onUse: () => coffee(K, s, P, x) });
+      K.use({ seated: S, at: [x + 0.32, FLOOR + 1.08, -6.3], range: 1.6, cone: 0.35, prompt: `pie: $${PIE}`, when: () => !(s.state.pies || {})[x.toFixed(2)], onUse: () => pie(K, s, P, x) });
     }
     K.use({ at: [jx - 0.4, FLOOR + 1.0, jz], range: 2.6, cone: 0.6, prompt: 'the jukebox', onUse: () => { P.game.sfx.play('jukebox_change', K.F.v(jx, FLOOR + 1, jz), {}, { ref: 3 }); P.game.hud.message('It takes the nickel. Nothing plays.', 1.8); } });
     // its people: the waitress, the cook, two at a booth, a man at his supper
@@ -96,7 +98,8 @@ export default {
 
 function coffee(K, s, P, x) {
   const G = P.game;
-  if (s.state.cup === x) {
+  const key = x.toFixed(2);
+  if ((s.state.cups || (s.state.cups = {}))[key]) {
     // a swallow: the health whole
     G.sfx.play('sip', null, {}, { ref: 1 });
     G.health.reset();
@@ -104,7 +107,7 @@ function coffee(K, s, P, x) {
     return;
   }
   if ((G.save.money || 0) >= COFFEE) P.money(-COFFEE, 'coffee'); else G.hud.message('On the house.', 1.4);
-  s.state.cup = x;
+  s.state.cups[key] = true;
   const c = K.prop('cup', x, FLOOR + 1.05, -6.25, 0.4, { name: 'cup' });
   K.prop('saucer', x, FLOOR + 1.05, -6.25, 0, { name: 'saucer' });
   void c;
@@ -114,7 +117,7 @@ function coffee(K, s, P, x) {
 function pie(K, s, P, x) {
   const G = P.game;
   if ((G.save.money || 0) >= PIE) P.money(-PIE, 'pie'); else G.hud.message('On the house.', 1.4);
-  s.state.pie = x;
+  (s.state.pies || (s.state.pies = {}))[x.toFixed(2)] = true;
   K.prop('plate', x + 0.32, FLOOR + 1.05, -6.3, 0, { name: 'plate' });
   K.prop('pie', x + 0.32, FLOOR + 1.065, -6.3, 0.6, { name: 'pie' });
   G.sfx.play('plateDown', K.F.v(x, FLOOR + 1.1, -6.3), {}, { ref: 2 });

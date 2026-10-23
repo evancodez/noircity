@@ -116,7 +116,7 @@ export class Places {
     s.live.street = s.ldoors.map((d) => {
       const axis = d.nz ? 'x' : 'z';
       const cx = d.x - d.nx * 0.18, cz = d.z - d.nz * 0.18;
-      const D = K.door({ x: axis === 'x' ? cx - d.w / 2 : cx, z: axis === 'z' ? cz - d.w / 2 : cz, axis, w: d.w, h: 2.05, double: d.w > 1.5, glass: s.kind === 'diner' || s.kind === 'theatre' || s.kind === 'gunshop', name: 'street' + d.i, locked: !!(s.state.locked && s.state.locked[d.i]) });
+      const D = K.door({ x: axis === 'x' ? cx - d.w / 2 : cx, z: axis === 'z' ? cz - d.w / 2 : cz, axis, w: d.w, h: 2.05, double: d.w > 1.5, glass: s.kind === 'diner' || s.kind === 'theatre' || s.kind === 'gunshop', name: 'street' + d.i, outer: true, locked: !!(s.state.locked && s.state.locked[d.i]) });
       D.street = true; D.ld = d;
       // (the threshold: a floor through the wall's thickness)
       K.surface(Math.min(d.x - (axis === 'x' ? d.w / 2 : 0.35), d.x + (axis === 'x' ? d.w / 2 : 0.35)), Math.max(d.x - (axis === 'x' ? d.w / 2 : 0.35), d.x + (axis === 'x' ? d.w / 2 : 0.35)),

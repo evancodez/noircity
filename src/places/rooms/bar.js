@@ -18,6 +18,7 @@ export default {
   spawn: { x: 0, z: -1.5, yaw: 0 },
   build(K, s, P) {
     const big = s.id === 'bar2';
+    s.state.glass = false;
     const b = s.lb, R0 = new RNG(big ? 0xBA2 : 0xBA1), rng = () => R0.next();
     let x0, x1, z0;
     const z1 = -0.3;

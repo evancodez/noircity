@@ -115,6 +115,8 @@ export default defineScene({
       const pq = q && q.get('place');
       // (&out=1: loaded, but I stay where the pose puts me - outside its door)
       if (pq && !q.get('out')) ctx.game.city.places.enter(pq, { seat: q.get('sit') || null });
+      // (&opendoor=<s>: its street door opened that many seconds in - the strips)
+      if (pq && q.get('opendoor')) { const P = ctx.game.city.places, at = +q.get('opendoor'); let t = 0; P.later((dt) => { t += dt; const s = P.byId.get(pq); if (t < at || !s || !s.live) return false; s.live.street[0].open(ctx.game.eye); return true; }); }
     },
     // [O5] the hotel's bed wrote the save: CONTINUE wakes me in my room, the car at the kerb outside
     hotel(ctx) {

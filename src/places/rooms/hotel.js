@@ -108,7 +108,7 @@ export default {
     K.solid(rx1 - 0.6, rx1 - 0.02, rz0 + 0.1, rz0 + 1.1);
     K.box('woodHi', rx0 + 0.1, rx0 + 0.55, y1, y1 + 0.6, rz0 + 2.5, rz0 + 2.95, 1);
     K.lamp(rx0 + 0.32, y1 + 0.9, rz0 + 2.72, { kind: 'pendant', power: 0.35, ceilY: y1 + 0.95, drop: 0.6 });
-    K.lamp((rx0 + rx1) / 2, y1 + 2.5, (rz0 + rz1) / 2, { kind: 'bare', power: 0.35, ceilY: y1 + 2.9, on: false });
+    K.lamp((rx0 + rx1) / 2, y1 + 2.5, (rz0 + rz1) / 2, { kind: 'bare', power: 0.35, ceilY: y1 + 2.9 });
     K.use({ at: [rx0 + 0.8, y1 + 0.6, rz0 + 1.3], range: 2.2, cone: 0.6, prompt: 'sleep', onUse: () => sleep(K, s, P) });
     K.use({ at: [rx1 - 0.05, y1 + 1.3, rz1 - 1.8], range: 2.0, cone: 0.4, prompt: 'the light', onUse: () => { const l = K.lamps.at(-1); l.set(!l.on); P.game.sfx.play('c3_switch', null, {}, { ref: 1 }); } });
     K.box('chrome', rx1 - 0.06, rx1 - 0.02, y1 + 1.25, y1 + 1.37, rz1 - 1.85, rz1 - 1.75, 3);

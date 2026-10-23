@@ -56,7 +56,8 @@ export function makeDoor(kit, spec) {
   const L = [];
   const root = new THREE.Group();
   root.matrixAutoUpdate = false; root.matrix.copy(F.M);
-  kit.group.add(root);
+  // (a street door is part of the street: drawn while the room behind it is not)
+  (spec.outer ? kit.outer : kit.group).add(root);
   const geo = mergeGeos(leafGeos(lw, h, spec.glass));
   const kg = mergeGeos(knobGeos(lw));
   for (let i = 0; i < leaves; i++) {
