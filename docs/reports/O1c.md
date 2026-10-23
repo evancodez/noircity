@@ -1,8 +1,83 @@
 # O1c — the streets, the follow-up (lane report, the handover)
 
-Branch `ow/O1c-streets` from main at 7040333 (after O3, O5, O7). Brief:
+Branch `ow/O1c-streets` from main at 7040333 (after O3, O5, O7); main merged in
+again at b2228c7 (O6b's car damage, O7 and O3 together, O9's brief). Brief:
 `docs/briefs/O1C_STREETS.md`. Port 5378. What a player meets, how it is built,
-the proofs, what is left.
+the proofs, what is left. **Section 0 (after the critic) is the current state;
+where sections 1-6 say otherwise (the kick, a car's 'dent' that was a sound, the
+0.5 s beat, the duplicate punch), section 0 wins.**
+
+---------------------------------------------------------------------------
+## 0. After the critic (`docs/reports/O1c_CRITIC.md`)
+
+Each finding, in the order a player feels it, played on the final code:
+
+| finding | now | proved by |
+| --- | --- | --- |
+| **B1** a jab at a car only a sound | **fixed.** The tin dents where the fist met it (`CarDamage.dent` of O6b, r 0.32 m, 4.5 cm; the second blow 0.42 / 7 cm), the paint scarred pale round it (its scar strokes), the body rocks on its springs away from the blow (roll or pitch, 0.03 rad at a jab; the roam's parked car is stepped while it rocks: `scenes/city.js`), the dent sound, and a car that is not mine (never driven by me: `v.driver !== 'player'`) is a crime, `vandal`, once in 4 s - the street sees it as it sees a bin go over (seen by a civilian: he goes to tell; by a cop: HEAT 1) | the fist walk's car: `dents +1, rock 0.031 rad, crimes: vandal`; the same pose before and after three jabs (frame `after/5`, bottom: the scars pale on the door) |
+| **B2** a thing knocked over goes ink on ink | **fixed.** What O1b's dressing drops out of its merge is drawn by its pool in the dressing's own material (`props` of `parts/dressing.js`: the floor of light) with the set's paper rim, and its kind's grey (the mean of its pieces' levels), never under the tin's 0.09 - the bench and the single dustbin too (`parts/props.js`). A round thing, a bicycle struck high topples (the fist's spin across the blow) instead of hopping back onto its foot | the fist walk's new check `__seeLying`: from 3 m on the open side, two frames of the canvas, with the instance and without it, the share of its drawn box changed 20 levels or more: dustbins 37 %, a dustbin 36, board 38, churns 40, barrel 53, crates 59, drums 47, bench 39 (the old material on the same dustbins: 1.7 %). Bicycle 6 % (a frame of thin lines: its threshold 5 %), rain barrel 40 (10 %, its box holds its downpipe) - both looked at in frames. Frame `after/5`, top |
+| **M1** the kick hidden, footless, C meaning nothing | **the kick cut** (the critic's first option). C (or Ctrl, the pad's circle) held changes nothing now. **The second blow** instead: a thing that shook to a jab (bench, oil drums, barrels, a handcart, a stall) goes over to the next jab within 2.5 s, with the eye's lunge and the wind of it - hitting again is all a player has to find. Crates are still shoved over whole by a jab (to planks only by a car or rounds now). C on foot is still nothing in the city (the controller's walk mode has no crouch; not this lane's) | fist walk: `oil drums, twice`, `barrels, twice`, `a bench, twice`, `a handcart, twice`: over; one jab: shake. Pad play: `a bench, twice` by R2 |
+| **M2** each crime logged again as a 'punch' by 'me' | **fixed by the merge** (main's `standins.js`: O7's stand-in listeners stand down under O3's crime bus) | the crime log after a knock: `vandal:player` only; after a lamp post double jab: nothing |
+| m1 0.5 s of swallowed presses after a hurt hand | **fixed**: the beat 0.25 s (`THING.beat`) | a lamp post jabbed twice 0.35 s apart: two swings, two rings, both hurt |
+| m2 a bottle at my feet takes the jab meant for the bins | **fixed**: a bottle on a step is hit only looking down at it (pitch under -0.3; at the feet it is out of view otherwise) | the critic's c11 walk at the dustbins (-148.6, -19.6) with presses every 0.4 s: whiffs, then `bins:over`; the bottle target looking down: broken |
+| m3 the firehouse's red out of the frame at arm's length | **fixed**: the middle panels' top rail of each leaf in the company's red, at 1.74 m (the eye) | the critic's pose (1.7 m off the doors): **1.21 %** colour, all red (was 0.00). Frame `after/6` |
+| m4 the Hill not warm on foot | **partly.** Its globes' glass burns amber-yellow (the far tiles' lamp mouths, `parts/far.js`: `[2.0, 1.65, 0.7]` - the registry amber's reflection printed red in the wet), the pools' light deeper amber (1.0 / 0.6 / 0.27) and at 0.6 of the power so the wet keeps it. Hill Rd at the critic's pose: **colour 0.62 %, amber 0.18** (was 0.09), the globes plainly amber; but the columns the globes leave in the water are mostly white with a pink edge, and the lamp cones are white (the cone shader writes a volume, not a colour) | frame `after/6` (the park: old, new); `hill` probe 0.62 % |
+| m5 dustbin groups read the same | **fixed**: by the hash, two or three cans, a gap where one was taken, the last pulled out of line, a lid askew or **off** (lying against the can's foot, the mouth black), the cans' greys differing | Hester St (frame `after/6`) |
+| cheat: the proof counted `car:dent` by its name | **removed**: the car passes on the damage record (`D.scar` slots in use +1), a sampled rock over 0.004 rad, and the `vandal` crime | `tools/lib/o1c_fist.mjs` |
+| cheat: 'everything resting' true for things no one can see | **removed**: every 'over' is also `__seeLying` (above) | same |
+
+**Not changed, where I agree with the critic but it is not mine**: losing the
+revolver for a knocked bin is O3's arrest rule. **Where the critic's finding
+stands as written**: none disputed.
+
+### 0a. The runs on the final code
+- **The fist walk** `o1c_fist.json`: **PASS, 29 of 29** (the kicked crate
+  target gone with the kick): every 'over' lying, resting and seen (numbers
+  above), shakes, rings with the hurt hand, glass crack then gone, wall, door,
+  the coupe dented and rocked and a crime, the bottle, the bin a cop saw:
+  `vandal@cop`, **HEAT 1** 1.5 s after the press. Press to the swing 1.8-47 ms.
+  #errlog clean. (The bottle's look-down rule came after this run; the bottle
+  target and the critic's c11 bins were run again after it: both as expected.)
+- **The fist by the pad** `o1c_fist_pad.json`: **PASS** (dustbin over, lamp
+  post rings and hurts, a bench over to the second R2, glass cracked then
+  gone), **0 key or mouse events**.
+- **Golden** against main's frames after the merge: game one's **39 of 40
+  identical**, `title` changed (its backdrop: the near ground darker) and
+  re-accepted; the city's 17: **6 identical** (`city_tenements`, `city_quay`,
+  `city_straight`, `city_clock`, `o5_bar`, `o5_gym`), **11 re-accepted**: the
+  near ground darker (`uNearK`, this lane's look pass) in every street frame
+  and O6b's beds, `city_park` also its Hill globe amber, `city_gasworks` and
+  `city_o3_police` a speck each. Colour of all re-taken: **max 1.72 %**
+  (`city_grand_car`), none over 2 %.
+- **Errors** (`tools/errors.sh`): `scene=city&beat=roam&at=` grand, hill,
+  tenements, docks, and `start=city`: **clean, all five**.
+- **fps** (`MOMENTS=city tools/fpstable.mjs 5`, at a load of 7-18, other lanes
+  capturing): Grand Ave from the car **1.26 x** shot=perf, the el's corner
+  1.37, Broadway 1.88, the Bowery 1.94, the quay 1.53 - every spot over perf;
+  draws 670 / 599 / 930 / 671 / 555 (unchanged: the fallen things' material
+  is one more program, no draw).
+- Not re-run after the critic: `o1b_jank`, `o6_city`, `o3_witness`,
+  `o3_crowd`, `o1_drive`, `pavecheck` (nothing of the graph, the walk or the
+  cars' driving changed; the merge brought O6b's damage, whose own plays ran
+  on main).
+
+### 0b. Left after the critic (most felt first)
+1. **The Hill's water**: the globes are amber, but the columns they leave in
+   the wet print white with a pink edge, and the cones are white (the cone
+   pass carries no colour). A warm column needs the ground shader's lamp
+   reflection or the cone's volume to carry a hue - a renderer lane's.
+2. **A bicycle knocked over** stands on its wheels where it lands more often
+   than not (tilted 0 in both walks; it tumbles and lands upright): it reads
+   as moved, not fallen.
+3. **C on foot** means nothing in the city (no crouch in the walk mode): the
+   rulebook's 'get low' on foot is the controller's, not this lane's.
+4. **A car punched is a crime only if I never drove it** (`driver !==
+   'player'`); there is no car alarm (1940s) and no owner yet - O2's traffic
+   brings drivers: `city:fist { thing: 'car', depth, heavy }` is the hook.
+5. **Crates go to planks only by a car or rounds** now (the kick took them;
+   the second blow cannot reach a crate already shoved over).
+6. The earlier Left (section 6) items 1, 4, 6, 7 stand; 2 (no foot) and 5 (the
+   duplicate punch) are gone with the kick and the merge.
 
 ---------------------------------------------------------------------------
 ## 1. What exists now (as a player meets it)
