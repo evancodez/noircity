@@ -108,7 +108,7 @@ export default {
     const mt = bar.top(big ? bar.stools[0][1] : bar.stools[0][0]);
     if (!(P.game.save.matchbooks || []).includes(s.id)) {
       const mb = K.prop('matchbook', mt[0], mt[1] - 0.01, mt[2], 0.5, { name: 'matchbook' });
-      K.use({ at: [mt[0], mt[1], mt[2]], range: 1.8, cone: 0.35, prompt: 'a matchbook', when: () => mb.o.visible, onUse: () => {
+      K.use({ at: [mt[0], mt[1], mt[2]], range: 2.3, cone: 0.45, prompt: 'a matchbook', when: () => mb.o.visible, onUse: () => {
         mb.o.visible = false;
         const L = P.game.save.matchbooks; if (!L.includes(s.id)) L.push(s.id);
         P.game.sfx.play('matchbook', null, {}, { ref: 1 });

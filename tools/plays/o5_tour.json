@@ -30,6 +30,21 @@
   {
    "drive": "tools/lib/o5_places.mjs",
    "mode": "tour",
+   "sites": [
+    "gym",
+    "diner",
+    "bar1",
+    "bar2",
+    "gunshop",
+    "garage",
+    "hotel",
+    "police",
+    "theatre1",
+    "hall",
+    "stairs1",
+    "stairs2",
+    "stairs3"
+   ],
    "timeout": 3000000,
    "check": "D.bad.length === 0",
    "label": "[O5] every place: in and out by its door, everything tried answered, nothing inside a wall"

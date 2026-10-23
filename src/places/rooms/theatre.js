@@ -58,7 +58,7 @@ export default {
     K.solid(x0, x1, z0, z0 + 1.6);
     // the rows (an aisle down each side)
     const rows = [];
-    for (let z = z0 + 4.0; z < zl - 1.5; z += 1.05) {
+    for (let z = z0 + 4.0; z < zl - 2.8; z += 1.05) {
       K.box('leather', x0 + 1.4, x1 - 1.4, FLOOR, FLOOR + 0.45, z - 0.25, z + 0.25, 1);
       K.box('leather', x0 + 1.4, x1 - 1.4, FLOOR + 0.45, FLOOR + 0.95, z + 0.2, z + 0.3, 1);
       K.solid(x0 + 1.4, x1 - 1.4, z - 0.3, z + 0.3);
@@ -70,7 +70,7 @@ export default {
     // my seat: the end of a middle row, from the aisle
     const rz = rows[Math.floor(rows.length / 2)] ?? (z0 + 6);
     const sx = x0 + 1.75;
-    K.seat({ name: 'house', x: sx, z: rz - 0.05, yaw: 0, eyeY: FLOOR + 1.12, at: [sx, FLOOR + 0.6, rz], prompt: 'take a seat', pitch: 0.12, standAt: { x: x0 + 0.8, z: rz + 0.2, yaw: Math.PI / 2 }, onSit: () => reel(K, s, P) });
+    K.seat({ name: 'house', x: sx, z: rz - 0.05, yaw: 0, eyeY: FLOOR + 1.12, at: [sx, FLOOR + 0.6, rz], prompt: 'take a seat', pitch: 0.12, standAt: { x: x0 + 0.8, z: rz + 0.2, yaw: Math.PI / 2 }, onSit: () => reel(K, s, P), tourSkip: 'the reel play' });
     K.spawnHouse = { x: x0 + 0.8, z: rz + 0.4 };
   },
 };

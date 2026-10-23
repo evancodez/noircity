@@ -22,6 +22,7 @@ export default {
     const L0 = -1.4, L1 = 1.6, zF = -0.3, zA = -2.2, zB = -4.4, zH = -5.6, mid = 0.08, t = 0.24;
     const paint = PAINT[v % 3], lampKind = LAMP[v % 3];
     K.roomRect = { x0: L0, x1: L1, z0: zH, z1: zF };
+    K.groundOnly = [];
     const y = (k) => FLOOR + k * fh;
     // the well between the flights (full height), the shaft's walls floor by floor (each floor's own)
     K.at(null);
@@ -68,10 +69,10 @@ export default {
         for (let i = 0; i < 8; i++) K.box('iron', L0 + 0.0, L0 + 0.12, FLOOR + 1.1 + (i % 4) * 0.22, FLOOR + 1.3 + (i % 4) * 0.22, -1.9 + Math.floor(i / 4) * 0.42, -1.55 + Math.floor(i / 4) * 0.42, 3);
         K.box('wood', mid, L1, FLOOR, y(0) + fh / 2 - 0.1, zB, zA, 1);
         // (the cupboard is solid at the ground only: over it runs the first flight back, on the same floor's level)
-        K.cupboard = K.solid(mid, L1, zB, zA, { lvl: null }); K.cupboard.lvl = undefined;
-        if (v === 0) { K.box('leather', L1 - 0.75, L1 - 0.1, FLOOR + 0.3, FLOOR + 0.85, -1.9, -0.9, 1); K.add('iron', new THREE.TorusGeometry(0.17, 0.02, 6, 14).rotateY(Math.PI / 2).translate(L1 - 0.4, FLOOR + 0.2, -1.8), 1); K.add('iron', new THREE.TorusGeometry(0.17, 0.02, 6, 14).rotateY(Math.PI / 2).translate(L1 - 0.4, FLOOR + 0.2, -1.0), 1); K.solid(L1 - 0.8, L1, -2.0, -0.8, { lvl: 0 }); }
-        else if (v === 1) { for (const z of [-1.7, -0.7]) K.add('iron', new THREE.TorusGeometry(0.32, 0.025, 6, 18).rotateY(Math.PI / 2).translate(L1 - 0.12, FLOOR + 0.33, z), 1); K.box('iron', L1 - 0.15, L1 - 0.1, FLOOR + 0.3, FLOOR + 0.75, -1.7, -0.7, 1); K.solid(L1 - 0.25, L1, -2.1, -0.4, { lvl: 0 }); }
-        else { for (const z of [-1.7, -1.0]) { K.cyl('iron', L1 - 0.35, FLOOR, FLOOR + 0.75, z, 0.27, 0.25, 12, 1); } K.solid(L1 - 0.65, L1, -2.0, -0.7, { lvl: 0 }); }
+        K.groundOnly.push(K.solid(mid, L1, zB, zA, { lvl: null }));
+        if (v === 0) { K.box('leather', L1 - 0.75, L1 - 0.1, FLOOR + 0.3, FLOOR + 0.85, -1.9, -0.9, 1); K.add('iron', new THREE.TorusGeometry(0.17, 0.02, 6, 14).rotateY(Math.PI / 2).translate(L1 - 0.4, FLOOR + 0.2, -1.8), 1); K.add('iron', new THREE.TorusGeometry(0.17, 0.02, 6, 14).rotateY(Math.PI / 2).translate(L1 - 0.4, FLOOR + 0.2, -1.0), 1); K.groundOnly.push(K.solid(L1 - 0.8, L1, -2.0, -0.8, { lvl: null })); }
+        else if (v === 1) { for (const z of [-1.7, -0.7]) K.add('iron', new THREE.TorusGeometry(0.32, 0.025, 6, 18).rotateY(Math.PI / 2).translate(L1 - 0.12, FLOOR + 0.33, z), 1); K.box('iron', L1 - 0.15, L1 - 0.1, FLOOR + 0.3, FLOOR + 0.75, -1.7, -0.7, 1); K.groundOnly.push(K.solid(L1 - 0.25, L1, -2.1, -0.4, { lvl: null })); }
+        else { for (const z of [-1.7, -1.0]) { K.cyl('iron', L1 - 0.35, FLOOR, FLOOR + 0.75, z, 0.27, 0.25, 12, 1); } K.groundOnly.push(K.solid(L1 - 0.65, L1, -2.0, -0.7, { lvl: null })); }
         sheet(K, -1.0, FLOOR + 1.6, zA - 0.0, { w: 0.4, h: 0.55, dir: 's' });
       }
     }
@@ -106,7 +107,9 @@ export default {
     return {
       step(dt) {
         t += dt;
-        if (K.cupboard) K.cupboard.gone = !(P.inside === s && P.game.controller.groundY < FLOOR + 0.5);
+        // (what stands on the ground floor is solid there only: the flights over it are the same floor's level)
+        const low = P.game.controller.groundY < FLOOR + 0.5;
+        for (const c of K.groundOnly) c.gone = !low;
         for (const l of fl) { const on = Math.sin(t * 13) + Math.sin(t * 5.7) > 0.6; if (on !== l.on) l.set(on); }
         // (the roof's surface: not inside the bulkhead)
       },

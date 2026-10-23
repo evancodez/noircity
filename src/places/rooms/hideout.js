@@ -153,13 +153,15 @@ function hideoutLife(K, s, P) {
     for (const m of K.men) {
       if (s.state.dead && s.state.dead.includes(m)) continue;
       const p = F.w(m.x, m.z), e = F.w(0, 0);
-      const h = Kt.spawn({ kind: m.kind, at: p, start: () => st.hostile, yaw: Math.atan2(e.x - p.x, e.z - p.z) });
+      // (a way of one step - where he stands - so he waits on start(): without a way a gunman is in the fight at once)
+      const h = Kt.spawn({ kind: m.kind, at: p, way: { steps: [{ x: p.x, z: p.z }] }, start: () => st.hostile, yaw: Math.atan2(e.x - p.x, e.z - p.z) });
       h._o5 = m;
       st.men.push(h);
     }
   };
   const alive = () => st.men.filter((h) => h.alive);
   const run = {
+    st,
     alarm(why) { if (!st.hostile && st.begun) { st.hostile = true; G.hud.warn(null); P.crime('hideout', G.eye.clone(), 2); arm(); void why; } },
     step(dt) {
       st.t += dt;
@@ -199,7 +201,8 @@ function hideoutLife(K, s, P) {
   };
   // the revolver out of my coat (the stand-in for O4's carried guns)
   const arm = () => {
-    if (G.player.weapons.current) return;
+    if (G.player.weapons.current === 'revolver' && st.armed) return;
+    st.armed = true;
     Kt.arm('revolver');
     if (G.controller.mode === 'walk') G.controller.setMode('gun', { crouch: false });
     G.setViewmodelVisible(true);

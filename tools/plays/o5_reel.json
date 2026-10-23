@@ -51,7 +51,7 @@
    "wait": 1000
   },
   {
-   "walk": "(() => { const s = G.city.places.byId.get('theatre1'), F = s.frame, K = s.live.K; const p = F.w(K.spawnHouse.x, K.spawnHouse.z); const q = F.w(1.0, -8.0), r = F.w(K.spawnHouse.x, -8.0); return [[q.x, q.z], [r.x, r.z], [p.x, p.z]]; })()",
+   "walk": "(() => { const s = G.city.places.byId.get('theatre1'), F = s.frame, K = s.live.K; const p = F.w(K.spawnHouse.x, K.spawnHouse.z); const q = F.w(1.0, -8.9), r = F.w(K.spawnHouse.x, -8.9); return [[q.x, q.z], [r.x, r.z], [p.x, p.z]]; })()",
    "timeout": 25000
   },
   {

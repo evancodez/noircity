@@ -137,7 +137,9 @@ export class Places {
     this.shell(s);
     // the lot's collider: its box gone, a wall round its edge with the doors' gaps
     s.live.lotCols = [];
-    for (const c of stage.colliders.near(s.lot.cx, s.lot.cz, 2)) if (c.hx != null && c.tag === 'wall' && Math.abs(c.cx - s.lot.cx) < 0.05 && Math.abs(c.cz - s.lot.cz) < 0.05) { c.gone = true; s.live.lotCols.push(c); }
+    // (its box: matched by its extents - a lot's cx / cz are not always its box's middle)
+    const Lb = s.lot, mx = (Lb.x0 + Lb.x1) / 2, mz = (Lb.z0 + Lb.z1) / 2;
+    for (const c of stage.colliders.near(mx, mz, 2)) if (c.hx != null && c.tag === 'wall' && Math.abs(c.cx - mx) < 0.05 && Math.abs(c.cz - mz) < 0.05 && Math.abs(c.hx - (Lb.x1 - Lb.x0) / 2) < 0.05) { c.gone = true; s.live.lotCols.push(c); }
     this.rim(K, s);
     // its lamps in the city's deal; its look and its dry volume
     if (this.lampsApi && this.lampsApi.addExtra) this.lampsApi.addExtra(K.lamps);

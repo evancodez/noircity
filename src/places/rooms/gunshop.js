@@ -51,7 +51,7 @@ export default {
     K.fig('oldman', x0 + 4.0, cz - 1.25, 0, { name: 'gunman', state: 'idle' });
     // E at the case: what he sells, one thing a press (cycling)
     K.use({ at: [x0 + 3.6, FLOOR + 1.0, cz - 0.1], range: 2.0, cone: 0.55, prompt: () => offerText(s, P), onUse: () => buy(K, s, P) });
-    K.use({ at: [x0 + 5.6, FLOOR + 1.0, cz - 0.1], range: 2.0, cone: 0.25, prompt: 'next', onUse: () => { s.state.pick = ((s.state.pick || 0) + 1) % PRICES.length; P.game.sfx.play('paperTouch', null, {}, { ref: 1 }); } });
+    K.use({ at: [x0 + 5.6, FLOOR + 1.0, cz - 0.1], range: 2.0, cone: 0.25, prompt: 'next', onUse: () => { s.state.pick = ((s.state.pick || 0) + 1) % PRICES.length; P.game.sfx.play('paperTouch', null, {}, { ref: 1 }); P.game.hud.message(PRICES[s.state.pick].name, 1.2); } });
   },
 };
 function offerText(s, P) {

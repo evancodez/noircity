@@ -199,7 +199,7 @@ export class RoomKit {
 
   // ---- doors, seats, uses ---------------------------------------------------------------------------
   door(spec) { return makeDoor(this, { lvl: this.curLvl, ...spec }); }
-  seat(s) { const S = { prompt: 'sit', range: 1.9, cone: 0.5, eyeY: FLOOR + 1.25, lvl: this.curLvl, ...s }; this.seats.push(S); return S; }
+  seat(s) { const S = { prompt: 'sit', range: 2.2, cone: 0.6, eyeY: FLOOR + 1.25, lvl: this.curLvl, ...s }; this.seats.push(S); return S; }
   use(u) { const U = { range: 1.9, cone: 0.45, lvl: this.curLvl, ...u }; this.uses.push(U); return U; }
 
   // ---- props and people ------------------------------------------------------------------------------

@@ -54,7 +54,7 @@ export default {
     K.use({ at: [K.man.x, FLOOR + 1.5, K.man.z], range: 2.4, cone: 0.5,
       prompt: () => boutPrompt(s, P),
       when: () => !P.game.brawl.active && !(s.live && s.live.run && s.live.run.busy),
-      onUse: () => s.live.run.offer() });
+      onUse: () => s.live.run.offer(), tourSkip: 'the bout plays' });
     void rng;
   },
   live(K, s, P) { return boutStart(K, s, P); },

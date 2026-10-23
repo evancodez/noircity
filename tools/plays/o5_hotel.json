@@ -56,7 +56,7 @@
    "expect": "G.city.places.inside && G.city.places.inside.id === 'hotel'"
   },
   {
-   "eval": "(() => { const s = G.city.places.byId.get('hotel'), F = s.frame, K = s.live.K; const a = F.v(...([-6.2, 1.5, -10.7])); const C = N.controller; C.yaw = Math.atan2(-(a.x - G.eye.x), -(a.z - G.eye.z)); C.pitch = -0.1; return 1; })()"
+   "eval": "(() => { const s = G.city.places.byId.get('hotel'), F = s.frame, K = s.live.K; const a = F.v(...([-5.95, 1.75, -10.7])); const C = N.controller; C.yaw = Math.atan2(-(a.x - G.eye.x), -(a.z - G.eye.z)); C.pitch = Math.atan2(a.y - G.eye.y, Math.hypot(a.x - G.eye.x, a.z - G.eye.z)); return 1; })()"
   },
   {
    "wait": 500

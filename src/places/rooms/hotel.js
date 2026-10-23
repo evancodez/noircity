@@ -78,7 +78,7 @@ export default {
     lift.shut0 = K.solid(L.x1 + 0.08, L.x1 + 0.16, L.z0 + 0.35, L.z1 - 0.25, { lvl: null }); lift.shut0.lvl = undefined;
     lift.shut1 = K.solid(L.x1 + 0.08, L.x1 + 0.16, L.z0 + 0.35, L.z1 - 0.25, { lvl: null }); lift.shut1.lvl = undefined;
     K.lift = lift;
-    K.use({ atFn: () => K.F.v(L.x1 - 0.3, lift.y + 1.2, (L.z0 + L.z1) / 2), range: 2.2, cone: 0.6, prompt: () => (lift.at === 0 ? 'the lift: up' : 'the lift: down'), when: () => !lift.riding, onUse: () => ride(K, s, P) });
+    K.use({ atFn: () => K.F.v(L.x1 - 0.05, lift.y + 1.45, (L.z0 + L.z1) / 2), range: 2.4, cone: 0.8, prompt: () => (lift.at === 0 ? 'the lift: up' : 'the lift: down'), when: () => !lift.riding, onUse: () => ride(K, s, P) });
     // (a call button outside each floor's gate)
     // ---- the first floor: the corridor at the back, my room over the avenue
     K.at(1);
