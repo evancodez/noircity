@@ -21,9 +21,9 @@ for (let i = 0; i < n; i++) {
     { key: 'KeyE', hold: 70 }, { wait: 600 },
     { walk: `(() => { const F = ${S}.frame; return [[0, -1.8]].map(([x, z]) => { const p = F.w(x, z); return [p.x, p.z]; }); })()`, timeout: 10000, stop: false },
     ...(prof === 'idle'
-      ? [{ until: 'G.failing || G.health.dead', timeout: 60000, stop: false }, { wait: 1200 }, { shot: 'idle_fall' }]
+      ? [{ until: 'G.failing || G.health.dead || window.__h.fails.length > 0', timeout: 60000, stop: false }, { wait: 1200 }, { shot: 'idle_fall' }]
       : [{ shoot: { until: `${S}.state.cleared || G.failing || G.health.dead`, cover: P.cover, react: P.react, err: P.err, timeout: 120000 } }]),
-    { eval: `'try ${i + 1}: ' + (${S}.state.cleared ? 'CLEARED' : 'down') + ' in ' + (G.time - window.__t0).toFixed(0) + ' s; warns ' + window.__h.warns.slice(-3).join(' / ') + '; fails ' + window.__h.fails.slice(-1).join('') + '; line: ' + document.getElementById('hud').innerText.replace(/\\s+/g, ' ').slice(0, 120)` },
+    { eval: `'try ${i + 1}: ' + (${S}.state.cleared ? 'CLEARED' : 'down') + ' (men down ' + (${S}.live ? ${S}.live.run.st.men.filter((h) => !h.alive).length + ' of ' + ${S}.live.run.st.men.length : '?') + ') in ' + (G.time - window.__t0).toFixed(0) + ' s; warns ' + window.__h.warns.slice(-3).join(' / ') + '; fails ' + window.__h.fails.slice(-1).join('') + '; line: ' + document.getElementById('hud').innerText.replace(/\\s+/g, ' ').slice(0, 120)` },
     { wait: 4000 },
     { eval: `'after: scene ' + G.scenes.beat + ' at ' + N.controller.pos.x.toFixed(0) + ',' + N.controller.pos.z.toFixed(0) + ' inside ' + (G.city.places.inside && G.city.places.inside.id) + ' hp ' + Math.round(G.health.hp) + ' state ' + G.state` },
   );

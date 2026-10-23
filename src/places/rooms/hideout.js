@@ -56,13 +56,14 @@ function pierOffice(K, s, P, rng) {
   K.roomRect = { x0: sx0, x1: sx1, z0: sz0, z1 };
   // ---- the front office (floor 0)
   K.at(0);
-  K.room(x0, x1, zf, z1, { h: Hf, floor: 'boards', wall: 'plaster', look: { ambient: 0.5, haze: 0.4, room: 'o5_big' }, sides: { s: { holes: P.doorHoles(s, 's') }, n: { holes: [{ a: 3.0, b: 4.0, top: FLOOR + 2.05 }] } } });
+  K.room(x0, x1, zf, z1, { h: Hf, floor: 'boards', wall: 'plaster', look: { ambient: 0.5, haze: 0.4, room: 'o5_big' }, sides: { s: { holes: P.doorHoles(s, 's') }, n: { holes: [{ a: 2.6, b: 4.4, top: FLOOR + 2.3 }] } } });
   counter(K, x0, 1.8, -3.0, -2.4, { dir: 's', h: 1.05 });
   desk(K, -3.6, -2.0, -4.9, -4.1); chair(K, -2.8, -4.4 + 0.6, 0);
   shelves(K, -4.4, -2.0, x0, { dir: 'e', h: 1.6, n: 3, depth: 0.45, fill: 'linen', rng });
   label(K, 'HARBOR SHIPPING CO.', -1.4, FLOOR + 2.4, zf, { w: 2.4, h: 0.32, dir: 's', dark: true });
   K.lamp(-1.0, FLOOR + 2.3, -2.4, { kind: 'pendant', power: 0.7, ceilY: FLOOR + Hf });
-  // (the way through to the store is an open doorway: its men come through it - a leaf there kept them in)
+  // (the way through to the store is a wide opening: its men come through it - a leaf, then a door's
+  // width, kept the last of them in the store for minutes)
   // ---- the store behind it (floor 0, high)
   const Hs = 6.2;
   K.room(sx0, sx1, sz0, zf - 0.24, { h: Hs, floor: 'concrete', wall: 'concrete', ceil: 'dark', look: { ambient: 0.4, haze: 0.5, room: 'o5_big' }, sides: { s: false, w: { holes: P.doorHoles(s, 'w') } } });
@@ -99,9 +100,13 @@ function pierOffice(K, s, P, rng) {
   K.safeAt = { x: x0 + 0.6, z: zf + 0.7, yaw: Math.PI / 2, y: up, lvl: 1 };
   K.at(null);
   // the men: two in the front office, two in the store (one upstairs would stand on the office's floor)
+  // ([O5] after the critic: three - a Tommy gunner in the store was the last man, pinned from his
+  // range and never came: two minutes of nobody)
   K.men = [
     { kind: 'pistol', x: -2.6, z: -4.0 }, { kind: 'pistol', x: 2.8, z: -1.6 },
-    { kind: 'pistol', x: -6.0, z: -8.6 }, { kind: 'tommy', x: 4.0, z: -13.0 },
+    // (the third at the back of the front office: a man put in the store never found his way out to
+    // me - the men's grid does not take the opening under the landing - and the fight stalled)
+    { kind: 'pistol', x: 0.4, z: -4.7 },
   ];
   K.area = { x0: sx0, x1: sx1, z0: sz0, z1 };
 }
@@ -121,10 +126,14 @@ function warehouse(K, s, P, rng) {
   }
   for (let z = -4; z > z0 + 2; z -= 7) K.lamp(0, FLOOR + H - 1.4, z, { kind: 'cage', power: 0.9, ceilY: FLOOR + H });
   // (cover by the door: a man who comes in has a crate to get down behind - one each side and
-  // a low row of goods a step in front of the door itself, under the eye: crouched behind it
+  // a row of goods a step in front of the door itself, chest high (my belly behind it from their eyes): crouched behind it
   // I am out of their sight, risen I shoot over it)
   for (const [cx, cz] of [[-2.4, -3.4], [2.6, -3.9]]) { crates(K, cx, cz, { n: 1, s: 1.15, rng }); K.cols.at(-1).tag = 'crates'; }
-  for (const cx of [-0.48, 0.48]) { crates(K, cx, -3.0, { n: 1, s: 0.95, rng }); K.cols.at(-1).tag = 'crates'; }
+  for (const [cx, h] of [[-0.56, 1.2], [0.56, 1.14]]) {
+    K.box('wood', cx - 0.5, cx + 0.5, FLOOR, FLOOR + h, -3.3, -2.4, 1);
+    K.box('black', cx - 0.51, cx + 0.51, FLOOR + h * 0.46, FLOOR + h * 0.5, -3.31, -2.39, 1);
+    K.solid(cx - 0.5, cx + 0.5, -3.3, -2.4); K.cols.at(-1).tag = 'crates';
+  }
   // the office in the far corner: its walls, its door, its desk, the safe
   const ox0 = x1 - 5.6, oz1 = z0 + 5.0;
   K.wall('x', oz1 + 0.12, ox0, x1, FLOOR, FLOOR + 3.0, { key: 'plaster', holes: [{ a: ox0 + 0.8, b: ox0 + 1.8, top: FLOOR + 2.05 }] });
@@ -139,8 +148,10 @@ function warehouse(K, s, P, rng) {
   K.safeAt = { x: x1 - 0.6, z: z0 + 2.6, yaw: -Math.PI / 2, y: FLOOR, lvl: 0 };
   K.at(null);
   K.men = [
-    { kind: 'pistol', x: -4.0, z: -11.0 }, { kind: 'pistol', x: 4.5, z: -14.0 },
-    { kind: 'tommy', x: 7.5, z: -20.0 }, { kind: 'pistol', x: ox0 - 1.2, z: oz1 + 1.6 },
+    // (two at a revolver's range down the hall, a third by the office who comes to find me when they
+    // are down - a Tommy gunner as the last man pins from his range and never comes: a stand-off)
+    { kind: 'pistol', x: -3.2, z: -8.2 }, { kind: 'pistol', x: 3.6, z: -9.6 },
+    { kind: 'pistol', x: ox0 - 1.2, z: oz1 + 1.6 },
   ];
   K.area = { x0, x1, z0, z1 };
 }
@@ -161,11 +172,14 @@ function hideoutLife(K, s, P) {
     // (a first gunfight's numbers - GUNS.md's table - and O4's mercy a fall: their aim slower to
     // settle, their rounds lighter, the flank later; a fall wakes me outside the door: the city's beat)
     const mc = Math.min(3, s.state.falls || 0);
-    Kt.begin({ to: 'wake', area: box, maxFiring: 2, flankAfter: 10 + 3 * mc, settleK: 1.2 + 0.06 * mc, dmgK: 0.85 - 0.07 * mc, why: { open: 'Shot standing in the open.', moving: 'Shot in the open.', bare: 'Down in the open. Get behind the crates.' } });
+    Kt.begin({ to: 'wake', area: box, maxFiring: 1, flankAfter: 10 + 3 * mc, settleK: 1.6 + 0.2 * mc, dmgK: [0.8, 0.65, 0.5, 0.4][mc], why: { open: 'Shot standing in the open.', moving: 'Shot in the open.', bare: 'Down in the open. Get behind the crates.' } });
     for (const m of K.men) {
       const p = F.w(m.x, m.z), e = F.w(0, 0);
       // (a way of one step - where he stands - so he waits on start(): without a way a gunman is in the fight at once)
-      const h = Kt.spawn({ kind: m.kind, at: p, way: { steps: [{ x: p.x, z: p.z }] }, start: () => st.hostile, yaw: Math.atan2(e.x - p.x, e.z - p.z) });
+      // (the Tommy gun holds back until two of the others are down: one gun that sprays at a time,
+      // never all four at a man who has just come in)
+      const start = m.kind === 'tommy' ? () => st.hostile && st.men.filter((x) => !x.alive).length >= Math.min(2, st.men.length - 1) : () => st.hostile;
+      const h = Kt.spawn({ kind: m.kind, at: p, way: { steps: [{ x: p.x, z: p.z }] }, start, yaw: Math.atan2(e.x - p.x, e.z - p.z) });
       h._o5 = m;
       h.surface = P.figSurface(h, m.y ?? 0.3);
       st.men.push(h);

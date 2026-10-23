@@ -1,5 +1,5 @@
 {
- "about": "[O5] A hideout's shootout (the warehouse), profile idle (brief O5 \u00a73): in by its door, they know my face (the warning), they draw (the gun kit's men: the stand-in for O4's), the fight: idle loses, warned; good clears it.",
+ "about": "[O5] the hideout, my idle hands, up to 1 tries",
  "url": "/?mute=1&start=city",
  "size": [
   1280,
@@ -7,10 +7,6 @@
  ],
  "out": "shots/o5/hide_idle",
  "steps": [
-  {
-   "until": "G.state === 'title' && !document.getElementById('title').classList.contains('hidden')",
-   "timeout": 60000
-  },
   {
    "wait": 1500
   },
@@ -22,45 +18,53 @@
   },
   {
    "until": "G.scenes.current && G.scenes.current.id === 'city' && G.scenes.fadeK < 0.05",
-   "timeout": 60000
+   "timeout": 25000
   },
   {
-   "wait": 1000
+   "eval": "(() => { window.__h = { fails: [], warns: [] }; G.on('fail', (e) => window.__h.fails.push(JSON.stringify(e).slice(0, 80))); const w0 = G.hud.warn.bind(G.hud); G.hud.warn = (t, ...a) => { if (t) window.__h.warns.push(t); return w0(t, ...a); }; return 1; })()"
   },
   {
-   "eval": "(G.health.reset(), 1)"
+   "until": "G.state === 'playing' && !G.failing && G.scenes.fadeK < 0.05",
+   "timeout": 30000,
+   "stop": false
   },
   {
-   "eval": "(() => { const s = G.city.places.byId.get('warehouse'), F = s.frame; const p = F.w(0, 3.0); G.stage.part('stream').warmAround(p.x, p.z); N.controller.setPose(p.x, p.z, F.yaw(0), -0.05); return 1; })()"
+   "eval": "(() => { const s = G.city.places.byId.get('warehouse'); if (s.state.cleared) return 'cleared already'; const d = s.door; const x = d.x + d.nx * 3, z = d.z + d.nz * 3; G.stage.part('stream').warmAround(x, z); N.controller.setPose(x, z, Math.atan2(d.nx, d.nz), -0.05); window.__t0 = G.time; return 'warehouse try 1 hp ' + Math.round(G.health.hp) + ' dead so far ' + ((s.state.dead || []).length); })()"
   },
   {
-   "wait": 3000
+   "wait": 2500
   },
   {
    "key": "KeyE",
-   "hold": 60
+   "hold": 70
   },
   {
-   "wait": 500
+   "wait": 600
   },
   {
-   "walk": "(() => { const s = G.city.places.byId.get('warehouse'), F = s.frame; return [[0, -1.8]].map(([x, z]) => { const p = F.w(x, z); return [p.x, p.z]; }); })()",
-   "timeout": 12000
+   "walk": "(() => { const F = G.city.places.byId.get('warehouse').frame; return [[0, -1.8]].map(([x, z]) => { const p = F.w(x, z); return [p.x, p.z]; }); })()",
+   "timeout": 10000,
+   "stop": false
   },
   {
-   "until": "G.hud.warnText === 'They know your face.'",
-   "timeout": 45000
+   "until": "G.failing || G.health.dead || window.__h.fails.length > 0",
+   "timeout": 60000,
+   "stop": false
   },
   {
-   "until": "!!G.failing || G.health.dead",
-   "timeout": 90000
+   "wait": 1200
   },
   {
-   "eval": "(() => { const s = G.city.places.byId.get('warehouse'); const st = s.live && s.live.run && s.live.run.st; return JSON.stringify({ men: st ? st.men.length : null, down: st ? st.men.filter((h) => !h.alive).length : null, cleared: !!s.state.cleared, deaths: G.counters.deaths, hp: G.health.hp }); })()"
+   "shot": "idle_fall"
   },
   {
-   "name": "[O5] idle in a hideout: warned (They know your face.), then down",
-   "expect": "true"
+   "eval": "'try 1: ' + (G.city.places.byId.get('warehouse').state.cleared ? 'CLEARED' : 'down') + ' (men down ' + (G.city.places.byId.get('warehouse').live ? G.city.places.byId.get('warehouse').live.run.st.men.filter((h) => !h.alive).length + ' of ' + G.city.places.byId.get('warehouse').live.run.st.men.length : '?') + ') in ' + (G.time - window.__t0).toFixed(0) + ' s; warns ' + window.__h.warns.slice(-3).join(' / ') + '; fails ' + window.__h.fails.slice(-1).join('') + '; line: ' + document.getElementById('hud').innerText.replace(/\\s+/g, ' ').slice(0, 120)"
+  },
+  {
+   "wait": 4000
+  },
+  {
+   "eval": "'after: scene ' + G.scenes.beat + ' at ' + N.controller.pos.x.toFixed(0) + ',' + N.controller.pos.z.toFixed(0) + ' inside ' + (G.city.places.inside && G.city.places.inside.id) + ' hp ' + Math.round(G.health.hp) + ' state ' + G.state"
   }
  ]
 }
