@@ -460,7 +460,7 @@ export class People {
     else if (rec.kind === 'shot') this.alarm('shot', at, 45, { skip: victim });
     else if (rec.kind === 'punch' || rec.kind === 'assault') this.alarm('fight', at, 16, { skip: victim });
     else if (rec.kind === 'death' || rec.kind === 'cophurt') { this.alarm('shot', at, 30, { skip: victim }); this.later(9, () => this.alarm('body', at, 40)); }
-    else if (rec.kind === 'hijack' || rec.kind === 'smash') this.alarm('fight', at, 12, { skip: victim });
+    else if (rec.kind === 'hijack' || rec.kind === 'smash' || rec.kind === 'vandal') this.alarm('fight', at, 12, { skip: victim });   // [O1c] vandal
     else if (rec.kind === 'wreck') this.later(5, () => this.alarm('wreck', at, 40));
     else if (rec.kind === 'body') this.later(6, () => this.alarm('body', at, 40));
     if (rec.by !== 'player' || !rec.level) return;

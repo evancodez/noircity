@@ -364,8 +364,6 @@ function mendWalk(C, pnodes, pedges, pedge, streetAt) {
           const ua = Math.max(0.2, g.u0 - 0.7), ub = Math.min(e.len - 0.2, g.u1 + 0.7);
           const p1 = at(ua, v), p2 = at(ub, v), last = way[way.length - 1];
           const lastU = (last[0] - A.x) * ux + (last[1] - A.z) * uz;
-          const D = globalThis.__mendDebug && globalThis.__mendDebug(A, B);
-          if (D) console.log('  side', side, 'v', v.toFixed(2), 'u', ua.toFixed(1), ub.toFixed(1), 'lastU', lastU.toFixed(1), 'walk', walkable(p1[0], p1[1]), walkable(p2[0], p2[1]));
           if (ua < lastU - 0.1 || Math.abs(v) > 3.5) break;
           if (!walkable(p1[0], p1[1]) || !walkable(p2[0], p2[1])) { extra += 0.25; continue; }   // (over the kerb: a little further)
           const pts = [];

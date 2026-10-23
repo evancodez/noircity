@@ -1,0 +1,23 @@
+{
+ "about": "[O1c] The street answers a fist, by the pad alone (?padfake=1, the rulebook's mapping: R2 the jab on foot, circle held + R2 a kick, the left stick W): a dustbin over, a lamp post rings and hurts the hand, crates kicked to planks, shop glass cracked then gone; 0 key or mouse events. node tools/play.mjs tools/plays/o1c_fist_pad.json",
+ "url": "/?mute=1&start=city&padfake=1",
+ "input": "pad",
+ "size": [1280, 800],
+ "out": "shots/o1c/fistpad",
+ "steps": [
+  { "until": "G.state === 'title' && N.hud.titleShown", "timeout": 40000 },
+  { "wait": 1500 },
+  { "pad": { "b": ["x"], "secs": 0.12 }, "label": "the first press wakes the pad" },
+  { "wait": 400 },
+  { "pad": { "b": ["x"], "secs": 0.12 } },
+  { "until": "G.scenes.current && G.scenes.current.id === 'city' && !G.scenes.fadeK", "timeout": 45000 },
+  { "wait": 800 },
+  { "eval": "(G.save.flags.taught = Object.assign(G.save.flags.taught || {}, { city_in: true, city_drive: true, city_map: true }), 1)" },
+  { "drive": "tools/lib/o1c_fist.mjs", "targets": [
+    { "name": "a dustbin", "find": "__T('bin')", "expect": "over" },
+    { "name": "a lamp post", "find": "__T('lamp')", "expect": "ring" },
+    { "name": "crates, kicked", "find": "__T('crates', 1)", "expect": "break", "kick": true },
+    { "name": "shop glass, twice", "find": "__face('glass')", "expect": "glass", "presses": 2, "between": 900 }
+   ], "check": "D.bad.length === 0", "label": "by the pad: each answers as its kind" }
+ ]
+}

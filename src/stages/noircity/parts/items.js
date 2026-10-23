@@ -160,7 +160,20 @@ export default {
       G.on('shot', () => { if (G.stage !== stage) return; const last = N.lines[N.lines.length - 1]; if (last && G.time - last.t < 45) return; N.say(`SHOTS FIRED ON ${streetName(G.eye.x, G.eye.z)}`, 1, { x: G.eye.x, z: G.eye.z }); });
       G.on('smash', (e) => { if (!e || !e.pos || e.by !== 'car' || G.stage !== stage) return; const last = N.lines[N.lines.length - 1]; if (last && G.time - last.t < 30) return; N.say(`CAR RUNS WILD ON ${streetName(e.pos.x, e.pos.z)}`, 1, { x: e.pos.x, z: e.pos.z }); });
       G.on('city:in', (e) => api.glovebox(e && e.car));
+      // [O1c] what lies by a thing that goes over (a car, a round, a fist, a blast) is knocked loose
+      G.on('smash', (e) => {
+        if (!e || !e.pos || !e.item || G.stage !== stage || e.how === 'hit') return;
+        const it0 = e.item, d = new THREE.Vector3(it0.x - G.eye.x, 0, it0.z - G.eye.z);
+        if (d.lengthSq() < 1e-6) d.set(1, 0, 0);
+        d.normalize();
+        for (const it of nearList(it0.x, it0.z, 1.6)) if (it.mesh && !it.taken && !it.flying && !it.hop && it.kind !== 'paper' && Math.hypot(it.x - it0.x, it.z - it0.z) < 1.4) api.knock(it, d);
+      });
     };
+    // [O1c] a thing knocked off where it lay (a fist, a foot, a thing going over beside it): a hop
+    // along the way it was hit, a bounce where it lands; a bottle breaks there (it is back
+    // after RESPAWN where nobody looks, as a taken one); what is found once a save stays to be found
+    const hops = [];
+    const _q = new THREE.Vector3();
     const api = {
       group, list, shown, uses, glintAt: null, target: null, taken: [], used: [], pockets: () => (pocketEl && pocketEl.style.opacity === '1' ? pocketEl.textContent : null), paper: () => (paperEl && paperEl.style.opacity === '1' ? paperEl.querySelector('.hl').textContent : null),
       // a thing put down at a place (a gun where a man fell): { kind, gun?, x, z }
@@ -169,6 +182,32 @@ export default {
         const it = { kind, x, y: y + 0.005, z, yaw: vhash(x, z, 9) * 6.28, n: list.length, taken: false, t: 0, mesh: null, dropped: true, born: stage.game ? stage.game.time : 0, ...opts };
         list.push(it); index(it);
         return it;
+      },
+      // [O1c] the thing lying in front of my feet within reach (the fist's: a bottle on a stoop)
+      ahead(e, fx, fz, reach) {
+        let best = null, bs = Infinity;
+        for (const it of shown) {
+          if (it.taken || it.flying || it.hop || it.kind === 'paper') continue;
+          const dx = it.x - e.x, dz = it.z - e.z, fwd = dx * fx + dz * fz, lat = Math.abs(dx * fz - dz * fx);
+          if (fwd < 0.2 || fwd > reach || lat > 0.35 + fwd * 0.25) continue;
+          const sc = lat + fwd * 0.2;
+          if (sc < bs) { bs = sc; best = it; }
+        }
+        return best;
+      },
+      knock(it, dir) {
+        if (!it || !it.mesh || it.taken || it.hop) return null;
+        const G = stage.game, r = vhash(it.x + G.time, it.z, 13);
+        const go = it.kind === 'bottle' ? 1.1 + r * 0.6 : 0.6 + r * 0.5, side = (r - 0.5) * 0.9;
+        const to = new THREE.Vector3(it.x + (dir.x - dir.z * side) * go, 0, it.z + (dir.z + dir.x * side) * go);
+        // (not into a wall: a short hop, then)
+        const col = stage.colliders;
+        if (col && col.resolve) { const v = to.clone(); col.resolve(v, 0.1, null); if (v.distanceTo(to) > 0.05) to.lerpVectors(new THREE.Vector3(it.x, 0, it.z), v, 0.6); }
+        to.y = (stage.surfaceY ? stage.surfaceY(to.x, to.z) : 0.15) + 0.005;
+        it.hop = { k: 0, from: it.mesh.position.clone(), to, spin: (r - 0.5) * 9, breaks: it.kind === 'bottle' };
+        hops.push(it);
+        G.sfx.play(it.kind === 'bottle' ? 'f_jab' : 'tail_click', it.mesh.position.clone(), { k: 0.3 }, { ref: 2 });
+        return it.kind === 'bottle' ? 'broken' : 'knocked';
       },
       // a car taken: what is in its glovebox (once a car): a police car's box of rounds, a roll of cash in one car in three
       glovebox(car) {
@@ -195,7 +234,7 @@ export default {
           it.mesh = meshOf(it); group.add(it.mesh); shown.add(it);
         }
         for (const it of [...shown]) {
-          if (it.flying) continue;
+          if (it.flying || it.hop) continue;
           if (it.taken || Math.hypot(it.x - p.x, it.z - p.z) > HIDE) { group.remove(it.mesh); it.mesh = null; unGlint(it); shown.delete(it); }
         }
         // the taken come back where nobody looks; the dropped go when long left
@@ -217,6 +256,29 @@ export default {
           m.position.lerpVectors(f.from, _p, Math.min(1, f.k));
           m.scale.setScalar(Math.max(0.01, 1 - f.k * 0.85));
           if (f.k >= 1) { f.it.flying = false; group.remove(m); f.it.mesh = null; unGlint(f.it); shown.delete(f.it); flying.splice(i, 1); }
+        }
+        // [O1c] the hops (a thing knocked off where it lay)
+        for (let i = hops.length - 1; i >= 0; i--) {
+          const it = hops[i], h = it.hop, m = it.mesh;
+          if (!m) { it.hop = null; hops.splice(i, 1); continue; }
+          h.k = Math.min(1, h.k + dt / 0.42);
+          m.position.lerpVectors(h.from, h.to, h.k);
+          m.position.y += Math.sin(h.k * Math.PI) * 0.32;
+          m.rotation.y += h.spin * dt;
+          if (h.k < 1) continue;
+          hops.splice(i, 1); it.hop = null;
+          // (re-filed where it lies now)
+          const k0 = bk(it.x, it.z), L0 = buckets.get(k0); if (L0) { const j = L0.indexOf(it); if (j >= 0) L0.splice(j, 1); }
+          if (!it.sk && !it.dropped) it.sk = spotKey(it);   // (found once a save by where it was laid)
+          it.x = h.to.x; it.y = h.to.y; it.z = h.to.z; index(it);
+          if (h.breaks) {
+            // (a bottle breaks where it lands: the glass, the bits; gone until it is back unseen)
+            G.sfx.play('bottleSmash', _q.copy(h.to), { k: 0.55 }, { ref: 3 });
+            if (stage.smash && stage.smash.glassBits) stage.smash.glassBits(h.to.clone().setY(h.to.y + 0.1), new THREE.Vector3(0, 1, 0), 10);
+            it.taken = true; it.t = 0;
+            group.remove(m); it.mesh = null; unGlint(it); shown.delete(it);
+            G.emit('item:broken', { kind: it.kind, item: it });
+          } else G.sfx.play('tail_click', _q.copy(h.to), { k: 0.25 }, { ref: 2 });
         }
         if (paperT > 0) { paperT -= dt; if (paperT <= 0 && paperEl) paperEl.style.opacity = '0'; }
         if (pocketT > 0) { pocketT -= dt; if (pocketT <= 0 && pocketEl) pocketEl.style.opacity = '0'; }
@@ -252,7 +314,7 @@ export default {
         };
         let best = null, bs = Infinity;
         if (ok) for (const it of shown) {
-          if (it.taken || it.flying) continue;
+          if (it.taken || it.flying || it.hop) continue;
           const sc = lookAt(it.x, it.y + 0.05, it.z, it.kind === 'paper' ? 2.4 : REACH);
           if (sc >= 0 && sc < bs) { bs = sc; best = it; }
         }
@@ -296,7 +358,7 @@ export default {
           if (best.kind === 'paper') showPaper(G, newsOf(G).latest());
           else {
             best.taken = true; best.t = 0; best.flying = true;
-            if (ONCE[best.kind] && !best.dropped) { best.gone = true; G.save.flags.o1bTaken[spotKey(best)] = 1; }
+            if (ONCE[best.kind] && !best.dropped) { best.gone = true; G.save.flags.o1bTaken[best.sk || spotKey(best)] = 1; }
             if (best.glint) best.glint.visible = false;
             flying.push({ it: best, k: 0, from: best.mesh.position.clone() });
             if (said) hud.message(said, 3.0);
