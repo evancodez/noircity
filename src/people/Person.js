@@ -73,6 +73,9 @@ export class Person {
     this.speed = 0; this.blocked = 0; this.lastPos = { x, z }; this.stuckT = 0; this.stuckN = 0;
     this.seenBy = 0; this.outT = 0; this.fledT = null; this.victimOf = null; this.upAfter = null; this.gunDropped = false;
     this.c.down = false; this.c.hp = 100; this.c.state = 'idle'; this.c.base = 'idle'; this.c.clipH = null; this.c._koFall = null; this.gaitNow = null;
+    // (a figure out of a fist fight comes back clean: no guard overlay, its clock at 1)
+    this.c.noGlance = false; this.armed = false;
+    if (F.anim) { try { if (F.anim.setOverlay) F.anim.setOverlay(null, 0); if (F.anim.setTimeScale) F.anim.setTimeScale(1); } catch (e) { /* */ } }
     if (F.collider && this.stage.colliders.circles.indexOf(F.collider) < 0) { this.stage.colliders.circles.push(F.collider); if (this.stage.colliders.moving) this.stage.colliders.moving.push(F.collider); }
     if (F.collider) { F.collider.x = x; F.collider.z = z; F.collider.person = this; }
     if (this.umb) { this.umb.hold(F); this.umb.group.visible = true; }
@@ -260,10 +263,23 @@ export class Person {
     const dy = wrap(want - F.yaw);
     F.yaw += Math.sign(dy) * Math.min(Math.abs(dy), turn * dt);
     // (stuck - walking and not getting anywhere for 3 s: the next point, or give up the way)
-    if (F.speed > 0.5) {
+    // [O3] after the critic: by the way made toward the next point each second, not by
+    // the feet's own movement (a man walking into a wall corner, pushed back out of it
+    // each step, moved every step and went nowhere for a minute)
+    if (F.speed > 0.5 && this.path && this.pi < this.path.length) {
+      this.progT = (this.progT || 0) + dt;
+      if (this.progT >= 1) {
+        const [tx, tz] = this.path[this.pi];
+        const dNow = Math.hypot(tx - this.pos.x, tz - this.pos.z);
+        const made = this.progPi === this.pi && this.progD != null ? this.progD - dNow : F.speed;
+        this.stuckT = made < F.speed * this.progT * 0.25 ? this.stuckT + this.progT : Math.max(0, this.stuckT - this.progT);
+        this.progD = dNow; this.progPi = this.pi; this.progT = 0;
+      }
+      if (this.stuckT > 3) { this.stuckT = 0; this.progD = null; this.stuckN = (this.stuckN || 0) + 1; if (this.path && this.pi < this.path.length - 1) this.pi++; else { this.path = null; this.setGait('idle'); } }
+    } else if (F.speed > 0.5) {
       const moved = Math.hypot(this.pos.x - this.lastPos.x, this.pos.z - this.lastPos.z);
       this.stuckT = moved < F.speed * dt * 0.25 ? this.stuckT + dt : Math.max(0, this.stuckT - dt);
-      if (this.stuckT > 3) { this.stuckT = 0; this.stuckN = (this.stuckN || 0) + 1; if (this.path && this.pi < this.path.length - 1) this.pi++; else { this.path = null; this.setGait('idle'); } }
+      if (this.stuckT > 3) { this.stuckT = 0; this.stuckN = (this.stuckN || 0) + 1; this.setGait('idle'); }
     }
     this.lastPos.x = this.pos.x; this.lastPos.z = this.pos.z;
   }

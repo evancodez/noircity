@@ -1,9 +1,7 @@
 import * as THREE from 'three';
 import { Pilot } from '../vehicles/pilot.js';
 import { samplePath } from '../stages/city/route.js';
-import { accentMaterial, accent } from '../render/accents.js';
-import { glowTexture } from '../vehicles/models.js';
-import { LAYER } from '../render/layers.js';
+import { accentMaterial } from '../render/accents.js';
 
 // [O3] The patrol car, a STAND-IN until lane O2 merges (its police car's
 // model, its lamp and siren, its hunting pilot replace this file: the seam is
@@ -175,21 +173,10 @@ export class PatrolCar {
     }
     // the lamp turns (a beacon: bright, dim)
     const pulse = Math.max(0, Math.sin(this.t * 7));
-    if (v.policeLamp) v.policeLamp.scale.setScalar(this.mode === 'block' || this.siren || this.mode === 'search' ? 0.85 + 0.3 * pulse : 0.6);
-    // [O3] after the critic (m3): a roadblock's beacons read from far off - a red
-    // glow round each dome, about the same few pixels wide at any distance (the
-    // colour kept small: under 2 % of a frame at arm's length)
-    if (this.mode === 'block' && v.policeLamp) {
-      if (!this.halo) {
-        const m = new THREE.SpriteMaterial({ map: glowTexture(), color: accent('blood', { gain: 2.2 }), blending: THREE.AdditiveBlending, depthWrite: false, transparent: true, fog: false });
-        const h = this.halo = new THREE.Sprite(m);
-        h.layers.set(LAYER.FX_REFL); h.renderOrder = 6; h.userData.noRay = true;
-        h.position.copy(v.policeLamp.position).y += 0.08;
-        v.body.add(h);
-      }
-      const cam = this.G.camera, d = cam ? cam.position.distanceTo(v.pos) : 30;
-      this.halo.scale.setScalar(Math.max(0.3, Math.min(1.5, d * 0.013)) * (0.75 + 0.4 * pulse));
-    }
+    // [O3] after the critic (m3): a roadblock's beacons are the big ones (twice the
+    // patrol dome, flashing) - two red lamps read from 80 m under the street's lamp
+    const big = this.mode === 'block' ? 1.9 : 1;
+    if (v.policeLamp) v.policeLamp.scale.setScalar(big * (this.mode === 'block' || this.siren || this.mode === 'search' ? 0.85 + 0.3 * pulse : 0.6));
     // stuck: wanting to go and not going (the pilot backs off by itself; this is the give-up)
     const sp = Math.abs(v.speed);
     if (this.pilot && v.driver === this.pilot && this.pilot.want > 3 && sp < 0.6) this.stuckT += dt; else this.stuckT = Math.max(0, this.stuckT - dt);
@@ -197,7 +184,6 @@ export class PatrolCar {
   }
 
   dispose() {
-    if (this.halo) { if (this.halo.parent) this.halo.parent.remove(this.halo); this.halo.material.dispose(); this.halo = null; }
     const V = this.G.vehicles;
     if (V.list.includes(this.v)) V.remove(this.v);
     this.pilot = null;

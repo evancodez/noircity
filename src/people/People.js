@@ -138,6 +138,16 @@ export class People {
       if (k) this.crime.emit(k, e.at, e.by || 'player');
     };
     G.on('crime', this._o4crime);
+    // lane O6's destruction set ('smash' { kind, pos, by }): what is someone's (a shop's
+    // glass, a stall, a newsstand) broken by my car or my fist is a crime ('smash', 1)
+    this._smash = (e) => {
+      if (!e || !e.pos || !this.G.city || this.G.stage !== this.stage) return;
+      if (!(e.kind === 'glass' || e.kind === 'stall' || e.kind === 'newsstand')) return;
+      const R = this.G.city;
+      const mine = e.by === 'fist' || (e.by === 'car' && R.inCar && R.car && Math.hypot(R.car.pos.x - e.pos.x, R.car.pos.z - e.pos.z) < 7);
+      if (mine) this.crime.emit('smash', e.pos, 'player');
+    };
+    G.on('smash', this._smash);
   }
   shadowFigs() { const out = []; for (const p of this.list) if (p.object.visible && p.pos.distanceToSquared(this.G.eye) < 26 * 26) out.push(p.fig); return out; }
 
@@ -145,6 +155,7 @@ export class People {
     this.G.off('shot', this._shot);
     this.G.off('city:in', this._in);
     this.G.off('crime', this._o4crime);
+    this.G.off('smash', this._smash);
     this.police.dispose();
     this.gangs.dispose();
     for (const p of this.list) p.dispose();
@@ -266,6 +277,14 @@ export class People {
   release(p) {
     const i = this.list.indexOf(p);
     if (i >= 0) this.list.splice(i, 1);
+    // [O3] after the critic (M1): a witness let go out of my sight on his way to
+    // a box still gets there (his walk out of sight is not seen: the call comes
+    // when he would have made it) - a report is never lost to the crowd's cap
+    const rec = p.mode === 'report' && p.reportOf;
+    if (rec && !rec.reported && p.reportTo && p.reportTo.box) {
+      const b = p.reportTo.box, left = Math.hypot(b.x - p.pos.x, b.z - p.pos.z) / 3 + 2.6;
+      this.later(left, () => { if (rec.reported) return; rec.reported = true; this.stats.reports++; this.police.report(rec, null, 'box'); });
+    }
     if (p.onRelease) { const f = p.onRelease; p.onRelease = null; f(p); }
     p.hide();
     this.stats.released++;
@@ -455,8 +474,11 @@ export class People {
   // the witness's walk: he looks at me, then goes for the box (or a cop in sight)
   startReport(p, rec) {
     const box = this.callBoxNear(p.pos.x, p.pos.z);
-    const cop = this.police.copInSight(p.pos, 60);
-    const toCop = cop && (!box || Math.hypot(cop.pos.x - p.pos.x, cop.pos.z - p.pos.z) < Math.hypot(box.x - p.pos.x, box.z - p.pos.z));
+    // [O3] after the critic (M1): a cop in sight, or one on his beat within earshot
+    // (100 m: he shouts for him, and the cop comes to meet him) when he is nearer
+    // than the box - the answer within seconds where the beat walks
+    const cop = this.police.copInSight(p.pos, 60) || this.police.copNear(p.pos, 100);
+    const toCop = cop && (!box || Math.hypot(cop.pos.x - p.pos.x, cop.pos.z - p.pos.z) < Math.hypot(box.x - p.pos.x, box.z - p.pos.z) * 1.4);
     if (!box && !toCop) return;
     rec.reporters++;
     p.mode = 'report'; p.t = 0; p.reportOf = rec; p.reportTo = toCop ? { cop } : { box }; p.phase = 'look';
@@ -481,29 +503,46 @@ export class People {
           pts.push([fx, fz]);
           // (a jog: he is seen going, and a man who runs after him catches him)
           p.goTo(pts, { gait: p.reportGait || 'jog', then: (q) => { q.phase = 'call'; q.t = 0; q.face(to.box.x, to.box.z); q.say('o3_callbox'); } });
-        } else p.goTo({ x: to.cop.pos.x, z: to.cop.pos.z }, { gait: p.reportGait || 'jog' });
+        } else {
+          // (he shouts for him as he goes - the cop turns and comes to meet him)
+          p.say('o3_hey', { f0: 150 + Math.random() * 40 });
+          to.cop.summonedBy = p; to.cop.summonedT = this.G.time;
+          p.goTo({ x: to.cop.pos.x, z: to.cop.pos.z }, { gait: p.reportGait || 'jog' });
+          p.copRouteT = 0;
+        }
         p.mode = 'report';
       }
       return;
     }
-    // caught: I stand at his side - he gives it up (cowers, then walks off)
+    // caught: I come to his side - he gives it up (cowers, then walks off).
+    // [O3] after the critic: caught by a man who came after him (moving), not by
+    // one he passes as he goes (his way to the box can run by where I stand)
     const dE = Math.hypot(p.pos.x - E.x, p.pos.z - E.z);
-    if (dE < 1.9 && p.t > 1.2) {
+    const V = this.G.controller.vel, mine = Math.hypot(V.x, V.z);
+    if (mine > 1.0) p.chasedT = this.G.time;
+    if (dE < 1.9 && p.t > 1.2 && this.G.time - (p.chasedT ?? -9) < 0.6) {
       p.caughtT = (p.caughtT || 0) + dt;
       if (p.caughtT > 0.35) { this.stopReport(p, 'caught'); p.cower(E, 4); return; }
     } else p.caughtT = 0;
     if (p.phase === 'go' && to.cop) {
       const c = to.cop;
-      if (!c.standing) { this.stopReport(p, 'cop down'); return; }
-      p.path = [[c.pos.x, c.pos.z]]; p.pi = 0;
+      if (!c.standing || c.mode === 'fight') { this.stopReport(p, 'cop down'); return; }
+      // (straight to him where he can see him, by the pavements where he cannot)
+      p.copRouteT = (p.copRouteT || 0) - dt;
+      if (this.sees(p.pos, c.pos, 60)) { p.path = [[c.pos.x, c.pos.z]]; p.pi = 0; }
+      else if (p.copRouteT <= 0 || !p.path) { p.copRouteT = 2; const R = this.graph.pavementRoute(p.pos, c.pos); p.path = (R ? R.pts : []).concat([[c.pos.x, c.pos.z]]); p.pi = 0; }
+      p.gait = p.reportGait || 'jog';
       if (Math.hypot(c.pos.x - p.pos.x, c.pos.z - p.pos.z) < 2.6) { p.phase = 'call'; p.t = 0; p.stop(); p.face(c.pos.x, c.pos.z); }
     }
     if (p.phase === 'call') {
       p.setGait('idle');
       if (p.t > (to.cop ? 1.4 : 2.6)) {
+        if (to.cop) to.cop.summonedBy = null;
         this.stats.reports++;
         rec.reported = true;
         this.police.report(rec, p, to.cop ? 'cop' : 'box');
+        // (the cop he told is the one who comes: to the place, then after me)
+        if (to.cop && to.cop.standing && to.cop.job === 'beat') { to.cop.job = 'respond'; to.cop.mode = 'approach'; to.cop.t = 0; to.cop.path = null; to.cop.repath = 0; }
         this.stopReport(p, null);
         p.goTo(this.pavWalk(this.nearestP(p.pos.x, p.pos.z), 3), { gait: 'walk' });
       }
@@ -511,6 +550,7 @@ export class People {
     if (p.t > 70) this.stopReport(p, 'late');
   }
   stopReport(p, why) {
+    if (p.reportTo && p.reportTo.cop && p.reportTo.cop.summonedBy === p) p.reportTo.cop.summonedBy = null;
     if (why) { this.stats.stopped++; this.G.emit('witness:stopped', { who: p, why }); }
     p.mode = 'walk'; p.reportOf = null; p.reportTo = null; p.phase = null; p.t = 0;
   }
@@ -743,6 +783,18 @@ export class People {
         const dx = p.pos.x - v.pos.x, dz = p.pos.z - v.pos.z;
         const lx = dx * c - dz * s, lz = dx * s + dz * c;
         if (p.standing && Math.abs(lx) < hl + p.r * 0.6 && Math.abs(lz) < hw + p.r * 0.6) { this.hitByCar(p, v, sp); continue; }
+        // [O3] after the critic: a man lying in the road is solid to a car (not to feet):
+        // shoved out of its way to the side he lies on, the car jolted a little
+        if (!p.standing && Math.abs(lx) < hl + 0.3 && Math.abs(lz) < hw + 0.3) {
+          const sd = lz >= 0 ? 1 : -1, out = hw + 0.45 - Math.abs(lz);
+          // (local z is the car's right: world (-s, c)... the side he lies on, out of the box)
+          p.fig.pos.x += s * sd * out; p.fig.pos.z += c * sd * out;
+          this.stage.colliders.resolve(p.fig.pos, 0.3);
+          if (p.fig.object) { p.fig.object.position.x = p.fig.pos.x; p.fig.object.position.z = p.fig.pos.z; }
+          v.vel.multiplyScalar(0.97);
+          if (this.G.time - (p.shoveT ?? -9) > 0.6) { p.shoveT = this.G.time; if (this.G.sfx) this.G.sfx.play('c3_dent', p.pos.clone().setY(0.4), { k: Math.min(0.6, sp / 20) }, { ref: 3 }); }
+          continue;
+        }
         if (!p.standing || p.mode === 'dash' || (p.role !== 'walker' && p.role !== 'cop')) continue;
         // coming at him in the next second: the dash clear (the tail's rule)
         let tHit = null;

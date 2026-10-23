@@ -157,9 +157,10 @@ export class Police {
     if (!by) return false;
     this.event('heard', { kind: rec.kind, d: +bd.toFixed(0) });
     by.say('o3_whistle');
+    const h0 = this._heat;
     this.raise(rec.level, at, rec.kind + ':heard');
     // (heard, not seen: they know the place, not me - the search there, shown, until one of them sees me)
-    if (!this.seenNow) { this.state = 'search'; this.unseenT = HEAT.searchAfter; this.badges.set(this._heat, this.state); }
+    if (!h0 && !this.seenNow) { this.state = 'search'; this.unseenT = HEAT.searchAfter; this.badges.set(this._heat, this.state); }
     // (he is the one who comes: at a run to the place)
     if (by.job === 'beat') { by.job = 'respond'; by.mode = 'chase'; by.t = 0; by.path = null; by.repath = 0; }
     rec.heard = true;
@@ -218,6 +219,16 @@ export class Police {
   }
   dispose() { this.reset(); this.badges.dispose(); }
 
+  // [O3] the nearest cop on foot within r, seen or not (a witness shouts for him)
+  copNear(pos, r = 100) {
+    let best = null, bd = r;
+    for (const c of this.cops) {
+      if (!c.standing || c.armed || c.mode === 'fight' || (c.job !== 'beat' && c.job !== 'respond')) continue;
+      const d = Math.hypot(c.pos.x - pos.x, c.pos.z - pos.z);
+      if (d < bd) { bd = d; best = c; }
+    }
+    return best;
+  }
   copInSight(pos, r = 60) {
     let best = null, bd = r;
     for (const c of this.cops) {
@@ -608,6 +619,22 @@ export class Police {
     if (c.mode === 'fight' || c.job === 'hold') return;
     const inCar = !!(G.city && G.city.inCar);
     const d = Math.hypot(c.pos.x - E.x, c.pos.z - E.z);
+    // [O3] after the critic: a man wedged on his way (a lot's corner the pavement's
+    // line cuts) and out of my sight is let go - the beat gets another, the answer
+    // sends another (a responder wedged for a minute 35 m off was the police never coming)
+    if (c.stuckN >= 2 && c.job !== 'block' && c.job !== 'scene' && !P.inView(c.pos.x, c.pos.z)) { this.event('wedged', { job: c.job }); this.dropCop(c); return; }
+    if (c.job === 'beat' && c.summonedBy) {
+      // [O3] a man of the street shouting for him: he goes to meet him (hurrying), and hears him out
+      const w = c.summonedBy;
+      if (!w.standing || w.mode !== 'report' || this.G.time - c.summonedT > 60) { c.summonedBy = null; c.path = null; }
+      else {
+        const dw = Math.hypot(w.pos.x - c.pos.x, w.pos.z - c.pos.z);
+        c.repath = (c.repath || 0) - dt;
+        if (dw > 2.2) { if (c.repath <= 0 || !c.path) { c.repath = 1; c.path = P.sees(c.pos, w.pos, 60) ? [[w.pos.x, w.pos.z]] : (P.graph.pavementRoute(c.pos, w.pos) || { pts: [] }).pts.concat([[w.pos.x, w.pos.z]]); c.pi = 0; c.mode = 'walk'; } c.gait = 'hurry'; }
+        else { c.stop(); c.face(w.pos.x, w.pos.z); c.look(w.pos); }
+        return;
+      }
+    }
     if (c.job === 'beat') {
       // walking the beat; at a corner now and then a stop; he watches me if I am close
       if (!c.path) {
@@ -680,7 +707,8 @@ export class Police {
       // (straight at me where he can see me, by the pavements where he cannot)
       if (!c.path || !(c.repath > 0) || c.pi >= c.path.length) {
         c.repath = 0.6;
-        c.path = P.sees(c.pos, E, 60) ? [[E.x, E.z]] : (P.graph.pavementRoute(c.pos, E) || { pts: [[E.x, E.z]] }).pts.concat([[E.x, E.z]]);
+        // (a man who wedged once going straight takes the pavements' way)
+        c.path = P.sees(c.pos, E, 60) && !(c.stuckN > 0) ? [[E.x, E.z]] : (P.graph.pavementRoute(c.pos, E) || { pts: [[E.x, E.z]] }).pts.concat([[E.x, E.z]]);
         c.pi = 0;
       }
       c.repath -= dt;

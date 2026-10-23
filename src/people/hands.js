@@ -64,7 +64,7 @@ export class StandinHands {
     if (up !== !!G.vmWanted) G.setViewmodelVisible(up);
     // the keys, once a save (the kit's): on foot a few seconds, nothing else up;
     // [O3] after the critic (M2): the card says what is true - the draw only with a gun of mine
-    if (this.footT > 9 && !this.taught && !G.hud.kit.warnText && !G.hud.sayShown && !(G.police && G.police.heat)) {
+    if (this.footT > 5 && !this.taught && !G.hud.kit.warnText && !G.hud.sayShown && !(G.police && G.police.heat)) {
       this.taught = true;
       if (this.hasGun) G.hud.teach('o3_hands', '[LMB] punch   [RMB] draw', { until: ['Mouse0', 'Mouse2'], secs: 4 });
       else G.hud.teach('o3_punch', '[LMB] punch', { until: ['Mouse0'], secs: 3.4 });
