@@ -46,9 +46,11 @@ export function swimStep(ctx, R) {
     if (G.sfx) G.sfx.play('b9splash', _v.set(ctl.pos.x, WATER_Y, ctl.pos.z), { k: 1 });
     const st = ctx.stage.part('street');
     if (st && st.addImpact) st.addImpact(ctx.stage, ctl.pos.x, ctl.pos.z, 1);
-    // ([O1b] after the critic, m3: the card went the frame it came - the W that
-    // walked him off the pier answered it; it stays until he has swum on 2 s in)
-    hud.teach('city_swim', '[W] swim to the steps', { until: () => !S.on || (G.time - S.t0 > 2.5 && G.held('KeyW')) });
+    // ([O1b] after the critic, m3: the card went the frame it came - the W held
+    // that walked him off the pier answered it; now a fresh W a second in, or
+    // out of the water, answers it, else it stays 6 s: read while he swims)
+    const t0 = G.time;
+    hud.teach('city_swim', '[W] swim to the steps', { secs: 6, until: () => (G.time - t0 > 1 && G.pressed('KeyW')) || ctl.mode === 'walk' });
     G.emit('city:swim', { x: ctl.pos.x, z: ctl.pos.z });
     return true;
   }
