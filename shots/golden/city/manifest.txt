@@ -8,3 +8,5 @@ city_gasworks|scene=city&beat=roam&t=2&at=gasworks&pose=-290,-120,0.9,0.2
 city_park|scene=city&beat=roam&t=2&at=park&pose=-120,-428,0.3,0.05
 city_straight|scene=city&beat=roam&t=2&at=yards&pose=-446,380,0,0.04
 city_clock|scene=city&beat=roam&t=2&at=clock&pose=-28,-118,-2.32,0.95
+o5_bar|scene=city&beat=roam&t=2&place=bar1
+o5_gym|scene=city&beat=roam&t=2&place=gym
