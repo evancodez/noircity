@@ -122,10 +122,11 @@ async function stagePunch({ js, sleep }, { copD = 14, cop = true, civ = null, at
   await waitFor(js, '!G.failing && G.state === "playing"', 20000);
   await sleep(300);
   if (await js(OUT_OF_STATION)) await sleep(600);
+  // (a pose given: there first, a moment for the eye to follow, then the people round it)
+  if (at) { await js(`(G.controller.setPose(${at[0]}, ${at[1]}, ${at[2]}, -0.1), 1)`); await sleep(500); }
   const r = await js(`(() => {
     const P = G.people, C = G.controller;
     P.dbgClear();
-    ${at ? `C.setPose(${at[0]}, ${at[1]}, ${at[2]}, -0.1);` : ''}
     const E = G.eye, yaw = C.yaw, fx = -Math.sin(yaw), fz = -Math.cos(yaw);
     const v = P.dbgWalker(E.x + fx * 1.45, E.z + fz * 1.45, Math.atan2(-fx, -fz));
     window.__o3v = v;
@@ -143,7 +144,9 @@ async function punch(api) {
   const n = opts.tries || 1;
   for (let k = 0; k < n; k++) {
     const T = { k };
-    const st0 = await stagePunch(api, { copD: opts.copD ?? 14, at: opts.at || null });
+    // (after the station: back on Grand Ave's pavement, looking along it - the station's wake faces a building)
+    const at = opts.at || (k ? await js(`(() => { const a = G.stage.anchor('city.start.grand'); return [a.pos.x, a.pos.z, a.yaw]; })()`) : null);
+    const st0 = await stagePunch(api, { copD: opts.copD ?? 14, at });
     log(`punch ${k}: staged ${JSON.stringify(st0)}`);
     // the two jabs (LMB, a third of a second apart)
     const t0 = Date.now();
