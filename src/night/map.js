@@ -31,6 +31,9 @@ export class NightMap {
       #pausecard.ncity .nmapp { display: block; }
       #pausecard .nmapp canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
       #pausecard .ncol { display: flex; flex-direction: column; align-items: center; justify-content: center; }
+      #pausecard.ncity .ncol { max-width: 44vw; }
+      #pausecard.ncity .ncol .keys { font-size: 10px; letter-spacing: 0.16em; }
+      #pausecard.ncity .ncol .set { flex-wrap: wrap; justify-content: center; gap: 10px 26px; }
       #pausecard.mview { cursor: none; background: rgba(4,4,4,0.72); }
       #pausecard.mview .nmapp { width: min(86vh, 76vw); height: min(86vh, 76vw); }
       #pausecard.mview .ncol { display: none; }

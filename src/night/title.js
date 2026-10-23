@@ -11,7 +11,7 @@ import { compileAll } from '../stages/noircity/compile.js';
 // save: an old story's save is dropped quietly, Save.js) low over the wet
 // street. BEGIN drops into the city at that kerb, which is why it is the
 // picture: the title is the first frame of the night.
-export const TITLE_CAM = { back: 3.4, side: -0.9, eye: 1.62, pitch: 0.075, sway: 0.55, swing: 0.05, period: 64 };
+export const TITLE_CAM = { back: 4.5, side: 0.6, turn: 0.12, eye: 1.62, pitch: 0.075, sway: 0.55, swing: 0.05, period: 64 };
 
 export class Title {
   constructor(night) {
@@ -25,9 +25,9 @@ export class Title {
     const stage = G.enterStage('noircity');
     const a = stage.anchor(`city.start.${START_DEFAULT}`);
     const S = STARTS[START_DEFAULT];
-    // (look development: ?titlecam=back,side,pitch)
+    // (look development: ?titlecam=back,side,pitch,turn)
     const q = typeof location !== 'undefined' ? new URLSearchParams(location.search).get('titlecam') : null;
-    if (q) { const [b, s, p] = q.split(',').map(Number); if (Number.isFinite(b)) TITLE_CAM.back = b; if (Number.isFinite(s)) TITLE_CAM.side = s; if (Number.isFinite(p)) TITLE_CAM.pitch = p; }
+    if (q) { const [b, s, p, y] = q.split(',').map(Number); if (Number.isFinite(b)) TITLE_CAM.back = b; if (Number.isFinite(s)) TITLE_CAM.side = s; if (Number.isFinite(p)) TITLE_CAM.pitch = p; if (Number.isFinite(y)) TITLE_CAM.turn = y; }
     stage.part('stream').warmAround(S.car.x, S.car.z);
     // the coupe at the kerb (BEGIN's place() takes it away and puts its own there)
     G.vehicles.clear();
@@ -37,8 +37,9 @@ export class Title {
     this.car = car;
     // the eye a little further back than the start, so the lettering has the storeys and the choices the street
     const fx = Math.cos(S.car.yaw), fz = -Math.sin(S.car.yaw), rx = Math.sin(S.car.yaw), rz = Math.cos(S.car.yaw);
-    this.base = { x: a.pos.x - fx * (TITLE_CAM.back - 2.2) + rx * TITLE_CAM.side, z: a.pos.z - fz * (TITLE_CAM.back - 2.2) + rz * TITLE_CAM.side, yaw: a.yaw, fx, fz, rx, rz };
+    this.base = { x: a.pos.x - fx * (TITLE_CAM.back - 2.2) + rx * TITLE_CAM.side, z: a.pos.z - fz * (TITLE_CAM.back - 2.2) + rz * TITLE_CAM.side, yaw: a.yaw + TITLE_CAM.turn, fx, fz, rx, rz };
     G.titleCam = (t) => this.drift(t);
+    this.night.keysLine();
     G.setViewmodelVisible(false);
     if (!G.shotMode) this.compileMs = compileAll(stage, G);
     this.ready = true;

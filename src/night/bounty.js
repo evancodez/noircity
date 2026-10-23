@@ -45,7 +45,7 @@ export class Bounty {
     const rng = new RNG(seed);
     const out = [];
     for (let i = 0; i < 3; i++) {
-      const turf = TURF[i % 2 === 0 ? (seed + i) % 2 : 1 - ((seed + i) % 2)];
+      const turf = TURF[(seed + i) % 2];
       const D = DISTRICTS.find((d) => d.id === turf);
       const nodes = g ? [...g.pnodes.values()].filter((n) => { const [a, b, c, e] = D.rect; return n.x > a + 20 && n.x < Math.min(b, 440) - 20 && n.z > c + 20 && n.z < Math.min(e, 440) - 20; }) : [];
       const n = nodes.length ? nodes[Math.floor(rng.next() * nodes.length)] : { x: turf === 'docks' ? -60 : 260, z: turf === 'docks' ? 300 : 0 };
@@ -197,21 +197,30 @@ function poster(b) {
   // the photo: grey ground, the man
   const px = 18, py = 18, pw = w - 36, ph = 170;
   g.fillStyle = '#8c8a85'; g.fillRect(px, py, pw, ph);
-  const cx = px + pw / 2 + rng.gauss() * 4, top = py + 34 + rng.next() * 8;
+  const cx = px + pw / 2 + rng.gauss() * 5, top = py + 30 + rng.next() * 12;
+  // each man his own: the jaw, the shoulders, the hat's tilt and brim, the tie or the bow, the moustache, the scar, the cigarette
+  const jaw = 18 + rng.next() * 8, long = 26 + rng.next() * 8, sh = 60 + rng.next() * 22, tilt = rng.gauss() * 0.12;
+  const brim = 40 + rng.next() * 20, crown = 20 + rng.next() * 7, collarUp = rng.next() < 0.4;
   g.fillStyle = '#0a0a0a';
   // the coat's shoulders and collar
-  g.beginPath(); g.moveTo(px, py + ph); g.quadraticCurveTo(cx - 70, top + 92, cx - 30, top + 86); g.lineTo(cx + 30, top + 86); g.quadraticCurveTo(cx + 70, top + 92, px + pw, py + ph); g.closePath(); g.fill();
-  // the face: a pale oval mostly lost in the brim's shadow
-  g.fillStyle = '#b9b5ad'; g.beginPath(); g.ellipse(cx, top + 58, 22, 30, 0, 0, Math.PI * 2); g.fill();
-  g.fillStyle = '#141414'; g.beginPath(); g.ellipse(cx, top + 44, 25, 17, 0, 0, Math.PI * 2); g.fill();
-  // the hat: crown and brim (a narrow or a wide brim)
-  const brim = 44 + rng.next() * 16;
+  g.beginPath(); g.moveTo(px, py + ph); g.quadraticCurveTo(cx - sh, top + 92, cx - 28, top + 86); g.lineTo(cx + 28, top + 86); g.quadraticCurveTo(cx + sh, top + 92, px + pw, py + ph); g.closePath(); g.fill();
+  if (collarUp) { g.beginPath(); g.moveTo(cx - 34, top + 92); g.lineTo(cx - 22, top + 62); g.lineTo(cx - 12, top + 92); g.closePath(); g.fill(); g.beginPath(); g.moveTo(cx + 34, top + 92); g.lineTo(cx + 22, top + 62); g.lineTo(cx + 12, top + 92); g.closePath(); g.fill(); }
+  // the face: a pale shape mostly lost in the brim's shadow
+  g.fillStyle = '#b9b5ad'; g.beginPath(); g.ellipse(cx, top + 58, jaw, long, 0, 0, Math.PI * 2); g.fill();
+  g.fillStyle = '#141414'; g.beginPath(); g.ellipse(cx, top + 44, jaw + 4, 15 + rng.next() * 5, 0, 0, Math.PI * 2); g.fill();
+  // the hat: crown and brim, tilted his way
+  g.save(); g.translate(cx, top + 30); g.rotate(tilt);
   g.fillStyle = '#060606';
-  g.beginPath(); g.ellipse(cx, top + 30, brim, 9, rng.gauss() * 0.05, 0, Math.PI * 2); g.fill();
-  g.beginPath(); g.moveTo(cx - 25, top + 30); g.quadraticCurveTo(cx - 24, top - 4, cx, top - 2); g.quadraticCurveTo(cx + 24, top - 4, cx + 25, top + 30); g.closePath(); g.fill();
-  // the tie, a mouth's line, now and then a scar or a cigarette
-  g.fillStyle = '#e4e0d6'; g.beginPath(); g.moveTo(cx - 6, top + 88); g.lineTo(cx + 6, top + 88); g.lineTo(cx, top + 120); g.closePath(); g.fill();
-  g.strokeStyle = '#2a2a2a'; g.lineWidth = 2; g.beginPath(); g.moveTo(cx - 8, top + 74); g.lineTo(cx + 8, top + 75); g.stroke();
+  g.beginPath(); g.ellipse(0, 0, brim, 8 + rng.next() * 3, 0, 0, Math.PI * 2); g.fill();
+  g.beginPath(); g.moveTo(-crown, 0); g.quadraticCurveTo(-crown + 1, -34, 0, -31); g.quadraticCurveTo(crown - 1, -34, crown, 0); g.closePath(); g.fill();
+  g.fillStyle = '#2c2c2c'; g.fillRect(-crown, -7, crown * 2, 4);
+  g.restore();
+  // the tie or the bow; the mouth; a moustache, a scar, a cigarette, now and then
+  g.fillStyle = '#e4e0d6';
+  if (rng.next() < 0.3) { g.beginPath(); g.moveTo(cx - 12, top + 86); g.lineTo(cx, top + 92); g.lineTo(cx - 12, top + 98); g.closePath(); g.moveTo(cx + 12, top + 86); g.lineTo(cx, top + 92); g.lineTo(cx + 12, top + 98); g.closePath(); g.fill(); }
+  else { g.beginPath(); g.moveTo(cx - 6, top + 88); g.lineTo(cx + 6, top + 88); g.lineTo(cx, top + 120); g.closePath(); g.fill(); }
+  g.strokeStyle = '#2a2a2a'; g.lineWidth = 2; g.beginPath(); g.moveTo(cx - 8, top + 74); g.lineTo(cx + 8, top + 75 + rng.gauss()); g.stroke();
+  if (rng.next() < 0.45) { g.fillStyle = '#1a1a1a'; g.beginPath(); g.ellipse(cx, top + 69, 10, 3, 0, 0, Math.PI * 2); g.fill(); }
   if (rng.next() < 0.5) { g.strokeStyle = '#f0ece4'; g.lineWidth = 3; g.beginPath(); g.moveTo(cx + 9, top + 76); g.lineTo(cx + 26, top + 80); g.stroke(); }
   if (rng.next() < 0.4) { g.strokeStyle = '#3a3a3a'; g.lineWidth = 1.5; g.beginPath(); g.moveTo(cx - 14, top + 56); g.lineTo(cx - 6, top + 68); g.stroke(); }
   g.strokeStyle = '#0a0a0a'; g.lineWidth = 3; g.strokeRect(px, py, pw, ph);

@@ -8,7 +8,7 @@ import * as THREE from 'three';
 // (the free roam's car: game.city.car); the old one stays where I left it.
 // (O2's car at a point when it merges: a man drives it in; until then it is
 // set at the kerb out of my sight.)
-export const PHONE = { cost: 50, wait: 35, reach: 1.9, lookMax: 90 };
+export const PHONE = { cost: 50, wait: 35, reach: 1.9, lookMax: 25 };
 const _v = new THREE.Vector3();
 
 export class PhoneBox {
@@ -84,11 +84,13 @@ export class PhoneBox {
     // the kerb by the box, out of my sight if it can be (a man drove it there)
     const g = N.graph();
     if (!g) return;
-    const bays = g.baysNear(O.box.x, O.box.z, 40);
+    const bays = g.baysNear(O.box.x, O.box.z, 60);
     const e = G.eye, f = G.camera.getWorldDirection(_v);
-    const seen = (b) => { const tx = b.x - e.x, tz = b.z - e.z, tl = Math.max(0.05, Math.hypot(tx, tz)); return tl < 18 || (tx * f.x + tz * f.z) / tl > 0.55; };
-    let bay = bays.find((b) => !seen(b) && !this.taken(b));
-    if (!bay && O.t > PHONE.wait + PHONE.lookMax) bay = bays.find((b) => !this.taken(b));
+    const seen = (b) => { const tx = b.x - e.x, tz = b.z - e.z, tl = Math.max(0.05, Math.hypot(tx, tz)); return tl < 10 || (tx * f.x + tz * f.z) / tl > 0.55; };
+    // (the kerb by the box: a bay in the box's own street, no building between)
+    const near = bays.filter((b) => g.lineOfSight(O.box.x, O.box.z, b.x, b.z) !== false);
+    let bay = near.find((b) => !seen(b) && !this.taken(b));
+    if (!bay && O.t > PHONE.wait + PHONE.lookMax) bay = near.find((b) => !this.taken(b)) || bays.find((b) => !this.taken(b));
     if (!bay) return;
     const V = G.vehicles;
     const car = V.spawn('coupe', { at: new THREE.Vector3(bay.x, 0, bay.z), yaw: bay.yaw, lights: true });

@@ -11,7 +11,7 @@ import { OVERPASS } from '../world/Overpass.js';
 // The train is the stage's (src/stages/noircity/parts/train.js): while I
 // ride, the night steps it (pulled in at the stations, never gone after one
 // loop); when I get off it runs on its own way.
-export const EL_RIDE = { vmax: 14, acc: 1.3, dwell: 7, reach: 2.6, fade: 0.35 };
+export const EL_RIDE = { vmax: 14, acc: 1.3, dwell: 7, reach: 2.6, fade: 0.35, look: 0.3, pitch: -0.06 };
 const LEN = 13.6, GAP = 0.9;
 const _f = {};
 
@@ -96,24 +96,29 @@ export class ElRide {
       tr.beam.visible = false; tr.halo.visible = false;
       // the night drives it while I ride (Game.post calls tr.update: it only places the cars)
       this.trUpdate = tr.update;
+      this.trRumble = tr.onRumble; tr.onRumble = null;
       const me = this;
-      tr.update = function (dt, t, opts) { this.s = me.s; this.run0 = me.s; return me.trUpdate.call(this, 0, t, opts); };
+      // (no camera: the part's shake and rumble are for a man under the el, not one in it - the ride has its own)
+      tr.update = function (dt, t, opts) { this.s = me.s; this.run0 = me.s; return me.trUpdate.call(this, 0, t, { ...opts, camera: null }); };
       const eye = this.eyeAt(new THREE.Vector3());
-      G.controller.setMode('hold', { at: eye, face: this.face(), yaw: 0, pitch: -0.04 });
+      G.controller.setMode('hold', { at: eye, face: this.face(), yaw: 0, pitch: EL_RIDE.pitch });
       G.emit('el:board', { stop: stop.name });
       this.night.hud.lines.taken = null;
     });
   }
 
-  // the eye: up front in the first car, behind its glass
+  // the eye: at a window of the first car, its front end, on the side its
+  // track runs (the outer rail: the street, the lamps and the shop fronts
+  // below, the iron going by), looking out ahead and down at the avenue
   eyeAt(out) {
     const line = this.line;
-    line.at(this.s - this.dir * 1.3, _f);
+    line.at(this.s - this.dir * 3.0, _f);
     const deck = OVERPASS.deckY + OVERPASS.girderH - 0.1;
-    const tr = 1.7 * (this.dir > 0 ? 1 : -1);
-    return out.set(_f.x - _f.nx * tr, deck + 1.95, _f.z - _f.nz * tr);
+    const tr = (1.7 + 1.25) * (this.dir > 0 ? 1 : -1);
+    return out.set(_f.x - _f.nx * tr, deck + 2.7, _f.z - _f.nz * tr);
   }
-  face() { this.line.at(this.s, _f); return Math.atan2(-_f.fx * this.dir, -_f.fz * this.dir); }
+  // (the travel's way turned out toward the window's side)
+  face() { this.line.at(this.s, _f); return Math.atan2(-_f.fx * this.dir, -_f.fz * this.dir) + EL_RIDE.look; }
 
   ride(dt) {
     const G = this.G, line = this.line;
@@ -122,15 +127,16 @@ export class ElRide {
     for (const st of this.stops) {
       const want = st.s + this.dir * (LEN / 2);
       let d = ((want - this.s) * this.dir) % line.len; if (d < 0) d += line.len;
-      if (d < 0.05 && this.dwell > 0) d = 0;
-      if (d < ahead && (d > 0.5 || this.dwell > 0)) { ahead = d; next = st; }
+      // (the station just left is behind me, not a metre ahead)
+      if (this.dwell <= 0 && st === this.left && (d < 2 || d > line.len - 2)) continue;
+      if (d < ahead) { ahead = d; next = st; }
     }
     if (this.dwell > 0) {
       this.dwell -= dt;
       this.v = 0;
       this.prompt(true, 'E  get off');
       if (G.keysDown.has('KeyE')) { G.keysDown.delete('KeyE'); this.getOff(this.at); return; }
-      if (this.dwell <= 0) { this.prompt(false); this.at = null; if (G.sfx) G.sfx.play('n_chime', null, { k: 0.6 }, { send: false }); }
+      if (this.dwell <= 0) { this.prompt(false); this.left = this.at; this.at = null; if (G.sfx) G.sfx.play('n_chime', null, { k: 0.6 }, { send: false }); }
     } else {
       // brake for the stop: v^2 = 2 a d
       const vStop = Math.sqrt(2 * EL_RIDE.acc * Math.max(0, ahead - 0.3));
@@ -140,6 +146,9 @@ export class ElRide {
     }
     const H = G.controller.hold;
     if (H) { this.eyeAt(H.at); H.face = this.face(); }
+    // the car's rumble under me, by the speed; a little sway, never a shake
+    if (G.sfx) G.sfx.train(0.25 + 0.35 * (this.v / EL_RIDE.vmax), H ? H.at : G.eye);
+    if (this.v > 1 && Math.random() < 0.02 * this.v / EL_RIDE.vmax) G.controller.shake(0.02, 0);
     if (G.controller.mode !== 'hold') this.end();
   }
 
@@ -158,7 +167,8 @@ export class ElRide {
   end() {
     const tr = this.tr;
     this.riding = false;
-    if (tr && this.trUpdate) { tr.update = this.trUpdate; this.trUpdate = null; tr.run0 = tr.s; tr.beam.visible = true; tr.halo.visible = true; }
+    if (tr && this.trUpdate) { tr.update = this.trUpdate; this.trUpdate = null; tr.onRumble = this.trRumble; tr.run0 = tr.s; tr.beam.visible = true; tr.halo.visible = true; }
+    if (this.G.sfx) this.G.sfx.train(0);
     this.prompt(false);
   }
 }
