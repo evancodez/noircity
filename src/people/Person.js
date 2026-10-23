@@ -3,6 +3,9 @@ import { Figure } from '../cast/Figure.js';
 import { Character } from '../cast/Character.js';
 import { makeUmbrella } from '../scenes/watcher/umbrella.js';
 import { allocHoodSlot, releaseHoodSlot, HOOD_ID0, FIG_ANCHOR } from '../render/layers.js';
+import { styleFor } from '../cast/style.js';   // [O8] a man's own build, carriage, walk and habits
+import { carry } from '../cast/o8extras.js';   // [O8] the cigarette, the cane
+import { LOOKS } from './costumes.js';
 
 // [O3] One of the city's people (lane O3, NOIR CITY): a figure of the cast
 // (src/cast/: Figure on the Hood's skeleton, the costume's outline, its
@@ -19,7 +22,7 @@ import { allocHoodSlot, releaseHoodSlot, HOOD_ID0, FIG_ANCHOR } from '../render/
 // Modes are data the plays read (p.mode, p.t); the figure is p.c (a Character).
 const _v = new THREE.Vector3();
 let SEQ = 0;
-export const GAIT = { walk: 1.25, stroll: 1.05, hurry: 1.7, jog: 3.0, run: 4.3, sprint: 5.2 };
+export const GAIT = { walk: 1.25, stroll: 1.05, hurry: 1.7, jog: 3.0, run: 4.3, sprint: 5.2, turn: 0.55 };   // [O8] turn: the steps round on the spot
 const wrap = (a) => Math.atan2(Math.sin(a), Math.cos(a));
 
 export class Person {
@@ -70,6 +73,17 @@ export class Person {
     const hk = 0.955 + ((Math.sin(x * 12.9898 + z * 78.233) * 43758.5453) % 1 + 1) % 1 * 0.09;
     F.scale = this.scale0 * hk; F.object.scale.setScalar(F.scale);
     this.paceK = 0.88 + ((Math.sin(x * 39.34 + z * 11.13) * 24634.6345) % 1 + 1) % 1 * 0.24;
+    // [O8] his build, his hat's set, his carriage and walk, the idle he keeps, what he carries:
+    // by where he stands (src/cast/style.js) - the same corner, the same man; the next, another
+    {
+      const L = LOOKS[this.kind] || {};
+      const sex = L.sex || (/woman|_her|nurse|waitress/.test(this.kind) ? 'f' : 'm');
+      const work = !!L.work || /dock|truck|caps|tough|newsboy|driver/.test(this.kind);
+      this.style = styleFor(this.kind, x, z, { role: this.role, sex, work, old: !!L.old });
+      F.setStyle(this.style);
+      carry(F, this.umb ? null : this.style.smoke ? 'cigarette' : this.kind === 'o8_swell' ? 'cane' : null);
+      this.gestureT = 0; this.gestureName = null; this._turnBack = null; this._lookT = 0;
+    }
     this.fear = 0; this.calmT = 0; this.reportOf = null; this.box = null;
     this.speed = 0; this.blocked = 0; this.lastPos = { x, z }; this.stuckT = 0; this.stuckN = 0;
     this.seenBy = 0; this.outT = 0; this.fledT = null; this.victimOf = null; this.upAfter = null; this.gunDropped = false;
@@ -129,6 +143,22 @@ export class Person {
     else { F.speed = (GAIT[g] || GAIT.walk) * (this.paceK || 1); c.clipH = null; c.setState(run ? 'run' : 'walk', fade); }
     // (an umbrella is carried up in the right fist while it is held)
     if (this.umb && this.umb.state === 'held' && c.costumed && F.anim.setOverlay) F.anim.setOverlay(run ? null : 'carry', 0.25);
+    // [O8] (hands in the pockets as he walks, if he keeps them there; a gesture held stays)
+    else if (c.costumed && F.anim.setOverlay && !this.gestureName) F.anim.setOverlay(this.walkOverlay(g), 0.3);
+  }
+  // [O8] the upper body's own over a gait: the pockets (his style), else the clip's
+  walkOverlay(g = this.gaitNow) {
+    const run = g === 'run' || g === 'sprint' || g === 'jog';
+    return this.style && this.style.pockets && !run && g !== 'idle' && g !== 'watch' && !this.umb ? 'o8_idlePockets' : null;
+  }
+  // [O8] what he means to do, shown before he does it: an arm out at what he saw, the palm
+  // out, the hand into the coat (src/cast/kinds/o8_swell.js), held over the legs for secs
+  gesture(name, secs = 1.2) {
+    const F = this.fig;
+    if (!this.standing || !this.c.costumed || !F.anim.setOverlay) return false;
+    this.gestureName = name; this.gestureT = secs;
+    F.anim.setOverlay(name, 0.12);
+    return true;
   }
   // follow a list of points [[x, z], ...] (or one {x, z}); then(): when there
   goTo(pts, { gait = 'walk', then = null } = {}) {
@@ -151,6 +181,8 @@ export class Person {
     // (when he last ran from something: a shot after it, he knows who - People.witness)
     this.fledT = this.G.time;
     if (first && cry && Math.random() < 0.55) this.say('o3_cry', { f0: this.kind === 'couple_her' ? 330 + Math.random() * 60 : 190 + Math.random() * 50 });
+    // [O8] (the start: a jolt through him the step it happens, then the run)
+    if (first) { try { this.c.play('startle'); } catch (e) { /* */ } if (this.gestureName) { this.gestureName = null; this.gestureT = 0; } }
     // (the umbrella goes: dropped in the run)
     if (first && this.umb && this.umb.state === 'held') { this.umb.drop(_v.set(Math.sin(this.yaw) * 2, 1, Math.cos(this.yaw) * 2).clone()); if (this.fig.anim.setOverlay) this.fig.anim.setOverlay(null, 0.1); }
     this.path = this.P.awayPath(this.pos, from, 28 + Math.random() * 18);
@@ -248,7 +280,17 @@ export class Person {
         this.wantYaw = Math.atan2(dx, dz);
         this.setGait(this.gait);
       }
-    } else if (this.gaitNow !== 'idle' && this.gaitNow !== 'watch' && this.mode !== 'cower') this.setGait('idle', 0.3);
+    } else if (this.gaitNow !== 'idle' && this.gaitNow !== 'watch' && this.gaitNow !== 'turn' && this.mode !== 'cower') this.setGait('idle', 0.3);
+    // [O8] a turn on the spot steps round (lane C2b's rule, for everyone: no spin, no feet sliding
+    // under a turning man) - a slow step or two on the turn, then he stands again
+    if (!this.path && this.mode !== 'cower' && this.mode !== 'fight' && (this.gaitNow === 'idle' || this.gaitNow === 'watch' || this.gaitNow === 'turn')) {
+      const dyT = Math.abs(wrap(this.wantYaw - F.yaw));
+      if (this.gaitNow !== 'turn' && dyT > 0.75) { this._turnBack = this.gaitNow; this.setGait('turn', 0.2); }
+      else if (this.gaitNow === 'turn' && dyT < 0.12) {
+        const b = this._turnBack; this._turnBack = null;
+        if (b === 'watch') { this.gaitNow = null; F.speed = 0; try { this.c.setState('watch', 0.3); } catch (e) { /* */ } this.gaitNow = 'watch'; } else this.setGait('idle', 0.3);
+      }
+    }
     // the steering: away from the others close by and from the eye
     let ax = 0, az = 0;
     const near = this.P.near(this.pos.x, this.pos.z, 1.4);
@@ -294,6 +336,14 @@ export class Person {
       if (this.stuckT > 3) { this.stuckT = 0; this.stuckN = (this.stuckN || 0) + 1; this.setGait('idle'); }
     }
     this.lastPos.x = this.pos.x; this.lastPos.z = this.pos.z;
+    // [O8] the look: his head to what matters - me, close by and before him (now and then)
+    if ((this.mode === 'walk' || this.mode === 'stand') && this.c._glance && this.c._glance.until <= 0 && this.G.time > this._lookT) {
+      const E = this.G.eye, ex = E.x - this.pos.x, ez = E.z - this.pos.z, ed = Math.hypot(ex, ez);
+      if (ed < 6.5 && ed > 0.9 && (ex * Math.sin(F.yaw) + ez * Math.cos(F.yaw)) / ed > -0.1) {
+        this._lookT = this.G.time + 6 + (this.id % 5) * 1.7;
+        this.c.glance(new THREE.Vector3(E.x, E.y, E.z), 0.9 + (this.id % 3) * 0.4);
+      }
+    }
   }
 
   // [O3] a point to one side of his way, clear of what stands there (2 - 4 m across,
@@ -326,6 +376,8 @@ export class Person {
 
   // the figure's pose and the umbrella (every step; a far man's pose is cheap: LOD)
   update(dt, t, camera) {
+    // [O8] a gesture held its while, then the upper body back to its own
+    if (this.gestureName) { this.gestureT -= dt; if (this.gestureT <= 0 || !this.standing) { this.gestureName = null; if (this.standing && this.fig.anim.setOverlay) this.fig.anim.setOverlay(this.walkOverlay(), 0.25); } }
     this.c.update(dt, t, camera);
     if (this.fig.collider) { this.fig.collider.x = this.pos.x; this.fig.collider.z = this.pos.z; }
     if (this.umb) this.umb.update(dt);

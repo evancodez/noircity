@@ -51,6 +51,8 @@ export const CROWD = {
   umbrella: 0.35,                   // a share of them under an open umbrella
 };
 const _v = new THREE.Vector3(), _f = new THREE.Vector3();
+// [O8] the cast's own clips every look may play (src/cast/kinds/o8_swell.js), made under the fade in
+const O8_CLIPS = ['o8_idleShift', 'o8_idlePockets', 'o8_idleSmoke', 'o8_idleArms', 'o8_point', 'o8_halt', 'o8_reach'];
 // the pool's size: figures waiting for a man of their look (no ink slot held)
 const POOL = 40;
 
@@ -94,7 +96,7 @@ export class People {
       const c = COSTUMES[k];
       if (!c) continue;
       for (let l = 0; l < 3; l++) figureGeometry(c, l);
-      try { const B = castBank(k); for (const n of ['idle', 'walk', 'run', 'cower', 'watch', 'koFall', 'ko', 'carry', 'o4_getUp']) if (B.has(n)) B.ensure(n); } catch (e) { /* */ }
+      try { const B = castBank(k); for (const n of ['idle', 'walk', 'run', 'cower', 'watch', 'koFall', 'ko', 'carry', 'o4_getUp', ...O8_CLIPS]) if (B.has(n)) B.ensure(n); } catch (e) { /* */ }
     }
     // (the hands' programs: the fists and the revolver drawn once out of sight,
     // compiled, put away - the first jab or draw in the street never stalls)
@@ -498,6 +500,8 @@ export class People {
     p.lookFor = rec.level >= 2 ? 0.5 : 0.9; p.reportGait = rec.level >= 2 ? 'run' : 'jog';
     p.path = null; p.setGait('idle', 0.15);
     p.face(this.G.eye.x, this.G.eye.z); p.look(this.G.eye);
+    // [O8] (he shows what he means to do: his arm out at me, then he goes)
+    if (p.gesture) p.gesture('o8_point', (p.lookFor || 0.9) + 0.3);
     this.G.emit('witness', { who: p, rec, to: toCop ? 'cop' : 'box' });
   }
   // the witness's way to his box (made again if he wedges): the pavements, then the box's front

@@ -175,7 +175,58 @@ function punch(p, from) {
 }
 
 // ---- the beats ------------------------------------------------------------------------------------
+// every look the city wears (the crowd's, the police's, the gangs', the fights' and the rooms' men)
+const ALL = () => [...Object.keys(LOOKS), 'o3_newsboy', 'o3_patrolman', 'o3_docksman', 'o3_tough', 'o4_boxer', 'o4_driver', 'o4_drunk', 'o4_gangster', 'o4_cop']
+  .filter((k, i, a) => a.indexOf(k) === i && !!LOOKS_OK(k));
+const LOOKS_OK = (k) => { try { return !!castKinds()[k]; } catch (e) { return false; } };
+let _kinds = null;
+const castKinds = () => _kinds || (_kinds = Object.fromEntries(Object.keys(LOOKS).concat(['o3_newsboy', 'o3_patrolman', 'o3_docksman', 'o3_tough', 'o4_boxer', 'o4_driver', 'o4_drunk', 'o4_gangster', 'o4_cop']).map((k) => [k, true])));
+// (the role a look stands in: its own style's - a cop's carriage, a gang man's swagger)
+const roleOf = (k) => (/cop|patrolman/.test(k) ? 'cop' : /docks|caps|tough|gangster/.test(k) ? 'gang' : 'walker');
+// the x of the el's columns down the avenue (a man is never put through one)
+const clearX = (x) => Math.abs(x + 123.9) > 1.0 && Math.abs(x + 116.1) > 1.0;
 const SETUP = {
+  // three rows under the lamps facing me, every look in the variants where it stands
+  lineup(ctx, B, P) {
+    const looks = ALL();
+    const xs = [];
+    for (let x = -128.6; x <= -111.4; x += 1.25) if (clearX(x)) xs.push(x);
+    let k = 0;
+    B.men = [];
+    for (const z of [37.6, 36.2, 34.8]) {
+      for (const x of xs) {
+        const look = looks[k % looks.length]; k++;
+        const p = P.spawn(look, x + (z === 36.2 ? 0.6 : 0), z, 0, roleOf(look));
+        p.role = 'parade'; p.mode = 'stand'; p.until = 1e9; p.t = 0; p.stop();
+        B.men.push(p);
+      }
+    }
+  },
+  // the looks walking up and down the avenue's three lanes, turning at the ends; a row standing on
+  // the east pavement in their idles
+  parade(ctx, B, P) {
+    const looks = ALL();
+    B.men = [];
+    const lanes = [-127.6, -120.0, -112.7];
+    const gaits = ['walk', 'stroll', 'walk', 'hurry', 'walk', 'stroll'];
+    let k = 0;
+    for (let i = 0; i < 18; i++) {
+      const lane = lanes[i % 3], z0 = 20 + ((i * 7.3) % 34), north = i % 2 === 0;
+      const look = looks[(k++ * 5) % looks.length];
+      const p = P.spawn(look, lane + ((i % 5) - 2) * 0.35, z0, north ? 0 : Math.PI, roleOf(look));
+      p.role = 'parade';
+      const gait = gaits[i % gaits.length];
+      const back = (q) => { const zz = q.pos.z > 37 ? 19 : 55; q.mode = 'walk'; q.goTo([[q.pos.x, zz]], { gait, then: back }); };
+      p.mode = 'walk'; p.goTo([[p.pos.x, north ? 55 : 19]], { gait, then: back });
+      B.men.push(p);
+    }
+    for (let i = 0; i < 9; i++) {
+      const look = looks[(k++ * 5 + 2) % looks.length];
+      const p = P.spawn(look, -108.6 + (i % 2) * 0.5, 24 + i * 3.1, -Math.PI / 2, roleOf(look));
+      p.role = 'parade'; p.mode = 'stand'; p.until = 1e9; p.t = 0; p.stop();
+      B.men.push(p);
+    }
+  },
   falls(ctx, B, P) {
     const S = BED.stoop;
     const street = { x: -121, z: 37 };
@@ -234,8 +285,8 @@ export default defineScene({
   beats: ['parade', 'lineup', 'falls', 'cars', 'car20', 'car50', 'crowd'],
   objectives: { parade: null, lineup: null, falls: null, cars: null, car20: null, car50: null, crowd: null },
   setup: {
-    parade(ctx) { place(ctx); },
-    lineup(ctx) { place(ctx, { x: -118.5, z: 40, yaw: SOUTH, pitch: -0.08 }); },
+    parade(ctx) { place(ctx, { x: -106.8, z: 30.5, yaw: 1.05, pitch: -0.06 }); },
+    lineup(ctx) { place(ctx, { x: -120.0, z: 43.4, yaw: 0, pitch: -0.1 }); },
     falls(ctx) { place(ctx, { x: -120.6, z: 41.0, yaw: WEST - 0.12, pitch: -0.14 }); },
     cars(ctx) { place(ctx, { x: -107.6, z: 46.5, yaw: 1.12, pitch: -0.08 }); },
     car20(ctx) { place(ctx, { x: -107.8, z: 45.0, yaw: 0.85, pitch: -0.12 }); },

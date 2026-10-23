@@ -296,15 +296,17 @@ for (const [id, info] of Object.entries({
   docker: { sex: 'm', h: 1.82, hat: 'knit', work: true }, dockhand: { sex: 'm', h: 1.8, hat: 'cap', work: true }, tail_trucker: { sex: 'm', h: 1.8, hat: 'cap', work: true },
   victim: { sex: 'm', h: 1.74, hat: null },
 })) if (COSTUMES[id]) LOOKS[id] = { kind: id, role: 'ped', ...info };
+// [O8] the swell: the topper, the white scarf, the cane (src/cast/kinds/o8_swell.js)
+if (COSTUMES.o8_swell) LOOKS.o8_swell = { kind: 'o8_swell', role: 'ped', sex: 'm', h: 1.84, hat: 'topper' };
 
 // the pedestrians' looks by district (weights): the Docks and the Yards
 // working men, downtown the coats and the hats, the Hill the good coats
 export const PED_LOOKS = {
-  downtown: { o3_fedora_a: 3, o3_fedora_b: 3, o3_fedora_c: 2, o3_fedora_d: 2, o3_fedora_e: 2, o3_fedora_f: 1, o3_fedora_g: 2, o3_fedora_h: 2, o3_woman_a: 2, o3_woman_b: 2, o3_woman_c: 2, o3_woman_d: 2, couple_him: 2, couple_her: 1, oldman: 1, victim: 1 },
+  downtown: { o3_fedora_a: 3, o3_fedora_b: 3, o3_fedora_c: 2, o3_fedora_d: 2, o3_fedora_e: 2, o3_fedora_f: 1, o3_fedora_g: 2, o3_fedora_h: 2, o3_woman_a: 2, o3_woman_b: 2, o3_woman_c: 2, o3_woman_d: 2, couple_him: 2, couple_her: 1, oldman: 1, victim: 1, o8_swell: 1 },
   tenements: { o3_fedora_a: 1, o3_fedora_c: 2, o3_fedora_e: 2, o3_fedora_h: 2, o3_woman_b: 2, o3_woman_c: 2, oldman: 3, dockhand: 2, tail_trucker: 2, docker: 1, couple_her: 1, victim: 1 },
   docks: { docker: 3, dockhand: 3, tail_trucker: 2, oldman: 1, o3_fedora_c: 1, o3_fedora_f: 1, o3_woman_b: 1 },
   yards: { tail_trucker: 3, dockhand: 2, docker: 1, oldman: 1, o3_fedora_e: 1 },
-  hill: { o3_fedora_a: 2, o3_fedora_b: 2, o3_fedora_d: 2, o3_fedora_g: 2, o3_woman_a: 3, o3_woman_d: 2, o3_woman_c: 1, couple_him: 2, couple_her: 2 },
+  hill: { o3_fedora_a: 2, o3_fedora_b: 2, o3_fedora_d: 2, o3_fedora_g: 2, o3_woman_a: 3, o3_woman_d: 2, o3_woman_c: 1, couple_him: 2, couple_her: 2, o8_swell: 3 },
 };
 export const COP_LOOKS = ['o3_cop_a', 'o3_cop_b', 'o3_cop_c'];
 export const TEC_LOOKS = ['o3_tec_a', 'o3_tec_b'];

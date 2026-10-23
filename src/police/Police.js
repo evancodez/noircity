@@ -741,7 +741,7 @@ export class Police {
       }
       const V = G.controller.vel, sp = Math.hypot(V.x, V.z);
       if (n) {
-        if (this.warned !== 'Hands up.') { this.warn('Hands up.'); nearest.c.say('o3_handsup'); this.event('handsup', { n }); }
+        if (this.warned !== 'Hands up.') { this.warn('Hands up.'); nearest.c.say('o3_handsup'); if (nearest.c.gesture) nearest.c.gesture('o8_halt', HEAT.arrest.warn + 0.6); this.event('handsup', { n }); }   // [O8] (his palm out)
         // (standing, or walking off with him at my elbow, or boxed in by two:
         // the cuffs come; running away - Shift - or a fist in his face: not)
         const caught = sp < 3.2 || n >= 2 || (nearest.d < 1.9 && sp < 5);

@@ -6,6 +6,7 @@ import { roundedBox } from '../world/geom.js';
 import { STREET } from '../world/Street.js';
 import { buildTommyGeometry } from '../player/Viewmodel.js';
 import { Ragdoll } from '../cast/ragdoll.js';   // [O8] the physics layer (a stage that asks: stage.ragdolls)
+import { applyStyle } from '../cast/style.js';   // [O8] a man's own carriage, walk and habits
 
 // The Hood: a procedural man in a fedora and a belted trench coat.
 //
@@ -815,6 +816,8 @@ export function driveSkirt(b, groundW = 1) {
   }
 }
 
+// [O8] the bones the style layer turns (src/cast/style.js)
+const STYLE_BONES = new Set(['spine', 'chest', 'neck', 'head', 'upperArmL', 'upperArmR', 'coat']);
 // [O8] scratch for the ragdoll's start and end
 const _rg = { v: new THREE.Vector3(), q: new THREE.Quaternion(), m: new THREE.Matrix4() };
 // scratch for Hood.postPose (per Hood per step)
@@ -993,7 +996,33 @@ export class Hood {
     this.state = name;
     if (name === 'stepOut') this._rm = 0;
     const ts = name === 'walk' ? this.gaitScale(WALK.speed) : name === 'run' ? this.gaitScale(RUN.speed) : 1;
-    this.anim.play(name, { fade, timeScale: ts });
+    // [O8] the idle a man keeps (his style's: the weight on one leg, hands in the pockets ...)
+    const nm = name === 'idle' && this.idleName ? this.idleName : name;
+    this.anim.play(nm, { fade, timeScale: ts });
+  }
+  // [O8] a figure's own build, carriage, walk and habits (src/cast/style.js: styleFor);
+  // null: as the costume is
+  setStyle(S) {
+    this.style = S || null;
+    const sc = this.scale;
+    if (S) this.object.scale.set(sc * S.wx, sc, sc * S.wz); else this.object.scale.setScalar(sc);
+    const hat = this.bones.hat;
+    if (hat && hat.parent === this.bones.head) { if (S && S.hat) hat.quaternion.setFromEuler(_pp.e.set(S.hat[0], 0, S.hat[1])); else hat.quaternion.identity(); }
+    const bank = this.anim && this.anim.bank;
+    this.idleName = S && S.idle && S.idle !== 'idle' && bank && bank.has(S.idle) ? S.idle : null;
+  }
+  // [O8] the bones a layer turns on top of the mixer's pose, marked moved each step: the
+  // mixer writes a bone only when its value moved, and a layer laid on an unwritten bone
+  // would be laid on last step's layer (the CastAnimator's own fix, for every bone named)
+  dirtyBones(names) {
+    const M = this.anim && this.anim.mixer, binds = M && M._bindings;
+    if (!binds) return;
+    const other = M._accuIndex;
+    for (const pm of binds) {
+      const b = pm.binding, node = b && (b.targetObject || b.node);
+      if (!node || !names.has(node.name)) continue;
+      const n = pm.valueSize; pm.buffer[other * n + n] = NaN;
+    }
   }
   gaitScale(clipSpeed) {
     return this.speed > 0.05 ? this.speed / (clipSpeed * this.scale) : 1;
@@ -1279,6 +1308,7 @@ export class Hood {
     if (this.collider) { this.collider.x = this.pos.x; this.collider.z = this.pos.z; }
 
     if (this._ragBlend) this.ragDirty();   // [O8]
+    else if (this.style) this.dirtyBones(STYLE_BONES);   // [O8]
     this.anim.update(dt);
     if (this._ragBlend) this.ragBlendStep(dt);   // [O8]
     obj.updateMatrixWorld(true);
@@ -1310,6 +1340,7 @@ export class Hood {
       let dyaw = this.yaw - this._prevYaw;
       dyaw = Math.atan2(Math.sin(dyaw), Math.cos(dyaw));
       const yawRate = dyaw / dt;
+      this._yawRate = yawRate;   // [O8] (the lean into a turn)
       const H = this._hem, k = 60, damp = 7;
       // +x tips the hem back (it lags a forward start); +z swings it toward
       // his left, so it goes opposite to the sideways (centripetal) pull and
@@ -1369,6 +1400,7 @@ export class Hood {
         if (axis.lengthSq() > 1e-6) b.upperArmR.quaternion.premultiply(q.setFromAxisAngle(axis.normalize(), elev));
       }
     }
+    if (this.style) applyStyle(this, dt);   // [O8]
     this.object.updateMatrixWorld(true);
   }
 
