@@ -55,7 +55,9 @@ async function tour(api) {
     await sleep(2200);
     // E at the door: the latency to the leaf's first move
     await js(`(() => { const s = G.city.places.byId.get(${JSON.stringify(id)}); const D = s.live && s.live.street && s.live.street[0]; window.__o5.watch = D ? { door: D } : null; return !!D; })()`);
-    const prompt = await js('G.hud.promptShown');
+    let prompt = await js('G.hud.promptShown');
+    // [O5b] (a thing of O1b's lying on the step takes the first E - the Docks bar's: 'take' - then the door's)
+    if (prompt && !/go in|open|try the door/.test(prompt)) { r.firstE = prompt; await press(api, 'KeyE'); await sleep(700); prompt = await js('G.hud.promptShown'); }
     await press(api, 'KeyE');
     await sleep(500);
     const lat = await js('(() => { const W = window.__o5.watch; return W ? { ms: W.t1 != null ? +(W.t1 - W.t0).toFixed(1) : null, frames: W.frames ?? null, open: +W.door.angle.toFixed(2) } : null; })()');
