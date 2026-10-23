@@ -6,6 +6,7 @@ gun range (`?start=guns`, `src/scenes/91_guns.js`, the killhouse
 `src/stages/killhouse/`), the diner and the block (`src/stages/block/`)
 for a street. The user's words:
 
+- **[must]** "This city should really react to player interaction (like a dynamic police system), fun shootouts, brawls, etc. Keep the scope manageable but it should feel fun." (OPEN_WORLD.md: the city answers everything the player does, within seconds, visibly.)
 - **[must]** "get into shootouts, fist fight (please change these
   mechanics to work better and smoother)".
 - **[must]** The three bars (GAME_TWO §1): smooth (under 50 ms on the

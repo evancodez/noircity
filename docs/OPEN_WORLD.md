@@ -16,6 +16,46 @@ fails, the tools). The user's words, which are the standard:
 > (use the base as inspiration for the aesthetic). No story mode or
 > outright missions yet: a full open world game.
 
+> (Later the same day:) I really want the game to have that noir style,
+> like the game you are basing it off of. But importantly this city should
+> really react to player interaction (like a dynamic police system), fun
+> shootouts, brawls, etc. Keep the scope manageable but it should feel fun.
+
+> (And:) Think GTA but noir. Make sure the player has freedom to cause
+> havoc and do what they want in this open world, one that reacts to them.
+
+> (After the first drive, 2026-10-23:) Overall nice. Make things look a
+> bit more distinct from street to street and add a bit more stuff (def
+> add destructibility and items etc). I assume you are going to populate
+> the city and add a bit more color (still the vast majority just black
+> and white). Probably add a mini map in the bottom left corner too. Keep
+> on making this to completion: super awesome, fun, cool, and polished.
+
+> (And:) Make sure to add things like car damage (would be cool for some
+> physical stuff within reason), and a variety of cars (not a ton for
+> now). Make it a world that feels not overly copy-paste.
+
+**Nothing copy-paste.** Every kit piece, car, figure and prop comes in
+variants, picked by a seeded hash of where it stands, so no two blocks,
+cars or corners read the same; a lane that places the same thing twice
+in a frame makes them differ in something a player sees.
+
+**The north star, in one line: the player may do anything the systems
+allow, and the city answers everything he does, within seconds, in a way
+he can see.** Freedom first: no invisible hand says no. He may run people
+down, steal the police car from under the cop, start a gang war, ram the
+tram, shoot every lamp on Grand Avenue, drive off the pier, and the only
+answer is the city's own (the heat, the crowd, the gangs, the wreck,
+the river), never a scripted stop, never a locked verb. A scene the
+player breaks on purpose must still end somewhere sane (the hospital,
+the station, the quay). A punch draws a crowd and a
+cop; a shot scatters the street and sends a witness running for a call
+box; a hijack brings a patrol car with its siren heard before it is
+seen; a wreck gathers onlookers; a gang watched too long turns and asks
+what you want. The police system is the spine of that answer (§3 People)
+and every other lane feeds it (`crime.emit`) or is fed by it. Judge every
+system by: when I do this, what does the city do back, and is it fun?
+
 Read first, in this order: `reference/noir_reference.png`, `DESIGN.md`,
 this file, your brief `docs/briefs/O<n>_*.md`, then the parts of
 `docs/story/WAVE_C.md` §1 and §2 and `docs/story/GAME_TWO.md` §1 that
@@ -214,11 +254,16 @@ do everything but buy.
 | O4 | combat: the crowd brawl, the guns in open ground, the shotgun, the gym, the gun shop | `ow/O4-combat` | 5374 |
 | O5 | places: the interior kit and the dozen buildings with their uses, the hotel's save | `ow/O5-places` | 5375 |
 | O6 | smash: the destruction set, car damage and fire | `ow/O6-smash` | 5376 |
-| O7 | the night: HUD, map, saves, radio, title, pad, polish, the whole-game hunt | `ow/O7-night` | 5377 |
+| O7 | the night: HUD with the minimap bottom left, map, saves, radio, title, pad, polish, the whole-game hunt | `ow/O7-night` | 5377 |
+| O1b | the streets distinct (the blind test), more in them, items, a touch of colour (the user's first drive) | `ow/O1b-streets` | 5378 |
 
 Waves: O1, O4, O6 first (O4 and O6 build and prove on the base's test
-beds and move into the city when O1 merges); then O2, O3, O5 on the
-city; then O7. At most three builders on this machine at a time, and
+beds and move into the city when O1 merges); then O2, O3, O1b, O5 on
+the city; then O7. **Colour**: the vast majority of every frame is black,
+white and grey; a small palette of accents through the registry (the
+neon's blue, red for the police lamp, fire and the odd sign, a warm
+amber for marquees and embers), under 2 % of a frame's pixels, never a
+wash (O1b §4). At most three builders on this machine at a time, and
 NOIR EXTREME's own lanes count: the art director schedules.
 
 One owner per lane, end to end, judged by playing it (headless, by real
