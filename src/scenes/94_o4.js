@@ -4,6 +4,7 @@ import { gunsOf } from '../guns/Guns.js';
 import { money, earn, pay, owns, give, arms, wallet } from '../combat/money.js';
 import { BOXER_LEVELS } from '../combat/brawl/kinds.js';
 import { buildCounter, buildRing, priceCard } from './o4/places.js';
+import { DINER, counterAt } from './_diner_room.js';
 
 // [O4] Lane O4's test bed (docs/briefs/O4_COMBAT.md): NOT a scene of the
 // story; ?start=o4 plays it from the first contest, ?start=o4.<beat> one
@@ -71,8 +72,17 @@ export const SHOP = {
 // the gym's ring (the rules; the room is lane O5's): a bout with a boxer of a
 // level for a bet; won, the purse; down, the bet is his
 export const GYM = { ring: { x: 3.0, z: 12.6, size: 5.2 }, cash: 60, obj: 'The gym. A bout, for money.' };
-const CONTESTS = ['brawl1', 'brawl2', 'brawl3', 'cop', 'street'];
-const NEXT = { brawl1: 'brawl2', brawl2: 'brawl3', brawl3: 'cop', cop: 'street', street: 'done', done: 'brawl1' };
+// a bar brawl in the diner: two of them by the counter; the room's things to
+// fight with (two bottles on the counter, the cafe's chairs), its walls to
+// put a man into, the stools in his way and mine
+export const DINERFIGHT = {
+  me: { x: -12.15, z: -1.7, yaw: Math.PI },
+  men: [{ kind: 'drunk', at: { x: -12.9, z: 2.3 } }, { kind: 'driver', at: { x: -11.9, z: 4.4 } }],
+  bottles: [[3, 0.16, 0.1, 'o4.bottle1'], [6, 0.16, -0.2, 'o4.bottle2']],
+  obj: 'A fight in the diner. Use the room.',
+};
+const CONTESTS = ['brawl1', 'brawl2', 'brawl3', 'cop', 'street', 'diner'];
+const NEXT = { brawl1: 'brawl2', brawl2: 'brawl3', brawl3: 'cop', cop: 'diner', diner: 'street', street: 'done', done: 'brawl1' };
 
 // the street for a beat: the men gone, me where I start, the fight begun
 function street(ctx, name) {
@@ -88,12 +98,48 @@ function street(ctx, name) {
   if (name === 'range') { range(ctx); return; }
   if (name === 'shop') { shop(ctx); return; }
   if (name === 'gym') { gym(ctx); return; }
+  if (name === 'diner') { dinerFight(ctx); return; }
   const E = O4.me;
   ctx.controller.setPose(E.x, E.z, E.yaw, -0.05);
   G.eye.copy(G.camera.position);
   ctx.flags.o4 = { beat: name, t0: G.time, result: null, tries: G.fails(name) };
   if (!B) { ctx.player.weapons.equip('fists'); return; }
   F.start({ men: B.men.map((m) => ({ ...m, yaw: Math.atan2(E.x - m.at.x, E.z - m.at.z) })), to: name, leave: true, seed: 4242 + G.fails(name) * 7,
+    onEnd: (result) => { ctx.flags.o4.result = result; } });
+}
+
+// the bar brawl: the diner's floor, its things, two men
+function dinerFight(ctx) {
+  const G = ctx.game, S = ctx.stage, B = DINERFIGHT, F = crowdOf(G), d = S.part('diner');
+  const Bk = S.breakables;
+  const E = B.me;
+  ctx.controller.setPose(E.x, E.z, E.yaw, -0.05);
+  G.eye.copy(G.camera.position);
+  // (the room's things, as the diner's fight takes them: off the floor, out of the bullets' world)
+  const lift = (o, handle) => {
+    if (handle && Bk) Bk.snapshot(handle);
+    if (o.parent) o.parent.remove(o);
+    o.traverse((m) => { if (m.isMesh) S.removeSolid(m); });
+    if (handle && handle.collider) for (const arr of [S.colliders.circles, S.colliders.boxes]) { const k = arr.indexOf(handle.collider); if (k >= 0) arr.splice(k, 1); }
+    if (handle) handle.broken = true;
+    o.position.set(0, 0, 0); o.quaternion.identity(); o.scale.setScalar(1);
+    return o;
+  };
+  const things = [];
+  for (const [i, back, dz, name] of B.bottles) {
+    const o = d.place('bottle', counterAt(i, back, dz), { name, variant: 'beer' });
+    things.push({ kind: 'bottle', name, object: o, take: () => d.take(name), available: () => d.items.get(name) === o });
+  }
+  for (const t of d.booths.cafe || []) for (const c of t.chairs) {
+    if (!c.handle || c.handle.broken || c.handle.toppled) continue;
+    const it = { kind: 'chair', object: c.object, taken: false };
+    it.take = () => { it.taken = true; return lift(c.object, c.handle); };
+    it.available = () => !it.taken && !c.handle.broken && !c.handle.toppled;
+    things.push(it);
+  }
+  ctx.flags.o4 = { beat: 'diner', t0: G.time, result: null, things: things.length };
+  F.start({ men: B.men.map((m) => ({ ...m, yaw: Math.atan2(E.x - m.at.x, E.z - m.at.z) })), to: 'diner', leave: false, seed: 5100 + G.fails('diner') * 7,
+    bounds: { x0: DINER.counter.frontX + 0.25, x1: DINER.innerX - 0.1, z0: DINER.zMin + 0.2, z1: DINER.zMax - 0.2 }, things,
     onEnd: (result) => { ctx.flags.o4.result = result; } });
 }
 
@@ -164,7 +210,7 @@ export default defineScene({
   id: 'o4', stage: 'block', title: '', name: 'The Street',
   beats: [...CONTESTS, 'done', 'range', 'shop', 'gym'],
   save: [],
-  objectives: { ...Object.fromEntries(CONTESTS.map((k) => [k, k === 'street' ? STREET.obj : O4[k].obj])), done: 'All of them won. E: again.', range: RANGE.obj, shop: SHOP.obj, gym: GYM.obj },
+  objectives: { ...Object.fromEntries(CONTESTS.map((k) => [k, k === 'street' ? STREET.obj : k === 'diner' ? DINERFIGHT.obj : O4[k].obj])), done: 'All of them won. E: again.', range: RANGE.obj, shop: SHOP.obj, gym: GYM.obj },
   setup: Object.fromEntries([...CONTESTS, 'done', 'range', 'shop', 'gym'].map((b) => [b, (ctx) => street(ctx, b)])),
   *script(ctx) {
     const G = ctx.game, F = ctx.flags, C = crowdOf(G);

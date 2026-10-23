@@ -20,7 +20,7 @@
    "retries": 4
   },
   {
-   "until": "G.scenes.current && G.scenes.current.id === 'o4' && G.scenes.beat === 'gym' && G.crowd.active && !G.failing",
+   "until": "G.scenes.current && G.scenes.current.id === 'o4' && G.scenes.beat === 'gym' && !G.failing",
    "timeout": 30000
   },
   {

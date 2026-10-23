@@ -143,6 +143,8 @@ export default async function drive({ js, turn, keyDown, keyUp, mouse, log, slee
     const Bk = plans.get('block');
     if (Bk && now >= Bk.at) { plans.delete('block'); await up('KeyW'); await down('Space', Bk.until); }
     if (held.has('Space')) { await sleep(16); continue; }
+    // ---- a thing in reach (a bottle, a chair): the taught hand takes it
+    if (opts.things && !s.holding && /take the/.test(s.prompt || '') && s.me === 'idle' && now > (out.thingAt || 0)) { out.thingAt = now + 2500; await tap('KeyE'); out.took = (out.took || 0) + 1; log('take: ' + s.prompt); }
     // ---- into reach of the one I face
     if (tgt && tgt.d > 1.75 && Math.abs(tgt.rel) < 0.5 && s.me !== 'hurt') await down('KeyW', 120);
     if (s.me !== 'idle') { await sleep(16); continue; }
