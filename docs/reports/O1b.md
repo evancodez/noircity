@@ -65,7 +65,7 @@ drawn by the unique, not the facade. The firehouse itself
 (`city/kits/uniques.js`): two tall doors of leaves in dark enamel, pale rails,
 a row of lights, the pier between, ENGINE CO. 7 over them; its red is a lamp
 over each door and the street's fire alarm box on its post. Colour at arm's
-length (3.5 m): **0.0 %** (was 47.6); from across Baxter St the two red lamps
+length (3.5 m): **0.06 %** (was 47.6); from across Baxter St the two red lamps
 and their streaks. All 26 looked at from the road (5.5 m): no board, pilaster,
 display or pavement thing across any; the SEAMEN'S REST board, which was
 behind its own plank, now in front. Frame `3_firehouse_after_near_and_across.jpg`.
@@ -83,7 +83,7 @@ the Hill's gate lanterns burn amber. Downtown blue, red or amber by street,
 the lanes their own (Mott and Eldridge blue, Pell, Orchard and Rivington amber,
 Bayard red, Doyers its red lanterns). Measured on the critic's ten blind
 positions (on foot, his poses): mean **0.75 %** (the critic's 0.19 % over his 21 frames, and 7 of these ten under 0.1 %), nine of ten from 0.25 to 1.48 % - Mott St 0.25, Dock Rd 0.44, Canal St 0.65, Pell Ln 1.36, Doyers Ln 1.48, the Bowery 0.66, Clock St 1.02, Rivington Ln 1.03, the Straight 0.55 - and Houston St 0.10 % (its red blades far down under the el, none near in that frame); none over 2 % (frame `1_critics_blind_ten_after_colour_by_street.jpg`). From the seat (this lane's ten):
-mean 0.57 % (the first pass's 0.13 %), 0.23-1.73 %, none over 2 %, but Bridge St on the Hill 0.05 % (its amber lanterns read, small: Left 3). **Nothing over 2 % at arm's length**: the firehouse 0.0 %, the
+mean 0.57 % (the first pass's 0.13 %), 0.23-1.73 %, none over 2 %, but Bridge St on the Hill 0.05 % (its amber lanterns read, small: Left 3). **Nothing over 2 % at arm's length**: the firehouse 0.06 %, the
 uniques at 3.5 m at most 1.25 %; and from the road (5.5 m, facing them) the
 RIALTO's and the ROSELAND's amber bulbs and the mission's red tubes streaked the
 wet street red to 4.5-5 % - their bulbs and tubes are white now (the RIALTO's
@@ -132,7 +132,7 @@ LAUNDRY and a DRUGS now, Houston St sells tobacco, not coffee. The Tenements'
 lanes each their own: Mott blue (its barbers' BARBER blades, the big pole),
 Pell amber with all its washing kept, Doyers red lanterns and no washing,
 Rivington amber, no washing, the bakery's glow; the laundry lines kept by each
-lane's share (`wash`). Not re-played blind by a second cold eye: Left 1.
+lane's share (`wash`). Not re-played blind by a second cold eye: Left 2.
 
 **Minors.** m1 (dark on dark): bicycles enamelled pale or mid (were black
 tubes), tyres grey; the pavement things carry a floor of light of their own
@@ -151,19 +151,31 @@ a doorway) still comes back after five minutes out of sight.
 
 **Kept** (the critic's list): the Grand Ave start (its marquee red and amber
 untouched, its golden frame changed only by the street's new blue blade and
-the lit glass - section 3), the glass and benches going under the car (O6's,
+the lit glass - the gate below), the glass and benches going under the car (O6's,
 untouched), E into the coupe, the take on the press with its count, the paper's
 card exactly, the matchbook line, Doyers Ln (its lanterns a little fewer, still
 its red), the Yards' Straight and Dock Rd (their blades added), the swim off a
 pier, the pad play (`o1b_pad.json`, now with Tab by the pad), no errors, the
-frame rate (section 3).
+frame rate (the gate below).
 
-**The gate on the final code** (every play by real input, muted, at load 10-20 from other lanes' plays;
-the proofs on 4378828, the last two changes after them touch only the neon
-atlas's resolution of the accent blades and the report)
+**The gate on the final code** (every play by real input, muted, at load 10-24 from other lanes' plays;
+the proofs on 4378828; the one source change after them draws the accent
+blades at half the neon atlas's resolution - the city's golden frames, the
+critic's ten colour frames and the counts were taken again after it, the
+seat's ten on 4378828)
 - **Golden, game one's**: `python3 tools/golden.py check` - **40 of 40 identical**
   (the base's 38 and lane O4's two).
-- **Golden, the city's**: GOLDEN_CITY
+- **Golden, the city's**: `NOIR_GOLDEN=shots/golden/city python3 tools/golden.py check`
+  - 11 of 12 changed, re-taken (the clock's identical), each by this pass:
+  the streets' accent blades and their streaks (Grand Ave's blue, Houston's
+  red, Broadway's and the Yards' amber, the Bowery's red: `city_grand_car`,
+  `city_elcorner`, `city_broadway`, `city_straight`, `city_gasworks`,
+  `city_station`, `city_tenements`, `smash_bed`'s blue TAILOR), a trade that
+  no longer twins its neighbour with its display inside the glass (the
+  Bowery's SHOES now a BARBER, `city_station`), the pavement things off the
+  black, the Hill walls' lanterns and far blades by a few pixels (`city_park`,
+  `city_quay`, `smash_wreck`). Before and after:
+  `6_golden_before_after_grand_houston_bowery.jpg`.
 - **Errors at every start**: `tools/errors.sh "scene=city&beat=roam&anim=1&t=3&at=<id>"`
   at all ten starts, `beat=ashore` and O4's `scene=o4&beat=brawl1`: clean, all
   twelve (the gasworks' first dump came back empty on the loaded machine; again: clean).
@@ -171,7 +183,7 @@ atlas's resolution of the accent blades and the report)
   rounds - no gun for them yet`, bottle, matchbook, paper, his revolver `18
   rounds in the coat`, the glovebox; E to the take 2.1-23 ms), `o1b_pad` PASS (the
   pad alone: square takes four kinds, share shows Tab; 0 key or mouse events),
-  `o1b_coat` PASS, `o1b_swim` PASS (the card from the splash), `o1b_doors` PASS
+  `o1b_coat` PASS, `o1b_swim` PASS (the card from the splash; run at e51e6d8; nothing after it touches the swim), `o1b_doors` PASS
   (24 doors, 8 on lots across a chunk line, every one answers), `o1b_smash` PASS,
   `o1b_train` PASS, `o1b_pigeons` PASS (up at 8.5 m and 23.6 m), the critic's
   `c10_walkover` and `c8_poke` as above. **`o1b_jank` 19 of 20**: the flowers
@@ -182,7 +194,13 @@ atlas's resolution of the accent blades and the report)
   none over 2 %; every unique from the road at most 1.99 %, at arm's length at
   most 1.25 %.
 - **The neon atlas**: 3,755 of 4,096 px (542 accent blades, 582 blades in all).
-- **Frames per second** against `shot=perf` at the same moments: FPS_TABLE
+- **Frames per second** against `shot=perf` at the same moments
+  (`MOMENTS=city node tools/fpstable.mjs 5`, once, at load 45-60, the GPU 100 %
+  busy before each): Grand Ave from the car **1.09 x** (652 draws, 2.56 M
+  triangles), the el's corner **1.87 x**, Broadway to the clock **1.48 x**, the
+  Bowery under the station **1.45 x**, the quay **1.55 x** - every spot over
+  `perf`; the critic's at load 130-178 were 1.20 / 1.88 / 1.27 / 1.53 / 1.78:
+  Grand Ave is the thinnest (its blades and the start's items), Left 4.
 
 
 ---------------------------------------------------------------------------
