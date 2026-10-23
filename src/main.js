@@ -90,7 +90,8 @@ const sfx = new Sfx({ enabled: !shotMode, forceMute: autoMute });
 // instead of the diner, the save unread - a scene played without the ones
 // before it, by hand or by tools/play.mjs)
 const startParam = shotMode ? null : params.get('start');
-const startAt = startParam ? { scene: startParam.split('.')[0], beat: startParam.split('.')[1] || null } : null;
+// [AD] NOIR CITY: BEGIN drops into the city (no story, no chapters); ?start= still picks any scene
+const startAt = startParam ? { scene: startParam.split('.')[0], beat: startParam.split('.')[1] || null } : (shotMode ? null : { scene: 'city', beat: null });
 let startFrom = null, chosen = null;
 const hud = new Hud({
   brush: tex.brush.image,
@@ -161,7 +162,8 @@ if (!shotMode && !autoplay) {
 }
 // the title offers CONTINUE when a checkpoint exists
 if (!shotMode) hud.showTitle('', { canContinue: game.save.exists });
-hud.setChapters(ORDER.map((c) => ({ ...c, ready: !!game.scenes.get(c.id) })));
+hud.setChapters([]);   // [AD] NOIR CITY has no chapters: the title shows BEGIN (and CONTINUE) only
+if (hud.chapOpt) { hud.chapOpt.style.display = 'none'; if (hud.chapOpt.previousSibling && hud.chapOpt.previousSibling.className === 'sep') hud.chapOpt.previousSibling.style.display = 'none'; }
 if (startAt && !game.scenes.get(startAt.scene)) console.error(`start=${startParam}: no scene '${startAt.scene}' (scenes: ${game.scenes.names.join(', ')})`);
 else if (startAt && startAt.beat && !game.scenes.get(startAt.scene).beats.includes(startAt.beat)) console.error(`start=${startParam}: '${startAt.scene}' has no beat '${startAt.beat}'`);
 // (play and the fight presets: every Hood variant + combat program up front)

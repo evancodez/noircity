@@ -4,6 +4,7 @@ Branch `ow/O6-smash`, port 5376. Built and proven on a test bed of your
 own until the city (lane O1) merges; then it is the city's. The user's
 words:
 
+- **[must]** "Make sure to add things like car damage (would be cool for some physical stuff within reason)." (The user, 2026-10-23.) Damage that is physical and seen where the hit was: the shell dents at the point of impact (a capped vertex displacement on the body, deeper the harder the hit), the bonnet pops and flaps, a door hangs and then comes off and lies on the road, a bumper drags and sparks, a wheel wobbles after a bad corner hit and can come off (the car then grinds on the hub, slow and pulling), the lamps and the glass as before, the wreck of C3b as the end state; the parts that come off are things (solid, they rest, they are swept by the cap). Within reason: no soft-body sim, a few strokes, 60 fps with ten damaged cars in view.
 - **[must]** "some destruction".
 - **[must]** "everything works": destruction is physical (it stops a
   man, a car, a round), seen (a few strokes, the right sound), and it
