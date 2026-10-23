@@ -24,6 +24,13 @@ fails, the tools). The user's words, which are the standard:
 > (And:) Think GTA but noir. Make sure the player has freedom to cause
 > havoc and do what they want in this open world, one that reacts to them.
 
+> (After the first drive, 2026-10-23:) Overall nice. Make things look a
+> bit more distinct from street to street and add a bit more stuff (def
+> add destructibility and items etc). I assume you are going to populate
+> the city and add a bit more color (still the vast majority just black
+> and white). Probably add a mini map in the bottom left corner too. Keep
+> on making this to completion: super awesome, fun, cool, and polished.
+
 **The north star, in one line: the player may do anything the systems
 allow, and the city answers everything he does, within seconds, in a way
 he can see.** Freedom first: no invisible hand says no. He may run people
@@ -238,11 +245,16 @@ do everything but buy.
 | O4 | combat: the crowd brawl, the guns in open ground, the shotgun, the gym, the gun shop | `ow/O4-combat` | 5374 |
 | O5 | places: the interior kit and the dozen buildings with their uses, the hotel's save | `ow/O5-places` | 5375 |
 | O6 | smash: the destruction set, car damage and fire | `ow/O6-smash` | 5376 |
-| O7 | the night: HUD, map, saves, radio, title, pad, polish, the whole-game hunt | `ow/O7-night` | 5377 |
+| O7 | the night: HUD with the minimap bottom left, map, saves, radio, title, pad, polish, the whole-game hunt | `ow/O7-night` | 5377 |
+| O1b | the streets distinct (the blind test), more in them, items, a touch of colour (the user's first drive) | `ow/O1b-streets` | 5378 |
 
 Waves: O1, O4, O6 first (O4 and O6 build and prove on the base's test
-beds and move into the city when O1 merges); then O2, O3, O5 on the
-city; then O7. At most three builders on this machine at a time, and
+beds and move into the city when O1 merges); then O2, O3, O1b, O5 on
+the city; then O7. **Colour**: the vast majority of every frame is black,
+white and grey; a small palette of accents through the registry (the
+neon's blue, red for the police lamp, fire and the odd sign, a warm
+amber for marquees and embers), under 2 % of a frame's pixels, never a
+wash (O1b §4). At most three builders on this machine at a time, and
 NOIR EXTREME's own lanes count: the art director schedules.
 
 One owner per lane, end to end, judged by playing it (headless, by real
