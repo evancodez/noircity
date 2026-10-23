@@ -86,3 +86,19 @@ beats and the city's starts; the pad play. Report `docs/reports/O6b.md`
 with "For other lanes" (the parts as things, what O2's kinds must name).
 Hours, not days: the dents, the bonnet and the doors first, grey and
 physical, then the rest.
+
+## From the drive-through on main after O1b's merge (2026-10-23): yours
+The drive-through play (`tools/plays/o1_drive.json`: a bot drives 4.3 km
+through every district at up to 60 km/h, by the keys, taking its corners
+badly) on main 6c1a623, three runs: the car ends the loop at damage 3.2 in
+the `smoke` state with 5 to 8 wall scrapes and **no crash**; in two runs of
+three it went to `burning` and the wreck on the Docks leg at 257 s (the
+fail `Wrecked.`, the bot never getting out). That is wear beyond the
+user's "within reason": a scrape marks the paint and dents the wing, a
+dozen scrapes do not burn a car; the engine's smoke, the fire and the
+wreck come from crashes (hard, head-on, the corner taken into a wall at
+speed) and from rounds into the engine, never from scrapes alone. Yours in
+your fix pass: tune the wear so that the drive-through's bot finishes its
+loop under `smoke` every time (the scrapes showing on the body as yours do),
+and name in your report what a car can take before it smokes, burns and
+goes: how many hard crashes at what speed, how many rounds.
