@@ -137,14 +137,18 @@ export class StandinHands {
     // a man of the street: he staggers; two inside 3 s put him down
     p.hits = G.time - (p.hitT ?? -9) < 3 ? p.hits + 1 : 1;
     p.hitT = G.time;
-    const down = p.hits >= 2;
+    // [O8] after the critic (the punched man ran before the physics showed): a clean first jab
+    // drops one man in three (a slight man, a drunk, an old one more often), the shock beat after
+    // the first holds him long enough for the second to land
+    const soft = p.drunk || (p.style && p.style.build === 'slight') || /oldman|newsboy/.test(p.kind);
+    const down = p.hits >= 2 || Math.random() < (soft ? 0.5 : 0.33);
     if (down) { p.knock(dir, { why: 'punch' }); P.stats.knocked++; G.sfx.fight('bodyPavement', p.pos.clone().setY(0.3), { k: 0.8 }); }
     else {
       // (the first: the head snaps, a step back, a beat of shock - then he runs)
       // [O3] after the critic (m4): the step back is out of what stands behind him (a post, a wall, a stall)
       p.fig.flinch(dir); p.say('o3_hey'); p.fig.pos.x += dir.x * 0.3; p.fig.pos.z += dir.z * 0.3;
       G.stage.colliders.resolve(p.fig.pos, p.r, p.fig.collider);
-      if (p.role === 'walker') { p.stop(); p.mode = 'dash'; p.t = 0; p.until = 1.5; p.path = null; p.face(G.eye.x, G.eye.z); p.after = null; P.later(0.8, () => { if (p.standing && p.mode === 'dash') p.flee(G.eye, 5); }); }
+      if (p.role === 'walker') { p.stop(); p.mode = 'dash'; p.t = 0; p.until = 1.5; p.path = null; p.face(G.eye.x, G.eye.z); p.after = null; P.later(1.1, () => { if (p.standing && p.mode === 'dash') p.flee(G.eye, 5); }); }
     }
     const rec = P.crime.emit('punch', p.pos, 'player', { victim: p });
     // (the man I put down tells it himself once he is up - [O3] after the critic, M1)

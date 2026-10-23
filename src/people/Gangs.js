@@ -98,9 +98,9 @@ export class Gangs {
     T.men.forEach((p, i) => {
       if (!(p.standing && !p.armed && p.mode !== 'fight')) return;
       const kind = T.gang === 'docks' && i === 0 ? 'tommy' : 'pistol';
-      if (!p.gesture || !p.gesture('o8_reach', 0.6)) { guns.arm(p, kind, T.gang); return; }
+      if (!p.gesture || !p.gesture('o8_reach', 0.95)) { guns.arm(p, kind, T.gang); return; }
       p.face(this.G.eye.x, this.G.eye.z);
-      this.P.later(0.32 + 0.12 * i, () => { if (p.standing && !p.armed && p.mode !== 'fight') { p.gestureName = null; guns.arm(p, kind, T.gang); } });
+      this.P.later(0.5 + 0.14 * i, () => { if (p.standing && !p.armed && p.mode !== 'fight') { p.gestureName = null; guns.arm(p, kind, T.gang); } });
     });
   }
 

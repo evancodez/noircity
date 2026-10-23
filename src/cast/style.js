@@ -43,7 +43,12 @@ export function styleFor(kind, x, z, { role = 'walker', sex = 'm', work = false,
     pockets: !f && !cop && !work && u(11) < 0.28,
     smoke: !f && !cop && !boy && u(12) < (gang ? 0.3 : 0.1),
     idle: null,
+    // [O8] after the critic: his own phase in a loop and his own pace in it (men made in the same
+    // moment no longer raise the cigarette in the same frame), his arms a little out from the coat
+    // as he walks (a man seen from behind is not a slab: the arms read outside its line)
+    phase: u(14), rate: 0.86 + 0.28 * u(15),
   };
+  if (!f && !S.armIn) S.armIn = -1.2;
   // the idle he keeps (a cop and a woman their own few)
   const r = u(13);
   S.idle = cop ? (r < 0.5 ? 'o8_idleShift' : 'o8_idleArms')

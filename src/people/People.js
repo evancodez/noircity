@@ -47,7 +47,7 @@ export const CROWD = {
   // (who walks where: src/people/costumes.js PED_LOOKS, by district, picked
   // by a seeded hash of where he comes on; the newsboy downtown and in the
   // Tenements now and then)
-  newsboy: { downtown: 0.08, tenements: 0.1 },
+  newsboy: { downtown: 0.12, tenements: 0.1 },   // ([O8] after the critic: more of him downtown)
   umbrella: 0.35,                   // a share of them under an open umbrella
 };
 const _v = new THREE.Vector3(), _f = new THREE.Vector3();
@@ -746,7 +746,7 @@ export class People {
     // [O3] after the critic (m5): a man knocked down, not dead, gets up after a few
     // seconds (lane O4's get-up clip), backs off from me and - if it was me who
     // put him down - goes to tell it (M1: the victim reports)
-    if (!p.standing) { if (p.mode === 'down' && p.t > (p.upAfter || (p.upAfter = 3.5 + this.rng.next() * 2.5))) p.getUp(); return true; }
+    if (!p.standing) { if (p.mode === 'down' && p.t > (p.upAfter || (p.upAfter = (p.downWhy === 'punch' ? 5 : 3.5) + this.rng.next() * 2.5))) p.getUp(); return true; }
     if (p.mode === 'rise') { if (p.t > 1.45) this.afterUp(p); return true; }
     // (wedged - his way blocked a long while: out of my sight he goes; in it, back the way he came)
     if (p.stuckN >= 2) {
@@ -865,15 +865,34 @@ export class People {
         if (!p.standing || p.mode === 'dash' || (p.role !== 'walker' && p.role !== 'cop')) continue;
         // coming at him in the next second: the dash clear (the tail's rule)
         let tHit = null;
-        for (const tt of [0.25, 0.5, 0.8, 1.1]) {
+        for (const tt of [0.25, 0.5, 0.8, 1.1, 1.5, 2.0]) {   // ([O8] two seconds out: a car seen coming, not a reflex)
           const fx = dx - v.vel.x * tt, fz = dz - v.vel.z * tt;
           const ax = fx * c - fz * s, az = fx * s + fz * c;
           if (Math.abs(ax) < hl + 1.0 && Math.abs(az) < hw + 1.0) { tHit = tt; break; }
         }
         if (tHit == null) continue;
-        // (too late to clear: a man needs a third of a second to see it and
-        // start; a car coming over 18 m/s gives him less than 0.6 s - the driver's doing)
-        if (tHit < 0.35 || (tHit < 0.6 && sp > 18)) continue;
+        // [O8] after the critic: a man's own reaction, not a reflex faster than any man's. He sees
+        // it (or hears it, his back to it) and starts after his own time: 0.4 - 0.6 s, slower
+        // with his back turned, under an umbrella, in a crowd, drunk. A car fast (over 40 km/h)
+        // or close (8 m) freezes him now and then - the lamps in his eyes, his arms up - and a
+        // driver who aims hits about half the time. Too late when he starts: the arms up, struck.
+        const now = this.G.time, S = p.carSeen;
+        if (!S || S.v !== v || now - S.t > 2.5) {
+          const dd = Math.max(0.1, Math.hypot(dx, dz)), fwd = -(dx * Math.sin(p.fig.yaw) + dz * Math.cos(p.fig.yaw)) / dd;
+          let rt = 0.4 + Math.random() * 0.2;
+          if (fwd < -0.2) rt += 0.25;
+          if (p.umb) rt += 0.15;
+          if (p.drunk) rt += 0.3;
+          if (this.near(p.pos.x, p.pos.z, 2.2).length > 3) rt += 0.1;
+          const risky = sp > 11 || dd - hl < 8;
+          p.carSeen = { v, t: now, rt, freeze: Math.random() < (risky ? 0.5 : 0.08) };
+          continue;
+        }
+        if (now - S.t < S.rt) continue;
+        if (S.freeze || tHit < 0.3) {
+          if (p.role === 'walker' && p.mode !== 'cower') { p.cower(v.pos, 1.4); if (Math.random() < 0.6) p.say('o3_cry', { f0: 200 + Math.random() * 60 }); this.stats.froze = (this.stats.froze || 0) + 1; }
+          continue;
+        }
         const side = lz >= 0 ? 1 : -1;
         let rx = s * side, rz = c * side;
         const T = this.stage.track, J = 2.6;

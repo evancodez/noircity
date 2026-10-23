@@ -845,6 +845,9 @@ const HAT_TUMBLE = {
 };
 
 // ---------------------------------------------------------------------------
+// [O8] who is told when a figure goes onto the physics layer and off it (src/cast/o8extras.js:
+// the shirt front and the cuffs a man shows lying, so a body on the black street reads)
+export const RAG_HOOKS = [];
 export class Hood {
   // build (the cast's costumes, src/cast/Figure.js; a Hood passes none):
   // { lods: [geo x3], offsets: { joint: Vector3 }, scale, animator(obj),
@@ -995,7 +998,7 @@ export class Hood {
     if (!this.alive) return;
     this.state = name;
     if (name === 'stepOut') this._rm = 0;
-    const ts = name === 'walk' ? this.gaitScale(WALK.speed) : name === 'run' ? this.gaitScale(RUN.speed) : 1;
+    const ts = name === 'walk' ? this.gaitScale(WALK.speed) : name === 'run' ? this.gaitScale(RUN.speed) : name === 'idle' && this.style && this.style.rate ? this.style.rate : 1;
     // [O8] the idle a man keeps (his style's: the weight on one leg, hands in the pockets ...)
     const nm = name === 'idle' && this.idleName ? this.idleName : name;
     this.anim.play(nm, { fade, timeScale: ts });
@@ -1010,6 +1013,7 @@ export class Hood {
     if (hat && hat.parent === this.bones.head) { if (S && S.hat) hat.quaternion.setFromEuler(_pp.e.set(S.hat[0], 0, S.hat[1])); else hat.quaternion.identity(); }
     const bank = this.anim && this.anim.bank;
     this.idleName = S && S.idle && S.idle !== 'idle' && bank && bank.has(S.idle) ? S.idle : null;
+    if (this.anim && this.anim.seedPhase) this.anim.seedPhase(S && S.phase != null ? S.phase : null);
   }
   // [O8] the bones a layer turns on top of the mixer's pose, marked moved each step: the
   // mixer writes a bone only when its value moved, and a layer laid on an unwritten bone
@@ -1091,6 +1095,7 @@ export class Hood {
     this.object.updateMatrixWorld(true);
     this._ragBlend = null;
     this.rag = new Ragdoll(this, { clip, push, follow });
+    for (const f of RAG_HOOKS) f(this, true);
     return this.rag;
   }
   // the lying clips (a ragdoll goes on while the figure plays one of these)
@@ -1102,6 +1107,7 @@ export class Hood {
     const R = this.rag;
     if (!R) { if (instant) this._ragBlend = null; return; }
     this.rag = null;
+    for (const f of RAG_HOOKS) f(this, false);
     if (instant) { this._ragBlend = null; return; }
     // where he lies -> where the get-up clip starts: his feet at the root, his head
     // along -z of it, the pelvis 0.8 m back (KO_LIE: castAnim.js); on his front the

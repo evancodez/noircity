@@ -215,10 +215,13 @@ const SETUP = {
     for (let x = -128.6; x <= -111.4; x += 1.25) if (clearX(x)) xs.push(x);
     let k = 0;
     B.men = [];
-    for (const z of [37.6, 36.2, 34.8]) {
+    // ([O8] after the critic: as many rows as it takes for every look - a fourth now)
+    const zs = [37.6, 36.2, 34.8, 33.4].slice(0, Math.max(3, Math.ceil(looks.length / xs.length)));
+    for (const z of zs) {
       for (const x of xs) {
-        const look = looks[k % looks.length]; k++;
-        const p = P.spawn(look, x + (z === 36.2 ? 0.6 : 0), z, 0, roleOf(look));
+        if (k >= Math.max(looks.length, xs.length * 3)) break;
+        const look = looks[(looks.length - 1 - (k % looks.length))]; k++;   // (the newest looks in front)
+        const p = P.spawn(look, x + (z === 36.2 ? 0.6 : z === 33.4 ? 0.3 : 0), z, 0, roleOf(look));
         p.role = 'parade'; p.mode = 'stand'; p.until = 1e9; p.t = 0; p.stop();
         B.men.push(p);
       }

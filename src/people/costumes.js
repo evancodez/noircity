@@ -169,11 +169,16 @@ function fedoraCostume(o, { name, gang = false } = {}) {
   ];
   // (a belted trench: the belt a darker band at the waist)
   if (o.belt) garments[0] = { kind: 'torso', shade: (th, y) => (y > 1.27 && A(th) < 0.11 ? 0.3 : A(y - 1.04) < 0.022 ? 0.004 : 'coat') };
+  // [O8] after the critic: the same coats under another hat - the bowler's round dome, the flat
+  // cap's low peak - so the street is not one fedora at 20 m
+  let cover = { kind: 'none', hatDY: 0.13, hatDZ: 0.0, pitch: gang ? 0.12 : 0.06, s: 1 };
+  if (o.hat === 'bowler') { garments.pop(); cover = { kind: 'bowler', hatDY: 0.13, hatDZ: 0.0, pitch: 0.05, s: 1.0, brim: 0.145 }; }
+  else if (o.hat === 'flatcap') { garments.pop(); cover = { kind: 'flatcap', hatDY: 0.124, hatDZ: 0.012, pitch: 0.16, s: 1.06, peak: 0.066, peakDrop: 0.3 }; }
   return {
     name, h: o.h, body: o.body,
-    cover: { kind: 'none', hatDY: 0.13, hatDZ: 0.0, pitch: gang ? 0.12 : 0.06, s: 1 },
+    cover,
     garments,
-    skin: { coat: o.coat, lapel: o.coat * 0.9, collar: o.coat * 1.1, scarf: o.scarf ?? 0.3, hand: 0.022, skin: 0.03, cover: o.coat < 0.03 ? 0.007 : 0.012, band: 0.002, trousers: 0.007, shoes: 0.004 },
+    skin: { coat: o.coat, lapel: o.coat * 0.9, collar: o.coat * 1.1, scarf: o.scarf ?? 0.3, hand: 0.022, skin: 0.03, cover: o.coat < 0.03 ? 0.007 : 0.012, band: 0.002, peak: 0.009, trousers: 0.007, shoes: 0.004 },
     collider: o.body === BROAD ? 0.34 : 0.3,
   };
 }
@@ -296,17 +301,27 @@ for (const [id, info] of Object.entries({
   docker: { sex: 'm', h: 1.82, hat: 'knit', work: true }, dockhand: { sex: 'm', h: 1.8, hat: 'cap', work: true }, tail_trucker: { sex: 'm', h: 1.8, hat: 'cap', work: true },
   victim: { sex: 'm', h: 1.74, hat: null },
 })) if (COSTUMES[id]) LOOKS[id] = { kind: id, role: 'ped', ...info };
+// [O8] after the critic ('downtown is still mostly the fedora man'): kinds told at 20 m by the
+// outline - the clerk in a bowler and a short jacket (his legs and the dome), the big man in a grey
+// coat and a bowler, the working man in a long coat and a flat cap with a muffler, the woman in a
+// long pale fur coat (the palest long shape in the street)
+reg('o8_bowler_a', fedoraCostume({ hem: 0.86, coat: 0.014, brim: 0.16, scarf: null, body: MAN, h: 1.75, jacket: true, hat: 'bowler' }), { role: 'ped', sex: 'm', h: 1.75, hat: 'bowler' });
+reg('o8_bowler_b', fedoraCostume({ hem: 0.44, coat: 0.07, brim: 0.17, scarf: null, body: BROAD, h: 1.8, hat: 'bowler' }), { role: 'ped', sex: 'm', h: 1.8, hat: 'bowler' });
+reg('o8_capcoat', fedoraCostume({ hem: 0.52, coat: 0.02, brim: 0.17, scarf: 0.34, body: BROAD, h: 1.81, hat: 'flatcap' }), { role: 'ped', sex: 'm', h: 1.81, hat: 'cap', work: true });
+reg('o8_woman_fur', womanCostume({ coat: 0.11, collar: 'fur', fur: 0.32, hem: 0.3, cover: 'cloche', cv: 0.01, h: 1.66 }), { role: 'ped', sex: 'f', h: 1.66, hat: 'cloche' });
 // [O8] the swell: the topper, the white scarf, the cane (src/cast/kinds/o8_swell.js)
 if (COSTUMES.o8_swell) LOOKS.o8_swell = { kind: 'o8_swell', role: 'ped', sex: 'm', h: 1.84, hat: 'topper' };
 
 // the pedestrians' looks by district (weights): the Docks and the Yards
 // working men, downtown the coats and the hats, the Hill the good coats
 export const PED_LOOKS = {
-  downtown: { o3_fedora_a: 3, o3_fedora_b: 3, o3_fedora_c: 2, o3_fedora_d: 2, o3_fedora_e: 2, o3_fedora_f: 1, o3_fedora_g: 2, o3_fedora_h: 2, o3_woman_a: 2, o3_woman_b: 2, o3_woman_c: 2, o3_woman_d: 2, couple_him: 2, couple_her: 1, oldman: 1, victim: 1, o8_swell: 1 },
-  tenements: { o3_fedora_a: 1, o3_fedora_c: 2, o3_fedora_e: 2, o3_fedora_h: 2, o3_woman_b: 2, o3_woman_c: 2, oldman: 3, dockhand: 2, tail_trucker: 2, docker: 1, couple_her: 1, victim: 1 },
+  // ([O8] after the critic: the fedoras 13 of 43 downtown, not 17 of 31 - the bowlers, the flat
+  // cap, the fur, the swell, the bare head, the cap of a driver by his van in their place)
+  downtown: { o3_fedora_a: 2, o3_fedora_b: 1, o3_fedora_c: 1, o3_fedora_d: 3, o3_fedora_e: 2, o3_fedora_f: 1, o3_fedora_g: 1, o3_fedora_h: 2, o3_woman_a: 2, o3_woman_b: 2, o3_woman_c: 2, o3_woman_d: 2, o8_woman_fur: 3, couple_him: 2, couple_her: 1, oldman: 2, victim: 2, o8_swell: 3, o8_bowler_a: 3, o8_bowler_b: 2, o8_capcoat: 2, tail_trucker: 1, dockhand: 1 },
+  tenements: { o3_fedora_a: 1, o3_fedora_c: 2, o3_fedora_e: 2, o3_fedora_h: 2, o3_woman_b: 2, o3_woman_c: 2, oldman: 3, dockhand: 2, tail_trucker: 2, docker: 1, couple_her: 1, victim: 1, o8_capcoat: 3, o8_bowler_a: 1 },
   docks: { docker: 3, dockhand: 3, tail_trucker: 2, oldman: 1, o3_fedora_c: 1, o3_fedora_f: 1, o3_woman_b: 1 },
   yards: { tail_trucker: 3, dockhand: 2, docker: 1, oldman: 1, o3_fedora_e: 1 },
-  hill: { o3_fedora_a: 2, o3_fedora_b: 2, o3_fedora_d: 2, o3_fedora_g: 2, o3_woman_a: 3, o3_woman_d: 2, o3_woman_c: 1, couple_him: 2, couple_her: 2, o8_swell: 3 },
+  hill: { o3_fedora_a: 2, o3_fedora_b: 2, o3_fedora_d: 2, o3_fedora_g: 2, o3_woman_a: 3, o3_woman_d: 2, o3_woman_c: 1, couple_him: 2, couple_her: 2, o8_swell: 3, o8_woman_fur: 3, o8_bowler_b: 2 },
 };
 export const COP_LOOKS = ['o3_cop_a', 'o3_cop_b', 'o3_cop_c'];
 export const TEC_LOOKS = ['o3_tec_a', 'o3_tec_b'];

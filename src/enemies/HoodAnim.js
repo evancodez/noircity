@@ -685,6 +685,8 @@ export class HoodAnimator {
     if (pa && prev.loop && clip.loop && (name === 'walk' || name === 'run') && (prev.name === 'walk' || prev.name === 'run')) {
       time = ((pa.time / prev.duration) % 1) * clip.duration;
     } else if (!clip.loop) time = 0;
+    // [O8] a loop begun fresh starts at the figure's own phase (seeded where he stands): no two in step
+    else if (this.phase != null && !this.lower.slots.has(clip.name)) time = this.phase * clip.duration;
     this.base = name;
     this.baseTime = 0;
     this.lowerOnce = null;
@@ -693,6 +695,14 @@ export class HoodAnimator {
       if (!clip.loop) this.overlay = null;
       this.upper.play(clip, { fade, time: time ?? this.lower.get(clip.name).time, timeScale });
     }
+  }
+
+  // [O8] the figure's own phase in its loops (0..1, or null: from the start, as game one's men)
+  seedPhase(p) {
+    this.phase = p;
+    const c = this.base && this.clips[this.base];
+    if (p == null || !c || !c.loop) return;
+    for (const ch of [this.lower, this.upper]) { const a = ch.get(this.base); if (a) a.time = p * c.duration; }
   }
 
   setTimeScale(s) {

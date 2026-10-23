@@ -430,6 +430,15 @@ export class Ragdoll {
       if (pB < pen) { pen = pB; sg = -1; }
       if (pT < pen && !DBG.noTop) { pen = pT; ax = 'y'; }
       if (pS < pen || (this.lying && y < 0.45)) { pen = pS; ax = 'z'; sg = Math.sign(lz || 1); }
+      // [O8] after the critic (a man struck by a car still under the throttle rode its bumper 50 m):
+      // held against the face for a quarter of a second while it keeps going, he slides off its
+      // corner - out to the side he is on, the car's way kept in him, and the car goes by
+      let slide = 0;
+      if (ax === 'x' && sg > 0) {
+        if (this.t - (this._cfLast ?? -9) > 0.2) { this._cf0 = this.t; this._cfSide = 0; }
+        this._cfLast = this.t;
+        if (this.t - this._cf0 > 0.25 && Math.hypot(vx, vz) > 4) slide = (this._cfSide || (this._cfSide = Math.sign(lz || 1))) * Math.min(6, 0.45 * Math.hypot(vx, vz));
+      }
       let nlx = 0, nlz = 0;
       const px0 = p.x, py0 = p.y, pz0 = p.z;
       if (ax === 'y') p.y = y0 + B.y1 + r;
@@ -450,6 +459,11 @@ export class Ragdoll {
       const along = ((p.x - o.x) * nx + (p.z - o.z) * nz) / h, carAlong = vx * nx + vz * nz;
       const want = carAlong * 1.05 + (this.lying ? 1.2 : 0);
       if (along < want) { const add = (want - along) * h; o.x -= nx * add; o.z -= nz * add; }
+      if (slide) {
+        // (the car's right in the world: its local +z)
+        const sx = s, sz = c, sAlong = ((p.x - o.x) * sx + (p.z - o.z) * sz) / h;
+        if (sAlong * Math.sign(slide) < Math.abs(slide)) { const add = (slide - sAlong) * h; o.x -= sx * add; o.z -= sz * add; }
+      }
       // (a car face does not throw a man up faster than its bonnet would: the drag of his own
       // limbs against it is no lift)
       if (p.y - o.y > 1.6 * h) o.y = p.y - 1.6 * h;
