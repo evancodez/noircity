@@ -5,6 +5,7 @@ import { money, earn, pay, owns, give, arms, wallet } from '../combat/money.js';
 import { BOXER_LEVELS } from '../combat/brawl/kinds.js';
 import { buildCounter, buildRing, priceCard } from './o4/places.js';
 import { DINER, counterAt } from './_diner_room.js';
+import { wake } from '../combat/fall.js';
 
 // [O4] Lane O4's test bed (docs/briefs/O4_COMBAT.md): NOT a scene of the
 // story; ?start=o4 plays it from the first contest, ?start=o4.<beat> one
@@ -81,7 +82,20 @@ export const DINERFIGHT = {
   bottles: [[3, 0.16, 0.1, 'o4.bottle1'], [6, 0.16, -0.2, 'o4.bottle2']],
   obj: 'A fight in the diner. Use the room.',
 };
-const CONTESTS = ['brawl1', 'brawl2', 'brawl3', 'cop', 'street', 'diner'];
+// the police in the street (the same avenue): two cops with revolvers, a
+// detective with a Tommy gun; a fall here, and in the street, ends at the
+// hospital's steps (the stand-in: the pavement before the diner) - the gun
+// kept, the money less a little (src/combat/fall.js)
+export const POLICE = {
+  men: [
+    { kind: 'pistol', at: { x: 6.4, z: -20.7 }, cover: true, wait: 1.6, variant: { coat: 1, brim: 1, tall: 1, cap: 'police' } },
+    { kind: 'pistol', at: { x: 2.6, z: -28.7 }, cover: true, wait: 2.6, variant: { coat: 1, brim: 1, tall: 0, cap: 'police' } },
+    { kind: 'tommy', at: { x: 12.9, z: -25.1 }, cover: true, wait: 3.6, variant: { coat: 0, brim: 1, tall: 1, heavy: true } },
+  ],
+  obj: 'The police. Two cops and a detective.',
+};
+export const HOSPITAL = { at: [-7.0, 0.6, -Math.PI / 2], obj: 'The hospital steps.' };
+const CONTESTS = ['brawl1', 'brawl2', 'brawl3', 'cop', 'street', 'diner', 'police'];
 const NEXT = { brawl1: 'brawl2', brawl2: 'brawl3', brawl3: 'cop', cop: 'diner', diner: 'street', street: 'done', done: 'brawl1' };
 
 // the street for a beat: the men gone, me where I start, the fight begun
@@ -95,6 +109,8 @@ function street(ctx, name) {
   G.fx.clear();
   G.health.reset();
   if (name === 'street') { shootout(ctx); return; }
+  if (name === 'police') { shootout(ctx, POLICE); return; }
+  if (name === 'hospital') { hospital(ctx); return; }
   if (name === 'range') { range(ctx); return; }
   if (name === 'shop') { shop(ctx); return; }
   if (name === 'gym') { gym(ctx); return; }
@@ -104,8 +120,32 @@ function street(ctx, name) {
   G.eye.copy(G.camera.position);
   ctx.flags.o4 = { beat: name, t0: G.time, result: null, tries: G.fails(name) };
   if (!B) { ctx.player.weapons.equip('fists'); return; }
-  F.start({ men: B.men.map((m) => ({ ...m, yaw: Math.atan2(E.x - m.at.x, E.z - m.at.z) })), to: name, leave: true, seed: 4242 + G.fails(name) * 7,
+  F.start({ men: B.men.map((m) => ({ ...m, yaw: Math.atan2(E.x - m.at.x, E.z - m.at.z) })), to: name, leave: true, seed: 4242 + G.fails(name) * 7, mercy: G.fails(name),
     onEnd: (result) => { ctx.flags.o4.result = result; } });
+  if (G.shotMode) stripHooks(ctx, F);
+}
+// (the strips' frames, shot mode only: ?o4near=1 the first man 1.45 m before me,
+// the others at the ring; ?o4hold=1 they wait; ?o4atk=<clip>@<t> the first
+// throws that blow at t; ?o4press=<code>@<t0>-<t1> a press held t0..t1)
+function stripHooks(ctx, F) {
+  const G = ctx.game, q = new URLSearchParams(location.search);
+  if (q.get('o4near')) {
+    const E = O4.me;
+    F.men.forEach((m, i) => { const a = (i === 0 ? 0 : (i % 2 ? 1 : -1) * (0.9 + 0.3 * i)), r = i === 0 ? 1.45 : 2.6;
+      m.c.fig.pos.x = E.x - Math.sin(a) * r; m.c.fig.pos.z = E.z - Math.cos(a) * r; m.c.fig.yaw = Math.atan2(E.x - m.c.fig.pos.x, E.z - m.c.fig.pos.z); m.next = 9; });
+  }
+  if (q.get('o4hold')) F.hold = true;
+  const atk = q.get('o4atk');
+  if (atk) { const [clip, t] = atk.split('@'); let done = false; G.scripts.push((tt) => { if (!done && tt >= +t && F.men[0]) { done = true; F.attack(F.men[0], clip); } }); }
+  const pr = q.get('o4press');
+  if (pr) {
+    const [code, span] = pr.split('@'), [t0, t1] = span.split('-').map(Number);
+    let st = 0;
+    G.scripts.push((tt) => {
+      if (st === 0 && tt >= t0) { st = 1; G.vin.down.add(code); G.vin.held.add(code); }
+      else if (st === 1 && tt >= t1) { st = 2; G.vin.held.delete(code); G.vin.up.add(code); }
+    });
+  }
 }
 
 // the bar brawl: the diner's floor, its things, two men
@@ -138,7 +178,7 @@ function dinerFight(ctx) {
     things.push(it);
   }
   ctx.flags.o4 = { beat: 'diner', t0: G.time, result: null, things: things.length };
-  F.start({ men: B.men.map((m) => ({ ...m, yaw: Math.atan2(E.x - m.at.x, E.z - m.at.z) })), to: 'diner', leave: false, seed: 5100 + G.fails('diner') * 7,
+  F.start({ men: B.men.map((m) => ({ ...m, yaw: Math.atan2(E.x - m.at.x, E.z - m.at.z) })), to: 'diner', leave: false, seed: 5100 + G.fails('diner') * 7, mercy: G.fails('diner'),
     bounds: { x0: DINER.counter.frontX + 0.25, x1: DINER.innerX - 0.1, z0: DINER.zMin + 0.2, z1: DINER.zMax - 0.2 }, things,
     onEnd: (result) => { ctx.flags.o4.result = result; } });
 }
@@ -195,26 +235,39 @@ function range(ctx) {
 }
 
 // the shootout down the avenue (the gun kit, its men planning on the world's cover)
-function shootout(ctx) {
-  const G = ctx.game, K = gunsOf(G), B = STREET, C = ctx.controller, S = ctx.stage;
+// the hospital: up out of the black on its steps, the gun kept, the money less a little
+function hospital(ctx) {
+  const G = ctx.game, C = ctx.controller, H = HOSPITAL;
+  C.setPose(H.at[0], H.at[1], H.at[2], 0.02);
+  G.eye.copy(G.camera.position);
+  wallet(G);
+  if (!owns(G, 'revolver')) give(G, 'revolver');
+  arms(G).to('revolver');
+  C.setMode('gun', { crouch: false });
+  ctx.flags.o4 = { beat: 'hospital', woke: wake(G, 'hospital') };
+}
+function shootout(ctx, men = null) {
+  const G = ctx.game, K = gunsOf(G), B = men ? { ...STREET, men: men.men } : STREET, C = ctx.controller, S = ctx.stage;
   // (the sedan across the lane: once on this stage; it stays, a car like the others)
   if (!S._o4car) { const cars = S.part('cars'); const car = cars.spawn({ pos: new G.camera.position.constructor(B.car.x, 0, B.car.z), yaw: B.car.yaw, lights: false, paint: 'paint' }); cars.cars.push(car); S._o4car = car; }
   C.setPose(B.at[0], B.at[1], B.at[2], -0.04);
   C.setMode('gun', { crouch: true });
   G.eye.copy(G.camera.position);
   K.arm('revolver', { pocket: B.pocket });
-  K.begin({ world: true, area: B.area, to: 'street', maxFiring: 2, flankAfter: 14, settleK: 1.2, dmgK: 0.9 });
-  ctx.flags.c2 = { beat: 'street', men: [], won: false, t0: G.time, spots: B.spots, open: B.open };
-  ctx.flags.o4 = { beat: 'street', t0: G.time, result: null };
+  const beatName = men ? 'police' : 'street';
+  // (a play proving the contest retries it: G.o4stay; else a fall ends at the hospital, as in the city)
+  K.begin({ world: true, area: B.area, to: G.o4stay ? beatName : 'hospital', maxFiring: 2, flankAfter: 14, settleK: 1.2, dmgK: 0.9 });
+  ctx.flags.c2 = { beat: beatName, men: [], won: false, t0: G.time, spots: B.spots, open: B.open };
+  ctx.flags.o4 = { beat: beatName, t0: G.time, result: null };
   for (const m of B.men) ctx.flags.c2.men.push(K.spawn({ kind: m.kind, at: m.at, way: m.way ? { steps: m.way } : null, wait: m.wait ?? 0, cover: !!m.cover, variant: m.variant || null }));
 }
 
 export default defineScene({
   id: 'o4', stage: 'block', title: '', name: 'The Street',
-  beats: [...CONTESTS, 'done', 'range', 'shop', 'gym'],
+  beats: [...CONTESTS, 'done', 'range', 'shop', 'gym', 'hospital'],
   save: [],
-  objectives: { ...Object.fromEntries(CONTESTS.map((k) => [k, k === 'street' ? STREET.obj : k === 'diner' ? DINERFIGHT.obj : O4[k].obj])), done: 'All of them won. E: again.', range: RANGE.obj, shop: SHOP.obj, gym: GYM.obj },
-  setup: Object.fromEntries([...CONTESTS, 'done', 'range', 'shop', 'gym'].map((b) => [b, (ctx) => street(ctx, b)])),
+  objectives: { ...Object.fromEntries(CONTESTS.map((k) => [k, k === 'street' ? STREET.obj : k === 'diner' ? DINERFIGHT.obj : k === 'police' ? POLICE.obj : O4[k].obj])), done: 'All of them won. E: again.', range: RANGE.obj, shop: SHOP.obj, gym: GYM.obj, hospital: HOSPITAL.obj },
+  setup: Object.fromEntries([...CONTESTS, 'done', 'range', 'shop', 'gym', 'hospital'].map((b) => [b, (ctx) => street(ctx, b)])),
   *script(ctx) {
     const G = ctx.game, F = ctx.flags, C = crowdOf(G);
     const exitFn = () => { C.stop('exit'); C.clearMen(); gunsOf(G).end(); G.off('scene:exit', exitFn); ctx.hud.warn(null); priceCard(G.hud, []);
@@ -230,10 +283,11 @@ export default defineScene({
     // (the mouse wheel turns through what I own: fists, the revolver, the shotgun)
     ctx.onStep(() => { const w = G.mouse.wheel; if (w && !C.active) arms(G).next(Math.sign(w)); });
     if (name === 'range') { yield beat('range'); return; }
+    if (name === 'hospital') { yield beat('hospital'); ctx.hud.say(F.o4.woke.line, 3.0, { always: true }); yield wait(4); ctx.hud.objective('E: the street again.'); yield* ctx.prompt({ text: 'the street again', key: 'KeyE' }); G.scenes.go('o4', { beat: 'street', fade: 'black', card: false }); return; }
     if (name === 'shop') { yield* shopScript(ctx); return; }
     if (name === 'gym') { yield* gymScript(ctx); return; }
     if (!CONTESTS.includes(name)) return;
-    if (name === 'street') { yield* shootoutScript(ctx); return; }
+    if (name === 'street' || name === 'police') { yield* shootoutScript(ctx, name); return; }
     yield beat(name);
     yield until(() => !!(F.o4 && F.o4.result));
     const r = F.o4.result;
@@ -248,14 +302,14 @@ export default defineScene({
 });
 
 // the shootout's contest: the kit's cards, its warning each step, won when the last is down
-function* shootoutScript(ctx) {
+function* shootoutScript(ctx, name = 'street') {
   const G = ctx.game, K = gunsOf(G), F = ctx.flags, C = ctx.controller;
-  yield beat('street');
+  yield beat(name);
   G.director.stop(); G.director.begin();
   G.director.run(function* () { while (G.scenes.ctx === ctx && !(F.c2 && F.c2.won)) yield null; });
   let won = false;
   ctx.onStep(() => ctx.hud.warn(K.active && !won ? K.warning() : null));
-  if (G.fails('street') === 2) K.teach('crouch', { again: true }); else K.teach('crouch');
+  if (G.fails(name) === 2) K.teach('crouch', { again: true }); else K.teach('crouch');
   let rose = false, n0 = 4;
   const alive = () => (F.c2 ? F.c2.men.filter((h) => h.alive).length : 0);
   yield until(() => {
@@ -266,13 +320,13 @@ function* shootoutScript(ctx) {
     return n === 0;
   });
   F.c2.won = true; won = true; ctx.hud.warn(null);
-  (G._c2won || (G._c2won = [])).push('street');
+  (G._c2won || (G._c2won = [])).push(name);
   F.o4.result = 'won';
   ctx.hud.objective('Clear.');
   yield wait(1.8);
   ctx.hud.objective(null);
   K.end();
-  G.scenes.go('o4', { beat: G.o4stay ? 'street' : NEXT.street, fade: 'black', card: false });
+  G.scenes.go('o4', { beat: G.o4stay ? name : NEXT[name], fade: 'black', card: false });
 }
 
 // the gun shop: E on a thing on the counter buys it (the prompt says the price)
@@ -332,7 +386,7 @@ function* gymScript(ctx) {
   ctx.controller.setPose(m.x, m.z, yaw, -0.05);
   G.eye.copy(G.camera.position);
   ctx.hud.objective('Win the bout.');
-  C.start({ men: [{ kind: 'boxer', c: F.o4.boxer, name: L.name, over: { ...L }, hp: L.hp }], bounds: ring.bounds, leave: false, to: 'gym', maxIn: 1, seed: 7100 + lv,
+  C.start({ men: [{ kind: 'boxer', c: F.o4.boxer, name: L.name, over: { ...L }, hp: L.hp }], bounds: ring.bounds, leave: false, to: 'gym', maxIn: 1, seed: 7100 + lv, mercy: G.fails('gym'),
     onEnd: (r) => { F.o4.result = r; },
     onDown: () => ({ why: F.o4.bet > 0 ? 'Out cold. The bet is his.' : 'Out cold.', to: 'gym' }) });
   yield until(() => !!F.o4.result);

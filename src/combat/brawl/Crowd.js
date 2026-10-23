@@ -50,7 +50,7 @@ import { EdgeInk } from './ink.js';
 // (no bounds) they follow; past 14 m 'He's coming.', past 30 m they give up
 // ('He's gone.') and the fight is left.
 export const CROWD = {
-  me: { jab: 4, heavy: 15, counter: 1.5, back: 1.25, combo: [1, 1, 1.15, 1.3, 1.3], comboGap: 0.55, into: 6 },
+  me: { jab: 5, heavy: 15, counter: 1.5, back: 1.25, combo: [1, 1, 1.15, 1.3, 1.3], comboGap: 0.55, into: 6 },
   hold: { heavy: 0.25, auto: 0.6 },
   hop: { side: 0.55, back: 0.6, dur: 0.1, again: 0.2 },
   buffer: 0.35,
@@ -61,7 +61,7 @@ export const CROWD = {
   stun: 1.0, coverAfter: 4, cover: 0.9, hurtMax: 0.25, jammed: 0.25,
   warnOn: 30, warnOff: 40, read: 1.0,
   leave: { warn: 14, gone: 30 },
-  getUp: { after: 3.0, hp: 0.34 },
+  getUp: { after: 3.0, hp: 0.25 },
   // the hit stop (steps of 1/60 s) and the frame's kick by what landed
   feel: { jab: { stop: 4, kick: [0.6, 0.8], burst: 90 }, heavy: { stop: 5, kick: [2.2, 2.8], burst: 230, knock: 1.1 }, thing: { stop: 5, kick: [1.8, 2.2], burst: 200, knock: 0.8 } },
 };
@@ -128,7 +128,11 @@ export class Crowd {
     this.stats = fresh();
     this.T = 0; this.RT = 0;
     this.cue = null; G.worldK = 1;
-    this.cueW = CROWD.cue.start + Math.min(CROWD.cue.mercyMax, CROWD.cue.mercy * (cfg.lateDowns || 0));
+    // (the mercy: the place's count of my falls in this fight, 0..3 - a little more
+    // time to read the cue, his openings a fifth longer and his blows a beat
+    // further apart a level; it never lands a blow for me, and an idle man still loses)
+    this.mercy = Math.max(0, Math.min(3, this.cfg.mercy || 0));
+    this.cueW = CROWD.cue.start + Math.min(CROWD.cue.mercyMax, CROWD.cue.mercy * this.mercy);
     this.warned = false; this.warnedAt = 0;
     this.lastIn = -9; this.lastBig = -9;
     this.nudge = { guard: 0, opened: false, missedCues: 0, cueAgain: false, openAgain: false };
@@ -156,6 +160,8 @@ export class Crowd {
   add(spec) {
     const G = this.game, base = MEN[spec.kind] || MEN.driver;
     const K = { ...base, ...(spec.over || {}) };
+    const mc = this.mercy || 0;
+    if (mc) { K.open = (K.open || 1) * (1 + 0.2 * mc); K.gap = [K.gap[0] + 0.2 * mc, K.gap[1] + 0.2 * mc]; }
     let c = spec.c;
     if (!c) c = G.cast.spawn(K.cast, { at: spec.at, yaw: spec.yaw ?? Math.atan2(G.eye.x - spec.at.x, G.eye.z - spec.at.z), name: spec.id || null });
     c.noGlance = true;
@@ -321,7 +327,8 @@ export class Crowd {
     }
     // (the free walk: nobody in reach - a press still swings at the air)
     for (const code of ['KeyA', 'KeyD', 'KeyS']) if (G.pressed(code)) me.buf = { code, t: 0 };
-    if (me.buf) { me.buf.t += dt; if (me.buf.t > 0.15) me.buf = null; }
+    // (a key that comes while a blow holds me is kept a quarter second and more: it acts as soon as I can)
+    if (me.buf) { me.buf.t += dt; if (me.buf.t > 0.3) me.buf = null; }
     // ---- the heavy: the jab's fist still held past 0.25 s cocks; let go (or 0.6 s), it goes
     if (me.act === 'wind') {
       const b = me.btn[me.code];
@@ -854,13 +861,16 @@ export class Crowd {
         if (A.block) this.hurtMe(A.dmg * A.block * K, from, { soft: true });
         this.sfx('blocked', eye, { k: A.kind === 'straight' ? 0.7 : 1 });
         me.h = H.play('blockHit');
-        // (a straight blocked leaves him open a moment: the block's reward)
-        if (A.kind === 'straight') { m.missOpen = true; m.hit = false; const mt = 0.45 * (m.K.open || 1); this.open(m, mt); m.missT = mt; m.punished = false; }
+        // (a blow blocked leaves him open a moment: the block's reward, a counter -
+        // a straight 0.45 s, a hook that came round into my arms 0.6)
+        { m.missOpen = true; m.hit = false; const mt = (A.kind === 'straight' ? 0.45 : 0.6) * (m.K.open || 1); this.open(m, mt); m.missT = mt; m.punished = false; }
         G.emit('crowd:hit', { by: 'him', man: m.id, kind: m.clip, zone: 'covered' });
         return;
       }
-      // a haymaker, a shove, a rush: through the block, a short stagger
+      // a haymaker, a shove, a rush: through the block, a short stagger - but
+      // he threw his weight into it: he is open a moment too (a counter, if I am quick)
       this.lastHurt = { why: 'big', man: m.id };
+      { m.missOpen = true; const mt = 0.55 * (m.K.open || 1); this.open(m, mt); m.missT = mt; m.punished = false; }
       this.hurtMe(A.dmg * 0.5 * K, from, { soft: false, stun: CROWD.hurtMax });
       this.sfx('guardBreak', eye, {});
       if (A.push) this.pushMe(m, A.push);
