@@ -3,6 +3,7 @@ import { Vehicle, Headlamps } from './Vehicle.js';
 import { Car } from './Car.js';
 import { buildCoupe, buildCoupeSteps, buildTruck, tailLamps, figureInk, contactShadow, COUPE, TRUCK } from './models.js';
 import { releaseHoodSlot, LAYER } from '../render/layers.js';
+import { KINDS as FLEET_KINDS, fleetModel } from './kinds.js';
 
 // Vehicles (docs/story/CONTRACTS.md §11; wave B, lane B5): game.vehicles.
 //   vehicles.spawn(kind: 'coupe' | 'sedan' | 'truck', { at: { x, z } | Vector3,
@@ -26,12 +27,22 @@ export class Vehicles {
     this.player = null;
   }
 
-  spawn(kind, { at, yaw = 0, speed = 0, lights = true, tail = null, paint = 'paint', spec = null } = {}) {
+  // [O2] the city's fleet (vehicles/kinds.js): 'saloon' 'taxi' 'police' 'hearse' 'van'
+  // 'lorry', and 'coupe' with fleet: true (the light build; without it the base's
+  // full coupe); fleetPaint: one of kinds.PAINTS; ink: false - no figure slot (a
+  // parked car takes world ids, traffic/Traffic.js)
+  spawn(kind, { at, yaw = 0, speed = 0, lights = true, tail = null, paint = 'paint', spec = null, fleet = false, fleetPaint = null, ink = true } = {}) {
     const G = this.game, stage = G.stage;
     const pos = at && at.isVector3 ? at.clone() : new THREE.Vector3(at?.x ?? 0, 0, at?.z ?? 0);
     const T = stage.track;
     let model, lampPts, tailPts;
-    if (kind === 'coupe') {
+    if (FLEET_KINDS[kind] && (kind !== 'coupe' || fleet)) {
+      // [O2] a car of the fleet: its kind's shared geometry, its spec, its lamps
+      model = fleetModel(kind, stage, { paint: fleetPaint });
+      stage.scene.add(model.group);
+      lampPts = model.K.lamps; tailPts = model.K.tail;
+      spec = { ...model.K.spec, ...(spec || {}) };
+    } else if (kind === 'coupe') {
       // ([C3 3rd] a coupe's model is ~40 ms to build: one let go in this stage
       // is used again, and a stage being warmed may build one ahead -
       // vehicles.prebuild - so the cut into the driver's seat does not)
@@ -70,7 +81,7 @@ export class Vehicles {
     const v = T && T.plane ? new Car(this, kind, model, { pos, yaw, spec }) : new Vehicle(this, kind, model, { pos, yaw, s: T ? T.project(pos.x, pos.z, null, {}).s : null });
     v.car = model.car || null;
     if (tail === 'crew' && tailPts) v.tail = tailLamps(model.group, tailPts);
-    v.inkSlot = figureInk(model.group);
+    v.inkSlot = ink === false ? -1 : figureInk(model.group);   // [O2] (ink: false)
     if (lights && lampPts && T) v.lamps = new Headlamps(stage, v, lampPts, kind === 'coupe' ? { reach: 30, intensity: 170, cone: 0.16 } : { reach: 24, intensity: 120, cone: 0.2 });
     v.place(pos, yaw, speed);
     this.list.push(v);
@@ -121,7 +132,9 @@ export class Vehicles {
     // [C10a] a car not kept for another spawn: its own geometries (its glass and lenses, its contact shadows,
     // its tail lamps: made per car) off the GPU; those it shares with a car still in the stage (the sedan's
     // templates) stay. A retry in VI made every car of the try again and kept the last try's: +70 a retry.
-    if (!(v.kind === 'coupe' && v.model && v.model.group)) {
+    // [O2] (a fleet car's geometry is its kind's, shared: only its contact shadow is its own)
+    if (v.model && v.model.fleet) { if (v.model.meshes.contact) v.model.meshes.contact.geometry.dispose(); }
+    else if (!(v.kind === 'coupe' && v.model && v.model.group)) {
       const mine = new Set();
       v.body.traverse((o) => { if (o.geometry) mine.add(o.geometry); });
       if (mine.size) {
@@ -130,7 +143,7 @@ export class Vehicles {
       }
     }
     // ([C3 3rd] my coupe's model kept for the next spawn, as it was built)
-    if (v.kind === 'coupe' && v.model && v.model.group) {
+    if (v.kind === 'coupe' && v.model && v.model.group && !v.model.fleet) {
       const m = v.model;
       if (m.meshes && m.meshes.hood) m.meshes.hood.rotation.set(0, 0, 0);
       m.group.position.set(0, 0, 0); m.group.quaternion.identity();

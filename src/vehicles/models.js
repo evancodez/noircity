@@ -26,7 +26,8 @@ const ext = (shape, depth, bt, bs, seg = 4, curve = 18) => {
 // grille and the fenders make the front): the cockpit's well cut out of it
 // (the body's top would otherwise be a table at the driver's chest), the
 // door skins close its sides
-function coupeBody() {
+// [O2] exported: the city's fleet (vehicles/kinds.js) builds its light coupe from these
+export function coupeBody() {
   const s = new THREE.Shape();
   s.moveTo(-2.24, 0.52);
   s.lineTo(0.66, 0.52);
@@ -47,7 +48,7 @@ function coupeBody() {
 // it): from the raised seat the road runs on down past the ornament
 export const HOOD = { x0: 0.64, x1: 2.25, top0: 1.155, top1: 1.0, w0: 0.5, w1: 0.37, side: 0.78 };
 export function hoodTop(x) { const u = Math.min(1, Math.max(0, (x - HOOD.x0) / (HOOD.x1 - HOOD.x0))); return HOOD.top0 + (HOOD.top1 - HOOD.top0) * Math.pow(u, 1.4); }
-function hoodLoft() {
+export function hoodLoft() {
   const NX = 28, NA = 24, pos = [], idx = [];
   for (let i = 0; i <= NX; i++) {
     const u = i / NX, x = HOOD.x0 + (HOOD.x1 - HOOD.x0) * u;
@@ -93,7 +94,7 @@ function coupeCabin() {
 
 // the cabin as a shell: the roof and the fastback a cap 5 cm thick across
 // the car, each side a frame round its window openings
-function coupeShell() {
+export function coupeShell() {
   const top = [V2(0.42, 1.78), V2(0.36, 1.85), V2(0.18, 1.87), V2(-0.5, 1.88), V2(-0.98, 1.83), V2(-1.32, 1.66), V2(-1.62, 1.4), V2(-1.88, 1.13)];
   const curve = new THREE.SplineCurve(top);
   const pts = curve.getPoints(40);

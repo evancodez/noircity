@@ -42,6 +42,11 @@ export class Save {
   // BEGIN and the chapters again, not the last ten seconds of the ending)
   get exists() { const d = this.read(); return !!d && !(d.flags && d.flags.ended); }
 
+  // [O2] the money ($): lane O4 names it save.money (O7 draws it); until its
+  // seam lands it lives in the flags, so a save keeps it (src/traffic/seams.js)
+  get money() { return (this.flags && this.flags.money) || 0; }
+  set money(n) { if (!this.flags) this.flags = {}; this.flags.money = Math.max(0, Math.round(n)); }
+
   clear() {
     this.flags = {};
     this.inventory = [];
