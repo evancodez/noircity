@@ -81,6 +81,10 @@ export class Controller {
 
     this._onMouse = (e) => {
       if (!this.enabled) return;
+      // [O5b] after the critic (m3: the first move after the lock left the eye pitched up ~35 deg): a
+      // jump the browser reports in the first 150 ms of a pointer lock (the cursor's way to the lock's
+      // centre, not a hand's) is dropped
+      if (!e.pad && performance.now() - (this._lockT ?? -1e9) < 150 && Math.abs(e.movementX || 0) + Math.abs(e.movementY || 0) > 120) return;
       const D = MODE_DEFS[this.mode];
       if (D && D.mouse && D.mouse(this, e)) return;
       if (this.mode === 'brawl') {
@@ -106,6 +110,7 @@ export class Controller {
     document.addEventListener('keyup', (e) => this._onKey(e, false));
     document.addEventListener('pointerlockchange', () => {
       this.enabled = document.pointerLockElement === this.dom;
+      if (this.enabled) this._lockT = performance.now();
       if (!this.enabled) this.keys.clear();
     });
   }
