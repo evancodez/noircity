@@ -59,6 +59,19 @@ the news, a hideout the gang and then the police), one HUD language,
 one sound, nothing cluttered: a thing is added because a player will
 notice it, and taken out if he would not.
 
+> (After playing the first systems, 2026-10-23, midday:) The city doesn't
+> feel alive, and NPC reactions (police etc.) are often too stiff or
+> nonsensical. It's possible the car hitboxes are too big, as bullets
+> seem to hit the cars sometimes; some first-person car views, like the
+> police car's, are blocked. Basically make the city feel more alive and
+> less canned and stiff. That's a general goal.
+
+**Alive, not canned, not stiff** (lane O9, `docs/briefs/O9_ALIVE.md`, and
+every lane after it): the near street is never empty, things happen on
+their own that a player can walk into, every NPC has a state he can read
+with human delays and eased turns, no reaction without a cause he saw
+and none that outlives its cause. The whole-game critic judges by it.
+
 **Nothing copy-paste.** Every kit piece, car, figure and prop comes in
 variants, picked by a seeded hash of where it stands, so no two blocks,
 cars or corners read the same; a lane that places the same thing twice
@@ -282,6 +295,7 @@ do everything but buy.
 | O6 | smash: the destruction set, car damage and fire | `ow/O6-smash` | 5376 |
 | O7 | the night: HUD with the minimap bottom left, map, saves, radio, title, pad, polish, the whole-game hunt | `ow/O7-night` | 5377 |
 | O1b | the streets distinct (the blind test), more in them, items, a touch of colour (the user's first drive) | `ow/O1b-streets` | 5378 |
+| O9 | alive: density with purpose, events on a clock, the intention model for every NPC, the police that path and make sense, car hitboxes and views, the city's sound | `ow/O9-alive` | 5389 |
 | O8 | figures: one cast for the city, the Hood's look for everyone, never stiff, the physics layer, AI that shows its intention | `ow/O8-figures` | 5379 |
 
 Waves: O1, O4, O6 first (O4 and O6 build and prove on the base's test

@@ -1,0 +1,115 @@
+# O9 — alive: the city as a living place, reactions that make sense, nothing canned or stiff
+
+Branch `ow/O9-alive`, port 5389. After O2 (wheels), O3 (people), O7 (the
+night) and O8 (figures) are merged: the lane that turns the systems into
+a city that feels alive. The user's words after playing (2026-10-23,
+midday):
+
+- **[must]** "The city doesn't feel alive, and NPC reactions, police
+  etc., are often too stiff or nonsensical."
+- **[must]** "It's possible the car hitboxes are too big, as bullets seem
+  to hit the cars sometimes. Also some first-person car views, like the
+  police car's, are blocked."
+- **[must]** "Basically make the city feel more alive and less canned and
+  stiff. That's a general goal."
+
+What you build on: O3's people and police (`docs/reports/O3.md`,
+`src/people/`, `src/police/`: the walkers, the witnesses, the heat, the
+responses, and its `Left`: the beat cop sidesteps rather than paths, a
+second cop does not join, witnesses slow where the box is far, a patrol
+car can stall), O8's cast (`docs/reports/O8.md`, `docs/seams/CAST.md`:
+the rig, the layers, the ragdoll, the intention read), O2's traffic and
+cars (`docs/reports/O2.md`), O7's night (`docs/seams/NIGHT.md`: the
+news, the things, the radio), O1's graphs (`docs/seams/WORLD.md`), the
+perf audit's budget table (`docs/reports/PERF_AUDIT.md`: forty figures,
+thirty cars, what is left at 60 fps).
+
+## 1. Alive: density with purpose, and things that happen on their own
+- **Walkers with somewhere to go**: each walker has a destination and a
+  reason (the el's stair to a bar's door and in; a stall to a stop; a
+  stoop to the corner shop and back with a bag), picked by district and
+  hour; groups of two or three who walk and talk; queues at the theatre
+  and the stop; a shoeshine; a man under an awning lighting a cigarette;
+  a cop on his beat with its stops. The budget is the audit's (forty in
+  view at the busiest street: the light figure beyond the ten nearest,
+  the outline beyond that), and the near street is never empty.
+- **Cars with people**: parked cars that someone gets into and drives
+  off, a taxi that drops a fare, a lorry at a loading door with two men
+  carrying crates in, a tram with passengers at its windows, a police car
+  on patrol that is just passing.
+- **Events on a clock, by district**, each seen or heard from a block
+  away and each something the player can walk into: a drunk thrown out
+  of a bar's door; a couple arguing under an awning; a paperboy calling
+  the headline; a street musician under the el; two men fighting in an
+  alley (join either side); a stall-holder shouting his prices; a gang's
+  three at their corner laughing; a window lit, then dark; a radio from
+  a window (the base's music slots); a train on the el every few minutes
+  with its sparks and its roar; a siren far off; once a night a fire
+  engine passing flat out with its red lamp (one of the few colours); a
+  cat on a wall; pigeons that go up. Never the same event twice in a
+  row at the same place; never one that the player cannot interrupt.
+
+## 2. Reactions that make sense (the intention model)
+Every NPC has a state the player can read, with human delays (0.3 to
+0.8 s), eased transitions (no snap, no spin: the body turns), short
+lines that vary (never the same line twice running):
+`unaware → notices (the head turns, a glance) → reacts by kind`.
+- A civilian: step aside / stare / back away from a drawn gun before a
+  shot / flee a shot / cower in a fight's ring / gather at a wreck /
+  report a crime he saw (and only one he saw).
+- A cop: watch → warn (`Put that away.` to a drawn gun; `Move along.` to
+  a loiterer at heat 0) → act (the walk-over, the hand up, the cuffs);
+  he paths on the pavement graph (never sidesteps), runs at the corner
+  he saw me turn (not at my coordinates), calls a second cop who joins;
+  the search reads (lamps sweeping, cars prowling, cops on foot asking
+  people, who point if they saw me).
+- A gang man: watch → talk (`You lost, pal?`) → square up → fists or
+  guns by what I did; they back their own.
+- A driver: a horn, a swerve, a brake, a curse out of the window, out
+  of the car with fists if I hit his car twice.
+- To what I drive: a police car makes cops wave and civilians stare; a
+  hearse makes people take off their hats.
+- To my heat: at 3 the street clears ahead of me; at 5 nobody is out.
+**Nonsense killers** (each a proof): no arrest without a cause I saw;
+no witness for an unseen crime; nobody walks into a wall or another man;
+no reaction without a cause; no reaction that outlives its cause (a
+crowd that stares for ever, a cop who warns a man who has left); no
+line that does not fit (a cop saying `Hands up.` to a man already down).
+
+## 3. Cars: the hitboxes and the views
+- **Rounds against cars** hit a tight hull: the body and the cabin as
+  two boxes inside the silhouette, the wheel arches and the space over
+  the bonnet and behind the boot excluded, glass a round goes through
+  (and breaks), a tyre its own target. A round that passes a car's edge
+  does not hit it. The same hull for the police's rounds at me in a car.
+- **The first-person view from every car kind** is clear: the eye placed
+  per cabin (the police car, the lorry, the van, the hearse, the taxi),
+  the cabin's pillars, mirror, and frames cut back or thinned where they
+  block the road, the windscreen's rain and wiper in each; a frame from
+  every kind's seat is in the report.
+
+## 4. Sound
+The city's bed by district and hour (the base's sound tools: the
+murmur, footsteps, the el's roar and sparks, far sirens, a jazz from a
+window, the rain on awnings and on the car's roof), and every reaction
+with its sound (a cry, a whistle, a horn, a door). Nothing continuous
+that a player would notice as a loop.
+
+## 5. Proofs and gate
+- **The alive test**: a cold critic stands at three corners (Grand Ave
+  under the el, Hester St by the market, the quay) for a minute each,
+  doing nothing, and lists what happened: at least six distinct things
+  a minute, none repeated, half of them something he could join.
+- **The read test**: strips of ten NPCs in reaction; the critic names
+  each one's state before the act.
+- **The nonsense test**: the list in §2 as plays; none produces an absurd
+  reaction; the police proofs of O3 still pass (idle / bad / medium /
+  good at heat 1 to 3).
+- **The hitbox play**: rounds fired past a car's edge at five angles hit
+  nothing; through its glass, the glass; at its tyre, the tyre.
+- **The view test**: a frame from every car kind's seat, the road
+  visible.
+- fps at the busiest street with the crowd, traffic and an event
+  against `shot=perf`; memory flat over ten minutes; golden identical
+  (named where the crowd changed a frame); errors clean at every start
+  and every event. Report `docs/reports/O9.md`. Hours, not days.
