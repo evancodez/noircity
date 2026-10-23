@@ -125,3 +125,21 @@ drive and a hijack. Edits to shared files marked `// [O2]`. Report
 `docs/reports/O2.md` with "For other lanes" (how a system asks for a
 car at a point, how the police car hunts, `traffic.alarm`, the hijack's
 events, the garage's save). Hours, not days.
+
+## From the cold play of the merged city (`docs/reports/CITY_COLD_PLAY.md`): yours
+Yours, in your fix pass: **finding 5**, the coupe tops out at 75 km/h
+(`vmax` 22.5 in `src/vehicles/Car.js` line 33): a faster coupe for the
+Straight, the lorry slow, each kind its own top speed that reads; and
+**finding 4's cabin**: it fills about two fifths of the frame from the
+seat (a lower dash or a wider view from the seat): the districts must read
+from the car. Keep the cabin's craft the report praises (the drops on the
+glass, the wiper, the mascot, the mirror).
+
+## From the performance audit (`docs/reports/PERF_AUDIT.md`): yours
+Hold your merge to the audit's budget table (its section 5). Yours, in
+your fix pass (or your build if you read this first): `src/world/Cars.js`
+`spawn` draws 12 meshes per car and `src/stages/noircity/parts/cars.js`
+`update` never calls `lodUpdate`, so every car is drawn at full detail at
+any range. A **one-draw far build** beyond about 36 m, with `lodUpdate`
+called every tick (30 cars from about 400 draws to under 90), and the
+variants' extra parts inside that budget.

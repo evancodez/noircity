@@ -1,0 +1,143 @@
+{
+ "about": "[O6 critic] the first drive on the bed: E, W, a touch right onto the east kerb, through whatever stands there; out and look back.",
+ "url": "/?mute=1&start=smash",
+ "size": [
+  1280,
+  800
+ ],
+ "out": "shots/critic_o6/drive",
+ "steps": [
+  {
+   "wait": 2500
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]",
+   "taken": "G.state !== 'title'",
+   "retries": 3,
+   "every": 3000
+  },
+  {
+   "wait": 2000
+  },
+  {
+   "key": "KeyE",
+   "hold": 80
+  },
+  {
+   "wait": 900
+  },
+  {
+   "eval": "JSON.stringify({t:+G.time?.toFixed?.(1), inCar:G.city.inCar, v:G.city.car?+(G.city.car.speed*3.6).toFixed(0):null, pos:G.city.car?[+G.city.car.pos.x.toFixed(1),+G.city.car.pos.z.toFixed(1)]:null, me:[+G.camera.position.x.toFixed(1),+G.camera.position.z.toFixed(1)], hp:G.city.car&&G.city.car.health, s:G.stage.smash.stats, out:G.stage.smash.out.length, txt:[...document.querySelectorAll('body *')].filter(e=>e.offsetParent&&e.children.length===0&&e.innerText&&e.innerText.trim()).map(e=>e.innerText.trim().slice(0,40)).join(' | ')})"
+  },
+  {
+   "down": "KeyW"
+  },
+  {
+   "wait": 500
+  },
+  {
+   "down": "KeyD"
+  },
+  {
+   "wait": 200
+  },
+  {
+   "up": "KeyD"
+  },
+  {
+   "wait": 500
+  },
+  {
+   "shot": "01"
+  },
+  {
+   "eval": "JSON.stringify({t:+G.time?.toFixed?.(1), inCar:G.city.inCar, v:G.city.car?+(G.city.car.speed*3.6).toFixed(0):null, pos:G.city.car?[+G.city.car.pos.x.toFixed(1),+G.city.car.pos.z.toFixed(1)]:null, me:[+G.camera.position.x.toFixed(1),+G.camera.position.z.toFixed(1)], hp:G.city.car&&G.city.car.health, s:G.stage.smash.stats, out:G.stage.smash.out.length, txt:[...document.querySelectorAll('body *')].filter(e=>e.offsetParent&&e.children.length===0&&e.innerText&&e.innerText.trim()).map(e=>e.innerText.trim().slice(0,40)).join(' | ')})"
+  },
+  {
+   "wait": 500
+  },
+  {
+   "shot": "02"
+  },
+  {
+   "eval": "JSON.stringify({t:+G.time?.toFixed?.(1), inCar:G.city.inCar, v:G.city.car?+(G.city.car.speed*3.6).toFixed(0):null, pos:G.city.car?[+G.city.car.pos.x.toFixed(1),+G.city.car.pos.z.toFixed(1)]:null, me:[+G.camera.position.x.toFixed(1),+G.camera.position.z.toFixed(1)], hp:G.city.car&&G.city.car.health, s:G.stage.smash.stats, out:G.stage.smash.out.length, txt:[...document.querySelectorAll('body *')].filter(e=>e.offsetParent&&e.children.length===0&&e.innerText&&e.innerText.trim()).map(e=>e.innerText.trim().slice(0,40)).join(' | ')})"
+  },
+  {
+   "wait": 500
+  },
+  {
+   "shot": "03"
+  },
+  {
+   "eval": "JSON.stringify({t:+G.time?.toFixed?.(1), inCar:G.city.inCar, v:G.city.car?+(G.city.car.speed*3.6).toFixed(0):null, pos:G.city.car?[+G.city.car.pos.x.toFixed(1),+G.city.car.pos.z.toFixed(1)]:null, me:[+G.camera.position.x.toFixed(1),+G.camera.position.z.toFixed(1)], hp:G.city.car&&G.city.car.health, s:G.stage.smash.stats, out:G.stage.smash.out.length, txt:[...document.querySelectorAll('body *')].filter(e=>e.offsetParent&&e.children.length===0&&e.innerText&&e.innerText.trim()).map(e=>e.innerText.trim().slice(0,40)).join(' | ')})"
+  },
+  {
+   "wait": 700
+  },
+  {
+   "shot": "04"
+  },
+  {
+   "eval": "JSON.stringify({t:+G.time?.toFixed?.(1), inCar:G.city.inCar, v:G.city.car?+(G.city.car.speed*3.6).toFixed(0):null, pos:G.city.car?[+G.city.car.pos.x.toFixed(1),+G.city.car.pos.z.toFixed(1)]:null, me:[+G.camera.position.x.toFixed(1),+G.camera.position.z.toFixed(1)], hp:G.city.car&&G.city.car.health, s:G.stage.smash.stats, out:G.stage.smash.out.length, txt:[...document.querySelectorAll('body *')].filter(e=>e.offsetParent&&e.children.length===0&&e.innerText&&e.innerText.trim()).map(e=>e.innerText.trim().slice(0,40)).join(' | ')})"
+  },
+  {
+   "wait": 900
+  },
+  {
+   "shot": "05"
+  },
+  {
+   "eval": "JSON.stringify({t:+G.time?.toFixed?.(1), inCar:G.city.inCar, v:G.city.car?+(G.city.car.speed*3.6).toFixed(0):null, pos:G.city.car?[+G.city.car.pos.x.toFixed(1),+G.city.car.pos.z.toFixed(1)]:null, me:[+G.camera.position.x.toFixed(1),+G.camera.position.z.toFixed(1)], hp:G.city.car&&G.city.car.health, s:G.stage.smash.stats, out:G.stage.smash.out.length, txt:[...document.querySelectorAll('body *')].filter(e=>e.offsetParent&&e.children.length===0&&e.innerText&&e.innerText.trim()).map(e=>e.innerText.trim().slice(0,40)).join(' | ')})"
+  },
+  {
+   "wait": 1200
+  },
+  {
+   "shot": "06"
+  },
+  {
+   "eval": "JSON.stringify({t:+G.time?.toFixed?.(1), inCar:G.city.inCar, v:G.city.car?+(G.city.car.speed*3.6).toFixed(0):null, pos:G.city.car?[+G.city.car.pos.x.toFixed(1),+G.city.car.pos.z.toFixed(1)]:null, me:[+G.camera.position.x.toFixed(1),+G.camera.position.z.toFixed(1)], hp:G.city.car&&G.city.car.health, s:G.stage.smash.stats, out:G.stage.smash.out.length, txt:[...document.querySelectorAll('body *')].filter(e=>e.offsetParent&&e.children.length===0&&e.innerText&&e.innerText.trim()).map(e=>e.innerText.trim().slice(0,40)).join(' | ')})"
+  },
+  {
+   "up": "KeyW"
+  },
+  {
+   "down": "Space"
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "up": "Space"
+  },
+  {
+   "eval": "JSON.stringify({t:+G.time?.toFixed?.(1), inCar:G.city.inCar, v:G.city.car?+(G.city.car.speed*3.6).toFixed(0):null, pos:G.city.car?[+G.city.car.pos.x.toFixed(1),+G.city.car.pos.z.toFixed(1)]:null, me:[+G.camera.position.x.toFixed(1),+G.camera.position.z.toFixed(1)], hp:G.city.car&&G.city.car.health, s:G.stage.smash.stats, out:G.stage.smash.out.length, txt:[...document.querySelectorAll('body *')].filter(e=>e.offsetParent&&e.children.length===0&&e.innerText&&e.innerText.trim()).map(e=>e.innerText.trim().slice(0,40)).join(' | ')})"
+  },
+  {
+   "key": "KeyE",
+   "hold": 80
+  },
+  {
+   "wait": 1200
+  },
+  {
+   "look": [
+    1800,
+    0
+   ],
+   "steps": 14
+  },
+  {
+   "wait": 700
+  },
+  {
+   "shot": "07_back"
+  },
+  {
+   "eval": "JSON.stringify({t:+G.time?.toFixed?.(1), inCar:G.city.inCar, v:G.city.car?+(G.city.car.speed*3.6).toFixed(0):null, pos:G.city.car?[+G.city.car.pos.x.toFixed(1),+G.city.car.pos.z.toFixed(1)]:null, me:[+G.camera.position.x.toFixed(1),+G.camera.position.z.toFixed(1)], hp:G.city.car&&G.city.car.health, s:G.stage.smash.stats, out:G.stage.smash.out.length, txt:[...document.querySelectorAll('body *')].filter(e=>e.offsetParent&&e.children.length===0&&e.innerText&&e.innerText.trim()).map(e=>e.innerText.trim().slice(0,40)).join(' | ')})"
+  },
+  {
+   "eval": "JSON.stringify(G.stage.smash.items.filter(i=>i.state&&i.state!=='whole').map(i=>[i.kind,i.state,+(i.x??i.target?.x??0).toFixed(1),+(i.z??i.target?.z??0).toFixed(1)]).slice(0,40))"
+  }
+ ]
+}

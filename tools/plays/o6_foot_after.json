@@ -1,0 +1,30 @@
+{
+ "about": "[O6 after the critic, the minors] On foot in the bed by real input: walk into the standing bin on the west pavement (a clang: Smash.hit 'body', a jolt), run into the one on the east pavement (Shift: it goes over), then E at the sedan across the way (a rattle, 'locked'). node tools/play.mjs tools/plays/o6_foot_after.json",
+ "url": "/?mute=1&start=smash",
+ "size": [1280, 800],
+ "out": "shots/o6/footafter",
+ "steps": [
+  { "wait": 1500 },
+  { "clickOn": "#title .opt[data-k=begin]", "taken": "G.state !== 'title'", "retries": 5, "every": 4000 },
+  { "until": "G.scenes.current && G.scenes.current.id === 'smash' && G.scenes.fadeK < 0.05", "timeout": 30000 },
+  { "wait": 600 },
+  { "walk": [[-127.6, 38.6]], "timeout": 20000 },
+  { "eval": "(window.__n0 = G.stage.smash.events.length, 1)" },
+  { "walk": [[-129.6, 38.6]], "into": true, "timeout": 2500, "stop": false },
+  { "expect": "G.stage.smash.events.slice(window.__n0).some((e) => e.kind === 'bin' && e.what === 'jolt' && e.by === 'body') && G.stage.smash.items.find((i) => i.kind === 'bin' && Math.abs(i.x + 129.6) < 0.1 && Math.abs(i.z - 38.6) < 0.1).state === 'stand'", "label": "walked into the standing bin: it answers (a clang) and stands" },
+  { "walk": [[-113.5, 3.4]], "timeout": 25000 },
+  { "eval": "(window.__n1 = G.stage.smash.events.length, 1)" },
+  { "down": "ShiftLeft" },
+  { "walk": [[-110.35, 3.4]], "into": true, "timeout": 2500, "stop": false },
+  { "up": "ShiftLeft" },
+  { "wait": 800 },
+  { "expect": "G.stage.smash.events.slice(window.__n1).some((e) => e.kind === 'bin' && e.what === 'over' && e.by === 'body')", "label": "ran into a bin: over it goes" },
+  { "walk": [[-125.0, 9.5]], "timeout": 25000 },
+  { "look": "(() => { const C = N.controller, e = G.camera.position, c = G.city.cars[2].pos; const dx = c.x - e.x, dz = c.z - e.z; let d = Math.atan2(-dx, -dz) - C.yaw; d = Math.atan2(Math.sin(d), Math.cos(d)); return [-d / C.sensitivity, (C.pitch + 0.15) / C.sensitivity]; })()", "steps": 6 },
+  { "walk": [[-125.6, 8.0]], "into": true, "timeout": 2500, "stop": false },
+  { "expect": "document.body.innerText.toLowerCase().includes('try the door')", "label": "at the sedan: E  try the door" },
+  { "key": "KeyE", "hold": 80 },
+  { "wait": 200 },
+  { "expect": "document.body.innerText.toLowerCase().includes('locked') && !G.city.inCar", "label": "E at the sedan: locked" }
+ ]
+}

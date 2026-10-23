@@ -17,12 +17,15 @@ export class Save {
     this.enabled = enabled;
     this.flags = {};
     this.inventory = [];
+    // [O4] the city's money and the coat's rounds (src/combat/money.js; lane O7's HUD reads them)
+    this.money = 0;
+    this.ammo = {};
   }
 
   write() {
     if (!this.enabled) return null;
     const S = this.game.scenes;
-    const data = { v: SAVE_VERSION, scene: S && S.current ? S.current.id : null, beat: S ? S.beat : null, flags: plain(this.flags), inventory: [...this.inventory] };
+    const data = { v: SAVE_VERSION, scene: S && S.current ? S.current.id : null, beat: S ? S.beat : null, flags: plain(this.flags), inventory: [...this.inventory], money: this.money || 0, ammo: { ...(this.ammo || {}) } };   // ([O4] money, ammo)
     try { localStorage.setItem(KEY, JSON.stringify(data)); } catch (e) { return null; }
     return data;
   }
@@ -52,6 +55,7 @@ export class Save {
   clear() {
     this.flags = {};
     this.inventory = [];
+    this.money = 0; this.ammo = {};   // [O4]
     if (!this.enabled) return;
     try { localStorage.removeItem(KEY); } catch (e) { /* storage blocked */ }
   }

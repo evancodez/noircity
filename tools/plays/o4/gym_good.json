@@ -1,0 +1,41 @@
+{
+ "about": "[O4] The gym (tools/lib/o4_brawl.mjs, the bout taken up with E at the ring). Good hands win levels 1 and 2 in a row.",
+ "url": "/?mute=1&o4stay=1&start=o4.gym",
+ "size": [
+  1280,
+  800
+ ],
+ "out": "shots/play/gym_good",
+ "steps": [
+  {
+   "until": "G.state === 'title' && !!document.querySelector('#title .opt[data-k=begin]')",
+   "timeout": 60000
+  },
+  {
+   "wait": 1200
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]",
+   "taken": "G.scenes.current && G.scenes.current.id === 'o4'",
+   "retries": 4
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'o4' && G.scenes.beat === 'gym' && !G.failing",
+   "timeout": 30000
+  },
+  {
+   "eval": "(G.o4stay = true)"
+  },
+  {
+   "drive": "tools/lib/o4_brawl.mjs",
+   "profile": "good",
+   "beat": "gym",
+   "tries": 3,
+   "wins": 2,
+   "timeout": 480000,
+   "check": "D.wins >= 2 && D.losses === 0",
+   "label": "good hands win two bouts running (levels 1 and 2)",
+   "startKey": "KeyE"
+  }
+ ]
+}

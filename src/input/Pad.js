@@ -148,7 +148,7 @@ class Pad {
     if (G.stills.active) return 'stills';
     if (G.state !== 'playing' || G.failing) return 'idle';
     if (C.mode === 'table' || (G.inspect && G.inspect.active)) return 'table';
-    if (G.brawl.active || C.mode === 'brawl') return 'brawl';
+    if (G.brawl.active || C.mode === 'brawl' || (G.crowd && G.crowd.active && C.mode === 'crowd' && !G.crowd.free())) return 'brawl';   // [O4] the crowd brawl (free of them: the walk's)
     if (C.mode === 'drive') return 'drive';
     return 'play';
   }

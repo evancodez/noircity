@@ -41,13 +41,19 @@ export default {
       circles.push(c);
       return c;
     };
-    for (const w of C.walls) addBox(w.cx, w.cz, w.hx, w.hz, w.angle, w.tag === 'edge' ? 'wall' : w.tag);
-    // (a lamp post is solid, as a hydrant and the el's columns are: it is
-    // merged into its chunk's iron, so a post that gave to a car would stay
-    // standing in the picture with the car through it - the critic's B1. O6
-    // draws a breakable post on its own mesh and gives it back its give:
-    // { give: true, giveAt: 4.5, hurt: 0.1, drag: 0.8 } and hides the merged one)
-    for (const p of C.posts) addCircle(p.x, p.z, p.r, p.tag === 'bollard' || p.tag === 'lamp' ? 'post' : p.tag, p.tag === 'lamp' ? { lamp: true } : {});
+    // [O6] what breaks is the destruction set's (stage.props.smash): a bench's,
+    // a stall's, a newsstand's box is met in smash.collide (it goes over above
+    // its speed, a solid below it); a post of the set - a lamp, a hydrant, a
+    // bin, a call box, a sign, a telegraph pole - gives as Car.vsCircle's give
+    // says, its item drawn on its own as it goes (no post left standing with
+    // the car through it: the critic's B1)
+    const SM = stage.part('props') && stage.part('props').smash;
+    for (const w of C.walls) { if (SM && SM.itemAt(w.cx, w.cz, w.tag)) continue; addBox(w.cx, w.cz, w.hx, w.hz, w.angle, w.tag === 'edge' ? 'wall' : w.tag); }
+    for (const p of C.posts) {
+      const c = addCircle(p.x, p.z, p.r, p.tag === 'bollard' || p.tag === 'lamp' ? 'post' : p.tag, p.tag === 'lamp' ? { lamp: true } : {});
+      const it = SM && SM.itemAt(p.x, p.z, p.tag);
+      if (it) SM.bindCircle(it, c);
+    }
     if (el) for (const c of el.columns) addCircle(c.x, c.z, c.r, 'column');
     // the lamps' records know their post (O6: a bent post puts its lamp out)
     const L = stage.part('lamps');
@@ -65,7 +71,7 @@ export default {
     const api = {
       plane: true, spots, boxes, circles, addBox, addCircle,
       ground: (x, z) => C.groundAt(x, z),
-      smash: null, parked: [],
+      smash: SM || null, parked: [],
       vehicles: () => { const G = stage.game; return G && G.vehicles ? G.vehicles.list : []; },
       project(x, z, hint, out = {}) { out.s = 0; out.d = 0; return out; },
       statics(x, z, r, out = []) {

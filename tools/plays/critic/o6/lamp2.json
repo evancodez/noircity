@@ -1,0 +1,14 @@
+{
+ "about": "[O6 critic] poke.mjs mode lamp2 on the bed by real input at a human pace.",
+ "url": "/?mute=1&start=smash",
+ "size": [1280, 800],
+ "out": "shots/critic_o6/lamp2",
+ "steps": [
+  { "wait": 2000 },
+  { "clickOn": "#title .opt[data-k=begin]", "taken": "G.state !== 'title'", "retries": 4, "every": 3500 },
+  { "until": "G.scenes.current && G.scenes.current.id === 'smash' && G.scenes.fadeK < 0.05", "timeout": 30000 },
+  { "wait": 800 },
+  { "drive": "tools/plays/critic/o6/poke.mjs", "mode": "lamp2" },
+  { "eval": "JSON.stringify({fps: G.renderer && G.renderer.info && G.renderer.info.render.calls, stats: G.stage.smash.stats})" }
+ ]
+}

@@ -1,0 +1,41 @@
+{
+ "about": "[O4 critic] 1v3 good wins twice in a row",
+ "url": "/?mute=1&o4stay=1&start=o4.brawl3",
+ "size": [
+  1280,
+  800
+ ],
+ "out": "shots/critic/b1v3_good",
+ "steps": [
+  {
+   "until": "G.state === 'title' && !!document.querySelector('#title .opt[data-k=begin]')",
+   "timeout": 60000
+  },
+  {
+   "wait": 1000
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]",
+   "taken": "G.scenes.current && G.scenes.current.id === 'o4'",
+   "retries": 4
+  },
+  {
+   "until": "G.scenes.beat === 'brawl3' && G.crowd.active && !G.failing",
+   "timeout": 30000
+  },
+  {
+   "eval": "(G.o4stay = true)"
+  },
+  {
+   "drive": "tools/lib/o4_brawl.mjs",
+   "profile": "good",
+   "beat": "brawl3",
+   "tries": 2,
+   "wins": 2,
+   "timeout": 400000,
+   "shots": 0,
+   "check": "D.wins>=2 && D.losses===0",
+   "label": "1v3 good wins twice in a row"
+  }
+ ]
+}

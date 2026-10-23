@@ -38,7 +38,8 @@ const windKeys = (side) => {
 const windView = (s) => [[0, {}], [0.08, { yaw: -0.015 * s, pitch: 0.008, fwd: -0.008 }, 'snap'], [0.28, { yaw: -0.03 * s, roll: -0.007 * s, pitch: 0.016, fwd: -0.016 }, 'snap'],
   [0.48, { yaw: -0.045 * s, roll: -0.012 * s, pitch: 0.026, fwd: -0.026 }, 'snap'], [1.1, { yaw: -0.045 * s, roll: -0.012 * s, pitch: 0.026, fwd: -0.026 }]];
 // the aimed end (Brawl.fistPose), as fight.js's hard punch
-const aim = (kind) => (H, side) => (H.game.brawl && H.game.brawl.fistPose ? H.game.brawl.fistPose(side, kind, 1) : null) || (side === 'L' ? HP.jabL : HP.jabR);
+// ([O4] the crowd brawl's man when it is on)
+const aim = (kind) => (H, side) => { const B = H.game.crowd && H.game.crowd.active ? H.game.crowd : H.game.brawl; return (B && B.fistPose ? B.fistPose(side, kind, 1) : null) || (side === 'L' ? HP.jabL : HP.jabR); };
 const hard = (side, lv) => {
   const g = side === 'L' ? gL : gR, s = side === 'L' ? -1 : 1;
   const w = at(side, [0.5, 0.78, 1][lv - 1]), k = [0.6, 1, 1.5][lv - 1];
