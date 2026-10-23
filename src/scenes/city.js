@@ -336,7 +336,9 @@ export function step(ctx, R, T, dt) {   // [O6] exported
     // (within a stride of its body: 2.5 m, the starts' place behind its tail included)
     if (db >= 2.5 || db >= nearD) continue;
     const toX = cv.pos.x - G.eye.x, toZ = cv.pos.z - G.eye.z, tl = Math.max(0.05, Math.hypot(toX, toZ));
-    if ((toX * f.x + toZ * f.z) / (tl * fl) > 0.35 || db < 0.5) { nearCar = cv; nearD = db; }
+    // ([O6b] the cold play's m5: looking straight up at a hung lamp the prompt stayed - the look is
+    // the eye's, up and down too: not above the roof line)
+    if (((toX * f.x + toZ * f.z) / (tl * fl) > 0.35 && f.y < 0.62) || db < 0.5) { nearCar = cv; nearD = db; }
   }
   near = !!nearCar;
   // E at the car: the teach card the first time (the key drawn; it goes when
