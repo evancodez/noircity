@@ -62,6 +62,12 @@ export function installStandins(night) {
       },
     };
     made.push('crime');
+    // [O7] until O3's witnesses: a shot in the city is heard (heat 2, as the
+    // brief's table has it), O4's crowd's crimes (a gun drawn in a fist fight,
+    // a runner put down) the same - the city answers within the second, the
+    // shields brushed in and 'Lose them.'; it falls by itself unseen (LOSE)
+    G.on('shot', () => { if (night.inCity) G.crime.emit('shot', null, 'me'); });
+    G.on('crime', (e) => { if (night.inCity && e && e.by === 'player') G.crime.emit(e.kind === 'draw' ? 'punch' : 'shot', e.at, 'me'); });
   }
   // (the news is O1b's now, in main: world/items.js newsOf - no stand-in)
   newsOf(G);

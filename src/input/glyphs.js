@@ -23,6 +23,7 @@ const BASE = {
   SPACE: 'cross', ENTER: 'cross', E: 'square', C: 'circle', CTRL: 'circle', R: 'triangle',
   SHIFT: 'L1', F: 'R1', Q: 'dleft', M: 'ddown', ESC: 'options', TAB: 'touch',
   LMB: 'R2', RMB: 'L2', MOUSE: 'Rstick', W: 'Lup', S: 'Ldown', A: 'Lleft', D: 'Lright', WASD: 'Lstick',
+  WHEEL: 'dright',   // [O7] (the mouse's wheel - the gun drawn, put away - on foot: the d-pad's left and right)
 };
 const BY_CTX = {
   // (the fist fight: LMB is the left fist, RMB the right - each trigger the fist on its side)
@@ -165,11 +166,11 @@ export function keyNodes(label, ctx, h = 30) {
 // the rulebook's keys for the pad (WAVE_C §2), one line each for the title
 // and the pause card: [glyph(s), words]
 export const PAD_KEYS = [
-  [['Lstick'], 'move'], [['Rstick'], 'look'], [['square'], 'use'], [['R2'], 'fire, jab'], [['L2'], 'steady, other fist'],
-  [['cross'], 'block, vault'], null,
-  [['Lleft', 'Lright'], 'dodge'], [['circle'], 'get low'], [['triangle'], 'reload'], [['L1'], 'run'], [['R1'], 'smoke'], [['dleft'], 'horn'],
-  // [O7] the open world's: the map, the heat and the money, the radio
-  [['ddown'], 'map'], [['touch'], 'heat, money'], [['dright'], 'radio'], [['options'], 'pause'],
+  // [O7] NOIR CITY's, true of the city as built (the cold play's finding 2):
+  // a verb comes onto this line when its lane brings it into the city
+  [['Lstick'], 'move'], [['Rstick'], 'look'], [['square'], 'use, get in, take'], [['dleft', 'dright'], 'the revolver'], [['R2'], 'fire, throttle'], [['L2'], 'steady, brake'], null,
+  [['triangle'], 'reload'], [['circle'], 'get low'], [['L1'], 'run'], [['cross'], 'handbrake'], [['dup'], 'horn'], [['dright'], 'radio, driving'],
+  [['ddown'], 'map'], [['touch'], 'heat, money'], [['options'], 'pause'],
 ];
 // the line as nodes into `el` (two rows, glyphs small)
 export function fillPadKeys(el, h = 20) {

@@ -229,7 +229,7 @@ export class KitUi {
       if (p.key) {
         const K = p.key.toUpperCase().replace(/\s+/g, '');
         const gid = pad ? glyphOf(K, ctx) : null;   // [C12]
-        const c = gid ? padGlyph(gid, { h: 46 }) : K === 'LMB' ? mouseGlyph('L', { h: 50 }) : K === 'RMB' ? mouseGlyph('R', { h: 50 }) : keyCap(K, { h: 44 });
+        const c = gid ? padGlyph(gid, { h: 46 }) : K === 'LMB' ? mouseGlyph('L', { h: 50 }) : K === 'RMB' ? mouseGlyph('R', { h: 50 }) : K === 'WHEEL' ? mouseGlyph('W', { h: 50 }) : keyCap(K, { h: 44 });   // [O7] (WHEEL: the mouse's wheel)
         c.classList.add('cap');
         row.appendChild(c);
         width += parseFloat(c.style.width) + 12;

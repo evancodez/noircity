@@ -401,7 +401,7 @@ export class Game {
       this.save.inventory = [...(from.inventory || [])];
       // [O7] the open world's own state: a v3 save's (CONTINUE), else a new night's
       this.save.load(from.v ? from : null);
-      this.emit('night:start', { from: from.v ? from : null });
+      this.emit('night:start', { from: from.v ? from : null, scene: from.scene });
       if (!from.v) { if (from.money) this.save.money = from.money; if (from.ammo) this.save.ammo = { ...from.ammo }; }   // [O4] (a bed's purse)
       const def = this.scenes.get(from.scene);
       const beat = def.beats.includes(from.beat) ? from.beat : def.beats[0];

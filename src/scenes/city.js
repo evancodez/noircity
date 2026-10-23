@@ -6,6 +6,7 @@ import { riverNearest } from '../world/cityGen.js';
 import { MapOverlay } from '../world/map.js';
 import { compileAll } from '../stages/noircity/compile.js';
 import { swimStep } from '../world/swim.js';
+import { arms, owns } from '../combat/money.js';   // [O7] the revolver under my arm
 
 // NOIR CITY's free roam (lane O1): the city, a car at the kerb, nothing I
 // must do. Every critic and every later lane starts from here.
@@ -218,7 +219,17 @@ export function step(ctx, R, T, dt) {   // [O6] exported
   if (car && !R.inCar && (car.vel.lengthSq() > 4e-4 || Math.abs(car.yawRate) > 0.01)) car.step(dt);
   // on foot: the river (walked off a pier's end, down a slipway, the steps):
   // [O1b] a swim to the steps (world/swim.js), never the fade
-  if (swimStep(ctx, R)) return;
+  if (swimStep(ctx, R)) { if (gunOut(G)) holster(ctx); return; }
+  // [O7] the revolver under my arm (OPEN_WORLD §1): the wheel - the pad's
+  // d-pad left / right - draws it and puts it away (O4's arms: what I own,
+  // fists first); in a fist fight the crowd takes the wheel (Crowd.draw)
+  const wh = G.mouse.wheel;
+  if (wh && !(G.crowd && G.crowd.active)) {
+    const g = arms(G).next(Math.sign(wh));
+    if (g) { ctl.setMode(g === 'fists' ? 'walk' : 'gun', { crouch: false }); if (g === 'fists') G.player.hands.equip('empty'); G.setViewmodelVisible(g !== 'fists'); G.emit('city:arms', { gun: g }); }
+    if (g && g !== 'fists') T.drawn = true;
+  }
+  if (!T.drawn && T.foot > 4 && owns(G, 'revolver') && !T.warned && !(G.police && G.police.heat > 0)) { T.drawn = true; hud.teach('city_gun', '[WHEEL] the revolver', { until: () => gunOut(G) || R.inCar, secs: 4 }); }
   // E at the car: any door, looking at it, close by
   let near = false;
   if (car && car.solid !== false && !car.wrecked) {   // [O6] (a burnt wreck is no car to get into)
@@ -259,8 +270,20 @@ export function step(ctx, R, T, dt) {   // [O6] exported
   }
 }
 
+// [O7] a gun in hand: put away (into the car, into the river)
+export function gunOut(G) { const c = G.player.weapons.current; return !!c && c !== 'fists'; }
+export function holster(ctx) {
+  const G = ctx.game;
+  arms(G).to('fists');
+  G.player.hands.equip('empty');
+  G.setViewmodelVisible(false);
+  if (ctx.controller.mode === 'gun') ctx.controller.setMode('walk', { crouch: false });
+  G.emit('city:arms', { gun: 'fists' });
+}
+
 export function getIn(ctx, R, T) {   // [O6] exported
   const G = ctx.game, car = R.car;
+  if (gunOut(G)) holster(ctx);   // [O7]
   ctx.hud.clearPrompt('cityin');
   T.near = false; T.inShown = false; T.drive = 0; T.dist = 0; T.outShown = false; R.wantOut = false;
   G.vehicles.setPlayer(car);

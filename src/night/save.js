@@ -14,6 +14,7 @@
 // where it stood, in its seat if I was, the world drawn afresh (the traffic
 // and the people are the city's, never the save's).
 export const AUTOSAVE = { quietHit: 8, every: 20, after: 6 };
+export const NEW_NIGHT = { rounds: 12 };   // [O7] the revolver's rounds in the coat on BEGIN
 
 export class NightSave {
   constructor(night) {
@@ -23,6 +24,8 @@ export class NightSave {
     this.autos = 0;
     this.skipped = null;     // why the last autosave was not written (the plays read it)
     const G = night.game;
+    // [O7] a new night in the city: the man in the coat with a revolver under his arm (OPEN_WORLD §1) - a cylinder and a dozen in the coat (O4's arms)
+    G.on('night:start', (e) => { if (e && !e.from && e.scene === 'city') { if (!G.save.inventory.includes('revolver')) G.save.inventory.push('revolver'); G.save.ammo = { revolver: NEW_NIGHT.rounds, revolverIn: 6, ...(G.save.ammo || {}) }; } });
     G.on('night:start', (e) => { this.resume = e && e.from ? e.from : null; this.lastAuto = -1e9; this.started = G.time; if (this.resume && this.resume.city && this.resume.city.hour != null) night.clock.set(this.resume.city.hour); else night.clock.set(0); });
     G.on('city:in', () => this.auto());
   }
