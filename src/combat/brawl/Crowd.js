@@ -1259,7 +1259,7 @@ export class Crowd {
     const live = this.alive();
     if (!live.length) { this.finish('won'); return; }
     // walking off (in the open): free of them (nobody within reach), my run is
-    // counted from where I broke away; they follow - past 10 m 'He's coming.' -
+    // counted (the way my feet went) from where I broke away; they follow - past 10 m 'He's coming.' -
     // and a run of 30 m and they give up ('He's gone.'). One of them back on me
     // and the run starts again.
     if (this.cfg.leave && !this.cfg.bounds) {
@@ -1268,10 +1268,12 @@ export class Crowd {
       for (const m of live) if (this.standing(m)) near = Math.min(near, Math.hypot(m.c.pos.x - e.x, m.c.pos.z - e.z));
       // (nobody on his feet - one down, about to get up - is no one to leave)
       if (near === Infinity) return;
-      if (near < 3.6) this.breakAt = null;
-      else if (!this.breakAt) this.breakAt = { x: e.x, z: e.z };
-      const run = this.breakAt ? Math.hypot(e.x - this.breakAt.x, e.z - this.breakAt.z) : 0;
-      this.run = run;
+      // (the run is the way my feet went since I broke free, not a straight line: a block is not 30 m wide)
+      const L = this.breakAt;
+      if (near < 3.6) { this.breakAt = null; this.run = 0; }
+      else if (!L) { this.breakAt = { x: e.x, z: e.z }; this.run = 0; }
+      else { this.run += Math.hypot(e.x - L.x, e.z - L.z); L.x = e.x; L.z = e.z; }
+      const run = this.run;
       if (run > CROWD.leave.gone && near > 8) { this.finish('left'); return; }
       const w = this.leaveWarn ? run > CROWD.leave.warn - 2 : run > CROWD.leave.warn;
       if (w !== !!this.leaveWarn) { this.leaveWarn = w; if (!this.warned) G.hud.warn(w ? (live.length > 1 ? 'They’re coming.' : 'He’s coming.') : null); }
