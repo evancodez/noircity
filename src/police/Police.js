@@ -35,7 +35,8 @@ import { copFists, copGuns } from './standins.js';
 //   police.events   the record (the plays read it)
 export const HEAT = {
   lose: [0, 20, 32, 60, 75, 90],     // s out of their sight to lose it, by level
-  sight: { foot: 45, car: 60 },      // how far they see me (m), in line of sight
+  sight: { foot: 36, car: 55 },      // how far they see me (m), in line of sight (night, the rain)
+  wind: { sprint: 10, rest: 6 },     // a man on foot sprints this long, then runs until he has his breath (s)
   searchAfter: 2.5,                  // s unseen before the search begins (the siren drops)
   arrest: { r: 3.0, warn: 1.3, box: 4.0, boxR: 9 },
   // the answer, by level: men on foot, cars, a roadblock, detectives, the lorry
@@ -131,8 +132,10 @@ export class Police {
   report(rec, who, how) {
     this.event('report', { kind: rec.kind, how });
     this.raise(rec.level, { x: rec.x, z: rec.z }, rec.kind + ':' + how);
-    // (they know where it was, not where I am: the search begins there unless they see me)
-    if (!this.seenNow) { this.state = 'search'; this.unseenT = HEAT.searchAfter; }
+    // (they know where it was, not where I am: they come to the place and
+    // search there; the clock to losing them starts once they are there, or
+    // after 30 s)
+    if (!this.seenNow) { this.state = 'search'; this.unseenT = HEAT.searchAfter; this.comeTo = { x: rec.x, z: rec.z, by: this.t + 30 }; }
   }
   // a door shut behind me (O5) or a car changed (O2), unseen: lost at once
   lost() { if (this._heat && !this.seenNow) { this.clear('lost'); return true; } return false; }
@@ -169,6 +172,10 @@ export class Police {
     if (this.G.save) this.G.save.heat = 0;
     this.badges.set(0, 'clear');
     this.warn(null);
+    // (the line, if it is the heat's)
+    const ot = this.G.hud.objectiveText;
+    if (ot && (/^HEAT \d$/.test(ot) || ot === 'Lose them.' || ot === 'Clear.')) this.G.hud.objective(null, { now: true });
+    this.lineT = 0;
     this.arrestT = 0; this.boxT = 0;
     this.event('reset');
   }
@@ -210,10 +217,13 @@ export class Police {
     if (this._heat) {
       if (this.seenNow) {
         this.lastSeen = { x: me.x, z: me.z, t: G.time };
-        this.unseenT = 0;
+        this.unseenT = 0; this.comeTo = null;
         if (this.state !== 'hunt') { this.state = 'hunt'; this.event('found'); for (const pc of this.cars) if (pc.mode === 'search') { pc.mode = 'drive'; pc.siren = true; } }
       } else {
-        this.unseenT += dt;
+        // (a report: the clock waits for them to get there)
+        const CT = this.comeTo;
+        if (CT && (this.t > CT.by || this.cops.some((c) => c.standing && c.job === 'respond' && Math.hypot(c.pos.x - CT.x, c.pos.z - CT.z) < 14) || this.cars.some((pc) => Math.hypot(pc.pos.x - CT.x, pc.pos.z - CT.z) < 20))) this.comeTo = null;
+        if (!this.comeTo) this.unseenT += dt;
         if (this.state === 'hunt' && this.unseenT > HEAT.searchAfter) { this.state = 'search'; this.event('search'); for (const pc of this.cars) { if (pc.mode === 'drive') pc.mode = 'search'; pc.siren = false; } }
         if (this.unseenT > HEAT.lose[this._heat]) this.clear('lost');
       }
@@ -224,6 +234,7 @@ export class Police {
     else if (this.lineT < 0) { this.lineT += dt; if (this.lineT >= 0 && !this._heat) G.hud.objective(null); }
     this.badges.step(dt);
     this.stepBeat(dt);
+    this.offerCar();
     this.stepResponse(dt);
     for (const pc of [...this.cars]) this.stepCar(pc, dt);
     this.guns.step(dt);
@@ -236,6 +247,7 @@ export class Police {
 
   // ---- the beat: a few cops walking it round me, by district ------------------------------------
   stepBeat(dt) {
+    if (this.P.hold) return;
     this.beatT -= dt;
     if (this.beatT > 0) return;
     this.beatT = 1.2;
@@ -253,13 +265,13 @@ export class Police {
     if (n) n.goTo(P.pavWalk(P.nearestP(n.pos.x, n.pos.z), 6), { gait: 'stroll' });
   }
   // a man on foot out of my sight, on the pavement in a ring round me
-  spawnOnFoot(r0, r1, job, kind = 'o3_patrolman') {
+  spawnOnFoot(r0, r1, job, kind = null) {
     const P = this.P, E = this.G.eye;
     for (let k = 0; k < 14; k++) {
       const n = P.pList[Math.floor(Math.random() * P.pList.length)];
       const d = Math.hypot(n.x - E.x, n.z - E.z);
       if (d < r0 || d > r1 || P.inView(n.x, n.z)) continue;
-      const c = P.spawn(kind, n.x, n.z, 0, 'cop');
+      const c = P.spawn(kind || P.copLook(k), n.x, n.z, 0, 'cop');
       c.job = job; c.mode = 'walk';
       this.cops.push(c);
       this.event('cop', { job });
@@ -293,11 +305,16 @@ export class Police {
     }
     // 1: a man on foot to make the arrest (the nearest cop on the beat, or one sent)
     const foot = this.cops.filter((c) => c.standing && (c.job === 'respond' || c.job === 'arrest'));
+    // (the first time a man comes for me: what I can do about it, once, while he is still coming)
+    if (foot.length && !this.taught && !inCar) {
+      const c = foot[0], d = Math.hypot(c.pos.x - E.x, c.pos.z - E.z);
+      if (d < 24 && d > 6 && P.sees(c.pos, E, 30) && !G.hud.kit.warnText) { this.taught = true; G.hud.teach('o3_runfight', '[SHIFT] run   [LMB] fight', { until: ['ShiftLeft', 'Mouse0'], secs: 4 }); }
+    }
     if (!foot.length) {
       let best = null, bd = 130;
       for (const c of this.cops) if (c.standing && c.job === 'beat') { const d = Math.hypot(c.pos.x - E.x, c.pos.z - E.z); if (d < bd) { bd = d; best = c; } }
       if (!best && !inCar) best = this.spawnOnFoot(40, 75, 'respond');
-      if (best) { best.job = 'respond'; best.mode = 'approach'; best.t = 0; this.event('send', { who: 'foot', d: +bd.toFixed(0) }); }
+      if (best) { best.job = 'respond'; best.mode = 'approach'; best.t = 0; best.path = null; best.repath = 0; this.event('send', { who: 'foot', d: +bd.toFixed(0) }); }
     }
     // 2+: the cars
     this.carT -= 0.5;
@@ -323,7 +340,7 @@ export class Police {
       if (d < 95 || P.inView(L.x, L.z)) continue;
       // (clear of another car there)
       if (G.vehicles.list.some((v) => Math.hypot(v.pos.x - L.x, v.pos.z - L.z) < 8)) continue;
-      const pc = new PatrolCar(this, { x: L.x, z: L.z, yaw: L.heading, role, crew: role === 'riot' ? 3 : 2, kind: role === 'riot' ? 'truck' : 'sedan', crewKind: 'o3_patrolman' });
+      const pc = new PatrolCar(this, { x: L.x, z: L.z, yaw: L.heading, role, crew: role === 'riot' ? 3 : 2, kind: role === 'riot' ? 'truck' : 'sedan', crewKind: null });
       pc.mode = 'drive';
       this.cars.push(pc);
       this.chase(pc);
@@ -332,6 +349,8 @@ export class Police {
     }
     return null;
   }
+  // (the plays' staging: a police car standing where they say)
+  spawnCarAt(x, z, yaw, role = 'patrol') { const pc = new PatrolCar(this, { x, z, yaw, role }); this.cars.push(pc); return pc; }
   dropCar(pc) {
     for (const c of pc.crew) if (this.cops.includes(c) && c.mode !== 'gone') { c.job = 'leave'; }
     const i = this.cars.indexOf(pc);
@@ -392,8 +411,49 @@ export class Police {
     }
     if (pc.mode === 'box') {
       pc.boxT += dt;
-      if (!myCar || Math.abs(myCar.speed) > 3 || d > 12) { pc.mode = 'drive'; this.chase(pc); }
+      // (a moment stopped across my nose: the men out and at my doors)
+      if (pc.boxT > 0.8 && !pc.crew.length) for (const c of pc.crewOut('respond')) { c.mode = 'chase'; c.t = 0; c.atCar = true; }
+      if (!myCar || Math.abs(myCar.speed) > 3 || d > 12) {
+        pc.mode = 'drive'; this.chase(pc);
+        // (the men back in: off the street with the car)
+        for (const c of pc.crew) if (c.standing && this.cops.includes(c)) this.dropCop(c);
+        pc.crew = [];
+      }
     }
+  }
+
+  // ---- a police car I can take: parked, its men out (the city's E takes it: city.js) -------------
+  // (until O2's hijack: the free roam's car is the one E gets into; the
+  // police car stood empty nearest me is offered in its place, and taking
+  // it is a hijack the men see)
+  offerCar() {
+    const G = this.G, R = G.city;
+    if (!R || R.inCar) return;
+    const E = G.eye;
+    let best = null, bd = 4.2;
+    for (const pc of this.cars) {
+      if (pc.v.driver || pc.mode === 'leave') continue;
+      const d = Math.hypot(pc.pos.x - E.x, pc.pos.z - E.z);
+      if (d < bd) { bd = d; best = pc; }
+    }
+    if (best) {
+      if (R.car !== best.v) { if (!R.ownCar || R.car && !R.car.police) R.ownCar = R.car; R.car = best.v; }
+    } else if (R.car && R.car.police && R.ownCar && !R.car.taken) R.car = R.ownCar;
+  }
+  // I got into a car: a police car is taken (a hijack: its men, any cop in sight, see it)
+  onIn(car) {
+    if (!car || !car.police) return;
+    const pc = this.cars.find((q) => q.v === car);
+    car.taken = true;
+    if (pc) {
+      const i = this.cars.indexOf(pc);
+      if (i >= 0) this.cars.splice(i, 1);
+      pc.siren = false;
+      for (const c of pc.crew) if (c.job === 'block' || c.job === 'scene') c.job = 'respond';
+      if (this.block && this.block.cars.includes(pc)) this.block.cars.splice(this.block.cars.indexOf(pc), 1);
+    }
+    this.event('stolen', { role: pc ? pc.role : '?' });
+    this.P.crime.emit('hijack', car.pos, 'player');
   }
 
   // ---- the gangs' border fight: a car to the place (their crime, not mine: no heat) -------------
@@ -498,23 +558,47 @@ export class Police {
     // respond: after me while they see me, a look round where I was while they search
     if (!this._heat) { c.job = 'leave'; return; }
     if (this.state === 'search') {
-      c.mode = 'search';
-      if (!c.path || c.t > 12) { const L = this.lastSeen || E; c.t = 0; c.goTo({ x: L.x + (Math.random() - 0.5) * 30, z: L.z + (Math.random() - 0.5) * 30 }, { gait: 'walk' }); }
+      // (to the place first, at a run; then a look round it)
+      const L = this.comeTo || this.lastSeen || E;
+      const dL = Math.hypot(c.pos.x - L.x, c.pos.z - L.z);
+      if (c.mode !== 'search' || !c.path || c.t > 12) {
+        c.mode = 'search'; c.t = 0;
+        const far = dL > 18;
+        const tgt = far ? { x: L.x, z: L.z } : { x: L.x + (Math.random() - 0.5) * 30, z: L.z + (Math.random() - 0.5) * 30 };
+        const R = P.graph.pavementRoute(c.pos, tgt);
+        c.goTo(R ? R.pts.concat([[tgt.x, tgt.z]]) : tgt, { gait: far ? 'run' : 'walk' });
+        c.mode = 'search';
+      }
       return;
     }
-    // (in a car I am beyond him: he stands and watches it go)
-    if (inCar && d > 6) { c.stop(); c.face(E.x, E.z); c.look(E); return; }
+    // (in a car: to my door if it stands; else he stands and watches it go)
+    if (inCar) {
+      const car = G.city.car;
+      if (car && Math.abs(car.speed) < 2 && d < 20) {
+        const door = car.world(-0.3, -(car.spec.halfW + 0.7), new THREE.Vector3());
+        c.path = [[door.x, door.z]]; c.pi = 0; c.gait = 'run'; c.mode = 'chase';
+        if (Math.hypot(door.x - c.pos.x, door.z - c.pos.z) < 0.9) { c.stop(); c.face(car.pos.x, car.pos.z); }
+      } else { c.stop(); c.face(E.x, E.z); }
+      c.look(E);
+      return;
+    }
     const run = c.mode === 'chase' || d > 14 || this._heat >= 2;
     c.mode = run ? 'chase' : 'approach';
+    // (his wind: a sprint of ten seconds, then a run until he has his breath back)
+    const W = HEAT.wind;
+    if (run && c.gaitNow === 'sprint') c.sprintT = (c.sprintT || 0) + dt; else c.sprintT = Math.max(0, (c.sprintT || 0) - dt * W.sprint / W.rest);
+    if (c.sprintT > W.sprint) c.blown = true; else if (c.sprintT <= 0) c.blown = false;
+    const fast = c.blown ? 'run' : 'sprint';
+    c.gait = run ? fast : 'hurry';
     if (d > 2.0) {
       // (straight at me where he can see me, by the pavements where he cannot)
-      if (!c.path || c.repath <= 0 || c.pi >= c.path.length) {
+      if (!c.path || !(c.repath > 0) || c.pi >= c.path.length) {
         c.repath = 0.6;
         c.path = P.sees(c.pos, E, 60) ? [[E.x, E.z]] : (P.graph.pavementRoute(c.pos, E) || { pts: [[E.x, E.z]] }).pts.concat([[E.x, E.z]]);
         c.pi = 0;
       }
       c.repath -= dt;
-      c.gait = run ? 'run' : 'hurry';
+      c.gait = run ? fast : 'hurry';
     } else { c.stop(); c.face(E.x, E.z); }
     c.look(E);
     // he runs: the whistle once
@@ -536,8 +620,9 @@ export class Police {
       const V = G.controller.vel, sp = Math.hypot(V.x, V.z);
       if (n) {
         if (this.warned !== 'Hands up.') { this.warn('Hands up.'); nearest.c.say('o3_handsup'); this.event('handsup', { n }); }
-        // (standing, or walking, or boxed in by two: the cuffs come; running away: not)
-        const caught = sp < 3.2 || n >= 2;
+        // (standing, or walking off with him at my elbow, or boxed in by two:
+        // the cuffs come; running away - Shift - or a fist in his face: not)
+        const caught = sp < 3.2 || n >= 2 || (nearest.d < 1.9 && sp < 5);
         this.arrestT = caught ? this.arrestT + dt : Math.max(0, this.arrestT - dt * 1.5);
         if (this.arrestT >= HEAT.arrest.warn) this.arrest('foot');
       } else {

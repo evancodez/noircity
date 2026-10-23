@@ -58,9 +58,10 @@ export class Gangs {
 
   // a three at a corner (out of my sight), standing round a point
   three(gang, x, z, { post = null, walkTo = null } = {}) {
-    const P = this.P, kind = GANG[gang].kind;
+    const P = this.P, looks = P.gangLooks(gang, x, z);
     const T = { gang, x, z, men: [], post, hostile: false, sayT: 0, nearT: 0, t: 0 };
     for (let i = 0; i < 3; i++) {
+      const kind = looks[i] || GANG[gang].kind;
       const a = i * 2.1 + Math.random() * 0.4, r = 0.95;
       const mx = x + Math.sin(a) * r, mz = z + Math.cos(a) * r;
       const p = P.spawn(kind, mx, mz, a + Math.PI, 'gang');
@@ -108,7 +109,7 @@ export class Gangs {
       for (const post of this.posts) {
         post.coolT = Math.max(0, post.coolT - 1);
         const d = Math.hypot(post.x - E.x, post.z - E.z);
-        if (!post.three && d < GANG.near && d > 35 && post.coolT <= 0 && !P.inView(post.x, post.z)) this.three(post.gang, post.x, post.z, { post });
+        if (!post.three && !P.hold && d < GANG.near && d > 35 && post.coolT <= 0 && !P.inView(post.x, post.z)) this.three(post.gang, post.x, post.z, { post });
       }
       for (const T of [...this.threes]) {
         const d = Math.hypot(T.x - E.x, T.z - E.z);

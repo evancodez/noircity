@@ -1,0 +1,59 @@
+# [O3] writes the lane's plays (tools/plays/o3_*.json): one head (BEGIN, the
+# city up, the people up), then the driver's stage (tools/lib/o3_people.mjs).
+#   python3 tools/plays/o3/mk.py
+import json, os
+HERE = os.path.dirname(os.path.abspath(__file__))
+OUT = os.path.dirname(HERE)
+HEAD = [
+    {"wait": 1500},
+    {"clickOn": "#title .opt[data-k=begin]", "taken": "G.state !== 'title'", "retries": 5, "every": 4000},
+    {"until": "G.scenes.current && G.scenes.current.id === 'city' && G.scenes.fadeK < 0.05 && !!G.people", "timeout": 30000},
+    {"wait": 1500},
+]
+PAD_HEAD = [
+    {"wait": 1500},
+    {"pad": {"b": ["x"], "secs": 0.15}},
+    {"until": "G.scenes.current && G.scenes.current.id === 'city' && G.scenes.fadeK < 0.05 && !!G.people", "timeout": 30000},
+    {"wait": 1500},
+]
+
+
+def play(name, about, steps, url="/?mute=1&start=city", head=HEAD, extra=None):
+    d = {"about": about, "url": url, "size": [1280, 800], "out": "shots/o3/" + name, "steps": head + steps}
+    if extra:
+        d.update(extra)
+    with open(os.path.join(OUT, name + '.json'), 'w') as f:
+        json.dump(d, f, indent=1)
+
+
+D = "tools/lib/o3_people.mjs"
+play('o3_punch_idle', "[O3] the walk-over arrest, idle: a man punched before a beat cop, then nothing - HEAT 1 at once, he walks over, 'Hands up.' (up over a second), 'Arrested.', the station: the gun gone, the heat gone, back in under ten seconds. Twice.",
+     [{"drive": D, "mode": "punch", "then": "idle", "tries": 2, "shots": True, "check": "D.ok", "label": "punch seen, idle: warned, arrested, the station (twice)"}])
+play('o3_punch_good', "[O3] the walk-over arrest, good: a man punched before a beat cop; as he comes I run (Shift) round the corner - the search, then 'Clear.'. Twice.",
+     [{"drive": D, "mode": "punch", "then": "run", "tries": 2, "check": "D.ok", "label": "punch seen, good: away and lost (twice)"}])
+play('o3_punch_fists', "[O3] the walk-over arrest, the fists: a man punched before a beat cop; I wait for him and punch him - the fist fight (the base's Brawl, the stand-in), played by play.mjs's fight step at a first-timer's pace.",
+     [{"drive": D, "mode": "punch", "then": "fists", "tries": 1, "check": "D.ok", "label": "the cop's fist fight starts"},
+      {"fight": {"timeout": 150000, "shots": {"fight": "G.brawl.active && G.brawl.T > 2"}, "expect": "F.time > 0"}},
+      {"wait": 2500},
+      {"eval": "JSON.stringify({ heat: G.police.heat, beat: G.scenes.beat, fail: G.lastFail, ev: G.police.events.slice(-6) })"},
+      {"expect": "G.lastFail ? G.lastFail.why === 'Arrested.' && G.scenes.beat === 'station' : (window.__o3c && window.__o3c.down && G.police.heat >= 2)", "label": "the fight ends: won (he lies there, HEAT 2: a cop down) or lost (arrested)"}])
+play('o3_witness', "[O3] the witnesses: a punch nobody sees raises nothing; the same before a cop: HEAT 1 at once; before a civilian: he looks at me, runs to the call box, HEAT 1 when he gets there; one I catch gives it up: nothing.",
+     [{"drive": D, "mode": "witness", "shots": True, "check": "D.ok", "label": "the witness rules: empty 0, cop 1, box 1, stopped 0"}])
+play('o3_lose', "[O3] losing them on foot: HEAT 1 seen, away round the corner - the search shown (the badges breathe, 'Lose them.'), found again (the heat as it was), away again: 'Clear.'.",
+     [{"drive": D, "mode": "lose", "shots": True, "check": "D.ok", "label": "the search shown, found again, lost: Clear."}])
+play('o3_chase_idle', "[O3] the car chase at HEAT 2, idle: in my car, the patrol car comes (the siren first), stops across my nose, its men at my door - 'Hands up.', 'Arrested.'.",
+     [{"drive": D, "mode": "chase", "heat": 2, "profile": "idle", "tries": 1, "shots": True, "check": "D.wins === 1", "label": "chase idle: boxed, warned, arrested"}])
+play('o3_chase_medium', "[O3] the car chase at HEAT 2, medium hands (slower, 58 km/h at most, reacting a beat late): away down the streets until they lose me; up to three tries.",
+     [{"drive": D, "mode": "chase", "heat": 2, "profile": "medium", "tries": 3, "secs": 150, "check": "D.wins >= 1", "label": "chase medium: lost in one to three"}])
+play('o3_chase_good', "[O3] the car chase at HEAT 2, good hands: away, lost, twice.",
+     [{"drive": D, "mode": "chase", "heat": 2, "profile": "good", "tries": 2, "secs": 150, "check": "D.wins === 2", "label": "chase good: lost twice"}])
+play('o3_roadblock', "[O3] HEAT 3 in the car: two cars and the roadblock on my road ahead (two cars nose to nose, men behind them); medium hands: through it, round it, or away - lost in one to three.",
+     [{"drive": D, "mode": "chase", "heat": 3, "profile": "medium", "tries": 3, "secs": 180, "shots": True, "check": "D.wins >= 1 && D.tries.some(t => t.ev.some(e => e.startsWith('roadblock')))", "label": "roadblock: seen, and lost in one to three"}])
+play('o3_heat4', "[O3] HEAT 4 on foot: the detectives' car, the Tommy gun and the pistol out of it (the gun kit's men, every tell); idle: down, warned, the hospital; good (the chase driver in my car): away.",
+     [{"drive": D, "mode": "chase", "heat": 4, "profile": "good", "tries": 1, "secs": 180, "check": "D.wins === 1", "label": "HEAT 4 in the car: away and lost"}])
+play('o3_gangs', "[O3] the gangs: a three on a Tenements corner, three men not one; I walk up - the word; I push one (a jab) - the fist fight.",
+     [{"drive": D, "mode": "gangs", "gang": "tenements", "shots": True, "check": "D.ok", "label": "the gang's word, the push, the fight"}])
+play('o3_crowd', "[O3] the jank walk through the busiest crowd (Grand Ave under the el, the crowd at its cap): nobody through anybody, nobody in a wall, the eye never in a man; then my car into four people in the road: they clear or go down, never through.",
+     [{"drive": D, "mode": "crowd", "min": 14, "car": True, "shots": True, "check": "D.ok", "label": "the crowd: nothing through anything"}])
+play('o3_latency', "[O3] the latency: LMB on foot to the fist's first frame (five), E at a police car to the seat (three).",
+     [{"drive": D, "mode": "latency", "n": 5, "nE": 3, "check": "D.ok", "label": "fists and E: under 50 ms"}])

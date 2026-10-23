@@ -5,6 +5,10 @@ import { Police, HEAT } from '../police/Police.js';
 import { Gangs } from './Gangs.js';
 import { StandinHands } from './hands.js';
 import { districtAt } from '../world/plan.js';
+import { figureGeometry } from '../cast/tailor.js';
+import { COSTUMES } from '../cast/costumes.js';
+import { castBank } from '../cast/castAnim.js';
+import { LOOKS, PED_LOOKS, COP_LOOKS, TEC_LOOKS, GANG_LOOKS, hash, pickWeighted } from './costumes.js';
 
 // [O3] The city's people (lane O3, NOIR CITY): the crowd on the pavements,
 // the witnesses, and the systems that live on them - the police (src/police/)
@@ -38,13 +42,10 @@ export const CROWD = {
   gone: 95,                         // and goes past this (out of sight 5 s past the ring)
   // walkers wanted round me, by district
   want: { downtown: 16, tenements: 14, docks: 9, yards: 4, hill: 6, river: 4 },
-  kinds: ['couple_him', 'couple_her', 'oldman', 'docker', 'o3_newsboy', 'couple_him', 'couple_her'],
-  // the docks' and the yards' men in their work clothes more, the hill's in their coats
-  byDistrict: {
-    docks: ['docker', 'docker', 'oldman', 'couple_him', 'o3_newsboy'],
-    yards: ['docker', 'oldman', 'couple_him'],
-    hill: ['couple_her', 'couple_him', 'couple_her', 'oldman'],
-  },
+  // (who walks where: src/people/costumes.js PED_LOOKS, by district, picked
+  // by a seeded hash of where he comes on; the newsboy downtown and in the
+  // Tenements now and then)
+  newsboy: { downtown: 0.08, tenements: 0.1 },
   umbrella: 0.35,                   // a share of them under an open umbrella
 };
 const _v = new THREE.Vector3(), _f = new THREE.Vector3();
@@ -74,6 +75,20 @@ export class People {
     this.gangs = new Gangs(this);
     this.hands = new StandinHands(this);
     this.hook();
+    this.prewarm();
+  }
+  // every look's body cut and its clips made now (under the fade in), never
+  // at a man's first step out of a door
+  prewarm() {
+    const t0 = performance.now();
+    const kinds = new Set([...Object.keys(LOOKS), 'o3_newsboy', 'o3_patrolman', 'o3_docksman', 'o3_tough']);
+    for (const k of kinds) {
+      const c = COSTUMES[k];
+      if (!c) continue;
+      for (let l = 0; l < 3; l++) figureGeometry(c, l);
+      try { const B = castBank(k); for (const n of ['idle', 'walk', 'run', 'cower', 'watch', 'koFall', 'ko', 'carry']) if (B.has(n)) B.ensure(n); } catch (e) { /* */ }
+    }
+    this.prewarmMs = performance.now() - t0;
   }
 
   // ---- the game's hooks (no shared file edited for these) -------------------------------------
@@ -92,11 +107,14 @@ export class People {
     // themselves; the same shot told twice is one: crime.js)
     this._shot = (e) => this.onShot(e);
     G.on('shot', this._shot);
+    this._in = (e) => this.police.onIn(e && e.car);
+    G.on('city:in', this._in);
   }
   shadowFigs() { const out = []; for (const p of this.list) if (p.object.visible && p.pos.distanceToSquared(this.G.eye) < 26 * 26) out.push(p.fig); return out; }
 
   dispose() {
     this.G.off('shot', this._shot);
+    this.G.off('city:in', this._in);
     this.police.dispose();
     this.gangs.dispose();
     for (const p of this.list) p.dispose();
@@ -111,6 +129,7 @@ export class People {
   afterFail(why) {
     const G = this.G;
     this.police.reset();
+    if (G.city) G.city.ownCar = null;
     for (const T of [...this.gangs.threes]) this.gangs.drop(T);
     this.gangs.war_ = null;
     for (const p of [...this.list]) this.release(p);
@@ -124,6 +143,23 @@ export class People {
       G.hud.say(`Released. Fined $${fine}. They kept the gun.`, 3.4, { always: true });
     } else if (why === 'hospital') G.hud.say('Patched up. On your feet.', 2.8, { always: true });
     this.police.event('wake', { why });
+  }
+
+  // ---- the plays' staging (tools/plays/o3_*: a beat's setup, like the kit's debug hooks) ---------
+  // the street round me emptied, the police stood down (the start of a proof)
+  dbgClear() { this.afterFail('reset'); this.hold = true; }
+  // a walker standing at a place (held there until let go: p.mode 'stand', long)
+  dbgWalker(x, z, yaw = 0, kind = null) {
+    const p = this.spawn(kind || this.pedLook(x, z), x, z, yaw, 'walker');
+    p.mode = 'stand'; p.until = 9999; p.t = 0; p.stop();
+    return p;
+  }
+  // a beat cop at a place, looking along yaw
+  dbgCop(x, z, yaw = 0, job = 'beat') {
+    const c = this.spawn(this.copLook(), x, z, yaw, 'cop');
+    c.job = job; c.mode = 'stand'; c.until = 9999; c.t = 0; c.stop();
+    this.police.cops.push(c);
+    return c;
   }
 
   // ---- making and letting go of people (a pool by kind: no figure made twice) --------------------
@@ -399,6 +435,27 @@ export class People {
   }
 
   // ---- the crowd's own brain ---------------------------------------------------------------------
+  // a walker's look: the district's table, by a seeded hash of where and when
+  // (no two alike in a frame: a look met within 30 m is passed over)
+  pedLook(x, z) {
+    const dist = this.districtOf(x, z), n = this.stats.spawned;
+    if (this.rng.next() < (CROWD.newsboy[dist] || 0)) return 'o3_newsboy';
+    const T = PED_LOOKS[dist] || PED_LOOKS.downtown;
+    for (let k = 0; k < 4; k++) {
+      const look = pickWeighted(T, hash(x, z, n, k));
+      if (!this.list.some((p) => p.kind === look && Math.hypot(p.pos.x - x, p.pos.z - z) < 30)) return look;
+    }
+    return pickWeighted(T, hash(z, x, n));
+  }
+  copLook(n = 0) { const L = COP_LOOKS.concat(['o3_patrolman']); return L[Math.floor(hash(this.stats.spawned, n, 7) * L.length) % L.length]; }
+  tecLook(n = 0) { return TEC_LOOKS[Math.floor(hash(this.stats.spawned, n, 9) * TEC_LOOKS.length) % TEC_LOOKS.length]; }
+  gangLooks(gang, x, z) {
+    const L = GANG_LOOKS[gang].concat([gang === 'docks' ? 'o3_docksman' : 'o3_tough']);
+    // (three men, three looks: a seeded order of the four)
+    const o = L.map((k, i) => [hash(x, z, i), k]).sort((a, b) => a[0] - b[0]).map((e) => e[1]);
+    return o.slice(0, 3);
+  }
+
   districtOf(x, z) {
     const d = districtAt(x, z);
     return d ? d.id : 'downtown';
@@ -414,6 +471,7 @@ export class People {
   walkers() { let n = 0; for (const p of this.list) if (p.role === 'walker') n++; return n; }
 
   spawnWalkers(dt) {
+    if (this.hold) return;
     this.spawnT -= dt;
     if (this.spawnT > 0) return;
     this.spawnT = 0.3;
@@ -435,9 +493,7 @@ export class People {
       if (d < R[0] || d > R[1]) continue;
       if (this.inView(x, z)) continue;
       if (this.near(x, z, 2.5).length) continue;
-      const dist = this.districtOf(x, z);
-      const K = CROWD.byDistrict[dist] || CROWD.kinds;
-      const kind = K[Math.floor(this.rng.next() * K.length) % K.length];
+      const kind = this.pedLook(x, z);
       const umb = kind !== 'o3_newsboy' && kind !== 'docker' && this.rng.next() < CROWD.umbrella;
       // (on along the edge one way or the other, then a walk on from there)
       const first = this.rng.next() < 0.5 ? o : n;

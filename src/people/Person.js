@@ -41,6 +41,7 @@ export class Person {
     const rm = fig.onMove;
     fig.onMove = (h) => { if (rm) rm(h); this.resolve(); };
     this.r = (fig.collider ? fig.collider.r : 0.3);
+    this.scale0 = fig.scale;
     this.reset(x, z, yaw);
   }
 
@@ -60,6 +61,10 @@ export class Person {
     this.down = false; this.dead = false; this.hurt = 0; this.hits = 0;
     this.from = null; this.until = 0; this.watchAt = null; this.wantYaw = yaw;
     this.side = (Math.random() < 0.5 ? 0.35 : 0.75);
+    // (no two alike: a little taller or shorter, a pace of his own)
+    const hk = 0.955 + ((Math.sin(x * 12.9898 + z * 78.233) * 43758.5453) % 1 + 1) % 1 * 0.09;
+    F.scale = this.scale0 * hk; F.object.scale.setScalar(F.scale);
+    this.paceK = 0.88 + ((Math.sin(x * 39.34 + z * 11.13) * 24634.6345) % 1 + 1) % 1 * 0.24;
     this.fear = 0; this.calmT = 0; this.reportOf = null; this.box = null;
     this.speed = 0; this.blocked = 0; this.lastPos = { x, z }; this.stuckT = 0;
     this.seenBy = 0; this.outT = 0;
@@ -92,7 +97,7 @@ export class Person {
     this.gaitNow = g;
     const run = g === 'run' || g === 'sprint';
     if (g === 'idle') { F.speed = 0; c.clipH = null; c.setState('idle', fade); }
-    else { F.speed = GAIT[g] || GAIT.walk; c.clipH = null; c.setState(run ? 'run' : 'walk', fade); }
+    else { F.speed = (GAIT[g] || GAIT.walk) * (this.paceK || 1); c.clipH = null; c.setState(run ? 'run' : 'walk', fade); }
     // (an umbrella is carried up in the right fist while it is held)
     if (this.umb && this.umb.state === 'held' && c.costumed && F.anim.setOverlay) F.anim.setOverlay(run ? null : 'carry', 0.25);
   }

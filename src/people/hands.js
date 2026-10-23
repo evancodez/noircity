@@ -54,6 +54,9 @@ export class StandinHands {
     if (!G.city || G.city.inCar || G.brawl.active || G.failing || G.state !== 'playing') return;
     if (C.mode !== 'walk' || C.frozen) return;
     this.footT += dt;
+    // (the hands in the frame only while they hold something up: the fists, the gun)
+    const up = H.set === 'fists' || W.current === 'revolver';
+    if (up !== !!G.vmWanted) G.setViewmodelVisible(up);
     // the keys, once: on foot a few seconds, nothing else up
     if (this.footT > 7 && !this.taught && !G.hud.kit.warnText) { this.taught = true; G.hud.teach('o3_hands', '[LMB] punch  [RMB] the gun', { until: ['Mouse0', 'Mouse2'], secs: 4 }); }
     const gun = this.gunOut;
@@ -74,7 +77,7 @@ export class StandinHands {
     }
     // LMB: a jab
     if (G.pressed('Mouse0')) this.jab();
-    if (H.set === 'fists') { this.fistT += dt; if (this.fistT > 3.5) { H.equip('empty'); } }
+    if (H.set === 'fists') { this.fistT += dt; if (this.fistT > 3.5) { H.equip('empty'); G.setViewmodelVisible(false); } }
     // E over a man down with a gun: take it
     if (!this.hasGun) {
       const p = this.gunNear();
@@ -141,7 +144,11 @@ export class StandinHands {
     p.hits = G.time - (p.hitT ?? -9) < 3 ? p.hits + 1 : 1;
     p.hitT = G.time;
     if (p.hits >= 2) { p.knock(dir, { why: 'punch' }); P.stats.knocked++; G.sfx.fight('bodyPavement', p.pos.clone().setY(0.3), { k: 0.8 }); }
-    else { p.fig.flinch(dir); p.say('o3_hey'); p.fig.pos.x += dir.x * 0.3; p.fig.pos.z += dir.z * 0.3; if (p.role === 'walker') p.flee(G.eye, 5); }
+    else {
+      // (the first: the head snaps, a step back, a beat of shock - then he runs)
+      p.fig.flinch(dir); p.say('o3_hey'); p.fig.pos.x += dir.x * 0.3; p.fig.pos.z += dir.z * 0.3;
+      if (p.role === 'walker') { p.stop(); p.mode = 'dash'; p.t = 0; p.until = 1.5; p.path = null; p.face(G.eye.x, G.eye.z); p.after = null; P.later(0.8, () => { if (p.standing && p.mode === 'dash') p.flee(G.eye, 5); }); }
+    }
     P.crime.emit('punch', p.pos, 'player', { victim: p });
   }
 }

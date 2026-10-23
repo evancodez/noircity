@@ -155,7 +155,7 @@ export function copGuns(police) {
         const sd = i % 2 ? 1 : -1;
         const q = v.world(0.2, sd * (v.spec.halfW + 0.6), V(0, 0, 0));
         G.stage.colliders.resolve(q, 0.35);
-        const man = P.spawn('o3_patrolman', q.x, q.z, v.yaw - Math.PI / 2 * sd, 'cop');
+        const man = P.spawn(P.tecLook(i), q.x, q.z, v.yaw - Math.PI / 2 * sd, 'cop');
         man.job = 'gun';
         S.arm(man, i === 0 ? 'tommy' : 'pistol', 'police');
       }

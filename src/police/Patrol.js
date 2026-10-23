@@ -123,7 +123,7 @@ export class PatrolCar {
       const side = i % 2 ? 1 : -1;
       const p = v.world(0.2 - Math.floor(i / 2) * 1.4, side * (v.spec.halfW + 0.6), _v);
       const q = p.clone(); this.G.stage.colliders.resolve(q, 0.35);
-      const man = P.spawn(this.crewKind, q.x, q.z, v.yaw - Math.PI / 2 * side, 'cop');
+      const man = P.spawn(this.crewKind || P.copLook(i), q.x, q.z, v.yaw - Math.PI / 2 * side, 'cop');
       man.job = job; man.car = this;
       this.police.cops.push(man);
       this.crew.push(man);
