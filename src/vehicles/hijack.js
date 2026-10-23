@@ -159,7 +159,7 @@ export class Hijack {
     if (A && A.kind === 'break') {
       A.t += dt;
       const ctl = G.controller, b = A.body;
-      for (let i = 0; i < A.marks.length; i++) if (A.t >= A.marks[i] && !A['m' + i]) { A['m' + i] = true; G.sfx.play(i === 0 ? 'tail_click' : 'c3_switch', b.pos.clone().setY(1.1), { k: 0.7 }); }
+      for (let i = 0; i < A.marks.length; i++) if (A.t >= A.marks[i] && !A['m' + i]) { A['m' + i] = true; G.sfx.play(i === 0 ? 'o2_lock' : 'c3_switch', b.pos.clone().setY(1.1), { k: 0.7 }); }
       // (the controls mine through it: walk off, or turn away, and it is left)
       const moved = Math.hypot(ctl.pos.x - A.at.x, ctl.pos.z - A.at.z);
       const f = G.camera.getWorldDirection(_f), toX = b.pos.x - G.eye.x, toZ = b.pos.z - G.eye.z;

@@ -198,14 +198,17 @@ function step(ctx, R, T, dt) {
     // gone a few lengths, or its time
     if (T.drive > 0.4 && !T.driveCard) T.driveCard = hud.teach('city_drive', '[W] drive  [S] brake  [SPACE] handbrake', { until: () => T.dist > 30, secs: 5 });
     if (T.drive > 25 && !T.taughtMap && !T.warned) { T.taughtMap = true; hud.teach('city_map', '[M] the map'); }
+    // [O2] a thing to do wants E here (the garage's door, the race's line, a fare): not out
+    const claimed = G.wheels && G.wheels.claimsE(ctx, R);
+    if (claimed && T.outShown) { T.outShown = false; hud.clearPrompt('cityout'); }
     // E, moving: the brakes go on and I get out as it stops (W again
     // changes my mind) - E acts on the press (the critic's m3)
-    if (ctx.pressed('KeyE') && T.drive > 0.6) R.wantOut = true;
+    if (!claimed && ctx.pressed('KeyE') && T.drive > 0.6) R.wantOut = true;
     if (R.wantOut && (ctx.pressed('KeyW') || ctx.pressed('ArrowUp'))) R.wantOut = false;
     if (R.wantOut && slow) { R.wantOut = false; getOut(ctx, R, T); return; }
     // 'E get out' once the car has been driven and stands (or after a while
     // in the seat), never under a card
-    const out = slow && !R.wantOut && (T.dist > 4 || T.drive > 8) && (!T.driveCard || T.driveCard.done);
+    const out = slow && !R.wantOut && !claimed && (T.dist > 4 || T.drive > 8) && (!T.driveCard || T.driveCard.done);
     if (out !== !!T.outShown) { T.outShown = out; if (out) hud.prompt('E  get out', null, 'cityout'); else hud.clearPrompt('cityout'); }
     return;
   }

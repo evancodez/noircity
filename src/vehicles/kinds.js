@@ -371,13 +371,13 @@ function lorryParts(P) {
 // ---- the table ------------------------------------------------------------------------------------
 const sedanSpec = (o) => ({ ...CAR_SPECS.sedan, ...o });
 export const KINDS = {
-  coupe: { build: coupeParts, spec: { ...CAR_SPECS.coupe }, halfL: 2.45, halfW: 0.94, eye: V3(-0.02, 1.5, -0.34), screen: { base: 0.66, baseY: 1.13, top: 0.43, topY: 1.77 }, cockpit: [0, 0], lamps: COUPE.lamps, tail: COUPE.tail, note: 1.0, paint: 'paint' },
-  saloon: { build: (P) => saloonParts(P, 'saloon'), spec: sedanSpec({ mass: 1.25, accel: 4.2, vmax: 21 }), halfL: 2.45, halfW: 0.95, eye: V3(0.1, 1.43, -0.32), screen: { base: 0.75, baseY: 1.11, top: 0.48, topY: 1.58 }, cockpit: [0.12, -0.07], lamps: [V3(2.3, 0.98, -0.6), V3(2.3, 0.98, 0.6)], tail: [V3(-2.3, 0.84, -0.74), V3(-2.3, 0.84, 0.74)], note: 0.85, paint: 'paint' },
-  taxi: { build: (P) => saloonParts(P, 'taxi'), spec: sedanSpec({ accel: 4.4, vmax: 20 }), halfL: 2.45, halfW: 0.95, eye: V3(0.1, 1.43, -0.32), screen: { base: 0.75, baseY: 1.11, top: 0.48, topY: 1.58 }, cockpit: [0.12, -0.07], lamps: [V3(2.3, 0.98, -0.6), V3(2.3, 0.98, 0.6)], tail: [V3(-2.3, 0.84, -0.74), V3(-2.3, 0.84, 0.74)], note: 0.95, paint: 'paint' },
-  police: { build: (P) => saloonParts(P, 'police'), spec: sedanSpec({ accel: 5.0, vmax: 24, mass: 1.2 }), halfL: 2.45, halfW: 0.95, eye: V3(0.1, 1.43, -0.32), screen: { base: 0.75, baseY: 1.11, top: 0.48, topY: 1.58 }, cockpit: [0.12, -0.07], lamps: [V3(2.3, 0.98, -0.6), V3(2.3, 0.98, 0.6)], tail: [V3(-2.3, 0.84, -0.74), V3(-2.3, 0.84, 0.74)], note: 1.1, paint: 'paint', cap: true },
-  hearse: { build: hearseParts, spec: sedanSpec({ vmax: 17, accel: 3.2, a: 2.0, b: 2.0, k: 1.7, mass: 1.6, steerMax: 0.5, latCap: 7.2, halfL: 3.2, halfW: 0.96 }), halfL: 3.2, halfW: 0.96, eye: V3(0.72, 1.44, -0.32), screen: { base: 1.37, baseY: 1.11, top: 1.1, topY: 1.6 }, cockpit: [0.74, -0.06], lamps: [V3(2.92, 0.98, -0.6), V3(2.92, 0.98, 0.6)], tail: [V3(-3.12, 0.84, -0.74), V3(-3.12, 0.84, 0.74)], note: 0.7, paint: 'paint' },
-  van: { build: vanParts, spec: sedanSpec({ vmax: 15, accel: 2.9, a: 1.75, b: 1.8, k: 1.5, h: 0.85, mass: 1.9, steerMax: 0.52, latCap: 6.4, halfL: 2.8, halfW: 1.05 }), halfL: 2.8, halfW: 1.05, eye: V3(0.38, 1.82, -0.36), screen: { base: 0.97, baseY: 1.32, top: 0.73, topY: 1.97 }, cockpit: [0.4, 0.32], lamps: [V3(2.44, 1.12, -0.62), V3(2.44, 1.12, 0.62)], tail: [V3(-2.72, 0.7, -0.84), V3(-2.72, 0.7, 0.84)], note: 0.75, paint: 'paintGrey', cap: true },
-  lorry: { build: lorryParts, spec: { ...CAR_SPECS.truck, vmax: 12.5, accel: 1.9, a: 2.9, b: 2.4, k: 2.2, halfL: 3.85, halfW: 1.2, mass: 4, steerMax: 0.5, latCap: 5.4 }, halfL: 3.85, halfW: 1.2, eye: V3(1.5, 2.12, -0.42), screen: { base: 2.07, baseY: 1.62, top: 1.83, topY: 2.36 }, cockpit: [1.52, 0.62], lamps: [V3(3.52, 1.38, -0.7), V3(3.52, 1.38, 0.7)], tail: [V3(-3.76, 1.05, -1.0), V3(-3.76, 1.05, 1.0)], note: 0.55, paint: 'paintGrey', cap: true },
+  coupe: { box: { belt: 1.1, roof: 1.86, cab: [-1.7, 0.6] }, build: coupeParts, spec: { ...CAR_SPECS.coupe }, halfL: 2.45, halfW: 0.94, eye: V3(-0.02, 1.5, -0.34), screen: { base: 0.66, baseY: 1.13, top: 0.43, topY: 1.77 }, cockpit: [0, 0], lamps: COUPE.lamps, tail: COUPE.tail, note: 1.0, paint: 'paint' },
+  saloon: { box: { belt: 1.12, roof: 1.7, cab: [-1.6, 0.7] }, build: (P) => saloonParts(P, 'saloon'), spec: sedanSpec({ mass: 1.25, accel: 4.2, vmax: 21 }), halfL: 2.45, halfW: 0.95, eye: V3(0.1, 1.43, -0.32), screen: { base: 0.75, baseY: 1.11, top: 0.48, topY: 1.58 }, cockpit: [0.12, -0.07], lamps: [V3(2.3, 0.98, -0.6), V3(2.3, 0.98, 0.6)], tail: [V3(-2.3, 0.84, -0.74), V3(-2.3, 0.84, 0.74)], note: 0.85, paint: 'paint' },
+  taxi: { box: { belt: 1.12, roof: 1.7, cab: [-1.6, 0.7] }, build: (P) => saloonParts(P, 'taxi'), spec: sedanSpec({ accel: 4.4, vmax: 20 }), halfL: 2.45, halfW: 0.95, eye: V3(0.1, 1.43, -0.32), screen: { base: 0.75, baseY: 1.11, top: 0.48, topY: 1.58 }, cockpit: [0.12, -0.07], lamps: [V3(2.3, 0.98, -0.6), V3(2.3, 0.98, 0.6)], tail: [V3(-2.3, 0.84, -0.74), V3(-2.3, 0.84, 0.74)], note: 0.95, paint: 'paint' },
+  police: { box: { belt: 1.12, roof: 1.7, cab: [-1.6, 0.7] }, build: (P) => saloonParts(P, 'police'), spec: sedanSpec({ accel: 5.0, vmax: 24, mass: 1.2 }), halfL: 2.45, halfW: 0.95, eye: V3(0.1, 1.43, -0.32), screen: { base: 0.75, baseY: 1.11, top: 0.48, topY: 1.58 }, cockpit: [0.12, -0.07], lamps: [V3(2.3, 0.98, -0.6), V3(2.3, 0.98, 0.6)], tail: [V3(-2.3, 0.84, -0.74), V3(-2.3, 0.84, 0.74)], note: 1.1, paint: 'paint', cap: true },
+  hearse: { box: { belt: 1.12, roof: 1.82, cab: [-3.05, 1.3] }, build: hearseParts, spec: sedanSpec({ vmax: 17, accel: 3.2, a: 2.0, b: 2.0, k: 1.7, mass: 1.6, steerMax: 0.5, latCap: 7.2, halfL: 3.2, halfW: 0.96 }), halfL: 3.2, halfW: 0.96, eye: V3(0.72, 1.44, -0.32), screen: { base: 1.37, baseY: 1.11, top: 1.1, topY: 1.6 }, cockpit: [0.74, -0.06], lamps: [V3(2.92, 0.98, -0.6), V3(2.92, 0.98, 0.6)], tail: [V3(-3.12, 0.84, -0.74), V3(-3.12, 0.84, 0.74)], note: 0.7, paint: 'paint' },
+  van: { box: { belt: 1.3, roof: 2.36, cab: [-2.68, 0.95], nose: 1.28 }, build: vanParts, spec: sedanSpec({ vmax: 15, accel: 2.9, a: 1.75, b: 1.8, k: 1.5, h: 0.85, mass: 1.9, steerMax: 0.52, latCap: 6.4, halfL: 2.8, halfW: 1.05 }), halfL: 2.8, halfW: 1.05, eye: V3(0.38, 1.82, -0.36), screen: { base: 0.97, baseY: 1.32, top: 0.73, topY: 1.97 }, cockpit: [0.4, 0.32], lamps: [V3(2.44, 1.12, -0.62), V3(2.44, 1.12, 0.62)], tail: [V3(-2.72, 0.7, -0.84), V3(-2.72, 0.7, 0.84)], note: 0.75, paint: 'paintGrey', cap: true },
+  lorry: { box: { belt: 1.58, roof: 2.6, cab: [0.95, 2.05], nose: 1.58, load: [-3.7, 0.8, 2.7] }, build: lorryParts, spec: { ...CAR_SPECS.truck, vmax: 12.5, accel: 1.9, a: 2.9, b: 2.4, k: 2.2, halfL: 3.85, halfW: 1.2, mass: 4, steerMax: 0.5, latCap: 5.4 }, halfL: 3.85, halfW: 1.2, eye: V3(1.5, 2.12, -0.42), screen: { base: 2.07, baseY: 1.62, top: 1.83, topY: 2.36 }, cockpit: [1.52, 0.62], lamps: [V3(3.52, 1.38, -0.7), V3(3.52, 1.38, 0.7)], tail: [V3(-3.76, 1.05, -1.0), V3(-3.76, 1.05, 1.0)], note: 0.55, paint: 'paintGrey', cap: true },
 };
 export const FLEET = Object.keys(KINDS);
 // the three greys a car may be painted (the garage's): black, the dark grey, the light
@@ -385,6 +385,22 @@ export const PAINTS = ['paint', 'paintGrey', 'paintPale'];
 
 // ---- the builds: once a kind (near and far), shared ----------------------------------------------
 const BUILT = new Map();
+// the far build (past 95 m: a car a few dozen pixels long in the rain): its
+// masses as boxes and its wheels, a few hundred triangles
+function buildBox(kind) {
+  const K = KINDS[kind], B = K.box, L = K.halfL, W = K.halfW;
+  const bx = (x0, x1, y0, y1, z0, z1) => new THREE.BoxGeometry(x1 - x0, y1 - y0, z1 - z0).translate((x0 + x1) / 2, (y0 + y1) / 2, (z0 + z1) / 2);
+  const body = [bx(-L, L, 0.42, B.nose || B.belt, -W * 0.82, W * 0.82), bx(B.cab[0], B.cab[1], B.belt - 0.05, B.roof, -W * 0.68, W * 0.68)];
+  if (B.load) body.push(bx(B.load[0], B.load[1], 1.2, B.load[2], -W, W));
+  const r = kind === 'lorry' ? 0.5 : kind === 'van' ? 0.42 : 0.375;
+  const dark = [];
+  for (const x of [L * 0.62, -L * 0.62]) for (const z of [-W * 0.85, W * 0.85]) dark.push(new THREE.CylinderGeometry(r, r, 0.22, 8).rotateX(Math.PI / 2).translate(x, r, z));
+  const glass = [bx(B.cab[0] + 0.15, B.cab[1] - 0.1, B.belt + 0.08, B.roof - 0.12, -W * 0.7, W * 0.7)];
+  const chrome = [bx(L - 0.05, L + 0.1, 0.4, 0.55, -W, W), bx(-L - 0.1, -L + 0.05, 0.4, 0.55, -W, W)];
+  const out = { body: merge(body), bodyWell: merge(body), dark: merge(dark), glass: merge(glass), chrome: merge(chrome) };
+  for (const g of Object.values(out)) { g.computeBoundingBox(); g.computeBoundingSphere(); }
+  return out;
+}
 function buildParts(kind, q) {
   CQ = q;
   try {
@@ -401,9 +417,11 @@ function buildParts(kind, q) {
     return out;
   } finally { CQ = 1; }
 }
+// far: false / 0 the near build, true / 1 the light one, 2 the boxes
 export function kindGeo(kind, far = false) {
-  const key = kind + (far ? ':far' : '');
-  if (!BUILT.has(key)) BUILT.set(key, buildParts(kind, far ? 0.45 : 1));
+  const lv = far === true ? 1 : far || 0;
+  const key = kind + ':' + lv;
+  if (!BUILT.has(key)) BUILT.set(key, lv === 2 ? buildBox(kind) : buildParts(kind, lv ? 0.45 : 1));
   return BUILT.get(key);
 }
 
@@ -452,18 +470,23 @@ export function fleetModel(kind, stage, { paint = null } = {}) {
   if (G.red) { const r = mk('red', G.red, X.redDim, 'lamp'); r.userData.emitter = true; r.userData.noRay = true; }
   if (G.lamp) { const r = mk('lamp', G.lamp, X.roof, 'lamp'); r.userData.emitter = true; r.userData.noRay = true; }
   meshes.contact = contactShadow(g, K.halfL * 2 + 1.2, K.halfW * 2 + 1.0);
-  const model = { group: g, meshes, kind, K, paint: pname, far: false, well: false, fleet: true };
+  const model = { group: g, meshes, kind, K, paint: pname, far: 0, well: false, fleet: true };
   return model;
 }
 // near / far build (the traffic's LOD, every quarter second)
+// (far: 0 near, 1 light, 2 boxes; a part the boxes have not - the hubs, the
+// lenses, the extras - hidden that far off)
 export function fleetLod(model, far) {
-  if (model.far === far || model.well) return;
-  model.far = far;
-  const G = kindGeo(model.kind, far);
+  const lv = far === true ? 1 : far || 0;
+  if (model.far === lv || model.well) return;
+  model.far = lv;
+  const G = kindGeo(model.kind, lv), N = kindGeo(model.kind);
   for (const m of Object.values(model.meshes)) {
     if (!m || !m.isMesh || !m.userData.geoKey) continue;
     const k = m.userData.geoKey;
-    if (G[k]) { m.userData.rayGeo = kindGeo(model.kind)[k]; m.geometry = G[k]; }
+    if (G[k]) { m.userData.rayGeo = N[k]; m.geometry = G[k]; if (m.userData.lodHid) { m.visible = true; m.userData.lodHid = false; } }
+    else if (lv === 2 && m.visible) { m.visible = false; m.userData.lodHid = true; }
+    else if (lv < 2 && m.userData.lodHid) { m.visible = true; m.userData.lodHid = false; m.geometry = N[k]; }
   }
 }
 // the player's own car: the body with its well (the dash is the cockpit's),
@@ -472,6 +495,7 @@ export function wellOn(model, on) {
   if (!model.fleet) return;
   fleetLod(model, false);
   model.well = on;
+  model.far = 0;
   const G = kindGeo(model.kind);
   model.meshes.body.geometry = on ? G.bodyWell : G.body;
   if (model.meshes.glass) model.meshes.glass.visible = !on;

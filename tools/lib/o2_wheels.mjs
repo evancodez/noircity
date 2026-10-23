@@ -230,7 +230,42 @@ async function pull(P, { js, sleep, log, shot }, H) {
 }
 async function witness() { return { err: 'todo' }; }
 async function fare() { return { err: 'todo' }; }
-async function race() { return { err: 'todo' }; }
+// ---- race: the Yards' corner ------------------------------------------------------------------------
+// (&car=-444,252,1.5708: in a coupe on the Straight just short of the line)
+async function race(P, { js, sleep, log, shot }, H) {
+  const T0 = Date.now();
+  const site = await js(`(() => { const R = G.wheels.race; return { line: [R.path.pts[0].x, R.path.pts[0].z], s0: R.s0, lap: R.lap, len: R.len, cars: R.cars.length, state: R.state }; })()`);
+  log(`race: ${JSON.stringify(site)}`);
+  // to the line: creep up to it and stop
+  for (let i = 0; i < 200; i++) {
+    const s = await P.state();
+    const r = await js('({ shown: !!G.wheels.race.shown, state: G.wheels.race.state, cars: G.wheels.race.cars.length })');
+    if (r.shown) break;
+    await P.set('KeyW', r.cars > 0 && Math.abs(s.car.v) < 3);
+    await sleep(60);
+    if (i > 10 && Math.abs(s.car.v) < 0.1 && !P.held.has('KeyW')) break;
+  }
+  await P.stop();
+  await sleep(300);
+  const pr = (await P.state()).prompt;
+  await P.tap('KeyE');
+  for (let i = 0; i < 100; i++) { const r = await js('G.wheels.race.state'); if (r === 'run') break; await sleep(60); }
+  if (shot) await shot('grid');
+  const pts = await js(`(() => { const R = G.wheels.race, P = R.path, out = []; for (let s = R.s0; s < R.s0 + R.len + 40; s += 3) { const p = P.at(s, {}); out.push([p.x, p.z]); } return out; })()`);
+  // (bad hands: late off the line; idle: never)
+  if (H.name === 'idle') {
+    for (let i = 0; i < 600; i++) { const r = await js('G.wheels.race.state'); if (r === 'done' || r === 'idle') break; await sleep(500); }
+  } else {
+    await sleep(H.react);
+    const shots = new Set();
+    await P.driveAlong(pts, { speed: H.name === 'good' ? 21 : H.name === 'medium' ? 19 : 16, timeout: 300000,
+      until: async () => { const r = await js('G.wheels.race.state'); return r !== 'run'; },
+      onStep: async (s, idx) => { if (shot && idx > 20 && !shots.has('a')) { shots.add('a'); await shot('start'); } } });
+  }
+  await sleep(400);
+  const res = await js('({ result: G.wheels.race.result, stats: G.wheels.race.stats, money: G.save.money, others: G.wheels.race.cars.map((c) => +c.s.toFixed(0)), mine: +G.wheels.race.mine.s.toFixed(0), knocks: G.city.car && G.city.car.stats.log, crashes: G.city.car && G.city.car.stats.crashes, damage: G.city.car && +G.city.car.damage.toFixed(2) })');
+  return { hands: H.name, prompt: pr, ...res, secs: (Date.now() - T0) / 1000 };
+}
 async function drive() { return { err: 'todo' }; }
 async function latency() { return { err: 'todo' }; }
 async function bench() { return { err: 'todo' }; }

@@ -44,13 +44,13 @@ export function walk(graph, from, prev, n, rng, ok = okEdge) {
 }
 
 // an edge's lane line driven from node a toward b (the lane's offset to the right)
-function laneLine(graph, a, b, lane = 0) {
+function laneLine(graph, a, b, lane = 0, offOver = null) {
   const e = edgeOf(graph, a, b);
   if (!e) throw new Error(`traffic path: no street from ${a} to ${b}`);
   const fwd = e.a === a;
   const ax = fwd ? e.ax : e.bx, az = fwd ? e.az : e.bz, bx = fwd ? e.bx : e.ax, bz = fwd ? e.bz : e.az;
   const dx = (bx - ax) / e.len, dz = (bz - az) / e.len;
-  const off = e.lanes[Math.min(lane, e.lanes.length - 1)];
+  const off = offOver != null ? offOver : e.lanes[Math.min(lane, e.lanes.length - 1)];
   // (right of a heading (dx, dz) in x-z, z south: (-dz, dx))
   return { pts: [[ax - dz * off, az + dx * off], [bx - dz * off, bz + dx * off]], e };
 }
@@ -62,9 +62,9 @@ function meet(a0, a1, b0, b1) {
   return [a0[0] + dx1 * t, a0[1] + dz1 * t];
 }
 
-export function lanePath(graph, ids, { from = null, to = null, vmax = 13, aLat = 3.6, aBrake = 3.5, lane = 0, rRight = 6.5, rLeft = 10, pace = 1 } = {}) {
+export function lanePath(graph, ids, { from = null, to = null, vmax = 13, aLat = 3.6, aBrake = 3.5, lane = 0, rRight = 6.5, rLeft = 10, pace = 1, off = null } = {}) {
   const legs = [];
-  for (let i = 0; i + 1 < ids.length; i++) legs.push(laneLine(graph, ids[i], ids[i + 1], lane));
+  for (let i = 0; i + 1 < ids.length; i++) legs.push(laneLine(graph, ids[i], ids[i + 1], lane, off));
   const poly = [];   // [x, z, limit]
   if (from) poly.push([from.x, from.z, LIMIT[legs[0].e.cls] || 10]);
   for (let i = 0; i < legs.length; i++) {

@@ -8,6 +8,10 @@ import { Hijack } from '../vehicles/hijack.js';
 import { KINDS, lampsLit } from '../vehicles/kinds.js';
 import { Headlamps } from '../vehicles/Vehicle.js';
 import { showDamage, damageStep, watchDamage } from '../vehicles/damage.js';
+import { Garage } from '../vehicles/garage.js';
+import { Fares } from '../vehicles/fares.js';
+import { Race } from '../vehicles/race.js';
+import { HuntPilot, siren, sirenStep } from '../vehicles/police.js';
 
 // NOIR CITY's wheels (lane O2): game.wheels, made by the free roam (src/scenes/city.js)
 // on the city's stage. Owns the signals, the parked cars, the moving traffic,
@@ -40,6 +44,10 @@ export class Wheels {
     this.t = 0;
     this.extras = [];   // the things to do (garage, fares, race): { step(dt), reset() }
     // the cars' world: the parked bodies are solid to the cars (track) and to a man (colliders)
+    // the things to do on wheels
+    this.garage = new Garage(this);
+    this.fares = new Fares(this);
+    this.race = new Race(this);
     const T = stage.track;
     if (T) T.parked = this.parked.bodies;
     stage.colliders.bodies = () => this.V.list.concat(this.parked.bodies);
@@ -156,8 +164,11 @@ export class Wheels {
       if (v.vel.lengthSq() > 4e-4 || Math.abs(v.yawRate) > 0.01 || v.touchT < 0.3) { v.input.throttle = 0; v.input.brake = 1; v.input.handbrake = 1; v.step(dt); }
     }
     damageStep(this, dt);
+    sirenStep(this, dt);
     if (this.comeT != null) { this.comeT -= dt; if (this.comeT <= 0) { this.comeT = null; this.come(); } }
     for (const x of this.extras) x.step(dt);
+    // (the hunters O3 asks for: stepped here, like the traffic)
+    if (this.hunters) for (const v of this.hunters) if (this.V.list.includes(v) && v !== this.V.player) v.step(dt);
   }
   keepLeft(eye) {
     for (const L of this.left) {
@@ -185,6 +196,14 @@ export class Wheels {
       const old = this.left.find((x) => x.v !== this.V.player && x.v !== (this.game.city && this.game.city.car));
       if (old) { if (old.v) this.V.remove(old.v); this.left.splice(this.left.indexOf(old), 1); }
     }
+  }
+  // in a car: does a thing to do want E now (the garage's door, the race's line,
+  // a fare at the kerb)? Then the free roam's 'E get out' waits
+  claimsE(ctx, R) {
+    if (this.garage.inCar(ctx, R)) return true;
+    if (this.race.shown || this.race.state === 'grid') return true;
+    if (this.fares.fare && this.fares.fare.prompted) return true;
+    return false;
   }
   // a car of mine taken again (I am in it)
   took(v) { v.parked = false; }
@@ -236,6 +255,21 @@ export class Wheels {
     this.come = () => {};
     return c;
   }
+
+  // a police car at a point (O3's patrol, a roadblock's), hunting a target ({ pos }:
+  // a car, a man) on the graph, its siren on or not -> Car (v.driver: a HuntPilot)
+  police(x, z, { target = null, siren: on = true, yaw = null, pace = 1.05 } = {}) {
+    const v = this.carAt(x, z, 'police', { yaw, lights: true });
+    this.ownLamps(v);
+    if (v.model.meshes.bust) v.model.meshes.bust.visible = true;
+    if (target) v.driver = new HuntPilot(this, target, { pace });
+    siren(this, v, on);
+    v.police = true;
+    (this.hunters || (this.hunters = [])).push(v);
+    return v;
+  }
+  hunt(v, target, opts) { v.driver = new HuntPilot(this, target, opts); return v.driver; }
+  siren(v, on) { siren(this, v, on); }
 
   // a shot, a man down near the traffic: they panic
   alarm(point, k = 1) { this.traffic.alarm(point, k); }

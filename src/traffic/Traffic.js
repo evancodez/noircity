@@ -78,6 +78,7 @@ export class Traffic {
       const d = Math.hypot(x - eye.x, z - eye.z);
       if (d < SPAWN_MIN || d > SPAWN_MAX) continue;
       if (!this.hidden(eye, x, z, d)) continue;
+      if (this.avoid && this.avoid({ x, z })) continue;   // (the race's loop while it runs)
       // (nothing there)
       if (this.W.bodiesNear(x, z, 9).length) continue;
       const from = dir > 0 ? e.a : e.b, to = dir > 0 ? e.b : e.a;
@@ -183,6 +184,18 @@ export class Traffic {
       if (car.pilot && car.pilot.s > car.path.len - 70) this.extend(car);
     }
     this.stats.maxNear = Math.max(this.stats.maxNear, near);
+    // the engines of the two nearest, by their speed (my own is the cabin's bed)
+    this.engT = (this.engT || 0) - dt;
+    const S = this.game.sfx;
+    if (S && S.live && this.engT <= 0) {
+      this.engT = 0.1;
+      const by = this.cars.map((c) => [Math.hypot(c.v.pos.x - eye.x, c.v.pos.z - eye.z), c]).filter((x) => x[0] < 45).sort((a, b) => a[0] - b[0]);
+      for (let k = 0; k < 2; k++) {
+        const c = by[k] && by[k][1];
+        if (c) { const sp = Math.abs(c.v.speed), n = KINDS[c.kind].note; S.loop('o2_eng' + k, c.v.pos, 0.12 + 0.18 * Math.min(1, sp / 12) * (1.4 - n * 0.5), 'brown', (160 + sp * 11) * n, 0, true); }
+        else if (S.loops && S.loops.has('o2_eng' + k)) S.stopLoop('o2_eng' + k);
+      }
+    }
     this.stats.near = near;
   }
   deal(eye) {
@@ -190,7 +203,7 @@ export class Traffic {
     const cand = [];
     for (const car of this.cars) {
       const v = car.v, dx = v.pos.x - eye.x, dz = v.pos.z - eye.z, d = Math.hypot(dx, dz);
-      fleetLod(v.model, d > 48);
+      fleetLod(v.model, d > 95 ? 2 : d > 48 ? 1 : 0);
       if (d < 110 && (dx * f.x + dz * f.z) / Math.max(d, 1) > 0.2) cand.push([d, v]);
     }
     cand.sort((a, b) => a[0] - b[0]);

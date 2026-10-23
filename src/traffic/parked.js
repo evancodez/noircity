@@ -19,7 +19,7 @@ import { STARTS } from '../world/plan.js';
 // (promote): from then on it is a Car, kept where it is left.
 //   parked.bodies (live)  parked.promote(body) -> Car  parked.step(dt, camera)
 //   parked.taken (bay keys gone: a car taken or driven off from its bay)
-const RADIUS = 190, DROP = 240, NEAR = 42;
+const RADIUS = 190, DROP = 240, NEAR = 42, FAR = 95;
 const MARGIN = 0.62, CLOSE = 10;
 // a district's share of bays taken and its mix of kinds
 const MIX = {
@@ -53,8 +53,11 @@ export class Parked {
       const mix = MIX[dist] || MIX.downtown;
       const r = rng.next(), rk = rng.next();
       if (r > mix.share || along < freeFrom) continue;
-      // (clear of the starts' cars and of the junctions' mouths)
+      // (clear of the starts' cars and of the junctions' mouths; the race's
+      // loop in the Yards kept clear: the Straight, Centre St, Foundry St and
+      // Water St round it are the course - vehicles/race.js)
       if (starts.some((s) => Math.hypot(s.x - b.x, s.z - b.z) < 9)) continue;
+      if (b.x > -462 && b.x < -358 && b.z > -42 && b.z < 252) continue;
       const S = G.streetAt(b.x, b.z);
       if (S && (S.s < S.edge.hw + 7 || S.s > S.edge.len - S.edge.hw - 7)) continue;
       let tot = 0; for (const [, w] of mix.kinds) tot += w;
@@ -80,8 +83,8 @@ export class Parked {
       const cap = Math.min(90, count[kind]);
       this.inst[kind] = { cap };
       const id = allocInkId(1);
-      for (const lod of ['hi', 'lo']) {
-        const g = kindGeo(kind, lod === 'lo');
+      for (const lod of ['hi', 'lo', 'box']) {
+        const g = kindGeo(kind, lod === 'box' ? 2 : lod === 'lo' ? 1 : 0);
         const geo = {
           body: g.body, chrome: g.chrome,
           dark: merge([g.dark, g.hub, g.red, g.bust].filter(Boolean)),
@@ -199,7 +202,7 @@ export class Parked {
       const I = this.inst[b.kind];
       if (!I) continue;
       if (d > CLOSE && (dx * fx + dz * fz) / d < cosHalf) continue;
-      const lod = d < NEAR ? 'hi' : 'lo';
+      const lod = d < NEAR ? 'hi' : d < FAR ? 'lo' : 'box';
       const key = b.kind + lod;
       const k = n[key] = (n[key] || 0);
       if (k >= I.cap) continue;
@@ -214,7 +217,7 @@ export class Parked {
         this.shadow.setMatrixAt(ns++, _m.compose(_p.set(b.pos.x, gy + 0.012, b.pos.z), _q, _s.set(K.halfL * 2 + 1.2, 1, K.halfW * 2 + 1.0)));
       }
     }
-    for (const [kind, I] of Object.entries(this.inst)) for (const lod of ['hi', 'lo']) {
+    for (const [kind, I] of Object.entries(this.inst)) for (const lod of ['hi', 'lo', 'box']) {
       const c = n[kind + lod] || 0;
       for (const im of Object.values(I[lod])) {
         im.count = c; im.visible = c > 0;
@@ -228,7 +231,7 @@ export class Parked {
   near(x, z, r) { return this.bodies.filter((b) => Math.abs(b.pos.x - x) < r && Math.abs(b.pos.z - z) < r); }
 
   dispose() {
-    for (const I of Object.values(this.inst)) for (const lod of ['hi', 'lo']) for (const im of Object.values(I[lod] || {})) { if (im.parent) im.parent.remove(im); im.dispose(); }
+    for (const I of Object.values(this.inst)) for (const lod of ['hi', 'lo', 'box']) for (const im of Object.values(I[lod] || {})) { if (im.parent) im.parent.remove(im); im.dispose(); }
     if (this.shadow.parent) this.shadow.parent.remove(this.shadow);
     this.shadow.dispose();
   }
