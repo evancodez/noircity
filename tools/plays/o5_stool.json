@@ -1,0 +1,188 @@
+{
+ "about": "[O5] the bar stool: sit, the whiskey (one on the house, then he waits), up by S, by E looking away, by SPACE - never sat again by the press that got me up",
+ "url": "/?mute=1&start=city",
+ "size": [
+  1280,
+  800
+ ],
+ "out": "shots/o5/stool",
+ "steps": [
+  {
+   "wait": 1500
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]",
+   "taken": "G.state !== 'title'",
+   "retries": 5,
+   "every": 4000
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'city' && G.scenes.fadeK < 0.05",
+   "timeout": 25000
+  },
+  {
+   "eval": "(() => { const s = G.city.places.byId.get('bar1'), d = s.door; const x = d.x + d.nx * 3, z = d.z + d.nz * 3; G.stage.part('stream').warmAround(x, z); N.controller.setPose(x, z, Math.atan2(d.nx, d.nz), -0.05); window.__m = []; const m0 = G.hud.message.bind(G.hud); G.hud.message = (t, s) => { window.__m.push(t); return m0(t, s); }; return 1; })()"
+  },
+  {
+   "wait": 2500
+  },
+  {
+   "key": "KeyE",
+   "hold": 70
+  },
+  {
+   "wait": 700
+  },
+  {
+   "walk": "(()=>{const s=G.city.places.byId.get('bar1'),F=s.frame,S=s.live.K.seats.find(x=>/stool16/.test(x.name));return [[0,-1.8],[S.x,S.z+1.4]].map(([x,z])=>{const p=F.w(x,z);return [p.x,p.z]})})()",
+   "timeout": 10000,
+   "stop": false
+  },
+  {
+   "look": "(()=>{const s=G.city.places.byId.get('bar1'),F=s.frame,S=s.live.K.seats.find(x=>/stool16/.test(x.name));const a=F.v(S.at[0],S.at[1],S.at[2]);const dx=a.x-G.eye.x,dz=a.z-G.eye.z,dy=a.y-G.eye.y;const w=Math.atan2(-dx,-dz);const e=Math.atan2(Math.sin(w-N.controller.yaw),Math.cos(w-N.controller.yaw));const p=Math.atan2(dy,Math.hypot(dx,dz));return [Math.round(-e/N.controller.sensitivity),Math.round(-(p-N.controller.pitch)/N.controller.sensitivity)]})()",
+   "steps": 6
+  },
+  {
+   "wait": 300
+  },
+  {
+   "key": "KeyE",
+   "hold": 70
+  },
+  {
+   "wait": 900
+  },
+  {
+   "expect": "!!G.city.places.seat",
+   "name": "E sits me on the stool"
+  },
+  {
+   "eval": "'sat: prompt '+G.hud.promptShown+' | hud '+document.getElementById('hud').innerText.replace(/\\s+/g,' ').slice(0,140)"
+  },
+  {
+   "shot": "sat"
+  },
+  {
+   "key": "KeyE",
+   "hold": 70
+  },
+  {
+   "wait": 900
+  },
+  {
+   "eval": "'E #1: '+window.__m.slice(-2).join(' / ')+' prompt '+G.hud.promptShown"
+  },
+  {
+   "key": "KeyE",
+   "hold": 70
+  },
+  {
+   "wait": 900
+  },
+  {
+   "eval": "'E #2 (drink): '+window.__m.slice(-2).join(' / ')+' hp '+Math.round(G.health.hp)"
+  },
+  {
+   "key": "KeyE",
+   "hold": 70
+  },
+  {
+   "wait": 900
+  },
+  {
+   "eval": "'E #3: '+window.__m.slice(-2).join(' / ')"
+  },
+  {
+   "expect": "!window.__m.slice(-1)[0].includes('On the house')",
+   "name": "the house pours one, not two (broke: he waits)"
+  },
+  {
+   "expect": "!!G.city.places.seat",
+   "name": "still seated after three E at the bar top"
+  },
+  {
+   "key": "KeyS",
+   "hold": 120
+  },
+  {
+   "wait": 800
+  },
+  {
+   "expect": "!!!G.city.places.seat",
+   "name": "S gets me up from the stool"
+  },
+  {
+   "wait": 500
+  },
+  {
+   "look": "(()=>{const s=G.city.places.byId.get('bar1'),F=s.frame,S=s.live.K.seats.find(x=>/stool16/.test(x.name));const a=F.v(S.at[0],S.at[1],S.at[2]);const dx=a.x-G.eye.x,dz=a.z-G.eye.z,dy=a.y-G.eye.y;const w=Math.atan2(-dx,-dz);const e=Math.atan2(Math.sin(w-N.controller.yaw),Math.cos(w-N.controller.yaw));const p=Math.atan2(dy,Math.hypot(dx,dz));return [Math.round(-e/N.controller.sensitivity),Math.round(-(p-N.controller.pitch)/N.controller.sensitivity)]})()",
+   "steps": 6
+  },
+  {
+   "wait": 200
+  },
+  {
+   "key": "KeyE",
+   "hold": 70
+  },
+  {
+   "wait": 900
+  },
+  {
+   "expect": "!!G.city.places.seat",
+   "name": "E sits me again"
+  },
+  {
+   "look": [
+    700,
+    -120
+   ],
+   "steps": 8
+  },
+  {
+   "wait": 400
+  },
+  {
+   "eval": "'looked away: prompt '+G.hud.promptShown"
+  },
+  {
+   "key": "KeyE",
+   "hold": 70
+  },
+  {
+   "wait": 1200
+  },
+  {
+   "expect": "!!!G.city.places.seat",
+   "name": "E looking away from the bar gets me up and keeps me up"
+  },
+  {
+   "eval": "'up: mode '+N.controller.mode+' modeT '+N.controller.modeT.toFixed(2)"
+  },
+  {
+   "look": "(()=>{const s=G.city.places.byId.get('bar1'),F=s.frame,S=s.live.K.seats.find(x=>/stool16/.test(x.name));const a=F.v(S.at[0],S.at[1],S.at[2]);const dx=a.x-G.eye.x,dz=a.z-G.eye.z,dy=a.y-G.eye.y;const w=Math.atan2(-dx,-dz);const e=Math.atan2(Math.sin(w-N.controller.yaw),Math.cos(w-N.controller.yaw));const p=Math.atan2(dy,Math.hypot(dx,dz));return [Math.round(-e/N.controller.sensitivity),Math.round(-(p-N.controller.pitch)/N.controller.sensitivity)]})()",
+   "steps": 6
+  },
+  {
+   "wait": 200
+  },
+  {
+   "key": "KeyE",
+   "hold": 70
+  },
+  {
+   "wait": 900
+  },
+  {
+   "key": "Space",
+   "hold": 90
+  },
+  {
+   "wait": 800
+  },
+  {
+   "expect": "!!!G.city.places.seat",
+   "name": "SPACE gets me up"
+  }
+ ]
+}

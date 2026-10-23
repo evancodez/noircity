@@ -1,0 +1,86 @@
+{
+ "about": "[O5 critic] the street door's latency: E to the first frame the leaf moves (no capture in between), twice",
+ "url": "/?mute=1&start=city",
+ "size": [
+  1280,
+  800
+ ],
+ "out": "shots/critic_o5/lat",
+ "steps": [
+  {
+   "wait": 1500
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]",
+   "taken": "G.state !== 'title'",
+   "retries": 5,
+   "every": 4000
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'city' && G.scenes.fadeK < 0.05",
+   "timeout": 25000
+  },
+  {
+   "eval": "(()=>{window.__c={};addEventListener('keydown',e=>{if(e.code==='KeyE'&&window.__c.door){__c.t0=performance.now();__c.a0=__c.door.angle;__c.t1=null}},true);const tick=()=>{const c=__c;if(c.door&&c.t0!=null&&c.t1==null&&Math.abs(c.door.angle-c.a0)>1e-4)c.t1=performance.now();requestAnimationFrame(tick)};requestAnimationFrame(tick);const m0=G.hud.message.bind(G.hud);__c.msgs=[];G.hud.message=(t,s)=>{__c.msgs.push(t);return m0(t,s)};return 1})()"
+  },
+  {
+   "walk": [
+    [
+     -124,
+     28
+    ],
+    [
+     -127,
+     14
+    ],
+    [
+     -131.4,
+     13.9
+    ]
+   ],
+   "timeout": 20000
+  },
+  {
+   "wait": 400
+  },
+  {
+   "eval": "'prompt:'+G.hud.promptShown+' | hud:'+document.getElementById('hud').innerText.replace(/\\s+/g,' ').slice(0,200)+' | live:'+!!(G.city.places.byId.get('theatre1').live)"
+  },
+  {
+   "eval": "(()=>{const s=G.city.places.byId.get('theatre1');__c.door=s.live&&s.live.street[0];return !!__c.door})()"
+  },
+  {
+   "key": "KeyE",
+   "hold": 70
+  },
+  {
+   "wait": 150
+  },
+  {
+   "eval": "'lat ms '+(__c.t1?(__c.t1-__c.t0).toFixed(1):'none')+' angle '+(__c.door&&__c.door.angle.toFixed(2))"
+  },
+  {
+   "wait": 2500
+  },
+  {
+   "key": "KeyE",
+   "hold": 70
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "eval": "'closed? angle '+__c.door.angle.toFixed(2)"
+  },
+  {
+   "key": "KeyE",
+   "hold": 70
+  },
+  {
+   "wait": 400
+  },
+  {
+   "eval": "'lat2 ms '+(__c.t1?(__c.t1-__c.t0).toFixed(1):'none')+' angle '+__c.door.angle.toFixed(2)"
+  }
+ ]
+}

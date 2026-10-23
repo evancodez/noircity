@@ -1,0 +1,70 @@
+{
+ "about": "[O5] the hideout, my idle hands, up to 1 tries",
+ "url": "/?mute=1&start=city",
+ "size": [
+  1280,
+  800
+ ],
+ "out": "shots/o5/hide_idle",
+ "steps": [
+  {
+   "wait": 1500
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]",
+   "taken": "G.state !== 'title'",
+   "retries": 5,
+   "every": 4000
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'city' && G.scenes.fadeK < 0.05",
+   "timeout": 25000
+  },
+  {
+   "eval": "(() => { window.__h = { fails: [], warns: [] }; G.on('fail', (e) => window.__h.fails.push(JSON.stringify(e).slice(0, 80))); const w0 = G.hud.warn.bind(G.hud); G.hud.warn = (t, ...a) => { if (t) window.__h.warns.push(t); return w0(t, ...a); }; return 1; })()"
+  },
+  {
+   "until": "G.state === 'playing' && !G.failing && G.scenes.fadeK < 0.05",
+   "timeout": 30000,
+   "stop": false
+  },
+  {
+   "eval": "(() => { const s = G.city.places.byId.get('pieroffice'); if (s.state.cleared) return 'cleared already'; const d = s.door; const x = d.x + d.nx * 3, z = d.z + d.nz * 3; G.stage.part('stream').warmAround(x, z); N.controller.setPose(x, z, Math.atan2(d.nx, d.nz), -0.05); window.__t0 = G.time; return 'pieroffice try 1 hp ' + Math.round(G.health.hp) + ' dead so far ' + ((s.state.dead || []).length); })()"
+  },
+  {
+   "wait": 2500
+  },
+  {
+   "key": "KeyE",
+   "hold": 70
+  },
+  {
+   "wait": 600
+  },
+  {
+   "walk": "(() => { const F = G.city.places.byId.get('pieroffice').frame; return [[0, -1.8]].map(([x, z]) => { const p = F.w(x, z); return [p.x, p.z]; }); })()",
+   "timeout": 10000,
+   "stop": false
+  },
+  {
+   "until": "G.failing || G.health.dead || window.__h.fails.length > 0",
+   "timeout": 60000,
+   "stop": false
+  },
+  {
+   "wait": 1200
+  },
+  {
+   "shot": "idle_fall"
+  },
+  {
+   "eval": "'try 1: ' + (G.city.places.byId.get('pieroffice').state.cleared ? 'CLEARED' : 'down') + ' (men down ' + (G.city.places.byId.get('pieroffice').live ? G.city.places.byId.get('pieroffice').live.run.st.men.filter((h) => !h.alive).length + ' of ' + G.city.places.byId.get('pieroffice').live.run.st.men.length : '?') + ') in ' + (G.time - window.__t0).toFixed(0) + ' s; warns ' + window.__h.warns.slice(-3).join(' / ') + '; fails ' + window.__h.fails.slice(-1).join('') + '; line: ' + document.getElementById('hud').innerText.replace(/\\s+/g, ' ').slice(0, 120)"
+  },
+  {
+   "wait": 4000
+  },
+  {
+   "eval": "'after: scene ' + G.scenes.beat + ' at ' + N.controller.pos.x.toFixed(0) + ',' + N.controller.pos.z.toFixed(0) + ' inside ' + (G.city.places.inside && G.city.places.inside.id) + ' hp ' + Math.round(G.health.hp) + ' state ' + G.state"
+  }
+ ]
+}

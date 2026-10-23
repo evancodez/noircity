@@ -1,0 +1,19 @@
+{
+ "about": "[O5 critic] cold: the title, BEGIN, the first frame, a look round; where are the places from here and what says so",
+ "url": "/?mute=1",
+ "size": [1280, 800],
+ "out": "shots/critic_o5/cold",
+ "steps": [
+  { "wait": 2500 },
+  { "shot": "title" },
+  { "clickOn": "#title .opt[data-k=begin]", "taken": "G.state !== 'title'", "retries": 5, "every": 4000 },
+  { "until": "G.scenes.current && G.scenes.current.id === 'city' && G.scenes.fadeK < 0.05", "timeout": 25000 },
+  { "wait": 1500 },
+  { "shot": "first" },
+  { "eval": "document.getElementById('hud').innerText.replace(/\\s+/g,' ').slice(0,400)" },
+  { "eval": "(()=>{const P=G.city.places,p=G.controller.camera.position;return [...P.byId.values()].map(s=>s.id+':'+Math.round(Math.hypot(s.door.x-p.x,s.door.z-p.z))).join(' ')})()" },
+  { "look": [900, 0], "steps": 10 }, { "wait": 500 }, { "shot": "look1" },
+  { "look": [900, 0], "steps": 10 }, { "wait": 500 }, { "shot": "look2" },
+  { "look": [900, 0], "steps": 10 }, { "wait": 500 }, { "shot": "look3" }
+ ]
+}

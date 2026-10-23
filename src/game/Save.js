@@ -41,6 +41,13 @@ export class Save {
     } catch (e) { return null; }
   }
 
+  // [O5] the city's money ($: one number, OPEN_WORLD §4) and the bars'
+  // matchbooks taken (ids, once each: O7 shows the collection) - plain
+  // flags, so the v2 save keeps them (O7 defines the open world's save)
+  get money() { return this.flags.money || 0; }
+  set money(v) { this.flags.money = Math.max(0, Math.round(v)); }
+  get matchbooks() { return Array.isArray(this.flags.matchbooks) ? this.flags.matchbooks : (this.flags.matchbooks = []); }
+
   // [R3] (a story played to THE END is not continued: the title offers
   // BEGIN and the chapters again, not the last ten seconds of the ending)
   get exists() { const d = this.read(); return !!d && !(d.flags && d.flags.ended); }

@@ -1,0 +1,19 @@
+{
+ "about": "[O5 critic] the Orpheum by input from the start: its door, in, every usable thing poked (poke.mjs), the house and its seat (the reel), out",
+ "url": "/?mute=1&start=city",
+ "size": [1280, 800],
+ "out": "shots/critic_o5/thp",
+ "steps": [
+  { "wait": 1500 },
+  { "clickOn": "#title .opt[data-k=begin]", "taken": "G.state !== 'title'", "retries": 5, "every": 4000 },
+  { "until": "G.scenes.current && G.scenes.current.id === 'city' && G.scenes.fadeK < 0.05", "timeout": 25000 },
+  { "look": [2, 0], "steps": 1 },
+  { "look": "[0, Math.round((N.controller.pitch + 0.04) / N.controller.sensitivity)]", "steps": 4 },
+  { "walk": [[-124, 28], [-127, 14], [-131.4, 13.9]], "timeout": 20000 },
+  { "key": "KeyE", "hold": 70 }, { "wait": 700 },
+  { "walk": "(()=>{const F=G.city.places.byId.get('theatre1').frame;return [[0,-2.2]].map(([x,z])=>{const p=F.w(x,z);return [p.x,p.z]})})()", "timeout": 10000 },
+  { "wait": 400 }, { "shot": "lobby" },
+  { "drive": "tools/plays/critic/o5/poke.mjs", "site": "theatre1", "sitMs": 3500, "shots": true },
+  { "eval": "'inside:'+(G.city.places.inside&&G.city.places.inside.id)+' lvl '+G.city.places.level+' pos '+N.controller.pos.x.toFixed(1)+','+N.controller.pos.z.toFixed(1)" }
+ ]
+}
