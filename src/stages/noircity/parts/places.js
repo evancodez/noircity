@@ -53,15 +53,18 @@ export default {
     const uvOf = (c) => [c.x / ATLAS, 1 - (c.y + c.h) / ATLAS_H, (c.x + c.w) / ATLAS, 1 - c.y / ATLAS_H];
     // a neon face: the black board, the tube's glow, the tube, its white-hot line
     const faceCache = new Map();   // [O1b] (a blade's face drawn once a word and a colour)
-    const neonFace = (text, col, wM, hM, vert) => {
-      const ck = vert ? `${text}|${col}|${wM.toFixed(2)}|${hM.toFixed(2)}` : null;
+    const neonFace = (text, col, wM, hM, vert, res = 1) => {
+      const ck = vert ? `${text}|${col}|${wM.toFixed(2)}|${hM.toFixed(2)}|${res}` : null;
       if (ck && faceCache.has(ck)) return faceCache.get(ck);
-      const r = neonFace0(text, col, wM, hM, vert);
+      const r = neonFace0(text, col, wM, hM, vert, res);
       if (ck) faceCache.set(ck, r);
       return r;
     };
-    const neonFace0 = (text, col, wM, hM, vert) => {
-      const c = alloc(Math.round(wM * PX), Math.round(hM * PX));
+    // ([O1b] res: the atlas's pixels a metre, a share of PX - the streets' accent
+    // blades are drawn at half: at full they ran the atlas past its height and
+    // the painted names after them fell off it)
+    const neonFace0 = (text, col, wM, hM, vert, res = 1) => {
+      const c = alloc(Math.round(wM * PX * res), Math.round(hM * PX * res));
       const K = COL[col];
       g.save(); g.beginPath(); g.rect(c.x, c.y, c.w, c.h); g.clip(); g.translate(c.x, c.y);
       g.fillStyle = '#050505'; g.fillRect(0, 0, c.w, c.h);
@@ -113,13 +116,13 @@ export default {
     };
     const nearestFace = (L, at) => { let best = null, bd = Infinity; for (const F of facesOf(L)) { const d = Math.hypot(F.mid[0] - at[0], F.mid[1] - at[1]); if (d < bd) { bd = d; best = F; } } return best; };
     // a blade sign hung out from the wall at (x, z) (n: out of the wall)
-    const blade = (x, z, n, y, text, col, { big = false } = {}) => {
+    const blade = (x, z, n, y, text, col, { big = false, res = 1 } = {}) => {
       const wM = big ? 1.2 : 0.85, lh = big ? 0.8 : 0.58, hM = text.replace(/ /g, '').length * lh + 0.4;
       const out = 0.35 + wM / 2, cx = x + n[0] * out, cz = z + n[1] * out;
       const yawN = Math.atan2(-n[1], n[0]);
       boards.push(box(cx, y, cz, wM, hM, 0.14, yawN));
       boards.push(box(x + n[0] * (0.35 + wM) / 2, y + hM / 2 + 0.08, z + n[1] * (0.35 + wM) / 2, 0.35 + wM, 0.05, 0.05, yawN));
-      const uv = neonFace(text.replace(/ /g, ''), col, wM - 0.06, hM - 0.06, true);
+      const uv = neonFace(text.replace(/ /g, ''), col, wM - 0.06, hM - 0.06, true, res);
       const tx = -n[1], tz = n[0];
       for (const sd of [1, -1]) neonFaces.push(faceGeo(wM - 0.06, hM - 0.06, tx * sd, tz * sd, cx + tx * sd * 0.075, y, cz + tz * sd * 0.075, uv));
       signs.push({ text, x, z, n, kind: 'blade', col });
@@ -263,7 +266,7 @@ export default {
         const text = words[Math.floor(vhash(w.x, w.z, 82) * words.length) % words.length];
         const tx = -w.nz, tz = w.nx, side = vhash(w.x, w.z, 83) < 0.5 ? -1 : 1;
         const base = e.L.district === 'tenements' ? 4.1 : 4.6;
-        blade(w.x + tx * side * (w.w * 0.5 + 0.1), w.z + tz * side * (w.w * 0.5 + 0.1), [w.nx, w.nz], base + text.replace(/ /g, '').length * 0.29, text, A.col);
+        blade(w.x + tx * side * (w.w * 0.5 + 0.1), w.z + tz * side * (w.w * 0.5 + 0.1), [w.nx, w.nz], base + text.replace(/ /g, '').length * 0.29, text, A.col, { res: 0.5 });
         last = e.s;
         nA++;
       }
@@ -310,6 +313,8 @@ export default {
     mk(bulbs, M.bulb, 2);
     mk(amberBulbs, new THREE.MeshBasicMaterial({ color: accent('neonAmber', { gain: 0.7 }) }), 2);   // [O1b]
     void CLS; void NS; void EW;
+    // ([O1b] a face past the atlas's foot prints nothing: say so where the plays read it)
+    if (ay + row > ATLAS_H) console.error(`places: the neon atlas overflows (${ay + row} of ${ATLAS_H} px)`);
     return { group, signs, doors, atlasUsed: ay + row, accentBlades: nA };   // ([O1b] the atlas's height used: under ATLAS_H)
   },
 };
