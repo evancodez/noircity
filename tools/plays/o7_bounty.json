@@ -1,5 +1,5 @@
 {
- "about": "[O7] The bounty board by real input: at the board by the police headquarters' door (a tool's teleport), 'E  the wanted board'; E: WANTED, three posters (a photo, a name, a district, a reward), the game held; E: put back. The first man stands on his corner of his turf; the revolver (O4's guns in the city: given here by the tool) and two shots by real clicks take him down; at the board, 'E  collect  $150', E: the money, his poster crossed and PAID. node tools/play.mjs tools/plays/o7_bounty.json",
+ "about": "[O7] The bounty board by real input: at the board by the police headquarters' door (a tool's teleport), 'E  the wanted board'; E: WANTED, three posters (a photo, a name, a district, a reward), the game held; E: put back. The first man stands on his corner of his turf; the night's revolver drawn by the wheel and shots by real clicks take him down; at the board, 'E  collect  $150', E: the money, his poster crossed and PAID. node tools/play.mjs tools/plays/o7_bounty.json",
  "url": "/?mute=1&start=city",
  "size": [1440, 900],
  "out": "shots/o7/bounty",
@@ -20,7 +20,8 @@
   { "expect": "!G.night.bounty.open && !G.night.holding", "label": "E: put back" },
   { "eval": "(() => { const b = G.night.bounty.names()[0]; window.__b = b; G.stage.part('stream').warmAround(b.x, b.z); const g = G.night.graph(); let px = b.x + 9, pz = b.z; for (let i = 0; i < 16; i++) { const a = i * Math.PI / 8, q = new N.THREE.Vector3(b.x + Math.cos(a) * 9, 0, b.z + Math.sin(a) * 9); const q0 = q.clone(); G.stage.colliders.resolve(q, 0.4); if (q.distanceTo(q0) < 0.05 && g.lineOfSight(q.x, q.z, b.x, b.z) && !G.stage.part('city').C.inWater(q.x, q.z)) { px = q.x; pz = q.z; break; } } N.controller.setPose(px, pz, Math.atan2(-(b.x - px), -(b.z - pz)), -0.02); G.stage.part('bounds').navAround(px, pz, 20); return [b.name, b.district, b.x, b.z]; })()" },
   { "until": "!!G.night.bounty.men.get('b0')", "timeout": 3000, "label": "he stands on his corner" },
-  { "eval": "(G.player.weapons.equip('revolver'), G.setViewmodelVisible(true), 1)" },
+  { "drive": "tools/lib/o4_wheel.mjs", "dy": 100 },
+  { "expect": "G.player.weapons.current === 'revolver'", "label": "the wheel: the night's revolver out" },
   { "wait": 1500 },
   { "eval": "(() => { const h = G.night.bounty.men.get('b0'); const c = new N.THREE.Vector3().setFromMatrixPosition(h.bones.chest.matrixWorld); const e = N.camera.position; N.controller.yaw = Math.atan2(-(c.x - e.x), -(c.z - e.z)); N.controller.pitch = Math.atan2(c.y - e.y, Math.hypot(c.x - e.x, c.z - e.z)); return 1; })()" },
   { "wait": 300 },
