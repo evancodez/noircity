@@ -481,12 +481,31 @@ export class People {
     const toCop = cop && (!box || Math.hypot(cop.pos.x - p.pos.x, cop.pos.z - p.pos.z) < Math.hypot(box.x - p.pos.x, box.z - p.pos.z) * 1.4);
     if (!box && !toCop) return;
     rec.reporters++;
-    p.mode = 'report'; p.t = 0; p.reportOf = rec; p.reportTo = toCop ? { cop } : { box }; p.phase = 'look';
+    p.mode = 'report'; p.t = 0; p.reportOf = rec; p.reportTo = toCop ? { cop } : { box }; p.phase = 'look'; p.detour = false;
     // (a shooting: a glance and he runs for it; a punch: a look, then a jog - seen going, catchable)
     p.lookFor = rec.level >= 2 ? 0.5 : 0.9; p.reportGait = rec.level >= 2 ? 'run' : 'jog';
     p.path = null; p.setGait('idle', 0.15);
     p.face(this.G.eye.x, this.G.eye.z); p.look(this.G.eye);
     this.G.emit('witness', { who: p, rec, to: toCop ? 'cop' : 'box' });
+  }
+  // the witness's way to his box (made again if he wedges): the pavements, then the box's front
+  boxWay(p) {
+    // (the nearest box whose way along the pavements can be walked: every leg of it in
+    // the clear - the pavement graph has a few legs that cut a block; up to three boxes tried)
+    const way = (b) => { const R = this.graph.pavementRoute(p.pos, b); return R ? R.pts.filter(([x, z]) => !this.inWall(x, z)) : []; };
+    const clear = (pts) => { let x = p.pos.x, z = p.pos.z; for (const [px, pz] of pts) { if (Math.hypot(px - x, pz - z) > 3 && !this.graph.lineOfSight(x, z, px, pz)) return false; x = px; z = pz; } return true; };
+    let box = p.reportTo.box, pts = way(box);
+    if (!clear(pts)) {
+      const others = this.boxes.map((b) => [Math.hypot(b.x - p.pos.x, b.z - p.pos.z), b]).filter(([d, b]) => b !== box && d < 220).sort((a, b) => a[0] - b[0]).slice(0, 3);
+      for (const [, b] of others) { const w = way(b); if (clear(w)) { box = b; pts = w; p.reportTo.box = b; break; } }
+    }
+    // (not back to a corner behind him)
+    while (pts.length > 1 && Math.hypot(pts[0][0] - p.pos.x, pts[0][1] - p.pos.z) < 6 && Math.hypot(pts[1][0] - p.pos.x, pts[1][1] - p.pos.z) < Math.hypot(pts[1][0] - pts[0][0], pts[1][1] - pts[0][1])) pts.shift();
+    // (out of the pavement's line to the box's front)
+    const fx = box.x + Math.sin(box.yaw || 0) * 0.9, fz = box.z + Math.cos(box.yaw || 0) * 0.9;
+    pts.push([fx, fz]);
+    // (a jog: he is seen going, and a man who runs after him catches him)
+    p.goTo(pts, { gait: p.reportGait || 'jog', then: (q) => { q.phase = 'call'; q.t = 0; q.face(box.x, box.z); q.say('o3_callbox'); } });
   }
   stepReport(p, dt) {
     const rec = p.reportOf, to = p.reportTo, E = this.G.eye;
@@ -495,15 +514,8 @@ export class People {
       if (p.t > (p.lookFor || 0.9)) {
         p.look(null);
         p.phase = 'go';
-        if (to.box) {
-          const R = this.graph.pavementRoute(p.pos, to.box);
-          const pts = R ? R.pts.slice() : [];
-          // (out of the pavement's line to the box's front)
-          const fx = to.box.x + Math.sin(to.box.yaw || 0) * 0.9, fz = to.box.z + Math.cos(to.box.yaw || 0) * 0.9;
-          pts.push([fx, fz]);
-          // (a jog: he is seen going, and a man who runs after him catches him)
-          p.goTo(pts, { gait: p.reportGait || 'jog', then: (q) => { q.phase = 'call'; q.t = 0; q.face(to.box.x, to.box.z); q.say('o3_callbox'); } });
-        } else {
+        if (to.box) this.boxWay(p);
+        else {
           // (he shouts for him as he goes - the cop turns and comes to meet him)
           p.say('o3_hey', { f0: 150 + Math.random() * 40 });
           to.cop.summonedBy = p; to.cop.summonedT = this.G.time;
@@ -524,6 +536,13 @@ export class People {
       p.caughtT = (p.caughtT || 0) + dt;
       if (p.caughtT > 0.35) { this.stopReport(p, 'caught'); p.cower(E, 4); return; }
     } else p.caughtT = 0;
+    // a way to the box he cannot walk (he stands, wedged, his way used up in my sight):
+    // off away from me along the pavements - out of my sight he is let go and still
+    // calls (release); still in my sight at the end of that, he gives it up
+    if (p.phase === 'go' && to.box && !p.path) {
+      if (!p.detour) { p.detour = true; p.goTo(this.awayPath(p.pos, E, 40), { gait: p.reportGait || 'jog' }); p.mode = 'report'; }
+      else { this.stopReport(p, 'lost'); return; }
+    }
     if (p.phase === 'go' && to.cop) {
       const c = to.cop;
       // (the cop gone - down, in a fight, off his beat: another within earshot, or the box)
@@ -708,7 +727,13 @@ export class People {
     if (!p.standing) { if (p.mode === 'down' && p.t > (p.upAfter || (p.upAfter = 3.5 + this.rng.next() * 2.5))) p.getUp(); return true; }
     if (p.mode === 'rise') { if (p.t > 1.45) this.afterUp(p); return true; }
     // (wedged - his way blocked a long while: out of my sight he goes; in it, back the way he came)
-    if (p.stuckN >= 2) { p.stuckN = 0; if (!this.inView(p.pos.x, p.pos.z)) { this.release(p); return false; } p.goTo(this.awayPath(p.pos, { x: p.pos.x + Math.sin(p.yaw), z: p.pos.z + Math.cos(p.yaw) }, 20), { gait: 'walk' }); }
+    if (p.stuckN >= 2) {
+      p.stuckN = 0;
+      if (!this.inView(p.pos.x, p.pos.z)) { this.release(p); return false; }
+      // ([O3] after the critic: a witness wedged in my sight keeps his errand - he steps
+      // round what stands there and goes on; out of my sight he is let go and still calls)
+      if (p.mode !== 'report') p.goTo(this.awayPath(p.pos, { x: p.pos.x + Math.sin(p.yaw), z: p.pos.z + Math.cos(p.yaw) }, 20), { gait: 'walk' });
+    }
     if (p.mode === 'report') { this.stepReport(p, dt); return true; }
     if (p.mode === 'flee') {
       if (!p.path || p.t > p.until) {
@@ -758,7 +783,7 @@ export class People {
     const E = this.G.eye, rec = p.victimOf;
     p.victimOf = null; p.upAfter = null;
     p.mode = 'walk'; p.gaitNow = null; p.hits = 0;
-    if (rec && !rec.reported && rec.reporters < 2 && this.G.time - rec.t < 90 && rec.by === 'player') {
+    if (rec && !rec.reported && rec.reporters < 2 && this.G.time - rec.t < 90 && rec.by === 'player' && rec.seen !== 'cop' && !rec.heard) {
       p.flee(E, 2.2, { cry: false });
       p.after = (q) => { if (q.standing && !rec.reported) this.startReport(q, rec); };
     } else p.flee(E, 5, { cry: false });

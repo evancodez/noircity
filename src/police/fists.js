@@ -17,6 +17,8 @@ import { crowdOf } from '../combat/brawl/Crowd.js';
 //   left   I walked 30 m off: a cop comes after me (the arrest is still his),
 //          a gang man goes back to his corner
 //   drawn  the wheel drew a gun: a cop draws back (HEAT 2), a gang draws
+// the beat cop's numbers over O4's cop (src/combat/brawl/kinds.js MEN.cop: hp 48, guard 0.88, answer 0.5)
+export const STREET_COP = { hp: 40, guard: 0.78, answer: 0.42, breathe: 3.6 };
 export function streetFists(police) {
   const G = police.G, P = police.P;
   const F = {
@@ -37,7 +39,10 @@ export function streetFists(police) {
       // (my fists up in the frame: the street's hands only show what they hold)
       G.setViewmodelVisible(true);
       crowd.start({
-        men: men.map((q) => ({ kind, c: q.c, at: { x: q.pos.x, z: q.pos.z }, yaw: q.fig.yaw, id: `o3_${q.id}` })),
+        // (a beat cop in the street is a man with a stick and a whistle, not O4's
+        // test-bed cop: his guard a little lower, a little less of him - the
+        // middle hand wins in one to three, a first-timer by the third or fourth)
+        men: men.map((q) => ({ kind, c: q.c, at: { x: q.pos.x, z: q.pos.z }, yaw: q.fig.yaw, id: `o3_${q.id}`, ...(kind === 'cop' ? { over: STREET_COP } : {}) })),
         leave: true, seed: 3300 + (p.id % 97),
         // (O4's mercy: my falls to this kind of man tonight, 0..3 - a little more time to
         // read his cue, his openings longer; never a blow landed for me, idle still loses)

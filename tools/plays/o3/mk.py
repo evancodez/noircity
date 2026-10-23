@@ -103,3 +103,21 @@ play('o3_frames', "[O3] the review frames at 1440 x 900 (not a proof): 'Hands up
 for mode, about in [('punch', "the nearest walker punched down"), ('shoot', "the gun drawn (RMB) among the walkers and two shots")]:
     play('o3_unstaged_' + mode, "[O3] after the critic (M1): unstaged on Grand Avenue, three times in a row (each from where the last ended): " + about + ", then hands off at the place - answered within about 10 s with something seen or heard (a witness going, a whistle, a car), the heat comes, and it never dies while I stand there unfound.",
          [{"drive": "tools/lib/o3_unstaged.mjs", "mode": mode, "tries": 3, "secs": 90, "check": "D.answered === 3", "label": "three of three answered, the heat held at the place"}])
+# [O3] after the critic: the review frames of the fixes (1440 x 900, not a proof)
+play('o3_frames_after', "[O3] after the critic: the review frames - a beat cop punched first, the fist fight on (O4's crowd brawl); the station wake facing the door; the roadblock's beacons under a lamp from 75 m.",
+     [{"eval": "(() => { const E = G.eye, y = G.controller.yaw, fx = -Math.sin(y), fz = -Math.cos(y); window.__o3cop = G.people.dbgCop(E.x + fx * 5, E.z + fz * 5, Math.atan2(-fx, -fz)); return 1; })()"},
+      {"down": "KeyW"}, {"until": "Math.hypot(window.__o3cop.pos.x - G.eye.x, window.__o3cop.pos.z - G.eye.z) < 1.8", "timeout": 6000}, {"up": "KeyW"},
+      {"look": "(() => { const C = G.controller, c = window.__o3cop; const want = Math.atan2(-(c.pos.x - G.eye.x), -(c.pos.z - G.eye.z)); const dy = Math.atan2(Math.sin(want - C.yaw), Math.cos(want - C.yaw)); return [Math.round(-dy / 0.0021), Math.round(-(-0.05 - C.pitch) / 0.0021)]; })()", "steps": 6},
+      {"mouse": "click", "button": "left"},
+      {"until": "G.crowd.active && G.crowd.liveT > 3.2 && G.crowd.men[0] && G.crowd.men[0].state === 'atk'", "timeout": 20000},
+      {"shot": "f_cop_fight"},
+      {"until": "!!G.failing", "timeout": 120000},
+      {"until": "!G.failing && G.scenes.beat === 'station' && G.scenes.fadeK < 0.05", "timeout": 20000},
+      {"wait": 700},
+      {"shot": "f_station_wake"},
+      {"eval": "(() => { const P = G.people; P.dbgClear(); P.dbgAtCar(); return 1; })()"}, {"wait": 300},
+      {"key": "KeyE"}, {"wait": 1600},
+      {"eval": "(G.police.raise(3, G.city.car.pos, 'staged'), G.police.makeBlock(85), G.police.block && Math.hypot(G.police.block.x - G.city.car.pos.x, G.police.block.z - G.city.car.pos.z))"},
+      {"wait": 1200},
+      {"shot": "f_roadblock"}],
+     extra={"size": [1440, 900]})

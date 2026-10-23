@@ -292,9 +292,15 @@ async function lose(api) {
   if (spot) await goPath(api, spot, { run: false, ms: 30000, until: `G.police.state === 'hunt'` });
   await waitFor(js, `G.police.state === 'hunt'`, 6000);
   R.found = await js(`({ st: G.police.state, heat: G.police.heat })`);
-  // and lost for good: away again and wait
-  await runAway(api);
-  const cleared = await waitFor(js, `G.police.heat === 0`, 60000);
+  // and lost for good: away again and wait - found again (they search round where they
+  // saw me, and a cop no longer wedges on a corner), away again, as a player would: up to four times
+  let cleared = false;
+  for (let k = 0; k < 4 && !cleared; k++) {
+    await runAway(api);
+    const T1 = Date.now();
+    while (Date.now() - T1 < 45000) { const q = await js(`({ h: G.police.heat, st: G.police.state, f: !!G.failing })`); if (q.h === 0) { cleared = true; break; } if (q.st === 'hunt' || q.f) break; await sleep(250); }
+    if ((await js('!!G.failing')) === true) break;
+  }
   R.clear = await js(`({ heat: G.police.heat, obj: G.hud.objectiveText, ev: G.police.events.filter(e => e.t > 10).map(e => e.what + '@' + e.t + (e.why ? ':' + e.why : '')), fail: G.lastFail })`);
   R.ok = searched && R.search.badges === 'search' && R.found.st === 'hunt' && R.found.heat >= 1 && cleared && R.clear.obj === 'Clear.';
   log(`lose: ${JSON.stringify(R)}`);

@@ -168,6 +168,8 @@ export class Police {
   }
   // a civilian told it (at a call box, or to a cop)
   report(rec, who, how) {
+    // (a crime a cop saw or heard is theirs already: told again, it is nothing new)
+    if (rec.seen === 'cop' || rec.heard) { this.event('report', { kind: rec.kind, how, known: true }); return; }
     this.event('report', { kind: rec.kind, how });
     this.raise(rec.level, { x: rec.x, z: rec.z }, rec.kind + ':' + how);
     // (they know where it was, not where I am: they come to the place and

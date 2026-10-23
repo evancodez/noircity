@@ -275,13 +275,38 @@ export class Person {
         this.stuckT = made < F.speed * this.progT * 0.25 ? this.stuckT + this.progT : Math.max(0, this.stuckT - this.progT);
         this.progD = dNow; this.progPi = this.pi; this.progT = 0;
       }
-      if (this.stuckT > 3) { this.stuckT = 0; this.progD = null; this.stuckN = (this.stuckN || 0) + 1; if (this.path && this.pi < this.path.length - 1) this.pi++; else { this.path = null; this.setGait('idle'); } }
+      if (this.stuckT > 3) {
+        this.stuckT = 0; this.progD = null; this.stuckN = (this.stuckN || 0) + 1;
+        // (a step round what stands in his way first - a stall, a post, a wall's corner -
+        // then on to the next point, or give up the way)
+        const side = this.sidestep();
+        if (side) this.path.splice(this.pi, 0, side);
+        else if (this.path && this.pi < this.path.length - 1) this.pi++; else { this.path = null; this.setGait('idle'); }
+      }
     } else if (F.speed > 0.5) {
       const moved = Math.hypot(this.pos.x - this.lastPos.x, this.pos.z - this.lastPos.z);
       this.stuckT = moved < F.speed * dt * 0.25 ? this.stuckT + dt : Math.max(0, this.stuckT - dt);
       if (this.stuckT > 3) { this.stuckT = 0; this.stuckN = (this.stuckN || 0) + 1; this.setGait('idle'); }
     }
     this.lastPos.x = this.pos.x; this.lastPos.z = this.pos.z;
+  }
+
+  // [O3] a point to one side of his way, clear of what stands there (2 - 4 m across,
+  // a little on): where a man wedged against a thing steps to go round it
+  sidestep() {
+    if (!this.path || this.pi >= this.path.length) return null;
+    const [tx, tz] = this.path[this.pi], x0 = this.pos.x, z0 = this.pos.z;
+    const L = Math.hypot(tx - x0, tz - z0) || 1, ux = (tx - x0) / L, uz = (tz - z0) / L;
+    const col = this.stage.colliders;
+    for (const k of [2.2, -2.2, 3.8, -3.8]) {
+      const v = _v.set(x0 - uz * k + ux * 1.5, 0, z0 + ux * k + uz * 1.5);
+      const x = v.x, z = v.z;
+      col.resolve(v, this.r + 0.1, this.fig.collider);
+      if (Math.hypot(v.x - x, v.z - z) > 0.15 || this.P.inWall(x, z, 0.4)) continue;
+      if (!this.P.graph.lineOfSight(x0, z0, x, z)) continue;
+      return [x, z];
+    }
+    return null;
   }
 
   // after the figure's own locomotion: out of the walls, the posts, the cars,

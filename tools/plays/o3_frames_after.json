@@ -1,0 +1,90 @@
+{
+ "about": "[O3] after the critic: the review frames - a beat cop punched first, the fist fight on (O4's crowd brawl); the station wake facing the door; the roadblock's beacons under a lamp from 75 m.",
+ "url": "/?mute=1&start=city",
+ "size": [
+  1440,
+  900
+ ],
+ "out": "shots/o3/o3_frames_after",
+ "steps": [
+  {
+   "wait": 1500
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]",
+   "taken": "G.state !== 'title'",
+   "retries": 5,
+   "every": 4000
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'city' && G.scenes.fadeK < 0.05 && !!G.people",
+   "timeout": 30000
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "eval": "(() => { const E = G.eye, y = G.controller.yaw, fx = -Math.sin(y), fz = -Math.cos(y); window.__o3cop = G.people.dbgCop(E.x + fx * 5, E.z + fz * 5, Math.atan2(-fx, -fz)); return 1; })()"
+  },
+  {
+   "down": "KeyW"
+  },
+  {
+   "until": "Math.hypot(window.__o3cop.pos.x - G.eye.x, window.__o3cop.pos.z - G.eye.z) < 1.8",
+   "timeout": 6000
+  },
+  {
+   "up": "KeyW"
+  },
+  {
+   "look": "(() => { const C = G.controller, c = window.__o3cop; const want = Math.atan2(-(c.pos.x - G.eye.x), -(c.pos.z - G.eye.z)); const dy = Math.atan2(Math.sin(want - C.yaw), Math.cos(want - C.yaw)); return [Math.round(-dy / 0.0021), Math.round(-(-0.05 - C.pitch) / 0.0021)]; })()",
+   "steps": 6
+  },
+  {
+   "mouse": "click",
+   "button": "left"
+  },
+  {
+   "until": "G.crowd.active && G.crowd.liveT > 3.2 && G.crowd.men[0] && G.crowd.men[0].state === 'atk'",
+   "timeout": 20000
+  },
+  {
+   "shot": "f_cop_fight"
+  },
+  {
+   "until": "!!G.failing",
+   "timeout": 120000
+  },
+  {
+   "until": "!G.failing && G.scenes.beat === 'station' && G.scenes.fadeK < 0.05",
+   "timeout": 20000
+  },
+  {
+   "wait": 700
+  },
+  {
+   "shot": "f_station_wake"
+  },
+  {
+   "eval": "(() => { const P = G.people; P.dbgClear(); P.dbgAtCar(); return 1; })()"
+  },
+  {
+   "wait": 300
+  },
+  {
+   "key": "KeyE"
+  },
+  {
+   "wait": 1600
+  },
+  {
+   "eval": "(G.police.raise(3, G.city.car.pos, 'staged'), G.police.makeBlock(85), G.police.block && Math.hypot(G.police.block.x - G.city.car.pos.x, G.police.block.z - G.city.car.pos.z))"
+  },
+  {
+   "wait": 1200
+  },
+  {
+   "shot": "f_roadblock"
+  }
+ ]
+}
