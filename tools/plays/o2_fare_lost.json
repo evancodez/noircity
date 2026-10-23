@@ -1,0 +1,36 @@
+{
+ "about": "[O2] after the critic (B1): a fare lost on the way - in the taxi, the fare in, the minimap's ring and the lantern show the drop-off, and I drive the other way on and on: 'Wrong way.', 'Come on.', then he gets out ('He got out.'): a lost fare ends. node tools/play.mjs tools/plays/o2_fare_lost.json",
+ "url": "/?mute=1&start=city&ckind=taxi",
+ "size": [
+  1280,
+  800
+ ],
+ "out": "shots/o2/o2_fare_lost",
+ "steps": [
+  {
+   "wait": 1500
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]",
+   "taken": "G.state !== 'title'",
+   "retries": 5,
+   "every": 4000
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'city' && G.scenes.fadeK < 0.05",
+   "timeout": 20000
+  },
+  {
+   "wait": 1000
+  },
+  {
+   "drive": "tools/lib/o2_wheels.mjs",
+   "mode": "fare",
+   "hands": "medium",
+   "fares": 1,
+   "check": "D.fares[0].wrong && D.fares[0].shown.ring < 1 && D.fares[0].shown.lantern && D.fares[0].warns.includes('Wrong way.') && D.fares[0].warns.includes('Come on.') && D.stats.lost === 1 && D.stats.paid === 0",
+   "label": "the drop-off shown; driven away: warned (Wrong way., Come on.), then he got out",
+   "wrong": true
+  }
+ ]
+}

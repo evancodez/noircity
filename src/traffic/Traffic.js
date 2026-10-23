@@ -105,7 +105,7 @@ export class Traffic {
   // routed through that junction and down my lane past me
   feed(eye) {
     const W = this.W, R = this.game.city;
-    if (!R || R.inCar || (this.avoid && this.avoid(eye))) return null;
+    if (!R || R.inCar || this.game.shotMode || (this.avoid && this.avoid(eye))) return null;
     const G = this.graph, L = G.nearestLane(eye.x, eye.z);
     if (!L || L.d > L.edge.hw + 2.5) return null;
     const e = L.edge, hx = Math.cos(L.heading), hz = -Math.sin(L.heading);

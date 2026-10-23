@@ -228,6 +228,8 @@ export class Hijack {
   man(m, dt) {
     const G = this.G, W = this.W, c = m.c, v = m.v;
     m.t += dt;
+    // [O2] after the critic (B5): knocked down by a car (O3's people: the crowd sees it, the crime) - he is the street's
+    if (m.p && !m.p.standing && m.state !== 'fight') { if (m.state === 'back' || m.state === 'out' || m.state === 'recover') G.hud.warn(null); this.street(m, { down: true }); return; }
     const R = G.city;
     const mine = R && R.inCar && R.car === v;
     if (m.state === 'out') {

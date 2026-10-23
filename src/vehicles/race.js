@@ -78,6 +78,11 @@ export class Race {
     const row = Math.floor(i / 2), side = i % 2 ? 1 : -1;
     return { x: START.x - ux * (2 + row * 7) + rx * side * 1.9, z: START.z - uz * (2 + row * 7) + rz * side * 1.9, yaw: Math.atan2(-uz, ux) };
   }
+  // (the kerb's offset from the Straight's middle: where the racers wait and pull in)
+  kerbOff() {
+    const S = this.W.graph.streetAt(START.x, START.z), e = S && S.edge;
+    return e ? (e.park || Math.max(3.2, (e.hw || 7) - 1.15)) : 4.2;
+  }
   // (waiting: one behind another at the kerb on the right, short of the line)
   kerb(i) {
     const p = this.path.pts[0], q = this.path.pts[6];
@@ -121,24 +126,32 @@ export class Race {
     }
     // the man with the flag at the kerb up ahead of the line, facing the grid (seen from the pole)
     const p = this.path.pts[0];
+    // ([O2] after the critic, B5: the street's own man - O3's Person, held: a car that hits him knocks him down)
     try {
-      const c = W.stage.cast.spawn('o2_fare', { at: { x: START.x + 7.4, z: START.z - 16 }, yaw: Math.atan2(-7.4, 20), name: 'o2flag' });
+      const at = { x: START.x + 7.4, z: START.z - 16 }, yaw = Math.atan2(-7.4, 20), P = this.G.people;
+      let c;
+      if (P && P.spawn) { const p = P.spawn('o2_fare', at.x, at.z, yaw, 'o2'); p.mode = 'fight'; p.path = null; p.fig.speed = 0; p.gaitNow = null; c = p.c; this.flagP = p; }
+      else c = W.stage.cast.spawn('o2_fare', { at, yaw, name: 'o2flag' });
       c.hold(flagProp(W.stage), 'R');
       c.play('o2_flagUp');
       this.flag = c;
-    } catch (e) { this.flag = null; }
+    } catch (e) { this.flag = null; this.flagP = null; }
     void p;
   }
   takeDown() {
     for (const c of this.cars) { if (this.G.rays && c.v.model.meshes.body) this.G.rays.remove(c.v.model.meshes.body); this.W.V.remove(c.v); }
     this.cars = [];
-    if (this.flag) { try { this.W.stage.cast.remove(this.flag); } catch (e) { /* gone */ } this.flag = null; }
+    if (this.flagP) { try { this.G.people.release(this.flagP); } catch (e) { /* gone */ } }
+    else if (this.flag) { try { this.W.stage.cast.remove(this.flag); } catch (e) { /* gone */ } }
+    this.flag = null; this.flagP = null;
   }
 
   // ---- each step --------------------------------------------------------------------------------------
   step(dt) {
     const G = this.G, R = G.city, hud = G.hud, W = this.W;
     this.site();
+    // (the man with the flag knocked down by a car: the street's now - O3's; the race goes by the horn alone)
+    if (this.flagP && !this.flagP.standing) { this.flagP.role = 'walker'; this.flagP = null; this.flag = null; }
     // (the frame rate's bed: &racego=1 - the race started under me at once)
     if (this.state === 'idle' && this.cars.length && R && R.inCar && typeof location !== 'undefined' && new URLSearchParams(location.search).get('racego') && !this.bedDone) { this.bedDone = true; this.start(R.car); }
     for (const c of this.cars) if (c.v.driver && c.v.driver !== 'player') c.v.step(dt);
@@ -172,7 +185,8 @@ export class Race {
     }
     if (this.state === 'run') this.run(dt);
     if (this.state === 'done') {
-      for (const c of this.cars) if (c.pilot && !c.pulled && c.pilot.s > this.s0 + this.len + 4) { c.pulled = true; c.pilot.offset = 2.6; }
+      // (past the line they pull in to the kerb, out of the lane: a man behind them drives on by)
+      for (const c of this.cars) if (c.pilot && !c.pulled && c.pilot.s > this.s0 + this.len + 4) { c.pulled = true; c.pilot.offset = Math.max(2.6, this.kerbOff() - 1.2); }
       this.doneT += dt; if (this.doneT > 6) this.reset();
     }
   }

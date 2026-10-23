@@ -1,0 +1,237 @@
+{
+ "about": "[O2] after the critic (B6, the user's must): V in the car - the view behind it (the spring on its heading and place, high over the roof, the car whole: no hands, no cockpit), the turn's lag, reverse looks back, the look swings it round and it settles, RMB the seat while held, out and in again remembered, V back to the seat; the camera never through a wall and never cut. node tools/play.mjs tools/plays/o2_view.json",
+ "url": "/?mute=1&start=city",
+ "size": [
+  1280,
+  800
+ ],
+ "out": "shots/o2/o2_view",
+ "steps": [
+  {
+   "wait": 1500
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]",
+   "taken": "G.state !== 'title'",
+   "retries": 5,
+   "every": 4000
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'city' && G.scenes.fadeK < 0.05",
+   "timeout": 20000
+  },
+  {
+   "wait": 800
+  },
+  {
+   "key": "KeyE"
+  },
+  {
+   "until": "G.city.inCar",
+   "timeout": 4000
+  },
+  {
+   "wait": 1200
+  },
+  {
+   "shot": "a_seat"
+  },
+  {
+   "eval": "(() => { const R = window.__o2view = { n: 0, through: 0, minD: 99, maxJump: 0, last: null }; const g = G.stage.part('city').graph; const tick = () => { const C = G.city; if (C && C.inCar && C.chase && C.chase.k > 0.99) { const c = C.car.pos, p = G.camera.position; R.n++; if (!g.lineOfSight(c.x, c.z, p.x, p.z)) R.through++; R.minD = Math.min(R.minD, Math.hypot(p.x - c.x, p.z - c.z)); } const p = G.camera.position; if (R.last) R.maxJump = Math.max(R.maxJump, Math.hypot(p.x - R.last.x, p.y - R.last.y, p.z - R.last.z)); R.last = p.clone(); }; G.scripts.push(tick); return 'rec'; })()"
+  },
+  {
+   "key": "KeyV"
+  },
+  {
+   "wait": 900
+  },
+  {
+   "expect": "G.city.chase.want && G.city.chase.k === 1 && !G.vm.visible && Math.hypot(G.camera.position.x - G.city.car.pos.x, G.camera.position.z - G.city.car.pos.z) > 4.5 && G.camera.position.y > 2.4 && G.save.flags.carView === 'third'",
+   "label": "V: behind the car, high over its roof, the hands and the cockpit gone, remembered"
+  },
+  {
+   "expect": "Math.hypot(G.eye.x - G.city.car.pos.x, G.eye.z - G.city.car.pos.z) < 1.5",
+   "label": "the man is still in the seat (G.eye: what sees him, shoots at him)"
+  },
+  {
+   "shot": "b_behind"
+  },
+  {
+   "down": "KeyW"
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "down": "KeyA"
+  },
+  {
+   "wait": 700
+  },
+  {
+   "eval": "(() => { const c = G.city.car, p = G.camera.position; const a = Math.atan2(-(c.pos.z - p.z), c.pos.x - p.x); return { lag: +Math.abs(Math.atan2(Math.sin(a - c.yaw), Math.cos(a - c.yaw))).toFixed(3) }; })()"
+  },
+  {
+   "expect": "(() => { const c = G.city.car, p = G.camera.position; const a = Math.atan2(-(c.pos.z - p.z), c.pos.x - p.x); return Math.abs(Math.atan2(Math.sin(a - c.yaw), Math.cos(a - c.yaw))) > 0.04; })()",
+   "label": "into the turn the view lags the car (the spring)"
+  },
+  {
+   "shot": "c_turn"
+  },
+  {
+   "up": "KeyA"
+  },
+  {
+   "wait": 600
+  },
+  {
+   "up": "KeyW"
+  },
+  {
+   "down": "KeyS"
+  },
+  {
+   "wait": 2600
+  },
+  {
+   "expect": "G.city.car.speed < -1 && G.city.chase.back > 0.5",
+   "label": "reverse: it looks back the way the car goes"
+  },
+  {
+   "shot": "d_reverse"
+  },
+  {
+   "up": "KeyS"
+  },
+  {
+   "wait": 800
+  },
+  {
+   "look": [
+    260,
+    0
+   ],
+   "steps": 10
+  },
+  {
+   "wait": 150
+  },
+  {
+   "expect": "Math.abs(G.city.chase.oy) > 0.3",
+   "label": "the look swings it round the car"
+  },
+  {
+   "shot": "e_look"
+  },
+  {
+   "wait": 3200
+  },
+  {
+   "expect": "Math.abs(G.city.chase.oy) < 0.12",
+   "label": "and it settles behind once the look rests"
+  },
+  {
+   "mouse": "down",
+   "button": "right"
+  },
+  {
+   "wait": 700
+  },
+  {
+   "expect": "G.city.chase.k === 0 && G.vm.visible",
+   "label": "RMB held: the seat"
+  },
+  {
+   "mouse": "up",
+   "button": "right"
+  },
+  {
+   "wait": 700
+  },
+  {
+   "expect": "G.city.chase.k === 1",
+   "label": "let go: behind again"
+  },
+  {
+   "down": "KeyW"
+  },
+  {
+   "wait": 2500
+  },
+  {
+   "down": "KeyD"
+  },
+  {
+   "wait": 1800
+  },
+  {
+   "up": "KeyD"
+  },
+  {
+   "wait": 2500
+  },
+  {
+   "up": "KeyW"
+  },
+  {
+   "down": "KeyS"
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "up": "KeyS"
+  },
+  {
+   "wait": 1200
+  },
+  {
+   "key": "KeyE"
+  },
+  {
+   "until": "!G.city.inCar",
+   "timeout": 5000
+  },
+  {
+   "wait": 900
+  },
+  {
+   "expect": "N.controller.mode === 'walk' && G.vm.visible === false",
+   "label": "out of the car from the view behind: on foot"
+  },
+  {
+   "key": "KeyE"
+  },
+  {
+   "until": "G.city.inCar",
+   "timeout": 5000
+  },
+  {
+   "wait": 1000
+  },
+  {
+   "expect": "G.city.chase.want && G.city.chase.k === 1",
+   "label": "back in: the view remembered"
+  },
+  {
+   "key": "KeyV"
+  },
+  {
+   "wait": 900
+  },
+  {
+   "expect": "G.city.chase.k === 0 && G.vm.visible && G.save.flags.carView === 'seat'",
+   "label": "V again: the seat"
+  },
+  {
+   "shot": "f_seat_again"
+  },
+  {
+   "eval": "({ ...window.__o2view, last: null, pulled: G.city.chase.stats.pulled, toggles: G.city.chase.stats.toggles })"
+  },
+  {
+   "expect": "window.__o2view.through === 0 && window.__o2view.n > 200 && window.__o2view.maxJump < 2.6",
+   "label": "never through a wall (the car to the camera clear every frame), never a cut (the camera's step under 2.6 m, the get out and in included)"
+  }
+ ]
+}

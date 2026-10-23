@@ -1,5 +1,5 @@
 {
- "about": "[O2] The race, bad hands (brief O2 \u00a74, \u00a75): E at the line, the flag, three laps of the Yards loop by the keys. node tools/play.mjs tools/plays/o2_race_bad.json",
+ "about": "[O2] after the critic (B4): the Yards' race by bad hands (late off the line, the wheel sloppy, slow), four in a row: never stuck, and through (a win) by the fourth - the field at its own paces every race, no easing. node tools/play.mjs tools/plays/o2_race_bad.json",
  "url": "/?mute=1&start=city&car=-448,262,1.5708",
  "size": [
   1280,
@@ -27,8 +27,10 @@
    "drive": "tools/lib/o2_wheels.mjs",
    "mode": "race",
    "hands": "bad",
-   "check": "D.result != null",
-   "label": "bad: through the three laps (won or lost, never stuck)"
+   "check": "D.won >= 1",
+   "label": "bad hands: a win within four races, never stuck",
+   "races": 4,
+   "untilWon": true
   }
  ]
 }

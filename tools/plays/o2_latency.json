@@ -1,5 +1,5 @@
 {
- "about": "[O2] The feel measure (GAME_TWO \u00a71 A1, brief O2 \u00a75): trusted key to the first frame of the act - E at a parked car's door (the break-in begun), then in it: W (the car moves), A (the wheel turns), SPACE (the handbrake on), Q (the horn). node tools/play.mjs tools/plays/o2_latency.json",
+ "about": "[O2] The feel measure (GAME_TWO §1 A1, brief O2 §5): trusted key to the first frame of the act - E at a parked car's door (the break-in begun), then in it: W (the car moves), A (the wheel turns), SPACE (the handbrake on), Q (the horn). node tools/play.mjs tools/plays/o2_latency.json",
  "url": "/?mute=1&start=city&park=saloon",
  "size": [
   1280,
@@ -26,7 +26,7 @@
   {
    "drive": "tools/lib/o2_wheels.mjs",
    "mode": "latency",
-   "check": "[D.E, D.W, D.A, D.SPACE, D.Q].every((x) => x != null && x < 50)",
+   "check": "[D.E, D.W, D.A, D.SPACE, D.Q, D.V].every((x) => x != null && x < 50)",
    "label": "E, W, A, SPACE, Q: the first frame of each within 50 ms"
   }
  ]

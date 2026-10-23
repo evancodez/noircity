@@ -329,6 +329,25 @@ async function fare(P, { js, sleep, log, shot }, H) {
       break;
     }
     const dest = F.dest;
+    // [O2] after the critic (B1): what a player is shown of where he goes - the minimap's ring
+    // (O7's night.target) on the drop-off, the lantern lit at its kerb
+    const shown = await js(`(() => { const f = G.wheels.fares.fare, t = G.night && G.night.target; return { ring: t ? +Math.hypot(t.x - f.dest.x, t.z - f.dest.z).toFixed(1) : null, lantern: !!(f.mark && f.mark.group && f.mark.group.parent), line: G.hud.kit && G.hud.kit.objText != null ? G.hud.kit.objText : null, patience: +f.patience.toFixed(0) }; })()`);
+    log(`  shown: ${JSON.stringify(shown)}`);
+    if (P.opts.wrong) {
+      // a lost driver: away from where he goes, on and on - warned, then he gets out
+      const warns = [];
+      const s = await P.state();
+      const ax = s.car.x - (dest.x - s.car.x), az = s.car.z - (dest.z - s.car.z);
+      const r3 = await P.route([Math.max(-560, Math.min(560, ax)), Math.max(-560, Math.min(560, az))]);
+      const t2 = Date.now();
+      await P.driveAlong(r3 || [], { timeout: 240000, speed: 11, traffic: true, onStep: async () => { const w = await js('G.hud.kit.warnText'); if (w && warns[warns.length - 1] !== w) warns.push(w); },
+        until: async () => (await js('G.wheels.fares.state')) !== 'in' });
+      // (at the route's end, still in: round the block until he goes)
+      for (let i = 0; i < 2000 && (await js('G.wheels.fares.state')) === 'in'; i++) { const w = await js('G.hud.kit.warnText'); if (w && warns[warns.length - 1] !== w) warns.push(w); await sleep(100); }
+      await P.stop();
+      out.push({ wrong: true, shown, warns, secs: (Date.now() - t2) / 1000, stats: await js('({ ...G.wheels.fares.stats })') });
+      break;
+    }
     const r2 = await P.route([dest.x, dest.z]);
     const speed = H.name === 'good' ? 15 : H.name === 'medium' ? 13 : 12;
     let knocks = 0;
@@ -337,7 +356,7 @@ async function fare(P, { js, sleep, log, shot }, H) {
     await P.stop();
     await sleep(600);
     const fs = await js('({ ...G.wheels.fares.stats, money: G.save.money })');
-    out.push({ dest: dest.name, end: res.end, secs: (Date.now() - t1) / 1000, stats: fs });
+    out.push({ dest: dest.name, end: res.end, secs: (Date.now() - t1) / 1000, shown, stats: fs });
     log(`  fare ${k}: ${JSON.stringify(out[out.length - 1])}`);
   }
   const S = await js('({ ...G.wheels.fares.stats, money: G.save.money })');
@@ -366,7 +385,7 @@ async function raceAgain(P, { js, sleep, log }, H) {
   // on round the loop to its far side (Foundry St), the racers pulled in; there till the corner is set again
   // (the far side: the next middle of Foundry St on the course, two thirds of a lap from the line; then on to Water St short of the corner)
   const way = await js(`(() => { const R = G.wheels.race, P = R.path, c = G.city.car; const i = P.nearest(c.pos.x, c.pos.z, R.mine.i, 80); const s = P.pts[i].s; let f = R.s0 + R.lap * 0.66; while (f < s + 40) f += R.lap; const e = f + R.lap * 0.34 - 62; const a = [], b = []; for (let q = s; q < f; q += 3) { const p = P.at(q, {}); a.push([p.x, p.z, p.v]); } for (let q = f; q < e; q += 3) { const p = P.at(q, {}); b.push([p.x, p.z, p.v]); } return { a, b }; })()`);
-  const r1 = await P.driveAlong(way.a, { speed: 12, timeout: 90000, traffic: true });
+  const r1 = await P.driveAlong(way.a, { speed: 12, timeout: 90000, traffic: true, pass: true });
   await P.stop();
   let set = false;
   for (let i = 0; i < 300; i++) { if (await js(`G.wheels.race.state === 'idle' && G.wheels.race.cars.length === 3`)) { set = true; break; } await sleep(100); }
@@ -504,7 +523,7 @@ async function latency(P, { js, keyDown, keyUp, sleep, log }, H) {
     addEventListener('keydown', () => { if (!L.key) L.key = performance.now(); }, { capture: true, once: true });
     const tick = () => {
       const c = G.city.car;
-      const done = L.what === 'W' ? Math.hypot(c.pos.x - p0.x, c.pos.z - p0.z) > 1e-4 : L.what === 'A' ? Math.abs(c.steer - p0.steer) > 1e-4 : L.what === 'SPACE' ? c.input.handbrake > 0 : L.what === 'Q' ? horn : L.what === 'E' ? !!G.wheels.hijack.act : false;
+      const done = L.what === 'W' ? Math.hypot(c.pos.x - p0.x, c.pos.z - p0.z) > 1e-4 : L.what === 'A' ? Math.abs(c.steer - p0.steer) > 1e-4 : L.what === 'SPACE' ? c.input.handbrake > 0 : L.what === 'Q' ? horn : L.what === 'E' ? !!G.wheels.hijack.act : L.what === 'V' ? G.city.chase && G.city.chase.k > 0 && G.city.chase.k < 1 : false;
       if (L.key && done) { L.frame = performance.now(); G.off('city:horn', hf); return; }
       if (performance.now() - (L.key || performance.now()) < 2000) requestAnimationFrame(tick);
     };
@@ -523,6 +542,10 @@ async function latency(P, { js, keyDown, keyUp, sleep, log }, H) {
   await arm('SPACE'); await keyDown('Space'); out.SPACE = await read(); await keyUp('Space');
   await P.stop();
   await arm('Q'); await keyDown('KeyQ'); out.Q = await read(); await keyUp('KeyQ');
+  // [O2] V: the view behind the car begins to move the frame it is pressed (and back to the seat)
+  await sleep(600);
+  await arm('V'); await keyDown('KeyV'); out.V = await read(); await keyUp('KeyV');
+  await sleep(600); await keyDown('KeyV'); await sleep(60); await keyUp('KeyV');
   log(`latency: ${JSON.stringify(out)}`);
   return out;
 }
