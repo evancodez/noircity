@@ -31,6 +31,15 @@ fails, the tools). The user's words, which are the standard:
 > and white). Probably add a mini map in the bottom left corner too. Keep
 > on making this to completion: super awesome, fun, cool, and polished.
 
+> (And:) Make sure to add things like car damage (would be cool for some
+> physical stuff within reason), and a variety of cars (not a ton for
+> now). Make it a world that feels not overly copy-paste.
+
+**Nothing copy-paste.** Every kit piece, car, figure and prop comes in
+variants, picked by a seeded hash of where it stands, so no two blocks,
+cars or corners read the same; a lane that places the same thing twice
+in a frame makes them differ in something a player sees.
+
 **The north star, in one line: the player may do anything the systems
 allow, and the city answers everything he does, within seconds, in a way
 he can see.** Freedom first: no invisible hand says no. He may run people

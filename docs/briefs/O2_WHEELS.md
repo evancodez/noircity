@@ -7,6 +7,7 @@ you) and on the destruction set (lane O6, `docs/seams/SMASH.md`: a car's
 damage states, its fire and its wreck are O6's rule; you call it, you do
 not redo it). The user's words:
 
+- **[must]** "A variety of cars (not a ton for now but yk). Make it a world that feels not overly copy-paste." (The user, 2026-10-23.) The fleet's kinds each in two or three visible variants (body: two-door, four-door, a roof up or down, a pickup bed; livery: the taxi's band and roof light, the police markings, the vans' painted names, the hearse; grilles, lamps, wheels, a dent or a scrape on some parked ones), picked by a seeded hash of the bay or the lane, so no street of parked cars reads as one car repeated.
 - **[must]** "You should be able to drive around."
 - **[must]** "Hijack cars and various cars."
 - **[must]** "everything works": cars never through cars, people, walls
