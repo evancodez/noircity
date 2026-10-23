@@ -526,11 +526,26 @@ export class People {
     } else p.caughtT = 0;
     if (p.phase === 'go' && to.cop) {
       const c = to.cop;
-      if (!c.standing || c.mode === 'fight') { this.stopReport(p, 'cop down'); return; }
-      // (straight to him where he can see him, by the pavements where he cannot)
-      p.copRouteT = (p.copRouteT || 0) - dt;
-      if (this.sees(p.pos, c.pos, 60)) { p.path = [[c.pos.x, c.pos.z]]; p.pi = 0; }
-      else if (p.copRouteT <= 0 || !p.path) { p.copRouteT = 2; const R = this.graph.pavementRoute(p.pos, c.pos); p.path = (R ? R.pts : []).concat([[c.pos.x, c.pos.z]]); p.pi = 0; }
+      // (the cop gone - down, in a fight, off his beat: another within earshot, or the box)
+      if (!c.standing || c.mode === 'fight' || c.mode === 'gone' || !this.police.cops.includes(c)) {
+        if (c.summonedBy === p) c.summonedBy = null;
+        const c2 = this.police.copNear(p.pos, 100), box = this.callBoxNear(p.pos.x, p.pos.z);
+        if (c2 && c2 !== c) { p.reportTo = { cop: c2 }; c2.summonedBy = p; c2.summonedT = this.G.time; p.path = null; p.copAt = null; }
+        else if (box) { p.reportTo = { box }; p.phase = 'look'; p.t = p.lookFor || 0.9; }
+        else this.stopReport(p, 'cop down');
+        return;
+      }
+      // (straight to him where he can see him, by the pavements where he cannot: the
+      // way made again only when he has moved on or it is walked)
+      if (this.sees(p.pos, c.pos, 60)) { p.path = [[c.pos.x, c.pos.z]]; p.pi = 0; p.copAt = null; }
+      else if (!p.path || p.pi >= p.path.length || !p.copAt || Math.hypot(c.pos.x - p.copAt.x, c.pos.z - p.copAt.z) > 6) {
+        p.copAt = { x: c.pos.x, z: c.pos.z };
+        const R = this.graph.pavementRoute(p.pos, c.pos);
+        const pts = (R ? R.pts : []).concat([[c.pos.x, c.pos.z]]);
+        // (not back to a corner behind him)
+        while (pts.length > 1 && Math.hypot(pts[0][0] - p.pos.x, pts[0][1] - p.pos.z) < 6 && Math.hypot(pts[1][0] - p.pos.x, pts[1][1] - p.pos.z) < Math.hypot(pts[1][0] - pts[0][0], pts[1][1] - pts[0][1])) pts.shift();
+        p.path = pts; p.pi = 0;
+      }
       p.gait = p.reportGait || 'jog';
       if (Math.hypot(c.pos.x - p.pos.x, c.pos.z - p.pos.z) < 2.6) { p.phase = 'call'; p.t = 0; p.stop(); p.face(c.pos.x, c.pos.z); }
     }

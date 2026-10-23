@@ -311,7 +311,8 @@ export class Police {
     // (gone when far and out of sight; a cop busy with me stays)
     for (const c of beat) {
       const d = Math.hypot(c.pos.x - E.x, c.pos.z - E.z);
-      if (d > 110 && !P.inView(c.pos.x, c.pos.z)) this.dropCop(c);
+      // (a cop a witness is running to stays: he is the answer coming)
+      if (d > 110 && !P.inView(c.pos.x, c.pos.z) && !c.summonedBy) this.dropCop(c);
     }
     if (beat.length >= want) return;
     const n = this.spawnOnFoot(45, 100, 'beat');

@@ -99,3 +99,7 @@ play('o3_soak', "[O3] memory: ten minutes at HEAT 3 (in the car, chased, boxed, 
 
 play('o3_frames', "[O3] the review frames at 1440 x 900 (not a proof): 'Hands up.' face on, the roadblock ahead from the car, the gang's word",
      [{"drive": D, "mode": "frames", "check": "D.ok", "label": "the frames"}], extra={"size": [1440, 900]})
+# [O3] after the critic (M1): the unstaged crimes on Grand Avenue, three in a row each
+for mode, about in [('punch', "the nearest walker punched down"), ('shoot', "the gun drawn (RMB) among the walkers and two shots")]:
+    play('o3_unstaged_' + mode, "[O3] after the critic (M1): unstaged on Grand Avenue, three times in a row (each from where the last ended): " + about + ", then hands off at the place - answered within about 10 s with something seen or heard (a witness going, a whistle, a car), the heat comes, and it never dies while I stand there unfound.",
+         [{"drive": "tools/lib/o3_unstaged.mjs", "mode": mode, "tries": 3, "secs": 90, "check": "D.answered === 3", "label": "three of three answered, the heat held at the place"}])
