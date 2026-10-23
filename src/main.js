@@ -20,6 +20,7 @@ import { Autoplay } from './game/Autoplay.js';
 import { ORDER } from './scenes/order.js';
 import { pad, input } from './input/Pad.js';   // [C12]
 import { PadUi } from './input/padUi.js';   // [C12]
+import { Night } from './night/index.js';   // [O7]
 
 // ---- URL params (DESIGN.md §9) -------------------------------------------
 const params = new URLSearchParams(location.search);
@@ -111,17 +112,19 @@ const hud = new Hud({
 // the rain in behind it; the click that begins the game does too)
 if (!shotMode) for (const ev of ['mousedown', 'keydown', 'touchstart']) addEventListener(ev, () => { sfx.unlock(); hud.soundHint(!sfx.live, sfx.muted); }, { passive: true });
 hud.soundHint(!shotMode, sfx.muted);
-// [O1] in the city M is the map (the sound is the settings'): its key line says so on the title and the pause card (O7 makes the city's own title)
-if (startAt && startAt.scene === 'city') {
-  hud.keysText = hud.keysText.replace('M sound', 'M map');
-  for (const el of [hud.titleKeys, hud.pauseCard && hud.pauseCard.keys]) if (el && el.textContent) el.textContent = el.textContent.replace('M sound', 'M map');
-}
 hud.setVisible(hudOn);
 if (shotMode) hud.hideTitle();
 // (a screenshot never depends on when the page loaded: no CSS animation runs)
 if (shotMode) hud.freeze();
 game = new Game({ stages, stage: 'block', camera, controller, pipeline, hud, shotMode, sfx });
 game.bindInput(renderer.domElement);
+// [O7] the night (src/night/): the HUD, the minimap, the map and the pause
+// card, the saves, the radio and the city's sound, the title, the el, the
+// phone box, the bounty board. In the city M is the map (the sound is the
+// pause card's settings line): the rulebook's line says so on the title.
+const night = new Night({ game, params });
+const cityTitle = !shotMode && !!startAt && startAt.scene === 'city';
+if (cityTitle) { night.keysLine(); night.title.stage(); }
 // the pause card's settings line (P1): mouse sensitivity, volume, subtitles
 // (kept in localStorage; never read in shot mode)
 const settings = {
@@ -137,11 +140,12 @@ const settings = {
       pad.rumbleOn = localStorage.getItem('noir.rumble') !== '0';
     } catch (e) { /* storage blocked: defaults */ }
   },
-  get() { return { mouse: Math.round(controller.sensitivity / 0.0021 * 5), volume: Math.round(sfx.volume * 10), subtitles: hud.subtitles,
+  get() { return { mouse: Math.round(controller.sensitivity / 0.0021 * 5), volume: Math.round(sfx.volume * 10), sound: !sfx.muted, subtitles: hud.subtitles,   // [O7] (sound: the old M's, now the settings')
     ...(pad.seen ? { stick: Math.round(pad.sens * 5), rumble: pad.rumbleOn } : {}) }; },   // [C12]
   change(k, d) {
     if (k === 'mouse') { const m = Math.min(15, Math.max(1, this.get().mouse + d)); controller.sensitivity = 0.0021 * m / 5; try { localStorage.setItem('noir.mouse', String(m)); } catch (e) { /* */ } }
     if (k === 'volume') sfx.setVolume(sfx.volume + d * 0.1);
+    if (k === 'sound') { game.muted = sfx.toggleMute(); hud.soundHint(!sfx.live, sfx.muted); }   // [O7]
     if (k === 'subtitles') { hud.subtitles = !hud.subtitles; try { localStorage.setItem('noir.subs', hud.subtitles ? '1' : '0'); } catch (e) { /* */ } }
     // [C12]
     if (k === 'stick') { const m = Math.min(15, Math.max(1, Math.round(pad.sens * 5) + d)); pad.sens = m / 5; try { localStorage.setItem('noir.stick', String(m)); } catch (e) { /* */ } }
@@ -371,10 +375,12 @@ function frame(now) {
   // [C1] (the scene coming up after the stills with the mouse let go runs: mouseFree)
   pad.update(dt);   // [C12] (the pad's presses before the steps that read them)
   freeStep(dt);
+  night.frame(dt);   // [O7] (the map's M, the cards, the HUD's animations: before the steps)
   const unlocked = !shotMode && !autoplay && game.state === 'playing' && document.pointerLockElement !== renderer.domElement && !mouseFree && !pad.holds;   // [C12]
   // [C1] the stills' page: the game is held under it (its own clock is real time)
   const stilled = game.stills.active;
-  const paused = unlocked || stilled;
+  // [O7] (the night's map and the bounty board hold the game while they are read)
+  const paused = unlocked || stilled || night.holding;
   if (stilled) game.stills.update(dt * speed);
   if (!unlocked && !stilled) game.failUpdate(dt);
   if (animate && !paused) {

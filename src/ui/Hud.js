@@ -327,7 +327,8 @@ export class Hud {
   // (muted - mute=1, a test run, or the player's own M - it says so, and
   // how to have it back)
   soundHint(on, muted = false) {
-    this.soundLine.textContent = muted ? 'sound off · M sound' : 'any key: sound';
+    // [O7] (in the city M is the map: the sound is the pause card's settings)
+    this.soundLine.textContent = muted ? (this.soundKey || 'sound off · M sound') : 'any key: sound';
     // [C12] the pad the last device: M is the d-pad's down in play (on the
     // title it moves the bracket), and the browser's sound wants a key - a
     // pad's press is no gesture, and a click on the title starts the story
@@ -369,6 +370,8 @@ export class Hud {
     if (!s) { this.settingsEl.innerHTML = ''; return; }
     this.settingsEl.innerHTML = `<span>mouse <i data-k="mouse" data-d="-1">−</i><b>${s.mouse}</b><i data-k="mouse" data-d="1">+</i></span>`
       + `<span>volume <i data-k="volume" data-d="-1">−</i><b>${s.volume}</b><i data-k="volume" data-d="1">+</i></span>`
+      // [O7] the sound on or off (the old M: in the city M is the map)
+      + (s.sound != null ? `<span>sound <i data-k="sound" data-d="0">${s.sound ? 'on' : 'off'}</i></span>` : '')
       + `<span>subtitles <i data-k="subtitles" data-d="0">${s.subtitles ? 'on' : 'off'}</i></span>`
       // [C12] the pad's: the stick's speed, the rumble (once a pad has been used)
       + (s.stick != null ? `<span>stick <i data-k="stick" data-d="-1">−</i><b>${s.stick}</b><i data-k="stick" data-d="1">+</i></span>` : '')

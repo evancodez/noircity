@@ -242,7 +242,7 @@ export class SceneManager {
     else if (card !== false && (card === true || typeof card === 'string') && !G.shotMode) G.hud.card(def.title, typeof card === 'string' ? card : def.name);
     this.it = def.script ? def.script(ctx) : null;
     this.waitOn = null;
-    if (!G.shotMode) G.save.write();
+    if (!G.shotMode) G.save.write({ scene: true });   // [O7] (not a save in the open world: Save.js)
     this.stepScript(0);
   }
 
@@ -360,7 +360,7 @@ export class SceneManager {
       this.applyMusic(def, name, false);
     }
     this.game.emit('scene:beat', { id: def.id, beat: name });
-    if (def.save && def.save.includes(name) && !this.game.shotMode) this.game.save.write();
+    if (def.save && def.save.includes(name) && !this.game.shotMode) this.game.save.write({ scene: true });   // [O7]
   }
 
   // [C1] the objective line a beat declares: its line in `objectives` (null:

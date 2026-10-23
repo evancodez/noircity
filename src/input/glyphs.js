@@ -28,7 +28,7 @@ const BY_CTX = {
   // (the fist fight: LMB is the left fist, RMB the right - each trigger the fist on its side)
   brawl: { LMB: 'L2', RMB: 'R2' },
   // (the car: R2 the throttle, L2 the brake, L1 leans out to aim, R1 fires)
-  drive: { W: 'R2', S: 'L2', RMB: 'L1', LMB: 'R1' },
+  drive: { W: 'R2', S: 'L2', RMB: 'L1', LMB: 'R1', F: 'dright' },   // [O7] (F in the car: the radio, the d-pad's right)
 };
 export function glyphOf(token, ctx = 'play') {
   const T = String(token).toUpperCase().replace(/\s+/g, '');
@@ -167,7 +167,9 @@ export function keyNodes(label, ctx, h = 30) {
 export const PAD_KEYS = [
   [['Lstick'], 'move'], [['Rstick'], 'look'], [['square'], 'use'], [['R2'], 'fire, jab'], [['L2'], 'steady, other fist'],
   [['cross'], 'block, vault'], null,
-  [['Lleft', 'Lright'], 'dodge'], [['circle'], 'get low'], [['triangle'], 'reload'], [['L1'], 'run'], [['R1'], 'smoke'], [['dleft'], 'toys, horn'], [['options'], 'pause'],
+  [['Lleft', 'Lright'], 'dodge'], [['circle'], 'get low'], [['triangle'], 'reload'], [['L1'], 'run'], [['R1'], 'smoke'], [['dleft'], 'horn'],
+  // [O7] the open world's: the map, the heat and the money, the radio
+  [['ddown'], 'map'], [['touch'], 'heat, money'], [['dright'], 'radio'], [['options'], 'pause'],
 ];
 // the line as nodes into `el` (two rows, glyphs small)
 export function fillPadKeys(el, h = 20) {

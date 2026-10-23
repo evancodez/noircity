@@ -424,6 +424,8 @@ SHOTS.perf = { ...SHOTS.street, t: 1, viewmodel: true, holdWindow: 0, prewarm: t
 // (Game.titleDrift) at t=, the rain falling, no gun in frame
 function stageTitle(world, camera, controller, game) {
   game.state = 'title';
+  // [O7] NOIR CITY's title: the live city from the start's kerb (src/night/title.js)
+  if (game.night) game.night.title.stage();
   game.setViewmodelVisible(false);
   game.hud.showTitle();
   game.titleDrift(0);

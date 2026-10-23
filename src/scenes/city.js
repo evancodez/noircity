@@ -65,7 +65,7 @@ function place(ctx, at) {
   const R = G.city || (G.city = {});
   V.clear();
   stage.part('stream').warmAround(at.car.x, at.car.z);
-  const car = V.spawn('coupe', { at: new THREE.Vector3(at.car.x, 0, at.car.z), yaw: at.carYaw, lights: true });
+  const car = V.spawn(at.kind || 'coupe', { at: new THREE.Vector3(at.car.x, 0, at.car.z), yaw: at.carYaw, lights: true });   // [O7] (a save's kind)
   car.driver = null;
   V.player = null;
   R.car = car;
@@ -95,9 +95,16 @@ export default defineScene({
       // (look development and the frames: ?car=x,z,yaw puts the car there and me in its seat)
       const q = typeof location !== 'undefined' ? new URLSearchParams(location.search) : null;
       const cq = q && q.get('car');
-      if (cq) {
-        const [x, z, yaw] = cq.split(',').map(Number);
-        place(ctx, { car: { x, z }, carYaw: yaw, pos: { x: x + Math.sin(yaw) * 2.3, z: z + Math.cos(yaw) * 2.3 }, yaw: 0 });
+      // [O7] CONTINUE (src/night/save.js): the car and me where the save has us (in its seat, or beside it)
+      const rs = ctx.game.night && ctx.game.night.takeResume ? ctx.game.night.takeResume() : null;
+      if (rs) {
+        place(ctx, rs);
+        if (rs.damage) ctx.game.city.car.damage = rs.damage;
+        if (!rs.inCar) return;
+      }
+      if (cq || (rs && rs.inCar)) {
+        const [x, z, yaw] = rs ? [rs.car.x, rs.car.z, rs.carYaw] : cq.split(',').map(Number);
+        if (!rs) place(ctx, { car: { x, z }, carYaw: yaw, pos: { x: x + Math.sin(yaw) * 2.3, z: z + Math.cos(yaw) * 2.3 }, yaw: 0 });
         const G = ctx.game, R = G.city;
         G.vehicles.setPlayer(R.car);
         if (R.car.lamps && R.car.lamps.setOn) R.car.lamps.setOn(true);

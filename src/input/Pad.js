@@ -331,7 +331,10 @@ class Pad {
     }
     if (on(BTN.square)) want.add('KeyE');
     if (on(BTN.triangle)) want.add('KeyR');
-    if (on(BTN.left) || on(BTN.right) || on(BTN.up)) want.add('KeyQ');
+    // [O7] (in the car the d-pad's right is the radio's dial, F; the touchpad held is Tab: the heat, the money)
+    if (on(BTN.left) || on(BTN.up) || (on(BTN.right) && ctx !== 'drive')) want.add('KeyQ');
+    if (ctx === 'drive' && on(BTN.right)) want.add('KeyF');
+    if (on(BTN.touch)) want.add('Tab');
     if (edge(BTN.down)) this.tap('KeyM');
     void C;
   }
