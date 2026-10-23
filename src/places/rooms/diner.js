@@ -83,7 +83,7 @@ export default {
     // the cup and the plate before each free stool (the props are the base's)
     const free = stools.filter((x, i) => i !== 1 && i !== stools.length - 2);
     for (const x of free) {
-      const S = K.seat({ name: 'stool' + Math.round(x * 10), x, z: -5.25, yaw: 0, eyeY: FLOOR + 1.62, at: [x, FLOOR + 0.8, -5.25], range: 1.7, cone: 0.38, prompt: 'sit at the counter', standAt: { x, z: -4.4, yaw: 0 } });
+      const S = K.seat({ name: 'stool' + Math.round(x * 10), x, z: -5.25, yaw: 0, eyeY: FLOOR + 1.62, at: [x, FLOOR + 0.8, -5.25], range: 1.7, cone: 0.38, prompt: 'sit at the counter', standAt: { x, z: -4.4, yaw: 0 }, tourAt: [x, -4.3] });
       K.use({ seated: S, at: [x, FLOOR + 1.08, -6.25], range: 1.6, cone: 0.6, prompt: () => ((s.state.cups || {})[x.toFixed(2)] ? 'drink the coffee' : `coffee: $${COFFEE}`), onUse: () => coffee(K, s, P, x) });
       K.use({ seated: S, at: [x + 0.32, FLOOR + 1.08, -6.3], range: 1.6, cone: 0.35, prompt: `pie: $${PIE}`, when: () => !(s.state.pies || {})[x.toFixed(2)], onUse: () => pie(K, s, P, x) });
     }

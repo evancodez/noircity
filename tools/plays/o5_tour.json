@@ -43,7 +43,8 @@
     "hall",
     "stairs1",
     "stairs2",
-    "stairs3"
+    "stairs3",
+    "hospital"
    ],
    "timeout": 3000000,
    "check": "D.bad.length === 0",

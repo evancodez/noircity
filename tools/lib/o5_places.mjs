@@ -45,9 +45,11 @@ async function tour(api) {
   for (const id of ids) {
     const r = { id, uses: [], jank: [] };
     // stand 3 m out from the door, facing it; the car parked behind me at the kerb
+    // [O5b] (its loads counted from its own turn: a place seen from further off - the hospital, 80 m - is loaded passing another's door)
+    await js(`(window.__o5.loads[${JSON.stringify(id)}] = (G.city.places.byId.get(${JSON.stringify(id)}).live ? 1 : 0), 1)`);
     const setup = await js(`(() => { const P = G.city.places, s = P.byId.get(${JSON.stringify(id)}); const d = s.door;
       const x = d.x + d.nx * 3.0, z = d.z + d.nz * 3.0; G.stage.part('stream').warmAround(x, z);
-      N.controller.setPose(x, z, Math.atan2(d.nx, d.nz), -0.05);
+      N.controller.setPose(x, z, Math.atan2(d.nx, d.nz), 0.12);   // [O5b] (looking at the door, not at a thing on the pavement before it)
       const c = G.city.car; if (c && !G.city.inCar) { c.pos.set(x + d.nx * 2.2 + d.nz * 2.0, 0, z + d.nz * 2.2 - d.nx * 2.0); c.vel.set(0, 0, 0); c.sync && c.sync(); }
       window.__o5.carAt = c ? [c.pos.x, c.pos.z] : null; window.__o5.crimes0 = window.__o5.crimes; return { x, z }; })()`);
     await sleep(2200);
@@ -89,7 +91,10 @@ async function tour(api) {
       await press(api, 'KeyE');
       await sleep(900);
       const after = await js(`(() => { const s = G.city.places.byId.get(${JSON.stringify(id)}); const D = ${th.kind === 'door' ? `s.live.K.doors.find((d) => d.name === ${JSON.stringify(th.name)})` : 'null'};
-        return { msg: window.__o5.lastMsg, money: (G.save.money || 0) - window.__o5.m0, seated: !!G.city.places.seat, mode: N.controller.mode, door: D ? { open: !D.shut, locked: D.locked } : null }; })()`);
+        return { msg: window.__o5.lastMsg, money: (G.save.money || 0) - window.__o5.m0, seated: !!G.city.places.seat, mode: N.controller.mode, door: D ? { open: !D.shut, locked: D.locked } : null, card: !!(G.night && G.night.bounty && G.night.bounty.open), sleep: !!G.city.places.sleeping }; })()`);
+      // [O5b] (the hall's board opens the WANTED card: put back by E; a ward's bed is a sleep: 4 s of black)
+      if (after.card) { after.msg = 'the WANTED card'; await press(api, 'KeyE'); await sleep(600); }
+      if (after.sleep) { after.msg = 'a sleep (Slept. Saved.)'; for (let k = 0; k < 20 && (await js('!!G.city.places.sleeping')); k++) await sleep(400); }
       const answer = after.door ? (after.door.locked ? `rattles, locked${after.msg ? ' (' + after.msg + ')' : ''}` : after.door.open ? 'opens' : 'shuts') : after.seated ? 'sat' : after.msg ? after.msg : after.money ? `$${after.money}` : (after.mode !== 'walk' ? after.mode : 'nothing seen');
       r.uses.push({ kind: th.kind, name: th.name, prompt: before.prompt || before.cur, answer });
       log(`  ${id} ${th.kind} ${th.name}: [${before.prompt || before.cur || 'no prompt'}] -> ${answer}`);

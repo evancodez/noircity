@@ -104,10 +104,10 @@ function pierOffice(K, s, P, rng) {
   // ([O5] after the critic: three - a Tommy gunner in the store was the last man, pinned from his
   // range and never came: two minutes of nobody)
   // [O5b] (the men's grid takes the opening under the landing now - Covers.rebuild leaves an upper floor's
-  // rails out of it: O5's Left 2): one at the front office's desk, two in the store who come through it
+  // rails out of it: O5's Left 2): the three in the store at the back, among the crates; they heard the
+  // street door and come through the opening (brief O5b §4) - the front office is the place to meet them
   K.men = [
-    { kind: 'pistol', x: -2.6, z: -4.0 },
-    { kind: 'pistol', x: -3.5, z: -10.5 }, { kind: 'pistol', x: 6.5, z: -11.5 },
+    { kind: 'pistol', x: -3.5, z: -10.5 }, { kind: 'pistol', x: 6.5, z: -11.5 }, { kind: 'pistol', x: 0.6, z: -8.6 },
   ];
   K.opening = { x0: 2.6, x1: 4.4, z: zf };
   K.area = { x0: sx0, x1: sx1, z0: sz0, z1 };

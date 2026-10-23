@@ -402,6 +402,8 @@ export class Places {
     }
     if (D.shut || D.target === 0) {
       D.open(G.controller.pos);
+      // [O5b] (the leaf starts in the frame E was pressed, not the next: GAME_TWO §1 A1)
+      D.update(1 / 60);
       if (D.street) { this.lastDoorT = performance.now(); if (s.live.run && s.live.run.door) s.live.run.door(D); }
     } else D.close();
   }
