@@ -71,7 +71,11 @@ const HELPERS = `(() => {
   window.__car = () => { const L = (G.vehicles.list || []).filter((c) => !c.wrecked && Math.abs(c.speed || 0) < 0.1); L.sort((a, b) => Math.hypot(a.pos.x + 120, a.pos.z - 30) - Math.hypot(b.pos.x + 120, b.pos.z - 30)); const c = L[0]; return c ? { x: c.pos.x, z: c.pos.z, r: 1.05, kind: 'car', car: c } : null; };
   // (a car's damage record: its dents (the scar's slots in use) and the body's rock, sampled)
   window.__dents = (c) => { const D = c && c.smashD; return D && D.scar ? D.scar.dents.filter((d) => d.w > 0).length : 0; };
-  window.__rockOn = (c) => { window.__rock = 0; const f = () => { window.__rock = Math.max(window.__rock, Math.abs(c.roll) + Math.abs(c.pitch)); if (window.__rockT > performance.now()) requestAnimationFrame(f); }; window.__rockT = performance.now() + 3000; requestAnimationFrame(f); };
+  // (the car at a target: its own, or - an O2 parked body, made a car by the blow - the car standing there now)
+  window.__carAt = (t) => t.car || (G.vehicles.list || []).find((v) => Math.hypot(v.pos.x - t.x, v.pos.z - t.z) < 1.5) || null;
+  window.__rockOn = (t) => { window.__rock = 0; const f = () => { const c = window.__carAt(t); if (c) window.__rock = Math.max(window.__rock, Math.abs(c.roll) + Math.abs(c.pitch)); if (window.__rockT > performance.now()) requestAnimationFrame(f); }; window.__rockT = performance.now() + 3000; requestAnimationFrame(f); };
+  // an O2 parked car (an instance body) nearest Grand Ave, clear to stand by
+  window.__parkedCar = () => { const W = G.wheels; if (!W || !W.parked) return null; const L = W.parked.bodies.slice().sort((a, b) => Math.hypot(a.pos.x + 120, a.pos.z - 30) - Math.hypot(b.pos.x + 120, b.pos.z - 30)); for (const b of L) { const st = window.__standBy(b.pos.x, b.pos.z, b.spec.halfW + 0.1); if (st) return { x: b.pos.x, z: b.pos.z, r: b.spec.halfW + 0.1, kind: 'parked car', parked: b, stand: st }; } return null; };
   window.__bottle = () => { const I = G.stage.part('items'); const L = I.list.filter((it) => it.kind === 'bottle' && !it.taken && !C.inWater(it.x, it.z)); L.sort((a, b) => Math.hypot(a.x + 120, a.z - 30) - Math.hypot(b.x + 120, b.z - 30)); for (const it of L) { const n = S.near(it.x, it.z, 2).filter((q) => q.state === 'stand' && Math.hypot(q.x - it.x, q.z - it.z) < 1.6); if (!n.length) return { x: it.x, z: it.z, item: it, r: 0.05, kind: 'bottle' }; } return null; };
   // a thing a cop can see (6 - 22 m off, in his line): the vandal's witness
   window.__seen = (kind) => { const P = G.police, g = G.stage.part('city').graph; if (!P) return null; for (const c of P.cops) { if (!c.standing) continue; const L = S.near(c.pos.x, c.pos.z, 22).filter((it) => it.kind === kind && it.state === 'stand' && Math.hypot(it.x - c.pos.x, it.z - c.pos.z) > 6 && g.lineOfSight(c.pos.x, c.pos.z, it.x, it.z)); if (L.length) return { x: L[0].x, z: L[0].z, it: L[0], cop: c.pos.clone() }; } return null; };
@@ -125,7 +129,7 @@ export default async function o1cFist({ js, keyDown, keyUp, mouse, sleep, log, o
       const bx = st[0] - ax / al * 0.6, bz = st[1] - az / al * 0.6;
       N.controller.setPose(bx, bz, Math.atan2(-ax, -az), ${T.pitch ?? -0.12});
       window.__ev0 = G.stage.smash.events.length; window.__cr0 = G.crime ? G.crime.log.length : 0; window.__fl0 = window.__fistLog.length;
-      window.__heat = null; window.__dent0 = t.car ? window.__dents(t.car) : 0; if (t.car) window.__rockOn(t.car);
+      window.__heat = null; window.__dent0 = t.car ? window.__dents(t.car) : 0; if (t.car || t.parked) window.__rockOn(t);
       return { x: +t.x.toFixed(1), z: +t.z.toFixed(1), kind: it ? it.kind : t.kind, at: [+bx.toFixed(1), +bz.toFixed(1)] }; })()`);
     if (!tg) { out.push({ name: T.name, ok: false, why: 'not found' }); log(`  ${T.name}: NOT FOUND`); continue; }
     await sleep(250);
@@ -152,7 +156,7 @@ export default async function o1cFist({ js, keyDown, keyUp, mouse, sleep, log, o
       return { state: it ? it.state : null, gone: it ? !!it.gone : null, rest: it && it.state !== 'stand' && !it.gone ? window.__rest(it) : null, ev, fl, cr, pane, item,
         heat: window.__heat ?? (G.police ? G.police.heat : null),
         tilt: it && it.Q && it.state !== 'stand' ? Math.round(Math.acos(Math.min(1, new N.THREE.Vector3(0, 1, 0).applyQuaternion(it.Q).y)) * 57.3) : null,
-        dents: t.car ? window.__dents(t.car) - window.__dent0 : null, rock: t.car ? +window.__rock.toFixed(3) : null,
+        dents: t.car || t.parked ? window.__dents(window.__carAt(t)) - window.__dent0 : null, rock: t.car || t.parked ? +window.__rock.toFixed(3) : null,
         hands: G.player.hands.set, clip: G.player.hands.clip ? G.player.hands.clip.name : null }; })()`);
     // (what went over: seen where it lies, from 3 m)
     if (T.expect === 'over' && r.state === 'rest' && !r.gone) r.seen = await js(`window.__seeLying(window.__t.it)`);

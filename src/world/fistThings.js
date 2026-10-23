@@ -87,6 +87,8 @@ export function thingAhead(G) {
       // (a thing of the set whose shape the ray met - its own mesh or its chunk's merge - is the
       // set's, above; the ground is no wall)
       if (P && P.carD) offer({ kind: 'car', car: P.carD, gap, ang: 0, point: hp, normal: h.normal });
+      // ([O1c] after O2's merge: a parked car is a body drawn as an instance - its proxy carries it)
+      else if (h.mesh && h.mesh.userData.parked) offer({ kind: 'car', parked: h.mesh.userData.parked, gap, ang: 0, point: hp, normal: h.normal });
       else if (!(P && (P.K || P === 'merged')) && Math.abs(h.normal.y) < 0.6) offer({ kind: door ? 'door' : 'wall', door, gap, ang: 0, point: hp, normal: h.normal });
     }
   }
@@ -109,7 +111,7 @@ export function thingStep(G, R, arm) {
   G.setViewmodelVisible(true);
   if (H.set !== 'fists') H.equip('fists');
   // (the second blow at what shook to the last one: my weight in it)
-  const was = T.kind === 'thing' ? T.it : T.kind === 'car' ? T.car : null;
+  const was = T.kind === 'thing' ? T.it : T.kind === 'car' ? T.car || T.parked : null;
   const heavy = !!(was && was.fistT != null && G.time - was.fistT < THING.again);
   const land = () => answer(G, R, T, dir, heavy, S);
   G.emit('city:swing', { thing: T.kind, heavy });
@@ -188,7 +190,19 @@ function answer(G, R, T, dir, heavy, S) {
     // ([O1c] after the critic, B1: the tin answers) a dent where the fist met it, the paint
     // scarred pale round it (O6b's CarDamage.dent), the body rocked on its springs away
     // from the blow; a second blow within `again` s deeper. A car not mine: a crime.
-    const D = T.car, v = D.v, CD = S && S.cars;
+    const CD = S && S.cars;
+    // (a parked car of O2's - an instance - becomes a real one where it stands (the hijack's
+    // promote), kept as a car left there, its damage attached now: the dent lands on it)
+    if (T.parked) {
+      const W = G.wheels, b = T.parked;
+      if (!W || !W.parked || !W.parked.bodies.includes(b)) return;
+      const v0 = W.parked.promote(b);
+      if (W.leave) W.leave(v0);
+      if (CD && !v0.smashD) CD.attach(v0);
+      if (!v0.smashD) return;
+      T.car = v0.smashD;
+    }
+    const D = T.car, v = D.v;
     let depth = 0;
     if (CD && D.state !== 'wreck') {
       const l = v.local(T.point, new THREE.Vector3()).clone(), Sp = v.spec;
@@ -200,8 +214,10 @@ function answer(G, R, T, dir, heavy, S) {
       const side = Math.abs(l.z) / Sp.halfW > Math.abs(l.x) / Sp.halfL, a = heavy ? 0.85 : 0.55;
       if (side) v.rollV = (v.rollV || 0) - Math.sign(l.z || 1) * a; else v.pitchV = (v.pitchV || 0) + Math.sign(l.x || 1) * a * 0.7;
       v.shake = Math.min(1, (v.shake || 0) + 0.35);
+      // (stepped a second while it rocks: O2's wheels step a car left standing while it is touched)
+      v.touchT = -0.8;
     }
-    D.fistT = G.time;
+    D.fistT = G.time; if (T.parked) T.parked.fistT = G.time;
     sfx.play('c3_dent', T.point, { k: heavy ? 0.7 : 0.5 }, { ref: 3 });
     if (ctl.kick) ctl.kick(1.0, 0.5, 0.1);
     // (someone's car beaten in the street: the street sees it as a bin knocked over - once a few seconds)

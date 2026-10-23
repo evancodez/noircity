@@ -36,7 +36,8 @@
     { "name": "shop glass, twice", "find": "__face('glass')", "expect": "glass", "presses": 2, "between": 900, "crime": "smash" },
     { "name": "a wall", "find": "__face('wall')", "expect": "wall" },
     { "name": "a street door", "find": "__face('door')", "expect": "door" },
-    { "name": "a parked car (the coupe: no traffic before O2)", "find": "__car()", "expect": "car", "crime": "vandal" },
+    { "name": "the roam's coupe", "find": "__car()", "expect": "car", "crime": "vandal" },
+    { "name": "a parked car (O2's, an instance until struck)", "find": "__parkedCar()", "expect": "car", "crime": "vandal" },
     { "name": "a bottle on a step", "find": "__bottle()", "expect": "item", "pitch": -0.45 },
     { "name": "a bin a cop can see", "find": "__seen('bin') || __seen('bins') || __seen('board')", "expect": "over", "crime": "vandal@cop", "heat": 1, "settle": 7000 }
    ], "check": "D.bad.length === 0", "label": "the fist walk: every kind answers as its kind, nothing floating, everything resting" },
