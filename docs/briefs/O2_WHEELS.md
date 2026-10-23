@@ -151,3 +151,14 @@ repaints ($10) the car parked outside, but the garage stores no car. Yours:
 a car left at the garage is kept (one bay: the save holds it, the sheet goes
 over it), taken again from the mechanic; and the repaint through your
 variants (a new colour and plate, the heat off it: the reason to repaint).
+
+## From lane O3's merge (2026-10-23, main 768adb5): yours
+O3's police drive a stand-in patrol car on the base's Car.js and pilot.js
+(`src/police/`), with a red roof lamp, a siren, the prowl of the search and
+the roadblock; it once never reached an idle player in 120 s, and a car
+stuck for good is not replaced the way men on foot are. Yours at your fix
+pass: the patrol car on your model, lamp, siren and hunting pilot
+(`traffic.alarm`, the brief's §3), a stuck unit replaced, and the chase's
+knocks felt in the wheel without burning the car (O6b's wear). O3's plays
+`o3_chase_idle`, `o3_chase_medium`, `o3_roadblock` and `o3_pad_chase` are
+the measure.

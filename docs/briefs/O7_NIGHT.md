@@ -201,3 +201,17 @@ O5 (the places) is in main: fifteen street doors open on rooms (`src/places/`,
   arrest.
 - **The stills' footer** writes keys as words (`CLICK: NEXT · ESC ESC: SKIP`)
   outside O5's reel; the kit's key caps everywhere.
+
+## From lane O3's merge (2026-10-23, main 768adb5): yours (second pass)
+O3's police are in: `game.police` (heat, searching, units, marks(),
+on('heat'), set, lost, clear); your stand-in (`src/night/standins.js`,
+`patrol.js`) is installed only while it is absent: drop it. The title's
+and the pause card's key line says `RMB steady, other fist`; in the street
+RMB draws the gun you own and steadies it, in a fist fight it is the other
+fist: say `RMB draw / steady, other fist` (game one's title golden frame
+changes once, named). From the art director's look at your frames: the
+minimap's district label rotates with the heading-up map and reads
+mirrored (frame 2); labels stay upright. The el ride's right third is a
+flat white panel (the car's own window): the window's frame and the dark
+of the car instead. The title's colour measured (the splash, the blue
+sign, the red lanterns together under 2 %).
