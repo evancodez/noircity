@@ -159,6 +159,7 @@ function hideoutLife(K, s, P) {
       // (a way of one step - where he stands - so he waits on start(): without a way a gunman is in the fight at once)
       const h = Kt.spawn({ kind: m.kind, at: p, way: { steps: [{ x: p.x, z: p.z }] }, start: () => st.hostile, yaw: Math.atan2(e.x - p.x, e.z - p.z) });
       h._o5 = m;
+      h.surface = P.figSurface(h, m.y ?? 0.3);
       st.men.push(h);
     }
   };
@@ -178,7 +179,8 @@ function hideoutLife(K, s, P) {
         let seen = false;
         if (inside) for (const h of alive()) { const d = Math.hypot(h.pos.x - G.eye.x, h.pos.z - G.eye.z); if (d < 14 && Kt.see && Kt.see(new THREE.Vector3(h.pos.x, (h.pos.y || 0) + 1.55, h.pos.z), G.eye, 0.25)) { seen = true; h.lookAt && h.lookAt(G.eye.clone()); } }
         st.seen = seen ? st.seen + dt : Math.max(0, st.seen - dt * 0.5);
-        if (st.seen > 0.3 && !st.warned) { st.warned = true; G.hud.warn('They know your face.'); }
+        // (the warning; my hand goes to my coat: the revolver is out - I may fire first)
+        if (st.seen > 0.3 && !st.warned) { st.warned = true; G.hud.warn('They know your face.'); arm(); }
         if (!seen && st.warned && st.seen <= 0) { st.warned = false; G.hud.warn(null); }
         // (a shot of mine anywhere in here, or a man hit: at once)
         if (st.seen > 2.2 || alive().length < st.men.length) this.alarm('seen');

@@ -7,13 +7,13 @@ import { PURSE, NAMES } from './rooms/gym.js';
 // (the black, the rope lifted) and I am squared up in one corner, my man in
 // the other, the crowd at the ropes. Three levels, a man each (his hit
 // points and his manners grow); the purse is paid on the knock-out. Losing
-// is two downs (three at the first level): the warning before the last
+// is two downs (four at the first level, three at the second): the warning before the last
 // ("One more and you're down."), the black, the word, and I am outside the
 // ropes by the steps - nothing taken; the man offers the bout again.
 //   const run = boutStart(K, site, places)   run.offer()   run.step(dt)   run.busy   run.dispose()
-const HP = [70, 105, 140];
+const HP = [52, 90, 130];
 const KIND = ['dockhand', 'brawler', 'foreman'];
-const DOWNS = [3, 2, 2];
+const DOWNS = [4, 3, 2];
 
 export function boutStart(K, s, P) {
   const G = P.game, B = G.brawl, F = s.frame;

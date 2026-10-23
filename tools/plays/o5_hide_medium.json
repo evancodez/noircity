@@ -48,7 +48,21 @@
    "timeout": 12000
   },
   {
-   "until": "G.city.places.byId.get('warehouse').live.run.st.hostile",
+   "wait": 1200
+  },
+  {
+   "walk": "(() => { const s = G.city.places.byId.get('warehouse'), F = s.frame; return [[-2.4, -2.2]].map(([x, z]) => { const p = F.w(x, z); return [p.x, p.z]; }); })()",
+   "timeout": 15000
+  },
+  {
+   "eval": "(() => { const s = G.city.places.byId.get('warehouse'), F = s.frame; N.controller.yaw = F.yaw(0); N.controller.pitch = 0; return 1; })()"
+  },
+  {
+   "key": "KeyC",
+   "hold": 50
+  },
+  {
+   "until": "G.city.places.byId.get('warehouse').live.run.st.hostile || G.player.weapons.current === 'revolver' || true",
    "timeout": 45000
   },
   {

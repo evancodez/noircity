@@ -31,7 +31,7 @@
    "drive": "tools/lib/o5_places.mjs",
    "mode": "memory",
    "timeout": 3000000,
-   "check": "D.rounds[2].geo <= D.rounds[1].geo + 4 && D.rounds[2].tex <= D.rounds[1].tex + 1 && D.rounds[2].loaded <= D.rounds[1].loaded && D.rounds[2].cast <= D.rounds[1].cast && D.rounds[2].cols <= D.rounds[1].cols && D.rounds[2].solids <= D.rounds[1].solids && D.rounds[2].lamps === D.rounds[0].lamps",
+   "check": "D.rounds[2].geo <= D.rounds[1].geo + 4 && D.rounds[2].tex <= D.rounds[1].tex + 1 && D.rounds[2].loaded <= D.rounds[1].loaded && D.rounds[2].cast <= D.rounds[1].cast && D.rounds[2].cols <= D.rounds[1].cols && D.rounds[2].solids <= D.rounds[1].solids && D.rounds[2].lamps === D.rounds[1].lamps && D.rounds[2].looks === D.rounds[1].looks && D.rounds[2].dry === D.rounds[1].dry",
    "label": "[O5] the second round left nothing more behind than the first"
   }
  ]

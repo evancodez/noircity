@@ -48,7 +48,7 @@
    "timeout": 12000
   },
   {
-   "until": "G.city.places.byId.get('warehouse').live.run.st.hostile",
+   "until": "G.city.places.byId.get('warehouse').live.run.st.hostile || G.player.weapons.current === 'revolver' || false",
    "timeout": 45000
   },
   {

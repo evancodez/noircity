@@ -62,9 +62,12 @@ export class Places {
   get loaded() { return this.list.filter((s) => s.live); }
 
   // ---- the walking surface ----------------------------------------------------------------------------
-  surfaceAt(x, z) {
-    let best, bd = Infinity;
-    const G = this.game, hint = G && G.controller ? G.controller.groundY : 0;
+  // (hint: the floor the asker stands on - the player's by default; a figure
+  // of a place asks with its own, so a man at the desk below never rises to
+  // the floor I am on)
+  surfaceAt(x, z, hint0 = null) {
+    let best, bd = Infinity, lvlAt = 0;
+    const G = this.game, hint = hint0 ?? (G && G.controller ? G.controller.groundY : 0);
     for (const s of this.list) {
       const K = s.live && s.live.K;
       if (!K) continue;
@@ -73,7 +76,7 @@ export class Places {
       const p = s.frame.l(x, z);
       // (the nearest to the floor I am on; a flight of stairs within a step
       // of it wins over the floor its foot stands on - I go up it)
-      const consider = (y, lvl, ramp) => { const d0 = Math.abs(y - hint); const d = d0 + (y > hint + 0.75 ? 50 : 0) - (ramp && d0 < 0.6 ? 10 : 0); if (d < bd) { bd = d; best = y; this._lvlAt = lvl; } };
+      const consider = (y, lvl, ramp) => { const d0 = Math.abs(y - hint); const d = d0 + (y > hint + 0.75 ? 50 : 0) - (ramp && d0 < 0.6 ? 10 : 0); if (d < bd) { bd = d; best = y; lvlAt = lvl; } };
       for (const f of K.floors) if (p.x >= f.x0 && p.x <= f.x1 && p.z >= f.z0 && p.z <= f.z1) consider(f.y, f.lvl, f.prefer);
       for (const r of K.ramps) {
         if (p.x < r.x0 || p.x > r.x1 || p.z < r.z0 || p.z > r.z1) continue;
@@ -81,7 +84,13 @@ export class Places {
         consider(r.y0 + (r.y1 - r.y0) * Math.max(0, Math.min(1, t)), r.lvl, true);
       }
     }
+    if (hint0 == null && best !== undefined) this._lvlAt = lvlAt;
     return best;
+  }
+  // a figure's own floor (it keeps to the floor it was put on)
+  figSurface(fig, y0) {
+    let y = y0;
+    return (x, z) => { const v = this.surfaceAt(x, z, y); if (v !== undefined) { y = v; return v; } return this.C.groundAt(x, z); };
   }
 
   // ---- loading and dropping ----------------------------------------------------------------------------
@@ -285,6 +294,8 @@ export class Places {
       if (f.seat) c.sit({ pos: V(p.x, f.seat.y, p.z), yaw: s.frame.figYaw(f.yaw) - Math.PI, name: f.seat.name || 'stool' });
       if (f.state && f.state !== 'idle') c.setState(f.state, 0);
       c.place2 = s; c.spec = f;
+      // (its own floor: the one it stands on - never the floor I am on)
+      if (c.fig) c.fig.surface = this.figSurface(c.fig, f.y ?? FLOOR);
       s.live.cast.push(c);
       if (f.onSpawn) f.onSpawn(c);
       return c;
