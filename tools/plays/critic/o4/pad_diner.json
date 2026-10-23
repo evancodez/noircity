@@ -1,0 +1,59 @@
+{
+ "about": "[O4 critic] the pad: the diner brawl with a bottle and a chair",
+ "url": "/?mute=1&o4stay=1&start=o4.diner&padfake=1",
+ "input": "pad",
+ "size": [
+  1280,
+  800
+ ],
+ "out": "shots/critic/pad_diner",
+ "steps": [
+  {
+   "until": "G.state === 'title' && !!document.querySelector('#title .opt[data-k=begin]')",
+   "timeout": 60000
+  },
+  {
+   "wait": 1200
+  },
+  {
+   "pad": {
+    "b": [
+     "x"
+    ],
+    "secs": 0.15
+   }
+  },
+  {
+   "wait": 700
+  },
+  {
+   "pad": {
+    "b": [
+     "x"
+    ],
+    "secs": 0.15
+   }
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'o4' && G.scenes.beat === 'diner' && G.crowd.active && !G.failing",
+   "timeout": 30000
+  },
+  {
+   "eval": "(G.o4stay = true)"
+  },
+  {
+   "drive": "tools/lib/o4_brawl.mjs",
+   "profile": "medium",
+   "beat": "diner",
+   "tries": 3,
+   "wins": 1,
+   "things": true,
+   "timeout": 420000,
+   "check": "D.wins >= 1",
+   "label": "the pad: the diner brawl with the room's things, medium, within three"
+  },
+  {
+   "eval": "({took:(G.crowd.stats||{}).things, breaks:(G.crowd.stats||{}).breaks})"
+  }
+ ]
+}

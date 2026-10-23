@@ -1,0 +1,41 @@
+{
+ "about": "[O4] The gym (tools/lib/o4_brawl.mjs, the bout taken up with E at the ring). Medium hands win the first level within three tries; the purse.",
+ "url": "/?mute=1&o4stay=1&start=o4.gym",
+ "size": [
+  1280,
+  800
+ ],
+ "out": "shots/play/gym_medium",
+ "steps": [
+  {
+   "until": "G.state === 'title' && !!document.querySelector('#title .opt[data-k=begin]')",
+   "timeout": 60000
+  },
+  {
+   "wait": 1200
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]",
+   "taken": "G.scenes.current && G.scenes.current.id === 'o4'",
+   "retries": 4
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'o4' && G.scenes.beat === 'gym' && !G.failing",
+   "timeout": 30000
+  },
+  {
+   "eval": "(G.o4stay = true)"
+  },
+  {
+   "drive": "tools/lib/o4_brawl.mjs",
+   "profile": "medium",
+   "beat": "gym",
+   "tries": 3,
+   "wins": 1,
+   "timeout": 420000,
+   "check": "D.wins >= 1",
+   "label": "the first bout: medium hands win within three tries",
+   "startKey": "KeyE"
+  }
+ ]
+}

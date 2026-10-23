@@ -1,0 +1,359 @@
+{
+ "about": "[O4 critic] the gun shop: look at each thing on the counter, E, until the money runs out",
+ "url": "/?mute=1&o4stay=1&start=o4.shop",
+ "size": [
+  1280,
+  800
+ ],
+ "out": "shots/critic/shop",
+ "steps": [
+  {
+   "until": "G.state === 'title' && !!document.querySelector('#title .opt[data-k=begin]')",
+   "timeout": 60000
+  },
+  {
+   "wait": 1000
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]",
+   "taken": "G.scenes.current && G.scenes.current.id === 'o4'",
+   "retries": 4
+  },
+  {
+   "until": "G.scenes.beat === 'shop' && !G.failing",
+   "timeout": 30000
+  },
+  {
+   "eval": "(G.o4stay = true)"
+  },
+  {
+   "wait": 3000
+  },
+  {
+   "eval": "({t:+G.time.toFixed(1),yaw:+N.controller.yaw.toFixed(2),pitch:+N.controller.pitch.toFixed(2),prompt:G.hud.promptShown||'',say:(document.querySelector('#hud')||{}).innerText.replace(/\\s+/g,' ').slice(0,120),money:G.save.money,ammo:JSON.stringify(G.save.ammo||{}),inv:JSON.stringify(G.save.inventory||[]),gun:G.player.weapons.current})"
+  },
+  {
+   "eval": "['shotgun','shells','rounds'].map(k=>{const p=G.stage._o4shop.at(k);return [k,+p.x.toFixed(2),+p.y.toFixed(2),+p.z.toFixed(2)]})"
+  },
+  {
+   "look": [
+    300,
+    0
+   ],
+   "steps": 4
+  },
+  {
+   "wait": 400
+  },
+  {
+   "eval": "({t:+G.time.toFixed(1),yaw:+N.controller.yaw.toFixed(2),pitch:+N.controller.pitch.toFixed(2),prompt:G.hud.promptShown||'',say:(document.querySelector('#hud')||{}).innerText.replace(/\\s+/g,' ').slice(0,120),money:G.save.money,ammo:JSON.stringify(G.save.ammo||{}),inv:JSON.stringify(G.save.inventory||[]),gun:G.player.weapons.current})"
+  },
+  {
+   "look": "(()=>{const C=N.controller,e=G.eye;const p=G.stage._o4shop.at('rounds');const look=Math.atan2(-Math.sin(C.yaw),-Math.cos(C.yaw));const a=Math.atan2(p.x-e.x,p.z-e.z);const r=Math.atan2(Math.sin(a-look),Math.cos(a-look));const pt=Math.atan2(p.y-e.y,Math.hypot(p.x-e.x,p.z-e.z));return [Math.round(-r/C.sensitivity),Math.round(-(pt-C.pitch)/C.sensitivity)]})()",
+   "steps": 3
+  },
+  {
+   "wait": 350
+  },
+  {
+   "eval": "({t:+G.time.toFixed(1),yaw:+N.controller.yaw.toFixed(2),pitch:+N.controller.pitch.toFixed(2),prompt:G.hud.promptShown||'',say:(document.querySelector('#hud')||{}).innerText.replace(/\\s+/g,' ').slice(0,120),money:G.save.money,ammo:JSON.stringify(G.save.ammo||{}),inv:JSON.stringify(G.save.inventory||[]),gun:G.player.weapons.current})"
+  },
+  {
+   "key": "KeyE"
+  },
+  {
+   "wait": 500
+  },
+  {
+   "eval": "({t:+G.time.toFixed(1),yaw:+N.controller.yaw.toFixed(2),pitch:+N.controller.pitch.toFixed(2),prompt:G.hud.promptShown||'',say:(document.querySelector('#hud')||{}).innerText.replace(/\\s+/g,' ').slice(0,120),money:G.save.money,ammo:JSON.stringify(G.save.ammo||{}),inv:JSON.stringify(G.save.inventory||[]),gun:G.player.weapons.current})"
+  },
+  {
+   "look": "(()=>{const C=N.controller,e=G.eye;const p=G.stage._o4shop.at('shells');const look=Math.atan2(-Math.sin(C.yaw),-Math.cos(C.yaw));const a=Math.atan2(p.x-e.x,p.z-e.z);const r=Math.atan2(Math.sin(a-look),Math.cos(a-look));const pt=Math.atan2(p.y-e.y,Math.hypot(p.x-e.x,p.z-e.z));return [Math.round(-r/C.sensitivity),Math.round(-(pt-C.pitch)/C.sensitivity)]})()",
+   "steps": 3
+  },
+  {
+   "wait": 350
+  },
+  {
+   "eval": "({t:+G.time.toFixed(1),yaw:+N.controller.yaw.toFixed(2),pitch:+N.controller.pitch.toFixed(2),prompt:G.hud.promptShown||'',say:(document.querySelector('#hud')||{}).innerText.replace(/\\s+/g,' ').slice(0,120),money:G.save.money,ammo:JSON.stringify(G.save.ammo||{}),inv:JSON.stringify(G.save.inventory||[]),gun:G.player.weapons.current})"
+  },
+  {
+   "key": "KeyE"
+  },
+  {
+   "wait": 500
+  },
+  {
+   "eval": "({t:+G.time.toFixed(1),yaw:+N.controller.yaw.toFixed(2),pitch:+N.controller.pitch.toFixed(2),prompt:G.hud.promptShown||'',say:(document.querySelector('#hud')||{}).innerText.replace(/\\s+/g,' ').slice(0,120),money:G.save.money,ammo:JSON.stringify(G.save.ammo||{}),inv:JSON.stringify(G.save.inventory||[]),gun:G.player.weapons.current})"
+  },
+  {
+   "look": "(()=>{const C=N.controller,e=G.eye;const p=G.stage._o4shop.at('shotgun');const look=Math.atan2(-Math.sin(C.yaw),-Math.cos(C.yaw));const a=Math.atan2(p.x-e.x,p.z-e.z);const r=Math.atan2(Math.sin(a-look),Math.cos(a-look));const pt=Math.atan2(p.y-e.y,Math.hypot(p.x-e.x,p.z-e.z));return [Math.round(-r/C.sensitivity),Math.round(-(pt-C.pitch)/C.sensitivity)]})()",
+   "steps": 3
+  },
+  {
+   "wait": 350
+  },
+  {
+   "eval": "({t:+G.time.toFixed(1),yaw:+N.controller.yaw.toFixed(2),pitch:+N.controller.pitch.toFixed(2),prompt:G.hud.promptShown||'',say:(document.querySelector('#hud')||{}).innerText.replace(/\\s+/g,' ').slice(0,120),money:G.save.money,ammo:JSON.stringify(G.save.ammo||{}),inv:JSON.stringify(G.save.inventory||[]),gun:G.player.weapons.current})"
+  },
+  {
+   "key": "KeyE"
+  },
+  {
+   "wait": 500
+  },
+  {
+   "eval": "({t:+G.time.toFixed(1),yaw:+N.controller.yaw.toFixed(2),pitch:+N.controller.pitch.toFixed(2),prompt:G.hud.promptShown||'',say:(document.querySelector('#hud')||{}).innerText.replace(/\\s+/g,' ').slice(0,120),money:G.save.money,ammo:JSON.stringify(G.save.ammo||{}),inv:JSON.stringify(G.save.inventory||[]),gun:G.player.weapons.current})"
+  },
+  {
+   "look": "(()=>{const C=N.controller,e=G.eye;const p=G.stage._o4shop.at('rounds');const look=Math.atan2(-Math.sin(C.yaw),-Math.cos(C.yaw));const a=Math.atan2(p.x-e.x,p.z-e.z);const r=Math.atan2(Math.sin(a-look),Math.cos(a-look));const pt=Math.atan2(p.y-e.y,Math.hypot(p.x-e.x,p.z-e.z));return [Math.round(-r/C.sensitivity),Math.round(-(pt-C.pitch)/C.sensitivity)]})()",
+   "steps": 3
+  },
+  {
+   "wait": 350
+  },
+  {
+   "eval": "({t:+G.time.toFixed(1),yaw:+N.controller.yaw.toFixed(2),pitch:+N.controller.pitch.toFixed(2),prompt:G.hud.promptShown||'',say:(document.querySelector('#hud')||{}).innerText.replace(/\\s+/g,' ').slice(0,120),money:G.save.money,ammo:JSON.stringify(G.save.ammo||{}),inv:JSON.stringify(G.save.inventory||[]),gun:G.player.weapons.current})"
+  },
+  {
+   "key": "KeyE"
+  },
+  {
+   "wait": 500
+  },
+  {
+   "eval": "({t:+G.time.toFixed(1),yaw:+N.controller.yaw.toFixed(2),pitch:+N.controller.pitch.toFixed(2),prompt:G.hud.promptShown||'',say:(document.querySelector('#hud')||{}).innerText.replace(/\\s+/g,' ').slice(0,120),money:G.save.money,ammo:JSON.stringify(G.save.ammo||{}),inv:JSON.stringify(G.save.inventory||[]),gun:G.player.weapons.current})"
+  },
+  {
+   "look": "(()=>{const C=N.controller,e=G.eye;const p=G.stage._o4shop.at('shells');const look=Math.atan2(-Math.sin(C.yaw),-Math.cos(C.yaw));const a=Math.atan2(p.x-e.x,p.z-e.z);const r=Math.atan2(Math.sin(a-look),Math.cos(a-look));const pt=Math.atan2(p.y-e.y,Math.hypot(p.x-e.x,p.z-e.z));return [Math.round(-r/C.sensitivity),Math.round(-(pt-C.pitch)/C.sensitivity)]})()",
+   "steps": 3
+  },
+  {
+   "wait": 350
+  },
+  {
+   "eval": "({t:+G.time.toFixed(1),yaw:+N.controller.yaw.toFixed(2),pitch:+N.controller.pitch.toFixed(2),prompt:G.hud.promptShown||'',say:(document.querySelector('#hud')||{}).innerText.replace(/\\s+/g,' ').slice(0,120),money:G.save.money,ammo:JSON.stringify(G.save.ammo||{}),inv:JSON.stringify(G.save.inventory||[]),gun:G.player.weapons.current})"
+  },
+  {
+   "key": "KeyE"
+  },
+  {
+   "wait": 500
+  },
+  {
+   "eval": "({t:+G.time.toFixed(1),yaw:+N.controller.yaw.toFixed(2),pitch:+N.controller.pitch.toFixed(2),prompt:G.hud.promptShown||'',say:(document.querySelector('#hud')||{}).innerText.replace(/\\s+/g,' ').slice(0,120),money:G.save.money,ammo:JSON.stringify(G.save.ammo||{}),inv:JSON.stringify(G.save.inventory||[]),gun:G.player.weapons.current})"
+  },
+  {
+   "look": "(()=>{const C=N.controller,e=G.eye;const p=G.stage._o4shop.at('shells');const look=Math.atan2(-Math.sin(C.yaw),-Math.cos(C.yaw));const a=Math.atan2(p.x-e.x,p.z-e.z);const r=Math.atan2(Math.sin(a-look),Math.cos(a-look));const pt=Math.atan2(p.y-e.y,Math.hypot(p.x-e.x,p.z-e.z));return [Math.round(-r/C.sensitivity),Math.round(-(pt-C.pitch)/C.sensitivity)]})()",
+   "steps": 3
+  },
+  {
+   "wait": 350
+  },
+  {
+   "eval": "({t:+G.time.toFixed(1),yaw:+N.controller.yaw.toFixed(2),pitch:+N.controller.pitch.toFixed(2),prompt:G.hud.promptShown||'',say:(document.querySelector('#hud')||{}).innerText.replace(/\\s+/g,' ').slice(0,120),money:G.save.money,ammo:JSON.stringify(G.save.ammo||{}),inv:JSON.stringify(G.save.inventory||[]),gun:G.player.weapons.current})"
+  },
+  {
+   "key": "KeyE"
+  },
+  {
+   "wait": 500
+  },
+  {
+   "eval": "({t:+G.time.toFixed(1),yaw:+N.controller.yaw.toFixed(2),pitch:+N.controller.pitch.toFixed(2),prompt:G.hud.promptShown||'',say:(document.querySelector('#hud')||{}).innerText.replace(/\\s+/g,' ').slice(0,120),money:G.save.money,ammo:JSON.stringify(G.save.ammo||{}),inv:JSON.stringify(G.save.inventory||[]),gun:G.player.weapons.current})"
+  },
+  {
+   "look": "(()=>{const C=N.controller,e=G.eye;const p=G.stage._o4shop.at('shells');const look=Math.atan2(-Math.sin(C.yaw),-Math.cos(C.yaw));const a=Math.atan2(p.x-e.x,p.z-e.z);const r=Math.atan2(Math.sin(a-look),Math.cos(a-look));const pt=Math.atan2(p.y-e.y,Math.hypot(p.x-e.x,p.z-e.z));return [Math.round(-r/C.sensitivity),Math.round(-(pt-C.pitch)/C.sensitivity)]})()",
+   "steps": 3
+  },
+  {
+   "wait": 350
+  },
+  {
+   "eval": "({t:+G.time.toFixed(1),yaw:+N.controller.yaw.toFixed(2),pitch:+N.controller.pitch.toFixed(2),prompt:G.hud.promptShown||'',say:(document.querySelector('#hud')||{}).innerText.replace(/\\s+/g,' ').slice(0,120),money:G.save.money,ammo:JSON.stringify(G.save.ammo||{}),inv:JSON.stringify(G.save.inventory||[]),gun:G.player.weapons.current})"
+  },
+  {
+   "key": "KeyE"
+  },
+  {
+   "wait": 500
+  },
+  {
+   "eval": "({t:+G.time.toFixed(1),yaw:+N.controller.yaw.toFixed(2),pitch:+N.controller.pitch.toFixed(2),prompt:G.hud.promptShown||'',say:(document.querySelector('#hud')||{}).innerText.replace(/\\s+/g,' ').slice(0,120),money:G.save.money,ammo:JSON.stringify(G.save.ammo||{}),inv:JSON.stringify(G.save.inventory||[]),gun:G.player.weapons.current})"
+  },
+  {
+   "look": "(()=>{const C=N.controller,e=G.eye;const p=G.stage._o4shop.at('shells');const look=Math.atan2(-Math.sin(C.yaw),-Math.cos(C.yaw));const a=Math.atan2(p.x-e.x,p.z-e.z);const r=Math.atan2(Math.sin(a-look),Math.cos(a-look));const pt=Math.atan2(p.y-e.y,Math.hypot(p.x-e.x,p.z-e.z));return [Math.round(-r/C.sensitivity),Math.round(-(pt-C.pitch)/C.sensitivity)]})()",
+   "steps": 3
+  },
+  {
+   "wait": 350
+  },
+  {
+   "eval": "({t:+G.time.toFixed(1),yaw:+N.controller.yaw.toFixed(2),pitch:+N.controller.pitch.toFixed(2),prompt:G.hud.promptShown||'',say:(document.querySelector('#hud')||{}).innerText.replace(/\\s+/g,' ').slice(0,120),money:G.save.money,ammo:JSON.stringify(G.save.ammo||{}),inv:JSON.stringify(G.save.inventory||[]),gun:G.player.weapons.current})"
+  },
+  {
+   "key": "KeyE"
+  },
+  {
+   "wait": 500
+  },
+  {
+   "eval": "({t:+G.time.toFixed(1),yaw:+N.controller.yaw.toFixed(2),pitch:+N.controller.pitch.toFixed(2),prompt:G.hud.promptShown||'',say:(document.querySelector('#hud')||{}).innerText.replace(/\\s+/g,' ').slice(0,120),money:G.save.money,ammo:JSON.stringify(G.save.ammo||{}),inv:JSON.stringify(G.save.inventory||[]),gun:G.player.weapons.current})"
+  },
+  {
+   "look": "(()=>{const C=N.controller,e=G.eye;const p=G.stage._o4shop.at('shells');const look=Math.atan2(-Math.sin(C.yaw),-Math.cos(C.yaw));const a=Math.atan2(p.x-e.x,p.z-e.z);const r=Math.atan2(Math.sin(a-look),Math.cos(a-look));const pt=Math.atan2(p.y-e.y,Math.hypot(p.x-e.x,p.z-e.z));return [Math.round(-r/C.sensitivity),Math.round(-(pt-C.pitch)/C.sensitivity)]})()",
+   "steps": 3
+  },
+  {
+   "wait": 350
+  },
+  {
+   "eval": "({t:+G.time.toFixed(1),yaw:+N.controller.yaw.toFixed(2),pitch:+N.controller.pitch.toFixed(2),prompt:G.hud.promptShown||'',say:(document.querySelector('#hud')||{}).innerText.replace(/\\s+/g,' ').slice(0,120),money:G.save.money,ammo:JSON.stringify(G.save.ammo||{}),inv:JSON.stringify(G.save.inventory||[]),gun:G.player.weapons.current})"
+  },
+  {
+   "key": "KeyE"
+  },
+  {
+   "wait": 500
+  },
+  {
+   "eval": "({t:+G.time.toFixed(1),yaw:+N.controller.yaw.toFixed(2),pitch:+N.controller.pitch.toFixed(2),prompt:G.hud.promptShown||'',say:(document.querySelector('#hud')||{}).innerText.replace(/\\s+/g,' ').slice(0,120),money:G.save.money,ammo:JSON.stringify(G.save.ammo||{}),inv:JSON.stringify(G.save.inventory||[]),gun:G.player.weapons.current})"
+  },
+  {
+   "look": "(()=>{const C=N.controller,e=G.eye;const p=G.stage._o4shop.at('shells');const look=Math.atan2(-Math.sin(C.yaw),-Math.cos(C.yaw));const a=Math.atan2(p.x-e.x,p.z-e.z);const r=Math.atan2(Math.sin(a-look),Math.cos(a-look));const pt=Math.atan2(p.y-e.y,Math.hypot(p.x-e.x,p.z-e.z));return [Math.round(-r/C.sensitivity),Math.round(-(pt-C.pitch)/C.sensitivity)]})()",
+   "steps": 3
+  },
+  {
+   "wait": 350
+  },
+  {
+   "eval": "({t:+G.time.toFixed(1),yaw:+N.controller.yaw.toFixed(2),pitch:+N.controller.pitch.toFixed(2),prompt:G.hud.promptShown||'',say:(document.querySelector('#hud')||{}).innerText.replace(/\\s+/g,' ').slice(0,120),money:G.save.money,ammo:JSON.stringify(G.save.ammo||{}),inv:JSON.stringify(G.save.inventory||[]),gun:G.player.weapons.current})"
+  },
+  {
+   "key": "KeyE"
+  },
+  {
+   "wait": 500
+  },
+  {
+   "eval": "({t:+G.time.toFixed(1),yaw:+N.controller.yaw.toFixed(2),pitch:+N.controller.pitch.toFixed(2),prompt:G.hud.promptShown||'',say:(document.querySelector('#hud')||{}).innerText.replace(/\\s+/g,' ').slice(0,120),money:G.save.money,ammo:JSON.stringify(G.save.ammo||{}),inv:JSON.stringify(G.save.inventory||[]),gun:G.player.weapons.current})"
+  },
+  {
+   "look": "(()=>{const C=N.controller,e=G.eye;const p=G.stage._o4shop.at('shells');const look=Math.atan2(-Math.sin(C.yaw),-Math.cos(C.yaw));const a=Math.atan2(p.x-e.x,p.z-e.z);const r=Math.atan2(Math.sin(a-look),Math.cos(a-look));const pt=Math.atan2(p.y-e.y,Math.hypot(p.x-e.x,p.z-e.z));return [Math.round(-r/C.sensitivity),Math.round(-(pt-C.pitch)/C.sensitivity)]})()",
+   "steps": 3
+  },
+  {
+   "wait": 350
+  },
+  {
+   "eval": "({t:+G.time.toFixed(1),yaw:+N.controller.yaw.toFixed(2),pitch:+N.controller.pitch.toFixed(2),prompt:G.hud.promptShown||'',say:(document.querySelector('#hud')||{}).innerText.replace(/\\s+/g,' ').slice(0,120),money:G.save.money,ammo:JSON.stringify(G.save.ammo||{}),inv:JSON.stringify(G.save.inventory||[]),gun:G.player.weapons.current})"
+  },
+  {
+   "key": "KeyE"
+  },
+  {
+   "wait": 500
+  },
+  {
+   "eval": "({t:+G.time.toFixed(1),yaw:+N.controller.yaw.toFixed(2),pitch:+N.controller.pitch.toFixed(2),prompt:G.hud.promptShown||'',say:(document.querySelector('#hud')||{}).innerText.replace(/\\s+/g,' ').slice(0,120),money:G.save.money,ammo:JSON.stringify(G.save.ammo||{}),inv:JSON.stringify(G.save.inventory||[]),gun:G.player.weapons.current})"
+  },
+  {
+   "look": "(()=>{const C=N.controller,e=G.eye;const p=G.stage._o4shop.at('shells');const look=Math.atan2(-Math.sin(C.yaw),-Math.cos(C.yaw));const a=Math.atan2(p.x-e.x,p.z-e.z);const r=Math.atan2(Math.sin(a-look),Math.cos(a-look));const pt=Math.atan2(p.y-e.y,Math.hypot(p.x-e.x,p.z-e.z));return [Math.round(-r/C.sensitivity),Math.round(-(pt-C.pitch)/C.sensitivity)]})()",
+   "steps": 3
+  },
+  {
+   "wait": 350
+  },
+  {
+   "eval": "({t:+G.time.toFixed(1),yaw:+N.controller.yaw.toFixed(2),pitch:+N.controller.pitch.toFixed(2),prompt:G.hud.promptShown||'',say:(document.querySelector('#hud')||{}).innerText.replace(/\\s+/g,' ').slice(0,120),money:G.save.money,ammo:JSON.stringify(G.save.ammo||{}),inv:JSON.stringify(G.save.inventory||[]),gun:G.player.weapons.current})"
+  },
+  {
+   "key": "KeyE"
+  },
+  {
+   "wait": 500
+  },
+  {
+   "eval": "({t:+G.time.toFixed(1),yaw:+N.controller.yaw.toFixed(2),pitch:+N.controller.pitch.toFixed(2),prompt:G.hud.promptShown||'',say:(document.querySelector('#hud')||{}).innerText.replace(/\\s+/g,' ').slice(0,120),money:G.save.money,ammo:JSON.stringify(G.save.ammo||{}),inv:JSON.stringify(G.save.inventory||[]),gun:G.player.weapons.current})"
+  },
+  {
+   "look": "(()=>{const C=N.controller,e=G.eye;const p=G.stage._o4shop.at('shells');const look=Math.atan2(-Math.sin(C.yaw),-Math.cos(C.yaw));const a=Math.atan2(p.x-e.x,p.z-e.z);const r=Math.atan2(Math.sin(a-look),Math.cos(a-look));const pt=Math.atan2(p.y-e.y,Math.hypot(p.x-e.x,p.z-e.z));return [Math.round(-r/C.sensitivity),Math.round(-(pt-C.pitch)/C.sensitivity)]})()",
+   "steps": 3
+  },
+  {
+   "wait": 350
+  },
+  {
+   "eval": "({t:+G.time.toFixed(1),yaw:+N.controller.yaw.toFixed(2),pitch:+N.controller.pitch.toFixed(2),prompt:G.hud.promptShown||'',say:(document.querySelector('#hud')||{}).innerText.replace(/\\s+/g,' ').slice(0,120),money:G.save.money,ammo:JSON.stringify(G.save.ammo||{}),inv:JSON.stringify(G.save.inventory||[]),gun:G.player.weapons.current})"
+  },
+  {
+   "key": "KeyE"
+  },
+  {
+   "wait": 500
+  },
+  {
+   "eval": "({t:+G.time.toFixed(1),yaw:+N.controller.yaw.toFixed(2),pitch:+N.controller.pitch.toFixed(2),prompt:G.hud.promptShown||'',say:(document.querySelector('#hud')||{}).innerText.replace(/\\s+/g,' ').slice(0,120),money:G.save.money,ammo:JSON.stringify(G.save.ammo||{}),inv:JSON.stringify(G.save.inventory||[]),gun:G.player.weapons.current})"
+  },
+  {
+   "look": "(()=>{const C=N.controller,e=G.eye;const p=G.stage._o4shop.at('shells');const look=Math.atan2(-Math.sin(C.yaw),-Math.cos(C.yaw));const a=Math.atan2(p.x-e.x,p.z-e.z);const r=Math.atan2(Math.sin(a-look),Math.cos(a-look));const pt=Math.atan2(p.y-e.y,Math.hypot(p.x-e.x,p.z-e.z));return [Math.round(-r/C.sensitivity),Math.round(-(pt-C.pitch)/C.sensitivity)]})()",
+   "steps": 3
+  },
+  {
+   "wait": 350
+  },
+  {
+   "eval": "({t:+G.time.toFixed(1),yaw:+N.controller.yaw.toFixed(2),pitch:+N.controller.pitch.toFixed(2),prompt:G.hud.promptShown||'',say:(document.querySelector('#hud')||{}).innerText.replace(/\\s+/g,' ').slice(0,120),money:G.save.money,ammo:JSON.stringify(G.save.ammo||{}),inv:JSON.stringify(G.save.inventory||[]),gun:G.player.weapons.current})"
+  },
+  {
+   "key": "KeyE"
+  },
+  {
+   "wait": 500
+  },
+  {
+   "eval": "({t:+G.time.toFixed(1),yaw:+N.controller.yaw.toFixed(2),pitch:+N.controller.pitch.toFixed(2),prompt:G.hud.promptShown||'',say:(document.querySelector('#hud')||{}).innerText.replace(/\\s+/g,' ').slice(0,120),money:G.save.money,ammo:JSON.stringify(G.save.ammo||{}),inv:JSON.stringify(G.save.inventory||[]),gun:G.player.weapons.current})"
+  },
+  {
+   "look": "(()=>{const C=N.controller,e=G.eye;const p=G.stage._o4shop.at('shells');const look=Math.atan2(-Math.sin(C.yaw),-Math.cos(C.yaw));const a=Math.atan2(p.x-e.x,p.z-e.z);const r=Math.atan2(Math.sin(a-look),Math.cos(a-look));const pt=Math.atan2(p.y-e.y,Math.hypot(p.x-e.x,p.z-e.z));return [Math.round(-r/C.sensitivity),Math.round(-(pt-C.pitch)/C.sensitivity)]})()",
+   "steps": 3
+  },
+  {
+   "wait": 350
+  },
+  {
+   "eval": "({t:+G.time.toFixed(1),yaw:+N.controller.yaw.toFixed(2),pitch:+N.controller.pitch.toFixed(2),prompt:G.hud.promptShown||'',say:(document.querySelector('#hud')||{}).innerText.replace(/\\s+/g,' ').slice(0,120),money:G.save.money,ammo:JSON.stringify(G.save.ammo||{}),inv:JSON.stringify(G.save.inventory||[]),gun:G.player.weapons.current})"
+  },
+  {
+   "key": "KeyE"
+  },
+  {
+   "wait": 500
+  },
+  {
+   "eval": "({t:+G.time.toFixed(1),yaw:+N.controller.yaw.toFixed(2),pitch:+N.controller.pitch.toFixed(2),prompt:G.hud.promptShown||'',say:(document.querySelector('#hud')||{}).innerText.replace(/\\s+/g,' ').slice(0,120),money:G.save.money,ammo:JSON.stringify(G.save.ammo||{}),inv:JSON.stringify(G.save.inventory||[]),gun:G.player.weapons.current})"
+  },
+  {
+   "look": "(()=>{const C=N.controller,e=G.eye;const p=G.stage._o4shop.at('rounds');const look=Math.atan2(-Math.sin(C.yaw),-Math.cos(C.yaw));const a=Math.atan2(p.x-e.x,p.z-e.z);const r=Math.atan2(Math.sin(a-look),Math.cos(a-look));const pt=Math.atan2(p.y-e.y,Math.hypot(p.x-e.x,p.z-e.z));return [Math.round(-r/C.sensitivity),Math.round(-(pt-C.pitch)/C.sensitivity)]})()",
+   "steps": 3
+  },
+  {
+   "wait": 350
+  },
+  {
+   "eval": "({t:+G.time.toFixed(1),yaw:+N.controller.yaw.toFixed(2),pitch:+N.controller.pitch.toFixed(2),prompt:G.hud.promptShown||'',say:(document.querySelector('#hud')||{}).innerText.replace(/\\s+/g,' ').slice(0,120),money:G.save.money,ammo:JSON.stringify(G.save.ammo||{}),inv:JSON.stringify(G.save.inventory||[]),gun:G.player.weapons.current})"
+  },
+  {
+   "key": "KeyE"
+  },
+  {
+   "wait": 500
+  },
+  {
+   "eval": "({t:+G.time.toFixed(1),yaw:+N.controller.yaw.toFixed(2),pitch:+N.controller.pitch.toFixed(2),prompt:G.hud.promptShown||'',say:(document.querySelector('#hud')||{}).innerText.replace(/\\s+/g,' ').slice(0,120),money:G.save.money,ammo:JSON.stringify(G.save.ammo||{}),inv:JSON.stringify(G.save.inventory||[]),gun:G.player.weapons.current})"
+  },
+  {
+   "shot": "s2_bought"
+  }
+ ]
+}

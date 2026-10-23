@@ -1,0 +1,55 @@
+{
+ "about": "[O4 critic] the police shootout hands off, as the run plays it: where does the fall wake, and E back to it",
+ "url": "/?mute=1&start=o4.police",
+ "size": [
+  1280,
+  800
+ ],
+ "out": "shots/critic/police_idle",
+ "steps": [
+  {
+   "until": "G.state === 'title' && !!document.querySelector('#title .opt[data-k=begin]')",
+   "timeout": 60000
+  },
+  {
+   "wait": 1000
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]",
+   "taken": "G.scenes.current && G.scenes.current.id === 'o4'",
+   "retries": 4
+  },
+  {
+   "until": "G.scenes.beat === 'police'",
+   "timeout": 30000
+  },
+  {
+   "eval": "({t:+G.time.toFixed(1),beat:G.scenes.beat,obj:G.hud.objectiveText||'',hud:(document.querySelector('#hud')||{}).innerText.replace(/\\s+/g,' ').slice(0,200),inv:JSON.stringify(G.save.inventory||[]),gun:G.player.weapons.current,money:G.save.money})"
+  },
+  {
+   "until": "G.scenes.beat === 'hospital' || G.scenes.beat === 'station'",
+   "timeout": 60000
+  },
+  {
+   "wait": 2500
+  },
+  {
+   "eval": "({t:+G.time.toFixed(1),beat:G.scenes.beat,obj:G.hud.objectiveText||'',hud:(document.querySelector('#hud')||{}).innerText.replace(/\\s+/g,' ').slice(0,200),inv:JSON.stringify(G.save.inventory||[]),gun:G.player.weapons.current,money:G.save.money})"
+  },
+  {
+   "wait": 4500
+  },
+  {
+   "eval": "({t:+G.time.toFixed(1),beat:G.scenes.beat,obj:G.hud.objectiveText||'',hud:(document.querySelector('#hud')||{}).innerText.replace(/\\s+/g,' ').slice(0,200),inv:JSON.stringify(G.save.inventory||[]),gun:G.player.weapons.current,money:G.save.money})"
+  },
+  {
+   "key": "KeyE"
+  },
+  {
+   "wait": 3000
+  },
+  {
+   "eval": "({t:+G.time.toFixed(1),beat:G.scenes.beat,obj:G.hud.objectiveText||'',hud:(document.querySelector('#hud')||{}).innerText.replace(/\\s+/g,' ').slice(0,200),inv:JSON.stringify(G.save.inventory||[]),gun:G.player.weapons.current,money:G.save.money})"
+  }
+ ]
+}

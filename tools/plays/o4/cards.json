@@ -1,0 +1,64 @@
+{
+ "about": "[O4] after the critic: the cards of a fresh save's first fight (1v2, medium hands): one at a time, 5.5 s apart at least, none while a man is in his blow, none but the dodge's while a cue is live; the first cue after 5 s of the fight; the men wait for the fade and the card; no cue while a card is being read (3 s from its coming)",
+ "url": "/?mute=1&o4stay=1&start=o4.brawl2",
+ "size": [
+  1280,
+  800
+ ],
+ "out": "shots/o4/cards",
+ "steps": [
+  {
+   "until": "G.state === 'title' && !!document.querySelector('#title .opt[data-k=begin]')",
+   "timeout": 60000
+  },
+  {
+   "wait": 800
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]",
+   "taken": "G.scenes.current && G.scenes.current.id === 'o4'",
+   "retries": 4
+  },
+  {
+   "until": "G.scenes.beat === 'brawl2' && G.crowd.active",
+   "timeout": 30000
+  },
+  {
+   "eval": "(()=>{const R=window.__cards={cards:[],cues:[],inCue:[],t0:G.time,first:null};let cur=null;\nG.on('crowd:cue',()=>{R.cues.push({t:+(G.time-R.t0).toFixed(2),live:+G.crowd.liveT.toFixed(2)});});\nG.scripts.push(()=>{const K=G.hud.kit,c=K.teachCur;const id=c&&c.out<0&&c.t>0.05?c.id:null;\n if(id!==cur){cur=id;if(id){R.cards.push({id,t:+(G.time-R.t0).toFixed(2),live:+G.crowd.liveT.toFixed(2),cue:!!(G.crowd.cue&&!G.crowd.cue.done),atk:G.crowd.men.filter(m=>m.state==='atk').map(m=>m.clip)});}}\n if(id&&id!=='dodge'&&G.crowd.cue&&!G.crowd.cue.done)R.inCue.push({id,t:+(G.time-R.t0).toFixed(2)});\n if(R.first===null&&G.crowd.active&&G.crowd.men.some(m=>m.state==='in'||m.state==='atk'))R.first={t:+(G.time-R.t0).toFixed(2),fade:+(G.scenes.fadeK||0).toFixed(2),card:+(G.hud.cardT||0).toFixed(2)};\n});return 1})()"
+  },
+  {
+   "eval": "({fade:+(G.scenes.fadeK||0).toFixed(2), card:+(G.hud.cardT||0).toFixed(2), name:document.querySelector('#hud .chapter .name, .chapter .name')?.textContent||''})"
+  },
+  {
+   "shot": "first_second"
+  },
+  {
+   "drive": "tools/lib/o4_brawl.mjs",
+   "profile": "medium",
+   "beat": "brawl2",
+   "tries": 1,
+   "wins": 1,
+   "timeout": 150000,
+   "check": "D.tries.length>=1",
+   "label": "the first fight of a fresh save, medium hands"
+  },
+  {
+   "eval": "window.__cards"
+  },
+  {
+   "expect": "window.__cards.inCue.length === 0"
+  },
+  {
+   "expect": "window.__cards.cues.length === 0 || window.__cards.cues[0].live >= 4.9"
+  },
+  {
+   "expect": "window.__cards.first && window.__cards.first.fade < 0.05"
+  },
+  {
+   "expect": "(()=>{const C=window.__cards.cards.filter(c=>c.id!=='dodge');for(let i=1;i<C.length;i++)if(C[i].t-C[i-1].t<5.4)return false;return C.every(c=>!c.atk.length)})()"
+  },
+  {
+   "expect": "(()=>{const R=window.__cards,C=R.cards.filter(c=>c.id!=='dodge');return R.cues.every(q=>!C.some(c=>c.t<=q.t&&q.t-c.t<3.0))})()"
+  }
+ ]
+}

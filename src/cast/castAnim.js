@@ -551,6 +551,28 @@ Object.assign(DEFS, {
   // down from standing where he is (a figure put down by a script: the
   // fall is 0.9 s, then he lies as 'ko')
   koFall: () => ({ duration: 1.15, armSpace: 'root', pose: keyed([...DEATH_BACK.map((k) => [k.t, k.pose])]) }),
+  // [O4] up again (the crowd brawl: a man knocked down once gets up, slower):
+  // from flat on his back, up onto an elbow and his hands, a knee, his feet,
+  // his fists up; the root carried to where he stands up (he lay 0.8 m behind it)
+  o4_getUp: () => {
+    const rm = (t) => [0, -0.5 * sstep(0.6, 1.5, t)];
+    const K = keyed([
+      [0, KO_LIE],
+      [0.35, { hipsPos: [0.0, 0.17, -0.75], hips: [-55, 0, 0], spine: [20, 0, 0], chest: [20, 0, 0], neck: [0, 0, 0], head: [10, 0, 0],
+        armR: [-0.35, -0.85, -0.4, 0], elbowR: [20], armL: [0.35, -0.85, -0.4, 0], elbowL: [20],
+        footL: [0.15, A, -0.3], footRotL: [0, 8, 0], kneeL: [0.2, 1, 0.6], footR: [-0.15, 0.09, -0.05], footRotR: [60, 10, 0], kneeR: [-0.2, 1, 0.3] }],
+      [0.75, { hipsPos: [0.02, 0.5, -0.55], hips: [-5, 0, 0], spine: [25, 0, 0], chest: [15, 0, 0], neck: [0, 0, 0], head: [-5, 0, 0],
+        armR: [-0.2, -0.9, 0.3, 0], elbowR: [30], armL: [0.3, -0.8, 0.5, 0], elbowL: [60],
+        footL: [0.15, A, -0.3], footRotL: [0, 8, 0], kneeL: [0.2, 0.3, 1], footR: [-0.15, 0.1, -0.85], footRotR: [-60, 10, 0], kneeR: [-0.1, -0.3, 1] }],
+      [1.2, { hipsPos: [0, 0.88, -0.45], hips: [-5, 0, 0], spine: [8, 0, 0], chest: [0, 0, 0], head: [4, 0, 0],
+        armR: [-0.25, -0.8, 0.55, 0], elbowR: [110], armL: [0.25, -0.8, 0.6, 0], elbowL: [110],
+        footL: [0.14, A, -0.25], footRotL: [0, 12, 0], kneeL: [0.3, 0, 1], footR: [-0.16, A, -0.62], footRotR: [0, 25, 0], kneeR: [-0.2, 0, 1] }],
+      [1.5, { hipsPos: [0, 0.93, -0.54], hips: [0, -18, 0], spine: [-1, -5, 0], chest: [-4, -5, 0], neck: [8, 6, 0], head: [10, 12, 0],
+        armR: [-0.3, -0.6, 0.7, 0], elbowR: [125], armL: [0.3, -0.55, 0.75, 0], elbowL: [125],
+        footL: [0.14, A, -0.28], footRotL: [0, 12, 0], kneeL: [0.3, 0, 1], footR: [-0.18, A, -0.72], footRotR: [0, 32, 0], kneeR: [-0.2, 0, 1] }],
+    ]);
+    return { duration: 1.5, armSpace: 'root', pose: rooted((t) => P(K(t)), rm), rootMotion: rm, fps: 30 };
+  },
 });
 
 // the brawler's fight as round 2 made it (src/cast/brawl/clips.js): his
