@@ -509,10 +509,11 @@ export function getOut(ctx, R, T) {   // [O6] exported
   G.setViewmodelVisible(false);
   // (looking along the car, away from its door: eased out of the seat)
   const yaw = car.yaw - Math.PI / 2;
-  const chased = R.chase && R.chase.k > 0;
-  ctx.controller.setMode('walk', { pose: { x: d.p.x, z: d.p.z, yaw, pitch: -0.05 }, ease: chased ? 0.55 : 0.4 });
-  // [O2] (from behind the car the eye is metres off the door: the blend is kept - never a cut)
-  if (chased) { const B = ctx.controller._modeBlend; if (B) B.checked = true; if (R.cabin.screen && R.cabin.screen.mesh) R.cabin.screen.mesh.visible = true; if (car.model && car.model.meshes && car.model.meshes.bust) car.model.meshes.bust.visible = false; R.chase.end(); }
+  const chased = R.chase && R.chase.k > 0, from = chased ? ctx.controller.eyePose() : null;
+  ctx.controller.setMode('walk', { pose: { x: d.p.x, z: d.p.z, yaw, pitch: -0.05 }, ease: 0.4 });
+  // [O2] (from behind the car the eye is metres off the door - the controller's blend cuts a
+  // move that long: it is made again here, from the view behind, so it is never a cut)
+  if (chased) { ctx.controller._modeBlend = { from, t: 0, dur: 0.6, checked: true }; ctx.controller.apply(0); if (R.cabin.screen && R.cabin.screen.mesh) R.cabin.screen.mesh.visible = true; if (car.model && car.model.meshes && car.model.meshes.bust) car.model.meshes.bust.visible = false; R.chase.end(); }
   if (R.cabin.car) { R.cabin.dispose(); }
   // [O2] the car stays where I left it (the wheels keep it); a fleet car shut again
   cockpitOut(ctx.stage, car);

@@ -60,7 +60,7 @@ export class Chase {
     const s = smooth(this.k);
     const third = s > 0.5;
     if (third !== this.third) { this.third = third; if (this.onSwap) this.onSwap(third, v); }
-    if (this.k <= 0) { this.has = false; return; }
+    if (this.k <= 0) { this.has = false; this.held = false; return; }
     // the heading it follows: the nose, or the tail a breath into reverse (it looks the way it goes)
     const sp = v.speed;
     if (dt > 0) this.back = sp < -1.2 ? Math.min(1, this.back + dt * 1.6) : Math.max(0, this.back - dt * 2.2);
@@ -77,30 +77,39 @@ export class Chase {
     const back = hl + CHASE.gap + clamp(Math.abs(sp) * 0.05, 0, 1.4);
     const rise = top + CHASE.over + Math.sin(this.op) * back * 0.9;
     const cosP = Math.cos(this.op);
-    // the pivot over the car's middle (what the camera looks past), and where it wants to be
+    // the pivot over the car's roof (a camera pulled in toward it stays over the car, never in
+    // its body), and where the camera wants to be
     const gy = v.groundY || 0;
-    _p.set(v.pos.x, gy + top * 0.75, v.pos.z);
+    _p.set(v.pos.x, gy + top + 0.45, v.pos.z);
     _c.set(v.pos.x - fx * back * cosP, gy + Math.max(0.6, rise), v.pos.z - fz * back * cosP);
     // the spring on its place (the lag under the brake, into a turn)
-    if (!this.has) { this.cam.copy(_c); this.has = true; }
+    if (!this.has) { this.cam.copy(_c); this.has = true; this.held = false; }
     else if (dt > 0) this.cam.lerp(_c, 1 - Math.exp(-dt * CHASE.spring));
-    // never through a wall: in along the line from the pivot to it
+    // never through a wall: in along the line from the pivot to it - quick in (a few frames, never a
+    // cut), easing back out once the line is clear (the spring's own place, this.cam, kept apart)
     const want = _d.subVectors(this.cam, _p), far = want.length();
+    const V3 = this.view || (this.view = new THREE.Vector3());
     if (far > 0.01) {
       want.divideScalar(far);
       const hit = this.clear(_p, want, far, v);
-      if (hit < far) { this.cam.copy(_p).addScaledVector(want, Math.max(0.9, hit)); this.stats.pulled++; }
-      this.stats.minDist = Math.min(this.stats.minDist, Math.min(far, hit));
-    }
+      const aim = Math.min(far, Math.max(0.9, hit));
+      if (this.dist == null || !this.held) this.dist = aim;
+      else if (dt > 0) this.dist += (aim - this.dist) * (1 - Math.exp(-dt * (aim < this.dist ? 40 : 3)));
+      this.dist = Math.min(this.dist, far);
+      this.held = true;
+      if (aim < far - 0.05) this.stats.pulled++;
+      V3.copy(_p).addScaledVector(want, this.dist);
+      this.stats.minDist = Math.min(this.stats.minDist, this.dist);
+    } else V3.copy(this.cam);
     // it looks over the car, a little ahead of it the way the car goes
     const lx = v.pos.x + Math.cos(goal) * CHASE.lead, lz = v.pos.z - Math.sin(goal) * CHASE.lead, ly = gy + top * 0.55 + CHASE.look;
-    const dx = lx - this.cam.x, dz = lz - this.cam.z, dy = ly - this.cam.y;
+    const dx = lx - V3.x, dz = lz - V3.z, dy = ly - V3.y;
     const yaw3 = Math.atan2(-dx, -dz), pitch3 = Math.atan2(dy, Math.max(0.3, Math.hypot(dx, dz)));
     // blended with the seat's eye (the drive mode put it in ctl): the camera never jumps
     const sx = ctl.pos.x, sz = ctl.pos.z, sy = ctl.groundY;
     const EYE = 1.65;
-    ctl.pos.set(sx + (this.cam.x - sx) * s, 0, sz + (this.cam.z - sz) * s);
-    ctl.groundY = sy + ((this.cam.y - EYE + 0.02) - sy) * s;
+    ctl.pos.set(sx + (V3.x - sx) * s, 0, sz + (V3.z - sz) * s);
+    ctl.groundY = sy + ((V3.y - EYE + 0.02) - sy) * s;
     ctl.yaw = ctl.yaw + wrap(yaw3 - ctl.yaw) * s;
     ctl.pitch = ctl.pitch + (pitch3 - ctl.pitch) * s;
     // (the body's roll and shake are the seat's: from behind, the car shows them itself)

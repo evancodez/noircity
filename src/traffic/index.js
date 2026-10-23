@@ -104,17 +104,19 @@ export class Wheels {
       // (&lineup=all: every variant of every kind, in its greys by turn, whitewalls every other)
       const lq = q.get('lineup');
       const list = lq === 'all' ? Object.keys(KINDS).flatMap((k) => KINDS[k].variants.map((_, vi) => [k, vi])) : (lq === '1' ? ['coupe', 'saloon', 'taxi', 'police', 'hearse', 'van', 'lorry'] : lq.split(',')).map((k) => [k, 0]);
-      let ahead = 7, n = 0;
+      // (&gap=<m>: that much kerb between them - the jank bench's bed: each car met alone, clear behind)
+      const gap = +(q.get('gap') || 0) || 0.8;
+      let ahead = gap > 1 ? gap : 7, n = 0;
       for (const [k, vi] of list) {
         const K = KINDS[k];
-        ahead += K.halfL + 0.8;
+        ahead += K.halfL + gap;
         const p = car.world(ahead, 0, new THREE.Vector3());
         const fixed = k === 'police' || k === 'taxi' || k === 'hearse';
         const v = this.carAt(p.x, p.z, k, { yaw: car.yaw, lights: false, look: { variant: vi, paint: fixed ? K.paint : ['paint', 'paintGrey', 'paintPale'][n % 3], white: n % 2 === 0 } });
         n++;
         v.parked = true;
         this.left.push({ v, kind: k, x: p.x, z: p.z, yaw: car.yaw, paint: v.model.paint });
-        ahead += K.halfL + 0.8;
+        ahead += K.halfL + gap;
       }
     }
   }

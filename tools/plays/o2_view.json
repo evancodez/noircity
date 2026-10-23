@@ -37,7 +37,7 @@
    "shot": "a_seat"
   },
   {
-   "eval": "(() => { const R = window.__o2view = { n: 0, through: 0, minD: 99, maxJump: 0, last: null }; const g = G.stage.part('city').graph; const tick = () => { const C = G.city; if (C && C.inCar && C.chase && C.chase.k > 0.99) { const c = C.car.pos, p = G.camera.position; R.n++; if (!g.lineOfSight(c.x, c.z, p.x, p.z)) R.through++; R.minD = Math.min(R.minD, Math.hypot(p.x - c.x, p.z - c.z)); } const p = G.camera.position; if (R.last) R.maxJump = Math.max(R.maxJump, Math.hypot(p.x - R.last.x, p.y - R.last.y, p.z - R.last.z)); R.last = p.clone(); }; G.scripts.push(tick); return 'rec'; })()"
+   "eval": "(() => { const R = window.__o2view = { n: 0, through: 0, minD: 99, maxJump: 0, last: null }; const g = G.stage.part('city').graph; const tick = () => { const C = G.city; if (C && C.inCar && C.chase && C.chase.k > 0.99) { const c = C.car.pos, p = G.camera.position; R.n++; if (!g.lineOfSight(c.x, c.z, p.x, p.z)) R.through++; R.minD = Math.min(R.minD, Math.hypot(p.x - c.x, p.z - c.z)); } const p = G.camera.position; if (R.last) { const j = Math.hypot(p.x - R.last.x, p.y - R.last.y, p.z - R.last.z); if (j > R.maxJump) { R.maxJump = j; R.at = { t: +G.time.toFixed(2), inCar: !!(C && C.inCar), k: C && C.chase ? +C.chase.k.toFixed(2) : null, mode: N.controller.mode, v: C && C.car ? +C.car.speed.toFixed(1) : null }; } } R.last = p.clone(); }; G.scripts.push(tick); return 'rec'; })()"
   },
   {
    "key": "KeyV"
@@ -198,6 +198,13 @@
   {
    "expect": "N.controller.mode === 'walk' && G.vm.visible === false",
    "label": "out of the car from the view behind: on foot"
+  },
+  {
+   "look": "(() => { const C = N.controller, c = G.city.car; const want = Math.atan2(-(c.pos.x - C.pos.x), -(c.pos.z - C.pos.z)); const err = Math.atan2(Math.sin(want - C.yaw), Math.cos(want - C.yaw)); return [Math.round(-err / C.sensitivity), 0]; })()",
+   "steps": 8
+  },
+  {
+   "wait": 400
   },
   {
    "key": "KeyE"
