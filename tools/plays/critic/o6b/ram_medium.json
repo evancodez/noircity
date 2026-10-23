@@ -1,0 +1,19 @@
+{
+ "about": "[O6b critic] the havoc, medium hands (my own bot): E into the coupe, point it at each parked car and floor it, twice each, back off, the next; what each car shows; what lies on the road.",
+ "url": "/?mute=1&start=smash.ten",
+ "size": [1440, 900],
+ "out": "shots/critic_o6b/ram",
+ "steps": [
+  { "wait": 2000 },
+  { "clickOn": "#title .opt[data-k=begin]", "taken": "G.state !== 'title'", "retries": 5, "every": 4000 },
+  { "until": "G.scenes.current && G.scenes.current.id === 'smash' && G.scenes.fadeK < 0.05 && G.city.cars.length >= 11", "timeout": 30000 },
+  { "wait": 1000 },
+  { "key": "KeyE", "hold": 80 },
+  { "until": "G.city.inCar", "timeout": 3000 },
+  { "wait": 800 },
+  { "drive": "tools/plays/critic/o6b/ram_bot.mjs", "profile": "medium", "order": [3, 1, 4, 10, 5, 9, 6, 2, 7, 8], "hits": 3, "timeout": 300000, "shotEvery": [2, 6, 12] , "check": "true" },
+  { "wait": 2500 },
+  { "shot": "after" },
+  { "eval": "(() => { const S = G.stage.smash; const P = S.out.filter((i) => i.part); const k = {}; let live = 0; for (const it of P) { k[it.kind] = (k[it.kind]||0)+1; if (it.state==='live') live++; } return JSON.stringify({ parts: k, live, cars: G.city.cars.map((c,i)=>[i, +c.damage.toFixed(2), c.smashD&&c.smashD.state]), me:[G.controller.pos.x,G.controller.pos.z].map(v=>+v.toFixed(1)), inCar:G.city.inCar, hp:G.health.hp, t:[...document.querySelectorAll('body *')].filter(e=>e.offsetParent&&e.children.length===0&&e.innerText&&e.innerText.trim()).map(e=>e.innerText.trim().slice(0,50)).join(' | ') }); })()" }
+ ]
+}

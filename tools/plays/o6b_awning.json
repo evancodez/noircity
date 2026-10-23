@@ -1,0 +1,15 @@
+{
+ "about": "[O6b] The city's awnings torn down by a lorry (brief O6b §2, O6's left 1): from the bed, on foot to the lorry, E in, out of Grand Ave into Fifth St and up onto its north pavement under the shop fronts by the keys (tools/lib/o6b_damage.mjs awning): the near build's awnings (records of the set, not the bed's) are torn down by the lorry's roof and lie on the pavement. node tools/play.mjs tools/plays/o6b_awning.json",
+ "url": "/?mute=1&start=smash",
+ "size": [1440, 900],
+ "out": "shots/o6b/awning",
+ "steps": [
+  { "wait": 1500 },
+  { "clickOn": "#title .opt[data-k=begin]", "taken": "G.state !== 'title'", "retries": 5, "every": 4000 },
+  { "until": "G.scenes.current && G.scenes.current.id === 'smash' && G.scenes.fadeK < 0.05", "timeout": 30000 },
+  { "wait": 1200 },
+  { "drive": "tools/lib/o6b_damage.mjs", "mode": "awning", "settle": 9000,
+    "check": "!D.err && D.n > 0 && D.torn.some((e) => e[0] === 'over') && D.rest.length > 0 && D.rest.every((r) => r[1] === 'rest')",
+    "label": "the city's awnings on Fifth St torn down by the lorry, lying at rest" }
+ ]
+}

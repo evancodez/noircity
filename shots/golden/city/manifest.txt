@@ -16,3 +16,4 @@ o5_bar|scene=city&beat=roam&t=2&place=bar1
 o5_gym|scene=city&beat=roam&t=2&place=gym
 smash_bed|scene=smash&beat=bed&t=1&hud=0
 smash_wreck|scene=smash&beat=burn&t=10&hud=0
+smash_ten|scene=smash&beat=ten&ten=wrecks&t=14&hud=0&vm=0&pose=-120,-21,3.1416,-0.06

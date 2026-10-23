@@ -71,7 +71,7 @@ export default async function unstaged(api) {
       // (the station kept the gun: the only staging - a gun found again, as a man down gives one)
       T.gunGiven = await js('G.people.hands.hasGun ? false : (G.people.hands.hasGun = true, true)');
       await chase(api, 8, 20000);
-      await click(api, 'right', 600);
+      await api.mouse('mouseWheel', ...api.cursor(), 'none', { deltaX: 0, deltaY: 100 }); await sleepP(700);   // (the wheel draws: O7)
       T.fled = await js(`G.people.list.filter(p => p.role === 'walker' && p.mode === 'flee').length + '/' + G.people.list.filter(p => p.role === 'walker').length`);
       await sleepP(800);
       await api.turn(0, -200); await sleepP(100);

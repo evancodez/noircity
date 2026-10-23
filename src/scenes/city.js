@@ -322,14 +322,20 @@ export function step(ctx, R, T, dt) {   // [O6] exported
     if (ctx.pressed('KeyV') && R.chase) { R.chase.toggle(); if (!T.viewTold && R.chase.want) T.viewTold = true; }
     // [O2] Q: the horn (the car ahead pulls over; the others answer)
     if (ctx.pressed('KeyQ')) { G.sfx.play('tail_horn', car.seat(_v.set(2, 1, 0), new THREE.Vector3()), { k: 1, dur: 0.5, low: car.model && car.model.K && car.model.K.note < 0.9 ? 1 : 0 }, { ref: 3 }); if (G.wheels) G.wheels.traffic.horn(car); G.emit('city:horn', { car }); }
-    // the river: the car in the water is lost
-    if (C.inWater(car.pos.x, car.pos.z)) { wet(ctx, R, car.pos, 'The river took it.'); return; }
+    // the river: the car in the water is lost ([O6b] it drops, the splash, the water
+    // closing over it - then the words; stage.smash.cars.sink)
+    if (C.inWater(car.pos.x, car.pos.z) || R.sinkT) {
+      const S = ctx.stage.smash;
+      if (!R.sinkT) { R.sinkT = G.time; if (S) S.cars.sink(car); }
+      if (!S || G.time - R.sinkT > 0.95) { R.sinkT = 0; wet(ctx, R, car.pos, 'The river took it.'); }
+      return;
+    }
     // ([O6] shoved by the tram the car is not slow, but a man may still get out of it)
     const slow = Math.abs(car.speed) < 1.5 || (car.smashD && car.smashD.tramT != null && G.time - car.smashD.tramT < 0.4);
     // the pedals, taught in the seat before the first W (the critic's m2:
     // it came 2.5 s after W, and S was never taught); up until the car has
     // gone a few lengths, or its time
-    if (T.drive > 0.4 && !T.driveCard) T.driveCard = hud.teach('city_drive', '[W] drive  [S] brake  [SPACE] handbrake', { until: () => T.dist > 30, secs: 5 });
+    if (T.drive > 0.4 && !T.driveCard) { const c0 = car.stats.crashes + car.stats.scrapes; T.driveCard = hud.teach('city_drive', '[W] drive  [S] brake  [SPACE] handbrake', { until: () => T.dist > 9 || car.stats.crashes + car.stats.scrapes > c0, secs: 5 }); }   // ([O6b] the cold play's m7: gone once she moves off - never up into the first ram)
     if (T.drive > 25 && !T.taughtMap && !T.warned) { T.taughtMap = true; hud.teach('city_map', '[M] the map'); }
     // [O2] the view behind the car, once, in a quiet second of a drive (never over another card)
     if (T.drive > 50 && T.dist > 300 && !T.taughtView && !T.warned && !hud.kit.teachCur && !(R.chase && R.chase.want)) { T.taughtView = true; hud.teach('city_view', '[V] the view', { until: () => R.chase && R.chase.want, secs: 4 }); }
@@ -354,8 +360,9 @@ export function step(ctx, R, T, dt) {   // [O6] exported
   // stands (nothing else steps a parked car yet: O2's traffic will)
   if (car && !R.inCar && !G.wheels && (car.vel.lengthSq() > 4e-4 || Math.abs(car.yawRate) > 0.01)) car.step(dt);
   // on foot: the river (walked off a pier's end, down a slipway, the steps):
-  // [O1b] a swim to the steps (world/swim.js), never the fade
-  if (swimStep(ctx, R)) { if (gunOut(G)) holster(ctx); return; }
+  // [O1b] a swim to the steps (world/swim.js), never the fade; [O6b] the ink splash where he went in
+  const swims = R.swim ? R.swim.n : 0;
+  if (swimStep(ctx, R)) { if (R.swim.n !== swims && ctx.stage.smash) ctx.stage.smash.cars.splash(ctl.pos.clone(), 0.55); if (gunOut(G)) holster(ctx); return; }
   // [O3] a fist fight on (lane O4's crowd brawl): no prompt of the street's under it
   // (no card in danger, and E is the fight's: a bottle) - the critic's m2
   if (G.crowd && G.crowd.active) {
@@ -378,7 +385,9 @@ export function step(ctx, R, T, dt) {   // [O6] exported
     // (within a stride of its body: 2.5 m, the starts' place behind its tail included)
     if (db >= 2.5 || db >= nearD) continue;
     const toX = cv.pos.x - G.eye.x, toZ = cv.pos.z - G.eye.z, tl = Math.max(0.05, Math.hypot(toX, toZ));
-    if ((toX * f.x + toZ * f.z) / (tl * fl) > 0.35 || db < 0.5) { nearCar = cv; nearD = db; }
+    // ([O6b] the cold play's m5: looking straight up at a hung lamp the prompt stayed - the look is
+    // the eye's, up and down too: not above the roof line)
+    if (((toX * f.x + toZ * f.z) / (tl * fl) > 0.35 && f.y < 0.62) || db < 0.5) { nearCar = cv; nearD = db; }
   }
   near = !!nearCar;
   // E at the car: the teach card the first time (the key drawn; it goes when

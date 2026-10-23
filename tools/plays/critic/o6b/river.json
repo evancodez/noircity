@@ -1,0 +1,25 @@
+{
+ "about": "[O6b critic] the river from the seat: W held south off the slip (a player who does not stop): the warning, the drop and the splash as seen from the seat, the words, ashore; then on foot back into the water.",
+ "url": "/?mute=1&start=city&car=0,428,-1.5708",
+ "size": [1440, 900],
+ "out": "shots/critic_o6b/river",
+ "steps": [
+  { "wait": 2000 },
+  { "clickOn": "#title .opt[data-k=begin]", "taken": "G.state !== 'title'", "retries": 5, "every": 4000 },
+  { "until": "G.scenes.current && G.scenes.current.id === 'city' && G.scenes.fadeK < 0.05", "timeout": 20000 },
+  { "wait": 500 },
+  { "eval": "(() => { const L = window.__rv = []; const h = G.hud; const w0 = h.warn.bind(h); h.warn = (t, ...a) => { L.push(['warn', t, +(performance.now()/1000).toFixed(2), +(G.city.car.speed*3.6).toFixed(0), +G.city.car.pos.z.toFixed(1)]); return w0(t, ...a); }; const f0 = G.fail.bind(G); G.fail = (o) => { L.push(['fail', o && o.why, +(performance.now()/1000).toFixed(2)]); return f0(o); }; return 1; })()" },
+  { "down": "KeyW" },
+  { "until": "G.city.sinkT > 0 || G.failing", "timeout": 25000 },
+  { "eval": "JSON.stringify({t:+(performance.now()/1000).toFixed(2), log: window.__rv})" },
+  { "wait": 250 }, { "shot": "r1_splash_025" },
+  { "wait": 400 }, { "shot": "r2_splash_065" },
+  { "up": "KeyW" },
+  { "until": "G.failing", "timeout": 8000 },
+  { "wait": 200 }, { "shot": "r3_fail" },
+  { "eval": "JSON.stringify({t:+(performance.now()/1000).toFixed(2), log: window.__rv, t2:[...document.querySelectorAll('body *')].filter(e=>e.offsetParent&&e.children.length===0&&e.innerText&&e.innerText.trim()).map(e=>e.innerText.trim().slice(0,50)).join(' | ')})" },
+  { "until": "!G.failing && G.state === 'playing' && G.scenes.fadeK < 0.05", "timeout": 20000 },
+  { "eval": "JSON.stringify({t:+(performance.now()/1000).toFixed(2), inCar:G.city.inCar, me:[G.controller.pos.x,G.controller.pos.z].map(v=>+v.toFixed(1)), beat: G.scenes.beat, t2:[...document.querySelectorAll('body *')].filter(e=>e.offsetParent&&e.children.length===0&&e.innerText&&e.innerText.trim()).map(e=>e.innerText.trim().slice(0,50)).join(' | ')})" },
+  { "wait": 600 }, { "shot": "r4_ashore" }
+ ]
+}
