@@ -31,11 +31,15 @@ segments where it is a road:
 - `RIVER`, `RIVER_LINE`: the river road along the east and south quays and
   round the bend; `QUAY_OFF` (20 m from its middle) is the water's edge.
 - `PIERS`, `SLIPS` (a ramp into the water: no railing), `BRIDGE` (Bridge St on
-  over the water to the far bank, shut by a barrier and a lorry at x 596).
+  over the water on its arches to a bascule in the river's middle whose two
+  leaves are up - `hinge: [517, 565]`, `raise` - the road shut by the barrier
+  at x 503, lettered BRIDGE UP; past the gap the far span to the far bank).
 - `DISTRICTS` (rects, first match wins: hill, yards, docks, tenements,
   downtown): each fills its lots from its own kit. `districtAt(x, z)`.
 - `SPECIAL`: grounds with their own builders (the rail yard, the gasworks, the
-  park, the fish market, the market hall). `CLOCK` (Clock Square and its tower),
+  park, the fish market, the market hall). `CLOCK` (Clock Square and its tower:
+  200 m, 18 m square, its faces at 150 m; no downtown tower within `clear`,
+  none over 20 floors anywhere - `TOWER_MAX` in cityGen),
   `GASWORKS`, `PARK`, `CRANES`, `STADIUM`, `WHEEL`.
 - `EL`: the loop (Grand Ave, Market St, the Bowery, Houston St) and its stations.
 - `PLACES`: the named buildings (police, bank, hotel, store, theatres, diner,
@@ -43,7 +47,8 @@ segments where it is a road:
   nearest its `at` and the kit dresses it as its kind. **O5: a place's door is
   that lot's street face** (`C.lots.find((l) => l.place && l.place.id === 'gym')`).
 - `STARTS`: the free roam's starts (`?start=city&at=<id>`): `grand clock
-  tenements docks yards hill gasworks bridge river park`.
+  tenements docks yards hill gasworks bridge river park` (the car at the
+  kerb; the anchor puts me a stride behind its tail looking up the street).
 
 ## 2. The generated city (`getCity()` -> C)
 
@@ -56,9 +61,9 @@ headless tool gets the same walls.
 | `C.paves` | the raised ground: `{ pts (convex polygon), kerbSides: [bool per edge], cell, chunk }` |
 | `C.lots` | the buildings: `{ kind: 'rect' (x0 x1 z0 z1) / 'poly' (pts) / 'garden', h, floors, fh, kit, district, faces: { n, s, w, e } (the street faces), tower, flatiron, house, back, place, chunk, cx, cz }` |
 | `C.walls` | the solids as oriented boxes `{ cx, cz, hx, hz, angle, tag: 'wall' 'rail' 'fence' 'barrier' 'edge' }` |
-| `C.posts` | round solids `{ x, z, r, tag: 'lamp' 'hydrant' 'bin' 'callbox' 'bollard' 'holder' 'stack' 'column' 'crane' 'tree' 'bandstand' }` |
+| `C.posts` | round solids `{ x, z, r, tag: 'lamp' 'pole' 'hydrant' 'bin' 'callbox' 'bollard' 'holder' 'stack' 'column' 'crane' 'tree' 'bandstand' }` - all solid to a car and a man (a lamp post does not give: it is merged into its chunk's iron, so O6 draws a breakable post on its own mesh and gives it back `give: true` in `track.js`) |
 | `C.lamps` | every lamp `{ x, z, yaw (the arm's heading), kind, street, quay?, bridge?, park?, chunk }` |
-| `C.props` | the furniture `{ kind: 'hydrant' 'bin' 'callbox', x, z, yaw, chunk }` |
+| `C.props` | the furniture `{ kind: 'hydrant' 'bin' 'callbox' 'pole' (the Yards' telegraph poles) ..., x, z, yaw, chunk }`; `C.lines` the Tenements' washing and the Yards' wires (`wire: true`) |
 | `C.bays` | parking bays `{ x, z, yaw (the way the traffic goes there), street, side }` |
 | `C.streets` | road segments between junctions `{ id, name, cls, hw, p, a, b, el, tram, diag, river, bridge }` |
 | `C.alleys` | `{ x0, x1, z0, z1, through }` (5 m, at pavement height; a dead end when not through) |
@@ -164,7 +169,16 @@ street's mirror (the far masses stand in for it there).
 Events: `city:in`, `city:out` (`{ car }`); `city:door` (`{ door, handled }`:
 a street door tried with E - **O5 sets `e.handled = true` for a door it
 opens**, else it rattles and `city:locked` follows). The warning before the
-river (`The river.`) is the scene's own (a slipway, a pier's open end). The river: `game.fail({ why, to:
+river (`The river.`) is the scene's own (a slipway, a pier's open end, at
+least 1.6 s ahead at the car's speed), and `The bridge is up.` before the
+barrier (2.4 s ahead). One card at a time: the teach card the first time
+(`city_in`, `city_drive` in the seat before W, `city_map` after 25 s), the
+plain prompt after; a warning takes a teach card down. E moving sets
+`game.city.wantOut`: the brakes go on (the drive mode's `control` hook) and I
+get out as it stops; the car I leave rolls out its roll (the scene steps it:
+nothing else steps a parked car yet - O2's traffic will). The seat is
+`CITY_SEAT` (the eye forward and level, fov 64; `&seat=fov,pitch,ex,ey` to
+try another). The river: `game.fail({ why, to:
 'ashore' })`, the `ashore` beat puts me on the quay at the nearest steps with a
 car at the kerb by them (`stepsNear(x, z)`). M is the map (`mapKey: true` on
 the scene leaves the sound alone; O7 moves the map to the pause card). Look
