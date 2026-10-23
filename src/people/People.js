@@ -50,6 +50,8 @@ export const CROWD = {
 };
 const _v = new THREE.Vector3(), _f = new THREE.Vector3();
 const HEAT_FINE = HEAT.fine;
+// the pool's size: figures waiting for a man of their look (no ink slot held)
+const POOL = 24;
 
 export class People {
   constructor(G, stage) {
@@ -255,8 +257,21 @@ export class People {
     this.stats.released++;
     // (a dead man's figure is not used again: its skeleton is let go)
     if (!p.fig.alive) { p.dispose(); return; }
+    // the pool: its figures hold no ink slot, and it holds at most POOL of
+    // them (the oldest let go: a skeleton's bone texture, its mixer)
+    p.giveSlot();
     if (!this.pool.has(p.kind)) this.pool.set(p.kind, []);
     this.pool.get(p.kind).push(p);
+    p.pooledAt = this.t;
+    let n = 0;
+    for (const L of this.pool.values()) n += L.length;
+    while (n > POOL) {
+      let oldest = null, ok = null;
+      for (const [k, L] of this.pool) for (const q of L) if (!oldest || q.pooledAt < oldest.pooledAt) { oldest = q; ok = k; }
+      const L = this.pool.get(ok); L.splice(L.indexOf(oldest), 1);
+      oldest.dispose(); n--;
+      this.stats.disposed = (this.stats.disposed || 0) + 1;
+    }
   }
   // the people near a point (a 4 m bucket grid, made each step)
   near(x, z, r, out = this._nearOut || (this._nearOut = [])) {

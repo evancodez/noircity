@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { Figure } from '../cast/Figure.js';
 import { Character } from '../cast/Character.js';
 import { makeUmbrella } from '../scenes/watcher/umbrella.js';
+import { allocHoodSlot, releaseHoodSlot, HOOD_ID0, FIG_ANCHOR } from '../render/layers.js';
 
 // [O3] One of the city's people (lane O3, NOIR CITY): a figure of the cast
 // (src/cast/: Figure on the Hood's skeleton, the costume's outline, its
@@ -54,6 +55,9 @@ export class Person {
   // (a pooled figure used again: as new where it is put)
   reset(x, z, yaw = 0) {
     const F = this.fig;
+    // (a pooled figure gave its ink slot back: one again - the 64 slots are the people's and the cars')
+    if (F.slot < 0 && this.pooled) this.takeSlot();
+    this.pooled = false;
     F.pos.set(x, this.stage.surfaceY(x, z), z); F._prevPos.copy(F.pos); F.yaw = yaw; F._prevYaw = yaw;
     F.object.visible = true;
     this.mode = 'stand'; this.t = 0; this.life = 0;
@@ -76,6 +80,22 @@ export class Person {
     F.update(0, 0);
   }
 
+  // the figure's ink slot (layers.js: HOOD_ID0 + slot, its brush anchor): given
+  // back while it waits in the pool, taken again when it is used
+  giveSlot() {
+    const F = this.fig;
+    if (F.slot < 0) return;
+    FIG_ANCHOR[F.slot].set(0, 0, 0, 0);
+    releaseHoodSlot(F.slot);
+    F.slot = -1;
+    this.pooled = true;
+  }
+  takeSlot() {
+    const F = this.fig;
+    F.slot = allocHoodSlot();
+    F.inkId = HOOD_ID0 + Math.max(0, F.slot);
+    F.object.traverse((o) => { if (o.isMesh && o.userData.inkFigure) o.userData.inkId = F.inkId; });
+  }
   // out of the world (back to the pool, or gone): hidden, no collider
   hide() {
     const F = this.fig, col = this.stage.colliders;
