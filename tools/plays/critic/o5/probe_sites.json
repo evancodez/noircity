@@ -1,0 +1,13 @@
+{
+ "about": "[O5 critic] where the doors are (for walking to them by input)",
+ "url": "/?mute=1&start=city",
+ "size": [960, 600],
+ "out": "shots/critic_o5/probe",
+ "steps": [
+  { "wait": 1500 },
+  { "clickOn": "#title .opt[data-k=begin]", "taken": "G.state !== 'title'", "retries": 5, "every": 4000 },
+  { "until": "G.scenes.current && G.scenes.current.id === 'city' && G.scenes.fadeK < 0.05", "timeout": 25000 },
+  { "eval": "(()=>{const P=G.city.places,p=G.controller.camera.position;return 'me '+p.x.toFixed(1)+','+p.z.toFixed(1)+' | '+[...P.byId.values()].map(s=>s.id+' '+s.door.x.toFixed(1)+','+s.door.z.toFixed(1)+' n'+s.door.nx+','+s.door.nz+(s.doors.length?' +'+s.doors.map(d=>d.x.toFixed(1)+','+d.z.toFixed(1)).join(';'):'')).join(' | ')})()" },
+  { "eval": "Object.keys(G.city.places).join(',')" }
+ ]
+}

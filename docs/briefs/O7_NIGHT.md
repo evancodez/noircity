@@ -171,3 +171,33 @@ lost the street three of three and the 1v2 at the merge check): a soft
 snap toward the nearest man in the reticle's cone while aiming on the
 stick, in `src/input/Pad.js`, measured by `tools/plays/o4/pad_street.json`
 and `pad_1v2.json` passing by medium hands. Take these at your fix pass.
+
+## From lane O5's merge (2026-10-23, main 407278b): yours
+O5 (the places) is in main: fifteen street doors open on rooms (`src/places/`,
+`docs/reports/O5.md`). Yours in this pass or your fix pass:
+- **One matchbook collection.** O1b put a matchbook on every bar's step
+  (`src/world/items.js`: `save.flags.matchbooks`, "n of 6" on Tab) and O5 put
+  one on the counter inside each of its two bars (`src/places/rooms/bar.js`:
+  `save.matchbooks`). Two collections of the same thing is the clutter the
+  user warned of. Make it one: six matchbooks, one a bar; at the two bars with
+  rooms it is the one inside (O5's, on the counter: a reason to go in), and
+  the step's is gone; one save field (`save.matchbooks`, the ids; migrate the
+  flags map), one count on Tab, one row on the pause card.
+- **One press, one answer at a door.** At the Docks bar's door the prompt
+  reads `E  take` (O1b's item on the step) and the press opens the door
+  (O5's). Whatever the eye is on gets the prompt and the press: the door when
+  looking at the door, the item when looking at the item; never two answers
+  to one press.
+- **The wheel** on foot (city.js [O5]: the mouse wheel through what I own) has
+  no teach card and no pad mapping: give it both, in the kit's language.
+- **The night's kit at BEGIN.** OPEN_WORLD's revolver under his arm and
+  O4's night kit ($150 and the revolver, `nightKit`) are never given in the
+  city: BEGIN gives them once, quietly; CONTINUE keeps what the save holds.
+- **Where a fall wakes.** A fall inside a place wakes where the place says
+  (outside its door, by the ring, the cell bench); a fall anywhere else in the
+  city has nowhere to wake but the city's beats. O4's rule is
+  `fall.wake('hospital')`: give the city a hospital's waking (a bed, the
+  black, 'Came round.', the money docked), with O3's station wake for an
+  arrest.
+- **The stills' footer** writes keys as words (`CLICK: NEXT · ESC ESC: SKIP`)
+  outside O5's reel; the kit's key caps everywhere.

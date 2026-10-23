@@ -1,5 +1,5 @@
 {
- "about": "[O1] The river is the end (brief O1 §3): by real keys, the car down the slipway at Baxter's foot into the water - 'The river took it.', the kit's black, up on the quay by the steps with a car at the kerb by them (E: in again); then on foot off Pier 7's open end - 'Into the river.', up on the quay again. node tools/play.mjs tools/plays/o1_river.json",
+ "about": "[O1] The river is the end (brief O1 §3): by real keys, the car down the slipway at Baxter's foot into the water - 'The river took it.', the kit's black, up on the quay by the steps with a car at the kerb by them (E: in again); then on foot off Pier 7's open end: since O1b a man in the river swims (no fade, no loss), W strokes him to a flight of steps and he climbs out on the quay. node tools/play.mjs tools/plays/o1_river.json",
  "url": "/?mute=1&start=city&car=0,418,-1.5708",
  "size": [1280, 800],
  "out": "shots/o1/river",
@@ -28,12 +28,18 @@
   { "wait": 500 },
   { "eval": "(() => { const C = N.controller; G.stage.part('stream').warmAround(91, 525); C.setPose(91, 525, Math.PI, 0); return 1; })()" },
   { "down": "KeyW" },
-  { "until": "!!G.failing", "timeout": 12000 },
+  { "until": "N.controller.mode === 'swim'", "timeout": 12000 },
+  { "expect": "!G.failing && N.controller.mode === 'swim'", "label": "a man off the pier's end swims (O1b): no fade, no loss" },
+  { "wait": 800 },
+  { "shot": "r02_swim" },
   { "up": "KeyW" },
-  { "expect": "G.lastFail && G.lastFail.why === 'Into the river.' && G.lastFail.warnedFor > 0.3", "label": "a man off the pier's end: warned first, then the words" },
-  { "until": "!G.failing && G.scenes.beat === 'ashore'", "timeout": 12000 },
+  { "walk": "(() => { const C = N.controller, S = G.stage.part('city').C.steps.filter((q) => q.kind === 'pier' && q.foot).sort((a, b) => Math.hypot(a.foot[0] - C.pos.x, a.foot[1] - C.pos.z) - Math.hypot(b.foot[0] - C.pos.x, b.foot[1] - C.pos.z))[0]; const f = S.foot; return [[C.pos.x, C.pos.z + 8], [f[0] + 7, C.pos.z + 8], [f[0] + 7, f[1] + 1]]; })()", "timeout": 30000 },
+  { "eval": "(() => { const C = N.controller, S = G.stage.part('city').C.steps.filter((q) => q.kind === 'pier' && q.foot).sort((a, b) => Math.hypot(a.foot[0] - C.pos.x, a.foot[1] - C.pos.z) - Math.hypot(b.foot[0] - C.pos.x, b.foot[1] - C.pos.z))[0]; C.setPose(C.pos.x, C.pos.z, Math.atan2(-(S.foot[0] - C.pos.x), -(S.foot[1] - C.pos.z)), 0); return { foot: S.foot, me: [+C.pos.x.toFixed(1), +C.pos.z.toFixed(1)] }; })()" },
+  { "down": "KeyW" },
+  { "until": "N.controller.mode === 'walk' && !G.stage.part('city').C.inWater(N.controller.pos.x, N.controller.pos.z)", "timeout": 30000 },
+  { "up": "KeyW" },
   { "wait": 600 },
-  { "shot": "r02_ashore" },
-  { "expect": "!G.stage.part('city').C.inWater(N.controller.pos.x, N.controller.pos.z) && N.controller.groundY > -0.5", "label": "up on the quay again" }
+  { "shot": "r03_ashore" },
+  { "expect": "!G.failing && !G.stage.part('city').C.inWater(N.controller.pos.x, N.controller.pos.z) && N.controller.groundY > -0.5", "label": "out of the water at a flight of steps, up on the quay again" }
  ]
 }

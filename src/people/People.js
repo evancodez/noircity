@@ -132,10 +132,21 @@ export class People {
     G.on('city:in', this._in);
     // lane O4's crowd brawl tells its own ('crime' { kind: 'draw' | 'shot', by, at, cop }):
     // into the bus (the bus's own records carry an id and come back here: passed over)
+    // lane O5's places tell theirs too ('crime' { kind, pos, level, place }: a fist at a room's
+    // man, a brawl, a shot, a pane, a theft, a hideout's fight): a shot is heard from the street
+    // as any shot is; the rest nobody on the street sees - the room's own telephone calls it
+    // in (a report 20 - 35 s later, unless a cop saw or heard it first)
     this._o4crime = (e) => {
-      if (!e || e.id || !e.at || !this.G.city) return;
-      const k = e.kind === 'draw' ? 'menace' : e.kind === 'shot' ? (e.cop ? 'cophurt' : 'shot') : null;
-      if (k) this.crime.emit(k, e.at, e.by || 'player');
+      if (!e || e.id || !this.G.city) return;
+      if (e.at) {
+        const k = e.kind === 'draw' ? 'menace' : e.kind === 'shot' ? (e.cop ? 'cophurt' : 'shot') : null;
+        if (k) this.crime.emit(k, e.at, e.by || 'player');
+        return;
+      }
+      if (!e.pos) return;
+      const k = e.kind === 'shot' || e.kind === 'hideout' ? 'shot' : e.kind === 'glass' ? 'smash' : 'punch';
+      const rec = this.crime.emit(k, e.pos, 'player', { level: e.level ?? (k === 'shot' ? 2 : 1) });
+      if (rec && e.place && rec.level) this.later(20 + this.rng.next() * 15, () => { if (rec.seen || rec.heard || rec.reported) return; rec.reported = true; this.stats.reports++; this.police.report(rec, null, 'phone'); });
     };
     G.on('crime', this._o4crime);
     // lane O6's destruction set ('smash' { kind, pos, by }): what is someone's (a shop's
@@ -167,7 +178,7 @@ export class People {
 
   // after a fail's black (the station, the hospital, the river): the police
   // stood down, the street round the old place let go, the arrest's costs
-  afterFail(why) {
+  afterFail(why, { room = false } = {}) {
     const G = this.G;
     this.police.reset();
     if (G.city) G.city.ownCar = null;
@@ -178,7 +189,8 @@ export class People {
     this.spawnT = 1.2;
     // (lane O4's rules of the fall, src/combat/fall.js: the station keeps the guns
     // and fines a fifth, $10 at least; the hospital keeps nothing but a tenth)
-    if (why === 'arrest') {
+    if (why === 'arrest' && room) { /* (lane O5's cell: its wake took the fine and the guns and says its line) */ }
+    else if (why === 'arrest') {
       const had = ['revolver', 'shotgun', 'tommy'].some((g) => owns(G, g));
       const { cost } = wake(G, 'station');
       if (G.player.weapons.current) G.player.weapons.equip(null);

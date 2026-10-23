@@ -134,3 +134,13 @@ A car the player hides behind in a gunfight must be in the ray world
 (`S.addSolid` on each mesh) or rounds pass through it; `collider.noCover`
 keeps a thing from being cover. Take these at your fix pass (it merges
 main first) and drop your stand-ins for them.
+
+## From lane O5's merge (2026-10-23, main 407278b): yours
+O5's places emit `crime` `{ kind: 'assault' | 'brawl' | 'shot' | 'glass' |
+'theft' | 'hideout', pos, level, place }` (a fist at a room's person, a shot
+in a room, a hideout's fight); nobody hears them yet. Your police hear them
+as they hear the street's: a shot in a bar brings the law to its door within
+the minute. `places.wake('police')` and the city's `station` beat (a cell
+bench, the door open) exist for your arrest's waking; a fall elsewhere in the
+city wakes at O7's hospital. Rooms' people are O5's props (they flinch,
+cower, fight back through O4's crowd brawl); your crowd stays on the street.

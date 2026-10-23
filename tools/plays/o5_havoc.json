@@ -1,0 +1,114 @@
+{
+ "about": "[O5] havoc in a room: a fist at the barman (his flinch and word, the room sore, the crime), a fist at a drunk (he and his mate fight back: O4's crowd brawl)",
+ "url": "/?mute=1&start=city",
+ "size": [
+  1280,
+  800
+ ],
+ "out": "shots/o5/havoc",
+ "steps": [
+  {
+   "wait": 1500
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]",
+   "taken": "G.state !== 'title'",
+   "retries": 5,
+   "every": 4000
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'city' && G.scenes.fadeK < 0.05",
+   "timeout": 25000
+  },
+  {
+   "eval": "(() => { const s = G.city.places.byId.get('bar1'), d = s.door; const x = d.x + d.nx * 3, z = d.z + d.nz * 3; G.stage.part('stream').warmAround(x, z); N.controller.setPose(x, z, Math.atan2(d.nx, d.nz), -0.05); window.__m = []; const m0 = G.hud.message.bind(G.hud); G.hud.message = (t, s) => { window.__m.push(t); return m0(t, s); }; return 1; })()"
+  },
+  {
+   "wait": 2500
+  },
+  {
+   "key": "KeyE",
+   "hold": 70
+  },
+  {
+   "wait": 700
+  },
+  {
+   "eval": "(()=>{window.__cr=[];G.on('crime',e=>window.__cr.push(e.kind));return 1})()"
+  },
+  {
+   "walk": "(()=>{const c=(()=>{const s=G.city.places.byId.get('bar1');return s.live.cast.find(c=>c.spec&&c.spec.name==='barman')})();const s=G.city.places.byId.get('bar1'),F=s.frame;const l=F.l(c.pos.x,c.pos.z);const p=F.w(l.x,l.z+1.75);return [[F.w(0,-1.8).x,F.w(0,-1.8).z],[p.x,p.z]]})()",
+   "timeout": 12000,
+   "stop": false
+  },
+  {
+   "look": "(()=>{const c=(()=>{const s=G.city.places.byId.get('bar1');return s.live.cast.find(c=>c.spec&&c.spec.name==='barman')})();const dx=c.pos.x-G.eye.x,dz=c.pos.z-G.eye.z,dy=(c.pos.y||0)+1.45-G.eye.y;const w=Math.atan2(-dx,-dz);const e=Math.atan2(Math.sin(w-N.controller.yaw),Math.cos(w-N.controller.yaw));const p=Math.atan2(dy,Math.hypot(dx,dz));return [Math.round(-e/N.controller.sensitivity),Math.round(-(p-N.controller.pitch)/N.controller.sensitivity)]})()",
+   "steps": 6
+  },
+  {
+   "wait": 300
+  },
+  {
+   "eval": "(()=>{const c=(()=>{const s=G.city.places.byId.get('bar1');return s.live.cast.find(c=>c.spec&&c.spec.name==='barman')})();return 'barman at '+Math.hypot(c.pos.x-G.eye.x,c.pos.z-G.eye.z).toFixed(2)+' m, prompt '+G.hud.promptShown})()"
+  },
+  {
+   "mouse": "click",
+   "button": "left"
+  },
+  {
+   "wait": 120
+  },
+  {
+   "shot": "fist_barman"
+  },
+  {
+   "wait": 900
+  },
+  {
+   "expect": "window.__cr.includes('assault')",
+   "name": "the fist at the barman is a crime the city hears"
+  },
+  {
+   "expect": "G.city.places.byId.get('bar1').state.sore === true",
+   "name": "the room is sore: no more drinks"
+  },
+  {
+   "eval": "(()=>{const c=(()=>{const s=G.city.places.byId.get('bar1');return s.live.cast.find(c=>c.spec&&c.spec.name==='barman')})();return 'barman state '+c.state+' | hud '+document.getElementById('hud').innerText.replace(/\\s+/g,' ').slice(0,120)})()"
+  },
+  {
+   "walk": "(()=>{const c=(()=>{const s=G.city.places.byId.get('bar1');return s.live.cast.find(c=>c.spec&&c.spec.name==='drunkA')})();const s=G.city.places.byId.get('bar1'),F=s.frame;const l=F.l(c.pos.x,c.pos.z);const p=F.w(l.x,l.z+1.3);return [[F.w(0,-1.8).x,F.w(0,-1.8).z],[p.x,p.z]]})()",
+   "timeout": 12000,
+   "stop": false
+  },
+  {
+   "look": "(()=>{const c=(()=>{const s=G.city.places.byId.get('bar1');return s.live.cast.find(c=>c.spec&&c.spec.name==='drunkA')})();const dx=c.pos.x-G.eye.x,dz=c.pos.z-G.eye.z,dy=(c.pos.y||0)+1.45-G.eye.y;const w=Math.atan2(-dx,-dz);const e=Math.atan2(Math.sin(w-N.controller.yaw),Math.cos(w-N.controller.yaw));const p=Math.atan2(dy,Math.hypot(dx,dz));return [Math.round(-e/N.controller.sensitivity),Math.round(-(p-N.controller.pitch)/N.controller.sensitivity)]})()",
+   "steps": 6
+  },
+  {
+   "wait": 300
+  },
+  {
+   "mouse": "click",
+   "button": "left"
+  },
+  {
+   "wait": 200
+  },
+  {
+   "expect": "G.crowd.active && G.crowd.men.length >= 1",
+   "name": "a fist at a drunk: he fights back (O4's crowd brawl)"
+  },
+  {
+   "eval": "'crowd men '+G.crowd.men.length+' my act '+G.crowd.me.act+' landed '+G.crowd.stats.landed+' presses '+G.crowd.stats.presses"
+  },
+  {
+   "wait": 1200
+  },
+  {
+   "shot": "brawl"
+  },
+  {
+   "eval": "'after 1.2 s: landed '+G.crowd.stats.landed+' taken '+G.crowd.stats.taken"
+  }
+ ]
+}

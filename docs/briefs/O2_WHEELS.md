@@ -7,6 +7,7 @@ you) and on the destruction set (lane O6, `docs/seams/SMASH.md`: a car's
 damage states, its fire and its wreck are O6's rule; you call it, you do
 not redo it). The user's words:
 
+- **[must]** "When in a car, allow a third person view mode too." (The user, 2026-10-23.) V in a car (the pad's R3) toggles between the seat and a camera behind the car: a smooth follow (a spring on position and heading, a touch of lag in turns and under the brake, never through a wall: it comes in on a wall or a column, pulled by a sphere cast), the car seen whole in the ink (its damage, its lamps, its wheels turning), the eye high enough to read the street, the look stick swinging the view round the car and settling behind it; reverse looks back; the choice remembered in the save; the HUD and the minimap unchanged; the aim out of the window stays first person (RMB brings the seat back while held). The ink pipeline and the rain must hold from outside the car as they do inside.
 - **[must]** "A variety of cars (not a ton for now but yk). Make it a world that feels not overly copy-paste." (The user, 2026-10-23.) The fleet's kinds each in two or three visible variants (body: two-door, four-door, a roof up or down, a pickup bed; livery: the taxi's band and roof light, the police markings, the vans' painted names, the hearse; grilles, lamps, wheels, a dent or a scrape on some parked ones), picked by a seeded hash of the bay or the lane, so no street of parked cars reads as one car repeated.
 - **[must]** "You should be able to drive around."
 - **[must]** "Hijack cars and various cars."
@@ -143,3 +144,10 @@ your fix pass (or your build if you read this first): `src/world/Cars.js`
 any range. A **one-draw far build** beyond about 36 m, with `lodUpdate`
 called every tick (30 cars from about 400 draws to under 90), and the
 variants' extra parts inside that budget.
+
+## From lane O5's merge (2026-10-23, main 407278b): yours
+O5's garage (`src/places/rooms/garage.js`): the mechanic fixes ($15) or
+repaints ($10) the car parked outside, but the garage stores no car. Yours:
+a car left at the garage is kept (one bay: the save holds it, the sheet goes
+over it), taken again from the mechanic; and the repaint through your
+variants (a new colour and plate, the heat off it: the reason to repaint).

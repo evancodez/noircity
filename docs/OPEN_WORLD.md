@@ -112,7 +112,9 @@ WAVE_C §1 rules 1, 2, 6, 7, 8 bind every system (nothing wins itself;
 nothing lost for no reason; no jank; players explore and are answered;
 polish). The rulebook of keys is WAVE_C §2 with these additions:
 **M** the map (the pause card's map; the old M for sound moves to the
-settings), **Tab** the heat and the money for a moment, **E** also:
+settings), **V** in a car: the view, first person from the seat or
+third person from behind the car (a toggle, remembered; the pad's R3),
+**Tab** the heat and the money for a moment, **E** also:
 take a car (a parked one, or the driver out of it), enter a door, sit,
 buy. Keys are taught by the kit's cards once (`docs/story/seams/Z.md`:
 the kit is kept, its `game.fail` is now the arrest and the hospital).

@@ -1,0 +1,44 @@
+{
+ "about": "[O5] the gym's bout by good hands (O4's crowd brawl and its bot tools/lib/o4_brawl.mjs): E at the man by the ring, the bet, the fight; a fall wakes me by the ring's steps, the man offering again",
+ "url": "/?mute=1&start=city.wake&wake=gym:ring",
+ "size": [
+  1280,
+  800
+ ],
+ "out": "shots/o5/bout_good",
+ "steps": [
+  {
+   "until": "G.state === 'title' && !!document.querySelector('#title .opt[data-k=begin]')",
+   "timeout": 60000
+  },
+  {
+   "wait": 1200
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]",
+   "taken": "G.scenes.current && G.scenes.current.id === 'city'",
+   "retries": 4
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'city' && G.scenes.beat === 'wake' && !G.failing && G.scenes.fadeK < 0.05",
+   "timeout": 30000
+  },
+  {
+   "eval": "'at the ring: inside '+(G.city.places.inside&&G.city.places.inside.id)+' prompt '+G.hud.promptShown+' $'+G.save.money"
+  },
+  {
+   "drive": "tools/lib/o4_brawl.mjs",
+   "profile": "good",
+   "beat": "wake",
+   "tries": 2,
+   "wins": 2,
+   "timeout": 480000,
+   "check": "D.wins >= 2 && D.tries.every((t) => t.result === 'won')",
+   "label": "good hands win twice, no fall",
+   "startKey": "KeyE"
+  },
+  {
+   "eval": "'after: $'+G.save.money+' wins '+G.city.places.byId.get('gym').state.wins+' prompt '+G.hud.promptShown"
+  }
+ ]
+}
