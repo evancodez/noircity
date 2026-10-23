@@ -20,7 +20,7 @@ import { EL, districtAt } from '../../../world/plan.js';
 const N_CONES = 30;
 const CONE_HALF = 0.42, LIGHT_ANGLE = 0.85, LIGHT_PENUMBRA = 0.95;
 const DEAL = 0.25;
-const WARM = new THREE.Color(1.0, 0.76, 0.46), WHITE = new THREE.Color(1, 1, 1);   // [O1c] the Hill's amber globes
+const WARM = new THREE.Color(1.0, 0.6, 0.27), WHITE = new THREE.Color(1, 1, 1);   // [O1c] the Hill's amber globes (after the critic, m4: 0.76 / 0.46 read white on the wet - deeper)
 
 export default {
   name: 'lamps', order: 50, tick: 40,
@@ -179,7 +179,7 @@ export default {
         }
         for (const s of pool) {
           s.k = s.lamp ? Math.min(1, s.k + dt * 4) : 0;
-          s.spot.intensity = s.lamp && s.lamp.on && !s.lamp.dead ? (s.lamp.power ?? (s.lamp.hanging ? 70 : 90)) * s.k : 0;
+          s.spot.intensity = s.lamp && s.lamp.on && !s.lamp.dead ? (s.lamp.power ?? (s.lamp.hanging ? 70 : 90)) * s.k * (s.lamp.warm ? 0.6 : 1) : 0;   // ([O1c] after the critic, m4: a warm pool under the clip, so the ink keeps its amber)
         }
       },
     };

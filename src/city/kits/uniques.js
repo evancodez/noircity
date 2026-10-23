@@ -144,7 +144,9 @@ const B = {
         for (const [py, ph] of [[0.38, 0.5], [1.3, 1.0], [2.33, 0.62]]) {
           R.push([box(1.06, ph - 0.12, 0.03).translate(lx, py, 0.125), G.wood * 1.8]);
           for (const q of [-1, 1]) {
-            R.push([box(1.12, 0.035, 0.03).translate(lx, py + q * (ph / 2 - 0.04), 0.135), G.trim * 1.5]);
+            // ([O1c] after the critic, m3: the red where the eye is at arm's length - the middle
+            // panel's top rail, at 1.74 m, one thin red line a leaf; the rest pale)
+            R.push([box(1.12, 0.035, 0.03).translate(lx, py + q * (ph / 2 - 0.04), 0.135), ph === 1.0 && q > 0 ? RED : G.trim * 1.5]);
             R.push([box(0.035, ph - 0.05, 0.03).translate(lx + q * 0.545, py, 0.135), G.trim * 1.5]);
           }
         }

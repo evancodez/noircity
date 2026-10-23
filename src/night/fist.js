@@ -24,7 +24,7 @@ export function fistStep(ctx, R) {
   // (the hands down a breath after the last swing at nobody)
   if (R.fistDown != null && G.time > R.fistDown) { R.fistDown = null; if (!F.active && !drawnGun(G) && H.set === 'fists') { H.equip('empty'); G.setViewmodelVisible(false); } }
   if (R.inCar || F.active || (G.brawl && G.brawl.active) || G.failing || drawnGun(G)) return false;
-  const beat = thingTick(G, R);   // [O1c] (a kick's foot landing; the beat after a hurt hand)
+  const beat = thingTick(G, R);   // [O1c] (the beat after a hurt hand)
   const L = G.pressed('Mouse0'), Rt = G.pressed('Mouse2');
   if (!L && !Rt) return false;
   if (beat) return true;
