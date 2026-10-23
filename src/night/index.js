@@ -30,7 +30,7 @@ export const CLOCK = { start: 23 * 60, secsPerMin: 2.5, span: 6 * 60 };
 // [O7] true of the city as built (the cold play's finding 2): a verb comes
 // onto the line when its lane brings it into the city (the fist fight's jab,
 // block and dodge with O3's men)
-const KEYS_CITY = 'WASD move · mouse look · E use, get in, take · WHEEL the revolver · LMB fire · RMB steady · R reload · C get low\n'
+const KEYS_CITY = 'WASD move · mouse look · E use, get in, take · WHEEL the revolver · LMB jab, fire · RMB steady · R reload · C get low\n'
   + 'SHIFT run · SPACE handbrake · Q horn · F the radio · TAB heat, money · M map · ESC pause';
 
 export class Night {

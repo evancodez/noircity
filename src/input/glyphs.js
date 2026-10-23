@@ -168,7 +168,7 @@ export function keyNodes(label, ctx, h = 30) {
 export const PAD_KEYS = [
   // [O7] NOIR CITY's, true of the city as built (the cold play's finding 2):
   // a verb comes onto this line when its lane brings it into the city
-  [['Lstick'], 'move'], [['Rstick'], 'look'], [['square'], 'use, get in, take'], [['dleft', 'dright'], 'the revolver'], [['R2'], 'fire, throttle'], [['L2'], 'steady, brake'], null,
+  [['Lstick'], 'move'], [['Rstick'], 'look'], [['square'], 'use, get in, take'], [['dleft', 'dright'], 'the revolver'], [['R2'], 'jab, fire, throttle'], [['L2'], 'steady, brake'], null,
   [['triangle'], 'reload'], [['circle'], 'get low'], [['L1'], 'run'], [['cross'], 'handbrake'], [['dup'], 'horn'], [['dright'], 'radio, driving'],
   [['ddown'], 'map'], [['touch'], 'heat, money'], [['options'], 'pause'],
 ];

@@ -1,0 +1,92 @@
+{
+ "about": "[O7 after the critic, B3] the bare hand in the street: LMB with nothing drawn throws the jab on the press (the hands up, the swing, the whiff), the hands go down a breath after; at the wanted man's back, at arm's length, the jab starts O4's fist fight with him at once.",
+ "url": "/?mute=1&start=city",
+ "size": [
+  1280,
+  800
+ ],
+ "out": "shots/o7/fist",
+ "steps": [
+  {
+   "wait": 1500
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]",
+   "taken": "G.state !== 'title'",
+   "retries": 5,
+   "every": 4000
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'city' && G.scenes.fadeK < 0.05",
+   "timeout": 30000
+  },
+  {
+   "look": [
+    0,
+    0
+   ],
+   "steps": 1
+  },
+  {
+   "eval": "(N.controller.pitch = 0, 1)"
+  },
+  {
+   "eval": "(window.__f = [], G.on('city:fist', (e) => window.__f.push(e.man)), 1)"
+  },
+  {
+   "mouse": "down",
+   "button": "left"
+  },
+  {
+   "wait": 90
+  },
+  {
+   "expect": "window.__f.length === 1 && G.player.hands.set === 'fists' && G.vmWanted !== false",
+   "label": "LMB on the press: the fist swings (the hands drawn)"
+  },
+  {
+   "shot": "f01_jab"
+  },
+  {
+   "mouse": "up",
+   "button": "left"
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "expect": "G.player.hands.set === 'empty'",
+   "label": "the hands down again"
+  },
+  {
+   "eval": "(() => { const b = G.night.bounty.names()[0]; G.stage.part('stream').warmAround(b.x, b.z); const g = G.night.graph(); let px = b.x + 1.3, pz = b.z; for (let i = 0; i < 16; i++) { const a = i * Math.PI / 8, q = new N.THREE.Vector3(b.x + Math.cos(a) * 1.3, 0, b.z + Math.sin(a) * 1.3); const q0 = q.clone(); G.stage.colliders.resolve(q, 0.4); if (q.distanceTo(q0) < 0.05 && g.lineOfSight(q.x, q.z, b.x, b.z) && !G.stage.part('city').C.inWater(q.x, q.z)) { px = q.x; pz = q.z; break; } } N.controller.setPose(px, pz, Math.atan2(-(b.x - px), -(b.z - pz)), -0.05); G.stage.part('bounds').navAround(px, pz, 30); return [b.name, Math.round(px), Math.round(pz)]; })()"
+  },
+  {
+   "until": "!!G.night.bounty.men.get('b0')",
+   "timeout": 3000
+  },
+  {
+   "eval": "(() => { const M = G.night.bounty.men.get('b0'); M.c.yaw = Math.atan2(M.pos.x - G.eye.x, M.pos.z - G.eye.z); const e = N.controller.pos; N.controller.yaw = Math.atan2(-(M.pos.x - e.x), -(M.pos.z - e.z)); return M.mode; })()"
+  },
+  {
+   "wait": 200
+  },
+  {
+   "mouse": "click",
+   "button": "left"
+  },
+  {
+   "wait": 300
+  },
+  {
+   "expect": "G.crowd.active && G.crowd.men.some((m) => m.kind === 'gangster') && G.night.bounty.men.get('b0').mode === 'fight'",
+   "label": "a jab at his back: the fist fight with him"
+  },
+  {
+   "wait": 1200
+  },
+  {
+   "shot": "f02_fight"
+  }
+ ]
+}
