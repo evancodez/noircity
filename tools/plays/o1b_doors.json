@@ -1,0 +1,14 @@
+{
+ "about": "[O1b] The doors (the cold play's finding 6: doorNear searched the lot's chunk, so one street door in four gave no prompt): every street door within 45 m of Grand Ave x Centre St's west block (lots across the chunk line at x -192 among them) tried - 1.2 m in front of it, facing it: E try the door, E, locked. node tools/play.mjs tools/plays/o1b_doors.json",
+ "url": "/?mute=1&start=city",
+ "size": [1280, 800],
+ "out": "shots/o1b/doors",
+ "steps": [
+  { "wait": 1500 },
+  { "clickOn": "#title .opt[data-k=begin]", "taken": "G.state !== 'title'", "retries": 5, "every": 4000 },
+  { "until": "G.scenes.current && G.scenes.current.id === 'city' && G.scenes.fadeK < 0.05", "timeout": 25000 },
+  { "wait": 800 },
+  { "eval": "(G.save.flags.taught = { city_in: true, city_drive: true, city_map: true }, 1)" },
+  { "drive": "tools/lib/o1b_streets.mjs", "mode": "doors", "at": [-196, -6], "r": 45, "max": 60, "check": "D.tried > 20 && D.straddling > 0 && D.bad === 0", "label": "every door tried answers (the ones on lots across a chunk line too)" }
+ ]
+}

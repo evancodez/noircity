@@ -188,40 +188,8 @@ export function propPieces(rec, y0 = PAVE) {
   return P;
 }
 
-// ---- the trees: a shape each (the brief: "the trees get a shape") --------------------------------
-export function treePieces(t, y0 = PAVE) {
-  const P = [], v = t.v, s = t.s || 1;
-  const lump = (x, y, z, r, sy = 0.8) => P.push([new THREE.IcosahedronGeometry(r, 1).scale(1, sy, 1).translate(x, y, z), G.leaf]);
-  const limb = (pts, r) => P.push([tube(pts.map(([x, y, z]) => V3(x, y, z)), r, 5, Math.max(6, pts.length * 3)), G.bark]);
-  // (each its own: the forks' angles and the crown's lumps turned by the place's hash)
-  const a0 = v * Math.PI * 2;
-  const dir = (a, r) => [Math.cos(a0 + a) * r, Math.sin(a0 + a) * r];
-  if (t.kind === 'plane') {
-    // the London plane: a straight trunk, a broad crown of lumps
-    limb([[0, 0, 0], [0.05, 2.2, 0], [0.1, 3.6, 0.05]], 0.17 * s);
-    for (let k = 0; k < 3; k++) { const [x, z] = dir(k * 2.1, 1.3 * s); limb([[0.1, 3.4, 0.05], [x * 0.6, 4.6 * s, z * 0.6], [x, 5.4 * s, z]], 0.08 * s); }
-    for (let k = 0; k < 6; k++) { const [x, z] = dir(k * 1.05 + 0.4, (k % 2 ? 1.6 : 0.9) * s); lump(x, (5.4 + (k % 3) * 0.5) * s, z, (1.3 + (k % 2) * 0.35) * s, 0.7); }
-  } else if (t.kind === 'bare') {
-    // a winter tree: the trunk forks, the limbs fork again, twigs (ink lines against the sky)
-    limb([[0, 0, 0], [0.08, 1.8, 0], [0.12, 2.8, 0.04]], 0.15 * s);
-    for (let k = 0; k < 4; k++) {
-      const [x, z] = dir(k * 1.57 + 0.3, 1.0 * s), [x2, z2] = dir(k * 1.57 + 0.6, 2.2 * s);
-      limb([[0.12, 2.7, 0.04], [x, 3.8 * s, z], [x2, 5.2 * s, z2]], 0.07 * s);
-      for (let q = 0; q < 2; q++) { const [x3, z3] = dir(k * 1.57 + (q ? 0.9 : 0.1), 2.8 * s); limb([[x * 0.9 + x2 * 0.1, 4.1 * s, z * 0.9 + z2 * 0.1], [x3, 5.8 * s + q * 0.6, z3]], 0.025 * s); }
-    }
-  } else if (t.kind === 'poplar') {
-    // a Lombardy poplar: a tall narrow flame of lumps
-    limb([[0, 0, 0], [0, 2.4, 0]], 0.14 * s);
-    for (let k = 0; k < 6; k++) { const [x, z] = dir(k * 2.4, 0.25 * s); lump(x, (2.6 + k * 1.1) * s, z, (0.95 - k * 0.09) * s, 1.4); }
-  } else {
-    // an elm: the vase - the trunk splits low, the crown wide at the top
-    limb([[0, 0, 0], [0.03, 1.6, 0]], 0.2 * s);
-    for (let k = 0; k < 3; k++) { const [x, z] = dir(k * 2.1, 1.6 * s); limb([[0.03, 1.5, 0], [x * 0.5, 3.6 * s, z * 0.5], [x, 5.6 * s, z]], 0.1 * s); }
-    for (let k = 0; k < 7; k++) { const [x, z] = dir(k * 0.9, (k % 2 ? 2.2 : 1.4) * s); lump(x, (6.0 + (k % 3) * 0.4) * s, z, (1.15 + (k % 3) * 0.25) * s, 0.6); }
-  }
-  for (const p of P) p[0].translate(t.x, y0, t.z);
-  return P;
-}
+// ---- the trees: a shape each (city/kits/trees.js) ----------------------------------------------
+export { treePieces } from './trees.js';
 
 // ---- the trade boards' atlas (one canvas for the city: each trade in each lettering, the names) ----
 export const TRADES = {
@@ -500,6 +468,34 @@ export function faceRelief(L, out) {
       // a glazed ground floor: a pale field under the course
       rel.push([onFace(new THREE.PlaneGeometry(f.len, K.ground - 0.45).translate(f.len / 2, (K.ground - 0.45) / 2, 0.02), f, 0, 0), G.tile]);
     }
+    // the doors (the cold play's finding 8: one door everywhere): a leaf of its
+    // own by the hash of where it stands - panelled, glazed (lit now and then),
+    // double, a warehouse's planks - its paint dark, mid or pale, a lit
+    // transom over some, a number plate beside many
+    const works = L.district === 'docks' || L.district === 'yards';
+    for (const w of mine) {
+      if (w.kind !== 'door') continue;
+      const h = vhash(w.x, w.z, 21), h2 = vhash(w.x, w.z, 22), h3 = vhash(w.x, w.z, 23);
+      const paint = h2 < 0.4 ? G.ink * 1.5 : h2 < 0.8 ? G.wood : G.woodP * 1.4;
+      const ww = w.w - 0.06, hh = w.h - 0.04, z0 = 0.03;
+      const kind = works && h < 0.5 ? 'planks' : h < 0.5 ? 'panel' : h < 0.78 ? 'glazed' : h < 0.9 ? 'double' : 'panel';
+      rel.push([onWin(box(ww, hh, 0.04).translate(0, 0, z0), w), paint]);
+      if (kind === 'panel') for (const y of [-hh * 0.22, hh * 0.24]) rel.push([onWin(new THREE.PlaneGeometry(ww * 0.62, hh * 0.32).translate(0, y, z0 + 0.025), w), paint * 0.55]);
+      if (kind === 'double') rel.push([onWin(box(0.03, hh, 0.02).translate(0, 0, z0 + 0.03), w), G.ink]);
+      if (kind === 'planks') for (let k = 1; k < 5; k++) rel.push([onWin(box(0.02, hh, 0.015).translate(-ww / 2 + k * ww / 5, 0, z0 + 0.025), w), G.ink]);
+      if (kind === 'glazed') {
+        const litG = h3 < 0.3;
+        (litG ? lit : rel).push([onWin(new THREE.PlaneGeometry(ww * 0.66, hh * 0.38).translate(0, hh * 0.2, z0 + 0.026), w), litG ? 0.32 : G.glass]);
+        rel.push([onWin(box(0.025, hh * 0.38, 0.01).translate(0, hh * 0.2, z0 + 0.03), w), paint]);
+      }
+      // the knob (and a mail slot)
+      rel.push([onWin(new THREE.SphereGeometry(0.035, 6, 4).translate(ww * 0.36 * (h2 < 0.5 ? 1 : -1), -0.05, z0 + 0.05), w), G.tin * 1.5]);
+      if (kind !== 'planks' && h3 > 0.5) rel.push([onWin(new THREE.PlaneGeometry(0.24, 0.04).translate(0, -hh * 0.05, z0 + 0.027), w), G.tin]);
+      // a lit transom (the far build's transom glass is dark: a light on in the hall)
+      if (h3 > 0.82) lit.push([onWin(new THREE.PlaneGeometry(w.w - 0.1, 0.5).translate(0, w.h / 2 + 0.4, 0.035), w), 0.4]);
+      // the number plate beside it
+      if (h > 0.35) rel.push([onWin(new THREE.CircleGeometry(0.08, 10).scale(1.4, 1, 1).translate((w.w / 2 + 0.38) * (h3 < 0.5 ? 1 : -1), 0.55, 0.02), w), G.paper * 0.6]);
+    }
     // the shop fronts: the trade's board on the fascia, the awning, the display behind the glass
     const awnK = ch.awnK || 0;
     for (const w of mine) {
@@ -519,6 +515,14 @@ export function faceRelief(L, out) {
         }
         // behind the lit glass, what the trade has (dark against the light)
         if (w.lit && DISPLAY[w.trade]) for (const [g, c] of DISPLAY[w.trade](w.w, w.h, vhash(w.x, w.z, 13))) (Array.isArray(c) ? lit : rel).push([onWin(g.translate(0, 0, 0.12), w), c]);
+      }
+      // a barber's pole by his window, red and white, its glass top lit (the registry's red)
+      if (w.trade === 'barber' && vhash(w.x, w.z, 16) < 0.7) {
+        const side = vhash(w.x, w.z, 17) < 0.5 ? -1 : 1, px = side * (w.w / 2 + 0.3), y0 = 2.0 - w.y;
+        rel.push([onWin(new THREE.CylinderGeometry(0.075, 0.075, 0.9, 12).translate(px, y0 + 0.45, 0.24), w), G.paper * 1.2]);
+        for (let k = 0; k < 4; k++) rel.push([onWin(new THREE.TorusGeometry(0.078, 0.022, 4, 10, Math.PI * 1.1).rotateX(Math.PI / 2 - 0.55).rotateY(k * 0.5).translate(px, y0 + 0.12 + k * 0.22, 0.24), w), RED]);
+        rel.push([onWin(new THREE.BoxGeometry(0.04, 0.04, 0.24).translate(px, y0 + 0.45, 0.12), w), G.iron]);
+        lit.push([onWin(new THREE.SphereGeometry(0.09, 10, 6).translate(px, y0 + 1.0, 0.24), w), 2.2]);
       }
       // the awning in the street's canvas
       if (ch.awning && vhash(w.x, w.z, 14) < awnK) awning(rel, w, ch.awning, w.y + w.h / 2 - 0.05, vhash(w.x, w.z, 15));

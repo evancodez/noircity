@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { RNG } from '../../util/rng.js';
+import { treePieces, LEAF } from './trees.js';
 
 // NOIR CITY's facade kit (lane O1): a lot of the generator's
 // (src/world/cityGen.js) dressed by its district's kit. Two builds, so the
@@ -321,9 +322,10 @@ function nearGarden(lot, out) {
   for (let k = 0; k < nT; k++) {
     const tx = x0 + 4 + rng.next() * (W - 8), tz = z0 + 4 + rng.next() * (z1 - z0 - 8);
     const r = rng.range(2.5, 4.2);
-    // (a crown of three lumps: one ball read as a balloon over the wall)
-    for (let q = 0; q < 3; q++) push(out, 'tree', new THREE.IcosahedronGeometry(r * rng.range(0.6, 0.85), 2).scale(1, 0.8, 1).translate(tx + rng.range(-1, 1) * r * 0.45, 5 + r * rng.range(0.4, 0.9), tz + rng.range(-1, 1) * r * 0.45));
-    push(out, 'iron', new THREE.CylinderGeometry(0.18, 0.25, 5, 6).translate(tx, 2.5, tz));
+    // ([O1b] the cold play's finding 7: three lumps on a stick read as a
+    // balloon over the wall - a tree of a kind, its shape turned by where it stands)
+    const v = rng.next(), kind = v < 0.4 ? 'elm' : v < 0.65 ? 'bare' : v < 0.85 ? 'plane' : 'poplar';
+    for (const [g, lev] of treePieces({ x: tx, z: tz, kind, v: (v * 7.3) % 1, s: 0.8 + r * 0.12 }, 0)) push(out, lev === LEAF ? 'tree' : 'iron', g);
   }
 }
 

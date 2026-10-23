@@ -46,6 +46,7 @@ export default {
     const MATS = { dark: M.black, trim: M.stoneTrim, iron: M.lampIron, tree: M.tower, pave: street.paveMat, kerb: M.kerb, signs: names.mat, cloth: clothMat };
     const SOLID = new Set(['pave', 'kerb', 'iron']);
     const loaded = new Map(), building = new Map();
+    const doorsAt = new Map();   // [O1b] chunk key (where the door stands) -> Set(door)
     const stats = { built: 0, dropped: 0, buildMs: 0, live: 0, lastMs: 0 };
 
     // a chunk's build, a lot a step
@@ -108,12 +109,16 @@ export default {
       // rattle; O5 opens the places' - city:door)
       const doors = [];
       for (const L of (index.get(key) || { lots: [] }).lots) for (const w of lotWindows(L)) if (w.kind === 'door') doors.push({ x: w.x, z: w.z, nx: w.nx, nz: w.nz, lot: L, place: L.place ? L.place.id : null });
+      // ([O1b] the cold play's finding 6: a door is kept by where it stands,
+      // not by its lot's chunk - a lot across a chunk line hid one door in four from doorNear)
+      for (const d of doors) { const k = `${Math.floor(d.x / CHUNK)},${Math.floor(d.z / CHUNK)}`; if (!doorsAt.has(k)) doorsAt.set(k, new Set()); doorsAt.get(k).add(d); d.at = k; }
       loaded.set(key, { key, meshes, doors });
       stats.built++;
     }
     function drop(key) {
       const ch = loaded.get(key);
       if (!ch) return;
+      for (const d of ch.doors) { const S = doorsAt.get(d.at); if (S) { S.delete(d); if (!S.size) doorsAt.delete(d.at); } }   // [O1b]
       for (const m of ch.meshes) {
         group.remove(m);
         if (!m.userData.noRay && stage.rays) stage.removeSolid(m);
@@ -145,12 +150,14 @@ export default {
         let best = null, bd = r;
         const i0 = Math.floor((x - r) / CHUNK), i1 = Math.floor((x + r) / CHUNK), j0 = Math.floor((z - r) / CHUNK), j1 = Math.floor((z + r) / CHUNK);
         for (let i = i0; i <= i1; i++) for (let j = j0; j <= j1; j++) {
-          const ch = loaded.get(`${i},${j}`);
-          if (!ch) continue;
-          for (const d of ch.doors) { const e = Math.hypot(d.x - x, d.z - z); if (e < bd) { bd = e; best = d; } }
+          const S = doorsAt.get(`${i},${j}`);   // [O1b] (by where each door stands)
+          if (!S) continue;
+          for (const d of S) { const e = Math.hypot(d.x - x, d.z - z); if (e < bd) { bd = e; best = d; } }
         }
         return best ? { ...best, d: bd } : null;
       },
+      // [O1b] a door that is no lot's (the el's stair gates): kept for good
+      addDoor(d) { const k = `${Math.floor(d.x / CHUNK)},${Math.floor(d.z / CHUNK)}`; if (!doorsAt.has(k)) doorsAt.set(k, new Set()); doorsAt.get(k).add(d); d.at = k; d.fixed = true; return d; },
       // every chunk round a point built now (a start, a jump: before the first frame)
       warmAround(x, z, r = NEAR) {
         for (const { key } of want(x, z, r)) {

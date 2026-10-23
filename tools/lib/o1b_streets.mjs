@@ -14,7 +14,40 @@ export default async function o1b(api) {
   const { opts } = api;
   if (opts.mode === 'items') return items(api);
   if (opts.mode === 'pigeons') return pigeons(api);
+  if (opts.mode === 'doors') return doors(api);
   return { err: 'no mode' };
+}
+
+// doors    the cold play's finding 6: every street door of the lots round a
+//          point (opts.at, opts.r) tried - the eye set 1.2 m in front of it,
+//          facing it; the prompt `E  try the door` must be up; E; `locked`
+//          (city:locked) must answer. Lots across a chunk line included.
+async function doors(api) {
+  const { js, sleep, log } = api;
+  const list = await js(`(() => {
+    const [x, z] = ${JSON.stringify(api.opts.at || [-201, -6])}, r = ${api.opts.r || 40};
+    G.stage.part('stream').warmAround(x, z);
+    const out = [];
+    const S = G.stage.part('stream');
+    for (const ch of S.loaded.values()) for (const d of ch.doors) if (!d.place && Math.hypot(d.x - x, d.z - z) < r) out.push([+d.x.toFixed(2), +d.z.toFixed(2), d.nx, d.nz, d.lot.chunk, G.stage.part('city').C.chunkOf(d.x, d.z)]);
+    if (!window.__lockN) { window.__lockN = 0; G.on('city:locked', () => window.__lockN++); }
+    return out;
+  })()`);
+  const out = [];
+  for (const [x, z, nx, nz, lotChunk, atChunk] of list.slice(0, api.opts.max || 40)) {
+    await js(`(() => { const x = ${x + nx * 1.2}, z = ${z + nz * 1.2}; N.controller.setPose(x, z, Math.atan2(${nx}, ${nz}), -0.05); return 1; })()`);
+    await sleep(350);
+    const p = await js(`({ prompt: G.hud.promptShown, n: window.__lockN })`);
+    await press(api, 'KeyE');
+    await sleep(300);
+    const n = await js('window.__lockN');
+    const ok = p.prompt === 'E  try the door' && n === p.n + 1;
+    out.push({ at: [x, z], ok, straddles: lotChunk !== atChunk, prompt: p.prompt });
+    if (!ok) log(`  door ${x},${z}: NOT OK - prompt '${p.prompt}', locked ${n - p.n}`);
+  }
+  const bad = out.filter((d) => !d.ok);
+  log(`  doors: ${out.length} tried, ${out.filter((d) => d.straddles).length} of them on a lot across a chunk line, ${bad.length} without an answer`);
+  return { tried: out.length, straddling: out.filter((d) => d.straddles).length, bad: bad.length, badAt: bad.map((d) => d.at) };
 }
 
 async function press(api, code) { await api.keyDown(code); await api.sleep(60); await api.keyUp(code); }

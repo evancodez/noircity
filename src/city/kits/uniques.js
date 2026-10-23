@@ -19,7 +19,7 @@ const WORDS = {
   balls: ['LOANS', 'block'], barber: ['BARBER', 'script'], cellar: ['THE CELLAR', 'script'], chinese: ['JADE GARDEN', 'block'],
   steamvent: ['HAND LAUNDRY', 'serif'], poultry: ['LIVE POULTRY', 'block'], gate: ['NO ADMITTANCE', 'stencil'], bakery: ['BAKERY', 'script'],
   cycles: ['CYCLES', 'block'], yardgate: ['HARBOR LUMBER CO.', 'stencil'], billboard: ['GALLAGHER\'S RYE', 'block'], gasboard: ['CITY GAS LIGHT CO.', 'serif'],
-  mission: ['JESUS SAVES', 'block'], fountain: ['1898', 'serif'],
+  mission: ['JESUS SAVES', 'block'], fountain: ['1898', 'serif'], closed: ['CLOSED', 'stencil'], office: ['PIER 7  OFFICE', 'stencil'],
 };
 const FONTS = {
   deco: (px) => `700 ${px}px "Futura", ${LETTER_FONT}`, serif: (px) => `700 ${px}px "Didot", "Georgia", serif`,
@@ -348,3 +348,43 @@ export function uniquePieces(u) {
   return { relief: R, lit: L, sign: S, vents };
 }
 export const UNIQUE_KINDS = Object.keys(B);
+
+// the el's stair gate (the cold play's finding 11: the stair looked
+// climbable, went black at its foot and said nothing): two posts, an iron
+// grille, a chain across, a board CLOSED - at (x, z), facing +z (the street)
+export function stairGate(x, z, w = 1.8) {
+  const R = [], S = [];
+  for (const s of [-1, 1]) R.push([box(0.12, 1.5, 0.12).translate(x + s * (w / 2 + 0.06), PAVE + 0.75, z), G.iron]);
+  for (let k = 0; k <= 9; k++) R.push([box(0.025, 1.3, 0.025).translate(x - w / 2 + 0.09 + k * (w - 0.18) / 9, PAVE + 0.7, z), G.iron]);
+  for (const y of [0.12, 1.32]) R.push([box(w, 0.04, 0.04).translate(x, PAVE + y, z), G.iron]);
+  R.push([tube([V3(x - w / 2, PAVE + 1.0, z + 0.06), V3(x, PAVE + 0.82, z + 0.09), V3(x + w / 2, PAVE + 1.0, z + 0.06)], 0.018, 4, 10), G.tin]);
+  R.push([box(0.12, 0.16, 0.08).translate(x, PAVE + 0.86, z + 0.1), G.tin]);
+  S.push(sign('closed', x, PAVE + 1.08, z + 0.05, 0.9, 0.24));
+  return { relief: R, sign: S };
+}
+// a pier's shed (the cold play's finding 9: a blank slab): its roof's ridge,
+// doors, lit windows, a board on the office's
+export function pierShed(x0, x1, z0, z1, h, office) {
+  const R = [], L = [], S = [];
+  const cx = (x0 + x1) / 2, cz = (z0 + z1) / 2, w = x1 - x0, d = z1 - z0;
+  const gab = new THREE.BufferGeometry();
+  const y = PAVE + h;
+  gab.setAttribute('position', new THREE.Float32BufferAttribute([x0, y, z0, x1, y, z0, cx, y + w * 0.22, z0, x1, y, z1, x0, y, z1, cx, y + w * 0.22, z1], 3));
+  gab.computeVertexNormals();
+  R.push([gab, G.wood]);
+  for (const s of [-1, 1]) { const g = new THREE.PlaneGeometry(Math.hypot(w / 2, w * 0.22) + 0.3, d + 0.4).rotateX(-Math.PI / 2).rotateZ(s * Math.atan2(w * 0.22, w / 2)).translate(cx - s * w / 4, y + w * 0.11, cz); R.push([g, G.iron]); }
+  // the doors on its long sides, a window lit here and there, the office's board
+  for (const sx of [-1, 1]) for (let k = 0; k < Math.floor(d / 9); k++) {
+    const z = z0 + 4.5 + k * 9, x = sx < 0 ? x0 - 0.02 : x1 + 0.02, yaw = sx < 0 ? -Math.PI / 2 : Math.PI / 2;
+    R.push([new THREE.PlaneGeometry(3.2, 3.4).rotateY(yaw).translate(x + sx * 0.01, PAVE + 1.7, z), G.wood * 1.6]);
+    for (let q = 0; q < 4; q++) R.push([new THREE.PlaneGeometry(0.06, 3.3).rotateY(yaw).translate(x + sx * 0.015, PAVE + 1.7, z - 1.2 + q * 0.8), G.ink]);
+    const lit = ((k + (sx > 0 ? 1 : 0)) % 3) === 0;
+    (lit ? L : R).push([new THREE.PlaneGeometry(1.2, 0.8).rotateY(yaw).translate(x + sx * 0.015, PAVE + h - 1.4, z + 2.6), lit ? 0.55 : G.ink]);
+  }
+  if (office) {
+    S.push(sign('office', cx, PAVE + h - 1.0, z0 - 0.04, Math.min(w * 0.8, 9), 1.0, Math.PI));
+    L.push([new THREE.PlaneGeometry(1.4, 1.0).rotateY(Math.PI).translate(cx - 3, PAVE + 2.0, z0 - 0.03), 0.6]);
+    L.push([new THREE.PlaneGeometry(1.4, 1.0).rotateY(Math.PI).translate(cx + 3, PAVE + 2.0, z0 - 0.03), 0.6]);
+  }
+  return { relief: R, lit: L, sign: S };
+}

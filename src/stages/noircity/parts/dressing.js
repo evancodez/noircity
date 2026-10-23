@@ -1,8 +1,8 @@
 import * as THREE from 'three';
 import { propPieces, treePieces, faceRelief, boardAtlas, stepsPieces } from '../../../city/kits/dress.js';
-import { uniquePieces, signAtlas } from '../../../city/kits/uniques.js';
+import { uniquePieces, signAtlas, stairGate, pierShed } from '../../../city/kits/uniques.js';
 import { CHUNK } from '../../../world/cityGen.js';
-import { WATER_Y } from '../../../world/plan.js';
+import { WATER_Y, PIERS, RIVER, QUAY_OFF, PAVE } from '../../../world/plan.js';
 
 // NOIR CITY's dressing (lane O1b): every street its own and more in them,
 // drawn round the eye. What world/dressing.js placed (C.dress, C.trees, the
@@ -77,10 +77,11 @@ export default {
     const mats = { props: relief, relief, boards, lit };
     // what each chunk holds
     const index = new Map();
-    const slot = (k) => { if (!index.has(k)) index.set(k, { props: [], trees: [], lots: [] }); return index.get(k); };
+    const slot = (k) => { if (!index.has(k)) index.set(k, { props: [], trees: [], lots: [], gardens: [] }); return index.get(k); };
     for (const r of C.dress || []) slot(r.chunk).props.push(r);
     for (const t of C.trees || []) slot(t.chunk).trees.push(t);
     for (const L of C.lots) if (L.fc && L.fc.length) slot(L.chunk).lots.push(L);
+    for (const L of C.lots) if (L.kind === 'garden') slot(L.chunk).gardens.push(L);
     const loaded = new Map(), building = new Map();
     const stats = { built: 0, dropped: 0, buildMs: 0, live: 0, tris: 0 };
 
@@ -93,6 +94,19 @@ export default {
       yield;
       const R = { relief: out.relief, board: out.board, lit: out.lit };
       for (const L of D.lots) { faceRelief(L, R); }
+      // the Hill's gates: a lantern lit on each pier (the cold play's finding 7: the Hill's streets a blank wall)
+      for (const L of D.gardens || []) {
+        const n = L.gates || 1, W = L.x1 - L.x0, gz = L.sides.s ? L.z1 : L.z0, s = L.sides.s ? 1 : -1;
+        for (let k = 0; k < n; k++) {
+          const gx = L.x0 + (W / n) * (k + 0.5);
+          for (const ox of [-2.3, 2.3]) {
+            const y = 0.15 + L.wallH + 1.4;
+            out.relief.push([new THREE.BoxGeometry(0.36, 0.06, 0.36).translate(gx + ox, y + 0.02, gz), 0.008]);
+            out.relief.push([new THREE.ConeGeometry(0.26, 0.2, 4).rotateY(Math.PI / 4).translate(gx + ox, y + 0.62, gz), 0.008]);
+            out.lit.push([new THREE.BoxGeometry(0.22, 0.4, 0.22).translate(gx + ox, y + 0.3, gz + s * 0.0), 1.5]);
+          }
+        }
+      }
       yield;
       const meshes = [];
       let k = 8;
@@ -150,6 +164,22 @@ export default {
     }
     // the quay's steps down to the water (the swim's way out)
     for (const s of C.steps || []) U.relief.push(...stepsPieces(s, WATER_Y));
+    // the el's stairs: a gate at each foot, chained, CLOSED (the cold play's
+    // finding 11): solid, and E at it rattles it as at a street door
+    const el = stage.part('el'), stream = stage.part('stream');
+    for (const st of (el && el.stops) || []) {
+      const x = st.stair.x, z = st.z + 32.4;
+      const P = stairGate(x, z, 1.8);
+      U.relief.push(...P.relief); U.sign.push(...P.sign);
+      C.walls.push({ cx: x, cz: z, hx: 1.0, hz: 0.12, angle: 0, tag: 'gate' });
+      if (stream && stream.addDoor) stream.addDoor({ x, z: z + 0.1, nx: 0, nz: 1, lot: null, place: null, gate: 'el' });
+    }
+    // the piers' sheds: a roof's ridge, doors, a window lit, the office's board (finding 9)
+    for (const p of PIERS) {
+      const e0 = RIVER.s + QUAY_OFF;
+      const P = pierShed(p.x - p.w / 2 + 2, p.x + p.w / 2 - 2, e0 + p.len * 0.35, e0 + p.len * 0.8, (p.office ? 7 : 5) - PAVE, !!p.office);
+      U.relief.push(...P.relief); U.lit.push(...P.lit); U.sign.push(...P.sign);
+    }
     const uid = city.idFor('5,5', 40);
     const umk = (geo, mat, k, solid) => { const m = new THREE.Mesh(geo, mat); m.userData.inkId = uid + k; m.receiveShadow = true; if (!solid) m.userData.noRay = true; m.name = 'uniques ' + k; group.add(m); return m; };
     const uniques = [];

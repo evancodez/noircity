@@ -31,7 +31,7 @@ const COL = {
   white: { rim: '#cfcfcf', core: '#ffffff' },
   red: { rim: toCss(accent('neonRed', { gain: 1 / 3 })), core: '#ffe2e2' },
 };
-const PX = 96, ATLAS = 2048;
+const PX = 96, ATLAS = 2048, ATLAS_H = 4096;   // ([O1b] twice as tall: the painted names and the windows' neon ran off the bottom of a square one)
 const BLADES = ['BAR', 'HOTEL', 'CHOP SUEY', 'PAWN', 'DANCING', 'LIQUORS', 'BILLIARDS', 'LUNCH', 'ROOMS', 'DRUGS', 'CAFE', 'TAILOR', 'GRILL', 'SHOES', 'RADIO', 'JEWELRY'];
 const BLADE_STREETS = new Set(['grand', 'bowery', 'centre', 'houston', 'broadway', 'mott', 'clock']);
 
@@ -44,12 +44,12 @@ export default {
     group.name = 'places';
     scene.add(group);
     // ---- the atlas ---------------------------------------------------------------------------------
-    const cv = document.createElement('canvas'); cv.width = ATLAS; cv.height = ATLAS;
+    const cv = document.createElement('canvas'); cv.width = ATLAS; cv.height = ATLAS_H;
     const g = cv.getContext('2d');
-    g.fillStyle = '#000'; g.fillRect(0, 0, ATLAS, ATLAS);
+    g.fillStyle = '#000'; g.fillRect(0, 0, ATLAS, ATLAS_H);
     let ax = 4, ay = 4, row = 0;
     const alloc = (w, h) => { if (ax + w + 4 > ATLAS) { ax = 4; ay += row + 6; row = 0; } const c = { x: ax, y: ay, w, h }; ax += w + 6; row = Math.max(row, h); return c; };
-    const uvOf = (c) => [c.x / ATLAS, 1 - (c.y + c.h) / ATLAS, (c.x + c.w) / ATLAS, 1 - c.y / ATLAS];
+    const uvOf = (c) => [c.x / ATLAS, 1 - (c.y + c.h) / ATLAS_H, (c.x + c.w) / ATLAS, 1 - c.y / ATLAS_H];
     // a neon face: the black board, the tube's glow, the tube, its white-hot line
     const neonFace = (text, col, wM, hM, vert) => {
       const c = alloc(Math.round(wM * PX), Math.round(hM * PX));
@@ -116,10 +116,10 @@ export default {
       signs.push({ text, x, z, n, kind: 'blade', col });
     };
     // a flat sign on the wall
-    const flat = (x, z, n, y, text, w, h, kind, col = 'blue') => {
+    const flat = (x, z, n, y, text, w, h, kind, col = 'blue', res = 1) => {   // ([O1b] res: the atlas's pixels a metre, a share of PX - the painted names are big and seen far)
       const yawN = Math.atan2(-n[1], n[0]) + Math.PI / 2;
       boards.push(box(x + n[0] * 0.05, y, z + n[1] * 0.05, w + 0.12, h + 0.12, 0.1, yawN));
-      const uv = kind === 'neon' ? neonFace(text, col, w, h, false) : boardFace(text, w, h, kind === 'lit');
+      const uv = kind === 'neon' ? neonFace(text, col, w * res, h * res, false) : boardFace(text, w * res, h * res, kind === 'lit');
       (kind === 'neon' ? neonFaces : kind === 'lit' ? litFaces : darkFaces).push(faceGeo(w, h, n[0], n[1], x + n[0] * 0.11, y, z + n[1] * 0.11, uv));
       signs.push({ text, x, z, n, kind });
     };
@@ -196,6 +196,26 @@ export default {
       blade(shop.x + (-F.n[1]) * shop.w * 0.5, shop.z + F.n[0] * shop.w * 0.5, F.n, 4.6 + text.replace(/ /g, '').length * 0.29, text, col);
       if (++nB >= 40) break;
     }
+    // ---- [O1b] neon in the lit shop windows (the brief §4: a touch of colour,
+    // the vast majority still ink): one lit shop in four of the trades that
+    // burn one - a cafe's EATS, a pawnshop's LOANS, a chop suey's - red, the
+    // registry's blue or white; red by the street (one in ten and more on the
+    // Bowery, Doyers, Broadway). A tube on its black backing, up in the glass
+    const WN = { cafe: ['EATS', 'CAFE', 'OPEN'], deli: ['DELI', 'OPEN'], chopsuey: ['CHOP SUEY', 'TEA'], pawn: ['LOANS', 'PAWN'], radio: ['RADIO'], drugs: ['DRUGS', 'SODA'], cigars: ['CIGARS'], tobacco: ['SMOKES'], barber: ['BARBER'], shoes: ['OPEN'], grocer: ['OPEN'], laundry: ['LAUNDRY'], hats: ['HATS'], jeweler: ['WATCHES'] };
+    let nW = 0;
+    for (const L of C.lots) {
+      if (!L.fc || L.place || nW >= 260) continue;
+      for (const w of lotWindows(L)) {
+        if (w.kind !== 'shop' || !w.lit || !w.trade || !WN[w.trade] || vhash(w.x, w.z, 71) > 0.3) continue;
+        const words = WN[w.trade], text = words[Math.floor(vhash(w.x, w.z, 72) * words.length) % words.length];
+        const red = Math.max(0.3, ((L.ch && L.ch.red) || 0) * 2.5);
+        const col = vhash(w.x, w.z, 73) < red ? 'red' : vhash(w.x, w.z, 74) < 0.6 ? 'blue' : 'white';
+        const wM = Math.min(w.w * 0.62, text.replace(/ /g, '').length * 0.24 + 0.35), hM = 0.4;
+        neonFaces.push(faceGeo(wM, hM, w.nx, w.nz, w.x + w.nx * 0.16, w.y + w.h * 0.2, w.z + w.nz * 0.16, neonFace(text, col, wM, hM, false)));
+        signs.push({ text, x: w.x, z: w.z, n: [w.nx, w.nz], kind: 'window', col });
+        if (++nW >= 260) break;
+      }
+    }
     // ---- the warehouses' and the sheds' painted names, high on their street faces (the Docks, the Yards) ------------
     const PAINT = {
       docks: ['HARBOR FREIGHT', 'COLD STORAGE', 'PIER 5 TERMINAL', 'BONDED WAREHOUSE', 'COFFEE & SUGAR', 'LUMBER', 'SHIP CHANDLER', 'FISH', 'HEMP & ROPE', 'IMPORTS', 'GENERAL CARGO', 'TEA'],
@@ -211,7 +231,7 @@ export default {
       const F = Fs[Math.floor(prng.next() * Fs.length)];
       const list = PAINT[L.district], text = list[Math.floor(prng.next() * list.length)];
       const w = Math.min(F.len * 0.7, text.length * 0.9 + 2), h = Math.min(2.2, Math.max(1.4, w / text.length * 1.4));
-      flat(F.mid[0], F.mid[1], F.n, L.h - h / 2 - 1.0, text, w, h, 'dark');
+      flat(F.mid[0], F.mid[1], F.n, L.h - h / 2 - 1.0, text, w, h, 'dark', 'blue', 0.4);
       if (++nP >= 30) break;
     }
     // ---- the meshes ----------------------------------------------------------------------------------------------
@@ -238,7 +258,7 @@ export default {
     mk(bulbs, M.bulb, 2);
     mk(amberBulbs, new THREE.MeshBasicMaterial({ color: accent('neonAmber', { gain: 0.7 }) }), 2);   // [O1b]
     void CLS; void NS; void EW;
-    return { group, signs, doors };
+    return { group, signs, doors, atlasUsed: ay + row };   // ([O1b] the atlas's height used: under ATLAS_H)
   },
 };
 
