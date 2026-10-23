@@ -35,6 +35,30 @@ fails, the tools). The user's words, which are the standard:
 > physical stuff within reason), and a variety of cars (not a ton for
 > now). Make it a world that feels not overly copy-paste.
 
+> (And, 2026-10-23:) I trust you (Fable) and Opus 5.5 most for artistic
+> choices and high-level planning. Don't wait for me to play before
+> continuing. Once you have the basics down, don't make it cluttered or
+> overly convoluted, but add nice attention to detail and cool stuff. I
+> liked the noir-style enemies from the OG game (the face obscured, not
+> blocky, not balloon-animally) and the animations often looked cool, but
+> it needs some physics or a more dynamic way, more animations, better
+> AI; that style of character and others, not just one style of NPC;
+> other characters must not feel buggy, glitchy, ugly or overly stiff.
+> Focus on making everything come together as a cohesive open world.
+
+**Characters** (lane O8, `docs/briefs/O8_FIGURES.md`): one cast on one
+rig for every system; the Hood's look for everyone (the face in the
+brim's shadow, the silhouette tells the kind, nothing blocky, nothing
+balloon), many kinds in seeded variants; blended clips over procedural
+layers (look, lean, feet on kerbs) and a light ragdoll within reason;
+intentions a player can read before a man acts.
+
+**Cohesion** (lane O7 ties it): one city where every system meets every
+other (a brawl draws the crowd and the cop, a wreck the onlookers and
+the news, a hideout the gang and then the police), one HUD language,
+one sound, nothing cluttered: a thing is added because a player will
+notice it, and taken out if he would not.
+
 **Nothing copy-paste.** Every kit piece, car, figure and prop comes in
 variants, picked by a seeded hash of where it stands, so no two blocks,
 cars or corners read the same; a lane that places the same thing twice
@@ -256,10 +280,11 @@ do everything but buy.
 | O6 | smash: the destruction set, car damage and fire | `ow/O6-smash` | 5376 |
 | O7 | the night: HUD with the minimap bottom left, map, saves, radio, title, pad, polish, the whole-game hunt | `ow/O7-night` | 5377 |
 | O1b | the streets distinct (the blind test), more in them, items, a touch of colour (the user's first drive) | `ow/O1b-streets` | 5378 |
+| O8 | figures: one cast for the city, the Hood's look for everyone, never stiff, the physics layer, AI that shows its intention | `ow/O8-figures` | 5379 |
 
 Waves: O1, O4, O6 first (O4 and O6 build and prove on the base's test
 beds and move into the city when O1 merges); then O2, O3, O1b, O5 on
-the city; then O7. **Colour**: the vast majority of every frame is black,
+the city; then O8 (the figures, after O3 and O4); then O7. **Colour**: the vast majority of every frame is black,
 white and grey; a small palette of accents through the registry (the
 neon's blue, red for the police lamp, fire and the odd sign, a warm
 amber for marquees and embers), under 2 % of a frame's pixels, never a

@@ -1,0 +1,26 @@
+{
+ "about": "[O6 after the critic, finding 8] The city's shop glass (O1's free roam, ?start=city): walk to the nearest shop front on Grand Ave, the Tommy gun out (?gun: the roam's hands are empty, so the play gives them the gun the way the bed does), a burst into its window: the pane glazed there and then and holed where the round went; a second burst and it goes; then walk into it: the facade stops me. node tools/play.mjs tools/plays/o6_city_glass.json",
+ "url": "/?mute=1&start=city",
+ "size": [1280, 800],
+ "out": "shots/o6/cityglass",
+ "steps": [
+  { "wait": 1500 },
+  { "clickOn": "#title .opt[data-k=begin]", "taken": "G.state !== 'title'", "retries": 5, "every": 4000 },
+  { "until": "G.scenes.current && G.scenes.current.id === 'city' && G.scenes.fadeK < 0.05", "timeout": 30000 },
+  { "eval": "(() => { const S = G.stage.smash, C = N.controller; let best = null, bd = 1e9; for (const L of S.shopGrid.values()) for (const w of L) { const d = Math.hypot(w.x - C.pos.x, w.z - C.pos.z); if (d < bd && w.lit) { bd = d; best = w; } } window.__w = best; G.player.weapons.equip('tommy'); G.setViewmodelVisible(true); if (G.weapon) G.weapon.ammo = 50; return JSON.stringify({ w: [best.x, best.z, best.nx, best.nz, best.w], d: +bd.toFixed(1) }); })()" },
+  { "walk": "(() => { const w = window.__w; return [[w.x + w.nx * 5, w.z + w.nz * 5]]; })()", "timeout": 30000 },
+  { "look": "(() => { const C = N.controller, e = G.camera.position, w = window.__w; const dx = w.x - e.x, dy = w.y - e.y, dz = w.z - e.z; let d = Math.atan2(-dx, -dz) - C.yaw; d = Math.atan2(Math.sin(d), Math.cos(d)); return [-d / C.sensitivity, -(Math.atan2(dy, Math.hypot(dx, dz)) - C.pitch) / C.sensitivity]; })()", "steps": 8 },
+  { "wait": 500 },
+  { "mouse": "down", "button": "left" }, { "wait": 180 }, { "mouse": "up", "button": "left" },
+  { "wait": 500 },
+  { "shot": "g1_holed" },
+  { "expect": "(() => { const w = window.__w; return !!(w.it && w.it.pane && w.it.pane.state !== 'whole'); })()", "label": "the shop front is glazed and its glass answered the round" },
+  { "eval": "(() => { const w = window.__w; return JSON.stringify({ state: w.it.pane.state, hits: w.it.pane.hits, glazed: G.stage.smash.glazed.length }); })()" },
+  { "mouse": "down", "button": "left" }, { "wait": 900 }, { "mouse": "up", "button": "left" },
+  { "wait": 900 },
+  { "shot": "g2_gone" },
+  { "eval": "(() => { const w = window.__w; return JSON.stringify({ state: w.it && w.it.pane ? w.it.pane.state : null }); })()" },
+  { "walk": "(() => { const w = window.__w; return [[w.x - w.nx * 1.5, w.z - w.nz * 1.5]]; })()", "into": true, "timeout": 5000, "stop": false },
+  { "expect": "(() => { const w = window.__w, p = N.controller.pos; return (p.x - w.x) * w.nx + (p.z - w.z) * w.nz > 0.1; })()", "label": "walking into the broken window: the facade stops me in front of it" }
+ ]
+}

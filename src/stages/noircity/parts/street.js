@@ -17,6 +17,9 @@ export default {
     const { scene, U } = stage;
     const C = stage.part('city').C;
     const roadMat = makeGroundMaterial(U, { paving: 0 }), paveMat = makeGroundMaterial(U, { paving: 1 });
+    // [O1b] the city's street: ink and pools (the cold play's finding 3) - the
+    // dry ground between the puddles darker, the light kept in the puddles' sheen
+    roadMat.uniforms.uDryK.value = 0.5; paveMat.uniforms.uDryK.value = 0.6;
     const mk = (geo, mat, name) => {
       const m = new THREE.Mesh(geo, mat);
       m.layers.set(LAYER.GROUND);

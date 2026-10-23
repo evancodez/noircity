@@ -1,0 +1,43 @@
+{
+ "about": "[O4 critic] the fists' press-to-act in a live fight",
+ "url": "/?mute=1&o4stay=1&start=o4.brawl2",
+ "size": [
+  1280,
+  800
+ ],
+ "out": "shots/critic/lat",
+ "steps": [
+  {
+   "until": "G.state === 'title' && !!document.querySelector('#title .opt[data-k=begin]')",
+   "timeout": 60000
+  },
+  {
+   "wait": 1000
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]",
+   "taken": "G.scenes.current && G.scenes.current.id === 'o4'",
+   "retries": 4
+  },
+  {
+   "until": "G.scenes.beat === 'brawl2' && G.crowd.active && !G.failing",
+   "timeout": 30000
+  },
+  {
+   "eval": "(G.o4stay = true)"
+  },
+  {
+   "wait": 2500
+  },
+  {
+   "drive": "tools/lib/o4_latency.mjs",
+   "part": "fists",
+   "n": 12,
+   "check": "true",
+   "label": "the fists' latency in a live 1v2 (no hold: he is hitting me)"
+  },
+  {
+   "eval": "(()=>{const L=window.__lat||[];return L.length})()"
+  }
+ ]
+}

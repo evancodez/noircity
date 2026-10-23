@@ -1,0 +1,60 @@
+{
+ "about": "[O4] after the critic: the bed's chain - a direct start names the place on its card (the diner: 'The Diner', not 'The Street'); the police after the street and won goes to the end ('All of them won.', the E prompt with its cap: no key written in the line), never to an undefined beat",
+ "url": "/?mute=1&start=o4.diner",
+ "size": [
+  1280,
+  800
+ ],
+ "out": "shots/o4/chain",
+ "steps": [
+  {
+   "until": "G.state === 'title' && !!document.querySelector('#title .opt[data-k=begin]')",
+   "timeout": 60000
+  },
+  {
+   "wait": 800
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]",
+   "taken": "G.scenes.current && G.scenes.current.id === 'o4'",
+   "retries": 4
+  },
+  {
+   "until": "G.scenes.beat === 'diner'",
+   "timeout": 30000
+  },
+  {
+   "eval": "({ card: document.querySelector('.chapter .name') ? document.querySelector('.chapter .name').textContent : null, cardT: +(G.hud.cardT || 0).toFixed(2) })"
+  },
+  {
+   "expect": "/diner/i.test(document.querySelector('.chapter .name').textContent)"
+  },
+  {
+   "name": "the police's shootout won (its men put down by the test: the routing is what is proved here)",
+   "eval": "(N.game.scenes.go('o4', { beat: 'police', fade: 'cut', card: false }), 1)"
+  },
+  {
+   "until": "G.scenes.beat === 'police' && G.ais && G.ais.size > 0 && !G.failing",
+   "timeout": 20000
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "eval": "([...G.ais.keys()].forEach((h) => G.damageHood(h, 999, new N.THREE.Vector3(0, 0, -1), {})), 1)"
+  },
+  {
+   "until": "G.scenes.beat === 'done'",
+   "timeout": 15000
+  },
+  {
+   "wait": 2500
+  },
+  {
+   "eval": "({ beat: G.scenes.beat, obj: G.hud.objectiveText, prompt: G.hud.promptShown })"
+  },
+  {
+   "expect": "G.hud.objectiveText === 'All of them won.' && /again/.test(G.hud.promptShown || '')"
+  }
+ ]
+}

@@ -1,0 +1,38 @@
+{
+ "about": "[O4] The street shootout (four of the gang down the avenue, the cover the world's; tools/lib/o4_guns.mjs). The clumsy first-timer (C2's clumsy profile).",
+ "url": "/?mute=1&start=o4.street",
+ "size": [
+  1280,
+  800
+ ],
+ "out": "shots/play/street_bad",
+ "steps": [
+  {
+   "until": "G.state === 'title' && !!document.querySelector('#title .opt[data-k=begin]')",
+   "timeout": 60000
+  },
+  {
+   "wait": 1200
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]",
+   "taken": "G.scenes.current && G.scenes.current.id === 'o4'",
+   "retries": 4
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'o4' && document.pointerLockElement === N.renderer.domElement",
+   "timeout": 30000
+  },
+  {
+   "drive": "tools/lib/o4_guns.mjs",
+   "profile": "bad",
+   "beats": [
+    "street"
+   ],
+   "tries": 4,
+   "beatTimeout": 150,
+   "check": "D.won === 1",
+   "label": "the clumsy first-timer gets through by the fourth try"
+  }
+ ]
+}

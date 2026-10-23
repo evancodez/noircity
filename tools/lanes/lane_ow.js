@@ -146,7 +146,8 @@ for (let r = 1; r <= N; r++) {
   const hard = c.findings.filter((f) => f.severity !== 'minor').length + c.musts.filter((m) => !m.met).length + c.cheats.length
   log(L.n + ' critic ' + r + ': ' + c.findings.length + ' findings (' + hard + ' hard), ' + c.musts.filter((m) => !m.met).length + ' asks not met')
   if (r > 1 && hard === 0) { rounds.push({ round: r, critic: c, fix: null }); break }
-  const fx = await agent(fixPrompt(WT, c), { label: L.n + ' fix ' + r, phase: 'Fix', model: 'opus', effort: L.effort || 'high', schema: FIX_SCHEMA })
+  // (the fix pass is targeted work: 'high' unless the lane says otherwise; the user: lesser thinking for smaller tasks)
+  const fx = await agent(fixPrompt(WT, c), { label: L.n + ' fix ' + r, phase: 'Fix', model: 'opus', effort: L.fixEffort || 'high', schema: FIX_SCHEMA })
   rounds.push({ round: r, critic: c, fix: fx })
   if (fx) last = fx
   if (!fx || hard === 0) break

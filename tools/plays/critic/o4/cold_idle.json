@@ -1,0 +1,128 @@
+{
+ "about": "[O4 critic] cold: the first contest from the title, hands off",
+ "url": "/?mute=1&start=o4",
+ "size": [
+  1280,
+  800
+ ],
+ "out": "shots/critic/cold_idle",
+ "steps": [
+  {
+   "until": "G.state === 'title' && !!document.querySelector('#title .opt[data-k=begin]')",
+   "timeout": 60000
+  },
+  {
+   "wait": 1000
+  },
+  {
+   "shot": "00_title"
+  },
+  {
+   "eval": "document.querySelector('#title').innerText.replace(/\\s+/g,' ')"
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]",
+   "taken": "G.scenes.current && G.scenes.current.id === 'o4'",
+   "retries": 4
+  },
+  {
+   "wait": 2500
+  },
+  {
+   "eval": "({t:+(G.time||0).toFixed?.(1), beat:G.scenes.beat, hud:(document.querySelector('#hud')||{}).innerText?.replace(/\\s+/g,' ').slice(0,300), cards:(document.querySelector('#fightcards')||{}).innerText?.replace(/\\s+/g,' ').slice(0,200), hp: G.crowd && G.crowd.me && G.crowd.me.hp, failing:!!G.failing})"
+  },
+  {
+   "shot": "idle_00"
+  },
+  {
+   "wait": 2500
+  },
+  {
+   "eval": "({t:+(G.time||0).toFixed?.(1), beat:G.scenes.beat, hud:(document.querySelector('#hud')||{}).innerText?.replace(/\\s+/g,' ').slice(0,300), cards:(document.querySelector('#fightcards')||{}).innerText?.replace(/\\s+/g,' ').slice(0,200), hp: G.crowd && G.crowd.me && G.crowd.me.hp, failing:!!G.failing})"
+  },
+  {
+   "wait": 2500
+  },
+  {
+   "eval": "({t:+(G.time||0).toFixed?.(1), beat:G.scenes.beat, hud:(document.querySelector('#hud')||{}).innerText?.replace(/\\s+/g,' ').slice(0,300), cards:(document.querySelector('#fightcards')||{}).innerText?.replace(/\\s+/g,' ').slice(0,200), hp: G.crowd && G.crowd.me && G.crowd.me.hp, failing:!!G.failing})"
+  },
+  {
+   "shot": "idle_02"
+  },
+  {
+   "wait": 2500
+  },
+  {
+   "eval": "({t:+(G.time||0).toFixed?.(1), beat:G.scenes.beat, hud:(document.querySelector('#hud')||{}).innerText?.replace(/\\s+/g,' ').slice(0,300), cards:(document.querySelector('#fightcards')||{}).innerText?.replace(/\\s+/g,' ').slice(0,200), hp: G.crowd && G.crowd.me && G.crowd.me.hp, failing:!!G.failing})"
+  },
+  {
+   "wait": 2500
+  },
+  {
+   "eval": "({t:+(G.time||0).toFixed?.(1), beat:G.scenes.beat, hud:(document.querySelector('#hud')||{}).innerText?.replace(/\\s+/g,' ').slice(0,300), cards:(document.querySelector('#fightcards')||{}).innerText?.replace(/\\s+/g,' ').slice(0,200), hp: G.crowd && G.crowd.me && G.crowd.me.hp, failing:!!G.failing})"
+  },
+  {
+   "wait": 2500
+  },
+  {
+   "eval": "({t:+(G.time||0).toFixed?.(1), beat:G.scenes.beat, hud:(document.querySelector('#hud')||{}).innerText?.replace(/\\s+/g,' ').slice(0,300), cards:(document.querySelector('#fightcards')||{}).innerText?.replace(/\\s+/g,' ').slice(0,200), hp: G.crowd && G.crowd.me && G.crowd.me.hp, failing:!!G.failing})"
+  },
+  {
+   "shot": "idle_05"
+  },
+  {
+   "wait": 2500
+  },
+  {
+   "eval": "({t:+(G.time||0).toFixed?.(1), beat:G.scenes.beat, hud:(document.querySelector('#hud')||{}).innerText?.replace(/\\s+/g,' ').slice(0,300), cards:(document.querySelector('#fightcards')||{}).innerText?.replace(/\\s+/g,' ').slice(0,200), hp: G.crowd && G.crowd.me && G.crowd.me.hp, failing:!!G.failing})"
+  },
+  {
+   "wait": 2500
+  },
+  {
+   "eval": "({t:+(G.time||0).toFixed?.(1), beat:G.scenes.beat, hud:(document.querySelector('#hud')||{}).innerText?.replace(/\\s+/g,' ').slice(0,300), cards:(document.querySelector('#fightcards')||{}).innerText?.replace(/\\s+/g,' ').slice(0,200), hp: G.crowd && G.crowd.me && G.crowd.me.hp, failing:!!G.failing})"
+  },
+  {
+   "wait": 2500
+  },
+  {
+   "eval": "({t:+(G.time||0).toFixed?.(1), beat:G.scenes.beat, hud:(document.querySelector('#hud')||{}).innerText?.replace(/\\s+/g,' ').slice(0,300), cards:(document.querySelector('#fightcards')||{}).innerText?.replace(/\\s+/g,' ').slice(0,200), hp: G.crowd && G.crowd.me && G.crowd.me.hp, failing:!!G.failing})"
+  },
+  {
+   "wait": 2500
+  },
+  {
+   "eval": "({t:+(G.time||0).toFixed?.(1), beat:G.scenes.beat, hud:(document.querySelector('#hud')||{}).innerText?.replace(/\\s+/g,' ').slice(0,300), cards:(document.querySelector('#fightcards')||{}).innerText?.replace(/\\s+/g,' ').slice(0,200), hp: G.crowd && G.crowd.me && G.crowd.me.hp, failing:!!G.failing})"
+  },
+  {
+   "shot": "idle_09"
+  },
+  {
+   "wait": 2500
+  },
+  {
+   "eval": "({t:+(G.time||0).toFixed?.(1), beat:G.scenes.beat, hud:(document.querySelector('#hud')||{}).innerText?.replace(/\\s+/g,' ').slice(0,300), cards:(document.querySelector('#fightcards')||{}).innerText?.replace(/\\s+/g,' ').slice(0,200), hp: G.crowd && G.crowd.me && G.crowd.me.hp, failing:!!G.failing})"
+  },
+  {
+   "wait": 2500
+  },
+  {
+   "eval": "({t:+(G.time||0).toFixed?.(1), beat:G.scenes.beat, hud:(document.querySelector('#hud')||{}).innerText?.replace(/\\s+/g,' ').slice(0,300), cards:(document.querySelector('#fightcards')||{}).innerText?.replace(/\\s+/g,' ').slice(0,200), hp: G.crowd && G.crowd.me && G.crowd.me.hp, failing:!!G.failing})"
+  },
+  {
+   "wait": 2500
+  },
+  {
+   "eval": "({t:+(G.time||0).toFixed?.(1), beat:G.scenes.beat, hud:(document.querySelector('#hud')||{}).innerText?.replace(/\\s+/g,' ').slice(0,300), cards:(document.querySelector('#fightcards')||{}).innerText?.replace(/\\s+/g,' ').slice(0,200), hp: G.crowd && G.crowd.me && G.crowd.me.hp, failing:!!G.failing})"
+  },
+  {
+   "wait": 2500
+  },
+  {
+   "eval": "({t:+(G.time||0).toFixed?.(1), beat:G.scenes.beat, hud:(document.querySelector('#hud')||{}).innerText?.replace(/\\s+/g,' ').slice(0,300), cards:(document.querySelector('#fightcards')||{}).innerText?.replace(/\\s+/g,' ').slice(0,200), hp: G.crowd && G.crowd.me && G.crowd.me.hp, failing:!!G.failing})"
+  },
+  {
+   "shot": "idle_13"
+  }
+ ]
+}

@@ -1,0 +1,36 @@
+{
+ "about": "[O1b] The jank walk of the new things (brief §5, WAVE_C §7 5): on foot by W (each walk set up facing its target) into every kind the streets now carry - crates, barrels, a barrel, churns, a phone booth, a mailbox, a fruit stand, flowers, a sandwich board, a bicycle, dustbins, a rain barrel, oil drums, a handcart, a newsstand, a street tree, the Hill lane's wall, the cellar bar's railing, the bank's columns, a steps' lamp - each stops the eye short, never inside its box. tools/lib/o1_city.mjs 'walk'. node tools/play.mjs tools/plays/o1b_jank.json",
+ "url": "/?mute=1&start=city",
+ "size": [1280, 800],
+ "out": "shots/o1b/jank",
+ "steps": [
+  { "wait": 1500 },
+  { "clickOn": "#title .opt[data-k=begin]", "taken": "G.state !== 'title'", "retries": 5, "every": 4000 },
+  { "until": "G.scenes.current && G.scenes.current.id === 'city' && G.scenes.fadeK < 0.05", "timeout": 25000 },
+  { "wait": 800 },
+  { "eval": "(G.save.flags.taught = { city_in: true, city_drive: true, city_map: true }, window.__pick = (kind, i = 0, d = 2.8) => { const L = G.stage.part('city').C.dress.filter((q) => q.kind === kind && q.face && !q.alley); const r = L[Math.floor(L.length * 0.37 + i) % L.length]; window.__r = r; return [r.x + r.face[0] * d, r.z + r.face[1] * d]; }, 1)" },
+  { "drive": "tools/lib/o1_city.mjs", "mode": "walk", "walks": [
+    { "name": "crates", "from": "window.__pick('crates')", "to": "[window.__r.x, window.__r.z]", "expect": "stop", "ms": 3000 },
+    { "name": "barrels", "from": "window.__pick('barrels')", "to": "[window.__r.x, window.__r.z]", "expect": "stop", "ms": 3000 },
+    { "name": "a barrel", "from": "window.__pick('barrel')", "to": "[window.__r.x, window.__r.z]", "expect": "stop", "ms": 3000 },
+    { "name": "churns", "from": "window.__pick('churns')", "to": "[window.__r.x, window.__r.z]", "expect": "stop", "ms": 3000 },
+    { "name": "fruit stand", "from": "window.__pick('fruit')", "to": "[window.__r.x, window.__r.z]", "expect": "stop", "ms": 3000 },
+    { "name": "flowers", "from": "window.__pick('flowers')", "to": "[window.__r.x, window.__r.z]", "expect": "stop", "ms": 3000 },
+    { "name": "sandwich board", "from": "window.__pick('board', 0, 2.2)", "to": "[window.__r.x, window.__r.z]", "expect": "stop", "ms": 3000 },
+    { "name": "bicycle", "from": "window.__pick('bike')", "to": "[window.__r.x, window.__r.z]", "expect": "stop", "ms": 3000 },
+    { "name": "dustbins", "from": "window.__pick('bins')", "to": "[window.__r.x, window.__r.z]", "expect": "stop", "ms": 3000 },
+    { "name": "rain barrel", "from": "window.__pick('rainbarrel')", "to": "[window.__r.x, window.__r.z]", "expect": "stop", "ms": 3000 },
+    { "name": "oil drums", "from": "window.__pick('drums')", "to": "[window.__r.x, window.__r.z]", "expect": "stop", "ms": 3000 },
+    { "name": "handcart", "from": "window.__pick('cart')", "to": "[window.__r.x, window.__r.z]", "expect": "stop", "ms": 3000 },
+    { "name": "phone booth", "from": "(() => { const r = G.stage.part('city').C.dress.find((q) => q.kind === 'booth'); window.__r = r; return [r.x + 2.6, r.z]; })()", "to": "[window.__r.x, window.__r.z]", "expect": "stop", "ms": 3000 },
+    { "name": "mailbox", "from": "(() => { const r = G.stage.part('city').C.dress.filter((q) => q.kind === 'mailbox')[3]; window.__r = r; return [r.x, r.z + 2.6]; })()", "to": "[window.__r.x, window.__r.z]", "expect": "stop", "ms": 3000 },
+    { "name": "newsstand", "from": "(() => { const r = G.stage.part('city').C.props.find((q) => q.kind === 'newsstand' && q.o1b); window.__r = r; return [r.x + Math.sin(r.yaw) * 2.6, r.z + Math.cos(r.yaw) * 2.6]; })()", "to": "[window.__r.x, window.__r.z]", "expect": "stop", "ms": 3000 },
+    { "name": "street tree", "from": "(() => { const r = G.stage.part('city').C.trees.find((t) => t.street === 'centre'); window.__r = r; return [r.x, r.z + (r.z > -30 ? 2.4 : -2.4)]; })()", "to": "[window.__r.x, window.__r.z]", "expect": "stop", "ms": 3000 },
+    { "name": "the Hill lane's wall", "from": "(() => { const u = G.stage.part('city').C.uniques.find((q) => q.kind === 'lane'); const p = u.pts[16], a = u.pts[15], b = u.pts[17], L = Math.hypot(b[0] - a[0], b[1] - a[1]), nx = -(b[1] - a[1]) / L, nz = (b[0] - a[0]) / L; window.__r = { x: p[0] + nx * 6, z: p[1] + nz * 6 }; return [p[0], p[1]]; })()", "to": "[window.__r.x, window.__r.z]", "expect": "stop", "ms": 4000 },
+    { "name": "the cellar bar's railing", "from": "(() => { const u = G.stage.part('city').C.uniques.find((q) => q.kind === 'cellar'); const tx = u.nz, tz = -u.nx; window.__r = { x: u.x + tx * 1.2 + u.nx * 0.6, z: u.z + tz * 1.2 + u.nz * 0.6 }; return [u.x + tx * 1.2 + u.nx * 3.6, u.z + tz * 1.2 + u.nz * 3.6]; })()", "to": "[window.__r.x, window.__r.z]", "expect": "stop", "ms": 3500 },
+    { "name": "the bank's columns", "from": "(() => { const u = G.stage.part('city').C.uniques.find((q) => q.kind === 'columns'); const tx = u.nz, tz = -u.nx, w = Math.min(u.len - 2, 14), a = -w / 2 + 0.5 * (w / 6); window.__r = { x: u.x + tx * a + u.nx * 1.1, z: u.z + tz * a + u.nz * 1.1 }; return [window.__r.x + u.nx * 2.8, window.__r.z + u.nz * 2.8]; })()", "to": "[window.__r.x, window.__r.z]", "expect": "stop", "ms": 3500 },
+    { "name": "a steps' lamp", "from": "(() => { const s = G.stage.part('city').C.steps.find((q) => q.kind === 'quay' && q.nz > 0.9); window.__r = { x: s.lamp[0], z: s.lamp[1] }; return [s.lamp[0], s.lamp[1] - 3]; })()", "to": "[window.__r.x, window.__r.z]", "expect": "stop", "ms": 3500 }
+   ], "check": "D.insideAny.length === 0 && D.bad.length === 0", "label": "the jank walk: every new thing stops a man, never inside it" },
+  { "shot": "j_end" }
+ ]
+}

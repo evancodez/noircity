@@ -1,0 +1,16 @@
+{
+ "about": "[O1b] The streets' new things go over (brief §2: everything that can break registered with lane O6's set, and over when a car takes it): the Docks start, E into the coupe, west along Dock Rd and up onto its north pavement through the crates, barrels and drums by the loading doors, by the keys (tools/lib/o6_smash.mjs drive on a path): each goes over (out of its merge, drawn on its own), the car never inside a standing thing, nothing floating, everything resting. node tools/play.mjs tools/plays/o1b_smash.json",
+ "url": "/?mute=1&start=city&at=docks",
+ "size": [1280, 800],
+ "out": "shots/o1b/smash",
+ "steps": [
+  { "wait": 1500 },
+  { "clickOn": "#title .opt[data-k=begin]", "taken": "G.state !== 'title'", "retries": 5, "every": 4000 },
+  { "until": "G.scenes.current && G.scenes.current.id === 'city' && G.scenes.fadeK < 0.05", "timeout": 30000 },
+  { "wait": 1200 },
+  { "drive": "tools/lib/o6_smash.mjs", "mode": "drive", "path": [[-100, 324.4], [-200, 324.4], [-214, 320.3], [-292, 320.3], [-302, 324.5]], "speed": 8, "settle": 5000, "timeout": 200000,
+    "check": "D.end === 'done' && (D.kinds.crates || 0) + (D.kinds.barrel || 0) + (D.kinds.barrels || 0) + (D.kinds.drums || 0) >= 5 && D.inside.length === 0 && D.rest.floating.length === 0 && D.rest.inWall.length === 0",
+    "label": "along Dock Rd's pavement: the crates and the barrels go over, nothing passed through, nothing floating" },
+  { "shot": "after" }
+ ]
+}

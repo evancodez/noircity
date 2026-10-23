@@ -1,0 +1,243 @@
+{
+ "about": "[O4 critic] the range: the double at 25, 10 and 4 m, a dry click, the reload",
+ "url": "/?mute=1&o4stay=1&start=o4.range",
+ "size": [
+  1280,
+  800
+ ],
+ "out": "shots/critic/range",
+ "steps": [
+  {
+   "until": "G.state === 'title' && !!document.querySelector('#title .opt[data-k=begin]')",
+   "timeout": 60000
+  },
+  {
+   "wait": 1000
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]",
+   "taken": "G.scenes.current && G.scenes.current.id === 'o4'",
+   "retries": 4
+  },
+  {
+   "until": "G.scenes.beat === 'range' && !G.failing",
+   "timeout": 30000
+  },
+  {
+   "eval": "(G.o4stay = true)"
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "eval": "({t:+G.time.toFixed(1),gun:G.player.weapons.current,rounds:(G.player.weapons.active||{}).rounds,pocket:(G.player.weapons.active||{}).pocket,reloading:!!(G.player.weapons.active||{}).reloading,men:(G.scenes.ctx.flags.o4.men||[]).map(h=>[h.o4d,Math.round(h.hp),h.alive,h.state])})"
+  },
+  {
+   "shot": "r0"
+  },
+  {
+   "look": "(()=>{const C=N.controller,e=G.eye;const P=[2.6,-18.5];const look=Math.atan2(-Math.sin(C.yaw),-Math.cos(C.yaw));const a=Math.atan2(P[0]-e.x,P[1]-e.z);const r=Math.atan2(Math.sin(a-look),Math.cos(a-look));return [Math.round(-r/C.sensitivity),0]})()",
+   "steps": 4
+  },
+  {
+   "look": "[0, Math.round((N.controller.pitch - (-0.02))/N.controller.sensitivity)]",
+   "steps": 2
+  },
+  {
+   "wait": 400
+  },
+  {
+   "mouse": "click",
+   "button": "left",
+   "x": 640,
+   "y": 400
+  },
+  {
+   "wait": 120
+  },
+  {
+   "wait": 120
+  },
+  {
+   "wait": 900
+  },
+  {
+   "eval": "({t:+G.time.toFixed(1),gun:G.player.weapons.current,rounds:(G.player.weapons.active||{}).rounds,pocket:(G.player.weapons.active||{}).pocket,reloading:!!(G.player.weapons.active||{}).reloading,men:(G.scenes.ctx.flags.o4.men||[]).map(h=>[h.o4d,Math.round(h.hp),h.alive,h.state])})"
+  },
+  {
+   "mouse": "click",
+   "button": "left",
+   "x": 640,
+   "y": 400
+  },
+  {
+   "wait": 1000
+  },
+  {
+   "eval": "({t:+G.time.toFixed(1),gun:G.player.weapons.current,rounds:(G.player.weapons.active||{}).rounds,pocket:(G.player.weapons.active||{}).pocket,reloading:!!(G.player.weapons.active||{}).reloading,men:(G.scenes.ctx.flags.o4.men||[]).map(h=>[h.o4d,Math.round(h.hp),h.alive,h.state])})"
+  },
+  {
+   "mouse": "click",
+   "button": "left",
+   "x": 640,
+   "y": 400
+  },
+  {
+   "wait": 400
+  },
+  {
+   "eval": "({t:+G.time.toFixed(1),gun:G.player.weapons.current,rounds:(G.player.weapons.active||{}).rounds,pocket:(G.player.weapons.active||{}).pocket,reloading:!!(G.player.weapons.active||{}).reloading,men:(G.scenes.ctx.flags.o4.men||[]).map(h=>[h.o4d,Math.round(h.hp),h.alive,h.state])})"
+  },
+  {
+   "key": "KeyR"
+  },
+  {
+   "wait": 200
+  },
+  {
+   "eval": "({t:+G.time.toFixed(1),gun:G.player.weapons.current,rounds:(G.player.weapons.active||{}).rounds,pocket:(G.player.weapons.active||{}).pocket,reloading:!!(G.player.weapons.active||{}).reloading,men:(G.scenes.ctx.flags.o4.men||[]).map(h=>[h.o4d,Math.round(h.hp),h.alive,h.state])})"
+  },
+  {
+   "wait": 1700
+  },
+  {
+   "eval": "({t:+G.time.toFixed(1),gun:G.player.weapons.current,rounds:(G.player.weapons.active||{}).rounds,pocket:(G.player.weapons.active||{}).pocket,reloading:!!(G.player.weapons.active||{}).reloading,men:(G.scenes.ctx.flags.o4.men||[]).map(h=>[h.o4d,Math.round(h.hp),h.alive,h.state])})"
+  },
+  {
+   "look": "(()=>{const C=N.controller,e=G.eye;const P=[1.4,-3.5];const look=Math.atan2(-Math.sin(C.yaw),-Math.cos(C.yaw));const a=Math.atan2(P[0]-e.x,P[1]-e.z);const r=Math.atan2(Math.sin(a-look),Math.cos(a-look));return [Math.round(-r/C.sensitivity),0]})()",
+   "steps": 4
+  },
+  {
+   "look": "[0, Math.round((N.controller.pitch - (-0.02))/N.controller.sensitivity)]",
+   "steps": 2
+  },
+  {
+   "wait": 400
+  },
+  {
+   "mouse": "click",
+   "button": "left",
+   "x": 640,
+   "y": 400
+  },
+  {
+   "wait": 120
+  },
+  {
+   "wait": 120
+  },
+  {
+   "wait": 900
+  },
+  {
+   "eval": "({t:+G.time.toFixed(1),gun:G.player.weapons.current,rounds:(G.player.weapons.active||{}).rounds,pocket:(G.player.weapons.active||{}).pocket,reloading:!!(G.player.weapons.active||{}).reloading,men:(G.scenes.ctx.flags.o4.men||[]).map(h=>[h.o4d,Math.round(h.hp),h.alive,h.state])})"
+  },
+  {
+   "mouse": "click",
+   "button": "left",
+   "x": 640,
+   "y": 400
+  },
+  {
+   "wait": 1000
+  },
+  {
+   "eval": "({t:+G.time.toFixed(1),gun:G.player.weapons.current,rounds:(G.player.weapons.active||{}).rounds,pocket:(G.player.weapons.active||{}).pocket,reloading:!!(G.player.weapons.active||{}).reloading,men:(G.scenes.ctx.flags.o4.men||[]).map(h=>[h.o4d,Math.round(h.hp),h.alive,h.state])})"
+  },
+  {
+   "mouse": "click",
+   "button": "left",
+   "x": 640,
+   "y": 400
+  },
+  {
+   "wait": 400
+  },
+  {
+   "eval": "({t:+G.time.toFixed(1),gun:G.player.weapons.current,rounds:(G.player.weapons.active||{}).rounds,pocket:(G.player.weapons.active||{}).pocket,reloading:!!(G.player.weapons.active||{}).reloading,men:(G.scenes.ctx.flags.o4.men||[]).map(h=>[h.o4d,Math.round(h.hp),h.alive,h.state])})"
+  },
+  {
+   "key": "KeyR"
+  },
+  {
+   "wait": 200
+  },
+  {
+   "eval": "({t:+G.time.toFixed(1),gun:G.player.weapons.current,rounds:(G.player.weapons.active||{}).rounds,pocket:(G.player.weapons.active||{}).pocket,reloading:!!(G.player.weapons.active||{}).reloading,men:(G.scenes.ctx.flags.o4.men||[]).map(h=>[h.o4d,Math.round(h.hp),h.alive,h.state])})"
+  },
+  {
+   "wait": 1700
+  },
+  {
+   "eval": "({t:+G.time.toFixed(1),gun:G.player.weapons.current,rounds:(G.player.weapons.active||{}).rounds,pocket:(G.player.weapons.active||{}).pocket,reloading:!!(G.player.weapons.active||{}).reloading,men:(G.scenes.ctx.flags.o4.men||[]).map(h=>[h.o4d,Math.round(h.hp),h.alive,h.state])})"
+  },
+  {
+   "look": "(()=>{const C=N.controller,e=G.eye;const P=[2.0,2.5];const look=Math.atan2(-Math.sin(C.yaw),-Math.cos(C.yaw));const a=Math.atan2(P[0]-e.x,P[1]-e.z);const r=Math.atan2(Math.sin(a-look),Math.cos(a-look));return [Math.round(-r/C.sensitivity),0]})()",
+   "steps": 4
+  },
+  {
+   "look": "[0, Math.round((N.controller.pitch - (-0.02))/N.controller.sensitivity)]",
+   "steps": 2
+  },
+  {
+   "wait": 400
+  },
+  {
+   "mouse": "click",
+   "button": "left",
+   "x": 640,
+   "y": 400
+  },
+  {
+   "wait": 120
+  },
+  {
+   "shot": "r3_blast"
+  },
+  {
+   "wait": 900
+  },
+  {
+   "eval": "({t:+G.time.toFixed(1),gun:G.player.weapons.current,rounds:(G.player.weapons.active||{}).rounds,pocket:(G.player.weapons.active||{}).pocket,reloading:!!(G.player.weapons.active||{}).reloading,men:(G.scenes.ctx.flags.o4.men||[]).map(h=>[h.o4d,Math.round(h.hp),h.alive,h.state])})"
+  },
+  {
+   "mouse": "click",
+   "button": "left",
+   "x": 640,
+   "y": 400
+  },
+  {
+   "wait": 1000
+  },
+  {
+   "eval": "({t:+G.time.toFixed(1),gun:G.player.weapons.current,rounds:(G.player.weapons.active||{}).rounds,pocket:(G.player.weapons.active||{}).pocket,reloading:!!(G.player.weapons.active||{}).reloading,men:(G.scenes.ctx.flags.o4.men||[]).map(h=>[h.o4d,Math.round(h.hp),h.alive,h.state])})"
+  },
+  {
+   "mouse": "click",
+   "button": "left",
+   "x": 640,
+   "y": 400
+  },
+  {
+   "wait": 400
+  },
+  {
+   "eval": "({t:+G.time.toFixed(1),gun:G.player.weapons.current,rounds:(G.player.weapons.active||{}).rounds,pocket:(G.player.weapons.active||{}).pocket,reloading:!!(G.player.weapons.active||{}).reloading,men:(G.scenes.ctx.flags.o4.men||[]).map(h=>[h.o4d,Math.round(h.hp),h.alive,h.state])})"
+  },
+  {
+   "key": "KeyR"
+  },
+  {
+   "wait": 200
+  },
+  {
+   "eval": "({t:+G.time.toFixed(1),gun:G.player.weapons.current,rounds:(G.player.weapons.active||{}).rounds,pocket:(G.player.weapons.active||{}).pocket,reloading:!!(G.player.weapons.active||{}).reloading,men:(G.scenes.ctx.flags.o4.men||[]).map(h=>[h.o4d,Math.round(h.hp),h.alive,h.state])})"
+  },
+  {
+   "wait": 1700
+  },
+  {
+   "eval": "({t:+G.time.toFixed(1),gun:G.player.weapons.current,rounds:(G.player.weapons.active||{}).rounds,pocket:(G.player.weapons.active||{}).pocket,reloading:!!(G.player.weapons.active||{}).reloading,men:(G.scenes.ctx.flags.o4.men||[]).map(h=>[h.o4d,Math.round(h.hp),h.alive,h.state])})"
+  }
+ ]
+}

@@ -1,0 +1,14 @@
+{
+ "about": "[O6 critic] the hundred beat (?start=smash.hundred): the frame times round the sedan's blast (rAF deltas), against the second before it.",
+ "url": "/?mute=1&start=smash.hundred",
+ "size": [1280, 800],
+ "out": "shots/critic_o6/hitch",
+ "steps": [
+  { "wait": 2000 },
+  { "clickOn": "#title .opt[data-k=begin]", "taken": "G.state !== 'title'", "retries": 4, "every": 3500 },
+  { "eval": "(() => { const W = window.__ft = { d: [], last: null, blastAt: null }; const t = (now) => { if (W.last != null) W.d.push([+(now - W.last).toFixed(1), G.city && G.city.cars && G.city.cars.some((c) => c.wrecked) ? 1 : 0]); W.last = now; if (W.d.length < 900) requestAnimationFrame(t); }; requestAnimationFrame(t); return 1; })()" },
+  { "wait": 9000 },
+  { "shot": "h1" },
+  { "eval": "(() => { const W = window.__ft; const pre = W.d.filter((x) => !x[1]).map((x) => x[0]), post = W.d.filter((x) => x[1]).map((x) => x[0]); const i = W.d.findIndex((x) => x[1]); const s = (a) => a.length ? { n: a.length, max: Math.max(...a), med: a.slice().sort((p, q) => p - q)[a.length >> 1] } : null; return JSON.stringify({ pre: s(pre.slice(-60)), post: s(post.slice(0, 60)), around: W.d.slice(Math.max(0, i - 4), i + 12).map((x) => x[0]), over: G.stage.smash.stats }); })()" }
+ ]
+}

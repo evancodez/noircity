@@ -499,6 +499,85 @@ export function buildHat(brimR, crownShade = SHADE.hat) {
   return { geo, shade, weights: () => [[B.hat, 1]] };
 }
 
+// [O4] the city's other covers (docs/briefs/O4_COMBAT.md §2: gang men of two
+// looks, cops in uniform): a policeman's peaked cap (a stiff band, the crown
+// flaring to a flat top, a black visor down over the eyes) and the second
+// gang's flat cap (a soft dome pulled forward, a short peak). Hat-bone space,
+// origin on the brim plane, as the fedora.
+export function buildPoliceCap() {
+  const H = BIND.hat;
+  const prof = [[0.0, 0.004], [0.094, 0.0], [0.099, 0.002], [0.1, 0.044], [0.104, 0.05], [0.128, 0.074], [0.132, 0.08], [0.128, 0.086], [0.06, 0.09], [0.0, 0.09]];
+  const nu = seg(80, 22), nv = seg(prof.length * 4, prof.length + 6);
+  const tilt = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(1, 0, 0), -0.05);
+  const crown = grid(nu, nv, (u, v, p) => {
+    const [r, h] = profileAt(prof, v);
+    const th = u * TAU;
+    // (the top a little longer front to back, pushed forward: the cap's peak line)
+    const fz = h > 0.06 ? 1.08 : 1.0;
+    p.set(r * Math.sin(th) * 0.93, h, r * Math.cos(th) * fz + (h > 0.06 ? 0.008 : 0)).applyQuaternion(tilt).add(H);
+  });
+  orientOut(crown, H.clone().add(new THREE.Vector3(0, 0.04, 0)));
+  // the visor: a stiff half-moon off the band's front, down over the eyes
+  const visor = grid(seg(28, 8), seg(6, 3), (u, v, p) => {
+    const a = (u - 0.5) * 2.4, r = lerp(0.095, 0.158, v);
+    const x = Math.sin(a) * r * 0.95, z = Math.cos(a) * r;
+    const y = 0.004 - 0.34 * Math.max(0, z - 0.09) - 0.004 * v;
+    p.set(x, y, z).applyQuaternion(tilt).add(H);
+  }, { wrapU: false });
+  orientOut(visor, H.clone().add(new THREE.Vector3(0, 0.2, 0)));
+  const geo = mergeGeo([crown, visor]);
+  const shade = (x, y) => { const h = y - H.y; return h < 0.046 && h > 0.006 ? SHADE.band : SHADE.hat * 1.4; };
+  return { geo, shade, weights: () => [[B.hat, 1]] };
+}
+export function buildFlatCap() {
+  const H = BIND.hat;
+  const nu = seg(72, 20), nv = seg(18, 8);
+  const tilt = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(1, 0, 0), 0.12);
+  const dome = grid(nu, nv, (u, v, p) => {
+    const th = u * TAU, ph = v * Math.PI / 2;
+    const c = Math.cos(th);
+    // (a soft dome, fuller over the front and pulled down to the peak)
+    const r = 0.112 + 0.016 * Math.max(0, c);
+    p.set(Math.sin(th) * Math.cos(ph) * r * 0.95, 0.002 + Math.sin(ph) * (0.06 - 0.02 * Math.max(0, c)), c * Math.cos(ph) * r + 0.012).applyQuaternion(tilt).add(H);
+  });
+  orientOut(dome, H.clone().add(new THREE.Vector3(0, 0.02, 0.01)));
+  const peak = grid(seg(24, 8), seg(5, 3), (u, v, p) => {
+    const a = (u - 0.5) * 2.0, r = lerp(0.1, 0.15, v);
+    p.set(Math.sin(a) * r * 0.95, 0.004 - 0.18 * Math.max(0, Math.cos(a) * r - 0.1), Math.cos(a) * r + 0.012).applyQuaternion(tilt).add(H);
+  }, { wrapU: false });
+  orientOut(peak, H.clone().add(new THREE.Vector3(0, 0.2, 0)));
+  return { geo: mergeGeo([dome, peak]), shade: SHADE.hat * 1.6, weights: () => [[B.hat, 1]] };
+}
+// the badge on a policeman's breast: a small light shield (it reads at 15 m)
+function buildBadge() {
+  const c = torsoPoint(0.42, 1.37, new THREE.Vector3(), 0.006);
+  const n = torsoNormal(0.42, 1.37, new THREE.Vector3());
+  const t = new THREE.Vector3(0, 1, 0).cross(n).normalize(), b = n.clone().cross(t).normalize();
+  const geo = grid(seg(16, 8), seg(4, 2), (u, v, p) => {
+    const a = u * TAU, r = 0.024 * v * (1 - 0.25 * Math.max(0, -Math.sin(a)));
+    p.copy(c).addScaledVector(t, Math.cos(a) * r).addScaledVector(b, Math.sin(a) * r * 1.2).addScaledVector(n, 0.002 * (1 - v));
+  });
+  return { geo, shade: 0.5, weights: () => [[B.chest, 1]] };
+}
+function mergeGeo(list) {
+  let nv = 0, ni = 0;
+  for (const g of list) { nv += g.getAttribute('position').count; ni += g.index.count; }
+  const pos = new Float32Array(nv * 3), nrm = new Float32Array(nv * 3), uv = new Float32Array(nv * 2), idx = new Uint32Array(ni);
+  let vo = 0, io = 0;
+  for (const g of list) {
+    const P = g.getAttribute('position'), N = g.getAttribute('normal'), U = g.getAttribute('uv');
+    pos.set(P.array, vo * 3); nrm.set(N.array, vo * 3); if (U) uv.set(U.array, vo * 2);
+    const I = g.index.array; for (let i = 0; i < I.length; i++) idx[io + i] = I[i] + vo;
+    vo += P.count; io += I.length;
+  }
+  const out = new THREE.BufferGeometry();
+  out.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+  out.setAttribute('normal', new THREE.BufferAttribute(nrm, 3));
+  out.setAttribute('uv', new THREE.BufferAttribute(uv, 2));
+  out.setIndex(new THREE.BufferAttribute(idx, 1));
+  return out;
+}
+
 function buildHand(sgn, fist) {
   const W = BIND[sgn > 0 ? 'handL' : 'handR'];
   const C = fist ? new THREE.Vector3(W.x, W.y - 0.058, W.z + 0.004) : new THREE.Vector3(W.x - sgn * 0.004, W.y - 0.075, W.z + 0.006);
@@ -629,15 +708,21 @@ const GEO_CACHE = new Map();
 function hoodGeometry(v, lod = 0) {
   // (an unarmed figure - the cast's civilians, src/cast/ - drops the pistol;
   // an armed Hood's key is what it always was)
-  const key = `${v.coat}_${v.brim}_${lod}_${v.heavy ? 1 : 0}${v.unarmed ? '_u' : ''}`;
+  const key = `${v.coat}_${v.brim}_${lod}_${v.heavy ? 1 : 0}${v.unarmed ? '_u' : ''}${v.cap ? '_' + v.cap : ''}`;   // ([O4] the city's caps)
   if (!GEO_CACHE.has(key)) {
     Q = LOD_Q[lod];
     const near = lod < 2;
+    // [O4] a policeman: the peaked cap, the tunic to the hip, the badge; the
+    // second gang: the flat cap and a short coat
+    const cop = v.cap === 'police', flat = v.cap === 'flat';
+    const hat = cop ? buildPoliceCap() : flat ? buildFlatCap() : buildHat(BRIM_R[v.brim], SHADE.hat);
+    const hem = cop ? 0.8 : flat ? COAT_HEM[2] + 0.1 : COAT_HEM[v.coat];
     const parts = [
-      buildTorso(), buildSkirt(COAT_HEM[v.coat]), ...(near ? [buildBelt()] : []), buildCollar(), ...(near ? [buildLapel(1), buildLapel(-1)] : []),
+      buildTorso(), buildSkirt(hem), ...(near || cop ? [buildBelt()] : []), buildCollar(), ...(near && !cop ? [buildLapel(1), buildLapel(-1)] : []),
       buildSleeve(1), buildSleeve(-1), buildTrouser(1), buildTrouser(-1), buildShoe(1), buildShoe(-1),
-      buildHead(), ...(near ? [buildNose()] : []), buildNeck(), buildHat(BRIM_R[v.brim], SHADE.hat),
+      buildHead(), ...(near ? [buildNose()] : []), buildNeck(), hat,
       buildHand(1, false), buildHand(-1, true),
+      ...(cop && lod < 2 ? [buildBadge()] : []),
     ];
     if (!v.heavy && !v.unarmed) parts.push(buildGun());
     GEO_CACHE.set(key, assemble(parts));
@@ -741,7 +826,7 @@ export function hoodVariant(v = {}) {
     const h = (n) => Math.abs(Math.sin(v * 12.9898 + n * 78.233) * 43758.5453) % 1;
     v = { coat: Math.floor(h(1) * 3), brim: Math.floor(h(2) * 2), tall: Math.floor(h(3) * 2), cig: h(4) < 0.4 };
   }
-  return { coat: v.coat ?? 1, brim: v.brim ?? 1, tall: v.tall ?? 1, cig: !!v.cig, heavy: !!v.heavy, unarmed: !!v.unarmed };
+  return { coat: v.coat ?? 1, brim: v.brim ?? 1, tall: v.tall ?? 1, cig: !!v.cig, heavy: !!v.heavy, unarmed: !!v.unarmed, ...(v.cap ? { cap: v.cap } : {}) };   // ([O4] cap: 'police' | 'flat')
 }
 
 // the flying hat's tumble per death (axis in the Hood's frame, rad/s, sense)

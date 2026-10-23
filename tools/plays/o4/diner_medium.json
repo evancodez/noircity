@@ -1,0 +1,41 @@
+{
+ "about": "[O4] The bar brawl in the diner (tools/lib/o4_brawl.mjs): two men, the room's things and walls. Medium hands.",
+ "url": "/?mute=1&o4stay=1&start=o4.diner",
+ "size": [
+  1280,
+  800
+ ],
+ "out": "shots/play/diner_medium",
+ "steps": [
+  {
+   "until": "G.state === 'title' && !!document.querySelector('#title .opt[data-k=begin]')",
+   "timeout": 60000
+  },
+  {
+   "wait": 1200
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]",
+   "taken": "G.scenes.current && G.scenes.current.id === 'o4'",
+   "retries": 4
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'o4' && G.scenes.beat === 'diner' && G.crowd.active && !G.failing",
+   "timeout": 30000
+  },
+  {
+   "eval": "(G.o4stay = true)"
+  },
+  {
+   "drive": "tools/lib/o4_brawl.mjs",
+   "profile": "medium",
+   "beat": "diner",
+   "tries": 3,
+   "wins": 1,
+   "timeout": 420000,
+   "check": "D.wins >= 1",
+   "label": "the diner: medium hands win within three tries",
+   "things": true
+  }
+ ]
+}

@@ -51,26 +51,86 @@ export const LAMP = (() => {
     [0, 0], [0.3, 0], [0.3, 0.1], [0.25, 0.16], [0.23, 0.5], [0.17, 0.6], [0.17, 0.88], [0.13, 0.96],
     [0.1, 1.04], [0.085, 2.6], [0.105, 2.64], [0.105, 2.74], [0.08, 2.78], [0.068, 4.9], [0.09, 4.95],
     [0.09, 5.05], [0.065, 5.1], [0.06, 5.6], [0.075, 5.66], [0.04, 5.8], [0, 5.86],
-  ], 12);
-  const arm = tube([V3(0, 5.0, 0), V3(0, 5.55, 0), V3(0.1, 6.02, 0), V3(0.42, 6.3, 0), V3(0.9, 6.34, 0), V3(1.26, 6.2, 0), V3(1.46, 5.98, 0)], 0.042, 6, 28);
+  ], 8);   // ([O1b] the audit's lever 2: 8 sides, not 12 - the post was ~1,300 triangles in every chunk; now ~700)
+  const arm = tube([V3(0, 5.0, 0), V3(0, 5.55, 0), V3(0.1, 6.02, 0), V3(0.42, 6.3, 0), V3(0.9, 6.34, 0), V3(1.26, 6.2, 0), V3(1.46, 5.98, 0)], 0.042, 5, 16);
   const sc = [];
   for (let i = 0; i <= 20; i++) { const t = i / 20, a = Math.PI + t * Math.PI * 2.6, r = 0.3 * (1 - t * 0.78); sc.push(V3(0.36 + Math.cos(a) * r, 5.72 + Math.sin(a) * r * 0.9, 0)); }
-  const scroll = tube(sc, 0.016, 4, 30);
-  const shade = lathe([[0.03, 0.12], [0.07, 0.08], [0.12, 0.0], [0.24, -0.12], [0.36, -0.24], [0.43, -0.3], [0.44, -0.33], [0.41, -0.33]], 18).translate(1.46, 5.96, 0);
+  const scroll = tube(sc, 0.016, 3, 16);
+  const shade = lathe([[0.03, 0.12], [0.07, 0.08], [0.12, 0.0], [0.24, -0.12], [0.36, -0.24], [0.43, -0.3], [0.44, -0.33], [0.41, -0.33]], 12).translate(1.46, 5.96, 0);
   const bulb = new THREE.CircleGeometry(0.35, 20).rotateX(Math.PI / 2).translate(1.46, 5.96 - 0.29, 0);
   return { iron: merge([base, arm, scroll]), shade, bulb, head: V3(1.46, 5.64, 0) };
 })();
+// [O1b] the lamp's styles by its street (world/streets.js: every street its
+// own lamp): the gooseneck (LAMP, above), a fluted post with a glass globe, a
+// lantern on an iron bracket from the wall (no post), a shade hung on a wire
+// across the lane (no post; its wire spans l.span), a timber pole with an
+// enamel dish (the docks', the yards'). Each { iron, shade, bulb, head }
+// local (the arm along +x, the post at the origin); a hung lamp's iron is
+// made for its span (lampIronOf). The far build's mouth is `bulb`.
+export const LAMP_STYLES = (() => {
+  const S = { goose: LAMP };
+  // the globe: a fluted cast-iron post, a collar, the glass ball (the mouth: the whole ball)
+  {
+    const post = lathe([[0, 0], [0.24, 0], [0.24, 0.12], [0.2, 0.18], [0.18, 0.55], [0.13, 0.66], [0.1, 0.72], [0.085, 3.2], [0.11, 3.26], [0.11, 3.36], [0.07, 3.42], [0.07, 3.6], [0.13, 3.66], [0.14, 3.72], [0, 3.74]], 8);
+    const flutes = [];
+    for (let k = 0; k < 4; k++) { const a = (k / 4) * Math.PI * 2; flutes.push(new THREE.BoxGeometry(0.03, 2.3, 0.03).translate(Math.cos(a) * 0.09, 1.95, Math.sin(a) * 0.09)); }
+    const ball = new THREE.SphereGeometry(0.27, 16, 12).translate(0, 4.0, 0);
+    const cap = lathe([[0, 0.08], [0.06, 0.06], [0.08, 0], [0, -0.02]], 10).translate(0, 4.27, 0);
+    S.globe = { iron: merge([post, ...flutes, cap]), shade: new THREE.TorusGeometry(0.13, 0.03, 4, 10).rotateX(Math.PI / 2).translate(0, 3.74, 0), bulb: ball, head: V3(0, 4.0, 0) };
+  }
+  // the bracket: a wall plate, an S-scroll arm out 1 m, a four-sided lantern hung from it
+  {
+    const plate = new THREE.BoxGeometry(0.06, 0.7, 0.32).translate(0.03, 4.75, 0);
+    const arm = tube([V3(0.05, 5.0, 0), V3(0.35, 5.08, 0), V3(0.72, 5.06, 0), V3(1.02, 4.98, 0)], 0.035, 5, 10);
+    const sc = [];
+    for (let i = 0; i <= 16; i++) { const t = i / 16, a = Math.PI * 0.5 + t * Math.PI * 2.2, r = 0.2 * (1 - t * 0.7); sc.push(V3(0.32 + Math.cos(a) * r, 4.75 + Math.sin(a) * r, 0)); }
+    const scroll = tube(sc, 0.014, 3, 12);
+    const lantern = [];
+    for (const [x, z] of [[-1, -1], [1, -1], [1, 1], [-1, 1]]) lantern.push(new THREE.BoxGeometry(0.025, 0.42, 0.025).translate(1.02 + x * 0.14, 4.6, z * 0.14));
+    const roof = new THREE.ConeGeometry(0.24, 0.2, 4).rotateY(Math.PI / 4).translate(1.02, 4.9, 0);
+    const base = new THREE.BoxGeometry(0.3, 0.05, 0.3).translate(1.02, 4.38, 0);
+    const glass = new THREE.BoxGeometry(0.25, 0.36, 0.25).translate(1.02, 4.6, 0);
+    S.bracket = { iron: merge([plate, arm, scroll, ...lantern, roof, base]), shade: new THREE.CylinderGeometry(0.02, 0.02, 0.1, 6).translate(1.02, 5.0, 0), bulb: glass, head: V3(1.02, 4.58, 0) };
+  }
+  // the hung lamp: the shade on its drop (the wire is the span's: lampIronOf)
+  {
+    const drop = new THREE.CylinderGeometry(0.012, 0.012, 0.5, 4).translate(0, 6.85, 0);
+    const shade = lathe([[0.02, 0.1], [0.06, 0.08], [0.2, -0.02], [0.36, -0.14], [0.38, -0.17], [0.35, -0.17]], 10).translate(0, 6.55, 0);
+    S.hung = { iron: drop, shade, bulb: new THREE.CircleGeometry(0.3, 18).rotateX(Math.PI / 2).translate(0, 6.39, 0), head: V3(0, 6.3, 0) };
+  }
+  // the dish: a timber pole, an iron arm, an enamel dish over the road
+  {
+    const pole = new THREE.CylinderGeometry(0.1, 0.15, 8.4, 6).translate(0, 4.2, 0);
+    const arm = new THREE.CylinderGeometry(0.03, 0.03, 1.7, 5).rotateZ(Math.PI / 2).translate(0.85, 7.6, 0);
+    const brace = new THREE.CylinderGeometry(0.02, 0.02, 1.15, 4).rotateZ(Math.PI / 2 - 0.6).translate(0.45, 7.25, 0);
+    const dish = lathe([[0.03, 0.06], [0.1, 0.05], [0.3, -0.03], [0.46, -0.12], [0.47, -0.15], [0.44, -0.15], [0.29, -0.06], [0.1, 0.0], [0.03, 0.0]], 12).translate(1.6, 7.5, 0);
+    S.dish = { iron: merge([pole, arm, brace]), shade: dish, bulb: new THREE.CircleGeometry(0.2, 14).rotateX(Math.PI / 2).translate(1.6, 7.36, 0), head: V3(1.6, 7.3, 0) };
+  }
+  return S;
+})();
+const styleOf = (l) => LAMP_STYLES[(l && l.style) || 'goose'] || LAMP;
+// a hung lamp's wire: from wall to wall across the street (local x), a sag to the drop
+function lampIronOf(l) {
+  const half = (l.span || 10) / 2;
+  const a = V3(-half, 7.25, 0), m = V3(0, 7.1, 0), b = V3(half, 7.25, 0);
+  const pts = []; for (let i = 0; i <= 10; i++) { const t = i / 10; pts.push(t < 0.5 ? a.clone().lerp(m, t * 2) : m.clone().lerp(b, t * 2 - 1)); }
+  const hooks = [-half, half].map((x) => new THREE.BoxGeometry(0.12, 0.12, 0.12).translate(x, 7.25, 0));
+  return merge([tube(pts, 0.014, 3, 12), LAMP_STYLES.hung.iron.clone(), ...hooks]);
+}
 // a piece of the post (local) at a lamp's place (yaw: the arm's heading, Lamps.addPost's)
+// ([O1b] by its style: LAMP.iron / shade / bulb stand for that style's pieces)
 const _m = new THREE.Matrix4(), _q = new THREE.Quaternion(), _y = new THREE.Vector3(0, 1, 0), _s = new THREE.Vector3(1, 1, 1);
 export function placeLamp(geo, l) {
   _q.setFromAxisAngle(_y, l.yaw);
   _m.compose(new THREE.Vector3(l.x, PAVE, l.z), _q, _s);
+  const S = styleOf(l);
+  if (S !== LAMP) geo = geo === LAMP.iron ? (l.style === 'hung' ? lampIronOf(l) : S.iron) : geo === LAMP.shade ? S.shade : geo === LAMP.bulb ? S.bulb : geo;
   return geo.clone().applyMatrix4(_m);
 }
 // the head (the shade's mouth) of a lamp, in the world
 export function lampHead(l, out = new THREE.Vector3()) {
   _q.setFromAxisAngle(_y, l.yaw);
-  return out.copy(LAMP.head).applyQuaternion(_q).add(new THREE.Vector3(l.x, PAVE, l.z));
+  return out.copy(styleOf(l).head).applyQuaternion(_q).add(new THREE.Vector3(l.x, PAVE, l.z));
 }
 
 // ---- the furniture ---------------------------------------------------------------------------------------
@@ -166,9 +226,12 @@ export function nameBlades(p, A) {
   return { faces, iron };
 }
 
+// [O1b] the new pavement things' shapes (city/kits/dress.js fills it): a
+// kind's whole shape for whoever draws one on its own (lane O6's pools)
+export const PROPS_EXT = {};
 const CACHE = new Map();
 export function propGeo(kind) {
-  if (!CACHE.has(kind)) CACHE.set(kind, (PROPS[kind] || PROPS.bin)());
+  if (!CACHE.has(kind)) CACHE.set(kind, (PROPS[kind] || PROPS_EXT[kind] || PROPS.bin)());
   return CACHE.get(kind);
 }
 export function placeProp(kind, p) {

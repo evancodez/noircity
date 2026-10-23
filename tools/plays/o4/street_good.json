@@ -1,0 +1,49 @@
+{
+ "about": "[O4] The street shootout (four of the gang down the avenue, the cover the world's; tools/lib/o4_guns.mjs). Good hands, twice in a row.",
+ "url": "/?mute=1&start=o4.street",
+ "size": [
+  1280,
+  800
+ ],
+ "out": "shots/play/street_good",
+ "steps": [
+  {
+   "until": "G.state === 'title' && !!document.querySelector('#title .opt[data-k=begin]')",
+   "timeout": 60000
+  },
+  {
+   "wait": 1200
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]",
+   "taken": "G.scenes.current && G.scenes.current.id === 'o4'",
+   "retries": 4
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'o4' && document.pointerLockElement === N.renderer.domElement",
+   "timeout": 30000
+  },
+  {
+   "drive": "tools/lib/o4_guns.mjs",
+   "profile": "good",
+   "beats": [
+    "street"
+   ],
+   "tries": 1,
+   "beatTimeout": 150,
+   "check": "D.wonFirst === 1",
+   "label": "good hands win first time (run 1)"
+  },
+  {
+   "drive": "tools/lib/o4_guns.mjs",
+   "profile": "good",
+   "beats": [
+    "street"
+   ],
+   "tries": 1,
+   "beatTimeout": 150,
+   "check": "D.wonFirst === 1",
+   "label": "good hands win first time (run 2)"
+  }
+ ]
+}

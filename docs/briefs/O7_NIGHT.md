@@ -18,8 +18,13 @@ and the hunts (`tools/hunts/*.mjs`, `tools/hunt.mjs`, `tools/lib/whole.py`,
   everywhere, the middle everywhere (the line is the player's own
   situation), everything works.
 - **[must]** "This city should really react to player interaction (like a dynamic police system), fun shootouts, brawls, etc. Keep the scope manageable but it should feel fun." (OPEN_WORLD.md: the city answers everything the player does, within seconds, visibly.)
+- **[must]** "Focus on making everything come together as a cohesive open world. Once you have the basics down, don't make it cluttered or overly convoluted, but add nice attention to detail and cool stuff." (The user, 2026-10-23.) One city where every system meets every other; one HUD language; a thing is on the screen because a player will notice it, and off it if he would not.
 - **[must]** "Probably add a mini map in the bottom left corner too or something." (The user, after his first drive, 2026-10-23.) An inked minimap bottom left: the streets within about 150 m, heading up, my mark, the cops' marks when they are close, the thing I have taken up (a fare, a bout) as a mark; a torn-paper patch in the game's ink, small, hidden on the title and under stills; M still opens the full map.
 - **[must]** "Think GTA but noir. Make sure the player has freedom to cause havoc and do what they want in this open world, one that reacts to them." (OPEN_WORLD.md: the player may do anything the systems allow and the city answers everything he does, visibly, within seconds; no invisible hand says no, never a scripted stop or a locked verb; the only answer is the city's own, and a scene broken on purpose still ends somewhere sane.)
+
+Read `docs/THINGS_TO_DO.md` first: the design of every thing to do (how
+each is found, played and answered by the city; the seams `things.start`
+/ `things.end`, `news.say`, `money.add` / `money.take`): it binds.
 
 What you build on: the HUD (`src/ui/Hud.js`, `kit.js`, `inkArt.js`,
 `lettering.js`: the title, the pause card and its settings line, the
@@ -149,3 +154,20 @@ and shown; the whole play twice; the saves; the pad; the fps table;
 errors; the report `docs/reports/O7.md` with "What the user should
 feel", "Found and fixed", "The middle, audited", "Left". Edits to shared
 files marked `// [O7]`. Hours, not days.
+
+## From the cold play of the merged city (`docs/reports/CITY_COLD_PLAY.md`): yours
+Yours, in your fix pass: **finding 2**, the title's key line promises
+verbs the city does not have yet and lists M twice: one line per device
+(keys, pad) that is true of the city as built, kept true as lanes merge.
+And its section 2 (what is good and must not be lost) is a list your
+whole-game check keeps.
+
+## From lane O4's merge (`docs/reports/O4.md`, "For other lanes"): yours
+O4 is in main (5e83e76). The weapon wheel is `arms(G).next(dir)`; in a
+fist fight `crowd.draw(gun)` ends the fight. The pad has no wheel in play
+(L1 and R1 are Shift and F), so a pad player cannot draw a gun in a fight:
+map it. The pad needs an aim help in a gunfight (the pad's medium hands
+lost the street three of three and the 1v2 at the merge check): a soft
+snap toward the nearest man in the reticle's cone while aiming on the
+stick, in `src/input/Pad.js`, measured by `tools/plays/o4/pad_street.json`
+and `pad_1v2.json` passing by medium hands. Take these at your fix pass.

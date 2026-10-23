@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { RNG } from '../../util/rng.js';
+import { treePieces, LEAF } from './trees.js';
 
 // NOIR CITY's facade kit (lane O1): a lot of the generator's
 // (src/world/cityGen.js) dressed by its district's kit. Two builds, so the
@@ -132,8 +133,10 @@ export function lotWindows(lot) {
 // g: the lot's ink group (0..2)
 export function farLot(lot, out, g = 0) {
   const K = kitOf(lot);
-  const stone = K.stone || lot.place;
-  const massK = (stone ? 'stone' : 'mass') + g;
+  // [O1b] the mass's stone by its street (world/streets.js: lot.mat): dark
+  // brick and timber, grey stone, iron fronts and tile on stone, pale limestone
+  const stone = lot.mat ? lot.place || lot.mat === 'stone' || lot.mat === 'iron' || lot.mat === 'tile' : K.stone || lot.place;
+  const massK = (lot.mat === 'pale' && !lot.place ? 'pale' : stone ? 'stone' : 'mass') + g;
   if (lot.kind === 'garden') {
     // the garden's wall (with its piers), the trees' crowns over it
     const { x0, x1, z0, z1, wallH } = lot;
@@ -219,6 +222,7 @@ export function nearLot(lot, out) {
       for (const f of [-1 / 6, 1 / 6]) push(out, 'dark', box(-0.05, 0.05, -w.h / 2, w.h / 2, 0, 0.03).rotateY(ang).translate(w.x + w.nx * 0.08 + Math.cos(ang) * f * w.w * 2, w.y, w.z + w.nz * 0.08 - Math.sin(ang) * f * w.w * 2));
       push(out, 'dark', box(-w.w / 2, w.w / 2, -0.05, 0.05, 0, 0.03).rotateY(ang).translate(w.x + w.nx * 0.08, w.y + w.h * 0.28, w.z + w.nz * 0.08));
     }
+    if (w.unique) continue;   // [O1b] (a unique's own door: its builder draws it - city/kits/uniques.js)
     if (w.kind === 'door') {
       push(out, 'trim', box(-0.75, 0.75, 0, 0.15, 0, 0.45).rotateY(ang).translate(w.x, 0.15, w.z));
       // its stone frame - the jambs, the lintel, a transom's sill - so a door
@@ -253,7 +257,8 @@ export function nearLot(lot, out) {
       // a tenement's fire escape on a street face (not over a shop's sign line)
       if (K.escape && f.ground && !f.alley && L > 7 && rng.chance(K.escape)) fireEscape(out, f, lot, rng);
       // an awning over a shop front now and then (downtown, the tenements)
-      if (K.shop && f.ground && rng.chance(0.25)) {
+      // ([O1b] a lot on a street with a character: its awnings are its street's, drawn by parts/dressing.js)
+      if (K.shop && f.ground && rng.chance(0.25) && !lot.fc) {
         const u = L * rng.range(0.25, 0.75), w = rng.range(3, 6);
         const ax = f.a[0] + (dx / L) * u, az = f.a[1] + (dz / L) * u;
         const g = new THREE.BoxGeometry(w, 0.08, 1.6).rotateX(-0.32).translate(0, 0, 0.8).rotateY(ang).translate(ax, K.ground - 0.55, az);
@@ -318,9 +323,10 @@ function nearGarden(lot, out) {
   for (let k = 0; k < nT; k++) {
     const tx = x0 + 4 + rng.next() * (W - 8), tz = z0 + 4 + rng.next() * (z1 - z0 - 8);
     const r = rng.range(2.5, 4.2);
-    // (a crown of three lumps: one ball read as a balloon over the wall)
-    for (let q = 0; q < 3; q++) push(out, 'tree', new THREE.IcosahedronGeometry(r * rng.range(0.6, 0.85), 2).scale(1, 0.8, 1).translate(tx + rng.range(-1, 1) * r * 0.45, 5 + r * rng.range(0.4, 0.9), tz + rng.range(-1, 1) * r * 0.45));
-    push(out, 'iron', new THREE.CylinderGeometry(0.18, 0.25, 5, 6).translate(tx, 2.5, tz));
+    // ([O1b] the cold play's finding 7: three lumps on a stick read as a
+    // balloon over the wall - a tree of a kind, its shape turned by where it stands)
+    const v = rng.next(), kind = v < 0.55 ? 'bare' : v < 0.85 ? 'elm' : v < 0.95 ? 'plane' : 'poplar';
+    for (const [g, lev] of treePieces({ x: tx, z: tz, kind, v: (v * 7.3) % 1, s: 0.8 + r * 0.12 }, 0)) push(out, lev === LEAF ? 'tree' : 'iron', g);
   }
 }
 
