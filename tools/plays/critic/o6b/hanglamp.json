@@ -1,0 +1,103 @@
+{
+ "about": "[O6b critic] the el's hung lamp: from the start of the bed, aim at the nearest hung lamp's head and fire a short burst; does it go out, is it seen to?",
+ "url": "/?mute=1&start=smash.ten",
+ "size": [
+  1440,
+  900
+ ],
+ "out": "shots/critic_o6b/hang",
+ "steps": [
+  {
+   "wait": 2000
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]",
+   "taken": "G.state !== 'title'",
+   "retries": 5,
+   "every": 4000
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'smash' && G.scenes.fadeK < 0.05 && G.city.cars.length >= 11",
+   "timeout": 30000
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "eval": "(() => { const S=G.stage.smash, c=N.controller.pos; let b=null, bd=1e9; for (const it of S.items) { if (it.kind!=='hanglamp') continue; const d=Math.hypot(it.x-c.x, it.z-c.z); if (d<bd && d>4) { bd=d; b=it; } } window.__hl=b; return JSON.stringify({n:S.items.filter(i=>i.kind==='hanglamp').length, d:bd, at:[b.x,b.z]}); })()"
+  },
+  {
+   "look": "(() => { const C=N.controller; const it=window.__hl; const h=it.lamp.head; const e=G.camera.position; const dx=h.x-e.x, dz=h.z-e.z, dy=h.y-e.y; let dyaw=Math.atan2(-dx,-dz)-C.yaw; dyaw=Math.atan2(Math.sin(dyaw),Math.cos(dyaw)); const dp=Math.atan2(dy,Math.hypot(dx,dz))-C.pitch; if (window.__pe!=null && Math.abs(dp)>Math.abs(window.__pe)*1.1 && Math.abs(dp)>0.05) window.__ps=-(window.__ps||1); window.__pe=dp; const s=window.__ps||1; return [-dyaw/C.sensitivity*0.9, s*dp/C.sensitivity*0.9]; })()",
+   "steps": 6
+  },
+  {
+   "wait": 200
+  },
+  {
+   "eval": "(() => { const it=window.__hl; const h=it.lamp.head; const e=G.camera.position; const dx=h.x-e.x, dz=h.z-e.z, dy=h.y-e.y; let dyaw=Math.atan2(-dx,-dz)-N.controller.yaw; dyaw=Math.atan2(Math.sin(dyaw),Math.cos(dyaw)); return JSON.stringify({d:+Math.hypot(dx,dz).toFixed(1), h:+h.y.toFixed(1), dyaw:+dyaw.toFixed(3), dp:+(Math.atan2(dy,Math.hypot(dx,dz))-N.controller.pitch).toFixed(3), st:it.state, dark:!!it.dark, hits:it.hits, ammo:G.guns&&G.guns.ammo}); })()"
+  },
+  {
+   "look": "(() => { const C=N.controller; const it=window.__hl; const h=it.lamp.head; const e=G.camera.position; const dx=h.x-e.x, dz=h.z-e.z, dy=h.y-e.y; let dyaw=Math.atan2(-dx,-dz)-C.yaw; dyaw=Math.atan2(Math.sin(dyaw),Math.cos(dyaw)); const dp=Math.atan2(dy,Math.hypot(dx,dz))-C.pitch; if (window.__pe!=null && Math.abs(dp)>Math.abs(window.__pe)*1.1 && Math.abs(dp)>0.05) window.__ps=-(window.__ps||1); window.__pe=dp; const s=window.__ps||1; return [-dyaw/C.sensitivity*0.9, s*dp/C.sensitivity*0.9]; })()",
+   "steps": 4
+  },
+  {
+   "wait": 200
+  },
+  {
+   "eval": "(() => { const it=window.__hl; const h=it.lamp.head; const e=G.camera.position; const dx=h.x-e.x, dz=h.z-e.z, dy=h.y-e.y; let dyaw=Math.atan2(-dx,-dz)-N.controller.yaw; dyaw=Math.atan2(Math.sin(dyaw),Math.cos(dyaw)); return JSON.stringify({d:+Math.hypot(dx,dz).toFixed(1), h:+h.y.toFixed(1), dyaw:+dyaw.toFixed(3), dp:+(Math.atan2(dy,Math.hypot(dx,dz))-N.controller.pitch).toFixed(3), st:it.state, dark:!!it.dark, hits:it.hits, ammo:G.guns&&G.guns.ammo}); })()"
+  },
+  {
+   "look": "(() => { const C=N.controller; const it=window.__hl; const h=it.lamp.head; const e=G.camera.position; const dx=h.x-e.x, dz=h.z-e.z, dy=h.y-e.y; let dyaw=Math.atan2(-dx,-dz)-C.yaw; dyaw=Math.atan2(Math.sin(dyaw),Math.cos(dyaw)); const dp=Math.atan2(dy,Math.hypot(dx,dz))-C.pitch; if (window.__pe!=null && Math.abs(dp)>Math.abs(window.__pe)*1.1 && Math.abs(dp)>0.05) window.__ps=-(window.__ps||1); window.__pe=dp; const s=window.__ps||1; return [-dyaw/C.sensitivity*0.9, s*dp/C.sensitivity*0.9]; })()",
+   "steps": 3
+  },
+  {
+   "wait": 200
+  },
+  {
+   "eval": "(() => { const it=window.__hl; const h=it.lamp.head; const e=G.camera.position; const dx=h.x-e.x, dz=h.z-e.z, dy=h.y-e.y; let dyaw=Math.atan2(-dx,-dz)-N.controller.yaw; dyaw=Math.atan2(Math.sin(dyaw),Math.cos(dyaw)); return JSON.stringify({d:+Math.hypot(dx,dz).toFixed(1), h:+h.y.toFixed(1), dyaw:+dyaw.toFixed(3), dp:+(Math.atan2(dy,Math.hypot(dx,dz))-N.controller.pitch).toFixed(3), st:it.state, dark:!!it.dark, hits:it.hits, ammo:G.guns&&G.guns.ammo}); })()"
+  },
+  {
+   "look": "(() => { const C=N.controller; const it=window.__hl; const h=it.lamp.head; const e=G.camera.position; const dx=h.x-e.x, dz=h.z-e.z, dy=h.y-e.y; let dyaw=Math.atan2(-dx,-dz)-C.yaw; dyaw=Math.atan2(Math.sin(dyaw),Math.cos(dyaw)); const dp=Math.atan2(dy,Math.hypot(dx,dz))-C.pitch; if (window.__pe!=null && Math.abs(dp)>Math.abs(window.__pe)*1.1 && Math.abs(dp)>0.05) window.__ps=-(window.__ps||1); window.__pe=dp; const s=window.__ps||1; return [-dyaw/C.sensitivity*0.9, s*dp/C.sensitivity*0.9]; })()",
+   "steps": 3
+  },
+  {
+   "wait": 200
+  },
+  {
+   "eval": "(() => { const it=window.__hl; const h=it.lamp.head; const e=G.camera.position; const dx=h.x-e.x, dz=h.z-e.z, dy=h.y-e.y; let dyaw=Math.atan2(-dx,-dz)-N.controller.yaw; dyaw=Math.atan2(Math.sin(dyaw),Math.cos(dyaw)); return JSON.stringify({d:+Math.hypot(dx,dz).toFixed(1), h:+h.y.toFixed(1), dyaw:+dyaw.toFixed(3), dp:+(Math.atan2(dy,Math.hypot(dx,dz))-N.controller.pitch).toFixed(3), st:it.state, dark:!!it.dark, hits:it.hits, ammo:G.guns&&G.guns.ammo}); })()"
+  },
+  {
+   "look": "(() => { const C=N.controller; const it=window.__hl; const h=it.lamp.head; const e=G.camera.position; const dx=h.x-e.x, dz=h.z-e.z, dy=h.y-e.y; let dyaw=Math.atan2(-dx,-dz)-C.yaw; dyaw=Math.atan2(Math.sin(dyaw),Math.cos(dyaw)); const dp=Math.atan2(dy,Math.hypot(dx,dz))-C.pitch; if (window.__pe!=null && Math.abs(dp)>Math.abs(window.__pe)*1.1 && Math.abs(dp)>0.05) window.__ps=-(window.__ps||1); window.__pe=dp; const s=window.__ps||1; return [-dyaw/C.sensitivity*0.9, s*dp/C.sensitivity*0.9]; })()",
+   "steps": 2
+  },
+  {
+   "wait": 200
+  },
+  {
+   "eval": "(() => { const it=window.__hl; const h=it.lamp.head; const e=G.camera.position; const dx=h.x-e.x, dz=h.z-e.z, dy=h.y-e.y; let dyaw=Math.atan2(-dx,-dz)-N.controller.yaw; dyaw=Math.atan2(Math.sin(dyaw),Math.cos(dyaw)); return JSON.stringify({d:+Math.hypot(dx,dz).toFixed(1), h:+h.y.toFixed(1), dyaw:+dyaw.toFixed(3), dp:+(Math.atan2(dy,Math.hypot(dx,dz))-N.controller.pitch).toFixed(3), st:it.state, dark:!!it.dark, hits:it.hits, ammo:G.guns&&G.guns.ammo}); })()"
+  },
+  {
+   "shot": "h1_aim"
+  },
+  {
+   "mouse": "click",
+   "button": "left",
+   "hold": 250
+  },
+  {
+   "wait": 150
+  },
+  {
+   "shot": "h2_hit"
+  },
+  {
+   "wait": 600
+  },
+  {
+   "eval": "(() => { const it=window.__hl; const h=it.lamp.head; const e=G.camera.position; const dx=h.x-e.x, dz=h.z-e.z, dy=h.y-e.y; let dyaw=Math.atan2(-dx,-dz)-N.controller.yaw; dyaw=Math.atan2(Math.sin(dyaw),Math.cos(dyaw)); return JSON.stringify({d:+Math.hypot(dx,dz).toFixed(1), h:+h.y.toFixed(1), dyaw:+dyaw.toFixed(3), dp:+(Math.atan2(dy,Math.hypot(dx,dz))-N.controller.pitch).toFixed(3), st:it.state, dark:!!it.dark, hits:it.hits, ammo:G.guns&&G.guns.ammo}); })()"
+  },
+  {
+   "shot": "h3_after"
+  }
+ ]
+}

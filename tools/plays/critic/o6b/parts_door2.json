@@ -1,0 +1,32 @@
+{
+ "about": "[O6b critic] the door lying (&ten=parts), straight into it: stand 1.8 m south of it facing north, look down at it, W held 1.6 s with no steering; where am I each quarter second?",
+ "url": "/?mute=1&start=smash.ten&ten=parts",
+ "size": [1440, 900],
+ "out": "shots/critic_o6b/door2",
+ "steps": [
+  { "wait": 2000 },
+  { "clickOn": "#title .opt[data-k=begin]", "taken": "G.state !== 'title'", "retries": 5, "every": 4000 },
+  { "until": "G.scenes.current && G.scenes.current.id === 'smash' && G.scenes.fadeK < 0.05 && G.city.cars.length >= 11", "timeout": 30000 },
+  { "wait": 3500 },
+  { "walk": "(() => { const d = G.stage.smash.out.find(i=>i.part && i.kind==='cardoor'); return [[d.body.p.x, d.body.p.z + 4.5], [d.body.p.x, d.body.p.z + 1.9]]; })()", "timeout": 12000 },
+  { "wait": 300 },
+  { "look": [0, -330], "steps": 5 },
+  { "wait": 400 },
+  { "eval": "JSON.stringify({pitch:+N.controller.pitch.toFixed(2)})" },
+  { "shot": "e1_down" },
+  { "eval": "(() => { const d = G.stage.smash.out.find(i=>i.part && i.kind==='cardoor'); return JSON.stringify({me:[N.controller.pos.x,N.controller.pos.z].map(v=>+v.toFixed(2)), door:[d.body.p.x,d.body.p.y,d.body.p.z].map(v=>+v.toFixed(2)), q:[d.Q.x,d.Q.y,d.Q.z,d.Q.w].map(v=>+v.toFixed(2)), yaw:+N.controller.yaw.toFixed(2)}); })()" },
+  { "down": "KeyW" },
+  { "wait": 250 }, { "eval": "(() => { const d = G.stage.smash.out.find(i=>i.part && i.kind==='cardoor'); return JSON.stringify({me:[N.controller.pos.x,N.controller.pos.z].map(v=>+v.toFixed(2)), door:[d.body.p.x,d.body.p.y,d.body.p.z].map(v=>+v.toFixed(2)), q:[d.Q.x,d.Q.y,d.Q.z,d.Q.w].map(v=>+v.toFixed(2)), yaw:+N.controller.yaw.toFixed(2)}); })()" },
+  { "wait": 250 }, { "eval": "(() => { const d = G.stage.smash.out.find(i=>i.part && i.kind==='cardoor'); return JSON.stringify({me:[N.controller.pos.x,N.controller.pos.z].map(v=>+v.toFixed(2)), door:[d.body.p.x,d.body.p.y,d.body.p.z].map(v=>+v.toFixed(2)), q:[d.Q.x,d.Q.y,d.Q.z,d.Q.w].map(v=>+v.toFixed(2)), yaw:+N.controller.yaw.toFixed(2)}); })()" },
+  { "wait": 250 }, { "eval": "(() => { const d = G.stage.smash.out.find(i=>i.part && i.kind==='cardoor'); return JSON.stringify({me:[N.controller.pos.x,N.controller.pos.z].map(v=>+v.toFixed(2)), door:[d.body.p.x,d.body.p.y,d.body.p.z].map(v=>+v.toFixed(2)), q:[d.Q.x,d.Q.y,d.Q.z,d.Q.w].map(v=>+v.toFixed(2)), yaw:+N.controller.yaw.toFixed(2)}); })()" },
+  { "shot": "e2_on" },
+  { "wait": 250 }, { "eval": "(() => { const d = G.stage.smash.out.find(i=>i.part && i.kind==='cardoor'); return JSON.stringify({me:[N.controller.pos.x,N.controller.pos.z].map(v=>+v.toFixed(2)), door:[d.body.p.x,d.body.p.y,d.body.p.z].map(v=>+v.toFixed(2)), q:[d.Q.x,d.Q.y,d.Q.z,d.Q.w].map(v=>+v.toFixed(2)), yaw:+N.controller.yaw.toFixed(2)}); })()" },
+  { "wait": 300 }, { "eval": "(() => { const d = G.stage.smash.out.find(i=>i.part && i.kind==='cardoor'); return JSON.stringify({me:[N.controller.pos.x,N.controller.pos.z].map(v=>+v.toFixed(2)), door:[d.body.p.x,d.body.p.y,d.body.p.z].map(v=>+v.toFixed(2)), q:[d.Q.x,d.Q.y,d.Q.z,d.Q.w].map(v=>+v.toFixed(2)), yaw:+N.controller.yaw.toFixed(2)}); })()" },
+  { "wait": 300 }, { "eval": "(() => { const d = G.stage.smash.out.find(i=>i.part && i.kind==='cardoor'); return JSON.stringify({me:[N.controller.pos.x,N.controller.pos.z].map(v=>+v.toFixed(2)), door:[d.body.p.x,d.body.p.y,d.body.p.z].map(v=>+v.toFixed(2)), q:[d.Q.x,d.Q.y,d.Q.z,d.Q.w].map(v=>+v.toFixed(2)), yaw:+N.controller.yaw.toFixed(2)}); })()" },
+  { "up": "KeyW" },
+  { "look": [0, 200], "steps": 4 },
+  { "look": [1400, 0], "steps": 10 },
+  { "wait": 300 },
+  { "shot": "e3_back" }
+ ]
+}

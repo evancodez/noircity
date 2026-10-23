@@ -1,0 +1,31 @@
+{
+ "about": "[O6b] after the critic, the minors by real input (?start=smash.ten): m5 - by my coupe, E GET IN shows while I look at it, goes when I look straight up at the el, comes back when I look down at her again; m7 - in the seat, the pedals card comes before the first W and is gone once she has moved off (9 m), never up into the first ram. node tools/play.mjs tools/plays/o6b_after.json",
+ "url": "/?mute=1&start=smash.ten",
+ "size": [1440, 900],
+ "out": "shots/o6b/after",
+ "steps": [
+  { "wait": 1500 },
+  { "clickOn": "#title .opt[data-k=begin]", "taken": "G.state !== 'title'", "retries": 5, "every": 4000 },
+  { "until": "G.scenes.current && G.scenes.current.id === 'smash' && G.scenes.fadeK < 0.05 && G.city.cars.length >= 14", "timeout": 30000 },
+  { "wait": 1200 },
+  { "eval": "(window.__txt = (re) => [...document.querySelectorAll('body *')].some((e) => e.offsetParent && e.children.length === 0 && re.test(e.innerText || '')), 1)" },
+  { "until": "window.__txt(/get in/i)", "timeout": 5000, "name": "E get in, looking at her" },
+  { "look": [0, -2600], "steps": 10 },
+  { "wait": 500 },
+  { "eval": "JSON.stringify({ pitch: +N.controller.pitch.toFixed(2), prompt: window.__txt(/get in/i) })" },
+  { "expect": "N.controller.pitch > 0.9 && !window.__txt(/get in/i)", "name": "looking straight up at the el: no prompt" },
+  { "look": [0, 2600], "steps": 10 },
+  { "wait": 500 },
+  { "expect": "window.__txt(/get in/i)", "name": "looking back down at her: the prompt again" },
+  { "key": "KeyE", "hold": 80 },
+  { "until": "G.city.inCar", "timeout": 3000 },
+  { "until": "window.__txt(/handbrake/i)", "timeout": 3000, "name": "the pedals card before the first W" },
+  { "down": "KeyW" },
+  { "until": "Math.abs(G.city.car.speed) > 1", "timeout": 3000 },
+  { "until": "!window.__txt(/handbrake/i)", "timeout": 4000, "name": "gone once she moves off" },
+  { "eval": "JSON.stringify({ moved: +Math.hypot(G.city.car.pos.x + 119.6, G.city.car.pos.z - 58).toFixed(1), v: +G.city.car.speed.toFixed(1), crashes: G.city.car.stats.crashes, scrapes: G.city.car.stats.scrapes })" },
+  { "expect": "G.city.car.stats.crashes === 0", "name": "and before any blow" },
+  { "up": "KeyW" },
+  { "down": "KeyS" }, { "wait": 1200 }, { "up": "KeyS" }
+ ]
+}

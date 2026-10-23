@@ -1,0 +1,17 @@
+{
+ "about": "[O6b critic] the ten bed cold: begin, what is on screen, where the cars are; a look round from where I stand.",
+ "url": "/?mute=1&start=smash.ten",
+ "size": [1440, 900],
+ "out": "shots/critic_o6b/bed",
+ "steps": [
+  { "wait": 2000 },
+  { "clickOn": "#title .opt[data-k=begin]", "taken": "G.state !== 'title'", "retries": 5, "every": 4000 },
+  { "until": "G.scenes.current && G.scenes.current.id === 'smash' && G.scenes.fadeK < 0.05 && G.city.cars.length >= 11", "timeout": 30000 },
+  { "wait": 1500 },
+  { "eval": "JSON.stringify({me:[G.controller.pos.x,G.controller.pos.z].map(v=>+v.toFixed(1)), yaw:+G.controller.yaw?.toFixed?.(2), car:[G.city.car.pos.x,G.city.car.pos.z].map(v=>+v.toFixed(1)), cars:G.city.cars.map((c,i)=>[i,(c.model&&c.model.kind)||c.kindName||c.type||'?',+c.pos.x.toFixed(1),+c.pos.z.toFixed(1),+c.yaw.toFixed(2),c===G.city.car]), veh:G.vehicles&&G.vehicles.list&&G.vehicles.list.length, t:[...document.querySelectorAll('body *')].filter(e=>e.offsetParent&&e.children.length===0&&e.innerText&&e.innerText.trim()).map(e=>e.innerText.trim().slice(0,50)).join(' | ')})" },
+  { "shot": "00_begin" },
+  { "look": [900, 0], "steps": 10 }, { "wait": 400 }, { "shot": "01_right" },
+  { "look": [900, 0], "steps": 10 }, { "wait": 400 }, { "shot": "02_back" },
+  { "look": [900, 0], "steps": 10 }, { "wait": 400 }, { "shot": "03_left" }
+ ]
+}

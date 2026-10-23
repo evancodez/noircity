@@ -770,6 +770,7 @@ export class Cars {
   lodUpdate(camera) {
     const p = camera.position;
     for (const car of this.cars) {
+      if (car.own) continue;   // [O6] a car with a build of its own (dented, parts cut off: destruct/CarDamage) keeps it
       const d = Math.hypot(car.pos.x - p.x, car.pos.z - p.z);
       const lod = this.world.lodOff ? 0 : car.lod ? (d > FAR_LOD - 4 ? 1 : 0) : (d > FAR_LOD ? 1 : 0);
       if (lod === car.lod) continue;
@@ -788,7 +789,7 @@ export class Cars {
   // build while a map is re-rendered (Phase 3c performance pass)
   shadowLod(on) {
     for (const car of this.cars) {
-      if (car.lod) continue;
+      if (car.lod || car.own) continue;   // ([O6] its own build casts as it is)
       const T = on ? this.TL : this.T;
       for (const k of LOD_PARTS) { const m = car.meshes[k]; if (m) m.geometry = T[k]; }
     }

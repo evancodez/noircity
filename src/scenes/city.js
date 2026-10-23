@@ -280,14 +280,20 @@ export function step(ctx, R, T, dt) {   // [O6] exported
     T.drive += dt;
     T.dist += Math.abs(car.speed) * dt;
     R.cabin.step(dt);
-    // the river: the car in the water is lost
-    if (C.inWater(car.pos.x, car.pos.z)) { wet(ctx, R, car.pos, 'The river took it.'); return; }
+    // the river: the car in the water is lost ([O6b] it drops, the splash, the water
+    // closing over it - then the words; stage.smash.cars.sink)
+    if (C.inWater(car.pos.x, car.pos.z) || R.sinkT) {
+      const S = ctx.stage.smash;
+      if (!R.sinkT) { R.sinkT = G.time; if (S) S.cars.sink(car); }
+      if (!S || G.time - R.sinkT > 0.95) { R.sinkT = 0; wet(ctx, R, car.pos, 'The river took it.'); }
+      return;
+    }
     // ([O6] shoved by the tram the car is not slow, but a man may still get out of it)
     const slow = Math.abs(car.speed) < 1.5 || (car.smashD && car.smashD.tramT != null && G.time - car.smashD.tramT < 0.4);
     // the pedals, taught in the seat before the first W (the critic's m2:
     // it came 2.5 s after W, and S was never taught); up until the car has
     // gone a few lengths, or its time
-    if (T.drive > 0.4 && !T.driveCard) T.driveCard = hud.teach('city_drive', '[W] drive  [S] brake  [SPACE] handbrake', { until: () => T.dist > 30, secs: 5 });
+    if (T.drive > 0.4 && !T.driveCard) { const c0 = car.stats.crashes + car.stats.scrapes; T.driveCard = hud.teach('city_drive', '[W] drive  [S] brake  [SPACE] handbrake', { until: () => T.dist > 9 || car.stats.crashes + car.stats.scrapes > c0, secs: 5 }); }   // ([O6b] the cold play's m7: gone once she moves off - never up into the first ram)
     if (T.drive > 25 && !T.taughtMap && !T.warned) { T.taughtMap = true; hud.teach('city_map', '[M] the map'); }
     // E, moving: the brakes go on and I get out as it stops (W again
     // changes my mind) - E acts on the press (the critic's m3)
@@ -305,8 +311,9 @@ export function step(ctx, R, T, dt) {   // [O6] exported
   // stands (nothing else steps a parked car yet: O2's traffic will)
   if (car && !R.inCar && (car.vel.lengthSq() > 4e-4 || Math.abs(car.yawRate) > 0.01)) car.step(dt);
   // on foot: the river (walked off a pier's end, down a slipway, the steps):
-  // [O1b] a swim to the steps (world/swim.js), never the fade
-  if (swimStep(ctx, R)) { if (gunOut(G)) holster(ctx); return; }
+  // [O1b] a swim to the steps (world/swim.js), never the fade; [O6b] the ink splash where he went in
+  const swims = R.swim ? R.swim.n : 0;
+  if (swimStep(ctx, R)) { if (R.swim.n !== swims && ctx.stage.smash) ctx.stage.smash.cars.splash(ctl.pos.clone(), 0.55); if (gunOut(G)) holster(ctx); return; }
   // [O3] a fist fight on (lane O4's crowd brawl): no prompt of the street's under it
   // (no card in danger, and E is the fight's: a bottle) - the critic's m2
   if (G.crowd && G.crowd.active) {
