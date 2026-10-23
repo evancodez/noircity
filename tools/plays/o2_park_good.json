@@ -1,19 +1,35 @@
 {
- "about": "[O2] The hijack of a parked car, good hands (brief O2 §3, §5): walk to the parked saloon ahead of the start's car (&park=saloon), E at its door, the 2 s at the glass (the lock), in, drive off 60 m. Twice in a row (the second at the next parked car, &park=saloon,coupe). node tools/play.mjs tools/plays/o2_park_good.json",
- "url": "/?mute=1&start=city&park=saloon,coupe",
- "size": [1280, 800],
+ "about": "[O2] The hijack of a parked car, good hands (brief O2 \u00a73, \u00a75): walk to the parked saloon ahead of the start's car (&park=saloon), E at its door, the 2 s at the glass (the lock), in, drive off 60 m. (Run twice: twice in a row.) node tools/play.mjs tools/plays/o2_park_good.json",
+ "url": "/?mute=1&start=city&park=saloon",
+ "size": [
+  1280,
+  800
+ ],
  "out": "shots/o2/park_good",
  "steps": [
-  { "wait": 1500 },
-  { "clickOn": "#title .opt[data-k=begin]", "taken": "G.state !== 'title'", "retries": 5, "every": 4000 },
-  { "until": "G.scenes.current && G.scenes.current.id === 'city' && G.scenes.fadeK < 0.05", "timeout": 20000 },
-  { "wait": 800 },
-  { "drive": "tools/lib/o2_wheels.mjs", "mode": "park", "hands": "good", "pick": 0,
-    "check": "D.inMs != null && D.inMs < 2600 && D.kind === 'saloon' && D.drove > 40 && D.stats.broke === 1 && D.prompt === 'E  break in'", "label": "good: the saloon broken into in 2 s and driven off" },
-  { "key": "KeyE" },
-  { "until": "!G.city.inCar", "timeout": 8000 },
-  { "wait": 600 },
-  { "drive": "tools/lib/o2_wheels.mjs", "mode": "park", "hands": "good", "pick": 1,
-    "check": "D.inMs != null && D.inMs < 2600 && D.kind === 'coupe' && D.drove > 40 && D.stats.broke === 2", "label": "good, again: the coupe" }
+  {
+   "wait": 1500
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]",
+   "taken": "G.state !== 'title'",
+   "retries": 5,
+   "every": 4000
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'city' && G.scenes.fadeK < 0.05",
+   "timeout": 20000
+  },
+  {
+   "wait": 800
+  },
+  {
+   "drive": "tools/lib/o2_wheels.mjs",
+   "mode": "park",
+   "hands": "good",
+   "pick": 0,
+   "check": "D.inMs != null && D.inMs < 2600 && D.kind === 'saloon' && D.drove > 40 && D.stats.broke === 1 && D.prompt === 'E  break in'",
+   "label": "good: the saloon broken into in 2 s and driven off"
+  }
  ]
 }

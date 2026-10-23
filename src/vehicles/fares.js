@@ -48,7 +48,7 @@ export class Fares {
       const d = Math.hypot(v.pos.x - c.fig.pos.x, v.pos.z - c.fig.pos.z);
       if (d > 140 && F.t > 6) { this.dismiss('missed'); return; }
       c.fig.yaw = Math.atan2(v.pos.x - c.fig.pos.x, v.pos.z - c.fig.pos.z);
-      const near = d < 7.5 && v.speedAbs < 1.0;
+      const near = d < 9 && v.speedAbs < 1.0;
       F.stoodT = near ? F.stoodT + dt : 0;
       if (near && !F.prompted) { F.prompted = true; hud.prompt('E  take him', null, 'o2fare'); }
       if (!near && F.prompted) { F.prompted = false; hud.clearPrompt('o2fare'); }

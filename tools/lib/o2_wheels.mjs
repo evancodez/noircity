@@ -192,7 +192,9 @@ async function pull(P, { js, sleep, log, shot }, H) {
   await sleep(H.react * 0.4);
   const pr = (await P.state()).prompt;
   const look = await js(`(() => { const L = G.wheels.hijack.look(G.city.car); return L ? { what: L.what, db: +L.db.toFixed(2), v: +L.o.speedAbs.toFixed(2) } : null; })()`);
+  if (P.opts.strip && shot) await shot('strip_0');
   await P.tap('KeyE');
+  if (P.opts.strip && shot) for (let k = 1; k <= P.opts.strip; k++) { await sleep(150); await shot('strip_' + k); }
   let inT = null;
   for (let i = 0; i < 60; i++) { const s = await P.state(); if (s.inCar) { inT = i * 50; break; } await sleep(50); }
   if (inT == null) return { err: 'not in', prompt: pr, look, me: await P.state() };
@@ -260,14 +262,14 @@ async function fare(P, { js, sleep, log, shot }, H) {
     await sleep(H.react);
     // to him: along the road to a stop by him
     const r1 = await P.route([F.x, F.z], 2.6);
-    await P.driveAlong(r1 || [], { timeout: 40000, speed: 9, traffic: true, until: async (s) => Math.hypot(s.car.x - F.x, s.car.z - F.z) < 6.5 });
+    await P.driveAlong(r1 || [], { timeout: 40000, speed: 8, traffic: true, until: async (s) => Math.hypot(s.car.x - F.x, s.car.z - F.z) < 5.5 });
     await P.stop();
     if (shot && k === 0) await shot('hail');
     // (good hands say it: E; the others wait the two seconds)
     if (H.name === 'good') await P.tap('KeyE');
     let inside = false;
     for (let i = 0; i < 80; i++) { const s = await js('G.wheels.fares.state'); if (s === 'in') { inside = true; break; } await sleep(100); }
-    if (!inside) { out.push({ err: 'not in', state: await js('G.wheels.fares.state') }); continue; }
+    if (!inside) { out.push({ err: 'not in', state: await js('G.wheels.fares.state'), dbg: await js(`(() => { const f = G.wheels.fares, c = G.city.car, F = f.fare; return { taxi: !!f.taxi, inCar: G.city.inCar, kind: c && c.kind, v: c && +c.speedAbs.toFixed(2), d: F && F.c ? +Math.hypot(c.pos.x - F.c.fig.pos.x, c.pos.z - F.c.fig.pos.z).toFixed(1) : null, stood: F && F.stoodT, t: F && F.t }; })()`) }); continue; }
     const t1 = Date.now();
     if (H.name === 'idle') {
       // nothing: he waits, says Come on., and gets out
@@ -310,7 +312,9 @@ async function race(P, { js, sleep, log, shot }, H) {
   await sleep(300);
   const pr = (await P.state()).prompt;
   await P.tap('KeyE');
+  if (P.opts.strip && shot) { for (let k = 0; k < P.opts.strip; k++) { await sleep(420); await shot('strip_' + k); } }
   for (let i = 0; i < 100; i++) { const r = await js('G.wheels.race.state'); if (r === 'run') break; await sleep(60); }
+  if (P.opts.strip) { await P.set('KeyW', true); for (let k = 0; k < 4; k++) { await sleep(300); if (shot) await shot('strip_go' + k); } await P.set('KeyW', false); return { strip: true }; }
   if (shot) await shot('grid');
   const pts = await js(`(() => { const R = G.wheels.race, P = R.path, out = []; for (let s = R.s0; s < R.s0 + R.len + 40; s += 3) { const p = P.at(s, {}); out.push([p.x, p.z]); } return out; })()`);
   // (bad hands: late off the line; idle: never)

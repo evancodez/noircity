@@ -202,7 +202,7 @@ export class Hijack {
     }
     if (m.state === 'recover') {
       // (a man with a jaw: he gets his breath and comes back for his car)
-      if (m.t > 1.0) { m.state = 'back'; m.t = 0; c.setState('run', 0.2); c.fig.speed = 2.6; }
+      if (m.t > 1.2) { m.state = 'back'; m.t = 0; c.setState('run', 0.2); c.fig.speed = 2.6; }
       return;
     }
     if (m.state === 'back') {
@@ -212,13 +212,13 @@ export class Hijack {
       const dx = door.x - c.fig.pos.x, dz = door.z - c.fig.pos.z, d = Math.hypot(dx, dz);
       c.fig.yaw = Math.atan2(dx, dz);
       // driven off from him: he is left in the road (he stops, he shouts)
-      if (!mine || v.speedAbs > 1.6 || d > 14) {
+      if (!mine || v.speedAbs > 1.2 || d > 14) {
         G.hud.warn(null);
         c.fig.speed = 0; c.setState('idle', 0.3);
         m.state = 'left'; m.t = 0;
         return;
       }
-      if (d < 0.45 && v.speedAbs <= 1.6) {
+      if (d < 0.45 && v.speedAbs <= 1.2) {
         // he has me out of my seat: the fight (the base's brawl, one man)
         G.hud.warn(null);
         c.fig.speed = 0;

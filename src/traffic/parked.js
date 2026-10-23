@@ -141,6 +141,7 @@ export class Parked {
 
   // a record made a body (near the eye)
   make(r) {
+    if (!r.look) r.look = lookAt(r.kind, r.x, r.z, 0, { parked: true });
     const K = KINDS[r.kind], P = this;
     const b = {
       kind: r.kind, parked: true, rec: r, pos: new THREE.Vector3(r.x, 0, r.z), yaw: r.yaw, vel: new THREE.Vector3(), yawRate: 0,

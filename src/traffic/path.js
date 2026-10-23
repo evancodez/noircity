@@ -71,6 +71,11 @@ function meet(a0, a1, b0, b1) {
 export function lanePath(graph, ids, { from = null, to = null, vmax = 13, aLat = 3.6, aBrake = 3.5, lane = 0, rRight = 6.5, rLeft = 10, pace = 1, off = null } = {}) {
   const legs = [];
   for (let i = 0; i + 1 < ids.length; i++) legs.push(laneLine(graph, ids[i], ids[i + 1], lane, off));
+  // (from a point on the first street: the lane joined a few metres on from
+  // abreast of it; to a point on the last: the lane left abreast of it)
+  const along = (L, p) => { const dx = L[1][0] - L[0][0], dz = L[1][1] - L[0][1], len = Math.hypot(dx, dz) || 1; return [((p.x - L[0][0]) * dx + (p.z - L[0][1]) * dz) / len, dx / len, dz / len, len]; };
+  if (from && legs.length) { const L = legs[0].pts, [t, ux, uz, len] = along(L, from); if (t > -2) { const u = Math.min(len - 1, Math.max(0, t) + 7); L[0] = [L[0][0] + ux * u, L[0][1] + uz * u]; } }
+  if (to && legs.length) { const L = legs[legs.length - 1].pts, [t, ux, uz, len] = along(L, to); const u = Math.max(0.5, Math.min(len, t)); if (u < len) L[1] = [L[0][0] + ux * u, L[0][1] + uz * u]; }
   const poly = [];   // [x, z, limit]
   if (from) poly.push([from.x, from.z, LIMIT[legs[0].e.cls] || 10]);
   for (let i = 0; i < legs.length; i++) {
