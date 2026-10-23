@@ -60,7 +60,7 @@ export const CROWD = {
   reach: 1.9, cone: 0.62, pick: 0.85, sticky: 0.2, keep: 1.05,
   stun: 1.0, coverAfter: 4, cover: 0.9, hurtMax: 0.25, jammed: 0.25,
   warnOn: 30, warnOff: 40, read: 1.0,
-  leave: { warn: 14, gone: 30 },
+  leave: { warn: 10, gone: 30 },
   getUp: { after: 3.0, hp: 0.25 },
   // the hit stop (steps of 1/60 s) and the frame's kick by what landed
   feel: { jab: { stop: 4, kick: [0.6, 0.8], burst: 90 }, heavy: { stop: 5, kick: [2.2, 2.8], burst: 230, knock: 1.1 }, thing: { stop: 5, kick: [1.8, 2.2], burst: 200, knock: 0.8 } },
@@ -124,7 +124,7 @@ export class Crowd {
     this.cfg = { to: null, why: {}, bounds: null, leave: true, dmgK: 1, maxIn: null, onEnd: null, onDown: null, things: [], name: null, seed: 4242, ...cfg };
     this.rng = G.stage.rng.fork(this.cfg.seed);
     this.active = true;
-    this.result = null; this.done = false; this.timers = []; this.lastHurt = null; this.lastCue = null; this.leaveWarn = false;
+    this.result = null; this.done = false; this.timers = []; this.breakAt = null; this.run = 0; this.lastHurt = null; this.lastCue = null; this.leaveWarn = false;
     this.stats = fresh();
     this.T = 0; this.RT = 0;
     this.cue = null; G.worldK = 1;
@@ -1258,18 +1258,24 @@ export class Crowd {
     if (this.done) return;
     const live = this.alive();
     if (!live.length) { this.finish('won'); return; }
-    // walking off (in the open): they follow a while, then give up
+    // walking off (in the open): free of them (nobody within reach), my run is
+    // counted from where I broke away; they follow - past 10 m 'He's coming.' -
+    // and a run of 30 m and they give up ('He's gone.'). One of them back on me
+    // and the run starts again.
     if (this.cfg.leave && !this.cfg.bounds) {
       const e = G.eye;
       let near = Infinity;
       for (const m of live) if (this.standing(m)) near = Math.min(near, Math.hypot(m.c.pos.x - e.x, m.c.pos.z - e.z));
       // (nobody on his feet - one down, about to get up - is no one to leave)
       if (near === Infinity) return;
-      const far = near;
-      if (far > CROWD.leave.gone) { this.finish('left'); return; }
-      const w = this.leaveWarn ? far > CROWD.leave.warn - 2 : far > CROWD.leave.warn;
+      if (near < 3.6) this.breakAt = null;
+      else if (!this.breakAt) this.breakAt = { x: e.x, z: e.z };
+      const run = this.breakAt ? Math.hypot(e.x - this.breakAt.x, e.z - this.breakAt.z) : 0;
+      this.run = run;
+      if (run > CROWD.leave.gone && near > 8) { this.finish('left'); return; }
+      const w = this.leaveWarn ? run > CROWD.leave.warn - 2 : run > CROWD.leave.warn;
       if (w !== !!this.leaveWarn) { this.leaveWarn = w; if (!this.warned) G.hud.warn(w ? (live.length > 1 ? 'They’re coming.' : 'He’s coming.') : null); }
-      for (const m of live) m.chase = far > 4;
+      for (const m of live) m.chase = near > 4;
     }
     void dt;
   }
@@ -1279,7 +1285,7 @@ export class Crowd {
     this.result = result;
     if (this.leaveWarn) { this.leaveWarn = false; G.hud.warn(null); }
     if (this.warned) { this.warned = false; G.hud.warn(null); }
-    if (result === 'left') { for (const m of this.men) if (this.standing(m)) { m.state = 'gone'; this.toRing(m); m.state = 'gone'; } if (G.hud.say) G.hud.say(this.alive().length > 1 ? 'They’re gone.' : 'He’s gone.', 2.2, { always: true }); }
+    if (result === 'left') { const n = this.men.filter((m) => this.standing(m)).length; for (const m of this.men) if (this.standing(m)) { m.state = 'gone'; this.toRing(m); m.state = 'gone'; } if (G.hud.say) G.hud.say(n > 1 ? 'They’re gone.' : 'He’s gone.', 2.2, { always: true }); }
     G.emit('crowd:end', { result, stats: this.stats });
     const cb = this.cfg.onEnd;
     this.stop(result);
@@ -1298,8 +1304,9 @@ export class Crowd {
     const spec = this.cfg.onDown ? this.cfg.onDown({ why, last: this.lastHurt, crowd: this }) : null;
     const cop = this.men.some((m) => m.kind === 'cop' && this.standing(m));
     const words = (spec && spec.why) || (cop ? 'Hands up.' : why);
-    this.stop('down');
+    // (the fail first: the kit reads the warning that was up before it - then the fight stops)
     G.fail({ why: words, to: (spec && spec.to) || this.cfg.to || (G.scenes && G.scenes.beat), fall: true });
+    this.stop('down');
   }
 
   // a timer on the world's clock

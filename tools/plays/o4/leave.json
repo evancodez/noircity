@@ -1,0 +1,20 @@
+{
+ "about": "[O4] Walking off a street fight (the brief's: they do not chase for ever): the driver on me in the open; I run (Shift) south-east down the avenue - past 10 m 'He's coming.', a run of 30 m and he gives up ('He's gone.'), the fight left. By real input.",
+ "url": "/?mute=1&o4stay=1&start=o4.brawl1",
+ "size": [1280, 800],
+ "out": "shots/play/leave",
+ "steps": [
+  { "until": "G.state === 'title' && !!document.querySelector('#title .opt[data-k=begin]')", "timeout": 60000 },
+  { "wait": 1200 },
+  { "clickOn": "#title .opt[data-k=begin]", "taken": "G.scenes.current && G.scenes.current.id === 'o4'", "retries": 4 },
+  { "until": "G.scenes.current && G.scenes.current.id === 'o4' && G.scenes.beat === 'brawl1' && G.crowd.active && !G.failing && document.pointerLockElement === N.renderer.domElement", "timeout": 30000 },
+  { "eval": "(window.__lv = [], G.on('crowd:end', (e) => window.__lv.push(e.result)), N.hud.teach.dismiss && N.hud.teach.dismiss(), 1)" },
+  { "down": "ShiftLeft" },
+  { "walk": [[4, 12], [10, 22], [16, 27.5]], "timeout": 14000 },
+  { "up": "ShiftLeft" },
+  { "eval": "({ run: G.crowd.run, warn: G.hud.warnText, ends: window.__lv, me: [+N.controller.pos.x.toFixed(1), +N.controller.pos.z.toFixed(1)], him: G.crowd.men.map((m) => [m.state, +m.c.pos.x.toFixed(1), +m.c.pos.z.toFixed(1)]) })" },
+  { "until": "window.__lv.includes('left')", "timeout": 4000 },
+  { "expect": "N.hud.lastSay === 'He’s gone.'" },
+  { "eval": "({ ends: window.__lv, say: N.hud.lastSay })" }
+ ]
+}

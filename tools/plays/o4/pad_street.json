@@ -24,6 +24,17 @@
    }
   },
   {
+   "wait": 700
+  },
+  {
+   "pad": {
+    "b": [
+     "x"
+    ],
+    "secs": 0.15
+   }
+  },
+  {
    "until": "G.scenes.current && G.scenes.current.id === 'o4' && G.scenes.beat === 'street' && !G.failing",
    "timeout": 30000
   },
