@@ -102,6 +102,8 @@ export class ElRide {
       tr.update = function (dt, t, opts) { this.s = me.s; this.run0 = me.s; return me.trUpdate.call(this, 0, t, { ...opts, camera: null }); };
       const eye = this.eyeAt(new THREE.Vector3());
       G.controller.setMode('hold', { at: eye, face: this.face(), yaw: 0, pitch: EL_RIDE.pitch });
+      // (THINGS_TO_DO §6: a man chased onto the el is lost at the next station if they did not see him board)
+      const P = G.police; this.unseen = !!(P && P.heat > 0 && P.searching);
       G.emit('el:board', { stop: stop.name });
       this.night.hud.lines.taken = null;
     });
@@ -142,7 +144,7 @@ export class ElRide {
       const vStop = Math.sqrt(2 * EL_RIDE.acc * Math.max(0, ahead - 0.3));
       this.v = Math.min(EL_RIDE.vmax, this.v + EL_RIDE.acc * dt, vStop);
       this.s += this.dir * this.v * dt;
-      if (ahead < 0.4 && this.v < 0.6) { this.dwell = EL_RIDE.dwell; this.at = next; this.v = 0; if (G.sfx) G.sfx.play('n_chime', null, {}, { send: false }); G.emit('el:stop', { stop: next.name }); }
+      if (ahead < 0.4 && this.v < 0.6) { this.dwell = EL_RIDE.dwell; this.at = next; this.v = 0; if (G.sfx) G.sfx.play('n_chime', null, {}, { send: false }); G.emit('el:stop', { stop: next.name }); const P = G.police; if (P && P.heat > 0 && this.unseen && P.searching && P.lost) { P.lost(); this.unseen = false; } }
     }
     const H = G.controller.hold;
     if (H) { this.eyeAt(H.at); H.face = this.face(); }

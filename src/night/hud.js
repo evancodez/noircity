@@ -147,7 +147,9 @@ export class NightHud {
     this.savedT = 0;
     this.tabHeld = false;
     G.on('money', (e) => this.onMoney(e));
-    G.on('scene:enter', () => { this.lines.taken = null; this.lines.heat = null; this.clearT = 0; });
+    // (a scene or a beat entered - the quay after the river, the hospital - keeps the heat's line: the heat
+    // is still on; the thing taken up is the scene's to give again)
+    G.on('scene:enter', () => { this.lines.taken = null; this.lines.heat = this.heat > 0 ? (this.searching ? HEAT_LINES.search : HEAT_LINES.up) : null; this.clearT = 0; this.applyLine(); });
   }
 
   // the line shown: the heat's over the taken-up thing's

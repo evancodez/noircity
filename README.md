@@ -1,4 +1,82 @@
-# NOIR EXTREME
+# NOIR CITY
+
+An open-world first-person noir game: one new city, one endless night in the
+rain, rendered in real time to look like a hand-inked black-and-white
+illustration (`reference/noir_reference.png`). No story and no missions:
+systems (driving, the gun, the police's heat, destruction), places, and
+things to do that you find by looking. Cloned from NOIR EXTREME (below),
+whose renderer, ink, cast, cars, guns, fist fight, pad and tools it keeps.
+The standard is `docs/OPEN_WORLD.md`; the lanes' reports `docs/reports/`.
+
+## Run
+
+```bash
+npm install
+npm run dev          # NOIR_PORT=<port> npm run dev for another port (default 5173)
+```
+
+Open http://127.0.0.1:5173 and click. The game takes the mouse (pointer
+lock); Esc gives it back and pauses. `?mute=1` starts silent.
+
+## How to play (the city as built)
+
+**The title** is the city itself: Grand Ave under the el in the rain, the
+coupe at the kerb. **BEGIN** starts a new night at that kerb; **CONTINUE**
+(only when there is a save of the city) puts you back where you last got into
+a car with no heat on you. An old NOIR EXTREME save is dropped quietly.
+
+**The keys** (the title and the pause card list them; a card teaches each
+the first time it is needed):
+
+| key | does |
+| --- | --- |
+| WASD, mouse | walk and look; in a car: throttle, brake, steer |
+| E | use what you look at: get in / out of the car, try a door, take a thing, ride the el, the phone box, the wanted board |
+| mouse wheel | draw the revolver under your coat, and put it away |
+| LMB / RMB / R | with the revolver out: fire, steady, reload; C gets low |
+| SHIFT | run |
+| SPACE | the handbrake |
+| Q / F | in a car: the horn / the radio's dial (silent stations hiss until you drop records into `public/music/`) |
+| TAB (held) | the heat, the money, the car's state, the hour, what is in your pockets |
+| M | the map (the game holds while you read it) |
+| ESC | the pause card: the map, the settings (the sound is there), the matchbooks |
+
+**What the screen shows**: an inked scrap of the map bottom left (heading
+up); the police's shields top right when they want you (half-toned while
+they search, struck as they give up) and a line top left that is your
+situation (`Lose them.`, `Stay out of sight.`, `Clear.`, `A car is
+coming.`); the money bottom right when it changes. Nothing else.
+
+**What answers you**: a shot in the city is heard (two shields, `Lose
+them.`; out of sight they search, then give up). Things on the pavements
+break, fall and stay where they fell; cars dent, smoke and burn; the river
+takes a car (and lets a man swim to the steps); the paper at a stand prints
+what you did last.
+
+**Things to find** (nothing lists them): the el (the stair at any station:
+ride the loop up front, off at any stop; a man chased onto it while they
+search for him is lost at the next station); the phone boxes (a car brought
+to the kerb by the box for $50); the wanted board by the police
+headquarters' door (three faces a night, each standing somewhere in his
+district: take him down and collect); cash, rounds and bottles in alleys and
+on stoops; a matchbook on the step of each of the six bars (the pause card
+keeps the row); the paper at every newsstand.
+
+**The pad** (a PS5 controller, `?padfake=1` for the tools): the title and
+the pause card are menus (✕ chooses); the left stick walks, the right looks;
+□ use, R2 fire (and throttle), L2 steady (and brake), d-pad left / right the
+revolver on foot, d-pad right the radio in a car, d-pad up the horn, d-pad
+down the map, the touchpad the heat and the money, options the pause. A
+gun raised on L2 eases the sight onto a man near it.
+
+**Test beds** (`?start=<id>[.<beat>]`): `city` (the default), `o4` and its
+beats (the fist fights, the street shootout, the gym, the gun shop: lane
+O4's), `smash` (lane O6's destruction), `?nightbed=1` in the city (1 to 5
+set the heat, 0 clears it, 9 the search, 8 gives $50, 7 a matchbook).
+NOIR EXTREME's chapters stay reachable the same way (below).
+
+---------------------------------------------------------------------------
+# The base: NOIR EXTREME (its chapters are reference and test beds here)
 
 A short first-person noir detective story, one rainy night in 1937, in a
 city rendered in real time to look like a hand-inked black-and-white noir
