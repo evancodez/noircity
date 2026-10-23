@@ -71,7 +71,7 @@ export class Person {
     this.paceK = 0.88 + ((Math.sin(x * 39.34 + z * 11.13) * 24634.6345) % 1 + 1) % 1 * 0.24;
     this.fear = 0; this.calmT = 0; this.reportOf = null; this.box = null;
     this.speed = 0; this.blocked = 0; this.lastPos = { x, z }; this.stuckT = 0; this.stuckN = 0;
-    this.seenBy = 0; this.outT = 0;
+    this.seenBy = 0; this.outT = 0; this.fledT = null; this.victimOf = null; this.upAfter = null; this.gunDropped = false;
     this.c.down = false; this.c.hp = 100; this.c.state = 'idle'; this.c.base = 'idle'; this.c.clipH = null; this.c._koFall = null; this.gaitNow = null;
     if (F.collider && this.stage.colliders.circles.indexOf(F.collider) < 0) { this.stage.colliders.circles.push(F.collider); if (this.stage.colliders.moving) this.stage.colliders.moving.push(F.collider); }
     if (F.collider) { F.collider.x = x; F.collider.z = z; F.collider.person = this; }
@@ -144,6 +144,8 @@ export class Person {
     if (!this.standing) return;
     const first = this.mode !== 'flee';
     this.mode = 'flee'; this.t = 0; this.until = secs; this.from = { x: from.x, z: from.z };
+    // (when he last ran from something: a shot after it, he knows who - People.witness)
+    this.fledT = this.G.time;
     if (first && cry && Math.random() < 0.55) this.say('o3_cry', { f0: this.kind === 'couple_her' ? 330 + Math.random() * 60 : 190 + Math.random() * 50 });
     // (the umbrella goes: dropped in the run)
     if (first && this.umb && this.umb.state === 'held') { this.umb.drop(_v.set(Math.sin(this.yaw) * 2, 1, Math.cos(this.yaw) * 2).clone()); if (this.fig.anim.setOverlay) this.fig.anim.setOverlay(null, 0.1); }
@@ -191,11 +193,28 @@ export class Person {
     return true;
   }
 
+  // [O3] after the critic (m5): up again after a knock down (not dead): lane O4's
+  // get-up clip, his body back among the walkers' colliders; 'rise' until it ends
+  getUp() {
+    if (!this.down || this.dead) return false;
+    const F = this.fig, c = this.c;
+    this.down = false; this.mode = 'rise'; this.t = 0; this.path = null; this.then = null;
+    c.down = false; c._koFall = null;
+    let ok = false;
+    try { c.play('o4_getUp', { fade: 0.2, hold: true }); ok = true; } catch (e) { ok = false; }
+    if (!ok) c.setState('idle', 0.5);
+    this.gaitNow = null; F.speed = 0;
+    const col = this.stage.colliders;
+    if (F.collider && col.circles.indexOf(F.collider) < 0) col.circles.push(F.collider);
+    this.resolve();
+    return true;
+  }
+
   // ---- one step ------------------------------------------------------------------------------
   step(dt) {
     this.t += dt; this.life += dt;
     const F = this.fig;
-    if (this.down || this.dead) { F.speed = 0; return; }
+    if (this.down || this.dead || this.mode === 'rise') { F.speed = 0; return; }
     // the way: the next point of the path, kept to the right of it by `side`
     if (this.path && this.pi < this.path.length) {
       const [tx0, tz0] = this.path[this.pi];

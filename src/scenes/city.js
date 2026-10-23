@@ -82,7 +82,7 @@ function place(ctx, at) {
   if (car.lamps && car.lamps.setOn) car.lamps.setOn(false);
   G.player.hands.equip('empty');
   G.setViewmodelVisible(false);
-  ctx.controller.setPose(at.pos.x, at.pos.z, at.yaw, -0.06);
+  ctx.controller.setPose(at.pos.x, at.pos.z, at.yaw, at.pitch ?? -0.06);   // [O3] (a wake's own pitch)
   stage.part('bounds').navAround(at.pos.x, at.pos.z, 14);
   R.stream = stage.part('stream');
   // (every program the city draws with, compiled under the fade in: none met first down a street)
@@ -103,7 +103,7 @@ function place(ctx, at) {
     R.cabin.dispose();
     G.player.hands.equip('empty');
     G.setViewmodelVisible(false);
-    ctx.controller.setPose(at.pos.x, at.pos.z, at.yaw, -0.06);
+    ctx.controller.setPose(at.pos.x, at.pos.z, at.yaw, at.pitch ?? -0.06);   // [O3]
   }
   if (!G.shotMode && !stage._compiled) R.compileMs = compileAll(stage, G);
 }
@@ -227,6 +227,13 @@ export function step(ctx, R, T, dt) {   // [O6] exported
   // on foot: the river (walked off a pier's end, down a slipway, the steps):
   // [O1b] a swim to the steps (world/swim.js), never the fade
   if (swimStep(ctx, R)) return;
+  // [O3] a fist fight on (lane O4's crowd brawl): no prompt of the street's under it
+  // (no card in danger, and E is the fight's: a bottle) - the critic's m2
+  if (G.crowd && G.crowd.active) {
+    if (T.inShown || T.door) { hud.clearPrompt('cityin'); hud.clearPrompt('citydoor'); }
+    T.inShown = false; T.near = false; T.door = null;
+    return;
+  }
   // E at the car: any door, looking at it, close by
   let near = false;
   if (car && car.solid !== false && !car.wrecked) {   // [O6] (a burnt wreck is no car to get into)
@@ -337,14 +344,19 @@ function wet(ctx, R, at, why) {
 const HOSPITAL = { x: -36.5, z: 66 };
 function wakeAt(ctx, what) {
   const stage = ctx.stage, C = stage.part('city').C, g = stage.part('city').graph;
-  let x, z, yaw;
+  let x, z, yaw, pitch = -0.06;
   const D = what === 'police' ? (stage.part('places').doors || []).find((d) => d.place === 'police' || (d.place && d.place.id === 'police')) : null;
   if (D) {
     // (out on the street side of the door, whichever way its normal is cut: the side nearer the road)
     const sd = (k) => { const S = g.streetAt(D.x + D.nx * k * 3, D.z + D.nz * k * 3); return S ? S.d : 99; };
     const k = sd(1) <= sd(-1) ? 1 : -1;
-    x = D.x + D.nx * k * 2.2; z = D.z + D.nz * k * 2.2;
-    yaw = Math.atan2(-D.nx * k, -D.nz * k);
+    // [O3] after the critic (m1): out on the pavement 5.5 m from the door and a
+    // stride to one side, facing it - the door, its two lamps and the POLICE
+    // board over it in the frame: the frame itself says where I am
+    const tx = D.nz * k, tz = -D.nx * k;
+    x = D.x + D.nx * k * 5.5 + tx * 2.2; z = D.z + D.nz * k * 5.5 + tz * 2.2;
+    yaw = Math.atan2(x - D.x, z - D.z);
+    pitch = 0.1;
   } else {
     const n = g.nearestPavement(HOSPITAL.x, HOSPITAL.z).node;
     x = n.x; z = n.z;
@@ -359,7 +371,7 @@ function wakeAt(ctx, what) {
   const car = b ? { x: b.x, z: b.z } : { x: x + 6, z };
   const carYaw = b ? b.yaw : 0;
   void C;
-  return { car, carYaw, pos: { x: v.x, z: v.z }, yaw };
+  return { car, carYaw, pos: { x: v.x, z: v.z }, yaw, pitch };
 }
 
 // the steps up out of the water nearest a point: a place on the quay's

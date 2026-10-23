@@ -1,8 +1,9 @@
 import * as THREE from 'three';
+import { owns, give, arms, wallet } from '../combat/money.js';
 
-// [O3] My hands in the street, a STAND-IN until lane O4 merges (its guns in
-// open ground and its crowd brawl take these verbs over; this object is the
-// seam: `people.hands`, the one place the street reads what my hands do).
+// [O3] My hands in the street (lane O4's crowd brawl takes over the moment a
+// fight starts; its guns' money.js says what I own: this object is the seam,
+// `people.hands`, the one place the street reads what my hands do).
 // The rulebook's keys (WAVE_C §2), on foot in the city:
 //   LMB  a jab at the man in front of me (the fists come up on the press;
 //        the first lands on the press - 0.06 s to contact); a cop or a gang
@@ -10,8 +11,10 @@ import * as THREE from 'three';
 //        staggers, two put him down
 //   RMB  the revolver out from under the arm (0.35 s), steadied while held;
 //        LMB fires it (the gun's own: src/player/weapons/revolver.js), R
-//        reloads; left alone 6 s it goes back under the arm
-//   E    over a man down with a gun: take it (the gun the police took back)
+//        reloads; left alone 6 s it goes back under the arm. Only a gun I own
+//        (O4's save.inventory: given once a save as the city first starts,
+//        taken at the station, taken back from a man down with E - lane O1b's
+//        items); with none, RMB says 'no gun'.
 // Every act is told to the street: a jab is a crime ('punch'), the gun out
 // is a 'menace' (the street runs; a cop who sees it 25 m off: HEAT 1), a shot
 // is a 'shot' (People.onShot).
@@ -21,7 +24,6 @@ export class StandinHands {
   constructor(P) {
     this.P = P;
     this.G = P.G;
-    this.hasGun = true;
     this.side = 'L';
     this.fistT = 0;
     this.gunIdle = 0;
@@ -30,6 +32,9 @@ export class StandinHands {
     this.stats = { jabs: 0, landed: 0, draws: 0, menace: 0 };
     this.lastJab = null;
   }
+  get hasGun() { return owns(this.G, 'revolver'); }
+  // (the plays' staging: the revolver given or taken)
+  set hasGun(v) { const S = this.G.save; if (v) give(this.G, 'revolver'); else S.inventory = (S.inventory || []).filter((k) => k !== 'revolver'); }
   get gunOut() { const W = this.G.player.weapons; return W.current === 'revolver' && W.active && W.active.phase !== 'holster' && W.active.phase !== 'away'; }
   // the man in front of me within reach (a cone of the view)
   inReach(r = 1.9) {
@@ -51,18 +56,25 @@ export class StandinHands {
 
   step(dt) {
     const G = this.G, C = G.controller, H = G.player.hands, W = G.player.weapons;
-    if (!G.city || G.city.inCar || G.brawl.active || G.failing || G.state !== 'playing') return;
+    if (!G.city || G.city.inCar || G.brawl.active || (G.crowd && G.crowd.active) || G.failing || G.state !== 'playing') return;
     if (C.mode !== 'walk' || C.frozen) return;
     this.footT += dt;
     // (the hands in the frame only while they hold something up: the fists, the gun)
     const up = H.set === 'fists' || W.current === 'revolver';
     if (up !== !!G.vmWanted) G.setViewmodelVisible(up);
-    // the keys, once: on foot a few seconds, nothing else up
-    if (this.footT > 9 && !this.taught && !G.hud.kit.warnText && !G.hud.sayShown && !(G.police && G.police.heat)) { this.taught = true; G.hud.teach('o3_hands', '[LMB] punch  [RMB] the gun', { until: ['Mouse0', 'Mouse2'], secs: 4 }); }
+    // the keys, once a save (the kit's): on foot a few seconds, nothing else up;
+    // [O3] after the critic (M2): the card says what is true - the draw only with a gun of mine
+    if (this.footT > 9 && !this.taught && !G.hud.kit.warnText && !G.hud.sayShown && !(G.police && G.police.heat)) {
+      this.taught = true;
+      if (this.hasGun) G.hud.teach('o3_hands', '[LMB] punch   [RMB] draw', { until: ['Mouse0', 'Mouse2'], secs: 4 });
+      else G.hud.teach('o3_punch', '[LMB] punch', { until: ['Mouse0'], secs: 3.4 });
+    }
     const gun = this.gunOut;
+    // (the gun's rounds kept in the coat's count as they go: a draw again loads what is left - O4's arms)
+    if (W.current === 'revolver' && W.active && Number.isFinite(W.active.pocket)) { const A = wallet(G).ammo; A.revolver = W.active.pocket; A.revolverIn = W.active.ammo; }
     // RMB: the gun out
     if (G.pressed('Mouse2') && W.current !== 'revolver') {
-      if (this.hasGun) { W.equip('revolver'); this.gunIdle = 0; this.stats.draws++; this.menace(true); }
+      if (this.hasGun) { arms(G).to('revolver'); this.gunIdle = 0; this.stats.draws++; this.menace(true); }
       else if (G.time - (this.noGunT ?? -9) > 3) { this.noGunT = G.time; G.hud.message('no gun', 1.4); }
       return;
     }
@@ -78,26 +90,7 @@ export class StandinHands {
     // LMB: a jab
     if (G.pressed('Mouse0')) this.jab();
     if (H.set === 'fists') { this.fistT += dt; if (this.fistT > 3.5) { H.equip('empty'); G.setViewmodelVisible(false); } }
-    // E over a man down with a gun: take it
-    if (!this.hasGun) {
-      const p = this.gunNear();
-      const k = p ? 'o3gun' : null;
-      // (over another's prompt - the car's 'get in' near by: the gun is what E does here)
-      if (k) G.hud.prompt('E  take the gun');
-      else if (this.gunPrompt) G.hud.clearPrompt();
-      this.gunPrompt = k;
-      if (p && G.pressed('KeyE')) { this.hasGun = true; G.hud.clearPrompt('o3gun'); this.gunPrompt = null; G.sfx.play('pocket', null, {}, { send: false }); G.hud.message('the gun', 1.2); if (p.gunProp && p.gunProp.parent) p.gunProp.parent.remove(p.gunProp); p.gunTaken = true; }
-    }
-  }
-  // a man down near me who carried a gun (a cop, a gang man)
-  gunNear() {
-    const E = this.G.eye;
-    for (const h of this.G.stage.hoods.list) {
-      if (h.alive || !h.person || h.person.gunTaken) continue;
-      if (Math.hypot(h.pos.x - E.x, h.pos.z - E.z) < 1.8) return h.person;
-    }
-    for (const p of this.P.near(E.x, E.z, 2)) if (!p.standing && (p.role === 'cop' || p.gunProp) && !p.gunTaken && Math.hypot(p.pos.x - E.x, p.pos.z - E.z) < 1.8) return p;
-    return null;
+    // (a gun from a man down is lane O1b's item: E over it - his gun lies by him, items.drop)
   }
   menace(first) {
     const G = this.G, P = this.P, E = G.eye;
@@ -146,12 +139,17 @@ export class StandinHands {
     // a man of the street: he staggers; two inside 3 s put him down
     p.hits = G.time - (p.hitT ?? -9) < 3 ? p.hits + 1 : 1;
     p.hitT = G.time;
-    if (p.hits >= 2) { p.knock(dir, { why: 'punch' }); P.stats.knocked++; G.sfx.fight('bodyPavement', p.pos.clone().setY(0.3), { k: 0.8 }); }
+    const down = p.hits >= 2;
+    if (down) { p.knock(dir, { why: 'punch' }); P.stats.knocked++; G.sfx.fight('bodyPavement', p.pos.clone().setY(0.3), { k: 0.8 }); }
     else {
       // (the first: the head snaps, a step back, a beat of shock - then he runs)
+      // [O3] after the critic (m4): the step back is out of what stands behind him (a post, a wall, a stall)
       p.fig.flinch(dir); p.say('o3_hey'); p.fig.pos.x += dir.x * 0.3; p.fig.pos.z += dir.z * 0.3;
+      G.stage.colliders.resolve(p.fig.pos, p.r, p.fig.collider);
       if (p.role === 'walker') { p.stop(); p.mode = 'dash'; p.t = 0; p.until = 1.5; p.path = null; p.face(G.eye.x, G.eye.z); p.after = null; P.later(0.8, () => { if (p.standing && p.mode === 'dash') p.flee(G.eye, 5); }); }
     }
-    P.crime.emit('punch', p.pos, 'player', { victim: p });
+    const rec = P.crime.emit('punch', p.pos, 'player', { victim: p });
+    // (the man I put down tells it himself once he is up - [O3] after the critic, M1)
+    if (down && rec) p.victimOf = rec;
   }
 }

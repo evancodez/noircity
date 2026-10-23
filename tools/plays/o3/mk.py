@@ -34,19 +34,27 @@ play('o3_punch_idle', "[O3] the walk-over arrest, idle: a man punched before a b
      [{"drive": D, "mode": "punch", "then": "idle", "tries": 2, "shots": True, "check": "D.ok", "label": "punch seen, idle: warned, arrested, the station (twice)"}])
 play('o3_punch_good', "[O3] the walk-over arrest, good: a man punched before a beat cop; as he comes I run (Shift) round the corner - the search, then 'Clear.'. Twice.",
      [{"drive": D, "mode": "punch", "then": "run", "tries": 2, "check": "D.ok", "label": "punch seen, good: away and lost (twice)"}])
-play('o3_punch_fists', "[O3] the walk-over arrest, the fists: a man punched before a beat cop; I wait for him and punch him - the fist fight (the base's Brawl, the stand-in), played by play.mjs's fight step at a first-timer's pace.",
+play('o3_punch_fists', "[O3] the walk-over arrest, the fists: a man punched before a beat cop; I wait for him and punch him - the fist fight (lane O4's crowd brawl, COP), played by O4's bot with a first-timer's hands (bad); won: he lies there, HEAT 2, his gun on the pavement, taken with E.",
      [{"eval": "(G.people.hands.hasGun = false, 'staged: out of the station, no gun')"},
       {"drive": D, "mode": "punch", "then": "fists", "tries": 1, "check": "D.ok", "label": "the cop's fist fight starts"},
-      {"fight": {"timeout": 150000, "shots": {"fight": "G.brawl.active && G.brawl.T > 2"}, "expect": "F.time > 0"}},
+      {"drive": "tools/lib/o4_brawl.mjs", "profile": "bad", "beat": "roam", "tries": 1, "wins": 1, "timeout": 150000},
       {"wait": 2500},
-      {"eval": "JSON.stringify({ fa: G.police.fists.active, fe: G.police.fists.ended, who: window.__o3c.mode, down: window.__o3c.down, n: (G._events.get('brawl:end') || []).length, B: { active: G.brawl.active, done: G.brawl.done, fin: G.brawl.finished }, cmode: G.controller.mode })"},
-      {"eval": "JSON.stringify({ heat: G.police.heat, beat: G.scenes.beat, fail: G.lastFail, ev: G.police.events.slice(-6) })"},
-      {"expect": "G.lastFail ? G.lastFail.why === 'Arrested.' && G.scenes.beat === 'station' : (window.__o3c && window.__o3c.down && G.police.heat >= 2)", "label": "the fight ends: won (he lies there, HEAT 2: a cop down) or lost (arrested)"},
-      {"walk": "G.lastFail ? [[G.eye.x, G.eye.z]] : [[window.__o3c.pos.x + 0.9, window.__o3c.pos.z]]", "timeout": 6000, "into": True},
-      {"until": "!!G.lastFail || G.hud.promptShown === 'E  take the gun'", "timeout": 4000, "stop": False},
+      {"eval": "JSON.stringify({ fa: G.police.fists.active, who: window.__o3c.mode, down: window.__o3c.down, res: G.crowd.result, cmode: G.controller.mode, heat: G.police.heat, beat: G.scenes.beat, fail: G.lastFail, ev: G.police.events.slice(-6) })"},
+      {"expect": "G.lastFail ? G.lastFail.why.startsWith('Arrested.') && G.scenes.beat === 'station' : (window.__o3c && window.__o3c.down && G.police.heat >= 2 && G.controller.mode === 'walk')", "label": "the fight ends: won (he lies there, HEAT 2: a cop down) or lost (arrested)"},
+      {"walk": "G.lastFail ? [[G.eye.x, G.eye.z]] : (() => { const I = G.stage.part('items').list.filter(i => i.dropped && i.kind === 'weapon' && !i.taken).slice(-1)[0]; return [[I.x + 0.9, I.z]]; })()", "timeout": 6000, "into": True},
+      {"look": "G.lastFail ? [0, 0] : (() => { const I = G.stage.part('items').list.filter(i => i.dropped && i.kind === 'weapon' && !i.taken).slice(-1)[0]; const C = G.controller; const want = Math.atan2(-(I.x - G.eye.x), -(I.z - G.eye.z)); const dy = Math.atan2(Math.sin(want - C.yaw), Math.cos(want - C.yaw)); return [Math.round(-dy / 0.0021), Math.round(-(-0.9 - C.pitch) / 0.0021)]; })()", "steps": 8},
+      {"until": "!!G.lastFail || /^E +take/.test(G.hud.promptShown || '')", "timeout": 4000, "stop": False},
       {"key": "KeyE"},
-      {"wait": 600},
-      {"expect": "!!G.lastFail || G.people.hands.hasGun === true", "label": "won: his gun taken from him (E)"}])
+      {"wait": 900},
+      {"expect": "!!G.lastFail || G.people.hands.hasGun === true", "label": "won: his gun taken from the pavement (E)"}])
+for prof, about in [('idle', "hands off: down, warned ('One more and you\u2019re down.'), arrested, the station"), ('bad', "a first-timer's hands (O4's bad): it ends, won or lost, in one to four"), ('medium', "medium hands: won in one to three (O4's mercy after each fall)"), ('good', "good hands: won first time")]:
+    play('o3_cop_first_' + prof, "[O3] after the critic (B1): a beat cop I punch first (a cop 5 m ahead, the only staging): the fist fight is O4's crowd brawl and it ends - " + about + ".",
+         [{"drive": "tools/lib/o3_copfirst.mjs", "profile": prof, "tries": 1 if prof in ('idle', 'good') else (4 if prof == 'bad' else 3),
+           "check": {"idle": "D.tries[0].result === 'down' && D.tries[0].after.fail.startsWith('Arrested.') && D.tries[0].after.beat === 'station' && D.tries[0].sentDuring === 0",
+                     "bad": "D.ended && D.tries.every(t => t.sentDuring === 0)",
+                     "medium": "D.won && D.wonAt <= 3 && D.tries.every(t => t.sentDuring === 0)",
+                     "good": "D.won && D.wonAt === 1"}[prof],
+           "label": "the cop punched first: " + about}])
 play('o3_witness', "[O3] the witnesses: a punch nobody sees raises nothing; the same before a cop: HEAT 1 at once; before a civilian: he looks at me, runs to the call box, HEAT 1 when he gets there; one I catch gives it up: nothing.",
      [{"drive": D, "mode": "witness", "shots": True, "check": "D.ok", "label": "the witness rules: empty 0, cop 1, box 1, stopped 0"}])
 play('o3_lose', "[O3] losing them on foot: HEAT 1 seen, away round the corner - the search shown (the badges breathe, 'Lose them.'), found again (the heat as it was), away again: 'Clear.'.",

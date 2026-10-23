@@ -9,6 +9,8 @@ import { figureGeometry } from '../cast/tailor.js';
 import { COSTUMES } from '../cast/costumes.js';
 import { castBank } from '../cast/castAnim.js';
 import { LOOKS, PED_LOOKS, COP_LOOKS, TEC_LOOKS, GANG_LOOKS, hash, pickWeighted } from './costumes.js';
+import { wake } from '../combat/fall.js';
+import { owns } from '../combat/money.js';
 
 // [O3] The city's people (lane O3, NOIR CITY): the crowd on the pavements,
 // the witnesses, and the systems that live on them - the police (src/police/)
@@ -49,7 +51,6 @@ export const CROWD = {
   umbrella: 0.35,                   // a share of them under an open umbrella
 };
 const _v = new THREE.Vector3(), _f = new THREE.Vector3();
-const HEAT_FINE = HEAT.fine;
 // the pool's size: figures waiting for a man of their look (no ink slot held)
 const POOL = 40;
 
@@ -93,7 +94,7 @@ export class People {
       const c = COSTUMES[k];
       if (!c) continue;
       for (let l = 0; l < 3; l++) figureGeometry(c, l);
-      try { const B = castBank(k); for (const n of ['idle', 'walk', 'run', 'cower', 'watch', 'koFall', 'ko', 'carry']) if (B.has(n)) B.ensure(n); } catch (e) { /* */ }
+      try { const B = castBank(k); for (const n of ['idle', 'walk', 'run', 'cower', 'watch', 'koFall', 'ko', 'carry', 'o4_getUp']) if (B.has(n)) B.ensure(n); } catch (e) { /* */ }
     }
     // (the hands' programs: the fists and the revolver drawn once out of sight,
     // compiled, put away - the first jab or draw in the street never stalls)
@@ -129,12 +130,21 @@ export class People {
     G.on('shot', this._shot);
     this._in = (e) => this.police.onIn(e && e.car);
     G.on('city:in', this._in);
+    // lane O4's crowd brawl tells its own ('crime' { kind: 'draw' | 'shot', by, at, cop }):
+    // into the bus (the bus's own records carry an id and come back here: passed over)
+    this._o4crime = (e) => {
+      if (!e || e.id || !e.at || !this.G.city) return;
+      const k = e.kind === 'draw' ? 'menace' : e.kind === 'shot' ? (e.cop ? 'cophurt' : 'shot') : null;
+      if (k) this.crime.emit(k, e.at, e.by || 'player');
+    };
+    G.on('crime', this._o4crime);
   }
   shadowFigs() { const out = []; for (const p of this.list) if (p.object.visible && p.pos.distanceToSquared(this.G.eye) < 26 * 26) out.push(p.fig); return out; }
 
   dispose() {
     this.G.off('shot', this._shot);
     this.G.off('city:in', this._in);
+    this.G.off('crime', this._o4crime);
     this.police.dispose();
     this.gangs.dispose();
     for (const p of this.list) p.dispose();
@@ -155,13 +165,17 @@ export class People {
     for (const p of [...this.list]) this.release(p);
     this._later = [];
     this.spawnT = 1.2;
+    // (lane O4's rules of the fall, src/combat/fall.js: the station keeps the guns
+    // and fines a fifth, $10 at least; the hospital keeps nothing but a tenth)
     if (why === 'arrest') {
-      this.hands.hasGun = false;
+      const had = ['revolver', 'shotgun', 'tommy'].some((g) => owns(G, g));
+      const { cost } = wake(G, 'station');
       if (G.player.weapons.current) G.player.weapons.equip(null);
-      const fine = HEAT_FINE;
-      G.save.money = Math.max(0, (G.save.money || 0) - fine);
-      G.hud.say(`Released. Fined $${fine}. They kept the gun.`, 3.4, { always: true });
-    } else if (why === 'hospital') G.hud.say('Patched up. On your feet.', 2.8, { always: true });
+      G.hud.say(`Released.${cost ? ` Fined $${cost}.` : ''}${had ? ' They kept the gun.' : ''}`, 3.4, { always: true });
+    } else if (why === 'hospital') {
+      const { cost } = wake(G, 'hospital');
+      G.hud.say(cost ? `Patched up. $${cost} for the stitches.` : 'Patched up. On your feet.', 2.8, { always: true });
+    }
     this.police.event('wake', { why });
   }
 
@@ -419,12 +433,18 @@ export class People {
     // the police: a cop who sees it raises the heat at once
     if (this.police.witness(rec)) { rec.seen = 'cop'; return; }
     // a civilian who saw it goes to tell it (one, two for a death or a shot)
+    // [O3] after the critic (M1): a shot is heard - a walker within HEAT.hear.civ
+    // who ran from my gun or from the shot knows who it was (the draw does not
+    // clear the witnesses: it makes them)
     const want = rec.level >= 2 ? 2 : 1;
-    const cands = [];
+    const loud = rec.kind === 'shot' || rec.kind === 'death' || rec.kind === 'cophurt';
+    const G = this.G, cands = [];
     for (const p of this.list) {
       if (p.role !== 'walker' || !p.standing || p === victim || p.mode === 'report') continue;
       const d = Math.hypot(p.pos.x - rec.x, p.pos.z - rec.z);
-      if (d > SEE.civ || !(d < 5 || this.graph.lineOfSight(p.pos.x, p.pos.z, rec.x, rec.z))) continue;
+      const saw = d <= SEE.civ && (d < 5 || this.graph.lineOfSight(p.pos.x, p.pos.z, rec.x, rec.z));
+      const knew = loud && d <= HEAT.hear.civ && p.fledT != null && G.time - p.fledT < 30;
+      if (!saw && !knew) continue;
       cands.push([d, p]);
     }
     cands.sort((a, b) => a[0] - b[0]);
@@ -440,6 +460,8 @@ export class People {
     if (!box && !toCop) return;
     rec.reporters++;
     p.mode = 'report'; p.t = 0; p.reportOf = rec; p.reportTo = toCop ? { cop } : { box }; p.phase = 'look';
+    // (a shooting: a glance and he runs for it; a punch: a look, then a jog - seen going, catchable)
+    p.lookFor = rec.level >= 2 ? 0.5 : 0.9; p.reportGait = rec.level >= 2 ? 'run' : 'jog';
     p.path = null; p.setGait('idle', 0.15);
     p.face(this.G.eye.x, this.G.eye.z); p.look(this.G.eye);
     this.G.emit('witness', { who: p, rec, to: toCop ? 'cop' : 'box' });
@@ -448,7 +470,7 @@ export class People {
     const rec = p.reportOf, to = p.reportTo, E = this.G.eye;
     if (p.phase === 'look') {
       p.face(E.x, E.z);
-      if (p.t > 0.9) {
+      if (p.t > (p.lookFor || 0.9)) {
         p.look(null);
         p.phase = 'go';
         if (to.box) {
@@ -458,8 +480,8 @@ export class People {
           const fx = to.box.x + Math.sin(to.box.yaw || 0) * 0.9, fz = to.box.z + Math.cos(to.box.yaw || 0) * 0.9;
           pts.push([fx, fz]);
           // (a jog: he is seen going, and a man who runs after him catches him)
-          p.goTo(pts, { gait: 'jog', then: (q) => { q.phase = 'call'; q.t = 0; q.face(to.box.x, to.box.z); q.say('o3_callbox'); } });
-        } else p.goTo({ x: to.cop.pos.x, z: to.cop.pos.z }, { gait: 'jog' });
+          p.goTo(pts, { gait: p.reportGait || 'jog', then: (q) => { q.phase = 'call'; q.t = 0; q.face(to.box.x, to.box.z); q.say('o3_callbox'); } });
+        } else p.goTo({ x: to.cop.pos.x, z: to.cop.pos.z }, { gait: p.reportGait || 'jog' });
         p.mode = 'report';
       }
       return;
@@ -520,6 +542,7 @@ export class People {
     const dead = head || p.hits >= 2 || p.down || Math.random() < 0.5;
     if (p.role === 'cop' || p.role === 'gang') { if (p.onShot && p.onShot(hit, dir, dead) === false) return; }
     p.knock(dir, { dead, why: 'shot' });
+    if (p.role === 'cop') this.police.fists.dropGun(p);
     if (dead) { this.stats.killed++; G.sfx.death(p.pos.clone().setY(1.5)); } else G.sfx.grunt(p.pos.clone().setY(1.5));
     const kind = p.role === 'cop' ? 'cophurt' : dead ? 'death' : 'shot';
     if (kind !== 'shot') this.crime.emit(kind, p.pos, 'player', { victim: p });
@@ -624,7 +647,11 @@ export class People {
       p.outT = seen ? 0 : p.outT + dt;
       if (d > CROWD.gone && p.outT > 0.5 || p.outT > 5) { this.release(p); return false; }
     } else p.outT = 0;
-    if (!p.standing) return true;
+    // [O3] after the critic (m5): a man knocked down, not dead, gets up after a few
+    // seconds (lane O4's get-up clip), backs off from me and - if it was me who
+    // put him down - goes to tell it (M1: the victim reports)
+    if (!p.standing) { if (p.mode === 'down' && p.t > (p.upAfter || (p.upAfter = 3.5 + this.rng.next() * 2.5))) p.getUp(); return true; }
+    if (p.mode === 'rise') { if (p.t > 1.45) this.afterUp(p); return true; }
     // (wedged - his way blocked a long while: out of my sight he goes; in it, back the way he came)
     if (p.stuckN >= 2) { p.stuckN = 0; if (!this.inView(p.pos.x, p.pos.z)) { this.release(p); return false; } p.goTo(this.awayPath(p.pos, { x: p.pos.x + Math.sin(p.yaw), z: p.pos.z + Math.cos(p.yaw) }, 20), { gait: 'walk' }); }
     if (p.mode === 'report') { this.stepReport(p, dt); return true; }
@@ -670,6 +697,16 @@ export class People {
       p.paceK = lag > 1.2 ? 1.15 : lag < 0.6 ? 0.85 : 1;
     }
     return true;
+  }
+  // up on his feet: a few strides away from me, then the box (if it was me), or off
+  afterUp(p) {
+    const E = this.G.eye, rec = p.victimOf;
+    p.victimOf = null; p.upAfter = null;
+    p.mode = 'walk'; p.gaitNow = null; p.hits = 0;
+    if (rec && !rec.reported && rec.reporters < 2 && this.G.time - rec.t < 90 && rec.by === 'player') {
+      p.flee(E, 2.2, { cry: false });
+      p.after = (q) => { if (q.standing && !rec.reported) this.startReport(q, rec); };
+    } else p.flee(E, 5, { cry: false });
   }
   // a spot to stand at near a place: a point on the pavement beside the thing, the thing to look at
   spotNear(x, z, r) {
@@ -741,9 +778,12 @@ export class People {
     // (the car takes it: a jolt off its speed)
     v.vel.multiplyScalar(dead ? 0.82 : 0.9);
     if (v === this.G.vehicles.player && this.G.controller.shake) this.G.controller.shake(0.25, 0);
+    if (p.role === 'cop') this.police.fists.dropGun(p);
     if (v === this.G.vehicles.player) {
       const kind = p.role === 'cop' ? 'cophurt' : dead ? 'death' : 'punch';
-      this.crime.emit(kind, p.pos, 'player', { victim: p });
+      const rec = this.crime.emit(kind, p.pos, 'player', { victim: p });
+      // (a man knocked down, not dead, tells it himself once he is up)
+      if (!dead && rec) p.victimOf = rec;
     }
   }
 

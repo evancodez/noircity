@@ -192,7 +192,7 @@ async function punch(api) {
       const c = await js(`({ x: window.__o3c.pos.x, z: window.__o3c.pos.z })`);
       await turnTo(api, c.x, c.z, { pitch: -0.05 });
       await click(api);
-      T.fight = await waitFor(js, `G.brawl.active`, 3000);
+      T.fight = await waitFor(js, `(G.brawl.active || G.crowd.active)`, 3000);
       T.dbg = await js(`({ jab: G.people.hands.lastJab, st: G.people.hands.stats, d: +Math.hypot(window.__o3c.pos.x - G.eye.x, window.__o3c.pos.z - G.eye.z).toFixed(2), mode: G.controller.mode, warn: G.hud.warnText, fists: G.police.fists.active })`);
       T.ok = T.fight;
     }
@@ -208,12 +208,28 @@ async function punch(api) {
 async function witness(api) {
   const { js, log, sleep, shot, opts } = api;
   const R = {};
-  // (a) nobody to see it: a lane at night, the man I punch the only one there
+  // (a) [O3] after the critic (M1): nobody to see it but the man I put down -
+  // he gets up, backs off and goes to the box himself: HEAT 1 when he has called
   await stagePunch(api, { cop: false, at: opts.alley || null });
+  const ta = Date.now();
   await click(api); await sleep(320); await click(api);
+  const upA = await waitFor(js, `window.__o3v.standing && window.__o3v.mode !== 'down'`, 9000, 50);
+  const upAt = (Date.now() - ta) / 1000;
+  const goes = await waitFor(js, `window.__o3v.mode === 'report' && window.__o3v.phase === 'go'`, 9000, 50);
+  const goAt = (Date.now() - ta) / 1000;
+  if (opts.shots) await shot('victim_goes');
+  const calledA = await waitFor(js, `G.police.heat >= 1`, 70000);
+  R.victim = { upAt: +upAt.toFixed(1), goAt: +goAt.toFixed(1), heatAt: +((Date.now() - ta) / 1000).toFixed(1), heat: await js('G.police.heat'), how: await js(`(G.police.events.filter(e => e.what === 'report').slice(-1)[0] || {}).how`) };
+  R.victimOk = upA && goes && calledA && R.victim.how === 'box';
+  log(`witness victim: ${JSON.stringify(R.victim)}`);
+  // (a2) a crime nobody sees or hears: a shot in a lane with nobody in it - nothing
+  await stagePunch(api, { cop: false, at: opts.alley || null });
+  await js(`(() => { const P = G.people; P.release(window.__o3v); window.__o3v = null; return 1; })()`);
+  await click(api, 'right', 600);
+  await api.mouse('mousePressed', ...api.cursor(), 'right'); await sleep(450); await click(api); await sleep(200); await api.mouse('mouseReleased', ...api.cursor(), 'right');
   await sleep(opts.quiet ?? 25000);
-  R.empty = await js(`({ heat: G.police.heat, seen: G.crime.log.slice(-1)[0].seen, reporters: G.crime.log.slice(-1)[0].reporters })`);
-  R.emptyOk = R.empty.heat === 0 && !R.empty.seen;
+  R.empty = await js(`({ heat: G.police.heat, last: (() => { const r = G.crime.log.filter(r => r.kind === 'shot').slice(-1)[0]; return r ? { seen: r.seen, heard: !!r.heard, reporters: r.reporters } : null; })() })`);
+  R.emptyOk = R.empty.heat === 0 && R.empty.last && !R.empty.last.seen && !R.empty.last.heard;
   log(`witness empty: ${JSON.stringify(R.empty)}`);
   // (b) before a cop: HEAT 1 at once
   await stagePunch(api, { cop: true, copD: 16 });
@@ -233,10 +249,12 @@ async function witness(api) {
   R.civ.end = await js(`({ heat: G.police.heat, reports: G.people.stats.reports, how: (G.police.events.filter(e => e.what === 'report').slice(-1)[0] || {}).how })`);
   R.civOk = R.civ.start.mode === 'report' && reached && R.civ.end.how === 'box';
   log(`witness civ: ${JSON.stringify(R.civ)}`);
-  // (d) one I stop: I go after him and stand at his side - he gives it up
-  await stagePunch(api, { cop: false, civ: [9, 2.5] });
+  // (d) one I stop: the man I put down gets up and goes - I go after him and
+  // stand at his side: he gives it up
+  await stagePunch(api, { cop: false });
   await click(api); await sleep(320); await click(api);
-  await waitFor(js, `window.__o3w.mode === 'report' && window.__o3w.phase === 'go'`, 5000);
+  await js(`(window.__o3w = window.__o3v, 1)`);
+  await waitFor(js, `window.__o3w.mode === 'report' && window.__o3w.phase === 'go'`, 14000);
   let caught = false;
   for (let i = 0; i < 40 && !caught; i++) {
     const w = await js(`({ x: window.__o3w.pos.x, z: window.__o3w.pos.z, m: window.__o3w.mode })`);
@@ -248,7 +266,7 @@ async function witness(api) {
   R.stop = await js(`({ heat: G.police.heat, mode: window.__o3w.mode, stopped: G.people.stats.stopped })`);
   R.stopOk = caught && R.stop.heat === 0 && R.stop.stopped >= 1;
   log(`witness stopped: ${JSON.stringify(R.stop)}`);
-  R.ok = R.emptyOk && R.copOk && R.civOk && R.stopOk;
+  R.ok = R.victimOk && R.emptyOk && R.copOk && R.civOk && R.stopOk;
   return R;
 }
 
@@ -441,10 +459,10 @@ async function gangs(api) {
   await goTo(api, m.x, m.z, { near: 1.5, ms: 3000 });
   await turnTo(api, m.x, m.z, { pitch: -0.05 });
   await click(api);
-  R.fight = await waitFor(js, `G.brawl.active`, 2500);
+  R.fight = await waitFor(js, `(G.brawl.active || G.crowd.active)`, 2500);
   // out of the fight (the black of its own, or I walk away): the Docks' three, and my gun out at 15 m
   if (opts.draw) {
-    await waitFor(js, '!G.brawl.active && !G.failing', 120000);
+    await waitFor(js, '!(G.brawl.active || G.crowd.active) && !G.failing', 120000);
     await sleep(1500);
     const D = await js(`(() => { const P = G.people, Gs = P.gangs; P.dbgClear(); P.hold = true;
       const post = Gs.posts.find(p => p.gang === 'docks');

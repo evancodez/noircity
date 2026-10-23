@@ -1,4 +1,5 @@
 import { People } from './People.js';
+import { give } from '../combat/money.js';
 
 // [O3] The people of the city (lane O3): installed by the free roam
 // (src/scenes/city.js), one per game while the city is the stage.
@@ -19,6 +20,11 @@ export function installPeople(ctx) {
   if (G.people && G.people.stage !== ctx.stage) { G.people.dispose(); G.people = null; }
   if (!G.people) G.people = new People(G, ctx.stage);
   const P = G.people;
+  // (the man in the coat has a revolver under his arm: given once a save, as the
+  // city first starts - lane O4's save.inventory; the station takes it, a man
+  // down gives one back)
+  const F = G.save && G.save.flags;
+  if (F && !F.o3armed && !G.shotMode) { F.o3armed = true; give(G, 'revolver'); }
   ctx.onStep((dt) => P.step(dt));
   // (the frames' tableaux: fixed people for a golden frame / look development)
   const st = q && q.get('o3stage');

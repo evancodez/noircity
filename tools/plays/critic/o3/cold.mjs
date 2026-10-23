@@ -9,7 +9,7 @@
 const sleepP = (ms) => new Promise((r) => setTimeout(r, ms));
 const SENS = 0.0021;
 const SAY = `[...document.querySelectorAll('body *')].filter(e=>e.offsetParent&&e.children.length===0&&e.innerText&&e.innerText.trim()&&getComputedStyle(e).opacity>0.05).map(e=>e.innerText.trim().slice(0,40)).join(' | ')`;
-const ST = `({ t: +G.time.toFixed(2), heat: G.police.heat, st: G.police.state, fail: G.failing ? G.failing.phase : null, beat: G.scenes.beat, eye: [+G.eye.x.toFixed(1), +G.eye.z.toFixed(1)], cops: G.people.list.filter(p=>p.role==='cop').map(p=>+Math.hypot(p.pos.x-G.eye.x,p.pos.z-G.eye.z).toFixed(1)).sort((a,b)=>a-b).slice(0,3), cars: (G.police.cars||[]).length, br: (() => { try { const K = JSON.parse(document.getElementById('counters').dataset.json || '{}'); return K.fight ? [K.fight.me, K.fight.him, K.fight.taken, K.fight.hisState, K.fight.myState] : null; } catch (e) { return 'x'; } })(), say: ${SAY} })`;
+const ST = `({ t: +G.time.toFixed(2), heat: G.police.heat, st: G.police.state, fail: G.failing ? G.failing.phase : null, beat: G.scenes.beat, eye: [+G.eye.x.toFixed(1), +G.eye.z.toFixed(1)], cops: G.people.list.filter(p=>p.role==='cop').map(p=>+Math.hypot(p.pos.x-G.eye.x,p.pos.z-G.eye.z).toFixed(1)).sort((a,b)=>a-b).slice(0,3), cars: (G.police.cars||[]).length, br: (() => { try { const K = JSON.parse(document.getElementById('counters').dataset.json || '{}'); return K.fight ? [K.fight.me, K.fight.him, K.fight.taken, K.fight.hisState, K.fight.myState] : null; } catch (e) { return 'x'; } })(), cr: G.crowd && (G.crowd.active || G.crowd.result) ? [G.crowd.active ? 'on' : G.crowd.result, G.crowd.stats.landed, G.crowd.stats.taken, (G.crowd.men[0] || {}).state, Math.round(G.health.hp)] : null, say: ${SAY} })`;
 async function turnTo(api, x, z, pitch = -0.12) {
   const s = await api.js(`({ x: G.eye.x, z: G.eye.z, yaw: G.controller.yaw, pitch: G.controller.pitch })`);
   const want = Math.atan2(-(x - s.x), -(z - s.z));
@@ -43,7 +43,7 @@ async function timeline(api, secs, R, label, every = 250, stop = null) {
   const T = Date.now() + secs * 1000; let last = '';
   while (Date.now() < T) {
     const s = await api.js(ST);
-    if (s && !s.__exc) { const k = JSON.stringify([s.heat, s.st, s.fail, s.beat, s.say, s.cars, s.br && s.br[2], s.br && s.br[3]]); if (k !== last) { R.log.push(label + ' ' + JSON.stringify(s)); last = k; } if (stop && (await api.js(stop)) === true) return s; }
+    if (s && !s.__exc) { const k = JSON.stringify([s.heat, s.st, s.fail, s.beat, s.say, s.cars, s.br && s.br[2], s.br && s.br[3], s.cr && s.cr[0], s.cr && s.cr[2], s.cr && s.cr[3]]); if (k !== last) { R.log.push(label + ' ' + JSON.stringify(s)); last = k; } if (stop && (await api.js(stop)) === true) return s; }
     await sleepP(every);
   }
 }
@@ -68,7 +68,7 @@ export default async function cold(api) {
     const p = await js('[window.__cv.pos.x, window.__cv.pos.z]'); await turnTo(api, p[0], p[1]);
     if (opts.shots) await shot('o3c_' + opts.mode + '_before');
     const t0 = await js('performance.now()');
-    if (opts.mode === 'punch') { R.clicks = 0; for (let i = 0; i < 8; i++) { const q = await js('[window.__cv.pos.x, window.__cv.pos.z, window.__cv.hits, Math.hypot(window.__cv.pos.x-G.eye.x, window.__cv.pos.z-G.eye.z)]'); if (q[2] >= (opts.hits || 2) || await js('G.brawl.active')) break; if (q[3] > 1.9) await chase(api, 'window.__cv', { near: 1.3, ms: 3000 }); await turnTo(api, q[0], q[1]); await click(api); R.clicks++; await sleepP(420); } }
+    if (opts.mode === 'punch') { R.clicks = 0; for (let i = 0; i < 8; i++) { const q = await js('[window.__cv.pos.x, window.__cv.pos.z, window.__cv.hits, Math.hypot(window.__cv.pos.x-G.eye.x, window.__cv.pos.z-G.eye.z)]'); if (q[2] >= (opts.hits || 2) || await js('G.brawl.active || G.crowd.active')) break; if (q[3] > 1.9) await chase(api, 'window.__cv', { near: 1.3, ms: 3000 }); await turnTo(api, q[0], q[1]); await click(api); R.clicks++; await sleepP(420); } }
     else { await api.keyDown('KeyE'); await sleepP(80); await api.keyUp('KeyE'); }
     R.victim = await js(`({ mode: window.__cv.mode, down: window.__cv.down, hits: window.__cv.hits })`);
     await timeline(api, 1.5, R, 'hit');

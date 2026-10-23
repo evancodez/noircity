@@ -2,7 +2,8 @@ import * as THREE from 'three';
 import { SEE } from './crime.js';
 import { PatrolCar } from './Patrol.js';
 import { Badges } from './badges.js';
-import { copFists, copGuns } from './standins.js';
+import { copGuns } from './standins.js';
+import { streetFists } from './fists.js';
 
 // [O3] The police system (lane O3, NOIR CITY): the spine of the city's
 // answer. HEAT 0 to 5 (police.heat), raised by a crime seen (src/police/
@@ -24,7 +25,7 @@ import { copFists, copGuns } from './standins.js';
 // The ARREST is the fail when they have me: on foot a cop within 3 m with a
 // line and me not running (or two within 3 m), or down in a fist fight with
 // a cop; in the car, boxed - two of their cars on me (or a car and a man at
-// my door) and me stopped. The warning 'Hands up.' comes first (1.3 s on foot,
+// my door) and me stopped. The warning 'Hands up.' comes first (2 s on foot,
 // 4 s boxed: time to run or fight), then the black ('Arrested.') and I wake
 // at the police station (the city's 'station' beat): the gun gone, the heat
 // gone, the car gone, the money less a fine.
@@ -38,13 +39,23 @@ export const HEAT = {
   sight: { foot: 36, car: 55, carSearch: 42 },   // how far they see me (m), in line of sight (night, the rain; a car prowling sees less)
   wind: { sprint: 10, rest: 6 },     // a man on foot sprints this long, then runs until he has his breath (s)
   searchAfter: 2.5,                  // s unseen before the search begins (the siren drops)
-  arrest: { r: 3.0, warn: 1.3, box: 4.0, boxR: 9 },
+  // [O3] after the critic (M3): 2 s from 'Hands up.' to the cuffs on foot (1.3 was
+  // cuffed before a man who stopped to read the words could act)
+  arrest: { r: 3.0, warn: 2.0, box: 4.0, boxR: 9 },
   // the answer, by level: men on foot, cars, a roadblock, detectives, the lorry
   cars: [0, 0, 1, 2, 2, 3],
   fine: 50,
   // (a crime seen while they already hunt me adds to the pressure: a whole
-  // level more once it passes 1)
-  press: 0.4,
+  // level more once it passes 1; at most once in pressGap s - a volley of six
+  // shots is one shooting, not four levels)
+  press: 0.4, pressGap: 4,
+  // [O3] after the critic (M1): a shot is heard - a cop within this (m), line
+  // of sight or not, knows where it was (his whistle; HEAT at the place); a
+  // walker within this who ran from my gun or the shot knows who it was
+  hear: { cop: 80, civ: 45 },
+  // a report's place: the clock to losing them waits until one of them has
+  // been there (or I am this far from it, or this long has gone)
+  comeTo: { far: 90, secs: 120 },
 };
 
 export class Police {
@@ -72,7 +83,7 @@ export class Police {
     this.beatT = 0;
     this.blockT = -30;
     this.badges = new Badges(this.G);
-    this.fists = copFists(this);
+    this.fists = streetFists(this);
     this.guns = copGuns(this);
     this.lineT = 0;
   }
@@ -106,10 +117,10 @@ export class Police {
     if (!level) return;
     const h = this._heat;
     if (level > h) this.setHeat(level, why);
-    else { this.pressure += level * HEAT.press; if (this.pressure >= 1 && h < 5) { this.pressure = 0; this.setHeat(h + 1, why + '+'); } }
+    else if (this.t - (this.pressT ?? -99) > HEAT.pressGap) { this.pressT = this.t; this.pressure += level * HEAT.press; if (this.pressure >= 1 && h < 5) { this.pressure = 0; this.setHeat(h + 1, why + '+'); } }
     if (at) this.lastSeen = { x: at.x, z: at.z, t: this.G.time };
-    // (they come to the place first: the clock to losing them waits for them, 30 s at most)
-    if (at && !this.seenNow) this.comeTo = { x: at.x, z: at.z, by: this.t + 30 };
+    // (they come to the place first: the clock to losing them waits until one of them is there)
+    if (at && !this.seenNow) this.comeTo = { x: at.x, z: at.z, t: this.t };
     this.state = 'hunt';
     this.unseenT = 0;
     this.badges.set(this._heat, this.state);
@@ -123,11 +134,35 @@ export class Police {
       if (this.P.sees(c.pos, at, SEE.cop)) { by = c; break; }
     }
     if (!by) for (const pc of this.cars) if (pc.mode !== 'block' || true) { if (this.P.sees(pc.pos, at, SEE.cop + 10)) { by = pc; break; } }
-    if (!by) return false;
+    if (!by) return this.heard(rec);
     this.event('seen', { kind: rec.kind, by: by.role || 'car' });
     // (the beat cop's whistle: he has seen it)
     if (by.say) by.say('o3_whistle');
     this.raise(rec.level, this.G.eye, rec.kind);
+    return true;
+  }
+  // [O3] after the critic (M1): a shot nobody of theirs saw is still heard -
+  // the nearest cop on foot within HEAT.hear.cop blows his whistle and runs to
+  // the place: the heat at the place (they know where, not who: the search
+  // there, and the clock waits until they have been)
+  heard(rec) {
+    if (rec.kind !== 'shot' && rec.kind !== 'death' && rec.kind !== 'cophurt') return false;
+    const at = { x: rec.x, z: rec.z };
+    let by = null, bd = HEAT.hear.cop;
+    for (const c of this.cops) {
+      if (!c.standing || c === rec.victim || c.mode === 'fight' || c.armed) continue;
+      const d = Math.hypot(c.pos.x - at.x, c.pos.z - at.z);
+      if (d < bd) { bd = d; by = c; }
+    }
+    if (!by) return false;
+    this.event('heard', { kind: rec.kind, d: +bd.toFixed(0) });
+    by.say('o3_whistle');
+    this.raise(rec.level, at, rec.kind + ':heard');
+    // (heard, not seen: they know the place, not me - the search there, shown, until one of them sees me)
+    if (!this.seenNow) { this.state = 'search'; this.unseenT = HEAT.searchAfter; this.badges.set(this._heat, this.state); }
+    // (he is the one who comes: at a run to the place)
+    if (by.job === 'beat') { by.job = 'respond'; by.mode = 'chase'; by.t = 0; by.path = null; by.repath = 0; }
+    rec.heard = true;
     return true;
   }
   // a civilian told it (at a call box, or to a cop)
@@ -135,9 +170,9 @@ export class Police {
     this.event('report', { kind: rec.kind, how });
     this.raise(rec.level, { x: rec.x, z: rec.z }, rec.kind + ':' + how);
     // (they know where it was, not where I am: they come to the place and
-    // search there; the clock to losing them starts once they are there, or
-    // after 30 s)
-    if (!this.seenNow) { this.state = 'search'; this.unseenT = HEAT.searchAfter; this.comeTo = { x: rec.x, z: rec.z, by: this.t + 30 }; }
+    // search there; the clock to losing them starts once one of them has been
+    // there - [O3] after the critic: never while I stand at the place unfound)
+    if (!this.seenNow) { this.state = 'search'; this.unseenT = HEAT.searchAfter; this.comeTo = { x: rec.x, z: rec.z, t: this.t }; }
   }
   // a door shut behind me (O5) or a car changed (O2), unseen: lost at once
   lost() { if (this._heat && !this.seenNow) { this.clear('lost'); return true; } return false; }
@@ -227,7 +262,9 @@ export class Police {
       } else {
         // (a report: the clock waits for them to get there)
         const CT = this.comeTo;
-        if (CT && (this.t > CT.by || this.cops.some((c) => c.standing && c.job === 'respond' && Math.hypot(c.pos.x - CT.x, c.pos.z - CT.z) < 14) || this.cars.some((pc) => Math.hypot(pc.pos.x - CT.x, pc.pos.z - CT.z) < 20))) this.comeTo = null;
+        if (CT && (this.t - CT.t > HEAT.comeTo.secs || Math.hypot(me.x - CT.x, me.z - CT.z) > HEAT.comeTo.far
+          || this.cops.some((c) => c.standing && c.job === 'respond' && Math.hypot(c.pos.x - CT.x, c.pos.z - CT.z) < 10)
+          || this.cars.some((pc) => pc.mode !== 'leave' && Math.hypot(pc.pos.x - CT.x, pc.pos.z - CT.z) < 14))) this.comeTo = null;
         if (!this.comeTo) this.unseenT += dt;
         if (this.state === 'hunt' && this.unseenT > HEAT.searchAfter) { this.state = 'search'; this.event('search'); for (const pc of this.cars) { if (pc.mode === 'drive') pc.mode = 'search'; pc.siren = false; } }
         if (this.unseenT > HEAT.lose[this._heat]) this.clear('lost');
@@ -309,7 +346,8 @@ export class Police {
       return;
     }
     // 1: a man on foot to make the arrest (the nearest cop on the beat, or one sent)
-    const foot = this.cops.filter((c) => c.standing && (c.job === 'respond' || c.job === 'arrest'));
+    // ([O3] after the critic, B1: the man in my fist fight is the man on foot - never sent again)
+    const foot = this.cops.filter((c) => c.standing && (c.job === 'respond' || c.job === 'arrest' || c.job === 'fight'));
     // (HEAT 4 and up: no man walks over to cuff me - the detectives come, and the men on foot draw)
     if (h >= 4) foot.push(null);
     // (the first time a man comes for me: what I can do about it, once, while he is still coming)
@@ -319,7 +357,7 @@ export class Police {
     }
     if (!foot.length) {
       let best = null, bd = 130;
-      for (const c of this.cops) if (c.standing && c.job === 'beat') { const d = Math.hypot(c.pos.x - E.x, c.pos.z - E.z); if (d < bd) { bd = d; best = c; } }
+      for (const c of this.cops) if (c.standing && c.job === 'beat' && c.mode !== 'fight') { const d = Math.hypot(c.pos.x - E.x, c.pos.z - E.z); if (d < bd) { bd = d; best = c; } }
       if (!best && !inCar) best = this.spawnOnFoot(40, 75, 'respond');
       if (best) { best.job = 'respond'; best.mode = 'approach'; best.t = 0; best.path = null; best.repath = 0; this.event('send', { who: 'foot', d: +bd.toFixed(0) }); }
     }
@@ -386,7 +424,10 @@ export class Police {
     const G = this.G;
     const inCar = !!(G.city && G.city.inCar);
     let tgt;
-    if (this.state === 'search' && this.lastSeen) {
+    if (this.state === 'search' && this.comeTo) {
+      // (a report: to the place itself first)
+      tgt = { x: this.comeTo.x, z: this.comeTo.z };
+    } else if (this.state === 'search' && this.lastSeen) {
       const a = Math.random() * Math.PI * 2, r = 25 + Math.random() * 45;
       tgt = { x: this.lastSeen.x + Math.sin(a) * r, z: this.lastSeen.z + Math.cos(a) * r };
     } else {
@@ -511,7 +552,19 @@ export class Police {
       if (!L || L.d > 8 || L.edge.bridge || L.edge.cls === 'lane') continue;
       const e = L.edge;
       // the street's middle at that point, the cars across it
-      const s = Math.max(14, Math.min(e.len - 14, L.s));
+      let s = Math.max(14, Math.min(e.len - 14, L.s));
+      // [O3] after the critic (m3): under the nearest street lamp along the street
+      // within 25 m (its pool on the two cars: they read from far off)
+      {
+        let best = null, bd = 25;
+        for (const l of P.C.lamps || []) {
+          if (Math.abs(l.x - (e.ax + e.dx * s)) > 40 || Math.abs(l.z - (e.az + e.dz * s)) > 40) continue;
+          const u = (l.x - e.ax) * e.dx + (l.z - e.az) * e.dz, off = Math.abs((l.x - e.ax) * -e.dz + (l.z - e.az) * e.dx);
+          if (off > e.hw + 4 || u < 14 || u > e.len - 14) continue;
+          if (Math.abs(u - s) < bd) { bd = Math.abs(u - s); best = u; }
+        }
+        if (best != null) s = best;
+      }
       const mx = e.ax + e.dx * s, mz = e.az + e.dz * s;
       if (Math.hypot(mx - car.pos.x, mz - car.pos.z) < (force ? force * 0.6 : 60)) continue;
       // (both lanes: two cars nose to nose across its width)
@@ -551,7 +604,7 @@ export class Police {
   // ---- the men on foot (Person brains with role 'cop') ---------------------------------------------
   stepCop(c, dt) {
     const G = this.G, P = this.P, E = G.eye;
-    if (!c.standing) { if (c.dead && !P.inView(c.pos.x, c.pos.z) && Math.hypot(c.pos.x - E.x, c.pos.z - E.z) > 50) this.dropCop(c); return; }
+    if (!c.standing) { if (!P.inView(c.pos.x, c.pos.z) && Math.hypot(c.pos.x - E.x, c.pos.z - E.z) > 50) this.dropCop(c); return; }
     if (c.mode === 'fight' || c.job === 'hold') return;
     const inCar = !!(G.city && G.city.inCar);
     const d = Math.hypot(c.pos.x - E.x, c.pos.z - E.z);
@@ -641,7 +694,8 @@ export class Police {
   // ---- the arrest -------------------------------------------------------------------------------------
   stepArrest(dt, inCar) {
     const G = this.G, P = this.P, E = G.eye;
-    if (!this._heat || G.brawl.active) { if (!G.brawl.active) { this.arrestT = 0; this.boxT = 0; this.warn(null); } return; }
+    const fight = G.brawl.active || (G.crowd && G.crowd.active);
+    if (!this._heat || fight) { if (!fight) { this.arrestT = 0; this.boxT = 0; this.warn(null); } return; }
     if (!inCar) {
       this.boxT = 0;
       let n = 0, nearest = null;
