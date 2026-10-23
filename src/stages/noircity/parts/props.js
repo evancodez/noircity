@@ -47,20 +47,24 @@ export default {
     // bin over in a lamp's pool went ink on ink, as if the jab had made it vanish. Its pool
     // takes the dressing's own props material (dressing.js: the same floor of light) with the
     // set's paper rim, and its kind's grey - the mean of its pieces' levels, as the merge drew
-    // it standing. (O1's generator kinds - KIND_OF - stand in the pool's own material already.)
+    // it standing - never under 0.09 - the tin's level - (a black bicycle, a tarred rain barrel, a bench lying in
+    // the black between the pools were not there at all to the eye: what lies reads a shade
+    // paler than it stood). (O1's generator kinds - KIND_OF - stand in the pool's own material;
+    // of them the bench, a dark wood, and the dustbin take the floor too.)
     const o1Kinds = new Set(Object.values(KIND_OF));
     const dressKinds = new Set((C.dress || []).filter((r) => KINDS[r.kind] && !KINDS[r.kind].part && !o1Kinds.has(r.kind)).map((r) => r.kind));
+    dressKinds.add('bench'); dressKinds.add('bin');
     if (dressKinds.size) {
       const propsLike = rimMaterial(new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.8, metalness: 0, envMap: M.envSoft, envMapIntensity: 0.25, emissive: 0x262626 }), 0.05, false);
       for (const kind of dressKinds) {
         const P = smash.pools[kind];
         if (!P) continue;
         let sum = 0, n = 0;
-        for (const v of [0.15, 0.5, 0.85]) for (const [g, c] of propPieces({ kind, v, x: 0, z: 0, yaw: 0 })) {
+        if (!o1Kinds.has(kind)) for (const v of [0.15, 0.5, 0.85]) for (const [g, c] of propPieces({ kind, v, x: 0, z: 0, yaw: 0 })) {
           const k = g.getAttribute('position').count, l = Array.isArray(c) ? 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2] : c;
           sum += l * k; n += k; g.dispose();
         }
-        const col = new THREE.Color().setScalar(n ? sum / n : 0.05);
+        const col = new THREE.Color().setScalar(Math.max(0.09, n ? sum / n : 0.09));
         P.im.material = propsLike;
         for (let i = 0; i < P.cap; i++) P.im.setColorAt(i, col);
         P.im.instanceColor.needsUpdate = true;

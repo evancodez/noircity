@@ -83,7 +83,9 @@ const HELPERS = `(() => {
   window.__grab = () => new Promise((res) => requestAnimationFrame(() => { const c = document.querySelector('canvas'), w = c.width, h = c.height, x = document.createElement('canvas'); x.width = w; x.height = h; const g = x.getContext('2d', { willReadFrequently: true }); g.drawImage(c, 0, 0); res({ g, w, h }); }));
   window.__seeLying = async (it) => {
     const P = S.pools[it.kind]; if (!P || it.inst < 0) return null;
-    const e = G.eye; let ax = it.P.x - e.x, az = it.P.z - e.z; const al = Math.hypot(ax, az) || 1; ax /= al; az /= al;
+    // (from 3 m on clear ground with a line of sight to it - the most open side - else back along my way)
+    const st = window.__standBy(it.P.x, it.P.z, 0.3, 2.35), e = G.eye;
+    let ax = it.P.x - (st ? st[0] : e.x), az = it.P.z - (st ? st[1] : e.z); const al = Math.hypot(ax, az) || 1; ax /= al; az /= al;
     N.controller.setPose(it.P.x - ax * 3, it.P.z - az * 3, Math.atan2(-ax, -az), -0.32);
     await new Promise((r) => setTimeout(r, 700));
     const g = P.im.geometry; if (!g.boundingBox) g.computeBoundingBox();
@@ -109,7 +111,7 @@ const HELPERS = `(() => {
   return 1;
 })()`;
 
-export default async function o1cFist({ js, keyDown, keyUp, mouse, sleep, log, opts, cursor }) {
+export default async function o1cFist({ js, keyDown, keyUp, mouse, sleep, log, opts, cursor, shot }) {
   await js(HELPERS);
   const out = [];
   for (const T of opts.targets || []) {
@@ -123,7 +125,7 @@ export default async function o1cFist({ js, keyDown, keyUp, mouse, sleep, log, o
       const bx = st[0] - ax / al * 0.6, bz = st[1] - az / al * 0.6;
       N.controller.setPose(bx, bz, Math.atan2(-ax, -az), ${T.pitch ?? -0.12});
       window.__ev0 = G.stage.smash.events.length; window.__cr0 = G.crime ? G.crime.log.length : 0; window.__fl0 = window.__fistLog.length;
-      window.__dent0 = t.car ? window.__dents(t.car) : 0; if (t.car) window.__rockOn(t.car);
+      window.__heat = null; window.__dent0 = t.car ? window.__dents(t.car) : 0; if (t.car) window.__rockOn(t.car);
       return { x: +t.x.toFixed(1), z: +t.z.toFixed(1), kind: it ? it.kind : t.kind, at: [+bx.toFixed(1), +bz.toFixed(1)] }; })()`);
     if (!tg) { out.push({ name: T.name, ok: false, why: 'not found' }); log(`  ${T.name}: NOT FOUND`); continue; }
     await sleep(250);
@@ -138,7 +140,9 @@ export default async function o1cFist({ js, keyDown, keyUp, mouse, sleep, log, o
     }
     // the first frame that shows the act (the hands up: the press's latency)
     const lat = await js(`(window.__swing && window.__down && window.__swing >= window.__down ? +(window.__swing - window.__down).toFixed(1) : null)`);
-    await sleep(T.settle ?? 3500);
+    // (the heat a cop's sight gives, read 1.5 s after the press: the walk's later crimes end in an arrest)
+    if (T.heat != null) { await sleep(1500); await js('(window.__heat = G.police ? G.police.heat : null, 1)'); }
+    await sleep(Math.max(0, (T.settle ?? 3500) - (T.heat != null ? 1500 : 0)));
     const r = await js(`(() => { const t = window.__t, it = t.it || null, S = G.stage.smash;
       const ev = S.events.slice(window.__ev0).filter((e) => !it || e.id === it.id).map((e) => e.what + ':' + e.by);
       const fl = window.__fistLog.slice(window.__fl0).map((e) => (e.thing || 'whiff') + (e.how ? ':' + e.how : '') + (e.hurt ? ':hurt' : ''));
@@ -146,16 +150,17 @@ export default async function o1cFist({ js, keyDown, keyUp, mouse, sleep, log, o
       const pane = t.w && t.w.it && t.w.it.pane ? t.w.it.pane.state : null;
       const item = t.item ? { taken: t.item.taken, x: +t.item.x.toFixed(2), z: +t.item.z.toFixed(2) } : null;
       return { state: it ? it.state : null, gone: it ? !!it.gone : null, rest: it && it.state !== 'stand' && !it.gone ? window.__rest(it) : null, ev, fl, cr, pane, item,
-        heat: G.police ? G.police.heat : null,
+        heat: window.__heat ?? (G.police ? G.police.heat : null),
         tilt: it && it.Q && it.state !== 'stand' ? Math.round(Math.acos(Math.min(1, new N.THREE.Vector3(0, 1, 0).applyQuaternion(it.Q).y)) * 57.3) : null,
         dents: t.car ? window.__dents(t.car) - window.__dent0 : null, rock: t.car ? +window.__rock.toFixed(3) : null,
         hands: G.player.hands.set, clip: G.player.hands.clip ? G.player.hands.clip.name : null }; })()`);
     // (what went over: seen where it lies, from 3 m)
     if (T.expect === 'over' && r.state === 'rest' && !r.gone) r.seen = await js(`window.__seeLying(window.__t.it)`);
+    if (T.shot && shot) await shot(T.shot);   // (the frame of it lying, from where it was looked at)
     const e = T.expect, ev = r.ev.join(' '), fl = r.fl.join(' ');
     const lies = r.rest == null || (r.rest > -0.3 && r.rest < 0.15);
     let ok;
-    const seen = !r.seen || r.seen.frac >= (opts.seenFrac ?? 0.15);
+    const seen = !r.seen || r.seen.frac >= (T.seenFrac ?? opts.seenFrac ?? 0.15);   // (T.seenFrac: a thin or long thing's box is mostly background - its 'why' says)
     if (e === 'over') ok = /over/.test(ev) && (r.state === 'rest') && lies && !!r.seen && seen;
     else if (e === 'break') ok = /break/.test(ev) && r.gone;
     else if (e === 'ring') ok = /jolt/.test(ev) && r.state === 'stand' && /:hurt/.test(fl);
