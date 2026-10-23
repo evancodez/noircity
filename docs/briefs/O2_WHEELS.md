@@ -125,3 +125,12 @@ drive and a hijack. Edits to shared files marked `// [O2]`. Report
 `docs/reports/O2.md` with "For other lanes" (how a system asks for a
 car at a point, how the police car hunts, `traffic.alarm`, the hijack's
 events, the garage's save). Hours, not days.
+
+## From the cold play of the merged city (`docs/reports/CITY_COLD_PLAY.md`): yours
+Yours, in your fix pass: **finding 5**, the coupe tops out at 75 km/h
+(`vmax` 22.5 in `src/vehicles/Car.js` line 33): a faster coupe for the
+Straight, the lorry slow, each kind its own top speed that reads; and
+**finding 4's cabin**: it fills about two fifths of the frame from the
+seat (a lower dash or a wider view from the seat): the districts must read
+from the car. Keep the cabin's craft the report praises (the drops on the
+glass, the wiper, the mascot, the mirror).

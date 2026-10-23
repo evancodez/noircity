@@ -20,6 +20,10 @@ shop fronts and the interiors' breakables). The user's words:
 - **[must]** "This city should really react to player interaction (like a dynamic police system), fun shootouts, brawls, etc. Keep the scope manageable but it should feel fun." (OPEN_WORLD.md: the city answers everything the player does, within seconds, visibly.)
 - **[must]** "Think GTA but noir. Make sure the player has freedom to cause havoc and do what they want in this open world, one that reacts to them." (OPEN_WORLD.md: the player may do anything the systems allow and the city answers everything he does, visibly, within seconds; no invisible hand says no, never a scripted stop or a locked verb; the only answer is the city's own, and a scene broken on purpose still ends somewhere sane.)
 
+Read `docs/THINGS_TO_DO.md` first: the design of every thing to do (how
+each is found, played and answered by the city; the seams `things.start`
+/ `things.end`, `news.say`, `money.add` / `money.take`): it binds.
+
 What you build on: the office (`src/stages/office/`: `plan.js`, `build/`,
 `parts/`: a whole interior with its doors, lights and furniture), the
 killhouse's door (`src/stages/killhouse/door.js`: a hinged leaf with a
@@ -123,3 +127,12 @@ other lanes" (the kit's pieces and plan format, `places.enter`,
 first (the kit, every door opening on a bare room, the hotel's save),
 then the rooms one by one in the order a player finds them. Hours, not
 days.
+
+## From the cold play of the merged city (`docs/reports/CITY_COLD_PLAY.md`): yours
+**Finding 6** is a bug under your feet: `doorNear` in
+`src/stages/noircity/parts/stream.js` (line 144) searches only the chunks
+around the player while each door is stored in its lot's chunk, so about
+one street door in four gives no prompt and E does nothing, and your
+`city:door` depends on it. If O1b's fix has not reached main when you need
+it, fix it first yourself (a play that tries every door of a block) and
+mark it `[O5]`; take O1b's from main if it lands first.
