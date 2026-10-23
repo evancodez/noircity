@@ -1,0 +1,94 @@
+{
+ "about": "[O1b critic] walking straight over an item with the eye a little down (as a man walks): does the prompt ever come, and at what distance",
+ "url": "/?mute=1&start=city",
+ "size": [
+  1440,
+  900
+ ],
+ "out": "shots/o1bc/over",
+ "steps": [
+  {
+   "wait": 2000
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]",
+   "taken": "G.state !== 'title'",
+   "retries": 5,
+   "every": 4000
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'city' && G.scenes.fadeK < 0.05",
+   "timeout": 30000
+  },
+  {
+   "look": [
+    1,
+    0
+   ],
+   "steps": 1
+  },
+  {
+   "eval": "(G.stage.part('stream').warmAround(-157.8, 203.6), N.controller.setPose(-157.8, 203.6, 1.5708, -0.12), window.__pr=null, JSON.stringify([N.controller.pos.x, N.controller.pos.z]))"
+  },
+  {
+   "wait": 2500
+  },
+  {
+   "eval": "(window.__iv = setInterval(() => { const on = G.hud.el.prompt.style.display !== 'none' && G.hud.promptOwner === 'item'; if (on && !window.__pr) window.__pr = Math.hypot(N.controller.pos.x-(-163.8), N.controller.pos.z-(203.6)).toFixed(2); }, 30), 1)"
+  },
+  {
+   "down": "KeyW"
+  },
+  {
+   "wait": 4500
+  },
+  {
+   "up": "KeyW"
+  },
+  {
+   "eval": "(clearInterval(window.__iv), JSON.stringify({kind:'cash', promptAtDist: window.__pr, end: Math.hypot(N.controller.pos.x-(-163.8), N.controller.pos.z-(203.6)).toFixed(1)}))"
+  },
+  {
+   "eval": "(G.stage.part('stream').warmAround(-87.9, 242.4), N.controller.setPose(-87.9, 242.4, -3.1416, -0.12), window.__pr=null, JSON.stringify([N.controller.pos.x, N.controller.pos.z]))"
+  },
+  {
+   "wait": 2500
+  },
+  {
+   "eval": "(window.__iv = setInterval(() => { const on = G.hud.el.prompt.style.display !== 'none' && G.hud.promptOwner === 'item'; if (on && !window.__pr) window.__pr = Math.hypot(N.controller.pos.x-(-87.9), N.controller.pos.z-(248.4)).toFixed(2); }, 30), 1)"
+  },
+  {
+   "down": "KeyW"
+  },
+  {
+   "wait": 4500
+  },
+  {
+   "up": "KeyW"
+  },
+  {
+   "eval": "(clearInterval(window.__iv), JSON.stringify({kind:'rounds', promptAtDist: window.__pr, end: Math.hypot(N.controller.pos.x-(-87.9), N.controller.pos.z-(248.4)).toFixed(1)}))"
+  },
+  {
+   "eval": "(G.stage.part('stream').warmAround(-61.3, 21), N.controller.setPose(-61.3, 21, 1.5708, -0.12), window.__pr=null, JSON.stringify([N.controller.pos.x, N.controller.pos.z]))"
+  },
+  {
+   "wait": 2500
+  },
+  {
+   "eval": "(window.__iv = setInterval(() => { const on = G.hud.el.prompt.style.display !== 'none' && G.hud.promptOwner === 'item'; if (on && !window.__pr) window.__pr = Math.hypot(N.controller.pos.x-(-67.3), N.controller.pos.z-(21)).toFixed(2); }, 30), 1)"
+  },
+  {
+   "down": "KeyW"
+  },
+  {
+   "wait": 4500
+  },
+  {
+   "up": "KeyW"
+  },
+  {
+   "eval": "(clearInterval(window.__iv), JSON.stringify({kind:'bottle', promptAtDist: window.__pr, end: Math.hypot(N.controller.pos.x-(-67.3), N.controller.pos.z-(21)).toFixed(1)}))"
+  }
+ ]
+}
