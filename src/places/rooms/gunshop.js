@@ -1,21 +1,25 @@
 import { FLOOR } from '../../city/kits/interior/kit.js';
 import { counter, shelves, label, sheet } from '../../city/kits/interior/pieces.js';
 import { RNG } from '../../util/rng.js';
+import { pay, give, owns, wallet, arms, money } from '../../combat/money.js';
+import { SHOP } from '../../scenes/94_o4.js';
+import { priceCard } from '../../scenes/o4/places.js';
 
 // The gun shop (the Tenements, off the avenue; brief O5 §2.4): a narrow
 // front shop behind its windows, the counter across it with a glass case of
 // pistols, the long guns racked on the wall behind the man, the card of
-// prices over him. E at the case: buy (O4's rules - until they land, the
-// stand-in: what is bought goes into save.inventory and its rounds into
-// save.flags.rounds, for O4's guns to read; money is spent, never required
-// for anything but buying). Shoot the man or rob him: the city's answer
-// (crime), he ducks behind his counter.
+// prices over him and O4's card of them as I stand at the case. E at the case:
+// buy - O4's rules (src/scenes/94_o4.js SHOP: the double, shells, .38s; the
+// money and the coat's rounds in src/combat/money.js): a gun bought is mine
+// (save.inventory) and comes out in my hand, the mouse wheel turns through
+// what I own (city.js); rounds go into the coat. And the revolver, if I have
+// none (the man in the coat has one under his arm: OPEN_WORLD §1). A fist at
+// the man: his word and the room is sore (Places.fist).
 export const PRICES = [
-  { id: 'rounds38', name: '.38 rounds, a box', price: 3, give: { rounds: 24 } },
-  { id: 'revolver', name: 'a revolver', price: 25, give: { item: 'revolver' } },
-  { id: 'shotgun', name: 'a shotgun', price: 60, give: { item: 'shotgun' } },
-  { id: 'shells', name: 'shells, a box', price: 4, give: { shells: 12 } },
-  { id: 'tommy', name: 'a Tommy gun', price: 300, give: { item: 'tommy' } },
+  { id: 'revolver', name: 'a revolver', price: 25, gun: 'revolver', with: 12, line: 'THE .38, SIX SHOTS ......... $25', when: (G) => !owns(G, 'revolver') },
+  { id: 'shotgun', name: 'the double', price: SHOP.items.shotgun.price, gun: 'shotgun', with: 4, line: SHOP.items.shotgun.line, when: (G) => !owns(G, 'shotgun') },
+  { id: 'rounds', name: 'a dozen .38s', price: SHOP.items.rounds.price, gives: SHOP.items.rounds.gives, line: SHOP.items.rounds.line },
+  { id: 'shells', name: 'ten shells', price: SHOP.items.shells.price, gives: SHOP.items.shells.gives, line: SHOP.items.shells.line },
 ];
 export default {
   kind: 'gunshop',
@@ -51,22 +55,48 @@ export default {
     K.fig('oldman', x0 + 4.0, cz - 1.25, 0, { name: 'gunman', state: 'idle' });
     // E at the case: what he sells, one thing a press (cycling)
     K.use({ at: [x0 + 3.6, FLOOR + 1.0, cz - 0.1], range: 2.0, cone: 0.55, prompt: () => offerText(s, P), onUse: () => buy(K, s, P) });
-    K.use({ at: [x0 + 5.6, FLOOR + 1.0, cz - 0.1], range: 2.0, cone: 0.25, prompt: 'next', onUse: () => { s.state.pick = ((s.state.pick || 0) + 1) % PRICES.length; P.game.sfx.play('paperTouch', null, {}, { ref: 1 }); P.game.hud.message(PRICES[s.state.pick].name, 1.2); } });
+    K.use({ at: [x0 + 5.6, FLOOR + 1.0, cz - 0.1], range: 2.0, cone: 0.25, prompt: 'next', onUse: () => { pick(s, P, 1); P.game.sfx.play('paperTouch', null, {}, { ref: 1 }); P.game.hud.message(cur(s, P).name, 1.2); } });
+    K.caseAt = { x: x0 + 4.6, z: cz };
+  },
+  // (O4's card of prices while I stand at the case)
+  live(K, s, P) {
+    const G = P.game;
+    return {
+      step() {
+        const c = K.F.w(K.caseAt.x, K.caseAt.z), d = Math.hypot(G.eye.x - c.x, G.eye.z - c.z);
+        priceCard(G.hud, d < 3.0 && P.inside === s && !G.failing ? ['GUNS  &  AMMUNITION', ...PRICES.filter((p) => !p.when || p.when(G)).map((p) => p.line), 'YOU HAVE  $' + money(G)] : []);
+      },
+      dispose() { priceCard(G.hud, []); },
+    };
   },
 };
+const list = (G) => PRICES.filter((p) => !p.when || p.when(G));
+const cur = (s, P) => { const L = list(P.game); return L[(s.state.pick || 0) % L.length]; };
+const pick = (s, P, d) => { s.state.pick = ((s.state.pick || 0) + d + 100) % list(P.game).length; };
 function offerText(s, P) {
-  const p = PRICES[(s.state.pick || 0) % PRICES.length];
-  const have = P.game.save.money || 0;
-  return `${p.name}: $${p.price}${have < p.price ? ' (you have $' + have + ')' : ''}`;
+  const p = cur(s, P);
+  return `buy ${p.name}: $${p.price}`;
 }
 function buy(K, s, P) {
-  const G = P.game, p = PRICES[(s.state.pick || 0) % PRICES.length];
-  if ((G.save.money || 0) < p.price) { G.hud.message('Not enough. He shrugs.', 1.6); G.sfx.play('shrug', null, {}, { ref: 1 }); return; }
-  P.money(-p.price, p.name);
-  const inv = G.save.inventory, F = G.save.flags;
-  if (p.give.item && !inv.includes(p.give.item)) inv.push(p.give.item);
-  if (p.give.rounds) F.rounds = (F.rounds || 0) + p.give.rounds;
-  if (p.give.shells) F.shells = (F.shells || 0) + p.give.shells;
-  G.sfx.play('register', K.F.v(0, 1.2, -4.4), {}, { ref: 2 });
-  G.emit('shop:buy', { id: p.id, price: p.price, item: p.give.item || null });
+  const G = P.game, p = cur(s, P);
+  if (s.state.sore) { G.hud.message('Not to you. Not tonight.', 1.6); return; }
+  if (!pay(G, p.price, p.id)) { G.hud.message(`Not enough. $${p.price}.`, 1.6); G.sfx.play('revDry', null, {}, { send: false, gain: 0.6 }); return; }
+  G.sfx.play('o4_till', null, {}, { send: false, gain: 0.8 });
+  const A = wallet(G).ammo;
+  if (p.gun) {
+    // (a gun bought is mine and comes out in my hand, its rounds in my coat)
+    give(G, p.gun);
+    A[p.gun] = (A[p.gun] || 0) + p.with;
+    arms(G).to(p.gun);
+    G.setViewmodelVisible(true);
+    if (G.controller.mode === 'walk') G.controller.setMode('gun', { crouch: false });
+    G.hud.say ? G.hud.say(p.gun === 'shotgun' ? 'The double. Four shells with it.' : 'The .38. A dozen rounds with it.', 2.0, { always: true }) : null;
+    s.state.pick = 0;
+  } else for (const [gun, n] of Object.entries(p.gives)) {
+    A[gun] = (A[gun] || 0) + n;
+    const W = G.player.weapons.get(gun);
+    if (G.player.weapons.current === gun && W && Number.isFinite(W.pocket)) { W.pocket += n; if (W.keep) W.keep(); }
+    G.hud.say ? G.hud.say(n + (gun === 'shotgun' ? ' shells.' : ' rounds.'), 1.8, { always: true }) : null;
+  }
+  G.emit('shop:buy', { id: p.id, price: p.price, item: p.gun || null });
 }

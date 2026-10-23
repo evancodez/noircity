@@ -70,7 +70,7 @@ export default {
     if (fruit) {
       const fx = fruit.c + 0.6, fz = fruit.z;
       K.fig('docker', fx - 1.15, fz, -Math.PI / 2, { name: 'grocer', state: 'idle' });
-      K.use({ at: [fruit.c, FLOOR + 1.2, fz], range: 2.2, cone: 0.5, prompt: 'an apple: $1', onUse: () => { const G = P.game; if ((G.save.money || 0) >= 1) P.money(-1, 'an apple'); else G.hud.message('He tosses you one.', 1.4); G.health.hp = Math.min(100, G.health.hp + 10); G.sfx.play('coin', null, {}, { ref: 1 }); } });
+      K.use({ at: [fruit.c, FLOOR + 1.2, fz], range: 2.2, cone: 0.5, prompt: 'an apple: $1', onUse: () => { const G = P.game; if (!P.buy(s, 1, 'an apple', 'He tosses you one.')) return; G.health.hp = Math.min(100, G.health.hp + 10); G.sfx.play('coin', null, {}, { ref: 1 }); } });
     }
     // the crowd: shoppers at the stalls, a vendor or two
     const people = [['oldman', 1.9, -9.0, -Math.PI / 2, 'idle'], ['couple_her', -1.8, -14.0, Math.PI / 2, 'idle'], ['couple_him', -1.6, -15.0, Math.PI / 2, 'idle'], ['dockhand', 1.9, -20.0, -Math.PI / 2, 'idle']];

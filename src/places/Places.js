@@ -5,6 +5,8 @@ import { RoomKit, FLOOR, WALL_T } from '../city/kits/interior/kit.js';
 import { cutRun, heal, boxRun } from '../city/kits/interior/surgery.js';
 import { sites } from './sites.js';
 import { shellGeo } from '../city/kits/interior/shell.js';
+import { earn, pay } from '../combat/money.js';
+import { crowdOf } from '../combat/brawl/Crowd.js';
 
 // The places (lane O5, OPEN_WORLD §3 Places, brief O5): the dozen buildings a
 // player can go into, each with its use. A place is LOADED when I come near
@@ -18,11 +20,17 @@ import { shellGeo } from '../city/kits/interior/shell.js';
 //   P.wake(id)                 the police's: on the cell's bench at headquarters
 //   P.inside                   the site I am in (or null)   P.list, P.byId
 //   P.owns(door)               a street door of O1's that is a place's (city.js leaves it to me)
-//   P.money(n, why)            the stand-in for O4 / O7's purse: save.money += n, the HUD says so
+//   P.buy(s, price, why, free) pay O4's purse (src/combat/money.js); broke: one on the house a place a night
+//   P.earn(n, why)             O4's earn (a purse, a safe)
 // Events: places:enter { id }, places:leave { id }, places:load / places:drop { id },
 // crime { kind, pos, level, place } (the stand-in for O3's crime.emit: a shot,
 // a man hurt, a theft in a place - O3 listens and raises the heat).
 const LOAD = 34, DROP = 62;
+// a fist at a room's people (OPEN_WORLD's havoc: the room answers): who fights back, as O4's
+// kind of man; everyone else flinches, says his word and cowers, and the room turns
+const FIGHTS = { drunkA: 'drunk', drunkB: 'drunk', trainer: 'driver', sitter: 'driver', mechanic: 'driver', grocer: 'driver', supper: 'drunk' };
+const OUCH = { barman: 'Out. Now.', waitress: 'Hey!', cashier: 'Hey! Somebody!', usher: 'Out you go.', clerk: 'Mister!', promoter: 'In the ring. Not out here.',
+  gunman: 'Wrong shop for that.', cook: 'Hey!', sergeant: 'You want a cell? Keep going.', drunk: 'Whassat for?' };
 const ROOMS = {};
 for (const m of Object.values(import.meta.glob('./rooms/*.js', { eager: true }))) if (m.default && m.default.kind) ROOMS[m.default.kind] = m.default;
 const V = (x, y, z) => new THREE.Vector3(x, y, z);
@@ -54,6 +62,8 @@ export class Places {
     stage.addSurface((x, z) => this.surfaceAt(x, z));
     // (a street door of O1's that is a place's: opened here, never rattled)
     game.on('city:door', (e) => { if (this.owns(e.door)) e.handled = true; });
+    // (a shot in a room that is not a hideout: everyone down, the room is sore, the crime)
+    game.on('shot', () => this.shotIn());
   }
 
   // ---- what is whose ------------------------------------------------------------------------------
@@ -316,7 +326,8 @@ export class Places {
     for (const S of K.seats) {
       if (S._wired) continue; S._wired = true;
       const at = S.at ? F.v(S.at[0], S.at[1], S.at[2]) : F.v(S.x, S.eyeY - 0.5, S.z);
-      add({ at, range: S.range, cone: S.cone, prompt: S.prompt, when: () => !this.seat && this.canUse(S.lvl) && (!S.when || S.when()), onUse: () => this.sit(s, S) });
+      // (not in the half second after I got up: the press that stood me up never sits me again)
+      add({ at, range: S.range, cone: S.cone, prompt: S.prompt, when: () => !this.seat && G.time - (this.upT ?? -9) > 0.5 && this.canUse(S.lvl) && (!S.when || S.when()), onUse: () => this.sit(s, S) });
     }
     for (const U of K.uses) {
       if (U._wired) continue; U._wired = true;
@@ -325,7 +336,8 @@ export class Places {
       if (typeof U.prompt === 'function') Object.defineProperty(h, 'prompt', { get: U.prompt }); else h.prompt = U.prompt;
     }
   }
-  canUse(lvl) { return lvl == null || lvl === this.level; }
+  // (nothing is offered under a sleep's black)
+  canUse(lvl) { return !this.sleeping && (lvl == null || lvl === this.level); }
   inSite(s) { return this.inside === s; }
 
   useDoor(s, D) {
@@ -350,11 +362,16 @@ export class Places {
     C.setMode('seated', { anchor: { pos, yaw: F.yaw(S.yaw), eyeY: S.eyeY }, ease: 0.35, pitch: S.pitch ?? -0.12, yawRange: S.yawRange || [-1.6, 1.6], pitchRange: [-0.95, 0.6] });
     G.sfx.play('stoolSqueak', pos.clone().setY(S.eyeY - 0.8), {}, { ref: 2 });
     if (S.onSit) S.onSit(s, this);
-    if (!G.save.flags.taught || !G.save.flags.taught.o5_stand) G.hud.teach('o5_stand', '[E] get up', { until: () => this.seat !== S, secs: 3 });
+    // (a seat with a use in front of it - the bar, the counter - has E for that use: S gets me up, taught once;
+    // a seat without one says 'E  get up' on the prompt line, never a card saying the same)
+    if (K_USES(s, S)) G.hud.teach('o5_up', '[S] get up', { until: () => this.seat !== S, secs: 3.5 });
   }
   stand() {
     const G = this.game, S = this.seat, s = this.seatSite, F = s.frame;
     if (!S) return;
+    this.upT = G.time;
+    // (the press that got me up is spent: the stool in front of me never takes it - the critic's trap)
+    G.keysDown.delete('KeyE'); if (G.vin && G.vin.down) G.vin.down.delete('KeyE');
     const st = S.standAt || { x: S.x + Math.sin(S.yaw) * 0.6, z: S.z + Math.cos(S.yaw) * 0.6, yaw: S.yaw };
     const p = F.w(st.x, st.z);
     this.seat = null;
@@ -387,16 +404,109 @@ export class Places {
     return s;
   }
 
-  // ---- the purse (the stand-in for O4 / O7's: one number, save.money) --------------------------------------
-  money(n, why = null) {
-    const S = this.game.save;
-    const v = Math.max(0, (S.money || 0) + n);
-    S.money = v;
-    this.game.hud.message(`${n >= 0 ? '+' : '-'}$${Math.abs(n)}${why ? '  ' + why : ''}`, 1.8);
-    this.game.emit('money', { n, total: v, why });
-    return v;
+  // the city's beat `wake` (after a fall in a place): the place built again as it was - every
+  // man of a hideout back, the bout's ring empty - and me outside its street door ('door'),
+  // or where its room puts me (def.wakeAt(K, where): the gym's 'ring')
+  wakeAfter({ id, where = 'door' } = {}) {
+    const s = this.byId.get(id);
+    if (!s) return null;
+    if (s.live) this.drop(s);
+    s.state.dead = [];
+    const def = ROOMS[s.kind] || {};
+    if (where !== 'door' && def.wakeAt) return this.enter(id, { at: def.wakeAt(where) });
+    this.load(s);
+    this.inside = null; this.level = 0;
+    return s;
+  }
+
+  // ---- the purse: O4's (src/combat/money.js, save.money) ------------------------------------------------------
+  earn(n, why = '') { return earn(this.game, n, why); }
+  // a thing bought: paid if I have it; broke, one on the house a place a night (the line says
+  // so), then he waits - never free for ever
+  buy(s, price, why = '', free = 'On the house. Once.') {
+    const G = this.game;
+    if (s.state.sore) { G.hud.message('Not to you. Not tonight.', 1.6); return false; }
+    if (pay(G, price, why)) return true;
+    if (!s.state.onHouse) { s.state.onHouse = true; G.hud.message(free, 1.8); return true; }
+    G.hud.message(`$${price}. He waits.`, 1.6);
+    return false;
   }
   crime(kind, pos, level = 1) { this.game.emit('crime', { kind, pos, level, place: this.inside ? this.inside.id : null }); }
+
+  // ---- havoc in a room: the fist, the shot -------------------------------------------------------------
+  // LMB / RMB with nothing drawn, at one of the room's people within reach: my fist swings at
+  // once; a man who fights (FIGHTS) answers with O4's crowd brawl (the room's men of his kind
+  // join, the room's things in reach; down: thrown out on the pavement - the city's beat
+  // `wake`); anyone else takes it (the flinch, his word), cowers, and the room turns and will
+  // not serve me tonight (s.state.sore)
+  fist(arm) {
+    const G = this.game, s = this.inside, L = s && s.live;
+    if (!L) return false;
+    const e = G.eye, f = new THREE.Vector3(0, 0, -1).transformDirection(G.camera.matrixWorld);
+    let best = null, bs = 0.42;
+    for (const c of L.cast) {
+      if (!c.alive || c.down || c.dead) continue;
+      const dx = c.pos.x - e.x, dz = c.pos.z - e.z, d = Math.hypot(dx, dz);
+      if (d > 1.9 || Math.abs((c.pos.y || 0) + 1.3 - e.y) > 1.4) continue;
+      const a = Math.acos(Math.max(-1, Math.min(1, (dx * f.x + dz * f.z) / (d * Math.hypot(f.x, f.z) || 1))));
+      if (a < bs) { bs = a; best = c; }
+    }
+    if (!best) return false;
+    const name = (best.spec && best.spec.name) || '';
+    const kind = FIGHTS[name];
+    this.crime('assault', best.pos.clone(), 1);
+    s.state.sore = true;
+    if (kind && !best.seat && !(best.spec && best.spec.seat)) {
+      // (he and the men of his kind standing within 5 m: two at most)
+      const men = [best, ...L.cast.filter((c) => c !== best && c.alive && !c.down && FIGHTS[(c.spec && c.spec.name) || ''] && !(c.spec && c.spec.seat) && Math.hypot(c.pos.x - best.pos.x, c.pos.z - best.pos.z) < 5)].slice(0, 2);
+      this.brawl(s, men);
+      return true;
+    }
+    // (the swing, and him taking it at its contact)
+    const H = G.player.hands;
+    G.setViewmodelVisible(true);
+    H.equip('fists');
+    H.play(arm === 'L' ? 'jabL' : 'jabR', { onMark: { contact: () => {
+      try { best.play(arm === 'L' ? 'br_hitHeadR' : 'br_hitHeadL', { fade: 0.05 }); } catch (err) { /* */ }
+      G.sfx.play('f_heavy', best.pos.clone().setY((best.pos.y || 0) + 1.6), { k: 0.6 }, { ref: 3 });
+      G.controller.kick && G.controller.kick(0.6, 0.8, 0.08);
+    } } });
+    const line = OUCH[name] || OUCH[best.spec && best.spec.kind] || 'Hey!';
+    this.laterT(0.25, () => G.hud.say ? G.hud.say(line, 1.8, { always: true }) : G.hud.message(line, 1.8));
+    this.laterT(0.55, () => { try { best.setState('cower', 0.25); } catch (err) { /* */ } });
+    this.turn(s, best);
+    this.laterT(0.9, () => { if (!crowdOf(G).active && !drawn(G)) { H.equip('empty'); G.setViewmodelVisible(false); } });
+    return true;
+  }
+  // (the room turns to look: everyone else startles)
+  turn(s, not = null) {
+    const L = s.live;
+    if (!L) return;
+    for (const c of L.cast) if (c !== not && c.alive && !c.down) { try { c.lookAt(this.game.eye.clone()); if (!c.seat) c.play('startle', { fade: 0.12 }); } catch (e) { /* */ } }
+  }
+  // O4's crowd brawl with the room's men (the room's things offered: s.live.things)
+  brawl(s, men) {
+    const G = this.game, F = crowdOf(G);
+    if (F.active || !men.length) return null;
+    this.turn(s, null);
+    F.start({ men: men.map((c) => ({ kind: FIGHTS[c.spec.name] || 'drunk', c, name: c.spec.name === 'drunkA' || c.spec.name === 'drunkB' ? 'DRUNK' : null })), leave: true,
+      things: (s.live.things || []).filter((t) => !t.available || t.available()), seed: 6100 + (s.state.brawls = (s.state.brawls || 0) + 1),
+      onEnd: (r) => { G.emit('places:brawl', { id: s.id, result: r }); },
+      onDown: () => { G.city && (G.city.wake = { id: s.id, where: 'door' }); return { why: 'Thrown out.', to: 'wake' }; } });
+    // (the press that started it is my first jab: it lands now, not on the next click)
+    F.inputStep(0);
+    this.crime('brawl', men[0].pos.clone(), 1);
+    return F;
+  }
+  shotIn() {
+    const G = this.game, s = this.inside;
+    if (!s || !s.live || s.kind === 'hideout' || s.state.shotT === G.time) return;
+    s.state.shotT = G.time; s.state.sore = true;
+    for (const c of s.live.cast) if (c.alive && !c.down && !c.seat) { try { c.setState('cower', 0.2); } catch (e) { /* */ } }
+    if (!s.state.shotSaid) { s.state.shotSaid = true; this.laterT(0.4, () => G.hud.say ? G.hud.say('Everybody down.', 1.8, { always: true }) : null); }
+    this.crime('shot', G.eye.clone(), 2);
+  }
+  laterT(secs, fn) { let t = 0; this.later((dt) => { t += dt; if (t < secs) return false; try { fn(); } catch (e) { /* */ } return true; }); }
 
   // a step function run every step until it returns true (a sleep's black, a cut)
   later(fn) { (this.laters || (this.laters = [])).push(fn); }
@@ -457,14 +567,23 @@ export class Places {
       if (L.K.group.visible !== see) L.K.group.visible = see;
       if (L.run && L.run.step) L.run.step(dt);
     }
-    // seated: E gets me up (when nothing else in reach takes the E)
+    // a fist at one of the room's people (nothing drawn, no fight on, on my feet)
+    if (this.inside && !this.seat && !G.crowd.active && !G.brawl.active && !G.failing && !drawn(G)
+      && (G.pressed('Mouse0') || G.pressed('Mouse2'))) this.fist(G.pressed('Mouse0') ? 'L' : 'R');
+    // seated: S or SPACE gets me up always (the stick back, cross on the pad); E too when nothing
+    // in reach takes it (then the prompt says so - but not under the card that says it)
     if (this.seat) {
-      const cur = G.interact.current;
-      if (!cur && !this.seatLock) G.hud.prompt('E  get up', null, 'o5seat'); else G.hud.clearPrompt('o5seat');
-      if (!cur && !this.seatLock && G.pressed('KeyE') && G.controller.modeT > 0.3) this.stand();
+      const cur = G.interact.current, T = G.hud.kit && G.hud.kit.teachCur;
+      if (!cur && !this.seatLock && !(T && T.id === 'o5_up')) G.hud.prompt('E  get up', null, 'o5seat'); else G.hud.clearPrompt('o5seat');
+      if (!this.seatLock && G.controller.modeT > 0.3 && (G.pressed('KeyS') || G.pressed('Space') || (!cur && G.pressed('KeyE')))) this.stand();
     }
   }
 }
+
+// (a gun in hand: LMB is its)
+function drawn(G) { const c = G.player.weapons.current; return !!c && c !== 'fists'; }
+// (a seat with a use of its own in front of it: the bar's whiskey, the counter's coffee)
+function K_USES(s, S) { return !!(s.live && s.live.K.uses.some((U) => U.seated === S)); }
 
 // a place without a room of its own yet: one bare room behind its door
 function bareRoom(K, s) {

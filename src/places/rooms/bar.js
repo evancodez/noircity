@@ -2,6 +2,8 @@ import * as THREE from 'three';
 import { FLOOR } from '../../city/kits/interior/kit.js';
 import { counter, backBar, stool, table, chair, label, sheet, crates, litWindow } from '../../city/kits/interior/pieces.js';
 import { RNG } from '../../util/rng.js';
+import { buildProp } from '../../props/index.js';
+import { crowdOf } from '../../combat/brawl/Crowd.js';
 
 // The two bars (brief O5 §2.3): the Tenements' (bar1: narrow, a piano by the
 // door, a tin ceiling's pressed squares, the gang's corner) and the Docks'
@@ -9,9 +11,10 @@ import { RNG } from '../../util/rng.js';
 // walls, a pool table, the long bar down its side). In each: a drink at the
 // bar (sit, E: the glass and the bottle's amber), a card game at a back
 // table to watch (E sits), two men at the bar end who fall to fighting now
-// and then (the stand-in for O4's spawn: they trade blows, one goes down,
-// gets up; E at one of them steps in - the base's fist fight with him), and
-// a matchbook on the bar (E: taken, one a bar - save.matchbooks).
+// and then (they trade blows, one goes down, gets up; E at one of them steps
+// in - and both turn on me: O4's crowd brawl, the bottles on the bar to hand),
+// and a matchbook on the bar (E: taken, one a bar - save.matchbooks). A fist
+// at anyone here is answered (Places.fist).
 const DRINK = 2;
 export default {
   kind: 'bar',
@@ -99,11 +102,22 @@ export default {
     const e = bar.end;
     K.fig('docker', e[0] - 0.35, e[1], Math.PI / 2, { name: 'drunkA', state: 'idle' });
     K.fig('dockhand', e[0] + 0.35, e[1] + 0.05, -Math.PI / 2, { name: 'drunkB', state: 'idle' });
+    // two bottles on the bar by them: a fight's things (O4's crowd takes them by E)
+    s.live.things = [];
+    for (const [i, d] of [[0, -0.25], [1, 0.3]]) {
+      const t = bar.top(big ? e[1] + d : e[0] + 0.6 + d), o = buildProp('bottle', { variant: 'beer' });
+      o.position.copy(K.F.v(t[0], t[1] - 0.02, t[2])); o.traverse((m) => { if (m.isMesh) m.userData.inkId = K.id + 3; });
+      K.group.add(o);
+      const it = { kind: 'bottle', name: `${s.id}_bottle${i}`, object: o, taken: false };
+      it.take = () => { it.taken = true; if (o.parent) o.parent.remove(o); o.position.set(0, 0, 0); o.rotation.set(0, 0, 0); return o; };
+      it.available = () => !it.taken;
+      s.live.things.push(it);
+    }
     // a drink at the bar: sit on a stool, E
     for (const [sx, sz] of bar.stools.slice(1, -1)) {
       const S = K.seat({ name: `stool${Math.round(sx * 10)}_${Math.round(sz * 10)}`, x: sx, z: sz, yaw: big ? -Math.PI / 2 : 0, eyeY: FLOOR + 1.62, at: [sx, FLOOR + 0.8, sz], prompt: 'sit at the bar', standAt: big ? { x: sx - 0.7, z: sz, yaw: -Math.PI / 2 } : { x: sx, z: sz + 0.7, yaw: 0 } });
       const top = bar.top(big ? sz : sx);
-      K.use({ seated: S, at: top, range: 1.7, cone: 0.7, prompt: () => (s.state.glass ? 'drink' : `a whiskey: $${DRINK}`), onUse: () => drink(K, s, P, top) });
+      K.use({ seated: S, at: top, range: 1.7, cone: 0.7, prompt: () => (s.state.glass ? 'drink' : s.state.sore ? 'the barman' : `a whiskey: $${DRINK}`), onUse: () => drink(K, s, P, top) });
     }
     // the matchbook at the bar's end (one a bar)
     const mt = bar.top(big ? bar.stools[0][1] : bar.stools[0][0]);
@@ -124,7 +138,7 @@ export default {
 function drink(K, s, P, top) {
   const G = P.game;
   if (s.state.glass) { G.sfx.play('sip', null, {}, { ref: 1 }); G.hud.message('It burns going down.', 1.4); G.health.hp = Math.min(100, G.health.hp + 15); s.state.glass = false; if (K._glass) K._glass.o.visible = false; return; }
-  if ((G.save.money || 0) >= DRINK) P.money(-DRINK, 'whiskey'); else G.hud.message('The barman pours. One. On the house.', 1.8);
+  if (!P.buy(s, DRINK, 'whiskey', 'The barman pours. One. On the house.')) return;
   s.state.glass = true;
   K._glass = K.prop('tumbler', top[0], top[1] - 0.02, top[2], 0, { name: 'glass' });
   K._bottle = K.prop('bottle', top[0] + 0.22, top[1] - 0.02, top[2] - 0.08, 0.4, { variant: 'scotch', name: 'bottle' });
@@ -134,32 +148,21 @@ function drink(K, s, P, top) {
 // the two men at the bar's end: now and then they fall to fighting (a shove,
 // blows traded, one goes down and gets up a while later); E at one steps in
 function barLife(K, s, P) {
-  const G = P.game;
-  const st = { t: 0, next: 40 + Math.random() * 30, fight: null, mine: false, lost: false, fadeT: 0, pend: [] };
+  const G = P.game, Cr = crowdOf(G);
+  const st = { t: 0, next: 25 + Math.random() * 20, fight: null, mine: false, pend: [] };
   const man = (n) => s.live.cast.find((c) => c.name === `${s.id}_${n}`);
   const later = (secs, fn) => st.pend.push({ t: secs, fn });
-  const back = (why) => {
-    const e = G.eye, C = G.controller;
-    C.setPose(e.x, e.z, C.yaw, -0.05, 0.3);
-    G.player.hands.equip('empty'); G.setViewmodelVisible(false);
-    if (why) G.hud.message(why, 1.8);
-  };
   const run = {
     step(dt) {
       for (const p of [...st.pend]) { p.t -= dt; if (p.t <= 0) { st.pend.splice(st.pend.indexOf(p), 1); try { p.fn(); } catch (e) { /* a man gone */ } } }
-      if (st.fadeT > 0) { st.fadeT -= dt; G.hud.fade(Math.max(0, st.fadeT / 0.5)); }
       const A = man('drunkA'), B = man('drunkB');
-      if (st.mine) {
-        // (my fight: lost at a down - out of it, the black lifted; won - on my feet)
-        if (st.lost && G.brawl.blackT <= 0) { G.brawl.stop(); st.lost = false; st.mine = false; st.fadeT = 0.5; back('Thrown out of it.'); st.next = 60; st.t = 0; }
-        else if (!G.brawl.active && !st.lost) { st.mine = false; back(null); st.next = 80; st.t = 0; }
-        return;
-      }
-      if (!A || !B || !A.alive || !B.alive) return;
-      if (P.inside !== s) return;
+      // (my fight with them is O4's crowd's: when it is over they are where it left them)
+      if (st.mine) { if (!Cr.active) st.mine = false; return; }
+      if (!A || !B || !A.alive || !B.alive || A.down || B.down) return;
+      if (P.inside !== s || Cr.active) return;
       st.t += dt;
       if (run.__forceNext) { run.__forceNext = false; st.t = st.next; }
-      if (!st.fight && st.t > st.next && !G.brawl.active) {
+      if (!st.fight && st.t > st.next) {
         st.fight = { t: 0, n: 0, next: 0.6 };
         A.lookAt(null); B.lookAt(null);
         A.setState('br_guard', 0.3); B.setState('br_guard', 0.3);
@@ -183,23 +186,16 @@ function barLife(K, s, P) {
         if (F.n >= 6) { F.done = F.t + 0.6; F.loser = hit; later(0.6, () => { hit.play('koFall', { fade: 0.1, hold: true }); hit.down = true; G.sfx.play('f_bodyFloor', hit.pos.clone(), {}, { ref: 3 }); }); }
       }
     },
-    // E at a fighter: I step in, the base's fist fight with him (the stand-in for O4's crowd brawl)
+    // E at a fighter: I step in - and both of them turn on me (O4's crowd brawl, Places.brawl)
     stepIn(c) {
       const A = man('drunkA'), B = man('drunkB');
-      const other = c === A ? B : A;
-      st.mine = true; st.fight = null; st.lost = false;
-      if (other) other.setState('idle', 0.3);
-      const p = G.controller.pos, yaw = Math.atan2(-(c.pos.x - p.x), -(c.pos.z - p.z));
-      G.controller.setMode('brawl', { opponent: c, eyeY: 0.3 + 1.74, pos: { x: p.x, z: p.z }, yaw });
-      const R = K.roomRect, bounds = K.F.box(R.x0 + 0.3, R.x1 - 0.3, R.z0 + 0.3, R.z1 - 0.3);
-      G.brawl.start({ opponent: c, manner: 'dirty', room: { bounds }, rng: G.stage.rng.fork(911), who: { name: 'DRUNK', hp: 60 },
-        // (one down and I am out of it: the base's fist fight would go round again)
-        onRetry: () => { st.lost = true; } });
-      P.crime('brawl', c.pos.clone(), 1);
+      st.mine = true; st.fight = null;
+      for (const m of [A, B]) if (m) { m.down = false; }
+      P.brawl(s, [c, c === A ? B : A].filter(Boolean));
     },
-    dispose() { if (st.mine && G.brawl.active) G.brawl.stop(); if (st.fadeT > 0 || st.lost) G.hud.fade(0); },
+    dispose() { if (st.mine && Cr.active) Cr.stop('gone'); },
   };
-  for (const n of ['drunkA', 'drunkB']) K.use({ atFn: () => { const c = man(n); return c ? c.pos.clone().setY(1.4) : null; }, range: 2.2, cone: 0.5, prompt: 'step in', when: () => !!st.fight && !st.fight.done && !G.brawl.active, onUse: () => run.stepIn(man(n)) });
+  for (const n of ['drunkA', 'drunkB']) K.use({ atFn: () => { const c = man(n); return c ? c.pos.clone().setY(1.4) : null; }, range: 2.2, cone: 0.5, prompt: 'step in', when: () => !!st.fight && !st.fight.done && !Cr.active, onUse: () => run.stepIn(man(n)) });
   // (uses added after the wiring: wire them now)
   P.wireLate(s);
   return run;

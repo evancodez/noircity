@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { pay } from '../../combat/money.js';
 import { FLOOR } from '../../city/kits/interior/kit.js';
 import { desk, shelves, label, crates } from '../../city/kits/interior/pieces.js';
 import { RNG } from '../../util/rng.js';
@@ -77,8 +78,8 @@ function carWork(K, s, P) {
   const G = P.game, car = myCar(P, s);
   if (!car) { G.hud.message('Bring it round. He’ll look at it.', 1.8); return; }
   const fix = (car.damage || 0) > 0.2, cost = fix ? REPAIR : REPAINT;
-  if ((G.save.money || 0) < cost) { G.hud.message(`$${cost}. He waits.`, 1.6); return; }
-  P.money(-cost, fix ? 'repairs' : 'paint');
+  if (s.state.sore) { G.hud.message('Not to you. Not tonight.', 1.6); return; }
+  if (!pay(G, cost, fix ? 'repairs' : 'paint')) { G.hud.message(`$${cost}. He waits.`, 1.6); return; }
   if (fix) { if (car.repair) car.repair(); else { car.damage = 0; car.pull = 0; } G.emit('car:repaired', { car }); }
   else {
     const k = (s.state.paint = ((s.state.paint || 0) + 1) % GREYS.length);

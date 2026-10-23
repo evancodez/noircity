@@ -141,11 +141,14 @@ function escapeDown(K, s, P, fx, yr) {
   const G = P.game, C = G.controller, F = s.frame;
   const top = F.v(fx, yr + 1.6, 0.55), bot = F.v(fx, 0.15 + 1.62, 0.9);
   const yaw = F.yaw(0);
-  const dur = 2.6;
+  // ([O5] after the critic: 2.0 s, and the half turn to the street eased over its last 0.7 s -
+  // it was a turn in one frame at the bottom)
+  const dur = 2.0, turn = 0.7;
   G.sfx.play('w_ladder', top, {}, { ref: 2 });
   C.setMode('cutscene', { track: (tt) => {
     const u = Math.min(1, tt / dur), e = u * u * (3 - 2 * u);
-    return { x: top.x + (bot.x - top.x) * e, y: top.y + (bot.y - top.y) * e, z: top.z + (bot.z - top.z) * e, yaw, pitch: -0.2 + 0.15 * Math.sin(u * Math.PI) };
+    const v = Math.max(0, Math.min(1, (tt - (dur - turn)) / turn)), r = v * v * (3 - 2 * v);
+    return { x: top.x + (bot.x - top.x) * e, y: top.y + (bot.y - top.y) * e, z: top.z + (bot.z - top.z) * e, yaw: yaw + Math.PI * r, pitch: (-0.2 + 0.15 * Math.sin(u * Math.PI)) * (1 - r) - 0.05 * r };
   } });
   P.later((() => { let t = 0, n = 0; return (dt) => { t += dt; if (t > n * 0.35 && t < dur) { n++; G.sfx.play('w_ladderStop', null, { k: 0.4 }, { ref: 1 }); } if (t < dur) return false; C.setPose(bot.x, bot.z, yaw + Math.PI, -0.05); P.level = 0; return true; }; })());
 }

@@ -106,7 +106,7 @@ function coffee(K, s, P, x) {
     G.hud.message('Hot. Black.', 1.4);
     return;
   }
-  if ((G.save.money || 0) >= COFFEE) P.money(-COFFEE, 'coffee'); else G.hud.message('On the house.', 1.4);
+  if (!P.buy(s, COFFEE, 'coffee', 'On the house. Once.')) return;
   s.state.cups[key] = true;
   const c = K.prop('cup', x, FLOOR + 1.05, -6.25, 0.4, { name: 'cup' });
   K.prop('saucer', x, FLOOR + 1.05, -6.25, 0, { name: 'saucer' });
@@ -116,7 +116,7 @@ function coffee(K, s, P, x) {
 }
 function pie(K, s, P, x) {
   const G = P.game;
-  if ((G.save.money || 0) >= PIE) P.money(-PIE, 'pie'); else G.hud.message('On the house.', 1.4);
+  if (!P.buy(s, PIE, 'pie', 'On the house. Once.')) return;
   (s.state.pies || (s.state.pies = {}))[x.toFixed(2)] = true;
   K.prop('plate', x + 0.32, FLOOR + 1.05, -6.3, 0, { name: 'plate' });
   K.prop('pie', x + 0.32, FLOOR + 1.065, -6.3, 0.6, { name: 'pie' });

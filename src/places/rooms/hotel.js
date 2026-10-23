@@ -24,7 +24,9 @@ export default {
     K.roomRect = { x0, x1, z0, z1 };
     // (the lift's shaft is cut through the ceiling)
     const L = { x0: x0 + 0.3, x1: x0 + 2.1, z0: z0 + 0.1, z1: z0 + 1.9 };
-    K.room(x0, x1, z0, z1, { h: UP - 0.3, floor: 'tile', wall: 'paper', ceil: null, look: { ambient: 0.6, haze: 0.25 }, sides: { s: { holes: P.doorHoles(s, 's') } } });
+    // ([O5] after the critic - grey mud: the walls dark, the pigeonholes lit from behind like the
+    // bar's shelves, the name lit, a hard pool on the rug, the rest black)
+    K.room(x0, x1, z0, z1, { h: UP - 0.3, floor: 'tile', wall: 'plaster', ceil: null, look: { ambient: 0.36, haze: 0.4 }, sides: { s: { holes: P.doorHoles(s, 's') } } });
     // (the ceiling, round the shaft)
     K.ceil(L.x1 + 0.1, x1 + 0.24, z0 - 0.24, z1 + 0.24, FLOOR + UP - 0.3, 'plaster');
     K.ceil(x0 - 0.24, L.x1 + 0.1, L.z1 + 0.1, z1 + 0.24, FLOOR + UP - 0.3, 'plaster');
@@ -32,12 +34,13 @@ export default {
     // the desk, its bell, the pigeonholes behind it, the clerk
     const dz = z0 + 3.2;
     counter(K, x1 - 4.6, x1 - 0.6, dz - 0.6, dz, { dir: 's', h: 1.1, top: 'woodHi' });
-    shelves(K, x1 - 4.2, x1 - 1.0, z0, { dir: 's', h: 2.2, n: 6, depth: 0.25, fill: 'linen', rng });
+    shelves(K, x1 - 4.2, x1 - 1.0, z0, { dir: 's', h: 2.2, n: 6, depth: 0.25, fill: 'wood', rng });
+    K.box('lit', x1 - 4.16, x1 - 1.04, FLOOR + 0.05, FLOOR + 2.15, z0 + 0.025, z0 + 0.03, 2);
     K.prop('cup', x1 - 1.3, FLOOR + 1.1, dz - 0.25, 0, { name: 'pen' });
     K.use({ at: [x1 - 2.6, FLOOR + 1.15, dz - 0.15], range: 2.0, cone: 0.5, prompt: 'the bell', onUse: () => { P.game.sfx.play('bell', K.F.v(x1 - 2.6, 1.5, dz), {}, { ref: 3 }); P.game.hud.message('The clerk looks up. Your key is on its hook: 3.', 2.0); } });
     K.fig('oldman', x1 - 2.6, dz - 1.2, 0, { name: 'clerk', state: 'read' });
     // two armchairs and their low table on a rug; a palm by the door
-    K.box('cloth', -3.6, 0.4, FLOOR, FLOOR + 0.02, -6.4, -3.4, 1);
+    K.box('canvas', -3.6, 0.4, FLOOR, FLOOR + 0.02, -6.4, -3.4, 1);
     for (const [cx, cz, yw] of [[-2.8, -4.9, -Math.PI / 2], [-0.4, -4.9, Math.PI / 2]]) {
       K.box('leather', cx - 0.4, cx + 0.4, FLOOR, FLOOR + 0.45, cz - 0.4, cz + 0.4, 1);
       K.box('leather', cx - 0.4 + (yw < 0 ? 0 : 0.6), cx - 0.4 + (yw < 0 ? 0.2 : 0.8), FLOOR + 0.45, FLOOR + 1.0, cz - 0.4, cz + 0.4, 1);
@@ -47,11 +50,11 @@ export default {
     K.cyl('wood', x0 + 0.6, FLOOR, FLOOR + 0.5, -1.0, 0.25, 0.3, 12, 1);
     for (let i = 0; i < 7; i++) { const a = i * 0.9; K.add('cloth', new THREE.PlaneGeometry(0.22, 0.9).rotateX(-0.6).rotateY(a).translate(x0 + 0.6 + Math.sin(a) * 0.3, FLOOR + 0.95, -1.0 + Math.cos(a) * 0.3), 3); }
     K.post(x0 + 0.6, -1.0, 0.32);
-    label(K, 'HOTEL CARLTON', 0, FLOOR + 3.3, z0, { w: 2.6, h: 0.5, dir: 's', dark: true });
+    label(K, 'HOTEL CARLTON', 0, FLOOR + 3.3, z0, { w: 2.6, h: 0.5, dir: 's', lit: true });
     sheet(K, -5.0, FLOOR + 1.9, z0, { w: 0.8, h: 1.0, dir: 's' });
-    K.lamp(-1.6, FLOOR + 3.0, -4.9, { kind: 'globe', power: 0.8, ceilY: FLOOR + UP - 0.3 });
+    K.lamp(-1.6, FLOOR + 2.7, -4.9, { kind: 'pendant', power: 1.25, ceilY: FLOOR + UP - 0.3 });
     K.lamp(x1 - 2.6, FLOOR + 3.0, dz - 0.4, { kind: 'pendant', power: 0.8, ceilY: FLOOR + UP - 0.3 });
-    K.lamp(0, FLOOR + 3.0, -1.4, { kind: 'globe', power: 0.5, ceilY: FLOOR + UP - 0.3 });
+    K.lamp(0, FLOOR + 3.0, -1.4, { kind: 'globe', power: 0.3, ceilY: FLOOR + UP - 0.3 });
     // ---- the lift: a cage in its shaft, ground floor to the first; E: up or down
     K.at(null);
     bars(K, 'z', L.x1, L.z0, L.z1, { y0: FLOOR, y1: y1 + 2.4, gap: [L.z0 + 0.35, L.z1 - 0.25] });
@@ -85,9 +88,9 @@ export default {
     // ---- the first floor: the corridor at the back, my room over the avenue
     K.at(1);
     const cz0 = z0, cz1 = z0 + 2.4;
-    K.room(L.x1 + 0.14, x1, cz0, cz1, { y: y1, h: 2.9, floor: 'boards', wall: 'paper', look: { ambient: 0.5, haze: 0.2 }, sides: { s: { holes: [{ a: -0.6, b: 0.4, top: y1 + 2.05 }, { a: 3.0, b: 4.0, top: y1 + 2.05 }, { a: -4.6, b: -3.6, top: y1 + 2.05 }] }, w: { holes: [{ a: L.z0 + 0.3, b: L.z1 - 0.2, top: y1 + 2.2 }] } } });
+    K.room(L.x1 + 0.14, x1, cz0, cz1, { y: y1, h: 2.9, floor: 'boards', wall: 'plaster', look: { ambient: 0.32, haze: 0.35 }, sides: { s: { holes: [{ a: -0.6, b: 0.4, top: y1 + 2.05 }, { a: 3.0, b: 4.0, top: y1 + 2.05 }, { a: -4.6, b: -3.6, top: y1 + 2.05 }] }, w: { holes: [{ a: L.z0 + 0.3, b: L.z1 - 0.2, top: y1 + 2.2 }] } } });
     K.box('cloth', x0 + 2.4, x1 - 0.2, y1, y1 + 0.02, cz0 + 0.5, cz1 - 0.5, 1);
-    for (const x of [x0 + 4.2, 2.6]) K.lamp(x, y1 + 2.5, (cz0 + cz1) / 2, { kind: 'globe', power: 0.45, ceilY: y1 + 2.9 });
+    for (const x of [x0 + 4.2, 2.6]) K.lamp(x, y1 + 2.4, (cz0 + cz1) / 2, { kind: 'pendant', power: 0.8, ceilY: y1 + 2.9 });
     // the doors along it: 2 (locked), 3 (mine), 4 (locked)
     K.door({ x: -4.6, z: cz1 + 0.12, axis: 'x', w: 1.0, y: y1, locked: true, name: 'room2' });
     const mine = K.door({ x: -0.6, z: cz1 + 0.12, axis: 'x', w: 1.0, y: y1, name: 'room3', swing: -1 });
@@ -100,7 +103,7 @@ export default {
     const rx0 = -2.0, rx1 = 1.9, rz0 = cz1 + 0.24, rz1 = z1;
     const win = P.faceWindows(s, { kinds: ['win'], y0: y1 + 0.3, y1: y1 + 2.4, x0: rx0 + 0.6, x1: rx1 - 0.6 });
     K.windows = win.slice(0, 1);
-    K.room(rx0, rx1, rz0, rz1, { y: y1, h: 2.9, floor: 'boards', wall: 'paper', look: { ambient: 0.45, haze: 0.1 }, sides: { n: false, s: { holes: P.windowHoles(K.windows) } } });
+    K.room(rx0, rx1, rz0, rz1, { y: y1, h: 2.9, floor: 'boards', wall: 'plaster', look: { ambient: 0.3, haze: 0.25 }, sides: { n: false, s: { holes: P.windowHoles(K.windows) } } });
     // (its back wall is the corridor's front: the room's 'n' side, with its door)
     bed(K, rx0 + 0.1, rx0 + 1.5, rz0 + 0.3, rz0 + 2.4, { y: y1, head: 'n' });
     chair(K, rx1 - 0.6, rz1 - 1.2, -Math.PI / 2 - 0.4, { y: y1 });

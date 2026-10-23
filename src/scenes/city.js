@@ -6,6 +6,7 @@ import { riverNearest } from '../world/cityGen.js';
 import { MapOverlay } from '../world/map.js';
 import { compileAll } from '../stages/noircity/compile.js';
 import { placesOf } from '../places/Places.js';   // [O5] the places: their doors, their rooms
+import { arms } from '../combat/money.js';   // [O5] the wheel through what I own
 
 // NOIR CITY's free roam (lane O1): the city, a car at the kerb, nothing I
 // must do. Every critic and every later lane starts from here.
@@ -91,11 +92,12 @@ function place(ctx, at) {
 export default defineScene({
   id: 'city', stage: 'noircity', title: '', name: 'Noir City',
   // [O5] hotel: up in my room at the Carlton (the save the bed writes; CONTINUE);
-  // station: on the cell's bench at headquarters (the arrest's wake: O3)
-  beats: ['roam', 'ashore', 'hotel', 'station'],
+  // station: on the cell's bench at headquarters (the arrest's wake: O3);
+  // wake: up after a fall in a place (G.city.wake: outside its door, or by the gym's ring), the car where I left it
+  beats: ['roam', 'ashore', 'hotel', 'station', 'wake'],
   // (M is the map here: Game.bindInput leaves the sound alone)
   mapKey: true,
-  objectives: { roam: null, ashore: null, hotel: null, station: null },
+  objectives: { roam: null, ashore: null, hotel: null, station: null, wake: null },
   // [O6] the low line when the destruction set hurt him (the fire, the tram): its fix, not the gun kit's
   lowWarn: (ctx) => (ctx.stage.smash && ctx.stage.smash.cars.lowWarn()) || null,
   setup: {
@@ -134,6 +136,19 @@ export default defineScene({
       const a = ctx.stage.anchor('city.start.grand');
       place(ctx, { car: a.car, carYaw: a.carYaw, pos: a.pos, yaw: a.yaw });
       placesOf(ctx.game, ctx.stage).wake('police');
+    },
+    // [O5] a fall in a place (a hideout's men, the bout, a room's fight): the place as it was (built
+    // again under the black: every man back), me outside its street door facing it - or by the
+    // gym's ring - and my car where I left it
+    wake(ctx) {
+      const G = ctx.game, R = G.city || {}, W = R.wake || {}, P = placesOf(G, ctx.stage), s = P.byId.get(W.id);
+      const car = R.car ? { x: R.car.pos.x, z: R.car.pos.z, yaw: R.car.yaw } : null;
+      if (!s) { const a = ctx.stage.anchor('city.start.grand'); place(ctx, { car: a.car, carYaw: a.carYaw, pos: a.pos, yaw: a.yaw }); return; }
+      const out = s.frame.w(0, 2.6);
+      const kerb = car || { ...s.frame.w(2.5, 6.5), yaw: s.frame.yaw(Math.PI / 2) };
+      place(ctx, { car: { x: kerb.x, z: kerb.z }, carYaw: kerb.yaw, pos: out, yaw: s.frame.yaw(0) });
+      P.wakeAfter(W);
+      R.wake = null;
     },
     // out of the river: on the quay at the nearest steps, a car at the kerb by them
     ashore(ctx) {
@@ -180,6 +195,12 @@ export function step(ctx, R, T, dt) {   // [O6] exported
   // the map: M (the pad's d-pad down taps M)
   if (ctx.pressed('KeyM')) { const open = R.map.toggle(); ctl.frozen = open; if (car && R.inCar) { car.input.throttle = 0; car.input.brake = open ? 1 : 0; } }
   if (R.map.isOpen) { R.map.draw([{ x: G.eye.x, z: G.eye.z, yaw: ctl.yaw, kind: 'me' }, ...(car && !R.inCar ? [{ x: car.pos.x, z: car.pos.z, yaw: car.yaw - Math.PI / 2, kind: 'car' }] : [])]); return; }
+  // [O5] on foot, the mouse wheel turns through what I own (O4's arms: fists, a gun bought at the
+  // gun shop) - a gun out is the gun mode, fists the walk (lane O7 owns the wheel's card and the pad's)
+  if (!R.inCar && G.mouse.wheel && !G.crowd.active && !(R.places && R.places.seat)) {
+    const g = arms(G).next(Math.sign(G.mouse.wheel));
+    if (g) { G.setViewmodelVisible(g !== 'fists'); if (g === 'fists') G.player.hands.equip('empty'); ctl.setMode(g === 'fists' ? 'walk' : 'gun', { crouch: false }); }
+  }
   if (R.inCar) {
     T.drive += dt;
     T.dist += Math.abs(car.speed) * dt;

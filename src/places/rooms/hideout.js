@@ -3,17 +3,21 @@ import { FLOOR } from '../../city/kits/interior/kit.js';
 import { counter, desk, chair, crates, shelves, safe, label, table, lockers } from '../../city/kits/interior/pieces.js';
 import { RNG } from '../../util/rng.js';
 import { gunsOf } from '../../guns/Guns.js';
+import { owns } from '../../combat/money.js';
 
 // The gangs' hideouts on the Docks (brief O5 §2.8): the pier office (a
 // shipping office on the quay by Pier 7: the counter, the store behind it,
 // the stairs up to the boss's office over the front, its safe, its window
 // on the river) and a warehouse (one long hall of stacked crates, the
 // office in its far corner with the safe). Men inside: they watch me come
-// in - "They know your face." - and, if I stay in their sight, draw (the
-// base's gun kit, docs/story/seams/GUNS.md: the men from the room's nav,
-// the stand-in for O4's spawn; the revolver comes out of my coat - the
-// stand-in for O4's carried guns). The safe: E kicks it (twice) and it
-// opens, the money in it. A back way out. Cleared, it stays cleared.
+// in - "They know your face." - my revolver comes out with the warning, and
+// they draw: at once if they have me in sight a second, else a few seconds
+// after I am in (they come for me: the gun kit's push, seek and flank,
+// docs/story/seams/GUNS.md). A fall is the kit's black and I come round on
+// the pavement outside the door, the place as it was (every man back: no win
+// by dying enough), each fall a little mercy (O4's street numbers). The safe:
+// E kicks it (twice) and it opens, the money in it. A back way out. Cleared,
+// it stays cleared.
 const CASH = { pieroffice: 180, warehouse: 240 };
 export default {
   kind: 'hideout',
@@ -31,7 +35,7 @@ export default {
         const G = P.game;
         if (s.state.safeOpen) {
           if (s.state.safeTaken) return;
-          s.state.safeTaken = true; P.money(CASH[s.id], 'from the safe'); G.sfx.play('wallet', null, {}, { ref: 1 }); P.crime('theft', K.F.v(S.x, S.y + 0.5, S.z), 2);
+          s.state.safeTaken = true; P.earn(CASH[s.id], 'the safe'); G.sfx.play('wallet', null, {}, { ref: 1 }); P.crime('theft', K.F.v(S.x, S.y + 0.5, S.z), 2);
           return;
         }
         s.state.kicks = (s.state.kicks || 0) + 1;
@@ -58,7 +62,7 @@ function pierOffice(K, s, P, rng) {
   shelves(K, -4.4, -2.0, x0, { dir: 'e', h: 1.6, n: 3, depth: 0.45, fill: 'linen', rng });
   label(K, 'HARBOR SHIPPING CO.', -1.4, FLOOR + 2.4, zf, { w: 2.4, h: 0.32, dir: 's', dark: true });
   K.lamp(-1.0, FLOOR + 2.3, -2.4, { kind: 'pendant', power: 0.7, ceilY: FLOOR + Hf });
-  K.door({ x: 3.0, z: zf - 0.12, axis: 'x', w: 1.0, name: 'store0' });
+  // (the way through to the store is an open doorway: its men come through it - a leaf there kept them in)
   // ---- the store behind it (floor 0, high)
   const Hs = 6.2;
   K.room(sx0, sx1, sz0, zf - 0.24, { h: Hs, floor: 'concrete', wall: 'concrete', ceil: 'dark', look: { ambient: 0.4, haze: 0.5, room: 'o5_big' }, sides: { s: false, w: { holes: P.doorHoles(s, 'w') } } });
@@ -116,8 +120,11 @@ function warehouse(K, s, P, rng) {
     K.cols.at(-1).tag = 'crates';
   }
   for (let z = -4; z > z0 + 2; z -= 7) K.lamp(0, FLOOR + H - 1.4, z, { kind: 'cage', power: 0.9, ceilY: FLOOR + H });
-  // (cover by the door: a man who comes in has a crate to get down behind)
+  // (cover by the door: a man who comes in has a crate to get down behind - one each side and
+  // a low row of goods a step in front of the door itself, under the eye: crouched behind it
+  // I am out of their sight, risen I shoot over it)
   for (const [cx, cz] of [[-2.4, -3.4], [2.6, -3.9]]) { crates(K, cx, cz, { n: 1, s: 1.15, rng }); K.cols.at(-1).tag = 'crates'; }
+  for (const cx of [-0.48, 0.48]) { crates(K, cx, -3.0, { n: 1, s: 0.95, rng }); K.cols.at(-1).tag = 'crates'; }
   // the office in the far corner: its walls, its door, its desk, the safe
   const ox0 = x1 - 5.6, oz1 = z0 + 5.0;
   K.wall('x', oz1 + 0.12, ox0, x1, FLOOR, FLOOR + 3.0, { key: 'plaster', holes: [{ a: ox0 + 0.8, b: ox0 + 1.8, top: FLOOR + 2.05 }] });
@@ -142,7 +149,7 @@ function warehouse(K, s, P, rng) {
 // by their start() until they turn on me; the warning, then the fight
 function hideoutLife(K, s, P) {
   const G = P.game, F = s.frame;
-  const st = { hostile: false, seen: 0, warned: false, men: [], begun: false, t: 0 };
+  const st = { hostile: false, seen: 0, warned: false, men: [], begun: false, t: 0, inT: 0 };
   const Kt = gunsOf(G);
   const A = K.area, box = F.box(A.x0, A.x1, A.z0, A.z1);
   const begin = () => {
@@ -151,10 +158,11 @@ function hideoutLife(K, s, P) {
     const c = F.w((A.x0 + A.x1) / 2, (A.z0 + A.z1) / 2);
     G.stage.part('bounds').navAround(c.x, c.z, Math.max(A.x1 - A.x0, A.z1 - A.z0) / 2 + 3);
     Kt.end();
-    // (a first gunfight's numbers: slower to settle, a little lighter - GUNS.md's table)
-    Kt.begin({ to: 'roam', area: box, maxFiring: 2, flankAfter: 9, settleK: 1.35, dmgK: 0.75, why: { open: 'Shot standing in the open.', moving: 'Shot in the open.' } });
+    // (a first gunfight's numbers - GUNS.md's table - and O4's mercy a fall: their aim slower to
+    // settle, their rounds lighter, the flank later; a fall wakes me outside the door: the city's beat)
+    const mc = Math.min(3, s.state.falls || 0);
+    Kt.begin({ to: 'wake', area: box, maxFiring: 2, flankAfter: 10 + 3 * mc, settleK: 1.2 + 0.06 * mc, dmgK: 0.85 - 0.07 * mc, why: { open: 'Shot standing in the open.', moving: 'Shot in the open.', bare: 'Down in the open. Get behind the crates.' } });
     for (const m of K.men) {
-      if (s.state.dead && s.state.dead.includes(m)) continue;
       const p = F.w(m.x, m.z), e = F.w(0, 0);
       // (a way of one step - where he stands - so he waits on start(): without a way a gunman is in the fight at once)
       const h = Kt.spawn({ kind: m.kind, at: p, way: { steps: [{ x: p.x, z: p.z }] }, start: () => st.hostile, yaw: Math.atan2(e.x - p.x, e.z - p.z) });
@@ -166,7 +174,13 @@ function hideoutLife(K, s, P) {
   const alive = () => st.men.filter((h) => h.alive);
   const run = {
     st,
-    alarm(why) { if (!st.hostile && st.begun) { st.hostile = true; G.hud.warn(null); P.crime('hideout', G.eye.clone(), 2); arm(); void why; } },
+    alarm(why) {
+      if (st.hostile || !st.begun) return;
+      st.hostile = true; G.hud.warn(null); P.crime('hideout', G.eye.clone(), 2); arm(); void why;
+      // (a fall from here on wakes me outside this door, every man back)
+      if (G.city) G.city.wake = { id: s.id, where: 'door' };
+      if (!st.fallHook) { st.fallHook = true; G.on('fail', onFail); }
+    },
     step(dt) {
       st.t += dt;
       // the safe's door swings open once it is kicked in (open at once if it was before)
@@ -174,6 +188,7 @@ function hideoutLife(K, s, P) {
       if (!st.begun && !s.state.cleared) begin();
       if (!st.begun) return;
       const inside = P.inside === s;
+      st.inT = inside ? st.inT + dt : 0;
       if (!st.hostile) {
         // seen: a man with a line on me, within 14 m
         let seen = false;
@@ -182,8 +197,11 @@ function hideoutLife(K, s, P) {
         // (the warning; my hand goes to my coat: the revolver is out - I may fire first)
         if (st.seen > 0.3 && !st.warned) { st.warned = true; G.hud.warn('They know your face.'); arm(); }
         if (!seen && st.warned && st.seen <= 0) { st.warned = false; G.hud.warn(null); }
-        // (a shot of mine anywhere in here, or a man hit: at once)
-        if (st.seen > 2.2 || alive().length < st.men.length) this.alarm('seen');
+        // (in by the door, the warning up at once - they heard it - and my gun out)
+        if (inside && st.inT > 0.4 && !st.warned) { st.warned = true; G.hud.warn('They know your face.'); arm(); }
+        // (a second in their sight, or three and a half in the place out of it - they come for me -
+        // or a shot of mine anywhere in here, or a man hit: at once)
+        if (st.seen > 1.0 || (inside && st.inT > 3.5) || alive().length < st.men.length) this.alarm('seen');
       }
       if (st.hostile && !alive().length && !s.state.cleared) {
         s.state.cleared = true; G.hud.warn(null);
@@ -193,11 +211,14 @@ function hideoutLife(K, s, P) {
       }
       // (gone out of the place while they hunt me: they stay inside; it ends when I am well away)
     },
-    leave() { if (!st.hostile && st.warned) { st.warned = false; G.hud.warn(null); st.seen = 0; } },
+    leave() {
+      if (!st.hostile && st.warned) { st.warned = false; G.hud.warn(null); st.seen = 0; }
+      // (out of the door before they drew: the gun goes back under my coat - unless it is my own, bought)
+      if (!st.hostile && st.armed && !owns(G, 'revolver')) disarm();
+    },
     dispose() {
-      // the dead stay dead (a count kept); the living go with the place
-      const dead = st.men.filter((h) => !h.alive).map((h) => h._o5);
-      s.state.dead = [...new Set([...(s.state.dead || []), ...dead])];
+      // (the men go with the place: built again, every one is back - a fall's retry is the
+      // place as it was; only a hideout cleared stays cleared)
       for (const h of st.men) { try { G.removeHood(h); } catch (e) { /* */ } }
       st.men = [];
       if (st.begun && Kt.active) Kt.end();
@@ -213,10 +234,13 @@ function hideoutLife(K, s, P) {
     G.setViewmodelVisible(true);
     G.hud.teach('fire', '[LMB] fire', { secs: 2.5 });
   };
+  const disarm = () => { st.armed = false; G.player.weapons.equip(null); G.player.hands.equip('empty'); G.setViewmodelVisible(false); if (G.controller.mode === 'gun') G.controller.setMode('walk'); };
+  // (a fall in the fight: counted for the mercy of the next try)
+  const onFail = (e) => { if (st.hostile && !s.state.cleared && e && e.to === 'wake') s.state.falls = (s.state.falls || 0) + 1; };
   // (a shot of mine while they watch)
   const onShot = () => { if (s.live && st.begun && P.inside === s) run.alarm('shot'); };
   G.on('shot', onShot);
   const d0 = run.dispose;
-  run.dispose = () => { G.off('shot', onShot); d0(); };
+  run.dispose = () => { G.off('shot', onShot); if (st.fallHook) G.off('fail', onFail); d0(); };
   return run;
 }
