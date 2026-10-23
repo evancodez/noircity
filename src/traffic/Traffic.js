@@ -231,6 +231,8 @@ export class Traffic {
     let stop = Infinity;
     // (a man at my door: I brake for him - the hijack's 'he brakes when I stand at his door')
     if (car.held) stop = s - 1;
+    // (the proofs' bed: a car that stops beside a car - &come=..&held=1)
+    if (car.stopBy) { const i = path.nearestAll(car.stopBy.pos.x, car.stopBy.pos.z); stop = Math.min(stop, path.pts[i].s + 1.5); }
     // the next junction ahead and the line before it
     const nodes = path.nodes;
     for (let k = 1; k < nodes.length; k++) {

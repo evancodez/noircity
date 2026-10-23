@@ -86,7 +86,10 @@ function place(ctx, at) {
   if (W) W.detach();
   V.clear();
   stage.part('stream').warmAround(at.car.x, at.car.z);
-  const car = V.spawn('coupe', { at: new THREE.Vector3(at.car.x, 0, at.car.z), yaw: at.carYaw, lights: true });
+  // [O2] (look development: &ckind=<kind> - the start's car of the fleet's kind instead of the coupe)
+  const ck = typeof location !== 'undefined' ? new URLSearchParams(location.search).get('ckind') : null;
+  const car = ck && KINDS[ck] ? V.spawn(ck, { at: new THREE.Vector3(at.car.x, 0, at.car.z), yaw: at.carYaw, lights: true, fleet: true })
+    : V.spawn('coupe', { at: new THREE.Vector3(at.car.x, 0, at.car.z), yaw: at.carYaw, lights: true });
   car.driver = null;
   V.player = null;
   R.car = car;
@@ -123,7 +126,12 @@ export default defineScene({
         const G = ctx.game, R = G.city;
         G.vehicles.setPlayer(R.car);
         if (R.car.lamps && R.car.lamps.setOn) R.car.lamps.setOn(true);
-        R.cabin.attach(R.car, { ...seatOpts(), control: brakesFor(G) });
+        // [O2] (a fleet car: its seat, its cockpit, its screen)
+        const fl = R.car.model && R.car.model.fleet, so = fl ? { ...seatOpts(), eye: KINDS[R.car.kind].eye.clone() } : seatOpts();
+        if (fl) cockpitInto(ctx.stage, R.car);
+        R.cabin.attach(R.car, { ...so, control: brakesFor(G) });
+        R.cabin.eye = so.eye;
+        if (fl) R.cabin.screen.mesh.matrix.copy(screenBasis(R.car.kind));
         R.inCar = true;
         return;
       }
@@ -202,6 +210,8 @@ function step(ctx, R, T, dt) {
     return;
   }
   T.foot += dt;
+  // [O2] a fist fight on the pavement (a driver who came back for his car): no car's E under it
+  if (G.brawl && G.brawl.active) { if (T.inShown) { T.inShown = false; hud.clearPrompt('cityin'); } if (T.door) { T.door = null; hud.clearPrompt('citydoor'); } return; }
   // the car I left rolls out what was left of its roll, its brakes on, and
   // stands (nothing else steps a parked car yet: O2's traffic will)
   if (car && !R.inCar && !G.wheels && (car.vel.lengthSq() > 4e-4 || Math.abs(car.yawRate) > 0.01)) car.step(dt);

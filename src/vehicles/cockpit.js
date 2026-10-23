@@ -47,7 +47,7 @@ function build(M) {
   meshes.cabin = mk(cabin, M.iron, 'cabin');
   meshes.trim = mk(trim, M.chrome, 'trim');
   meshes.panel = mk(panel, M.iron, 'panel');
-  meshes.dials = mk(dials, new THREE.MeshBasicMaterial({ color: new THREE.Color().setScalar(0.06) }), 'dials');
+  meshes.dials = mk(dials, new THREE.MeshBasicMaterial({ color: new THREE.Color().setScalar(0.025) }), 'dials');
   for (const k of ['trim', 'panel', 'dials']) meshes[k].userData.inkSub = true;
   const needleGeo = new THREE.BoxGeometry(0.004, 0.058, 0.006).translate(0, 0.026, 0);
   const needles = [];

@@ -207,7 +207,8 @@ export class Hijack {
     }
     if (m.state === 'back') {
       const K = KINDS[v.kind];
-      const door = v.world(K.eye.x - 0.2, -(K.halfW + 0.75), _w);
+      // (he comes to stand a stride out from his door: from there he has me out)
+      const door = v.world(K.eye.x - 0.3, -(K.halfW + 2.1), _w);
       const dx = door.x - c.fig.pos.x, dz = door.z - c.fig.pos.z, d = Math.hypot(dx, dz);
       c.fig.yaw = Math.atan2(dx, dz);
       // driven off from him: he is left in the road (he stops, he shouts)
@@ -217,7 +218,7 @@ export class Hijack {
         m.state = 'left'; m.t = 0;
         return;
       }
-      if (d < 0.9 && v.speedAbs < 2.2) {
+      if (d < 0.5 && v.speedAbs < 2.2) {
         // he has me out of my seat: the fight (the base's brawl, one man)
         G.hud.warn(null);
         c.fig.speed = 0;

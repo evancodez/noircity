@@ -11,7 +11,12 @@ import * as THREE from 'three';
 // calls in vehicles/hijack.js).
 export function fightDriver(W, c, { at, onWin, onLose }) {
   const G = W.game, C = G.controller, B = G.brawl;
-  const me = { x: C.pos.x, z: C.pos.z };
+  // (I am had out of my door: between him and my car, a stride from him)
+  let me = { x: C.pos.x, z: C.pos.z };
+  if (at) {
+    const dx = at.x - c.pos.x, dz = at.z - c.pos.z, d = Math.hypot(dx, dz) || 1;
+    me = { x: c.pos.x + (dx / d) * 1.45, z: c.pos.z + (dz / d) * 1.45 };
+  }
   const yaw = Math.atan2(-(c.pos.x - me.x), -(c.pos.z - me.z));
   C.setMode('brawl', { opponent: c, eyeY: 1.72, pos: me, yaw, ease: 0.25 });
   const mid = { x: (me.x + c.pos.x) / 2, z: (me.z + c.pos.z) / 2 };
@@ -40,7 +45,6 @@ export function fightDriver(W, c, { at, onWin, onLose }) {
     else if (!B.active) end('lost');
   };
   F.cancel = () => end('lost');
-  void at;
   return F;
 }
 
