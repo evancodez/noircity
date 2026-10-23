@@ -1047,8 +1047,8 @@ export class Crowd {
     // [O4] after the critic (the block card stood over a live cue - it was up, and the dodge's
     // waited behind it): any other card goes, at once, before the cue's own
     if (K && K.teachCur && K.teachCur.id !== 'dodge' && G.hud.teach && G.hud.teach.dismiss) G.hud.teach.dismiss();
-    if (untaught && G.hud.teach && !G.shotMode) { teach = G.hud.teach('dodge', CROWD_CARDS.dodge, { hold: true, holdMax: 6, until: () => !this.cue || this.cue.done }); held = !teach.done; }
-    else if (this.nudge.cueAgain && G.hud.teach) { this.nudge.cueAgain = false; this.nudge.missedCues = 0; G.hud.teach.again('dodge', CROWD_CARDS.dodge, { hold: false, secs: 2.4, until: () => !this.cue || this.cue.done }); }
+    if (untaught && G.hud.teach && !G.shotMode) { teach = G.hud.teach('dodge', CROWD_CARDS.dodge, { hold: true, holdMax: 6, until: () => !this.cue || this.cue.done || !!this.cue.answer }); held = !teach.done; }
+    else if (this.nudge.cueAgain && G.hud.teach) { this.nudge.cueAgain = false; this.nudge.missedCues = 0; G.hud.teach.again('dodge', CROWD_CARDS.dodge, { hold: false, secs: 2.4, until: () => !this.cue || this.cue.done || !!this.cue.answer }); }
     if (teach && teach.shown) this.cardAt = this.T;
     const win = this.cueW + CROWD.cue.grace;
     const k = Math.max(0.06, Math.min(1, remain / win));
@@ -1070,7 +1070,8 @@ export class Crowd {
     if (Q.held) {
       const K = this.game.hud && this.game.hud.kit, cur = K && K.teachCur;
       const still = cur && Q.teach && cur.h === Q.teach && cur.held;
-      if (!still && Q.t > 0.1) { Q.held = false; Q.t = Q.win * 0.5; this.game.worldK = Q.k; }
+      // (the card gone: the cue runs on at its slow-down - unless I already answered it: the world is back)
+      if (!still && Q.t > 0.1) { Q.held = false; Q.t = Q.win * 0.5; if (!Q.answer) this.game.worldK = Q.k; }
       return;
     }
     if (Q.t >= Q.win + CROWD.cue.grace + 0.05) this.endCue(Q.answer || 'late');

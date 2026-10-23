@@ -30,7 +30,7 @@ export function buildCounter(stage, { x, z, yaw = 0 }) {
   // the board behind (the stand-in of the shop's wall of guns)
   g.add(mesh(new THREE.BoxGeometry(2.4, 1.6, 0.06).translate(0, 1.7, -0.62), peg, id + 2));
   // the felt under the gun
-  g.add(mesh(new THREE.BoxGeometry(1.05, 0.012, 0.42).translate(-0.55, 0.976, 0.04), felt, id + 3, false));
+  g.add(mesh(new THREE.BoxGeometry(1.05, 0.012, 0.42).translate(-0.62, 0.976, 0.04), felt, id + 3, false));
   const items = {};
   const lay = (kind, lx, lz, ry = 0) => {
     const o = buildProp(kind);
@@ -47,9 +47,9 @@ export function buildCounter(stage, { x, z, yaw = 0 }) {
     g.add(o);
     return o;
   };
-  items.shotgun = lay('shotgun', -0.55, 0.05, Math.PI / 2 + 0.1);
-  items.shells = boxOf(0.25, 0.04, 0.25, 0.2, 0.11, 0.28, 0);
-  items.rounds = boxOf(0.85, -0.02, -0.2, 0.16, 0.08, 0.22, 1);
+  items.shotgun = lay('shotgun', -0.62, 0.05, Math.PI / 2 + 0.1);
+  items.shells = boxOf(0.12, 0.04, 0.25, 0.2, 0.11, 0.28, 0);
+  items.rounds = boxOf(0.62, -0.02, -0.2, 0.16, 0.08, 0.22, 1);
   stage.scene.add(g); g.updateMatrixWorld(true);
   const col = stage.colliders.addBox(x, z, 1.15, 0.36, yaw, 'counter');
   const back = stage.colliders.addBox(x - Math.sin(yaw) * 0.62, z - Math.cos(yaw) * 0.62, 1.2, 0.05, yaw, 'wall');

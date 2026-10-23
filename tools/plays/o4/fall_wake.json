@@ -1,29 +1,143 @@
 {
- "about": "[O4] Where a fall in the city ends (src/combat/fall.js): hands off in a street fight with a driver - down, warned, the black - and up on the hospital's steps (the stand-in), the revolver kept, a tenth of the money gone; then hands off against a cop - 'Hands up.' - and up on the station's steps, the guns gone, a fine.",
+ "about": "[O4] Where a fall in the city ends (src/combat/fall.js): hands off in a street fight with a driver - down, warned, the black - and up on the hospital's steps (the stand-in), the revolver kept, a tenth of the money gone; then hands off against a cop - 'Hands up.' - and up on the station's steps, the guns gone, a fine. [O4] after the critic: then the police's shootout, hands off - down, and up on the station's steps (not the hospital's), the revolver gone; then a street fight lost - the hospital's steps, and no revolver handed back (what the station kept stays kept).",
  "url": "/?mute=1&start=o4.brawl1",
- "size": [1280, 800],
+ "size": [
+  1280,
+  800
+ ],
  "out": "shots/play/fall_wake",
  "steps": [
-  { "until": "G.state === 'title' && !!document.querySelector('#title .opt[data-k=begin]')", "timeout": 60000 },
-  { "wait": 1200 },
-  { "clickOn": "#title .opt[data-k=begin]", "taken": "G.scenes.current && G.scenes.current.id === 'o4'", "retries": 4 },
-  { "until": "G.scenes.current && G.scenes.current.id === 'o4' && G.scenes.beat === 'brawl1' && G.crowd.active && !G.failing", "timeout": 30000 },
-  { "eval": "(G.save.money = 100, G.save.inventory = ['revolver', 'shotgun'], 1)" },
-  { "until": "!!G.failing", "timeout": 90000 },
-  { "eval": "({ why: G.lastFail.why, warnedFor: G.lastFail.warnedFor })" },
-  { "until": "G.scenes.beat === 'hospital' && !G.failing", "timeout": 20000 },
-  { "wait": 800 },
-  { "shot": "hospital" },
-  { "expect": "G.save.money === 90 && G.save.inventory.includes('revolver') && G.player.weapons.current === 'revolver'" },
-  { "eval": "({ money: G.save.money, inv: G.save.inventory, gun: G.player.weapons.current, say: N.hud.lastSay })" },
-  { "eval": "(N.game.scenes.go('o4', { beat: 'cop', fade: 'cut', card: false }), 1)" },
-  { "until": "G.scenes.beat === 'cop' && G.crowd.active && !G.failing", "timeout": 20000 },
-  { "until": "!!G.failing", "timeout": 120000 },
-  { "expect": "G.lastFail.why === 'Hands up.'" },
-  { "until": "G.scenes.beat === 'station' && !G.failing", "timeout": 20000 },
-  { "wait": 800 },
-  { "shot": "station" },
-  { "expect": "G.save.money === 72 && !G.save.inventory.includes('revolver') && !G.save.inventory.includes('shotgun')" },
-  { "eval": "({ money: G.save.money, inv: G.save.inventory, gun: G.player.weapons.current, say: N.hud.lastSay })" }
+  {
+   "until": "G.state === 'title' && !!document.querySelector('#title .opt[data-k=begin]')",
+   "timeout": 60000
+  },
+  {
+   "wait": 1200
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]",
+   "taken": "G.scenes.current && G.scenes.current.id === 'o4'",
+   "retries": 4
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'o4' && G.scenes.beat === 'brawl1' && G.crowd.active && !G.failing",
+   "timeout": 30000
+  },
+  {
+   "eval": "(G.save.money = 100, G.save.inventory = ['revolver', 'shotgun'], 1)"
+  },
+  {
+   "until": "!!G.failing",
+   "timeout": 90000
+  },
+  {
+   "eval": "({ why: G.lastFail.why, warnedFor: G.lastFail.warnedFor })"
+  },
+  {
+   "until": "G.scenes.beat === 'hospital' && !G.failing",
+   "timeout": 20000
+  },
+  {
+   "wait": 800
+  },
+  {
+   "shot": "hospital"
+  },
+  {
+   "expect": "G.save.money === 90 && G.save.inventory.includes('revolver') && G.player.weapons.current === 'revolver'"
+  },
+  {
+   "eval": "({ money: G.save.money, inv: G.save.inventory, gun: G.player.weapons.current, say: N.hud.lastSay })"
+  },
+  {
+   "eval": "(N.game.scenes.go('o4', { beat: 'cop', fade: 'cut', card: false }), 1)"
+  },
+  {
+   "until": "G.scenes.beat === 'cop' && G.crowd.active && !G.failing",
+   "timeout": 20000
+  },
+  {
+   "until": "!!G.failing",
+   "timeout": 120000
+  },
+  {
+   "expect": "G.lastFail.why === 'Hands up.'"
+  },
+  {
+   "until": "G.scenes.beat === 'station' && !G.failing",
+   "timeout": 20000
+  },
+  {
+   "wait": 800
+  },
+  {
+   "shot": "station"
+  },
+  {
+   "expect": "G.save.money === 72 && !G.save.inventory.includes('revolver') && !G.save.inventory.includes('shotgun')"
+  },
+  {
+   "eval": "({ money: G.save.money, inv: G.save.inventory, gun: G.player.weapons.current, say: N.hud.lastSay })"
+  },
+  {
+   "eval": "(G.save.inventory = ['revolver'], N.game.scenes.go('o4', { beat: 'police', fade: 'cut', card: false }), 1)"
+  },
+  {
+   "until": "G.scenes.beat === 'police' && !G.failing && G.ais && G.ais.size > 0",
+   "timeout": 20000
+  },
+  {
+   "until": "!!G.failing",
+   "timeout": 120000
+  },
+  {
+   "eval": "({ why: G.lastFail.why, warnedFor: G.lastFail.warnedFor, to: G.lastFail.to })"
+  },
+  {
+   "until": "(G.scenes.beat === 'station' || G.scenes.beat === 'hospital') && !G.failing",
+   "timeout": 20000
+  },
+  {
+   "wait": 800
+  },
+  {
+   "expect": "G.scenes.beat === 'station' && !G.save.inventory.includes('revolver') && G.player.weapons.current === 'fists'"
+  },
+  {
+   "eval": "({ beat: G.scenes.beat, money: G.save.money, inv: G.save.inventory, gun: G.player.weapons.current, say: N.hud.lastSay, obj: G.hud.objectiveText })"
+  },
+  {
+   "eval": "(N.game.scenes.go('o4', { beat: 'brawl1', fade: 'cut', card: false }), 1)"
+  },
+  {
+   "until": "G.scenes.beat === 'brawl1' && G.crowd.active && !G.failing",
+   "timeout": 20000
+  },
+  {
+   "until": "!!G.failing",
+   "timeout": 120000
+  },
+  {
+   "until": "G.scenes.beat === 'hospital' && !G.failing",
+   "timeout": 20000
+  },
+  {
+   "wait": 800
+  },
+  {
+   "expect": "!G.save.inventory.includes('revolver') && G.player.weapons.current === 'fists'"
+  },
+  {
+   "eval": "({ beat: G.scenes.beat, money: G.save.money, inv: G.save.inventory, gun: G.player.weapons.current, say: N.hud.lastSay, obj: G.hud.objectiveText })"
+  },
+  {
+   "wait": 4000
+  },
+  {
+   "expect": "/back to it/.test(G.hud.promptShown || '') && !/E:/.test(G.hud.objectiveText || '')"
+  },
+  {
+   "shot": "hospital_after_station"
+  }
  ]
 }
