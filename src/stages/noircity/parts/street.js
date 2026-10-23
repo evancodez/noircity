@@ -20,6 +20,10 @@ export default {
     // [O1b] the city's street: ink and pools (the cold play's finding 3) - the
     // dry ground between the puddles darker, the light kept in the puddles' sheen
     roadMat.uniforms.uDryK.value = 0.5; paveMat.uniforms.uDryK.value = 0.6;
+    // [O1c] the near field's grey wash a third of the base's (the reference's black between the
+    // pools, the lamps' columns kept); Doyers Ln's red lanterns halved in the water
+    roadMat.uniforms.uNearK.value = 0.35;
+    roadMat.uniforms.uRedCut.value.set(382, 398, -302, -148);
     const mk = (geo, mat, name) => {
       const m = new THREE.Mesh(geo, mat);
       m.layers.set(LAYER.GROUND);

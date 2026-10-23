@@ -136,6 +136,24 @@ const B = {
       for (const y of [0.7, 1.9]) R.push([box(2.9, 0.06, 0.02).translate(cx, y, 0.12), G.trim * 1.2]);
       for (const q of [-1, 1]) R.push([box(0.06, 3.7, 0.02).translate(cx + q * 1.45, 1.88, 0.12), G.trim * 1.2]);
       for (let k = 0; k < 4; k++) R.push([box(0.5, 0.45, 0.02).translate(cx - 1.08 + k * 0.72, 2.95, 0.12), G.paper * 0.9]);
+      // [O1c] at arm's length (the brief's 'flat now'): each leaf's raised panels - a lit rim
+      // round a field proud of the leaf - the brass (the pulls at the meeting edge, the
+      // hinges, the kick plates), and the company's red in one thin line under the lights
+      for (const l of [-1, 1]) {
+        const lx = cx + l * 0.725;
+        for (const [py, ph] of [[0.38, 0.5], [1.3, 1.0], [2.33, 0.62]]) {
+          R.push([box(1.06, ph - 0.12, 0.03).translate(lx, py, 0.125), G.wood * 1.8]);
+          for (const q of [-1, 1]) {
+            R.push([box(1.12, 0.035, 0.03).translate(lx, py + q * (ph / 2 - 0.04), 0.135), G.trim * 1.5]);
+            R.push([box(0.035, ph - 0.05, 0.03).translate(lx + q * 0.545, py, 0.135), G.trim * 1.5]);
+          }
+        }
+        R.push([cyl(0.028, 0.028, 0.6, 10).translate(cx + l * 0.13, 1.45, 0.2), G.paper * 2.2]);
+        for (const ey of [1.15, 1.75]) R.push([box(0.09, 0.05, 0.05).translate(cx + l * 0.13, ey, 0.16), G.paper * 2.2]);
+        for (const hy of [0.45, 1.9, 3.3]) R.push([box(0.07, 0.2, 0.04).translate(cx + l * 1.42, hy, 0.15), G.paper * 1.8]);
+        R.push([box(1.3, 0.16, 0.02).translate(lx, 0.09, 0.13), G.paper * 1.4]);
+      }
+      R.push([box(2.9, 0.05, 0.02).translate(cx, 3.42, 0.13), RED]);
       L.push([new THREE.SphereGeometry(0.15, 12, 8).translate(cx, 4.35, 0.42), NEON_RED]);
       R.push([box(0.04, 0.04, 0.34).translate(cx, 4.35, 0.22), G.iron]);
     }

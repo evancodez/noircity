@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { LAYER } from '../../../render/layers.js';
 import { makeConeMesh } from '../../../render/shaders/cone.js';
 import { lampHead } from '../../../city/kits/street.js';
-import { EL } from '../../../world/plan.js';
+import { EL, districtAt } from '../../../world/plan.js';
 
 // The city's lamps (lane O1): ~650 posts, hung lamps under the el; far too
 // many for a cone, a rain entry and a light each. So a budget, dealt to the
@@ -20,6 +20,7 @@ import { EL } from '../../../world/plan.js';
 const N_CONES = 30;
 const CONE_HALF = 0.42, LIGHT_ANGLE = 0.85, LIGHT_PENUMBRA = 0.95;
 const DEAL = 0.25;
+const WARM = new THREE.Color(1.0, 0.76, 0.46), WHITE = new THREE.Color(1, 1, 1);   // [O1c] the Hill's amber globes
 
 export default {
   name: 'lamps', order: 50, tick: 40,
@@ -29,7 +30,10 @@ export default {
     const el = stage.part('el');
     const all = C.lamps.map((l) => {
       const head = lampHead(l);
-      return { ...l, src: l, head, on: true, dead: false, _k: 1, cone: null, entry: null, height: head.y * 0.98 / Math.cos(0.3), kind: l.kind };
+      // [O1c] a warmer Hill: its globes burn amber - the pool under each real light warm (the
+      // ink keeps a saturated light's colour on the wet; the colour measure holds it under 2 %)
+      const warm = districtAt(l.x, l.z).id === 'hill' && !l.quay && !l.bridge;
+      return { ...l, src: l, head, on: true, dead: false, _k: 1, cone: null, entry: null, height: head.y * 0.98 / Math.cos(0.3), kind: l.kind, warm };
     });
     // the el's hung lamps: under the deck's middle every other span
     if (el) {
@@ -158,6 +162,7 @@ export default {
             s.spot.target.position.copy(l.head).addScaledVector(l.axis || _down, 6); s.spot.target.position.y = 0;
             s.spot.target.updateMatrixWorld();
             s.spot.angle = l.hanging ? 0.62 : LIGHT_ANGLE; s.spot.penumbra = LIGHT_PENUMBRA; s.spot.distance = 26;
+            s.spot.color.copy(l.warm ? WARM : WHITE);   // [O1c]
           }
         }
         // the cones' strength (a lamp switched off goes dark at once); a cone

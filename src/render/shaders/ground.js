@@ -55,7 +55,12 @@ export function makeGroundMaterial(U, { paving = 0 } = {}) {
     // [O1b] uDryK: the dry ground's albedo against the puddles' (1: the base's,
     // its golden frames identical; the city's ink-and-pools street darkens it -
     // the cold play's finding 3, the grey camouflage wash)
-    { uPaving: { value: paving }, uDryK: { value: 1 } },
+    { uPaving: { value: paving }, uDryK: { value: 1 },
+      // [O1c] uNearK: the near field's grey wash (the storm sky in the rain-beaten water at the
+      // eye's feet) against the base's (1: unchanged, game one's frames identical; the city's is
+      // darker - the reference's black between the pools); uRedCut: a rect (x0, x1, z0, z1) where
+      // a red sign's column in the water is halved (Doyers Ln: its lanterns' red doubled in the wet)
+      uNearK: { value: 1 }, uRedCut: { value: new THREE.Vector4(0, 0, 0, 0) } },
   );
   const mat = new THREE.ShaderMaterial({
     name: paving ? 'NoirPavement' : 'NoirStreet',
@@ -88,6 +93,8 @@ export function makeGroundMaterial(U, { paving = 0 } = {}) {
       uniform sampler2D tRefl, tReflBlur, tNoise, tBrush;
       uniform float uTime, uPaving, uReflStrength;
       uniform float uDryK;   // [O1b]
+      uniform float uNearK;  // [O1c]
+      uniform vec4 uRedCut;  // [O1c]
       uniform vec2 uReflRemap;
       uniform int uGroundDebug;
       uniform float uFast;
@@ -544,6 +551,9 @@ export function makeGroundMaterial(U, { paving = 0 } = {}) {
                     * smoothstep( 0.3, 0.6, dash );
         // (a column's dashes cut crisp: a sliver is lit or it is a gap)
         float dashC = mix( dash, smoothstep( 0.3, 0.62, dash ), colMask );
+        // [O1c] (a red sign's column halved inside uRedCut)
+        float redCut = 1.0 - 0.5 * step( uRedCut.x, p.x ) * step( p.x, uRedCut.y ) * step( uRedCut.z, p.y ) * step( p.y, uRedCut.w );
+        colBlood *= redCut; colFire *= redCut;
         vec3 refl = colC * mix( 0.04, 1.0, dashC ) + colBlood * 0.35 * fleck
                   + colFire * mix( 0.02, 1.0, dash )
                   + colNeon * mix( 0.0, 1.0, dash )
@@ -568,7 +578,7 @@ export function makeGroundMaterial(U, { paving = 0 } = {}) {
         // rims; the horizontal-brush strokes printed 6:1 hard-edged streaks)
         float wash = nearMask( p, 4.4, 0.56 ) * nearW;
         float speck = smoothstep( 0.7, 0.74, texture2D( tNoise, p * vec2( 0.9, 1.3 ) + 6.1 ).a ) * nearW;
-        refl += uFogColor * ( 0.22 * wash + 0.45 * speck ) * ( 1.0 - coverage * puddle );
+        refl += uFogColor * ( 0.22 * wash * uNearK + 0.45 * speck ) * ( 1.0 - coverage * puddle );
         // the bottom edge (< ~5 m, the bottom ~20 % of the street view): the
         // reference's rain-beaten water is a GREY wash (~0.35 display) over
         // about half of it, and the black ink splatter reads as holes cut
@@ -581,7 +591,7 @@ export function makeGroundMaterial(U, { paving = 0 } = {}) {
           float washE = nearMask( p, 2.7, 0.515 ) * nearE;
           // (under a column too: its dash gaps print grey, not black, so a
           // column's foot is white ripple slivers on grey water)
-          refl += uFogColor * 0.4 * washE * ( 1.0 - coverage * puddle );
+          refl += uFogColor * 0.4 * washE * uNearK * ( 1.0 - coverage * puddle );
         }
         // ink blots are matte: nothing reflects in them
         refl *= ( 1.0 - 0.95 * blobs ) * ( 1.0 - 0.25 * joint );
