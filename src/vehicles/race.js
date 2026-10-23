@@ -94,6 +94,8 @@ export class Race {
   step(dt) {
     const G = this.G, R = G.city, hud = G.hud, W = this.W;
     this.site();
+    // (the frame rate's bed: &racego=1 - the race started under me at once)
+    if (this.state === 'idle' && this.cars.length && R && R.inCar && typeof location !== 'undefined' && new URLSearchParams(location.search).get('racego') && !this.bedDone) { this.bedDone = true; this.start(R.car); }
     for (const c of this.cars) if (c.v.driver && c.v.driver !== 'player') c.v.step(dt);
     else if (this.state !== 'run') { c.v.input.brake = 1; c.v.input.throttle = 0; c.v.step(dt); }
     if (this.fade) {
