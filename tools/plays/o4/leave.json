@@ -1,20 +1,86 @@
 {
- "about": "[O4] Walking off a street fight (the brief's: they do not chase for ever): the driver on me in the open; I run (Shift) south-east down the avenue - past 10 m 'He's coming.', a run of 30 m and he gives up ('He's gone.'), the fight left. By real input.",
- "url": "/?mute=1&o4stay=1&start=o4.brawl1",
- "size": [1280, 800],
+ "about": "[O4] Walking off a street fight (the brief's: they do not chase for ever): the driver on me in the open; I run (Shift) south-east down the avenue - past 10 m 'He's coming.', a run of 30 m and he gives up ('He's gone.'), the fight left, he walks off; [O4] after the critic: on to the next fight (two men), never back to the start of the one I left. By real input.",
+ "url": "/?mute=1&start=o4.brawl1",
+ "size": [
+  1280,
+  800
+ ],
  "out": "shots/play/leave",
  "steps": [
-  { "until": "G.state === 'title' && !!document.querySelector('#title .opt[data-k=begin]')", "timeout": 60000 },
-  { "wait": 1200 },
-  { "clickOn": "#title .opt[data-k=begin]", "taken": "G.scenes.current && G.scenes.current.id === 'o4'", "retries": 4 },
-  { "until": "G.scenes.current && G.scenes.current.id === 'o4' && G.scenes.beat === 'brawl1' && G.crowd.active && !G.failing && document.pointerLockElement === N.renderer.domElement", "timeout": 30000 },
-  { "eval": "(window.__lv = [], G.on('crowd:end', (e) => window.__lv.push(e.result)), N.hud.teach.dismiss && N.hud.teach.dismiss(), 1)" },
-  { "down": "ShiftLeft" },
-  { "walk": [[4, 12], [10, 22], [16, 27.5], [16.5, 19]], "timeout": 14000 },
-  { "up": "ShiftLeft" },
-  { "eval": "({ run: G.crowd.run, warn: G.hud.warnText, ends: window.__lv, me: [+N.controller.pos.x.toFixed(1), +N.controller.pos.z.toFixed(1)], him: G.crowd.men.map((m) => [m.state, +m.c.pos.x.toFixed(1), +m.c.pos.z.toFixed(1)]) })" },
-  { "until": "window.__lv.includes('left')", "timeout": 4000 },
-  { "expect": "N.hud.lastSay === 'He’s gone.'" },
-  { "eval": "({ ends: window.__lv, say: N.hud.lastSay })" }
+  {
+   "until": "G.state === 'title' && !!document.querySelector('#title .opt[data-k=begin]')",
+   "timeout": 60000
+  },
+  {
+   "wait": 800
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]",
+   "taken": "G.scenes.current && G.scenes.current.id === 'o4'",
+   "retries": 4
+  },
+  {
+   "until": "G.scenes.current && G.scenes.beat === 'brawl1' && G.crowd.active && G.crowd.seen() && !G.failing && document.pointerLockElement === N.renderer.domElement",
+   "timeout": 30000
+  },
+  {
+   "eval": "(window.__lv = [], G.on('crowd:end', (e) => window.__lv.push(e.result)), N.hud.teach.dismiss && N.hud.teach.dismiss(), 1)"
+  },
+  {
+   "down": "ShiftLeft"
+  },
+  {
+   "walk": [
+    [
+     4,
+     12
+    ],
+    [
+     10,
+     22
+    ],
+    [
+     16,
+     27.5
+    ],
+    [
+     16.5,
+     19
+    ]
+   ],
+   "timeout": 14000
+  },
+  {
+   "up": "ShiftLeft"
+  },
+  {
+   "eval": "({ run: G.crowd.run, warn: G.hud.warnText, ends: window.__lv, me: [+N.controller.pos.x.toFixed(1), +N.controller.pos.z.toFixed(1)], him: G.crowd.men.map((m) => [m.state, +m.c.pos.x.toFixed(1), +m.c.pos.z.toFixed(1)]) })"
+  },
+  {
+   "until": "window.__lv.includes('left')",
+   "timeout": 4000
+  },
+  {
+   "expect": "N.hud.lastSay === 'He\u2019s gone.'"
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "eval": "({ obj: G.hud.objectiveText, him: G.crowd.men.map((m) => [m.state, !!m.off, !!m.removed, +Math.hypot(m.c.pos.x - G.eye.x, m.c.pos.z - G.eye.z).toFixed(1)]) })"
+  },
+  {
+   "expect": "G.crowd.men.every((m) => m.off || m.removed)"
+  },
+  {
+   "shot": "he_walks_off"
+  },
+  {
+   "until": "G.scenes.beat === 'brawl2' && G.crowd.active",
+   "timeout": 9000
+  },
+  {
+   "expect": "G.scenes.beat === 'brawl2'"
+  }
  ]
 }

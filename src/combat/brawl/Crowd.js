@@ -4,6 +4,7 @@ import { cued } from '../../game/BrawlCue.js';
 import { FightCards } from '../../ui/fightCards.js';
 import { MEN, BIG } from './kinds.js';
 import { EdgeInk } from './ink.js';
+import { arms } from '../money.js';
 
 // [O4] The crowd brawl (docs/briefs/O4_COMBAT.md §1): one fist fight for one
 // to four men in the open city - a street, a bar, the gym's ring. Built on
@@ -48,7 +49,16 @@ import { EdgeInk } from './ink.js';
 // 'One more and you're down.' a second first, always) - the fail, by the
 // place's onDown (a cop's fight: 'Hands up.'). Walking off: in the open
 // (no bounds) they follow; a run of 10 m 'He's coming.', of 30 m they give up
-// ('He's gone.') and the fight is left.
+// ('He's gone.') and the fight is left: they walk off. The wheel draws a gun
+// I own (draw()): the fight is over - they run, the city's answer is its
+// own (the 'crime' event: lane O3's heat); a round finds a man running.
+//
+// [O4] after the critic: the men wait for the fade and the place's card;
+// the first big blow (the cue) not before 5 s of the fight; the cards one at
+// a time, a gap between two, never while a man is in his blow, and a card
+// up goes when a cue comes; A / D cut a blow's hold short (a hop out of a
+// stagger: the dodge acts on the press); a thing is offered by its middle,
+// in reach of where I stand, and the soft lock lets my eye rest on it.
 export const CROWD = {
   me: { jab: 5, heavy: 15, counter: 1.5, back: 1.25, combo: [1, 1, 1.15, 1.3, 1.3], comboGap: 0.55, into: 6 },
   hold: { heavy: 0.25, auto: 0.6 },
@@ -59,6 +69,16 @@ export const CROWD = {
   ring: { r: 2.5, rMin: 2.1, rMax: 3.0, sep: 0.95, near: 1.35, maxIn: 2, stepGap: 0.75, bigGap: 1.5, unseen: 0.5 },
   reach: 1.9, cone: 0.62, pick: 0.85, sticky: 0.2, keep: 1.05,
   stun: 1.0, coverAfter: 4, cover: 0.9, hurtMax: 0.25, jammed: 0.25,
+  // (a hop out of a blow's hold after this long: the flinch reads, the dodge acts; out of my own blow after this)
+  hurtHop: 0.04, hurtAct: 0.1, blowHop: 0.03,
+  // the fight's opening: no cued blow before firstCue s of it (the first man walks in); the first in after firstIn
+  firstCue: 5.0, firstIn: 2.0,
+  // the cards: one at a time, gap s between two (from the last one's start), the first at first s
+  card: { gap: 5.5, first: 0.8 },
+  // a thing (a bottle, a chair): taken within reach m of where I stand (its middle), within cone rad of where I look
+  take: { reach: 1.5, cone: 0.8 },
+  // the men going off after the fight (left: they walk; a gun drawn: they run); gone past far m or after secs
+  off: { walk: 1.4, run: 4.6, far: 26, secs: 10 },
   warnOn: 30, warnOff: 40, read: 1.0,
   leave: { warn: 10, gone: 30 },
   getUp: { after: 3.0, hp: 0.25 },
@@ -112,7 +132,19 @@ export class Crowd {
   }
   get hands() { return this.game.player.hands; }
   get controller() { return this.game.controller; }
-  get cards() { return this._cards || (this._cards = new FightCards(this.game.hud)); }
+  get cards() {
+    if (this._cards) return this._cards;
+    const F = this._cards = new FightCards(this.game.hud);
+    // [O4] after the critic: the objective line over the cue's ink (the black half swallowed it)
+    if (typeof document !== 'undefined' && !document.getElementById('o4crowdcss')) {
+      const st = document.createElement('style'); st.id = 'o4crowdcss';
+      st.textContent = '#hud .kobj { z-index: 3; }';
+      document.head.appendChild(st);
+    }
+    return F;
+  }
+  // [O4] after the critic: his name and bar a line under the objective (they shared one and overprinted)
+  barDown() { const el = this._cards && this._cards.hbEl; if (el && el.style.top !== '68px') el.style.top = '68px'; }
   // (the hands' clips aim the fist at the man I face: player/clips/fight.js aim())
   get c() { return this.target ? this.target.c : null; }
 
@@ -125,6 +157,9 @@ export class Crowd {
     this.rng = G.stage.rng.fork(this.cfg.seed);
     this.active = true;
     this.result = null; this.done = false; this.timers = []; this.breakAt = null; this.run = 0; this.lastHurt = null; this.lastCue = null; this.leaveWarn = false;
+    // (the fight's own clock once the place can be seen: the fade lifted, the card gone; the last card's start on it)
+    this.liveT = 0; this.cardAt = -99; this.drawnGun = null;
+    if (!this._shotHook && G.on) { this._shotHook = true; G.on('shot', () => this.shotAt()); }
     this.stats = fresh();
     this.T = 0; this.RT = 0;
     this.cue = null; G.worldK = 1;
@@ -140,6 +175,8 @@ export class Crowd {
     this.men = [];
     for (const spec of this.cfg.men || []) this.add(spec);
     this.target = this.men[0] || null;
+    // (the first man walks in: nobody steps in before firstIn of the fight seen)
+    this.men.forEach((m, i) => { m.next = Math.max(m.next, CROWD.firstIn + i * 0.6); });
     // my body: the street fight's footwork and the soft lock
     const C = this.controller;
     C.setMode('crowd', { target: () => this.lockPoint(), free: () => this.free(), bounds: () => this.cfg.bounds, ease: 0.25 });
@@ -149,6 +186,7 @@ export class Crowd {
     this.edge = this.edge || new EdgeInk(G.hud);
     this.edge.clear();
     this.cards.health(this.target ? this.target.hp / this.target.max : null, this.target ? this.target.name : '', true);
+    this.barDown();
     // the things in reach: E takes one (the place lists them)
     this.thingHandles = [];
     for (const it of this.cfg.things || []) this.offerThing(it);
@@ -199,12 +237,19 @@ export class Crowd {
     G.emit('crowd:stop', { why, result: this.result });
   }
   // (the men off the stage: a scene's setup clears them, a retry spawns them again)
-  clearMen() { const G = this.game; for (const m of this.men) if (m.c) { this.colOn(m, true); G.cast.remove(m.c); } this.men = []; this.target = null; }
+  clearMen() { const G = this.game; for (const m of this.men) if (m.c && !m.removed) { this.colOn(m, true); G.cast.remove(m.c); } this.men = []; this.target = null; this.offN = 0; }
 
   // ---- per step: my input (Game.pre: an input acts on the step it arrives) -------------
   inputStep(dt) {
     if (!this.active || this.game.failing) return;
     this.RT += dt;
+    // [O4] after the critic (the wheel did nothing in a fight, with no word why): the wheel
+    // draws a gun I own - the fist fight is over (draw())
+    const w = this.game.mouse && this.game.mouse.wheel;
+    if (w && this.cfg.draw !== false && !this.done) {
+      const L = arms(this.game).list().filter((g) => g !== 'fists');
+      if (L.length) { this.game.mouse.wheel = 0; this.draw(w > 0 ? L[0] : L[L.length - 1]); return; }
+    }
     this.pickTarget();
     this.input(dt);
     if (this.cue) this.stepCue(dt);
@@ -212,9 +257,12 @@ export class Crowd {
 
   // ---- per step: the world (Game.post) ---------------------------------------------------
   update(dt, wdt = dt) {
+    // (the men going off after a fight: walking away, running from a gun)
+    if (this.offN) this.stepOff(wdt);
     if (!this.active) return;
     const G = this.game;
     this.T += wdt;
+    if (this.seen()) this.liveT += wdt;
     this.stats.time += wdt;
     G.health.sinceHit = 0;
     if (this._cards) { this._cards.tick(dt); if (this.target) this._cards.health(Math.max(0, this.target.hp) / this.target.max, this.target.name); }
@@ -233,6 +281,15 @@ export class Crowd {
     this.bumps();
     this.cardsStep(dt);
     this.endCheck(dt);
+  }
+
+  // [O4] after the critic: the place can be seen - the fade has lifted and its card has gone
+  // (the men wait for it: a fight never starts under the black)
+  seen() {
+    const G = this.game, S = G.scenes;
+    if (G.shotMode) return true;
+    if (S && (S.trans || (S.fadeK || 0) > 0.05)) return false;
+    return !((G.hud && G.hud.cardT) > 0.7);
   }
 
   // ---- the man I face --------------------------------------------------------------------
@@ -261,6 +318,9 @@ export class Crowd {
   lockPoint() {
     const m = this.target;
     if (!m || !this.standing(m) || this.free()) return null;
+    // [O4] (my eye on a thing I can take - its prompt up: the lock lets it rest there)
+    const cur = this.game.interact && this.game.interact.current;
+    if (cur && this.thingHandles && this.thingHandles.includes(cur)) return null;
     const p = m.c.bones && m.c.bones.chest ? _d.setFromMatrixPosition(m.c.bones.chest.matrixWorld) : _d.set(m.c.pos.x, 1.4, m.c.pos.z);
     const lp = this._lp || (this._lp = { x: p.x, y: p.y, z: p.z, pull: 1 });
     const k = Math.min(1, (this.T - (this.switchT ?? -9)) / 0.2);
@@ -297,12 +357,18 @@ export class Crowd {
   // ---- my side ---------------------------------------------------------------------------
   can(what) {
     const me = this.me, a = me.act, t = me.t;
-    if (a === 'hurt' || a === 'grab') return false;
+    // [O4] after the critic (two dodges held 150 and 248 ms behind a blow's hold): A / D
+    // cut a hurt short once the flinch has read - a hop out of a stagger
+    // cut a hurt short once the flinch has read - a hop out of a stagger; a fist or the
+    // guard a beat later (the blow that found me still costs me that beat)
+    if (a === 'hurt') return what === 'hop' ? t >= CROWD.hurtHop : t >= CROWD.hurtAct;
+    if (a === 'grab') return false;
     if (a === 'idle' || a === 'block') return what !== 'block' || a === 'idle';
     if (what === 'punch') return a !== 'bounce' || me.bounceT <= 0;
     if (a === 'hop') return what === 'block' ? t >= 0.08 : what === 'hop' ? this.T - me.lastHop >= CROWD.hop.again && t >= CROWD.hop.dur : false;
-    if (a === 'jab' || a === 'wind' || a === 'heavy' || a === 'swing') return what === 'hop' || what === 'block' ? t >= 0.06 : false;
-    if (a === 'bounce') return me.bounceT <= 0;
+    if (a === 'jab' || a === 'wind' || a === 'heavy' || a === 'swing') return what === 'hop' ? t >= CROWD.blowHop : what === 'block' ? t >= 0.06 : false;
+    // (a fist off his guard: the hop at once, the next punch after its moment)
+    if (a === 'bounce') return what === 'hop' || me.bounceT <= 0;
     return false;
   }
 
@@ -317,6 +383,8 @@ export class Crowd {
     M.f = hurt || hopping ? 0 : (G.held('KeyW') ? 1 : 0) - (G.held('KeyS') && (me.lastHopKey === 'KeyS' && this.T - me.lastHop > 0.12) ? 1 : 0);
     M.s = hurt || hopping ? 0 : (circle('KeyD') ? 1 : 0) - (circle('KeyA') ? 1 : 0);
     if (me.act === 'wind' || me.act === 'block') { M.f *= 0.5; M.s *= 0.5; }
+    // [O4] after the critic: while a held card stops the clock my feet stop with it
+    if ((G.crawl ?? 1) < 1) { M.f = 0; M.s = 0; }
     // ---- the buttons: each press a jab at once; held, the heavy
     for (const code of ['Mouse0', 'Mouse2']) {
       if (G.pressed(code)) { me.btn[code] = { age: 0, t: 0, down: G.held(code) && !G.released(code), used: false, wound: false, at: this.RT }; this.stats.presses++; }
@@ -346,6 +414,7 @@ export class Crowd {
       if (b.age > CROWD.buffer) { b.used = true; continue; }
       if (!this.can('punch')) continue;
       b.used = true;
+      if (me.act === 'hurt') me.stun = 0;
       this.flushContact();
       if (this.cue) this.cueAct('punch');
       const arm = code === 'Mouse0' ? 'L' : 'R';
@@ -354,17 +423,17 @@ export class Crowd {
       this.stats.latency.length < 200 && this.stats.latency.push(+(this.RT - b.at).toFixed(3));
       return;
     }
-    if (hurt) return;
+    // ---- a hop (the dodge): before all else - out of a blow's hold, off his guard, out of my own blow
+    const k = me.buf;
+    if (k && !this.free()) {
+      if (this.cue && this.cueRefuse(k.code)) me.buf = null;
+      else if (this.can('hop')) { me.buf = null; if (me.act === 'hurt') me.stun = 0; this.hop(k.code); return; }
+    } else if (k && this.free()) me.buf = null;
+    if (hurt && !this.can('block')) return;
     // ---- SPACE held: the block
     const space = G.held('Space');
     if (space && me.act !== 'block' && this.can('block')) { if (this.cue) this.cueAct('block'); this.block(true); return; }
     if (!space && me.act === 'block') this.block(false);
-    // ---- a hop (the dodge)
-    const k = me.buf;
-    if (k && !this.free()) {
-      if (this.cue && this.cueRefuse(k.code)) { me.buf = null; return; }
-      if (this.can('hop')) { me.buf = null; this.hop(k.code); }
-    } else if (k && this.free()) me.buf = null;
   }
 
   // a blow of mine whose contact has not come yet, sent home now (a new press)
@@ -567,10 +636,36 @@ export class Crowd {
   }
 
   // ---- what I hold -----------------------------------------------------------------------
+  // [O4] after the critic (no prompt ever came: the point was the thing's foot - a
+  // chair's on the floor, a bottle's behind the counter's edge - measured from the
+  // eye in a narrow cone): the point is its middle (a bottle's body, a chair's
+  // seat), in reach of where I stand (take.reach, along the floor), in a wide cone
+  // of where I look (take.cone, left and right only: eye height and the lock's
+  // pitch do not matter); the interact system's own range and cone are only a gate
   offerThing(it) {
     const G = this.game;
-    const h = G.interact.add({ id: 'o4thing:' + (it.name || it.kind) + ':' + this.thingHandles.length, at: () => (it.available && !it.available() ? null : (it.object ? it.object.getWorldPosition(_a) : it.pos)), range: 1.9, cone: 0.55, prompt: 'take the ' + it.kind,
-      when: () => this.active && !this.me.holding && (this.me.act === 'idle' || this.me.act === 'block') && (!it.available || it.available()),
+    let off = null;
+    if (it.object) {
+      it.object.updateWorldMatrix(true, true);
+      const b = new THREE.Box3().setFromObject(it.object);
+      if (!b.isEmpty()) off = b.getCenter(V(0, 0, 0)).sub(it.object.getWorldPosition(V(0, 0, 0)));
+    }
+    const tp = V(0, 0, 0);
+    const at = () => {
+      if (it.available && !it.available()) return null;
+      if (!it.object) return it.pos || null;
+      it.object.getWorldPosition(tp);
+      return off ? tp.add(off) : tp;
+    };
+    const inReach = () => {
+      const p = at();
+      if (!p) return false;
+      const e = G.eye, C = this.controller, dx = p.x - e.x, dz = p.z - e.z, d = Math.hypot(dx, dz);
+      if (d > CROWD.take.reach) return false;
+      return d < 0.4 || Math.abs(wrap(Math.atan2(dx, dz) - Math.atan2(-Math.sin(C.yaw), -Math.cos(C.yaw)))) <= CROWD.take.cone;
+    };
+    const h = G.interact.add({ id: 'o4thing:' + (it.name || it.kind) + ':' + this.thingHandles.length, at, range: 3.2, cone: 1.45, prompt: 'take the ' + it.kind,
+      when: () => this.active && !this.me.holding && (this.me.act === 'idle' || this.me.act === 'block') && (!it.available || it.available()) && inReach(),
       onUse: () => this.take(it) });
     this.thingHandles.push(h);
   }
@@ -624,6 +719,8 @@ export class Crowd {
     const engaged = live.filter((m) => m.state === 'in' || m.state === 'atk');
     const maxIn = this.cfg.maxIn ?? Math.min(CROWD.ring.maxIn, live.length);
     if (this.me.act === 'down' || this.game.failing) return;
+    // (nobody steps in while the place cannot be seen yet: the fade, its card)
+    if (!this.seen()) return;
     // (a man out of my sight bides his time: he comes, but not as often)
     for (const m of live) if (m.state === 'ring') m.next -= dt * (this.seenBy(m) ? 1 : CROWD.ring.unseen);
     if (engaged.length >= maxIn || this.T - this.lastIn < CROWD.ring.stepGap) return;
@@ -644,7 +741,7 @@ export class Crowd {
     const mix = { ...K.mix };
     if (!seen) for (const k of Object.keys(mix)) if (!BIG.test(k)) delete mix[k];
     // (never two big ones on me together: a second man throws a small one, or waits)
-    if (this.T - this.lastBig < CROWD.ring.bigGap || this.men.some((o) => o !== m && o.state === 'atk' && cued(o.clip) && !o.done)) for (const k of Object.keys(mix)) if (cued(k)) delete mix[k];
+    if (this.T - this.lastBig < CROWD.ring.bigGap || this.liveT < CROWD.firstCue || this.men.some((o) => o !== m && o.state === 'atk' && cued(o.clip) && !o.done)) for (const k of Object.keys(mix)) if (cued(k)) delete mix[k];
     let tot = 0; for (const v of Object.values(mix)) tot += v;
     if (tot <= 0) return { clip: null };
     let x = r.next() * tot, clip = 'br_jab';
@@ -947,9 +1044,12 @@ export class Crowd {
     const remain = Math.max(0.02, m.marks.contact - m.clipT);
     let held = false, teach = null;
     const K = G.hud && G.hud.kit, untaught = K && K.taught && !K.taught().dodge;
+    // [O4] after the critic (the block card stood over a live cue - it was up, and the dodge's
+    // waited behind it): any other card goes, at once, before the cue's own
+    if (K && K.teachCur && K.teachCur.id !== 'dodge' && G.hud.teach && G.hud.teach.dismiss) G.hud.teach.dismiss();
     if (untaught && G.hud.teach && !G.shotMode) { teach = G.hud.teach('dodge', CROWD_CARDS.dodge, { hold: true, holdMax: 6, until: () => !this.cue || this.cue.done }); held = !teach.done; }
     else if (this.nudge.cueAgain && G.hud.teach) { this.nudge.cueAgain = false; this.nudge.missedCues = 0; G.hud.teach.again('dodge', CROWD_CARDS.dodge, { hold: false, secs: 2.4, until: () => !this.cue || this.cue.done }); }
-    if (!held && G.hud.kit && G.hud.kit.teachCur && G.hud.kit.teachCur.id !== 'dodge' && G.hud.teach.dismiss) G.hud.teach.dismiss();
+    if (teach && teach.shown) this.cardAt = this.T;
     const win = this.cueW + CROWD.cue.grace;
     const k = Math.max(0.06, Math.min(1, remain / win));
     this.cue = { m, A, clip: m.clip, side: m.cueSide, t: 0, win: this.cueW, k, vis: 0, held, teach, answer: null, done: false, atk: m.atk };
@@ -1239,20 +1339,106 @@ export class Crowd {
     if (on && !this.warned) { this.warned = true; this.warnedAt = this.T; G.hud.warn('One more and you’re down.'); }
     else if (!on && this.warned) { this.warned = false; G.hud.warn(null); }
   }
-  // the kit's cards, at their first need (once a save); the nudge once each
+  // the kit's cards, at their first need (once a save); the nudge once each.
+  // [O4] after the critic (four cards in 20 s, three in the first 8, while men threw):
+  // one at a time, a gap of card.gap s between two, and only in a safe second -
+  // nobody in his blow, nobody stepping in, no cue (a card up goes when a cue
+  // comes); the hitting card first, as the first man walks in; the dodge's is
+  // the cue's own (startCue), and no cue comes in the first firstCue s
   cardsStep() {
     const G = this.game, T = G.hud && G.hud.teach;
-    if (!T || G.shotMode || this.cue || G.failing) return;
+    if (!T || G.shotMode || this.cue || G.failing || !this.seen()) return;
     const K = G.hud.kit, taught = K && K.taught ? K.taught() : {};
-    // the opening: the first time a man I face is open (a miss, a breath), a second in at least
+    if (K && K.teachCur) return;
+    if (this.T - this.cardAt < CROWD.card.gap || this.liveT < CROWD.card.first) return;
+    if (this.men.some((o) => this.standing(o) && (o.state === 'atk' || o.state === 'in'))) return;
+    const show = (id, text, opts, again = false) => { const h = again ? T.again(id, text, opts) : T(id, text, opts); if (h && h.shown) this.cardAt = this.T; return h; };
     const m = this.target;
-    if (!taught.opening && m && m.openT > 0.25 && this.T > 1.2 && this.seenBy(m)) { T('opening', CROWD_CARDS.opening, { secs: 3.2, until: false }); return; }
+    // the hitting card: in the first safe second (the first man walking in), or the first time one I face is open
+    if (!taught.opening) { show('opening', CROWD_CARDS.opening, { secs: 3.2, until: false }); return; }
     // the block: after his jab found me
-    if (!taught.block && this.lastHurt && this.lastHurt.why === 'jab') { T('block', CROWD_CARDS.block, { secs: 3.4, until: 'Space' }); return; }
-    // the heavy: the first time a man is stunned or open long, for a man who has never loaded one
-    if (!taught.heavy && taught.opening && !this.stats.heavies && m && (m.state === 'stun' || m.missT > 0.5)) { T('heavy', CROWD_CARDS.heavy, { secs: 3.2, until: false }); return; }
+    if (!taught.block && this.lastHurt && this.lastHurt.why === 'jab') { show('block', CROWD_CARDS.block, { secs: 3.4, until: 'Space' }); return; }
+    // the heavy: once I have hit an opening, the first time a man is stunned or open long (for a man who has never loaded one)
+    if (!taught.heavy && this.nudge.opened && !this.stats.heavies && m && (m.state === 'stun' || m.missT > 0.5)) { show('heavy', CROWD_CARDS.heavy, { secs: 3.2, until: false }); return; }
     // the nudge: eight punches into the guard without one into an opening
-    if (this.nudge.guard >= 8 && !this.nudge.opened && !this.nudge.openAgain && taught.opening) { this.nudge.openAgain = true; T.again('opening', CROWD_CARDS.opening, { secs: 3.2, until: false }); }
+    if (this.nudge.guard >= 8 && !this.nudge.opened && !this.nudge.openAgain) { this.nudge.openAgain = true; show('opening', CROWD_CARDS.opening, { secs: 3.2, until: false }, true); }
+  }
+  // [O4] a gun out in a fist fight (the wheel): it is over - they see it and run (a cop
+  // too: the city's answer is lane O3's heat, fed by the 'crime' event); the gun in
+  // my hand, the gun kit's footwork (C gets low, RMB rises over cover)
+  draw(gun) {
+    const G = this.game;
+    if (!this.active || this.done) return false;
+    this.drawnGun = gun;
+    const cop = this.men.some((m) => m.kind === 'cop' && this.standing(m));
+    G.emit('crime', { kind: 'draw', by: 'player', at: { x: G.eye.x, z: G.eye.z }, cop, gun });
+    this.finish('drawn');
+    // (the fight's held guard off the hands: the gun's own hold)
+    const H = this.hands;
+    if (H.clips && H.clips.some((c) => c.hold)) { H.clips = H.clips.filter((c) => !c.hold); H.keyMemo = null; if (H.snapshot) H.snapshot(0.18); }
+    arms(G).to(gun);
+    this.controller.setMode('gun', { crouch: false });
+    return true;
+  }
+  // a man going off after the fight: walking away (he gave up), running (a gun is out)
+  goOff(m, run) {
+    const c = m.c;
+    m.state = 'gone'; m.t = 0; m.clip = null; m.h = null; m.marks = null; m.aim = null; m.loco = null; m.openT = 0;
+    m.off = { run, t: 0, ang: null };
+    try { c.fig.anim.setTimeScale(1); c.fig.anim.setOverlay(null, 0.12); } catch (e) { /* next step */ }
+    try { c.setState(run ? 'run' : 'walk', 0.25); } catch (e) { c.setState('br_stepB', 0.2); }
+    this.offN = (this.offN || 0) + 1;
+  }
+  stepOff(dt) {
+    const G = this.game, e = G.eye, S = G.stage, O = CROWD.off;
+    let n = 0;
+    for (const m of this.men) {
+      if (!m.off || m.removed) continue;
+      n++;
+      const F = m.c.fig, Q = m.off;
+      Q.t += dt;
+      // (away from me, the way he faces: a little to one side if a thing stands there)
+      if (Q.ang == null) Q.ang = Math.atan2(F.pos.x - e.x, F.pos.z - e.z);
+      const sp = Q.run ? O.run : O.walk;
+      const x0 = F.pos.x, z0 = F.pos.z;
+      const p = _c.set(x0 + Math.sin(Q.ang) * sp * dt, 0, z0 + Math.cos(Q.ang) * sp * dt);
+      S.colliders.resolve(p, (F.collider ? F.collider.r : 0.35), F.collider);
+      if (Math.hypot(p.x - x0, p.z - z0) < sp * dt * 0.3) Q.ang += (m.id % 2 ? 1 : -1) * 0.9 * dt * 3;
+      F.pos.x = p.x; F.pos.z = p.z;
+      if (m.c.object) { m.c.object.position.x = F.pos.x; m.c.object.position.z = F.pos.z; }
+      const dy = wrap(Q.ang - F.yaw);
+      F.yaw = wrap(F.yaw + Math.sign(dy) * Math.min(Math.abs(dy), 6 * dt));
+      m.c.speed = sp;
+      if (Q.t > O.secs || Math.hypot(F.pos.x - e.x, F.pos.z - e.z) > O.far) { m.removed = true; m.off = null; this.colOn(m, true); G.cast.remove(m.c); }
+    }
+    this.offN = n;
+  }
+  // a round fired (the 'shot' event) at a man running from my gun: he goes down where he ran
+  shotAt() {
+    const G = this.game, cam = G.camera;
+    const run = this.men.filter((m) => m.off && m.off.run && !m.removed);
+    if (!run.length) return;
+    const o = cam.position, d = _a.set(0, 0, -1).transformDirection(cam.matrixWorld);
+    const L = Math.hypot(d.x, d.z) || 1e-6;
+    let best = null, bt = Infinity;
+    for (const m of run) {
+      const p = m.c.pos;
+      const t = ((p.x - o.x) * d.x + (p.z - o.z) * d.z) / (L * L);
+      if (t <= 0 || t > 60) continue;
+      const hx = o.x + d.x * t - p.x, hz = o.z + d.z * t - p.z, y = o.y + d.y * t - (p.y || 0);
+      if (Math.hypot(hx, hz) < 0.34 && y > 0.1 && y < 1.85 && t < bt) { bt = t; best = m; }
+    }
+    if (!best) return;
+    const at = o.clone().addScaledVector(d, bt);
+    const wall = G.rays.raycast(o, d.clone(), bt * 0.98);
+    if (wall) return;
+    best.off = null; best.state = 'out'; best.removed = false;
+    if (G.fx && G.fx.bloodFx) G.fx.bloodFx.hit(at, d.clone(), { strength: 1.1, rays: G.rays });
+    best.c.ko('deathBack');
+    this.colOn(best, false);
+    this.sfx('bodyFloor', V(best.c.pos.x, 0.2, best.c.pos.z), { k: 1 });
+    G.emit('crime', { kind: 'shot', by: 'player', at: { x: best.c.pos.x, z: best.c.pos.z }, cop: best.kind === 'cop' });
+    G.emit('crowd:shot', { man: best.id, kind: best.kind });
   }
   // won, lost, left
   endCheck(dt) {
@@ -1289,7 +1475,12 @@ export class Crowd {
     this.result = result;
     if (this.leaveWarn) { this.leaveWarn = false; G.hud.warn(null); }
     if (this.warned) { this.warned = false; G.hud.warn(null); }
-    if (result === 'left') { const n = this.men.filter((m) => this.standing(m)).length; for (const m of this.men) if (this.standing(m)) { m.state = 'gone'; this.toRing(m); m.state = 'gone'; } if (G.hud.say) G.hud.say(n > 1 ? 'They’re gone.' : 'He’s gone.', 2.2, { always: true }); }
+    // (left: they give up and walk off; a gun drawn: they run)
+    if (result === 'left' || result === 'drawn') {
+      const up = this.men.filter((m) => this.standing(m) || m.state === 'rise'), n = up.length;
+      for (const m of up) { if (m.cueing) this.endCue('gone'); this.goOff(m, result === 'drawn'); }
+      if (G.hud.say) G.hud.say(result === 'drawn' ? (n > 1 ? 'They ran.' : 'He ran.') : (n > 1 ? 'They’re gone.' : 'He’s gone.'), 2.2, { always: true });
+    }
     G.emit('crowd:end', { result, stats: this.stats });
     const cb = this.cfg.onEnd;
     this.stop(result);

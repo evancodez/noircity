@@ -1,0 +1,147 @@
+{
+ "about": "[O4] after the critic: the diner's room answers - walk to the counter, look at a bottle: 'take the bottle', E takes it, it breaks on a man; walk to a chair at the window, look at it: 'take the chair', E takes it (the men held in their ring for the walk; the bottle's swing live)",
+ "url": "/?mute=1&o4stay=1&start=o4.diner",
+ "size": [
+  1280,
+  800
+ ],
+ "out": "shots/o4/diner_take",
+ "steps": [
+  {
+   "until": "G.state === 'title' && !!document.querySelector('#title .opt[data-k=begin]')",
+   "timeout": 60000
+  },
+  {
+   "wait": 800
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]",
+   "taken": "G.scenes.current && G.scenes.current.id === 'o4'",
+   "retries": 4
+  },
+  {
+   "until": "G.scenes.beat === 'diner' && G.crowd.active && !G.failing",
+   "timeout": 30000
+  },
+  {
+   "eval": "(G.o4stay = true, G.crowd.hold = true, G.crowd.cfg.things.map(t=>{const v=new N.THREE.Vector3();t.object.getWorldPosition(v);return [t.kind,+v.x.toFixed(2),+v.y.toFixed(2),+v.z.toFixed(2)]}))"
+  },
+  {
+   "until": "G.crowd.seen()",
+   "timeout": 8000
+  },
+  {
+   "name": "to the counter, by a bottle",
+   "walk": "[(()=>{const p=(()=>{const t=G.crowd.cfg.things.filter(t=>t.kind==='bottle'&&(!t.available||t.available()))[0];const v=new N.THREE.Vector3();t.object.getWorldPosition(v);return v})();return [p.x+0.75,p.z+-0.35]})()]",
+   "timeout": 7000,
+   "into": true
+  },
+  {
+   "look": "(()=>{const C=N.controller,e=G.eye,p=(()=>{const t=G.crowd.cfg.things.filter(t=>t.kind==='bottle'&&(!t.available||t.available()))[0];const v=new N.THREE.Vector3();t.object.getWorldPosition(v);return v})();p.y+=0.12;const look=Math.atan2(-Math.sin(C.yaw),-Math.cos(C.yaw));const a=Math.atan2(p.x-e.x,p.z-e.z);const r=Math.atan2(Math.sin(a-look),Math.cos(a-look));const wp=Math.atan2(p.y-e.y,Math.hypot(p.x-e.x,p.z-e.z));return [Math.round(-r/C.sensitivity),Math.round(-(wp-C.pitch)/C.sensitivity)]})()",
+   "steps": 6
+  },
+  {
+   "wait": 350
+  },
+  {
+   "eval": "({t:+G.time.toFixed(1),me:[+G.eye.x.toFixed(2),+G.eye.z.toFixed(2)],prompt:G.hud.promptShown||'',holding:G.crowd.me&&G.crowd.me.holding?G.crowd.me.holding.kind:null,things:G.crowd.stats.things,landed:G.crowd.stats.landed,res:G.crowd.result,men:G.crowd.men.map(m=>[m.kind,m.state,Math.round(m.hp)])})"
+  },
+  {
+   "expect": "/take the bottle/.test(G.hud.promptShown||'')"
+  },
+  {
+   "shot": "take_bottle"
+  },
+  {
+   "key": "KeyE"
+  },
+  {
+   "wait": 700
+  },
+  {
+   "eval": "({t:+G.time.toFixed(1),me:[+G.eye.x.toFixed(2),+G.eye.z.toFixed(2)],prompt:G.hud.promptShown||'',holding:G.crowd.me&&G.crowd.me.holding?G.crowd.me.holding.kind:null,things:G.crowd.stats.things,landed:G.crowd.stats.landed,res:G.crowd.result,men:G.crowd.men.map(m=>[m.kind,m.state,Math.round(m.hp)])})"
+  },
+  {
+   "expect": "G.crowd.me.holding && G.crowd.me.holding.kind === 'bottle'"
+  },
+  {
+   "eval": "(G.crowd.hold = false, 1)"
+  },
+  {
+   "name": "on the nearest man",
+   "look": "(()=>{const C=N.controller,e=G.eye;const m=G.crowd.men.filter(m=>m.hp>0).sort((a,b)=>Math.hypot(a.c.pos.x-e.x,a.c.pos.z-e.z)-Math.hypot(b.c.pos.x-e.x,b.c.pos.z-e.z))[0];const look=Math.atan2(-Math.sin(C.yaw),-Math.cos(C.yaw));const a=Math.atan2(m.c.pos.x-e.x,m.c.pos.z-e.z);const r=Math.atan2(Math.sin(a-look),Math.cos(a-look));return [Math.round(-r/C.sensitivity),Math.round(C.pitch/C.sensitivity)]})()",
+   "steps": 4
+  },
+  {
+   "until": "(()=>{const e=G.eye;return G.crowd.men.some(m=>m.hp>0&&Math.hypot(m.c.pos.x-e.x,m.c.pos.z-e.z)<1.8)})()",
+   "timeout": 8000
+  },
+  {
+   "look": "(()=>{const C=N.controller,e=G.eye;const m=G.crowd.men.filter(m=>m.hp>0).sort((a,b)=>Math.hypot(a.c.pos.x-e.x,a.c.pos.z-e.z)-Math.hypot(b.c.pos.x-e.x,b.c.pos.z-e.z))[0];const look=Math.atan2(-Math.sin(C.yaw),-Math.cos(C.yaw));const a=Math.atan2(m.c.pos.x-e.x,m.c.pos.z-e.z);const r=Math.atan2(Math.sin(a-look),Math.cos(a-look));return [Math.round(-r/C.sensitivity),0]})()",
+   "steps": 2
+  },
+  {
+   "mouse": "click",
+   "button": "left",
+   "x": 640,
+   "y": 400
+  },
+  {
+   "wait": 900
+  },
+  {
+   "eval": "({t:+G.time.toFixed(1),me:[+G.eye.x.toFixed(2),+G.eye.z.toFixed(2)],prompt:G.hud.promptShown||'',holding:G.crowd.me&&G.crowd.me.holding?G.crowd.me.holding.kind:null,things:G.crowd.stats.things,landed:G.crowd.stats.landed,res:G.crowd.result,men:G.crowd.men.map(m=>[m.kind,m.state,Math.round(m.hp)])})"
+  },
+  {
+   "expect": "!G.crowd.me.holding && G.crowd.stats.landed >= 1"
+  },
+  {
+   "eval": "(G.crowd.hold = true, G.health.hp = 100, 1)"
+  },
+  {
+   "name": "to a chair at the window",
+   "walk": "[(()=>{const p=(()=>{const t=G.crowd.cfg.things.filter(t=>t.kind==='chair'&&(!t.available||t.available()))[0];const v=new N.THREE.Vector3();t.object.getWorldPosition(v);return v})();return [p.x+-0.7,p.z+0.0]})()]",
+   "timeout": 8000,
+   "into": true
+  },
+  {
+   "look": "(()=>{const C=N.controller,e=G.eye,p=(()=>{const t=G.crowd.cfg.things.filter(t=>t.kind==='chair'&&(!t.available||t.available()))[0];const v=new N.THREE.Vector3();t.object.getWorldPosition(v);return v})();p.y+=0.45;const look=Math.atan2(-Math.sin(C.yaw),-Math.cos(C.yaw));const a=Math.atan2(p.x-e.x,p.z-e.z);const r=Math.atan2(Math.sin(a-look),Math.cos(a-look));const wp=Math.atan2(p.y-e.y,Math.hypot(p.x-e.x,p.z-e.z));return [Math.round(-r/C.sensitivity),Math.round(-(wp-C.pitch)/C.sensitivity)]})()",
+   "steps": 6
+  },
+  {
+   "wait": 350
+  },
+  {
+   "eval": "({t:+G.time.toFixed(1),me:[+G.eye.x.toFixed(2),+G.eye.z.toFixed(2)],prompt:G.hud.promptShown||'',holding:G.crowd.me&&G.crowd.me.holding?G.crowd.me.holding.kind:null,things:G.crowd.stats.things,landed:G.crowd.stats.landed,res:G.crowd.result,men:G.crowd.men.map(m=>[m.kind,m.state,Math.round(m.hp)])})"
+  },
+  {
+   "expect": "/take the chair/.test(G.hud.promptShown||'')"
+  },
+  {
+   "shot": "take_chair"
+  },
+  {
+   "key": "KeyE"
+  },
+  {
+   "wait": 900
+  },
+  {
+   "eval": "({t:+G.time.toFixed(1),me:[+G.eye.x.toFixed(2),+G.eye.z.toFixed(2)],prompt:G.hud.promptShown||'',holding:G.crowd.me&&G.crowd.me.holding?G.crowd.me.holding.kind:null,things:G.crowd.stats.things,landed:G.crowd.stats.landed,res:G.crowd.result,men:G.crowd.men.map(m=>[m.kind,m.state,Math.round(m.hp)])})"
+  },
+  {
+   "expect": "G.crowd.me.holding && G.crowd.me.holding.kind === 'chair'"
+  },
+  {
+   "name": "look away: the prompt goes",
+   "look": [
+    900,
+    0
+   ],
+   "steps": 4
+  },
+  {
+   "eval": "({t:+G.time.toFixed(1),me:[+G.eye.x.toFixed(2),+G.eye.z.toFixed(2)],prompt:G.hud.promptShown||'',holding:G.crowd.me&&G.crowd.me.holding?G.crowd.me.holding.kind:null,things:G.crowd.stats.things,landed:G.crowd.stats.landed,res:G.crowd.result,men:G.crowd.men.map(m=>[m.kind,m.state,Math.round(m.hp)])})"
+  }
+ ]
+}

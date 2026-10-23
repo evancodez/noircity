@@ -16,24 +16,40 @@ function mesh(geo, mat, id, cast = true) { const m = new THREE.Mesh(geo, mat); m
 export function buildCounter(stage, { x, z, yaw = 0 }) {
   const g = new THREE.Group(); g.position.set(x, stage.surfaceY(x, z), z); g.rotation.y = yaw;
   const wood = std('o4Counter', { color: 0x1c1c1c, roughness: 0.8, surface: 'wood' });
-  const top = std('o4CounterTop', { color: 0x3a3a3a, roughness: 0.6, surface: 'wood' });
-  const id = allocInkId(4);
+  // ([O4] after the critic - a black smear on a dark box, the boxes unseen: the top
+  // pale, a pale felt under the gun, the boxes pasteboard white and big enough to read
+  // from where I stand, a pale board of pegs behind; the things a hand apart)
+  const top = std('o4CounterTop', { color: 0x8a8781, roughness: 0.6, surface: 'wood' });
+  const felt = std('o4Felt', { color: 0xd8d4ca, roughness: 0.95, surface: 'wood' });
+  const card = std('o4Pasteboard', { color: 0xe4ded0, roughness: 0.9, surface: 'wood' });
+  const band = std('o4Band', { color: 0x161616, roughness: 0.8, surface: 'wood' });
+  const peg = std('o4Pegboard', { color: 0x7c7a75, roughness: 0.9, surface: 'wood' });
+  const id = allocInkId(7);
   g.add(mesh(new THREE.BoxGeometry(2.2, 0.92, 0.62).translate(0, 0.46, 0), wood, id));
   g.add(mesh(new THREE.BoxGeometry(2.3, 0.05, 0.7).translate(0, 0.945, 0), top, id + 1));
   // the board behind (the stand-in of the shop's wall of guns)
-  g.add(mesh(new THREE.BoxGeometry(2.4, 1.6, 0.06).translate(0, 1.7, -0.62), wood, id + 2));
+  g.add(mesh(new THREE.BoxGeometry(2.4, 1.6, 0.06).translate(0, 1.7, -0.62), peg, id + 2));
+  // the felt under the gun
+  g.add(mesh(new THREE.BoxGeometry(1.05, 0.012, 0.42).translate(-0.55, 0.976, 0.04), felt, id + 3, false));
   const items = {};
   const lay = (kind, lx, lz, ry = 0) => {
     const o = buildProp(kind);
     o.position.set(lx, 0.97, lz); o.rotation.y = ry;
-    if (kind === 'shotgun') { o.rotation.set(0, ry, Math.PI / 2); o.position.y = 0.99; }
+    if (kind === 'shotgun') { o.rotation.set(0, ry, Math.PI / 2); o.position.y = 0.995; }
     g.add(o);
     return o;
   };
-  items.shotgun = lay('shotgun', -0.3, 0.05, Math.PI / 2 + 0.1);
-  items.shells = lay('shellBox', 0.55, 0.05, 0.3);
-  items.rounds = lay('shellBox', 0.85, -0.05, -0.2);
-  items.rounds.scale.set(0.8, 0.7, 0.8);
+  // a box of pasteboard, a dark band round it (its lettering), the count on the lid in rows
+  const boxOf = (lx, lz, ry, w, h, d, k) => {
+    const o = new THREE.Group(); o.position.set(lx, 0.97, lz); o.rotation.y = ry;
+    o.add(mesh(new THREE.BoxGeometry(w, h, d).translate(0, h / 2, 0), card, id + 4 + k));
+    o.add(mesh(new THREE.BoxGeometry(w + 0.004, h * 0.32, d + 0.004).translate(0, h * 0.5, 0), band, id + 4 + k, false));
+    g.add(o);
+    return o;
+  };
+  items.shotgun = lay('shotgun', -0.55, 0.05, Math.PI / 2 + 0.1);
+  items.shells = boxOf(0.25, 0.04, 0.25, 0.2, 0.11, 0.28, 0);
+  items.rounds = boxOf(0.85, -0.02, -0.2, 0.16, 0.08, 0.22, 1);
   stage.scene.add(g); g.updateMatrixWorld(true);
   const col = stage.colliders.addBox(x, z, 1.15, 0.36, yaw, 'counter');
   const back = stage.colliders.addBox(x - Math.sin(yaw) * 0.62, z - Math.cos(yaw) * 0.62, 1.2, 0.05, yaw, 'wall');

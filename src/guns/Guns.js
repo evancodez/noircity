@@ -720,8 +720,16 @@ export class Guns {
 
   // why I fell, in a few words (the retry says it)
   why() {
-    const L = this.lastKill, W = this.cfg.why || {};
+    let L = this.lastKill;
+    const W = this.cfg.why || {};
     if (!L) return W.default || 'Shot.';
+    // [O4] after the critic (75 of the damage came down behind the car, the last round as I
+    // rose, and the black said 'Up over the cover too long.'): the pose that took most of
+    // the last 6 s's damage names the fix, not the last round's alone
+    const P = this.mostHurt(6);
+    if (P === 'down' || P === 'down-open') L = { ...L, crouched: true, risen: false, bare: P === 'down-open' };
+    else if (P === 'risen') L = { ...L, crouched: true, risen: true };
+    else if (P === 'standing') L = { ...L, crouched: false, risen: false };
     if (L.rush && L.dist < 3.5) return W.rush || 'He walked right up to you.';
     if (L.reloading && !L.crouched) return W.reload || 'Reloading in the open.';
     if (L.flank || L.behind) return W.flank || 'Flanked.';
@@ -732,6 +740,15 @@ export class Guns {
     if (L.crouched) return W.angle || 'They had your angle.';
     if (L.moving) return W.moving || 'Shot in the open.';
     return W.open || 'Shot standing in the open.';
+  }
+
+  // [O4] the pose ('standing' | 'down' | 'down-open' | 'risen') that took the most damage in the last secs
+  mostHurt(secs = 6) {
+    const t0 = this.game.time - secs, by = {};
+    for (const e of this.events || []) if (e.what === 'hit' && e.t >= t0) by[e.pose] = (by[e.pose] || 0) + e.dmg;
+    let best = null, bd = 0;
+    for (const [k, v] of Object.entries(by)) if (v > bd) { bd = v; best = k; }
+    return best;
   }
 
   // ---- the teach cards (lane C1's hud.teach; the words are the rulebook's) ---------------------------------

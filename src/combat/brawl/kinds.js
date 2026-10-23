@@ -4,7 +4,7 @@
 // and their marks (src/cast/brawl/clips.js BR_ATTACKS: the tell, the strike,
 // the contact, the path a blow sweeps).
 //   cast     the cast kind (a costume, src/cast/kinds/o4_*.js)
-//   hp       his hit points (my jab 4, my heavy 15, a counter half again)
+//   hp       his hit points (my jab 5, my heavy 15, a counter half again: CROWD.me)
 //   speed    m/s on his feet in the ring
 //   tell     x the length of his blows (a drunk's 1.35: slow and wide)
 //   gap      s between his blows when he is the one in
