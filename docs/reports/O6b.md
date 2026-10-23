@@ -50,10 +50,42 @@ its blast, my car swapped when it is smoking past 3.0 or burning; the critic's
 own bot, `tools/lib/o6b_havoc.mjs`, a copy of his with E by look, was tried
 first and dropped: its straight line into a column gap stalls on the el's
 columns). The east kerb's five go up every run, at two or three blows each,
-in about three minutes. On the final code: RAMRUNS. The west kerb's tail rams
+in about three minutes. On the final code (the proof run, the machine at load 10-20): **nine of the ten wrecks** (all but the bed's lorry, left steaming), in 5.5 minutes, four cars taken, never a fail, every part at rest (doors on their faces). The runs before it on these numbers, with the driver as it then was: 7, 8, 7, 4 (a walk to a spare that did not arrive: the driver now walks again) - and one where the driver sat in a burning car until it went (it now gets out at once). The west kerb's tail rams
 and the driver's walks to a spare coupe are what the hands do worst: a pass
 ends when no car is left in reach. The bar is **seven wrecks of ten in one
-pass, never a fail** (left 4).
+pass, never a fail** (left 2).
+
+**The gate after the critic** (on the final code, the machine at load 8-20 and
+the GPU 65-100 % busy from other processes throughout):
+1. `npx vite build` after the merge: built.
+2. Golden: **game one's 40 identical**. The city's: six identical (tenements,
+   quay, gasworks, park, straight, clock); **re-taken**: `smash_wreck` (20 %:
+   the merge - O1b's streets, their boards, bulbs and colour - over the frame
+   last taken before it), `smash_ten` (24 %: the same, plus the spare coupe at
+   Centre St and the blasts' new numbers in the ten going up), `smash_bed`
+   (0.009 %: eight pixels), `city_station` 0.20 %, `city_grand_car` 0.05 %,
+   `city_broadway` 0.03 %, `city_elcorner` 0.02 % (a few pixels of the wet
+   street's reflections; no shape moved - the awnings are a draw of their own
+   now). All named, all accepted as this pass's.
+3. Errors: clean on the bed's `bed`, `ten`, `ten&ten=states`, `ten&ten=wrecks`,
+   `ten&ten=drive`, `tram`, `burn` and the city's `roam`, `ashore`,
+   `roam&at=docks` (four ran out their watchdog on the loaded machine the first
+   time; run again, clean). `ten&ten=parts` ran out its watchdog twice (300 and
+   400 s) - not dug into; its play (`o6b_parts.json`, the pad play) is clean in
+   `#errlog`. Every play's `#errlog` clean.
+4. The proofs, each run once on the final code: `o6b_ram` PASS (9 of 10),
+   `o6b_parts` PASS, `o6b_after` PASS, `o6b_awnshot` PASS, `o6b_awning` PASS,
+   `o6b_pad` PASS (after its steer was moved a breath earlier: a door lying flat
+   slows the car less, and the stick came after the sedan), `o6b_retry` PASS,
+   O6's `o6_fire` PASS; the critic's `ram_medium` replayed (above).
+5. **Frames per second with ten damaged cars in view** (the critic's: `ten=states`
+   from the lane at -120, -21, 6 s): **32.6 fps, 1,781 draws, 3.95 M triangles**;
+   the same view with the ten whole: 30.3 fps, 1,245 draws, 3.96 M; `shot=perf`
+   straight after: 40.2 fps, 725 draws. The damage costs draws (a loose part is
+   a mesh a material while it hangs) and no frame rate; the view itself is now
+   0.75-0.81 x perf - the merge's streets in the bed's corner of the city
+   (O1b's dressing), not the cars (left 12).
+
 
 The copy's start (`ow/O6b-copy-wip`, d1b420d) was cherry-picked, played and
 judged: **kept** its idea of cutting a part out of the car's own skin (`own`,
@@ -289,3 +321,7 @@ wet. Frames (`docs/review/O6b/`, 1440 x 900): `o6b_1_ten_wrecks_on_grand_ave`
     carries its own twin of its paint material (one program for all).
 11. The `hundred` beat's errors and fps were not re-measured (O6's left 12);
     sounds were not listened to (every run muted).
+12. **The bed's view is heavier than `shot=perf` since the merge**: 30-33 fps
+    against 40 under a busy GPU (whole or damaged alike: O1b's streets in
+    view). Not this lane's to cut; named for the perf audit. `ten&ten=parts`'s
+    errors dump hangs headless (the play is clean).
