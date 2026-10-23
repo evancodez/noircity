@@ -4,6 +4,30 @@ import { nearLot, lotWindows } from '../../../city/kits/facade.js';
 import { paveGeo, kerbGeos, LAMP, placeLamp, placeProp, nameAtlas, nameBlades } from '../../../city/kits/street.js';
 import { CHUNK } from '../../../world/cityGen.js';
 import { mergeAll } from './street.js';
+
+// [O1b] mergeAll over steps (the performance audit's lever 3: a chunk's iron
+// bucket merged in one step ran 9 ms against the 4 ms budget): the pieces
+// made unindexed with their normals a few at a time, yielding every ~1.5 ms;
+// the copy into the merged buffers is one quick pass. The same geometry out.
+function* mergeSteps(list0) {
+  const list = [];
+  let t = performance.now();
+  for (const g0 of list0) {
+    const g = g0.index ? g0.toNonIndexed() : g0;
+    if (!g.getAttribute('normal')) g.computeVertexNormals();
+    list.push(g);
+    if (performance.now() - t > 1.5) { yield; t = performance.now(); }
+  }
+  void mergeAll;
+  let n = 0; for (const g of list) n += g.getAttribute('position').count;
+  const pos = new Float32Array(n * 3), nor = new Float32Array(n * 3);
+  let o = 0;
+  for (const g of list) { pos.set(g.getAttribute('position').array, o * 3); nor.set(g.getAttribute('normal').array, o * 3); o += g.getAttribute('position').count; }
+  const out = new THREE.BufferGeometry();
+  out.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+  out.setAttribute('normal', new THREE.BufferAttribute(nor, 3));
+  return out;
+}
 import { mergeUV } from './places.js';
 
 // The near city (lane O1): chunks of CHUNK m streamed round the eye. A chunk
@@ -89,7 +113,7 @@ export default {
       let k = 0;
       for (const [b, list] of Object.entries(out)) {
         if (!list.length || !MATS[b]) continue;
-        const m = new THREE.Mesh(b === 'signs' ? mergeUV(list) : mergeAll(list), MATS[b]);
+        const m = new THREE.Mesh(b === 'signs' ? mergeUV(list) : yield* mergeSteps(list), MATS[b]);   // [O1b] (merged over steps: one bucket was 9 ms in one)
         for (const g of list) g.dispose();
         m.userData.inkId = city.idFor(key, k++);
         m.receiveShadow = true;

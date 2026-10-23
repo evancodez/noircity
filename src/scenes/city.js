@@ -83,7 +83,26 @@ function place(ctx, at) {
   stage.part('bounds').navAround(at.pos.x, at.pos.z, 14);
   R.stream = stage.part('stream');
   // (every program the city draws with, compiled under the fade in: none met first down a street)
-  if (!G.shotMode) R.compileMs = compileAll(stage, G);
+  // [O1b] (the performance audit's lever 3: the first E into the car made a
+  // program and uploaded the seat's geometries in its frame - 108 and 127 ms.
+  // The seat taken once now, under the fade in: the hands on the wheel, the
+  // screen's drops, compiled and drawn into a scrap target, then let go)
+  if (!G.shotMode && !stage._compiled && G.pipeline && G.pipeline.renderer) {
+    const r = G.pipeline.renderer;
+    try {
+      R.cabin.attach(car, { ...seatOpts(), ease: 0.001 });
+      G.vm.sync && G.vm.sync(G.camera);
+      r.compile(G.vm.scene, G.vm.cam);
+      const rt = new THREE.WebGLRenderTarget(64, 64), prev = r.getRenderTarget();
+      r.setRenderTarget(rt); r.render(G.vm.scene, G.vm.cam); r.setRenderTarget(prev); rt.dispose();
+      R.compileMs = compileAll(stage, G);
+    } catch (e) { /* its first entry will */ }
+    R.cabin.dispose();
+    G.player.hands.equip('empty');
+    G.setViewmodelVisible(false);
+    ctx.controller.setPose(at.pos.x, at.pos.z, at.yaw, -0.06);
+  }
+  if (!G.shotMode && !stage._compiled) R.compileMs = compileAll(stage, G);
 }
 
 export default defineScene({

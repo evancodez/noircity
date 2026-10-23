@@ -324,7 +324,7 @@ export function dress(C, ctx) {
 
   // ---- the park's trees: a shape each too, streamed with the street trees (the landmarks part leaves them to us)
   if (C.specials && C.specials.trees) {
-    for (const [x, z, r] of C.specials.trees) { const v = vhash(x, z, 79); trees.push({ x, z, kind: v < 0.45 ? 'elm' : v < 0.7 ? 'plane' : v < 0.88 ? 'bare' : 'poplar', v: vhash(x, z, 77), s: 0.75 + r * 0.12, chunk: chunkOf(x, z), park: true }); }
+    for (const [x, z, r] of C.specials.trees) { const v = vhash(x, z, 79); trees.push({ x, z, kind: v < 0.55 ? 'bare' : v < 0.85 ? 'elm' : 'poplar', v: vhash(x, z, 77), s: 0.75 + r * 0.12, chunk: chunkOf(x, z), park: true }); }
     C.specials.treesO1b = true;
   }
   // ---- the Hill's curving lane (the brief: "the Hill gets a curving lane") ------------------------

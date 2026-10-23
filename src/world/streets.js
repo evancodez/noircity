@@ -41,7 +41,7 @@ const BASE = {
   tenement: { mat: 'brick', win: 'arch', lamp: 'bracket', trades: ['grocer', 'butcher', 'barber', 'laundry', 'deli', 'pawn', 'shoes', 'chopsuey'], letter: 'serif', awning: 'pin', awnK: 0.45, trees: null, props: { crate: 0.5, barrel: 0.4, churn: 0.3, bin: 0.6, bike: 0.35, board: 0.3, fruit: 0.3, rainbarrel: 0.2 }, red: 0.12 },
   docks: { mat: 'brick', win: 'lintel', lamp: 'dish', trades: ['chandler', 'hardware', 'cafe'], letter: 'stencil', awning: 'dark', awnK: 0.1, trees: null, props: { crate: 0.9, barrel: 0.8, cart: 0.5, drum: 0.3, bin: 0.3 }, red: 0 },
   yards: { mat: 'timber', win: 'plain', lamp: 'dish', trades: ['hardware'], letter: 'stencil', awning: null, awnK: 0, trees: null, props: { drum: 0.7, rainbarrel: 0.6, crate: 0.4, cart: 0.3, bin: 0.2 }, red: 0 },
-  hill: { mat: 'pale', win: 'hood', lamp: 'globe', trades: [], letter: 'serif', awning: null, awnK: 0, trees: 'elm', treeStep: 26, props: { mailbox: 0.4, booth: 0.15 }, red: 0 },
+  hill: { mat: 'pale', win: 'hood', lamp: 'globe', trades: [], letter: 'serif', awning: null, awnK: 0, trees: 'bare', treeStep: 26, props: { mailbox: 0.4, booth: 0.15 }, red: 0 },
 };
 
 // the streets' own (over their district's): what a man remembers each by
@@ -77,7 +77,7 @@ export const STREETS = {
   foundry: { look: 'the foundry street: oil drums, the stack, the billboard on the roofs', mat: 'brick', lamp: 'dish', unique: 'billboard' },
   gasworks: { look: 'the gasworks\' avenue: the holders behind the fence, the dish lamps', mat: 'brick', lamp: 'dish', unique: 'gasboard' },
   // ---- the hill
-  hillrd: { look: 'the top of the hill: the long walls, the elms, the globes; the curving lane up to the big house', lamp: 'globe', trees: 'elm', treeStep: 24, unique: 'lane' },
+  hillrd: { look: 'the top of the hill: the long walls, the winter trees, the globes; the curving lane up to the big houses', lamp: 'globe', trees: 'bare', treeStep: 24, unique: 'lane' },
   bridge: { look: 'Bridge St: the walls and gates, bare trees, the curving lane\'s mouth, the bridge\'s lanterns ahead', lamp: 'globe', trees: 'bare', treeStep: 30 },
   parkrow: { look: 'Park Row: the park\'s railing, the poplars, the globe lamps', mat: 'pale', lamp: 'globe', trees: 'poplar', treeStep: 24, trades: ['florist', 'books', 'cafe'], letter: 'script', awning: 'pale', awnK: 0.3, unique: 'fountain' },
 };

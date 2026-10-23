@@ -324,7 +324,7 @@ function nearGarden(lot, out) {
     const r = rng.range(2.5, 4.2);
     // ([O1b] the cold play's finding 7: three lumps on a stick read as a
     // balloon over the wall - a tree of a kind, its shape turned by where it stands)
-    const v = rng.next(), kind = v < 0.4 ? 'elm' : v < 0.65 ? 'bare' : v < 0.85 ? 'plane' : 'poplar';
+    const v = rng.next(), kind = v < 0.55 ? 'bare' : v < 0.85 ? 'elm' : v < 0.95 ? 'plane' : 'poplar';
     for (const [g, lev] of treePieces({ x: tx, z: tz, kind, v: (v * 7.3) % 1, s: 0.8 + r * 0.12 }, 0)) push(out, lev === LEAF ? 'tree' : 'iron', g);
   }
 }

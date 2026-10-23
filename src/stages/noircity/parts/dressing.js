@@ -48,6 +48,16 @@ function mergeCol(list) {
   out.userData.ranges = ranges;
   return out;
 }
+// (the pieces readied a few at a time, yielding every ~1.5 ms: a chunk's build never one long step)
+function* mergeColSteps(list) {
+  let t = performance.now();
+  for (const p of list) {
+    if (p[0].index) p[0] = p[0].toNonIndexed();
+    if (!p[0].getAttribute('normal')) p[0].computeVertexNormals();
+    if (performance.now() - t > 1.5) { yield; t = performance.now(); }
+  }
+  return mergeCol(list);
+}
 function mergeUVs(list) {
   let n = 0;
   const L = list.map((g0) => { const g = g0.index ? g0.toNonIndexed() : g0; n += g.getAttribute('position').count; return g; });
@@ -93,7 +103,7 @@ export default {
       for (const t of D.trees) for (const p of treePieces(t)) out.relief.push(p);
       yield;
       const R = { relief: out.relief, board: out.board, lit: out.lit };
-      for (const L of D.lots) { faceRelief(L, R); }
+      for (const L of D.lots) { faceRelief(L, R); yield; }
       // the Hill's gates: a lantern lit on each pier (the cold play's finding 7: the Hill's streets a blank wall)
       for (const L of D.gardens || []) {
         const n = L.gates || 1, W = L.x1 - L.x0, gz = L.sides.s ? L.z1 : L.z0, s = L.sides.s ? 1 : -1;
@@ -121,14 +131,14 @@ export default {
         return m;
       };
       if (out.props.length) {
-        const g = mergeCol(out.props);
+        const g = yield* mergeColSteps(out.props);
         const m = mk(g, relief, 'props', true);
         // (each record's vertices in the merge: lane O6's set takes one out of it as it goes)
         m.userData.ranges = g.userData.ranges; m.userData.prop = 'merged';
       }
-      if (out.relief.length) mk(mergeCol(out.relief), relief, 'relief', false);
+      if (out.relief.length) mk(yield* mergeColSteps(out.relief), relief, 'relief', false);
       if (out.board.length) mk(mergeUVs(out.board), boards, 'boards', false);
-      if (out.lit.length) mk(mergeCol(out.lit), lit, 'lit', false);
+      if (out.lit.length) mk(yield* mergeColSteps(out.lit), lit, 'lit', false);
       return meshes;
     }
     function attach(key, meshes) {

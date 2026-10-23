@@ -23,13 +23,15 @@ export function treePieces(t, y0 = PAVE) {
   if (t.kind === 'plane') {
     limb([[0, 0, 0], [0.05 + lean, 2.2, 0], [0.1 + lean, 3.6, 0.05]], 0.17 * s);
     for (let k = 0; k < 3; k++) { const [x, z] = dir(k * 2.1, 1.3 * s); limb([[0.1 + lean, 3.4, 0.05], [x * 0.6, 4.6 * s, z * 0.6], [x, 5.4 * s, z]], 0.08 * s); }
-    for (let k = 0; k < 6; k++) { const [x, z] = dir(k * 1.05 + 0.4, (k % 2 ? 1.6 : 0.9) * s); lump(x, (5.4 + (k % 3) * 0.5) * s, z, (1.3 + (k % 2) * 0.35) * s, 0.7); }
+    for (let k = 0; k < 9; k++) { const r = (0.3 + ((k * 0.618 + v) % 1) * 1.7) * s; const [x, z] = dir(k * 2.4 + 0.4, r); lump(x, (4.8 + ((k * 0.41 + v) % 1) * 2.0) * s, z, (0.9 + ((k * 0.33) % 1) * 0.6) * s, 0.8); }
   } else if (t.kind === 'bare') {
     limb([[0, 0, 0], [0.08 + lean, 1.8, 0], [0.12 + lean, 2.8, 0.04]], 0.15 * s);
-    for (let k = 0; k < 4; k++) {
-      const [x, z] = dir(k * 1.57 + 0.3, 1.0 * s), [x2, z2] = dir(k * 1.57 + 0.6, 2.2 * s);
-      limb([[0.12 + lean, 2.7, 0.04], [x, 3.8 * s, z], [x2, 5.2 * s, z2]], 0.07 * s);
-      for (let q = 0; q < 2; q++) { const [x3, z3] = dir(k * 1.57 + (q ? 0.9 : 0.1), 2.8 * s); limb([[x * 0.9 + x2 * 0.1, 4.1 * s, z * 0.9 + z2 * 0.1], [x3, 5.8 * s + q * 0.6, z3]], 0.025 * s); }
+    for (let k = 0; k < 5; k++) {
+      // (each limb bends as it goes out and up, then forks into twigs that bend again)
+      const a = k * 1.26 + 0.3 + v;
+      const [x, z] = dir(a, 0.9 * s), [xm, zm] = dir(a + 0.25, 1.7 * s), [x2, z2] = dir(a + 0.4, 2.3 * s);
+      limb([[0.12 + lean, 2.7, 0.04], [x, 3.6 * s, z], [xm, 4.5 * s, zm], [x2, 5.1 * s + (k % 2) * 0.5, z2]], 0.06 * s);
+      for (let q = 0; q < 3; q++) { const [x3, z3] = dir(a + (q - 1) * 0.45, (2.5 + q * 0.3) * s), [x4, z4] = dir(a + (q - 1) * 0.6, (3.0 + q * 0.25) * s); limb([[xm, 4.5 * s, zm], [x3, (5.4 + q * 0.3) * s, z3], [x4, (6.0 + q * 0.4) * s, z4]], 0.018 * s); }
     }
   } else if (t.kind === 'poplar') {
     limb([[0, 0, 0], [0, 2.4, 0]], 0.14 * s);
@@ -38,7 +40,8 @@ export function treePieces(t, y0 = PAVE) {
     limb([[0, 0, 0], [0.03 + lean, 1.6, 0]], 0.2 * s);
     for (let k = 0; k < 3; k++) { const [x, z] = dir(k * 2.1, 1.6 * s); limb([[0.03 + lean, 1.5, 0], [x * 0.5, 3.6 * s, z * 0.5], [x, 5.6 * s, z]], 0.1 * s); }
     // (the vase's crown: lumps round its rim and its top, wider than tall, open in the middle)
-    for (let k = 0; k < 8; k++) { const [x, z] = dir(k * 0.785, (k % 2 ? 2.4 : 1.7) * s); lump(x, (5.7 + (k % 3) * 0.45) * s, z, (0.95 + (k % 3) * 0.22) * s, 0.55); }
+    // (lumps of different sizes at different heights and reaches: a ragged crown, never an umbrella)
+    for (let k = 0; k < 11; k++) { const r = (0.5 + ((k * 0.618 + v) % 1) * 2.0) * s; const [x, z] = dir(k * 2.4, r); lump(x, (4.9 + ((k * 0.377 + v * 2) % 1) * 2.2) * s, z, (0.75 + ((k * 0.29) % 1) * 0.55) * s, 0.75 + (k % 3) * 0.1); }
   }
   for (const p of P) p[0].translate(t.x, y0, t.z);
   return P;
