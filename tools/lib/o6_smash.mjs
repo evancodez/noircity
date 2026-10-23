@@ -20,7 +20,7 @@ const PATHS = {
   // the city's own (start=city, at Grand Ave): up Grand Ave's east kerb (its lamps, its hydrant, the tram stop's sign),
   // east along Centre St, south down Hester St's west pavement through the Tenements' market (its stalls)
   city: [[-112.2, 30], [-110.1, 25], [-110.1, -19], [-107.6, -25], [-100, -26.6], [140, -26.6], [160, -26.6], [308, -26.6], [317, -24.5], [322, -19], [322, 22], [322.4, 27]],
-  bed: [[-112.2, 30], [-110.1, 25.5], [-110.1, 10], [-110.1, -21], [-111.6, -26], [-116, -30.2], [-121, -31.2], [-125.4, -28.5], [-126.8, -22], [-126.8, -6], [-128.3, 0.5], [-130.6, 5], [-130.6, 20], [-130.6, 44.2], [-131.6, 47.4], [-133.4, 47.5]],
+  bed: [[-112.2, 30], [-110.1, 25.5], [-110.1, 10], [-110.1, -21], [-111.6, -26], [-116, -30.2], [-121, -31.2], [-125.4, -28.5], [-126.8, -22], [-126.8, -6], [-128.3, 0.5], [-130.6, 5], [-130.6, 20], [-130.6, 44.2], [-131.6, 47.4], [-132.6, 47.45]],
 };
 
 export default async function o6(api) {
@@ -170,6 +170,8 @@ async function drive(api) {
     for (const [k, name] of Object.entries(shots)) if (idx >= +k && !shots['_' + k]) { shots['_' + k] = 1; await js('(window.__o6w.on = false, 1)'); await shot(name); shotN++; await js('(window.__o6w.last = performance.now(), window.__o6w.on = true, 1)'); }
   } });
   log(`drive: ${JSON.stringify(r)}`);
+  // (the path's end: on into what is ahead - the shop window - W held a moment more)
+  if (opts.into && r.end === 'done') { await keyDown('KeyW'); await sleep(opts.into); await keyUp('KeyW'); await keyDown('KeyS'); await sleep(400); await keyUp('KeyS'); }
   // let it all come to rest
   await sleep(opts.settle ?? 4000);
   const res = await js(`(() => {

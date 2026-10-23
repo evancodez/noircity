@@ -396,7 +396,7 @@ export class Smash {
     for (const it of this.items) if (it.state !== 'stand' || it.torn || it.pane && it.pane.state !== 'whole') this.mend(it);
     this.pieces.clear();
     for (const g of this.geysers) g.dead = true;
-    this.geysers.length = 0; this.jets.length = 0;
+    this.geysers.length = 0; this.jets.length = 0; if (this.pending) this.pending.length = 0;
     this.events.push({ t: this.game ? +this.game.time.toFixed(3) : 0, kind: '*', what: 'mendAll', by: 'reset' });
   }
 
@@ -490,7 +490,8 @@ export class Smash {
     else if (K.how === 'break' && (vn > 2.5 || by !== 'car')) { this.breakUp(it, cv, pt); res = 'break'; }
     else this.tumble(it, cv, vn, pt);
     if (G0) {
-      G0.sfx.play(K.sound, pt, { k: Math.min(1, vn / 14) }, { ref: 4 });
+      // (five sounds a step at most: a blast takes a street over at once)
+      if ((this.sounds = (this.sounds || 0) + 1) <= 5) G0.sfx.play(K.sound, pt, { k: Math.min(1, vn / 14) }, { ref: 4 });
       if (K.goods) this.spillGoods(it, cv);
       if (K.papers) this.papers(it, cv, 46);
       G0.emit('smash', { kind: it.kind, pos: pt.clone(), by, how: res, item: it, speed: vn });
@@ -779,7 +780,16 @@ export class Smash {
   stepBody(it, dt) {
     const b = it.body, S = this.stage;
     if (b.roll) return this.stepRoll(it, dt);
-    const n = Math.min(4, Math.max(1, Math.ceil((b.v.length() + b.w.length() * b.e.length()) * dt / 0.05)));
+    const n = Math.min(2, Math.max(1, Math.ceil((b.v.length() + b.w.length() * b.e.length()) * dt / 0.05)));
+    // (the ground under it: one height when it is flat all round - the road, a
+    // pavement - looked at again only as it moves; at a kerb every corner its own)
+    if (b.gAt == null || Math.abs(b.p.x - b.gx) + Math.abs(b.p.z - b.gz) > 0.3) {
+      const R = Math.max(b.e.x, b.e.y, b.e.z) + 0.2, g0 = S.surfaceY(b.p.x, b.p.z);
+      let flat = true;
+      for (const [ox, oz] of [[R, 0], [-R, 0], [0, R], [0, -R]]) if (Math.abs(S.surfaceY(b.p.x + ox, b.p.z + oz) - g0) > 0.02) { flat = false; break; }
+      b.gAt = flat ? g0 : NaN; b.gx = b.p.x; b.gz = b.p.z;
+    }
+    const flatG = b.gAt;
     const h = dt / n;
     for (let s = 0; s < n; s++) {
       b.v.y -= G * h;
@@ -796,7 +806,7 @@ export class Smash {
       for (const [sx, sy, sz] of CORNERS) {
         const r = _rs[nc];
         r.set(sx * e.x, sy * e.y, sz * e.z).applyQuaternion(it.Q);
-        const pen = S.surfaceY(b.p.x + r.x, b.p.z + r.z) - (b.p.y + r.y);
+        const pen = (Number.isNaN(flatG) ? S.surfaceY(b.p.x + r.x, b.p.z + r.z) : flatG) - (b.p.y + r.y);
         if (pen <= 0) continue;
         if (pen > deep) deep = pen;
         nc++;
@@ -825,7 +835,9 @@ export class Smash {
       }
       if (deep > 0) b.p.y += deep;
       if (b.touch) { const k = Math.exp(-(it.K.scrub ?? 2.2) * h); b.v.x *= k; b.v.z *= k; b.w.multiplyScalar(Math.exp(-1.2 * h)); }
-      // walls stop it (a box in the colliders' world: a building's, a fence's)
+    }
+    {
+      // walls stop it (a box in the colliders' world: a building's, a fence's) - once a step
       if (Math.abs(b.v.x) + Math.abs(b.v.z) > 0.05 && S.colliders.resolve) {
         const rr = Math.min(b.e.x, b.e.z, 0.45);
         _c.set(b.p.x, 0, b.p.z);
@@ -1066,10 +1078,14 @@ export class Smash {
       const d = Math.hypot(it.x - at.x, it.z - at.z);
       if (d > r) continue;
       const k = (1 - d / r) * power;
-      _d.set(it.x - at.x, 0, it.z - at.z).normalize();
-      if (it.state === 'stand' && !it.K.pane) this.carHit(it, null, (it.K.giveAt ?? 2) + 1 + 10 * k, _d.clone(), null, 'blast');
-      else if (it.K.pane && it.state === 'stand') this.shatterPane(it, _d.clone(), 1.5, at);
-      else if (it.body && !it.body.lean) this.kickBody(it, _d.clone().multiplyScalar(6 * k).setY(3 * k), null);
+      const dir = new THREE.Vector3(it.x - at.x, 0, it.z - at.z).normalize();
+      // (the push reaches each as the wave does, 35 m/s out: a street's worth
+      // over a few steps, never all of it in one)
+      this.later(d / 35, () => {
+        if (it.state === 'stand' && !it.K.pane) this.carHit(it, null, (it.K.giveAt ?? 2) + 1 + 10 * k, dir, null, 'blast');
+        else if (it.K.pane && it.state === 'stand') this.shatterPane(it, dir, 1.5, at);
+        else if (it.body && !it.body.lean) this.kickBody(it, dir.clone().multiplyScalar(6 * k).setY(3 * k), null);
+      });
     }
     // the pieces lying near are thrown too
     for (const P of Object.values(this.pieces.pools)) for (let i = 0; i < P.used; i++) {
@@ -1277,8 +1293,24 @@ export class Smash {
   }
 
   // ---- per step (fx/React.js steps the stage's props) -------------------------------------------------------------
+  // a thing to do a moment from now (a blast's wave on its way)
+  later(dt, fn) { (this.pending || (this.pending = [])).push({ t: dt, fn }); }
+
   update(dt, t) {
     const G0 = this.game;
+    this.sounds = 0;
+    if (this.pending && this.pending.length) {
+      let n = 0;
+      for (let i = this.pending.length - 1; i >= 0; i--) {
+        const p = this.pending[i];
+        p.t -= dt;
+        // (twelve a step at most: the rest go the step after)
+        if (p.t > 0 || n >= 12) continue;
+        this.pending.splice(i, 1);
+        n++;
+        p.fn();
+      }
+    }
     for (let i = this.out.length - 1; i >= 0; i--) {
       const it = this.out[i];
       it.t += dt;

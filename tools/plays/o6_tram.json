@@ -1,7 +1,7 @@
 {
  "about": "[O6] The tram's sparks (brief O6 §2, §4): the bed's tram beat - the sedan stalled across Grand Ave's west rails, the tram coming south on them; it meets the car and shoves it on, striking sparks off it (CarDamage.tramSparks on the bump and the lean), the car dented and pushed aside. node tools/play.mjs tools/plays/o6_tram.json",
  "url": "/?mute=1&start=smash.tram",
- "size": [1280, 800],
+ "size": [1440, 900],
  "out": "shots/o6/tram",
  "steps": [
   { "wait": 1500 },

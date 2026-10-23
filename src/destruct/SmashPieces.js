@@ -11,6 +11,7 @@ import * as THREE from 'three';
 //   pieces.kick(car)   pieces.guard(car)   pieces.update(dt)   pieces.clear()
 // (the old city's smash, lane C3: its pools, its kick and its guard of my cabin)
 const G = 9.8;
+const STEP_BUDGET = 160;    // pieces made in one step at most
 const ZERO = new THREE.Matrix4().makeScale(0, 0, 0);
 const _m = new THREE.Matrix4(), _q = new THREE.Quaternion(), _v = new THREE.Vector3(), _s = new THREE.Vector3(), _f = new THREE.Vector3();
 
@@ -23,6 +24,7 @@ export class SmashPieces {
     this.pools = {};
     this.live = [];          // flying, sliding
     this.n = 0;              // lying
+    this.made = 0;           // made this step
     const pool = (name, geo, mat, cap) => {
       const im = new THREE.InstancedMesh(geo, mat, cap);
       im.name = 'smash_' + name;
@@ -50,10 +52,15 @@ export class SmashPieces {
   alloc(P, owner) {
     let i = P.free.length ? P.free.pop() : P.used < P.cap ? P.used++ : -1;
     if (i < 0) {
+      // (a full pool: the resting piece the eye least sees among the next
+      // 40 round the pool from where the last search stopped - never a
+      // whole pool's search a piece: a blast spawns hundreds in one step)
       const G0 = this.stage.game, cam = G0 ? G0.camera : null;
       let best = -1, bd = -Infinity;
       if (cam) cam.getWorldDirection(_f);
-      for (let k = 0; k < P.cap; k++) {
+      const n = Math.min(P.cap, 40);
+      for (let j = 0; j < n; j++) {
+        const k = P.cursor = ((P.cursor || 0) + 1) % P.cap;
         const o = P.owner[k];
         if (!o || !o.rest) continue;
         let d = o.t;
@@ -79,6 +86,8 @@ export class SmashPieces {
   spawn(name, pos, q, scale, vel, spin, { r = 0.05, paper = false, roll = false, bounce = 0.3, life = 0 } = {}) {
     const P = this.pools[name];
     if (!P) return null;
+    // (a step's budget: past it a blast's last pieces are not made - a few strokes, never a stall)
+    if (++this.made > STEP_BUDGET) return null;
     const p = { P, i: -1, pos: pos.clone(), q: q.clone(), scale: scale.clone(), vel: vel.clone(), ang: spin.clone(), r, paper, roll, bounce, rest: false, t: 0, restT: 0, dead: false, life };
     const i = this.alloc(P, p);
     if (i < 0) return null;
@@ -181,6 +190,7 @@ export class SmashPieces {
   }
 
   update(dt) {
+    this.made = 0;
     const S = this.stage;
     for (let j = this.live.length - 1; j >= 0; j--) {
       const p = this.live[j];

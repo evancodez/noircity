@@ -257,8 +257,9 @@ function allOver(ctx) {
   const f = () => {
     if (G.time - t0 < +at) return;
     G.scripts.splice(G.scripts.indexOf(f), 1);
-    for (const rec of H.recs) { const it = S.itemOf(rec); if (it && it.state === 'stand') { const a = rnd() * 6.283; S.hit(it, null, V(Math.cos(a), 0, Math.sin(a)).multiplyScalar(5 + 5 * rnd()), 'blast'); } }
-    for (const it of S.items) if (it.kind === 'glass' && it.state === 'stand') S.hit(it, null, V(-1, 0, 0).multiplyScalar(6), 'blast');
+    // (as a blast's wave would reach them: over a third of a second)
+    for (const rec of H.recs) { const it = S.itemOf(rec); if (it && it.state === 'stand') { const a = rnd() * 6.283, imp = V(Math.cos(a), 0, Math.sin(a)).multiplyScalar(5 + 5 * rnd()); S.later(rnd() * 0.35, () => S.hit(it, null, imp, 'blast')); } }
+    for (const it of S.items) if (it.kind === 'glass' && it.state === 'stand') S.later(rnd() * 0.35, () => S.hit(it, null, V(-1, 0, 0).multiplyScalar(6), 'blast'));
   };
   G.scripts.push(f);
 }
