@@ -100,12 +100,17 @@ export class Person {
   hide() {
     const F = this.fig, col = this.stage.colliders;
     F.object.visible = false;
-    if (F.collider) { const i = col.circles.indexOf(F.collider); if (i >= 0) col.circles.splice(i, 1); }
+    if (F.collider) {
+      const i = col.circles.indexOf(F.collider); if (i >= 0) col.circles.splice(i, 1);
+      // (and out of the walkers' short list: a stale entry there held the whole man)
+      const j = col.moving ? col.moving.indexOf(F.collider) : -1; if (j >= 0) col.moving.splice(j, 1);
+    }
     if (this.umb) this.umb.group.visible = false;
     this.mode = 'gone';
   }
   dispose() {
     this.hide();
+    if (this.fig.collider) this.fig.collider.person = null;
     if (this.umb) { const g = this.umb.group; if (g.parent) g.parent.remove(g); g.traverse((o) => { if (o.geometry) o.geometry.dispose(); }); this.umb = null; }
     this.fig.dispose();
   }

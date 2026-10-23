@@ -51,7 +51,7 @@ export const CROWD = {
 const _v = new THREE.Vector3(), _f = new THREE.Vector3();
 const HEAT_FINE = HEAT.fine;
 // the pool's size: figures waiting for a man of their look (no ink slot held)
-const POOL = 24;
+const POOL = 40;
 
 export class People {
   constructor(G, stage) {
@@ -534,6 +534,11 @@ export class People {
     const dist = this.districtOf(x, z), n = this.stats.spawned;
     if (this.rng.next() < (CROWD.newsboy[dist] || 0)) return 'o3_newsboy';
     const T = PED_LOOKS[dist] || PED_LOOKS.downtown;
+    // (a look waiting in the pool, if this street wears it and none of it is near: no figure made)
+    if (this.rng.next() < 0.65) for (const [look, L] of this.pool) {
+      if (!L.length || !T[look]) continue;
+      if (!this.list.some((p) => p.kind === look && Math.hypot(p.pos.x - x, p.pos.z - z) < 30)) return look;
+    }
     for (let k = 0; k < 4; k++) {
       const look = pickWeighted(T, hash(x, z, n, k));
       if (!this.list.some((p) => p.kind === look && Math.hypot(p.pos.x - x, p.pos.z - z) < 30)) return look;

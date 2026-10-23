@@ -25,6 +25,7 @@ export class GridColliders extends Colliders {
     this._seen = new Set();
     this._near = [];
     this.moving = [];   // [O3]
+    this._sweep = 0;
   }
   _insert(o, x0, x1, z0, z1) {
     o._cells = [];
@@ -69,6 +70,13 @@ export class GridColliders extends Colliders {
     }
     // [O3] the men near it now (one still in `circles`: the dead are taken out of it)
     const M = this.moving;
+    // (now and then the whole list against `circles`: a man taken out far from
+    // every query would stay in it for ever, and with him all he holds)
+    if (++this._sweep > 600 && M.length) {
+      this._sweep = 0;
+      const C = new Set(this.circles);
+      for (let k = M.length - 1; k >= 0; k--) if (!C.has(M[k])) M.splice(k, 1);
+    }
     for (let k = M.length - 1; k >= 0; k--) {
       const o = M[k];
       if (Math.abs(o.x - x) > r + o.r || Math.abs(o.z - z) > r + o.r) continue;
