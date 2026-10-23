@@ -66,6 +66,12 @@ notice it, and taken out if he would not.
 > police car's, are blocked. Basically make the city feel more alive and
 > less canned and stiff. That's a general goal.
 
+> (And:) Alive means robust systems of reaction and procedural stuff
+> happening. Not "I shot a person and everybody in the entire map knows";
+> not the opposite either, NPCs not caring; not everyone with the same
+> animation, running the same way. All are bad. Find a way to have it
+> feel alive.
+
 **Alive, not canned, not stiff** (lane O9, `docs/briefs/O9_ALIVE.md`, and
 every lane after it): the near street is never empty, things happen on
 their own that a player can walk into, every NPC has a state he can read

@@ -12,6 +12,11 @@ midday):
   police car's, are blocked."
 - **[must]** "Basically make the city feel more alive and less canned and
   stiff. That's a general goal."
+- **[must]** "Alive means robust systems of reaction and procedural stuff
+  happening. Not: I shot a person and everybody in the entire map knows.
+  Not the opposite either: you shoot somebody and you see NPCs not
+  caring. Not everyone with the same animation, running the same way.
+  All are bad. Find a way to have it feel alive."
 
 What you build on: O3's people and police (`docs/reports/O3.md`,
 `src/people/`, `src/police/`: the walkers, the witnesses, the heat, the
@@ -48,6 +53,41 @@ thirty cars, what is left at 60 fps).
   engine passing flat out with its red lamp (one of the few colours); a
   cat on a wall; pigeons that go up. Never the same event twice in a
   row at the same place; never one that the player cannot interrupt.
+
+## 1b. Who knows what: the propagation model (the user's own rule)
+Knowledge of what I did travels like it would, not like a flag:
+- **Perception**: a man sees what is in his line of sight within his
+  range (about 40 m, less in rain, none through a wall) and hears what
+  carries (a shot 120 m, a scream 60 m, a horn 80 m, a punch 15 m, with
+  walls halving it); each NPC keeps what he himself perceived, with a
+  position and an age.
+- **Spread**: a witness tells the people he passes for a minute (they
+  look toward where it was; some go to look); a scream makes the street
+  turn and the near ones react, the far ones only look; a cop who saw
+  it, or who was told, calls it in (then the patrol knows the place and
+  my description: the coat, the car), and the news knows it next
+  edition; nobody beyond that knows anything. A player who shoots in an
+  empty alley and walks out calm is a man walking out of an alley.
+- **Decay**: reactions fade with time and distance: the crowd disperses
+  in a minute, the stare ends, the fear becomes a glance; the cop who
+  lost me gives up; the police remember my car and my coat for the
+  heat's life, nothing after.
+- **Proportion**: the answer fits the act: a shove gets a word, a punch
+  a ring and maybe a cop, a shot the street scattering and a report, a
+  death a crowd and the siren. The proof: a shot on the quay at night
+  with nobody near raises no heat and draws nobody; the same shot on
+  Grand Ave at the stop draws the stop's people, two reports and a
+  patrol car; a man two blocks away never flinches.
+
+## 1c. Nobody moves alike (the variety rule)
+Every reaction picks from a set by kind and by a seeded temperament
+(bold, nervous, slow, drunk, young, old): one freezes, one runs, one
+ducks behind a car, one shouts, one films nothing (no phones: one
+stares), one walks off fast; the runs differ (a sprint, a scuttle, a
+limp, a run with a hand on the hat), the speeds differ, the clips are
+offset and blended so no two walkers are in step, the lines differ.
+The proof: a strip of a dozen people reacting to one shot shows no two
+doing the same thing the same way.
 
 ## 2. Reactions that make sense (the intention model)
 Every NPC has a state the player can read, with human delays (0.3 to
