@@ -29,6 +29,7 @@ import { step as roam } from './city.js';
 // game.city is the roam's record (scenes/city.js runs it: E in and out, the
 // map, the river), with every car of the bed to get into: game.city.cars.
 const V = (x, y, z) => new THREE.Vector3(x, y, z);
+const _v = new THREE.Vector3();
 const NORTH = 0;
 // what the bed adds to the city's own (kind, x, z, yaw[, on: index of the one it stands on])
 const E = -Math.PI / 2, W = Math.PI / 2;
@@ -209,9 +210,10 @@ function place(ctx, at = {}) {
   G.setViewmodelVisible(typeof location === 'undefined' || new URLSearchParams(location.search).get('vm') !== '0');   // (vm=0: the strips without the gun)
   if (G.weapon && G.weapon.ammo != null) G.weapon.ammo = 50;
   stage.part('bounds').navAround(me.x, me.z, 14);
-  // (a blast's push on me: too near is a fall, back at the start)
+  // (down by the set - the blast, the wreck's fire, the tram: a fall, back at
+  // the start; the words name what did it - the critic's blocker 2)
   G.health.reset && G.health.reset();
-  G.health.onDeath = () => G.fail({ why: 'Too close when she went.', to: 'bed' });
+  G.health.onDeath = () => G.fail({ why: (stage.smash && stage.smash.cars.why()) || 'Too close when she went.', to: 'bed' });
   if (!G.shotMode) R.compileMs = compileAll(stage, G);
   lookDev(ctx);
   return { coupe, sedan, lorry };
@@ -306,6 +308,8 @@ export default defineScene({
   beats: ['bed', 'burn', 'tram', 'hundred', 'fire'],
   mapKey: true,
   objectives: { bed: null, burn: null, tram: null, hundred: null, fire: null },
+  // (hurt by the fire or the tram: its fix - not the gun kit's 'Get to cover.')
+  lowWarn: (ctx) => (ctx.stage.smash && ctx.stage.smash.cars.lowWarn()) || null,
   setup: {
     bed(ctx) { place(ctx); },
     // the sedan already burning, its fuse running; me across the road
@@ -358,6 +362,16 @@ export default defineScene({
         }
         if (best && best !== R.car && !R.car.vel.lengthSq()) R.car = best;
       }
+      // the sedan across the way: its door tried, locked (a rattle, as the city's
+      // street doors - the critic's minor: no prompt, no answer)
+      const sd = R.cars[2];
+      let atSedan = false;
+      if (!R.inCar && sd && !sd.wrecked && G.vehicles.list.includes(sd) && !(sd.smashD && sd.smashD.state === 'burning')) {
+        const l = sd.local(ctx.controller.pos, _v);
+        atSedan = Math.hypot(Math.max(0, Math.abs(l.x) - sd.spec.halfL), Math.max(0, Math.abs(l.z) - sd.spec.halfW)) < 1.4;
+      }
+      if (atSedan !== !!T.atSedan) { T.atSedan = atSedan; if (atSedan) ctx.hud.prompt('E  try the door', null, 'bedsedan'); else ctx.hud.clearPrompt('bedsedan'); }
+      if (atSedan && ctx.pressed('KeyE')) { G.sfx.play('f_c4rattle', V(sd.pos.x, 1.1, sd.pos.z)); ctx.hud.message('locked', 1.2); }
       // every car but the one the roam steps (the tram, the parked ones)
       for (const v of G.vehicles.list) if (v !== R.car) v.step(dt);
       dealT -= dt;

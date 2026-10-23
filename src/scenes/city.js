@@ -89,6 +89,8 @@ export default defineScene({
   // (M is the map here: Game.bindInput leaves the sound alone)
   mapKey: true,
   objectives: { roam: null, ashore: null },
+  // [O6] the low line when the destruction set hurt him (the fire, the tram): its fix, not the gun kit's
+  lowWarn: (ctx) => (ctx.stage.smash && ctx.stage.smash.cars.lowWarn()) || null,
   setup: {
     roam(ctx) {
       const a = ctx.stage.anchor(`city.start.${startOf()}`);
@@ -156,7 +158,8 @@ export function step(ctx, R, T, dt) {   // [O6] exported
     R.cabin.step(dt);
     // the river: the car in the water is lost
     if (C.inWater(car.pos.x, car.pos.z)) { wet(ctx, R, car.pos, 'The river took it.'); return; }
-    const slow = Math.abs(car.speed) < 1.5;
+    // ([O6] shoved by the tram the car is not slow, but a man may still get out of it)
+    const slow = Math.abs(car.speed) < 1.5 || (car.smashD && car.smashD.tramT != null && G.time - car.smashD.tramT < 0.4);
     // the pedals, taught in the seat before the first W (the critic's m2:
     // it came 2.5 s after W, and S was never taught); up until the car has
     // gone a few lengths, or its time
@@ -224,6 +227,7 @@ export function getIn(ctx, R, T) {   // [O6] exported
   ctx.hud.clearPrompt('cityin');
   T.near = false; T.inShown = false; T.drive = 0; T.dist = 0; T.outShown = false; R.wantOut = false;
   G.vehicles.setPlayer(car);
+  car.input.hold = 0;   // [O6] (my S reverses again)
   if (car.lamps && car.lamps.setOn) car.lamps.setOn(true);
   // (eased into the seat: the camera never jumps)
   R.cabin.attach(car, { ease: 0.35, ...seatOpts(), ...(car.seatOpts || {}), control: brakesFor(G) });   // [O6] (car.seatOpts: another kind's seat)
@@ -240,6 +244,10 @@ export function getOut(ctx, R, T) {   // [O6] exported
   // (the brakes on, the handbrake up: what is left of its roll it rolls -
   // under 1.5 m/s, a few centimetres - never a dead stop)
   car.input.throttle = 0; car.input.brake = 1; car.input.steer = 0; car.input.handbrake = 1;
+  // ([O6] a foot held on the brake: a car left rolling back never reversed on
+  // by itself - the critic's 7: S's brake past a breath is reverse, and the
+  // empty coupe drove itself 37 m down Grand Ave)
+  car.input.hold = 1;
   // the driver's door (left), or the other if that is against a wall
   const col = ctx.stage.colliders;
   const tryDoor = (side) => {

@@ -37,6 +37,7 @@ import { CarDamage } from './CarDamage.js';
 // Events (game.emit): 'smash' { kind, pos, by, how, item }.
 export const CAP = 140;                // items out of their merge at once
 const MEND_R = 200;                   // (m) further than this from the eye: mended
+const GLAZED = 24;                    // the city's shop fronts glazed at once (the oldest out of view goes)
 const CELL = 8;
 const G = 9.8;
 const ZERO = new THREE.Matrix4().makeScale(0, 0, 0);
@@ -105,6 +106,19 @@ export class Smash {
     this.stumpGeo = new THREE.CylinderGeometry(0.12, 0.15, 0.12, 12).translate(0, 0.06, 0);
     this.bulbGeo = new THREE.CircleGeometry(0.33, 18).rotateX(Math.PI / 2);
     this.bulbMat = new THREE.MeshBasicMaterial({ color: new THREE.Color().setScalar(8) });
+    // (the wreck's shell made with the stage: never in a blast's frame)
+    this.cars.prewarm();
+    // (every pool drawn its first steps with one instance of nothing: the
+    // first lamp over, the first papers in the air were each the first draw
+    // of a program - 50 ms frames, a car's blast among them)
+    this.warmPools(true);
+  }
+  warmPools(on) {
+    for (const P of [...Object.values(this.pools), ...Object.values(this.pieces.pools)]) {
+      if (P.used) continue;
+      P.im.visible = on; P.im.count = on ? 1 : 0;
+    }
+    this._warmed = !on;
   }
 
   get game() { return this.stage.game; }
@@ -257,11 +271,11 @@ export class Smash {
       if (s.attr !== 'color') continue;
       if (k >= 1) { this.restore(s); continue; }
       if (!s.saved) this.collapse(s, it);
-      if (k > 0) {
-        const A = s.mesh.geometry.getAttribute('color'), i0 = s.start * 3;
-        for (let i = 0; i < s.saved.length; i++) A.array[i0 + i] = s.saved[i] * k;
-        A.addUpdateRange(i0, s.saved.length); A.needsUpdate = true;
-      }
+      // (written every time: the critic's c1 - a 0 after the buzz's 0.6 never
+      // reached the array once it was saved, so a shot-out head stayed lit)
+      const A = s.mesh.geometry.getAttribute('color'), i0 = s.start * 3;
+      for (let i = 0; i < s.saved.length; i++) A.array[i0 + i] = s.saved[i] * Math.max(0, k);
+      A.addUpdateRange(i0, s.saved.length); A.needsUpdate = true;
     }
   }
   entryOf(mesh) {
@@ -353,6 +367,7 @@ export class Smash {
 
   // back as it stood (out of view: a recycle, the mend at a distance, a reset)
   mend(it) {
+    if (it.lazy) { this.unglaze(it); return; }
     if (it.state === 'stand' && !it.dark) return;
     const i = this.out.indexOf(it);
     if (i >= 0) this.out.splice(i, 1);
@@ -385,16 +400,18 @@ export class Smash {
       if (L && L.setOn) L.setOn(l, true);
     }
     if (it.pane && this.stage.glass) this.stage.glass.restore(it.pane);
-    it.state = 'stand'; it.dark = false; it.body = null; it.hits = 0; it.hp = it.K.hp ?? 3; it.flick = null; it.torn = 0; it.gone = false; it.glassGone = false; it.dumped = false;
+    it.state = 'stand'; it.dark = false; it.body = null; it.hits = 0; it.hp = it.K.hp ?? 3; it.flick = null; it.torn = 0; it.gone = false; it.glassGone = false; it.dumped = false; it.leaked = false;
     it.P.set(it.x, it.y0, it.z); it.Q.copy(it.q0);
     if (it.K.fp && !it.proxy && it.slots.some((s) => s.attr === 'position' && s.mesh.userData.noRay)) this.addProxy(it);
     this.colliders(it, true);
     this.stats.mended++;
   }
   mendAll() {
+    for (const it of [...(this.glazed || [])]) this.unglaze(it);
     for (const it of [...this.out, ...this.dark]) this.mend(it);
     for (const it of this.items) if (it.state !== 'stand' || it.torn || it.pane && it.pane.state !== 'whole') this.mend(it);
     this.pieces.clear();
+    if (!this._warmed) this.warmPools(true);
     for (const g of this.geysers) g.dead = true;
     this.geysers.length = 0; this.jets.length = 0; if (this.pending) this.pending.length = 0;
     this.events.push({ t: this.game ? +this.game.time.toFixed(3) : 0, kind: '*', what: 'mendAll', by: 'reset' });
@@ -487,7 +504,7 @@ export class Smash {
     else if (it.state === 'rest') return null;
     else if (K.how === 'lean') this.lean(it, d, vn);
     else if (K.how === 'shear') this.shear(it, cv, vn);
-    else if (K.how === 'break' && (vn > 2.5 || by !== 'car')) { this.breakUp(it, cv, pt); res = 'break'; }
+    else if (K.how === 'break' && (vn > 2.5 || (by !== 'car' && by !== 'body'))) { this.breakUp(it, cv, pt); res = 'break'; }
     else this.tumble(it, cv, vn, pt);
     if (G0) {
       // (five sounds a step at most: a blast takes a street over at once)
@@ -495,10 +512,34 @@ export class Smash {
       if (K.goods) this.spillGoods(it, cv);
       if (K.papers) this.papers(it, cv, 46);
       G0.emit('smash', { kind: it.kind, pos: pt.clone(), by, how: res, item: it, speed: vn });
+      // (its white stroke where it went: in the dark a thing going over was a
+      // black hump on black - the critic's blocker 1, GAME_TWO A.4)
+      if (K.how !== 'pane') this.mark(pt, Math.min(1, 0.45 + vn / 16));
+      // (my car feels it: the eye kicked by what it cost - a lamp post half the speed)
+      if (car && G0.vehicles && G0.vehicles.player === car && G0.controller && G0.controller.kick) {
+        const c = 1 - (K.drag ?? 1);
+        if (c > 0.08) G0.controller.kick(1 + 5 * c, 1 + 6 * c, 0.12 + 0.12 * c);
+      }
     }
     this.stats[res === 'break' ? 'broken' : 'over']++;
     this.log(it, res, by);
     return res;
+  }
+
+  // the white of a break (the muzzle flash's splatter, two frames, a hair
+  // toward the eye; its size on the screen by how near): three a step at most
+  mark(pt, k = 1) {
+    const G0 = this.game;
+    if (!G0 || !G0.fx || !G0.fx.hit || !G0.fx.hit.punch) return;
+    if ((this.marks = (this.marks || 0) + 1) > 3) return;
+    const cam = G0.camera;
+    _w.subVectors(cam.position, pt);
+    const d = _w.length();
+    if (d > 80 || d < 0.3) return;
+    _w.divideScalar(d);
+    const p = pt.clone().addScaledVector(_w, Math.min(0.6, d * 0.25));
+    const px = (70 + 90 * k) * Math.max(0.35, Math.min(1.2, 10 / d));
+    G0.fx.hit.punch(p, _w.clone().negate(), 0.3, { camera: cam, px });
   }
 
   log(it, what, by) {
@@ -605,7 +646,7 @@ export class Smash {
       }
       case 'leak': {
         // a hydrant: a fan of water out of the hole (the head off: nothing)
-        if (it.state === 'stand' && !weak) this.jet(p, _v.copy(dir).negate().setY(0.2).normalize().clone(), 'water', 10);
+        if (it.state === 'stand' && !weak) { this.jet(p, _v.copy(dir).negate().setY(0.2).normalize().clone(), 'water', 10); if (!it.leaked) { it.leaked = true; this.mark(p, 0.6); } }
         G0.sfx.play('clang', p, { k: 0.6 }, { ref: 3 });
         return null;
       }
@@ -977,6 +1018,8 @@ export class Smash {
     const c = Math.cos(car.yaw), s = Math.sin(car.yaw);
     const top = (car.groundY || 0) + (S.top ?? (car.kind === 'truck' || car.kind === 'tram' ? 3.3 : 1.75));
     let n = 0;
+    // (a city shop front the car reaches: glazed now, so it bursts below as the bed's do)
+    if (this.shopGrid && sp > 1) this.shopsFor(car, list);
     for (const it of list) {
       if (it.gone || it.state !== 'stand' && it.body && it.body.lean) continue;
       const K = it.K;
@@ -1071,6 +1114,97 @@ export class Smash {
   kickPieces(car) { return this.pieces.kick(car); }
   guardBody(car) { return this.pieces.guard(car); }
 
+  // ---- the city's shop fronts (the critic's 8: the first thing a player shoots in a noir street) ----
+  // the generator's shop windows (facade.js lotWindows, kind 'shop': { x, y, z,
+  // nx, nz, w, h }) bucketed here by props.js; a round into the wall there, or
+  // a car's box reaching it, glazes it there and then: a Glass pane over the
+  // window (as the bed's), an item of kind 'glass'. At most GLAZED at once:
+  // the oldest out of view goes (as the mend at a distance takes them all)
+  setShops(list) {
+    this.shopGrid = new Map();
+    for (const w of list) { const k = this.key(w.x, w.z); if (!this.shopGrid.has(k)) this.shopGrid.set(k, []); this.shopGrid.get(k).push(w); }
+    this.glazed = [];
+  }
+  shopNear(x, z, y = null, pad = 0.5, out = null) {
+    if (!this.shopGrid) return null;
+    const r = 4;
+    for (let i = Math.floor((x - r) / CELL); i <= Math.floor((x + r) / CELL); i++) for (let j = Math.floor((z - r) / CELL); j <= Math.floor((z + r) / CELL); j++) {
+      const L = this.shopGrid.get(i * 100003 + j);
+      if (!L) continue;
+      for (const w of L) {
+        const dx = x - w.x, dz = z - w.z;
+        const along = Math.abs(dx * w.nz - dz * w.nx), off = dx * w.nx + dz * w.nz;
+        if (along > w.w / 2 + (out ? 3 : 0) || off < -0.3 || off > pad || (y != null && Math.abs(y - w.y) > w.h / 2)) continue;
+        if (!out) return w;
+        out.push(w);
+      }
+    }
+    return out;
+  }
+  glaze(w) {
+    if (w.it) return w.it;
+    const Gl = this.stage.glass;
+    if (!Gl) return null;
+    const pane = Gl.addPane({ centre: new THREE.Vector3(w.x + w.nx * 0.1, w.y, w.z + w.nz * 0.1), normal: new THREE.Vector3(w.nx, 0, w.nz), w: w.w - 0.3, h: w.h - 0.3, tag: 'shop' });
+    const it = this.register({ x: w.x + w.nx * 0.12, z: w.z + w.nz * 0.12, yaw: Math.atan2(w.nx, w.nz) }, 'glass', { y: 0.15 });
+    it.pane = pane; it.fp = { hx: (w.w - 0.3) / 2, hz: 0.12 }; it.lazy = w;
+    w.it = it;
+    this.glazed.push(it);
+    if (this.glazed.length > GLAZED) {
+      let old = this.glazed.find((x) => x !== it && !this.seen(x));
+      if (!old) old = this.glazed[0];
+      this.unglaze(old);
+    }
+    return it;
+  }
+  unglaze(it) {
+    const Gl = this.stage.glass;
+    if (Gl && it.pane) Gl.removePane(it.pane);
+    for (const L of [this.items, this.out, this.glazed]) { const i = L ? L.indexOf(it) : -1; if (i >= 0) L.splice(i, 1); }
+    const g = this.grid.get(this.key(it.x, it.z));
+    if (g) { const i = g.indexOf(it); if (i >= 0) g.splice(i, 1); }
+    if (it.rec) this.byRec.delete(it.rec);
+    if (it.lazy) it.lazy.it = null;
+    it.pane = null; it.lazy = null; it.state = 'gone';
+    this.stats.mended++;
+  }
+  facadeShot(hit, dir, weak) {
+    const p = hit.point, w = this.shopNear(p.x, p.z, p.y, 0.6);
+    if (!w) return null;
+    const it = this.glaze(w);
+    if (!it || !it.pane) return null;
+    return this.stage.glass.hit(it.pane, { point: p.clone().addScaledVector(_n.set(w.nx, 0, w.nz), 0.1), normal: _n.clone(), dir, power: weak ? 0.5 : 1, by: 'bullet' });
+  }
+  shopsFor(car, list) {
+    const S = car.spec, L = this._shops || (this._shops = []);
+    L.length = 0;
+    this.shopNear(car.pos.x, car.pos.z, null, S.halfL + 0.8, L);
+    for (const w of L) {
+      if (w.it) continue;
+      if (!this.boxOverlap(car, w.x + w.nx * 0.12, w.z + w.nz * 0.12, (w.w - 0.3) / 2 + 0.25, 0.12 + 0.35, Math.atan2(w.nx, w.nz))) continue;
+      list.push(this.glaze(w));
+    }
+  }
+
+  // ---- a man walking into what stands (Smash.hit 'body'): a clang, a bin at a run goes over ----
+  foot(ctl, t) {
+    const v = ctl.vel, sp = Math.hypot(v.x, v.z);
+    if (sp < 0.8) return;
+    const p = ctl.pos, R = (ctl.radius || 0.35) + 0.14;
+    for (const it of this.near(p.x, p.z, 2)) {
+      if (it.state !== 'stand' || it.K.high || it.K.pane || it.K.lamp || (it.bodyT && t - it.bodyT < 0.8)) continue;
+      const dx = it.x - p.x, dz = it.z - p.z;
+      let d;
+      if (it.K.round) d = Math.hypot(dx, dz) - it.K.r;
+      else if (it.fp) { const c = Math.cos(it.yaw), s = Math.sin(it.yaw), lx = -dx * c + dz * s, lz = -dx * s - dz * c; d = Math.hypot(Math.max(0, Math.abs(lx) - it.fp.hx), Math.max(0, Math.abs(lz) - it.fp.hz)); }
+      else continue;
+      if (d > R || (dx * v.x + dz * v.z) < 0.5 * sp * Math.hypot(dx, dz)) continue;
+      it.bodyT = t;
+      // (a walk is a fifth of a car's push: a bin rocks with a clang; at a run it goes over)
+      this.hit(it, _c.set(it.x - dx * 0.3, it.y0 + 0.8, it.z - dz * 0.3).clone(), new THREE.Vector3(v.x, 0, v.z).multiplyScalar(0.2), 'body');
+    }
+  }
+
   // a blast: what stands within r goes over away from it, what lies is thrown
   blast(at, r = 6, power = 1) {
     const list = [...this.near(at.x, at.z, r)];
@@ -1154,12 +1288,15 @@ export class Smash {
       J.t += dt;
       if (J.t > J.life) { this.jets.splice(i, 1); continue; }
       const strong = Math.max(0, 1 - J.t / J.life);
-      J.acc += dt * (14 + 50 * strong);
+      J.acc += dt * (24 + 80 * strong);
       while (J.acc >= 1) {
         J.acc -= 1;
-        const sp = (0.5 + 3.2 * strong) * this.rnd(0.7, 1.1), fan = 0.15 + 0.4 * strong;
-        G0.fx.splash.spawn({ pos: J.at.clone(), vel: new THREE.Vector3(J.dir.x * sp + this.gauss() * fan, J.dir.y * sp + this.gauss() * fan * 0.5, J.dir.z * sp + this.gauss() * fan), life: this.rnd(0.4, 0.9), size: [0.01, 0.02 + 0.01 * strong], stretch: 0.03, col: [0.45, 0.45, 0.45], alpha: 0.9, cell: ATLAS.DROP, gravity: 9.8, ground: this.stage.surfaceY(J.at.x, J.at.z), fadeOut: 0.1 });
+        // (white, as the column: the critic's hydrant shot from 4 m showed no water)
+        const sp = (1.0 + 5.0 * strong) * this.rnd(0.75, 1.1), fan = 0.18 + 0.45 * strong;
+        G0.fx.splash.spawn({ pos: J.at.clone(), vel: new THREE.Vector3(J.dir.x * sp + this.gauss() * fan, J.dir.y * sp + this.gauss() * fan * 0.5, J.dir.z * sp + this.gauss() * fan), life: this.rnd(0.5, 1.1), size: [0.03, 0.07 + 0.04 * strong], stretch: 0.06, col: [1.2, 1.2, 1.2], alpha: 0.95, cell: ATLAS.DROP, gravity: 9.8, ground: this.stage.surfaceY(J.at.x, J.at.z), fadeOut: 0.15 });
       }
+      // (where it lands: rings on the wet)
+      if (this.rnd() < dt * 5 * strong && this.stage.street && this.stage.street.addImpact) this.stage.street.addImpact(this.stage, J.at.x + J.dir.x * 1.5 * strong, J.at.z + J.dir.z * 1.5 * strong, 0.3);
     }
   }
   // an awning's load of rain sheets off its edge
@@ -1206,7 +1343,11 @@ export class Smash {
       PC.spawn('fruit', p.clone().add(_v.set(this.gauss() * 0.1, 0.05, this.gauss() * 0.1)), this.randQ(), _w.set(r, r, r), new THREE.Vector3(dir.x * 2 + this.gauss() * 1.5, this.rnd(1.5, 3.2), dir.z * 2 + this.gauss() * 1.5), this.spin(0.6), { r, bounce: 0.4, roll: true });
     }
     const G0 = this.game;
-    if (G0) { G0.sfx.play('splinter', p, { k: 0.5 }, { ref: 3 }); this.chipsAt(p, dir, 0.08, 6); }
+    if (G0) {
+      G0.sfx.play('splinter', p, { k: 0.5 }, { ref: 3 }); this.chipsAt(p, dir, 0.08, 6);
+      // (the pulp: a white spray off the burst - the fruit itself is dark)
+      for (let k = 0; k < 10; k++) G0.fx.splash.spawn({ pos: p.clone(), vel: new THREE.Vector3(-dir.x * this.rnd(0.5, 2) + this.gauss() * 1.4, this.rnd(0.6, 2.6), -dir.z * this.rnd(0.5, 2) + this.gauss() * 1.4), life: this.rnd(0.35, 0.7), size: [0.02, 0.045], stretch: 0.04, col: [1.15, 1.15, 1.15], alpha: 0.95, cell: ATLAS.DROP, gravity: 9.8, ground: this.stage.surfaceY(p.x, p.z) + 0.01, fadeOut: 0.15 });
+    }
   }
   papers(it, cv, n, at = null) {
     const PC = this.pieces;
@@ -1239,7 +1380,9 @@ export class Smash {
     if (!G0) return;
     for (let i = 0; i < n; i++) {
       const s = this.rnd(size * 0.3, size);
-      G0.fx.debris.spawn({ pos: p.clone(), vel: new THREE.Vector3(-dir.x * this.rnd(0.6, 2) + this.gauss() * 1.2, this.rnd(0.5, 2.5), -dir.z * this.rnd(0.6, 2) + this.gauss() * 1.2), life: this.rnd(0.6, 1.2), size: [s, s * 0.4], rot: this.rnd(0, 6.28), spin: this.gauss() * 14, col: [0.1, 0.1, 0.1], alpha: 1, cell: FIRE.CHUNK, gravity: 9.8, ground: this.stage.surfaceY(p.x, p.z) + 0.01, bounce: 0.25, fadeOut: 0.3 });
+      // (two in three white - a splinter's lit edge: black chips on a black facade were nothing)
+      const c = i % 3 ? 1.6 : 0.1;
+      G0.fx.debris.spawn({ pos: p.clone(), vel: new THREE.Vector3(-dir.x * this.rnd(0.6, 2) + this.gauss() * 1.2, this.rnd(0.5, 2.5), -dir.z * this.rnd(0.6, 2) + this.gauss() * 1.2), life: this.rnd(0.6, 1.2), size: [s, s * 0.4], rot: this.rnd(0, 6.28), spin: this.gauss() * 14, col: [c, c, c], alpha: 1, cell: FIRE.CHUNK, gravity: 9.8, ground: this.stage.surfaceY(p.x, p.z) + 0.01, bounce: 0.25, fadeOut: 0.3, lit: c > 1 ? 1.5 : 0, litT: 0.3 });
     }
   }
   dust(p, k = 1) {
@@ -1253,6 +1396,7 @@ export class Smash {
   // (a merged mesh: the item standing where the round went)
   bullet(prop, hit, dir, weak = false) {
     if (prop && prop.carD) return this.cars.bullet(prop.carD, hit, dir, weak);
+    if (prop === 'facade') return this.facadeShot(hit, dir, weak);
     let it = prop && prop.K ? prop : null;
     if (!it) it = this.pick(hit.point);
     if (!it) return null;
@@ -1298,7 +1442,8 @@ export class Smash {
 
   update(dt, t) {
     const G0 = this.game;
-    this.sounds = 0;
+    this.sounds = 0; this.marks = 0;
+    if (!this._warmed && G0 && G0.state === 'playing' && (this._warmN = (this._warmN || 0) + 1) > 20) this.warmPools(false);
     if (this.pending && this.pending.length) {
       let n = 0;
       for (let i = this.pending.length - 1; i >= 0; i--) {
@@ -1323,6 +1468,7 @@ export class Smash {
       this.draw(it);
     }
     for (const it of this.dark) if (it.flick) this.lampStep(it, dt);
+    if (G0 && G0.controller && G0.controller.mode === 'walk' && !(G0.city && G0.city.inCar) && G0.state === 'playing') this.foot(G0.controller, G0.time);
     this.waterStep(dt);
     this.pieces.update(dt);
     const me = G0 && G0.vehicles && G0.vehicles.player;

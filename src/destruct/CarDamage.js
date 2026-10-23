@@ -5,6 +5,7 @@ import { Fire } from '../fx/Fire.js';
 import { buildWreck, wreckMaterials, WRECK_DROP } from './Wreck.js';
 import { SEDAN_SHAPES } from '../world/Cars.js';
 import { SURF } from '../util/RayWorld.js';
+import { LAYER } from '../render/layers.js';
 
 // [O6] What a car shows of what it met (lane O6; docs/seams/SMASH.md §3).
 // The rule for every car of game.vehicles, mine or theirs, any kind (the
@@ -27,8 +28,16 @@ import { SURF } from '../util/RayWorld.js';
 //     solid (a wall for a car, a box for a man), never driven again
 //   the tyres: a round near a wheel flattens it (that corner down, the
 //     grip gone, the wheel pulling to that side; a rim sparks on the road)
-//   the tram: on a car in its way it strikes sparks (bump / lean)
+//   the tram: on a car in its way it strikes sparks (bump / lean); a man on
+//     its rails ahead hears the bell and is told (`The tram. Off the rails.`);
+//     met, he is knocked aside and hurt (never carried along)
+//   the man on foot: told off a car that burns (`She’s going up. Get back.`)
+//     and off a burning wreck's fire (`Too hot. Get back.`); the fail names
+//     what did it (why(): the blast, the fire, the tram) and the low line too
+//     (lowWarn(): a scene's `lowWarn` - the bed's, the city's)
 // A car is never wrecked by one blow from below the fire's step (Car.warnAt).
+// The wreck's shell is built, and its programs compiled, with the stage
+// (prewarm): built in the blast's frame it was a 100 ms frame (the critic's 5).
 // Bullets meet a car as a box in the bullets' world riding with it (its
 // hull, ud.prop: { car }) - Smash.bullet sends them here.
 export const STEAM = 1.5, SMOKE = 2.5, BURN = 3.3, FUSE = 7, FUSE_HOT = 3;
@@ -47,6 +56,65 @@ export class CarDamage {
     this.byCar = new Map();
     this.fires = [];
     this.trams = [];
+    this.hurtBy = null;          // { by: 'blast' | 'fire' | 'tram', t }: what last hurt the man
+  }
+  // the wreck's shell and its materials made now, and meshes of them in the
+  // stage drawn for its first few steps at a scale of nothing (no pixel, but
+  // every pass draws them once: the programs compiled, the GPU's own state
+  // for them made, their buffers up - a first blast was 75 ms of render)
+  prewarm() {
+    const st = this.stage;
+    if (!WRECK) WRECK = { B: buildWreck('A', SEDAN_SHAPES, 0), M: wreckMaterials(st.M) };
+    if (this._warm) return;
+    const g = this._warm = new THREE.Group();
+    g.name = 'wreckWarm';
+    g.scale.set(0, 0, 0);
+    this._warmN = 0;
+    for (const [geo, mat] of [[WRECK.B.shell, WRECK.M.shell], [WRECK.B.lines, WRECK.M.lines], [WRECK.B.rims, WRECK.M.rims]]) {
+      if (!geo) continue;
+      const m = new THREE.Mesh(geo, mat);
+      m.frustumCulled = false; m.userData.noRay = true; m.userData.inkId = 1; m.userData.inkFigure = true; m.receiveShadow = true; m.castShadow = false;
+      g.add(m);
+    }
+    // (and twins of what a blast makes the first time it goes - the
+    // explosion's charred chunks, a shard's glint - so their programs are
+    // compiled with the city's: fx/ keeps its own lazily made materials)
+    const chunk = new THREE.Mesh(new THREE.PlaneGeometry(0.01, 0.01), new THREE.MeshBasicMaterial({ color: 0x030303, transparent: true, opacity: 1, depthWrite: true }));
+    chunk.userData.inkFigure = true; chunk.userData.noRay = true; chunk.castShadow = false; chunk.frustumCulled = false; chunk.renderOrder = 7;
+    const glint = new THREE.Sprite(new THREE.SpriteMaterial({ color: new THREE.Color(3.2, 3.2, 3.2), depthWrite: false, fog: false }));
+    glint.userData.noRay = true; glint.frustumCulled = false; glint.layers.set(LAYER.FX); glint.renderOrder = 4;
+    g.add(chunk, glint);
+    // (the glass's, made at its first break - a pane's cracks, halo and
+    // backing, its shards flying and lying, their hairlines: the same
+    // materials, or twins of the same make where Glass.js makes its own -
+    // a sedan's glass going at the blast was a 52 ms frame three frames on)
+    const Gl = st.glass;
+    if (Gl && Gl.materials) {
+      const gm = Gl.materials();
+      const tri = new THREE.PlaneGeometry(0.01, 0.01);
+      const seg = new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(), new THREE.Vector3(0.01, 0, 0)]);
+      const fly = new THREE.MeshStandardMaterial({ color: 0x9a9a9a, roughness: 0.2, metalness: 0.6, envMap: gm.shard.envMap, envMapIntensity: 1.6, emissive: new THREE.Color(0.02, 0.02, 0.02), transparent: true, opacity: 0.32, depthWrite: false, side: THREE.DoubleSide });
+      const rest = new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.1, depthWrite: false, side: THREE.DoubleSide, fog: false });
+      for (const mat of [gm.crack, gm.halo, gm.backing, gm.shard, fly, rest]) for (const L of [LAYER.WORLD, LAYER.FX]) {
+        const m = new THREE.Mesh(tri, mat); m.layers.set(L); m.frustumCulled = false; m.userData.noRay = true; g.add(m);
+      }
+      for (const mat of [new THREE.LineBasicMaterial({ color: new THREE.Color(0.2, 0.2, 0.2), transparent: true, opacity: 0.7, depthWrite: false }), new THREE.LineBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.85, depthWrite: false })]) {
+        const l = new THREE.LineSegments(seg, mat); l.layers.set(LAYER.FX); l.frustumCulled = false; l.userData.noRay = true; g.add(l);
+      }
+    }
+    this.smash.group.add(g);
+  }
+  // what the fail says when the man goes down by what this set did (null: not ours)
+  why() {
+    const h = this.hurtBy, G0 = this.game;
+    if (!h || !G0 || G0.time - h.t > 3) return null;
+    return h.by === 'fire' ? 'Burnt. Keep off the fire.' : h.by === 'tram' ? 'The tram. Mind the rails.' : 'Too close when she went.';
+  }
+  // the low line (Game.lowStep's scene `lowWarn`) when it was ours that hurt him
+  lowWarn() {
+    const h = this.hurtBy, G0 = this.game;
+    if (!h || !G0 || G0.time - h.t > 2) return null;
+    return h.by === 'tram' ? 'Hurt. Keep off the rails.' : 'Too hot. Get back.';
   }
   get stage() { return this.smash.stage; }
   get game() { return this.smash.stage.game; }
@@ -360,10 +428,11 @@ export class CarDamage {
       // (the cars near take it too)
       for (const o of this.list) if (o !== D && o.state !== 'wreck' && Math.hypot(o.v.pos.x - v.pos.x, o.v.pos.z - v.pos.z) < 6.5) o.v.hurt(1.4, at);
       const mine = G0.vehicles && G0.vehicles.player === v && G0.city && G0.city.inCar;
+      if (Math.hypot(G0.eye.x - at.x, G0.eye.z - at.z) < 8) this.hurtBy = { by: 'blast', t: G0.time };
       G0.onCarExploded({ pos: v.pos.clone(), id: -1, smash: true }, at);
       G0.emit('car:wreck', { car: v, at, mine });
       if (mine) G0.fail({ why: 'She went up with you in her.', fall: false });
-      else if (G0.health && G0.health.dead && !G0.health.onDeath) G0.fail({ why: 'Too close when she went.', fall: false });
+      else if (G0.health && G0.health.dead && !G0.health.onDeath) G0.fail({ why: this.why() || 'Too close when she went.', fall: false });
     }
     this.toWreck(D);
   }
@@ -380,11 +449,11 @@ export class CarDamage {
       if (o.renderOrder >= 1 && o.layers && o.layers.mask === 4) return;   // (the contact shadow: LAYER.FX)
       o.visible = false; D.hidden.push(o);
     });
-    // (a sedan's glass all gone)
+    // (a sedan's glass all gone: the step after - the blast's own frame is full)
     const C = st.cars;
-    if (v.car && v.car.panes && C && C.shatter) { try { v.car.panes.forEach((p, i) => { if (!p.broken) C.shatter(v.car, i, 2); }); } catch (e) { /* */ } }
+    if (v.car && v.car.panes && C && C.shatter) this.smash.later(0.02, () => { try { v.car.panes.forEach((p, i) => { if (!p.broken) C.shatter(v.car, i, 2); }); } catch (e) { /* */ } });
     // the burnt body: the wreck's shell, cut to its length and width, down on its rims
-    if (!WRECK) WRECK = { B: buildWreck('A', SEDAN_SHAPES, 0), M: wreckMaterials(st.M) };
+    if (!WRECK) this.prewarm();
     const g = new THREE.Group();
     g.scale.set(S.halfL / 2.45, 1, S.halfW / 0.95);
     g.position.y = -WRECK_DROP;
@@ -441,6 +510,8 @@ export class CarDamage {
   update(dt, t) {
     const G0 = this.game;
     if (!G0 || !G0.vehicles) return;
+    // (the warm meshes drawn a third of a second of play, then not again)
+    if (this._warm && this._warm.visible && G0.state === 'playing' && ++this._warmN > 20) this._warm.visible = false;
     const L = G0.vehicles.list;
     for (const v of L) if (!v.smashD && v.spec && v.local && v.body) this.attach(v);
     for (let i = this.list.length - 1; i >= 0; i--) { const D = this.list[i]; if (!L.includes(D.v)) this.detach(D); }
@@ -481,9 +552,81 @@ export class CarDamage {
       if (D.fire && !(this.stage.cars && this.stage.cars.fires)) D.fire.update(dt, t);
     }
     if (this._litBy && this._litBy.state !== 'burning') { const Lf = this.stage.fxLights && this.stage.fxLights.fire[0]; if (Lf && !(this.stage.cars && this.stage.cars.fires.some((f) => f.light === Lf))) Lf.intensity = 0; this._litBy = null; }
-    // the player's: warned while it burns and he sits in it
+    // the player's: warned while it burns and he sits in it; on foot, off a
+    // car that burns, a fire that burns him, the tram's rails ahead of it
     const me = G0.vehicles.player, D = me && me.smashD, inCar = !!(G0.city && G0.city.inCar);
-    const want = D && D.state === 'burning' && inCar ? 'She’s burning. Get out.' : null;
+    const live = G0.state === 'playing' && !G0.failing;
+    let want = D && D.state === 'burning' && inCar ? 'She’s burning. Get out.' : null;
+    if (!want && !inCar && live) want = this.footWant(G0, dt);
     if (want !== (this._warned || null)) { this._warned = want; if (G0.hud && G0.hud.warn) { if (want) { if (G0.hud.teach && G0.hud.teach.dismiss) G0.hud.teach.dismiss(); G0.hud.warn(want); } else G0.hud.warn(null); } }
+    // knocked aside by the tram: carried off its rails over a moment
+    const K = this.knockV, ctl = G0.controller;
+    if (K && ctl) {
+      const k = Math.min(dt, K.t);
+      ctl.pos.x += K.x * k; ctl.pos.z += K.z * k;
+      if (this.stage.colliders && this.stage.colliders.resolve) this.stage.colliders.resolve(ctl.pos, ctl.radius || 0.35);
+      K.t -= dt;
+      if (K.t <= 0) this.knockV = null;
+    }
+    // (down by what this set did, in a scene that does not catch it - the
+    // city's roam: the fail with its words, never a man lying dead in the street)
+    if (live && G0.health && G0.health.dead && !G0.health.onDeath && this.why()) G0.fail({ why: this.why(), fall: true });
+  }
+
+  // a man on foot: the line he needs (and, met by the tram, the blow)
+  footWant(G0, dt) {
+    const e = G0.eye;
+    let want = null;
+    // the fire: standing in a burning wreck's (React's tick hurts within 2.4 m)
+    const F = this.stage.cars && this.stage.cars.fires ? this.stage.cars.fires : this.fires;
+    for (const f of F) {
+      const I = f.intensity(), d = Math.hypot(f.pos.x - e.x, f.pos.z - e.z);
+      if (I < 0.3) continue;
+      if (d < 2.45) this.hurtBy = { by: 'fire', t: G0.time };
+      if (d < 3.6) want = 'Too hot. Get back.';
+    }
+    for (const D of this.list) {
+      const v = D.v;
+      if (v.kind === 'tram') {
+        const T = this.tramMan(v, e, G0);
+        if (T && !want) want = T;
+        continue;
+      }
+      // a car that burns, its blast to come (8 m: Game.onCarExploded's reach)
+      if (!want && D.state === 'burning' && Math.hypot(v.pos.x - e.x, v.pos.z - e.z) - v.spec.halfL * 0.5 < 7.5) want = 'She’s going up. Get back.';
+    }
+    void dt;
+    return want;
+  }
+
+  // the tram and a man on its rails: told while it comes; met, knocked aside
+  // (to the side he stood) and hurt by its speed - a moving wall that hits
+  tramMan(v, e, G0) {
+    const sp = Math.hypot(v.vel.x, v.vel.z);
+    if (sp < 1) return null;
+    const l = v.local(_v.set(e.x, 0, e.z), _w), S = v.spec;
+    const fwd = Math.sign(v.vel.x * Math.cos(v.yaw) - v.vel.z * Math.sin(v.yaw)) || 1;
+    const ax = l.x * fwd;     // ahead of its nose along its way
+    if (Math.abs(l.z) > S.halfW + 0.45) return null;
+    if (ax > S.halfL - 0.6 && ax < S.halfL + 0.75 && G0.time - (this.tramHitT ?? -9) > 1.2) {
+      this.tramHitT = G0.time;
+      const side = l.z >= 0 ? 1 : -1, s = Math.sin(v.yaw), c = Math.cos(v.yaw);
+      // (aside at 7 m/s for 0.35 s, and on a little with it)
+      this.knockV = { x: s * side * 7 + v.vel.x * 0.4, z: c * side * 7 + v.vel.z * 0.4, t: 0.35 };
+      this.hurtBy = { by: 'tram', t: G0.time };
+      const ctl = G0.controller;
+      if (ctl) { if (ctl.shake) ctl.shake(1, 0); if (ctl.kick) ctl.kick(7, 9, 0.3); }
+      G0.sfx.play('crash', e.clone(), { k: 0.8 }, { ref: 4 });
+      G0.sfx.play('f_bodyFloor', null, {}, { send: false });
+      G0.health.damage(Math.round(16 + 4.2 * sp));
+      G0.emit('smash:tram', { at: e.clone(), k: 1, man: true });
+      return 'The tram. Off the rails.';
+    }
+    if (ax > S.halfL - 0.6 && ax < S.halfL + 26) {
+      // (the bell, again and again as it closes)
+      if (G0.time - (this._bellT ?? -9) > 0.9) { this._bellT = G0.time; G0.sfx.play('c3_bell', v.pos, { k: 1 }, { ref: 8 }); }
+      return 'The tram. Off the rails.';
+    }
+    return null;
   }
 }

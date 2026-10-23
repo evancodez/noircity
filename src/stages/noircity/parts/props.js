@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { Smash } from '../../../destruct/Smash.js';
 import { KIND_OF } from '../../../destruct/smashKinds.js';
+import { lotWindows } from '../../../city/kits/facade.js';
 
 // [O6] The city's destruction set (lane O6, docs/seams/SMASH.md): the
 // furniture the generator placed (cityGen's C.props, C.lamps) registered
@@ -19,7 +20,11 @@ export default {
       iron: M.lampIron, kerb: M.kerb, tree: M.tower, wood: M.wood,
       cloth: new THREE.MeshStandardMaterial({ color: 0x262626, roughness: 0.9, side: THREE.DoubleSide }),
       fruit: new THREE.MeshStandardMaterial({ color: 0x2c2c2c, roughness: 0.32, envMap: M.env, envMapIntensity: 0.5 }),
-      paper: new THREE.MeshStandardMaterial({ color: 0x9a9a9a, roughness: 0.9, side: THREE.DoubleSide }),
+      // (papers and a stall's canvas carry a little light of their own: in the
+      // dark a newsstand's papers in the air were nothing - the critic's
+      // blocker 1; under a lamp they print paper white)
+      paper: new THREE.MeshStandardMaterial({ color: 0xd8d8d8, roughness: 0.9, side: THREE.DoubleSide, emissive: 0x6a6a6a }),
+      canvas: new THREE.MeshStandardMaterial({ color: 0xbdbdbd, roughness: 0.9, side: THREE.DoubleSide, emissive: 0x4a4a4a }),
       // (broken glass: its bright edges and a sheen catching the lamps)
       shard: new THREE.MeshStandardMaterial({ color: 0x505050, roughness: 0.12, metalness: 0.55, envMap: M.env, envMapIntensity: 1.8, side: THREE.DoubleSide }),
     };
@@ -34,6 +39,12 @@ export default {
     // the lamps' mouths in the far tiles (always drawn): their colour ranges
     const far = stage.part('far');
     if (far) for (const t of far.tiles) smash.chunkIn('far:' + t.key, t.meshes);
+    // the shop fronts (glazed when a round or a car meets one: Smash.setShops)
+    // - a round into a wall of the far masses is asked about them ('facade')
+    const shops = [];
+    for (const L of C.lots) for (const w of lotWindows(L)) if (w.kind === 'shop') shops.push(w);
+    smash.setShops(shops);
+    if (far) for (const t of far.tiles) for (const m of t.meshes) if (!m.userData.noRay && !m.userData.prop) m.userData.prop = 'facade';
     // (the lamps' own answer to a round in a head: O1's stage.lamps.hit gave null)
     const L = stage.part('lamps');
     if (L) L.hit = (lamp, hit, dir) => {

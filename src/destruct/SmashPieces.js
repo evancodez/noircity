@@ -42,7 +42,7 @@ export class SmashPieces {
     pool('plank', new THREE.BoxGeometry(1, 1, 1), mats.wood, caps.plank ?? 420);
     pool('fruit', new THREE.SphereGeometry(1, 8, 6), mats.fruit, caps.fruit ?? 320);
     pool('sheet', new THREE.PlaneGeometry(1, 1), mats.paper, caps.sheet ?? 200);
-    pool('cloth', new THREE.PlaneGeometry(1, 1, 3, 2), mats.cloth, caps.cloth ?? 24);
+    pool('cloth', new THREE.PlaneGeometry(1, 1, 3, 2), mats.canvas || mats.cloth, caps.cloth ?? 24);   // (a stall's canvas: pale)
     pool('shard', new THREE.CircleGeometry(1, 3), mats.shard, caps.shard ?? 360);
     pool('lid', new THREE.CylinderGeometry(1, 1, 1, 14), mats.iron, caps.lid ?? 24);
     pool('iron', new THREE.BoxGeometry(1, 1, 1), mats.iron, caps.iron ?? 60);
