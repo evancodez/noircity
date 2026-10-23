@@ -5,6 +5,7 @@ import { STARTS, START_DEFAULT, PAVE, RIVER, QUAY_OFF, SLIPS, PIERS, BRIDGE } fr
 import { riverNearest } from '../world/cityGen.js';
 import { MapOverlay } from '../world/map.js';
 import { compileAll } from '../stages/noircity/compile.js';
+import { installPeople } from '../people/index.js';   // [O3]
 
 // NOIR CITY's free roam (lane O1): the city, a car at the kerb, nothing I
 // must do. Every critic and every later lane starts from here.
@@ -85,10 +86,10 @@ function place(ctx, at) {
 
 export default defineScene({
   id: 'city', stage: 'noircity', title: '', name: 'Noir City',
-  beats: ['roam', 'ashore'],
+  beats: ['roam', 'ashore', 'station', 'hospital'],   // [O3] the arrest's and the fall's ends
   // (M is the map here: Game.bindInput leaves the sound alone)
   mapKey: true,
-  objectives: { roam: null, ashore: null },
+  objectives: { roam: null, ashore: null, station: null, hospital: null },
   setup: {
     roam(ctx) {
       const a = ctx.stage.anchor(`city.start.${startOf()}`);
@@ -112,6 +113,23 @@ export default defineScene({
       const G = ctx.game, W = G.cityWet || { x: 300, z: 432 };
       const S = stepsNear(W.x, W.z);
       place(ctx, S);
+      // [O3] (out of the river unseen: the police have lost me)
+      if (G.people) G.people.afterFail('river');
+    },
+    // [O3] arrested: I wake on the pavement outside the police headquarters
+    // (O5's room when it merges), the gun gone, the heat gone, the car gone
+    // (a car at the kerb down the street, until O2 parks the city's), a fine
+    station(ctx) {
+      const G = ctx.game, S = wakeAt(ctx, 'police');
+      place(ctx, S);
+      if (G.people) G.people.afterFail('arrest');
+    },
+    // [O3] down (shot, beaten): up on the pavement by the hospital (O4's
+    // rule: the gun kept, the money less a little); the stand-in's place
+    hospital(ctx) {
+      const G = ctx.game, S = wakeAt(ctx, 'hospital');
+      place(ctx, S);
+      if (G.people) G.people.afterFail('hospital');
     },
   },
   *script(ctx) {
@@ -119,6 +137,7 @@ export default defineScene({
     yield beat(ctx.beat || 'roam');
     if (!R.map) R.map = new MapOverlay(ctx.stage.part('city').C);
     R.map.close();
+    installPeople(ctx);   // [O3] the crowd, the police, the gangs
     const T = { foot: 0, drive: 0, dist: 0, near: false };
     ctx.onStep((dt) => step(ctx, R, T, dt));
     for (;;) yield null;
@@ -275,6 +294,35 @@ function wet(ctx, R, at, why) {
   if (R.map) R.map.close();
   // (the warning stays up into the fail: it was the reason)
   G.fail({ why, to: 'ashore', fall: false, hold: 1.1 });
+}
+
+// [O3] where I wake after the black: the pavement outside a place's door
+// (the police headquarters; the hospital - no lot of the plan is one yet: the
+// stand-in is the pavement at Baxter St and Fifth St, downtown), a car at the
+// kerb down the street
+const HOSPITAL = { x: -36.5, z: 66 };
+function wakeAt(ctx, what) {
+  const stage = ctx.stage, C = stage.part('city').C, g = stage.part('city').graph;
+  let x, z, yaw;
+  const D = what === 'police' ? (stage.part('places').doors || []).find((d) => d.place === 'police' || (d.place && d.place.id === 'police')) : null;
+  if (D) {
+    x = D.x + D.nx * 2.2; z = D.z + D.nz * 2.2;
+    yaw = Math.atan2(-D.nx, -D.nz);
+  } else {
+    const n = g.nearestPavement(HOSPITAL.x, HOSPITAL.z).node;
+    x = n.x; z = n.z;
+    const L = g.nearestLane(x, z);
+    yaw = L ? Math.atan2(-(L.x - x), -(L.z - z)) : 0;
+  }
+  const v = new THREE.Vector3(x, 0, z);
+  stage.colliders.resolve(v, 0.4);
+  // (the car: a bay 25 - 70 m off, the way the traffic goes there)
+  const bays = g.baysNear(x, z, 70).filter((b) => b.d > 25);
+  const b = bays[0] || g.baysNear(x, z, 120)[0];
+  const car = b ? { x: b.x, z: b.z } : { x: x + 6, z };
+  const carYaw = b ? b.yaw : 0;
+  void C;
+  return { car, carYaw, pos: { x: v.x, z: v.z }, yaw };
 }
 
 // the steps up out of the water nearest a point: a place on the quay's

@@ -10,6 +10,12 @@ import { Colliders } from './Colliders.js';
 // (the Hoods' nav grid over the bounds, the cover set).
 const CELL = 16;
 const key = (i, j) => i * 65536 + j;
+// [O3] the circles that walk (the men: Hood.js and the cast's figures add
+// theirs tagged 'hood' and move it every step): kept out of the grid's
+// buckets (a man gridded where he was made was not met 40 m on) and tested
+// from one short list by their place now; a man taken out of `circles` (the
+// dead: Game.killHood splices it) is no longer met
+const MOVING = new Set(['hood', 'person']);
 
 export class GridColliders extends Colliders {
   constructor() {
@@ -18,6 +24,7 @@ export class GridColliders extends Colliders {
     this.bodies = null;
     this._seen = new Set();
     this._near = [];
+    this.moving = [];   // [O3]
   }
   _insert(o, x0, x1, z0, z1) {
     o._cells = [];
@@ -35,6 +42,7 @@ export class GridColliders extends Colliders {
   }
   addCircle(x, z, r, tag) {
     const c = super.addCircle(x, z, r, tag);
+    if (MOVING.has(tag)) { this.moving.push(c); return c; }   // [O3]
     this._insert(c, x - r, x + r, z - r, z + r);
     return c;
   }
@@ -46,7 +54,8 @@ export class GridColliders extends Colliders {
   }
   remove(o) {
     this._drop(o);
-    let i = this.boxes.indexOf(o); if (i >= 0) this.boxes.splice(i, 1);
+    let i = this.moving.indexOf(o); if (i >= 0) this.moving.splice(i, 1);   // [O3]
+    i = this.boxes.indexOf(o); if (i >= 0) this.boxes.splice(i, 1);
     i = this.circles.indexOf(o); if (i >= 0) this.circles.splice(i, 1);
   }
   // what is near a point (r: the reach)
@@ -57,6 +66,14 @@ export class GridColliders extends Colliders {
       const L = this.grid.get(key(i, j));
       if (!L) continue;
       for (const o of L) if (!S.has(o)) { S.add(o); out.push(o); }
+    }
+    // [O3] the men near it now (one still in `circles`: the dead are taken out of it)
+    const M = this.moving;
+    for (let k = M.length - 1; k >= 0; k--) {
+      const o = M[k];
+      if (Math.abs(o.x - x) > r + o.r || Math.abs(o.z - z) > r + o.r) continue;
+      if (this.circles.indexOf(o) < 0) { M.splice(k, 1); continue; }
+      out.push(o);
     }
     return out;
   }
