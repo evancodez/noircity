@@ -41,7 +41,32 @@ S.itemAt(x, z, tag)                // the standing item at a place (a collider's
 S.near(x, z, r)                    // the items round a point
 S.events                           // the record the plays read: { t, kind, what, by, id }
 S.stats                            // { over, broken, shot, mended, recycled, maxOut }
+S.setShops(list)                   // [after the critic] the city's shop windows (facade.js
+                                   // lotWindows kind 'shop'): glazed when a round or a car meets one
+S.cars.why()                       // the fail's words when the set downed the man (null: not ours):
+                                   // 'Too close when she went.' | 'Burnt. Keep off the fire.' | 'The tram. Mind the rails.'
+S.cars.lowWarn()                   // the low line's fix when the set hurt him ('Too hot. Get back.' | 'Hurt. Keep off the rails.'):
+                                   // a scene's `lowWarn: (ctx) => ctx.stage.smash.cars.lowWarn() || null`
 ```
+
+**Every break is seen** (after the critic: dark on dark it was not): a
+thing that goes over or breaks throws the muzzle flash's white splatter for
+two frames where it went (`S.mark`, three a step), sparks off iron and
+white splinters off wood and stone, a pale puff that hangs a moment; a
+round's chips are two in three white; a shot hydrant's fan is white; the
+papers, a stall's canvas and its goods carry a little light of their own.
+A lane's own breakable gets it by going through `S.hit`.
+
+**The man and the set** (no lane calls these; the set does it per step):
+walking into a standing thing is `S.hit(item, ..., 'body')` at a fifth of
+his speed (a clang; a bin at a run goes over); on foot within 7.5 m of a
+car that burns he is told `She’s going up. Get back.`, in a burning wreck's
+fire (3.6 m) `Too hot. Get back.`; on the rails ahead of a car of `kind
+'tram'` (26 m) the bell and `The tram. Off the rails.`, and met he is
+knocked aside off the rails and hurt by its speed (16 + 4.2 x m/s). Downed
+by what the set did in a scene with no `health.onDeath` (the city's roam),
+the set fails him with `why()`'s words; a scene with its own `onDeath` (the
+bed's; O3 / O7's hospital) reads `S.cars.why()` for them.
 
 Events on the game: `smash` `{ kind, pos, by, how, item, speed }` (O3: a
 witness to what is someone's), `car:burning` `{ car }`, `car:wreck`
@@ -79,7 +104,18 @@ a merged set of its own** does the same: merge, record the ranges, call
 - `spec.top` (m over the road; default 1.75, a truck 3.3) says what an
   awning's hem reaches: only a tall thing tears one down.
 - A kinematic car (the tram) calls `S.collide(car)` from its driver to
-  sweep its rails.
+  sweep its rails; its `kind = 'tram'` gives it the man's rule above.
+- [after the critic] What a car pays (the kind's `drag`, `hurt`): a lamp
+  post or a telegraph pole about half its speed, a hydrant or a call box a
+  third, a stall a third; the eye of the player's car kicked by it
+  (`controller.kick`). Two lamps at 50 km/h and the car steams, four or
+  five iron things and it smokes, never burning from one kerb run.
+- [after the critic] A car whose `input.hold` is 1 brakes when rolling back
+  too (Car.js's own rule for the city's drivers): the roam sets it on the
+  car I leave and while E brakes for me to get out (the empty coupe reversed
+  itself 37 m down Grand Ave), and clears it as I get in.
+- The city's shop fronts: a car's box reaching one glazes it and bursts it
+  (`S.collide`), as the bed's panes.
 
 ### The rounds (O4: the rounds call)
 `fx/React.js` already routes every round: `ud.prop` -> `stage.props.hit` ->
@@ -89,6 +125,11 @@ merge has a box in the bullets' world (`ud.prop = item`); a car has its
 hull's box riding with it (`ud.prop = { carD }`). A Hood's stray round
 (`weak`) shows but never kills a lamp or flattens a tyre. A fist or a body
 thrown into a thing: `S.hit(item, point, impulse, 'fist' | 'body')`.
+[after the critic] The far tiles' masses carry `ud.prop = 'facade'`: a round
+into a wall comes here too, and where it went into a shop window
+(`S.shopNear`) the window is glazed there and then (`S.glaze`: a Glass pane
+over it, an item of kind `glass`, at most 24 at once, the oldest out of
+view goes, all of them at the mend's 200 m) and the round is the pane's.
 
 ---------------------------------------------------------------------------
 ## 2. The kinds (src/destruct/smashKinds.js)
@@ -169,6 +210,11 @@ it reads: `Car.js`'s contacts (`crash`, `scrape`, `bump`, `lean`, `post`),
 - Water: two hydrant columns in full spate at most (95 drops/s each; the
   splash pool is 300); six jets.
 - Fires: two roaring at once (a third blast sinks the oldest to embers).
+- The first draw of every program the set and a blast use (the wreck's
+  shell, the explosion's chunks, the glass's cracks, halo, shards and
+  hairlines, every pool) is made in the stage's first steps, at a scale of
+  nothing (`CarDamage.prewarm`, `Smash.warmPools`): the first blast was a
+  100 ms frame, the first papers in the air 50 ms.
 - Lights: none added. A leaning lamp moves its own cone and light while it
   flickers; a burning car borrows the fire light (`fxLights.fire[0]`); the
   blast borrows the muzzle flash's.

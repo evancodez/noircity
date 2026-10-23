@@ -1,0 +1,20 @@
+{
+ "about": "[O6 after the critic, major 4] Iron costs a car (O1's free roam: ?start=city&car= on Grand Ave's east kerb, W held, by the keys): through a bin, a lamp post, a stop sign, a hydrant and a second lamp at 40 to 60 km/h. The speed just before and just after each; a lamp post costs about half of it, a hydrant a third; the eye kicked; the car steams by the second iron thing and smokes by the fifth - never burning from a kerb run. node tools/play.mjs tools/plays/o6_iron.json",
+ "url": "/?mute=1&start=city&car=-110.4,62,1.5708",
+ "size": [1280, 800],
+ "out": "shots/o6/iron",
+ "steps": [
+  { "wait": 1500 },
+  { "clickOn": "#title .opt[data-k=begin]", "taken": "G.state !== 'title'", "retries": 5, "every": 4000 },
+  { "until": "G.scenes.current && G.scenes.current.id === 'city' && G.scenes.fadeK < 0.05 && G.city.inCar", "timeout": 30000 },
+  { "eval": "(() => { const W = window.__sp = []; const c = G.city.car; let kicks = 0; const k0 = N.controller.kick.bind(N.controller); N.controller.kick = (...a) => { kicks++; window.__kicks = kicks; return k0(...a); }; const tick = () => { W.push([+G.time.toFixed(2), +(c.speed * 3.6).toFixed(1), +c.pos.z.toFixed(1), +c.damage.toFixed(2), c.smashD ? c.smashD.state : null]); if (W.length < 2000) requestAnimationFrame(tick); }; requestAnimationFrame(tick); return 1; })()" },
+  { "down": "KeyW" },
+  { "wait": 9000 },
+  { "up": "KeyW" },
+  { "eval": "(() => { const W = window.__sp, E = G.stage.smash.events; const out = []; for (const e of E) { if (e.what !== 'over') continue; const i = W.findIndex((x) => x[0] >= e.t); if (i < 0) continue; out.push({ kind: e.kind, before: Math.max(...W.slice(Math.max(0, i - 6), i).map((x) => x[1])), after: Math.min(...W.slice(i, i + 12).map((x) => x[1])), dmg: W[Math.min(W.length - 1, i + 10)][3], st: W[Math.min(W.length - 1, i + 10)][4] }); } window.__iron = out; return JSON.stringify({ out, kicks: window.__kicks, end: W[W.length - 1] }); })()" },
+  { "expect": "window.__iron.filter((h) => h.kind === 'lamp').length >= 2 && window.__iron.filter((h) => h.kind === 'lamp').every((h) => h.after <= h.before * 0.65)", "label": "a lamp post at speed costs about half of it" },
+  { "expect": "window.__iron.filter((h) => h.kind === 'hydrant').every((h) => h.after <= h.before * 0.8)", "label": "a hydrant a third" },
+  { "expect": "window.__kicks >= 3", "label": "each iron thing kicks the eye" },
+  { "expect": "(() => { const I = window.__iron.filter((h) => h.kind !== 'bin'); return I.length >= 4 && I[1].dmg >= 1.5 && I[I.length - 1].dmg >= 2.5 && G.city.car.smashD.state !== 'burning' && G.city.car.smashD.state !== 'wreck'; })()", "label": "steam by the second, smoke by the last, never burning from a kerb run" }
+ ]
+}
