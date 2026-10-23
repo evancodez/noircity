@@ -549,7 +549,7 @@ export class Police {
   stepCop(c, dt) {
     const G = this.G, P = this.P, E = G.eye;
     if (!c.standing) { if (c.dead && !P.inView(c.pos.x, c.pos.z) && Math.hypot(c.pos.x - E.x, c.pos.z - E.z) > 50) this.dropCop(c); return; }
-    if (c.mode === 'fight') return;
+    if (c.mode === 'fight' || c.job === 'hold') return;
     const inCar = !!(G.city && G.city.inCar);
     const d = Math.hypot(c.pos.x - E.x, c.pos.z - E.z);
     if (c.job === 'beat') {

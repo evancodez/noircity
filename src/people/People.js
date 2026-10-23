@@ -158,6 +158,45 @@ export class People {
     this.police.event('wake', { why });
   }
 
+  // ---- the frames' tableaux (shot mode: ?scene=city&beat=roam&people=1&o3stage=<name>) ----------
+  // fixed people at fixed places on the Grand Ave start, the same every capture
+  // (the golden frames city_o3_crowd and city_o3_police; look development)
+  stageShot(name) {
+    this.hold = true;
+    const walk = (kind, x, z, yaw, gait = 'walk', umbrella = false) => {
+      const p = this.spawn(kind, x, z, yaw, 'walker', { umbrella });
+      p.side = 0.5; p.mode = 'walk';
+      p.goTo([[x + Math.sin(yaw) * 40, z + Math.cos(yaw) * 40]], { gait });
+      return p;
+    };
+    if (name === 'crowd') {
+      // the east pavement under the el: toward me, away from me, two under umbrellas
+      walk('o3_fedora_b', -108.4, 14, 0, 'walk', true);
+      walk('o3_woman_a', -107.2, 4, 0, 'stroll', true);
+      walk('oldman', -108.9, -6, 0, 'walk');
+      walk('o3_fedora_d', -107.5, 24, Math.PI, 'walk');
+      walk('o3_newsboy', -109.4, 27.5, Math.PI, 'hurry');
+      walk('o3_fedora_g', -108.2, -16, 0, 'stroll', true);
+      // across the avenue under the marquee, waiting out the rain
+      this.dbgWalker(-130.4, 21.5, -Math.PI / 2, 'o3_woman_c');
+      this.dbgWalker(-130.6, 23.2, -Math.PI / 2 + 0.5, 'o3_fedora_c');
+      // a beat cop coming down the pavement
+      const c = this.dbgCop(-108.3, -26, 0); c.mode = 'walk'; c.goTo([[-108.3, 30]], { gait: 'stroll' });
+    } else if (name === 'police') {
+      // a man down in the road, the patrol car stopped crooked by him, a cop
+      // over him, another at the car, the street watching from the kerb
+      const pc = this.police.spawnCarAt(-116.5, 12, Math.PI / 2 + 0.5);
+      pc.park(); pc.mode = 'stopped'; pc.siren = false;
+      const v = this.dbgWalker(-113.2, 14.5, 0.8, 'o3_fedora_e'); v.knock(null, { why: 'punch' });
+      const c1 = this.dbgCop(-112.3, 15.8, -2.2, 'hold'); c1.look({ x: -113.2, z: 14.5, y: -1 });
+      const c2 = this.dbgCop(-118.6, 14.2, 2.4, 'hold');
+      void c2;
+      this.dbgWalker(-108.6, 18.5, -1.9, 'o3_woman_b').watch({ x: -113.2, z: 14.5 }, 999);
+      this.dbgWalker(-108.2, 16.2, -1.6, 'oldman').watch({ x: -113.2, z: 14.5 }, 999);
+      this.dbgWalker(-108.9, 11.8, -1.3, 'o3_fedora_h').watch({ x: -113.2, z: 14.5 }, 999);
+    }
+  }
+
   // ---- the plays' staging (tools/plays/o3_*: a beat's setup, like the kit's debug hooks) ---------
   // the street round me emptied, the police stood down (the start of a proof)
   dbgClear() { this.afterFail('reset'); this.hold = true; }

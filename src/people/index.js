@@ -20,5 +20,8 @@ export function installPeople(ctx) {
   if (!G.people) G.people = new People(G, ctx.stage);
   const P = G.people;
   ctx.onStep((dt) => P.step(dt));
+  // (the frames' tableaux: fixed people for a golden frame / look development)
+  const st = q && q.get('o3stage');
+  if (st && G.shotMode) P.stageShot(st);
   return P;
 }

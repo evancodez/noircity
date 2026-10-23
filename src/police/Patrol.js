@@ -27,9 +27,12 @@ export function makeCar(police, { x, z, yaw, kind = 'sedan' }) {
   const v = G.vehicles.spawn(kind, { at: { x, z }, yaw, lights: true });
   v.police = true;
   // the red lamp on the roof: a small lit dome, the registry's red
-  if (!LAMP_MAT) { LAMP_MAT = accentMaterial('blood', { gain: 3.2 }); LAMP_GEO = new THREE.SphereGeometry(0.11, 16, 10, 0, Math.PI * 2, 0, Math.PI / 2); }
+  if (!LAMP_MAT) { LAMP_MAT = accentMaterial('blood', { gain: 3.2 }); LAMP_GEO = new THREE.SphereGeometry(0.15, 16, 10, 0, Math.PI * 2, 0, Math.PI / 2).scale(1, 1.3, 1); }
   const lamp = new THREE.Mesh(LAMP_GEO, LAMP_MAT);
-  lamp.position.set(-0.1, kind === 'truck' ? 2.75 : 1.62, 0);
+  // (on the roof's top: the body's own height there)
+  v.body.updateMatrixWorld(true);
+  const top = new THREE.Box3().setFromObject(v.body).max.y - v.body.position.y;
+  lamp.position.set(-0.45, Math.max(1.3, top) - 0.02, 0);
   lamp.userData.emitter = true;
   v.body.add(lamp);
   v.policeLamp = lamp;
