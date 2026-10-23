@@ -10,18 +10,22 @@ export class EdgeInk {
     this.hud = hud;
     this.k = { L: 0, R: 0, B: 0 };
     this.want = { L: 0, R: 0, B: 0 };
+    this.p = { L: 0, R: 0, B: 0 };   // a blow's pulse: the ink closes in a touch on that side, and lifts
     this.c = null;
     this.drawn = '';
   }
   set(side, k = 1) {
     for (const s of ['L', 'R', 'B']) this.want[s] = s === side ? k : 0;
   }
-  clear() { this.set(null); this.k.L = this.k.R = this.k.B = 0; this.draw(); }
+  clear() { this.set(null); this.k.L = this.k.R = this.k.B = 0; this.p.L = this.p.R = this.p.B = 0; this.draw(); }
+  // a blow from that side: the ink pressed in at once, lifting over a third of a second
+  pulse(side, k = 0.6) { if (this.p[side] != null) this.p[side] = Math.max(this.p[side], k); }
   step(dt) {
     let ch = false;
     for (const s of ['L', 'R', 'B']) {
-      const w = this.want[s], k0 = this.k[s];
-      const k1 = k0 + (w - k0) * (1 - Math.exp(-dt * (w > k0 ? 9 : 5)));
+      if (this.p[s] > 0) { this.p[s] = Math.max(0, this.p[s] - dt * 1.8); ch = true; }
+      const w = Math.max(this.want[s], this.p[s]), k0 = this.k[s];
+      const k1 = this.p[s] >= w - 1e-6 && this.p[s] > 0 ? w : k0 + (w - k0) * (1 - Math.exp(-dt * (w > k0 ? 9 : 5)));
       this.k[s] = Math.abs(k1 - w) < 0.005 ? w : k1;
       if (Math.abs(this.k[s] - k0) > 1e-4) ch = true;
     }

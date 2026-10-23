@@ -63,7 +63,7 @@ export const CROWD = {
   leave: { warn: 14, gone: 30 },
   getUp: { after: 3.0, hp: 0.34 },
   // the hit stop (steps of 1/60 s) and the frame's kick by what landed
-  feel: { jab: { stop: 3, kick: [0.6, 0.8], burst: 90 }, heavy: { stop: 5, kick: [2.2, 2.8], burst: 230, knock: 1.1 }, thing: { stop: 5, kick: [1.8, 2.2], burst: 200, knock: 0.8 } },
+  feel: { jab: { stop: 4, kick: [0.6, 0.8], burst: 90 }, heavy: { stop: 5, kick: [2.2, 2.8], burst: 230, knock: 1.1 }, thing: { stop: 5, kick: [1.8, 2.2], burst: 200, knock: 0.8 } },
 };
 // the black's words (six at most): what put me down, and the fix
 export const CROWD_WHY = {
@@ -611,6 +611,8 @@ export class Crowd {
 
   // ---- the director: who steps in, and when ----------------------------------------------
   director(dt) {
+    // (a test hold: the men stand their ring and wait - the feel's measure)
+    if (this.hold) return;
     const live = this.men.filter((m) => this.standing(m));
     const engaged = live.filter((m) => m.state === 'in' || m.state === 'atk');
     const maxIn = this.cfg.maxIn ?? Math.min(CROWD.ring.maxIn, live.length);
@@ -905,9 +907,13 @@ export class Crowd {
       if (stun > 0) { me.act = 'hurt'; me.t = 0; me.stun = stun; me.h = H.play(from === 'L' ? 'hurtFromL' : from === 'R' ? 'hurtFromR' : 'hurtFront'); }
       if (me.holding && n >= 12) this.dropThing();
     }
-    // (the hit's splash at the frame's edge on his side: the health's compass)
-    const at = from === 'L' ? { at: [0, 0.5], behind: false } : from === 'R' ? { at: [1, 0.5], behind: false } : from === 'B' ? { at: [0.5, 1], behind: true } : { at: [0.5, 0], behind: false };
-    G.health.damage(n, at);
+    // (a fist is no bullet: no blood on the lens - the ink closes in a touch on
+    // the side it came from, the frame's flash, and the health's own count)
+    if (!soft && this.edge) this.edge.pulse(from === 'F' ? 'B' : from, Math.min(0.85, 0.35 + n / 25));
+    const Hh = G.health;
+    if (Hh.dead) return;
+    Hh.hp = Math.max(0, Hh.hp - n); Hh.sinceHit = 0; Hh.hitA = Math.max(Hh.hitA || 0, Math.min(0.7, 0.2 + n / 30));
+    if (Hh.hp <= 0) { Hh.dead = true; if (Hh.onDeath) Hh.onDeath(); }
   }
   pushMe(m, k) {
     const C = this.controller, P = C.brawlPush;

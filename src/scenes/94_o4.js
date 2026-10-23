@@ -149,6 +149,7 @@ function shop(ctx) {
   if (S._o4shop) S._o4shop.remove();
   S._o4shop = buildCounter(S, B.counter);
   C.setPose(B.at[0], B.at[1], B.at[2], -0.18);
+  C.setMode('gun', { crouch: false });
   G.eye.copy(G.camera.position);
   wallet(G);
   if (!ctx.flags.o4cash) { ctx.flags.o4cash = true; G.save.money = Math.max(G.save.money, B.cash); }
@@ -178,6 +179,8 @@ function gym(ctx) {
 function range(ctx) {
   const G = ctx.game, C = ctx.controller, R = RANGE;
   C.setPose(R.at[0], R.at[1], R.at[2], -0.02);
+  // (a gun out: the gun kit's mode - C gets low, RMB rises over what is in front)
+  C.setMode('gun', { crouch: false });
   G.eye.copy(G.camera.position);
   const W = ctx.player.weapons;
   W.equip('shotgun');
