@@ -323,9 +323,19 @@ export class Wheels {
     const between = (p, a, b) => { const A = g.nodes.get(a), B = g.nodes.get(b); return Math.hypot(p.x - B.x, p.z - B.z) < Math.hypot(A.x - B.x, A.z - B.z) && Math.hypot(p.x - A.x, p.z - A.z) < Math.hypot(A.x - B.x, A.z - B.z); };
     if (ids.length >= 2 && between(from, ids[0], ids[1])) ids.shift();
     if (ids.length >= 2 && between(to, ids[ids.length - 2], ids[ids.length - 1])) ids.pop();
+    // (from off its lane - at the kerb, in a bay - in to the lane 10 m on first)
+    let fromP = from;
+    const L = g.nearestLane(from.x, from.z, opts.yaw ?? null);
+    if (L && Math.hypot(L.x - from.x, L.z - from.z) > 1.2 && ids.length >= 2) {
+      const e = L.edge, s2 = Math.max(0, Math.min(e.len, L.s + L.dir * 10)), nx = -e.dz * L.dir, nz = e.dx * L.dir;
+      const off = opts.off != null ? opts.off : L.off;
+      fromP = { x: e.ax + e.dx * s2 + nx * off, z: e.az + e.dz * s2 + nz * off };
+    }
     let p;
-    try { p = ids.length >= 2 ? lanePath(g, ids, { from, to, ...opts }) : samplePath([[from.x, from.z, 12], ...ids.map((id) => [g.nodes.get(id).x, g.nodes.get(id).z, 12]), [to.x, to.z, 12]], { vmax: opts.vmax || 13 }); } catch (e) { return null; }
+    try { p = ids.length >= 2 ? lanePath(g, ids, { from: fromP, to, ...opts }) : samplePath([[from.x, from.z, 12], ...ids.map((id) => [g.nodes.get(id).x, g.nodes.get(id).z, 12]), [to.x, to.z, 12]], { vmax: opts.vmax || 13 }); } catch (e) { return null; }
     p.ids = p.ids && p.ids.length ? p.ids : r.nodes;
+    // (and the car's own place before it, when it was off the lane)
+    if (fromP !== from) { const s0 = { x: from.x, z: from.z }; const P0 = p.pts; const d = Math.hypot(P0[0].x - s0.x, P0[0].z - s0.z); const n = Math.max(1, Math.round(d)); const pre = []; for (let k = 0; k < n; k++) pre.push({ x: s0.x + (P0[0].x - s0.x) * k / n, z: s0.z + (P0[0].z - s0.z) * k / n, s: 0, v: Math.min(6, P0[0].v), k: 0 }); for (const q of P0) q.s += d; p.pts = pre.concat(P0); for (let k = 0; k < pre.length; k++) pre[k].s = d * k / n; p.len += d; }
     return p;
   }
 

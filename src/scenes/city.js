@@ -133,7 +133,7 @@ export default defineScene({
         const fl = R.car.model && R.car.model.fleet, so = fl ? { ...seatOpts(), eye: KINDS[R.car.kind].eye.clone() } : seatOpts();
         if (fl) cockpitInto(ctx.stage, R.car);
         R.cabin.attach(R.car, { ...so, control: brakesFor(G) });
-        R.cabin.eye = so.eye;
+        R.cabin.eye = fl ? so.eye : null;
         if (fl) R.cabin.screen.mesh.matrix.copy(screenBasis(R.car.kind));
         R.inCar = true;
         return;
@@ -282,7 +282,7 @@ function getIn(ctx, R, T, car = R.car) {
   const seat = fleet ? { ...seatOpts(), eye: KINDS[car.kind].eye.clone() } : seatOpts();
   if (fleet) cockpitInto(ctx.stage, car);
   R.cabin.attach(car, { ease: 0.35, ...seat, control: brakesFor(G) });
-  R.cabin.eye = seat.eye;
+  R.cabin.eye = fleet ? seat.eye : null;
   if (fleet) R.cabin.screen.mesh.matrix.copy(screenBasis(car.kind));
   R.inCar = true;
   G.sfx.play('tail_door', null, { open: false });

@@ -126,7 +126,7 @@ export class Hijack {
     if (v.model.meshes.bust) v.model.meshes.bust.visible = false;
     // his place at the wheel, and outside his door (the car's left)
     const seat = v.world(K.eye.x, K.eye.z, new THREE.Vector3());
-    const out = v.world(K.eye.x - 0.2, -(K.halfW + 1.25), new THREE.Vector3());
+    const out = v.world(K.eye.x - 0.2, -(K.halfW + 1.6), new THREE.Vector3());
     const men = [];
     const spawn = (kind, from, to) => {
       try {
@@ -191,7 +191,7 @@ export class Hijack {
       c.fig.pos.x = m.from.x + (m.to.x - m.from.x) * e; c.fig.pos.z = m.from.z + (m.to.z - m.from.z) * e;
       if (u >= 1) {
         if (m.kind === 'civilian') { m.state = 'flee'; m.t = 0; this.stats.fled++; this.run(c, v.pos); }
-        else { m.state = 'recover'; m.t = 0; c.setState('idle', 0.2); c.lookAt(G.eye); }
+        else { m.state = 'recover'; m.t = 0; c.setState('idle', 0.2); c.lookAt(G.eye); if (mine) G.hud.warn('He’s coming back.'); }
       }
       return;
     }
@@ -202,23 +202,23 @@ export class Hijack {
     }
     if (m.state === 'recover') {
       // (a man with a jaw: he gets his breath and comes back for his car)
-      if (m.t > 0.9) { m.state = 'back'; m.t = 0; G.hud.warn('He’s coming back.'); c.setState('run', 0.2); c.fig.speed = 3.2; }
+      if (m.t > 1.0) { m.state = 'back'; m.t = 0; c.setState('run', 0.2); c.fig.speed = 2.6; }
       return;
     }
     if (m.state === 'back') {
       const K = KINDS[v.kind];
       // (he comes to stand a stride out from his door: from there he has me out)
-      const door = v.world(K.eye.x - 0.3, -(K.halfW + 2.1), _w);
+      const door = v.world(K.eye.x - 0.3, -(K.halfW + 0.95), _w);
       const dx = door.x - c.fig.pos.x, dz = door.z - c.fig.pos.z, d = Math.hypot(dx, dz);
       c.fig.yaw = Math.atan2(dx, dz);
       // driven off from him: he is left in the road (he stops, he shouts)
-      if (!mine || v.speedAbs > 3.2 || d > 14) {
+      if (!mine || v.speedAbs > 1.6 || d > 14) {
         G.hud.warn(null);
         c.fig.speed = 0; c.setState('idle', 0.3);
         m.state = 'left'; m.t = 0;
         return;
       }
-      if (d < 0.5 && v.speedAbs < 2.2) {
+      if (d < 0.45 && v.speedAbs <= 1.6) {
         // he has me out of my seat: the fight (the base's brawl, one man)
         G.hud.warn(null);
         c.fig.speed = 0;

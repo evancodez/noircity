@@ -146,9 +146,10 @@ async function park(P, { js, sleep, log, shot }, H) {
   await P.tap('KeyE');
   const t0 = Date.now();
   // (bad hands: turn away in the middle once, and try again)
-  if (H.wrong && Math.random() < 0.5 + H.wrong) {
+  if (H.name === 'bad') {
     await sleep(900);
-    await P.face(b.x + 8, b.z + 8);
+    const me = await P.state();
+    await P.face(me.x + (me.x - b.x) * 3, me.z + (me.z - b.z) * 3);
     const c = await js('({ act: !!G.wheels.hijack.act, cancelled: G.wheels.hijack.stats.cancelled })');
     log(`  bad hands looked away: ${JSON.stringify(c)}`);
     await sleep(500);
@@ -219,6 +220,7 @@ async function pull(P, { js, sleep, log, shot }, H) {
   }
   const s = await P.state();
   if (!s.inCar) { R.end = 'out'; return R; }
+  await P.set('KeyW', true);
   const route = await P.route([s.car.x + Math.cos(s.car.yaw) * 150, s.car.z - Math.sin(s.car.yaw) * 150]);
   const r = await P.driveAlong(route || [], { timeout: 20000, until: async (q) => Math.hypot(q.car.x - s.car.x, q.car.z - s.car.z) > 50 });
   const end = await P.state();
@@ -234,7 +236,7 @@ async function pull(P, { js, sleep, log, shot }, H) {
 // man sees; with &notraffic=1 nobody is about: the event is logged unseen)
 async function witness(P, api, H) {
   const { js, sleep } = api;
-  if (P.opts.waitCar) for (let i = 0; i < 300; i++) { const c = await js('G.wheels.traffic.cars.some((c) => c.stopBy && Math.abs(c.v.speed) < 0.3)'); if (c) break; await sleep(100); }
+  if (P.opts.waitCar) for (let i = 0; i < 400; i++) { const c = await js('G.wheels.traffic.cars.some((c) => c.stopBy && Math.abs(c.v.speed) < 0.3 && Math.hypot(c.v.pos.x - c.stopBy.pos.x, c.v.pos.z - c.stopBy.pos.z) < 14)'); if (c) break; await sleep(100); }
   const r = await park(P, api, H);
   const log = await js('G.crime.log.slice()');
   return { ...r, log };
