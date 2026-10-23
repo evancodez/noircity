@@ -20,6 +20,7 @@ export default async function o6b(api) {
   if (m === 'hang') return hang(api);
   if (m === 'awning') return awning(api);
   if (m === 'river') return river(api);
+  if (m === 'memory') return memory(api);
   return ram(api);
 }
 
@@ -378,4 +379,27 @@ async function river(api) {
   const end = await js(`(() => { const s = (G.stage.smash.cars._sunk || []).find((x) => x.visible); return { shape: !!s, glow: s ? +s.userData.glows[0].material.opacity.toFixed(2) : 0, beat: G.scenes.beat, inCar: G.city.inCar }; })()`);
   log(`river: sink at ${sinkT}, mid ${JSON.stringify(mid)}, why ${why}, end ${JSON.stringify(end)}`);
   return { sinkT, mid, why, end };
+}
+
+// ---- memory flat over cycles: the ten cars given every part's damage, then put back ----------------------------
+async function memory(api) {
+  const { js, sleep, log, opts } = api;
+  const read = async () => js('(() => { if (window.gc) window.gc(); const m = performance.memory; const R = N.renderer.info.memory; const S = G.stage.smash; return { heap: m ? +(m.usedJSHeapSize / 1048576).toFixed(1) : null, geo: R.geometries, tex: R.textures, prog: N.renderer.info.programs ? N.renderer.info.programs.length : null, out: S.out.length, items: S.items.length, scene: G.stage.scene.children.length, cut: S.cars.list.reduce((a, d) => a + d.cutGeos.length, 0) }; })()');
+  const out = [await read()];
+  const n = opts.cycles ?? 50;
+  for (let k = 0; k < n; k++) {
+    await js(`(() => { const S = G.stage.smash, C = S.cars; for (const v of G.city.cars) { if (v === G.city.car) continue; const d = v.smashD; if (!d) continue;
+      const P = (x, z) => { const p = v.world(x, z); p.y = 0.6; return p; };
+      C.knock(d, { point: P(1.2, -0.95), k: 0.7, n: null }, 0.6); C.popHood(d, 1); C.hangDoor(d, -1); C.doorOff(d, 0); C.hangDoor(d, 1);
+      C.looseBumper(d, 0, 1); C.bumperOff(d, 0); C.looseBumper(d, 1, -1); C.wobble(d, 0); C.wheelOff(d, 0); C.wobble(d, 3); C.hoodOff(d, 1); }
+      return S.out.length; })()`);
+    await sleep(opts.hold ?? 700);
+    // (put back: each car out of the list a step - its damage dropped, everything it was given disposed - and in again whole)
+    await js('(() => { const L = G.vehicles.list; window.__kept = G.city.cars.filter((v) => v !== G.city.car && L.includes(v)); for (const v of window.__kept) L.splice(L.indexOf(v), 1); return window.__kept.length; })()');
+    await sleep(120);
+    await js('(() => { for (const v of window.__kept) G.vehicles.list.push(v); G.stage.smash.mendAll(); return 1; })()');
+    await sleep(120);
+    if ((k + 1) % 10 === 0) { await sleep(300); const r = await read(); out.push(r); log(`memory after ${k + 1}: ${JSON.stringify(r)}`); }
+  }
+  return { reads: out };
 }
