@@ -1,6 +1,6 @@
 {
  "about": "[O4] The crowd brawl on the street (tools/lib/o4_brawl.mjs). the cop: blocks well, grabs; medium hands within three tries.",
- "url": "/?mute=1&start=o4.cop",
+ "url": "/?mute=1&o4stay=1&start=o4.cop",
  "size": [
   1280,
   800

@@ -1,6 +1,6 @@
 {
  "about": "[O4] The crowd brawl on the street (tools/lib/o4_brawl.mjs). the pad (?padfake=1): the same fight by the pad only.",
- "url": "/?mute=1&start=o4.brawl2&padfake=1",
+ "url": "/?mute=1&o4stay=1&start=o4.brawl2&padfake=1",
  "size": [
   1280,
   800

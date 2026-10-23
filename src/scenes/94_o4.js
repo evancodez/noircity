@@ -95,12 +95,15 @@ export const POLICE = {
   obj: 'The police. Two cops and a detective.',
 };
 export const HOSPITAL = { at: [-7.0, 0.6, -Math.PI / 2], obj: 'The hospital steps.' };
+export const STATION = { at: [-7.0, -4.2, -Math.PI / 2], obj: 'The station steps.' };
 const CONTESTS = ['brawl1', 'brawl2', 'brawl3', 'cop', 'street', 'diner', 'police'];
 const NEXT = { brawl1: 'brawl2', brawl2: 'brawl3', brawl3: 'cop', cop: 'diner', diner: 'street', street: 'done', done: 'brawl1' };
 
 // the street for a beat: the men gone, me where I start, the fight begun
 function street(ctx, name) {
   const G = ctx.game, F = crowdOf(G), B = O4[name];
+  // (?o4stay=1: a play proving one contest - a fall retries it, a win plays it again)
+  if (typeof location !== 'undefined' && /[?&]o4stay=1/.test(location.search)) G.o4stay = true;
   F.stop('setup');
   F.clearMen();
   gunsOf(G).end();
@@ -111,6 +114,7 @@ function street(ctx, name) {
   if (name === 'street') { shootout(ctx); return; }
   if (name === 'police') { shootout(ctx, POLICE); return; }
   if (name === 'hospital') { hospital(ctx); return; }
+  if (name === 'station') { hospital(ctx, 'station'); return; }
   if (name === 'range') { range(ctx); return; }
   if (name === 'shop') { shop(ctx); return; }
   if (name === 'gym') { gym(ctx); return; }
@@ -120,7 +124,9 @@ function street(ctx, name) {
   G.eye.copy(G.camera.position);
   ctx.flags.o4 = { beat: name, t0: G.time, result: null, tries: G.fails(name) };
   if (!B) { ctx.player.weapons.equip('fists'); return; }
-  F.start({ men: B.men.map((m) => ({ ...m, yaw: Math.atan2(E.x - m.at.x, E.z - m.at.z) })), to: name, leave: true, seed: 4242 + G.fails(name) * 7, mercy: G.fails(name),
+  // (a play proving the contest retries it; else a fall wakes where the city's would: the
+  // station after the police, the hospital after anyone else)
+  F.start({ men: B.men.map((m) => ({ ...m, yaw: Math.atan2(E.x - m.at.x, E.z - m.at.z) })), to: G.o4stay ? name : name === 'cop' ? 'station' : 'hospital', leave: true, seed: 4242 + G.fails(name) * 7, mercy: G.fails(name),
     onEnd: (result) => { ctx.flags.o4.result = result; } });
   if (G.shotMode) stripHooks(ctx, F);
 }
@@ -178,7 +184,7 @@ function dinerFight(ctx) {
     things.push(it);
   }
   ctx.flags.o4 = { beat: 'diner', t0: G.time, result: null, things: things.length };
-  F.start({ men: B.men.map((m) => ({ ...m, yaw: Math.atan2(E.x - m.at.x, E.z - m.at.z) })), to: 'diner', leave: false, seed: 5100 + G.fails('diner') * 7, mercy: G.fails('diner'),
+  F.start({ men: B.men.map((m) => ({ ...m, yaw: Math.atan2(E.x - m.at.x, E.z - m.at.z) })), to: G.o4stay ? 'diner' : 'hospital', leave: false, seed: 5100 + G.fails('diner') * 7, mercy: G.fails('diner'),
     bounds: { x0: DINER.counter.frontX + 0.25, x1: DINER.innerX - 0.1, z0: DINER.zMin + 0.2, z1: DINER.zMax - 0.2 }, things,
     onEnd: (result) => { ctx.flags.o4.result = result; } });
 }
@@ -236,15 +242,17 @@ function range(ctx) {
 
 // the shootout down the avenue (the gun kit, its men planning on the world's cover)
 // the hospital: up out of the black on its steps, the gun kept, the money less a little
-function hospital(ctx) {
-  const G = ctx.game, C = ctx.controller, H = HOSPITAL;
+function hospital(ctx, where = 'hospital') {
+  const G = ctx.game, C = ctx.controller, H = where === 'station' ? STATION : HOSPITAL;
   C.setPose(H.at[0], H.at[1], H.at[2], 0.02);
   G.eye.copy(G.camera.position);
   wallet(G);
-  if (!owns(G, 'revolver')) give(G, 'revolver');
-  arms(G).to('revolver');
-  C.setMode('gun', { crouch: false });
-  ctx.flags.o4 = { beat: 'hospital', woke: wake(G, 'hospital') };
+  if (where === 'hospital') {
+    if (!owns(G, 'revolver')) give(G, 'revolver');
+    arms(G).to('revolver');
+    C.setMode('gun', { crouch: false });
+  }
+  ctx.flags.o4 = { beat: where, woke: wake(G, where) };
 }
 function shootout(ctx, men = null) {
   const G = ctx.game, K = gunsOf(G), B = men ? { ...STREET, men: men.men } : STREET, C = ctx.controller, S = ctx.stage;
@@ -264,10 +272,10 @@ function shootout(ctx, men = null) {
 
 export default defineScene({
   id: 'o4', stage: 'block', title: '', name: 'The Street',
-  beats: [...CONTESTS, 'done', 'range', 'shop', 'gym', 'hospital'],
+  beats: [...CONTESTS, 'done', 'range', 'shop', 'gym', 'hospital', 'station'],
   save: [],
-  objectives: { ...Object.fromEntries(CONTESTS.map((k) => [k, k === 'street' ? STREET.obj : k === 'diner' ? DINERFIGHT.obj : k === 'police' ? POLICE.obj : O4[k].obj])), done: 'All of them won. E: again.', range: RANGE.obj, shop: SHOP.obj, gym: GYM.obj, hospital: HOSPITAL.obj },
-  setup: Object.fromEntries([...CONTESTS, 'done', 'range', 'shop', 'gym', 'hospital'].map((b) => [b, (ctx) => street(ctx, b)])),
+  objectives: { ...Object.fromEntries(CONTESTS.map((k) => [k, k === 'street' ? STREET.obj : k === 'diner' ? DINERFIGHT.obj : k === 'police' ? POLICE.obj : O4[k].obj])), done: 'All of them won. E: again.', range: RANGE.obj, shop: SHOP.obj, gym: GYM.obj, hospital: HOSPITAL.obj, station: STATION.obj },
+  setup: Object.fromEntries([...CONTESTS, 'done', 'range', 'shop', 'gym', 'hospital', 'station'].map((b) => [b, (ctx) => street(ctx, b)])),
   *script(ctx) {
     const G = ctx.game, F = ctx.flags, C = crowdOf(G);
     const exitFn = () => { C.stop('exit'); C.clearMen(); gunsOf(G).end(); G.off('scene:exit', exitFn); ctx.hud.warn(null); priceCard(G.hud, []);
@@ -283,10 +291,11 @@ export default defineScene({
     // (the mouse wheel turns through what I own: fists, the revolver, the shotgun)
     ctx.onStep(() => { const w = G.mouse.wheel; if (w && !C.active) arms(G).next(Math.sign(w)); });
     if (name === 'range') { yield beat('range'); return; }
-    if (name === 'hospital') { yield beat('hospital'); ctx.hud.say(F.o4.woke.line, 3.0, { always: true }); yield wait(4); ctx.hud.objective('E: the street again.'); yield* ctx.prompt({ text: 'the street again', key: 'KeyE' }); G.scenes.go('o4', { beat: 'street', fade: 'black', card: false }); return; }
+    if (name === 'hospital' || name === 'station') { yield beat(name); ctx.hud.say(F.o4.woke.line, 3.0, { always: true }); yield wait(4); ctx.hud.objective('E: back to it.'); yield* ctx.prompt({ text: 'back to it', key: 'KeyE' }); G.scenes.go('o4', { beat: G.save.flags.o4last || 'brawl1', fade: 'black', card: false }); return; }
     if (name === 'shop') { yield* shopScript(ctx); return; }
     if (name === 'gym') { yield* gymScript(ctx); return; }
     if (!CONTESTS.includes(name)) return;
+    G.save.flags.o4last = name;
     if (name === 'street' || name === 'police') { yield* shootoutScript(ctx, name); return; }
     yield beat(name);
     yield until(() => !!(F.o4 && F.o4.result));

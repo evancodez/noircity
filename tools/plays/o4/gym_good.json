@@ -1,6 +1,6 @@
 {
  "about": "[O4] The gym (tools/lib/o4_brawl.mjs, the bout taken up with E at the ring). Good hands win levels 1 and 2 in a row.",
- "url": "/?mute=1&start=o4.gym",
+ "url": "/?mute=1&o4stay=1&start=o4.gym",
  "size": [
   1280,
   800

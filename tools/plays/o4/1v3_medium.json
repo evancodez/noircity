@@ -1,6 +1,6 @@
 {
  "about": "[O4] The crowd brawl on the street (tools/lib/o4_brawl.mjs). 1v3: medium hands win within one to three tries.",
- "url": "/?mute=1&start=o4.brawl3",
+ "url": "/?mute=1&o4stay=1&start=o4.brawl3",
  "size": [
   1280,
   800
