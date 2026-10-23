@@ -32,8 +32,10 @@ S.hit(target, point, impulse, by) -> 'hit' | 'over' | 'break' | null
 //   way and its speed in m/s; by: 'car' | 'bullet' | 'fist' | 'body' | 'blast'
 //   (a fist counts 0.4 of its push; below the kind's give it is a jolt: a
 //   sound, nothing moves)
-S.blast(at, r = 6, power = 1)      // what stands within r goes over, away;
+S.blast(at, r = 6, power = 1)      // what stands within r goes over, away, as the
+                                   // wave reaches it (35 m/s out, 12 a step at most);
                                    // what lies is thrown (a car's blast calls it)
+S.later(dt, fn)                    // a thing to do a moment from now (the wave's queue)
 S.mend(item)   S.mendAll()         // back as built (a retry, a reset)
 S.itemAt(x, z, tag)                // the standing item at a place (a collider's)
 S.near(x, z, r)                    // the items round a point
@@ -161,8 +163,11 @@ it reads: `Car.js`'s contacts (`crash`, `scrape`, `bump`, `lean`, `post`),
   behind the eye, then the furthest. Nothing is made or freed after the
   build: memory flat (the memory play: 100 cycles of a hundred over and
   mended, geometries and textures unchanged).
-- Water: three hydrant columns in full spate at most (70 drops/s each); six
-  jets.
+- A step's own: 160 pieces made at most (a blast's last are not made), five
+  smash sounds, twelve things reached by a blast's wave (the rest the step
+  after); a full pool is searched 40 slots at a time.
+- Water: two hydrant columns in full spate at most (95 drops/s each; the
+  splash pool is 300); six jets.
 - Fires: two roaring at once (a third blast sinks the oldest to embers).
 - Lights: none added. A leaning lamp moves its own cone and light while it
   flickers; a burning car borrows the fire light (`fxLights.fire[0]`); the

@@ -230,9 +230,9 @@ async function shoot(api) {
     { kind: 'bench', at: [-109.95, 0.6, 1.2] },
     { kind: 'stop', at: [-110.5, 2.3, -13.3], n: 3, from: [-116.5, -8] },
     { kind: 'fence', at: [-107.6, 1.0, -18.6], n: 3 },
-    { kind: 'glass', at: [-133.9, 1.5, 17.0], from: [-117.8, 22] },
+    { kind: 'glass', at: [-133.9, 1.5, 17.0], from: [-127.4, 19.5] },
     { kind: 'awning', at: [-133.4, 3.1, 27.0], n: 3 },
-    { kind: 'namesign', at: [-129.8, 2.5, 50.2], n: 3, from: [-117.8, 40] },
+    { kind: 'namesign', at: [-129.8, 2.5, 50.2], n: 3, from: [-127.4, 40] },
     { kind: 'car', at: 'sedan', n: 3, from: [-125.6, 16.5] },
   ];
   const res = {};
