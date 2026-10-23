@@ -1,5 +1,5 @@
 {
- "about": "[O2] The race, medium hands (brief O2 \u00a74, \u00a75): E at the line, the flag, three laps of the Yards loop by the keys. node tools/play.mjs tools/plays/o2_race_medium.json",
+ "about": "[O2] The race, medium hands (brief O2 §4, §5): E at the line, the flag, three laps of the Yards loop by the keys; up to three races, till one is won. node tools/play.mjs tools/plays/o2_race_medium.json",
  "url": "/?mute=1&start=city&car=-446,262,1.5708",
  "size": [
   1280,
@@ -27,8 +27,10 @@
    "drive": "tools/lib/o2_wheels.mjs",
    "mode": "race",
    "hands": "medium",
-   "check": "D.result != null && D.result.laps >= 2",
-   "label": "medium: in it to the end"
+   "check": "D.won >= 1",
+   "label": "medium: won in one to three",
+   "races": 3,
+   "untilWon": true
   }
  ]
 }

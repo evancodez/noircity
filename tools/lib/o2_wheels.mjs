@@ -77,9 +77,9 @@ function prims({ js, turn, keyDown, keyUp, sleep, log }, H) {
       return true;
     },
     // a car's way by the keys: pure pursuit on a path of points; until(s) ends it
-    async driveAlong(path, { until = null, speed = 14, timeout = 120000, onStep = null, traffic = false } = {}) {
+    async driveAlong(path, { until = null, speed = 14, timeout = 120000, onStep = null, traffic = false, pass = false } = {}) {
       const T0 = Date.now();
-      let idx = 0, stuckT = 0, revUntil = 0, last = Date.now(), slowT = 0;
+      let idx = 0, stuckT = 0, revUntil = 0, last = Date.now(), slowT = 0, passSide = 0, passUntil = 0, blockT = 0, roundUntil = 0;
       for (;;) {
         const now = Date.now(), dt = (now - last) / 1000; last = now;
         const s = await P.state();
@@ -92,7 +92,20 @@ function prims({ js, turn, keyDown, keyUp, sleep, log }, H) {
         idx = best;
         if (idx >= path.length - 2) { await P.release(); return { end: 'done', idx }; }
         const look = Math.min(path.length - 1, idx + Math.round((6 + Math.abs(c.v) * 0.6) / 3));
-        const [tx, tz] = path[look];
+        let [tx, tz] = path[look];
+        // (a racer's pass: a car ahead in my line - out to the side it is not on, by the line's normal, till by it)
+        if (now > passUntil) passSide = 0;
+        if (pass) {
+          const ah = await js(`(() => { const c = G.city.car, ca = Math.cos(c.yaw), sa = Math.sin(c.yaw); let best = null; for (const o of G.wheels.bodies()) { if (o === c || !o.spec || o.parked) continue; const dx = o.pos.x - c.pos.x, dz = o.pos.z - c.pos.z; if (Math.abs(dx) > 30 || Math.abs(dz) > 30) continue; const lx = dx * ca - dz * sa, lz = dx * sa + dz * ca; if (lx > -3 && lx < 22 && Math.abs(lz) < 2.7 && (!best || lx < best.lx)) best = { lx, lz }; } return best; })()`);
+          if (ah) { if (!passSide) passSide = ah.lz < -0.3 ? 1 : -1; passUntil = now + 1500; }
+        }
+        {
+          if (passSide) {
+            const q0 = path[Math.max(0, look - 1)], q1 = path[Math.min(path.length - 1, look + 1)];
+            const ux = q1[0] - q0[0], uz = q1[1] - q0[1], ul = Math.hypot(ux, uz) || 1;
+            tx += passSide * 2.9 * (-uz / ul); tz += passSide * 2.9 * (ux / ul);
+          }
+        }
         const fx = Math.cos(c.yaw), fz = -Math.sin(c.yaw);
         let ang = Math.atan2(fx * (tz - c.z) - fz * (tx - c.x), fx * (tx - c.x) + fz * (tz - c.z));
         // (sloppy hands: the wheel a little off now and then)
@@ -105,7 +118,12 @@ function prims({ js, turn, keyDown, keyUp, sleep, log }, H) {
         if (path[idx] && path[idx].length > 2) { let vv = 99; for (let k = idx; k < Math.min(path.length, idx + 4); k++) vv = Math.min(vv, path[k][2]); target = Math.min(speed, vv * 1.15) * H.slow; }
         // (a car in my lane ahead: kept off it, stopped behind it)
         if (traffic) {
-          const ah = await js(`(() => { const c = G.city.car, ca = Math.cos(c.yaw), sa = Math.sin(c.yaw); let best = 99; for (const o of G.wheels.bodies()) { if (o === c || !o.spec) continue; const dx = o.pos.x - c.pos.x, dz = o.pos.z - c.pos.z; if (Math.abs(dx) > 30 || Math.abs(dz) > 30) continue; const lx = dx * ca - dz * sa, lz = dx * sa + dz * ca; if (lx > 1 && lx < 28 && Math.abs(lz) < o.spec.halfW + (o.parked ? 0.45 : 1.25)) best = Math.min(best, lx - o.spec.halfL - 2.45); } return best; })()`);
+          const [am, ap] = await js(`(() => { const c = G.city.car, ca = Math.cos(c.yaw), sa = Math.sin(c.yaw); let bm = 99, bp = 99; for (const o of G.wheels.bodies()) { if (o === c || !o.spec) continue; const dx = o.pos.x - c.pos.x, dz = o.pos.z - c.pos.z; if (Math.abs(dx) > 30 || Math.abs(dz) > 30) continue; const lx = dx * ca - dz * sa, lz = dx * sa + dz * ca; if (lx > 1 && lx < 28 && Math.abs(lz) < o.spec.halfW + (o.parked ? 0.45 : 1.25)) { const d = lx - o.spec.halfL - 2.45; if (o.parked) bp = Math.min(bp, d); else bm = Math.min(bm, d); } } return [bm, bp]; })()`);
+          // (stood behind a parked car: round it - out to the left, slow, the moving ones still minded)
+          const rounding = now < roundUntil;
+          const ah = rounding ? am : Math.min(am, ap);
+          if (rounding) target = Math.min(target, 4);
+          if (!rounding && ap < 4 && ap <= am && Math.abs(c.v) < 0.5) { blockT += dt; if (blockT > 2.5) { blockT = 0; roundUntil = now + 4500; passSide = -1; passUntil = now + 4500; } } else blockT = 0;
           if (ah < 30) target = Math.min(target, Math.max(0, (ah - 4) * 0.6));
           if (ah < 3) target = 0;
           if (ah < 4 && Math.abs(c.v) < 0.5) stuckT = 0;
@@ -268,8 +286,8 @@ async function fare(P, { js, sleep, log, shot }, H) {
     for (let tries = 0; tries < 4; tries++) {
       const s0 = await P.state();
       if (Math.hypot(s0.car.x - F.x, s0.car.z - F.z) < 8) break;
-      const r1 = await P.route([F.x, F.z], 2.6);
-      const rr = await P.driveAlong(r1 || [], { timeout: 70000, speed: 11, traffic: true, until: async (s) => Math.hypot(s.car.x - F.x, s.car.z - F.z) < 5.5 });
+      const r1 = await P.route([F.x, F.z]);
+      const rr = await P.driveAlong(r1 || [], { timeout: 70000, speed: 11, traffic: true, until: async (s) => Math.hypot(s.car.x - F.x, s.car.z - F.z) < 7.5 });
       await P.stop();
       const s1 = await P.state();
       log(`  to the fare: ${rr.end}, ${r1 ? r1.length : 0} points, ${Math.hypot(s1.car.x - F.x, s1.car.z - F.z).toFixed(1)} m off him`);
@@ -306,7 +324,40 @@ async function fare(P, { js, sleep, log, shot }, H) {
 }
 // ---- race: the Yards' corner ------------------------------------------------------------------------
 // (&car=-444,252,1.5708: in a coupe on the Straight just short of the line)
-async function race(P, { js, sleep, log, shot }, H) {
+// (opts.races: that many in a row - after each, on round the loop out of the
+// corner's sight till it is set again, then back to the line; opts.untilWon: stop at a win)
+async function race(P, api, H) {
+  const { js, log } = api;
+  const T0 = Date.now();
+  const n = P.opts.races || 1;
+  const all = [];
+  for (let k = 0; k < n; k++) {
+    if (k > 0 && !(await raceAgain(P, api, H))) { all.push({ err: 'not set again' }); break; }
+    const r = await raceOnce(P, api, H);
+    all.push(r);
+    log(`race ${k}: ${JSON.stringify(r.result)} others ${JSON.stringify(r.others)} mine ${r.mine}`);
+    if (r.strip || (P.opts.untilWon && r.result && r.result.won)) break;
+  }
+  const last = all[all.length - 1] || {};
+  return { ...last, races: all.map((r) => r.result ? { won: r.result.won, place: r.result.place, time: r.result.time, others: r.others, mine: r.mine } : r), won: all.filter((r) => r.result && r.result.won).length, stats: await js('({ ...G.wheels.race.stats })'), money: await js('G.save.money'), secs: (Date.now() - T0) / 1000 };
+}
+async function raceAgain(P, { js, sleep, log }, H) {
+  // on round the loop to its far side (Foundry St), the racers pulled in; there till the corner is set again
+  // (the far side: the next middle of Foundry St on the course, two thirds of a lap from the line; then on to Water St short of the corner)
+  const way = await js(`(() => { const R = G.wheels.race, P = R.path, c = G.city.car; const i = P.nearest(c.pos.x, c.pos.z, R.mine.i, 80); const s = P.pts[i].s; let f = R.s0 + R.lap * 0.66; while (f < s + 40) f += R.lap; const e = f + R.lap * 0.34 - 62; const a = [], b = []; for (let q = s; q < f; q += 3) { const p = P.at(q, {}); a.push([p.x, p.z, p.v]); } for (let q = f; q < e; q += 3) { const p = P.at(q, {}); b.push([p.x, p.z, p.v]); } return { a, b }; })()`);
+  const r1 = await P.driveAlong(way.a, { speed: 12, timeout: 90000, traffic: true });
+  await P.stop();
+  let set = false;
+  for (let i = 0; i < 300; i++) { if (await js(`G.wheels.race.state === 'idle' && G.wheels.race.cars.length === 3`)) { set = true; break; } await sleep(100); }
+  log(`  round to the far side: ${r1.end}; the corner set again: ${set}`);
+  if (!set) return false;
+  await sleep(H.react);
+  const r2 = await P.driveAlong(way.b, { speed: 12, timeout: 60000, traffic: true });
+  await P.stop();
+  log(`  back to Water St: ${r2.end}`);
+  return true;
+}
+async function raceOnce(P, { js, sleep, log, shot }, H) {
   const T0 = Date.now();
   const site = await js(`(() => { const R = G.wheels.race; return { line: [R.path.pts[0].x, R.path.pts[0].z], s0: R.s0, lap: R.lap, len: R.len, cars: R.cars.length, state: R.state }; })()`);
   log(`race: ${JSON.stringify(site)}`);
@@ -336,12 +387,13 @@ async function race(P, { js, sleep, log, shot }, H) {
   } else {
     await sleep(H.react);
     const shots = new Set();
-    await P.driveAlong(pts, { speed: 23, timeout: 300000,
+    await P.driveAlong(pts, { speed: 23, timeout: 300000, pass: true,
       until: async () => { const r = await js('G.wheels.race.state'); return r !== 'run'; },
       onStep: async (s, idx) => { if (shot && idx > 20 && !shots.has('a')) { shots.add('a'); await shot('start'); } } });
   }
   await sleep(400);
-  const res = await js('({ result: G.wheels.race.result, stats: G.wheels.race.stats, money: G.save.money, others: G.wheels.race.cars.map((c) => +c.s.toFixed(0)), mine: +G.wheels.race.mine.s.toFixed(0), knocks: G.city.car && G.city.car.stats.log, crashes: G.city.car && G.city.car.stats.crashes, damage: G.city.car && +G.city.car.damage.toFixed(2) })');
+  for (let i = 0; i < 100; i++) { if ((await js('G.wheels.race.state')) !== 'run') break; await sleep(100); }
+  const res = await js('({ result: G.wheels.race.result, stats: { ...G.wheels.race.stats }, money: G.save.money, others: G.wheels.race.cars.map((c) => +c.s.toFixed(0)), paces: G.wheels.race.cars.map((c) => c.pace), mine: +G.wheels.race.mine.s.toFixed(0), crashes: G.city.car && G.city.car.stats.crashes, damage: G.city.car && +G.city.car.damage.toFixed(2) })');
   return { hands: H.name, prompt: pr, ...res, secs: (Date.now() - T0) / 1000 };
 }
 // ---- drive: the drive-through of every district in the traffic -----------------------------------------

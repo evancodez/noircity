@@ -1,5 +1,5 @@
 {
- "about": "[O2] The race, good hands (brief O2 \u00a74, \u00a75): E at the line, the flag, three laps of the Yards loop by the keys. node tools/play.mjs tools/plays/o2_race_good.json",
+ "about": "[O2] The race, good hands (brief O2 §4, §5): E at the line, the flag, three laps of the Yards loop by the keys; twice: after the first, round to the far side, the corner set again, back to the line. node tools/play.mjs tools/plays/o2_race_good.json",
  "url": "/?mute=1&start=city&car=-446,262,1.5708",
  "size": [
   1280,
@@ -27,8 +27,9 @@
    "drive": "tools/lib/o2_wheels.mjs",
    "mode": "race",
    "hands": "good",
-   "check": "D.result && D.result.won === true",
-   "label": "good: won"
+   "check": "D.won === 2",
+   "label": "good: won twice in a row",
+   "races": 2
   }
  ]
 }

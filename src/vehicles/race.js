@@ -12,6 +12,9 @@ import { money, pay, spend } from '../traffic/seams.js';
 // Centre St, down Foundry St, along Water St: all right turns, 700 m a lap),
 // the others driven by the base's Pilot at three paces. The line crossed
 // first after three laps is the win and the purse ($30, or $5 for glory).
+// The field's lead man eases off a little against a man he has beaten (he
+// has his money): a step for each loss in a row, two at most, his best
+// again once he is beaten - so a fair driver wins in one to three.
 // Idle loses (they finish: `They’re ahead.` first, on the last lap); off the
 // course too long is out of it (`Back on the course.` first). Traffic is kept
 // off the loop while it runs.
@@ -21,7 +24,7 @@ import { money, pay, spend } from '../traffic/seams.js';
 const LOOP = ['-4500,2400', '-4500,1500', '-4500,600', '-4500,-300', '-3700,-300', '-3700,600', '-3700,1500', '-3700,2400'];
 const LAPS = 3, BET = 10, BOX = { x0: -470, x1: -350, z0: -55, z1: 265 };
 const START = { x: -450, z: 222 };      // the line: on the Straight 18 m north of Water St
-export const RACE = { paces: [0.91, 0.87, 0.83], kinds: ['coupe', 'saloon', 'coupe'], LAPS, BET };
+export const RACE = { paces: [1.04, 0.99, 0.94], ease: 0.05, kinds: ['coupe', 'saloon', 'coupe'], LAPS, BET };
 const _v = new THREE.Vector3();
 
 export class Race {
@@ -32,6 +35,7 @@ export class Race {
     this.cars = [];
     this.flag = null;
     this.stats = { races: 0, won: 0, lost: 0, out: 0, best: null };
+    this.ease = 0;      // (losses in a row: the field's lead eases a step for each, two at most)
     // the course: three laps, then the run on past the line; its length a lap
     const g = W.graph;
     const ids = [];
@@ -122,7 +126,10 @@ export class Race {
       return;
     }
     if (this.state === 'run') this.run(dt);
-    if (this.state === 'done') { this.doneT += dt; if (this.doneT > 6) this.reset(); }
+    if (this.state === 'done') {
+      for (const c of this.cars) if (c.pilot && !c.pulled && c.pilot.s > this.s0 + this.len + 4) { c.pulled = true; c.pilot.offset = 2.6; }
+      this.doneT += dt; if (this.doneT > 6) this.reset();
+    }
   }
 
   start(v) {
@@ -153,7 +160,10 @@ export class Race {
     G.hud.warn(null);
     if (this.flag) this.flag.play('o2_flagDown');
     G.sfx.play('tail_horn', this.flag ? this.flag.fig.pos : this.me.pos, { k: 0.6, dur: 0.15 }, { ref: 8 });
-    for (const c of this.cars) {
+    const ease = Math.min(2, this.ease) * RACE.ease;
+    for (let i = 0; i < this.cars.length; i++) {
+      const c = this.cars[i];
+      c.pace = RACE.paces[i] - ease;
       const p = new Pilot(this.path, { pace: c.pace, vmax: 24, keep: 4, bodies: () => this.W.bodiesFor(c.v), overtake: true });
       // (the course goes round the same streets three times: found on its first lap)
       p.i = this.path.nearest(c.v.pos.x, c.v.pos.z, 0, 120); p.s = this.path.pts[p.i].s;
@@ -199,19 +209,22 @@ export class Race {
     G.hud.warn(null);
     G.hud.objective(null);
     const place = 1 + this.cars.filter((c) => c.s > this.mine.s).length;
-    this.result = { won, place, time: +this.t.toFixed(1), laps: Math.floor(this.mine.s / this.lap), why };
+    this.result = { won, place, time: +this.t.toFixed(1), laps: Math.min(LAPS, Math.floor((this.mine.s + 2) / this.lap)), why };
+    this.ease = won ? 0 : Math.min(2, this.ease + 1);
     if (won) { this.stats.won++; this.stats.best = Math.min(this.stats.best ?? 1e9, this.t); pay(G, this.bet ? this.bet * 3 : 5, 'the purse'); G.hud.message('Won.', 2.4); }
     else { this.stats.lost++; G.hud.message(why || 'Beaten.', 2.4); }
-    // (the others run on to the line's far side and stop)
-    for (const c of this.cars) if (c.pilot) c.pilot.o.stopAt = Math.min(this.path.len - 2, (c.pilot.s || 0) + 45);
+    // (the others run their laps out, over the line, pull in to the kerb past it and stop, one behind another)
+    const order = this.cars.filter((c) => c.pilot).sort((a, b) => b.pilot.s - a.pilot.s);
+    order.forEach((c, i) => { c.pilot.o.stopAt = Math.min(this.path.len - 2, this.s0 + this.len + 45 - 9 * i); c.pulled = false; });
     this.W.traffic.avoid = null;
     G.emit('wheels:race', { what: 'end', ...this.result });
   }
-  // the corner set again for the next (when I am out of sight of it, or away)
+  // the corner set again for the next (when I am away from it and it is out of my sight)
   reset() {
     const eye = this.G.camera.position;
     const d = Math.hypot(eye.x - START.x, eye.z - START.z);
-    if (d < 60) { this.doneT = 5; return; }
+    const seen = (x, z) => !this.W.traffic.hidden(eye, x, z, Math.hypot(eye.x - x, eye.z - z));
+    if (d < 60 || seen(START.x, START.z) || this.cars.some((c) => seen(c.v.pos.x, c.v.pos.z))) { this.doneT = 5; return; }
     this.takeDown();
     this.state = 'idle';
   }
