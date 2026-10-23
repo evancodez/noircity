@@ -269,9 +269,37 @@ z: [front, rear], y, r }` (model frame: x ahead, y up, z right). A kind
 without them uses the sedan's. A damaged sedan of world/Cars keeps its near
 build (`car.own`): Cars' LOD leaves it be.
 
-**The city** (`parts/props.js`, `parts/stream.js`, marked `[O6b]`): the near
-build's awnings are records of the set (read back from facade.js's boxes,
-registered once a lot: kind `awning`, a pool of 12) - a lorry's roof (3.3 m)
+**After the critic (O6b)**:
+- **Car to car** (`Car.contact`, `[O6b]`): the rammer is the one closing the
+  faster; the car struck takes `(impC * mr - 2.5) * 0.3` where `impC` is the
+  closing speed at the contact (at most 2.2 x its square part: a diagonal into
+  a door counts, a long scrape does not) and `mr = sqrt(clamp(m_ram / m_hit,
+  0.56, 2.5))`; the rammer's nose `(imp - 5) * 0.07 / mr` head-on (0.05 a
+  glance). A wall, a post, a wreck: as before (0.14 / 0.08). Events carry
+  `struck` (and `impC`): CarDamage knocks the struck car as a bump (its corner
+  smashed at k >= 0.56, about 25 km/h) and the rammer as a crash (k >= 0.8 into
+  a car, 0.55 into a wall); otherwise a corner smashes only when knocks of 0.4
+  and more add up to 1.2 (no pile of nudges). A side blow of k >= 0.62 hangs
+  the door and tears it off a breath later.
+- **The blast** hurts cars `2.8 - 0.2 d` within 14 m (2.0 at 4 m, 0.5 at
+  11.5): a smoking neighbour goes too, a whole one steams.
+- **The scrape**: a dent scars the paint round it (`uDents`, eight a car, in
+  the car's own twin of its paint - one program, see `scarMaterial`); the
+  paint is restored at `detach`. Any code that swaps a car's paint material
+  must go through `material.userData.scarBase` for the base.
+- **A thin part lies on its face**: `K.topple` names the local axis that ends
+  vertical (`true` = y, a wheel; `cardoor` 'z', `carbonnet` 'y').
+- **A merge of one kind** (`m.userData.pickKind`): a round into it picks only
+  that kind (`Smash.pick(p, kind)`); an item with `K.low` is picked down to it.
+
+**The city** (`parts/props.js`, `parts/stream.js`, `parts/dressing.js`, marked
+`[O6b]`): the streets' awnings (O1b's dressing, `city/kits/dress.js awning`)
+are records of the set, one a shop front (`w._awn`: wall point, yaw out, the
+canvas's middle `y`, width, depth), their pieces in a merge of their own per
+chunk (`bucket 'awnings'`, solid to rounds, `pickKind 'awning'`, the relief's
+material and ink id), registered at the chunk's attach - a burst tears one
+(three rounds); the older lots' awnings (facade.js's boxes, `awningRec`) as
+before. A lorry's roof (3.3 m)
 reaches their valance (`low: -0.6` under the fixing; the bed's too now); the
 el's hung lamps are items of kind `hanglamp` (`how: 'fixed'`: no car or blast
 moves them) with a box in the bullets' world at the head: a round there puts

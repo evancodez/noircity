@@ -150,7 +150,7 @@ async function ram(api) {
     if (!me || me.failing) return 'failed';
     if (me.dmg >= (opts.untilFire ? 3.0 : 2.45) || me.hubs >= 1 || me.state === 'burning') {   // ([O6b] untilFire: a smoking car still drives - power 0.8 - on until it is near the fire)
       out.mine.push(await js(SHOWS('G.city.car')));
-      await brakeAndBack(api, 0);
+      if (me.state !== 'burning') await brakeAndBack(api, 0);   // (on fire: E at once - moving, E brakes and gets me out as she stops)
       await press('KeyE');
       for (let i = 0; i < 60; i++) { if (!(await js('G.city.inCar'))) break; await sleep(100); }
       await sleep(600);
