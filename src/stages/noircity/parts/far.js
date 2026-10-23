@@ -3,7 +3,6 @@ import { allocInkId } from '../../../render/layers.js';
 import { farLot } from '../../../city/kits/facade.js';
 import { LAMP, lampHead, placeLamp } from '../../../city/kits/street.js';
 import { mergeAll } from './street.js';
-import { AMBER } from '../../../city/kits/dress.js';
 import { districtAt } from '../../../world/plan.js';
 
 // The far city (lane O1): what is always drawn, the whole city over, in
