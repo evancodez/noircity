@@ -1,0 +1,33 @@
+{
+ "about": "[O1b] The swim (brief §2, O1 Left 6): on foot off Pier 7's open end by W - into the water, the eye at the water (the swim mode), no fade, no fail - then W to the foot of the pier's steps (their globe lamp at the landing): up them and on the pier, on his feet; then through a quay steps' landing into the water and out up a slipway's ramp. node tools/play.mjs tools/plays/o1b_swim.json",
+ "url": "/?mute=1&start=city&at=docks",
+ "size": [1280, 800],
+ "out": "shots/o1b/swim",
+ "steps": [
+  { "wait": 1500 },
+  { "clickOn": "#title .opt[data-k=begin]", "taken": "G.state !== 'title'", "retries": 5, "every": 4000 },
+  { "until": "G.scenes.current && G.scenes.current.id === 'city' && G.scenes.fadeK < 0.05", "timeout": 25000 },
+  { "wait": 1200 },
+  { "eval": "(G.save.flags.taught = { city_in: true, city_drive: true, city_map: true }, G.stage.part('stream').warmAround(95, 530), N.controller.setPose(95, 530, Math.PI, 0), window.__sw = { fails: 0 }, G.on('city:ashore', (e) => { window.__sw.out = e.how; window.__sw.outT = performance.now(); }), 1)" },
+  { "wait": 600 },
+  { "walk": [[95, 549]], "timeout": 12000, "stop": false },
+  { "until": "N.controller.mode === 'swim'", "timeout": 6000 },
+  { "eval": "(window.__sw.inT = performance.now(), { y: +G.camera.position.y.toFixed(2), failing: !!G.failing })" },
+  { "wait": 1200 },
+  { "expect": "N.controller.mode === 'swim' && !G.failing && G.camera.position.y < -1.2", "label": "in the water: swimming, the eye at the water, no fade" },
+  { "shot": "swim_eye" },
+  { "walk": "(() => { const s = G.stage.part('city').C.steps.find((q) => q.pier === 'PIER 7'); return [[s.foot[0] + 1.5, s.foot[1] + 4], [s.foot[0], s.foot[1]]]; })()", "timeout": 25000, "into": true },
+  { "until": "window.__sw.out === 'steps' && N.controller.mode === 'walk'", "timeout": 8000 },
+  { "eval": "({ out: window.__sw.out, secs: +((window.__sw.outT - window.__sw.inT) / 1000).toFixed(1), at: [+N.controller.pos.x.toFixed(1), +N.controller.pos.z.toFixed(1)], ground: +N.controller.groundY.toFixed(2) })" },
+  { "expect": "N.controller.groundY > 0.05 && !G.failing && (window.__sw.outT - window.__sw.inT) < 30000", "label": "up the steps onto the pier, on his feet, in under 30 s" },
+  { "shot": "swim_out" },
+  { "eval": "(() => { const s = G.stage.part('city').C.steps.find((q) => q.kind === 'quay' && q.x > -60 && q.x < 10 && q.nz > 0.9); window.__q = s; G.stage.part('stream').warmAround(s.top[0], s.top[1]); N.controller.setPose(s.top[0], s.top[1] - 2.5, Math.PI, 0); window.__sw.out = null; return [s.x, s.z]; })()" },
+  { "wait": 600 },
+  { "walk": "[[window.__q.top[0], window.__q.top[1] + 3.5]]", "timeout": 8000, "stop": false },
+  { "until": "N.controller.mode === 'swim'", "timeout": 6000 },
+  { "expect": "N.controller.mode === 'swim'", "label": "through the landing's gap and in: swimming" },
+  { "walk": "[[-2, 457], [0, 452.5], [0, 446]]", "timeout": 40000, "stop": false },
+  { "until": "window.__sw.out === 'slipway' && N.controller.mode === 'walk'", "timeout": 8000 },
+  { "expect": "window.__sw.out === 'slipway' && !G.failing", "label": "out up the slipway's ramp, wading" }
+ ]
+}
