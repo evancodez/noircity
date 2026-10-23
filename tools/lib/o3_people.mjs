@@ -31,6 +31,7 @@ export default async function o3(api) {
   if (opts.mode === 'crowd') return crowd(api);
   if (opts.mode === 'latency') return latency(api);
   if (opts.mode === 'strip') return strip(api);
+  if (opts.mode === 'soak') return soak(api);
   return { err: 'no mode ' + opts.mode };
 }
 
@@ -660,5 +661,33 @@ async function strip(api) {
   }
   log(`strip ${opts.what}: ${JSON.stringify(R)}`);
   R.ok = R.frames >= 5;
+  return R;
+}
+
+// ---- the soak: ten minutes at HEAT 3 (in the car, chased, the heat put back each time it falls), the memory read every two minutes ----
+async function soak(api) {
+  const { js, log, sleep, send, opts } = api;
+  const R = { reads: [] };
+  const T0 = Date.now(), secs = opts.secs ?? 600;
+  const read = async (label) => {
+    await send('HeapProfiler.collectGarbage', {});
+    const h = (await send('Runtime.getHeapUsage', {})).result || {};
+    const m = await js(`({ geo: G.pipeline.renderer.info.memory.geometries, tex: G.pipeline.renderer.info.memory.textures, progs: G.pipeline.renderer.info.programs.length, people: G.people.list.length, pooled: [...G.people.pool.values()].reduce((a, L) => a + L.length, 0), made: G.people.stats.made, hoods: G.stage.hoods.list.length, cars: G.vehicles.list.length, heat: G.police.heat, arrests: G.counters.arrests || 0 })`);
+    const r = { label, t: Math.round((Date.now() - T0) / 1000), heapMB: +((h.usedSize || 0) / 1048576).toFixed(1), ...m };
+    R.reads.push(r); log(`soak read ${JSON.stringify(r)}`);
+  };
+  await read('start');
+  let nextRead = 120;
+  while ((Date.now() - T0) / 1000 < secs) {
+    await waitFor(js, '!G.failing && G.state === "playing"', 30000);
+    if (!(await js('G.city.inCar'))) { await js('(G.people.dbgAtCar(), 1)'); await sleep(300); await tap(api, 'KeyE'); await sleep(1200); }
+    await js(`(G.police.heat < 3 && G.police.raise(3, G.city.inCar ? G.city.car.pos : G.eye, 'soak'), 1)`);
+    await driveAway(api, { vmax: 18, look: 1.1, react: 110, secs: 45, until: 'false' });
+    if ((Date.now() - T0) / 1000 >= nextRead) { await read('t' + nextRead); nextRead += 120; }
+  }
+  await read('end');
+  const a = R.reads[1] || R.reads[0], z = R.reads[R.reads.length - 1];
+  R.growMB = +(z.heapMB - a.heapMB).toFixed(1); R.growGeo = z.geo - a.geo; R.growTex = z.tex - a.tex;
+  R.ok = R.growMB < 15 && R.growGeo < 150 && R.growTex < 10;
   return R;
 }

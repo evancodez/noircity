@@ -23,5 +23,8 @@ export function installPeople(ctx) {
   // (the frames' tableaux: fixed people for a golden frame / look development)
   const st = q && q.get('o3stage');
   if (st && G.shotMode) P.stageShot(st);
+  // (the frame-rate scenario: ?o3heat=n raises the heat as the roam begins, shot mode only)
+  const oh = q && +q.get('o3heat');
+  if (oh && G.shotMode) P.police.raise(oh, G.eye, 'staged');
   return P;
 }

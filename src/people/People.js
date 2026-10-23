@@ -731,7 +731,13 @@ export class People {
     if (G.city && G.city.inCar) return;
     const E = G.eye, V = G.controller.vel, sp = Math.hypot(V.x, V.z);
     for (const p of this.near(E.x, E.z, 1.4)) {
-      if (!p.standing || p.role === 'gang' && p.mode === 'hold') continue;
+      if (!p.standing) continue;
+      // (a gang man shouldered at a run: he turns and squares up - the fist fight)
+      if (p.role === 'gang') {
+        const d = Math.hypot(p.pos.x - E.x, p.pos.z - E.z);
+        if (sp > 2.6 && d < p.r + 0.7 && !p.armed && !this.police.fists.active && !(p.gang && p.gang.war)) { p.say('o3_hey', { f0: 100 }); this.crime.emit('punch', p.pos, 'player', { victim: p, level: 0 }); this.gangs.stats.fights++; this.police.fists.start(p, { why: 'push' }); }
+        continue;
+      }
       const dx = p.pos.x - E.x, dz = p.pos.z - E.z, d = Math.hypot(dx, dz);
       if (d > p.r + 0.62 || sp < 1.5) continue;
       if ((dx * V.x + dz * V.z) / (d * sp) < 0.4) continue;
@@ -769,7 +775,15 @@ export class People {
     this.stepBumps();
     this.police.step(dt);
     this.gangs.step(dt);
-    const cam = G.camera, t = G.time;
-    for (const p of this.list) p.update(dt, t, cam);
+    // the poses: every step for the near ones; past 38 m every other step
+    // (their time kept: a far man in the fog moves at 30 Hz, half the cost)
+    const cam = G.camera, t = G.time, E = G.eye;
+    this.frame = (this.frame || 0) + 1;
+    for (const p of this.list) {
+      const far = Math.abs(p.pos.x - E.x) + Math.abs(p.pos.z - E.z) > 52 && p.pos.distanceToSquared(E) > 38 * 38;
+      if (far && ((this.frame + p.id) & 1)) { p.owed = (p.owed || 0) + dt; continue; }
+      p.update(dt + (p.owed || 0), t, cam);
+      p.owed = 0;
+    }
   }
 }

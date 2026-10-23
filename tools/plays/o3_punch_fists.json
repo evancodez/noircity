@@ -24,6 +24,9 @@
    "wait": 1500
   },
   {
+   "eval": "(G.people.hands.hasGun = false, 'staged: out of the station, no gun')"
+  },
+  {
    "drive": "tools/lib/o3_people.mjs",
    "mode": "punch",
    "then": "fists",
@@ -52,6 +55,26 @@
   {
    "expect": "G.lastFail ? G.lastFail.why === 'Arrested.' && G.scenes.beat === 'station' : (window.__o3c && window.__o3c.down && G.police.heat >= 2)",
    "label": "the fight ends: won (he lies there, HEAT 2: a cop down) or lost (arrested)"
+  },
+  {
+   "walk": "G.lastFail ? [[G.eye.x, G.eye.z]] : [[window.__o3c.pos.x + 0.9, window.__o3c.pos.z]]",
+   "timeout": 8000,
+   "stop": false
+  },
+  {
+   "until": "G.lastFail || G.hud.promptShown === 'E  take the gun'",
+   "timeout": 4000,
+   "stop": false
+  },
+  {
+   "key": "KeyE"
+  },
+  {
+   "wait": 600
+  },
+  {
+   "expect": "!!G.lastFail || G.people.hands.hasGun === true",
+   "label": "won: his gun taken from him (E)"
   }
  ]
 }
