@@ -15,7 +15,7 @@ import { Frame } from '../city/kits/interior/frame.js';
 const PLACE_IDS = ['gym', 'diner', 'bar1', 'bar2', 'gunshop', 'garage', 'hotel', 'police', 'theatre1'];
 const KIND = { gym: 'gym', diner: 'diner', bar1: 'bar', bar2: 'bar', gunshop: 'gunshop', garage: 'garage', hotel: 'hotel', police: 'police', theatre1: 'theatre' };
 const NAME = { gym: 'the gym', diner: 'the diner', bar1: 'the Tenements bar', bar2: 'the Docks bar', gunshop: 'the gun shop', garage: 'the garage', hotel: 'the hotel', police: 'police headquarters', theatre1: 'the Orpheum' };
-const ROOM = { gym: 'o5_gym', diner: 'diner', bar: 'o5_bar', gunshop: 'office', garage: 'o5_big', hotel: 'office', police: 'office', theatre: 'office', hall: 'o5_hall', hideout: 'o5_big', stair: 'corridor' };
+const ROOM = { hospital: 'office', gym: 'o5_gym', diner: 'diner', bar: 'o5_bar', gunshop: 'office', garage: 'o5_big', hotel: 'office', police: 'office', theatre: 'office', hall: 'o5_hall', hideout: 'o5_big', stair: 'corridor' };
 
 // the street faces of a rect lot: { n: [nx, nz], mid: [x, z], len }
 function facesOf(L) {
@@ -81,6 +81,14 @@ export function sites(C) {
     mk('warehouse', 'hideout', wh, doorOn(wh, F), { name: 'a warehouse', gang: 'docks' });
     const back = facesOf(wh).find((f) => f.k === 'w' || f.k === 'e');
     if (back && hasDoorOn(wh, back.k)) out.at(-1).doors.push({ ...doorOn(wh, back), back: true });
+  }
+  // ---- [O5b] the hospital (Downtown, on Mercer St behind the Orpheum's block: a door of its own -
+  // the globe, EMERGENCY, the ambulance at the kerb - loaded from further off so the globe is seen
+  // down the street)
+  const hl = nearestLot(C, -190, 13, (L) => L.district === 'downtown' && hasDoorOn(L, 'w') && L.x1 - L.x0 > 20 && L.z1 - L.z0 > 16);
+  if (hl) {
+    const F = facesOf(hl).find((f) => f.k === 'w');
+    mk('hospital', 'hospital', hl, doorOn(hl, F), { name: 'the hospital', loadR: 80, dropR: 110 });
   }
   // ---- three tenement stairwells (a street door, four floors and more, the roof)
   const used = new Set(out.map((s) => s.lot));

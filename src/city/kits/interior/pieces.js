@@ -212,8 +212,9 @@ export function sheet(K, a, y, c, { w = 0.6, h = 0.8, dir = 's', key = 'poster' 
 
 // ---- lettering: one atlas a place (a price card, a board, a sign on a door) ------------------------
 // K.labels: [{ text, lines, x, y, z, w, h, dir, lit }] -> drawn at finish into one canvas and one mesh
-export function label(K, text, a, y, c, { w = 0.8, h = 0.4, dir = 's', lit = false, dark = false, size = 1 } = {}) {
-  (K.labels || (K.labels = [])).push({ text, a, y, c, w, h, dir, lit, dark, size });
+// [O5b] outer: drawn with the place's outside (K.outer: seen from the street with its door shut - the hospital's EMERGENCY)
+export function label(K, text, a, y, c, { w = 0.8, h = 0.4, dir = 's', lit = false, dark = false, size = 1, outer = false } = {}) {
+  (K.labels || (K.labels = [])).push({ text, a, y, c, w, h, dir, lit, dark, size, outer });
 }
 export function finishLabels(K) {
   const L = K.labels;
@@ -225,7 +226,7 @@ export function finishLabels(K) {
   const cv = document.createElement('canvas'); cv.width = W; cv.height = H;
   const g = cv.getContext('2d');
   g.fillStyle = '#000'; g.fillRect(0, 0, W, H);
-  const geos = [];
+  const geos = [], outs = [];
   L.forEach((l, i) => {
     const [rx, ry, pw, ph] = rects[i];
     g.save(); g.translate(rx, ry);
@@ -246,22 +247,28 @@ export function finishLabels(K) {
     const along = dz !== 0;
     const off = 0.016;
     if (along) p.translate(l.a, l.y, l.c + dz * off); else p.translate(l.c + dx * off, l.y, l.a);
-    geos.push(p);
+    (l.outer ? outs : geos).push(p);
   });
   const tex = new THREE.CanvasTexture(cv); tex.colorSpace = THREE.SRGBColorSpace; tex.anisotropy = 4;
   const mat = new THREE.MeshBasicMaterial({ map: tex, color: new THREE.Color().setScalar(0.85) });
   mat.userData.inkSurface = 'lit';
-  const flat = geos.map((q0) => { const q = q0.index ? q0.toNonIndexed() : q0; if (q !== q0) q0.dispose(); return q; });
-  let n = 0; for (const q of flat) n += q.getAttribute('position').count;
-  const pos = new Float32Array(n * 3), uv = new Float32Array(n * 2), nor = new Float32Array(n * 3); let o = 0;
-  for (const q of flat) { pos.set(q.getAttribute('position').array, o * 3); nor.set(q.getAttribute('normal').array, o * 3); uv.set(q.getAttribute('uv').array, o * 2); o += q.getAttribute('position').count; q.dispose(); }
-  const geo = new THREE.BufferGeometry();
-  geo.setAttribute('position', new THREE.BufferAttribute(pos, 3)); geo.setAttribute('normal', new THREE.BufferAttribute(nor, 3)); geo.setAttribute('uv', new THREE.BufferAttribute(uv, 2));
-  const m = new THREE.Mesh(geo, mat);
-  m.matrixAutoUpdate = false; m.matrix.copy(K.F.M);
-  m.userData.inkId = K.id + 3; m.userData.noRay = true;
-  K.group.add(m);
-  K.extra.push(m);
+  const mesh = (list, into) => {
+    if (!list.length) return null;
+    const flat = list.map((q0) => { const q = q0.index ? q0.toNonIndexed() : q0; if (q !== q0) q0.dispose(); return q; });
+    let n = 0; for (const q of flat) n += q.getAttribute('position').count;
+    const pos = new Float32Array(n * 3), uv = new Float32Array(n * 2), nor = new Float32Array(n * 3); let o = 0;
+    for (const q of flat) { pos.set(q.getAttribute('position').array, o * 3); nor.set(q.getAttribute('normal').array, o * 3); uv.set(q.getAttribute('uv').array, o * 2); o += q.getAttribute('position').count; q.dispose(); }
+    const geo = new THREE.BufferGeometry();
+    geo.setAttribute('position', new THREE.BufferAttribute(pos, 3)); geo.setAttribute('normal', new THREE.BufferAttribute(nor, 3)); geo.setAttribute('uv', new THREE.BufferAttribute(uv, 2));
+    const m = new THREE.Mesh(geo, mat);
+    m.matrixAutoUpdate = false; m.matrix.copy(K.F.M);
+    m.userData.inkId = K.id + 3; m.userData.noRay = true;
+    into.add(m);
+    K.extra.push(m);
+    return m;
+  };
+  const m = mesh(geos, K.group);
+  mesh(outs, K.outer);
   K.labelTex = tex; K.labelMat = mat;
   return m;
 }

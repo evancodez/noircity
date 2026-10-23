@@ -128,12 +128,12 @@ export default defineScene({
   // station: on the cell's bench at headquarters (the arrest's wake: O3);
   // wake: up after a fall in a place (G.city.wake: outside its door, or by the gym's ring), the car where I left it
   // [O7] hospital: after a fall in the street (the bounty's man, a fight lost to anyone but the police):
-  // up on the pavement by my car where I left it - O4's rules (fall.js: the stitches' cost) - until a
-  // hospital's door is built
-  beats: ['roam', 'ashore', 'hotel', 'station', 'wake', 'hospital'],
+  // [O5b] the hospital's door is built: up in the ward's bed by its door ('Came round.', O4's
+  // stitches), my car where I left it; ward: CONTINUE after a sleep in a ward's bed
+  beats: ['roam', 'ashore', 'hotel', 'station', 'wake', 'hospital', 'ward'],
   // (M is the map here: Game.bindInput leaves the sound alone)
   mapKey: true,
-  objectives: { roam: null, ashore: null, hotel: null, station: null, wake: null, hospital: null },
+  objectives: { roam: null, ashore: null, hotel: null, station: null, wake: null, hospital: null, ward: null },
   // [O6] the low line when the destruction set hurt him (the fire, the tram): its fix, not the gun kit's
   lowWarn: (ctx) => (ctx.stage.smash && ctx.stage.smash.cars.lowWarn()) || null,
   setup: {
@@ -197,14 +197,25 @@ export default defineScene({
       P.wakeAfter(W);
       R.wake = null;
     },
-    // [O7] up after a fall in the street: by my car where I left it (or at Grand Ave's kerb), the stitches paid
+    // [O7] up after a fall in the street, the stitches paid
+    // [O5b] in the hospital's ward (src/places/rooms/hospital.js): the bed by the door, 'Came round.', my car
+    // where I left it (or, gone or burnt out, at the hospital's kerb)
     hospital(ctx) {
-      const G = ctx.game, R = G.city || (G.city = {});
+      const G = ctx.game, R = G.city || (G.city = {}), P = placesOf(G, ctx.stage), s = P.byId.get('hospital');
       const car = R.car && R.car.solid !== false && !R.car.wrecked ? { x: R.car.pos.x, z: R.car.pos.z, yaw: R.car.yaw, kind: R.car.kind } : null;
       if (car) place(ctx, { car: { x: car.x, z: car.z }, carYaw: car.yaw, kind: car.kind, pos: { x: car.x + Math.sin(car.yaw) * 2.4, z: car.z + Math.cos(car.yaw) * 2.4 }, yaw: car.yaw - Math.PI / 2 });
+      else if (s) { const k = s.frame.w(-5.5, 4.9); place(ctx, { car: k, carYaw: s.frame.yaw(Math.PI / 2), pos: s.frame.w(-5.5, 2.4), yaw: 0 }); }
       else { const a = ctx.stage.anchor('city.start.grand'); place(ctx, { car: a.car, carYaw: a.carYaw, pos: a.pos, yaw: a.yaw }); }
+      if (s) { P.wake('hospital', 'fall'); return; }
       const r = fallWake(G, 'hospital');
       G.hud.message(r.line, 3.0);
+    },
+    // [O5b] a ward's bed wrote the save: CONTINUE wakes me in it, the car at the hospital's kerb
+    ward(ctx) {
+      const P = placesOf(ctx.game, ctx.stage), s = P.byId.get('hospital');
+      const k = s ? s.frame.w(-5.5, 4.9) : { x: -205, z: 13 };
+      place(ctx, { car: k, carYaw: s ? s.frame.yaw(Math.PI / 2) : Math.PI / 2, pos: s ? s.frame.w(-5.5, 2.4) : k, yaw: 0 });
+      P.wake('hospital', 'ward');
     },
     // out of the river: on the quay at the nearest steps, a car at the kerb by them
     ashore(ctx) {
