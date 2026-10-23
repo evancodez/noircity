@@ -260,6 +260,28 @@ async function parts(api) {
   const r = await js('(() => { const W = window.__o6bin; W.stop = true; return { min: +W.min.toFixed(2), inside: W.inside }; })()');
   out.walks.push({ kind: L.kind, ...r });
   log(`walk into the ${L.kind}: ${JSON.stringify(r)}`);
+  if (api.opts.over === false) return out;
+  // into my coupe (its left side), then north up the lane over the door lying in it
+  const car = await js(`(() => { const v = G.city.cars[0]; return { id: v.id, x: v.pos.x, z: v.pos.z, yaw: v.yaw, hw: v.spec.halfW }; })()`);
+  await walkTo(api, car.x - Math.sin(car.yaw) * (car.hw + 0.9), car.z - Math.cos(car.yaw) * (car.hw + 0.9), 25000);
+  const f = await js(`(() => { const C = N.controller; let d = Math.atan2(-(${car.x} - C.pos.x), -(${car.z} - C.pos.z)) - C.yaw; return { d: Math.atan2(Math.sin(d), Math.cos(d)), sens: C.sensitivity }; })()`);
+  await turn(-f.d / f.sens, 0);
+  await sleep(300);
+  await keyDown('KeyE'); await sleep(70); await keyUp('KeyE');
+  for (let i = 0; i < 50 && !(await js('G.city.inCar')); i++) await sleep(100);
+  const door = await js(`(() => { const it = G.stage.smash.out.find((i) => i.kind === 'cardoor' && i.state === 'rest'); return it && { id: it.id, x: it.body.p.x, z: it.body.p.z }; })()`);
+  if (!door) { out.over = { err: 'no door lying' }; return out; }
+  await js(`(() => { const W = window.__o6bOver = { log: [], hits: [] }; const c = G.city.car; c.on('smash', (e) => { if (e.item && e.item.kind) W.hits.push([e.item.kind, +G.time.toFixed(2), +c.speedAbs.toFixed(2)]); }); const tick = () => { if (Math.abs(c.pos.z - ${door.z}) < 7) W.log.push([+c.pos.z.toFixed(2), +c.speedAbs.toFixed(2)]); if (!W.stop) requestAnimationFrame(tick); }; requestAnimationFrame(tick); return 1; })()`);
+  const r2 = await follow(api, [[car.x, car.z], [door.x, door.z + 14], [door.x, door.z], [door.x, door.z - 16]], { speed: 8.5, timeout: 30000 });
+  await brakeAndBack(api, 0);
+  await sleep(3000);
+  const W = await js(`(() => { const W = window.__o6bOver; W.stop = true; const it = G.stage.smash.items.find((i) => i.id === ${door.id}); return { log: W.log, hits: W.hits, moved: it && it.body ? +Math.hypot(it.body.p.x - ${door.x}, it.body.p.z - ${door.z}).toFixed(2) : null, state: it ? it.state : 'gone' }; })()`);
+  // the speed before it and at the bump
+  const hit = W.hits.find((h) => h[0] === 'cardoor');
+  const before = W.log.filter((e) => e[0] > door.z + 3.2).map((e) => e[1]);
+  const vBefore = before.length ? before[before.length - 1] : null;
+  out.over = { end: r2.end, hit: !!hit, vBefore, vAt: hit ? hit[2] : null, moved: W.moved, state: W.state };
+  log(`over the door: ${JSON.stringify(out.over)}`);
   return out;
 }
 

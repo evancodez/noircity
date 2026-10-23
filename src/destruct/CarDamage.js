@@ -175,13 +175,16 @@ export class CarDamage {
     v.smashD = D;
     // (never wrecked by one blow from below the fire: the warning first)
     if (v.warnAt == null) v.warnAt = BURN;
-    v.on('crash', (e) => this.knock(D, e, 1));
-    v.on('scrape', (e) => this.knock(D, e, 0.35));
+    // ([O6b] a car met by the tram is told by its own contact - the tram's is the
+    // other end: marked, its damage comes on over seconds, update)
+    const tramT = (e) => { if (e.thing && e.thing.kind === 'tram' && this.game) D.tramT = this.game.time; };
+    v.on('crash', (e) => { tramT(e); this.knock(D, e, 1); });
+    v.on('scrape', (e) => { tramT(e); this.knock(D, e, 0.35); });
     v.on('bump', (e) => { if (e.by && e.by.kind === 'tram') this.tramSparks(e.point, e.k ?? 0.6, D); this.knock(D, { point: e.point, k: e.k ?? 0.3, n: e.n }, 0.8); });
     v.on('lean', (e) => { if (e.by && e.by.kind === 'tram') this.tramSparks(e.point, 0.3, D); });
     v.on('post', (e) => this.knock(D, { point: new THREE.Vector3(e.thing.x, 0.6, e.thing.z), k: e.k ?? 0.5 }, 0.35));
     // the tram's own contacts (a car it shoves: Car.contact on the car finds the tram as `o` and tells it 'bump')
-    if (v.kind === 'tram') v.on('bump', (e) => this.tramSparks(e.point, e.k ?? 0.6, null));
+    if (v.kind === 'tram') v.on('bump', (e) => this.tramSparks(e.point, e.k ?? 0.6, e.by && e.by.smashD ? e.by.smashD : null));
     this.addProxy(D);
     this.list.push(D);
     this.byCar.set(v, D);

@@ -343,6 +343,14 @@ function ten(ctx) {
   const f = () => {
     if (G.time - t0 < 0.3) return;
     G.scripts.splice(G.scripts.indexOf(f), 1);
+    // (&ten=parts: a sedan's door and its bonnet lying in the lane under the el, on the
+    // way north from my coupe - the parts' proof: a man stopped by one, a car slowed by it)
+    if (mode === 'parts') {
+      const pc = cars.find((c) => c.kind === 'sedan'), col = pc && pc.smashD ? D.paintOf(pc) : null, q = new THREE.Quaternion();
+      S.spawnPart('cardoor', V(-119.6, 0.4, 44), q.clone(), V(0, 0, 0), null, { scale: V(0.91, 0.6 / 0.62, 1), color: col });
+      S.spawnPart('carbonnet', V(-120.4, 0.4, 36), q.clone(), V(0, 0, 0), null, { scale: V(1.56, 1, 1.16), color: col });
+      return;
+    }
     cars.forEach((v, i) => {
       const d = v.smashD;
       if (!d) return;
