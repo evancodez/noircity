@@ -37,6 +37,16 @@ export const KINDS = {
   fence: { fp: [1.15, 0.06], h: 1.9, giveAt: 1.5, drag: 0.85, hurt: 0.04, how: 'tumble', shot: 'wood', hp: 3, cap: 24, mat: 'wood', surf: SURF.STONE, sound: 'smash_fence', knock: 'w_fenceHit', tags: ['fence'], lie: false, lift: 0.8, carry: 0.6, light: true },
   // (an awning: an object of its own on a wall; only a tall thing reaches it)
   awning: { high: true, low: 2.45, h: 0.6, giveAt: 0, drag: 1, hurt: 0, how: 'tear', shot: 'tear', hp: 3, mat: 'cloth', surf: SURF.STONE, sound: 'awning_tear', tags: ['awning'], proxy: false, bounce: 0.1, mu: 0.8 },
+  // [O6b] the parts that come off a car (CarDamage, the user's must: "car damage ... physical
+  // within reason"): things of the set once they are off - never standing (Smash.spawnPart),
+  // a rigid body that flies, rests and is swept by the cap and the mend at a distance. The
+  // bonnet and a door lie as a man's box and are heavy to a car (a bump that slows it, a
+  // shove); a bumper and a wheel are kicked on. Their pool's shape is scaled to the car's part
+  // (it.S); `paintable`: drawn in its car's paint (the instance's colour)
+  carbonnet: { part: true, paintable: true, h: 0.06, giveAt: 0, drag: 0.97, hurt: 0, how: 'part', shot: 'knock', cap: 10, mat: 'paint', surf: SURF.IRON, sound: 'o6b_flap', knock: 'clang', tags: ['part'], lie: true, lieDrag: 0.94, mu: 0.45, bounce: 0.15, scrub: 1.6 },
+  cardoor: { part: true, paintable: true, h: 0.62, giveAt: 0, drag: 0.97, hurt: 0, how: 'part', shot: 'knock', cap: 12, mat: 'paint', surf: SURF.IRON, sound: 'o6b_door', knock: 'clang', tags: ['part'], lie: true, lieDrag: 0.92, mu: 0.5, bounce: 0.18 },
+  carbumper: { part: true, h: 0.17, giveAt: 0, drag: 0.98, hurt: 0, how: 'part', shot: 'knock', cap: 12, mat: 'chrome', surf: SURF.IRON, sound: 'clang', knock: 'clang', tags: ['part'], light: true, mu: 0.4, bounce: 0.25 },
+  carwheel: { part: true, h: 0.75, giveAt: 0, drag: 0.98, hurt: 0, how: 'part', shot: 'knock', cap: 12, mat: 'rubber', surf: SURF.STONE, sound: 'o6b_wheel', knock: 'b9thunk', tags: ['part'], light: true, mu: 0.6, bounce: 0.35, topple: true },
   // (shop glass: a Glass pane; its rounds are the pane's own)
   glass: { pane: true, h: 2, giveAt: 0, drag: 0.97, hurt: 0.02, how: 'pane', shot: 'pane', mat: 'kerb', sound: 'glass', tags: ['glass'], proxy: false },
 };
@@ -54,6 +64,13 @@ export function kindGeo(kind) {
     case 'crate': g = crateGeo(); break;
     case 'fence': g = fenceGeo(); break;
     case 'awning': g = awningGeo(3, 1.5); break;
+    // [O6b] (a car's parts, each a unit a car's own scales: the bonnet a crowned
+    // plate 1 m long, a door a panel 1 m, a bumper's bar 1 m across, a wheel -
+    // tyre and hub - its axle along y, 0.75 m across; middles at the origin)
+    case 'carbonnet': g = roundedBox(1, 0.05, 1, 0.02, 2); break;
+    case 'cardoor': g = roundedBox(1, 0.62, 0.05, 0.02, 2); break;
+    case 'carbumper': g = roundedBox(0.12, 0.15, 1, 0.05, 2); break;
+    case 'carwheel': g = merge([new THREE.TorusGeometry(0.27, 0.105, 10, 24).rotateX(Math.PI / 2), new THREE.CylinderGeometry(0.22, 0.22, 0.12, 16)]); break;
     default: g = propGeo(kind).clone();
   }
   CACHE.set(kind, g);

@@ -186,14 +186,16 @@ function place(ctx, at = {}) {
   stage.part('stream').warmAround(BED.car.x, BED.car.z);
   buildBed(stage);
   stage.smash.mendAll();
-  const coupe = Vh.spawn('coupe', { at: V(BED.car.x, 0, BED.car.z), yaw: BED.car.yaw, lights: true });
+  const cAt = at.car || BED.car;   // [O6b] (the ten's: my coupe in the lane under the el)
+  const coupe = Vh.spawn('coupe', { at: V(cAt.x, 0, cAt.z), yaw: cAt.yaw, lights: true });
   coupe.driver = null;
   if (coupe.lamps && coupe.lamps.setOn) coupe.lamps.setOn(false);
   const sedan = Vh.spawn('sedan', { at: V(at.sedan ? at.sedan.x : BED.sedan.x, 0, at.sedan ? at.sedan.z : BED.sedan.z), yaw: at.sedan ? at.sedan.yaw : BED.sedan.yaw, lights: false });
   sedan.driver = null;
   // (the block's sedan leaves a box of its own in the walking colliders' grid: the car's own box is the one a man meets)
   if (sedan.car && sedan.car.collider && stage.colliders.remove) stage.colliders.remove(sedan.car.collider);
-  const lorry = Vh.spawn('truck', { at: V(BED.lorry.x, 0, BED.lorry.z), yaw: BED.lorry.yaw, lights: true });
+  const lAt = at.lorry || BED.lorry;
+  const lorry = Vh.spawn('truck', { at: V(lAt.x, 0, lAt.z), yaw: lAt.yaw, lights: true });
   lorry.driver = null;
   if (lorry.lamps && lorry.lamps.setOn) lorry.lamps.setOn(false);
   // (the lorry's seat: high in its cab, over its screen; no wheel of the coupe's)
@@ -202,7 +204,7 @@ function place(ctx, at = {}) {
   R.car = coupe; R.cars = [coupe, lorry, sedan]; R.inCar = false;
   R.cabin = stage._cabin || (stage._cabin = new Cabin(G));
   R.cabin.car = null;
-  R.tram = spawnTram(ctx, at.tramZ ?? BED.tram.z0, at.tramDir ?? -1);
+  R.tram = at.noTram ? null : spawnTram(ctx, at.tramZ ?? BED.tram.z0, at.tramDir ?? -1);
   R.stream = stage.part('stream');
   const me = at.me || BED.me;
   ctx.controller.setPose(me.x, me.z, me.yaw, me.pitch ?? -0.04);
@@ -303,11 +305,74 @@ function hundred(ctx) {
   return stage._hundred;
 }
 
+// [O6b] ten cars on Grand Ave (the havoc's bed, brief O6b: "ram every car on
+// Grand Ave until each is a wreck"): parked along both kerbs, each in the gap
+// between two of the el's columns (a car can be reached from the lane under
+// the el: a door from the side, a tail from behind), the bed's sedan and
+// lorry among them; my coupe in the lane under the el at Fifth St, heading
+// north; the tram kept off (its own beat). Every one but the bed's locked
+// sedan to get into (E) when mine is spent. kind, x, z, yaw, paint
+const MID = [37.85, 26.35, 14.85, 3.35, -8.15];   // (between the columns, z)
+export const TEN = {
+  car: { x: -119.6, z: 58, yaw: Math.PI / 2 }, me: { x: -117.6, z: 60.5, yaw: 0.6, pitch: -0.04 },
+  sedan: { x: -127.6, z: MID[3] + 0.17, yaw: -Math.PI / 2 }, lorry: { x: -127.3, z: MID[0] - 1.0, yaw: -Math.PI / 2 },
+  cars: [
+    ['sedan', -112.4, MID[0] + 0.17, Math.PI / 2, 'paint'], ['sedan', -112.4, MID[1] + 0.17, Math.PI / 2, 'paintGrey'], ['truck', -112.9, MID[2] + 1.35, Math.PI / 2],
+    ['sedan', -112.4, MID[3] + 0.17, Math.PI / 2, 'paintGrey'], ['coupe', -112.4, MID[4] - 0.1, Math.PI / 2],
+    ['sedan', -127.6, MID[4] + 0.17, -Math.PI / 2, 'paintGrey'], ['sedan', -127.6, MID[2] + 0.17, -Math.PI / 2, 'paint'], ['sedan', -127.6, MID[1] + 0.17, -Math.PI / 2, 'paintGrey'],
+  ],
+};
+function ten(ctx) {
+  const G = ctx.game, R = G.city, Vh = G.vehicles;
+  for (const [kind, x, z, yaw, paint] of TEN.cars) {
+    const v = Vh.spawn(kind, { at: V(x, 0, z), yaw, lights: false, paint: paint || 'paint' });
+    v.driver = null; v.input.hold = 1; v.input.brake = 1; v.input.handbrake = 1;   // (parked: its brakes on - a car shoved slides a little, it does not roll away)
+    if (v.lamps && v.lamps.setOn) v.lamps.setOn(false);
+    if (v.car && v.car.collider && ctx.stage.colliders.remove) ctx.stage.colliders.remove(v.car.collider);
+    if (kind === 'truck') v.seatOpts = { eye: V(1.55, 2.45, -0.45), fov: 64, pitch: -0.05 };
+    R.cars.push(v);
+  }
+  for (const v of [R.cars[1], R.cars[2]]) { v.input.hold = 1; v.input.brake = 1; v.input.handbrake = 1; }
+  // (look development and the frames: &ten=states puts the ten in the ten
+  // states of a car's damage, &ten=wrecks sends every one up, a few at a time)
+  const q = typeof location !== 'undefined' ? new URLSearchParams(location.search) : null;
+  const mode = q && q.get('ten');
+  if (!mode) return;
+  const S = ctx.stage.smash, D = S.cars, cars = R.cars.filter((c) => c !== R.car);
+  const t0 = G.time;
+  const f = () => {
+    if (G.time - t0 < 0.3) return;
+    G.scripts.splice(G.scripts.indexOf(f), 1);
+    cars.forEach((v, i) => {
+      const d = v.smashD;
+      if (!d) return;
+      const P = (x, z) => { const p = v.world(x, z); p.y = 0.6; return p; };
+      const N0 = (x, z) => { const p = v.world(x, z).sub(v.pos); p.y = 0; return p.normalize(); };
+      if (mode === 'wrecks') { S.later(i * 0.45, () => { v.damage = 4.3; }); return; }
+      // the ten states, one a car: dents, the bonnet sprung, a door hanging, a door
+      // off, a bumper dragging, a bumper off, a wheel wobbling, a wheel off, burning, the wreck
+      switch (i) {
+        case 0: D.knock(d, { point: P(1.2, -0.95), k: 0.7, n: N0(0, 1) }, 0.6); D.knock(d, { point: P(-1.6, -0.95), k: 0.6, n: N0(0, 1) }, 0.6); break;
+        case 1: D.popHood(d, 1); break;
+        case 2: D.hangDoor(d, -1); d.doors[0].ang = 0.9; break;
+        case 3: D.hangDoor(d, 1); D.doorOff(d, 1); break;
+        case 4: D.looseBumper(d, 0, -1); break;
+        case 5: D.looseBumper(d, 1, 1); D.bumperOff(d, 1); break;
+        case 6: D.wobble(d, 0); break;
+        case 7: D.wobble(d, 3); D.wheelOff(d, 3); break;
+        case 8: v.damage = 3.4; break;
+        default: v.damage = 4.3;
+      }
+    });
+  };
+  G.scripts.push(f);
+}
+
 export default defineScene({
   id: 'smash', stage: 'noircity', title: '', name: 'Smash (the bed)',
-  beats: ['bed', 'burn', 'tram', 'hundred', 'fire'],
+  beats: ['bed', 'burn', 'tram', 'hundred', 'fire', 'ten'],
   mapKey: true,
-  objectives: { bed: null, burn: null, tram: null, hundred: null, fire: null },
+  objectives: { bed: null, burn: null, tram: null, hundred: null, fire: null, ten: null },
   // (hurt by the fire or the tram: its fix - not the gun kit's 'Get to cover.')
   lowWarn: (ctx) => (ctx.stage.smash && ctx.stage.smash.cars.lowWarn()) || null,
   setup: {
@@ -325,6 +390,11 @@ export default defineScene({
     fire(ctx) {
       const { coupe } = place(ctx);
       coupe.damage = 3.36;
+    },
+    // [O6b] ten cars along Grand Ave to ram, me by my coupe
+    ten(ctx) {
+      place(ctx, { car: TEN.car, me: TEN.me, sedan: TEN.sedan, lorry: TEN.lorry, noTram: true });
+      ten(ctx);
     },
     // a hundred things round the sedan, its fuse at a second
     hundred(ctx) {
@@ -356,7 +426,7 @@ export default defineScene({
       if (!R.inCar) {
         let best = null, bd = 6;
         for (const c of R.cars) {
-          if (c.wrecked || !G.vehicles.list.includes(c) || c === R.cars[2]) continue;
+          if (c.wrecked || !G.vehicles.list.includes(c) || c.kind === 'sedan') continue;   // [O6b] (every sedan of the bed is locked: no seat in it yet)
           const d = Math.hypot(c.pos.x - ctx.controller.pos.x, c.pos.z - ctx.controller.pos.z) - c.spec.halfL * 0.6;
           if (d < bd) { bd = d; best = c; }
         }
@@ -364,11 +434,11 @@ export default defineScene({
       }
       // the sedan across the way: its door tried, locked (a rattle, as the city's
       // street doors - the critic's minor: no prompt, no answer)
-      const sd = R.cars[2];
-      let atSedan = false;
-      if (!R.inCar && sd && !sd.wrecked && G.vehicles.list.includes(sd) && !(sd.smashD && sd.smashD.state === 'burning')) {
-        const l = sd.local(ctx.controller.pos, _v);
-        atSedan = Math.hypot(Math.max(0, Math.abs(l.x) - sd.spec.halfL), Math.max(0, Math.abs(l.z) - sd.spec.halfW)) < 1.4;
+      let atSedan = false, sd = null;
+      if (!R.inCar) for (const c of R.cars) {
+        if (c.kind !== 'sedan' || c.wrecked || !G.vehicles.list.includes(c) || (c.smashD && c.smashD.state === 'burning')) continue;
+        const l = c.local(ctx.controller.pos, _v);
+        if (Math.hypot(Math.max(0, Math.abs(l.x) - c.spec.halfL), Math.max(0, Math.abs(l.z) - c.spec.halfW)) < 1.4) { atSedan = true; sd = c; break; }
       }
       if (atSedan !== !!T.atSedan) { T.atSedan = atSedan; if (atSedan) ctx.hud.prompt('E  try the door', null, 'bedsedan'); else ctx.hud.clearPrompt('bedsedan'); }
       if (atSedan && ctx.pressed('KeyE')) { G.sfx.play('f_c4rattle', V(sd.pos.x, 1.1, sd.pos.z)); ctx.hud.message('locked', 1.2); }

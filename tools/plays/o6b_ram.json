@@ -1,0 +1,17 @@
+{
+ "about": "[O6b] The havoc (brief O6b §3): ten cars parked along Grand Ave (?start=smash&beat=ten), rammed one after another by the keys a player presses (tools/lib/o6b_damage.mjs ram): E into my coupe; up the east kerb a diagonal from the lane under the el into each one's door (the last one twice), round the junction at Centre St, down the west kerb head-on into each one's tail; my car spent, E out, a walk to the next whole car, E in. Every car shows where it was hit: the ten states between them (dents, the bonnet sprung, a door hanging, a door off and lying, a bumper dragging, a bumper off, a wheel wobbling, a wheel off and the car on its hub, burning, the wreck); everything that came off lies still on the road, nothing floating, nothing in a wall. node tools/play.mjs tools/plays/o6b_ram.json",
+ "url": "/?mute=1&start=smash.ten",
+ "size": [1440, 900],
+ "out": "shots/o6b/ram",
+ "steps": [
+  { "wait": 1500 },
+  { "clickOn": "#title .opt[data-k=begin]", "taken": "G.state !== 'title'", "retries": 5, "every": 4000 },
+  { "until": "G.scenes.current && G.scenes.current.id === 'smash' && G.scenes.fadeK < 0.05 && G.city.cars.length >= 11", "timeout": 30000 },
+  { "wait": 1200 },
+  { "drive": "tools/lib/o6b_damage.mjs", "mode": "ram", "settle": 5000,
+    "shots": { "east_sedan": { "name": "r1_door_from_seat", "after": 150 }, "west_grey": { "name": "r2_head_on_from_seat", "after": 120 }, "west_sedan": { "name": "r3_bonnet_from_seat", "after": 600 } },
+    "check": "D.end === 'done' && D.parts.live === 0 && D.parts.floating.length === 0 && D.parts.inWall.length === 0 && ['dent','bonnet','doorHang','doorOff','bumperDrag','bumperOff','wheelWobble','wheelOff'].every((k) => D.states.includes(k))",
+    "label": "ten cars rammed by the keys: the states of a car's damage between them, every part off at rest on the road, none floating or in a wall" },
+  { "shot": "r4_after" }
+ ]
+}

@@ -79,10 +79,23 @@ export class Smash {
     stage.scene.add(this.group);
     // the pools of whole things out of their merge (built now, invisible: the
     // city's compile sees them; no ink id is taken from the shared counter)
+    // [O6b] (what lies carries a faint rim of paper on its edge - O6's left 4:
+    // a bench over in an unlit stretch was a black hole; each pool's own
+    // twin of its material, so nothing standing in the city's merges changes;
+    // a car's parts are white under their instance's colour: the car's paint)
+    const rimmed = new Map();
+    const matOf = (K) => {
+      const base = this.mats[K.mat] || (stage.M && stage.M[K.mat]) || this.mats.kerb;
+      const key = base.uuid + (K.paintable ? ':paint' : '');
+      if (!rimmed.has(key)) rimmed.set(key, rimMaterial(base, K.part ? 0.07 : 0.05, !!K.paintable));
+      return rimmed.get(key);
+    };
+    const baseOf = (K) => this.mats[K.mat] || (stage.M && stage.M[K.mat]) || this.mats.kerb;
     for (const [kind, K] of Object.entries(KINDS)) {
       if (!K.cap) continue;
       const geo = kindGeo(kind);
-      const im = new THREE.InstancedMesh(geo, this.mats[K.mat] || this.mats.kerb, K.cap);
+      const im = new THREE.InstancedMesh(geo, matOf(K), K.cap);
+      if (K.part) { const c = K.paintable && baseOf(K).color ? baseOf(K).color.clone() : new THREE.Color(1, 1, 1); for (let i = 0; i < K.cap; i++) im.setColorAt(i, c); im.userData.tint0 = c; }
       im.name = 'smash_' + kind;
       im.userData.inkId = this.idOf(kind);
       im.userData.inkPerInstance = false;
@@ -368,6 +381,7 @@ export class Smash {
   // back as it stood (out of view: a recycle, the mend at a distance, a reset)
   mend(it) {
     if (it.lazy) { this.unglaze(it); return; }
+    if (it.part) { this.dropPart(it); return; }
     if (it.state === 'stand' && !it.dark) return;
     const i = this.out.indexOf(it);
     if (i >= 0) this.out.splice(i, 1);
@@ -426,6 +440,7 @@ export class Smash {
     m.userData.prop = it;
     m.userData.surf = it.K.surf || SURF.IRON;
     m.scale.set(P.e.x * 2 * 0.95, P.e.y * 2 * 0.95, P.e.z * 2 * 0.95);
+    if (it.S) m.scale.multiply(it.S);
     this.group.add(m);
     it.proxy = m;
     this.syncProxy(it);
@@ -442,7 +457,9 @@ export class Smash {
   syncProxy(it) {
     const m = it.proxy, P = this.pools[it.kind];
     if (!m) return;
-    _c.copy(P.c).applyQuaternion(it.Q).add(it.P);
+    _c.copy(P.c);
+    if (it.S) _c.multiply(it.S);
+    _c.applyQuaternion(it.Q).add(it.P);
     m.position.copy(_c); m.quaternion.copy(it.Q);
     m.updateMatrixWorld(true);
     const e = it.entry;
@@ -459,7 +476,7 @@ export class Smash {
     if (it.obj) { it.obj.position.copy(it.P); it.obj.quaternion.copy(it.Q); if (it.obj.parent && it.obj.parent !== this.stage.scene) { /* a child: its parent's frame */ } it.obj.updateMatrixWorld(true); }
     else if (it.inst >= 0) {
       const P = this.pools[it.kind];
-      _m.compose(it.P, it.Q, _one);
+      _m.compose(it.P, it.Q, it.S || _one);
       P.im.setMatrixAt(it.inst, _m); P.im.instanceMatrix.needsUpdate = true;
     }
     if (it.proxy) this.syncProxy(it);
@@ -806,6 +823,7 @@ export class Smash {
     const P = this.pools[it.kind];
     const e = it.obj ? (it.opts.e ? new THREE.Vector3(...it.opts.e) : new THREE.Vector3(0.5, 0.3, 0.5)) : P.e.clone();
     const c = it.obj ? (it.opts.c ? new THREE.Vector3(...it.opts.c) : new THREE.Vector3(0, e.y, 0)) : P.c.clone();
+    if (it.S) { e.multiply(it.S); c.multiply(it.S); }     // [O6b] (a car's part: its pool's shape scaled to that car's)
     const p = c.clone().applyQuaternion(it.Q).add(it.P);
     const b = { p, v: v.clone(), w: new THREE.Vector3(), e, c, touch: false, restT: 0, roll: null };
     // the turn the blow gives: about the axis across the way it was hit, by how high
@@ -882,6 +900,10 @@ export class Smash {
         }
       }
       if (deep > 0) b.p.y += deep;
+      // [O6b] (a car's part is a thin plate: the corners' impulses, shared out
+      // one by one, mostly turn it and never stop its fall - it lay pushed up
+      // each step at -0.75 m/s and never came to rest; on the ground, it stops)
+      if (it.part && deep > 0 && b.v.y < 0) b.v.y = 0;
       if (b.touch) { const k = Math.exp(-(it.K.scrub ?? 2.2) * h); b.v.x *= k; b.v.z *= k; b.w.multiplyScalar(Math.exp(-1.2 * h)); }
     }
     {
@@ -902,6 +924,18 @@ export class Smash {
     // at rest: on its broadest face, still
     // (still on the ground: no slide, no turn - its vertical speed is the step's own gravity and the push back)
     if (b.touch && b.v.x * b.v.x + b.v.z * b.v.z < 0.03 && Math.abs(b.v.y) < 0.7 && b.w.lengthSq() < 0.35) b.restT += dt; else b.restT = 0;
+    // [O6b] a wheel run down on its rim tips on over onto its side (never left
+    // standing: settle would square it up on its edge) - a pull about its line
+    // of roll, the way it already leans
+    if (it.K.topple) {
+      _v.set(0, 1, 0).applyQuaternion(it.Q);
+      if (Math.abs(_v.y) < 0.94) {
+        _a.crossVectors(_v, UP);
+        const l = _a.length();
+        if (l > 1e-4) b.w.addScaledVector(_a.divideScalar(l), (_v.y >= 0 ? 1 : -1) * 16 * dt);
+        b.restT = 0;
+      }
+    }
     if (b.restT > 0.25 || it.t > 12) {
       // (a round thing on its side rolls on, slowing)
       if (it.K.roll && !b.rolled && this.onSide(it) && Math.hypot(b.v.x, b.v.z) > 0.25) return this.startRoll(it);
@@ -937,7 +971,12 @@ export class Smash {
     if (Math.abs(_c.x - b.p.x) + Math.abs(_c.z - b.p.z) > 1e-4) { b.p.x = _c.x; b.p.z = _c.z; R.dir.negate(); R.sp *= 0.4; }
     b.p.y = S.surfaceY(b.p.x, b.p.z) + R.r;
     it.P.copy(b.c).applyQuaternion(it.Q).negate().add(b.p);
-    if (R.sp <= 0.02) { b.roll = null; this.settle(it); }
+    if (R.sp <= 0.02) {
+      b.roll = null;
+      // (a wheel run down topples over onto its side)
+      if (it.K.topple) { b.v.set(0, 0, 0); b.w.copy(R.dir).multiplyScalar(this.rnd() < 0.5 ? -2.4 : 2.4); b.restT = 0; return; }
+      this.settle(it);
+    }
   }
   // lying still: flat on the face nearest the ground, its lowest point on it;
   // a man's box where it lies (a big thing stops him), the bullets' box there
@@ -959,6 +998,7 @@ export class Smash {
       b.v.set(0, 0, 0); b.w.set(0, 0, 0);
     }
     it.state = 'rest';
+    if (it.part) this.regrid(it, b.p.x, b.p.z);
     this.draw(it);
     if (it.K.lie && !it.lie && !b.lean) this.addLie(it);
   }
@@ -1120,6 +1160,64 @@ export class Smash {
   }
   kickPieces(car) { return this.pieces.kick(car); }
   guardBody(car) { return this.pieces.guard(car); }
+
+  // ---- a car's parts come off (CarDamage: the bonnet, a door, a bumper, a wheel) [O6b] ----------------
+  // a thing of the set made where the part was (pos: its shape's middle, q its
+  // way, scale: its pool's shape stretched to that car's part, color: its
+  // paint), flying with vel and spin (roll: { dir, sp } - a wheel rolling on);
+  // it rests, is solid where it lies (a door, the bonnet: a man's box; heavy:
+  // a bump that slows a car), is kicked by a car (a bumper, a wheel), and is
+  // swept by the caps (its pool's, CAP) and the mend at a distance: then it
+  // is gone, not put back (dropPart)
+  spawnPart(kind, pos, q, vel, spin = null, { roll = null, scale = null, color = null } = {}) {
+    if (!this.pools[kind]) return null;
+    const it = this.register({ x: pos.x, z: pos.z, yaw: 0 }, kind, { y: pos.y });
+    it.part = true;
+    if (scale) it.S = scale.clone();
+    if (!this.detach(it) || it.inst < 0) { this.dropPart(it); return null; }
+    const P = this.pools[kind];
+    if (P.im.instanceColor) { P.im.setColorAt(it.inst, (it.K.paintable && color) || P.im.userData.tint0 || _col.setRGB(1, 1, 1)); P.im.instanceColor.needsUpdate = true; }
+    // (pos is its shape's middle: its base is under it by the pool's centre)
+    _v.copy(P.c); if (it.S) _v.multiply(it.S);
+    it.Q.copy(q);
+    it.P.copy(pos).sub(_v.applyQuaternion(it.Q));
+    this.makeBody(it, vel, vel.length());
+    if (spin) it.body.w.copy(spin);
+    if (roll) {
+      const b = it.body;
+      b.roll = { axis: new THREE.Vector3(0, 1, 0).applyQuaternion(it.Q), dir: roll.dir.clone().setY(0).normalize(), sp: roll.sp, r: Math.max(b.e.x, b.e.z) };
+      b.rolled = true;
+      b.p.y = this.stage.surfaceY(b.p.x, b.p.z) + b.roll.r;
+      it.P.copy(b.c).applyQuaternion(it.Q).negate().add(b.p);
+    }
+    this.draw(it);
+    this.log(it, 'off', 'car');
+    if (this.game) this.game.emit('smash', { kind, pos: pos.clone(), by: 'car', how: 'off', item: it, speed: vel.length() });
+    return it;
+  }
+  dropPart(it) {
+    const i = this.out.indexOf(it);
+    if (i >= 0) this.out.splice(i, 1);
+    if (it.inst >= 0) { const P = this.pools[it.kind]; P.im.setMatrixAt(it.inst, ZERO); P.owner[it.inst] = null; P.free.push(it.inst); P.im.instanceMatrix.needsUpdate = true; it.inst = -1; }
+    if (it.proxy) this.dropProxy(it);
+    if (it.lie) this.dropLie(it);
+    const j = this.items.indexOf(it);
+    if (j >= 0) this.items.splice(j, 1);
+    const g = this.grid.get(this.key(it.x, it.z));
+    if (g) { const k = g.indexOf(it); if (k >= 0) g.splice(k, 1); }
+    if (it.rec) this.byRec.delete(it.rec);
+    it.state = 'gone'; it.gone = true; it.body = null;
+    this.stats.mended++;
+  }
+  // (a part come to rest: found where it lies - the grid by where it is now)
+  regrid(it, x, z) {
+    const g = this.grid.get(this.key(it.x, it.z));
+    if (g) { const k = g.indexOf(it); if (k >= 0) g.splice(k, 1); }
+    it.x = x; it.z = z;
+    const k = this.key(x, z);
+    if (!this.grid.has(k)) this.grid.set(k, []);
+    this.grid.get(k).push(it);
+  }
 
   // ---- the city's shop fronts (the critic's 8: the first thing a player shoots in a noir street) ----
   // the generator's shop windows (facade.js lotWindows, kind 'shop': { x, y, z,
@@ -1495,4 +1593,24 @@ export class Smash {
 }
 
 const _box = new THREE.Box3();
+const _col = new THREE.Color();
 function G0play(G0, name, at, k) { if (G0) G0.sfx.play(name, at, { k }, { ref: 3 }); }
+// [O6b] a pool's twin of a material with a faint paper rim where the surface
+// turns from the eye (the ink keeps the black contour outside it): a fallen
+// thing reads by its edge in an unlit stretch. `white`: the colour comes from
+// the instances (a car's part takes its car's paint).
+function rimMaterial(base, k, white) {
+  const m = base.clone();
+  if (white && m.color) m.color.setRGB(1, 1, 1);
+  if (!(m.isMeshStandardMaterial || m.isMeshLambertMaterial || m.isMeshPhongMaterial)) return m;
+  // (the base's own change first - a car paint's cap on its light - then the
+  // rim after it, so the cap does not eat the rim)
+  const own = base.onBeforeCompile, ownKey = base.customProgramCacheKey ? base.customProgramCacheKey() : '';
+  m.onBeforeCompile = (sh, r) => {
+    if (own) own.call(m, sh, r);
+    sh.fragmentShader = sh.fragmentShader.replace('#include <opaque_fragment>', `{ float rimK = 1.0 - abs(dot(normal, normalize(vViewPosition))); outgoingLight += vec3(${k.toFixed(3)}) * rimK * rimK * rimK; }
+      #include <opaque_fragment>`);
+  };
+  m.customProgramCacheKey = () => 'o6bRim' + k.toFixed(3) + ownKey;
+  return m;
+}
