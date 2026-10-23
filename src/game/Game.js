@@ -22,6 +22,7 @@ import { Music } from '../audio/Music.js';
 import { Vehicles } from '../vehicles/index.js';
 import { Bodies } from '../guns/Bodies.js';   // [C2]
 import { Stills } from './Stills.js';
+import { crowdOf } from '../combat/brawl/Crowd.js';   // [O4] the crowd brawl
 
 // The game: the player (Controller + Tommy gun + Health), the Hoods' AI,
 // the encounter director (game/Director.js), combat resolution (the
@@ -99,6 +100,7 @@ export class Game {
     this.puzzles = new Puzzles(this);
     this.scenes = new SceneManager(this);
     this.brawl = new Brawl(this);
+    this.crowd = crowdOf(this);   // [O4] the street fight, one to four men (src/combat/brawl/Crowd.js)
     // [C1] wave C's kit (docs/story/seams/Z.md): the stills player, the fail,
     // the checkpoints and the fail counts; the HUD's lines read the game
     this.stills = new Stills(this);
@@ -416,6 +418,7 @@ export class Game {
     this.scenes.stop();
     this.brawl.stop();
     this.brawl.finished = false;
+    this.crowd.stop('title');   // [O4]
     this.director.stop();
     this.hud.hideEnd();
     this.hud.clearPrompt();
@@ -438,6 +441,7 @@ export class Game {
     // (in a fist fight going down is not the end: the brawl puts him back
     // on his feet at the start of the round)
     if (this.brawl.active) { this.health.dead = false; this.brawl.playerDown(); return; }
+    if (this.crowd.active) { this.health.dead = false; this.crowd.playerDown(); return; }   // [O4]
     // (the battle preset's warm-up: the autopilot holds its fire while the
     // Hoods walk in, so it is not killed there either)
     if (this.autopilot || this.inWarmup) {
@@ -553,7 +557,7 @@ export class Game {
   // or 'You’re hit. Get to cover.'; it goes as health mends past LOW.off, or
   // with the fail. It is the kit's own line under the scene's: a scene's
   // warning shows over it while the scene has one (hud.kit.low). Per step.
-  inStory() { const S = this.scenes; return !!S.current && this.state === 'playing' && !this.shotMode && !this.failing && !this.brawl.active && !this.autopilot && !this.inWarmup; }
+  inStory() { const S = this.scenes; return !!S.current && this.state === 'playing' && !this.shotMode && !this.failing && !this.brawl.active && !this.crowd.active && !this.autopilot && !this.inWarmup; }   // [O4] (the crowd brawl warns for itself)
   lowStep() {
     const K = this.hud.kit, H = this.health;
     if (!this.inStory()) { if (this.lowWarn) { K.low(null); this.lowWarn = null; } return; }
@@ -603,6 +607,7 @@ export class Game {
           this.fx.clear();
         }
         if (this.brawl.active) this.brawl.stop();
+        if (this.crowd.active) this.crowd.stop('fail');   // [O4]
         this.health.reset();
         this.vm.lowerTo(0, true);
         // (up off the floor: where he stood, for a setup that does not place him)
@@ -808,6 +813,7 @@ export class Game {
     // (the fist fight's input acts on the step it arrives: before the
     // controller moves the eye and before the hands pose - FIGHT.md v3 §9)
     if (this.brawl.active) this.brawl.inputStep(dt);
+    if (this.crowd.active) this.crowd.inputStep(dt);   // [O4]
     if (this.state === 'title') this.titleDrift(t - (this.titleT0 || 0));
     else if (!this.shotMode || this.autopilot) C.update(dt);
     else C.apply(dt);
@@ -858,6 +864,7 @@ export class Game {
     this.director.update(dt, t);
     if (this.slowT > 0) { this.slowT -= dt; if (this.slowT <= 0) this.timeScale = 1; }
     this.brawl.update(dt, wdt);
+    this.crowd.update(dt, wdt);   // [O4]
     // the story: the scene's script, the prompts, the hands' inspection,
     // the puzzle; the sound of the room the eye is in
     this.scenes.update(wdt, t);
@@ -912,7 +919,7 @@ export class Game {
     this.hud.update({
       ammo: this.weapon.ammo, drum: WEAPON.drum,
       reloading: this.weapon.reloading, hp: this.health.hp, spread: this.weapon.spread, dt,
-      gun: this.hands.set === 'tommy', fight: this.director.active || this.brawl.active || this.controller.mode === 'brawl',
+      gun: this.hands.set === 'tommy', fight: this.director.active || this.brawl.active || this.controller.mode === 'brawl' || this.crowd.active,   // [O4]
     });
   }
 

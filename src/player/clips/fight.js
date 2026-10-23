@@ -27,7 +27,8 @@ const windHalfR = lerpP(gR, windFullR, 0.7);
 const windFullL = mirror(windFullR), cockL = mirror(cockR), windHalfL = mirror(windHalfR);
 
 // the aimed poses (Brawl.fistPose): computed once when the blow starts
-const aim = (kind, k = 1) => (H, side) => (H.game.brawl && H.game.brawl.fistPose ? H.game.brawl.fistPose(side, kind, k) : null) || (side === 'L' ? HP.jabL : HP.jabR);
+// ([O4] the crowd brawl's man when it is on: src/combat/brawl/Crowd.js fistPose)
+const aim = (kind, k = 1) => (H, side) => { const B = H.game.crowd && H.game.crowd.active ? H.game.crowd : H.game.brawl; return (B && B.fistPose ? B.fistPose(side, kind, k) : null) || (side === 'L' ? HP.jabL : HP.jabR); };
 
 // the tremble of a fist held wound: small snaps a few mm apart
 const tremble = (P, side, t0) => {

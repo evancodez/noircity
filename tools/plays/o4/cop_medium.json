@@ -1,0 +1,40 @@
+{
+ "about": "[O4] The crowd brawl on the street (tools/lib/o4_brawl.mjs). the cop: blocks well, grabs; medium hands within three tries.",
+ "url": "/?mute=1&start=o4.cop",
+ "size": [
+  1280,
+  800
+ ],
+ "out": "shots/play/cop_medium",
+ "steps": [
+  {
+   "until": "G.state === 'title' && !!document.querySelector('#title .opt[data-k=begin]')",
+   "timeout": 60000
+  },
+  {
+   "wait": 1200
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]",
+   "taken": "G.scenes.current && G.scenes.current.id === 'o4'",
+   "retries": 4
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'o4' && G.scenes.beat === 'cop' && G.crowd.active && !G.failing",
+   "timeout": 30000
+  },
+  {
+   "eval": "(G.o4stay = true)"
+  },
+  {
+   "drive": "tools/lib/o4_brawl.mjs",
+   "profile": "medium",
+   "beat": "cop",
+   "tries": 3,
+   "wins": 1,
+   "timeout": 300000,
+   "check": "D.wins >= 1",
+   "label": "the cop: medium hands win within three tries"
+  }
+ ]
+}

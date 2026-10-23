@@ -1,0 +1,48 @@
+{
+ "about": "[O4] The crowd brawl on the street (tools/lib/o4_brawl.mjs). the pad (?padfake=1): the same fight by the pad only.",
+ "url": "/?mute=1&start=o4.brawl2&padfake=1",
+ "size": [
+  1280,
+  800
+ ],
+ "out": "shots/play/pad_1v2",
+ "input": "pad",
+ "steps": [
+  {
+   "until": "G.state === 'title' && !!document.querySelector('#title .opt[data-k=begin]')",
+   "timeout": 60000
+  },
+  {
+   "wait": 1200
+  },
+  {
+   "pad": {
+    "b": [
+     "x"
+    ],
+    "secs": 0.15
+   }
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'o4'",
+   "timeout": 20000
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'o4' && G.scenes.beat === 'brawl2' && G.crowd.active && !G.failing",
+   "timeout": 30000
+  },
+  {
+   "eval": "(G.o4stay = true)"
+  },
+  {
+   "drive": "tools/lib/o4_brawl.mjs",
+   "profile": "medium",
+   "beat": "brawl2",
+   "tries": 3,
+   "wins": 1,
+   "timeout": 420000,
+   "check": "D.wins >= 1",
+   "label": "the pad: 1v2 within three tries"
+  }
+ ]
+}

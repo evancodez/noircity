@@ -1,0 +1,40 @@
+{
+ "about": "[O4] The crowd brawl on the street (tools/lib/o4_brawl.mjs). 1v1: the clumsy first-timer gets through by the fourth try, never stuck.",
+ "url": "/?mute=1&start=o4.brawl1",
+ "size": [
+  1280,
+  800
+ ],
+ "out": "shots/play/1v1_bad",
+ "steps": [
+  {
+   "until": "G.state === 'title' && !!document.querySelector('#title .opt[data-k=begin]')",
+   "timeout": 60000
+  },
+  {
+   "wait": 1200
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]",
+   "taken": "G.scenes.current && G.scenes.current.id === 'o4'",
+   "retries": 4
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'o4' && G.scenes.beat === 'brawl1' && G.crowd.active && !G.failing",
+   "timeout": 30000
+  },
+  {
+   "eval": "(G.o4stay = true)"
+  },
+  {
+   "drive": "tools/lib/o4_brawl.mjs",
+   "profile": "bad",
+   "beat": "brawl1",
+   "tries": 4,
+   "wins": 1,
+   "timeout": 480000,
+   "check": "D.wins >= 1",
+   "label": "1v1 clumsy hands get through within four tries"
+  }
+ ]
+}
