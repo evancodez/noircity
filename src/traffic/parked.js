@@ -178,6 +178,13 @@ export class Parked {
           const o = obbPush(b, k);
           if (o) { b.pos.x += o[0]; b.pos.z += o[1]; b.vel.multiplyScalar(0.5); }
         }
+        // (into its neighbour: stopped against it, the push shared - it rocks)
+        for (const o of this.bodies) {
+          if (o === b || Math.abs(o.pos.x - b.pos.x) > 8 || Math.abs(o.pos.z - b.pos.z) > 8) continue;
+          const c = Math.cos(o.yaw), s = Math.sin(o.yaw);
+          const push = obbPush(b, { cx: o.pos.x, cz: o.pos.z, hx: o.spec.halfL, hz: o.spec.halfW, c, s });
+          if (push) { b.pos.x += push[0] * 0.6; b.pos.z += push[1] * 0.6; o.pos.x -= push[0] * 0.4; o.pos.z -= push[1] * 0.4; o.vel.addScaledVector(b.vel, 0.3); b.vel.multiplyScalar(0.4); o.rockV += 0.3; }
+        }
       }
       if (b.rockV || b.rockAmp > 0.01) { b.rockAmp = Math.max(0, b.rockAmp + b.rockV - dt * 1.6); b.rockV = 0; b.rock += dt; this.dirty = true; }
     }

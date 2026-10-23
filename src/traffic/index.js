@@ -5,7 +5,10 @@ import { Traffic } from './Traffic.js';
 import { Tram } from './tram.js';
 import { crimeOf } from './seams.js';
 import { Hijack } from '../vehicles/hijack.js';
-import { KINDS, lampsLit } from '../vehicles/kinds.js';
+import { KINDS, FLEET, lampsLit, kindGeo } from '../vehicles/kinds.js';
+import { lanePath, samplePath } from './path.js';
+import { fleetModel, fleetMats, policeGlow } from '../vehicles/kinds.js';
+import { cockpitWarm } from '../vehicles/cockpit.js';
 import { Headlamps } from '../vehicles/Vehicle.js';
 import { showDamage, damageStep, watchDamage } from '../vehicles/damage.js';
 import { Garage } from '../vehicles/garage.js';
@@ -33,6 +36,8 @@ export class Wheels {
     this.C = city.C;
     this.graph = city.graph;
     this.V = game.vehicles;
+    // (every kind's builds made now, under the stage's black: never on the road)
+    for (const k of FLEET) for (const lv of [0, 1, 2]) kindGeo(k, lv);
     this.crime = crimeOf(game);
     this.signals = new Signals(stage, this.graph);
     this.parked = new Parked(this);
@@ -101,6 +106,28 @@ export class Wheels {
         ahead += K.halfL + 0.8;
       }
     }
+  }
+  // (under the stage's black, before its programs are compiled: one of every
+  // kind of what the wheels draw, out of sight under the street, and every
+  // parked instance set shown with one car - unwarm() puts them away)
+  warm() {
+    const S = this.stage, put = (o) => { o.position.set(0, -80, 0); S.scene.add(o); this._warm.push(o); return o; };
+    this._warm = [];
+    for (const k of Object.keys(KINDS)) { const m = fleetModel(k, S); lampsLit(m, S, true); if (k === 'police') { const g = policeGlow(m); if (g) g.visible = true; } put(m.group); if (this.game.rays) { this.game.rays.add(m.meshes.body); this.game.rays.remove(m.meshes.body); } }
+    put(cockpitWarm(S));
+    this._inst = [];
+    for (const I of Object.values(this.parked.inst)) for (const lod of ['hi', 'lo', 'box']) for (const im of Object.values(I[lod] || {})) { if (!im.visible) { im.count = 1; im.visible = true; im.setMatrixAt(0, new THREE.Matrix4().makeTranslation(0, -80, 0)); this._inst.push(im); } }
+    void fleetMats;
+    try { const c = S.cast.spawn('o2_fare', { at: { x: 0, z: 0 }, name: 'o2warm' }); c.fig.object.position.y = -80; this._warmCast = [c]; const c2 = S.cast.spawn('o2_fare_her', { at: { x: 0, z: 0 }, name: 'o2warm2' }); this._warmCast.push(c2); } catch (e) { this._warmCast = []; }
+  }
+  unwarm() {
+    if (this._warm) for (const o of this._warm) if (o.parent) o.parent.remove(o);
+    this._warm = null;
+    if (this._inst) for (const im of this._inst) { im.count = 0; im.visible = false; }
+    this._inst = null;
+    if (this._warmCast) for (const c of this._warmCast) { try { this.stage.cast.remove(c); } catch (e) { /* */ } }
+    this._warmCast = null;
+    this.parked.dirty = true;
   }
   // my car's knocks heard and seen (once a car)
   watch(v) {
@@ -274,6 +301,27 @@ export class Wheels {
   }
   hunt(v, target, opts) { v.driver = new HuntPilot(this, target, opts); return v.driver; }
   siren(v, on) { siren(this, v, on); }
+
+  // a way on the roads between two points as a car drives it (its lane, its
+  // corners, the speed each point allows): { pts: [[x, z, v]], len, nodes } or null
+  pathFor(from, to, opts = {}) {
+    const p = this.lanePathFor(from, to, opts);
+    return p ? { pts: p.pts.map((q) => [q.x, q.z, q.v]), len: p.len, nodes: p.ids } : null;
+  }
+  // (the same as the Pilot's path object: at, nearest, pts, len - a driver of mine follows it)
+  lanePathFor(from, to, opts = {}) {
+    const g = this.graph, r = g.route(from, to);
+    if (!r) return null;
+    // (a junction behind me, or past where I am going, off the ends: from and to lie on those streets)
+    let ids = [...r.nodes];
+    const between = (p, a, b) => { const A = g.nodes.get(a), B = g.nodes.get(b); return Math.hypot(p.x - B.x, p.z - B.z) < Math.hypot(A.x - B.x, A.z - B.z) && Math.hypot(p.x - A.x, p.z - A.z) < Math.hypot(A.x - B.x, A.z - B.z); };
+    if (ids.length >= 2 && between(from, ids[0], ids[1])) ids.shift();
+    if (ids.length >= 2 && between(to, ids[ids.length - 2], ids[ids.length - 1])) ids.pop();
+    let p;
+    try { p = ids.length >= 2 ? lanePath(g, ids, { from, to, ...opts }) : samplePath([[from.x, from.z, 12], ...ids.map((id) => [g.nodes.get(id).x, g.nodes.get(id).z, 12]), [to.x, to.z, 12]], { vmax: opts.vmax || 13 }); } catch (e) { return null; }
+    p.ids = p.ids && p.ids.length ? p.ids : r.nodes;
+    return p;
+  }
 
   // a shot, a man down near the traffic: they panic
   alarm(point, k = 1) { this.traffic.alarm(point, k); }

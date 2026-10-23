@@ -82,7 +82,7 @@ export function lanePath(graph, ids, { from = null, to = null, vmax = 13, aLat =
       din[0] /= ln; din[1] /= ln; dout[0] /= lo; dout[1] /= lo;
       const cross = din[0] * dout[1] - din[1] * dout[0], dot = din[0] * dout[0] + din[1] * dout[1];
       const c = meet(L[0], L[1], M[0], M[1]);
-      if (i === 0 && !from) poly.push([L[0][0], L[0][1], lim]);
+      if (i === 0) poly.push([L[0][0], L[0][1], lim]);
       if (dot > 0.985) { poly.push([c[0], c[1], lim]); legs[i + 1].pts = [c, M[1]]; continue; }
       // (z south: a right turn is a positive cross in x-z)
       const r = Math.min(cross > 0 ? rRight : rLeft, ln * 0.45, lo * 0.45);
@@ -91,7 +91,7 @@ export function lanePath(graph, ids, { from = null, to = null, vmax = 13, aLat =
       for (let k = 1; k <= 8; k++) { const u = k / 8, a = (1 - u) * (1 - u), b = 2 * u * (1 - u), d = u * u; poly.push([a * p0[0] + b * c[0] + d * p2[0], a * p0[1] + b * c[1] + d * p2[1], lim]); }
       legs[i + 1].pts = [p2, M[1]];
     } else {
-      if (i === 0 && !from) poly.push([L[0][0], L[0][1], lim]);
+      if (i === 0) poly.push([L[0][0], L[0][1], lim]);
       poly.push([L[1][0], L[1][1], lim]);
     }
   }

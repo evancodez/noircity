@@ -101,6 +101,8 @@ function prims({ js, turn, keyDown, keyUp, sleep, log }, H) {
         const h1 = Math.atan2(a1[1] - a0[1], a1[0] - a0[0]), h2 = Math.atan2(a2[1] - a1[1], a2[0] - a1[0]);
         const tn = Math.abs(Math.atan2(Math.sin(h2 - h1), Math.cos(h2 - h1)));
         let target = (tn > 0.9 ? 6.5 : tn > 0.4 ? 10 : speed) * H.slow;
+        // (a path with its speeds: what it allows a little ahead, the hands' share of it)
+        if (path[idx] && path[idx].length > 2) { let vv = 99; for (let k = idx; k < Math.min(path.length, idx + 4); k++) vv = Math.min(vv, path[k][2]); target = Math.min(speed, vv * 1.15) * H.slow; }
         // (a car in my lane ahead: kept off it, stopped behind it)
         if (traffic) {
           const ah = await js(`(() => { const c = G.city.car, ca = Math.cos(c.yaw), sa = Math.sin(c.yaw); let best = 99; for (const o of G.wheels.bodies()) { if (o === c || !o.spec) continue; const dx = o.pos.x - c.pos.x, dz = o.pos.z - c.pos.z; if (Math.abs(dx) > 30 || Math.abs(dz) > 30) continue; const lx = dx * ca - dz * sa, lz = dx * sa + dz * ca; if (lx > 1 && lx < 28 && Math.abs(lz) < o.spec.halfW + (o.parked ? 0.45 : 1.25)) best = Math.min(best, lx - o.spec.halfL - 2.45); } return best; })()`);
@@ -124,16 +126,7 @@ function prims({ js, turn, keyDown, keyUp, sleep, log }, H) {
     // a stop where I am (S held until stopped)
     async stop() { await P.release(); for (let i = 0; i < 80; i++) { const s = await P.state(); if (!s.inCar || Math.abs(s.car.v) < 0.3) break; await P.set('KeyS', true); await sleep(40); } await P.set('KeyS', false); },
     // a route on the road graph from the car to a point (the right lane), as points
-    route: (to, off = 2.0) => js(`(() => {
-      const g = G.stage.part('city').graph, c = G.city.car;
-      const r = g.route({ x: c.pos.x, z: c.pos.z }, { x: ${to[0]}, z: ${to[1]} });
-      if (!r) return null;
-      const out = r.pts, D = [];
-      for (let i = 0; i + 1 < out.length; i++) { const [ax, az] = out[i], [bx, bz] = out[i + 1]; const L = Math.hypot(bx - ax, bz - az); const n = Math.max(1, Math.ceil(L / 3)); for (let k = 0; k < n; k++) D.push([ax + (bx - ax) * k / n, az + (bz - az) * k / n]); }
-      D.push(out[out.length - 1]);
-      const R = [];
-      for (let i = 0; i < D.length; i++) { const a = D[Math.max(0, i - 2)], b = D[Math.min(D.length - 1, i + 2)]; const dx = b[0] - a[0], dz = b[1] - a[1], L = Math.hypot(dx, dz) || 1; const S = g.streetAt(D[i][0], D[i][1]); const off = ${off}; R.push([D[i][0] - dz / L * off, D[i][1] + dx / L * off]); }
-      return R; })()`),
+    route: (to, off = null) => js(`(() => { const c = G.city.car; const r = G.wheels.pathFor({ x: c.pos.x, z: c.pos.z }, { x: ${to[0]}, z: ${to[1]} }, ${off != null ? `{ off: ${off} }` : '{}'}); return r ? r.pts : null; })()`),
   };
   return P;
 }
@@ -367,17 +360,11 @@ async function drive(P, { js, sleep, log, shot }, H) {
   if (!st0.inCar) { await P.tap('KeyE'); await sleep(1200); }
   const pts = P.opts.points || DISTRICTS;
   const path = await js(`(() => {
-    const g = G.stage.part('city').graph, c = G.city.car;
-    const snap = ([x, z]) => { const S = g.streetAt(x, z); return S ? [S.edge.ax + S.edge.dx * S.s, S.edge.az + S.edge.dz * S.s] : [x, z]; };
-    const P = [[c.pos.x, c.pos.z], ...${JSON.stringify(pts)}].map(snap);
+    const W = G.wheels, c = G.city.car;
+    const P = [[c.pos.x, c.pos.z], ...${JSON.stringify(pts)}];
     const out = [];
-    for (let i = 0; i + 1 < P.length; i++) { const r = g.route({ x: P[i][0], z: P[i][1] }, { x: P[i + 1][0], z: P[i + 1][1] }); if (!r) return { err: 'no route ' + i }; for (const p of r.pts) { if (out.length && Math.hypot(p[0] - out[out.length - 1][0], p[1] - out[out.length - 1][1]) < 1) continue; out.push(p); } }
-    const D = [];
-    for (let i = 0; i + 1 < out.length; i++) { const [ax, az] = out[i], [bx, bz] = out[i + 1]; const L = Math.hypot(bx - ax, bz - az); const n = Math.max(1, Math.ceil(L / 3)); for (let k = 0; k < n; k++) D.push([ax + (bx - ax) * k / n, az + (bz - az) * k / n]); }
-    D.push(out[out.length - 1]);
-    const R = [];
-    for (let i = 0; i < D.length; i++) { const a = D[Math.max(0, i - 2)], b = D[Math.min(D.length - 1, i + 2)]; const dx = b[0] - a[0], dz = b[1] - a[1], L = Math.hypot(dx, dz) || 1; const S = g.streetAt(D[i][0], D[i][1]); const off = 2.0; R.push([D[i][0] - dz / L * off, D[i][1] + dx / L * off]); }
-    return R; })()`);
+    for (let i = 0; i + 1 < P.length; i++) { const r = W.pathFor({ x: P[i][0], z: P[i][1] }, { x: P[i + 1][0], z: P[i + 1][1] }); if (!r) return { err: 'no route ' + i }; for (const q of r.pts) { if (out.length && Math.hypot(q[0] - out[out.length - 1][0], q[1] - out[out.length - 1][1]) < 2.5) continue; out.push(q); } }
+    return out; })()`);
   if (!path || path.err) return { err: path && path.err };
   log(`drive: ${path.length} points (${(path.length * 3 / 1000).toFixed(2)} km)`);
   await sleep(300);

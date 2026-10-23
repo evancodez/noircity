@@ -91,6 +91,11 @@ function build(M) {
   return { group: g, meshes, needles, wipers, wheel, wheelMount: mount, rim: wm };
 }
 
+// (made ahead, under the stage's black: its programs compiled with the rest)
+export function cockpitWarm(stage) {
+  if (!COCK || COCK.M !== stage.M) { COCK = build(stage.M); COCK.M = stage.M; }
+  return COCK.group;
+}
 export function cockpitInto(stage, car) {
   const m = car.model;
   if (!m || !m.fleet) return false;

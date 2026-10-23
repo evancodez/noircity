@@ -1,6 +1,5 @@
 import * as THREE from 'three';
 import { Pilot } from './pilot.js';
-import { lanePath } from '../traffic/path.js';
 import { lampsLit, policeGlow } from './kinds.js';
 
 // The police car's hunt (lane O2 gives it; lane O3's police drive it): a
@@ -27,11 +26,9 @@ export class HuntPilot {
   }
   tpos() { const t = this.target; return t.pos || t; }
   plan(v) {
-    const g = this.W.graph, p = this.tpos();
-    const r = g.route({ x: v.pos.x, z: v.pos.z }, { x: p.x, z: p.z });
-    if (!r || r.nodes.length < 2) return false;
-    let path;
-    try { path = lanePath(g, r.nodes, { from: { x: v.pos.x, z: v.pos.z }, to: { x: p.x, z: p.z }, vmax: 20, aLat: 5.5, aBrake: 6, pace: 1.25 }); } catch (e) { return false; }
+    const p = this.tpos();
+    const path = this.W.lanePathFor({ x: v.pos.x, z: v.pos.z }, { x: p.x, z: p.z }, { vmax: 20, aLat: 5.5, aBrake: 6, pace: 1.25 });
+    if (!path) return false;
     if (!this.inner) this.inner = new Pilot(path, { pace: this.o.pace, vmax: 22, keep: this.o.keep, overtake: true, bodies: () => this.W.bodiesFor(v) });
     else this.inner.setPath(path, v);
     this.inner.i = path.nearest(v.pos.x, v.pos.z, 0, 30); this.inner.s = path.pts[this.inner.i].s;

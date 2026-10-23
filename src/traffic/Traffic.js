@@ -258,6 +258,7 @@ export class Traffic {
     }
     const s = P.s, sp = Math.max(0, v.speed);
     let stop = Infinity;
+    car.atSignal = false;
     // (a man at my door: I brake for him - the hijack's 'he brakes when I stand at his door';
     // the hijack says so each step it sees me there)
     if (car.held) { stop = s - 1; car.held = false; car.why = 'held'; }
@@ -277,7 +278,7 @@ export class Traffic {
         const st = W.signals.state(N.node, N.edgeIn);
         if (st === 'stop') stop = Math.min(stop, line);
         else if (st === 'amber') { const need = (sp * sp) / (2 * 3.2) + 1; if (line - s > need) stop = Math.min(stop, line); }
-        car.atSignal = st !== 'go' && line - s < 25;
+        car.atSignal = st !== 'go';
         // (and a car of mine across it on its red: they brake for me)
         const pv = W.V.player;
         if (st === 'go' && pv && line - s < 14 && Math.hypot(pv.pos.x - N.node.x, pv.pos.z - N.node.z) < box + 2 && pv.speedAbs > 1.5 && Math.abs(Math.cos(pv.yaw - v.yaw)) < 0.6) stop = Math.min(stop, line);
@@ -324,7 +325,10 @@ export class Traffic {
     } else if (!P.ahead || P.ahead !== W.V.player) car.cutHonk = false;
     P.o.stopAt = stop < Infinity ? stop : null;
     // (how long a car has waited where it stands: the bench's 'stuck at a junction')
-    if (sp < 0.3) { car.waitT += dt; if (!car.atSignal) this.stats.maxWait = Math.max(this.stats.maxWait, car.waitT); } else car.waitT = 0;
+    // (a car queued behind one that waits at a red waits at the red too)
+    const ahead = P.ahead && P.ahead.traffic ? this.cars.find((c) => c.v === P.ahead) : null;
+    car.red = car.atSignal || !!(ahead && ahead.red && Math.abs(ahead.v.speed) < 0.5);
+    if (sp < 0.3) { car.waitT += dt; if (!car.red) { car.freeWait = (car.freeWait || 0) + dt; this.stats.maxWait = Math.max(this.stats.maxWait, car.freeWait); } } else { car.waitT = 0; car.freeWait = 0; }
     // the police car's lamp: its slow turn (a cruise: dim; a hunt: O3's)
     if (v.model.glow) v.model.glow.visible = false;
   }

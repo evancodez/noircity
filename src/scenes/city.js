@@ -105,7 +105,10 @@ function place(ctx, at) {
   R.stream = stage.part('stream');
   if (W) W.attach(R.car);
   // (every program the city draws with, compiled under the fade in: none met first down a street)
+  // [O2] (the wheels' programs too: every kind's car, the parked instances, the cockpit, the fares' people)
+  if (!G.shotMode && W && !stage._compiled) W.warm();
   if (!G.shotMode) R.compileMs = compileAll(stage, G);
+  if (W) W.unwarm();
 }
 
 export default defineScene({
