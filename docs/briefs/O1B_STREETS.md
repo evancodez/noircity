@@ -109,3 +109,16 @@ if you read this first):
   light in the reflections); if the shader itself needs a change, add a
   uniform whose default keeps the base's golden frames (street, lamp, cars)
   identical, marked `[O1b]`.
+
+## From the performance audit (`docs/reports/PERF_AUDIT.md`): yours
+Hold your merge to the audit's budget table (its section 5) and the
+drive's hitch bar. Yours, in your fix pass (or your build if you read this
+first): the lamp post `LAMP` in `src/city/kits/street.js` is about 1,300
+triangles per post merged into every chunk (43 to 49 % of the near city's
+triangles): a lighter post, or instanced; the el's `buildSteps` in
+`parts/el.js` makes a mesh per column bay (merge per 80 m); and the two
+hitches that are the game's own: `compileAll` in `compile.js` misses one
+program made on the first car entry (108 and 127 ms frames: compile it
+under the fade too), and `buildChunk`'s `mergeAll` in `stream.js` ran
+8.9 ms against its 4 ms budget (split it across steps). Memory is flat:
+keep it so.

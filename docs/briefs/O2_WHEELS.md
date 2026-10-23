@@ -134,3 +134,12 @@ Straight, the lorry slow, each kind its own top speed that reads; and
 seat (a lower dash or a wider view from the seat): the districts must read
 from the car. Keep the cabin's craft the report praises (the drops on the
 glass, the wiper, the mascot, the mirror).
+
+## From the performance audit (`docs/reports/PERF_AUDIT.md`): yours
+Hold your merge to the audit's budget table (its section 5). Yours, in
+your fix pass (or your build if you read this first): `src/world/Cars.js`
+`spawn` draws 12 meshes per car and `src/stages/noircity/parts/cars.js`
+`update` never calls `lodUpdate`, so every car is drawn at full detail at
+any range. A **one-draw far build** beyond about 36 m, with `lodUpdate`
+called every tick (30 cars from about 400 draws to under 90), and the
+variants' extra parts inside that budget.
