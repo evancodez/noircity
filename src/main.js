@@ -110,6 +110,11 @@ const hud = new Hud({
 // the rain in behind it; the click that begins the game does too)
 if (!shotMode) for (const ev of ['mousedown', 'keydown', 'touchstart']) addEventListener(ev, () => { sfx.unlock(); hud.soundHint(!sfx.live, sfx.muted); }, { passive: true });
 hud.soundHint(!shotMode, sfx.muted);
+// [O1] in the city M is the map (the sound is the settings'): its key line says so on the title and the pause card (O7 makes the city's own title)
+if (startAt && startAt.scene === 'city') {
+  hud.keysText = hud.keysText.replace('M sound', 'M map');
+  for (const el of [hud.titleKeys, hud.pauseCard && hud.pauseCard.keys]) if (el && el.textContent) el.textContent = el.textContent.replace('M sound', 'M map');
+}
 hud.setVisible(hudOn);
 if (shotMode) hud.hideTitle();
 // (a screenshot never depends on when the page loaded: no CSS animation runs)

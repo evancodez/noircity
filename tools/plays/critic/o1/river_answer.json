@@ -1,0 +1,61 @@
+{
+ "about": "[O1 critic] the river, answered: full throttle down the slipway at Baxter (0, 428 south); on 'The river.' a human 250 ms later lets W go and holds S and SPACE. Does the car stop on the ramp?",
+ "url": "/?mute=1&start=city&car=0,428,-1.5708",
+ "size": [
+  1280,
+  800
+ ],
+ "out": "shots/critic_o1/river_answer",
+ "steps": [
+  {
+   "wait": 2000
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]",
+   "taken": "G.state !== 'title'",
+   "retries": 5,
+   "every": 4000
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'city' && G.scenes.fadeK < 0.05",
+   "timeout": 20000
+  },
+  {
+   "wait": 500
+  },
+  {
+   "eval": "(() => { const L = window.__rv = []; const h = G.hud; const w0 = h.warn.bind(h); h.warn = (t, ...a) => { L.push(['warn', t, +(performance.now()/1000).toFixed(2), +(G.city.car.speed*3.6).toFixed(0), +G.city.car.pos.z.toFixed(1)]); return w0(t, ...a); }; const f0 = G.fail.bind(G); G.fail = (o) => { L.push(['fail', o && o.why, +(performance.now()/1000).toFixed(2), +(G.city.car.speed*3.6).toFixed(0), +G.city.car.pos.z.toFixed(1)]); return f0(o); }; return 1; })()"
+  },
+  {
+   "down": "KeyW"
+  },
+  {
+   "until": "G.failing || window.__rv.some(e => e[0]==='warn' && e[1])",
+   "timeout": 20000
+  },
+  {
+   "wait": 250
+  },
+  {
+   "up": "KeyW"
+  },
+  {
+   "down": "KeyS"
+  },
+  {
+   "down": "Space"
+  },
+  {
+   "wait": 2500
+  },
+  {
+   "up": "KeyS"
+  },
+  {
+   "up": "Space"
+  },
+  {
+   "eval": "JSON.stringify({log: window.__rv, failing: !!G.failing, inCar:G.city.inCar, v:+(G.city.car.speed*3.6).toFixed(0), car:[G.city.car.pos.x,G.city.car.pos.z].map(v=>+v.toFixed(1))})"
+  }
+ ]
+}

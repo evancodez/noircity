@@ -1,0 +1,28 @@
+{
+ "about": "[O1 critic] the bridge to its end at speed: what stops me at the far bank, and do I see why; then on foot to the barrier and the parapet.",
+ "url": "/?mute=1&start=city&at=bridge",
+ "size": [1280, 800],
+ "out": "shots/critic_o1/bridge",
+ "steps": [
+  { "wait": 2000 },
+  { "clickOn": "#title .opt[data-k=begin]", "taken": "G.state !== 'title'", "retries": 5, "every": 4000 },
+  { "until": "G.scenes.current && G.scenes.current.id === 'city' && G.scenes.fadeK < 0.05", "timeout": 20000 },
+  { "wait": 800 },
+  { "key": "KeyE", "hold": 60 }, { "wait": 1200 },
+  { "down": "KeyW" },
+  { "wait": 4000 }, { "shot": "00_deck" },
+  { "eval": "JSON.stringify({v:+(G.city.car.speed*3.6).toFixed(0), pos:[+G.city.car.pos.x.toFixed(1),+G.city.car.pos.z.toFixed(1)], cr:G.city.car.stats.crashes})" },
+  { "wait": 3500 }, { "shot": "01_end" },
+  { "eval": "JSON.stringify({v:+(G.city.car.speed*3.6).toFixed(0), pos:[+G.city.car.pos.x.toFixed(1),+G.city.car.pos.z.toFixed(1)], cr:G.city.car.stats.crashes, dmg:G.city.car.damage})" },
+  { "wait": 2500 },
+  { "up": "KeyW" },
+  { "eval": "JSON.stringify({v:+(G.city.car.speed*3.6).toFixed(0), pos:[+G.city.car.pos.x.toFixed(1),+G.city.car.pos.z.toFixed(1)], cr:G.city.car.stats.crashes, dmg:G.city.car.damage})" },
+  { "key": "KeyE", "hold": 60 }, { "wait": 1200 },
+  { "eval": "JSON.stringify({inCar:G.city.inCar, p:[G.controller.pos.x,G.controller.pos.z].map(v=>+v.toFixed(1))})" },
+  { "walk": [[600, -416], [640, -416]], "into": true, "timeout": 12000 },
+  { "eval": "JSON.stringify({p:[G.controller.pos.x,G.controller.pos.z].map(v=>+v.toFixed(1))})" },
+  { "shot": "02_foot_end" },
+  { "walk": [[590, -425], [590, -440]], "into": true, "timeout": 8000 },
+  { "eval": "JSON.stringify({p:[G.controller.pos.x,G.controller.pos.z].map(v=>+v.toFixed(1)), y:+G.controller.pos.y.toFixed(2)})" }
+ ]
+}

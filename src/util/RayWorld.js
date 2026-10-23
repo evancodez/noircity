@@ -206,7 +206,8 @@ export class RayWorld {
     if (!g.boundingBox) g.computeBoundingBox();
     _box.copy(g.boundingBox).applyMatrix4(mesh.matrixWorld);
     // the far skyline is never within a bullet's range of the block
-    const far = Math.hypot((_box.min.x + _box.max.x) / 2, (_box.min.z + _box.max.z) / 2 + 40) > 260;
+    // [O1] (an open world's stage - world.rayAll - keeps every solid: a round stops in a wall anywhere)
+    const far = !this.world.rayAll && Math.hypot((_box.min.x + _box.max.x) / 2, (_box.min.z + _box.max.z) / 2 + 40) > 260;
     if (far) return;
     const bvh = bvhFor(g);
     bvh.geo = g;
