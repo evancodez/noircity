@@ -2,8 +2,8 @@
  "about": "[O2] The fares, good hands (brief O2 §4, §5): a hail on my way, stopped by him, he gets in, the line says where, there by the roads, paid. node tools/play.mjs tools/plays/o2_fare_good.json",
  "url": "/?mute=1&start=city&ckind=taxi",
  "size": [
-  1280,
-  800
+  1440,
+  900
  ],
  "out": "shots/o2/o2_fare_good",
  "steps": [

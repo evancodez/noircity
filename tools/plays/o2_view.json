@@ -2,8 +2,8 @@
  "about": "[O2] after the critic (B6, the user's must): V in the car - the view behind it (the spring on its heading and place, high over the roof, the car whole: no hands, no cockpit), the turn's lag, reverse looks back, the look swings it round and it settles, RMB the seat while held, out and in again remembered, V back to the seat; the camera never through a wall and never cut. node tools/play.mjs tools/plays/o2_view.json",
  "url": "/?mute=1&start=city",
  "size": [
-  1280,
-  800
+  1440,
+  900
  ],
  "out": "shots/o2/o2_view",
  "steps": [

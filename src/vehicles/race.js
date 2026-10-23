@@ -33,7 +33,7 @@ import { sawhorse } from './marks.js';
 const LOOP = ['-4500,2400', '-4500,1500', '-4500,600', '-4500,-300', '-3700,-300', '-3700,600', '-3700,1500', '-3700,2400'];
 const LAPS = 2, BET = 10, BOX = { x0: -470, x1: -350, z0: -55, z1: 265 };
 const START = { x: -450, z: 222 };      // the line: on the Straight 18 m north of Water St
-export const RACE = { paces: [0.9, 0.85, 0.8], kinds: ['coupe', 'saloon', 'coupe'], LAPS, BET, offWarn: 12, offOut: 26, offSecs: 9 };
+export const RACE = { paces: [0.84, 0.8, 0.76], kinds: ['coupe', 'saloon', 'coupe'], LAPS, BET, offWarn: 12, offOut: 26, offSecs: 9 };
 const CORNERS = [LOOP[3], LOOP[4], LOOP[7], LOOP[0]];   // (the four right turns, in the order they come)
 const _v = new THREE.Vector3();
 

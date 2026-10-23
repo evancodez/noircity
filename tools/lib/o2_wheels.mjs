@@ -234,7 +234,7 @@ async function pull(P, { js, sleep, log, shot, turn }, H) {
     for (;;) {
       const f = await js('({ warn: G.hud.kit && G.hud.kit.warnText, failing: !!G.failing, hp: G.health.hp, shots: G.wheels.hijack.men.reduce((n, m) => n + (m.gun ? m.gun.shots : 0), 0), close: G.wheels.hijack.men.some((m) => m.gun && m.gun.close) })');
       if (f.warn && !warned) warned = { warn: f.warn, at: Date.now() - t0 };
-      if (f.close && !R.closeAt) R.closeAt = Date.now() - t0;
+      if (f.close && !R.closeAt) { R.closeAt = Date.now() - t0; if (shot) { await sleep(900); await shot('glass'); } }
       R.shots = f.shots;
       if (f.failing) { failAt = Date.now() - t0; break; }
       if (Date.now() - t0 > (P.opts.sitMs || 40000)) break;
@@ -352,7 +352,7 @@ async function fare(P, { js, sleep, log, shot }, H) {
     const speed = H.name === 'good' ? 15 : H.name === 'medium' ? 13 : 12;
     let knocks = 0;
     const res = await P.driveAlong(r2 || [], { timeout: 300000, speed, traffic: true, until: async () => (await js('G.wheels.fares.state')) !== 'in',
-      onStep: async (s, idx) => { if (H.name === 'bad' && knocks < 2 && idx > 30 + knocks * 60 && Math.random() < 0.01) { knocks++; log('  bad hands: into the kerb'); await P.set('KeyW', true); await P.set(Math.random() < 0.5 ? 'KeyA' : 'KeyD', true); await sleep(1300); } } });
+      onStep: async (s, idx) => { if (shot && k === 0 && !out.lanternShot && Math.hypot(s.car.x - dest.x, s.car.z - dest.z) < 42) { out.lanternShot = true; await shot('lantern'); } if (H.name === 'bad' && knocks < 2 && idx > 30 + knocks * 60 && Math.random() < 0.01) { knocks++; log('  bad hands: into the kerb'); await P.set('KeyW', true); await P.set(Math.random() < 0.5 ? 'KeyA' : 'KeyD', true); await sleep(1300); } } });
     await P.stop();
     await sleep(600);
     const fs = await js('({ ...G.wheels.fares.stats, money: G.save.money })');

@@ -2,8 +2,8 @@
  "about": "[O2] after the critic (B2): the hijack of the gang's saloon, idle in the seat: E at the driver's door, the two men out of their doors step back and draw (`They’re drawing.`, the raise first), and with my hands off they walk up to the glass and fire through it - shot down at the wheel, the hospital, `Shot sitting at the wheel. Drive.` node tools/play.mjs tools/plays/o2_gangster_idle.json",
  "url": "/?mute=1&start=city&held=1&again=1&come=saloon:gangster",
  "size": [
-  1280,
-  800
+  1440,
+  900
  ],
  "out": "shots/o2/o2_gangster_idle",
  "steps": [
