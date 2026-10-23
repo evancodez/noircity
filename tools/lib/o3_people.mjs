@@ -179,7 +179,8 @@ async function punch(api) {
       for (let k = 0; k < 4 && !lost; k++) {
         const T1 = Date.now();
         while (Date.now() - T1 < 45000) { const q = await js(`({ h: G.police.heat, st: G.police.state, f: !!G.failing })`); if (q.h === 0) { lost = true; break; } if (q.st === 'hunt' || q.f) break; await sleep(250); }
-        if (!lost && (await js('!G.failing && G.police.state === "hunt"')) === true) await runAway(api);
+        // (found again - or found and out of his sight a moment later: away again either way)
+        if (!lost && (await js('!G.failing && G.police.heat > 0')) === true) await runAway(api);
         else break;
       }
       T.after = await state(js);

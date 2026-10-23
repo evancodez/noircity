@@ -626,6 +626,9 @@ export class Police {
     // line cuts) and out of my sight is let go - the beat gets another, the answer
     // sends another (a responder wedged for a minute 35 m off was the police never coming)
     if (c.stuckN >= 2 && c.job !== 'block' && c.job !== 'scene' && !P.inView(c.pos.x, c.pos.z)) { this.event('wedged', { job: c.job }); this.dropCop(c); return; }
+    // (wedged over and over in my sight - his steps round it no use: he gives it up and
+    // walks off, and the answer sends another - never a man walking into a wall for a minute)
+    if (c.stuckN >= 4 && (c.job === 'respond' || c.job === 'arrest')) { this.event('wedged', { job: c.job, seen: true }); c.job = 'leave'; c.mode = 'walk'; c.path = null; c.stuckN = 0; return; }
     if (c.job === 'beat' && c.summonedBy) {
       // [O3] a man of the street shouting for him: he goes to meet him (hurrying), and hears him out
       const w = c.summonedBy;
@@ -707,8 +710,9 @@ export class Police {
     const fast = c.blown ? 'run' : 'sprint';
     c.gait = run ? fast : 'hurry';
     if (d > 1.6) {
-      // (straight at me where he can see me, by the pavements where he cannot)
-      if (!c.path || !(c.repath > 0) || c.pi >= c.path.length) {
+      // (straight at me where he can see me, by the pavements where he cannot; a step
+      // round a thing in his way is walked before the way is made again)
+      if (!(c.sideUntil > G.time && c.path && c.pi < c.path.length) && (!c.path || !(c.repath > 0) || c.pi >= c.path.length)) {
         c.repath = 0.6;
         // (a man who wedged once going straight takes the pavements' way)
         c.path = P.sees(c.pos, E, 60) && !(c.stuckN > 0) ? [[E.x, E.z]] : (P.graph.pavementRoute(c.pos, E) || { pts: [[E.x, E.z]] }).pts.concat([[E.x, E.z]]);

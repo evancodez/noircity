@@ -280,7 +280,7 @@ export class Person {
         // (a step round what stands in his way first - a stall, a post, a wall's corner -
         // then on to the next point, or give up the way)
         const side = this.sidestep();
-        if (side) this.path.splice(this.pi, 0, side);
+        if (side) { this.path.splice(this.pi, 0, side); this.sideUntil = this.G.time + 2.5; }
         else if (this.path && this.pi < this.path.length - 1) this.pi++; else { this.path = null; this.setGait('idle'); }
       }
     } else if (F.speed > 0.5) {

@@ -532,7 +532,7 @@ export class People {
     const dE = Math.hypot(p.pos.x - E.x, p.pos.z - E.z);
     const V = this.G.controller.vel, mine = Math.hypot(V.x, V.z);
     if (mine > 1.0) p.chasedT = this.G.time;
-    if (dE < 1.9 && p.t > 1.2 && this.G.time - (p.chasedT ?? -9) < 0.6) {
+    if (dE < 2.2 && p.t > 1.2 && this.G.time - (p.chasedT ?? -9) < 1.5) {
       p.caughtT = (p.caughtT || 0) + dt;
       if (p.caughtT > 0.35) { this.stopReport(p, 'caught'); p.cower(E, 4); return; }
     } else p.caughtT = 0;
