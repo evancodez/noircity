@@ -25,7 +25,9 @@ export function compileAll(stage, game) {
   // uv and its colours there, so the Tenements' first chunk compiles nothing)
   const S = stage.part('stream');
   const stand = [];
-  if (S && S.mats) for (const m of Object.values(S.mats)) {
+  // ([O1b] the dressing's materials too: its props, relief, boards, lights)
+  const D = stage.part('dressing');
+  if (S && S.mats) for (const m of [...Object.values(S.mats), ...(D && D.mats ? Object.values(D.mats) : [])]) {
     const g = new THREE.BoxGeometry(0.01, 0.01, 0.01);
     const o = new THREE.Mesh(g, m);
     o.position.set(0, -60, 0); o.receiveShadow = true; o.userData.noRay = true;

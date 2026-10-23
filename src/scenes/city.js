@@ -65,6 +65,7 @@ function place(ctx, at) {
   const R = G.city || (G.city = {});
   V.clear();
   stage.part('stream').warmAround(at.car.x, at.car.z);
+  if (stage.part('dressing')) stage.part('dressing').warmAround(at.car.x, at.car.z);   // [O1b]
   const car = V.spawn('coupe', { at: new THREE.Vector3(at.car.x, 0, at.car.z), yaw: at.carYaw, lights: true });
   car.driver = null;
   V.player = null;

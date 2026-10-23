@@ -132,8 +132,10 @@ export function lotWindows(lot) {
 // g: the lot's ink group (0..2)
 export function farLot(lot, out, g = 0) {
   const K = kitOf(lot);
-  const stone = K.stone || lot.place;
-  const massK = (stone ? 'stone' : 'mass') + g;
+  // [O1b] the mass's stone by its street (world/streets.js: lot.mat): dark
+  // brick and timber, grey stone, iron fronts and tile on stone, pale limestone
+  const stone = lot.mat ? lot.place || lot.mat === 'stone' || lot.mat === 'iron' || lot.mat === 'tile' : K.stone || lot.place;
+  const massK = (lot.mat === 'pale' && !lot.place ? 'pale' : stone ? 'stone' : 'mass') + g;
   if (lot.kind === 'garden') {
     // the garden's wall (with its piers), the trees' crowns over it
     const { x0, x1, z0, z1, wallH } = lot;
@@ -253,7 +255,8 @@ export function nearLot(lot, out) {
       // a tenement's fire escape on a street face (not over a shop's sign line)
       if (K.escape && f.ground && !f.alley && L > 7 && rng.chance(K.escape)) fireEscape(out, f, lot, rng);
       // an awning over a shop front now and then (downtown, the tenements)
-      if (K.shop && f.ground && rng.chance(0.25)) {
+      // ([O1b] a lot on a street with a character: its awnings are its street's, drawn by parts/dressing.js)
+      if (K.shop && f.ground && rng.chance(0.25) && !lot.fc) {
         const u = L * rng.range(0.25, 0.75), w = rng.range(3, 6);
         const ax = f.a[0] + (dx / L) * u, az = f.a[1] + (dz / L) * u;
         const g = new THREE.BoxGeometry(w, 0.08, 1.6).rotateX(-0.32).translate(0, 0, 0.8).rotateY(ang).translate(ax, K.ground - 0.55, az);
