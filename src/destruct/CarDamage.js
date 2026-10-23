@@ -1090,10 +1090,12 @@ export class CarDamage {
       sm.blast(at, 7, 1);
       // (the cars near take it too)
       // ([O6b] the cold play's blocker: 1.4 within 6.5 m never reached the next
-      // car along a kerb, 11.5 m off. Now 2.0 at 8 m, 1.6 at 11.5, nothing past
-      // 14: a burning car takes a damaged neighbour with it - the chain - and a
-      // whole one is left steaming)
-      for (const o of this.list) { if (o === D || o.state === 'wreck') continue; const d = Math.hypot(o.v.pos.x - v.pos.x, o.v.pos.z - v.pos.z); if (d < 14) o.v.hurt(3.0 - 0.12 * d, at); }
+      // car along a kerb, 11.5 m off. Now 2.0 at 4 m, 1.5 at 6.5, 0.5 at 11.5,
+      // nothing past 14: a burning car takes a smoking neighbour with it - the
+      // chain - and leaves a whole one steaming. Tried in play: 1.6 at 11.5 sent
+      // all ten up from three; 2.0 at 8 m spent the rammer's car faster than his
+      // rams spent the cars he rammed - three coupes for two wrecks)
+      for (const o of this.list) { if (o === D || o.state === 'wreck') continue; const d = Math.hypot(o.v.pos.x - v.pos.x, o.v.pos.z - v.pos.z); if (d < 14) o.v.hurt(2.8 - 0.2 * d, at); }
       const mine = G0.vehicles && G0.vehicles.player === v && G0.city && G0.city.inCar;
       if (Math.hypot(G0.eye.x - at.x, G0.eye.z - at.z) < 8) this.hurtBy = { by: 'blast', t: G0.time };
       G0.onCarExploded({ pos: v.pos.clone(), id: -1, smash: true }, at);

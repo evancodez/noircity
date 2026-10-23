@@ -324,8 +324,8 @@ export const TEN = {
   ],
   // [O6b] (the cold play's blocker: only three cars to take, the second one
   // already spent by my own rams - two spare coupes at the kerbs by the start,
-  // short of the ten: the next car when mine burns)
-  spares: [['coupe', -112.4, 49.35 - 0.1, Math.PI / 2, 'paintGrey'], ['coupe', -127.6, 49.35 + 0.1, -Math.PI / 2, 'paint']],
+  // short of the ten, and a third past them at Centre St: the next car when mine burns)
+  spares: [['coupe', -112.4, 49.35 - 0.1, Math.PI / 2, 'paintGrey'], ['coupe', -127.6, 49.35 + 0.1, -Math.PI / 2, 'paint'], ['coupe', -112.4, MID[4] - 11.5 - 0.1, Math.PI / 2, 'paint']],
 };
 // [O6b] the cold play's m6: a burning fail threw two minutes of havoc away (the
 // retry put all ten back whole). What each car had is kept for the retry - its

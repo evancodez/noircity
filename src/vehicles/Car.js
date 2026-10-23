@@ -483,7 +483,7 @@ export class Car {
     else {
       const hOn = Math.abs(ram.fwd.x * nx + ram.fwd.z * nz);
       if (imp > 5) ram.hurt((imp - 5) * (hOn > 0.6 ? 0.07 : 0.05) / mr, point);
-      if (impC > 3 && hit.hurt) hit.hurt((impC - 3) * 0.24 * mr, point);
+      if (impC * mr > 2.5 && hit.hurt) hit.hurt((impC * mr - 2.5) * 0.27, point);   // (a lorry's weight: hard at a walking pace)
     }
     if (o) {
       o.emit && o.emit('bump', { by: this, k: Math.min(1, impC / 10), imp: impC, impN: imp, point, n: new THREE.Vector3(-nx, 0, -nz), struck: iRam });

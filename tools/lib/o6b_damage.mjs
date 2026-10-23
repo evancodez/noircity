@@ -49,6 +49,7 @@ async function follow(api, path, { speed = 9, timeout = 40000, stop = null, slow
     s = await js(ST);
     if (!s || s.__exc) { await sleep(30); continue; }
     if (s.failing || !s.inCar) { end = s.failing ? 'failed' : 'out'; break; }
+    if (follow.outIfBurning && s.state === 'burning') { end = 'burning'; break; }   // ([O6b] warned: a player gets out)
     maxV = Math.max(maxV, Math.abs(s.v)); (follow.trace || (follow.trace = [])).push([idx, P.length, +s.v.toFixed(1), +s.x.toFixed(1), +s.z.toFixed(1)]); if (follow.trace.length > 60) follow.trace.shift();
     if (stop && (await stop(s))) { end = 'stop'; break; }
     let best = idx, bd = Infinity;
@@ -130,6 +131,7 @@ async function ram(api) {
   const corners = (id) => `Object.values(G.city.cars.find((c) => c.id === ${id}).smashD.corners).reduce((a, b) => a + b, 0)`;
   const where = (id) => js(`(() => { const v = G.city.cars.find((c) => c.id === ${id}); return { x: v.pos.x, z: v.pos.z, yaw: v.yaw }; })()`);
   if (!(await into())) { out.end = 'no car'; return out; }
+  follow.outIfBurning = !!opts.untilFire;
   const shots = opts.shots || {};
   let southward = false, prev = null;
   for (const step of PLAN.slice(0, opts.n ?? PLAN.length)) {
@@ -142,23 +144,27 @@ async function ram(api) {
     }
     const T = byAt(step.at);
     // my car spent (smoking, on a hub, burning): out, and into the nearest whole car (one already rammed first)
+    const spent = async () => {
     const me = await js(ST);
+    if (!me || me.failing) return 'failed';
     if (me.dmg >= 2.45 || me.hubs >= 1 || me.state === 'burning') {
       out.mine.push(await js(SHOWS('G.city.car')));
       await brakeAndBack(api, 0);
       await press('KeyE');
       for (let i = 0; i < 60; i++) { if (!(await js('G.city.inCar'))) break; await sleep(100); }
       await sleep(600);
+      // (out of a burning car: away from it first - its blast reaches a man within 8 m)
+      if (me.state === 'burning') { const p = await js('[N.controller.pos.x, N.controller.pos.z]'); await walkTo(api, p[0], p[1] + (southward ? -12 : 12), 6000, true); }
       const done = out.blows.map((b) => b.id);
-      const pick = await js(`(() => { const C = N.controller.pos, done = ${JSON.stringify(done)}; let b = null, bd = 1e9; for (const v of G.city.cars) { if (v.wrecked || v === G.city.car || v.kind === 'sedan' || !v.smashD || v.smashD.state === 'burning' || v.damage > 1.6 || v.smashD.hub.some(Boolean)) continue; const d = Math.hypot(v.pos.x - C.x, v.pos.z - C.z) + (done.includes(v.id) ? 0 : 25); if (d < bd) { bd = d; b = v; } } return b && { id: b.id, x: b.pos.x, z: b.pos.z, yaw: b.yaw, hw: b.spec.halfW, east: b.pos.x > -120 }; })()`);
-      if (!pick) { out.end = 'no car to take'; break; }
+      const pick = await js(`(() => { const C = N.controller.pos, done = ${JSON.stringify(done)}; let b = null, bd = 1e9; for (const v of G.city.cars) { if (v.wrecked || v === G.city.car || v.kind === 'sedan' || !v.smashD || v.smashD.state === 'burning' || v.damage > 2.3 || v.smashD.hub.some(Boolean)) continue; const d = Math.hypot(v.pos.x - C.x, v.pos.z - C.z) + (done.includes(v.id) ? 0 : 25) + (v.kind === 'truck' ? 60 : 0); if (d < bd) { bd = d; b = v; } } return b && { id: b.id, x: b.pos.x, z: b.pos.z, yaw: b.yaw, hw: b.spec.halfW, east: b.pos.x > -120 }; })()`);
+      if (!pick || pick.__exc) { out.end = 'no car to take'; return 'end'; }
       // (its door on the lane's side: a car at the east kerb from its west side)
       const sd = pick.east ? -1 : 1;
-      await walkTo(api, pick.x + sd * (pick.hw + 1.0), pick.z, 25000);
+      await walkTo(api, pick.x + sd * (pick.hw + 1.0), pick.z, 40000, true);
       const f = await js(`(() => { const C = N.controller; let d = Math.atan2(-(${pick.x} - C.pos.x), -(${pick.z} - C.pos.z)) - C.yaw; return { d: Math.atan2(Math.sin(d), Math.cos(d)), sens: C.sensitivity }; })()`);
       await api.turn(-f.d / f.sens, 0);
       await sleep(300);
-      if (!(await into())) { out.end = 'could not take ' + pick.id; break; }
+      if (!(await into())) { out.end = 'could not take ' + pick.id; return 'end'; }
       out.swaps++;
       log(`  took car ${pick.id}`);
       // (out of its kerb into the lane I was going down: back off it, then on)
@@ -167,6 +173,9 @@ async function ram(api) {
       const laneX = southward ? -124.9 : -119.6, zN = s2.z + (southward ? 6 : -6);
       await follow(api, [[s2.x, s2.z], [(s2.x + laneX) / 2, (s2.z + zN) / 2], [laneX, zN], [laneX, zN + (southward ? 3 : -3)]], { speed: 4, timeout: 15000 });
     }
+    return 'ok';
+    };
+    if ((await spent()) !== 'ok') break;
     const sgn = southward ? 1 : -1;
     const fT = [Math.cos(T.yaw), -Math.sin(T.yaw)];
     const blowOnce = async (again) => {
@@ -202,15 +211,38 @@ async function ram(api) {
     };
     let r = await blowOnce(false);
     if (step.again) r = await blowOnce(true);
+    // ([O6b] after the critic: opts.untilFire - again and again, until it burns (the havoc's
+    // proof counts wrecks): a longer back-off for a run-up, my car swapped when it is spent)
+    let nb = step.again ? 2 : 1, stopAll = false;
+    while (opts.untilFire && nb < (opts.maxBlows || 6)) {
+      const t = await js(`(() => { const v = G.city.cars.find((c) => c.id === ${T.id}); return { dmg: v.damage, wreck: !!v.wrecked, st: v.smashD && v.smashD.state }; })()`);
+      if (t.wreck || t.st === 'burning') break;
+      const sp = await spent();
+      if (sp !== 'ok') { stopAll = true; break; }
+      { await keyDown('KeyS'); await sleep(step.blow === 'door' ? 2400 : 1800); await keyUp('KeyS'); await sleep(150); }
+      r = await blowOnce(true); nb++;
+    }
+    // (it burns: back off out of its blast and let it go - a player sees the flames - then on)
+    if (opts.untilFire && !stopAll) {
+      const t = await js(`(() => { const v = G.city.cars.find((c) => c.id === ${T.id}); return { wreck: !!v.wrecked, st: v.smashD && v.smashD.state }; })()`);
+      if (t.st === 'burning') {
+        await keyDown('KeyS'); await sleep(4000); await keyUp('KeyS'); await keyDown('Space'); await sleep(300); await keyUp('Space');
+        for (let i = 0; i < 60; i++) { const u = await js(`(() => { const v = G.city.cars.find((c) => c.id === ${T.id}); return !!v.wrecked; })()`); if (u) break; await sleep(150); }
+        await sleep(400);
+      }
+    }
     if (opts.trace === step.name) log(JSON.stringify(follow.trace));
     prev = T;
     const after = await js(SHOWS(`G.city.cars.find((v) => v.id === ${T.id})`));
     const mine = await js(SHOWS('G.city.car'));
     out.blows.push({ name: step.name, id: T.id, blow: step.blow, ...r, after: after && after.st, dmg: after && after.dmg, mine: mine && mine.st, myDmg: mine && mine.dmg });
-    log(`  ${step.name} (${step.blow}, ${r.end} at ${r.kmh} km/h, ${r.max} at most): it ${JSON.stringify(after && after.st)} ${after && after.dmg}; mine ${JSON.stringify(mine && mine.st)} ${mine && mine.dmg}`);
+    log(`  ${step.name} (${step.blow} x${nb}, ${r.end} at ${r.kmh} km/h, ${r.max} at most): it ${JSON.stringify(after && after.st)} ${after && after.dmg}; mine ${JSON.stringify(mine && mine.st)} ${mine && mine.dmg}`);
+    if (stopAll) break;
   }
   out.mine.push(await js(SHOWS('G.city.car')));
   await brakeAndBack(api, 0);
+  // ([O6b] after the critic: in a burning car at the end, out and away - a player warned gets out)
+  { const me = await js(ST); if (me && me.inCar && me.state === 'burning') { await press('KeyE'); for (let i = 0; i < 60; i++) { if (!(await js('G.city.inCar'))) break; await sleep(100); } await sleep(400); const p = await js('[N.controller.pos.x, N.controller.pos.z]'); await walkTo(api, p[0] < -120 ? -134 : -106, p[1] + 6, 9000); out.leftBurning = true; } }
   await sleep(opts.settle ?? 5000);
   out.parts = await js(`(() => { const S = G.stage.smash, st = G.stage; const P = S.out.filter((i) => i.part); const R = { n: P.length, kinds: {}, live: 0, floating: [], inWall: [], against: [] };
     for (const it of P) { R.kinds[it.kind] = (R.kinds[it.kind] || 0) + 1; if (it.state === 'live') R.live++;
@@ -223,7 +255,7 @@ async function ram(api) {
   out.cars = [];
   for (let i = 0; i < cars.length; i++) out.cars.push(await js(SHOWS(`G.city.cars[${i}]`)));
   out.states = [...new Set(out.cars.flatMap((c) => (c ? c.st : [])).concat(out.blows.flatMap((b) => [...(b.after || []), ...(b.mine || [])])))];
-  out.end = 'done';
+  out.end = out.end || 'done';
   return out;
 }
 const COL_Z = [-25.4, -13.9, -2.4, 9.1, 20.6, 32.1, 43.6, 55.1];
@@ -232,15 +264,21 @@ function segDist(a, b, p) {
   const t = Math.max(0, Math.min(1, ((p[0] - a[0]) * dx + (p[1] - a[1]) * dz) / L2));
   return Math.hypot(a[0] + dx * t - p[0], a[1] + dz * t - p[1]);
 }
-async function walkTo({ js, keyDown, keyUp, sleep, turn }, x, z, timeout = 12000) {
+async function walkTo({ js, keyDown, keyUp, sleep, turn }, x, z, timeout = 12000, run = false) {
   const T0 = Date.now();
   await keyDown('KeyW');
+  if (run) await keyDown('ShiftLeft');
+  // ([O6b] after the critic: run (Shift) to a car far off; blocked by a car or a column - no
+  // way made for a second - a step aside, as a player steps round it)
+  let lp = null, lt = Date.now();
   for (;;) {
     const s = await js(`(() => { const C = N.controller; const dx = ${x} - C.pos.x, dz = ${z} - C.pos.z; let d = Math.atan2(-dx, -dz) - C.yaw; d = Math.atan2(Math.sin(d), Math.cos(d)); return { d: Math.hypot(dx, dz), dyaw: d, sens: C.sensitivity }; })()`);
     if (s.d < 0.6 || Date.now() - T0 > timeout) break;
     if (Math.abs(s.dyaw) > 0.05) await turn(-s.dyaw / s.sens * 0.7, 0);
+    if (Date.now() - lt > 1000) { if (lp != null && lp - s.d < 0.4) { await keyDown('KeyD'); await sleep(550); await keyUp('KeyD'); } lp = s.d; lt = Date.now(); }
     await sleep(40);
   }
+  if (run) await keyUp('ShiftLeft');
   await keyUp('KeyW');
   await sleep(200);
 }
