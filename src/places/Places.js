@@ -1,4 +1,6 @@
 import * as THREE from 'three';
+import { styleFor } from '../cast/style.js';   // [O8] the rooms' figures varied as the street's
+import { carry } from '../cast/o8extras.js';
 import { allocInkId } from '../render/layers.js';
 import { lotTiers, lotWindows } from '../city/kits/facade.js';
 import { RoomKit, FLOOR, WALL_T } from '../city/kits/interior/kit.js';
@@ -301,6 +303,13 @@ export class Places {
     try {
       const p = s.frame.w(f.x, f.z);
       const c = stage.cast.spawn(f.kind, { at: { x: p.x, z: p.z }, yaw: s.frame.figYaw(f.yaw), name: f.name ? `${s.id}_${f.name}` : null, variant: f.variant || null });
+      // [O8] after the critic (the same barman and boxer in every bar and gym): the street's variety
+      // for the rooms' figures too - a build, a carriage, the hat's set, the idle he keeps, by where he stands
+      if (c.fig && c.fig.setStyle) {
+        const S = styleFor(f.kind, p.x, p.z, { role: 'room', sex: /woman|waitress|nurse|_her|singer|girl/.test(f.kind) ? 'f' : 'm', work: /cook|barman|boxer|docker|dockhand|trucker/.test(f.kind) });
+        c.fig.setStyle(S);
+        if (S.smoke) carry(c.fig, 'cigarette');
+      }
       if (f.seat) c.sit({ pos: V(p.x, f.seat.y, p.z), yaw: s.frame.figYaw(f.yaw) - Math.PI, name: f.seat.name || 'stool' });
       if (f.state && f.state !== 'idle') c.setState(f.state, 0);
       c.place2 = s; c.spec = f;

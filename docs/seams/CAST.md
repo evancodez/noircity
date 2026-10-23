@@ -62,6 +62,16 @@ carry(fig, 'cigarette' | 'cane' | null);
   `styleFor` with no more work.
 - `fig.setStyle(null)` is the costume as built (game one's figures never have
   one: their frames are golden).
+- **No two in step** (after the critic): a style carries `phase` (0..1) and
+  `rate` (0.86 - 1.14); `setStyle` calls `fig.anim.seedPhase(phase)`, so every
+  loop begun fresh (the idle, the walk) starts at his own phase, and the idle
+  runs at his own pace. Without a style (game one) loops start at 0 as before.
+- **The rooms' figures** (O5's `Places.spawnFig`) are styled as the street's
+  (by where they stand; a smoker gets his cigarette).
+- **The street's looks** after the critic: `o8_bowler_a` (bowler, short
+  jacket), `o8_bowler_b` (bowler, grey coat, heavy), `o8_capcoat` (flat cap,
+  muffler, long coat), `o8_woman_fur` (the long pale fur); `fedoraCostume`
+  takes `hat: 'bowler' | 'flatcap'` for any coat.
 
 ---------------------------------------------------------------------------
 ## 3. The layers a system drives
@@ -119,6 +129,14 @@ person.knock(dir, { dead, why, push, follow })   // the street's: the fall that 
   (his feet at the root, his head along -z) and the pose blends from how he
   lay over 0.32 s (0.55 s from his front).
 - **The blood pool** waits for the body to lie still (`rag.onSleep`).
+- **A body reads on the black street** (after the critic): `RAG_HOOKS`
+  (`src/enemies/Hood.js`) tells `src/cast/o8extras.js` when a figure goes onto
+  the physics layer and off it; while he lies he shows the light shapes a fall
+  shows - the shirt front and tie where the coat fell open (chest), the coat's
+  lining thrown up over his seat (hips), the cuffs (hands) - printed by the ink
+  as the cast's light shapes (flat, pale, lit or not). Standing, never.
+- **A car still under the throttle**: a body held against its face for 0.25 s
+  slides off its corner to the side he is on (no man rides the bumper).
 - **The bodies are solid to things, not to feet** (C2b's rule): no body is in
   the walking colliders; the gun kit's `overBody` reads the bones as before.
 - **Budget**: twelve bodies falling at once and forty walking, the bed's
