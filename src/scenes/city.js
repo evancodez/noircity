@@ -5,6 +5,7 @@ import { STARTS, START_DEFAULT, PAVE, RIVER, QUAY_OFF, SLIPS, PIERS, BRIDGE } fr
 import { riverNearest } from '../world/cityGen.js';
 import { MapOverlay } from '../world/map.js';
 import { compileAll } from '../stages/noircity/compile.js';
+import { placesOf } from '../places/Places.js';   // [O5] the places: their doors, their rooms
 
 // NOIR CITY's free roam (lane O1): the city, a car at the kerb, nothing I
 // must do. Every critic and every later lane starts from here.
@@ -79,16 +80,20 @@ function place(ctx, at) {
   ctx.controller.setPose(at.pos.x, at.pos.z, at.yaw, -0.06);
   stage.part('bounds').navAround(at.pos.x, at.pos.z, 14);
   R.stream = stage.part('stream');
+  // [O5] the places (src/places/): loaded as I come near their doors
+  R.places = placesOf(G, stage);
   // (every program the city draws with, compiled under the fade in: none met first down a street)
   if (!G.shotMode) R.compileMs = compileAll(stage, G);
 }
 
 export default defineScene({
   id: 'city', stage: 'noircity', title: '', name: 'Noir City',
-  beats: ['roam', 'ashore'],
+  // [O5] hotel: up in my room at the Carlton (the save the bed writes; CONTINUE);
+  // station: on the cell's bench at headquarters (the arrest's wake: O3)
+  beats: ['roam', 'ashore', 'hotel', 'station'],
   // (M is the map here: Game.bindInput leaves the sound alone)
   mapKey: true,
-  objectives: { roam: null, ashore: null },
+  objectives: { roam: null, ashore: null, hotel: null, station: null },
   setup: {
     roam(ctx) {
       const a = ctx.stage.anchor(`city.start.${startOf()}`);
@@ -106,6 +111,22 @@ export default defineScene({
         return;
       }
       place(ctx, { car: a.car, carYaw: a.carYaw, pos: a.pos, yaw: a.yaw });
+      // [O5] (look development and the frames: ?place=<id> puts me inside it, &seat=<name> in its seat)
+      const pq = q && q.get('place');
+      if (pq) ctx.game.city.places.enter(pq, { seat: q.get('sit') || null });
+    },
+    // [O5] the hotel's bed wrote the save: CONTINUE wakes me in my room, the car at the kerb outside
+    hotel(ctx) {
+      const P = placesOf(ctx.game, ctx.stage), s = P.byId.get('hotel');
+      const kerb = s ? s.frame.w(0, 7.5) : { x: -112, z: 83 };
+      place(ctx, { car: kerb, carYaw: Math.PI / 2, pos: { x: kerb.x + 2, z: kerb.z }, yaw: 0 });
+      P.wake('hotel');
+    },
+    // [O5] after an arrest (O3's): the cell's bench at headquarters; the car is gone (it is at the Grand Ave start)
+    station(ctx) {
+      const a = ctx.stage.anchor('city.start.grand');
+      place(ctx, { car: a.car, carYaw: a.carYaw, pos: a.pos, yaw: a.yaw });
+      placesOf(ctx.game, ctx.stage).wake('police');
     },
     // out of the river: on the quay at the nearest steps, a car at the kerb by them
     ashore(ctx) {
@@ -130,6 +151,8 @@ export default defineScene({
 function step(ctx, R, T, dt) {
   const G = ctx.game, C = ctx.stage.part('city').C, hud = ctx.hud, ctl = ctx.controller;
   if (G.failing || G.state !== 'playing') return;
+  // [O5] the places: loaded and dropped, their doors and their life
+  if (R.places) R.places.step(dt);
   const car = R.car;
   // the warning before the river (WAVE_C §1 rule 2): on a slipway's ramp, or
   // near a pier's open end - in the car at least 1.6 s ahead at its speed
@@ -204,7 +227,8 @@ function step(ctx, R, T, dt) {
   let door = null;
   if (!near) {
     const D = R.stream.doorNear(ctl.pos.x, ctl.pos.z, 1.9);
-    if (D && (ctl.pos.x - D.x) * D.nx + (ctl.pos.z - D.z) * D.nz > 0.05) {
+    // [O5] (a place's door is the place's: it opens, src/places/)
+    if (D && !(R.places && R.places.owns(D)) && (ctl.pos.x - D.x) * D.nx + (ctl.pos.z - D.z) * D.nz > 0.05) {
       const f = G.camera.getWorldDirection(_v);
       const toX = D.x - G.eye.x, toZ = D.z - G.eye.z, tl = Math.max(0.05, Math.hypot(toX, toZ)), fl = Math.max(1e-3, Math.hypot(f.x, f.z));
       if ((toX * f.x + toZ * f.z) / (tl * fl) > 0.72) door = D;
